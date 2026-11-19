@@ -7,6 +7,7 @@ package com.liferay.object.service;
 
 import com.liferay.object.model.ObjectField;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.module.service.Snapshot;
 
 import java.util.List;
 import java.util.Map;
@@ -33,7 +34,8 @@ public class ObjectFieldServiceUtil {
 	public static ObjectField addCustomObjectField(
 			String externalReferenceCode, long listTypeDefinitionId,
 			long objectDefinitionId, String businessType, String dbType,
-			boolean indexed, boolean indexedAsKeyword, String indexedLanguageId,
+			Map<java.util.Locale, String> descriptionMap, boolean indexed,
+			boolean indexedAsKeyword, String indexedLanguageId,
 			Map<java.util.Locale, String> labelMap, boolean localized,
 			String name, String readOnly, String readOnlyConditionExpression,
 			boolean required, boolean state,
@@ -43,9 +45,9 @@ public class ObjectFieldServiceUtil {
 
 		return getService().addCustomObjectField(
 			externalReferenceCode, listTypeDefinitionId, objectDefinitionId,
-			businessType, dbType, indexed, indexedAsKeyword, indexedLanguageId,
-			labelMap, localized, name, readOnly, readOnlyConditionExpression,
-			required, state, objectFieldSettings);
+			businessType, dbType, descriptionMap, indexed, indexedAsKeyword,
+			indexedLanguageId, labelMap, localized, name, readOnly,
+			readOnlyConditionExpression, required, state, objectFieldSettings);
 	}
 
 	public static ObjectField deleteObjectField(long objectFieldId)
@@ -72,7 +74,8 @@ public class ObjectFieldServiceUtil {
 	public static ObjectField updateObjectField(
 			String externalReferenceCode, long objectFieldId,
 			long listTypeDefinitionId, String businessType, String dbType,
-			boolean indexed, boolean indexedAsKeyword, String indexedLanguageId,
+			Map<java.util.Locale, String> descriptionMap, boolean indexed,
+			boolean indexedAsKeyword, String indexedLanguageId,
 			Map<java.util.Locale, String> labelMap, boolean localized,
 			String name, String readOnly, String readOnlyConditionExpression,
 			boolean required, boolean state,
@@ -82,19 +85,17 @@ public class ObjectFieldServiceUtil {
 
 		return getService().updateObjectField(
 			externalReferenceCode, objectFieldId, listTypeDefinitionId,
-			businessType, dbType, indexed, indexedAsKeyword, indexedLanguageId,
-			labelMap, localized, name, readOnly, readOnlyConditionExpression,
-			required, state, objectFieldSettings);
+			businessType, dbType, descriptionMap, indexed, indexedAsKeyword,
+			indexedLanguageId, labelMap, localized, name, readOnly,
+			readOnlyConditionExpression, required, state, objectFieldSettings);
 	}
 
 	public static ObjectFieldService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(ObjectFieldService service) {
-		_service = service;
-	}
-
-	private static volatile ObjectFieldService _service;
+	private static final Snapshot<ObjectFieldService> _serviceSnapshot =
+		new Snapshot<>(ObjectFieldServiceUtil.class, ObjectFieldService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1699148342

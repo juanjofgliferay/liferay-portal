@@ -29,11 +29,11 @@ import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.PortletRequest;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.Locale;
-
-import javax.portlet.PortletRequest;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -166,7 +166,9 @@ public class AssetVocabularyCTDisplayRenderer
 
 			sb.append(name);
 
-			if (assetVocabulary.isRequired(classNameId, classTypePK)) {
+			if (assetVocabulary.isRequired(
+					classNameId, classTypePK, assetVocabulary.getGroupId())) {
+
 				sb.append(StringPool.SPACE);
 				sb.append(StringPool.STAR);
 			}

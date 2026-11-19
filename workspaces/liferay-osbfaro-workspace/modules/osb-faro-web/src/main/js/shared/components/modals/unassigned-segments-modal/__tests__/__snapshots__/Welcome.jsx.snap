@@ -1,0 +1,82 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Welcome should render 1`] = `
+<div>
+  <div
+    class="pt-4"
+  >
+    <div
+      class="modal-body d-flex flex-column align-items-center"
+    >
+      <img
+        alt=""
+        class="mw-100"
+        height="150"
+        src="ac_property_buildings.svg"
+        width="700"
+      />
+      <h2
+        class="h4"
+      >
+        Introducing Properties
+      </h2>
+      <span
+        class="d-block mb-4 text-secondary"
+      >
+        We have upgraded your Analytics Cloud workspace to include properties.
+      </span>
+      <ul
+        class="mb-0 text-secondary"
+        style="max-width: 588px;"
+      >
+        <li>
+          <p
+            class="font-weight-semi-bold mb-3 text-dark"
+          >
+            Track user activities across experiences that matter.
+          </p>
+          <p
+            class="mb-2 text-dark"
+          >
+            Scope user sessions to their intended experiences by combining sites for each property.
+          </p>
+          <p>
+            For existing workspaces, we scoped each datasource to its own property. This may have affected some of your existing segments.
+          </p>
+        </li>
+        <li>
+          <p
+            class="font-weight-semi-bold mb-3 text-dark"
+          >
+            Take control of the data access with property permissions.
+          </p>
+          <p
+            class="mb-2 text-dark"
+          >
+            Flexible user access controls with custom permissioning for each property.
+          </p>
+        </li>
+      </ul>
+    </div>
+    <div
+      class="modal-footer d-flex justify-content-end"
+    >
+      <div
+        class="modal-item-last"
+      >
+        <div
+          class="btn-group-spaced"
+          role="group"
+        >
+          <button
+            class="button-root btn btn-secondary"
+            type="button"
+          >
+            Next
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+`;

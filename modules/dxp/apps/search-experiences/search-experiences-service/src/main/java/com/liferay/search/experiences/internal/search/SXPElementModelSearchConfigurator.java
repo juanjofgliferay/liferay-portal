@@ -6,11 +6,15 @@
 package com.liferay.search.experiences.internal.search;
 
 import com.liferay.portal.kernel.search.Field;
+import com.liferay.portal.kernel.util.Localization;
 import com.liferay.portal.search.spi.model.index.contributor.ModelIndexerWriterContributor;
 import com.liferay.portal.search.spi.model.registrar.ModelSearchConfigurator;
 import com.liferay.portal.search.spi.model.result.contributor.ModelSummaryContributor;
+import com.liferay.search.experiences.internal.search.spi.model.result.contributor.SXPElementModelSummaryContributor;
 import com.liferay.search.experiences.model.SXPElement;
+import com.liferay.search.experiences.service.SXPElementLocalService;
 
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
@@ -52,15 +56,22 @@ public class SXPElementModelSearchConfigurator
 		return _modelSummaryContributor;
 	}
 
-	@Reference(
-		target = "(indexer.class.name=com.liferay.search.experiences.model.SXPElement)"
-	)
+	@Activate
+	protected void activate() {
+		_modelIndexWriterContributor = new ModelIndexerWriterContributor<>(
+			_sxpElementLocalService::getIndexableActionableDynamicQuery);
+		_modelSummaryContributor = new SXPElementModelSummaryContributor(
+			_localization);
+	}
+
+	@Reference
+	private Localization _localization;
+
 	private ModelIndexerWriterContributor<SXPElement>
 		_modelIndexWriterContributor;
-
-	@Reference(
-		target = "(indexer.class.name=com.liferay.search.experiences.model.SXPElement)"
-	)
 	private ModelSummaryContributor _modelSummaryContributor;
+
+	@Reference
+	private SXPElementLocalService _sxpElementLocalService;
 
 }

@@ -8,13 +8,14 @@ package com.liferay.headless.commerce.admin.catalog.client.serdes.v1_0;
 import com.liferay.headless.commerce.admin.catalog.client.dto.v1_0.RelatedProduct;
 import com.liferay.headless.commerce.admin.catalog.client.json.BaseJSONParser;
 
+import jakarta.annotation.Generated;
+
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
-
-import javax.annotation.Generated;
 
 /**
  * @author Zoltán Takács
@@ -91,6 +92,20 @@ public class RelatedProductSerDes {
 			sb.append(relatedProduct.getProductId());
 		}
 
+		if (relatedProduct.getProductType() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"productType\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(relatedProduct.getProductType()));
+
+			sb.append("\"");
+		}
+
 		if (relatedProduct.getType() != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -155,6 +170,14 @@ public class RelatedProductSerDes {
 			map.put("productId", String.valueOf(relatedProduct.getProductId()));
 		}
 
+		if (relatedProduct.getProductType() == null) {
+			map.put("productType", null);
+		}
+		else {
+			map.put(
+				"productType", String.valueOf(relatedProduct.getProductType()));
+		}
+
 		if (relatedProduct.getType() == null) {
 			map.put("type", null);
 		}
@@ -176,6 +199,32 @@ public class RelatedProductSerDes {
 		@Override
 		protected RelatedProduct[] createDTOArray(int size) {
 			return new RelatedProduct[size];
+		}
+
+		@Override
+		protected boolean parseMaps(String jsonParserFieldName) {
+			if (Objects.equals(jsonParserFieldName, "id")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "priority")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "productExternalReferenceCode")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "productId")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "productType")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "type")) {
+				return false;
+			}
+
+			return false;
 		}
 
 		@Override
@@ -207,6 +256,11 @@ public class RelatedProductSerDes {
 				if (jsonParserFieldValue != null) {
 					relatedProduct.setProductId(
 						Long.valueOf((String)jsonParserFieldValue));
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "productType")) {
+				if (jsonParserFieldValue != null) {
+					relatedProduct.setProductType((String)jsonParserFieldValue);
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "type")) {
@@ -246,36 +300,7 @@ public class RelatedProductSerDes {
 
 			Object value = entry.getValue();
 
-			Class<?> valueClass = value.getClass();
-
-			if (value instanceof Map) {
-				sb.append(_toJSON((Map)value));
-			}
-			else if (valueClass.isArray()) {
-				Object[] values = (Object[])value;
-
-				sb.append("[");
-
-				for (int i = 0; i < values.length; i++) {
-					sb.append("\"");
-					sb.append(_escape(values[i]));
-					sb.append("\"");
-
-					if ((i + 1) < values.length) {
-						sb.append(", ");
-					}
-				}
-
-				sb.append("]");
-			}
-			else if (value instanceof String) {
-				sb.append("\"");
-				sb.append(_escape(entry.getValue()));
-				sb.append("\"");
-			}
-			else {
-				sb.append(String.valueOf(entry.getValue()));
-			}
+			sb.append(_toJSON(value));
 
 			if (iterator.hasNext()) {
 				sb.append(", ");
@@ -287,4 +312,47 @@ public class RelatedProductSerDes {
 		return sb.toString();
 	}
 
+	private static String _toJSON(Object value) {
+		if (value == null) {
+			return "null";
+		}
+
+		if (value instanceof Collection) {
+			Collection<?> collection = (Collection<?>)value;
+
+			return _toJSON(collection.toArray());
+		}
+
+		if (value instanceof Map) {
+			return _toJSON((Map)value);
+		}
+
+		Class<?> clazz = value.getClass();
+
+		if (clazz.isArray()) {
+			StringBuilder sb = new StringBuilder("[");
+
+			Object[] values = (Object[])value;
+
+			for (int i = 0; i < values.length; i++) {
+				sb.append(_toJSON(values[i]));
+
+				if ((i + 1) < values.length) {
+					sb.append(", ");
+				}
+			}
+
+			sb.append("]");
+
+			return sb.toString();
+		}
+
+		if (value instanceof String) {
+			return "\"" + _escape(value) + "\"";
+		}
+
+		return String.valueOf(value);
+	}
+
 }
+// LIFERAY-REST-BUILDER-HASH:-1360166138

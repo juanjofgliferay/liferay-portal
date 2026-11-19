@@ -8,25 +8,34 @@ package com.liferay.asset.list.asset.entry.provider;
 import com.liferay.asset.kernel.model.AssetEntry;
 import com.liferay.asset.kernel.service.persistence.AssetEntryQuery;
 import com.liferay.asset.list.model.AssetListEntry;
-
-import java.util.List;
+import com.liferay.info.pagination.InfoPage;
+import com.liferay.portal.kernel.search.BooleanQuery;
 
 /**
  * @author Sarai Díaz
  */
 public interface AssetListAssetEntryProvider {
 
-	public List<AssetEntry> getAssetEntries(
+	public InfoPage<AssetEntry> getAssetEntriesInfoPage(
 		AssetListEntry assetListEntry, long[] segmentsEntryIds,
 		long[][] assetCategoryIds, String[][] assetTagNames, String keywords,
 		String userId, int start, int end);
 
-	public int getAssetEntriesCount(
-		AssetListEntry assetListEntry, long[] segmentsEntryIds,
-		long[][] assetCategoryIds, String[][] assetTagNames, String keywords,
-		String userId);
+	public InfoPage<AssetEntry> getAssetEntriesInfoPage(
+		long[][] assetCategoryIds, AssetListEntry assetListEntry,
+		String[][] assetTagNames, String[] audienceEntryERCs, int end,
+		String keywords, int start, String userId);
 
 	public AssetEntryQuery getAssetEntryQuery(
 		AssetListEntry assetListEntry, long[] segmentsEntryIds, String userId);
+
+	public AssetEntryQuery getAssetEntryQuery(
+		AssetListEntry assetListEntry, String[] audienceEntryERCs,
+		String userId);
+
+	public BooleanQuery getBooleanQuery(
+			AssetEntryQuery assetEntryQuery, AssetListEntry assetListEntry,
+			long segmentsEntryId)
+		throws Exception;
 
 }

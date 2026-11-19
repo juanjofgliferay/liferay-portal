@@ -8,6 +8,8 @@ package com.liferay.layout.seo.service;
 import com.liferay.exportimport.kernel.lar.PortletDataContext;
 import com.liferay.layout.seo.exception.NoSuchEntryException;
 import com.liferay.layout.seo.model.LayoutSEOEntry;
+import com.liferay.layout.seo.model.LayoutSEOEntryCustomMetaTag;
+import com.liferay.layout.seo.model.LayoutSEOEntryCustomMetaTagProperty;
 import com.liferay.petra.function.UnsafeFunction;
 import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.change.tracking.CTAware;
@@ -18,6 +20,7 @@ import com.liferay.portal.kernel.dao.orm.IndexableActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.Projection;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
+import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.PersistedModel;
 import com.liferay.portal.kernel.search.Indexable;
 import com.liferay.portal.kernel.search.IndexableType;
@@ -80,13 +83,7 @@ public interface LayoutSEOEntryLocalService
 
 	public LayoutSEOEntry copyLayoutSEOEntry(
 			long userId, long groupId, boolean privateLayout,
-			long sourceLayoutId, boolean canonicalURLEnabled,
-			Map<Locale, String> canonicalURLMap, long copyDDMStorageId,
-			boolean openGraphDescriptionEnabled,
-			Map<Locale, String> openGraphDescriptionMap,
-			Map<Locale, String> openGraphImageAltMap,
-			long openGraphImageFileEntryId, boolean openGraphTitleEnabled,
-			Map<Locale, String> openGraphTitleMap,
+			long targetLayoutId, LayoutSEOEntry sourceLayoutSEOEntry,
 			ServiceContext serviceContext)
 		throws PortalException;
 
@@ -135,9 +132,6 @@ public interface LayoutSEOEntryLocalService
 
 	public void deleteLayoutSEOEntry(
 			long groupId, boolean privateLayout, long layoutId)
-		throws NoSuchEntryException;
-
-	public void deleteLayoutSEOEntry(String uuid, long groupId)
 		throws NoSuchEntryException;
 
 	/**
@@ -218,6 +212,9 @@ public interface LayoutSEOEntryLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public long dynamicQueryCount(
 		DynamicQuery dynamicQuery, Projection projection);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public LayoutSEOEntry fetchLayoutSEOEntry(Layout layout);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public LayoutSEOEntry fetchLayoutSEOEntry(long layoutSEOEntryId);
@@ -319,6 +316,10 @@ public interface LayoutSEOEntryLocalService
 			String uuid, long groupId)
 		throws PortalException;
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<LayoutSEOEntryCustomMetaTag> getLayoutSEOEntryCustomMetaTags(
+		long groupId, long layoutSEOEntryId);
+
 	/**
 	 * Returns the OSGi service identifier.
 	 *
@@ -336,6 +337,8 @@ public interface LayoutSEOEntryLocalService
 
 	public LayoutSEOEntry updateCustomMetaTags(
 			long userId, long groupId, boolean privateLayout, long layoutId,
+			List<LayoutSEOEntryCustomMetaTagProperty>
+				layoutSEOEntryCustomMetaTagProperties,
 			ServiceContext serviceContext)
 		throws PortalException;
 
@@ -358,7 +361,21 @@ public interface LayoutSEOEntryLocalService
 			boolean openGraphDescriptionEnabled,
 			Map<Locale, String> openGraphDescriptionMap,
 			Map<Locale, String> openGraphImageAltMap,
-			long openGraphImageFileEntryId, boolean openGraphTitleEnabled,
+			String openGraphImageFileEntryERC,
+			String openGraphImageFileEntryScopeERC,
+			boolean openGraphTitleEnabled,
+			Map<Locale, String> openGraphTitleMap,
+			ServiceContext serviceContext)
+		throws PortalException;
+
+	public LayoutSEOEntry updateLayoutSEOEntry(
+			long userId, long groupId, boolean privateLayout, long layoutId,
+			boolean openGraphDescriptionEnabled,
+			Map<Locale, String> openGraphDescriptionMap,
+			Map<Locale, String> openGraphImageAltMap,
+			String openGraphImageFileEntryERC,
+			String openGraphImageFileEntryScopeERC,
+			boolean openGraphTitleEnabled,
 			Map<Locale, String> openGraphTitleMap,
 			ServiceContext serviceContext)
 		throws PortalException;
@@ -385,3 +402,4 @@ public interface LayoutSEOEntryLocalService
 		throws E;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1905923090

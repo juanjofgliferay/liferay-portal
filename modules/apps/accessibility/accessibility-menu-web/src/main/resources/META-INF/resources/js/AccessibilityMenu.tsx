@@ -11,7 +11,7 @@ import {
 	accessibilityMenuAtom,
 } from '@liferay/accessibility-settings-state-web';
 import {checkCookieConsentForTypes} from '@liferay/cookies-banner-web';
-import {useLiferayState} from '@liferay/frontend-js-state-web';
+import {useLiferayState} from '@liferay/frontend-js-state-web/react';
 import {
 	COOKIE_TYPES,
 	checkConsent,
@@ -22,12 +22,14 @@ import PropTypes from 'prop-types';
 import React, {useCallback, useEffect, useState} from 'react';
 
 import AccessibilitySetting from './AccessibilitySetting';
-import {getSettingValue, toggleClassName} from './util';
+import {applySetting, getSettingValue} from './util';
 
 type KEYS = keyof typeof CONSTANTS;
 
 type Setting = {
-	className: string;
+	attributeName?: string | null;
+	attributeValue?: string | null;
+	className?: string | null;
 	defaultValue: boolean;
 	description: string;
 	key: KEYS;
@@ -36,7 +38,9 @@ type Setting = {
 };
 
 type AccessibilityMenuSetting = {
-	className: string;
+	attributeName?: string | null;
+	attributeValue?: string | null;
+	className?: string | null;
 	description: string;
 	key: KEYS;
 	label: string;
@@ -54,10 +58,8 @@ const OPEN_ACCESSIBILITY_MENU_EVENT_NAME = 'openAccessibilityMenu';
 const AccessibilityMenu = (props: Props) => {
 	const [settings, setSettings] = useLiferayState(accessibilityMenuAtom);
 
-	const [
-		hasFunctionalCookiesConsent,
-		setHasFunctionalCookiesConsent,
-	] = useState(checkConsent(COOKIE_TYPES.FUNCTIONAL));
+	const [hasFunctionalCookiesConsent, setHasFunctionalCookiesConsent] =
+		useState(checkConsent(COOKIE_TYPES.FUNCTIONAL));
 
 	const {observer, onOpenChange, open} = useModal();
 
@@ -66,6 +68,8 @@ const AccessibilityMenu = (props: Props) => {
 			props.settings.reduce<Record<KEYS, AccessibilityMenuSetting>>(
 				(prev, setting) => {
 					const {
+						attributeName,
+						attributeValue,
 						className,
 						defaultValue,
 						description,
@@ -80,9 +84,20 @@ const AccessibilityMenu = (props: Props) => {
 						key
 					);
 
-					toggleClassName(className, value);
+					applySetting(
+						{attributeName, attributeValue, className},
+						value
+					);
 
-					prev[key] = {className, description, key, label, value};
+					prev[key] = {
+						attributeName,
+						attributeValue,
+						className,
+						description,
+						key,
+						label,
+						value,
+					};
 
 					return prev;
 				},
@@ -131,15 +146,15 @@ const AccessibilityMenu = (props: Props) => {
 	);
 
 	const afterSettingValueChange = useCallback(
-		(value, setting) => {
-			toggleClassName(setting.className, value);
+		(value: any, setting: any) => {
+			applySetting(setting, value);
 
 			updateSetting(setting.key, {updating: false, value});
 		},
 		[updateSetting]
 	);
 
-	const handleAccessiblitySettingChange = useCallback(
+	const handleAccessibilitySettingChange = useCallback(
 		(value: boolean, setting: AccessibilityMenuSetting) => {
 			if (setting.updating) {
 				return;
@@ -182,7 +197,9 @@ const AccessibilityMenu = (props: Props) => {
 		<>
 			{open && (
 				<ClayModal observer={observer}>
-					<ClayModal.Header>
+					<ClayModal.Header
+						closeButtonAriaLabel={Liferay.Language.get('close')}
+					>
 						{Liferay.Language.get('accessibility-menu')}
 					</ClayModal.Header>
 
@@ -216,18 +233,18 @@ const AccessibilityMenu = (props: Props) => {
 							{(Object.keys(settings) as Array<KEYS>).map(
 								(key, index) => (
 									<AccessibilitySetting
-										description={settings[key].description}
+										description={settings[key]!.description}
 										disabled={isSettingsDisabled}
 										index={index}
-										key={settings[key].key}
-										label={settings[key].label}
+										key={settings[key]!.key}
+										label={settings[key]!.label}
 										onChange={(value) =>
-											handleAccessiblitySettingChange(
+											handleAccessibilitySettingChange(
 												value,
-												settings[key]
+												settings[key]!
 											)
 										}
-										value={settings[key].value}
+										value={settings[key]!.value}
 									/>
 								)
 							)}
@@ -242,6 +259,8 @@ const AccessibilityMenu = (props: Props) => {
 AccessibilityMenu.propTypes = {
 	settings: PropTypes.arrayOf(
 		PropTypes.shape({
+			attributeName: PropTypes.string,
+			attributeValue: PropTypes.string,
 			className: PropTypes.string,
 			defaultValue: PropTypes.bool,
 			key: PropTypes.string,

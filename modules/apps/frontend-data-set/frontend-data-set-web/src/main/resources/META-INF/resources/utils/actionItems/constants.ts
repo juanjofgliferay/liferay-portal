@@ -6,11 +6,13 @@
 export const ACTION_ITEM_TARGETS = {
 	BLANK: 'blank',
 	EVENT: 'event',
+	INFO_PANEL: 'infoPanel',
 	LINK: 'link',
 	MODAL: 'modal',
 	MODAL_FULL_SCREEN: 'modal-full-screen',
 	MODAL_LARGE: 'modal-lg',
 	MODAL_PERMISSIONS: 'modal-permissions',
 	MODAL_SMALL: 'modal-sm',
+	MODAL_WORKFLOW_TRANSITION: 'modal-workflow-transition',
 	SIDE_PANEL: 'sidePanel',
 };

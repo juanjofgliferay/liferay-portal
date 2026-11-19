@@ -30,13 +30,13 @@ import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.upgrade.registry.UpgradeStepRegistrator;
 import com.liferay.portal.upgrade.test.util.UpgradeTestUtil;
 
+import jakarta.portlet.PortletPreferences;
+
 import java.io.IOException;
 
 import java.util.Arrays;
 import java.util.Dictionary;
 import java.util.List;
-
-import javax.portlet.PortletPreferences;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -224,15 +224,17 @@ public class LDAPPropertiesUpgradeProcessTest {
 			Dictionary<String, Object> properties =
 				configuration.getProperties();
 
-			if (properties != null) {
-				Long companyId = (Long)properties.get(LDAPConstants.COMPANY_ID);
-
-				if ((companyId != null) &&
-					(companyId == company.getCompanyId())) {
-
-					configuration.delete();
-				}
+			if (properties == null) {
+				continue;
 			}
+
+			Long companyId = (Long)properties.get(LDAPConstants.COMPANY_ID);
+
+			if ((companyId == null) || (companyId != company.getCompanyId())) {
+				continue;
+			}
+
+			configuration.delete();
 		}
 	}
 

@@ -13,6 +13,7 @@ import com.liferay.portal.kernel.dao.orm.ProjectionFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.orm.RestrictionsFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.Session;
+import com.liferay.portal.kernel.exception.DuplicateRepositoryExternalReferenceCodeException;
 import com.liferay.portal.kernel.exception.NoSuchRepositoryException;
 import com.liferay.portal.kernel.model.Repository;
 import com.liferay.portal.kernel.service.RepositoryLocalServiceUtil;
@@ -110,15 +111,13 @@ public class RepositoryPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		Repository newRepository = _persistence.create(pk);
-
-		newRepository.setMvccVersion(RandomTestUtil.nextLong());
+		Repository newRepository = addRepository();
 
 		newRepository.setCtCollectionId(RandomTestUtil.nextLong());
 
 		newRepository.setUuid(RandomTestUtil.randomString());
+
+		newRepository.setExternalReferenceCode(RandomTestUtil.randomString());
 
 		newRepository.setGroupId(RandomTestUtil.nextLong());
 
@@ -146,7 +145,9 @@ public class RepositoryPersistenceTest {
 
 		newRepository.setLastPublishDate(RandomTestUtil.nextDate());
 
-		_repositories.add(_persistence.update(newRepository));
+		newRepository = _persistence.update(newRepository);
+
+		_repositories.add(newRepository);
 
 		Repository existingRepository = _persistence.findByPrimaryKey(
 			newRepository.getPrimaryKey());
@@ -159,6 +160,9 @@ public class RepositoryPersistenceTest {
 			newRepository.getCtCollectionId());
 		Assert.assertEquals(
 			existingRepository.getUuid(), newRepository.getUuid());
+		Assert.assertEquals(
+			existingRepository.getExternalReferenceCode(),
+			newRepository.getExternalReferenceCode());
 		Assert.assertEquals(
 			existingRepository.getRepositoryId(),
 			newRepository.getRepositoryId());
@@ -196,6 +200,26 @@ public class RepositoryPersistenceTest {
 			Time.getShortTimestamp(newRepository.getLastPublishDate()));
 	}
 
+	@Test(expected = DuplicateRepositoryExternalReferenceCodeException.class)
+	public void testUpdateWithExistingExternalReferenceCode() throws Exception {
+		Repository repository = addRepository();
+
+		Repository newRepository = addRepository();
+
+		newRepository.setGroupId(repository.getGroupId());
+
+		newRepository = _persistence.update(newRepository);
+
+		Session session = _persistence.getCurrentSession();
+
+		session.evict(newRepository);
+
+		newRepository.setExternalReferenceCode(
+			repository.getExternalReferenceCode());
+
+		_persistence.update(newRepository);
+	}
+
 	@Test
 	public void testCountByUuid() throws Exception {
 		_persistence.countByUuid("");
@@ -231,12 +255,30 @@ public class RepositoryPersistenceTest {
 	}
 
 	@Test
+	public void testCountByPortletId() throws Exception {
+		_persistence.countByPortletId("");
+
+		_persistence.countByPortletId("null");
+
+		_persistence.countByPortletId((String)null);
+	}
+
+	@Test
 	public void testCountByG_N_P() throws Exception {
 		_persistence.countByG_N_P(RandomTestUtil.nextLong(), "", "");
 
 		_persistence.countByG_N_P(0L, "null", "null");
 
 		_persistence.countByG_N_P(0L, (String)null, (String)null);
+	}
+
+	@Test
+	public void testCountByERC_G() throws Exception {
+		_persistence.countByERC_G("", RandomTestUtil.nextLong());
+
+		_persistence.countByERC_G("null", 0L);
+
+		_persistence.countByERC_G((String)null, 0L);
 	}
 
 	@Test
@@ -265,11 +307,11 @@ public class RepositoryPersistenceTest {
 	protected OrderByComparator<Repository> getOrderByComparator() {
 		return OrderByComparatorFactoryUtil.create(
 			"Repository", "mvccVersion", true, "ctCollectionId", true, "uuid",
-			true, "repositoryId", true, "groupId", true, "companyId", true,
-			"userId", true, "userName", true, "createDate", true,
-			"modifiedDate", true, "classNameId", true, "name", true,
-			"description", true, "portletId", true, "dlFolderId", true,
-			"lastPublishDate", true);
+			true, "externalReferenceCode", true, "repositoryId", true,
+			"groupId", true, "companyId", true, "userId", true, "userName",
+			true, "createDate", true, "modifiedDate", true, "classNameId", true,
+			"name", true, "description", true, "portletId", true, "dlFolderId",
+			true, "lastPublishDate", true);
 	}
 
 	@Test
@@ -558,6 +600,17 @@ public class RepositoryPersistenceTest {
 			ReflectionTestUtil.invoke(
 				repository, "getColumnOriginalValue",
 				new Class<?>[] {String.class}, "portletId"));
+
+		Assert.assertEquals(
+			repository.getExternalReferenceCode(),
+			ReflectionTestUtil.invoke(
+				repository, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "externalReferenceCode"));
+		Assert.assertEquals(
+			Long.valueOf(repository.getGroupId()),
+			ReflectionTestUtil.<Long>invoke(
+				repository, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "groupId"));
 	}
 
 	protected Repository addRepository() throws Exception {
@@ -565,11 +618,11 @@ public class RepositoryPersistenceTest {
 
 		Repository repository = _persistence.create(pk);
 
-		repository.setMvccVersion(RandomTestUtil.nextLong());
-
 		repository.setCtCollectionId(RandomTestUtil.nextLong());
 
 		repository.setUuid(RandomTestUtil.randomString());
+
+		repository.setExternalReferenceCode(RandomTestUtil.randomString());
 
 		repository.setGroupId(RandomTestUtil.nextLong());
 
@@ -607,3 +660,4 @@ public class RepositoryPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-294853201

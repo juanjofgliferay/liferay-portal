@@ -8,16 +8,17 @@ package com.liferay.portal.search.rest.client.serdes.v1_0;
 import com.liferay.portal.search.rest.client.dto.v1_0.SearchResult;
 import com.liferay.portal.search.rest.client.json.BaseJSONParser;
 
+import jakarta.annotation.Generated;
+
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
-
-import javax.annotation.Generated;
 
 /**
  * @author Petteri Karttunen
@@ -52,6 +53,31 @@ public class SearchResultSerDes {
 		DateFormat liferayToJSONDateFormat = new SimpleDateFormat(
 			"yyyy-MM-dd'T'HH:mm:ssXX");
 
+		if (searchResult.getActions() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"actions\": ");
+
+			sb.append(_toJSON(searchResult.getActions()));
+		}
+
+		if (searchResult.getDateCreated() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"dateCreated\": ");
+
+			sb.append("\"");
+
+			sb.append(
+				liferayToJSONDateFormat.format(searchResult.getDateCreated()));
+
+			sb.append("\"");
+		}
+
 		if (searchResult.getDateModified() != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -63,6 +89,21 @@ public class SearchResultSerDes {
 
 			sb.append(
 				liferayToJSONDateFormat.format(searchResult.getDateModified()));
+
+			sb.append("\"");
+		}
+
+		if (searchResult.getDateReview() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"dateReview\": ");
+
+			sb.append("\"");
+
+			sb.append(
+				liferayToJSONDateFormat.format(searchResult.getDateReview()));
 
 			sb.append("\"");
 		}
@@ -88,14 +129,21 @@ public class SearchResultSerDes {
 
 			sb.append("\"embedded\": ");
 
-			if (searchResult.getEmbedded() instanceof String) {
-				sb.append("\"");
-				sb.append((String)searchResult.getEmbedded());
-				sb.append("\"");
+			sb.append(_toJSON(searchResult.getEmbedded()));
+		}
+
+		if (searchResult.getEntryClassName() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
 			}
-			else {
-				sb.append(searchResult.getEmbedded());
-			}
+
+			sb.append("\"entryClassName\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(searchResult.getEntryClassName()));
+
+			sb.append("\"");
 		}
 
 		if (searchResult.getItemURL() != null) {
@@ -136,6 +184,20 @@ public class SearchResultSerDes {
 			sb.append("\"");
 		}
 
+		if (searchResult.getType() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"type\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(searchResult.getType()));
+
+			sb.append("\"");
+		}
+
 		sb.append("}");
 
 		return sb.toString();
@@ -158,6 +220,22 @@ public class SearchResultSerDes {
 		DateFormat liferayToJSONDateFormat = new SimpleDateFormat(
 			"yyyy-MM-dd'T'HH:mm:ssXX");
 
+		if (searchResult.getActions() == null) {
+			map.put("actions", null);
+		}
+		else {
+			map.put("actions", String.valueOf(searchResult.getActions()));
+		}
+
+		if (searchResult.getDateCreated() == null) {
+			map.put("dateCreated", null);
+		}
+		else {
+			map.put(
+				"dateCreated",
+				liferayToJSONDateFormat.format(searchResult.getDateCreated()));
+		}
+
 		if (searchResult.getDateModified() == null) {
 			map.put("dateModified", null);
 		}
@@ -165,6 +243,15 @@ public class SearchResultSerDes {
 			map.put(
 				"dateModified",
 				liferayToJSONDateFormat.format(searchResult.getDateModified()));
+		}
+
+		if (searchResult.getDateReview() == null) {
+			map.put("dateReview", null);
+		}
+		else {
+			map.put(
+				"dateReview",
+				liferayToJSONDateFormat.format(searchResult.getDateReview()));
 		}
 
 		if (searchResult.getDescription() == null) {
@@ -180,6 +267,15 @@ public class SearchResultSerDes {
 		}
 		else {
 			map.put("embedded", String.valueOf(searchResult.getEmbedded()));
+		}
+
+		if (searchResult.getEntryClassName() == null) {
+			map.put("entryClassName", null);
+		}
+		else {
+			map.put(
+				"entryClassName",
+				String.valueOf(searchResult.getEntryClassName()));
 		}
 
 		if (searchResult.getItemURL() == null) {
@@ -203,6 +299,13 @@ public class SearchResultSerDes {
 			map.put("title", String.valueOf(searchResult.getTitle()));
 		}
 
+		if (searchResult.getType() == null) {
+			map.put("type", null);
+		}
+		else {
+			map.put("type", String.valueOf(searchResult.getType()));
+		}
+
 		return map;
 	}
 
@@ -220,13 +323,70 @@ public class SearchResultSerDes {
 		}
 
 		@Override
+		protected boolean parseMaps(String jsonParserFieldName) {
+			if (Objects.equals(jsonParserFieldName, "actions")) {
+				return true;
+			}
+			else if (Objects.equals(jsonParserFieldName, "dateCreated")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "dateModified")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "dateReview")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "description")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "embedded")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "entryClassName")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "itemURL")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "score")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "title")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "type")) {
+				return false;
+			}
+
+			return false;
+		}
+
+		@Override
 		protected void setField(
 			SearchResult searchResult, String jsonParserFieldName,
 			Object jsonParserFieldValue) {
 
-			if (Objects.equals(jsonParserFieldName, "dateModified")) {
+			if (Objects.equals(jsonParserFieldName, "actions")) {
+				if (jsonParserFieldValue != null) {
+					searchResult.setActions(
+						(Map<String, Map<String, String>>)jsonParserFieldValue);
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "dateCreated")) {
+				if (jsonParserFieldValue != null) {
+					searchResult.setDateCreated(
+						toDate((String)jsonParserFieldValue));
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "dateModified")) {
 				if (jsonParserFieldValue != null) {
 					searchResult.setDateModified(
+						toDate((String)jsonParserFieldValue));
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "dateReview")) {
+				if (jsonParserFieldValue != null) {
+					searchResult.setDateReview(
 						toDate((String)jsonParserFieldValue));
 				}
 			}
@@ -238,6 +398,12 @@ public class SearchResultSerDes {
 			else if (Objects.equals(jsonParserFieldName, "embedded")) {
 				if (jsonParserFieldValue != null) {
 					searchResult.setEmbedded((Object)jsonParserFieldValue);
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "entryClassName")) {
+				if (jsonParserFieldValue != null) {
+					searchResult.setEntryClassName(
+						(String)jsonParserFieldValue);
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "itemURL")) {
@@ -254,6 +420,11 @@ public class SearchResultSerDes {
 			else if (Objects.equals(jsonParserFieldName, "title")) {
 				if (jsonParserFieldValue != null) {
 					searchResult.setTitle((String)jsonParserFieldValue);
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "type")) {
+				if (jsonParserFieldValue != null) {
+					searchResult.setType((String)jsonParserFieldValue);
 				}
 			}
 		}
@@ -288,36 +459,7 @@ public class SearchResultSerDes {
 
 			Object value = entry.getValue();
 
-			Class<?> valueClass = value.getClass();
-
-			if (value instanceof Map) {
-				sb.append(_toJSON((Map)value));
-			}
-			else if (valueClass.isArray()) {
-				Object[] values = (Object[])value;
-
-				sb.append("[");
-
-				for (int i = 0; i < values.length; i++) {
-					sb.append("\"");
-					sb.append(_escape(values[i]));
-					sb.append("\"");
-
-					if ((i + 1) < values.length) {
-						sb.append(", ");
-					}
-				}
-
-				sb.append("]");
-			}
-			else if (value instanceof String) {
-				sb.append("\"");
-				sb.append(_escape(entry.getValue()));
-				sb.append("\"");
-			}
-			else {
-				sb.append(String.valueOf(entry.getValue()));
-			}
+			sb.append(_toJSON(value));
 
 			if (iterator.hasNext()) {
 				sb.append(", ");
@@ -329,4 +471,47 @@ public class SearchResultSerDes {
 		return sb.toString();
 	}
 
+	private static String _toJSON(Object value) {
+		if (value == null) {
+			return "null";
+		}
+
+		if (value instanceof Collection) {
+			Collection<?> collection = (Collection<?>)value;
+
+			return _toJSON(collection.toArray());
+		}
+
+		if (value instanceof Map) {
+			return _toJSON((Map)value);
+		}
+
+		Class<?> clazz = value.getClass();
+
+		if (clazz.isArray()) {
+			StringBuilder sb = new StringBuilder("[");
+
+			Object[] values = (Object[])value;
+
+			for (int i = 0; i < values.length; i++) {
+				sb.append(_toJSON(values[i]));
+
+				if ((i + 1) < values.length) {
+					sb.append(", ");
+				}
+			}
+
+			sb.append("]");
+
+			return sb.toString();
+		}
+
+		if (value instanceof String) {
+			return "\"" + _escape(value) + "\"";
+		}
+
+		return String.valueOf(value);
+	}
+
 }
+// LIFERAY-REST-BUILDER-HASH:72540213

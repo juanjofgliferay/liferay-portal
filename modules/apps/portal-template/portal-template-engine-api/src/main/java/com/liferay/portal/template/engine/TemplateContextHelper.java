@@ -5,12 +5,11 @@
 
 package com.liferay.portal.template.engine;
 
-import com.liferay.expando.kernel.service.ExpandoColumnLocalService;
-import com.liferay.expando.kernel.service.ExpandoRowLocalService;
-import com.liferay.expando.kernel.service.ExpandoTableLocalService;
-import com.liferay.expando.kernel.service.ExpandoValueLocalService;
-import com.liferay.osgi.service.tracker.collections.list.ServiceTrackerList;
-import com.liferay.osgi.service.tracker.collections.list.ServiceTrackerListFactory;
+import com.liferay.osgi.service.tracker.collections.map.PropertyServiceReferenceMapper;
+import com.liferay.osgi.service.tracker.collections.map.ServiceReferenceMapper;
+import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMap;
+import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMapFactory;
+import com.liferay.petra.concurrent.DCLSingleton;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.image.ImageToolUtil_IW;
@@ -21,8 +20,6 @@ import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.model.Layout;
-import com.liferay.portal.kernel.model.Theme;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.portlet.PortletModeFactory_IW;
 import com.liferay.portal.kernel.portlet.PortletProvider;
@@ -64,12 +61,12 @@ import com.liferay.portal.kernel.util.HttpUtil;
 import com.liferay.portal.kernel.util.InetAddressUtil;
 import com.liferay.portal.kernel.util.JavaConstants;
 import com.liferay.portal.kernel.util.ListMergeable;
-import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.LocaleUtil_IW;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.ParamUtil_IW;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.PrefsPropsUtil;
-import com.liferay.portal.kernel.util.PropsUtil;
+import com.liferay.portal.kernel.util.PropsUtil_IW;
 import com.liferay.portal.kernel.util.SessionClicks_IW;
 import com.liferay.portal.kernel.util.StaticFieldGetter;
 import com.liferay.portal.kernel.util.StringUtil_IW;
@@ -88,26 +85,32 @@ import com.liferay.portal.struts.Definition;
 import com.liferay.portal.struts.TilesUtil;
 import com.liferay.portal.template.ServiceLocator;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.io.IOException;
 import java.io.InputStream;
 
 import java.net.URL;
 
+import java.util.AbstractMap;
+import java.util.AbstractSet;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
-
-import javax.portlet.PortletConfig;
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletRequest;
+import java.util.function.Function;
 
 import org.osgi.framework.BundleContext;
 
@@ -153,8 +156,25 @@ public class TemplateContextHelper {
 		return templateVariableGroups;
 	}
 
+	public Map<String, Object> createLazyContext(
+		Map<String, Object> contextObjects,
+		HttpServletRequest httpServletRequest, boolean restricted) {
+
+		Set<String> restrictedVariables = Collections.emptySet();
+
+		if (restricted) {
+			restrictedVariables = getRestrictedVariables();
+		}
+
+		return new LazyContext(
+			contextObjects, httpServletRequest,
+			_lazyContextFunctionsDCLSingleton.getSingleton(
+				this::_createLazyContextFunctions),
+			restrictedVariables, _serviceTrackerMap);
+	}
+
 	public void destory() {
-		_serviceTrackerList.close();
+		_serviceTrackerMap.close();
 	}
 
 	public Map<String, Object> getHelperUtilities(boolean restricted) {
@@ -194,180 +214,45 @@ public class TemplateContextHelper {
 	}
 
 	public void init(BundleContext bundleContext) {
-		_serviceTrackerList = ServiceTrackerListFactory.open(
+		_serviceTrackerMap = ServiceTrackerMapFactory.openMultiValueMap(
 			bundleContext, TemplateContextContributor.class,
-			"(type=" + TemplateContextContributor.TYPE_GLOBAL + ")");
+			"(type=" + TemplateContextContributor.TYPE_GLOBAL + ")",
+			(serviceReference, emitter) -> {
+				if (serviceReference.getProperty(_TEMPLATE_CONTEXT_KEYS) ==
+						null) {
+
+					emitter.emit(_UNDECLARED_KEYS);
+
+					return;
+				}
+
+				_serviceReferenceMapper.map(serviceReference, emitter);
+			});
 	}
 
 	public void prepare(
 		Map<String, Object> contextObjects,
 		HttpServletRequest httpServletRequest) {
 
-		// Content security policy nonce
-
-		contextObjects.put(
-			"nonceAttribute",
-			ContentSecurityPolicyNonceProviderUtil.getNonceAttribute(
-				httpServletRequest));
-
-		// Request
-
-		contextObjects.put("request", httpServletRequest);
-
-		// Portlet config
-
-		PortletConfig portletConfig =
-			(PortletConfig)httpServletRequest.getAttribute(
-				JavaConstants.JAVAX_PORTLET_CONFIG);
-
-		if (portletConfig != null) {
-			contextObjects.put("portletConfig", portletConfig);
-		}
-
-		// Render request
-
-		final PortletRequest portletRequest =
-			(PortletRequest)httpServletRequest.getAttribute(
-				JavaConstants.JAVAX_PORTLET_REQUEST);
-
-		if ((portletRequest != null) &&
-			(portletRequest instanceof RenderRequest)) {
-
-			contextObjects.put("renderRequest", portletRequest);
-		}
-
-		// Render response
-
-		final PortletResponse portletResponse =
-			(PortletResponse)httpServletRequest.getAttribute(
-				JavaConstants.JAVAX_PORTLET_RESPONSE);
-
-		if ((portletResponse != null) &&
-			(portletResponse instanceof RenderResponse)) {
-
-			contextObjects.put("renderResponse", portletResponse);
-		}
-
-		// XML request
-
-		if ((portletRequest != null) && (portletResponse != null)) {
-			contextObjects.put(
-				"portletRequestModelFactory",
-				new PortletRequestModelFactory(
-					portletRequest, portletResponse));
-
-			// Deprecated
-
-			contextObjects.put(
-				"xmlRequest",
-				new Object() {
-
-					@Override
-					public String toString() {
-						PortletRequestModel portletRequestModel =
-							new PortletRequestModel(
-								portletRequest, portletResponse);
-
-						return portletRequestModel.toXML();
-					}
-
-				});
-		}
-
-		// Theme display
-
 		ThemeDisplay themeDisplay =
 			(ThemeDisplay)httpServletRequest.getAttribute(
 				WebKeys.THEME_DISPLAY);
 
-		if (themeDisplay != null) {
-			Layout layout = themeDisplay.getLayout();
+		Definition definition = (Definition)httpServletRequest.getAttribute(
+			TilesUtil.DEFINITION);
 
-			HttpServletRequest originalHttpServletRequest =
-				PortalUtil.getOriginalServletRequest(httpServletRequest);
+		if (definition == null) {
+			themeDisplay.setTilesSelectable(true);
 
-			String namespace = PortalUtil.getPortletNamespace(
-				ParamUtil.getString(httpServletRequest, "p_p_id"));
-
-			String bodyCssClass = ParamUtil.getString(
-				originalHttpServletRequest, namespace + "bodyCssClass");
-
-			contextObjects.put("bodyCssClass", bodyCssClass);
-
-			contextObjects.put("colorScheme", themeDisplay.getColorScheme());
-			contextObjects.put("company", themeDisplay.getCompany());
-			contextObjects.put("layout", layout);
-			contextObjects.put("layouts", themeDisplay.getLayouts());
-			contextObjects.put(
-				"layoutTypePortlet", themeDisplay.getLayoutTypePortlet());
-			contextObjects.put("locale", themeDisplay.getLocale());
-			contextObjects.put(
-				"permissionChecker", themeDisplay.getPermissionChecker());
-			contextObjects.put("plid", String.valueOf(themeDisplay.getPlid()));
-			contextObjects.put(
-				"portletDisplay", themeDisplay.getPortletDisplay());
-			contextObjects.put("realUser", themeDisplay.getRealUser());
-			contextObjects.put(
-				"scopeGroupId", Long.valueOf(themeDisplay.getScopeGroupId()));
-			contextObjects.put(
-				"siteSpritemap", themeDisplay.getPathThemeSpritemap());
-			contextObjects.put("themeDisplay", themeDisplay);
-			contextObjects.put("timeZone", themeDisplay.getTimeZone());
-
-			User user = UserLocalServiceUtil.fetchUser(
-				PrincipalThreadLocal.getUserId());
-
-			if (user == null) {
-				user = themeDisplay.getUser();
-			}
-
-			contextObjects.put("user", user);
-
-			// Deprecated
-
-			contextObjects.put(
-				"portletGroupId", Long.valueOf(themeDisplay.getScopeGroupId()));
+			return;
 		}
 
-		// Theme
+		Map<String, String> attributes = definition.getAttributes();
 
-		Theme theme = (Theme)httpServletRequest.getAttribute(WebKeys.THEME);
-
-		if ((theme == null) && (themeDisplay != null)) {
-			theme = themeDisplay.getTheme();
-		}
-
-		if (theme != null) {
-			contextObjects.put("theme", theme);
-		}
-
-		// Tiles attributes
-
-		prepareTiles(contextObjects, httpServletRequest);
-
-		// Page title and subtitle
-
-		ListMergeable<String> pageTitleListMergeable =
-			(ListMergeable<String>)httpServletRequest.getAttribute(
-				WebKeys.PAGE_TITLE);
-
-		if (pageTitleListMergeable != null) {
-			String pageTitle = pageTitleListMergeable.mergeToString(
-				StringPool.SPACE);
-
-			contextObjects.put("pageTitle", pageTitle);
-		}
-
-		ListMergeable<String> pageSubtitleListMergeable =
-			(ListMergeable<String>)httpServletRequest.getAttribute(
-				WebKeys.PAGE_SUBTITLE);
-
-		if (pageSubtitleListMergeable != null) {
-			String pageSubtitle = pageSubtitleListMergeable.mergeToString(
-				StringPool.SPACE);
-
-			contextObjects.put("pageSubtitle", pageSubtitle);
-		}
+		themeDisplay.setTilesContent(attributes.get("content"));
+		themeDisplay.setTilesSelectable(
+			GetterUtil.getBoolean(attributes.get("selectable")));
+		themeDisplay.setTilesTitle(attributes.get("title"));
 	}
 
 	public void removeAllHelperUtilities() {
@@ -377,7 +262,14 @@ public class TemplateContextHelper {
 	protected Iterable<TemplateContextContributor>
 		getTemplateContextContributors() {
 
-		return _serviceTrackerList;
+		List<TemplateContextContributor> templateContextContributors =
+			_serviceTrackerMap.getService(_UNDECLARED_KEYS);
+
+		if (templateContextContributors == null) {
+			return Collections.emptyList();
+		}
+
+		return templateContextContributors;
 	}
 
 	protected void populateCommonHelperUtilities(
@@ -433,65 +325,6 @@ public class TemplateContextHelper {
 		// Date util
 
 		variables.put("dateUtil", DateUtil_IW.getInstance());
-
-		// Expando column service
-
-		try {
-			ServiceLocator serviceLocator = ServiceLocator.getInstance();
-
-			// Service locator
-
-			variables.put("serviceLocator", serviceLocator);
-
-			try {
-				variables.put(
-					"expandoColumnLocalService",
-					serviceLocator.findService(
-						ExpandoColumnLocalService.class.getName()));
-			}
-			catch (SecurityException securityException) {
-				_log.error(securityException);
-			}
-
-			// Expando row service
-
-			try {
-				variables.put(
-					"expandoRowLocalService",
-					serviceLocator.findService(
-						ExpandoRowLocalService.class.getName()));
-			}
-			catch (SecurityException securityException) {
-				_log.error(securityException);
-			}
-
-			// Expando table service
-
-			try {
-				variables.put(
-					"expandoTableLocalService",
-					serviceLocator.findService(
-						ExpandoTableLocalService.class.getName()));
-			}
-			catch (SecurityException securityException) {
-				_log.error(securityException);
-			}
-
-			// Expando value service
-
-			try {
-				variables.put(
-					"expandoValueLocalService",
-					serviceLocator.findService(
-						ExpandoValueLocalService.class.getName()));
-			}
-			catch (SecurityException securityException) {
-				_log.error(securityException);
-			}
-		}
-		catch (SecurityException securityException) {
-			_log.error(securityException);
-		}
 
 		// Getter util
 
@@ -561,11 +394,15 @@ public class TemplateContextHelper {
 		// Locale util
 
 		try {
-			variables.put("localeUtil", LocaleUtil.getInstance());
+			variables.put("localeUtil", LocaleUtil_IW.getInstance());
 		}
 		catch (SecurityException securityException) {
 			_log.error(securityException);
 		}
+
+		// Content security policy nonce
+
+		variables.put("nonceAttribute", StringPool.BLANK);
 
 		// Param util
 
@@ -599,7 +436,7 @@ public class TemplateContextHelper {
 		// Props util
 
 		try {
-			variables.put("propsUtil", PropsUtil.getProps());
+			variables.put("propsUtil", PropsUtil_IW.getInstance());
 		}
 		catch (SecurityException securityException) {
 			_log.error(securityException);
@@ -624,6 +461,15 @@ public class TemplateContextHelper {
 		// SAX reader util
 
 		variables.put("saxReaderUtil", SAXReaderUtil.getSAXReader());
+
+		// Service locator
+
+		try {
+			variables.put("serviceLocator", ServiceLocator.getInstance());
+		}
+		catch (SecurityException securityException) {
+			_log.error(securityException);
+		}
 
 		// Session clicks
 
@@ -816,51 +662,284 @@ public class TemplateContextHelper {
 		Map<String, Object> variables, boolean restricted) {
 	}
 
-	protected void prepareTiles(
-		Map<String, Object> contextObjects,
+	protected void populateLazyContextFunctions(
+		Map<String, Function<HttpServletRequest, Object>>
+			lazyContextFunctions) {
+
+		lazyContextFunctions.put(
+			"bodyCssClass", TemplateContextHelper::_getBodyCssClass);
+		lazyContextFunctions.put(
+			"colorScheme",
+			_getThemeDisplayFunction(ThemeDisplay::getColorScheme));
+		lazyContextFunctions.put(
+			"company", _getThemeDisplayFunction(ThemeDisplay::getCompany));
+		lazyContextFunctions.put(
+			"layout", _getThemeDisplayFunction(ThemeDisplay::getLayout));
+		lazyContextFunctions.put(
+			"layouts", _getThemeDisplayFunction(ThemeDisplay::getLayouts));
+		lazyContextFunctions.put(
+			"layoutTypePortlet",
+			_getThemeDisplayFunction(ThemeDisplay::getLayoutTypePortlet));
+		lazyContextFunctions.put(
+			"locale", _getThemeDisplayFunction(ThemeDisplay::getLocale));
+		lazyContextFunctions.put(
+			"nonceAttribute",
+			ContentSecurityPolicyNonceProviderUtil::getNonceAttribute);
+		lazyContextFunctions.put(
+			"pageSubtitle",
+			httpServletRequest -> _mergeToString(
+				httpServletRequest, WebKeys.PAGE_SUBTITLE));
+		lazyContextFunctions.put(
+			"pageTitle",
+			httpServletRequest -> _mergeToString(
+				httpServletRequest, WebKeys.PAGE_TITLE));
+		lazyContextFunctions.put(
+			"permissionChecker",
+			_getThemeDisplayFunction(ThemeDisplay::getPermissionChecker));
+		lazyContextFunctions.put(
+			"plid",
+			_getThemeDisplayFunction(
+				themeDisplay -> String.valueOf(themeDisplay.getPlid())));
+		lazyContextFunctions.put(
+			"portletConfig",
+			httpServletRequest -> httpServletRequest.getAttribute(
+				JavaConstants.JAKARTA_PORTLET_CONFIG));
+		lazyContextFunctions.put(
+			"portletDisplay",
+			_getThemeDisplayFunction(ThemeDisplay::getPortletDisplay));
+		lazyContextFunctions.put(
+			"portletGroupId",
+			_getThemeDisplayFunction(ThemeDisplay::getScopeGroupId));
+		lazyContextFunctions.put(
+			"portletRequestModelFactory",
+			TemplateContextHelper::_getPortletRequestModelFactory);
+		lazyContextFunctions.put(
+			"realUser", _getThemeDisplayFunction(ThemeDisplay::getRealUser));
+		lazyContextFunctions.put(
+			"renderRequest", TemplateContextHelper::_getRenderRequest);
+		lazyContextFunctions.put(
+			"renderResponse", TemplateContextHelper::_getRenderResponse);
+		lazyContextFunctions.put(
+			"request", httpServletRequest -> httpServletRequest);
+		lazyContextFunctions.put(
+			"scopeGroupId",
+			_getThemeDisplayFunction(ThemeDisplay::getScopeGroupId));
+		lazyContextFunctions.put(
+			"siteSpritemap",
+			_getThemeDisplayFunction(ThemeDisplay::getPathThemeSpritemap));
+		lazyContextFunctions.put("theme", TemplateContextHelper::_getTheme);
+		lazyContextFunctions.put(
+			"themeDisplay",
+			httpServletRequest -> httpServletRequest.getAttribute(
+				WebKeys.THEME_DISPLAY));
+		lazyContextFunctions.put(
+			"tilesContent", _getTilesFunction(ThemeDisplay::getTilesContent));
+		lazyContextFunctions.put(
+			"tilesSelectable",
+			_getTilesFunction(ThemeDisplay::isTilesSelectable));
+		lazyContextFunctions.put(
+			"tilesTitle", _getTilesFunction(ThemeDisplay::getTilesTitle));
+		lazyContextFunctions.put(
+			"timeZone", _getThemeDisplayFunction(ThemeDisplay::getTimeZone));
+		lazyContextFunctions.put(
+			"user", _getThemeDisplayFunction(TemplateContextHelper::_getUser));
+		lazyContextFunctions.put(
+			"xmlRequest", TemplateContextHelper::_getXMLRequest);
+	}
+
+	private static Object _getBodyCssClass(
 		HttpServletRequest httpServletRequest) {
+
+		if (httpServletRequest.getAttribute(WebKeys.THEME_DISPLAY) == null) {
+			return null;
+		}
+
+		String namespace = PortalUtil.getPortletNamespace(
+			ParamUtil.getString(httpServletRequest, "p_p_id"));
+
+		return ParamUtil.getString(
+			PortalUtil.getOriginalServletRequest(httpServletRequest),
+			namespace + "bodyCssClass");
+	}
+
+	private static Object _getPortletRequestModelFactory(
+		HttpServletRequest httpServletRequest) {
+
+		PortletRequest portletRequest =
+			(PortletRequest)httpServletRequest.getAttribute(
+				JavaConstants.JAKARTA_PORTLET_REQUEST);
+		PortletResponse portletResponse =
+			(PortletResponse)httpServletRequest.getAttribute(
+				JavaConstants.JAKARTA_PORTLET_RESPONSE);
+
+		if ((portletRequest == null) || (portletResponse == null)) {
+			return null;
+		}
+
+		return new PortletRequestModelFactory(portletRequest, portletResponse);
+	}
+
+	private static Object _getRenderRequest(
+		HttpServletRequest httpServletRequest) {
+
+		Object portletRequest = httpServletRequest.getAttribute(
+			JavaConstants.JAKARTA_PORTLET_REQUEST);
+
+		if (portletRequest instanceof RenderRequest) {
+			return portletRequest;
+		}
+
+		return null;
+	}
+
+	private static Object _getRenderResponse(
+		HttpServletRequest httpServletRequest) {
+
+		Object portletResponse = httpServletRequest.getAttribute(
+			JavaConstants.JAKARTA_PORTLET_RESPONSE);
+
+		if (portletResponse instanceof RenderResponse) {
+			return portletResponse;
+		}
+
+		return null;
+	}
+
+	private static Object _getTheme(HttpServletRequest httpServletRequest) {
+		Object theme = httpServletRequest.getAttribute(WebKeys.THEME);
+
+		if (theme != null) {
+			return theme;
+		}
 
 		ThemeDisplay themeDisplay =
 			(ThemeDisplay)httpServletRequest.getAttribute(
 				WebKeys.THEME_DISPLAY);
 
-		Definition definition = (Definition)httpServletRequest.getAttribute(
-			TilesUtil.DEFINITION);
-
-		if (definition == null) {
-			themeDisplay.setTilesSelectable(true);
-
-			return;
+		if (themeDisplay == null) {
+			return null;
 		}
 
-		Map<String, String> attributes = definition.getAttributes();
-
-		String tilesTitle = attributes.get("title");
-
-		themeDisplay.setTilesTitle(tilesTitle);
-
-		contextObjects.put("tilesTitle", tilesTitle);
-
-		String tilesContent = attributes.get("content");
-
-		themeDisplay.setTilesContent(tilesContent);
-
-		contextObjects.put("tilesContent", tilesContent);
-
-		boolean tilesSelectable = GetterUtil.getBoolean(
-			attributes.get("selectable"));
-
-		themeDisplay.setTilesSelectable(tilesSelectable);
-
-		contextObjects.put("tilesSelectable", tilesSelectable);
+		return themeDisplay.getTheme();
 	}
+
+	private static Object _getUser(ThemeDisplay themeDisplay) {
+		User user = themeDisplay.getUser();
+
+		long userId = PrincipalThreadLocal.getUserId();
+
+		if ((user != null) && (user.getUserId() == userId)) {
+			return user;
+		}
+
+		User principalUser = UserLocalServiceUtil.fetchUser(userId);
+
+		if (principalUser == null) {
+			return user;
+		}
+
+		return principalUser;
+	}
+
+	private static Object _getXMLRequest(
+		HttpServletRequest httpServletRequest) {
+
+		PortletRequest portletRequest =
+			(PortletRequest)httpServletRequest.getAttribute(
+				JavaConstants.JAKARTA_PORTLET_REQUEST);
+		PortletResponse portletResponse =
+			(PortletResponse)httpServletRequest.getAttribute(
+				JavaConstants.JAKARTA_PORTLET_RESPONSE);
+
+		if ((portletRequest == null) || (portletResponse == null)) {
+			return null;
+		}
+
+		return new Object() {
+
+			@Override
+			public String toString() {
+				PortletRequestModel portletRequestModel =
+					new PortletRequestModel(portletRequest, portletResponse);
+
+				return portletRequestModel.toXML();
+			}
+
+		};
+	}
+
+	private Map<String, Function<HttpServletRequest, Object>>
+		_createLazyContextFunctions() {
+
+		Map<String, Function<HttpServletRequest, Object>> lazyContextFunctions =
+			new HashMap<>();
+
+		populateLazyContextFunctions(lazyContextFunctions);
+
+		return lazyContextFunctions;
+	}
+
+	private Function<HttpServletRequest, Object> _getThemeDisplayFunction(
+		Function<ThemeDisplay, Object> function) {
+
+		return httpServletRequest -> {
+			ThemeDisplay themeDisplay =
+				(ThemeDisplay)httpServletRequest.getAttribute(
+					WebKeys.THEME_DISPLAY);
+
+			if (themeDisplay == null) {
+				return null;
+			}
+
+			return function.apply(themeDisplay);
+		};
+	}
+
+	private Function<HttpServletRequest, Object> _getTilesFunction(
+		Function<ThemeDisplay, Object> function) {
+
+		return httpServletRequest -> {
+			if (httpServletRequest.getAttribute(TilesUtil.DEFINITION) == null) {
+				return null;
+			}
+
+			return function.apply(
+				(ThemeDisplay)httpServletRequest.getAttribute(
+					WebKeys.THEME_DISPLAY));
+		};
+	}
+
+	private Object _mergeToString(
+		HttpServletRequest httpServletRequest, String name) {
+
+		ListMergeable<String> listMergeable =
+			(ListMergeable<String>)httpServletRequest.getAttribute(name);
+
+		if (listMergeable == null) {
+			return null;
+		}
+
+		return listMergeable.mergeToString(StringPool.SPACE);
+	}
+
+	private static final String _TEMPLATE_CONTEXT_KEYS =
+		"template.context.keys";
+
+	private static final String _UNDECLARED_KEYS = StringPool.STAR;
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		TemplateContextHelper.class);
 
+	private static final ServiceReferenceMapper
+		<String, TemplateContextContributor> _serviceReferenceMapper =
+			new PropertyServiceReferenceMapper<>(_TEMPLATE_CONTEXT_KEYS);
+
 	private Map<String, Object>[] _helperUtilitiesMapArray;
-	private volatile ServiceTrackerList<TemplateContextContributor>
-		_serviceTrackerList;
+	private final DCLSingleton
+		<Map<String, Function<HttpServletRequest, Object>>>
+			_lazyContextFunctionsDCLSingleton = new DCLSingleton<>();
+	private ServiceTrackerMap<String, List<TemplateContextContributor>>
+		_serviceTrackerMap;
 
 	private static class HttpWrapper implements Http {
 
@@ -874,26 +953,6 @@ public class TemplateContextHelper {
 		}
 
 		@Override
-		public Cookie[] getCookies() {
-			return _http.getCookies();
-		}
-
-		@Override
-		public boolean hasProxyConfig() {
-			return _http.hasProxyConfig();
-		}
-
-		@Override
-		public boolean isNonProxyHost(String host) {
-			return _http.isNonProxyHost(host);
-		}
-
-		@Override
-		public boolean isProxyHost(String host) {
-			return _http.isProxyHost(host);
-		}
-
-		@Override
 		public byte[] URLtoByteArray(Options options) throws IOException {
 			if (isLocationAccessDenied(options.getLocation())) {
 				throw new IOException(
@@ -904,37 +963,30 @@ public class TemplateContextHelper {
 						"local network."));
 			}
 
+			options.setFollowRedirects(false);
+
 			return _http.URLtoByteArray(options);
 		}
 
 		@Override
 		public byte[] URLtoByteArray(String location) throws IOException {
-			if (isLocationAccessDenied(location)) {
-				throw new IOException(
-					StringBundler.concat(
-						"Denied access to resource ", location,
-						" using $httpUtil variable from a template. Please ",
-						"use restricted variable $httpUtilUnsafe to access ",
-						"local network."));
-			}
+			Options options = new Options();
 
-			return _http.URLtoByteArray(location);
+			options.setLocation(location);
+
+			return URLtoByteArray(options);
 		}
 
 		@Override
 		public byte[] URLtoByteArray(String location, boolean post)
 			throws IOException {
 
-			if (isLocationAccessDenied(location)) {
-				throw new IOException(
-					StringBundler.concat(
-						"Denied access to resource ", location,
-						" using $httpUtil variable from a template. Please ",
-						"use restricted variable $httpUtilUnsafe to access ",
-						"local network."));
-			}
+			Options options = new Options();
 
-			return _http.URLtoByteArray(location, post);
+			options.setLocation(location);
+			options.setPost(post);
+
+			return URLtoByteArray(options);
 		}
 
 		@Override
@@ -950,6 +1002,8 @@ public class TemplateContextHelper {
 						"local network."));
 			}
 
+			options.setFollowRedirects(false);
+
 			return _http.URLtoInputStream(options);
 		}
 
@@ -957,32 +1011,23 @@ public class TemplateContextHelper {
 		public InputStream URLtoInputStream(String location)
 			throws IOException {
 
-			if (isLocationAccessDenied(location)) {
-				throw new IOException(
-					StringBundler.concat(
-						"Denied access to resource ", location,
-						" using $httpUtil variable from a template. Please ",
-						"use restricted variable $httpUtilUnsafe to access ",
-						"local network."));
-			}
+			Options options = new Options();
 
-			return _http.URLtoInputStream(location);
+			options.setLocation(location);
+
+			return URLtoInputStream(options);
 		}
 
 		@Override
 		public InputStream URLtoInputStream(String location, boolean post)
 			throws IOException {
 
-			if (isLocationAccessDenied(location)) {
-				throw new IOException(
-					StringBundler.concat(
-						"Denied access to resource ", location,
-						" using $httpUtil variable from a template. Please ",
-						"use restricted variable $httpUtilUnsafe to access ",
-						"local network."));
-			}
+			Options options = new Options();
 
-			return _http.URLtoInputStream(location, post);
+			options.setLocation(location);
+			options.setPost(post);
+
+			return URLtoInputStream(options);
 		}
 
 		@Override
@@ -996,37 +1041,30 @@ public class TemplateContextHelper {
 						"local network."));
 			}
 
+			options.setFollowRedirects(false);
+
 			return _http.URLtoString(options);
 		}
 
 		@Override
 		public String URLtoString(String location) throws IOException {
-			if (isLocationAccessDenied(location)) {
-				throw new IOException(
-					StringBundler.concat(
-						"Denied access to resource ", location,
-						" using $httpUtil variable from a template. Please ",
-						"use restricted variable $httpUtilUnsafe to access ",
-						"local network."));
-			}
+			Options options = new Options();
 
-			return _http.URLtoString(location);
+			options.setLocation(location);
+
+			return URLtoString(options);
 		}
 
 		@Override
 		public String URLtoString(String location, boolean post)
 			throws IOException {
 
-			if (isLocationAccessDenied(location)) {
-				throw new IOException(
-					StringBundler.concat(
-						"Denied access to resource ", location,
-						" using $httpUtil variable from a template. Please ",
-						"use restricted variable $httpUtilUnsafe to access ",
-						"local network."));
-			}
+			Options options = new Options();
 
-			return _http.URLtoString(location, post);
+			options.setLocation(location);
+			options.setPost(post);
+
+			return URLtoString(options);
 		}
 
 		@Override
@@ -1050,7 +1088,32 @@ public class TemplateContextHelper {
 						"local network."));
 			}
 
-			return _http.URLtoString(url);
+			Options options = new Options();
+
+			options.setFollowRedirects(false);
+			options.setLocation(url.toString());
+
+			return URLtoString(options);
+		}
+
+		@Override
+		public Cookie[] getCookies() {
+			return _http.getCookies();
+		}
+
+		@Override
+		public boolean hasProxyConfig() {
+			return _http.hasProxyConfig();
+		}
+
+		@Override
+		public boolean isNonProxyHost(String host) {
+			return _http.isNonProxyHost(host);
+		}
+
+		@Override
+		public boolean isProxyHost(String host) {
+			return _http.isProxyHost(host);
 		}
 
 		protected boolean isLocationAccessDenied(String location)
@@ -1071,6 +1134,187 @@ public class TemplateContextHelper {
 
 		private final boolean _disableLocalNetworkAccess;
 		private final Http _http;
+
+	}
+
+	private static class LazyContext extends AbstractMap<String, Object> {
+
+		@Override
+		public boolean containsKey(Object key) {
+			if (get(key) == null) {
+				return false;
+			}
+
+			return true;
+		}
+
+		@Override
+		public Set<Entry<String, Object>> entrySet() {
+			return new AbstractSet<>() {
+
+				@Override
+				public Iterator<Entry<String, Object>> iterator() {
+					List<Entry<String, Object>> entries =
+						Collections.unmodifiableList(_getEntries());
+
+					return entries.iterator();
+				}
+
+				@Override
+				public int size() {
+					List<Entry<String, Object>> entries = _getEntries();
+
+					return entries.size();
+				}
+
+			};
+		}
+
+		@Override
+		public Object get(Object key) {
+			if (_restrictedVariables.contains(key) ||
+				_UNDECLARED_KEYS.equals(key)) {
+
+				return null;
+			}
+
+			Object value = _values.get(key);
+
+			if ((value != null) || _values.containsKey(key)) {
+				return value;
+			}
+
+			_prepareTemplateContextContributors((String)key);
+
+			value = _values.get(key);
+
+			if (value != null) {
+				return value;
+			}
+
+			Function<HttpServletRequest, Object> function =
+				_lazyContextFunctions.get(key);
+
+			if (function == null) {
+				return null;
+			}
+
+			value = function.apply(_httpServletRequest);
+
+			_values.put((String)key, value);
+
+			return value;
+		}
+
+		@Override
+		public Object remove(Object key) {
+			throw new UnsupportedOperationException();
+		}
+
+		private LazyContext(
+			Map<String, Object> contextObjects,
+			HttpServletRequest httpServletRequest,
+			Map<String, Function<HttpServletRequest, Object>>
+				lazyContextFunctions,
+			Set<String> restrictedVariables,
+			ServiceTrackerMap<String, List<TemplateContextContributor>>
+				serviceTrackerMap) {
+
+			_contextObjects = contextObjects;
+			_httpServletRequest = httpServletRequest;
+			_lazyContextFunctions = lazyContextFunctions;
+			_restrictedVariables = restrictedVariables;
+			_serviceTrackerMap = serviceTrackerMap;
+		}
+
+		private List<Entry<String, Object>> _getEntries() {
+			List<Entry<String, Object>> entries = new ArrayList<>();
+
+			Set<String> keys = new HashSet<>(_lazyContextFunctions.keySet());
+
+			if (_serviceTrackerMap != null) {
+				keys.addAll(_serviceTrackerMap.keySet());
+			}
+
+			for (String key : keys) {
+				Object value = get(key);
+
+				if (value == null) {
+					continue;
+				}
+
+				entries.add(new SimpleImmutableEntry<>(key, value));
+			}
+
+			return entries;
+		}
+
+		private void _prepareTemplateContextContributors(String key) {
+			if (_serviceTrackerMap == null) {
+				return;
+			}
+
+			List<TemplateContextContributor> templateContextContributors =
+				_serviceTrackerMap.getService(key);
+
+			if (templateContextContributors == null) {
+				return;
+			}
+
+			for (TemplateContextContributor templateContextContributor :
+					templateContextContributors) {
+
+				if (!_templateContextContributors.add(
+						templateContextContributor)) {
+
+					continue;
+				}
+
+				templateContextContributor.prepare(
+					new TemplateContextContributorContext(),
+					_httpServletRequest);
+			}
+		}
+
+		private final Map<String, Object> _contextObjects;
+		private final HttpServletRequest _httpServletRequest;
+		private final Map<String, Function<HttpServletRequest, Object>>
+			_lazyContextFunctions;
+		private final Set<String> _restrictedVariables;
+		private final ServiceTrackerMap
+			<String, List<TemplateContextContributor>> _serviceTrackerMap;
+		private final Set<TemplateContextContributor>
+			_templateContextContributors = new HashSet<>();
+		private final Map<String, Object> _values = new HashMap<>();
+
+		private class TemplateContextContributorContext
+			extends AbstractMap<String, Object> {
+
+			@Override
+			public boolean containsKey(Object key) {
+				return _contextObjects.containsKey(key);
+			}
+
+			@Override
+			public Set<Entry<String, Object>> entrySet() {
+				return _contextObjects.entrySet();
+			}
+
+			@Override
+			public Object get(Object key) {
+				return _contextObjects.get(key);
+			}
+
+			@Override
+			public Object put(String key, Object value) {
+				if ((value == null) || _restrictedVariables.contains(key)) {
+					return null;
+				}
+
+				return _values.put(key, value);
+			}
+
+		}
 
 	}
 

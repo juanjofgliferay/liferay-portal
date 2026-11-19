@@ -215,10 +215,6 @@ public interface CommerceOrderTypeLocalService
 		DynamicQuery dynamicQuery, Projection projection);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public CommerceOrderType fetchByExternalReferenceCode(
-		String externalReferenceCode, long companyId);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public CommerceOrderType fetchCommerceOrderType(long commerceOrderTypeId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
@@ -311,6 +307,11 @@ public interface CommerceOrderTypeLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public IndexableActionableDynamicQuery getIndexableActionableDynamicQuery();
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public CommerceOrderType getOrAddEmptyCommerceOrderType(
+			String externalReferenceCode, long companyId, long userId)
+		throws PortalException;
+
 	/**
 	 * Returns the OSGi service identifier.
 	 *
@@ -365,3 +366,4 @@ public interface CommerceOrderTypeLocalService
 		throws PortalException;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:31536212

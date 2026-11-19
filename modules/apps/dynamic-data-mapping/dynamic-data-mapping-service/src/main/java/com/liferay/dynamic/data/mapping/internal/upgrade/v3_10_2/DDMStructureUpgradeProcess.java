@@ -42,7 +42,6 @@ import com.liferay.portal.kernel.util.StringUtil;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -125,25 +124,27 @@ public class DDMStructureUpgradeProcess extends UpgradeProcess {
 
 			String unquotedParameterValue = StringUtil.unquote(parameterValue);
 
-			if (ddmFormFieldsMap.containsKey(unquotedParameterValue) ||
-				((i > 0) &&
-				 _isDDMFormFieldOptionValue(
+			if (!ddmFormFieldsMap.containsKey(unquotedParameterValue) &&
+				((i <= 0) ||
+				 !_isDDMFormFieldOptionValue(
 					 ddmFormFieldsMap, unquotedParameterValue,
 					 StringUtil.unquote(parameterValues.get(i - 1))))) {
 
-				int index = ddmFormRuleExpression.indexOf(parameterValue);
-
-				sb.append(ddmFormRuleExpression.substring(0, index));
-
-				sb.append(
-					StringUtil.replace(
-						parameterValue, unquotedParameterValue,
-						DDMFormFieldUpgradeProcessUtil.getNormalizedName(
-							unquotedParameterValue)));
-
-				ddmFormRuleExpression = ddmFormRuleExpression.substring(
-					index + parameterValue.length());
+				continue;
 			}
+
+			int index = ddmFormRuleExpression.indexOf(parameterValue);
+
+			sb.append(ddmFormRuleExpression.substring(0, index));
+
+			sb.append(
+				StringUtil.replace(
+					parameterValue, unquotedParameterValue,
+					DDMFormFieldUpgradeProcessUtil.getNormalizedName(
+						unquotedParameterValue)));
+
+			ddmFormRuleExpression = ddmFormRuleExpression.substring(
+				index + parameterValue.length());
 		}
 
 		sb.append(ddmFormRuleExpression);
@@ -174,11 +175,7 @@ public class DDMStructureUpgradeProcess extends UpgradeProcess {
 		Set<String> ddmFormFieldOptionsValues =
 			ddmFormFieldOptions.getOptionsValues();
 
-		if (ddmFormFieldOptionsValues.contains(operand)) {
-			return true;
-		}
-
-		return false;
+		return ddmFormFieldOptionsValues.contains(operand);
 	}
 
 	private void _normalizeDDMFormField(DDMFormField ddmFormField)
@@ -327,15 +324,11 @@ public class DDMStructureUpgradeProcess extends UpgradeProcess {
 	private void _normalizeDDMFormRuleActions(
 		Map<String, DDMFormField> ddmFormFieldsMap, DDMFormRule ddmFormRule) {
 
-		List<String> normalizedDDMFormRuleActions = new ArrayList<>();
-
-		for (String ddmFormRuleAction : ddmFormRule.getActions()) {
-			normalizedDDMFormRuleActions.add(
-				_getNormalizedDDMFormRuleExpression(
-					ddmFormFieldsMap, ddmFormRuleAction));
-		}
-
-		ddmFormRule.setActions(normalizedDDMFormRuleActions);
+		ddmFormRule.setActions(
+			TransformUtil.transform(
+				ddmFormRule.getActions(),
+				ddmFormRuleAction -> _getNormalizedDDMFormRuleExpression(
+					ddmFormFieldsMap, ddmFormRuleAction)));
 	}
 
 	private void _normalizeDDMFormRules(DDMForm ddmForm) throws Exception {
@@ -378,8 +371,8 @@ public class DDMStructureUpgradeProcess extends UpgradeProcess {
 						"select DDMStructure.structureId, ",
 						"DDMStructureVersion.definition from DDMStructure ",
 						"inner join DDMStructureVersion on ",
-						"DDMStructure.structureid = ",
-						"DDMStructureVersion.structureid where ",
+						"DDMStructure.structureId = ",
+						"DDMStructureVersion.structureId where ",
 						"DDMStructure.version = DDMStructureVersion.version ",
 						"and DDMStructure.classNameId = ?"));
 			PreparedStatement updatePreparedStatement =

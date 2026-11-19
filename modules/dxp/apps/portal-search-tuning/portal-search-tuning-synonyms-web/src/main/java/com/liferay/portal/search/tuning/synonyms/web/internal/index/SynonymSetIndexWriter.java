@@ -5,20 +5,58 @@
 
 package com.liferay.portal.search.tuning.synonyms.web.internal.index;
 
+import com.liferay.portal.search.engine.adapter.SearchEngineAdapter;
+import com.liferay.portal.search.engine.adapter.document.DeleteDocumentRequest;
+import com.liferay.portal.search.engine.adapter.document.IndexDocumentRequest;
+import com.liferay.portal.search.engine.adapter.document.IndexDocumentResponse;
 import com.liferay.portal.search.tuning.synonyms.index.name.SynonymSetIndexName;
 
 /**
  * @author Adam Brandizzi
  */
-public interface SynonymSetIndexWriter {
+public class SynonymSetIndexWriter {
+
+	public SynonymSetIndexWriter(SearchEngineAdapter searchEngineAdapter) {
+		_searchEngineAdapter = searchEngineAdapter;
+	}
 
 	public String create(
-		SynonymSetIndexName synonymSetIndexName, SynonymSet synonymSet);
+		SynonymSetIndexName synonymSetIndexName, SynonymSet synonymSet) {
 
-	public void remove(
-		SynonymSetIndexName synonymSetIndexName, String synonymSetDocumentId);
+		IndexDocumentRequest documentRequest = new IndexDocumentRequest(
+			synonymSetIndexName.getIndexName(),
+			SynonymSetToDocumentTranslatorUtil.translate(synonymSet));
+
+		documentRequest.setRefresh(true);
+
+		IndexDocumentResponse indexDocumentResponse =
+			_searchEngineAdapter.execute(documentRequest);
+
+		return indexDocumentResponse.getUid();
+	}
+
+	public void remove(SynonymSetIndexName synonymSetIndexName, String id) {
+		DeleteDocumentRequest deleteDocumentRequest = new DeleteDocumentRequest(
+			synonymSetIndexName.getIndexName(), id);
+
+		deleteDocumentRequest.setRefresh(true);
+
+		_searchEngineAdapter.execute(deleteDocumentRequest);
+	}
 
 	public void update(
-		SynonymSetIndexName synonymSetIndexName, SynonymSet synonymSet);
+		SynonymSetIndexName synonymSetIndexName, SynonymSet synonymSet) {
+
+		IndexDocumentRequest indexDocumentRequest = new IndexDocumentRequest(
+			synonymSetIndexName.getIndexName(),
+			synonymSet.getSynonymSetDocumentId(),
+			SynonymSetToDocumentTranslatorUtil.translate(synonymSet));
+
+		indexDocumentRequest.setRefresh(true);
+
+		_searchEngineAdapter.execute(indexDocumentRequest);
+	}
+
+	private final SearchEngineAdapter _searchEngineAdapter;
 
 }

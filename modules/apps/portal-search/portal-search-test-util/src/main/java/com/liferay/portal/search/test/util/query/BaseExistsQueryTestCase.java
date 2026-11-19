@@ -13,6 +13,7 @@ import com.liferay.portal.search.engine.adapter.search.SearchSearchResponse;
 import com.liferay.portal.search.hits.SearchHit;
 import com.liferay.portal.search.hits.SearchHits;
 import com.liferay.portal.search.query.ExistsQuery;
+import com.liferay.portal.search.query.QueriesUtil;
 import com.liferay.portal.search.test.util.indexing.BaseIndexingTestCase;
 import com.liferay.portal.search.test.util.indexing.DocumentCreationHelpers;
 
@@ -41,12 +42,13 @@ public abstract class BaseExistsQueryTestCase extends BaseIndexingTestCase {
 
 		assertSearch(
 			indexingTestHelper -> {
-				ExistsQuery existsQuery = queries.exists(Field.USER_NAME);
+				ExistsQuery existsQuery = QueriesUtil.exists(Field.USER_NAME);
 
 				SearchSearchRequest searchSearchRequest =
 					new SearchSearchRequest();
 
-				searchSearchRequest.setIndexNames("_all");
+				searchSearchRequest.setIndexNames(
+					String.valueOf(getCompanyId()));
 				searchSearchRequest.setQuery(existsQuery);
 				searchSearchRequest.setSize(30);
 

@@ -4,7 +4,7 @@
 	}
 
 	.drop-zone {
-		background-color: #f1f2f5;
+		background-color: $gray-200;
 		margin-top: 1rem;
 	}
 
@@ -33,7 +33,9 @@
 		}
 
 		&:focus + label::before {
-			box-shadow: 0 0 0 2px $white, 0 0 0 4px $primary-l1;
+			box-shadow:
+				0 0 0 2px $white,
+				0 0 0 4px $primary-l1;
 		}
 	}
 

@@ -6,6 +6,8 @@
 package com.liferay.portal.vulcan.util;
 
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.vulcan.batch.engine.Field;
@@ -32,6 +34,20 @@ import java.util.Map;
  */
 public class OpenAPIUtil {
 
+	public static String[] getBatchUnsupportedFormats(
+		Map<String, Object> extensions) {
+
+		if (MapUtil.isEmpty(extensions) ||
+			!extensions.containsKey("x-batch-unsupported-formats")) {
+
+			return null;
+		}
+
+		return StringUtil.split(
+			GetterUtil.getString(
+				extensions.get("x-batch-unsupported-formats")));
+	}
+
 	public static List<String> getCreateEntityScopes(
 		String entityName, OpenAPIYAML openAPIYAML) {
 
@@ -50,9 +66,11 @@ public class OpenAPIUtil {
 
 			String operationScope = _getOperationScope(post);
 
-			if (Validator.isNotNull(operationScope)) {
-				scopes.add(operationScope);
+			if (Validator.isNull(operationScope)) {
+				continue;
 			}
+
+			scopes.add(operationScope);
 		}
 
 		return scopes;
@@ -87,10 +105,12 @@ public class OpenAPIUtil {
 			fields.put(
 				propertyName,
 				Field.of(
-					propertySchema.getDescription(), propertyName,
+					null, propertySchema.getDescription(), propertyName,
 					propertySchema.isReadOnly(), null,
 					requiredPropertySchemaNames.contains(propertyName),
-					propertySchema.getType(), propertySchema.isWriteOnly()));
+					propertySchema.getType(),
+					getBatchUnsupportedFormats(Collections.emptyMap()),
+					propertySchema.isWriteOnly()));
 		}
 
 		return fields;
@@ -115,9 +135,11 @@ public class OpenAPIUtil {
 
 			String operationScope = _getOperationScope(get);
 
-			if (Validator.isNotNull(operationScope)) {
-				scopes.add(operationScope);
+			if (Validator.isNull(operationScope)) {
+				continue;
 			}
+
+			scopes.add(operationScope);
 		}
 
 		return scopes;

@@ -31,7 +31,7 @@ import com.liferay.trash.constants.TrashEntryConstants;
 import com.liferay.trash.exception.RestoreEntryException;
 import com.liferay.trash.kernel.model.TrashEntry;
 
-import javax.portlet.PortletRequest;
+import jakarta.portlet.PortletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -138,17 +138,17 @@ public class JournalFolderTrashHandler extends BaseJournalTrashHandler {
 	}
 
 	@Override
-	public TrashedModel getTrashedModel(long classPK) {
-		return _journalFolderLocalService.fetchFolder(classPK);
-	}
-
-	@Override
 	public TrashRenderer getTrashRenderer(long classPK) throws PortalException {
 		AssetRendererFactory<JournalFolder> assetRendererFactory =
 			AssetRendererFactoryRegistryUtil.getAssetRendererFactoryByClass(
 				JournalFolder.class);
 
 		return (TrashRenderer)assetRendererFactory.getAssetRenderer(classPK);
+	}
+
+	@Override
+	public TrashedModel getTrashedModel(long classPK) {
+		return _journalFolderLocalService.fetchFolder(classPK);
 	}
 
 	@Override

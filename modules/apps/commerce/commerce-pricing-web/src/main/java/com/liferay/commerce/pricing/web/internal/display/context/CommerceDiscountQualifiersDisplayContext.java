@@ -7,6 +7,7 @@ package com.liferay.commerce.pricing.web.internal.display.context;
 
 import com.liferay.account.constants.AccountPortletKeys;
 import com.liferay.commerce.currency.service.CommerceCurrencyLocalService;
+import com.liferay.commerce.currency.util.CommercePriceFormatter;
 import com.liferay.commerce.discount.model.CommerceDiscount;
 import com.liferay.commerce.discount.rule.type.CommerceDiscountRuleTypeRegistry;
 import com.liferay.commerce.discount.service.CommerceDiscountAccountRelService;
@@ -30,11 +31,11 @@ import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermi
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.Portal;
 
+import jakarta.portlet.PortletRequest;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.List;
-
-import javax.portlet.PortletRequest;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Alessio Antonio Rendina
@@ -55,6 +56,7 @@ public class CommerceDiscountQualifiersDisplayContext
 		CommerceDiscountRuleService commerceDiscountRuleService,
 		CommerceDiscountRuleTypeRegistry commerceDiscountRuleTypeRegistry,
 		CommerceDiscountTargetRegistry commerceDiscountTargetRegistry,
+		CommercePriceFormatter commercePriceFormatter,
 		PercentageFormatter percentageFormatter,
 		HttpServletRequest httpServletRequest, Portal portal) {
 
@@ -62,8 +64,8 @@ public class CommerceDiscountQualifiersDisplayContext
 			commerceCurrencyLocalService,
 			commerceDiscountModelResourcePermission, commerceDiscountService,
 			commerceDiscountRuleService, commerceDiscountRuleTypeRegistry,
-			commerceDiscountTargetRegistry, percentageFormatter,
-			httpServletRequest, portal);
+			commerceDiscountTargetRegistry, commercePriceFormatter,
+			percentageFormatter, httpServletRequest, portal);
 
 		_commerceChannelRelService = commerceChannelRelService;
 		_commerceDiscountAccountRelService = commerceDiscountAccountRelService;

@@ -11,25 +11,27 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import com.liferay.petra.function.UnsafeSupplier;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Javier Gamarra
@@ -39,6 +41,9 @@ import javax.xml.bind.annotation.XmlRootElement;
 @GraphQLName(
 	description = "Represents a definition of a submission result of type URL.",
 	value = "URLFormSubmissionResult"
+)
+@io.swagger.v3.oas.annotations.media.Schema(
+	description = "Represents a definition of a submission result of type URL."
 )
 @JsonFilter("Liferay.Vulcan")
 @XmlRootElement(name = "URLFormSubmissionResult")
@@ -53,34 +58,49 @@ public class URLFormSubmissionResult implements Serializable {
 			URLFormSubmissionResult.class, json);
 	}
 
-	@Schema(description = "The localized submission of URL type.")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The localized submission of URL type."
+	)
 	@Valid
 	public FragmentInlineValue getUrl() {
+		if (_urlSupplier != null) {
+			url = _urlSupplier.get();
+
+			_urlSupplier = null;
+		}
+
 		return url;
 	}
 
 	public void setUrl(FragmentInlineValue url) {
 		this.url = url;
+
+		_urlSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setUrl(
 		UnsafeSupplier<FragmentInlineValue, Exception> urlUnsafeSupplier) {
 
-		try {
-			url = urlUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_urlSupplier = () -> {
+			try {
+				return urlUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The localized submission of URL type.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected FragmentInlineValue url;
+
+	@JsonIgnore
+	private Supplier<FragmentInlineValue> _urlSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -110,6 +130,8 @@ public class URLFormSubmissionResult implements Serializable {
 
 		sb.append("{");
 
+		FragmentInlineValue url = getUrl();
+
 		if (url != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -125,8 +147,8 @@ public class URLFormSubmissionResult implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.delivery.dto.v1_0.URLFormSubmissionResult",
 		name = "x-class-name"
 	)
@@ -172,7 +194,10 @@ public class URLFormSubmissionResult implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -210,6 +235,27 @@ public class URLFormSubmissionResult implements Serializable {
 		return sb.toString();
 	}
 
+	private static String _toJSON(Object value) {
+		if (value instanceof Collection) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONArray((Collection<?>)value));
+		}
+		else if (value instanceof Map) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONObject((Map<?, ?>)value));
+		}
+		else if (value instanceof Object[]) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONArray(
+					Arrays.asList((Object[])value)));
+		}
+		else if (value instanceof String) {
+			return StringBundler.concat("\"", _escape(value), "\"");
+		}
+
+		return String.valueOf(value);
+	}
+
 	private static final String[][] _JSON_ESCAPE_STRINGS = {
 		{"\\", "\"", "\b", "\f", "\n", "\r", "\t"},
 		{"\\\\", "\\\"", "\\b", "\\f", "\\n", "\\r", "\\t"}
@@ -218,3 +264,4 @@ public class URLFormSubmissionResult implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:1524429146

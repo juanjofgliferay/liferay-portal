@@ -9,7 +9,7 @@ import com.liferay.asset.kernel.model.AssetEntry;
 import com.liferay.asset.kernel.service.AssetEntryLocalService;
 import com.liferay.asset.link.constants.AssetLinkConstants;
 import com.liferay.asset.link.service.AssetLinkLocalService;
-import com.liferay.bookmarks.configuration.BookmarksGroupServiceOverriddenConfiguration;
+import com.liferay.bookmarks.configuration.BookmarksGroupServiceConfiguration;
 import com.liferay.bookmarks.constants.BookmarksConstants;
 import com.liferay.bookmarks.constants.BookmarksPortletKeys;
 import com.liferay.bookmarks.exception.EntryURLException;
@@ -17,7 +17,6 @@ import com.liferay.bookmarks.model.BookmarksEntry;
 import com.liferay.bookmarks.model.BookmarksFolder;
 import com.liferay.bookmarks.service.base.BookmarksEntryLocalServiceBaseImpl;
 import com.liferay.bookmarks.social.BookmarksActivityKeys;
-import com.liferay.bookmarks.util.comparator.EntryModifiedDateComparator;
 import com.liferay.expando.kernel.service.ExpandoRowLocalService;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
@@ -59,6 +58,7 @@ import com.liferay.portal.kernel.transaction.Transactional;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.GroupSubscriptionCheckSubscriptionSender;
+import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.Localization;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.Portal;
@@ -78,12 +78,12 @@ import com.liferay.trash.model.TrashVersion;
 import com.liferay.trash.service.TrashEntryLocalService;
 import com.liferay.trash.service.TrashVersionLocalService;
 
+import jakarta.portlet.PortletRequest;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.Date;
 import java.util.List;
-
-import javax.portlet.PortletRequest;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -181,11 +181,13 @@ public class BookmarksEntryLocalServiceImpl
 			groupId, folderId);
 
 		for (BookmarksEntry entry : entries) {
-			if (includeTrashedEntries ||
-				!_trashHelper.isInTrashExplicitly(entry)) {
+			if (!includeTrashedEntries &&
+				_trashHelper.isInTrashExplicitly(entry)) {
 
-				bookmarksEntryLocalService.deleteEntry(entry);
+				continue;
 			}
+
+			bookmarksEntryLocalService.deleteEntry(entry);
 		}
 	}
 
@@ -311,52 +313,13 @@ public class BookmarksEntryLocalServiceImpl
 
 	@Override
 	public int getFoldersEntriesCount(long groupId, List<Long> folderIds) {
+		if (ListUtil.isEmpty(folderIds)) {
+			return 0;
+		}
+
 		return bookmarksEntryPersistence.countByG_F_S(
 			groupId, ArrayUtil.toArray(folderIds.toArray(new Long[0])),
 			WorkflowConstants.STATUS_APPROVED);
-	}
-
-	@Override
-	public List<BookmarksEntry> getGroupEntries(
-		long groupId, int start, int end) {
-
-		return bookmarksEntryPersistence.findByG_S(
-			groupId, WorkflowConstants.STATUS_APPROVED, start, end,
-			new EntryModifiedDateComparator());
-	}
-
-	@Override
-	public List<BookmarksEntry> getGroupEntries(
-		long groupId, long userId, int start, int end) {
-
-		OrderByComparator<BookmarksEntry> orderByComparator =
-			new EntryModifiedDateComparator();
-
-		if (userId <= 0) {
-			return bookmarksEntryPersistence.findByG_S(
-				groupId, WorkflowConstants.STATUS_APPROVED, start, end,
-				orderByComparator);
-		}
-
-		return bookmarksEntryPersistence.findByG_U_S(
-			groupId, userId, WorkflowConstants.STATUS_APPROVED, start, end,
-			orderByComparator);
-	}
-
-	@Override
-	public int getGroupEntriesCount(long groupId) {
-		return bookmarksEntryPersistence.countByG_S(
-			groupId, WorkflowConstants.STATUS_APPROVED);
-	}
-
-	@Override
-	public int getGroupEntriesCount(long groupId, long userId) {
-		if (userId <= 0) {
-			return getGroupEntriesCount(groupId);
-		}
-
-		return bookmarksEntryPersistence.countByG_U_S(
-			groupId, userId, WorkflowConstants.STATUS_APPROVED);
 	}
 
 	@Indexable(type = IndexableType.REINDEX)
@@ -560,11 +523,10 @@ public class BookmarksEntryLocalServiceImpl
 				updateBookmarksEntry(entry);
 
 				if (!reindex) {
-					return;
+					return null;
 				}
 
-				indexableActionableDynamicQuery.addDocuments(
-					indexer.getDocument(entry));
+				return indexer.getDocument(entry);
 			});
 
 		indexableActionableDynamicQuery.performActions();
@@ -761,19 +723,16 @@ public class BookmarksEntryLocalServiceImpl
 			return;
 		}
 
-		BookmarksGroupServiceOverriddenConfiguration
-			bookmarksGroupServiceOverriddenConfiguration =
-				_configurationProvider.getConfiguration(
-					BookmarksGroupServiceOverriddenConfiguration.class,
-					new GroupServiceSettingsLocator(
-						entry.getGroupId(), BookmarksConstants.SERVICE_NAME));
+		BookmarksGroupServiceConfiguration bookmarksGroupServiceConfiguration =
+			_configurationProvider.getConfiguration(
+				BookmarksGroupServiceConfiguration.class,
+				new GroupServiceSettingsLocator(
+					entry.getGroupId(), BookmarksConstants.SERVICE_NAME));
 
 		if ((serviceContext.isCommandAdd() &&
-			 !bookmarksGroupServiceOverriddenConfiguration.
-				 emailEntryAddedEnabled()) ||
+			 !bookmarksGroupServiceConfiguration.emailEntryAddedEnabled()) ||
 			(serviceContext.isCommandUpdate() &&
-			 !bookmarksGroupServiceOverriddenConfiguration.
-				 emailEntryUpdatedEnabled())) {
+			 !bookmarksGroupServiceConfiguration.emailEntryUpdatedEnabled())) {
 
 			return;
 		}
@@ -794,29 +753,24 @@ public class BookmarksEntryLocalServiceImpl
 
 		String entryURL = _getBookmarksEntryURL(entry, serviceContext);
 
-		String fromName =
-			bookmarksGroupServiceOverriddenConfiguration.emailFromName();
+		String fromName = bookmarksGroupServiceConfiguration.emailFromName();
 		String fromAddress =
-			bookmarksGroupServiceOverriddenConfiguration.emailFromAddress();
+			bookmarksGroupServiceConfiguration.emailFromAddress();
 
 		LocalizedValuesMap subjectLocalizedValuesMap = null;
 		LocalizedValuesMap bodyLocalizedValuesMap = null;
 
 		if (serviceContext.isCommandUpdate()) {
 			subjectLocalizedValuesMap =
-				bookmarksGroupServiceOverriddenConfiguration.
-					emailEntryUpdatedSubject();
+				bookmarksGroupServiceConfiguration.emailEntryUpdatedSubject();
 			bodyLocalizedValuesMap =
-				bookmarksGroupServiceOverriddenConfiguration.
-					emailEntryUpdatedBody();
+				bookmarksGroupServiceConfiguration.emailEntryUpdatedBody();
 		}
 		else {
 			subjectLocalizedValuesMap =
-				bookmarksGroupServiceOverriddenConfiguration.
-					emailEntryAddedSubject();
+				bookmarksGroupServiceConfiguration.emailEntryAddedSubject();
 			bodyLocalizedValuesMap =
-				bookmarksGroupServiceOverriddenConfiguration.
-					emailEntryAddedBody();
+				bookmarksGroupServiceConfiguration.emailEntryAddedBody();
 		}
 
 		SubscriptionSender subscriptionSender =
@@ -825,7 +779,6 @@ public class BookmarksEntryLocalServiceImpl
 
 		subscriptionSender.setClassName(entry.getModelClassName());
 		subscriptionSender.setClassPK(entry.getEntryId());
-		subscriptionSender.setCompanyId(entry.getCompanyId());
 		subscriptionSender.setContextAttributes(
 			"[$BOOKMARKS_ENTRY_STATUS_BY_USER_NAME$]", statusByUserName,
 			"[$BOOKMARKS_ENTRY_URL$]", entryURL);

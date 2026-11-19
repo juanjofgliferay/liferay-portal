@@ -16,6 +16,7 @@ import com.liferay.message.boards.model.impl.MBCategoryImpl;
 import com.liferay.message.boards.service.MBMailingListLocalService;
 import com.liferay.message.boards.service.MBThreadLocalService;
 import com.liferay.message.boards.service.base.MBCategoryLocalServiceBaseImpl;
+import com.liferay.message.boards.service.persistence.MBMailingListPersistence;
 import com.liferay.message.boards.service.persistence.MBMessagePersistence;
 import com.liferay.message.boards.service.persistence.MBThreadPersistence;
 import com.liferay.petra.string.StringPool;
@@ -67,12 +68,12 @@ public class MBCategoryLocalServiceImpl extends MBCategoryLocalServiceBaseImpl {
 
 	@Override
 	public MBCategory addCategory(
-			long userId, long parentCategoryId, String name, String description,
-			ServiceContext serviceContext)
+			String externalReferenceCode, long userId, long parentCategoryId,
+			String name, String description, ServiceContext serviceContext)
 		throws PortalException {
 
 		return mbCategoryLocalService.addCategory(
-			userId, parentCategoryId, name, description,
+			externalReferenceCode, userId, parentCategoryId, name, description,
 			MBCategoryConstants.DEFAULT_DISPLAY_STYLE, null, null, null, 0,
 			false, null, null, 0, null, false, null, 0, false, null, null,
 			false, false, serviceContext);
@@ -80,14 +81,15 @@ public class MBCategoryLocalServiceImpl extends MBCategoryLocalServiceBaseImpl {
 
 	@Override
 	public MBCategory addCategory(
-			long userId, long parentCategoryId, String name, String description,
-			String displayStyle, String emailAddress, String inProtocol,
-			String inServerName, int inServerPort, boolean inUseSSL,
-			String inUserName, String inPassword, int inReadInterval,
-			String outEmailAddress, boolean outCustom, String outServerName,
-			int outServerPort, boolean outUseSSL, String outUserName,
-			String outPassword, boolean allowAnonymous,
-			boolean mailingListActive, ServiceContext serviceContext)
+			String externalReferenceCode, long userId, long parentCategoryId,
+			String name, String description, String displayStyle,
+			String emailAddress, String inProtocol, String inServerName,
+			int inServerPort, boolean inUseSSL, String inUserName,
+			String inPassword, int inReadInterval, String outEmailAddress,
+			boolean outCustom, String outServerName, int outServerPort,
+			boolean outUseSSL, String outUserName, String outPassword,
+			boolean allowAnonymous, boolean mailingListActive,
+			ServiceContext serviceContext)
 		throws PortalException {
 
 		// Category
@@ -105,6 +107,7 @@ public class MBCategoryLocalServiceImpl extends MBCategoryLocalServiceBaseImpl {
 		MBCategory category = mbCategoryPersistence.create(categoryId);
 
 		category.setUuid(serviceContext.getUuid());
+		category.setExternalReferenceCode(externalReferenceCode);
 		category.setGroupId(groupId);
 		category.setCompanyId(user.getCompanyId());
 		category.setUserId(user.getUserId());
@@ -243,12 +246,14 @@ public class MBCategoryLocalServiceImpl extends MBCategoryLocalServiceBaseImpl {
 			category.getGroupId(), category.getCategoryId());
 
 		for (MBCategory curCategory : categories) {
-			if (includeTrashedEntries ||
-				!_trashHelper.isInTrashExplicitly(curCategory)) {
+			if (!includeTrashedEntries &&
+				_trashHelper.isInTrashExplicitly(curCategory)) {
 
-				mbCategoryLocalService.deleteCategory(
-					curCategory, includeTrashedEntries);
+				continue;
 			}
+
+			mbCategoryLocalService.deleteCategory(
+				curCategory, includeTrashedEntries);
 		}
 
 		// Threads
@@ -259,9 +264,8 @@ public class MBCategoryLocalServiceImpl extends MBCategoryLocalServiceBaseImpl {
 
 		// Mailing list
 
-		MBMailingList mbMailingList =
-			_mbMailingListLocalService.fetchCategoryMailingList(
-				category.getGroupId(), category.getCategoryId());
+		MBMailingList mbMailingList = _mbMailingListPersistence.fetchByG_C(
+			category.getGroupId(), category.getCategoryId());
 
 		if (mbMailingList != null) {
 			_mbMailingListLocalService.deleteMailingList(mbMailingList);
@@ -304,8 +308,21 @@ public class MBCategoryLocalServiceImpl extends MBCategoryLocalServiceBaseImpl {
 		mbCategoryLocalService.deleteMBCategory(category);
 	}
 
+	@Override
+	public void deleteCategoryByExternalReferenceCode(
+			String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		mbCategoryLocalService.deleteCategory(
+			mbCategoryPersistence.findByERC_G(externalReferenceCode, groupId));
+	}
+
+	@Override
 	public MBCategory fetchMBCategory(long groupId, String friendlyURL) {
-		return mbCategoryPersistence.fetchByG_F(groupId, friendlyURL);
+		return mbCategoryPersistence.fetchByG_F(
+			groupId,
+			_friendlyURLNormalizer.normalizeWithEncodingPeriodsAndSlashes(
+				friendlyURL));
 	}
 
 	@Override
@@ -421,15 +438,6 @@ public class MBCategoryLocalServiceImpl extends MBCategoryLocalServiceBaseImpl {
 	}
 
 	@Override
-	public int getCategoriesAndThreadsCount(long groupId, long categoryId) {
-		QueryDefinition<?> queryDefinition = new QueryDefinition<>(
-			WorkflowConstants.STATUS_ANY);
-
-		return mbCategoryFinder.countC_T_ByG_C(
-			groupId, categoryId, queryDefinition);
-	}
-
-	@Override
 	public int getCategoriesAndThreadsCount(
 		long groupId, long categoryId, int status) {
 
@@ -531,22 +539,13 @@ public class MBCategoryLocalServiceImpl extends MBCategoryLocalServiceBaseImpl {
 	}
 
 	@Override
-	public List<MBCategory> getCompanyCategories(
-		long companyId, int start, int end) {
-
-		return mbCategoryPersistence.findByCompanyId(companyId, start, end);
-	}
-
-	@Override
-	public int getCompanyCategoriesCount(long companyId) {
-		return mbCategoryPersistence.countByCompanyId(companyId);
-	}
-
-	@Override
 	public MBCategory getMBCategory(long groupId, String friendlyURL)
 		throws PortalException {
 
-		return mbCategoryPersistence.findByG_F(groupId, friendlyURL);
+		return mbCategoryPersistence.findByG_F(
+			groupId,
+			_friendlyURLNormalizer.normalizeWithEncodingPeriodsAndSlashes(
+				friendlyURL));
 	}
 
 	@Override
@@ -564,26 +563,6 @@ public class MBCategoryLocalServiceImpl extends MBCategoryLocalServiceBaseImpl {
 		}
 
 		return categoryIds;
-	}
-
-	@Override
-	public List<MBCategory> getSubscribedCategories(
-		long groupId, long userId, int start, int end) {
-
-		QueryDefinition<MBCategory> queryDefinition = new QueryDefinition<>(
-			WorkflowConstants.STATUS_ANY, start, end, null);
-
-		return mbCategoryFinder.findC_ByS_G_U_P(
-			groupId, userId, null, queryDefinition);
-	}
-
-	@Override
-	public int getSubscribedCategoriesCount(long groupId, long userId) {
-		QueryDefinition<MBCategory> queryDefinition = new QueryDefinition<>(
-			WorkflowConstants.STATUS_ANY);
-
-		return mbCategoryFinder.countC_ByS_G_U_P(
-			groupId, userId, null, queryDefinition);
 	}
 
 	@Override
@@ -827,9 +806,8 @@ public class MBCategoryLocalServiceImpl extends MBCategoryLocalServiceBaseImpl {
 
 		// Mailing list
 
-		MBMailingList mailingList =
-			_mbMailingListLocalService.fetchCategoryMailingList(
-				category.getGroupId(), category.getCategoryId());
+		MBMailingList mailingList = _mbMailingListPersistence.fetchByG_C(
+			category.getGroupId(), category.getCategoryId());
 
 		if (mailingList != null) {
 			_mbMailingListLocalService.updateMailingList(
@@ -938,7 +916,9 @@ public class MBCategoryLocalServiceImpl extends MBCategoryLocalServiceBaseImpl {
 			name = String.valueOf(categoryId);
 		}
 		else {
-			name = _friendlyURLNormalizer.normalizeWithPeriodsAndSlashes(name);
+			name =
+				_friendlyURLNormalizer.normalizeWithEncodingPeriodsAndSlashes(
+					name);
 		}
 
 		name = ModelHintsUtil.trimString(
@@ -949,8 +929,16 @@ public class MBCategoryLocalServiceImpl extends MBCategoryLocalServiceBaseImpl {
 		MBCategory mbCategory = mbCategoryPersistence.fetchByG_F(
 			groupId, friendlyURL);
 
+		if (mbCategory == null) {
+			return friendlyURL;
+		}
+
+		if (!StringUtil.endsWith(friendlyURL, StringPool.DASH)) {
+			name = name + StringPool.DASH;
+		}
+
 		for (int i = 1; mbCategory != null; i++) {
-			friendlyURL = name + StringPool.DASH + i;
+			friendlyURL = name + i;
 
 			mbCategory = mbCategoryPersistence.fetchByG_F(groupId, friendlyURL);
 		}
@@ -1196,6 +1184,9 @@ public class MBCategoryLocalServiceImpl extends MBCategoryLocalServiceBaseImpl {
 
 	@Reference
 	private MBMailingListLocalService _mbMailingListLocalService;
+
+	@Reference
+	private MBMailingListPersistence _mbMailingListPersistence;
 
 	@Reference
 	private MBMessagePersistence _mbMessagePersistence;

@@ -8,7 +8,7 @@ package com.liferay.layout.admin.web.internal.portlet.action;
 import com.liferay.client.extension.constants.ClientExtensionEntryConstants;
 import com.liferay.client.extension.model.ClientExtensionEntryRel;
 import com.liferay.client.extension.service.ClientExtensionEntryRelLocalService;
-import com.liferay.document.library.kernel.service.DLAppLocalService;
+import com.liferay.document.library.kernel.service.DLAppService;
 import com.liferay.layout.admin.constants.LayoutAdminPortletKeys;
 import com.liferay.layout.admin.constants.LayoutScreenNavigationEntryConstants;
 import com.liferay.petra.string.StringPool;
@@ -36,8 +36,8 @@ import com.liferay.portal.kernel.util.UnicodePropertiesBuilder;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -47,7 +47,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + LayoutAdminPortletKeys.GROUP_PAGES,
+		"jakarta.portlet.name=" + LayoutAdminPortletKeys.GROUP_PAGES,
 		"mvc.command.name=/layout_admin/edit_layout_set"
 	},
 	service = MVCActionCommand.class
@@ -107,6 +107,19 @@ public class EditLayoutSetMVCActionCommand extends BaseMVCActionCommand {
 			groupId = stagingGroupId;
 		}
 
+		Group group = _groupLocalService.getGroup(groupId);
+
+		if (group.isLayoutSetPrototype()) {
+			_updateLookAndFeel(
+				actionRequest, companyId, groupId, true,
+				typeSettingsUnicodeProperties);
+			_updateLookAndFeel(
+				actionRequest, companyId, groupId, false,
+				typeSettingsUnicodeProperties);
+
+			return;
+		}
+
 		_updateLookAndFeel(
 			actionRequest, companyId, groupId, privateLayout,
 			typeSettingsUnicodeProperties);
@@ -114,8 +127,6 @@ public class EditLayoutSetMVCActionCommand extends BaseMVCActionCommand {
 		if (privateLayout) {
 			return;
 		}
-
-		Group group = _groupLocalService.getGroup(groupId);
 
 		if (!group.hasPrivateLayouts()) {
 			_updateLookAndFeel(
@@ -252,7 +263,7 @@ public class EditLayoutSetMVCActionCommand extends BaseMVCActionCommand {
 		long fileEntryId = ParamUtil.getLong(actionRequest, "fileEntryId");
 
 		if (fileEntryId > 0) {
-			FileEntry fileEntry = _dlAppLocalService.getFileEntry(fileEntryId);
+			FileEntry fileEntry = _dlAppService.getFileEntry(fileEntryId);
 
 			logoBytes = FileUtil.getBytes(fileEntry.getContentStream());
 		}
@@ -345,7 +356,7 @@ public class EditLayoutSetMVCActionCommand extends BaseMVCActionCommand {
 		_clientExtensionEntryRelLocalService;
 
 	@Reference
-	private DLAppLocalService _dlAppLocalService;
+	private DLAppService _dlAppService;
 
 	@Reference
 	private GroupLocalService _groupLocalService;

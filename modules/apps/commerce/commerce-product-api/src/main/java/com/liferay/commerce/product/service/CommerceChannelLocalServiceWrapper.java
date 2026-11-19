@@ -264,14 +264,6 @@ public class CommerceChannelLocalServiceWrapper
 	}
 
 	@Override
-	public CommerceChannel fetchByExternalReferenceCode(
-		String externalReferenceCode, long companyId) {
-
-		return _commerceChannelLocalService.fetchByExternalReferenceCode(
-			externalReferenceCode, companyId);
-	}
-
-	@Override
 	public CommerceChannel fetchCommerceChannel(long commerceChannelId) {
 		return _commerceChannelLocalService.fetchCommerceChannel(
 			commerceChannelId);
@@ -287,9 +279,7 @@ public class CommerceChannelLocalServiceWrapper
 	}
 
 	@Override
-	public CommerceChannel fetchCommerceChannelByGroupClassPK(long groupId)
-		throws com.liferay.portal.kernel.exception.PortalException {
-
+	public CommerceChannel fetchCommerceChannelByGroupClassPK(long groupId) {
 		return _commerceChannelLocalService.fetchCommerceChannelByGroupClassPK(
 			groupId);
 	}
@@ -465,6 +455,15 @@ public class CommerceChannelLocalServiceWrapper
 	}
 
 	@Override
+	public java.util.List<CommerceChannel> getEligibleCommerceChannels(
+			long accountEntryId, String name, int start, int end)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _commerceChannelLocalService.getEligibleCommerceChannels(
+			accountEntryId, name, start, end);
+	}
+
+	@Override
 	public com.liferay.portal.kernel.dao.orm.ExportActionableDynamicQuery
 		getExportActionableDynamicQuery(
 			com.liferay.exportimport.kernel.lar.PortletDataContext
@@ -480,6 +479,15 @@ public class CommerceChannelLocalServiceWrapper
 
 		return _commerceChannelLocalService.
 			getIndexableActionableDynamicQuery();
+	}
+
+	@Override
+	public CommerceChannel getOrAddEmptyCommerceChannel(
+			String externalReferenceCode, long companyId, long userId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _commerceChannelLocalService.getOrAddEmptyCommerceChannel(
+			externalReferenceCode, companyId, userId);
 	}
 
 	/**
@@ -612,3 +620,4 @@ public class CommerceChannelLocalServiceWrapper
 	private CommerceChannelLocalService _commerceChannelLocalService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-992223687

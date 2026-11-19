@@ -11,6 +11,11 @@
 
 <tbody>
 <tr>
+	<td>ADD_NEW_PAGE</td>
+	<td>//div[contains(@class,'taglib-empty-result-message')]//a[@class='btn btn-secondary' and contains(text(),'Page')]</td>
+	<td></td>
+</tr>
+<tr>
 	<td>CHILD_PAGE_NAME</td>
 	<td>//li[contains(@class,'treeview-item') and div[normalize-space()='${key_parentPageName}']]//ul[contains(@class,'treeview-group')]//div[contains(@role,'treeitem')]//a[normalize-space()='${key_childPageName}']</td>
 	<td></td>
@@ -23,6 +28,11 @@
 <tr>
 	<td>PAGE_ELLIPSIS_ICON</td>
 	<td>//div[contains(@class,'pages-tree')]//div[contains(@role,'treeitem')][normalize-space()='${key_pageName}']//button[contains(@class,'dropdown')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>PAGE_HREF_BLANK</td>
+	<td>//div[contains(@class,'pages-tree')]//div[contains(@role,'treeitem')]//a[normalize-space()='${key_pageName}'][@href='${key_href}'][@target='_blank']</td>
 	<td></td>
 </tr>
 <tr>

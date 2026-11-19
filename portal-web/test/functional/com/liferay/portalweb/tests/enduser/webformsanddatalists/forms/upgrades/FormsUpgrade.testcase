@@ -1,12 +1,11 @@
-@component-name = "portal-upgrades"
+@component-name = "portal-bpm"
 definition {
 
-	property database.types = "db2,mariadb,mysql,oracle,postgresql,sqlserver,sybase";
+	property database.types = "db2,mariadb,mysql,oracle,postgresql,sqlserver";
 	property portal.release = "true";
 	property portal.upstream = "true";
 	property test.liferay.virtual.instance = "false";
 	property test.run.type = "single";
-	property testray.component.names = "Forms";
 	property testray.main.component.name = "Upgrades Forms";
 
 	setUp {
@@ -63,7 +62,7 @@ definition {
 	@priority = 5
 	test AddFormAfterUpgrade621015 {
 		property data.archive.type = "data-archive-portal";
-		property database.types = "db2,mariadb,mysql,oracle,postgresql,sybase";
+		property database.types = "db2,mariadb,mysql,oracle,postgresql";
 		property portal.version = "6.2.10.15";
 
 		ValidateFormsUpgrade.addForm(site = "Guest");
@@ -72,7 +71,7 @@ definition {
 	@priority = 5
 	test AddFormAfterUpgrade621021 {
 		property data.archive.type = "data-archive-portal";
-		property database.types = "db2,mariadb,mysql,oracle,postgresql,sybase";
+		property database.types = "db2,mariadb,mysql,oracle,postgresql";
 		property portal.version = "6.2.10.21";
 
 		ValidateFormsUpgrade.addForm(site = "Guest");
@@ -81,7 +80,7 @@ definition {
 	@priority = 5
 	test CanSubmitFormEntryAfterUpgrade7010 {
 		property data.archive.type = "data-archive-form-entry";
-		property database.types = "mysql";
+		property database.types = "mysql,postgresql";
 		property portal.acceptance = "quarantine";
 		property portal.release = "quarantine";
 		property portal.upstream = "quarantine";
@@ -117,7 +116,7 @@ definition {
 	@priority = 5
 	test CanSubmitFormEntryAfterUpgrade7310 {
 		property data.archive.type = "data-archive-form-entry";
-		property database.types = "mysql";
+		property database.types = "mysql,postgresql";
 		property portal.acceptance = "quarantine";
 		property portal.release = "quarantine";
 		property portal.upstream = "quarantine";
@@ -129,7 +128,7 @@ definition {
 	@priority = 5
 	test UpdateFieldNameToFieldReference7010 {
 		property data.archive.type = "data-archive-form-entry";
-		property database.types = "mysql";
+		property database.types = "mysql,postgresql";
 		property portal.acceptance = "quarantine";
 		property portal.release = "quarantine";
 		property portal.upstream = "quarantine";
@@ -189,7 +188,7 @@ definition {
 	@priority = 5
 	test UploadFieldKeepsAllFilesAfterUpgrade7310 {
 		property data.archive.type = "data-archive-form-entry";
-		property database.types = "mysql";
+		property database.types = "mysql,postgresql";
 		property portal.acceptance = "quarantine";
 		property portal.release = "quarantine";
 		property portal.upstream = "quarantine";
@@ -213,7 +212,7 @@ definition {
 	@priority = 5
 	test ViewAndDeleteFormEntryAfterUpgrade70106 {
 		property data.archive.type = "data-archive-form-entry";
-		property database.types = "db2,mariadb,mysql,oracle,postgresql,sybase";
+		property database.types = "db2,mariadb,mysql,oracle,postgresql";
 		property portal.acceptance = "quarantine";
 		property portal.release = "quarantine";
 		property portal.upstream = "quarantine";
@@ -225,7 +224,7 @@ definition {
 	@priority = 5
 	test ViewFormEntryAfterUpgrade7010 {
 		property data.archive.type = "data-archive-form-entry";
-		property database.types = "mysql";
+		property database.types = "mysql,postgresql";
 		property portal.acceptance = "quarantine";
 		property portal.release = "quarantine";
 		property portal.upstream = "quarantine";
@@ -261,7 +260,7 @@ definition {
 	@priority = 5
 	test ViewFormEntryAfterUpgrade7310 {
 		property data.archive.type = "data-archive-form-entry";
-		property database.types = "mysql";
+		property database.types = "mysql,postgresql";
 		property portal.acceptance = "quarantine";
 		property portal.release = "quarantine";
 		property portal.upstream = "quarantine";

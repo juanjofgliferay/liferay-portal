@@ -22,19 +22,21 @@ public class StringCastCheck extends BaseCheck {
 
 	@Override
 	protected void doVisitToken(DetailAST detailAST) {
-		List<DetailAST> methodCallDetailASTList = getMethodCalls(
+		List<DetailAST> methodCallDetailASTs = getMethodCalls(
 			detailAST, "toString");
 
-		for (DetailAST methodCallDetailAST : methodCallDetailASTList) {
+		for (DetailAST methodCallDetailAST : methodCallDetailASTs) {
 			DetailAST dotDetailAST = methodCallDetailAST.findFirstToken(
 				TokenTypes.DOT);
 
 			String variableTypeName = getVariableTypeName(
 				methodCallDetailAST, getName(dotDetailAST), false);
 
-			if (variableTypeName.equals("String")) {
-				log(methodCallDetailAST, _MSG_UNNEEDED_STRING_CAST);
+			if (!variableTypeName.equals("String")) {
+				continue;
 			}
+
+			log(methodCallDetailAST, _MSG_UNNEEDED_STRING_CAST);
 		}
 	}
 

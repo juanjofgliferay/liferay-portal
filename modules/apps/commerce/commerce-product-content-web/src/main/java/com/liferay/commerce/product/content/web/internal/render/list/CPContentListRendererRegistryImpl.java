@@ -44,8 +44,8 @@ public class CPContentListRendererRegistryImpl
 		}
 
 		ServiceWrapper<CPContentListRenderer>
-			cpContentListRendererServiceWrapper =
-				_cpContentListRendererServiceTrackerMap.getService(key);
+			cpContentListRendererServiceWrapper = _serviceTrackerMap.getService(
+				key);
 
 		if (cpContentListRendererServiceWrapper == null) {
 			if (_log.isDebugEnabled()) {
@@ -67,7 +67,7 @@ public class CPContentListRendererRegistryImpl
 
 		List<ServiceWrapper<CPContentListRenderer>>
 			cpContentListRendererServiceWrappers = ListUtil.fromCollection(
-				_cpContentListRendererServiceTrackerMap.values());
+				_serviceTrackerMap.values());
 
 		Collections.sort(
 			cpContentListRendererServiceWrappers,
@@ -77,30 +77,30 @@ public class CPContentListRendererRegistryImpl
 				cpContentListRendererServiceWrapper :
 					cpContentListRendererServiceWrappers) {
 
-			if (Validator.isNotNull(portletName)) {
-				Map<String, Object>
-					cpContentListRendererServiceWrapperProperties =
-						cpContentListRendererServiceWrapper.getProperties();
+			if (Validator.isNull(portletName)) {
+				continue;
+			}
 
-				Object valueObject =
-					cpContentListRendererServiceWrapperProperties.get(
-						"commerce.product.content.list.renderer.portlet.name");
+			Map<String, Object> cpContentListRendererServiceWrapperProperties =
+				cpContentListRendererServiceWrapper.getProperties();
 
-				if (valueObject instanceof String[]) {
-					String[] values = GetterUtil.getStringValues(valueObject);
+			Object valueObject =
+				cpContentListRendererServiceWrapperProperties.get(
+					"commerce.product.content.list.renderer.portlet.name");
 
-					if (ArrayUtil.contains(values, portletName)) {
-						cpContentListRenderers.add(
-							cpContentListRendererServiceWrapper.getService());
-					}
-				}
-				else if ((valueObject instanceof String) &&
-						 portletName.equals(
-							 GetterUtil.getString(valueObject))) {
+			if (valueObject instanceof String[]) {
+				String[] values = GetterUtil.getStringValues(valueObject);
 
+				if (ArrayUtil.contains(values, portletName)) {
 					cpContentListRenderers.add(
 						cpContentListRendererServiceWrapper.getService());
 				}
+			}
+			else if ((valueObject instanceof String) &&
+					 portletName.equals(GetterUtil.getString(valueObject))) {
+
+				cpContentListRenderers.add(
+					cpContentListRendererServiceWrapper.getService());
 			}
 		}
 
@@ -109,26 +109,25 @@ public class CPContentListRendererRegistryImpl
 
 	@Activate
 	protected void activate(BundleContext bundleContext) {
-		_cpContentListRendererServiceTrackerMap =
-			ServiceTrackerMapFactory.openSingleValueMap(
-				bundleContext, CPContentListRenderer.class,
-				"commerce.product.content.list.renderer.key",
-				ServiceTrackerCustomizerFactory.
-					<CPContentListRenderer>serviceWrapper(bundleContext));
+		_serviceTrackerMap = ServiceTrackerMapFactory.openSingleValueMap(
+			bundleContext, CPContentListRenderer.class,
+			"commerce.product.content.list.renderer.key",
+			ServiceTrackerCustomizerFactory.
+				<CPContentListRenderer>serviceWrapper(bundleContext));
 	}
 
 	@Deactivate
 	protected void deactivate() {
-		_cpContentListRendererServiceTrackerMap.close();
+		_serviceTrackerMap.close();
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		CPContentListRendererRegistryImpl.class);
 
-	private ServiceTrackerMap<String, ServiceWrapper<CPContentListRenderer>>
-		_cpContentListRendererServiceTrackerMap;
 	private final Comparator<ServiceWrapper<CPContentListRenderer>>
 		_cpContentListRendererServiceWrapperOrderComparator =
 			new CPContentListRendererServiceWrapperOrderComparator();
+	private ServiceTrackerMap<String, ServiceWrapper<CPContentListRenderer>>
+		_serviceTrackerMap;
 
 }

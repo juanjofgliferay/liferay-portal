@@ -1,5 +1,6 @@
 [
 	{
+		"externalReferenceCode": "M2H8-MAIN",
 		"menuItems": [
 			{
 				"friendlyURL": "/home",
@@ -7,8 +8,12 @@
 				"type": "layout"
 			},
 			{
-				"friendlyURL": "/view-tickets",
 				"menuItems": [
+					{
+						"friendlyURL": "/view-tickets",
+						"name": "View Tickets",
+						"type": "layout"
+					},
 					{
 						"friendlyURL": "/admin-tickets",
 						"name": "Admin View",
@@ -20,14 +25,21 @@
 						"type": "layout"
 					}
 				],
-				"name": "View Tickets",
-				"type": "layout"
+				"name": "Tickets",
+				"name_i18n": {
+					"en_US": "Tickets"
+				},
+				"title": "Tickets",
+				"type": "node"
 			},
 			{
 				"menuItems": [
 					{
 						"friendlyURL": "/trialguide",
 						"name": "Trial Guide",
+						"name_i18n": {
+							"en_US": "Trial Guide"
+						},
 						"type": "layout",
 						"useCustomName": true
 					},
@@ -43,14 +55,23 @@
 					}
 				],
 				"name": "Learning",
+				"name_i18n": {
+					"en_US": "Learning"
+				},
+				"title": "Learning",
 				"type": "node"
 			}
 		],
 		"name": "Main Menu",
+		"name_i18n": {
+			"en_US": "Main Menu"
+		},
 		"navigationType": "Primary",
+		"title": "Main Menu",
 		"type": "node"
 	},
 	{
+		"externalReferenceCode": "M2H8-FOOTER-CLARITY",
 		"menuItems": [
 			{
 				"friendlyURL": "/home",
@@ -69,20 +90,24 @@
 			}
 		],
 		"name": "Footer Clarity Menu",
+		"name_i18n": {
+			"en_US": "Footer Clarity Menu"
+		},
+		"title": "Footer Clarity Menu",
 		"type": "node"
 	},
 	{
+		"externalReferenceCode": "M2H8-FOOTER-TRIAL",
 		"menuItems": [
 			{
 				"friendlyURL": "/welcome",
-				"name": "Trial Guide",
+				"name": "Welcome",
 				"type": "layout"
 			},
 			{
-				"name": "Documentation",
-				"type": "url",
-				"url": "https://learn.liferay.com",
-				"useNewTab": "true"
+				"friendlyURL": "/trialguide",
+				"name": "Trial Guide",
+				"type": "layout"
 			},
 			{
 				"friendlyURL": "/faq",
@@ -96,30 +121,57 @@
 			}
 		],
 		"name": "Footer Trial Menu",
+		"name_i18n": {
+			"en_US": "Footer Trial Menu"
+		},
+		"title": "Footer Trial Menu",
 		"type": "node"
 	},
 	{
+		"externalReferenceCode": "M2H8-FOOTER-LIFERAY",
 		"menuItems": [
 			{
 				"name": "About Liferay",
+				"name_i18n": {
+					"en_US": "About Liferay"
+				},
 				"type": "url",
 				"url": "https://www.liferay.com/company/our-story",
 				"useNewTab": "true"
 			},
 			{
-				"name": "Liferay Experience Cloud",
+				"name": "Capabilities",
+				"name_i18n": {
+					"en_US": "Capabilities"
+				},
 				"type": "url",
-				"url": "https://www.liferay.com/products/liferay-cloud-capabilities",
+				"url": "https://www.liferay.com/capabilities",
+				"useNewTab": "true"
+			},
+			{
+				"name": "Offerings",
+				"name_i18n": {
+					"en_US": "Offerings"
+				},
+				"type": "url",
+				"url": "https://www.liferay.com/offerings",
 				"useNewTab": "true"
 			},
 			{
 				"name": "Liferay.com",
+				"name_i18n": {
+					"en_US": "Liferay.com"
+				},
 				"type": "url",
 				"url": "https://www.liferay.com",
 				"useNewTab": "true"
 			}
 		],
 		"name": "Footer Liferay Menu",
+		"name_i18n": {
+			"en_US": "Footer Liferay Menu"
+		},
+		"title": "Footer Liferay Menu",
 		"type": "node"
 	}
 ]

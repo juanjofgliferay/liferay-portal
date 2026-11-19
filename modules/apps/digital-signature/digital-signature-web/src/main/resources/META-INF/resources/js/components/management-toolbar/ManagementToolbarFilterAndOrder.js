@@ -33,10 +33,8 @@ export default function ManagementToolbarFilterAndOrder({
 	disabled,
 	filters = [],
 }) {
-	const [
-		{filters: appliedFilters = {}, defaultSort, sort},
-		dispatch,
-	] = useContext(SearchContext);
+	const [{filters: appliedFilters = {}, defaultSort, sort}, dispatch] =
+		useContext(SearchContext);
 	const [localFilters, setLocalFilters] = useState(appliedFilters);
 	const [isDropDownActive, setDropDownActive] = useState(false);
 
@@ -57,6 +55,7 @@ export default function ManagementToolbarFilterAndOrder({
 				return (
 					<CheckboxGroup
 						{...props}
+						key={key}
 						onAdd={(value) => {
 							setLocalFilters((prevFilters) => {
 								const values = prevFilters[key] || [];
@@ -89,6 +88,7 @@ export default function ManagementToolbarFilterAndOrder({
 							},
 							...props.items,
 						]}
+						key={key}
 						onChange={(value) => {
 							setLocalFilters((prevFilters) => ({
 								...prevFilters,

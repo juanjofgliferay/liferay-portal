@@ -6,67 +6,33 @@
 package com.liferay.commerce.frontend.taglib.internal.servlet;
 
 import com.liferay.commerce.constants.CommerceOrderConstants;
-import com.liferay.commerce.frontend.util.ProductHelper;
+import com.liferay.commerce.frontend.helper.ProductHelper;
 import com.liferay.commerce.inventory.engine.CommerceInventoryEngine;
 import com.liferay.commerce.order.CommerceOrderHttpHelper;
 import com.liferay.commerce.product.content.helper.CPContentHelper;
+import com.liferay.commerce.product.helper.CPCompareHelper;
+import com.liferay.commerce.product.helper.CPDefinitionHelper;
+import com.liferay.commerce.product.helper.CPInstanceHelper;
 import com.liferay.commerce.product.service.CPDefinitionOptionRelLocalService;
 import com.liferay.commerce.product.service.CPInstanceUnitOfMeasureLocalService;
 import com.liferay.commerce.product.service.CommerceChannelLocalService;
 import com.liferay.commerce.product.url.CPFriendlyURL;
-import com.liferay.commerce.product.util.CPCompareHelper;
-import com.liferay.commerce.product.util.CPDefinitionHelper;
-import com.liferay.commerce.product.util.CPInstanceHelper;
 import com.liferay.commerce.product.util.CPSubscriptionTypeRegistry;
 import com.liferay.commerce.service.CommerceOrderItemLocalService;
+import com.liferay.commerce.service.CommerceOrderLocalService;
 import com.liferay.commerce.service.CommerceOrderTypeLocalService;
-import com.liferay.frontend.js.loader.modules.extender.npm.NPMResolver;
 import com.liferay.info.item.renderer.InfoItemRendererRegistry;
 import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.security.permission.resource.PortletResourcePermission;
 
-import javax.servlet.ServletContext;
+import jakarta.servlet.ServletContext;
 
 /**
  * @author Marco Leo
  * @author Alessio Antonio Rendina
  */
 public class ServletContextUtil {
-
-	public static CommerceChannelLocalService getCommerceChannelLocalService() {
-		return _commerceChannelLocalServiceSnapshot.get();
-	}
-
-	public static CommerceInventoryEngine getCommerceInventoryEngine() {
-		return _commerceInventoryEngineSnapshot.get();
-	}
-
-	public static CommerceOrderHttpHelper getCommerceOrderHttpHelper() {
-		return _commerceOrderHttpHelperSnapshot.get();
-	}
-
-	public static CommerceOrderItemLocalService
-		getCommerceOrderItemLocalService() {
-
-		return _commerceOrderItemLocalServiceSnapshot.get();
-	}
-
-	public static PortletResourcePermission
-		getCommerceOrderPortletResourcePermission() {
-
-		return _commerceOrderPortletResourcePermissionSnapshot.get();
-	}
-
-	public static CommerceOrderTypeLocalService
-		getCommerceOrderTypeLocalService() {
-
-		return _commerceOrderTypeLocalServiceSnapshot.get();
-	}
-
-	public static ConfigurationProvider getConfigurationProvider() {
-		return _configurationProviderSnapshot.get();
-	}
 
 	public static CPCompareHelper getCPCompareHelper() {
 		return _cpCompareHelperSnapshot.get();
@@ -104,12 +70,46 @@ public class ServletContextUtil {
 		return _cpSubscriptionTypeRegistrySnapshot.get();
 	}
 
-	public static InfoItemRendererRegistry getInfoItemRendererRegistry() {
-		return _infoItemRendererRegistrySnapshot.get();
+	public static CommerceChannelLocalService getCommerceChannelLocalService() {
+		return _commerceChannelLocalServiceSnapshot.get();
 	}
 
-	public static NPMResolver getNPMResolver() {
-		return _npmResolverSnapshot.get();
+	public static CommerceInventoryEngine getCommerceInventoryEngine() {
+		return _commerceInventoryEngineSnapshot.get();
+	}
+
+	public static CommerceOrderHttpHelper getCommerceOrderHttpHelper() {
+		return _commerceOrderHttpHelperSnapshot.get();
+	}
+
+	public static CommerceOrderItemLocalService
+		getCommerceOrderItemLocalService() {
+
+		return _commerceOrderItemLocalServiceSnapshot.get();
+	}
+
+	public static CommerceOrderLocalService getCommerceOrderLocalService() {
+		return _commerceOrderLocalServiceSnapshot.get();
+	}
+
+	public static PortletResourcePermission
+		getCommerceOrderPortletResourcePermission() {
+
+		return _commerceOrderPortletResourcePermissionSnapshot.get();
+	}
+
+	public static CommerceOrderTypeLocalService
+		getCommerceOrderTypeLocalService() {
+
+		return _commerceOrderTypeLocalServiceSnapshot.get();
+	}
+
+	public static ConfigurationProvider getConfigurationProvider() {
+		return _configurationProviderSnapshot.get();
+	}
+
+	public static InfoItemRendererRegistry getInfoItemRendererRegistry() {
+		return _infoItemRendererRegistrySnapshot.get();
 	}
 
 	public static ProductHelper getProductHelper() {
@@ -132,6 +132,9 @@ public class ServletContextUtil {
 	private static final Snapshot<CommerceOrderItemLocalService>
 		_commerceOrderItemLocalServiceSnapshot = new Snapshot<>(
 			ServletContextUtil.class, CommerceOrderItemLocalService.class);
+	private static final Snapshot<CommerceOrderLocalService>
+		_commerceOrderLocalServiceSnapshot = new Snapshot<>(
+			ServletContextUtil.class, CommerceOrderLocalService.class);
 	private static final Snapshot<PortletResourcePermission>
 		_commerceOrderPortletResourcePermissionSnapshot = new Snapshot<>(
 			ServletContextUtil.class, PortletResourcePermission.class,
@@ -166,8 +169,6 @@ public class ServletContextUtil {
 	private static final Snapshot<InfoItemRendererRegistry>
 		_infoItemRendererRegistrySnapshot = new Snapshot<>(
 			ServletContextUtil.class, InfoItemRendererRegistry.class);
-	private static final Snapshot<NPMResolver> _npmResolverSnapshot =
-		new Snapshot<>(ServletContextUtil.class, NPMResolver.class);
 	private static final Snapshot<ProductHelper> _productHelperSnapshot =
 		new Snapshot<>(ServletContextUtil.class, ProductHelper.class);
 	private static final Snapshot<ServletContext> _servletContextSnapshot =

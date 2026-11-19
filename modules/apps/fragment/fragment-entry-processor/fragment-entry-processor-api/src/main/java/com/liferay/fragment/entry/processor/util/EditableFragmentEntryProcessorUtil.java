@@ -5,11 +5,12 @@
 
 package com.liferay.fragment.entry.processor.util;
 
-import java.util.HashMap;
+import com.liferay.fragment.processor.util.FragmentEntryHtmlParserUtil;
+
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 
-import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
@@ -20,19 +21,25 @@ import org.jsoup.select.Elements;
 public class EditableFragmentEntryProcessorUtil {
 
 	public static Map<String, String> getEditableTypes(String html) {
-		Map<String, String> editableTypes = new HashMap<>();
+		Map<String, String> editableTypes = new LinkedHashMap<>();
 
-		Document document = Jsoup.parse(html);
+		Document document = FragmentEntryHtmlParserUtil.parse(html);
 
-		Elements elements = document.select(
-			"lfr-editable,*[data-lfr-editable-id]");
+		Elements elements = document.getElementsByTag("lfr-editable");
 
 		elements.forEach(
 			element -> editableTypes.put(
 				getElementId(element), getElementType(element)));
 
-		Elements backgroundImageElements = document.select(
-			"*[data-lfr-background-image-id]");
+		Elements editableElements = document.getElementsByAttribute(
+			"data-lfr-editable-id");
+
+		editableElements.forEach(
+			element -> editableTypes.put(
+				getElementId(element), getElementType(element)));
+
+		Elements backgroundImageElements = document.getElementsByAttribute(
+			"data-lfr-background-image-id");
 
 		backgroundImageElements.forEach(
 			element -> editableTypes.put(

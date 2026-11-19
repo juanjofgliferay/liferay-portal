@@ -1,6 +1,13 @@
-@import 'cadmin-variables';
+$mappedStickerBackgroundColor: $cadmin-pink-l5;
+$mappedStickerDisabledOpacity: 0.4;
+$mappedStickerIconColor: $cadmin-pink-d1;
+$mappedStickerRadius: 4px;
+$mappedStickerSize: 22px;
 
-$treeNodeNameMappedColor: #954cff;
+$treeNodeIconSize: 16px;
+$treeNodeMinHeight: 24px;
+
+$mappedStickerSpread: ($mappedStickerSize - $treeNodeIconSize) * 0.5;
 
 html#{$cadmin-selector} {
 	.cadmin {
@@ -10,6 +17,7 @@ html#{$cadmin-selector} {
 				width: initial;
 
 				&.treeview-link {
+					border-radius: 4px;
 					width: fit-content;
 				}
 
@@ -22,24 +30,13 @@ html#{$cadmin-selector} {
 				}
 
 				&--active.treeview-link:not(:focus) {
-					box-shadow: inset 0 0 0 1px $cadmin-primary-l1;
-					font-weight: 600;
-				}
-
-				&--hovered.treeview-link,
-				&--active.treeview-link {
 					background-color: $cadmin-primary-l3;
-					border-radius: 4px;
+					box-shadow: inset 0 0 0 1px $cadmin-primary;
+					color: $cadmin-gray-800;
 				}
-				&--mapped.treeview-link {
-					&.page-editor__page-structure__clay-tree-node--active {
-						background-color: fade_out($cadmin-purple, 0.92);
-						box-shadow: inset 0 0 0 1px $cadmin-purple;
-					}
 
-					&.page-editor__page-structure__clay-tree-node--hovered {
-						background-color: fade_out($cadmin-purple, 0.92);
-					}
+				&--hovered.treeview-link {
+					box-shadow: inset 0 0 0 1px $cadmin-secondary-l0;
 				}
 
 				&--master-item.treeview-link {
@@ -48,7 +45,6 @@ html#{$cadmin-selector} {
 
 				.page-editor__page-structure__tree-node__actions-button,
 				.page-editor__page-structure__tree-node__visibility-button {
-					color: $cadmin-secondary;
 					visibility: hidden;
 
 					&--visible {
@@ -61,9 +57,8 @@ html#{$cadmin-selector} {
 		.page-editor__page-structure__tree-node {
 			align-items: center;
 			display: flex;
-			font-size: 12px;
 			justify-content: space-between;
-			padding: 6px 8px;
+			min-height: $treeNodeMinHeight;
 			position: relative;
 			white-space: nowrap;
 
@@ -76,17 +71,17 @@ html#{$cadmin-selector} {
 			}
 
 			&.drag-over-bottom {
-				box-shadow: 0 1px 0 0 $cadmin-primary-l1;
+				box-shadow: 0 1px 0 0 $cadmin-primary;
 			}
 
 			&.drag-over-top {
-				box-shadow: 0 -1px 0 0 $cadmin-primary-l1;
+				box-shadow: 0 -1px 0 0 $cadmin-primary;
 			}
 
 			&.drag-over-middle {
 				background-color: $cadmin-primary-l3;
 				border-radius: 4px;
-				box-shadow: 0 0 0 1px $cadmin-primary-l1;
+				box-shadow: 0 0 0 1px $cadmin-primary;
 			}
 
 			&.dragged {
@@ -111,8 +106,15 @@ html#{$cadmin-selector} {
 				color: $cadmin-secondary-l1;
 			}
 
+			&__icon--mapped {
+				background-color: $mappedStickerBackgroundColor;
+				border-radius: $mappedStickerRadius - $mappedStickerSpread;
+				box-shadow: 0 0 0 $mappedStickerSpread
+					$mappedStickerBackgroundColor;
+				color: $mappedStickerIconColor;
+			}
+
 			&__name {
-				color: $cadmin-dark;
 				margin-left: 4px;
 
 				input {
@@ -155,14 +157,10 @@ html#{$cadmin-selector} {
 					color: $cadmin-secondary-l1;
 				}
 
-				&--mapped {
-					color: $treeNodeNameMappedColor;
-
-					&.page-editor__page-structure__tree-node__name {
-						&--hidden,
-						&--master-item {
-							color: fade_out($treeNodeNameMappedColor, 0.6);
-						}
+				&--hidden,
+				&--master-item {
+					.page-editor__page-structure__tree-node__icon--mapped {
+						opacity: $mappedStickerDisabledOpacity;
 					}
 				}
 			}

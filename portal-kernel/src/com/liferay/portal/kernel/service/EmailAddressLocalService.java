@@ -79,8 +79,9 @@ public interface EmailAddressLocalService
 	public EmailAddress addEmailAddress(EmailAddress emailAddress);
 
 	public EmailAddress addEmailAddress(
-			long userId, String className, long classPK, String address,
-			long listTypeId, boolean primary, ServiceContext serviceContext)
+			String externalReferenceCode, long userId, String className,
+			long classPK, String address, long listTypeId, boolean primary,
+			ServiceContext serviceContext)
 		throws PortalException;
 
 	/**
@@ -215,6 +216,10 @@ public interface EmailAddressLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public EmailAddress fetchEmailAddress(long emailAddressId);
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public EmailAddress fetchEmailAddressByExternalReferenceCode(
+		String externalReferenceCode, long companyId);
+
 	/**
 	 * Returns the email address with the matching UUID and company.
 	 *
@@ -240,6 +245,11 @@ public interface EmailAddressLocalService
 	public EmailAddress getEmailAddress(long emailAddressId)
 		throws PortalException;
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public EmailAddress getEmailAddressByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws PortalException;
+
 	/**
 	 * Returns the email address with the matching UUID and company.
 	 *
@@ -252,9 +262,6 @@ public interface EmailAddressLocalService
 	public EmailAddress getEmailAddressByUuidAndCompanyId(
 			String uuid, long companyId)
 		throws PortalException;
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<EmailAddress> getEmailAddresses();
 
 	/**
 	 * Returns a range of all the email addresses.
@@ -318,8 +325,8 @@ public interface EmailAddressLocalService
 	public EmailAddress updateEmailAddress(EmailAddress emailAddress);
 
 	public EmailAddress updateEmailAddress(
-			long emailAddressId, String address, long listTypeId,
-			boolean primary)
+			String externalReferenceCode, long emailAddressId, String address,
+			long listTypeId, boolean primary)
 		throws PortalException;
 
 	@Override
@@ -338,3 +345,4 @@ public interface EmailAddressLocalService
 		throws E;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:2147228495

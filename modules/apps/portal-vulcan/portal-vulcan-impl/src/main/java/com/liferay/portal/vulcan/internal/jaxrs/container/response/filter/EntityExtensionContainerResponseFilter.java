@@ -10,27 +10,25 @@ import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.vulcan.extension.EntityExtensionHandler;
 import com.liferay.portal.vulcan.extension.EntityExtensionThreadLocal;
 
+import jakarta.ws.rs.HttpMethod;
+import jakarta.ws.rs.container.ContainerRequestContext;
+import jakarta.ws.rs.container.ContainerResponseContext;
+import jakarta.ws.rs.container.ContainerResponseFilter;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.ext.ContextResolver;
+import jakarta.ws.rs.ext.Provider;
+import jakarta.ws.rs.ext.Providers;
+
 import java.io.IOException;
 import java.io.Serializable;
 
 import java.util.Map;
-
-import javax.annotation.Priority;
-
-import javax.ws.rs.Priorities;
-import javax.ws.rs.container.ContainerRequestContext;
-import javax.ws.rs.container.ContainerResponseContext;
-import javax.ws.rs.container.ContainerResponseFilter;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.ext.ContextResolver;
-import javax.ws.rs.ext.Provider;
-import javax.ws.rs.ext.Providers;
+import java.util.Objects;
 
 /**
  * @author Carlos Correa
  */
-@Priority(Priorities.USER + 10)
 @Provider
 public class EntityExtensionContainerResponseFilter
 	implements ContainerResponseFilter {
@@ -74,7 +72,9 @@ public class EntityExtensionContainerResponseFilter
 		try {
 			entityExtensionHandler.setExtendedProperties(
 				_company.getCompanyId(), _user.getUserId(),
-				containerResponseContext.getEntity(), extendedProperties);
+				containerResponseContext.getEntity(), extendedProperties,
+				Objects.equals(
+					containerRequestContext.getMethod(), HttpMethod.PATCH));
 		}
 		catch (Exception exception) {
 			throw new IOException(exception);

@@ -52,6 +52,8 @@ public interface PortletDataContext extends Serializable {
 
 	public static final String REFERENCE_TYPE_EMBEDDED = "embedded";
 
+	public static final String REFERENCE_TYPE_LAZY = "lazy";
+
 	public static final String REFERENCE_TYPE_PARENT = "parent";
 
 	public static final String REFERENCE_TYPE_STRONG = "strong";
@@ -269,13 +271,13 @@ public interface PortletDataContext extends Serializable {
 
 	public String getRootPortletId();
 
-	public Set<String> getScopedPrimaryKeys();
-
 	public long getScopeGroupId();
 
 	public String getScopeLayoutUuid();
 
 	public String getScopeType();
+
+	public Set<String> getScopedPrimaryKeys();
 
 	public long getSourceCompanyGroupId();
 
@@ -370,6 +372,8 @@ public interface PortletDataContext extends Serializable {
 
 	public boolean isStagedModelCounted(StagedModel stagedModel);
 
+	public boolean isValidateExistingDataHandler();
+
 	public boolean isWithinDateRange(Date modifiedDate);
 
 	public void putNotUniquePerLayout(String dataKey);
@@ -439,6 +443,9 @@ public interface PortletDataContext extends Serializable {
 	public void setUserIdStrategy(UserIdStrategy userIdStrategy);
 
 	public void setUserPersonalSiteGroupId(long userPersonalSiteGroupId);
+
+	public void setValidateExistingDataHandler(
+		boolean validateExistingDataHandler);
 
 	public void setZipReader(ZipReader zipReader);
 

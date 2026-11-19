@@ -11,7 +11,7 @@ import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.LayoutType;
 import com.liferay.portal.kernel.model.User;
 
-import javax.servlet.ServletContext;
+import jakarta.servlet.ServletContext;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -42,7 +42,7 @@ public class LayoutURLFormNavigatorEntry extends BaseLayoutFormNavigatorEntry {
 
 	@Override
 	public boolean isVisible(User user, Layout layout) {
-		if (layout.isTypeAssetDisplay()) {
+		if (layout.isTypeAssetDisplay() || layout.isTypeUtility()) {
 			return true;
 		}
 

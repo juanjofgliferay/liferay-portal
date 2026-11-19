@@ -20,10 +20,13 @@ import com.liferay.dynamic.data.mapping.test.util.DDMFormValuesTestUtil;
 import com.liferay.dynamic.data.mapping.util.DDMFormFactory;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.configuration.test.util.ConfigurationTemporarySwapper;
 import com.liferay.portal.configuration.test.util.ConfigurationTestUtil;
 import com.liferay.portal.kernel.cache.PortalCache;
 import com.liferay.portal.kernel.cache.PortalCacheHelperUtil;
 import com.liferay.portal.kernel.cache.PortalCacheManagerNames;
+import com.liferay.portal.kernel.language.Language;
+import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.model.ResourceConstants;
 import com.liferay.portal.kernel.model.Role;
 import com.liferay.portal.kernel.model.User;
@@ -35,20 +38,26 @@ import com.liferay.portal.kernel.service.CountryLocalService;
 import com.liferay.portal.kernel.service.RoleLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserLocalService;
+import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.ResourcePermissionTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
-import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
 import com.liferay.portal.kernel.util.KeyValuePair;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.test.log.LogCapture;
+import com.liferay.portal.test.log.LoggerTestUtil;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 
+import jakarta.ws.rs.core.Application;
+
 import java.util.List;
+import java.util.Locale;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -59,6 +68,11 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.FrameworkUtil;
+import org.osgi.framework.ServiceRegistration;
 
 /**
  * @author Marcellus Tavares
@@ -73,10 +87,30 @@ public class DDMRESTDataProviderTest {
 
 	@BeforeClass
 	public static void setUpClass() throws Exception {
+		_getCountriesURL =
+			"http://localhost:" + PortalUtil.getPortalServerPort(false) +
+				"/api/jsonws/country/get-countries";
+		_getCountryByNameURL =
+			"http://localhost:" + PortalUtil.getPortalServerPort(false) +
+				"/api/jsonws/country/get-country-by-name";
+
 		ConfigurationTestUtil.saveConfiguration(
 			DDMDataProviderConfiguration.class.getName(),
 			HashMapDictionaryBuilder.<String, Object>put(
 				"accessLocalNetwork", true
+			).build());
+
+		Bundle bundle = FrameworkUtil.getBundle(DDMRESTDataProviderTest.class);
+
+		BundleContext bundleContext = bundle.getBundleContext();
+
+		_serviceRegistration = bundleContext.registerService(
+			Application.class, new TestDDMDataProviderApplication(),
+			HashMapDictionaryBuilder.put(
+				"osgi.jaxrs.application.base", "/ddm"
+			).put(
+				"osgi.jaxrs.name",
+				TestDDMDataProviderApplication.class.getName()
 			).build());
 	}
 
@@ -87,6 +121,10 @@ public class DDMRESTDataProviderTest {
 			HashMapDictionaryBuilder.<String, Object>put(
 				"accessLocalNetwork", false
 			).build());
+
+		if (_serviceRegistration != null) {
+			_serviceRegistration.unregister();
+		}
 	}
 
 	@Before
@@ -108,14 +146,13 @@ public class DDMRESTDataProviderTest {
 		long ddmDataProviderId = _addDDMDataProviderInstance(
 			_createDDMDataProviderDDMFormValues(
 				false, false, StringPool.BLANK, null, outputParameterId,
-				"nameCurrentValue;name", "list", null, null,
-				_GET_COUNTRIES_URL),
+				"nameCurrentValue;name", "list", null, null, _getCountriesURL),
 			false);
 
 		DDMDataProviderResponse ddmDataProviderResponse =
 			_ddmDataProvider.getData(
 				_createDDMDataProviderRequest(
-					ddmDataProviderId, null, null, null, null, null));
+					ddmDataProviderId, null, null, null, null, null, null));
 
 		List<KeyValuePair> keyValuePairs = ddmDataProviderResponse.getOutput(
 			outputParameterId, List.class);
@@ -137,18 +174,18 @@ public class DDMRESTDataProviderTest {
 			_createDDMDataProviderDDMFormValues(
 				true, false, StringPool.BLANK, "name",
 				StringUtil.randomString(), "nameCurrentValue;name", "list",
-				null, null, _GET_COUNTRY_BY_NAME_URL),
+				null, null, _getCountryByNameURL),
 			false);
 
 		DDMDataProviderRequest ddmDataProviderRequest =
 			_createDDMDataProviderRequest(
-				ddmDataProviderId, null, "name", "brazil", null, null);
+				ddmDataProviderId, null, "name", "brazil", null, null, null);
 
 		_ddmDataProvider.getData(ddmDataProviderRequest);
 
 		String cacheKey = StringBundler.concat(
 			ddmDataProviderRequest.getDDMDataProviderId(), StringPool.AT,
-			_GET_COUNTRY_BY_NAME_URL, "?name=brazil");
+			_getCountryByNameURL, "?name=brazil");
 
 		Class<?> clazz = _ddmDataProvider.getClass();
 
@@ -171,13 +208,13 @@ public class DDMRESTDataProviderTest {
 			_createDDMDataProviderDDMFormValues(
 				false, true, "name", null, outputParameterId,
 				"nameCurrentValue;name", "list", null, null,
-				_GET_COUNTRY_BY_NAME_URL),
+				_getCountryByNameURL),
 			false);
 
 		DDMDataProviderResponse ddmDataProviderResponse =
 			_ddmDataProvider.getData(
 				_createDDMDataProviderRequest(
-					ddmDataProviderId, "brazil", null, null, null, null));
+					ddmDataProviderId, "brazil", null, null, null, null, null));
 
 		List<KeyValuePair> keyValuePairs = ddmDataProviderResponse.getOutput(
 			outputParameterId, List.class);
@@ -199,14 +236,14 @@ public class DDMRESTDataProviderTest {
 		long ddmDataProviderId = _addDDMDataProviderInstance(
 			_createDDMDataProviderDDMFormValues(
 				false, false, StringPool.BLANK, "name", outputParameterId,
-				"nameCurrentValue", "list", null, null,
-				_GET_COUNTRY_BY_NAME_URL),
+				"nameCurrentValue", "list", null, null, _getCountryByNameURL),
 			false);
 
 		DDMDataProviderResponse ddmDataProviderResponse =
 			_ddmDataProvider.getData(
 				_createDDMDataProviderRequest(
-					ddmDataProviderId, null, "name", "brazil", null, null));
+					ddmDataProviderId, null, "name", "brazil", null, null,
+					null));
 
 		List<KeyValuePair> keyValuePairs = ddmDataProviderResponse.getOutput(
 			outputParameterId, List.class);
@@ -229,13 +266,14 @@ public class DDMRESTDataProviderTest {
 			_createDDMDataProviderDDMFormValues(
 				false, false, StringPool.BLANK, "name", outputParameterId,
 				"nameCurrentValue", "list", null, null,
-				_GET_COUNTRY_BY_NAME_URL + "?name={name}"),
+				_getCountryByNameURL + "?name={name}"),
 			false);
 
 		DDMDataProviderResponse ddmDataProviderResponse =
 			_ddmDataProvider.getData(
 				_createDDMDataProviderRequest(
-					ddmDataProviderId, null, "name", "brazil", null, null));
+					ddmDataProviderId, null, "name", "brazil", null, null,
+					null));
 
 		List<KeyValuePair> keyValuePairs = ddmDataProviderResponse.getOutput(
 			outputParameterId, List.class);
@@ -246,6 +284,78 @@ public class DDMRESTDataProviderTest {
 
 		Assert.assertEquals("Brazil", keyValuePair.getKey());
 		Assert.assertEquals("Brazil", keyValuePair.getValue());
+
+		String firstName = RandomTestUtil.randomString();
+		String lastName = RandomTestUtil.randomString();
+
+		ddmDataProviderId = _addDDMDataProviderInstance(
+			_createDDMDataProviderDDMFormValues(
+				false, false, null, null, outputParameterId, "$.fullName",
+				"text", null, null,
+				String.format(
+					"http://localhost:" +
+						PortalUtil.getPortalServerPort(false) +
+							"/o/ddm/get-full-name?name=%s&name=%s",
+					firstName, lastName)),
+			false);
+
+		ddmDataProviderResponse = _ddmDataProvider.getData(
+			DDMDataProviderRequest.Builder.newBuilder(
+			).withDDMDataProviderId(
+				String.valueOf(ddmDataProviderId)
+			).build());
+
+		Assert.assertEquals(
+			firstName + StringPool.SPACE + lastName,
+			ddmDataProviderResponse.getOutput(outputParameterId, String.class));
+	}
+
+	@Test
+	public void testGetDataWithLocalNetworkAccessDisabled() throws Exception {
+		_setUserPermissionChecker(false);
+
+		long ddmDataProviderId = _addDDMDataProviderInstance(
+			_createDDMDataProviderDDMFormValues(
+				false, false, null, null, null, null, null, null, null,
+				_getCountriesURL),
+			false);
+
+		try (ConfigurationTemporarySwapper configurationTemporarySwapper =
+				new ConfigurationTemporarySwapper(
+					DDMDataProviderConfiguration.class.getName(),
+					HashMapDictionaryBuilder.<String, Object>put(
+						"accessLocalNetwork", false
+					).build())) {
+
+			DDMDataProviderResponse ddmDataProviderResponse =
+				_ddmDataProvider.getData(
+					_createDDMDataProviderRequest(
+						ddmDataProviderId, null, null, null, null, null, null));
+
+			Assert.assertEquals(
+				DDMDataProviderResponseStatus.SERVICE_UNAVAILABLE,
+				ddmDataProviderResponse.getStatus());
+		}
+	}
+
+	@Test
+	public void testGetDataWithLocale() throws Exception {
+		_setUserPermissionChecker(false);
+
+		String outputParameterId = StringUtil.randomString();
+
+		long ddmDataProviderId = _addDDMDataProviderInstance(
+			_createDDMDataProviderDDMFormValues(
+				false, false, StringPool.BLANK, null, outputParameterId,
+				"nameCurrentValue;name", "list", null, null, _getCountriesURL),
+			false);
+
+		_testGetDataWithLocale(
+			ddmDataProviderId, LocaleUtil.FRANCE, outputParameterId);
+		_testGetDataWithLocale(
+			ddmDataProviderId, LocaleUtil.GERMANY, outputParameterId);
+		_testGetDataWithLocale(
+			ddmDataProviderId, LocaleUtil.US, outputParameterId);
 	}
 
 	@Test
@@ -257,19 +367,135 @@ public class DDMRESTDataProviderTest {
 		long ddmDataProviderId = _addDDMDataProviderInstance(
 			_createDDMDataProviderDDMFormValues(
 				false, false, null, null, outputParameterId, "$.length()",
-				"number", null, null, _GET_COUNTRIES_URL),
+				"number", null, null, _getCountriesURL),
 			false);
 
 		DDMDataProviderResponse ddmDataProviderResponse =
 			_ddmDataProvider.getData(
 				_createDDMDataProviderRequest(
-					ddmDataProviderId, null, null, null, null, null));
+					ddmDataProviderId, null, null, null, null, null, null));
 
 		Assert.assertEquals(
 			_countryLocalService.getCompanyCountriesCount(
 				TestPropsValues.getCompanyId()),
 			(int)ddmDataProviderResponse.getOutput(
 				outputParameterId, Number.class));
+	}
+
+	@Test
+	public void testGetDataWithPagination() throws Exception {
+		_setUserPermissionChecker(false);
+
+		String outputParameterId = StringUtil.randomString();
+
+		long ddmDataProviderId = _addDDMDataProviderInstance(
+			_createDDMDataProviderDDMFormValues(
+				false, false, StringPool.BLANK, null, outputParameterId,
+				"nameCurrentValue", "list", "7", "2", _getCountriesURL),
+			false);
+
+		DDMDataProviderResponse ddmDataProviderResponse =
+			_ddmDataProvider.getData(
+				_createDDMDataProviderRequest(
+					ddmDataProviderId, null, null, null, null, "7", "2"));
+
+		Assert.assertEquals(
+			DDMDataProviderResponseStatus.OK,
+			ddmDataProviderResponse.getStatus());
+
+		List<KeyValuePair> keyValuePairs = ddmDataProviderResponse.getOutput(
+			outputParameterId, List.class);
+
+		Assert.assertEquals(keyValuePairs.toString(), 5, keyValuePairs.size());
+	}
+
+	@Test
+	public void testGetDataWithTextOutput() throws Exception {
+		_setUserPermissionChecker(false);
+
+		String outputParameterId = StringUtil.randomString();
+
+		long ddmDataProviderId = _addDDMDataProviderInstance(
+			_createDDMDataProviderDDMFormValues(
+				false, false, StringPool.BLANK, "name", outputParameterId,
+				"$.nameCurrentValue", "text", null, null,
+				_getCountryByNameURL + "?name={name}"),
+			false);
+
+		DDMDataProviderResponse ddmDataProviderResponse =
+			_ddmDataProvider.getData(
+				_createDDMDataProviderRequest(
+					ddmDataProviderId, null, "name", "brazil", null, null,
+					null));
+
+		Assert.assertNotNull(ddmDataProviderResponse);
+
+		Assert.assertEquals(
+			"Brazil",
+			ddmDataProviderResponse.getOutput(outputParameterId, String.class));
+	}
+
+	@Test
+	public void testGetDataWithViewDataProviderPermission() throws Exception {
+		_setUserPermissionChecker(true);
+
+		String outputParameterId = StringUtil.randomString();
+
+		long ddmDataProviderId = _addDDMDataProviderInstance(
+			_createDDMDataProviderDDMFormValues(
+				false, true, "name", null, outputParameterId,
+				"nameCurrentValue;name", "list", null, null,
+				_getCountryByNameURL),
+			true);
+
+		DDMDataProviderResponse ddmDataProviderResponse =
+			_ddmDataProvider.getData(
+				_createDDMDataProviderRequest(
+					ddmDataProviderId, "canada", null, null, null, null, null));
+
+		Assert.assertNotNull(ddmDataProviderResponse);
+
+		List<KeyValuePair> keyValuePairs = ddmDataProviderResponse.getOutput(
+			outputParameterId, List.class);
+
+		Assert.assertEquals(keyValuePairs.toString(), 1, keyValuePairs.size());
+
+		KeyValuePair keyValuePair = keyValuePairs.get(0);
+
+		Assert.assertEquals("canada", keyValuePair.getKey());
+		Assert.assertEquals("Canada", keyValuePair.getValue());
+	}
+
+	@Test
+	public void testGetDataWithWebServiceError() throws Exception {
+		_setUserPermissionChecker(false);
+
+		try (LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
+				"com.liferay.dynamic.data.mapping.data.provider.internal." +
+					"rest.DDMRESTDataProvider",
+				LoggerTestUtil.WARN)) {
+
+			String outputParameterId = StringUtil.randomString();
+
+			DDMDataProviderResponse ddmDataProviderResponse =
+				_ddmDataProvider.getData(
+					_createDDMDataProviderRequest(
+						_addDDMDataProviderInstance(
+							_createDDMDataProviderDDMFormValues(
+								false, false, StringPool.BLANK, null,
+								outputParameterId, "nameCurrentValue;name",
+								"list", null, null, "http://localhost"),
+							false),
+						null, null, null, null, null, null));
+
+			Assert.assertTrue(
+				ListUtil.isEmpty(
+					ddmDataProviderResponse.getOutput(
+						outputParameterId, List.class)));
+			Assert.assertEquals(
+				DDMDataProviderResponseStatus.SERVICE_UNAVAILABLE,
+				ddmDataProviderResponse.getStatus());
+		}
 	}
 
 	@Test
@@ -297,13 +523,13 @@ public class DDMRESTDataProviderTest {
 		long ddmDataProviderId = _addDDMDataProviderInstance(
 			_createDDMDataProviderDDMFormValues(
 				false, false, StringPool.BLANK, null, outputParameterId, null,
-				null, null, null, _GET_COUNTRIES_URL),
+				null, null, null, _getCountriesURL),
 			false);
 
 		DDMDataProviderResponse ddmDataProviderResponse =
 			_ddmDataProvider.getData(
 				_createDDMDataProviderRequest(
-					ddmDataProviderId, null, null, null, null, null));
+					ddmDataProviderId, null, null, null, null, null, null));
 
 		Assert.assertEquals(
 			DDMDataProviderResponseStatus.OK,
@@ -322,126 +548,14 @@ public class DDMRESTDataProviderTest {
 		long ddmDataProviderId = _addDDMDataProviderInstance(
 			_createDDMDataProviderDDMFormValues(
 				false, false, StringPool.BLANK, null, StringUtil.randomString(),
-				"nameCurrentValue;name", "list", null, null,
-				_GET_COUNTRIES_URL),
+				"nameCurrentValue;name", "list", null, null, _getCountriesURL),
 			false);
 
 		DDMDataProviderRequest ddmDataProviderRequest =
 			_createDDMDataProviderRequest(
-				ddmDataProviderId, null, null, null, null, null);
+				ddmDataProviderId, null, null, null, null, null, null);
 
 		_ddmDataProvider.getData(ddmDataProviderRequest);
-	}
-
-	@Test
-	public void testGetDataWithPagination() throws Exception {
-		_setUserPermissionChecker(false);
-
-		String outputParameterId = StringUtil.randomString();
-
-		long ddmDataProviderId = _addDDMDataProviderInstance(
-			_createDDMDataProviderDDMFormValues(
-				false, false, StringPool.BLANK, null, outputParameterId,
-				"nameCurrentValue", "list", "7", "2", _GET_COUNTRIES_URL),
-			false);
-
-		DDMDataProviderResponse ddmDataProviderResponse =
-			_ddmDataProvider.getData(
-				_createDDMDataProviderRequest(
-					ddmDataProviderId, null, null, null, "7", "2"));
-
-		Assert.assertEquals(
-			DDMDataProviderResponseStatus.OK,
-			ddmDataProviderResponse.getStatus());
-
-		List<KeyValuePair> keyValuePairs = ddmDataProviderResponse.getOutput(
-			outputParameterId, List.class);
-
-		Assert.assertEquals(keyValuePairs.toString(), 5, keyValuePairs.size());
-	}
-
-	@Test
-	public void testGetDataWithTextOutput() throws Exception {
-		_setUserPermissionChecker(false);
-
-		String outputParameterId = StringUtil.randomString();
-
-		long ddmDataProviderId = _addDDMDataProviderInstance(
-			_createDDMDataProviderDDMFormValues(
-				false, false, StringPool.BLANK, "name", outputParameterId,
-				"$.nameCurrentValue", "text", null, null,
-				_GET_COUNTRY_BY_NAME_URL + "?name={name}"),
-			false);
-
-		DDMDataProviderResponse ddmDataProviderResponse =
-			_ddmDataProvider.getData(
-				_createDDMDataProviderRequest(
-					ddmDataProviderId, null, "name", "brazil", null, null));
-
-		Assert.assertNotNull(ddmDataProviderResponse);
-
-		Assert.assertEquals(
-			"Brazil",
-			ddmDataProviderResponse.getOutput(outputParameterId, String.class));
-	}
-
-	@Test
-	public void testGetDataWithViewDataProviderPermission() throws Exception {
-		_setUserPermissionChecker(true);
-
-		String outputParameterId = StringUtil.randomString();
-
-		long ddmDataProviderId = _addDDMDataProviderInstance(
-			_createDDMDataProviderDDMFormValues(
-				false, true, "name", null, outputParameterId,
-				"nameCurrentValue;name", "list", null, null,
-				_GET_COUNTRY_BY_NAME_URL),
-			true);
-
-		DDMDataProviderResponse ddmDataProviderResponse =
-			_ddmDataProvider.getData(
-				_createDDMDataProviderRequest(
-					ddmDataProviderId, "canada", null, null, null, null));
-
-		Assert.assertNotNull(ddmDataProviderResponse);
-
-		List<KeyValuePair> keyValuePairs = ddmDataProviderResponse.getOutput(
-			outputParameterId, List.class);
-
-		Assert.assertEquals(keyValuePairs.toString(), 1, keyValuePairs.size());
-
-		KeyValuePair keyValuePair = keyValuePairs.get(0);
-
-		Assert.assertEquals("canada", keyValuePair.getKey());
-		Assert.assertEquals("Canada", keyValuePair.getValue());
-	}
-
-	@Test
-	public void testGetDataWithWebServiceError() throws Exception {
-		_setUserPermissionChecker(false);
-
-		String outputParameterId = StringUtil.randomString();
-
-		long ddmDataProviderId = _addDDMDataProviderInstance(
-			_createDDMDataProviderDDMFormValues(
-				false, false, StringPool.BLANK, null, outputParameterId,
-				"nameCurrentValue;name", "list", null, null,
-				"http://localhost"),
-			false);
-
-		DDMDataProviderResponse ddmDataProviderResponse =
-			_ddmDataProvider.getData(
-				_createDDMDataProviderRequest(
-					ddmDataProviderId, null, null, null, null, null));
-
-		Assert.assertEquals(
-			DDMDataProviderResponseStatus.SERVICE_UNAVAILABLE,
-			ddmDataProviderResponse.getStatus());
-
-		List<KeyValuePair> keyValuePairs = ddmDataProviderResponse.getOutput(
-			outputParameterId, List.class);
-
-		Assert.assertEquals(keyValuePairs.toString(), 0, keyValuePairs.size());
 	}
 
 	private long _addDDMDataProviderInstance(
@@ -555,7 +669,7 @@ public class DDMRESTDataProviderTest {
 
 		ddmFormValues.addDDMFormFieldValue(
 			DDMFormValuesTestUtil.createUnlocalizedDDMFormFieldValue(
-				"password", "test"));
+				"password", TestPropsValues.USER_PASSWORD));
 		ddmFormValues.addDDMFormFieldValue(
 			DDMFormValuesTestUtil.createUnlocalizedDDMFormFieldValue(
 				"timeout", "1000"));
@@ -571,31 +685,23 @@ public class DDMRESTDataProviderTest {
 
 	private DDMDataProviderRequest _createDDMDataProviderRequest(
 		long ddmDataProviderId, String filterParameterValue,
-		String inputParameterName, String inputParameterValue,
+		String inputParameterName, String inputParameterValue, Locale locale,
 		String paginationEnd, String paginationStart) {
 
-		DDMDataProviderRequest.Builder builder =
-			DDMDataProviderRequest.Builder.newBuilder();
-
-		builder.withDDMDataProviderId(String.valueOf(ddmDataProviderId));
-
-		if (filterParameterValue != null) {
-			builder.withParameter("filterParameterValue", filterParameterValue);
-		}
-
-		if (Validator.isNotNull(inputParameterName)) {
-			builder.withParameter(
-				inputParameterName, GetterUtil.getString(inputParameterValue));
-		}
-
-		if (Validator.isNotNull(paginationEnd) &&
-			Validator.isNotNull(paginationStart)) {
-
-			builder.withParameter("paginationEnd", paginationEnd);
-			builder.withParameter("paginationStart", paginationStart);
-		}
-
-		return builder.build();
+		return DDMDataProviderRequest.Builder.newBuilder(
+		).withDDMDataProviderId(
+			String.valueOf(ddmDataProviderId)
+		).withLocale(
+			locale
+		).withParameter(
+			inputParameterName, inputParameterValue
+		).withParameter(
+			"filterParameterValue", filterParameterValue
+		).withParameter(
+			"paginationEnd", paginationEnd
+		).withParameter(
+			"paginationStart", paginationStart
+		).build();
 	}
 
 	private void _setUpPermissionThreadLocal() {
@@ -615,11 +721,28 @@ public class DDMRESTDataProviderTest {
 			PermissionCheckerFactoryUtil.create(user));
 	}
 
-	private static final String _GET_COUNTRIES_URL =
-		"http://localhost:8080/api/jsonws/country/get-countries";
+	private void _testGetDataWithLocale(
+			long ddmDataProviderId, Locale locale, String outputParameterId)
+		throws Exception {
 
-	private static final String _GET_COUNTRY_BY_NAME_URL =
-		"http://localhost:8080/api/jsonws/country/get-country-by-name";
+		DDMDataProviderResponse ddmDataProviderResponse =
+			_ddmDataProvider.getData(
+				_createDDMDataProviderRequest(
+					ddmDataProviderId, null, null, null, locale, null, null));
+
+		for (KeyValuePair keyValuePair :
+				(List<KeyValuePair>)ddmDataProviderResponse.getOutput(
+					outputParameterId, List.class)) {
+
+			Assert.assertEquals(
+				LanguageUtil.get(locale, "country." + keyValuePair.getKey()),
+				keyValuePair.getValue());
+		}
+	}
+
+	private static String _getCountriesURL;
+	private static String _getCountryByNameURL;
+	private static ServiceRegistration<Application> _serviceRegistration;
 
 	@Inject
 	private CountryLocalService _countryLocalService;
@@ -632,6 +755,9 @@ public class DDMRESTDataProviderTest {
 	@Inject(type = DDMDataProviderInstanceLocalService.class)
 	private DDMDataProviderInstanceLocalService
 		_ddmDataProviderInstanceLocalService;
+
+	@Inject
+	private Language _language;
 
 	private PermissionChecker _originalPermissionChecker;
 

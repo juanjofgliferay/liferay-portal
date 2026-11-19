@@ -6,8 +6,26 @@
 import {renderHook} from '@testing-library/react-hooks';
 
 import * as Actions from '../../../../../src/main/resources/META-INF/resources/page_editor/app/actions/types';
+import getActionLabel from '../../../../../src/main/resources/META-INF/resources/page_editor/app/components/undo/getActionLabel';
 import useUndo from '../../../../../src/main/resources/META-INF/resources/page_editor/app/components/undo/useUndo';
 import * as ExperienceActions from '../../../../../src/main/resources/META-INF/resources/page_editor/plugins/experience/actions';
+
+jest.mock(
+	'../../../../../src/main/resources/META-INF/resources/page_editor/app/config/index',
+	() => ({
+		config: {
+			availableViewportSizes: {
+				desktop: {label: 'Desktop'},
+			},
+			masterLayouts: [
+				{
+					masterLayoutPageTemplateEntryERC: 'master-erc',
+					name: 'Test Master',
+				},
+			],
+		},
+	})
+);
 
 describe('useUndo', () => {
 
@@ -36,6 +54,7 @@ describe('useUndo', () => {
 		Actions.UPDATE_DRAFT,
 		Actions.UPDATE_FRAGMENTS,
 		Actions.UPDATE_FRAGMENT_ENTRY_LINK_CONTENT,
+		Actions.UPDATE_FRAGMENT_ENTRY_LINKS_CONTENT,
 		Actions.UPDATE_NETWORK,
 		Actions.UPDATE_UNDO_ACTIONS,
 		Actions.UPDATE_PAGE_CONTENTS,
@@ -65,11 +84,29 @@ describe('useUndo', () => {
 			it(`is supported by "${action}" action`, () => {
 				undoDispatch({type: action});
 
-				expect(dispatch).toBeCalledWith(
+				expect(dispatch).toHaveBeenCalledWith(
 					expect.objectContaining({type: Actions.ADD_UNDO_ACTION})
 				);
 
 				dispatch.mockClear();
+			});
+
+			it(`getActionLabel returns a value for "${action}" action`, () => {
+				const actionObject = {
+					itemName: 'test',
+					nextMasterLayoutPageTemplateEntryERC: 'master-erc',
+					nextSegmentsExperienceId: 'experience-id',
+					nextSize: 'desktop',
+					type: action,
+				};
+
+				const label = getActionLabel(actionObject, 'undo', {
+					availableSegmentsExperiences: {
+						'experience-id': {name: 'Test Experience'},
+					},
+				});
+
+				expect(label).toBeDefined();
 			});
 		});
 });

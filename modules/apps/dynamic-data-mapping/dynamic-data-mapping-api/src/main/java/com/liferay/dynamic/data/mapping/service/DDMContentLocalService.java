@@ -22,7 +22,6 @@ import com.liferay.portal.kernel.search.Indexable;
 import com.liferay.portal.kernel.search.IndexableType;
 import com.liferay.portal.kernel.service.BaseLocalService;
 import com.liferay.portal.kernel.service.PersistedModelLocalService;
-import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.change.tracking.CTService;
 import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
 import com.liferay.portal.kernel.transaction.Isolation;
@@ -44,12 +43,9 @@ import org.osgi.annotation.versioning.ProviderType;
  *
  * @author Brian Wing Shun Chan
  * @see DDMContentLocalServiceUtil
- * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
- DDMFieldLocalServiceImpl}
  * @generated
  */
 @CTAware
-@Deprecated
 @ProviderType
 @Transactional(
 	isolation = Isolation.PORTAL,
@@ -64,10 +60,6 @@ public interface DDMContentLocalService
 	 *
 	 * Never modify this interface directly. Add custom service methods to <code>com.liferay.dynamic.data.mapping.service.impl.DDMContentLocalServiceImpl</code> and rerun ServiceBuilder to automatically copy the method declarations to this interface. Consume the ddm content local service via injection or a <code>org.osgi.util.tracker.ServiceTracker</code>. Use {@link DDMContentLocalServiceUtil} if injection and service tracking are not available.
 	 */
-	public DDMContent addContent(
-			long userId, long groupId, String name, String description,
-			String data, ServiceContext serviceContext)
-		throws PortalException;
 
 	/**
 	 * Adds the ddm content to the database. Also notifies the appropriate model listeners.
@@ -96,10 +88,6 @@ public interface DDMContentLocalService
 	 */
 	public PersistedModel createPersistedModel(Serializable primaryKeyObj)
 		throws PortalException;
-
-	public void deleteContent(DDMContent content);
-
-	public void deleteContents(long groupId);
 
 	/**
 	 * Deletes the ddm content from the database. Also notifies the appropriate model listeners.
@@ -224,21 +212,6 @@ public interface DDMContentLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public ActionableDynamicQuery getActionableDynamicQuery();
 
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public DDMContent getContent(long contentId) throws PortalException;
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<DDMContent> getContents();
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<DDMContent> getContents(long groupId);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<DDMContent> getContents(long groupId, int start, int end);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getContentsCount(long groupId);
-
 	/**
 	 * Returns the ddm content with the primary key.
 	 *
@@ -331,11 +304,6 @@ public interface DDMContentLocalService
 	public PersistedModel getPersistedModel(Serializable primaryKeyObj)
 		throws PortalException;
 
-	public DDMContent updateContent(
-			long contentId, String name, String description, String data,
-			ServiceContext serviceContext)
-		throws PortalException;
-
 	/**
 	 * Updates the ddm content in the database or adds it if it does not yet exist. Also notifies the appropriate model listeners.
 	 *
@@ -365,3 +333,4 @@ public interface DDMContentLocalService
 		throws E;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1215012444

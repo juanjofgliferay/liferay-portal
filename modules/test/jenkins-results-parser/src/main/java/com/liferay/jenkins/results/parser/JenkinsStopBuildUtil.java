@@ -14,6 +14,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.commons.codec.binary.Base64;
+import org.apache.http.client.utils.URIBuilder;
 
 import org.json.JSONObject;
 
@@ -21,6 +22,59 @@ import org.json.JSONObject;
  * @author Kevin Yen
  */
 public class JenkinsStopBuildUtil {
+
+	public static AbortResult abortBuild(String buildURL) throws Exception {
+		String normalizedBuildURL = JenkinsResultsParserUtil.normalizeURL(
+			JenkinsResultsParserUtil.getLocalURL(buildURL));
+
+		if (!_isBuilding(normalizedBuildURL)) {
+			return AbortResult.ALREADY_FINISHED;
+		}
+
+		int responseCode = _post(normalizedBuildURL + "/stop");
+
+		if (responseCode >= 400) {
+			throw new RuntimeException(
+				JenkinsResultsParserUtil.combine(
+					"Unable to stop ", normalizedBuildURL,
+					", received response ", String.valueOf(responseCode)));
+		}
+
+		for (int i = 0; i < _ABORT_VERIFICATION_RETRIES; i++) {
+			JenkinsResultsParserUtil.sleep(_ABORT_VERIFICATION_PERIOD);
+
+			if (!_isBuilding(normalizedBuildURL)) {
+				return AbortResult.STOPPED;
+			}
+		}
+
+		long abortVerificationDuration =
+			_ABORT_VERIFICATION_PERIOD * _ABORT_VERIFICATION_RETRIES;
+
+		System.out.println(
+			JenkinsResultsParserUtil.combine(
+				normalizedBuildURL, " was still running ",
+				JenkinsResultsParserUtil.toDurationString(
+					abortVerificationDuration),
+				" after being interrupted"));
+
+		return AbortResult.STILL_RUNNING;
+	}
+
+	public static void cancelQueueItem(
+			JenkinsMaster jenkinsMaster, long queueId)
+		throws Exception {
+
+		String normalizedURL = JenkinsResultsParserUtil.normalizeURL(
+			JenkinsResultsParserUtil.getLocalURL(jenkinsMaster.getURL()));
+
+		URIBuilder uriBuilder = JenkinsResultsParserUtil.newURIBuilder(
+			normalizedURL + "/queue/cancelItem");
+
+		uriBuilder.addParameter("id", String.valueOf(queueId));
+
+		_post(uriBuilder.toString());
+	}
 
 	public static void stopBuild(String buildURL) throws Exception {
 		_stopDownstreamBuilds(buildURL);
@@ -45,6 +99,12 @@ public class JenkinsStopBuildUtil {
 		}
 	}
 
+	public static enum AbortResult {
+
+		ALREADY_FINISHED, STILL_RUNNING, STOPPED
+
+	}
+
 	protected static String encodeAuthorizationFields(
 		String username, String password) {
 
@@ -58,10 +118,16 @@ public class JenkinsStopBuildUtil {
 
 		List<String> downstreamURLs = new ArrayList<>();
 
+		String progressiveTextURL = JenkinsResultsParserUtil.getLocalURL(
+			buildURL + "/logText/progressiveText");
+
 		String consoleOutput = JenkinsResultsParserUtil.toString(
-			JenkinsResultsParserUtil.getLocalURL(
-				buildURL + "/logText/progressiveText"),
-			true, true);
+			progressiveTextURL, true, false);
+
+		if (JenkinsResultsParserUtil.isNullOrEmpty(consoleOutput)) {
+			consoleOutput = JenkinsResultsParserUtil.toString(
+				progressiveTextURL, true, false);
+		}
 
 		Matcher progressiveTextMatcher = _progressiveTextPattern.matcher(
 			consoleOutput);
@@ -71,12 +137,79 @@ public class JenkinsStopBuildUtil {
 
 			Matcher buildURLMatcher = _buildURLPattern.matcher(urlString);
 
-			if (buildURLMatcher.find()) {
-				downstreamURLs.add(urlString);
+			if (!buildURLMatcher.find()) {
+				continue;
 			}
+
+			downstreamURLs.add(urlString);
 		}
 
 		return downstreamURLs;
+	}
+
+	private static boolean _isBuilding(String normalizedBuildURL)
+		throws Exception {
+
+		URIBuilder uriBuilder = JenkinsResultsParserUtil.newURIBuilder(
+			normalizedBuildURL + "/api/json");
+
+		uriBuilder.addParameter("tree", "result");
+
+		JSONObject jsonObject = JenkinsResultsParserUtil.toJSONObject(
+			uriBuilder.toString(), false);
+
+		if (!jsonObject.has("result")) {
+			throw new RuntimeException(
+				JenkinsResultsParserUtil.combine(
+					"Unable to determine whether ", normalizedBuildURL,
+					" is running, no result was reported"));
+		}
+
+		return jsonObject.isNull("result");
+	}
+
+	private static int _post(String urlString) throws Exception {
+		URL urlObject = new URL(urlString);
+
+		HttpURLConnection httpConnection =
+			(HttpURLConnection)urlObject.openConnection();
+
+		httpConnection.setRequestMethod("POST");
+
+		_setAuthorization(httpConnection);
+
+		int responseCode = httpConnection.getResponseCode();
+
+		System.out.println(
+			JenkinsResultsParserUtil.combine(
+				"Response from ", urlString, ": ", String.valueOf(responseCode),
+				" ", httpConnection.getResponseMessage()));
+
+		return responseCode;
+	}
+
+	private static void _setAuthorization(HttpURLConnection httpConnection)
+		throws Exception {
+
+		String username = JenkinsResultsParserUtil.getBuildProperty(
+			"jenkins.admin.user.name");
+
+		if (JenkinsResultsParserUtil.isNullOrEmpty(username)) {
+			throw new RuntimeException(
+				"Unable to find property \"jenkins.admin.user.name\"");
+		}
+
+		String password = JenkinsResultsParserUtil.getBuildProperty(
+			"jenkins.admin.user.token");
+
+		if (JenkinsResultsParserUtil.isNullOrEmpty(password)) {
+			throw new RuntimeException(
+				"Unable to find property \"jenkins.admin.user.token\"");
+		}
+
+		httpConnection.setRequestProperty(
+			"Authorization",
+			"Basic " + encodeAuthorizationFields(username, password));
 	}
 
 	private static void _stopBuild(Build build) throws Exception {
@@ -84,40 +217,14 @@ public class JenkinsStopBuildUtil {
 	}
 
 	private static void _stopBuild(String buildURL) throws Exception {
-		String normalizedBuildURL = JenkinsResultsParserUtil.fixURL(
+		String normalizedBuildURL = JenkinsResultsParserUtil.normalizeURL(
 			JenkinsResultsParserUtil.getLocalURL(buildURL));
 
-		JSONObject jsonObject = JenkinsResultsParserUtil.toJSONObject(
-			normalizedBuildURL + "/api/json?tree=result", false);
-
-		if (jsonObject.has("result") && jsonObject.isNull("result")) {
-			URL urlObject = new URL(normalizedBuildURL + "/stop");
-
-			HttpURLConnection httpConnection =
-				(HttpURLConnection)urlObject.openConnection();
-
-			httpConnection.setRequestMethod("POST");
-
-			String username = JenkinsResultsParserUtil.getBuildProperty(
-				"jenkins.admin.user.name");
-
-			String password = JenkinsResultsParserUtil.getBuildProperty(
-				"jenkins.admin.user.token");
-
-			if (normalizedBuildURL.contains("test-1-1")) {
-				password = JenkinsResultsParserUtil.getBuildProperty(
-					"jenkins.admin.user.password");
-			}
-
-			httpConnection.setRequestProperty(
-				"Authorization",
-				"Basic " + encodeAuthorizationFields(username, password));
-
-			System.out.println(
-				"Response from " + urlObject.toString() + ": " +
-					httpConnection.getResponseCode() + " " +
-						httpConnection.getResponseMessage());
+		if (!_isBuilding(normalizedBuildURL)) {
+			return;
 		}
+
+		_post(normalizedBuildURL + "/stop");
 	}
 
 	private static void _stopDownstreamBuilds(String buildURL)
@@ -129,6 +236,10 @@ public class JenkinsStopBuildUtil {
 			_stopBuild(downstreamURL);
 		}
 	}
+
+	private static final long _ABORT_VERIFICATION_PERIOD = 5 * 1000L;
+
+	private static final int _ABORT_VERIFICATION_RETRIES = 6;
 
 	private static final Pattern _buildURLPattern = Pattern.compile(
 		".+://(?<hostName>[^.]+)(.liferay.com)?/job/(?<jobName>[^/]+).*/" +

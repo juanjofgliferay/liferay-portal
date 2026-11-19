@@ -96,7 +96,7 @@ public class JSPStylingCheck extends BaseStylingCheck {
 
 		if ((x != -1) && (y != -1) && (x < y)) {
 			addMessage(
-				fileName, "'<%!...%>' block should come after <%...%> blcok",
+				fileName, "\"<%!...%>\" block should come after <%...%> block",
 				getLineNumber(content, x));
 
 			return content;
@@ -115,9 +115,9 @@ public class JSPStylingCheck extends BaseStylingCheck {
 				addMessage(
 					fileName,
 					StringBundler.concat(
-						"Combine <%!...%> blocks at line '",
-						getLineNumber(content, x), "' and '",
-						getLineNumber(content, y), "'"));
+						"Combine <%!...%> blocks at line \"",
+						getLineNumber(content, x), "\" and \"",
+						getLineNumber(content, y), "\""));
 
 				return content;
 			}
@@ -216,11 +216,13 @@ public class JSPStylingCheck extends BaseStylingCheck {
 		Matcher matcher = _incorrectLineBreakPattern1.matcher(content);
 
 		while (matcher.find()) {
-			if (!JSPSourceUtil.isJSSource(content, matcher.start(1))) {
-				addMessage(
-					fileName, "There should be a line break after '}'",
-					getLineNumber(content, matcher.start(1)));
+			if (JSPSourceUtil.isJSSource(content, matcher.start(1))) {
+				continue;
 			}
+
+			addMessage(
+				fileName, "There should be a line break after \"}\"",
+				getLineNumber(content, matcher.start(1)));
 		}
 
 		matcher = _incorrectLineBreakPattern2.matcher(content);
@@ -237,7 +239,7 @@ public class JSPStylingCheck extends BaseStylingCheck {
 
 		while (matcher.find()) {
 			addMessage(
-				fileName, "There should be a line break after '<%='",
+				fileName, "There should be a line break after \"<%=\"",
 				getLineNumber(content, matcher.start()));
 		}
 
@@ -271,11 +273,13 @@ public class JSPStylingCheck extends BaseStylingCheck {
 
 			String line = SourceUtil.getLine(content, lineNumber);
 
-			if (!line.endsWith("%>")) {
-				addMessage(
-					fileName, "There should be a line break after '<%'",
-					lineNumber);
+			if (line.endsWith("%>")) {
+				continue;
 			}
+
+			addMessage(
+				fileName, "There should be a line break after \"<%\"",
+				lineNumber);
 		}
 
 		return content;

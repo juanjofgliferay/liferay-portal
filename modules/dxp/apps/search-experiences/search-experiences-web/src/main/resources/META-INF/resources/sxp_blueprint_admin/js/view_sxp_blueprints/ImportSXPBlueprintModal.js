@@ -95,10 +95,10 @@ const ImportSXPBlueprintModal = ({portletNamespace, redirectURL}) => {
 								isElement
 									? Liferay.Language.get(
 											'unable-to-import-element-with-the-same-external-reference-code-as-an-existing-element'
-									  )
+										)
 									: Liferay.Language.get(
 											'unable-to-import-blueprint-with-the-same-external-reference-code-as-an-existing-blueprint'
-									  )
+										)
 							);
 						}
 						else if (
@@ -120,10 +120,10 @@ const ImportSXPBlueprintModal = ({portletNamespace, redirectURL}) => {
 								isElement
 									? Liferay.Language.get(
 											'unable-to-import-because-the-element-configuration-is-invalid'
-									  )
+										)
 									: Liferay.Language.get(
 											'unable-to-import-because-the-blueprint-configuration-is-invalid'
-									  )
+										)
 							);
 						}
 
@@ -169,8 +169,10 @@ const ImportSXPBlueprintModal = ({portletNamespace, redirectURL}) => {
 			observer={observer}
 			size="full-screen"
 		>
-			<ClayModal.Header>
-				{Liferay.Language.get('import')}
+			<ClayModal.Header
+				closeButtonAriaLabel={Liferay.Language.get('close')}
+			>
+				{Liferay.Language.get('import[noun]')}
 			</ClayModal.Header>
 
 			<ClayModal.Body>

@@ -24,8 +24,8 @@ import com.liferay.trash.BaseTrashHandler;
 import com.liferay.trash.TrashHelper;
 import com.liferay.trash.constants.TrashActionKeys;
 
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletURL;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -88,8 +88,12 @@ public class BlogsEntryTrashHandler extends BaseTrashHandler {
 	}
 
 	@Override
-	public boolean isInTrash(long classPK) throws PortalException {
-		BlogsEntry entry = _blogsEntryLocalService.getEntry(classPK);
+	public boolean isInTrash(long classPK) {
+		BlogsEntry entry = _blogsEntryLocalService.fetchBlogsEntry(classPK);
+
+		if (entry == null) {
+			return false;
+		}
 
 		return entry.isInTrash();
 	}

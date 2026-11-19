@@ -38,18 +38,33 @@ import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.servlet.NamespaceServletRequest;
 import com.liferay.portal.servlet.SharedSessionServletRequest;
-import com.liferay.portal.util.PropsValues;
 import com.liferay.portlet.PortletPreferencesImpl;
 import com.liferay.portlet.PortletPreferencesWrapper;
 import com.liferay.portlet.PublicRenderParametersPool;
 import com.liferay.portlet.RenderParametersPool;
 import com.liferay.portlet.UserInfoFactory;
 import com.liferay.portlet.portletconfiguration.util.PublicRenderParameterConfiguration;
+
+import jakarta.portlet.PortalContext;
+import jakarta.portlet.PortletConfig;
+import jakarta.portlet.PortletContext;
+import jakarta.portlet.PortletMode;
+import jakarta.portlet.PortletPreferences;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+import jakarta.portlet.PortletSession;
+import jakarta.portlet.RenderParameters;
+import jakarta.portlet.WindowState;
+
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 
 import java.security.Principal;
 
@@ -67,21 +82,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-import javax.portlet.PortalContext;
-import javax.portlet.PortletConfig;
-import javax.portlet.PortletContext;
-import javax.portlet.PortletMode;
-import javax.portlet.PortletPreferences;
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
-import javax.portlet.PortletSession;
-import javax.portlet.RenderParameters;
-import javax.portlet.WindowState;
-
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
-
 /**
  * @author Brian Wing Shun Chan
  * @author Brian Myunghun Kim
@@ -93,11 +93,12 @@ public abstract class PortletRequestImpl implements LiferayPortletRequest {
 
 	@Override
 	public void cleanUp() {
-		_httpServletRequest.removeAttribute(JavaConstants.JAVAX_PORTLET_CONFIG);
 		_httpServletRequest.removeAttribute(
-			JavaConstants.JAVAX_PORTLET_REQUEST);
+			JavaConstants.JAKARTA_PORTLET_CONFIG);
 		_httpServletRequest.removeAttribute(
-			JavaConstants.JAVAX_PORTLET_RESPONSE);
+			JavaConstants.JAKARTA_PORTLET_REQUEST);
+		_httpServletRequest.removeAttribute(
+			JavaConstants.JAKARTA_PORTLET_RESPONSE);
 		_httpServletRequest.removeAttribute(PortletRequest.LIFECYCLE_PHASE);
 		_httpServletRequest.removeAttribute(WebKeys.PORTLET_ID);
 		_httpServletRequest.removeAttribute(WebKeys.PORTLET_CONTENT);
@@ -118,9 +119,9 @@ public abstract class PortletRequestImpl implements LiferayPortletRequest {
 
 		setAttribute(WebKeys.PORTLET_ID, liferayPortletConfig.getPortletId());
 
-		setAttribute(JavaConstants.JAVAX_PORTLET_CONFIG, portletConfig);
-		setAttribute(JavaConstants.JAVAX_PORTLET_REQUEST, this);
-		setAttribute(JavaConstants.JAVAX_PORTLET_RESPONSE, portletResponse);
+		setAttribute(JavaConstants.JAKARTA_PORTLET_CONFIG, portletConfig);
+		setAttribute(JavaConstants.JAKARTA_PORTLET_REQUEST, this);
+		setAttribute(JavaConstants.JAKARTA_PORTLET_RESPONSE, portletResponse);
 		setAttribute(PortletRequest.LIFECYCLE_PHASE, getLifecycle());
 	}
 
@@ -415,9 +416,11 @@ public abstract class PortletRequestImpl implements LiferayPortletRequest {
 			while (enumeration.hasMoreElements()) {
 				String header = enumeration.nextElement();
 
-				if (header != null) {
-					values.add(header);
+				if (header == null) {
+					continue;
 				}
+
+				values.add(header);
 			}
 		}
 
@@ -489,13 +492,15 @@ public abstract class PortletRequestImpl implements LiferayPortletRequest {
 		for (Map.Entry<String, String[]> entry : parameterMap.entrySet()) {
 			String name = entry.getKey();
 
-			if (_portlet.getPublicRenderParameter(name) != null) {
-				if (publicParameterMap == null) {
-					publicParameterMap = new HashMap<>(parameterMap.size(), 1);
-				}
-
-				publicParameterMap.put(name, entry.getValue());
+			if (_portlet.getPublicRenderParameter(name) == null) {
+				continue;
 			}
+
+			if (publicParameterMap == null) {
+				publicParameterMap = new HashMap<>(parameterMap.size(), 1);
+			}
+
+			publicParameterMap.put(name, entry.getValue());
 		}
 
 		if (publicParameterMap == null) {
@@ -741,17 +746,16 @@ public abstract class PortletRequestImpl implements LiferayPortletRequest {
 					privateRenderParameterNames.add(requestParameter.getName());
 				}
 
-				if (requestParameter.getValues() == null) {
+				if ((requestParameter.getValues() == null) ||
+					(!requestParameter.isPortletNamespaced() &&
+					 portlet.isRequiresNamespacedParameters())) {
+
 					continue;
 				}
 
-				if (requestParameter.isPortletNamespaced() ||
-					!portlet.isRequiresNamespacedParameters()) {
-
-					dynamicServletRequest.setParameterValues(
-						requestParameter.getName(facesPortlet),
-						requestParameter.getValues());
-				}
+				dynamicServletRequest.setParameterValues(
+					requestParameter.getName(facesPortlet),
+					requestParameter.getValues());
 			}
 
 			if ((Objects.equals(getLifecycle(), PortletRequest.HEADER_PHASE) ||
@@ -901,15 +905,19 @@ public abstract class PortletRequestImpl implements LiferayPortletRequest {
 					PortletQNameUtil.getPublicRenderParameterName(
 						publicRenderParameter.getQName()));
 
-				if (values != null) {
-					allRenderParameters.put(
-						publicRenderParameter.getIdentifier(), values);
+				if (values == null) {
+					continue;
 				}
+
+				allRenderParameters.put(
+					publicRenderParameter.getIdentifier(), values);
 			}
 
 			Map<String, String[]> privateRenderParameters =
 				RenderParametersPool.get(
 					httpServletRequest, plid, _portletName);
+
+			Set<String> nullValueParameterNames = new HashSet<>();
 
 			if (privateRenderParameters != null) {
 				for (Map.Entry<String, String[]> entry :
@@ -946,6 +954,10 @@ public abstract class PortletRequestImpl implements LiferayPortletRequest {
 						}
 					}
 
+					if (values == null) {
+						nullValueParameterNames.add(privateRenderParameterName);
+					}
+
 					allRenderParameters.put(privateRenderParameterName, values);
 				}
 			}
@@ -953,14 +965,16 @@ public abstract class PortletRequestImpl implements LiferayPortletRequest {
 			for (String privateRenderParameterName :
 					privateRenderParameterNames) {
 
-				if (!allRenderParameters.containsKey(
+				if (nullValueParameterNames.contains(
 						privateRenderParameterName)) {
 
-					allRenderParameters.put(
-						privateRenderParameterName,
-						dynamicServletRequest.getParameterValues(
-							privateRenderParameterName));
+					continue;
 				}
+
+				allRenderParameters.putIfAbsent(
+					privateRenderParameterName,
+					dynamicServletRequest.getParameterValues(
+						privateRenderParameterName));
 			}
 		}
 		else {
@@ -997,11 +1011,12 @@ public abstract class PortletRequestImpl implements LiferayPortletRequest {
 					requestParameter.setValues(null);
 				}
 
-				if (requestParameter.getValues() != null) {
-					allRenderParameters.put(
-						requestParameter.getName(),
-						requestParameter.getValues());
+				if (requestParameter.getValues() == null) {
+					continue;
 				}
+
+				allRenderParameters.put(
+					requestParameter.getName(), requestParameter.getValues());
 			}
 		}
 
@@ -1123,9 +1138,11 @@ public abstract class PortletRequestImpl implements LiferayPortletRequest {
 		while (enumeration.hasMoreElements()) {
 			String name = enumeration.nextElement();
 
-			if (!name.equals(JavaConstants.JAVAX_SERVLET_INCLUDE_PATH_INFO)) {
-				names.add(name);
+			if (name.equals(JavaConstants.JAKARTA_SERVLET_INCLUDE_PATH_INFO)) {
+				continue;
 			}
+
+			names.add(name);
 		}
 	}
 
@@ -1242,6 +1259,10 @@ public abstract class PortletRequestImpl implements LiferayPortletRequest {
 
 		for (String checkboxName : StringUtil.split(checkboxNames)) {
 			String value = dynamicServletRequest.getParameter(checkboxName);
+
+			if (checkboxName.contains("ExpandoAttribute")) {
+				continue;
+			}
 
 			if (value == null) {
 				dynamicServletRequest.setParameter(
@@ -1406,12 +1427,14 @@ public abstract class PortletRequestImpl implements LiferayPortletRequest {
 
 			if ((values != null) && (portletSpecMajorVersion >= 3)) {
 				for (int i = 0; i < values.length; i++) {
-					if (Objects.equals(
+					if (!Objects.equals(
 							values[i],
 							LiferayMutablePortletParameters.NULL_PARAM_VALUE)) {
 
-						values[i] = null;
+						continue;
 					}
+
+					values[i] = null;
 				}
 			}
 

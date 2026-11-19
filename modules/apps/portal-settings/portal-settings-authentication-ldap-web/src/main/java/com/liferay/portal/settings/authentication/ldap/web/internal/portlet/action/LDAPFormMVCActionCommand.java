@@ -6,19 +6,19 @@
 package com.liferay.portal.settings.authentication.ldap.web.internal.portlet.action;
 
 import com.liferay.configuration.admin.constants.ConfigurationAdminPortletKeys;
+import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseFormMVCActionCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.servlet.SessionErrors;
-import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.portal.security.ldap.LDAPConfigurationModelListenerException;
 import com.liferay.portal.security.ldap.authenticator.configuration.LDAPAuthConfiguration;
 import com.liferay.portal.security.ldap.configuration.ConfigurationProvider;
 import com.liferay.portal.security.ldap.configuration.LDAPServerConfiguration;
@@ -27,11 +27,11 @@ import com.liferay.portal.security.ldap.exportimport.configuration.LDAPExportCon
 import com.liferay.portal.security.ldap.exportimport.configuration.LDAPImportConfiguration;
 import com.liferay.portal.settings.authentication.ldap.web.internal.portlet.constants.LDAPSettingsConstants;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+
 import java.util.Dictionary;
 import java.util.List;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -41,7 +41,8 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + ConfigurationAdminPortletKeys.INSTANCE_SETTINGS,
+		"jakarta.portlet.name=" + ConfigurationAdminPortletKeys.INSTANCE_SETTINGS,
+		"jakarta.portlet.name=" + ConfigurationAdminPortletKeys.SYSTEM_SETTINGS,
 		"mvc.command.name=/portal_settings_authentication_ldap/ldap_form"
 	},
 	service = MVCActionCommand.class
@@ -53,13 +54,12 @@ public class LDAPFormMVCActionCommand extends BaseFormMVCActionCommand {
 			ActionRequest actionRequest, ActionResponse actionResponse)
 		throws Exception {
 
-		ThemeDisplay themeDisplay = (ThemeDisplay)actionRequest.getAttribute(
-			WebKeys.THEME_DISPLAY);
+		long companyId = ActionUtil.getCompanyId(actionRequest);
 
 		PermissionChecker permissionChecker =
 			PermissionThreadLocal.getPermissionChecker();
 
-		if (!permissionChecker.isCompanyAdmin(themeDisplay.getCompanyId())) {
+		if (!permissionChecker.isCompanyAdmin(companyId)) {
 			SessionErrors.add(actionRequest, PrincipalException.class);
 
 			actionResponse.setRenderParameter("mvcPath", "/error.jsp");
@@ -69,27 +69,39 @@ public class LDAPFormMVCActionCommand extends BaseFormMVCActionCommand {
 
 		String cmd = ParamUtil.getString(actionRequest, Constants.CMD);
 
-		if (cmd.equals(LDAPSettingsConstants.CMD_UPDATE_AUTH)) {
-			_updateLDAPAuthConfigurationProvider(
-				actionRequest, _ldapAuthConfigurationProvider,
-				themeDisplay.getCompanyId());
+		try {
+			if (cmd.equals(LDAPSettingsConstants.CMD_UPDATE_AUTH)) {
+				_updateLDAPAuthConfigurationProvider(
+					actionRequest, _ldapAuthConfigurationProvider, companyId);
+			}
+			else if (cmd.equals(LDAPSettingsConstants.CMD_UPDATE_EXPORT)) {
+				_updateLDAPExportConfigurationProvider(
+					actionRequest, _ldapExportConfigurationProvider, companyId);
+			}
+			else if (cmd.equals(LDAPSettingsConstants.CMD_UPDATE_IMPORT)) {
+				_updateLDAPImportConfigurationProvider(
+					actionRequest, _ldapImportConfigurationProvider, companyId);
+			}
+			else if (cmd.equals(LDAPSettingsConstants.CMD_UPDATE_SERVER)) {
+				_sortLDAPServerConfigurations(
+					companyId,
+					ParamUtil.getString(
+						actionRequest,
+						"ldap--" + LDAPConstants.AUTH_SERVER_PRIORITY + "--"));
+			}
 		}
-		else if (cmd.equals(LDAPSettingsConstants.CMD_UPDATE_EXPORT)) {
-			_updateLDAPExportConfigurationProvider(
-				actionRequest, _ldapExportConfigurationProvider,
-				themeDisplay.getCompanyId());
-		}
-		else if (cmd.equals(LDAPSettingsConstants.CMD_UPDATE_IMPORT)) {
-			_updateLDAPImportConfigurationProvider(
-				actionRequest, _ldapImportConfigurationProvider,
-				themeDisplay.getCompanyId());
-		}
-		else if (cmd.equals(LDAPSettingsConstants.CMD_UPDATE_SERVER)) {
-			_sortLdapServerConfigurations(
-				themeDisplay.getCompanyId(),
-				ParamUtil.getString(
-					actionRequest,
-					"ldap--" + LDAPConstants.AUTH_SERVER_PRIORITY + "--"));
+		catch (SystemException systemException) {
+			Throwable throwable = systemException.getCause();
+
+			if (!(throwable instanceof
+					LDAPConfigurationModelListenerException)) {
+
+				throw systemException;
+			}
+
+			SessionErrors.add(
+				actionRequest, LDAPConfigurationModelListenerException.class,
+				throwable);
 		}
 	}
 
@@ -97,12 +109,9 @@ public class LDAPFormMVCActionCommand extends BaseFormMVCActionCommand {
 	protected void doValidateForm(
 		ActionRequest actionRequest, ActionResponse actionResponse) {
 
-		ThemeDisplay themeDisplay = (ThemeDisplay)actionRequest.getAttribute(
-			WebKeys.THEME_DISPLAY);
-
 		LDAPImportConfiguration ldapImportConfiguration =
 			_ldapImportConfigurationProvider.getConfiguration(
-				themeDisplay.getCompanyId());
+				ActionUtil.getCompanyId(actionRequest));
 
 		if (!ldapImportConfiguration.importUserPasswordAutogenerated()) {
 			return;
@@ -167,10 +176,10 @@ public class LDAPFormMVCActionCommand extends BaseFormMVCActionCommand {
 		}
 	}
 
-	private void _sortLdapServerConfigurations(
-		long companyId, String orderedLdapServerIdsString) {
+	private void _sortLDAPServerConfigurations(
+		long companyId, String orderedLDAPServerIdsString) {
 
-		if (Validator.isBlank(orderedLdapServerIdsString)) {
+		if (Validator.isBlank(orderedLDAPServerIdsString)) {
 			return;
 		}
 
@@ -178,11 +187,11 @@ public class LDAPFormMVCActionCommand extends BaseFormMVCActionCommand {
 			_ldapServerConfigurationProvider.getConfigurationsProperties(
 				companyId);
 
-		String[] orderedLdapServerIds = StringUtil.split(
-			orderedLdapServerIdsString, ",");
+		String[] orderedLDAPServerIds = StringUtil.split(
+			orderedLDAPServerIdsString, ",");
 
-		for (int i = 0; i < orderedLdapServerIds.length; i++) {
-			long ldapServerId = GetterUtil.getLong(orderedLdapServerIds[i]);
+		for (int i = 0; i < orderedLDAPServerIds.length; i++) {
+			long ldapServerId = GetterUtil.getLong(orderedLDAPServerIds[i]);
 
 			for (Dictionary<String, Object> dictionary : dictionaries) {
 				long dictionaryLDAPServerId = GetterUtil.getLong(

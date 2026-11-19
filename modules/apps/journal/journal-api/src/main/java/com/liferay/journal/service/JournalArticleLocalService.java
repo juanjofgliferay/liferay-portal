@@ -21,6 +21,7 @@ import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.model.PersistedModel;
 import com.liferay.portal.kernel.model.SystemEventConstants;
 import com.liferay.portal.kernel.portlet.PortletRequestModel;
+import com.liferay.portal.kernel.preview.Previewable;
 import com.liferay.portal.kernel.search.Indexable;
 import com.liferay.portal.kernel.search.IndexableType;
 import com.liferay.portal.kernel.service.BaseLocalService;
@@ -98,74 +99,74 @@ public interface JournalArticleLocalService
 	 *
 	 * @param externalReferenceCode the external reference code of the web
 	 content article
-	 * @param userId                the primary key of the web content article's creator/owner
-	 * @param groupId               the primary key of the web content article's group
-	 * @param folderId              the primary key of the web content article folder
-	 * @param classNameId           the primary key of the DDMStructure class if the web
+	 * @param userId the primary key of the web content article's creator/owner
+	 * @param groupId the primary key of the web content article's group
+	 * @param folderId the primary key of the web content article folder
+	 * @param classNameId the primary key of the DDMStructure class if the web
 	 content article is related to a DDM structure, the primary key of
 	 the class name associated with the article, or
 	 JournalArticleConstants.CLASS_NAME_ID_DEFAULT in the journal-api
 	 module otherwise
-	 * @param classPK               the primary key of the DDM structure, if the primary key
+	 * @param classPK the primary key of the DDM structure, if the primary key
 	 of the DDMStructure class is given as the
 	 <code>classNameId</code> parameter, the primary key of the class
 	 associated with the web content article, or <code>0</code>
 	 otherwise
-	 * @param articleId             the primary key of the web content article
-	 * @param autoArticleId         whether to auto generate the web content article ID
-	 * @param version               the web content article's version
-	 * @param titleMap              the web content article's locales and localized titles
-	 * @param descriptionMap        the web content article's locales and localized
+	 * @param articleId the primary key of the web content article
+	 * @param autoArticleId whether to auto generate the web content article ID
+	 * @param version the web content article's version
+	 * @param titleMap the web content article's locales and localized titles
+	 * @param descriptionMap the web content article's locales and localized
 	 descriptions
-	 * @param friendlyURLMap        the web content article's locales and localized
+	 * @param friendlyURLMap the web content article's locales and localized
 	 friendly URLs
-	 * @param content               the HTML content wrapped in XML
-	 * @param ddmStructureId        the primary key of the web content article's DDM
+	 * @param content the HTML content wrapped in XML
+	 * @param ddmStructureId the primary key of the web content article's DDM
 	 structure, if the article is related to a DDM structure, or
 	 <code>0</code> otherwise
-	 * @param ddmTemplateKey        the primary key of the web content article's DDM
+	 * @param ddmTemplateKey the primary key of the web content article's DDM
 	 template
-	 * @param layoutUuid            the unique string identifying the web content
+	 * @param layoutUuid the unique string identifying the web content
 	 article's display page
-	 * @param displayDateMonth      the month the web content article is set to
+	 * @param displayDateMonth the month the web content article is set to
 	 display
-	 * @param displayDateDay        the calendar day the web content article is set to
+	 * @param displayDateDay the calendar day the web content article is set to
 	 display
-	 * @param displayDateYear       the year the web content article is set to
+	 * @param displayDateYear the year the web content article is set to
 	 display
-	 * @param displayDateHour       the hour the web content article is set to
+	 * @param displayDateHour the hour the web content article is set to
 	 display
-	 * @param displayDateMinute     the minute the web content article is set to
+	 * @param displayDateMinute the minute the web content article is set to
 	 display
-	 * @param expirationDateMonth   the month the web content article is set to
+	 * @param expirationDateMonth the month the web content article is set to
 	 expire
-	 * @param expirationDateDay     the calendar day the web content article is set
+	 * @param expirationDateDay the calendar day the web content article is set
 	 to expire
-	 * @param expirationDateYear    the year the web content article is set to
+	 * @param expirationDateYear the year the web content article is set to
 	 expire
-	 * @param expirationDateHour    the hour the web content article is set to
+	 * @param expirationDateHour the hour the web content article is set to
 	 expire
-	 * @param expirationDateMinute  the minute the web content article is set to
+	 * @param expirationDateMinute the minute the web content article is set to
 	 expire
-	 * @param neverExpire           whether the web content article is not set to auto
+	 * @param neverExpire whether the web content article is not set to auto
 	 expire
-	 * @param reviewDateMonth       the month the web content article is set for
+	 * @param reviewDateMonth the month the web content article is set for
 	 review
-	 * @param reviewDateDay         the calendar day the web content article is set for
+	 * @param reviewDateDay the calendar day the web content article is set for
 	 review
-	 * @param reviewDateYear        the year the web content article is set for review
-	 * @param reviewDateHour        the hour the web content article is set for review
-	 * @param reviewDateMinute      the minute the web content article is set for
+	 * @param reviewDateYear the year the web content article is set for review
+	 * @param reviewDateHour the hour the web content article is set for review
+	 * @param reviewDateMinute the minute the web content article is set for
 	 review
-	 * @param neverReview           whether the web content article is not set for review
-	 * @param indexable             whether the web content article is searchable
-	 * @param smallImage            whether the web content article has a small image
-	 * @param smallImageSource      the web content article's small image source
-	 * @param smallImageURL         the web content article's small image URL
-	 * @param smallImageFile        the web content article's small image file
-	 * @param images                the web content's images
-	 * @param articleURL            the web content article's accessible URL
-	 * @param serviceContext        the service context to be applied. Can set the
+	 * @param neverReview whether the web content article is not set for review
+	 * @param indexable whether the web content article is searchable
+	 * @param smallImage whether the web content article has a small image
+	 * @param smallImageSource the web content article's small image source
+	 * @param smallImageURL the web content article's small image URL
+	 * @param smallImageFile the web content article's small image file
+	 * @param images the web content's images
+	 * @param articleURL the web content article's accessible URL
+	 * @param serviceContext the service context to be applied. Can set the
 	 UUID, creation date, modification date, expando bridge
 	 attributes, guest permissions, group permissions, asset category
 	 IDs, asset tag names, asset link entry IDs, URL title, and
@@ -660,6 +661,7 @@ public interface JournalArticleLocalService
 	 * @param id the primary key of the web content article
 	 * @return the web content article with the ID
 	 */
+	@Previewable(enabled = false)
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public JournalArticle fetchArticle(long id);
 
@@ -768,20 +770,20 @@ public interface JournalArticleLocalService
 		long groupId, String externalReferenceCode);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public JournalArticle fetchLatestArticleByExternalReferenceCode(
+		long groupId, String externalReferenceCode, int status,
+		boolean preferApproved);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public JournalArticle fetchLatestArticleByExternalReferenceCode(
+		long groupId, String externalReferenceCode, int[] statuses);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public JournalArticle fetchLatestArticleByUrlTitle(
 		long groupId, String urlTitle, int status);
 
-	/**
-	 * Returns the latest indexable web content article matching the resource
-	 * primary key.
-	 *
-	 * @param resourcePrimKey the primary key of the resource instance
-	 * @return the latest indexable web content article matching the resource
-	 primary key, or <code>null</code> if no matching web content
-	 article could be found
-	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public JournalArticle fetchLatestIndexableArticle(long resourcePrimKey);
+	public PersistedModel fetchPersistedModel(Serializable primaryKeyObj);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public ActionableDynamicQuery getActionableDynamicQuery();
@@ -793,6 +795,7 @@ public interface JournalArticleLocalService
 	 * @return the web content article with the ID
 	 * @throws PortalException if a portal exception occurred
 	 */
+	@Previewable(enabled = false)
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public JournalArticle getArticle(long id) throws PortalException;
 
@@ -931,13 +934,16 @@ public interface JournalArticleLocalService
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public String getArticleDescription(long articlePK, Locale locale);
+	public String getArticleDescription(
+		long companyId, long articlePK, Locale locale);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public String getArticleDescription(long articlePK, String languageId);
+	public String getArticleDescription(
+		long companyId, long articlePK, String languageId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public Map<Locale, String> getArticleDescriptionMap(long articlePK);
+	public Map<Locale, String> getArticleDescriptionMap(
+		long companyId, long articlePK);
 
 	/**
 	 * Returns a web content article display for the specified page of the
@@ -1118,7 +1124,8 @@ public interface JournalArticleLocalService
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<String> getArticleLocalizationLanguageIds(long articlePK);
+	public List<String> getArticleLocalizationLanguageIds(
+		long companyId, long articlePK);
 
 	/**
 	 * Returns all the web content articles present in the system.
@@ -1306,17 +1313,7 @@ public interface JournalArticleLocalService
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<JournalArticle> getArticlesByReviewDate(
-		Date previousCheckDate, Date reviewDate);
-
-	/**
-	 * Returns all the web content articles matching the small image ID.
-	 *
-	 * @param smallImageId the primary key of the web content article's small
-	 image
-	 * @return the web content articles matching the small image ID
-	 */
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<JournalArticle> getArticlesBySmallImageId(long smallImageId);
+		long companyId, Date previousCheckDate, Date reviewDate);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<JournalArticle> getArticlesByStructureId(
@@ -1326,23 +1323,6 @@ public interface JournalArticleLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<JournalArticle> getArticlesByStructureId(
 		long groupId, long ddmStructureId, int start, int end,
-		OrderByComparator<JournalArticle> orderByComparator);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<JournalArticle> getArticlesByStructureId(
-		long groupId, long ddmStructureId, Locale locale, int status, int start,
-		int end, OrderByComparator<JournalArticle> orderByComparator);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<JournalArticle> getArticlesByStructureId(
-		long groupId, long classNameId, long ddmStructureId, int status,
-		int start, int end,
-		OrderByComparator<JournalArticle> orderByComparator);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<JournalArticle> getArticlesByStructureId(
-		long groupId, long classNameId, long ddmStructureId, Locale locale,
-		int status, int start, int end,
 		OrderByComparator<JournalArticle> orderByComparator);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
@@ -1389,109 +1369,16 @@ public interface JournalArticleLocalService
 	public int getArticlesCountByResourcePrimKey(long resourcePrimKey);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public String getArticleTitle(long articlePK, Locale locale);
+	public String getArticleTitle(
+		long companyId, long articlePK, Locale locale);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public String getArticleTitle(long articlePK, String languageId);
+	public String getArticleTitle(
+		long companyId, long articlePK, String languageId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public Map<Locale, String> getArticleTitleMap(long articlePK);
-
-	/**
-	 * Returns an ordered range of all the web content articles matching the
-	 * company, version, and workflow status.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end -
-	 * start</code> instances. <code>start</code> and <code>end</code> are not
-	 * primary keys, they are indexes in the result set. Thus, <code>0</code>
-	 * refers to the first result in the set. Setting both <code>start</code>
-	 * and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full
-	 * result set.
-	 * </p>
-	 *
-	 * @param companyId the primary key of the web content article's company
-	 * @param version the web content article's version
-	 * @param status the web content article's workflow status. For more
-	 information see {@link WorkflowConstants} for constants starting
-	 with the "STATUS_" prefix.
-	 * @param start the lower bound of the range of web content articles to
-	 return
-	 * @param end the upper bound of the range of web content articles to
-	 return (not inclusive)
-	 * @return the range of matching web content articles ordered by article ID
-	 */
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<JournalArticle> getCompanyArticles(
-		long companyId, double version, int status, int start, int end);
-
-	/**
-	 * Returns an ordered range of all the web content articles matching the
-	 * company and workflow status.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end -
-	 * start</code> instances. <code>start</code> and <code>end</code> are not
-	 * primary keys, they are indexes in the result set. Thus, <code>0</code>
-	 * refers to the first result in the set. Setting both <code>start</code>
-	 * and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full
-	 * result set.
-	 * </p>
-	 *
-	 * @param companyId the primary key of the web content article's company
-	 * @param status the web content article's workflow status. For more
-	 information see {@link WorkflowConstants} for constants starting
-	 with the "STATUS_" prefix.
-	 * @param start the lower bound of the range of web content articles to
-	 return
-	 * @param end the upper bound of the range of web content articles to
-	 return (not inclusive)
-	 * @return the range of matching web content articles ordered by article ID
-	 */
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<JournalArticle> getCompanyArticles(
-		long companyId, int status, int start, int end);
-
-	/**
-	 * Returns the number of web content articles matching the company, version,
-	 * and workflow status.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end -
-	 * start</code> instances. <code>start</code> and <code>end</code> are not
-	 * primary keys, they are indexes in the result set. Thus, <code>0</code>
-	 * refers to the first result in the set. Setting both <code>start</code>
-	 * and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full
-	 * result set.
-	 * </p>
-	 *
-	 * @param companyId the primary key of the web content article's company
-	 * @param version the web content article's version
-	 * @param status the web content article's workflow status. For more
-	 information see {@link WorkflowConstants} for constants starting
-	 with the "STATUS_" prefix.
-	 * @param start the lower bound of the range of web content articles to
-	 return
-	 * @param end the upper bound of the range of web content articles to
-	 return (not inclusive)
-	 * @return the number of matching web content articles
-	 */
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getCompanyArticlesCount(
-		long companyId, double version, int status, int start, int end);
-
-	/**
-	 * Returns the number of web content articles matching the company and
-	 * workflow status.
-	 *
-	 * @param companyId the primary key of the web content article's company
-	 * @param status the web content article's workflow status. For more
-	 information see {@link WorkflowConstants} for constants starting
-	 with the "STATUS_" prefix.
-	 * @return the number of matching web content articles
-	 */
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getCompanyArticlesCount(long companyId, int status);
+	public Map<Locale, String> getArticleTitleMap(
+		long companyId, long articlePK);
 
 	/**
 	 * Returns the matching web content article currently displayed or next to
@@ -1723,6 +1610,12 @@ public interface JournalArticleLocalService
 			long groupId, String externalReferenceCode)
 		throws PortalException;
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public JournalArticle getLatestArticleByExternalReferenceCode(
+			long groupId, String externalReferenceCode, int status,
+			boolean preferApproved)
+		throws PortalException;
+
 	/**
 	 * Returns the latest web content article matching the group, URL title, and
 	 * workflow status.
@@ -1774,16 +1667,6 @@ public interface JournalArticleLocalService
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<JournalArticle> getNoPermissionArticles();
-
-	/**
-	 * Returns the number of web content articles that are not recycled.
-	 *
-	 * @param groupId the primary key of the web content article's group
-	 * @param folderId the primary key of the web content article folder
-	 * @return the number of web content articles that are not recycled
-	 */
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getNotInTrashArticlesCount(long groupId, long folderId);
 
 	/**
 	 * Returns the oldest web content article with the group and article ID.
@@ -1851,8 +1734,8 @@ public interface JournalArticleLocalService
 	/**
 	 * Returns the web content articles matching the DDM structure keys.
 	 *
-	 * @param ddmStructureId the primary key of the web content article's
-	 DDM structure
+	 * @param ddmStructureId the primary key of the web content article's DDM
+	 structure
 	 * @return the web content articles matching the DDM structure keys
 	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
@@ -1912,60 +1795,6 @@ public interface JournalArticleLocalService
 	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public int getStructureArticlesCount(long groupId, long ddmStructureId);
-
-	/**
-	 * Returns the web content articles matching the group and DDM template key.
-	 *
-	 * @param groupId the primary key of the web content article's group
-	 * @param ddmTemplateKey the primary key of the web content article's DDM
-	 template
-	 * @return the matching web content articles
-	 */
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<JournalArticle> getTemplateArticles(
-		long groupId, String ddmTemplateKey);
-
-	/**
-	 * Returns an ordered range of all the web content articles matching the
-	 * group and DDM template key.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end -
-	 * start</code> instances. <code>start</code> and <code>end</code> are not
-	 * primary keys, they are indexes in the result set. Thus, <code>0</code>
-	 * refers to the first result in the set. Setting both <code>start</code>
-	 * and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full
-	 * result set.
-	 * </p>
-	 *
-	 * @param groupId the primary key of the web content article's group
-	 * @param ddmTemplateKey the primary key of the web content article's DDM
-	 template
-	 * @param start the lower bound of the range of web content articles to
-	 return
-	 * @param end the upper bound of the range of web content articles to
-	 return (not inclusive)
-	 * @param orderByComparator the comparator to order the web content
-	 articles
-	 * @return the range of matching web content articles ordered by the
-	 comparator
-	 */
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<JournalArticle> getTemplateArticles(
-		long groupId, String ddmTemplateKey, int start, int end,
-		OrderByComparator<JournalArticle> orderByComparator);
-
-	/**
-	 * Returns the number of web content articles matching the group and DDM
-	 * template key.
-	 *
-	 * @param groupId the primary key of the web content article's group
-	 * @param ddmTemplateKey the primary key of the web content article's DDM
-	 template
-	 * @return the number of matching web content articles
-	 */
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getTemplateArticlesCount(long groupId, String ddmTemplateKey);
 
 	/**
 	 * Returns the web content article's unique URL title.
@@ -2166,6 +1995,10 @@ public interface JournalArticleLocalService
 	@Indexable(type = IndexableType.REINDEX)
 	public JournalArticle restoreArticleFromTrash(
 			long userId, JournalArticle article)
+		throws PortalException;
+
+	public JournalArticle revertArticle(
+			long userId, long groupId, String articleId, double version)
 		throws PortalException;
 
 	public void setTreePaths(long folderId, String treePath, boolean reindex)
@@ -2475,25 +2308,6 @@ public interface JournalArticleLocalService
 		throws PortalException;
 
 	/**
-	 * Updates the web content articles matching the group, class name ID, and
-	 * DDM template key, replacing the DDM template key with a new one.
-	 *
-	 * @param groupId the primary key of the web content article's group
-	 * @param classNameId the primary key of the DDMStructure class if the web
-	 content article is related to a DDM structure, the primary key of
-	 the class name associated with the article, or
-	 JournalArticleConstants.CLASS_NAME_ID_DEFAULT in the journal-api
-	 module otherwise
-	 * @param oldDDMTemplateKey the primary key of the web content article's old
-	 DDM template
-	 * @param newDDMTemplateKey the primary key of the web content article's new
-	 DDM template
-	 */
-	public void updateDDMTemplateKey(
-		long groupId, long classNameId, String oldDDMTemplateKey,
-		String newDDMTemplateKey);
-
-	/**
 	 * Updates the journal article in the database or adds it if it does not yet exist. Also notifies the appropriate model listeners.
 	 *
 	 * <p>
@@ -2602,3 +2416,4 @@ public interface JournalArticleLocalService
 		throws E;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-168784004

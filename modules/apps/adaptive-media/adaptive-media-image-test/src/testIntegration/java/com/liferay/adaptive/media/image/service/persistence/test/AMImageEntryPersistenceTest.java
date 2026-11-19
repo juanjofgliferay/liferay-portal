@@ -112,11 +112,7 @@ public class AMImageEntryPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		AMImageEntry newAMImageEntry = _persistence.create(pk);
-
-		newAMImageEntry.setMvccVersion(RandomTestUtil.nextLong());
+		AMImageEntry newAMImageEntry = addAMImageEntry();
 
 		newAMImageEntry.setCtCollectionId(RandomTestUtil.nextLong());
 
@@ -140,7 +136,9 @@ public class AMImageEntryPersistenceTest {
 
 		newAMImageEntry.setSize(RandomTestUtil.nextLong());
 
-		_amImageEntries.add(_persistence.update(newAMImageEntry));
+		newAMImageEntry = _persistence.update(newAMImageEntry);
+
+		_amImageEntries.add(newAMImageEntry);
 
 		AMImageEntry existingAMImageEntry = _persistence.findByPrimaryKey(
 			newAMImageEntry.getPrimaryKey());
@@ -205,29 +203,6 @@ public class AMImageEntryPersistenceTest {
 		_persistence.countByUuid_C("null", 0L);
 
 		_persistence.countByUuid_C((String)null, 0L);
-	}
-
-	@Test
-	public void testCountByGroupId() throws Exception {
-		_persistence.countByGroupId(RandomTestUtil.nextLong());
-
-		_persistence.countByGroupId(0L);
-	}
-
-	@Test
-	public void testCountByCompanyId() throws Exception {
-		_persistence.countByCompanyId(RandomTestUtil.nextLong());
-
-		_persistence.countByCompanyId(0L);
-	}
-
-	@Test
-	public void testCountByConfigurationUuid() throws Exception {
-		_persistence.countByConfigurationUuid("");
-
-		_persistence.countByConfigurationUuid("null");
-
-		_persistence.countByConfigurationUuid((String)null);
 	}
 
 	@Test
@@ -579,8 +554,6 @@ public class AMImageEntryPersistenceTest {
 
 		AMImageEntry amImageEntry = _persistence.create(pk);
 
-		amImageEntry.setMvccVersion(RandomTestUtil.nextLong());
-
 		amImageEntry.setCtCollectionId(RandomTestUtil.nextLong());
 
 		amImageEntry.setUuid(RandomTestUtil.randomString());
@@ -613,3 +586,4 @@ public class AMImageEntryPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-379078423

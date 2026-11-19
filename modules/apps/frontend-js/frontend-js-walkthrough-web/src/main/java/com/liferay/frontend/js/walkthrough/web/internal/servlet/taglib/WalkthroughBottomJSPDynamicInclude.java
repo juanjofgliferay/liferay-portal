@@ -5,23 +5,28 @@
 
 package com.liferay.frontend.js.walkthrough.web.internal.servlet.taglib;
 
-import com.liferay.frontend.js.loader.modules.extender.npm.NPMResolver;
+import com.liferay.frontend.js.loader.modules.extender.esm.ESImportUtil;
 import com.liferay.frontend.js.walkthrough.web.internal.configuration.WalkthroughConfiguration;
-import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.servlet.taglib.DynamicInclude;
+import com.liferay.portal.kernel.servlet.taglib.aui.JSFragment;
 import com.liferay.portal.kernel.servlet.taglib.aui.ScriptData;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.portal.url.builder.AbsolutePortalURLBuilder;
+import com.liferay.portal.url.builder.AbsolutePortalURLBuilderFactory;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import java.util.Arrays;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -32,6 +37,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	configurationPid = "com.liferay.frontend.js.walkthrough.web.internal.configuration.WalkthroughConfiguration",
+	property = "dynamic.include.key=/html/common/themes/bottom.jsp#post",
 	service = DynamicInclude.class
 )
 public class WalkthroughBottomJSPDynamicInclude implements DynamicInclude {
@@ -46,6 +52,12 @@ public class WalkthroughBottomJSPDynamicInclude implements DynamicInclude {
 			(ThemeDisplay)httpServletRequest.getAttribute(
 				WebKeys.THEME_DISPLAY);
 
+		if (!FeatureFlagManagerUtil.isEnabled(
+				themeDisplay.getCompanyId(), "LPD-44091")) {
+
+			return;
+		}
+
 		Group group = themeDisplay.getScopeGroup();
 
 		String steps = null;
@@ -53,7 +65,8 @@ public class WalkthroughBottomJSPDynamicInclude implements DynamicInclude {
 		try {
 			WalkthroughConfiguration walkthroughConfiguration =
 				_configurationProvider.getGroupConfiguration(
-					WalkthroughConfiguration.class, group.getGroupId());
+					WalkthroughConfiguration.class, group.getCompanyId(),
+					group.getGroupId());
 
 			if (!walkthroughConfiguration.enabled()) {
 				return;
@@ -71,32 +84,29 @@ public class WalkthroughBottomJSPDynamicInclude implements DynamicInclude {
 
 		ScriptData scriptData = new ScriptData();
 
-		String resolvedModuleName = _npmResolver.resolveModuleName(
-			"@liferay/frontend-js-walkthrough-web/index");
+		AbsolutePortalURLBuilder absolutePortalURLBuilder =
+			_absolutePortalURLBuilderFactory.getAbsolutePortalURLBuilder(
+				httpServletRequest);
 
 		scriptData.append(
 			null,
-			StringBundler.concat("WalkthroughRender.default(", steps, ")"),
-			resolvedModuleName + " as WalkthroughRender",
-			ScriptData.ModulesType.ES6);
+			new JSFragment(
+				"main(" + steps + ");",
+				Arrays.asList(
+					ESImportUtil.getESImport(
+						absolutePortalURLBuilder,
+						"{main} from frontend-js-walkthrough-web"))));
 
 		scriptData.writeTo(httpServletResponse.getWriter());
-	}
-
-	@Override
-	public void register(
-		DynamicInclude.DynamicIncludeRegistry dynamicIncludeRegistry) {
-
-		dynamicIncludeRegistry.register("/html/common/themes/bottom.jsp#post");
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		WalkthroughBottomJSPDynamicInclude.class);
 
 	@Reference
-	private ConfigurationProvider _configurationProvider;
+	private AbsolutePortalURLBuilderFactory _absolutePortalURLBuilderFactory;
 
 	@Reference
-	private NPMResolver _npmResolver;
+	private ConfigurationProvider _configurationProvider;
 
 }

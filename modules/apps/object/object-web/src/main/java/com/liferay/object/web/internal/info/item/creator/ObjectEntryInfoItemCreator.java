@@ -5,15 +5,19 @@
 
 package com.liferay.object.web.internal.info.item.creator;
 
+import com.liferay.info.field.InfoFieldValue;
+import com.liferay.info.field.RelatedInfoFieldValue;
 import com.liferay.info.item.InfoItemFieldValues;
 import com.liferay.info.item.creator.InfoItemCreator;
 import com.liferay.info.item.provider.InfoItemFormProvider;
+import com.liferay.object.info.item.util.ObjectEntryInfoItemUtil;
 import com.liferay.object.model.ObjectDefinition;
 import com.liferay.object.model.ObjectEntry;
 import com.liferay.object.rest.dto.v1_0.Status;
 import com.liferay.object.rest.manager.v1_0.ObjectEntryManager;
 import com.liferay.object.rest.manager.v1_0.ObjectEntryManagerRegistry;
 import com.liferay.object.scope.ObjectScopeProviderRegistry;
+import com.liferay.object.service.ObjectDefinitionLocalService;
 import com.liferay.object.service.ObjectEntryLocalService;
 import com.liferay.object.web.internal.info.item.handler.ObjectEntryInfoItemExceptionRequestHandler;
 import com.liferay.object.web.internal.util.ObjectEntryUtil;
@@ -22,8 +26,14 @@ import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ArrayUtil;
+import com.liferay.portal.kernel.util.DateFormatFactoryUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.vulcan.dto.converter.DTOConverterContext;
 import com.liferay.portal.vulcan.dto.converter.DefaultDTOConverterContext;
+
+import java.text.DateFormat;
+
+import java.util.Map;
 
 /**
  * @author Rubén Pulido
@@ -33,13 +43,15 @@ public class ObjectEntryInfoItemCreator
 
 	public ObjectEntryInfoItemCreator(
 		InfoItemFormProvider<ObjectEntry> infoItemFormProvider,
-		ObjectDefinition objectDefinition,
+		long objectDefinitionId,
+		ObjectDefinitionLocalService objectDefinitionLocalService,
 		ObjectEntryLocalService objectEntryLocalService,
 		ObjectEntryManagerRegistry objectEntryManagerRegistry,
 		ObjectScopeProviderRegistry objectScopeProviderRegistry) {
 
 		_infoItemFormProvider = infoItemFormProvider;
-		_objectDefinition = objectDefinition;
+		_objectDefinitionId = objectDefinitionId;
+		_objectDefinitionLocalService = objectDefinitionLocalService;
 		_objectEntryLocalService = objectEntryLocalService;
 		_objectEntryManagerRegistry = objectEntryManagerRegistry;
 		_objectScopeProviderRegistry = objectScopeProviderRegistry;
@@ -47,43 +59,77 @@ public class ObjectEntryInfoItemCreator
 
 	@Override
 	public ObjectEntry createFromInfoItemFieldValues(
-			long groupId, InfoItemFieldValues infoItemFieldValues, int status)
+			long groupId, InfoItemFieldValues infoItemFieldValues,
+			int statusInt)
 		throws InfoFormException {
 
 		try {
+			ObjectDefinition objectDefinition =
+				_objectDefinitionLocalService.getObjectDefinition(
+					_objectDefinitionId);
+
+			DateFormat dateFormat = DateFormatFactoryUtil.getSimpleDateFormat(
+				"yyyy-MM-dd HH:mm");
+
 			ObjectEntryManager objectEntryManager =
 				_objectEntryManagerRegistry.getObjectEntryManager(
-					_objectDefinition.getStorageType());
+					objectDefinition.getCompanyId(),
+					objectDefinition.getStorageType());
 
 			ServiceContext serviceContext =
 				ServiceContextThreadLocal.getServiceContext();
 
 			ThemeDisplay themeDisplay = serviceContext.getThemeDisplay();
 
-			int objectEntryStatus = status;
+			Map<String, Object> curProperties = _getProperties(
+				infoItemFieldValues, objectDefinition, themeDisplay);
+
+			DTOConverterContext dtoConverterContext =
+				new DefaultDTOConverterContext(
+					false, null, null, null, null, themeDisplay.getLocale(),
+					null, themeDisplay.getUser());
+
+			dtoConverterContext.setAttribute("addActions", Boolean.FALSE);
 
 			com.liferay.object.rest.dto.v1_0.ObjectEntry objectEntry =
 				objectEntryManager.addObjectEntry(
-					new DefaultDTOConverterContext(
-						false, null, null, null, null, themeDisplay.getLocale(),
-						null, themeDisplay.getUser()),
-					_objectDefinition,
+					dtoConverterContext, objectDefinition,
 					new com.liferay.object.rest.dto.v1_0.ObjectEntry() {
 						{
-							keywords = serviceContext.getAssetTagNames();
-							properties = ObjectEntryUtil.toProperties(
-								infoItemFieldValues);
-							status = new Status() {
-								{
-									code = objectEntryStatus;
-								}
-							};
-							taxonomyCategoryIds = ArrayUtil.toLongArray(
-								serviceContext.getAssetCategoryIds());
+							setDisplayDate(
+								() -> GetterUtil.getDate(
+									curProperties.get("displayDate"),
+									dateFormat, null));
+							setExpirationDate(
+								() -> GetterUtil.getDate(
+									curProperties.get("expirationDate"),
+									dateFormat, null));
+							setFriendlyUrlPath(
+								() -> GetterUtil.getString(
+									curProperties.get("objectEntryFriendlyURL"),
+									null));
+							setFriendlyUrlPath_i18n(
+								() -> (Map<String, String>)curProperties.get(
+									"objectEntryFriendlyURL_i18n"));
+							setKeywords(serviceContext::getAssetTagNames);
+							setProperties(() -> curProperties);
+							setReviewDate(
+								() -> GetterUtil.getDate(
+									curProperties.get("reviewDate"), dateFormat,
+									null));
+							setStatus(
+								() -> new Status() {
+									{
+										setCode(() -> statusInt);
+									}
+								});
+							setTaxonomyCategoryIds(
+								() -> ArrayUtil.toLongArray(
+									serviceContext.getAssetCategoryIds()));
 						}
 					},
-					ObjectEntryUtil.getScopeKey(
-						groupId, _objectDefinition,
+					ObjectEntryInfoItemUtil.getScopeKey(
+						groupId, objectDefinition,
 						_objectScopeProviderRegistry));
 
 			ObjectEntry serviceBuilderObjectEntry =
@@ -93,20 +139,38 @@ public class ObjectEntryInfoItemCreator
 			serviceBuilderObjectEntry.setExternalReferenceCode(
 				objectEntry.getExternalReferenceCode());
 			serviceBuilderObjectEntry.setObjectDefinitionId(
-				_objectDefinition.getObjectDefinitionId());
+				objectDefinition.getObjectDefinitionId());
 
 			return serviceBuilderObjectEntry;
 		}
 		catch (Exception exception) {
 			ObjectEntryInfoItemExceptionRequestHandler.handleInfoFormException(
-				exception, groupId, _infoItemFormProvider, _objectDefinition);
+				exception, groupId, _infoItemFormProvider, _objectDefinitionId);
 		}
 
 		return null;
 	}
 
+	private Map<String, Object> _getProperties(
+		InfoItemFieldValues infoItemFieldValues,
+		ObjectDefinition objectDefinition, ThemeDisplay themeDisplay) {
+
+		for (InfoFieldValue<Object> infoFieldValue :
+				infoItemFieldValues.getInfoFieldValues()) {
+
+			if (infoFieldValue.getValue() instanceof RelatedInfoFieldValue) {
+				return ObjectEntryUtil.toProperties(
+					infoItemFieldValues, objectDefinition, null);
+			}
+		}
+
+		return ObjectEntryUtil.toProperties(
+			themeDisplay.getCompanyId(), infoItemFieldValues, null);
+	}
+
 	private final InfoItemFormProvider<ObjectEntry> _infoItemFormProvider;
-	private final ObjectDefinition _objectDefinition;
+	private final long _objectDefinitionId;
+	private final ObjectDefinitionLocalService _objectDefinitionLocalService;
 	private final ObjectEntryLocalService _objectEntryLocalService;
 	private final ObjectEntryManagerRegistry _objectEntryManagerRegistry;
 	private final ObjectScopeProviderRegistry _objectScopeProviderRegistry;

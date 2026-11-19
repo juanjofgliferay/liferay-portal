@@ -111,11 +111,7 @@ public class MBBanPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		MBBan newMBBan = _persistence.create(pk);
-
-		newMBBan.setMvccVersion(RandomTestUtil.nextLong());
+		MBBan newMBBan = addMBBan();
 
 		newMBBan.setCtCollectionId(RandomTestUtil.nextLong());
 
@@ -137,7 +133,9 @@ public class MBBanPersistenceTest {
 
 		newMBBan.setLastPublishDate(RandomTestUtil.nextDate());
 
-		_mbBans.add(_persistence.update(newMBBan));
+		newMBBan = _persistence.update(newMBBan);
+
+		_mbBans.add(newMBBan);
 
 		MBBan existingMBBan = _persistence.findByPrimaryKey(
 			newMBBan.getPrimaryKey());
@@ -199,13 +197,6 @@ public class MBBanPersistenceTest {
 		_persistence.countByGroupId(RandomTestUtil.nextLong());
 
 		_persistence.countByGroupId(0L);
-	}
-
-	@Test
-	public void testCountByUserId() throws Exception {
-		_persistence.countByUserId(RandomTestUtil.nextLong());
-
-		_persistence.countByUserId(0L);
 	}
 
 	@Test
@@ -529,8 +520,6 @@ public class MBBanPersistenceTest {
 
 		MBBan mbBan = _persistence.create(pk);
 
-		mbBan.setMvccVersion(RandomTestUtil.nextLong());
-
 		mbBan.setCtCollectionId(RandomTestUtil.nextLong());
 
 		mbBan.setUuid(RandomTestUtil.randomString());
@@ -561,3 +550,4 @@ public class MBBanPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-873951607

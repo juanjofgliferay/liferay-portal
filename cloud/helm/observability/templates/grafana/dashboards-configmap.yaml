@@ -1,0 +1,76 @@
+{{- $cloudProvider := .Values.cloudProvider -}}
+{{- $items := deepCopy .Values.dashboards.items -}}
+{{- if eq $cloudProvider "aws" -}}
+{{- if hasKey $items "backups" -}}
+{{- $_ := set (index $items "backups") "file" "dashboards/backups-aws.json" -}}
+{{- end -}}
+{{- end -}}
+{{- if eq $cloudProvider "azure" -}}
+{{- if hasKey $items "backups" -}}
+{{- $_ := set (index $items "backups") "file" "dashboards/backups-azure.json" -}}
+{{- end -}}
+{{- end -}}
+{{- $activeTileStyle := "ch-tile" -}}
+{{- $mutedTileStyle := "ch-tile-muted" -}}
+{{- $argocdDescription := "Set centralHub.argocdURL in your values.yaml to enable this link." -}}
+{{- $argocdHref := "#" -}}
+{{- $argocdTileStyle := $mutedTileStyle -}}
+{{- if .Values.centralHub.argocdURL -}}
+{{- $argocdDescription = "GitOps and Delivery" -}}
+{{- $argocdHref = .Values.centralHub.argocdURL -}}
+{{- $argocdTileStyle = $activeTileStyle -}}
+{{- end -}}
+{{- $argoWfDescription := "Set centralHub.argoWorkflowsURL in your values.yaml to enable this link." -}}
+{{- $argoWfHref := "#" -}}
+{{- $argoWfTileStyle := $mutedTileStyle -}}
+{{- if .Values.centralHub.argoWorkflowsURL -}}
+{{- $argoWfDescription = "Workflow Automation" -}}
+{{- $argoWfHref = .Values.centralHub.argoWorkflowsURL -}}
+{{- $argoWfTileStyle = $activeTileStyle -}}
+{{- end -}}
+{{- $gitDescription := "Set centralHub.gitURL in your values.yaml to enable this link." -}}
+{{- $gitHref := "#" -}}
+{{- $gitTileStyle := $mutedTileStyle -}}
+{{- if .Values.centralHub.gitURL -}}
+{{- $gitDescription = "Source Code History" -}}
+{{- $gitHref = .Values.centralHub.gitURL -}}
+{{- $gitTileStyle = $activeTileStyle -}}
+{{- end -}}
+{{- $monitoringTiles := concat (list
+    (dict "alert" true "emoji" "🔔" "href" "/alerting/list" "subtitle" "Active Firing and Rules" "title" "Alerts")
+    (dict "emoji" "📦" "href" "/d/kubernetes-workloads/kubernetes-workloads" "subtitle" "Usage and Pods" "title" "Workloads")
+    (dict "emoji" "💾" "href" "/d/backups/backups" "subtitle" "Data Recovery" "title" "Backups")
+    (dict "emoji" "🛢️" "href" "/d/databases/databases" "subtitle" "DB Health" "title" "Databases")
+    (dict "emoji" "⚖️" "href" "/d/load-balancers/load-balancers" "subtitle" "Traffic Status" "title" "Load Balancers")
+) .Values.centralHub.monitoringTiles -}}
+{{- $monitoringColumnSize := div (add (len $monitoringTiles) 1) 2 -}}
+{{- $monitoringColumns := list (slice $monitoringTiles 0 $monitoringColumnSize) (slice $monitoringTiles $monitoringColumnSize) -}}
+{{- $dashboardHeaders := dict
+    "backups" (dict "subtitle" "View backup history and status across the platform." "title" "Backups")
+    "databases" (dict "subtitle" "Monitor database instance health and operational metrics." "title" "Database Health")
+    "kubernetes-workloads" (dict "subtitle" "Track performance and resource metrics across pods." "title" "Kubernetes Workloads")
+    "load-balancers" (dict "subtitle" "Analyze traffic and monitor Envoy health." "title" "Load Balancer Metrics")
+-}}
+{{- range $key, $entry := $items }}
+{{- if not (eq $entry.enabled false) }}
+{{- $replacements := dict -}}
+{{- if and (eq $key "backups") (eq $cloudProvider "aws") -}}
+{{- $_ := set $replacements "${AWS_BACKUP_HTML}" (tpl ($.Files.Get "dashboards/html/aws-backup.html") (dict "region" $.Values.aws.region)) -}}
+{{- end -}}
+{{- if and (eq $key "backups") (eq $cloudProvider "azure") -}}
+{{- $azureBackupCtx := dict "argoWfDescription" $argoWfDescription "argoWfHref" $argoWfHref "argoWfTileStyle" "azb-tile-muted" "resourceGroupName" $.Values.azure.resourceGroupName "subscriptionId" $.Values.azure.subscriptionId -}}
+{{- if $.Values.centralHub.argoWorkflowsURL -}}
+{{- $_ := set $azureBackupCtx "argoWfDescription" "Submit the Backup Restore Cluster Workflow Template Into the ${environment} Namespace" -}}
+{{- $_ := set $azureBackupCtx "argoWfHref" (printf "%s/cluster-workflow-templates/backup-restore-cluster-workflow-template?sidePanel=true" (trimSuffix "/" $.Values.centralHub.argoWorkflowsURL)) -}}
+{{- $_ := set $azureBackupCtx "argoWfTileStyle" "azb-tile" -}}
+{{- end -}}
+{{- $_ := set $replacements "${AZURE_BACKUP_HTML}" (tpl ($.Files.Get "dashboards/html/azure-backup.html") $azureBackupCtx) -}}
+{{- end -}}
+{{- if eq $key "central-hub" -}}
+{{- $centralHubCtx := dict "argocdDescription" $argocdDescription "argocdHref" $argocdHref "argocdTileStyle" $argocdTileStyle "argoWfDescription" $argoWfDescription "argoWfHref" $argoWfHref "argoWfTileStyle" $argoWfTileStyle "gitDescription" $gitDescription "gitHref" $gitHref "gitTileStyle" $gitTileStyle "monitoringColumns" $monitoringColumns -}}
+{{- $_ := set $replacements "${CENTRAL_HUB_HTML}" (tpl ($.Files.Get "dashboards/html/central-hub.html") $centralHubCtx) -}}
+{{- end }}
+---
+{{ include "observability.dashboardConfigMap" (dict "context" $ "files" $.Files "header" (index $dashboardHeaders $key) "key" $key "path" $entry.file "replacements" $replacements) }}
+{{- end }}
+{{- end }}

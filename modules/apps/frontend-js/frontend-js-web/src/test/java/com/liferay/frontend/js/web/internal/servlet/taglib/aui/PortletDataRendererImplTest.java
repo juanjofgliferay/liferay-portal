@@ -31,28 +31,6 @@ public class PortletDataRendererImplTest {
 		LiferayUnitTestRule.INSTANCE;
 
 	@Test
-	public void testAliasedESImports() throws Exception {
-		PortletDataRendererImpl portletDataRendererImpl =
-			new PortletDataRendererImpl();
-
-		PortletData portletData = new PortletData();
-
-		portletData.add(
-			new JSFragment(
-				null, null, "content",
-				Arrays.asList(new ESImport("alias", "module", "symbol"))));
-
-		Writer writer = new CharArrayWriter();
-
-		portletDataRendererImpl.write(Arrays.asList(portletData), writer);
-
-		String code = writer.toString();
-
-		Assert.assertTrue(
-			code, code.contains("import {symbol as alias} from 'module';"));
-	}
-
-	@Test
 	public void testAMDCodeIsWrappedInIIFE() throws Exception {
 		PortletDataRendererImpl portletDataRendererImpl =
 			new PortletDataRendererImpl();
@@ -92,6 +70,28 @@ public class PortletDataRendererImplTest {
 		String code = writer.toString();
 
 		Assert.assertTrue(code.contains("(function() {\ncontent\n})();"));
+	}
+
+	@Test
+	public void testAliasedESImports() throws Exception {
+		PortletDataRendererImpl portletDataRendererImpl =
+			new PortletDataRendererImpl();
+
+		PortletData portletData = new PortletData();
+
+		portletData.add(
+			new JSFragment(
+				null, null, "content",
+				Arrays.asList(new ESImport("alias", "module", "symbol"))));
+
+		Writer writer = new CharArrayWriter();
+
+		portletDataRendererImpl.write(Arrays.asList(portletData), writer);
+
+		String code = writer.toString();
+
+		Assert.assertTrue(
+			code, code.contains("import {symbol as alias} from 'module';"));
 	}
 
 	@Test
@@ -332,7 +332,7 @@ public class PortletDataRendererImplTest {
 	}
 
 	@Test
-	public void testScriptTypeIsTextJavascriptWhenESMImportsAreMissing()
+	public void testScriptTypeIsTextJavaScriptWhenESMImportsAreMissing()
 		throws Exception {
 
 		PortletDataRendererImpl portletDataRendererImpl =

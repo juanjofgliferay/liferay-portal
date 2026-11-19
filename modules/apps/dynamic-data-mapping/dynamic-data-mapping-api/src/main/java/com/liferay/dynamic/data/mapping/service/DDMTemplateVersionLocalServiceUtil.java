@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -290,12 +291,6 @@ public class DDMTemplateVersionLocalServiceUtil {
 		return getService().getPersistedModel(primaryKeyObj);
 	}
 
-	public static DDMTemplateVersion getTemplateVersion(long templateVersionId)
-		throws PortalException {
-
-		return getService().getTemplateVersion(templateVersionId);
-	}
-
 	public static DDMTemplateVersion getTemplateVersion(
 			long templateId, String version)
 		throws PortalException {
@@ -307,18 +302,6 @@ public class DDMTemplateVersionLocalServiceUtil {
 		long templateId) {
 
 		return getService().getTemplateVersions(templateId);
-	}
-
-	public static List<DDMTemplateVersion> getTemplateVersions(
-		long templateId, int start, int end,
-		OrderByComparator<DDMTemplateVersion> orderByComparator) {
-
-		return getService().getTemplateVersions(
-			templateId, start, end, orderByComparator);
-	}
-
-	public static int getTemplateVersionsCount(long templateId) {
-		return getService().getTemplateVersionsCount(templateId);
 	}
 
 	/**
@@ -338,13 +321,13 @@ public class DDMTemplateVersionLocalServiceUtil {
 	}
 
 	public static DDMTemplateVersionLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(DDMTemplateVersionLocalService service) {
-		_service = service;
-	}
-
-	private static volatile DDMTemplateVersionLocalService _service;
+	private static final Snapshot<DDMTemplateVersionLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			DDMTemplateVersionLocalServiceUtil.class,
+			DDMTemplateVersionLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1563989832

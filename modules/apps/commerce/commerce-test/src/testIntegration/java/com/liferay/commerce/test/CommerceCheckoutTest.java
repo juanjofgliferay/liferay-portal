@@ -20,6 +20,7 @@ import com.liferay.commerce.constants.CommerceOrderConstants;
 import com.liferay.commerce.constants.CommerceWebKeys;
 import com.liferay.commerce.context.CommerceContext;
 import com.liferay.commerce.currency.model.CommerceCurrency;
+import com.liferay.commerce.currency.service.CommerceCurrencyLocalServiceUtil;
 import com.liferay.commerce.currency.test.util.CommerceCurrencyTestUtil;
 import com.liferay.commerce.exception.CommerceOrderGuestCheckoutException;
 import com.liferay.commerce.inventory.engine.CommerceInventoryEngine;
@@ -28,8 +29,6 @@ import com.liferay.commerce.model.CommerceAddress;
 import com.liferay.commerce.model.CommerceOrder;
 import com.liferay.commerce.model.CommerceOrderItem;
 import com.liferay.commerce.order.engine.CommerceOrderEngine;
-import com.liferay.commerce.price.list.model.CommercePriceEntry;
-import com.liferay.commerce.price.list.model.CommercePriceList;
 import com.liferay.commerce.price.list.service.CommercePriceEntryLocalService;
 import com.liferay.commerce.price.list.service.CommercePriceListLocalService;
 import com.liferay.commerce.product.model.CPDefinition;
@@ -83,11 +82,11 @@ import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.math.BigDecimal;
 
 import java.util.List;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.frutilla.FrutillaRule;
 
@@ -121,8 +120,14 @@ public class CommerceCheckoutTest {
 
 		_user = UserTestUtil.addUser(_company);
 
-		_commerceCurrency = CommerceCurrencyTestUtil.addCommerceCurrency(
-			_group.getCompanyId());
+		_commerceCurrency =
+			CommerceCurrencyLocalServiceUtil.fetchPrimaryCommerceCurrency(
+				_group.getCompanyId());
+
+		if (_commerceCurrency == null) {
+			_commerceCurrency = CommerceCurrencyTestUtil.addCommerceCurrency(
+				_group.getCompanyId());
+		}
 
 		_commerceChannel = CommerceTestUtil.addCommerceChannel(
 			_group.getGroupId(), _commerceCurrency.getCode());
@@ -180,8 +185,8 @@ public class CommerceCheckoutTest {
 		CommerceOrder commerceOrder =
 			CommerceOrderLocalServiceUtil.addCommerceOrder(
 				user.getUserId(), _commerceChannel.getGroupId(),
-				accountEntry.getAccountEntryId(),
-				_commerceCurrency.getCommerceCurrencyId());
+				accountEntry.getAccountEntryId(), _commerceCurrency.getCode(),
+				0);
 
 		commerceOrder = CommerceTestUtil.addCheckoutDetailsToCommerceOrder(
 			commerceOrder, commerceOrder.getUserId(), false);
@@ -229,7 +234,7 @@ public class CommerceCheckoutTest {
 
 			AccountEntry accountEntry =
 				_accountEntryLocalService.addAccountEntry(
-					user1.getUserId(),
+					StringPool.BLANK, user1.getUserId(),
 					AccountConstants.PARENT_ACCOUNT_ENTRY_ID_DEFAULT,
 					RandomTestUtil.randomString(), null, null, null, null,
 					StringPool.BLANK, AccountConstants.ACCOUNT_ENTRY_TYPE_GUEST,
@@ -254,7 +259,7 @@ public class CommerceCheckoutTest {
 				CommerceOrderLocalServiceUtil.addCommerceOrder(
 					user1.getUserId(), _commerceChannel.getGroupId(),
 					accountEntry.getAccountEntryId(),
-					_commerceCurrency.getCommerceCurrencyId());
+					_commerceCurrency.getCode(), 0);
 
 			CommerceTestUtil.addCheckoutDetailsToCommerceOrder(
 				commerceOrder, commerceOrder.getUserId(), false);
@@ -326,7 +331,7 @@ public class CommerceCheckoutTest {
 				CommerceOrderLocalServiceUtil.addCommerceOrder(
 					user.getUserId(), _commerceChannel.getGroupId(),
 					accountEntry.getAccountEntryId(),
-					_commerceCurrency.getCommerceCurrencyId());
+					_commerceCurrency.getCode(), 0);
 
 			CommerceTestUtil.addCheckoutDetailsToCommerceOrder(
 				commerceOrder, commerceOrder.getUserId(), false);
@@ -381,8 +386,8 @@ public class CommerceCheckoutTest {
 		CommerceOrder commerceOrder =
 			CommerceOrderLocalServiceUtil.addCommerceOrder(
 				user.getUserId(), _commerceChannel.getGroupId(),
-				accountEntry.getAccountEntryId(),
-				_commerceCurrency.getCommerceCurrencyId());
+				accountEntry.getAccountEntryId(), _commerceCurrency.getCode(),
+				0);
 
 		boolean activeBillingAddressCommerceCheckoutStep =
 			_commerceCheckoutStepHttpHelper.
@@ -425,8 +430,8 @@ public class CommerceCheckoutTest {
 		CommerceOrder commerceOrder =
 			CommerceOrderLocalServiceUtil.addCommerceOrder(
 				user.getUserId(), _commerceChannel.getGroupId(),
-				accountEntry.getAccountEntryId(),
-				_commerceCurrency.getCommerceCurrencyId());
+				accountEntry.getAccountEntryId(), _commerceCurrency.getCode(),
+				0);
 
 		CommerceAddress commerceAddress = addCommerceAddress(
 			commerceOrder,
@@ -481,8 +486,8 @@ public class CommerceCheckoutTest {
 		CommerceOrder commerceOrder =
 			CommerceOrderLocalServiceUtil.addCommerceOrder(
 				user.getUserId(), _commerceChannel.getGroupId(),
-				accountEntry.getAccountEntryId(),
-				_commerceCurrency.getCommerceCurrencyId());
+				accountEntry.getAccountEntryId(), _commerceCurrency.getCode(),
+				0);
 
 		CommerceAddress commerceAddress = addCommerceAddress(
 			commerceOrder, CommerceAddressConstants.ADDRESS_TYPE_SHIPPING);
@@ -533,8 +538,8 @@ public class CommerceCheckoutTest {
 		CommerceOrder commerceOrder =
 			CommerceOrderLocalServiceUtil.addCommerceOrder(
 				user.getUserId(), _commerceChannel.getGroupId(),
-				accountEntry.getAccountEntryId(),
-				_commerceCurrency.getCommerceCurrencyId());
+				accountEntry.getAccountEntryId(), _commerceCurrency.getCode(),
+				0);
 
 		boolean activePaymentMethod =
 			_commerceCheckoutStepHttpHelper.
@@ -576,13 +581,13 @@ public class CommerceCheckoutTest {
 		CommerceOrder commerceOrder =
 			CommerceOrderLocalServiceUtil.addCommerceOrder(
 				user.getUserId(), _commerceChannel.getGroupId(),
-				accountEntry.getAccountEntryId(),
-				_commerceCurrency.getCommerceCurrencyId());
+				accountEntry.getAccountEntryId(), _commerceCurrency.getCode(),
+				0);
 
 		CommerceTestUtil.addCommercePaymentMethodGroupRel(
 			user.getUserId(), commerceOrder.getGroupId());
 
-		CommerceCatalog catalog =
+		CommerceCatalog commerceCatalog =
 			_commerceCatalogLocalService.addCommerceCatalog(
 				null, RandomTestUtil.randomString(),
 				_commerceCurrency.getCode(), LocaleUtil.US.getDisplayLanguage(),
@@ -591,7 +596,7 @@ public class CommerceCheckoutTest {
 		BigDecimal price = BigDecimal.valueOf(RandomTestUtil.randomDouble());
 
 		CPInstance cpInstance = CPTestUtil.addCPInstanceWithRandomSku(
-			catalog.getGroupId(), price);
+			commerceCatalog.getGroupId(), price);
 
 		CommerceTestUtil.addCommerceOrderItem(
 			commerceOrder.getCommerceOrderId(), cpInstance.getCPInstanceId(),
@@ -637,8 +642,8 @@ public class CommerceCheckoutTest {
 		CommerceOrder commerceOrder =
 			CommerceOrderLocalServiceUtil.addCommerceOrder(
 				user.getUserId(), _commerceChannel.getGroupId(),
-				accountEntry.getAccountEntryId(),
-				_commerceCurrency.getCommerceCurrencyId());
+				accountEntry.getAccountEntryId(), _commerceCurrency.getCode(),
+				0);
 
 		CommerceTestUtil.addCommercePaymentMethodGroupRel(
 			user.getUserId(), commerceOrder.getGroupId());
@@ -766,22 +771,10 @@ public class CommerceCheckoutTest {
 				continue;
 			}
 
-			CommercePriceList commercePriceList =
-				_commercePriceListLocalService.getCatalogBaseCommercePriceList(
-					cpInstance.getGroupId());
+			BigDecimal unitPrice = commerceOrderItem.getUnitPrice();
 
-			CommercePriceEntry commercePriceEntry =
-				_commercePriceEntryLocalService.fetchCommercePriceEntry(
-					commercePriceList.getCommercePriceListId(),
-					cpInstance.getCPInstanceUuid(),
-					commerceOrderItem.getUnitOfMeasureKey());
-
-			BigDecimal price = commercePriceEntry.getPrice();
-
-			BigDecimal totalItemPrice = price.multiply(
-				commerceOrderItem.getQuantity());
-
-			expectedSubtotal = expectedSubtotal.add(totalItemPrice);
+			expectedSubtotal = expectedSubtotal.add(
+				unitPrice.multiply(commerceOrderItem.getQuantity()));
 		}
 
 		BigDecimal actualSubtotal = commerceOrder.getSubtotal();
@@ -792,6 +785,8 @@ public class CommerceCheckoutTest {
 
 		BigDecimal expectedTotal = expectedSubtotal.add(
 			commerceOrder.getShippingAmount());
+
+		expectedTotal = expectedTotal.add(commerceOrder.getTaxAmount());
 
 		BigDecimal actualTotal = commerceOrder.getTotal();
 
@@ -819,22 +814,20 @@ public class CommerceCheckoutTest {
 
 		if (country == null) {
 			country = CountryLocalServiceUtil.addCountry(
-				a2, a3, true, true, RandomTestUtil.randomString(),
+				null, a2, a3, true, true, RandomTestUtil.randomString(),
 				RandomTestUtil.randomString(), RandomTestUtil.randomString(),
 				0D, true, true, false, _serviceContext);
 		}
 
 		return CommerceAddressLocalServiceUtil.addCommerceAddress(
-			AccountEntry.class.getName(), commerceOrder.getCommerceAccountId(),
+			StringPool.BLANK, AccountEntry.class.getName(),
+			commerceOrder.getCommerceAccountId(), country.getCountryId(), 0,
 			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
 			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
 			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
-			RandomTestUtil.randomString(), 0, country.getCountryId(),
-			RandomTestUtil.randomString(), addressType, _serviceContext);
+			RandomTestUtil.randomString(), StringPool.BLANK, addressType,
+			RandomTestUtil.randomString(), _serviceContext);
 	}
-
-	private static Company _company;
-	private static User _user;
 
 	private AccountEntry _accountEntry;
 
@@ -850,7 +843,6 @@ public class CommerceCheckoutTest {
 	@Inject
 	private CommerceCheckoutStepHttpHelper _commerceCheckoutStepHttpHelper;
 
-	@DeleteAfterTestRun
 	private CommerceCurrency _commerceCurrency;
 
 	@Inject
@@ -868,6 +860,8 @@ public class CommerceCheckoutTest {
 	@Inject
 	private CommercePriceListLocalService _commercePriceListLocalService;
 
+	private Company _company;
+
 	@Inject
 	private CPDefinitionInventoryLocalService
 		_cpDefinitionInventoryLocalService;
@@ -880,5 +874,6 @@ public class CommerceCheckoutTest {
 
 	private Group _group;
 	private ServiceContext _serviceContext;
+	private User _user;
 
 }

@@ -15,7 +15,6 @@ deploy {
 }
 
 deployJar {
-
 	ext {
 		autoClean = false
 	}
@@ -28,6 +27,10 @@ deployJar {
 	}
 }
 
+jarSources {
+	mustRunAfter patch
+}
+
 patch {
 	copyOriginalLibClasses = false
 
@@ -37,6 +40,5 @@ patch {
 
 	fileNames "org/jabsorb/JSONSerializer.java"
 	fileNames "org/jabsorb/serializer/impl/PrimitiveSerializer.java"
-
 	originalLibModuleName = "jabsorb"
 }

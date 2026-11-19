@@ -6,13 +6,14 @@
 package com.liferay.change.tracking.web.internal.portlet.action;
 
 import com.liferay.change.tracking.constants.CTPortletKeys;
-import com.liferay.change.tracking.web.internal.scheduler.PublishScheduler;
+import com.liferay.change.tracking.scheduler.PublishScheduler;
+import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.portlet.JSONPortletResponseUtil;
-import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCActionCommand;
+import com.liferay.portal.kernel.portlet.bridges.mvc.BaseTransactionalMVCActionCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
 import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
@@ -20,10 +21,10 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import java.util.Date;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
+import java.util.Date;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -33,16 +34,17 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + CTPortletKeys.PUBLICATIONS,
+		"jakarta.portlet.name=" + CTPortletKeys.PUBLICATIONS,
 		"mvc.command.name=/change_tracking/reschedule_publication",
 		"mvc.command.name=/change_tracking/schedule_publication"
 	},
 	service = MVCActionCommand.class
 )
-public class SchedulePublicationMVCActionCommand extends BaseMVCActionCommand {
+public class SchedulePublicationMVCActionCommand
+	extends BaseTransactionalMVCActionCommand {
 
 	@Override
-	protected void doProcessAction(
+	protected void doTransactionalCommand(
 			ActionRequest actionRequest, ActionResponse actionResponse)
 		throws Exception {
 
@@ -81,10 +83,12 @@ public class SchedulePublicationMVCActionCommand extends BaseMVCActionCommand {
 			_publishScheduler.schedulePublish(
 				ctCollectionId, themeDisplay.getUserId(), publishDate);
 		}
-		catch (Exception exception) {
+		catch (PortalException portalException) {
 			if (_log.isWarnEnabled()) {
-				_log.warn(exception);
+				_log.warn(portalException);
 			}
+
+			hideDefaultErrorMessage(actionRequest);
 
 			JSONPortletResponseUtil.writeJSON(
 				actionRequest, actionResponse,
@@ -94,7 +98,7 @@ public class SchedulePublicationMVCActionCommand extends BaseMVCActionCommand {
 						_portal.getHttpServletRequest(actionRequest),
 						"an-unexpected-error-occurred")));
 
-			return;
+			throw portalException;
 		}
 
 		JSONPortletResponseUtil.writeJSON(

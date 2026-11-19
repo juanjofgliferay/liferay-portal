@@ -18,9 +18,9 @@ import com.liferay.portal.kernel.trash.TrashRenderer;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.trash.BaseTrashHandler;
 
-import javax.portlet.PortletRequest;
+import jakarta.portlet.PortletRequest;
 
-import javax.servlet.ServletContext;
+import jakarta.servlet.ServletContext;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -56,12 +56,6 @@ public class ExportImportConfigurationTrashHandler extends BaseTrashHandler {
 	}
 
 	@Override
-	public TrashedModel getTrashedModel(long classPK) {
-		return _exportImportConfigurationLocalService.
-			fetchExportImportConfiguration(classPK);
-	}
-
-	@Override
 	public TrashRenderer getTrashRenderer(long classPK) throws PortalException {
 		ExportImportConfigurationTrashRenderer
 			exportImportConfigurationTrashRenderer =
@@ -73,6 +67,12 @@ public class ExportImportConfigurationTrashHandler extends BaseTrashHandler {
 			_servletContext);
 
 		return exportImportConfigurationTrashRenderer;
+	}
+
+	@Override
+	public TrashedModel getTrashedModel(long classPK) {
+		return _exportImportConfigurationLocalService.
+			fetchExportImportConfiguration(classPK);
 	}
 
 	@Override

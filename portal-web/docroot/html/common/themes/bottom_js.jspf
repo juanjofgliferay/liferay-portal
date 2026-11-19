@@ -10,7 +10,7 @@
 		Liferay.provide(
 			Liferay.Portlet,
 			'refreshLayout',
-			function(portletBound) {
+			function (portletBound) {
 				if (!portletBound.isStatic) {
 					Liferay.Layout.refresh(portletBound);
 				}
@@ -23,14 +23,11 @@
 <aui:script position="inline">
 	<c:choose>
 		<c:when test="<%= themeDisplay.isStatePopUp() %>">
-			Liferay.Util.getTop().Liferay.fire(
-				'popupReady',
-				{
-					doc: document,
-					win: window,
-					windowName: window.name
-				}
-			);
+			Liferay.Util.getTop().Liferay.fire('popupReady', {
+				doc: document,
+				win: window,
+				windowName: window.name,
+			});
 		</c:when>
 		<c:otherwise>
 
@@ -39,12 +36,9 @@
 			%>
 
 			<c:if test="<%= Validator.isNotNull(scroll) %>">
-				Liferay.on(
-					'allPortletsReady',
-					function(event) {
-						document.getElementById('<%= HtmlUtil.escape(scroll) %>').scrollIntoView();
-					}
-				);
+				Liferay.on('allPortletsReady', function (event) {
+					document.getElementById('<%= HtmlUtil.escape(scroll) %>').scrollIntoView();
+				});
 			</c:if>
 		</c:otherwise>
 	</c:choose>
@@ -52,37 +46,23 @@
 
 <aui:script>
 	if (window.svg4everybody && Liferay.Data.ICONS_INLINE_SVG) {
-		svg4everybody(
-			{
-				polyfill: true,
-				validate: function (src, svg, use) {
-					return !src || !src.startsWith('#');
-				}
-			}
-		);
+		svg4everybody({
+			polyfill: true,
+			validate: function (src, svg, use) {
+				return !src || !src.startsWith('#');
+			},
+		});
 	}
 </aui:script>
 
-<aui:script require="frontend-js-web/index as frontendJsWeb">
-	var {delegate} = frontendJsWeb;
+<aui:script sandbox="<%= true %>">
+	Liferay.Util.delegate(document, 'focusin', '.portlet', function (event) {
+		event.delegateTarget.closest('.portlet').classList.add('open');
+	});
 
-	delegate(
-		document,
-		'focusin',
-		'.portlet',
-		function(event) {
-			event.delegateTarget.closest('.portlet').classList.add('open');
-		}
-	);
-
-	delegate(
-		document,
-		'focusout',
-		'.portlet',
-		function(event) {
-			event.delegateTarget.closest('.portlet').classList.remove('open');
-		}
-	);
+	Liferay.Util.delegate(document, 'focusout', '.portlet', function (event) {
+		event.delegateTarget.closest('.portlet').classList.remove('open');
+	});
 </aui:script>
 
 <%
@@ -106,10 +86,15 @@ if (layout != null) {
 
 				<c:choose>
 					<c:when test="<%= BrowserSnifferUtil.isMobile(request) %>">
-						handles: Liferay.Data.PORTLET_TOUCH_DRAG_HANDLE_SELECTOR || ['.portlet-title-default'],
+						handles: Liferay.Data.PORTLET_TOUCH_DRAG_HANDLE_SELECTOR || [
+							'.portlet-title-default',
+						],
 					</c:when>
 					<c:otherwise>
-						handles: Liferay.Data.PORTLET_DRAG_HANDLE_SELECTOR || ['.portlet-title-default', '.portlet-topper'],
+						handles: Liferay.Data.PORTLET_DRAG_HANDLE_SELECTOR || [
+							'.portlet-title-default',
+							'.portlet-topper',
+						],
 					</c:otherwise>
 				</c:choose>
 
@@ -119,7 +104,7 @@ if (layout != null) {
 				emptyColumnClass: 'empty',
 				invalid: '.portlet-static',
 				nestedPortletId: '_<%= PortletKeys.NESTED_PORTLETS %>_INSTANCE',
-				portletBoundary: '.portlet-boundary'
+				portletBoundary: '.portlet-boundary',
 			};
 
 			Liferay.fire('dataLayoutConfigReady');
@@ -133,47 +118,28 @@ if (layout != null) {
 	<aui:script use="event-move,liferay-navigation">
 		var navBlock = A.one(Liferay.Data.NAV_SELECTOR);
 
-		Liferay.once(
-			'initNavigation',
-			function() {
-				new Liferay.Navigation(
-					{
-						navBlock: navBlock
-					}
-				);
-			}
-		);
-
 		if (navBlock) {
 			if (A.UA.touchMobile) {
 				var panel = document.querySelector(Liferay.Data.NAV_SELECTOR_MOBILE);
 
-				Liferay.on('liferay.collapse.shown',
-					function(event) {
-						var panelId = event.panel.geAttribute('id');
+				Liferay.on('liferay.collapse.shown', function (event) {
+					var panelId = event.panel.getAttribute('id');
 
-						if (panelId === panel.geAttribute('id')) {
-							Liferay.fire('initNavigation');
-						}
-					}
-				);
-			}
-			else {
-				navBlock.once(
-					['gesturemovestart', 'mousemove'],
-					function() {
+					if (panel && panelId === panel.getAttribute('id')) {
 						Liferay.fire('initNavigation');
 					}
-				);
+				});
+			}
+			else {
+				navBlock.once(['gesturemovestart', 'mousemove'], function () {
+					Liferay.fire('initNavigation');
+				});
 			}
 		}
 
-		A.on(
-			'io:complete',
-			function() {
-				Liferay.fire('io:complete');
-			}
-		);
+		A.on('io:complete', function () {
+			Liferay.fire('io:complete');
+		});
 	</aui:script>
 </c:if>
 
@@ -185,23 +151,24 @@ if (layout != null) {
 	for (var i = 0; i < liferayNotices.length; i++) {
 		Liferay.Util.openToast(liferayNotices[i]);
 	}
-
 </aui:script>
 
-<script type="text/javascript">
+<aui:script type="text/javascript">
+
 	// <![CDATA[
 
-		<%
-		String currentURL = PortalUtil.getCurrentURL(request);
-		%>
+	<%
+	String currentURL = PortalUtil.getCurrentURL(request);
+	%>
 
-		Liferay.currentURL = '<%= HtmlUtil.escapeJS(currentURL) %>';
-		Liferay.currentURLEncoded = '<%= HtmlUtil.escapeJS(URLCodec.encodeURL(currentURL)) %>';
+	Liferay.currentURL = '<%= HtmlUtil.escapeJS(currentURL) %>';
+	Liferay.currentURLEncoded =
+		'<%= HtmlUtil.escapeJS(URLCodec.encodeURL(currentURL)) %>';
 
 	// ]]>
-</script>
+</aui:script>
 
-<c:if test="<%= layout != null %>">
+<c:if test="<%= (layout != null) && !layout.isTypeControlPanel() %>">
 
 	<%-- User Inputted Layout and LayoutSet JavaScript --%>
 
@@ -221,17 +188,27 @@ if (layout != null) {
 	UnicodeProperties layoutSetSettingsUnicodeProperties = layoutSet.getSettingsProperties();
 
 	UnicodeProperties layoutTypeSettingsUnicodeProperties = layout.getTypeSettingsProperties();
+
+	String snippet = GetterUtil.getString(layoutSetSettingsUnicodeProperties.getProperty("javascript"));
 	%>
 
-	<script type="text/javascript">
-		// <![CDATA[
-			<c:if test="<%= !layout.isTypeControlPanel() %>">
-				<%= GetterUtil.getString(layoutSetSettingsUnicodeProperties.getProperty("javascript")) %>
+	<c:if test="<%= Validator.isNotNull(snippet) %>">
+		<%@ include file="/html/common/themes/bottom_js_script.jspf" %>
+	</c:if>
 
-				<%= GetterUtil.getString(masterLayoutTypeSettingsUnicodeProperties.getProperty("javascript")) %>
+	<%
+	snippet = GetterUtil.getString(masterLayoutTypeSettingsUnicodeProperties.getProperty("javascript"));
+	%>
 
-				<%= GetterUtil.getString(layoutTypeSettingsUnicodeProperties.getProperty("javascript")) %>
-			</c:if>
-		// ]]>
-	</script>
+	<c:if test="<%= Validator.isNotNull(snippet) %>">
+		<%@ include file="/html/common/themes/bottom_js_script.jspf" %>
+	</c:if>
+
+	<%
+	snippet = GetterUtil.getString(layoutTypeSettingsUnicodeProperties.getProperty("javascript"));
+	%>
+
+	<c:if test="<%= Validator.isNotNull(snippet) %>">
+		<%@ include file="/html/common/themes/bottom_js_script.jspf" %>
+	</c:if>
 </c:if>

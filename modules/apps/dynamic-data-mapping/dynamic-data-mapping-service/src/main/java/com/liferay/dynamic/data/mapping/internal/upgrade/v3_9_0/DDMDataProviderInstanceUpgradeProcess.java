@@ -17,18 +17,23 @@ import com.liferay.dynamic.data.mapping.util.DDMFormFactory;
 import com.liferay.dynamic.data.mapping.util.DDMFormValuesDeserializeUtil;
 import com.liferay.dynamic.data.mapping.util.DDMFormValuesSerializeUtil;
 import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMap;
+import com.liferay.petra.function.transform.TransformUtil;
+import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.jdbc.AutoBatchPreparedStatementUtil;
 import com.liferay.portal.kernel.upgrade.UpgradeProcess;
+import com.liferay.portal.kernel.util.SetUtil;
+import com.liferay.portal.kernel.util.StringUtil;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * @author Marcos Martins
@@ -50,27 +55,25 @@ public class DDMDataProviderInstanceUpgradeProcess extends UpgradeProcess {
 	@Override
 	protected void doUpgrade() throws Exception {
 		try (PreparedStatement preparedStatement1 = connection.prepareStatement(
-				"select dataProviderInstanceId, definition, type_ from " +
-					"DDMDataProviderInstance");
+				"select ctCollectionId, dataProviderInstanceId, definition, " +
+					"type_ from DDMDataProviderInstance");
 			PreparedStatement preparedStatement2 =
 				AutoBatchPreparedStatementUtil.concurrentAutoBatch(
 					connection,
 					"update DDMDataProviderInstance set definition = ? where " +
-						"dataProviderInstanceId = ?");
+						"ctCollectionId = ? and dataProviderInstanceId = ?");
 			ResultSet resultSet = preparedStatement1.executeQuery()) {
 
 			while (resultSet.next()) {
-				String dataProviderInstanceDefinition = resultSet.getString(2);
-				String type = resultSet.getString(3);
-
 				preparedStatement2.setString(
 					1,
 					_upgradeDataProviderInstanceDefinition(
-						dataProviderInstanceDefinition, type));
-
-				long dataProviderInstanceId = resultSet.getLong(1);
-
-				preparedStatement2.setLong(2, dataProviderInstanceId);
+						resultSet.getString("definition"),
+						resultSet.getString("type_")));
+				preparedStatement2.setLong(
+					2, resultSet.getLong("ctCollectionId"));
+				preparedStatement2.setLong(
+					3, resultSet.getLong("dataProviderInstanceId"));
 
 				preparedStatement2.addBatch();
 			}
@@ -84,25 +87,27 @@ public class DDMDataProviderInstanceUpgradeProcess extends UpgradeProcess {
 
 		Value value = nestedDDMFormFieldValue.getValue();
 
-		Map<Locale, String> valuesMap = value.getValues();
+		Map<Locale, String> valuesMap = new HashMap<>(value.getValues());
 
-		for (Map.Entry<Locale, String> valueEntry : valuesMap.entrySet()) {
-			String valueString = valueEntry.getValue();
+		for (Map.Entry<Locale, String> entry : valuesMap.entrySet()) {
+			String[] valueStringParts = StringUtil.split(
+				entry.getValue(), CharPool.SEMICOLON);
 
-			String[] valueStringParts = valueString.split(StringPool.SEMICOLON);
+			if ((valueStringParts.length != 2) ||
+				!_legacyOutputPathTypes.contains(valueStringParts[1])) {
 
-			if (valueStringParts.length > 1) {
-				String outputPathType = valueStringParts[1];
-				String outputPathValue = valueStringParts[0];
-
-				if (outputPathType.equals("List")) {
-					outputPathValue = StringBundler.concat(
-						StringPool.DOLLAR, StringPool.DOUBLE_PERIOD,
-						outputPathValue);
-				}
-
-				valuesMap.put(valueEntry.getKey(), outputPathValue);
+				continue;
 			}
+
+			String outputPathValue = valueStringParts[0];
+
+			if (valueStringParts[1].equals("List")) {
+				outputPathValue = StringBundler.concat(
+					StringPool.DOLLAR, StringPool.DOUBLE_PERIOD,
+					outputPathValue);
+			}
+
+			value.addString(entry.getKey(), outputPathValue);
 		}
 	}
 
@@ -137,39 +142,39 @@ public class DDMDataProviderInstanceUpgradeProcess extends UpgradeProcess {
 				ddmFormField.getNestedDDMFormFieldsMap();
 
 			for (DDMFormFieldValue ddmFormFieldValue : ddmFormFieldValues) {
-				List<DDMFormFieldValue> newNestedDDMFormFieldValues =
-					new ArrayList<>();
-
-				for (DDMFormFieldValue nestedDDMFormFieldValue :
-						ddmFormFieldValue.getNestedDDMFormFieldValues()) {
-
-					String nestedDDMFormFieldValueName =
-						nestedDDMFormFieldValue.getName();
-
-					DDMFormField nestedDDMFormField =
-						nestedDDMFormFieldsMap.get(nestedDDMFormFieldValueName);
-
-					if (nestedDDMFormField == null) {
-						continue;
-					}
-
-					if (nestedDDMFormFieldValueName.equals(
-							"outputParameterPath")) {
-
-						_updateNestedDDMFormFieldValue(nestedDDMFormFieldValue);
-					}
-
-					newNestedDDMFormFieldValues.add(nestedDDMFormFieldValue);
-				}
-
 				ddmFormFieldValue.setNestedDDMFormFields(
-					newNestedDDMFormFieldValues);
+					TransformUtil.transform(
+						ddmFormFieldValue.getNestedDDMFormFieldValues(),
+						nestedDDMFormFieldValue -> {
+							String nestedDDMFormFieldValueName =
+								nestedDDMFormFieldValue.getName();
+
+							DDMFormField nestedDDMFormField =
+								nestedDDMFormFieldsMap.get(
+									nestedDDMFormFieldValueName);
+
+							if (nestedDDMFormField == null) {
+								return null;
+							}
+
+							if (nestedDDMFormFieldValueName.equals(
+									"outputParameterPath")) {
+
+								_updateNestedDDMFormFieldValue(
+									nestedDDMFormFieldValue);
+							}
+
+							return nestedDDMFormFieldValue;
+						}));
 			}
 		}
 
 		return DDMFormValuesSerializeUtil.serialize(
 			ddmFormValues, _ddmFormValuesSerializer);
 	}
+
+	private static final Set<String> _legacyOutputPathTypes = SetUtil.fromArray(
+		"List", "Number", "Text");
 
 	private final DDMFormValuesDeserializer _ddmFormValuesDeserializer;
 	private final DDMFormValuesSerializer _ddmFormValuesSerializer;

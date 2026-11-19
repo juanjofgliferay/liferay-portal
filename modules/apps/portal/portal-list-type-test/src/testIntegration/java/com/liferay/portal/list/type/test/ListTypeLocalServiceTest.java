@@ -71,14 +71,14 @@ public class ListTypeLocalServiceTest {
 				false));
 
 		try (SafeCloseable safeCloseable =
-				CompanyThreadLocal.setWithSafeCloseable(
+				CompanyThreadLocal.setCompanyIdWithSafeCloseable(
 					_company.getCompanyId())) {
 
 			for (int i = 0; i < listTypesJSONArray.length(); i++) {
 				JSONObject listTypeJSONObject =
 					listTypesJSONArray.getJSONObject(i);
 
-				ListType listType = _listTypeLocalService.getListType(
+				ListType listType = _listTypeLocalService.fetchListType(
 					_company.getCompanyId(),
 					listTypeJSONObject.getString("name"),
 					listTypeJSONObject.getString("type"));
@@ -95,22 +95,22 @@ public class ListTypeLocalServiceTest {
 		ListType listType = null;
 
 		try (SafeCloseable safeCloseable1 =
-				CompanyThreadLocal.setWithSafeCloseable(
+				CompanyThreadLocal.setCompanyIdWithSafeCloseable(
 					_company.getCompanyId())) {
 
 			listType = _listTypeLocalService.addListType(
 				_company.getCompanyId(), _LIST_TYPE_NAME, _LIST_TYPE_TYPE);
 
 			Assert.assertNotNull(
-				_listTypeLocalService.getListType(
+				_listTypeLocalService.fetchListType(
 					_company.getCompanyId(), _LIST_TYPE_NAME, _LIST_TYPE_TYPE));
 
 			try (SafeCloseable safeCloseable2 =
-					CompanyThreadLocal.setWithSafeCloseable(
+					CompanyThreadLocal.setCompanyIdWithSafeCloseable(
 						PortalUtil.getDefaultCompanyId())) {
 
 				Assert.assertNull(
-					_listTypeLocalService.getListType(
+					_listTypeLocalService.fetchListType(
 						PortalUtil.getDefaultCompanyId(), _LIST_TYPE_NAME,
 						_LIST_TYPE_TYPE));
 			}
@@ -118,7 +118,7 @@ public class ListTypeLocalServiceTest {
 		finally {
 			if (listType != null) {
 				try (SafeCloseable safeCloseable =
-						CompanyThreadLocal.setWithSafeCloseable(
+						CompanyThreadLocal.setCompanyIdWithSafeCloseable(
 							_company.getCompanyId())) {
 
 					_listTypeLocalService.deleteListType(listType);
@@ -132,7 +132,7 @@ public class ListTypeLocalServiceTest {
 		ListType listType = null;
 
 		try (SafeCloseable safeCloseable1 =
-				CompanyThreadLocal.setWithSafeCloseable(
+				CompanyThreadLocal.setCompanyIdWithSafeCloseable(
 					_company.getCompanyId())) {
 
 			listType = _listTypeLocalService.addListType(
@@ -144,7 +144,7 @@ public class ListTypeLocalServiceTest {
 			Assert.assertEquals(listTypes.toString(), 1, listTypes.size());
 
 			try (SafeCloseable safeCloseable2 =
-					CompanyThreadLocal.setWithSafeCloseable(
+					CompanyThreadLocal.setCompanyIdWithSafeCloseable(
 						PortalUtil.getDefaultCompanyId())) {
 
 				listTypes = _listTypeLocalService.getListTypes(
@@ -156,7 +156,7 @@ public class ListTypeLocalServiceTest {
 		finally {
 			if (listType != null) {
 				try (SafeCloseable safeCloseable =
-						CompanyThreadLocal.setWithSafeCloseable(
+						CompanyThreadLocal.setCompanyIdWithSafeCloseable(
 							_company.getCompanyId())) {
 
 					_listTypeLocalService.deleteListType(listType);
@@ -173,7 +173,7 @@ public class ListTypeLocalServiceTest {
 	private static Company _company;
 
 	@Inject
-	private static CompanyLocalService _companyLocalService;
+	private CompanyLocalService _companyLocalService;
 
 	@Inject
 	private JSONFactory _jsonFactory;

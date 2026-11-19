@@ -1,0 +1,43 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`FilterInfo render 1`] = `
+<div>
+  <div
+    class="filter-info-root"
+  >
+    <div
+      class="filter-name d-flex align-items-center justify-content-between"
+    >
+      Test Name
+      <button
+        aria-label="Edit"
+        class="button-root btn btn-outline-borderless btn-sm btn-outline-secondary"
+        type="button"
+      >
+        <svg
+          class="lexicon-icon lexicon-icon-pencil icon-root"
+          role="presentation"
+        >
+          <use
+            href="#pencil"
+          />
+        </svg>
+      </button>
+    </div>
+    <div
+      class="description"
+    >
+      Test description
+    </div>
+    <span
+      class="label label-inverse-info"
+    >
+      <span
+        class="label-item label-item-expand"
+      >
+        String
+      </span>
+    </span>
+  </div>
+</div>
+`;

@@ -71,13 +71,15 @@ String userIdentifierExpression = attributeMappingDisplayContext.getUserIdentifi
 				<aui:input name='<%= "attribute:" + prefix + ":userAttributeMappingsIndexes" %>' type="hidden" value="<%= StringUtil.merge(userAttributeMappingsIndexes) %>" />
 			</div>
 
-			<aui:script use="liferay-auto-fields">
-				new Liferay.AutoFields({
+			<aui:script type="module">
+				import {autoFields} from '<%= FrontendESMUtil.buildURL(themeDisplay, "frontend-js-web", "auto_fields") %>';
+
+				autoFields({
 					contentBox: '#<portlet:namespace /><%= userAttributeMappingsContentBox %>',
 					fieldIndexes:
 						'<portlet:namespace />attribute:<%= prefix %>:userAttributeMappingsIndexes',
 					namespace: '<portlet:namespace />',
-				}).render();
+				});
 			</aui:script>
 		</aui:field-wrapper>
 
@@ -88,7 +90,7 @@ String userIdentifierExpression = attributeMappingDisplayContext.getUserIdentifi
 	<aui:input name="attribute:userAttributeMappingsPrefixes" type="hidden" value="<%= StringUtil.merge(attributeMappingDisplayContext.getPrefixes()) %>" />
 </aui:fieldset>
 
-<script>
+<aui:script>
 	function <portlet:namespace />evaluateAttributeMappingRows() {
 		document.querySelector(
 			'input[name="<portlet:namespace />attribute:userIdentifierExpressionPrefix"]'
@@ -139,6 +141,10 @@ String userIdentifierExpression = attributeMappingDisplayContext.getUserIdentifi
 				radioTarget.closest('label').classList.toggle('disabled', true);
 			}
 		}
+
+		radioTarget.value = selectTarget.name.substring(
+			selectTarget.name.lastIndexOf('-') + 1
+		);
 	}
 
 	var userAttributeMappings = document.getElementById(
@@ -181,4 +187,4 @@ String userIdentifierExpression = attributeMappingDisplayContext.getUserIdentifi
 		);
 
 	<portlet:namespace />evaluateAttributeMappingRows();
-</script>
+</aui:script>

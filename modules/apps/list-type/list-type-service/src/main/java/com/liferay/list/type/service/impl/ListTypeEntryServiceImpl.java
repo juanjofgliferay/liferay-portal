@@ -36,7 +36,7 @@ public class ListTypeEntryServiceImpl extends ListTypeEntryServiceBaseImpl {
 	@Override
 	public ListTypeEntry addListTypeEntry(
 			String externalReferenceCode, long listTypeDefinitionId, String key,
-			Map<Locale, String> nameMap)
+			Map<Locale, String> nameMap, boolean system)
 		throws PortalException {
 
 		ListTypeDefinition listTypeDefinition =
@@ -49,7 +49,7 @@ public class ListTypeEntryServiceImpl extends ListTypeEntryServiceBaseImpl {
 
 		return listTypeEntryLocalService.addListTypeEntry(
 			externalReferenceCode, getUserId(), listTypeDefinitionId, key,
-			nameMap);
+			nameMap, system);
 	}
 
 	@Override
@@ -67,6 +67,22 @@ public class ListTypeEntryServiceImpl extends ListTypeEntryServiceBaseImpl {
 	}
 
 	@Override
+	public ListTypeEntry fetchListTypeEntry(
+			long listTypeDefinitionId, String key)
+		throws PortalException {
+
+		ListTypeEntry listTypeEntry = listTypeEntryPersistence.fetchByLTDI_K(
+			listTypeDefinitionId, key);
+
+		if (listTypeEntry != null) {
+			_listTypeDefinitionModelResourcePermission.check(
+				getPermissionChecker(), listTypeDefinitionId, ActionKeys.VIEW);
+		}
+
+		return listTypeEntry;
+	}
+
+	@Override
 	public List<ListTypeEntry> getListTypeEntries(
 			long listTypeDefinitionId, int start, int end)
 		throws PortalException {
@@ -74,7 +90,7 @@ public class ListTypeEntryServiceImpl extends ListTypeEntryServiceBaseImpl {
 		_listTypeDefinitionModelResourcePermission.check(
 			getPermissionChecker(), listTypeDefinitionId, ActionKeys.VIEW);
 
-		return listTypeEntryLocalService.getListTypeEntries(
+		return listTypeEntryPersistence.findByListTypeDefinitionId(
 			listTypeDefinitionId, start, end);
 	}
 
@@ -85,7 +101,7 @@ public class ListTypeEntryServiceImpl extends ListTypeEntryServiceBaseImpl {
 		_listTypeDefinitionModelResourcePermission.check(
 			getPermissionChecker(), listTypeDefinitionId, ActionKeys.VIEW);
 
-		return listTypeEntryLocalService.getListTypeEntriesCount(
+		return listTypeEntryPersistence.countByListTypeDefinitionId(
 			listTypeDefinitionId);
 	}
 
@@ -100,7 +116,7 @@ public class ListTypeEntryServiceImpl extends ListTypeEntryServiceBaseImpl {
 			getPermissionChecker(), listTypeEntry.getListTypeDefinitionId(),
 			ActionKeys.VIEW);
 
-		return listTypeEntryLocalService.getListTypeEntry(listTypeEntryId);
+		return listTypeEntryPersistence.findByPrimaryKey(listTypeEntryId);
 	}
 
 	@Override
@@ -109,15 +125,38 @@ public class ListTypeEntryServiceImpl extends ListTypeEntryServiceBaseImpl {
 			long listTypeDefinitionId)
 		throws PortalException {
 
-		ListTypeEntry listTypeEntry =
-			listTypeEntryLocalService.getListTypeEntryByExternalReferenceCode(
-				externalReferenceCode, companyId, listTypeDefinitionId);
+		ListTypeEntry listTypeEntry = listTypeEntryPersistence.findByERC_C_LTDI(
+			externalReferenceCode, companyId, listTypeDefinitionId);
 
 		_listTypeDefinitionModelResourcePermission.check(
 			getPermissionChecker(), listTypeEntry.getListTypeDefinitionId(),
 			ActionKeys.VIEW);
 
 		return listTypeEntry;
+	}
+
+	@Override
+	public ListTypeEntry getOrAddEmptyListTypeEntry(
+			long userId, long listTypeDefinitionId, String key)
+		throws PortalException {
+
+		ListTypeEntry listTypeEntry = listTypeEntryService.fetchListTypeEntry(
+			listTypeDefinitionId, key);
+
+		if (listTypeEntry != null) {
+			return listTypeEntry;
+		}
+
+		ListTypeDefinition listTypeDefinition =
+			_listTypeDefinitionPersistence.findByPrimaryKey(
+				listTypeDefinitionId);
+
+		_listTypeDefinitionModelResourcePermission.check(
+			getPermissionChecker(),
+			listTypeDefinition.getListTypeDefinitionId(), ActionKeys.UPDATE);
+
+		return listTypeEntryLocalService.getOrAddEmptyListTypeEntry(
+			userId, listTypeDefinitionId, key);
 	}
 
 	@Override

@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -234,13 +235,6 @@ public class CommerceTermEntryRelLocalServiceUtil {
 		return getService().fetchCommerceTermEntryRel(commerceTermEntryRelId);
 	}
 
-	public static CommerceTermEntryRel fetchCommerceTermEntryRel(
-		String className, long classPK, long commerceTermEntryId) {
-
-		return getService().fetchCommerceTermEntryRel(
-			className, classPK, commerceTermEntryId);
-	}
-
 	public static com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery
 		getActionableDynamicQuery() {
 
@@ -293,20 +287,6 @@ public class CommerceTermEntryRelLocalServiceUtil {
 		return getService().getCommerceTermEntryRels(start, end);
 	}
 
-	public static List<CommerceTermEntryRel> getCommerceTermEntryRels(
-		long commerceTermEntryId) {
-
-		return getService().getCommerceTermEntryRels(commerceTermEntryId);
-	}
-
-	public static List<CommerceTermEntryRel> getCommerceTermEntryRels(
-		long commerceTermEntryId, int start, int end,
-		OrderByComparator<CommerceTermEntryRel> orderByComparator) {
-
-		return getService().getCommerceTermEntryRels(
-			commerceTermEntryId, start, end, orderByComparator);
-	}
-
 	/**
 	 * Returns the number of commerce term entry rels.
 	 *
@@ -314,10 +294,6 @@ public class CommerceTermEntryRelLocalServiceUtil {
 	 */
 	public static int getCommerceTermEntryRelsCount() {
 		return getService().getCommerceTermEntryRelsCount();
-	}
-
-	public static int getCommerceTermEntryRelsCount(long commerceTermEntryId) {
-		return getService().getCommerceTermEntryRelsCount(commerceTermEntryId);
 	}
 
 	public static
@@ -362,13 +338,13 @@ public class CommerceTermEntryRelLocalServiceUtil {
 	}
 
 	public static CommerceTermEntryRelLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(CommerceTermEntryRelLocalService service) {
-		_service = service;
-	}
-
-	private static volatile CommerceTermEntryRelLocalService _service;
+	private static final Snapshot<CommerceTermEntryRelLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			CommerceTermEntryRelLocalServiceUtil.class,
+			CommerceTermEntryRelLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-2129540305

@@ -1,14 +1,22 @@
 @component-name = "portal-commerce"
 definition {
 
-	property custom.properties = "company.security.strangers.verify=false${line.separator}jsonws.web.service.paths.excludes=";
+	property browser.chrome.version = "139.0";
+	property custom.properties = "company.security.strangers.verify=false${line.separator}feature.flag.LPD-11235=true${line.separator}jsonws.web.service.paths.excludes=";
 	property portal.release = "true";
 	property portal.upstream = "true";
-	property release.feature.flags.disable.DISABLE_PRIVATE_LAYOUTS = "true";
 	property testray.main.component.name = "Shopping Experience";
 
 	setUp {
 		CommerceConfiguration.commerceSetUp();
+
+		task ("Enable private pages") {
+			PagesAdmin.enablePrivatePages();
+		}
+
+		task ("Enable CKE4") {
+			PagesAdmin.enableCKE4();
+		}
 	}
 
 	tearDown {
@@ -72,250 +80,6 @@ definition {
 			locator1 = "FormViewBuilder#ASSERT_FORM");
 	}
 
-	@description = "COMMERCE-6359. As a buyer, I want to be able to select only the allowed quantities of a product in Product Details, if set"
-	@priority = 5
-	test AssertOnlyAllowedQuantitiesAreSelectableInProductDetails {
-		property portal.acceptance = "true";
-
-		// TODO Review
-
-		CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Minium");
-
-		CommerceNavigator.gotoPortlet(
-			category = "Product Management",
-			portlet = "Products");
-
-		CommerceNavigator.searchEntry(entryName = "U-Joint");
-
-		CommerceNavigator.gotoEntry(entryName = "U-Joint");
-
-		CommerceEntry.gotoMenuTab(menuTab = "Configuration");
-
-		Type(
-			key_text = "Allowed Order Quantities",
-			locator1 = "TextInput#ANY",
-			value1 = "1 4 5 7 11");
-
-		Button.clickPublish();
-
-		ApplicationsMenu.gotoSite(site = "Minium");
-
-		CommerceNavigator.gotoMiniumSidebarItem(menuItem = "Account Management");
-
-		CommerceAcceleratorsInitializer.createNewAccountViaFront(accountName = "Commerce Account");
-
-		CommerceNavigator.gotoMiniumSidebarItem(menuItem = "Catalog");
-
-		var product = "U-Joint";
-
-		Click(
-			key_productName = ${product},
-			locator1 = "CommerceAccelerators#PRODUCT_CARD_NAME");
-
-		for (var quantity : list "1,4,5,7,11") {
-			AssertElementPresent(
-				key_optionValue = ${quantity},
-				key_productName = ${product},
-				locator1 = "CommerceFrontStore#PRODUCT_DETAILS_QUANTITY_OPTION");
-		}
-	}
-
-	@description = "COMMERCE-6363. As a buyer, I want to be able to select the quantity of a product in Product Details by multiple value, if set"
-	@priority = 5
-	test AssertOnlyMultipleValuesAreSelectableQuantitiesInProductDetails {
-		property portal.acceptance = "true";
-
-		// TODO Review
-
-		var multipleQuantity = 3;
-		var product = "U-Joint";
-
-		CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Minium");
-
-		CommerceNavigator.gotoPortlet(
-			category = "Product Management",
-			portlet = "Products");
-
-		CommerceNavigator.searchEntry(entryName = ${product});
-
-		CommerceNavigator.gotoEntry(entryName = ${product});
-
-		CommerceEntry.gotoMenuTab(menuTab = "Configuration");
-
-		Type(
-			key_text = "Multiple Order Quantity",
-			locator1 = "TextInput#ANY",
-			value1 = ${multipleQuantity});
-
-		Button.clickPublish();
-
-		ApplicationsMenu.gotoSite(site = "Minium");
-
-		CommerceNavigator.gotoMiniumSidebarItem(menuItem = "Account Management");
-
-		CommerceAcceleratorsInitializer.createNewAccountViaFront(accountName = "Commerce Account");
-
-		CommerceNavigator.gotoMiniumSidebarItem(menuItem = "Catalog");
-
-		Click(
-			key_productName = ${product},
-			locator1 = "CommerceAccelerators#PRODUCT_CARD_NAME");
-
-		AssertTextEquals(
-			key_productName = ${product},
-			locator1 = "CommerceFrontStore#PRODUCT_DETAILS_QUANTITY_SELECTOR",
-			value1 = ${multipleQuantity});
-
-		for (var quantity : list "1,3,4,6,300") {
-			Type(
-				key_productName = ${product},
-				locator1 = "CommerceFrontStore#PRODUCT_DETAILS_QUANTITY_SELECTOR",
-				value1 = ${quantity});
-
-			AssertTextEquals(
-				key_productName = ${product},
-				locator1 = "CommerceFrontStore#PRODUCT_DETAILS_QUANTITY_SELECTOR",
-				value1 = ${quantity});
-
-			if ((${quantity} == 1) || (${quantity} == 4)) {
-				var conditionNotSatisfied = "true";
-
-				AssertElementPresent(
-					key_productName = ${product},
-					locator1 = "CommerceFrontStore#PRODUCT_DETAILS_QUANTITY_SELECTOR_HAS_ERROR");
-			}
-			else {
-				var conditionNotSatisfied = "false";
-
-				AssertElementNotPresent(
-					key_productName = ${product},
-					locator1 = "CommerceFrontStore#PRODUCT_DETAILS_QUANTITY_SELECTOR_HAS_ERROR");
-			}
-
-			FrontStore.viewQuantitySelectorPopoverListItem(
-				conditionNotSatisfied = ${conditionNotSatisfied},
-				quantity = ${multipleQuantity},
-				quantityConfiguration = "multiple");
-		}
-	}
-
-	@description = "COMMERCE-6369. As a buyer, I want to be able to add a product to the cart in Product Details regardless of the availability, if back ordererabilty of that product is enabled"
-	@priority = 3
-	test AssertProductCanBeAddedToCartFromProductDetailsIfBackOrderIsEnabled {
-		property portal.acceptance = "false";
-
-		// TODO Review
-
-		CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Minium");
-
-		CommerceNavigator.gotoPortlet(
-			category = "Product Management",
-			portlet = "Products");
-
-		CPCommerceCatalog.newProductsEntry(
-			productCatalog = "Minium",
-			productName = "Simple T-Shirt",
-			productType = "Simple");
-
-		CommerceEntry.gotoMenuTab(menuTab = "SKUs");
-
-		AssertTextEquals(
-			key_columnNumber = 4,
-			key_entryName = "default",
-			locator1 = "CommerceEntry#TABLE_CELL_BY_COLUMN_ORDER",
-			value1 = 0);
-
-		CommerceEntry.gotoMenuTab(menuTab = "Configuration");
-
-		Uncheck.uncheckToggleSwitch(
-			key_toggleSwitchLabel = "Allow Back Order",
-			locator1 = "ToggleSwitch#ANY_TOGGLE_SWITCH");
-
-		Button.click(button = "Publish");
-
-		ApplicationsMenu.gotoSite(site = "Minium");
-
-		CommerceNavigator.gotoMiniumSidebarItem(menuItem = "Account Management");
-
-		CommerceAcceleratorsInitializer.createNewAccountViaFront(accountName = "Test Test");
-
-		CommerceNavigator.gotoMiniumSidebarItem(menuItem = "Catalog");
-
-		CommerceAcceleratorsInitializer.gotoMiniumProductDetailsPage(productName = "Simple T-Shirt");
-
-		AssertElementPresent(
-			key_productName = "Simple T-Shirt",
-			locator1 = "CommerceAccelerators#ADD_TO_CART_BUTTON_PRODUCT_DETAILS_PAGE_DISABLED");
-
-		CommerceNavigator.gotoPortlet(
-			category = "Product Management",
-			portlet = "Products");
-
-		CommerceNavigator.searchEntry(entryName = "Simple T-Shirt");
-
-		CommerceNavigator.gotoEntry(entryName = "Simple T-Shirt");
-
-		CommerceEntry.gotoMenuTab(menuTab = "Configuration");
-
-		Check.checkToggleSwitch(
-			key_toggleSwitchLabel = "Allow Back Orders",
-			locator1 = "ToggleSwitch#ANY_TOGGLE_SWITCH");
-
-		Button.click(button = "Publish");
-
-		ApplicationsMenu.gotoSite(site = "Minium");
-
-		AssertElementNotPresent(
-			key_productName = "Simple T-Shirt",
-			locator1 = "CommerceAccelerators#ADD_TO_CART_BUTTON_PRODUCT_DETAILS_PAGE_DISABLED");
-	}
-
-	@description = "COMMERCE-6367. As a buyer, I don't want to be able to add a product to the cart in Product Details if the product is not purchasable"
-	@priority = 5
-	test AssertProductCannotBeAddedToCartFromProductDetailsIfProductIsNotPurchasable {
-		property portal.acceptance = "true";
-
-		// TODO Review
-
-		CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Minium");
-
-		CommerceNavigator.gotoPortlet(
-			category = "Product Management",
-			portlet = "Products");
-
-		CommerceNavigator.searchEntry(entryName = "U-Joint");
-
-		CommerceNavigator.gotoEntry(entryName = "U-Joint");
-
-		CommerceEntry.gotoMenuTab(menuTab = "SKUs");
-
-		CommerceNavigator.gotoEntry(entryName = "MIN55861");
-
-		SelectFrame.selectFrameNoLoading(locator1 = "CommerceEntry#IFRAME_SIDE_PANEL");
-
-		Uncheck.uncheckToggleSwitch(
-			key_checkSetupName = "Purchasable",
-			locator1 = "ToggleSwitch#SHOW_SPECIFIC_TOGGLE_SWITCH");
-
-		Button.clickPublish();
-
-		SelectFrameTop(locator1 = "CommerceEntry#IFRAME_SIDE_PANEL");
-
-		ApplicationsMenu.gotoSite(site = "Minium");
-
-		CommerceNavigator.gotoMiniumSidebarItem(menuItem = "Account Management");
-
-		CommerceAcceleratorsInitializer.createNewAccountViaFront(accountName = "Test Test");
-
-		CommerceNavigator.gotoMiniumSidebarItem(menuItem = "Catalog");
-
-		CommerceAcceleratorsInitializer.gotoMiniumProductDetailsPage(productName = "U-Joint");
-
-		AssertElementPresent(
-			key_productName = "U-Joint",
-			locator1 = "CommerceAccelerators#ADD_TO_CART_BUTTON_PRODUCT_DETAILS_PAGE_DISABLED");
-	}
-
 	@description = "COMMERCE-6362. As a buyer, I want to be able to select the quantity of a product in Product Details up to a maximum quantity, if set"
 	@priority = 5
 	test AssertQuantityInProductDetailsCanBeSelectedUpToAMaximumQuantitySet {
@@ -328,9 +92,7 @@ definition {
 
 		CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Minium");
 
-		CommerceNavigator.gotoPortlet(
-			category = "Product Management",
-			portlet = "Products");
+		CommerceProducts.openProductsAdmin();
 
 		CommerceProducts.searchProduct(search = ${product});
 
@@ -340,7 +102,7 @@ definition {
 
 		Type(
 			key_fieldLabel = "Maximum Order Quantity",
-			locator1 = "TextInput#GENERIC_TEXT_INPUT",
+			locator1 = "TextInput#GENERIC_NUMBER_INPUT",
 			value1 = ${maximumQuantity});
 
 		Button.clickPublish();
@@ -391,98 +153,6 @@ definition {
 		}
 	}
 
-	@description = "COMMERCE-6360. As a buyer, I want to be able to select the quantity of a product in Product Details starting from a minimum quantity, if set"
-	@priority = 5
-	test AssertSelectableQuantitiesInProductDetailsStartFromMinimumQuantitySet {
-		property portal.acceptance = "true";
-
-		// TODO Review
-
-		var minimumQuantity = 3;
-		var product = "U-Joint";
-
-		CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Minium");
-
-		CommerceNavigator.gotoPortlet(
-			category = "Product Management",
-			portlet = "Products");
-
-		CommerceNavigator.searchEntry(entryName = ${product});
-
-		CommerceNavigator.gotoEntry(entryName = ${product});
-
-		CommerceEntry.gotoMenuTab(menuTab = "Configuration");
-
-		Type(
-			key_text = "Minimum Order Quantity",
-			locator1 = "TextInput#ANY",
-			value1 = ${minimumQuantity});
-
-		Button.clickPublish();
-
-		ApplicationsMenu.gotoSite(site = "Minium");
-
-		CommerceNavigator.gotoMiniumSidebarItem(menuItem = "Account Management");
-
-		CommerceAcceleratorsInitializer.createNewAccountViaFront(accountName = "Commerce Account");
-
-		CommerceNavigator.gotoMiniumSidebarItem(menuItem = "Catalog");
-
-		Click(
-			key_productName = ${product},
-			locator1 = "CommerceAccelerators#PRODUCT_CARD_NAME");
-
-		AssertElementPresent(
-			key_minQuantity = ${minimumQuantity},
-			locator1 = "CommerceFrontStore#PRODUCT_DETAILS_MIN_QUANTITY_PER_ORDER");
-
-		AssertTextEquals(
-			key_productName = ${product},
-			locator1 = "CommerceFrontStore#PRODUCT_DETAILS_QUANTITY_SELECTOR",
-			value1 = ${minimumQuantity});
-
-		task ("On the product details page, assert that the add to cart button is disabled if the quantity selector is empty") {
-			Type(
-				key_productName = ${product},
-				locator1 = "CommerceFrontStore#PRODUCT_DETAILS_QUANTITY_SELECTOR",
-				value1 = "");
-
-			AssertElementPresent(locator1 = "CommerceAccelerators#ADD_TO_CART_BUTTON_PRODUCT_DETAILS_PAGE_DISABLED");
-		}
-
-		for (var quantity : list "1,2,3,4") {
-			Type(
-				key_productName = ${product},
-				locator1 = "CommerceFrontStore#PRODUCT_DETAILS_QUANTITY_SELECTOR",
-				value1 = ${quantity});
-
-			AssertTextEquals(
-				key_productName = ${product},
-				locator1 = "CommerceFrontStore#PRODUCT_DETAILS_QUANTITY_SELECTOR",
-				value1 = ${quantity});
-
-			if ((${quantity} == 1) || (${quantity} == 2)) {
-				var conditionNotSatisfied = "true";
-
-				AssertElementPresent(
-					key_productName = ${product},
-					locator1 = "CommerceFrontStore#PRODUCT_DETAILS_QUANTITY_SELECTOR_HAS_ERROR");
-			}
-			else {
-				var conditionNotSatisfied = "false";
-
-				AssertElementNotPresent(
-					key_productName = ${product},
-					locator1 = "CommerceFrontStore#PRODUCT_DETAILS_QUANTITY_SELECTOR_HAS_ERROR");
-			}
-
-			FrontStore.viewQuantitySelectorPopoverListItem(
-				conditionNotSatisfied = ${conditionNotSatisfied},
-				quantity = ${minimumQuantity},
-				quantityConfiguration = "min");
-		}
-	}
-
 	@description = "COMMERCE-9678 | As a buyer, I want to not be able to see Full Description tab if the field is empty"
 	@priority = 3
 	test CanAssertFullDescriptionTabNotPresent {
@@ -528,7 +198,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 
@@ -569,917 +239,6 @@ definition {
 			AssertTextEquals.assertPartialText(
 				locator1 = "CommerceFrontStore#FS_PRODUCT_FULL_DESCRIPTION",
 				value1 = "This product has Full Description");
-		}
-	}
-
-	@description = "COMMERCE-10082 | As a buyer user, I want to be able to only add to cart quantities that are allowed when adding to cart a multiple Skus product"
-	@priority = 4
-	test CanAssertMultipleSkusProductInvalidAllowedOrderQuantity {
-		property portal.acceptance = "false";
-
-		var productName = "Brake Fluid";
-
-		task ("Given a Minium site") {
-			CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Minium");
-		}
-
-		task ("And a Business Account with a buyer user") {
-			CommerceEntry.addAccountEntryUser(
-				accountName = "Commerce Account",
-				accountType = "Business",
-				agreeToTermsAndAnswerReminderQuery = "true",
-				createNewAccount = "true",
-				requireReset = "false",
-				userEmailAddress = "buyer@liferay.com",
-				userFirstName = "Buyer",
-				userLastName = "User",
-				userRole = "Buyer",
-				userScreenName = "buyeruser",
-				userSiteMembership = "Minium");
-		}
-
-		task ("And Allowed Order Quantity is set to '1,3,5' for a multiple Skus product(Brake Fluid)") {
-			CommerceJSONProductsAPI._patchCommerceProductConfiguration(
-				allowedOrderQuantities = "1,3,5",
-				productName = ${productName});
-		}
-
-		task ("When the buyer navigates to the product detail page") {
-			User.logoutPG();
-
-			CommerceLogin.miniumLogin(
-				password = "test",
-				urlAppend = "web/minium",
-				userEmailAddress = "buyer@liferay.com");
-
-			CommerceAcceleratorsInitializer.changeProductsSorting(sortingType = "Name Ascending");
-
-			CommerceNavigator.gotoProductDetails(productName = ${productName});
-		}
-
-		task ("Then the allowed quantities set are selectable") {
-			for (var quantity : list "1,3,5") {
-				AssertElementPresent(
-					key_optionValue = ${quantity},
-					key_productName = ${productName},
-					locator1 = "CommerceFrontStore#PRODUCT_DETAILS_QUANTITY_OPTION");
-			}
-		}
-
-		task ("And other quantities are not selectable") {
-			for (var quantity : list "2,4,6,7,8") {
-				AssertElementNotPresent(
-					key_optionValue = ${quantity},
-					key_productName = ${productName},
-					locator1 = "CommerceFrontStore#PRODUCT_DETAILS_QUANTITY_OPTION");
-			}
-		}
-	}
-
-	@description = "COMMERCE-10317 | As a buyer user, I want to be able to only add to cart quantities that are lower or equal to a given maximum value when adding to cart a multiple skus product"
-	@priority = 4
-	test CanAssertMultipleSkusProductInvalidMaximumOrderQuantity {
-		property portal.acceptance = "false";
-
-		var maximumQuantity = 4;
-		var productName = "Brake Fluid";
-
-		task ("Given a Minium site") {
-			CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Minium");
-		}
-
-		task ("And a Business Account with a buyer user") {
-			CommerceEntry.addAccountEntryUser(
-				accountName = "Commerce Account",
-				accountType = "Business",
-				agreeToTermsAndAnswerReminderQuery = "true",
-				createNewAccount = "true",
-				requireReset = "false",
-				userEmailAddress = "buyer@liferay.com",
-				userFirstName = "Buyer",
-				userLastName = "User",
-				userRole = "Buyer",
-				userScreenName = "buyeruser",
-				userSiteMembership = "Minium");
-		}
-
-		task ("And Maximum Order Quantity is set to '4' for a multiple Skus product(Brake Fluid)") {
-			CommerceJSONProductsAPI._patchCommerceProductConfiguration(
-				maxOrderQuantity = ${maximumQuantity},
-				productName = ${productName});
-		}
-
-		task ("And the buyer navigates to the product detail page") {
-			User.logoutPG();
-
-			CommerceLogin.miniumLogin(
-				password = "test",
-				urlAppend = "web/minium",
-				userEmailAddress = "buyer@liferay.com");
-
-			CommerceAcceleratorsInitializer.changeProductsSorting(sortingType = "Name Ascending");
-
-			CommerceNavigator.gotoProductDetails(productName = ${productName});
-		}
-
-		task ("When the buyer inputs invalid quantities on the quantity selector(e.g. 5, 6)") {
-			for (var quantity : list "5,6") {
-				Type(
-					key_productName = ${productName},
-					locator1 = "CommerceFrontStore#PRODUCT_DETAILS_QUANTITY_SELECTOR",
-					value1 = ${quantity});
-
-				AssertTextEquals(
-					key_productName = ${productName},
-					locator1 = "CommerceFrontStore#PRODUCT_DETAILS_QUANTITY_SELECTOR",
-					value1 = ${quantity});
-
-				task ("Then the quantity selector pop-over shows an error for the maximum order quantity and add to cart button is not clickable") {
-					AssertElementPresent(
-						key_productName = ${productName},
-						locator1 = "CommerceFrontStore#PRODUCT_DETAILS_QUANTITY_SELECTOR_HAS_ERROR");
-
-					AssertElementPresent(locator1 = "CommerceAccelerators#ADD_TO_CART_BUTTON_PRODUCT_DETAILS_PAGE_INVALID");
-
-					FrontStore.viewQuantitySelectorPopoverListItem(
-						conditionNotSatisfied = "true",
-						quantity = ${maximumQuantity},
-						quantityConfiguration = "max");
-				}
-			}
-		}
-
-		task ("When the buyer inputs valid quantity values(e.g. 2, 3, 4)") {
-			for (var quantity : list "2,3,4") {
-				Type(
-					key_productName = ${productName},
-					locator1 = "CommerceFrontStore#PRODUCT_DETAILS_QUANTITY_SELECTOR",
-					value1 = ${quantity});
-
-				AssertTextEquals(
-					key_productName = ${productName},
-					locator1 = "CommerceFrontStore#PRODUCT_DETAILS_QUANTITY_SELECTOR",
-					value1 = ${quantity});
-
-				task ("Then the quantity selector pop-over is not showing any error and add to cart button is clickable") {
-					AssertElementNotPresent(
-						key_productName = ${productName},
-						locator1 = "CommerceFrontStore#PRODUCT_DETAILS_QUANTITY_SELECTOR_HAS_ERROR");
-
-					AssertElementNotPresent(locator1 = "CommerceAccelerators#ADD_TO_CART_BUTTON_PRODUCT_DETAILS_PAGE_INVALID");
-				}
-			}
-		}
-	}
-
-	@description = "COMMERCE-10316 | As a buyer user, I want to be able to only add to cart quantities that are at least the given minimum value when adding to cart a multiple skus product"
-	@priority = 4
-	test CanAssertMultipleSkusProductInvalidMinimumOrderQuantity {
-		property portal.acceptance = "false";
-
-		var minimumQuantity = 3;
-		var productName = "Brake Fluid";
-
-		task ("Given a Minium site") {
-			CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Minium");
-		}
-
-		task ("And a Business Account with a buyer user") {
-			CommerceEntry.addAccountEntryUser(
-				accountName = "Commerce Account",
-				accountType = "Business",
-				agreeToTermsAndAnswerReminderQuery = "true",
-				createNewAccount = "true",
-				requireReset = "false",
-				userEmailAddress = "buyer@liferay.com",
-				userFirstName = "Buyer",
-				userLastName = "User",
-				userRole = "Buyer",
-				userScreenName = "buyeruser",
-				userSiteMembership = "Minium");
-		}
-
-		task ("And Minimum Order Quantity is set to '3' for a multiple Skus product(Brake Fluid)") {
-			CommerceJSONProductsAPI._patchCommerceProductConfiguration(
-				minOrderQuantity = ${minimumQuantity},
-				productName = ${productName});
-		}
-
-		task ("When the buyer navigates to the product detail page") {
-			User.logoutPG();
-
-			CommerceLogin.miniumLogin(
-				password = "test",
-				urlAppend = "web/minium",
-				userEmailAddress = "buyer@liferay.com");
-
-			CommerceAcceleratorsInitializer.changeProductsSorting(sortingType = "Name Ascending");
-
-			CommerceNavigator.gotoProductDetails(productName = ${productName});
-		}
-
-		task ("Then on the product details page, assert that the add to cart button is disabled if the quantity selector is empty") {
-			Type(
-				key_productName = ${productName},
-				locator1 = "CommerceFrontStore#PRODUCT_DETAILS_QUANTITY_SELECTOR",
-				value1 = "");
-
-			AssertElementPresent(locator1 = "CommerceAccelerators#ADD_TO_CART_BUTTON_PRODUCT_DETAILS_PAGE_DISABLED");
-		}
-
-		task ("When the buyer inputs invalid quantities on the quantity selector(e.g. 1, 2)") {
-			for (var quantity : list "1,2") {
-				Type(
-					key_productName = ${productName},
-					locator1 = "CommerceFrontStore#PRODUCT_DETAILS_QUANTITY_SELECTOR",
-					value1 = ${quantity});
-
-				AssertTextEquals(
-					key_productName = ${productName},
-					locator1 = "CommerceFrontStore#PRODUCT_DETAILS_QUANTITY_SELECTOR",
-					value1 = ${quantity});
-
-				task ("Then the quantity selector pop-over shows an error for the minimum order quantity and add to cart button is not clickable") {
-					AssertElementPresent(
-						key_productName = ${productName},
-						locator1 = "CommerceFrontStore#PRODUCT_DETAILS_QUANTITY_SELECTOR_HAS_ERROR");
-
-					AssertElementPresent(locator1 = "CommerceAccelerators#ADD_TO_CART_BUTTON_PRODUCT_DETAILS_PAGE_INVALID");
-
-					FrontStore.viewQuantitySelectorPopoverListItem(
-						conditionNotSatisfied = "true",
-						quantity = ${minimumQuantity},
-						quantityConfiguration = "min");
-				}
-			}
-		}
-
-		task ("When the buyer inputs valid quantity values") {
-			for (var quantity : list "3,4,5") {
-				Type(
-					key_productName = ${productName},
-					locator1 = "CommerceFrontStore#PRODUCT_DETAILS_QUANTITY_SELECTOR",
-					value1 = ${quantity});
-
-				AssertTextEquals(
-					key_productName = ${productName},
-					locator1 = "CommerceFrontStore#PRODUCT_DETAILS_QUANTITY_SELECTOR",
-					value1 = ${quantity});
-
-				task ("Then the quantity selector pop-over is not showing any error and add to cart button is clickable") {
-					AssertElementNotPresent(
-						key_productName = ${productName},
-						locator1 = "CommerceFrontStore#PRODUCT_DETAILS_QUANTITY_SELECTOR_HAS_ERROR");
-
-					AssertElementNotPresent(locator1 = "CommerceAccelerators#ADD_TO_CART_BUTTON_PRODUCT_DETAILS_PAGE_INVALID");
-
-					FrontStore.viewQuantitySelectorPopoverListItem(
-						conditionNotSatisfied = "false",
-						quantity = ${minimumQuantity},
-						quantityConfiguration = "min");
-				}
-			}
-		}
-	}
-
-	@description = "COMMERCE-10081 | As a buyer user, I want to be able to only add to cart quantities that are multiples of a given value when adding to cart a multiple Skus product"
-	@priority = 4
-	test CanAssertMultipleSkusProductInvalidMultipleOrderQuantity {
-		property portal.acceptance = "false";
-
-		var multipleQuantity = 3;
-		var productName = "Brake Fluid";
-
-		task ("Given a Minium site") {
-			CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Minium");
-		}
-
-		task ("And a Business Account with a buyer user") {
-			CommerceEntry.addAccountEntryUser(
-				accountName = "Commerce Account",
-				accountType = "Business",
-				agreeToTermsAndAnswerReminderQuery = "true",
-				createNewAccount = "true",
-				requireReset = "false",
-				userEmailAddress = "buyer@liferay.com",
-				userFirstName = "Buyer",
-				userLastName = "User",
-				userRole = "Buyer",
-				userScreenName = "buyeruser",
-				userSiteMembership = "Minium");
-		}
-
-		task ("And Multiple Order Quantity is set to '3' for a multiple Skus product(Brake Fluid)") {
-			CommerceJSONProductsAPI._patchCommerceProductConfiguration(
-				multipleOrderQuantity = ${multipleQuantity},
-				productName = ${productName});
-		}
-
-		task ("When the buyer navigates to the product detail page") {
-			User.logoutPG();
-
-			CommerceLogin.miniumLogin(
-				password = "test",
-				urlAppend = "web/minium",
-				userEmailAddress = "buyer@liferay.com");
-
-			CommerceAcceleratorsInitializer.changeProductsSorting(sortingType = "Name Ascending");
-
-			CommerceNavigator.gotoProductDetails(productName = ${productName});
-		}
-
-		task ("Then inputs invalid values -> add to cart -> an error is thrown") {
-			for (var quantity : list "1,2,4,5") {
-				Type(
-					key_productName = ${productName},
-					locator1 = "CommerceFrontStore#PRODUCT_DETAILS_QUANTITY_SELECTOR",
-					value1 = ${quantity});
-
-				AssertTextEquals(
-					key_productName = ${productName},
-					locator1 = "CommerceFrontStore#PRODUCT_DETAILS_QUANTITY_SELECTOR",
-					value1 = ${quantity});
-
-				task ("Then the quantity selector pop-over shows an error for the multiple order quantity and add to cart button is not clickable") {
-					AssertElementPresent(
-						key_productName = ${productName},
-						locator1 = "CommerceFrontStore#PRODUCT_DETAILS_QUANTITY_SELECTOR_HAS_ERROR");
-
-					AssertElementPresent(locator1 = "CommerceAccelerators#ADD_TO_CART_BUTTON_PRODUCT_DETAILS_PAGE_INVALID");
-
-					FrontStore.viewQuantitySelectorPopoverListItem(
-						conditionNotSatisfied = "true",
-						quantity = ${multipleQuantity},
-						quantityConfiguration = "multiple");
-				}
-			}
-		}
-
-		task ("And inputs valid values -> add to cart -> product is successfully added to cart") {
-			for (var quantity : list "3,6") {
-				Type(
-					key_productName = ${productName},
-					locator1 = "CommerceFrontStore#PRODUCT_DETAILS_QUANTITY_SELECTOR",
-					value1 = ${quantity});
-
-				AssertTextEquals(
-					key_productName = ${productName},
-					locator1 = "CommerceFrontStore#PRODUCT_DETAILS_QUANTITY_SELECTOR",
-					value1 = ${quantity});
-
-				task ("Then the quantity selector pop-over is not showing any error and add to cart button is clickable") {
-					AssertElementNotPresent(
-						key_productName = ${productName},
-						locator1 = "CommerceFrontStore#PRODUCT_DETAILS_QUANTITY_SELECTOR_HAS_ERROR");
-
-					AssertElementNotPresent(locator1 = "CommerceAccelerators#ADD_TO_CART_BUTTON_PRODUCT_DETAILS_PAGE_INVALID");
-
-					FrontStore.viewQuantitySelectorPopoverListItem(
-						conditionNotSatisfied = "false",
-						quantity = ${multipleQuantity},
-						quantityConfiguration = "multiple");
-				}
-			}
-		}
-	}
-
-	@description = "COMMERCE-10319 | As a buyer user, I want to be able to only add to cart quantities based on a combination of a maximum value and a multiple value when adding to cart a multiple skus product"
-	@priority = 4
-	test CanAssertMultipleSkusProductMaximumMultipleCombinationInvalidQuantities {
-		property portal.acceptance = "false";
-
-		var productName1 = "Brake Fluid";
-		var productName2 = "Hoses";
-
-		task ("Given a Minium site") {
-			CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Minium");
-		}
-
-		task ("And a Business Account with a buyer user") {
-			CommerceEntry.addAccountEntryUser(
-				accountName = "Commerce Account",
-				accountType = "Business",
-				agreeToTermsAndAnswerReminderQuery = "true",
-				createNewAccount = "true",
-				requireReset = "false",
-				userEmailAddress = "buyer@liferay.com",
-				userFirstName = "Buyer",
-				userLastName = "User",
-				userRole = "Buyer",
-				userScreenName = "buyeruser",
-				userSiteMembership = "Minium");
-		}
-
-		task ("And Order Quantity configurations are set for Brake Fluid") {
-			CommerceJSONProductsAPI._patchCommerceProductConfiguration(
-				maxOrderQuantity = 10,
-				multipleOrderQuantity = 4,
-				productName = ${productName1});
-		}
-
-		task ("And Order Quantity configurations are set for Hoses") {
-			CommerceJSONProductsAPI._patchCommerceProductConfiguration(
-				maxOrderQuantity = 4,
-				multipleOrderQuantity = 5,
-				productName = ${productName2});
-		}
-
-		task ("When the buyer logs in") {
-			User.logoutPG();
-
-			CommerceLogin.miniumLogin(
-				password = "test",
-				urlAppend = "web/minium",
-				userEmailAddress = "buyer@liferay.com");
-		}
-
-		task ("And navigates to Brake Fluid details page") {
-			CommerceAcceleratorsInitializer.changeProductsSorting(sortingType = "Name Ascending");
-
-			CommerceNavigator.gotoProductDetails(productName = ${productName1});
-		}
-
-		task ("And inputs invalid quantities for Brake Fluid(e.g. 5, 11, 12)") {
-			for (var quantity : list "5,11,12") {
-				Type(
-					key_productName = ${productName1},
-					locator1 = "CommerceFrontStore#PRODUCT_DETAILS_QUANTITY_SELECTOR",
-					value1 = ${quantity});
-
-				AssertTextEquals(
-					key_productName = ${productName1},
-					locator1 = "CommerceFrontStore#PRODUCT_DETAILS_QUANTITY_SELECTOR",
-					value1 = ${quantity});
-
-				task ("Then the quantity selector pop-over is showing errors and add to cart button is not clickable") {
-					AssertElementPresent(
-						key_productName = ${productName1},
-						locator1 = "CommerceFrontStore#PRODUCT_DETAILS_QUANTITY_SELECTOR_HAS_ERROR");
-
-					AssertElementPresent(locator1 = "CommerceAccelerators#ADD_TO_CART_BUTTON_PRODUCT_DETAILS_PAGE_INVALID");
-
-					if ((${quantity} == 11) || (${quantity} == 12)) {
-						var maximumConditionNotSatisfied = "true";
-					}
-					else if (${quantity} == 5) {
-						var maximumConditionNotSatisfied = "false";
-					}
-
-					if ((${quantity} == 5) || (${quantity} == 11)) {
-						var multipleConditionNotSatisfied = "true";
-					}
-					else if (${quantity} == 12) {
-						var multipleConditionNotSatisfied = "false";
-					}
-
-					FrontStore.viewQuantitySelectorPopoverListItem(
-						conditionNotSatisfied = ${maximumConditionNotSatisfied},
-						quantity = 10,
-						quantityConfiguration = "max");
-
-					FrontStore.viewQuantitySelectorPopoverListItem(
-						conditionNotSatisfied = ${multipleConditionNotSatisfied},
-						quantity = 4,
-						quantityConfiguration = "multiple");
-				}
-			}
-		}
-
-		task ("When the buyer inputs valid quantities for Brake Fluid(e.g. 4, 8)") {
-			for (var quantity : list "4,8") {
-				Type(
-					key_productName = ${productName1},
-					locator1 = "CommerceFrontStore#PRODUCT_DETAILS_QUANTITY_SELECTOR",
-					value1 = ${quantity});
-
-				AssertTextEquals(
-					key_productName = ${productName1},
-					locator1 = "CommerceFrontStore#PRODUCT_DETAILS_QUANTITY_SELECTOR",
-					value1 = ${quantity});
-
-				task ("Then the quantity selector pop-over is not showing any error and add to cart button is clickable") {
-					AssertElementNotPresent(
-						key_productName = ${productName1},
-						locator1 = "CommerceFrontStore#PRODUCT_DETAILS_QUANTITY_SELECTOR_HAS_ERROR");
-
-					AssertElementNotPresent(locator1 = "CommerceAccelerators#ADD_TO_CART_BUTTON_PRODUCT_DETAILS_PAGE_INVALID");
-
-					FrontStore.viewQuantitySelectorPopoverListItem(
-						conditionNotSatisfied = "false",
-						quantity = 10,
-						quantityConfiguration = "max");
-
-					FrontStore.viewQuantitySelectorPopoverListItem(
-						conditionNotSatisfied = "false",
-						quantity = 4,
-						quantityConfiguration = "multiple");
-				}
-			}
-		}
-
-		task ("When the buyer navigates to Hoses details page") {
-			CommerceNavigator.gotoMiniumSidebarItem(menuItem = "Catalog");
-
-			CommerceAcceleratorsInitializer.changeProductsSorting(sortingType = "Name Ascending");
-
-			CommerceNavigator.gotoProductDetails(productName = ${productName2});
-		}
-
-		task ("And inputs invalid quantities for Hoses(e.g. 3, 5, 6, 7)") {
-			for (var quantity : list "3,5,6,7") {
-				Type(
-					key_productName = ${productName2},
-					locator1 = "CommerceFrontStore#PRODUCT_DETAILS_QUANTITY_SELECTOR",
-					value1 = ${quantity});
-
-				AssertTextEquals(
-					key_productName = ${productName2},
-					locator1 = "CommerceFrontStore#PRODUCT_DETAILS_QUANTITY_SELECTOR",
-					value1 = ${quantity});
-
-				task ("Then the quantity selector pop-over is showing errors and add to cart button is not clickable") {
-					AssertElementPresent(
-						key_productName = ${productName2},
-						locator1 = "CommerceFrontStore#PRODUCT_DETAILS_QUANTITY_SELECTOR_HAS_ERROR");
-
-					AssertElementPresent(locator1 = "CommerceAccelerators#ADD_TO_CART_BUTTON_PRODUCT_DETAILS_PAGE_INVALID");
-
-					if ((${quantity} == 5) || (${quantity} == 6) || (${quantity} == 7)) {
-						var maximumConditionNotSatisfied = "true";
-					}
-					else if (${quantity} == 3) {
-						var maximumConditionNotSatisfied = "false";
-					}
-
-					if ((${quantity} == 3) || (${quantity} == 6) || (${quantity} == 7)) {
-						var multipleConditionNotSatisfied = "true";
-					}
-					else if (${quantity} == 5) {
-						var multipleConditionNotSatisfied = "false";
-					}
-
-					FrontStore.viewQuantitySelectorPopoverListItem(
-						conditionNotSatisfied = ${maximumConditionNotSatisfied},
-						quantity = 4,
-						quantityConfiguration = "max");
-
-					FrontStore.viewQuantitySelectorPopoverListItem(
-						conditionNotSatisfied = ${multipleConditionNotSatisfied},
-						quantity = 5,
-						quantityConfiguration = "multiple");
-				}
-			}
-		}
-	}
-
-	@description = "COMMERCE-10318 | As a buyer user, I want to be able to only add to cart quantities based on a combination of a minimum value and a multiple value when adding to cart a multiple skus product"
-	@priority = 4
-	test CanAssertMultipleSkusProductMinimumMultipleCombinationInvalidQuantities {
-		property portal.acceptance = "false";
-
-		var productName1 = "Brake Fluid";
-		var productName2 = "Hoses";
-
-		task ("Given a Minium site") {
-			CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Minium");
-		}
-
-		task ("And a Business Account with a buyer user") {
-			CommerceEntry.addAccountEntryUser(
-				accountName = "Commerce Account",
-				accountType = "Business",
-				agreeToTermsAndAnswerReminderQuery = "true",
-				createNewAccount = "true",
-				requireReset = "false",
-				userEmailAddress = "buyer@liferay.com",
-				userFirstName = "Buyer",
-				userLastName = "User",
-				userRole = "Buyer",
-				userScreenName = "buyeruser",
-				userSiteMembership = "Minium");
-		}
-
-		task ("And Order Quantity configurations are set for Brake Fluid") {
-			CommerceJSONProductsAPI._patchCommerceProductConfiguration(
-				minOrderQuantity = 5,
-				multipleOrderQuantity = 2,
-				productName = ${productName1});
-		}
-
-		task ("And Order Quantity configurations are set for Hoses") {
-			CommerceJSONProductsAPI._patchCommerceProductConfiguration(
-				minOrderQuantity = 3,
-				multipleOrderQuantity = 4,
-				productName = ${productName2});
-		}
-
-		task ("When the buyer logs in") {
-			User.logoutPG();
-
-			CommerceLogin.miniumLogin(
-				password = "test",
-				urlAppend = "web/minium",
-				userEmailAddress = "buyer@liferay.com");
-		}
-
-		task ("And navigates to Brake Fluid details page") {
-			CommerceAcceleratorsInitializer.changeProductsSorting(sortingType = "Name Ascending");
-
-			CommerceNavigator.gotoProductDetails(productName = ${productName1});
-		}
-
-		task ("And inputs invalid quantities for Brake Fluid(e.g. 3, 4, 7)") {
-			for (var quantity : list "3,4,7") {
-				Type(
-					key_productName = ${productName1},
-					locator1 = "CommerceFrontStore#PRODUCT_DETAILS_QUANTITY_SELECTOR",
-					value1 = ${quantity});
-
-				AssertTextEquals(
-					key_productName = ${productName1},
-					locator1 = "CommerceFrontStore#PRODUCT_DETAILS_QUANTITY_SELECTOR",
-					value1 = ${quantity});
-
-				task ("Then the quantity selector pop-over is showing errors and add to cart button is not clickable") {
-					AssertElementPresent(
-						key_productName = ${productName1},
-						locator1 = "CommerceFrontStore#PRODUCT_DETAILS_QUANTITY_SELECTOR_HAS_ERROR");
-
-					AssertElementPresent(locator1 = "CommerceAccelerators#ADD_TO_CART_BUTTON_PRODUCT_DETAILS_PAGE_INVALID");
-
-					if ((${quantity} == 3) || (${quantity} == 4)) {
-						var minimumConditionNotSatisfied = "true";
-					}
-					else if (${quantity} == 7) {
-						var minimumConditionNotSatisfied = "false";
-					}
-
-					if ((${quantity} == 3) || (${quantity} == 7)) {
-						var multipleConditionNotSatisfied = "true";
-					}
-					else if (${quantity} == 4) {
-						var multipleConditionNotSatisfied = "false";
-					}
-
-					FrontStore.viewQuantitySelectorPopoverListItem(
-						conditionNotSatisfied = ${minimumConditionNotSatisfied},
-						quantity = 5,
-						quantityConfiguration = "min");
-
-					FrontStore.viewQuantitySelectorPopoverListItem(
-						conditionNotSatisfied = ${multipleConditionNotSatisfied},
-						quantity = 2,
-						quantityConfiguration = "multiple");
-				}
-			}
-		}
-
-		task ("When the buyer inputs valid quantities for Brake Fluid(e.g. 6, 8, 12)") {
-			for (var quantity : list "6,8,12") {
-				Type(
-					key_productName = ${productName1},
-					locator1 = "CommerceFrontStore#PRODUCT_DETAILS_QUANTITY_SELECTOR",
-					value1 = ${quantity});
-
-				AssertTextEquals(
-					key_productName = ${productName1},
-					locator1 = "CommerceFrontStore#PRODUCT_DETAILS_QUANTITY_SELECTOR",
-					value1 = ${quantity});
-
-				task ("Then the quantity selector pop-over is not showing any error and add to cart button is clickable") {
-					AssertElementNotPresent(
-						key_productName = ${productName1},
-						locator1 = "CommerceFrontStore#PRODUCT_DETAILS_QUANTITY_SELECTOR_HAS_ERROR");
-
-					AssertElementNotPresent(locator1 = "CommerceAccelerators#ADD_TO_CART_BUTTON_PRODUCT_DETAILS_PAGE_INVALID");
-
-					FrontStore.viewQuantitySelectorPopoverListItem(
-						conditionNotSatisfied = "false",
-						quantity = 5,
-						quantityConfiguration = "min");
-
-					FrontStore.viewQuantitySelectorPopoverListItem(
-						conditionNotSatisfied = "false",
-						quantity = 2,
-						quantityConfiguration = "multiple");
-				}
-			}
-		}
-
-		task ("When the buyer navigates to Hoses details page") {
-			CommerceNavigator.gotoMiniumSidebarItem(menuItem = "Catalog");
-
-			CommerceAcceleratorsInitializer.changeProductsSorting(sortingType = "Name Ascending");
-
-			CommerceNavigator.gotoProductDetails(productName = ${productName2});
-		}
-
-		task ("And inputs invalid quantities for Hoses(e.g. 2, 3, 5)") {
-			for (var quantity : list "2,3,5") {
-				Type(
-					key_productName = ${productName2},
-					locator1 = "CommerceFrontStore#PRODUCT_DETAILS_QUANTITY_SELECTOR",
-					value1 = ${quantity});
-
-				AssertTextEquals(
-					key_productName = ${productName2},
-					locator1 = "CommerceFrontStore#PRODUCT_DETAILS_QUANTITY_SELECTOR",
-					value1 = ${quantity});
-
-				task ("Then the quantity selector pop-over is showing errors and add to cart button is not clickable") {
-					AssertElementPresent(
-						key_productName = ${productName2},
-						locator1 = "CommerceFrontStore#PRODUCT_DETAILS_QUANTITY_SELECTOR_HAS_ERROR");
-
-					AssertElementPresent(locator1 = "CommerceAccelerators#ADD_TO_CART_BUTTON_PRODUCT_DETAILS_PAGE_INVALID");
-
-					if (${quantity} == 2) {
-						var minimumConditionNotSatisfied = "true";
-					}
-					else {
-						var minimumConditionNotSatisfied = "false";
-					}
-
-					FrontStore.viewQuantitySelectorPopoverListItem(
-						conditionNotSatisfied = ${minimumConditionNotSatisfied},
-						quantity = 3,
-						quantityConfiguration = "min");
-
-					FrontStore.viewQuantitySelectorPopoverListItem(
-						conditionNotSatisfied = "true",
-						quantity = 4,
-						quantityConfiguration = "multiple");
-				}
-			}
-		}
-
-		task ("When the buyer inputs valid quantities for Hoses(e.g. 4, 8, 12)") {
-			for (var quantity : list "4,8,12") {
-				Type(
-					key_productName = ${productName2},
-					locator1 = "CommerceFrontStore#PRODUCT_DETAILS_QUANTITY_SELECTOR",
-					value1 = ${quantity});
-
-				AssertTextEquals(
-					key_productName = ${productName2},
-					locator1 = "CommerceFrontStore#PRODUCT_DETAILS_QUANTITY_SELECTOR",
-					value1 = ${quantity});
-
-				task ("Then the quantity selector pop-over is not showing any error and add to cart button is clickable") {
-					AssertElementNotPresent(
-						key_productName = ${productName2},
-						locator1 = "CommerceFrontStore#PRODUCT_DETAILS_QUANTITY_SELECTOR_HAS_ERROR");
-
-					AssertElementNotPresent(locator1 = "CommerceAccelerators#ADD_TO_CART_BUTTON_PRODUCT_DETAILS_PAGE_INVALID");
-
-					FrontStore.viewQuantitySelectorPopoverListItem(
-						conditionNotSatisfied = "false",
-						quantity = 3,
-						quantityConfiguration = "min");
-
-					FrontStore.viewQuantitySelectorPopoverListItem(
-						conditionNotSatisfied = "false",
-						quantity = 4,
-						quantityConfiguration = "multiple");
-				}
-			}
-		}
-	}
-
-	@description = "COMMERCE-10197. Users cannot view and download owner limited products' attachments"
-	@priority = 5
-	test CanAssertOwnerLimitedFileAttacchmentNotVisibleForBuyer {
-		property portal.acceptance = "true";
-
-		var fileName1 = "commerce.pdf";
-		var fileName2 = "Minium_InstallationGuide.pdf";
-
-		task ("Given a Minium site is created") {
-			CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Minium");
-		}
-
-		task ("And a Business Account with a buyer user") {
-			CommerceEntry.addAccountEntryUser(
-				accountName = "Commerce Account",
-				accountType = "Business",
-				agreeToTermsAndAnswerReminderQuery = "true",
-				createNewAccount = "true",
-				requireReset = "false",
-				userEmailAddress = "buyer@liferay.com",
-				userFirstName = "Buyer",
-				userLastName = "User",
-				userRole = "Buyer",
-				userScreenName = "buyeruser",
-				userSiteMembership = "Minium");
-		}
-
-		task ("And an admin user") {
-			JSONUser.addUserWithRole(
-				roleTitle = "Administrator",
-				userEmailAddress = "administrator@liferay.com",
-				userFirstName = "Admin",
-				userLastName = "User",
-				userScreenName = "administrator");
-		}
-
-		task ("And the administrator user is set as a buyer for the account") {
-			Account.openAccountsAdmin();
-
-			LexiconEntry.gotoEntry(rowEntry = "Commerce Account");
-
-			Account.assignUsers(
-				accountName = "Commerce Account",
-				assigneeName = "Admin User");
-
-			Account.addAssigneeToRoleViaUsersTab(
-				accountRoleTitle = "Buyer",
-				accountUserName = "administrator@liferay.com");
-		}
-
-		task ("And the administrator user logs in") {
-			User.logoutPG();
-
-			User.loginPG(
-				password = "test",
-				userEmailAddress = "administrator@liferay.com");
-		}
-
-		task ("And in the global site, in Documents and Media, a file visible to Owner only is uploaded(e.g. a pdf file)") {
-			DMNavigator.openDocumentsAndMediaAdmin(siteURLKey = "global");
-
-			DMNavigator.gotoAddDocumentTypeCP(dmDocumentTypeName = "File Upload");
-
-			UploadDependencyFile.uploadFile(fileName = ${fileName1});
-
-			PortletEntry.inputTitle(title = ${fileName1});
-
-			Panel.expandPanel(panel = "Permissions");
-
-			Select(
-				locator1 = "Select#PERMISSIONS",
-				value1 = "Owner");
-
-			PortletEntry.publish();
-		}
-
-		task ("And on a product (e.g. Brake Pads), add the previously uploaded file as a product's attachment") {
-			ApplicationsMenu.gotoPortlet(
-				category = "Product Management",
-				panel = "Commerce",
-				portlet = "Products");
-
-			CommerceProducts.searchAndGoToProductEntry(entryProductName = "Brake Pads");
-
-			CommerceEntry.gotoMenuTab(menuTab = "Media");
-
-			CommerceProductImages.addAttachments(
-				alreadyUploaded = "true",
-				fileNames = ${fileName1});
-		}
-
-		task ("When the admin user navigates into Brake Pad product details") {
-			Navigator.openWithAppendToBaseURL(urlAppend = "web/minium/catalog");
-
-			CommerceNavigator.searchCatalog(productName = "Brake Pads");
-
-			CommerceAcceleratorsInitializer.gotoMiniumProductDetailsPage(productName = "Brake Pads");
-		}
-
-		task ("Then the admin user can see the attachment in the 'attachments' tab") {
-			AssertElementPresent(
-				key_text = "Attachments",
-				locator1 = "Button#ANY");
-
-			for (var fileName : list "${fileName1},${fileName2}") {
-				FrontStore.viewProductAttachment(attachmentName = ${fileName});
-			}
-		}
-
-		task ("When the buyer user logs in -> Minium -> Brake Pads") {
-			User.logoutPG();
-
-			CommerceLogin.miniumLogin(
-				password = "test",
-				urlAppend = "web/minium",
-				userEmailAddress = "buyer@liferay.com");
-
-			CommerceNavigator.searchCatalog(productName = "Brake Pads");
-
-			CommerceNavigator.gotoProductDetails(productName = "Brake Pads");
-		}
-
-		task ("Then the buyer user cannot see the attachment") {
-			Click(
-				key_text = "Attachments",
-				locator1 = "Button#ANY");
-
-			AssertElementPresent(
-				key_entryName = ${fileName2},
-				locator1 = "CommerceFrontStore#PRODUCT_DETAILS_ATTACHMENTS_NAME");
-
-			AssertElementNotPresent(
-				key_entryName = ${fileName1},
-				locator1 = "CommerceFrontStore#PRODUCT_DETAILS_ATTACHMENTS_NAME");
 		}
 	}
 
@@ -1533,7 +292,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.speedwellLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/speedwell",
 				userEmailAddress = "buyer@liferay.com");
 
@@ -1637,7 +396,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 		}
@@ -1699,183 +458,6 @@ definition {
 			AssertElementPresent(
 				key_availability = "Available",
 				locator1 = "CommerceFrontStore#FS_PRODUCT_AVAILABILITY");
-		}
-	}
-
-	@description = "COMMERCE-9675. Users can view and download a product's attachments"
-	@priority = 3
-	test CanDownloadProductAttachments {
-		property portal.acceptance = "false";
-
-		var fileName1 = "Document_1.pdf";
-		var fileName2 = "Commerce_Black.jpg";
-
-		task ("Given a Minium site") {
-			CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Minium");
-		}
-
-		task ("And a Business Account with a buyer user") {
-			CommerceEntry.addAccountEntryUser(
-				accountName = "Commerce Account",
-				accountType = "Business",
-				agreeToTermsAndAnswerReminderQuery = "true",
-				createNewAccount = "true",
-				requireReset = "false",
-				userEmailAddress = "buyer@liferay.com",
-				userFirstName = "Buyer",
-				userLastName = "User",
-				userRole = "Buyer",
-				userScreenName = "buyeruser",
-				userSiteMembership = "Minium");
-		}
-
-		task ("And a product with 2 attachments") {
-			CommerceProducts.openProductsAdmin();
-
-			CommerceNavigator.searchEntry(entryName = "U-Joint");
-
-			CommerceNavigator.gotoEntry(entryName = "U-Joint");
-
-			CommerceEntry.gotoMenuTab(menuTab = "Media");
-
-			CommerceProductImages.addAttachments(fileNames = "${fileName1},${fileName2}");
-		}
-
-		task ("When the buyer navigates to the product detail page") {
-			User.logoutPG();
-
-			CommerceLogin.miniumLogin(
-				password = "test",
-				urlAppend = "web/minium",
-				userEmailAddress = "buyer@liferay.com");
-
-			CommerceNavigator.gotoProductDetails(productName = "U-Joint");
-		}
-
-		task ("Then the buyer can see the attachments tab") {
-			AssertElementPresent(
-				key_text = "Attachments",
-				locator1 = "Button#ANY");
-
-			for (var fileName : list "${fileName1},${fileName2}") {
-				FrontStore.viewProductAttachment(attachmentName = ${fileName});
-			}
-		}
-
-		task ("When the buyer clicks the 'Download' button of an attachment") {
-			Click(
-				key_button = "Download",
-				key_entryName = ${fileName1},
-				locator1 = "CommerceFrontStore#PRODUCT_DETAILS_ATTACHMENTS_BUTTON");
-		}
-
-		task ("Then the file is downloaded successfully") {
-			ImportExport.assertDownloadedFileName(downloadedFile = ${fileName1});
-		}
-	}
-
-	@description = "COMMERCE-12676. As a buyer user, I cannot add the option to the cart when the option's stock quantity is zero and the allow back order is disabled"
-	@priority = 5
-	test CannotAddToCartOptionWhenStockIsZeroAndBackOrderIsDisabled {
-		property portal.acceptance = "true";
-
-		task ("Given a Minium site with a buyer user") {
-			CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Minium");
-
-			CommerceEntry.addAccountEntryUser(
-				accountName = "Commerce Account",
-				accountType = "Business",
-				agreeToTermsAndAnswerReminderQuery = "true",
-				createNewAccount = "true",
-				requireReset = "false",
-				userEmailAddress = "buyer@liferay.com",
-				userFirstName = "Buyer",
-				userLastName = "User",
-				userRole = "Buyer",
-				userScreenName = "buyeruser",
-				userSiteMembership = "Minium");
-		}
-
-		task ("And the Package Quantity option is added to product ABS Sensor") {
-			CommerceProducts.openProductsAdmin();
-
-			CommerceNavigator.gotoEntry(entryName = "ABS Sensor");
-
-			CommerceEntry.gotoMenuTab(menuTab = "Options");
-
-			CommerceRelations.assignSingleRelationToProductsEntry(
-				entryName = "Package Quantity",
-				title = "Add Option");
-		}
-
-		task ("And all SKUs are generated") {
-			CommerceEntry.gotoMenuTab(menuTab = "SKUs");
-
-			CommerceSKUs.generateAllSkuCombinations();
-		}
-
-		task ("And the inventory of other generated SKUs is configured besides SKU:6 and 24 which has 0 stock") {
-			for (var sku : list "112,48,12") {
-				CommerceJSONWarehousesAndInventoriesAPI._addWarehouseItem(
-					warehouseItemQuantity = 10,
-					warehouseItemSku = ${sku},
-					warehouseName = "Italy");
-			}
-		}
-
-		task ("And Allow Back Orders toggle is switched off for ABS Sensor") {
-			CommerceJSONProductsAPI._patchCommerceProductConfiguration(
-				allowBackOrder = "false",
-				productName = "ABS Sensor");
-		}
-
-		task ("When the buyer navigates to the ABS Sensor's details page") {
-			User.logoutPG();
-
-			CommerceLogin.miniumLogin(
-				password = "test",
-				urlAppend = "web/minium",
-				userEmailAddress = "buyer@liferay.com");
-
-			Navigator.openWithAppendToBaseURL(urlAppend = "web/minium/p/abs-sensor");
-		}
-
-		task ("Then can see the selected option is 6 and the add-to-cart button is disabled") {
-			AssertSelectedLabel(
-				key_optionName = "Package Quantity",
-				locator1 = "CommerceFrontStore#FS_PRODUCT_OPTIONS_SELECT",
-				value1 = 6);
-
-			AssertElementPresent(locator1 = "CommerceAccelerators#ADD_TO_CART_BUTTON_PRODUCT_DETAILS_PAGE_DISABLED");
-		}
-
-		task ("And other options can be added to cart with add-to-cart button enabled") {
-			var index = 1;
-
-			for (var optionValue : list "12,24,48,112") {
-				FrontStore.selectAssociatedFSOptionsValue(
-					fsOptionName = "Package Quantity",
-					fsOptionValue = ${optionValue});
-
-				WaitForElementPresent(
-					key_productSku = ${optionValue},
-					locator1 = "CommerceFrontStore#FS_PRODUCT_SKU");
-
-				if (${optionValue} == 24) {
-					AssertElementPresent(locator1 = "CommerceAccelerators#ADD_TO_CART_BUTTON_PRODUCT_DETAILS_PAGE_DISABLED");
-				}
-				else {
-					AssertElementPresent(locator1 = "CommerceAccelerators#ADD_TO_CART_BUTTON_PRODUCT_DETAILS_PAGE");
-
-					Click(locator1 = "CommerceAccelerators#ADD_TO_CART_BUTTON_PRODUCT_DETAILS_PAGE");
-
-					WaitForElementPresent(
-						key_itemCount = ${index},
-						locator1 = "CommerceAccelerators#MINI_CART_BUTTON_DATA_BADGE_COUNT");
-
-					var index = ${index} + 1;
-				}
-			}
 		}
 	}
 
@@ -1986,7 +568,7 @@ definition {
 			SystemSettings.gotoConfiguration(
 				configurationCategory = "Catalog",
 				configurationName = "Friendly URL",
-				configurationScope = "Virtual Instance Scope");
+				configurationScope = "System Scope");
 
 			Type(
 				key_labelName = "Product URL Separator",
@@ -2008,7 +590,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 
@@ -2020,9 +602,7 @@ definition {
 		}
 
 		task ("When a special character in the Product URL Separator under the Catalog of Instance Settings is set") {
-			User.logoutAndLoginPG(
-				userLoginEmailAddress = "test@liferay.com",
-				userLoginFullName = "Test Test");
+			User.logoutAndLoginPG();
 
 			PortalSettings.gotoConfiguration(
 				configurationCategory = "Catalog",
@@ -2049,7 +629,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 
@@ -2133,7 +713,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 
@@ -2198,6 +778,101 @@ definition {
 				key_incomingDate = ${incomingDate2},
 				key_incomingQuantity = 2,
 				locator1 = "CommerceFrontStore#FS_PRODUCT_DETAIL_INCOMING_DATE_QUANTITY");
+		}
+	}
+
+	@description = "COMMERCE-10066. User can only view the allowed quantities that match the minimum, max and multiple quantities of a product"
+	@priority = 5
+	test CanViewOnlyCorrectAllowedQuantitiesAreSelectableInProductDetails {
+		property portal.acceptance = "true";
+
+		task ("Given a Minium site is created") {
+			CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Minium");
+		}
+
+		task ("And allowed quantities, maximum quantity, minimum quantity and multiple quantity are configured for three products") {
+			CommerceJSONProductsAPI._patchCommerceProductConfiguration(
+				allowedOrderQuantities = "1, 2, 6, 8",
+				minOrderQuantity = 2,
+				productName = "U-Joint");
+
+			CommerceJSONProductsAPI._patchCommerceProductConfiguration(
+				allowedOrderQuantities = "1, 2, 6, 8",
+				maxOrderQuantity = 7,
+				productName = "Transmission Cooler Line Assembly");
+
+			CommerceJSONProductsAPI._patchCommerceProductConfiguration(
+				allowedOrderQuantities = "1, 3, 6, 9",
+				multipleOrderQuantity = 3,
+				productName = "Torque Converters");
+		}
+
+		task ("Add a account with a buyer user is created") {
+			CommerceEntry.addAccountEntryUser(
+				accountName = "Commerce Account",
+				accountType = "Business",
+				agreeToTermsAndAnswerReminderQuery = "true",
+				createNewAccount = "true",
+				requireReset = "false",
+				userEmailAddress = "buyer@liferay.com",
+				userFirstName = "Buyer",
+				userLastName = "User",
+				userRole = "Buyer",
+				userScreenName = "buyeruser",
+				userSiteMembership = "Minium");
+		}
+
+		task ("When the buyer user does the log in") {
+			User.logoutPG();
+
+			CommerceLogin.miniumLogin(
+				password = PropsUtil.get("default.admin.password"),
+				urlAppend = "web/minium",
+				userEmailAddress = "buyer@liferay.com");
+		}
+
+		task ("Then only the quantities that meet the configuration are displayed on the product details page") {
+			Navigator.openWithAppendToBaseURL(urlAppend = "web/minium/p/u-joint");
+
+			for (var number : list "2,6,8") {
+				AssertElementPresent(
+					key_optionValue = ${number},
+					key_productName = "U-Joint",
+					locator1 = "CommerceFrontStore#PRODUCT_DETAILS_QUANTITY_OPTION");
+			}
+
+			AssertElementNotPresent(
+				key_optionValue = 1,
+				key_productName = "U-Joint",
+				locator1 = "CommerceFrontStore#PRODUCT_DETAILS_QUANTITY_OPTION");
+
+			Navigator.openWithAppendToBaseURL(urlAppend = "web/minium/p/transmission-cooler-line-assembly");
+
+			for (var number : list "1,2,6") {
+				AssertElementPresent(
+					key_optionValue = ${number},
+					key_productName = "Transmission Cooler Line Assembly",
+					locator1 = "CommerceFrontStore#PRODUCT_DETAILS_QUANTITY_OPTION");
+			}
+
+			AssertElementNotPresent(
+				key_optionValue = 8,
+				key_productName = "Transmission Cooler Line Assembly",
+				locator1 = "CommerceFrontStore#PRODUCT_DETAILS_QUANTITY_OPTION");
+
+			Navigator.openWithAppendToBaseURL(urlAppend = "web/minium/p/torque-converters");
+
+			for (var number : list "3,6,9") {
+				AssertElementPresent(
+					key_optionValue = ${number},
+					key_productName = "Torque Converters",
+					locator1 = "CommerceFrontStore#PRODUCT_DETAILS_QUANTITY_OPTION");
+			}
+
+			AssertElementNotPresent(
+				key_optionValue = 1,
+				key_productName = "Torque Converters",
+				locator1 = "CommerceFrontStore#PRODUCT_DETAILS_QUANTITY_OPTION");
 		}
 	}
 
@@ -2270,9 +945,19 @@ definition {
 
 			CommerceNavigator.gotoEntry(entryName = "GROUPEDSKU");
 
-			CommerceSKUs.editSkuPricing(
-				basePrice = "55.00",
-				promoPrice = "50.00");
+			SelectFrame.selectFrameNoLoading(locator1 = "CommerceEntry#IFRAME_SIDE_PANEL");
+
+			CommerceEntry.gotoMenuTab(menuTab = "Price");
+
+			CommerceNavigator.gotoEntry(entryName = "Minium Base Price List");
+
+			CommerceSKUs.editSkuPricing(basePrice = "55.00");
+
+			SelectFrame.selectFrameNoLoading(locator1 = "CommerceEntry#IFRAME_SIDE_PANEL");
+
+			CommerceNavigator.gotoEntry(entryName = "Minium Base Promotion");
+
+			CommerceSKUs.editSkuPricing(promoPrice = "50.00");
 
 			CommerceEntry.gotoMenuTab(menuTab = "Media");
 
@@ -2315,7 +1000,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 
@@ -2336,7 +1021,7 @@ definition {
 				productListPriceInactive = "55.00",
 				productMPN = "MPN1",
 				productName = "Grouped Product",
-				productNetPrice = "160.00",
+				productNetPrice = "40.00",
 				productSalePriceInactive = "50.00",
 				productShortDescription = "Short Description",
 				productSKU = "GROUPEDSKU",
@@ -2396,7 +1081,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 
@@ -2414,233 +1099,6 @@ definition {
 				key_incomingDate = ${nearestIncomingDate},
 				key_incomingQuantity = 1,
 				locator1 = "CommerceFrontStore#FS_PRODUCT_DETAIL_INCOMING_DATE_QUANTITY");
-		}
-	}
-
-	@description = "COMMERCE-9677 | As a buyer, I want to be able to view a virtual product Detail page"
-	@priority = 5
-	test CanViewSingleSkuVirtualProductDetailPage {
-		property portal.acceptance = "true";
-
-		var sampleFileName = "Commerce_White.jpg";
-
-		task ("Given a Minium site with a buyer user") {
-			CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Minium");
-
-			CommerceEntry.addAccountEntryUser(
-				accountName = "Commerce Account",
-				accountType = "Business",
-				agreeToTermsAndAnswerReminderQuery = "true",
-				createNewAccount = "true",
-				requireReset = "false",
-				userEmailAddress = "buyer@liferay.com",
-				userFirstName = "Buyer",
-				userLastName = "User",
-				userRole = "Buyer",
-				userScreenName = "buyeruser",
-				userSiteMembership = "Minium");
-		}
-
-		task ("And a new Virtual product is created with all the data needed") {
-			CommerceJSONProductsAPI._addCommerceProduct(
-				catalogName = "Minium",
-				gtin = "GTIN1",
-				manufacturerPartNumber = "MPN1",
-				productDescription = "Full Description",
-				productName = "Virtual Product",
-				productType = "Virtual",
-				shortDescription = "Short Description",
-				sku = "VIRTUALSKU",
-				specifications = "Warranty:6 Months");
-
-			CommerceJSONWarehousesAndInventoriesAPI._addWarehouseItem(
-				warehouseItemQuantity = 60,
-				warehouseItemSku = "VIRTUALSKU",
-				warehouseName = "Italy");
-
-			CommerceProducts.openProductsAdmin();
-
-			CommerceNavigator.searchEntry(entryName = "Virtual");
-
-			CommerceNavigator.gotoEntry(entryName = "Virtual Product");
-
-			CommerceEntry.gotoMenuTab(menuTab = "Virtual");
-
-			CommerceProducts.updateProductVirtualConfiguration(
-				enableSample = "true",
-				sampleFileName = ${sampleFileName},
-				virtualProductFile = "Commerce_Blue.jpg");
-
-			CommerceEntry.gotoMenuTab(menuTab = "SKUs");
-
-			CommerceNavigator.gotoEntry(entryName = "VIRTUALSKU");
-
-			CommerceSKUs.editSkuPricing(
-				basePrice = "55.00",
-				promoPrice = "50.00");
-
-			CommerceEntry.gotoMenuTab(menuTab = "Media");
-
-			CommerceProductImages.addProductImages(imageTitles = "Black,Blue");
-
-			CommerceEntry.gotoMenuTab(menuTab = "Subscription");
-
-			for (var subscriptionName : list "Payment,Delivery") {
-				CommerceProducts.configureSubscription(
-					subscriptionExactDay = 15,
-					subscriptionLength = 10,
-					subscriptionMode = "Exact Day of Month",
-					subscriptionName = "${subscriptionName} Subscription",
-					subscriptionType = "Month");
-			}
-
-			CommerceEntry.gotoMenuTab(menuTab = "Configuration");
-
-			CommerceProducts.updateProductInventoryConfiguration(
-				displayAvailability = "true",
-				displayStockQuantity = "true",
-				minOrderQuantity = 4,
-				publish = "true");
-
-			CommerceJSONDiscountsAPI._addDiscount(
-				active = "true",
-				level = "L1",
-				percentageLevel1 = 20,
-				target = "products",
-				title = "Virtual Products Discount",
-				usePercentage = "true");
-
-			CommerceJSONDiscountsAPI._addDiscountProduct(
-				discountTitle = "Virtual Products Discount",
-				productName = "Virtual Product");
-		}
-
-		task ("When the buyer navigates to the product detail page") {
-			User.logoutPG();
-
-			CommerceLogin.miniumLogin(
-				password = "test",
-				urlAppend = "web/minium",
-				userEmailAddress = "buyer@liferay.com");
-
-			CommerceNavigator.gotoProductDetails(productName = "Virtual Product");
-		}
-
-		task ("Then the buyer can see all the Virtual Products fields") {
-			FrontStore.assertProductDetails(
-				deliverySubscriptionPeriod = "Every 10 Months",
-				discountPercentage = 20,
-				minQuantity = 4,
-				paymentSubscriptionPeriod = "Every 10 Months",
-				productAvailability = "Available",
-				productFullDescription = "Full Description",
-				productGTIN = "GTIN1",
-				productImages = "Black,Blue",
-				productListPriceInactive = "55.00",
-				productMPN = "MPN1",
-				productName = "Virtual Product",
-				productNetPrice = "160.00",
-				productSalePriceInactive = "50.00",
-				productShortDescription = "Short Description",
-				productSKU = "VIRTUALSKU",
-				productSpecifications = "Warranty:6 Months",
-				productStockQuantity = 60,
-				sampleFileName = ${sampleFileName});
-		}
-	}
-
-	@description = "COMMERCE-10066. User can only view the allowed quantities that match the minimum, max and multiple quantities of a product"
-	@priority = 5
-	test CanViweOnlyCorrectAllowedQuantitiesAreSelectableInProductDetails {
-		property portal.acceptance = "true";
-
-		task ("Given a Minium site is created") {
-			CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Minium");
-		}
-
-		task ("And allowed quantities, maximum quantity, minimum quantity and multiple quantity are configured for three products") {
-			CommerceJSONProductsAPI._patchCommerceProductConfiguration(
-				allowedOrderQuantities = "1,2,6,8",
-				minOrderQuantity = 2,
-				productName = "U-Joint");
-
-			CommerceJSONProductsAPI._patchCommerceProductConfiguration(
-				allowedOrderQuantities = "1,2,6,8",
-				maxOrderQuantity = 7,
-				productName = "Transmission Cooler Line Assembly");
-
-			CommerceJSONProductsAPI._patchCommerceProductConfiguration(
-				allowedOrderQuantities = "1,3,6,9",
-				multipleOrderQuantity = 3,
-				productName = "Torque Converters");
-		}
-
-		task ("Add a account with a buyer user is created") {
-			CommerceEntry.addAccountEntryUser(
-				accountName = "Commerce Account",
-				accountType = "Business",
-				agreeToTermsAndAnswerReminderQuery = "true",
-				createNewAccount = "true",
-				requireReset = "false",
-				userEmailAddress = "buyer@liferay.com",
-				userFirstName = "Buyer",
-				userLastName = "User",
-				userRole = "Buyer",
-				userScreenName = "buyeruser",
-				userSiteMembership = "Minium");
-		}
-
-		task ("When the buyer user does the log in") {
-			User.logoutPG();
-
-			CommerceLogin.miniumLogin(
-				password = "test",
-				urlAppend = "web/minium",
-				userEmailAddress = "buyer@liferay.com");
-		}
-
-		task ("Then only the quantities that meet the configuration are displayed on the product details page") {
-			Navigator.openWithAppendToBaseURL(urlAppend = "web/minium/p/u-joint");
-
-			for (var number : list "2,6,8") {
-				AssertElementPresent(
-					key_optionValue = ${number},
-					key_productName = "U-Joint",
-					locator1 = "CommerceFrontStore#PRODUCT_DETAILS_QUANTITY_OPTION");
-			}
-
-			AssertElementNotPresent(
-				key_optionValue = 1,
-				key_productName = "U-Joint",
-				locator1 = "CommerceFrontStore#PRODUCT_DETAILS_QUANTITY_OPTION");
-
-			Navigator.openWithAppendToBaseURL(urlAppend = "web/minium/p/transmission-cooler-line-assembly");
-
-			for (var number : list "1,2,6") {
-				AssertElementPresent(
-					key_optionValue = ${number},
-					key_productName = "Transmission Cooler Line Assembly",
-					locator1 = "CommerceFrontStore#PRODUCT_DETAILS_QUANTITY_OPTION");
-			}
-
-			AssertElementNotPresent(
-				key_optionValue = 8,
-				key_productName = "Transmission Cooler Line Assembly",
-				locator1 = "CommerceFrontStore#PRODUCT_DETAILS_QUANTITY_OPTION");
-
-			Navigator.openWithAppendToBaseURL(urlAppend = "web/minium/p/torque-converters");
-
-			for (var number : list "3,6,9") {
-				AssertElementPresent(
-					key_optionValue = ${number},
-					key_productName = "Torque Converters",
-					locator1 = "CommerceFrontStore#PRODUCT_DETAILS_QUANTITY_OPTION");
-			}
-
-			AssertElementNotPresent(
-				key_optionValue = 1,
-				key_productName = "Torque Converters",
-				locator1 = "CommerceFrontStore#PRODUCT_DETAILS_QUANTITY_OPTION");
 		}
 	}
 
@@ -2776,9 +1234,7 @@ definition {
 
 		Button.clickSave();
 
-		CommerceNavigator.gotoPortlet(
-			category = "Product Management",
-			portlet = "Products");
+		CommerceProducts.openProductsAdmin();
 
 		CPCommerceCatalog.newProductsEntry(
 			productCatalog = "Minium",
@@ -2881,14 +1337,13 @@ definition {
 			key_toggleSwitchLabel = "Purchasable",
 			locator1 = "ToggleSwitch#ANY_TOGGLE_SWITCH");
 
-		Type(
-			key_fieldLabel = "Base Price",
-			locator1 = "TextInput#GENERIC_TEXT_INPUT",
-			value1 = "10.0");
-
 		Button.click(button = "Publish");
 
-		CommerceUtilities.checkSuccessAlertAppearsAndDisappears();
+		CommerceEntry.gotoMenuTab(menuTab = "Price");
+
+		CommerceSKUs.addSKUPriceEntry(
+			priceList = "Minium Base Price List",
+			unitPrice = 10);
 
 		Refresh();
 
@@ -2914,14 +1369,13 @@ definition {
 			key_toggleSwitchLabel = "Purchasable",
 			locator1 = "ToggleSwitch#ANY_TOGGLE_SWITCH");
 
-		Type(
-			key_fieldLabel = "Base Price",
-			locator1 = "TextInput#GENERIC_TEXT_INPUT",
-			value1 = "20.0");
-
 		Button.click(button = "Publish");
 
-		CommerceUtilities.checkSuccessAlertAppearsAndDisappears();
+		CommerceEntry.gotoMenuTab(menuTab = "Price");
+
+		CommerceSKUs.addSKUPriceEntry(
+			priceList = "Minium Base Price List",
+			unitPrice = 20);
 
 		Refresh();
 
@@ -2985,9 +1439,7 @@ definition {
 
 		CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Minium");
 
-		CommerceNavigator.gotoPortlet(
-			category = "Product Management",
-			portlet = "Products");
+		CommerceProducts.openProductsAdmin();
 
 		CommerceProducts.searchProduct(search = "Hoses");
 
@@ -2999,12 +1451,11 @@ definition {
 
 		SelectFrame.selectFrameNoLoading(locator1 = "CommerceEntry#IFRAME_SIDE_PANEL");
 
-		Type(
-			key_fieldLabel = "Base Price",
-			locator1 = "TextInput#GENERIC_TEXT_INPUT",
-			value1 = "80.0");
+		CommerceEntry.gotoMenuTab(menuTab = "Price");
 
-		Button.clickPublish();
+		CommerceSKUs.addSKUPriceEntry(
+			priceList = "Minium Base Price List",
+			unitPrice = 80);
 
 		CommerceEntry.gotoMenuTab(menuTab = "Inventory");
 
@@ -3104,97 +1555,6 @@ definition {
 
 	}
 
-	@description = "COMMERCE-6364. As a buyer, I want the first selectable quantity of a product in Product Details to be the minimum multiple quantity if Minimum Order Quantity is higher than Multiple Order Quantity"
-	@priority = 5
-	test ViewFirstSelectableQuantityInProductDetailsWhenMinimumOrderQuantityIsHigherThanMultipleOrderQuantity {
-		property portal.acceptance = "true";
-
-		// TODO Review
-
-		var minimumQuantity = 6;
-		var multipleQuantity = 5;
-		var product = "U-Joint";
-
-		CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Minium");
-
-		CommerceNavigator.gotoPortlet(
-			category = "Product Management",
-			portlet = "Products");
-
-		CommerceNavigator.searchEntry(entryName = ${product});
-
-		CommerceNavigator.gotoEntry(entryName = ${product});
-
-		CommerceEntry.gotoMenuTab(menuTab = "Configuration");
-
-		Type(
-			key_text = "Minimum Order Quantity",
-			locator1 = "TextInput#ANY",
-			value1 = ${minimumQuantity});
-
-		Type(
-			key_text = "Multiple Order Quantity",
-			locator1 = "TextInput#ANY",
-			value1 = ${multipleQuantity});
-
-		Button.clickPublish();
-
-		ApplicationsMenu.gotoSite(site = "Minium");
-
-		CommerceNavigator.gotoMiniumSidebarItem(menuItem = "Account Management");
-
-		CommerceAcceleratorsInitializer.createNewAccountViaFront(accountName = "Commerce Account");
-
-		CommerceNavigator.gotoMiniumSidebarItem(menuItem = "Catalog");
-
-		Click(
-			key_productName = ${product},
-			locator1 = "CommerceAccelerators#PRODUCT_CARD_NAME");
-
-		AssertTextEquals(
-			key_productName = ${product},
-			locator1 = "CommerceFrontStore#PRODUCT_DETAILS_QUANTITY_SELECTOR",
-			value1 = 10);
-
-		for (var quantity : list "5,20") {
-			Type(
-				key_productName = ${product},
-				locator1 = "CommerceFrontStore#PRODUCT_DETAILS_QUANTITY_SELECTOR",
-				value1 = ${quantity});
-
-			AssertTextEquals(
-				key_productName = ${product},
-				locator1 = "CommerceFrontStore#PRODUCT_DETAILS_QUANTITY_SELECTOR",
-				value1 = ${quantity});
-
-			if (${quantity} == 5) {
-				var minimumConditionNotSatisfied = "true";
-
-				AssertElementPresent(
-					key_productName = ${product},
-					locator1 = "CommerceFrontStore#PRODUCT_DETAILS_QUANTITY_SELECTOR_HAS_ERROR");
-			}
-			else {
-				var minimumConditionNotSatisfied = "false";
-				var multipleConditionNotSatisfied = "false";
-
-				AssertElementNotPresent(
-					key_productName = ${product},
-					locator1 = "CommerceFrontStore#PRODUCT_DETAILS_QUANTITY_SELECTOR_HAS_ERROR");
-			}
-
-			FrontStore.viewQuantitySelectorPopoverListItem(
-				conditionNotSatisfied = ${minimumConditionNotSatisfied},
-				quantity = ${minimumQuantity},
-				quantityConfiguration = "min");
-
-			FrontStore.viewQuantitySelectorPopoverListItem(
-				conditionNotSatisfied = ${multipleConditionNotSatisfied},
-				quantity = ${multipleQuantity},
-				quantityConfiguration = "multiple");
-		}
-	}
-
 	@description = "COMMERCE-6366. As a buyer, I want the first selectable quantity of a product in Product Details to be the minimum multiple quantity if Minimum Order Quantity is lower than Multiple Order Quantity"
 	@priority = 5
 	test ViewFirstSelectableQuantityInProductDetailsWhenMinimumOrderQuantityIsLowerThanMultipleOrderQuantity {
@@ -3208,9 +1568,7 @@ definition {
 
 		CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Minium");
 
-		CommerceNavigator.gotoPortlet(
-			category = "Product Management",
-			portlet = "Products");
+		CommerceProducts.openProductsAdmin();
 
 		CommerceNavigator.searchEntry(entryName = ${product});
 
@@ -3283,7 +1641,7 @@ definition {
 
 			FrontStore.viewQuantitySelectorPopoverListItem(
 				conditionNotSatisfied = ${minimumConditionNotSatisfied},
-				quantity = ${minimumQuantity},
+				quantity = ${multipleQuantity},
 				quantityConfiguration = "min");
 
 			FrontStore.viewQuantitySelectorPopoverListItem(

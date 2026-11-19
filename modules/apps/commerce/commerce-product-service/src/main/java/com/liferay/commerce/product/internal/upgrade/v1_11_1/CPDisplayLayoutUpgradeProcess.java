@@ -27,9 +27,8 @@ public class CPDisplayLayoutUpgradeProcess extends UpgradeProcess {
 
 	@Override
 	protected void doUpgrade() throws Exception {
-		try (Statement s =
-				connection.createStatement(
-					ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
+		try (Statement s = connection.createStatement(
+				ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
 
 			ResultSet resultSet = s.executeQuery(_SELECT_CPDISPLAYLAYOUT_SQL)) {
 
@@ -40,21 +39,22 @@ public class CPDisplayLayoutUpgradeProcess extends UpgradeProcess {
 
 				Layout layout = _fetchLayout(groupId, layoutUuid);
 
-				if (layout == null) {
-					long cpDisplayLayoutId = resultSet.getLong(
-						"CPDisplayLayoutId");
-
-					if (_log.isDebugEnabled()) {
-						_log.debug(
-							String.format(
-								"Removing CPDisplayLayout entry id: %s",
-								cpDisplayLayoutId));
-					}
-
-					runSQL(
-						String.format(
-							_DELETE_CPDISPLAYLAYOUT_SQL, cpDisplayLayoutId));
+				if (layout != null) {
+					continue;
 				}
+
+				long cpDisplayLayoutId = resultSet.getLong("CPDisplayLayoutId");
+
+				if (_log.isDebugEnabled()) {
+					_log.debug(
+						String.format(
+							"Removing CPDisplayLayout entry id: %s",
+							cpDisplayLayoutId));
+				}
+
+				runSQL(
+					String.format(
+						_DELETE_CPDISPLAYLAYOUT_SQL, cpDisplayLayoutId));
 			}
 		}
 	}

@@ -11,6 +11,7 @@ import com.liferay.commerce.configuration.CommerceAccountGroupServiceConfigurati
 import com.liferay.commerce.constants.CommerceConstants;
 import com.liferay.commerce.currency.model.CommerceCurrency;
 import com.liferay.commerce.currency.service.CommerceCurrencyLocalService;
+import com.liferay.commerce.helper.CommerceRoleHelper;
 import com.liferay.commerce.initializer.util.AssetCategoriesImporter;
 import com.liferay.commerce.initializer.util.BlogsImporter;
 import com.liferay.commerce.initializer.util.CPDefinitionsImporter;
@@ -47,9 +48,8 @@ import com.liferay.commerce.product.service.CommerceChannelLocalService;
 import com.liferay.commerce.service.CommerceShippingMethodLocalService;
 import com.liferay.commerce.shipping.engine.fixed.service.CommerceShippingFixedOptionLocalService;
 import com.liferay.commerce.theme.minium.SiteInitializerDependencyResolver;
-import com.liferay.commerce.theme.minium.SiteInitializerDependencyResolverThreadLocal;
+import com.liferay.commerce.theme.minium.util.SiteInitializerDependencyResolverThreadLocal;
 import com.liferay.commerce.util.AccountEntryAllowedTypesUtil;
-import com.liferay.commerce.util.CommerceAccountRoleHelper;
 import com.liferay.commerce.util.CommerceShippingEngineRegistry;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
@@ -95,6 +95,8 @@ import com.liferay.portal.search.capabilities.SearchCapabilities;
 import com.liferay.site.exception.InitializationException;
 import com.liferay.site.initializer.SiteInitializer;
 
+import jakarta.servlet.ServletContext;
+
 import java.io.File;
 import java.io.InputStream;
 
@@ -107,8 +109,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.ResourceBundle;
-
-import javax.servlet.ServletContext;
 
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -312,7 +312,7 @@ public class MiniumSiteInitializer implements SiteInitializer {
 		_commerceCurrencyLocalService.importDefaultValues(true, serviceContext);
 		_cpMeasurementUnitLocalService.importDefaultValues(serviceContext);
 
-		_commerceAccountRoleHelper.checkCommerceAccountRoles(serviceContext);
+		_commerceRoleHelper.checkCommerceAccountRoles(serviceContext);
 
 		Settings settings = FallbackKeysSettingsUtil.getSettings(
 			new GroupServiceSettingsLocator(
@@ -444,18 +444,22 @@ public class MiniumSiteInitializer implements SiteInitializer {
 	private ServiceContext _getServiceContext(long groupId)
 		throws PortalException {
 
-		User user = _userLocalService.getUser(PrincipalThreadLocal.getUserId());
-		Group group = _groupLocalService.getGroup(groupId);
-
-		Locale locale = LocaleUtil.getSiteDefault();
-
 		ServiceContext serviceContext = new ServiceContext();
 
 		serviceContext.setAddGroupPermissions(true);
 		serviceContext.setAddGuestPermissions(true);
+
+		Group group = _groupLocalService.getGroup(groupId);
+
 		serviceContext.setCompanyId(group.getCompanyId());
-		serviceContext.setLanguageId(_language.getLanguageId(locale));
+
+		serviceContext.setLanguageId(
+			_language.getLanguageId(LocaleUtil.getSiteDefault()));
+
 		serviceContext.setScopeGroupId(groupId);
+
+		User user = _userLocalService.getUser(PrincipalThreadLocal.getUserId());
+
 		serviceContext.setTimeZone(user.getTimeZone());
 		serviceContext.setUserId(user.getUserId());
 
@@ -521,6 +525,110 @@ public class MiniumSiteInitializer implements SiteInitializer {
 
 		if (_log.isInfoEnabled()) {
 			_log.info("Blogs Entries successfully imported");
+		}
+	}
+
+	private List<CPDefinition> _importCPDefinitions(
+			long catalogGroupId, long commerceChannelId,
+			List<CommerceInventoryWarehouse> commerceInventoryWarehouses,
+			ServiceContext serviceContext)
+		throws Exception {
+
+		Group group = serviceContext.getScopeGroup();
+
+		JSONArray jsonArray = _getJSONArray("products.json");
+
+		if (_siteInitializerDependencyResolver != null) {
+			for (int i = 0; i < jsonArray.length(); i++) {
+				JSONObject jsonObject = jsonArray.getJSONObject(i);
+
+				String externalReferenceCode = jsonObject.getString(
+					"externalReferenceCode");
+
+				String newExternalReferenceCode =
+					externalReferenceCode +
+						_siteInitializerDependencyResolver.getKey();
+
+				jsonObject.put(
+					"externalReferenceCode", newExternalReferenceCode);
+
+				JSONArray skusJSONArray = jsonObject.getJSONArray("skus");
+
+				if (skusJSONArray == null) {
+					continue;
+				}
+
+				for (int j = 0; j < skusJSONArray.length(); j++) {
+					JSONObject skuJSONObject = skusJSONArray.getJSONObject(j);
+
+					String skuExternalReferenceCode = skuJSONObject.getString(
+						"externalReferenceCode");
+
+					String newSkuExternalReferenceCode =
+						skuExternalReferenceCode +
+							_siteInitializerDependencyResolver.getKey();
+
+					skuJSONObject.put(
+						"externalReferenceCode", newSkuExternalReferenceCode);
+				}
+			}
+		}
+
+		long[] commerceInventoryWarehouseIds = ListUtil.toLongArray(
+			commerceInventoryWarehouses,
+			CommerceInventoryWarehouse.
+				COMMERCE_INVENTORY_WAREHOUSE_ID_ACCESSOR);
+
+		return _cpDefinitionsImporter.importCPDefinitions(
+			jsonArray, group.getName(serviceContext.getLocale()),
+			catalogGroupId, commerceChannelId, commerceInventoryWarehouseIds,
+			_siteInitializerDependencyResolver.getImageClassLoader(),
+			_siteInitializerDependencyResolver.getImageDependencyPath(),
+			serviceContext.getScopeGroupId(), serviceContext.getUserId());
+	}
+
+	private void _importCPOptionCategories(
+			long catalogGroupId, ServiceContext serviceContext)
+		throws Exception {
+
+		if (_log.isInfoEnabled()) {
+			_log.info("Importing commerce product option categories...");
+		}
+
+		_cpOptionCategoriesImporter.importCPOptionCategories(
+			_getJSONArray("option-categories.json"), catalogGroupId,
+			serviceContext.getUserId());
+
+		if (_log.isInfoEnabled()) {
+			_log.info(
+				"Commerce product option categories successfully imported");
+		}
+	}
+
+	private List<CPOption> _importCPOptions(
+			long catalogGroupId, ServiceContext serviceContext)
+		throws Exception {
+
+		return _cpOptionsImporter.importCPOptions(
+			_getJSONArray("options.json"), catalogGroupId,
+			serviceContext.getUserId());
+	}
+
+	private void _importCPSpecificationOptions(
+			long catalogGroupId, ServiceContext serviceContext)
+		throws Exception {
+
+		if (_log.isInfoEnabled()) {
+			_log.info("Importing commerce product specification options...");
+		}
+
+		_cpSpecificationOptionsImporter.importCPSpecificationOptions(
+			_getJSONArray("specification-options.json"), catalogGroupId,
+			serviceContext.getUserId());
+
+		if (_log.isInfoEnabled()) {
+			_log.info(
+				"Commerce product specification options successfully imported");
 		}
 	}
 
@@ -645,110 +753,6 @@ public class MiniumSiteInitializer implements SiteInitializer {
 
 		if (_log.isInfoEnabled()) {
 			_log.info("Commerce Users successfully imported");
-		}
-	}
-
-	private List<CPDefinition> _importCPDefinitions(
-			long catalogGroupId, long commerceChannelId,
-			List<CommerceInventoryWarehouse> commerceInventoryWarehouses,
-			ServiceContext serviceContext)
-		throws Exception {
-
-		Group group = serviceContext.getScopeGroup();
-
-		JSONArray jsonArray = _getJSONArray("products.json");
-
-		if (_siteInitializerDependencyResolver != null) {
-			for (int i = 0; i < jsonArray.length(); i++) {
-				JSONObject jsonObject = jsonArray.getJSONObject(i);
-
-				String externalReferenceCode = jsonObject.getString(
-					"externalReferenceCode");
-
-				String newExternalReferenceCode =
-					externalReferenceCode +
-						_siteInitializerDependencyResolver.getKey();
-
-				jsonObject.put(
-					"externalReferenceCode", newExternalReferenceCode);
-
-				JSONArray skusJSONArray = jsonObject.getJSONArray("skus");
-
-				if (skusJSONArray != null) {
-					for (int j = 0; j < skusJSONArray.length(); j++) {
-						JSONObject skuJSONObject = skusJSONArray.getJSONObject(
-							j);
-
-						String skuExternalReferenceCode =
-							skuJSONObject.getString("externalReferenceCode");
-
-						String newSkuExternalReferenceCode =
-							skuExternalReferenceCode +
-								_siteInitializerDependencyResolver.getKey();
-
-						skuJSONObject.put(
-							"externalReferenceCode",
-							newSkuExternalReferenceCode);
-					}
-				}
-			}
-		}
-
-		long[] commerceInventoryWarehouseIds = ListUtil.toLongArray(
-			commerceInventoryWarehouses,
-			CommerceInventoryWarehouse.
-				COMMERCE_INVENTORY_WAREHOUSE_ID_ACCESSOR);
-
-		return _cpDefinitionsImporter.importCPDefinitions(
-			jsonArray, group.getName(serviceContext.getLocale()),
-			catalogGroupId, commerceChannelId, commerceInventoryWarehouseIds,
-			_siteInitializerDependencyResolver.getImageClassLoader(),
-			_siteInitializerDependencyResolver.getImageDependencyPath(),
-			serviceContext.getScopeGroupId(), serviceContext.getUserId());
-	}
-
-	private void _importCPOptionCategories(
-			long catalogGroupId, ServiceContext serviceContext)
-		throws Exception {
-
-		if (_log.isInfoEnabled()) {
-			_log.info("Importing commerce product option categories...");
-		}
-
-		_cpOptionCategoriesImporter.importCPOptionCategories(
-			_getJSONArray("option-categories.json"), catalogGroupId,
-			serviceContext.getUserId());
-
-		if (_log.isInfoEnabled()) {
-			_log.info(
-				"Commerce product option categories successfully imported");
-		}
-	}
-
-	private List<CPOption> _importCPOptions(
-			long catalogGroupId, ServiceContext serviceContext)
-		throws Exception {
-
-		return _cpOptionsImporter.importCPOptions(
-			_getJSONArray("options.json"), catalogGroupId,
-			serviceContext.getUserId());
-	}
-
-	private void _importCPSpecificationOptions(
-			long catalogGroupId, ServiceContext serviceContext)
-		throws Exception {
-
-		if (_log.isInfoEnabled()) {
-			_log.info("Importing commerce product specification options...");
-		}
-
-		_cpSpecificationOptionsImporter.importCPSpecificationOptions(
-			_getJSONArray("specification-options.json"), catalogGroupId,
-			serviceContext.getUserId());
-
-		if (_log.isInfoEnabled()) {
-			_log.info(
-				"Commerce product specification options successfully imported");
 		}
 	}
 
@@ -1079,9 +1083,6 @@ public class MiniumSiteInitializer implements SiteInitializer {
 	private BlogsImporter _blogsImporter;
 
 	@Reference
-	private CommerceAccountRoleHelper _commerceAccountRoleHelper;
-
-	@Reference
 	private CommerceAccountsImporter _commerceAccountsImporter;
 
 	@Reference
@@ -1108,6 +1109,9 @@ public class MiniumSiteInitializer implements SiteInitializer {
 
 	@Reference
 	private CommercePriceListsImporter _commercePriceListsImporter;
+
+	@Reference
+	private CommerceRoleHelper _commerceRoleHelper;
 
 	@Reference
 	private CommerceShippingEngineRegistry _commerceShippingEngineRegistry;

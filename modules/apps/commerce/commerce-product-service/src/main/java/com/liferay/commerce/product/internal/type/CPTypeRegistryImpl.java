@@ -41,7 +41,7 @@ public class CPTypeRegistryImpl implements CPTypeRegistry {
 		}
 
 		ServiceWrapper<CPType> cpTypeServiceWrapper =
-			_cpTypeServiceTrackerMap.getService(name);
+			_serviceTrackerMap.getService(name);
 
 		if (cpTypeServiceWrapper == null) {
 			if (_log.isDebugEnabled()) {
@@ -57,7 +57,7 @@ public class CPTypeRegistryImpl implements CPTypeRegistry {
 
 	@Override
 	public Set<String> getCPTypeNames() {
-		return _cpTypeServiceTrackerMap.keySet();
+		return _serviceTrackerMap.keySet();
 	}
 
 	@Override
@@ -65,7 +65,7 @@ public class CPTypeRegistryImpl implements CPTypeRegistry {
 		List<CPType> cpTypes = new ArrayList<>();
 
 		List<ServiceWrapper<CPType>> cpTypeServiceWrappers =
-			ListUtil.fromCollection(_cpTypeServiceTrackerMap.values());
+			ListUtil.fromCollection(_serviceTrackerMap.values());
 
 		Collections.sort(
 			cpTypeServiceWrappers, _cpTypeServiceWrapperDisplayOrderComparator);
@@ -75,9 +75,11 @@ public class CPTypeRegistryImpl implements CPTypeRegistry {
 
 			CPType cpType = cpTypeServiceWrapper.getService();
 
-			if (cpType.isActive()) {
-				cpTypes.add(cpType);
+			if (!cpType.isActive()) {
+				continue;
 			}
+
+			cpTypes.add(cpType);
 		}
 
 		return Collections.unmodifiableList(cpTypes);
@@ -85,7 +87,7 @@ public class CPTypeRegistryImpl implements CPTypeRegistry {
 
 	@Activate
 	protected void activate(BundleContext bundleContext) {
-		_cpTypeServiceTrackerMap = ServiceTrackerMapFactory.openSingleValueMap(
+		_serviceTrackerMap = ServiceTrackerMapFactory.openSingleValueMap(
 			bundleContext, CPType.class, "commerce.product.type.name",
 			ServiceTrackerCustomizerFactory.<CPType>serviceWrapper(
 				bundleContext));
@@ -93,16 +95,16 @@ public class CPTypeRegistryImpl implements CPTypeRegistry {
 
 	@Deactivate
 	protected void deactivate() {
-		_cpTypeServiceTrackerMap.close();
+		_serviceTrackerMap.close();
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		CPTypeRegistryImpl.class);
 
-	private ServiceTrackerMap<String, ServiceWrapper<CPType>>
-		_cpTypeServiceTrackerMap;
 	private final Comparator<ServiceWrapper<CPType>>
 		_cpTypeServiceWrapperDisplayOrderComparator =
 			new CPTypeServiceWrapperDisplayOrderComparator();
+	private ServiceTrackerMap<String, ServiceWrapper<CPType>>
+		_serviceTrackerMap;
 
 }

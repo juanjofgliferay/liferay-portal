@@ -143,7 +143,7 @@ public class AccountRoleModelResourcePermission
 				(accountEntryId > 0) &&
 				_accountEntryModelResourcePermission.contains(
 					permissionChecker, accountEntryId,
-					ActionKeys.MANAGE_USERS)) {
+					AccountActionKeys.ASSIGN_USERS)) {
 
 				return true;
 			}
@@ -214,9 +214,12 @@ public class AccountRoleModelResourcePermission
 				}
 
 				if (!Objects.equals(organization, originalOrganization) &&
-					OrganizationPermissionUtil.contains(
+					(OrganizationPermissionUtil.contains(
 						permissionChecker, organization,
-						AccountActionKeys.MANAGE_SUBORGANIZATIONS_ACCOUNTS) &&
+						AccountActionKeys.MANAGE_SUBORGANIZATIONS_ACCOUNTS) ||
+					 OrganizationPermissionUtil.contains(
+						 permissionChecker, organization,
+						 AccountActionKeys.UPDATE_SUBORGANIZATIONS_ACCOUNTS)) &&
 					ArrayUtil.contains(
 						userOrganizationIds,
 						organization.getOrganizationId()) &&

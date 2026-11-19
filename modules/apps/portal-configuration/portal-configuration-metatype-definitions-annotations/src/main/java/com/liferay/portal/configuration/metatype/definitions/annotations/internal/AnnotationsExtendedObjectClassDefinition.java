@@ -101,13 +101,13 @@ public class AnnotationsExtendedObjectClassDefinition
 	}
 
 	@Override
-	public InputStream getIcon(int size) throws IOException {
-		return _objectClassDefinition.getIcon(size);
+	public String getID() {
+		return _objectClassDefinition.getID();
 	}
 
 	@Override
-	public String getID() {
-		return _objectClassDefinition.getID();
+	public InputStream getIcon(int size) throws IOException {
+		return _objectClassDefinition.getIcon(size);
 	}
 
 	@Override
@@ -118,17 +118,18 @@ public class AnnotationsExtendedObjectClassDefinition
 	private JSONObject _createJSONObject(Bundle bundle, String resourcePath) {
 		URL url = bundle.getResource(resourcePath);
 
-		if (url != null) {
-			try {
-				return JSONFactoryUtil.createJSONObject(URLUtil.toString(url));
-			}
-			catch (Exception exception) {
-				_log.error(
-					"Unable to process resource " + resourcePath, exception);
-			}
+		if (url == null) {
+			return null;
 		}
 
-		return null;
+		try {
+			return JSONFactoryUtil.createJSONObject(URLUtil.toString(url));
+		}
+		catch (Exception exception) {
+			_log.error("Unable to process resource " + resourcePath, exception);
+
+			return null;
+		}
 	}
 
 	private void _loadConfigurationBeanClass(Bundle bundle) {
@@ -188,6 +189,9 @@ public class AnnotationsExtendedObjectClassDefinition
 		Map<String, String> attributes = HashMapBuilder.put(
 			"category", extendedObjectClassDefinition.category()
 		).put(
+			"deprecated",
+			Boolean.toString(extendedObjectClassDefinition.deprecated())
+		).put(
 			"description-arguments",
 			StringUtil.merge(
 				extendedObjectClassDefinition.descriptionArguments())
@@ -195,7 +199,7 @@ public class AnnotationsExtendedObjectClassDefinition
 			"factoryInstanceLabelAttribute",
 			extendedObjectClassDefinition.factoryInstanceLabelAttribute()
 		).put(
-			"featureFlagKey", extendedObjectClassDefinition.featureFlagKey()
+			"feature.flag.key", extendedObjectClassDefinition.featureFlagKey()
 		).put(
 			"generateUI",
 			Boolean.toString(extendedObjectClassDefinition.generateUI())

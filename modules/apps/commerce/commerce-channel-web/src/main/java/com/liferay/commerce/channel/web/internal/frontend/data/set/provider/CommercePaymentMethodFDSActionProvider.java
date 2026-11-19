@@ -28,12 +28,12 @@ import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.List;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -67,6 +67,9 @@ public class CommercePaymentMethodFDSActionProvider
 							PortletProvider.Action.EDIT)
 					).setParameter(
 						"commerceChannelId", commerceChannelId
+					).setParameter(
+						"commercePaymentIntegrationKey",
+						paymentMethod.getPaymentIntegrationKey()
 					).setParameter(
 						"commercePaymentMethodEngineKey", paymentMethod.getKey()
 					).setWindowState(

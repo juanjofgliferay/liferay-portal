@@ -115,12 +115,8 @@ public class AssetDisplayPageEntryPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		AssetDisplayPageEntry newAssetDisplayPageEntry = _persistence.create(
-			pk);
-
-		newAssetDisplayPageEntry.setMvccVersion(RandomTestUtil.nextLong());
+		AssetDisplayPageEntry newAssetDisplayPageEntry =
+			addAssetDisplayPageEntry();
 
 		newAssetDisplayPageEntry.setCtCollectionId(RandomTestUtil.nextLong());
 
@@ -149,8 +145,10 @@ public class AssetDisplayPageEntryPersistenceTest {
 
 		newAssetDisplayPageEntry.setPlid(RandomTestUtil.nextLong());
 
-		_assetDisplayPageEntries.add(
-			_persistence.update(newAssetDisplayPageEntry));
+		newAssetDisplayPageEntry = _persistence.update(
+			newAssetDisplayPageEntry);
+
+		_assetDisplayPageEntries.add(newAssetDisplayPageEntry);
 
 		AssetDisplayPageEntry existingAssetDisplayPageEntry =
 			_persistence.findByPrimaryKey(
@@ -233,18 +231,19 @@ public class AssetDisplayPageEntryPersistenceTest {
 	}
 
 	@Test
-	public void testCountByGroupId() throws Exception {
-		_persistence.countByGroupId(RandomTestUtil.nextLong());
-
-		_persistence.countByGroupId(0L);
-	}
-
-	@Test
 	public void testCountByLayoutPageTemplateEntryId() throws Exception {
 		_persistence.countByLayoutPageTemplateEntryId(
 			RandomTestUtil.nextLong());
 
 		_persistence.countByLayoutPageTemplateEntryId(0L);
+	}
+
+	@Test
+	public void testCountByG_CN() throws Exception {
+		_persistence.countByG_CN(
+			RandomTestUtil.nextLong(), RandomTestUtil.nextLong());
+
+		_persistence.countByG_CN(0L, 0L);
 	}
 
 	@Test
@@ -620,8 +619,6 @@ public class AssetDisplayPageEntryPersistenceTest {
 
 		AssetDisplayPageEntry assetDisplayPageEntry = _persistence.create(pk);
 
-		assetDisplayPageEntry.setMvccVersion(RandomTestUtil.nextLong());
-
 		assetDisplayPageEntry.setCtCollectionId(RandomTestUtil.nextLong());
 
 		assetDisplayPageEntry.setUuid(RandomTestUtil.randomString());
@@ -661,3 +658,4 @@ public class AssetDisplayPageEntryPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:565159234

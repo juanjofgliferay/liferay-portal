@@ -5,28 +5,27 @@
 
 package com.liferay.dynamic.data.mapping.form.field.type.internal.document.library;
 
+import com.liferay.document.library.helper.DLURLHelper;
 import com.liferay.document.library.kernel.model.DLFolderConstants;
 import com.liferay.document.library.kernel.service.DLAppLocalService;
 import com.liferay.dynamic.data.mapping.constants.DDMFormConstants;
 import com.liferay.dynamic.data.mapping.constants.DDMPortletKeys;
 import com.liferay.dynamic.data.mapping.form.field.type.DDMFormFieldTemplateContextContributor;
 import com.liferay.dynamic.data.mapping.form.field.type.constants.DDMFormFieldTypeConstants;
-import com.liferay.dynamic.data.mapping.form.item.selector.criterion.DDMUserPersonalFolderItemSelectorCriterion;
+import com.liferay.dynamic.data.mapping.form.item.selector.DDMUserPersonalFolderItemSelectorCriterion;
 import com.liferay.dynamic.data.mapping.model.DDMFormField;
 import com.liferay.dynamic.data.mapping.model.DDMFormInstance;
 import com.liferay.dynamic.data.mapping.render.DDMFormFieldRenderingContext;
 import com.liferay.dynamic.data.mapping.security.permission.DDMPermissionChecker;
 import com.liferay.dynamic.data.mapping.service.DDMFormInstanceLocalService;
+import com.liferay.dynamic.data.mapping.util.DDMFormUtil;
 import com.liferay.item.selector.ItemSelector;
 import com.liferay.item.selector.ItemSelectorCriterion;
 import com.liferay.item.selector.criteria.FileEntryItemSelectorReturnType;
 import com.liferay.item.selector.criteria.file.criterion.FileItemSelectorCriterion;
 import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMap;
 import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMapFactory;
-import com.liferay.petra.lang.SafeCloseable;
-import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.change.tracking.CTCollectionThreadLocal;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONException;
 import com.liferay.portal.kernel.json.JSONFactory;
@@ -34,11 +33,9 @@ import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Repository;
 import com.liferay.portal.kernel.model.User;
-import com.liferay.portal.kernel.model.UserConstants;
 import com.liferay.portal.kernel.portlet.RequestBackedPortletURLFactory;
 import com.liferay.portal.kernel.portlet.RequestBackedPortletURLFactoryUtil;
 import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
@@ -46,11 +43,9 @@ import com.liferay.portal.kernel.portlet.url.builder.ResourceURLBuilder;
 import com.liferay.portal.kernel.portletfilerepository.PortletFileRepository;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.repository.model.Folder;
-import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextFactory;
-import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.theme.PortletDisplay;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.AggregateResourceBundle;
@@ -64,19 +59,17 @@ import com.liferay.portal.kernel.util.ResourceBundleUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.portal.kernel.workflow.WorkflowConstants;
+
+import jakarta.portlet.ResourceURL;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.ResourceBundle;
-
-import javax.portlet.ResourceURL;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.service.component.annotations.Activate;
@@ -115,6 +108,29 @@ public class DocumentLibraryDDMFormFieldTemplateContextContributor
 				return ddmFormInstanceRecordId;
 			}
 		).put(
+			"fileEntryDeleteURL",
+			() -> {
+				if (ddmFormFieldRenderingContext.isReadOnly()) {
+					return null;
+				}
+
+				HttpServletRequest httpServletRequest =
+					ddmFormFieldRenderingContext.getHttpServletRequest();
+
+				RequestBackedPortletURLFactory requestBackedPortletURLFactory =
+					RequestBackedPortletURLFactoryUtil.create(
+						httpServletRequest);
+
+				return PortletURLBuilder.create(
+					requestBackedPortletURLFactory.createActionURL(
+						GetterUtil.getString(
+							_portal.getPortletId(httpServletRequest),
+							DDMPortletKeys.DYNAMIC_DATA_MAPPING_FORM))
+				).setActionName(
+					"/dynamic_data_mapping_form/delete_file_entry"
+				).buildString();
+			}
+		).put(
 			"groupId", ddmFormFieldRenderingContext.getProperty("groupId")
 		).put(
 			"maximumRepetitions",
@@ -133,6 +149,8 @@ public class DocumentLibraryDDMFormFieldTemplateContextContributor
 			"objectFieldAcceptedFileExtensions",
 			GetterUtil.getString(
 				ddmFormField.getProperty("objectFieldAcceptedFileExtensions"))
+		).put(
+			"strings", _getStrings(ddmFormFieldRenderingContext)
 		).put(
 			"value",
 			() -> {
@@ -154,12 +172,16 @@ public class DocumentLibraryDDMFormFieldTemplateContextContributor
 	@Activate
 	protected void activate(BundleContext bundleContext) {
 		_serviceTrackerMap = ServiceTrackerMapFactory.openSingleValueMap(
-			bundleContext, DDMPermissionChecker.class, "javax.portlet.name");
+			bundleContext, DDMPermissionChecker.class, "jakarta.portlet.name");
 	}
 
 	protected boolean containsPermission(
 		DDMFormFieldRenderingContext ddmFormFieldRenderingContext,
 		String portletId) {
+
+		if (portletId.equals(DDMPortletKeys.DYNAMIC_DATA_MAPPING_FORM_ADMIN)) {
+			return true;
+		}
 
 		try {
 			DDMPermissionChecker ddmPermissionChecker =
@@ -204,60 +226,6 @@ public class DocumentLibraryDDMFormFieldTemplateContextContributor
 
 		return (ThemeDisplay)httpServletRequest.getAttribute(
 			WebKeys.THEME_DISPLAY);
-	}
-
-	private User _createDDMFormDefaultUser(long companyId) {
-		try (SafeCloseable safeCloseable =
-				CTCollectionThreadLocal.setProductionModeWithSafeCloseable()) {
-
-			long creatorUserId = 0;
-			boolean autoPassword = true;
-			String password1 = StringPool.BLANK;
-			String password2 = StringPool.BLANK;
-			boolean autoScreenName = false;
-			String screenName =
-				DDMFormConstants.DDM_FORM_DEFAULT_USER_SCREEN_NAME;
-			String emailAddress = _getEmailAddress(companyId);
-			Locale locale = LocaleUtil.getDefault();
-			String firstName =
-				DDMFormConstants.DDM_FORM_DEFAULT_USER_FIRST_NAME;
-			String middleName = StringPool.BLANK;
-			String lastName = DDMFormConstants.DDM_FORM_DEFAULT_USER_LAST_NAME;
-			long prefixListTypeId = 0;
-			long suffixListTypeId = 0;
-			boolean male = true;
-			int birthdayMonth = Calendar.JANUARY;
-			int birthdayDay = 1;
-			int birthdayYear = 1970;
-			String jobTitle = StringPool.BLANK;
-			long[] groupIds = null;
-			long[] organizationIds = null;
-			long[] roleIds = null;
-			long[] userGroupIds = null;
-			boolean sendEmail = false;
-			ServiceContext serviceContext = null;
-
-			User user = _userLocalService.addUser(
-				creatorUserId, companyId, autoPassword, password1, password2,
-				autoScreenName, screenName, emailAddress, locale, firstName,
-				middleName, lastName, prefixListTypeId, suffixListTypeId, male,
-				birthdayMonth, birthdayDay, birthdayYear, jobTitle,
-				UserConstants.TYPE_REGULAR, groupIds, organizationIds, roleIds,
-				userGroupIds, sendEmail, serviceContext);
-
-			_userLocalService.updateStatus(
-				user.getUserId(), WorkflowConstants.STATUS_INACTIVE,
-				new ServiceContext());
-
-			return user;
-		}
-		catch (PortalException portalException) {
-			if (_log.isDebugEnabled()) {
-				_log.debug(portalException);
-			}
-
-			return null;
-		}
 	}
 
 	private Folder _createDDMFormFolder(
@@ -305,20 +273,6 @@ public class DocumentLibraryDDMFormFieldTemplateContextContributor
 		}
 	}
 
-	private User _getDDMFormDefaultUser(long companyId) {
-		try {
-			return _userLocalService.getUserByScreenName(
-				companyId, DDMFormConstants.DDM_FORM_DEFAULT_USER_SCREEN_NAME);
-		}
-		catch (PortalException portalException) {
-			if (_log.isDebugEnabled()) {
-				_log.debug(portalException);
-			}
-
-			return _createDDMFormDefaultUser(companyId);
-		}
-	}
-
 	private long _getDDMFormFolderId(
 		long companyId, long repositoryId,
 		HttpServletRequest httpServletRequest) {
@@ -335,7 +289,7 @@ public class DocumentLibraryDDMFormFieldTemplateContextContributor
 				_log.debug(portalException);
 			}
 
-			User user = _getDDMFormDefaultUser(companyId);
+			User user = DDMFormUtil.getDDMFormDefaultUser(companyId);
 
 			if (user != null) {
 				folder = _createDDMFormFolder(
@@ -364,23 +318,6 @@ public class DocumentLibraryDDMFormFieldTemplateContextContributor
 		return GetterUtil.getLong(
 			ddmFormFieldRenderingContext.getProperty(
 				"ddmFormInstanceRecordId"));
-	}
-
-	private String _getEmailAddress(long companyId) {
-		try {
-			Company company = _companyLocalService.getCompany(companyId);
-
-			return StringBundler.concat(
-				DDMFormConstants.DDM_FORM_DEFAULT_USER_SCREEN_NAME,
-				StringPool.AT, company.getMx());
-		}
-		catch (PortalException portalException) {
-			if (_log.isDebugEnabled()) {
-				_log.debug(portalException);
-			}
-
-			return null;
-		}
 	}
 
 	private FileEntry _getFileEntry(JSONObject valueJSONObject) {
@@ -425,6 +362,18 @@ public class DocumentLibraryDDMFormFieldTemplateContextContributor
 					return StringPool.BLANK;
 				}
 
+				long ddmFormInstanceRecordId = _getDDMFormInstanceRecordId(
+					ddmFormField, ddmFormFieldRenderingContext);
+
+				if (ddmFormInstanceRecordId == 0) {
+					return _dlURLHelper.getDownloadURL(
+						fileEntry, fileEntry.getFileVersion(),
+						getThemeDisplay(
+							ddmFormFieldRenderingContext.
+								getHttpServletRequest()),
+						StringPool.BLANK);
+				}
+
 				RequestBackedPortletURLFactory requestBackedPortletURLFactory =
 					RequestBackedPortletURLFactoryUtil.create(
 						ddmFormFieldRenderingContext.getHttpServletRequest());
@@ -436,9 +385,7 @@ public class DocumentLibraryDDMFormFieldTemplateContextContributor
 				).setParameter(
 					"ddmFormFieldName", ddmFormField.getName()
 				).setParameter(
-					"ddmFormInstanceRecordId",
-					_getDDMFormInstanceRecordId(
-						ddmFormField, ddmFormFieldRenderingContext)
+					"ddmFormInstanceRecordId", ddmFormInstanceRecordId
 				).setParameter(
 					"fileEntryId", fileEntry.getFileEntryId()
 				).setResourceID(
@@ -459,7 +406,7 @@ public class DocumentLibraryDDMFormFieldTemplateContextContributor
 	private String _getGuestUploadURL(
 		DDMFormField ddmFormField,
 		DDMFormFieldRenderingContext ddmFormFieldRenderingContext,
-		long folderId, HttpServletRequest httpServletRequest) {
+		HttpServletRequest httpServletRequest) {
 
 		RequestBackedPortletURLFactory requestBackedPortletURLFactory =
 			RequestBackedPortletURLFactoryUtil.create(httpServletRequest);
@@ -471,8 +418,6 @@ public class DocumentLibraryDDMFormFieldTemplateContextContributor
 					DDMPortletKeys.DYNAMIC_DATA_MAPPING_FORM))
 		).setActionName(
 			"/dynamic_data_mapping_form/upload_file_entry"
-		).setParameter(
-			"folderId", folderId
 		).setParameter(
 			"formInstanceId",
 			ParamUtil.getString(
@@ -642,6 +587,77 @@ public class DocumentLibraryDDMFormFieldTemplateContextContributor
 		return serviceContext;
 	}
 
+	private Map<String, String> _getStrings(
+		DDMFormFieldRenderingContext ddmFormFieldRenderingContext) {
+
+		Locale locale = ddmFormFieldRenderingContext.getLocale();
+
+		if (!StringUtil.startsWith(
+				ddmFormFieldRenderingContext.getPortletNamespace(),
+				_portal.getPortletNamespace(
+					DDMPortletKeys.DYNAMIC_DATA_MAPPING_FORM))) {
+
+			ThemeDisplay themeDisplay = getThemeDisplay(
+				ddmFormFieldRenderingContext.getHttpServletRequest());
+
+			if (themeDisplay != null) {
+				locale = themeDisplay.getLocale();
+			}
+		}
+
+		if (locale == null) {
+			locale = LocaleUtil.getDefault();
+		}
+
+		ResourceBundle resourceBundle = getResourceBundle(locale);
+
+		return HashMapBuilder.put(
+			"attentionValueIsAtLabel",
+			_language.get(resourceBundle, "attention-value-is-at-x")
+		).put(
+			"clearLabel", _language.get(resourceBundle, "clear")
+		).put(
+			"completeLabel", _language.get(resourceBundle, "complete")
+		).put(
+			"documentLabel", _language.get(resourceBundle, "document")
+		).put(
+			"fileLabel", _language.get(resourceBundle, "file")
+		).put(
+			"invalidExtensionErrorMessage",
+			_language.get(
+				resourceBundle, "please-enter-a-file-with-a-valid-extension-x")
+		).put(
+			"invalidFileSizeErrorMessage",
+			_language.get(
+				resourceBundle,
+				"please-enter-a-file-with-a-valid-file-size-no-larger-than-x")
+		).put(
+			"maximumSubmissionLimitReachedErrorMessage",
+			_language.get(
+				resourceBundle,
+				"the-maximum-number-of-submissions-allowed-for-this-form-has-" +
+					"been-reached")
+		).put(
+			"progressLabel", _language.get(resourceBundle, "progress-x")
+		).put(
+			"selectLabel", _language.get(resourceBundle, "select")
+		).put(
+			"selectXLabel", _language.get(resourceBundle, "select-x")
+		).put(
+			"signInRequiredErrorMessage",
+			_language.get(
+				resourceBundle, "you-need-to-be-signed-in-to-edit-this-field")
+		).put(
+			"unselectFileLabel", _language.get(resourceBundle, "unselect-file")
+		).put(
+			"uploadPermissionErrorMessage",
+			_language.get(
+				resourceBundle,
+				"you-need-to-be-assigned-to-the-same-site-where-the-form-was-" +
+					"created-to-use-this-field")
+		).build();
+	}
+
 	private Map<String, Object> _getUploadParameters(
 		DDMFormField ddmFormField,
 		DDMFormFieldRenderingContext ddmFormFieldRenderingContext) {
@@ -691,14 +707,8 @@ public class DocumentLibraryDDMFormFieldTemplateContextContributor
 			return new HashMap<>();
 		}
 
-		long ddmFormFolderId = _getDDMFormFolderId(
-			themeDisplay.getCompanyId(), repository.getRepositoryId(),
-			httpServletRequest);
-
 		if (!themeDisplay.isSignedIn()) {
 			return HashMapBuilder.<String, Object>put(
-				"folderId", ddmFormFolderId
-			).put(
 				"guestUploadURL",
 				() -> {
 					String guestUploadURL = GetterUtil.getString(
@@ -710,14 +720,17 @@ public class DocumentLibraryDDMFormFieldTemplateContextContributor
 
 					return _getGuestUploadURL(
 						ddmFormField, ddmFormFieldRenderingContext,
-						ddmFormFolderId, httpServletRequest);
+						httpServletRequest);
 				}
 			).build();
 		}
 
 		long privateUserFolderId = _getPrivateUserFolderId(
-			repository.getRepositoryId(), ddmFormFolderId, httpServletRequest,
-			themeDisplay.getUser());
+			repository.getRepositoryId(),
+			_getDDMFormFolderId(
+				themeDisplay.getCompanyId(), repository.getRepositoryId(),
+				httpServletRequest),
+			httpServletRequest, themeDisplay.getUser());
 
 		return HashMapBuilder.<String, Object>put(
 			"folderId", privateUserFolderId
@@ -756,13 +769,13 @@ public class DocumentLibraryDDMFormFieldTemplateContextContributor
 		DocumentLibraryDDMFormFieldTemplateContextContributor.class);
 
 	@Reference
-	private CompanyLocalService _companyLocalService;
-
-	@Reference
 	private DDMFormInstanceLocalService _ddmFormInstanceLocalService;
 
 	@Reference
 	private DLAppLocalService _dlAppLocalService;
+
+	@Reference
+	private DLURLHelper _dlURLHelper;
 
 	@Reference
 	private GroupLocalService _groupLocalService;
@@ -784,8 +797,5 @@ public class DocumentLibraryDDMFormFieldTemplateContextContributor
 
 	private volatile ServiceTrackerMap<String, DDMPermissionChecker>
 		_serviceTrackerMap;
-
-	@Reference
-	private UserLocalService _userLocalService;
 
 }

@@ -17,7 +17,7 @@ LayoutSet publicLayoutSet = LayoutSetLocalServiceUtil.getLayoutSet(liveGroupId, 
 
 Set<Locale> availableLocales = LanguageUtil.getAvailableLocales(liveGroupId);
 
-TreeMap<String, String> publicVirtualHostnames = publicLayoutSet.getVirtualHostnames();
+NavigableMap<String, String> publicVirtualHostnames = publicLayoutSet.getVirtualHostnames();
 
 if (publicVirtualHostnames.isEmpty()) {
 	publicVirtualHostnames = TreeMapBuilder.put(
@@ -122,7 +122,7 @@ if (publicVirtualHostnames.isEmpty()) {
 	</p>
 
 	<div class="mb-5" id="<portlet:namespace />publicVirtualHostFields">
-		<h4 class="sheet-subtitle"><liferay-ui:message key="pages" /></h4>
+		<div class="sheet-subtitle"><liferay-ui:message key="pages" /></div>
 
 		<%
 		for (Map.Entry<String, String> entry : publicVirtualHostnames.entrySet()) {
@@ -133,6 +133,7 @@ if (publicVirtualHostnames.isEmpty()) {
 
 			<clay:container-fluid
 				cssClass="lfr-form-row"
+				fullWidth="<%= true %>"
 			>
 				<clay:row>
 					<aui:input inlineField="<%= true %>" label="virtual-host" maxlength="200" name="publicVirtualHostname[]" placeholder="virtual-host" type="text" value="<%= virtualHostname %>" wrapperCssClass="col-sm-6" />
@@ -166,7 +167,7 @@ if (publicVirtualHostnames.isEmpty()) {
 		<%
 		LayoutSet stagingPublicLayoutSet = LayoutSetLocalServiceUtil.getLayoutSet(stagingGroupId, false);
 
-		TreeMap<String, String> stagingPublicVirtualHostnames = stagingPublicLayoutSet.getVirtualHostnames();
+		NavigableMap<String, String> stagingPublicVirtualHostnames = stagingPublicLayoutSet.getVirtualHostnames();
 
 		if (stagingPublicVirtualHostnames.isEmpty()) {
 			stagingPublicVirtualHostnames = TreeMapBuilder.put(
@@ -186,6 +187,7 @@ if (publicVirtualHostnames.isEmpty()) {
 
 				<clay:container-fluid
 					cssClass="lfr-form-row"
+					fullWidth="<%= true %>"
 				>
 					<clay:row>
 						<aui:input inlineField="<%= true %>" label="staging-pages" maxlength="200" name="stagingPublicVirtualHostname[]" placeholder="virtual-host" type="text" value="<%= virtualHostname %>" wrapperCssClass="col-sm-6" />
@@ -216,21 +218,23 @@ if (publicVirtualHostnames.isEmpty()) {
 	</c:if>
 </aui:fieldset>
 
-<aui:script use="liferay-auto-fields">
-	new Liferay.AutoFields({
+<aui:script type="module">
+	import {autoFields} from '<%= FrontendESMUtil.buildURL(themeDisplay, "frontend-js-web", "auto_fields") %>';
+
+	autoFields({
 		contentBox: '#<portlet:namespace />publicVirtualHostFields',
 		namespace: '<portlet:namespace />',
-	}).render();
+	});
 
 	<c:if test="<%= liveGroup.hasStagingGroup() %>">
-		new Liferay.AutoFields({
+		autoFields({
 			contentBox: '#<portlet:namespace />stagingPublicVirtualHostFields',
 			namespace: '<portlet:namespace />',
-		}).render();
+		});
 	</c:if>
 </aui:script>
 
-<script>
+<aui:script>
 	var friendlyURL = document.getElementById(
 		'<portlet:namespace />groupFriendlyURL'
 	);
@@ -257,4 +261,4 @@ if (publicVirtualHostnames.isEmpty()) {
 			friendlyURL.value = value;
 		});
 	}
-</script>
+</aui:script>

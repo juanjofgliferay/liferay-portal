@@ -17,7 +17,7 @@ import org.osgi.service.component.annotations.Component;
  * @author Lino Alves
  */
 @Component(
-	property = "javax.portlet.name=" + DDMPortletKeys.DYNAMIC_DATA_MAPPING_FORM_ADMIN,
+	property = "jakarta.portlet.name=" + DDMPortletKeys.DYNAMIC_DATA_MAPPING_FORM_ADMIN,
 	service = DDMDisplayTabItem.class
 )
 public class DDMFormAdminFieldSetTabItem extends DDMFormAdminTabItem {
@@ -38,7 +38,7 @@ public class DDMFormAdminFieldSetTabItem extends DDMFormAdminTabItem {
 		throws Exception {
 
 		return PortletURLBuilder.create(
-			getPortletURL(liferayPortletRequest, liferayPortletResponse)
+			getPortletURL(liferayPortletRequest)
 		).setParameter(
 			"currentTab", "element-set"
 		).buildString();

@@ -32,7 +32,7 @@ public class PortletPreferenceValueLocalServiceImpl
 	}
 
 	@Override
-	public javax.portlet.PortletPreferences getPreferences(
+	public jakarta.portlet.PortletPreferences getPreferences(
 		PortletPreferences portletPreferences) {
 
 		Map<String, List<PortletPreferenceValue>> portletPreferenceValuesMap =
@@ -60,9 +60,11 @@ public class PortletPreferenceValueLocalServiceImpl
 
 				values[i] = portletPreferenceValue.getValue();
 
-				if (portletPreferenceValue.isReadOnly()) {
-					readOnly = true;
+				if (!portletPreferenceValue.isReadOnly()) {
+					continue;
 				}
+
+				readOnly = true;
 			}
 
 			preferenceMap.put(name, new Preference(name, values, readOnly));

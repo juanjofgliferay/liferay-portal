@@ -45,6 +45,40 @@ public class KaleoLogLocalServiceWrapper
 			serviceContext);
 	}
 
+	@Override
+	public KaleoLog addInstanceEndKaleoLog(
+			com.liferay.portal.workflow.kaleo.model.KaleoInstanceToken
+				kaleoInstanceToken,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _kaleoLogLocalService.addInstanceEndKaleoLog(
+			kaleoInstanceToken, serviceContext);
+	}
+
+	@Override
+	public KaleoLog addInstanceFailKaleoLog(
+			com.liferay.portal.workflow.kaleo.model.KaleoInstanceToken
+				kaleoInstanceToken,
+			String comment,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _kaleoLogLocalService.addInstanceFailKaleoLog(
+			kaleoInstanceToken, comment, serviceContext);
+	}
+
+	@Override
+	public KaleoLog addInstanceStartKaleoLog(
+			com.liferay.portal.workflow.kaleo.model.KaleoInstanceToken
+				kaleoInstanceToken,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _kaleoLogLocalService.addInstanceStartKaleoLog(
+			kaleoInstanceToken, serviceContext);
+	}
+
 	/**
 	 * Adds the kaleo log to the database. Also notifies the appropriate model listeners.
 	 *
@@ -85,6 +119,18 @@ public class KaleoLogLocalServiceWrapper
 
 		return _kaleoLogLocalService.addNodeExitKaleoLog(
 			kaleoInstanceToken, departingKaleoNode, serviceContext);
+	}
+
+	@Override
+	public KaleoLog addNodeUsageMetadataKaleoLog(
+			com.liferay.portal.workflow.kaleo.model.KaleoInstanceToken
+				kaleoInstanceToken,
+			java.util.Map<String, java.io.Serializable> workflowContext,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _kaleoLogLocalService.addNodeUsageMetadataKaleoLog(
+			kaleoInstanceToken, workflowContext, serviceContext);
 	}
 
 	@Override
@@ -173,28 +219,6 @@ public class KaleoLogLocalServiceWrapper
 
 		return _kaleoLogLocalService.addTaskUpdateKaleoLog(
 			kaleoTaskInstanceToken, comment, workflowContext, serviceContext);
-	}
-
-	@Override
-	public KaleoLog addWorkflowInstanceEndKaleoLog(
-			com.liferay.portal.workflow.kaleo.model.KaleoInstanceToken
-				kaleoInstanceToken,
-			com.liferay.portal.kernel.service.ServiceContext serviceContext)
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return _kaleoLogLocalService.addWorkflowInstanceEndKaleoLog(
-			kaleoInstanceToken, serviceContext);
-	}
-
-	@Override
-	public KaleoLog addWorkflowInstanceStartKaleoLog(
-			com.liferay.portal.workflow.kaleo.model.KaleoInstanceToken
-				kaleoInstanceToken,
-			com.liferay.portal.kernel.service.ServiceContext serviceContext)
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return _kaleoLogLocalService.addWorkflowInstanceStartKaleoLog(
-			kaleoInstanceToken, serviceContext);
 	}
 
 	/**
@@ -557,3 +581,4 @@ public class KaleoLogLocalServiceWrapper
 	private KaleoLogLocalService _kaleoLogLocalService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-747663136

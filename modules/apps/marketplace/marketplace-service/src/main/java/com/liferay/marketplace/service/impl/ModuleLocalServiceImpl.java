@@ -61,11 +61,6 @@ public class ModuleLocalServiceImpl extends ModuleLocalServiceBaseImpl {
 	}
 
 	@Override
-	public void deleteModules(long appId) {
-		modulePersistence.removeByAppId(appId);
-	}
-
-	@Override
 	public Module fetchModule(
 		long appId, String bundleSymbolicName, String bundleVersion,
 		String contextName) {
@@ -75,7 +70,8 @@ public class ModuleLocalServiceImpl extends ModuleLocalServiceBaseImpl {
 				appId, bundleSymbolicName, bundleVersion);
 		}
 		else if (Validator.isNotNull(contextName)) {
-			return modulePersistence.fetchByA_CN(appId, contextName);
+			return modulePersistence.fetchByA_CN_First(
+				appId, contextName, null);
 		}
 
 		return null;

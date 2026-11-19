@@ -7,14 +7,12 @@ package com.liferay.fragment.entry.processor.editable.internal.mapper;
 
 import com.liferay.fragment.entry.processor.editable.mapper.EditableElementMapper;
 import com.liferay.fragment.entry.processor.helper.FragmentEntryProcessorHelper;
+import com.liferay.fragment.entry.processor.helper.LayoutReferenceResolver;
 import com.liferay.fragment.processor.FragmentEntryProcessorContext;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONObject;
-import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
-import com.liferay.portal.kernel.service.GroupLocalService;
-import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
@@ -23,9 +21,9 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import java.util.HashMap;
+import jakarta.servlet.http.HttpServletRequest;
 
-import javax.servlet.http.HttpServletRequest;
+import java.util.HashMap;
 
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
@@ -117,13 +115,13 @@ public class LinkEditableElementMapper implements EditableElementMapper {
 			processEditableTag = true;
 		}
 
-		boolean replaceLink = false;
+		boolean reuseExistingLink = false;
 
 		if ((firstChildElement != null) && processEditableTag &&
 			StringUtil.equalsIgnoreCase(firstChildElement.tagName(), "a")) {
 
 			linkElement = firstChildElement;
-			replaceLink = true;
+			reuseExistingLink = true;
 		}
 
 		String target = configJSONObject.getString("target");
@@ -135,11 +133,21 @@ public class LinkEditableElementMapper implements EditableElementMapper {
 				target = "_self";
 			}
 
+			if (StringUtil.equalsIgnoreCase(target, "_blank")) {
+				linkElement.attr("rel", "noopener noreferrer");
+			}
+
 			linkElement.attr("target", target);
 		}
 
 		if (Validator.isNull(href)) {
 			return;
+		}
+
+		boolean empty = false;
+
+		if (element.childNodeSize() == 0) {
+			empty = true;
 		}
 
 		linkElement.attr("href", href);
@@ -148,16 +156,28 @@ public class LinkEditableElementMapper implements EditableElementMapper {
 			linkElement.attr("rel", "nofollow");
 		}
 
-		_replaceLinkContent(
-			element, firstChildElement, linkElement, replaceLink);
+		Element parentElement = element.parent();
 
-		if (((linkElement != element) || processEditableTag) &&
-			Validator.isNotNull(element.html())) {
+		int index = element.siblingIndex();
 
-			element.html(linkElement.outerHtml());
+		if (!reuseExistingLink) {
+			_replaceLinkContent(element, empty, linkElement);
 		}
-		else if ((linkElement != element) && Validator.isNull(element.html())) {
-			element.replaceWith(linkElement);
+
+		if (((linkElement != element) || processEditableTag) && !empty &&
+			(linkElement.parent() != element)) {
+
+			element.empty();
+
+			element.appendChild(linkElement);
+		}
+		else if ((linkElement != element) && empty) {
+			if (element.parent() == parentElement) {
+				element.replaceWith(linkElement);
+			}
+			else {
+				parentElement.insertChildren(index, linkElement);
+			}
 		}
 	}
 
@@ -168,6 +188,20 @@ public class LinkEditableElementMapper implements EditableElementMapper {
 
 		if (!_isMappedLayout(jsonObject)) {
 			return StringPool.BLANK;
+		}
+
+		JSONObject layoutJSONObject = jsonObject.getJSONObject("layout");
+
+		if (layoutJSONObject == null) {
+			return StringPool.POUND;
+		}
+
+		Layout layout = _layoutReferenceResolver.resolve(
+			fragmentEntryProcessorContext.getCompanyId(), layoutJSONObject,
+			fragmentEntryProcessorContext.getScopeGroupId());
+
+		if (layout == null) {
+			return StringPool.POUND;
 		}
 
 		HttpServletRequest httpServletRequest =
@@ -185,50 +219,27 @@ public class LinkEditableElementMapper implements EditableElementMapper {
 			return StringPool.BLANK;
 		}
 
-		JSONObject layoutJSONObject = jsonObject.getJSONObject("layout");
-
-		long groupId = layoutJSONObject.getLong("groupId");
-
-		Group group = _groupLocalService.fetchGroup(groupId);
-
-		if (group == null) {
-			return StringPool.POUND;
-		}
-
-		Layout layout = _layoutLocalService.fetchLayout(
-			groupId, layoutJSONObject.getBoolean("privateLayout"),
-			layoutJSONObject.getLong("layoutId"));
-
-		if (layout == null) {
-			return StringPool.POUND;
-		}
-
 		return _portal.getLayoutRelativeURL(layout, themeDisplay);
 	}
 
 	private boolean _isMappedLayout(JSONObject jsonObject) {
-		if (jsonObject.has("layout")) {
-			return true;
-		}
-
-		return false;
+		return jsonObject.has("layout");
 	}
 
 	private void _replaceLinkContent(
-		Element element, Element firstChildElement, Element linkElement,
-		boolean replaceLink) {
+		Element element, boolean empty, Element linkElement) {
 
-		if (replaceLink && Validator.isNull(firstChildElement.html())) {
-			linkElement.html(firstChildElement.outerHtml());
+		if (linkElement == element) {
+			return;
 		}
-		else if (replaceLink && Validator.isNotNull(firstChildElement.html())) {
-			linkElement.html(firstChildElement.html());
-		}
-		else if (Validator.isNull(element.html())) {
-			linkElement.html(element.outerHtml());
+
+		linkElement.empty();
+
+		if (empty) {
+			linkElement.appendChild(element);
 		}
 		else {
-			linkElement.html(element.html());
+			linkElement.appendChildren(element.childNodes());
 		}
 	}
 
@@ -236,10 +247,7 @@ public class LinkEditableElementMapper implements EditableElementMapper {
 	private FragmentEntryProcessorHelper _fragmentEntryProcessorHelper;
 
 	@Reference
-	private GroupLocalService _groupLocalService;
-
-	@Reference
-	private LayoutLocalService _layoutLocalService;
+	private LayoutReferenceResolver _layoutReferenceResolver;
 
 	@Reference
 	private Portal _portal;

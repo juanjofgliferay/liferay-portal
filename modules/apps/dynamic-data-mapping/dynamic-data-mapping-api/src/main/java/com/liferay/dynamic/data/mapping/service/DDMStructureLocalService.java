@@ -82,23 +82,6 @@ public interface DDMStructureLocalService
 	@Indexable(type = IndexableType.REINDEX)
 	public DDMStructure addDDMStructure(DDMStructure ddmStructure);
 
-	@Indexable(type = IndexableType.REINDEX)
-	public DDMStructure addStructure(
-			long userId, long groupId, long parentStructureId, long classNameId,
-			String structureKey, Map<Locale, String> nameMap,
-			Map<Locale, String> descriptionMap, DDMForm ddmForm,
-			DDMFormLayout ddmFormLayout, String storageType, int type,
-			ServiceContext serviceContext)
-		throws PortalException;
-
-	@Indexable(type = IndexableType.REINDEX)
-	public DDMStructure addStructure(
-			long userId, long groupId, long parentStructureId, long classNameId,
-			String structureKey, Map<Locale, String> nameMap,
-			Map<Locale, String> descriptionMap, String definition,
-			String storageType, ServiceContext serviceContext)
-		throws PortalException;
-
 	public DDMStructure addStructure(
 			long userId, long groupId, long classNameId,
 			Map<Locale, String> nameMap, Map<Locale, String> descriptionMap,
@@ -111,6 +94,24 @@ public interface DDMStructureLocalService
 			long classNameId, String structureKey, Map<Locale, String> nameMap,
 			Map<Locale, String> descriptionMap, DDMForm ddmForm,
 			DDMFormLayout ddmFormLayout, String storageType, int type,
+			ServiceContext serviceContext)
+		throws PortalException;
+
+	@Indexable(type = IndexableType.REINDEX)
+	public DDMStructure addStructure(
+			String externalReferenceCode, long userId, long groupId,
+			long parentStructureId, long classNameId, String structureKey,
+			Map<Locale, String> nameMap, Map<Locale, String> descriptionMap,
+			DDMForm ddmForm, DDMFormLayout ddmFormLayout, String storageType,
+			int type, ServiceContext serviceContext)
+		throws PortalException;
+
+	@Indexable(type = IndexableType.REINDEX)
+	public DDMStructure addStructure(
+			String externalReferenceCode, long userId, long groupId,
+			long parentStructureId, long classNameId, String structureKey,
+			Map<Locale, String> nameMap, Map<Locale, String> descriptionMap,
+			String definition, String storageType,
 			ServiceContext serviceContext)
 		throws PortalException;
 
@@ -411,6 +412,10 @@ public interface DDMStructureLocalService
 		boolean includeAncestorStructures);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public DDMStructure fetchStructureByExternalReferenceCode(
+		String externalReferenceCode, long groupId, long classNameId);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public DDMStructure fetchStructureByUuidAndGroupId(
 		String uuid, long groupId, boolean includeAncestorStructures);
 
@@ -617,17 +622,10 @@ public interface DDMStructureLocalService
 			boolean includeAncestorStructures)
 		throws PortalException;
 
-	/**
-	 * Returns all the structures matching the group, name, and description.
-	 *
-	 * @param groupId the primary key of the structure's group
-	 * @param name the structure's name
-	 * @param description the structure's description
-	 * @return the matching structures
-	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<DDMStructure> getStructure(
-		long groupId, String name, String description);
+	public DDMStructure getStructureByExternalReferenceCode(
+			String externalReferenceCode, long groupId, long classNameId)
+		throws PortalException;
 
 	@Transactional(enabled = false)
 	public DDMForm getStructureDDMForm(DDMStructure structure)
@@ -746,10 +744,6 @@ public interface DDMStructureLocalService
 		int status, int start, int end,
 		OrderByComparator<DDMStructure> orderByComparator);
 
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<DDMStructure> getStructures(
-		long groupId, String name, String description);
-
 	/**
 	 * Returns all the structures belonging to the groups.
 	 *
@@ -802,36 +796,6 @@ public interface DDMStructureLocalService
 		OrderByComparator<DDMStructure> orderByComparator);
 
 	/**
-	 * Returns an ordered range of all the structures matching the group, class
-	 * name ID, name, and description.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end -
-	 * start</code> instances. <code>start</code> and <code>end</code> are not
-	 * primary keys, they are indexes in the result set. Thus, <code>0</code>
-	 * refers to the first result in the set. Setting both <code>start</code>
-	 * and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full
-	 * result set.
-	 * </p>
-	 *
-	 * @param groupIds the primary keys of the groups
-	 * @param classNameId the primary key of the class name for the structure's
-	 related model
-	 * @param name the name keywords
-	 * @param description the description keywords
-	 * @param start the lower bound of the range of structures to return
-	 * @param end the upper bound of the range of structures to return (not
-	 inclusive)
-	 * @param orderByComparator the comparator to order the structures
-	 (optionally <code>null</code>)
-	 * @return the range of matching structures ordered by the comparator
-	 */
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<DDMStructure> getStructures(
-		long[] groupIds, long classNameId, String name, String description,
-		int start, int end, OrderByComparator<DDMStructure> orderByComparator);
-
-	/**
 	 * Returns the number of structures belonging to the group.
 	 *
 	 * @param groupId the primary key of the group
@@ -873,7 +837,8 @@ public interface DDMStructureLocalService
 		long groupId, long classNameId, String structureKey);
 
 	public String prepareLocalizedDefinitionForImport(
-		DDMStructure structure, Locale defaultImportLocale);
+			DDMStructure structure, Locale defaultImportLocale)
+		throws PortalException;
 
 	public void revertStructure(
 			long userId, long structureId, String version,
@@ -1042,7 +1007,8 @@ public interface DDMStructureLocalService
 
 	@Indexable(type = IndexableType.REINDEX)
 	public DDMStructure updateStructure(
-			long userId, long structureId, long parentStructureId,
+			String externalReferenceCode, long userId, long structureId,
+			long groupId, long parentStructureId, long classNameId,
 			String structureKey, Map<Locale, String> nameMap,
 			Map<Locale, String> descriptionMap, String definition,
 			ServiceContext serviceContext)
@@ -1064,3 +1030,4 @@ public interface DDMStructureLocalService
 		throws E;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1122466150

@@ -10,10 +10,9 @@ import com.liferay.change.tracking.exception.CTStagingEnabledException;
 import com.liferay.change.tracking.model.CTCollection;
 import com.liferay.change.tracking.model.CTPreferences;
 import com.liferay.change.tracking.model.CTPreferencesTable;
+import com.liferay.change.tracking.scheduler.PublishScheduler;
 import com.liferay.change.tracking.service.CTCollectionLocalService;
 import com.liferay.change.tracking.service.CTPreferencesLocalService;
-import com.liferay.change.tracking.web.internal.configuration.helper.CTSettingsConfigurationHelper;
-import com.liferay.change.tracking.web.internal.scheduler.PublishScheduler;
 import com.liferay.oauth2.provider.constants.ClientProfile;
 import com.liferay.oauth2.provider.constants.GrantType;
 import com.liferay.oauth2.provider.model.OAuth2Application;
@@ -43,9 +42,10 @@ import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
-import com.liferay.portal.util.PropsValues;
+import com.liferay.portal.security.key.secret.SecretResolver;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -84,9 +84,9 @@ public class CTSettingsConfigurationModelListener
 
 			_cleanUpScheduledCTCollections(companyId);
 		}
-		catch (PortalException portalException) {
+		catch (Exception exception) {
 			throw new ConfigurationModelListenerException(
-				portalException, CTSettingsConfiguration.class, getClass(),
+				exception, CTSettingsConfiguration.class, getClass(),
 				properties);
 		}
 	}
@@ -95,14 +95,14 @@ public class CTSettingsConfigurationModelListener
 	public void onBeforeSave(String pid, Dictionary<String, Object> properties)
 		throws ConfigurationModelListenerException {
 
-		if (!FeatureFlagManagerUtil.isEnabled("LPS-186360")) {
-			properties.put("remoteEnabled", false);
-		}
-
 		try (SafeCloseable safeCloseable =
 				CTCollectionThreadLocal.setProductionModeWithSafeCloseable()) {
 
 			long companyId = GetterUtil.getLong(properties.get("companyId"));
+
+			if (!FeatureFlagManagerUtil.isEnabled(companyId, "LPS-186360")) {
+				properties.put("remoteEnabled", false);
+			}
 
 			boolean enabled = GetterUtil.getBoolean(properties.get("enabled"));
 
@@ -199,7 +199,7 @@ public class CTSettingsConfigurationModelListener
 	}
 
 	private void _cleanUpScheduledCTCollections(long companyId)
-		throws PortalException {
+		throws Exception {
 
 		if (PropsValues.SCHEDULER_ENABLED) {
 			for (CTCollection ctCollection :
@@ -275,6 +275,8 @@ public class CTSettingsConfigurationModelListener
 			properties.put("remoteClientSecret", clientSecret);
 		}
 
+		clientSecret = _secretResolver.resolve(companyId, clientSecret);
+
 		_oAuth2ApplicationLocalService.addOAuth2Application(
 			companyId, user.getUserId(), user.getScreenName(),
 			new ArrayList<GrantType>() {
@@ -318,9 +320,6 @@ public class CTSettingsConfigurationModelListener
 	private CTPreferencesLocalService _ctPreferencesLocalService;
 
 	@Reference
-	private CTSettingsConfigurationHelper _ctSettingsConfigurationHelper;
-
-	@Reference
 	private GroupLocalService _groupLocalService;
 
 	@Reference
@@ -331,6 +330,9 @@ public class CTSettingsConfigurationModelListener
 
 	@Reference
 	private RoleLocalService _roleLocalService;
+
+	@Reference
+	private SecretResolver _secretResolver;
 
 	@Reference
 	private UserLocalService _userLocalService;

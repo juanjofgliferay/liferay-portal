@@ -32,12 +32,12 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.webserver.WebServerServletTokenUtil;
 import com.liferay.users.admin.kernel.file.uploads.UserFileUploadsSettings;
 
+import jakarta.portlet.PortletPreferences;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
-
-import javax.portlet.PortletPreferences;
 
 /**
  * @author Brian Wing Shun Chan
@@ -56,9 +56,11 @@ public class OrganizationImpl extends OrganizationBaseImpl {
 		List<String> parentTypes = new ArrayList<>();
 
 		for (String curType : types) {
-			if (ArrayUtil.contains(getChildrenTypes(curType), type)) {
-				parentTypes.add(curType);
+			if (!ArrayUtil.contains(getChildrenTypes(curType), type)) {
+				continue;
 			}
+
+			parentTypes.add(curType);
 		}
 
 		return parentTypes.toArray(new String[0]);

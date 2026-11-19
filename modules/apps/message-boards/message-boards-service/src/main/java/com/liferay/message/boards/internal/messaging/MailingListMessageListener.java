@@ -10,6 +10,7 @@ import com.liferay.mail.kernel.service.MailService;
 import com.liferay.message.boards.constants.MBMessageConstants;
 import com.liferay.message.boards.internal.util.MBMailMessage;
 import com.liferay.message.boards.internal.util.MBMailUtil;
+import com.liferay.message.boards.internal.util.MBMailingListPasswordUtil;
 import com.liferay.message.boards.internal.util.MailingListThreadLocal;
 import com.liferay.message.boards.model.MBMessage;
 import com.liferay.message.boards.service.MBMessageLocalService;
@@ -35,20 +36,20 @@ import com.liferay.portal.kernel.util.ObjectValuePair;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.security.permission.PermissionCheckerUtil;
 
+import jakarta.mail.Address;
+import jakarta.mail.Flags;
+import jakarta.mail.Folder;
+import jakarta.mail.Message;
+import jakarta.mail.MessagingException;
+import jakarta.mail.Session;
+import jakarta.mail.Store;
+import jakarta.mail.URLName;
+import jakarta.mail.internet.InternetAddress;
+
 import java.io.IOException;
 import java.io.InputStream;
 
 import java.util.List;
-
-import javax.mail.Address;
-import javax.mail.Flags;
-import javax.mail.Folder;
-import javax.mail.Message;
-import javax.mail.MessagingException;
-import javax.mail.Session;
-import javax.mail.Store;
-import javax.mail.URLName;
-import javax.mail.internet.InternetAddress;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceRegistration;
@@ -163,7 +164,10 @@ public class MailingListMessageListener extends BaseMessageListener {
 		String host = mailingListRequest.getInServerName();
 		int port = mailingListRequest.getInServerPort();
 		String user = mailingListRequest.getInUserName();
-		String password = mailingListRequest.getInPassword();
+		String password = MBMailingListPasswordUtil.getPassword(
+			mailingListRequest.getCategoryId(),
+			mailingListRequest.getCompanyId(), "inPassword",
+			mailingListRequest.getInPassword());
 
 		Account account = Account.getInstance(protocol, port);
 
@@ -184,7 +188,7 @@ public class MailingListMessageListener extends BaseMessageListener {
 			MailingListRequest mailingListRequest, Message mailMessage)
 		throws Exception {
 
-		if (MBMailUtil.hasMailIdHeader(mailMessage)) {
+		if (MBMailUtil.hasMailIdHeader(_mailService, mailMessage)) {
 			return;
 		}
 

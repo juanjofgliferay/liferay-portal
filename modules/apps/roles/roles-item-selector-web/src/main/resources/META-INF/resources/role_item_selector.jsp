@@ -49,13 +49,13 @@ RoleItemSelectorViewDisplayContext roleItemSelectorViewDisplayContext = (RoleIte
 			<liferay-ui:search-container-column-text
 				cssClass="<%= cssClass %>"
 				name="title"
-				value="<%= role.getTitle(locale) %>"
+				value="<%= HtmlUtil.escape(role.getTitle(locale)) %>"
 			/>
 
 			<liferay-ui:search-container-column-text
 				cssClass="<%= cssClass %>"
 				name="description"
-				value="<%= role.getDescription(locale) %>"
+				value="<%= HtmlUtil.escape(role.getDescription(locale)) %>"
 			/>
 		</liferay-ui:search-container-row>
 
@@ -68,10 +68,8 @@ RoleItemSelectorViewDisplayContext roleItemSelectorViewDisplayContext = (RoleIte
 
 <c:choose>
 	<c:when test="<%= roleItemSelectorViewDisplayContext.getItemSelectorCriterion() instanceof RoleItemSelectorCriterion %>">
-		<aui:script require="frontend-js-web/index as frontendJsWeb">
-			var {delegate} = frontendJsWeb;
-
-			var selectItemHandler = delegate(
+		<aui:script sandbox="<%= true %>">
+			var selectItemHandler = Liferay.Util.delegate(
 				document.getElementById('<portlet:namespace />roleSelectorWrapper'),
 				'change',
 				'.entry input',
@@ -112,9 +110,18 @@ RoleItemSelectorViewDisplayContext roleItemSelectorViewDisplayContext = (RoleIte
 				var selectedData = [];
 
 				allSelectedElements.each(function () {
-					var row = this.ancestor('tr');
+					var data;
 
-					var data = row.getDOM().dataset;
+					if (Object.keys(this.getDOM().dataset).length) {
+						data = this.getDOM().dataset;
+					}
+					else {
+						const row = this.ancestor('tr');
+
+						if (row && Object.keys(row.getDOM().dataset).length) {
+							data = row.getDOM().dataset;
+						}
+					}
 
 					selectedData.push({
 						id: data.id,

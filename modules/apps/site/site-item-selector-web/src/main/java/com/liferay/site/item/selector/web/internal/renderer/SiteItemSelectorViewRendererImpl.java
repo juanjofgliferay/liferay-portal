@@ -10,14 +10,14 @@ import com.liferay.site.constants.SiteWebKeys;
 import com.liferay.site.item.selector.display.context.SitesItemSelectorViewDisplayContext;
 import com.liferay.site.item.selector.renderer.SiteItemSelectorViewRenderer;
 import com.liferay.site.item.selector.web.internal.constants.SitesItemSelectorWebKeys;
-import com.liferay.site.util.GroupURLProvider;
+import com.liferay.site.provider.GroupURLProvider;
+
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.io.IOException;
-
-import javax.servlet.RequestDispatcher;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;

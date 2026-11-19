@@ -42,6 +42,7 @@ public class StyleBookEntryVersionWrapper
 		attributes.put("styleBookEntryVersionId", getStyleBookEntryVersionId());
 		attributes.put("version", getVersion());
 		attributes.put("uuid", getUuid());
+		attributes.put("externalReferenceCode", getExternalReferenceCode());
 		attributes.put("styleBookEntryId", getStyleBookEntryId());
 		attributes.put("groupId", getGroupId());
 		attributes.put("companyId", getCompanyId());
@@ -50,10 +51,12 @@ public class StyleBookEntryVersionWrapper
 		attributes.put("createDate", getCreateDate());
 		attributes.put("modifiedDate", getModifiedDate());
 		attributes.put("defaultStyleBookEntry", isDefaultStyleBookEntry());
+		attributes.put("frontendTokenDefinition", getFrontendTokenDefinition());
 		attributes.put("frontendTokensValues", getFrontendTokensValues());
 		attributes.put("name", getName());
 		attributes.put("previewFileEntryId", getPreviewFileEntryId());
 		attributes.put("styleBookEntryKey", getStyleBookEntryKey());
+		attributes.put("themeId", getThemeId());
 
 		return attributes;
 	}
@@ -89,6 +92,13 @@ public class StyleBookEntryVersionWrapper
 
 		if (uuid != null) {
 			setUuid(uuid);
+		}
+
+		String externalReferenceCode = (String)attributes.get(
+			"externalReferenceCode");
+
+		if (externalReferenceCode != null) {
+			setExternalReferenceCode(externalReferenceCode);
 		}
 
 		Long styleBookEntryId = (Long)attributes.get("styleBookEntryId");
@@ -140,6 +150,13 @@ public class StyleBookEntryVersionWrapper
 			setDefaultStyleBookEntry(defaultStyleBookEntry);
 		}
 
+		String frontendTokenDefinition = (String)attributes.get(
+			"frontendTokenDefinition");
+
+		if (frontendTokenDefinition != null) {
+			setFrontendTokenDefinition(frontendTokenDefinition);
+		}
+
 		String frontendTokensValues = (String)attributes.get(
 			"frontendTokensValues");
 
@@ -163,6 +180,12 @@ public class StyleBookEntryVersionWrapper
 
 		if (styleBookEntryKey != null) {
 			setStyleBookEntryKey(styleBookEntryKey);
+		}
+
+		String themeId = (String)attributes.get("themeId");
+
+		if (themeId != null) {
+			setThemeId(themeId);
 		}
 	}
 
@@ -209,6 +232,26 @@ public class StyleBookEntryVersionWrapper
 	@Override
 	public boolean getDefaultStyleBookEntry() {
 		return model.getDefaultStyleBookEntry();
+	}
+
+	/**
+	 * Returns the external reference code of this style book entry version.
+	 *
+	 * @return the external reference code of this style book entry version
+	 */
+	@Override
+	public String getExternalReferenceCode() {
+		return model.getExternalReferenceCode();
+	}
+
+	/**
+	 * Returns the frontend token definition of this style book entry version.
+	 *
+	 * @return the frontend token definition of this style book entry version
+	 */
+	@Override
+	public String getFrontendTokenDefinition() {
+		return model.getFrontendTokenDefinition();
 	}
 
 	/**
@@ -312,6 +355,16 @@ public class StyleBookEntryVersionWrapper
 	}
 
 	/**
+	 * Returns the theme ID of this style book entry version.
+	 *
+	 * @return the theme ID of this style book entry version
+	 */
+	@Override
+	public String getThemeId() {
+		return model.getThemeId();
+	}
+
+	/**
 	 * Returns the user ID of this style book entry version.
 	 *
 	 * @return the user ID of this style book entry version
@@ -409,6 +462,26 @@ public class StyleBookEntryVersionWrapper
 	@Override
 	public void setDefaultStyleBookEntry(boolean defaultStyleBookEntry) {
 		model.setDefaultStyleBookEntry(defaultStyleBookEntry);
+	}
+
+	/**
+	 * Sets the external reference code of this style book entry version.
+	 *
+	 * @param externalReferenceCode the external reference code of this style book entry version
+	 */
+	@Override
+	public void setExternalReferenceCode(String externalReferenceCode) {
+		model.setExternalReferenceCode(externalReferenceCode);
+	}
+
+	/**
+	 * Sets the frontend token definition of this style book entry version.
+	 *
+	 * @param frontendTokenDefinition the frontend token definition of this style book entry version
+	 */
+	@Override
+	public void setFrontendTokenDefinition(String frontendTokenDefinition) {
+		model.setFrontendTokenDefinition(frontendTokenDefinition);
 	}
 
 	/**
@@ -512,6 +585,16 @@ public class StyleBookEntryVersionWrapper
 	}
 
 	/**
+	 * Sets the theme ID of this style book entry version.
+	 *
+	 * @param themeId the theme ID of this style book entry version
+	 */
+	@Override
+	public void setThemeId(String themeId) {
+		model.setThemeId(themeId);
+	}
+
+	/**
 	 * Sets the user ID of this style book entry version.
 	 *
 	 * @param userId the user ID of this style book entry version
@@ -608,3 +691,4 @@ public class StyleBookEntryVersionWrapper
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:633940839

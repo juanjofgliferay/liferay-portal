@@ -23,10 +23,10 @@ import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
 import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.List;
 import java.util.Objects;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Eudaldo Alonso
@@ -160,7 +160,7 @@ public class CPSpecificationOptionManagementToolbarDisplayContext
 
 	@Override
 	protected String[] getOrderByKeys() {
-		return new String[] {"group", "label", "modified-date"};
+		return new String[] {"group", "label", "modified-date", "priority"};
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(

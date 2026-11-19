@@ -5,95 +5,405 @@
 
 package com.liferay.exportimport.web.internal.display.context;
 
-import com.liferay.portal.kernel.backgroundtask.BackgroundTask;
-import com.liferay.portal.kernel.backgroundtask.BackgroundTaskManagerUtil;
-import com.liferay.portal.kernel.dao.search.SearchContainer;
+import com.liferay.exportimport.kernel.staging.StagingUtil;
+import com.liferay.exportimport.rest.dto.v1_0.ExportPreview;
+import com.liferay.exportimport.rest.resource.v1_0.ExportPreviewResource;
+import com.liferay.exportimport.util.ScopeUtil;
+import com.liferay.exportimport.vulcan.batch.engine.ExportImportVulcanBatchEngineTaskItemDelegate.Scope;
+import com.liferay.exportimport.web.internal.util.ExportImportAPIURLUtil;
+import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.util.JavaConstants;
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
+import com.liferay.portal.kernel.json.JSONArray;
+import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.json.JSONObject;
+import com.liferay.portal.kernel.json.JSONUtil;
+import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.model.Layout;
+import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
+import com.liferay.portal.kernel.portlet.url.builder.ResourceURLBuilder;
+import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.HashMapBuilder;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
+import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
+import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.PropsValues;
+import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.kernel.util.WebKeys;
 
-import java.util.ArrayList;
-import java.util.List;
+import jakarta.servlet.http.HttpServletRequest;
 
-import javax.portlet.MimeResponse;
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
+import java.util.Locale;
+import java.util.Map;
 
 /**
- * @author Mariano Álvaro Sáiz
+ * @author Daniel Raposo
+ * @author Jorge González
  */
 public class ExportImportProcessDisplayContext {
 
 	public ExportImportProcessDisplayContext(
-			HttpServletRequest httpServletRequest)
-		throws PortalException {
+		String backMVCRenderCommandName,
+		ExportPreviewResource.Factory exportPreviewResourceFactory, Group group,
+		long groupId, HttpServletRequest httpServletRequest,
+		LiferayPortletResponse liferayPortletResponse, long liveGroupId,
+		boolean privateLayout, boolean staticSite) {
 
+		_backMVCRenderCommandName = backMVCRenderCommandName;
+		_exportPreviewResourceFactory = exportPreviewResourceFactory;
+		_group = group;
+		_groupId = groupId;
 		_httpServletRequest = httpServletRequest;
-
-		_portletRequest = (PortletRequest)httpServletRequest.getAttribute(
-			JavaConstants.JAVAX_PORTLET_REQUEST);
+		_liferayPortletResponse = liferayPortletResponse;
+		_liveGroupId = liveGroupId;
+		_privateLayout = privateLayout;
+		_staticSite = staticSite;
 	}
 
-	public BackgroundTask getBackgroundTask() throws PortalException {
-		if (_backgroundTaskId != null) {
-			return _backgroundTask;
-		}
+	public ExportImportProcessDisplayContext(
+		String backMVCRenderCommandName, Group group, long groupId,
+		HttpServletRequest httpServletRequest,
+		LiferayPortletResponse liferayPortletResponse, long liveGroupId,
+		boolean privateLayout) {
 
-		_backgroundTaskId = ParamUtil.getLong(
-			_httpServletRequest, "backgroundTaskId");
-
-		_backgroundTask = null;
-
-		if (_backgroundTaskId > 0) {
-			_backgroundTask = BackgroundTaskManagerUtil.getBackgroundTask(
-				_backgroundTaskId);
-		}
-
-		return _backgroundTask;
+		this(
+			backMVCRenderCommandName, null, group, groupId, httpServletRequest,
+			liferayPortletResponse, liveGroupId, privateLayout, false);
 	}
 
-	public SearchContainer<BackgroundTask> getSearchContainer()
-		throws Exception {
+	public JSONArray getAvailableLanguagesJSONArray() {
+		JSONArray availableLanguagesJSONArray =
+			JSONFactoryUtil.createJSONArray();
 
-		if (_searchContainer != null) {
-			return _searchContainer;
+		ThemeDisplay themeDisplay =
+			(ThemeDisplay)_httpServletRequest.getAttribute(
+				WebKeys.THEME_DISPLAY);
+
+		for (Locale locale : LanguageUtil.getAvailableLocales(_groupId)) {
+			availableLanguagesJSONArray.put(
+				JSONUtil.put(
+					"label", locale.getDisplayName(themeDisplay.getLocale())
+				).put(
+					"value", LocaleUtil.toLanguageId(locale)
+				));
 		}
 
-		_searchContainer = new SearchContainer<>(
-			_portletRequest, _getIteratorURL(), null,
-			"no-processes-were-found");
+		return availableLanguagesJSONArray;
+	}
 
-		BackgroundTask backgroundTask = getBackgroundTask();
-
-		List<BackgroundTask> backgroundTasks = new ArrayList<>();
-
-		if (backgroundTask != null) {
-			backgroundTasks.add(backgroundTask);
+	public String getBackURL() {
+		if (_backURL != null) {
+			return _backURL;
 		}
 
-		_searchContainer.setResultsAndTotal(
-			() -> backgroundTasks, backgroundTasks.size());
+		String backURL = ParamUtil.getString(_httpServletRequest, "backURL");
 
-		return _searchContainer;
+		if (Validator.isBlank(backURL)) {
+			backURL = PortletURLBuilder.createRenderURL(
+				_liferayPortletResponse
+			).setMVCRenderCommandName(
+				_backMVCRenderCommandName
+			).setParameter(
+				"displayStyle",
+				() -> ParamUtil.getString(_httpServletRequest, "displayStyle")
+			).setParameter(
+				"groupId", _groupId
+			).setParameter(
+				"liveGroupId", _liveGroupId
+			).setParameter(
+				"privateLayout", _privateLayout
+			).buildString();
+		}
+
+		_backURL = backURL;
+
+		return _backURL;
 	}
 
-	private PortletURL _getIteratorURL() {
-		PortletResponse portletResponse =
-			(PortletResponse)_httpServletRequest.getAttribute(
-				JavaConstants.JAVAX_PORTLET_RESPONSE);
-
-		MimeResponse mimeResponse = (MimeResponse)portletResponse;
-
-		return mimeResponse.createRenderURL();
+	public String getDefaultLanguageId() throws PortalException {
+		return LocaleUtil.toLanguageId(
+			PortalUtil.getSiteDefaultLocale(_groupId));
 	}
 
-	private BackgroundTask _backgroundTask;
-	private Long _backgroundTaskId;
+	public String getExportPreviewAPIURL() {
+		if (_exportPreviewAPIURL != null) {
+			return _exportPreviewAPIURL;
+		}
+
+		_exportPreviewAPIURL = _getResourceAPIURL("/export-preview");
+
+		return _exportPreviewAPIURL;
+	}
+
+	public JSONObject getExportPreviewJSONObject() {
+		if (_exportPreviewJSONObject != null) {
+			return _exportPreviewJSONObject;
+		}
+
+		ExportPreview exportPreview = _getExportPreview();
+
+		if (exportPreview == null) {
+			return null;
+		}
+
+		try {
+			_exportPreviewJSONObject = JSONFactoryUtil.createJSONObject(
+				exportPreview.toString());
+		}
+		catch (Exception exception) {
+			_log.error("Unable to serialize export preview", exception);
+		}
+
+		return _exportPreviewJSONObject;
+	}
+
+	public String getExportPreviewSitesAPIURL() {
+		if (!isSiteSelectionEnabled()) {
+			return null;
+		}
+
+		if (_exportPreviewSitesAPIURL != null) {
+			return _exportPreviewSitesAPIURL;
+		}
+
+		_exportPreviewSitesAPIURL = _getResourceAPIURL("/export-preview/sites");
+
+		return _exportPreviewSitesAPIURL;
+	}
+
+	public String getExportPreviewSpacesAPIURL() {
+		if (!isSpaceSelectionEnabled()) {
+			return null;
+		}
+
+		if (_exportPreviewSpacesAPIURL != null) {
+			return _exportPreviewSpacesAPIURL;
+		}
+
+		_exportPreviewSpacesAPIURL = HttpComponentsUtil.addParameter(
+			_getResourceAPIURL("/export-preview/asset-libraries"), "filter",
+			"type eq 'Space'");
+
+		return _exportPreviewSpacesAPIURL;
+	}
+
+	public String getExportProcessAPIURL() {
+		if (_exportProcessAPIURL != null) {
+			return _exportProcessAPIURL;
+		}
+
+		if (_staticSite) {
+			_exportProcessAPIURL = ResourceURLBuilder.createResourceURL(
+				_liferayPortletResponse
+			).setParameter(
+				"groupId", _groupId
+			).setResourceID(
+				"/export_import/export_static_site"
+			).buildString();
+		}
+		else {
+			_exportProcessAPIURL = _getResourceAPIURL("/export-processes");
+		}
+
+		return _exportProcessAPIURL;
+	}
+
+	public String getExportTitle() {
+		return _getTitle("new-export-process");
+	}
+
+	public String getImportPreviewAPIURL() {
+		if (_importPreviewAPIURL != null) {
+			return _importPreviewAPIURL;
+		}
+
+		_importPreviewAPIURL = _getResourceAPIURL("/import-preview");
+
+		return _importPreviewAPIURL;
+	}
+
+	public String getImportProcessAPIURL() {
+		if (_importProcessAPIURL != null) {
+			return _importProcessAPIURL;
+		}
+
+		_importProcessAPIURL = _getResourceAPIURL("/import-processes");
+
+		return _importProcessAPIURL;
+	}
+
+	public String getImportTitle() {
+		return _getTitle("new-import-process");
+	}
+
+	public Map<String, Object> getPageTreeModalConfiguration() {
+		Group liveGroup = StagingUtil.getLiveGroup(_group);
+
+		return HashMapBuilder.<String, Object>put(
+			"groupId", liveGroup.getGroupId()
+		).put(
+			"pageSize", PropsValues.LAYOUT_MANAGE_PAGES_INITIAL_CHILDREN
+		).put(
+			"privateLayoutsAvailable",
+			!_staticSite && !liveGroup.isLayoutSetPrototype() &&
+			liveGroup.isPrivateLayoutsEnabled() && liveGroup.hasPrivateLayouts()
+		).put(
+			"siteExternalReferenceCode", liveGroup.getExternalReferenceCode()
+		).build();
+	}
+
+	public Scope getScope() {
+		if (!Validator.isBlank(_getPortletId())) {
+			return Scope.PORTLET;
+		}
+
+		if (ScopeUtil.isInstanceScoped(_group)) {
+			return Scope.COMPANY;
+		}
+
+		if (_group.isDepot()) {
+			return Scope.DEPOT;
+		}
+
+		return Scope.SITE;
+	}
+
+	public boolean isCommentsAndRatingsEnabled() {
+		return ScopeUtil.isCommentsAndRatingsEnabled(_group);
+	}
+
+	public boolean isSiteSelectionEnabled() {
+		if ((getScope() == Scope.COMPANY) &&
+			FeatureFlagManagerUtil.isEnabled(
+				_group.getCompanyId(), "LPD-85946")) {
+
+			return true;
+		}
+
+		return false;
+	}
+
+	public boolean isSpaceSelectionEnabled() {
+		if ((getScope() == Scope.COMPANY) &&
+			FeatureFlagManagerUtil.isEnabled(
+				_group.getCompanyId(), "LPD-41307")) {
+
+			return true;
+		}
+
+		return false;
+	}
+
+	public boolean isStaticSite() {
+		return _staticSite;
+	}
+
+	private ExportPreview _getExportPreview() {
+		if (_exportPreviewResourceFactory == null) {
+			return null;
+		}
+
+		try {
+			ThemeDisplay themeDisplay =
+				(ThemeDisplay)_httpServletRequest.getAttribute(
+					WebKeys.THEME_DISPLAY);
+
+			ExportPreviewResource exportPreviewResource =
+				_exportPreviewResourceFactory.create(
+				).checkPermissions(
+					true
+				).httpServletRequest(
+					_httpServletRequest
+				).preferredLocale(
+					themeDisplay.getLocale()
+				).user(
+					themeDisplay.getUser()
+				).build();
+
+			String portletId = _getPortletId();
+
+			Layout layout = ExportImportAPIURLUtil.getPortletLayout(
+				ParamUtil.getLong(_httpServletRequest, "plid"), portletId);
+
+			if (layout != null) {
+				Group group = layout.getGroup();
+
+				return exportPreviewResource.getSiteExportPreview(
+					group.getExternalReferenceCode(), null, null, null,
+					portletId, layout.getExternalReferenceCode(), null);
+			}
+
+			if (ScopeUtil.isInstanceScoped(_group)) {
+				return exportPreviewResource.getExportPreview(
+					null, null, null, portletId, null);
+			}
+
+			if (_group.isDepot()) {
+				return exportPreviewResource.getAssetLibraryExportPreview(
+					_group.getExternalReferenceCode(), null, null, null,
+					portletId, null);
+			}
+
+			return exportPreviewResource.getSiteExportPreview(
+				_group.getExternalReferenceCode(), null, null, null, portletId,
+				null, null);
+		}
+		catch (Exception exception) {
+			_log.error("Unable to get export preview", exception);
+		}
+
+		return null;
+	}
+
+	private String _getPortletId() {
+		return ParamUtil.getString(_httpServletRequest, "portletId");
+	}
+
+	private String _getResourceAPIURL(String endpoint) {
+		return ExportImportAPIURLUtil.getAPIURL(
+			endpoint, _group, ParamUtil.getLong(_httpServletRequest, "plid"),
+			_getPortletId());
+	}
+
+	private String _getTitle(String key) {
+		String label = LanguageUtil.get(_httpServletRequest, key);
+
+		String portletId = _getPortletId();
+
+		if (Validator.isBlank(portletId)) {
+			return label;
+		}
+
+		return StringBundler.concat(
+			label, " - ",
+			PortalUtil.getPortletTitle(
+				portletId, PortalUtil.getLocale(_httpServletRequest)));
+	}
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		ExportImportProcessDisplayContext.class);
+
+	private final String _backMVCRenderCommandName;
+	private String _backURL;
+	private String _exportPreviewAPIURL;
+	private JSONObject _exportPreviewJSONObject;
+	private final ExportPreviewResource.Factory _exportPreviewResourceFactory;
+	private String _exportPreviewSitesAPIURL;
+	private String _exportPreviewSpacesAPIURL;
+	private String _exportProcessAPIURL;
+	private final Group _group;
+	private final long _groupId;
 	private final HttpServletRequest _httpServletRequest;
-	private final PortletRequest _portletRequest;
-	private SearchContainer<BackgroundTask> _searchContainer;
+	private String _importPreviewAPIURL;
+	private String _importProcessAPIURL;
+	private final LiferayPortletResponse _liferayPortletResponse;
+	private final long _liveGroupId;
+	private final boolean _privateLayout;
+	private final boolean _staticSite;
 
 }

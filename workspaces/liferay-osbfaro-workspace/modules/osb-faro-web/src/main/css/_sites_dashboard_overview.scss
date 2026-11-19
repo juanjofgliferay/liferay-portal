@@ -1,0 +1,23 @@
+.sites-dashboard-overview-root {
+	.interests-card-root,
+	.search-terms-card-root,
+	.top-pages-card-root {
+		.table-responsive {
+			margin-bottom: 0;
+		}
+	}
+
+	.visitors-by-time-card {
+		.heatmap-chart-root {
+			.heatmap-chart {
+				height: 420px;
+			}
+
+			.row-axis {
+				.tick:nth-child(2n) {
+					display: none;
+				}
+			}
+		}
+	}
+}

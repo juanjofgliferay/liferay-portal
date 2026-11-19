@@ -11,6 +11,8 @@ import com.liferay.document.library.kernel.model.DLFolderConstants;
 import com.liferay.document.library.kernel.service.DLAppLocalServiceUtil;
 import com.liferay.document.library.kernel.service.DLAppServiceUtil;
 import com.liferay.document.library.kernel.service.DLFileShortcutLocalServiceUtil;
+import com.liferay.document.library.kernel.service.DLFolderLocalServiceUtil;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.repository.model.FileShortcut;
@@ -75,7 +77,7 @@ public class DLFileShortcutLocalServiceTreeTest {
 		FileEntry fileEntry = addFileEntry(folderA.getFolderId(), "Entry.txt");
 
 		FileShortcut fileShortcut = addFileShortcut(
-			fileEntry, TestPropsValues.getGroupId(), folderAA.getFolderId());
+			fileEntry, folderAA.getGroupId(), folderAA.getFolderId());
 
 		DLAppLocalServiceUtil.moveFolder(
 			TestPropsValues.getUserId(), folderAA.getFolderId(),
@@ -103,8 +105,10 @@ public class DLFileShortcutLocalServiceTreeTest {
 			DLFileShortcutLocalServiceUtil.updateDLFileShortcut(dlFileShortcut);
 		}
 
-		DLFileShortcutLocalServiceUtil.rebuildTree(
-			TestPropsValues.getCompanyId());
+		DLFolderLocalServiceUtil.rebuildTree(
+			TestPropsValues.getCompanyId(),
+			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID, StringPool.SLASH,
+			false);
 
 		for (FileShortcut fileShortcut : _fileShortcuts) {
 			DLFileShortcut dlFileShortcut =
@@ -122,7 +126,7 @@ public class DLFileShortcutLocalServiceTreeTest {
 		return DLAppLocalServiceUtil.addFileEntry(
 			null, TestPropsValues.getUserId(), _group.getGroupId(), folderId,
 			sourceFileName, ContentTypes.TEXT_PLAIN,
-			TestDataConstants.TEST_BYTE_ARRAY, null, null,
+			TestDataConstants.TEST_BYTE_ARRAY, null, null, null,
 			ServiceContextTestUtil.getServiceContext(
 				_group.getGroupId(), TestPropsValues.getUserId()));
 	}
@@ -136,7 +140,7 @@ public class DLFileShortcutLocalServiceTreeTest {
 				groupId, TestPropsValues.getUserId());
 
 		return DLAppLocalServiceUtil.addFileShortcut(
-			TestPropsValues.getUserId(), groupId, folderId,
+			null, TestPropsValues.getUserId(), groupId, folderId,
 			fileEntry.getFileEntryId(), serviceContext);
 	}
 
@@ -158,7 +162,7 @@ public class DLFileShortcutLocalServiceTreeTest {
 				_group.getGroupId(), TestPropsValues.getUserId()));
 
 		FileShortcut fileShortcutAA = addFileShortcut(
-			_fileEntry, TestPropsValues.getGroupId(), _folder.getFolderId());
+			_fileEntry, _folder.getGroupId(), _folder.getFolderId());
 
 		_fileShortcuts.add(fileShortcutAA);
 	}

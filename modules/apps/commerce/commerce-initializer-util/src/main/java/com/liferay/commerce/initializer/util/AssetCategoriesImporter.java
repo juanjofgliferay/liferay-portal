@@ -116,15 +116,16 @@ public class AssetCategoriesImporter {
 			JSONArray permissionsJSONArray = jsonObject.getJSONArray(
 				"permissions");
 
-			if ((permissionsJSONArray != null) &&
-				(permissionsJSONArray.length() > 0)) {
+			if ((permissionsJSONArray == null) ||
+				(permissionsJSONArray.length() <= 0)) {
 
-				updatePermissions(
-					assetCategory.getCompanyId(),
-					assetCategory.getModelClassName(),
-					String.valueOf(assetCategory.getCategoryId()),
-					permissionsJSONArray);
+				continue;
 			}
+
+			updatePermissions(
+				assetCategory.getCompanyId(), assetCategory.getModelClassName(),
+				String.valueOf(assetCategory.getCategoryId()),
+				permissionsJSONArray);
 		}
 
 		return assetCategories;
@@ -207,7 +208,7 @@ public class AssetCategoriesImporter {
 				null, serviceContext.getUserId(),
 				serviceContext.getScopeGroupId(),
 				AssetCategoryConstants.DEFAULT_PARENT_CATEGORY_ID, titleMap,
-				null, assetVocabularyId, new String[0], serviceContext);
+				null, assetVocabularyId, false, new String[0], serviceContext);
 		}
 
 		// Commerce product friendly URL entry
@@ -286,6 +287,16 @@ public class AssetCategoriesImporter {
 		return assetVocabulary;
 	}
 
+	private long _getParentClassPK(AssetCategory assetCategory) {
+		if (assetCategory.getParentCategoryId() ==
+				AssetCategoryConstants.DEFAULT_PARENT_CATEGORY_ID) {
+
+			return assetCategory.getVocabularyId();
+		}
+
+		return assetCategory.getParentCategoryId();
+	}
+
 	private Map<String, String> _getUniqueUrlTitles(AssetCategory assetCategory)
 		throws Exception {
 
@@ -300,7 +311,8 @@ public class AssetCategoriesImporter {
 			String urlTitle = _friendlyURLEntryLocalService.getUniqueUrlTitle(
 				companyGroup.getGroupId(),
 				_portal.getClassNameId(AssetCategory.class),
-				assetCategory.getCategoryId(), titleEntry.getValue(), null);
+				_getParentClassPK(assetCategory), assetCategory.getCategoryId(),
+				titleEntry.getValue());
 
 			urlTitleMap.put(
 				LocaleUtil.toLanguageId(titleEntry.getKey()), urlTitle);

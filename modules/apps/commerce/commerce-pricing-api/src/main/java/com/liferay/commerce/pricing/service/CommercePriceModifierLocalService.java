@@ -82,48 +82,27 @@ public interface CommercePriceModifierLocalService
 		CommercePriceModifier commercePriceModifier);
 
 	public CommercePriceModifier addCommercePriceModifier(
-			long groupId, String title, long commercePriceListId,
-			String modifierType, BigDecimal modifierAmount, double priority,
+			String externalReferenceCode, long groupId,
+			long commercePriceListId, String title, String target,
+			BigDecimal modifierAmount, String modifierType, double priority,
 			boolean active, int displayDateMonth, int displayDateDay,
 			int displayDateYear, int displayDateHour, int displayDateMinute,
 			int expirationDateMonth, int expirationDateDay,
 			int expirationDateYear, int expirationDateHour,
 			int expirationDateMinute, boolean neverExpire,
 			ServiceContext serviceContext)
-		throws PortalException;
-
-	public CommercePriceModifier addCommercePriceModifier(
-			long groupId, String title, String target, long commercePriceListId,
-			String modifierType, BigDecimal modifierAmount, double priority,
-			boolean active, int displayDateMonth, int displayDateDay,
-			int displayDateYear, int displayDateHour, int displayDateMinute,
-			int expirationDateMonth, int expirationDateDay,
-			int expirationDateYear, int expirationDateHour,
-			int expirationDateMinute, boolean neverExpire,
-			ServiceContext serviceContext)
-		throws PortalException;
-
-	public CommercePriceModifier addCommercePriceModifier(
-			String externalReferenceCode, long groupId, String title,
-			String target, long commercePriceListId, String modifierType,
-			BigDecimal modifierAmount, double priority, boolean active,
-			int displayDateMonth, int displayDateDay, int displayDateYear,
-			int displayDateHour, int displayDateMinute, int expirationDateMonth,
-			int expirationDateDay, int expirationDateYear,
-			int expirationDateHour, int expirationDateMinute,
-			boolean neverExpire, ServiceContext serviceContext)
 		throws PortalException;
 
 	public CommercePriceModifier addOrUpdateCommercePriceModifier(
-			String externalReferenceCode, long userId,
-			long commercePriceModifierId, long groupId, String title,
-			String target, long commercePriceListId, String modifierType,
-			BigDecimal modifierAmount, double priority, boolean active,
-			int displayDateMonth, int displayDateDay, int displayDateYear,
-			int displayDateHour, int displayDateMinute, int expirationDateMonth,
-			int expirationDateDay, int expirationDateYear,
-			int expirationDateHour, int expirationDateMinute,
-			boolean neverExpire, ServiceContext serviceContext)
+			String externalReferenceCode, long commercePriceModifierId,
+			long groupId, long commercePriceListId, String title, String target,
+			BigDecimal modifierAmount, String modifierType, double priority,
+			boolean active, int displayDateMonth, int displayDateDay,
+			int displayDateYear, int displayDateHour, int displayDateMinute,
+			int expirationDateMonth, int expirationDateDay,
+			int expirationDateYear, int expirationDateHour,
+			int expirationDateMinute, boolean neverExpire,
+			ServiceContext serviceContext)
 		throws PortalException;
 
 	public void checkCommercePriceModifiers() throws PortalException;
@@ -175,9 +154,6 @@ public interface CommercePriceModifierLocalService
 	@Indexable(type = IndexableType.DELETE)
 	public CommercePriceModifier deleteCommercePriceModifier(
 			long commercePriceModifierId)
-		throws PortalException;
-
-	public void deleteCommercePriceModifiers(long companyId)
 		throws PortalException;
 
 	public void deleteCommercePriceModifiersByCommercePriceListId(
@@ -264,10 +240,6 @@ public interface CommercePriceModifierLocalService
 		DynamicQuery dynamicQuery, Projection projection);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public CommercePriceModifier fetchByExternalReferenceCode(
-		String externalReferenceCode, long companyId);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public CommercePriceModifier fetchCommercePriceModifier(
 		long commercePriceModifierId);
 
@@ -344,10 +316,6 @@ public interface CommercePriceModifierLocalService
 	public List<CommercePriceModifier> getCommercePriceModifiers(
 		long commercePriceListId, int start, int end,
 		OrderByComparator<CommercePriceModifier> orderByComparator);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<CommercePriceModifier> getCommercePriceModifiers(
-		long companyId, String target);
 
 	/**
 	 * Returns all the commerce price modifiers matching the UUID and company.
@@ -429,14 +397,15 @@ public interface CommercePriceModifierLocalService
 		CommercePriceModifier commercePriceModifier);
 
 	public CommercePriceModifier updateCommercePriceModifier(
-			long commercePriceModifierId, long groupId, String title,
-			String target, long commercePriceListId, String modifierType,
-			BigDecimal modifierAmount, double priority, boolean active,
-			int displayDateMonth, int displayDateDay, int displayDateYear,
-			int displayDateHour, int displayDateMinute, int expirationDateMonth,
-			int expirationDateDay, int expirationDateYear,
-			int expirationDateHour, int expirationDateMinute,
-			boolean neverExpire, ServiceContext serviceContext)
+			long commercePriceModifierId, long groupId,
+			long commercePriceListId, String title, String target,
+			BigDecimal modifierAmount, String modifierType, double priority,
+			boolean active, int displayDateMonth, int displayDateDay,
+			int displayDateYear, int displayDateHour, int displayDateMinute,
+			int expirationDateMonth, int expirationDateDay,
+			int expirationDateYear, int expirationDateHour,
+			int expirationDateMinute, boolean neverExpire,
+			ServiceContext serviceContext)
 		throws PortalException;
 
 	public CommercePriceModifier updateStatus(
@@ -461,3 +430,4 @@ public interface CommercePriceModifierLocalService
 		throws E;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1491553851

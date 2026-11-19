@@ -5,12 +5,12 @@
 
 package com.liferay.jenkins.results.parser;
 
+import com.liferay.jenkins.results.parser.history.TestClassHistory;
 import com.liferay.jenkins.results.parser.test.clazz.JUnitTestClass;
 import com.liferay.jenkins.results.parser.test.clazz.TestClass;
 import com.liferay.jenkins.results.parser.test.clazz.group.AxisTestClassGroup;
 
-import java.net.MalformedURLException;
-import java.net.URISyntaxException;
+import java.net.URL;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -68,19 +68,24 @@ public abstract class BaseTestClassResult implements TestClassResult {
 			Dom4JUtil.getNewAnchorElement(
 				getTestClassReportURL(), getClassName()));
 
-		TestHistory testHistory = getTestHistory();
+		TestClassHistory testClassHistory = getTestClassHistory();
 
-		if (testHistory != null) {
-			summaryElement.addText(" - ");
+		if (testClassHistory != null) {
+			URL testrayCaseURL = testClassHistory.getTestrayCaseURL();
 
-			summaryElement.add(
-				Dom4JUtil.getNewAnchorElement(
-					testHistory.getTestrayCaseResultURL(),
-					JenkinsResultsParserUtil.combine(
-						"Failed ",
-						String.valueOf(testHistory.getFailureCount()),
-						" of last ",
-						String.valueOf(testHistory.getTestCount()))));
+			String summaryContent = JenkinsResultsParserUtil.combine(
+				"Failed ", String.valueOf(testClassHistory.getFailureCount()),
+				" of last ", String.valueOf(testClassHistory.getTestCount()));
+
+			if (testrayCaseURL != null) {
+				Dom4JUtil.addToElement(
+					downstreamBuildListItemElement, " - ",
+					Dom4JUtil.getNewAnchorElement(
+						String.valueOf(testrayCaseURL), summaryContent));
+			}
+			else {
+				downstreamBuildListItemElement.addText(" - " + summaryContent);
+			}
 		}
 
 		List<Element> failureElements = new ArrayList<>();
@@ -90,15 +95,16 @@ public abstract class BaseTestClassResult implements TestClassResult {
 				continue;
 			}
 
-			if ((uniqueFailures == null) ||
-				(uniqueFailures && testResult.isUniqueFailure()) ||
-				(!uniqueFailures && !testResult.isUniqueFailure())) {
+			if ((uniqueFailures != null) &&
+				(!uniqueFailures || !testResult.isUniqueFailure()) &&
+				(uniqueFailures || testResult.isUniqueFailure())) {
 
-				failureElements.add(
-					Dom4JUtil.getNewAnchorElement(
-						testResult.getTestReportURL(),
-						testResult.getTestName()));
+				continue;
 			}
+
+			failureElements.add(
+				Dom4JUtil.getNewAnchorElement(
+					testResult.getTestReportURL(), testResult.getTestName()));
 		}
 
 		if (failureElements.isEmpty()) {
@@ -197,6 +203,17 @@ public abstract class BaseTestClassResult implements TestClassResult {
 	}
 
 	@Override
+	public TestClassHistory getTestClassHistory() {
+		TestClass testClass = getTestClass();
+
+		if (testClass == null) {
+			return null;
+		}
+
+		return testClass.getTestClassHistory();
+	}
+
+	@Override
 	public String getTestClassReportURL() {
 		StringBuilder sb = new StringBuilder();
 
@@ -205,39 +222,37 @@ public abstract class BaseTestClassResult implements TestClassResult {
 		sb.append(build.getBuildURL());
 
 		sb.append("testReport/");
-		sb.append(getPackageName());
+
+		String packageName = getPackageName();
+
+		sb.append(packageName.replaceAll("/", "_"));
+
 		sb.append("/");
 		sb.append(getSimpleClassName());
 
 		String testClassReportURL = sb.toString();
 
 		if (testClassReportURL.startsWith("http")) {
-			try {
-				return JenkinsResultsParserUtil.encode(testClassReportURL);
-			}
-			catch (MalformedURLException | URISyntaxException exception) {
-				System.out.println(
-					"Unable to encode the test report " + testClassReportURL);
-			}
+			return JenkinsResultsParserUtil.normalizeURL(testClassReportURL);
 		}
 
 		return testClassReportURL;
 	}
 
 	@Override
-	public TestHistory getTestHistory() {
-		TestClass testClass = getTestClass();
-
-		if (testClass == null) {
-			return null;
-		}
-
-		return testClass.getTestHistory();
+	public String getTestClassResultKey() {
+		return getClassName();
 	}
 
 	@Override
 	public TestResult getTestResult(String testName) {
-		return _testResults.get(testName);
+		for (TestResult testResult : _testResults.values()) {
+			if (Objects.equals(testName, testResult.getTestName())) {
+				return testResult;
+			}
+		}
+
+		return null;
 	}
 
 	@Override
@@ -256,6 +271,17 @@ public abstract class BaseTestClassResult implements TestClassResult {
 		}
 
 		return true;
+	}
+
+	@Override
+	public boolean isSkipped() {
+		Status status = Status.valueOf(getStatus());
+
+		if (status == Status.SKIPPED) {
+			return true;
+		}
+
+		return false;
 	}
 
 	protected BaseTestClassResult(Build build, JSONObject suiteJSONObject) {
@@ -280,8 +306,12 @@ public abstract class BaseTestClassResult implements TestClassResult {
 			TestResult testResult = TestResultFactory.newTestResult(
 				build, caseJSONObject);
 
-			_testResults.put(testResult.getTestName(), testResult);
+			_testResults.put(testResult.getTestResultKey(), testResult);
 		}
+	}
+
+	protected JSONObject getSuiteJSONObject() {
+		return _suiteJSONObject;
 	}
 
 	private final Build _build;

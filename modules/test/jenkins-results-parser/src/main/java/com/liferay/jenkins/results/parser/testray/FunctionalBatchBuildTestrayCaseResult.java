@@ -5,13 +5,14 @@
 
 package com.liferay.jenkins.results.parser.testray;
 
-import com.liferay.jenkins.results.parser.Build;
+import com.liferay.jenkins.results.parser.DownstreamBuildReport;
 import com.liferay.jenkins.results.parser.JenkinsResultsParserUtil;
-import com.liferay.jenkins.results.parser.TestClassResult;
-import com.liferay.jenkins.results.parser.TestResult;
-import com.liferay.jenkins.results.parser.TopLevelBuild;
+import com.liferay.jenkins.results.parser.TestClassReport;
+import com.liferay.jenkins.results.parser.TestReport;
+import com.liferay.jenkins.results.parser.TopLevelBuildReport;
 import com.liferay.jenkins.results.parser.test.clazz.FunctionalTestClass;
 import com.liferay.jenkins.results.parser.test.clazz.TestClass;
+import com.liferay.jenkins.results.parser.test.clazz.TestClassMethod;
 import com.liferay.jenkins.results.parser.test.clazz.group.AxisTestClassGroup;
 
 import java.util.ArrayList;
@@ -22,90 +23,52 @@ import java.util.List;
  * @author Michael Hashimoto
  */
 public class FunctionalBatchBuildTestrayCaseResult
-	extends BatchBuildTestrayCaseResult {
+	extends BatchBuildTestrayCaseResult<FunctionalTestClass, TestClassMethod> {
 
 	public FunctionalBatchBuildTestrayCaseResult(
-		TestrayBuild testrayBuild, TopLevelBuild topLevelBuild,
-		AxisTestClassGroup axisTestClassGroup, TestClass testClass) {
+		AxisTestClassGroup axisTestClassGroup, TestClass testClass,
+		TestrayBuild testrayBuild, TopLevelBuildReport topLevelBuildReport) {
 
-		super(testrayBuild, topLevelBuild, axisTestClassGroup);
+		super(axisTestClassGroup, testClass, testrayBuild, topLevelBuildReport);
 
 		if (!(testClass instanceof FunctionalTestClass)) {
 			throw new RuntimeException(
 				"Test class is not a functional test class");
 		}
-
-		_functionalTestClass = (FunctionalTestClass)testClass;
 	}
 
 	@Override
 	public String getComponentName() {
+		FunctionalTestClass functionalTestClass = getTestClass();
+
 		return JenkinsResultsParserUtil.getProperty(
-			_functionalTestClass.getPoshiProperties(),
+			functionalTestClass.getPoshiProperties(),
 			"testray.main.component.name");
 	}
 
 	@Override
+	public long getDuration() {
+		return getTestResultDuration();
+	}
+
+	@Override
 	public String getErrors() {
-		TestResult testResult = getTestResult();
-
-		if (testResult == null) {
-			Build build = getBuild();
-
-			if (build == null) {
-				return "Failed to run build on CI";
-			}
-
-			String result = build.getResult();
-
-			if (result == null) {
-				return "Failed to finish build on CI";
-			}
-
-			if (result.equals("ABORTED")) {
-				return "Aborted prior to running test";
-			}
-
-			if (result.equals("SUCCESS") || result.equals("UNSTABLE")) {
-				return "Failed to run test on CI";
-			}
-
-			return "Failed prior to running test";
-		}
-
-		if (!testResult.isFailing()) {
-			return null;
-		}
-
-		String errorMessage = testResult.getErrorDetails();
-
-		if (JenkinsResultsParserUtil.isNullOrEmpty(errorMessage)) {
-			return "Failed for unknown reason";
-		}
-
-		if (errorMessage.contains("\n")) {
-			errorMessage = errorMessage.substring(
-				0, errorMessage.indexOf("\n"));
-		}
-
-		errorMessage = errorMessage.trim();
-
-		if (JenkinsResultsParserUtil.isNullOrEmpty(errorMessage)) {
-			return "Failed for unknown reason";
-		}
-
-		return errorMessage;
+		return getTestResultErrors();
 	}
 
 	@Override
 	public String getName() {
-		return _functionalTestClass.getTestClassMethodName();
+		FunctionalTestClass functionalTestClass = getTestClass();
+
+		return functionalTestClass.getTestClassMethodName();
 	}
 
 	@Override
 	public int getPriority() {
+		FunctionalTestClass functionalTestClass = getTestClass();
+
 		String priority = JenkinsResultsParserUtil.getProperty(
-			_functionalTestClass.getPoshiProperties(), "priority");
+			functionalTestClass.getPoshiProperties(), "priority");
 
 		if ((priority != null) && priority.matches("\\d+")) {
 			return Integer.parseInt(priority);
@@ -116,82 +79,83 @@ public class FunctionalBatchBuildTestrayCaseResult
 
 	@Override
 	public Status getStatus() {
-		Build build = getBuild();
+		TestReport testReport = getTestReport();
 
-		if (build == null) {
-			return Status.UNTESTED;
-		}
+		if (testReport != null) {
+			String errorDetails = testReport.getErrorDetails();
 
-		TestResult testResult = getTestResult();
+			if (!JenkinsResultsParserUtil.isNullOrEmpty(errorDetails) &&
+				errorDetails.contains("TEST_SETUP_ERROR:")) {
 
-		if (testResult == null) {
-			String result = build.getResult();
-
-			if ((result == null) || result.equals("SUCCESS") ||
-				result.equals("UNSTABLE")) {
-
-				return Status.UNTESTED;
+				return Status.BLOCKED;
 			}
-
-			return Status.FAILED;
 		}
 
-		if (testResult.isFailing()) {
-			return Status.FAILED;
-		}
-
-		return Status.PASSED;
+		return getTestResultStatus();
 	}
 
 	@Override
 	public String getSubcomponentNames() {
+		FunctionalTestClass functionalTestClass = getTestClass();
+
 		return JenkinsResultsParserUtil.getProperty(
-			_functionalTestClass.getPoshiProperties(),
+			functionalTestClass.getPoshiProperties(),
 			"testray.component.names");
 	}
 
 	@Override
 	public List<TestrayAttachment> getTestrayAttachments() {
-		List<TestrayAttachment> testrayAttachments =
-			super.getTestrayAttachments();
+		List<TestrayAttachment> testrayAttachments = new ArrayList<>();
 
 		testrayAttachments.addAll(getLiferayLogTestrayAttachments());
 		testrayAttachments.addAll(getLiferayOSGiLogTestrayAttachments());
-
+		testrayAttachments.add(getParentTestrayCaseResultTestrayAttachment());
 		testrayAttachments.add(_getPoshiConsoleTestrayAttachment());
 		testrayAttachments.add(_getPoshiReportTestrayAttachment());
 		testrayAttachments.add(_getPoshiSummaryTestrayAttachment());
+		testrayAttachments.add(getWarningsTestrayAttachment());
 
 		testrayAttachments.removeAll(Collections.singleton(null));
 
 		return testrayAttachments;
 	}
 
-	public TestResult getTestResult() {
-		Build build = getBuild();
+	@Override
+	protected TestReport findTestReport() {
+		FunctionalTestClass functionalTestClass = getTestClass();
 
-		if (build == null) {
+		if (functionalTestClass.isBuildCachingEnabled()) {
+			TestReport cachedTestReport =
+				functionalTestClass.getCachedTestReport();
+
+			if (cachedTestReport != null) {
+				return cachedTestReport;
+			}
+		}
+
+		DownstreamBuildReport downstreamBuildReport =
+			getDownstreamBuildReport();
+
+		if (downstreamBuildReport == null) {
 			return null;
 		}
 
-		TestClassResult testClassResult = build.getTestClassResult(
-			"com.liferay.poshi.runner.PoshiRunner");
+		for (TestClassReport testClassReport :
+				downstreamBuildReport.getTestClassReports()) {
 
-		if (testClassResult == null) {
-			testClassResult = build.getTestClassResult(
-				"com.liferay.poshi.runner.ParallelPoshiRunner");
+			TestReport testReport = testClassReport.getTestReport(getName());
+
+			if (testReport != null) {
+				return testReport;
+			}
 		}
 
-		if (testClassResult == null) {
-			return null;
-		}
-
-		return testClassResult.getTestResult("test[" + getName() + "]");
+		return null;
 	}
 
 	@Override
 	protected List<TestrayAttachment> getLiferayLogTestrayAttachments() {
-		if (getTestResult() == null) {
+		if (getTestReport() == null) {
 			return new ArrayList<>();
 		}
 
@@ -200,15 +164,33 @@ public class FunctionalBatchBuildTestrayCaseResult
 
 	@Override
 	protected List<TestrayAttachment> getLiferayOSGiLogTestrayAttachments() {
-		if (getTestResult() == null) {
+		if (getTestReport() == null) {
 			return new ArrayList<>();
 		}
 
 		return super.getLiferayOSGiLogTestrayAttachments();
 	}
 
+	@Override
+	protected void initBuildReport() {
+		FunctionalTestClass functionalTestClass = getTestClass();
+
+		if (functionalTestClass.isBuildCachingEnabled()) {
+			DownstreamBuildReport cachedDownstreamBuildReport =
+				functionalTestClass.getCachedDownstreamBuildReport();
+
+			if (cachedDownstreamBuildReport != null) {
+				setBuildReport(cachedDownstreamBuildReport);
+
+				return;
+			}
+		}
+
+		super.initBuildReport();
+	}
+
 	private TestrayAttachment _getPoshiConsoleTestrayAttachment() {
-		if (getTestResult() == null) {
+		if (getTestReport() == null) {
 			return null;
 		}
 
@@ -217,14 +199,15 @@ public class FunctionalBatchBuildTestrayCaseResult
 		name = name.replace("#", "_");
 
 		return getTestrayAttachment(
-			getBuild(), "Poshi Console",
+			getBuildReport(), "Poshi Console",
 			JenkinsResultsParserUtil.combine(
-				getAxisBuildURLPath(), "/",
-				JenkinsResultsParserUtil.fixURL(name), "/console.txt.gz"));
+				getAxisName(), "/",
+				JenkinsResultsParserUtil.encodeLegacyURLPart(name),
+				"/console.txt.gz"));
 	}
 
 	private TestrayAttachment _getPoshiReportTestrayAttachment() {
-		if (getTestResult() == null) {
+		if (getTestReport() == null) {
 			return null;
 		}
 
@@ -233,14 +216,15 @@ public class FunctionalBatchBuildTestrayCaseResult
 		name = name.replace("#", "_");
 
 		return getTestrayAttachment(
-			getBuild(), "Poshi Report",
+			getBuildReport(), "Poshi Report",
 			JenkinsResultsParserUtil.combine(
-				getAxisBuildURLPath(), "/",
-				JenkinsResultsParserUtil.fixURL(name), "/index.html.gz"));
+				getAxisName(), "/",
+				JenkinsResultsParserUtil.encodeLegacyURLPart(name),
+				"/index.html.gz"));
 	}
 
 	private TestrayAttachment _getPoshiSummaryTestrayAttachment() {
-		if (getTestResult() == null) {
+		if (getTestReport() == null) {
 			return null;
 		}
 
@@ -249,12 +233,11 @@ public class FunctionalBatchBuildTestrayCaseResult
 		name = name.replace("#", "_");
 
 		return getTestrayAttachment(
-			getBuild(), "Poshi Summary",
+			getBuildReport(), "Poshi Summary",
 			JenkinsResultsParserUtil.combine(
-				getAxisBuildURLPath(), "/",
-				JenkinsResultsParserUtil.fixURL(name), "/summary.html.gz"));
+				getAxisName(), "/",
+				JenkinsResultsParserUtil.encodeLegacyURLPart(name),
+				"/summary.html.gz"));
 	}
-
-	private final FunctionalTestClass _functionalTestClass;
 
 }

@@ -49,8 +49,8 @@ public class SegmentsExperienceTableReferenceDefinitionTest
 	@Override
 	protected CTModel<?> addCTModel() throws Exception {
 		return SegmentsTestUtil.addSegmentsExperience(
-			_layout.getGroupId(), _segmentsEntry.getSegmentsEntryId(),
-			_layout.getPlid());
+			_layout.getGroupId(), _segmentsEntry.getExternalReferenceCode(),
+			null, _layout.getPlid());
 	}
 
 	private Layout _layout;

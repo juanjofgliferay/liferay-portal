@@ -16,6 +16,17 @@ public class LocalGitMirrorFailureMessageGenerator
 	extends BaseFailureMessageGenerator {
 
 	@Override
+	public String getMessage(String consoleText) {
+		if (!consoleText.contains(_TOKEN_LOCAL_GIT_FAILURE_END) ||
+			!consoleText.contains(_TOKEN_LOCAL_GIT_FAILURE_START)) {
+
+			return null;
+		}
+
+		return "Unable to synchronize with local Git mirror.";
+	}
+
+	@Override
 	public Element getMessageElement(String consoleText) {
 		if (!consoleText.contains(_TOKEN_LOCAL_GIT_FAILURE_END) ||
 			!consoleText.contains(_TOKEN_LOCAL_GIT_FAILURE_START)) {
@@ -26,8 +37,8 @@ public class LocalGitMirrorFailureMessageGenerator
 		Element messageElement = Dom4JUtil.getNewElement("div");
 
 		Dom4JUtil.getNewElement(
-			"p", messageElement, "Unable to synchronize with ",
-			Dom4JUtil.getNewElement("strong", null, "local Git mirror"), ".");
+			"p", messageElement,
+			Dom4JUtil.getNewElement("strong", null, getMessage(consoleText)));
 
 		int end = consoleText.indexOf(_TOKEN_LOCAL_GIT_FAILURE_END);
 
@@ -41,9 +52,11 @@ public class LocalGitMirrorFailureMessageGenerator
 		for (String string : new String[] {"error: ", "fatal: "}) {
 			int index = consoleText.indexOf(string);
 
-			if ((index != -1) && (index < minIndex)) {
-				minIndex = index;
+			if ((index == -1) || (index >= minIndex)) {
+				continue;
 			}
+
+			minIndex = index;
 		}
 
 		int gitCommandIndex = consoleText.lastIndexOf("+ git", minIndex);

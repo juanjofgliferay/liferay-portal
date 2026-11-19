@@ -307,18 +307,6 @@ public class KaleoDefinitionVersionLocalServiceWrapper
 	}
 
 	@Override
-	public KaleoDefinitionVersion fetchLatestKaleoDefinitionVersion(
-			long companyId, String name,
-			com.liferay.portal.kernel.util.OrderByComparator
-				<KaleoDefinitionVersion> orderByComparator)
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return _kaleoDefinitionVersionLocalService.
-			fetchLatestKaleoDefinitionVersion(
-				companyId, name, orderByComparator);
-	}
-
-	@Override
 	public com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery
 		getActionableDynamicQuery() {
 
@@ -459,25 +447,15 @@ public class KaleoDefinitionVersionLocalServiceWrapper
 	@Override
 	public java.util.List<KaleoDefinitionVersion>
 		getLatestKaleoDefinitionVersions(
-			long companyId, int start, int end,
+			long companyId, String keywords, int status,
+			java.util.Locale locale, int start, int end,
 			com.liferay.portal.kernel.util.OrderByComparator
 				<KaleoDefinitionVersion> orderByComparator) {
 
 		return _kaleoDefinitionVersionLocalService.
 			getLatestKaleoDefinitionVersions(
-				companyId, start, end, orderByComparator);
-	}
-
-	@Override
-	public java.util.List<KaleoDefinitionVersion>
-		getLatestKaleoDefinitionVersions(
-			long companyId, String keywords, int status, int start, int end,
-			com.liferay.portal.kernel.util.OrderByComparator
-				<KaleoDefinitionVersion> orderByComparator) {
-
-		return _kaleoDefinitionVersionLocalService.
-			getLatestKaleoDefinitionVersions(
-				companyId, keywords, status, start, end, orderByComparator);
+				companyId, keywords, status, locale, start, end,
+				orderByComparator);
 	}
 
 	@Override
@@ -570,3 +548,4 @@ public class KaleoDefinitionVersionLocalServiceWrapper
 		_kaleoDefinitionVersionLocalService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1379985630

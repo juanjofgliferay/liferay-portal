@@ -10,18 +10,19 @@ import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.servlet.HttpHeaders;
 import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.servlet.filters.BasePortalFilter;
 
-import java.util.Date;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 
-import javax.servlet.FilterChain;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
+import java.util.Date;
 
 /**
  * @author Marta Medio
@@ -40,6 +41,10 @@ public class PasswordModifiedFilter extends BasePortalFilter {
 		if (!requestPath.equals("/c/portal/logout") &&
 			_isPasswordModified(httpServletRequest)) {
 
+			httpServletResponse.setHeader(
+				HttpHeaders.CACHE_CONTROL,
+				HttpHeaders.CACHE_CONTROL_NO_CACHE_VALUE);
+
 			httpServletResponse.sendRedirect(
 				PortalUtil.getPathMain() + "/portal/logout");
 		}
@@ -51,12 +56,20 @@ public class PasswordModifiedFilter extends BasePortalFilter {
 	private String _getRequestPath(HttpServletRequest httpServletRequest) {
 		String requestURI = httpServletRequest.getRequestURI();
 
-		String contextPath = httpServletRequest.getContextPath();
+		String contextPath = PortalUtil.getPathContext();
 
-		if (Validator.isNotNull(contextPath) &&
-			!contextPath.equals(StringPool.SLASH)) {
+		if (Validator.isNotNull(contextPath)) {
+			String proxyPath = PortalUtil.getPathProxy();
 
-			requestURI = requestURI.substring(contextPath.length());
+			if (Validator.isNotNull(proxyPath) &&
+				contextPath.startsWith(proxyPath)) {
+
+				contextPath = contextPath.substring(proxyPath.length());
+			}
+
+			if (!contextPath.equals(StringPool.SLASH)) {
+				requestURI = requestURI.substring(contextPath.length());
+			}
 		}
 
 		return HttpComponentsUtil.removePathParameters(requestURI);

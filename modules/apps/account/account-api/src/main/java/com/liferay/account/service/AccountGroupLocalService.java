@@ -75,8 +75,8 @@ public interface AccountGroupLocalService
 
 	@Indexable(type = IndexableType.REINDEX)
 	public AccountGroup addAccountGroup(
-			long userId, String description, String name,
-			ServiceContext serviceContext)
+			String externalReferenceCode, long userId, String description,
+			String name, ServiceContext serviceContext)
 		throws PortalException;
 
 	public AccountGroup checkGuestAccountGroup(long companyId)
@@ -272,16 +272,6 @@ public interface AccountGroupLocalService
 	public List<AccountGroup> getAccountGroups(int start, int end);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<AccountGroup> getAccountGroups(
-		long companyId, int start, int end,
-		OrderByComparator<AccountGroup> orderByComparator);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<AccountGroup> getAccountGroups(
-		long companyId, String name, int start, int end,
-		OrderByComparator<AccountGroup> orderByComparator);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<AccountGroup> getAccountGroupsByAccountEntryId(
 		long accountEntryId, int start, int end);
 
@@ -298,19 +288,14 @@ public interface AccountGroupLocalService
 	public int getAccountGroupsCount();
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getAccountGroupsCount(long companyId);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public long getAccountGroupsCount(long companyId, String name);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public int getAccountGroupsCountByAccountEntryId(long accountEntryId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public ActionableDynamicQuery getActionableDynamicQuery();
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public AccountGroup getDefaultAccountGroup(long companyId);
+	public AccountGroup getDefaultAccountGroup(long companyId)
+		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public ExportActionableDynamicQuery getExportActionableDynamicQuery(
@@ -318,6 +303,13 @@ public interface AccountGroupLocalService
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public IndexableActionableDynamicQuery getIndexableActionableDynamicQuery();
+
+	@Indexable(type = IndexableType.REINDEX)
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public AccountGroup getOrAddEmptyAccountGroup(
+			String externalReferenceCode, long companyId, long userId,
+			String name)
+		throws PortalException;
 
 	/**
 	 * Returns the OSGi service identifier.
@@ -362,8 +354,8 @@ public interface AccountGroupLocalService
 
 	@Indexable(type = IndexableType.REINDEX)
 	public AccountGroup updateAccountGroup(
-			long accountGroupId, String description, String name,
-			ServiceContext serviceContext)
+			String externalReferenceCode, long accountGroupId,
+			String description, String name, ServiceContext serviceContext)
 		throws PortalException;
 
 	@Indexable(type = IndexableType.REINDEX)
@@ -377,3 +369,4 @@ public interface AccountGroupLocalService
 		throws PortalException;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1170359977

@@ -19,7 +19,7 @@ import com.liferay.portal.kernel.model.ModelListener;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
-import com.liferay.portal.kernel.transaction.TransactionCommitCallbackUtil;
+import com.liferay.portal.kernel.transaction.TransactionCallbackUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 
 import java.util.List;
@@ -38,7 +38,7 @@ public class GroupModelListener extends BaseModelListener<Group> {
 		if ((group != null) && group.isDepot() &&
 			_isStaging(ServiceContextThreadLocal.getServiceContext())) {
 
-			TransactionCommitCallbackUtil.registerCallback(
+			TransactionCallbackUtil.registerCommitCallback(
 				() -> {
 					_copyLiveDepotEntryGroupRelsToStaging(group);
 
@@ -50,7 +50,7 @@ public class GroupModelListener extends BaseModelListener<Group> {
 	@Override
 	public void onAfterRemove(Group group) throws ModelListenerException {
 		if ((group != null) && group.isDepot()) {
-			TransactionCommitCallbackUtil.registerCallback(
+			TransactionCallbackUtil.registerCommitCallback(
 				() -> {
 					DepotEntry depotEntry =
 						_depotEntryLocalService.fetchGroupDepotEntry(
@@ -141,24 +141,26 @@ public class GroupModelListener extends BaseModelListener<Group> {
 			Group groupRel = _groupLocalService.getGroup(
 				depotEntryGroupRel.getGroupId());
 
-			if (groupRel.isStagingGroup()) {
-				DepotEntry depotEntry =
-					_depotEntryLocalService.fetchGroupDepotEntry(
-						group.getGroupId());
-
-				DepotEntryGroupRel stagedDepotEntryGroupRel =
-					_depotEntryGroupRelLocalService.addDepotEntryGroupRel(
-						depotEntry.getDepotEntryId(),
-						depotEntryGroupRel.getGroupId());
-
-				stagedDepotEntryGroupRel.setDdmStructuresAvailable(
-					depotEntryGroupRel.isDdmStructuresAvailable());
-				stagedDepotEntryGroupRel.setSearchable(
-					depotEntryGroupRel.isSearchable());
-
-				_depotEntryGroupRelLocalService.updateDepotEntryGroupRel(
-					stagedDepotEntryGroupRel);
+			if (!groupRel.isStagingGroup()) {
+				continue;
 			}
+
+			DepotEntry depotEntry =
+				_depotEntryLocalService.fetchGroupDepotEntry(
+					group.getGroupId());
+
+			DepotEntryGroupRel stagedDepotEntryGroupRel =
+				_depotEntryGroupRelLocalService.addDepotEntryGroupRel(
+					depotEntry.getDepotEntryId(),
+					depotEntryGroupRel.getGroupId());
+
+			stagedDepotEntryGroupRel.setDdmStructuresAvailable(
+				depotEntryGroupRel.isDdmStructuresAvailable());
+			stagedDepotEntryGroupRel.setSearchable(
+				depotEntryGroupRel.isSearchable());
+
+			_depotEntryGroupRelLocalService.updateDepotEntryGroupRel(
+				stagedDepotEntryGroupRel);
 		}
 	}
 

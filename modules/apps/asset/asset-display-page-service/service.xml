@@ -31,11 +31,12 @@
 
 		<!-- Finder methods -->
 
-		<finder name="GroupId" return-type="Collection">
-			<finder-column name="groupId" />
-		</finder>
 		<finder name="LayoutPageTemplateEntryId" return-type="Collection">
 			<finder-column name="layoutPageTemplateEntryId" />
+		</finder>
+		<finder name="G_CN" return-type="Collection">
+			<finder-column name="groupId" />
+			<finder-column name="classNameId" />
 		</finder>
 		<finder name="G_C_C" return-type="AssetDisplayPageEntry" unique="true">
 			<finder-column name="groupId" />

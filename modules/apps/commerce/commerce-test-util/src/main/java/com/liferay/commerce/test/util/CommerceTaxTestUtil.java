@@ -26,17 +26,26 @@ import java.util.List;
  */
 public class CommerceTaxTestUtil {
 
-	public static CommerceTaxMethod addCommerceByAddressTaxMethod(
+	public static CommerceTaxMethod addByAddressCommerceTaxMethod(
 			long userId, long commerceChannelGroupId, boolean percentage)
 		throws PortalException {
-
-		String commerceTaxMethodEngineKey = "by-address";
 
 		return CommerceTaxMethodLocalServiceUtil.addCommerceTaxMethod(
 			userId, commerceChannelGroupId,
 			RandomTestUtil.randomLocaleStringMap(),
-			RandomTestUtil.randomLocaleStringMap(), commerceTaxMethodEngineKey,
-			percentage, true);
+			RandomTestUtil.randomLocaleStringMap(), "by-address", percentage,
+			true);
+	}
+
+	public static CommerceTaxMethod addFixedTaxCommerceTaxMethod(
+			long userId, long commerceChannelGroupId, boolean percentage)
+		throws PortalException {
+
+		return CommerceTaxMethodLocalServiceUtil.addCommerceTaxMethod(
+			userId, commerceChannelGroupId,
+			RandomTestUtil.randomLocaleStringMap(),
+			RandomTestUtil.randomLocaleStringMap(), "fixed-tax", percentage,
+			true);
 	}
 
 	public static long addTaxCategoryId(long groupId) throws PortalException {
@@ -68,6 +77,16 @@ public class CommerceTaxTestUtil {
 		return cpTaxCategory.getCPTaxCategoryId();
 	}
 
+	public static BigDecimal getPriceWithTaxAmount(
+		BigDecimal price, BigDecimal taxRate, RoundingMode roundingMode) {
+
+		BigDecimal taxValue = price.multiply(taxRate);
+
+		taxValue = taxValue.divide(_ONE_HUNDRED, _SCALE, roundingMode);
+
+		return price.add(taxValue);
+	}
+
 	public static BigDecimal getPriceWithoutTaxAmount(
 		BigDecimal priceWithTaxAmount, BigDecimal taxRate,
 		RoundingMode roundingMode) {
@@ -79,16 +98,6 @@ public class CommerceTaxTestUtil {
 		taxValue = taxValue.divide(denominator, _SCALE, roundingMode);
 
 		return priceWithTaxAmount.subtract(taxValue);
-	}
-
-	public static BigDecimal getPriceWithTaxAmount(
-		BigDecimal price, BigDecimal taxRate, RoundingMode roundingMode) {
-
-		BigDecimal taxValue = price.multiply(taxRate);
-
-		taxValue = taxValue.divide(_ONE_HUNDRED, _SCALE, roundingMode);
-
-		return price.add(taxValue);
 	}
 
 	public static void setCommerceMethodTaxRate(

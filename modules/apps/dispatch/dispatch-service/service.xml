@@ -86,10 +86,6 @@
 			<finder-column name="companyId" />
 			<finder-column name="userId" />
 		</finder>
-		<finder name="C_DTET" return-type="Collection">
-			<finder-column name="companyId" />
-			<finder-column name="dispatchTaskExecutorType" />
-		</finder>
 		<finder name="C_N" return-type="DispatchTrigger" unique="true">
 			<finder-column name="companyId" />
 			<finder-column name="name" />

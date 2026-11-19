@@ -85,7 +85,7 @@ public class AopInvocationHandler implements InvocationHandler {
 
 		TransactionAttributeAdapter transactionAttributeAdapter =
 			transactionInterceptor.createMethodContext(
-				targetClass, method, annotations);
+				target, method, annotations);
 
 		if (transactionAttributeAdapter != null) {
 			aopMethodInvocation = new AopMethodInvocationImpl(
@@ -100,15 +100,17 @@ public class AopInvocationHandler implements InvocationHandler {
 				chainableMethodAdvices[i];
 
 			Object methodContext = chainableMethodAdvice.createMethodContext(
-				targetClass, method, annotations);
+				target, method, annotations);
 
-			if (methodContext != null) {
-				aopMethodInvocation = new AopMethodInvocationImpl(
-					target, method, methodContext, nextChainableMethodAdvice,
-					aopMethodInvocation);
-
-				nextChainableMethodAdvice = chainableMethodAdvice;
+			if (methodContext == null) {
+				continue;
 			}
+
+			aopMethodInvocation = new AopMethodInvocationImpl(
+				target, method, methodContext, nextChainableMethodAdvice,
+				aopMethodInvocation);
+
+			nextChainableMethodAdvice = chainableMethodAdvice;
 		}
 
 		return new AopMethodInvocationImpl(

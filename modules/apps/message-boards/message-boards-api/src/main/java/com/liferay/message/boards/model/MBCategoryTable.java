@@ -29,6 +29,10 @@ public class MBCategoryTable extends BaseTable<MBCategoryTable> {
 		"ctCollectionId", Long.class, Types.BIGINT, Column.FLAG_PRIMARY);
 	public final Column<MBCategoryTable, String> uuid = createColumn(
 		"uuid_", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
+	public final Column<MBCategoryTable, String> externalReferenceCode =
+		createColumn(
+			"externalReferenceCode", String.class, Types.VARCHAR,
+			Column.FLAG_DEFAULT);
 	public final Column<MBCategoryTable, Long> categoryId = createColumn(
 		"categoryId", Long.class, Types.BIGINT, Column.FLAG_PRIMARY);
 	public final Column<MBCategoryTable, Long> groupId = createColumn(
@@ -71,3 +75,4 @@ public class MBCategoryTable extends BaseTable<MBCategoryTable> {
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1704565529

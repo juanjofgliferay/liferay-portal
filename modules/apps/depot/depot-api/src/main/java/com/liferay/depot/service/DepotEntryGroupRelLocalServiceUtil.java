@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -36,8 +37,9 @@ public class DepotEntryGroupRelLocalServiceUtil {
 	 * Never modify this class directly. Add custom service methods to <code>com.liferay.depot.service.impl.DepotEntryGroupRelLocalServiceImpl</code> and rerun ServiceBuilder to regenerate this class.
 	 */
 	public static DepotEntryGroupRel addDepotEntryGroupRel(
-		boolean ddmStructuresAvailable, long depotEntryId, long toGroupId,
-		boolean searchable) {
+			boolean ddmStructuresAvailable, long depotEntryId, long toGroupId,
+			boolean searchable)
+		throws PortalException {
 
 		return getService().addDepotEntryGroupRel(
 			ddmStructuresAvailable, depotEntryId, toGroupId, searchable);
@@ -60,13 +62,15 @@ public class DepotEntryGroupRelLocalServiceUtil {
 	}
 
 	public static DepotEntryGroupRel addDepotEntryGroupRel(
-		long depotEntryId, long toGroupId) {
+			long depotEntryId, long toGroupId)
+		throws PortalException {
 
 		return getService().addDepotEntryGroupRel(depotEntryId, toGroupId);
 	}
 
 	public static DepotEntryGroupRel addDepotEntryGroupRel(
-		long depotEntryId, long toGroupId, boolean searchable) {
+			long depotEntryId, long toGroupId, boolean searchable)
+		throws PortalException {
 
 		return getService().addDepotEntryGroupRel(
 			depotEntryId, toGroupId, searchable);
@@ -103,9 +107,11 @@ public class DepotEntryGroupRelLocalServiceUtil {
 	 *
 	 * @param depotEntryGroupRel the depot entry group rel
 	 * @return the depot entry group rel that was removed
+	 * @throws PortalException
 	 */
 	public static DepotEntryGroupRel deleteDepotEntryGroupRel(
-		DepotEntryGroupRel depotEntryGroupRel) {
+			DepotEntryGroupRel depotEntryGroupRel)
+		throws PortalException {
 
 		return getService().deleteDepotEntryGroupRel(depotEntryGroupRel);
 	}
@@ -315,9 +321,9 @@ public class DepotEntryGroupRelLocalServiceUtil {
 	}
 
 	public static List<DepotEntryGroupRel> getDepotEntryGroupRels(
-		long groupId, int start, int end) {
+		long groupId, int type, int start, int end) {
 
-		return getService().getDepotEntryGroupRels(groupId, start, end);
+		return getService().getDepotEntryGroupRels(groupId, type, start, end);
 	}
 
 	/**
@@ -368,8 +374,8 @@ public class DepotEntryGroupRelLocalServiceUtil {
 		return getService().getDepotEntryGroupRelsCount(depotEntry);
 	}
 
-	public static int getDepotEntryGroupRelsCount(long groupId) {
-		return getService().getDepotEntryGroupRelsCount(groupId);
+	public static int getDepotEntryGroupRelsCount(long groupId, int type) {
+		return getService().getDepotEntryGroupRelsCount(groupId, type);
 	}
 
 	public static com.liferay.portal.kernel.dao.orm.ExportActionableDynamicQuery
@@ -448,13 +454,13 @@ public class DepotEntryGroupRelLocalServiceUtil {
 	}
 
 	public static DepotEntryGroupRelLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(DepotEntryGroupRelLocalService service) {
-		_service = service;
-	}
-
-	private static volatile DepotEntryGroupRelLocalService _service;
+	private static final Snapshot<DepotEntryGroupRelLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			DepotEntryGroupRelLocalServiceUtil.class,
+			DepotEntryGroupRelLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-842062070

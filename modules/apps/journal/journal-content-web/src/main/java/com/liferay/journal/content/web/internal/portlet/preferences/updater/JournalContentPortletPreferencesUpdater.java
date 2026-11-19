@@ -15,13 +15,15 @@ import com.liferay.layout.model.LayoutClassedModelUsage;
 import com.liferay.layout.portlet.preferences.updater.PortletPreferencesUpdater;
 import com.liferay.layout.service.LayoutClassedModelUsageLocalService;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.Portlet;
+import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.Portal;
 
-import javax.portlet.PortletPreferences;
+import jakarta.portlet.PortletPreferences;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -56,14 +58,24 @@ public class JournalContentPortletPreferencesUpdater
 		JournalArticle article = articleAssetRenderer.getAssetObject();
 
 		portletPreferences.setValue(
-			"groupId", String.valueOf(article.getGroupId()));
-		portletPreferences.setValue("articleId", article.getArticleId());
+			"articleExternalReferenceCode", article.getExternalReferenceCode());
 
-		portletPreferences.setValue(
-			"assetEntryId", String.valueOf(assetEntry.getEntryId()));
+		Layout layout = themeDisplay.getLayout();
 
-		_addLayoutClassedModelUsage(
-			themeDisplay.getLayout(), portletId, article);
+		if ((article.getGroupId() != layout.getGroupId()) ||
+			(article.getGroupId() != _portal.getScopeGroupId(
+				layout, portletId))) {
+
+			Group group = _groupLocalService.fetchGroup(article.getGroupId());
+
+			if (group != null) {
+				portletPreferences.setValue(
+					"groupExternalReferenceCode",
+					group.getExternalReferenceCode());
+			}
+		}
+
+		_addLayoutClassedModelUsage(layout, portletId, article);
 	}
 
 	private void _addLayoutClassedModelUsage(
@@ -71,8 +83,9 @@ public class JournalContentPortletPreferencesUpdater
 
 		LayoutClassedModelUsage layoutClassedModelUsage =
 			_layoutClassedModelUsageLocalService.fetchLayoutClassedModelUsage(
+				layout.getGroupId(), StringPool.BLANK,
 				_portal.getClassNameId(JournalArticle.class),
-				article.getResourcePrimKey(), StringPool.BLANK, portletId,
+				article.getResourcePrimKey(), portletId,
 				_portal.getClassNameId(Portlet.class), layout.getPlid());
 
 		if (layoutClassedModelUsage != null) {
@@ -80,14 +93,18 @@ public class JournalContentPortletPreferencesUpdater
 		}
 
 		_layoutClassedModelUsageLocalService.addLayoutClassedModelUsage(
-			layout.getGroupId(), _portal.getClassNameId(JournalArticle.class),
-			article.getResourcePrimKey(), StringPool.BLANK, portletId,
+			layout.getGroupId(), StringPool.BLANK,
+			_portal.getClassNameId(JournalArticle.class),
+			article.getResourcePrimKey(), portletId,
 			_portal.getClassNameId(Portlet.class), layout.getPlid(),
 			ServiceContextThreadLocal.getServiceContext());
 	}
 
 	@Reference
 	private AssetEntryLocalService _assetEntryLocalService;
+
+	@Reference
+	private GroupLocalService _groupLocalService;
 
 	@Reference
 	private LayoutClassedModelUsageLocalService

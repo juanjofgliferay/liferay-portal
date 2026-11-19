@@ -159,14 +159,14 @@ public class CommercePriceListsImporter {
 
 			CommercePriceList commercePriceList =
 				_commercePriceListLocalService.addOrUpdateCommercePriceList(
-					externalReferenceCode, catalogGroupId, user.getUserId(), 0,
-					commerceCurrency.getCommerceCurrencyId(), true,
-					CommercePriceListConstants.TYPE_PRICE_LIST,
-					parentPriceListId, false, name, priority, displayDateMonth,
-					displayDateDay, displayDateYear, displayDateHour,
-					displayDateMinute, expirationDateMonth, expirationDateDay,
-					expirationDateYear, expirationDateHour,
-					expirationDateMinute, neverExpire, serviceContext);
+					externalReferenceCode, user.getUserId(), catalogGroupId, 0,
+					parentPriceListId, false, commerceCurrency.getCode(),
+					displayDateDay, displayDateHour, displayDateMinute,
+					displayDateMonth, displayDateYear, expirationDateDay,
+					expirationDateHour, expirationDateMinute,
+					expirationDateMonth, expirationDateYear, name, true,
+					neverExpire, priority,
+					CommercePriceListConstants.TYPE_PRICE_LIST, serviceContext);
 
 			for (int i = 0; i < accountGroupsJSONArray.length(); i++) {
 				try {

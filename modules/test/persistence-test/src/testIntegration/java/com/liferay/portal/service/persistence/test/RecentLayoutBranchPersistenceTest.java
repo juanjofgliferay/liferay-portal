@@ -47,8 +47,10 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 /**
+ * @deprecated As of Cavanaugh (7.4.x), with no direct replacement
  * @generated
  */
+@Deprecated
 @RunWith(Arquillian.class)
 public class RecentLayoutBranchPersistenceTest {
 
@@ -110,11 +112,7 @@ public class RecentLayoutBranchPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		RecentLayoutBranch newRecentLayoutBranch = _persistence.create(pk);
-
-		newRecentLayoutBranch.setMvccVersion(RandomTestUtil.nextLong());
+		RecentLayoutBranch newRecentLayoutBranch = addRecentLayoutBranch();
 
 		newRecentLayoutBranch.setGroupId(RandomTestUtil.nextLong());
 
@@ -128,7 +126,9 @@ public class RecentLayoutBranchPersistenceTest {
 
 		newRecentLayoutBranch.setPlid(RandomTestUtil.nextLong());
 
-		_recentLayoutBranchs.add(_persistence.update(newRecentLayoutBranch));
+		newRecentLayoutBranch = _persistence.update(newRecentLayoutBranch);
+
+		_recentLayoutBranchs.add(newRecentLayoutBranch);
 
 		RecentLayoutBranch existingRecentLayoutBranch =
 			_persistence.findByPrimaryKey(
@@ -158,13 +158,6 @@ public class RecentLayoutBranchPersistenceTest {
 		Assert.assertEquals(
 			existingRecentLayoutBranch.getPlid(),
 			newRecentLayoutBranch.getPlid());
-	}
-
-	@Test
-	public void testCountByGroupId() throws Exception {
-		_persistence.countByGroupId(RandomTestUtil.nextLong());
-
-		_persistence.countByGroupId(0L);
 	}
 
 	@Test
@@ -519,8 +512,6 @@ public class RecentLayoutBranchPersistenceTest {
 
 		RecentLayoutBranch recentLayoutBranch = _persistence.create(pk);
 
-		recentLayoutBranch.setMvccVersion(RandomTestUtil.nextLong());
-
 		recentLayoutBranch.setGroupId(RandomTestUtil.nextLong());
 
 		recentLayoutBranch.setCompanyId(RandomTestUtil.nextLong());
@@ -544,3 +535,4 @@ public class RecentLayoutBranchPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-13385636

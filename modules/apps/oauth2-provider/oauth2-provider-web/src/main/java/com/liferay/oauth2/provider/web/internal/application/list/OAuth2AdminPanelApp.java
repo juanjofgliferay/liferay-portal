@@ -19,12 +19,17 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"panel.app.order:Integer=400",
+		"panel.app.order:Integer=300",
 		"panel.category.key=" + PanelCategoryKeys.CONTROL_PANEL_SECURITY
 	},
 	service = PanelApp.class
 )
 public class OAuth2AdminPanelApp extends BasePanelApp {
+
+	@Override
+	public String getIcon() {
+		return "shield-check";
+	}
 
 	@Override
 	public Portlet getPortlet() {
@@ -37,7 +42,7 @@ public class OAuth2AdminPanelApp extends BasePanelApp {
 	}
 
 	@Reference(
-		target = "(javax.portlet.name=" + OAuth2ProviderPortletKeys.OAUTH2_ADMIN + ")"
+		target = "(jakarta.portlet.name=" + OAuth2ProviderPortletKeys.OAUTH2_ADMIN + ")"
 	)
 	private Portlet _portlet;
 

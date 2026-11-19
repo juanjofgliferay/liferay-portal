@@ -61,24 +61,28 @@ import com.liferay.portal.kernel.service.RoleLocalService;
 import com.liferay.portal.kernel.service.UserGroupRoleLocalService;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
+import com.liferay.portal.kernel.test.TestInfo;
+import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.math.BigDecimal;
 
 import java.time.LocalDate;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -814,6 +818,47 @@ public class DDMFormEvaluatorHelperTest {
 	}
 
 	@Test
+	public void testRequiredValidationWithTextField() throws Exception {
+		DDMForm ddmForm = new DDMForm();
+
+		DDMFormField ddmFormField = _createDDMFormField(
+			"field0", "text", FieldConstants.STRING);
+
+		ddmFormField.setRequired(true);
+
+		ddmForm.addDDMFormField(ddmFormField);
+
+		DDMFormValues ddmFormValues = DDMFormValuesTestUtil.createDDMFormValues(
+			ddmForm);
+
+		ddmFormValues.addDDMFormFieldValue(
+			DDMFormValuesTestUtil.createDDMFormFieldValue(
+				"field0_instanceId", "field0", new UnlocalizedValue("\n")));
+
+		DDMFormEvaluatorEvaluateResponse ddmFormEvaluatorEvaluateResponse =
+			evaluate(ddmForm, ddmFormValues);
+
+		Map<DDMFormEvaluatorFieldContextKey, Map<String, Object>>
+			ddmFormFieldsPropertyChanges =
+				ddmFormEvaluatorEvaluateResponse.
+					getDDMFormFieldsPropertyChanges();
+
+		Assert.assertEquals(
+			ddmFormFieldsPropertyChanges.toString(), 1,
+			ddmFormFieldsPropertyChanges.size());
+
+		Map<String, Object> ddmFormFieldPropertyChanges =
+			ddmFormFieldsPropertyChanges.get(
+				new DDMFormEvaluatorFieldContextKey(
+					"field0", "field0_instanceId"));
+
+		Assert.assertEquals(
+			"This field is required.",
+			ddmFormFieldPropertyChanges.get("errorMessage"));
+		Assert.assertFalse((boolean)ddmFormFieldPropertyChanges.get("valid"));
+	}
+
+	@Test
 	public void testRequiredValidationWithinRuleAction() throws Exception {
 		DDMForm ddmForm = new DDMForm();
 
@@ -864,47 +909,6 @@ public class DDMFormEvaluatorHelperTest {
 	}
 
 	@Test
-	public void testRequiredValidationWithTextField() throws Exception {
-		DDMForm ddmForm = new DDMForm();
-
-		DDMFormField ddmFormField = _createDDMFormField(
-			"field0", "text", FieldConstants.STRING);
-
-		ddmFormField.setRequired(true);
-
-		ddmForm.addDDMFormField(ddmFormField);
-
-		DDMFormValues ddmFormValues = DDMFormValuesTestUtil.createDDMFormValues(
-			ddmForm);
-
-		ddmFormValues.addDDMFormFieldValue(
-			DDMFormValuesTestUtil.createDDMFormFieldValue(
-				"field0_instanceId", "field0", new UnlocalizedValue("\n")));
-
-		DDMFormEvaluatorEvaluateResponse ddmFormEvaluatorEvaluateResponse =
-			evaluate(ddmForm, ddmFormValues);
-
-		Map<DDMFormEvaluatorFieldContextKey, Map<String, Object>>
-			ddmFormFieldsPropertyChanges =
-				ddmFormEvaluatorEvaluateResponse.
-					getDDMFormFieldsPropertyChanges();
-
-		Assert.assertEquals(
-			ddmFormFieldsPropertyChanges.toString(), 1,
-			ddmFormFieldsPropertyChanges.size());
-
-		Map<String, Object> ddmFormFieldPropertyChanges =
-			ddmFormFieldsPropertyChanges.get(
-				new DDMFormEvaluatorFieldContextKey(
-					"field0", "field0_instanceId"));
-
-		Assert.assertEquals(
-			"This field is required.",
-			ddmFormFieldPropertyChanges.get("errorMessage"));
-		Assert.assertFalse((boolean)ddmFormFieldPropertyChanges.get("valid"));
-	}
-
-	@Test
 	public void testRuleConditionWithNestedFunctions() throws Exception {
 		DDMForm ddmForm = DDMFormTestUtil.createDDMForm();
 
@@ -943,6 +947,65 @@ public class DDMFormEvaluatorHelperTest {
 
 		Assert.assertEquals(
 			new BigDecimal(18), ddmFormFieldPropertyChanges.get("value"));
+	}
+
+	@Test
+	@TestInfo("LPD-80263")
+	public void testSetVisibleFunction() throws Exception {
+		DDMForm ddmForm = new DDMForm();
+
+		ddmForm.addDDMFormField(
+			_createDDMFormField("text1", "text", FieldConstants.STRING));
+
+		DDMFormField ddmFormField = _createDDMFormField(
+			"text2", "text", FieldConstants.STRING);
+
+		ddmFormField.setVisibilityExpression("FALSE");
+
+		ddmForm.addDDMFormField(ddmFormField);
+
+		ddmForm.addDDMFormRule(
+			new DDMFormRule(
+				Collections.singletonList("setVisible(\"text2\", true)"),
+				"equals(getValue(\"text1\"), \"value1\")"));
+		ddmForm.addDDMFormRule(
+			new DDMFormRule(
+				Collections.singletonList("setVisible(\"text2\", true)"),
+				"equals(getValue(\"text1\"), \"value2\")"));
+
+		DDMFormValues ddmFormValues = DDMFormValuesTestUtil.createDDMFormValues(
+			ddmForm);
+
+		ddmFormValues.addDDMFormFieldValue(
+			DDMFormValuesTestUtil.createDDMFormFieldValue(
+				"text1_instanceId", "text1", new UnlocalizedValue("value1")));
+		ddmFormValues.addDDMFormFieldValue(
+			DDMFormValuesTestUtil.createDDMFormFieldValue(
+				"text2_instanceId", "text2",
+				new UnlocalizedValue(RandomTestUtil.randomString())));
+
+		DDMFormEvaluatorEvaluateResponse ddmFormEvaluatorEvaluateResponse =
+			evaluate(ddmForm, ddmFormValues);
+
+		Map<DDMFormEvaluatorFieldContextKey, Map<String, Object>>
+			ddmFormFieldsPropertyChanges =
+				ddmFormEvaluatorEvaluateResponse.
+					getDDMFormFieldsPropertyChanges();
+
+		Assert.assertEquals(
+			ddmFormFieldsPropertyChanges.toString(), 1,
+			ddmFormFieldsPropertyChanges.size());
+
+		Map<String, Object> ddmFormFieldPropertyChanges =
+			ddmFormFieldsPropertyChanges.get(
+				new DDMFormEvaluatorFieldContextKey(
+					"text2", "text2_instanceId"));
+
+		Assert.assertEquals(
+			ddmFormFieldPropertyChanges.toString(), 1,
+			ddmFormFieldPropertyChanges.size());
+
+		Assert.assertTrue((Boolean)ddmFormFieldPropertyChanges.get("visible"));
 	}
 
 	@Test
@@ -1002,9 +1065,11 @@ public class DDMFormEvaluatorHelperTest {
 					"field1", "field1_instanceId"));
 
 		Assert.assertEquals(
-			ddmFormFieldPropertyChanges.toString(), 1,
+			ddmFormFieldPropertyChanges.toString(), 2,
 			ddmFormFieldPropertyChanges.size());
 
+		Assert.assertTrue(
+			Validator.isNull(ddmFormFieldPropertyChanges.get("value")));
 		Assert.assertFalse((boolean)ddmFormFieldPropertyChanges.get("visible"));
 
 		// Field 2
@@ -1017,6 +1082,13 @@ public class DDMFormEvaluatorHelperTest {
 			ddmFormFieldPropertyChanges.size());
 
 		Assert.assertTrue((boolean)ddmFormFieldPropertyChanges.get("readOnly"));
+	}
+
+	@Test
+	@TestInfo("LPD-110314")
+	public void testShowHideWithCalculateRule() throws Exception {
+		_testShowHideWithCalculateRule(false, true, true);
+		_testShowHideWithCalculateRule(true, false, false);
 	}
 
 	@Test
@@ -1218,6 +1290,102 @@ public class DDMFormEvaluatorHelperTest {
 		}
 
 		Assert.assertEquals("10", actualValue.getString(LocaleUtil.US));
+	}
+
+	@Test
+	public void testValidConfirmationDecimalValue() throws Exception {
+		DDMForm ddmForm = new DDMForm();
+
+		ddmForm.addDDMFormField(
+			_createDDMFormFieldWithConfirmationField(
+				"field0", "numeric", FieldConstants.DOUBLE));
+
+		DDMFormValues ddmFormValues = DDMFormValuesTestUtil.createDDMFormValues(
+			ddmForm);
+
+		ddmFormValues.addDDMFormFieldValue(
+			_createDDMFormFieldValueWithConfirmationValue(
+				"field0_instanceId", "field0", "1.2", "1,2"));
+
+		DDMFormEvaluatorEvaluateResponse ddmFormEvaluatorEvaluateResponse =
+			evaluate(ddmForm, ddmFormValues);
+
+		Map<DDMFormEvaluatorFieldContextKey, Map<String, Object>>
+			ddmFormFieldsPropertyChanges =
+				ddmFormEvaluatorEvaluateResponse.
+					getDDMFormFieldsPropertyChanges();
+
+		Assert.assertEquals(
+			ddmFormFieldsPropertyChanges.toString(), 0,
+			ddmFormFieldsPropertyChanges.size());
+	}
+
+	@Test
+	public void testValidConfirmationValueWithTextField() throws Exception {
+		DDMForm ddmForm = new DDMForm();
+
+		DDMFormField ddmFormField = _createDDMFormFieldWithConfirmationField(
+			"field0", "text", FieldConstants.STRING);
+
+		ddmForm.addDDMFormField(ddmFormField);
+
+		DDMFormValues ddmFormValues = DDMFormValuesTestUtil.createDDMFormValues(
+			ddmForm);
+
+		DDMFormFieldValue ddmFormFieldValue =
+			_createDDMFormFieldValueWithConfirmationValue(
+				"field0_instanceId", "field0", "field value", "field value");
+
+		ddmFormValues.addDDMFormFieldValue(ddmFormFieldValue);
+
+		DDMFormEvaluatorEvaluateResponse ddmFormEvaluatorEvaluateResponse =
+			evaluate(ddmForm, ddmFormValues);
+
+		Map<DDMFormEvaluatorFieldContextKey, Map<String, Object>>
+			ddmFormFieldsPropertyChanges =
+				ddmFormEvaluatorEvaluateResponse.
+					getDDMFormFieldsPropertyChanges();
+
+		Assert.assertEquals(
+			ddmFormFieldsPropertyChanges.toString(), 0,
+			ddmFormFieldsPropertyChanges.size());
+	}
+
+	@Test
+	public void testValidNumericValueWithInputMask() throws Exception {
+		DDMForm ddmForm = new DDMForm();
+
+		DDMFormField ddmFormField = _createDDMFormField(
+			"field0", "numeric", "integer");
+
+		ddmFormField.setProperty("inputMask", true);
+		ddmFormField.setProperty(
+			"inputMaskFormat",
+			DDMFormValuesTestUtil.createLocalizedValue(
+				"999.999.999-99", LocaleUtil.US));
+
+		ddmForm.addDDMFormField(ddmFormField);
+
+		DDMFormValues ddmFormValues = DDMFormValuesTestUtil.createDDMFormValues(
+			ddmForm);
+
+		ddmFormValues.addDDMFormFieldValue(
+			DDMFormValuesTestUtil.createDDMFormFieldValue(
+				"field0_instanceId", "field0",
+				DDMFormValuesTestUtil.createLocalizedValue(
+					"01234567899", LocaleUtil.US)));
+
+		DDMFormEvaluatorEvaluateResponse ddmFormEvaluatorEvaluateResponse =
+			evaluate(ddmForm, ddmFormValues);
+
+		Map<DDMFormEvaluatorFieldContextKey, Map<String, Object>>
+			ddmFormFieldsPropertyChanges =
+				ddmFormEvaluatorEvaluateResponse.
+					getDDMFormFieldsPropertyChanges();
+
+		Assert.assertEquals(
+			ddmFormFieldsPropertyChanges.toString(), 0,
+			ddmFormFieldsPropertyChanges.size());
 	}
 
 	@Test
@@ -1622,102 +1790,6 @@ public class DDMFormEvaluatorHelperTest {
 	}
 
 	@Test
-	public void testValidConfirmationDecimalValue() throws Exception {
-		DDMForm ddmForm = new DDMForm();
-
-		ddmForm.addDDMFormField(
-			_createDDMFormFieldWithConfirmationField(
-				"field0", "numeric", FieldConstants.DOUBLE));
-
-		DDMFormValues ddmFormValues = DDMFormValuesTestUtil.createDDMFormValues(
-			ddmForm);
-
-		ddmFormValues.addDDMFormFieldValue(
-			_createDDMFormFieldValueWithConfirmationValue(
-				"field0_instanceId", "field0", "1.2", "1,2"));
-
-		DDMFormEvaluatorEvaluateResponse ddmFormEvaluatorEvaluateResponse =
-			evaluate(ddmForm, ddmFormValues);
-
-		Map<DDMFormEvaluatorFieldContextKey, Map<String, Object>>
-			ddmFormFieldsPropertyChanges =
-				ddmFormEvaluatorEvaluateResponse.
-					getDDMFormFieldsPropertyChanges();
-
-		Assert.assertEquals(
-			ddmFormFieldsPropertyChanges.toString(), 0,
-			ddmFormFieldsPropertyChanges.size());
-	}
-
-	@Test
-	public void testValidConfirmationValueWithTextField() throws Exception {
-		DDMForm ddmForm = new DDMForm();
-
-		DDMFormField ddmFormField = _createDDMFormFieldWithConfirmationField(
-			"field0", "text", FieldConstants.STRING);
-
-		ddmForm.addDDMFormField(ddmFormField);
-
-		DDMFormValues ddmFormValues = DDMFormValuesTestUtil.createDDMFormValues(
-			ddmForm);
-
-		DDMFormFieldValue ddmFormFieldValue =
-			_createDDMFormFieldValueWithConfirmationValue(
-				"field0_instanceId", "field0", "field value", "field value");
-
-		ddmFormValues.addDDMFormFieldValue(ddmFormFieldValue);
-
-		DDMFormEvaluatorEvaluateResponse ddmFormEvaluatorEvaluateResponse =
-			evaluate(ddmForm, ddmFormValues);
-
-		Map<DDMFormEvaluatorFieldContextKey, Map<String, Object>>
-			ddmFormFieldsPropertyChanges =
-				ddmFormEvaluatorEvaluateResponse.
-					getDDMFormFieldsPropertyChanges();
-
-		Assert.assertEquals(
-			ddmFormFieldsPropertyChanges.toString(), 0,
-			ddmFormFieldsPropertyChanges.size());
-	}
-
-	@Test
-	public void testValidNumericValueWithInputMask() throws Exception {
-		DDMForm ddmForm = new DDMForm();
-
-		DDMFormField ddmFormField = _createDDMFormField(
-			"field0", "numeric", "integer");
-
-		ddmFormField.setProperty("inputMask", true);
-		ddmFormField.setProperty(
-			"inputMaskFormat",
-			DDMFormValuesTestUtil.createLocalizedValue(
-				"999.999.999-99", LocaleUtil.US));
-
-		ddmForm.addDDMFormField(ddmFormField);
-
-		DDMFormValues ddmFormValues = DDMFormValuesTestUtil.createDDMFormValues(
-			ddmForm);
-
-		ddmFormValues.addDDMFormFieldValue(
-			DDMFormValuesTestUtil.createDDMFormFieldValue(
-				"field0_instanceId", "field0",
-				DDMFormValuesTestUtil.createLocalizedValue(
-					"01234567899", LocaleUtil.US)));
-
-		DDMFormEvaluatorEvaluateResponse ddmFormEvaluatorEvaluateResponse =
-			evaluate(ddmForm, ddmFormValues);
-
-		Map<DDMFormEvaluatorFieldContextKey, Map<String, Object>>
-			ddmFormFieldsPropertyChanges =
-				ddmFormEvaluatorEvaluateResponse.
-					getDDMFormFieldsPropertyChanges();
-
-		Assert.assertEquals(
-			ddmFormFieldsPropertyChanges.toString(), 0,
-			ddmFormFieldsPropertyChanges.size());
-	}
-
-	@Test
 	public void testVisibilityExpression() throws Exception {
 		DDMForm ddmForm = new DDMForm();
 
@@ -1767,23 +1839,34 @@ public class DDMFormEvaluatorHelperTest {
 			DDMFormValues ddmFormValues, Locale locale)
 		throws Exception {
 
-		DDMFormEvaluatorEvaluateRequest.Builder builder =
-			DDMFormEvaluatorEvaluateRequest.Builder.newBuilder(
-				ddmForm, ddmFormValues, locale);
+		return evaluate(ddmForm, ddmFormLayout, ddmFormValues, locale, true);
+	}
 
-		builder.withCompanyId(
-			1L
-		).withDDMFormLayout(
-			ddmFormLayout
-		).withGroupId(
-			1L
-		).withUserId(
-			1L
-		);
+	protected DDMFormEvaluatorEvaluateResponse evaluate(
+			DDMForm ddmForm, DDMFormLayout ddmFormLayout,
+			DDMFormValues ddmFormValues, Locale locale, boolean viewMode)
+		throws Exception {
 
 		DDMFormEvaluatorHelper ddmFormEvaluatorHelper =
 			new DDMFormEvaluatorHelper(
-				_ddmExpressionFactory, builder.build(),
+				_ddmExpressionFactory,
+				DDMFormEvaluatorEvaluateRequest.Builder.newBuilder(
+					ddmForm, ddmFormValues, locale
+				).withCompanyId(
+					RandomTestUtil.randomLong()
+				).withDDMFormInstanceId(
+					RandomTestUtil.randomLong()
+				).withDDMFormLayout(
+					ddmFormLayout
+				).withEditingFieldValue(
+					true
+				).withGroupId(
+					RandomTestUtil.randomLong()
+				).withUserId(
+					RandomTestUtil.randomLong()
+				).withViewMode(
+					viewMode
+				).build(),
 				_mockDDMFormFieldTypeServicesRegistry(),
 				_mockDDMFormPageChangeRegistry());
 
@@ -1947,19 +2030,6 @@ public class DDMFormEvaluatorHelperTest {
 		).build();
 	}
 
-	private DDMFormValues _createDDMFormFieldValuesWithValue(
-		DDMForm ddmForm, String instanceId, String name, Value value) {
-
-		DDMFormValues ddmFormValues = DDMFormValuesTestUtil.createDDMFormValues(
-			ddmForm);
-
-		ddmFormValues.addDDMFormFieldValue(
-			DDMFormValuesTestUtil.createDDMFormFieldValue(
-				instanceId, name, value));
-
-		return ddmFormValues;
-	}
-
 	private DDMFormFieldValue _createDDMFormFieldValueWithConfirmationValue(
 		String instanceId, String fieldName, String fieldValue,
 		String confirmationValue) {
@@ -1973,6 +2043,19 @@ public class DDMFormEvaluatorHelperTest {
 		ddmFormFieldValue.setConfirmationValue(confirmationValue);
 
 		return ddmFormFieldValue;
+	}
+
+	private DDMFormValues _createDDMFormFieldValuesWithValue(
+		DDMForm ddmForm, String instanceId, String name, Value value) {
+
+		DDMFormValues ddmFormValues = DDMFormValuesTestUtil.createDDMFormValues(
+			ddmForm);
+
+		ddmFormValues.addDDMFormFieldValue(
+			DDMFormValuesTestUtil.createDDMFormFieldValue(
+				instanceId, name, value));
+
+		return ddmFormValues;
 	}
 
 	private DDMFormField _createDDMFormFieldWithConfirmationField(
@@ -2112,6 +2195,76 @@ public class DDMFormEvaluatorHelperTest {
 		);
 
 		return ddmFormPageChangeRegistry;
+	}
+
+	private void _testShowHideWithCalculateRule(
+			boolean text1Visible, boolean text2Visible, boolean viewMode)
+		throws Exception {
+
+		DDMForm ddmForm = new DDMForm();
+
+		ddmForm.addDDMFormField(
+			_createDDMFormField("numeric", "numeric", FieldConstants.DOUBLE));
+		ddmForm.addDDMFormField(
+			_createDDMFormField("text1", "text", FieldConstants.STRING));
+		ddmForm.addDDMFormField(
+			_createDDMFormField("text2", "text", FieldConstants.STRING));
+		ddmForm.addDDMFormRule(
+			new DDMFormRule(
+				List.of("setVisible('text1', true)"),
+				"getValue(\"numeric\") < 60"));
+		ddmForm.addDDMFormRule(
+			new DDMFormRule(
+				List.of("setVisible('text2', true)"),
+				"getValue(\"numeric\") >= 60"));
+		ddmForm.addDDMFormRule(
+			new DDMFormRule(List.of("calculate(\"numeric\", 70)"), "TRUE"));
+
+		DDMFormValues ddmFormValues = DDMFormValuesTestUtil.createDDMFormValues(
+			ddmForm);
+
+		String instanceId1 = RandomTestUtil.randomString();
+
+		ddmFormValues.addDDMFormFieldValue(
+			DDMFormValuesTestUtil.createDDMFormFieldValue(
+				instanceId1, "numeric", new UnlocalizedValue("40")));
+
+		String instanceId2 = RandomTestUtil.randomString();
+
+		ddmFormValues.addDDMFormFieldValue(
+			DDMFormValuesTestUtil.createDDMFormFieldValue(
+				instanceId2, "text1", new UnlocalizedValue("")));
+
+		String instanceId3 = RandomTestUtil.randomString();
+
+		ddmFormValues.addDDMFormFieldValue(
+			DDMFormValuesTestUtil.createDDMFormFieldValue(
+				instanceId3, "text2", new UnlocalizedValue("")));
+
+		DDMFormEvaluatorEvaluateResponse ddmFormEvaluatorEvaluateResponse =
+			evaluate(ddmForm, null, ddmFormValues, LocaleUtil.US, viewMode);
+
+		Map<String, Object> ddmFormFieldsPropertyChanges =
+			_getDDMFormFieldPropertyChangesByKey(
+				ddmFormEvaluatorEvaluateResponse,
+				new DDMFormEvaluatorFieldContextKey("numeric", instanceId1));
+
+		Assert.assertEquals(
+			BigDecimal.valueOf(70), ddmFormFieldsPropertyChanges.get("value"));
+
+		ddmFormFieldsPropertyChanges = _getDDMFormFieldPropertyChangesByKey(
+			ddmFormEvaluatorEvaluateResponse,
+			new DDMFormEvaluatorFieldContextKey("text1", instanceId2));
+
+		Assert.assertEquals(
+			text1Visible, ddmFormFieldsPropertyChanges.get("visible"));
+
+		ddmFormFieldsPropertyChanges = _getDDMFormFieldPropertyChangesByKey(
+			ddmFormEvaluatorEvaluateResponse,
+			new DDMFormEvaluatorFieldContextKey("text2", instanceId3));
+
+		Assert.assertEquals(
+			text2Visible, ddmFormFieldsPropertyChanges.get("visible"));
 	}
 
 	private static final Company _company = Mockito.mock(Company.class);

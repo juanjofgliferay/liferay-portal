@@ -38,11 +38,11 @@ import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portlet.test.MockLiferayPortletContext;
 
+import jakarta.portlet.Portlet;
+import jakarta.portlet.PortletPreferences;
+
 import java.util.Locale;
 import java.util.Map;
-
-import javax.portlet.Portlet;
-import javax.portlet.PortletPreferences;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -83,10 +83,10 @@ public class ContentDashboardAdminPortletGetPropsTest {
 				"vocabulary", serviceContext);
 
 		AssetCategory assetCategory1 = _assetCategoryLocalService.addCategory(
-			TestPropsValues.getUserId(), _company.getGroupId(), "category-1",
+			TestPropsValues.getUserId(), _company.getGroupId(), "category-b",
 			assetVocabulary.getVocabularyId(), serviceContext);
 		AssetCategory assetCategory2 = _assetCategoryLocalService.addCategory(
-			TestPropsValues.getUserId(), _company.getGroupId(), "category-2",
+			TestPropsValues.getUserId(), _company.getGroupId(), "category-a",
 			assetVocabulary.getVocabularyId(), serviceContext);
 
 		try {
@@ -117,7 +117,7 @@ public class ContentDashboardAdminPortletGetPropsTest {
 					JSONUtil.put(
 						"key", String.valueOf(assetCategory1.getCategoryId())
 					).put(
-						"name", "category-1"
+						"name", "category-b"
 					).put(
 						"value", 1L
 					).put(
@@ -126,7 +126,7 @@ public class ContentDashboardAdminPortletGetPropsTest {
 					JSONUtil.put(
 						"key", String.valueOf(assetCategory2.getCategoryId())
 					).put(
-						"name", "category-2"
+						"name", "category-a"
 					).put(
 						"value", 2L
 					).put(
@@ -635,15 +635,15 @@ public class ContentDashboardAdminPortletGetPropsTest {
 	}
 
 	@Inject
-	private static CompanyLocalService _companyLocalService;
-
-	@Inject
 	private AssetCategoryLocalService _assetCategoryLocalService;
 
 	@Inject
 	private AssetVocabularyLocalService _assetVocabularyLocalService;
 
 	private Company _company;
+
+	@Inject
+	private CompanyLocalService _companyLocalService;
 
 	@DeleteAfterTestRun
 	private Group _group;

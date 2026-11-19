@@ -5,15 +5,24 @@
 
 package com.liferay.headless.commerce.admin.catalog.internal.util.v1_0;
 
+import com.liferay.commerce.exception.NoSuchAvailabilityEstimateException;
 import com.liferay.commerce.model.CPDAvailabilityEstimate;
 import com.liferay.commerce.model.CPDefinitionInventory;
+import com.liferay.commerce.model.CommerceAvailabilityEstimate;
 import com.liferay.commerce.service.CPDAvailabilityEstimateService;
 import com.liferay.commerce.service.CPDefinitionInventoryService;
+import com.liferay.commerce.service.CommerceAvailabilityEstimateService;
 import com.liferay.headless.commerce.admin.catalog.dto.v1_0.ProductConfiguration;
+import com.liferay.headless.commerce.core.util.LanguageUtils;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.lazy.referencing.LazyReferencingThreadLocal;
 import com.liferay.portal.kernel.util.BigDecimalUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.Validator;
+
+import java.math.BigDecimal;
 
 /**
  * @author Alessio Antonio Rendina
@@ -21,7 +30,67 @@ import com.liferay.portal.kernel.util.StringUtil;
  */
 public class ProductConfigurationUtil {
 
+	public static String getAllowedOrderQuantities(
+		BigDecimal[] allowedOrderQuantities,
+		String defaultAllowedOrderQuantities) {
+
+		if (allowedOrderQuantities != null) {
+			return StringUtil.merge(allowedOrderQuantities, StringPool.SPACE);
+		}
+
+		if (Validator.isNull(defaultAllowedOrderQuantities)) {
+			return null;
+		}
+
+		return defaultAllowedOrderQuantities;
+	}
+
+	public static long getCommerceAvailabilityEstimateId(
+			CommerceAvailabilityEstimateService
+				commerceAvailabilityEstimateService,
+			long companyId, long defaultCommerceAvailabilityEstimateId,
+			ProductConfiguration productConfiguration)
+		throws PortalException {
+
+		String externalReferenceCode =
+			productConfiguration.getAvailabilityEstimateExternalReferenceCode();
+
+		if (Validator.isNull(externalReferenceCode)) {
+			return GetterUtil.getLong(
+				productConfiguration.getAvailabilityEstimateId(),
+				defaultCommerceAvailabilityEstimateId);
+		}
+
+		if (!LazyReferencingThreadLocal.isEnabled()) {
+			CommerceAvailabilityEstimate commerceAvailabilityEstimate =
+				commerceAvailabilityEstimateService.
+					fetchCommerceAvailabilityEstimateByExternalReferenceCode(
+						externalReferenceCode, companyId);
+
+			if (commerceAvailabilityEstimate == null) {
+				throw new NoSuchAvailabilityEstimateException(
+					"Unable to find availability estimate with external " +
+						"reference code " + externalReferenceCode);
+			}
+
+			return commerceAvailabilityEstimate.
+				getCommerceAvailabilityEstimateId();
+		}
+
+		CommerceAvailabilityEstimate commerceAvailabilityEstimate =
+			commerceAvailabilityEstimateService.
+				getOrAddEmptyCommerceAvailabilityEstimate(
+					externalReferenceCode,
+					LanguageUtils.getLocalizedMap(
+						productConfiguration.getAvailabilityEstimateName()));
+
+		return commerceAvailabilityEstimate.getCommerceAvailabilityEstimateId();
+	}
+
 	public static void updateCPDAvailabilityEstimate(
+			CommerceAvailabilityEstimateService
+				commerceAvailabilityEstimateService,
+			long companyId,
 			CPDAvailabilityEstimateService cpdAvailabilityEstimateService,
 			ProductConfiguration productConfiguration, long cpDefinitionId)
 		throws PortalException {
@@ -39,9 +108,9 @@ public class ProductConfigurationUtil {
 
 		cpdAvailabilityEstimateService.updateCPDAvailabilityEstimate(
 			0, cpDefinitionId,
-			GetterUtil.get(
-				productConfiguration.getAvailabilityEstimateId(),
-				commerceAvailabilityEstimateId));
+			getCommerceAvailabilityEstimateId(
+				commerceAvailabilityEstimateService, companyId,
+				commerceAvailabilityEstimateId, productConfiguration));
 	}
 
 	public static CPDefinitionInventory updateCPDefinitionInventory(
@@ -77,27 +146,12 @@ public class ProductConfigurationUtil {
 			BigDecimalUtil.get(
 				productConfiguration.getMaxOrderQuantity(),
 				cpDefinitionInventory.getMaxOrderQuantity()),
-			_getAllowedOrderQuantities(
-				cpDefinitionInventory, productConfiguration),
+			getAllowedOrderQuantities(
+				productConfiguration.getAllowedOrderQuantities(),
+				cpDefinitionInventory.getAllowedOrderQuantities()),
 			BigDecimalUtil.get(
 				productConfiguration.getMultipleOrderQuantity(),
 				cpDefinitionInventory.getMultipleOrderQuantity()));
-	}
-
-	private static String _getAllowedOrderQuantities(
-		CPDefinitionInventory cpDefinitionInventory,
-		ProductConfiguration productConfiguration) {
-
-		if (productConfiguration.getAllowedOrderQuantities() != null) {
-			return StringUtil.merge(
-				productConfiguration.getAllowedOrderQuantities());
-		}
-
-		if (cpDefinitionInventory == null) {
-			return null;
-		}
-
-		return cpDefinitionInventory.getAllowedOrderQuantities();
 	}
 
 }

@@ -5,6 +5,7 @@
 
 package com.liferay.batch.engine.internal.reader;
 
+import com.liferay.batch.engine.exception.BatchEngineImportTaskExecutorException;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
@@ -162,7 +163,8 @@ public class JSONLBatchEngineImportTaskItemReaderImplTest
 
 				Assert.fail();
 			}
-			catch (IllegalArgumentException illegalArgumentException) {
+			catch (BatchEngineImportTaskExecutorException
+						batchEngineImportTaskExecutorException) {
 			}
 		}
 	}
@@ -194,7 +196,8 @@ public class JSONLBatchEngineImportTaskItemReaderImplTest
 
 				Assert.fail();
 			}
-			catch (NoSuchFieldException noSuchFieldException) {
+			catch (BatchEngineImportTaskExecutorException
+						batchEngineImportTaskExecutorException) {
 			}
 		}
 	}
@@ -320,13 +323,15 @@ public class JSONLBatchEngineImportTaskItemReaderImplTest
 			sb.append("{");
 
 			for (int j = 0; j < singleRowValues.length; j++) {
-				if (singleRowValues[j] != null) {
-					sb.append("\"");
-					sb.append(columnNames[j]);
-					sb.append("\": ");
-					sb.append(singleRowValues[j]);
-					sb.append(",");
+				if (singleRowValues[j] == null) {
+					continue;
 				}
+
+				sb.append("\"");
+				sb.append(columnNames[j]);
+				sb.append("\": ");
+				sb.append(singleRowValues[j]);
+				sb.append(",");
 			}
 
 			sb.setIndex(sb.index() - 1);

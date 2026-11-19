@@ -20,7 +20,7 @@ renderResponse.setTitle(LanguageUtil.get(request, "review-changes"));
 <div class="publications-view-changes-wrapper">
 	<div>
 		<react:component
-			module="publications/js/views/ChangeTrackingChangesToolbar"
+			module="{ChangeTrackingChangesToolbar} from change-tracking-web"
 			props="<%= viewChangesDisplayContext.getToolbarReactData() %>"
 		/>
 	</div>
@@ -29,10 +29,10 @@ renderResponse.setTitle(LanguageUtil.get(request, "review-changes"));
 		navigationItems="<%= viewChangesDisplayContext.getViewNavigationItems() %>"
 	/>
 
-	<clay:container-fluid>
+	<div>
 		<react:component
-			module="publications/js/views/ChangeTrackingRelationshipsView"
+			module="{ChangeTrackingRelationshipsView} from change-tracking-web"
 			props="<%= viewChangesDisplayContext.getToolbarReactData() %>"
 		/>
-	</clay:container-fluid>
+	</div>
 </div>

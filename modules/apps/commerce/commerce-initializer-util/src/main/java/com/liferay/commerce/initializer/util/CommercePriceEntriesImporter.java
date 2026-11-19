@@ -29,7 +29,6 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserLocalService;
-import com.liferay.portal.kernel.settings.SystemSettingsLocator;
 import com.liferay.portal.kernel.util.FriendlyURLNormalizer;
 
 import java.math.BigDecimal;
@@ -53,10 +52,8 @@ public class CommercePriceEntriesImporter {
 		throws PortalException {
 
 		CommercePricingConfiguration commercePricingConfiguration =
-			_configurationProvider.getConfiguration(
-				CommercePricingConfiguration.class,
-				new SystemSettingsLocator(
-					CommercePricingConstants.SERVICE_NAME));
+			_configurationProvider.getSystemConfiguration(
+				CommercePricingConfiguration.class);
 
 		if (!Objects.equals(
 				commercePricingConfiguration.commercePricingCalculationKey(),
@@ -153,8 +150,10 @@ public class CommercePriceEntriesImporter {
 			_friendlyURLNormalizer.normalize(name);
 
 		CommercePriceList commercePriceList =
-			_commercePriceListLocalService.fetchByExternalReferenceCode(
-				priceListExternalReferenceCode, serviceContext.getCompanyId());
+			_commercePriceListLocalService.
+				fetchCommercePriceListByExternalReferenceCode(
+					priceListExternalReferenceCode,
+					serviceContext.getCompanyId());
 
 		if (commercePriceList == null) {
 			throw new NoSuchPriceListException(
@@ -165,13 +164,13 @@ public class CommercePriceEntriesImporter {
 			"externalReferenceCode");
 
 		CPInstance cpInstance =
-			_cpInstanceLocalService.fetchByExternalReferenceCode(
+			_cpInstanceLocalService.fetchCPInstanceByExternalReferenceCode(
 				externalReferenceCode, serviceContext.getCompanyId());
 
 		if (cpInstance == null) {
 			throw new NoSuchCPInstanceException(
-				"No CP instance found with external reference code " +
-					externalReferenceCode);
+				"No commerce product instance was found with external " +
+					"reference code " + externalReferenceCode);
 		}
 
 		CommercePriceEntry commercePriceEntry =

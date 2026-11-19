@@ -9,7 +9,7 @@ import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.URLUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.source.formatter.parser.JavaClass;
 import com.liferay.source.formatter.parser.JavaClassParser;
@@ -53,71 +53,11 @@ public class ChainingCheck extends BaseCheck {
 			_checkChainingOnParentheses(detailAST);
 		}
 
-		DetailAST parentDetailAST = detailAST.getParent();
-
-		if (parentDetailAST != null) {
+		if (!isDirectChildOfCompilationUnit(detailAST)) {
 			return;
 		}
 
 		_checkChainingOnMethodCalls(detailAST);
-	}
-
-	private void _checkChainingOnMethodCalls(DetailAST detailAST) {
-		List<DetailAST> methodCallDetailASTList = getAllChildTokens(
-			detailAST, true, TokenTypes.METHOD_CALL);
-
-		for (DetailAST methodCallDetailAST : methodCallDetailASTList) {
-			DetailAST dotDetailAST = methodCallDetailAST.findFirstToken(
-				TokenTypes.DOT);
-
-			if (dotDetailAST != null) {
-				List<DetailAST> childMethodCallDetailASTList =
-					getAllChildTokens(
-						dotDetailAST, false, TokenTypes.METHOD_CALL);
-
-				// Only check the method that is first in the chain
-
-				if (!childMethodCallDetailASTList.isEmpty()) {
-					continue;
-				}
-			}
-
-			ChainInformation chainInformation = getChainInformation(
-				methodCallDetailAST);
-
-			List<String> chainedMethodNames = chainInformation.getMethodNames();
-
-			_checkRequiredChaining(methodCallDetailAST, chainedMethodNames);
-
-			int chainSize = chainedMethodNames.size();
-
-			if (chainSize > 3) {
-				_checkChainOrder(methodCallDetailAST, chainedMethodNames);
-			}
-		}
-	}
-
-	private void _checkChainingOnParentheses(DetailAST detailAST) {
-		if (_isInsideConstructorThisCall(detailAST) ||
-			hasParentWithTokenType(detailAST, TokenTypes.SUPER_CTOR_CALL)) {
-
-			return;
-		}
-
-		DetailAST parentDetailAST = detailAST.getParent();
-
-		if (parentDetailAST.getType() != TokenTypes.DOT) {
-			return;
-		}
-
-		DetailAST previousSiblingDetailAST = detailAST.getPreviousSibling();
-
-		if (previousSiblingDetailAST.getType() != TokenTypes.TYPECAST) {
-			log(detailAST, _MSG_AVOID_PARENTHESES_CHAINING);
-		}
-		else if (isAttributeValue(_APPLY_TO_TYPE_CAST_KEY)) {
-			log(detailAST, _MSG_AVOID_TYPE_CAST_CHAINING);
-		}
 	}
 
 	private void _checkChainOrder(
@@ -142,6 +82,65 @@ public class ChainingCheck extends BaseCheck {
 
 		if (!unsortedNames.equals(middleMethodNames.toString())) {
 			log(methodCallDetailAST, _MSG_UNSORTED_RESPONSE);
+		}
+	}
+
+	private void _checkChainingOnMethodCalls(DetailAST detailAST) {
+		List<DetailAST> methodCallDetailASTs = getAllChildTokens(
+			detailAST, true, TokenTypes.METHOD_CALL);
+
+		for (DetailAST methodCallDetailAST : methodCallDetailASTs) {
+			DetailAST dotDetailAST = methodCallDetailAST.findFirstToken(
+				TokenTypes.DOT);
+
+			if (dotDetailAST != null) {
+				List<DetailAST> childMethodCallDetailASTs = getAllChildTokens(
+					dotDetailAST, false, TokenTypes.METHOD_CALL);
+
+				// Only check the method that is first in the chain
+
+				if (!childMethodCallDetailASTs.isEmpty()) {
+					continue;
+				}
+			}
+
+			ChainInformation chainInformation = getChainInformation(
+				methodCallDetailAST);
+
+			List<String> chainedMethodNames = chainInformation.getMethodNames();
+
+			_checkRequiredChaining(methodCallDetailAST, chainedMethodNames);
+
+			int chainSize = chainedMethodNames.size();
+
+			if (chainSize <= 3) {
+				continue;
+			}
+
+			_checkChainOrder(methodCallDetailAST, chainedMethodNames);
+		}
+	}
+
+	private void _checkChainingOnParentheses(DetailAST detailAST) {
+		if (_isInsideConstructorThisCall(detailAST) ||
+			hasParentWithTokenType(detailAST, TokenTypes.SUPER_CTOR_CALL)) {
+
+			return;
+		}
+
+		DetailAST parentDetailAST = detailAST.getParent();
+
+		if (parentDetailAST.getType() != TokenTypes.DOT) {
+			return;
+		}
+
+		DetailAST previousSiblingDetailAST = detailAST.getPreviousSibling();
+
+		if (previousSiblingDetailAST.getType() != TokenTypes.TYPECAST) {
+			log(detailAST, _MSG_AVOID_PARENTHESES_CHAINING);
+		}
+		else if (isAttributeValue(_APPLY_TO_TYPE_CAST_KEY)) {
+			log(detailAST, _MSG_AVOID_TYPE_CAST_CHAINING);
 		}
 	}
 
@@ -174,6 +173,16 @@ public class ChainingCheck extends BaseCheck {
 			requiredChainingMethodNames = Arrays.asList(
 				"put", "putOnce", "putOpt");
 		}
+		else if (fullyQualifiedClassName.startsWith(
+					"com.liferay.frontend.data.set.view.table.") &&
+				 fullyQualifiedClassName.endsWith("FDSTableSchemaField")) {
+
+			requiredChainingMethodNames = Arrays.asList(
+				"setActionId", "setContentRenderer",
+				"setContentRendererClientExtension",
+				"setContentRendererModuleURL", "setFieldName", "setLabel",
+				"setLocalizeLabel", "setSortable", "setSortingOrder");
+		}
 		else {
 			requiredChainingMethodNames = _getRequiredChainingMethodNames(
 				fullyQualifiedClassName);
@@ -190,23 +199,8 @@ public class ChainingCheck extends BaseCheck {
 			return;
 		}
 
-		DetailAST topLevelMethodCallDetailAST = methodCallDetailAST;
-
-		while (true) {
-			DetailAST parentDetailAST = topLevelMethodCallDetailAST.getParent();
-
-			if (parentDetailAST.getType() != TokenTypes.DOT) {
-				break;
-			}
-
-			parentDetailAST = parentDetailAST.getParent();
-
-			if (parentDetailAST.getType() != TokenTypes.METHOD_CALL) {
-				break;
-			}
-
-			topLevelMethodCallDetailAST = parentDetailAST;
-		}
+		DetailAST topLevelMethodCallDetailAST = getTopLevelMethodCallDetailAST(
+			methodCallDetailAST);
 
 		DetailAST parentDetailAST = topLevelMethodCallDetailAST.getParent();
 
@@ -256,7 +250,8 @@ public class ChainingCheck extends BaseCheck {
 
 		if (classOrVariableName.equals(
 				getClassOrVariableName(nextMethodCallDetailAST)) &&
-			!Objects.equals(getMethodName(nextMethodCallDetailAST), "remove")) {
+			requiredChainingMethodNames.contains(
+				getMethodName(nextMethodCallDetailAST))) {
 
 			log(
 				methodCallDetailAST, _MSG_REQUIRED_CHAINING,
@@ -288,8 +283,7 @@ public class ChainingCheck extends BaseCheck {
 					requiredChainingClassFileName));
 
 			return JavaClassParser.parseJavaClass(
-				requiredChainingClassFileName,
-				StringUtil.read(url.openStream()));
+				requiredChainingClassFileName, URLUtil.toString(url));
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
@@ -336,11 +330,13 @@ public class ChainingCheck extends BaseCheck {
 
 				JavaSignature javaSignature = javaMethod.getSignature();
 
-				if (Objects.equals(
+				if (!Objects.equals(
 						javaClass.getName(), javaSignature.getReturnType())) {
 
-					requiredChainingMethodNames.add(javaMethod.getName());
+					continue;
 				}
+
+				requiredChainingMethodNames.add(javaMethod.getName());
 			}
 
 			_requiredChainingMethodNamesMap.put(

@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -383,23 +384,6 @@ public class CommerceShipmentItemLocalServiceUtil {
 			commerceShipmentId, start, end, orderByComparator);
 	}
 
-	public static List<CommerceShipmentItem> getCommerceShipmentItems(
-		long commerceShipmentId, long commerceOrderItemId, int start, int end,
-		OrderByComparator<CommerceShipmentItem> orderByComparator) {
-
-		return getService().getCommerceShipmentItems(
-			commerceShipmentId, commerceOrderItemId, start, end,
-			orderByComparator);
-	}
-
-	public static List<CommerceShipmentItem>
-		getCommerceShipmentItemsByCommerceOrderItemId(
-			long commerceOrderItemId) {
-
-		return getService().getCommerceShipmentItemsByCommerceOrderItemId(
-			commerceOrderItemId);
-	}
-
 	/**
 	 * Returns all the commerce shipment items matching the UUID and company.
 	 *
@@ -445,13 +429,6 @@ public class CommerceShipmentItemLocalServiceUtil {
 
 	public static int getCommerceShipmentItemsCount(long commerceShipmentId) {
 		return getService().getCommerceShipmentItemsCount(commerceShipmentId);
-	}
-
-	public static int getCommerceShipmentItemsCountByCommerceOrderItemId(
-		long commerceOrderItemId) {
-
-		return getService().getCommerceShipmentItemsCountByCommerceOrderItemId(
-			commerceOrderItemId);
 	}
 
 	public static java.math.BigDecimal getCommerceShipmentOrderItemsQuantity(
@@ -529,13 +506,13 @@ public class CommerceShipmentItemLocalServiceUtil {
 	}
 
 	public static CommerceShipmentItemLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(CommerceShipmentItemLocalService service) {
-		_service = service;
-	}
-
-	private static volatile CommerceShipmentItemLocalService _service;
+	private static final Snapshot<CommerceShipmentItemLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			CommerceShipmentItemLocalServiceUtil.class,
+			CommerceShipmentItemLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1866782898

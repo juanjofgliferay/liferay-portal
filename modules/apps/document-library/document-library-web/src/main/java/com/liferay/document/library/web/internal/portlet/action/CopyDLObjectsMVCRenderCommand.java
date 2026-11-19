@@ -23,17 +23,18 @@ import com.liferay.portal.kernel.servlet.SessionErrors;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.PortletException;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
-
-import javax.portlet.PortletException;
-import javax.portlet.PortletRequest;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -43,9 +44,9 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + DLPortletKeys.DOCUMENT_LIBRARY,
-		"javax.portlet.name=" + DLPortletKeys.DOCUMENT_LIBRARY_ADMIN,
-		"javax.portlet.name=" + DLPortletKeys.MEDIA_GALLERY_DISPLAY,
+		"jakarta.portlet.name=" + DLPortletKeys.DOCUMENT_LIBRARY,
+		"jakarta.portlet.name=" + DLPortletKeys.DOCUMENT_LIBRARY_ADMIN,
+		"jakarta.portlet.name=" + DLPortletKeys.MEDIA_GALLERY_DISPLAY,
 		"mvc.command.name=/document_library/copy_dl_objects"
 	},
 	service = MVCRenderCommand.class
@@ -66,11 +67,9 @@ public class CopyDLObjectsMVCRenderCommand implements MVCRenderCommand {
 			CopyDLObjectsDisplayContext copyDLObjectsDisplayContext =
 				new CopyDLObjectsDisplayContext(
 					_portal.getHttpServletRequest(renderRequest),
-					_portal.getLiferayPortletResponse(renderResponse),
+					_portal.getLiferayPortletResponse(renderResponse), size,
 					(ThemeDisplay)renderRequest.getAttribute(
 						WebKeys.THEME_DISPLAY));
-
-			copyDLObjectsDisplayContext.setSize(size);
 
 			renderRequest.setAttribute(
 				CopyDLObjectsDisplayContext.class.getName(),
@@ -139,11 +138,15 @@ public class CopyDLObjectsMVCRenderCommand implements MVCRenderCommand {
 		throws PortletException {
 
 		try {
-			HttpServletResponse httpServletResponse =
-				_portal.getHttpServletResponse(renderResponse);
-
-			httpServletResponse.sendRedirect(
+			String redirect = _portal.escapeRedirect(
 				ParamUtil.getString(renderRequest, "redirect"));
+
+			if (Validator.isNotNull(redirect)) {
+				HttpServletResponse httpServletResponse =
+					_portal.getHttpServletResponse(renderResponse);
+
+				httpServletResponse.sendRedirect(redirect);
+			}
 		}
 		catch (IOException ioException) {
 			throw new PortletException(ioException);

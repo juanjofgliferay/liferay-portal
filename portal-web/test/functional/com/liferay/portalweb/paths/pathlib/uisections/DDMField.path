@@ -56,11 +56,6 @@
 	<td></td>
 </tr>
 <tr>
-	<td>NESTED_INPUT</td>
-	<td>//div[contains(@class,'nested-separator')][//following-sibling::div[1][//label[normalize-space(text())='${key_fieldName}']]]//following-sibling::div[2]//label[normalize-space(text())='${key_nestedFieldName}']//..//input</td>
-	<td></td>
-</tr>
-<tr>
 	<td>RADIO</td>
 	<td>//div[@data-fieldname='${key_fieldName}']//label[contains(.,'${key_radioValue}')]</td>
 	<td></td>
@@ -107,7 +102,7 @@
 </tr>
 <tr>
 	<td>REMOVE_SPECIFIC_REPEATED_FIELD</td>
-	<td>//div[@class='ddm-field' and contains(.,'${key_fieldValue}')]//button[@class= 'ddm-form-field-repeatable-delete-button p-0 btn btn-sm btn-primary']</td>
+	<td>//div[@class='ddm-field' and contains(.,'${key_fieldValue}')]//button[contains(@class,'ddm-form-field-repeatable-delete-button')]</td>
 	<td></td>
 </tr>
 </tbody>

@@ -7,6 +7,7 @@ package com.liferay.notification.service;
 
 import com.liferay.notification.model.NotificationTemplate;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.module.service.Snapshot;
 
 /**
  * Provides the remote service utility for NotificationTemplate. This utility wraps
@@ -65,6 +66,15 @@ public class NotificationTemplateServiceUtil {
 		return getService().getNotificationTemplate(notificationTemplateId);
 	}
 
+	public static NotificationTemplate
+			getNotificationTemplateByExternalReferenceCode(
+				String externalReferenceCode, long companyId)
+		throws PortalException {
+
+		return getService().getNotificationTemplateByExternalReferenceCode(
+			externalReferenceCode, companyId);
+	}
+
 	/**
 	 * Returns the OSGi service identifier.
 	 *
@@ -83,13 +93,13 @@ public class NotificationTemplateServiceUtil {
 	}
 
 	public static NotificationTemplateService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(NotificationTemplateService service) {
-		_service = service;
-	}
-
-	private static volatile NotificationTemplateService _service;
+	private static final Snapshot<NotificationTemplateService>
+		_serviceSnapshot = new Snapshot<>(
+			NotificationTemplateServiceUtil.class,
+			NotificationTemplateService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1989646015

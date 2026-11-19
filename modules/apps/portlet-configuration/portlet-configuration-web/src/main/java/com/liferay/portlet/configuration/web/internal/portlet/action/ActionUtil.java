@@ -34,21 +34,21 @@ import com.liferay.portlet.portletconfiguration.util.PublicRenderParameterConfig
 import com.liferay.portlet.portletconfiguration.util.PublicRenderParameterIdentifierComparator;
 import com.liferay.portlet.portletconfiguration.util.PublicRenderParameterIdentifierConfigurationComparator;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.PortletPreferences;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.ResourceRequest;
+
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.PortletPreferences;
-import javax.portlet.PortletRequest;
-import javax.portlet.RenderRequest;
-import javax.portlet.ResourceRequest;
-
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Jorge Ferrer
@@ -59,6 +59,30 @@ public class ActionUtil {
 	public static final String ACTION = "_ACTION_";
 
 	public static final String PRESELECTED = "_PRESELECTED_";
+
+	public static void checkConfigurationPermission(
+			PortletRequest portletRequest)
+		throws PortalException {
+
+		ThemeDisplay themeDisplay = (ThemeDisplay)portletRequest.getAttribute(
+			WebKeys.THEME_DISPLAY);
+
+		PermissionChecker permissionChecker =
+			themeDisplay.getPermissionChecker();
+
+		String portletId = ParamUtil.getString(
+			portletRequest, "portletResource");
+
+		if (!PortletPermissionUtil.contains(
+				permissionChecker, themeDisplay.getScopeGroupId(),
+				PortletConfigurationLayoutUtil.getLayout(themeDisplay),
+				portletId, ActionKeys.CONFIGURATION)) {
+
+			throw new PrincipalException.MustHavePermission(
+				permissionChecker, Portlet.class.getName(), portletId,
+				ActionKeys.CONFIGURATION);
+		}
+	}
 
 	public static PortletPreferences getLayoutPortletSetup(
 		PortletRequest portletRequest, Portlet portlet) {
@@ -88,13 +112,11 @@ public class ActionUtil {
 			for (PublicRenderParameter publicRenderParameter :
 					portlet.getPublicRenderParameters()) {
 
-				if (!identifiers.contains(
-						publicRenderParameter.getIdentifier())) {
-
-					identifiers.add(publicRenderParameter.getIdentifier());
-
-					publicRenderParameters.add(publicRenderParameter);
+				if (!identifiers.add(publicRenderParameter.getIdentifier())) {
+					continue;
 				}
+
+				publicRenderParameters.add(publicRenderParameter);
 			}
 		}
 
@@ -105,27 +127,14 @@ public class ActionUtil {
 	public static Portlet getPortlet(PortletRequest portletRequest)
 		throws Exception {
 
+		checkConfigurationPermission(portletRequest);
+
 		ThemeDisplay themeDisplay = (ThemeDisplay)portletRequest.getAttribute(
 			WebKeys.THEME_DISPLAY);
 
-		PermissionChecker permissionChecker =
-			themeDisplay.getPermissionChecker();
-
-		String portletId = ParamUtil.getString(
-			portletRequest, "portletResource");
-
-		if (!PortletPermissionUtil.contains(
-				permissionChecker, themeDisplay.getScopeGroupId(),
-				PortletConfigurationLayoutUtil.getLayout(themeDisplay),
-				portletId, ActionKeys.CONFIGURATION)) {
-
-			throw new PrincipalException.MustHavePermission(
-				permissionChecker, Portlet.class.getName(), portletId,
-				ActionKeys.CONFIGURATION);
-		}
-
 		return PortletLocalServiceUtil.getPortletById(
-			themeDisplay.getCompanyId(), portletId);
+			themeDisplay.getCompanyId(),
+			ParamUtil.getString(portletRequest, "portletResource"));
 	}
 
 	public static void getPublicRenderParameterConfigurationList(
@@ -210,7 +219,8 @@ public class ActionUtil {
 		}
 
 		String title = PortletConfigurationUtil.getPortletTitle(
-			portletPreferences, themeDisplay.getLanguageId());
+			portlet.getPortletId(), portletPreferences,
+			themeDisplay.getLanguageId());
 
 		if (Validator.isNull(title)) {
 			ServletContext servletContext =
@@ -250,7 +260,7 @@ public class ActionUtil {
 			renderRequest, portletPreferences);
 
 		httpServletRequest.setAttribute(
-			JavaConstants.JAVAX_PORTLET_REQUEST, renderRequest);
+			JavaConstants.JAKARTA_PORTLET_REQUEST, renderRequest);
 
 		return renderRequest;
 	}

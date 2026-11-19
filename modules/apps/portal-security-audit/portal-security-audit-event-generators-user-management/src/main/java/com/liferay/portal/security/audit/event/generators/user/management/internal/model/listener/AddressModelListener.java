@@ -45,8 +45,10 @@ public class AddressModelListener extends BaseModelListener<Address> {
 			if (!attributes.isEmpty()) {
 				AuditMessage auditMessage =
 					AuditMessageBuilder.buildAuditMessage(
-						EventTypes.UPDATE, User.class.getName(),
-						address.getClassPK(), attributes);
+						User.class.getName(), address.getClassPK(),
+						EventTypes.UPDATE, attributes);
+
+				auditMessage.setCompanyId(address.getCompanyId());
 
 				_auditRouter.route(auditMessage);
 			}

@@ -33,6 +33,10 @@ public class TalendArchive {
 		return _contextProperties;
 	}
 
+	public String getJVMOptions() {
+		return _jvmOptions;
+	}
+
 	public String getJobDirectory() {
 		return _jobDirectory;
 	}
@@ -49,16 +53,8 @@ public class TalendArchive {
 		return _jobMainClassFQN;
 	}
 
-	public String getJVMOptions() {
-		return _jvmOptions;
-	}
-
 	public boolean hasJVMOptions() {
-		if (Validator.isNotNull(_jvmOptions)) {
-			return true;
-		}
-
-		return false;
+		return Validator.isNotNull(_jvmOptions);
 	}
 
 	public static class Builder {
@@ -155,9 +151,11 @@ public class TalendArchive {
 
 				sb.append(jvmOption);
 
-				if (iterator.hasNext()) {
-					sb.append(StringPool.SPACE);
+				if (!iterator.hasNext()) {
+					continue;
 				}
+
+				sb.append(StringPool.SPACE);
 			}
 
 			return sb.toString();

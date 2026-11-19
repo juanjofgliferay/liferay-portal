@@ -12,11 +12,11 @@ CommerceCatalogDisplayContext commerceCatalogDisplayContext = (CommerceCatalogDi
 %>
 
 <liferay-ui:error embed="<%= false %>" exception="<%= CommerceCatalogProductsException.class %>" message="you-cannot-delete-catalogs-that-have-products" />
+<liferay-ui:error embed="<%= false %>" exception="<%= CommerceCatalogSystemException.class %>" message="you-cannot-delete-master-catalog" />
 
 <frontend-data-set:classic-display
 	creationMenu="<%= commerceCatalogDisplayContext.getCreationMenu() %>"
 	dataProviderKey="<%= CommerceCatalogFDSNames.CATALOGS %>"
 	id="<%= CommerceCatalogFDSNames.CATALOGS %>"
-	itemsPerPage="<%= 10 %>"
 	style="fluid"
 />

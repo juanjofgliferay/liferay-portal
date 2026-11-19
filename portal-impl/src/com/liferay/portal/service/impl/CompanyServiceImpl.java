@@ -6,30 +6,45 @@
 package com.liferay.portal.service.impl;
 
 import com.liferay.petra.function.UnsafeConsumer;
+import com.liferay.petra.string.StringPool;
+import com.liferay.portal.db.partition.util.DBPartitionUtil;
+import com.liferay.portal.kernel.audit.AuditException;
+import com.liferay.portal.kernel.audit.AuditMessage;
+import com.liferay.portal.kernel.audit.AuditRouterUtil;
 import com.liferay.portal.kernel.bean.BeanReference;
+import com.liferay.portal.kernel.exception.CompanyVirtualHostException;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.jsonwebservice.JSONWebService;
 import com.liferay.portal.kernel.jsonwebservice.JSONWebServiceMode;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Address;
 import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.EmailAddress;
+import com.liferay.portal.kernel.model.ListTypeConstants;
 import com.liferay.portal.kernel.model.Phone;
+import com.liferay.portal.kernel.model.VirtualHost;
 import com.liferay.portal.kernel.model.Website;
 import com.liferay.portal.kernel.model.role.RoleConstants;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.service.RoleLocalService;
+import com.liferay.portal.kernel.service.VirtualHostLocalService;
+import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.PrefsPropsUtil;
+import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.service.base.CompanyServiceBaseImpl;
 import com.liferay.portlet.usersadmin.util.UsersAdminUtil;
 import com.liferay.ratings.kernel.transformer.RatingsDataTransformerUtil;
 
+import jakarta.portlet.PortletPreferences;
+
 import java.io.InputStream;
 
 import java.util.List;
-
-import javax.portlet.PortletPreferences;
 
 /**
  * Provides the local service for accessing, adding, checking, and updating
@@ -69,8 +84,8 @@ public class CompanyServiceImpl extends CompanyServiceBaseImpl {
 		}
 
 		return companyLocalService.addCompany(
-			companyId, webId, virtualHost, mx, maxUsers, active, null, null,
-			null, null, null, null);
+			companyId, webId, virtualHost, mx, maxUsers, active, true, null,
+			null, null, null, null, null);
 	}
 
 	/**
@@ -85,9 +100,10 @@ public class CompanyServiceImpl extends CompanyServiceBaseImpl {
 	 * @return the company
 	 */
 	@JSONWebService(mode = JSONWebServiceMode.IGNORE)
+	@Override
 	public Company addCompany(
-			String webId, String virtualHost, String mx, int maxUsers,
-			boolean active, String defaultAdminPassword,
+			Long companyId, String webId, String virtualHost, String mx,
+			int maxUsers, boolean active, String defaultAdminPassword,
 			String defaultAdminScreenName, String defaultAdminEmailAddress,
 			String defaultAdminFirstName, String defaultAdminMiddleName,
 			String defaultAdminLastName)
@@ -100,10 +116,112 @@ public class CompanyServiceImpl extends CompanyServiceBaseImpl {
 		}
 
 		return companyLocalService.addCompany(
-			null, webId, virtualHost, mx, maxUsers, active,
+			companyId, webId, virtualHost, mx, maxUsers, active, true,
 			defaultAdminPassword, defaultAdminScreenName,
 			defaultAdminEmailAddress, defaultAdminFirstName,
 			defaultAdminMiddleName, defaultAdminLastName);
+	}
+
+	@JSONWebService(mode = JSONWebServiceMode.IGNORE)
+	@Override
+	public Company addDBPartitionCompany(
+			String schemaName, String name, String virtualHost, String webId)
+		throws PortalException {
+
+		PermissionChecker permissionChecker = getPermissionChecker();
+
+		if (!permissionChecker.isOmniadmin()) {
+			throw new PrincipalException.MustBeOmniadmin(permissionChecker);
+		}
+
+		String databaseExportedPartitionSchemaNamePrefix =
+			DBPartitionUtil.DATABASE_EXPORTED_PARTITION_SCHEMA_NAME_PREFIX;
+
+		if (!StringUtil.startsWith(
+				schemaName, databaseExportedPartitionSchemaNamePrefix)) {
+
+			throw new IllegalArgumentException(
+				"Invalid schema name \"" + schemaName + "\"");
+		}
+
+		long companyId = GetterUtil.getLong(
+			schemaName.substring(
+				databaseExportedPartitionSchemaNamePrefix.length()));
+
+		if (companyId <= 0) {
+			throw new IllegalArgumentException(
+				"Invalid schema name \"" + schemaName + "\"");
+		}
+
+		Company company = companyLocalService.addDBPartitionCompany(
+			companyId, name, virtualHost, webId);
+
+		if (AuditRouterUtil.isDeployed()) {
+			long userId = getUserId();
+
+			try {
+				AuditRouterUtil.route(
+					new AuditMessage(
+						0, company.getCompanyId(), userId,
+						PortalUtil.getUserName(userId, StringPool.BLANK), null,
+						JSONUtil.put(
+							"virtualHostname", company.getVirtualHostname()
+						).put(
+							"webId", company.getWebId()
+						),
+						Company.class.getName(),
+						String.valueOf(company.getCompanyId()), "ADD", null));
+			}
+			catch (AuditException auditException) {
+				if (_log.isWarnEnabled()) {
+					_log.warn("Unable to route audit message", auditException);
+				}
+			}
+		}
+
+		return company;
+	}
+
+	@JSONWebService(mode = JSONWebServiceMode.IGNORE)
+	@Override
+	public Company copyDBPartitionCompany(
+			long fromCompanyId, Long toCompanyId, String name,
+			String virtualHost, String webId)
+		throws PortalException {
+
+		PermissionChecker permissionChecker = getPermissionChecker();
+
+		if (!permissionChecker.isOmniadmin()) {
+			throw new PrincipalException.MustBeOmniadmin(permissionChecker);
+		}
+
+		Company company = companyLocalService.copyDBPartitionCompany(
+			fromCompanyId, toCompanyId, name, virtualHost, webId);
+
+		if (AuditRouterUtil.isDeployed()) {
+			long userId = getUserId();
+
+			try {
+				AuditRouterUtil.route(
+					new AuditMessage(
+						0, company.getCompanyId(), userId,
+						PortalUtil.getUserName(userId, StringPool.BLANK), null,
+						JSONUtil.put(
+							"virtualHostname", company.getVirtualHostname()
+						).put(
+							"webId", company.getWebId()
+						),
+						Company.class.getName(),
+						String.valueOf(company.getCompanyId()), "COPY", null));
+			}
+			catch (AuditException auditException) {
+				if (_log.isWarnEnabled()) {
+					_log.warn("Unable to route audit message", auditException);
+				}
+			}
+		}
+
+		return company;
 	}
 
 	@JSONWebService(mode = JSONWebServiceMode.IGNORE)
@@ -134,6 +252,44 @@ public class CompanyServiceImpl extends CompanyServiceBaseImpl {
 		companyLocalService.deleteLogo(companyId);
 	}
 
+	@JSONWebService(mode = JSONWebServiceMode.IGNORE)
+	@Override
+	public Company exportCompany(long companyId) throws PortalException {
+		PermissionChecker permissionChecker = getPermissionChecker();
+
+		if (!permissionChecker.isOmniadmin()) {
+			throw new PrincipalException.MustBeOmniadmin(permissionChecker);
+		}
+
+		Company company = companyLocalService.exportCompany(companyId);
+
+		if (AuditRouterUtil.isDeployed()) {
+			long userId = getUserId();
+
+			try {
+				AuditRouterUtil.route(
+					new AuditMessage(
+						0, company.getCompanyId(), userId,
+						PortalUtil.getUserName(userId, StringPool.BLANK), null,
+						JSONUtil.put(
+							"virtualHostname", company.getVirtualHostname()
+						).put(
+							"webId", company.getWebId()
+						),
+						Company.class.getName(),
+						String.valueOf(company.getCompanyId()), "EXPORT",
+						null));
+			}
+			catch (AuditException auditException) {
+				if (_log.isWarnEnabled()) {
+					_log.warn("Unable to route audit message", auditException);
+				}
+			}
+		}
+
+		return company;
+	}
+
 	@Override
 	public void forEachCompany(
 			UnsafeConsumer<Company, Exception> unsafeConsumer)
@@ -154,8 +310,14 @@ public class CompanyServiceImpl extends CompanyServiceBaseImpl {
 	 * @return the companies
 	 */
 	@Override
-	public List<Company> getCompanies() {
-		return companyLocalService.getCompanies();
+	public List<Company> getCompanies() throws PortalException {
+		PermissionChecker permissionChecker = getPermissionChecker();
+
+		if (!permissionChecker.isOmniadmin()) {
+			throw new PrincipalException.MustBeOmniadmin(permissionChecker);
+		}
+
+		return companyPersistence.findAll();
 	}
 
 	/**
@@ -166,42 +328,43 @@ public class CompanyServiceImpl extends CompanyServiceBaseImpl {
 	 */
 	@Override
 	public Company getCompanyById(long companyId) throws PortalException {
-		return companyLocalService.getCompanyById(companyId);
-	}
+		PermissionChecker permissionChecker = getPermissionChecker();
 
-	/**
-	 * Returns the company with the logo.
-	 *
-	 * @param  logoId the ID of the company's logo
-	 * @return Returns the company with the logo
-	 */
-	@Override
-	public Company getCompanyByLogoId(long logoId) throws PortalException {
-		return companyLocalService.getCompanyByLogoId(logoId);
-	}
+		if (!permissionChecker.isOmniadmin() &&
+			(companyId != permissionChecker.getCompanyId())) {
 
-	/**
-	 * Returns the company with the mail domian.
-	 *
-	 * @param  mx the company's mail domain
-	 * @return Returns the company with the mail domain
-	 */
-	@Override
-	public Company getCompanyByMx(String mx) throws PortalException {
-		return companyLocalService.getCompanyByMx(mx);
+			throw new PrincipalException();
+		}
+
+		return companyPersistence.findByPrimaryKey(companyId);
 	}
 
 	/**
 	 * Returns the company with the virtual host name.
 	 *
-	 * @param  virtualHost the company's virtual host name
+	 * @param  virtualHostname the company's virtual host name
 	 * @return Returns the company with the virtual host name
 	 */
 	@Override
-	public Company getCompanyByVirtualHost(String virtualHost)
+	public Company getCompanyByVirtualHost(String virtualHostname)
 		throws PortalException {
 
-		return companyLocalService.getCompanyByVirtualHost(virtualHost);
+		VirtualHost virtualHost = _virtualHostLocalService.fetchVirtualHost(
+			virtualHostname);
+
+		if (virtualHost == null) {
+			throw new CompanyVirtualHostException(
+				"Unable to find a virtual host with hostname " +
+					virtualHostname);
+		}
+
+		if (virtualHost.getLayoutSetId() != 0) {
+			throw new CompanyVirtualHostException(
+				"Virtual host is associated with layout set " +
+					virtualHost.getLayoutSetId());
+		}
+
+		return companyPersistence.findByPrimaryKey(virtualHost.getCompanyId());
 	}
 
 	/**
@@ -212,7 +375,7 @@ public class CompanyServiceImpl extends CompanyServiceBaseImpl {
 	 */
 	@Override
 	public Company getCompanyByWebId(String webId) throws PortalException {
-		return companyLocalService.getCompanyByWebId(webId);
+		return companyPersistence.findByWebId(webId);
 	}
 
 	/**
@@ -372,7 +535,8 @@ public class CompanyServiceImpl extends CompanyServiceBaseImpl {
 			companyId, oldCompanyPortletPreferences, unicodeProperties);
 
 		UsersAdminUtil.updateAddresses(
-			Company.class.getName(), company.getCompanyId(), addresses);
+			Company.class.getName(), company.getCompanyId(), addresses,
+			ListTypeConstants.COMPANY_ADDRESS);
 
 		UsersAdminUtil.updateEmailAddresses(
 			Company.class.getName(), company.getCompanyId(), emailAddresses);
@@ -510,7 +674,13 @@ public class CompanyServiceImpl extends CompanyServiceBaseImpl {
 			strangersWithMx, strangersVerify, siteLogo);
 	}
 
+	private static final Log _log = LogFactoryUtil.getLog(
+		CompanyServiceImpl.class);
+
 	@BeanReference(type = RoleLocalService.class)
 	private RoleLocalService _roleLocalService;
+
+	@BeanReference(type = VirtualHostLocalService.class)
+	private VirtualHostLocalService _virtualHostLocalService;
 
 }

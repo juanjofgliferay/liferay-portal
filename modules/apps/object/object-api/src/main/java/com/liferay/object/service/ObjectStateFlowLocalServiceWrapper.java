@@ -400,6 +400,16 @@ public class ObjectStateFlowLocalServiceWrapper
 			newObjectField, oldObjectField);
 	}
 
+	@Override
+	public void updateObjectStateFlow(
+			long userId, long objectStateFlowId,
+			java.util.List<com.liferay.object.model.ObjectState> objectStates)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		_objectStateFlowLocalService.updateObjectStateFlow(
+			userId, objectStateFlowId, objectStates);
+	}
+
 	/**
 	 * Updates the object state flow in the database or adds it if it does not yet exist. Also notifies the appropriate model listeners.
 	 *
@@ -438,3 +448,4 @@ public class ObjectStateFlowLocalServiceWrapper
 	private ObjectStateFlowLocalService _objectStateFlowLocalService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-703836354

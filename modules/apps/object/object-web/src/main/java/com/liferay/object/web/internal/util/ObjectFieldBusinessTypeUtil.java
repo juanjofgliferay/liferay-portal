@@ -6,9 +6,11 @@
 package com.liferay.object.web.internal.util;
 
 import com.liferay.object.field.business.type.ObjectFieldBusinessType;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
+import com.liferay.portal.kernel.util.ListUtil;
 
-import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -21,14 +23,10 @@ public class ObjectFieldBusinessTypeUtil {
 	public static List<Map<String, String>> getObjectFieldBusinessTypeMaps(
 		Locale locale, List<ObjectFieldBusinessType> objectFieldBusinessTypes) {
 
-		List<Map<String, String>> objectFieldBusinessTypeMaps =
-			new ArrayList<>();
-
-		for (ObjectFieldBusinessType objectFieldBusinessType :
-				objectFieldBusinessTypes) {
-
-			objectFieldBusinessTypeMaps.add(
-				HashMapBuilder.put(
+		return ListUtil.sort(
+			TransformUtil.transform(
+				objectFieldBusinessTypes,
+				objectFieldBusinessType -> HashMapBuilder.put(
 					"businessType", objectFieldBusinessType.getName()
 				).put(
 					"dbType", objectFieldBusinessType.getDBType()
@@ -39,10 +37,8 @@ public class ObjectFieldBusinessTypeUtil {
 					"label", objectFieldBusinessType.getLabel(locale)
 				).put(
 					"name", objectFieldBusinessType.getName()
-				).build());
-		}
-
-		return objectFieldBusinessTypeMaps;
+				).build()),
+			Comparator.comparing(item -> item.get("label")));
 	}
 
 }

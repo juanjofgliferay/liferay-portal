@@ -7,14 +7,16 @@ import ClayButton from '@clayui/button';
 import ClayForm, {ClayInput, ClaySelect} from '@clayui/form';
 import ClayIcon from '@clayui/icon';
 import ClayLayout from '@clayui/layout';
-import {sub} from 'frontend-js-web';
+import {sub, uuidv4} from 'frontend-js-web';
 import PropTypes from 'prop-types';
 import React, {useState} from 'react';
-import {v4 as uuidv4} from 'uuid';
 
 import '../css/redirect_pattern.scss';
 
-const REGEX_URL_ALLOW_RELATIVE = /((([A-Za-z]{3,9}:(?:\/\/)?)|\/(?:[-;:&=+$,\w]+@)?[A-Za-z0-9.-]+|(https?:\/\/|www.|[-;:&=+$,\w]+@)[A-Za-z0-9.-]+)((?:\/[+~%/.\w-_]*)?\??(?:[-+=&;%@.\w_]*)#?(?:[\w]*))((.*):(\d*)\/?(.*))?)/;
+import ClayAlert from '@clayui/alert';
+
+const REGEX_URL_ALLOW_RELATIVE =
+	/((([A-Za-z]{3,9}:(?:\/\/)?)|\/(?:[-;:&=+$,\w]+@)?[A-Za-z0-9.-]+|(https?:\/\/|www.|[-;:&=+$,\w]+@)[A-Za-z0-9.-]+)((?:\/[+~%/.\w-_]*)?\??(?:[-+=&;%@.\w_]*)#?(?:[\w]*))((.*):(\d*)\/?(.*))?)/;
 
 const urlAllowRelative = (url) => REGEX_URL_ALLOW_RELATIVE.test(url);
 
@@ -174,6 +176,7 @@ const RedirectPattern = ({
 	portletNamespace,
 	strings,
 	userAgents,
+	isStagingEnvironment,
 }) => {
 	const emptyRow = () => ({
 		destinationURL: '',
@@ -188,7 +191,7 @@ const RedirectPattern = ({
 					...item,
 					error: false,
 					id: uuidv4(),
-			  }))
+				}))
 			: [emptyRow()]
 	);
 
@@ -213,7 +216,7 @@ const RedirectPattern = ({
 	return (
 		<form
 			action={actionUrl}
-			className="container-fluid container-fluid-max-xl mt-4"
+			className="container-fluid mt-4"
 			method="post"
 			name={`${portletNamespace}fm`}
 		>
@@ -226,8 +229,19 @@ const RedirectPattern = ({
 					</h2>
 				</div>
 
+				{isStagingEnvironment && (
+					<ClayAlert
+						displayType="warning"
+						title={`${Liferay.Language.get('warning')}:`}
+					>
+						{Liferay.Language.get(
+							'redirect-functionality-may-not-work-as-expected-in-the-staging-environment'
+						)}
+					</ClayAlert>
+				)}
+
 				<div className="sheet-section">
-					<p className="text-muted">{description}</p>
+					<p className="text-secondary">{description}</p>
 
 					{patterns.map((item, index) => (
 						<PatternField
@@ -262,6 +276,7 @@ const RedirectPattern = ({
 
 RedirectPattern.propTypes = {
 	description: PropTypes.string,
+	isStagingEnvironment: PropTypes.bool.isRequired,
 	patterns: PropTypes.arrayOf(
 		PropTypes.shape({
 			destinationURL: PropTypes.string,

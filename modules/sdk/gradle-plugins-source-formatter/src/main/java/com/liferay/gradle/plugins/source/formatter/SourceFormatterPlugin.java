@@ -14,9 +14,12 @@ import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.DependencySet;
+import org.gradle.api.attributes.AttributeContainer;
+import org.gradle.api.attributes.java.TargetJvmEnvironment;
 import org.gradle.api.execution.TaskExecutionGraph;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.invocation.Gradle;
+import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.specs.Spec;
 import org.gradle.api.tasks.TaskContainer;
 import org.gradle.language.base.plugins.LifecycleBasePlugin;
@@ -51,6 +54,15 @@ public class SourceFormatterPlugin implements Plugin<Project> {
 		Configuration configuration = GradleUtil.addConfiguration(
 			project, CONFIGURATION_NAME);
 
+		AttributeContainer attributeContainer = configuration.getAttributes();
+
+		ObjectFactory objectFactory = project.getObjects();
+
+		attributeContainer.attribute(
+			TargetJvmEnvironment.TARGET_JVM_ENVIRONMENT_ATTRIBUTE,
+			objectFactory.named(
+				TargetJvmEnvironment.class, TargetJvmEnvironment.STANDARD_JVM));
+
 		configuration.defaultDependencies(
 			new Action<DependencySet>() {
 
@@ -61,6 +73,7 @@ public class SourceFormatterPlugin implements Plugin<Project> {
 
 			});
 
+		configuration.setCanBeConsumed(false);
 		configuration.setDescription(
 			"Configures Liferay Source Formatter for this project.");
 		configuration.setVisible(false);
@@ -78,7 +91,7 @@ public class SourceFormatterPlugin implements Plugin<Project> {
 		FormatSourceTask formatSourceTask = GradleUtil.addTask(
 			project, CHECK_SOURCE_FORMATTING_TASK_NAME, FormatSourceTask.class);
 
-		formatSourceTask.onlyIf(_skipIfExecutingParentTaskSpec);
+		formatSourceTask.onlyIf(_getSkipIfExecutingParentTaskSpec(project));
 		formatSourceTask.setAutoFix(false);
 		formatSourceTask.setDescription(
 			"Checks the source formatting of this project.");
@@ -94,7 +107,7 @@ public class SourceFormatterPlugin implements Plugin<Project> {
 		FormatSourceTask formatSourceTask = GradleUtil.addTask(
 			project, FORMAT_SOURCE_TASK_NAME, FormatSourceTask.class);
 
-		formatSourceTask.onlyIf(_skipIfExecutingParentTaskSpec);
+		formatSourceTask.onlyIf(_getSkipIfExecutingParentTaskSpec(project));
 		formatSourceTask.setDescription(
 			"Runs Liferay Source Formatter to format the project files.");
 		formatSourceTask.setGroup("formatting");
@@ -106,6 +119,21 @@ public class SourceFormatterPlugin implements Plugin<Project> {
 		FormatSourceTask formatSourceTask, FileCollection classpath) {
 
 		formatSourceTask.setClasspath(classpath);
+
+		String baseDirName = GradleUtil.getTaskPrefixedProperty(
+			formatSourceTask, "source.base.dir");
+
+		if (Validator.isNotNull(baseDirName)) {
+			formatSourceTask.setBaseDirName(baseDirName);
+		}
+
+		String checkCategoryNames = GradleUtil.getTaskPrefixedProperty(
+			formatSourceTask, "source.check.category.names");
+
+		if (Validator.isNotNull(checkCategoryNames)) {
+			formatSourceTask.setCheckCategoryNames(
+				checkCategoryNames.split(","));
+		}
 
 		String checkNames = GradleUtil.getTaskPrefixedProperty(
 			formatSourceTask, "source.check.names");
@@ -152,19 +180,19 @@ public class SourceFormatterPlugin implements Plugin<Project> {
 				Boolean.parseBoolean(formatLocalChanges));
 		}
 
+		String gitWorkingBranchName = GradleUtil.getTaskPrefixedProperty(
+			formatSourceTask, "git.working.branch.name");
+
+		if (Validator.isNotNull(gitWorkingBranchName)) {
+			formatSourceTask.setGitWorkingBranchName(gitWorkingBranchName);
+		}
+
 		String javaParserEnabled = GradleUtil.getTaskPrefixedProperty(
 			formatSourceTask, "java.parser.enabled");
 
 		if (Validator.isNotNull(javaParserEnabled)) {
 			formatSourceTask.setJavaParserEnabled(
 				Boolean.parseBoolean(javaParserEnabled));
-		}
-
-		String sourceBaseDir = GradleUtil.getTaskPrefixedProperty(
-			formatSourceTask, "source.base.dir");
-
-		if (Validator.isNotNull(sourceBaseDir)) {
-			formatSourceTask.setBaseDirName(sourceBaseDir);
 		}
 	}
 
@@ -185,36 +213,30 @@ public class SourceFormatterPlugin implements Plugin<Project> {
 			});
 	}
 
-	private static final Spec<Task> _skipIfExecutingParentTaskSpec =
-		new Spec<Task>() {
+	private Spec<Task> _getSkipIfExecutingParentTaskSpec(Project project) {
+		Gradle gradle = project.getGradle();
 
-			@Override
-			public boolean isSatisfiedBy(Task task) {
-				Project project = task.getProject();
+		return task -> {
+			TaskExecutionGraph taskExecutionGraph = gradle.getTaskGraph();
 
-				Gradle gradle = project.getGradle();
+			Project parentProject = project;
 
-				TaskExecutionGraph taskExecutionGraph = gradle.getTaskGraph();
+			while ((parentProject = parentProject.getParent()) != null) {
+				TaskContainer parentProjectTaskContainer =
+					parentProject.getTasks();
 
-				Project parentProject = project;
+				Task parentProjectTask = parentProjectTaskContainer.findByName(
+					task.getName());
 
-				while ((parentProject = parentProject.getParent()) != null) {
-					TaskContainer parentProjectTaskContainer =
-						parentProject.getTasks();
+				if ((parentProjectTask != null) &&
+					taskExecutionGraph.hasTask(parentProjectTask)) {
 
-					Task parentProjectTask =
-						parentProjectTaskContainer.findByName(task.getName());
-
-					if ((parentProjectTask != null) &&
-						taskExecutionGraph.hasTask(parentProjectTask)) {
-
-						return false;
-					}
+					return false;
 				}
-
-				return true;
 			}
 
+			return true;
 		};
+	}
 
 }

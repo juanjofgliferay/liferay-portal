@@ -10,6 +10,7 @@ import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.LayoutSet;
 import com.liferay.portal.kernel.model.Plugin;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
+import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.service.PluginSettingLocalService;
 import com.liferay.portal.kernel.service.permission.GroupPermissionUtil;
 import com.liferay.portal.kernel.service.permission.PortalPermissionUtil;
@@ -37,6 +38,31 @@ public class LayoutSetServiceImpl extends LayoutSetServiceBaseImpl {
 			groupId, privateLayout, faviconFileEntryId);
 	}
 
+	@Override
+	public void updateLayoutSetPrototypeLinkEnabled(
+			long groupId, boolean mergeLayoutSetPrototype,
+			boolean privateLayout, boolean layoutSetPrototypeLinkEnabled,
+			String layoutSetPrototypeUuid)
+		throws PortalException {
+
+		GroupPermissionUtil.check(
+			getPermissionChecker(), groupId, ActionKeys.UPDATE);
+
+		LayoutSet layoutSet = layoutSetPersistence.findByG_P(
+			groupId, privateLayout);
+
+		if (layoutSet.isLayoutSetPrototypeLinkEnabled() &&
+			!layoutSetPrototypeLinkEnabled) {
+
+			PortalPermissionUtil.check(
+				getPermissionChecker(), ActionKeys.UNLINK_LAYOUT_SET_PROTOTYPE);
+		}
+
+		layoutSetLocalService.updateLayoutSetPrototypeLinkEnabled(
+			groupId, mergeLayoutSetPrototype, privateLayout,
+			layoutSetPrototypeLinkEnabled, layoutSetPrototypeUuid);
+	}
+
 	/**
 	 * Updates the state of the layout set prototype link.
 	 *
@@ -62,21 +88,8 @@ public class LayoutSetServiceImpl extends LayoutSetServiceBaseImpl {
 			String layoutSetPrototypeUuid)
 		throws PortalException {
 
-		GroupPermissionUtil.check(
-			getPermissionChecker(), groupId, ActionKeys.UPDATE);
-
-		LayoutSet layoutSet = layoutSetLocalService.getLayoutSet(
-			groupId, privateLayout);
-
-		if (layoutSet.isLayoutSetPrototypeLinkEnabled() &&
-			!layoutSetPrototypeLinkEnabled) {
-
-			PortalPermissionUtil.check(
-				getPermissionChecker(), ActionKeys.UNLINK_LAYOUT_SET_PROTOTYPE);
-		}
-
-		layoutSetLocalService.updateLayoutSetPrototypeLinkEnabled(
-			groupId, privateLayout, layoutSetPrototypeLinkEnabled,
+		layoutSetService.updateLayoutSetPrototypeLinkEnabled(
+			groupId, true, privateLayout, layoutSetPrototypeLinkEnabled,
 			layoutSetPrototypeUuid);
 	}
 
@@ -131,11 +144,13 @@ public class LayoutSetServiceImpl extends LayoutSetServiceBaseImpl {
 			String colorSchemeId, String css)
 		throws PortalException {
 
+		PermissionChecker permissionChecker = getPermissionChecker();
+
 		GroupPermissionUtil.check(
-			getPermissionChecker(), groupId, ActionKeys.MANAGE_LAYOUTS);
+			permissionChecker, groupId, ActionKeys.MANAGE_LAYOUTS);
 
 		_pluginSettingLocalService.checkPermission(
-			getUserId(), themeId, Plugin.TYPE_THEME);
+			permissionChecker.getUserId(), themeId, Plugin.TYPE_THEME);
 
 		return layoutSetLocalService.updateLookAndFeel(
 			groupId, privateLayout, themeId, colorSchemeId, css);

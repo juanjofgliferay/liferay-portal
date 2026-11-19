@@ -7,6 +7,7 @@ package com.liferay.change.tracking.service;
 
 import com.liferay.change.tracking.model.CTCollection;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.util.List;
@@ -31,13 +32,12 @@ public class CTCollectionServiceUtil {
 	 * Never modify this class directly. Add custom service methods to <code>com.liferay.change.tracking.service.impl.CTCollectionServiceImpl</code> and rerun ServiceBuilder to regenerate this class.
 	 */
 	public static CTCollection addCTCollection(
-			String externalReferenceCode, long companyId, long userId,
-			long ctRemoteId, String name, String description)
+			String externalReferenceCode, long ctRemoteId, String name,
+			String description)
 		throws PortalException {
 
 		return getService().addCTCollection(
-			externalReferenceCode, companyId, userId, ctRemoteId, name,
-			description);
+			externalReferenceCode, ctRemoteId, name, description);
 	}
 
 	public static void deleteCTAutoResolutionInfo(long ctAutoResolutionInfoId)
@@ -53,6 +53,14 @@ public class CTCollectionServiceUtil {
 	}
 
 	public static void discardCTEntry(
+			long ctCollectionId,
+			List<com.liferay.change.tracking.model.CTEntry> ctEntries)
+		throws PortalException {
+
+		getService().discardCTEntry(ctCollectionId, ctEntries);
+	}
+
+	public static void discardCTEntry(
 			long ctCollectionId, long modelClassNameId, long modelClassPK)
 		throws PortalException {
 
@@ -61,26 +69,27 @@ public class CTCollectionServiceUtil {
 	}
 
 	public static List<CTCollection> getCTCollections(
-		long companyId, int[] statuses, int start, int end,
-		OrderByComparator<CTCollection> orderByComparator) {
+			int[] statuses, int start, int end,
+			OrderByComparator<CTCollection> orderByComparator)
+		throws PortalException {
 
 		return getService().getCTCollections(
-			companyId, statuses, start, end, orderByComparator);
+			statuses, start, end, orderByComparator);
 	}
 
 	public static List<CTCollection> getCTCollections(
-		long companyId, int[] statuses, String keywords, int start, int end,
-		OrderByComparator<CTCollection> orderByComparator) {
+			int[] statuses, String keywords, int start, int end,
+			OrderByComparator<CTCollection> orderByComparator)
+		throws PortalException {
 
 		return getService().getCTCollections(
-			companyId, statuses, keywords, start, end, orderByComparator);
+			statuses, keywords, start, end, orderByComparator);
 	}
 
-	public static int getCTCollectionsCount(
-		long companyId, int[] statuses, String keywords) {
+	public static int getCTCollectionsCount(int[] statuses, String keywords)
+		throws PortalException {
 
-		return getService().getCTCollectionsCount(
-			companyId, statuses, keywords);
+		return getService().getCTCollectionsCount(statuses, keywords);
 	}
 
 	/**
@@ -90,6 +99,15 @@ public class CTCollectionServiceUtil {
 	 */
 	public static String getOSGiServiceIdentifier() {
 		return getService().getOSGiServiceIdentifier();
+	}
+
+	public static void moveCTEntries(
+			long fromCTCollectionId, long toCTCollectionId,
+			List<com.liferay.change.tracking.model.CTEntry> ctEntries)
+		throws PortalException {
+
+		getService().moveCTEntries(
+			fromCTCollectionId, toCTCollectionId, ctEntries);
 	}
 
 	public static void moveCTEntry(
@@ -125,13 +143,12 @@ public class CTCollectionServiceUtil {
 	}
 
 	public static CTCollectionService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(CTCollectionService service) {
-		_service = service;
-	}
-
-	private static volatile CTCollectionService _service;
+	private static final Snapshot<CTCollectionService> _serviceSnapshot =
+		new Snapshot<>(
+			CTCollectionServiceUtil.class, CTCollectionService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1118160705

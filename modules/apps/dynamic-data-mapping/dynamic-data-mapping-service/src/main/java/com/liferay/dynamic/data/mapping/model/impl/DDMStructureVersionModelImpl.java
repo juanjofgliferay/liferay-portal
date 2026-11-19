@@ -9,8 +9,10 @@ import com.liferay.dynamic.data.mapping.model.DDMStructureVersion;
 import com.liferay.dynamic.data.mapping.model.DDMStructureVersionModel;
 import com.liferay.expando.kernel.model.ExpandoBridge;
 import com.liferay.expando.kernel.util.ExpandoBridgeFactoryUtil;
+import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.bean.AutoEscapeBeanHandler;
+import com.liferay.portal.kernel.dao.orm.EntityCacheUtil;
 import com.liferay.portal.kernel.exception.LocaleException;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSON;
@@ -30,6 +32,8 @@ import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
 import java.io.Serializable;
 
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
@@ -76,7 +80,7 @@ public class DDMStructureVersionModelImpl
 		{"companyId", Types.BIGINT}, {"userId", Types.BIGINT},
 		{"userName", Types.VARCHAR}, {"createDate", Types.TIMESTAMP},
 		{"structureId", Types.BIGINT}, {"version", Types.VARCHAR},
-		{"parentStructureId", Types.BIGINT}, {"name", Types.VARCHAR},
+		{"parentStructureId", Types.BIGINT}, {"name", Types.CLOB},
 		{"description", Types.CLOB}, {"definition", Types.CLOB},
 		{"storageType", Types.VARCHAR}, {"type_", Types.INTEGER},
 		{"status", Types.INTEGER}, {"statusByUserId", Types.BIGINT},
@@ -98,7 +102,7 @@ public class DDMStructureVersionModelImpl
 		TABLE_COLUMNS_MAP.put("structureId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("version", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("parentStructureId", Types.BIGINT);
-		TABLE_COLUMNS_MAP.put("name", Types.VARCHAR);
+		TABLE_COLUMNS_MAP.put("name", Types.CLOB);
 		TABLE_COLUMNS_MAP.put("description", Types.CLOB);
 		TABLE_COLUMNS_MAP.put("definition", Types.CLOB);
 		TABLE_COLUMNS_MAP.put("storageType", Types.VARCHAR);
@@ -110,10 +114,12 @@ public class DDMStructureVersionModelImpl
 	}
 
 	public static final String TABLE_SQL_CREATE =
-		"create table DDMStructureVersion (mvccVersion LONG default 0 not null,ctCollectionId LONG default 0 not null,structureVersionId LONG not null,groupId LONG,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,structureId LONG,version VARCHAR(75) null,parentStructureId LONG,name STRING null,description TEXT null,definition TEXT null,storageType VARCHAR(75) null,type_ INTEGER,status INTEGER,statusByUserId LONG,statusByUserName VARCHAR(75) null,statusDate DATE null,primary key (structureVersionId, ctCollectionId))";
+		"create table DDMStructureVersion (mvccVersion LONG default 0 not null,ctCollectionId LONG default 0 not null,structureVersionId LONG not null,groupId LONG,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,structureId LONG,version VARCHAR(75) null,parentStructureId LONG,name TEXT null,description TEXT null,definition TEXT null,storageType VARCHAR(75) null,type_ INTEGER,status INTEGER,statusByUserId LONG,statusByUserName VARCHAR(75) null,statusDate DATE null,primary key (structureVersionId, ctCollectionId))";
 
 	public static final String TABLE_SQL_DROP =
 		"drop table DDMStructureVersion";
+
+	public static final String ENTITY_ALIAS = "ddmStructureVersion";
 
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY ddmStructureVersion.structureVersionId ASC";
@@ -131,26 +137,20 @@ public class DDMStructureVersionModelImpl
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long STATUS_COLUMN_BITMASK = 1L;
+	public static final long STRUCTUREID_COLUMN_BITMASK = 1L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long STRUCTUREID_COLUMN_BITMASK = 2L;
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
-	 */
-	@Deprecated
-	public static final long VERSION_COLUMN_BITMASK = 4L;
+	public static final long VERSION_COLUMN_BITMASK = 2L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
 	 *		#getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long STRUCTUREVERSIONID_COLUMN_BITMASK = 8L;
+	public static final long STRUCTUREVERSIONID_COLUMN_BITMASK = 4L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
@@ -906,16 +906,6 @@ public class DDMStructureVersionModelImpl
 		_status = status;
 	}
 
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #getColumnOriginalValue(String)}
-	 */
-	@Deprecated
-	public int getOriginalStatus() {
-		return GetterUtil.getInteger(
-			this.<Integer>getColumnOriginalValue("status"));
-	}
-
 	@JSON
 	@Override
 	public long getStatusByUserId() {
@@ -1307,6 +1297,24 @@ public class DDMStructureVersionModelImpl
 	}
 
 	@Override
+	public void copyCacheFields(DDMStructureVersion source) {
+		if (getMvccVersion() != source.getMvccVersion()) {
+			return;
+		}
+
+		try {
+			_ddmFormSetterMethodHandle.invokeExact(
+				(DDMStructureVersionImpl)this,
+				(com.liferay.dynamic.data.mapping.model.DDMForm)
+					_ddmFormGetterMethodHandle.invokeExact(
+						(DDMStructureVersionImpl)source));
+		}
+		catch (Throwable throwable) {
+			ReflectionUtil.throwException(throwable);
+		}
+	}
+
+	@Override
 	public boolean equals(Object object) {
 		if (this == object) {
 			return true;
@@ -1464,9 +1472,17 @@ public class DDMStructureVersionModelImpl
 			ddmStructureVersionCacheModel.statusDate = Long.MIN_VALUE;
 		}
 
-		setDDMForm(null);
+		try {
+			setDDMForm(null);
 
-		ddmStructureVersionCacheModel._ddmForm = getDDMForm();
+			ddmStructureVersionCacheModel.ddmForm =
+				(com.liferay.dynamic.data.mapping.model.DDMForm)
+					_ddmFormGetterMethodHandle.invokeExact(
+						(DDMStructureVersionImpl)this);
+		}
+		catch (Throwable throwable) {
+			ReflectionUtil.throwException(throwable);
+		}
 
 		return ddmStructureVersionCacheModel;
 	}
@@ -1670,6 +1686,46 @@ public class DDMStructureVersionModelImpl
 	}
 
 	private long _columnBitmask;
+
+	protected static final BiConsumer
+		<DDMStructureVersion, com.liferay.dynamic.data.mapping.model.DDMForm>
+			ddmFormUpdateEntityCacheBiConsumer =
+				(ddmStructureVersion, ddmForm) -> {
+					DDMStructureVersionCacheModel
+						ddmStructureVersionCacheModel =
+							EntityCacheUtil.fetchCacheModel(
+								DDMStructureVersionImpl.class,
+								ddmStructureVersion.getPrimaryKey(),
+								DDMStructureVersionCacheModel.class);
+
+					if ((ddmStructureVersionCacheModel != null) &&
+						(ddmStructureVersionCacheModel.getMvccVersion() ==
+							ddmStructureVersion.getMvccVersion())) {
+
+						ddmStructureVersionCacheModel.ddmForm = ddmForm;
+					}
+				};
+
+	private static final MethodHandle _ddmFormGetterMethodHandle;
+	private static final MethodHandle _ddmFormSetterMethodHandle;
+
+	static {
+		MethodHandles.Lookup lookup = ReflectionUtil.getImplLookup();
+
+		try {
+			_ddmFormGetterMethodHandle = lookup.findGetter(
+				DDMStructureVersionImpl.class, "_ddmForm",
+				com.liferay.dynamic.data.mapping.model.DDMForm.class);
+			_ddmFormSetterMethodHandle = lookup.findSetter(
+				DDMStructureVersionImpl.class, "_ddmForm",
+				com.liferay.dynamic.data.mapping.model.DDMForm.class);
+		}
+		catch (ReflectiveOperationException reflectiveOperationException) {
+			throw new ExceptionInInitializerError(reflectiveOperationException);
+		}
+	}
+
 	private DDMStructureVersion _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1914058280

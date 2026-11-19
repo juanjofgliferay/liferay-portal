@@ -6,10 +6,12 @@
 package com.liferay.headless.admin.user.internal.resource.v1_0;
 
 import com.liferay.account.constants.AccountConstants;
+import com.liferay.account.exception.NoSuchRoleException;
 import com.liferay.account.model.AccountEntry;
 import com.liferay.account.role.AccountRolePermissionThreadLocal;
-import com.liferay.account.service.AccountEntryLocalService;
+import com.liferay.account.service.AccountEntryService;
 import com.liferay.account.service.AccountRoleLocalService;
+import com.liferay.account.service.AccountRoleService;
 import com.liferay.headless.admin.user.dto.v1_0.Account;
 import com.liferay.headless.admin.user.dto.v1_0.AccountRole;
 import com.liferay.headless.admin.user.dto.v1_0.UserAccount;
@@ -36,9 +38,9 @@ import com.liferay.portal.vulcan.pagination.Page;
 import com.liferay.portal.vulcan.pagination.Pagination;
 import com.liferay.portal.vulcan.util.SearchUtil;
 
-import java.util.Collections;
+import jakarta.ws.rs.core.MultivaluedMap;
 
-import javax.ws.rs.core.MultivaluedMap;
+import java.util.Collections;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -58,8 +60,55 @@ public class AccountRoleResourceImpl extends BaseAccountRoleResourceImpl {
 			Long accountId, Long accountRoleId, Long userAccountId)
 		throws Exception {
 
-		_accountRoleLocalService.unassociateUser(
+		_accountRoleService.unassociateUser(
 			accountId, accountRoleId, userAccountId);
+	}
+
+	@Override
+	public void
+			deleteAccountByExternalReferenceCodeAccountRoleByExternalReferenceCodeUserAccountByEmailAddress(
+				String externalReferenceCode,
+				String accountRoleExternalReferenceCode, String emailAddress)
+		throws Exception {
+
+		com.liferay.account.model.AccountRole accountRole =
+			_accountRoleLocalService.fetchAccountRoleByExternalReferenceCode(
+				accountRoleExternalReferenceCode,
+				contextCompany.getCompanyId());
+
+		if (accountRole == null) {
+			throw new NoSuchRoleException(
+				"Unable to find account role with external reference code " +
+					accountRoleExternalReferenceCode);
+		}
+
+		deleteAccountByExternalReferenceCodeAccountRoleUserAccountByEmailAddress(
+			externalReferenceCode, accountRole.getAccountRoleId(),
+			emailAddress);
+	}
+
+	@Override
+	public void
+			deleteAccountByExternalReferenceCodeAccountRoleByExternalReferenceCodeUserAccountByExternalReferenceCode(
+				String accountExternalReferenceCode,
+				String accountRoleExternalReferenceCode,
+				String externalReferenceCode)
+		throws Exception {
+
+		com.liferay.account.model.AccountRole accountRole =
+			_accountRoleLocalService.fetchAccountRoleByExternalReferenceCode(
+				accountRoleExternalReferenceCode,
+				contextCompany.getCompanyId());
+
+		if (accountRole == null) {
+			throw new NoSuchRoleException(
+				"Unable to find account role with external reference code " +
+					accountRoleExternalReferenceCode);
+		}
+
+		deleteAccountByExternalReferenceCodeAccountRoleUserAccountByExternalReferenceCode(
+			accountExternalReferenceCode, accountRole.getAccountRoleId(),
+			externalReferenceCode);
 	}
 
 	@Override
@@ -112,12 +161,12 @@ public class AccountRoleResourceImpl extends BaseAccountRoleResourceImpl {
 		throws Exception {
 
 		if (accountId > 0) {
-			_accountEntryLocalService.getAccountEntry(accountId);
+			_accountEntryService.getAccountEntry(accountId);
 		}
 
 		try (SafeCloseable safeCloseable =
-				AccountRolePermissionThreadLocal.setWithSafeCloseable(
-					accountId)) {
+				AccountRolePermissionThreadLocal.
+					setAccountEntryIdWithSafeCloseable(accountId)) {
 
 			return SearchUtil.search(
 				null,
@@ -161,15 +210,16 @@ public class AccountRoleResourceImpl extends BaseAccountRoleResourceImpl {
 				String externalReferenceCode, String emailAddress)
 		throws Exception {
 
+		AccountEntry accountEntry =
+			_accountEntryService.getAccountEntryByExternalReferenceCode(
+				externalReferenceCode, contextCompany.getCompanyId());
 		User user = _userLocalService.getUserByEmailAddress(
 			contextCompany.getCompanyId(), emailAddress);
 
 		return Page.of(
 			transform(
 				_accountRoleLocalService.getAccountRoles(
-					DTOConverterUtil.getModelPrimaryKey(
-						_accountResourceDTOConverter, externalReferenceCode),
-					user.getUserId()),
+					accountEntry.getAccountEntryId(), user.getUserId()),
 				accountRole -> _toAccountRole(accountRole)));
 	}
 
@@ -180,12 +230,14 @@ public class AccountRoleResourceImpl extends BaseAccountRoleResourceImpl {
 				String externalReferenceCode)
 		throws Exception {
 
+		AccountEntry accountEntry =
+			_accountEntryService.getAccountEntryByExternalReferenceCode(
+				accountExternalReferenceCode, contextCompany.getCompanyId());
+
 		return Page.of(
 			transform(
 				_accountRoleLocalService.getAccountRoles(
-					DTOConverterUtil.getModelPrimaryKey(
-						_accountResourceDTOConverter,
-						accountExternalReferenceCode),
+					accountEntry.getAccountEntryId(),
 					DTOConverterUtil.getModelPrimaryKey(
 						_userResourceDTOConverter, externalReferenceCode)),
 				accountRole -> _toAccountRole(accountRole)));
@@ -202,8 +254,9 @@ public class AccountRoleResourceImpl extends BaseAccountRoleResourceImpl {
 		throws Exception {
 
 		return _toAccountRole(
-			_accountRoleLocalService.addAccountRole(
-				contextUser.getUserId(), accountId, accountRole.getName(),
+			_accountRoleService.addAccountRole(
+				accountRole.getExternalReferenceCode(), accountId,
+				accountRole.getName(),
 				Collections.singletonMap(
 					contextAcceptLanguage.getPreferredLocale(),
 					accountRole.getDisplayName()),
@@ -228,8 +281,55 @@ public class AccountRoleResourceImpl extends BaseAccountRoleResourceImpl {
 			Long accountId, Long accountRoleId, Long userAccountId)
 		throws Exception {
 
-		_accountRoleLocalService.associateUser(
+		_accountRoleService.associateUser(
 			accountId, accountRoleId, userAccountId);
+	}
+
+	@Override
+	public void
+			postAccountByExternalReferenceCodeAccountRoleByExternalReferenceCodeUserAccountByEmailAddress(
+				String externalReferenceCode,
+				String accountRoleExternalReferenceCode, String emailAddress)
+		throws Exception {
+
+		com.liferay.account.model.AccountRole accountRole =
+			_accountRoleLocalService.fetchAccountRoleByExternalReferenceCode(
+				accountRoleExternalReferenceCode,
+				contextCompany.getCompanyId());
+
+		if (accountRole == null) {
+			throw new NoSuchRoleException(
+				"Unable to find account role with external reference code " +
+					accountRoleExternalReferenceCode);
+		}
+
+		postAccountByExternalReferenceCodeAccountRoleUserAccountByEmailAddress(
+			externalReferenceCode, accountRole.getAccountRoleId(),
+			emailAddress);
+	}
+
+	@Override
+	public void
+			postAccountByExternalReferenceCodeAccountRoleByExternalReferenceCodeUserAccountByExternalReferenceCode(
+				String accountExternalReferenceCode,
+				String accountRoleExternalReferenceCode,
+				String externalReferenceCode)
+		throws Exception {
+
+		com.liferay.account.model.AccountRole accountRole =
+			_accountRoleLocalService.fetchAccountRoleByExternalReferenceCode(
+				accountRoleExternalReferenceCode,
+				contextCompany.getCompanyId());
+
+		if (accountRole == null) {
+			throw new NoSuchRoleException(
+				"Unable to find account role with external reference code " +
+					accountRoleExternalReferenceCode);
+		}
+
+		postAccountByExternalReferenceCodeAccountRoleUserAccountByExternalReferenceCode(
+			accountExternalReferenceCode, accountRole.getAccountRoleId(),
+			externalReferenceCode);
 	}
 
 	@Override
@@ -271,20 +371,27 @@ public class AccountRoleResourceImpl extends BaseAccountRoleResourceImpl {
 
 		return new AccountRole() {
 			{
-				accountId = serviceBuilderAccountRole.getAccountEntryId();
-				description = role.getDescription(
-					contextAcceptLanguage.getPreferredLocale());
-				displayName = role.getTitle(
-					contextAcceptLanguage.getPreferredLocale());
-				id = serviceBuilderAccountRole.getAccountRoleId();
-				name = serviceBuilderAccountRole.getRoleName();
-				roleId = serviceBuilderAccountRole.getRoleId();
+				setAccountId(serviceBuilderAccountRole::getAccountEntryId);
+				setDescription(
+					() -> role.getDescription(
+						contextAcceptLanguage.getPreferredLocale()));
+				setDisplayName(
+					() -> role.getTitle(
+						contextAcceptLanguage.getPreferredLocale()));
+				setExternalReferenceCode(
+					serviceBuilderAccountRole::getExternalReferenceCode);
+				setId(serviceBuilderAccountRole::getAccountRoleId);
+				setName(serviceBuilderAccountRole::getRoleName);
+				setRoleId(serviceBuilderAccountRole::getRoleId);
 			}
 		};
 	}
 
+	private static final EntityModel _entityModel =
+		new AccountRoleEntityModel();
+
 	@Reference
-	private AccountEntryLocalService _accountEntryLocalService;
+	private AccountEntryService _accountEntryService;
 
 	@Reference(target = DTOConverterConstants.ACCOUNT_RESOURCE_DTO_CONVERTER)
 	private DTOConverter<AccountEntry, Account> _accountResourceDTOConverter;
@@ -292,7 +399,8 @@ public class AccountRoleResourceImpl extends BaseAccountRoleResourceImpl {
 	@Reference
 	private AccountRoleLocalService _accountRoleLocalService;
 
-	private final EntityModel _entityModel = new AccountRoleEntityModel();
+	@Reference
+	private AccountRoleService _accountRoleService;
 
 	@Reference
 	private UserLocalService _userLocalService;

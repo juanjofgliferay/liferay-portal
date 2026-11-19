@@ -10,7 +10,6 @@ import com.liferay.asset.display.page.service.AssetDisplayPageEntryLocalService;
 import com.liferay.asset.kernel.AssetRendererFactoryRegistryUtil;
 import com.liferay.asset.kernel.model.AssetRenderer;
 import com.liferay.asset.kernel.model.AssetRendererFactory;
-import com.liferay.asset.kernel.service.AssetEntryLocalService;
 import com.liferay.exportimport.data.handler.base.BaseStagedModelDataHandler;
 import com.liferay.exportimport.kernel.lar.ExportImportPathUtil;
 import com.liferay.exportimport.kernel.lar.ExportImportThreadLocal;
@@ -25,6 +24,7 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.StagedModel;
 import com.liferay.portal.kernel.util.MapUtil;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.xml.Element;
 import com.liferay.staging.StagingGroupHelper;
 
@@ -68,10 +68,9 @@ public class AssetDisplayPageStagedModelDataHandler
 				assetDisplayPageEntry.getLayoutPageTemplateEntryId());
 
 		if (layoutPageTemplateEntry != null) {
-			StagedModelDataHandlerUtil.exportReferenceStagedModel(
-				portletDataContext, assetDisplayPageEntry,
-				layoutPageTemplateEntry,
-				PortletDataContext.REFERENCE_TYPE_DEPENDENCY);
+			assetDisplayPageElement.addAttribute(
+				"layoutPageTemplateEntryERC",
+				layoutPageTemplateEntry.getExternalReferenceCode());
 		}
 
 		_exportAssetObject(portletDataContext, assetDisplayPageEntry);
@@ -83,21 +82,27 @@ public class AssetDisplayPageStagedModelDataHandler
 			AssetDisplayPageEntry assetDisplayPageEntry)
 		throws Exception {
 
-		AssetDisplayPageEntry importedAssetDisplayPageEntry =
-			(AssetDisplayPageEntry)assetDisplayPageEntry.clone();
-
 		long layoutPageTemplateEntryId = 0;
 
-		if (importedAssetDisplayPageEntry.getLayoutPageTemplateEntryId() > 0) {
-			Map<Long, Long> layoutPageTemplateEntryIds =
-				(Map<Long, Long>)portletDataContext.getNewPrimaryKeysMap(
-					LayoutPageTemplateEntry.class);
+		Element element = portletDataContext.getImportDataStagedModelElement(
+			assetDisplayPageEntry);
 
-			layoutPageTemplateEntryId = MapUtil.getLong(
-				layoutPageTemplateEntryIds,
-				assetDisplayPageEntry.getLayoutPageTemplateEntryId(),
-				assetDisplayPageEntry.getLayoutPageTemplateEntryId());
+		String layoutPageTemplateEntryERC = element.attributeValue(
+			"layoutPageTemplateEntryERC");
+
+		if (Validator.isNotNull(layoutPageTemplateEntryERC)) {
+			LayoutPageTemplateEntry layoutPageTemplateEntry =
+				_layoutPageTemplateEntryLocalService.
+					getLayoutPageTemplateEntryByExternalReferenceCode(
+						layoutPageTemplateEntryERC,
+						portletDataContext.getGroupId());
+
+			layoutPageTemplateEntryId =
+				layoutPageTemplateEntry.getLayoutPageTemplateEntryId();
 		}
+
+		AssetDisplayPageEntry importedAssetDisplayPageEntry =
+			(AssetDisplayPageEntry)assetDisplayPageEntry.clone();
 
 		Map<Long, Long> plids =
 			(Map<Long, Long>)portletDataContext.getNewPrimaryKeysMap(
@@ -224,9 +229,6 @@ public class AssetDisplayPageStagedModelDataHandler
 	@Reference
 	private AssetDisplayPageEntryLocalService
 		_assetDisplayPageEntryLocalService;
-
-	@Reference
-	private AssetEntryLocalService _assetEntryLocalService;
 
 	@Reference
 	private LayoutPageTemplateEntryLocalService

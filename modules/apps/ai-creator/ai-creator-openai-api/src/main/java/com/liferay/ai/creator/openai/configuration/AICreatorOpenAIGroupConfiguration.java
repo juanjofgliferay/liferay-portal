@@ -23,7 +23,10 @@ import com.liferay.portal.configuration.metatype.annotations.ExtendedObjectClass
 )
 public interface AICreatorOpenAIGroupConfiguration {
 
-	@Meta.AD(deflt = "", name = "api-key", required = false)
+	@Meta.AD(
+		deflt = "", name = "api-key", required = false,
+		type = Meta.Type.Password
+	)
 	public String apiKey();
 
 	@Meta.AD(
@@ -33,8 +36,21 @@ public interface AICreatorOpenAIGroupConfiguration {
 	public boolean enableChatGPTToCreateContent();
 
 	@Meta.AD(
-		deflt = "true", name = "enable-dalle-to-create-images", required = false
+		deflt = "true", name = "enable-openai-image-generation",
+		required = false
 	)
-	public boolean enableDALLEToCreateImages();
+	public boolean enableOpenAIImageGeneration();
+
+	@Meta.AD(
+		deflt = "", description = "image-model-site-help", name = "image-model",
+		required = false
+	)
+	public String imageModel();
+
+	@Meta.AD(
+		deflt = "", description = "image-sizes-site-help", name = "image-sizes",
+		required = false
+	)
+	public String imageSizes();
 
 }

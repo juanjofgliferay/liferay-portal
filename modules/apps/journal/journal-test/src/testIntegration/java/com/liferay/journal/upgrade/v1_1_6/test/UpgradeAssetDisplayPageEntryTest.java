@@ -10,6 +10,7 @@ import com.liferay.asset.display.page.constants.AssetDisplayPageConstants;
 import com.liferay.asset.display.page.model.AssetDisplayPageEntry;
 import com.liferay.asset.display.page.service.AssetDisplayPageEntryLocalServiceUtil;
 import com.liferay.counter.kernel.service.CounterLocalService;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.dao.db.DB;
 import com.liferay.portal.kernel.dao.db.DBManagerUtil;
@@ -77,9 +78,11 @@ public class UpgradeAssetDisplayPageEntryTest {
 		for (Group group : _groups) {
 			cleanUpGroup(group);
 
-			if (group.isStaged()) {
-				cleanUpGroup(group.getStagingGroup());
+			if (!group.isStaged()) {
+				continue;
 			}
+
+			cleanUpGroup(group.getStagingGroup());
 		}
 	}
 
@@ -127,6 +130,7 @@ public class UpgradeAssetDisplayPageEntryTest {
 		throws Exception {
 
 		try (Connection connection = DataAccess.getConnection();
+
 			PreparedStatement preparedStatement = connection.prepareStatement(
 				StringBundler.concat(
 					"insert into AssetEntry (entryId, groupId, companyId, ",
@@ -150,6 +154,7 @@ public class UpgradeAssetDisplayPageEntryTest {
 		throws Exception {
 
 		try (Connection connection = DataAccess.getConnection();
+
 			PreparedStatement preparedStatement = connection.prepareStatement(
 				StringBundler.concat(
 					"insert into JournalArticle (uuid_, id_, resourcePrimKey, ",
@@ -187,7 +192,7 @@ public class UpgradeAssetDisplayPageEntryTest {
 
 		for (long journalResourcePrimKey : resourcePrimKeys) {
 			AssetDisplayPageEntry assetDisplayPageEntry =
-				fetchAssetDisplayPageEntryByClassPk(journalResourcePrimKey);
+				fetchAssetDisplayPageEntryByClassPK(journalResourcePrimKey);
 
 			Assert.assertNotNull(assetDisplayPageEntry);
 
@@ -278,27 +283,25 @@ public class UpgradeAssetDisplayPageEntryTest {
 			Group group, String layoutUuid)
 		throws Exception {
 
-		List<Long> resourcePrimKeys = new ArrayList<>();
+		return TransformUtil.transform(
+			stagingResourcePrimKeys,
+			stagingResourcePrimKey -> {
+				long liveResourcePrimKey = _counterLocalService.increment();
 
-		for (long stagingResourcePrimKey : stagingResourcePrimKeys) {
-			long liveResourcePrimKey = _counterLocalService.increment();
+				createJournalArticle(
+					multipleArticleVersions, group, layoutUuid,
+					liveResourcePrimKey);
 
-			createJournalArticle(
-				multipleArticleVersions, group, layoutUuid,
-				liveResourcePrimKey);
+				addAssetEntry(
+					group.getGroupId(), group.getCompanyId(),
+					_classNameIdJournalArticle, liveResourcePrimKey,
+					_assetEntryClassUuids.get(stagingResourcePrimKey));
 
-			addAssetEntry(
-				group.getGroupId(), group.getCompanyId(),
-				_classNameIdJournalArticle, liveResourcePrimKey,
-				_assetEntryClassUuids.get(stagingResourcePrimKey));
-
-			resourcePrimKeys.add(liveResourcePrimKey);
-		}
-
-		return resourcePrimKeys;
+				return liveResourcePrimKey;
+			});
 	}
 
-	protected AssetDisplayPageEntry fetchAssetDisplayPageEntryByClassPk(
+	protected AssetDisplayPageEntry fetchAssetDisplayPageEntryByClassPK(
 			long classPK)
 		throws Exception {
 
@@ -359,10 +362,12 @@ public class UpgradeAssetDisplayPageEntryTest {
 					for (UpgradeStep upgradeStep : upgradeSteps) {
 						Class<?> clazz = upgradeStep.getClass();
 
-						if (Objects.equals(clazz.getName(), _CLASS_NAME)) {
-							_assetDisplayPageEntryUpgradeProcess =
-								(UpgradeProcess)upgradeStep;
+						if (!Objects.equals(clazz.getName(), _CLASS_NAME)) {
+							continue;
 						}
+
+						_assetDisplayPageEntryUpgradeProcess =
+							(UpgradeProcess)upgradeStep;
 					}
 				}
 
@@ -399,10 +404,10 @@ public class UpgradeAssetDisplayPageEntryTest {
 			long liveResourcePrimKey = liveResourcePrimKeys.get(i);
 
 			AssetDisplayPageEntry stagingAssetDisplayPageEntry =
-				fetchAssetDisplayPageEntryByClassPk(stagingResourcePrimKey);
+				fetchAssetDisplayPageEntryByClassPK(stagingResourcePrimKey);
 
 			AssetDisplayPageEntry liveAssetDisplayPageEntry =
-				fetchAssetDisplayPageEntryByClassPk(liveResourcePrimKey);
+				fetchAssetDisplayPageEntryByClassPK(liveResourcePrimKey);
 
 			Assert.assertEquals(
 				liveAssetDisplayPageEntry.getUuid(),
@@ -460,11 +465,6 @@ public class UpgradeAssetDisplayPageEntryTest {
 		"com.liferay.journal.internal.upgrade.v1_1_6." +
 			"AssetDisplayPageEntryUpgradeProcess";
 
-	@Inject(
-		filter = "(&(component.name=com.liferay.journal.internal.upgrade.registry.JournalServiceUpgradeStepRegistrator))"
-	)
-	private static UpgradeStepRegistrator _upgradeStepRegistrator;
-
 	private UpgradeProcess _assetDisplayPageEntryUpgradeProcess;
 	private final Map<Long, String> _assetEntryClassUuids = new HashMap<>();
 	private long _classNameIdJournalArticle;
@@ -476,5 +476,10 @@ public class UpgradeAssetDisplayPageEntryTest {
 	private List<Group> _groups = new ArrayList<>();
 
 	private Timestamp _timestamp;
+
+	@Inject(
+		filter = "(&(component.name=com.liferay.journal.internal.upgrade.registry.JournalServiceUpgradeStepRegistrator))"
+	)
+	private UpgradeStepRegistrator _upgradeStepRegistrator;
 
 }

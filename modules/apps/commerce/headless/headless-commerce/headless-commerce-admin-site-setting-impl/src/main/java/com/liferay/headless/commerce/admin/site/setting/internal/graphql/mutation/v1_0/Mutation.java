@@ -15,8 +15,6 @@ import com.liferay.headless.commerce.admin.site.setting.resource.v1_0.TaxCategor
 import com.liferay.headless.commerce.admin.site.setting.resource.v1_0.WarehouseResource;
 import com.liferay.petra.function.UnsafeConsumer;
 import com.liferay.petra.function.UnsafeFunction;
-import com.liferay.portal.kernel.search.Sort;
-import com.liferay.portal.kernel.search.filter.Filter;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.RoleLocalService;
 import com.liferay.portal.vulcan.accept.language.AcceptLanguage;
@@ -25,15 +23,15 @@ import com.liferay.portal.vulcan.batch.engine.resource.VulcanBatchEngineImportTa
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 
+import jakarta.annotation.Generated;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriInfo;
+
 import java.util.function.BiFunction;
-
-import javax.annotation.Generated;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
 
 import org.osgi.service.component.ComponentServiceObjects;
 
@@ -76,7 +74,9 @@ public class Mutation {
 			warehouseResourceComponentServiceObjects;
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Deletes the availability estimate identified by ID. Returns 404 when no estimate matches the ID."
+	)
 	public Response deleteAvailabilityEstimate(@GraphQLName("id") Long id)
 		throws Exception {
 
@@ -101,8 +101,67 @@ public class Mutation {
 					callbackURL, object));
 	}
 
-	@GraphQLField
-	public Response updateAvailabilityEstimate(
+	@GraphQLField(
+		description = "Deletes the availability estimate identified by external reference code. Returns 404 when no estimate carries that code. Side effects -- cascades to the per-product availability estimates that reference it."
+	)
+	public boolean deleteAvailabilityEstimateByExternalReferenceCode(
+			@GraphQLName("externalReferenceCode") String externalReferenceCode)
+		throws Exception {
+
+		_applyVoidComponentServiceObjects(
+			_availabilityEstimateResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			availabilityEstimateResource ->
+				availabilityEstimateResource.
+					deleteAvailabilityEstimateByExternalReferenceCode(
+						externalReferenceCode));
+
+		return true;
+	}
+
+	@GraphQLField(
+		description = "Partially updates the availability estimate identified by external reference code, applying JSON Merge Patch semantics (only fields present in the body are modified). Returns 404 when no estimate carries that code, and 400 when the supplied external reference code is already taken by another estimate in the company."
+	)
+	public AvailabilityEstimate
+			patchAvailabilityEstimateByExternalReferenceCode(
+				@GraphQLName("externalReferenceCode") String
+					externalReferenceCode,
+				@GraphQLName("availabilityEstimate") AvailabilityEstimate
+					availabilityEstimate)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_availabilityEstimateResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			availabilityEstimateResource ->
+				availabilityEstimateResource.
+					patchAvailabilityEstimateByExternalReferenceCode(
+						externalReferenceCode, availabilityEstimate));
+	}
+
+	@GraphQLField(
+		description = "Creates an availability estimate for the caller's company from the supplied external reference code, localized `title`, and `priority`. The supplied site (`groupId`) is a wire-only compatibility field and does not scope the record. Returns 400 when the supplied external reference code is already taken by another estimate in the company."
+	)
+	public AvailabilityEstimate
+			createCommerceAdminSiteSettingGroupAvailabilityEstimate(
+				@GraphQLName("groupId") Long groupId,
+				@GraphQLName("availabilityEstimate") AvailabilityEstimate
+					availabilityEstimate)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_availabilityEstimateResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			availabilityEstimateResource ->
+				availabilityEstimateResource.
+					postCommerceAdminSiteSettingGroupAvailabilityEstimate(
+						groupId, availabilityEstimate));
+	}
+
+	@GraphQLField(
+		description = "Replaces the availability estimate identified by ID with the request body. Returns 404 when no estimate matches the ID, and 400 when the supplied external reference code is already taken by another estimate in the company."
+	)
+	public AvailabilityEstimate updateAvailabilityEstimate(
 			@GraphQLName("id") Long id,
 			@GraphQLName("availabilityEstimate") AvailabilityEstimate
 				availabilityEstimate)
@@ -130,10 +189,13 @@ public class Mutation {
 					callbackURL, object));
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Upserts the availability estimate identified by external reference code -- replaces it with the request body when the code exists, otherwise creates a new estimate. Returns 400 when the supplied external reference code is already taken by another estimate in the company."
+	)
 	public AvailabilityEstimate
-			createCommerceAdminSiteSettingGroupAvailabilityEstimate(
-				@GraphQLName("groupId") Long groupId,
+			updateAvailabilityEstimateByExternalReferenceCode(
+				@GraphQLName("externalReferenceCode") String
+					externalReferenceCode,
 				@GraphQLName("availabilityEstimate") AvailabilityEstimate
 					availabilityEstimate)
 		throws Exception {
@@ -143,116 +205,13 @@ public class Mutation {
 			this::_populateResourceContext,
 			availabilityEstimateResource ->
 				availabilityEstimateResource.
-					postCommerceAdminSiteSettingGroupAvailabilityEstimate(
-						groupId, availabilityEstimate));
+					putAvailabilityEstimateByExternalReferenceCode(
+						externalReferenceCode, availabilityEstimate));
 	}
 
-	@GraphQLField
-	public Response createMeasurementUnitsPageExportBatch(
-			@GraphQLName("filter") String filterString,
-			@GraphQLName("sort") String sortsString,
-			@GraphQLName("callbackURL") String callbackURL,
-			@GraphQLName("contentType") String contentType,
-			@GraphQLName("fieldNames") String fieldNames)
-		throws Exception {
-
-		return _applyComponentServiceObjects(
-			_measurementUnitResourceComponentServiceObjects,
-			this::_populateResourceContext,
-			measurementUnitResource ->
-				measurementUnitResource.postMeasurementUnitsPageExportBatch(
-					_filterBiFunction.apply(
-						measurementUnitResource, filterString),
-					_sortsBiFunction.apply(
-						measurementUnitResource, sortsString),
-					callbackURL, contentType, fieldNames));
-	}
-
-	@GraphQLField
-	public MeasurementUnit createMeasurementUnit(
-			@GraphQLName("measurementUnit") MeasurementUnit measurementUnit)
-		throws Exception {
-
-		return _applyComponentServiceObjects(
-			_measurementUnitResourceComponentServiceObjects,
-			this::_populateResourceContext,
-			measurementUnitResource ->
-				measurementUnitResource.postMeasurementUnit(measurementUnit));
-	}
-
-	@GraphQLField
-	public Response createMeasurementUnitBatch(
-			@GraphQLName("callbackURL") String callbackURL,
-			@GraphQLName("object") Object object)
-		throws Exception {
-
-		return _applyComponentServiceObjects(
-			_measurementUnitResourceComponentServiceObjects,
-			this::_populateResourceContext,
-			measurementUnitResource ->
-				measurementUnitResource.postMeasurementUnitBatch(
-					callbackURL, object));
-	}
-
-	@GraphQLField
-	public boolean deleteMeasurementUnitByExternalReferenceCode(
-			@GraphQLName("externalReferenceCode") String externalReferenceCode)
-		throws Exception {
-
-		_applyVoidComponentServiceObjects(
-			_measurementUnitResourceComponentServiceObjects,
-			this::_populateResourceContext,
-			measurementUnitResource ->
-				measurementUnitResource.
-					deleteMeasurementUnitByExternalReferenceCode(
-						externalReferenceCode));
-
-		return true;
-	}
-
-	@GraphQLField
-	public Response patchMeasurementUnitByExternalReferenceCode(
-			@GraphQLName("externalReferenceCode") String externalReferenceCode,
-			@GraphQLName("measurementUnit") MeasurementUnit measurementUnit)
-		throws Exception {
-
-		return _applyComponentServiceObjects(
-			_measurementUnitResourceComponentServiceObjects,
-			this::_populateResourceContext,
-			measurementUnitResource ->
-				measurementUnitResource.
-					patchMeasurementUnitByExternalReferenceCode(
-						externalReferenceCode, measurementUnit));
-	}
-
-	@GraphQLField
-	public boolean deleteMeasurementUnitByKey(@GraphQLName("key") String key)
-		throws Exception {
-
-		_applyVoidComponentServiceObjects(
-			_measurementUnitResourceComponentServiceObjects,
-			this::_populateResourceContext,
-			measurementUnitResource ->
-				measurementUnitResource.deleteMeasurementUnitByKey(key));
-
-		return true;
-	}
-
-	@GraphQLField
-	public Response patchMeasurementUnitByKey(
-			@GraphQLName("key") String key,
-			@GraphQLName("measurementUnit") MeasurementUnit measurementUnit)
-		throws Exception {
-
-		return _applyComponentServiceObjects(
-			_measurementUnitResourceComponentServiceObjects,
-			this::_populateResourceContext,
-			measurementUnitResource ->
-				measurementUnitResource.patchMeasurementUnitByKey(
-					key, measurementUnit));
-	}
-
-	@GraphQLField
+	@GraphQLField(
+		description = "Deletes the measurement unit identified by ID. Returns 404 when no unit matches the ID."
+	)
 	public boolean deleteMeasurementUnit(@GraphQLName("id") Long id)
 		throws Exception {
 
@@ -279,7 +238,42 @@ public class Mutation {
 					callbackURL, object));
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Deletes the measurement unit identified by external reference code. Returns 404 when no unit carries that code."
+	)
+	public boolean deleteMeasurementUnitByExternalReferenceCode(
+			@GraphQLName("externalReferenceCode") String externalReferenceCode)
+		throws Exception {
+
+		_applyVoidComponentServiceObjects(
+			_measurementUnitResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			measurementUnitResource ->
+				measurementUnitResource.
+					deleteMeasurementUnitByExternalReferenceCode(
+						externalReferenceCode));
+
+		return true;
+	}
+
+	@GraphQLField(
+		description = "Deletes the measurement unit identified by its stable string `key`. Returns 404 when no unit carries that key."
+	)
+	public boolean deleteMeasurementUnitByKey(@GraphQLName("key") String key)
+		throws Exception {
+
+		_applyVoidComponentServiceObjects(
+			_measurementUnitResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			measurementUnitResource ->
+				measurementUnitResource.deleteMeasurementUnitByKey(key));
+
+		return true;
+	}
+
+	@GraphQLField(
+		description = "Partially updates the measurement unit identified by ID, applying JSON Merge Patch semantics (only fields present in the body are modified). Returns 409 when the supplied external reference code or `key` is already taken in the company, and 422 when the type is not one of the known types."
+	)
 	public Response patchMeasurementUnit(
 			@GraphQLName("id") Long id,
 			@GraphQLName("measurementUnit") MeasurementUnit measurementUnit)
@@ -293,22 +287,108 @@ public class Mutation {
 					id, measurementUnit));
 	}
 
-	@GraphQLField
-	public TaxCategory createCommerceAdminSiteSettingGroupTaxCategory(
-			@GraphQLName("groupId") Long groupId,
-			@GraphQLName("taxCategory") TaxCategory taxCategory)
+	@GraphQLField(
+		description = "Partially updates the measurement unit identified by external reference code, applying JSON Merge Patch semantics (only fields present in the body are modified). Returns 409 when the supplied external reference code or `key` is already taken in the company, and 422 when the type is not one of the known types."
+	)
+	public Response patchMeasurementUnitByExternalReferenceCode(
+			@GraphQLName("externalReferenceCode") String externalReferenceCode,
+			@GraphQLName("measurementUnit") MeasurementUnit measurementUnit)
 		throws Exception {
 
 		return _applyComponentServiceObjects(
-			_taxCategoryResourceComponentServiceObjects,
+			_measurementUnitResourceComponentServiceObjects,
 			this::_populateResourceContext,
-			taxCategoryResource ->
-				taxCategoryResource.
-					postCommerceAdminSiteSettingGroupTaxCategory(
-						groupId, taxCategory));
+			measurementUnitResource ->
+				measurementUnitResource.
+					patchMeasurementUnitByExternalReferenceCode(
+						externalReferenceCode, measurementUnit));
+	}
+
+	@GraphQLField(
+		description = "Partially updates the measurement unit identified by its stable string `key`, applying JSON Merge Patch semantics (only fields present in the body are modified). Returns 409 when the supplied external reference code or `key` is already taken in the company, and 422 when the type is not one of the known types."
+	)
+	public Response patchMeasurementUnitByKey(
+			@GraphQLName("key") String key,
+			@GraphQLName("measurementUnit") MeasurementUnit measurementUnit)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_measurementUnitResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			measurementUnitResource ->
+				measurementUnitResource.patchMeasurementUnitByKey(
+					key, measurementUnit));
+	}
+
+	@GraphQLField(
+		description = "Creates a measurement unit for the caller's company from the supplied `name`, `key`, `rate`, `priority`, and type. Returns 422 when the type is not one of the known types, and 409 when the supplied external reference code or `key` is already taken in the company."
+	)
+	public MeasurementUnit createMeasurementUnit(
+			@GraphQLName("measurementUnit") MeasurementUnit measurementUnit)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_measurementUnitResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			measurementUnitResource ->
+				measurementUnitResource.postMeasurementUnit(measurementUnit));
 	}
 
 	@GraphQLField
+	public Response createMeasurementUnitBatch(
+			@GraphQLName("callbackURL") String callbackURL,
+			@GraphQLName("object") Object object)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_measurementUnitResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			measurementUnitResource ->
+				measurementUnitResource.postMeasurementUnitBatch(
+					callbackURL, object));
+	}
+
+	@GraphQLField
+	public Response createMeasurementUnitsPageExportBatch(
+			@GraphQLName("filter") String filterString,
+			@GraphQLName("sort") String sortsString,
+			@GraphQLName("callbackURL") String callbackURL,
+			@GraphQLName("contentType") String contentType,
+			@GraphQLName("fieldNames") String fieldNames)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_measurementUnitResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			measurementUnitResource ->
+				measurementUnitResource.postMeasurementUnitsPageExportBatch(
+					_filterBiFunction.apply(
+						measurementUnitResource, filterString),
+					_sortsBiFunction.apply(
+						measurementUnitResource, sortsString),
+					callbackURL, contentType, fieldNames));
+	}
+
+	@GraphQLField(
+		description = "Upserts the measurement unit identified by external reference code -- replaces it with the request body when the code exists, otherwise creates a new unit. Returns 409 when the supplied external reference code or `key` is already taken in the company, and 422 when the type is not one of the known types."
+	)
+	public MeasurementUnit updateMeasurementUnitByExternalReferenceCode(
+			@GraphQLName("externalReferenceCode") String externalReferenceCode,
+			@GraphQLName("measurementUnit") MeasurementUnit measurementUnit)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_measurementUnitResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			measurementUnitResource ->
+				measurementUnitResource.
+					putMeasurementUnitByExternalReferenceCode(
+						externalReferenceCode, measurementUnit));
+	}
+
+	@GraphQLField(
+		description = "Deletes the tax category identified by ID. Returns 404 when no tax category matches the ID."
+	)
 	public Response deleteTaxCategory(@GraphQLName("id") Long id)
 		throws Exception {
 
@@ -331,7 +411,26 @@ public class Mutation {
 				callbackURL, object));
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Unimplemented endpoint for creating a tax category under the supplied site (`groupId`). Every request is rejected with a 400 Bad Request without reaching the underlying service, and no record is persisted."
+	)
+	public TaxCategory createCommerceAdminSiteSettingGroupTaxCategory(
+			@GraphQLName("groupId") Long groupId,
+			@GraphQLName("taxCategory") TaxCategory taxCategory)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_taxCategoryResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			taxCategoryResource ->
+				taxCategoryResource.
+					postCommerceAdminSiteSettingGroupTaxCategory(
+						groupId, taxCategory));
+	}
+
+	@GraphQLField(
+		description = "Unimplemented endpoint for replacing the tax category identified by ID. Every request is rejected with a 400 Bad Request without reaching the underlying service, and the addressed record is left unchanged."
+	)
 	public Response updateTaxCategory(
 			@GraphQLName("id") Long id,
 			@GraphQLName("taxCategory") TaxCategory taxCategory)
@@ -357,21 +456,9 @@ public class Mutation {
 				callbackURL, object));
 	}
 
-	@GraphQLField
-	public Warehouse createCommerceAdminSiteSettingGroupWarehouse(
-			@GraphQLName("groupId") Long groupId,
-			@GraphQLName("warehouse") Warehouse warehouse)
-		throws Exception {
-
-		return _applyComponentServiceObjects(
-			_warehouseResourceComponentServiceObjects,
-			this::_populateResourceContext,
-			warehouseResource ->
-				warehouseResource.postCommerceAdminSiteSettingGroupWarehouse(
-					groupId, warehouse));
-	}
-
-	@GraphQLField
+	@GraphQLField(
+		description = "Deletes the warehouse definition identified by ID. Returns 404 when no warehouse matches the ID. Side effects -- stock levels held in the inventory administration API are not removed."
+	)
 	public Response deleteWarehouse(@GraphQLName("id") Long id)
 		throws Exception {
 
@@ -394,7 +481,25 @@ public class Mutation {
 				callbackURL, object));
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Unimplemented endpoint for creating a warehouse definition under the supplied site (`groupId`). Every request is rejected with a 400 Bad Request without reaching the underlying service, and no record is persisted. For warehouse writes that persist, including stock levels and per-account, per-group, and per-channel scoping, use the inventory administration API."
+	)
+	public Warehouse createCommerceAdminSiteSettingGroupWarehouse(
+			@GraphQLName("groupId") Long groupId,
+			@GraphQLName("warehouse") Warehouse warehouse)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_warehouseResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			warehouseResource ->
+				warehouseResource.postCommerceAdminSiteSettingGroupWarehouse(
+					groupId, warehouse));
+	}
+
+	@GraphQLField(
+		description = "Unimplemented endpoint for replacing the warehouse definition identified by ID. Every request is rejected with a 400 Bad Request without reaching the underlying service, and the addressed record is left unchanged. For warehouse writes that persist, use the inventory administration API."
+	)
 	public Response updateWarehouse(
 			@GraphQLName("id") Long id,
 			@GraphQLName("warehouse") Warehouse warehouse)
@@ -551,12 +656,15 @@ public class Mutation {
 
 	private AcceptLanguage _acceptLanguage;
 	private com.liferay.portal.kernel.model.Company _company;
-	private BiFunction<Object, String, Filter> _filterBiFunction;
+	private BiFunction
+		<Object, String, com.liferay.portal.kernel.search.filter.Filter>
+			_filterBiFunction;
 	private GroupLocalService _groupLocalService;
 	private HttpServletRequest _httpServletRequest;
 	private HttpServletResponse _httpServletResponse;
 	private RoleLocalService _roleLocalService;
-	private BiFunction<Object, String, Sort[]> _sortsBiFunction;
+	private BiFunction<Object, String, com.liferay.portal.kernel.search.Sort[]>
+		_sortsBiFunction;
 	private UriInfo _uriInfo;
 	private com.liferay.portal.kernel.model.User _user;
 	private VulcanBatchEngineExportTaskResource
@@ -565,3 +673,4 @@ public class Mutation {
 		_vulcanBatchEngineImportTaskResource;
 
 }
+// LIFERAY-REST-BUILDER-HASH:-228747382

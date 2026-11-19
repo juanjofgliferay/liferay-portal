@@ -44,16 +44,29 @@ public class FreestyleBatchBuild extends BaseBuild {
 	}
 
 	@Override
+	public Job getJob() {
+		TopLevelBuild topLevelBuild = getTopLevelBuild();
+
+		if (topLevelBuild != null) {
+			return topLevelBuild.getJob();
+		}
+
+		return super.getJob();
+	}
+
+	@Override
 	public String getJobVariant() {
 		return getParameterValue("RUN_ID");
 	}
 
-	protected FreestyleBatchBuild(String url) {
-		this(url, null);
+	protected FreestyleBatchBuild(String buildURL) {
+		this(buildURL, null);
 	}
 
-	protected FreestyleBatchBuild(String url, TopLevelBuild topLevelBuild) {
-		super(url, topLevelBuild);
+	protected FreestyleBatchBuild(
+		String buildURL, TopLevelBuild topLevelBuild) {
+
+		super(buildURL, topLevelBuild);
 	}
 
 	@Override

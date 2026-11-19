@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -72,6 +73,16 @@ public class CommerceTermEntryLocalServiceUtil {
 			expirationDateYear, expirationDateHour, expirationDateMinute,
 			neverExpire, labelMap, name, priority, type, typeSettings,
 			serviceContext);
+	}
+
+	public static com.liferay.commerce.term.model.CTermEntryLocalization
+			addCTermEntryLocalization(
+				CommerceTermEntry commerceTermEntry, String languageId,
+				String description, String label)
+		throws PortalException {
+
+		return getService().addCTermEntryLocalization(
+			commerceTermEntry, languageId, description, label);
 	}
 
 	public static void checkCommerceTermEntries() throws PortalException {
@@ -373,6 +384,14 @@ public class CommerceTermEntryLocalServiceUtil {
 			companyId, commerceOrderTypeId, commerceShippingOptionId);
 	}
 
+	public static int getDeliveryCommerceTermEntriesCount(
+		long companyId, long commerceOrderTypeId,
+		long commerceShippingOptionId) {
+
+		return getService().getDeliveryCommerceTermEntriesCount(
+			companyId, commerceOrderTypeId, commerceShippingOptionId);
+	}
+
 	public static com.liferay.portal.kernel.dao.orm.ExportActionableDynamicQuery
 		getExportActionableDynamicQuery(
 			com.liferay.exportimport.kernel.lar.PortletDataContext
@@ -405,6 +424,14 @@ public class CommerceTermEntryLocalServiceUtil {
 			companyId, commerceOrderTypeId, commercePaymentMethodGroupRelId);
 	}
 
+	public static int getPaymentCommerceTermEntriesCount(
+		long companyId, long commerceOrderTypeId,
+		long commercePaymentMethodGroupRelId) {
+
+		return getService().getPaymentCommerceTermEntriesCount(
+			companyId, commerceOrderTypeId, commercePaymentMethodGroupRelId);
+	}
+
 	/**
 	 * @throws PortalException
 	 */
@@ -412,12 +439,6 @@ public class CommerceTermEntryLocalServiceUtil {
 		throws PortalException {
 
 		return getService().getPersistedModel(primaryKeyObj);
-	}
-
-	public static com.liferay.portal.kernel.search.Hits search(
-		com.liferay.portal.kernel.search.SearchContext searchContext) {
-
-		return getService().search(searchContext);
 	}
 
 	public static com.liferay.portal.kernel.search.BaseModelSearchResult
@@ -508,13 +529,13 @@ public class CommerceTermEntryLocalServiceUtil {
 	}
 
 	public static CommerceTermEntryLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(CommerceTermEntryLocalService service) {
-		_service = service;
-	}
-
-	private static volatile CommerceTermEntryLocalService _service;
+	private static final Snapshot<CommerceTermEntryLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			CommerceTermEntryLocalServiceUtil.class,
+			CommerceTermEntryLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-390425019

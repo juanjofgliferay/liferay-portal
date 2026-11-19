@@ -7,6 +7,7 @@ package com.liferay.knowledge.base.web.internal.display.context;
 
 import com.liferay.item.selector.criteria.InfoItemItemSelectorReturnType;
 import com.liferay.item.selector.criteria.info.item.criterion.InfoItemItemSelectorCriterion;
+import com.liferay.item.selector.taglib.GroupSelectorBreadcrumbUtil;
 import com.liferay.knowledge.base.constants.KBFolderConstants;
 import com.liferay.knowledge.base.constants.KBPortletKeys;
 import com.liferay.knowledge.base.model.KBArticle;
@@ -52,17 +53,17 @@ import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.site.navigation.taglib.servlet.taglib.util.BreadcrumbEntryBuilder;
 import com.liferay.site.navigation.taglib.servlet.taglib.util.BreadcrumbEntryListBuilder;
 
+import jakarta.portlet.PortletException;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-
-import javax.portlet.PortletException;
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
-import javax.portlet.PortletURL;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Alicia García
@@ -81,9 +82,9 @@ public class KBArticleItemSelectorViewDisplayContext {
 		_search = search;
 
 		_portletRequest = (PortletRequest)httpServletRequest.getAttribute(
-			JavaConstants.JAVAX_PORTLET_REQUEST);
+			JavaConstants.JAKARTA_PORTLET_REQUEST);
 		_portletResponse = (RenderResponse)httpServletRequest.getAttribute(
-			JavaConstants.JAVAX_PORTLET_RESPONSE);
+			JavaConstants.JAKARTA_PORTLET_RESPONSE);
 		_themeDisplay = (ThemeDisplay)httpServletRequest.getAttribute(
 			WebKeys.THEME_DISPLAY);
 	}
@@ -111,6 +112,26 @@ public class KBArticleItemSelectorViewDisplayContext {
 			"classNameId", PortalUtil.getClassNameId(KBArticle.class.getName())
 		).put(
 			"classPK", kbArticle.getResourcePrimKey()
+		).put(
+			"externalReferenceCode", kbArticle.getExternalReferenceCode()
+		).put(
+			"scopeExternalReferenceCode",
+			() -> {
+				long scopeGroupId = _themeDisplay.getRefererGroupId();
+
+				if (scopeGroupId <= 0) {
+					scopeGroupId = _themeDisplay.getScopeGroupId();
+				}
+
+				if (kbArticle.getGroupId() == scopeGroupId) {
+					return null;
+				}
+
+				Group group = GroupLocalServiceUtil.getGroup(
+					kbArticle.getGroupId());
+
+				return group.getExternalReferenceCode();
+			}
 		).put(
 			"title", kbArticle.getTitle()
 		).put(
@@ -173,27 +194,18 @@ public class KBArticleItemSelectorViewDisplayContext {
 	public List<BreadcrumbEntry> getPortletBreadcrumbEntries()
 		throws Exception {
 
+		Group group = GroupLocalServiceUtil.getGroup(_getGroupId());
 		KBFolder kbFolder = _getKBFolder();
 
-		return BreadcrumbEntryListBuilder.add(
-			BreadcrumbEntryBuilder.setTitle(
-				LanguageUtil.get(_httpServletRequest, "sites-and-libraries")
-			).setURL(
-				PortletURLBuilder.create(
-					getPortletURL()
-				).setParameter(
-					"groupType", "site"
-				).setParameter(
-					"showGroupSelector", true
-				).buildString()
-			).build()
+		return BreadcrumbEntryListBuilder.addAll(
+			() -> GroupSelectorBreadcrumbUtil.getBreadcrumbEntries(
+				group, _httpServletRequest,
+				PortalUtil.getLiferayPortletResponse(_portletResponse),
+				getPortletURL())
 		).add(
 			breadcrumbEntry -> {
-				Group group = GroupLocalServiceUtil.getGroup(_getGroupId());
-
 				breadcrumbEntry.setTitle(
 					group.getDescriptiveName(_themeDisplay.getLocale()));
-
 				breadcrumbEntry.setURL(
 					PortletURLBuilder.create(
 						getPortletURL()
@@ -346,7 +358,7 @@ public class KBArticleItemSelectorViewDisplayContext {
 
 					if (Objects.equals(_getOrderByCol(), "priority")) {
 						kbObjectOrderByComparator =
-							new KBObjectsPriorityComparator<>(orderByAsc);
+							KBObjectsPriorityComparator.getInstance(orderByAsc);
 					}
 					else if (Objects.equals(
 								_getOrderByCol(), "modified-date")) {
@@ -360,7 +372,8 @@ public class KBArticleItemSelectorViewDisplayContext {
 					}
 					else if (Objects.equals(_getOrderByCol(), "view-count")) {
 						kbObjectOrderByComparator =
-							new KBObjectsViewCountComparator<>(orderByAsc);
+							KBObjectsViewCountComparator.getInstance(
+								orderByAsc);
 					}
 
 					return KBFolderServiceUtil.getKBFoldersAndKBArticles(
@@ -495,6 +508,7 @@ public class KBArticleItemSelectorViewDisplayContext {
 
 		_kbFolderId = BeanParamUtil.getLong(
 			_getKBFolder(), _httpServletRequest, "kbFolderId",
+			KBFolder::getKbFolderId,
 			KBFolderConstants.DEFAULT_PARENT_FOLDER_ID);
 
 		return _kbFolderId;

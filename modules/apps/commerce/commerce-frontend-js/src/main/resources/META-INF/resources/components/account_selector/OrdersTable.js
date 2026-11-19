@@ -5,10 +5,12 @@
 
 import ClayTable from '@clayui/table';
 import {DateTimeRenderer, StatusRenderer} from '@liferay/frontend-data-set-web';
+import {navigate} from 'frontend-js-web';
 import PropTypes from 'prop-types';
 import React from 'react';
 
 import {formatActionUrl} from '../../utilities/index';
+import {resetCommerceCurrency} from '../currency_selector/util';
 
 function OrdersTable({orders, selectOrderURL}) {
 	return (
@@ -30,10 +32,22 @@ function OrdersTable({orders, selectOrderURL}) {
 			</ClayTable.Head>
 
 			<ClayTable.Body>
-				{orders.map((order) => (
+				{orders.map((order, index) => (
 					<ClayTable.Row key={order.id}>
 						<ClayTable.Cell headingTitle>
-							<a href={formatActionUrl(selectOrderURL, order)}>
+							<a
+								onClick={(event) => {
+									event.preventDefault();
+
+									resetCommerceCurrency();
+
+									navigate(
+										formatActionUrl(selectOrderURL, order)
+									);
+								}}
+								role="button"
+								tabIndex={index}
+							>
 								{order.id}
 							</a>
 						</ClayTable.Cell>

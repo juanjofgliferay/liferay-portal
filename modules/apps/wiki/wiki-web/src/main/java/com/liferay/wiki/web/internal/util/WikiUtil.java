@@ -23,8 +23,10 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
+import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.URLCodec;
 import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.wiki.configuration.WikiGroupServiceConfiguration;
 import com.liferay.wiki.engine.WikiEngine;
 import com.liferay.wiki.engine.WikiEngineRenderer;
 import com.liferay.wiki.exception.WikiFormatException;
@@ -34,6 +36,15 @@ import com.liferay.wiki.model.WikiPageDisplay;
 import com.liferay.wiki.service.WikiPageLocalService;
 import com.liferay.wiki.util.comparator.PageVersionComparator;
 
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.jsp.PageContext;
+
 import java.io.IOException;
 import java.io.Writer;
 
@@ -42,15 +53,6 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
-
-import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.jsp.PageContext;
 
 /**
  * @author Brian Wing Shun Chan
@@ -78,7 +80,7 @@ public class WikiUtil {
 
 		List<WikiPage> pages = wikiPageLocalService.getPages(
 			nodeId, title, QueryUtil.ALL_POS, QueryUtil.ALL_POS,
-			new PageVersionComparator(true));
+			PageVersionComparator.getInstance(true));
 
 		for (WikiPage page : pages) {
 			if ((page.getVersion() < sourceVersion) &&
@@ -87,11 +89,13 @@ public class WikiUtil {
 				previousVersion = page.getVersion();
 			}
 
-			if ((page.getVersion() > targetVersion) &&
-				((page.getVersion() < nextVersion) || (nextVersion == 0))) {
+			if ((page.getVersion() <= targetVersion) ||
+				((page.getVersion() >= nextVersion) && (nextVersion != 0))) {
 
-				nextVersion = page.getVersion();
+				continue;
 			}
+
+			nextVersion = page.getVersion();
 		}
 
 		List<DiffVersion> diffVersions = new ArrayList<>();
@@ -181,15 +185,27 @@ public class WikiUtil {
 			ModelResourcePermission<WikiNode> wikiNodeModelResourcePermission =
 				_wikiNodeModelResourcePermissionSnapshot.get();
 
-			if (!(Arrays.binarySearch(hiddenNodes, node.getName()) < 0) ||
-				!wikiNodeModelResourcePermission.contains(
+			if ((Arrays.binarySearch(hiddenNodes, node.getName()) < 0) &&
+				wikiNodeModelResourcePermission.contains(
 					permissionChecker, node, ActionKeys.VIEW)) {
 
-				iterator.remove();
+				continue;
 			}
+
+			iterator.remove();
 		}
 
 		return nodes;
+	}
+
+	public static boolean isRSSFeedsEnabled(
+		WikiGroupServiceConfiguration wikiGroupServiceConfiguration) {
+
+		if (!PortalUtil.isRSSFeedsEnabled()) {
+			return false;
+		}
+
+		return wikiGroupServiceConfiguration.enableRss();
 	}
 
 	public static List<WikiNode> orderNodes(

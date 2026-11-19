@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {fetch, getOpener, openToast} from 'frontend-js-web';
+import {openToast} from 'frontend-js-components-web';
+import {fetch, getOpener} from 'frontend-js-web';
 
 import {checkFriendlyURL} from './checkFriendlyURL';
 
@@ -21,6 +22,12 @@ export default function AddLayout({
 	const addButton = document.getElementById(
 		`${namespace}addButton`
 	) as HTMLButtonElement;
+
+	const addLayoutForm = document.querySelector(
+		'.add-layout-form'
+	) as HTMLButtonElement;
+
+	addLayoutForm?.classList.remove('d-none');
 
 	const form = document.getElementById(`${namespace}fm`) as HTMLFormElement;
 

@@ -110,9 +110,7 @@ public class ModulePersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		Module newModule = _persistence.create(pk);
+		Module newModule = addModule();
 
 		newModule.setUuid(RandomTestUtil.randomString());
 
@@ -126,7 +124,9 @@ public class ModulePersistenceTest {
 
 		newModule.setContextName(RandomTestUtil.randomString());
 
-		_modules.add(_persistence.update(newModule));
+		newModule = _persistence.update(newModule);
+
+		_modules.add(newModule);
 
 		Module existingModule = _persistence.findByPrimaryKey(
 			newModule.getPrimaryKey());
@@ -169,15 +169,6 @@ public class ModulePersistenceTest {
 		_persistence.countByAppId(RandomTestUtil.nextLong());
 
 		_persistence.countByAppId(0L);
-	}
-
-	@Test
-	public void testCountByBundleSymbolicName() throws Exception {
-		_persistence.countByBundleSymbolicName("");
-
-		_persistence.countByBundleSymbolicName("null");
-
-		_persistence.countByBundleSymbolicName((String)null);
 	}
 
 	@Test
@@ -492,17 +483,6 @@ public class ModulePersistenceTest {
 				module, "getColumnOriginalValue", new Class<?>[] {String.class},
 				"appId"));
 		Assert.assertEquals(
-			module.getContextName(),
-			ReflectionTestUtil.invoke(
-				module, "getColumnOriginalValue", new Class<?>[] {String.class},
-				"contextName"));
-
-		Assert.assertEquals(
-			Long.valueOf(module.getAppId()),
-			ReflectionTestUtil.<Long>invoke(
-				module, "getColumnOriginalValue", new Class<?>[] {String.class},
-				"appId"));
-		Assert.assertEquals(
 			module.getBundleSymbolicName(),
 			ReflectionTestUtil.invoke(
 				module, "getColumnOriginalValue", new Class<?>[] {String.class},
@@ -541,3 +521,4 @@ public class ModulePersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:2113219236

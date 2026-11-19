@@ -7,7 +7,9 @@ package com.liferay.layout.seo.service;
 
 import com.liferay.layout.seo.model.LayoutSEOEntry;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.module.service.Snapshot;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -29,25 +31,6 @@ public class LayoutSEOEntryServiceUtil {
 	 *
 	 * Never modify this class directly. Add custom service methods to <code>com.liferay.layout.seo.service.impl.LayoutSEOEntryServiceImpl</code> and rerun ServiceBuilder to regenerate this class.
 	 */
-	public static LayoutSEOEntry copyLayoutSEOEntry(
-			long userId, long groupId, boolean privateLayout,
-			long sourceLayoutId, boolean canonicalURLEnabled,
-			Map<java.util.Locale, String> canonicalURLMap,
-			long copyDDMStorageId, boolean openGraphDescriptionEnabled,
-			Map<java.util.Locale, String> openGraphDescriptionMap,
-			Map<java.util.Locale, String> openGraphImageAltMap,
-			long openGraphImageFileEntryId, boolean openGraphTitleEnabled,
-			Map<java.util.Locale, String> openGraphTitleMap,
-			com.liferay.portal.kernel.service.ServiceContext serviceContext)
-		throws PortalException {
-
-		return getService().copyLayoutSEOEntry(
-			userId, groupId, privateLayout, sourceLayoutId, canonicalURLEnabled,
-			canonicalURLMap, copyDDMStorageId, openGraphDescriptionEnabled,
-			openGraphDescriptionMap, openGraphImageAltMap,
-			openGraphImageFileEntryId, openGraphTitleEnabled, openGraphTitleMap,
-			serviceContext);
-	}
 
 	/**
 	 * Returns the OSGi service identifier.
@@ -60,11 +43,16 @@ public class LayoutSEOEntryServiceUtil {
 
 	public static LayoutSEOEntry updateCustomMetaTags(
 			long groupId, boolean privateLayout, long layoutId,
+			List
+				<com.liferay.layout.seo.model.
+					LayoutSEOEntryCustomMetaTagProperty>
+						layoutSEOEntryCustomMetaTagProperties,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().updateCustomMetaTags(
-			groupId, privateLayout, layoutId, serviceContext);
+			groupId, privateLayout, layoutId,
+			layoutSEOEntryCustomMetaTagProperties, serviceContext);
 	}
 
 	public static LayoutSEOEntry updateLayoutSEOEntry(
@@ -74,7 +62,9 @@ public class LayoutSEOEntryServiceUtil {
 			boolean openGraphDescriptionEnabled,
 			Map<java.util.Locale, String> openGraphDescriptionMap,
 			Map<java.util.Locale, String> openGraphImageAltMap,
-			long openGraphImageFileEntryId, boolean openGraphTitleEnabled,
+			String openGraphImageFileEntryERC,
+			String openGraphImageFileEntryScopeERC,
+			boolean openGraphTitleEnabled,
 			Map<java.util.Locale, String> openGraphTitleMap,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
@@ -83,8 +73,27 @@ public class LayoutSEOEntryServiceUtil {
 			groupId, privateLayout, layoutId, canonicalURLEnabled,
 			canonicalURLMap, openGraphDescriptionEnabled,
 			openGraphDescriptionMap, openGraphImageAltMap,
-			openGraphImageFileEntryId, openGraphTitleEnabled, openGraphTitleMap,
-			serviceContext);
+			openGraphImageFileEntryERC, openGraphImageFileEntryScopeERC,
+			openGraphTitleEnabled, openGraphTitleMap, serviceContext);
+	}
+
+	public static LayoutSEOEntry updateLayoutSEOEntry(
+			long groupId, boolean privateLayout, long layoutId,
+			boolean openGraphDescriptionEnabled,
+			Map<java.util.Locale, String> openGraphDescriptionMap,
+			Map<java.util.Locale, String> openGraphImageAltMap,
+			String openGraphImageFileEntryERC,
+			String openGraphImageFileEntryScopeERC,
+			boolean openGraphTitleEnabled,
+			Map<java.util.Locale, String> openGraphTitleMap,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
+		throws PortalException {
+
+		return getService().updateLayoutSEOEntry(
+			groupId, privateLayout, layoutId, openGraphDescriptionEnabled,
+			openGraphDescriptionMap, openGraphImageAltMap,
+			openGraphImageFileEntryERC, openGraphImageFileEntryScopeERC,
+			openGraphTitleEnabled, openGraphTitleMap, serviceContext);
 	}
 
 	public static LayoutSEOEntry updateLayoutSEOEntry(
@@ -100,13 +109,12 @@ public class LayoutSEOEntryServiceUtil {
 	}
 
 	public static LayoutSEOEntryService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(LayoutSEOEntryService service) {
-		_service = service;
-	}
-
-	private static volatile LayoutSEOEntryService _service;
+	private static final Snapshot<LayoutSEOEntryService> _serviceSnapshot =
+		new Snapshot<>(
+			LayoutSEOEntryServiceUtil.class, LayoutSEOEntryService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-772633419

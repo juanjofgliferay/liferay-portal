@@ -10,12 +10,17 @@ import com.dumbster.smtp.SmtpServerFactory;
 import com.dumbster.smtp.mailstores.RollingMailStore;
 
 import com.liferay.mail.kernel.service.MailServiceUtil;
-import com.liferay.petra.lang.SafeCloseable;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
-import com.liferay.portal.kernel.test.util.PrefsPropsTestUtil;
-import com.liferay.portal.kernel.util.PropsKeys;
+import com.liferay.portal.kernel.util.ProxyUtil;
 import com.liferay.portal.kernel.util.SocketUtil;
+import com.liferay.portal.spring.aop.AopInvocationHandler;
 import com.liferay.portal.test.mail.impl.MailMessageImpl;
+
+import jakarta.mail.Session;
+
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
 
 import java.net.InetAddress;
 import java.net.ServerSocket;
@@ -24,7 +29,11 @@ import java.net.SocketException;
 import java.nio.channels.ServerSocketChannel;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Properties;
 
 /**
  * @author Adam Brandizzi
@@ -51,6 +60,34 @@ public class MailServiceTestUtil {
 			"There are no messages in the inbox");
 	}
 
+	public static MailMessage getMailMessage(
+		String headerName, String[] headerValues) {
+
+		Arrays.sort(headerValues);
+
+		for (com.dumbster.smtp.MailMessage mailMessage :
+				_smtpServer.getMessages()) {
+
+			String mailMessageHeaderValue = mailMessage.getFirstHeaderValue(
+				headerName);
+
+			if (mailMessageHeaderValue == null) {
+				continue;
+			}
+
+			String[] mailMessageHeaderValues = mailMessageHeaderValue.split(
+				"[,;]\\s*");
+
+			Arrays.sort(mailMessageHeaderValues);
+
+			if (Arrays.equals(mailMessageHeaderValues, headerValues)) {
+				return new MailMessageImpl(mailMessage);
+			}
+		}
+
+		return null;
+	}
+
 	public static List<MailMessage> getMailMessages(
 		String headerName, String headerValue) {
 
@@ -67,10 +104,10 @@ public class MailServiceTestUtil {
 				}
 			}
 			else {
-				String messageHeaderValue = mailMessage.getFirstHeaderValue(
+				String mailMessageHeaderValue = mailMessage.getFirstHeaderValue(
 					headerName);
 
-				if (messageHeaderValue.equals(headerValue)) {
+				if (mailMessageHeaderValue.equals(headerValue)) {
 					mailMessages.add(mailMessage);
 				}
 			}
@@ -94,9 +131,52 @@ public class MailServiceTestUtil {
 
 		int smtpPort = _getFreePort();
 
-		_safeCloseable = PrefsPropsTestUtil.swapWithSafeCloseable(
-			0, PropsKeys.MAIL_SESSION_MAIL_SMTP_PORT, smtpPort,
-			PropsKeys.MAIL_SESSION_MAIL, true);
+		Object mailService = MailServiceUtil.getService();
+
+		AopInvocationHandler aopInvocationHandler =
+			ProxyUtil.fetchInvocationHandler(
+				mailService, AopInvocationHandler.class);
+
+		mailService = aopInvocationHandler.getTarget();
+
+		_originalSessions = ReflectionTestUtil.getFieldValue(
+			mailService, "_sessions");
+
+		Class<?> clazz = mailService.getClass();
+
+		ReflectionTestUtil.setFieldValue(
+			mailService, "_sessions",
+			ProxyUtil.newProxyInstance(
+				clazz.getClassLoader(), new Class<?>[] {Map.class},
+				new InvocationHandler() {
+
+					public Object invoke(
+							Object proxy, Method method, Object[] args)
+						throws Throwable {
+
+						if (Objects.equals(method.getName(), "get")) {
+							Properties properties = new Properties();
+
+							properties.put("mail.pop3.host", "localhost");
+							properties.put("mail.pop3.password", "");
+							properties.put("mail.pop3.port", "110");
+							properties.put("mail.pop3.user", "");
+							properties.put("mail.smtp.auth", "false");
+							properties.put("mail.smtp.host", "localhost");
+							properties.put("mail.smtp.password", "");
+							properties.put("mail.smtp.port", smtpPort);
+							properties.put("mail.smtp.starttls.enable", "true");
+							properties.put("mail.smtp.user", "");
+							properties.put("mail.store.protocol", "pop3");
+							properties.put("mail.transport.protocol", "smtp");
+
+							return Session.getInstance(properties);
+						}
+
+						return null;
+					}
+
+				}));
 
 		_smtpServer = new SmtpServer();
 
@@ -128,8 +208,6 @@ public class MailServiceTestUtil {
 		ReflectionTestUtil.invoke(
 			SmtpServerFactory.class, "startServerThread",
 			new Class<?>[] {SmtpServer.class}, _smtpServer);
-
-		MailServiceUtil.clearSession();
 	}
 
 	public static void stop() throws Exception {
@@ -141,9 +219,20 @@ public class MailServiceTestUtil {
 
 		_smtpServer = null;
 
-		_safeCloseable.close();
+		if (_originalSessions != null) {
+			Object mailService = MailServiceUtil.getService();
 
-		MailServiceUtil.clearSession();
+			AopInvocationHandler aopInvocationHandler =
+				ProxyUtil.fetchInvocationHandler(
+					mailService, AopInvocationHandler.class);
+
+			mailService = aopInvocationHandler.getTarget();
+
+			ReflectionTestUtil.setFieldValue(
+				mailService, "_sessions", _originalSessions);
+
+			_originalSessions = null;
+		}
 	}
 
 	private static int _getFreePort() throws Exception {
@@ -170,18 +259,13 @@ public class MailServiceTestUtil {
 	private static List<MailMessage> _wrapMailMessages(
 		List<com.dumbster.smtp.MailMessage> mailMessages) {
 
-		List<MailMessage> wrappedMailMessages = new ArrayList<>();
-
-		for (com.dumbster.smtp.MailMessage mailMessage : mailMessages) {
-			wrappedMailMessages.add(new MailMessageImpl(mailMessage));
-		}
-
-		return wrappedMailMessages;
+		return TransformUtil.transform(
+			mailMessages, mailMessage -> new MailMessageImpl(mailMessage));
 	}
 
 	private static final int _START_PORT = 3241;
 
-	private static SafeCloseable _safeCloseable;
+	private static Map<Long, Session> _originalSessions;
 	private static SmtpServer _smtpServer;
 
 }

@@ -19,12 +19,12 @@ import com.liferay.portal.struts.Action;
 import com.liferay.portal.struts.model.ActionForward;
 import com.liferay.portal.struts.model.ActionMapping;
 
-import java.util.Enumeration;
+import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 
-import javax.servlet.ServletOutputStream;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
+import java.util.Enumeration;
 
 /**
  * @author Brian Wing Shun Chan
@@ -52,19 +52,21 @@ public class SessionClickAction implements Action {
 			while (enumeration.hasMoreElements()) {
 				String name = enumeration.nextElement();
 
-				if (!StringUtil.equals(name, "cmd") &&
-					!StringUtil.equals(name, "doAsUserId") &&
-					!StringUtil.equals(name, "p_auth")) {
+				if (StringUtil.equals(name, "cmd") ||
+					StringUtil.equals(name, "doAsUserId") ||
+					StringUtil.equals(name, "key") ||
+					StringUtil.equals(name, "p_auth")) {
 
-					String value = ParamUtil.getString(
-						httpServletRequest, name);
+					continue;
+				}
 
-					if (useHttpSession) {
-						SessionClicks.put(httpSession, name, value);
-					}
-					else {
-						SessionClicks.put(httpServletRequest, name, value);
-					}
+				String value = ParamUtil.getString(httpServletRequest, name);
+
+				if (useHttpSession) {
+					SessionClicks.put(httpSession, name, value);
+				}
+				else {
+					SessionClicks.put(httpServletRequest, name, value);
 				}
 			}
 

@@ -14,6 +14,7 @@ import com.liferay.message.boards.model.MBMessage;
 import com.liferay.message.boards.service.MBMessageLocalService;
 import com.liferay.portal.kernel.comment.DiscussionPermission;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
@@ -22,10 +23,10 @@ import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
 import com.liferay.portal.kernel.util.HtmlParser;
 
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
-import javax.portlet.WindowState;
-import javax.portlet.WindowStateException;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.WindowState;
+import jakarta.portlet.WindowStateException;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -37,7 +38,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Sergio González
  */
 @Component(
-	property = "javax.portlet.name=" + MBPortletKeys.MESSAGE_BOARDS,
+	property = "jakarta.portlet.name=" + MBPortletKeys.MESSAGE_BOARDS,
 	service = AssetRendererFactory.class
 )
 public class MBMessageAssetRendererFactory
@@ -111,6 +112,15 @@ public class MBMessageAssetRendererFactory
 
 		return _messageModelResourcePermission.contains(
 			permissionChecker, classPK, actionId);
+	}
+
+	@Override
+	public boolean isActive(long companyId) {
+		if (!FeatureFlagManagerUtil.isEnabled(companyId, "LPD-105225")) {
+			return false;
+		}
+
+		return super.isActive(companyId);
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(

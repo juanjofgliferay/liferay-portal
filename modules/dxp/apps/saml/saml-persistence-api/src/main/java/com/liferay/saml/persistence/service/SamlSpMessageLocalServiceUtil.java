@@ -9,6 +9,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.saml.persistence.model.SamlSpMessage;
 
@@ -51,12 +52,12 @@ public class SamlSpMessageLocalServiceUtil {
 	}
 
 	public static SamlSpMessage addSamlSpMessage(
-		String samlIdpEntityId, String samlIdpResponseKey,
-		java.util.Date expirationDate,
+		String samlIdpEntityId, java.util.Date expirationDate,
+		String samlIdpResponseKey,
 		com.liferay.portal.kernel.service.ServiceContext serviceContext) {
 
 		return getService().addSamlSpMessage(
-			samlIdpEntityId, samlIdpResponseKey, expirationDate,
+			samlIdpEntityId, expirationDate, samlIdpResponseKey,
 			serviceContext);
 	}
 
@@ -316,13 +317,13 @@ public class SamlSpMessageLocalServiceUtil {
 	}
 
 	public static SamlSpMessageLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(SamlSpMessageLocalService service) {
-		_service = service;
-	}
-
-	private static volatile SamlSpMessageLocalService _service;
+	private static final Snapshot<SamlSpMessageLocalService> _serviceSnapshot =
+		new Snapshot<>(
+			SamlSpMessageLocalServiceUtil.class,
+			SamlSpMessageLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1352081650

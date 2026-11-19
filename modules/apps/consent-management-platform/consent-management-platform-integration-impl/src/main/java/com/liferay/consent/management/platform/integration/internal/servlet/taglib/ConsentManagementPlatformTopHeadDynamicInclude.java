@@ -1,0 +1,113 @@
+/**
+ * SPDX-FileCopyrightText: (c) 2025 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
+ */
+
+package com.liferay.consent.management.platform.integration.internal.servlet.taglib;
+
+import com.liferay.consent.management.platform.integration.configuration.ConsentManagementPlatformConfiguration;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProviderUtil;
+import com.liferay.portal.kernel.content.security.policy.ContentSecurityPolicyNonceProviderUtil;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.module.configuration.ConfigurationException;
+import com.liferay.portal.kernel.servlet.taglib.BaseDynamicInclude;
+import com.liferay.portal.kernel.servlet.taglib.DynamicInclude;
+import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.kernel.util.WebKeys;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+import java.io.IOException;
+import java.io.PrintWriter;
+
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import org.osgi.service.component.annotations.Component;
+
+/**
+ * @author Christian Moura
+ */
+@Component(
+	property = {
+		"dynamic.include.key=/html/common/themes/top_head.jsp#consent_management_platform",
+		"service.ranking:Integer=1000"
+	},
+	service = DynamicInclude.class
+)
+public class ConsentManagementPlatformTopHeadDynamicInclude
+	extends BaseDynamicInclude {
+
+	@Override
+	public void include(
+			HttpServletRequest httpServletRequest,
+			HttpServletResponse httpServletResponse, String key)
+		throws IOException {
+
+		ThemeDisplay themeDisplay =
+			(ThemeDisplay)httpServletRequest.getAttribute(
+				WebKeys.THEME_DISPLAY);
+
+		ConsentManagementPlatformConfiguration
+			consentManagementPlatformConfiguration = null;
+
+		try {
+			consentManagementPlatformConfiguration =
+				ConfigurationProviderUtil.getGroupConfiguration(
+					ConsentManagementPlatformConfiguration.class,
+					themeDisplay.getCompanyId(),
+					themeDisplay.getScopeGroupId());
+		}
+		catch (ConfigurationException configurationException) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(configurationException);
+			}
+		}
+
+		if ((consentManagementPlatformConfiguration == null) ||
+			!consentManagementPlatformConfiguration.enabled()) {
+
+			return;
+		}
+
+		PrintWriter printWriter = httpServletResponse.getWriter();
+
+		String nonceAttribute =
+			ContentSecurityPolicyNonceProviderUtil.getNonceAttribute(
+				httpServletRequest);
+
+		printWriter.println(
+			_addNonceAttribute(
+				consentManagementPlatformConfiguration.scriptTag(),
+				nonceAttribute));
+
+		String consentMappingScript =
+			consentManagementPlatformConfiguration.consentMappingScript();
+
+		if (Validator.isNotNull(consentMappingScript)) {
+			printWriter.println(
+				_addNonceAttribute(consentMappingScript, nonceAttribute));
+		}
+	}
+
+	private String _addNonceAttribute(String html, String nonceAttribute) {
+		if (Validator.isNull(nonceAttribute)) {
+			return html;
+		}
+
+		Matcher matcher = _linkOrScriptPattern.matcher(html);
+
+		return matcher.replaceAll(
+			matchResult -> matchResult.group() + nonceAttribute);
+	}
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		ConsentManagementPlatformTopHeadDynamicInclude.class);
+
+	private static final Pattern _linkOrScriptPattern = Pattern.compile(
+		"<(?:link|script)(?=[\\s>])", Pattern.CASE_INSENSITIVE);
+
+}

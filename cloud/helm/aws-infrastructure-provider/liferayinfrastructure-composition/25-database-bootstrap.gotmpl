@@ -1,0 +1,130 @@
+{{- $databaseAppRole := "liferay" -}}
+
+{{- if not $env.databaseScripts }}
+{{- fail "The \"database-scripts\" EnvironmentConfig is missing, so the database Jobs have no scripts to run" }}
+{{- end }}
+apiVersion: kubernetes.m.crossplane.io/v1alpha1
+kind: Object
+metadata:
+    annotations:
+        gotemplating.fn.crossplane.io/composition-resource-name: database-scripts
+    name: {{ $baseName }}-database-scripts
+    namespace: {{ $namespace }}
+spec:
+    forProvider:
+        manifest:
+            apiVersion: v1
+            data:
+                {{- $env.databaseScripts | toYaml | nindent 16 }}
+            kind: ConfigMap
+            metadata:
+                name: database-scripts
+                namespace: {{ $namespace }}
+    managementPolicies: {{ $managementPolicies }}
+{{- if $activeDatabaseAddress }}
+---
+apiVersion: kubernetes.m.crossplane.io/v1alpha1
+kind: Object
+metadata:
+    annotations:
+        gotemplating.fn.crossplane.io/composition-resource-name: database-bootstrap-job-{{ $activeDataPlane }}
+    labels:
+        app: liferay
+        component: database-bootstrap
+        dataPlane: {{ $activeDataPlane }}
+        environmentId: {{ $environmentId }}
+        projectId: {{ $projectId }}
+    name: {{ $baseName }}-database-bootstrap-{{ $activeDataPlane }}
+    namespace: {{ $namespace }}
+spec:
+    forProvider:
+        manifest:
+            apiVersion: batch/v1
+            kind: Job
+            metadata:
+                labels:
+                    app: liferay
+                    component: database-bootstrap
+                    dataPlane: {{ $activeDataPlane }}
+                    environmentId: {{ $environmentId }}
+                    projectId: {{ $projectId }}
+                name: database-bootstrap-{{ $activeDataPlane }}
+                namespace: {{ $namespace }}
+            spec:
+                template:
+                    spec:
+                        automountServiceAccountToken: false
+                        containers:
+                            -   command:
+                                    -   /bin/sh
+                                    -   /scripts/bootstrap-database.sh
+                                env:
+                                    -   name: DATABASE_NAME
+                                        value: lportal
+                                    -   name: LIFERAY_DATABASE_USERNAME
+                                        value: {{ $databaseAppRole }}
+                                    -   name: LIFERAY_PASSWORD
+                                        valueFrom:
+                                            secretKeyRef:
+                                                key: DATABASE_PASSWORD
+                                                name: database-app-password
+                                    -   name: PGHOST
+                                        valueFrom:
+                                            secretKeyRef:
+                                                key: address
+                                                name: liferay-database-{{ $activeDataPlane }}-credentials
+                                    -   name: PGPASSWORD
+                                        valueFrom:
+                                            secretKeyRef:
+                                                key: password
+                                                name: liferay-database-{{ $activeDataPlane }}-credentials
+                                    -   name: PGPORT
+                                        valueFrom:
+                                            secretKeyRef:
+                                                key: port
+                                                name: liferay-database-{{ $activeDataPlane }}-credentials
+                                    -   name: PGSSLMODE
+                                        value: require
+                                    -   name: PGUSER
+                                        valueFrom:
+                                            secretKeyRef:
+                                                key: username
+                                                name: liferay-database-{{ $activeDataPlane }}-credentials
+                                image: postgres:18-alpine
+                                name: sql-runner
+                                resources:
+                                    limits:
+                                        cpu: 200m
+                                        memory: 256Mi
+                                    requests:
+                                        cpu: 100m
+                                        memory: 128Mi
+                                securityContext:
+                                    allowPrivilegeEscalation: false
+                                    capabilities:
+                                        drop:
+                                            -   ALL
+                                    readOnlyRootFilesystem: true
+                                    runAsNonRoot: true
+                                    runAsUser: 1000
+                                    seccompProfile:
+                                        type: RuntimeDefault
+                                volumeMounts:
+                                    -   mountPath: /scripts
+                                        name: database-scripts
+                                        readOnly: true
+                        restartPolicy: OnFailure
+                        securityContext:
+                            fsGroup: 1000
+                            runAsNonRoot: true
+                            seccompProfile:
+                                type: RuntimeDefault
+                        volumes:
+                            -   configMap:
+                                    name: database-scripts
+                                name: database-scripts
+    managementPolicies: ["Create", "Observe", "Delete"]
+    readiness:
+        celQuery: object.status.succeeded == 1
+        policy: DeriveFromCelQuery
+{{- end }}

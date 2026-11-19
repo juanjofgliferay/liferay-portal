@@ -27,6 +27,9 @@ public class CommerceConstants {
 	public static final String RESOURCE_NAME_COMMERCE_ORDER_TYPE =
 		"com.liferay.commerce.order.type";
 
+	public static final String RESOURCE_NAME_COMMERCE_RETURN =
+		"com.liferay.commerce.return";
+
 	public static final String RESOURCE_NAME_COMMERCE_SHIPMENT =
 		"com.liferay.commerce.shipment";
 
@@ -35,6 +38,9 @@ public class CommerceConstants {
 
 	public static final String SERVICE_NAME_COMMERCE_ACCOUNT =
 		"com.liferay.commerce.account";
+
+	public static final String SERVICE_NAME_COMMERCE_ACCOUNT_ENTRY_VALIDATION =
+		"com.liferay.commerce.account.entry.validation";
 
 	public static final String SERVICE_NAME_COMMERCE_ORDER =
 		"com.liferay.commerce.order";
@@ -45,9 +51,6 @@ public class CommerceConstants {
 	public static final String
 		SERVICE_NAME_COMMERCE_ORDER_IMPORTER_DATE_FORMAT =
 			"com.liferay.commerce.order.importer.date.format";
-
-	public static final String SERVICE_NAME_COMMERCE_PRICE =
-		"com.liferay.commerce.price";
 
 	public static final String SERVICE_NAME_COMMERCE_SHIPPING =
 		"com.liferay.commerce.shipping";

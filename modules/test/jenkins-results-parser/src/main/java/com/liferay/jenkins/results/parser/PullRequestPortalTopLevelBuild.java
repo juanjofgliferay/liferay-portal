@@ -25,9 +25,9 @@ public class PullRequestPortalTopLevelBuild
 	implements PortalWorkspaceBuild, PullRequestBuild {
 
 	public PullRequestPortalTopLevelBuild(
-		String url, TopLevelBuild topLevelBuild) {
+		String buildURL, TopLevelBuild topLevelBuild) {
 
-		super(url, topLevelBuild);
+		super(buildURL, topLevelBuild);
 
 		setCompareToUpstream(true);
 
@@ -61,6 +61,28 @@ public class PullRequestPortalTopLevelBuild
 	}
 
 	@Override
+	public String getBranchName() {
+		String branchName = getParameterValue("GITHUB_UPSTREAM_BRANCH_NAME");
+
+		if (!JenkinsResultsParserUtil.isNullOrEmpty(branchName)) {
+			return branchName;
+		}
+
+		return super.getBranchName();
+	}
+
+	public String getPortalUpstreamBranchName() {
+		String portalUpstreamBranchName = getParameterValue(
+			"PORTAL_UPSTREAM_BRANCH_NAME");
+
+		if (!JenkinsResultsParserUtil.isNullOrEmpty(portalUpstreamBranchName)) {
+			return portalUpstreamBranchName;
+		}
+
+		return null;
+	}
+
+	@Override
 	public PortalWorkspace getPortalWorkspace() {
 		Workspace workspace = getWorkspace();
 
@@ -77,22 +99,22 @@ public class PullRequestPortalTopLevelBuild
 			return _pullRequest;
 		}
 
-		StringBuilder sb = new StringBuilder();
+		String pullRequestURL = getParameterValue("PULL_REQUEST_URL");
 
-		sb.append("https://github.com/");
-		sb.append(getParameterValue("GITHUB_RECEIVER_USERNAME"));
-		sb.append("/liferay-portal");
+		if (pullRequestURL == null) {
+			StringBuilder sb = new StringBuilder();
 
-		String branchName = getBranchName();
+			sb.append("https://github.com/");
+			sb.append(getParameterValue("GITHUB_RECEIVER_USERNAME"));
+			sb.append("/");
+			sb.append(getBaseGitRepositoryName());
+			sb.append("/pull/");
+			sb.append(getParameterValue("GITHUB_PULL_REQUEST_NUMBER"));
 
-		if (!branchName.equals("master")) {
-			sb.append("-ee");
+			pullRequestURL = sb.toString();
 		}
 
-		sb.append("/pull/");
-		sb.append(getParameterValue("GITHUB_PULL_REQUEST_NUMBER"));
-
-		_pullRequest = PullRequestFactory.newPullRequest(sb.toString(), this);
+		_pullRequest = PullRequestFactory.newPullRequest(pullRequestURL, this);
 
 		return _pullRequest;
 	}
@@ -169,12 +191,6 @@ public class PullRequestPortalTopLevelBuild
 	}
 
 	public String getStableJobResult() {
-		Job stableJob = _getStableJob();
-
-		if (stableJob == null) {
-			return null;
-		}
-
 		if (_stableJobResult != null) {
 			return _stableJobResult;
 		}
@@ -184,6 +200,22 @@ public class PullRequestPortalTopLevelBuild
 		int stableJobDownstreamBuildsSize = stableJobDownstreamBuilds.size();
 
 		if (stableJobDownstreamBuildsSize == 0) {
+			return null;
+		}
+
+		String result = getResult();
+
+		if (result == null) {
+			return null;
+		}
+
+		if (result.equals("SUCCESS")) {
+			_stableJobResult = result;
+		}
+
+		Job stableJob = _getStableJob();
+
+		if (stableJob == null) {
 			return null;
 		}
 
@@ -200,14 +232,12 @@ public class PullRequestPortalTopLevelBuild
 			return null;
 		}
 
-		String result = getResult();
 		int stableJobDownstreamBuildsSuccessCount =
 			getJobVariantsDownstreamBuildCount(
 				stableJobBatchNames, "SUCCESS", null);
 
-		if (((result != null) && result.equals("SUCCESS")) ||
-			(stableJobDownstreamBuildsSuccessCount ==
-				stableJobDownstreamBuildsSize)) {
+		if (stableJobDownstreamBuildsSuccessCount ==
+				stableJobDownstreamBuildsSize) {
 
 			_stableJobResult = "SUCCESS";
 		}
@@ -231,10 +261,27 @@ public class PullRequestPortalTopLevelBuild
 
 			portalWorkspace.setBuildProfile(getBuildProfile());
 			portalWorkspace.setOSBAsahGitHubURL(_getOSBAsahGitHubURL());
+			portalWorkspace.setOSBFaroGitHubURL(_getOSBFaroGitHubURL());
+			portalWorkspace.setPortalUpstreamBranchName(
+				getPortalUpstreamBranchName());
 		}
 
 		WorkspaceGitRepository workspaceGitRepository =
 			workspace.getPrimaryWorkspaceGitRepository();
+
+		String upstreamBranchSHA = _getUpstreamBranchSHA();
+
+		if (JenkinsResultsParserUtil.isSHA(upstreamBranchSHA)) {
+			workspaceGitRepository.setBaseBranchSHA(upstreamBranchSHA);
+		}
+
+		String upstreamBranchUsername = getParameterValue(
+			"GITHUB_UPSTREAM_BRANCH_USERNAME");
+
+		if (!JenkinsResultsParserUtil.isNullOrEmpty(upstreamBranchUsername)) {
+			workspaceGitRepository.setBaseBranchUsername(
+				upstreamBranchUsername);
+		}
 
 		workspaceGitRepository.setGitHubURL(pullRequest.getHtmlURL());
 
@@ -242,12 +289,6 @@ public class PullRequestPortalTopLevelBuild
 
 		if (JenkinsResultsParserUtil.isSHA(senderBranchSHA)) {
 			workspaceGitRepository.setSenderBranchSHA(senderBranchSHA);
-		}
-
-		String upstreamBranchSHA = _getUpstreamBranchSHA();
-
-		if (JenkinsResultsParserUtil.isSHA(upstreamBranchSHA)) {
-			workspaceGitRepository.setBaseBranchSHA(upstreamBranchSHA);
 		}
 
 		return workspace;
@@ -263,11 +304,7 @@ public class PullRequestPortalTopLevelBuild
 			}
 		}
 
-		if (failedDownstreamBuilds.isEmpty()) {
-			return true;
-		}
-
-		return false;
+		return failedDownstreamBuilds.isEmpty();
 	}
 
 	protected Element getFailedStableJobSummaryElement() {
@@ -325,7 +362,7 @@ public class PullRequestPortalTopLevelBuild
 
 		String stableJobResult = getStableJobResult();
 
-		if (stableJobResult.equals("SUCCESS")) {
+		if ((stableJobResult != null) && stableJobResult.equals("SUCCESS")) {
 			sb.append(":heavy_check_mark: ");
 		}
 		else {
@@ -468,6 +505,27 @@ public class PullRequestPortalTopLevelBuild
 		return null;
 	}
 
+	private String _getOSBFaroGitHubURL() {
+		String osbFaroGitHubURL = getParameterValue("OSB_FARO_GITHUB_URL");
+
+		if (!JenkinsResultsParserUtil.isNullOrEmpty(osbFaroGitHubURL)) {
+			return osbFaroGitHubURL;
+		}
+
+		Build controllerBuild = getControllerBuild();
+
+		if (controllerBuild != null) {
+			osbFaroGitHubURL = controllerBuild.getParameterValue(
+				"OSB_FARO_GITHUB_URL");
+
+			if (!JenkinsResultsParserUtil.isNullOrEmpty(osbFaroGitHubURL)) {
+				return osbFaroGitHubURL;
+			}
+		}
+
+		return "https://github.com/liferay/liferay-portal/tree/master";
+	}
+
 	private String _getSenderBranchSHA() {
 		String senderBranchSHA = getParameterValue("GITHUB_SENDER_BRANCH_SHA");
 
@@ -489,22 +547,39 @@ public class PullRequestPortalTopLevelBuild
 			return null;
 		}
 
-		String branchName = getBranchName();
 		Job.BuildProfile buildProfile = getBuildProfile();
 		String jobName = getJobName();
+
+		String portalUpstreamBranchName = getPortalUpstreamBranchName();
+
+		String branchName = getBranchName();
+
+		if (JenkinsResultsParserUtil.isNullOrEmpty(portalUpstreamBranchName)) {
+			portalUpstreamBranchName = branchName;
+		}
+
 		String repositoryName = getBaseGitRepositoryName();
 		String stableTestSuiteName = "stable";
 
+		PortalGitWorkingDirectory portalGitWorkingDirectory = null;
+
+		if (JenkinsResultsParserUtil.isCINode()) {
+			portalGitWorkingDirectory =
+				GitWorkingDirectoryFactory.newPortalGitWorkingDirectory(
+					portalUpstreamBranchName);
+		}
+
 		try {
 			_stableJob = JobFactory.newJob(
-				buildProfile, jobName, null, null, null, branchName, null,
-				repositoryName, stableTestSuiteName, branchName);
+				buildProfile, jobName, null, portalGitWorkingDirectory, null,
+				portalUpstreamBranchName, null, repositoryName,
+				stableTestSuiteName, branchName);
 
 			BuildDatabase buildDatabase = BuildDatabaseUtil.getBuildDatabase();
 
 			buildDatabase.putJob(
 				JobFactory.getKey(
-					buildProfile, jobName, null, branchName, null,
+					buildProfile, jobName, null, portalUpstreamBranchName, null,
 					repositoryName, stableTestSuiteName, branchName),
 				_stableJob);
 		}

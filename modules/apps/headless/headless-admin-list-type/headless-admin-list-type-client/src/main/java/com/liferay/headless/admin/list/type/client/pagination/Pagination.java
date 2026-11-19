@@ -5,7 +5,7 @@
 
 package com.liferay.headless.admin.list.type.client.pagination;
 
-import javax.annotation.Generated;
+import jakarta.annotation.Generated;
 
 /**
  * @author Gabriel Albuquerque
@@ -63,3 +63,4 @@ public class Pagination {
 	private final int _pageSize;
 
 }
+// LIFERAY-REST-BUILDER-HASH:-157596694

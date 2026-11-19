@@ -3,6 +3,7 @@ definition {
 	@summary = "Default summary"
 	macro _curlMessageBoardSection(parentMessageBoardSectionId = null, title = null) {
 		var portalURL = JSONCompany.getPortalURL();
+		var userPassword = PropsUtil.get("default.admin.password");
 
 		if (isSet(parentMessageBoardSectionId)) {
 			var api = "message-board-sections/${parentMessageBoardSectionId}";
@@ -16,14 +17,14 @@ definition {
 		}
 
 		var command = '''
-			-u test@liferay.com:test \
+			-u test@liferay.com:${userPassword} \
 			-H Content-Type: application/json \
 			-d {
 				"title": "${title}"
 			}
 		''';
 
-		var curl = StringUtil.add("${portalURL}/o/headless-delivery/v1.0/${api}/message-board-sections", "\ ${command}", "");
+		var curl = StringUtil.add("${portalURL}/o/headless-delivery/v1.0/${api}/message-board-sections", " \ ${command}", "");
 
 		return ${curl};
 	}

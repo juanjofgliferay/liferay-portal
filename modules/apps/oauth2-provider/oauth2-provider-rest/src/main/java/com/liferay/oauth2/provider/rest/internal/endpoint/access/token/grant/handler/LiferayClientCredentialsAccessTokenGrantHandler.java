@@ -10,10 +10,10 @@ import com.liferay.oauth2.provider.model.OAuth2Application;
 import com.liferay.oauth2.provider.rest.internal.endpoint.liferay.LiferayOAuthDataProvider;
 import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
 
+import jakarta.ws.rs.core.MultivaluedMap;
+
 import java.util.List;
 import java.util.Map;
-
-import javax.ws.rs.core.MultivaluedMap;
 
 import org.apache.cxf.rs.security.oauth2.common.Client;
 import org.apache.cxf.rs.security.oauth2.common.ServerAccessToken;
@@ -54,7 +54,10 @@ public class LiferayClientCredentialsAccessTokenGrantHandler
 	protected ServerAccessToken doCreateAccessToken(
 		Client client, MultivaluedMap<String, String> params) {
 
-		return _clientCredentialsGrantHandler.createAccessToken(client, params);
+		return createAccessTokenWithResources(
+			client, params,
+			() -> _clientCredentialsGrantHandler.createAccessToken(
+				client, params));
 	}
 
 	@Override

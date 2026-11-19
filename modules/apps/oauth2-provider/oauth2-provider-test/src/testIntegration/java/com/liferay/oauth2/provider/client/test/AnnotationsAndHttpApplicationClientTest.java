@@ -10,20 +10,20 @@ import com.liferay.oauth2.provider.internal.test.TestAnnotatedApplication;
 import com.liferay.oauth2.provider.internal.test.TestApplication;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
+import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
-import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
+
+import jakarta.ws.rs.client.Invocation;
+import jakarta.ws.rs.client.WebTarget;
 
 import java.util.Collections;
 import java.util.Dictionary;
 
-import javax.ws.rs.client.Invocation;
-import javax.ws.rs.client.WebTarget;
-
 import org.junit.Assert;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -42,10 +42,9 @@ public class AnnotationsAndHttpApplicationClientTest
 	public static final AggregateTestRule aggregateTestRule =
 		new LiferayIntegrationTestRule();
 
-	@Ignore
 	@Test
 	public void test() throws Exception {
-		String tokenString = getToken("oauthTestApplication");
+		String tokenString = getToken(_CLIENT_ID);
 
 		WebTarget webTarget = getWebTarget("/methods");
 
@@ -61,14 +60,21 @@ public class AnnotationsAndHttpApplicationClientTest
 		Assert.assertEquals("everything.read", builder.get(String.class));
 	}
 
-	public static class AnnotationsAndHttpTestPreparatorBundleActivator
+	@Override
+	protected BundleActivator getBundleActivator() {
+		return new AnnotationsAndHttpTestPreparatorBundleActivator();
+	}
+
+	private static final String _CLIENT_ID = RandomTestUtil.randomString();
+
+	private class AnnotationsAndHttpTestPreparatorBundleActivator
 		extends BaseTestPreparatorBundleActivator {
 
 		@Override
 		protected void prepareTest() throws Exception {
-			long defaultCompanyId = PortalUtil.getDefaultCompanyId();
+			long companyId = TestPropsValues.getCompanyId();
 
-			User user = UserTestUtil.getAdminUser(defaultCompanyId);
+			User user = UserTestUtil.getAdminUser(companyId);
 
 			Dictionary<String, Object> annotatedApplicationProperties =
 				HashMapDictionaryBuilder.<String, Object>put(
@@ -101,15 +107,10 @@ public class AnnotationsAndHttpApplicationClientTest
 				properties);
 
 			createOAuth2Application(
-				defaultCompanyId, user, "oauthTestApplication",
+				companyId, user, _CLIENT_ID,
 				Collections.singletonList("everything"));
 		}
 
-	}
-
-	@Override
-	protected BundleActivator getBundleActivator() {
-		return new AnnotationsAndHttpTestPreparatorBundleActivator();
 	}
 
 }

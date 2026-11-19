@@ -17,7 +17,7 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Validator;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 
@@ -44,7 +44,8 @@ public class JournalFormNavigatorContextProvider
 			httpServletRequest, "toLanguageId");
 
 		long classNameId = BeanParamUtil.getLong(
-			article, httpServletRequest, "classNameId");
+			article, httpServletRequest, "classNameId",
+			JournalArticle::getClassNameId);
 
 		if (Validator.isNotNull(toLanguageId)) {
 			return "translate";

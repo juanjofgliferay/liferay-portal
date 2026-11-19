@@ -66,7 +66,7 @@ public class UpgradeDynamicDataMapping extends UpgradeProcess {
 	protected void updateSchema() throws Exception {
 		try (LoggingTimer loggingTimer = new LoggingTimer()) {
 			alterTableAddColumn("DDMTemplate", "classNameId", "LONG");
-			alterColumnName("DDMTemplate", "structureId", "classPK LONG");
+			alterColumnName("DDMTemplate", "structureId", "classPK");
 
 			long classNameId = PortalUtil.getClassNameId(
 				"com.liferay.portlet.dynamicdatamapping.model.DDMStructure");
@@ -83,8 +83,7 @@ public class UpgradeDynamicDataMapping extends UpgradeProcess {
 	}
 
 	protected void updateStructure(
-			long structureId, String structureKey, String xsd)
-		throws Exception {
+		long structureId, String structureKey, String xsd) {
 
 		try (PreparedStatement preparedStatement = connection.prepareStatement(
 				"update DDMStructure set structureKey = ?, xsd = ? where " +
@@ -105,8 +104,10 @@ public class UpgradeDynamicDataMapping extends UpgradeProcess {
 
 	protected void updateStructures() throws Exception {
 		try (LoggingTimer loggingTimer = new LoggingTimer();
+
 			PreparedStatement preparedStatement = connection.prepareStatement(
 				"select structureId, structureKey, xsd from DDMStructure");
+
 			ResultSet resultSet = preparedStatement.executeQuery()) {
 
 			while (resultSet.next()) {
@@ -127,7 +128,7 @@ public class UpgradeDynamicDataMapping extends UpgradeProcess {
 		}
 	}
 
-	protected void updateStructuresClassNameId() throws Exception {
+	protected void updateStructuresClassNameId() {
 		try (LoggingTimer loggingTimer = new LoggingTimer();
 			PreparedStatement preparedStatement = connection.prepareStatement(
 				"update DDMStructure set classNameId = ? where classNameId = " +
@@ -170,9 +171,11 @@ public class UpgradeDynamicDataMapping extends UpgradeProcess {
 
 	protected void updateTemplates() throws Exception {
 		try (LoggingTimer loggingTimer = new LoggingTimer();
+
 			PreparedStatement preparedStatement = connection.prepareStatement(
 				"select templateId, templateKey, script from DDMTemplate " +
 					"where language = 'xsd'");
+
 			ResultSet resultSet = preparedStatement.executeQuery()) {
 
 			while (resultSet.next()) {

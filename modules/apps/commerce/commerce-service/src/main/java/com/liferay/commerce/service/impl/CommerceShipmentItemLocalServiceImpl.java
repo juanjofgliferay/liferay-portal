@@ -9,7 +9,6 @@ import com.liferay.commerce.constants.CommerceShipmentConstants;
 import com.liferay.commerce.exception.CommerceShipmentInactiveWarehouseException;
 import com.liferay.commerce.exception.CommerceShipmentItemQuantityException;
 import com.liferay.commerce.exception.CommerceShipmentStatusException;
-import com.liferay.commerce.exception.DuplicateCommerceShipmentItemException;
 import com.liferay.commerce.inventory.engine.CommerceInventoryEngine;
 import com.liferay.commerce.inventory.model.CommerceInventoryWarehouse;
 import com.liferay.commerce.inventory.model.CommerceInventoryWarehouseItem;
@@ -26,6 +25,7 @@ import com.liferay.commerce.product.model.CPInstanceUnitOfMeasure;
 import com.liferay.commerce.product.service.CPInstanceUnitOfMeasureLocalService;
 import com.liferay.commerce.service.CommerceOrderItemLocalService;
 import com.liferay.commerce.service.base.CommerceShipmentItemLocalServiceBaseImpl;
+import com.liferay.commerce.service.persistence.CommerceOrderItemPersistence;
 import com.liferay.commerce.service.persistence.CommerceShipmentPersistence;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -35,6 +35,8 @@ import com.liferay.portal.kernel.model.SystemEventConstants;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.search.Indexable;
 import com.liferay.portal.kernel.search.IndexableType;
+import com.liferay.portal.kernel.search.Indexer;
+import com.liferay.portal.kernel.search.IndexerRegistryUtil;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.systemevent.SystemEvent;
@@ -46,7 +48,6 @@ import com.liferay.portal.kernel.util.Validator;
 import java.math.BigDecimal;
 
 import java.util.List;
-import java.util.Objects;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -75,16 +76,8 @@ public class CommerceShipmentItemLocalServiceImpl
 
 		User user = _userLocalService.getUser(serviceContext.getUserId());
 
-		if (Validator.isBlank(externalReferenceCode)) {
-			externalReferenceCode = null;
-		}
-
-		_validateExternalReferenceCode(
-			0, serviceContext.getCompanyId(), externalReferenceCode);
-
 		CommerceOrderItem commerceOrderItem =
-			_commerceOrderItemLocalService.getCommerceOrderItem(
-				commerceOrderItemId);
+			_commerceOrderItemPersistence.findByPrimaryKey(commerceOrderItemId);
 
 		if (validateInventory) {
 			_validate(
@@ -143,6 +136,8 @@ public class CommerceShipmentItemLocalServiceImpl
 		_commerceOrderItemLocalService.incrementShippedQuantity(
 			commerceShipmentItem.getCommerceOrderItemId(), quantity);
 
+		_reindexCommerceShipment(commerceShipmentItem.getCommerceShipmentId());
+
 		return commerceShipmentItem;
 	}
 
@@ -169,7 +164,12 @@ public class CommerceShipmentItemLocalServiceImpl
 		commerceShipmentItem.setCommerceShipmentId(commerceShipmentId);
 		commerceShipmentItem.setCommerceOrderItemId(commerceOrderItemId);
 
-		return commerceShipmentItemPersistence.update(commerceShipmentItem);
+		commerceShipmentItem = commerceShipmentItemPersistence.update(
+			commerceShipmentItem);
+
+		_reindexCommerceShipment(commerceShipmentItem.getCommerceShipmentId());
+
+		return commerceShipmentItem;
 	}
 
 	@Override
@@ -179,10 +179,6 @@ public class CommerceShipmentItemLocalServiceImpl
 			BigDecimal quantity, String unitOfMeasureKey,
 			boolean validateInventory, ServiceContext serviceContext)
 		throws PortalException {
-
-		if (Validator.isBlank(externalReferenceCode)) {
-			externalReferenceCode = null;
-		}
 
 		CommerceShipmentItem commerceShipmentItem = null;
 
@@ -216,7 +212,7 @@ public class CommerceShipmentItemLocalServiceImpl
 		// Commerce order item
 
 		CommerceOrderItem commerceOrderItem =
-			_commerceOrderItemLocalService.fetchCommerceOrderItem(
+			_commerceOrderItemPersistence.fetchByPrimaryKey(
 				commerceShipmentItem.getCommerceOrderItemId());
 
 		if (!restoreStockQuantity) {
@@ -251,6 +247,8 @@ public class CommerceShipmentItemLocalServiceImpl
 		catch (PortalException portalException) {
 			_log.error(portalException);
 		}
+
+		_reindexCommerceShipment(commerceShipmentItem.getCommerceShipmentId());
 
 		return commerceShipmentItem;
 	}
@@ -303,8 +301,8 @@ public class CommerceShipmentItemLocalServiceImpl
 	public List<CommerceShipmentItem> getCommerceShipmentItems(
 		long commerceOrderItemId) {
 
-		return commerceShipmentItemLocalService.
-			getCommerceShipmentItemsByCommerceOrderItemId(commerceOrderItemId);
+		return commerceShipmentItemPersistence.findByCommerceOrderItemId(
+			commerceOrderItemId);
 	}
 
 	@Override
@@ -317,36 +315,9 @@ public class CommerceShipmentItemLocalServiceImpl
 	}
 
 	@Override
-	public List<CommerceShipmentItem> getCommerceShipmentItems(
-		long commerceShipmentId, long commerceOrderItemId, int start, int end,
-		OrderByComparator<CommerceShipmentItem> orderByComparator) {
-
-		return commerceShipmentItemPersistence.findByC_C(
-			commerceShipmentId, commerceOrderItemId, start, end,
-			orderByComparator);
-	}
-
-	@Override
-	public List<CommerceShipmentItem>
-		getCommerceShipmentItemsByCommerceOrderItemId(
-			long commerceOrderItemId) {
-
-		return commerceShipmentItemPersistence.findByCommerceOrderItemId(
-			commerceOrderItemId);
-	}
-
-	@Override
 	public int getCommerceShipmentItemsCount(long commerceShipmentId) {
 		return commerceShipmentItemPersistence.countByCommerceShipmentId(
 			commerceShipmentId);
-	}
-
-	@Override
-	public int getCommerceShipmentItemsCountByCommerceOrderItemId(
-		long commerceOrderItemId) {
-
-		return commerceShipmentItemPersistence.countByCommerceOrderItemId(
-			commerceOrderItemId);
 	}
 
 	@Override
@@ -371,7 +342,7 @@ public class CommerceShipmentItemLocalServiceImpl
 				commerceShipmentItemId);
 
 		CommerceOrderItem commerceOrderItem =
-			_commerceOrderItemLocalService.getCommerceOrderItem(
+			_commerceOrderItemPersistence.findByPrimaryKey(
 				commerceShipmentItem.getCommerceOrderItemId());
 
 		BigDecimal originalQuantity = commerceShipmentItem.getQuantity();
@@ -412,6 +383,8 @@ public class CommerceShipmentItemLocalServiceImpl
 		_commerceOrderItemLocalService.incrementShippedQuantity(
 			commerceShipmentItem.getCommerceOrderItemId(), quantityDelta);
 
+		_reindexCommerceShipment(commerceShipmentItem.getCommerceShipmentId());
+
 		return commerceShipmentItem;
 	}
 
@@ -424,17 +397,6 @@ public class CommerceShipmentItemLocalServiceImpl
 		CommerceShipmentItem commerceShipmentItem =
 			commerceShipmentItemPersistence.findByPrimaryKey(
 				commerceShipmentItemId);
-
-		if (Objects.equals(
-				commerceShipmentItem.getExternalReferenceCode(),
-				externalReferenceCode)) {
-
-			return commerceShipmentItem;
-		}
-
-		_validateExternalReferenceCode(
-			commerceShipmentItemId, commerceShipmentItem.getCompanyId(),
-			externalReferenceCode);
 
 		commerceShipmentItem.setExternalReferenceCode(externalReferenceCode);
 
@@ -453,6 +415,15 @@ public class CommerceShipmentItemLocalServiceImpl
 			fetchCommerceInventoryWarehouseItem(
 				commerceShipmentItem.getCommerceInventoryWarehouseId(), sku,
 				unitOfMeasureKey);
+	}
+
+	private void _reindexCommerceShipment(long commerceShipmentId)
+		throws PortalException {
+
+		Indexer<CommerceShipment> indexer =
+			IndexerRegistryUtil.nullSafeGetIndexer(CommerceShipment.class);
+
+		indexer.reindex(CommerceShipment.class.getName(), commerceShipmentId);
 	}
 
 	private void _restoreStockQuantity(
@@ -600,32 +571,6 @@ public class CommerceShipmentItemLocalServiceImpl
 		}
 	}
 
-	private void _validateExternalReferenceCode(
-			long commerceShipmentItemId, long companyId,
-			String externalReferenceCode)
-		throws PortalException {
-
-		if (Validator.isNull(externalReferenceCode)) {
-			return;
-		}
-
-		CommerceShipmentItem commerceShipmentItem =
-			commerceShipmentItemPersistence.fetchByERC_C(
-				externalReferenceCode, companyId);
-
-		if (commerceShipmentItem == null) {
-			return;
-		}
-
-		if (commerceShipmentItem.getCommerceShipmentItemId() !=
-				commerceShipmentItemId) {
-
-			throw new DuplicateCommerceShipmentItemException(
-				"There is another commerce shipment item with external " +
-					"reference code " + externalReferenceCode);
-		}
-	}
-
 	private static final Log _log = LogFactoryUtil.getLog(
 		CommerceShipmentItemLocalServiceImpl.class);
 
@@ -646,6 +591,9 @@ public class CommerceShipmentItemLocalServiceImpl
 
 	@Reference
 	private CommerceOrderItemLocalService _commerceOrderItemLocalService;
+
+	@Reference
+	private CommerceOrderItemPersistence _commerceOrderItemPersistence;
 
 	@Reference
 	private CommerceShipmentPersistence _commerceShipmentPersistence;

@@ -23,19 +23,21 @@ import com.liferay.portal.kernel.portlet.PortalPreferences;
 import com.liferay.portal.kernel.portlet.PortletPreferencesFactoryUtil;
 import com.liferay.portal.kernel.portlet.SearchOrderByUtil;
 import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
+import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.staging.constants.StagingProcessesPortletKeys;
+
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.jsp.PageContext;
 
 import java.util.List;
 import java.util.Objects;
-
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.jsp.PageContext;
 
 /**
  * @author Péter Alius
@@ -95,32 +97,40 @@ public class StagingProcessesWebToolbarDisplayContext {
 							TYPE_PUBLISH_LAYOUT_LOCAL;
 				}
 
-				for (ExportImportConfiguration exportImportConfiguration :
-						ExportImportConfigurationLocalServiceUtil.
-							getExportImportConfigurations(
-								stagingGroupId, configurationType)) {
+				ThemeDisplay themeDisplay =
+					(ThemeDisplay)_httpServletRequest.getAttribute(
+						WebKeys.THEME_DISPLAY);
 
-					addRestDropdownItem(
-						dropdownItem -> {
-							String cmd = Constants.PUBLISH_TO_LIVE;
+				if (FeatureFlagManagerUtil.isEnabled(
+						themeDisplay.getCompanyId(), "LPD-101272")) {
 
-							if (stagingGroup.isStagedRemotely()) {
-								cmd = Constants.PUBLISH_TO_REMOTE;
-							}
+					for (ExportImportConfiguration exportImportConfiguration :
+							ExportImportConfigurationLocalServiceUtil.
+								getExportImportConfigurations(
+									stagingGroupId, configurationType)) {
 
-							dropdownItem.setHref(
-								_liferayPortletResponse.createRenderURL(),
-								"mvcRenderCommandName",
-								"/staging_processes/publish_layouts",
-								Constants.CMD, cmd,
-								"exportImportConfigurationId",
-								String.valueOf(
-									exportImportConfiguration.
-										getExportImportConfigurationId()),
-								"groupId", String.valueOf(stagingGroupId));
-							dropdownItem.setLabel(
-								exportImportConfiguration.getName());
-						});
+						addRestDropdownItem(
+							dropdownItem -> {
+								String cmd = Constants.PUBLISH_TO_LIVE;
+
+								if (stagingGroup.isStagedRemotely()) {
+									cmd = Constants.PUBLISH_TO_REMOTE;
+								}
+
+								dropdownItem.setHref(
+									_liferayPortletResponse.createRenderURL(),
+									"mvcRenderCommandName",
+									"/staging_processes/publish_layouts",
+									Constants.CMD, cmd,
+									"exportImportConfigurationId",
+									String.valueOf(
+										exportImportConfiguration.
+											getExportImportConfigurationId()),
+									"groupId", String.valueOf(stagingGroupId));
+								dropdownItem.setLabel(
+									exportImportConfiguration.getName());
+							});
+					}
 				}
 
 				addPrimaryDropdownItem(
@@ -178,13 +188,6 @@ public class StagingProcessesWebToolbarDisplayContext {
 				dropdownGroupItem.setLabel(
 					LanguageUtil.get(_httpServletRequest, "filter"));
 				dropdownGroupItem.setSeparator(true);
-			}
-		).addGroup(
-			() -> !FeatureFlagManagerUtil.isEnabled("LPS-144527"),
-			dropdownGroupItem -> {
-				dropdownGroupItem.setDropdownItems(getOrderByDropDownItems());
-				dropdownGroupItem.setLabel(
-					LanguageUtil.get(_httpServletRequest, "order-by"));
 			}
 		).build();
 	}

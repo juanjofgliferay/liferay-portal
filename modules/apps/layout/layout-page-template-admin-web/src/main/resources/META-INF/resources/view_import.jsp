@@ -8,16 +8,30 @@
 <%@ include file="/init.jsp" %>
 
 <%
-ImportDisplayContext importDisplayContext = new ImportDisplayContext(request, renderRequest, renderResponse);
-
 portletDisplay.setShowBackIcon(true);
 portletDisplay.setURLBack(ParamUtil.getString(request, "backURL", String.valueOf(renderResponse.createRenderURL())));
 portletDisplay.setURLBackTitle(portletDisplay.getPortletDisplayName());
 
-renderResponse.setTitle(LanguageUtil.get(request, "import"));
+renderResponse.setTitle(LanguageUtil.get(request, "import[noun]"));
+
+LiferayPortletURL importURL = (LiferayPortletURL)ResourceURLBuilder.createResourceURL(
+	renderResponse
+).setParameter(
+	"layoutPageTemplateCollectionId", ParamUtil.getString(request, "layoutPageTemplateCollectionId")
+).setResourceID(
+	"/layout_page_template_admin/import"
+).buildResourceURL();
+
+importURL.setCopyCurrentRenderParameters(false);
 %>
 
 <react:component
-	module="js/ImportPageTemplates"
-	props="<%= importDisplayContext.getProps() %>"
+	module="{ImportPageTemplates} from layout-page-template-admin-web"
+	props='<%=
+		HashMapBuilder.<String, Object>put(
+			"backURL", ParamUtil.getString(request, "backURL")
+		).put(
+			"importURL", importURL.toString()
+		).build()
+	%>'
 />

@@ -182,18 +182,10 @@ public class PoshiReportGenerator {
 		if ((element instanceof ExecutePoshiElement) &&
 			Validator.isNotNull(macroName)) {
 
-			Set<Element> elements = new HashSet<>();
+			Set<Element> elements = _executeMacroElementMap.computeIfAbsent(
+				macroName, key -> new HashSet<>());
 
-			if (_executeMacroElementMap.containsKey(macroName)) {
-				elements = _executeMacroElementMap.get(macroName);
-
-				elements.add(element);
-			}
-			else {
-				elements.add(element);
-
-				_executeMacroElementMap.put(macroName, elements);
-			}
+			elements.add(element);
 		}
 
 		List<Element> childElements = element.elements();
@@ -279,21 +271,23 @@ public class PoshiReportGenerator {
 				String macroName = commandKey.substring(
 					commandKey.indexOf(".") + 1);
 
-				if (macroName.equals(executeMacroElementKey)) {
-					PoshiElement poshiElement =
-						(PoshiElement)commandElements.get(commandKey);
-
-					StringBuilder sb = new StringBuilder();
-
-					URL fileURL = poshiElement.getFilePathURL();
-
-					sb.append(fileURL.toString());
-
-					sb.append(":");
-					sb.append(poshiElement.getPoshiScriptLineNumber());
-
-					jsonArray.put(sb.toString());
+				if (!macroName.equals(executeMacroElementKey)) {
+					continue;
 				}
+
+				PoshiElement poshiElement = (PoshiElement)commandElements.get(
+					commandKey);
+
+				StringBuilder sb = new StringBuilder();
+
+				URL fileURL = poshiElement.getFilePathURL();
+
+				sb.append(fileURL.toString());
+
+				sb.append(":");
+				sb.append(poshiElement.getPoshiScriptLineNumber());
+
+				jsonArray.put(sb.toString());
 			}
 
 			Set<Element> executeMacroElements = _executeMacroElementMap.get(

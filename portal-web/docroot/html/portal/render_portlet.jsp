@@ -53,7 +53,7 @@ if (layout instanceof VirtualLayout) {
 	privateLayout = sourceLayout.isPrivateLayout();
 }
 else {
-	group = layout.getGroup();
+	group = themeDisplay.getLayoutGroup(layout);
 	privateLayout = layout.isPrivateLayout();
 }
 
@@ -290,11 +290,17 @@ if (layoutTypeController.isFullPageDisplayable()) {
 	showCloseIcon = false;
 }
 
+long portletScopeGroupId = 0;
+
 if (Validator.isNotNull(portletResource)) {
-	themeDisplay.setScopeGroupId(PortalUtil.getScopeGroupId(request, portletResourcePortlet.getPortletId()));
+	portletScopeGroupId = PortalUtil.getScopeGroupId(request, portletResourcePortlet.getPortletId());
 }
 else {
-	themeDisplay.setScopeGroupId(PortalUtil.getScopeGroupId(request, portletId));
+	portletScopeGroupId = PortalUtil.getScopeGroupId(request, portletId);
+}
+
+if (portletScopeGroupId != themeDisplay.getScopeGroupId()) {
+	themeDisplay.setScopeGroupId(portletScopeGroupId);
 }
 
 Group siteGroup = themeDisplay.getSiteGroup();
@@ -363,7 +369,7 @@ portletDisplay.setStateMin(stateMin);
 portletDisplay.setStateNormal(windowState.equals(WindowState.NORMAL));
 portletDisplay.setStatePopUp(themeDisplay.isStatePopUp());
 portletDisplay.setPortletPreferences(setupPortletPreferences);
-portletDisplay.setWebDAVEnabled(portlet.getWebDAVStorageInstance() != null);
+portletDisplay.setWebDAVEnabledSupplier(() -> portlet.getWebDAVStorageInstance() != null);
 
 // Portlet custom CSS class name
 
@@ -565,7 +571,9 @@ portletDisplay.setURLEditGuest(urlEditGuest.toString());
 
 // URL export / import
 
-LiferayPortletURL urlExportImport = PortletURLFactoryUtil.create(request, PortletKeys.EXPORT_IMPORT, PortletRequest.RENDER_PHASE);
+Portlet exportImportPortlet = PortletLocalServiceUtil.getPortletById(company.getCompanyId(), PortletKeys.EXPORT_IMPORT);
+
+LiferayPortletURL urlExportImport = PortletURLFactoryUtil.create(request, exportImportPortlet, PortletRequest.RENDER_PHASE);
 
 urlExportImport.setWindowState(LiferayWindowState.POP_UP);
 
@@ -611,6 +619,8 @@ if (!portletDisplay.isRestoreCurrentView()) {
 
 LiferayPortletURL urlMax = PortletURLFactoryUtil.create(request, portlet, lifecycle);
 
+urlMax.setEscapeXml(false);
+
 if (portletDisplay.isStateMax()) {
 	urlMax.setWindowState(WindowState.NORMAL);
 }
@@ -618,21 +628,7 @@ else {
 	urlMax.setWindowState(WindowState.MAXIMIZED);
 }
 
-if (urlMax instanceof LiferayPortletURL) {
-	LiferayPortletURL liferayPortletURL = (LiferayPortletURL)urlMax;
-
-	liferayPortletURL.setWindowStateRestoreCurrentView(true);
-}
-else {
-	try {
-		BeanPropertiesUtil.setProperty(urlMax, "windowStateRestoreCurrentView", true);
-	}
-	catch (Exception e) {
-		_log.error(ClassUtil.getClassName(urlMax) + " must implement the method setWindowStateRestoreCurrentView(boolean)", e);
-	}
-}
-
-urlMax.setEscapeXml(false);
+urlMax.setWindowStateRestoreCurrentView(true);
 
 if (lifecycle.equals(PortletRequest.RENDER_PHASE)) {
 	Map<String, String[]> renderParameters = RenderParametersPool.get(request, plid, portletDisplay.getId());
@@ -739,7 +735,7 @@ portletDisplay.setURLRefresh(urlRefresh);
 
 // URL staging
 
-LiferayPortletURL urlStaging = PortletURLFactoryUtil.create(request, PortletKeys.EXPORT_IMPORT, PortletRequest.RENDER_PHASE);
+LiferayPortletURL urlStaging = PortletURLFactoryUtil.create(request, exportImportPortlet, PortletRequest.RENDER_PHASE);
 
 urlStaging.setWindowState(LiferayWindowState.POP_UP);
 
@@ -960,17 +956,19 @@ else {
 		Liferay.Portlet.register('<%= HtmlUtil.escapeJS(portletDisplay.getId()) %>');
 	</c:if>
 
-	Liferay.Portlet.onLoad(
-		{
-			canEditTitle: <%= canEditTitle %>,
-			columnPos: <%= columnPos %>,
-			isStatic: '<%= staticVar %>',
-			namespacedId: 'p_p_id<%= HtmlUtil.escapeJS((PortalUtil.getLiferayPortletResponse(liferayRenderResponse)).getNamespace()) %>',
-			portletId: '<%= HtmlUtil.escapeJS(portletDisplay.getId()) %>',
-			refreshURL: '<%= HtmlUtil.escapeJS(PortletURLUtil.getRefreshURL(request, themeDisplay, false)) %>',
-			refreshURLData: <%= JSONFactoryUtil.looseSerializeDeep(PortletURLUtil.getRefreshURLParameters(request)) %>
-		}
-	);
+	Liferay.Portlet.onLoad({
+		canEditTitle: <%= canEditTitle %>,
+		columnPos: <%= columnPos %>,
+		isAjaxable: <%= portlet.isAjaxable() %>,
+		isStatic: '<%= staticVar %>',
+		namespacedId:
+			'p_p_id<%= HtmlUtil.escapeJS((PortalUtil.getLiferayPortletResponse(liferayRenderResponse)).getNamespace()) %>',
+		portletId: '<%= HtmlUtil.escapeJS(portletDisplay.getId()) %>',
+		refreshURL:
+			'<%= HtmlUtil.escapeJS(PortletURLUtil.getRefreshURL(request, themeDisplay, false)) %>',
+		refreshURLData:
+			<%= JSONFactoryUtil.looseSerializeDeep(PortletURLUtil.getRefreshURLParameters(request)) %>,
+	});
 </aui:script>
 
 <c:if test="<%= renderPortletBoundary %>">
@@ -996,7 +994,8 @@ else {
 		<aui:script position="inline" use="aui-base">
 			if (window.parent) {
 				var data = {
-					portletAjaxable: <%= !(((portletResourcePortlet != null) && !portletResourcePortlet.isAjaxable()) || SessionMessages.contains(liferayRenderRequest, portletId + SessionMessages.KEY_SUFFIX_PORTLET_NOT_AJAXABLE)) %>
+					portletAjaxable:
+						<%= !(((portletResourcePortlet != null) && !portletResourcePortlet.isAjaxable()) || SessionMessages.contains(liferayRenderRequest, portletId + SessionMessages.KEY_SUFFIX_PORTLET_NOT_AJAXABLE)) %>,
 				};
 
 				<c:if test="<%= (refreshPortletData != null) && !refreshPortletData.isEmpty() %>">
@@ -1013,7 +1012,10 @@ else {
 
 				</c:if>
 
-				Liferay.Util.getOpener().Liferay.Portlet.refresh('#p_p_id_<%= HtmlUtil.escapeJS(refreshPortletId) %>_', data);
+				Liferay.Util.getOpener().Liferay.Portlet.refresh(
+					'#p_p_id_<%= HtmlUtil.escapeJS(refreshPortletId) %>_',
+					data
+				);
 			}
 		</aui:script>
 	</c:if>
@@ -1033,24 +1035,21 @@ else {
 
 				dialog.on(
 					'<portlet:namespace />hideRefreshDialog|visibleChange',
-					function(event) {
+					function (event) {
 						if (!event.newVal && event.src !== 'hideLink') {
-							var refreshWindow = dialog._refreshWindow || Liferay.Util.getTop();
+							var refreshWindow =
+								dialog._refreshWindow || Liferay.Util.getTop();
 
 							var topA = refreshWindow.AUI();
 
-							topA.use(
-								'aui-loading-mask-deprecated',
-								function(A) {
-									new A.LoadingMask(
-										{
-											target: A.getBody()
-										}
-									).show();
-								}
-							);
+							topA.use('aui-loading-mask-deprecated', function (A) {
+								new A.LoadingMask({
+									target: A.getBody(),
+								}).show();
+							});
 
-							refreshWindow.location.href = '<%= HtmlUtil.escapeJS(closeRedirect) %>';
+							refreshWindow.location.href =
+								'<%= HtmlUtil.escapeJS(closeRedirect) %>';
 						}
 						else {
 							dialog.detach(hideDialogSignature);
@@ -1080,13 +1079,14 @@ else {
 
 			dialog.on(
 				'<portlet:namespace />hideRefreshDialog|visibleChange',
-				function(event) {
+				function (event) {
 					if (!event.newVal && event.src !== 'hideLink') {
 						var refreshWindow = dialog._refreshWindow || Liferay.Util.getTop();
 
 						if (window.parent) {
 							var data = {
-								portletAjaxable: <%= !(((portletResourcePortlet != null) && !portletResourcePortlet.isAjaxable()) || SessionMessages.contains(liferayRenderRequest, portletId + SessionMessages.KEY_SUFFIX_PORTLET_NOT_AJAXABLE)) %>
+								portletAjaxable:
+									<%= !(((portletResourcePortlet != null) && !portletResourcePortlet.isAjaxable()) || SessionMessages.contains(liferayRenderRequest, portletId + SessionMessages.KEY_SUFFIX_PORTLET_NOT_AJAXABLE)) %>,
 							};
 
 							<c:if test="<%= (refreshPortletData != null) && !refreshPortletData.isEmpty() %>">
@@ -1103,7 +1103,10 @@ else {
 
 							</c:if>
 
-							refreshWindow.Liferay.Portlet.refresh('#p_p_id_<%= closeRefreshPortletId %>_', data);
+							refreshWindow.Liferay.Portlet.refresh(
+								'#p_p_id_<%= closeRefreshPortletId %>_',
+								data
+							);
 						}
 					}
 					else {

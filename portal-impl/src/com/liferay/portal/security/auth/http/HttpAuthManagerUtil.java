@@ -18,6 +18,7 @@ import com.liferay.portal.kernel.servlet.HttpHeaders;
 import com.liferay.portal.kernel.util.Base64;
 import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.kernel.util.UnicodePropertiesBuilder;
@@ -26,10 +27,10 @@ import com.liferay.portal.security.auth.session.AuthenticatedSessionManagerUtil;
 import com.liferay.portal.servlet.filters.secure.NonceUtil;
 import com.liferay.portal.util.PortalInstances;
 
-import java.util.Map;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import java.util.Map;
 
 /**
  * @author Tomas Polesovsky
@@ -219,8 +220,14 @@ public class HttpAuthManagerUtil {
 		httpAuthorizationHeader.setAuthParameter(
 			HttpAuthorizationHeader.AUTH_PARAMETER_NAME_NONCE, nonce);
 
+		String wwwAuthenticate = httpAuthorizationHeader.toString();
+
+		if (PropsValues.FIPS_ENABLED) {
+			wwwAuthenticate += ", algorithm=SHA-256";
+		}
+
 		httpServletResponse.setHeader(
-			HttpHeaders.WWW_AUTHENTICATE, httpAuthorizationHeader.toString());
+			HttpHeaders.WWW_AUTHENTICATE, wwwAuthenticate);
 
 		httpServletResponse.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
 	}
@@ -323,7 +330,37 @@ public class HttpAuthManagerUtil {
 		if (index > -1) {
 			login = credentials.substring(0, index);
 
-			login = HttpComponentsUtil.decodeURL(login.trim());
+			login = StringUtil.replace(
+				login, new String[] {StringPool.PLUS, "%20"},
+				new String[] {_TEMP_PLUS, _TEMP_PLUS});
+
+			String[] parts = StringUtil.split(login, CharPool.PERCENT);
+
+			if (parts.length > 1) {
+				StringBundler sb = new StringBundler(parts.length);
+
+				sb.append(parts[0]);
+
+				for (int i = 1; i < parts.length; i++) {
+					String decodedPart = HttpComponentsUtil.decodeURL(
+						StringPool.PERCENT + parts[i]);
+
+					if (Validator.isNotNull(decodedPart)) {
+						sb.append(decodedPart);
+
+						continue;
+					}
+
+					sb.append(StringPool.PERCENT + parts[i]);
+				}
+
+				login = sb.toString();
+			}
+			else {
+				login = login.trim();
+			}
+
+			login = StringUtil.replace(login, _TEMP_PLUS, StringPool.PLUS);
 
 			password = credentials.substring(index + 1);
 
@@ -375,6 +412,8 @@ public class HttpAuthManagerUtil {
 
 	private HttpAuthManagerUtil() {
 	}
+
+	private static final String _TEMP_PLUS = "_TEMP_PLUS_";
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		HttpAuthManagerUtil.class);

@@ -30,6 +30,9 @@ import java.util.Map;
  */
 public class DefaultFullNameGenerator implements FullNameGenerator {
 
+	public static final DefaultFullNameGenerator INSTANCE =
+		new DefaultFullNameGenerator();
+
 	@Override
 	public String getFullName(
 		String firstName, String middleName, String lastName) {
@@ -219,10 +222,12 @@ public class DefaultFullNameGenerator implements FullNameGenerator {
 		for (FullNameField fullNameField : fullNameFields) {
 			String name = namesMap.get(fullNameField.getName());
 
-			if (name != null) {
-				sb.append(StringPool.SPACE);
-				sb.append(name);
+			if (name == null) {
+				continue;
 			}
+
+			sb.append(StringPool.SPACE);
+			sb.append(name);
 		}
 
 		return StringUtil.trim(sb.toString());

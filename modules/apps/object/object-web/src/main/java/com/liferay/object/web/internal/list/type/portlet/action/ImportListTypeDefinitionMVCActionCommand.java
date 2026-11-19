@@ -26,10 +26,12 @@ import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.vulcan.util.LocalizedMapUtil;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletResponse;
+
+import java.util.Map;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -39,7 +41,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + ObjectPortletKeys.LIST_TYPE_DEFINITIONS,
+		"jakarta.portlet.name=" + ObjectPortletKeys.LIST_TYPE_DEFINITIONS,
 		"mvc.command.name=/list_type_definitions/import_list_type_definition"
 	},
 	service = MVCActionCommand.class
@@ -54,6 +56,9 @@ public class ImportListTypeDefinitionMVCActionCommand
 
 		try {
 			_importListTypeDefinition(actionRequest);
+
+			JSONPortletResponseUtil.writeJSON(
+				actionRequest, actionResponse, _jsonFactory.createJSONObject());
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
@@ -102,10 +107,11 @@ public class ImportListTypeDefinitionMVCActionCommand
 		ListTypeDefinition listTypeDefinition = ListTypeDefinition.toDTO(
 			listTypeDefinitionJSONObject.toString());
 
+		Map<String, String> nameI18n = listTypeDefinition.getName_i18n();
+
 		listTypeDefinition.setName_i18n(
-			LocalizedMapUtil.mergeI18nMap(
-				listTypeDefinition.getName_i18n(),
-				LocaleUtil.toLanguageId(LocaleUtil.getDefault()),
+			() -> LocalizedMapUtil.mergeI18nMap(
+				nameI18n, LocaleUtil.toLanguageId(LocaleUtil.getDefault()),
 				ParamUtil.getString(actionRequest, "name")));
 
 		listTypeDefinitionResource.putListTypeDefinitionByExternalReferenceCode(

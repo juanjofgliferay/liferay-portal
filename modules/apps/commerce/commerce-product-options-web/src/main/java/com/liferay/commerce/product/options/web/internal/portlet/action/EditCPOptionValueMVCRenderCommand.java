@@ -9,16 +9,19 @@ import com.liferay.commerce.product.constants.CPPortletKeys;
 import com.liferay.commerce.product.constants.CPWebKeys;
 import com.liferay.commerce.product.exception.NoSuchCPOptionValueException;
 import com.liferay.commerce.product.model.CPOptionValue;
+import com.liferay.commerce.product.options.web.internal.display.context.CPOptionValueDisplayContext;
 import com.liferay.commerce.product.service.CPOptionValueService;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCRenderCommand;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.servlet.SessionErrors;
 import com.liferay.portal.kernel.util.ParamUtil;
+import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.WebKeys;
 
-import javax.portlet.PortletException;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -28,7 +31,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + CPPortletKeys.CP_OPTIONS,
+		"jakarta.portlet.name=" + CPPortletKeys.CP_OPTIONS,
 		"mvc.command.name=/cp_options/edit_cp_option_value"
 	},
 	service = MVCRenderCommand.class
@@ -72,9 +75,15 @@ public class EditCPOptionValueMVCRenderCommand implements MVCRenderCommand {
 		}
 
 		renderRequest.setAttribute(CPWebKeys.CP_OPTION_VALUE, cpOptionValue);
+		renderRequest.setAttribute(
+			WebKeys.PORTLET_DISPLAY_CONTEXT,
+			new CPOptionValueDisplayContext(cpOptionValue, _portal));
 	}
 
 	@Reference
 	private CPOptionValueService _cpOptionValueService;
+
+	@Reference
+	private Portal _portal;
 
 }

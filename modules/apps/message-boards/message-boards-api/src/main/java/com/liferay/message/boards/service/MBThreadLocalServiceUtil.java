@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -267,75 +268,6 @@ public class MBThreadLocalServiceUtil {
 		return getService().getExportActionableDynamicQuery(portletDataContext);
 	}
 
-	public static List<MBThread> getGroupThreads(
-		long groupId, long userId, boolean subscribed, boolean includeAnonymous,
-		com.liferay.portal.kernel.dao.orm.QueryDefinition<MBThread>
-			queryDefinition) {
-
-		return getService().getGroupThreads(
-			groupId, userId, subscribed, includeAnonymous, queryDefinition);
-	}
-
-	public static List<MBThread> getGroupThreads(
-		long groupId, long userId, boolean subscribed,
-		com.liferay.portal.kernel.dao.orm.QueryDefinition<MBThread>
-			queryDefinition) {
-
-		return getService().getGroupThreads(
-			groupId, userId, subscribed, queryDefinition);
-	}
-
-	public static List<MBThread> getGroupThreads(
-		long groupId, long userId,
-		com.liferay.portal.kernel.dao.orm.QueryDefinition<MBThread>
-			queryDefinition) {
-
-		return getService().getGroupThreads(groupId, userId, queryDefinition);
-	}
-
-	public static List<MBThread> getGroupThreads(
-		long groupId,
-		com.liferay.portal.kernel.dao.orm.QueryDefinition<MBThread>
-			queryDefinition) {
-
-		return getService().getGroupThreads(groupId, queryDefinition);
-	}
-
-	public static int getGroupThreadsCount(
-		long groupId, long userId, boolean subscribed, boolean includeAnonymous,
-		com.liferay.portal.kernel.dao.orm.QueryDefinition<MBThread>
-			queryDefinition) {
-
-		return getService().getGroupThreadsCount(
-			groupId, userId, subscribed, includeAnonymous, queryDefinition);
-	}
-
-	public static int getGroupThreadsCount(
-		long groupId, long userId, boolean subscribed,
-		com.liferay.portal.kernel.dao.orm.QueryDefinition<MBThread>
-			queryDefinition) {
-
-		return getService().getGroupThreadsCount(
-			groupId, userId, subscribed, queryDefinition);
-	}
-
-	public static int getGroupThreadsCount(
-		long groupId, long userId,
-		com.liferay.portal.kernel.dao.orm.QueryDefinition<MBThread>
-			queryDefinition) {
-
-		return getService().getGroupThreadsCount(
-			groupId, userId, queryDefinition);
-	}
-
-	public static int getGroupThreadsCount(
-		long groupId,
-		com.liferay.portal.kernel.dao.orm.QueryDefinition<MBThread>
-			queryDefinition) {
-
-		return getService().getGroupThreadsCount(groupId, queryDefinition);
-	}
-
 	public static
 		com.liferay.portal.kernel.dao.orm.IndexableActionableDynamicQuery
 			getIndexableActionableDynamicQuery() {
@@ -446,20 +378,6 @@ public class MBThreadLocalServiceUtil {
 		return getService().getPersistedModel(primaryKeyObj);
 	}
 
-	public static List<MBThread> getPriorityThreads(
-			long categoryId, double priority)
-		throws PortalException {
-
-		return getService().getPriorityThreads(categoryId, priority);
-	}
-
-	public static List<MBThread> getPriorityThreads(
-			long categoryId, double priority, boolean inherit)
-		throws PortalException {
-
-		return getService().getPriorityThreads(categoryId, priority, inherit);
-	}
-
 	public static MBThread getThread(long threadId) throws PortalException {
 		return getService().getThread(threadId);
 	}
@@ -474,10 +392,6 @@ public class MBThreadLocalServiceUtil {
 		long groupId, long categoryId, int status) {
 
 		return getService().getThreadsCount(groupId, categoryId, status);
-	}
-
-	public static boolean hasAnswerMessage(long threadId) {
-		return getService().hasAnswerMessage(threadId);
 	}
 
 	public static void incrementViewCounter(long threadId, int increment) {
@@ -596,13 +510,12 @@ public class MBThreadLocalServiceUtil {
 	}
 
 	public static MBThreadLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(MBThreadLocalService service) {
-		_service = service;
-	}
-
-	private static volatile MBThreadLocalService _service;
+	private static final Snapshot<MBThreadLocalService> _serviceSnapshot =
+		new Snapshot<>(
+			MBThreadLocalServiceUtil.class, MBThreadLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1403328884

@@ -13,6 +13,7 @@ import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.ListUtil;
+import com.liferay.portal.kernel.util.StringUtil;
 
 import java.sql.Types;
 
@@ -33,6 +34,10 @@ public class DynamicObjectDefinitionLocalizationTable
 		_objectDefinition = objectDefinition;
 		_objectFields = objectFields;
 
+		_primaryKeyColumnNames = new String[] {
+			objectDefinition.getPKObjectFieldDBColumnName(), "languageId"
+		};
+
 		createColumn(
 			objectDefinition.getPKObjectFieldDBColumnName(), Long.class,
 			Types.BIGINT, Column.FLAG_DEFAULT);
@@ -40,13 +45,15 @@ public class DynamicObjectDefinitionLocalizationTable
 			"languageId", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
 
 		for (ObjectField objectField : objectFields) {
-			createColumn(
-				objectField.getDBColumnName(),
-				DynamicObjectDefinitionTableUtil.getJavaClass(
-					objectField.getDBType()),
-				DynamicObjectDefinitionTableUtil.getSQLType(
-					objectField.getDBType()),
-				Column.FLAG_DEFAULT);
+			for (String dbColumnName : objectField.getDBColumnNames()) {
+				createColumn(
+					dbColumnName,
+					DynamicObjectDefinitionTableUtil.getJavaClass(
+						objectField.getDBType()),
+					DynamicObjectDefinitionTableUtil.getSQLType(
+						objectField.getDBType()),
+					Column.FLAG_DEFAULT);
+			}
 		}
 
 		_objectFieldColumns = ListUtil.filter(
@@ -62,6 +69,18 @@ public class DynamicObjectDefinitionLocalizationTable
 			});
 	}
 
+	@Override
+	public DynamicObjectDefinitionLocalizationTable as(String alias) {
+		DynamicObjectDefinitionLocalizationTable
+			dynamicObjectDefinitionLocalizationTable =
+				new DynamicObjectDefinitionLocalizationTable(
+					_objectDefinition, _objectFields);
+
+		dynamicObjectDefinitionLocalizationTable.setAlias(alias);
+
+		return dynamicObjectDefinitionLocalizationTable;
+	}
+
 	public String getCreateTableSQL() {
 		StringBundler sb = new StringBundler();
 
@@ -69,20 +88,23 @@ public class DynamicObjectDefinitionLocalizationTable
 		sb.append(_objectDefinition.getLocalizationDBTableName());
 		sb.append(" (");
 		sb.append(_objectDefinition.getPKObjectFieldDBColumnName());
-		sb.append(" LONG not null, languageId VARCHAR(10) not null");
+		sb.append(" LONG not null, languageId VARCHAR(75) not null");
 
 		for (ObjectField objectField : _objectFields) {
-			sb.append(", ");
-			sb.append(objectField.getDBColumnName());
-			sb.append(" ");
-			sb.append(
-				DynamicObjectDefinitionTableUtil.getDataType(
-					objectField.getDBType()));
+			for (String dbColumnName : objectField.getDBColumnNames()) {
+				sb.append(", ");
+				sb.append(dbColumnName);
+				sb.append(" ");
+				sb.append(
+					DynamicObjectDefinitionTableUtil.getDataType(
+						objectField.getBusinessType(),
+						objectField.getDBType()));
+			}
 		}
 
 		sb.append(", primary key (");
-		sb.append(_objectDefinition.getPKObjectFieldDBColumnName());
-		sb.append(", languageId))");
+		sb.append(StringUtil.merge(_primaryKeyColumnNames));
+		sb.append("));");
 
 		String sql = sb.toString();
 
@@ -128,6 +150,10 @@ public class DynamicObjectDefinitionLocalizationTable
 		return _objectFields;
 	}
 
+	public String[] getPrimaryKeyColumnNames() {
+		return _primaryKeyColumnNames;
+	}
+
 	private static final Log _log = LogFactoryUtil.getLog(
 		DynamicObjectDefinitionLocalizationTable.class);
 
@@ -135,5 +161,6 @@ public class DynamicObjectDefinitionLocalizationTable
 	private final List<Column<DynamicObjectDefinitionLocalizationTable, ?>>
 		_objectFieldColumns;
 	private final List<ObjectField> _objectFields;
+	private final String[] _primaryKeyColumnNames;
 
 }

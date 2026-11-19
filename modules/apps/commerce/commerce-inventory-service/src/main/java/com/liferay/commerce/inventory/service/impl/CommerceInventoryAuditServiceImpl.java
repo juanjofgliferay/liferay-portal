@@ -41,11 +41,10 @@ public class CommerceInventoryAuditServiceImpl
 
 		if (_portletResourcePermission.contains(
 				getPermissionChecker(), null,
-				CommerceInventoryActionKeys.MANAGE_INVENTORY)) {
+				CommerceInventoryActionKeys.VIEW_INVENTORIES)) {
 
-			return commerceInventoryAuditLocalService.
-				getCommerceInventoryAudits(
-					companyId, sku, unitOfMeasureKey, start, end);
+			return commerceInventoryAuditPersistence.findByC_S_U(
+				companyId, sku, unitOfMeasureKey, start, end);
 		}
 
 		return Collections.emptyList();
@@ -58,11 +57,10 @@ public class CommerceInventoryAuditServiceImpl
 
 		if (_portletResourcePermission.contains(
 				getPermissionChecker(), null,
-				CommerceInventoryActionKeys.MANAGE_INVENTORY)) {
+				CommerceInventoryActionKeys.VIEW_INVENTORIES)) {
 
-			return commerceInventoryAuditLocalService.
-				getCommerceInventoryAuditsCount(
-					companyId, sku, unitOfMeasureKey);
+			return commerceInventoryAuditPersistence.countByC_S_U(
+				companyId, sku, unitOfMeasureKey);
 		}
 
 		return 0;

@@ -26,7 +26,9 @@ public class CommerceInventoryWarehouseUpgradeProcess extends UpgradeProcess {
 		try (PreparedStatement preparedStatement = connection.prepareStatement(
 				"update CIWarehouse set description = ?, name = ? where " +
 					"CIWarehouseId = ?");
+
 			Statement statement = connection.createStatement();
+
 			ResultSet resultSet = statement.executeQuery(
 				"select CIWarehouseId, companyId, description, name from " +
 					"CIWarehouse")) {
@@ -77,9 +79,9 @@ public class CommerceInventoryWarehouseUpgradeProcess extends UpgradeProcess {
 	protected UpgradeStep[] getPreUpgradeSteps() {
 		return new UpgradeStep[] {
 			UpgradeProcessFactory.alterColumnType(
-				"CIWarehouse", "description", "STRING null"),
+				"CIWarehouse", "name", "STRING null"),
 			UpgradeProcessFactory.alterColumnType(
-				"CIWarehouse", "name", "STRING null")
+				"CIWarehouse", "description", "STRING null")
 		};
 	}
 

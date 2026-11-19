@@ -14,6 +14,7 @@ import {
 import React, {useEffect, useState} from 'react';
 
 import {defaultLanguageId} from '../../utils/constants';
+import {getNonInheritanceObjectRelationshipFields} from '../../utils/getNonInheritanceObjectRelationshipFields';
 import {TabsVisitor} from '../../utils/visitor';
 import InfoScreen from './InfoScreen/InfoScreen';
 import LayoutScreen from './LayoutScreen/LayoutScreen';
@@ -86,13 +87,11 @@ const normalizeObjectRelationships: TNormalizeObjectRelationships = ({
 
 	objectLayoutTabs.forEach(({objectRelationshipId}) => {
 		if (objectRelationshipId) {
-			const objectRelationshipIndex = objectRelationshipIds.indexOf(
-				objectRelationshipId
-			);
+			const objectRelationshipIndex =
+				objectRelationshipIds.indexOf(objectRelationshipId);
 
-			normalizedObjectRelationships[
-				objectRelationshipIndex
-			].inLayout = true;
+			normalizedObjectRelationships[objectRelationshipIndex].inLayout =
+				true;
 		}
 	});
 
@@ -100,10 +99,8 @@ const normalizeObjectRelationships: TNormalizeObjectRelationships = ({
 };
 
 const Layout: React.FC<React.HTMLAttributes<HTMLElement>> = () => {
-	const [
-		{isViewOnly, objectFields, objectLayout, objectLayoutId},
-		dispatch,
-	] = useLayoutContext();
+	const [{isViewOnly, objectFields, objectLayout, objectLayoutId}, dispatch] =
+		useLayoutContext();
 	const [activeIndex, setActiveIndex] = useState<number>(0);
 	const [loading, setLoading] = useState<boolean>(true);
 
@@ -118,17 +115,21 @@ const Layout: React.FC<React.HTMLAttributes<HTMLElement>> = () => {
 				`/o/object-admin/v1.0/object-layouts/${objectLayoutId}`
 			);
 
-			const objectDefinition = await API.getObjectDefinitionByExternalReferenceCode(
-				objectDefinitionExternalReferenceCode
-			);
+			const objectDefinition =
+				await API.getObjectDefinitionByExternalReferenceCode(
+					objectDefinitionExternalReferenceCode
+				);
 
-			const objectFields = await API.getObjectDefinitionByExternalReferenceCodeObjectFields(
-				objectDefinitionExternalReferenceCode
-			);
+			const objectFields =
+				await getNonInheritanceObjectRelationshipFields(
+					objectDefinition
+				);
 
-			const objectRelationships = await API.getObjectDefinitionByExternalReferenceCodeObjectRelationships(
-				objectDefinitionExternalReferenceCode
-			);
+			const objectRelationships =
+				await API.getObjectDefinitionByExternalReferenceCodeObjectRelationships(
+					objectDefinitionExternalReferenceCode,
+					{filter: 'edge eq false', pageSize: '-1'}
+				);
 
 			const objectLayout = {
 				defaultObjectLayout,
@@ -141,6 +142,9 @@ const Layout: React.FC<React.HTMLAttributes<HTMLElement>> = () => {
 				payload: {
 					creationLanguageId: objectDefinition.defaultLanguageId,
 					enableCategorization: objectDefinition.enableCategorization,
+					enableFriendlyURLCustomization:
+						objectDefinition.enableFriendlyURLCustomization,
+					objectDefinitionExternalReferenceCode,
 					objectLayout,
 					objectRelationships: normalizeObjectRelationships({
 						objectLayoutTabs,
@@ -250,20 +254,20 @@ const Layout: React.FC<React.HTMLAttributes<HTMLElement>> = () => {
 
 interface ILayoutWrapperProps extends React.HTMLAttributes<HTMLElement> {
 	isViewOnly: boolean;
-	objectFieldTypes: ObjectFieldType[];
+	objectFieldBusinessTypes: ObjectFieldBusinessType[];
 	objectLayoutId: string;
 }
 
 export default function LayoutWrapper({
 	isViewOnly,
-	objectFieldTypes,
+	objectFieldBusinessTypes,
 	objectLayoutId,
 }: ILayoutWrapperProps) {
 	return (
 		<LayoutContextProvider
 			value={{
 				isViewOnly,
-				objectFieldTypes,
+				objectFieldBusinessTypes,
 				objectLayoutId,
 			}}
 		>

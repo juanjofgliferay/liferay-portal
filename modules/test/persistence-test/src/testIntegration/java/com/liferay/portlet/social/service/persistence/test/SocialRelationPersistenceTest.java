@@ -109,11 +109,7 @@ public class SocialRelationPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		SocialRelation newSocialRelation = _persistence.create(pk);
-
-		newSocialRelation.setMvccVersion(RandomTestUtil.nextLong());
+		SocialRelation newSocialRelation = addSocialRelation();
 
 		newSocialRelation.setCtCollectionId(RandomTestUtil.nextLong());
 
@@ -129,7 +125,9 @@ public class SocialRelationPersistenceTest {
 
 		newSocialRelation.setType(RandomTestUtil.nextInt());
 
-		_socialRelations.add(_persistence.update(newSocialRelation));
+		newSocialRelation = _persistence.update(newSocialRelation);
+
+		_socialRelations.add(newSocialRelation);
 
 		SocialRelation existingSocialRelation = _persistence.findByPrimaryKey(
 			newSocialRelation.getPrimaryKey());
@@ -180,13 +178,6 @@ public class SocialRelationPersistenceTest {
 	}
 
 	@Test
-	public void testCountByCompanyId() throws Exception {
-		_persistence.countByCompanyId(RandomTestUtil.nextLong());
-
-		_persistence.countByCompanyId(0L);
-	}
-
-	@Test
 	public void testCountByUserId1() throws Exception {
 		_persistence.countByUserId1(RandomTestUtil.nextLong());
 
@@ -198,13 +189,6 @@ public class SocialRelationPersistenceTest {
 		_persistence.countByUserId2(RandomTestUtil.nextLong());
 
 		_persistence.countByUserId2(0L);
-	}
-
-	@Test
-	public void testCountByType() throws Exception {
-		_persistence.countByType(RandomTestUtil.nextInt());
-
-		_persistence.countByType(0);
 	}
 
 	@Test
@@ -565,8 +549,6 @@ public class SocialRelationPersistenceTest {
 
 		SocialRelation socialRelation = _persistence.create(pk);
 
-		socialRelation.setMvccVersion(RandomTestUtil.nextLong());
-
 		socialRelation.setCtCollectionId(RandomTestUtil.nextLong());
 
 		socialRelation.setUuid(RandomTestUtil.randomString());
@@ -592,3 +574,4 @@ public class SocialRelationPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1026975491

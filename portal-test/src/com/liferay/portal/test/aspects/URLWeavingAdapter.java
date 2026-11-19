@@ -5,8 +5,8 @@
 
 package com.liferay.portal.test.aspects;
 
-import com.liferay.portal.kernel.io.unsync.UnsyncByteArrayOutputStream;
-import com.liferay.portal.kernel.util.StreamUtil;
+import com.liferay.petra.io.StreamUtil;
+import com.liferay.petra.io.unsync.UnsyncByteArrayOutputStream;
 import com.liferay.portal.kernel.util.StringUtil;
 
 import java.io.ByteArrayInputStream;
@@ -40,6 +40,25 @@ public class URLWeavingAdapter extends WeavingAdaptor {
 			_addAspectClass(aspectClass);
 		}
 
+		ClassLoader systemClassLoader = ClassLoader.getSystemClassLoader();
+
+		ClassLoader platformClassLoader = systemClassLoader.getParent();
+
+		bcelWorld.addTypeDelegateResolver(
+			referenceType -> {
+				try {
+					return bcelWorld.buildBcelDelegate(
+						referenceType,
+						_classToJavaClass(
+							platformClassLoader.loadClass(
+								referenceType.getName())),
+						false, false);
+				}
+				catch (Exception exception) {
+					return null;
+				}
+			});
+
 		weaver.prepareForWeave();
 	}
 
@@ -56,23 +75,26 @@ public class URLWeavingAdapter extends WeavingAdaptor {
 			for (Class<?> interfaceClass : interfaceClasses) {
 				JavaClass javaClass = _classToJavaClass(interfaceClass);
 
-				if (javaClass != null) {
-					bcelWorld.addSourceObjectType(javaClass, false);
+				if (javaClass == null) {
+					continue;
 				}
+
+				bcelWorld.addSourceObjectType(javaClass, false);
 			}
 
 			currentClass = currentClass.getSuperclass();
 
-			if (currentClass != null) {
-				JavaClass javaClass = _classToJavaClass(currentClass);
-
-				if (javaClass != null) {
-					bcelWorld.addSourceObjectType(javaClass, false);
-				}
-			}
-			else {
+			if (currentClass == null) {
 				break;
 			}
+
+			JavaClass javaClass = _classToJavaClass(currentClass);
+
+			if (javaClass == null) {
+				continue;
+			}
+
+			bcelWorld.addSourceObjectType(javaClass, false);
 		}
 
 		JavaClass javaClass = _classToJavaClass(aspectClass);

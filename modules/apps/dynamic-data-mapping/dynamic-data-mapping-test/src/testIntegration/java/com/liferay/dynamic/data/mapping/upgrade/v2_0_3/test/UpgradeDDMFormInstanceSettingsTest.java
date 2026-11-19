@@ -237,10 +237,12 @@ public class UpgradeDDMFormInstanceSettingsTest {
 
 						String className = clazz.getName();
 
-						if (className.contains(_CLASS_NAME)) {
-							_ddmFormInstanceSettingsUpgradeProcess =
-								(UpgradeProcess)upgradeStep;
+						if (!className.contains(_CLASS_NAME)) {
+							continue;
 						}
+
+						_ddmFormInstanceSettingsUpgradeProcess =
+							(UpgradeProcess)upgradeStep;
 					}
 				}
 
@@ -251,16 +253,16 @@ public class UpgradeDDMFormInstanceSettingsTest {
 		"com.liferay.dynamic.data.mapping.internal.upgrade.v2_0_3." +
 			"DDMFormInstanceSettingsUpgradeProcess";
 
-	@Inject(
-		filter = "(&(component.name=com.liferay.dynamic.data.mapping.internal.upgrade.registry.DDMServiceUpgradeStepRegistrator))"
-	)
-	private static UpgradeStepRegistrator _upgradeStepRegistrator;
-
 	private UpgradeProcess _ddmFormInstanceSettingsUpgradeProcess;
 
 	@DeleteAfterTestRun
 	private Group _group;
 
 	private JSONFactory _jsonFactory;
+
+	@Inject(
+		filter = "(&(component.name=com.liferay.dynamic.data.mapping.internal.upgrade.registry.DDMServiceUpgradeStepRegistrator))"
+	)
+	private UpgradeStepRegistrator _upgradeStepRegistrator;
 
 }

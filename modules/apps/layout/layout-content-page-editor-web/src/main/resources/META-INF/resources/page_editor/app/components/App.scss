@@ -1,3 +1,4 @@
+@import 'atlas-custom-properties/_variables';
 @import 'cadmin-variables';
 
 @import 'variables';
@@ -23,7 +24,7 @@
 @import 'fragment_configuration_fields/CSSClassSelectorField';
 @import 'fragment_configuration_fields/CustomCSSField';
 @import 'fragment_configuration_fields/HideFromSearchField';
-@import 'fragment_configuration_fields/TargetCollectionsField';
+@import 'fragment_configuration_fields/TargetCollectionDisplayField';
 
 @import 'fragment_content/FragmentContent';
 
@@ -44,6 +45,7 @@
 @import '../../common/components/Editor';
 @import '../../common/components/InlineConfirm';
 @import '../../common/components/ItemSelector';
+@import '../../common/components/MappedField';
 @import '../../common/components/SearchForm';
 @import '../../common/components/SidebarPanelHeader';
 @import '../../common/components/SpacingBox';
@@ -59,3 +61,9 @@
 @import '../../plugins/page_content/components/Plugin';
 @import '../../plugins/page_design_options/components/Plugin';
 @import '../../plugins/page_rules/components/Plugin';
+
+html#{$cadmin-selector}
+	.page-editor__small-resolution
+	.cadmin.control-menu-container {
+	position: static;
+}

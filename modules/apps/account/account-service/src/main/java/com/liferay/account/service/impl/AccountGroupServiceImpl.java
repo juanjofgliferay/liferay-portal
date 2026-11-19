@@ -9,12 +9,14 @@ import com.liferay.account.constants.AccountActionKeys;
 import com.liferay.account.model.AccountEntry;
 import com.liferay.account.model.AccountGroup;
 import com.liferay.account.service.base.AccountGroupServiceBaseImpl;
+import com.liferay.account.service.persistence.AccountGroupRelPersistence;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.search.BaseModelSearchResult;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
+import com.liferay.portal.kernel.service.ClassNameLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.permission.PortalPermissionUtil;
 import com.liferay.portal.kernel.util.LinkedHashMapBuilder;
@@ -41,15 +43,15 @@ public class AccountGroupServiceImpl extends AccountGroupServiceBaseImpl {
 
 	@Override
 	public AccountGroup addAccountGroup(
-			long userId, String description, String name,
-			ServiceContext serviceContext)
+			String externalReferenceCode, long userId, String description,
+			String name, ServiceContext serviceContext)
 		throws PortalException {
 
 		PortalPermissionUtil.check(
 			getPermissionChecker(), AccountActionKeys.ADD_ACCOUNT_GROUP);
 
 		return accountGroupLocalService.addAccountGroup(
-			userId, description, name, serviceContext);
+			externalReferenceCode, userId, description, name, serviceContext);
 	}
 
 	@Override
@@ -72,13 +74,27 @@ public class AccountGroupServiceImpl extends AccountGroupServiceBaseImpl {
 	}
 
 	@Override
+	public AccountGroup fetchAccountGroup(long accountGroupId)
+		throws PortalException {
+
+		AccountGroup accountGroup = accountGroupPersistence.fetchByPrimaryKey(
+			accountGroupId);
+
+		if (accountGroup != null) {
+			_accountGroupModelResourcePermission.check(
+				getPermissionChecker(), accountGroup, ActionKeys.VIEW);
+		}
+
+		return accountGroup;
+	}
+
+	@Override
 	public AccountGroup fetchAccountGroupByExternalReferenceCode(
 			String externalReferenceCode, long companyId)
 		throws PortalException {
 
-		AccountGroup accountGroup =
-			accountGroupLocalService.fetchAccountGroupByExternalReferenceCode(
-				externalReferenceCode, companyId);
+		AccountGroup accountGroup = accountGroupPersistence.fetchByERC_C(
+			externalReferenceCode, companyId);
 
 		if (accountGroup != null) {
 			_accountGroupModelResourcePermission.check(
@@ -92,10 +108,27 @@ public class AccountGroupServiceImpl extends AccountGroupServiceBaseImpl {
 	public AccountGroup getAccountGroup(long accountGroupId)
 		throws PortalException {
 
-		_accountGroupModelResourcePermission.check(
-			getPermissionChecker(), accountGroupId, ActionKeys.VIEW);
+		AccountGroup accountGroup = accountGroupPersistence.findByPrimaryKey(
+			accountGroupId);
 
-		return accountGroupLocalService.getAccountGroup(accountGroupId);
+		_accountGroupModelResourcePermission.check(
+			getPermissionChecker(), accountGroup, ActionKeys.VIEW);
+
+		return accountGroup;
+	}
+
+	@Override
+	public AccountGroup getAccountGroupByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws PortalException {
+
+		AccountGroup accountGroup = accountGroupPersistence.findByERC_C(
+			externalReferenceCode, companyId);
+
+		_accountGroupModelResourcePermission.check(
+			getPermissionChecker(), accountGroup, ActionKeys.VIEW);
+
+		return accountGroup;
 	}
 
 	@Override
@@ -119,8 +152,30 @@ public class AccountGroupServiceImpl extends AccountGroupServiceBaseImpl {
 			getPermissionChecker(), accountEntryId,
 			AccountActionKeys.VIEW_ACCOUNT_GROUPS);
 
-		return accountGroupLocalService.getAccountGroupsCountByAccountEntryId(
+		return _accountGroupRelPersistence.countByC_C(
+			_classNameLocalService.getClassNameId(AccountEntry.class.getName()),
 			accountEntryId);
+	}
+
+	public AccountGroup getOrAddEmptyAccountGroup(
+			String externalReferenceCode, String name)
+		throws Exception {
+
+		PermissionChecker permissionChecker = getPermissionChecker();
+
+		AccountGroup accountGroup = fetchAccountGroupByExternalReferenceCode(
+			externalReferenceCode, permissionChecker.getCompanyId());
+
+		if (accountGroup != null) {
+			return accountGroup;
+		}
+
+		PortalPermissionUtil.check(
+			permissionChecker, AccountActionKeys.ADD_ACCOUNT_GROUP);
+
+		return accountGroupLocalService.getOrAddEmptyAccountGroup(
+			externalReferenceCode, permissionChecker.getCompanyId(),
+			permissionChecker.getUserId(), name);
 	}
 
 	@Override
@@ -141,15 +196,16 @@ public class AccountGroupServiceImpl extends AccountGroupServiceBaseImpl {
 
 	@Override
 	public AccountGroup updateAccountGroup(
-			long accountGroupId, String description, String name,
-			ServiceContext serviceContext)
+			String externalReferenceCode, long accountGroupId,
+			String description, String name, ServiceContext serviceContext)
 		throws PortalException {
 
 		_accountGroupModelResourcePermission.check(
 			getPermissionChecker(), accountGroupId, ActionKeys.UPDATE);
 
 		return accountGroupLocalService.updateAccountGroup(
-			accountGroupId, description, name, serviceContext);
+			externalReferenceCode, accountGroupId, description, name,
+			serviceContext);
 	}
 
 	@Override
@@ -177,5 +233,11 @@ public class AccountGroupServiceImpl extends AccountGroupServiceBaseImpl {
 	)
 	private ModelResourcePermission<AccountGroup>
 		_accountGroupModelResourcePermission;
+
+	@Reference
+	private AccountGroupRelPersistence _accountGroupRelPersistence;
+
+	@Reference
+	private ClassNameLocalService _classNameLocalService;
 
 }

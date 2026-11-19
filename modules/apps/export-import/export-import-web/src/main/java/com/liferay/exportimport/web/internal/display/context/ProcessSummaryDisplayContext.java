@@ -10,7 +10,6 @@ import com.liferay.exportimport.kernel.lar.ExportImportHelperUtil;
 import com.liferay.exportimport.kernel.staging.LayoutStagingUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.language.LanguageUtil;
@@ -53,8 +52,7 @@ public class ProcessSummaryDisplayContext {
 		Map<String, ?> taskContextMap, Portlet portlet) {
 
 		if (!Objects.equals(
-				portlet.getPortletId(), _PORTLET_ID_JOURNAL_PORTLET) ||
-			!FeatureFlagManagerUtil.isEnabled("LPS-165481")) {
+				portlet.getPortletId(), _PORTLET_ID_JOURNAL_PORTLET)) {
 
 			return null;
 		}
@@ -218,12 +216,14 @@ public class ProcessSummaryDisplayContext {
 
 			pageNames.add(childPageName);
 
-			if (childLayoutJSONObject.getBoolean("hasChildren")) {
-				pageNames.addAll(
-					_getChildPageNames(
-						childPageName,
-						childLayoutJSONObject.getJSONObject("children")));
+			if (!childLayoutJSONObject.getBoolean("hasChildren")) {
+				continue;
 			}
+
+			pageNames.addAll(
+				_getChildPageNames(
+					childPageName,
+					childLayoutJSONObject.getJSONObject("children")));
 		}
 
 		return pageNames;

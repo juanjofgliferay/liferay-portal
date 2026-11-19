@@ -5,10 +5,10 @@
 
 package com.liferay.frontend.taglib.clay.internal.servlet.taglib;
 
+import com.liferay.frontend.js.loader.modules.extender.esm.ESImportUtil;
 import com.liferay.frontend.js.loader.modules.extender.npm.NPMResolvedPackageNameUtil;
 import com.liferay.frontend.taglib.clay.internal.servlet.ServletContextUtil;
 import com.liferay.frontend.taglib.clay.internal.servlet.taglib.util.ServicesProvider;
-import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringPool;
 import com.liferay.petra.string.StringUtil;
 import com.liferay.portal.kernel.theme.PortletDisplay;
@@ -23,18 +23,18 @@ import com.liferay.portal.template.react.renderer.ReactRenderer;
 import com.liferay.taglib.util.AttributesTagSupport;
 import com.liferay.taglib.util.InlineUtil;
 
+import jakarta.portlet.PortletResponse;
+
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.jsp.JspException;
+import jakarta.servlet.jsp.JspWriter;
+import jakarta.servlet.jsp.PageContext;
+
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
-
-import javax.portlet.PortletResponse;
-
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.jsp.JspException;
-import javax.servlet.jsp.JspWriter;
-import javax.servlet.jsp.PageContext;
 
 /**
  * @author Chema Balsas
@@ -151,7 +151,7 @@ public class BaseContainerTag extends AttributesTagSupport {
 
 		PortletResponse portletResponse =
 			(PortletResponse)httpServletRequest.getAttribute(
-				JavaConstants.JAVAX_PORTLET_RESPONSE);
+				JavaConstants.JAKARTA_PORTLET_RESPONSE);
 
 		if (portletResponse != null) {
 			_namespace = portletResponse.getNamespace();
@@ -323,7 +323,7 @@ public class BaseContainerTag extends AttributesTagSupport {
 		String cssClass = getCssClass();
 
 		if (Validator.isNotNull(cssClass)) {
-			cssClasses.addAll(StringUtil.split(cssClass, CharPool.SPACE));
+			cssClasses.add(cssClass.trim());
 		}
 
 		return StringUtil.merge(cssClasses, StringPool.SPACE);
@@ -356,11 +356,16 @@ public class BaseContainerTag extends AttributesTagSupport {
 			String propsTransformer = null;
 
 			if (Validator.isNotNull(_propsTransformer)) {
-				String resolvedPackageName = NPMResolvedPackageNameUtil.get(
-					getPropsTransformerServletContext());
+				if (ESImportUtil.isESImport(_propsTransformer)) {
+					propsTransformer = _propsTransformer;
+				}
+				else {
+					String resolvedPackageName = NPMResolvedPackageNameUtil.get(
+						getPropsTransformerServletContext());
 
-				propsTransformer =
-					resolvedPackageName + "/" + _propsTransformer;
+					propsTransformer =
+						resolvedPackageName + "/" + _propsTransformer;
+				}
 			}
 			else if (Validator.isNotNull(getDefaultEventHandler())) {
 				propsTransformer =

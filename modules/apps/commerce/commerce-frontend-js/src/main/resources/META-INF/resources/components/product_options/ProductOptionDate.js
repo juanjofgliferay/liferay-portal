@@ -4,16 +4,16 @@
  */
 
 import ClayForm, {ClayInput} from '@clayui/form';
-import {useLiferayState} from '@liferay/frontend-js-state-web';
+import {useLiferayState} from '@liferay/frontend-js-state-web/react';
 import classnames from 'classnames';
 import React, {useEffect, useState} from 'react';
 
 import skuOptionsAtom from '../../utilities/atoms/skuOptionsAtom';
 import Asterisk from './Asterisk';
 import {
+	INITIAL_SKU_OPTIONS_ATOM_STATE,
 	getProductOptionName,
 	getSkuOptionsErrors,
-	initialSkuOptionsAtomState,
 	isRequired,
 } from './utils';
 
@@ -30,9 +30,8 @@ const ProductOptionDate = ({
 	const [hasErrors, setHasErrors] = useState(false);
 	const skuOptionsKey = isFromMiniCart ? 'miniCartSkuOptions' : 'skuOptions';
 
-	const [skuOptionsAtomState, setSkuOptionsAtomState] = useLiferayState(
-		skuOptionsAtom
-	);
+	const [skuOptionsAtomState, setSkuOptionsAtomState] =
+		useLiferayState(skuOptionsAtom);
 
 	useEffect(
 		() =>
@@ -45,6 +44,7 @@ const ProductOptionDate = ({
 					skuOptionsAtomState
 				),
 			}),
+
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 		[hasErrors]
 	);
@@ -87,7 +87,7 @@ const ProductOptionDate = ({
 							skuOptionName: productOption.name,
 							value: [value],
 						},
-				  ],
+					],
 		});
 
 		return () =>
@@ -96,8 +96,9 @@ const ProductOptionDate = ({
 						...skuOptionsAtomState,
 						miniCartErrors: [],
 						miniCartSkuOptions: [],
-				  })
-				: setSkuOptionsAtomState(initialSkuOptionsAtomState);
+					})
+				: setSkuOptionsAtomState(INITIAL_SKU_OPTIONS_ATOM_STATE);
+
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 

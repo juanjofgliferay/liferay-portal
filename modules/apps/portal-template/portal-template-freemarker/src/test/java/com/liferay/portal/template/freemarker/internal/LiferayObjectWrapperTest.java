@@ -5,12 +5,11 @@
 
 package com.liferay.portal.template.freemarker.internal;
 
+import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
-import com.liferay.portal.kernel.test.SwappableSecurityManager;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.CodeCoverageAssertor;
 import com.liferay.portal.kernel.test.rule.NewEnv;
-import com.liferay.portal.kernel.test.util.ReflectionUtilTestUtil;
 import com.liferay.portal.kernel.util.ProxyUtil;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
@@ -27,13 +26,17 @@ import java.lang.reflect.Field;
 
 import java.util.Collections;
 import java.util.Enumeration;
-import java.util.Map;
+import java.util.List;
 import java.util.ResourceBundle;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Assert;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -155,21 +158,31 @@ public class LiferayObjectWrapperTest extends BaseObjectWrapperTestCase {
 	@NewEnv(type = NewEnv.Type.CLASSLOADER)
 	@Test
 	public void testInitializationFailure() throws Exception {
-		SecurityException securityException = new SecurityException();
+		MockedStatic<ReflectionUtil> reflectionUtilMockedStatic =
+			Mockito.mockStatic(ReflectionUtil.class);
 
-		try (SwappableSecurityManager swappableSecurityManager =
-				ReflectionUtilTestUtil.throwForSuppressAccessChecks(
-					securityException)) {
+		Exception exception = new NoSuchFieldException();
 
+		reflectionUtilMockedStatic.when(
+			() -> ReflectionUtil.getDeclaredField(
+				Mockito.any(), Mockito.eq("cacheClassNames"))
+		).thenThrow(
+			exception
+		);
+
+		try {
 			Class.forName(
 				"com.liferay.portal.template.freemarker.internal." +
 					"LiferayObjectWrapper");
 
 			Assert.fail("ExceptionInInitializerError was not thrown");
 		}
-		catch (ExceptionInInitializerError eiie) {
-			Assert.assertSame(securityException, eiie.getCause());
+		catch (ExceptionInInitializerError exceptionInInitializerError) {
+			Assert.assertSame(
+				exception, exceptionInInitializerError.getCause());
 		}
+
+		reflectionUtilMockedStatic.close();
 	}
 
 	@Test
@@ -180,14 +193,20 @@ public class LiferayObjectWrapperTest extends BaseObjectWrapperTestCase {
 	private void _assertModelFactoryCache(
 		String modelFactoryFieldName, Class<?> clazz) {
 
-		Map<Class<?>, ModelFactory> modelFactories =
+		ClassValue<AtomicInteger> modelFactoryIndexClassValue =
 			ReflectionTestUtil.getFieldValue(
-				LiferayObjectWrapper.class, "_modelFactories");
+				LiferayObjectWrapper.class, "_modelFactoryIndexClassValue");
+
+		AtomicInteger modelFactoryIndex = modelFactoryIndexClassValue.get(
+			clazz);
+
+		List<ModelFactory> modelFactories = ReflectionTestUtil.getFieldValue(
+			LiferayObjectWrapper.class, "_modelFactories");
 
 		Assert.assertSame(
 			ReflectionTestUtil.getFieldValue(
 				LiferayObjectWrapper.class, modelFactoryFieldName),
-			modelFactories.get(clazz));
+			modelFactories.get(modelFactoryIndex.get()));
 	}
 
 }

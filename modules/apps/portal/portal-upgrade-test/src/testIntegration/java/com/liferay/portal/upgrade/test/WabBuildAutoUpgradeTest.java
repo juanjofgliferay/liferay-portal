@@ -76,9 +76,11 @@ public class WabBuildAutoUpgradeTest extends BaseBuildAutoUpgradeTestCase {
 		super.tearDown();
 
 		for (File file : _warFiles) {
-			if (file != null) {
-				file.delete();
+			if (file == null) {
+				continue;
 			}
+
+			file.delete();
 		}
 	}
 
@@ -93,6 +95,7 @@ public class WabBuildAutoUpgradeTest extends BaseBuildAutoUpgradeTestCase {
 		File file = FileUtil.createTempFile("war");
 
 		try (OutputStream outputStream = new FileOutputStream(file);
+
 			JarOutputStream jarOutputStream = new JarOutputStream(
 				outputStream)) {
 

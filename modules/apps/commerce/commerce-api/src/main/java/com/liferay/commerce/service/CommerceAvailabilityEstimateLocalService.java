@@ -75,8 +75,8 @@ public interface CommerceAvailabilityEstimateLocalService
 		CommerceAvailabilityEstimate commerceAvailabilityEstimate);
 
 	public CommerceAvailabilityEstimate addCommerceAvailabilityEstimate(
-			Map<Locale, String> titleMap, double priority,
-			ServiceContext serviceContext)
+			String externalReferenceCode, Map<Locale, String> titleMap,
+			double priority, ServiceContext serviceContext)
 		throws PortalException;
 
 	/**
@@ -214,6 +214,11 @@ public interface CommerceAvailabilityEstimateLocalService
 	public CommerceAvailabilityEstimate fetchCommerceAvailabilityEstimate(
 		long commerceAvailabilityEstimateId);
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public CommerceAvailabilityEstimate
+		fetchCommerceAvailabilityEstimateByExternalReferenceCode(
+			String externalReferenceCode, long companyId);
+
 	/**
 	 * Returns the commerce availability estimate with the matching UUID and company.
 	 *
@@ -239,6 +244,12 @@ public interface CommerceAvailabilityEstimateLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public CommerceAvailabilityEstimate getCommerceAvailabilityEstimate(
 			long commerceAvailabilityEstimateId)
+		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public CommerceAvailabilityEstimate
+			getCommerceAvailabilityEstimateByExternalReferenceCode(
+				String externalReferenceCode, long companyId)
 		throws PortalException;
 
 	/**
@@ -284,14 +295,18 @@ public interface CommerceAvailabilityEstimateLocalService
 	public int getCommerceAvailabilityEstimatesCount();
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getCommerceAvailabilityEstimatesCount(long companyId);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public ExportActionableDynamicQuery getExportActionableDynamicQuery(
 		PortletDataContext portletDataContext);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public IndexableActionableDynamicQuery getIndexableActionableDynamicQuery();
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public CommerceAvailabilityEstimate
+			getOrAddEmptyCommerceAvailabilityEstimate(
+				String externalReferenceCode, long companyId, long userId,
+				Map<Locale, String> titleMap)
+		throws PortalException;
 
 	/**
 	 * Returns the OSGi service identifier.
@@ -323,8 +338,10 @@ public interface CommerceAvailabilityEstimateLocalService
 		CommerceAvailabilityEstimate commerceAvailabilityEstimate);
 
 	public CommerceAvailabilityEstimate updateCommerceAvailabilityEstimate(
-			long commerceAvailabilityId, Map<Locale, String> titleMap,
-			double priority, ServiceContext serviceContext)
+			String externalReferenceCode, long commerceAvailabilityEstimateId,
+			Map<Locale, String> titleMap, double priority,
+			ServiceContext serviceContext)
 		throws PortalException;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:268575048

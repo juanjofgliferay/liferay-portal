@@ -8,14 +8,18 @@ package com.liferay.template.internal.transformer;
 import com.liferay.info.field.InfoField;
 import com.liferay.info.field.InfoFieldValue;
 import com.liferay.info.field.type.InfoFieldType;
+import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMap;
+import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMapFactory;
 import com.liferay.portal.kernel.templateparser.TemplateNode;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.template.info.field.transformer.BaseTemplateNodeTransformer;
 import com.liferay.template.info.field.transformer.TemplateNodeTransformer;
-import com.liferay.template.internal.info.field.transformer.TemplateNodeTransformerRegistry;
 import com.liferay.template.transformer.TemplateNodeFactory;
 
+import org.osgi.framework.BundleContext;
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.component.annotations.Deactivate;
 
 /**
  * @author Lourdes Fernández Besada
@@ -34,13 +38,50 @@ public class TemplateNodeFactoryImpl implements TemplateNodeFactory {
 		Class<?> infoFieldTypeClass = infoFieldType.getClass();
 
 		TemplateNodeTransformer templateNodeTransformer =
-			_templateNodeTransformerRegistry.getTemplateNodeTransformer(
-				infoFieldTypeClass.getName());
+			_getTemplateNodeTransformer(infoFieldTypeClass.getName());
 
 		return templateNodeTransformer.transform(infoFieldValue, themeDisplay);
 	}
 
-	@Reference
-	private TemplateNodeTransformerRegistry _templateNodeTransformerRegistry;
+	@Activate
+	protected void activate(BundleContext bundleContext) {
+		_serviceTrackerMap = ServiceTrackerMapFactory.openSingleValueMap(
+			bundleContext, TemplateNodeTransformer.class,
+			"info.field.type.class.name");
+	}
+
+	@Deactivate
+	protected void deactivate() {
+		_serviceTrackerMap.close();
+	}
+
+	private TemplateNodeTransformer _getTemplateNodeTransformer(
+		String className) {
+
+		TemplateNodeTransformer templateNodeTransformer =
+			_serviceTrackerMap.getService(className);
+
+		if (templateNodeTransformer != null) {
+			return templateNodeTransformer;
+		}
+
+		return _defaultTemplateNodeTransformer;
+	}
+
+	private static final TemplateNodeTransformer
+		_defaultTemplateNodeTransformer = new BaseTemplateNodeTransformer() {
+
+			@Override
+			public TemplateNode transform(
+				InfoFieldValue<Object> infoFieldValue,
+				ThemeDisplay themeDisplay) {
+
+				return getDefaultTemplateNode(infoFieldValue, themeDisplay);
+			}
+
+		};
+
+	private ServiceTrackerMap<String, TemplateNodeTransformer>
+		_serviceTrackerMap;
 
 }

@@ -4,12 +4,33 @@
  */
 
 type LocalizedValue<T> = Liferay.Language.LocalizedValue<T>;
+
+type Actions = {
+	create?: HTTPMethod;
+	delete?: HTTPMethod;
+	get?: HTTPMethod;
+	permissions?: HTTPMethod;
+	update?: HTTPMethod;
+	updateBatch?: HTTPMethod;
+};
+
+type HTTPMethod = {
+	href: string;
+	method: string;
+};
+
+type LabelValueObject = {
+	label?: string;
+	value?: string | number;
+};
+
 interface ObjectDefinition {
-	actions: DefinitionActions;
+	actions: Actions;
 	active: boolean;
 	dateCreated: string;
 	dateModified: string;
 	defaultLanguageId: string;
+	description?: LocalizedValue<string>;
 	externalReferenceCode: string;
 	id: number;
 	label: LocalizedValue<string>;
@@ -34,22 +55,11 @@ interface ObjectDefinition {
 	titleObjectFieldName: string;
 }
 
-type DefinitionAction = {
-	href: string;
-	method: string;
-};
-
-type DefinitionActions = {
-	delete: DefinitionAction;
-	get: DefinitionAction;
-	permissions: DefinitionAction;
-	update: DefinitionAction;
-};
-
 interface ObjectField {
 	DBType: string;
 	businessType: ObjectFieldBusinessType | string;
 	defaultValue?: string;
+	description?: LocalizedValue<string>;
 	externalReferenceCode?: string;
 	id: number;
 	indexed: boolean;
@@ -59,31 +69,35 @@ interface ObjectField {
 	listTypeDefinitionId: number;
 	localized: boolean;
 	name: string;
+	objectDefinitionExternalReferenceCode1?: string;
 	objectFieldSettings?: ObjectFieldSetting[];
+	objectRelationshipExternalReferenceCode: string;
 	relationshipType?: unknown;
 	required: boolean;
 	state: boolean;
 	system?: boolean;
 }
 
-type LabelValueObject = {
-	label?: string;
-	value?: string | number;
-};
-
-type ObjectFieldBusinessType =
-	| 'Attachment'
-	| 'LongText'
-	| 'Picklist'
-	| 'Relationship'
-	| 'Text'
+type ObjectFieldBusinessTypeName =
 	| 'Aggregation'
-	| 'LongInteger'
-	| 'Integer'
+	| 'Attachment'
+	| 'AutoIncrement'
+	| 'Boolean'
+	| 'Date'
+	| 'DateTime'
 	| 'Decimal'
+	| 'Encrypted'
+	| 'Formula'
+	| 'Integer'
+	| 'Location'
+	| 'LongInteger'
+	| 'LongText'
+	| 'MultiselectPicklist'
+	| 'Picklist'
 	| 'PrecisionDecimal'
-	| 'Workflow Status'
-	| 'Date';
+	| 'Relationship'
+	| 'RichText'
+	| 'Text';
 
 interface ObjectFieldSetting {
 	name: ObjectFieldSettingName;
@@ -115,7 +129,7 @@ type ObjectFieldSettingName =
 	| 'maximumFileSize'
 	| 'maxLength'
 	| 'showCounter'
-	| 'showFilesInDocumentsAndMedia'
+	| 'showFilesInLibrary'
 	| 'storageDLFolderPath'
 	| 'relationship'
 	| 'function'

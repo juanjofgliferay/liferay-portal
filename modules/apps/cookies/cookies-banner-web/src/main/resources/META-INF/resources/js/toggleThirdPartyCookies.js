@@ -5,11 +5,9 @@
 
 import {COOKIE_TYPES, getCookie} from 'frontend-js-web';
 
-export function flipThirdPartyCookiesOff(element) {
-	if (!Liferay.FeatureFlags['LPS-154290']) {
-		return element;
-	}
+import {declineAllCookies} from './CookiesUtil';
 
+export function flipThirdPartyCookiesOff(element) {
 	const elements = element.querySelectorAll(
 		'[data-third-party-cookie-flipped]'
 	);
@@ -78,7 +76,7 @@ function flipThirdPartyCookie(type) {
 
 			switch (element.tagName) {
 				case 'SCRIPT': {
-					const newScript = element.cloneNode();
+					const newScript = element.cloneNode(true);
 
 					newScript.type = 'text/javascript';
 
@@ -112,6 +110,7 @@ function flipThirdPartyCookie(type) {
 					break;
 				}
 				default:
+
 					// eslint-disable-next-line no-console
 					console.warn(
 						'3rd Party Cookies: ',
@@ -145,16 +144,34 @@ export default function toggleThirdPartyCookies() {
 	});
 }
 
+export function suppressThirdPartyCookies({
+	consentRenewalPeriod,
+	consentRenewalPeriodTimeUnit,
+	dissentRenewalPeriod,
+	dissentRenewalPeriodTimeUnit,
+	optionalConsentCookieTypeNames,
+	requiredConsentCookieTypeNames,
+	storeConsent,
+}) {
+	flipThirdPartyCookiesOff(document);
+
+	declineAllCookies(
+		consentRenewalPeriod,
+		consentRenewalPeriodTimeUnit,
+		dissentRenewalPeriod,
+		dissentRenewalPeriodTimeUnit,
+		optionalConsentCookieTypeNames,
+		requiredConsentCookieTypeNames,
+		storeConsent
+	);
+}
+
 /**
  * Runs `toggleThirdPartyCookies` on a gradual increasing interval of 500ms.
  *
  * @param {number} startingInterval - The initial interval to start with
  */
 export function runThirdPartyCookiesInterval(startingInterval = 2000) {
-	if (!Liferay.FeatureFlags['LPS-154290']) {
-		return;
-	}
-
 	function refresh(interval) {
 
 		// Don't increase the interval past 10s

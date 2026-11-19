@@ -48,38 +48,72 @@ public interface ObjectDefinition
 
 		};
 
+	public java.util.Locale getDefaultLocale();
+
 	public String getDestinationName();
 
 	public String getExtensionDBTableName();
 
 	public String getLocalizationDBTableName();
 
-	public String getObjectFolderExternalReferenceCode();
-
 	public String getOSGiJaxRsName();
 
 	public String getOSGiJaxRsName(String className);
 
-	public String getPortletId();
+	public java.util.List<ObjectDefinitionSetting>
+		getObjectDefinitionSettings();
 
-	public String getResourceName();
+	public com.liferay.object.model.bag.ObjectFieldBag getObjectFieldBag();
+
+	public ObjectFolder getObjectFolder();
+
+	public String getObjectFolderExternalReferenceCode();
+
+	public String getPortletId();
 
 	public String getRESTContextPath();
 
+	public String getResourceName();
+
+	public String getRootObjectDefinitionExternalReferenceCode();
+
+	public long getRootObjectDefinitionId();
+
+	public long[] getRootObjectDefinitionIds();
+
 	public String getShortName();
 
+	public boolean isAllowStandaloneObjectEntry();
+
 	public boolean isApproved();
+
+	public boolean isCMP();
+
+	public boolean isCMS();
 
 	public boolean isDefaultStorageType();
 
 	public boolean isLinkedToObjectFolder(long objectFolderId);
 
-	public boolean isNodeCandidate();
+	public boolean isModifiableAndSystem();
 
 	public boolean isRootDescendantNode();
+
+	public boolean isRootDescendantNode(long rootObjectDefinitionId);
 
 	public boolean isRootNode();
 
 	public boolean isUnmodifiableSystemObject();
 
+	public boolean isVisible();
+
+	public void setObjectDefinitionSettings(
+		java.util.List<ObjectDefinitionSetting> objectDefinitionSettings);
+
+	public void setObjectFieldBag(
+		com.liferay.object.model.bag.ObjectFieldBag objectFieldBag);
+
+	public void setObjectFolder(ObjectFolder objectFolder);
+
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-442249019

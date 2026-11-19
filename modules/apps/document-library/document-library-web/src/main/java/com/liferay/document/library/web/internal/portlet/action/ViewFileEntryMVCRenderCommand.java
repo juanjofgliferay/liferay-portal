@@ -11,11 +11,11 @@ import com.liferay.asset.kernel.service.AssetEntryLocalService;
 import com.liferay.asset.util.LinkedAssetEntryIdsUtil;
 import com.liferay.document.library.constants.DLPortletKeys;
 import com.liferay.document.library.display.context.DLDisplayContextProvider;
+import com.liferay.document.library.helper.DLAssetHelper;
 import com.liferay.document.library.kernel.exception.NoSuchFileEntryException;
 import com.liferay.document.library.kernel.exception.NoSuchFileVersionException;
 import com.liferay.document.library.kernel.model.DLFileEntryConstants;
 import com.liferay.document.library.repository.authorization.capability.AuthorizationCapability;
-import com.liferay.document.library.util.DLAssetHelper;
 import com.liferay.document.library.web.internal.display.context.DLAdminDisplayContext;
 import com.liferay.document.library.web.internal.display.context.DLAdminDisplayContextProvider;
 import com.liferay.document.library.web.internal.display.context.DLViewFileEntryDisplayContext;
@@ -37,13 +37,13 @@ import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.PortletException;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
-
-import javax.portlet.PortletException;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -53,9 +53,9 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + DLPortletKeys.DOCUMENT_LIBRARY,
-		"javax.portlet.name=" + DLPortletKeys.DOCUMENT_LIBRARY_ADMIN,
-		"javax.portlet.name=" + DLPortletKeys.MEDIA_GALLERY_DISPLAY,
+		"jakarta.portlet.name=" + DLPortletKeys.DOCUMENT_LIBRARY,
+		"jakarta.portlet.name=" + DLPortletKeys.DOCUMENT_LIBRARY_ADMIN,
+		"jakarta.portlet.name=" + DLPortletKeys.MEDIA_GALLERY_DISPLAY,
 		"mvc.command.name=/document_library/view_file_entry"
 	},
 	service = MVCRenderCommand.class
@@ -145,8 +145,7 @@ public class ViewFileEntryMVCRenderCommand
 
 		DLAdminDisplayContext dlAdminDisplayContext =
 			_dlAdminDisplayContextProvider.getDLAdminDisplayContext(
-				_portal.getHttpServletRequest(renderRequest),
-				_portal.getHttpServletResponse(renderResponse));
+				_portal.getHttpServletRequest(renderRequest));
 
 		DLViewFileEntryDisplayContext dlViewFileEntryDisplayContext =
 			new DLViewFileEntryDisplayContext(

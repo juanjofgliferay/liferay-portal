@@ -5,6 +5,7 @@
 
 package com.liferay.layout.page.template.admin.web.internal.display.context;
 
+import com.liferay.design.library.util.DesignLibraryUtil;
 import com.liferay.frontend.taglib.clay.servlet.taglib.display.context.SearchContainerManagementToolbarDisplayContext;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.CreationMenu;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.CreationMenuBuilder;
@@ -15,10 +16,12 @@ import com.liferay.layout.page.template.constants.LayoutPageTemplateActionKeys;
 import com.liferay.layout.page.template.model.LayoutPageTemplateEntry;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
+import com.liferay.portal.kernel.portlet.LiferayPortletURL;
 import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.portlet.url.builder.ResourceURLBuilder;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
@@ -26,10 +29,10 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Eudaldo Alonso
@@ -132,7 +135,19 @@ public class LayoutPageTemplateManagementToolbarDisplayContext
 	public CreationMenu getCreationMenu() {
 		return CreationMenuBuilder.addPrimaryDropdownItem(
 			dropdownItem -> {
-				dropdownItem.setHref(_getSelectMasterLayoutURL());
+				if (DesignLibraryUtil.isDesignLibraryScope(
+						_themeDisplay.getScopeGroup())) {
+
+					dropdownItem.putData(
+						"action", "addLayoutPageTemplateEntry");
+					dropdownItem.putData(
+						"addPageTemplateURL",
+						_getAddLayoutPageTemplateEntryURL());
+				}
+				else {
+					dropdownItem.setHref(_getSelectMasterLayoutURL());
+				}
+
 				dropdownItem.setLabel(
 					LanguageUtil.get(
 						httpServletRequest, "content-page-template"));
@@ -141,12 +156,16 @@ public class LayoutPageTemplateManagementToolbarDisplayContext
 			() -> {
 				Group scopeGroup = _themeDisplay.getScopeGroup();
 
-				return !scopeGroup.isLayoutSetPrototype();
+				return !scopeGroup.isLayoutSetPrototype() &&
+					   !DesignLibraryUtil.isDesignLibraryScope(scopeGroup) &&
+					   FeatureFlagManagerUtil.isEnabled(
+						   _themeDisplay.getCompanyId(), "LPD-76864");
 			},
 			dropdownItem -> {
 				dropdownItem.putData("action", "addLayoutPageTemplateEntry");
 				dropdownItem.putData(
 					"addPageTemplateURL", _getAddLayoutPrototypeURL());
+				dropdownItem.setDeprecated(true);
 				dropdownItem.setLabel(
 					LanguageUtil.get(
 						httpServletRequest, "widget-page-template"));
@@ -176,6 +195,18 @@ public class LayoutPageTemplateManagementToolbarDisplayContext
 		return new String[] {"create-date", "name"};
 	}
 
+	private String _getAddLayoutPageTemplateEntryURL() {
+		return PortletURLBuilder.createActionURL(
+			liferayPortletResponse
+		).setActionName(
+			"/layout_page_template_admin/add_layout_page_template_entry"
+		).setParameter(
+			"layoutPageTemplateCollectionId",
+			_layoutPageTemplateDisplayContext.
+				getLayoutPageTemplateCollectionId()
+		).buildString();
+	}
+
 	private String _getAddLayoutPrototypeURL() {
 		return PortletURLBuilder.createActionURL(
 			liferayPortletResponse
@@ -195,15 +226,21 @@ public class LayoutPageTemplateManagementToolbarDisplayContext
 			_layoutPageTemplateDisplayContext.
 				getLayoutPageTemplateCollectionId());
 
-		return ResourceURLBuilder.createResourceURL(
-			liferayPortletResponse
-		).setParameter(
-			"layoutPageTemplateCollectionId",
-			_layoutPageTemplateDisplayContext.
-				getLayoutPageTemplateCollectionId()
-		).setResourceID(
-			"/layout_page_template_admin/export_layout_page_template_entries"
-		).buildString();
+		LiferayPortletURL exportLayoutPageTemplateEntryURL =
+			(LiferayPortletURL)ResourceURLBuilder.createResourceURL(
+				liferayPortletResponse
+			).setParameter(
+				"layoutPageTemplateCollectionId",
+				_layoutPageTemplateDisplayContext.
+					getLayoutPageTemplateCollectionId()
+			).setResourceID(
+				"/layout_page_template_admin" +
+					"/export_layout_page_template_entries"
+			).buildResourceURL();
+
+		exportLayoutPageTemplateEntryURL.setCopyCurrentRenderParameters(false);
+
+		return exportLayoutPageTemplateEntryURL.toString();
 	}
 
 	private String _getSelectMasterLayoutURL() {

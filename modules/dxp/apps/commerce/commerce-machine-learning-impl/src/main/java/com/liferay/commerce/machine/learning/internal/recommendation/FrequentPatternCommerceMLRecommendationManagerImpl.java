@@ -6,7 +6,7 @@
 package com.liferay.commerce.machine.learning.internal.recommendation;
 
 import com.liferay.commerce.machine.learning.internal.recommendation.constants.CommerceMLRecommendationField;
-import com.liferay.commerce.machine.learning.internal.search.api.CommerceMLIndexer;
+import com.liferay.commerce.machine.learning.internal.search.constants.IndexNamePatterns;
 import com.liferay.commerce.machine.learning.recommendation.FrequentPatternCommerceMLRecommendation;
 import com.liferay.commerce.machine.learning.recommendation.FrequentPatternCommerceMLRecommendationManager;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -19,9 +19,10 @@ import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.search.engine.adapter.search.SearchSearchRequest;
 import com.liferay.portal.search.engine.adapter.search.SearchSearchResponse;
+import com.liferay.portal.search.index.IndexNameBuilder;
 import com.liferay.portal.search.query.BooleanQuery;
 import com.liferay.portal.search.query.FunctionScoreQuery;
-import com.liferay.portal.search.query.Queries;
+import com.liferay.portal.search.query.QueriesUtil;
 import com.liferay.portal.search.query.TermQuery;
 import com.liferay.portal.search.query.function.CombineFunction;
 import com.liferay.portal.search.query.function.score.ScoreFunctions;
@@ -56,7 +57,7 @@ public class FrequentPatternCommerceMLRecommendationManagerImpl
 
 		return addCommerceMLRecommendation(
 			frequentPatternCommerceMLRecommendation,
-			_commerceMLIndexer.getIndexName(
+			_getIndexName(
 				frequentPatternCommerceMLRecommendation.getCompanyId()));
 	}
 
@@ -128,17 +129,17 @@ public class FrequentPatternCommerceMLRecommendationManagerImpl
 		Document document = getDocument(model);
 
 		document.addKeyword(
-			Field.UID,
-			String.valueOf(
-				getHash(
-					model.getAntecedentIds(),
-					model.getRecommendedEntryClassPK())));
-		document.addKeyword(
 			CommerceMLRecommendationField.ANTECEDENT_IDS,
 			model.getAntecedentIds());
 		document.addNumber(
 			CommerceMLRecommendationField.ANTECEDENT_IDS_LENGTH,
 			model.getAntecedentIdsLength());
+		document.addKeyword(
+			Field.UID,
+			String.valueOf(
+				getHash(
+					model.getAntecedentIds(),
+					model.getRecommendedEntryClassPK())));
 
 		return document;
 	}
@@ -166,25 +167,25 @@ public class FrequentPatternCommerceMLRecommendationManagerImpl
 	}
 
 	private BooleanQuery _getConstantScoreQuery(long[] cpInstanceIds) {
-		BooleanQuery booleanQuery = _queries.booleanQuery();
+		BooleanQuery booleanQuery = QueriesUtil.booleanQuery();
 
 		for (long cpInstanceId : cpInstanceIds) {
-			TermQuery termQuery = _queries.term(
+			TermQuery termQuery = QueriesUtil.term(
 				CommerceMLRecommendationField.ANTECEDENT_IDS, cpInstanceId);
 
 			booleanQuery.addShouldQueryClauses(
-				_queries.constantScore(termQuery));
+				QueriesUtil.constantScore(termQuery));
 		}
 
 		return booleanQuery;
 	}
 
 	private BooleanQuery _getExcludeRecommendations(long[] cpInstanceIds) {
-		BooleanQuery booleanQuery = _queries.booleanQuery();
+		BooleanQuery booleanQuery = QueriesUtil.booleanQuery();
 
 		for (long cpInstanceId : cpInstanceIds) {
 			booleanQuery.addMustNotQueryClauses(
-				_queries.term(
+				QueriesUtil.term(
 					CommerceMLRecommendationField.RECOMMENDED_ENTRY_CLASS_PK,
 					cpInstanceId));
 		}
@@ -192,8 +193,14 @@ public class FrequentPatternCommerceMLRecommendationManagerImpl
 		return booleanQuery;
 	}
 
+	private String _getIndexName(long companyId) {
+		return IndexNamePatterns.getIndexName(
+			_indexNameBuilder,
+			IndexNamePatterns.FREQUENT_PATTERN_RECOMMENDATION, companyId);
+	}
+
 	private Script _getScript(long[] cpInstanceIds) {
-		ScriptBuilder scriptBuilder = _scripts.builder();
+		ScriptBuilder scriptBuilder = Scripts.INSTANCE.builder();
 
 		return scriptBuilder.idOrCode(
 			StringUtil.read(
@@ -213,7 +220,7 @@ public class FrequentPatternCommerceMLRecommendationManagerImpl
 	private SearchSearchRequest _getSearchSearchRequest(
 		long companyId, long[] cpDefinitionIds) {
 
-		FunctionScoreQuery functionScoreQuery = _queries.functionScore(
+		FunctionScoreQuery functionScoreQuery = QueriesUtil.functionScore(
 			_getConstantScoreQuery(cpDefinitionIds));
 
 		functionScoreQuery.addFilterQueryScoreFunctionHolder(
@@ -225,7 +232,7 @@ public class FrequentPatternCommerceMLRecommendationManagerImpl
 
 		return new SearchSearchRequest() {
 			{
-				setIndexNames(_commerceMLIndexer.getIndexName(companyId));
+				setIndexNames(_getIndexName(companyId));
 				setQuery(functionScoreQuery);
 				setSize(_SEARCH_SEARCH_REQUEST_SIZE);
 			}
@@ -239,18 +246,10 @@ public class FrequentPatternCommerceMLRecommendationManagerImpl
 	private static final Log _log = LogFactoryUtil.getLog(
 		FrequentPatternCommerceMLRecommendationManagerImpl.class);
 
-	@Reference(
-		target = "(component.name=com.liferay.commerce.machine.learning.internal.recommendation.search.index.FrequentPatternRecommendationCommerceMLIndexer)"
-	)
-	private CommerceMLIndexer _commerceMLIndexer;
-
 	@Reference
-	private Queries _queries;
+	private IndexNameBuilder _indexNameBuilder;
 
 	@Reference
 	private ScoreFunctions _scoreFunctions;
-
-	@Reference
-	private Scripts _scripts;
 
 }

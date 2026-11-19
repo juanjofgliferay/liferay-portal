@@ -15,12 +15,18 @@ import java.util.List;
 public class JavaMethodReference extends BaseJavaExpression {
 
 	public JavaMethodReference(
-		String methodName, JavaExpression referenceJavaExpression,
-		List<JavaType> genericJavaTypes) {
+		List<JavaType> genericJavaTypes, String methodName,
+		JavaExpression referenceJavaExpression) {
 
+		_genericJavaTypes = genericJavaTypes;
 		_methodName = new JavaSimpleValue(methodName);
 		_referenceJavaExpression = referenceJavaExpression;
-		_genericJavaTypes = genericJavaTypes;
+	}
+
+	public void setMethodGenericJavaTypes(
+		List<JavaType> methodGenericJavaTypes) {
+
+		_methodGenericJavaTypes = methodGenericJavaTypes;
 	}
 
 	@Override
@@ -45,12 +51,18 @@ public class JavaMethodReference extends BaseJavaExpression {
 				sb, _referenceJavaExpression, indent, "", "::", maxLineLength);
 		}
 
+		if (_methodGenericJavaTypes != null) {
+			append(
+				sb, _methodGenericJavaTypes, indent, "<", ">", maxLineLength);
+		}
+
 		append(sb, _methodName, indent, "", suffix, maxLineLength);
 
 		return sb.toString();
 	}
 
 	private final List<JavaType> _genericJavaTypes;
+	private List<JavaType> _methodGenericJavaTypes;
 	private final JavaSimpleValue _methodName;
 	private final JavaExpression _referenceJavaExpression;
 

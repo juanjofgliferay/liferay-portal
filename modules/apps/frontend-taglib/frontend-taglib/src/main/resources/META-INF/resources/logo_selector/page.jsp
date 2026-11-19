@@ -13,16 +13,17 @@ String description = (String)request.getAttribute("liferay-frontend:logo-selecto
 boolean disabled = (boolean)request.getAttribute("liferay-frontend:logo-selector:disabled");
 String label = (String)request.getAttribute("liferay-frontend:logo-selector:label");
 String logoURL = (String)request.getAttribute("liferay-frontend:logo-selector:logoURL");
+String portletNamespace = (String)request.getAttribute("liferay-frontend:logo-selector:portletNamespace");
 String selectLogoURL = (String)request.getAttribute("liferay-frontend:logo-selector:selectLogoURL");
 %>
 
 <liferay-util:html-top>
-	<link href="<%= PortalUtil.getStaticResourceURL(request, PortalUtil.getPathProxy() + application.getContextPath() + "/css/logo_selector.css") %>" rel="stylesheet" type="text/css" />
+	<aui:link hashedFile="<%= true %>" href="frontend-taglib/css/logo_selector.css" rel="stylesheet" type="text/css" />
 </liferay-util:html-top>
 
 <div>
 	<react:component
-		module="logo_selector/LogoSelector"
+		module="{LogoSelector} from frontend-taglib"
 		props='<%=
 			HashMapBuilder.<String, Object>put(
 				"defaultLogoURL", defaultLogoURL
@@ -34,6 +35,8 @@ String selectLogoURL = (String)request.getAttribute("liferay-frontend:logo-selec
 				"label", label
 			).put(
 				"logoURL", logoURL
+			).put(
+				"portletNamespace", () -> portletNamespace
 			).put(
 				"selectLogoURL", selectLogoURL
 			).build()

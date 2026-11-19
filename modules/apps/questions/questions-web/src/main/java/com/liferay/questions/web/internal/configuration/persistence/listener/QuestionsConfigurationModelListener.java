@@ -36,6 +36,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.osgi.framework.BundleContext;
+import org.osgi.framework.Constants;
 import org.osgi.framework.ServiceRegistration;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -99,9 +100,9 @@ public class QuestionsConfigurationModelListener
 				properties.get("historyRouterBasePath"));
 			Dictionary<String, Object> assetRendererFactoryProperties =
 				HashMapDictionaryBuilder.<String, Object>put(
-					"javax.portlet.name", QuestionsPortletKeys.QUESTIONS
+					Constants.SERVICE_RANKING, 100
 				).put(
-					"service.ranking:Integer", 100
+					"jakarta.portlet.name", QuestionsPortletKeys.QUESTIONS
 				).build();
 
 			_serviceRegistrations = Arrays.asList(
@@ -128,7 +129,7 @@ public class QuestionsConfigurationModelListener
 	private void _enableServiceAccessPolicy(boolean enableAnonymousRead)
 		throws Exception {
 
-		String name = "QUESTIONS_SERVICE_ACCESS_POLICY";
+		String name = "QUESTIONS";
 
 		SAPEntry sapEntry = _sapEntryService.fetchSAPEntry(
 			CompanyThreadLocal.getCompanyId(), name);
@@ -179,7 +180,7 @@ public class QuestionsConfigurationModelListener
 					"getSiteMessageBoardThreadsPage\n"),
 				true, true, name,
 				Collections.singletonMap(
-					LocaleThreadLocal.getDefaultLocale(), name),
+					LocaleThreadLocal.getDefaultLocale(), "Questions"),
 				new ServiceContext());
 		}
 	}
@@ -188,9 +189,11 @@ public class QuestionsConfigurationModelListener
 		for (ServiceRegistration<?> serviceRegistration :
 				_serviceRegistrations) {
 
-			if (serviceRegistration != null) {
-				serviceRegistration.unregister();
+			if (serviceRegistration == null) {
+				continue;
 			}
+
+			serviceRegistration.unregister();
 		}
 	}
 

@@ -353,37 +353,50 @@ public class FlatNPMBundleProcessor implements JSBundleProcessor {
 			}
 		}
 
-		HashMap<URL, Collection<String>> moduleDependenciesMap =
-			new HashMap<>();
+		Map<URL, Collection<String>> moduleDependenciesMap = new HashMap<>();
+
+		Map<String, URL> jsURLsMap = new HashMap<>();
 
 		Enumeration<URL> enumeration = bundle.findEntries(
 			"META-INF/resources", "*.js", true);
 
 		if (enumeration != null) {
-			List<Future<Map.Entry<URL, Collection<String>>>>
-				moduleDepedenciesFutures = new ArrayList<>();
-
 			while (enumeration.hasMoreElements()) {
 				URL jsURL = enumeration.nextElement();
 
-				moduleDepedenciesFutures.add(
-					_executorService.submit(
-						() -> new AbstractMap.SimpleImmutableEntry<>(
-							jsURL,
-							_parseModuleDependencies(_getDefineArgs(jsURL)))));
+				String path = jsURL.getPath();
+
+				URL bundleURL = bundle.getEntry(path);
+
+				if (bundleURL == null) {
+					continue;
+				}
+
+				jsURLsMap.putIfAbsent(path, bundleURL);
 			}
+		}
 
-			for (Future<Map.Entry<URL, Collection<String>>> future :
-					moduleDepedenciesFutures) {
+		List<Future<Map.Entry<URL, Collection<String>>>>
+			moduleDepedenciesFutures = new ArrayList<>();
 
-				try {
-					Map.Entry<URL, Collection<String>> entry = future.get();
+		for (URL jsURL : jsURLsMap.values()) {
+			moduleDepedenciesFutures.add(
+				_executorService.submit(
+					() -> new AbstractMap.SimpleImmutableEntry<>(
+						jsURL,
+						_parseModuleDependencies(_getDefineArgs(jsURL)))));
+		}
 
-					moduleDependenciesMap.put(entry.getKey(), entry.getValue());
-				}
-				catch (Exception exception) {
-					_log.error(exception);
-				}
+		for (Future<Map.Entry<URL, Collection<String>>> future :
+				moduleDepedenciesFutures) {
+
+			try {
+				Map.Entry<URL, Collection<String>> entry = future.get();
+
+				moduleDependenciesMap.put(entry.getKey(), entry.getValue());
+			}
+			catch (Exception exception) {
+				_log.error(exception);
 			}
 		}
 
@@ -530,25 +543,27 @@ public class FlatNPMBundleProcessor implements JSBundleProcessor {
 
 			String main = jsonObject.getString("main", null);
 
-			if (Validator.isNotNull(main)) {
-				String folderPath = filePath.substring(
-					0, filePath.lastIndexOf(StringPool.SLASH));
-
-				String alias = folderPath.substring(1);
-
-				if (!main.startsWith(StringPool.SLASH)) {
-					main = _canonicalizePath(alias + StringPool.SLASH + main);
-				}
-
-				main = ModuleNameUtil.toModuleName(main);
-
-				JSModuleAlias jsModuleAlias = new JSModuleAlias(
-					flatJSPackage, main, alias);
-
-				flatJSPackage.addJSModuleAlias(jsModuleAlias);
-
-				processedFolderPaths.add(folderPath);
+			if (Validator.isNull(main)) {
+				continue;
 			}
+
+			String folderPath = filePath.substring(
+				0, filePath.lastIndexOf(StringPool.SLASH));
+
+			String alias = folderPath.substring(1);
+
+			if (!main.startsWith(StringPool.SLASH)) {
+				main = _canonicalizePath(alias + StringPool.SLASH + main);
+			}
+
+			main = ModuleNameUtil.toModuleName(main);
+
+			JSModuleAlias jsModuleAlias = new JSModuleAlias(
+				flatJSPackage, main, alias);
+
+			flatJSPackage.addJSModuleAlias(jsModuleAlias);
+
+			processedFolderPaths.add(folderPath);
 		}
 
 		for (URL url : moduleDependenciesMap.keySet()) {
@@ -571,10 +586,12 @@ public class FlatNPMBundleProcessor implements JSBundleProcessor {
 
 			String alias = folderPath.substring(1);
 
-			if (!processedFolderPaths.contains(folderPath)) {
-				flatJSPackage.addJSModuleAlias(
-					new JSModuleAlias(flatJSPackage, alias + "/index", alias));
+			if (processedFolderPaths.contains(folderPath)) {
+				continue;
 			}
+
+			flatJSPackage.addJSModuleAlias(
+				new JSModuleAlias(flatJSPackage, alias + "/index", alias));
 		}
 	}
 
@@ -651,12 +668,14 @@ public class FlatNPMBundleProcessor implements JSBundleProcessor {
 
 			String lastFolderPath = parts[parts.length - 2];
 
-			if (lastFolderPath.equals("node_modules")) {
-				_processPackage(
-					flatJSBundle, manifest, entry.getValue(), jsonObjects,
-					moduleDependenciesMap, StringPool.SLASH.concat(location),
-					false);
+			if (!lastFolderPath.equals("node_modules")) {
+				continue;
 			}
+
+			_processPackage(
+				flatJSBundle, manifest, entry.getValue(), jsonObjects,
+				moduleDependenciesMap, StringPool.SLASH.concat(location),
+				false);
 		}
 	}
 
@@ -731,9 +750,9 @@ public class FlatNPMBundleProcessor implements JSBundleProcessor {
 			return jsonObject;
 		}
 
-		Set<Map.Entry<URL, JSONObject>> entrySet = jsonObjects.entrySet();
+		Set<Map.Entry<URL, JSONObject>> entries = jsonObjects.entrySet();
 
-		Iterator<Map.Entry<URL, JSONObject>> iterator = entrySet.iterator();
+		Iterator<Map.Entry<URL, JSONObject>> iterator = entries.iterator();
 
 		while (iterator.hasNext()) {
 			Map.Entry<URL, JSONObject> entry = iterator.next();

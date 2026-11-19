@@ -37,6 +37,24 @@ public class CommercePriceModifierUtil {
 	 */
 
 	/**
+	 * @see com.liferay.portal.kernel.service.persistence.BasePersistence#cacheResult(List)
+	 */
+	public static void cacheResult(
+		List<CommercePriceModifier> commercePriceModifiers) {
+
+		getPersistence().cacheResult(commercePriceModifiers);
+	}
+
+	/**
+	 * @see com.liferay.portal.kernel.service.persistence.BasePersistence#cacheResult(com.liferay.portal.kernel.model.BaseModel)
+	 */
+	public static void cacheResult(
+		CommercePriceModifier commercePriceModifier) {
+
+		getPersistence().cacheResult(commercePriceModifier);
+	}
+
+	/**
 	 * @see com.liferay.portal.kernel.service.persistence.BasePersistence#clearCache()
 	 */
 	public static void clearCache() {
@@ -115,58 +133,10 @@ public class CommercePriceModifierUtil {
 	}
 
 	/**
-	 * Returns all the commerce price modifiers where uuid = &#63;.
-	 *
-	 * @param uuid the uuid
-	 * @return the matching commerce price modifiers
-	 */
-	public static List<CommercePriceModifier> findByUuid(String uuid) {
-		return getPersistence().findByUuid(uuid);
-	}
-
-	/**
-	 * Returns a range of all the commerce price modifiers where uuid = &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CommercePriceModifierModelImpl</code>.
-	 * </p>
-	 *
-	 * @param uuid the uuid
-	 * @param start the lower bound of the range of commerce price modifiers
-	 * @param end the upper bound of the range of commerce price modifiers (not inclusive)
-	 * @return the range of matching commerce price modifiers
-	 */
-	public static List<CommercePriceModifier> findByUuid(
-		String uuid, int start, int end) {
-
-		return getPersistence().findByUuid(uuid, start, end);
-	}
-
-	/**
 	 * Returns an ordered range of all the commerce price modifiers where uuid = &#63;.
 	 *
 	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CommercePriceModifierModelImpl</code>.
-	 * </p>
-	 *
-	 * @param uuid the uuid
-	 * @param start the lower bound of the range of commerce price modifiers
-	 * @param end the upper bound of the range of commerce price modifiers (not inclusive)
-	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
-	 * @return the ordered range of matching commerce price modifiers
-	 */
-	public static List<CommercePriceModifier> findByUuid(
-		String uuid, int start, int end,
-		OrderByComparator<CommercePriceModifier> orderByComparator) {
-
-		return getPersistence().findByUuid(uuid, start, end, orderByComparator);
-	}
-
-	/**
-	 * Returns an ordered range of all the commerce price modifiers where uuid = &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CommercePriceModifierModelImpl</code>.
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>com.liferay.commerce.pricing.model.impl.CommercePriceModifierModelImpl</code>.
 	 * </p>
 	 *
 	 * @param uuid the uuid
@@ -217,56 +187,6 @@ public class CommercePriceModifierUtil {
 	}
 
 	/**
-	 * Returns the last commerce price modifier in the ordered set where uuid = &#63;.
-	 *
-	 * @param uuid the uuid
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the last matching commerce price modifier
-	 * @throws NoSuchPriceModifierException if a matching commerce price modifier could not be found
-	 */
-	public static CommercePriceModifier findByUuid_Last(
-			String uuid,
-			OrderByComparator<CommercePriceModifier> orderByComparator)
-		throws com.liferay.commerce.pricing.exception.
-			NoSuchPriceModifierException {
-
-		return getPersistence().findByUuid_Last(uuid, orderByComparator);
-	}
-
-	/**
-	 * Returns the last commerce price modifier in the ordered set where uuid = &#63;.
-	 *
-	 * @param uuid the uuid
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the last matching commerce price modifier, or <code>null</code> if a matching commerce price modifier could not be found
-	 */
-	public static CommercePriceModifier fetchByUuid_Last(
-		String uuid,
-		OrderByComparator<CommercePriceModifier> orderByComparator) {
-
-		return getPersistence().fetchByUuid_Last(uuid, orderByComparator);
-	}
-
-	/**
-	 * Returns the commerce price modifiers before and after the current commerce price modifier in the ordered set where uuid = &#63;.
-	 *
-	 * @param commercePriceModifierId the primary key of the current commerce price modifier
-	 * @param uuid the uuid
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the previous, current, and next commerce price modifier
-	 * @throws NoSuchPriceModifierException if a commerce price modifier with the primary key could not be found
-	 */
-	public static CommercePriceModifier[] findByUuid_PrevAndNext(
-			long commercePriceModifierId, String uuid,
-			OrderByComparator<CommercePriceModifier> orderByComparator)
-		throws com.liferay.commerce.pricing.exception.
-			NoSuchPriceModifierException {
-
-		return getPersistence().findByUuid_PrevAndNext(
-			commercePriceModifierId, uuid, orderByComparator);
-	}
-
-	/**
 	 * Removes all the commerce price modifiers where uuid = &#63; from the database.
 	 *
 	 * @param uuid the uuid
@@ -298,19 +218,6 @@ public class CommercePriceModifierUtil {
 			NoSuchPriceModifierException {
 
 		return getPersistence().findByUUID_G(uuid, groupId);
-	}
-
-	/**
-	 * Returns the commerce price modifier where uuid = &#63; and groupId = &#63; or returns <code>null</code> if it could not be found. Uses the finder cache.
-	 *
-	 * @param uuid the uuid
-	 * @param groupId the group ID
-	 * @return the matching commerce price modifier, or <code>null</code> if a matching commerce price modifier could not be found
-	 */
-	public static CommercePriceModifier fetchByUUID_G(
-		String uuid, long groupId) {
-
-		return getPersistence().fetchByUUID_G(uuid, groupId);
 	}
 
 	/**
@@ -354,64 +261,10 @@ public class CommercePriceModifierUtil {
 	}
 
 	/**
-	 * Returns all the commerce price modifiers where uuid = &#63; and companyId = &#63;.
-	 *
-	 * @param uuid the uuid
-	 * @param companyId the company ID
-	 * @return the matching commerce price modifiers
-	 */
-	public static List<CommercePriceModifier> findByUuid_C(
-		String uuid, long companyId) {
-
-		return getPersistence().findByUuid_C(uuid, companyId);
-	}
-
-	/**
-	 * Returns a range of all the commerce price modifiers where uuid = &#63; and companyId = &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CommercePriceModifierModelImpl</code>.
-	 * </p>
-	 *
-	 * @param uuid the uuid
-	 * @param companyId the company ID
-	 * @param start the lower bound of the range of commerce price modifiers
-	 * @param end the upper bound of the range of commerce price modifiers (not inclusive)
-	 * @return the range of matching commerce price modifiers
-	 */
-	public static List<CommercePriceModifier> findByUuid_C(
-		String uuid, long companyId, int start, int end) {
-
-		return getPersistence().findByUuid_C(uuid, companyId, start, end);
-	}
-
-	/**
 	 * Returns an ordered range of all the commerce price modifiers where uuid = &#63; and companyId = &#63;.
 	 *
 	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CommercePriceModifierModelImpl</code>.
-	 * </p>
-	 *
-	 * @param uuid the uuid
-	 * @param companyId the company ID
-	 * @param start the lower bound of the range of commerce price modifiers
-	 * @param end the upper bound of the range of commerce price modifiers (not inclusive)
-	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
-	 * @return the ordered range of matching commerce price modifiers
-	 */
-	public static List<CommercePriceModifier> findByUuid_C(
-		String uuid, long companyId, int start, int end,
-		OrderByComparator<CommercePriceModifier> orderByComparator) {
-
-		return getPersistence().findByUuid_C(
-			uuid, companyId, start, end, orderByComparator);
-	}
-
-	/**
-	 * Returns an ordered range of all the commerce price modifiers where uuid = &#63; and companyId = &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CommercePriceModifierModelImpl</code>.
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>com.liferay.commerce.pricing.model.impl.CommercePriceModifierModelImpl</code>.
 	 * </p>
 	 *
 	 * @param uuid the uuid
@@ -467,61 +320,6 @@ public class CommercePriceModifierUtil {
 	}
 
 	/**
-	 * Returns the last commerce price modifier in the ordered set where uuid = &#63; and companyId = &#63;.
-	 *
-	 * @param uuid the uuid
-	 * @param companyId the company ID
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the last matching commerce price modifier
-	 * @throws NoSuchPriceModifierException if a matching commerce price modifier could not be found
-	 */
-	public static CommercePriceModifier findByUuid_C_Last(
-			String uuid, long companyId,
-			OrderByComparator<CommercePriceModifier> orderByComparator)
-		throws com.liferay.commerce.pricing.exception.
-			NoSuchPriceModifierException {
-
-		return getPersistence().findByUuid_C_Last(
-			uuid, companyId, orderByComparator);
-	}
-
-	/**
-	 * Returns the last commerce price modifier in the ordered set where uuid = &#63; and companyId = &#63;.
-	 *
-	 * @param uuid the uuid
-	 * @param companyId the company ID
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the last matching commerce price modifier, or <code>null</code> if a matching commerce price modifier could not be found
-	 */
-	public static CommercePriceModifier fetchByUuid_C_Last(
-		String uuid, long companyId,
-		OrderByComparator<CommercePriceModifier> orderByComparator) {
-
-		return getPersistence().fetchByUuid_C_Last(
-			uuid, companyId, orderByComparator);
-	}
-
-	/**
-	 * Returns the commerce price modifiers before and after the current commerce price modifier in the ordered set where uuid = &#63; and companyId = &#63;.
-	 *
-	 * @param commercePriceModifierId the primary key of the current commerce price modifier
-	 * @param uuid the uuid
-	 * @param companyId the company ID
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the previous, current, and next commerce price modifier
-	 * @throws NoSuchPriceModifierException if a commerce price modifier with the primary key could not be found
-	 */
-	public static CommercePriceModifier[] findByUuid_C_PrevAndNext(
-			long commercePriceModifierId, String uuid, long companyId,
-			OrderByComparator<CommercePriceModifier> orderByComparator)
-		throws com.liferay.commerce.pricing.exception.
-			NoSuchPriceModifierException {
-
-		return getPersistence().findByUuid_C_PrevAndNext(
-			commercePriceModifierId, uuid, companyId, orderByComparator);
-	}
-
-	/**
 	 * Removes all the commerce price modifiers where uuid = &#63; and companyId = &#63; from the database.
 	 *
 	 * @param uuid the uuid
@@ -543,238 +341,10 @@ public class CommercePriceModifierUtil {
 	}
 
 	/**
-	 * Returns all the commerce price modifiers where companyId = &#63;.
-	 *
-	 * @param companyId the company ID
-	 * @return the matching commerce price modifiers
-	 */
-	public static List<CommercePriceModifier> findByCompanyId(long companyId) {
-		return getPersistence().findByCompanyId(companyId);
-	}
-
-	/**
-	 * Returns a range of all the commerce price modifiers where companyId = &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CommercePriceModifierModelImpl</code>.
-	 * </p>
-	 *
-	 * @param companyId the company ID
-	 * @param start the lower bound of the range of commerce price modifiers
-	 * @param end the upper bound of the range of commerce price modifiers (not inclusive)
-	 * @return the range of matching commerce price modifiers
-	 */
-	public static List<CommercePriceModifier> findByCompanyId(
-		long companyId, int start, int end) {
-
-		return getPersistence().findByCompanyId(companyId, start, end);
-	}
-
-	/**
-	 * Returns an ordered range of all the commerce price modifiers where companyId = &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CommercePriceModifierModelImpl</code>.
-	 * </p>
-	 *
-	 * @param companyId the company ID
-	 * @param start the lower bound of the range of commerce price modifiers
-	 * @param end the upper bound of the range of commerce price modifiers (not inclusive)
-	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
-	 * @return the ordered range of matching commerce price modifiers
-	 */
-	public static List<CommercePriceModifier> findByCompanyId(
-		long companyId, int start, int end,
-		OrderByComparator<CommercePriceModifier> orderByComparator) {
-
-		return getPersistence().findByCompanyId(
-			companyId, start, end, orderByComparator);
-	}
-
-	/**
-	 * Returns an ordered range of all the commerce price modifiers where companyId = &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CommercePriceModifierModelImpl</code>.
-	 * </p>
-	 *
-	 * @param companyId the company ID
-	 * @param start the lower bound of the range of commerce price modifiers
-	 * @param end the upper bound of the range of commerce price modifiers (not inclusive)
-	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
-	 * @param useFinderCache whether to use the finder cache
-	 * @return the ordered range of matching commerce price modifiers
-	 */
-	public static List<CommercePriceModifier> findByCompanyId(
-		long companyId, int start, int end,
-		OrderByComparator<CommercePriceModifier> orderByComparator,
-		boolean useFinderCache) {
-
-		return getPersistence().findByCompanyId(
-			companyId, start, end, orderByComparator, useFinderCache);
-	}
-
-	/**
-	 * Returns the first commerce price modifier in the ordered set where companyId = &#63;.
-	 *
-	 * @param companyId the company ID
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the first matching commerce price modifier
-	 * @throws NoSuchPriceModifierException if a matching commerce price modifier could not be found
-	 */
-	public static CommercePriceModifier findByCompanyId_First(
-			long companyId,
-			OrderByComparator<CommercePriceModifier> orderByComparator)
-		throws com.liferay.commerce.pricing.exception.
-			NoSuchPriceModifierException {
-
-		return getPersistence().findByCompanyId_First(
-			companyId, orderByComparator);
-	}
-
-	/**
-	 * Returns the first commerce price modifier in the ordered set where companyId = &#63;.
-	 *
-	 * @param companyId the company ID
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the first matching commerce price modifier, or <code>null</code> if a matching commerce price modifier could not be found
-	 */
-	public static CommercePriceModifier fetchByCompanyId_First(
-		long companyId,
-		OrderByComparator<CommercePriceModifier> orderByComparator) {
-
-		return getPersistence().fetchByCompanyId_First(
-			companyId, orderByComparator);
-	}
-
-	/**
-	 * Returns the last commerce price modifier in the ordered set where companyId = &#63;.
-	 *
-	 * @param companyId the company ID
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the last matching commerce price modifier
-	 * @throws NoSuchPriceModifierException if a matching commerce price modifier could not be found
-	 */
-	public static CommercePriceModifier findByCompanyId_Last(
-			long companyId,
-			OrderByComparator<CommercePriceModifier> orderByComparator)
-		throws com.liferay.commerce.pricing.exception.
-			NoSuchPriceModifierException {
-
-		return getPersistence().findByCompanyId_Last(
-			companyId, orderByComparator);
-	}
-
-	/**
-	 * Returns the last commerce price modifier in the ordered set where companyId = &#63;.
-	 *
-	 * @param companyId the company ID
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the last matching commerce price modifier, or <code>null</code> if a matching commerce price modifier could not be found
-	 */
-	public static CommercePriceModifier fetchByCompanyId_Last(
-		long companyId,
-		OrderByComparator<CommercePriceModifier> orderByComparator) {
-
-		return getPersistence().fetchByCompanyId_Last(
-			companyId, orderByComparator);
-	}
-
-	/**
-	 * Returns the commerce price modifiers before and after the current commerce price modifier in the ordered set where companyId = &#63;.
-	 *
-	 * @param commercePriceModifierId the primary key of the current commerce price modifier
-	 * @param companyId the company ID
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the previous, current, and next commerce price modifier
-	 * @throws NoSuchPriceModifierException if a commerce price modifier with the primary key could not be found
-	 */
-	public static CommercePriceModifier[] findByCompanyId_PrevAndNext(
-			long commercePriceModifierId, long companyId,
-			OrderByComparator<CommercePriceModifier> orderByComparator)
-		throws com.liferay.commerce.pricing.exception.
-			NoSuchPriceModifierException {
-
-		return getPersistence().findByCompanyId_PrevAndNext(
-			commercePriceModifierId, companyId, orderByComparator);
-	}
-
-	/**
-	 * Removes all the commerce price modifiers where companyId = &#63; from the database.
-	 *
-	 * @param companyId the company ID
-	 */
-	public static void removeByCompanyId(long companyId) {
-		getPersistence().removeByCompanyId(companyId);
-	}
-
-	/**
-	 * Returns the number of commerce price modifiers where companyId = &#63;.
-	 *
-	 * @param companyId the company ID
-	 * @return the number of matching commerce price modifiers
-	 */
-	public static int countByCompanyId(long companyId) {
-		return getPersistence().countByCompanyId(companyId);
-	}
-
-	/**
-	 * Returns all the commerce price modifiers where commercePriceListId = &#63;.
-	 *
-	 * @param commercePriceListId the commerce price list ID
-	 * @return the matching commerce price modifiers
-	 */
-	public static List<CommercePriceModifier> findByCommercePriceListId(
-		long commercePriceListId) {
-
-		return getPersistence().findByCommercePriceListId(commercePriceListId);
-	}
-
-	/**
-	 * Returns a range of all the commerce price modifiers where commercePriceListId = &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CommercePriceModifierModelImpl</code>.
-	 * </p>
-	 *
-	 * @param commercePriceListId the commerce price list ID
-	 * @param start the lower bound of the range of commerce price modifiers
-	 * @param end the upper bound of the range of commerce price modifiers (not inclusive)
-	 * @return the range of matching commerce price modifiers
-	 */
-	public static List<CommercePriceModifier> findByCommercePriceListId(
-		long commercePriceListId, int start, int end) {
-
-		return getPersistence().findByCommercePriceListId(
-			commercePriceListId, start, end);
-	}
-
-	/**
 	 * Returns an ordered range of all the commerce price modifiers where commercePriceListId = &#63;.
 	 *
 	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CommercePriceModifierModelImpl</code>.
-	 * </p>
-	 *
-	 * @param commercePriceListId the commerce price list ID
-	 * @param start the lower bound of the range of commerce price modifiers
-	 * @param end the upper bound of the range of commerce price modifiers (not inclusive)
-	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
-	 * @return the ordered range of matching commerce price modifiers
-	 */
-	public static List<CommercePriceModifier> findByCommercePriceListId(
-		long commercePriceListId, int start, int end,
-		OrderByComparator<CommercePriceModifier> orderByComparator) {
-
-		return getPersistence().findByCommercePriceListId(
-			commercePriceListId, start, end, orderByComparator);
-	}
-
-	/**
-	 * Returns an ordered range of all the commerce price modifiers where commercePriceListId = &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CommercePriceModifierModelImpl</code>.
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>com.liferay.commerce.pricing.model.impl.CommercePriceModifierModelImpl</code>.
 	 * </p>
 	 *
 	 * @param commercePriceListId the commerce price list ID
@@ -827,58 +397,6 @@ public class CommercePriceModifierUtil {
 	}
 
 	/**
-	 * Returns the last commerce price modifier in the ordered set where commercePriceListId = &#63;.
-	 *
-	 * @param commercePriceListId the commerce price list ID
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the last matching commerce price modifier
-	 * @throws NoSuchPriceModifierException if a matching commerce price modifier could not be found
-	 */
-	public static CommercePriceModifier findByCommercePriceListId_Last(
-			long commercePriceListId,
-			OrderByComparator<CommercePriceModifier> orderByComparator)
-		throws com.liferay.commerce.pricing.exception.
-			NoSuchPriceModifierException {
-
-		return getPersistence().findByCommercePriceListId_Last(
-			commercePriceListId, orderByComparator);
-	}
-
-	/**
-	 * Returns the last commerce price modifier in the ordered set where commercePriceListId = &#63;.
-	 *
-	 * @param commercePriceListId the commerce price list ID
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the last matching commerce price modifier, or <code>null</code> if a matching commerce price modifier could not be found
-	 */
-	public static CommercePriceModifier fetchByCommercePriceListId_Last(
-		long commercePriceListId,
-		OrderByComparator<CommercePriceModifier> orderByComparator) {
-
-		return getPersistence().fetchByCommercePriceListId_Last(
-			commercePriceListId, orderByComparator);
-	}
-
-	/**
-	 * Returns the commerce price modifiers before and after the current commerce price modifier in the ordered set where commercePriceListId = &#63;.
-	 *
-	 * @param commercePriceModifierId the primary key of the current commerce price modifier
-	 * @param commercePriceListId the commerce price list ID
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the previous, current, and next commerce price modifier
-	 * @throws NoSuchPriceModifierException if a commerce price modifier with the primary key could not be found
-	 */
-	public static CommercePriceModifier[] findByCommercePriceListId_PrevAndNext(
-			long commercePriceModifierId, long commercePriceListId,
-			OrderByComparator<CommercePriceModifier> orderByComparator)
-		throws com.liferay.commerce.pricing.exception.
-			NoSuchPriceModifierException {
-
-		return getPersistence().findByCommercePriceListId_PrevAndNext(
-			commercePriceModifierId, commercePriceListId, orderByComparator);
-	}
-
-	/**
 	 * Removes all the commerce price modifiers where commercePriceListId = &#63; from the database.
 	 *
 	 * @param commercePriceListId the commerce price list ID
@@ -898,195 +416,6 @@ public class CommercePriceModifierUtil {
 	}
 
 	/**
-	 * Returns all the commerce price modifiers where companyId = &#63; and target = &#63;.
-	 *
-	 * @param companyId the company ID
-	 * @param target the target
-	 * @return the matching commerce price modifiers
-	 */
-	public static List<CommercePriceModifier> findByC_T(
-		long companyId, String target) {
-
-		return getPersistence().findByC_T(companyId, target);
-	}
-
-	/**
-	 * Returns a range of all the commerce price modifiers where companyId = &#63; and target = &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CommercePriceModifierModelImpl</code>.
-	 * </p>
-	 *
-	 * @param companyId the company ID
-	 * @param target the target
-	 * @param start the lower bound of the range of commerce price modifiers
-	 * @param end the upper bound of the range of commerce price modifiers (not inclusive)
-	 * @return the range of matching commerce price modifiers
-	 */
-	public static List<CommercePriceModifier> findByC_T(
-		long companyId, String target, int start, int end) {
-
-		return getPersistence().findByC_T(companyId, target, start, end);
-	}
-
-	/**
-	 * Returns an ordered range of all the commerce price modifiers where companyId = &#63; and target = &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CommercePriceModifierModelImpl</code>.
-	 * </p>
-	 *
-	 * @param companyId the company ID
-	 * @param target the target
-	 * @param start the lower bound of the range of commerce price modifiers
-	 * @param end the upper bound of the range of commerce price modifiers (not inclusive)
-	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
-	 * @return the ordered range of matching commerce price modifiers
-	 */
-	public static List<CommercePriceModifier> findByC_T(
-		long companyId, String target, int start, int end,
-		OrderByComparator<CommercePriceModifier> orderByComparator) {
-
-		return getPersistence().findByC_T(
-			companyId, target, start, end, orderByComparator);
-	}
-
-	/**
-	 * Returns an ordered range of all the commerce price modifiers where companyId = &#63; and target = &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CommercePriceModifierModelImpl</code>.
-	 * </p>
-	 *
-	 * @param companyId the company ID
-	 * @param target the target
-	 * @param start the lower bound of the range of commerce price modifiers
-	 * @param end the upper bound of the range of commerce price modifiers (not inclusive)
-	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
-	 * @param useFinderCache whether to use the finder cache
-	 * @return the ordered range of matching commerce price modifiers
-	 */
-	public static List<CommercePriceModifier> findByC_T(
-		long companyId, String target, int start, int end,
-		OrderByComparator<CommercePriceModifier> orderByComparator,
-		boolean useFinderCache) {
-
-		return getPersistence().findByC_T(
-			companyId, target, start, end, orderByComparator, useFinderCache);
-	}
-
-	/**
-	 * Returns the first commerce price modifier in the ordered set where companyId = &#63; and target = &#63;.
-	 *
-	 * @param companyId the company ID
-	 * @param target the target
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the first matching commerce price modifier
-	 * @throws NoSuchPriceModifierException if a matching commerce price modifier could not be found
-	 */
-	public static CommercePriceModifier findByC_T_First(
-			long companyId, String target,
-			OrderByComparator<CommercePriceModifier> orderByComparator)
-		throws com.liferay.commerce.pricing.exception.
-			NoSuchPriceModifierException {
-
-		return getPersistence().findByC_T_First(
-			companyId, target, orderByComparator);
-	}
-
-	/**
-	 * Returns the first commerce price modifier in the ordered set where companyId = &#63; and target = &#63;.
-	 *
-	 * @param companyId the company ID
-	 * @param target the target
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the first matching commerce price modifier, or <code>null</code> if a matching commerce price modifier could not be found
-	 */
-	public static CommercePriceModifier fetchByC_T_First(
-		long companyId, String target,
-		OrderByComparator<CommercePriceModifier> orderByComparator) {
-
-		return getPersistence().fetchByC_T_First(
-			companyId, target, orderByComparator);
-	}
-
-	/**
-	 * Returns the last commerce price modifier in the ordered set where companyId = &#63; and target = &#63;.
-	 *
-	 * @param companyId the company ID
-	 * @param target the target
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the last matching commerce price modifier
-	 * @throws NoSuchPriceModifierException if a matching commerce price modifier could not be found
-	 */
-	public static CommercePriceModifier findByC_T_Last(
-			long companyId, String target,
-			OrderByComparator<CommercePriceModifier> orderByComparator)
-		throws com.liferay.commerce.pricing.exception.
-			NoSuchPriceModifierException {
-
-		return getPersistence().findByC_T_Last(
-			companyId, target, orderByComparator);
-	}
-
-	/**
-	 * Returns the last commerce price modifier in the ordered set where companyId = &#63; and target = &#63;.
-	 *
-	 * @param companyId the company ID
-	 * @param target the target
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the last matching commerce price modifier, or <code>null</code> if a matching commerce price modifier could not be found
-	 */
-	public static CommercePriceModifier fetchByC_T_Last(
-		long companyId, String target,
-		OrderByComparator<CommercePriceModifier> orderByComparator) {
-
-		return getPersistence().fetchByC_T_Last(
-			companyId, target, orderByComparator);
-	}
-
-	/**
-	 * Returns the commerce price modifiers before and after the current commerce price modifier in the ordered set where companyId = &#63; and target = &#63;.
-	 *
-	 * @param commercePriceModifierId the primary key of the current commerce price modifier
-	 * @param companyId the company ID
-	 * @param target the target
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the previous, current, and next commerce price modifier
-	 * @throws NoSuchPriceModifierException if a commerce price modifier with the primary key could not be found
-	 */
-	public static CommercePriceModifier[] findByC_T_PrevAndNext(
-			long commercePriceModifierId, long companyId, String target,
-			OrderByComparator<CommercePriceModifier> orderByComparator)
-		throws com.liferay.commerce.pricing.exception.
-			NoSuchPriceModifierException {
-
-		return getPersistence().findByC_T_PrevAndNext(
-			commercePriceModifierId, companyId, target, orderByComparator);
-	}
-
-	/**
-	 * Removes all the commerce price modifiers where companyId = &#63; and target = &#63; from the database.
-	 *
-	 * @param companyId the company ID
-	 * @param target the target
-	 */
-	public static void removeByC_T(long companyId, String target) {
-		getPersistence().removeByC_T(companyId, target);
-	}
-
-	/**
-	 * Returns the number of commerce price modifiers where companyId = &#63; and target = &#63;.
-	 *
-	 * @param companyId the company ID
-	 * @param target the target
-	 * @return the number of matching commerce price modifiers
-	 */
-	public static int countByC_T(long companyId, String target) {
-		return getPersistence().countByC_T(companyId, target);
-	}
-
-	/**
 	 * Returns all the commerce price modifiers where displayDate &lt; &#63; and status = &#63;.
 	 *
 	 * @param displayDate the display date
@@ -1103,7 +432,7 @@ public class CommercePriceModifierUtil {
 	 * Returns a range of all the commerce price modifiers where displayDate &lt; &#63; and status = &#63;.
 	 *
 	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CommercePriceModifierModelImpl</code>.
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>com.liferay.commerce.pricing.model.impl.CommercePriceModifierModelImpl</code>.
 	 * </p>
 	 *
 	 * @param displayDate the display date
@@ -1122,7 +451,7 @@ public class CommercePriceModifierUtil {
 	 * Returns an ordered range of all the commerce price modifiers where displayDate &lt; &#63; and status = &#63;.
 	 *
 	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CommercePriceModifierModelImpl</code>.
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>com.liferay.commerce.pricing.model.impl.CommercePriceModifierModelImpl</code>.
 	 * </p>
 	 *
 	 * @param displayDate the display date
@@ -1144,7 +473,7 @@ public class CommercePriceModifierUtil {
 	 * Returns an ordered range of all the commerce price modifiers where displayDate &lt; &#63; and status = &#63;.
 	 *
 	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CommercePriceModifierModelImpl</code>.
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>com.liferay.commerce.pricing.model.impl.CommercePriceModifierModelImpl</code>.
 	 * </p>
 	 *
 	 * @param displayDate the display date
@@ -1200,61 +529,6 @@ public class CommercePriceModifierUtil {
 	}
 
 	/**
-	 * Returns the last commerce price modifier in the ordered set where displayDate &lt; &#63; and status = &#63;.
-	 *
-	 * @param displayDate the display date
-	 * @param status the status
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the last matching commerce price modifier
-	 * @throws NoSuchPriceModifierException if a matching commerce price modifier could not be found
-	 */
-	public static CommercePriceModifier findByLtD_S_Last(
-			Date displayDate, int status,
-			OrderByComparator<CommercePriceModifier> orderByComparator)
-		throws com.liferay.commerce.pricing.exception.
-			NoSuchPriceModifierException {
-
-		return getPersistence().findByLtD_S_Last(
-			displayDate, status, orderByComparator);
-	}
-
-	/**
-	 * Returns the last commerce price modifier in the ordered set where displayDate &lt; &#63; and status = &#63;.
-	 *
-	 * @param displayDate the display date
-	 * @param status the status
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the last matching commerce price modifier, or <code>null</code> if a matching commerce price modifier could not be found
-	 */
-	public static CommercePriceModifier fetchByLtD_S_Last(
-		Date displayDate, int status,
-		OrderByComparator<CommercePriceModifier> orderByComparator) {
-
-		return getPersistence().fetchByLtD_S_Last(
-			displayDate, status, orderByComparator);
-	}
-
-	/**
-	 * Returns the commerce price modifiers before and after the current commerce price modifier in the ordered set where displayDate &lt; &#63; and status = &#63;.
-	 *
-	 * @param commercePriceModifierId the primary key of the current commerce price modifier
-	 * @param displayDate the display date
-	 * @param status the status
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the previous, current, and next commerce price modifier
-	 * @throws NoSuchPriceModifierException if a commerce price modifier with the primary key could not be found
-	 */
-	public static CommercePriceModifier[] findByLtD_S_PrevAndNext(
-			long commercePriceModifierId, Date displayDate, int status,
-			OrderByComparator<CommercePriceModifier> orderByComparator)
-		throws com.liferay.commerce.pricing.exception.
-			NoSuchPriceModifierException {
-
-		return getPersistence().findByLtD_S_PrevAndNext(
-			commercePriceModifierId, displayDate, status, orderByComparator);
-	}
-
-	/**
 	 * Removes all the commerce price modifiers where displayDate &lt; &#63; and status = &#63; from the database.
 	 *
 	 * @param displayDate the display date
@@ -1292,7 +566,7 @@ public class CommercePriceModifierUtil {
 	 * Returns a range of all the commerce price modifiers where expirationDate &lt; &#63; and status = &#63;.
 	 *
 	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CommercePriceModifierModelImpl</code>.
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>com.liferay.commerce.pricing.model.impl.CommercePriceModifierModelImpl</code>.
 	 * </p>
 	 *
 	 * @param expirationDate the expiration date
@@ -1311,7 +585,7 @@ public class CommercePriceModifierUtil {
 	 * Returns an ordered range of all the commerce price modifiers where expirationDate &lt; &#63; and status = &#63;.
 	 *
 	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CommercePriceModifierModelImpl</code>.
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>com.liferay.commerce.pricing.model.impl.CommercePriceModifierModelImpl</code>.
 	 * </p>
 	 *
 	 * @param expirationDate the expiration date
@@ -1333,7 +607,7 @@ public class CommercePriceModifierUtil {
 	 * Returns an ordered range of all the commerce price modifiers where expirationDate &lt; &#63; and status = &#63;.
 	 *
 	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CommercePriceModifierModelImpl</code>.
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>com.liferay.commerce.pricing.model.impl.CommercePriceModifierModelImpl</code>.
 	 * </p>
 	 *
 	 * @param expirationDate the expiration date
@@ -1390,61 +664,6 @@ public class CommercePriceModifierUtil {
 	}
 
 	/**
-	 * Returns the last commerce price modifier in the ordered set where expirationDate &lt; &#63; and status = &#63;.
-	 *
-	 * @param expirationDate the expiration date
-	 * @param status the status
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the last matching commerce price modifier
-	 * @throws NoSuchPriceModifierException if a matching commerce price modifier could not be found
-	 */
-	public static CommercePriceModifier findByLtE_S_Last(
-			Date expirationDate, int status,
-			OrderByComparator<CommercePriceModifier> orderByComparator)
-		throws com.liferay.commerce.pricing.exception.
-			NoSuchPriceModifierException {
-
-		return getPersistence().findByLtE_S_Last(
-			expirationDate, status, orderByComparator);
-	}
-
-	/**
-	 * Returns the last commerce price modifier in the ordered set where expirationDate &lt; &#63; and status = &#63;.
-	 *
-	 * @param expirationDate the expiration date
-	 * @param status the status
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the last matching commerce price modifier, or <code>null</code> if a matching commerce price modifier could not be found
-	 */
-	public static CommercePriceModifier fetchByLtE_S_Last(
-		Date expirationDate, int status,
-		OrderByComparator<CommercePriceModifier> orderByComparator) {
-
-		return getPersistence().fetchByLtE_S_Last(
-			expirationDate, status, orderByComparator);
-	}
-
-	/**
-	 * Returns the commerce price modifiers before and after the current commerce price modifier in the ordered set where expirationDate &lt; &#63; and status = &#63;.
-	 *
-	 * @param commercePriceModifierId the primary key of the current commerce price modifier
-	 * @param expirationDate the expiration date
-	 * @param status the status
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the previous, current, and next commerce price modifier
-	 * @throws NoSuchPriceModifierException if a commerce price modifier with the primary key could not be found
-	 */
-	public static CommercePriceModifier[] findByLtE_S_PrevAndNext(
-			long commercePriceModifierId, Date expirationDate, int status,
-			OrderByComparator<CommercePriceModifier> orderByComparator)
-		throws com.liferay.commerce.pricing.exception.
-			NoSuchPriceModifierException {
-
-		return getPersistence().findByLtE_S_PrevAndNext(
-			commercePriceModifierId, expirationDate, status, orderByComparator);
-	}
-
-	/**
 	 * Removes all the commerce price modifiers where expirationDate &lt; &#63; and status = &#63; from the database.
 	 *
 	 * @param expirationDate the expiration date
@@ -1466,622 +685,6 @@ public class CommercePriceModifierUtil {
 	}
 
 	/**
-	 * Returns all the commerce price modifiers where groupId = &#63; and companyId = &#63; and status = &#63;.
-	 *
-	 * @param groupId the group ID
-	 * @param companyId the company ID
-	 * @param status the status
-	 * @return the matching commerce price modifiers
-	 */
-	public static List<CommercePriceModifier> findByG_C_S(
-		long groupId, long companyId, int status) {
-
-		return getPersistence().findByG_C_S(groupId, companyId, status);
-	}
-
-	/**
-	 * Returns a range of all the commerce price modifiers where groupId = &#63; and companyId = &#63; and status = &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CommercePriceModifierModelImpl</code>.
-	 * </p>
-	 *
-	 * @param groupId the group ID
-	 * @param companyId the company ID
-	 * @param status the status
-	 * @param start the lower bound of the range of commerce price modifiers
-	 * @param end the upper bound of the range of commerce price modifiers (not inclusive)
-	 * @return the range of matching commerce price modifiers
-	 */
-	public static List<CommercePriceModifier> findByG_C_S(
-		long groupId, long companyId, int status, int start, int end) {
-
-		return getPersistence().findByG_C_S(
-			groupId, companyId, status, start, end);
-	}
-
-	/**
-	 * Returns an ordered range of all the commerce price modifiers where groupId = &#63; and companyId = &#63; and status = &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CommercePriceModifierModelImpl</code>.
-	 * </p>
-	 *
-	 * @param groupId the group ID
-	 * @param companyId the company ID
-	 * @param status the status
-	 * @param start the lower bound of the range of commerce price modifiers
-	 * @param end the upper bound of the range of commerce price modifiers (not inclusive)
-	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
-	 * @return the ordered range of matching commerce price modifiers
-	 */
-	public static List<CommercePriceModifier> findByG_C_S(
-		long groupId, long companyId, int status, int start, int end,
-		OrderByComparator<CommercePriceModifier> orderByComparator) {
-
-		return getPersistence().findByG_C_S(
-			groupId, companyId, status, start, end, orderByComparator);
-	}
-
-	/**
-	 * Returns an ordered range of all the commerce price modifiers where groupId = &#63; and companyId = &#63; and status = &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CommercePriceModifierModelImpl</code>.
-	 * </p>
-	 *
-	 * @param groupId the group ID
-	 * @param companyId the company ID
-	 * @param status the status
-	 * @param start the lower bound of the range of commerce price modifiers
-	 * @param end the upper bound of the range of commerce price modifiers (not inclusive)
-	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
-	 * @param useFinderCache whether to use the finder cache
-	 * @return the ordered range of matching commerce price modifiers
-	 */
-	public static List<CommercePriceModifier> findByG_C_S(
-		long groupId, long companyId, int status, int start, int end,
-		OrderByComparator<CommercePriceModifier> orderByComparator,
-		boolean useFinderCache) {
-
-		return getPersistence().findByG_C_S(
-			groupId, companyId, status, start, end, orderByComparator,
-			useFinderCache);
-	}
-
-	/**
-	 * Returns the first commerce price modifier in the ordered set where groupId = &#63; and companyId = &#63; and status = &#63;.
-	 *
-	 * @param groupId the group ID
-	 * @param companyId the company ID
-	 * @param status the status
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the first matching commerce price modifier
-	 * @throws NoSuchPriceModifierException if a matching commerce price modifier could not be found
-	 */
-	public static CommercePriceModifier findByG_C_S_First(
-			long groupId, long companyId, int status,
-			OrderByComparator<CommercePriceModifier> orderByComparator)
-		throws com.liferay.commerce.pricing.exception.
-			NoSuchPriceModifierException {
-
-		return getPersistence().findByG_C_S_First(
-			groupId, companyId, status, orderByComparator);
-	}
-
-	/**
-	 * Returns the first commerce price modifier in the ordered set where groupId = &#63; and companyId = &#63; and status = &#63;.
-	 *
-	 * @param groupId the group ID
-	 * @param companyId the company ID
-	 * @param status the status
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the first matching commerce price modifier, or <code>null</code> if a matching commerce price modifier could not be found
-	 */
-	public static CommercePriceModifier fetchByG_C_S_First(
-		long groupId, long companyId, int status,
-		OrderByComparator<CommercePriceModifier> orderByComparator) {
-
-		return getPersistence().fetchByG_C_S_First(
-			groupId, companyId, status, orderByComparator);
-	}
-
-	/**
-	 * Returns the last commerce price modifier in the ordered set where groupId = &#63; and companyId = &#63; and status = &#63;.
-	 *
-	 * @param groupId the group ID
-	 * @param companyId the company ID
-	 * @param status the status
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the last matching commerce price modifier
-	 * @throws NoSuchPriceModifierException if a matching commerce price modifier could not be found
-	 */
-	public static CommercePriceModifier findByG_C_S_Last(
-			long groupId, long companyId, int status,
-			OrderByComparator<CommercePriceModifier> orderByComparator)
-		throws com.liferay.commerce.pricing.exception.
-			NoSuchPriceModifierException {
-
-		return getPersistence().findByG_C_S_Last(
-			groupId, companyId, status, orderByComparator);
-	}
-
-	/**
-	 * Returns the last commerce price modifier in the ordered set where groupId = &#63; and companyId = &#63; and status = &#63;.
-	 *
-	 * @param groupId the group ID
-	 * @param companyId the company ID
-	 * @param status the status
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the last matching commerce price modifier, or <code>null</code> if a matching commerce price modifier could not be found
-	 */
-	public static CommercePriceModifier fetchByG_C_S_Last(
-		long groupId, long companyId, int status,
-		OrderByComparator<CommercePriceModifier> orderByComparator) {
-
-		return getPersistence().fetchByG_C_S_Last(
-			groupId, companyId, status, orderByComparator);
-	}
-
-	/**
-	 * Returns the commerce price modifiers before and after the current commerce price modifier in the ordered set where groupId = &#63; and companyId = &#63; and status = &#63;.
-	 *
-	 * @param commercePriceModifierId the primary key of the current commerce price modifier
-	 * @param groupId the group ID
-	 * @param companyId the company ID
-	 * @param status the status
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the previous, current, and next commerce price modifier
-	 * @throws NoSuchPriceModifierException if a commerce price modifier with the primary key could not be found
-	 */
-	public static CommercePriceModifier[] findByG_C_S_PrevAndNext(
-			long commercePriceModifierId, long groupId, long companyId,
-			int status,
-			OrderByComparator<CommercePriceModifier> orderByComparator)
-		throws com.liferay.commerce.pricing.exception.
-			NoSuchPriceModifierException {
-
-		return getPersistence().findByG_C_S_PrevAndNext(
-			commercePriceModifierId, groupId, companyId, status,
-			orderByComparator);
-	}
-
-	/**
-	 * Returns all the commerce price modifiers where groupId = any &#63; and companyId = &#63; and status = &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CommercePriceModifierModelImpl</code>.
-	 * </p>
-	 *
-	 * @param groupIds the group IDs
-	 * @param companyId the company ID
-	 * @param status the status
-	 * @return the matching commerce price modifiers
-	 */
-	public static List<CommercePriceModifier> findByG_C_S(
-		long[] groupIds, long companyId, int status) {
-
-		return getPersistence().findByG_C_S(groupIds, companyId, status);
-	}
-
-	/**
-	 * Returns a range of all the commerce price modifiers where groupId = any &#63; and companyId = &#63; and status = &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CommercePriceModifierModelImpl</code>.
-	 * </p>
-	 *
-	 * @param groupIds the group IDs
-	 * @param companyId the company ID
-	 * @param status the status
-	 * @param start the lower bound of the range of commerce price modifiers
-	 * @param end the upper bound of the range of commerce price modifiers (not inclusive)
-	 * @return the range of matching commerce price modifiers
-	 */
-	public static List<CommercePriceModifier> findByG_C_S(
-		long[] groupIds, long companyId, int status, int start, int end) {
-
-		return getPersistence().findByG_C_S(
-			groupIds, companyId, status, start, end);
-	}
-
-	/**
-	 * Returns an ordered range of all the commerce price modifiers where groupId = any &#63; and companyId = &#63; and status = &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CommercePriceModifierModelImpl</code>.
-	 * </p>
-	 *
-	 * @param groupIds the group IDs
-	 * @param companyId the company ID
-	 * @param status the status
-	 * @param start the lower bound of the range of commerce price modifiers
-	 * @param end the upper bound of the range of commerce price modifiers (not inclusive)
-	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
-	 * @return the ordered range of matching commerce price modifiers
-	 */
-	public static List<CommercePriceModifier> findByG_C_S(
-		long[] groupIds, long companyId, int status, int start, int end,
-		OrderByComparator<CommercePriceModifier> orderByComparator) {
-
-		return getPersistence().findByG_C_S(
-			groupIds, companyId, status, start, end, orderByComparator);
-	}
-
-	/**
-	 * Returns an ordered range of all the commerce price modifiers where groupId = &#63; and companyId = &#63; and status = &#63;, optionally using the finder cache.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CommercePriceModifierModelImpl</code>.
-	 * </p>
-	 *
-	 * @param groupIds the group IDs
-	 * @param companyId the company ID
-	 * @param status the status
-	 * @param start the lower bound of the range of commerce price modifiers
-	 * @param end the upper bound of the range of commerce price modifiers (not inclusive)
-	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
-	 * @param useFinderCache whether to use the finder cache
-	 * @return the ordered range of matching commerce price modifiers
-	 */
-	public static List<CommercePriceModifier> findByG_C_S(
-		long[] groupIds, long companyId, int status, int start, int end,
-		OrderByComparator<CommercePriceModifier> orderByComparator,
-		boolean useFinderCache) {
-
-		return getPersistence().findByG_C_S(
-			groupIds, companyId, status, start, end, orderByComparator,
-			useFinderCache);
-	}
-
-	/**
-	 * Removes all the commerce price modifiers where groupId = &#63; and companyId = &#63; and status = &#63; from the database.
-	 *
-	 * @param groupId the group ID
-	 * @param companyId the company ID
-	 * @param status the status
-	 */
-	public static void removeByG_C_S(long groupId, long companyId, int status) {
-		getPersistence().removeByG_C_S(groupId, companyId, status);
-	}
-
-	/**
-	 * Returns the number of commerce price modifiers where groupId = &#63; and companyId = &#63; and status = &#63;.
-	 *
-	 * @param groupId the group ID
-	 * @param companyId the company ID
-	 * @param status the status
-	 * @return the number of matching commerce price modifiers
-	 */
-	public static int countByG_C_S(long groupId, long companyId, int status) {
-		return getPersistence().countByG_C_S(groupId, companyId, status);
-	}
-
-	/**
-	 * Returns the number of commerce price modifiers where groupId = any &#63; and companyId = &#63; and status = &#63;.
-	 *
-	 * @param groupIds the group IDs
-	 * @param companyId the company ID
-	 * @param status the status
-	 * @return the number of matching commerce price modifiers
-	 */
-	public static int countByG_C_S(
-		long[] groupIds, long companyId, int status) {
-
-		return getPersistence().countByG_C_S(groupIds, companyId, status);
-	}
-
-	/**
-	 * Returns all the commerce price modifiers where groupId = &#63; and companyId = &#63; and status &ne; &#63;.
-	 *
-	 * @param groupId the group ID
-	 * @param companyId the company ID
-	 * @param status the status
-	 * @return the matching commerce price modifiers
-	 */
-	public static List<CommercePriceModifier> findByG_C_NotS(
-		long groupId, long companyId, int status) {
-
-		return getPersistence().findByG_C_NotS(groupId, companyId, status);
-	}
-
-	/**
-	 * Returns a range of all the commerce price modifiers where groupId = &#63; and companyId = &#63; and status &ne; &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CommercePriceModifierModelImpl</code>.
-	 * </p>
-	 *
-	 * @param groupId the group ID
-	 * @param companyId the company ID
-	 * @param status the status
-	 * @param start the lower bound of the range of commerce price modifiers
-	 * @param end the upper bound of the range of commerce price modifiers (not inclusive)
-	 * @return the range of matching commerce price modifiers
-	 */
-	public static List<CommercePriceModifier> findByG_C_NotS(
-		long groupId, long companyId, int status, int start, int end) {
-
-		return getPersistence().findByG_C_NotS(
-			groupId, companyId, status, start, end);
-	}
-
-	/**
-	 * Returns an ordered range of all the commerce price modifiers where groupId = &#63; and companyId = &#63; and status &ne; &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CommercePriceModifierModelImpl</code>.
-	 * </p>
-	 *
-	 * @param groupId the group ID
-	 * @param companyId the company ID
-	 * @param status the status
-	 * @param start the lower bound of the range of commerce price modifiers
-	 * @param end the upper bound of the range of commerce price modifiers (not inclusive)
-	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
-	 * @return the ordered range of matching commerce price modifiers
-	 */
-	public static List<CommercePriceModifier> findByG_C_NotS(
-		long groupId, long companyId, int status, int start, int end,
-		OrderByComparator<CommercePriceModifier> orderByComparator) {
-
-		return getPersistence().findByG_C_NotS(
-			groupId, companyId, status, start, end, orderByComparator);
-	}
-
-	/**
-	 * Returns an ordered range of all the commerce price modifiers where groupId = &#63; and companyId = &#63; and status &ne; &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CommercePriceModifierModelImpl</code>.
-	 * </p>
-	 *
-	 * @param groupId the group ID
-	 * @param companyId the company ID
-	 * @param status the status
-	 * @param start the lower bound of the range of commerce price modifiers
-	 * @param end the upper bound of the range of commerce price modifiers (not inclusive)
-	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
-	 * @param useFinderCache whether to use the finder cache
-	 * @return the ordered range of matching commerce price modifiers
-	 */
-	public static List<CommercePriceModifier> findByG_C_NotS(
-		long groupId, long companyId, int status, int start, int end,
-		OrderByComparator<CommercePriceModifier> orderByComparator,
-		boolean useFinderCache) {
-
-		return getPersistence().findByG_C_NotS(
-			groupId, companyId, status, start, end, orderByComparator,
-			useFinderCache);
-	}
-
-	/**
-	 * Returns the first commerce price modifier in the ordered set where groupId = &#63; and companyId = &#63; and status &ne; &#63;.
-	 *
-	 * @param groupId the group ID
-	 * @param companyId the company ID
-	 * @param status the status
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the first matching commerce price modifier
-	 * @throws NoSuchPriceModifierException if a matching commerce price modifier could not be found
-	 */
-	public static CommercePriceModifier findByG_C_NotS_First(
-			long groupId, long companyId, int status,
-			OrderByComparator<CommercePriceModifier> orderByComparator)
-		throws com.liferay.commerce.pricing.exception.
-			NoSuchPriceModifierException {
-
-		return getPersistence().findByG_C_NotS_First(
-			groupId, companyId, status, orderByComparator);
-	}
-
-	/**
-	 * Returns the first commerce price modifier in the ordered set where groupId = &#63; and companyId = &#63; and status &ne; &#63;.
-	 *
-	 * @param groupId the group ID
-	 * @param companyId the company ID
-	 * @param status the status
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the first matching commerce price modifier, or <code>null</code> if a matching commerce price modifier could not be found
-	 */
-	public static CommercePriceModifier fetchByG_C_NotS_First(
-		long groupId, long companyId, int status,
-		OrderByComparator<CommercePriceModifier> orderByComparator) {
-
-		return getPersistence().fetchByG_C_NotS_First(
-			groupId, companyId, status, orderByComparator);
-	}
-
-	/**
-	 * Returns the last commerce price modifier in the ordered set where groupId = &#63; and companyId = &#63; and status &ne; &#63;.
-	 *
-	 * @param groupId the group ID
-	 * @param companyId the company ID
-	 * @param status the status
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the last matching commerce price modifier
-	 * @throws NoSuchPriceModifierException if a matching commerce price modifier could not be found
-	 */
-	public static CommercePriceModifier findByG_C_NotS_Last(
-			long groupId, long companyId, int status,
-			OrderByComparator<CommercePriceModifier> orderByComparator)
-		throws com.liferay.commerce.pricing.exception.
-			NoSuchPriceModifierException {
-
-		return getPersistence().findByG_C_NotS_Last(
-			groupId, companyId, status, orderByComparator);
-	}
-
-	/**
-	 * Returns the last commerce price modifier in the ordered set where groupId = &#63; and companyId = &#63; and status &ne; &#63;.
-	 *
-	 * @param groupId the group ID
-	 * @param companyId the company ID
-	 * @param status the status
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the last matching commerce price modifier, or <code>null</code> if a matching commerce price modifier could not be found
-	 */
-	public static CommercePriceModifier fetchByG_C_NotS_Last(
-		long groupId, long companyId, int status,
-		OrderByComparator<CommercePriceModifier> orderByComparator) {
-
-		return getPersistence().fetchByG_C_NotS_Last(
-			groupId, companyId, status, orderByComparator);
-	}
-
-	/**
-	 * Returns the commerce price modifiers before and after the current commerce price modifier in the ordered set where groupId = &#63; and companyId = &#63; and status &ne; &#63;.
-	 *
-	 * @param commercePriceModifierId the primary key of the current commerce price modifier
-	 * @param groupId the group ID
-	 * @param companyId the company ID
-	 * @param status the status
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the previous, current, and next commerce price modifier
-	 * @throws NoSuchPriceModifierException if a commerce price modifier with the primary key could not be found
-	 */
-	public static CommercePriceModifier[] findByG_C_NotS_PrevAndNext(
-			long commercePriceModifierId, long groupId, long companyId,
-			int status,
-			OrderByComparator<CommercePriceModifier> orderByComparator)
-		throws com.liferay.commerce.pricing.exception.
-			NoSuchPriceModifierException {
-
-		return getPersistence().findByG_C_NotS_PrevAndNext(
-			commercePriceModifierId, groupId, companyId, status,
-			orderByComparator);
-	}
-
-	/**
-	 * Returns all the commerce price modifiers where groupId = any &#63; and companyId = &#63; and status &ne; &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CommercePriceModifierModelImpl</code>.
-	 * </p>
-	 *
-	 * @param groupIds the group IDs
-	 * @param companyId the company ID
-	 * @param status the status
-	 * @return the matching commerce price modifiers
-	 */
-	public static List<CommercePriceModifier> findByG_C_NotS(
-		long[] groupIds, long companyId, int status) {
-
-		return getPersistence().findByG_C_NotS(groupIds, companyId, status);
-	}
-
-	/**
-	 * Returns a range of all the commerce price modifiers where groupId = any &#63; and companyId = &#63; and status &ne; &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CommercePriceModifierModelImpl</code>.
-	 * </p>
-	 *
-	 * @param groupIds the group IDs
-	 * @param companyId the company ID
-	 * @param status the status
-	 * @param start the lower bound of the range of commerce price modifiers
-	 * @param end the upper bound of the range of commerce price modifiers (not inclusive)
-	 * @return the range of matching commerce price modifiers
-	 */
-	public static List<CommercePriceModifier> findByG_C_NotS(
-		long[] groupIds, long companyId, int status, int start, int end) {
-
-		return getPersistence().findByG_C_NotS(
-			groupIds, companyId, status, start, end);
-	}
-
-	/**
-	 * Returns an ordered range of all the commerce price modifiers where groupId = any &#63; and companyId = &#63; and status &ne; &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CommercePriceModifierModelImpl</code>.
-	 * </p>
-	 *
-	 * @param groupIds the group IDs
-	 * @param companyId the company ID
-	 * @param status the status
-	 * @param start the lower bound of the range of commerce price modifiers
-	 * @param end the upper bound of the range of commerce price modifiers (not inclusive)
-	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
-	 * @return the ordered range of matching commerce price modifiers
-	 */
-	public static List<CommercePriceModifier> findByG_C_NotS(
-		long[] groupIds, long companyId, int status, int start, int end,
-		OrderByComparator<CommercePriceModifier> orderByComparator) {
-
-		return getPersistence().findByG_C_NotS(
-			groupIds, companyId, status, start, end, orderByComparator);
-	}
-
-	/**
-	 * Returns an ordered range of all the commerce price modifiers where groupId = &#63; and companyId = &#63; and status &ne; &#63;, optionally using the finder cache.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CommercePriceModifierModelImpl</code>.
-	 * </p>
-	 *
-	 * @param groupIds the group IDs
-	 * @param companyId the company ID
-	 * @param status the status
-	 * @param start the lower bound of the range of commerce price modifiers
-	 * @param end the upper bound of the range of commerce price modifiers (not inclusive)
-	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
-	 * @param useFinderCache whether to use the finder cache
-	 * @return the ordered range of matching commerce price modifiers
-	 */
-	public static List<CommercePriceModifier> findByG_C_NotS(
-		long[] groupIds, long companyId, int status, int start, int end,
-		OrderByComparator<CommercePriceModifier> orderByComparator,
-		boolean useFinderCache) {
-
-		return getPersistence().findByG_C_NotS(
-			groupIds, companyId, status, start, end, orderByComparator,
-			useFinderCache);
-	}
-
-	/**
-	 * Removes all the commerce price modifiers where groupId = &#63; and companyId = &#63; and status &ne; &#63; from the database.
-	 *
-	 * @param groupId the group ID
-	 * @param companyId the company ID
-	 * @param status the status
-	 */
-	public static void removeByG_C_NotS(
-		long groupId, long companyId, int status) {
-
-		getPersistence().removeByG_C_NotS(groupId, companyId, status);
-	}
-
-	/**
-	 * Returns the number of commerce price modifiers where groupId = &#63; and companyId = &#63; and status &ne; &#63;.
-	 *
-	 * @param groupId the group ID
-	 * @param companyId the company ID
-	 * @param status the status
-	 * @return the number of matching commerce price modifiers
-	 */
-	public static int countByG_C_NotS(
-		long groupId, long companyId, int status) {
-
-		return getPersistence().countByG_C_NotS(groupId, companyId, status);
-	}
-
-	/**
-	 * Returns the number of commerce price modifiers where groupId = any &#63; and companyId = &#63; and status &ne; &#63;.
-	 *
-	 * @param groupIds the group IDs
-	 * @param companyId the company ID
-	 * @param status the status
-	 * @return the number of matching commerce price modifiers
-	 */
-	public static int countByG_C_NotS(
-		long[] groupIds, long companyId, int status) {
-
-		return getPersistence().countByG_C_NotS(groupIds, companyId, status);
-	}
-
-	/**
 	 * Returns the commerce price modifier where externalReferenceCode = &#63; and companyId = &#63; or throws a <code>NoSuchPriceModifierException</code> if it could not be found.
 	 *
 	 * @param externalReferenceCode the external reference code
@@ -2095,19 +698,6 @@ public class CommercePriceModifierUtil {
 			NoSuchPriceModifierException {
 
 		return getPersistence().findByERC_C(externalReferenceCode, companyId);
-	}
-
-	/**
-	 * Returns the commerce price modifier where externalReferenceCode = &#63; and companyId = &#63; or returns <code>null</code> if it could not be found. Uses the finder cache.
-	 *
-	 * @param externalReferenceCode the external reference code
-	 * @param companyId the company ID
-	 * @return the matching commerce price modifier, or <code>null</code> if a matching commerce price modifier could not be found
-	 */
-	public static CommercePriceModifier fetchByERC_C(
-		String externalReferenceCode, long companyId) {
-
-		return getPersistence().fetchByERC_C(externalReferenceCode, companyId);
 	}
 
 	/**
@@ -2151,28 +741,6 @@ public class CommercePriceModifierUtil {
 		String externalReferenceCode, long companyId) {
 
 		return getPersistence().countByERC_C(externalReferenceCode, companyId);
-	}
-
-	/**
-	 * Caches the commerce price modifier in the entity cache if it is enabled.
-	 *
-	 * @param commercePriceModifier the commerce price modifier
-	 */
-	public static void cacheResult(
-		CommercePriceModifier commercePriceModifier) {
-
-		getPersistence().cacheResult(commercePriceModifier);
-	}
-
-	/**
-	 * Caches the commerce price modifiers in the entity cache if it is enabled.
-	 *
-	 * @param commercePriceModifiers the commerce price modifiers
-	 */
-	public static void cacheResult(
-		List<CommercePriceModifier> commercePriceModifiers) {
-
-		getPersistence().cacheResult(commercePriceModifiers);
 	}
 
 	/**
@@ -2233,84 +801,183 @@ public class CommercePriceModifierUtil {
 	}
 
 	/**
-	 * Returns all the commerce price modifiers.
+	 * Returns the commerce price modifier where uuid = &#63; and groupId = &#63; or returns <code>null</code> if it could not be found. Uses the finder cache.
 	 *
-	 * @return the commerce price modifiers
+	 * @param uuid the uuid
+	 * @param groupId the group ID
+	 * @return the matching commerce price modifier, or <code>null</code> if a matching commerce price modifier could not be found
 	 */
-	public static List<CommercePriceModifier> findAll() {
-		return getPersistence().findAll();
+	public static CommercePriceModifier fetchByUUID_G(
+		String uuid, long groupId) {
+
+		return getPersistence().fetchByUUID_G(uuid, groupId);
 	}
 
 	/**
-	 * Returns a range of all the commerce price modifiers.
+	 * Returns the commerce price modifier where externalReferenceCode = &#63; and companyId = &#63; or returns <code>null</code> if it could not be found. Uses the finder cache.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param companyId the company ID
+	 * @return the matching commerce price modifier, or <code>null</code> if a matching commerce price modifier could not be found
+	 */
+	public static CommercePriceModifier fetchByERC_C(
+		String externalReferenceCode, long companyId) {
+
+		return getPersistence().fetchByERC_C(externalReferenceCode, companyId);
+	}
+
+	/**
+	 * Returns all the commerce price modifiers where uuid = &#63;.
+	 *
+	 * @param uuid the uuid
+	 * @return the matching commerce price modifiers
+	 */
+	public static List<CommercePriceModifier> findByUuid(String uuid) {
+		return getPersistence().findByUuid(uuid);
+	}
+
+	/**
+	 * Returns a range of all the commerce price modifiers where uuid = &#63;.
 	 *
 	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CommercePriceModifierModelImpl</code>.
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>com.liferay.commerce.pricing.model.impl.CommercePriceModifierModelImpl</code>.
 	 * </p>
 	 *
+	 * @param uuid the uuid
 	 * @param start the lower bound of the range of commerce price modifiers
 	 * @param end the upper bound of the range of commerce price modifiers (not inclusive)
-	 * @return the range of commerce price modifiers
+	 * @return the range of matching commerce price modifiers
 	 */
-	public static List<CommercePriceModifier> findAll(int start, int end) {
-		return getPersistence().findAll(start, end);
+	public static List<CommercePriceModifier> findByUuid(
+		String uuid, int start, int end) {
+
+		return getPersistence().findByUuid(uuid, start, end);
 	}
 
 	/**
-	 * Returns an ordered range of all the commerce price modifiers.
+	 * Returns an ordered range of all the commerce price modifiers where uuid = &#63;.
 	 *
 	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CommercePriceModifierModelImpl</code>.
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>com.liferay.commerce.pricing.model.impl.CommercePriceModifierModelImpl</code>.
 	 * </p>
 	 *
+	 * @param uuid the uuid
 	 * @param start the lower bound of the range of commerce price modifiers
 	 * @param end the upper bound of the range of commerce price modifiers (not inclusive)
 	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
-	 * @return the ordered range of commerce price modifiers
+	 * @return the ordered range of matching commerce price modifiers
 	 */
-	public static List<CommercePriceModifier> findAll(
-		int start, int end,
+	public static List<CommercePriceModifier> findByUuid(
+		String uuid, int start, int end,
 		OrderByComparator<CommercePriceModifier> orderByComparator) {
 
-		return getPersistence().findAll(start, end, orderByComparator);
+		return getPersistence().findByUuid(uuid, start, end, orderByComparator);
 	}
 
 	/**
-	 * Returns an ordered range of all the commerce price modifiers.
+	 * Returns all the commerce price modifiers where uuid = &#63; and companyId = &#63;.
+	 *
+	 * @param uuid the uuid
+	 * @param companyId the company ID
+	 * @return the matching commerce price modifiers
+	 */
+	public static List<CommercePriceModifier> findByUuid_C(
+		String uuid, long companyId) {
+
+		return getPersistence().findByUuid_C(uuid, companyId);
+	}
+
+	/**
+	 * Returns a range of all the commerce price modifiers where uuid = &#63; and companyId = &#63;.
 	 *
 	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CommercePriceModifierModelImpl</code>.
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>com.liferay.commerce.pricing.model.impl.CommercePriceModifierModelImpl</code>.
 	 * </p>
 	 *
+	 * @param uuid the uuid
+	 * @param companyId the company ID
+	 * @param start the lower bound of the range of commerce price modifiers
+	 * @param end the upper bound of the range of commerce price modifiers (not inclusive)
+	 * @return the range of matching commerce price modifiers
+	 */
+	public static List<CommercePriceModifier> findByUuid_C(
+		String uuid, long companyId, int start, int end) {
+
+		return getPersistence().findByUuid_C(uuid, companyId, start, end);
+	}
+
+	/**
+	 * Returns an ordered range of all the commerce price modifiers where uuid = &#63; and companyId = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>com.liferay.commerce.pricing.model.impl.CommercePriceModifierModelImpl</code>.
+	 * </p>
+	 *
+	 * @param uuid the uuid
+	 * @param companyId the company ID
 	 * @param start the lower bound of the range of commerce price modifiers
 	 * @param end the upper bound of the range of commerce price modifiers (not inclusive)
 	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
-	 * @param useFinderCache whether to use the finder cache
-	 * @return the ordered range of commerce price modifiers
+	 * @return the ordered range of matching commerce price modifiers
 	 */
-	public static List<CommercePriceModifier> findAll(
-		int start, int end,
-		OrderByComparator<CommercePriceModifier> orderByComparator,
-		boolean useFinderCache) {
+	public static List<CommercePriceModifier> findByUuid_C(
+		String uuid, long companyId, int start, int end,
+		OrderByComparator<CommercePriceModifier> orderByComparator) {
 
-		return getPersistence().findAll(
-			start, end, orderByComparator, useFinderCache);
+		return getPersistence().findByUuid_C(
+			uuid, companyId, start, end, orderByComparator);
 	}
 
 	/**
-	 * Removes all the commerce price modifiers from the database.
-	 */
-	public static void removeAll() {
-		getPersistence().removeAll();
-	}
-
-	/**
-	 * Returns the number of commerce price modifiers.
+	 * Returns all the commerce price modifiers where commercePriceListId = &#63;.
 	 *
-	 * @return the number of commerce price modifiers
+	 * @param commercePriceListId the commerce price list ID
+	 * @return the matching commerce price modifiers
 	 */
-	public static int countAll() {
-		return getPersistence().countAll();
+	public static List<CommercePriceModifier> findByCommercePriceListId(
+		long commercePriceListId) {
+
+		return getPersistence().findByCommercePriceListId(commercePriceListId);
+	}
+
+	/**
+	 * Returns a range of all the commerce price modifiers where commercePriceListId = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>com.liferay.commerce.pricing.model.impl.CommercePriceModifierModelImpl</code>.
+	 * </p>
+	 *
+	 * @param commercePriceListId the commerce price list ID
+	 * @param start the lower bound of the range of commerce price modifiers
+	 * @param end the upper bound of the range of commerce price modifiers (not inclusive)
+	 * @return the range of matching commerce price modifiers
+	 */
+	public static List<CommercePriceModifier> findByCommercePriceListId(
+		long commercePriceListId, int start, int end) {
+
+		return getPersistence().findByCommercePriceListId(
+			commercePriceListId, start, end);
+	}
+
+	/**
+	 * Returns an ordered range of all the commerce price modifiers where commercePriceListId = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>com.liferay.commerce.pricing.model.impl.CommercePriceModifierModelImpl</code>.
+	 * </p>
+	 *
+	 * @param commercePriceListId the commerce price list ID
+	 * @param start the lower bound of the range of commerce price modifiers
+	 * @param end the upper bound of the range of commerce price modifiers (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching commerce price modifiers
+	 */
+	public static List<CommercePriceModifier> findByCommercePriceListId(
+		long commercePriceListId, int start, int end,
+		OrderByComparator<CommercePriceModifier> orderByComparator) {
+
+		return getPersistence().findByCommercePriceListId(
+			commercePriceListId, start, end, orderByComparator);
 	}
 
 	public static CommercePriceModifierPersistence getPersistence() {
@@ -2326,3 +993,4 @@ public class CommercePriceModifierUtil {
 	private static volatile CommercePriceModifierPersistence _persistence;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1778637390

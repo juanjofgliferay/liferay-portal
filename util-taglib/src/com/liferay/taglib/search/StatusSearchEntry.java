@@ -5,34 +5,24 @@
 
 package com.liferay.taglib.search;
 
-import com.liferay.portal.kernel.bean.BeanPropertiesUtil;
 import com.liferay.portal.kernel.servlet.DirectRequestDispatcherFactoryUtil;
 import com.liferay.portal.kernel.servlet.PipingServletResponse;
 import com.liferay.portal.kernel.servlet.ServletContextPool;
 import com.liferay.portal.kernel.util.PortalUtil;
 
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.Writer;
 
 import java.util.Date;
-
-import javax.servlet.RequestDispatcher;
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * @author Eudaldo Alonso
  */
 public class StatusSearchEntry extends TextSearchEntry {
-
-	@Override
-	public Object clone() {
-		StatusSearchEntry jspSearchEntry = new StatusSearchEntry();
-
-		BeanPropertiesUtil.copyProperties(this, jspSearchEntry);
-
-		return jspSearchEntry;
-	}
 
 	public HttpServletRequest getRequest() {
 		return _httpServletRequest;

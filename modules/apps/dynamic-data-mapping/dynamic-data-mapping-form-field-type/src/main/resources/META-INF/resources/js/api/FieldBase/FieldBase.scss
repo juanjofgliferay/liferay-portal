@@ -1,0 +1,52 @@
+@import 'atlas-custom-properties/_variables';
+
+.ddm-field-types-base {
+	&__nested {
+		margin-top: 15px;
+	}
+}
+
+.ddm-field {
+	& &-text-small {
+		font-size: 0.875rem;
+	}
+
+	&[data-field-name='layout'] {
+		padding-bottom: 80px;
+	}
+
+	&-information {
+		pointer-events: visible;
+	}
+}
+
+.ddm-form-field-repeatable-add-button {
+	margin-top: 1rem;
+	min-height: 44px;
+}
+
+.ddm-form-field-repeatable-delete-button,
+.ddm-form-field-repeatable-delete-button-placeholder {
+	min-width: 44px;
+}
+
+.ddm-form-field-repeatable-delete-button {
+	min-height: 44px;
+}
+
+.ddm-form-field-repeatable-button-disabled {
+	cursor: not-allowed;
+	opacity: 0.5 !important;
+}
+
+.ddm-label.ddm-repeatable {
+	padding-right: 48px;
+}
+
+.lfr-ddm-legend {
+	color: $gray-900;
+	font-size: 0.875rem;
+	font-weight: 600;
+	margin-bottom: 0.25rem;
+	word-break: break-word;
+}

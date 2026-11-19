@@ -6,7 +6,8 @@
 import ClayButton from '@clayui/button';
 import ClayForm, {ClayInput} from '@clayui/form';
 import ClayIcon from '@clayui/icon';
-import {getPortletNamespace, openSelectionModal, sub} from 'frontend-js-web';
+import {openSelectionModal} from 'frontend-js-components-web';
+import {getPortletNamespace, sub} from 'frontend-js-web';
 import React from 'react';
 
 export default function AssetDisplayPageSelector({
@@ -18,7 +19,7 @@ export default function AssetDisplayPageSelector({
 	selectedSite,
 	setAssetDisplayPageSelected,
 }) {
-	const assetDisplayPageId = `${namespace}assetDisplayPageId`;
+	const assetDisplayPageNameInputId = `${namespace}assetDisplayPageName`;
 
 	const openAssetDisplayPageSelector = () => {
 		const url = new URL(selectAssetDisplayPageURL);
@@ -70,7 +71,10 @@ export default function AssetDisplayPageSelector({
 	return (
 		<div className="mb-2 mt-2">
 			<ClayForm.Group className="mb-2">
-				<label className="sr-only" htmlFor={assetDisplayPageId}>
+				<label
+					className="sr-only"
+					htmlFor={assetDisplayPageNameInputId}
+				>
 					{Liferay.Language.get('display-page')}
 				</label>
 
@@ -78,6 +82,7 @@ export default function AssetDisplayPageSelector({
 					<ClayInput.GroupItem>
 						<ClayInput
 							disabled={disabled}
+							id={assetDisplayPageNameInputId}
 							placeholder={sub(
 								Liferay.Language.get('no-x-selected'),
 								Liferay.Language.get('display-page')

@@ -1,7 +1,10 @@
-@component-name = "portal-lima"
+@component-name = "portal-content-management"
 definition {
 
-	property portal.release = "true";
+	property browser.chrome.version = "139.0";
+	property custom.properties = "feature.flag.LPD-35013=false${line.separator}feature.flag.LPD-57655=false";
+	property osgi.modules.includes = "wiki";
+	property portal.release = "false";
 	property portal.upstream = "true";
 	property testray.main.component.name = "Ratings";
 
@@ -9,6 +12,8 @@ definition {
 		TestCase.setUpPortalInstance();
 
 		User.firstLoginPG();
+
+		WikiPortlet.enableWiki();
 	}
 
 	tearDown {
@@ -124,11 +129,11 @@ definition {
 
 		Staging.deactivateStagingCP(siteName = "Site Name");
 
-		Navigator.gotoSitePage(
-			pageName = "Staging Blogs Page",
+		HeadlessExportImport.exportPortlet(
+			larFileName = "Export.Blogs.With.Comment.Rate.portlet.lar",
+			layoutName = "Staging Blogs Page",
+			portletId = "com_liferay_blogs_web_portlet_BlogsPortlet",
 			siteName = "Site Name");
-
-		LAR.exportPortlet(larFileName = "Export.Blogs.With.Comment.Rate.portlet.lar");
 
 		HeadlessSite.addSite(siteName = "Second Site");
 
@@ -142,9 +147,11 @@ definition {
 			layoutName = "Blogs Page",
 			widgetName = "Blogs");
 
-		Navigator.openSiteURL(siteName = "Second Site");
-
-		LAR.importPortlet(larFileName = "Export.Blogs.With.Comment.Rate.portlet.lar");
+		HeadlessExportImport.importPortlet(
+			larFileName = "Export.Blogs.With.Comment.Rate.portlet.lar",
+			layoutName = "Blogs Page",
+			portletId = "com_liferay_blogs_web_portlet_BlogsPortlet",
+			siteName = "Second Site");
 
 		BlogsNavigator.openToBlogEntry(
 			entryTitle = "Blogs Entry Title",
@@ -209,13 +216,11 @@ definition {
 
 		Staging.deactivateStagingCP(siteName = "Site Name");
 
-		Navigator.gotoSitePage(
-			pageName = "Staging Test Page",
-			siteName = "Site Name");
-
-		LAR.exportPortlet(
+		HeadlessExportImport.exportPortlet(
 			larFileName = "Wiki.portlet.lar",
-			wikiPortlet = "true");
+			layoutName = "Staging Test Page",
+			portletId = "com_liferay_wiki_web_portlet_WikiPortlet",
+			siteName = "Site Name");
 
 		HeadlessSite.addSite(siteName = "Second Site");
 
@@ -229,11 +234,11 @@ definition {
 			layoutName = "Wiki Page",
 			widgetName = "Wiki");
 
-		Navigator.openSiteURL(siteName = "Second Site");
-
-		LAR.importPortlet(
+		HeadlessExportImport.importPortlet(
 			larFileName = "Wiki.portlet.lar",
-			wikiPortlet = "true");
+			layoutName = "Wiki Page",
+			portletId = "com_liferay_wiki_web_portlet_WikiPortlet",
+			siteName = "Second Site");
 
 		WikiNavigator.openToWikiPage(
 			layoutURLKey = "wiki-page",
@@ -254,7 +259,7 @@ definition {
 	@priority = 5
 	@refactordone
 	test CanRateAndEditWikiPageComment {
-		property custom.properties = "default.layout.template.id=1_column";
+		property custom.properties = "default.layout.template.id=1_column${line.separator}feature.flag.LPD-35013=true";
 
 		JSONLayout.addPublicLayout(
 			groupName = "Guest",
@@ -313,8 +318,8 @@ definition {
 	@priority = 4
 	@refactordone
 	test CanRateBlogsEntry {
-		property custom.properties = "jsonws.web.service.paths.excludes=";
-		property portal.acceptance = "true";
+		property custom.properties = "feature.flag.LPD-35013=true${line.separator}jsonws.web.service.paths.excludes=";
+		property portal.acceptance = "quarantine";
 
 		JSONUser.addUser(
 			userEmailAddress = "userea@liferay.com",
@@ -368,13 +373,14 @@ definition {
 			ratingResult = "Rate this as good");
 
 		Ratings.viewRateThumb(
+			ratingResult = "Rate this as bad",
+			toolTip = "true",
+			voteCount = 0);
+
+		Ratings.viewRateThumb(
 			ratingResult = "You have rated this as good",
 			toolTip = "true",
 			voteCount = 1);
-
-		Ratings.viewRateThumb(
-			ratingResult = "Rate this as bad",
-			voteCount = 0);
 
 		User.logoutAndLoginPG(
 			userLoginEmailAddress = "userea@liferay.com",
@@ -440,6 +446,10 @@ definition {
 	@priority = 4
 	@refactordone
 	test CanRateMBThreadAndReply {
+		task ("Enable Message Boards") {
+			MessageboardsPortlet.enableMessageBoards();
+		}
+
 		JSONLayout.addPublicLayout(
 			groupName = "Guest",
 			layoutName = "Message Boards Page");
@@ -567,7 +577,7 @@ definition {
 	@priority = 5
 	@refactordone
 	test CanRevokeBlogsStarsRating {
-		property custom.properties = "jsonws.web.service.paths.excludes=";
+		property custom.properties = "feature.flag.LPD-35013=true${line.separator}jsonws.web.service.paths.excludes=";
 		property portal.acceptance = "true";
 
 		JSONLayout.addPublicLayout(
@@ -843,6 +853,10 @@ definition {
 	test CanRevokeStarsFromMB {
 		property portal.acceptance = "true";
 
+		task ("Enable Message Boards") {
+			MessageboardsPortlet.enableMessageBoards();
+		}
+
 		Ratings.configureRatingType(
 			applications = "MBMessage",
 			portlet = "Ratings",
@@ -976,7 +990,7 @@ definition {
 	@priority = 4
 	@refactordone
 	test CanViewLikeCountForDocument {
-		property custom.properties = "jsonws.web.service.paths.excludes=";
+		property custom.properties = "feature.flag.LPD-35013=true${line.separator}jsonws.web.service.paths.excludes=";
 		property portal.acceptance = "true";
 
 		Ratings.configureRatingType(

@@ -6,6 +6,7 @@
 package com.liferay.roles.service.persistence.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.model.ResourceConstants;
 import com.liferay.portal.kernel.model.Role;
@@ -20,15 +21,17 @@ import com.liferay.portal.kernel.service.persistence.RoleFinder;
 import com.liferay.portal.kernel.test.context.ContextUserReplace;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
+import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.RoleTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
+import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
 import com.liferay.portal.test.rule.TransactionalTestRule;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.Assert;
@@ -79,7 +82,37 @@ public class RoleFinderTest {
 
 			List<Role> roles = _roleFinder.filterFindByGroupRoleAndTeamRole(
 				TestPropsValues.getCompanyId(), null, existingRoleNames, null,
-				null, _TYPES, 0, _user.getGroupId(), QueryUtil.ALL_POS,
+				null, _TYPES, null, 0, _user.getGroupId(), QueryUtil.ALL_POS,
+				QueryUtil.ALL_POS);
+
+			Assert.assertEquals(roles.toString(), 1, roles.size());
+
+			Assert.assertEquals(_roleWithViewPermission, roles.get(0));
+
+			_roleWithViewPermission.setSubtype("space");
+
+			_roleWithViewPermission = _roleLocalService.updateRole(
+				_roleWithViewPermission);
+
+			roles = _roleFinder.filterFindByGroupRoleAndTeamRole(
+				TestPropsValues.getCompanyId(), null, existingRoleNames, null,
+				null, _TYPES, "space", 0, _user.getGroupId(), QueryUtil.ALL_POS,
+				QueryUtil.ALL_POS);
+
+			Assert.assertEquals(roles.toString(), 1, roles.size());
+
+			Assert.assertEquals(_roleWithViewPermission, roles.get(0));
+
+			roles = _roleFinder.filterFindByGroupRoleAndTeamRole(
+				TestPropsValues.getCompanyId(), null, existingRoleNames, null,
+				null, _TYPES, RandomTestUtil.randomString(), 0,
+				_user.getGroupId(), QueryUtil.ALL_POS, QueryUtil.ALL_POS);
+
+			Assert.assertTrue(roles.toString(), roles.isEmpty());
+
+			roles = _roleFinder.filterFindByGroupRoleAndTeamRole(
+				TestPropsValues.getCompanyId(), null, existingRoleNames, null,
+				null, _TYPES, null, 0, _user.getGroupId(), QueryUtil.ALL_POS,
 				QueryUtil.ALL_POS);
 
 			Assert.assertEquals(roles.toString(), 1, roles.size());
@@ -88,23 +121,37 @@ public class RoleFinderTest {
 		}
 	}
 
+	@Test
+	public void testFindByGroupRoleAndTeamRole() throws Exception {
+		_role = RoleTestUtil.addRole(RoleConstants.TYPE_REGULAR);
+
+		String title = StringUtil.toLowerCase(RandomTestUtil.randomString());
+
+		_role.setTitle(title, LocaleUtil.getDefault());
+
+		_role = _roleLocalService.updateRole(_role);
+
+		List<Role> roles = _roleFinder.findByGroupRoleAndTeamRole(
+			TestPropsValues.getCompanyId(), null, null, title, null, _TYPES,
+			null, 0, 0, QueryUtil.ALL_POS, QueryUtil.ALL_POS);
+
+		Assert.assertEquals(roles.toString(), 1, roles.size());
+		Assert.assertEquals(_role, roles.get(0));
+	}
+
 	private List<String> _getExistingRoleNames() throws Exception {
-		List<Role> roles = _roleLocalService.getRoles(
-			TestPropsValues.getCompanyId(), _TYPES);
-
-		List<String> roleNames = new ArrayList<>(roles.size());
-
-		for (Role role : roles) {
-			roleNames.add(role.getName());
-		}
-
-		return roleNames;
+		return TransformUtil.transform(
+			_roleLocalService.getRoles(TestPropsValues.getCompanyId(), _TYPES),
+			role -> role.getName());
 	}
 
 	private static final int[] _TYPES = {RoleConstants.TYPE_REGULAR};
 
 	@Inject
 	private ResourcePermissionLocalService _resourcePermissionLocalService;
+
+	@DeleteAfterTestRun
+	private Role _role;
 
 	@Inject
 	private RoleFinder _roleFinder;
@@ -113,10 +160,10 @@ public class RoleFinderTest {
 	private RoleLocalService _roleLocalService;
 
 	@DeleteAfterTestRun
-	private Role _roleWithoutViewPermission;
+	private Role _roleWithViewPermission;
 
 	@DeleteAfterTestRun
-	private Role _roleWithViewPermission;
+	private Role _roleWithoutViewPermission;
 
 	@DeleteAfterTestRun
 	private User _user;

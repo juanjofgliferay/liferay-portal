@@ -7,8 +7,11 @@ package com.liferay.ai.creator.openai.internal.upgrade.v1_1_0;
 
 import com.liferay.ai.creator.openai.configuration.AICreatorOpenAICompanyConfiguration;
 import com.liferay.ai.creator.openai.configuration.AICreatorOpenAIGroupConfiguration;
+import com.liferay.configuration.admin.util.ConfigurationFilterStringUtil;
 import com.liferay.portal.configuration.metatype.annotations.ExtendedObjectClassDefinition;
 import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
+import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
+import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.upgrade.UpgradeProcess;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
@@ -24,9 +27,11 @@ import org.osgi.service.cm.ConfigurationAdmin;
 public class AICreatorOpenAIConfigurationUpgradeProcess extends UpgradeProcess {
 
 	public AICreatorOpenAIConfigurationUpgradeProcess(
+		CompanyLocalService companyLocalService,
 		ConfigurationAdmin configurationAdmin,
 		ConfigurationProvider configurationProvider) {
 
+		_companyLocalService = companyLocalService;
 		_configurationAdmin = configurationAdmin;
 		_configurationProvider = configurationProvider;
 	}
@@ -53,13 +58,11 @@ public class AICreatorOpenAIConfigurationUpgradeProcess extends UpgradeProcess {
 		).build();
 	}
 
-	private Configuration[] _getScopedConfigurations(String className)
+	private Configuration[] _getConfigurations(String filterString)
 		throws Exception {
 
 		Configuration[] configurations = _configurationAdmin.listConfigurations(
-			String.format(
-				"(%s=%s.scoped)", ConfigurationAdmin.SERVICE_FACTORYPID,
-				className));
+			filterString);
 
 		if (configurations == null) {
 			return new Configuration[0];
@@ -70,8 +73,10 @@ public class AICreatorOpenAIConfigurationUpgradeProcess extends UpgradeProcess {
 
 	private void _updateCompanyConfigurations() throws Exception {
 		Configuration[] aiCreatorOpenAICompanyConfigurations =
-			_getScopedConfigurations(
-				AICreatorOpenAICompanyConfiguration.class.getName());
+			_getConfigurations(
+				ConfigurationFilterStringUtil.getCompanyScopedFilterString(
+					null, AICreatorOpenAICompanyConfiguration.class.getName(),
+					null));
 
 		for (Configuration aiCreatorOpenAICompanyConfiguration :
 				aiCreatorOpenAICompanyConfigurations) {
@@ -83,20 +88,26 @@ public class AICreatorOpenAIConfigurationUpgradeProcess extends UpgradeProcess {
 				return;
 			}
 
+			long companyId = GetterUtil.getLong(
+				properties.get(
+					ExtendedObjectClassDefinition.Scope.COMPANY.
+						getPropertyKey()));
+
+			if (_companyLocalService.fetchCompany(companyId) == null) {
+				continue;
+			}
+
 			_configurationProvider.saveCompanyConfiguration(
-				AICreatorOpenAICompanyConfiguration.class,
-				GetterUtil.getLong(
-					properties.get(
-						ExtendedObjectClassDefinition.Scope.COMPANY.
-							getPropertyKey())),
+				AICreatorOpenAICompanyConfiguration.class, companyId,
 				_createDictionary(properties));
 		}
 	}
 
 	private void _updateGroupConfigurations() throws Exception {
-		Configuration[] aiCreatorOpenAIGroupConfigurations =
-			_getScopedConfigurations(
-				AICreatorOpenAIGroupConfiguration.class.getName());
+		Configuration[] aiCreatorOpenAIGroupConfigurations = _getConfigurations(
+			ConfigurationFilterStringUtil.getGroupScopedFilterString(
+				CompanyThreadLocal.getCompanyId(), null,
+				AICreatorOpenAIGroupConfiguration.class.getName(), null));
 
 		for (Configuration aiCreatorOpenAIGroupConfiguration :
 				aiCreatorOpenAIGroupConfigurations) {
@@ -110,6 +121,7 @@ public class AICreatorOpenAIConfigurationUpgradeProcess extends UpgradeProcess {
 
 			_configurationProvider.saveGroupConfiguration(
 				AICreatorOpenAIGroupConfiguration.class,
+				CompanyThreadLocal.getCompanyId(),
 				GetterUtil.getLong(
 					properties.get(
 						ExtendedObjectClassDefinition.Scope.GROUP.
@@ -118,6 +130,7 @@ public class AICreatorOpenAIConfigurationUpgradeProcess extends UpgradeProcess {
 		}
 	}
 
+	private final CompanyLocalService _companyLocalService;
 	private final ConfigurationAdmin _configurationAdmin;
 	private final ConfigurationProvider _configurationProvider;
 

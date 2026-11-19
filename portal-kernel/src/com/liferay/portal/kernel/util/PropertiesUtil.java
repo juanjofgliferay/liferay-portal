@@ -5,11 +5,11 @@
 
 package com.liferay.portal.kernel.util;
 
+import com.liferay.petra.io.unsync.UnsyncByteArrayInputStream;
+import com.liferay.petra.io.unsync.UnsyncByteArrayOutputStream;
+import com.liferay.petra.io.unsync.UnsyncStringReader;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.io.unsync.UnsyncByteArrayInputStream;
-import com.liferay.portal.kernel.io.unsync.UnsyncByteArrayOutputStream;
-import com.liferay.portal.kernel.io.unsync.UnsyncStringReader;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -50,9 +50,11 @@ public class PropertiesUtil {
 		for (Map.Entry<String, ?> entry : map.entrySet()) {
 			Object value = entry.getValue();
 
-			if ((value != null) && (value instanceof String)) {
-				properties.setProperty(entry.getKey(), (String)value);
+			if ((value == null) || !(value instanceof String)) {
+				continue;
 			}
+
+			properties.setProperty(entry.getKey(), (String)value);
 		}
 
 		return properties;
@@ -79,15 +81,17 @@ public class PropertiesUtil {
 		while (enumeration.hasMoreElements()) {
 			String key = enumeration.nextElement();
 
-			if (key.startsWith(prefix)) {
-				String value = properties.getProperty(key);
-
-				if (removePrefix) {
-					key = key.substring(prefix.length());
-				}
-
-				newProperties.setProperty(key, value);
+			if (!key.startsWith(prefix)) {
+				continue;
 			}
+
+			String value = properties.getProperty(key);
+
+			if (removePrefix) {
+				key = key.substring(prefix.length());
+			}
+
+			newProperties.setProperty(key, value);
 		}
 
 		return newProperties;
@@ -156,11 +160,13 @@ public class PropertiesUtil {
 			// environments. This is a known case for loading SQL scripts in SQL
 			// Server.
 
-			if (value != null) {
-				value = value.trim();
-
-				properties.setProperty(key, value);
+			if (value == null) {
+				continue;
 			}
+
+			value = value.trim();
+
+			properties.setProperty(key, value);
 		}
 	}
 
@@ -264,13 +270,15 @@ public class PropertiesUtil {
 
 			String trimmedKey = key.trim();
 
-			if (!key.equals(trimmedKey)) {
-				properties.remove(key);
-
-				String value = properties.getProperty(key);
-
-				properties.setProperty(trimmedKey, value);
+			if (key.equals(trimmedKey)) {
+				continue;
 			}
+
+			properties.remove(key);
+
+			String value = properties.getProperty(key);
+
+			properties.setProperty(trimmedKey, value);
 		}
 	}
 

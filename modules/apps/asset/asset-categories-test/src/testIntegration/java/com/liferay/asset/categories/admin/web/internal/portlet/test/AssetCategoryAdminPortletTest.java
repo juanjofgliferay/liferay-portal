@@ -9,6 +9,7 @@ import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.asset.display.page.constants.AssetDisplayPageConstants;
 import com.liferay.asset.display.page.model.AssetDisplayPageEntry;
 import com.liferay.asset.display.page.service.AssetDisplayPageEntryLocalService;
+import com.liferay.asset.kernel.exception.NoSuchCategoryException;
 import com.liferay.asset.kernel.model.AssetCategory;
 import com.liferay.asset.kernel.model.AssetVocabulary;
 import com.liferay.asset.kernel.service.AssetCategoryLocalService;
@@ -21,11 +22,15 @@ import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
+import com.liferay.portal.kernel.portlet.bridges.mvc.constants.MVCRenderConstants;
 import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.servlet.SessionErrors;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.portlet.MockLiferayPortletActionRequest;
 import com.liferay.portal.kernel.test.portlet.MockLiferayPortletActionResponse;
+import com.liferay.portal.kernel.test.portlet.MockLiferayPortletRenderRequest;
+import com.liferay.portal.kernel.test.portlet.MockLiferayPortletRenderResponse;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
@@ -41,13 +46,14 @@ import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
+import com.liferay.portlet.test.MockLiferayPortletContext;
+
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.Portlet;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.Portlet;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -74,6 +80,31 @@ public class AssetCategoryAdminPortletTest {
 		_company = _companyLocalService.getCompany(_group.getCompanyId());
 
 		_user = UserTestUtil.getAdminUser(_company.getCompanyId());
+	}
+
+	@Test
+	public void testRender() throws Exception {
+		MockLiferayPortletRenderRequest mockLiferayPortletRenderRequest =
+			new MockLiferayPortletRenderRequest();
+
+		mockLiferayPortletRenderRequest.setAttribute(
+			MVCRenderConstants.
+				PORTLET_CONTEXT_OVERRIDE_REQUEST_ATTIBUTE_NAME_PREFIX +
+					"/error.jsp",
+			new MockLiferayPortletContext("/error.jsp"));
+		mockLiferayPortletRenderRequest.setParameter(
+			"categoryId", String.valueOf(RandomTestUtil.randomLong()));
+		mockLiferayPortletRenderRequest.setParameter(
+			"mvcPath", "/edit_asset_category.jsp");
+
+		_portlet.render(
+			mockLiferayPortletRenderRequest,
+			new MockLiferayPortletRenderResponse());
+
+		Assert.assertTrue(
+			SessionErrors.contains(
+				mockLiferayPortletRenderRequest,
+				NoSuchCategoryException.class.getName()));
 	}
 
 	@Test
@@ -104,7 +135,8 @@ public class AssetCategoryAdminPortletTest {
 				HashMapBuilder.put(
 					LocaleUtil.US, RandomTestUtil.randomString()
 				).build(),
-				null, assetVocabulary.getVocabularyId(), null, serviceContext);
+				null, assetVocabulary.getVocabularyId(), false, null,
+				serviceContext);
 
 		assetCategories.add(childAssetCategory1);
 
@@ -115,7 +147,8 @@ public class AssetCategoryAdminPortletTest {
 				HashMapBuilder.put(
 					LocaleUtil.US, RandomTestUtil.randomString()
 				).build(),
-				null, assetVocabulary.getVocabularyId(), null, serviceContext);
+				null, assetVocabulary.getVocabularyId(), false, null,
+				serviceContext);
 
 		assetCategories.add(childAssetCategory2);
 
@@ -160,8 +193,8 @@ public class AssetCategoryAdminPortletTest {
 
 		LayoutPageTemplateEntry layoutPageTemplateEntry =
 			_layoutPageTemplateEntryLocalService.addLayoutPageTemplateEntry(
-				TestPropsValues.getUserId(), _group.getGroupId(), 0, 0, 0,
-				RandomTestUtil.randomString(),
+				null, TestPropsValues.getUserId(), _group.getGroupId(), 0, null,
+				0, null, RandomTestUtil.randomString(),
 				LayoutPageTemplateEntryTypeConstants.DISPLAY_PAGE, 0, true, 0,
 				0, 0, WorkflowConstants.STATUS_APPROVED, new ServiceContext());
 

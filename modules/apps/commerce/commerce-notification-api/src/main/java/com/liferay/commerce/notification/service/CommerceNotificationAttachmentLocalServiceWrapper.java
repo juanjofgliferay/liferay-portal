@@ -13,8 +13,10 @@ import com.liferay.portal.kernel.service.persistence.BasePersistence;
  *
  * @author Alessio Antonio Rendina
  * @see CommerceNotificationAttachmentLocalService
+ * @deprecated As of Cavanaugh (7.4.x)
  * @generated
  */
+@Deprecated
 public class CommerceNotificationAttachmentLocalServiceWrapper
 	implements CommerceNotificationAttachmentLocalService,
 			   ServiceWrapper<CommerceNotificationAttachmentLocalService> {
@@ -51,22 +53,6 @@ public class CommerceNotificationAttachmentLocalServiceWrapper
 
 		return _commerceNotificationAttachmentLocalService.
 			addCommerceNotificationAttachment(commerceNotificationAttachment);
-	}
-
-	@Override
-	public
-		com.liferay.commerce.notification.model.CommerceNotificationAttachment
-				addCommerceNotificationAttachment(
-					long commerceNotificationQueueEntryId, long fileEntryId,
-					boolean deleteOnSend,
-					com.liferay.portal.kernel.service.ServiceContext
-						serviceContext)
-			throws com.liferay.portal.kernel.exception.PortalException {
-
-		return _commerceNotificationAttachmentLocalService.
-			addCommerceNotificationAttachment(
-				commerceNotificationQueueEntryId, fileEntryId, deleteOnSend,
-				serviceContext);
 	}
 
 	/**
@@ -364,21 +350,6 @@ public class CommerceNotificationAttachmentLocalServiceWrapper
 			getCommerceNotificationAttachments(start, end);
 	}
 
-	@Override
-	public java.util.List
-		<com.liferay.commerce.notification.model.CommerceNotificationAttachment>
-			getCommerceNotificationAttachments(
-				long commerceNotificationQueueEntryId, int start, int end,
-				com.liferay.portal.kernel.util.OrderByComparator
-					<com.liferay.commerce.notification.model.
-						CommerceNotificationAttachment> orderByComparator) {
-
-		return _commerceNotificationAttachmentLocalService.
-			getCommerceNotificationAttachments(
-				commerceNotificationQueueEntryId, start, end,
-				orderByComparator);
-	}
-
 	/**
 	 * Returns all the commerce notification attachments matching the UUID and company.
 	 *
@@ -519,3 +490,4 @@ public class CommerceNotificationAttachmentLocalServiceWrapper
 		_commerceNotificationAttachmentLocalService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1103688283

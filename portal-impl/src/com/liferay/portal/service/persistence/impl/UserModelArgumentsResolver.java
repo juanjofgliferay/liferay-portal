@@ -10,11 +10,14 @@ import com.liferay.portal.kernel.dao.orm.FinderPath;
 import com.liferay.portal.kernel.model.BaseModel;
 import com.liferay.portal.kernel.model.UserTable;
 import com.liferay.portal.kernel.spring.osgi.OSGiBeanProperties;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.model.impl.UserImpl;
 import com.liferay.portal.model.impl.UserModelImpl;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BiPredicate;
 
 /**
  * The arguments resolver class for retrieving value from User.
@@ -47,10 +50,19 @@ public class UserModelArgumentsResolver implements ArgumentsResolver {
 
 		UserModelImpl userModelImpl = (UserModelImpl)baseModel;
 
+		BiPredicate<UserModelImpl, Boolean> whereBiPredicate =
+			_whereBiPredicates.get(finderPath.getFinderName());
+
+		if ((whereBiPredicate != null) &&
+			!whereBiPredicate.test(userModelImpl, original)) {
+
+			return null;
+		}
+
 		long columnBitmask = userModelImpl.getColumnBitmask();
 
 		if (!checkColumn || (columnBitmask == 0)) {
-			return _getValue(userModelImpl, columnNames, original);
+			return _getValue(userModelImpl, finderPath, original);
 		}
 
 		Long finderPathColumnBitmask = _finderPathColumnBitmasksCache.get(
@@ -64,12 +76,19 @@ public class UserModelArgumentsResolver implements ArgumentsResolver {
 					columnName);
 			}
 
+			Long whereColumnBitmask = _whereColumnBitmasks.get(
+				finderPath.getFinderName());
+
+			if (whereColumnBitmask != null) {
+				finderPathColumnBitmask |= whereColumnBitmask;
+			}
+
 			_finderPathColumnBitmasksCache.put(
 				finderPath, finderPathColumnBitmask);
 		}
 
 		if ((columnBitmask & finderPathColumnBitmask) != 0) {
-			return _getValue(userModelImpl, columnNames, original);
+			return _getValue(userModelImpl, finderPath, original);
 		}
 
 		return null;
@@ -85,20 +104,36 @@ public class UserModelArgumentsResolver implements ArgumentsResolver {
 		return UserTable.INSTANCE.getTableName();
 	}
 
+	private static Object _getColumnValue(
+		UserModelImpl userModelImpl, String columnName, boolean original) {
+
+		if (original) {
+			return userModelImpl.getColumnOriginalValue(columnName);
+		}
+
+		return userModelImpl.getColumnValue(columnName);
+	}
+
 	private static Object[] _getValue(
-		UserModelImpl userModelImpl, String[] columnNames, boolean original) {
+		UserModelImpl userModelImpl, FinderPath finderPath, boolean original) {
+
+		String[] columnNames = finderPath.getColumnNames();
 
 		Object[] arguments = new Object[columnNames.length];
 
 		for (int i = 0; i < arguments.length; i++) {
 			String columnName = columnNames[i];
 
+			Object value;
+
 			if (original) {
-				arguments[i] = userModelImpl.getColumnOriginalValue(columnName);
+				value = userModelImpl.getColumnOriginalValue(columnName);
 			}
 			else {
-				arguments[i] = userModelImpl.getColumnValue(columnName);
+				value = userModelImpl.getColumnValue(columnName);
 			}
+
+			arguments[i] = finderPath.normalizeArgument(i, value);
 		}
 
 		return arguments;
@@ -106,5 +141,32 @@ public class UserModelArgumentsResolver implements ArgumentsResolver {
 
 	private static final Map<FinderPath, Long> _finderPathColumnBitmasksCache =
 		new ConcurrentHashMap<>();
+	private static final Map<String, Long> _whereColumnBitmasks =
+		new HashMap<>();
+	private static final Map<String, BiPredicate<UserModelImpl, Boolean>>
+		_whereBiPredicates = new HashMap<>();
+
+	static {
+		long whereColumnBitmask = UserModelImpl.getColumnBitmask("type_");
+
+		BiPredicate<UserModelImpl, Boolean> whereBiPredicate =
+			(userModelImpl, original) ->
+				GetterUtil.getInteger(
+					_getColumnValue(userModelImpl, "type_", original)) == 1;
+
+		_whereColumnBitmasks.put("CompanyId", whereColumnBitmask);
+
+		_whereBiPredicates.put("CompanyId", whereBiPredicate);
+		_whereColumnBitmasks.put("GtU_C", whereColumnBitmask);
+
+		_whereBiPredicates.put("GtU_C", whereBiPredicate);
+		_whereColumnBitmasks.put("C_MD", whereColumnBitmask);
+
+		_whereBiPredicates.put("C_MD", whereBiPredicate);
+		_whereColumnBitmasks.put("C_S", whereColumnBitmask);
+
+		_whereBiPredicates.put("C_S", whereBiPredicate);
+	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1652213176

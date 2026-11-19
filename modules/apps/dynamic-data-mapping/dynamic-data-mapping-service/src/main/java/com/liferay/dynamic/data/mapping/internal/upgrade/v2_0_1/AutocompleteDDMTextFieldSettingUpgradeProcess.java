@@ -59,9 +59,9 @@ public class AutocompleteDDMTextFieldSettingUpgradeProcess
 					"update DDMStructureVersion set definition = ? where " +
 						"structureVersionId = ?")) {
 
-			try (ResultSet resultSet = preparedStatement1.executeQuery()) {
-				while (resultSet.next()) {
-					String definition = resultSet.getString(2);
+			try (ResultSet resultSet1 = preparedStatement1.executeQuery()) {
+				while (resultSet1.next()) {
+					String definition = resultSet1.getString("definition");
 
 					String newDefinition = _upgradeDDMFormInstanceStructure(
 						definition);
@@ -72,7 +72,7 @@ public class AutocompleteDDMTextFieldSettingUpgradeProcess
 
 					preparedStatement2.setString(1, newDefinition);
 
-					long structureId = resultSet.getLong(1);
+					long structureId = resultSet1.getLong("structureId");
 
 					preparedStatement2.setLong(2, structureId);
 
@@ -115,11 +115,7 @@ public class AutocompleteDDMTextFieldSettingUpgradeProcess
 	private boolean _isAutocompleteEnabled(Map<String, Object> properties) {
 		String dataSourceType = (String)properties.get("dataSourceType");
 
-		if (Validator.isNotNull(dataSourceType)) {
-			return true;
-		}
-
-		return false;
+		return Validator.isNotNull(dataSourceType);
 	}
 
 	private String _upgradeDDMFormInstanceStructure(String definition)
@@ -129,14 +125,14 @@ public class AutocompleteDDMTextFieldSettingUpgradeProcess
 			_ddmFormDeserializer, definition);
 
 		for (DDMFormField ddmFormField : ddmForm.getDDMFormFields()) {
-			if (Objects.equals(ddmFormField.getType(), "text")) {
-				Map<String, Object> properties = ddmFormField.getProperties();
-
-				if (!properties.containsKey("autocomplete")) {
-					properties.put(
-						"autocomplete", _isAutocompleteEnabled(properties));
-				}
+			if (!Objects.equals(ddmFormField.getType(), "text")) {
+				continue;
 			}
+
+			Map<String, Object> properties = ddmFormField.getProperties();
+
+			properties.putIfAbsent(
+				"autocomplete", _isAutocompleteEnabled(properties));
 		}
 
 		return DDMFormSerializeUtil.serialize(ddmForm, _ddmFormSerializer);

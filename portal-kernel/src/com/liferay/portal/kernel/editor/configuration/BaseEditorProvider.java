@@ -51,11 +51,13 @@ public abstract class BaseEditorProvider<T> {
 		for (EditorContributorProvider<T> editorContributorProvider :
 				editorContributorProviders) {
 
-			if (editorContributorProvider.matches(
+			if (!editorContributorProvider.matches(
 					portletName, editorConfigKey, editorName)) {
 
-				consumer.accept(editorContributorProvider.get());
+				continue;
 			}
+
+			consumer.accept(editorContributorProvider.get());
 		}
 	}
 
@@ -177,7 +179,7 @@ public abstract class BaseEditorProvider<T> {
 				serviceReference);
 
 			List<String> portletNames = StringUtil.asList(
-				serviceReference.getProperty("javax.portlet.name"));
+				serviceReference.getProperty("jakarta.portlet.name"));
 			List<String> editorConfigKeys = StringUtil.asList(
 				serviceReference.getProperty("editor.config.key"));
 			List<String> editorNames = StringUtil.asList(

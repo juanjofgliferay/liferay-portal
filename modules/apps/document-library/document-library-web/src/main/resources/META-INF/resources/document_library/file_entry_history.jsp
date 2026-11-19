@@ -21,7 +21,7 @@
 	int start = 0;
 	int end = 10;
 
-	for (FileVersion fileVersion : ListUtil.sort(fileEntry.getFileVersions(status, start, end), new FileVersionVersionComparator(false))) {
+	for (FileVersion fileVersion : DLFileEntryUtil.getFileEntryVersionsSorted(fileEntry, status, start, end)) {
 	%>
 
 		<li class="list-group-item list-group-item-flex">
@@ -57,7 +57,7 @@
 				<clay:dropdown-actions
 					aria-label='<%= LanguageUtil.get(request, "show-actions") %>'
 					dropdownItems="<%= dlViewFileEntryHistoryDisplayContext.getActionDropdownItems() %>"
-					propsTransformer="document_library/js/DLFileEntryDropdownPropsTransformer"
+					propsTransformer="{DLFileEntryDropdownPropsTransformer} from document-library-web"
 				/>
 			</clay:content-col>
 		</li>

@@ -213,6 +213,18 @@ public class RemoteCommerceTaxEngineTest {
 			_recordedParameterMap.get(prefix + "AddressZip"));
 	}
 
+	private CPTaxCategory _getCPTaxCategory() {
+		CPTaxCategory cpTaxCategory = Mockito.mock(CPTaxCategory.class);
+
+		Mockito.when(
+			cpTaxCategory.getCPTaxCategoryId()
+		).thenReturn(
+			5L
+		);
+
+		return cpTaxCategory;
+	}
+
 	private CommerceAddress _getCommerceAddress(
 			String city, long commerceAddressId,
 			String commerceCountryThreeLettersISOCode,
@@ -234,6 +246,14 @@ public class RemoteCommerceTaxEngineTest {
 			commerceAddress.getCommerceAddressId()
 		).thenReturn(
 			commerceAddressId
+		);
+
+		Country country = _getCountry(commerceCountryThreeLettersISOCode);
+
+		Mockito.when(
+			commerceAddress.getCountry()
+		).thenReturn(
+			country
 		);
 
 		Mockito.when(
@@ -258,6 +278,14 @@ public class RemoteCommerceTaxEngineTest {
 			commerceAddress.getPhoneNumber()
 		).thenReturn(
 			phoneNumber
+		);
+
+		Region region = _getRegion(commerceRegionCode);
+
+		Mockito.when(
+			commerceAddress.getRegion()
+		).thenReturn(
+			region
 		);
 
 		Mockito.when(
@@ -288,22 +316,6 @@ public class RemoteCommerceTaxEngineTest {
 			commerceAddress.getZip()
 		).thenReturn(
 			zip
-		);
-
-		Country country = _getCountry(commerceCountryThreeLettersISOCode);
-
-		Mockito.when(
-			commerceAddress.getCountry()
-		).thenReturn(
-			country
-		);
-
-		Region region = _getRegion(commerceRegionCode);
-
-		Mockito.when(
-			commerceAddress.getRegion()
-		).thenReturn(
-			region
 		);
 
 		return commerceAddress;
@@ -358,18 +370,6 @@ public class RemoteCommerceTaxEngineTest {
 		);
 
 		return country;
-	}
-
-	private CPTaxCategory _getCPTaxCategory() {
-		CPTaxCategory cpTaxCategory = Mockito.mock(CPTaxCategory.class);
-
-		Mockito.when(
-			cpTaxCategory.getCPTaxCategoryId()
-		).thenReturn(
-			5L
-		);
-
-		return cpTaxCategory;
 	}
 
 	private Region _getRegion(String code) {

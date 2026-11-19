@@ -10,12 +10,12 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * Provides the local service utility for DDMField. This utility wraps
@@ -98,10 +98,6 @@ public class DDMFieldLocalServiceUtil {
 	 */
 	public static DDMField deleteDDMField(long fieldId) throws PortalException {
 		return getService().deleteDDMField(fieldId);
-	}
-
-	public static void deleteDDMFields(long structureId) {
-		getService().deleteDDMFields(structureId);
 	}
 
 	public static void deleteDDMFormValues(long storageId) {
@@ -284,17 +280,6 @@ public class DDMFieldLocalServiceUtil {
 		return getService().getDDMFormValues(ddmForm, storageId, languageId);
 	}
 
-	public static int getDDMFormValuesCount(long structureId) {
-		return getService().getDDMFormValuesCount(structureId);
-	}
-
-	public static int getDDMFormValuesCount(
-		long companyId, String fieldType, Map<String, Object> attributes) {
-
-		return getService().getDDMFormValuesCount(
-			companyId, fieldType, attributes);
-	}
-
 	public static
 		com.liferay.portal.kernel.dao.orm.IndexableActionableDynamicQuery
 			getIndexableActionableDynamicQuery() {
@@ -344,13 +329,12 @@ public class DDMFieldLocalServiceUtil {
 	}
 
 	public static DDMFieldLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(DDMFieldLocalService service) {
-		_service = service;
-	}
-
-	private static volatile DDMFieldLocalService _service;
+	private static final Snapshot<DDMFieldLocalService> _serviceSnapshot =
+		new Snapshot<>(
+			DDMFieldLocalServiceUtil.class, DDMFieldLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1970525551

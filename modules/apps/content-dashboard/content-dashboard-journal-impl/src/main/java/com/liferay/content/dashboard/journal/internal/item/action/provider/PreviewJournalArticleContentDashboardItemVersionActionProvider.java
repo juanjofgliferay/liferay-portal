@@ -5,7 +5,6 @@
 
 package com.liferay.content.dashboard.journal.internal.item.action.provider;
 
-import com.liferay.asset.display.page.portlet.AssetDisplayPageFriendlyURLProvider;
 import com.liferay.content.dashboard.item.action.ContentDashboardItemVersionAction;
 import com.liferay.content.dashboard.item.action.provider.ContentDashboardItemVersionActionProvider;
 import com.liferay.content.dashboard.journal.internal.item.action.PreviewJournalArticleContentDashboardItemVersionAction;
@@ -26,7 +25,7 @@ import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -52,9 +51,9 @@ public class PreviewJournalArticleContentDashboardItemVersionActionProvider
 		}
 
 		return new PreviewJournalArticleContentDashboardItemVersionAction(
-			_assetDisplayPageFriendlyURLProvider, httpServletRequest,
-			journalArticle, _language, _layoutDisplayPageProviderRegistry,
-			_layoutLocalService, _layoutSEOLinkManager, _portal,
+			httpServletRequest, journalArticle, _language,
+			_layoutDisplayPageProviderRegistry, _layoutLocalService,
+			_layoutSEOLinkManager, _portal,
 			RequestBackedPortletURLFactoryUtil.create(httpServletRequest));
 	}
 
@@ -77,7 +76,6 @@ public class PreviewJournalArticleContentDashboardItemVersionActionProvider
 			ViewJournalArticleContentDashboardItemAction
 				viewJournalArticleContentDashboardItemAction =
 					new ViewJournalArticleContentDashboardItemAction(
-						_assetDisplayPageFriendlyURLProvider,
 						httpServletRequest, journalArticle, _language,
 						_layoutDisplayPageProviderRegistry, _layoutLocalService,
 						_layoutSEOLinkManager, _portal);
@@ -100,10 +98,6 @@ public class PreviewJournalArticleContentDashboardItemVersionActionProvider
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		PreviewJournalArticleContentDashboardItemVersionActionProvider.class);
-
-	@Reference
-	private AssetDisplayPageFriendlyURLProvider
-		_assetDisplayPageFriendlyURLProvider;
 
 	@Reference
 	private Language _language;

@@ -119,6 +119,14 @@ public class CPDefinitionGroupedEntryLocalServiceWrapper
 			cpDefinitionId);
 	}
 
+	@Override
+	public void deleteCPDefinitionGroupedEntriesByEntryCProductId(
+		long entryCProductId) {
+
+		_cpDefinitionGroupedEntryLocalService.
+			deleteCPDefinitionGroupedEntriesByEntryCProductId(entryCProductId);
+	}
+
 	/**
 	 * Deletes the cp definition grouped entry from the database. Also notifies the appropriate model listeners.
 	 *
@@ -380,17 +388,6 @@ public class CPDefinitionGroupedEntryLocalServiceWrapper
 				companyId, cpDefinitionId, keywords, start, end, sort);
 	}
 
-	@Override
-	public java.util.List
-		<com.liferay.commerce.product.type.grouped.model.
-			CPDefinitionGroupedEntry>
-				getCPDefinitionGroupedEntriesByCPDefinitionId(
-					long cpDefinitionId) {
-
-		return _cpDefinitionGroupedEntryLocalService.
-			getCPDefinitionGroupedEntriesByCPDefinitionId(cpDefinitionId);
-	}
-
 	/**
 	 * Returns all the cp definition grouped entries matching the UUID and company.
 	 *
@@ -443,12 +440,6 @@ public class CPDefinitionGroupedEntryLocalServiceWrapper
 	public int getCPDefinitionGroupedEntriesCount() {
 		return _cpDefinitionGroupedEntryLocalService.
 			getCPDefinitionGroupedEntriesCount();
-	}
-
-	@Override
-	public int getCPDefinitionGroupedEntriesCount(long cpDefinitionId) {
-		return _cpDefinitionGroupedEntryLocalService.
-			getCPDefinitionGroupedEntriesCount(cpDefinitionId);
 	}
 
 	@Override
@@ -631,3 +622,4 @@ public class CPDefinitionGroupedEntryLocalServiceWrapper
 		_cpDefinitionGroupedEntryLocalService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-637569828

@@ -116,11 +116,18 @@ public class DDLRecordSetModelImpl
 
 	public static final String TABLE_SQL_DROP = "drop table DDLRecordSet";
 
+	public static final String ENTITY_ALIAS = "ddlRecordSet";
+
+	public static final String FILTER_PK_COLUMN_NAME = "recordSetId";
+
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY ddlRecordSet.recordSetId ASC";
 
 	public static final String ORDER_BY_SQL =
 		" ORDER BY DDLRecordSet.recordSetId ASC";
+
+	public static final String ORDER_BY_SQL_INLINE_DISTINCT =
+		" ORDER BY ddlRecordSet.recordSetId ASC";
 
 	public static final String DATA_SOURCE = "liferayDataSource";
 
@@ -1020,16 +1027,6 @@ public class DDLRecordSetModelImpl
 		_lastPublishDate = lastPublishDate;
 	}
 
-	public com.liferay.dynamic.data.mapping.storage.DDMFormValues
-		getDDMFormValues() {
-
-		return null;
-	}
-
-	public void setDDMFormValues(
-		com.liferay.dynamic.data.mapping.storage.DDMFormValues ddmFormValues) {
-	}
-
 	@Override
 	public StagedModelType getStagedModelType() {
 		return new StagedModelType(
@@ -1320,8 +1317,6 @@ public class DDLRecordSetModelImpl
 
 		_setModifiedDate = false;
 
-		setDDMFormValues(null);
-
 		_columnBitmask = 0;
 	}
 
@@ -1440,10 +1435,6 @@ public class DDLRecordSetModelImpl
 		else {
 			ddlRecordSetCacheModel.lastPublishDate = Long.MIN_VALUE;
 		}
-
-		setDDMFormValues(null);
-
-		ddlRecordSetCacheModel._ddmFormValues = getDDMFormValues();
 
 		return ddlRecordSetCacheModel;
 	}
@@ -1655,3 +1646,4 @@ public class DDLRecordSetModelImpl
 	private DDLRecordSet _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:646126244

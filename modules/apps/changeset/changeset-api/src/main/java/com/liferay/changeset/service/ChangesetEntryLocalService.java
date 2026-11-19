@@ -5,7 +5,6 @@
 
 package com.liferay.changeset.service;
 
-import com.liferay.changeset.exception.NoSuchEntryException;
 import com.liferay.changeset.model.ChangesetEntry;
 import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
@@ -69,8 +68,8 @@ public interface ChangesetEntryLocalService
 	public ChangesetEntry addChangesetEntry(ChangesetEntry changesetEntry);
 
 	public ChangesetEntry addChangesetEntry(
-			long userId, long changesetCollectionId, long classNameId,
-			long classPK)
+			long userId, long changesetCollectionId,
+			String classExternalReferenceCode, long classNameId, long classPK)
 		throws PortalException;
 
 	/**
@@ -209,8 +208,19 @@ public interface ChangesetEntryLocalService
 		long changesetCollectionId, long classNameId, long classPK);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public ChangesetEntry fetchChangesetEntry(
+		long changesetCollectionId, String classExternalReferenceCode,
+		long classNameId);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public ChangesetEntry fetchOrAddChangesetEntry(
 			long changesetCollectionId, long classNameId, long classPK)
+		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public ChangesetEntry fetchOrAddChangesetEntry(
+			long changesetCollectionId, String classExternalReferenceCode,
+			long classNameId, long classPK)
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
@@ -243,9 +253,6 @@ public interface ChangesetEntryLocalService
 	public int getChangesetEntriesCount();
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public long getChangesetEntriesCount(long changesetCollectionId);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public long getChangesetEntriesCount(
 		long changesetCollectionId, long classNameId);
 
@@ -263,11 +270,6 @@ public interface ChangesetEntryLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public ChangesetEntry getChangesetEntry(long changesetEntryId)
 		throws PortalException;
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public ChangesetEntry getChangesetEntry(
-			long changesetCollectionId, long classNameId, long classPK)
-		throws NoSuchEntryException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public IndexableActionableDynamicQuery getIndexableActionableDynamicQuery();
@@ -301,3 +303,4 @@ public interface ChangesetEntryLocalService
 	public ChangesetEntry updateChangesetEntry(ChangesetEntry changesetEntry);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:926937412

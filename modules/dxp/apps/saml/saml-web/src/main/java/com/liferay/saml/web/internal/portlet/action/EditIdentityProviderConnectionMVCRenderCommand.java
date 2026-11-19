@@ -8,6 +8,7 @@ package com.liferay.saml.web.internal.portlet.action;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCRenderCommand;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ParamUtil;
+import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.saml.constants.SamlPortletKeys;
 import com.liferay.saml.constants.SamlWebKeys;
@@ -18,10 +19,11 @@ import com.liferay.saml.persistence.service.SamlSpIdpConnectionLocalService;
 import com.liferay.saml.runtime.configuration.SamlProviderConfiguration;
 import com.liferay.saml.runtime.configuration.SamlProviderConfigurationHelper;
 import com.liferay.saml.web.internal.display.context.AttributeMappingDisplayContext;
+import com.liferay.saml.web.internal.util.SamlPermissionUtil;
 
-import javax.portlet.PortletException;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -31,7 +33,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + SamlPortletKeys.SAML_ADMIN,
+		"jakarta.portlet.name=" + SamlPortletKeys.SAML_ADMIN,
 		"mvc.command.name=/admin/edit_identity_provider_connection"
 	},
 	service = MVCRenderCommand.class
@@ -77,6 +79,9 @@ public class EditIdentityProviderConnectionMVCRenderCommand
 			samlSpIdpConnection =
 				_samlSpIdpConnectionLocalService.getSamlSpIdpConnection(
 					samlSpIdpConnectionId);
+
+			SamlPermissionUtil.checkPermission(
+				_portal.getCompanyId(renderRequest), samlSpIdpConnection);
 		}
 
 		renderRequest.setAttribute(
@@ -99,6 +104,9 @@ public class EditIdentityProviderConnectionMVCRenderCommand
 
 		return "/admin/edit_identity_provider_connection.jsp";
 	}
+
+	@Reference
+	private Portal _portal;
 
 	@Reference
 	private SamlProviderConfigurationHelper _samlProviderConfigurationHelper;

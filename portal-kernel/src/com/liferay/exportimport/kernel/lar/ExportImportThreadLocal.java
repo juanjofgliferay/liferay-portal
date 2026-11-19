@@ -12,6 +12,18 @@ import com.liferay.petra.lang.CentralizedThreadLocal;
  */
 public class ExportImportThreadLocal {
 
+	public static Long getExportImportConfigurationId() {
+		return _exportImportConfigurationId.get();
+	}
+
+	public static String getLastImportUserName() {
+		return _lastImportUserName.get();
+	}
+
+	public static String getLastImportUserUuid() {
+		return _lastImportUserUuid.get();
+	}
+
 	public static boolean isDataDeletionImportInProcess() {
 		if (isLayoutDataDeletionImportInProcess() ||
 			isPortletDataDeletionImportInProcess()) {
@@ -99,10 +111,24 @@ public class ExportImportThreadLocal {
 		return _stagingInProcessOnRemoteLive.get();
 	}
 
+	public static void setExportImportConfigurationId(
+		long exportImportConfigurationId) {
+
+		_exportImportConfigurationId.set(exportImportConfigurationId);
+	}
+
 	public static void setInitialLayoutStagingInProcess(
 		boolean initialLayoutStagingInProcess) {
 
 		_initialLayoutStagingInProcess.set(initialLayoutStagingInProcess);
+	}
+
+	public static void setLastImportUserName(String lastImportUserName) {
+		_lastImportUserName.set(lastImportUserName);
+	}
+
+	public static void setLastImportUserUuid(String lastImportUserUuid) {
+		_lastImportUserUuid.set(lastImportUserUuid);
 	}
 
 	public static void setLayoutDataDeletionImportInProcess(
@@ -169,10 +195,20 @@ public class ExportImportThreadLocal {
 		_stagingInProcessOnRemoteLive.set(stagingInProcessOnRemoteLive);
 	}
 
+	private static final ThreadLocal<Long> _exportImportConfigurationId =
+		new CentralizedThreadLocal<>(
+			ExportImportThreadLocal.class + "._exportImportConfigurationId",
+			() -> 0L);
 	private static final ThreadLocal<Boolean> _initialLayoutStagingInProcess =
 		new CentralizedThreadLocal<>(
 			ExportImportThreadLocal.class + "._initialLayoutStagingInProcess",
 			() -> Boolean.FALSE);
+	private static final ThreadLocal<String> _lastImportUserName =
+		new CentralizedThreadLocal<>(
+			ExportImportThreadLocal.class + "._lastImportUserName", () -> null);
+	private static final ThreadLocal<String> _lastImportUserUuid =
+		new CentralizedThreadLocal<>(
+			ExportImportThreadLocal.class + "._lastImportUserUuid", () -> null);
 	private static final ThreadLocal<Boolean>
 		_layoutDataDeletionImportInProcess = new CentralizedThreadLocal<>(
 			ExportImportThreadLocal.class +

@@ -84,6 +84,8 @@ public class SocialRelationModelImpl
 
 	public static final String TABLE_SQL_DROP = "drop table SocialRelation";
 
+	public static final String ENTITY_ALIAS = "socialRelation";
+
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY socialRelation.relationId ASC";
 
@@ -152,7 +154,7 @@ public class SocialRelationModelImpl
 	public static final long RELATIONID_COLUMN_BITMASK = 32L;
 
 	public static final long LOCK_EXPIRATION_TIME = GetterUtil.getLong(
-		com.liferay.portal.util.PropsUtil.get(
+		com.liferay.portal.kernel.util.PropsUtil.get(
 			"lock.expiration.time.com.liferay.social.kernel.model.SocialRelation"));
 
 	public SocialRelationModelImpl() {
@@ -850,3 +852,4 @@ public class SocialRelationModelImpl
 	private SocialRelation _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1095199886

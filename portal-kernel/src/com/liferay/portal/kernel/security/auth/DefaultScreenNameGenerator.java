@@ -34,15 +34,17 @@ public class DefaultScreenNameGenerator implements ScreenNameGenerator {
 		if (Validator.isNotNull(emailAddress)) {
 			screenName = StringUtil.extractFirst(emailAddress, CharPool.AT);
 
+			screenName = StringUtil.shorten(screenName, 64, StringPool.BLANK);
 			screenName = StringUtil.toLowerCase(screenName);
 
 			for (char c : screenName.toCharArray()) {
-				if (!Validator.isChar(c) && !Validator.isDigit(c) &&
-					(c != CharPool.DASH) && (c != CharPool.PERIOD)) {
+				if (Validator.isChar(c) || Validator.isDigit(c) ||
+					(c == CharPool.DASH) || (c == CharPool.PERIOD)) {
 
-					screenName = StringUtil.replace(
-						screenName, c, CharPool.PERIOD);
+					continue;
 				}
+
+				screenName = StringUtil.replace(screenName, c, CharPool.PERIOD);
 			}
 
 			if (screenName.equals(DefaultScreenNameValidator.POSTFIX)) {

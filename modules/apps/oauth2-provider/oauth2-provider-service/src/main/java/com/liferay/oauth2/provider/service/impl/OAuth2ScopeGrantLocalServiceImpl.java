@@ -10,9 +10,14 @@ import com.liferay.oauth2.provider.model.OAuth2Authorization;
 import com.liferay.oauth2.provider.model.OAuth2ScopeGrant;
 import com.liferay.oauth2.provider.scope.liferay.LiferayOAuth2Scope;
 import com.liferay.oauth2.provider.service.base.OAuth2ScopeGrantLocalServiceBaseImpl;
+import com.liferay.oauth2.provider.util.OAuth2TokenContentUtil;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.util.OrderByComparator;
+
+import java.nio.charset.StandardCharsets;
+
+import java.security.MessageDigest;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -116,8 +121,46 @@ public class OAuth2ScopeGrantLocalServiceImpl
 		long companyId, String applicationName, String bundleSymbolicName,
 		String accessTokenContent) {
 
-		return oAuth2ScopeGrantFinder.findByC_A_B_A(
-			companyId, applicationName, bundleSymbolicName, accessTokenContent);
+		accessTokenContent = OAuth2TokenContentUtil.getTokenContent(
+			accessTokenContent);
+
+		List<OAuth2ScopeGrant> oAuth2ScopeGrants = new ArrayList<>();
+
+		for (OAuth2Authorization oAuth2Authorization :
+				oAuth2AuthorizationPersistence.findByC_ATCH(
+					companyId, accessTokenContent.hashCode())) {
+
+			String currentAccessTokenContent =
+				oAuth2Authorization.getAccessTokenContent();
+
+			if (!MessageDigest.isEqual(
+					accessTokenContent.getBytes(StandardCharsets.UTF_8),
+					currentAccessTokenContent.getBytes(
+						StandardCharsets.UTF_8))) {
+
+				continue;
+			}
+
+			for (OAuth2ScopeGrant oAuth2ScopeGrant :
+					oAuth2ScopeGrantPersistence.
+						getOAuth2AuthorizationOAuth2ScopeGrants(
+							oAuth2Authorization.getPrimaryKey())) {
+
+				if (!Objects.equals(
+						applicationName,
+						oAuth2ScopeGrant.getApplicationName()) ||
+					!Objects.equals(
+						bundleSymbolicName,
+						oAuth2ScopeGrant.getBundleSymbolicName())) {
+
+					continue;
+				}
+
+				oAuth2ScopeGrants.add(oAuth2ScopeGrant);
+			}
+		}
+
+		return oAuth2ScopeGrants;
 	}
 
 	@Override
@@ -174,13 +217,8 @@ public class OAuth2ScopeGrantLocalServiceImpl
 
 		String bundleSymbolicName = bundle.getSymbolicName();
 
-		if (!Objects.equals(
-				oAuth2ScopeGrant.getBundleSymbolicName(), bundleSymbolicName)) {
-
-			return false;
-		}
-
-		return true;
+		return Objects.equals(
+			oAuth2ScopeGrant.getBundleSymbolicName(), bundleSymbolicName);
 	}
 
 }

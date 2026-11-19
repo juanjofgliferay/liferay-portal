@@ -9,7 +9,12 @@ import com.liferay.application.list.BasePanelApp;
 import com.liferay.application.list.PanelApp;
 import com.liferay.application.list.constants.PanelCategoryKeys;
 import com.liferay.object.constants.ObjectPortletKeys;
+import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Portlet;
+import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.WebKeys;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -19,12 +24,17 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"panel.app.order:Integer=200",
+		"panel.app.order:Integer=400",
 		"panel.category.key=" + PanelCategoryKeys.CONTROL_PANEL_OBJECT
 	},
 	service = PanelApp.class
 )
 public class ListTypeDefinitionsPanelApp extends BasePanelApp {
+
+	@Override
+	public String getIcon() {
+		return "list-ol";
+	}
 
 	@Override
 	public Portlet getPortlet() {
@@ -36,8 +46,17 @@ public class ListTypeDefinitionsPanelApp extends BasePanelApp {
 		return ObjectPortletKeys.LIST_TYPE_DEFINITIONS;
 	}
 
+	@Override
+	protected Group getGroup(HttpServletRequest httpServletRequest) {
+		ThemeDisplay themeDisplay =
+			(ThemeDisplay)httpServletRequest.getAttribute(
+				WebKeys.THEME_DISPLAY);
+
+		return themeDisplay.getControlPanelGroup();
+	}
+
 	@Reference(
-		target = "(javax.portlet.name=" + ObjectPortletKeys.LIST_TYPE_DEFINITIONS + ")"
+		target = "(jakarta.portlet.name=" + ObjectPortletKeys.LIST_TYPE_DEFINITIONS + ")"
 	)
 	private Portlet _portlet;
 

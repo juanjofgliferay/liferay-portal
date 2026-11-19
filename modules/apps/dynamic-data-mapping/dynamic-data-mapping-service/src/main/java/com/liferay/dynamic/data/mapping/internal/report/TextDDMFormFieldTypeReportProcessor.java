@@ -24,6 +24,7 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.search.BaseModelSearchResult;
 import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.kernel.search.Sort;
+import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
@@ -43,6 +44,8 @@ import org.osgi.service.component.annotations.Reference;
 		"ddm.form.field.type.name=" + DDMFormFieldTypeConstants.COLOR,
 		"ddm.form.field.type.name=" + DDMFormFieldTypeConstants.DATE,
 		"ddm.form.field.type.name=" + DDMFormFieldTypeConstants.DATE_TIME,
+		"ddm.form.field.type.name=" + DDMFormFieldTypeConstants.DOCUMENT_LIBRARY,
+		"ddm.form.field.type.name=" + DDMFormFieldTypeConstants.IMAGE,
 		"ddm.form.field.type.name=" + DDMFormFieldTypeConstants.SEARCH_LOCATION,
 		"ddm.form.field.type.name=" + DDMFormFieldTypeConstants.TEXT
 	},
@@ -102,6 +105,21 @@ public class TextDDMFormFieldTypeReportProcessor
 					DDMFormInstanceReportConstants.
 						EVENT_DELETE_RECORD_VERSION)) {
 
+			if (!nullValue) {
+				totalEntries--;
+			}
+
+			if (!ArrayUtil.contains(
+					JSONUtil.toLongArray(
+						fieldJSONObject.getJSONArray("values"),
+						"formInstanceRecordId"),
+					formInstanceRecordId)) {
+
+				fieldJSONObject.put("totalEntries", totalEntries);
+
+				return fieldJSONObject;
+			}
+
 			DDMFormInstanceRecord ddmFormInstanceRecord =
 				ddmFormInstanceRecordLocalService.getFormInstanceRecord(
 					formInstanceRecordId);
@@ -128,7 +146,10 @@ public class TextDDMFormFieldTypeReportProcessor
 						return ddmFormInstanceRecordId != formInstanceRecordId;
 					});
 
-			for (int i = 0; i < _VALUES_MAX_LENGTH; i++) {
+			int length = Math.min(
+				ddmFormInstanceRecords.size(), _VALUES_MAX_LENGTH);
+
+			for (int i = 0; i < length; i++) {
 				DDMFormInstanceRecord currentDDMFormInstanceRecord =
 					ddmFormInstanceRecords.get(i);
 
@@ -157,10 +178,6 @@ public class TextDDMFormFieldTypeReportProcessor
 						_log.warn(portalException);
 					}
 				}
-			}
-
-			if (!nullValue) {
-				totalEntries--;
 			}
 		}
 

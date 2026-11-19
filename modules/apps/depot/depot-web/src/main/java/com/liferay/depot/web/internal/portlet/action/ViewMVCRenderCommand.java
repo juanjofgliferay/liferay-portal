@@ -5,13 +5,15 @@
 
 package com.liferay.depot.web.internal.portlet.action;
 
-import com.liferay.depot.service.DepotEntryLocalService;
-import com.liferay.depot.web.internal.constants.DepotPortletKeys;
-import com.liferay.depot.web.internal.util.DepotAdminGroupSearchProvider;
+import com.liferay.depot.constants.DepotPortletKeys;
+import com.liferay.depot.service.DepotEntryService;
+import com.liferay.depot.web.internal.display.context.DepotAdminDisplayContext;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCRenderCommand;
+import com.liferay.portal.kernel.util.Portal;
 
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -21,7 +23,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + DepotPortletKeys.DEPOT_ADMIN,
+		"jakarta.portlet.name=" + DepotPortletKeys.DEPOT_ADMIN,
 		"mvc.command.name=/"
 	},
 	service = MVCRenderCommand.class
@@ -33,18 +35,22 @@ public class ViewMVCRenderCommand implements MVCRenderCommand {
 		RenderRequest renderRequest, RenderResponse renderResponse) {
 
 		renderRequest.setAttribute(
-			DepotAdminGroupSearchProvider.class.getName(),
-			_depotAdminGroupSearchProvider);
-		renderRequest.setAttribute(
-			DepotEntryLocalService.class.getName(), _depotEntryLocalService);
+			DepotAdminDisplayContext.class.getName(),
+			new DepotAdminDisplayContext(
+				_depotEntryService, _language,
+				_portal.getLiferayPortletRequest(renderRequest),
+				_portal.getLiferayPortletResponse(renderResponse)));
 
 		return "/view.jsp";
 	}
 
 	@Reference
-	private DepotAdminGroupSearchProvider _depotAdminGroupSearchProvider;
+	private DepotEntryService _depotEntryService;
 
 	@Reference
-	private DepotEntryLocalService _depotEntryLocalService;
+	private Language _language;
+
+	@Reference
+	private Portal _portal;
 
 }

@@ -51,4 +51,12 @@ public interface CommerceTaxMethod
 
 			};
 
+	public com.liferay.portal.kernel.util.UnicodeProperties
+		getTypeSettingsUnicodeProperties();
+
+	public void setTypeSettingsUnicodeProperties(
+		com.liferay.portal.kernel.util.UnicodeProperties
+			typeSettingsUnicodeProperties);
+
 }
+// LIFERAY-SERVICE-BUILDER-HASH:453952667

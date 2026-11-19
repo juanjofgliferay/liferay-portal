@@ -6,10 +6,10 @@
 package com.liferay.exportimport.resources.importer.internal.util;
 
 import com.liferay.asset.kernel.service.AssetTagLocalService;
+import com.liferay.document.library.helper.DLURLHelper;
 import com.liferay.document.library.kernel.service.DLAppLocalService;
 import com.liferay.document.library.kernel.service.DLFileEntryLocalService;
 import com.liferay.document.library.kernel.service.DLFolderLocalService;
-import com.liferay.document.library.util.DLURLHelper;
 import com.liferay.dynamic.data.mapping.io.DDMFormDeserializer;
 import com.liferay.dynamic.data.mapping.service.DDMStructureLocalService;
 import com.liferay.dynamic.data.mapping.service.DDMTemplateLocalService;
@@ -39,12 +39,12 @@ import com.liferay.portal.kernel.xml.SAXReader;
 import com.liferay.portal.plugin.PluginPackageUtil;
 import com.liferay.portal.search.index.IndexStatusManager;
 
+import jakarta.servlet.ServletContext;
+
 import java.net.URL;
 import java.net.URLConnection;
 
 import java.util.Set;
-
-import javax.servlet.ServletContext;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.service.component.annotations.Activate;
@@ -69,6 +69,8 @@ public class ImporterFactory {
 			PluginPackageProperties pluginPackageProperties)
 		throws Exception {
 
+		Importer importer = null;
+
 		String resourcesDir = pluginPackageProperties.getResourcesDir();
 
 		Set<String> resourcePaths = servletContext.getResourcePaths(
@@ -87,8 +89,6 @@ public class ImporterFactory {
 			publicLARURL = servletContext.getResource(
 				RESOURCES_DIR.concat("public.lar"));
 		}
-
-		Importer importer = null;
 
 		if ((privateLARURL != null) || (publicLARURL != null)) {
 			LARImporter larImporter = _getLARImporter();
@@ -252,10 +252,10 @@ public class ImporterFactory {
 	private GroupLocalService _groupLocalService;
 
 	@Reference
-	private IndexerRegistry _indexerRegistry;
+	private IndexStatusManager _indexStatusManager;
 
 	@Reference
-	private IndexStatusManager _indexStatusManager;
+	private IndexerRegistry _indexerRegistry;
 
 	@Reference
 	private JournalArticleLocalService _journalArticleLocalService;

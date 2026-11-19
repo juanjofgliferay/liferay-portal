@@ -5,6 +5,7 @@
 
 package com.liferay.headless.delivery.internal.resource.v1_0.factory;
 
+import com.liferay.headless.delivery.internal.resource.v1_0.BaseContentSetElementResourceImpl;
 import com.liferay.headless.delivery.internal.security.permission.LiberalPermissionChecker;
 import com.liferay.headless.delivery.resource.v1_0.ContentSetElementResource;
 import com.liferay.portal.kernel.model.Company;
@@ -27,6 +28,15 @@ import com.liferay.portal.odata.filter.ExpressionConvert;
 import com.liferay.portal.odata.filter.FilterParserProvider;
 import com.liferay.portal.odata.sort.SortParserProvider;
 import com.liferay.portal.vulcan.accept.language.AcceptLanguage;
+import com.liferay.portal.vulcan.feature.flag.FeatureFlagChecker;
+
+import jakarta.annotation.Generated;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.core.UriInfo;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
@@ -37,13 +47,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.function.Function;
-
-import javax.annotation.Generated;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import javax.ws.rs.core.UriInfo;
 
 import org.osgi.service.component.ComponentServiceObjects;
 import org.osgi.service.component.annotations.Component;
@@ -179,6 +182,14 @@ public class ContentSetElementResourceFactoryImpl
 			UriInfo uriInfo, User user)
 		throws Throwable {
 
+		if (!_featureFlagChecker.isEnabled(
+				user.getCompanyId(),
+				BaseContentSetElementResourceImpl.class.getMethod(
+					method.getName(), method.getParameterTypes()))) {
+
+			throw new NotFoundException();
+		}
+
 		String name = PrincipalThreadLocal.getName();
 
 		PrincipalThreadLocal.setName(user.getUserId());
@@ -251,6 +262,9 @@ public class ContentSetElementResourceFactoryImpl
 		target = "(result.class.name=com.liferay.portal.kernel.search.filter.Filter)"
 	)
 	private ExpressionConvert<Filter> _expressionConvert;
+
+	@Reference
+	private FeatureFlagChecker _featureFlagChecker;
 
 	@Reference
 	private FilterParserProvider _filterParserProvider;
@@ -333,3 +347,4 @@ public class ContentSetElementResourceFactoryImpl
 	}
 
 }
+// LIFERAY-REST-BUILDER-HASH:450422484

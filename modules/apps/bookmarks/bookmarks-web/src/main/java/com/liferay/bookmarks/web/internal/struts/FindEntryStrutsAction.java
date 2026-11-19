@@ -10,8 +10,8 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 
@@ -20,7 +20,8 @@ import org.osgi.service.component.annotations.Component;
  * @author Sergio González
  */
 @Component(
-	property = "path=/bookmarks/find_entry", service = StrutsAction.class
+	property = {"layout.required=false", "path=/bookmarks/find_entry"},
+	service = StrutsAction.class
 )
 public class FindEntryStrutsAction implements StrutsAction {
 

@@ -257,14 +257,6 @@ public class CPOptionLocalServiceWrapper
 	}
 
 	@Override
-	public CPOption fetchByExternalReferenceCode(
-		String externalReferenceCode, long companyId) {
-
-		return _cpOptionLocalService.fetchByExternalReferenceCode(
-			externalReferenceCode, companyId);
-	}
-
-	@Override
 	public CPOption fetchCPOption(long CPOptionId) {
 		return _cpOptionLocalService.fetchCPOption(CPOptionId);
 	}
@@ -408,6 +400,18 @@ public class CPOptionLocalServiceWrapper
 		return _cpOptionLocalService.getIndexableActionableDynamicQuery();
 	}
 
+	@Override
+	public CPOption getOrAddEmptyCPOption(
+			String externalReferenceCode, long companyId, long userId,
+			java.util.Map<java.util.Locale, String> nameMap,
+			String commerceOptionTypeKey, boolean skuContributor, String key)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _cpOptionLocalService.getOrAddEmptyCPOption(
+			externalReferenceCode, companyId, userId, nameMap,
+			commerceOptionTypeKey, skuContributor, key);
+	}
+
 	/**
 	 * Returns the OSGi service identifier.
 	 *
@@ -515,3 +519,4 @@ public class CPOptionLocalServiceWrapper
 	private CPOptionLocalService _cpOptionLocalService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1428041238

@@ -161,6 +161,21 @@ public interface SamlSpIdpConnectionModel
 	public void setModifiedDate(Date modifiedDate);
 
 	/**
+	 * Returns the saml idp entity ID of this saml sp idp connection.
+	 *
+	 * @return the saml idp entity ID of this saml sp idp connection
+	 */
+	@AutoEscape
+	public String getSamlIdpEntityId();
+
+	/**
+	 * Sets the saml idp entity ID of this saml sp idp connection.
+	 *
+	 * @param samlIdpEntityId the saml idp entity ID of this saml sp idp connection
+	 */
+	public void setSamlIdpEntityId(String samlIdpEntityId);
+
+	/**
 	 * Returns the assertion signature required of this saml sp idp connection.
 	 *
 	 * @return the assertion signature required of this saml sp idp connection
@@ -334,21 +349,6 @@ public interface SamlSpIdpConnectionModel
 	public void setNameIdFormat(String nameIdFormat);
 
 	/**
-	 * Returns the saml idp entity ID of this saml sp idp connection.
-	 *
-	 * @return the saml idp entity ID of this saml sp idp connection
-	 */
-	@AutoEscape
-	public String getSamlIdpEntityId();
-
-	/**
-	 * Sets the saml idp entity ID of this saml sp idp connection.
-	 *
-	 * @param samlIdpEntityId the saml idp entity ID of this saml sp idp connection
-	 */
-	public void setSamlIdpEntityId(String samlIdpEntityId);
-
-	/**
 	 * Returns the sign authn request of this saml sp idp connection.
 	 *
 	 * @return the sign authn request of this saml sp idp connection
@@ -428,3 +428,4 @@ public interface SamlSpIdpConnectionModel
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1767427520

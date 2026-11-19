@@ -5,9 +5,11 @@
 
 package com.liferay.portal.tools.rest.builder.internal.freemarker.tool.java.parser;
 
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.util.CamelCaseUtil;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.tools.rest.builder.internal.freemarker.tool.java.JavaMethodParameter;
 import com.liferay.portal.tools.rest.builder.internal.freemarker.tool.java.JavaMethodSignature;
 import com.liferay.portal.tools.rest.builder.internal.freemarker.tool.java.parser.util.OpenAPIParserUtil;
@@ -18,8 +20,6 @@ import com.liferay.portal.tools.rest.builder.internal.yaml.openapi.OpenAPIYAML;
 import com.liferay.portal.tools.rest.builder.internal.yaml.openapi.Operation;
 import com.liferay.portal.tools.rest.builder.internal.yaml.openapi.Parameter;
 import com.liferay.portal.tools.rest.builder.internal.yaml.openapi.Schema;
-import com.liferay.portal.vulcan.pagination.Page;
-import com.liferay.portal.vulcan.pagination.Pagination;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -86,6 +86,15 @@ public class GraphQLOpenAPIParser {
 			methodAnnotations.add(sb.toString());
 		}
 
+		String featureFlag = operation.getFeatureFlag();
+
+		if (Validator.isNotNull(featureFlag)) {
+			methodAnnotations.add(
+				StringBundler.concat(
+					"@com.liferay.portal.vulcan.feature.flag.FeatureFlag(\"",
+					featureFlag, "\")"));
+		}
+
 		String methodAnnotation = _getMethodAnnotationGraphQLName(
 			javaMethodSignature);
 
@@ -133,7 +142,7 @@ public class GraphQLOpenAPIParser {
 
 			if (Objects.equals(
 					javaMethodParameter.getParameterType(),
-					Pagination.class.getName())) {
+					"com.liferay.portal.vulcan.pagination.Pagination")) {
 
 				javaMethodParameters.add(
 					new JavaMethodParameter("pageSize", int.class.getName()));
@@ -153,47 +162,40 @@ public class GraphQLOpenAPIParser {
 		ConfigYAML configYAML, OpenAPIYAML openAPIYAML,
 		Predicate<Operation> predicate, String schemaName) {
 
-		List<JavaMethodSignature> javaMethodSignatures = new ArrayList<>();
-
-		List<JavaMethodSignature> resourceJavaMethodSignatures =
+		return TransformUtil.transform(
 			ResourceOpenAPIParser.getJavaMethodSignatures(
-				configYAML, openAPIYAML, schemaName);
+				configYAML, openAPIYAML, schemaName),
+			javaMethodSignature -> {
+				Operation operation = javaMethodSignature.getOperation();
 
-		for (JavaMethodSignature resourceJavaMethodSignature :
-				resourceJavaMethodSignatures) {
+				if (!predicate.test(operation)) {
+					return null;
+				}
 
-			Operation operation = resourceJavaMethodSignature.getOperation();
+				String returnType = javaMethodSignature.getReturnType();
 
-			if (!predicate.test(operation)) {
-				continue;
-			}
+				if (returnType.startsWith(
+						"com.liferay.portal.vulcan.pagination.Page<")) {
 
-			String returnType = resourceJavaMethodSignature.getReturnType();
+					String pageClassName =
+						"com.liferay.portal.vulcan.pagination.Page";
 
-			if (returnType.startsWith(Page.class.getName() + "<")) {
-				String pageClassName = Page.class.getName();
+					String className = returnType.substring(
+						pageClassName.length() + 1, returnType.length() - 1);
 
-				String className = returnType.substring(
-					pageClassName.length() + 1, returnType.length() - 1);
+					returnType = StringBundler.concat(
+						Collection.class.getName(), "<", className, ">");
+				}
 
-				returnType = StringBundler.concat(
-					Collection.class.getName(), "<", className, ">");
-			}
-
-			List<JavaMethodParameter> javaMethodParameters =
-				_getJavaMethodParameters(resourceJavaMethodSignature);
-
-			javaMethodSignatures.add(
-				new JavaMethodSignature(
-					resourceJavaMethodSignature.getPath(),
-					resourceJavaMethodSignature.getPathItem(), operation,
-					resourceJavaMethodSignature.getRequestBodyMediaTypes(),
-					resourceJavaMethodSignature.getSchemaName(),
-					javaMethodParameters,
-					resourceJavaMethodSignature.getMethodName(), returnType));
-		}
-
-		return javaMethodSignatures;
+				return new JavaMethodSignature(
+					javaMethodSignature.getPath(),
+					javaMethodSignature.getPathItem(), operation,
+					javaMethodSignature.getRequestBodyMediaTypes(),
+					javaMethodSignature.getSchemaName(),
+					_getJavaMethodParameters(javaMethodSignature),
+					javaMethodSignature.getMethodName(), returnType,
+					javaMethodSignature.getParentSchemaName());
+			});
 	}
 
 	private static String _getMethodAnnotationGraphQLName(

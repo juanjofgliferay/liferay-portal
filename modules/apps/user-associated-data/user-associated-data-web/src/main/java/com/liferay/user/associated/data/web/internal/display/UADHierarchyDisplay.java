@@ -22,6 +22,12 @@ import com.liferay.user.associated.data.display.UADHierarchyDeclaration;
 import com.liferay.user.associated.data.web.internal.registry.UADRegistry;
 import com.liferay.user.associated.data.web.internal.util.UADLanguageUtil;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.io.Serializable;
 
 import java.lang.reflect.InvocationTargetException;
@@ -35,12 +41,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.PortletURL;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Drew Brokke
@@ -441,14 +441,16 @@ public class UADHierarchyDisplay {
 					_uadHierarchyDeclaration.getNoncontainerUADDisplays()) {
 
 			for (Object userItem : allUserItems) {
-				if ((userItem != null) &&
-					noncontainerUADDisplay.isTypeEntity(userItem) &&
-					parentContainerId.equals(
+				if ((userItem == null) ||
+					!noncontainerUADDisplay.isTypeEntity(userItem) ||
+					!parentContainerId.equals(
 						noncontainerUADDisplay.getParentContainerId(
 							userItem))) {
 
-					searchResults.add(userItem);
+					continue;
 				}
+
+				searchResults.add(userItem);
 			}
 		}
 
@@ -479,11 +481,8 @@ public class UADHierarchyDisplay {
 		Map<String, List<Serializable>> entitiesMap,
 		List<Serializable> entities, String typeKey) {
 
-		if (!entitiesMap.containsKey(typeKey)) {
-			entitiesMap.put(typeKey, new ArrayList<>());
-		}
-
-		List<Serializable> entitiesList = entitiesMap.get(typeKey);
+		List<Serializable> entitiesList = entitiesMap.computeIfAbsent(
+			typeKey, key -> new ArrayList<>());
 
 		entitiesList.addAll(entities);
 	}
@@ -572,9 +571,11 @@ public class UADHierarchyDisplay {
 							parentContainerUADDisplay.getTypeClass(),
 							parentContainerId, searchItem);
 
-					if (topLevelContainer != null) {
-						containerItem = true;
+					if (topLevelContainer == null) {
+						continue;
 					}
+
+					containerItem = true;
 				}
 
 				if (containerItem) {

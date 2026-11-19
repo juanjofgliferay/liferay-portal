@@ -23,6 +23,7 @@ import com.liferay.portal.workflow.metrics.rest.dto.v1_0.PauseNodeKeys;
 import com.liferay.portal.workflow.metrics.rest.dto.v1_0.SLA;
 import com.liferay.portal.workflow.metrics.rest.dto.v1_0.StartNodeKeys;
 import com.liferay.portal.workflow.metrics.rest.dto.v1_0.StopNodeKeys;
+import com.liferay.portal.workflow.metrics.rest.internal.security.permission.WorkflowMetricsPermissionUtil;
 import com.liferay.portal.workflow.metrics.rest.resource.v1_0.SLAResource;
 import com.liferay.portal.workflow.metrics.service.WorkflowMetricsSLADefinitionLocalService;
 
@@ -44,6 +45,8 @@ public class SLAResourceImpl extends BaseSLAResourceImpl {
 
 	@Override
 	public void deleteSLA(Long slaId) throws Exception {
+		WorkflowMetricsPermissionUtil.check();
+
 		_workflowMetricsSLADefinitionLocalService.
 			deactivateWorkflowMetricsSLADefinition(
 				slaId, _createServiceContext());
@@ -130,6 +133,8 @@ public class SLAResourceImpl extends BaseSLAResourceImpl {
 
 	@Override
 	public SLA postProcessSLA(Long processId, SLA sla) throws Exception {
+		WorkflowMetricsPermissionUtil.check();
+
 		return _toSLA(
 			_workflowMetricsSLADefinitionLocalService.
 				addWorkflowMetricsSLADefinition(
@@ -143,6 +148,8 @@ public class SLAResourceImpl extends BaseSLAResourceImpl {
 
 	@Override
 	public SLA putSLA(Long slaId, SLA sla) throws Exception {
+		WorkflowMetricsPermissionUtil.check();
+
 		return _toSLA(
 			_workflowMetricsSLADefinitionLocalService.
 				updateWorkflowMetricsSLADefinition(
@@ -181,8 +188,6 @@ public class SLAResourceImpl extends BaseSLAResourceImpl {
 
 				return new NodeKey() {
 					{
-						id = nodeKeyStringParts[0];
-
 						setExecutionType(
 							() -> {
 								if (nodeKeyStringParts.length == 1) {
@@ -191,6 +196,7 @@ public class SLAResourceImpl extends BaseSLAResourceImpl {
 
 								return nodeKeyStringParts[1];
 							});
+						setId(() -> nodeKeyStringParts[0]);
 					}
 				};
 			},
@@ -202,15 +208,12 @@ public class SLAResourceImpl extends BaseSLAResourceImpl {
 
 		return new SLA() {
 			{
-				calendarKey = workflowMetricsSLADefinition.getCalendarKey();
-				dateModified = workflowMetricsSLADefinition.getModifiedDate();
-				description = workflowMetricsSLADefinition.getDescription();
-				duration = workflowMetricsSLADefinition.getDuration();
-				id = workflowMetricsSLADefinition.getPrimaryKey();
-				name = workflowMetricsSLADefinition.getName();
-				processId = workflowMetricsSLADefinition.getProcessId();
-				status = workflowMetricsSLADefinition.getStatus();
-
+				setCalendarKey(workflowMetricsSLADefinition::getCalendarKey);
+				setDateModified(workflowMetricsSLADefinition::getModifiedDate);
+				setDescription(workflowMetricsSLADefinition::getDescription);
+				setDuration(workflowMetricsSLADefinition::getDuration);
+				setId(workflowMetricsSLADefinition::getPrimaryKey);
+				setName(workflowMetricsSLADefinition::getName);
 				setPauseNodeKeys(
 					() -> {
 						String nodeKeysString =
@@ -222,11 +225,13 @@ public class SLAResourceImpl extends BaseSLAResourceImpl {
 
 						return new PauseNodeKeys() {
 							{
-								nodeKeys = _toNodeKeys(nodeKeysString);
-								status = WorkflowConstants.STATUS_APPROVED;
+								setNodeKeys(() -> _toNodeKeys(nodeKeysString));
+								setStatus(
+									() -> WorkflowConstants.STATUS_APPROVED);
 							}
 						};
 					});
+				setProcessId(workflowMetricsSLADefinition::getProcessId);
 				setStartNodeKeys(
 					() -> {
 						String nodeKeysString =
@@ -238,11 +243,12 @@ public class SLAResourceImpl extends BaseSLAResourceImpl {
 
 						return new StartNodeKeys() {
 							{
-								nodeKeys = _toNodeKeys(nodeKeysString);
-								status = _toStatus(nodeKeysString);
+								setNodeKeys(() -> _toNodeKeys(nodeKeysString));
+								setStatus(() -> _toStatus(nodeKeysString));
 							}
 						};
 					});
+				setStatus(workflowMetricsSLADefinition::getStatus);
 				setStopNodeKeys(
 					() -> {
 						String nodeKeysString =
@@ -254,8 +260,8 @@ public class SLAResourceImpl extends BaseSLAResourceImpl {
 
 						return new StopNodeKeys() {
 							{
-								nodeKeys = _toNodeKeys(nodeKeysString);
-								status = _toStatus(nodeKeysString);
+								setNodeKeys(() -> _toNodeKeys(nodeKeysString));
+								setStatus(() -> _toStatus(nodeKeysString));
 							}
 						};
 					});

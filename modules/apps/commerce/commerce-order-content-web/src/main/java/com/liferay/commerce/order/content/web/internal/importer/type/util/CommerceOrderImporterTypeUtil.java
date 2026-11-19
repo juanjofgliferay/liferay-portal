@@ -16,6 +16,7 @@ import com.liferay.commerce.order.importer.item.CommerceOrderImporterItemImpl;
 import com.liferay.commerce.price.CommerceOrderPriceCalculation;
 import com.liferay.commerce.service.CommerceOrderItemService;
 import com.liferay.commerce.service.CommerceOrderService;
+import com.liferay.commerce.util.CommerceOrderThreadLocal;
 import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringPool;
@@ -42,111 +43,6 @@ import org.apache.commons.csv.CSVFormat;
  */
 public class CommerceOrderImporterTypeUtil {
 
-	public static List<CommerceOrderImporterItem> getCommerceOrderImporterItems(
-			CommerceContextFactory commerceContextFactory,
-			CommerceOrder commerceOrder,
-			CommerceOrderImporterItemImpl[] commerceOrderImporterItemImpls,
-			CommerceOrderItemService commerceOrderItemService,
-			CommerceOrderPriceCalculation commerceOrderPriceCalculation,
-			CommerceOrderService commerceOrderService,
-			UserLocalService userLocalService)
-		throws Exception {
-
-		CommerceOrder tempCommerceOrder = commerceOrderService.addCommerceOrder(
-			commerceOrder.getGroupId(), commerceOrder.getCommerceAccountId(),
-			commerceOrder.getCommerceCurrencyId(),
-			commerceOrder.getCommerceOrderTypeId());
-
-		tempCommerceOrder.setManuallyAdjusted(true);
-
-		tempCommerceOrder = commerceOrderService.updateCommerceOrder(
-			tempCommerceOrder);
-
-		CommerceContext commerceContext = commerceContextFactory.create(
-			tempCommerceOrder.getCompanyId(), tempCommerceOrder.getGroupId(),
-			PrincipalThreadLocal.getUserId(),
-			tempCommerceOrder.getCommerceOrderId(),
-			tempCommerceOrder.getCommerceAccountId());
-
-		ServiceContext serviceContext = _getServiceContext(userLocalService);
-
-		_addPreviousCommerceOrderItems(
-			commerceContext, commerceOrder,
-			tempCommerceOrder.getCommerceOrderId(), commerceOrderItemService,
-			serviceContext);
-
-		for (CommerceOrderImporterItemImpl commerceOrderImporterItemImpl :
-				commerceOrderImporterItemImpls) {
-
-			try {
-
-				// Temporary commerce order item
-
-				CommerceOrderItem commerceOrderItem =
-					commerceOrderItemService.addOrUpdateCommerceOrderItem(
-						tempCommerceOrder.getCommerceOrderId(),
-						commerceOrderImporterItemImpl.getCPInstanceId(),
-						commerceOrderImporterItemImpl.getJSON(),
-						commerceOrderImporterItemImpl.getQuantity(), 0,
-						BigDecimal.ZERO,
-						commerceOrderImporterItemImpl.getUnitOfMeasureKey(),
-						commerceContext, serviceContext);
-
-				commerceOrderImporterItemImpl.setCommerceOrderItemPrice(
-					commerceOrderPriceCalculation.getCommerceOrderItemPrice(
-						tempCommerceOrder.getCommerceCurrency(),
-						commerceOrderItem));
-			}
-			catch (Exception exception) {
-				if (exception instanceof CommerceOrderValidatorException) {
-					CommerceOrderValidatorException
-						commerceOrderValidatorException =
-							(CommerceOrderValidatorException)exception;
-
-					commerceOrderImporterItemImpl.setErrorMessages(
-						TransformUtil.transformToArray(
-							commerceOrderValidatorException.
-								getCommerceOrderValidatorResults(),
-							commerceOrderValidatorResult ->
-								commerceOrderValidatorResult.
-									getLocalizedMessage(),
-							String.class));
-				}
-
-				if (exception instanceof PrincipalException) {
-					commerceOrderImporterItemImpl.setErrorMessages(
-						new String[] {
-							LanguageUtil.get(
-								serviceContext.getLocale(),
-								"the-product-is-no-longer-available")
-						});
-				}
-				else {
-					String[] errorMessages =
-						commerceOrderImporterItemImpl.getErrorMessages();
-
-					if ((errorMessages == null) ||
-						ArrayUtil.isNotEmpty(errorMessages)) {
-
-						commerceOrderImporterItemImpl.setErrorMessages(
-							TransformUtil.transform(
-								errorMessages,
-								errorMessage -> LanguageUtil.get(
-									serviceContext.getLocale(), errorMessage),
-								String.class));
-					}
-				}
-			}
-		}
-
-		// Delete temporary commerce order
-
-		commerceOrderService.deleteCommerceOrder(
-			tempCommerceOrder.getCommerceOrderId());
-
-		return ListUtil.fromArray(commerceOrderImporterItemImpls);
-	}
-
 	public static CSVFormat getCSVFormat(
 		CommerceOrderImporterTypeConfiguration
 			commerceOrderImporterTypeConfiguration) {
@@ -166,6 +62,126 @@ public class CommerceOrderImporterTypeUtil {
 		csvFormat = csvFormat.withNullString(StringPool.BLANK);
 
 		return csvFormat;
+	}
+
+	public static List<CommerceOrderImporterItem> getCommerceOrderImporterItems(
+			CommerceContextFactory commerceContextFactory,
+			CommerceOrder commerceOrder,
+			CommerceOrderImporterItemImpl[] commerceOrderImporterItemImpls,
+			CommerceOrderItemService commerceOrderItemService,
+			CommerceOrderPriceCalculation commerceOrderPriceCalculation,
+			CommerceOrderService commerceOrderService,
+			UserLocalService userLocalService)
+		throws Exception {
+
+		boolean skipValidateAccountLimit =
+			CommerceOrderThreadLocal.isSkipValidateAccountLimit();
+
+		try {
+			CommerceOrderThreadLocal.setSkipValidateAccountLimit(true);
+
+			CommerceOrder tempCommerceOrder =
+				commerceOrderService.addCommerceOrder(
+					commerceOrder.getGroupId(),
+					commerceOrder.getCommerceAccountId(),
+					commerceOrder.getCommerceCurrencyCode(),
+					commerceOrder.getCommerceOrderTypeId());
+
+			tempCommerceOrder.setManuallyAdjusted(true);
+
+			tempCommerceOrder = commerceOrderService.updateCommerceOrder(
+				tempCommerceOrder);
+
+			CommerceContext commerceContext = commerceContextFactory.create(
+				tempCommerceOrder.getCommerceAccountId(),
+				tempCommerceOrder.getGroupId(), null,
+				tempCommerceOrder.getCommerceOrderId(),
+				tempCommerceOrder.getCompanyId());
+
+			ServiceContext serviceContext = _getServiceContext(
+				userLocalService);
+
+			_addPreviousCommerceOrderItems(
+				commerceContext, commerceOrder,
+				tempCommerceOrder.getCommerceOrderId(),
+				commerceOrderItemService, serviceContext);
+
+			for (CommerceOrderImporterItemImpl commerceOrderImporterItemImpl :
+					commerceOrderImporterItemImpls) {
+
+				try {
+
+					// Temporary commerce order item
+
+					CommerceOrderItem commerceOrderItem =
+						commerceOrderItemService.addOrUpdateCommerceOrderItem(
+							tempCommerceOrder.getCommerceOrderId(),
+							commerceOrderImporterItemImpl.getCPInstanceId(),
+							commerceOrderImporterItemImpl.getJSON(),
+							commerceOrderImporterItemImpl.getQuantity(), 0,
+							BigDecimal.ZERO,
+							commerceOrderImporterItemImpl.getUnitOfMeasureKey(),
+							commerceContext, serviceContext);
+
+					commerceOrderImporterItemImpl.setCommerceOrderItemPrice(
+						commerceOrderPriceCalculation.getCommerceOrderItemPrice(
+							tempCommerceOrder.getCommerceCurrency(),
+							commerceOrderItem));
+				}
+				catch (Exception exception) {
+					if (exception instanceof CommerceOrderValidatorException) {
+						CommerceOrderValidatorException
+							commerceOrderValidatorException =
+								(CommerceOrderValidatorException)exception;
+
+						commerceOrderImporterItemImpl.setErrorMessages(
+							TransformUtil.transformToArray(
+								commerceOrderValidatorException.
+									getCommerceOrderValidatorResults(),
+								commerceOrderValidatorResult ->
+									commerceOrderValidatorResult.
+										getLocalizedMessage(),
+								String.class));
+					}
+
+					if (exception instanceof PrincipalException) {
+						commerceOrderImporterItemImpl.setErrorMessages(
+							new String[] {
+								LanguageUtil.get(
+									serviceContext.getLocale(),
+									"the-product-is-no-longer-available")
+							});
+					}
+					else {
+						String[] errorMessages =
+							commerceOrderImporterItemImpl.getErrorMessages();
+
+						if ((errorMessages == null) ||
+							ArrayUtil.isNotEmpty(errorMessages)) {
+
+							commerceOrderImporterItemImpl.setErrorMessages(
+								TransformUtil.transform(
+									errorMessages,
+									errorMessage -> LanguageUtil.get(
+										serviceContext.getLocale(),
+										errorMessage),
+									String.class));
+						}
+					}
+				}
+			}
+
+			// Delete temporary commerce order
+
+			commerceOrderService.deleteCommerceOrder(
+				tempCommerceOrder.getCommerceOrderId());
+
+			return ListUtil.fromArray(commerceOrderImporterItemImpls);
+		}
+		finally {
+			CommerceOrderThreadLocal.setSkipValidateAccountLimit(
+				skipValidateAccountLimit);
+		}
 	}
 
 	private static void _addPreviousCommerceOrderItems(

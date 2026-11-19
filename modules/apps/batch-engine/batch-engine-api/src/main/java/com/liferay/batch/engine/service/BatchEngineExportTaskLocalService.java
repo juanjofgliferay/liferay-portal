@@ -72,11 +72,11 @@ public interface BatchEngineExportTaskLocalService
 	public BatchEngineExportTask addBatchEngineExportTask(
 		BatchEngineExportTask batchEngineExportTask);
 
-	@Transactional(propagation = Propagation.REQUIRES_NEW)
+	@Transactional(propagation = Propagation.NESTED)
 	public BatchEngineExportTask addBatchEngineExportTask(
 		String externalReferenceCode, long companyId, long userId,
 		String callbackURL, String className, String contentType,
-		String executeStatus, List<String> fieldNamesList,
+		String executeStatus, List<String> fieldNames,
 		Map<String, Serializable> parameters, String taskItemDelegateName);
 
 	/**
@@ -88,6 +88,12 @@ public interface BatchEngineExportTaskLocalService
 	@Transactional(enabled = false)
 	public BatchEngineExportTask createBatchEngineExportTask(
 		long batchEngineExportTaskId);
+
+	public BatchEngineExportTask createBatchEngineExportTask(
+		long batchEngineExportTaskId, String externalReferenceCode,
+		long companyId, long userId, String callbackURL, String className,
+		String contentType, String executeStatus, List<String> fieldNames,
+		Map<String, Serializable> parameters, String taskItemDelegateName);
 
 	/**
 	 * @throws PortalException
@@ -275,15 +281,6 @@ public interface BatchEngineExportTaskLocalService
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<BatchEngineExportTask> getBatchEngineExportTasks(
-		long companyId, int start, int end);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<BatchEngineExportTask> getBatchEngineExportTasks(
-		long companyId, int start, int end,
-		OrderByComparator<BatchEngineExportTask> orderByComparator);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<BatchEngineExportTask> getBatchEngineExportTasks(
 		String executeStatus);
 
 	/**
@@ -293,9 +290,6 @@ public interface BatchEngineExportTaskLocalService
 	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public int getBatchEngineExportTasksCount();
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getBatchEngineExportTasksCount(long companyId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public BatchEngineExportTaskContentBlobModel getContentBlobModel(
@@ -337,7 +331,9 @@ public interface BatchEngineExportTaskLocalService
 	 * @return the batch engine export task that was updated
 	 */
 	@Indexable(type = IndexableType.REINDEX)
+	@Transactional(propagation = Propagation.NESTED)
 	public BatchEngineExportTask updateBatchEngineExportTask(
 		BatchEngineExportTask batchEngineExportTask);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:726841202

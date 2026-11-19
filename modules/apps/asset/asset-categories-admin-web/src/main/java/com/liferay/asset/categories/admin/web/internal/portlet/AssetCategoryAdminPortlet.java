@@ -16,26 +16,39 @@ import com.liferay.asset.kernel.NoSuchClassTypeException;
 import com.liferay.asset.kernel.exception.AssetCategoryLimitException;
 import com.liferay.asset.kernel.exception.AssetCategoryNameException;
 import com.liferay.asset.kernel.exception.DuplicateCategoryException;
+import com.liferay.asset.kernel.exception.DuplicateCategoryExternalReferenceCodeException;
 import com.liferay.asset.kernel.exception.DuplicateVocabularyException;
+import com.liferay.asset.kernel.exception.DuplicateVocabularyExternalReferenceCodeException;
 import com.liferay.asset.kernel.exception.InvalidAssetCategoryException;
 import com.liferay.asset.kernel.exception.NoSuchCategoryException;
 import com.liferay.asset.kernel.exception.NoSuchEntryException;
 import com.liferay.asset.kernel.exception.NoSuchVocabularyException;
 import com.liferay.asset.kernel.exception.VocabularyNameException;
+import com.liferay.asset.kernel.model.AssetCategory;
+import com.liferay.asset.kernel.model.AssetVocabulary;
+import com.liferay.asset.kernel.model.AssetVocabularyConstants;
+import com.liferay.asset.kernel.service.AssetCategoryLocalService;
+import com.liferay.asset.kernel.service.AssetVocabularyService;
+import com.liferay.change.tracking.spi.history.util.CTTimelineUtil;
 import com.liferay.item.selector.ItemSelector;
 import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
+import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCPortlet;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.servlet.SessionErrors;
+import com.liferay.portal.kernel.util.ParamUtil;
+
+import jakarta.portlet.Portlet;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
 
 import java.io.IOException;
 
 import java.util.Map;
-
-import javax.portlet.Portlet;
-import javax.portlet.PortletException;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
+import java.util.Objects;
 
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -57,13 +70,13 @@ import org.osgi.service.component.annotations.Reference;
 		"com.liferay.portlet.private-session-attributes=false",
 		"com.liferay.portlet.render-weight=50",
 		"com.liferay.portlet.use-default-template=true",
-		"javax.portlet.display-name=Asset Category Admin",
-		"javax.portlet.init-param.template-path=/META-INF/resources/",
-		"javax.portlet.init-param.view-template=/view.jsp",
-		"javax.portlet.name=" + AssetCategoriesAdminPortletKeys.ASSET_CATEGORIES_ADMIN,
-		"javax.portlet.resource-bundle=content.Language",
-		"javax.portlet.security-role-ref=administrator",
-		"javax.portlet.version=3.0"
+		"jakarta.portlet.display-name=Asset Category Admin",
+		"jakarta.portlet.init-param.template-path=/META-INF/resources/",
+		"jakarta.portlet.init-param.view-template=/view.jsp",
+		"jakarta.portlet.name=" + AssetCategoriesAdminPortletKeys.ASSET_CATEGORIES_ADMIN,
+		"jakarta.portlet.resource-bundle=content.Language",
+		"jakarta.portlet.security-role-ref=administrator",
+		"jakarta.portlet.version=4.0"
 	},
 	service = Portlet.class
 )
@@ -82,7 +95,8 @@ public class AssetCategoryAdminPortlet extends MVCPortlet {
 			RenderRequest renderRequest, RenderResponse renderResponse)
 		throws IOException, PortletException {
 
-		if (SessionErrors.contains(
+		if (_isStaleCategory(renderRequest, renderResponse) ||
+			SessionErrors.contains(
 				renderRequest, NoSuchCategoryException.class.getName()) ||
 			SessionErrors.contains(
 				renderRequest, NoSuchVocabularyException.class.getName()) ||
@@ -103,6 +117,15 @@ public class AssetCategoryAdminPortlet extends MVCPortlet {
 			_assetDisplayPageFriendlyURLProvider);
 		renderRequest.setAttribute(ItemSelector.class.getName(), _itemSelector);
 
+		CTTimelineUtil.setClassName(renderRequest, AssetCategory.class);
+
+		if (Objects.equals(
+				getPath(renderRequest, renderResponse),
+				"/edit_asset_vocabulary.jsp")) {
+
+			_setShowEditAssetVocabularyHeader(renderRequest);
+		}
+
 		super.doDispatch(renderRequest, renderResponse);
 	}
 
@@ -113,8 +136,12 @@ public class AssetCategoryAdminPortlet extends MVCPortlet {
 			throwable instanceof CategoryPropertyKeyException ||
 			throwable instanceof CategoryPropertyValueException ||
 			throwable instanceof DuplicateCategoryException ||
+			throwable instanceof
+				DuplicateCategoryExternalReferenceCodeException ||
 			throwable instanceof DuplicateCategoryPropertyException ||
 			throwable instanceof DuplicateVocabularyException ||
+			throwable instanceof
+				DuplicateVocabularyExternalReferenceCodeException ||
 			throwable instanceof InvalidAssetCategoryException ||
 			throwable instanceof NoSuchCategoryException ||
 			throwable instanceof NoSuchClassTypeException ||
@@ -129,12 +156,68 @@ public class AssetCategoryAdminPortlet extends MVCPortlet {
 		return false;
 	}
 
+	private boolean _isStaleCategory(
+		RenderRequest renderRequest, RenderResponse renderResponse) {
+
+		long categoryId = ParamUtil.getLong(renderRequest, "categoryId");
+
+		if ((categoryId > 0) &&
+			Objects.equals(
+				getPath(renderRequest, renderResponse),
+				"/edit_asset_category.jsp") &&
+			(_assetCategoryLocalService.fetchCategory(categoryId) == null)) {
+
+			SessionErrors.add(renderRequest, NoSuchCategoryException.class);
+
+			return true;
+		}
+
+		return false;
+	}
+
+	private void _setShowEditAssetVocabularyHeader(
+		RenderRequest renderRequest) {
+
+		long vocabularyId = ParamUtil.getLong(renderRequest, "vocabularyId");
+
+		if (vocabularyId <= 0) {
+			return;
+		}
+
+		try {
+			AssetVocabulary assetVocabulary =
+				_assetVocabularyService.fetchVocabulary(vocabularyId);
+
+			if ((assetVocabulary != null) &&
+				(assetVocabulary.getVisibilityType() ==
+					AssetVocabularyConstants.VISIBILITY_TYPE_EMPTY)) {
+
+				renderRequest.setAttribute(
+					AssetCategoriesAdminWebKeys.
+						SHOW_EDIT_ASSET_VOCABULARY_HEADER,
+					Boolean.TRUE);
+			}
+		}
+		catch (PortalException portalException) {
+			_log.error(portalException);
+		}
+	}
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		AssetCategoryAdminPortlet.class);
+
 	private volatile AssetCategoriesAdminWebConfiguration
 		_assetCategoriesAdminWebConfiguration;
 
 	@Reference
+	private AssetCategoryLocalService _assetCategoryLocalService;
+
+	@Reference
 	private AssetDisplayPageFriendlyURLProvider
 		_assetDisplayPageFriendlyURLProvider;
+
+	@Reference
+	private AssetVocabularyService _assetVocabularyService;
 
 	@Reference
 	private ItemSelector _itemSelector;

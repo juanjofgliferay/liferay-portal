@@ -114,13 +114,8 @@ public class KaleoTaskAssignmentInstancePersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
 		KaleoTaskAssignmentInstance newKaleoTaskAssignmentInstance =
-			_persistence.create(pk);
-
-		newKaleoTaskAssignmentInstance.setMvccVersion(
-			RandomTestUtil.nextLong());
+			addKaleoTaskAssignmentInstance();
 
 		newKaleoTaskAssignmentInstance.setCtCollectionId(
 			RandomTestUtil.nextLong());
@@ -172,8 +167,10 @@ public class KaleoTaskAssignmentInstancePersistenceTest {
 		newKaleoTaskAssignmentInstance.setCompletionDate(
 			RandomTestUtil.nextDate());
 
-		_kaleoTaskAssignmentInstances.add(
-			_persistence.update(newKaleoTaskAssignmentInstance));
+		newKaleoTaskAssignmentInstance = _persistence.update(
+			newKaleoTaskAssignmentInstance);
+
+		_kaleoTaskAssignmentInstances.add(newKaleoTaskAssignmentInstance);
 
 		KaleoTaskAssignmentInstance existingKaleoTaskAssignmentInstance =
 			_persistence.findByPrimaryKey(
@@ -291,15 +288,6 @@ public class KaleoTaskAssignmentInstancePersistenceTest {
 			RandomTestUtil.nextLong(), RandomTestUtil.nextLong());
 
 		_persistence.countByG_ACPK(0L, 0L);
-	}
-
-	@Test
-	public void testCountByKTITI_ACN() throws Exception {
-		_persistence.countByKTITI_ACN(RandomTestUtil.nextLong(), "");
-
-		_persistence.countByKTITI_ACN(0L, "null");
-
-		_persistence.countByKTITI_ACN(0L, (String)null);
 	}
 
 	@Test
@@ -608,8 +596,6 @@ public class KaleoTaskAssignmentInstancePersistenceTest {
 		KaleoTaskAssignmentInstance kaleoTaskAssignmentInstance =
 			_persistence.create(pk);
 
-		kaleoTaskAssignmentInstance.setMvccVersion(RandomTestUtil.nextLong());
-
 		kaleoTaskAssignmentInstance.setCtCollectionId(
 			RandomTestUtil.nextLong());
 
@@ -669,3 +655,4 @@ public class KaleoTaskAssignmentInstancePersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-595771904

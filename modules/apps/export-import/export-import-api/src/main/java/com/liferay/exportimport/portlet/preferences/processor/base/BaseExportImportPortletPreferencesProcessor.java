@@ -7,17 +7,21 @@ package com.liferay.exportimport.portlet.preferences.processor.base;
 
 import com.liferay.exportimport.kernel.lar.PortletDataContext;
 import com.liferay.exportimport.portlet.preferences.processor.ExportImportPortletPreferencesProcessor;
+import com.liferay.exportimport.portlet.preferences.processor.ExportImportPortletPreferencesProcessorHelper;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Portlet;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 
-import java.util.Map;
+import jakarta.portlet.PortletPreferences;
 
-import javax.portlet.PortletPreferences;
+import java.util.Map;
+import java.util.Objects;
 
 import org.osgi.annotation.versioning.ProviderType;
 
@@ -28,10 +32,50 @@ import org.osgi.annotation.versioning.ProviderType;
 public abstract class BaseExportImportPortletPreferencesProcessor
 	implements ExportImportPortletPreferencesProcessor {
 
+	protected String getExportPortletPreferencesExternalReferenceCode(
+		PortletDataContext portletDataContext, Portlet portlet,
+		String className, String externalReferenceCode) {
+
+		return null;
+	}
+
 	protected abstract String getExportPortletPreferencesValue(
 			PortletDataContext portletDataContext, Portlet portlet,
 			String className, long primaryKeyLong)
 		throws Exception;
+
+	protected String getGroupExportPortletPreferencesExternalReferenceCode(
+		PortletDataContext portletDataContext, String externalReferenceCode) {
+
+		ExportImportPortletPreferencesProcessorHelper
+			exportImportPortletPreferencesProcessorHelper =
+				_exportImportPortletPreferencesProcessorHelperSnapshot.get();
+
+		return exportImportPortletPreferencesProcessorHelper.
+			getGroupExportPortletPreferencesExternalReferenceCode(
+				portletDataContext.getCompanyId(), externalReferenceCode);
+	}
+
+	protected String getGroupImportPortletPreferencesExternalReferenceCode(
+		PortletDataContext portletDataContext, String externalReferenceCode) {
+
+		ExportImportPortletPreferencesProcessorHelper
+			exportImportPortletPreferencesProcessorHelper =
+				_exportImportPortletPreferencesProcessorHelperSnapshot.get();
+
+		return exportImportPortletPreferencesProcessorHelper.
+			getGroupImportPortletPreferencesExternalReferenceCode(
+				portletDataContext, externalReferenceCode);
+	}
+
+	protected String getImportPortletPreferencesNewExternalReferenceCode(
+			PortletDataContext portletDataContext, Class<?> clazz,
+			long companyGroupId, Map<String, String[]> primaryKeys,
+			String portletPreferencesOldExternalReferenceCode)
+		throws Exception {
+
+		return null;
+	}
 
 	protected abstract Long getImportPortletPreferencesNewValue(
 			PortletDataContext portletDataContext, Class<?> clazz,
@@ -91,6 +135,63 @@ public abstract class BaseExportImportPortletPreferencesProcessor
 		portletPreferences.setValues(key, newValues);
 	}
 
+	protected void updateExportPortletPreferencesExternalReferenceCodes(
+			PortletDataContext portletDataContext, Portlet portlet,
+			PortletPreferences portletPreferences, String key, String className)
+		throws Exception {
+
+		String[] oldValues = portletPreferences.getValues(key, null);
+
+		if (oldValues == null) {
+			return;
+		}
+
+		String[] newValues = new String[oldValues.length];
+
+		for (int i = 0; i < oldValues.length; i++) {
+			String oldValue = oldValues[i];
+
+			String newValue = oldValue;
+
+			String[] externalReferenceCodes = StringUtil.split(oldValue);
+
+			for (String externalReferenceCode : externalReferenceCodes) {
+				String newPreferencesValue = null;
+
+				if (Objects.equals(className, Group.class.getName())) {
+					newPreferencesValue =
+						getGroupExportPortletPreferencesExternalReferenceCode(
+							portletDataContext, externalReferenceCode);
+				}
+				else {
+					newPreferencesValue =
+						getExportPortletPreferencesExternalReferenceCode(
+							portletDataContext, portlet, className,
+							externalReferenceCode);
+				}
+
+				if (Validator.isNull(newPreferencesValue)) {
+					if (_log.isWarnEnabled()) {
+						_log.warn(
+							StringBundler.concat(
+								"Unable to export portlet preferences value ",
+								"for class ", className, " with external ",
+								"reference code", externalReferenceCode));
+					}
+
+					continue;
+				}
+
+				newValue = StringUtil.replace(
+					newValue, externalReferenceCode, newPreferencesValue);
+			}
+
+			newValues[i] = newValue;
+		}
+
+		portletPreferences.setValues(key, newValues);
+	}
+
 	protected void updateImportPortletPreferencesClassPKs(
 			PortletDataContext portletDataContext,
 			PortletPreferences portletPreferences, String key, Class<?> clazz,
@@ -142,7 +243,78 @@ public abstract class BaseExportImportPortletPreferencesProcessor
 		portletPreferences.setValues(key, newValues);
 	}
 
+	protected void updateImportPortletPreferencesExternalReferenceCodes(
+			PortletDataContext portletDataContext,
+			PortletPreferences portletPreferences, String key, Class<?> clazz,
+			long companyGroupId)
+		throws Exception {
+
+		String[] oldValues = portletPreferences.getValues(key, null);
+
+		if (oldValues == null) {
+			return;
+		}
+
+		Map<String, String[]> parameterMap =
+			portletDataContext.getParameterMap();
+
+		String[] newValues = new String[oldValues.length];
+
+		for (int i = 0; i < oldValues.length; i++) {
+			String oldValue = oldValues[i];
+
+			String newValue = oldValue;
+
+			String[] portletPreferencesOldValues = StringUtil.split(oldValue);
+
+			for (String portletPreferencesOldValue :
+					portletPreferencesOldValues) {
+
+				String externalReferenceCode = portletPreferencesOldValue;
+
+				if (clazz == Group.class) {
+					externalReferenceCode =
+						getGroupImportPortletPreferencesExternalReferenceCode(
+							portletDataContext, portletPreferencesOldValue);
+				}
+
+				String newExternalReferenceCode =
+					getImportPortletPreferencesNewExternalReferenceCode(
+						portletDataContext, clazz, companyGroupId, parameterMap,
+						externalReferenceCode);
+
+				if (Validator.isNotNull(newExternalReferenceCode)) {
+					newValue = StringUtil.replace(
+						newValue, portletPreferencesOldValue,
+						newExternalReferenceCode);
+				}
+				else if (!Objects.equals(
+							externalReferenceCode,
+							portletPreferencesOldValue)) {
+
+					newValue = StringUtil.replace(
+						newValue, portletPreferencesOldValue,
+						externalReferenceCode);
+				}
+				else if (_log.isInfoEnabled()) {
+					_log.info(
+						"Unable to import portlet preferences value " +
+							portletPreferencesOldValue);
+				}
+			}
+
+			newValues[i] = newValue;
+		}
+
+		portletPreferences.setValues(key, newValues);
+	}
+
 	private static final Log _log = LogFactoryUtil.getLog(
 		BaseExportImportPortletPreferencesProcessor.class);
+
+	private static final Snapshot<ExportImportPortletPreferencesProcessorHelper>
+		_exportImportPortletPreferencesProcessorHelperSnapshot = new Snapshot<>(
+			BaseExportImportPortletPreferencesProcessor.class,
+			ExportImportPortletPreferencesProcessorHelper.class);
 
 }

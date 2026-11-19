@@ -11,10 +11,10 @@ import com.liferay.portal.odata.entity.EntityModel;
 import com.liferay.segments.criteria.Criteria;
 import com.liferay.segments.field.Field;
 
+import jakarta.portlet.PortletRequest;
+
 import java.util.List;
 import java.util.Locale;
-
-import javax.portlet.PortletRequest;
 
 /**
  * Provides an interface for extending the segment's {@link Criteria} by adding
@@ -23,6 +23,14 @@ import javax.portlet.PortletRequest;
  * @author Eduardo García
  */
 public interface SegmentsCriteriaContributor {
+
+	public static void contribute(
+		Criteria criteria, String filterString,
+		Criteria.Conjunction conjunction, String key, Criteria.Type type) {
+
+		criteria.addCriterion(key, type, filterString, conjunction);
+		criteria.addFilter(type, filterString, conjunction);
+	}
 
 	/**
 	 * Contributes the criterion to a segment's criteria.
@@ -35,8 +43,15 @@ public interface SegmentsCriteriaContributor {
 		Criteria criteria, String filterString,
 		Criteria.Conjunction conjunction) {
 
-		criteria.addCriterion(getKey(), getType(), filterString, conjunction);
-		criteria.addFilter(getType(), filterString, conjunction);
+		SegmentsCriteriaContributor.contribute(
+			criteria, filterString, conjunction, getKey(), getType());
+	}
+
+	public default void contributeForMemberLookup(
+		Criteria criteria, String filterString,
+		Criteria.Conjunction conjunction) {
+
+		contribute(criteria, filterString, conjunction);
 	}
 
 	/**
@@ -104,5 +119,9 @@ public interface SegmentsCriteriaContributor {
 	 * @see    Criteria.Type
 	 */
 	public Criteria.Type getType();
+
+	public default boolean isDisabled(PortletRequest portletRequest) {
+		return false;
+	}
 
 }

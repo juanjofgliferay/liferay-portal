@@ -11,25 +11,27 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import com.liferay.petra.function.UnsafeSupplier;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Rafael Praxedes
@@ -38,6 +40,9 @@ import javax.xml.bind.annotation.XmlRootElement;
 @Generated("")
 @GraphQLName(
 	description = "https://schema.org/AssigneeMetric", value = "AssigneeMetric"
+)
+@io.swagger.v3.oas.annotations.media.Schema(
+	description = "https://schema.org/AssigneeMetric"
 )
 @JsonFilter("Liferay.Vulcan")
 @XmlRootElement(name = "AssigneeMetric")
@@ -51,146 +56,211 @@ public class AssigneeMetric implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(AssigneeMetric.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public Assignee getAssignee() {
+		if (_assigneeSupplier != null) {
+			assignee = _assigneeSupplier.get();
+
+			_assigneeSupplier = null;
+		}
+
 		return assignee;
 	}
 
 	public void setAssignee(Assignee assignee) {
 		this.assignee = assignee;
+
+		_assigneeSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setAssignee(
 		UnsafeSupplier<Assignee, Exception> assigneeUnsafeSupplier) {
 
-		try {
-			assignee = assigneeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_assigneeSupplier = () -> {
+			try {
+				return assigneeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Assignee assignee;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Assignee> _assigneeSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Long getDurationTaskAvg() {
+		if (_durationTaskAvgSupplier != null) {
+			durationTaskAvg = _durationTaskAvgSupplier.get();
+
+			_durationTaskAvgSupplier = null;
+		}
+
 		return durationTaskAvg;
 	}
 
 	public void setDurationTaskAvg(Long durationTaskAvg) {
 		this.durationTaskAvg = durationTaskAvg;
+
+		_durationTaskAvgSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setDurationTaskAvg(
 		UnsafeSupplier<Long, Exception> durationTaskAvgUnsafeSupplier) {
 
-		try {
-			durationTaskAvg = durationTaskAvgUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_durationTaskAvgSupplier = () -> {
+			try {
+				return durationTaskAvgUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long durationTaskAvg;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Long> _durationTaskAvgSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Long getOnTimeTaskCount() {
+		if (_onTimeTaskCountSupplier != null) {
+			onTimeTaskCount = _onTimeTaskCountSupplier.get();
+
+			_onTimeTaskCountSupplier = null;
+		}
+
 		return onTimeTaskCount;
 	}
 
 	public void setOnTimeTaskCount(Long onTimeTaskCount) {
 		this.onTimeTaskCount = onTimeTaskCount;
+
+		_onTimeTaskCountSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setOnTimeTaskCount(
 		UnsafeSupplier<Long, Exception> onTimeTaskCountUnsafeSupplier) {
 
-		try {
-			onTimeTaskCount = onTimeTaskCountUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_onTimeTaskCountSupplier = () -> {
+			try {
+				return onTimeTaskCountUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long onTimeTaskCount;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Long> _onTimeTaskCountSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Long getOverdueTaskCount() {
+		if (_overdueTaskCountSupplier != null) {
+			overdueTaskCount = _overdueTaskCountSupplier.get();
+
+			_overdueTaskCountSupplier = null;
+		}
+
 		return overdueTaskCount;
 	}
 
 	public void setOverdueTaskCount(Long overdueTaskCount) {
 		this.overdueTaskCount = overdueTaskCount;
+
+		_overdueTaskCountSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setOverdueTaskCount(
 		UnsafeSupplier<Long, Exception> overdueTaskCountUnsafeSupplier) {
 
-		try {
-			overdueTaskCount = overdueTaskCountUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_overdueTaskCountSupplier = () -> {
+			try {
+				return overdueTaskCountUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long overdueTaskCount;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Long> _overdueTaskCountSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Long getTaskCount() {
+		if (_taskCountSupplier != null) {
+			taskCount = _taskCountSupplier.get();
+
+			_taskCountSupplier = null;
+		}
+
 		return taskCount;
 	}
 
 	public void setTaskCount(Long taskCount) {
 		this.taskCount = taskCount;
+
+		_taskCountSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setTaskCount(
 		UnsafeSupplier<Long, Exception> taskCountUnsafeSupplier) {
 
-		try {
-			taskCount = taskCountUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_taskCountSupplier = () -> {
+			try {
+				return taskCountUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long taskCount;
+
+	@JsonIgnore
+	private Supplier<Long> _taskCountSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -219,6 +289,8 @@ public class AssigneeMetric implements Serializable {
 
 		sb.append("{");
 
+		Assignee assignee = getAssignee();
+
 		if (assignee != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -228,6 +300,8 @@ public class AssigneeMetric implements Serializable {
 
 			sb.append(String.valueOf(assignee));
 		}
+
+		Long durationTaskAvg = getDurationTaskAvg();
 
 		if (durationTaskAvg != null) {
 			if (sb.length() > 1) {
@@ -239,6 +313,8 @@ public class AssigneeMetric implements Serializable {
 			sb.append(durationTaskAvg);
 		}
 
+		Long onTimeTaskCount = getOnTimeTaskCount();
+
 		if (onTimeTaskCount != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -249,6 +325,8 @@ public class AssigneeMetric implements Serializable {
 			sb.append(onTimeTaskCount);
 		}
 
+		Long overdueTaskCount = getOverdueTaskCount();
+
 		if (overdueTaskCount != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -258,6 +336,8 @@ public class AssigneeMetric implements Serializable {
 
 			sb.append(overdueTaskCount);
 		}
+
+		Long taskCount = getTaskCount();
 
 		if (taskCount != null) {
 			if (sb.length() > 1) {
@@ -274,8 +354,8 @@ public class AssigneeMetric implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.portal.workflow.metrics.rest.dto.v1_0.AssigneeMetric",
 		name = "x-class-name"
 	)
@@ -321,7 +401,10 @@ public class AssigneeMetric implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -359,6 +442,27 @@ public class AssigneeMetric implements Serializable {
 		return sb.toString();
 	}
 
+	private static String _toJSON(Object value) {
+		if (value instanceof Collection) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONArray((Collection<?>)value));
+		}
+		else if (value instanceof Map) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONObject((Map<?, ?>)value));
+		}
+		else if (value instanceof Object[]) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONArray(
+					Arrays.asList((Object[])value)));
+		}
+		else if (value instanceof String) {
+			return StringBundler.concat("\"", _escape(value), "\"");
+		}
+
+		return String.valueOf(value);
+	}
+
 	private static final String[][] _JSON_ESCAPE_STRINGS = {
 		{"\\", "\"", "\b", "\f", "\n", "\r", "\t"},
 		{"\\\\", "\\\"", "\\b", "\\f", "\\n", "\\r", "\\t"}
@@ -367,3 +471,4 @@ public class AssigneeMetric implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:-1560885780

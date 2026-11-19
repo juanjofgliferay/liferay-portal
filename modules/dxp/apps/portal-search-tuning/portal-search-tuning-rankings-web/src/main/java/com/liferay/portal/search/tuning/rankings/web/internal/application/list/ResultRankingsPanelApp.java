@@ -13,7 +13,7 @@ import com.liferay.portal.kernel.model.Portlet;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.search.engine.SearchEngineInformation;
 import com.liferay.portal.search.tuning.rankings.web.internal.constants.ResultRankingsPortletKeys;
-import com.liferay.portal.search.tuning.web.application.list.constants.SearchTuningPanelCategoryKeys;
+import com.liferay.portal.search.web.application.list.constants.SearchPanelCategoryKeys;
 
 import java.util.Objects;
 
@@ -25,12 +25,17 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"panel.app.order:Integer=400",
-		"panel.category.key=" + SearchTuningPanelCategoryKeys.CONTROL_PANEL_SEARCH_TUNING
+		"panel.app.order:Integer=300",
+		"panel.category.key=" + SearchPanelCategoryKeys.CONTROL_PANEL_SEARCH
 	},
 	service = PanelApp.class
 )
 public class ResultRankingsPanelApp extends BasePanelApp {
+
+	@Override
+	public String getIcon() {
+		return "medal";
+	}
 
 	@Override
 	public Portlet getPortlet() {
@@ -57,7 +62,7 @@ public class ResultRankingsPanelApp extends BasePanelApp {
 	protected SearchEngineInformation searchEngineInformation;
 
 	@Reference(
-		target = "(javax.portlet.name=" + ResultRankingsPortletKeys.RESULT_RANKINGS + ")"
+		target = "(jakarta.portlet.name=" + ResultRankingsPortletKeys.RESULT_RANKINGS + ")"
 	)
 	private Portlet _portlet;
 

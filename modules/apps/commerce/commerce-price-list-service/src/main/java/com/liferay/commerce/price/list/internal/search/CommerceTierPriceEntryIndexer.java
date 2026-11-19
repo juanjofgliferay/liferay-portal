@@ -8,7 +8,6 @@ package com.liferay.commerce.price.list.internal.search;
 import com.liferay.commerce.price.list.model.CommerceTierPriceEntry;
 import com.liferay.commerce.price.list.service.CommerceTierPriceEntryLocalService;
 import com.liferay.portal.kernel.dao.orm.IndexableActionableDynamicQuery;
-import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.search.BaseIndexer;
@@ -23,11 +22,11 @@ import com.liferay.portal.kernel.search.filter.BooleanFilter;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+
 import java.util.LinkedHashMap;
 import java.util.Locale;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -124,7 +123,7 @@ public class CommerceTierPriceEntryIndexer
 			commerceTierPriceEntry.getCommercePriceEntryId());
 		document.addKeyword(
 			FIELD_EXTERNAL_REFERENCE_CODE,
-			commerceTierPriceEntry.getExternalReferenceCode());
+			commerceTierPriceEntry.getExternalReferenceCode(), true);
 
 		if (_log.isDebugEnabled()) {
 			_log.debug(
@@ -166,37 +165,11 @@ public class CommerceTierPriceEntryIndexer
 	}
 
 	@Override
-	protected void doReindex(String[] ids) throws Exception {
-		long companyId = GetterUtil.getLong(ids[0]);
+	protected IndexableActionableDynamicQuery
+		getIndexableActionableDynamicQuery() {
 
-		_reindexCommerceTierPriceEntries(companyId);
-	}
-
-	private void _reindexCommerceTierPriceEntries(long companyId)
-		throws Exception {
-
-		IndexableActionableDynamicQuery indexableActionableDynamicQuery =
-			_commerceTierPriceEntryLocalService.
-				getIndexableActionableDynamicQuery();
-
-		indexableActionableDynamicQuery.setCompanyId(companyId);
-		indexableActionableDynamicQuery.setPerformActionMethod(
-			(CommerceTierPriceEntry commerceTierPriceEntry) -> {
-				try {
-					indexableActionableDynamicQuery.addDocuments(
-						getDocument(commerceTierPriceEntry));
-				}
-				catch (PortalException portalException) {
-					if (_log.isWarnEnabled()) {
-						_log.warn(
-							"Unable to index commerce tier price entry " +
-								commerceTierPriceEntry,
-							portalException);
-					}
-				}
-			});
-
-		indexableActionableDynamicQuery.performActions();
+		return _commerceTierPriceEntryLocalService.
+			getIndexableActionableDynamicQuery();
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(

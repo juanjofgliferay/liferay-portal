@@ -45,14 +45,6 @@ public class CommercePricingClassCPDefinitionRelFinderImpl
 
 	@Override
 	public int countByCommercePricingClassId(
-		long commercePricingClassId, String name, String languageId) {
-
-		return countByCommercePricingClassId(
-			commercePricingClassId, name, languageId, false);
-	}
-
-	@Override
-	public int countByCommercePricingClassId(
 		long commercePricingClassId, String name, String languageId,
 		boolean inlineSQLHelper) {
 
@@ -67,8 +59,7 @@ public class CommercePricingClassCPDefinitionRelFinderImpl
 			if (inlineSQLHelper) {
 				sql = _inlineSQLHelper.replacePermissionCheck(
 					sql, CommercePricingClass.class.getName(),
-					"CommercePricingClass.commercePricingClassId", null, null,
-					new long[] {0}, null);
+					"CommercePricingClass.commercePricingClassId");
 			}
 
 			String[] keywords = _customSQL.keywords(name, true);
@@ -123,16 +114,6 @@ public class CommercePricingClassCPDefinitionRelFinderImpl
 	public List<CommercePricingClassCPDefinitionRel>
 		findByCommercePricingClassId(
 			long commercePricingClassId, String name, String languageId,
-			int start, int end) {
-
-		return findByCommercePricingClassId(
-			commercePricingClassId, name, languageId, start, end, false);
-	}
-
-	@Override
-	public List<CommercePricingClassCPDefinitionRel>
-		findByCommercePricingClassId(
-			long commercePricingClassId, String name, String languageId,
 			int start, int end, boolean inlineSQLHelper) {
 
 		Session session = null;
@@ -148,8 +129,7 @@ public class CommercePricingClassCPDefinitionRelFinderImpl
 			if (inlineSQLHelper) {
 				sql = _inlineSQLHelper.replacePermissionCheck(
 					sql, CommercePricingClass.class.getName(),
-					"CommercePricingClass.commercePricingClassId", null, null,
-					new long[] {0}, null);
+					"CommercePricingClass.commercePricingClassId");
 			}
 
 			if (Validator.isNotNull(name)) {

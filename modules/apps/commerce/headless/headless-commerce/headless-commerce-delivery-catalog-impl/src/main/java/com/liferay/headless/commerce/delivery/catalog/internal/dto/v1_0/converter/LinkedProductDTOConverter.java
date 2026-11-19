@@ -66,10 +66,10 @@ public class LinkedProductDTOConverter
 
 		return new LinkedProduct() {
 			{
-				productExternalReferenceCode =
-					cProduct.getExternalReferenceCode();
-				productId = cProduct.getCProductId();
-				type = cpDefinition.getProductTypeName();
+				setProductExternalReferenceCode(
+					cProduct::getExternalReferenceCode);
+				setProductId(cProduct::getCProductId);
+				setType(cpDefinition::getProductTypeName);
 			}
 		};
 	}
@@ -83,16 +83,16 @@ public class LinkedProductDTOConverter
 			CSDiagramEntry csDiagramEntry =
 				_csDiagramEntryLocalService.getCSDiagramEntry(id);
 
-			if (_commerceProductViewPermission.contains(
+			if (!_commerceProductViewPermission.contains(
 					PermissionThreadLocal.getPermissionChecker(), accountId,
 					commerceChannelGroupId,
 					csDiagramEntry.getCPDefinitionId())) {
 
-				return _cpDefinitionLocalService.getCPDefinition(
-					csDiagramEntry.getCPDefinitionId());
+				return null;
 			}
 
-			return null;
+			return _cpDefinitionLocalService.getCPDefinition(
+				csDiagramEntry.getCPDefinitionId());
 		}
 
 		if (GroupedCPTypeConstants.NAME.equals(productTypeName)) {
@@ -100,16 +100,16 @@ public class LinkedProductDTOConverter
 				_cpDefinitionGroupedEntryLocalService.
 					getCPDefinitionGroupedEntry(id);
 
-			if (_commerceProductViewPermission.contains(
+			if (!_commerceProductViewPermission.contains(
 					PermissionThreadLocal.getPermissionChecker(), accountId,
 					commerceChannelGroupId,
 					cpDefinitionGroupedEntry.getCPDefinitionId())) {
 
-				return _cpDefinitionLocalService.getCPDefinition(
-					cpDefinitionGroupedEntry.getCPDefinitionId());
+				return null;
 			}
 
-			return null;
+			return _cpDefinitionLocalService.getCPDefinition(
+				cpDefinitionGroupedEntry.getCPDefinitionId());
 		}
 
 		throw new CPDefinitionProductTypeNameException();

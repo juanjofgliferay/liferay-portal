@@ -110,12 +110,8 @@ public class UserNotificationEventPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		UserNotificationEvent newUserNotificationEvent = _persistence.create(
-			pk);
-
-		newUserNotificationEvent.setMvccVersion(RandomTestUtil.nextLong());
+		UserNotificationEvent newUserNotificationEvent =
+			addUserNotificationEvent();
 
 		newUserNotificationEvent.setUuid(RandomTestUtil.randomString());
 
@@ -140,8 +136,10 @@ public class UserNotificationEventPersistenceTest {
 
 		newUserNotificationEvent.setArchived(RandomTestUtil.randomBoolean());
 
-		_userNotificationEvents.add(
-			_persistence.update(newUserNotificationEvent));
+		newUserNotificationEvent = _persistence.update(
+			newUserNotificationEvent);
+
+		_userNotificationEvents.add(newUserNotificationEvent);
 
 		UserNotificationEvent existingUserNotificationEvent =
 			_persistence.findByPrimaryKey(
@@ -223,88 +221,16 @@ public class UserNotificationEventPersistenceTest {
 	}
 
 	@Test
-	public void testCountByU_DT() throws Exception {
-		_persistence.countByU_DT(
-			RandomTestUtil.nextLong(), RandomTestUtil.nextInt());
-
-		_persistence.countByU_DT(0L, 0);
-	}
-
-	@Test
-	public void testCountByU_D() throws Exception {
-		_persistence.countByU_D(
-			RandomTestUtil.nextLong(), RandomTestUtil.randomBoolean());
-
-		_persistence.countByU_D(0L, RandomTestUtil.randomBoolean());
-	}
-
-	@Test
-	public void testCountByU_A() throws Exception {
-		_persistence.countByU_A(
-			RandomTestUtil.nextLong(), RandomTestUtil.randomBoolean());
-
-		_persistence.countByU_A(0L, RandomTestUtil.randomBoolean());
-	}
-
-	@Test
-	public void testCountByU_DT_D() throws Exception {
-		_persistence.countByU_DT_D(
-			RandomTestUtil.nextLong(), RandomTestUtil.nextInt(),
+	public void testCountByU_T_GteT_D() throws Exception {
+		_persistence.countByU_T_GteT_D(
+			RandomTestUtil.nextLong(), "", RandomTestUtil.nextLong(),
 			RandomTestUtil.randomBoolean());
 
-		_persistence.countByU_DT_D(0L, 0, RandomTestUtil.randomBoolean());
-	}
+		_persistence.countByU_T_GteT_D(
+			0L, "null", 0L, RandomTestUtil.randomBoolean());
 
-	@Test
-	public void testCountByU_DT_A() throws Exception {
-		_persistence.countByU_DT_A(
-			RandomTestUtil.nextLong(), RandomTestUtil.nextInt(),
-			RandomTestUtil.randomBoolean());
-
-		_persistence.countByU_DT_A(0L, 0, RandomTestUtil.randomBoolean());
-	}
-
-	@Test
-	public void testCountByU_D_AR() throws Exception {
-		_persistence.countByU_D_AR(
-			RandomTestUtil.nextLong(), RandomTestUtil.randomBoolean(),
-			RandomTestUtil.randomBoolean());
-
-		_persistence.countByU_D_AR(
-			0L, RandomTestUtil.randomBoolean(), RandomTestUtil.randomBoolean());
-	}
-
-	@Test
-	public void testCountByU_D_A() throws Exception {
-		_persistence.countByU_D_A(
-			RandomTestUtil.nextLong(), RandomTestUtil.randomBoolean(),
-			RandomTestUtil.randomBoolean());
-
-		_persistence.countByU_D_A(
-			0L, RandomTestUtil.randomBoolean(), RandomTestUtil.randomBoolean());
-	}
-
-	@Test
-	public void testCountByU_AR_A() throws Exception {
-		_persistence.countByU_AR_A(
-			RandomTestUtil.nextLong(), RandomTestUtil.randomBoolean(),
-			RandomTestUtil.randomBoolean());
-
-		_persistence.countByU_AR_A(
-			0L, RandomTestUtil.randomBoolean(), RandomTestUtil.randomBoolean());
-	}
-
-	@Test
-	public void testCountByU_T_DT_D() throws Exception {
-		_persistence.countByU_T_DT_D(
-			RandomTestUtil.nextLong(), "", RandomTestUtil.nextInt(),
-			RandomTestUtil.randomBoolean());
-
-		_persistence.countByU_T_DT_D(
-			0L, "null", 0, RandomTestUtil.randomBoolean());
-
-		_persistence.countByU_T_DT_D(
-			0L, (String)null, 0, RandomTestUtil.randomBoolean());
+		_persistence.countByU_T_GteT_D(
+			0L, (String)null, 0L, RandomTestUtil.randomBoolean());
 	}
 
 	@Test
@@ -325,17 +251,6 @@ public class UserNotificationEventPersistenceTest {
 			RandomTestUtil.randomBoolean(), RandomTestUtil.randomBoolean());
 
 		_persistence.countByU_DT_D_A(
-			0L, 0, RandomTestUtil.randomBoolean(),
-			RandomTestUtil.randomBoolean());
-	}
-
-	@Test
-	public void testCountByU_DT_AR_A() throws Exception {
-		_persistence.countByU_DT_AR_A(
-			RandomTestUtil.nextLong(), RandomTestUtil.nextInt(),
-			RandomTestUtil.randomBoolean(), RandomTestUtil.randomBoolean());
-
-		_persistence.countByU_DT_AR_A(
 			0L, 0, RandomTestUtil.randomBoolean(),
 			RandomTestUtil.randomBoolean());
 	}
@@ -655,8 +570,6 @@ public class UserNotificationEventPersistenceTest {
 
 		UserNotificationEvent userNotificationEvent = _persistence.create(pk);
 
-		userNotificationEvent.setMvccVersion(RandomTestUtil.nextLong());
-
 		userNotificationEvent.setUuid(RandomTestUtil.randomString());
 
 		userNotificationEvent.setCompanyId(RandomTestUtil.nextLong());
@@ -690,3 +603,4 @@ public class UserNotificationEventPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1491076534

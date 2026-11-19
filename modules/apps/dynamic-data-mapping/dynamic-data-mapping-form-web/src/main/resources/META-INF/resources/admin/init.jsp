@@ -5,7 +5,7 @@
  */
 --%>
 
-<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<%@ taglib uri="jakarta.tags.core" prefix="c" %>
 
 <%@ taglib uri="http://java.sun.com/portlet_2_0" prefix="portlet" %>
 
@@ -19,7 +19,9 @@ taglib uri="http://liferay.com/tld/theme" prefix="liferay-theme" %><%@
 taglib uri="http://liferay.com/tld/ui" prefix="liferay-ui" %><%@
 taglib uri="http://liferay.com/tld/util" prefix="liferay-util" %>
 
-<%@ page import="com.liferay.dynamic.data.mapping.exception.FormInstanceNameException" %><%@
+<%@ page import="com.liferay.bulk.selection.BulkSelectionRunner" %><%@
+page import="com.liferay.bulk.selection.util.BulkSelectionRunnerUtil" %><%@
+page import="com.liferay.dynamic.data.mapping.exception.FormInstanceNameException" %><%@
 page import="com.liferay.dynamic.data.mapping.exception.FormInstanceSettingsRedirectURLException" %><%@
 page import="com.liferay.dynamic.data.mapping.exception.FormInstanceSettingsStorageTypeException" %><%@
 page import="com.liferay.dynamic.data.mapping.exception.StorageException" %><%@
@@ -56,6 +58,7 @@ page import="com.liferay.portal.kernel.json.JSONObject" %><%@
 page import="com.liferay.portal.kernel.language.LanguageUtil" %><%@
 page import="com.liferay.portal.kernel.portlet.LiferayWindowState" %><%@
 page import="com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder" %><%@
+page import="com.liferay.portal.kernel.servlet.SessionMessages" %><%@
 page import="com.liferay.portal.kernel.upload.FileItem" %><%@
 page import="com.liferay.portal.kernel.upload.LiferayFileItemException" %><%@
 page import="com.liferay.portal.kernel.util.HashMapBuilder" %><%@
@@ -69,13 +72,12 @@ page import="com.liferay.portal.kernel.util.WebKeys" %><%@
 page import="com.liferay.taglib.search.DateSearchEntry" %><%@
 page import="com.liferay.taglib.search.ResultRow" %>
 
+<%@ page import="jakarta.portlet.PortletURL" %>
+
 <%@ page import="java.util.List" %><%@
 page import="java.util.Map" %><%@
-page import="java.util.Map.Entry" %><%@
 page import="java.util.Objects" %><%@
 page import="java.util.Set" %>
-
-<%@ page import="javax.portlet.PortletURL" %>
 
 <liferay-frontend:defineObjects />
 
@@ -93,7 +95,6 @@ JSONObject functionsMetadataJSONObject = ddmFormAdminDisplayContext.getFunctions
 String functionsURL = ddmFormAdminDisplayContext.getFunctionsURL();
 String rolesURL = ddmFormAdminDisplayContext.getRolesURL();
 JSONArray ddmFormRulesJSONArray = ddmFormAdminDisplayContext.getDDMFormRulesJSONArray();
-JSONObject formBuilderContextJSONObject = ddmFormAdminDisplayContext.getFormBuilderContextJSONObject();
 %>
 
 <%@ include file="/admin/init-ext.jsp" %>

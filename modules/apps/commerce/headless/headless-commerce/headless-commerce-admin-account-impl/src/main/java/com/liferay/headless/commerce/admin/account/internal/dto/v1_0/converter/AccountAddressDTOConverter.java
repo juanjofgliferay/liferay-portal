@@ -21,7 +21,10 @@ import org.osgi.service.component.annotations.Reference;
  * @author Alessio Antonio Rendina
  */
 @Component(
-	property = "dto.class.name=com.liferay.commerce.model.CommerceAddress",
+	property = {
+		"default=true",
+		"dto.class.name=com.liferay.commerce.model.CommerceAddress"
+	},
 	service = DTOConverter.class
 )
 public class AccountAddressDTOConverter
@@ -40,28 +43,31 @@ public class AccountAddressDTOConverter
 			_commerceAddressService.getCommerceAddress(
 				(Long)dtoConverterContext.getId());
 
-		Country country = commerceAddress.getCountry();
-
 		return new AccountAddress() {
 			{
-				city = commerceAddress.getCity();
-				countryISOCode = country.getA2();
-				defaultBilling = commerceAddress.isDefaultBilling();
-				defaultShipping = commerceAddress.isDefaultShipping();
-				description = commerceAddress.getDescription();
-				externalReferenceCode =
-					commerceAddress.getExternalReferenceCode();
-				id = commerceAddress.getCommerceAddressId();
-				latitude = commerceAddress.getLatitude();
-				longitude = commerceAddress.getLongitude();
-				name = commerceAddress.getName();
-				phoneNumber = commerceAddress.getPhoneNumber();
-				regionISOCode = _getRegionISOCode(commerceAddress);
-				street1 = commerceAddress.getStreet1();
-				street2 = commerceAddress.getStreet2();
-				street3 = commerceAddress.getStreet3();
-				type = commerceAddress.getType();
-				zip = commerceAddress.getZip();
+				setCity(commerceAddress::getCity);
+				setCountryISOCode(
+					() -> {
+						Country country = commerceAddress.getCountry();
+
+						return country.getA2();
+					});
+				setDefaultBilling(commerceAddress::isDefaultBilling);
+				setDefaultShipping(commerceAddress::isDefaultShipping);
+				setDescription(commerceAddress::getDescription);
+				setExternalReferenceCode(
+					commerceAddress::getExternalReferenceCode);
+				setId(commerceAddress::getCommerceAddressId);
+				setLatitude(commerceAddress::getLatitude);
+				setLongitude(commerceAddress::getLongitude);
+				setName(commerceAddress::getName);
+				setPhoneNumber(commerceAddress::getPhoneNumber);
+				setRegionISOCode(() -> _getRegionISOCode(commerceAddress));
+				setStreet1(commerceAddress::getStreet1);
+				setStreet2(commerceAddress::getStreet2);
+				setStreet3(commerceAddress::getStreet3);
+				setType(commerceAddress::getType);
+				setZip(commerceAddress::getZip);
 			}
 		};
 	}

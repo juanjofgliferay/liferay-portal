@@ -289,6 +289,20 @@ public class ClassNameLocalServiceWrapper
 		return _classNameLocalService.getClassNameId(value);
 	}
 
+	@Override
+	public java.util.function.Supplier<long[]> getClassNameIdsSupplier(
+		String[] classNames) {
+
+		return _classNameLocalService.getClassNameIdsSupplier(classNames);
+	}
+
+	@Override
+	public java.util.function.Supplier<Long> getClassNameIdSupplier(
+		String className) {
+
+		return _classNameLocalService.getClassNameIdSupplier(className);
+	}
+
 	/**
 	 * Returns a range of all the class names.
 	 *
@@ -390,3 +404,4 @@ public class ClassNameLocalServiceWrapper
 	private ClassNameLocalService _classNameLocalService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1022052558

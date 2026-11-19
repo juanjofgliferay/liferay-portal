@@ -84,15 +84,17 @@ public class JavaSignatureParser {
 
 				String annotation = parameters.substring(0, pos);
 
-				if ((ToolsUtil.getLevel(annotation) == 0) &&
-					(ToolsUtil.getLevel(annotation, "<", ">") == 0)) {
+				if ((ToolsUtil.getLevel(annotation) != 0) ||
+					(ToolsUtil.getLevel(annotation, "<", ">") != 0)) {
 
-					parameterAnnotations.add(annotation);
-
-					parameters = parameters.substring(pos + 1);
-
-					pos = -1;
+					continue;
 				}
+
+				parameterAnnotations.add(annotation);
+
+				parameters = parameters.substring(pos + 1);
+
+				pos = -1;
 			}
 
 			if (parameters.startsWith("final ")) {
@@ -139,14 +141,14 @@ public class JavaSignatureParser {
 	}
 
 	private static String _getReturnType(String s) {
+		String returnType = null;
+
 		s = StringUtil.replace(
 			s, new String[] {"\t", ".\n", "\n"}, new String[] {"", ".", " "});
 
 		int z = s.lastIndexOf(CharPool.SPACE);
 
 		s = s.substring(0, z);
-
-		String returnType = null;
 
 		while (true) {
 			z = s.lastIndexOf(CharPool.SPACE, z - 1);

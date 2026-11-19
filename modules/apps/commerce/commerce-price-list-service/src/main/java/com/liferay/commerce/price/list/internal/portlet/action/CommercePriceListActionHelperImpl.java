@@ -16,11 +16,11 @@ import com.liferay.commerce.price.list.service.CommerceTierPriceEntryService;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.util.ParamUtil;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.RenderRequest;
+
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.RenderRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -47,9 +47,11 @@ public class CommercePriceListActionHelperImpl
 				_commercePriceEntryService.fetchCommercePriceEntry(
 					commercePriceEntryId);
 
-			if (commercePriceEntry != null) {
-				commercePriceEntries.add(commercePriceEntry);
+			if (commercePriceEntry == null) {
+				continue;
 			}
+
+			commercePriceEntries.add(commercePriceEntry);
 		}
 
 		return commercePriceEntries;
@@ -130,9 +132,11 @@ public class CommercePriceListActionHelperImpl
 				_commercePriceListService.fetchCommercePriceList(
 					commercePriceListId);
 
-			if (commercePriceList != null) {
-				commercePriceLists.add(commercePriceList);
+			if (commercePriceList == null) {
+				continue;
 			}
+
+			commercePriceLists.add(commercePriceList);
 		}
 
 		return commercePriceLists;
@@ -154,9 +158,11 @@ public class CommercePriceListActionHelperImpl
 				_commerceTierPriceEntryService.fetchCommerceTierPriceEntry(
 					commerceTierPriceEntryId);
 
-			if (commerceTierPriceEntry != null) {
-				commerceTierPriceEntries.add(commerceTierPriceEntry);
+			if (commerceTierPriceEntry == null) {
+				continue;
 			}
+
+			commerceTierPriceEntries.add(commerceTierPriceEntry);
 		}
 
 		return commerceTierPriceEntries;

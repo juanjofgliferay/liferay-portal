@@ -16,7 +16,9 @@ import com.liferay.gradle.plugins.defaults.internal.util.LiferayRelengUtil;
 import com.liferay.gradle.plugins.defaults.task.WritePropertiesTask;
 import com.liferay.gradle.plugins.jsdoc.AppJSDocConfigurationExtension;
 import com.liferay.gradle.plugins.jsdoc.AppJSDocPlugin;
+import com.liferay.gradle.plugins.jsdoc.BaseJSDocPlugin;
 import com.liferay.gradle.plugins.jsdoc.JSDocTask;
+import com.liferay.gradle.plugins.node.task.DownloadNodeModuleTask;
 import com.liferay.gradle.plugins.tlddoc.builder.AppTLDDocBuilderExtension;
 import com.liferay.gradle.plugins.tlddoc.builder.AppTLDDocBuilderPlugin;
 import com.liferay.gradle.plugins.tlddoc.builder.task.TLDDocTask;
@@ -56,7 +58,6 @@ import org.gradle.api.tasks.TaskInputs;
 import org.gradle.api.tasks.TaskOutputs;
 import org.gradle.api.tasks.javadoc.Javadoc;
 import org.gradle.execution.ProjectConfigurer;
-import org.gradle.external.javadoc.StandardJavadocDocletOptions;
 import org.gradle.internal.service.ServiceRegistry;
 import org.gradle.util.GUtil;
 
@@ -127,8 +128,9 @@ public class LiferayAppDefaultsPlugin implements Plugin<Project> {
 		_configureAppTLDDocBuilder(project, privateProject);
 		_configureProject(project, appDescription, appVersion);
 		_configureTaskAppJSDoc(writeAppPackageJsonFileTask);
-		_configureTaskAppJavadoc(project, portalRootDir, appTitle, appVersion);
+		_configureTaskAppJavadoc(project, appTitle, appVersion);
 		_configureTaskAppTlddoc(project, portalRootDir);
+		_configureTaskDownloadJSDoc(project);
 
 		if (privateProject != null) {
 			Gradle gradle = project.getGradle();
@@ -219,6 +221,19 @@ public class LiferayAppDefaultsPlugin implements Plugin<Project> {
 		GradleUtil.applyPlugin(project, NodeDefaultsPlugin.class);
 	}
 
+	private void _configureAppJSDoc(Project project, Project privateProject) {
+		if (privateProject == null) {
+			return;
+		}
+
+		AppJSDocConfigurationExtension appJSDocConfigurationExtension =
+			GradleUtil.getExtension(
+				project, AppJSDocConfigurationExtension.class);
+
+		appJSDocConfigurationExtension.subprojects(
+			privateProject.getSubprojects());
+	}
+
 	@SuppressWarnings("serial")
 	private void _configureAppJavadocBuilder(
 		Project project, Project privateProject) {
@@ -267,19 +282,6 @@ public class LiferayAppDefaultsPlugin implements Plugin<Project> {
 		}
 	}
 
-	private void _configureAppJSDoc(Project project, Project privateProject) {
-		if (privateProject == null) {
-			return;
-		}
-
-		AppJSDocConfigurationExtension appJSDocConfigurationExtension =
-			GradleUtil.getExtension(
-				project, AppJSDocConfigurationExtension.class);
-
-		appJSDocConfigurationExtension.subprojects(
-			privateProject.getSubprojects());
-	}
-
 	private void _configureAppTLDDocBuilder(
 		Project project, Project privateProject) {
 
@@ -302,30 +304,6 @@ public class LiferayAppDefaultsPlugin implements Plugin<Project> {
 
 		if (Validator.isNotNull(version)) {
 			project.setVersion(version);
-		}
-	}
-
-	private void _configureTaskAppJavadoc(
-		Project project, File portalRootDir, String appTitle,
-		String appVersion) {
-
-		Javadoc javadoc = (Javadoc)GradleUtil.getTask(
-			project, AppJavadocBuilderPlugin.APP_JAVADOC_TASK_NAME);
-
-		if (portalRootDir != null) {
-			File stylesheetFile = new File(
-				portalRootDir, "tools/styles/javadoc.css");
-
-			if (stylesheetFile.exists()) {
-				StandardJavadocDocletOptions standardJavadocDocletOptions =
-					(StandardJavadocDocletOptions)javadoc.getOptions();
-
-				standardJavadocDocletOptions.setStylesheetFile(stylesheetFile);
-			}
-		}
-
-		if (Validator.isNotNull(appTitle) && Validator.isNotNull(appVersion)) {
-			javadoc.setTitle(String.format("%s %s API", appTitle, appVersion));
 		}
 	}
 
@@ -360,6 +338,17 @@ public class LiferayAppDefaultsPlugin implements Plugin<Project> {
 		}
 	}
 
+	private void _configureTaskAppJavadoc(
+		Project project, String appTitle, String appVersion) {
+
+		if (Validator.isNotNull(appTitle) && Validator.isNotNull(appVersion)) {
+			Javadoc javadoc = (Javadoc)GradleUtil.getTask(
+				project, AppJavadocBuilderPlugin.APP_JAVADOC_TASK_NAME);
+
+			javadoc.setTitle(String.format("%s %s API", appTitle, appVersion));
+		}
+	}
+
 	private void _configureTaskAppTlddoc(Project project, File portalRootDir) {
 		if (portalRootDir == null) {
 			return;
@@ -371,6 +360,15 @@ public class LiferayAppDefaultsPlugin implements Plugin<Project> {
 		File xsltDir = new File(portalRootDir, "tools/styles/taglibs");
 
 		tldDocTask.setXsltDir(xsltDir);
+	}
+
+	private void _configureTaskDownloadJSDoc(Project project) {
+		DownloadNodeModuleTask downloadJSDocTask =
+			(DownloadNodeModuleTask)GradleUtil.getTask(
+				project, BaseJSDocPlugin.DOWNLOAD_JSDOC_TASK_NAME);
+
+		GradlePluginsDefaultsUtil.configureTaskDownloadNodeModule(
+			downloadJSDocTask);
 	}
 
 	private void _forceProjectHierarchyEvaluation(Project project) {

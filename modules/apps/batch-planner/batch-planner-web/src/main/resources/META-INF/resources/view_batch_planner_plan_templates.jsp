@@ -21,7 +21,7 @@ BatchPlannerPlanTemplateManagementToolbarDisplayContext batchPlannerPlanTemplate
 
 <clay:management-toolbar
 	managementToolbarDisplayContext="<%= batchPlannerPlanTemplateManagementToolbarDisplayContext %>"
-	propsTransformer="js/BatchPlannerPlanTemplateManagementToolbarPropsTransformer"
+	propsTransformer="{BatchPlannerPlanTemplateManagementToolbarPropsTransformer} from batch-planner-web"
 />
 
 <clay:container-fluid>
@@ -71,17 +71,17 @@ BatchPlannerPlanTemplateManagementToolbarDisplayContext batchPlannerPlanTemplate
 
 				<liferay-ui:search-container-column-text
 					name="type"
-					value="<%= batchPlannerPlanTemplateDisplayContext.getSimpleClassName(batchPlannerPlanTemplateDisplay.getInternalClassNameKey()) %>"
+					value="<%= HtmlUtil.escape(batchPlannerPlanTemplateDisplayContext.getSimpleClassName(batchPlannerPlanTemplateDisplay.getInternalClassNameKey())) %>"
 				/>
 
 				<liferay-ui:search-container-column-text
 					name="format"
-					value="<%= batchPlannerPlanTemplateDisplay.getExternalType() %>"
+					value="<%= HtmlUtil.escape(batchPlannerPlanTemplateDisplay.getExternalType()) %>"
 				/>
 
 				<liferay-ui:search-container-column-text
 					name="user"
-					value="<%= batchPlannerPlanTemplateDisplay.getUserName() %>"
+					value="<%= HtmlUtil.escape(batchPlannerPlanTemplateDisplay.getUserName()) %>"
 				/>
 
 				<liferay-ui:search-container-column-jsp

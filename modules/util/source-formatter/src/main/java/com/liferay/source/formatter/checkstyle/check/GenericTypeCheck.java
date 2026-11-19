@@ -18,6 +18,7 @@ import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.Tuple;
 import com.liferay.source.formatter.check.util.JavaSourceUtil;
+import com.liferay.source.formatter.checkstyle.util.DetailASTUtil;
 import com.liferay.source.formatter.util.FileUtil;
 
 import com.puppycrawl.tools.checkstyle.api.DetailAST;
@@ -26,6 +27,7 @@ import com.puppycrawl.tools.checkstyle.api.FileText;
 import com.puppycrawl.tools.checkstyle.api.FullIdent;
 import com.puppycrawl.tools.checkstyle.api.TokenTypes;
 import com.puppycrawl.tools.checkstyle.utils.AnnotationUtil;
+import com.puppycrawl.tools.checkstyle.utils.TokenUtil;
 
 import java.io.File;
 import java.io.IOException;
@@ -50,13 +52,14 @@ public class GenericTypeCheck extends BaseCheck {
 
 	@Override
 	protected void doVisitToken(DetailAST detailAST) {
-		if ((detailAST.getType() == TokenTypes.EXTENDS_CLAUSE) ||
-			(detailAST.getType() == TokenTypes.IMPLEMENTS_CLAUSE)) {
+		if (TokenUtil.isOfType(
+				detailAST, TokenTypes.EXTENDS_CLAUSE,
+				TokenTypes.IMPLEMENTS_CLAUSE)) {
 
-			List<DetailAST> childDetailASTList = getAllChildTokens(
+			List<DetailAST> childDetailASTs = getAllChildTokens(
 				detailAST, false, TokenTypes.DOT, TokenTypes.IDENT);
 
-			for (DetailAST childDetailAST : childDetailASTList) {
+			for (DetailAST childDetailAST : childDetailASTs) {
 				_checkType(detailAST, childDetailAST);
 			}
 		}
@@ -75,15 +78,15 @@ public class GenericTypeCheck extends BaseCheck {
 			childDetailAST);
 
 		if (typeArgumentsDetailAST != null) {
-			List<DetailAST> typeArgumentDetailASTList = getAllChildTokens(
+			List<DetailAST> typeArgumentDetailASTs = getAllChildTokens(
 				typeArgumentsDetailAST, false, TokenTypes.TYPE_ARGUMENT);
 
 			if (isAttributeValue(_POPULATE_TYPE_NAMES_KEY)) {
 				_populateGenericTypeNames(
-					childDetailAST, typeArgumentDetailASTList);
+					childDetailAST, typeArgumentDetailASTs);
 			}
 
-			for (DetailAST typeArgumentDetailAST : typeArgumentDetailASTList) {
+			for (DetailAST typeArgumentDetailAST : typeArgumentDetailASTs) {
 				_checkType(detailAST, typeArgumentDetailAST);
 			}
 
@@ -220,16 +223,14 @@ public class GenericTypeCheck extends BaseCheck {
 	}
 
 	private String _getTypeName(DetailAST detailAST) {
-		if ((detailAST.getType() == TokenTypes.TYPE) ||
-			(detailAST.getType() == TokenTypes.TYPE_ARGUMENT)) {
+		if (TokenUtil.isOfType(
+				detailAST, TokenTypes.TYPE, TokenTypes.TYPE_ARGUMENT)) {
 
 			return getTypeName(detailAST, false);
 		}
 
 		if (detailAST.getType() == TokenTypes.DOT) {
-			FullIdent fullIdent = FullIdent.createFullIdent(detailAST);
-
-			return fullIdent.getText();
+			return DetailASTUtil.getBaseTypeName(detailAST);
 		}
 
 		return detailAST.getText();
@@ -252,10 +253,10 @@ public class GenericTypeCheck extends BaseCheck {
 			return false;
 		}
 
-		List<DetailAST> literalStringDetailASTList = getAllChildTokens(
+		List<DetailAST> literalStringDetailASTs = getAllChildTokens(
 			annotationDetailAST, true, TokenTypes.STRING_LITERAL);
 
-		for (DetailAST literalStringDetailAST : literalStringDetailASTList) {
+		for (DetailAST literalStringDetailAST : literalStringDetailASTs) {
 			String s = literalStringDetailAST.getText();
 
 			if (s.equals("\"" + warning + "\"")) {
@@ -332,7 +333,7 @@ public class GenericTypeCheck extends BaseCheck {
 	}
 
 	private void _populateGenericTypeNames(
-		DetailAST childDetailAST, List<DetailAST> typeArgumentDetailASTList) {
+		DetailAST childDetailAST, List<DetailAST> typeArgumentDetailASTs) {
 
 		Tuple genericTypeNamesTuple = _getGenericTypeNamesTuple();
 
@@ -342,7 +343,7 @@ public class GenericTypeCheck extends BaseCheck {
 			return;
 		}
 
-		for (DetailAST typeArgumentDetailAST : typeArgumentDetailASTList) {
+		for (DetailAST typeArgumentDetailAST : typeArgumentDetailASTs) {
 			DetailAST firstChildDetailAST =
 				typeArgumentDetailAST.getFirstChild();
 
@@ -350,12 +351,14 @@ public class GenericTypeCheck extends BaseCheck {
 				return;
 			}
 
-			if (firstChildDetailAST.getType() == TokenTypes.IDENT) {
-				String name = firstChildDetailAST.getText();
+			if (firstChildDetailAST.getType() != TokenTypes.IDENT) {
+				continue;
+			}
 
-				if (name.length() == 1) {
-					return;
-				}
+			String name = firstChildDetailAST.getText();
+
+			if (name.length() == 1) {
+				return;
 			}
 		}
 
@@ -371,7 +374,7 @@ public class GenericTypeCheck extends BaseCheck {
 		}
 
 		genericTypeNamesMap.put(
-			fullyQualifiedTypeName, typeArgumentDetailASTList.size());
+			fullyQualifiedTypeName, typeArgumentDetailASTs.size());
 
 		try {
 			JSONObject jsonObject = new JSONObjectImpl();
@@ -398,8 +401,8 @@ public class GenericTypeCheck extends BaseCheck {
 
 			System.out.println(
 				StringBundler.concat(
-					"Added '", fullyQualifiedTypeName, "' to '",
-					_GENERIC_TYPE_NAMES_FILE_NAME, "'"));
+					"Added \"", fullyQualifiedTypeName, "\" to \"",
+					_GENERIC_TYPE_NAMES_FILE_NAME, "\""));
 
 			_genericTypeNamesMap = null;
 			_genericTypeNamesTuple = null;

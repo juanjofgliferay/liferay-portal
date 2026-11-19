@@ -1,0 +1,98 @@
+/**
+ * SPDX-FileCopyrightText: (c) 2024 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
+ */
+
+package com.liferay.headless.admin.site.internal.dto.v1_0.converter;
+
+import com.liferay.headless.admin.site.dto.v1_0.MasterPage;
+import com.liferay.headless.admin.site.dto.v1_0.util.ThumbnailURLReferenceUtil;
+import com.liferay.headless.admin.site.internal.dto.v1_0.util.AssetUtil;
+import com.liferay.headless.admin.site.internal.dto.v1_0.util.CreatorUtil;
+import com.liferay.layout.page.template.constants.LayoutPageTemplateEntryTypeConstants;
+import com.liferay.layout.page.template.model.LayoutPageTemplateEntry;
+import com.liferay.portal.kernel.model.Layout;
+import com.liferay.portal.kernel.service.LayoutLocalService;
+import com.liferay.portal.vulcan.dto.converter.DTOConverter;
+import com.liferay.portal.vulcan.dto.converter.DTOConverterContext;
+import com.liferay.portal.vulcan.fields.NestedFieldsSupplier;
+
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
+
+/**
+ * @author Lourdes Fernández Besada
+ */
+@Component(
+	property = {
+		"default=true",
+		"dto.class.name=com.liferay.layout.page.template.model.LayoutPageTemplateEntry",
+		"dto.class.type=" + LayoutPageTemplateEntryTypeConstants.MASTER_LAYOUT
+	},
+	service = DTOConverter.class
+)
+public class MasterPageDTOConverter
+	implements DTOConverter<LayoutPageTemplateEntry, MasterPage> {
+
+	@Override
+	public String getContentType() {
+		return MasterPage.class.getSimpleName();
+	}
+
+	@Override
+	public MasterPage toDTO(
+			DTOConverterContext dtoConverterContext,
+			LayoutPageTemplateEntry layoutPageTemplateEntry)
+		throws Exception {
+
+		Layout layout = _layoutLocalService.getLayout(
+			layoutPageTemplateEntry.getPlid());
+
+		return new MasterPage() {
+			{
+				setActions(
+					() -> {
+						if (dtoConverterContext == null) {
+							return null;
+						}
+
+						return dtoConverterContext.getActions();
+					});
+				setCreator(
+					() -> CreatorUtil.toCreator(
+						layoutPageTemplateEntry.getUserId(),
+						layoutPageTemplateEntry.getUserName()));
+				setDateCreated(layoutPageTemplateEntry::getCreateDate);
+				setDateModified(layoutPageTemplateEntry::getModifiedDate);
+				setDatePublished(layout::getPublishDate);
+				setExternalReferenceCode(
+					layoutPageTemplateEntry::getExternalReferenceCode);
+				setKey(layoutPageTemplateEntry::getLayoutPageTemplateEntryKey);
+				setKeywords(
+					() -> AssetUtil.getKeywords(
+						Layout.class.getName(),
+						layoutPageTemplateEntry.getPlid()));
+				setMarkedAsDefault(layoutPageTemplateEntry::isDefaultTemplate);
+				setName(layoutPageTemplateEntry::getName);
+				setTaxonomyCategoryBriefs(
+					() -> AssetUtil.getTaxonomyCategoryBriefs(
+						Layout.class.getName(),
+						layoutPageTemplateEntry.getPlid(),
+						layoutPageTemplateEntry.getGroupId()));
+				setThumbnailURLReference(
+					() -> NestedFieldsSupplier.supply(
+						"thumbnailURLReference",
+						fieldName ->
+							ThumbnailURLReferenceUtil.
+								getFileEntryThumbnailURLReference(
+									layoutPageTemplateEntry.
+										getPreviewFileEntryId())));
+				setUuid(layoutPageTemplateEntry::getUuid);
+			}
+		};
+	}
+
+	@Reference
+	private LayoutLocalService _layoutLocalService;
+
+}

@@ -9,6 +9,7 @@
 
 <liferay-staging:process-list
 	deleteMenu="<%= true %>"
+	detailsMenu="<%= true %>"
 	emptyResultsMessage="no-publish-processes-were-found"
 	localTaskExecutorClassName="<%= BackgroundTaskExecutorNames.LAYOUT_IMPORT_BACKGROUND_TASK_EXECUTOR %>"
 	mvcRenderCommandName="/export_import/view_import_layouts"

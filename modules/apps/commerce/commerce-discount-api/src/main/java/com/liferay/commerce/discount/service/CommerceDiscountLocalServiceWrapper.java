@@ -525,29 +525,6 @@ public class CommerceDiscountLocalServiceWrapper
 			dynamicQuery, projection);
 	}
 
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
-	 #fetchByExternalReferenceCode(String, long)}
-	 */
-	@Deprecated
-	@Override
-	public com.liferay.commerce.discount.model.CommerceDiscount
-		fetchByExternalReferenceCode(
-			long companyId, String externalReferenceCode) {
-
-		return _commerceDiscountLocalService.fetchByExternalReferenceCode(
-			companyId, externalReferenceCode);
-	}
-
-	@Override
-	public com.liferay.commerce.discount.model.CommerceDiscount
-		fetchByExternalReferenceCode(
-			String externalReferenceCode, long companyId) {
-
-		return _commerceDiscountLocalService.fetchByExternalReferenceCode(
-			externalReferenceCode, companyId);
-	}
-
 	@Override
 	public com.liferay.commerce.discount.model.CommerceDiscount
 		fetchCommerceDiscount(long commerceDiscountId) {
@@ -939,15 +916,6 @@ public class CommerceDiscountLocalServiceWrapper
 	}
 
 	@Override
-	public int getCommerceDiscountsCountByPricingClassId(
-		long commercePricingClassId, String title) {
-
-		return _commerceDiscountLocalService.
-			getCommerceDiscountsCountByPricingClassId(
-				commercePricingClassId, title);
-	}
-
-	@Override
 	public com.liferay.portal.kernel.dao.orm.ExportActionableDynamicQuery
 		getExportActionableDynamicQuery(
 			com.liferay.exportimport.kernel.lar.PortletDataContext
@@ -963,6 +931,16 @@ public class CommerceDiscountLocalServiceWrapper
 
 		return _commerceDiscountLocalService.
 			getIndexableActionableDynamicQuery();
+	}
+
+	@Override
+	public com.liferay.commerce.discount.model.CommerceDiscount
+			getOrAddEmptyCommerceDiscount(
+				String externalReferenceCode, long companyId, long userId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _commerceDiscountLocalService.getOrAddEmptyCommerceDiscount(
+			externalReferenceCode, companyId, userId);
 	}
 
 	@Override
@@ -1058,15 +1036,6 @@ public class CommerceDiscountLocalServiceWrapper
 
 		return _commerceDiscountLocalService.
 			incrementCommerceDiscountNumberOfUse(commerceDiscountId);
-	}
-
-	@Override
-	public java.util.List<com.liferay.commerce.discount.model.CommerceDiscount>
-		searchByCommercePricingClassId(
-			long commercePricingClassId, String title, int start, int end) {
-
-		return _commerceDiscountLocalService.searchByCommercePricingClassId(
-			commercePricingClassId, title, start, end);
 	}
 
 	@Override
@@ -1374,3 +1343,4 @@ public class CommerceDiscountLocalServiceWrapper
 	private CommerceDiscountLocalService _commerceDiscountLocalService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1529867510

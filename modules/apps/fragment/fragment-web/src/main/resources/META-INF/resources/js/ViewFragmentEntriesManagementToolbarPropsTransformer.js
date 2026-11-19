@@ -3,8 +3,10 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
+import {AIAssistant} from '@liferay/ai-hub-cell-js-components-web';
 import {render} from '@liferay/frontend-js-react-web';
-import {getCheckedCheckboxes, openSelectionModal} from 'frontend-js-web';
+import {openSelectionModal} from 'frontend-js-components-web';
+import {getCheckedCheckboxes} from 'frontend-js-web';
 
 import AddFragmentModal from './AddFragmentModal';
 import openDeleteFragmentModal from './openDeleteFragmentModal';
@@ -132,9 +134,10 @@ export default function propsTransformer({
 						);
 					}
 
-					const fragmentCompositionIdsElement = document.getElementById(
-						`${portletNamespace}fragmentCompositionIds`
-					);
+					const fragmentCompositionIdsElement =
+						document.getElementById(
+							`${portletNamespace}fragmentCompositionIds`
+						);
 
 					if (fragmentCompositionIdsElement) {
 						fragmentCompositionIdsElement.setAttribute(
@@ -166,8 +169,43 @@ export default function propsTransformer({
 		});
 	};
 
+	const handleCreation = (item) => {
+		const action = item.data?.action;
+
+		if (action === 'addFragmentEntry') {
+			render(
+				AddFragmentModal,
+				{
+					addFragmentEntryURL,
+					fieldTypes,
+					fragmentTypes,
+					namespace: portletNamespace,
+				},
+				document.createElement('div')
+			);
+		}
+		else if (action === 'generateFragmentWithAI') {
+			AIAssistant.open({
+				context: {
+					fragmentSetExternalReferenceCode:
+						item.data.fragmentSetExternalReferenceCode,
+					siteExternalReferenceCode:
+						item.data.siteExternalReferenceCode,
+				},
+				initialMessage: Liferay.Language.get('generate-fragment'),
+				instructionDefinitionScope: '',
+				presentation: 'sidebar',
+				pushContainer: '#main-content',
+				triggerId: 'generateFragmentWithAI',
+			});
+		}
+	};
+
+	const {creationMenu} = otherProps;
+
 	return {
 		...otherProps,
+		creationMenu: creationMenu && {...creationMenu, closeOnClick: true},
 		onActionButtonClick(event, {item}) {
 			const action = item.data?.action;
 
@@ -190,17 +228,11 @@ export default function propsTransformer({
 				moveFragmentCompositionsAndFragmentEntries();
 			}
 		},
-		onCreateButtonClick() {
-			render(
-				AddFragmentModal,
-				{
-					addFragmentEntryURL,
-					fieldTypes,
-					fragmentTypes,
-					namespace: portletNamespace,
-				},
-				document.createElement('div')
-			);
+		onCreateButtonClick(event, {item}) {
+			handleCreation(item);
+		},
+		onCreationMenuItemClick(event, {item}) {
+			handleCreation(item);
 		},
 	};
 }

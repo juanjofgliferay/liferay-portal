@@ -36,13 +36,13 @@ import com.liferay.saved.content.taglib.internal.permission.util.SavedContentPer
 import com.liferay.saved.content.taglib.internal.servlet.ServletContextUtil;
 import com.liferay.taglib.util.IncludeTag;
 
+import jakarta.portlet.PortletRequest;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.jsp.PageContext;
+
 import java.util.Locale;
 import java.util.Map;
-
-import javax.portlet.PortletRequest;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.jsp.PageContext;
 
 /**
  * @author Alicia Garcia
@@ -223,8 +223,6 @@ public class SavedContentTag extends IncludeTag {
 			PortalUtil.getControlPanelPortletURL(
 				httpServletRequest, MySavedContentPortletKeys.MY_SAVED_CONTENT,
 				PortletRequest.RENDER_PHASE)
-		).setMVCRenderCommandName(
-			"/saved_content/view_my_saved_content"
 		).setBackURL(
 			themeDisplay.getURLCurrent()
 		).buildString();

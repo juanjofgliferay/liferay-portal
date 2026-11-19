@@ -30,7 +30,7 @@ portletDisplay.setURLBack(String.valueOf(renderResponse.createRenderURL()));
 	bean="<%= cpOption %>"
 	beanIdLabel="id"
 	externalReferenceCode="<%= cpOption.getExternalReferenceCode() %>"
-	externalReferenceCodeEditUrl="<%= editCPOptionExternalReferenceCodeURL %>"
+	externalReferenceCodeEditURL="<%= editCPOptionExternalReferenceCodeURL %>"
 	model="<%= CPOption.class %>"
 	title="<%= cpOption.getName(locale) %>"
 	wrapperCssClasses="side-panel-top-anchor"
@@ -109,7 +109,6 @@ portletDisplay.setURLBack(String.valueOf(renderResponse.createRenderURL()));
 					creationMenu="<%= cpOptionDisplayContext.getOptionValueCreationMenu(cpOptionId) %>"
 					fdsActionDropdownItems="<%= cpOptionDisplayContext.getOptionValueFDSActionDropdownItems() %>"
 					id="<%= CommerceOptionFDSNames.OPTION_VALUES %>"
-					itemsPerPage="<%= 10 %>"
 					style="stacked"
 				/>
 			</commerce-ui:panel>
@@ -118,5 +117,12 @@ portletDisplay.setURLBack(String.valueOf(renderResponse.createRenderURL()));
 </aui:form>
 
 <liferay-frontend:component
-	module="js/edit_cp_option_and_value"
+	context='<%=
+		HashMapBuilder.<String, Object>put(
+			"allowedSkuContributorTypeNames", StringUtil.merge(CPConstants.PRODUCT_OPTION_SKU_CONTRIBUTOR_FIELD_TYPES, StringPool.COMMA)
+		).put(
+			"availableTypeNames", cpOptionDisplayContext.getCommerceOptionTypeKeys()
+		).build()
+	%>'
+	module="{editCpOptionAndValue} from commerce-product-options-web"
 />

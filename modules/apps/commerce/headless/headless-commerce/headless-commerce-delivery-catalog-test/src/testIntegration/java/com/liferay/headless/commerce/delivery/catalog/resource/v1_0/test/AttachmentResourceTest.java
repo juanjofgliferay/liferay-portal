@@ -118,13 +118,6 @@ public class AttachmentResourceTest extends BaseAttachmentResourceTestCase {
 		return _cpDefinition.getCProductId();
 	}
 
-	@Override
-	protected Attachment testGraphQLAttachment_addAttachment()
-		throws Exception {
-
-		return _addCPAttachmentFileEntry(randomAttachment());
-	}
-
 	private Attachment _addCPAttachmentFileEntry(Attachment attachment)
 		throws Exception {
 
@@ -132,7 +125,7 @@ public class AttachmentResourceTest extends BaseAttachmentResourceTestCase {
 			RandomTestUtil.randomString(), _user.getUserId(),
 			testGroup.getGroupId(), DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
 			RandomTestUtil.randomString(), RandomTestUtil.randomString(), null,
-			null, RandomTestUtil.nextDate(), _serviceContext);
+			null, null, RandomTestUtil.nextDate(), _serviceContext);
 
 		Calendar displayDate = Calendar.getInstance();
 		Calendar expirationDate = Calendar.getInstance();

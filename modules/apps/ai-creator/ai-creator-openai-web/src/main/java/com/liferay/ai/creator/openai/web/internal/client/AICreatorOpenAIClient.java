@@ -9,6 +9,7 @@ import java.util.Locale;
 
 /**
  * @author Lourdes Fernández Besada
+ * @author Roberto Díaz
  */
 public interface AICreatorOpenAIClient {
 
@@ -17,6 +18,11 @@ public interface AICreatorOpenAIClient {
 			int words)
 		throws Exception;
 
-	public void validateAPIKey(String apiKey) throws Exception;
+	public String[] getGenerations(
+			String apiKey, String model, int numberOfImages, String prompt,
+			String size)
+		throws Exception;
+
+	public void validateAPIKey(String apiKey, String model) throws Exception;
 
 }

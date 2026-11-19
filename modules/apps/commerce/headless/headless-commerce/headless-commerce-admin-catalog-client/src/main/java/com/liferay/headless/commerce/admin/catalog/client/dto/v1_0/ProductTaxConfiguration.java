@@ -8,11 +8,11 @@ package com.liferay.headless.commerce.admin.catalog.client.dto.v1_0;
 import com.liferay.headless.commerce.admin.catalog.client.function.UnsafeSupplier;
 import com.liferay.headless.commerce.admin.catalog.client.serdes.v1_0.ProductTaxConfigurationSerDes;
 
+import jakarta.annotation.Generated;
+
 import java.io.Serializable;
 
 import java.util.Objects;
-
-import javax.annotation.Generated;
 
 /**
  * @author Zoltán Takács
@@ -64,6 +64,32 @@ public class ProductTaxConfiguration implements Cloneable, Serializable {
 	}
 
 	protected String taxCategory;
+
+	public String getTaxCategoryExternalReferenceCode() {
+		return taxCategoryExternalReferenceCode;
+	}
+
+	public void setTaxCategoryExternalReferenceCode(
+		String taxCategoryExternalReferenceCode) {
+
+		this.taxCategoryExternalReferenceCode =
+			taxCategoryExternalReferenceCode;
+	}
+
+	public void setTaxCategoryExternalReferenceCode(
+		UnsafeSupplier<String, Exception>
+			taxCategoryExternalReferenceCodeUnsafeSupplier) {
+
+		try {
+			taxCategoryExternalReferenceCode =
+				taxCategoryExternalReferenceCodeUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String taxCategoryExternalReferenceCode;
 
 	public Boolean getTaxable() {
 		return taxable;
@@ -119,3 +145,4 @@ public class ProductTaxConfiguration implements Cloneable, Serializable {
 	}
 
 }
+// LIFERAY-REST-BUILDER-HASH:1335774173

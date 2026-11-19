@@ -33,7 +33,6 @@ DLPortletInstanceSettingsHelper dlPortletInstanceSettingsHelper = new DLPortletI
 
 	<liferay-frontend:edit-form-body>
 		<aui:input name="preferences--selectedRepositoryId--" type="hidden" value="<%= dlAdminDisplayContext.getSelectedRepositoryId() %>" />
-		<aui:input name="preferences--rootFolderId--" type="hidden" value="<%= dlAdminDisplayContext.getRootFolderId() %>" />
 		<aui:input name="preferences--displayViews--" type="hidden" />
 		<aui:input name="preferences--entryColumns--" type="hidden" />
 
@@ -64,41 +63,45 @@ DLPortletInstanceSettingsHelper dlPortletInstanceSettingsHelper = new DLPortletI
 
 			<aui:field-wrapper label="display-style-views">
 				<liferay-ui:input-move-boxes
-					leftBoxName="currentDisplayViews"
-					leftList="<%= dlPortletInstanceSettingsHelper.getCurrentDisplayViews() %>"
-					leftReorder="<%= Boolean.TRUE.toString() %>"
-					leftTitle="current"
-					rightBoxName="availableDisplayViews"
-					rightList="<%= dlPortletInstanceSettingsHelper.getAvailableDisplayViews() %>"
-					rightTitle="available"
+					leftBoxName="availableDisplayViews"
+					leftList="<%= dlPortletInstanceSettingsHelper.getAvailableDisplayViews() %>"
+					leftTitle="available"
+					rightBoxName="currentDisplayViews"
+					rightList="<%= dlPortletInstanceSettingsHelper.getCurrentDisplayViews() %>"
+					rightReorder="<%= Boolean.TRUE.toString() %>"
+					rightTitle="in-use"
 				/>
 			</aui:field-wrapper>
 		</liferay-frontend:fieldset>
+
+		<%
+		String warningMessage = null;
+
+		if (dlAdminDisplayContext.isRootFolderInTrash()) {
+			warningMessage = LanguageUtil.get(request, "the-selected-root-folder-is-in-the-recycle-bin-please-remove-it-or-select-another-one");
+		}
+
+		if (dlAdminDisplayContext.isRootFolderNotFound()) {
+			warningMessage = LanguageUtil.get(request, "the-selected-root-folder-cannot-be-found-please-select-another-one");
+		}
+		%>
 
 		<liferay-frontend:fieldset
 			collapsible="<%= true %>"
 			id="documentLibraryItemsListingPanel"
 			label="folders-listing"
 		>
-			<div class="form-group">
-				<aui:input label="root-folder" name="rootFolderName" type="resource" value="<%= dlAdminDisplayContext.getRootFolderName() %>" />
-
-				<div class="alert alert-warning <%= dlAdminDisplayContext.isRootFolderInTrash() ? StringPool.BLANK : "hide" %>" id="<portlet:namespace />rootFolderInTrash">
-					<liferay-ui:message key="the-selected-root-folder-is-in-the-recycle-bin-please-remove-it-or-select-another-one" />
-				</div>
-
-				<div class="alert alert-warning <%= dlAdminDisplayContext.isRootFolderNotFound() ? StringPool.BLANK : "hide" %>" id="<portlet:namespace />rootFolderNotFound">
-					<liferay-ui:message key="the-selected-root-folder-cannot-be-found-please-select-another-one" />
-				</div>
-
-				<aui:button name="selectFolderButton" value="select" />
-
-				<%
-				String taglibRemoveFolder = "Liferay.Util.removeEntitySelection('rootFolderId', 'rootFolderName', this, '" + liferayPortletResponse.getNamespace() + "'); Liferay.Util.removeEntitySelection('selectedRepositoryId', '', this, '" + liferayPortletResponse.getNamespace() + "');";
-				%>
-
-				<aui:button disabled="<%= (dlAdminDisplayContext.getRootFolderId() == DLFolderConstants.DEFAULT_PARENT_FOLDER_ID) && (dlAdminDisplayContext.getSelectedRepositoryId() == scopeGroupId) %>" name="removeFolderButton" onClick="<%= taglibRemoveFolder %>" value="remove" />
-			</div>
+			<liferay-frontend:resource-selector
+				inputLabel='<%= LanguageUtil.get(request, "root-folder") %>'
+				inputName="preferences--rootFolderId--"
+				modalTitle='<%= LanguageUtil.get(request, "select-folder") %>'
+				resourceName="<%= dlAdminDisplayContext.getRootFolderName() %>"
+				resourceValue="<%= String.valueOf(dlAdminDisplayContext.getRootFolderId()) %>"
+				selectEventName="folderSelected"
+				selectResourceURL="<%= dlAdminDisplayContext.getSelectRootFolderURL() %>"
+				showRemoveButton="<%= true %>"
+				warningMessage="<%= warningMessage %>"
+			/>
 		</liferay-frontend:fieldset>
 
 		<liferay-frontend:fieldset
@@ -109,13 +112,13 @@ DLPortletInstanceSettingsHelper dlPortletInstanceSettingsHelper = new DLPortletI
 			<liferay-frontend:fieldset>
 				<aui:field-wrapper label="show-columns">
 					<liferay-ui:input-move-boxes
-						leftBoxName="currentEntryColumns"
-						leftList="<%= dlPortletInstanceSettingsHelper.getCurrentEntryColumns() %>"
-						leftReorder="<%= Boolean.TRUE.toString() %>"
-						leftTitle="current"
-						rightBoxName="availableEntryColumns"
-						rightList="<%= dlPortletInstanceSettingsHelper.getAvailableEntryColumns() %>"
-						rightTitle="available"
+						leftBoxName="availableEntryColumns"
+						leftList="<%= dlPortletInstanceSettingsHelper.getAvailableEntryColumns() %>"
+						leftTitle="available"
+						rightBoxName="currentEntryColumns"
+						rightList="<%= dlPortletInstanceSettingsHelper.getCurrentEntryColumns() %>"
+						rightReorder="<%= Boolean.TRUE.toString() %>"
+						rightTitle="in-use"
 					/>
 				</aui:field-wrapper>
 			</liferay-frontend:fieldset>
@@ -131,60 +134,6 @@ DLPortletInstanceSettingsHelper dlPortletInstanceSettingsHelper = new DLPortletI
 		</liferay-frontend:fieldset>
 
 		<aui:script sandbox="<%= true %>">
-			var selectFolderButton = document.getElementById(
-				'<portlet:namespace />selectFolderButton'
-			);
-
-			if (selectFolderButton) {
-				selectFolderButton.addEventListener('click', (event) => {
-					Liferay.Util.openSelectionModal({
-						selectEventName: '<portlet:namespace />folderSelected',
-						multiple: false,
-						onSelect: function (selectedItem) {
-							if (!selectedItem) {
-								return;
-							}
-
-							var folderData = {
-								idString: 'rootFolderId',
-								idValue: selectedItem.folderid,
-								nameString: 'rootFolderName',
-								nameValue: selectedItem.foldername,
-							};
-
-							Liferay.Util.selectFolder(folderData, '<portlet:namespace />');
-
-							var repositoryIdElement = document.querySelector(
-								'#<portlet:namespace />selectedRepositoryId'
-							);
-
-							if (repositoryIdElement != null) {
-								repositoryIdElement.value = selectedItem.repositoryid;
-							}
-
-							var rootFolderInTrashWarning = document.querySelector(
-								'#<portlet:namespace />rootFolderInTrash'
-							);
-
-							rootFolderInTrashWarning.classList.add('hide');
-
-							var rootFolderNotFoundWarning = document.querySelector(
-								'#<portlet:namespace />rootFolderNotFound'
-							);
-
-							rootFolderNotFoundWarning.classList.add('hide');
-						},
-						title: '<liferay-ui:message arguments="folder" key="select-x" />',
-
-						<%
-						PortletURL selectFolderURL = dlAdminDisplayContext.getSelectFolderURL(request);
-						%>
-
-						url: '<%= HtmlUtil.escapeJS(selectFolderURL.toString()) %>',
-					});
-				});
-			}
-
 			var showActionsInput = document.getElementById(
 				'<portlet:namespace />showActions'
 			);
@@ -225,7 +174,7 @@ DLPortletInstanceSettingsHelper dlPortletInstanceSettingsHelper = new DLPortletI
 	</liferay-frontend:edit-form-footer>
 </liferay-frontend:edit-form>
 
-<script>
+<aui:script>
 	function <portlet:namespace />saveConfiguration() {
 		var form = document.<portlet:namespace />fm;
 
@@ -242,4 +191,4 @@ DLPortletInstanceSettingsHelper dlPortletInstanceSettingsHelper = new DLPortletI
 			},
 		});
 	}
-</script>
+</aui:script>

@@ -1,0 +1,131 @@
+ext.faroEnvironmentName = System.getenv().get("FARO_ENVIRONMENT_NAME") ?: "local"
+ext.faroImageTag = project.findProperty("docker.image.tag") ?: "latest"
+
+configurations {
+	faroLoggingDependencies
+}
+
+dependencies {
+	faroLoggingDependencies(group: "org.apache.logging.log4j", name: "log4j-layout-template-json", version: "2.17.1") {
+		transitive = false
+	}
+}
+
+buildDockerImage {
+	def tag = faroEnvironmentName == "prd" ? "prd-" + new Date().format("yyyyMMdd") : faroImageTag
+
+	buildArgs = ["FARO_ENVIRONMENT_NAME": faroEnvironmentName]
+	images = ["liferay/com-liferay-osb-faro:${tag}"]
+}
+
+createDockerfile {
+	def extFile = file(faroEnvironmentName == "local" ? "modules/osb-faro-docker/local/Dockerfile.ext" : "modules/osb-faro-docker/cloud/Dockerfile.ext")
+
+	doLast {
+		file("${buildDir}/docker/Dockerfile") << "\n" + extFile.text
+	}
+
+	inputs.file extFile
+	outputs.upToDateWhen {
+		false
+	}
+
+}
+
+dockerDeploy {
+	doLast {
+		copy {
+			exclude "cloud"
+			from "modules/osb-faro-docker"
+			into "${buildDir}/docker/docker"
+		}
+
+		copy {
+			from "modules/osb-faro-docker/scripts/100_liferay_image_setup.sh"
+			into "${buildDir}/docker"
+		}
+
+		if (faroEnvironmentName != "local") {
+			copy {
+				from "modules/osb-faro-docker/cloud"
+				into "${buildDir}/docker/docker"
+			}
+
+			copy {
+				from configurations.faroLoggingDependencies
+				into "${buildDir}/docker/docker/resources"
+				rename {
+					"log4j-layout-template-json.jar"
+				}
+			}
+		}
+
+		def configsEnv = faroEnvironmentName == "local" ? "local" : "cloud"
+
+		copy {
+			from "modules/osb-faro-docker/${configsEnv}/portal-env.properties"
+			into "${buildDir}/docker/configs/${configsEnv}"
+		}
+
+		copy {
+			from "modules/osb-faro-docker/portal-ext.properties"
+			from "modules/osb-faro-docker/portal-setup-wizard.properties"
+			into "${buildDir}/docker/configs/${configsEnv}"
+		}
+	}
+}
+
+def buildUserProperties = new Properties()
+
+def buildUserPropertiesFile = new File(rootProject.projectDir, "../../build.${System.getProperty('user.name')}.properties")
+
+if (buildUserPropertiesFile.exists()) {
+	buildUserPropertiesFile.withInputStream {
+		buildUserProperties.load(it)
+	}
+}
+
+allprojects {
+	repositories {
+		maven {
+			url new File(rootProject.projectDir, "../../.m2")
+		}
+
+		maven {
+			url new File(rootProject.projectDir, "../../.m2-tmp")
+		}
+
+		if (buildUserProperties["build.repository.private.url"]) {
+			maven {
+				credentials {
+					password buildUserProperties["build.repository.private.password"] ?: ""
+					username buildUserProperties["build.repository.private.username"] ?: ""
+				}
+
+				url buildUserProperties["build.repository.private.url"]
+			}
+		}
+
+		mavenCentral()
+	}
+}
+
+subprojects {
+	tasks.all {
+		Task task ->
+		if (task.name == "baseline") {
+			enabled = false
+		}
+	}
+
+	tasks.withType(Test) {
+		jvmArgs "--add-opens=java.base/java.lang.invoke=ALL-UNNAMED"
+		maxHeapSize = "4096m"
+	}
+}
+
+project(":modules:osb-faro-contacts-demo") {
+	tasks.all {
+		enabled = (faroEnvironmentName == "local")
+	}
+}

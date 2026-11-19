@@ -56,6 +56,11 @@ public interface CommerceDiscountRelService extends BaseService {
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public CommerceDiscountRel fetchCommerceDiscountRel(
+			long commerceDiscountId, String className, long classPK)
+		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public CommerceDiscountRel fetchCommerceDiscountRel(
 			String className, long classPK)
 		throws PortalException;
 
@@ -87,6 +92,11 @@ public interface CommerceDiscountRelService extends BaseService {
 	public List<CommerceDiscountRel> getCommerceDiscountRels(
 			long commerceDiscountId, String className, int start, int end,
 			OrderByComparator<CommerceDiscountRel> orderByComparator)
+		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<CommerceDiscountRel> getCommerceDiscountRels(
+			long commerceDiscountId, String className, long classPK)
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
@@ -133,4 +143,10 @@ public interface CommerceDiscountRelService extends BaseService {
 	 */
 	public String getOSGiServiceIdentifier();
 
+	public CommerceDiscountRel updateTypeSettings(
+			long commerceDiscountRelId,
+			UnicodeProperties typeSettingsUnicodeProperties)
+		throws PortalException;
+
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1876785648

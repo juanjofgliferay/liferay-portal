@@ -12,9 +12,9 @@ String redirect = ParamUtil.getString(request, "redirect");
 
 DLFileEntryType fileEntryType = (DLFileEntryType)request.getAttribute(WebKeys.DOCUMENT_LIBRARY_FILE_ENTRY_TYPE);
 
-long fileEntryTypeId = BeanParamUtil.getLong(fileEntryType, request, "fileEntryTypeId");
+long fileEntryTypeId = BeanParamUtil.getLong(fileEntryType, request, "fileEntryTypeId", DLFileEntryType::getFileEntryTypeId);
 
-long dataDefinitionId = BeanParamUtil.getLong(fileEntryType, request, "dataDefinitionId");
+long dataDefinitionId = BeanParamUtil.getLong(fileEntryType, request, "dataDefinitionId", DLFileEntryType::getDataDefinitionId);
 
 String defaultLanguageId = LocaleUtil.toLanguageId(LocaleUtil.getSiteDefault());
 
@@ -55,7 +55,9 @@ renderResponse.setTitle((fileEntryType == null) ? LanguageUtil.get(request, "new
 	<aui:model-context bean="<%= fileEntryType %>" model="<%= DLFileEntryType.class %>" />
 
 	<nav class="component-tbar subnav-tbar-light tbar tbar-metadata-type">
-		<clay:container-fluid>
+		<clay:container-fluid
+			size="xxxl"
+		>
 			<ul class="tbar-nav">
 				<li class="tbar-item tbar-item-expand">
 					<aui:input cssClass="form-control-inline" defaultLanguageId="<%= LocaleUtil.toLanguageId(LocaleUtil.getSiteDefault()) %>" label='<%= LanguageUtil.get(request, "name") %>' labelCssClass="sr-only" name="name" placeholder='<%= LanguageUtil.format(request, "untitled", "structure") %>' wrapperCssClass="article-content-title mb-0" />
@@ -81,7 +83,7 @@ renderResponse.setTitle((fileEntryType == null) ? LanguageUtil.get(request, "new
 			%>
 
 			<liferay-data-engine:data-layout-builder
-				additionalPanels="<%= dlEditFileEntryTypeDataEngineDisplayContext.getAdditionalPanels(npmResolvedPackageName) %>"
+				additionalPanels="<%= dlEditFileEntryTypeDataEngineDisplayContext.getAdditionalPanels() %>"
 				componentId='<%= liferayPortletResponse.getNamespace() + "dataLayoutBuilder" %>'
 				contentType="document-library"
 				dataDefinitionId="<%= dataDefinitionId %>"
@@ -104,7 +106,7 @@ renderResponse.setTitle((fileEntryType == null) ? LanguageUtil.get(request, "new
 			"defaultLanguageId", defaultLanguageId
 		).build()
 	%>'
-	module="document_library/js/LocaleChangedHandler.es"
+	module="{LocaleChangedHandler} from document-library-web"
 	servletContext="<%= application %>"
 />
 
@@ -116,7 +118,7 @@ renderResponse.setTitle((fileEntryType == null) ? LanguageUtil.get(request, "new
 			"defaultLanguageId", defaultLanguageId
 		).build()
 	%>'
-	module="document_library/js/data-engine/DataEngineLayoutBuilderHandler.es"
+	module="{DataEngineLayoutBuilderHandler} from document-library-web"
 	servletContext="<%= application %>"
 />
 

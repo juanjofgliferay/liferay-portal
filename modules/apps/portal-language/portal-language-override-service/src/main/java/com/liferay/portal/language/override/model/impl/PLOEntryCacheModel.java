@@ -67,16 +67,20 @@ public class PLOEntryCacheModel
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(19);
+		StringBundler sb = new StringBundler(23);
 
 		sb.append("{mvccVersion=");
 		sb.append(mvccVersion);
+		sb.append(", externalReferenceCode=");
+		sb.append(externalReferenceCode);
 		sb.append(", ploEntryId=");
 		sb.append(ploEntryId);
 		sb.append(", companyId=");
 		sb.append(companyId);
 		sb.append(", userId=");
 		sb.append(userId);
+		sb.append(", userName=");
+		sb.append(userName);
 		sb.append(", createDate=");
 		sb.append(createDate);
 		sb.append(", modifiedDate=");
@@ -97,9 +101,24 @@ public class PLOEntryCacheModel
 		PLOEntryImpl ploEntryImpl = new PLOEntryImpl();
 
 		ploEntryImpl.setMvccVersion(mvccVersion);
+
+		if (externalReferenceCode == null) {
+			ploEntryImpl.setExternalReferenceCode("");
+		}
+		else {
+			ploEntryImpl.setExternalReferenceCode(externalReferenceCode);
+		}
+
 		ploEntryImpl.setPloEntryId(ploEntryId);
 		ploEntryImpl.setCompanyId(companyId);
 		ploEntryImpl.setUserId(userId);
+
+		if (userName == null) {
+			ploEntryImpl.setUserName("");
+		}
+		else {
+			ploEntryImpl.setUserName(userName);
+		}
 
 		if (createDate == Long.MIN_VALUE) {
 			ploEntryImpl.setCreateDate(null);
@@ -146,12 +165,14 @@ public class PLOEntryCacheModel
 		throws ClassNotFoundException, IOException {
 
 		mvccVersion = objectInput.readLong();
+		externalReferenceCode = objectInput.readUTF();
 
 		ploEntryId = objectInput.readLong();
 
 		companyId = objectInput.readLong();
 
 		userId = objectInput.readLong();
+		userName = objectInput.readUTF();
 		createDate = objectInput.readLong();
 		modifiedDate = objectInput.readLong();
 		key = objectInput.readUTF();
@@ -163,11 +184,26 @@ public class PLOEntryCacheModel
 	public void writeExternal(ObjectOutput objectOutput) throws IOException {
 		objectOutput.writeLong(mvccVersion);
 
+		if (externalReferenceCode == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(externalReferenceCode);
+		}
+
 		objectOutput.writeLong(ploEntryId);
 
 		objectOutput.writeLong(companyId);
 
 		objectOutput.writeLong(userId);
+
+		if (userName == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(userName);
+		}
+
 		objectOutput.writeLong(createDate);
 		objectOutput.writeLong(modifiedDate);
 
@@ -194,9 +230,11 @@ public class PLOEntryCacheModel
 	}
 
 	public long mvccVersion;
+	public String externalReferenceCode;
 	public long ploEntryId;
 	public long companyId;
 	public long userId;
+	public String userName;
 	public long createDate;
 	public long modifiedDate;
 	public String key;
@@ -204,3 +242,4 @@ public class PLOEntryCacheModel
 	public String value;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1871136377

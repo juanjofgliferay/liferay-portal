@@ -9,23 +9,55 @@ import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.oauth2.provider.configuration.OAuth2ProviderApplicationHeadlessServerConfiguration;
 import com.liferay.oauth2.provider.configuration.OAuth2ProviderApplicationUserAgentConfiguration;
 import com.liferay.oauth2.provider.model.OAuth2Application;
+import com.liferay.oauth2.provider.scope.liferay.ScopeLocator;
 import com.liferay.oauth2.provider.service.OAuth2ApplicationLocalService;
+import com.liferay.oauth2.provider.service.OAuth2ApplicationScopeAliasesLocalService;
+import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.configuration.test.util.ConfigurationTestUtil;
+import com.liferay.portal.k8s.agent.PortalK8sConfigMapModifier;
+import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.model.UserConstants;
+import com.liferay.portal.kernel.module.util.SystemBundleUtil;
+import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
+import com.liferay.portal.kernel.test.util.CompanyTestUtil;
+import com.liferay.portal.kernel.test.util.JAXRSWhiteboardTestUtil;
+import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
+import com.liferay.portal.kernel.transaction.Propagation;
+import com.liferay.portal.kernel.transaction.TransactionConfig;
+import com.liferay.portal.kernel.transaction.TransactionInvokerUtil;
 import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
+import com.liferay.portal.kernel.util.ListUtil;
+import com.liferay.portal.kernel.util.MapUtil;
+import com.liferay.portal.test.log.LogCapture;
+import com.liferay.portal.test.log.LoggerTestUtil;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
-import com.liferay.portal.util.PropsValues;
 
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.core.Application;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Dictionary;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+
+import jodd.util.StringUtil;
 
 import org.junit.Assert;
 import org.junit.ClassRule;
@@ -33,8 +65,13 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.ServiceRegistration;
 import org.osgi.service.cm.Configuration;
 import org.osgi.service.cm.ConfigurationAdmin;
+import org.osgi.service.log.LogLevel;
+import org.osgi.service.log.LogListener;
+import org.osgi.service.log.LogReaderService;
 
 /**
  * @author Raymond Augé
@@ -46,6 +83,74 @@ public class BaseConfigurationFactoryTest {
 	@Rule
 	public static final AggregateTestRule aggregateTestRule =
 		new LiferayIntegrationTestRule();
+
+	@Test
+	public void testActivate() throws Exception {
+		_testActivateWithUnregisteredCompany();
+		_testActivateWithUnresolvedScopeAliases();
+	}
+
+	@Test
+	public void testExcessiveActivations() throws Exception {
+		Configuration configuration = _createFactoryConfiguration(
+			OAuth2ProviderApplicationUserAgentConfiguration.class.getName(),
+			HashMapDictionaryBuilder.<String, Object>put(
+				"_portalK8sConfigMapModifier.cardinality.minimum", 0
+			).put(
+				"baseURL", "http://foo.me"
+			).put(
+				"companyId",
+				() -> {
+					Company company = null;
+
+					try {
+						company = CompanyTestUtil.addCompany();
+					}
+					catch (Exception exception) {
+						throw new RuntimeException(exception);
+					}
+
+					return company.getCompanyId();
+				}
+			).build());
+
+		List<String> errorLogEntries = new ArrayList<>();
+
+		LogListener logListener = logEntry -> {
+			if (Objects.equals(logEntry.getLogLevel(), LogLevel.ERROR)) {
+				errorLogEntries.add(logEntry.getMessage());
+			}
+		};
+
+		_logReaderService.addLogListener(logListener);
+
+		ServiceRegistration<?> serviceRegistration = null;
+
+		try (SafeCloseable safeCloseable = CompanyThreadLocal.lock(
+				TestPropsValues.getCompanyId())) {
+
+			BundleContext bundleContext = SystemBundleUtil.getBundleContext();
+
+			serviceRegistration = bundleContext.registerService(
+				Application.class,
+				new Application() {
+				},
+				null);
+
+			Assert.assertTrue(
+				StringUtil.join(errorLogEntries, "\n"),
+				errorLogEntries.isEmpty());
+		}
+		finally {
+			ConfigurationTestUtil.deleteConfiguration(configuration);
+
+			if (serviceRegistration != null) {
+				serviceRegistration.unregister();
+			}
+
+			_logReaderService.removeLogListener(logListener);
+		}
+	}
 
 	@Test
 	public void testGetFactoryConfiguration() throws Exception {
@@ -63,12 +168,20 @@ public class BaseConfigurationFactoryTest {
 		_testGetFactoryConfiguration(
 			OAuth2ProviderApplicationHeadlessServerConfiguration.class.
 				getName(),
-			properties,
+			companyId, properties,
 			_userLocalService.getUserByScreenName(
-				companyId, PropsValues.DEFAULT_ADMIN_SCREEN_NAME));
+				companyId, UserConstants.SCREEN_NAME_DEFAULT_SERVICE_ACCOUNT));
+
+		properties.put("userAccountScreenName", "test");
+
+		_testGetFactoryConfiguration(
+			OAuth2ProviderApplicationHeadlessServerConfiguration.class.
+				getName(),
+			companyId, properties, TestPropsValues.getUser());
+
 		_testGetFactoryConfiguration(
 			OAuth2ProviderApplicationUserAgentConfiguration.class.getName(),
-			properties, _userLocalService.getGuestUser(companyId));
+			companyId, properties, _userLocalService.getGuestUser(companyId));
 
 		_user = UserTestUtil.addUser();
 
@@ -77,11 +190,33 @@ public class BaseConfigurationFactoryTest {
 		_testGetFactoryConfiguration(
 			OAuth2ProviderApplicationHeadlessServerConfiguration.class.
 				getName(),
-			properties, _user);
+			companyId, properties, _user);
 	}
 
-	private OAuth2Application _fetchOAuthApplication(
-			String externalReferenceCode)
+	@Path("/get")
+	public static class TestGetResource {
+
+		@GET
+		public String get() {
+			return RandomTestUtil.randomString();
+		}
+
+	}
+
+	private Configuration _createFactoryConfiguration(
+			String className, Dictionary<String, Object> properties)
+		throws Exception {
+
+		Configuration configuration =
+			_configurationAdmin.getFactoryConfiguration(
+				className, _EXTERNAL_REFERENCE_CODE, StringPool.QUESTION);
+
+		ConfigurationTestUtil.saveConfiguration(configuration, properties);
+
+		return configuration;
+	}
+
+	private OAuth2Application _fetchOAuthApplication(long companyId)
 		throws Exception {
 
 		CountDownLatch countDownLatch = new CountDownLatch(50);
@@ -93,8 +228,7 @@ public class BaseConfigurationFactoryTest {
 				oAuth2Application =
 					_oAuth2ApplicationLocalService.
 						getOAuth2ApplicationByExternalReferenceCode(
-							externalReferenceCode,
-							TestPropsValues.getCompanyId());
+							_EXTERNAL_REFERENCE_CODE, companyId);
 			}
 			catch (Exception exception) {
 
@@ -110,51 +244,256 @@ public class BaseConfigurationFactoryTest {
 		return oAuth2Application;
 	}
 
-	private void _testGetFactoryConfiguration(
-			String className, Dictionary<String, Object> properties, User user)
-		throws Exception {
+	private List<String> _getScopeAliasesList(long companyId) throws Exception {
+		OAuth2Application oAuth2Application =
+			_oAuth2ApplicationLocalService.
+				getOAuth2ApplicationByExternalReferenceCode(
+					_EXTERNAL_REFERENCE_CODE, companyId);
 
-		String externalReferenceCode = "foo";
+		return _oAuth2ApplicationScopeAliasesLocalService.getScopeAliasesList(
+			oAuth2Application.getOAuth2ApplicationScopeAliasesId());
+	}
 
-		Configuration configuration =
-			_configurationAdmin.getFactoryConfiguration(
-				className, externalReferenceCode, StringPool.QUESTION);
+	private void _testActivateWithUnregisteredCompany() throws Exception {
+		BundleContext bundleContext = SystemBundleUtil.getBundleContext();
+
+		Semaphore semaphore = new Semaphore(0);
+
+		ServiceRegistration<PortalK8sConfigMapModifier> serviceRegistration =
+			bundleContext.registerService(
+				PortalK8sConfigMapModifier.class,
+				(configMapModelConsumer, configMapName) -> {
+					semaphore.release();
+
+					return PortalK8sConfigMapModifier.Result.UNCHANGED;
+				},
+				MapUtil.singletonDictionary(
+					"service.ranking", Integer.MAX_VALUE));
 
 		try {
-			ConfigurationTestUtil.saveConfiguration(configuration, properties);
+			String webId = RandomTestUtil.randomString() + ".com";
 
-			OAuth2Application oAuth2Application = _fetchOAuthApplication(
-				externalReferenceCode);
+			Configuration configuration = _createFactoryConfiguration(
+				OAuth2ProviderApplicationUserAgentConfiguration.class.getName(),
+				HashMapDictionaryBuilder.<String, Object>put(
+					"_portalK8sConfigMapModifier.cardinality.minimum", 0
+				).put(
+					"baseURL", "http://foo.me"
+				).put(
+					"dxp.lxc.liferay.com.virtualInstanceId", webId
+				).put(
+					"projectName", RandomTestUtil.randomString()
+				).build());
 
-			Assert.assertNotNull(oAuth2Application);
-			Assert.assertEquals(
-				user.getUserId(),
-				oAuth2Application.getClientCredentialUserId());
-			Assert.assertEquals(
-				externalReferenceCode, oAuth2Application.getName());
+			try {
+				_company = CompanyTestUtil.addCompanyWithWebId(webId);
+
+				semaphore.acquire();
+
+				Assert.assertNotNull(
+					_oAuth2ApplicationLocalService.
+						fetchOAuth2ApplicationByExternalReferenceCode(
+							_EXTERNAL_REFERENCE_CODE, _company.getCompanyId()));
+			}
+			finally {
+				ConfigurationTestUtil.deleteConfiguration(configuration);
+			}
 		}
 		finally {
-			ConfigurationTestUtil.deleteConfiguration(configuration);
+			serviceRegistration.unregister();
+		}
+	}
+
+	private void _testActivateWithUnresolvedScopeAliases() throws Exception {
+		JAXRSWhiteboardTestUtil.ensureReady();
+
+		BundleContext bundleContext = SystemBundleUtil.getBundleContext();
+
+		String name = RandomTestUtil.randomString();
+
+		Dictionary<String, Object> properties =
+			HashMapDictionaryBuilder.<String, Object>put(
+				"osgi.jaxrs.application.base", "/" + name
+			).put(
+				"osgi.jaxrs.extension.select", "(liferay.extension=OAuth2)"
+			).put(
+				"osgi.jaxrs.name", name
+			).build();
+
+		ServiceRegistration<Application> applicationServiceRegistration =
+			bundleContext.registerService(
+				Application.class, new TestApplication(), properties);
+
+		long companyId = TestPropsValues.getCompanyId();
+
+		Collection<String> scopeAliases = _scopeLocator.getScopeAliases(
+			companyId, name);
+
+		Assert.assertFalse(scopeAliases.toString(), scopeAliases.isEmpty());
+
+		applicationServiceRegistration.unregister();
+
+		Semaphore semaphore = new Semaphore(0);
+
+		ServiceRegistration<PortalK8sConfigMapModifier>
+			portalK8sConfigMapModifierServiceRegistration =
+				bundleContext.registerService(
+					PortalK8sConfigMapModifier.class,
+					(configMapModelConsumer, configMapName) -> {
+						semaphore.release();
+
+						return PortalK8sConfigMapModifier.Result.UNCHANGED;
+					},
+					MapUtil.singletonDictionary(
+						"service.ranking", Integer.MAX_VALUE));
+
+		try {
+			Configuration configuration = _createFactoryConfiguration(
+				OAuth2ProviderApplicationUserAgentConfiguration.class.getName(),
+				HashMapDictionaryBuilder.<String, Object>put(
+					"_portalK8sConfigMapModifier.cardinality.minimum", 0
+				).put(
+					"baseURL", "http://foo.me"
+				).put(
+					"companyId", companyId
+				).put(
+					"projectName", RandomTestUtil.randomString()
+				).put(
+					"scopes", scopeAliases.toArray(new String[0])
+				).build());
+
+			semaphore.acquire();
+
+			List<String> errorLogEntries = new ArrayList<>();
+
+			LogListener logListener = logEntry -> {
+				if (Objects.equals(logEntry.getLogLevel(), LogLevel.ERROR)) {
+					errorLogEntries.add(logEntry.getMessage());
+				}
+			};
+
+			_logReaderService.addLogListener(logListener);
+
+			try {
+				List<String> scopeAliasesList = _getScopeAliasesList(companyId);
+
+				Assert.assertTrue(
+					scopeAliasesList.toString(), scopeAliasesList.isEmpty());
+
+				try {
+					TransactionInvokerUtil.invoke(
+						TransactionConfig.Factory.create(
+							Propagation.REQUIRED,
+							new Class<?>[] {Exception.class}),
+						() -> {
+							ServiceRegistration<Application>
+								serviceRegistration =
+									bundleContext.registerService(
+										Application.class,
+										new TestApplication(), properties);
+
+							serviceRegistration.unregister();
+
+							throw new PortalException("Roll back");
+						});
+
+					Assert.fail();
+				}
+				catch (Throwable throwable) {
+					Assert.assertEquals("Roll back", throwable.getMessage());
+				}
+
+				Assert.assertEquals(
+					new HashSet<>(scopeAliases),
+					new HashSet<>(_getScopeAliasesList(companyId)));
+				Assert.assertTrue(
+					errorLogEntries.toString(), errorLogEntries.isEmpty());
+			}
+			finally {
+				_logReaderService.removeLogListener(logListener);
+
+				semaphore.drainPermits();
+
+				ConfigurationTestUtil.deleteConfiguration(configuration);
+
+				semaphore.acquire();
+			}
+		}
+		finally {
+			portalK8sConfigMapModifierServiceRegistration.unregister();
+		}
+	}
+
+	private void _testGetFactoryConfiguration(
+			String className, long companyId,
+			Dictionary<String, Object> properties, User user)
+		throws Exception {
+
+		try (LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
+				className, LoggerTestUtil.INFO)) {
+
+			Configuration configuration = _createFactoryConfiguration(
+				className, properties);
+
+			Assert.assertTrue(ListUtil.isEmpty(logCapture.getLogEntries()));
+
+			try {
+				OAuth2Application oAuth2Application = _fetchOAuthApplication(
+					companyId);
+
+				Assert.assertNotNull(oAuth2Application);
+				Assert.assertEquals(
+					user.getUserId(),
+					oAuth2Application.getClientCredentialUserId());
+				Assert.assertEquals(
+					_EXTERNAL_REFERENCE_CODE, oAuth2Application.getName());
+			}
+			finally {
+				ConfigurationTestUtil.deleteConfiguration(configuration);
+			}
 		}
 
 		Thread.sleep(200);
 
-		OAuth2Application oAuth2Application = _fetchOAuthApplication(
-			externalReferenceCode);
+		OAuth2Application oAuth2Application = _fetchOAuthApplication(companyId);
 
 		Assert.assertNull(oAuth2Application);
 	}
 
-	@Inject
-	private static ConfigurationAdmin _configurationAdmin;
+	private static final String _EXTERNAL_REFERENCE_CODE = "foo";
+
+	@DeleteAfterTestRun
+	private Company _company;
 
 	@Inject
-	private static OAuth2ApplicationLocalService _oAuth2ApplicationLocalService;
+	private ConfigurationAdmin _configurationAdmin;
 
 	@Inject
-	private static UserLocalService _userLocalService;
+	private LogReaderService _logReaderService;
+
+	@Inject
+	private OAuth2ApplicationLocalService _oAuth2ApplicationLocalService;
+
+	@Inject
+	private OAuth2ApplicationScopeAliasesLocalService
+		_oAuth2ApplicationScopeAliasesLocalService;
+
+	@Inject
+	private ScopeLocator _scopeLocator;
 
 	@DeleteAfterTestRun
 	private User _user;
+
+	@Inject
+	private UserLocalService _userLocalService;
+
+	private static class TestApplication extends Application {
+
+		@Override
+		public Set<Object> getSingletons() {
+			return Collections.singleton(new TestGetResource());
+		}
+
+	}
 
 }

@@ -25,8 +25,10 @@ import java.util.Set;
  *
  * @author Brian Wing Shun Chan
  * @see RecentLayoutRevisionPersistence
+ * @deprecated As of Cavanaugh (7.4.x), with no direct replacement
  * @generated
  */
+@Deprecated
 public class RecentLayoutRevisionUtil {
 
 	/*
@@ -34,6 +36,22 @@ public class RecentLayoutRevisionUtil {
 	 *
 	 * Never modify this class directly. Modify <code>service.xml</code> and rerun ServiceBuilder to regenerate this class.
 	 */
+
+	/**
+	 * @see BasePersistence#cacheResult(List)
+	 */
+	public static void cacheResult(
+		List<RecentLayoutRevision> recentLayoutRevisions) {
+
+		getPersistence().cacheResult(recentLayoutRevisions);
+	}
+
+	/**
+	 * @see BasePersistence#cacheResult(com.liferay.portal.kernel.model.BaseModel)
+	 */
+	public static void cacheResult(RecentLayoutRevision recentLayoutRevision) {
+		getPersistence().cacheResult(recentLayoutRevision);
+	}
 
 	/**
 	 * @see BasePersistence#clearCache()
@@ -114,232 +132,10 @@ public class RecentLayoutRevisionUtil {
 	}
 
 	/**
-	 * Returns all the recent layout revisions where groupId = &#63;.
-	 *
-	 * @param groupId the group ID
-	 * @return the matching recent layout revisions
-	 */
-	public static List<RecentLayoutRevision> findByGroupId(long groupId) {
-		return getPersistence().findByGroupId(groupId);
-	}
-
-	/**
-	 * Returns a range of all the recent layout revisions where groupId = &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>RecentLayoutRevisionModelImpl</code>.
-	 * </p>
-	 *
-	 * @param groupId the group ID
-	 * @param start the lower bound of the range of recent layout revisions
-	 * @param end the upper bound of the range of recent layout revisions (not inclusive)
-	 * @return the range of matching recent layout revisions
-	 */
-	public static List<RecentLayoutRevision> findByGroupId(
-		long groupId, int start, int end) {
-
-		return getPersistence().findByGroupId(groupId, start, end);
-	}
-
-	/**
-	 * Returns an ordered range of all the recent layout revisions where groupId = &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>RecentLayoutRevisionModelImpl</code>.
-	 * </p>
-	 *
-	 * @param groupId the group ID
-	 * @param start the lower bound of the range of recent layout revisions
-	 * @param end the upper bound of the range of recent layout revisions (not inclusive)
-	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
-	 * @return the ordered range of matching recent layout revisions
-	 */
-	public static List<RecentLayoutRevision> findByGroupId(
-		long groupId, int start, int end,
-		OrderByComparator<RecentLayoutRevision> orderByComparator) {
-
-		return getPersistence().findByGroupId(
-			groupId, start, end, orderByComparator);
-	}
-
-	/**
-	 * Returns an ordered range of all the recent layout revisions where groupId = &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>RecentLayoutRevisionModelImpl</code>.
-	 * </p>
-	 *
-	 * @param groupId the group ID
-	 * @param start the lower bound of the range of recent layout revisions
-	 * @param end the upper bound of the range of recent layout revisions (not inclusive)
-	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
-	 * @param useFinderCache whether to use the finder cache
-	 * @return the ordered range of matching recent layout revisions
-	 */
-	public static List<RecentLayoutRevision> findByGroupId(
-		long groupId, int start, int end,
-		OrderByComparator<RecentLayoutRevision> orderByComparator,
-		boolean useFinderCache) {
-
-		return getPersistence().findByGroupId(
-			groupId, start, end, orderByComparator, useFinderCache);
-	}
-
-	/**
-	 * Returns the first recent layout revision in the ordered set where groupId = &#63;.
-	 *
-	 * @param groupId the group ID
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the first matching recent layout revision
-	 * @throws NoSuchRecentLayoutRevisionException if a matching recent layout revision could not be found
-	 */
-	public static RecentLayoutRevision findByGroupId_First(
-			long groupId,
-			OrderByComparator<RecentLayoutRevision> orderByComparator)
-		throws com.liferay.portal.kernel.exception.
-			NoSuchRecentLayoutRevisionException {
-
-		return getPersistence().findByGroupId_First(groupId, orderByComparator);
-	}
-
-	/**
-	 * Returns the first recent layout revision in the ordered set where groupId = &#63;.
-	 *
-	 * @param groupId the group ID
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the first matching recent layout revision, or <code>null</code> if a matching recent layout revision could not be found
-	 */
-	public static RecentLayoutRevision fetchByGroupId_First(
-		long groupId,
-		OrderByComparator<RecentLayoutRevision> orderByComparator) {
-
-		return getPersistence().fetchByGroupId_First(
-			groupId, orderByComparator);
-	}
-
-	/**
-	 * Returns the last recent layout revision in the ordered set where groupId = &#63;.
-	 *
-	 * @param groupId the group ID
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the last matching recent layout revision
-	 * @throws NoSuchRecentLayoutRevisionException if a matching recent layout revision could not be found
-	 */
-	public static RecentLayoutRevision findByGroupId_Last(
-			long groupId,
-			OrderByComparator<RecentLayoutRevision> orderByComparator)
-		throws com.liferay.portal.kernel.exception.
-			NoSuchRecentLayoutRevisionException {
-
-		return getPersistence().findByGroupId_Last(groupId, orderByComparator);
-	}
-
-	/**
-	 * Returns the last recent layout revision in the ordered set where groupId = &#63;.
-	 *
-	 * @param groupId the group ID
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the last matching recent layout revision, or <code>null</code> if a matching recent layout revision could not be found
-	 */
-	public static RecentLayoutRevision fetchByGroupId_Last(
-		long groupId,
-		OrderByComparator<RecentLayoutRevision> orderByComparator) {
-
-		return getPersistence().fetchByGroupId_Last(groupId, orderByComparator);
-	}
-
-	/**
-	 * Returns the recent layout revisions before and after the current recent layout revision in the ordered set where groupId = &#63;.
-	 *
-	 * @param recentLayoutRevisionId the primary key of the current recent layout revision
-	 * @param groupId the group ID
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the previous, current, and next recent layout revision
-	 * @throws NoSuchRecentLayoutRevisionException if a recent layout revision with the primary key could not be found
-	 */
-	public static RecentLayoutRevision[] findByGroupId_PrevAndNext(
-			long recentLayoutRevisionId, long groupId,
-			OrderByComparator<RecentLayoutRevision> orderByComparator)
-		throws com.liferay.portal.kernel.exception.
-			NoSuchRecentLayoutRevisionException {
-
-		return getPersistence().findByGroupId_PrevAndNext(
-			recentLayoutRevisionId, groupId, orderByComparator);
-	}
-
-	/**
-	 * Removes all the recent layout revisions where groupId = &#63; from the database.
-	 *
-	 * @param groupId the group ID
-	 */
-	public static void removeByGroupId(long groupId) {
-		getPersistence().removeByGroupId(groupId);
-	}
-
-	/**
-	 * Returns the number of recent layout revisions where groupId = &#63;.
-	 *
-	 * @param groupId the group ID
-	 * @return the number of matching recent layout revisions
-	 */
-	public static int countByGroupId(long groupId) {
-		return getPersistence().countByGroupId(groupId);
-	}
-
-	/**
-	 * Returns all the recent layout revisions where userId = &#63;.
-	 *
-	 * @param userId the user ID
-	 * @return the matching recent layout revisions
-	 */
-	public static List<RecentLayoutRevision> findByUserId(long userId) {
-		return getPersistence().findByUserId(userId);
-	}
-
-	/**
-	 * Returns a range of all the recent layout revisions where userId = &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>RecentLayoutRevisionModelImpl</code>.
-	 * </p>
-	 *
-	 * @param userId the user ID
-	 * @param start the lower bound of the range of recent layout revisions
-	 * @param end the upper bound of the range of recent layout revisions (not inclusive)
-	 * @return the range of matching recent layout revisions
-	 */
-	public static List<RecentLayoutRevision> findByUserId(
-		long userId, int start, int end) {
-
-		return getPersistence().findByUserId(userId, start, end);
-	}
-
-	/**
 	 * Returns an ordered range of all the recent layout revisions where userId = &#63;.
 	 *
 	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>RecentLayoutRevisionModelImpl</code>.
-	 * </p>
-	 *
-	 * @param userId the user ID
-	 * @param start the lower bound of the range of recent layout revisions
-	 * @param end the upper bound of the range of recent layout revisions (not inclusive)
-	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
-	 * @return the ordered range of matching recent layout revisions
-	 */
-	public static List<RecentLayoutRevision> findByUserId(
-		long userId, int start, int end,
-		OrderByComparator<RecentLayoutRevision> orderByComparator) {
-
-		return getPersistence().findByUserId(
-			userId, start, end, orderByComparator);
-	}
-
-	/**
-	 * Returns an ordered range of all the recent layout revisions where userId = &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>RecentLayoutRevisionModelImpl</code>.
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>com.liferay.portal.model.impl.RecentLayoutRevisionModelImpl</code>.
 	 * </p>
 	 *
 	 * @param userId the user ID
@@ -390,56 +186,6 @@ public class RecentLayoutRevisionUtil {
 	}
 
 	/**
-	 * Returns the last recent layout revision in the ordered set where userId = &#63;.
-	 *
-	 * @param userId the user ID
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the last matching recent layout revision
-	 * @throws NoSuchRecentLayoutRevisionException if a matching recent layout revision could not be found
-	 */
-	public static RecentLayoutRevision findByUserId_Last(
-			long userId,
-			OrderByComparator<RecentLayoutRevision> orderByComparator)
-		throws com.liferay.portal.kernel.exception.
-			NoSuchRecentLayoutRevisionException {
-
-		return getPersistence().findByUserId_Last(userId, orderByComparator);
-	}
-
-	/**
-	 * Returns the last recent layout revision in the ordered set where userId = &#63;.
-	 *
-	 * @param userId the user ID
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the last matching recent layout revision, or <code>null</code> if a matching recent layout revision could not be found
-	 */
-	public static RecentLayoutRevision fetchByUserId_Last(
-		long userId,
-		OrderByComparator<RecentLayoutRevision> orderByComparator) {
-
-		return getPersistence().fetchByUserId_Last(userId, orderByComparator);
-	}
-
-	/**
-	 * Returns the recent layout revisions before and after the current recent layout revision in the ordered set where userId = &#63;.
-	 *
-	 * @param recentLayoutRevisionId the primary key of the current recent layout revision
-	 * @param userId the user ID
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the previous, current, and next recent layout revision
-	 * @throws NoSuchRecentLayoutRevisionException if a recent layout revision with the primary key could not be found
-	 */
-	public static RecentLayoutRevision[] findByUserId_PrevAndNext(
-			long recentLayoutRevisionId, long userId,
-			OrderByComparator<RecentLayoutRevision> orderByComparator)
-		throws com.liferay.portal.kernel.exception.
-			NoSuchRecentLayoutRevisionException {
-
-		return getPersistence().findByUserId_PrevAndNext(
-			recentLayoutRevisionId, userId, orderByComparator);
-	}
-
-	/**
 	 * Removes all the recent layout revisions where userId = &#63; from the database.
 	 *
 	 * @param userId the user ID
@@ -459,62 +205,10 @@ public class RecentLayoutRevisionUtil {
 	}
 
 	/**
-	 * Returns all the recent layout revisions where layoutRevisionId = &#63;.
-	 *
-	 * @param layoutRevisionId the layout revision ID
-	 * @return the matching recent layout revisions
-	 */
-	public static List<RecentLayoutRevision> findByLayoutRevisionId(
-		long layoutRevisionId) {
-
-		return getPersistence().findByLayoutRevisionId(layoutRevisionId);
-	}
-
-	/**
-	 * Returns a range of all the recent layout revisions where layoutRevisionId = &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>RecentLayoutRevisionModelImpl</code>.
-	 * </p>
-	 *
-	 * @param layoutRevisionId the layout revision ID
-	 * @param start the lower bound of the range of recent layout revisions
-	 * @param end the upper bound of the range of recent layout revisions (not inclusive)
-	 * @return the range of matching recent layout revisions
-	 */
-	public static List<RecentLayoutRevision> findByLayoutRevisionId(
-		long layoutRevisionId, int start, int end) {
-
-		return getPersistence().findByLayoutRevisionId(
-			layoutRevisionId, start, end);
-	}
-
-	/**
 	 * Returns an ordered range of all the recent layout revisions where layoutRevisionId = &#63;.
 	 *
 	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>RecentLayoutRevisionModelImpl</code>.
-	 * </p>
-	 *
-	 * @param layoutRevisionId the layout revision ID
-	 * @param start the lower bound of the range of recent layout revisions
-	 * @param end the upper bound of the range of recent layout revisions (not inclusive)
-	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
-	 * @return the ordered range of matching recent layout revisions
-	 */
-	public static List<RecentLayoutRevision> findByLayoutRevisionId(
-		long layoutRevisionId, int start, int end,
-		OrderByComparator<RecentLayoutRevision> orderByComparator) {
-
-		return getPersistence().findByLayoutRevisionId(
-			layoutRevisionId, start, end, orderByComparator);
-	}
-
-	/**
-	 * Returns an ordered range of all the recent layout revisions where layoutRevisionId = &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>RecentLayoutRevisionModelImpl</code>.
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>com.liferay.portal.model.impl.RecentLayoutRevisionModelImpl</code>.
 	 * </p>
 	 *
 	 * @param layoutRevisionId the layout revision ID
@@ -567,58 +261,6 @@ public class RecentLayoutRevisionUtil {
 	}
 
 	/**
-	 * Returns the last recent layout revision in the ordered set where layoutRevisionId = &#63;.
-	 *
-	 * @param layoutRevisionId the layout revision ID
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the last matching recent layout revision
-	 * @throws NoSuchRecentLayoutRevisionException if a matching recent layout revision could not be found
-	 */
-	public static RecentLayoutRevision findByLayoutRevisionId_Last(
-			long layoutRevisionId,
-			OrderByComparator<RecentLayoutRevision> orderByComparator)
-		throws com.liferay.portal.kernel.exception.
-			NoSuchRecentLayoutRevisionException {
-
-		return getPersistence().findByLayoutRevisionId_Last(
-			layoutRevisionId, orderByComparator);
-	}
-
-	/**
-	 * Returns the last recent layout revision in the ordered set where layoutRevisionId = &#63;.
-	 *
-	 * @param layoutRevisionId the layout revision ID
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the last matching recent layout revision, or <code>null</code> if a matching recent layout revision could not be found
-	 */
-	public static RecentLayoutRevision fetchByLayoutRevisionId_Last(
-		long layoutRevisionId,
-		OrderByComparator<RecentLayoutRevision> orderByComparator) {
-
-		return getPersistence().fetchByLayoutRevisionId_Last(
-			layoutRevisionId, orderByComparator);
-	}
-
-	/**
-	 * Returns the recent layout revisions before and after the current recent layout revision in the ordered set where layoutRevisionId = &#63;.
-	 *
-	 * @param recentLayoutRevisionId the primary key of the current recent layout revision
-	 * @param layoutRevisionId the layout revision ID
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the previous, current, and next recent layout revision
-	 * @throws NoSuchRecentLayoutRevisionException if a recent layout revision with the primary key could not be found
-	 */
-	public static RecentLayoutRevision[] findByLayoutRevisionId_PrevAndNext(
-			long recentLayoutRevisionId, long layoutRevisionId,
-			OrderByComparator<RecentLayoutRevision> orderByComparator)
-		throws com.liferay.portal.kernel.exception.
-			NoSuchRecentLayoutRevisionException {
-
-		return getPersistence().findByLayoutRevisionId_PrevAndNext(
-			recentLayoutRevisionId, layoutRevisionId, orderByComparator);
-	}
-
-	/**
 	 * Removes all the recent layout revisions where layoutRevisionId = &#63; from the database.
 	 *
 	 * @param layoutRevisionId the layout revision ID
@@ -652,20 +294,6 @@ public class RecentLayoutRevisionUtil {
 			NoSuchRecentLayoutRevisionException {
 
 		return getPersistence().findByU_L_P(userId, layoutSetBranchId, plid);
-	}
-
-	/**
-	 * Returns the recent layout revision where userId = &#63; and layoutSetBranchId = &#63; and plid = &#63; or returns <code>null</code> if it could not be found. Uses the finder cache.
-	 *
-	 * @param userId the user ID
-	 * @param layoutSetBranchId the layout set branch ID
-	 * @param plid the plid
-	 * @return the matching recent layout revision, or <code>null</code> if a matching recent layout revision could not be found
-	 */
-	public static RecentLayoutRevision fetchByU_L_P(
-		long userId, long layoutSetBranchId, long plid) {
-
-		return getPersistence().fetchByU_L_P(userId, layoutSetBranchId, plid);
 	}
 
 	/**
@@ -713,26 +341,6 @@ public class RecentLayoutRevisionUtil {
 		long userId, long layoutSetBranchId, long plid) {
 
 		return getPersistence().countByU_L_P(userId, layoutSetBranchId, plid);
-	}
-
-	/**
-	 * Caches the recent layout revision in the entity cache if it is enabled.
-	 *
-	 * @param recentLayoutRevision the recent layout revision
-	 */
-	public static void cacheResult(RecentLayoutRevision recentLayoutRevision) {
-		getPersistence().cacheResult(recentLayoutRevision);
-	}
-
-	/**
-	 * Caches the recent layout revisions in the entity cache if it is enabled.
-	 *
-	 * @param recentLayoutRevisions the recent layout revisions
-	 */
-	public static void cacheResult(
-		List<RecentLayoutRevision> recentLayoutRevisions) {
-
-		getPersistence().cacheResult(recentLayoutRevisions);
 	}
 
 	/**
@@ -793,84 +401,118 @@ public class RecentLayoutRevisionUtil {
 	}
 
 	/**
-	 * Returns all the recent layout revisions.
+	 * Returns the recent layout revision where userId = &#63; and layoutSetBranchId = &#63; and plid = &#63; or returns <code>null</code> if it could not be found. Uses the finder cache.
 	 *
-	 * @return the recent layout revisions
+	 * @param userId the user ID
+	 * @param layoutSetBranchId the layout set branch ID
+	 * @param plid the plid
+	 * @return the matching recent layout revision, or <code>null</code> if a matching recent layout revision could not be found
 	 */
-	public static List<RecentLayoutRevision> findAll() {
-		return getPersistence().findAll();
+	public static RecentLayoutRevision fetchByU_L_P(
+		long userId, long layoutSetBranchId, long plid) {
+
+		return getPersistence().fetchByU_L_P(userId, layoutSetBranchId, plid);
 	}
 
 	/**
-	 * Returns a range of all the recent layout revisions.
+	 * Returns all the recent layout revisions where userId = &#63;.
+	 *
+	 * @param userId the user ID
+	 * @return the matching recent layout revisions
+	 */
+	public static List<RecentLayoutRevision> findByUserId(long userId) {
+		return getPersistence().findByUserId(userId);
+	}
+
+	/**
+	 * Returns a range of all the recent layout revisions where userId = &#63;.
 	 *
 	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>RecentLayoutRevisionModelImpl</code>.
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>com.liferay.portal.model.impl.RecentLayoutRevisionModelImpl</code>.
 	 * </p>
 	 *
+	 * @param userId the user ID
 	 * @param start the lower bound of the range of recent layout revisions
 	 * @param end the upper bound of the range of recent layout revisions (not inclusive)
-	 * @return the range of recent layout revisions
+	 * @return the range of matching recent layout revisions
 	 */
-	public static List<RecentLayoutRevision> findAll(int start, int end) {
-		return getPersistence().findAll(start, end);
+	public static List<RecentLayoutRevision> findByUserId(
+		long userId, int start, int end) {
+
+		return getPersistence().findByUserId(userId, start, end);
 	}
 
 	/**
-	 * Returns an ordered range of all the recent layout revisions.
+	 * Returns an ordered range of all the recent layout revisions where userId = &#63;.
 	 *
 	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>RecentLayoutRevisionModelImpl</code>.
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>com.liferay.portal.model.impl.RecentLayoutRevisionModelImpl</code>.
 	 * </p>
 	 *
+	 * @param userId the user ID
 	 * @param start the lower bound of the range of recent layout revisions
 	 * @param end the upper bound of the range of recent layout revisions (not inclusive)
 	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
-	 * @return the ordered range of recent layout revisions
+	 * @return the ordered range of matching recent layout revisions
 	 */
-	public static List<RecentLayoutRevision> findAll(
-		int start, int end,
+	public static List<RecentLayoutRevision> findByUserId(
+		long userId, int start, int end,
 		OrderByComparator<RecentLayoutRevision> orderByComparator) {
 
-		return getPersistence().findAll(start, end, orderByComparator);
+		return getPersistence().findByUserId(
+			userId, start, end, orderByComparator);
 	}
 
 	/**
-	 * Returns an ordered range of all the recent layout revisions.
+	 * Returns all the recent layout revisions where layoutRevisionId = &#63;.
+	 *
+	 * @param layoutRevisionId the layout revision ID
+	 * @return the matching recent layout revisions
+	 */
+	public static List<RecentLayoutRevision> findByLayoutRevisionId(
+		long layoutRevisionId) {
+
+		return getPersistence().findByLayoutRevisionId(layoutRevisionId);
+	}
+
+	/**
+	 * Returns a range of all the recent layout revisions where layoutRevisionId = &#63;.
 	 *
 	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>RecentLayoutRevisionModelImpl</code>.
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>com.liferay.portal.model.impl.RecentLayoutRevisionModelImpl</code>.
 	 * </p>
 	 *
+	 * @param layoutRevisionId the layout revision ID
+	 * @param start the lower bound of the range of recent layout revisions
+	 * @param end the upper bound of the range of recent layout revisions (not inclusive)
+	 * @return the range of matching recent layout revisions
+	 */
+	public static List<RecentLayoutRevision> findByLayoutRevisionId(
+		long layoutRevisionId, int start, int end) {
+
+		return getPersistence().findByLayoutRevisionId(
+			layoutRevisionId, start, end);
+	}
+
+	/**
+	 * Returns an ordered range of all the recent layout revisions where layoutRevisionId = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>com.liferay.portal.model.impl.RecentLayoutRevisionModelImpl</code>.
+	 * </p>
+	 *
+	 * @param layoutRevisionId the layout revision ID
 	 * @param start the lower bound of the range of recent layout revisions
 	 * @param end the upper bound of the range of recent layout revisions (not inclusive)
 	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
-	 * @param useFinderCache whether to use the finder cache
-	 * @return the ordered range of recent layout revisions
+	 * @return the ordered range of matching recent layout revisions
 	 */
-	public static List<RecentLayoutRevision> findAll(
-		int start, int end,
-		OrderByComparator<RecentLayoutRevision> orderByComparator,
-		boolean useFinderCache) {
+	public static List<RecentLayoutRevision> findByLayoutRevisionId(
+		long layoutRevisionId, int start, int end,
+		OrderByComparator<RecentLayoutRevision> orderByComparator) {
 
-		return getPersistence().findAll(
-			start, end, orderByComparator, useFinderCache);
-	}
-
-	/**
-	 * Removes all the recent layout revisions from the database.
-	 */
-	public static void removeAll() {
-		getPersistence().removeAll();
-	}
-
-	/**
-	 * Returns the number of recent layout revisions.
-	 *
-	 * @return the number of recent layout revisions
-	 */
-	public static int countAll() {
-		return getPersistence().countAll();
+		return getPersistence().findByLayoutRevisionId(
+			layoutRevisionId, start, end, orderByComparator);
 	}
 
 	public static RecentLayoutRevisionPersistence getPersistence() {
@@ -886,3 +528,4 @@ public class RecentLayoutRevisionUtil {
 	private static volatile RecentLayoutRevisionPersistence _persistence;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1246069391

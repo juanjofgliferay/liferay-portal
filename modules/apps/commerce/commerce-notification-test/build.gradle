@@ -7,8 +7,10 @@ dependencies {
 	testIntegrationImplementation project(":apps:commerce:commerce-inventory-api")
 	testIntegrationImplementation project(":apps:commerce:commerce-notification-api")
 	testIntegrationImplementation project(":apps:commerce:commerce-notification-test-util")
-	testIntegrationImplementation project(":apps:commerce:commerce-payment-test-util")
 	testIntegrationImplementation project(":apps:commerce:commerce-product-api")
 	testIntegrationImplementation project(":apps:commerce:commerce-test-util")
+	testIntegrationImplementation project(":apps:notification:notification-api")
+	testIntegrationImplementation project(":apps:object:object-api")
+	testIntegrationImplementation project(":apps:portal:portal-instance-lifecycle-api")
 	testIntegrationImplementation project(":test:arquillian-extension-junit-bridge")
 }

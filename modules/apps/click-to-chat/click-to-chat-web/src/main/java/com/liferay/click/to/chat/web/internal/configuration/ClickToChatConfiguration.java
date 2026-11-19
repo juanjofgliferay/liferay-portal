@@ -22,15 +22,16 @@ import com.liferay.portal.configuration.metatype.annotations.ExtendedObjectClass
 )
 public interface ClickToChatConfiguration {
 
-	public boolean enabled();
+	public String chatProviderAccountId();
 
 	public String chatProviderId();
 
-	public String chatProviderAccountId();
-
 	public String chatProviderKeyId();
 
+	@Meta.AD(required = false, type = Meta.Type.Password)
 	public String chatProviderSecretKey();
+
+	public boolean enabled();
 
 	public boolean guestUsersAllowed();
 

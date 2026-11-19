@@ -5,6 +5,7 @@
 
 package com.liferay.jenkins.results.parser;
 
+import java.io.File;
 import java.io.IOException;
 
 import java.util.ArrayList;
@@ -13,6 +14,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.TimeUnit;
+
+import org.apache.http.client.utils.URIBuilder;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 /**
  * @author Kenji Heigel
@@ -33,7 +40,7 @@ public class GenerateReportsControllerBuildRunner
 
 	@Override
 	public void run() {
-		invokeGenerateReportsBuild();
+		invokeGenerateReportsBuilds();
 	}
 
 	@Override
@@ -44,148 +51,137 @@ public class GenerateReportsControllerBuildRunner
 		super(buildData);
 	}
 
-	protected void invokeGenerateReportsBuild() {
+	protected void invokeGenerateReportsBuilds() {
 		List<String> reportNames = _getSelectedReportNames();
 
 		if (reportNames.isEmpty()) {
-			System.out.println("There are no reports to create at this time.");
+			System.out.println("There are no reports to create at this time");
 
 			keepJenkinsBuild(false);
 
 			return;
 		}
 
-		Properties buildProperties = null;
-
-		try {
-			buildProperties = JenkinsResultsParserUtil.getBuildProperties();
-		}
-		catch (IOException ioException) {
-			throw new RuntimeException(ioException);
-		}
-
-		StringBuilder sb = new StringBuilder();
-
-		String jenkinsMasterName = buildProperties.getProperty(
-			"report.generate.reports.jenkins.master");
-
-		String jobURL = "http://" + jenkinsMasterName + "/job/generate-reports";
-
-		sb.append(jobURL);
-
-		sb.append("/buildWithParameters?token=");
-
-		sb.append(buildProperties.getProperty("jenkins.authentication.token"));
-
-		Map<String, String> invocationParameters = new HashMap<>();
-
 		BuildData buildData = getBuildData();
 
-		invocationParameters.put(
-			"JENKINS_GITHUB_URL", buildData.getJenkinsGitHubURL());
+		String jenkinsGitHubURL = buildData.getJenkinsGitHubURL();
 
-		Collections.sort(reportNames);
+		List<String> groupedReportNames = new ArrayList<>();
 
-		invocationParameters.put("REPORT_NAMES", String.join(",", reportNames));
-
-		for (Map.Entry<String, String> invocationParameter :
-				invocationParameters.entrySet()) {
-
-			String invocationParameterValue = invocationParameter.getValue();
-
-			if (JenkinsResultsParserUtil.isNullOrEmpty(
-					invocationParameterValue)) {
+		for (String reportName : reportNames) {
+			if (reportName.startsWith("Flaky Test")) {
+				_invoke(jenkinsGitHubURL, reportName, "slave-mem");
 
 				continue;
 			}
 
-			sb.append("&");
-			sb.append(invocationParameter.getKey());
-			sb.append("=");
-			sb.append(invocationParameterValue);
-		}
+			if (reportName.equals("Spot Interruption")) {
+				_invoke(jenkinsGitHubURL, reportName, "slave-pco");
 
-		try {
-			JenkinsResultsParserUtil.toString(sb.toString());
-
-			System.out.println(
-				"The following reports will be generated at: " + jobURL);
-
-			for (String reportName : reportNames) {
-				System.out.println(reportName);
+				continue;
 			}
-		}
-		catch (IOException ioException) {
-			System.out.println(
-				"Unable to invoke a new build to generate reports");
 
-			ioException.printStackTrace();
+			groupedReportNames.add(reportName);
+		}
+
+		if (!groupedReportNames.isEmpty()) {
+			_invoke(
+				jenkinsGitHubURL, String.join(",", groupedReportNames), null);
 		}
 
 		_updateBuildDescription(reportNames);
 	}
 
-	private String _getBuildDescription(Build build) {
-		String buildDescription = build.getBuildDescription();
+	private Map<String, JSONObject> _getBuildJSONObjectsMap() {
+		Map<String, JSONObject> buildJSONObjectsMap = new HashMap<>();
 
-		if (buildDescription == null) {
-			return "";
+		try {
+			BuildData buildData = getBuildData();
+
+			URIBuilder uriBuilder = JenkinsResultsParserUtil.newURIBuilder(
+				JenkinsResultsParserUtil.getLocalURL(buildData.getJobURL()) +
+					"/api/json");
+
+			uriBuilder.addParameter(
+				"tree", "builds[description,timestamp,url]");
+
+			JSONObject jsonObject = JenkinsResultsParserUtil.toJSONObject(
+				uriBuilder.toString(), false);
+
+			JSONArray buildsJSONArray = jsonObject.getJSONArray("builds");
+
+			for (int i = 0; i < buildsJSONArray.length(); i++) {
+				JSONObject buildJSONObject = buildsJSONArray.getJSONObject(i);
+
+				buildJSONObjectsMap.put(
+					buildJSONObject.getString("url"), buildJSONObject);
+			}
+		}
+		catch (IOException ioException) {
+			throw new RuntimeException("Unable to get job JSON", ioException);
 		}
 
-		return buildDescription;
+		return buildJSONObjectsMap;
 	}
 
-	private List<Build> _getBuildHistory() {
-		BuildData buildData = getBuildData();
+	private Map<String, Long> _getLatestReportInvocationTimes() {
+		Map<String, Long> latestReportInvocationTimes = new HashMap<>();
 
-		Build build = BuildFactory.newBuild(buildData.getBuildURL(), null);
-
-		Job job = JobFactory.newJob(buildData.getJobName());
-
-		return job.getBuildHistory(build.getJenkinsMaster());
-	}
-
-	private Map<String, Long> _getLatestReportUpdateTimes() {
-		List<Build> builds = _getBuildHistory();
+		Map<String, JSONObject> buildJSONObjectsMap = _getBuildJSONObjectsMap();
 
 		BuildData buildData = getBuildData();
 
-		Build currentBuild = BuildFactory.newBuild(
-			buildData.getBuildURL(), null);
-
-		builds.remove(currentBuild);
-
-		Map<String, Long> latestReportUpdateTimes = new HashMap<>();
+		buildJSONObjectsMap.remove(buildData.getBuildURL());
 
 		for (GenerateReportsBuildRunner.Report report :
 				GenerateReportsBuildRunner.Report.values()) {
 
 			String reportName = report.toString();
 
-			for (Build build : builds) {
-				String buildDescription = _getBuildDescription(build);
+			for (JSONObject buildJSONObject : buildJSONObjectsMap.values()) {
+				String buildDescription = buildJSONObject.optString(
+					"description", "");
 
-				if (buildDescription.contains(reportName)) {
-					latestReportUpdateTimes.put(
-						reportName, build.getStartTime());
-
-					break;
+				if (!buildDescription.contains(reportName)) {
+					continue;
 				}
+
+				long timestamp = buildJSONObject.getLong("timestamp");
+
+				Long latestReportInvocationTime =
+					latestReportInvocationTimes.get(reportName);
+
+				if ((latestReportInvocationTime != null) &&
+					(latestReportInvocationTime >= timestamp)) {
+
+					continue;
+				}
+
+				latestReportInvocationTimes.put(reportName, timestamp);
 			}
 		}
 
-		for (GenerateReportsBuildRunner.Report report :
-				GenerateReportsBuildRunner.Report.values()) {
+		return latestReportInvocationTimes;
+	}
 
-			String reportName = report.toString();
+	private long _getReportGeneratedTime(
+		GenerateReportsBuildRunner.Report report) {
 
-			if (!latestReportUpdateTimes.containsKey(reportName)) {
-				latestReportUpdateTimes.put(
-					reportName, _getReportStaleDuration(reportName));
-			}
+		File dataFile = report.getDataFile();
+
+		if (dataFile == null) {
+			return 0;
 		}
 
-		return latestReportUpdateTimes;
+		try {
+			return JenkinsResultsParserUtil.getGeneratedTime(
+				JenkinsResultsParserUtil.read(dataFile));
+		}
+		catch (IOException ioException) {
+			System.out.println("Unable to read " + dataFile);
+
+			return 0;
+		}
 	}
 
 	private long _getReportStaleDuration(String reportName) {
@@ -206,7 +202,7 @@ public class GenerateReportsControllerBuildRunner
 			return _DEFAULT_REPORT_STALE_DURATION;
 		}
 
-		return Long.parseLong(reportStaleDuration);
+		return TimeUnit.MINUTES.toMillis(Long.parseLong(reportStaleDuration));
 	}
 
 	private List<String> _getSelectedReportNames() {
@@ -216,26 +212,130 @@ public class GenerateReportsControllerBuildRunner
 
 		_selectedReportNames = new ArrayList<>();
 
-		Map<String, Long> latestReportUpdateTimes =
-			_getLatestReportUpdateTimes();
+		Map<String, Long> latestReportInvocationTimes =
+			_getLatestReportInvocationTimes();
 
 		BuildData buildData = getBuildData();
 
 		long startTime = buildData.getStartTime();
 
-		for (Map.Entry<String, Long> entry :
-				latestReportUpdateTimes.entrySet()) {
+		for (GenerateReportsBuildRunner.Report report :
+				GenerateReportsBuildRunner.Report.values()) {
 
-			String reportName = entry.getKey();
+			if ((report ==
+					GenerateReportsBuildRunner.Report.AWS_BUILD_COMPARISON) &&
+				JenkinsResultsParserUtil.isCloudCINode()) {
 
-			long reportStaleDuration = startTime - entry.getValue();
-
-			if (reportStaleDuration >= _getReportStaleDuration(reportName)) {
-				_selectedReportNames.add(reportName);
+				continue;
 			}
+
+			String reportName = report.toString();
+
+			Long latestReportInvocationTime = latestReportInvocationTimes.get(
+				reportName);
+
+			long reportGeneratedTime = _getReportGeneratedTime(report);
+			long reportStaleDuration = _getReportStaleDuration(reportName);
+
+			if (!_isReportGenerationDue(
+					startTime, latestReportInvocationTime, reportGeneratedTime,
+					reportStaleDuration)) {
+
+				continue;
+			}
+
+			if (reportGeneratedTime <= 0) {
+				System.out.println(reportName + " has no generated date");
+			}
+			else {
+				System.out.println(
+					JenkinsResultsParserUtil.combine(
+						reportName, " was last generated ",
+						JenkinsResultsParserUtil.toDurationString(
+							startTime - reportGeneratedTime),
+						" ago which exceeds the stale duration of ",
+						JenkinsResultsParserUtil.toDurationString(
+							reportStaleDuration)));
+			}
+
+			_selectedReportNames.add(reportName);
 		}
 
+		Collections.sort(_selectedReportNames);
+
 		return _selectedReportNames;
+	}
+
+	private void _invoke(Map<String, String> invocationParameters) {
+		BuildData buildData = getBuildData();
+
+		invocationParameters.put("PARENT_BUILD_URL", buildData.getBuildURL());
+
+		String jobURL = JenkinsResultsParserUtil.combine(
+			JenkinsResultsParserUtil.getMostAvailableMasterURL(
+				"http://" + buildData.getCohortName() + ".liferay.com", null, 1,
+				"generate-reports"),
+			"/job/generate-reports");
+
+		try {
+			long queueId = JenkinsResultsParserUtil.invokeJenkinsBuild(
+				jobURL, invocationParameters);
+
+			if (queueId == 0) {
+				throw new RuntimeException("Unable to invoke " + jobURL);
+			}
+
+			System.out.println(
+				"The " + invocationParameters.get("REPORT_NAMES") +
+					" report(s) will be generated at: " + jobURL);
+		}
+		catch (Exception exception) {
+			System.out.println(
+				"Unable to invoke a new build to generate reports");
+
+			exception.printStackTrace();
+		}
+	}
+
+	private void _invoke(
+		String jenkinsGitHubURL, String reportNames, String slaveLabel) {
+
+		Map<String, String> invocationParameters = new HashMap<>();
+
+		invocationParameters.put("JENKINS_GITHUB_URL", jenkinsGitHubURL);
+		invocationParameters.put("REPORT_NAMES", reportNames);
+		invocationParameters.put("SLAVE_LABEL", slaveLabel);
+
+		_invoke(invocationParameters);
+	}
+
+	private boolean _isReportGenerationDue(
+		long currentTime, Long latestReportInvocationTime,
+		long reportGeneratedTime, long reportStaleDuration) {
+
+		long reportStaleTime = reportGeneratedTime + reportStaleDuration;
+
+		if (currentTime < reportStaleTime) {
+			return false;
+		}
+
+		if ((latestReportInvocationTime == null) ||
+			(latestReportInvocationTime < reportStaleTime)) {
+
+			return true;
+		}
+
+		long reportRetryDuration = Math.min(
+			reportStaleDuration,
+			Math.max(
+				_REPORT_RETRY_DURATION_MINIMUM,
+				latestReportInvocationTime - reportStaleTime));
+
+		if (currentTime < (latestReportInvocationTime + reportRetryDuration)) {
+			return false;
+		}
+
+		return true;
 	}
 
 	private void _updateBuildDescription(List<String> reportNames) {
@@ -257,6 +357,8 @@ public class GenerateReportsControllerBuildRunner
 	}
 
 	private static final long _DEFAULT_REPORT_STALE_DURATION = 1440 * 60 * 1000;
+
+	private static final long _REPORT_RETRY_DURATION_MINIMUM = 120 * 60 * 1000;
 
 	private List<String> _selectedReportNames;
 	private Workspace _workspace;

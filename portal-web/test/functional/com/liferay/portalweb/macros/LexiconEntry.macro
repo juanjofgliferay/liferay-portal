@@ -2,19 +2,21 @@ definition {
 
 	@summary = "Default summary"
 	macro changeDisplayStyle(displayStyle = null) {
-		WaitForPageLoad();
+		WaitForElementPresent(locator1 = "Icon#CURRENT_DISPLAY_STYLE");
 
-		Click.mouseOverClick(locator1 = "Icon#CURRENT_DISPLAY_STYLE");
-
-		if (IsElementNotPresent(key_menuItem = StringUtil.upperCaseFirstLetter(${displayStyle}), locator1 = "MenuItem#ANY_MENU_ITEM")) {
-			Refresh();
-
-			WaitForPageLoad();
-
+		if (IsElementNotPresent(key_displayStyle = StringUtil.lowerCase(${displayStyle}), locator1 = "Icon#CURRENT_DISPLAY_STYLE_ACTIVE")) {
 			Click.mouseOverClick(locator1 = "Icon#CURRENT_DISPLAY_STYLE");
-		}
 
-		MenuItem.click(menuItem = StringUtil.upperCaseFirstLetter(${displayStyle}));
+			if (IsElementNotPresent(key_menuItem = StringUtil.upperCaseFirstLetter(${displayStyle}), locator1 = "MenuItem#ANY_MENU_ITEM")) {
+				Refresh();
+
+				WaitForPageLoad();
+
+				Click.mouseOverClick(locator1 = "Icon#CURRENT_DISPLAY_STYLE");
+			}
+
+			MenuItem.click(menuItem = StringUtil.upperCaseFirstLetter(${displayStyle}));
+		}
 	}
 
 	@summary = "Default summary"
@@ -62,7 +64,7 @@ definition {
 	macro gotoAdd() {
 		WaitForPageLoad();
 
-		Click(locator1 = "Button#PLUS");
+		Click.waitForMenuToggleJSClick(locator1 = "Button#PLUS");
 
 		SelectFrameTop();
 	}
@@ -291,13 +293,6 @@ definition {
 		AssertElementNotPresent(
 			key_rowEntry = ${rowEntry},
 			locator1 = "ContentRow#ENTRY_CONTENT_ENTRY_NAME");
-	}
-
-	@summary = "Default summary"
-	macro viewNoEntryMenu(rowEntry = null) {
-		AssertElementNotPresent(
-			key_rowEntry = ${rowEntry},
-			locator1 = "Icon#ROW_VERTICAL_ELLIPSIS");
 	}
 
 	@summary = "Default summary"

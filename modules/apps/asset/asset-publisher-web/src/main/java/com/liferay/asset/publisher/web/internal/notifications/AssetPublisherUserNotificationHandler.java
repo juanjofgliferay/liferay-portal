@@ -25,7 +25,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Roberto Díaz
  */
 @Component(
-	property = "javax.portlet.name=" + AssetPublisherPortletKeys.ASSET_PUBLISHER,
+	property = "jakarta.portlet.name=" + AssetPublisherPortletKeys.ASSET_PUBLISHER,
 	service = UserNotificationHandler.class
 )
 public class AssetPublisherUserNotificationHandler
@@ -58,9 +58,10 @@ public class AssetPublisherUserNotificationHandler
 		JSONObject assetEntriesJSONObject = contextJSONObject.getJSONObject(
 			"[$ASSET_ENTRIES$]");
 
-		return assetEntriesJSONObject.getString("originalValue");
+		return assetEntriesJSONObject.getString("escapedValue");
 	}
 
+	@Override
 	protected String getTitle(
 			UserNotificationEvent userNotificationEvent,
 			ServiceContext serviceContext)

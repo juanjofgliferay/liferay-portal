@@ -1,0 +1,15 @@
+.index-root {
+	.entity-list-root.no-items {
+		.list-group-header {
+			background-color: $infoLighten53;
+		}
+	}
+
+	.list-group-item {
+		padding-left: $listPadding;
+	}
+
+	.search-toolbar-root .nav-item.sort {
+		margin-right: 72px;
+	}
+}

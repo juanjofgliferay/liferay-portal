@@ -17,7 +17,7 @@
 	</tr>
 	<tr>
 		<td>OBJECT_VIEW_LABEL</td>
-		<td>//div[(@class = 'dnd-td') and contains (.,'${key_viewLabel}')]</td>
+		<td>//td[contains(., '${key_viewLabel}')]</td>
 		<td></td>
 	</tr>
 	<tr>
@@ -37,7 +37,7 @@
 	</tr>
 	<tr>
 		<td>OBJECT_VIEW_KEBAB_MENU</td>
-		<td>//a[contains(text(),'${key_objectCustomViewLabel}')]/ancestor::div[contains(@class,'dnd-tr')]//*[contains(@class,'lexicon-icon-ellipsis')]</td>
+		<td>//a[contains(text(),'${key_objectCustomViewLabel}')]/ancestor::tr//*[contains(@class,'lexicon-icon-ellipsis')]</td>
 		<td></td>
 	</tr>
 	<tr>
@@ -96,6 +96,11 @@
 		<td></td>
 	</tr>
 	<tr>
+		<td>ADD_COLUMN</td>
+		<td>//button[contains(text(),'Add Column')]</td>
+		<td></td>
+	</tr>
+	<tr>
 		<td>ADD_COLUMNS_COLUMN_LABEL</td>
 		<td>//span[@class="custom-control-label-text" and contains(text(),'${key_columnName}')]</td>
 		<td></td>
@@ -112,7 +117,7 @@
 	</tr>
 	<tr>
 		<td>VIEW_COLUMN_ENTRIES</td>
-		<td>//div[${key_position}]//button[contains(text(),'${key_columnName}')]</td>
+		<td>//th[contains(.,'${key_columnName}')]</td>
 		<td></td>
 	</tr>
 	<tr>
@@ -157,7 +162,7 @@
 	</tr>
 	<tr>
 		<td>DEFAULT_SORT_ADD_BUTTON</td>
-		<td>//h3[(@class='lfr-objects__card-title') and text()='Default Sort']/../..//button[contains(@class,'nav-btn nav-btn-monospaced btn btn-monospaced btn-primary')]</td>
+		<td>//h3[(@class='lfr-objects__card-title') and text()='Default Sort']/../..//button[contains(@class,'btn btn-monospaced btn-primary')]</td>
 		<td></td>
 	</tr>
 	<tr>
@@ -167,7 +172,7 @@
 	</tr>
 	<tr>
 		<td>VIEW_FIELD_NAME_BY_POSITION</td>
-		<td>//*[${key_position}]/div[contains(span,'${key_fieldName}')]</td>
+		<td>//*[${key_position}]/td[contains(span,'${key_fieldName}')]</td>
 		<td></td>
 	</tr>
 	<tr>
@@ -182,17 +187,17 @@
 	</tr>
 	<tr>
 		<td>VIEW_FIELDS_ENTRY_BY_POSITION</td>
-		<td>//div[contains(@class,'dnd-tbody')]//div[${key_position}]//span[contains(.,'${key_entryName}')]</td>
+		<td>//tbody//tr[${key_position}]//span[contains(.,'${key_entryName}')]</td>
 		<td></td>
 	</tr>
 	<tr>
 		<td>CUSTOM_FIELD_VALUE_ONE</td>
-		<td>//div[contains(@class,'dnd-tbody')]/div[1]/div[1]/span</td>
+		<td>//tbody/tr[1]/td[1]/span</td>
 		<td></td>
 	</tr>
 	<tr>
 		<td>CUSTOM_FIELD_VALUE_TWO</td>
-		<td>//div[contains(@class,'dnd-tbody')]/div[2]/div[1]/span</td>
+		<td>//tbody/tr[2]/td[1]/span</td>
 		<td></td>
 	</tr>
 	<tr>
@@ -231,8 +236,13 @@
 		<td></td>
 	</tr>
 	<tr>
-		<td>ADD_BUTTON_FILTERS</td>
-		<td>//h3[(@class='lfr-objects__card-title') and text()='Filters']/../..//button[contains(@class,'nav-btn nav-btn-monospaced btn btn-monospaced btn-primary')]</td>
+		<td>ADD_NEW_FILTER</td>
+		<td>//button[contains(text(),'New Filter')]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>FILTER_ADD_BUTTON</td>
+		<td>//h3[(@class='lfr-objects__card-title') and text()='Filters']/../..//button[contains(@class,'btn btn-monospaced btn-primary')]</td>
 		<td></td>
 	</tr>
 	<tr>

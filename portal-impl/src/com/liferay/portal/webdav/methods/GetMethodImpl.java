@@ -7,6 +7,7 @@ package com.liferay.portal.webdav.methods;
 
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.servlet.HttpHeaders;
 import com.liferay.portal.kernel.servlet.ServletResponseUtil;
 import com.liferay.portal.kernel.webdav.Resource;
 import com.liferay.portal.kernel.webdav.WebDAVException;
@@ -14,9 +15,9 @@ import com.liferay.portal.kernel.webdav.WebDAVRequest;
 import com.liferay.portal.kernel.webdav.WebDAVStorage;
 import com.liferay.portal.kernel.webdav.methods.Method;
 
-import java.io.InputStream;
+import jakarta.servlet.http.HttpServletResponse;
 
-import javax.servlet.http.HttpServletResponse;
+import java.io.InputStream;
 
 /**
  * @author Brian Wing Shun Chan
@@ -45,14 +46,24 @@ public class GetMethodImpl implements Method {
 			}
 
 			if (inputStream != null) {
-				String fileName = resource.getDisplayName();
-
 				try {
-					ServletResponseUtil.sendFileWithRangeHeader(
-						webDAVRequest.getHttpServletRequest(),
-						webDAVRequest.getHttpServletResponse(), fileName,
-						inputStream, resource.getSize(),
-						resource.getContentType());
+					if (ServletResponseUtil.isBrowserExecutableContentType(
+							resource.getContentType())) {
+
+						ServletResponseUtil.sendFile(
+							webDAVRequest.getHttpServletRequest(),
+							webDAVRequest.getHttpServletResponse(),
+							resource.getDisplayName(), inputStream,
+							resource.getSize(), resource.getContentType(),
+							HttpHeaders.CONTENT_DISPOSITION_ATTACHMENT);
+					}
+					else {
+						ServletResponseUtil.sendFileWithRangeHeader(
+							webDAVRequest.getHttpServletRequest(),
+							webDAVRequest.getHttpServletResponse(),
+							resource.getDisplayName(), inputStream,
+							resource.getSize(), resource.getContentType());
+					}
 				}
 				catch (Exception exception) {
 					if (_log.isWarnEnabled()) {

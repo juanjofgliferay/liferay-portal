@@ -15,14 +15,18 @@ import com.liferay.object.constants.ObjectFieldSettingConstants;
 import com.liferay.object.model.ObjectDefinition;
 import com.liferay.object.service.ObjectDefinitionLocalService;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.test.rule.Inject;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -42,8 +46,8 @@ public class ObjectFieldResourceTest extends BaseObjectFieldResourceTestCase {
 	public void setUp() throws Exception {
 		super.setUp();
 
-		_objectDefinition = ObjectDefinitionTestUtil.addCustomObjectDefinition(
-			true);
+		_objectDefinition =
+			ObjectDefinitionTestUtil.addCustomObjectDefinition();
 	}
 
 	@After
@@ -73,7 +77,7 @@ public class ObjectFieldResourceTest extends BaseObjectFieldResourceTestCase {
 					objectDefinitionExternalReferenceCode, null, null,
 					Pagination.of(1, 10), null);
 
-		Assert.assertEquals(6, page.getTotalCount());
+		Assert.assertEquals(9, page.getTotalCount());
 
 		if (irrelevantObjectDefinitionExternalReferenceCode != null) {
 			ObjectField irrelevantObjectField =
@@ -106,9 +110,9 @@ public class ObjectFieldResourceTest extends BaseObjectFieldResourceTestCase {
 			objectFieldResource.
 				getObjectDefinitionByExternalReferenceCodeObjectFieldsPage(
 					objectDefinitionExternalReferenceCode, null, null,
-					Pagination.of(1, 10), null);
+					Pagination.of(1, 20), null);
 
-		Assert.assertEquals(8, page.getTotalCount());
+		Assert.assertEquals(11, page.getTotalCount());
 
 		assertContains(objectField1, (List<ObjectField>)page.getItems());
 		assertContains(objectField2, (List<ObjectField>)page.getItems());
@@ -224,7 +228,7 @@ public class ObjectFieldResourceTest extends BaseObjectFieldResourceTestCase {
 				objectDefinitionId, randomObjectField());
 
 		page = objectFieldResource.getObjectDefinitionObjectFieldsPage(
-			objectDefinitionId, null, null, Pagination.of(1, 10), null);
+			objectDefinitionId, null, null, Pagination.of(1, 20), null);
 
 		Assert.assertEquals(totalCount + 2, page.getTotalCount());
 
@@ -235,6 +239,13 @@ public class ObjectFieldResourceTest extends BaseObjectFieldResourceTestCase {
 		objectFieldResource.deleteObjectField(objectField1.getId());
 
 		objectFieldResource.deleteObjectField(objectField2.getId());
+
+		page = objectFieldResource.getObjectDefinitionObjectFieldsPage(
+			objectDefinitionId, null, null, null, null);
+
+		Collection<ObjectField> items = page.getItems();
+
+		Assert.assertEquals(items.size(), page.getTotalCount());
 	}
 
 	@Override
@@ -303,20 +314,7 @@ public class ObjectFieldResourceTest extends BaseObjectFieldResourceTestCase {
 
 		// Unique
 
-		ObjectField objectField = randomObjectField();
-
-		objectField.setObjectFieldSettings(
-			new ObjectFieldSetting[] {
-				new ObjectFieldSetting() {
-					{
-						name = ObjectFieldSettingConstants.NAME_UNIQUE_VALUES;
-						value = "true";
-					}
-				}
-			});
-
-		objectField = objectFieldResource.postObjectDefinitionObjectField(
-			_objectDefinition.getObjectDefinitionId(), objectField);
+		ObjectField objectField = _addUniqueObjectField();
 
 		Assert.assertTrue(objectField.getUnique());
 
@@ -342,17 +340,48 @@ public class ObjectFieldResourceTest extends BaseObjectFieldResourceTestCase {
 	@Ignore
 	@Override
 	@Test
+	public void testGraphQLGetObjectDefinitionByExternalReferenceCodeObjectFieldsPage() {
+	}
+
+	@Ignore
+	@Override
+	@Test
+	public void testGraphQLGetObjectDefinitionObjectFieldsPage() {
+	}
+
+	@Ignore
+	@Override
+	@Test
 	public void testGraphQLGetObjectFieldNotFound() {
 	}
 
 	@Override
+	@Test
+	public void testPatchObjectField() throws Exception {
+		super.testPatchObjectField();
+
+		_testPatchObjectField(_addObjectField(), true);
+		_testPatchObjectField(_addUniqueObjectField(), true);
+		_testPatchObjectField(_addUniqueObjectField(), false);
+	}
+
+	@Override
+	@Test
+	public void testPutObjectField() throws Exception {
+		super.testPutObjectField();
+
+		_testPutObjectFieldDescription(Collections.emptyMap());
+		_testPutObjectFieldDescription(null);
+	}
+
+	@Override
 	protected String[] getAdditionalAssertFieldNames() {
-		return new String[] {"label", "state"};
+		return new String[] {"description", "label", "state"};
 	}
 
 	@Override
 	protected String[] getIgnoredEntityFieldNames() {
-		return new String[] {"label"};
+		return new String[] {"description", "label"};
 	}
 
 	@Override
@@ -362,6 +391,9 @@ public class ObjectFieldResourceTest extends BaseObjectFieldResourceTestCase {
 		objectField.setBusinessType(ObjectField.BusinessType.create("Text"));
 		objectField.setDBType(ObjectField.DBType.create("String"));
 		objectField.setDefaultValue(StringPool.BLANK);
+		objectField.setDescription(
+			Collections.singletonMap(
+				LocaleUtil.US.toString(), RandomTestUtil.randomString()));
 		objectField.setIndexedAsKeyword(false);
 		objectField.setLabel(
 			Collections.singletonMap(
@@ -415,10 +447,36 @@ public class ObjectFieldResourceTest extends BaseObjectFieldResourceTestCase {
 	}
 
 	@Override
+	protected ObjectField
+			testGraphQLGetObjectDefinitionByExternalReferenceCodeObjectFieldsPageObjectDefinitionObjectField_addObjectField(
+				String objectDefinitionExternalReferenceCode,
+				ObjectField objectField)
+		throws Exception {
+
+		return objectFieldResource.
+			postObjectDefinitionByExternalReferenceCodeObjectField(
+				objectDefinitionExternalReferenceCode, objectField);
+	}
+
+	@Override
 	protected ObjectField testGraphQLObjectField_addObjectField()
 		throws Exception {
 
 		return _addObjectField();
+	}
+
+	@Override
+	protected Long
+		testGraphQLPostObjectDefinitionByExternalReferenceCodeObjectField_getObjectDefinitionId() {
+
+		return _objectDefinition.getObjectDefinitionId();
+	}
+
+	@Override
+	protected Long
+		testGraphQLPostObjectDefinitionObjectField_getObjectDefinitionId() {
+
+		return _objectDefinition.getObjectDefinitionId();
 	}
 
 	@Override
@@ -449,6 +507,67 @@ public class ObjectFieldResourceTest extends BaseObjectFieldResourceTestCase {
 			_objectDefinition.getObjectDefinitionId(), randomObjectField());
 
 		return _objectField;
+	}
+
+	private ObjectField _addUniqueObjectField() throws Exception {
+		ObjectField objectField = randomObjectField();
+
+		_setUnique(objectField, true);
+
+		return objectFieldResource.postObjectDefinitionObjectField(
+			_objectDefinition.getObjectDefinitionId(), objectField);
+	}
+
+	private void _setUnique(ObjectField objectField, boolean unique) {
+		objectField.setObjectFieldSettings(
+			new ObjectFieldSetting[] {
+				new ObjectFieldSetting() {
+					{
+						name = ObjectFieldSettingConstants.NAME_UNIQUE_VALUES;
+						value = String.valueOf(unique);
+					}
+				}
+			});
+	}
+
+	private void _testPatchObjectField(ObjectField objectField, boolean unique)
+		throws Exception {
+
+		ObjectField randomObjectField = randomObjectField();
+
+		_setUnique(randomObjectField, unique);
+
+		ObjectField patchObjectField = objectFieldResource.patchObjectField(
+			objectField.getId(), randomObjectField);
+
+		assertEquals(randomObjectField, patchObjectField);
+
+		Assert.assertEquals(unique, patchObjectField.getUnique());
+	}
+
+	private void _testPutObjectFieldDescription(
+			Map<String, String> descriptionMap)
+		throws Exception {
+
+		ObjectField objectField = randomObjectField();
+
+		String description = RandomTestUtil.randomString();
+
+		objectField.setDescription(
+			Collections.singletonMap(LocaleUtil.US.toString(), description));
+
+		objectField = objectFieldResource.postObjectDefinitionObjectField(
+			_objectDefinition.getObjectDefinitionId(), objectField);
+
+		objectField.setDescription(descriptionMap);
+
+		objectField = objectFieldResource.putObjectField(
+			objectField.getId(), objectField);
+
+		Assert.assertEquals(
+			description,
+			MapUtil.getString(
+				objectField.getDescription(), LocaleUtil.US.toString()));
 	}
 
 	private ObjectDefinition _objectDefinition;

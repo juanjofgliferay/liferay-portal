@@ -8,13 +8,14 @@ import React from 'react';
 
 import Item from '../../../../src/main/resources/META-INF/resources/js/components/list/Item.es';
 
-import '@testing-library/jest-dom/extend-expect';
+import '@testing-library/jest-dom';
 
 /* eslint-disable no-unused-vars */
 jest.mock('react-dnd', () => ({
 	DragSource: (element) => (element) => element,
 	DropTarget: (element) => (element) => element,
 }));
+
 /* eslint-enable no-unused-vars */
 
 const HIDE_BUTTON_LABEL = 'hide-result';

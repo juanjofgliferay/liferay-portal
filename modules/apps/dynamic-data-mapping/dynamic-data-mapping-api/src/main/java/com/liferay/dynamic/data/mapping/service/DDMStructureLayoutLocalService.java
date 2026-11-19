@@ -7,7 +7,6 @@ package com.liferay.dynamic.data.mapping.service;
 
 import com.liferay.dynamic.data.mapping.model.DDMFormLayout;
 import com.liferay.dynamic.data.mapping.model.DDMStructureLayout;
-import com.liferay.dynamic.data.mapping.model.DDMStructureVersion;
 import com.liferay.exportimport.kernel.lar.PortletDataContext;
 import com.liferay.petra.function.UnsafeFunction;
 import com.liferay.petra.sql.dsl.query.DSLQuery;
@@ -20,7 +19,6 @@ import com.liferay.portal.kernel.dao.orm.Projection;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.model.PersistedModel;
-import com.liferay.portal.kernel.model.SystemEventConstants;
 import com.liferay.portal.kernel.search.Indexable;
 import com.liferay.portal.kernel.search.IndexableType;
 import com.liferay.portal.kernel.service.BaseLocalService;
@@ -28,7 +26,6 @@ import com.liferay.portal.kernel.service.PersistedModelLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.change.tracking.CTService;
 import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
-import com.liferay.portal.kernel.systemevent.SystemEvent;
 import com.liferay.portal.kernel.transaction.Isolation;
 import com.liferay.portal.kernel.transaction.Propagation;
 import com.liferay.portal.kernel.transaction.Transactional;
@@ -151,21 +148,11 @@ public interface DDMStructureLayoutLocalService
 	public DDMStructureLayout deleteDDMStructureLayout(long structureLayoutId)
 		throws PortalException;
 
-	public void deleteDDMStructureLayouts(
-			long classNameId, DDMStructureVersion ddmStructureVersion)
-		throws PortalException;
-
 	/**
 	 * @throws PortalException
 	 */
 	@Override
 	public PersistedModel deletePersistedModel(PersistedModel persistedModel)
-		throws PortalException;
-
-	@SystemEvent(type = SystemEventConstants.TYPE_DELETE)
-	public void deleteStructureLayout(DDMStructureLayout structureLayout);
-
-	public void deleteStructureLayout(long structureLayoutId)
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
@@ -253,13 +240,6 @@ public interface DDMStructureLayoutLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public DDMStructureLayout fetchDDMStructureLayoutByUuidAndGroupId(
 		String uuid, long groupId);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public DDMStructureLayout fetchStructureLayout(long structureLayoutId);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public DDMStructureLayout fetchStructureLayout(
-		long groupId, long classNameId, String structureLayoutKey);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public ActionableDynamicQuery getActionableDynamicQuery();
@@ -383,11 +363,6 @@ public interface DDMStructureLayoutLocalService
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<DDMStructureLayout> getStructureLayouts(
-		long groupId, long classNameId, int start, int end,
-		OrderByComparator<DDMStructureLayout> orderByComparator);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<DDMStructureLayout> getStructureLayouts(
 		long groupId, long classNameId, long structureVersionId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
@@ -396,26 +371,8 @@ public interface DDMStructureLayoutLocalService
 		int end, OrderByComparator<DDMStructureLayout> orderByComparator);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getStructureLayoutsCount(long groupId);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getStructureLayoutsCount(long groupId, long classNameId);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public int getStructureLayoutsCount(
 		long groupId, long classNameId, long structureVersionId);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<DDMStructureLayout> search(
-			long companyId, long[] groupIds, long classNameId, String keywords,
-			int start, int end,
-			OrderByComparator<DDMStructureLayout> orderByComparator)
-		throws PortalException;
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int searchCount(
-			long companyId, long[] groupIds, long classNameId, String keywords)
-		throws PortalException;
 
 	/**
 	 * Updates the ddm structure layout in the database or adds it if it does not yet exist. Also notifies the appropriate model listeners.
@@ -430,11 +387,6 @@ public interface DDMStructureLayoutLocalService
 	@Indexable(type = IndexableType.REINDEX)
 	public DDMStructureLayout updateDDMStructureLayout(
 		DDMStructureLayout ddmStructureLayout);
-
-	public DDMStructureLayout updateStructureLayout(
-			long structureLayoutId, DDMFormLayout ddmFormLayout,
-			ServiceContext serviceContext)
-		throws PortalException;
 
 	@Indexable(type = IndexableType.REINDEX)
 	public DDMStructureLayout updateStructureLayout(
@@ -459,3 +411,4 @@ public interface DDMStructureLayoutLocalService
 		throws E;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1886856796

@@ -10,14 +10,13 @@ package com.liferay.jenkins.results.parser;
  */
 public class PullRequestSubrepositoryTopLevelBuild
 	extends DefaultTopLevelBuild
-	implements AnalyticsCloudBranchInformationBuild,
-			   PluginsBranchInformationBuild, PortalBranchInformationBuild,
+	implements PluginsBranchInformationBuild, PortalBranchInformationBuild,
 			   PullRequestBuild, WorkspaceBuild {
 
 	public PullRequestSubrepositoryTopLevelBuild(
-		String url, TopLevelBuild topLevelBuild) {
+		String buildURL, TopLevelBuild topLevelBuild) {
 
-		super(url, topLevelBuild);
+		super(buildURL, topLevelBuild);
 	}
 
 	@Override
@@ -29,15 +28,6 @@ public class PullRequestSubrepositoryTopLevelBuild
 		}
 
 		return getBranchName();
-	}
-
-	@Override
-	public BranchInformation getOSBAsahBranchInformation() {
-		Workspace workspace = getWorkspace();
-
-		return new WorkspaceBranchInformation(
-			workspace.getWorkspaceGitRepository(
-				"com-liferay-osb-asah-private"));
 	}
 
 	@Override
@@ -126,18 +116,18 @@ public class PullRequestSubrepositoryTopLevelBuild
 		WorkspaceGitRepository workspaceGitRepository =
 			workspace.getPrimaryWorkspaceGitRepository();
 
+		String upstreamBranchSHA = _getUpstreamBranchSHA();
+
+		if (JenkinsResultsParserUtil.isSHA(upstreamBranchSHA)) {
+			workspaceGitRepository.setBaseBranchSHA(upstreamBranchSHA);
+		}
+
 		workspaceGitRepository.setGitHubURL(pullRequest.getHtmlURL());
 
 		String senderBranchSHA = _getSenderBranchSHA();
 
 		if (JenkinsResultsParserUtil.isSHA(senderBranchSHA)) {
 			workspaceGitRepository.setSenderBranchSHA(senderBranchSHA);
-		}
-
-		String upstreamBranchSHA = _getUpstreamBranchSHA();
-
-		if (JenkinsResultsParserUtil.isSHA(upstreamBranchSHA)) {
-			workspaceGitRepository.setBaseBranchSHA(upstreamBranchSHA);
 		}
 
 		return workspace;

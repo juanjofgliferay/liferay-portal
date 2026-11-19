@@ -5,7 +5,7 @@
  */
 --%>
 
-<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<%@ taglib uri="jakarta.tags.core" prefix="c" %>
 
 <%@ taglib uri="http://java.sun.com/portlet_2_0" prefix="portlet" %>
 
@@ -35,7 +35,6 @@ page import="com.liferay.announcements.web.internal.configuration.AnnouncementsP
 page import="com.liferay.announcements.web.internal.constants.AnnouncementsWebKeys" %><%@
 page import="com.liferay.announcements.web.internal.display.context.AnnouncementsAdminViewManagementToolbarDisplayContext" %><%@
 page import="com.liferay.announcements.web.internal.display.context.AnnouncementsDisplayContext" %><%@
-page import="com.liferay.announcements.web.internal.display.context.DefaultAnnouncementsDisplayContext" %><%@
 page import="com.liferay.announcements.web.internal.display.context.helper.AnnouncementsRequestHelper" %><%@
 page import="com.liferay.frontend.taglib.clay.servlet.taglib.util.JSPNavigationItemList" %><%@
 page import="com.liferay.petra.string.StringPool" %><%@
@@ -58,7 +57,6 @@ page import="com.liferay.portal.kernel.service.RoleLocalServiceUtil" %><%@
 page import="com.liferay.portal.kernel.service.UserGroupLocalServiceUtil" %><%@
 page import="com.liferay.portal.kernel.service.UserLocalServiceUtil" %><%@
 page import="com.liferay.portal.kernel.service.permission.PortalPermissionUtil" %><%@
-page import="com.liferay.portal.kernel.service.permission.PortletPermissionUtil" %><%@
 page import="com.liferay.portal.kernel.servlet.HttpHeaders" %><%@
 page import="com.liferay.portal.kernel.util.Constants" %><%@
 page import="com.liferay.portal.kernel.util.GetterUtil" %><%@
@@ -68,11 +66,11 @@ page import="com.liferay.portal.kernel.util.KeyValuePair" %><%@
 page import="com.liferay.portal.kernel.util.ParamUtil" %><%@
 page import="com.liferay.portal.kernel.util.PortalUtil" %><%@
 page import="com.liferay.portal.kernel.util.PropsUtil" %><%@
+page import="com.liferay.portal.kernel.util.PropsValues" %><%@
 page import="com.liferay.portal.kernel.util.StringUtil" %><%@
 page import="com.liferay.portal.kernel.util.Time" %><%@
 page import="com.liferay.portal.kernel.util.Validator" %><%@
 page import="com.liferay.portal.kernel.util.WebKeys" %><%@
-page import="com.liferay.portal.util.PropsValues" %><%@
 page import="com.liferay.portlet.announcements.service.permission.AnnouncementsEntryPermission" %><%@
 page import="com.liferay.taglib.search.ResultRow" %>
 
@@ -88,7 +86,7 @@ page import="java.util.List" %>
 <%
 AnnouncementsRequestHelper announcementsRequestHelper = new AnnouncementsRequestHelper(request);
 
-AnnouncementsDisplayContext announcementsDisplayContext = (DefaultAnnouncementsDisplayContext)request.getAttribute(WebKeys.PORTLET_DISPLAY_CONTEXT);
+AnnouncementsDisplayContext announcementsDisplayContext = (AnnouncementsDisplayContext)request.getAttribute(WebKeys.PORTLET_DISPLAY_CONTEXT);
 %>
 
 <%@ include file="/init-ext.jsp" %>

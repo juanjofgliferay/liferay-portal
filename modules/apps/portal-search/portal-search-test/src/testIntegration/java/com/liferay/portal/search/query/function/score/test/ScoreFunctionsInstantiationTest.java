@@ -9,7 +9,7 @@ import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.search.query.function.score.ScoreFunctions;
 import com.liferay.portal.search.script.Scripts;
-import com.liferay.portal.search.test.util.SearchTestRule;
+import com.liferay.portal.search.test.rule.SearchTestRule;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 
@@ -84,7 +84,7 @@ public class ScoreFunctionsInstantiationTest {
 	@Test
 	public void testScript() {
 		Assert.assertNotNull(
-			_scoreFunctions.script(_scripts.script("script_id")));
+			_scoreFunctions.script(Scripts.INSTANCE.script("script_id")));
 	}
 
 	@Test
@@ -96,9 +96,6 @@ public class ScoreFunctionsInstantiationTest {
 	public SearchTestRule searchTestRule = new SearchTestRule();
 
 	@Inject
-	private static ScoreFunctions _scoreFunctions;
-
-	@Inject
-	private static Scripts _scripts;
+	private ScoreFunctions _scoreFunctions;
 
 }

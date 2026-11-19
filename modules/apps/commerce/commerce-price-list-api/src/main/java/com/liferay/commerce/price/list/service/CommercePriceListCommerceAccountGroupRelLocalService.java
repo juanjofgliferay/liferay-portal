@@ -106,7 +106,8 @@ public interface CommercePriceListCommerceAccountGroupRelLocalService
 		throws PortalException;
 
 	public void deleteCommercePriceListAccountGroupRelsByCommercePriceListId(
-		long commercePriceListId);
+			long commercePriceListId)
+		throws PortalException;
 
 	/**
 	 * Deletes the commerce price list commerce account group rel from the database. Also notifies the appropriate model listeners.
@@ -319,14 +320,6 @@ public interface CommercePriceListCommerceAccountGroupRelLocalService
 	public int getCommercePriceListCommerceAccountGroupRelsCount();
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getCommercePriceListCommerceAccountGroupRelsCount(
-		long commercePriceListId);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getCommercePriceListCommerceAccountGroupRelsCount(
-		long commercePriceListId, String name);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public ExportActionableDynamicQuery getExportActionableDynamicQuery(
 		PortletDataContext portletDataContext);
 
@@ -388,3 +381,4 @@ public interface CommercePriceListCommerceAccountGroupRelLocalService
 		throws E;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-142468813

@@ -1,0 +1,2514 @@
+/**
+ * SPDX-FileCopyrightText: (c) 2025 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
+ */
+
+package com.liferay.site.cms.site.initializer.internal.util;
+
+import com.liferay.depot.model.DepotEntry;
+import com.liferay.fragment.contributor.util.FragmentCollectionContributorRegistryUtil;
+import com.liferay.fragment.entry.processor.constants.FragmentEntryProcessorConstants;
+import com.liferay.fragment.listener.FragmentEntryLinkListener;
+import com.liferay.fragment.listener.FragmentEntryLinkListenerRegistry;
+import com.liferay.fragment.model.FragmentEntry;
+import com.liferay.fragment.model.FragmentEntryLink;
+import com.liferay.fragment.renderer.DefaultFragmentRendererContext;
+import com.liferay.fragment.renderer.FragmentRenderer;
+import com.liferay.fragment.renderer.FragmentRendererRegistry;
+import com.liferay.fragment.service.FragmentEntryLinkLocalServiceUtil;
+import com.liferay.fragment.service.FragmentEntryLinkService;
+import com.liferay.fragment.service.FragmentEntryLinkServiceUtil;
+import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItem;
+import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItemBuilder;
+import com.liferay.info.field.InfoField;
+import com.liferay.info.field.InfoFieldSet;
+import com.liferay.info.field.InfoFieldSetEntry;
+import com.liferay.info.field.type.RelationshipInfoFieldType;
+import com.liferay.info.form.InfoForm;
+import com.liferay.info.item.InfoItemServiceRegistry;
+import com.liferay.info.item.provider.InfoItemFormProvider;
+import com.liferay.info.localized.InfoLocalizedValue;
+import com.liferay.info.search.InfoSearchClassMapperRegistry;
+import com.liferay.layout.constants.LayoutTypeSettingsConstants;
+import com.liferay.layout.manager.FormManager;
+import com.liferay.layout.page.template.constants.LayoutPageTemplateEntryTypeConstants;
+import com.liferay.layout.page.template.model.LayoutPageTemplateEntry;
+import com.liferay.layout.page.template.model.LayoutPageTemplateStructure;
+import com.liferay.layout.page.template.service.LayoutPageTemplateEntryLocalServiceUtil;
+import com.liferay.layout.page.template.service.LayoutPageTemplateStructureLocalServiceUtil;
+import com.liferay.layout.util.structure.ColumnLayoutStructureItem;
+import com.liferay.layout.util.structure.ContainerStyledLayoutStructureItem;
+import com.liferay.layout.util.structure.FormRelationshipStyledLayoutStructureItem;
+import com.liferay.layout.util.structure.FormStyledLayoutStructureItem;
+import com.liferay.layout.util.structure.FragmentStyledLayoutStructureItem;
+import com.liferay.layout.util.structure.LayoutStructure;
+import com.liferay.layout.util.structure.LayoutStructureItem;
+import com.liferay.layout.util.structure.RowStyledLayoutStructureItem;
+import com.liferay.object.constants.ObjectDefinitionSettingConstants;
+import com.liferay.object.constants.ObjectEntryFolderConstants;
+import com.liferay.object.constants.ObjectFolderConstants;
+import com.liferay.object.field.attachment.AttachmentManager;
+import com.liferay.object.model.ObjectDefinition;
+import com.liferay.object.model.ObjectDefinitionSetting;
+import com.liferay.object.model.ObjectEntryFolder;
+import com.liferay.object.model.ObjectField;
+import com.liferay.object.model.ObjectLayout;
+import com.liferay.object.model.ObjectLayoutBox;
+import com.liferay.object.model.ObjectLayoutColumn;
+import com.liferay.object.model.ObjectLayoutRow;
+import com.liferay.object.model.ObjectLayoutTab;
+import com.liferay.object.service.ObjectDefinitionLocalServiceUtil;
+import com.liferay.object.service.ObjectDefinitionServiceUtil;
+import com.liferay.object.service.ObjectDefinitionSettingLocalServiceUtil;
+import com.liferay.object.service.ObjectFieldLocalServiceUtil;
+import com.liferay.object.service.ObjectLayoutLocalServiceUtil;
+import com.liferay.osgi.service.tracker.collections.list.ServiceTrackerList;
+import com.liferay.osgi.service.tracker.collections.list.ServiceTrackerListFactory;
+import com.liferay.petra.function.transform.TransformUtil;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
+import com.liferay.petra.string.StringUtil;
+import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
+import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.json.JSONObject;
+import com.liferay.portal.kernel.json.JSONUtil;
+import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.ClassName;
+import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.model.GroupConstants;
+import com.liferay.portal.kernel.model.Layout;
+import com.liferay.portal.kernel.module.service.Snapshot;
+import com.liferay.portal.kernel.portlet.FriendlyURLResolver;
+import com.liferay.portal.kernel.portlet.FriendlyURLResolverRegistryUtil;
+import com.liferay.portal.kernel.portlet.constants.FriendlyURLResolverConstants;
+import com.liferay.portal.kernel.service.ClassNameLocalServiceUtil;
+import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
+import com.liferay.portal.kernel.service.LayoutLocalServiceUtil;
+import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.ServiceContextFactory;
+import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.ArrayUtil;
+import com.liferay.portal.kernel.util.Constants;
+import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
+import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.ParamUtil;
+import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.PropsValues;
+import com.liferay.portal.kernel.util.ScopeUtil;
+import com.liferay.portal.kernel.util.SetUtil;
+import com.liferay.portal.kernel.util.UnicodeProperties;
+import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.portal.kernel.uuid.PortalUUIDUtil;
+import com.liferay.portal.kernel.workflow.WorkflowConstants;
+import com.liferay.portal.vulcan.util.LocalizedMapUtil;
+import com.liferay.segments.service.SegmentsExperienceLocalServiceUtil;
+import com.liferay.site.cms.site.initializer.contributor.CMSObjectEntryFormContributor;
+import com.liferay.site.cms.site.initializer.contributor.CMSStructureObjectFolderContributor;
+import com.liferay.site.cms.site.initializer.internal.fragment.renderer.SpacesComponentSectionFragmentRenderer;
+
+import jakarta.servlet.http.HttpServletRequest;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
+
+import org.osgi.framework.Bundle;
+import org.osgi.framework.FrameworkUtil;
+
+/**
+ * @author Eudaldo Alonso
+ */
+public class ActionUtil {
+
+	public static void addFriendlyURLHelpLayoutStructureItem(
+		long fragmentEntryLinkId, LayoutStructure layoutStructure,
+		String parentItemId, int position) {
+
+		LayoutStructureItem layoutStructureItem =
+			layoutStructure.addFragmentStyledLayoutStructureItem(
+				fragmentEntryLinkId, parentItemId, position);
+
+		layoutStructureItem.updateItemConfig(
+			JSONUtil.put(
+				"cssClasses", JSONUtil.put("text-secondary")
+			).put(
+				"styles", JSONUtil.put("marginBottom", "5")
+			));
+	}
+
+	public static void deleteCompareContentLayoutPageTemplateEntry(
+			long classNameId, long groupId)
+		throws PortalException {
+
+		synchronized (_compareContentLayoutLock) {
+			LayoutPageTemplateEntry layoutPageTemplateEntry =
+				LayoutPageTemplateEntryLocalServiceUtil.
+					fetchLayoutPageTemplateEntry(
+						groupId,
+						_COMPARE_LAYOUT_PAGE_TEMPLATE_ENTRY_KEY_PREFIX +
+							classNameId);
+
+			if (layoutPageTemplateEntry == null) {
+				return;
+			}
+
+			LayoutPageTemplateEntryLocalServiceUtil.
+				deleteLayoutPageTemplateEntry(layoutPageTemplateEntry);
+		}
+	}
+
+	public static void generateEditContentLayoutStructure(
+			FormManager formManager,
+			FragmentEntryLinkListenerRegistry fragmentEntryLinkListenerRegistry,
+			FragmentEntryLinkService fragmentEntryLinkService,
+			FragmentRendererRegistry fragmentRendererRegistry,
+			InfoItemServiceRegistry infoItemServiceRegistry,
+			InfoSearchClassMapperRegistry infoSearchClassMapperRegistry,
+			Layout layout, LayoutPageTemplateEntry layoutPageTemplateEntry,
+			ServiceContext serviceContext)
+		throws Exception {
+
+		long segmentsExperienceId =
+			SegmentsExperienceLocalServiceUtil.fetchDefaultSegmentsExperienceId(
+				layout.getPlid());
+
+		LayoutStructure layoutStructure = new LayoutStructure();
+
+		layoutStructure.addRootLayoutStructureItem();
+
+		ContainerStyledLayoutStructureItem
+			parentContainerStyledLayoutStructureItem =
+				(ContainerStyledLayoutStructureItem)
+					layoutStructure.addContainerStyledLayoutStructureItem(
+						layoutStructure.getMainItemId(), 0);
+
+		parentContainerStyledLayoutStructureItem.updateItemConfig(
+			JSONUtil.put(
+				"styles",
+				JSONUtil.put(
+					"paddingBottom", "40px"
+				).put(
+					"paddingLeft", "12px"
+				).put(
+					"paddingRight", "12px"
+				).put(
+					"paddingTop", "40px"
+				)));
+
+		ContainerStyledLayoutStructureItem
+			childContainerStyledLayoutStructureItem =
+				(ContainerStyledLayoutStructureItem)
+					layoutStructure.addContainerStyledLayoutStructureItem(
+						parentContainerStyledLayoutStructureItem.getItemId(),
+						0);
+
+		childContainerStyledLayoutStructureItem.setWidthType("fixed");
+
+		FormStyledLayoutStructureItem formStyledLayoutStructureItem =
+			(FormStyledLayoutStructureItem)
+				layoutStructure.addFormStyledLayoutStructureItem(
+					childContainerStyledLayoutStructureItem.getItemId(), 0);
+
+		formStyledLayoutStructureItem.setClassNameId(
+			layoutPageTemplateEntry.getClassNameId());
+
+		formStyledLayoutStructureItem.updateItemConfig(
+			JSONUtil.put(
+				"cssClasses",
+				JSONUtil.putAll(
+					"cms-object-layout-form", "lfr-main-form-container")));
+
+		List<FragmentEntryLink> addedFragmentEntryLinks = new ArrayList<>();
+
+		FragmentEntryLink localizationSelectFragmentEntryLink =
+			_addFragmentEntryLink(
+				JSONUtil.toString(
+					JSONUtil.put(
+						FragmentEntryProcessorConstants.
+							KEY_FREEMARKER_FRAGMENT_ENTRY_PROCESSOR,
+						JSONUtil.put(
+							"allowLocalizationManagement", "true"
+						).put(
+							"size", "small"
+						))),
+				"localization-select", fragmentEntryLinkService,
+				fragmentRendererRegistry, layout, segmentsExperienceId,
+				serviceContext);
+
+		if (localizationSelectFragmentEntryLink != null) {
+			LayoutStructureItem layoutStructureItem =
+				layoutStructure.addFragmentStyledLayoutStructureItem(
+					localizationSelectFragmentEntryLink.
+						getFragmentEntryLinkId(),
+					childContainerStyledLayoutStructureItem.getItemId(), 0);
+
+			layoutStructureItem.updateItemConfig(
+				JSONUtil.put("styles", JSONUtil.put("marginBottom", "5")));
+
+			addedFragmentEntryLinks.add(localizationSelectFragmentEntryLink);
+		}
+
+		InfoForm infoForm = _getInfoForm(
+			layoutPageTemplateEntry.getClassNameId(), layout.getGroupId(),
+			infoItemServiceRegistry, infoSearchClassMapperRegistry);
+
+		_addInputFragmentEntryLink(
+			JSONUtil.put(
+				"placeholder",
+				() -> {
+					JSONObject jsonObject = JSONFactoryUtil.createJSONObject();
+
+					for (Locale locale :
+							LanguageUtil.getCompanyAvailableLocales(
+								layout.getCompanyId())) {
+
+						jsonObject.put(
+							LocaleUtil.toLanguageId(locale),
+							LanguageUtil.format(
+								locale, "new-x", infoForm.getLabel(locale)));
+					}
+
+					return jsonObject;
+				}),
+			formManager, "INPUTS-inline-text-input", addedFragmentEntryLinks,
+			infoForm.getInfoField("ObjectField_title"), layout, layoutStructure,
+			formStyledLayoutStructureItem, false, segmentsExperienceId,
+			serviceContext, JSONUtil.put("marginBottom", "5"));
+
+		FragmentEntryLink fragmentEntryLink = _addFragmentEntryLink(
+			StringPool.BLANK,
+			SpacesComponentSectionFragmentRenderer.class.getName(),
+			fragmentEntryLinkService, fragmentRendererRegistry, layout,
+			segmentsExperienceId, serviceContext);
+
+		if (fragmentEntryLink != null) {
+			LayoutStructureItem layoutStructureItem =
+				layoutStructure.addFragmentStyledLayoutStructureItem(
+					fragmentEntryLink.getFragmentEntryLinkId(),
+					formStyledLayoutStructureItem.getItemId(), -1);
+
+			layoutStructureItem.updateItemConfig(
+				JSONUtil.put("styles", JSONUtil.put("marginBottom", "16px")));
+
+			addedFragmentEntryLinks.add(fragmentEntryLink);
+		}
+
+		_addInputFragmentEntryLink(
+			null, formManager, "INPUTS-friendly-url-input",
+			addedFragmentEntryLinks,
+			infoForm.getInfoField("objectEntryFriendlyURL"), layout,
+			layoutStructure, formStyledLayoutStructureItem, false,
+			segmentsExperienceId, serviceContext,
+			JSONUtil.put("marginBottom", "5"));
+
+		ObjectDefinition objectDefinition =
+			ObjectDefinitionLocalServiceUtil.fetchObjectDefinitionByClassName(
+				layout.getCompanyId(), layoutPageTemplateEntry.getClassName());
+
+		if (CMSFileTypeUtil.hasFileObjectField(objectDefinition)) {
+			_addFriendlyURLHelpFragmentEntryLink(
+				addedFragmentEntryLinks, fragmentEntryLinkService,
+				fragmentRendererRegistry, layout, layoutStructure,
+				formStyledLayoutStructureItem, segmentsExperienceId,
+				serviceContext);
+		}
+
+		InfoFieldSet infoFieldSet = (InfoFieldSet)infoForm.getInfoFieldSetEntry(
+			objectDefinition.getName());
+
+		ObjectLayout objectLayout = _getGroupObjectLayout(objectDefinition);
+
+		if (objectLayout != null) {
+			layoutStructure =
+				_addObjectLayoutFragmentEntryLinksToLayoutStructure(
+					formManager, fragmentEntryLinkListenerRegistry,
+					addedFragmentEntryLinks, fragmentEntryLinkService,
+					fragmentRendererRegistry, infoFieldSet, layout,
+					layoutStructure, formStyledLayoutStructureItem,
+					objectLayout, segmentsExperienceId, serviceContext);
+		}
+		else {
+			layoutStructure = _addInputFragmentEntryLinksToLayoutStructure(
+				true, formManager, fragmentEntryLinkListenerRegistry,
+				addedFragmentEntryLinks, fragmentEntryLinkService,
+				fragmentRendererRegistry, infoFieldSet, layout, layoutStructure,
+				formStyledLayoutStructureItem, objectDefinition.getName(),
+				false, segmentsExperienceId, serviceContext,
+				JSONUtil.put("marginBottom", "16px"));
+		}
+
+		LayoutPageTemplateStructureLocalServiceUtil.
+			updateLayoutPageTemplateStructureData(
+				serviceContext.getUserId(), layout.getGroupId(),
+				layout.getPlid(), segmentsExperienceId,
+				layoutStructure.toString());
+
+		for (FragmentEntryLink addedFragmentEntryLink :
+				addedFragmentEntryLinks) {
+
+			for (FragmentEntryLinkListener fragmentEntryLinkListener :
+					fragmentEntryLinkListenerRegistry.
+						getFragmentEntryLinkListeners()) {
+
+				fragmentEntryLinkListener.onAddFragmentEntryLink(
+					addedFragmentEntryLink);
+			}
+		}
+
+		_contribute(layout, objectDefinition, serviceContext);
+	}
+
+	public static void generateTranslateContentLayoutStructure(
+			FormManager formManager,
+			FragmentEntryLinkListenerRegistry fragmentEntryLinkListenerRegistry,
+			FragmentEntryLinkService fragmentEntryLinkService,
+			FragmentRendererRegistry fragmentRendererRegistry,
+			InfoItemServiceRegistry infoItemServiceRegistry,
+			InfoSearchClassMapperRegistry infoSearchClassMapperRegistry,
+			Layout layout, LayoutPageTemplateEntry layoutPageTemplateEntry,
+			String name, ServiceContext serviceContext)
+		throws Exception {
+
+		List<FragmentEntryLink> addedFragmentEntryLinks = new ArrayList<>();
+
+		LayoutStructure layoutStructure = new LayoutStructure();
+
+		layoutStructure.addRootLayoutStructureItem();
+
+		ContainerStyledLayoutStructureItem
+			parentContainerStyledLayoutStructureItem =
+				(ContainerStyledLayoutStructureItem)
+					layoutStructure.addContainerStyledLayoutStructureItem(
+						layoutStructure.getMainItemId(), 0);
+
+		parentContainerStyledLayoutStructureItem.updateItemConfig(
+			JSONUtil.put(
+				"styles",
+				JSONUtil.put(
+					"paddingBottom", "40px"
+				).put(
+					"paddingLeft", "12px"
+				).put(
+					"paddingRight", "12px"
+				).put(
+					"paddingTop", "40px"
+				)));
+
+		RowStyledLayoutStructureItem rowStyledLayoutStructureItem =
+			(RowStyledLayoutStructureItem)
+				layoutStructure.addRowStyledLayoutStructureItem(
+					parentContainerStyledLayoutStructureItem.getItemId(), 0, 2);
+
+		ColumnLayoutStructureItem firstColumnLayoutStructureItem =
+			(ColumnLayoutStructureItem)
+				layoutStructure.addColumnLayoutStructureItem(
+					rowStyledLayoutStructureItem.getItemId(), 0);
+
+		firstColumnLayoutStructureItem.setSize(6);
+
+		FormStyledLayoutStructureItem formStyledLayoutStructureItem =
+			(FormStyledLayoutStructureItem)
+				layoutStructure.addFormStyledLayoutStructureItem(
+					firstColumnLayoutStructureItem.getItemId(), 0);
+
+		formStyledLayoutStructureItem.setClassNameId(
+			layoutPageTemplateEntry.getClassNameId());
+
+		InfoForm infoForm = _getInfoForm(
+			formStyledLayoutStructureItem.getClassNameId(), layout.getGroupId(),
+			infoItemServiceRegistry, infoSearchClassMapperRegistry);
+
+		long segmentsExperienceId =
+			SegmentsExperienceLocalServiceUtil.fetchDefaultSegmentsExperienceId(
+				layout.getPlid());
+
+		_addInputFragmentEntryLink(
+			null, formManager, "INPUTS-text-input", addedFragmentEntryLinks,
+			infoForm.getInfoField("ObjectField_title"), layout, layoutStructure,
+			formStyledLayoutStructureItem, true, segmentsExperienceId,
+			serviceContext, JSONUtil.put("marginBottom", "24px"));
+
+		_addInputFragmentEntryLink(
+			null, formManager, "INPUTS-text-input", addedFragmentEntryLinks,
+			infoForm.getInfoField("objectEntryFriendlyURL"), layout,
+			layoutStructure, formStyledLayoutStructureItem, true,
+			segmentsExperienceId, serviceContext,
+			JSONUtil.put("marginBottom", "24px"));
+
+		layoutStructure = _addInputFragmentEntryLinksToLayoutStructure(
+			false, formManager, fragmentEntryLinkListenerRegistry,
+			addedFragmentEntryLinks, fragmentEntryLinkService,
+			fragmentRendererRegistry,
+			(InfoFieldSet)infoForm.getInfoFieldSetEntry(name), layout,
+			layoutStructure, formStyledLayoutStructureItem, name, true,
+			segmentsExperienceId, serviceContext,
+			JSONUtil.put("marginBottom", "24px"));
+
+		FragmentEntryLink localizationSelectFragmentEntryLink =
+			_addFragmentEntryLink(
+				JSONUtil.toString(
+					JSONUtil.put(
+						FragmentEntryProcessorConstants.
+							KEY_FREEMARKER_FRAGMENT_ENTRY_PROCESSOR,
+						JSONUtil.put("size", "small"))),
+				"localization-select", fragmentEntryLinkService,
+				fragmentRendererRegistry, layout, segmentsExperienceId,
+				serviceContext);
+
+		if (localizationSelectFragmentEntryLink != null) {
+			LayoutStructureItem layoutStructureItem =
+				layoutStructure.addFragmentStyledLayoutStructureItem(
+					localizationSelectFragmentEntryLink.
+						getFragmentEntryLinkId(),
+					formStyledLayoutStructureItem.getItemId(), 0);
+
+			layoutStructureItem.updateItemConfig(
+				JSONUtil.put("styles", JSONUtil.put("marginBottom", "5")));
+
+			addedFragmentEntryLinks.add(localizationSelectFragmentEntryLink);
+		}
+
+		ColumnLayoutStructureItem secondColumnLayoutStructureItem =
+			(ColumnLayoutStructureItem)
+				layoutStructure.addColumnLayoutStructureItem(
+					rowStyledLayoutStructureItem.getItemId(), 1);
+
+		secondColumnLayoutStructureItem.setSize(6);
+
+		formStyledLayoutStructureItem =
+			(FormStyledLayoutStructureItem)
+				layoutStructure.addFormStyledLayoutStructureItem(
+					secondColumnLayoutStructureItem.getItemId(), 0);
+
+		formStyledLayoutStructureItem.setClassNameId(
+			layoutPageTemplateEntry.getClassNameId());
+		formStyledLayoutStructureItem.updateItemConfig(
+			JSONUtil.put(
+				"cssClasses", JSONUtil.put("lfr-main-form-container")));
+
+		_addInputFragmentEntryLink(
+			null, formManager, "INPUTS-text-input", addedFragmentEntryLinks,
+			infoForm.getInfoField("ObjectField_title"), layout, layoutStructure,
+			formStyledLayoutStructureItem, false, segmentsExperienceId,
+			serviceContext, JSONUtil.put("marginBottom", "24px"));
+
+		_addInputFragmentEntryLink(
+			null, formManager, "INPUTS-text-input", addedFragmentEntryLinks,
+			infoForm.getInfoField("objectEntryFriendlyURL"), layout,
+			layoutStructure, formStyledLayoutStructureItem, false,
+			segmentsExperienceId, serviceContext,
+			JSONUtil.put("marginBottom", "24px"));
+
+		layoutStructure = _addInputFragmentEntryLinksToLayoutStructure(
+			false, formManager, fragmentEntryLinkListenerRegistry,
+			addedFragmentEntryLinks, fragmentEntryLinkService,
+			fragmentRendererRegistry,
+			(InfoFieldSet)infoForm.getInfoFieldSetEntry(name), layout,
+			layoutStructure, formStyledLayoutStructureItem, name, false,
+			segmentsExperienceId, serviceContext,
+			JSONUtil.put("marginBottom", "24px"));
+
+		localizationSelectFragmentEntryLink = _addFragmentEntryLink(
+			JSONUtil.toString(
+				JSONUtil.put(
+					FragmentEntryProcessorConstants.
+						KEY_FREEMARKER_FRAGMENT_ENTRY_PROCESSOR,
+					JSONUtil.put(
+						"allowLocalizationManagement", "true"
+					).put(
+						"size", "small"
+					))),
+			"localization-select", fragmentEntryLinkService,
+			fragmentRendererRegistry, layout, segmentsExperienceId,
+			serviceContext);
+
+		if (localizationSelectFragmentEntryLink != null) {
+			LayoutStructureItem layoutStructureItem =
+				layoutStructure.addFragmentStyledLayoutStructureItem(
+					localizationSelectFragmentEntryLink.
+						getFragmentEntryLinkId(),
+					formStyledLayoutStructureItem.getItemId(), 0);
+
+			layoutStructureItem.updateItemConfig(
+				JSONUtil.put("styles", JSONUtil.put("marginBottom", "5")));
+
+			addedFragmentEntryLinks.add(localizationSelectFragmentEntryLink);
+		}
+
+		LayoutPageTemplateStructureLocalServiceUtil.
+			updateLayoutPageTemplateStructureData(
+				serviceContext.getUserId(), layout.getGroupId(),
+				layout.getPlid(), segmentsExperienceId,
+				layoutStructure.toString());
+
+		for (FragmentEntryLink addedFragmentEntryLink :
+				addedFragmentEntryLinks) {
+
+			for (FragmentEntryLinkListener fragmentEntryLinkListener :
+					fragmentEntryLinkListenerRegistry.
+						getFragmentEntryLinkListeners()) {
+
+				fragmentEntryLinkListener.onAddFragmentEntryLink(
+					addedFragmentEntryLink);
+			}
+		}
+	}
+
+	public static List<Long> getAcceptedDepotEntryGroupIds(
+		List<Long> depotEntryGroupIds, long objectDefinitionId) {
+
+		ObjectDefinitionSetting acceptAllGroupsSetting =
+			ObjectDefinitionSettingLocalServiceUtil.
+				fetchObjectDefinitionSetting(
+					objectDefinitionId,
+					ObjectDefinitionSettingConstants.NAME_ACCEPT_ALL_GROUPS);
+
+		if ((acceptAllGroupsSetting != null) &&
+			GetterUtil.getBoolean(acceptAllGroupsSetting.getValue())) {
+
+			return depotEntryGroupIds;
+		}
+
+		ObjectDefinitionSetting acceptedGroupIdsSetting =
+			ObjectDefinitionSettingLocalServiceUtil.
+				fetchObjectDefinitionSetting(
+					objectDefinitionId,
+					ObjectDefinitionSettingConstants.NAME_ACCEPTED_GROUP_IDS);
+
+		if ((acceptedGroupIdsSetting == null) ||
+			Validator.isNull(acceptedGroupIdsSetting.getValue())) {
+
+			return depotEntryGroupIds;
+		}
+
+		List<Long> acceptedGroupIds = new ArrayList<>();
+
+		for (String groupId :
+				StringUtil.split(acceptedGroupIdsSetting.getValue())) {
+
+			acceptedGroupIds.add(GetterUtil.getLong(groupId));
+		}
+
+		return new ArrayList<>(
+			SetUtil.intersect(acceptedGroupIds, depotEntryGroupIds));
+	}
+
+	public static List<DropdownItem> getAllSectionCreationMenuDropdownItems(
+		List<CMSStructureObjectFolderContributor>
+			cmsStructureObjectFolderContributors,
+		HttpServletRequest httpServletRequest) {
+
+		List<DropdownItem> dropdownItems = new ArrayList<>(
+			List.of(
+				getCMSBasicWebContentDropdownItem(
+					httpServletRequest,
+					ObjectEntryFolderConstants.
+						EXTERNAL_REFERENCE_CODE_CONTENTS),
+				getCMSBasicDocumentDropdownItem(
+					httpServletRequest,
+					ObjectEntryFolderConstants.EXTERNAL_REFERENCE_CODE_FILES),
+				getUploadMultipleFilesDropdownItem(
+					httpServletRequest,
+					ObjectEntryFolderConstants.EXTERNAL_REFERENCE_CODE_FILES),
+				getCMSBlogDropdownItem(
+					httpServletRequest,
+					ObjectEntryFolderConstants.
+						EXTERNAL_REFERENCE_CODE_CONTENTS),
+				getCMSExternalVideoDropdownItem(
+					httpServletRequest,
+					ObjectEntryFolderConstants.EXTERNAL_REFERENCE_CODE_FILES)));
+
+		List<DropdownItem> customDropdownItems = getContentsCustomDropdownItems(
+			httpServletRequest,
+			ObjectEntryFolderConstants.EXTERNAL_REFERENCE_CODE_CONTENTS);
+
+		customDropdownItems.addAll(
+			getFilesCustomDropdownItems(
+				httpServletRequest,
+				ObjectEntryFolderConstants.EXTERNAL_REFERENCE_CODE_FILES));
+		customDropdownItems.addAll(
+			getStructureObjectFolderCustomDropdownItems(
+				cmsStructureObjectFolderContributors, httpServletRequest));
+
+		customDropdownItems.sort(
+			Comparator.comparing(
+				dropdownItem -> (String)dropdownItem.get("label"),
+				String.CASE_INSENSITIVE_ORDER));
+
+		dropdownItems.addAll(customDropdownItems);
+
+		return dropdownItems;
+	}
+
+	public static String getBaseAddSpaceMembersURL(ThemeDisplay themeDisplay) {
+		return StringBundler.concat(
+			themeDisplay.getPathFriendlyURLPublic(),
+			GroupConstants.CMS_FRIENDLY_URL, "/add-space-members");
+	}
+
+	public static String getBaseSpaceSettingsURL(ThemeDisplay themeDisplay) {
+		return StringBundler.concat(
+			themeDisplay.getPathFriendlyURLPublic(),
+			GroupConstants.CMS_FRIENDLY_URL, "/e/space-settings/",
+			PortalUtil.getClassNameId(DepotEntry.class), StringPool.SLASH);
+	}
+
+	public static String getBaseSpaceURL(ThemeDisplay themeDisplay) {
+		return StringBundler.concat(
+			themeDisplay.getPathFriendlyURLPublic(),
+			GroupConstants.CMS_FRIENDLY_URL, "/e/space/",
+			PortalUtil.getClassNameId(DepotEntry.class), StringPool.SLASH);
+	}
+
+	public static String getBaseStructureBuilderURL(ThemeDisplay themeDisplay) {
+		return StringBundler.concat(
+			themeDisplay.getPathFriendlyURLPublic(),
+			GroupConstants.CMS_FRIENDLY_URL, "/structure-builder");
+	}
+
+	public static String getBaseStructureUsagesURL(ThemeDisplay themeDisplay) {
+		return StringBundler.concat(
+			themeDisplay.getPathFriendlyURLPublic(),
+			GroupConstants.CMS_FRIENDLY_URL,
+			"/structure-usages?objectDefinitionId=");
+	}
+
+	public static String getBaseViewFolderRecycleBinURL(
+		ThemeDisplay themeDisplay) {
+
+		return StringBundler.concat(
+			themeDisplay.getPathFriendlyURLPublic(),
+			GroupConstants.CMS_FRIENDLY_URL, "/e/recycle-bin/",
+			PortalUtil.getClassNameId(ObjectEntryFolder.class),
+			StringPool.SLASH);
+	}
+
+	public static String getBaseViewFolderURL(ThemeDisplay themeDisplay) {
+		return StringBundler.concat(
+			themeDisplay.getPathFriendlyURLPublic(),
+			GroupConstants.CMS_FRIENDLY_URL, "/e/view-folder/",
+			PortalUtil.getClassNameId(ObjectEntryFolder.class),
+			StringPool.SLASH);
+	}
+
+	public static DropdownItem getCMSBasicDocumentDropdownItem(
+		HttpServletRequest httpServletRequest,
+		String objectEntryFolderExternalReferenceCode) {
+
+		return getStructuredContentDropdownItem(
+			httpServletRequest, "upload", "single-file", "L_CMS_BASIC_DOCUMENT",
+			objectEntryFolderExternalReferenceCode);
+	}
+
+	public static DropdownItem getCMSBasicWebContentDropdownItem(
+		HttpServletRequest httpServletRequest,
+		String objectEntryFolderExternalReferenceCode) {
+
+		return getStructuredContentDropdownItem(
+			httpServletRequest, "forms", "basic-web-content",
+			"L_CMS_BASIC_WEB_CONTENT", objectEntryFolderExternalReferenceCode);
+	}
+
+	public static DropdownItem getCMSBlogDropdownItem(
+		HttpServletRequest httpServletRequest,
+		String objectEntryFolderExternalReferenceCode) {
+
+		return getStructuredContentDropdownItem(
+			httpServletRequest, "blogs", "blog", "L_CMS_BLOG",
+			objectEntryFolderExternalReferenceCode);
+	}
+
+	public static DropdownItem getCMSExternalVideoDropdownItem(
+		HttpServletRequest httpServletRequest,
+		String objectEntryFolderExternalReferenceCode) {
+
+		return getStructuredContentDropdownItem(
+			httpServletRequest, "video", "external-video",
+			"L_CMS_EXTERNAL_VIDEO", objectEntryFolderExternalReferenceCode);
+	}
+
+	public static String getCompareURL(
+		FormManager formManager,
+		FragmentEntryLinkListenerRegistry fragmentEntryLinkListenerRegistry,
+		FragmentEntryLinkService fragmentEntryLinkService,
+		FragmentRendererRegistry fragmentRendererRegistry,
+		HttpServletRequest httpServletRequest, String id,
+		InfoItemServiceRegistry infoItemServiceRegistry,
+		InfoSearchClassMapperRegistry infoSearchClassMapperRegistry,
+		ObjectDefinition objectDefinition) {
+
+		try {
+			long classNameId = PortalUtil.getClassNameId(
+				objectDefinition.getClassName());
+
+			ThemeDisplay themeDisplay =
+				(ThemeDisplay)httpServletRequest.getAttribute(
+					WebKeys.THEME_DISPLAY);
+
+			Group group = GroupLocalServiceUtil.getGroup(
+				themeDisplay.getCompanyId(), GroupConstants.CMS);
+
+			Layout layout = _getCompareContentLayout(
+				classNameId, formManager, fragmentEntryLinkListenerRegistry,
+				fragmentEntryLinkService, fragmentRendererRegistry, group,
+				infoItemServiceRegistry, infoSearchClassMapperRegistry,
+				objectDefinition,
+				ServiceContextFactory.getInstance(httpServletRequest));
+
+			return PortalUtil.addPreservedParameters(
+				themeDisplay,
+				StringBundler.concat(
+					PortalUtil.getGroupFriendlyURL(
+						group.getPublicLayoutSet(), themeDisplay, false, false),
+					_getURLSeparator(),
+					layout.getFriendlyURL(themeDisplay.getLocale()),
+					StringPool.SLASH, classNameId, StringPool.SLASH, id));
+		}
+		catch (Exception exception) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(exception);
+			}
+		}
+
+		return StringPool.BLANK;
+	}
+
+	public static List<DropdownItem> getContentsCustomDropdownItems(
+		HttpServletRequest httpServletRequest,
+		String objectEntryFolderExternalReferenceCode) {
+
+		List<DropdownItem> dropdownItems = new ArrayList<>();
+
+		ThemeDisplay themeDisplay =
+			(ThemeDisplay)httpServletRequest.getAttribute(
+				WebKeys.THEME_DISPLAY);
+
+		for (ObjectDefinition objectDefinition :
+				ObjectDefinitionServiceUtil.getCMSObjectDefinitions(
+					themeDisplay.getCompanyId(),
+					new String[] {
+						ObjectFolderConstants.
+							EXTERNAL_REFERENCE_CODE_CONTENT_STRUCTURES
+					})) {
+
+			if (objectDefinition.isSystem()) {
+				continue;
+			}
+
+			dropdownItems.add(
+				getStructuredContentDropdownItem(
+					httpServletRequest, "web-content", null, objectDefinition,
+					objectEntryFolderExternalReferenceCode));
+		}
+
+		return dropdownItems;
+	}
+
+	public static List<DropdownItem>
+		getContentsSectionCreationMenuDropdownItems(
+			HttpServletRequest httpServletRequest,
+			ObjectEntryFolder objectEntryFolder) {
+
+		String objectEntryFolderExternalReferenceCode =
+			ObjectEntryFolderConstants.EXTERNAL_REFERENCE_CODE_CONTENTS;
+
+		if (objectEntryFolder != null) {
+			objectEntryFolderExternalReferenceCode =
+				objectEntryFolder.getExternalReferenceCode();
+		}
+
+		List<DropdownItem> dropdownItems = new ArrayList<>();
+
+		dropdownItems.add(
+			getCreateFolderDropdownItem(
+				httpServletRequest, objectEntryFolderExternalReferenceCode));
+
+		if (FeatureFlagManagerUtil.isEnabled(
+				PortalUtil.getCompanyId(httpServletRequest), "LPD-62272")) {
+
+			dropdownItems.add(
+				getGenerateContentWithAIDropdownItem(httpServletRequest));
+		}
+
+		dropdownItems.add(
+			getCMSBasicWebContentDropdownItem(
+				httpServletRequest, objectEntryFolderExternalReferenceCode));
+		dropdownItems.add(
+			getCMSBlogDropdownItem(
+				httpServletRequest, objectEntryFolderExternalReferenceCode));
+
+		List<DropdownItem> contentsCustomDropdownItems =
+			getContentsCustomDropdownItems(
+				httpServletRequest, objectEntryFolderExternalReferenceCode);
+
+		contentsCustomDropdownItems.sort(
+			Comparator.comparing(
+				dropdownItem -> (String)dropdownItem.get("label"),
+				String.CASE_INSENSITIVE_ORDER));
+
+		dropdownItems.addAll(contentsCustomDropdownItems);
+
+		return dropdownItems;
+	}
+
+	public static String getControlPanelPortletURL(
+		ThemeDisplay themeDisplay, String portletId) {
+
+		StringBundler sb = new StringBundler(4);
+
+		sb.append(themeDisplay.getCDNBaseURL());
+		sb.append(themeDisplay.getPathFriendlyURLPrivateGroup());
+		sb.append("{friendlyURL}/~/control_panel/manage?p_p_id=");
+		sb.append(portletId);
+
+		return sb.toString();
+	}
+
+	public static DropdownItem getCreateFolderDropdownItem(
+		HttpServletRequest httpServletRequest,
+		String parentObjectEntryFolderExternalReferenceCode) {
+
+		ThemeDisplay themeDisplay =
+			(ThemeDisplay)httpServletRequest.getAttribute(
+				WebKeys.THEME_DISPLAY);
+
+		return DropdownItemBuilder.putData(
+			"action", "createFolder"
+		).putData(
+			"baseAssetLibraryViewURL", getBaseSpaceURL(themeDisplay)
+		).putData(
+			"baseFolderViewURL", getBaseViewFolderURL(themeDisplay)
+		).putData(
+			"parentObjectEntryFolderExternalReferenceCode",
+			parentObjectEntryFolderExternalReferenceCode
+		).setIcon(
+			"folder"
+		).setLabel(
+			LanguageUtil.get(httpServletRequest, "folder")
+		).build();
+	}
+
+	public static String getDisplayPageEditURL(
+		FormManager formManager,
+		FragmentEntryLinkListenerRegistry fragmentEntryLinkListenerRegistry,
+		FragmentEntryLinkService fragmentEntryLinkService,
+		FragmentRendererRegistry fragmentRendererRegistry,
+		HttpServletRequest httpServletRequest,
+		InfoItemServiceRegistry infoItemServiceRegistry,
+		InfoSearchClassMapperRegistry infoSearchClassMapperRegistry,
+		ObjectDefinition objectDefinition) {
+
+		try {
+			ThemeDisplay themeDisplay =
+				(ThemeDisplay)httpServletRequest.getAttribute(
+					WebKeys.THEME_DISPLAY);
+
+			Layout layout = _getEditContentLayout(
+				PortalUtil.getClassNameId(objectDefinition.getClassName()),
+				formManager, fragmentEntryLinkListenerRegistry,
+				fragmentEntryLinkService, fragmentRendererRegistry,
+				GroupLocalServiceUtil.getGroup(
+					themeDisplay.getCompanyId(), GroupConstants.CMS),
+				infoItemServiceRegistry, infoSearchClassMapperRegistry,
+				objectDefinition,
+				ServiceContextFactory.getInstance(httpServletRequest));
+
+			String editURL = HttpComponentsUtil.addParameters(
+				PortalUtil.getLayoutFullURL(
+					layout.fetchDraftLayout(), themeDisplay),
+				"p_l_mode", Constants.EDIT);
+
+			String backURL = ParamUtil.getString(httpServletRequest, "backURL");
+
+			if (Validator.isNotNull(backURL)) {
+				editURL = HttpComponentsUtil.addParameters(
+					editURL, "backURL", backURL, "p_l_back_url", backURL);
+			}
+
+			return editURL;
+		}
+		catch (Exception exception) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(exception);
+			}
+		}
+
+		return StringPool.BLANK;
+	}
+
+	public static String getEditURL(
+		FormManager formManager,
+		FragmentEntryLinkListenerRegistry fragmentEntryLinkListenerRegistry,
+		FragmentEntryLinkService fragmentEntryLinkService,
+		FragmentRendererRegistry fragmentRendererRegistry,
+		HttpServletRequest httpServletRequest, String id,
+		InfoItemServiceRegistry infoItemServiceRegistry,
+		InfoSearchClassMapperRegistry infoSearchClassMapperRegistry,
+		ObjectDefinition objectDefinition) {
+
+		try {
+			long classNameId = PortalUtil.getClassNameId(
+				objectDefinition.getClassName());
+
+			ThemeDisplay themeDisplay =
+				(ThemeDisplay)httpServletRequest.getAttribute(
+					WebKeys.THEME_DISPLAY);
+
+			Group group = GroupLocalServiceUtil.getGroup(
+				themeDisplay.getCompanyId(), GroupConstants.CMS);
+
+			Layout layout = _getEditContentLayout(
+				classNameId, formManager, fragmentEntryLinkListenerRegistry,
+				fragmentEntryLinkService, fragmentRendererRegistry, group,
+				infoItemServiceRegistry, infoSearchClassMapperRegistry,
+				objectDefinition,
+				ServiceContextFactory.getInstance(httpServletRequest));
+
+			String editURL = PortalUtil.addPreservedParameters(
+				themeDisplay,
+				StringBundler.concat(
+					PortalUtil.getGroupFriendlyURL(
+						group.getPublicLayoutSet(), themeDisplay, false, false),
+					_getURLSeparator(),
+					layout.getFriendlyURL(themeDisplay.getLocale()),
+					StringPool.SLASH, classNameId, StringPool.SLASH, id));
+
+			String backURL = ParamUtil.getString(
+				httpServletRequest, "redirect");
+
+			if (Validator.isNotNull(backURL)) {
+				editURL = HttpComponentsUtil.addParameter(
+					editURL, "redirect", backURL);
+			}
+
+			return editURL;
+		}
+		catch (Exception exception) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(exception);
+			}
+		}
+
+		return StringPool.BLANK;
+	}
+
+	public static List<DropdownItem> getFilesCustomDropdownItems(
+		HttpServletRequest httpServletRequest,
+		String objectEntryFolderExternalReferenceCode) {
+
+		List<DropdownItem> dropdownItems = new ArrayList<>();
+
+		ThemeDisplay themeDisplay =
+			(ThemeDisplay)httpServletRequest.getAttribute(
+				WebKeys.THEME_DISPLAY);
+
+		for (ObjectDefinition objectDefinition :
+				ObjectDefinitionServiceUtil.getCMSObjectDefinitions(
+					themeDisplay.getCompanyId(),
+					new String[] {
+						ObjectFolderConstants.EXTERNAL_REFERENCE_CODE_FILE_TYPES
+					})) {
+
+			if (objectDefinition.isSystem()) {
+				continue;
+			}
+
+			dropdownItems.add(
+				getStructuredContentDropdownItem(
+					httpServletRequest, "document-default", null,
+					objectDefinition, objectEntryFolderExternalReferenceCode));
+		}
+
+		return dropdownItems;
+	}
+
+	public static List<DropdownItem> getFilesSectionCreationMenuDropdownItems(
+		HttpServletRequest httpServletRequest,
+		ObjectEntryFolder objectEntryFolder) {
+
+		String objectEntryFolderExternalReferenceCode =
+			ObjectEntryFolderConstants.EXTERNAL_REFERENCE_CODE_FILES;
+
+		if (objectEntryFolder != null) {
+			objectEntryFolderExternalReferenceCode =
+				objectEntryFolder.getExternalReferenceCode();
+		}
+
+		List<DropdownItem> dropdownItems = new ArrayList<>(
+			List.of(
+				getCMSBasicDocumentDropdownItem(
+					httpServletRequest, objectEntryFolderExternalReferenceCode),
+				getUploadMultipleFilesDropdownItem(
+					httpServletRequest, objectEntryFolderExternalReferenceCode),
+				getCreateFolderDropdownItem(
+					httpServletRequest, objectEntryFolderExternalReferenceCode),
+				getCMSExternalVideoDropdownItem(
+					httpServletRequest,
+					objectEntryFolderExternalReferenceCode)));
+
+		if (FeatureFlagManagerUtil.isEnabled(
+				PortalUtil.getCompanyId(httpServletRequest), "LPD-62272")) {
+
+			long groupId = InfoItemUtil.getGroupId(httpServletRequest);
+
+			dropdownItems.add(
+				getGenerateImageWithAIDropdownItem(
+					groupId,
+					LanguageUtil.get(
+						httpServletRequest, "generate-single-image-with-ai"),
+					LanguageUtil.get(
+						httpServletRequest, "generate-single-image"),
+					objectEntryFolderExternalReferenceCode));
+			dropdownItems.add(
+				getGenerateImageWithAIDropdownItem(
+					groupId,
+					LanguageUtil.get(
+						httpServletRequest, "generate-multiple-images-with-ai"),
+					LanguageUtil.get(
+						httpServletRequest, "generate-multiple-images"),
+					objectEntryFolderExternalReferenceCode));
+		}
+
+		List<DropdownItem> filesCustomDropdownItems =
+			getFilesCustomDropdownItems(
+				httpServletRequest, objectEntryFolderExternalReferenceCode);
+
+		filesCustomDropdownItems.sort(
+			Comparator.comparing(
+				dropdownItem -> (String)dropdownItem.get("label"),
+				String.CASE_INSENSITIVE_ORDER));
+
+		dropdownItems.addAll(filesCustomDropdownItems);
+
+		return dropdownItems;
+	}
+
+	public static String getFriendlyURLHelpEditableValues(long companyId) {
+		JSONObject elementTextJSONObject = JSONFactoryUtil.createJSONObject();
+
+		for (Locale locale :
+				LanguageUtil.getCompanyAvailableLocales(companyId)) {
+
+			elementTextJSONObject.put(
+				LocaleUtil.toLanguageId(locale),
+				LanguageUtil.get(
+					locale,
+					"the-file-is-only-reachable-through-the-friendly-url-of-" +
+						"the-default-language"));
+		}
+
+		return JSONUtil.toString(
+			JSONUtil.put(
+				FragmentEntryProcessorConstants.
+					KEY_EDITABLE_FRAGMENT_ENTRY_PROCESSOR,
+				JSONUtil.put("element-text", elementTextJSONObject)));
+	}
+
+	public static DropdownItem getGenerateContentWithAIDropdownItem(
+		HttpServletRequest httpServletRequest) {
+
+		return DropdownItemBuilder.putData(
+			"action", "generateContentWithAI"
+		).putData(
+			"contentTypes",
+			() -> {
+				ThemeDisplay themeDisplay =
+					(ThemeDisplay)httpServletRequest.getAttribute(
+						WebKeys.THEME_DISPLAY);
+
+				try {
+					return String.valueOf(
+						JSONUtil.toJSONArray(
+							ObjectDefinitionServiceUtil.getCMSObjectDefinitions(
+								themeDisplay.getCompanyId(),
+								new String[] {
+									ObjectFolderConstants.
+										EXTERNAL_REFERENCE_CODE_CONTENT_STRUCTURES
+								}),
+							objectDefinition -> JSONUtil.put(
+								"externalReferenceCode",
+								objectDefinition.getExternalReferenceCode()
+							).put(
+								"label",
+								objectDefinition.getLabel(
+									themeDisplay.getLocale())
+							).put(
+								"name", objectDefinition.getName()
+							)));
+				}
+				catch (Exception exception) {
+					if (_log.isDebugEnabled()) {
+						_log.debug(exception);
+					}
+
+					return String.valueOf(JSONFactoryUtil.createJSONArray());
+				}
+			}
+		).setIcon(
+			"stars"
+		).setLabel(
+			LanguageUtil.get(httpServletRequest, "generate-content-with-ai")
+		).build();
+	}
+
+	public static DropdownItem getGenerateImageWithAIDropdownItem(
+		long groupId, String label, String message,
+		String objectEntryFolderExternalReferenceCode) {
+
+		return DropdownItemBuilder.putData(
+			"action", "generateImageWithAI"
+		).putData(
+			"groupId", String.valueOf(groupId)
+		).putData(
+			"message", message
+		).putData(
+			"objectEntryFolderExternalReferenceCode",
+			objectEntryFolderExternalReferenceCode
+		).setIcon(
+			"stars"
+		).setLabel(
+			label
+		).build();
+	}
+
+	public static String getRecycleBinURL(ThemeDisplay themeDisplay) {
+		return StringBundler.concat(
+			themeDisplay.getPathFriendlyURLPublic(),
+			GroupConstants.CMS_FRIENDLY_URL, "/recycle-bin");
+	}
+
+	public static String getSpaceSettingsURL(
+		long classPK, String redirectURL, ThemeDisplay themeDisplay) {
+
+		String url = getBaseSpaceSettingsURL(themeDisplay) + classPK;
+
+		if (Validator.isNotNull(redirectURL)) {
+			return url + "?redirect=" + redirectURL;
+		}
+
+		return url;
+	}
+
+	public static String getSpaceURL(long classPK, ThemeDisplay themeDisplay) {
+		return getBaseSpaceURL(themeDisplay) + classPK;
+	}
+
+	public static List<DropdownItem>
+		getStructureObjectFolderCustomDropdownItems(
+			List<CMSStructureObjectFolderContributor>
+				cmsStructureObjectFolderContributors,
+			HttpServletRequest httpServletRequest) {
+
+		List<DropdownItem> dropdownItems = new ArrayList<>();
+		ThemeDisplay themeDisplay =
+			(ThemeDisplay)httpServletRequest.getAttribute(
+				WebKeys.THEME_DISPLAY);
+
+		for (CMSStructureObjectFolderContributor
+				cmsStructureObjectFolderContributor :
+					cmsStructureObjectFolderContributors) {
+
+			String objectEntryFolderExternalReferenceCode =
+				cmsStructureObjectFolderContributor.
+					getObjectEntryFolderExternalReferenceCode();
+			String objectFolderExternalReferenceCode =
+				cmsStructureObjectFolderContributor.
+					getObjectFolderExternalReferenceCode();
+
+			if (Validator.isNull(objectEntryFolderExternalReferenceCode) ||
+				Validator.isNull(objectFolderExternalReferenceCode)) {
+
+				continue;
+			}
+
+			dropdownItems.addAll(
+				TransformUtil.transform(
+					ObjectDefinitionServiceUtil.getCMSObjectDefinitions(
+						themeDisplay.getCompanyId(),
+						new String[] {objectFolderExternalReferenceCode}),
+					objectDefinition -> getStructuredContentDropdownItem(
+						httpServletRequest,
+						cmsStructureObjectFolderContributor.
+							getCreationMenuIcon(),
+						null, objectDefinition,
+						objectEntryFolderExternalReferenceCode)));
+		}
+
+		return dropdownItems;
+	}
+
+	public static DropdownItem getStructuredContentDropdownItem(
+		HttpServletRequest httpServletRequest, String icon, String labelKey,
+		ObjectDefinition objectDefinition,
+		String objectEntryFolderExternalReferenceCode) {
+
+		ThemeDisplay themeDisplay =
+			(ThemeDisplay)httpServletRequest.getAttribute(
+				WebKeys.THEME_DISPLAY);
+
+		return DropdownItemBuilder.putData(
+			"action", "createAsset"
+		).putData(
+			"objectDefinitionId",
+			String.valueOf(objectDefinition.getObjectDefinitionId())
+		).putData(
+			"redirect",
+			StringBundler.concat(
+				themeDisplay.getPortalURL(), themeDisplay.getPathMain(),
+				GroupConstants.CMS_FRIENDLY_URL,
+				"/add_structured_content_item?objectDefinitionId=",
+				objectDefinition.getObjectDefinitionId(),
+				"&objectEntryFolderExternalReferenceCode=",
+				objectEntryFolderExternalReferenceCode, "&plid=",
+				themeDisplay.getPlid(), "&redirect=",
+				themeDisplay.getURLCurrent())
+		).putData(
+			"title", objectDefinition.getLabel(themeDisplay.getLocale())
+		).setIcon(
+			icon
+		).setLabel(
+			() -> {
+				if (Validator.isNull(labelKey)) {
+					return objectDefinition.getLabel(themeDisplay.getLocale());
+				}
+
+				return LanguageUtil.get(httpServletRequest, labelKey);
+			}
+		).build();
+	}
+
+	public static DropdownItem getStructuredContentDropdownItem(
+		HttpServletRequest httpServletRequest, String icon, String labelKey,
+		String objectDefinitionExternalReferenceCode,
+		String objectEntryFolderExternalReferenceCode) {
+
+		ThemeDisplay themeDisplay =
+			(ThemeDisplay)httpServletRequest.getAttribute(
+				WebKeys.THEME_DISPLAY);
+
+		ObjectDefinition objectDefinition =
+			ObjectDefinitionLocalServiceUtil.
+				fetchObjectDefinitionByExternalReferenceCode(
+					objectDefinitionExternalReferenceCode,
+					themeDisplay.getCompanyId());
+
+		if (objectDefinition == null) {
+			return null;
+		}
+
+		return getStructuredContentDropdownItem(
+			httpServletRequest, icon, labelKey, objectDefinition,
+			objectEntryFolderExternalReferenceCode);
+	}
+
+	public static String getTranslateURL(
+		FormManager formManager,
+		FragmentEntryLinkListenerRegistry fragmentEntryLinkListenerRegistry,
+		FragmentEntryLinkService fragmentEntryLinkService,
+		FragmentRendererRegistry fragmentRendererRegistry,
+		HttpServletRequest httpServletRequest, String id,
+		InfoItemServiceRegistry infoItemServiceRegistry,
+		InfoSearchClassMapperRegistry infoSearchClassMapperRegistry,
+		ObjectDefinition objectDefinition) {
+
+		try {
+			long classNameId = PortalUtil.getClassNameId(
+				objectDefinition.getClassName());
+
+			ThemeDisplay themeDisplay =
+				(ThemeDisplay)httpServletRequest.getAttribute(
+					WebKeys.THEME_DISPLAY);
+
+			Group group = GroupLocalServiceUtil.getGroup(
+				themeDisplay.getCompanyId(), GroupConstants.CMS);
+
+			Layout layout = _getTranslateContentLayout(
+				classNameId, formManager, fragmentEntryLinkListenerRegistry,
+				fragmentEntryLinkService, fragmentRendererRegistry, group,
+				infoItemServiceRegistry, infoSearchClassMapperRegistry,
+				objectDefinition,
+				ServiceContextFactory.getInstance(httpServletRequest));
+
+			String translateURL = PortalUtil.addPreservedParameters(
+				themeDisplay,
+				StringBundler.concat(
+					PortalUtil.getGroupFriendlyURL(
+						group.getPublicLayoutSet(), themeDisplay, false, false),
+					_getURLSeparator(),
+					layout.getFriendlyURL(themeDisplay.getLocale()),
+					StringPool.SLASH, classNameId, StringPool.SLASH, id));
+
+			String backURL = ParamUtil.getString(
+				httpServletRequest, "redirect");
+
+			if (Validator.isNotNull(backURL)) {
+				translateURL = HttpComponentsUtil.addParameter(
+					translateURL, "redirect", backURL);
+			}
+
+			return translateURL;
+		}
+		catch (Exception exception) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(exception);
+			}
+		}
+
+		return StringPool.BLANK;
+	}
+
+	public static long getUploadMaximumFileSize(ThemeDisplay themeDisplay) {
+		long maximumFileSize = PropsValues.JSON_STRING_MAX_LENGTH / 4 * 3;
+
+		ObjectDefinition objectDefinition =
+			ObjectDefinitionLocalServiceUtil.
+				fetchObjectDefinitionByExternalReferenceCode(
+					"L_CMS_BASIC_DOCUMENT", themeDisplay.getCompanyId());
+
+		if (objectDefinition == null) {
+			return maximumFileSize;
+		}
+
+		ObjectField objectField = ObjectFieldLocalServiceUtil.fetchObjectField(
+			objectDefinition.getObjectDefinitionId(), "file");
+
+		if (objectField == null) {
+			return maximumFileSize;
+		}
+
+		AttachmentManager attachmentManager = _attachmentManagerSnapshot.get();
+
+		return Math.min(
+			attachmentManager.getMaximumFileSize(
+				objectField.getObjectFieldId(), themeDisplay.isSignedIn()),
+			maximumFileSize);
+	}
+
+	public static DropdownItem getUploadMultipleFilesDropdownItem(
+		HttpServletRequest httpServletRequest,
+		String parentObjectEntryFolderExternalReferenceCode) {
+
+		ThemeDisplay themeDisplay =
+			(ThemeDisplay)httpServletRequest.getAttribute(
+				WebKeys.THEME_DISPLAY);
+
+		return DropdownItemBuilder.putData(
+			"action", "uploadMultipleFiles"
+		).putData(
+			"baseAssetLibraryViewURL", getBaseSpaceURL(themeDisplay)
+		).putData(
+			"maxFileSize",
+			String.valueOf(getUploadMaximumFileSize(themeDisplay))
+		).putData(
+			"parentObjectEntryFolderExternalReferenceCode",
+			parentObjectEntryFolderExternalReferenceCode
+		).setIcon(
+			"upload-multiple"
+		).setLabel(
+			LanguageUtil.get(httpServletRequest, "multiple-files")
+		).build();
+	}
+
+	public static String getViewFolderRecycleBinURL(
+		long objectEntryFolderId, ThemeDisplay themeDisplay) {
+
+		return getBaseViewFolderRecycleBinURL(themeDisplay) +
+			objectEntryFolderId;
+	}
+
+	public static String getViewFolderURL(
+		long objectEntryFolderId, ThemeDisplay themeDisplay) {
+
+		return getBaseViewFolderURL(themeDisplay) + objectEntryFolderId;
+	}
+
+	private static LayoutStructure
+			_addAccordionFragmentEntryLinkToLayoutStructure(
+				FragmentEntryLinkListenerRegistry
+					fragmentEntryLinkListenerRegistry,
+				FragmentEntryLinkService fragmentEntryLinkService,
+				FragmentRendererRegistry fragmentRendererRegistry,
+				String itemId, Layout layout, LayoutStructure layoutStructure,
+				String parentItemId, long segmentsExperienceId,
+				ServiceContext serviceContext, JSONObject stylesJSONObject,
+				JSONObject titleJSONObject)
+		throws Exception {
+
+		FragmentEntryLink fragmentEntryLink = _addFragmentEntryLink(
+			JSONUtil.toString(
+				JSONUtil.put(
+					FragmentEntryProcessorConstants.
+						KEY_EDITABLE_FRAGMENT_ENTRY_PROCESSOR,
+					JSONUtil.put("accordion-title", titleJSONObject))),
+			"BASIC_COMPONENT-accordion", fragmentEntryLinkService,
+			fragmentRendererRegistry, layout, segmentsExperienceId,
+			serviceContext);
+
+		if (fragmentEntryLink == null) {
+			return layoutStructure;
+		}
+
+		LayoutStructureItem layoutStructureItem =
+			layoutStructure.addFragmentStyledLayoutStructureItem(
+				fragmentEntryLink.getFragmentEntryLinkId(), itemId,
+				parentItemId, -1);
+
+		layoutStructureItem.updateItemConfig(
+			JSONUtil.put("styles", stylesJSONObject));
+
+		return _updateLayoutStructure(
+			fragmentEntryLink, fragmentEntryLinkListenerRegistry, layout,
+			layoutStructure, segmentsExperienceId, serviceContext);
+	}
+
+	private static LayoutPageTemplateEntry
+			_addCompareContentDefaultLayoutPageTemplateEntry(
+				long classNameId, FormManager formManager,
+				FragmentEntryLinkListenerRegistry
+					fragmentEntryLinkListenerRegistry,
+				FragmentEntryLinkService fragmentEntryLinkService,
+				FragmentRendererRegistry fragmentRendererRegistry, long groupId,
+				InfoItemServiceRegistry infoItemServiceRegistry,
+				InfoSearchClassMapperRegistry infoSearchClassMapperRegistry,
+				String objectDefinitionName, ServiceContext serviceContext)
+		throws Exception {
+
+		LayoutPageTemplateEntry layoutPageTemplateEntry =
+			LayoutPageTemplateEntryLocalServiceUtil.addLayoutPageTemplateEntry(
+				null, serviceContext.getUserId(), groupId, 0,
+				_COMPARE_LAYOUT_PAGE_TEMPLATE_ENTRY_KEY_PREFIX + classNameId,
+				classNameId, null,
+				_COMPARE_LAYOUT_PAGE_TEMPLATE_ENTRY_KEY_PREFIX +
+					objectDefinitionName,
+				LayoutPageTemplateEntryTypeConstants.DISPLAY_PAGE, 0, false, 0,
+				0, 0, WorkflowConstants.STATUS_APPROVED, serviceContext);
+
+		Layout layout = LayoutLocalServiceUtil.getLayout(
+			layoutPageTemplateEntry.getPlid());
+
+		Layout draftLayout = layout.fetchDraftLayout();
+
+		_generateCompareContentLayoutStructure(
+			formManager, fragmentEntryLinkListenerRegistry,
+			fragmentEntryLinkService, fragmentRendererRegistry,
+			infoItemServiceRegistry, infoSearchClassMapperRegistry, draftLayout,
+			layoutPageTemplateEntry, serviceContext);
+
+		LayoutLocalServiceUtil.copyLayoutContent(draftLayout, layout);
+
+		draftLayout = LayoutLocalServiceUtil.getLayout(draftLayout.getPlid());
+
+		draftLayout.setStatus(WorkflowConstants.STATUS_APPROVED);
+
+		LayoutLocalServiceUtil.updateLayout(draftLayout);
+
+		return layoutPageTemplateEntry;
+	}
+
+	private static LayoutPageTemplateEntry
+			_addEditContentDefaultLayoutPageTemplateEntry(
+				long classNameId, FormManager formManager,
+				FragmentEntryLinkListenerRegistry
+					fragmentEntryLinkListenerRegistry,
+				FragmentEntryLinkService fragmentEntryLinkService,
+				FragmentRendererRegistry fragmentRendererRegistry, long groupId,
+				InfoItemServiceRegistry infoItemServiceRegistry,
+				InfoSearchClassMapperRegistry infoSearchClassMapperRegistry,
+				String name, ServiceContext serviceContext)
+		throws Exception {
+
+		LayoutPageTemplateEntry layoutPageTemplateEntry =
+			LayoutPageTemplateEntryLocalServiceUtil.addLayoutPageTemplateEntry(
+				null, serviceContext.getUserId(), groupId, 0, null, classNameId,
+				null, name, LayoutPageTemplateEntryTypeConstants.DISPLAY_PAGE,
+				0, true, 0, 0, 0, WorkflowConstants.STATUS_APPROVED,
+				serviceContext);
+
+		Layout layout = LayoutLocalServiceUtil.getLayout(
+			layoutPageTemplateEntry.getPlid());
+
+		Layout draftLayout = layout.fetchDraftLayout();
+
+		generateEditContentLayoutStructure(
+			formManager, fragmentEntryLinkListenerRegistry,
+			fragmentEntryLinkService, fragmentRendererRegistry,
+			infoItemServiceRegistry, infoSearchClassMapperRegistry, draftLayout,
+			layoutPageTemplateEntry, serviceContext);
+
+		LayoutPageTemplateEntry masterLayoutPageTemplateEntry =
+			LayoutPageTemplateEntryLocalServiceUtil.
+				fetchLayoutPageTemplateEntry(groupId, "content-editor-master");
+
+		if (masterLayoutPageTemplateEntry != null) {
+			draftLayout.setMasterLayoutPageTemplateEntryERC(
+				masterLayoutPageTemplateEntry.getExternalReferenceCode());
+		}
+
+		LayoutLocalServiceUtil.copyLayoutContent(draftLayout, layout);
+
+		draftLayout = LayoutLocalServiceUtil.getLayout(draftLayout.getPlid());
+
+		if (masterLayoutPageTemplateEntry != null) {
+			draftLayout.setMasterLayoutPageTemplateEntryERC(
+				masterLayoutPageTemplateEntry.getExternalReferenceCode());
+		}
+
+		draftLayout.setStatus(WorkflowConstants.STATUS_APPROVED);
+
+		draftLayout = LayoutLocalServiceUtil.updateLayout(draftLayout);
+
+		UnicodeProperties typeSettingsUnicodeProperties =
+			draftLayout.getTypeSettingsProperties();
+
+		typeSettingsUnicodeProperties.put(
+			LayoutTypeSettingsConstants.KEY_AUTOGENERATED,
+			Boolean.TRUE.toString());
+		typeSettingsUnicodeProperties.put(
+			LayoutTypeSettingsConstants.KEY_PUBLISHED, Boolean.TRUE.toString());
+
+		LayoutLocalServiceUtil.updateTypeSettings(
+			draftLayout, typeSettingsUnicodeProperties.toString());
+
+		return layoutPageTemplateEntry;
+	}
+
+	private static FragmentEntryLink _addFragmentEntryLink(
+			String editableValues, String fragmentEntryKey,
+			FragmentEntryLinkService fragmentEntryLinkService,
+			FragmentRendererRegistry fragmentRendererRegistry, Layout layout,
+			long segmentsExperienceId, ServiceContext serviceContext)
+		throws Exception {
+
+		FragmentRenderer fragmentRenderer =
+			fragmentRendererRegistry.getFragmentRenderer(fragmentEntryKey);
+
+		if (fragmentRenderer != null) {
+			DefaultFragmentRendererContext defaultFragmentRendererContext =
+				new DefaultFragmentRendererContext(null);
+
+			return fragmentEntryLinkService.addFragmentEntryLink(
+				null, layout.getGroupId(), null, null, null,
+				segmentsExperienceId, layout.getPlid(), StringPool.BLANK,
+				StringPool.BLANK, StringPool.BLANK,
+				JSONFactoryUtil.toString(
+					fragmentRenderer.getConfigurationJSONObject(
+						defaultFragmentRendererContext)),
+				editableValues, StringPool.BLANK, 0, fragmentEntryKey,
+				fragmentRenderer.getType(), serviceContext);
+		}
+
+		FragmentEntry fragmentEntry =
+			FragmentCollectionContributorRegistryUtil.getFragmentEntry(
+				fragmentEntryKey);
+
+		if (fragmentEntry == null) {
+			return null;
+		}
+
+		String contributedRendererKey = null;
+
+		if (fragmentEntry.getFragmentEntryId() == 0) {
+			contributedRendererKey = fragmentEntryKey;
+		}
+
+		return fragmentEntryLinkService.addFragmentEntryLink(
+			null, layout.getGroupId(), null,
+			fragmentEntry.getExternalReferenceCode(),
+			ScopeUtil.getItemScopeExternalReferenceCode(
+				fragmentEntry.getGroupId(), layout.getGroupId()),
+			segmentsExperienceId, layout.getPlid(), fragmentEntry.getCss(),
+			fragmentEntry.getHtml(), fragmentEntry.getJs(),
+			fragmentEntry.getConfiguration(), editableValues, StringPool.BLANK,
+			0, contributedRendererKey, fragmentEntry.getType(), serviceContext);
+	}
+
+	private static void _addFriendlyURLHelpFragmentEntryLink(
+			List<FragmentEntryLink> addedFragmentEntryLinks,
+			FragmentEntryLinkService fragmentEntryLinkService,
+			FragmentRendererRegistry fragmentRendererRegistry, Layout layout,
+			LayoutStructure layoutStructure,
+			LayoutStructureItem parentLayoutStructureItem,
+			long segmentsExperienceId, ServiceContext serviceContext)
+		throws Exception {
+
+		FragmentEntryLink fragmentEntryLink = _addFragmentEntryLink(
+			getFriendlyURLHelpEditableValues(layout.getCompanyId()),
+			"BASIC_COMPONENT-paragraph", fragmentEntryLinkService,
+			fragmentRendererRegistry, layout, segmentsExperienceId,
+			serviceContext);
+
+		if (fragmentEntryLink == null) {
+			return;
+		}
+
+		addFriendlyURLHelpLayoutStructureItem(
+			fragmentEntryLink.getFragmentEntryLinkId(), layoutStructure,
+			parentLayoutStructureItem.getItemId(), -1);
+
+		addedFragmentEntryLinks.add(fragmentEntryLink);
+	}
+
+	private static void _addInfoFieldFragmentEntryLink(
+			boolean editMode, FormManager formManager,
+			List<FragmentEntryLink> fragmentEntryLinks, InfoField<?> infoField,
+			Layout layout, LayoutStructure layoutStructure,
+			LayoutStructureItem layoutStructureItem, boolean readOnly,
+			long segmentsExperienceId, ServiceContext serviceContext,
+			JSONObject stylesJSONObject)
+		throws Exception {
+
+		if (RelationshipInfoFieldType.INSTANCE ==
+				infoField.getInfoFieldType()) {
+
+			if (!editMode) {
+				return;
+			}
+
+			InfoField<RelationshipInfoFieldType> relationshipInfoField =
+				(InfoField<RelationshipInfoFieldType>)infoField;
+
+			if (relationshipInfoField.getAttribute(
+					RelationshipInfoFieldType.INHERITANCE)) {
+
+				return;
+			}
+
+			if (relationshipInfoField.getAttribute(
+					RelationshipInfoFieldType.MULTIPLE)) {
+
+				_addInputFragmentEntryLink(
+					null, formManager, "INPUTS-multiselector-dropdown",
+					fragmentEntryLinks, infoField, layout, layoutStructure,
+					layoutStructureItem, readOnly, segmentsExperienceId,
+					serviceContext, stylesJSONObject);
+
+				return;
+			}
+		}
+
+		_addInputFragmentEntryLink(
+			null, formManager, null, fragmentEntryLinks, infoField, layout,
+			layoutStructure, layoutStructureItem, readOnly,
+			segmentsExperienceId, serviceContext, stylesJSONObject);
+	}
+
+	private static void _addInputFragmentEntryLink(
+			JSONObject configurationJSONObject, FormManager formManager,
+			String fragmentEntryKey, List<FragmentEntryLink> fragmentEntryLinks,
+			InfoField<?> infoField, Layout layout,
+			LayoutStructure layoutStructure,
+			LayoutStructureItem layoutStructureItem, boolean readOnly,
+			long segmentsExperienceId, ServiceContext serviceContext,
+			JSONObject stylesJSONObject)
+		throws Exception {
+
+		if (infoField == null) {
+			return;
+		}
+
+		FragmentStyledLayoutStructureItem fragmentStyledLayoutStructureItem =
+			formManager.addFragmentEntryLinksLayoutStructureItem(
+				fragmentEntryKey, infoField, layout, layoutStructure,
+				layoutStructureItem, readOnly, segmentsExperienceId,
+				serviceContext);
+
+		if (fragmentStyledLayoutStructureItem == null) {
+			return;
+		}
+
+		fragmentStyledLayoutStructureItem.updateItemConfig(
+			JSONUtil.put("styles", stylesJSONObject));
+
+		FragmentEntryLink fragmentEntryLink =
+			FragmentEntryLinkLocalServiceUtil.fetchFragmentEntryLink(
+				fragmentStyledLayoutStructureItem.getFragmentEntryLinkId());
+
+		if (configurationJSONObject != null) {
+			JSONObject editableValuesJSONObject =
+				JSONFactoryUtil.createJSONObject(
+					fragmentEntryLink.getEditableValues());
+
+			JSONObject jsonObject = editableValuesJSONObject.getJSONObject(
+				FragmentEntryProcessorConstants.
+					KEY_FREEMARKER_FRAGMENT_ENTRY_PROCESSOR);
+
+			for (String key : configurationJSONObject.keySet()) {
+				jsonObject.put(key, configurationJSONObject.get(key));
+			}
+
+			fragmentEntryLink =
+				FragmentEntryLinkServiceUtil.updateFragmentEntryLink(
+					fragmentEntryLink.getFragmentEntryLinkId(),
+					editableValuesJSONObject.toString());
+		}
+
+		if (fragmentEntryLink != null) {
+			fragmentEntryLinks.add(fragmentEntryLink);
+		}
+	}
+
+	private static LayoutStructure _addInputFragmentEntryLinksToLayoutStructure(
+			boolean editMode, FormManager formManager,
+			FragmentEntryLinkListenerRegistry fragmentEntryLinkListenerRegistry,
+			List<FragmentEntryLink> fragmentEntryLinks,
+			FragmentEntryLinkService fragmentEntryLinkService,
+			FragmentRendererRegistry fragmentRendererRegistry,
+			InfoFieldSet infoFieldSet, Layout layout,
+			LayoutStructure layoutStructure,
+			LayoutStructureItem layoutStructureItem,
+			String objectDefinitionName, boolean readOnly,
+			long segmentsExperienceId, ServiceContext serviceContext,
+			JSONObject stylesJSONObject)
+		throws Exception {
+
+		if (infoFieldSet.isRelationship()) {
+			String accordionItemId = PortalUUIDUtil.generate();
+
+			layoutStructure = _addAccordionFragmentEntryLinkToLayoutStructure(
+				fragmentEntryLinkListenerRegistry, fragmentEntryLinkService,
+				fragmentRendererRegistry, accordionItemId, layout,
+				layoutStructure, layoutStructureItem.getItemId(),
+				segmentsExperienceId, serviceContext, stylesJSONObject,
+				_getLocalizedValueJSONObject(
+					infoFieldSet.getLabelInfoLocalizedValue()));
+
+			FormRelationshipStyledLayoutStructureItem
+				formRelationshipStyledLayoutStructureItem =
+					(FormRelationshipStyledLayoutStructureItem)
+						layoutStructure.
+							addFormRelationshipStyledLayoutStructureItem(
+								PortalUUIDUtil.generate(),
+								_getChildrenItemId(
+									layoutStructureItem.getItemId(), 0,
+									accordionItemId, layoutStructure),
+								-1);
+
+			formRelationshipStyledLayoutStructureItem.setContentType(
+				infoFieldSet.getName());
+			formRelationshipStyledLayoutStructureItem.setRepeatable(
+				editMode && !readOnly);
+
+			layoutStructureItem = formRelationshipStyledLayoutStructureItem;
+		}
+
+		for (InfoFieldSetEntry infoFieldSetEntry :
+				infoFieldSet.getInfoFieldSetEntries()) {
+
+			if (Objects.equals(infoFieldSet.getName(), objectDefinitionName) &&
+				ArrayUtil.contains(
+					_HIDDEN_INFO_FIELDS, infoFieldSetEntry.getName())) {
+
+				continue;
+			}
+
+			if (infoFieldSetEntry instanceof InfoField) {
+				_addInfoFieldFragmentEntryLink(
+					editMode, formManager, fragmentEntryLinks,
+					(InfoField<?>)infoFieldSetEntry, layout, layoutStructure,
+					layoutStructureItem, readOnly, segmentsExperienceId,
+					serviceContext, stylesJSONObject);
+			}
+			else if (infoFieldSetEntry instanceof InfoFieldSet) {
+				layoutStructure = _addInputFragmentEntryLinksToLayoutStructure(
+					editMode, formManager, fragmentEntryLinkListenerRegistry,
+					fragmentEntryLinks, fragmentEntryLinkService,
+					fragmentRendererRegistry, (InfoFieldSet)infoFieldSetEntry,
+					layout, layoutStructure, layoutStructureItem,
+					objectDefinitionName, readOnly, segmentsExperienceId,
+					serviceContext, stylesJSONObject);
+			}
+		}
+
+		return layoutStructure;
+	}
+
+	private static LayoutStructure
+			_addObjectLayoutFragmentEntryLinksToLayoutStructure(
+				FormManager formManager,
+				FragmentEntryLinkListenerRegistry
+					fragmentEntryLinkListenerRegistry,
+				List<FragmentEntryLink> fragmentEntryLinks,
+				FragmentEntryLinkService fragmentEntryLinkService,
+				FragmentRendererRegistry fragmentRendererRegistry,
+				InfoFieldSet infoFieldSet, Layout layout,
+				LayoutStructure layoutStructure,
+				LayoutStructureItem layoutStructureItem,
+				ObjectLayout objectLayout, long segmentsExperienceId,
+				ServiceContext serviceContext)
+		throws Exception {
+
+		Map<String, InfoField<?>> infoFields = new HashMap<>();
+		Map<String, InfoFieldSet> relationshipInfoFieldSets = new HashMap<>();
+
+		for (InfoFieldSetEntry infoFieldSetEntry :
+				infoFieldSet.getInfoFieldSetEntries()) {
+
+			if (infoFieldSetEntry instanceof InfoField) {
+				infoFields.put(
+					infoFieldSetEntry.getName(),
+					(InfoField<?>)infoFieldSetEntry);
+			}
+			else if (infoFieldSetEntry instanceof InfoFieldSet) {
+				InfoFieldSet curInfoFieldSet = (InfoFieldSet)infoFieldSetEntry;
+
+				if (curInfoFieldSet.isRelationship()) {
+					relationshipInfoFieldSets.put(
+						curInfoFieldSet.getName(), curInfoFieldSet);
+				}
+			}
+		}
+
+		List<ObjectLayoutTab> objectLayoutTabs =
+			objectLayout.getObjectLayoutTabs();
+
+		String tabsItemId = PortalUUIDUtil.generate();
+
+		layoutStructure = _addTabsFragmentEntryLinkToLayoutStructure(
+			fragmentEntryLinkListenerRegistry, fragmentEntryLinkService,
+			fragmentRendererRegistry, tabsItemId, layout, layoutStructure,
+			layoutStructureItem.getItemId(), segmentsExperienceId,
+			serviceContext,
+			TransformUtil.transform(
+				objectLayoutTabs, ObjectLayoutTab::getNameMap));
+
+		for (int i = 0; i < objectLayoutTabs.size(); i++) {
+			String tabItemId = _getChildrenItemId(
+				null, i, tabsItemId, layoutStructure);
+
+			if (Validator.isNull(tabItemId)) {
+				continue;
+			}
+
+			ObjectLayoutTab objectLayoutTab = objectLayoutTabs.get(i);
+
+			String tabAccordionItemId = PortalUUIDUtil.generate();
+
+			layoutStructure = _addAccordionFragmentEntryLinkToLayoutStructure(
+				fragmentEntryLinkListenerRegistry, fragmentEntryLinkService,
+				fragmentRendererRegistry, tabAccordionItemId, layout,
+				layoutStructure, tabItemId, segmentsExperienceId,
+				serviceContext,
+				JSONUtil.put(
+					"marginBottom", "16px"
+				).put(
+					"marginTop", "24px"
+				),
+				_getLocalizedNameJSONObject(objectLayoutTab.getNameMap()));
+
+			String tabContentItemId = _getChildrenItemId(
+				tabItemId, 0, tabAccordionItemId, layoutStructure);
+
+			for (ObjectLayoutBox objectLayoutBox :
+					objectLayoutTab.getObjectLayoutBoxes()) {
+
+				String name = objectLayoutBox.getName(
+					objectLayoutBox.getDefaultLanguageId());
+
+				if (Validator.isNotNull(name) &&
+					name.startsWith(_REPEATABLE_GROUP_NAME_PREFIX)) {
+
+					InfoFieldSet relationshipInfoFieldSet =
+						relationshipInfoFieldSets.get(
+							name.substring(
+								_REPEATABLE_GROUP_NAME_PREFIX.length()));
+
+					if (relationshipInfoFieldSet != null) {
+						layoutStructure =
+							_addInputFragmentEntryLinksToLayoutStructure(
+								true, formManager,
+								fragmentEntryLinkListenerRegistry,
+								fragmentEntryLinks, fragmentEntryLinkService,
+								fragmentRendererRegistry,
+								relationshipInfoFieldSet, layout,
+								layoutStructure,
+								layoutStructure.getLayoutStructureItem(
+									tabContentItemId),
+								infoFieldSet.getName(), false,
+								segmentsExperienceId, serviceContext,
+								JSONUtil.put("marginBottom", "16px"));
+					}
+
+					continue;
+				}
+
+				String boxContentItemId = tabContentItemId;
+
+				if (objectLayoutBox.isCollapsable()) {
+					String boxAccordionItemId = PortalUUIDUtil.generate();
+
+					layoutStructure =
+						_addAccordionFragmentEntryLinkToLayoutStructure(
+							fragmentEntryLinkListenerRegistry,
+							fragmentEntryLinkService, fragmentRendererRegistry,
+							boxAccordionItemId, layout, layoutStructure,
+							tabContentItemId, segmentsExperienceId,
+							serviceContext,
+							JSONUtil.put("marginBottom", "16px"),
+							_getLocalizedNameJSONObject(
+								objectLayoutBox.getNameMap()));
+
+					boxContentItemId = _getChildrenItemId(
+						tabContentItemId, 0, boxAccordionItemId,
+						layoutStructure);
+				}
+
+				LayoutStructureItem boxLayoutStructureItem =
+					layoutStructure.getLayoutStructureItem(boxContentItemId);
+
+				for (ObjectLayoutRow objectLayoutRow :
+						objectLayoutBox.getObjectLayoutRows()) {
+
+					for (ObjectLayoutColumn objectLayoutColumn :
+							objectLayoutRow.getObjectLayoutColumns()) {
+
+						ObjectField objectField =
+							ObjectFieldLocalServiceUtil.fetchObjectField(
+								objectLayoutColumn.getObjectFieldId());
+
+						if (objectField == null) {
+							continue;
+						}
+
+						InfoField<?> infoField = infoFields.get(
+							objectField.getName());
+
+						if (infoField == null) {
+							continue;
+						}
+
+						_addInfoFieldFragmentEntryLink(
+							true, formManager, fragmentEntryLinks, infoField,
+							layout, layoutStructure, boxLayoutStructureItem,
+							false, segmentsExperienceId, serviceContext,
+							JSONUtil.put("marginBottom", "16px"));
+					}
+				}
+			}
+		}
+
+		return layoutStructure;
+	}
+
+	private static LayoutStructure _addTabsFragmentEntryLinkToLayoutStructure(
+			FragmentEntryLinkListenerRegistry fragmentEntryLinkListenerRegistry,
+			FragmentEntryLinkService fragmentEntryLinkService,
+			FragmentRendererRegistry fragmentRendererRegistry, String itemId,
+			Layout layout, LayoutStructure layoutStructure, String parentItemId,
+			long segmentsExperienceId, ServiceContext serviceContext,
+			List<Map<Locale, String>> titleMaps)
+		throws Exception {
+
+		JSONObject titlesJSONObject = JSONFactoryUtil.createJSONObject();
+
+		for (int i = 0; i < titleMaps.size(); i++) {
+			titlesJSONObject.put(
+				"title" + (i + 1),
+				_getLocalizedNameJSONObject(titleMaps.get(i)));
+		}
+
+		FragmentEntryLink fragmentEntryLink = _addFragmentEntryLink(
+			JSONUtil.toString(
+				JSONUtil.put(
+					FragmentEntryProcessorConstants.
+						KEY_EDITABLE_FRAGMENT_ENTRY_PROCESSOR,
+					titlesJSONObject
+				).put(
+					FragmentEntryProcessorConstants.
+						KEY_FREEMARKER_FRAGMENT_ENTRY_PROCESSOR,
+					JSONUtil.put(
+						"numberOfTabs", String.valueOf(titleMaps.size()))
+				)),
+			"BASIC_COMPONENT-tabs", fragmentEntryLinkService,
+			fragmentRendererRegistry, layout, segmentsExperienceId,
+			serviceContext);
+
+		if (fragmentEntryLink == null) {
+			return layoutStructure;
+		}
+
+		layoutStructure.addFragmentStyledLayoutStructureItem(
+			fragmentEntryLink.getFragmentEntryLinkId(), itemId, parentItemId,
+			-1);
+
+		return _updateLayoutStructure(
+			fragmentEntryLink, fragmentEntryLinkListenerRegistry, layout,
+			layoutStructure, segmentsExperienceId, serviceContext);
+	}
+
+	private static LayoutPageTemplateEntry
+			_addTranslateContentDefaultLayoutPageTemplateEntry(
+				long classNameId, FormManager formManager,
+				FragmentEntryLinkListenerRegistry
+					fragmentEntryLinkListenerRegistry,
+				FragmentEntryLinkService fragmentEntryLinkService,
+				FragmentRendererRegistry fragmentRendererRegistry, long groupId,
+				InfoItemServiceRegistry infoItemServiceRegistry,
+				InfoSearchClassMapperRegistry infoSearchClassMapperRegistry,
+				String objectDefinitionName, ServiceContext serviceContext)
+		throws Exception {
+
+		LayoutPageTemplateEntry layoutPageTemplateEntry =
+			LayoutPageTemplateEntryLocalServiceUtil.addLayoutPageTemplateEntry(
+				null, serviceContext.getUserId(), groupId, 0,
+				_TRANSLATION_LAYOUT_PAGE_TEMPLATE_ENTRY_KEY_PREFIX +
+					classNameId,
+				classNameId, null,
+				_TRANSLATION_LAYOUT_PAGE_TEMPLATE_ENTRY_KEY_PREFIX +
+					objectDefinitionName,
+				LayoutPageTemplateEntryTypeConstants.DISPLAY_PAGE, 0, false, 0,
+				0, 0, WorkflowConstants.STATUS_APPROVED, serviceContext);
+
+		Layout layout = LayoutLocalServiceUtil.getLayout(
+			layoutPageTemplateEntry.getPlid());
+
+		Layout draftLayout = layout.fetchDraftLayout();
+
+		generateTranslateContentLayoutStructure(
+			formManager, fragmentEntryLinkListenerRegistry,
+			fragmentEntryLinkService, fragmentRendererRegistry,
+			infoItemServiceRegistry, infoSearchClassMapperRegistry, draftLayout,
+			layoutPageTemplateEntry, objectDefinitionName, serviceContext);
+
+		LayoutPageTemplateEntry masterLayoutPageTemplateEntry =
+			LayoutPageTemplateEntryLocalServiceUtil.
+				fetchLayoutPageTemplateEntry(groupId, "cms-translation-master");
+
+		if (masterLayoutPageTemplateEntry != null) {
+			draftLayout.setMasterLayoutPageTemplateEntryERC(
+				masterLayoutPageTemplateEntry.getExternalReferenceCode());
+		}
+
+		LayoutLocalServiceUtil.copyLayoutContent(draftLayout, layout);
+
+		draftLayout = LayoutLocalServiceUtil.getLayout(draftLayout.getPlid());
+
+		if (masterLayoutPageTemplateEntry != null) {
+			draftLayout.setMasterLayoutPageTemplateEntryERC(
+				masterLayoutPageTemplateEntry.getExternalReferenceCode());
+		}
+
+		draftLayout.setStatus(WorkflowConstants.STATUS_APPROVED);
+
+		LayoutLocalServiceUtil.updateLayout(draftLayout);
+
+		return layoutPageTemplateEntry;
+	}
+
+	private static void _contribute(
+			Layout layout, ObjectDefinition objectDefinition,
+			ServiceContext serviceContext)
+		throws Exception {
+
+		if (_cmsObjectEntryFormContributors == null) {
+			return;
+		}
+
+		for (CMSObjectEntryFormContributor cmsObjectEntryFormContributor :
+				_cmsObjectEntryFormContributors) {
+
+			cmsObjectEntryFormContributor.contribute(
+				layout, objectDefinition, serviceContext);
+		}
+	}
+
+	private static void _generateCompareContentLayoutStructure(
+			FormManager formManager,
+			FragmentEntryLinkListenerRegistry fragmentEntryLinkListenerRegistry,
+			FragmentEntryLinkService fragmentEntryLinkService,
+			FragmentRendererRegistry fragmentRendererRegistry,
+			InfoItemServiceRegistry infoItemServiceRegistry,
+			InfoSearchClassMapperRegistry infoSearchClassMapperRegistry,
+			Layout layout, LayoutPageTemplateEntry layoutPageTemplateEntry,
+			ServiceContext serviceContext)
+		throws Exception {
+
+		long segmentsExperienceId =
+			SegmentsExperienceLocalServiceUtil.fetchDefaultSegmentsExperienceId(
+				layout.getPlid());
+
+		LayoutStructure layoutStructure = new LayoutStructure();
+
+		layoutStructure.addRootLayoutStructureItem();
+
+		ContainerStyledLayoutStructureItem
+			parentContainerStyledLayoutStructureItem =
+				(ContainerStyledLayoutStructureItem)
+					layoutStructure.addContainerStyledLayoutStructureItem(
+						layoutStructure.getMainItemId(), 0);
+
+		parentContainerStyledLayoutStructureItem.updateItemConfig(
+			JSONUtil.put(
+				"styles",
+				JSONUtil.put(
+					"paddingBottom", "40px"
+				).put(
+					"paddingLeft", "12px"
+				).put(
+					"paddingRight", "12px"
+				).put(
+					"paddingTop", "40px"
+				)));
+
+		ContainerStyledLayoutStructureItem
+			childContainerStyledLayoutStructureItem =
+				(ContainerStyledLayoutStructureItem)
+					layoutStructure.addContainerStyledLayoutStructureItem(
+						parentContainerStyledLayoutStructureItem.getItemId(),
+						0);
+
+		childContainerStyledLayoutStructureItem.setWidthType("fixed");
+
+		FormStyledLayoutStructureItem formStyledLayoutStructureItem =
+			(FormStyledLayoutStructureItem)
+				layoutStructure.addFormStyledLayoutStructureItem(
+					childContainerStyledLayoutStructureItem.getItemId(), 0);
+
+		formStyledLayoutStructureItem.setClassNameId(
+			layoutPageTemplateEntry.getClassNameId());
+
+		formStyledLayoutStructureItem.updateItemConfig(
+			JSONUtil.put(
+				"cssClasses", JSONUtil.put("lfr-main-form-container")));
+
+		List<FragmentEntryLink> addedFragmentEntryLinks = new ArrayList<>();
+
+		InfoForm infoForm = _getInfoForm(
+			layoutPageTemplateEntry.getClassNameId(), layout.getGroupId(),
+			infoItemServiceRegistry, infoSearchClassMapperRegistry);
+
+		_addInputFragmentEntryLink(
+			null, formManager, "INPUTS-inline-text-input",
+			addedFragmentEntryLinks, infoForm.getInfoField("ObjectField_title"),
+			layout, layoutStructure, formStyledLayoutStructureItem, true,
+			segmentsExperienceId, serviceContext,
+			JSONUtil.put("marginBottom", "5"));
+
+		FragmentEntryLink fragmentEntryLink = _addFragmentEntryLink(
+			StringPool.BLANK,
+			SpacesComponentSectionFragmentRenderer.class.getName(),
+			fragmentEntryLinkService, fragmentRendererRegistry, layout,
+			segmentsExperienceId, serviceContext);
+
+		if (fragmentEntryLink != null) {
+			LayoutStructureItem layoutStructureItem =
+				layoutStructure.addFragmentStyledLayoutStructureItem(
+					fragmentEntryLink.getFragmentEntryLinkId(),
+					formStyledLayoutStructureItem.getItemId(), -1);
+
+			layoutStructureItem.updateItemConfig(
+				JSONUtil.put("styles", JSONUtil.put("marginBottom", "16px")));
+
+			addedFragmentEntryLinks.add(fragmentEntryLink);
+		}
+
+		_addInputFragmentEntryLink(
+			null, formManager, "INPUTS-friendly-url-input",
+			addedFragmentEntryLinks,
+			infoForm.getInfoField("objectEntryFriendlyURL"), layout,
+			layoutStructure, formStyledLayoutStructureItem, true,
+			segmentsExperienceId, serviceContext,
+			JSONUtil.put("marginBottom", "5"));
+
+		ObjectDefinition objectDefinition =
+			ObjectDefinitionLocalServiceUtil.fetchObjectDefinitionByClassName(
+				layout.getCompanyId(), layoutPageTemplateEntry.getClassName());
+
+		layoutStructure = _addInputFragmentEntryLinksToLayoutStructure(
+			true, formManager, fragmentEntryLinkListenerRegistry,
+			addedFragmentEntryLinks, fragmentEntryLinkService,
+			fragmentRendererRegistry,
+			(InfoFieldSet)infoForm.getInfoFieldSetEntry(
+				objectDefinition.getName()),
+			layout, layoutStructure, formStyledLayoutStructureItem,
+			objectDefinition.getName(), true, segmentsExperienceId,
+			serviceContext, JSONUtil.put("marginBottom", "16px"));
+
+		LayoutPageTemplateStructureLocalServiceUtil.
+			updateLayoutPageTemplateStructureData(
+				serviceContext.getUserId(), layout.getGroupId(),
+				layout.getPlid(), segmentsExperienceId,
+				layoutStructure.toString());
+
+		for (FragmentEntryLink addedFragmentEntryLink :
+				addedFragmentEntryLinks) {
+
+			for (FragmentEntryLinkListener fragmentEntryLinkListener :
+					fragmentEntryLinkListenerRegistry.
+						getFragmentEntryLinkListeners()) {
+
+				fragmentEntryLinkListener.onAddFragmentEntryLink(
+					addedFragmentEntryLink);
+			}
+		}
+	}
+
+	private static String _getChildrenItemId(
+		String defaultItemId, int index, String itemId,
+		LayoutStructure layoutStructure) {
+
+		LayoutStructureItem layoutStructureItem =
+			layoutStructure.getLayoutStructureItem(itemId);
+
+		if (layoutStructureItem == null) {
+			return defaultItemId;
+		}
+
+		List<String> childrenItemIds = layoutStructureItem.getChildrenItemIds();
+
+		if (index >= childrenItemIds.size()) {
+			return defaultItemId;
+		}
+
+		return childrenItemIds.get(index);
+	}
+
+	private static Layout _getCompareContentLayout(
+			long classNameId, FormManager formManager,
+			FragmentEntryLinkListenerRegistry fragmentEntryLinkListenerRegistry,
+			FragmentEntryLinkService fragmentEntryLinkService,
+			FragmentRendererRegistry fragmentRendererRegistry, Group group,
+			InfoItemServiceRegistry infoItemServiceRegistry,
+			InfoSearchClassMapperRegistry infoSearchClassMapperRegistry,
+			ObjectDefinition objectDefinition, ServiceContext serviceContext)
+		throws Exception {
+
+		synchronized (_compareContentLayoutLock) {
+			LayoutPageTemplateEntry layoutPageTemplateEntry =
+				LayoutPageTemplateEntryLocalServiceUtil.
+					fetchLayoutPageTemplateEntry(
+						group.getGroupId(),
+						_COMPARE_LAYOUT_PAGE_TEMPLATE_ENTRY_KEY_PREFIX +
+							classNameId);
+
+			if (layoutPageTemplateEntry == null) {
+				layoutPageTemplateEntry =
+					_addCompareContentDefaultLayoutPageTemplateEntry(
+						classNameId, formManager,
+						fragmentEntryLinkListenerRegistry,
+						fragmentEntryLinkService, fragmentRendererRegistry,
+						group.getGroupId(), infoItemServiceRegistry,
+						infoSearchClassMapperRegistry,
+						objectDefinition.getName(), serviceContext);
+			}
+
+			return LayoutLocalServiceUtil.fetchLayout(
+				layoutPageTemplateEntry.getPlid());
+		}
+	}
+
+	private static Layout _getEditContentLayout(
+			long classNameId, FormManager formManager,
+			FragmentEntryLinkListenerRegistry fragmentEntryLinkListenerRegistry,
+			FragmentEntryLinkService fragmentEntryLinkService,
+			FragmentRendererRegistry fragmentRendererRegistry, Group group,
+			InfoItemServiceRegistry infoItemServiceRegistry,
+			InfoSearchClassMapperRegistry infoSearchClassMapperRegistry,
+			ObjectDefinition objectDefinition, ServiceContext serviceContext)
+		throws Exception {
+
+		LayoutPageTemplateEntry layoutPageTemplateEntry =
+			LayoutPageTemplateEntryLocalServiceUtil.
+				fetchDefaultLayoutPageTemplateEntry(
+					group.getGroupId(), classNameId, 0);
+
+		if (layoutPageTemplateEntry == null) {
+			layoutPageTemplateEntry =
+				_addEditContentDefaultLayoutPageTemplateEntry(
+					classNameId, formManager, fragmentEntryLinkListenerRegistry,
+					fragmentEntryLinkService, fragmentRendererRegistry,
+					group.getGroupId(), infoItemServiceRegistry,
+					infoSearchClassMapperRegistry, objectDefinition.getName(),
+					serviceContext);
+		}
+
+		return LayoutLocalServiceUtil.fetchLayout(
+			layoutPageTemplateEntry.getPlid());
+	}
+
+	private static ObjectLayout _getGroupObjectLayout(
+		ObjectDefinition objectDefinition) {
+
+		if (!FeatureFlagManagerUtil.isEnabled(
+				objectDefinition.getCompanyId(), "LPD-96666")) {
+
+			return null;
+		}
+
+		List<ObjectLayout> objectLayouts =
+			ObjectLayoutLocalServiceUtil.getObjectLayouts(
+				objectDefinition.getObjectDefinitionId());
+
+		if (objectLayouts.isEmpty()) {
+			return null;
+		}
+
+		return objectLayouts.get(0);
+	}
+
+	private static InfoForm _getInfoForm(
+			long classNameId, long groupId,
+			InfoItemServiceRegistry infoItemServiceRegistry,
+			InfoSearchClassMapperRegistry infoSearchClassMapperRegistry)
+		throws Exception {
+
+		ClassName className = ClassNameLocalServiceUtil.fetchClassName(
+			classNameId);
+
+		String itemClassName = infoSearchClassMapperRegistry.getClassName(
+			className.getClassName());
+
+		InfoItemFormProvider<?> infoItemFormProvider =
+			infoItemServiceRegistry.getFirstInfoItemService(
+				InfoItemFormProvider.class, itemClassName);
+
+		if (infoItemFormProvider == null) {
+			if (_log.isWarnEnabled()) {
+				_log.warn(
+					"Unable to get info item form provider for class " +
+						itemClassName);
+			}
+
+			return null;
+		}
+
+		return infoItemFormProvider.getInfoForm(StringPool.BLANK, groupId);
+	}
+
+	private static JSONObject _getLocalizedNameJSONObject(
+		Map<Locale, String> nameMap) {
+
+		return JSONFactoryUtil.createJSONObject(
+			LocalizedMapUtil.getLanguageIdMap(nameMap));
+	}
+
+	private static JSONObject _getLocalizedValueJSONObject(
+		InfoLocalizedValue<String> infoLocalizedValue) {
+
+		JSONObject jsonObject = JSONFactoryUtil.createJSONObject();
+
+		for (Locale locale : infoLocalizedValue.getAvailableLocales()) {
+			jsonObject.put(
+				LocaleUtil.toLanguageId(locale),
+				infoLocalizedValue.getValue(locale));
+		}
+
+		return jsonObject;
+	}
+
+	private static Layout _getTranslateContentLayout(
+			long classNameId, FormManager formManager,
+			FragmentEntryLinkListenerRegistry fragmentEntryLinkListenerRegistry,
+			FragmentEntryLinkService fragmentEntryLinkService,
+			FragmentRendererRegistry fragmentRendererRegistry, Group group,
+			InfoItemServiceRegistry infoItemServiceRegistry,
+			InfoSearchClassMapperRegistry infoSearchClassMapperRegistry,
+			ObjectDefinition objectDefinition, ServiceContext serviceContext)
+		throws Exception {
+
+		LayoutPageTemplateEntry layoutPageTemplateEntry =
+			LayoutPageTemplateEntryLocalServiceUtil.
+				fetchLayoutPageTemplateEntry(
+					group.getGroupId(),
+					_TRANSLATION_LAYOUT_PAGE_TEMPLATE_ENTRY_KEY_PREFIX +
+						classNameId);
+
+		if (layoutPageTemplateEntry == null) {
+			layoutPageTemplateEntry =
+				_addTranslateContentDefaultLayoutPageTemplateEntry(
+					classNameId, formManager, fragmentEntryLinkListenerRegistry,
+					fragmentEntryLinkService, fragmentRendererRegistry,
+					group.getGroupId(), infoItemServiceRegistry,
+					infoSearchClassMapperRegistry, objectDefinition.getName(),
+					serviceContext);
+		}
+
+		return LayoutLocalServiceUtil.fetchLayout(
+			layoutPageTemplateEntry.getPlid());
+	}
+
+	private static String _getURLSeparator() {
+		FriendlyURLResolver friendlyURLResolver =
+			FriendlyURLResolverRegistryUtil.
+				getFriendlyURLResolverByDefaultURLSeparator(
+					FriendlyURLResolverConstants.URL_SEPARATOR_CUSTOM_ASSET);
+
+		if (friendlyURLResolver != null) {
+			String urlSeparator = friendlyURLResolver.getURLSeparator();
+
+			return urlSeparator.substring(0, urlSeparator.length() - 1);
+		}
+
+		return FriendlyURLResolverConstants.URL_SEPARATOR_X_CUSTOM_ASSET;
+	}
+
+	private static LayoutStructure _updateLayoutStructure(
+			FragmentEntryLink fragmentEntryLink,
+			FragmentEntryLinkListenerRegistry fragmentEntryLinkListenerRegistry,
+			Layout layout, LayoutStructure layoutStructure,
+			long segmentsExperienceId, ServiceContext serviceContext)
+		throws Exception {
+
+		LayoutPageTemplateStructure layoutPageTemplateStructure =
+			LayoutPageTemplateStructureLocalServiceUtil.
+				updateLayoutPageTemplateStructureData(
+					serviceContext.getUserId(), layout.getGroupId(),
+					layout.getPlid(), segmentsExperienceId,
+					layoutStructure.toString());
+
+		for (FragmentEntryLinkListener fragmentEntryLinkListener :
+				fragmentEntryLinkListenerRegistry.
+					getFragmentEntryLinkListeners()) {
+
+			fragmentEntryLinkListener.onAddFragmentEntryLink(fragmentEntryLink);
+		}
+
+		return LayoutStructure.of(
+			layoutPageTemplateStructure.getData(segmentsExperienceId));
+	}
+
+	private static final String _COMPARE_LAYOUT_PAGE_TEMPLATE_ENTRY_KEY_PREFIX =
+		"LFR_CMS_COMPARE_";
+
+	private static final String[] _HIDDEN_INFO_FIELDS = {
+		"displayDate", "expirationDate", "externalReferenceCode",
+		"objectEntryFriendlyURL", "reviewDate", "title"
+	};
+
+	private static final String _REPEATABLE_GROUP_NAME_PREFIX =
+		"repeatable-group-";
+
+	private static final String
+		_TRANSLATION_LAYOUT_PAGE_TEMPLATE_ENTRY_KEY_PREFIX =
+			"LFR_CMS_TRANSLATION_";
+
+	private static final Log _log = LogFactoryUtil.getLog(ActionUtil.class);
+
+	private static final Snapshot<AttachmentManager>
+		_attachmentManagerSnapshot = new Snapshot<>(
+			ActionUtil.class, AttachmentManager.class);
+	private static final ServiceTrackerList<CMSObjectEntryFormContributor>
+		_cmsObjectEntryFormContributors;
+	private static final Object _compareContentLayoutLock = new Object();
+
+	static {
+		Bundle bundle = FrameworkUtil.getBundle(ActionUtil.class);
+
+		if (bundle == null) {
+			_cmsObjectEntryFormContributors = null;
+		}
+		else {
+			_cmsObjectEntryFormContributors = ServiceTrackerListFactory.open(
+				bundle.getBundleContext(), CMSObjectEntryFormContributor.class);
+		}
+	}
+
+}

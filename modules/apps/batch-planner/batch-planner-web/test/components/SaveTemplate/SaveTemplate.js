@@ -3,13 +3,18 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import '@testing-library/jest-dom/extend-expect';
+import '@testing-library/jest-dom';
 import {act, fireEvent, render, waitFor} from '@testing-library/react';
 import fetchMock from 'fetch-mock';
 import React from 'react';
 
 import SaveTemplate from '../../../src/main/resources/META-INF/resources/js/SaveTemplate';
 import {SCHEMA_SELECTED_EVENT} from '../../../src/main/resources/META-INF/resources/js/constants';
+
+jest.mock('frontend-js-components-web', () => ({
+	openModal: jest.fn(),
+	openToast: jest.fn(),
+}));
 
 const BASE_PROPS = {
 	evaluateForm: () => {},
@@ -37,7 +42,7 @@ describe('SaveTemplateModal', () => {
 	});
 
 	afterEach(() => {
-		fetchMock.restore();
+		fetchMock.hardReset();
 	});
 
 	it('must render a save template button', () => {
@@ -85,7 +90,7 @@ describe('SaveTemplateModal', () => {
 			);
 		});
 
-		expect(evaluate).toBeCalled();
+		expect(evaluate).toHaveBeenCalled();
 	});
 
 	it('must not show modal when the button is clicked and the form has no errors', async () => {
@@ -179,12 +184,11 @@ describe('SaveTemplateModal', () => {
 		});
 
 		it('must call api with form data and add the input field data', async () => {
-			const mockedApi = fetchMock.mock(
-				BASE_PROPS.formSaveAsTemplateURL,
-				() => {
-					return {test: 'test'};
-				}
-			);
+			fetchMock.mockGlobal();
+
+			fetchMock.route(BASE_PROPS.formSaveAsTemplateURL, () => {
+				return {test: 'test'};
+			});
 
 			const testName = 'test';
 			const {
@@ -217,7 +221,7 @@ describe('SaveTemplateModal', () => {
 				fireEvent.click(getByText(Liferay.Language.get('save')));
 			});
 
-			expect(mockedApi.called()).toBe(true);
+			expect(fetchMock.callHistory.called()).toBe(true);
 
 			await waitFor(() => {
 				expect(

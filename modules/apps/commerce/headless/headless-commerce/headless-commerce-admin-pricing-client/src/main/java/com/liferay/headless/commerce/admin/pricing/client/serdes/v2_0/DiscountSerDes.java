@@ -14,20 +14,22 @@ import com.liferay.headless.commerce.admin.pricing.client.dto.v2_0.DiscountOrder
 import com.liferay.headless.commerce.admin.pricing.client.dto.v2_0.DiscountProduct;
 import com.liferay.headless.commerce.admin.pricing.client.dto.v2_0.DiscountProductGroup;
 import com.liferay.headless.commerce.admin.pricing.client.dto.v2_0.DiscountRule;
+import com.liferay.headless.commerce.admin.pricing.client.dto.v2_0.DiscountSku;
 import com.liferay.headless.commerce.admin.pricing.client.json.BaseJSONParser;
+
+import jakarta.annotation.Generated;
 
 import java.math.BigDecimal;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
-
-import javax.annotation.Generated;
 
 /**
  * @author Zoltán Takács
@@ -108,6 +110,16 @@ public class DiscountSerDes {
 			sb.append("\"");
 		}
 
+		if (discount.getCreator() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"creator\": ");
+
+			sb.append(String.valueOf(discount.getCreator()));
+		}
+
 		if (discount.getCustomFields() != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -116,6 +128,36 @@ public class DiscountSerDes {
 			sb.append("\"customFields\": ");
 
 			sb.append(_toJSON(discount.getCustomFields()));
+		}
+
+		if (discount.getDateCreated() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"dateCreated\": ");
+
+			sb.append("\"");
+
+			sb.append(
+				liferayToJSONDateFormat.format(discount.getDateCreated()));
+
+			sb.append("\"");
+		}
+
+		if (discount.getDateModified() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"dateModified\": ");
+
+			sb.append("\"");
+
+			sb.append(
+				liferayToJSONDateFormat.format(discount.getDateModified()));
+
+			sb.append("\"");
 		}
 
 		if (discount.getDiscountAccountGroups() != null) {
@@ -277,6 +319,26 @@ public class DiscountSerDes {
 				sb.append(String.valueOf(discount.getDiscountRules()[i]));
 
 				if ((i + 1) < discount.getDiscountRules().length) {
+					sb.append(", ");
+				}
+			}
+
+			sb.append("]");
+		}
+
+		if (discount.getDiscountSkus() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"discountSkus\": ");
+
+			sb.append("[");
+
+			for (int i = 0; i < discount.getDiscountSkus().length; i++) {
+				sb.append(String.valueOf(discount.getDiscountSkus()[i]));
+
+				if ((i + 1) < discount.getDiscountSkus().length) {
 					sb.append(", ");
 				}
 			}
@@ -471,6 +533,26 @@ public class DiscountSerDes {
 			sb.append(discount.getPercentageLevel4());
 		}
 
+		if (discount.getPermissions() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"permissions\": ");
+
+			sb.append("[");
+
+			for (int i = 0; i < discount.getPermissions().length; i++) {
+				sb.append(discount.getPermissions()[i]);
+
+				if ((i + 1) < discount.getPermissions().length) {
+					sb.append(", ");
+				}
+			}
+
+			sb.append("]");
+		}
+
 		if (discount.getRulesConjunction() != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -491,6 +573,20 @@ public class DiscountSerDes {
 			sb.append("\"");
 
 			sb.append(_escape(discount.getTarget()));
+
+			sb.append("\"");
+		}
+
+		if (discount.getTargetKey() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"targetKey\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(discount.getTargetKey()));
 
 			sb.append("\"");
 		}
@@ -580,11 +676,36 @@ public class DiscountSerDes {
 			map.put("couponCode", String.valueOf(discount.getCouponCode()));
 		}
 
+		if (discount.getCreator() == null) {
+			map.put("creator", null);
+		}
+		else {
+			map.put("creator", String.valueOf(discount.getCreator()));
+		}
+
 		if (discount.getCustomFields() == null) {
 			map.put("customFields", null);
 		}
 		else {
 			map.put("customFields", String.valueOf(discount.getCustomFields()));
+		}
+
+		if (discount.getDateCreated() == null) {
+			map.put("dateCreated", null);
+		}
+		else {
+			map.put(
+				"dateCreated",
+				liferayToJSONDateFormat.format(discount.getDateCreated()));
+		}
+
+		if (discount.getDateModified() == null) {
+			map.put("dateModified", null);
+		}
+		else {
+			map.put(
+				"dateModified",
+				liferayToJSONDateFormat.format(discount.getDateModified()));
 		}
 
 		if (discount.getDiscountAccountGroups() == null) {
@@ -656,6 +777,13 @@ public class DiscountSerDes {
 		else {
 			map.put(
 				"discountRules", String.valueOf(discount.getDiscountRules()));
+		}
+
+		if (discount.getDiscountSkus() == null) {
+			map.put("discountSkus", null);
+		}
+		else {
+			map.put("discountSkus", String.valueOf(discount.getDiscountSkus()));
 		}
 
 		if (discount.getDisplayDate() == null) {
@@ -793,6 +921,13 @@ public class DiscountSerDes {
 				String.valueOf(discount.getPercentageLevel4()));
 		}
 
+		if (discount.getPermissions() == null) {
+			map.put("permissions", null);
+		}
+		else {
+			map.put("permissions", String.valueOf(discount.getPermissions()));
+		}
+
 		if (discount.getRulesConjunction() == null) {
 			map.put("rulesConjunction", null);
 		}
@@ -807,6 +942,13 @@ public class DiscountSerDes {
 		}
 		else {
 			map.put("target", String.valueOf(discount.getTarget()));
+		}
+
+		if (discount.getTargetKey() == null) {
+			map.put("targetKey", null);
+		}
+		else {
+			map.put("targetKey", String.valueOf(discount.getTargetKey()));
 		}
 
 		if (discount.getTitle() == null) {
@@ -848,6 +990,146 @@ public class DiscountSerDes {
 		}
 
 		@Override
+		protected boolean parseMaps(String jsonParserFieldName) {
+			if (Objects.equals(jsonParserFieldName, "actions")) {
+				return true;
+			}
+			else if (Objects.equals(jsonParserFieldName, "active")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "amountFormatted")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "couponCode")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "creator")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "customFields")) {
+				return true;
+			}
+			else if (Objects.equals(jsonParserFieldName, "dateCreated")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "dateModified")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "discountAccountGroups")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "discountAccounts")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "discountCategories")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "discountChannels")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "discountOrderTypes")) {
+
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "discountProductGroups")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "discountProducts")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "discountRules")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "discountSkus")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "displayDate")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "expirationDate")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "externalReferenceCode")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "id")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "level")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "limitationTimes")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "limitationTimesPerAccount")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "limitationType")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "maximumDiscountAmount")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "modifiedDate")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "neverExpire")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "numberOfUse")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "percentageLevel1")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "percentageLevel2")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "percentageLevel3")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "percentageLevel4")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "permissions")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "rulesConjunction")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "target")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "targetKey")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "title")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "useCouponCode")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "usePercentage")) {
+				return false;
+			}
+
+			return false;
+		}
+
+		@Override
 		protected void setField(
 			Discount discount, String jsonParserFieldName,
 			Object jsonParserFieldValue) {
@@ -855,8 +1137,7 @@ public class DiscountSerDes {
 			if (Objects.equals(jsonParserFieldName, "actions")) {
 				if (jsonParserFieldValue != null) {
 					discount.setActions(
-						(Map)DiscountSerDes.toMap(
-							(String)jsonParserFieldValue));
+						(Map<String, Map<String, String>>)jsonParserFieldValue);
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "active")) {
@@ -874,11 +1155,28 @@ public class DiscountSerDes {
 					discount.setCouponCode((String)jsonParserFieldValue);
 				}
 			}
+			else if (Objects.equals(jsonParserFieldName, "creator")) {
+				if (jsonParserFieldValue != null) {
+					discount.setCreator(
+						CreatorSerDes.toDTO((String)jsonParserFieldValue));
+				}
+			}
 			else if (Objects.equals(jsonParserFieldName, "customFields")) {
 				if (jsonParserFieldValue != null) {
 					discount.setCustomFields(
-						(Map)DiscountSerDes.toMap(
-							(String)jsonParserFieldValue));
+						(Map<String, ?>)jsonParserFieldValue);
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "dateCreated")) {
+				if (jsonParserFieldValue != null) {
+					discount.setDateCreated(
+						toDate((String)jsonParserFieldValue));
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "dateModified")) {
+				if (jsonParserFieldValue != null) {
+					discount.setDateModified(
+						toDate((String)jsonParserFieldValue));
 				}
 			}
 			else if (Objects.equals(
@@ -1027,6 +1325,22 @@ public class DiscountSerDes {
 					discount.setDiscountRules(discountRulesArray);
 				}
 			}
+			else if (Objects.equals(jsonParserFieldName, "discountSkus")) {
+				if (jsonParserFieldValue != null) {
+					Object[] jsonParserFieldValues =
+						(Object[])jsonParserFieldValue;
+
+					DiscountSku[] discountSkusArray =
+						new DiscountSku[jsonParserFieldValues.length];
+
+					for (int i = 0; i < discountSkusArray.length; i++) {
+						discountSkusArray[i] = DiscountSkuSerDes.toDTO(
+							(String)jsonParserFieldValues[i]);
+					}
+
+					discount.setDiscountSkus(discountSkusArray);
+				}
+			}
 			else if (Objects.equals(jsonParserFieldName, "displayDate")) {
 				if (jsonParserFieldValue != null) {
 					discount.setDisplayDate(
@@ -1125,6 +1439,26 @@ public class DiscountSerDes {
 						new BigDecimal((String)jsonParserFieldValue));
 				}
 			}
+			else if (Objects.equals(jsonParserFieldName, "permissions")) {
+				if (jsonParserFieldValue != null) {
+					Object[] jsonParserFieldValues =
+						(Object[])jsonParserFieldValue;
+
+					com.liferay.headless.commerce.admin.pricing.client.
+						permission.Permission[] permissionsArray = new
+						com.liferay.headless.commerce.admin.pricing.client.
+							permission.Permission[jsonParserFieldValues.length];
+
+					for (int i = 0; i < permissionsArray.length; i++) {
+						permissionsArray[i] =
+							com.liferay.headless.commerce.admin.pricing.client.
+								permission.Permission.toDTO(
+									(String)jsonParserFieldValues[i]);
+					}
+
+					discount.setPermissions(permissionsArray);
+				}
+			}
 			else if (Objects.equals(jsonParserFieldName, "rulesConjunction")) {
 				if (jsonParserFieldValue != null) {
 					discount.setRulesConjunction((Boolean)jsonParserFieldValue);
@@ -1133,6 +1467,11 @@ public class DiscountSerDes {
 			else if (Objects.equals(jsonParserFieldName, "target")) {
 				if (jsonParserFieldValue != null) {
 					discount.setTarget((String)jsonParserFieldValue);
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "targetKey")) {
+				if (jsonParserFieldValue != null) {
+					discount.setTargetKey((String)jsonParserFieldValue);
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "title")) {
@@ -1182,36 +1521,7 @@ public class DiscountSerDes {
 
 			Object value = entry.getValue();
 
-			Class<?> valueClass = value.getClass();
-
-			if (value instanceof Map) {
-				sb.append(_toJSON((Map)value));
-			}
-			else if (valueClass.isArray()) {
-				Object[] values = (Object[])value;
-
-				sb.append("[");
-
-				for (int i = 0; i < values.length; i++) {
-					sb.append("\"");
-					sb.append(_escape(values[i]));
-					sb.append("\"");
-
-					if ((i + 1) < values.length) {
-						sb.append(", ");
-					}
-				}
-
-				sb.append("]");
-			}
-			else if (value instanceof String) {
-				sb.append("\"");
-				sb.append(_escape(entry.getValue()));
-				sb.append("\"");
-			}
-			else {
-				sb.append(String.valueOf(entry.getValue()));
-			}
+			sb.append(_toJSON(value));
 
 			if (iterator.hasNext()) {
 				sb.append(", ");
@@ -1223,4 +1533,47 @@ public class DiscountSerDes {
 		return sb.toString();
 	}
 
+	private static String _toJSON(Object value) {
+		if (value == null) {
+			return "null";
+		}
+
+		if (value instanceof Collection) {
+			Collection<?> collection = (Collection<?>)value;
+
+			return _toJSON(collection.toArray());
+		}
+
+		if (value instanceof Map) {
+			return _toJSON((Map)value);
+		}
+
+		Class<?> clazz = value.getClass();
+
+		if (clazz.isArray()) {
+			StringBuilder sb = new StringBuilder("[");
+
+			Object[] values = (Object[])value;
+
+			for (int i = 0; i < values.length; i++) {
+				sb.append(_toJSON(values[i]));
+
+				if ((i + 1) < values.length) {
+					sb.append(", ");
+				}
+			}
+
+			sb.append("]");
+
+			return sb.toString();
+		}
+
+		if (value instanceof String) {
+			return "\"" + _escape(value) + "\"";
+		}
+
+		return String.valueOf(value);
+	}
+
 }
+// LIFERAY-REST-BUILDER-HASH:-338022315

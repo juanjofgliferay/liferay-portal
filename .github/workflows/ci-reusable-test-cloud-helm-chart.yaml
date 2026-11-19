@@ -1,0 +1,82 @@
+defaults:
+    run:
+        shell: bash
+jobs:
+    test-cloud-helm-chart:
+        runs-on: ubuntu-latest
+        steps:
+            -   name: Checkout code
+                uses: actions/checkout@v4
+            -   name: Install Helm
+                uses: azure/setup-helm@v4
+                with:
+                    version: 4.2.4
+            -   name: Install helm-unittest plugin
+                run: helm plugin install --verify=false --version 1.0.3 https://github.com/helm-unittest/helm-unittest
+            -   name: Set up Kubeconform
+                uses: bmuschko/setup-kubeconform@v1
+                with:
+                    kubeconform-version: 0.7.0
+            -   name: Lint chart
+                run: |
+                    set -o errexit
+                    set -o nounset
+                    set -o pipefail
+
+                    function main {
+                        local helm_lint_args=()
+                        local render_values_file="cloud/scripts/tests/render-values/${{matrix.chart}}.yaml"
+
+                        cloud/scripts/update_helm_dependencies.sh "cloud/helm/${{matrix.chart}}"
+
+                        if [[ -f ${render_values_file} ]]
+                        then
+                            helm_lint_args=("--values" "${render_values_file}")
+                        fi
+
+                        helm lint "cloud/helm/${{matrix.chart}}" "${helm_lint_args[@]}"
+                    }
+
+                    main "${@}"
+            -   name: Render and validate manifests
+                run: cloud/scripts/tests/render_helm_manifests.sh "${{matrix.chart}}"
+            -   if: ${{!cancelled()}}
+                name: Run unit tests
+                run: cloud/scripts/tests/run_helm_tests.sh "${{matrix.chart}}"
+            -   if: ${{!cancelled() && hashFiles(format('cloud/scripts/tests/test-results/helm-unittest-{0}.xml', matrix.chart)) != ''}}
+                name: Publish test report
+                uses: dorny/test-reporter@v2
+                with:
+                    name: Helm unit tests (${{matrix.chart}})
+                    path: cloud/scripts/tests/test-results/helm-unittest-${{matrix.chart}}.xml
+                    reporter: java-junit
+            -   if: ${{!cancelled() && hashFiles(format('cloud/scripts/tests/test-results/helm-unittest-{0}.xml', matrix.chart)) != ''}}
+                name: Upload test reports
+                uses: actions/upload-artifact@v4
+                with:
+                    name: helm-test-results-${{matrix.chart}}
+                    path: cloud/scripts/tests/test-results/helm-unittest-${{matrix.chart}}.xml
+        strategy:
+            fail-fast: false
+            matrix:
+                chart:
+                    -   aws
+                    -   aws-infrastructure-provider
+                    -   aws-marketplace
+                    -   azure
+                    -   azure-infrastructure-provider
+                    -   client-extension
+                    -   default
+                    -   dxp-operator
+                    -   gcp
+                    -   gcp-infrastructure-provider
+                    -   infrastructure
+                    -   observability
+                    -   observability-paas
+                    -   platform
+                    -   platform-components
+on:
+    workflow_call:
+permissions:
+    checks: write
+    contents: read

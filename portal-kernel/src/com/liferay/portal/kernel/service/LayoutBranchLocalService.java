@@ -36,8 +36,10 @@ import org.osgi.annotation.versioning.ProviderType;
  *
  * @author Brian Wing Shun Chan
  * @see LayoutBranchLocalServiceUtil
+ * @deprecated As of Cavanaugh (7.4.x), with no direct replacement
  * @generated
  */
+@Deprecated
 @OSGiBeanProperties(
 	property = {"model.class.name=com.liferay.portal.kernel.model.LayoutBranch"}
 )
@@ -225,11 +227,6 @@ public interface LayoutBranchLocalService
 	public LayoutBranch getLayoutBranch(long layoutBranchId)
 		throws PortalException;
 
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<LayoutBranch> getLayoutBranches(
-		long layoutSetBranchId, long plid, int start, int end,
-		OrderByComparator<LayoutBranch> orderByComparator);
-
 	/**
 	 * Returns a range of all the layout branches.
 	 *
@@ -299,3 +296,4 @@ public interface LayoutBranchLocalService
 		throws PortalException;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:511415203

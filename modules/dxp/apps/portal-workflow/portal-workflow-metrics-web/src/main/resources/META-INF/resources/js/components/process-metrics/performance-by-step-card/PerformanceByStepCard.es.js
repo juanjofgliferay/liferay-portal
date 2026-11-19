@@ -13,7 +13,11 @@ import {useFetch} from '../../../shared/hooks/useFetch.es';
 import {useFilter} from '../../../shared/hooks/useFilter.es';
 import ProcessVersionFilter from '../../filter/ProcessVersionFilter.es';
 import TimeRangeFilter from '../../filter/TimeRangeFilter.es';
-import {getTimeRangeParams} from '../../filter/util/timeRangeUtil.es';
+import {
+	getDefaultEndDate,
+	getDefaultStartDate,
+	getTimeRangeParams,
+} from '../../filter/util/timeRangeUtil.es';
 import {Body, Footer} from './PerformanceByStepCardBody.es';
 
 function Header({disableFilters, prefixKey, processId}) {
@@ -71,7 +75,11 @@ function PerformanceByStepCard({routeParams}) {
 
 	const processVersion = version !== 'allVersions' ? [version] : undefined;
 	const timeRange = useMemo(
-		() => getTimeRangeParams(stepDateStart, stepDateEnd),
+		() =>
+			getTimeRangeParams(
+				stepDateStart ?? getDefaultStartDate(),
+				stepDateEnd ?? getDefaultEndDate()
+			),
 		[stepDateEnd, stepDateStart]
 	);
 
@@ -98,7 +106,7 @@ function PerformanceByStepCard({routeParams}) {
 	}, [filtersError, routeParams, timeRange.dateEnd, timeRange.dateStart]);
 
 	return (
-		<ClayPanel className="mt-4 tabs-card">
+		<ClayPanel className="mt-4 tabs-card" displayType="secondary">
 			<PromisesResolver promises={promises}>
 				<PerformanceByStepCard.Header
 					disableFilters={filtersError}

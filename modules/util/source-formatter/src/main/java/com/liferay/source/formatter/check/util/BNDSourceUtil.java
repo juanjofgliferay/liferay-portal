@@ -91,13 +91,15 @@ public class BNDSourceUtil {
 				String bundleSymbolicName = getDefinitionValue(
 					content, "Bundle-SymbolicName");
 
-				if ((bundleSymbolicName != null) &&
-					bundleSymbolicName.startsWith("com.liferay")) {
+				if ((bundleSymbolicName == null) ||
+					!bundleSymbolicName.startsWith("com.liferay")) {
 
-					bundleSymbolicNamesMap.put(
-						bundleSymbolicName,
-						SourceUtil.getAbsolutePath(file.getParentFile()));
+					continue;
 				}
+
+				bundleSymbolicNamesMap.put(
+					bundleSymbolicName,
+					SourceUtil.getAbsolutePath(file.getParentFile()));
 			}
 		}
 		catch (IOException ioException) {
@@ -125,8 +127,10 @@ public class BNDSourceUtil {
 	public static Map<String, String> getDefinitionKeysMap() {
 		return _populateDefinitionKeysMap(
 			ArrayUtil.append(
-				Constants.BUNDLE_SPECIFIC_HEADERS, Constants.headers,
-				Constants.options));
+				ArrayUtil.toStringArray(Constants.BUNDLE_SPECIFIC_HEADERS),
+				ArrayUtil.toStringArray(Constants.headers),
+				ArrayUtil.toStringArray(Constants.options),
+				new String[] {"-bundleannotations"}));
 	}
 
 	public static String getDefinitionValue(String content, String key) {
@@ -222,9 +226,11 @@ public class BNDSourceUtil {
 		String[] lines = StringUtil.splitLines(content);
 
 		for (String line : lines) {
-			if (line.contains(header)) {
-				content = StringUtil.replaceFirst(content, line, instruction);
+			if (!line.contains(header)) {
+				continue;
 			}
+
+			content = StringUtil.replaceFirst(content, line, instruction);
 		}
 
 		return content;
@@ -256,7 +262,7 @@ public class BNDSourceUtil {
 	private static final String[] _BND_BND_DEFINITION_KEYS = {
 		"-jsp", "-liferay-aggregate-resource-bundles", "-metatype",
 		"-metatype-inherit", "-sass", "Bundle-ActivationPolicy",
-		"Can-Redefine-Classes", "Can-Retransform-Classes",
+		"Can-Redefine-Classes", "Can-Retransform-Classes", "CPE-Name",
 		"Eclipse-PlatformFilter", "Implementation-Version", "JPM-Command",
 		"Liferay-Client-Extension-Batch", "Liferay-Configuration-Path",
 		"Liferay-Enterprise-App", "Liferay-Icons-Pack-Name",
@@ -272,7 +278,7 @@ public class BNDSourceUtil {
 		"Liferay-Site-Initializer-Feature-Flag",
 		"Liferay-Site-Initializer-Name", "Liferay-Theme-Contributor-Type",
 		"Liferay-Theme-Contributor-Weight", "Liferay-Versions", "Main-Class",
-		"Premain-Class", "Web-ContextPath"
+		"Premain-Class", "Web-ContextPath", "Web-ServiceTracking"
 	};
 
 	private static final String[] _COMMON_BND_DEFINITION_KEYS = {
@@ -298,6 +304,8 @@ public class BNDSourceUtil {
 		_FILE_SYSTEM.getPathMatcher("glob:**/bin/**"),
 		_FILE_SYSTEM.getPathMatcher("glob:**/build/**"),
 		_FILE_SYSTEM.getPathMatcher("glob:**/classes/**"),
+		_FILE_SYSTEM.getPathMatcher("glob:**/node_modules/**"),
+		_FILE_SYSTEM.getPathMatcher("glob:**/node_modules_cache/**"),
 		_FILE_SYSTEM.getPathMatcher("glob:**/sql/**"),
 		_FILE_SYSTEM.getPathMatcher("glob:**/src/**"),
 		_FILE_SYSTEM.getPathMatcher("glob:**/test-classes/**"),

@@ -9,14 +9,26 @@
 
 <%
 ContentPageEditorDisplayContext contentPageEditorDisplayContext = (ContentPageEditorDisplayContext)request.getAttribute(ContentPageEditorWebKeys.LIFERAY_SHARED_CONTENT_PAGE_EDITOR_DISPLAY_CONTEXT);
+
+Group group = themeDisplay.getScopeGroup();
 %>
 
-<liferay-editor:resources
-	editorName="alloyeditor"
-/>
+<c:if test='<%= FeatureFlagManagerUtil.isEnabled("LPD-11235") %>'>
+	<liferay-editor:resources
+		editorName="alloyeditor"
+	/>
+</c:if>
 
 <liferay-util:html-top>
-	<link href="<%= PortalUtil.getStaticResourceURL(request, PortalUtil.getPathModule() + "/layout-content-page-editor-web/page_editor/app/components/App.css") %>" rel="stylesheet" />
+	<aui:link hashedFile="<%= true %>" href="layout-content-page-editor-web/page_editor/app/components/App.css" rel="stylesheet" />
+
+	<c:if test="<%= group.isCMS() %>">
+		<aui:style type="text/css">
+			.control-menu {
+				display: none;
+			}
+		</aui:style>
+	</c:if>
 </liferay-util:html-top>
 
 <div id="<portlet:namespace />pageEditor">
@@ -25,7 +37,7 @@ ContentPageEditorDisplayContext contentPageEditorDisplayContext = (ContentPageEd
 	</div>
 
 	<react:component
-		module="page_editor/app/index"
-		props="<%= contentPageEditorDisplayContext.getEditorContext(npmResolvedPackageName) %>"
+		module="{App} from layout-content-page-editor-web"
+		props="<%= contentPageEditorDisplayContext.getEditorContext() %>"
 	/>
 </div>

@@ -5,6 +5,8 @@
 
 package com.liferay.user.groups.admin.item.selector.web.internal.display.context;
 
+import com.liferay.petra.lang.SafeCloseable;
+import com.liferay.portal.kernel.change.tracking.CTCollectionThreadLocal;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.model.UserGroup;
@@ -13,16 +15,18 @@ import com.liferay.portal.kernel.service.UserGroupLocalServiceUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.JavaConstants;
 import com.liferay.portal.kernel.util.ParamUtil;
+import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portlet.usersadmin.util.UsersAdminUtil;
 import com.liferay.user.groups.admin.item.selector.UserGroupItemSelectorCriterion;
 import com.liferay.user.groups.admin.item.selector.web.internal.search.UserGroupItemSelectorChecker;
+import com.liferay.users.admin.constants.UsersAdminPortletKeys;
 
-import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * @author Alessio Antonio Rendina
@@ -39,9 +43,9 @@ public class UserGroupItemSelectorViewDisplayContext {
 		_portletURL = portletURL;
 
 		_renderRequest = (RenderRequest)httpServletRequest.getAttribute(
-			JavaConstants.JAVAX_PORTLET_REQUEST);
+			JavaConstants.JAKARTA_PORTLET_REQUEST);
 		_renderResponse = (RenderResponse)httpServletRequest.getAttribute(
-			JavaConstants.JAVAX_PORTLET_RESPONSE);
+			JavaConstants.JAKARTA_PORTLET_RESPONSE);
 		_themeDisplay = (ThemeDisplay)httpServletRequest.getAttribute(
 			WebKeys.THEME_DISPLAY);
 	}
@@ -86,23 +90,43 @@ public class UserGroupItemSelectorViewDisplayContext {
 
 		String keywords = getKeywords();
 
-		if (_userGroupItemSelectorCriterion.isFilterManageableUserGroups()) {
-			_searchContainer.setResultsAndTotal(
-				UsersAdminUtil.filterUserGroups(
-					_themeDisplay.getPermissionChecker(),
-					UserGroupLocalServiceUtil.search(
-						_themeDisplay.getCompanyId(), keywords, null,
-						QueryUtil.ALL_POS, QueryUtil.ALL_POS,
-						_searchContainer.getOrderByComparator())));
+		long ctCollectionId = CTCollectionThreadLocal.getCTCollectionId();
+
+		String itemSelectedEventName = ParamUtil.getString(
+			_renderRequest, "itemSelectedEventName");
+
+		if (itemSelectedEventName.startsWith(
+				PortalUtil.getPortletNamespace(
+					UsersAdminPortletKeys.USERS_ADMIN))) {
+
+			ctCollectionId =
+				CTCollectionThreadLocal.CT_COLLECTION_ID_PRODUCTION;
 		}
-		else {
-			_searchContainer.setResultsAndTotal(
-				() -> _userGroupLocalService.search(
-					_themeDisplay.getCompanyId(), keywords, null,
-					_searchContainer.getStart(), _searchContainer.getEnd(),
-					_searchContainer.getOrderByComparator()),
-				_userGroupLocalService.searchCount(
-					_themeDisplay.getCompanyId(), keywords, null));
+
+		try (SafeCloseable safeCloseable =
+				CTCollectionThreadLocal.setCTCollectionIdWithSafeCloseable(
+					ctCollectionId)) {
+
+			if (_userGroupItemSelectorCriterion.
+					isFilterManageableUserGroups()) {
+
+				_searchContainer.setResultsAndTotal(
+					UsersAdminUtil.filterUserGroups(
+						_themeDisplay.getPermissionChecker(),
+						UserGroupLocalServiceUtil.search(
+							_themeDisplay.getCompanyId(), keywords, null,
+							QueryUtil.ALL_POS, QueryUtil.ALL_POS,
+							_searchContainer.getOrderByComparator())));
+			}
+			else {
+				_searchContainer.setResultsAndTotal(
+					() -> _userGroupLocalService.search(
+						_themeDisplay.getCompanyId(), keywords, null,
+						_searchContainer.getStart(), _searchContainer.getEnd(),
+						_searchContainer.getOrderByComparator()),
+					_userGroupLocalService.searchCount(
+						_themeDisplay.getCompanyId(), keywords, null));
+			}
 		}
 
 		_searchContainer.setRowChecker(

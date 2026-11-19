@@ -28,22 +28,20 @@ import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
-import com.liferay.portal.kernel.util.HashMapBuilder;
-import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
+
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 import java.io.PrintWriter;
 
 import java.util.Locale;
 import java.util.Objects;
-
-import javax.servlet.RequestDispatcher;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -60,7 +58,7 @@ public class KBArticleNavigationFragmentRenderer implements FragmentRenderer {
 	}
 
 	@Override
-	public String getConfiguration(
+	public JSONObject getConfigurationJSONObject(
 		FragmentRendererContext fragmentRendererContext) {
 
 		return JSONUtil.put(
@@ -82,7 +80,7 @@ public class KBArticleNavigationFragmentRenderer implements FragmentRenderer {
 						JSONUtil.put(
 							"defaultValue", String.valueOf(_MAX_NESTING_LEVEL)
 						).put(
-							"label", "max-nesting-level"
+							"label", "maximum-nesting-level"
 						).put(
 							"name", "maxNestingLevel"
 						).put(
@@ -96,8 +94,7 @@ public class KBArticleNavigationFragmentRenderer implements FragmentRenderer {
 								).put(
 									"type", "number"
 								))
-						))))
-		).toString();
+						)))));
 	}
 
 	@Override
@@ -138,8 +135,6 @@ public class KBArticleNavigationFragmentRenderer implements FragmentRenderer {
 				fragmentRendererContext.getFragmentElementId();
 
 			printWriter.write("<div id=\"" + fragmentElementId + "\">");
-
-			_writeCss(fragmentElementId, printWriter);
 
 			httpServletRequest.setAttribute(
 				KBArticleNavigationFragmentDisplayContext.class.getName(),
@@ -207,8 +202,8 @@ public class KBArticleNavigationFragmentRenderer implements FragmentRenderer {
 
 			JSONObject jsonObject =
 				(JSONObject)_fragmentEntryConfigurationParser.getFieldValue(
-					getConfiguration(fragmentRendererContext),
-					fragmentEntryLink.getEditableValues(),
+					getConfigurationJSONObject(fragmentRendererContext),
+					fragmentEntryLink.getEditableValuesJSONObject(),
 					fragmentRendererContext.getLocale(), "itemSelector");
 
 			if ((jsonObject != null) && jsonObject.has("className") &&
@@ -255,42 +250,23 @@ public class KBArticleNavigationFragmentRenderer implements FragmentRenderer {
 
 		return GetterUtil.getInteger(
 			_fragmentEntryConfigurationParser.getFieldValue(
-				getConfiguration(fragmentRendererContext),
-				fragmentEntryLink.getEditableValues(),
+				getConfigurationJSONObject(fragmentRendererContext),
+				fragmentEntryLink.getEditableValuesJSONObject(),
 				fragmentRendererContext.getLocale(), "maxNestingLevel"),
 			_MAX_NESTING_LEVEL);
 	}
 
 	private void _printPortletMessageInfo(
-		HttpServletRequest httpServletRequest,
-		HttpServletResponse httpServletResponse, String message) {
-
-		try {
-			PrintWriter printWriter = httpServletResponse.getWriter();
-
-			printWriter.write(
-				StringBundler.concat(
-					"<div class=\"portlet-msg-info\">",
-					_language.get(httpServletRequest, message), "</div>"));
-		}
-		catch (IOException ioException) {
-			_log.error(ioException);
-		}
-	}
-
-	private void _writeCss(String fragmentElementId, PrintWriter printWriter)
+			HttpServletRequest httpServletRequest,
+			HttpServletResponse httpServletResponse, String message)
 		throws IOException {
 
+		PrintWriter printWriter = httpServletResponse.getWriter();
+
 		printWriter.write(
-			StringUtil.replace(
-				StringUtil.read(
-					getClass(),
-					"/com/liferay/knowledge/base/web/internal/fragment" +
-						"/renderer/dependencies/styles.tmpl"),
-				"${", "}",
-				HashMapBuilder.put(
-					"fragmentElementId", fragmentElementId
-				).build()));
+			StringBundler.concat(
+				"<div class=\"portlet-msg-info\">",
+				_language.get(httpServletRequest, message), "</div>"));
 	}
 
 	private static final int _MAX_NESTING_LEVEL = 3;

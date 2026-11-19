@@ -12,7 +12,7 @@ String redirect = ParamUtil.getString(request, "redirect");
 
 WikiNode node = (WikiNode)request.getAttribute(WikiWebKeys.WIKI_NODE);
 
-long nodeId = BeanParamUtil.getLong(node, request, "nodeId");
+long nodeId = BeanParamUtil.getLong(node, request, "nodeId", WikiNode::getNodeId);
 
 long[] nodeIds = null;
 
@@ -34,7 +34,7 @@ WikiURLHelper wikiURLHelper = new WikiURLHelper(wikiRequestHelper, renderRespons
 
 	<liferay-ui:header
 		backURL="<%= redirect %>"
-		title="search"
+		title="search[noun]"
 	/>
 
 	<div class="form-search">
@@ -45,8 +45,8 @@ WikiURLHelper wikiURLHelper = new WikiURLHelper(wikiRequestHelper, renderRespons
 				<div class="input-group-inset-item input-group-inset-item-after">
 					<clay:button
 						data-qa-id="searchButton"
-						icon="search"
 						displayType="unstyled"
+						icon="search"
 						monospaced="<%= false %>"
 						type="submit"
 					/>

@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -116,6 +117,16 @@ public class AnalyticsAssociationLocalServiceUtil {
 		throws PortalException {
 
 		return getService().deleteAnalyticsAssociation(analyticsAssociationId);
+	}
+
+	public static void deleteAnalyticsAssociations(long companyId) {
+		getService().deleteAnalyticsAssociations(companyId);
+	}
+
+	public static void deleteAnalyticsAssociations(
+		long companyId, java.util.Date modifiedDate) {
+
+		getService().deleteAnalyticsAssociations(companyId, modifiedDate);
 	}
 
 	public static void deleteAnalyticsAssociations(
@@ -263,21 +274,6 @@ public class AnalyticsAssociationLocalServiceUtil {
 		return getService().getAnalyticsAssociations(start, end);
 	}
 
-	public static List<AnalyticsAssociation> getAnalyticsAssociations(
-		long companyId, java.util.Date modifiedDate,
-		String associationClassName, int start, int end) {
-
-		return getService().getAnalyticsAssociations(
-			companyId, modifiedDate, associationClassName, start, end);
-	}
-
-	public static List<AnalyticsAssociation> getAnalyticsAssociations(
-		long companyId, String associationClassName, int start, int end) {
-
-		return getService().getAnalyticsAssociations(
-			companyId, associationClassName, start, end);
-	}
-
 	/**
 	 * Returns the number of analytics associations.
 	 *
@@ -285,21 +281,6 @@ public class AnalyticsAssociationLocalServiceUtil {
 	 */
 	public static int getAnalyticsAssociationsCount() {
 		return getService().getAnalyticsAssociationsCount();
-	}
-
-	public static int getAnalyticsAssociationsCount(
-		long companyId, java.util.Date modifiedDate,
-		String associationClassName) {
-
-		return getService().getAnalyticsAssociationsCount(
-			companyId, modifiedDate, associationClassName);
-	}
-
-	public static int getAnalyticsAssociationsCount(
-		long companyId, String associationClassName) {
-
-		return getService().getAnalyticsAssociationsCount(
-			companyId, associationClassName);
 	}
 
 	public static
@@ -344,13 +325,13 @@ public class AnalyticsAssociationLocalServiceUtil {
 	}
 
 	public static AnalyticsAssociationLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(AnalyticsAssociationLocalService service) {
-		_service = service;
-	}
-
-	private static volatile AnalyticsAssociationLocalService _service;
+	private static final Snapshot<AnalyticsAssociationLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			AnalyticsAssociationLocalServiceUtil.class,
+			AnalyticsAssociationLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-641761610

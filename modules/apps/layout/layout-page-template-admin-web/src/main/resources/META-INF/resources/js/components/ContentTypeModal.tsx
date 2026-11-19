@@ -5,15 +5,17 @@
 
 import ClayAlert from '@clayui/alert';
 import ClayButton from '@clayui/button';
+import ClayLoadingIndicator from '@clayui/loading-indicator';
 import ClayModal, {useModal} from '@clayui/modal';
-import {fetch, navigate, openModal} from 'frontend-js-web';
+import {openModal} from 'frontend-js-components-web';
+import {fetch, navigate} from 'frontend-js-web';
 import React, {useCallback, useRef, useState} from 'react';
 
 import openInUseModal from '../commands/openInUseModal';
 import {ModalType} from '../constants/modalTypes';
 import {MappingType} from '../types/MappingTypes';
 import {ValidationError} from '../types/ValidationError';
-import ContentTypeModalForm from './ContentTypeModalForm';
+import ContentTypeModalForm, {validateForm} from './ContentTypeModalForm';
 
 interface Props {
 	description?: string;
@@ -28,6 +30,54 @@ interface Props {
 	title: string;
 	type: ModalType;
 	warningMessage: string;
+}
+
+interface ModalProps {
+	children: React.ReactNode;
+	disableWarning: boolean;
+	error: ValidationError;
+	onCloseAlert: () => void;
+	onCloseWarning: () => void;
+	warningMessage: string;
+	warningVisible: boolean;
+}
+
+export function ModalContent({
+	children,
+	disableWarning,
+	error,
+	onCloseAlert,
+	onCloseWarning,
+	warningMessage,
+	warningVisible,
+}: ModalProps) {
+	return (
+		<>
+			{warningMessage && warningVisible && !disableWarning ? (
+				<ClayAlert
+					displayType="warning"
+					onClose={onCloseWarning}
+					title={Liferay.Language.get('warning')}
+					variant="stripe"
+				>
+					{warningMessage}
+				</ClayAlert>
+			) : null}
+
+			{error && error.other ? (
+				<ClayAlert
+					displayType="danger"
+					onClose={onCloseAlert}
+					title={Liferay.Language.get('error')}
+					variant="stripe"
+				>
+					{error.other}
+				</ClayAlert>
+			) : null}
+
+			{children}
+		</>
+	);
 }
 
 export default function ContentTypeModal({
@@ -52,43 +102,13 @@ export default function ContentTypeModal({
 
 	const formRef = useRef<HTMLFormElement>(null);
 
-	const validateForm = useCallback(
-		(form) => {
-			const {elements} = form;
-			const error: ValidationError = {};
-
-			const errorMessage = Liferay.Language.get('this-field-is-required');
-
-			const nameField = elements[`${namespace}name`];
-
-			if (nameField && !nameField.value) {
-				error.name = errorMessage;
-			}
-
-			const classNameIdField = elements[`${namespace}classNameId`];
-
-			if (classNameIdField.selectedIndex === 0) {
-				error.classNameId = errorMessage;
-			}
-
-			const classTypeIdField = elements[`${namespace}classTypeId`];
-
-			if (classTypeIdField && classTypeIdField.selectedIndex === 0) {
-				error.classTypeId = errorMessage;
-			}
-
-			return error;
-		},
-		[namespace]
-	);
-
 	const handleSubmit = useCallback(
-		(event) => {
+		(event: React.SyntheticEvent) => {
 			event.preventDefault();
 
 			const form = formRef.current;
 
-			const error = validateForm(form);
+			const error = validateForm(form, namespace);
 
 			if (Object.keys(error).length !== 0) {
 				setError(error);
@@ -156,52 +176,43 @@ export default function ContentTypeModal({
 					})
 				);
 		},
-		[formSubmitURL, onClose, validateForm]
+		[formSubmitURL, namespace, onClose]
 	);
 
 	return (
 		<ClayModal observer={observer}>
-			<ClayModal.Header>{title}</ClayModal.Header>
+			<ClayModal.Header
+				closeButtonAriaLabel={Liferay.Language.get('close')}
+			>
+				{title}
+			</ClayModal.Header>
 
-			{warningMessage && warningVisible && !disableWarning ? (
-				<ClayAlert
-					displayType="warning"
-					onClose={() => setWarningVisible(false)}
-					title={Liferay.Language.get('warning')}
-					variant="stripe"
-				>
-					{warningMessage}
-				</ClayAlert>
-			) : null}
+			<ModalContent
+				disableWarning={disableWarning}
+				error={error}
+				onCloseAlert={() => setError({})}
+				onCloseWarning={() => setWarningVisible(false)}
+				warningMessage={warningMessage}
+				warningVisible={warningVisible}
+			>
+				<ClayModal.Body>
+					{description ? (
+						<p className="text-secondary">{description}</p>
+					) : null}
 
-			{error && error.other ? (
-				<ClayAlert
-					displayType="danger"
-					onClose={() => setError({})}
-					title={Liferay.Language.get('error')}
-					variant="stripe"
-				>
-					{error.other}
-				</ClayAlert>
-			) : null}
-
-			<ClayModal.Body>
-				{description ? (
-					<p className="text-secondary">{description}</p>
-				) : null}
-
-				<ContentTypeModalForm
-					displayPageName={displayPageName}
-					error={error}
-					formRef={formRef}
-					mappingTypes={mappingTypes}
-					namespace={namespace}
-					onSubmit={handleSubmit}
-					selectedSubtype={selectedSubtype}
-					selectedType={selectedType}
-					type={type}
-				/>
-			</ClayModal.Body>
+					<ContentTypeModalForm
+						displayPageName={displayPageName}
+						error={error}
+						formRef={formRef}
+						mappingTypes={mappingTypes}
+						namespace={namespace}
+						onSubmit={handleSubmit}
+						selectedSubtype={selectedSubtype}
+						selectedType={selectedType}
+						type={type}
+					/>
+				</ClayModal.Body>
+			</ModalContent>
 
 			<ClayModal.Footer
 				last={
@@ -216,10 +227,10 @@ export default function ContentTypeModal({
 						>
 							{loading && (
 								<span className="inline-item inline-item-before">
-									<span
-										aria-hidden="true"
-										className="loading-animation"
-									></span>
+									<ClayLoadingIndicator
+										displayType="secondary"
+										size="sm"
+									/>
 								</span>
 							)}
 

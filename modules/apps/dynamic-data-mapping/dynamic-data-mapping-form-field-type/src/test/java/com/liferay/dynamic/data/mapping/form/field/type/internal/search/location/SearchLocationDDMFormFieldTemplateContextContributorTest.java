@@ -27,14 +27,15 @@ import com.liferay.portal.kernel.util.PrefsPropsUtil;
 import com.liferay.portal.kernel.util.ResourceBundleUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.portal.security.key.secret.SecretResolver;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
+
+import jakarta.portlet.PortletPreferences;
 
 import java.util.Arrays;
 import java.util.Locale;
 import java.util.Map;
 import java.util.ResourceBundle;
-
-import javax.portlet.PortletPreferences;
 
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -66,6 +67,7 @@ public class SearchLocationDDMFormFieldTemplateContextContributorTest {
 		_setUpJSONFactoryUtil();
 		_setUpLanguage();
 		_setUpResourceBundleUtil();
+		_setUpSecretResolver();
 	}
 
 	@Test
@@ -198,6 +200,7 @@ public class SearchLocationDDMFormFieldTemplateContextContributorTest {
 		).thenReturn(
 			ResourceBundleUtil.EMPTY_RESOURCE_BUNDLE
 		);
+
 		portalUtil.setPortal(portal);
 
 		ResourceBundleLoader resourceBundleLoader = Mockito.mock(
@@ -211,6 +214,20 @@ public class SearchLocationDDMFormFieldTemplateContextContributorTest {
 		).thenReturn(
 			ResourceBundleUtil.EMPTY_RESOURCE_BUNDLE
 		);
+	}
+
+	private static void _setUpSecretResolver() {
+		SecretResolver secretResolver = Mockito.mock(SecretResolver.class);
+
+		Mockito.when(
+			secretResolver.resolve(Mockito.anyLong(), Mockito.any())
+		).thenAnswer(
+			invocationOnMock -> invocationOnMock.getArgument(1)
+		);
+
+		ReflectionTestUtil.setFieldValue(
+			_searchLocationDDMFormFieldTemplateContextContributor,
+			"_secretResolver", secretResolver);
 	}
 
 	private DDMFormFieldRenderingContext _createDDMFormFieldRenderingContext() {

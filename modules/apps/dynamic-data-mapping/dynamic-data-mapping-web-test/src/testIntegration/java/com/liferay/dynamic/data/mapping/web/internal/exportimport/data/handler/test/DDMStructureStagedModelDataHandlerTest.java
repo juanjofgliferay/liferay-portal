@@ -6,6 +6,8 @@
 package com.liferay.dynamic.data.mapping.web.internal.exportimport.data.handler.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.data.engine.model.DEDataDefinitionFieldLink;
+import com.liferay.data.engine.service.DEDataDefinitionFieldLinkLocalServiceUtil;
 import com.liferay.dynamic.data.mapping.data.provider.DDMDataProvider;
 import com.liferay.dynamic.data.mapping.data.provider.configuration.DDMDataProviderConfiguration;
 import com.liferay.dynamic.data.mapping.io.DDMFormValuesDeserializer;
@@ -16,17 +18,23 @@ import com.liferay.dynamic.data.mapping.model.DDMDataProviderInstanceLink;
 import com.liferay.dynamic.data.mapping.model.DDMForm;
 import com.liferay.dynamic.data.mapping.model.DDMFormField;
 import com.liferay.dynamic.data.mapping.model.DDMStructure;
+import com.liferay.dynamic.data.mapping.model.DDMTemplate;
+import com.liferay.dynamic.data.mapping.model.LocalizedValue;
 import com.liferay.dynamic.data.mapping.service.DDMDataProviderInstanceLinkLocalServiceUtil;
 import com.liferay.dynamic.data.mapping.service.DDMDataProviderInstanceLocalServiceUtil;
 import com.liferay.dynamic.data.mapping.service.DDMStructureLocalServiceUtil;
+import com.liferay.dynamic.data.mapping.service.DDMTemplateLocalServiceUtil;
 import com.liferay.dynamic.data.mapping.storage.DDMFormValues;
 import com.liferay.dynamic.data.mapping.test.util.DDMFormTestUtil;
 import com.liferay.dynamic.data.mapping.test.util.DDMFormValuesTestUtil;
 import com.liferay.dynamic.data.mapping.test.util.DDMStructureTestUtil;
+import com.liferay.dynamic.data.mapping.test.util.DDMTemplateTestUtil;
 import com.liferay.dynamic.data.mapping.util.DDMFormFactory;
 import com.liferay.exportimport.kernel.lar.ExportImportThreadLocal;
 import com.liferay.exportimport.kernel.lar.StagedModelDataHandlerUtil;
+import com.liferay.exportimport.kernel.service.StagingLocalServiceUtil;
 import com.liferay.exportimport.test.util.lar.BaseStagedModelDataHandlerTestCase;
+import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.portal.configuration.test.util.ConfigurationTestUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.LanguageUtil;
@@ -34,8 +42,10 @@ import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.StagedModel;
 import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
 import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.test.TestInfo;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.util.CompanyTestUtil;
@@ -46,6 +56,8 @@ import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
 import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.xml.Element;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 
@@ -110,10 +122,80 @@ public class DDMStructureStagedModelDataHandlerTest
 	@After
 	@Override
 	public void tearDown() throws Exception {
+		super.tearDown();
+
 		LanguageUtil.init();
 
 		CompanyTestUtil.resetCompanyLocales(
 			TestPropsValues.getCompanyId(), _availableLocales, _defaultLocale);
+	}
+
+	@Test
+	@TestInfo("LPS-121695")
+	public void testImportStructureIntoCompanyStagingGroup() throws Exception {
+		DDMStructure structure = DDMStructureTestUtil.addStructure(
+			stagingGroup.getGroupId(), _CLASS_NAME);
+
+		DDMTemplate template = DDMTemplateTestUtil.addTemplate(
+			stagingGroup.getGroupId(), structure.getStructureId(),
+			PortalUtil.getClassNameId(_CLASS_NAME));
+
+		initExport();
+
+		ExportImportThreadLocal.setPortletExportInProcess(true);
+
+		StagedModelDataHandlerUtil.exportStagedModel(
+			portletDataContext, structure);
+		StagedModelDataHandlerUtil.exportStagedModel(
+			portletDataContext, template);
+
+		ExportImportThreadLocal.setPortletExportInProcess(false);
+
+		_targetCompany = CompanyTestUtil.addCompany();
+
+		User targetGuestUser = _targetCompany.getGuestUser();
+
+		Group companyGroup = _targetCompany.getGroup();
+
+		try (SafeCloseable safeCloseable =
+				CompanyThreadLocal.setCompanyIdWithSafeCloseable(
+					_targetCompany.getCompanyId())) {
+
+			StagingLocalServiceUtil.enableLocalStaging(
+				targetGuestUser.getUserId(), companyGroup, false, false,
+				new ServiceContext());
+		}
+
+		Group companyStagingGroup = companyGroup.getStagingGroup();
+
+		try (SafeCloseable safeCloseable = initImportWithSafeCloseable(
+				stagingGroup, companyStagingGroup)) {
+
+			portletDataContext.setUserIdStrategy(
+				new TestUserIdStrategy(targetGuestUser));
+
+			ExportImportThreadLocal.setPortletImportInProcess(true);
+
+			StagedModelDataHandlerUtil.importStagedModel(
+				portletDataContext, readExportedStagedModel(structure));
+			StagedModelDataHandlerUtil.importStagedModel(
+				portletDataContext, readExportedStagedModel(template));
+
+			ExportImportThreadLocal.setPortletImportInProcess(false);
+		}
+
+		Assert.assertNotNull(
+			DDMStructureLocalServiceUtil.fetchDDMStructureByUuidAndGroupId(
+				structure.getUuid(), companyStagingGroup.getGroupId()));
+		Assert.assertNotNull(
+			DDMTemplateLocalServiceUtil.fetchDDMTemplateByUuidAndGroupId(
+				template.getUuid(), companyStagingGroup.getGroupId()));
+		Assert.assertNull(
+			DDMStructureLocalServiceUtil.fetchDDMStructureByUuidAndGroupId(
+				structure.getUuid(), companyGroup.getGroupId()));
+		Assert.assertNull(
+			DDMTemplateLocalServiceUtil.fetchDDMTemplateByUuidAndGroupId(
+				template.getUuid(), companyGroup.getGroupId()));
 	}
 
 	@Test
@@ -142,29 +224,32 @@ public class DDMStructureStagedModelDataHandlerTest
 
 		User targetGuestUser = _targetCompany.getGuestUser();
 
-		initImport(companyGroup, _targetCompany.getGroup());
+		try (SafeCloseable safeCloseable = initImportWithSafeCloseable(
+				companyGroup, _targetCompany.getGroup())) {
 
-		portletDataContext.setUserIdStrategy(
-			new TestUserIdStrategy(targetGuestUser));
+			portletDataContext.setUserIdStrategy(
+				new TestUserIdStrategy(targetGuestUser));
 
-		StagedModel exportedStagedModel = readExportedStagedModel(structure);
+			StagedModel exportedStagedModel = readExportedStagedModel(
+				structure);
 
-		Assert.assertNotNull(exportedStagedModel);
+			Assert.assertNotNull(exportedStagedModel);
 
-		try {
-			ExportImportThreadLocal.setPortletImportInProcess(true);
+			try {
+				ExportImportThreadLocal.setPortletImportInProcess(true);
 
-			StagedModelDataHandlerUtil.importStagedModel(
-				portletDataContext, exportedStagedModel);
+				StagedModelDataHandlerUtil.importStagedModel(
+					portletDataContext, exportedStagedModel);
+			}
+			finally {
+				ExportImportThreadLocal.setPortletImportInProcess(false);
+			}
+
+			StagedModel importedStagedModel = getStagedModel(
+				exportedStagedModel.getUuid(), _targetCompany.getGroup());
+
+			Assert.assertNotNull(importedStagedModel);
 		}
-		finally {
-			ExportImportThreadLocal.setPortletImportInProcess(false);
-		}
-
-		StagedModel importedStagedModel = getStagedModel(
-			exportedStagedModel.getUuid(), _targetCompany.getGroup());
-
-		Assert.assertNotNull(importedStagedModel);
 	}
 
 	@Test
@@ -197,26 +282,80 @@ public class DDMStructureStagedModelDataHandlerTest
 			ExportImportThreadLocal.setPortletExportInProcess(false);
 		}
 
-		initImport();
+		try (SafeCloseable safeCloseable = initImportWithSafeCloseable()) {
+			StagedModel exportedStagedModel = readExportedStagedModel(
+				structure);
 
-		StagedModel exportedStagedModel = readExportedStagedModel(structure);
+			Assert.assertNotNull(exportedStagedModel);
 
-		Assert.assertNotNull(exportedStagedModel);
+			try {
+				ExportImportThreadLocal.setPortletImportInProcess(true);
 
-		try {
-			ExportImportThreadLocal.setPortletImportInProcess(true);
+				StagedModelDataHandlerUtil.importStagedModel(
+					portletDataContext, exportedStagedModel);
+			}
+			finally {
+				ExportImportThreadLocal.setPortletImportInProcess(false);
+			}
+
+			StagedModel importedStagedModel = getStagedModel(
+				exportedStagedModel.getUuid(), liveGroup);
+
+			Assert.assertNotNull(importedStagedModel);
+		}
+	}
+
+	@Test
+	@TestInfo("LPS-155637")
+	public void testImportStructuresComposedFromFieldsets() throws Exception {
+		DDMStructure ddmStructure1 = DDMStructureTestUtil.addStructure(
+			stagingGroup.getGroupId(), _CLASS_NAME);
+
+		DDMStructure ddmStructure2 = _addFieldsetStructure(
+			RandomTestUtil.randomString(), ddmStructure1);
+
+		DDMStructure ddmStructure3 = _addFieldsetStructure(
+			RandomTestUtil.randomString(), ddmStructure2);
+
+		initExport();
+
+		StagedModelDataHandlerUtil.exportStagedModel(
+			portletDataContext, ddmStructure3);
+
+		try (SafeCloseable safeCloseable = initImportWithSafeCloseable()) {
+			DDMStructure exportedDDMStructure1 =
+				(DDMStructure)readExportedStagedModel(ddmStructure2);
+
+			DDMStructure exportedDDMStructure2 =
+				(DDMStructure)readExportedStagedModel(ddmStructure3);
 
 			StagedModelDataHandlerUtil.importStagedModel(
-				portletDataContext, exportedStagedModel);
-		}
-		finally {
-			ExportImportThreadLocal.setPortletImportInProcess(false);
+				portletDataContext, exportedDDMStructure2);
+
+			_importDEDataDefinitionFieldLinks(exportedDDMStructure1);
+			_importDEDataDefinitionFieldLinks(exportedDDMStructure2);
 		}
 
-		StagedModel importedStagedModel = getStagedModel(
-			exportedStagedModel.getUuid(), liveGroup);
+		DDMStructure importedDDMStructure1 =
+			DDMStructureLocalServiceUtil.fetchDDMStructureByUuidAndGroupId(
+				ddmStructure1.getUuid(), liveGroup.getGroupId());
 
-		Assert.assertNotNull(importedStagedModel);
+		DDMStructure importedDDMStructure2 =
+			DDMStructureLocalServiceUtil.fetchDDMStructureByUuidAndGroupId(
+				ddmStructure2.getUuid(), liveGroup.getGroupId());
+
+		DDMStructure importedDDMStructure3 =
+			DDMStructureLocalServiceUtil.fetchDDMStructureByUuidAndGroupId(
+				ddmStructure3.getUuid(), liveGroup.getGroupId());
+
+		Assert.assertNotNull(importedDDMStructure1);
+		Assert.assertNotNull(importedDDMStructure2);
+		Assert.assertNotNull(importedDDMStructure3);
+
+		_assertDEDataDefinitionFieldLink(
+			importedDDMStructure2, importedDDMStructure1.getStructureId());
+		_assertDEDataDefinitionFieldLink(
+			importedDDMStructure3, importedDDMStructure2.getStructureId());
 	}
 
 	@Test
@@ -433,43 +572,100 @@ public class DDMStructureStagedModelDataHandlerTest
 
 		// Data provider instance
 
-		List<DDMDataProviderInstanceLink> dataProviderInstanceLinks =
+		List<DDMDataProviderInstanceLink> ddmDataProviderInstanceLinks =
 			DDMDataProviderInstanceLinkLocalServiceUtil.
 				getDataProviderInstanceLinks(structure.getStructureId());
 
-		List<DDMDataProviderInstanceLink> importedDataProviderInstanceLinks =
+		List<DDMDataProviderInstanceLink> importedDDMDataProviderInstanceLinks =
 			DDMDataProviderInstanceLinkLocalServiceUtil.
 				getDataProviderInstanceLinks(
 					importedStructure.getStructureId());
 
 		Assert.assertEquals(
-			dataProviderInstanceLinks.toString(), 1,
-			dataProviderInstanceLinks.size());
+			ddmDataProviderInstanceLinks.toString(), 1,
+			ddmDataProviderInstanceLinks.size());
 		Assert.assertEquals(
-			importedDataProviderInstanceLinks.toString(), 1,
-			importedDataProviderInstanceLinks.size());
+			importedDDMDataProviderInstanceLinks.toString(), 1,
+			importedDDMDataProviderInstanceLinks.size());
 
 		DDMDataProviderInstanceLink dataProviderInstanceLink =
-			dataProviderInstanceLinks.get(0);
+			ddmDataProviderInstanceLinks.get(0);
 
 		DDMDataProviderInstance dataProviderInstance =
-			DDMDataProviderInstanceLocalServiceUtil.getDataProviderInstance(
+			DDMDataProviderInstanceLocalServiceUtil.getDDMDataProviderInstance(
 				dataProviderInstanceLink.getDataProviderInstanceId());
 
 		DDMDataProviderInstanceLink importedDataProviderInstanceLink =
-			importedDataProviderInstanceLinks.get(0);
+			importedDDMDataProviderInstanceLinks.get(0);
 
 		long importedDataProviderInstanceId =
 			importedDataProviderInstanceLink.getDataProviderInstanceId();
 
 		DDMDataProviderInstance importedDataProviderInstance =
-			DDMDataProviderInstanceLocalServiceUtil.getDataProviderInstance(
+			DDMDataProviderInstanceLocalServiceUtil.getDDMDataProviderInstance(
 				importedDataProviderInstanceId);
 
 		Assert.assertEquals(
 			_getDDMDataProviderInstanceFormValues(dataProviderInstance),
 			_getDDMDataProviderInstanceFormValues(
 				importedDataProviderInstance));
+	}
+
+	private DDMStructure _addFieldsetStructure(
+			String fieldName, DDMStructure referencedDDMStructure)
+		throws Exception {
+
+		DDMForm ddmForm = DDMFormTestUtil.createDDMForm(
+			DDMFormTestUtil.createAvailableLocales(LocaleUtil.US),
+			LocaleUtil.US);
+
+		DDMFormField ddmFormField = new DDMFormField(fieldName, "fieldset");
+
+		ddmFormField.setProperty(
+			"ddmStructureId",
+			String.valueOf(referencedDDMStructure.getStructureId()));
+		ddmFormField.setProperty(
+			"ddmStructureLayoutId",
+			String.valueOf(
+				referencedDDMStructure.getDefaultDDMStructureLayoutId()));
+		ddmFormField.setProperty("labelAtStructureLevel", true);
+
+		LocalizedValue localizedValue = ddmFormField.getLabel();
+
+		localizedValue.addString(LocaleUtil.US, fieldName);
+
+		ddmForm.addDDMFormField(ddmFormField);
+
+		DDMStructure ddmStructure = DDMStructureTestUtil.addStructure(
+			stagingGroup.getGroupId(), _CLASS_NAME, ddmForm);
+
+		DEDataDefinitionFieldLinkLocalServiceUtil.addDEDataDefinitionFieldLink(
+			stagingGroup.getGroupId(),
+			PortalUtil.getClassNameId(DDMStructure.class.getName()),
+			ddmStructure.getStructureId(),
+			referencedDDMStructure.getStructureId(), fieldName);
+
+		return ddmStructure;
+	}
+
+	private void _assertDEDataDefinitionFieldLink(
+		DDMStructure ddmStructure, long structureId) {
+
+		List<DEDataDefinitionFieldLink> deDataDefinitionFieldLinks =
+			DEDataDefinitionFieldLinkLocalServiceUtil.
+				getDEDataDefinitionFieldLinksByClassNameIdAndClassPK(
+					PortalUtil.getClassNameId(DDMStructure.class.getName()),
+					ddmStructure.getStructureId());
+
+		Assert.assertEquals(
+			deDataDefinitionFieldLinks.toString(), 1,
+			deDataDefinitionFieldLinks.size());
+
+		DEDataDefinitionFieldLink deDataDefinitionFieldLink =
+			deDataDefinitionFieldLinks.get(0);
+
+		Assert.assertEquals(
+			structureId, deDataDefinitionFieldLink.getDdmStructureId());
 	}
 
 	private void _exportStructure(Group exportGroup, DDMStructure structure)
@@ -497,11 +693,12 @@ public class DDMStructureStagedModelDataHandlerTest
 				"key", "countryId"));
 		ddmFormValues.addDDMFormFieldValue(
 			DDMFormValuesTestUtil.createUnlocalizedDDMFormFieldValue(
-				"password", "test"));
+				"password", TestPropsValues.USER_PASSWORD));
 		ddmFormValues.addDDMFormFieldValue(
 			DDMFormValuesTestUtil.createUnlocalizedDDMFormFieldValue(
 				"url",
-				"http://localhost:8080/api/jsonws/country/get-countries"));
+				"http://localhost:" + PortalUtil.getPortalServerPort(false) +
+					"/api/jsonws/country/get-countries"));
 		ddmFormValues.addDDMFormFieldValue(
 			DDMFormValuesTestUtil.createUnlocalizedDDMFormFieldValue(
 				"username", "test@liferay.com"));
@@ -533,32 +730,58 @@ public class DDMStructureStagedModelDataHandlerTest
 		return ddmFormValuesDeserializerDeserializeResponse.getDDMFormValues();
 	}
 
+	private void _importDEDataDefinitionFieldLinks(DDMStructure ddmStructure)
+		throws Exception {
+
+		List<Element> deDataDefinitionFieldLinkElements =
+			portletDataContext.getReferenceDataElements(
+				ddmStructure, DEDataDefinitionFieldLink.class);
+
+		for (Element deDataDefinitionFieldLinkElement :
+				deDataDefinitionFieldLinkElements) {
+
+			String path = deDataDefinitionFieldLinkElement.attributeValue(
+				"path");
+
+			DEDataDefinitionFieldLink deDataDefinitionFieldLink =
+				(DEDataDefinitionFieldLink)
+					portletDataContext.getZipEntryAsObject(
+						deDataDefinitionFieldLinkElement, path);
+
+			StagedModelDataHandlerUtil.importStagedModel(
+				portletDataContext, deDataDefinitionFieldLink);
+		}
+	}
+
 	private void _importStructure(
 			Group exportGroup, Group importGroup, DDMStructure structure)
 		throws Exception {
 
-		initImport(exportGroup, importGroup);
+		try (SafeCloseable safeCloseable = initImportWithSafeCloseable(
+				exportGroup, importGroup)) {
 
-		if (Objects.nonNull(structure)) {
-			DDMStructure exportedStructure =
-				(DDMStructure)readExportedStagedModel(structure);
+			if (Objects.nonNull(structure)) {
+				DDMStructure exportedStructure =
+					(DDMStructure)readExportedStagedModel(structure);
 
-			StagedModelDataHandlerUtil.importStagedModel(
-				portletDataContext, exportedStructure);
+				StagedModelDataHandlerUtil.importStagedModel(
+					portletDataContext, exportedStructure);
+			}
 		}
 	}
 
 	private static final String _CLASS_NAME =
 		"com.liferay.dynamic.data.lists.model.DDLRecordSet";
 
-	private static Set<Locale> _availableLocales;
-	private static Locale _defaultLocale;
-
-	@Inject(filter = "ddm.form.values.deserializer.type=json")
-	private static DDMFormValuesDeserializer _jsonDDMFormValuesDeserializer;
+	private Set<Locale> _availableLocales;
 
 	@Inject(filter = "ddm.data.provider.type=rest")
 	private DDMDataProvider _ddmDataProvider;
+
+	private Locale _defaultLocale;
+
+	@Inject(filter = "ddm.form.values.deserializer.type=json")
+	private DDMFormValuesDeserializer _jsonDDMFormValuesDeserializer;
 
 	@DeleteAfterTestRun
 	private Company _targetCompany;

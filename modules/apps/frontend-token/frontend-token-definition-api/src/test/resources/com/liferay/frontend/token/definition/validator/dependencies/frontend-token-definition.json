@@ -1,0 +1,31 @@
+{
+	"frontendTokenCategories": [
+		{
+			"frontendTokenSets": [
+				{
+					"description": "This token set groups the gray colors of the color system.",
+					"frontendTokens": [
+						{
+							"defaultValue": "#FFF",
+							"description": "This token represents the white color of the color system.",
+							"editorType": "ColorPicker",
+							"label": "white",
+							"mappings": [
+								{
+									"type": "cssVariable",
+									"value": "white"
+								}
+							],
+							"name": "whiteColor",
+							"type": "String"
+						}
+					],
+					"label": "grays",
+					"name": "grays"
+				}
+			],
+			"label": "color-system",
+			"name": "colorSystem"
+		}
+	]
+}

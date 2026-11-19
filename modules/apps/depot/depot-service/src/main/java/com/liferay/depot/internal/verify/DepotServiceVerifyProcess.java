@@ -5,7 +5,8 @@
 
 package com.liferay.depot.internal.verify;
 
-import com.liferay.depot.internal.util.DepotRoleUtil;
+import com.liferay.depot.constants.DepotRolesConstants;
+import com.liferay.depot.util.DepotRoleUtil;
 import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.model.Role;
 import com.liferay.portal.kernel.service.CompanyLocalService;
@@ -27,27 +28,46 @@ public class DepotServiceVerifyProcess extends VerifyProcess {
 
 	@Override
 	protected void doVerify() throws Exception {
-		_checkDepotRoleDescriptions();
+		_checkDepotRoles();
 	}
 
-	private void _checkDepotRoleDescriptions() {
+	private void _checkDepotRoles() {
 		_companyLocalService.forEachCompanyId(
 			companyId -> {
-				for (String name : DepotRoleUtil.DEPOT_ROLE_NAMES) {
+				for (String name : DepotRolesConstants.DEPOT_ROLE_NAMES) {
 					Role role = _roleLocalService.fetchRole(companyId, name);
 
-					if (role != null) {
-						Map<Locale, String> descriptionMap =
-							DepotRoleUtil.getDescriptionMap(_language, name);
-
-						if (!Objects.equals(
-								descriptionMap, role.getDescriptionMap())) {
-
-							role.setDescriptionMap(descriptionMap);
-
-							_roleLocalService.updateRole(role);
-						}
+					if (role == null) {
+						continue;
 					}
+
+					boolean modified = false;
+
+					Map<Locale, String> descriptionMap =
+						DepotRoleUtil.getDescriptionMap(_language, name);
+
+					if (!Objects.equals(
+							descriptionMap, role.getDescriptionMap())) {
+
+						role.setDescriptionMap(descriptionMap);
+
+						modified = true;
+					}
+
+					Map<Locale, String> titleMap = DepotRoleUtil.getTitleMap(
+						_language, name);
+
+					if (!Objects.equals(titleMap, role.getTitleMap())) {
+						role.setTitleMap(titleMap);
+
+						modified = true;
+					}
+
+					if (!modified) {
+						continue;
+					}
+
+					_roleLocalService.updateRole(role);
 				}
 			});
 	}

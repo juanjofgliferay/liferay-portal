@@ -5,11 +5,13 @@
 
 package com.liferay.portal.vulcan.internal.jaxrs.feature;
 
-import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
-import com.fasterxml.jackson.jaxrs.xml.JacksonXMLProvider;
+import com.fasterxml.jackson.jakarta.rs.json.JacksonJsonProvider;
+import com.fasterxml.jackson.jakarta.rs.xml.JacksonXMLProvider;
 
 import com.liferay.depot.service.DepotEntryLocalService;
+import com.liferay.oauth2.provider.scope.ScopeChecker;
 import com.liferay.portal.kernel.language.Language;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.search.filter.Filter;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.ResourceActionLocalService;
@@ -22,13 +24,17 @@ import com.liferay.portal.odata.sort.SortParserProvider;
 import com.liferay.portal.vulcan.batch.engine.resource.VulcanBatchEngineExportTaskResourceFactory;
 import com.liferay.portal.vulcan.batch.engine.resource.VulcanBatchEngineImportTaskResourceFactory;
 import com.liferay.portal.vulcan.extension.ExtensionProviderRegistry;
+import com.liferay.portal.vulcan.feature.flag.FeatureFlagChecker;
+import com.liferay.portal.vulcan.internal.configuration.admin.service.HeadlessAPICacheManagedServiceFactory;
 import com.liferay.portal.vulcan.internal.jaxrs.container.request.filter.CTContainerRequestFilter;
 import com.liferay.portal.vulcan.internal.jaxrs.container.request.filter.ContextContainerRequestFilter;
+import com.liferay.portal.vulcan.internal.jaxrs.container.request.filter.FeatureFlagContainerRequestFilter;
 import com.liferay.portal.vulcan.internal.jaxrs.container.request.filter.LogContainerRequestFilter;
 import com.liferay.portal.vulcan.internal.jaxrs.container.request.filter.NestedFieldsContainerRequestFilter;
 import com.liferay.portal.vulcan.internal.jaxrs.container.request.filter.TransactionContainerRequestFilter;
 import com.liferay.portal.vulcan.internal.jaxrs.container.response.filter.CacheContainerResponseFilter;
 import com.liferay.portal.vulcan.internal.jaxrs.container.response.filter.EntityExtensionContainerResponseFilter;
+import com.liferay.portal.vulcan.internal.jaxrs.container.response.filter.EntityFieldsPreSerializerContainerResponseFilter;
 import com.liferay.portal.vulcan.internal.jaxrs.context.provider.AcceptLanguageContextProvider;
 import com.liferay.portal.vulcan.internal.jaxrs.context.provider.AggregationContextProvider;
 import com.liferay.portal.vulcan.internal.jaxrs.context.provider.CompanyContextProvider;
@@ -46,15 +52,18 @@ import com.liferay.portal.vulcan.internal.jaxrs.exception.mapper.DocumentFileNam
 import com.liferay.portal.vulcan.internal.jaxrs.exception.mapper.DocumentFileSizeExceptionMapper;
 import com.liferay.portal.vulcan.internal.jaxrs.exception.mapper.DuplicateExternalReferenceCodeExceptionMapper;
 import com.liferay.portal.vulcan.internal.jaxrs.exception.mapper.ExceptionMapper;
+import com.liferay.portal.vulcan.internal.jaxrs.exception.mapper.FileMimeTypeExceptionMapper;
 import com.liferay.portal.vulcan.internal.jaxrs.exception.mapper.IllegalArgumentExceptionMapper;
 import com.liferay.portal.vulcan.internal.jaxrs.exception.mapper.InvalidFilterExceptionMapper;
 import com.liferay.portal.vulcan.internal.jaxrs.exception.mapper.InvalidFormatExceptionMapper;
+import com.liferay.portal.vulcan.internal.jaxrs.exception.mapper.InvalidTypeIdExceptionMapper;
 import com.liferay.portal.vulcan.internal.jaxrs.exception.mapper.JsonMappingExceptionMapper;
 import com.liferay.portal.vulcan.internal.jaxrs.exception.mapper.JsonParseExceptionMapper;
 import com.liferay.portal.vulcan.internal.jaxrs.exception.mapper.NoSuchModelExceptionMapper;
 import com.liferay.portal.vulcan.internal.jaxrs.exception.mapper.NotAcceptableExceptionMapper;
 import com.liferay.portal.vulcan.internal.jaxrs.exception.mapper.NotFoundExceptionMapper;
 import com.liferay.portal.vulcan.internal.jaxrs.exception.mapper.PrincipalExceptionMapper;
+import com.liferay.portal.vulcan.internal.jaxrs.exception.mapper.SQLIntegrityConstraintViolationExceptionMapper;
 import com.liferay.portal.vulcan.internal.jaxrs.exception.mapper.UnrecognizedPropertyExceptionMapper;
 import com.liferay.portal.vulcan.internal.jaxrs.exception.mapper.UnsupportedOperationExceptionMapper;
 import com.liferay.portal.vulcan.internal.jaxrs.exception.mapper.ValidationExceptionMapper;
@@ -69,21 +78,19 @@ import com.liferay.portal.vulcan.internal.jaxrs.validation.BeanValidationInterce
 import com.liferay.portal.vulcan.internal.jaxrs.writer.interceptor.EntityExtensionWriterInterceptor;
 import com.liferay.portal.vulcan.internal.jaxrs.writer.interceptor.NestedFieldsWriterInterceptor;
 import com.liferay.portal.vulcan.internal.jaxrs.writer.interceptor.PageEntityExtensionWriterInterceptor;
+import com.liferay.portal.vulcan.internal.jaxrs.writer.interceptor.ProblemWriterInterceptor;
 import com.liferay.portal.vulcan.internal.param.converter.provider.DateParamConverterProvider;
+import com.liferay.portal.vulcan.jaxrs.context.ContextDataInjectorBuilderFactory;
 import com.liferay.portal.vulcan.pagination.provider.PaginationProvider;
 
-import javax.ws.rs.Priorities;
-import javax.ws.rs.core.Feature;
-import javax.ws.rs.core.FeatureContext;
+import jakarta.ws.rs.Priorities;
+import jakarta.ws.rs.core.Feature;
+import jakarta.ws.rs.core.FeatureContext;
 
-import org.osgi.framework.BundleContext;
-import org.osgi.framework.ServiceReference;
 import org.osgi.service.cm.ConfigurationAdmin;
-import org.osgi.service.component.annotations.Activate;
+import org.osgi.service.cm.ManagedServiceFactory;
 import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
-import org.osgi.service.component.annotations.ServiceScope;
 import org.osgi.service.jaxrs.whiteboard.JaxrsWhiteboardConstants;
 
 /**
@@ -99,26 +106,31 @@ import org.osgi.service.jaxrs.whiteboard.JaxrsWhiteboardConstants;
 		JaxrsWhiteboardConstants.JAX_RS_EXTENSION + "=true",
 		JaxrsWhiteboardConstants.JAX_RS_NAME + "=Liferay.Vulcan"
 	},
-	scope = ServiceScope.PROTOTYPE, service = Feature.class
+	service = Feature.class
 )
 public class VulcanFeature implements Feature {
 
 	@Override
 	public boolean configure(FeatureContext featureContext) {
 		featureContext.register(BeanValidationInterceptor.class);
-		featureContext.register(CacheContainerResponseFilter.class);
 		featureContext.register(CTContainerRequestFilter.class);
 		featureContext.register(DateParamConverterProvider.class);
 		featureContext.register(DocumentFileExtensionExceptionMapper.class);
 		featureContext.register(DocumentFileNameExceptionMapper.class);
 		featureContext.register(DocumentFileSizeExceptionMapper.class);
-		featureContext.register(EntityExtensionContainerResponseFilter.class);
+		featureContext.register(
+			EntityExtensionContainerResponseFilter.class, Priorities.USER + 10);
 		featureContext.register(EntityExtensionWriterInterceptor.class);
+		featureContext.register(
+			EntityFieldsPreSerializerContainerResponseFilter.class,
+			Priorities.USER + 11);
 		featureContext.register(ExceptionMapper.class);
 		featureContext.register(FieldsQueryParamContextProvider.class);
+		featureContext.register(FileMimeTypeExceptionMapper.class);
 		featureContext.register(IllegalArgumentExceptionMapper.class);
 		featureContext.register(InvalidFilterExceptionMapper.class);
 		featureContext.register(InvalidFormatExceptionMapper.class);
+		featureContext.register(InvalidTypeIdExceptionMapper.class);
 		featureContext.register(JSONMessageBodyReader.class);
 		featureContext.register(JSONMessageBodyWriter.class);
 		featureContext.register(JacksonJsonProvider.class);
@@ -133,9 +145,13 @@ public class VulcanFeature implements Feature {
 		featureContext.register(ObjectMapperContextResolver.class);
 		featureContext.register(PageEntityExtensionWriterInterceptor.class);
 		featureContext.register(PrincipalExceptionMapper.class);
+		featureContext.register(ProblemWriterInterceptor.class);
 		featureContext.register(RestrictFieldsQueryParamContextProvider.class);
+		featureContext.register(
+			SQLIntegrityConstraintViolationExceptionMapper.class);
 		featureContext.register(StatusDynamicFeature.class);
-		featureContext.register(TransactionContainerRequestFilter.class);
+		featureContext.register(
+			TransactionContainerRequestFilter.class, Priorities.USER - 10);
 		featureContext.register(UnrecognizedPropertyExceptionMapper.class);
 		featureContext.register(UnsupportedOperationExceptionMapper.class);
 		featureContext.register(ValidationExceptionMapper.class);
@@ -148,13 +164,17 @@ public class VulcanFeature implements Feature {
 			new AcceptLanguageContextProvider(_language, _portal));
 		featureContext.register(
 			new AggregationContextProvider(_language, _portal));
+		featureContext.register(
+			new CacheContainerResponseFilter(
+				(HeadlessAPICacheManagedServiceFactory)_managedServiceFactory));
 		featureContext.register(new CompanyContextProvider(_portal));
 		featureContext.register(
 			new ContextContainerRequestFilter(
-				_configurationAdmin, _expressionConvert, _filterParserProvider,
-				_groupLocalService, _language, _portal,
-				_resourceActionLocalService, _resourcePermissionLocalService,
-				_roleLocalService, _getScopeChecker(), _sortParserProvider,
+				_configurationAdmin, _contextDataInjectorBuilderFactory,
+				_expressionConvert, _filterParserProvider, _groupLocalService,
+				_language, _portal, _resourceActionLocalService,
+				_resourcePermissionLocalService, _roleLocalService,
+				_scopeCheckerSnapshot.get(), _sortParserProvider,
 				_vulcanBatchEngineExportTaskResourceFactory,
 				_vulcanBatchEngineImportTaskResourceFactory));
 		featureContext.register(
@@ -162,14 +182,15 @@ public class VulcanFeature implements Feature {
 		featureContext.register(
 			new EntityExtensionHandlerContextResolver(
 				_extensionProviderRegistry));
-		featureContext.register(new MultipartBodyMessageBodyReader());
-
-		_nestedFieldsWriterInterceptor = new NestedFieldsWriterInterceptor(
-			_bundleContext);
-
 		featureContext.register(
-			_nestedFieldsWriterInterceptor, Priorities.USER - 10);
-
+			new FeatureFlagContainerRequestFilter(_featureFlagChecker, _portal),
+			Priorities.USER - 20);
+		featureContext.register(new MultipartBodyMessageBodyReader());
+		featureContext.register(
+			new NestedFieldsWriterInterceptor(
+				_contextDataInjectorBuilderFactory, _language, _portal,
+				_scopeCheckerSnapshot.get()),
+			Priorities.USER - 10);
 		featureContext.register(
 			new PaginationContextProvider(_paginationProvider, _portal));
 		featureContext.register(
@@ -182,34 +203,15 @@ public class VulcanFeature implements Feature {
 		return false;
 	}
 
-	@Activate
-	protected void activate(BundleContext bundleContext) {
-		_bundleContext = bundleContext;
-	}
-
-	@Deactivate
-	protected void deactivate() {
-		if (_nestedFieldsWriterInterceptor != null) {
-			_nestedFieldsWriterInterceptor.destroy();
-		}
-	}
-
-	private Object _getScopeChecker() {
-		ServiceReference<?> serviceReference =
-			_bundleContext.getServiceReference(
-				"com.liferay.oauth2.provider.scope.ScopeChecker");
-
-		if (serviceReference != null) {
-			return _bundleContext.getService(serviceReference);
-		}
-
-		return null;
-	}
-
-	private BundleContext _bundleContext;
+	private static final Snapshot<ScopeChecker> _scopeCheckerSnapshot =
+		new Snapshot<>(VulcanFeature.class, ScopeChecker.class);
 
 	@Reference
 	private ConfigurationAdmin _configurationAdmin;
+
+	@Reference
+	private ContextDataInjectorBuilderFactory
+		_contextDataInjectorBuilderFactory;
 
 	@Reference
 	private DepotEntryLocalService _depotEntryLocalService;
@@ -223,6 +225,9 @@ public class VulcanFeature implements Feature {
 	private ExtensionProviderRegistry _extensionProviderRegistry;
 
 	@Reference
+	private FeatureFlagChecker _featureFlagChecker;
+
+	@Reference
 	private FilterParserProvider _filterParserProvider;
 
 	@Reference
@@ -231,7 +236,10 @@ public class VulcanFeature implements Feature {
 	@Reference
 	private Language _language;
 
-	private NestedFieldsWriterInterceptor _nestedFieldsWriterInterceptor;
+	@Reference(
+		target = "(component.name=com.liferay.portal.vulcan.internal.configuration.admin.service.HeadlessAPICacheManagedServiceFactory)"
+	)
+	private ManagedServiceFactory _managedServiceFactory;
 
 	@Reference
 	private PaginationProvider _paginationProvider;

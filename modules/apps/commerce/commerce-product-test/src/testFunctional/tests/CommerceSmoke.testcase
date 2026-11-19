@@ -1,14 +1,23 @@
 @component-name = "portal-commerce"
 definition {
 
+	property browser.chrome.version = "139.0";
 	property ci.retries.disabled = "true";
+	property custom.properties = "feature.flag.LPD-11235=true";
 	property portal.release = "true";
 	property portal.upstream = "true";
-	property release.feature.flags.disable.DISABLE_PRIVATE_LAYOUTS = "true";
 	property testray.main.component.name = "Product Info Management";
 
 	setUp {
 		CommerceConfiguration.commerceSetUp();
+
+		task ("Enable private pages") {
+			PagesAdmin.enablePrivatePages();
+		}
+
+		task ("Enable CKE4") {
+			PagesAdmin.enableCKE4();
+		}
 	}
 
 	tearDown {
@@ -17,7 +26,7 @@ definition {
 
 	@priority = 5
 	test CreateNewSpecificationOptions {
-		property environment.acceptance = "true";
+		property environment.acceptance = "false";
 		property operating.system.types = "alpine,amazonlinux,centos,debian,fedora,orcllinux,osx,redhat,rockylinux,solaris,suse,ubuntu,windows";
 		property portal.acceptance = "true";
 
@@ -66,9 +75,7 @@ definition {
 			productName = "Simple T-Shirt",
 			productType = "Simple");
 
-		CommerceNavigator.gotoPortlet(
-			category = "Product Management",
-			portlet = "Products");
+		CommerceProducts.openProductsAdmin();
 
 		CommerceNavigator.gotoEntry(entryName = "Simple T-Shirt");
 

@@ -105,22 +105,6 @@ definition {
 	}
 
 	@summary = "Default summary"
-	macro assertSortedStatusInOrder(statusList = null) {
-		Variables.assertDefined(parameterList = ${statusList});
-
-		var key_index = 1;
-
-		for (var statusValue : list ${statusList}) {
-			AssertTextEquals(
-				index = ${key_index},
-				locator1 = "APIBuilder#STATUS_LIST",
-				value1 = ${statusValue});
-
-			var key_index = ${key_index} + 1;
-		}
-	}
-
-	@summary = "Default summary"
 	macro changePublicationStatus(key_title = null) {
 		ApplicationsMenu.gotoPortlet(
 			category = "Object",
@@ -139,6 +123,90 @@ definition {
 
 		if (isSet(unpublish)) {
 			Click(locator1 = "Button#UNPUBLISH");
+		}
+	}
+
+	@summary = "Default summary"
+	macro configureAPIEndpoint(path = null, method = null, scope = null, name = null, retrieveType = null, applicationId = null) {
+		if (isSet(addByPlus)) {
+			Click(locator1 = "Button#PLUS");
+		}
+		else {
+			Click(locator1 = "APIBuilder#ADD_API_ENDPOINT");
+		}
+
+		if (isSet(name)) {
+			Type(
+				locator1 = "TextInput#NAME",
+				value1 = ${name});
+		}
+
+		if (isSet(method)) {
+			Click(
+				key_value = "Select Method",
+				locator1 = "APIBuilder#DROPDOWN_TOGGLE");
+
+			Click(
+				key_optionName = ${method},
+				locator1 = "ObjectAdmin#LAYOUT_ADD_FIELD_OPTION");
+		}
+
+		if (isSet(retrieveType)) {
+			Click(
+				key_value = "Select Type",
+				locator1 = "APIBuilder#DROPDOWN_TOGGLE");
+
+			Click(
+				key_optionName = ${retrieveType},
+				locator1 = "ObjectAdmin#LAYOUT_ADD_FIELD_OPTION");
+		}
+
+		if (isSet(scope)) {
+			Click(
+				key_value = "Select Scope",
+				locator1 = "APIBuilder#DROPDOWN_TOGGLE");
+
+			Click(
+				key_optionName = ${scope},
+				locator1 = "ObjectAdmin#LAYOUT_ADD_FIELD_OPTION");
+		}
+
+		if (isSet(description)) {
+			Type(
+				key_value = "endpoint",
+				locator1 = "APIBuilder#DESCRIPTION",
+				value1 = ${description});
+		}
+
+		if (isSet(path)) {
+			Type(
+				key_placeHolder = "Enter Path",
+				locator1 = "TextInput#ANY_PLACEHOLDER",
+				value1 = ${path});
+		}
+
+		if (isSet(pathCP)) {
+			Type(
+				key_fieldLabel = "Path",
+				locator1 = "TextInput#GENERIC_TEXT_INPUT",
+				value1 = ${pathCP});
+		}
+
+		if (isSet(parameter)) {
+			Type(
+				key_placeHolder = "Enter Parameter",
+				locator1 = "TextInput#ANY_PLACEHOLDER",
+				value1 = ${parameter});
+		}
+
+		if (isSet(applicationId)) {
+			Click.pauseClickAt(
+				locator1 = "TextInput#ANY_WITH_NAME",
+				name = "r_apiApplicationToAPIEndpoints_l_apiApplicationId");
+
+			Click(
+				applicationId = ${applicationId},
+				locator1 = "APIBuilder#API_APPLICATION_TO_API_ENDPOINTS");
 		}
 	}
 
@@ -178,54 +246,23 @@ definition {
 		}
 
 		Click(locator1 = "APIBuilder#CREATE_BUTTON");
+
+		WaitForElementPresent(locator1 = "APIBuilder#PUBLISH_BUTTON");
 	}
 
 	@summary = "Default summary"
-	macro createAPIEndpoint(path = null, name = null, applicationId = null, scope = null) {
-		Variables.assertDefined(parameterList = ${path});
-
-		Click(locator1 = "Button#PLUS");
-
-		if (isSet(name)) {
-			Type(
-				locator1 = "TextInput#NAME",
-				value1 = ${name});
-		}
-
-		if (isSet(retrieveType)) {
-			Click(
-				key_value = "Select Type",
-				locator1 = "APIBuilder#DROPDOWN_TOGGLE");
-
-			Click(
-				key_optionName = ${retrieveType},
-				locator1 = "ObjectAdmin#LAYOUT_ADD_FIELD_OPTION");
-		}
-
-		if (isSet(scope)) {
-			Click(
-				key_value = "Select Scope",
-				locator1 = "APIBuilder#DROPDOWN_TOGGLE");
-
-			Click(
-				key_optionName = ${scope},
-				locator1 = "ObjectAdmin#LAYOUT_ADD_FIELD_OPTION");
-		}
-
-		Type(
-			key_fieldLabel = "Path",
-			locator1 = "TextInput#GENERIC_TEXT_INPUT",
-			value1 = ${path});
-
-		if (isSet(applicationId)) {
-			Click.pauseClickAt(
-				locator1 = "TextInput#ANY_WITH_NAME",
-				name = "r_apiApplicationToAPIEndpoints_c_apiApplicationId");
-
-			Click(
-				applicationId = ${applicationId},
-				locator1 = "APIBuilder#API_APPLICATION_TO_API_ENDPOINTS");
-		}
+	macro createAPIEndpoint(path = null, method = null, scope = null, name = null, retrieveType = null, applicationId = null) {
+		APIBuilderUI.configureAPIEndpoint(
+			addByPlus = ${addByPlus},
+			applicationId = ${applicationId},
+			description = ${description},
+			method = ${method},
+			name = ${name},
+			parameter = ${parameter},
+			path = ${path},
+			pathCP = ${pathCP},
+			retrieveType = ${retrieveType},
+			scope = ${scope});
 
 		if (IsElementPresent(locator1 = "Button#SAVE")) {
 			AssertClick(
@@ -295,10 +332,6 @@ definition {
 			locator1 = "APIBuilder#DROPDOWN_MENU");
 
 		Click(locator1 = "APIBuilder#DELETE_IN_DROPDOWN_MENU");
-
-		if (isSet(confirmDeletion)) {
-			Click(locator1 = "APIBuilder#MODAL_DELETE_BUTTON");
-		}
 	}
 
 	@summary = "Default summary"
@@ -312,10 +345,6 @@ definition {
 			locator1 = "APIBuilder#DROPDOWN_MENU");
 
 		Click(locator1 = "APIBuilder#DELETE_IN_DROPDOWN_MENU");
-
-		if (isSet(confirmDeletion)) {
-			Click(locator1 = "APIBuilder#MODAL_DELETE_BUTTON");
-		}
 	}
 
 	@summary = "Default summary"
@@ -413,8 +442,8 @@ definition {
 		Click(locator1 = "APIBuilder#EDIT_BUTTON");
 
 		Click(
-			locator1 = "Button#BUTTON_WITH_VALUE",
-			value = ${tabEntity});
+			key_tab = ${tabEntity},
+			locator1 = "NavTab#TAB_LINK");
 	}
 
 	@summary = "Default summary"
@@ -451,23 +480,6 @@ definition {
 	}
 
 	@summary = "Default summary"
-	macro setPanelCategoryKeyToObject(objectDefinition = null) {
-		Variables.assertDefined(parameterList = ${objectDefinition});
-
-		ObjectAdmin.openObjectAdmin();
-
-		WaitForPageLoad();
-
-		ObjectPortlet.selectCustomObject(label = ${objectDefinition});
-
-		ObjectAdmin.selectDropdownItem(
-			labelName = "Panel Link",
-			optionName = "Object");
-
-		CreateObject.saveObject();
-	}
-
-	@summary = "Default summary"
 	macro switchToRelatedEntryInEditApplication(title = null, entity = null) {
 		Variables.assertDefined(parameterList = "${entity},${title}");
 
@@ -476,6 +488,30 @@ definition {
 		Click(
 			locator1 = "Button#BUTTON_WITH_VALUE",
 			value = ${entity});
+	}
+
+	@summary = "Default summary"
+	macro updateSchemaNameAndDescription(tabEntity = null, name = null, schemaDescription = null, title = null, schemaName = null, entity = null) {
+		Variables.assertDefined(parameterList = "${name},${entity},${title},${tabEntity},${schemaName},${schemaDescription},");
+
+		APIBuilderUI.goToEditRelatedEntryInEditApplication(
+			entity = ${entity},
+			name = ${name},
+			tabEntity = ${tabEntity},
+			title = ${title});
+
+		Type(
+			locator1 = "TextInput#NAME",
+			value1 = ${schemaName});
+
+		Type(
+			key_fieldId = "Description",
+			locator1 = "TextArea#ANY_ID",
+			value1 = ${schemaDescription});
+
+		if (isSet(publish)) {
+			Click(locator1 = "APIBuilder#PUBLISH_BUTTON");
+		}
 	}
 
 	@summary = "Default summary"

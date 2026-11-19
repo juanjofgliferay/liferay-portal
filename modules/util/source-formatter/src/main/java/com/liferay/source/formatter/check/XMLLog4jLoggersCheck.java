@@ -8,6 +8,7 @@ package com.liferay.source.formatter.check;
 import com.liferay.petra.string.CharPool;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.source.formatter.check.util.SourceUtil;
+import com.liferay.source.formatter.util.SourceFormatterUtil;
 
 import java.io.File;
 
@@ -79,10 +80,11 @@ public class XMLLog4jLoggersCheck extends BaseFileCheck {
 					}
 				}
 
-				if (!exists) {
-					addMessage(
-						fileName, "Class/package does not exist: " + name);
+				if (exists) {
+					continue;
 				}
+
+				addMessage(fileName, "Class/package does not exist: " + name);
 			}
 		}
 	}
@@ -96,9 +98,8 @@ public class XMLLog4jLoggersCheck extends BaseFileCheck {
 
 		File file = getPortalDir();
 
-		List<String> fileNames = getFileNames(
-			file.getAbsolutePath(), new String[0],
-			new String[] {"**/com/liferay/**/*.java"});
+		List<String> fileNames = SourceFormatterUtil.scanForFileNames(
+			file.getCanonicalPath(), new String[] {"**/com/liferay/**/*.java"});
 
 		for (String fileName : fileNames) {
 			fileName = fileName.substring(

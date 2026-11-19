@@ -113,6 +113,7 @@ exports[`DocumentPreviewerWrapper renders with a document 1`] = `
         >
           <div
             class="page-link"
+            data-testid="prevArrow"
           >
             <svg
               class="lexicon-icon lexicon-icon-angle-left"
@@ -128,7 +129,7 @@ exports[`DocumentPreviewerWrapper renders with a document 1`] = `
           class="page-item active"
         >
           <a
-            aria-label="Go to page, 1"
+            aria-label="Go to Page, 1"
             class="page-link"
             tabindex="0"
           >
@@ -140,6 +141,7 @@ exports[`DocumentPreviewerWrapper renders with a document 1`] = `
         >
           <div
             class="page-link"
+            data-testid="nextArrow"
           >
             <svg
               class="lexicon-icon lexicon-icon-angle-right"
@@ -175,31 +177,23 @@ exports[`DocumentPreviewerWrapper renders with a document without preview 1`] = 
           class="c-empty-state-image"
         >
           <div
-            class="c-empty-state-aspect-ratio"
+            class="c-empty-state-illustration"
           >
-            <img
-              alt=""
-              class="aspect-ratio-item aspect-ratio-item-fluid d-none-c-prefers-reduced-motion"
-              src="http://localhost:8080/o/admin-theme/images/states/empty_state.gif"
-            />
-            <img
-              alt=""
-              class="aspect-ratio-item aspect-ratio-item-fluid d-block-c-prefers-reduced-motion"
-              src="/o/admin-theme/images/states/empty_state_reduced_motion.gif"
-            />
+            <svg
+              class="c-empty-state-icon c-empty-state-icon-empty-state"
+              role="presentation"
+            >
+              <use
+                href="#empty-state"
+              />
+            </svg>
           </div>
         </div>
         <div
           class="c-empty-state-title"
         >
-          <span
-            class="text-truncate-inline"
-          >
-            <span
-              class="text-truncate"
-            >
-              no-preview-available
-            </span>
+          <span>
+            no-preview-available
           </span>
         </div>
         <div
@@ -258,6 +252,7 @@ exports[`DocumentPreviewerWrapper renders with a document without preview 1`] = 
         >
           <div
             class="page-link"
+            data-testid="prevArrow"
           >
             <svg
               class="lexicon-icon lexicon-icon-angle-left"
@@ -273,7 +268,7 @@ exports[`DocumentPreviewerWrapper renders with a document without preview 1`] = 
           class="page-item active"
         >
           <a
-            aria-label="Go to page, 1"
+            aria-label="Go to Page, 1"
             class="page-link"
             tabindex="0"
           >
@@ -285,6 +280,7 @@ exports[`DocumentPreviewerWrapper renders with a document without preview 1`] = 
         >
           <div
             class="page-link"
+            data-testid="nextArrow"
           >
             <svg
               class="lexicon-icon lexicon-icon-angle-right"
@@ -404,6 +400,7 @@ exports[`DocumentPreviewerWrapper renders with an image 1`] = `
         >
           <div
             class="page-link"
+            data-testid="prevArrow"
           >
             <svg
               class="lexicon-icon lexicon-icon-angle-left"
@@ -419,7 +416,7 @@ exports[`DocumentPreviewerWrapper renders with an image 1`] = `
           class="page-item active"
         >
           <a
-            aria-label="Go to page, 1"
+            aria-label="Go to Page, 1"
             class="page-link"
             tabindex="0"
           >
@@ -431,6 +428,7 @@ exports[`DocumentPreviewerWrapper renders with an image 1`] = `
         >
           <div
             class="page-link"
+            data-testid="nextArrow"
           >
             <svg
               class="lexicon-icon lexicon-icon-angle-right"
@@ -466,31 +464,23 @@ exports[`DocumentPreviewerWrapper renders with empty state 1`] = `
           class="c-empty-state-image"
         >
           <div
-            class="c-empty-state-aspect-ratio"
+            class="c-empty-state-illustration"
           >
-            <img
-              alt=""
-              class="aspect-ratio-item aspect-ratio-item-fluid d-none-c-prefers-reduced-motion"
-              src="http://localhost:8080/o/admin-theme/images/states/empty_state.gif"
-            />
-            <img
-              alt=""
-              class="aspect-ratio-item aspect-ratio-item-fluid d-block-c-prefers-reduced-motion"
-              src="/o/admin-theme/images/states/empty_state_reduced_motion.gif"
-            />
+            <svg
+              class="c-empty-state-icon c-empty-state-icon-empty-state"
+              role="presentation"
+            >
+              <use
+                href="#empty-state"
+              />
+            </svg>
           </div>
         </div>
         <div
           class="c-empty-state-title"
         >
-          <span
-            class="text-truncate-inline"
-          >
-            <span
-              class="text-truncate"
-            >
-              no-preview-available
-            </span>
+          <span>
+            no-preview-available
           </span>
         </div>
         <div

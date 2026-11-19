@@ -197,11 +197,11 @@ definition {
 		}
 
 		if (!(isSet(userEmailAddress))) {
-			var userEmailAddress = "test@liferay.com";
+			var userEmailAddress = JSONUtil2.getDefaultUserEmail();
 		}
 
 		if (!(isSet(userPassword))) {
-			var userPassword = "test";
+			var userPassword = JSONUtil2.getDefaultUserPassword();
 		}
 
 		if (!(isSet(weight))) {
@@ -327,99 +327,6 @@ definition {
 	}
 
 	@summary = "Default summary"
-	macro _addCommerceProductImage() {
-		var baseURL = JSONCompany.getPortalURL();
-
-		if (!(isSet(catalogName))) {
-			var catalogName = "Master";
-		}
-
-		if (!(isSet(productType))) {
-			var productType = "simple";
-		}
-
-		if (!(isSet(imageTitle))) {
-			var imageTitle = "Simple Image Title API";
-		}
-
-		if (!(isSet(productTitle))) {
-			var productTitle = "Simple Product API";
-		}
-
-		if (!(isSet(productStatus))) {
-			var productStatus = 0;
-		}
-
-		if (!(isSet(src))) {
-			var src = "${baseURL}/documents/d/guest/tree-png";
-		}
-
-		var catalogId = CommerceJSONCatalogsAPI._getCommerceCatalogIdByName(catalogName = ${catalogName});
-		var userLoginInfo = JSONUtil2.formatJSONUser();
-
-		var curl = '''
-			${baseURL}/o/headless-commerce-admin-catalog/v1.0/products \
-				-u ${userLoginInfo} \
-				-H 'accept: application/json' \
-				-H 'Content-Type: application/json' \
-				-d '{
-					"active": true,
-					"catalogId": "${catalogId}",
-					"productType": "${productType}",
-					"images": [
-						{
-							"src": "${src}",
-							"title": {
-								"en_US": "${imageTitle}"
-							}
-						}
-					],
-					"name": {"en_US": "${productTitle}"},
-					"productStatus": ${productStatus}
-				}'
-		''';
-
-		com.liferay.poshi.runner.util.JSONCurlUtil.post(${curl});
-	}
-
-	@summary = "Default summary"
-	macro _addCommerceProductImageLinkedToOptionValue(optionValue = null, productERC = null, optionName = null) {
-		Variables.assertDefined(parameterList = "${productERC},${optionName},${optionValue}");
-
-		var baseURL = JSONCompany.getPortalURL();
-
-		if (!(isSet(imageTitle))) {
-			var imageTitle = "Simple Image Title API";
-		}
-
-		if (!(isSet(src))) {
-			var src = "${baseURL}/documents/d/guest/tree-png";
-		}
-
-		var userLoginInfo = JSONUtil2.formatJSONUser();
-
-		var curl = '''
-			${baseURL}/o/headless-commerce-admin-catalog/v1.0/products/by-externalReferenceCode/${productERC}/images \
-				-u ${userLoginInfo} \
-				-H 'accept: application/json' \
-				-H 'Content-Type: application/json' \
-				-d '{
-					"options": {
-						"${optionName}": "${optionValue}"
-					},
-					"src": "${src}",
-					"title": {
-						"en_US": "${imageTitle}"
-					}
-				}'
-		''';
-
-		var responseBody = JSONCurlUtil.post(${curl});
-
-		return ${responseBody};
-	}
-
-	@summary = "Default summary"
 	macro _addCommerceProductSku(skuName = null, productName = null) {
 		Variables.assertDefined(parameterList = "${productName},${skuName}");
 
@@ -487,8 +394,6 @@ definition {
 		}
 
 		var productId = CommerceJSONProductsAPI._getProductId(productName = ${productName});
-
-		var productId = ${productId} - 1;
 		var userLoginInfo = JSONUtil2.formatJSONUser();
 
 		var curl = '''
@@ -605,33 +510,6 @@ definition {
 	}
 
 	@summary = "Default summary"
-	macro _deleteCommerceProductAttachment(attachmentName = null, type = null, productName = null) {
-		Variables.assertDefined(parameterList = "${attachmentName},${productName},${type}");
-
-		var baseURL = JSONCompany.getPortalURL();
-
-		if (!(isSet(baseURL))) {
-			var baseURL = JSONCompany.getPortalURL();
-		}
-
-		var attachmentId = CommerceJSONProductsAPI.getCommerceProductMediaFieldValues(
-			jsonPath = "$.items[?(@['title']['en_US'] == '${attachmentName}')].['id']",
-			productName = ${productName},
-			type = ${type});
-		var userLoginInfo = JSONUtil2.formatJSONUser();
-
-		var curl = '''
-			${baseURL}/o/headless-commerce-admin-catalog/v1.0/attachment/${attachmentId} \
-				-u ${userLoginInfo} \
-				-H 'accept: application/json' \
-		''';
-
-		JSONCurlUtil.delete(${curl});
-
-		echo("Deleting Commerce Product Attachment with id: ${attachmentId}");
-	}
-
-	@summary = "Default summary"
 	macro _getCommerceFieldValue(groupName = null, field = null) {
 		var portalURL = JSONCompany.getPortalURL();
 		var title = StringUtil.replace(${title}, " ", "%20");
@@ -652,41 +530,17 @@ definition {
 	}
 
 	@summary = "Default summary"
-	macro _getCommerceProductAttachments(productName = null) {
-		Variables.assertDefined(parameterList = ${productName});
-
-		var baseURL = ${baseURL};
-
-		if (!(isSet(baseURL))) {
-			var baseURL = JSONCompany.getPortalURL();
-		}
-
-		var productId = CommerceJSONProductsAPI._getProductId(productName = ${productName});
-		var userLoginInfo = JSONUtil2.formatJSONUser();
-
-		var curl = '''
-			${baseURL}/o/headless-commerce-admin-catalog/v1.0/products/${productId}/attachments \
-				-u ${userLoginInfo} \
-				-H 'accept: application/json' \
-		''';
-
-		var responseBody = JSONCurlUtil.get(${curl});
-
-		return ${responseBody};
-	}
-
-	@summary = "Default summary"
 	macro _getCommerceProductCategoryUsingProductERC(productERC = null) {
 		Variables.assertDefined(parameterList = ${productERC});
 
 		var baseURL = JSONCompany.getPortalURL();
 
 		if (!(isSet(userEmailAddress))) {
-			var userEmailAddress = "test@liferay.com";
+			var userEmailAddress = JSONUtil2.getDefaultUserEmail();
 		}
 
 		if (!(isSet(userPassword))) {
-			var userPassword = "test";
+			var userPassword = JSONUtil2.getDefaultUserPassword();
 		}
 
 		var curl = '''
@@ -754,30 +608,6 @@ definition {
 		}
 
 		return ${productImageIds};
-	}
-
-	@summary = "Default summary"
-	macro _getCommerceProductImages(productName = null) {
-		Variables.assertDefined(parameterList = ${productName});
-
-		var baseURL = ${baseURL};
-
-		if (!(isSet(baseURL))) {
-			var baseURL = JSONCompany.getPortalURL();
-		}
-
-		var productId = CommerceJSONProductsAPI._getProductId(productName = ${productName});
-		var userLoginInfo = JSONUtil2.formatJSONUser();
-
-		var curl = '''
-			${baseURL}/o/headless-commerce-admin-catalog/v1.0/products/${productId}/images \
-				-u ${userLoginInfo} \
-				-H 'accept: application/json' \
-		''';
-
-		var responseBody = JSONCurlUtil.get(${curl});
-
-		return ${responseBody};
 	}
 
 	@summary = "Default summary"
@@ -1160,8 +990,6 @@ definition {
 		}
 
 		if (isSet(allowedOrderQuantities)) {
-			var allowedOrderQuantities = StringUtil.replace(${allowedOrderQuantities}, ",", "-");
-
 			var allowedOrderQuantities = '''"allowedOrderQuantities": [${allowedOrderQuantities}]''';
 
 			ListUtil.add(${fieldsList}, ${allowedOrderQuantities});
@@ -1364,114 +1192,6 @@ definition {
 		''';
 
 		JSONCurlUtil.patch(${curl});
-	}
-
-	@summary = "Update a product's subscriptions configuration using JSON APIs"
-	macro _patchCommerceProductSubscriptionConfiguration(productName = null) {
-		Variables.assertDefined(parameterList = ${productName});
-
-		var baseURL = ${baseURL};
-		var fieldsList = ListUtil.newList();
-
-		if (!(isSet(baseURL))) {
-			var baseURL = JSONCompany.getPortalURL();
-		}
-
-		if (isSet(deliverySubscriptionEnabled)) {
-			var deliverySubscriptionEnabled = '''"deliverySubscriptionEnable": ${deliverySubscriptionEnabled}''';
-
-			ListUtil.add(${fieldsList}, ${deliverySubscriptionEnabled});
-		}
-
-		if (isSet(deliverySubscriptionLength)) {
-			var deliverySubscriptionLength = '''"deliverySubscriptionLength": ${deliverySubscriptionLength}''';
-
-			ListUtil.add(${fieldsList}, ${deliverySubscriptionLength});
-		}
-
-		if (isSet(deliverySubscriptionNumberOfLength)) {
-			var deliverySubscriptionNumberOfLength = '''"deliverySubscriptionNumberOfLength": ${deliverySubscriptionNumberOfLength}''';
-
-			ListUtil.add(${fieldsList}, ${deliverySubscriptionNumberOfLength});
-		}
-
-		if (isSet(deliverySubscriptionType)) {
-			var deliverySubscriptionType = '''"deliverySubscriptionType": "${deliverySubscriptionType}"''';
-
-			ListUtil.add(${fieldsList}, ${deliverySubscriptionType});
-		}
-
-		if (isSet(deliverySubscriptionTypeSettings)) {
-			var deliveryMonthDay = StringUtil.extractFirst(${deliverySubscriptionTypeSettings}, ",");
-			var deliveryMonthlyMode = StringUtil.extractLast(${deliverySubscriptionTypeSettings}, ",");
-			var deliveryMonthDay = StringUtil.extractLast(${deliveryMonthDay}, ":");
-			var deliveryMonthlyMode = StringUtil.extractLast(${deliveryMonthlyMode}, ":");
-
-			var deliverySubscriptionTypeSettings = '''"deliverySubscriptionTypeSettings": {
-				"deliveryMonthDay": ${deliveryMonthDay},
-				"deliveryMonthlyMode": ${deliveryMonthlyMode}
-			}''';
-
-			ListUtil.add(${fieldsList}, ${deliverySubscriptionTypeSettings});
-		}
-
-		if (isSet(paymentSubscriptionEnabled)) {
-			var paymentSubscriptionEnabled = '''"enable": ${paymentSubscriptionEnabled}''';
-
-			ListUtil.add(${fieldsList}, ${paymentSubscriptionEnabled});
-		}
-
-		if (isSet(paymentSubscriptionLength)) {
-			var paymentSubscriptionLength = '''"length": ${paymentSubscriptionLength}''';
-
-			ListUtil.add(${fieldsList}, ${paymentSubscriptionLength});
-		}
-
-		if (isSet(paymentSubscriptionNumberOfLength)) {
-			var paymentSubscriptionNumberOfLength = '''"numberOfLength": ${paymentSubscriptionNumberOfLength}''';
-
-			ListUtil.add(${fieldsList}, ${paymentSubscriptionNumberOfLength});
-		}
-
-		if (isSet(paymentSubscriptionType)) {
-			var paymentSubscriptionType = '''"subscriptionType": "${paymentSubscriptionType}"''';
-
-			ListUtil.add(${fieldsList}, ${paymentSubscriptionType});
-		}
-
-		if (isSet(paymentSubscriptionTypeSettings)) {
-			var paymentMonthDay = StringUtil.extractFirst(${paymentSubscriptionTypeSettings}, ",");
-			var paymentMonthlyMode = StringUtil.extractLast(${paymentSubscriptionTypeSettings}, ",");
-			var paymentMonthDay = StringUtil.extractLast(${paymentMonthDay}, ":");
-			var paymentMonthlyMode = StringUtil.extractLast(${paymentMonthlyMode}, ":");
-
-			var paymentSubscriptionTypeSettings = '''"subscriptionTypeSettings": {
-				"monthDay": ${paymentMonthDay},
-				"monthlyMode": ${paymentMonthlyMode}
-			}''';
-
-			ListUtil.add(${fieldsList}, ${paymentSubscriptionTypeSettings});
-		}
-
-		var fieldsList = ListUtil.toString(${fieldsList});
-
-		var payload = CommerceUtilities.getPayloadFromFieldsList(fieldsList = ${fieldsList});
-		var productId = CommerceJSONProductsAPI._getProductId(productName = ${productName});
-		var userLoginInfo = JSONUtil2.formatJSONUser();
-
-		var curl = '''
-			${baseURL}/o/headless-commerce-admin-catalog/v1.0/products/${productId}/subscriptionConfiguration \
-				-u ${userLoginInfo} \
-				-H 'accept: application/json' \
-				-H 'Content-Type: application/json' \
-				-d '{
-					${payload}
-				}'
-		''';
-
-		var responseBody = JSONCurlUtil.patch(${curl});
-
-		return ${responseBody};
 	}
 
 	@summary = "Default summary"
@@ -1716,25 +1436,6 @@ definition {
 		var skuId = JSONUtil.getWithJSONPath(${responseBody}, "$..['id']");
 
 		return ${skuId};
-	}
-
-	@summary = "Default summary"
-	macro getCommerceProductMediaFieldValues(jsonPath = null, type = null, productName = null) {
-		Variables.assertDefined(parameterList = "${jsonPath},${productName}");
-
-		if (${type} == "images") {
-			var responseBody = CommerceJSONProductsAPI._getCommerceProductImages(productName = ${productName});
-		}
-
-		if (${type} == "attachment") {
-			var responseBody = CommerceJSONProductsAPI._getCommerceProductAttachments(productName = ${productName});
-		}
-
-		var fieldValues = JSONUtil.getWithJSONPath(${responseBody}, ${jsonPath});
-
-		echo("Field: ${fieldValues}");
-
-		return ${fieldValues};
 	}
 
 	@summary = "Default summary"

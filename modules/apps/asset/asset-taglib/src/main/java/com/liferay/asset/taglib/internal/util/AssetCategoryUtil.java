@@ -7,6 +7,7 @@ package com.liferay.asset.taglib.internal.util;
 
 import com.liferay.asset.kernel.model.AssetCategory;
 import com.liferay.asset.kernel.service.AssetCategoryLocalServiceUtil;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.theme.PortletDisplay;
@@ -18,13 +19,12 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import java.util.ArrayList;
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.Collections;
 import java.util.List;
-
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Eudaldo Alonso
@@ -73,17 +73,19 @@ public class AssetCategoryUtil {
 			(ThemeDisplay)httpServletRequest.getAttribute(
 				WebKeys.THEME_DISPLAY);
 
-		List<AssetCategory> ancestorCategories = assetCategory.getAncestors();
+		List<AssetCategory> ancestorAssetCategories =
+			assetCategory.getAncestors();
 
-		Collections.reverse(ancestorCategories);
+		Collections.reverse(ancestorAssetCategories);
 
-		for (AssetCategory ancestorCategory : ancestorCategories) {
+		for (AssetCategory ancestorAssetCategory : ancestorAssetCategories) {
 			portletURL.setParameter(
-				"categoryId", String.valueOf(ancestorCategory.getCategoryId()));
+				"categoryId",
+				String.valueOf(ancestorAssetCategory.getCategoryId()));
 
 			PortalUtil.addPortletBreadcrumbEntry(
 				httpServletRequest,
-				ancestorCategory.getTitle(themeDisplay.getLocale()),
+				ancestorAssetCategory.getTitle(themeDisplay.getLocale()),
 				portletURL.toString(), null, portletBreadcrumbEntry);
 		}
 
@@ -98,9 +100,50 @@ public class AssetCategoryUtil {
 	public static long[] filterCategoryIds(
 		long vocabularyId, long[] categoryIds) {
 
-		List<Long> filteredCategoryIds = new ArrayList<>();
+		List<Long> filteredCategoryIds = TransformUtil.transformToList(
+			categoryIds,
+			categoryId -> {
+				AssetCategory category =
+					AssetCategoryLocalServiceUtil.fetchCategory(categoryId);
 
-		for (long categoryId : categoryIds) {
+				if ((category == null) ||
+					(category.getVocabularyId() != vocabularyId)) {
+
+					return null;
+				}
+
+				return category.getCategoryId();
+			});
+
+		return ArrayUtil.toLongArray(filteredCategoryIds);
+	}
+
+	public static String[] getCategoryIdsTitles(
+		String categoryIds, String categoryNames, long vocabularyId,
+		ThemeDisplay themeDisplay) {
+
+		if (Validator.isNull(categoryIds)) {
+			return new String[] {categoryIds, categoryNames};
+		}
+
+		long[] categoryIdsArray = GetterUtil.getLongValues(
+			StringUtil.split(categoryIds));
+
+		if (vocabularyId > 0) {
+			categoryIdsArray = filterCategoryIds(
+				vocabularyId, categoryIdsArray);
+		}
+
+		if (categoryIdsArray.length == 0) {
+			return new String[] {StringPool.BLANK, StringPool.BLANK};
+		}
+
+		StringBundler categoryIdsSB = new StringBundler(
+			categoryIdsArray.length * 2);
+		StringBundler categoryNamesSB = new StringBundler(
+			categoryIdsArray.length * 2);
+
+		for (long categoryId : categoryIdsArray) {
 			AssetCategory category =
 				AssetCategoryLocalServiceUtil.fetchCategory(categoryId);
 
@@ -108,60 +151,19 @@ public class AssetCategoryUtil {
 				continue;
 			}
 
-			if (category.getVocabularyId() == vocabularyId) {
-				filteredCategoryIds.add(category.getCategoryId());
-			}
+			categoryIdsSB.append(categoryId);
+			categoryIdsSB.append(StringPool.COMMA);
+
+			categoryNamesSB.append(category.getTitle(themeDisplay.getLocale()));
+			categoryNamesSB.append(CATEGORY_SEPARATOR);
 		}
 
-		return ArrayUtil.toArray(filteredCategoryIds.toArray(new Long[0]));
-	}
+		if (categoryIdsSB.index() > 0) {
+			categoryIdsSB.setIndex(categoryIdsSB.index() - 1);
+			categoryNamesSB.setIndex(categoryNamesSB.index() - 1);
 
-	public static String[] getCategoryIdsTitles(
-		String categoryIds, String categoryNames, long vocabularyId,
-		ThemeDisplay themeDisplay) {
-
-		if (Validator.isNotNull(categoryIds)) {
-			long[] categoryIdsArray = GetterUtil.getLongValues(
-				StringUtil.split(categoryIds));
-
-			if (vocabularyId > 0) {
-				categoryIdsArray = filterCategoryIds(
-					vocabularyId, categoryIdsArray);
-			}
-
-			categoryIds = StringPool.BLANK;
-			categoryNames = StringPool.BLANK;
-
-			if (categoryIdsArray.length > 0) {
-				StringBundler categoryIdsSB = new StringBundler(
-					categoryIdsArray.length * 2);
-				StringBundler categoryNamesSB = new StringBundler(
-					categoryIdsArray.length * 2);
-
-				for (long categoryId : categoryIdsArray) {
-					AssetCategory category =
-						AssetCategoryLocalServiceUtil.fetchCategory(categoryId);
-
-					if (category == null) {
-						continue;
-					}
-
-					categoryIdsSB.append(categoryId);
-					categoryIdsSB.append(StringPool.COMMA);
-
-					categoryNamesSB.append(
-						category.getTitle(themeDisplay.getLocale()));
-					categoryNamesSB.append(CATEGORY_SEPARATOR);
-				}
-
-				if (categoryIdsSB.index() > 0) {
-					categoryIdsSB.setIndex(categoryIdsSB.index() - 1);
-					categoryNamesSB.setIndex(categoryNamesSB.index() - 1);
-
-					categoryIds = categoryIdsSB.toString();
-					categoryNames = categoryNamesSB.toString();
-				}
-			}
+			categoryIds = categoryIdsSB.toString();
+			categoryNames = categoryNamesSB.toString();
 		}
 
 		return new String[] {categoryIds, categoryNames};

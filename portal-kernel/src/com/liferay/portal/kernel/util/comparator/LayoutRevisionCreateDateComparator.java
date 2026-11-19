@@ -11,7 +11,9 @@ import com.liferay.portal.kernel.util.OrderByComparator;
 
 /**
  * @author Julio Camarero
+ * @deprecated As of Cavanaugh (7.4.x), with no direct replacement
  */
+@Deprecated
 public class LayoutRevisionCreateDateComparator
 	extends OrderByComparator<LayoutRevision> {
 
@@ -21,12 +23,14 @@ public class LayoutRevisionCreateDateComparator
 
 	public static final String[] ORDER_BY_FIELDS = {"createDate"};
 
-	public LayoutRevisionCreateDateComparator() {
-		this(false);
-	}
+	public static LayoutRevisionCreateDateComparator getInstance(
+		boolean ascending) {
 
-	public LayoutRevisionCreateDateComparator(boolean ascending) {
-		_ascending = ascending;
+		if (ascending) {
+			return _INSTANCE_ASCENDING;
+		}
+
+		return _INSTANCE_DESCENDING;
 	}
 
 	@Override
@@ -61,6 +65,16 @@ public class LayoutRevisionCreateDateComparator
 	public boolean isAscending() {
 		return _ascending;
 	}
+
+	private LayoutRevisionCreateDateComparator(boolean ascending) {
+		_ascending = ascending;
+	}
+
+	private static final LayoutRevisionCreateDateComparator
+		_INSTANCE_ASCENDING = new LayoutRevisionCreateDateComparator(true);
+
+	private static final LayoutRevisionCreateDateComparator
+		_INSTANCE_DESCENDING = new LayoutRevisionCreateDateComparator(false);
 
 	private final boolean _ascending;
 

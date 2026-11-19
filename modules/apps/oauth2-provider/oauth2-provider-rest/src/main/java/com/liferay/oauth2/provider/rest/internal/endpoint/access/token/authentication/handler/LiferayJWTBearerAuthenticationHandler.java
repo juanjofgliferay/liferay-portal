@@ -6,25 +6,35 @@
 package com.liferay.oauth2.provider.rest.internal.endpoint.access.token.authentication.handler;
 
 import com.liferay.oauth2.provider.rest.internal.endpoint.constants.OAuth2ProviderRESTEndpointConstants;
+import com.liferay.oauth2.provider.rest.internal.endpoint.util.OAuth2HttpRequestUtil;
+import com.liferay.oauth2.provider.util.OAuth2JWKValidatorUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.security.fips.FIPSAuditEventFactory;
+import com.liferay.portal.kernel.security.fips.FIPSAuditUtil;
+import com.liferay.portal.kernel.security.fips.FIPSModeValidator;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.servlet.http.HttpServletRequest;
+
+import jakarta.ws.rs.NotAuthorizedException;
+import jakarta.ws.rs.container.ContainerRequestContext;
+import jakarta.ws.rs.core.UriInfo;
+import jakarta.ws.rs.ext.Provider;
+
+import java.nio.charset.StandardCharsets;
+
+import java.util.Base64;
 import java.util.Map;
-
-import javax.servlet.http.HttpServletRequest;
-
-import javax.ws.rs.NotAuthorizedException;
-import javax.ws.rs.container.ContainerRequestContext;
-import javax.ws.rs.core.UriInfo;
-import javax.ws.rs.ext.Provider;
 
 import org.apache.cxf.jaxrs.utils.HttpUtils;
 import org.apache.cxf.jaxrs.utils.JAXRSUtils;
 import org.apache.cxf.message.Message;
 import org.apache.cxf.rs.security.jose.common.JoseConstants;
+import org.apache.cxf.rs.security.jose.jwk.JsonWebKey;
 import org.apache.cxf.rs.security.jose.jwk.JsonWebKeys;
 import org.apache.cxf.rs.security.jose.jwk.JwkUtils;
 import org.apache.cxf.rs.security.jose.jws.HmacJwsSignatureVerifier;
@@ -38,7 +48,6 @@ import org.apache.cxf.rs.security.oauth2.grants.jwt.JwtBearerAuthHandler;
 import org.apache.cxf.rs.security.oauth2.provider.ClientRegistrationProvider;
 import org.apache.cxf.rs.security.oauth2.utils.OAuthConstants;
 import org.apache.cxf.security.SecurityContext;
-import org.apache.cxf.transport.http.AbstractHTTPDestination;
 
 /**
  * @author Arthur Chan
@@ -57,8 +66,8 @@ public class LiferayJWTBearerAuthenticationHandler
 
 		Message message = JAXRSUtils.getCurrentMessage();
 
-		HttpServletRequest httpServletRequest = (HttpServletRequest)message.get(
-			AbstractHTTPDestination.HTTP_REQUEST);
+		HttpServletRequest httpServletRequest =
+			OAuth2HttpRequestUtil.getHttpServletRequest(message);
 
 		if (!_isUsingJWTAssertionForClientAuthentication(httpServletRequest)) {
 			return;
@@ -112,8 +121,46 @@ public class LiferayJWTBearerAuthenticationHandler
 		String tokenEndpointAuthMethod = client.getTokenEndpointAuthMethod();
 
 		try {
+			String algorithm = GetterUtil.getString(
+				jwtToken.getJwsHeader(JoseConstants.HEADER_ALGORITHM), null);
+
+			try {
+				FIPSModeValidator.validateJWSAlgorithm(algorithm);
+			}
+			catch (SecurityException securityException) {
+				FIPSAuditUtil.write(
+					FIPSAuditEventFactory.createFederationTokenRejected(
+						OAuth2HttpRequestUtil.getRequestURI(), algorithm,
+						GetterUtil.getString(
+							jwtToken.getClaim(JwtConstants.CLAIM_ISSUER), null),
+						"JWT"));
+
+				throw securityException;
+			}
+
 			if (tokenEndpointAuthMethod.equals("client_secret_jwt")) {
-				return new HmacJwsSignatureVerifier(client.getClientSecret());
+				String clientSecret = client.getClientSecret();
+
+				byte[] bytes = clientSecret.getBytes(StandardCharsets.UTF_8);
+
+				try {
+					Base64.Decoder decoder = Base64.getDecoder();
+
+					decoder.decode(bytes);
+				}
+				catch (IllegalArgumentException illegalArgumentException) {
+					if (_log.isDebugEnabled()) {
+						_log.debug(
+							"Client secret is not Base64 encoded",
+							illegalArgumentException);
+					}
+
+					Base64.Encoder encoder = Base64.getEncoder();
+
+					clientSecret = new String(encoder.encode(bytes), "UTF-8");
+				}
+
+				return new HmacJwsSignatureVerifier(clientSecret);
 			}
 
 			if (tokenEndpointAuthMethod.equals("private_key_jwt")) {
@@ -124,10 +171,18 @@ public class LiferayJWTBearerAuthenticationHandler
 						OAuth2ProviderRESTEndpointConstants.
 							PROPERTY_KEY_CLIENT_JWKS));
 
-				return JwsUtils.getSignatureVerifier(
-					jsonWebKeys.getKey(
-						(String)jwtToken.getJwsHeader(
-							JoseConstants.HEADER_KEY_ID)));
+				JsonWebKey jsonWebKey = jsonWebKeys.getKey(
+					(String)jwtToken.getJwsHeader(JoseConstants.HEADER_KEY_ID));
+
+				if (jsonWebKey == null) {
+					throw new IllegalArgumentException(
+						"No JWK found for the key ID");
+				}
+
+				OAuth2JWKValidatorUtil.validateJWK(
+					JwkUtils.jwkKeyToJson(jsonWebKey));
+
+				return JwsUtils.getSignatureVerifier(jsonWebKey);
 			}
 
 			throw new IllegalArgumentException(
@@ -153,13 +208,8 @@ public class LiferayJWTBearerAuthenticationHandler
 			return false;
 		}
 
-		if (Constants.CLIENT_AUTH_JWT_BEARER.equals(
-				HttpUtils.urlDecode(assertionType))) {
-
-			return true;
-		}
-
-		return false;
+		return Constants.CLIENT_AUTH_JWT_BEARER.equals(
+			HttpUtils.urlDecode(assertionType));
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(

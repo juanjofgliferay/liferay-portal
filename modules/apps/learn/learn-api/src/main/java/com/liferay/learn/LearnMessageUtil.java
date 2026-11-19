@@ -12,11 +12,14 @@ import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.util.Http;
+import com.liferay.portal.kernel.util.FileUtil;
 import com.liferay.portal.kernel.util.HttpUtil;
+import com.liferay.portal.kernel.util.PropsUtil;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.webcache.WebCacheItem;
 import com.liferay.portal.kernel.webcache.WebCachePoolUtil;
-import com.liferay.portal.util.PropsValues;
+
+import java.util.Objects;
 
 /**
  * @author Brian Wing Shun Chan
@@ -56,6 +59,12 @@ public class LearnMessageUtil {
 		return jsonObject;
 	}
 
+	private static final String _LEARN_RESOURCES_DIR = PropsUtil.get(
+		"learn.resources.dir");
+
+	private static final boolean _LEARN_RESOURCES_MODE_OFF = Objects.equals(
+		PropsUtil.get("learn.resources.mode"), "off");
+
 	private static final Log _log = LogFactoryUtil.getLog(
 		LearnMessageUtil.class);
 
@@ -68,23 +77,26 @@ public class LearnMessageUtil {
 		@Override
 		public JSONObject convert(String key) {
 			try {
-				if (!PropsValues.LEARN_RESOURCES_ENABLED) {
+				if (_LEARN_RESOURCES_MODE_OFF) {
 					return JSONFactoryUtil.createJSONObject();
 				}
 
-				StringBundler sb = new StringBundler(5);
+				if (Validator.isNotNull(_LEARN_RESOURCES_DIR)) {
+					String fileName = StringBundler.concat(
+						_LEARN_RESOURCES_DIR, StringPool.SLASH, _resource,
+						".json");
 
-				sb.append(Http.HTTPS_WITH_SLASH);
+					if (_log.isDebugEnabled()) {
+						_log.debug("Reading " + fileName);
+					}
 
-				if (!PropsValues.LEARN_RESOURCES_CDN_ENABLED) {
-					sb.append("s3.amazonaws.com/");
+					return JSONFactoryUtil.createJSONObject(
+						FileUtil.read(fileName));
 				}
 
-				sb.append("learn-resources.liferay.com/");
-				sb.append(_resource);
-				sb.append(".json");
-
-				String url = sb.toString();
+				String url = StringBundler.concat(
+					"https://s3.amazonaws.com/learn-resources.liferay.com/",
+					_resource, ".json");
 
 				if (_log.isDebugEnabled()) {
 					_log.debug("Reading " + url);
@@ -104,7 +116,13 @@ public class LearnMessageUtil {
 
 		@Override
 		public long getRefreshTime() {
-			return PropsValues.LEARN_RESOURCES_REFRESH_TIME;
+			if (Validator.isNotNull(_LEARN_RESOURCES_DIR)) {
+				return 0;
+			}
+
+			// 4 hours
+
+			return 14400000;
 		}
 
 		private final String _resource;

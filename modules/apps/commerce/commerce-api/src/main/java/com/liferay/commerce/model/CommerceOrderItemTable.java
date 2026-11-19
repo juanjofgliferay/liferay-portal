@@ -84,9 +84,10 @@ public class CommerceOrderItemTable extends BaseTable<CommerceOrderItemTable> {
 	public final Column<CommerceOrderItemTable, Long> shippingAddressId =
 		createColumn(
 			"shippingAddressId", Long.class, Types.BIGINT, Column.FLAG_DEFAULT);
-	public final Column<CommerceOrderItemTable, String> deliveryGroup =
+	public final Column<CommerceOrderItemTable, String> deliveryGroupName =
 		createColumn(
-			"deliveryGroup", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
+			"deliveryGroupName", String.class, Types.VARCHAR,
+			Column.FLAG_DEFAULT);
 	public final Column<CommerceOrderItemTable, Long>
 		deliveryMaxSubscriptionCycles = createColumn(
 			"deliveryMaxSubscriptionCycles", Long.class, Types.BIGINT,
@@ -256,9 +257,12 @@ public class CommerceOrderItemTable extends BaseTable<CommerceOrderItemTable> {
 		"weight", Double.class, Types.DOUBLE, Column.FLAG_DEFAULT);
 	public final Column<CommerceOrderItemTable, Double> width = createColumn(
 		"width", Double.class, Types.DOUBLE, Column.FLAG_DEFAULT);
+	public final Column<CommerceOrderItemTable, Integer> status = createColumn(
+		"status", Integer.class, Types.INTEGER, Column.FLAG_DEFAULT);
 
 	private CommerceOrderItemTable() {
 		super("CommerceOrderItem", CommerceOrderItemTable::new);
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:753018585

@@ -5,12 +5,12 @@
 
 package com.liferay.commerce.product.type.virtual.web.internal.portlet.template;
 
-import com.liferay.commerce.product.type.virtual.util.VirtualCPTypeHelper;
+import com.liferay.commerce.product.type.virtual.helper.VirtualCPTypeHelper;
 import com.liferay.portal.kernel.template.TemplateContextContributor;
 
-import java.util.Map;
+import jakarta.servlet.http.HttpServletRequest;
 
-import javax.servlet.http.HttpServletRequest;
+import java.util.Map;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -19,7 +19,10 @@ import org.osgi.service.component.annotations.Reference;
  * @author Alessio Antonio Rendina
  */
 @Component(
-	property = "type=" + TemplateContextContributor.TYPE_GLOBAL,
+	property = {
+		"template.context.keys=virtualCPTypeHelper",
+		"type=" + TemplateContextContributor.TYPE_GLOBAL
+	},
 	service = TemplateContextContributor.class
 )
 public class VirtualCPTypeTemplateContextContributor

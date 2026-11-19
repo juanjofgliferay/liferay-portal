@@ -5,6 +5,8 @@
 
 package com.liferay.portal.search.internal.searcher;
 
+import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.search.QueryConfig;
 import com.liferay.portal.kernel.search.SearchContext;
 import com.liferay.portal.kernel.util.ArrayUtil;
@@ -59,7 +61,6 @@ public class SearchRequestImpl implements SearchRequest, Serializable {
 		_federatedSearchKey = searchRequestImpl._federatedSearchKey;
 		_federatedSearchRequestsMap.putAll(
 			searchRequestImpl._federatedSearchRequestsMap);
-		_from = searchRequestImpl._from;
 		_groupByRequests.addAll(searchRequestImpl._groupByRequests);
 		_highlight = searchRequestImpl._highlight;
 		_includeContributors.addAll(searchRequestImpl._includeContributors);
@@ -74,10 +75,11 @@ public class SearchRequestImpl implements SearchRequest, Serializable {
 		_query = searchRequestImpl._query;
 		_rescoreQuery = searchRequestImpl._rescoreQuery;
 		_rescores.addAll(searchRequestImpl._rescores);
+		_retainFacetSelections = searchRequestImpl._retainFacetSelections;
 		_searchContext = searchRequestImpl._searchContext;
-		_size = searchRequestImpl._size;
 		_sorts.addAll(searchRequestImpl._sorts);
 		_statsRequests.addAll(searchRequestImpl._statsRequests);
+		_trackTotalHitsLimit = searchRequestImpl._trackTotalHitsLimit;
 	}
 
 	public void addAggregation(Aggregation aggregation) {
@@ -195,7 +197,11 @@ public class SearchRequestImpl implements SearchRequest, Serializable {
 
 	@Override
 	public Integer getFrom() {
-		return _from;
+		if (_searchContext.getStart() == QueryUtil.ALL_POS) {
+			return null;
+		}
+
+		return _getStart();
 	}
 
 	@Override
@@ -221,6 +227,11 @@ public class SearchRequestImpl implements SearchRequest, Serializable {
 			Arrays.asList(queryConfig.getSelectedIndexNames()));
 	}
 
+	@Override
+	public List<String> getModelIndexerClassNames() {
+		return _modelIndexerClassNames;
+	}
+
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
 	 *             #getModelIndexerClassNames()}
@@ -229,11 +240,6 @@ public class SearchRequestImpl implements SearchRequest, Serializable {
 	@Override
 	public List<Class<?>> getModelIndexerClasses() {
 		return Collections.emptyList();
-	}
-
-	@Override
-	public List<String> getModelIndexerClassNames() {
-		return _modelIndexerClassNames;
 	}
 
 	@Override
@@ -286,7 +292,11 @@ public class SearchRequestImpl implements SearchRequest, Serializable {
 
 	@Override
 	public Integer getSize() {
-		return _size;
+		if (_searchContext.getEnd() == QueryUtil.ALL_POS) {
+			return null;
+		}
+
+		return _searchContext.getEnd() - _getStart();
 	}
 
 	@Override
@@ -297,6 +307,16 @@ public class SearchRequestImpl implements SearchRequest, Serializable {
 	@Override
 	public List<StatsRequest> getStatsRequests() {
 		return Collections.unmodifiableList(_statsRequests);
+	}
+
+	@Override
+	public String[] getStoredFields() {
+		return _storedFields;
+	}
+
+	@Override
+	public Integer getTrackTotalHitsLimit() {
+		return _trackTotalHitsLimit;
 	}
 
 	@Override
@@ -317,6 +337,11 @@ public class SearchRequestImpl implements SearchRequest, Serializable {
 	@Override
 	public boolean isIncludeResponseString() {
 		return _includeResponseString;
+	}
+
+	@Override
+	public boolean isRetainFacetSelections() {
+		return _retainFacetSelections;
 	}
 
 	public void setBasicFacetSelection(boolean basicFacetSelection) {
@@ -368,7 +393,8 @@ public class SearchRequestImpl implements SearchRequest, Serializable {
 	}
 
 	public void setFrom(Integer from) {
-		_from = from;
+		_setEnd(GetterUtil.getInteger(from), getSize());
+		_searchContext.setStart(GetterUtil.getInteger(from, QueryUtil.ALL_POS));
 	}
 
 	public void setGroupByRequests(GroupByRequest... groupByRequests) {
@@ -443,6 +469,14 @@ public class SearchRequestImpl implements SearchRequest, Serializable {
 		_rescores = rescores;
 	}
 
+	public void setRetainFacetSelections(boolean retainFacetSelections) {
+		_retainFacetSelections = retainFacetSelections;
+
+		_searchContext.setAttribute(
+			SearchContextAttributes.ATTRIBUTE_KEY_RETAIN_FACET_SELECTIONS,
+			Boolean.valueOf(retainFacetSelections));
+	}
+
 	public void setSelectedFieldNames(String... selectedFieldNames) {
 		QueryConfig queryConfig = _searchContext.getQueryConfig();
 
@@ -450,7 +484,13 @@ public class SearchRequestImpl implements SearchRequest, Serializable {
 	}
 
 	public void setSize(Integer size) {
-		_size = size;
+		if (size == null) {
+			_searchContext.setEnd(QueryUtil.ALL_POS);
+
+			return;
+		}
+
+		_setEnd(_getStart(), size);
 	}
 
 	public void setSorts(Sort... sorts) {
@@ -463,6 +503,40 @@ public class SearchRequestImpl implements SearchRequest, Serializable {
 		_statsRequests.clear();
 
 		Collections.addAll(_statsRequests, statsRequests);
+	}
+
+	public void setStoredFields(String... storedFields) {
+		_storedFields = storedFields;
+	}
+
+	public void setTrackTotalHitsLimit(Integer trackTotalHitsLimit) {
+		_trackTotalHitsLimit = trackTotalHitsLimit;
+	}
+
+	private int _getStart() {
+		return Math.max(_searchContext.getStart(), 0);
+	}
+
+	private void _setEnd(int start, Integer size) {
+		if (start < 0) {
+			throw new IllegalArgumentException("Invalid \"from\" " + start);
+		}
+
+		if (size == null) {
+			return;
+		}
+
+		if (size < 0) {
+			throw new IllegalArgumentException("Invalid \"size\" " + size);
+		}
+
+		if (size > (Integer.MAX_VALUE - start)) {
+			throw new IllegalArgumentException(
+				StringBundler.concat(
+					"Invalid \"from\" ", start, " and \"size\" ", size));
+		}
+
+		_searchContext.setEnd(start + size);
 	}
 
 	private final Map<String, Aggregation> _aggregationsMap =
@@ -480,7 +554,6 @@ public class SearchRequestImpl implements SearchRequest, Serializable {
 	private Boolean _fetchSource;
 	private String[] _fetchSourceExcludes;
 	private String[] _fetchSourceIncludes;
-	private Integer _from;
 	private final List<GroupByRequest> _groupByRequests = new ArrayList<>();
 	private Highlight _highlight;
 	private final List<String> _includeContributors = new ArrayList<>();
@@ -495,9 +568,11 @@ public class SearchRequestImpl implements SearchRequest, Serializable {
 	private Query _query;
 	private Query _rescoreQuery;
 	private List<Rescore> _rescores = new ArrayList<>();
+	private boolean _retainFacetSelections;
 	private final SearchContext _searchContext;
-	private Integer _size;
 	private final List<Sort> _sorts = new ArrayList<>();
 	private final List<StatsRequest> _statsRequests = new ArrayList<>();
+	private String[] _storedFields;
+	private Integer _trackTotalHitsLimit;
 
 }

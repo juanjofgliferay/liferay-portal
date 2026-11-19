@@ -24,7 +24,9 @@ public class CPDefinitionLinkUpgradeProcess extends UpgradeProcess {
 		try (PreparedStatement preparedStatement = connection.prepareStatement(
 				"update CPDefinitionLink set CProductId = ? where " +
 					"CPDefinitionId2 = ?");
+
 			Statement s = connection.createStatement();
+
 			ResultSet resultSet = s.executeQuery(
 				"select * from CPDefinitionLink")) {
 
@@ -53,12 +55,13 @@ public class CPDefinitionLinkUpgradeProcess extends UpgradeProcess {
 			UpgradeProcessFactory.addColumns(
 				"CPDefinitionLink", "CProductId LONG"),
 			UpgradeProcessFactory.alterColumnName(
-				"CPDefinitionLink", "CPDefinitionId1", "CPDefinitionId LONG")
+				"CPDefinitionLink", "CPDefinitionId1", "CPDefinitionId")
 		};
 	}
 
 	private long _getCProductId(long cpDefinitionId) throws Exception {
 		try (Statement s = connection.createStatement();
+
 			ResultSet resultSet = s.executeQuery(
 				"select CProductId from CPDefinition where CPDefinitionId = " +
 					cpDefinitionId)) {

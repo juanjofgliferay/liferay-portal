@@ -56,7 +56,7 @@ function ModalSelectObjectFields<T extends ModalItem>() {
 					resetModal();
 
 					return;
-			  }
+				}
 			: resetModal,
 	});
 
@@ -125,7 +125,11 @@ function ModalSelectObjectFields<T extends ModalItem>() {
 			className="lfr-object__object-view-modal-select-object-fields"
 			observer={observer}
 		>
-			<ClayModal.Header>{header}</ClayModal.Header>
+			<ClayModal.Header
+				closeButtonAriaLabel={Liferay.Language.get('close')}
+			>
+				{header}
+			</ClayModal.Header>
 
 			{!!alerts?.length &&
 				!!items.length &&
@@ -158,10 +162,13 @@ function ModalSelectObjectFields<T extends ModalItem>() {
 											!!selected.length &&
 											items.length !== selected.length
 										}
+										name="selectAllObjectFields"
 										onChange={() => {
-											const disabledItems = selected.filter(
-												(item) => item.disableCheckbox
-											);
+											const disabledItems =
+												selected.filter(
+													(item) =>
+														item.disableCheckbox
+												);
 											const selectedItems =
 												items.length -
 													disabledItems.length ===
@@ -224,7 +231,13 @@ function ModalSelectObjectFields<T extends ModalItem>() {
 									'there-are-no-fields-in-this-definition'
 								)
 							}
-							imgSrc={`${Liferay.ThemeDisplay.getPathThemeImages()}/states/empty_state.gif`}
+							image={
+								<ClayIcon
+									className="c-empty-state-icon c-empty-state-icon-empty-state"
+									illustration
+									symbol="empty-state"
+								/>
+							}
 							small
 							title={
 								emptyState?.title ??

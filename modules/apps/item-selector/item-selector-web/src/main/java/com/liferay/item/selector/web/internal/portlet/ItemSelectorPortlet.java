@@ -5,6 +5,7 @@
 
 package com.liferay.item.selector.web.internal.portlet;
 
+import com.liferay.frontend.taglib.clay.servlet.taglib.util.NavigationItem;
 import com.liferay.item.selector.ItemSelector;
 import com.liferay.item.selector.ItemSelectorRendering;
 import com.liferay.item.selector.constants.ItemSelectorPortletKeys;
@@ -12,14 +13,17 @@ import com.liferay.portal.kernel.model.Release;
 import com.liferay.portal.kernel.portlet.RequestBackedPortletURLFactoryUtil;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCPortlet;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.WebKeys;
+
+import jakarta.portlet.Portlet;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
 
 import java.io.IOException;
 
-import javax.portlet.Portlet;
-import javax.portlet.PortletException;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
+import java.util.Map;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -37,14 +41,14 @@ import org.osgi.service.component.annotations.Reference;
 		"com.liferay.portlet.render-weight=50",
 		"com.liferay.portlet.system=true",
 		"com.liferay.portlet.use-default-template=false",
-		"javax.portlet.display-name=Document Selector",
-		"javax.portlet.expiration-cache=0",
-		"javax.portlet.init-param.template-path=/META-INF/resources/",
-		"javax.portlet.init-param.view-template=/view.jsp",
-		"javax.portlet.name=" + ItemSelectorPortletKeys.ITEM_SELECTOR,
-		"javax.portlet.resource-bundle=content.Language",
-		"javax.portlet.security-role-ref=guest,power-user,user",
-		"javax.portlet.version=3.0"
+		"jakarta.portlet.display-name=Document Selector",
+		"jakarta.portlet.expiration-cache=0",
+		"jakarta.portlet.init-param.template-path=/META-INF/resources/",
+		"jakarta.portlet.init-param.view-template=/view.jsp",
+		"jakarta.portlet.name=" + ItemSelectorPortletKeys.ITEM_SELECTOR,
+		"jakarta.portlet.resource-bundle=content.Language",
+		"jakarta.portlet.security-role-ref=guest,power-user,user",
+		"jakarta.portlet.version=4.0"
 	},
 	service = Portlet.class
 )
@@ -69,7 +73,32 @@ public class ItemSelectorPortlet extends MVCPortlet {
 
 		localizedItemSelectorRendering.store(renderRequest);
 
+		_storeSelectedTab(renderRequest, localizedItemSelectorRendering);
+
 		super.render(renderRequest, renderResponse);
+	}
+
+	private void _storeSelectedTab(
+		RenderRequest renderRequest,
+		LocalizedItemSelectorRendering localizedItemSelectorRendering) {
+
+		NavigationItem activeNavigationItem =
+			localizedItemSelectorRendering.getActiveNavigationItem();
+
+		if (activeNavigationItem == null) {
+			return;
+		}
+
+		Map<String, Object> data =
+			(Map<String, Object>)activeNavigationItem.get("data");
+
+		if (data == null) {
+			return;
+		}
+
+		renderRequest.setAttribute(
+			"liferay-item-selector:group-selector:selectedTab",
+			MapUtil.getString(data, "id"));
 	}
 
 	@Reference

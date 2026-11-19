@@ -113,9 +113,7 @@ public class ChangesetCollectionPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		ChangesetCollection newChangesetCollection = _persistence.create(pk);
+		ChangesetCollection newChangesetCollection = addChangesetCollection();
 
 		newChangesetCollection.setGroupId(RandomTestUtil.nextLong());
 
@@ -133,7 +131,9 @@ public class ChangesetCollectionPersistenceTest {
 
 		newChangesetCollection.setDescription(RandomTestUtil.randomString());
 
-		_changesetCollections.add(_persistence.update(newChangesetCollection));
+		newChangesetCollection = _persistence.update(newChangesetCollection);
+
+		_changesetCollections.add(newChangesetCollection);
 
 		ChangesetCollection existingChangesetCollection =
 			_persistence.findByPrimaryKey(
@@ -170,43 +170,12 @@ public class ChangesetCollectionPersistenceTest {
 	}
 
 	@Test
-	public void testCountByGroupId() throws Exception {
-		_persistence.countByGroupId(RandomTestUtil.nextLong());
-
-		_persistence.countByGroupId(0L);
-	}
-
-	@Test
-	public void testCountByCompanyId() throws Exception {
-		_persistence.countByCompanyId(RandomTestUtil.nextLong());
-
-		_persistence.countByCompanyId(0L);
-	}
-
-	@Test
-	public void testCountByG_U() throws Exception {
-		_persistence.countByG_U(
-			RandomTestUtil.nextLong(), RandomTestUtil.nextLong());
-
-		_persistence.countByG_U(0L, 0L);
-	}
-
-	@Test
 	public void testCountByG_N() throws Exception {
 		_persistence.countByG_N(RandomTestUtil.nextLong(), "");
 
 		_persistence.countByG_N(0L, "null");
 
 		_persistence.countByG_N(0L, (String)null);
-	}
-
-	@Test
-	public void testCountByC_N() throws Exception {
-		_persistence.countByC_N(RandomTestUtil.nextLong(), "");
-
-		_persistence.countByC_N(0L, "null");
-
-		_persistence.countByC_N(0L, (String)null);
 	}
 
 	@Test
@@ -566,3 +535,4 @@ public class ChangesetCollectionPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-835143379

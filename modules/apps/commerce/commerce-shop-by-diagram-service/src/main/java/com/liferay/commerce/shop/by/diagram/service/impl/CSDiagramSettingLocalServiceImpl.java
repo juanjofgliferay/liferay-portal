@@ -98,22 +98,13 @@ public class CSDiagramSettingLocalServiceImpl
 	}
 
 	@Override
-	public CSDiagramSetting getCSDiagramSettingByCPDefinitionId(
-			long cpDefinitionId)
-		throws PortalException {
-
-		return csDiagramSettingPersistence.findByCPDefinitionId(cpDefinitionId);
-	}
-
-	@Override
 	public CSDiagramSetting updateCSDiagramSetting(
 			long csDiagramSettingId, long cpAttachmentFileEntryId, String color,
 			double radius, String type)
 		throws PortalException {
 
 		CSDiagramSetting csDiagramSetting =
-			csDiagramSettingLocalService.getCSDiagramSetting(
-				csDiagramSettingId);
+			csDiagramSettingPersistence.findByPrimaryKey(csDiagramSettingId);
 
 		csDiagramSetting.setCPAttachmentFileEntryId(cpAttachmentFileEntryId);
 		csDiagramSetting.setColor(color);

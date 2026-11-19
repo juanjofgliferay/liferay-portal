@@ -59,7 +59,7 @@ public class CommerceOrderItemWrapper
 		attributes.put(
 			"parentCommerceOrderItemId", getParentCommerceOrderItemId());
 		attributes.put("shippingAddressId", getShippingAddressId());
-		attributes.put("deliveryGroup", getDeliveryGroup());
+		attributes.put("deliveryGroupName", getDeliveryGroupName());
 		attributes.put(
 			"deliveryMaxSubscriptionCycles",
 			getDeliveryMaxSubscriptionCycles());
@@ -130,6 +130,7 @@ public class CommerceOrderItemWrapper
 		attributes.put("unitPriceWithTaxAmount", getUnitPriceWithTaxAmount());
 		attributes.put("weight", getWeight());
 		attributes.put("width", getWidth());
+		attributes.put("status", getStatus());
 
 		return attributes;
 	}
@@ -255,10 +256,10 @@ public class CommerceOrderItemWrapper
 			setShippingAddressId(shippingAddressId);
 		}
 
-		String deliveryGroup = (String)attributes.get("deliveryGroup");
+		String deliveryGroupName = (String)attributes.get("deliveryGroupName");
 
-		if (deliveryGroup != null) {
-			setDeliveryGroup(deliveryGroup);
+		if (deliveryGroupName != null) {
+			setDeliveryGroupName(deliveryGroupName);
 		}
 
 		Long deliveryMaxSubscriptionCycles = (Long)attributes.get(
@@ -582,6 +583,12 @@ public class CommerceOrderItemWrapper
 		if (width != null) {
 			setWidth(width);
 		}
+
+		Integer status = (Integer)attributes.get("status");
+
+		if (status != null) {
+			setStatus(status);
+		}
 	}
 
 	@Override
@@ -763,13 +770,13 @@ public class CommerceOrderItemWrapper
 	}
 
 	/**
-	 * Returns the delivery group of this commerce order item.
+	 * Returns the delivery group name of this commerce order item.
 	 *
-	 * @return the delivery group of this commerce order item
+	 * @return the delivery group name of this commerce order item
 	 */
 	@Override
-	public String getDeliveryGroup() {
-		return model.getDeliveryGroup();
+	public String getDeliveryGroupName() {
+		return model.getDeliveryGroupName();
 	}
 
 	/**
@@ -1342,6 +1349,16 @@ public class CommerceOrderItemWrapper
 	}
 
 	/**
+	 * Returns the status of this commerce order item.
+	 *
+	 * @return the status of this commerce order item
+	 */
+	@Override
+	public int getStatus() {
+		return model.getStatus();
+	}
+
+	/**
 	 * Returns the subscription of this commerce order item.
 	 *
 	 * @return the subscription of this commerce order item
@@ -1707,13 +1724,13 @@ public class CommerceOrderItemWrapper
 	}
 
 	/**
-	 * Sets the delivery group of this commerce order item.
+	 * Sets the delivery group name of this commerce order item.
 	 *
-	 * @param deliveryGroup the delivery group of this commerce order item
+	 * @param deliveryGroupName the delivery group name of this commerce order item
 	 */
 	@Override
-	public void setDeliveryGroup(String deliveryGroup) {
-		model.setDeliveryGroup(deliveryGroup);
+	public void setDeliveryGroupName(String deliveryGroupName) {
+		model.setDeliveryGroupName(deliveryGroupName);
 	}
 
 	/**
@@ -2245,6 +2262,16 @@ public class CommerceOrderItemWrapper
 	}
 
 	/**
+	 * Sets the status of this commerce order item.
+	 *
+	 * @param status the status of this commerce order item
+	 */
+	@Override
+	public void setStatus(int status) {
+		model.setStatus(status);
+	}
+
+	/**
 	 * Sets whether this commerce order item is subscription.
 	 *
 	 * @param subscription the subscription of this commerce order item
@@ -2405,3 +2432,4 @@ public class CommerceOrderItemWrapper
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1604462620

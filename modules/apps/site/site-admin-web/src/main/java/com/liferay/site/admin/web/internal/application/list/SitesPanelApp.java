@@ -27,6 +27,11 @@ import org.osgi.service.component.annotations.Reference;
 public class SitesPanelApp extends BasePanelApp {
 
 	@Override
+	public String getIcon() {
+		return "sites";
+	}
+
+	@Override
 	public Portlet getPortlet() {
 		return _portlet;
 	}
@@ -37,7 +42,7 @@ public class SitesPanelApp extends BasePanelApp {
 	}
 
 	@Reference(
-		target = "(javax.portlet.name=" + SiteAdminPortletKeys.SITE_ADMIN + ")"
+		target = "(jakarta.portlet.name=" + SiteAdminPortletKeys.SITE_ADMIN + ")"
 	)
 	private Portlet _portlet;
 

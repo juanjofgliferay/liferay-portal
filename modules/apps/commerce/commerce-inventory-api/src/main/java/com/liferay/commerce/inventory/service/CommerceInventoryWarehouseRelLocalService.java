@@ -215,8 +215,24 @@ public interface CommerceInventoryWarehouseRelLocalService
 		long commerceInventoryWarehouseRelId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public CommerceInventoryWarehouseRel fetchCommerceInventoryWarehouseRel(
-		String className, long classPK, long commerceInventoryWarehouseId);
+	public List<CommerceInventoryWarehouseRel>
+		getAccountEntryCommerceInventoryWarehouseRels(
+			long commerceInventoryWarehouseId, String keywords, int start,
+			int end);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public int getAccountEntryCommerceInventoryWarehouseRelsCount(
+		long commerceInventoryWarehouseId, String keywords);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<CommerceInventoryWarehouseRel>
+		getAccountGroupCommerceInventoryWarehouseRels(
+			long commerceInventoryWarehouseId, String keywords, int start,
+			int end);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public int getAccountGroupCommerceInventoryWarehouseRelsCount(
+		long commerceInventoryWarehouseId, String keywords);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public ActionableDynamicQuery getActionableDynamicQuery();
@@ -250,13 +266,8 @@ public interface CommerceInventoryWarehouseRelLocalService
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<CommerceInventoryWarehouseRel>
-		getCommerceInventoryWarehouseRels(long commerceInventoryWarehouseId);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<CommerceInventoryWarehouseRel>
 		getCommerceInventoryWarehouseRels(
-			long commerceInventoryWarehouseId, int start, int end,
-			OrderByComparator<CommerceInventoryWarehouseRel> orderByComparator);
+			String className, long commerceInventoryWarehouseId);
 
 	/**
 	 * Returns the number of commerce inventory warehouse rels.
@@ -265,10 +276,6 @@ public interface CommerceInventoryWarehouseRelLocalService
 	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public int getCommerceInventoryWarehouseRelsCount();
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getCommerceInventoryWarehouseRelsCount(
-		long commerceInventoryWarehouseId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<CommerceInventoryWarehouseRel>
@@ -313,3 +320,4 @@ public interface CommerceInventoryWarehouseRelLocalService
 		CommerceInventoryWarehouseRel commerceInventoryWarehouseRel);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:290289219

@@ -112,9 +112,7 @@ public class SAPEntryPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		SAPEntry newSAPEntry = _persistence.create(pk);
+		SAPEntry newSAPEntry = addSAPEntry();
 
 		newSAPEntry.setUuid(RandomTestUtil.randomString());
 
@@ -138,7 +136,9 @@ public class SAPEntryPersistenceTest {
 
 		newSAPEntry.setTitle(RandomTestUtil.randomString());
 
-		_sapEntries.add(_persistence.update(newSAPEntry));
+		newSAPEntry = _persistence.update(newSAPEntry);
+
+		_sapEntries.add(newSAPEntry);
 
 		SAPEntry existingSAPEntry = _persistence.findByPrimaryKey(
 			newSAPEntry.getPrimaryKey());
@@ -241,8 +241,7 @@ public class SAPEntryPersistenceTest {
 			"SAPEntry", "uuid", true, "sapEntryId", true, "companyId", true,
 			"userId", true, "userName", true, "createDate", true,
 			"modifiedDate", true, "allowedServiceSignatures", true,
-			"defaultSAPEntry", true, "enabled", true, "name", true, "title",
-			true);
+			"defaultSAPEntry", true, "enabled", true, "name", true);
 	}
 
 	@Test
@@ -551,3 +550,4 @@ public class SAPEntryPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-16390770

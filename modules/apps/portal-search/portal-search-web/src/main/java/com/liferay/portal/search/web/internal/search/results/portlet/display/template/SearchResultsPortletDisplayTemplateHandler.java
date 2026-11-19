@@ -34,7 +34,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	configurationPid = "com.liferay.portal.search.web.internal.search.results.configuration.SearchResultsWebTemplateConfiguration",
-	property = "javax.portlet.name=" + SearchResultsPortletKeys.SEARCH_RESULTS,
+	property = "jakarta.portlet.name=" + SearchResultsPortletKeys.SEARCH_RESULTS,
 	service = TemplateHandler.class
 )
 public class SearchResultsPortletDisplayTemplateHandler
@@ -98,6 +98,14 @@ public class SearchResultsPortletDisplayTemplateHandler
 			"documents", List.class, PortletDisplayTemplateConstants.ENTRIES,
 			"document", SearchResultSummaryDisplayContext.class,
 			PortletDisplayTemplateConstants.ENTRY, "getHighlightedTitle()");
+		templateVariableGroup.addVariable(
+			"download-file-size", SearchResultSummaryDisplayContext.class,
+			PortletDisplayTemplateConstants.ENTRY,
+			"getAssetRendererDownloadSize()");
+		templateVariableGroup.addVariable(
+			"download-file-url", SearchResultSummaryDisplayContext.class,
+			PortletDisplayTemplateConstants.ENTRY,
+			"getAssetRendererURLDownload()");
 		templateVariableGroup.addVariable(
 			"modified-by-user-name", SearchResultSummaryDisplayContext.class,
 			PortletDisplayTemplateConstants.ENTRY, "getModifiedByUserName()");

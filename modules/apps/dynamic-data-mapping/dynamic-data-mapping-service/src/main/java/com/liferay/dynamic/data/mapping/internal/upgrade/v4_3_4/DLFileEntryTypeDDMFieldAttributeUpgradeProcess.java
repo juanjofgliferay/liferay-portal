@@ -45,25 +45,25 @@ public class DLFileEntryTypeDDMFieldAttributeUpgradeProcess
 					"select DDMField.storageId, DDMField.fieldId from ",
 					"DLFileEntryType inner join DDMStructureLink on ",
 					"DDMStructureLink.classNameId = ? and ",
-					"DDMStructureLink.classPK = ",
-					"DLFileEntryType.fileEntryTypeId inner join ",
-					"DDMStructureVersion on DDMStructureVersion.structureId = ",
-					"DDMStructureLink.structureId inner join DDMField on ",
-					"DDMStructureVersion.structureVersionId = ",
-					"DDMField.structureVersionId and DDMField.companyId = ? ",
-					"and DDMField.fieldType like ?"))) {
+					"DDMStructureLink.classPK = DLFileEntryType.",
+					"fileEntryTypeId inner join DDMStructureVersion on ",
+					"DDMStructureVersion.structureId = DDMStructureLink.",
+					"structureId inner join DDMField on DDMStructureVersion.",
+					"structureVersionId = DDMField.structureVersionId and ",
+					"DDMField.companyId = ? and DDMField.fieldType like ?"))) {
 
 			PreparedStatement preparedStatement2 = connection.prepareStatement(
 				StringBundler.concat(
-					"select fieldAttributeId, languageId, smallAttributeValue ",
-					"from DDMFieldAttribute where storageId = ? and fieldId = ",
-					"? and (attributeName is null or attributeName = '') "));
+					"select ctCollectionId, fieldAttributeId, languageId, ",
+					"smallAttributeValue from DDMFieldAttribute where ",
+					"storageId = ? and fieldId = ? and (attributeName is null ",
+					"or attributeName = '') "));
 
 			PreparedStatement preparedStatement3 =
 				AutoBatchPreparedStatementUtil.autoBatch(
 					connection,
 					"update DDMFieldAttribute set smallAttributeValue = ? " +
-						"where fieldAttributeId = ? ");
+						"where ctCollectionId = ? and fieldAttributeId = ? ");
 
 			preparedStatement1.setLong(
 				1, PortalUtil.getClassNameId(DLFileEntryType.class));
@@ -72,24 +72,25 @@ public class DLFileEntryTypeDDMFieldAttributeUpgradeProcess
 
 			try (ResultSet resultSet1 = preparedStatement1.executeQuery()) {
 				while (resultSet1.next()) {
-					preparedStatement2.setLong(1, resultSet1.getLong(1));
-					preparedStatement2.setLong(2, resultSet1.getLong(2));
+					preparedStatement2.setLong(
+						1, resultSet1.getLong("storageId"));
+					preparedStatement2.setLong(
+						2, resultSet1.getLong("fieldId"));
 
 					try (ResultSet resultSet2 =
 							preparedStatement2.executeQuery()) {
 
 						while (resultSet2.next()) {
-							String languageId = resultSet2.getString(2);
-
 							Locale locale = LocaleUtil.fromLanguageId(
-								languageId);
+								resultSet2.getString("languageId"));
 
 							NumberFormat numberFormat =
 								NumberFormat.getNumberInstance(locale);
 
 							numberFormat.setGroupingUsed(true);
 
-							String valueString = resultSet2.getString(3);
+							String valueString = resultSet2.getString(
+								"smallAttributeValue");
 
 							if (Validator.isNull(valueString)) {
 								preparedStatement3.setString(1, null);
@@ -104,7 +105,9 @@ public class DLFileEntryTypeDDMFieldAttributeUpgradeProcess
 							}
 
 							preparedStatement3.setLong(
-								2, resultSet2.getLong(1));
+								2, resultSet2.getLong("ctCollectionId"));
+							preparedStatement3.setLong(
+								3, resultSet2.getLong("fieldAttributeId"));
 
 							preparedStatement3.addBatch();
 						}

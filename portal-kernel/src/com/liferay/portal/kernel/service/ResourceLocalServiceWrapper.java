@@ -70,7 +70,7 @@ public class ResourceLocalServiceWrapper
 	@Override
 	public void addModelResources(
 			com.liferay.portal.kernel.model.AuditedModel auditedModel,
-			ServiceContext serviceContext)
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		_resourceLocalService.addModelResources(auditedModel, serviceContext);
@@ -187,7 +187,8 @@ public class ResourceLocalServiceWrapper
 	@Override
 	public void addResources(
 			long companyId, long groupId, long userId, java.lang.String name,
-			long primKey, boolean portletActions, ServiceContext serviceContext)
+			long primKey, boolean portletActions,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		_resourceLocalService.addResources(
@@ -260,9 +261,8 @@ public class ResourceLocalServiceWrapper
 
 	@Override
 	public void copyModelResources(
-			long companyId, java.lang.String name, long sourcePrimKey,
-			long targetPrimKey)
-		throws com.liferay.portal.kernel.exception.PortalException {
+		long companyId, java.lang.String name, long sourcePrimKey,
+		long targetPrimKey) {
 
 		_resourceLocalService.copyModelResources(
 			companyId, name, sourcePrimKey, targetPrimKey);
@@ -378,6 +378,16 @@ public class ResourceLocalServiceWrapper
 			userId, resourceId, resources, actionId, roleIds);
 	}
 
+	@Override
+	public void removeResource(
+			long companyId, java.lang.String name, int scope,
+			java.lang.String primKey, long roleId, java.lang.String actionId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		_resourceLocalService.removeResource(
+			companyId, name, scope, primKey, roleId, actionId);
+	}
+
 	/**
 	 * Updates the resources for the model, replacing their group and guest
 	 * permissions with new ones from the service context.
@@ -389,7 +399,7 @@ public class ResourceLocalServiceWrapper
 	@Override
 	public void updateModelResources(
 			com.liferay.portal.kernel.model.AuditedModel auditedModel,
-			ServiceContext serviceContext)
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		_resourceLocalService.updateModelResources(
@@ -524,3 +534,4 @@ public class ResourceLocalServiceWrapper
 	private ResourceLocalService _resourceLocalService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1279640998

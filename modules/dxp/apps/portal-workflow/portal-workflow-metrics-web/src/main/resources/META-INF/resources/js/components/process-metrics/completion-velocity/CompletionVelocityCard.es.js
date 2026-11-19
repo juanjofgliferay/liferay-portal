@@ -13,7 +13,11 @@ import {useFetch} from '../../../shared/hooks/useFetch.es';
 import {useFilter} from '../../../shared/hooks/useFilter.es';
 import TimeRangeFilter from '../../filter/TimeRangeFilter.es';
 import VelocityUnitFilter from '../../filter/VelocityUnitFilter.es';
-import {getTimeRangeParams} from '../../filter/util/timeRangeUtil.es';
+import {
+	getDefaultEndDate,
+	getDefaultStartDate,
+	getTimeRangeParams,
+} from '../../filter/util/timeRangeUtil.es';
 import {getVelocityUnits} from '../../filter/util/velocityUnitUtil.es';
 import Body from './CompletionVelocityCardBody.es';
 
@@ -33,13 +37,18 @@ function CompletionVelocityCard({routeParams}) {
 	} = useFilter({filterKeys, prefixKeys});
 
 	const timeRange = useMemo(
-		() => getTimeRangeParams(completionDateStart, completionDateEnd),
+		() =>
+			getTimeRangeParams(
+				completionDateStart ?? getDefaultStartDate(),
+				completionDateEnd ?? getDefaultEndDate()
+			),
 		[completionDateEnd, completionDateStart]
 	);
 
-	const velocityUnits = useMemo(() => getVelocityUnits(timeRange), [
-		timeRange,
-	]);
+	const velocityUnits = useMemo(
+		() => getVelocityUnits(timeRange),
+		[timeRange]
+	);
 
 	const defaultUnit =
 		velocityUnits.find((unit) => unit.defaultVelocityUnit) || {};
@@ -75,7 +84,7 @@ function CompletionVelocityCard({routeParams}) {
 
 	return (
 		<PromisesResolver promises={promises}>
-			<ClayPanel className="mt-4">
+			<ClayPanel className="mt-4" displayType="secondary">
 				<CompletionVelocityCard.Header
 					disableFilters={filtersError}
 					prefixKey={prefixKey}

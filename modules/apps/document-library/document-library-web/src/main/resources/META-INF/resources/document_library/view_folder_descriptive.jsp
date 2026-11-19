@@ -17,8 +17,6 @@ Folder folder = (Folder)row.getObject();
 folder = folder.toEscapedModel();
 
 Date modifiedDate = folder.getModifiedDate();
-
-String modifiedDateDescription = LanguageUtil.getTimeDescription(request, System.currentTimeMillis() - modifiedDate.getTime(), true);
 %>
 
 <h2 class="h5">
@@ -28,8 +26,6 @@ String modifiedDateDescription = LanguageUtil.getTimeDescription(request, System
 				liferayPortletResponse
 			).setMVCRenderCommandName(
 				"/document_library/view_folder"
-			).setRedirect(
-				currentURL
 			).setParameter(
 				"folderId", folder.getFolderId()
 			).buildString()
@@ -40,14 +36,7 @@ String modifiedDateDescription = LanguageUtil.getTimeDescription(request, System
 </h2>
 
 <span>
-	<c:choose>
-		<c:when test="<%= Validator.isNull(folder.getUserName()) %>">
-			<liferay-ui:message arguments="<%= modifiedDateDescription %>" key="modified-x-ago" />
-		</c:when>
-		<c:otherwise>
-			<liferay-ui:message arguments="<%= new String[] {folder.getUserName(), modifiedDateDescription} %>" key="x-modified-x-ago" />
-		</c:otherwise>
-	</c:choose>
+	<liferay-ui:message arguments="<%= LanguageUtil.getTimeDescription(request, System.currentTimeMillis() - modifiedDate.getTime(), true) %>" key="modified-x-ago" />
 </span>
 <span>
 	<%= DLUtil.getAbsolutePath(liferayPortletRequest, dlAdminDisplayContext.getRootFolderId(), folder.getParentFolderId()).replace(StringPool.RAQUO_CHAR, StringPool.GREATER_THAN) %>

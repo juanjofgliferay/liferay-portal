@@ -12,7 +12,7 @@ import com.liferay.portal.kernel.configuration.ConfigurationFactory;
 import com.liferay.portal.kernel.configuration.ConfigurationFactoryUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.GroupConstants;
-import com.liferay.portal.kernel.module.util.SystemBundleUtil;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.portlet.PortletClassLoaderUtil;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
@@ -21,24 +21,21 @@ import com.liferay.portal.kernel.service.LayoutLocalServiceUtil;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.service.UserLocalServiceUtil;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
-import com.liferay.portal.kernel.test.util.PropsTestUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.PortalUtil;
-import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.kernel.uuid.PortalUUIDUtil;
+import com.liferay.portal.security.key.secret.SecretResolver;
+import com.liferay.portal.security.key.secret.SecretResolverUtil;
 import com.liferay.saml.constants.SamlProviderConfigurationKeys;
-import com.liferay.saml.opensaml.integration.internal.binding.SamlBindingProvider;
 import com.liferay.saml.opensaml.integration.internal.credential.FileSystemKeyStoreManagerImpl;
 import com.liferay.saml.opensaml.integration.internal.credential.KeyStoreCredentialResolver;
-import com.liferay.saml.opensaml.integration.internal.identifier.SamlIdentifierGeneratorStrategyFactory;
+import com.liferay.saml.opensaml.integration.internal.identifier.IdentifierGeneratorStrategyFactory;
 import com.liferay.saml.opensaml.integration.internal.metadata.KeyStoreLocalEntityManager;
 import com.liferay.saml.opensaml.integration.internal.metadata.MetadataGeneratorUtil;
-import com.liferay.saml.opensaml.integration.internal.metadata.MetadataManagerImpl;
-import com.liferay.saml.opensaml.integration.internal.provider.CachingChainingMetadataResolver;
-import com.liferay.saml.opensaml.integration.internal.servlet.profile.IdentifierGenerationStrategyFactory;
 import com.liferay.saml.opensaml.integration.internal.transport.HttpClientFactory;
 import com.liferay.saml.opensaml.integration.internal.util.ConfigurationServiceBootstrapUtil;
 import com.liferay.saml.persistence.model.SamlPeerBinding;
@@ -51,6 +48,8 @@ import com.liferay.saml.runtime.configuration.SamlProviderConfiguration;
 import com.liferay.saml.runtime.configuration.SamlProviderConfigurationHelper;
 import com.liferay.saml.util.PortletPropsKeys;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.io.UnsupportedEncodingException;
 
 import java.net.URLDecoder;
@@ -60,9 +59,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
-
-import javax.servlet.http.HttpServletRequest;
 
 import net.shibboleth.utilities.java.support.resolver.CriteriaSet;
 import net.shibboleth.utilities.java.support.resolver.ResolverException;
@@ -74,6 +70,7 @@ import org.apache.http.client.HttpClient;
 import org.junit.After;
 import org.junit.Before;
 
+import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.mockito.stubbing.Answer;
 
@@ -87,8 +84,6 @@ import org.opensaml.saml.saml2.metadata.SingleLogoutService;
 import org.opensaml.saml.saml2.metadata.SingleSignOnService;
 import org.opensaml.security.credential.Credential;
 
-import org.osgi.framework.BundleContext;
-
 import org.springframework.mock.web.MockHttpServletRequest;
 
 /**
@@ -98,30 +93,40 @@ public abstract class BaseSamlTestCase {
 
 	@Before
 	public void setUp() throws Exception {
-		_setupProps();
-
 		Class.forName(ConfigurationServiceBootstrapUtil.class.getName());
 
-		_setupConfiguration();
-		_setupIdentifiers();
-		_setupParserPool();
+		_setUpConfiguration();
+		_setUpIdentifiers();
+		_setUpParserPool();
+		_setUpSecretResolver();
 
-		_setupPortal();
+		_setUpPortal();
 
-		_setupMetadata();
+		_setUpMetadata();
 
-		_setupSamlBindings();
+		_setUpHttpClientFactory();
 
-		_setupSamlPeerBindingsLocalService();
+		_setUpSamlPeerBindingsLocalService();
 	}
 
 	@After
 	public void tearDown() {
 		identifiers.clear();
 
+		ReflectionTestUtil.setFieldValue(
+			SecretResolverUtil.class, "_secretResolverSnapshot",
+			_secretResolverSnapshot);
+
 		for (Class<?> serviceUtilClass : serviceUtilClasses) {
-			ReflectionTestUtil.setFieldValue(
-				serviceUtilClass, "_service", null);
+			try {
+				ReflectionTestUtil.setFieldValue(
+					serviceUtilClass, "_service", null);
+			}
+			catch (Exception exception) {
+				ReflectionTestUtil.setFieldValue(
+					serviceUtilClass, "_serviceSnapshot",
+					_snapshots.remove(serviceUtilClass));
+			}
 		}
 
 		ClassLoaderPool.unregister("saml-portlet");
@@ -248,11 +253,11 @@ public abstract class BaseSamlTestCase {
 
 		samlPeerBinding.setSamlPeerBindingId(_samlPeerBindings.size() + 1);
 		samlPeerBinding.setCompanyId(COMPANY_ID);
+		samlPeerBinding.setSamlPeerEntityId(peerEntityId);
 		samlPeerBinding.setDeleted(false);
 		samlPeerBinding.setSamlNameIdFormat(samlNameIdFormat);
 		samlPeerBinding.setSamlNameIdNameQualifier(samlNameIdNameQualifier);
 		samlPeerBinding.setSamlNameIdValue(samlNameIdValue);
-		samlPeerBinding.setSamlPeerEntityId(peerEntityId);
 
 		_samlPeerBindings.put(
 			samlPeerBinding.getSamlPeerBindingId(), samlPeerBinding);
@@ -317,18 +322,17 @@ public abstract class BaseSamlTestCase {
 	protected FileSystemKeyStoreManagerImpl fileSystemKeyStoreManagerImpl;
 	protected GroupLocalService groupLocalService;
 	protected HttpClient httpClient;
-	protected IdentifierGenerationStrategyFactory
-		identifierGenerationStrategyFactory;
+	protected HttpClientFactory httpClientFactory;
+	protected IdentifierGenerationStrategy identifierGenerationStrategy;
 	protected List<String> identifiers = new ArrayList<>();
 	protected KeyStoreLocalEntityManager keyStoreLocalEntityManager;
-	protected MetadataManagerImpl metadataManagerImpl;
 	protected ParserPool parserPool;
 	protected Portal portal;
-	protected SamlBindingProvider samlBindingProvider;
 	protected IdentifierGenerationStrategy samlIdentifierGenerator;
 	protected SamlPeerBindingLocalService samlPeerBindingLocalService;
 	protected SamlProviderConfiguration samlProviderConfiguration;
 	protected SamlProviderConfigurationHelper samlProviderConfigurationHelper;
+	protected SecretResolver secretResolver;
 	protected List<Class<?>> serviceUtilClasses = new ArrayList<>();
 	protected UserLocalService userLocalService;
 
@@ -476,13 +480,29 @@ public abstract class BaseSamlTestCase {
 
 		T serviceMock = Mockito.mock(serviceClass);
 
-		ReflectionTestUtil.setFieldValue(
-			serviceUtilClass, "_service", serviceMock);
+		try {
+			ReflectionTestUtil.setFieldValue(
+				serviceUtilClass, "_service", serviceMock);
+		}
+		catch (Exception exception) {
+			_snapshots.put(
+				serviceUtilClass,
+				ReflectionTestUtil.getAndSetFieldValue(
+					serviceUtilClass, "_serviceSnapshot",
+					new Snapshot<T>(serviceUtilClass, serviceClass) {
+
+						@Override
+						public T get() {
+							return serviceMock;
+						}
+
+					}));
+		}
 
 		return serviceMock;
 	}
 
-	private void _setupConfiguration() {
+	private void _setUpConfiguration() {
 		Thread currentThread = Thread.currentThread();
 
 		ClassLoaderPool.register(
@@ -554,25 +574,22 @@ public abstract class BaseSamlTestCase {
 		);
 	}
 
-	private void _setupIdentifiers() {
-		SamlIdentifierGeneratorStrategyFactory
-			samlIdentifierGeneratorStrategyFactory =
-				new SamlIdentifierGeneratorStrategyFactory();
+	private void _setUpHttpClientFactory() {
+		httpClientFactory = new HttpClientFactory() {
 
-		samlIdentifierGenerator = samlIdentifierGeneratorStrategyFactory.create(
-			16);
+			@Override
+			public HttpClient getHttpClient() {
+				return httpClient;
+			}
 
-		IdentifierGenerationStrategy identifierGenerationStrategy =
-			Mockito.mock(IdentifierGenerationStrategy.class);
+		};
+	}
 
-		identifierGenerationStrategyFactory = Mockito.mock(
-			IdentifierGenerationStrategyFactory.class);
+	private void _setUpIdentifiers() {
+		samlIdentifierGenerator = IdentifierGeneratorStrategyFactory.create(16);
 
-		Mockito.when(
-			identifierGenerationStrategyFactory.create(Mockito.anyInt())
-		).thenReturn(
-			identifierGenerationStrategy
-		);
+		identifierGenerationStrategy = Mockito.mock(
+			IdentifierGenerationStrategy.class);
 
 		Mockito.when(
 			identifierGenerationStrategy.generateIdentifier()
@@ -603,9 +620,22 @@ public abstract class BaseSamlTestCase {
 				return identifier;
 			}
 		);
+
+		_portalUUIDUtilMockedStatic.when(
+			PortalUUIDUtil::generate
+		).thenAnswer(
+			(Answer<String>)invocationOnMock -> {
+				String identifier =
+					samlIdentifierGenerator.generateIdentifier();
+
+				identifiers.add(identifier);
+
+				return identifier;
+			}
+		);
 	}
 
-	private void _setupMetadata() throws Exception {
+	private void _setUpMetadata() throws Exception {
 		fileSystemKeyStoreManagerImpl = new FileSystemKeyStoreManagerImpl();
 
 		ReflectionTestUtil.invoke(
@@ -642,40 +672,9 @@ public abstract class BaseSamlTestCase {
 			getMockPortletService(
 				SamlSpIdpConnectionLocalServiceUtil.class,
 				SamlSpIdpConnectionLocalService.class));
-
-		metadataManagerImpl = new MetadataManagerImpl();
-
-		ReflectionTestUtil.setFieldValue(
-			metadataManagerImpl, "_credentialResolver", credentialResolver);
-
-		ReflectionTestUtil.setFieldValue(
-			metadataManagerImpl, "_localEntityManager",
-			keyStoreLocalEntityManager);
-
-		ReflectionTestUtil.setFieldValue(
-			metadataManagerImpl, "_portal", portal);
-		ReflectionTestUtil.setFieldValue(
-			metadataManagerImpl, "_samlProviderConfigurationHelper",
-			samlProviderConfigurationHelper);
-
-		ReflectionTestUtil.invoke(
-			metadataManagerImpl, "activate",
-			new Class<?>[] {BundleContext.class},
-			SystemBundleUtil.getBundleContext());
-
-		ReflectionTestUtil.invoke(
-			metadataManagerImpl.getMetadataResolver(), "doDestroy",
-			new Class<?>[0]);
-
-		CachingChainingMetadataResolver cachingChainingMetadataResolver =
-			(CachingChainingMetadataResolver)
-				metadataManagerImpl.getMetadataResolver();
-
-		cachingChainingMetadataResolver.addMetadataResolver(
-			new MockMetadataResolver());
 	}
 
-	private void _setupParserPool() {
+	private void _setUpParserPool() {
 		XMLObjectProviderRegistry xmlObjectProviderRegistry =
 			ConfigurationServiceBootstrapUtil.get(
 				XMLObjectProviderRegistry.class);
@@ -683,7 +682,7 @@ public abstract class BaseSamlTestCase {
 		parserPool = xmlObjectProviderRegistry.getParserPool();
 	}
 
-	private void _setupPortal() throws Exception {
+	private void _setUpPortal() throws Exception {
 		httpClient = Mockito.mock(HttpClient.class);
 
 		PortalUtil portalUtil = new PortalUtil();
@@ -758,31 +757,7 @@ public abstract class BaseSamlTestCase {
 			UserLocalServiceUtil.class, UserLocalService.class);
 	}
 
-	private void _setupProps() {
-		PropsTestUtil.setProps(
-			HashMapBuilder.<String, Object>put(
-				PropsKeys.LIFERAY_HOME, System.getProperty("java.io.tmpdir")
-			).put(
-				"configuration.override.", new Properties()
-			).build());
-	}
-
-	private void _setupSamlBindings() {
-		samlBindingProvider = new SamlBindingProvider();
-
-		ReflectionTestUtil.setFieldValue(
-			samlBindingProvider, "_httpClientFactory",
-			new HttpClientFactory() {
-
-				@Override
-				public HttpClient getHttpClient() {
-					return httpClient;
-				}
-
-			});
-	}
-
-	private void _setupSamlPeerBindingsLocalService() throws Exception {
+	private void _setUpSamlPeerBindingsLocalService() throws Exception {
 		samlPeerBindingLocalService = getMockPortletService(
 			SamlPeerBindingLocalServiceUtil.class,
 			SamlPeerBindingLocalService.class);
@@ -794,7 +769,28 @@ public abstract class BaseSamlTestCase {
 		);
 	}
 
+	private void _setUpSecretResolver() {
+		secretResolver = Mockito.mock(SecretResolver.class);
+
+		_secretResolverSnapshot = ReflectionTestUtil.getAndSetFieldValue(
+			SecretResolverUtil.class, "_secretResolverSnapshot",
+			new Snapshot<SecretResolver>(
+				SecretResolverUtil.class, SecretResolver.class) {
+
+				@Override
+				public SecretResolver get() {
+					return secretResolver;
+				}
+
+			});
+	}
+
+	private static final MockedStatic<PortalUUIDUtil>
+		_portalUUIDUtilMockedStatic = Mockito.mockStatic(PortalUUIDUtil.class);
+
 	private final Map<Long, SamlPeerBinding> _samlPeerBindings =
 		new HashMap<>();
+	private Snapshot<SecretResolver> _secretResolverSnapshot;
+	private final Map<Class<?>, Snapshot<?>> _snapshots = new HashMap<>();
 
 }

@@ -21,10 +21,12 @@ boolean columnOptionsVisible = GetterUtil.getBoolean(SessionClicks.get(request, 
 <aui:script use="liferay-calendar-container,liferay-calendar-remote-services,liferay-component">
 	Liferay.component('<portlet:namespace />calendarContainer', () => {
 		var calendarContainer = new Liferay.CalendarContainer({
-			groupCalendarResourceId: <%= groupCalendarResource.getCalendarResourceId() %>,
+			groupCalendarResourceId:
+				<%= groupCalendarResource.getCalendarResourceId() %>,
 
 			<c:if test="<%= userCalendarResource != null %>">
-				userCalendarResourceId: <%= userCalendarResource.getCalendarResourceId() %>,
+				userCalendarResourceId:
+					<%= userCalendarResource.getCalendarResourceId() %>,
 			</c:if>
 
 			namespace: '<portlet:namespace />',
@@ -84,7 +86,7 @@ boolean columnOptionsVisible = GetterUtil.getBoolean(SessionClicks.get(request, 
 			>
 				<div class="calendar-portlet-mini-calendar" id="<portlet:namespace />miniCalendarContainer"></div>
 
-				<div id="<portlet:namespace />calendarListContainer">
+				<div class="calendar-portlet-calendar-list-container" id="<portlet:namespace />calendarListContainer">
 					<div class="calendar-portlet-list">
 						<c:if test="<%= themeDisplay.isSignedIn() && showUserEvents %>">
 							<div class="calendar-portlet-list-header toggler-header-expanded">
@@ -126,7 +128,7 @@ boolean columnOptionsVisible = GetterUtil.getBoolean(SessionClicks.get(request, 
 							</div>
 
 							<div class="calendar-portlet-calendar-list" id="<portlet:namespace />otherCalendarList">
-								<input class="calendar-portlet-add-calendars-input" id="<portlet:namespace />addOtherCalendar" placeholder="<liferay-ui:message key="add-other-calendars" />" type="text" />
+								<input aria-label="<liferay-ui:message key="add-other-calendars" />" class="calendar-portlet-add-calendars-input" id="<portlet:namespace />addOtherCalendar" placeholder="<liferay-ui:message key="add-other-calendars" />" type="text" />
 							</div>
 						</c:if>
 					</div>
@@ -214,7 +216,8 @@ boolean columnOptionsVisible = GetterUtil.getBoolean(SessionClicks.get(request, 
 </c:if>
 
 <aui:script use="liferay-calendar-list,liferay-calendar-util,liferay-scheduler">
-	Liferay.CalendarUtil.USER_CLASS_NAME_ID = <%= PortalUtil.getClassNameId(User.class) %>;
+	Liferay.CalendarUtil.USER_CLASS_NAME_ID =
+		<%= PortalUtil.getClassNameId(User.class) %>;
 
 	var calendarContainer = Liferay.component(
 		'<portlet:namespace />calendarContainer'

@@ -236,8 +236,8 @@ public class NestedSetsTreeManagerTest {
 			_simpleNestedSetsTreeNodes[8], _simpleNestedSetsTreeNodes[4]);
 
 		Assert.assertEquals(
-			"(1#0(2#3(3#5, 4), 5)(6#4(7#8, 8), 9), 10)" +
-				"(11#1(12#6(13#7, 14), 15), 16)(17#2, 18)",
+			"(1#0(2#3(3#5, 4), 5)(6#4(7#8, 8), 9), 10)(11#1(12#6(13#7, 14), " +
+				"15), 16)(17#2, 18)",
 			_nestedSetsTreeManager.toString());
 	}
 
@@ -248,8 +248,8 @@ public class NestedSetsTreeManagerTest {
 		_nestedSetsTreeManager.move(_simpleNestedSetsTreeNodes[4], null, null);
 
 		Assert.assertEquals(
-			"(1#0(2#3(3#5, 4), 5)(6#4(7#8, 8), 9), 10)" +
-				"(11#1(12#6(13#7, 14), 15), 16)(17#2, 18)",
+			"(1#0(2#3(3#5, 4), 5)(6#4(7#8, 8), 9), 10)(11#1(12#6(13#7, 14), " +
+				"15), 16)(17#2, 18)",
 			_nestedSetsTreeManager.toString());
 
 		_nestedSetsTreeManager.move(
@@ -257,8 +257,8 @@ public class NestedSetsTreeManagerTest {
 			_simpleNestedSetsTreeNodes[0]);
 
 		Assert.assertEquals(
-			"(1#0(2#3(3#5, 4), 5)(6#4(7#8, 8), 9), 10)" +
-				"(11#1(12#6(13#7, 14), 15), 16)(17#2, 18)",
+			"(1#0(2#3(3#5, 4), 5)(6#4(7#8, 8), 9), 10)(11#1(12#6(13#7, 14), " +
+				"15), 16)(17#2, 18)",
 			_nestedSetsTreeManager.toString());
 
 		_nestedSetsTreeManager.move(
@@ -266,40 +266,40 @@ public class NestedSetsTreeManagerTest {
 			_simpleNestedSetsTreeNodes[2]);
 
 		Assert.assertEquals(
-			"(1#0(2#3(3#5, 4), 5), 6)(7#1(8#6(9#7, 10), 11), 12)" +
-				"(13#2(14#4(15#8, 16), 17), 18)",
+			"(1#0(2#3(3#5, 4), 5), 6)(7#1(8#6(9#7, 10), 11), 12)(13#2(14#4(15" +
+				"#8, 16), 17), 18)",
 			_nestedSetsTreeManager.toString());
 
 		_nestedSetsTreeManager.move(
 			_simpleNestedSetsTreeNodes[2], null, _simpleNestedSetsTreeNodes[0]);
 
 		Assert.assertEquals(
-			"(1#0(2#3(3#5, 4), 5)(6#2(7#4(8#8, 9), 10), 11), 12)" +
-				"(13#1(14#6(15#7, 16), 17), 18)",
+			"(1#0(2#3(3#5, 4), 5)(6#2(7#4(8#8, 9), 10), 11), 12)(13#1(14#6(15" +
+				"#7, 16), 17), 18)",
 			_nestedSetsTreeManager.toString());
 
 		_nestedSetsTreeManager.move(
 			_simpleNestedSetsTreeNodes[3], _simpleNestedSetsTreeNodes[0], null);
 
 		Assert.assertEquals(
-			"(1#0(2#2(3#4(4#8, 5), 6), 7), 8)(9#1(10#6(11#7, 12), 13), 14)" +
-				"(15#3(16#5, 17), 18)",
+			"(1#0(2#2(3#4(4#8, 5), 6), 7), 8)(9#1(10#6(11#7, 12), 13), 14)(15" +
+				"#3(16#5, 17), 18)",
 			_nestedSetsTreeManager.toString());
 
 		_nestedSetsTreeManager.move(
 			_simpleNestedSetsTreeNodes[1], null, _simpleNestedSetsTreeNodes[0]);
 
 		Assert.assertEquals(
-			"(1#0(2#2(3#4(4#8, 5), 6), 7)(8#1(9#6(10#7, 11), 12), 13), 14)" +
-				"(15#3(16#5, 17), 18)",
+			"(1#0(2#2(3#4(4#8, 5), 6), 7)(8#1(9#6(10#7, 11), 12), 13), 14)(15" +
+				"#3(16#5, 17), 18)",
 			_nestedSetsTreeManager.toString());
 
 		_nestedSetsTreeManager.move(
 			_simpleNestedSetsTreeNodes[3], null, _simpleNestedSetsTreeNodes[1]);
 
 		Assert.assertEquals(
-			"(1#0(2#2(3#4(4#8, 5), 6), 7)(8#1(9#6(10#7, 11), 12)" +
-				"(13#3(14#5, 15), 16), 17), 18)",
+			"(1#0(2#2(3#4(4#8, 5), 6), 7)(8#1(9#6(10#7, 11), 12)(13#3(14#5, " +
+				"15), 16), 17), 18)",
 			_nestedSetsTreeManager.toString());
 
 		_nestedSetsTreeManager.move(
@@ -447,6 +447,13 @@ public class NestedSetsTreeManagerTest {
 		}
 
 		@Override
+		public int hashCode() {
+			String string = toString();
+
+			return string.hashCode();
+		}
+
+		@Override
 		public void setNestedSetsTreeNodeLeft(long nestedSetsTreeNodeLeft) {
 			_nestedSetsTreeNodeLeft = nestedSetsTreeNodeLeft;
 		}
@@ -565,13 +572,15 @@ public class NestedSetsTreeManagerTest {
 			for (SimpleNestedSetsTreeNode simpleNestedSetsTreeNode :
 					_simpleNestedSetsTreeNodeList) {
 
-				if ((nestedSetsTreeNodeLeft >=
-						simpleNestedSetsTreeNode._nestedSetsTreeNodeLeft) &&
-					(nestedSetsTreeNodeRight <=
+				if ((nestedSetsTreeNodeLeft <
+						simpleNestedSetsTreeNode._nestedSetsTreeNodeLeft) ||
+					(nestedSetsTreeNodeRight >
 						simpleNestedSetsTreeNode._nestedSetsTreeNodeRight)) {
 
-					count++;
+					continue;
 				}
+
+				count++;
 			}
 
 			return count;
@@ -587,13 +596,15 @@ public class NestedSetsTreeManagerTest {
 			for (SimpleNestedSetsTreeNode simpleNestedSetsTreeNode :
 					_simpleNestedSetsTreeNodeList) {
 
-				if ((nestedSetsTreeNodeLeft <=
-						simpleNestedSetsTreeNode._nestedSetsTreeNodeLeft) &&
-					(nestedSetsTreeNodeRight >=
+				if ((nestedSetsTreeNodeLeft >
+						simpleNestedSetsTreeNode._nestedSetsTreeNodeLeft) ||
+					(nestedSetsTreeNodeRight <
 						simpleNestedSetsTreeNode._nestedSetsTreeNodeRight)) {
 
-					count++;
+					continue;
 				}
+
+				count++;
 			}
 
 			return count;
@@ -610,13 +621,15 @@ public class NestedSetsTreeManagerTest {
 			for (SimpleNestedSetsTreeNode simpleNestedSetsTreeNode :
 					_simpleNestedSetsTreeNodeList) {
 
-				if ((nestedSetsTreeNodeLeft >=
-						simpleNestedSetsTreeNode._nestedSetsTreeNodeLeft) &&
-					(nestedSetsTreeNodeRight <=
+				if ((nestedSetsTreeNodeLeft <
+						simpleNestedSetsTreeNode._nestedSetsTreeNodeLeft) ||
+					(nestedSetsTreeNodeRight >
 						simpleNestedSetsTreeNode._nestedSetsTreeNodeRight)) {
 
-					simpleNestedSetsTreeNodes.add(simpleNestedSetsTreeNode);
+					continue;
 				}
+
+				simpleNestedSetsTreeNodes.add(simpleNestedSetsTreeNode);
 			}
 
 			Collections.sort(simpleNestedSetsTreeNodes);
@@ -635,13 +648,15 @@ public class NestedSetsTreeManagerTest {
 			for (SimpleNestedSetsTreeNode simpleNestedSetsTreeNode :
 					_simpleNestedSetsTreeNodeList) {
 
-				if ((nestedSetsTreeNodeLeft <=
-						simpleNestedSetsTreeNode._nestedSetsTreeNodeLeft) &&
-					(nestedSetsTreeNodeRight >=
+				if ((nestedSetsTreeNodeLeft >
+						simpleNestedSetsTreeNode._nestedSetsTreeNodeLeft) ||
+					(nestedSetsTreeNodeRight <
 						simpleNestedSetsTreeNode._nestedSetsTreeNodeRight)) {
 
-					simpleNestedSetsTreeNodes.add(simpleNestedSetsTreeNode);
+					continue;
 				}
+
+				simpleNestedSetsTreeNodes.add(simpleNestedSetsTreeNode);
 			}
 
 			Collections.sort(simpleNestedSetsTreeNodes);
@@ -725,13 +740,15 @@ public class NestedSetsTreeManagerTest {
 				long nestedSetsTreeNodeRight =
 					simpleNestedSetsTreeNode._nestedSetsTreeNodeRight;
 
-				if (isInRange(
+				if (!isInRange(
 						nestedSetsTreeNodeRight, start, startInclusive, end,
 						endInclusive)) {
 
-					simpleNestedSetsTreeNode.setNestedSetsTreeNodeRight(
-						nestedSetsTreeNodeRight + delta);
+					continue;
 				}
+
+				simpleNestedSetsTreeNode.setNestedSetsTreeNodeRight(
+					nestedSetsTreeNodeRight + delta);
 			}
 
 			synchronizeSimpleNestedSetsTreeNodes();
@@ -749,9 +766,11 @@ public class NestedSetsTreeManagerTest {
 				long nestedSetsTreeNodeRight =
 					simpleNestedSetsTreeNode.getNestedSetsTreeNodeRight();
 
-				if (nestedSetsTreeNodeRight > maxNestedSetsTreeNodeRight) {
-					maxNestedSetsTreeNodeRight = nestedSetsTreeNodeRight;
+				if (nestedSetsTreeNodeRight <= maxNestedSetsTreeNodeRight) {
+					continue;
 				}
+
+				maxNestedSetsTreeNodeRight = nestedSetsTreeNodeRight;
 			}
 
 			return maxNestedSetsTreeNodeRight + 1;
@@ -790,9 +809,11 @@ public class NestedSetsTreeManagerTest {
 			SimpleNestedSetsTreeNode simpleNestedSetsTreeNode) {
 
 			for (int i = 0; i < _simpleNestedSetsTreeNodes.length; i++) {
-				if (_simpleNestedSetsTreeNodes[i] == simpleNestedSetsTreeNode) {
-					_simpleNestedSetsTreeNodes[i] = null;
+				if (_simpleNestedSetsTreeNodes[i] != simpleNestedSetsTreeNode) {
+					continue;
 				}
+
+				_simpleNestedSetsTreeNodes[i] = null;
 			}
 		}
 

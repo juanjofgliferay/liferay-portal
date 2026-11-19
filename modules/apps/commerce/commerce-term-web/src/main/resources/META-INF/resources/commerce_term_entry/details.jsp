@@ -87,12 +87,23 @@ if ((commerceTermEntry != null) && (commerceTermEntry.getExpirationDate() != nul
 							<label class="control-label" for="<portlet:namespace />descriptionMapAsXML"><liferay-ui:message key="description" /></label>
 
 							<div class="entry-content form-group">
-								<liferay-ui:input-localized
-									defaultLanguageId="<%= themeDisplay.getLanguageId() %>"
-									name="descriptionMapAsXML"
-									type="editor"
-									xml="<%= descriptionMapAsXML %>"
-								/>
+								<c:choose>
+									<c:when test='<%= FeatureFlagManagerUtil.isEnabled("LPD-11235") %>'>
+										<liferay-ui:input-localized
+											defaultLanguageId="<%= themeDisplay.getLanguageId() %>"
+											name="descriptionMapAsXML"
+											type="editor"
+											xml="<%= descriptionMapAsXML %>"
+										/>
+									</c:when>
+									<c:otherwise>
+										<liferay-editor:input-localized
+											defaultLanguageId="<%= themeDisplay.getLanguageId() %>"
+											name="descriptionMapAsXML"
+											xml="<%= descriptionMapAsXML %>"
+										/>
+									</c:otherwise>
+								</c:choose>
 							</div>
 						</aui:field-wrapper>
 					</div>
@@ -103,7 +114,7 @@ if ((commerceTermEntry != null) && (commerceTermEntry.getExpirationDate() != nul
 		<div class="col-12 col-xl-4">
 			<commerce-ui:panel
 				bodyClasses="flex-fill"
-				title='<%= LanguageUtil.get(request, "schedule") %>'
+				title='<%= LanguageUtil.get(request, "schedule[noun]") %>'
 			>
 				<liferay-ui:error exception="<%= CommerceTermEntryExpirationDateException.class %>" message="please-select-a-valid-expiration-date" />
 

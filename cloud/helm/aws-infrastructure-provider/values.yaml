@@ -1,0 +1,19 @@
+deploymentContext:
+    accountId: ""
+    clusterSecurityGroupId: ""
+    clusterSubnetIds: ""
+    crossplaneDataRoleArn: ""
+    crossplaneIamBoundaryArn: ""
+    crossplaneIamPath: ""
+    crossplaneIamRoleArn: ""
+    deploymentName: ""
+    oidcIssuerUrl: ""
+    partition: ""
+    region: ""
+    vpcId: ""
+liferay-subchart-backup-restore:
+    enabled: true
+marketplace:
+    enabled: false
+providers:
+    enabled: true

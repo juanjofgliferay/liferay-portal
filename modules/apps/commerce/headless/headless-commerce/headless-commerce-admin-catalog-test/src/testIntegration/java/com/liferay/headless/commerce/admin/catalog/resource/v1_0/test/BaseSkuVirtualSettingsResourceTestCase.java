@@ -25,14 +25,16 @@ import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.model.Company;
-import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
+import com.liferay.portal.kernel.test.util.JAXRSWhiteboardTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
-import com.liferay.portal.kernel.util.DateFormatFactoryUtil;
+import com.liferay.portal.kernel.util.FastDateFormatFactoryUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.odata.entity.EntityField;
 import com.liferay.portal.odata.entity.EntityModel;
@@ -40,9 +42,13 @@ import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.vulcan.resource.EntityModelResource;
 
+import jakarta.annotation.Generated;
+
+import jakarta.ws.rs.core.MultivaluedHashMap;
+
 import java.lang.reflect.Method;
 
-import java.text.DateFormat;
+import java.text.Format;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -54,10 +60,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.ws.rs.core.MultivaluedHashMap;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -81,8 +83,10 @@ public abstract class BaseSkuVirtualSettingsResourceTestCase {
 
 	@BeforeClass
 	public static void setUpClass() throws Exception {
-		_dateFormat = DateFormatFactoryUtil.getSimpleDateFormat(
+		_format = FastDateFormatFactoryUtil.getSimpleDateFormat(
 			"yyyy-MM-dd'T'HH:mm:ss'Z'");
+
+		JAXRSWhiteboardTestUtil.ensureReady();
 	}
 
 	@Before
@@ -95,11 +99,16 @@ public abstract class BaseSkuVirtualSettingsResourceTestCase {
 
 		_skuVirtualSettingsResource.setContextCompany(testCompany);
 
-		SkuVirtualSettingsResource.Builder builder =
-			SkuVirtualSettingsResource.builder();
+		_testCompanyAdminUser = UserTestUtil.getAdminUser(
+			testCompany.getCompanyId());
 
-		skuVirtualSettingsResource = builder.authentication(
-			"test@liferay.com", "test"
+		skuVirtualSettingsResource = SkuVirtualSettingsResource.builder(
+		).authentication(
+			_testCompanyAdminUser.getEmailAddress(),
+			PropsValues.DEFAULT_ADMIN_PASSWORD
+		).endpoint(
+			testCompany.getVirtualHostname(),
+			PortalUtil.getPortalServerPort(false), "http"
 		).locale(
 			LocaleUtil.getDefault()
 		).build();
@@ -113,7 +122,33 @@ public abstract class BaseSkuVirtualSettingsResourceTestCase {
 
 	@Test
 	public void testClientSerDesToDTO() throws Exception {
-		ObjectMapper objectMapper = new ObjectMapper() {
+		ObjectMapper objectMapper = getClientSerDesObjectMapper();
+
+		SkuVirtualSettings skuVirtualSettings1 = randomSkuVirtualSettings();
+
+		String json = objectMapper.writeValueAsString(skuVirtualSettings1);
+
+		SkuVirtualSettings skuVirtualSettings2 = SkuVirtualSettingsSerDes.toDTO(
+			json);
+
+		Assert.assertTrue(equals(skuVirtualSettings1, skuVirtualSettings2));
+	}
+
+	@Test
+	public void testClientSerDesToJSON() throws Exception {
+		ObjectMapper objectMapper = getClientSerDesObjectMapper();
+
+		SkuVirtualSettings skuVirtualSettings = randomSkuVirtualSettings();
+
+		String json1 = objectMapper.writeValueAsString(skuVirtualSettings);
+		String json2 = SkuVirtualSettingsSerDes.toJSON(skuVirtualSettings);
+
+		Assert.assertEquals(
+			objectMapper.readTree(json1), objectMapper.readTree(json2));
+	}
+
+	protected ObjectMapper getClientSerDesObjectMapper() {
+		return new ObjectMapper() {
 			{
 				configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
 				configure(
@@ -128,41 +163,6 @@ public abstract class BaseSkuVirtualSettingsResourceTestCase {
 					PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE);
 			}
 		};
-
-		SkuVirtualSettings skuVirtualSettings1 = randomSkuVirtualSettings();
-
-		String json = objectMapper.writeValueAsString(skuVirtualSettings1);
-
-		SkuVirtualSettings skuVirtualSettings2 = SkuVirtualSettingsSerDes.toDTO(
-			json);
-
-		Assert.assertTrue(equals(skuVirtualSettings1, skuVirtualSettings2));
-	}
-
-	@Test
-	public void testClientSerDesToJSON() throws Exception {
-		ObjectMapper objectMapper = new ObjectMapper() {
-			{
-				configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
-				configure(
-					SerializationFeature.WRITE_ENUMS_USING_TO_STRING, true);
-				setDateFormat(new ISO8601DateFormat());
-				setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
-				setSerializationInclusion(JsonInclude.Include.NON_NULL);
-				setVisibility(
-					PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
-				setVisibility(
-					PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE);
-			}
-		};
-
-		SkuVirtualSettings skuVirtualSettings = randomSkuVirtualSettings();
-
-		String json1 = objectMapper.writeValueAsString(skuVirtualSettings);
-		String json2 = SkuVirtualSettingsSerDes.toJSON(skuVirtualSettings);
-
-		Assert.assertEquals(
-			objectMapper.readTree(json1), objectMapper.readTree(json2));
 	}
 
 	@Test
@@ -176,6 +176,10 @@ public abstract class BaseSkuVirtualSettingsResourceTestCase {
 		skuVirtualSettings.setSampleSrc(regex);
 		skuVirtualSettings.setSampleURL(regex);
 		skuVirtualSettings.setSrc(regex);
+		skuVirtualSettings.setTermsOfUseJournalArticleExternalReferenceCode(
+			regex);
+		skuVirtualSettings.
+			setTermsOfUseJournalArticleGroupExternalReferenceCode(regex);
 		skuVirtualSettings.setUrl(regex);
 
 		String json = SkuVirtualSettingsSerDes.toJSON(skuVirtualSettings);
@@ -189,6 +193,14 @@ public abstract class BaseSkuVirtualSettingsResourceTestCase {
 		Assert.assertEquals(regex, skuVirtualSettings.getSampleSrc());
 		Assert.assertEquals(regex, skuVirtualSettings.getSampleURL());
 		Assert.assertEquals(regex, skuVirtualSettings.getSrc());
+		Assert.assertEquals(
+			regex,
+			skuVirtualSettings.
+				getTermsOfUseJournalArticleExternalReferenceCode());
+		Assert.assertEquals(
+			regex,
+			skuVirtualSettings.
+				getTermsOfUseJournalArticleGroupExternalReferenceCode());
 		Assert.assertEquals(regex, skuVirtualSettings.getUrl());
 	}
 
@@ -196,38 +208,299 @@ public abstract class BaseSkuVirtualSettingsResourceTestCase {
 	public void testGetSkuByExternalReferenceCodeSkuVirtualSettings()
 		throws Exception {
 
-		Assert.assertTrue(false);
+		SkuVirtualSettings postSkuVirtualSettings =
+			testGetSkuByExternalReferenceCodeSkuVirtualSettings_addSkuVirtualSettings();
+
+		SkuVirtualSettings getSkuVirtualSettings =
+			skuVirtualSettingsResource.
+				getSkuByExternalReferenceCodeSkuVirtualSettings(
+					testGetSkuByExternalReferenceCodeSkuVirtualSettings_getExternalReferenceCode());
+
+		assertEquals(postSkuVirtualSettings, getSkuVirtualSettings);
+		assertValid(getSkuVirtualSettings);
+	}
+
+	protected SkuVirtualSettings
+			testGetSkuByExternalReferenceCodeSkuVirtualSettings_addSkuVirtualSettings()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	protected String
+			testGetSkuByExternalReferenceCodeSkuVirtualSettings_getExternalReferenceCode()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
 	}
 
 	@Test
 	public void testGraphQLGetSkuByExternalReferenceCodeSkuVirtualSettings()
 		throws Exception {
 
-		Assert.assertTrue(true);
+		SkuVirtualSettings skuVirtualSettings =
+			testGraphQLGetSkuByExternalReferenceCodeSkuVirtualSettings_addSkuVirtualSettings();
+
+		// No namespace
+
+		Assert.assertTrue(
+			equals(
+				skuVirtualSettings,
+				SkuVirtualSettingsSerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"skuByExternalReferenceCodeSkuVirtualSettings",
+								new HashMap<String, Object>() {
+									{
+										put(
+											"externalReferenceCode",
+											"\"" +
+												testGraphQLGetSkuByExternalReferenceCodeSkuVirtualSettings_getExternalReferenceCode() +
+													"\"");
+									}
+								},
+								getGraphQLFields())),
+						"JSONObject/data",
+						"Object/skuByExternalReferenceCodeSkuVirtualSettings"))));
+
+		// Using the namespace headlessCommerceAdminCatalog_v1_0
+
+		Assert.assertTrue(
+			equals(
+				skuVirtualSettings,
+				SkuVirtualSettingsSerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"headlessCommerceAdminCatalog_v1_0",
+								new GraphQLField(
+									"skuByExternalReferenceCodeSkuVirtualSettings",
+									new HashMap<String, Object>() {
+										{
+											put(
+												"externalReferenceCode",
+												"\"" +
+													testGraphQLGetSkuByExternalReferenceCodeSkuVirtualSettings_getExternalReferenceCode() +
+														"\"");
+										}
+									},
+									getGraphQLFields()))),
+						"JSONObject/data",
+						"JSONObject/headlessCommerceAdminCatalog_v1_0",
+						"Object/skuByExternalReferenceCodeSkuVirtualSettings"))));
+	}
+
+	protected String
+			testGraphQLGetSkuByExternalReferenceCodeSkuVirtualSettings_getExternalReferenceCode()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
 	}
 
 	@Test
 	public void testGraphQLGetSkuByExternalReferenceCodeSkuVirtualSettingsNotFound()
 		throws Exception {
 
-		Assert.assertTrue(true);
+		String irrelevantExternalReferenceCode =
+			"\"" + RandomTestUtil.randomString() + "\"";
+
+		// No namespace
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"skuByExternalReferenceCodeSkuVirtualSettings",
+						new HashMap<String, Object>() {
+							{
+								put(
+									"externalReferenceCode",
+									irrelevantExternalReferenceCode);
+							}
+						},
+						getGraphQLFields())),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
+
+		// Using the namespace headlessCommerceAdminCatalog_v1_0
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"headlessCommerceAdminCatalog_v1_0",
+						new GraphQLField(
+							"skuByExternalReferenceCodeSkuVirtualSettings",
+							new HashMap<String, Object>() {
+								{
+									put(
+										"externalReferenceCode",
+										irrelevantExternalReferenceCode);
+								}
+							},
+							getGraphQLFields()))),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
+	}
+
+	protected SkuVirtualSettings
+			testGraphQLGetSkuByExternalReferenceCodeSkuVirtualSettings_addSkuVirtualSettings()
+		throws Exception {
+
+		return testGraphQLSkuSkuVirtualSettings_addSkuVirtualSettings();
 	}
 
 	@Test
 	public void testGetSkuIdSkuVirtualSettings() throws Exception {
-		Assert.assertTrue(false);
+		SkuVirtualSettings postSkuVirtualSettings =
+			testGetSkuIdSkuVirtualSettings_addSkuVirtualSettings();
+
+		SkuVirtualSettings getSkuVirtualSettings =
+			skuVirtualSettingsResource.getSkuIdSkuVirtualSettings(
+				testGetSkuIdSkuVirtualSettings_getId(postSkuVirtualSettings));
+
+		assertEquals(postSkuVirtualSettings, getSkuVirtualSettings);
+		assertValid(getSkuVirtualSettings);
+	}
+
+	protected SkuVirtualSettings
+			testGetSkuIdSkuVirtualSettings_addSkuVirtualSettings()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	protected Long testGetSkuIdSkuVirtualSettings_getId(
+			SkuVirtualSettings skuVirtualSettings)
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
 	}
 
 	@Test
 	public void testGraphQLGetSkuIdSkuVirtualSettings() throws Exception {
-		Assert.assertTrue(true);
+		SkuVirtualSettings skuVirtualSettings =
+			testGraphQLGetSkuIdSkuVirtualSettings_addSkuVirtualSettings();
+
+		// No namespace
+
+		Assert.assertTrue(
+			equals(
+				skuVirtualSettings,
+				SkuVirtualSettingsSerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"skuIdSkuVirtualSettings",
+								new HashMap<String, Object>() {
+									{
+										put(
+											"id",
+											testGraphQLGetSkuIdSkuVirtualSettings_getId(
+												skuVirtualSettings));
+									}
+								},
+								getGraphQLFields())),
+						"JSONObject/data", "Object/skuIdSkuVirtualSettings"))));
+
+		// Using the namespace headlessCommerceAdminCatalog_v1_0
+
+		Assert.assertTrue(
+			equals(
+				skuVirtualSettings,
+				SkuVirtualSettingsSerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"headlessCommerceAdminCatalog_v1_0",
+								new GraphQLField(
+									"skuIdSkuVirtualSettings",
+									new HashMap<String, Object>() {
+										{
+											put(
+												"id",
+												testGraphQLGetSkuIdSkuVirtualSettings_getId(
+													skuVirtualSettings));
+										}
+									},
+									getGraphQLFields()))),
+						"JSONObject/data",
+						"JSONObject/headlessCommerceAdminCatalog_v1_0",
+						"Object/skuIdSkuVirtualSettings"))));
+	}
+
+	protected Long testGraphQLGetSkuIdSkuVirtualSettings_getId(
+			SkuVirtualSettings skuVirtualSettings)
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
 	}
 
 	@Test
 	public void testGraphQLGetSkuIdSkuVirtualSettingsNotFound()
 		throws Exception {
 
-		Assert.assertTrue(true);
+		Long irrelevantId = RandomTestUtil.randomLong();
+
+		// No namespace
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"skuIdSkuVirtualSettings",
+						new HashMap<String, Object>() {
+							{
+								put("id", irrelevantId);
+							}
+						},
+						getGraphQLFields())),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
+
+		// Using the namespace headlessCommerceAdminCatalog_v1_0
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"headlessCommerceAdminCatalog_v1_0",
+						new GraphQLField(
+							"skuIdSkuVirtualSettings",
+							new HashMap<String, Object>() {
+								{
+									put("id", irrelevantId);
+								}
+							},
+							getGraphQLFields()))),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
+	}
+
+	protected SkuVirtualSettings
+			testGraphQLGetSkuIdSkuVirtualSettings_addSkuVirtualSettings()
+		throws Exception {
+
+		return testGraphQLSkuSkuVirtualSettings_addSkuVirtualSettings();
+	}
+
+	protected SkuVirtualSettings
+			testGraphQLSkuSkuVirtualSettings_addSkuVirtualSettings()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
 	}
 
 	protected void assertContains(
@@ -315,6 +588,10 @@ public abstract class BaseSkuVirtualSettingsResourceTestCase {
 
 		boolean valid = true;
 
+		if (skuVirtualSettings.getId() == null) {
+			valid = false;
+		}
+
 		for (String additionalAssertFieldName :
 				getAdditionalAssertFieldNames()) {
 
@@ -392,6 +669,19 @@ public abstract class BaseSkuVirtualSettingsResourceTestCase {
 				continue;
 			}
 
+			if (Objects.equals(
+					"skuVirtualSettingsFileEntries",
+					additionalAssertFieldName)) {
+
+				if (skuVirtualSettings.getSkuVirtualSettingsFileEntries() ==
+						null) {
+
+					valid = false;
+				}
+
+				continue;
+			}
+
 			if (Objects.equals("src", additionalAssertFieldName)) {
 				if (skuVirtualSettings.getSrc() == null) {
 					valid = false;
@@ -404,6 +694,34 @@ public abstract class BaseSkuVirtualSettingsResourceTestCase {
 					"termsOfUseContent", additionalAssertFieldName)) {
 
 				if (skuVirtualSettings.getTermsOfUseContent() == null) {
+					valid = false;
+				}
+
+				continue;
+			}
+
+			if (Objects.equals(
+					"termsOfUseJournalArticleExternalReferenceCode",
+					additionalAssertFieldName)) {
+
+				if (skuVirtualSettings.
+						getTermsOfUseJournalArticleExternalReferenceCode() ==
+							null) {
+
+					valid = false;
+				}
+
+				continue;
+			}
+
+			if (Objects.equals(
+					"termsOfUseJournalArticleGroupExternalReferenceCode",
+					additionalAssertFieldName)) {
+
+				if (skuVirtualSettings.
+						getTermsOfUseJournalArticleGroupExternalReferenceCode() ==
+							null) {
+
 					valid = false;
 				}
 
@@ -506,6 +824,8 @@ public abstract class BaseSkuVirtualSettingsResourceTestCase {
 
 	protected List<GraphQLField> getGraphQLFields() throws Exception {
 		List<GraphQLField> graphQLFields = new ArrayList<>();
+
+		graphQLFields.add(new GraphQLField("id"));
 
 		for (java.lang.reflect.Field field :
 				getDeclaredFields(
@@ -615,6 +935,17 @@ public abstract class BaseSkuVirtualSettingsResourceTestCase {
 				continue;
 			}
 
+			if (Objects.equals("id", additionalAssertFieldName)) {
+				if (!Objects.deepEquals(
+						skuVirtualSettings1.getId(),
+						skuVirtualSettings2.getId())) {
+
+					return false;
+				}
+
+				continue;
+			}
+
 			if (Objects.equals("maxUsages", additionalAssertFieldName)) {
 				if (!Objects.deepEquals(
 						skuVirtualSettings1.getMaxUsages(),
@@ -670,6 +1001,21 @@ public abstract class BaseSkuVirtualSettingsResourceTestCase {
 				continue;
 			}
 
+			if (Objects.equals(
+					"skuVirtualSettingsFileEntries",
+					additionalAssertFieldName)) {
+
+				if (!Objects.deepEquals(
+						skuVirtualSettings1.getSkuVirtualSettingsFileEntries(),
+						skuVirtualSettings2.
+							getSkuVirtualSettingsFileEntries())) {
+
+					return false;
+				}
+
+				continue;
+			}
+
 			if (Objects.equals("src", additionalAssertFieldName)) {
 				if (!Objects.deepEquals(
 						skuVirtualSettings1.getSrc(),
@@ -687,6 +1033,38 @@ public abstract class BaseSkuVirtualSettingsResourceTestCase {
 				if (!equals(
 						(Map)skuVirtualSettings1.getTermsOfUseContent(),
 						(Map)skuVirtualSettings2.getTermsOfUseContent())) {
+
+					return false;
+				}
+
+				continue;
+			}
+
+			if (Objects.equals(
+					"termsOfUseJournalArticleExternalReferenceCode",
+					additionalAssertFieldName)) {
+
+				if (!Objects.deepEquals(
+						skuVirtualSettings1.
+							getTermsOfUseJournalArticleExternalReferenceCode(),
+						skuVirtualSettings2.
+							getTermsOfUseJournalArticleExternalReferenceCode())) {
+
+					return false;
+				}
+
+				continue;
+			}
+
+			if (Objects.equals(
+					"termsOfUseJournalArticleGroupExternalReferenceCode",
+					additionalAssertFieldName)) {
+
+				if (!Objects.deepEquals(
+						skuVirtualSettings1.
+							getTermsOfUseJournalArticleGroupExternalReferenceCode(),
+						skuVirtualSettings2.
+							getTermsOfUseJournalArticleGroupExternalReferenceCode())) {
 
 					return false;
 				}
@@ -778,6 +1156,10 @@ public abstract class BaseSkuVirtualSettingsResourceTestCase {
 
 	protected java.lang.reflect.Field[] getDeclaredFields(Class clazz)
 		throws Exception {
+
+		if (clazz.getClassLoader() == null) {
+			return new java.lang.reflect.Field[0];
+		}
 
 		return TransformUtil.transform(
 			ReflectionUtil.getDeclaredFields(clazz),
@@ -904,6 +1286,11 @@ public abstract class BaseSkuVirtualSettingsResourceTestCase {
 		}
 
 		if (entityFieldName.equals("duration")) {
+			throw new IllegalArgumentException(
+				"Invalid entity field " + entityFieldName);
+		}
+
+		if (entityFieldName.equals("id")) {
 			throw new IllegalArgumentException(
 				"Invalid entity field " + entityFieldName);
 		}
@@ -1057,6 +1444,11 @@ public abstract class BaseSkuVirtualSettingsResourceTestCase {
 			return sb.toString();
 		}
 
+		if (entityFieldName.equals("skuVirtualSettingsFileEntries")) {
+			throw new IllegalArgumentException(
+				"Invalid entity field " + entityFieldName);
+		}
+
 		if (entityFieldName.equals("src")) {
 			Object object = skuVirtualSettings.getSrc();
 
@@ -1106,6 +1498,106 @@ public abstract class BaseSkuVirtualSettingsResourceTestCase {
 		if (entityFieldName.equals("termsOfUseContent")) {
 			throw new IllegalArgumentException(
 				"Invalid entity field " + entityFieldName);
+		}
+
+		if (entityFieldName.equals(
+				"termsOfUseJournalArticleExternalReferenceCode")) {
+
+			Object object =
+				skuVirtualSettings.
+					getTermsOfUseJournalArticleExternalReferenceCode();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
+
+			return sb.toString();
+		}
+
+		if (entityFieldName.equals(
+				"termsOfUseJournalArticleGroupExternalReferenceCode")) {
+
+			Object object =
+				skuVirtualSettings.
+					getTermsOfUseJournalArticleGroupExternalReferenceCode();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
+
+			return sb.toString();
 		}
 
 		if (entityFieldName.equals("termsOfUseJournalArticleId")) {
@@ -1182,8 +1674,11 @@ public abstract class BaseSkuVirtualSettingsResourceTestCase {
 			).toString(),
 			"application/json");
 		httpInvoker.httpMethod(HttpInvoker.HttpMethod.POST);
-		httpInvoker.path("http://localhost:8080/o/graphql");
-		httpInvoker.userNameAndPassword("test@liferay.com:test");
+		httpInvoker.path(
+			"http://localhost:" + PortalUtil.getPortalServerPort(false) +
+				"/o/graphql");
+		httpInvoker.userNameAndPassword(
+			"test@liferay.com:" + PropsValues.DEFAULT_ADMIN_PASSWORD);
 
 		HttpInvoker.HttpResponse httpResponse = httpInvoker.invoke();
 
@@ -1217,6 +1712,7 @@ public abstract class BaseSkuVirtualSettingsResourceTestCase {
 				attachment = StringUtil.toLowerCase(
 					RandomTestUtil.randomString());
 				duration = RandomTestUtil.randomLong();
+				id = RandomTestUtil.randomLong();
 				maxUsages = RandomTestUtil.randomInt();
 				override = RandomTestUtil.randomBoolean();
 				sampleAttachment = StringUtil.toLowerCase(
@@ -1226,6 +1722,10 @@ public abstract class BaseSkuVirtualSettingsResourceTestCase {
 				sampleURL = StringUtil.toLowerCase(
 					RandomTestUtil.randomString());
 				src = StringUtil.toLowerCase(RandomTestUtil.randomString());
+				termsOfUseJournalArticleExternalReferenceCode =
+					StringUtil.toLowerCase(RandomTestUtil.randomString());
+				termsOfUseJournalArticleGroupExternalReferenceCode =
+					StringUtil.toLowerCase(RandomTestUtil.randomString());
 				termsOfUseJournalArticleId = RandomTestUtil.randomLong();
 				termsOfUseRequired = RandomTestUtil.randomBoolean();
 				url = StringUtil.toLowerCase(RandomTestUtil.randomString());
@@ -1250,21 +1750,21 @@ public abstract class BaseSkuVirtualSettingsResourceTestCase {
 	}
 
 	protected SkuVirtualSettingsResource skuVirtualSettingsResource;
-	protected Group irrelevantGroup;
-	protected Company testCompany;
-	protected Group testGroup;
+	protected com.liferay.portal.kernel.model.Group irrelevantGroup;
+	protected com.liferay.portal.kernel.model.Company testCompany;
+	protected com.liferay.portal.kernel.model.Group testGroup;
 
 	protected static class BeanTestUtil {
 
 		public static void copyProperties(Object source, Object target)
 			throws Exception {
 
-			Class<?> sourceClass = _getSuperClass(source.getClass());
+			Class<?> sourceClass = source.getClass();
 
 			Class<?> targetClass = target.getClass();
 
 			for (java.lang.reflect.Field field :
-					sourceClass.getDeclaredFields()) {
+					_getAllDeclaredFields(sourceClass)) {
 
 				if (field.isSynthetic()) {
 					continue;
@@ -1273,11 +1773,16 @@ public abstract class BaseSkuVirtualSettingsResourceTestCase {
 				Method getMethod = _getMethod(
 					sourceClass, field.getName(), "get");
 
-				Method setMethod = _getMethod(
-					targetClass, field.getName(), "set",
-					getMethod.getReturnType());
+				try {
+					Method setMethod = _getMethod(
+						targetClass, field.getName(), "set",
+						getMethod.getReturnType());
 
-				setMethod.invoke(target, getMethod.invoke(source));
+					setMethod.invoke(target, getMethod.invoke(source));
+				}
+				catch (Exception e) {
+					continue;
+				}
 			}
 		}
 
@@ -1309,6 +1814,24 @@ public abstract class BaseSkuVirtualSettingsResourceTestCase {
 			setMethod.invoke(bean, _translateValue(parameterTypes[0], value));
 		}
 
+		private static List<java.lang.reflect.Field> _getAllDeclaredFields(
+			Class<?> clazz) {
+
+			List<java.lang.reflect.Field> fields = new ArrayList<>();
+
+			while ((clazz != null) && (clazz != Object.class)) {
+				for (java.lang.reflect.Field field :
+						clazz.getDeclaredFields()) {
+
+					fields.add(field);
+				}
+
+				clazz = clazz.getSuperclass();
+			}
+
+			return fields;
+		}
+
 		private static Method _getMethod(Class<?> clazz, String name) {
 			for (Method method : clazz.getMethods()) {
 				if (name.equals(method.getName()) &&
@@ -1330,16 +1853,6 @@ public abstract class BaseSkuVirtualSettingsResourceTestCase {
 			return clazz.getMethod(
 				prefix + StringUtil.upperCaseFirstLetter(fieldName),
 				parameterTypes);
-		}
-
-		private static Class<?> _getSuperClass(Class<?> clazz) {
-			Class<?> superClass = clazz.getSuperclass();
-
-			if ((superClass == null) || (superClass == Object.class)) {
-				return clazz;
-			}
-
-			return superClass;
 		}
 
 		private static Object _translateValue(
@@ -1437,10 +1950,13 @@ public abstract class BaseSkuVirtualSettingsResourceTestCase {
 	private static final com.liferay.portal.kernel.log.Log _log =
 		LogFactoryUtil.getLog(BaseSkuVirtualSettingsResourceTestCase.class);
 
-	private static DateFormat _dateFormat;
+	private static Format _format;
+
+	private com.liferay.portal.kernel.model.User _testCompanyAdminUser;
 
 	@Inject
 	private com.liferay.headless.commerce.admin.catalog.resource.v1_0.
 		SkuVirtualSettingsResource _skuVirtualSettingsResource;
 
 }
+// LIFERAY-REST-BUILDER-HASH:1995442238

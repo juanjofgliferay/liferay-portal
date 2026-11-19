@@ -112,11 +112,7 @@ public class DDLRecordVersionPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		DDLRecordVersion newDDLRecordVersion = _persistence.create(pk);
-
-		newDDLRecordVersion.setMvccVersion(RandomTestUtil.nextLong());
+		DDLRecordVersion newDDLRecordVersion = addDDLRecordVersion();
 
 		newDDLRecordVersion.setCtCollectionId(RandomTestUtil.nextLong());
 
@@ -150,7 +146,9 @@ public class DDLRecordVersionPersistenceTest {
 
 		newDDLRecordVersion.setStatusDate(RandomTestUtil.nextDate());
 
-		_ddlRecordVersions.add(_persistence.update(newDDLRecordVersion));
+		newDDLRecordVersion = _persistence.update(newDDLRecordVersion);
+
+		_ddlRecordVersions.add(newDDLRecordVersion);
 
 		DDLRecordVersion existingDDLRecordVersion =
 			_persistence.findByPrimaryKey(newDDLRecordVersion.getPrimaryKey());
@@ -219,15 +217,6 @@ public class DDLRecordVersionPersistenceTest {
 	}
 
 	@Test
-	public void testCountByR_R() throws Exception {
-		_persistence.countByR_R(RandomTestUtil.nextLong(), "");
-
-		_persistence.countByR_R(0L, "null");
-
-		_persistence.countByR_R(0L, (String)null);
-	}
-
-	@Test
 	public void testCountByR_V() throws Exception {
 		_persistence.countByR_V(RandomTestUtil.nextLong(), "");
 
@@ -242,17 +231,6 @@ public class DDLRecordVersionPersistenceTest {
 			RandomTestUtil.nextLong(), RandomTestUtil.nextInt());
 
 		_persistence.countByR_S(0L, 0);
-	}
-
-	@Test
-	public void testCountByU_R_R_S() throws Exception {
-		_persistence.countByU_R_R_S(
-			RandomTestUtil.nextLong(), RandomTestUtil.nextLong(), "",
-			RandomTestUtil.nextInt());
-
-		_persistence.countByU_R_R_S(0L, 0L, "null", 0);
-
-		_persistence.countByU_R_R_S(0L, 0L, (String)null, 0);
 	}
 
 	@Test
@@ -571,8 +549,6 @@ public class DDLRecordVersionPersistenceTest {
 
 		DDLRecordVersion ddlRecordVersion = _persistence.create(pk);
 
-		ddlRecordVersion.setMvccVersion(RandomTestUtil.nextLong());
-
 		ddlRecordVersion.setCtCollectionId(RandomTestUtil.nextLong());
 
 		ddlRecordVersion.setGroupId(RandomTestUtil.nextLong());
@@ -616,3 +592,4 @@ public class DDLRecordVersionPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-128384300

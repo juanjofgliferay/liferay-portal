@@ -6,12 +6,13 @@
 import ClayButton from '@clayui/button';
 import ClayForm from '@clayui/form';
 import ClayModal from '@clayui/modal';
-import {Observer} from '@clayui/modal/lib/types';
 import {SingleSelect} from '@liferay/object-js-components-web';
 import React, {FormEvent, useEffect, useMemo, useState} from 'react';
 
 import {TYPES, useViewContext} from '../objectViewContext';
 import {TObjectViewColumn} from '../types';
+
+import type {Observer} from '@clayui/modal/src/types';
 
 interface ModalAddDefaultSortColumnProps {
 	editingObjectFieldName?: string;
@@ -48,14 +49,11 @@ export function ModalAddDefaultSortColumn({
 		dispatch,
 	] = useViewContext();
 
-	const [availableViewColumns, setAvailableViewColumns] = useState<
-		TObjectViewColumn[]
-	>(objectViewColumns);
+	const [availableViewColumns, setAvailableViewColumns] =
+		useState<TObjectViewColumn[]>(objectViewColumns);
 
-	const [
-		selectedObjectSortColumnName,
-		setSelectedObjectSortColumnValueName,
-	] = useState<string>();
+	const [selectedObjectSortColumnName, setSelectedObjectSortColumnValueName] =
+		useState<string>();
 	const [selectedObjetSortValue, setSelectedObjetSortValue] = useState('asc');
 
 	const objectSortColumnItems = useMemo(() => {
@@ -131,7 +129,11 @@ export function ModalAddDefaultSortColumn({
 	return (
 		<ClayModal observer={observer}>
 			<ClayForm onSubmit={onSubmit}>
-				<ClayModal.Header>{header}</ClayModal.Header>
+				<ClayModal.Header
+					closeButtonAriaLabel={Liferay.Language.get('close')}
+				>
+					{header}
+				</ClayModal.Header>
 
 				<ClayModal.Body>
 					<SingleSelect

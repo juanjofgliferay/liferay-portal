@@ -6,10 +6,10 @@
 import {cleanup, fireEvent, render} from '@testing-library/react';
 import React from 'react';
 
-import '@testing-library/jest-dom/extend-expect';
+import '@testing-library/jest-dom';
 import {act} from 'react-dom/test-utils';
 
-import ItemSelectorUrl from '../src/main/resources/META-INF/resources/js/ItemSelectorUrl.es';
+import {ItemSelectorUrl} from '../src/main/resources/META-INF/resources/js/index';
 
 describe('ItemSelectorUrl', () => {
 	afterEach(() => {

@@ -111,9 +111,7 @@ public class DLSyncEventPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		DLSyncEvent newDLSyncEvent = _persistence.create(pk);
+		DLSyncEvent newDLSyncEvent = addDLSyncEvent();
 
 		newDLSyncEvent.setCompanyId(RandomTestUtil.nextLong());
 
@@ -125,7 +123,9 @@ public class DLSyncEventPersistenceTest {
 
 		newDLSyncEvent.setTypePK(RandomTestUtil.nextLong());
 
-		_dlSyncEvents.add(_persistence.update(newDLSyncEvent));
+		newDLSyncEvent = _persistence.update(newDLSyncEvent);
+
+		_dlSyncEvents.add(newDLSyncEvent);
 
 		DLSyncEvent existingDLSyncEvent = _persistence.findByPrimaryKey(
 			newDLSyncEvent.getPrimaryKey());
@@ -144,13 +144,6 @@ public class DLSyncEventPersistenceTest {
 			existingDLSyncEvent.getType(), newDLSyncEvent.getType());
 		Assert.assertEquals(
 			existingDLSyncEvent.getTypePK(), newDLSyncEvent.getTypePK());
-	}
-
-	@Test
-	public void testCountByGtModifiedTime() throws Exception {
-		_persistence.countByGtModifiedTime(RandomTestUtil.nextLong());
-
-		_persistence.countByGtModifiedTime(0L);
 	}
 
 	@Test
@@ -481,3 +474,4 @@ public class DLSyncEventPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:267338481

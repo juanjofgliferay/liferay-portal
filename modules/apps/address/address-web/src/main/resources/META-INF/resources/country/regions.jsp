@@ -13,7 +13,7 @@ SearchContainer<Region> regionSearchContainer = RegionSearchContainerFactory.cre
 
 <clay:management-toolbar
 	managementToolbarDisplayContext="<%= new RegionsManagementToolbarDisplayContext(request, liferayPortletRequest, liferayPortletResponse, regionSearchContainer) %>"
-	propsTransformer="js/RegionsManagementToolbarPropsTransformer"
+	propsTransformer="{RegionsManagementToolbarPropsTransformer} from address-web"
 />
 
 <clay:container-fluid>
@@ -33,13 +33,15 @@ SearchContainer<Region> regionSearchContainer = RegionSearchContainerFactory.cre
 				<%
 				List<String> availableActions = new ArrayList<>();
 
-				availableActions.add("deleteRegions");
+				if (CountryPermissionUtil.contains(permissionChecker, region.getCountryId(), ActionKeys.UPDATE)) {
+					availableActions.add("deleteRegions");
 
-				if (region.getActive()) {
-					availableActions.add("deactivateRegions");
-				}
-				else {
-					availableActions.add("activateRegions");
+					if (region.getActive()) {
+						availableActions.add("deactivateRegions");
+					}
+					else {
+						availableActions.add("activateRegions");
+					}
 				}
 
 				row.setData(
@@ -56,7 +58,7 @@ SearchContainer<Region> regionSearchContainer = RegionSearchContainerFactory.cre
 				</portlet:renderURL>
 
 				<%
-				if (!PortalPermissionUtil.contains(permissionChecker, ActionKeys.MANAGE_COUNTRIES)) {
+				if (!CountryPermissionUtil.contains(permissionChecker, region.getCountryId(), ActionKeys.UPDATE)) {
 					rowURL = null;
 				}
 				%>
@@ -70,7 +72,7 @@ SearchContainer<Region> regionSearchContainer = RegionSearchContainerFactory.cre
 
 				<liferay-ui:search-container-column-text
 					name="region-code"
-					property="regionCode"
+					value="<%= HtmlUtil.escape(region.getRegionCode()) %>"
 				/>
 
 				<liferay-ui:search-container-column-text
@@ -87,6 +89,16 @@ SearchContainer<Region> regionSearchContainer = RegionSearchContainerFactory.cre
 					name="priority"
 					property="position"
 				/>
+
+				<liferay-ui:search-container-column-text
+					cssClass="table-cell-expand-smallest table-cell-ws-nowrap table-column-text-center"
+					name="status"
+				>
+					<clay:label
+						displayType="<%= WorkflowConstants.getStatusStyle(region.getStatus()) %>"
+						label="<%= WorkflowConstants.getStatusLabel(region.getStatus()) %>"
+					/>
+				</liferay-ui:search-container-column-text>
 
 				<liferay-ui:search-container-column-jsp
 					cssClass="table-column-text-end"

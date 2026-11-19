@@ -11,7 +11,10 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.ser.PropertyFilter;
 import com.fasterxml.jackson.databind.ser.PropertyWriter;
 import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
+import com.fasterxml.jackson.databind.ser.impl.UnwrappingBeanPropertyWriter;
+import com.fasterxml.jackson.databind.ser.std.MapProperty;
 
+import com.liferay.petra.function.UnsafeSupplier;
 import com.liferay.petra.function.transform.TransformUtil;
 
 import java.util.ArrayList;
@@ -42,7 +45,9 @@ public class VulcanPropertyFilter
 			return;
 		}
 
-		if (_shouldWrite(jsonGenerator, propertyWriter)) {
+		if ((propertyWriter instanceof UnwrappingBeanPropertyWriter) ||
+			_shouldWrite(jsonGenerator, propertyWriter)) {
+
 			propertyWriter.serializeAsField(
 				object, jsonGenerator, serializerProvider);
 		}
@@ -64,6 +69,36 @@ public class VulcanPropertyFilter
 		else {
 			_restrictFieldNames = restrictFieldNames;
 		}
+	}
+
+	private boolean _hasUnsafeSupplierValue(PropertyWriter propertyWriter)
+		throws Exception {
+
+		if (!(propertyWriter instanceof MapProperty)) {
+			return true;
+		}
+
+		MapProperty mapProperty = (MapProperty)propertyWriter;
+
+		Object value = mapProperty.getValue();
+
+		if (!(value instanceof UnsafeSupplier)) {
+			return true;
+		}
+
+		UnsafeSupplier<?, Exception> unsafeSupplier =
+			(UnsafeSupplier<?, Exception>)value;
+
+		Object unsafeSupplierValue = unsafeSupplier.get();
+
+		if (unsafeSupplierValue == null) {
+			return false;
+		}
+
+		mapProperty.setValue(
+			(UnsafeSupplier<?, Exception>)() -> unsafeSupplierValue);
+
+		return true;
 	}
 
 	private boolean _isFiltered(String path) {
@@ -97,14 +132,15 @@ public class VulcanPropertyFilter
 	}
 
 	private boolean _shouldWrite(
-		JsonGenerator jsonGenerator, PropertyWriter propertyWriter) {
+			JsonGenerator jsonGenerator, PropertyWriter propertyWriter)
+		throws Exception {
 
 		List<String> paths = _toPaths(jsonGenerator, propertyWriter.getName());
 
 		String firstPath = paths.get(0);
 
 		if (_isFiltered(firstPath)) {
-			return true;
+			return _hasUnsafeSupplierValue(propertyWriter);
 		}
 
 		if (paths.size() == 1) {
@@ -113,7 +149,7 @@ public class VulcanPropertyFilter
 
 		for (int i = 1; i < paths.size(); i++) {
 			if (_isFilteredWithoutNested(paths.get(i))) {
-				return true;
+				return _hasUnsafeSupplierValue(propertyWriter);
 			}
 		}
 

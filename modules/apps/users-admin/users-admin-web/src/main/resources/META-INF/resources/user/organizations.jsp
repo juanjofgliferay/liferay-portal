@@ -98,6 +98,16 @@ currentURLObj.setParameter("historyKey", liferayPortletResponse.getNamespace() +
 			value="<%= HtmlUtil.escape(UsersAdminUtil.getUserColumnText(locale, userGroupRoles, UsersAdminUtil.USER_GROUP_ROLE_TITLE_ACCESSOR, userGroupRolesCount)) %>"
 		/>
 
+		<liferay-ui:search-container-column-text
+			cssClass="table-cell-expand-small table-cell-minw-150"
+			name="status"
+		>
+			<clay:label
+				displayType="<%= WorkflowConstants.getStatusStyle(organization.getStatus()) %>"
+				label="<%= WorkflowConstants.getStatusLabel(organization.getStatus()) %>"
+			/>
+		</liferay-ui:search-container-column-text>
+
 		<c:if test="<%= !portletName.equals(myAccountPortletId) && ((selUser == null) || !OrganizationMembershipPolicyUtil.isMembershipProtected(permissionChecker, selUser.getUserId(), organization.getOrganizationId())) %>">
 			<liferay-ui:search-container-column-text>
 				<clay:button
@@ -129,9 +139,8 @@ currentURLObj.setParameter("historyKey", liferayPortletResponse.getNamespace() +
 			(event) => {
 				var link = event.currentTarget;
 
-				document.<portlet:namespace />fm.<portlet:namespace />deleteOrganizationIds.value = link.attr(
-					'data-rowId'
-				);
+				document.<portlet:namespace />fm.<portlet:namespace />deleteOrganizationIds.value =
+					link.attr('data-rowId');
 
 				submitForm(document.<portlet:namespace />fm);
 			},
@@ -146,26 +155,27 @@ currentURLObj.setParameter("historyKey", liferayPortletResponse.getNamespace() +
 			selectOrganizationLink.addEventListener('click', (event) => {
 				Liferay.Util.openSelectionModal({
 					multiple: true,
-					onSelect(data) {
-						if (data.value && data.value.length) {
-							document.<portlet:namespace />fm.<portlet:namespace />addOrganizationIds.value = Array.from(
-								data.value
-							)
-								.map((selectedItem) => {
-									const organization = JSON.parse(selectedItem);
+					onSelect(selection) {
+						const values = Array.isArray(selection)
+							? selection.map((selectedItem) => selectedItem.value)
+							: selection && selection.value;
 
-									return organization.organizationId;
-								})
-								.join(',');
+						if (values && values.length) {
+							document.<portlet:namespace />fm.<portlet:namespace />addOrganizationIds.value =
+								Array.from(values)
+									.map((value) => {
+										const organization = JSON.parse(value);
+
+										return organization.organizationId;
+									})
+									.join(',');
 
 							submitForm(document.<portlet:namespace />fm);
 						}
 					},
 					selectEventName: '<portlet:namespace />selectOrganization',
-					title:
-						'<liferay-ui:message arguments="organization" key="select-x" />',
-					url:
-						'<%= userDisplayContext.getOrganizationItemSelectorURL(true) %>',
+					title: '<liferay-ui:message arguments="organization" key="select-x" />',
+					url: '<%= userDisplayContext.getOrganizationItemSelectorURL(true) %>',
 				});
 			});
 		}

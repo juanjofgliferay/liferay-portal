@@ -37,13 +37,12 @@ import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.search.filter.ComplexQueryPartBuilderFactory;
-import com.liferay.portal.search.query.Queries;
 import com.liferay.portal.search.searcher.SearchRequestBuilder;
 import com.liferay.portal.search.searcher.SearchRequestBuilderFactory;
 import com.liferay.portal.search.searcher.SearchResponse;
 import com.liferay.portal.search.searcher.Searcher;
+import com.liferay.portal.search.test.rule.SearchTestRule;
 import com.liferay.portal.search.test.util.DocumentsAssert;
-import com.liferay.portal.search.test.util.SearchTestRule;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
@@ -324,15 +323,15 @@ public class IndexerClausesPermissionTest {
 		return serviceContext;
 	}
 
+	protected Consumer<SearchRequestBuilder> withPermissionCheck(User user) {
+		return searchRequestBuilder -> searchRequestBuilder.withSearchContext(
+			searchContext -> searchContext.setUserId(user.getUserId()));
+	}
+
 	protected Consumer<SearchRequestBuilder> withoutIndexerClauses() {
 		return searchRequestBuilder -> searchRequestBuilder.withSearchContext(
 			searchContext -> searchContext.setAttribute(
 				"search.full.query.suppress.indexer.provided.clauses", true));
-	}
-
-	protected Consumer<SearchRequestBuilder> withPermissionCheck(User user) {
-		return searchRequestBuilder -> searchRequestBuilder.withSearchContext(
-			searchContext -> searchContext.setUserId(user.getUserId()));
 	}
 
 	@Inject
@@ -362,13 +361,10 @@ public class IndexerClausesPermissionTest {
 	protected PermissionCheckerFactory permissionCheckerFactory;
 
 	@Inject
-	protected Queries queries;
+	protected SearchRequestBuilderFactory searchRequestBuilderFactory;
 
 	@Inject
 	protected Searcher searcher;
-
-	@Inject
-	protected SearchRequestBuilderFactory searchRequestBuilderFactory;
 
 	private boolean _isSearchEngine(String vendor) {
 		SearchEngine searchEngine = _searchEngineHelper.getSearchEngine();
@@ -388,10 +384,10 @@ public class IndexerClausesPermissionTest {
 	@DeleteAfterTestRun
 	private List<Group> _groups;
 
+	private JournalArticleSearchFixture _journalArticleSearchFixture;
+
 	@DeleteAfterTestRun
 	private List<JournalArticle> _journalArticles;
-
-	private JournalArticleSearchFixture _journalArticleSearchFixture;
 
 	@Inject
 	private SearchEngineHelper _searchEngineHelper;

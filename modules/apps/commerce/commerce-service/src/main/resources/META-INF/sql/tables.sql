@@ -68,6 +68,7 @@ create table CommerceAddressRestriction (
 create table CommerceAvailabilityEstimate (
 	mvccVersion LONG default 0 not null,
 	uuid_ VARCHAR(75) null,
+	externalReferenceCode VARCHAR(75) null,
 	commerceAvailabilityEstimateId LONG not null primary key,
 	companyId LONG,
 	userId LONG,
@@ -76,7 +77,8 @@ create table CommerceAvailabilityEstimate (
 	modifiedDate DATE null,
 	title STRING null,
 	priority DOUBLE,
-	lastPublishDate DATE null
+	lastPublishDate DATE null,
+	status INTEGER
 );
 
 create table CommerceOrder (
@@ -92,7 +94,7 @@ create table CommerceOrder (
 	modifiedDate DATE null,
 	billingAddressId LONG,
 	commerceAccountId LONG,
-	commerceCurrencyId LONG,
+	commerceCurrencyCode VARCHAR(75) null,
 	commerceOrderTypeId LONG,
 	commerceShippingMethodId LONG,
 	deliveryCommerceTermEntryId LONG,
@@ -105,6 +107,7 @@ create table CommerceOrder (
 	deliveryCommerceTermEntryName VARCHAR(75) null,
 	lastPriceUpdateDate DATE null,
 	manuallyAdjusted BOOLEAN,
+	name VARCHAR(75) null,
 	orderDate DATE null,
 	orderStatus INTEGER,
 	paymentCTermEntryDescription TEXT null,
@@ -159,6 +162,25 @@ create table CommerceOrder (
 	statusDate DATE null
 );
 
+create table CommerceOrderAttachment (
+	mvccVersion LONG default 0 not null,
+	uuid_ VARCHAR(75) null,
+	externalReferenceCode VARCHAR(75) null,
+	commerceOrderAttachmentId LONG not null primary key,
+	groupId LONG,
+	companyId LONG,
+	userId LONG,
+	userName VARCHAR(75) null,
+	createDate DATE null,
+	modifiedDate DATE null,
+	commerceOrderId LONG,
+	fileEntryId LONG,
+	priority DOUBLE,
+	restricted BOOLEAN,
+	title VARCHAR(75) null,
+	type_ VARCHAR(75) null
+);
+
 create table CommerceOrderItem (
 	mvccVersion LONG default 0 not null,
 	uuid_ VARCHAR(75) null,
@@ -179,7 +201,7 @@ create table CommerceOrderItem (
 	customerCommerceOrderItemId LONG,
 	parentCommerceOrderItemId LONG,
 	shippingAddressId LONG,
-	deliveryGroup VARCHAR(75) null,
+	deliveryGroupName VARCHAR(75) null,
 	deliveryMaxSubscriptionCycles LONG,
 	deliverySubscriptionLength INTEGER,
 	deliverySubscriptionType VARCHAR(75) null,
@@ -227,7 +249,8 @@ create table CommerceOrderItem (
 	unitPrice BIGDECIMAL null,
 	unitPriceWithTaxAmount BIGDECIMAL null,
 	weight DOUBLE,
-	width DOUBLE
+	width DOUBLE,
+	status INTEGER
 );
 
 create table CommerceOrderNote (
@@ -342,6 +365,7 @@ create table CommerceShipmentItem (
 
 create table CommerceShippingMethod (
 	mvccVersion LONG default 0 not null,
+	externalReferenceCode VARCHAR(75) null,
 	commerceShippingMethodId LONG not null primary key,
 	groupId LONG,
 	companyId LONG,
@@ -356,7 +380,8 @@ create table CommerceShippingMethod (
 	imageId LONG,
 	priority DOUBLE,
 	trackingURL STRING null,
-	typeSettings TEXT null
+	typeSettings TEXT null,
+	status INTEGER
 );
 
 create table CommerceSubscriptionEntry (

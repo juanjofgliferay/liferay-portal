@@ -25,13 +25,13 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.ResourceBundleUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+
 import java.io.IOException;
 
 import java.util.Map;
 import java.util.ResourceBundle;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -41,7 +41,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + AMPortletKeys.ADAPTIVE_MEDIA,
+		"jakarta.portlet.name=" + AMPortletKeys.ADAPTIVE_MEDIA,
 		"mvc.command.name=/adaptive_media/edit_image_configuration_entry"
 	},
 	service = MVCActionCommand.class
@@ -64,6 +64,18 @@ public class EditImageConfigurationEntryMVCActionCommand
 		String uuid = ParamUtil.getString(actionRequest, "uuid");
 
 		Map<String, String> properties = HashMapBuilder.put(
+			"adaptation-url-parameters",
+			ParamUtil.getString(actionRequest, "adaptationURLParameters")
+		).put(
+			"delegate-adaptation",
+			() -> {
+				if (ParamUtil.getBoolean(actionRequest, "delegateAdaptation")) {
+					return "true";
+				}
+
+				return null;
+			}
+		).put(
 			"max-height", ParamUtil.getString(actionRequest, "maxHeight")
 		).put(
 			"max-width", ParamUtil.getString(actionRequest, "maxWidth")
@@ -109,7 +121,15 @@ public class EditImageConfigurationEntryMVCActionCommand
 
 					newUuid = amImageConfigurationEntry.getUUID();
 
-					properties = amImageConfigurationEntry.getProperties();
+					Map<String, String> amImageConfigurationEntryProperties =
+						amImageConfigurationEntry.getProperties();
+
+					properties.put(
+						"max-height",
+						amImageConfigurationEntryProperties.get("max-height"));
+					properties.put(
+						"max-width",
+						amImageConfigurationEntryProperties.get("max-width"));
 
 					autoModifiedUuid = false;
 				}
@@ -200,10 +220,10 @@ public class EditImageConfigurationEntryMVCActionCommand
 			);
 		}
 
-		hideDefaultSuccessMessage(actionRequest);
-
 		JSONPortletResponseUtil.writeJSON(
 			actionRequest, actionResponse, jsonObject);
+
+		hideDefaultSuccessMessage(actionRequest);
 	}
 
 	private AMImageConfigurationEntry _addHighResolutionConfigurationEntry(

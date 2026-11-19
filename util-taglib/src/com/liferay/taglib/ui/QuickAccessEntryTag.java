@@ -12,12 +12,12 @@ import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.taglib.BaseBodyTagSupport;
 import com.liferay.taglib.util.TagResourceBundleUtil;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.jsp.JspException;
+import jakarta.servlet.jsp.tagext.BodyTag;
+
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.jsp.JspException;
-import javax.servlet.jsp.tagext.BodyTag;
 
 /**
  * @author Eudaldo Alonso
@@ -28,9 +28,6 @@ public class QuickAccessEntryTag extends BaseBodyTagSupport implements BodyTag {
 	public int doEndTag() throws JspException {
 		try {
 			return processEndTag();
-		}
-		catch (Exception exception) {
-			throw new JspException(exception);
 		}
 		finally {
 			_label = null;
@@ -60,7 +57,7 @@ public class QuickAccessEntryTag extends BaseBodyTagSupport implements BodyTag {
 		return _START_PAGE;
 	}
 
-	protected int processEndTag() throws Exception {
+	protected int processEndTag() {
 		HttpServletRequest httpServletRequest =
 			(HttpServletRequest)pageContext.getRequest();
 

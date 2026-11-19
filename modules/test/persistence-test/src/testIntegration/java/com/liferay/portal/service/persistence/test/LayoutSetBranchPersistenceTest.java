@@ -48,8 +48,10 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 /**
+ * @deprecated As of Cavanaugh (7.4.x), with no direct replacement
  * @generated
  */
+@Deprecated
 @RunWith(Arquillian.class)
 public class LayoutSetBranchPersistenceTest {
 
@@ -110,11 +112,7 @@ public class LayoutSetBranchPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		LayoutSetBranch newLayoutSetBranch = _persistence.create(pk);
-
-		newLayoutSetBranch.setMvccVersion(RandomTestUtil.nextLong());
+		LayoutSetBranch newLayoutSetBranch = addLayoutSetBranch();
 
 		newLayoutSetBranch.setGroupId(RandomTestUtil.nextLong());
 
@@ -152,7 +150,9 @@ public class LayoutSetBranchPersistenceTest {
 		newLayoutSetBranch.setLayoutSetPrototypeLinkEnabled(
 			RandomTestUtil.randomBoolean());
 
-		_layoutSetBranchs.add(_persistence.update(newLayoutSetBranch));
+		newLayoutSetBranch = _persistence.update(newLayoutSetBranch);
+
+		_layoutSetBranchs.add(newLayoutSetBranch);
 
 		LayoutSetBranch existingLayoutSetBranch = _persistence.findByPrimaryKey(
 			newLayoutSetBranch.getPrimaryKey());
@@ -214,13 +214,6 @@ public class LayoutSetBranchPersistenceTest {
 	}
 
 	@Test
-	public void testCountByGroupId() throws Exception {
-		_persistence.countByGroupId(RandomTestUtil.nextLong());
-
-		_persistence.countByGroupId(0L);
-	}
-
-	@Test
 	public void testCountByG_P() throws Exception {
 		_persistence.countByG_P(
 			RandomTestUtil.nextLong(), RandomTestUtil.randomBoolean());
@@ -270,12 +263,6 @@ public class LayoutSetBranchPersistenceTest {
 	public void testFindAll() throws Exception {
 		_persistence.findAll(
 			QueryUtil.ALL_POS, QueryUtil.ALL_POS, getOrderByComparator());
-	}
-
-	@Test
-	public void testFilterFindByGroupId() throws Exception {
-		_persistence.filterFindByGroupId(
-			0, QueryUtil.ALL_POS, QueryUtil.ALL_POS, getOrderByComparator());
 	}
 
 	protected OrderByComparator<LayoutSetBranch> getOrderByComparator() {
@@ -578,8 +565,6 @@ public class LayoutSetBranchPersistenceTest {
 
 		LayoutSetBranch layoutSetBranch = _persistence.create(pk);
 
-		layoutSetBranch.setMvccVersion(RandomTestUtil.nextLong());
-
 		layoutSetBranch.setGroupId(RandomTestUtil.nextLong());
 
 		layoutSetBranch.setCompanyId(RandomTestUtil.nextLong());
@@ -627,3 +612,4 @@ public class LayoutSetBranchPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1307437170

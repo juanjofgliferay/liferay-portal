@@ -5,13 +5,7 @@
 
 package com.liferay.layout.type.controller.display.page.internal.layout.type.controller;
 
-import com.liferay.asset.display.page.layout.asset.entry.provider.LayoutAssetEntryProvider;
-import com.liferay.asset.display.page.layout.asset.entry.provider.LayoutAssetEntryProviderRegistry;
-import com.liferay.asset.display.page.portlet.AssetDisplayPageFriendlyURLProvider;
-import com.liferay.asset.kernel.model.AssetEntry;
 import com.liferay.info.display.request.attributes.contributor.InfoDisplayRequestAttributesContributor;
-import com.liferay.info.item.ClassPKInfoItemIdentifier;
-import com.liferay.info.item.InfoItemReference;
 import com.liferay.info.item.InfoItemServiceRegistry;
 import com.liferay.info.search.InfoSearchClassMapperRegistry;
 import com.liferay.layout.content.page.editor.constants.ContentPageEditorWebKeys;
@@ -23,33 +17,42 @@ import com.liferay.layout.type.controller.display.page.internal.constants.Displa
 import com.liferay.layout.type.controller.display.page.internal.display.context.DisplayPageLayoutTypeControllerDisplayContext;
 import com.liferay.petra.io.unsync.UnsyncStringWriter;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.exception.NoSuchLayoutException;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.login.AuthLoginGroupSettingsUtil;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.LayoutConstants;
 import com.liferay.portal.kernel.model.LayoutTypeController;
+import com.liferay.portal.kernel.portlet.PortletIdCodec;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
+import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
 import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.service.permission.LayoutPermissionUtil;
 import com.liferay.portal.kernel.servlet.PipingServletResponse;
 import com.liferay.portal.kernel.servlet.TransferHeadersHelperUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.Constants;
+import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
+import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.PortletKeys;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import java.util.List;
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
-import javax.servlet.RequestDispatcher;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import java.util.List;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -73,45 +76,28 @@ public class DisplayPageLayoutTypeController
 			return null;
 		}
 
-		AssetEntry assetEntry = null;
+		ThemeDisplay themeDisplay =
+			(ThemeDisplay)httpServletRequest.getAttribute(
+				WebKeys.THEME_DISPLAY);
 
-		try {
-			assetEntry = (AssetEntry)httpServletRequest.getAttribute(
-				WebKeys.LAYOUT_ASSET_ENTRY);
-		}
-		catch (Exception exception) {
-			if (_log.isDebugEnabled()) {
-				_log.debug("Unable to get asset entry", exception);
-			}
-		}
+		String friendlyURL = _portal.getCurrentURL(httpServletRequest);
 
-		if (assetEntry == null) {
-			String portletId = ParamUtil.getString(
-				httpServletRequest, "p_p_id");
+		if (!Validator.isBlank(themeDisplay.getPathMain()) &&
+			friendlyURL.startsWith(themeDisplay.getPathMain())) {
 
-			LayoutAssetEntryProvider layoutAssetEntryProvider =
-				_layoutAssetEntryProviderRegistry.getLayoutAssetEntryProvider(
-					portletId);
-
-			if (layoutAssetEntryProvider != null) {
-				assetEntry = layoutAssetEntryProvider.getLayoutAssetEntry(
-					httpServletRequest, layout);
-			}
+			return null;
 		}
 
-		if (assetEntry != null) {
-			ThemeDisplay themeDisplay =
-				(ThemeDisplay)httpServletRequest.getAttribute(
-					WebKeys.THEME_DISPLAY);
-
-			return _assetDisplayPageFriendlyURLProvider.getFriendlyURL(
-				new InfoItemReference(
-					assetEntry.getClassName(),
-					new ClassPKInfoItemIdentifier(assetEntry.getClassPK())),
-				themeDisplay);
+		if (friendlyURL.contains(Portal.FRIENDLY_URL_SEPARATOR)) {
+			friendlyURL = friendlyURL.substring(
+				0, friendlyURL.indexOf(Portal.FRIENDLY_URL_SEPARATOR));
+		}
+		else if (friendlyURL.contains(StringPool.QUESTION)) {
+			friendlyURL = friendlyURL.substring(
+				0, friendlyURL.lastIndexOf(StringPool.QUESTION));
 		}
 
-		return null;
+		return HtmlUtil.escape(friendlyURL);
 	}
 
 	@Override
@@ -143,6 +129,10 @@ public class DisplayPageLayoutTypeController
 				WebKeys.THEME_DISPLAY);
 
 		if (layout.isDraftLayout()) {
+			if (!themeDisplay.isSignedIn()) {
+				throw new NoSuchLayoutException();
+			}
+
 			Layout curLayout = _layoutLocalService.fetchLayout(
 				layout.getClassPK());
 
@@ -173,13 +163,33 @@ public class DisplayPageLayoutTypeController
 		DisplayPageLayoutTypeControllerDisplayContext
 			displayPageLayoutTypeControllerDisplayContext =
 				new DisplayPageLayoutTypeControllerDisplayContext(
-					_assetDisplayPageFriendlyURLProvider, httpServletRequest,
-					_infoItemServiceRegistry, _infoSearchClassMapperRegistry);
+					httpServletRequest, _infoItemServiceRegistry,
+					_infoSearchClassMapperRegistry,
+					_layoutPageTemplateEntryModelResourcePermission);
 
 		httpServletRequest.setAttribute(
 			DisplayPageLayoutTypeControllerWebKeys.
 				DISPLAY_PAGE_LAYOUT_TYPE_CONTROLLER_DISPLAY_CONTEXT,
 			displayPageLayoutTypeControllerDisplayContext);
+
+		boolean loginRequest = _isLoginRequest(
+			httpServletRequest, themeDisplay);
+
+		if (!displayPageLayoutTypeControllerDisplayContext.hasInfoItem() &&
+			!themeDisplay.isSignedIn()) {
+
+			if (!loginRequest &&
+				AuthLoginGroupSettingsUtil.isPromptEnabled(
+					layout.getGroupId())) {
+
+				redirect = HttpComponentsUtil.setParameter(
+					themeDisplay.getURLSignIn(), "redirect",
+					themeDisplay.getURLCurrent());
+			}
+			else if (!loginRequest) {
+				throw new NoSuchLayoutException();
+			}
+		}
 
 		String page = getViewPage();
 
@@ -200,26 +210,35 @@ public class DisplayPageLayoutTypeController
 			RequestDispatcher.INCLUDE_SERVLET_PATH);
 
 		try {
+			LayoutPageTemplateEntry layoutPageTemplateEntry =
+				_fetchLayoutPageTemplateEntry(layout);
+
 			boolean hasViewPermission =
 				displayPageLayoutTypeControllerDisplayContext.hasPermission(
+					layoutPageTemplateEntry,
 					themeDisplay.getPermissionChecker(), ActionKeys.VIEW);
 
 			if (!hasViewPermission && themeDisplay.isSignedIn()) {
 				httpServletResponse.setStatus(HttpServletResponse.SC_FORBIDDEN);
 			}
 			else if (!hasViewPermission) {
-				redirect = HttpComponentsUtil.setParameter(
-					themeDisplay.getURLSignIn(), "redirect",
-					themeDisplay.getURLCurrent());
+				if (!loginRequest &&
+					AuthLoginGroupSettingsUtil.isPromptEnabled(
+						layout.getGroupId())) {
+
+					redirect = HttpComponentsUtil.setParameter(
+						themeDisplay.getURLSignIn(), "redirect",
+						themeDisplay.getURLCurrent());
+				}
+				else if (!loginRequest) {
+					throw new NoSuchLayoutException();
+				}
 			}
 
 			if (Validator.isNotNull(redirect)) {
 				httpServletResponse.sendRedirect(redirect);
 			}
 			else {
-				LayoutPageTemplateEntry layoutPageTemplateEntry =
-					_fetchLayoutPageTemplateEntry(layout);
-
 				if (layoutPageTemplateEntry != null) {
 					httpServletRequest.setAttribute(
 						ContentPageEditorWebKeys.CLASS_NAME,
@@ -329,15 +348,15 @@ public class DisplayPageLayoutTypeController
 			return layoutPageTemplateEntry;
 		}
 
-		if (layout.isDraftLayout()) {
-			Layout publishedLayout = _layoutLocalService.fetchLayout(
-				layout.getClassPK());
-
-			return _layoutPageTemplateEntryLocalService.
-				fetchLayoutPageTemplateEntryByPlid(publishedLayout.getPlid());
+		if (!layout.isDraftLayout()) {
+			return null;
 		}
 
-		return null;
+		Layout publishedLayout = _layoutLocalService.fetchLayout(
+			layout.getClassPK());
+
+		return _layoutPageTemplateEntryLocalService.
+			fetchLayoutPageTemplateEntryByPlid(publishedLayout.getPlid());
 	}
 
 	private boolean _hasUpdatePermissions(
@@ -359,6 +378,52 @@ public class DisplayPageLayoutTypeController
 		return false;
 	}
 
+	private boolean _isLoginRequest(
+		HttpServletRequest httpServletRequest, ThemeDisplay themeDisplay) {
+
+		if (GetterUtil.getBoolean(
+				httpServletRequest.getAttribute(WebKeys.LOGIN_REQUEST))) {
+
+			return true;
+		}
+
+		if ((themeDisplay != null) &&
+			Validator.isNotNull(themeDisplay.getPpid())) {
+
+			String loginPortletName = GetterUtil.get(
+				PropsValues.AUTH_LOGIN_PORTLET_NAME, PortletKeys.LOGIN);
+
+			String rootPortletId = PortletIdCodec.decodePortletName(
+				themeDisplay.getPpid());
+
+			if (loginPortletName.equals(rootPortletId)) {
+				return true;
+			}
+		}
+
+		String mainPath = _portal.getPathMain();
+		String proxyPath = _portal.getPathProxy();
+		String requestURI = httpServletRequest.getRequestURI();
+
+		if (Validator.isNotNull(proxyPath)) {
+			if (!requestURI.startsWith(proxyPath)) {
+				requestURI = proxyPath.concat(requestURI);
+			}
+
+			if (!mainPath.startsWith(proxyPath)) {
+				mainPath = proxyPath.concat(mainPath);
+			}
+		}
+
+		if (requestURI.startsWith(mainPath) &&
+			requestURI.startsWith("/portal/login", mainPath.length())) {
+
+			return true;
+		}
+
+		return false;
+	}
+
 	private static final String _EDIT_PAGE = "/layout/edit/display_page.jsp";
 
 	private static final String _URL =
@@ -371,10 +436,6 @@ public class DisplayPageLayoutTypeController
 		DisplayPageLayoutTypeController.class);
 
 	@Reference
-	private AssetDisplayPageFriendlyURLProvider
-		_assetDisplayPageFriendlyURLProvider;
-
-	@Reference
 	private volatile List<InfoDisplayRequestAttributesContributor>
 		_infoDisplayRequestAttributesContributors;
 
@@ -385,9 +446,6 @@ public class DisplayPageLayoutTypeController
 	private InfoSearchClassMapperRegistry _infoSearchClassMapperRegistry;
 
 	@Reference
-	private LayoutAssetEntryProviderRegistry _layoutAssetEntryProviderRegistry;
-
-	@Reference
 	private LayoutLocalService _layoutLocalService;
 
 	@Reference
@@ -396,6 +454,15 @@ public class DisplayPageLayoutTypeController
 	@Reference
 	private LayoutPageTemplateEntryLocalService
 		_layoutPageTemplateEntryLocalService;
+
+	@Reference(
+		target = "(model.class.name=com.liferay.layout.page.template.model.LayoutPageTemplateEntry)"
+	)
+	private ModelResourcePermission<LayoutPageTemplateEntry>
+		_layoutPageTemplateEntryModelResourcePermission;
+
+	@Reference
+	private Portal _portal;
 
 	@Reference(
 		target = "(osgi.web.symbolicname=com.liferay.layout.type.controller.display.page)"

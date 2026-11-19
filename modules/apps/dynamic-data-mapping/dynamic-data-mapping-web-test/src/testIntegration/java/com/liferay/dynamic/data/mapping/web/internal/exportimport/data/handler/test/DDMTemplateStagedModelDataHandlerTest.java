@@ -17,9 +17,11 @@ import com.liferay.exportimport.test.util.lar.BaseStagedModelDataHandlerTestCase
 import com.liferay.journal.constants.JournalFolderConstants;
 import com.liferay.journal.model.JournalArticle;
 import com.liferay.journal.service.JournalArticleLocalServiceUtil;
+import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.StagedModel;
+import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
@@ -38,6 +40,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -55,6 +58,81 @@ public class DDMTemplateStagedModelDataHandlerTest
 	@Rule
 	public static final AggregateTestRule aggregateTestRule =
 		new LiferayIntegrationTestRule();
+
+	@After
+	@Override
+	public void tearDown() throws Exception {
+		if (_journalArticle != null) {
+			JournalArticleLocalServiceUtil.deleteArticle(_journalArticle);
+		}
+
+		if (_importedTemplate != null) {
+			DDMTemplateLocalServiceUtil.deleteTemplate(_importedTemplate);
+		}
+
+		if (_importedStructure != null) {
+			DDMStructureLocalServiceUtil.deleteStructure(_importedStructure);
+		}
+
+		super.tearDown();
+	}
+
+	@Test
+	public void testImportTemplateToCompanyGroup() throws Exception {
+		DDMStructure structure = DDMStructureTestUtil.addStructure(
+			stagingGroup.getGroupId(), _CLASS_NAME_JOURNAL_ARTICLE);
+
+		DDMTemplate template = DDMTemplateTestUtil.addTemplate(
+			stagingGroup.getGroupId(), structure.getStructureId(),
+			PortalUtil.getClassNameId(_CLASS_NAME_JOURNAL_ARTICLE));
+
+		_exportTemplateAndStructure(stagingGroup, template, structure);
+
+		Group companyGroup = GroupLocalServiceUtil.getCompanyGroup(
+			stagingGroup.getCompanyId());
+
+		_importTemplateAndStructure(
+			stagingGroup, companyGroup, template, structure);
+
+		_importedStructure =
+			DDMStructureLocalServiceUtil.getDDMStructureByUuidAndGroupId(
+				structure.getUuid(), companyGroup.getGroupId());
+
+		_importedTemplate =
+			DDMTemplateLocalServiceUtil.getDDMTemplateByUuidAndGroupId(
+				template.getUuid(), companyGroup.getGroupId());
+
+		validateImportedStagedModel(template, _importedTemplate);
+
+		Assert.assertEquals(
+			_importedStructure.getStructureId(),
+			_importedTemplate.getClassPK());
+
+		ServiceContext serviceContext =
+			ServiceContextTestUtil.getServiceContext(liveGroup.getGroupId());
+
+		serviceContext.setWorkflowAction(WorkflowConstants.ACTION_PUBLISH);
+
+		_journalArticle = JournalArticleLocalServiceUtil.addArticle(
+			null, TestPropsValues.getUserId(), liveGroup.getGroupId(),
+			JournalFolderConstants.DEFAULT_PARENT_FOLDER_ID,
+			HashMapBuilder.put(
+				LocaleUtil.getDefault(), RandomTestUtil.randomString()
+			).build(),
+			HashMapBuilder.put(
+				LocaleUtil.getDefault(), RandomTestUtil.randomString()
+			).build(),
+			DDMStructureTestUtil.getSampleStructuredContent(),
+			_importedStructure.getStructureId(),
+			_importedTemplate.getTemplateKey(), serviceContext);
+
+		Assert.assertEquals(
+			_importedStructure.getStructureId(),
+			_journalArticle.getDDMStructureId());
+		Assert.assertEquals(
+			_importedTemplate.getTemplateKey(),
+			_journalArticle.getDDMTemplateKey());
+	}
 
 	@Test
 	public void testPublishTemplateToLiveBeforeStructure() throws Exception {
@@ -319,14 +397,16 @@ public class DDMTemplateStagedModelDataHandlerTest
 			Group exportGroup, Group importGroup, JournalArticle journalArticle)
 		throws Exception {
 
-		initImport(exportGroup, importGroup);
+		try (SafeCloseable safeCloseable = initImportWithSafeCloseable(
+				exportGroup, importGroup)) {
 
-		if (Objects.nonNull(journalArticle)) {
-			JournalArticle exportedJournalArticle =
-				(JournalArticle)readExportedStagedModel(journalArticle);
+			if (Objects.nonNull(journalArticle)) {
+				JournalArticle exportedJournalArticle =
+					(JournalArticle)readExportedStagedModel(journalArticle);
 
-			StagedModelDataHandlerUtil.importStagedModel(
-				portletDataContext, exportedJournalArticle);
+				StagedModelDataHandlerUtil.importStagedModel(
+					portletDataContext, exportedJournalArticle);
+			}
 		}
 	}
 
@@ -334,22 +414,22 @@ public class DDMTemplateStagedModelDataHandlerTest
 			DDMTemplate template, DDMStructure structure)
 		throws Exception {
 
-		initImport();
+		try (SafeCloseable safeCloseable = initImportWithSafeCloseable()) {
+			if (Objects.nonNull(structure)) {
+				DDMStructure exportedStructure =
+					(DDMStructure)readExportedStagedModel(structure);
 
-		if (Objects.nonNull(structure)) {
-			DDMStructure exportedStructure =
-				(DDMStructure)readExportedStagedModel(structure);
+				StagedModelDataHandlerUtil.importStagedModel(
+					portletDataContext, exportedStructure);
+			}
 
-			StagedModelDataHandlerUtil.importStagedModel(
-				portletDataContext, exportedStructure);
-		}
+			if (Objects.nonNull(template)) {
+				DDMTemplate exportedTemplate =
+					(DDMTemplate)readExportedStagedModel(template);
 
-		if (Objects.nonNull(template)) {
-			DDMTemplate exportedTemplate = (DDMTemplate)readExportedStagedModel(
-				template);
-
-			StagedModelDataHandlerUtil.importStagedModel(
-				portletDataContext, exportedTemplate);
+				StagedModelDataHandlerUtil.importStagedModel(
+					portletDataContext, exportedTemplate);
+			}
 		}
 	}
 
@@ -358,22 +438,24 @@ public class DDMTemplateStagedModelDataHandlerTest
 			DDMStructure structure)
 		throws Exception {
 
-		initImport(exportGroup, importGroup);
+		try (SafeCloseable safeCloseable = initImportWithSafeCloseable(
+				exportGroup, importGroup)) {
 
-		if (Objects.nonNull(structure)) {
-			DDMStructure exportedStructure =
-				(DDMStructure)readExportedStagedModel(structure);
+			if (Objects.nonNull(structure)) {
+				DDMStructure exportedStructure =
+					(DDMStructure)readExportedStagedModel(structure);
 
-			StagedModelDataHandlerUtil.importStagedModel(
-				portletDataContext, exportedStructure);
-		}
+				StagedModelDataHandlerUtil.importStagedModel(
+					portletDataContext, exportedStructure);
+			}
 
-		if (Objects.nonNull(template)) {
-			DDMTemplate exportedTemplate = (DDMTemplate)readExportedStagedModel(
-				template);
+			if (Objects.nonNull(template)) {
+				DDMTemplate exportedTemplate =
+					(DDMTemplate)readExportedStagedModel(template);
 
-			StagedModelDataHandlerUtil.importStagedModel(
-				portletDataContext, exportedTemplate);
+				StagedModelDataHandlerUtil.importStagedModel(
+					portletDataContext, exportedTemplate);
+			}
 		}
 	}
 
@@ -382,5 +464,9 @@ public class DDMTemplateStagedModelDataHandlerTest
 
 	private static final String _CLASS_NAME_JOURNAL_ARTICLE =
 		"com.liferay.journal.model.JournalArticle";
+
+	private DDMStructure _importedStructure;
+	private DDMTemplate _importedTemplate;
+	private JournalArticle _journalArticle;
 
 }

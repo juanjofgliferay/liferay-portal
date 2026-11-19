@@ -149,7 +149,7 @@ public interface BaseProjectTemplatesTestCase {
 		"gradle/wrapper/gradle-wrapper.properties"
 	};
 
-	public static final String GRADLE_WRAPPER_VERSION = "7.3.3";
+	public static final String GRADLE_WRAPPER_VERSION = "8.5";
 
 	public static final String MAVEN_GOAL_BUILD_REST = "rest-builder:build";
 
@@ -178,6 +178,11 @@ public interface BaseProjectTemplatesTestCase {
 
 	public static final boolean TEST_DEBUG_BUNDLE_DIFFS = Boolean.getBoolean(
 		"test.debug.bundle.diffs");
+
+	public static final String UNRELEASED_QUARTERLY_LIFERAY_VERSION = "2025.q3";
+
+	public static final String WORKSPACE_QUARTERLY_LIFERAY_VERSION =
+		"2025.q2.1";
 
 	public static final Pattern antBndPluginVersionPattern = Pattern.compile(
 		".*com\\.liferay\\.ant\\.bnd[:-]([0-9]+\\.[0-9]+\\.[0-9]+).*",
@@ -227,11 +232,7 @@ public interface BaseProjectTemplatesTestCase {
 
 		osName = osName.toLowerCase();
 
-		if (osName.contains("win")) {
-			return true;
-		}
-
-		return false;
+		return osName.contains("win");
 	}
 
 	public default void addCssBuilderConfigurationElement(
@@ -256,17 +257,18 @@ public interface BaseProjectTemplatesTestCase {
 
 			String artifactId = node.getNodeValue();
 
-			if (artifactId.equals("com.liferay.css.builder")) {
-				Element configurationElement = XMLTestUtil.getChildElement(
-					pluginElement, "configuration");
-
-				Element newElement = document.createElement(configurationName);
-
-				newElement.appendChild(
-					document.createTextNode(configurationText));
-
-				configurationElement.appendChild(newElement);
+			if (!artifactId.equals("com.liferay.css.builder")) {
+				continue;
 			}
+
+			Element configurationElement = XMLTestUtil.getChildElement(
+				pluginElement, "configuration");
+
+			Element newElement = document.createElement(configurationName);
+
+			newElement.appendChild(document.createTextNode(configurationText));
+
+			configurationElement.appendChild(newElement);
 		}
 	}
 
@@ -285,9 +287,11 @@ public interface BaseProjectTemplatesTestCase {
 			for (String line : lines) {
 				FileTestUtil.write(bufferedWriter, line);
 
-				if (line.contains("dependencies {")) {
-					FileTestUtil.write(bufferedWriter, dependencies);
+				if (!line.contains("dependencies {")) {
+					continue;
 				}
+
+				FileTestUtil.write(bufferedWriter, dependencies);
 			}
 		}
 	}
@@ -588,6 +592,7 @@ public interface BaseProjectTemplatesTestCase {
 		completeArgs.add("-DgroupId=" + groupId);
 		completeArgs.add("-Dversion=1.0.0");
 
+		String liferayVersion = "";
 		boolean liferayVersionSet = false;
 		boolean projectTypeSet = false;
 
@@ -595,6 +600,7 @@ public interface BaseProjectTemplatesTestCase {
 			completeArgs.add(arg);
 
 			if (arg.startsWith("-DliferayVersion=")) {
+				liferayVersion = arg.substring("-DliferayVersion=".length());
 				liferayVersionSet = true;
 			}
 			else if (arg.startsWith("-DprojectType=")) {
@@ -603,11 +609,20 @@ public interface BaseProjectTemplatesTestCase {
 		}
 
 		if (!liferayVersionSet) {
-			completeArgs.add("-DliferayVersion=" + getDefaultLiferayVersion());
+			liferayVersion = getDefaultLiferayVersion();
+
+			completeArgs.add("-DliferayVersion=" + liferayVersion);
 		}
 
 		if (!projectTypeSet) {
 			completeArgs.add("-DprojectType=standalone");
+		}
+
+		if (VersionUtil.isJakartaCompatibleVersion(liferayVersion)) {
+			completeArgs.add("-DjakartaCompatible=true");
+		}
+		else {
+			completeArgs.add("-DjakartaCompatible=false");
 		}
 
 		executeMaven(
@@ -639,6 +654,10 @@ public interface BaseProjectTemplatesTestCase {
 			TemporaryFolder temporaryFolder, String liferayVersion)
 		throws Exception {
 
+		if (liferayVersion.startsWith(UNRELEASED_QUARTERLY_LIFERAY_VERSION)) {
+			liferayVersion = WORKSPACE_QUARTERLY_LIFERAY_VERSION;
+		}
+
 		String name = "test-workspace";
 
 		File destinationDir = temporaryFolder.newFolder(
@@ -657,6 +676,10 @@ public interface BaseProjectTemplatesTestCase {
 			TemporaryFolder temporaryFolder, String buildType, String name,
 			String liferayVersion, MavenExecutor mavenExecutor)
 		throws Exception {
+
+		if (liferayVersion.startsWith(UNRELEASED_QUARTERLY_LIFERAY_VERSION)) {
+			liferayVersion = WORKSPACE_QUARTERLY_LIFERAY_VERSION;
+		}
 
 		File workspaceDir;
 
@@ -709,11 +732,8 @@ public interface BaseProjectTemplatesTestCase {
 
 		if (diffs.isEmpty()) {
 			Assert.assertEquals(
-				"Bundle " + bundleFile1 + " " +
-					diff.getNewer(
-					).toString() + " and " + bundleFile2 + " " +
-						diff.getOlder(
-						).toString() + " do not match",
+				"Bundle " + bundleFile1 + " " + diff.getNewer() + " and " +
+					bundleFile2 + " " + diff.getOlder() + " do not match",
 				aQute.bnd.service.diff.Delta.UNCHANGED.toString(),
 				String.valueOf(diff.getDelta()));
 
@@ -1082,7 +1102,7 @@ public interface BaseProjectTemplatesTestCase {
 			String... args)
 		throws Exception {
 
-		String[] completeArgs = new String[args.length + 3];
+		String[] completeArgs = new String[args.length + 5];
 
 		System.arraycopy(args, 0, completeArgs, 0, args.length);
 
@@ -1093,6 +1113,21 @@ public interface BaseProjectTemplatesTestCase {
 		completeArgs[args.length + 2] =
 			"-Drepository.private.password=" +
 				System.getProperty("repository.private.password");
+
+		String javaVersion = System.getProperty("java.version");
+
+		if (javaVersion.startsWith("17")) {
+			javaVersion = "17";
+		}
+
+		if (javaVersion.startsWith("21")) {
+			javaVersion = "21";
+		}
+
+		completeArgs[args.length + 3] =
+			"-Djava.compiler.source.version=" + javaVersion;
+		completeArgs[args.length + 4] =
+			"-Djava.compiler.target.version=" + javaVersion;
 
 		MavenExecutor.Result result = mavenExecutor.execute(
 			projectDir, completeArgs);
@@ -1122,8 +1157,21 @@ public interface BaseProjectTemplatesTestCase {
 		return projectTemplatesArgs.getLiferayVersion();
 	}
 
+	public default String getJavaxOrJakartaPackagePrefix(
+		String liferayVersion) {
+
+		if (VersionUtil.isJakartaCompatibleVersion(liferayVersion)) {
+			return "jakarta";
+		}
+
+		return "javax";
+	}
+
 	public default String getLiferayWorkspaceProduct(String liferayVersion) {
-		if (liferayVersion.startsWith("7.0")) {
+		if (liferayVersion.startsWith("20")) {
+			return "dxp-2024.q1.1";
+		}
+		else if (liferayVersion.startsWith("7.0")) {
 			return "dxp-7.0-sp17";
 		}
 		else if (liferayVersion.startsWith("7.1")) {
@@ -1298,24 +1346,21 @@ public interface BaseProjectTemplatesTestCase {
 			gradleWorkspaceModulesDir, template, name, "--liferay-product",
 			liferayProduct, "--liferay-version", liferayVersion);
 
-		if (VersionUtil.getMinorVersion(liferayVersion) < 3) {
-			testContains(
-				gradleProjectDir, "build.gradle", DEPENDENCY_RELEASE_DXP_API);
-		}
-		else {
-			testContains(
-				gradleProjectDir, "build.gradle",
-				DEPENDENCY_RELEASE_PORTAL_API);
-		}
+		testGradlePortalReleaseDependency(gradleProjectDir, liferayVersion);
 
 		testContains(
 			gradleProjectDir, "package.json",
-			"build/resources/main/META-INF/resources",
-			"liferay-npm-bundler\": \"2.30.0", "\"main\": \"lib/index.es.js\"");
+			"build/resources/main/META-INF/resources", "esbuild\": \"^0.20.2",
+			"\"main\": \"js/index.js\"");
 
 		testNotContains(
 			gradleProjectDir, "package.json",
 			"target/classes/META-INF/resources");
+
+		if (VersionUtil.isJakartaCompatibleVersion(liferayVersion)) {
+			testPortletUpdatedForJakarta(
+				gradleProjectDir, packageName, className);
+		}
 
 		File mavenWorkspaceDir = buildWorkspace(
 			temporaryFolder, "maven", "mavenWS", liferayVersion, mavenExecutor);
@@ -1413,6 +1458,11 @@ public interface BaseProjectTemplatesTestCase {
 				"resources/META-INF/resources/view.jsp",
 				"resources/META-INF/resources/css/main.scss"
 			};
+
+			if (VersionUtil.isJakartaCompatibleVersion(liferayVersion)) {
+				testPortletUpdatedForJakarta(
+					gradleProjectDir, packageName, className);
+			}
 		}
 		else {
 			resourceFileNames = new String[] {
@@ -1424,7 +1474,9 @@ public interface BaseProjectTemplatesTestCase {
 			testExists(gradleProjectDir, "src/main/" + resourceFileName);
 		}
 
-		if (VersionUtil.getMinorVersion(liferayVersion) < 3) {
+		if ((VersionUtil.getMinorVersion(liferayVersion) < 3) ||
+			(VersionUtil.getMajorVersion(liferayVersion) > 7)) {
+
 			testContains(
 				gradleProjectDir, "build.gradle", DEPENDENCY_RELEASE_DXP_API);
 		}
@@ -1477,7 +1529,14 @@ public interface BaseProjectTemplatesTestCase {
 
 		String liferayProduct = "portal";
 
-		if (liferayVersion.startsWith("7.0")) {
+		if (liferayVersion.startsWith("20")) {
+			writeGradlePropertiesInWorkspace(
+				gradleWorkspaceDir,
+				"liferay.workspace.target.platform.version=2024.q1.1");
+
+			liferayProduct = "dxp";
+		}
+		else if (liferayVersion.startsWith("7.0")) {
 			writeGradlePropertiesInWorkspace(
 				gradleWorkspaceDir,
 				"liferay.workspace.target.platform.version=7.0.10.17");
@@ -1534,6 +1593,14 @@ public interface BaseProjectTemplatesTestCase {
 		testNotContains(
 			gradleProjectDir, "build.gradle", true, "^repositories \\{.*");
 		testNotContains(gradleProjectDir, "build.gradle", "version: \"[0-9].*");
+
+		if (VersionUtil.isJakartaCompatibleVersion(liferayVersion)) {
+			testContains(
+				gradleProjectDir, "src/main/webapp/WEB-INF/web.xml",
+				"version=\"6.0\" xmlns=\"https://jakarta.ee/xml/ns/jakartaee",
+				"xsi:schemaLocation=\"https://jakarta.ee/xml/ns/jakartaee " +
+					"https://jakarta.ee/xml/ns/jakartaee/web-app_6_0.xsd");
+		}
 
 		File mavenWorkspaceDir = buildWorkspace(
 			temporaryFolder, "maven", "mavenWS", liferayVersion, mavenExecutor);
@@ -1841,6 +1908,38 @@ public interface BaseProjectTemplatesTestCase {
 		Assert.assertNotNull("Missing " + name, zipFile.getEntry(name));
 	}
 
+	public default void testFileUpdatedForJakarta(
+			File gradleProjectDir, String filePath)
+		throws IOException {
+
+		testNotContains(gradleProjectDir, filePath, "javax");
+		testContains(gradleProjectDir, filePath, "jakarta");
+
+		if (filePath.endsWith(".jsp")) {
+			testNotContains(
+				gradleProjectDir, filePath,
+				"http://java.sun.com/jsp/jstl/core");
+			testContains(gradleProjectDir, filePath, "jakarta.tags.core");
+		}
+	}
+
+	public default void testGradlePortalReleaseDependency(
+			File gradleProjectDir, String liferayVersion)
+		throws IOException {
+
+		if (VersionUtil.isLiferayQuarterlyVersion(liferayVersion) ||
+			(VersionUtil.getMinorVersion(liferayVersion) < 3)) {
+
+			testContains(
+				gradleProjectDir, "build.gradle", DEPENDENCY_RELEASE_DXP_API);
+		}
+		else {
+			testContains(
+				gradleProjectDir, "build.gradle",
+				DEPENDENCY_RELEASE_PORTAL_API);
+		}
+	}
+
 	public default File testNotContains(
 			File dir, String fileName, boolean regex, String... strings)
 		throws IOException {
@@ -1863,6 +1962,22 @@ public interface BaseProjectTemplatesTestCase {
 		return file;
 	}
 
+	public default void testPortletUpdatedForJakarta(
+			File gradleProjectDir, String packageName, String className)
+		throws IOException {
+
+		String portletFolderPath =
+			"src/main/java/" + packageName.replace('.', '/') + "/portlet/";
+
+		testFileUpdatedForJakarta(
+			gradleProjectDir, portletFolderPath + className + "Portlet.java");
+
+		testFileUpdatedForJakarta(
+			gradleProjectDir, "src/main/resources/META-INF/resources/init.jsp");
+		testFileUpdatedForJakarta(
+			gradleProjectDir, "src/main/resources/content/Language.properties");
+	}
+
 	public default File testStartsWith(File dir, String fileName, String prefix)
 		throws IOException {
 
@@ -1875,6 +1990,20 @@ public interface BaseProjectTemplatesTestCase {
 			content.startsWith(prefix));
 
 		return file;
+	}
+
+	public default void testTLDUpdatedForJakarta(
+			File gradleProjectDir, String tldFilePath)
+		throws IOException {
+
+		testFileUpdatedForJakarta(gradleProjectDir, tldFilePath);
+
+		testContains(
+			gradleProjectDir, tldFilePath,
+			"xmlns=\"https://jakarta.ee/xml/ns/jakartaee\"",
+			"xsi:schemaLocation=\"https://jakarta.ee/xml/ns/jakartaee " +
+				"https://jakarta.ee/xml/ns/jakartaee" +
+					"/web-jsptaglibrary_3_0.xsd");
 	}
 
 	public default void testTemplateWarHookDTD(
@@ -1912,7 +2041,18 @@ public interface BaseProjectTemplatesTestCase {
 			File gradleProjectDir, String liferayVersion)
 		throws Exception {
 
-		if (liferayVersion.startsWith("7.0")) {
+		if (liferayVersion.startsWith("20") ||
+			liferayVersion.startsWith("7.4")) {
+
+			testContains(
+				gradleProjectDir, "src/main/webapp/WEB-INF/liferay-display.xml",
+				"liferay-display_7_4_0.dtd");
+
+			testContains(
+				gradleProjectDir, "src/main/webapp/WEB-INF/liferay-portlet.xml",
+				"liferay-portlet-app_7_4_0.dtd");
+		}
+		else if (liferayVersion.startsWith("7.0")) {
 			testContains(
 				gradleProjectDir, "src/main/webapp/WEB-INF/liferay-display.xml",
 				"liferay-display_7_0_0.dtd");
@@ -1947,15 +2087,6 @@ public interface BaseProjectTemplatesTestCase {
 			testContains(
 				gradleProjectDir, "src/main/webapp/WEB-INF/liferay-portlet.xml",
 				"liferay-portlet-app_7_3_0.dtd");
-		}
-		else if (liferayVersion.startsWith("7.4")) {
-			testContains(
-				gradleProjectDir, "src/main/webapp/WEB-INF/liferay-display.xml",
-				"liferay-display_7_4_0.dtd");
-
-			testContains(
-				gradleProjectDir, "src/main/webapp/WEB-INF/liferay-portlet.xml",
-				"liferay-portlet-app_7_4_0.dtd");
 		}
 	}
 
@@ -2200,8 +2331,7 @@ public interface BaseProjectTemplatesTestCase {
 	public default void writeM2TmpForMavenWorkspace(File projectDir)
 		throws Exception {
 
-		File gettingStartedFile = new File(
-			projectDir, "GETTING_STARTED.markdown");
+		File gettingStartedFile = new File(projectDir, "GETTING_STARTED.md");
 		File pomXmlFile = new File(projectDir, "pom.xml");
 
 		if (gettingStartedFile.exists() && pomXmlFile.exists()) {

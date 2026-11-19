@@ -5,9 +5,9 @@
 
 package com.liferay.portal.osgi.web.wab.extender.internal.registration;
 
-import java.util.Comparator;
+import jakarta.servlet.ServletContextListener;
 
-import javax.servlet.ServletContextListener;
+import java.util.Comparator;
 
 import org.osgi.framework.Constants;
 import org.osgi.framework.ServiceReference;
@@ -33,11 +33,13 @@ public class ListenerServiceRegistrationComparator
 			Constants.OBJECTCLASS);
 
 		for (String objectClassName : objectClassNames1) {
-			if (objectClassName.equals(
+			if (!objectClassName.equals(
 					ServletContextListener.class.getName())) {
 
-				servletContextListenerCount1++;
+				continue;
 			}
+
+			servletContextListenerCount1++;
 		}
 
 		Integer servletContextListenerCount2 = 0;
@@ -49,11 +51,13 @@ public class ListenerServiceRegistrationComparator
 			Constants.OBJECTCLASS);
 
 		for (String objectClassName : objectClassNames2) {
-			if (objectClassName.equals(
+			if (!objectClassName.equals(
 					ServletContextListener.class.getName())) {
 
-				servletContextListenerCount2++;
+				continue;
 			}
+
+			servletContextListenerCount2++;
 		}
 
 		if (servletContextListenerCount1.equals(servletContextListenerCount2)) {

@@ -26,6 +26,7 @@ import com.liferay.dynamic.data.mapping.service.DDMFormInstanceVersionLocalServi
 import com.liferay.dynamic.data.mapping.service.DDMStructureLocalService;
 import com.liferay.dynamic.data.mapping.service.base.DDMFormInstanceLocalServiceBaseImpl;
 import com.liferay.dynamic.data.mapping.service.persistence.DDMFormInstanceVersionPersistence;
+import com.liferay.dynamic.data.mapping.service.persistence.DDMStructurePersistence;
 import com.liferay.dynamic.data.mapping.storage.DDMFormValues;
 import com.liferay.dynamic.data.mapping.storage.StorageType;
 import com.liferay.dynamic.data.mapping.util.DDMFormFactory;
@@ -33,6 +34,7 @@ import com.liferay.dynamic.data.mapping.util.DDMFormInstanceFactory;
 import com.liferay.dynamic.data.mapping.validator.DDMFormValuesValidator;
 import com.liferay.mail.kernel.model.MailMessage;
 import com.liferay.mail.kernel.service.MailService;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -54,14 +56,13 @@ import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.workflow.kaleo.model.KaleoDefinition;
 import com.liferay.portal.workflow.kaleo.service.KaleoDefinitionLocalService;
 
-import java.util.ArrayList;
+import jakarta.mail.internet.InternetAddress;
+
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
-
-import javax.mail.internet.InternetAddress;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -161,7 +162,8 @@ public class DDMFormInstanceLocalServiceImpl
 		throws PortalException {
 
 		DDMStructure ddmStructure = _ddmStructureLocalService.addStructure(
-			userId, groupId, DDMStructureConstants.DEFAULT_PARENT_STRUCTURE_ID,
+			null, userId, groupId,
+			DDMStructureConstants.DEFAULT_PARENT_STRUCTURE_ID,
 			_classNameLocalService.getClassNameId(DDMFormInstance.class),
 			StringPool.BLANK, nameMap, descriptionMap, ddmForm, ddmFormLayout,
 			_getStorageType(settingsDDMFormValues),
@@ -243,7 +245,7 @@ public class DDMFormInstanceLocalServiceImpl
 
 		long structureId = ddmFormInstance.getStructureId();
 
-		if (_ddmStructureLocalService.fetchDDMStructure(structureId) != null) {
+		if (_ddmStructurePersistence.fetchByPrimaryKey(structureId) != null) {
 			_ddmStructureLocalService.deleteStructure(structureId);
 		}
 
@@ -269,16 +271,6 @@ public class DDMFormInstanceLocalServiceImpl
 	}
 
 	@Override
-	public void deleteFormInstances(long groupId) throws PortalException {
-		List<DDMFormInstance> ddmFormInstances =
-			ddmFormInstancePersistence.findByGroupId(groupId);
-
-		for (DDMFormInstance ddmFormInstance : ddmFormInstances) {
-			deleteFormInstance(ddmFormInstance);
-		}
-	}
-
-	@Override
 	public DDMFormInstance fetchFormInstance(long ddmFormInstanceId) {
 		return ddmFormInstancePersistence.fetchByPrimaryKey(ddmFormInstanceId);
 	}
@@ -291,10 +283,29 @@ public class DDMFormInstanceLocalServiceImpl
 	}
 
 	@Override
-	public DDMFormInstance getFormInstance(String uuid, long ddmFormInstanceId)
+	public DDMFormInstance getFormInstanceByStructureId(long structureId)
 		throws PortalException {
 
-		return ddmFormInstancePersistence.findByUUID_G(uuid, ddmFormInstanceId);
+		return ddmFormInstancePersistence.findByStructureId(structureId);
+	}
+
+	@Override
+	public DDMFormValues getFormInstanceSettingsFormValues(
+		DDMFormInstance formInstance) {
+
+		return _getFormInstanceSettingsFormValues(formInstance.getSettings());
+	}
+
+	@Override
+	public DDMFormInstanceSettings getFormInstanceSettingsModel(
+			DDMFormInstance formInstance)
+		throws PortalException {
+
+		DDMFormValues formValues = getFormInstanceSettingsFormValues(
+			formInstance);
+
+		return DDMFormInstanceFactory.create(
+			DDMFormInstanceSettings.class, formValues);
 	}
 
 	@Override
@@ -313,58 +324,12 @@ public class DDMFormInstanceLocalServiceImpl
 	}
 
 	@Override
-	public DDMFormValues getFormInstanceSettingsFormValues(
-			DDMFormInstance formInstance)
-		throws PortalException {
-
-		return _getFormInstanceSettingsFormValues(formInstance.getSettings());
-	}
-
-	@Override
-	public DDMFormInstanceSettings getFormInstanceSettingsModel(
-			DDMFormInstance formInstance)
-		throws PortalException {
-
-		DDMFormValues formValues = getFormInstanceSettingsFormValues(
-			formInstance);
-
-		return DDMFormInstanceFactory.create(
-			DDMFormInstanceSettings.class, formValues);
-	}
-
-	@Override
 	public List<DDMFormInstance> search(
 		long companyId, long groupId, String keywords, int start, int end,
 		OrderByComparator<DDMFormInstance> orderByComparator) {
 
 		return ddmFormInstanceFinder.findByKeywords(
 			companyId, groupId, keywords, start, end, orderByComparator);
-	}
-
-	@Override
-	public List<DDMFormInstance> search(
-		long companyId, long groupId, String[] names, String[] descriptions,
-		boolean andOperator, int start, int end,
-		OrderByComparator<DDMFormInstance> orderByComparator) {
-
-		return ddmFormInstanceFinder.findByC_G_N_D(
-			companyId, groupId, names, descriptions, andOperator, start, end,
-			orderByComparator);
-	}
-
-	@Override
-	public int searchCount(long companyId, long groupId, String keywords) {
-		return ddmFormInstanceFinder.countByKeywords(
-			companyId, groupId, keywords);
-	}
-
-	@Override
-	public int searchCount(
-		long companyId, long groupId, String[] names, String[] descriptions,
-		boolean andOperator) {
-
-		return ddmFormInstanceFinder.countByC_G_N_D(
-			companyId, groupId, names, descriptions, andOperator);
 	}
 
 	@Override
@@ -379,13 +344,11 @@ public class DDMFormInstanceLocalServiceImpl
 			new InternetAddress(user.getEmailAddress(), user.getFullName()),
 			subject, message, false);
 
-		List<InternetAddress> internetAddresses = new ArrayList<>();
-
-		for (String toEmailAddress : toEmailAddresses) {
-			internetAddresses.add(new InternetAddress(toEmailAddress));
-		}
-
-		mailMessage.setTo(internetAddresses.toArray(new InternetAddress[0]));
+		mailMessage.setTo(
+			TransformUtil.transform(
+				toEmailAddresses,
+				toEmailAddress -> new InternetAddress(toEmailAddress),
+				InternetAddress.class));
 
 		_mailService.sendEmail(mailMessage);
 	}
@@ -492,7 +455,7 @@ public class DDMFormInstanceLocalServiceImpl
 	private Locale _getDDMFormDefaultLocale(long ddmStructureId)
 		throws PortalException {
 
-		DDMStructure ddmStructure = _ddmStructureLocalService.getDDMStructure(
+		DDMStructure ddmStructure = _ddmStructurePersistence.findByPrimaryKey(
 			ddmStructureId);
 
 		DDMForm ddmForm = ddmStructure.getDDMForm();
@@ -501,8 +464,7 @@ public class DDMFormInstanceLocalServiceImpl
 	}
 
 	private DDMFormValues _getFormInstanceSettingsFormValues(
-			String serializedSettingsDDMFormValues)
-		throws PortalException {
+		String serializedSettingsDDMFormValues) {
 
 		DDMForm ddmForm = DDMFormFactory.create(DDMFormInstanceSettings.class);
 
@@ -548,7 +510,7 @@ public class DDMFormInstanceLocalServiceImpl
 	private long _getStructureVersionId(long ddmStructureId)
 		throws PortalException {
 
-		DDMStructure ddmStructure = _ddmStructureLocalService.getStructure(
+		DDMStructure ddmStructure = _ddmStructurePersistence.findByPrimaryKey(
 			ddmStructureId);
 
 		DDMStructureVersion ddmStructureVersion =
@@ -737,7 +699,7 @@ public class DDMFormInstanceLocalServiceImpl
 	private void _validateStructureId(long ddmStructureId)
 		throws PortalException {
 
-		DDMStructure ddmStructure = _ddmStructureLocalService.fetchStructure(
+		DDMStructure ddmStructure = _ddmStructurePersistence.fetchByPrimaryKey(
 			ddmStructureId);
 
 		if (ddmStructure == null) {
@@ -769,6 +731,9 @@ public class DDMFormInstanceLocalServiceImpl
 
 	@Reference
 	private DDMStructureLocalService _ddmStructureLocalService;
+
+	@Reference
+	private DDMStructurePersistence _ddmStructurePersistence;
 
 	@Reference(target = "(ddm.form.values.deserializer.type=json)")
 	private DDMFormValuesDeserializer _jsonDDMFormValuesDeserializer;

@@ -12,6 +12,8 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.io.Serializable;
 
 import java.util.HashMap;
@@ -19,8 +21,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.TimeZone;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Brian Wing Shun Chan
@@ -54,15 +54,17 @@ public class SearchContextFactory {
 		for (Map.Entry<String, String[]> entry : parameters.entrySet()) {
 			String[] values = entry.getValue();
 
-			if (ArrayUtil.isNotEmpty(values)) {
-				String name = entry.getKey();
+			if (ArrayUtil.isEmpty(values)) {
+				continue;
+			}
 
-				if (values.length == 1) {
-					attributes.put(name, values[0]);
-				}
-				else {
-					attributes.put(name, values);
-				}
+			String name = entry.getKey();
+
+			if (values.length == 1) {
+				attributes.put(name, values[0]);
+			}
+			else {
+				attributes.put(name, values);
 			}
 		}
 

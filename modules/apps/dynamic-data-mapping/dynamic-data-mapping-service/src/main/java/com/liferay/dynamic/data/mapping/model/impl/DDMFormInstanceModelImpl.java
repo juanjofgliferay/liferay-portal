@@ -10,8 +10,10 @@ import com.liferay.dynamic.data.mapping.model.DDMFormInstanceModel;
 import com.liferay.expando.kernel.model.ExpandoBridge;
 import com.liferay.expando.kernel.util.ExpandoBridgeFactoryUtil;
 import com.liferay.exportimport.kernel.lar.StagedModelType;
+import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.bean.AutoEscapeBeanHandler;
+import com.liferay.portal.kernel.dao.orm.EntityCacheUtil;
 import com.liferay.portal.kernel.exception.LocaleException;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSON;
@@ -31,6 +33,8 @@ import com.liferay.portal.kernel.util.Validator;
 
 import java.io.Serializable;
 
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
@@ -111,11 +115,18 @@ public class DDMFormInstanceModelImpl
 
 	public static final String TABLE_SQL_DROP = "drop table DDMFormInstance";
 
+	public static final String ENTITY_ALIAS = "ddmFormInstance";
+
+	public static final String FILTER_PK_COLUMN_NAME = "formInstanceId";
+
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY ddmFormInstance.formInstanceId ASC";
 
 	public static final String ORDER_BY_SQL =
 		" ORDER BY DDMFormInstance.formInstanceId ASC";
+
+	public static final String ORDER_BY_SQL_INLINE_DISTINCT =
+		" ORDER BY ddmFormInstance.formInstanceId ASC";
 
 	public static final String DATA_SOURCE = "liferayDataSource";
 
@@ -139,14 +150,20 @@ public class DDMFormInstanceModelImpl
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long UUID_COLUMN_BITMASK = 4L;
+	public static final long STRUCTUREID_COLUMN_BITMASK = 4L;
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
+	 */
+	@Deprecated
+	public static final long UUID_COLUMN_BITMASK = 8L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
 	 *		#getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long FORMINSTANCEID_COLUMN_BITMASK = 8L;
+	public static final long FORMINSTANCEID_COLUMN_BITMASK = 16L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
@@ -659,6 +676,16 @@ public class DDMFormInstanceModelImpl
 		_structureId = structureId;
 	}
 
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
+	 *             #getColumnOriginalValue(String)}
+	 */
+	@Deprecated
+	public long getOriginalStructureId() {
+		return GetterUtil.getLong(
+			this.<Long>getColumnOriginalValue("structureId"));
+	}
+
 	@JSON
 	@Override
 	public String getVersion() {
@@ -933,14 +960,18 @@ public class DDMFormInstanceModelImpl
 		_lastPublishDate = lastPublishDate;
 	}
 
-	public com.liferay.dynamic.data.mapping.storage.DDMFormValues
-		getDDMFormValues() {
-
+	public Long getSettingsObjectDefinitionId() {
 		return null;
 	}
 
-	public void setDDMFormValues(
-		com.liferay.dynamic.data.mapping.storage.DDMFormValues ddmFormValues) {
+	public void setSettingsObjectDefinitionId(Long objectDefinitionId) {
+	}
+
+	public String getSettingsStorageType() {
+		return null;
+	}
+
+	public void setSettingsStorageType(String storageType) {
 	}
 
 	@Override
@@ -1177,6 +1208,28 @@ public class DDMFormInstanceModelImpl
 	}
 
 	@Override
+	public void copyCacheFields(DDMFormInstance source) {
+		if (getMvccVersion() != source.getMvccVersion()) {
+			return;
+		}
+
+		try {
+			_objectDefinitionIdSetterMethodHandle.invokeExact(
+				(DDMFormInstanceImpl)this,
+				(Long)_objectDefinitionIdGetterMethodHandle.invokeExact(
+					(DDMFormInstanceImpl)source));
+
+			_storageTypeSetterMethodHandle.invokeExact(
+				(DDMFormInstanceImpl)this,
+				(String)_storageTypeGetterMethodHandle.invokeExact(
+					(DDMFormInstanceImpl)source));
+		}
+		catch (Throwable throwable) {
+			ReflectionUtil.throwException(throwable);
+		}
+	}
+
+	@Override
 	public boolean equals(Object object) {
 		if (this == object) {
 			return true;
@@ -1227,7 +1280,9 @@ public class DDMFormInstanceModelImpl
 
 		_setModifiedDate = false;
 
-		setDDMFormValues(null);
+		setSettingsObjectDefinitionId(null);
+
+		setSettingsStorageType(null);
 
 		_columnBitmask = 0;
 	}
@@ -1337,9 +1392,22 @@ public class DDMFormInstanceModelImpl
 			ddmFormInstanceCacheModel.lastPublishDate = Long.MIN_VALUE;
 		}
 
-		setDDMFormValues(null);
+		try {
+			setSettingsObjectDefinitionId(null);
 
-		ddmFormInstanceCacheModel._ddmFormValues = getDDMFormValues();
+			ddmFormInstanceCacheModel.objectDefinitionId =
+				(Long)_objectDefinitionIdGetterMethodHandle.invokeExact(
+					(DDMFormInstanceImpl)this);
+
+			setSettingsStorageType(null);
+
+			ddmFormInstanceCacheModel.storageType =
+				(String)_storageTypeGetterMethodHandle.invokeExact(
+					(DDMFormInstanceImpl)this);
+		}
+		catch (Throwable throwable) {
+			ReflectionUtil.throwException(throwable);
+		}
 
 		return ddmFormInstanceCacheModel;
 	}
@@ -1536,6 +1604,68 @@ public class DDMFormInstanceModelImpl
 	}
 
 	private long _columnBitmask;
+
+	protected static final BiConsumer<DDMFormInstance, Long>
+		objectDefinitionIdUpdateEntityCacheBiConsumer =
+			(ddmFormInstance, objectDefinitionId) -> {
+				DDMFormInstanceCacheModel ddmFormInstanceCacheModel =
+					EntityCacheUtil.fetchCacheModel(
+						DDMFormInstanceImpl.class,
+						ddmFormInstance.getPrimaryKey(),
+						DDMFormInstanceCacheModel.class);
+
+				if ((ddmFormInstanceCacheModel != null) &&
+					(ddmFormInstanceCacheModel.getMvccVersion() ==
+						ddmFormInstance.getMvccVersion())) {
+
+					ddmFormInstanceCacheModel.objectDefinitionId =
+						objectDefinitionId;
+				}
+			};
+
+	private static final MethodHandle _objectDefinitionIdGetterMethodHandle;
+	private static final MethodHandle _objectDefinitionIdSetterMethodHandle;
+
+	protected static final BiConsumer<DDMFormInstance, String>
+		storageTypeUpdateEntityCacheBiConsumer =
+			(ddmFormInstance, storageType) -> {
+				DDMFormInstanceCacheModel ddmFormInstanceCacheModel =
+					EntityCacheUtil.fetchCacheModel(
+						DDMFormInstanceImpl.class,
+						ddmFormInstance.getPrimaryKey(),
+						DDMFormInstanceCacheModel.class);
+
+				if ((ddmFormInstanceCacheModel != null) &&
+					(ddmFormInstanceCacheModel.getMvccVersion() ==
+						ddmFormInstance.getMvccVersion())) {
+
+					ddmFormInstanceCacheModel.storageType = storageType;
+				}
+			};
+
+	private static final MethodHandle _storageTypeGetterMethodHandle;
+	private static final MethodHandle _storageTypeSetterMethodHandle;
+
+	static {
+		MethodHandles.Lookup lookup = ReflectionUtil.getImplLookup();
+
+		try {
+			_objectDefinitionIdGetterMethodHandle = lookup.findGetter(
+				DDMFormInstanceImpl.class, "_objectDefinitionId", Long.class);
+			_objectDefinitionIdSetterMethodHandle = lookup.findSetter(
+				DDMFormInstanceImpl.class, "_objectDefinitionId", Long.class);
+
+			_storageTypeGetterMethodHandle = lookup.findGetter(
+				DDMFormInstanceImpl.class, "_storageType", String.class);
+			_storageTypeSetterMethodHandle = lookup.findSetter(
+				DDMFormInstanceImpl.class, "_storageType", String.class);
+		}
+		catch (ReflectiveOperationException reflectiveOperationException) {
+			throw new ExceptionInInitializerError(reflectiveOperationException);
+		}
+	}
+
 	private DDMFormInstance _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:228130222

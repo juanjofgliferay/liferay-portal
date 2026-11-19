@@ -120,17 +120,17 @@ const RatingsStars = ({
 			return inititalTitle;
 		}
 		else if (score <= 0) {
-			return Liferay.Language.get('vote');
+			return Liferay.Language.get('vote[action]');
 		}
 		else if (score > 0) {
 			const title =
 				score === 1
 					? Liferay.Language.get(
 							'you-have-rated-this-x-star-out-of-x'
-					  )
+						)
 					: Liferay.Language.get(
 							'you-have-rated-this-x-stars-out-of-x'
-					  );
+						);
 
 			return Lang.sub(title, [score, numberOfStars]);
 		}
@@ -144,7 +144,7 @@ const RatingsStars = ({
 				? Liferay.Language.get('the-average-rating-is-x-star-out-of-x')
 				: Liferay.Language.get(
 						'the-average-rating-is-x-stars-out-of-x'
-				  );
+					);
 
 		return Lang.sub(srAverageMessage, [averageScore, numberOfStars]);
 	};

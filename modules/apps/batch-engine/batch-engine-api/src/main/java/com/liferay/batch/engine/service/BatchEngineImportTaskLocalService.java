@@ -73,7 +73,7 @@ public interface BatchEngineImportTaskLocalService
 	public BatchEngineImportTask addBatchEngineImportTask(
 		BatchEngineImportTask batchEngineImportTask);
 
-	@Transactional(propagation = Propagation.REQUIRES_NEW)
+	@Transactional(propagation = Propagation.NESTED)
 	public BatchEngineImportTask addBatchEngineImportTask(
 			String externalReferenceCode, long companyId, long userId,
 			long batchSize, String callbackURL, String className,
@@ -83,7 +83,7 @@ public interface BatchEngineImportTaskLocalService
 			String taskItemDelegateName)
 		throws PortalException;
 
-	@Transactional(propagation = Propagation.REQUIRES_NEW)
+	@Transactional(propagation = Propagation.NESTED)
 	public BatchEngineImportTask addBatchEngineImportTask(
 			String externalReferenceCode, long companyId, long userId,
 			long batchSize, String callbackURL, String className,
@@ -290,15 +290,6 @@ public interface BatchEngineImportTaskLocalService
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<BatchEngineImportTask> getBatchEngineImportTasks(
-		long companyId, int start, int end);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<BatchEngineImportTask> getBatchEngineImportTasks(
-		long companyId, int start, int end,
-		OrderByComparator<BatchEngineImportTask> orderByComparator);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<BatchEngineImportTask> getBatchEngineImportTasks(
 		String executeStatus);
 
 	/**
@@ -308,9 +299,6 @@ public interface BatchEngineImportTaskLocalService
 	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public int getBatchEngineImportTasksCount();
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getBatchEngineImportTasksCount(long companyId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public BatchEngineImportTaskContentBlobModel getContentBlobModel(
@@ -352,7 +340,9 @@ public interface BatchEngineImportTaskLocalService
 	 * @return the batch engine import task that was updated
 	 */
 	@Indexable(type = IndexableType.REINDEX)
+	@Transactional(propagation = Propagation.NESTED)
 	public BatchEngineImportTask updateBatchEngineImportTask(
 		BatchEngineImportTask batchEngineImportTask);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-36789696

@@ -22,7 +22,6 @@ import java.io.StringWriter;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
-import java.util.logging.Level;
 
 import org.junit.Assert;
 import org.junit.ClassRule;
@@ -52,6 +51,120 @@ public class TypedPropertiesTest {
 		for (String key : keys) {
 			Assert.assertNotEquals(null, typedProperties.get(key));
 		}
+	}
+
+	@Test
+	public void testLoadAndSaveSubstitution() throws IOException {
+		String systemKey = "testSystemKey";
+
+		String line = StringBundler.concat("testKey = \"${", systemKey, "}\"");
+
+		String systemValue = "testSystemValue";
+
+		String oldSystemValue = System.getProperty(systemKey);
+
+		System.setProperty(systemKey, systemValue);
+
+		TypedProperties typedProperties = _createTypedProperties(line);
+
+		try {
+			Assert.assertEquals(
+				"testSystemValue", typedProperties.get("testKey"));
+		}
+		finally {
+			if (oldSystemValue == null) {
+				System.clearProperty(systemKey);
+			}
+			else {
+				System.setProperty(systemKey, oldSystemValue);
+			}
+		}
+
+		_assertSave(typedProperties, line);
+	}
+
+	@Test
+	public void testLoadBadLine() throws IOException {
+		String line = "testKey = K\"testValue\"";
+
+		try (LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
+				TypedProperties.class.getName(), LoggerTestUtil.WARN)) {
+
+			TypedProperties typedProperties = _createTypedProperties(line);
+
+			List<LogEntry> logEntries = logCapture.getLogEntries();
+
+			Assert.assertEquals(logEntries.toString(), 1, logEntries.size());
+
+			LogEntry logEntry = logEntries.get(0);
+
+			Assert.assertEquals(
+				"Unable to parse config line: " + line, logEntry.getMessage());
+
+			Assert.assertEquals(null, typedProperties.get("testKey"));
+
+			_assertSave(typedProperties, StringPool.BLANK);
+		}
+	}
+
+	@NewEnv(type = NewEnv.Type.JVM)
+	@NewEnv.Environment(variables = "LIFERAY_FOO_ENV_VALUE=ENV_TEST_VALUE")
+	@Test
+	public void testLoadEnvVariable() throws IOException {
+		TypedProperties typedProperties = new TypedProperties();
+
+		typedProperties.load(
+			new StringReader("testKey=\"${LIFERAY_FOO_ENV_VALUE}\""));
+
+		Assert.assertEquals("ENV_TEST_VALUE", typedProperties.get("testKey"));
+	}
+
+	@Test
+	public void testLoadNonexistentEnvVariable() throws IOException {
+		TypedProperties typedProperties = _createTypedProperties(
+			"testKey=\"${LIFERAY_FOO_ENV_VALUE}\"");
+
+		Assert.assertNull(typedProperties.get("LIFERAY_FOO_ENV_VALUE"));
+	}
+
+	@Test
+	public void testLoadNontyped() throws IOException {
+		TypedProperties typedProperties = _createTypedProperties(
+			"testKey = \"testValue\"");
+
+		Assert.assertEquals("testValue", typedProperties.get("testKey"));
+	}
+
+	@Test
+	public void testLoadPutandSaveKeepFormat() throws IOException {
+		String line = "testKey = \\\n\"testValue\"";
+
+		TypedProperties typedProperties = _createTypedProperties(line);
+
+		typedProperties.put("testKey", "testValue");
+
+		_assertSave(typedProperties, line);
+	}
+
+	@Test
+	public void testLoadPutandSaveMultiline() throws IOException {
+		String line =
+			"testKey = [\\\n\t\"testValue1\",\\\n\t\"testValue2\"\\\n]";
+
+		TypedProperties typedProperties = _createTypedProperties(line);
+
+		typedProperties.put(
+			"testKey", new String[] {"testValue1", "testValue2"});
+
+		_assertSave(typedProperties, line);
+	}
+
+	@Test
+	public void testLoadTyped() throws IOException {
+		TypedProperties typedProperties = _createTypedProperties(
+			"testKey = I\"1\"");
+
+		Assert.assertEquals(1, typedProperties.get("testKey"));
 	}
 
 	@Test
@@ -142,8 +255,8 @@ public class TypedPropertiesTest {
 
 	@Test
 	public void testLoadandSaveMultipleComments() throws IOException {
-		try (LogCapture logCapture = LoggerTestUtil.configureJDKLogger(
-				TypedProperties.class.getName(), Level.WARNING)) {
+		try (LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
+				TypedProperties.class.getName(), LoggerTestUtil.WARN)) {
 
 			TypedProperties typedProperties = _createTypedProperties(
 				"#comment1\n#comment2\ntestKey = \"testValue\"");
@@ -165,39 +278,9 @@ public class TypedPropertiesTest {
 	}
 
 	@Test
-	public void testLoadAndSaveSubstitution() throws IOException {
-		String systemKey = "testSystemKey";
-
-		String line = StringBundler.concat("testKey = \"${", systemKey, "}\"");
-
-		String systemValue = "testSystemValue";
-
-		String oldSystemValue = System.getProperty(systemKey);
-
-		System.setProperty(systemKey, systemValue);
-
-		TypedProperties typedProperties = _createTypedProperties(line);
-
-		try {
-			Assert.assertEquals(
-				"testSystemValue", typedProperties.get("testKey"));
-		}
-		finally {
-			if (oldSystemValue == null) {
-				System.clearProperty(systemKey);
-			}
-			else {
-				System.setProperty(systemKey, oldSystemValue);
-			}
-		}
-
-		_assertSave(typedProperties, line);
-	}
-
-	@Test
 	public void testLoadandSaveTrailingComment() throws IOException {
-		try (LogCapture logCapture = LoggerTestUtil.configureJDKLogger(
-				TypedProperties.class.getName(), Level.WARNING)) {
+		try (LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
+				TypedProperties.class.getName(), LoggerTestUtil.WARN)) {
 
 			TypedProperties typedProperties = _createTypedProperties(
 				"testKey = \"testValue\"\n#comment");
@@ -228,90 +311,6 @@ public class TypedPropertiesTest {
 			"testValue1,testValue2", typedProperties.get("testKey"));
 
 		_assertSave(typedProperties, line);
-	}
-
-	@Test
-	public void testLoadBadLine() throws IOException {
-		String line = "testKey = K\"testValue\"";
-
-		try (LogCapture logCapture = LoggerTestUtil.configureJDKLogger(
-				TypedProperties.class.getName(), Level.WARNING)) {
-
-			TypedProperties typedProperties = _createTypedProperties(line);
-
-			List<LogEntry> logEntries = logCapture.getLogEntries();
-
-			Assert.assertEquals(logEntries.toString(), 1, logEntries.size());
-
-			LogEntry logEntry = logEntries.get(0);
-
-			Assert.assertEquals(
-				"Unable to parse config line: " + line, logEntry.getMessage());
-
-			Assert.assertEquals(null, typedProperties.get("testKey"));
-
-			_assertSave(typedProperties, StringPool.BLANK);
-		}
-	}
-
-	@NewEnv(type = NewEnv.Type.JVM)
-	@NewEnv.Environment(variables = "LIFERAY_FOO_ENV_VALUE=ENV_TEST_VALUE")
-	@Test
-	public void testLoadEnvVariable() throws IOException {
-		TypedProperties typedProperties = new TypedProperties();
-
-		typedProperties.load(
-			new StringReader("testKey=\"${LIFERAY_FOO_ENV_VALUE}\""));
-
-		Assert.assertEquals("ENV_TEST_VALUE", typedProperties.get("testKey"));
-	}
-
-	@Test
-	public void testLoadNonexistentEnvVariable() throws IOException {
-		TypedProperties typedProperties = _createTypedProperties(
-			"testKey=\"${LIFERAY_FOO_ENV_VALUE}\"");
-
-		Assert.assertNull(typedProperties.get("LIFERAY_FOO_ENV_VALUE"));
-	}
-
-	@Test
-	public void testLoadNontyped() throws IOException {
-		TypedProperties typedProperties = _createTypedProperties(
-			"testKey = \"testValue\"");
-
-		Assert.assertEquals("testValue", typedProperties.get("testKey"));
-	}
-
-	@Test
-	public void testLoadPutandSaveKeepFormat() throws IOException {
-		String line = "testKey = \\\n\"testValue\"";
-
-		TypedProperties typedProperties = _createTypedProperties(line);
-
-		typedProperties.put("testKey", "testValue");
-
-		_assertSave(typedProperties, line);
-	}
-
-	@Test
-	public void testLoadPutandSaveMultiline() throws IOException {
-		String line =
-			"testKey = [\\\n\t\"testValue1\",\\\n\t\"testValue2\"\\\n]";
-
-		TypedProperties typedProperties = _createTypedProperties(line);
-
-		typedProperties.put(
-			"testKey", new String[] {"testValue1", "testValue2"});
-
-		_assertSave(typedProperties, line);
-	}
-
-	@Test
-	public void testLoadTyped() throws IOException {
-		TypedProperties typedProperties = _createTypedProperties(
-			"testKey = I\"1\"");
-
-		Assert.assertEquals(1, typedProperties.get("testKey"));
 	}
 
 	@Test

@@ -21,6 +21,7 @@ import com.liferay.portal.kernel.util.IntegerWrapper;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.OrderByComparatorFactoryUtil;
 import com.liferay.portal.kernel.util.Time;
+import com.liferay.portal.language.override.exception.DuplicatePLOEntryExternalReferenceCodeException;
 import com.liferay.portal.language.override.exception.NoSuchPLOEntryException;
 import com.liferay.portal.language.override.model.PLOEntry;
 import com.liferay.portal.language.override.service.PLOEntryLocalServiceUtil;
@@ -112,15 +113,15 @@ public class PLOEntryPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
+		PLOEntry newPLOEntry = addPLOEntry();
 
-		PLOEntry newPLOEntry = _persistence.create(pk);
-
-		newPLOEntry.setMvccVersion(RandomTestUtil.nextLong());
+		newPLOEntry.setExternalReferenceCode(RandomTestUtil.randomString());
 
 		newPLOEntry.setCompanyId(RandomTestUtil.nextLong());
 
 		newPLOEntry.setUserId(RandomTestUtil.nextLong());
+
+		newPLOEntry.setUserName(RandomTestUtil.randomString());
 
 		newPLOEntry.setCreateDate(RandomTestUtil.nextDate());
 
@@ -132,7 +133,9 @@ public class PLOEntryPersistenceTest {
 
 		newPLOEntry.setValue(RandomTestUtil.randomString());
 
-		_ploEntries.add(_persistence.update(newPLOEntry));
+		newPLOEntry = _persistence.update(newPLOEntry);
+
+		_ploEntries.add(newPLOEntry);
 
 		PLOEntry existingPLOEntry = _persistence.findByPrimaryKey(
 			newPLOEntry.getPrimaryKey());
@@ -140,11 +143,16 @@ public class PLOEntryPersistenceTest {
 		Assert.assertEquals(
 			existingPLOEntry.getMvccVersion(), newPLOEntry.getMvccVersion());
 		Assert.assertEquals(
+			existingPLOEntry.getExternalReferenceCode(),
+			newPLOEntry.getExternalReferenceCode());
+		Assert.assertEquals(
 			existingPLOEntry.getPloEntryId(), newPLOEntry.getPloEntryId());
 		Assert.assertEquals(
 			existingPLOEntry.getCompanyId(), newPLOEntry.getCompanyId());
 		Assert.assertEquals(
 			existingPLOEntry.getUserId(), newPLOEntry.getUserId());
+		Assert.assertEquals(
+			existingPLOEntry.getUserName(), newPLOEntry.getUserName());
 		Assert.assertEquals(
 			Time.getShortTimestamp(existingPLOEntry.getCreateDate()),
 			Time.getShortTimestamp(newPLOEntry.getCreateDate()));
@@ -156,6 +164,26 @@ public class PLOEntryPersistenceTest {
 			existingPLOEntry.getLanguageId(), newPLOEntry.getLanguageId());
 		Assert.assertEquals(
 			existingPLOEntry.getValue(), newPLOEntry.getValue());
+	}
+
+	@Test(expected = DuplicatePLOEntryExternalReferenceCodeException.class)
+	public void testUpdateWithExistingExternalReferenceCode() throws Exception {
+		PLOEntry ploEntry = addPLOEntry();
+
+		PLOEntry newPLOEntry = addPLOEntry();
+
+		newPLOEntry.setCompanyId(ploEntry.getCompanyId());
+
+		newPLOEntry = _persistence.update(newPLOEntry);
+
+		Session session = _persistence.getCurrentSession();
+
+		session.evict(newPLOEntry);
+
+		newPLOEntry.setExternalReferenceCode(
+			ploEntry.getExternalReferenceCode());
+
+		_persistence.update(newPLOEntry);
 	}
 
 	@Test
@@ -175,21 +203,21 @@ public class PLOEntryPersistenceTest {
 	}
 
 	@Test
-	public void testCountByC_L() throws Exception {
-		_persistence.countByC_L(RandomTestUtil.nextLong(), "");
-
-		_persistence.countByC_L(0L, "null");
-
-		_persistence.countByC_L(0L, (String)null);
-	}
-
-	@Test
 	public void testCountByC_K_L() throws Exception {
 		_persistence.countByC_K_L(RandomTestUtil.nextLong(), "", "");
 
 		_persistence.countByC_K_L(0L, "null", "null");
 
 		_persistence.countByC_K_L(0L, (String)null, (String)null);
+	}
+
+	@Test
+	public void testCountByERC_C() throws Exception {
+		_persistence.countByERC_C("", RandomTestUtil.nextLong());
+
+		_persistence.countByERC_C("null", 0L);
+
+		_persistence.countByERC_C((String)null, 0L);
 	}
 
 	@Test
@@ -217,9 +245,10 @@ public class PLOEntryPersistenceTest {
 
 	protected OrderByComparator<PLOEntry> getOrderByComparator() {
 		return OrderByComparatorFactoryUtil.create(
-			"PLOEntry", "mvccVersion", true, "ploEntryId", true, "companyId",
-			true, "userId", true, "createDate", true, "modifiedDate", true,
-			"key", true, "languageId", true);
+			"PLOEntry", "mvccVersion", true, "externalReferenceCode", true,
+			"ploEntryId", true, "companyId", true, "userId", true, "userName",
+			true, "createDate", true, "modifiedDate", true, "key", true,
+			"languageId", true);
 	}
 
 	@Test
@@ -494,6 +523,17 @@ public class PLOEntryPersistenceTest {
 			ReflectionTestUtil.invoke(
 				ploEntry, "getColumnOriginalValue",
 				new Class<?>[] {String.class}, "languageId"));
+
+		Assert.assertEquals(
+			ploEntry.getExternalReferenceCode(),
+			ReflectionTestUtil.invoke(
+				ploEntry, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "externalReferenceCode"));
+		Assert.assertEquals(
+			Long.valueOf(ploEntry.getCompanyId()),
+			ReflectionTestUtil.<Long>invoke(
+				ploEntry, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "companyId"));
 	}
 
 	protected PLOEntry addPLOEntry() throws Exception {
@@ -501,11 +541,13 @@ public class PLOEntryPersistenceTest {
 
 		PLOEntry ploEntry = _persistence.create(pk);
 
-		ploEntry.setMvccVersion(RandomTestUtil.nextLong());
+		ploEntry.setExternalReferenceCode(RandomTestUtil.randomString());
 
 		ploEntry.setCompanyId(RandomTestUtil.nextLong());
 
 		ploEntry.setUserId(RandomTestUtil.nextLong());
+
+		ploEntry.setUserName(RandomTestUtil.randomString());
 
 		ploEntry.setCreateDate(RandomTestUtil.nextDate());
 
@@ -527,3 +569,4 @@ public class PLOEntryPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:777660939

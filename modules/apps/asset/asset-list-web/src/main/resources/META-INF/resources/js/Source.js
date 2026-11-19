@@ -3,16 +3,26 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
+import {State} from '@liferay/frontend-js-state-web';
+import {openSelectionModal} from 'frontend-js-components-web';
 import {
 	addParams,
 	delegate,
-	openSelectionModal,
+	fetch,
 	sub,
 	toggleDisabled,
 	toggleSelectBox,
 } from 'frontend-js-web';
 
-export default function ({classTypes, namespace}) {
+import {invalidFiltersAtom} from './atoms/invalidFiltersAtom';
+import {propertiesAtom} from './atoms/propertiesAtom';
+
+export default function ({
+	classTypes,
+	initialProperties,
+	namespace,
+	propertiesURL,
+}) {
 	const mapDDMStructures = {};
 
 	const assetMultipleSelector = document.getElementById(
@@ -27,6 +37,9 @@ export default function ({classTypes, namespace}) {
 	);
 	const ddmStructureFieldValueInput = document.getElementById(
 		`${namespace}ddmStructureFieldValue`
+	);
+	const nonexistentClassNameIdsContainer = document.getElementById(
+		`${namespace}nonexistentClassNameIds`
 	);
 	const orderByColumn1 = document.getElementById(
 		`${namespace}orderByColumn1`
@@ -59,6 +72,144 @@ export default function ({classTypes, namespace}) {
 	);
 
 	const eventDelegates = [];
+
+	/**
+	 * When more than one asset type or subtype is selected, the per-type field
+	 * groups can collide, so expose only the first "Common Fields" group
+	 * shared across every type.
+	 */
+	const collapseToCommonFields = (groups, {classNameIds, classTypeIds}) =>
+		classNameIds.length > 1 || classTypeIds.length > 1
+			? groups.slice(0, 1)
+			: groups;
+
+	/**
+	 * Reads the currently selected asset type(s) and subtype(s) from the
+	 * source panel selectors.
+	 */
+	const getSelectedIds = () => {
+		const assetTypeValue = assetSelector?.value || '';
+
+		let classNameIds = [];
+
+		if (assetTypeValue === 'false') {
+
+			// Multi-selection: collect every option out of the hidden
+			// <select> the JSP populates with the user's picks.
+
+			classNameIds = Array.from(assetMultipleSelector?.options || []).map(
+				(option) => option.value
+			);
+		}
+		else if (assetTypeValue && assetTypeValue !== 'true') {
+			classNameIds = [assetTypeValue];
+		}
+
+		let classTypeIds = [];
+
+		if (classNameIds.length === 1) {
+
+			// Subtype selection: Subtypes only make sense when exactly one
+			// asset type is selected — the subtype UI is hidden otherwise.
+
+			const classType = classTypes.find(
+				(ct) => `${ct.classNameId}` === classNameIds[0]
+			);
+
+			if (classType) {
+				const subtypeValue =
+					subtypeSelector[classType.className]?.value;
+
+				if (subtypeValue === 'false') {
+
+					// Multi-subtype selection: same pattern as
+					// classNameIds above, but the element id is
+					// namespaced with the class name.
+
+					const multiSubtypeSelect = document.getElementById(
+						`${namespace}${classType.className}currentClassTypeIds`
+					);
+
+					classTypeIds = Array.from(
+						multiSubtypeSelect?.options || []
+					).map((option) => option.value);
+				}
+				else if (subtypeValue && subtypeValue !== 'true') {
+					classTypeIds = [subtypeValue];
+				}
+			}
+		}
+
+		return {classNameIds, classTypeIds};
+	};
+
+	/**
+	 * Refetches the filterable properties using `propertiesURL` upon
+	 * changes to the asset source (type / subtype selectors) and writes
+	 * the result to `propertiesAtom`.
+	 *
+	 * CollectionFilterBuilder and CollectionOrdering React components
+	 * subscribe to that atom via `useTypeProperties`.
+	 */
+	const refreshProperties = () => {
+		if (!propertiesURL) {
+			return;
+		}
+
+		const {classNameIds, classTypeIds} = getSelectedIds();
+
+		fetch(
+			addParams(
+				{[`${namespace}classNameIds`]: classNameIds.join(',')},
+				propertiesURL
+			)
+		)
+			.then((response) => response.json())
+			.then((data) =>
+				State.write(
+					propertiesAtom,
+					collapseToCommonFields(data || [], {
+						classNameIds,
+						classTypeIds,
+					})
+				)
+			)
+			.catch((error) => {
+				if (process.env.NODE_ENV === 'development') {
+					console.error('Failed to fetch type properties: ', error);
+				}
+			});
+	};
+
+	const updateNonexistentClassNameIds = () => {
+		if (!nonexistentClassNameIdsContainer) {
+			return;
+		}
+
+		const {classNameIds} = getSelectedIds();
+
+		let visibleCount = 0;
+
+		nonexistentClassNameIdsContainer
+			.querySelectorAll('[data-class-name-id]')
+			.forEach((item) => {
+				item.hidden = !classNameIds.includes(item.dataset.classNameId);
+
+				if (!item.hidden) {
+					visibleCount++;
+				}
+			});
+
+		nonexistentClassNameIdsContainer.hidden = !visibleCount;
+	};
+
+	const fireSourceChange = () => {
+		Liferay.fire(`${namespace}sourceChange`);
+
+		refreshProperties();
+
+		updateNonexistentClassNameIds();
+	};
 
 	const createElement = (label, classNames, attributes, content) => {
 		const element = document.createElement(label);
@@ -96,15 +247,39 @@ export default function ({classTypes, namespace}) {
 		}
 	};
 
-	const toggleSaveButton = (valueIsEmpty) => {
-		if (valueIsEmpty) {
+	let filtersAreInvalid = State.read(invalidFiltersAtom);
+	let sourceIsEmpty = saveButton?.disabled ?? false;
+
+	const updateSaveButton = () => {
+		if (!saveButton) {
+			return;
+		}
+
+		const disabled = sourceIsEmpty || filtersAreInvalid;
+
+		if (disabled) {
 			saveButton.classList.add('disabled');
 		}
 		else {
 			saveButton.classList.remove('disabled');
 		}
-		saveButton.disabled = valueIsEmpty;
+		saveButton.disabled = disabled;
 	};
+
+	const setSourceIsEmpty = (isEmpty) => {
+		sourceIsEmpty = isEmpty;
+
+		updateSaveButton();
+	};
+
+	const invalidFiltersSubscription = State.subscribe(
+		invalidFiltersAtom,
+		(invalid) => {
+			filtersAreInvalid = invalid;
+
+			updateSaveButton();
+		}
+	);
 
 	const removeOptionsOrderByFilter = () => {
 		const options = orderingPanel.querySelectorAll('.order-by-subtype');
@@ -184,7 +359,7 @@ export default function ({classTypes, namespace}) {
 		if (classTypeSelected) {
 			selectedSubtype = subtypeSelector[classTypeSelected.className];
 		}
-		toggleSaveButton(
+		setSourceIsEmpty(
 			assetSelector.value === '' || selectedSubtype?.value === ''
 		);
 
@@ -215,9 +390,8 @@ export default function ({classTypes, namespace}) {
 		);
 
 		if (ddmStructureFieldMessageContainer) {
-			ddmStructureFieldMessageContainer.innerHTML = Liferay.Util.escape(
-				message
-			);
+			ddmStructureFieldMessageContainer.innerHTML =
+				Liferay.Util.escape(message);
 		}
 	};
 
@@ -264,20 +438,18 @@ export default function ({classTypes, namespace}) {
 				}
 			);
 
-			mapDDMStructures[
-				`${className}_${classTypeId}_column1`
-			] = columnBuffer1;
+			mapDDMStructures[`${className}_${classTypeId}_column1`] =
+				columnBuffer1;
 
-			mapDDMStructures[
-				`${className}_${classTypeId}_column2`
-			] = columnBuffer2;
+			mapDDMStructures[`${className}_${classTypeId}_column2`] =
+				columnBuffer2;
 		});
 
 		const onChangeSubtypeSelector = () => {
 			const subtypeSelectorIsEmpty =
 				subtypeSelector[className].value === '';
 
-			toggleSaveButton(subtypeSelectorIsEmpty);
+			setSourceIsEmpty(subtypeSelectorIsEmpty);
 
 			setDDMFields({className});
 
@@ -298,6 +470,8 @@ export default function ({classTypes, namespace}) {
 				});
 
 			toggleSubclassesFields(true, className);
+
+			fireSourceChange();
 		};
 
 		const changeSubtypeSelector = delegate(
@@ -310,8 +484,6 @@ export default function ({classTypes, namespace}) {
 		eventDelegates.push(changeSubtypeSelector);
 	});
 
-	toggleSubclasses(assetSelector.value);
-
 	const onChangeAssetSelector = () => {
 		ddmStructureFieldNameInput.value = '';
 		ddmStructureFieldValueInput.value = '';
@@ -321,6 +493,8 @@ export default function ({classTypes, namespace}) {
 		}
 
 		toggleSubclasses(assetSelector.value);
+
+		fireSourceChange();
 	};
 
 	const changeAssetSelector = delegate(
@@ -348,18 +522,37 @@ export default function ({classTypes, namespace}) {
 	eventDelegates.push(clickEnablePopupButtons);
 
 	Liferay.after('inputmoveboxes:moveItem', ({fromBox, toBox}) => {
-		const id = `${namespace}currentClassNameIds`;
+		const classNameIdsId = `${namespace}currentClassNameIds`;
+		const fromBoxId = fromBox.getAttribute('id');
+		const toBoxId = toBox.getAttribute('id');
 
-		if (fromBox.attr('id') === id || toBox.attr('id') === id) {
-			toggleSubclasses();
+		const isClassNameMove =
+			fromBoxId === classNameIdsId || toBoxId === classNameIdsId;
 
-			if (!document.getElementById(id).options.length) {
-				toggleSaveButton(true);
-			}
-			else {
-				toggleSaveButton(false);
-			}
+		const isClassTypeMove = classTypes.some(({className}) => {
+			const classTypeIdsId = `${namespace}${className}currentClassTypeIds`;
+
+			return fromBoxId === classTypeIdsId || toBoxId === classTypeIdsId;
+		});
+
+		if (!isClassNameMove && !isClassTypeMove) {
+			return;
 		}
+
+		// The select boxes are rendered by ClayDualListBox; setTimeout defers
+		// our reads until after React commits the new <option> children.
+
+		setTimeout(() => {
+			if (isClassNameMove) {
+				toggleSubclasses();
+
+				setSourceIsEmpty(
+					!document.getElementById(classNameIdsId).options.length
+				);
+			}
+
+			fireSourceChange();
+		}, 0);
 	});
 
 	const openModal = ({delegateTarget}) => {
@@ -415,15 +608,28 @@ export default function ({classTypes, namespace}) {
 
 	eventDelegates.push(clickOpenModal);
 
+	toggleSubclasses(assetSelector.value);
 	toggleSelectBox(
 		`${namespace}anyAssetType`,
 		'false',
 		`${namespace}classNamesBoxes`
 	);
 
+	// Set the save button once on load. invalidFiltersSubscription only fires
+	// when the filters change, so it misses filters that were already invalid.
+
+	updateSaveButton();
+
+	State.write(
+		propertiesAtom,
+		collapseToCommonFields(initialProperties || [], getSelectedIds())
+	);
+
 	return {
 		dispose() {
 			eventDelegates.forEach((eventDelegate) => eventDelegate.dispose());
+
+			invalidFiltersSubscription.dispose();
 		},
 	};
 }

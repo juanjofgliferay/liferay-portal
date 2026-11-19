@@ -5,18 +5,17 @@
 
 package com.liferay.portal.upload.internal;
 
-import com.liferay.document.library.kernel.util.DLValidatorUtil;
-import com.liferay.portal.kernel.model.GroupConstants;
 import com.liferay.portal.kernel.upload.FileItem;
 import com.liferay.portal.kernel.upload.UploadException;
+import com.liferay.portal.kernel.upload.configuration.UploadServletRequestConfigurationProviderUtil;
 import com.liferay.portal.upload.ServletFileUpload;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.io.File;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.apache.commons.fileupload.FileUploadBase;
 import org.apache.commons.fileupload.FileUploadException;
@@ -44,8 +43,9 @@ public class ServletFileUploadImpl implements ServletFileUpload {
 						new File(location), fileSizeThreshold,
 						httpServletRequest.getCharacterEncoding()));
 
-		long fileMaxSize = DLValidatorUtil.getMaxAllowableSize(
-			GroupConstants.DEFAULT_PARENT_GROUP_ID, null);
+		long fileMaxSize =
+			UploadServletRequestConfigurationProviderUtil.
+				getMaxSizeWithPadding();
 
 		servletFileUpload.setFileSizeMax(fileMaxSize);
 		servletFileUpload.setSizeMax(fileMaxSize);

@@ -63,20 +63,6 @@ public interface SiteNavigationMenuLocalService
 	 *
 	 * Never modify this interface directly. Add custom service methods to <code>com.liferay.site.navigation.service.impl.SiteNavigationMenuLocalServiceImpl</code> and rerun ServiceBuilder to automatically copy the method declarations to this interface. Consume the site navigation menu local service via injection or a <code>org.osgi.util.tracker.ServiceTracker</code>. Use {@link SiteNavigationMenuLocalServiceUtil} if injection and service tracking are not available.
 	 */
-	public SiteNavigationMenu addSiteNavigationMenu(
-			long userId, long groupId, String name, int type, boolean auto,
-			ServiceContext serviceContext)
-		throws PortalException;
-
-	public SiteNavigationMenu addSiteNavigationMenu(
-			long userId, long groupId, String name, int type,
-			ServiceContext serviceContext)
-		throws PortalException;
-
-	public SiteNavigationMenu addSiteNavigationMenu(
-			long userId, long groupId, String name,
-			ServiceContext serviceContext)
-		throws PortalException;
 
 	/**
 	 * Adds the site navigation menu to the database. Also notifies the appropriate model listeners.
@@ -91,6 +77,21 @@ public interface SiteNavigationMenuLocalService
 	@Indexable(type = IndexableType.REINDEX)
 	public SiteNavigationMenu addSiteNavigationMenu(
 		SiteNavigationMenu siteNavigationMenu);
+
+	public SiteNavigationMenu addSiteNavigationMenu(
+			String externalReferenceCode, long userId, long groupId,
+			String name, int type, boolean auto, ServiceContext serviceContext)
+		throws PortalException;
+
+	public SiteNavigationMenu addSiteNavigationMenu(
+			String externalReferenceCode, long userId, long groupId,
+			String name, int type, ServiceContext serviceContext)
+		throws PortalException;
+
+	public SiteNavigationMenu addSiteNavigationMenu(
+			String externalReferenceCode, long userId, long groupId,
+			String name, ServiceContext serviceContext)
+		throws PortalException;
 
 	/**
 	 * @throws PortalException
@@ -233,8 +234,8 @@ public interface SiteNavigationMenuLocalService
 	public SiteNavigationMenu fetchSiteNavigationMenu(long groupId, int type);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public SiteNavigationMenu fetchSiteNavigationMenuByName(
-		long groupId, String name);
+	public SiteNavigationMenu fetchSiteNavigationMenuByExternalReferenceCode(
+		String externalReferenceCode, long groupId);
 
 	/**
 	 * Returns the site navigation menu matching the UUID and group.
@@ -286,6 +287,11 @@ public interface SiteNavigationMenuLocalService
 	public SiteNavigationMenu getSiteNavigationMenu(long siteNavigationMenuId)
 		throws PortalException;
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public SiteNavigationMenu getSiteNavigationMenuByExternalReferenceCode(
+			String externalReferenceCode, long groupId)
+		throws PortalException;
+
 	/**
 	 * Returns the site navigation menu matching the UUID and group.
 	 *
@@ -315,16 +321,6 @@ public interface SiteNavigationMenuLocalService
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<SiteNavigationMenu> getSiteNavigationMenus(long groupId);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<SiteNavigationMenu> getSiteNavigationMenus(
-		long groupId, int start, int end,
-		OrderByComparator<SiteNavigationMenu> orderByComparator);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<SiteNavigationMenu> getSiteNavigationMenus(
-		long groupId, String keywords, int start, int end,
-		OrderByComparator<SiteNavigationMenu> orderByComparator);
 
 	/**
 	 * Returns all the site navigation menus matching the UUID and company.
@@ -359,12 +355,6 @@ public interface SiteNavigationMenuLocalService
 	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public int getSiteNavigationMenusCount();
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getSiteNavigationMenusCount(long groupId);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getSiteNavigationMenusCount(long groupId, String keywords);
 
 	public SiteNavigationMenu updateSiteNavigationMenu(
 			long userId, long siteNavigationMenuId, int type, boolean auto,
@@ -411,3 +401,4 @@ public interface SiteNavigationMenuLocalService
 		throws E;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1095269481

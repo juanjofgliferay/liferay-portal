@@ -37,6 +37,7 @@ public class SamlSpAuthRequestWrapper
 		attributes.put("companyId", getCompanyId());
 		attributes.put("createDate", getCreateDate());
 		attributes.put("samlIdpEntityId", getSamlIdpEntityId());
+		attributes.put("samlRelayState", getSamlRelayState());
 		attributes.put("samlSpAuthRequestKey", getSamlSpAuthRequestKey());
 
 		return attributes;
@@ -67,6 +68,12 @@ public class SamlSpAuthRequestWrapper
 
 		if (samlIdpEntityId != null) {
 			setSamlIdpEntityId(samlIdpEntityId);
+		}
+
+		String samlRelayState = (String)attributes.get("samlRelayState");
+
+		if (samlRelayState != null) {
+			setSamlRelayState(samlRelayState);
 		}
 
 		String samlSpAuthRequestKey = (String)attributes.get(
@@ -120,6 +127,16 @@ public class SamlSpAuthRequestWrapper
 	@Override
 	public String getSamlIdpEntityId() {
 		return model.getSamlIdpEntityId();
+	}
+
+	/**
+	 * Returns the saml relay state of this saml sp auth request.
+	 *
+	 * @return the saml relay state of this saml sp auth request
+	 */
+	@Override
+	public String getSamlRelayState() {
+		return model.getSamlRelayState();
 	}
 
 	/**
@@ -188,6 +205,16 @@ public class SamlSpAuthRequestWrapper
 	}
 
 	/**
+	 * Sets the saml relay state of this saml sp auth request.
+	 *
+	 * @param samlRelayState the saml relay state of this saml sp auth request
+	 */
+	@Override
+	public void setSamlRelayState(String samlRelayState) {
+		model.setSamlRelayState(samlRelayState);
+	}
+
+	/**
 	 * Sets the saml sp authn request ID of this saml sp auth request.
 	 *
 	 * @param samlSpAuthnRequestId the saml sp authn request ID of this saml sp auth request
@@ -220,3 +247,4 @@ public class SamlSpAuthRequestWrapper
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1866045732

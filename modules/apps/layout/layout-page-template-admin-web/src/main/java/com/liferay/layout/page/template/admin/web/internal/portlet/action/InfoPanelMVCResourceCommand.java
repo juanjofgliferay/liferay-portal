@@ -16,11 +16,11 @@ import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCResourceCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCResourceCommand;
 import com.liferay.portal.kernel.util.ParamUtil;
 
+import jakarta.portlet.ResourceRequest;
+import jakarta.portlet.ResourceResponse;
+
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.portlet.ResourceRequest;
-import javax.portlet.ResourceResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -30,7 +30,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + LayoutPageTemplateAdminPortletKeys.LAYOUT_PAGE_TEMPLATES,
+		"jakarta.portlet.name=" + LayoutPageTemplateAdminPortletKeys.LAYOUT_PAGE_TEMPLATES,
 		"mvc.command.name=/layout_page_template_admin/info_panel"
 	},
 	service = MVCResourceCommand.class
@@ -58,11 +58,11 @@ public class InfoPanelMVCResourceCommand extends BaseMVCResourceCommand {
 			_getLayoutPageTemplateCollections(ResourceRequest resourceRequest)
 		throws Exception {
 
-		long[] layoutPageTemplateCollectionIds = ParamUtil.getLongValues(
-			resourceRequest, "rowIdsLayoutPageTemplateCollection");
-
 		List<LayoutPageTemplateCollection> layoutPageTemplateCollections =
 			new ArrayList<>();
+
+		long[] layoutPageTemplateCollectionIds = ParamUtil.getLongValues(
+			resourceRequest, "rowIdsLayoutPageTemplateCollection");
 
 		for (long layoutPageTemplateCollectionId :
 				layoutPageTemplateCollectionIds) {
@@ -72,9 +72,11 @@ public class InfoPanelMVCResourceCommand extends BaseMVCResourceCommand {
 					fetchLayoutPageTemplateCollection(
 						layoutPageTemplateCollectionId);
 
-			if (layoutPageTemplateCollection != null) {
-				layoutPageTemplateCollections.add(layoutPageTemplateCollection);
+			if (layoutPageTemplateCollection == null) {
+				continue;
 			}
+
+			layoutPageTemplateCollections.add(layoutPageTemplateCollection);
 		}
 
 		return layoutPageTemplateCollections;
@@ -84,20 +86,22 @@ public class InfoPanelMVCResourceCommand extends BaseMVCResourceCommand {
 			ResourceRequest resourceRequest)
 		throws Exception {
 
-		long[] layoutPageTemplateEntryIds = ParamUtil.getLongValues(
-			resourceRequest, "rowIds");
-
 		List<LayoutPageTemplateEntry> layoutPageTemplateEntries =
 			new ArrayList<>();
+
+		long[] layoutPageTemplateEntryIds = ParamUtil.getLongValues(
+			resourceRequest, "rowIds");
 
 		for (long layoutPageTemplateEntryId : layoutPageTemplateEntryIds) {
 			LayoutPageTemplateEntry layoutPageTemplateEntry =
 				_layoutPageTemplateEntryService.fetchLayoutPageTemplateEntry(
 					layoutPageTemplateEntryId);
 
-			if (layoutPageTemplateEntry != null) {
-				layoutPageTemplateEntries.add(layoutPageTemplateEntry);
+			if (layoutPageTemplateEntry == null) {
+				continue;
 			}
+
+			layoutPageTemplateEntries.add(layoutPageTemplateEntry);
 		}
 
 		return layoutPageTemplateEntries;

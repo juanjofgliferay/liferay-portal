@@ -7,7 +7,7 @@ import ClayButton from '@clayui/button';
 import ClayModal from '@clayui/modal';
 import React, {useState} from 'react';
 
-import {EPageView, Events, useDispatch} from '../../App';
+import {EPageView, Events, useDispatch} from '../..';
 import {deleteConnection} from '../../utils/api';
 import Loading from '../Loading';
 
@@ -16,17 +16,18 @@ interface IDisconnectModalProps {
 	onOpenChange: (value: boolean) => void;
 }
 
-const DisconnectModal: React.FC<IDisconnectModalProps> = ({
-	observer,
-	onOpenChange,
-}) => {
+const DisconnectModal: React.FC<
+	{children?: React.ReactNode | undefined} & IDisconnectModalProps
+> = ({observer, onOpenChange}) => {
 	const [submitting, setSubmitting] = useState(false);
 
 	const dispatch = useDispatch();
 
 	return (
 		<ClayModal center observer={observer} status="warning">
-			<ClayModal.Header>
+			<ClayModal.Header
+				closeButtonAriaLabel={Liferay.Language.get('close')}
+			>
 				{Liferay.Language.get('disconnecting-data-source')}
 			</ClayModal.Header>
 

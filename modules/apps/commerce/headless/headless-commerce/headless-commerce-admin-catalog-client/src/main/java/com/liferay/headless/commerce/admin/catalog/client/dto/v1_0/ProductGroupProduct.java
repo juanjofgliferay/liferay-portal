@@ -8,11 +8,11 @@ package com.liferay.headless.commerce.admin.catalog.client.dto.v1_0;
 import com.liferay.headless.commerce.admin.catalog.client.function.UnsafeSupplier;
 import com.liferay.headless.commerce.admin.catalog.client.serdes.v1_0.ProductGroupProductSerDes;
 
+import jakarta.annotation.Generated;
+
 import java.io.Serializable;
 
 import java.util.Objects;
-
-import javax.annotation.Generated;
 
 /**
  * @author Zoltán Takács
@@ -24,6 +24,78 @@ public class ProductGroupProduct implements Cloneable, Serializable {
 	public static ProductGroupProduct toDTO(String json) {
 		return ProductGroupProductSerDes.toDTO(json);
 	}
+
+	public String getCatalogCurrencyCode() {
+		return catalogCurrencyCode;
+	}
+
+	public void setCatalogCurrencyCode(String catalogCurrencyCode) {
+		this.catalogCurrencyCode = catalogCurrencyCode;
+	}
+
+	public void setCatalogCurrencyCode(
+		UnsafeSupplier<String, Exception> catalogCurrencyCodeUnsafeSupplier) {
+
+		try {
+			catalogCurrencyCode = catalogCurrencyCodeUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String catalogCurrencyCode;
+
+	public String getCatalogCurrencyExternalReferenceCode() {
+		return catalogCurrencyExternalReferenceCode;
+	}
+
+	public void setCatalogCurrencyExternalReferenceCode(
+		String catalogCurrencyExternalReferenceCode) {
+
+		this.catalogCurrencyExternalReferenceCode =
+			catalogCurrencyExternalReferenceCode;
+	}
+
+	public void setCatalogCurrencyExternalReferenceCode(
+		UnsafeSupplier<String, Exception>
+			catalogCurrencyExternalReferenceCodeUnsafeSupplier) {
+
+		try {
+			catalogCurrencyExternalReferenceCode =
+				catalogCurrencyExternalReferenceCodeUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String catalogCurrencyExternalReferenceCode;
+
+	public String getCatalogExternalReferenceCode() {
+		return catalogExternalReferenceCode;
+	}
+
+	public void setCatalogExternalReferenceCode(
+		String catalogExternalReferenceCode) {
+
+		this.catalogExternalReferenceCode = catalogExternalReferenceCode;
+	}
+
+	public void setCatalogExternalReferenceCode(
+		UnsafeSupplier<String, Exception>
+			catalogExternalReferenceCodeUnsafeSupplier) {
+
+		try {
+			catalogExternalReferenceCode =
+				catalogExternalReferenceCodeUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String catalogExternalReferenceCode;
 
 	public Long getId() {
 		return id;
@@ -158,6 +230,27 @@ public class ProductGroupProduct implements Cloneable, Serializable {
 
 	protected String productName;
 
+	public String getProductType() {
+		return productType;
+	}
+
+	public void setProductType(String productType) {
+		this.productType = productType;
+	}
+
+	public void setProductType(
+		UnsafeSupplier<String, Exception> productTypeUnsafeSupplier) {
+
+		try {
+			productType = productTypeUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String productType;
+
 	public String getSku() {
 		return sku;
 	}
@@ -209,3 +302,4 @@ public class ProductGroupProduct implements Cloneable, Serializable {
 	}
 
 }
+// LIFERAY-REST-BUILDER-HASH:-846487689

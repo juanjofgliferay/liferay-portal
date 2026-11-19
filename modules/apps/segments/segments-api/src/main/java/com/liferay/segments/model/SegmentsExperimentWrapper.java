@@ -359,6 +359,11 @@ public class SegmentsExperimentWrapper
 		return model.getStatus();
 	}
 
+	@Override
+	public String getType() {
+		return model.getType();
+	}
+
 	/**
 	 * Returns the type settings of this segments experiment.
 	 *
@@ -663,3 +668,4 @@ public class SegmentsExperimentWrapper
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-363451453

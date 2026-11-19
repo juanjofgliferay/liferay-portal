@@ -35,13 +35,14 @@ import com.liferay.portal.search.hits.SearchHit;
 import com.liferay.portal.search.hits.SearchHits;
 import com.liferay.portal.search.index.IndexNameBuilder;
 import com.liferay.portal.search.query.BooleanQuery;
-import com.liferay.portal.search.query.Queries;
+import com.liferay.portal.search.query.QueriesUtil;
 import com.liferay.portal.search.query.RangeTermQuery;
 import com.liferay.portal.search.script.ScriptBuilder;
 import com.liferay.portal.search.script.ScriptType;
 import com.liferay.portal.search.script.Scripts;
 import com.liferay.portal.search.sort.SortOrder;
 import com.liferay.portal.search.sort.Sorts;
+import com.liferay.portal.workflow.metrics.internal.search.constants.WorkflowMetricsIndexTypeConstants;
 import com.liferay.portal.workflow.metrics.internal.search.index.SLAInstanceResultWorkflowMetricsIndexer;
 import com.liferay.portal.workflow.metrics.internal.search.index.SLATaskResultWorkflowMetricsIndexer;
 import com.liferay.portal.workflow.metrics.internal.search.index.WorkflowMetricsIndex;
@@ -54,6 +55,7 @@ import com.liferay.portal.workflow.metrics.model.WorkflowMetricsSLADefinitionVer
 import com.liferay.portal.workflow.metrics.search.index.constants.WorkflowMetricsIndexNameConstants;
 import com.liferay.portal.workflow.metrics.service.WorkflowMetricsSLADefinitionLocalService;
 import com.liferay.portal.workflow.metrics.service.WorkflowMetricsSLADefinitionVersionLocalService;
+import com.liferay.portal.workflow.metrics.sla.calendar.WorkflowMetricsSLACalendarRegistry;
 import com.liferay.portal.workflow.metrics.sla.processor.WorkflowMetricsSLAStatus;
 import com.liferay.portal.workflow.metrics.util.comparator.WorkflowMetricsSLADefinitionVersionIdComparator;
 
@@ -173,11 +175,11 @@ public class WorkflowMetricsSLAProcessBackgroundTaskExecutor
 		boolean completed, Date endDate, long instanceId, long processId,
 		long slaDefinitionId, Date startDate) {
 
-		BooleanQuery booleanQuery = _queries.booleanQuery();
+		BooleanQuery booleanQuery = QueriesUtil.booleanQuery();
 
 		if (completed) {
 			booleanQuery.addMustNotQueryClauses(
-				_queries.term("slaDefinitionIds", slaDefinitionId));
+				QueriesUtil.term("slaDefinitionIds", slaDefinitionId));
 		}
 
 		return booleanQuery.addMustQueryClauses(
@@ -189,12 +191,13 @@ public class WorkflowMetricsSLAProcessBackgroundTaskExecutor
 		boolean completed, Date endDate, long instanceId, long processId,
 		Date startDate) {
 
-		BooleanQuery booleanQuery = _queries.booleanQuery();
+		BooleanQuery booleanQuery = QueriesUtil.booleanQuery();
 
-		booleanQuery.addMustNotQueryClauses(_queries.term("instanceId", "0"));
+		booleanQuery.addMustNotQueryClauses(
+			QueriesUtil.term("instanceId", "0"));
 
 		if (startDate != null) {
-			RangeTermQuery rangeTermQuery = _queries.rangeTerm(
+			RangeTermQuery rangeTermQuery = QueriesUtil.rangeTerm(
 				"completionDate", true, false);
 
 			rangeTermQuery.setLowerBound(_getDate(startDate));
@@ -207,54 +210,56 @@ public class WorkflowMetricsSLAProcessBackgroundTaskExecutor
 		}
 
 		return booleanQuery.addMustQueryClauses(
-			_queries.term("active", true),
-			_queries.term("completed", completed),
-			_queries.term("deleted", false),
-			_queries.rangeTerm("instanceId", false, false, instanceId, null),
-			_queries.term("processId", processId));
+			QueriesUtil.term("active", true),
+			QueriesUtil.term("completed", completed),
+			QueriesUtil.term("deleted", false),
+			QueriesUtil.rangeTerm("instanceId", false, false, instanceId, null),
+			QueriesUtil.term("processId", processId));
 	}
 
 	private BooleanQuery _createMustNotCompletionDateBooleanQuery() {
-		BooleanQuery booleanQuery = _queries.booleanQuery();
+		BooleanQuery booleanQuery = QueriesUtil.booleanQuery();
 
 		return booleanQuery.addMustNotQueryClauses(
-			_queries.exists("completionDate"));
+			QueriesUtil.exists("completionDate"));
 	}
 
 	private BooleanQuery _createSLAInstanceResultsBooleanQuery(
 		long endInstanceId, long processId, long slaDefinitionId,
 		long startInstanceId) {
 
-		BooleanQuery booleanQuery = _queries.booleanQuery();
+		BooleanQuery booleanQuery = QueriesUtil.booleanQuery();
 
 		return booleanQuery.addMustQueryClauses(
-			_queries.term("active", true), _queries.term("blocked", false),
-			_queries.term("deleted", false),
-			_queries.rangeTerm(
+			QueriesUtil.term("active", true),
+			QueriesUtil.term("blocked", false),
+			QueriesUtil.term("deleted", false),
+			QueriesUtil.rangeTerm(
 				"instanceId", true, true, startInstanceId, endInstanceId),
-			_queries.term("processId", processId),
-			_queries.term("slaDefinitionId", slaDefinitionId));
+			QueriesUtil.term("processId", processId),
+			QueriesUtil.term("slaDefinitionId", slaDefinitionId));
 	}
 
 	private BooleanQuery _createTasksBooleanQuery(
 		long endInstanceId, LocalDateTime lastCheckLocalDateTime,
 		long processId, long startInstanceId) {
 
-		BooleanQuery booleanQuery = _queries.booleanQuery();
+		BooleanQuery booleanQuery = QueriesUtil.booleanQuery();
 
 		if (lastCheckLocalDateTime != null) {
 			booleanQuery.addShouldQueryClauses(
 				_createMustNotCompletionDateBooleanQuery(),
-				_queries.dateRangeTerm(
+				QueriesUtil.dateRangeTerm(
 					"completionDate", true, false,
 					_dateTimeFormatter.format(lastCheckLocalDateTime), null));
 		}
 
 		return booleanQuery.addMustQueryClauses(
-			_queries.term("active", true), _queries.term("deleted", false),
-			_queries.rangeTerm(
+			QueriesUtil.term("active", true),
+			QueriesUtil.term("deleted", false),
+			QueriesUtil.rangeTerm(
 				"instanceId", true, true, startInstanceId, endInstanceId),
-			_queries.term("processId", processId));
+			QueriesUtil.term("processId", processId));
 	}
 
 	private LocalDateTime _getCompletionLocalDateTime(Document document) {
@@ -289,13 +294,14 @@ public class WorkflowMetricsSLAProcessBackgroundTaskExecutor
 			_indexNameBuilder.getIndexName(companyId) +
 				WorkflowMetricsIndexNameConstants.SUFFIX_NODE);
 
-		BooleanQuery booleanQuery = _queries.booleanQuery();
+		BooleanQuery booleanQuery = QueriesUtil.booleanQuery();
 
 		searchSearchRequest.setQuery(
 			booleanQuery.addMustQueryClauses(
-				_queries.term("deleted", false), _queries.term("initial", true),
-				_queries.term("processId", processId),
-				_queries.term("version", version)));
+				QueriesUtil.term("deleted", false),
+				QueriesUtil.term("initial", true),
+				QueriesUtil.term("processId", processId),
+				QueriesUtil.term("version", version)));
 
 		searchSearchRequest.setSelectedFieldNames("nodeId");
 		searchSearchRequest.setSize(1);
@@ -328,7 +334,7 @@ public class WorkflowMetricsSLAProcessBackgroundTaskExecutor
 			_indexNameBuilder.getIndexName(companyId) +
 				WorkflowMetricsIndexNameConstants.SUFFIX_SLA_INSTANCE_RESULT);
 
-		BooleanQuery booleanQuery = _queries.booleanQuery();
+		BooleanQuery booleanQuery = QueriesUtil.booleanQuery();
 
 		searchSearchRequest.setQuery(
 			booleanQuery.addFilterQueryClauses(
@@ -394,7 +400,7 @@ public class WorkflowMetricsSLAProcessBackgroundTaskExecutor
 			_indexNameBuilder.getIndexName(companyId) +
 				WorkflowMetricsIndexNameConstants.SUFFIX_TASK);
 
-		BooleanQuery booleanQuery = _queries.booleanQuery();
+		BooleanQuery booleanQuery = QueriesUtil.booleanQuery();
 
 		searchSearchRequest.setQuery(
 			booleanQuery.addFilterQueryClauses(
@@ -451,8 +457,8 @@ public class WorkflowMetricsSLAProcessBackgroundTaskExecutor
 				_workflowMetricsSLADefinitionVersionLocalService.
 					getWorkflowMetricsSLADefinitionVersions(
 						workflowMetricsSLADefinitionId,
-						new WorkflowMetricsSLADefinitionVersionIdComparator(
-							true));
+						WorkflowMetricsSLADefinitionVersionIdComparator.
+							getInstance(true));
 
 		Iterator<WorkflowMetricsSLADefinitionVersion> iterator =
 			workflowMetricsSLADefinitionVersions.iterator();
@@ -513,7 +519,7 @@ public class WorkflowMetricsSLAProcessBackgroundTaskExecutor
 		searchSearchRequest.setIndexNames(
 			indexName + WorkflowMetricsIndexNameConstants.SUFFIX_INSTANCE);
 
-		BooleanQuery booleanQuery = _queries.booleanQuery();
+		BooleanQuery booleanQuery = QueriesUtil.booleanQuery();
 
 		searchSearchRequest.setQuery(
 			booleanQuery.addFilterQueryClauses(
@@ -586,7 +592,8 @@ public class WorkflowMetricsSLAProcessBackgroundTaskExecutor
 						document.getDate("createDate"), _dateTimeFormatter),
 					taskDocuments.get(document.getLong("instanceId")),
 					document.getLong("instanceId"), nowLocalDateTime,
-					startNodeId, workflowMetricsSLADefinitionVersion,
+					startNodeId, _workflowMetricsSLACalendarRegistry,
+					workflowMetricsSLADefinitionVersion,
 					workflowMetricsSLAInstanceResults.get(
 						document.getLong("instanceId")));
 
@@ -607,14 +614,16 @@ public class WorkflowMetricsSLAProcessBackgroundTaskExecutor
 						workflowMetricsSLATaskResult));
 			}
 
-			ScriptBuilder scriptBuilder = _scripts.builder();
+			ScriptBuilder scriptBuilder = Scripts.INSTANCE.builder();
 
 			bulkDocumentRequest.addBulkableDocumentRequest(
 				new UpdateDocumentRequest(
-					_instanceWorkflowMetricsIndex.getIndexName(
+					WorkflowMetricsIndex.getIndexName(
+						_indexNameBuilder,
+						WorkflowMetricsIndexNameConstants.SUFFIX_INSTANCE,
 						workflowMetricsSLAInstanceResult.getCompanyId()),
 					WorkflowMetricsIndexerUtil.digest(
-						_instanceWorkflowMetricsIndex.getIndexType(),
+						WorkflowMetricsIndexTypeConstants.INSTANCE_TYPE,
 						workflowMetricsSLAInstanceResult.getCompanyId(),
 						workflowMetricsSLAInstanceResult.getInstanceId()),
 					scriptBuilder.idOrCode(
@@ -692,15 +701,17 @@ public class WorkflowMetricsSLAProcessBackgroundTaskExecutor
 
 		UpdateByQueryDocumentRequest updateByQueryDocumentRequest =
 			new UpdateByQueryDocumentRequest(
-				_queries.rangeTerm(
+				QueriesUtil.rangeTerm(
 					"instanceId", true, true, startInstanceId, endInstanceId),
-				_scripts.script(
+				Scripts.INSTANCE.script(
 					StringBundler.concat(
 						"if (!ctx._source.containsKey('slaDefinitionIds')) ",
 						"ctx._source['slaDefinitionIds'] = [];",
 						"ctx._source.slaDefinitionIds.add(", slaDefinitionId,
 						")")),
 				indexName + WorkflowMetricsIndexNameConstants.SUFFIX_INSTANCE);
+
+		updateByQueryDocumentRequest.setProceedOnConflicts(true);
 
 		if (PortalRunMode.isTestMode()) {
 			updateByQueryDocumentRequest.setRefresh(true);
@@ -718,17 +729,8 @@ public class WorkflowMetricsSLAProcessBackgroundTaskExecutor
 	@Reference
 	private IndexNameBuilder _indexNameBuilder;
 
-	@Reference(target = "(workflow.metrics.index.entity.name=instance)")
-	private WorkflowMetricsIndex _instanceWorkflowMetricsIndex;
-
 	@Reference(target = ModuleServiceLifecycle.PORTLETS_INITIALIZED)
 	private ModuleServiceLifecycle _moduleServiceLifecycle;
-
-	@Reference
-	private Queries _queries;
-
-	@Reference
-	private Scripts _scripts;
 
 	@Reference
 	private SearchCapabilities _searchCapabilities;
@@ -748,6 +750,10 @@ public class WorkflowMetricsSLAProcessBackgroundTaskExecutor
 	private Sorts _sorts;
 
 	@Reference
+	private WorkflowMetricsSLACalendarRegistry
+		_workflowMetricsSLACalendarRegistry;
+
+	@Reference
 	private WorkflowMetricsSLADefinitionLocalService
 		_workflowMetricsSLADefinitionLocalService;
 
@@ -755,7 +761,7 @@ public class WorkflowMetricsSLAProcessBackgroundTaskExecutor
 	private WorkflowMetricsSLADefinitionVersionLocalService
 		_workflowMetricsSLADefinitionVersionLocalService;
 
-	@Reference
-	private WorkflowMetricsSLAProcessor _workflowMetricsSLAProcessor;
+	private final WorkflowMetricsSLAProcessor _workflowMetricsSLAProcessor =
+		new WorkflowMetricsSLAProcessor();
 
 }

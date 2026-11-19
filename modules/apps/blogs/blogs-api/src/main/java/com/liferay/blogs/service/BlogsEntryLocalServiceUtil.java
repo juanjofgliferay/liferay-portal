@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.InputStream;
@@ -39,12 +40,13 @@ public class BlogsEntryLocalServiceUtil {
 	 */
 	public static com.liferay.portal.kernel.repository.model.FileEntry
 			addAttachmentFileEntry(
-				BlogsEntry entry, long userId, String fileName, String mimeType,
-				InputStream inputStream)
+				String externalReferenceCode, long userId, long groupId,
+				String fileName, String mimeType, InputStream inputStream)
 		throws PortalException {
 
 		return getService().addAttachmentFileEntry(
-			entry, userId, fileName, mimeType, inputStream);
+			externalReferenceCode, userId, groupId, fileName, mimeType,
+			inputStream);
 	}
 
 	public static com.liferay.portal.kernel.repository.model.Folder
@@ -254,6 +256,12 @@ public class BlogsEntryLocalServiceUtil {
 		return getService().createPersistedModel(primaryKeyObj);
 	}
 
+	public static void deleteAttachmentFileEntry(long fileEntryId)
+		throws PortalException {
+
+		getService().deleteAttachmentFileEntry(fileEntryId);
+	}
+
 	/**
 	 * Deletes the blogs entry from the database. Also notifies the appropriate model listeners.
 	 *
@@ -432,6 +440,22 @@ public class BlogsEntryLocalServiceUtil {
 		getActionableDynamicQuery() {
 
 		return getService().getActionableDynamicQuery();
+	}
+
+	public static com.liferay.portal.kernel.repository.model.FileEntry
+			getAttachmentFileEntry(long fileEntryId)
+		throws PortalException {
+
+		return getService().getAttachmentFileEntry(fileEntryId);
+	}
+
+	public static com.liferay.portal.kernel.repository.model.FileEntry
+			getAttachmentFileEntryByExternalReferenceCode(
+				String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		return getService().getAttachmentFileEntryByExternalReferenceCode(
+			externalReferenceCode, groupId);
 	}
 
 	/**
@@ -619,38 +643,11 @@ public class BlogsEntryLocalServiceUtil {
 			groupId, userId, displayDate, queryDefinition);
 	}
 
-	public static int getGroupUserEntriesCount(
-		long groupId, long userId, java.util.Date displayDate,
-		com.liferay.portal.kernel.dao.orm.QueryDefinition<BlogsEntry>
-			queryDefinition) {
-
-		return getService().getGroupUserEntriesCount(
-			groupId, userId, displayDate, queryDefinition);
-	}
-
 	public static
 		com.liferay.portal.kernel.dao.orm.IndexableActionableDynamicQuery
 			getIndexableActionableDynamicQuery() {
 
 		return getService().getIndexableActionableDynamicQuery();
-	}
-
-	public static List<BlogsEntry> getOrganizationEntries(
-		long organizationId, java.util.Date displayDate,
-		com.liferay.portal.kernel.dao.orm.QueryDefinition<BlogsEntry>
-			queryDefinition) {
-
-		return getService().getOrganizationEntries(
-			organizationId, displayDate, queryDefinition);
-	}
-
-	public static int getOrganizationEntriesCount(
-		long organizationId, java.util.Date displayDate,
-		com.liferay.portal.kernel.dao.orm.QueryDefinition<BlogsEntry>
-			queryDefinition) {
-
-		return getService().getOrganizationEntriesCount(
-			organizationId, displayDate, queryDefinition);
 	}
 
 	/**
@@ -878,13 +875,12 @@ public class BlogsEntryLocalServiceUtil {
 	}
 
 	public static BlogsEntryLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(BlogsEntryLocalService service) {
-		_service = service;
-	}
-
-	private static volatile BlogsEntryLocalService _service;
+	private static final Snapshot<BlogsEntryLocalService> _serviceSnapshot =
+		new Snapshot<>(
+			BlogsEntryLocalServiceUtil.class, BlogsEntryLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1791826934

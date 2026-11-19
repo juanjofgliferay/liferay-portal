@@ -10,8 +10,8 @@ import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.StringUtil;
-import com.liferay.portal.util.PropsValues;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -55,9 +55,11 @@ public class VerifyLayout extends VerifyProcess {
 					"OR friendlyURL LIKE '/", likeClause, "' ");
 			}
 
-			if (likeClause.contains("!_")) {
-				reservedLayoutFriendlyURLS += "ESCAPE \'!\'";
+			if (!likeClause.contains("!_")) {
+				continue;
 			}
+
+			reservedLayoutFriendlyURLS += "ESCAPE \'!\'";
 		}
 
 		return reservedLayoutFriendlyURLS;
@@ -71,11 +73,12 @@ public class VerifyLayout extends VerifyProcess {
 		try (PreparedStatement preparedStatement = connection.prepareStatement(
 				"select plid, friendlyURL from LayoutFriendlyURL where " +
 					"friendlyURL " + _getReservedLayoutFriendlyURLS());
+
 			ResultSet resultSet = preparedStatement.executeQuery()) {
 
 			while (resultSet.next()) {
-				long plid = resultSet.getLong(1);
-				String friendlyURL = resultSet.getString(2);
+				long plid = resultSet.getLong("plid");
+				String friendlyURL = resultSet.getString("friendlyURL");
 
 				_log.error(
 					StringBundler.concat(

@@ -8,34 +8,46 @@
 <%@ include file="/info_box/init.jsp" %>
 
 <%
-String linkId = PortalUtil.generateRandomKey(request, "info-box") + "_action-link";
+String linkId = HtmlUtil.escape(PortalUtil.generateRandomKey(request, "info-box") + "_action-link");
 %>
 
 <div class="info-box<%= Validator.isNotNull(elementClasses) ? StringPool.SPACE + elementClasses : StringPool.BLANK %>">
-	<header class="header pb-2">
+	<header class="align-items-center d-flex header justify-content-between pb-2">
 		<c:if test="<%= Validator.isNotNull(title) %>">
-			<h5 class="mb-0 title"><%= HtmlUtil.escape(title) %></h5>
+			<div class="h5 mb-0 title"><%= HtmlUtil.escape(title) %></div>
 		</c:if>
 
 		<c:if test="<%= Validator.isNotNull(actionLabel) %>">
-			<c:if test="<%= Validator.isNotNull(actionTargetId) %>">
-				<aui:script require="commerce-frontend-js/utilities/eventsDefinitions as eventsDefinitions">
-					var link = document.getElementById('<%= HtmlUtil.escapeJS(linkId) %>');
 
-					if (link) {
-						link.addEventListener('click', (e) => {
-							e.preventDefault();
-							Liferay.fire(eventsDefinitions.OPEN_MODAL, {
-								id: '<%= HtmlUtil.escapeJS(actionTargetId) %>',
-							});
-						});
-					}
-				</aui:script>
+			<%
+			String href = Validator.isNotNull(actionURL) ? actionURL : "#";
+			%>
+
+			<c:if test="<%= Validator.isNotNull(actionContext) %>">
+
+				<%
+				href = "#";
+				%>
+
+				<liferay-frontend:component
+					context='<%=
+						HashMapBuilder.<String, Object>put(
+							"title", title
+						).put(
+							"url", actionURL
+						).putAll(
+							actionContext
+						).put(
+							"linkId", linkId
+						).build()
+					%>'
+					module="{ModalActionContextHandler} from commerce-frontend-taglib"
+				/>
 			</c:if>
 
 			<clay:link
-				href='<%= Validator.isNotNull(actionUrl) ? actionUrl : "#" %>'
-				id="<%= HtmlUtil.escape(linkId) %>"
+				href="<%= href %>"
+				id="<%= linkId %>"
 				label="<%= HtmlUtil.escape(actionLabel) %>"
 			/>
 		</c:if>

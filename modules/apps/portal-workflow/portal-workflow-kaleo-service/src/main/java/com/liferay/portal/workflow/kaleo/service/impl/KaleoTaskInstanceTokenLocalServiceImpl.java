@@ -40,14 +40,21 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.workflow.kaleo.internal.search.KaleoTaskInstanceTokenField;
 import com.liferay.portal.workflow.kaleo.model.KaleoInstanceToken;
+import com.liferay.portal.workflow.kaleo.model.KaleoTask;
 import com.liferay.portal.workflow.kaleo.model.KaleoTaskAssignment;
+import com.liferay.portal.workflow.kaleo.model.KaleoTaskAssignmentInstance;
 import com.liferay.portal.workflow.kaleo.model.KaleoTaskInstanceToken;
+import com.liferay.portal.workflow.kaleo.runtime.ExecutionContext;
+import com.liferay.portal.workflow.kaleo.runtime.assignment.AggregateKaleoTaskAssignmentSelector;
 import com.liferay.portal.workflow.kaleo.runtime.util.WorkflowContextUtil;
 import com.liferay.portal.workflow.kaleo.service.KaleoTaskAssignmentInstanceLocalService;
+import com.liferay.portal.workflow.kaleo.service.KaleoTaskAssignmentLocalService;
 import com.liferay.portal.workflow.kaleo.service.KaleoTaskFormInstanceLocalService;
 import com.liferay.portal.workflow.kaleo.service.KaleoTimerInstanceTokenLocalService;
 import com.liferay.portal.workflow.kaleo.service.base.KaleoTaskInstanceTokenLocalServiceBaseImpl;
 import com.liferay.portal.workflow.kaleo.service.persistence.KaleoInstanceTokenPersistence;
+import com.liferay.portal.workflow.kaleo.service.persistence.KaleoTaskAssignmentInstancePersistence;
+import com.liferay.portal.workflow.kaleo.service.persistence.KaleoTaskAssignmentPersistence;
 import com.liferay.portal.workflow.kaleo.service.persistence.KaleoTaskFormInstancePersistence;
 import com.liferay.portal.workflow.kaleo.service.persistence.KaleoTaskFormPersistence;
 import com.liferay.portal.workflow.kaleo.service.persistence.KaleoTaskInstanceTokenQuery;
@@ -121,13 +128,12 @@ public class KaleoTaskInstanceTokenLocalServiceImpl
 				(String)workflowContext.get(
 					WorkflowConstants.CONTEXT_ENTRY_CLASS_NAME));
 
-			if (workflowContext.containsKey(
-					WorkflowConstants.CONTEXT_ENTRY_CLASS_PK)) {
+			if (
+					workflowContext.get(
+						WorkflowConstants.CONTEXT_ENTRY_CLASS_PK) instanceof
+							String classPK) {
 
-				kaleoTaskInstanceToken.setClassPK(
-					GetterUtil.getLong(
-						(String)workflowContext.get(
-							WorkflowConstants.CONTEXT_ENTRY_CLASS_PK)));
+				kaleoTaskInstanceToken.setClassPK(GetterUtil.getLong(classPK));
 			}
 		}
 
@@ -412,6 +418,14 @@ public class KaleoTaskInstanceTokenLocalServiceImpl
 
 	@Override
 	public List<KaleoTaskInstanceToken> getKaleoTaskInstanceTokens(
+		String className, long classPK) {
+
+		return kaleoTaskInstanceTokenPersistence.findByCN_CPK(
+			className, classPK);
+	}
+
+	@Override
+	public List<KaleoTaskInstanceToken> getKaleoTaskInstanceTokens(
 		String assigneeClassName, long assigneeClassPK, Boolean completed,
 		int start, int end,
 		OrderByComparator<KaleoTaskInstanceToken> orderByComparator,
@@ -550,6 +564,51 @@ public class KaleoTaskInstanceTokenLocalServiceImpl
 
 		if (kaleoTaskFormsCount > kaleoTaskFormInstancesCount) {
 			return true;
+		}
+
+		return false;
+	}
+
+	@Override
+	public boolean isNotifiableUser(long userId, long workflowTaskId)
+		throws PortalException {
+
+		KaleoTaskInstanceToken kaleoTaskInstanceToken =
+			kaleoTaskInstanceTokenPersistence.findByPrimaryKey(workflowTaskId);
+
+		Collection<KaleoTaskAssignment> kaleoTaskAssignments =
+			_aggregateKaleoTaskAssignmentSelector.getKaleoTaskAssignments(
+				_kaleoTaskAssignmentPersistence.findByKCN_KCPK(
+					KaleoTask.class.getName(),
+					kaleoTaskInstanceToken.getKaleoTaskId()),
+				_createExecutionContext(kaleoTaskInstanceToken));
+
+		for (KaleoTaskAssignment kaleoTaskAssignment : kaleoTaskAssignments) {
+			if (_isNotifiableUser(
+					kaleoTaskAssignment, kaleoTaskInstanceToken, userId)) {
+
+				return true;
+			}
+		}
+
+		// TODO Temporary workaround for LPS-188796
+
+		for (KaleoTaskAssignmentInstance kaleoTaskAssignmentInstance :
+				kaleoTaskInstanceToken.getKaleoTaskAssignmentInstances()) {
+
+			KaleoTaskAssignment kaleoTaskAssignment =
+				_kaleoTaskAssignmentLocalService.createKaleoTaskAssignment(0L);
+
+			kaleoTaskAssignment.setAssigneeClassName(
+				kaleoTaskAssignmentInstance.getAssigneeClassName());
+			kaleoTaskAssignment.setAssigneeClassPK(
+				kaleoTaskAssignmentInstance.getAssigneeClassPK());
+
+			if (_isNotifiableUser(
+					kaleoTaskAssignment, kaleoTaskInstanceToken, userId)) {
+
+				return true;
+			}
 		}
 
 		return false;
@@ -920,6 +979,28 @@ public class KaleoTaskInstanceTokenLocalServiceImpl
 		return searchContext;
 	}
 
+	private ExecutionContext _createExecutionContext(
+			KaleoTaskInstanceToken kaleoTaskInstanceToken)
+		throws PortalException {
+
+		KaleoInstanceToken kaleoInstanceToken =
+			kaleoTaskInstanceToken.getKaleoInstanceToken();
+
+		Map<String, Serializable> workflowContext = WorkflowContextUtil.convert(
+			kaleoTaskInstanceToken.getWorkflowContext());
+
+		ServiceContext workflowContextServiceContext =
+			(ServiceContext)workflowContext.get(
+				WorkflowConstants.CONTEXT_SERVICE_CONTEXT);
+
+		ExecutionContext executionContext = new ExecutionContext(
+			kaleoInstanceToken, workflowContext, workflowContextServiceContext);
+
+		executionContext.setKaleoTaskInstanceToken(kaleoTaskInstanceToken);
+
+		return executionContext;
+	}
+
 	private String[] _getAssetTypes(String assetType) {
 		if (Validator.isNull(assetType)) {
 			return null;
@@ -980,6 +1061,44 @@ public class KaleoTaskInstanceTokenLocalServiceImpl
 		}
 
 		return new String[] {taskName};
+	}
+
+	private boolean _isNotifiableUser(
+			KaleoTaskAssignment kaleoTaskAssignment,
+			KaleoTaskInstanceToken kaleoTaskInstanceToken, long userId)
+		throws PortalException {
+
+		if (Objects.equals(
+				kaleoTaskAssignment.getAssigneeClassName(),
+				User.class.getName())) {
+
+			List<KaleoTaskAssignmentInstance> kaleoTaskAssignmentInstances =
+				_kaleoTaskAssignmentInstancePersistence.
+					findByKaleoTaskInstanceTokenId(
+						kaleoTaskInstanceToken.getKaleoTaskInstanceTokenId());
+
+			for (KaleoTaskAssignmentInstance kaleoTaskAssignmentInstance :
+					kaleoTaskAssignmentInstances) {
+
+				if (kaleoTaskAssignmentInstance.getAssigneeClassPK() ==
+						userId) {
+
+					return true;
+				}
+			}
+
+			return false;
+		}
+
+		User user = _userLocalService.getUser(userId);
+
+		for (Role role : user.getAllRoles()) {
+			if (role.getRoleId() == kaleoTaskAssignment.getAssigneeClassPK()) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	private Hits _search(
@@ -1074,11 +1193,25 @@ public class KaleoTaskInstanceTokenLocalServiceImpl
 		).build();
 
 	@Reference
+	private AggregateKaleoTaskAssignmentSelector
+		_aggregateKaleoTaskAssignmentSelector;
+
+	@Reference
 	private KaleoInstanceTokenPersistence _kaleoInstanceTokenPersistence;
 
 	@Reference
 	private KaleoTaskAssignmentInstanceLocalService
 		_kaleoTaskAssignmentInstanceLocalService;
+
+	@Reference
+	private KaleoTaskAssignmentInstancePersistence
+		_kaleoTaskAssignmentInstancePersistence;
+
+	@Reference
+	private KaleoTaskAssignmentLocalService _kaleoTaskAssignmentLocalService;
+
+	@Reference
+	private KaleoTaskAssignmentPersistence _kaleoTaskAssignmentPersistence;
 
 	@Reference
 	private KaleoTaskFormInstanceLocalService

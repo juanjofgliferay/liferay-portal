@@ -10,26 +10,25 @@ import com.liferay.portal.configuration.module.configuration.ConfigurationProvid
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.module.configuration.ConfigurationException;
-import com.liferay.portal.kernel.settings.CompanyServiceSettingsLocator;
 import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.ext.MessageBodyWriter;
 
 import java.io.IOException;
 import java.io.OutputStream;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.ext.MessageBodyWriter;
 
 import org.apache.cxf.jaxrs.ext.MessageContext;
 
@@ -42,7 +41,7 @@ public abstract class BaseMessageBodyWriter<T> implements MessageBodyWriter<T> {
 
 	@Override
 	public long getSize(
-		T t, Class<?> aClass, Type type, Annotation[] annotations,
+		T t, Class<?> clazz, Type type, Annotation[] annotations,
 		MediaType mediaType) {
 
 		return -1L;
@@ -50,7 +49,7 @@ public abstract class BaseMessageBodyWriter<T> implements MessageBodyWriter<T> {
 
 	@Override
 	public void writeTo(
-			T t, Class<?> aClass, Type type, Annotation[] annotations,
+			T t, Class<?> clazz, Type type, Annotation[] annotations,
 			MediaType mediaType, MultivaluedMap<String, Object> multivaluedMap,
 			OutputStream outputStream)
 		throws WebApplicationException {
@@ -123,10 +122,8 @@ public abstract class BaseMessageBodyWriter<T> implements MessageBodyWriter<T> {
 		throws ConfigurationException {
 
 		AuthorizeScreenConfiguration authorizeScreenConfiguration =
-			configurationProvider.getConfiguration(
-				AuthorizeScreenConfiguration.class,
-				new CompanyServiceSettingsLocator(
-					companyId, AuthorizeScreenConfiguration.class.getName()));
+			configurationProvider.getCompanyConfiguration(
+				AuthorizeScreenConfiguration.class, companyId);
 
 		return authorizeScreenConfiguration.authorizeScreenURL();
 	}

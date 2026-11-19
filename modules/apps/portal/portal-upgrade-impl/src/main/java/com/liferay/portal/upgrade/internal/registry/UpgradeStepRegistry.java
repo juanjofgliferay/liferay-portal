@@ -6,6 +6,7 @@
 package com.liferay.portal.upgrade.internal.registry;
 
 import com.liferay.petra.concurrent.DCLSingleton;
+import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.portal.kernel.upgrade.DummyUpgradeStep;
 import com.liferay.portal.kernel.upgrade.UpgradeProcess;
 import com.liferay.portal.kernel.upgrade.UpgradeStep;
@@ -37,8 +38,7 @@ public class UpgradeStepRegistry implements UpgradeStepRegistrator.Registry {
 	}
 
 	public void destroy() {
-		_upgradeInfosDCLSingleton.destroy(
-			upgradeInfos -> _bundleContext.ungetService(_serviceReference));
+		_upgradeInfosDCLSingleton.destroy(null);
 	}
 
 	public List<UpgradeStep> getReleaseCreationUpgradeSteps() {
@@ -131,7 +131,20 @@ public class UpgradeStepRegistry implements UpgradeStepRegistrator.Registry {
 		UpgradeStepRegistrator upgradeStepRegistrator =
 			_bundleContext.getService(_serviceReference);
 
-		upgradeStepRegistrator.register(this);
+		try {
+			upgradeStepRegistrator.register(this);
+		}
+		catch (Throwable throwable) {
+			_initialization = false;
+
+			_releaseCreationUpgradeSteps.clear();
+			_upgradeInfos.clear();
+
+			return ReflectionUtil.throwException(throwable);
+		}
+		finally {
+			_bundleContext.ungetService(_serviceReference);
+		}
 
 		if (_initialization && _portalUpgraded) {
 			if (_upgradeInfos.isEmpty()) {

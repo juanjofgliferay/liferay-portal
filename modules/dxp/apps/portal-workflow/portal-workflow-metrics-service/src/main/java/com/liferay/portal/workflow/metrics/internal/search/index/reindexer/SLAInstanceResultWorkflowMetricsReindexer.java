@@ -6,6 +6,7 @@
 package com.liferay.portal.workflow.metrics.internal.search.index.reindexer;
 
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.model.CompanyConstants;
 import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.PortalRunMode;
@@ -22,9 +23,11 @@ import com.liferay.portal.search.hits.SearchHit;
 import com.liferay.portal.search.hits.SearchHits;
 import com.liferay.portal.search.index.IndexNameBuilder;
 import com.liferay.portal.search.query.BooleanQuery;
-import com.liferay.portal.search.query.Queries;
+import com.liferay.portal.search.query.QueriesUtil;
+import com.liferay.portal.search.spi.reindexer.IndexReindexer;
 import com.liferay.portal.workflow.metrics.internal.background.task.WorkflowMetricsSLAProcessBackgroundTaskHelper;
 import com.liferay.portal.workflow.metrics.internal.search.index.SLAInstanceResultWorkflowMetricsIndexer;
+import com.liferay.portal.workflow.metrics.internal.search.index.WorkflowMetricsIndex;
 import com.liferay.portal.workflow.metrics.search.index.constants.WorkflowMetricsIndexNameConstants;
 import com.liferay.portal.workflow.metrics.search.index.reindexer.WorkflowMetricsReindexer;
 
@@ -35,15 +38,30 @@ import org.osgi.service.component.annotations.Reference;
  * @author Rafael Praxedes
  */
 @Component(
-	property = "workflow.metrics.index.entity.name=sla-instance-result",
-	service = WorkflowMetricsReindexer.class
+	property = "search.index.category=workflow",
+	service = {IndexReindexer.class, WorkflowMetricsReindexer.class}
 )
 public class SLAInstanceResultWorkflowMetricsReindexer
-	implements WorkflowMetricsReindexer {
+	implements IndexReindexer, WorkflowMetricsReindexer {
+
+	@Override
+	public String getKey() {
+		return "sla-instance-result";
+	}
 
 	@Override
 	public void reindex(long companyId) throws PortalException {
-		_creatDefaultDocuments(companyId);
+		if (!_searchCapabilities.isWorkflowMetricsSupported() ||
+			(companyId == CompanyConstants.SYSTEM)) {
+
+			return;
+		}
+
+		WorkflowMetricsIndex.createMissingIndexes(
+			_searchCapabilities, _searchEngineAdapter, _indexNameBuilder,
+			companyId);
+
+		_createDefaultDocuments(companyId);
 
 		WorkflowMetricsSLAProcessBackgroundTaskHelper
 			workflowMetricsSLAProcessBackgroundTaskHelper =
@@ -55,12 +73,15 @@ public class SLAInstanceResultWorkflowMetricsReindexer
 		}
 	}
 
-	@Reference
-	protected SearchEngineAdapter searchEngineAdapter;
+	@Override
+	public void reindex(long companyId, ExecutionMode executionMode)
+		throws Exception {
 
-	private void _creatDefaultDocuments(long companyId) {
-		if (!_searchCapabilities.isWorkflowMetricsSupported() ||
-			!_hasIndex(
+		reindex(companyId);
+	}
+
+	private void _createDefaultDocuments(long companyId) {
+		if (!_hasIndex(
 				_indexNameBuilder.getIndexName(companyId) +
 					WorkflowMetricsIndexNameConstants.SUFFIX_PROCESS)) {
 
@@ -73,18 +94,18 @@ public class SLAInstanceResultWorkflowMetricsReindexer
 			_indexNameBuilder.getIndexName(companyId) +
 				WorkflowMetricsIndexNameConstants.SUFFIX_PROCESS);
 
-		BooleanQuery booleanQuery = _queries.booleanQuery();
+		BooleanQuery booleanQuery = QueriesUtil.booleanQuery();
 
 		booleanQuery.addFilterQueryClauses(
-			_queries.term("companyId", companyId),
-			_queries.term("deleted", Boolean.FALSE));
+			QueriesUtil.term("companyId", companyId),
+			QueriesUtil.term("deleted", Boolean.FALSE));
 
 		searchSearchRequest.setQuery(booleanQuery);
 
 		searchSearchRequest.setSize(10000);
 
-		SearchSearchResponse searchSearchResponse = searchEngineAdapter.execute(
-			searchSearchRequest);
+		SearchSearchResponse searchSearchResponse =
+			_searchEngineAdapter.execute(searchSearchRequest);
 
 		SearchHits searchHits = searchSearchResponse.getSearchHits();
 
@@ -102,7 +123,7 @@ public class SLAInstanceResultWorkflowMetricsReindexer
 					_slaInstanceResultWorkflowMetricsIndexer.getIndexName(
 						companyId),
 					_slaInstanceResultWorkflowMetricsIndexer.
-						creatDefaultDocument(
+						createDefaultDocument(
 							companyId, document.getLong("processId"))));
 		}
 
@@ -113,7 +134,7 @@ public class SLAInstanceResultWorkflowMetricsReindexer
 				bulkDocumentRequest.setRefresh(true);
 			}
 
-			searchEngineAdapter.execute(bulkDocumentRequest);
+			_searchEngineAdapter.execute(bulkDocumentRequest);
 		}
 	}
 
@@ -122,7 +143,7 @@ public class SLAInstanceResultWorkflowMetricsReindexer
 			new IndicesExistsIndexRequest(indexName);
 
 		IndicesExistsIndexResponse indicesExistsIndexResponse =
-			searchEngineAdapter.execute(indicesExistsIndexRequest);
+			_searchEngineAdapter.execute(indicesExistsIndexRequest);
 
 		return indicesExistsIndexResponse.isExists();
 	}
@@ -136,10 +157,10 @@ public class SLAInstanceResultWorkflowMetricsReindexer
 	private IndexNameBuilder _indexNameBuilder;
 
 	@Reference
-	private Queries _queries;
+	private SearchCapabilities _searchCapabilities;
 
 	@Reference
-	private SearchCapabilities _searchCapabilities;
+	private SearchEngineAdapter _searchEngineAdapter;
 
 	@Reference
 	private SLAInstanceResultWorkflowMetricsIndexer

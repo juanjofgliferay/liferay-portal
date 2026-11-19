@@ -19,7 +19,6 @@ import com.liferay.commerce.inventory.service.CommerceInventoryWarehouseLocalSer
 import com.liferay.commerce.model.CommerceOrder;
 import com.liferay.commerce.model.CommerceOrderItem;
 import com.liferay.commerce.model.CommerceShipment;
-import com.liferay.commerce.notification.model.CommerceNotificationQueueEntry;
 import com.liferay.commerce.notification.model.CommerceNotificationTemplate;
 import com.liferay.commerce.notification.service.CommerceNotificationQueueEntryLocalService;
 import com.liferay.commerce.notification.service.CommerceNotificationTemplateLocalService;
@@ -32,6 +31,7 @@ import com.liferay.commerce.service.CommerceOrderLocalService;
 import com.liferay.commerce.service.CommerceShipmentItemLocalService;
 import com.liferay.commerce.service.CommerceShipmentLocalService;
 import com.liferay.commerce.test.util.CommerceTestUtil;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.Group;
@@ -99,7 +99,7 @@ public class CommerceOrderStatusNotificationTest {
 			RandomTestUtil.randomString(), _serviceContext);
 
 		CommerceAccountTestUtil.addAccountGroupAndAccountRel(
-			_user.getCompanyId(), RandomTestUtil.randomString(),
+			RandomTestUtil.randomString(),
 			AccountConstants.ACCOUNT_GROUP_TYPE_STATIC,
 			_accountEntry.getAccountEntryId(), _serviceContext);
 
@@ -146,7 +146,7 @@ public class CommerceOrderStatusNotificationTest {
 
 		Assert.assertEquals(
 			1,
-			_commerceNotificationQueueEntryLocalService.
+			CommerceNotificationTestUtil.
 				getCommerceNotificationQueueEntriesCount(
 					_commerceChannel.getGroupId()));
 
@@ -168,7 +168,7 @@ public class CommerceOrderStatusNotificationTest {
 
 		Assert.assertEquals(
 			1,
-			_commerceNotificationQueueEntryLocalService.
+			CommerceNotificationTestUtil.
 				getCommerceNotificationQueueEntriesCount(
 					_commerceChannel.getGroupId()));
 
@@ -181,7 +181,7 @@ public class CommerceOrderStatusNotificationTest {
 
 		Assert.assertEquals(
 			2,
-			_commerceNotificationQueueEntryLocalService.
+			CommerceNotificationTestUtil.
 				getCommerceNotificationQueueEntriesCount(
 					_commerceChannel.getGroupId()));
 
@@ -198,6 +198,7 @@ public class CommerceOrderStatusNotificationTest {
 			List<CommerceInventoryWarehouse> commerceInventoryWarehouses =
 				_commerceInventoryWarehouseLocalService.
 					getCommerceInventoryWarehouses(
+						_commerceOrder.getCommerceAccountId(),
 						_commerceChannel.getGroupId(),
 						commerceOrderItem.getSku());
 
@@ -217,7 +218,7 @@ public class CommerceOrderStatusNotificationTest {
 
 		Assert.assertEquals(
 			3,
-			_commerceNotificationQueueEntryLocalService.
+			CommerceNotificationTestUtil.
 				getCommerceNotificationQueueEntriesCount(
 					_commerceChannel.getGroupId()));
 
@@ -233,7 +234,7 @@ public class CommerceOrderStatusNotificationTest {
 
 		Assert.assertEquals(
 			4,
-			_commerceNotificationQueueEntryLocalService.
+			CommerceNotificationTestUtil.
 				getCommerceNotificationQueueEntriesCount(
 					_commerceChannel.getGroupId()));
 
@@ -262,26 +263,21 @@ public class CommerceOrderStatusNotificationTest {
 			String commerceNotificationTemplateType)
 		throws Exception {
 
-		List<CommerceNotificationQueueEntry> commerceNotificationQueueEntries =
-			_commerceNotificationQueueEntryLocalService.
-				getCommerceNotificationQueueEntries(
-					_commerceChannel.getGroupId(), QueryUtil.ALL_POS,
-					QueryUtil.ALL_POS, null);
+		List<String> commerceNotificationTemplateTypes =
+			TransformUtil.transform(
+				CommerceNotificationTestUtil.
+					getCommerceNotificationQueueEntries(
+						_commerceChannel.getGroupId(), QueryUtil.ALL_POS,
+						QueryUtil.ALL_POS, null),
+				commerceNotificationQueueEntry -> {
+					CommerceNotificationTemplate commerceNotificationTemplate =
+						CommerceNotificationTemplateLocalServiceUtil.
+							getCommerceNotificationTemplate(
+								commerceNotificationQueueEntry.
+									getCommerceNotificationTemplateId());
 
-		List<String> commerceNotificationTemplateTypes = new ArrayList<>();
-
-		for (CommerceNotificationQueueEntry commerceNotificationQueueEntry :
-				commerceNotificationQueueEntries) {
-
-			CommerceNotificationTemplate commerceNotificationTemplate =
-				CommerceNotificationTemplateLocalServiceUtil.
-					getCommerceNotificationTemplate(
-						commerceNotificationQueueEntry.
-							getCommerceNotificationTemplateId());
-
-			commerceNotificationTemplateTypes.add(
-				commerceNotificationTemplate.getType());
-		}
+					return commerceNotificationTemplate.getType();
+				});
 
 		Assert.assertTrue(
 			commerceNotificationTemplateTypes.contains(
@@ -294,8 +290,6 @@ public class CommerceOrderStatusNotificationTest {
 		CommerceOrderConstants.ORDER_NOTIFICATION_SHIPPED,
 		CommerceOrderConstants.ORDER_NOTIFICATION_COMPLETED
 	};
-
-	private static User _user;
 
 	private AccountEntry _accountEntry;
 	private CommerceChannel _commerceChannel;
@@ -335,5 +329,6 @@ public class CommerceOrderStatusNotificationTest {
 
 	private Group _group;
 	private ServiceContext _serviceContext;
+	private User _user;
 
 }

@@ -7,6 +7,7 @@ package com.liferay.style.book.change.tracking.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.change.tracking.test.util.BaseTableReferenceDefinitionTestCase;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.model.change.tracking.CTModel;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
@@ -43,21 +44,29 @@ public class StyleBookEntryVersionTableReferenceDefinitionTest
 		super.setUp();
 
 		_styleBookEntry = _styleBookEntryLocalService.addStyleBookEntry(
-			TestPropsValues.getUserId(), TestPropsValues.getGroupId(),
+			null, TestPropsValues.getUserId(), TestPropsValues.getGroupId(),
+			false, StringPool.BLANK, StringPool.BLANK,
 			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
+			RandomTestUtil.randomString(),
 			ServiceContextTestUtil.getServiceContext());
 	}
 
 	@Override
 	protected CTModel<?> addCTModel() throws Exception {
 		return _styleBookEntryLocalService.updateStyleBookEntry(
-			_styleBookEntry.getStyleBookEntryId(),
-			RandomTestUtil.randomString(), RandomTestUtil.randomString());
+			TestPropsValues.getUserId(), _styleBookEntry.getStyleBookEntryId(),
+			_styleBookEntry.isDefaultStyleBookEntry(),
+			_styleBookEntry.getFrontendTokenDefinition(), "{}",
+			RandomTestUtil.randomString(),
+			_styleBookEntry.getStyleBookEntryKey(),
+			_styleBookEntry.getPreviewFileEntryId(),
+			_styleBookEntry.getThemeId(),
+			ServiceContextTestUtil.getServiceContext());
 	}
 
-	private static StyleBookEntry _styleBookEntry;
+	private StyleBookEntry _styleBookEntry;
 
 	@Inject
-	private static StyleBookEntryLocalService _styleBookEntryLocalService;
+	private StyleBookEntryLocalService _styleBookEntryLocalService;
 
 }

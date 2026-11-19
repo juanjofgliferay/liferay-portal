@@ -128,8 +128,6 @@ public interface CommerceAddressRestrictionLocalService
 			long commerceAddressRestrictionId)
 		throws PortalException;
 
-	public void deleteCommerceAddressRestrictions(long countryId);
-
 	public void deleteCommerceAddressRestrictions(
 		String className, long classPK);
 
@@ -215,10 +213,6 @@ public interface CommerceAddressRestrictionLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public CommerceAddressRestriction fetchCommerceAddressRestriction(
 		long commerceAddressRestrictionId);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public CommerceAddressRestriction fetchCommerceAddressRestriction(
-		String className, long classPK, long countryId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public ActionableDynamicQuery getActionableDynamicQuery();
@@ -308,3 +302,4 @@ public interface CommerceAddressRestrictionLocalService
 		CommerceAddressRestriction commerceAddressRestriction);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:2043225384

@@ -5,22 +5,22 @@
 
 package com.liferay.translation.translator.google.cloud.internal.translator;
 
-import com.google.auth.oauth2.ServiceAccountCredentials;
+import com.google.auth.oauth2.GoogleCredentials;
 import com.google.cloud.translate.Language;
 import com.google.cloud.translate.Translate;
 import com.google.cloud.translate.TranslateOptions;
 import com.google.cloud.translate.Translation;
 
 import com.liferay.petra.function.transform.TransformUtil;
-import com.liferay.petra.string.CharPool;
-import com.liferay.petra.string.StringUtil;
 import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.module.configuration.ConfigurationException;
 import com.liferay.portal.kernel.util.SetUtil;
 import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.security.key.secret.SecretResolver;
 import com.liferay.translation.exception.TranslatorException;
+import com.liferay.translation.translator.BaseTranslator;
 import com.liferay.translation.translator.Translator;
 import com.liferay.translation.translator.TranslatorPacket;
 import com.liferay.translation.translator.google.cloud.internal.configuration.GoogleCloudTranslatorConfiguration;
@@ -47,7 +47,7 @@ import org.osgi.service.component.annotations.Reference;
 	configurationPid = "com.liferay.translation.translator.google.cloud.internal.configuration.GoogleCloudTranslatorConfiguration",
 	service = Translator.class
 )
-public class GoogleCloudTranslator implements Translator {
+public class GoogleCloudTranslator extends BaseTranslator {
 
 	@Override
 	public boolean isEnabled(long companyId) throws ConfigurationException {
@@ -79,12 +79,14 @@ public class GoogleCloudTranslator implements Translator {
 			return translatorPacket;
 		}
 
-		String sourceLanguageCode = _getLanguageCode(
+		String sourceLanguageCode = getLanguageCode(
 			translatorPacket.getSourceLanguageId());
-		String targetLanguageCode = _getLanguageCode(
+		String targetLanguageCode = getLanguageCode(
 			translatorPacket.getTargetLanguageId());
 
-		Translate translate = _getTranslate(googleCloudTranslatorConfiguration);
+		Translate translate = _getTranslate(
+			translatorPacket.getCompanyId(),
+			googleCloudTranslatorConfiguration);
 
 		Set<String> supportedLanguageCodes = SetUtil.fromCollection(
 			TransformUtil.transform(
@@ -144,27 +146,22 @@ public class GoogleCloudTranslator implements Translator {
 		};
 	}
 
-	private String _getLanguageCode(String languageId) {
-		List<String> list = StringUtil.split(languageId, CharPool.UNDERLINE);
-
-		return list.get(0);
-	}
-
 	private Translate _getTranslate(
+			long companyId,
 			GoogleCloudTranslatorConfiguration
 				googleCloudTranslatorConfiguration)
 		throws ConfigurationException {
 
-		String serviceAccountPrivateKey =
-			googleCloudTranslatorConfiguration.serviceAccountPrivateKey();
+		String serviceAccountPrivateKey = _secretResolver.resolve(
+			companyId,
+			googleCloudTranslatorConfiguration.serviceAccountPrivateKey());
 
-		ServiceAccountCredentials serviceAccountCredentials = null;
+		GoogleCredentials googleCredentials = null;
 
 		try (InputStream inputStream = new ByteArrayInputStream(
 				serviceAccountPrivateKey.getBytes())) {
 
-			serviceAccountCredentials = ServiceAccountCredentials.fromStream(
-				inputStream);
+			googleCredentials = GoogleCredentials.fromStream(inputStream);
 		}
 		catch (IOException ioException) {
 			throw new SystemException(
@@ -177,11 +174,14 @@ public class GoogleCloudTranslator implements Translator {
 		return defaultTranslateFactory.create(
 			TranslateOptions.newBuilder(
 			).setCredentials(
-				serviceAccountCredentials
+				googleCredentials
 			).build());
 	}
 
 	@Reference
 	private ConfigurationProvider _configurationProvider;
+
+	@Reference
+	private SecretResolver _secretResolver;
 
 }

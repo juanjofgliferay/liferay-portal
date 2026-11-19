@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -93,18 +94,6 @@ public class DDMDataProviderInstanceLinkLocalServiceUtil {
 		throws PortalException {
 
 		getService().deleteDataProviderInstanceLink(dataProviderInstanceLinkId);
-	}
-
-	public static void deleteDataProviderInstanceLink(
-			long dataProviderInstanceId, long structureId)
-		throws PortalException {
-
-		getService().deleteDataProviderInstanceLink(
-			dataProviderInstanceId, structureId);
-	}
-
-	public static void deleteDataProviderInstanceLinks(long structureId) {
-		getService().deleteDataProviderInstanceLinks(structureId);
 	}
 
 	/**
@@ -238,13 +227,6 @@ public class DDMDataProviderInstanceLinkLocalServiceUtil {
 		return getService().dynamicQueryCount(dynamicQuery, projection);
 	}
 
-	public static DDMDataProviderInstanceLink fetchDataProviderInstanceLink(
-		long dataProviderInstanceId, long structureId) {
-
-		return getService().fetchDataProviderInstanceLink(
-			dataProviderInstanceId, structureId);
-	}
-
 	public static DDMDataProviderInstanceLink fetchDDMDataProviderInstanceLink(
 		long dataProviderInstanceLinkId) {
 
@@ -348,15 +330,13 @@ public class DDMDataProviderInstanceLinkLocalServiceUtil {
 	}
 
 	public static DDMDataProviderInstanceLinkLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(
-		DDMDataProviderInstanceLinkLocalService service) {
-
-		_service = service;
-	}
-
-	private static volatile DDMDataProviderInstanceLinkLocalService _service;
+	private static final Snapshot<DDMDataProviderInstanceLinkLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			DDMDataProviderInstanceLinkLocalServiceUtil.class,
+			DDMDataProviderInstanceLinkLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1374613188

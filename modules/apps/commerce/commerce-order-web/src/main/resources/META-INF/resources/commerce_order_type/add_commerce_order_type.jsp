@@ -15,6 +15,7 @@ CommerceOrderTypeDisplayContext commerceOrderTypeDisplayContext = (CommerceOrder
 
 <commerce-ui:modal-content
 	title='<%= LanguageUtil.get(request, "add-order-type") %>'
+	useNativeSubmit="<%= false %>"
 >
 	<aui:form method="post" name="fm">
 		<aui:input bean="<%= commerceOrderTypeDisplayContext.getCommerceOrderType() %>" label="name" model="<%= CommerceOrderType.class %>" name="name" required="<%= true %>" />
@@ -30,6 +31,6 @@ CommerceOrderTypeDisplayContext commerceOrderTypeDisplayContext = (CommerceOrder
 				"editCommerceOrderTypePortletURL", String.valueOf(commerceOrderTypeDisplayContext.getEditCommerceOrderTypeRenderURL())
 			).build()
 		%>'
-		module="js/addCommerceOrderType"
+		module="{addCommerceOrderType} from commerce-order-web"
 	/>
 </commerce-ui:modal-content>

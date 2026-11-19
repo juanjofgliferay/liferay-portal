@@ -69,16 +69,16 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.upload.UploadResponseHandler;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.io.IOException;
 import java.io.InputStream;
 
 import java.util.HashMap;
 import java.util.Map;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -88,9 +88,9 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + DLPortletKeys.DOCUMENT_LIBRARY,
-		"javax.portlet.name=" + DLPortletKeys.DOCUMENT_LIBRARY_ADMIN,
-		"javax.portlet.name=" + DLPortletKeys.MEDIA_GALLERY_DISPLAY,
+		"jakarta.portlet.name=" + DLPortletKeys.DOCUMENT_LIBRARY,
+		"jakarta.portlet.name=" + DLPortletKeys.DOCUMENT_LIBRARY_ADMIN,
+		"jakarta.portlet.name=" + DLPortletKeys.MEDIA_GALLERY_DISPLAY,
 		"mvc.command.name=/document_library/edit_file_entry_image_editor"
 	},
 	service = MVCActionCommand.class
@@ -202,11 +202,12 @@ public class EditFileEntryImageEditorMVCActionCommand
 		for (Map.Entry<String, String[]> entry : parameterMap.entrySet()) {
 			String parameterName = entry.getKey();
 
-			if (StringUtil.startsWith(parameterName, namespace)) {
-				dynamicServletRequest.setParameterValues(
-					parameterName.substring(namespace.length()),
-					entry.getValue());
+			if (!StringUtil.startsWith(parameterName, namespace)) {
+				continue;
 			}
+
+			dynamicServletRequest.setParameterValues(
+				parameterName.substring(namespace.length()), entry.getValue());
 		}
 
 		return dynamicServletRequest;
@@ -356,8 +357,8 @@ public class EditFileEntryImageEditorMVCActionCommand
 				fileEntry.getTitle(), fileEntry.getTitle(),
 				fileEntry.getDescription(), changeLog,
 				DLVersionNumberIncrease.AUTOMATIC, inputStream, size,
-				fileEntry.getExpirationDate(), fileEntry.getReviewDate(),
-				serviceContext);
+				fileEntry.getDisplayDate(), fileEntry.getExpirationDate(),
+				fileEntry.getReviewDate(), serviceContext);
 
 			_assetDisplayPageEntryFormProcessor.process(
 				FileEntry.class.getName(), fileEntry.getFileEntryId(),

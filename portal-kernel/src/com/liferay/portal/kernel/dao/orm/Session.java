@@ -13,6 +13,8 @@ import java.io.Serializable;
 import java.sql.Connection;
 import java.sql.SQLException;
 
+import java.util.Set;
+
 import org.osgi.annotation.versioning.ProviderType;
 
 /**
@@ -23,6 +25,9 @@ import org.osgi.annotation.versioning.ProviderType;
 public interface Session {
 
 	public void apply(UnsafeConsumer<Connection, SQLException> unsafeConsumer)
+		throws ORMException;
+
+	public boolean autoFlushIfRequired(Set<String> querySpaces)
 		throws ORMException;
 
 	public void clear() throws ORMException;
@@ -76,8 +81,9 @@ public interface Session {
 
 	public Object merge(Object object) throws ORMException;
 
-	public Serializable save(Object object) throws ORMException;
+	public Object reassociateIfAbsent(
+		Class<?> clazz, Serializable id, Object object);
 
-	public void saveOrUpdate(Object object) throws ORMException;
+	public Serializable save(Object object) throws ORMException;
 
 }

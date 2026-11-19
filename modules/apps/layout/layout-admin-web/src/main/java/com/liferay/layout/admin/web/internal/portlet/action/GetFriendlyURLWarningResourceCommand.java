@@ -21,17 +21,16 @@ import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCResourceCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCResourceCommand;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.LayoutLocalService;
-import com.liferay.portal.kernel.service.LayoutSetLocalService;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.service.impl.LayoutLocalServiceHelper;
 
-import java.util.Locale;
+import jakarta.portlet.ResourceRequest;
+import jakarta.portlet.ResourceResponse;
 
-import javax.portlet.ResourceRequest;
-import javax.portlet.ResourceResponse;
+import java.util.Locale;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -41,7 +40,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + LayoutAdminPortletKeys.GROUP_PAGES,
+		"jakarta.portlet.name=" + LayoutAdminPortletKeys.GROUP_PAGES,
 		"mvc.command.name=/layout_admin/get_friendly_url_warning"
 	},
 	service = MVCResourceCommand.class
@@ -54,7 +53,13 @@ public class GetFriendlyURLWarningResourceCommand
 			ResourceRequest resourceRequest, ResourceResponse resourceResponse)
 		throws Exception {
 
-		if (!FeatureFlagManagerUtil.isEnabled("LPS-174417")) {
+		long groupId = ParamUtil.getLong(resourceRequest, "groupId");
+
+		Group group = _groupLocalService.getGroup(groupId);
+
+		if (!FeatureFlagManagerUtil.isEnabled(
+				group.getCompanyId(), "LPS-174417")) {
+
 			JSONPortletResponseUtil.writeJSON(
 				resourceRequest, resourceResponse,
 				JSONUtil.put("hasWarnings", false));
@@ -80,7 +85,7 @@ public class GetFriendlyURLWarningResourceCommand
 			Layout layout = _layoutLocalService.getLayout(plid);
 
 			if (!_layoutSetPrototypeHelper.hasDuplicatedFriendlyURLs(
-					layout.getUuid(), layout.getGroupId(),
+					layout.getExternalReferenceCode(), layout.getGroupId(),
 					layout.isPrivateLayout(), friendlyURL)) {
 
 				JSONPortletResponseUtil.writeJSON(
@@ -109,7 +114,6 @@ public class GetFriendlyURLWarningResourceCommand
 			return;
 		}
 
-		long groupId = ParamUtil.getLong(resourceRequest, "groupId");
 		String name = ParamUtil.getString(resourceRequest, "name");
 
 		if ((groupId == 0) || Validator.isNull(name)) {
@@ -188,9 +192,6 @@ public class GetFriendlyURLWarningResourceCommand
 
 	@Reference
 	private LayoutLocalServiceHelper _layoutLocalServiceHelper;
-
-	@Reference
-	private LayoutSetLocalService _layoutSetLocalService;
 
 	@Reference
 	private LayoutSetPrototypeHelper _layoutSetPrototypeHelper;

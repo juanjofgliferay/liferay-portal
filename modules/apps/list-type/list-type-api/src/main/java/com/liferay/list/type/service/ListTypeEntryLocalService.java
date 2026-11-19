@@ -73,7 +73,8 @@ public interface ListTypeEntryLocalService
 	@Indexable(type = IndexableType.REINDEX)
 	public ListTypeEntry addListTypeEntry(
 			String externalReferenceCode, long userId,
-			long listTypeDefinitionId, String key, Map<Locale, String> nameMap)
+			long listTypeDefinitionId, String key, Map<Locale, String> nameMap,
+			boolean system)
 		throws PortalException;
 
 	/**
@@ -89,6 +90,9 @@ public interface ListTypeEntryLocalService
 	 * @throws PortalException
 	 */
 	public PersistedModel createPersistedModel(Serializable primaryKeyObj)
+		throws PortalException;
+
+	public void deleteCompanyListTypeEntries(long companyId)
 		throws PortalException;
 
 	/**
@@ -119,10 +123,6 @@ public interface ListTypeEntryLocalService
 	 */
 	@Indexable(type = IndexableType.DELETE)
 	public ListTypeEntry deleteListTypeEntry(long listTypeEntryId)
-		throws PortalException;
-
-	public void deleteListTypeEntryByListTypeDefinitionId(
-			long listTypeDefinitionId)
 		throws PortalException;
 
 	/**
@@ -263,6 +263,9 @@ public interface ListTypeEntryLocalService
 		long listTypeDefinitionId, int start, int end,
 		OrderByComparator<ListTypeEntry> orderByComparator);
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<ListTypeEntry> getListTypeEntries(long[] listTypeDefinitionIds);
+
 	/**
 	 * Returns the number of list type entries.
 	 *
@@ -289,12 +292,6 @@ public interface ListTypeEntryLocalService
 	public ListTypeEntry getListTypeEntry(long listTypeDefinitionId, String key)
 		throws PortalException;
 
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public ListTypeEntry getListTypeEntryByExternalReferenceCode(
-			String externalReferenceCode, long companyId,
-			long listTypeDefinitionId)
-		throws PortalException;
-
 	/**
 	 * Returns the list type entry with the matching UUID and company.
 	 *
@@ -306,6 +303,12 @@ public interface ListTypeEntryLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public ListTypeEntry getListTypeEntryByUuidAndCompanyId(
 			String uuid, long companyId)
+		throws PortalException;
+
+	@Indexable(type = IndexableType.REINDEX)
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public ListTypeEntry getOrAddEmptyListTypeEntry(
+			long userId, long listTypeDefinitionId, String key)
 		throws PortalException;
 
 	/**
@@ -342,4 +345,8 @@ public interface ListTypeEntryLocalService
 			Map<Locale, String> nameMap)
 		throws PortalException;
 
+	public void updateUserId(long companyId, long oldUserId, long newUserId)
+		throws PortalException;
+
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-2140263931

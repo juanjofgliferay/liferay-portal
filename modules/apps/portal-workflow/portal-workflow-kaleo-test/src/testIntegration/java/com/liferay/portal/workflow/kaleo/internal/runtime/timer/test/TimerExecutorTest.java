@@ -6,13 +6,20 @@
 package com.liferay.portal.workflow.kaleo.internal.runtime.timer.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
-import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.messaging.Message;
+import com.liferay.portal.kernel.messaging.MessageBusUtil;
+import com.liferay.portal.kernel.messaging.MessageListener;
 import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.scheduler.SchedulerEngine;
+import com.liferay.portal.kernel.scheduler.SchedulerEngineHelperUtil;
+import com.liferay.portal.kernel.scheduler.StorageType;
+import com.liferay.portal.kernel.scheduler.messaging.SchedulerResponse;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DataGuard;
+import com.liferay.portal.kernel.test.rule.SynchronousDestinationTestRule;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
@@ -24,6 +31,7 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.kernel.workflow.WorkflowDefinition;
 import com.liferay.portal.kernel.workflow.WorkflowHandler;
+import com.liferay.portal.security.script.management.test.rule.ScriptManagementConfigurationTestRule;
 import com.liferay.portal.test.mail.MailMessage;
 import com.liferay.portal.test.mail.MailServiceTestUtil;
 import com.liferay.portal.test.rule.Inject;
@@ -38,7 +46,8 @@ import com.liferay.portal.workflow.kaleo.model.KaleoTaskAssignmentInstance;
 import com.liferay.portal.workflow.kaleo.model.KaleoTaskInstanceToken;
 import com.liferay.portal.workflow.kaleo.model.KaleoTimer;
 import com.liferay.portal.workflow.kaleo.model.KaleoTimerInstanceToken;
-import com.liferay.portal.workflow.kaleo.runtime.ExecutionContext;
+import com.liferay.portal.workflow.kaleo.runtime.constants.KaleoRuntimeDestinationNames;
+import com.liferay.portal.workflow.kaleo.runtime.util.SchedulerUtil;
 import com.liferay.portal.workflow.kaleo.service.KaleoDefinitionVersionLocalService;
 import com.liferay.portal.workflow.kaleo.service.KaleoInstanceLocalService;
 import com.liferay.portal.workflow.kaleo.service.KaleoInstanceTokenLocalService;
@@ -51,8 +60,6 @@ import com.liferay.portal.workflow.kaleo.service.KaleoTimerLocalService;
 import com.liferay.portal.workflow.manager.WorkflowDefinitionManager;
 
 import java.io.Serializable;
-
-import java.lang.reflect.Method;
 
 import java.util.Collections;
 import java.util.List;
@@ -84,7 +91,10 @@ public class TimerExecutorTest {
 	@Rule
 	public static final AggregateTestRule aggregateTestRule =
 		new AggregateTestRule(
-			new LiferayIntegrationTestRule(), SynchronousMailTestRule.INSTANCE);
+			new LiferayIntegrationTestRule(),
+			ScriptManagementConfigurationTestRule.INSTANCE,
+			SynchronousDestinationTestRule.INSTANCE,
+			SynchronousMailTestRule.INSTANCE);
 
 	@BeforeClass
 	public static void setUpClass() {
@@ -148,9 +158,9 @@ public class TimerExecutorTest {
 
 		_workflowDefinition =
 			_workflowDefinitionManager.deployWorkflowDefinition(
-				TestPropsValues.getCompanyId(), TestPropsValues.getUserId(),
+				content.getBytes(), TestPropsValues.getCompanyId(), null,
 				RandomTestUtil.randomString(), RandomTestUtil.randomString(),
-				content.getBytes());
+				TestPropsValues.getUserId());
 
 		_kaleoDefinitionVersion =
 			_kaleoDefinitionVersionLocalService.getLatestKaleoDefinitionVersion(
@@ -166,26 +176,14 @@ public class TimerExecutorTest {
 
 	@Test
 	public void testExecuteTimerNotifications() throws Exception {
-		KaleoTask kaleoTask = _getKaleoTask("Timer Notification");
-
-		Assert.assertNotNull(kaleoTask);
-
-		KaleoInstanceToken kaleoInstanceToken = _addKaleoInstanceToken(
-			kaleoTask);
-
-		KaleoTaskInstanceToken kaleoTaskInstanceToken =
-			_addKaleoTaskInstanceToken(kaleoInstanceToken, kaleoTask);
-
 		KaleoTimerInstanceToken kaleoTimerInstanceToken =
-			_kaleoTimerInstanceTokenLocalService.addKaleoTimerInstanceToken(
-				kaleoInstanceToken.getKaleoInstanceTokenId(),
-				kaleoTaskInstanceToken.getKaleoTaskInstanceTokenId(),
-				_getKaleoTimerId(kaleoTask), RandomTestUtil.randomString(),
-				_workflowContext, _serviceContext);
+			_addKaleoTimerInstanceToken(_KALEO_NODE_NAME_TIMER_NOTIFICATION);
 
-		_executeTimer(
-			kaleoInstanceToken, kaleoTaskInstanceToken,
-			kaleoTimerInstanceToken);
+		_executeTimer(kaleoTimerInstanceToken);
+
+		Assert.assertNotNull(
+			MessageBusUtil.getDestination(
+				KaleoRuntimeDestinationNames.WORKFLOW_TIMER));
 
 		MailMessage mailMessage = MailServiceTestUtil.getLastMailMessage();
 
@@ -195,22 +193,11 @@ public class TimerExecutorTest {
 
 	@Test
 	public void testExecuteTimerReassignments() throws Exception {
-		KaleoTask kaleoTask = _getKaleoTask("Timer Reassignment");
-
-		Assert.assertNotNull(kaleoTask);
-
-		KaleoInstanceToken kaleoInstanceToken = _addKaleoInstanceToken(
-			kaleoTask);
+		KaleoTimerInstanceToken kaleoTimerInstanceToken =
+			_addKaleoTimerInstanceToken(_KALEO_NODE_NAME_TIMER_REASSIGNMENT);
 
 		KaleoTaskInstanceToken kaleoTaskInstanceToken =
-			_addKaleoTaskInstanceToken(kaleoInstanceToken, kaleoTask);
-
-		KaleoTimerInstanceToken kaleoTimerInstanceToken =
-			_kaleoTimerInstanceTokenLocalService.addKaleoTimerInstanceToken(
-				kaleoInstanceToken.getKaleoInstanceTokenId(),
-				kaleoTaskInstanceToken.getKaleoTaskInstanceTokenId(),
-				_getKaleoTimerId(kaleoTask), RandomTestUtil.randomString(),
-				_workflowContext, _serviceContext);
+			kaleoTimerInstanceToken.getKaleoTaskInstanceToken();
 
 		List<KaleoTaskAssignmentInstance> kaleoTaskAssignmentInstances =
 			_kaleoTaskAssignmentInstanceLocalService.
@@ -219,16 +206,17 @@ public class TimerExecutorTest {
 
 		Assert.assertTrue(ListUtil.isEmpty(kaleoTaskAssignmentInstances));
 
-		_executeTimer(
-			kaleoInstanceToken, kaleoTaskInstanceToken,
-			kaleoTimerInstanceToken);
+		_executeTimer(kaleoTimerInstanceToken);
+
+		Assert.assertNotNull(
+			MessageBusUtil.getDestination(
+				KaleoRuntimeDestinationNames.WORKFLOW_TIMER));
 
 		kaleoTaskAssignmentInstances =
 			_kaleoTaskAssignmentInstanceLocalService.
 				getKaleoTaskAssignmentInstances(
 					kaleoTaskInstanceToken.getKaleoTaskInstanceTokenId());
 
-		Assert.assertTrue(ListUtil.isNotEmpty(kaleoTaskAssignmentInstances));
 		Assert.assertEquals(
 			kaleoTaskAssignmentInstances.toString(), 1,
 			kaleoTaskAssignmentInstances.size());
@@ -242,6 +230,53 @@ public class TimerExecutorTest {
 		Assert.assertEquals(
 			TestPropsValues.getUserId(),
 			kaleoTaskAssignmentInstance.getAssigneeClassPK());
+	}
+
+	@Test
+	public void testExecuteTimerWithCompletedKaleoTimerInstanceToken()
+		throws Exception {
+
+		KaleoTimerInstanceToken kaleoTimerInstanceToken =
+			_addKaleoTimerInstanceToken(_KALEO_NODE_NAME_TIMER_NOTIFICATION);
+
+		Message message = _getMessage(kaleoTimerInstanceToken);
+
+		_kaleoTimerInstanceTokenLocalService.completeKaleoTimerInstanceToken(
+			kaleoTimerInstanceToken.getKaleoTimerInstanceTokenId(),
+			_serviceContext);
+
+		int initialInboxSize = MailServiceTestUtil.getInboxSize();
+
+		_messageListener.receive(message);
+
+		Assert.assertEquals(
+			initialInboxSize, MailServiceTestUtil.getInboxSize());
+	}
+
+	@Test
+	public void testExecuteTimerWithDeletedKaleoTimerInstanceToken()
+		throws Exception {
+
+		KaleoTimerInstanceToken kaleoTimerInstanceToken =
+			_addKaleoTimerInstanceToken(_KALEO_NODE_NAME_TIMER_NOTIFICATION);
+
+		Message message = _getMessage(kaleoTimerInstanceToken);
+
+		_kaleoTimerInstanceTokenLocalService.deleteKaleoTimerInstanceToken(
+			kaleoTimerInstanceToken);
+
+		int initialInboxSize = MailServiceTestUtil.getInboxSize();
+
+		_messageListener.receive(message);
+
+		Assert.assertEquals(
+			initialInboxSize, MailServiceTestUtil.getInboxSize());
+
+		String groupName = _getSchedulerGroupName(kaleoTimerInstanceToken);
+
+		Assert.assertNull(
+			SchedulerEngineHelperUtil.getScheduledJob(
+				groupName, groupName, StorageType.PERSISTED));
 	}
 
 	private KaleoInstanceToken _addKaleoInstanceToken(KaleoTask kaleoTask)
@@ -264,48 +299,51 @@ public class TimerExecutorTest {
 			Collections.emptyList(), null, _workflowContext, _serviceContext);
 	}
 
-	private void _executeTimer(
-			KaleoInstanceToken kaleoInstanceToken,
-			KaleoTaskInstanceToken kaleoTaskInstanceToken,
-			KaleoTimerInstanceToken kaleoTimerInstanceToken)
+	private KaleoTimerInstanceToken _addKaleoTimerInstanceToken(
+			String kaleoNodeName)
 		throws Exception {
 
-		Method executeTimerMethod = ReflectionUtil.getDeclaredMethod(
-			_timerExecutor.getClass(), "executeTimer", ExecutionContext.class);
+		KaleoTask kaleoTask = _getKaleoTask(kaleoNodeName);
 
-		executeTimerMethod.invoke(
-			_timerExecutor,
-			new ExecutionContext(
-				kaleoInstanceToken, kaleoTimerInstanceToken, _workflowContext,
-				_serviceContext) {
+		KaleoInstanceToken kaleoInstanceToken = _addKaleoInstanceToken(
+			kaleoTask);
 
-				{
-					setKaleoTaskInstanceToken(kaleoTaskInstanceToken);
-				}
-			});
+		KaleoTaskInstanceToken kaleoTaskInstanceToken =
+			_addKaleoTaskInstanceToken(kaleoInstanceToken, kaleoTask);
+
+		return _kaleoTimerInstanceTokenLocalService.addKaleoTimerInstanceToken(
+			kaleoInstanceToken.getKaleoInstanceTokenId(),
+			kaleoTaskInstanceToken.getKaleoTaskInstanceTokenId(),
+			_getKaleoTimerId(kaleoTask), RandomTestUtil.randomString(),
+			_workflowContext, _serviceContext);
 	}
 
-	private KaleoTask _getKaleoTask(String taskName) {
+	private void _executeTimer(KaleoTimerInstanceToken kaleoTimerInstanceToken)
+		throws Exception {
+
+		_messageListener.receive(_getMessage(kaleoTimerInstanceToken));
+	}
+
+	private KaleoTask _getKaleoTask(String kaleoNodeName) {
 		for (KaleoNode kaleoNode :
 				_kaleoNodeLocalService.getKaleoDefinitionVersionKaleoNodes(
 					_kaleoDefinitionVersion.getKaleoDefinitionVersionId())) {
 
-			if (!Objects.equals(taskName, kaleoNode.getName())) {
+			if (!Objects.equals(kaleoNodeName, kaleoNode.getName())) {
 				continue;
 			}
 
-			KaleoTask kaleoNodeKaleoTask = null;
+			KaleoTask kaleoTask = null;
 
 			try {
-				kaleoNodeKaleoTask =
-					_kaleoTaskLocalService.getKaleoNodeKaleoTask(
-						kaleoNode.getKaleoNodeId());
+				kaleoTask = _kaleoTaskLocalService.getKaleoNodeKaleoTask(
+					kaleoNode.getKaleoNodeId());
 			}
 			catch (PortalException portalException) {
 			}
 
-			if (Objects.nonNull(kaleoNodeKaleoTask)) {
-				return kaleoNodeKaleoTask;
+			if (kaleoTask != null) {
+				return kaleoTask;
 			}
 		}
 
@@ -320,6 +358,41 @@ public class TimerExecutorTest {
 
 		return kaleoTimer.getKaleoTimerId();
 	}
+
+	private Message _getMessage(KaleoTimerInstanceToken kaleoTimerInstanceToken)
+		throws Exception {
+
+		String groupName = _getSchedulerGroupName(kaleoTimerInstanceToken);
+
+		SchedulerResponse schedulerResponse =
+			SchedulerEngineHelperUtil.getScheduledJob(
+				groupName, groupName, StorageType.PERSISTED);
+
+		Message message = schedulerResponse.getMessage();
+
+		message.put(
+			SchedulerEngine.DESTINATION_NAME,
+			KaleoRuntimeDestinationNames.WORKFLOW_TIMER);
+		message.put(SchedulerEngine.GROUP_NAME, groupName);
+		message.put(SchedulerEngine.JOB_NAME, groupName);
+		message.put("companyId", kaleoTimerInstanceToken.getCompanyId());
+
+		return message;
+	}
+
+	private String _getSchedulerGroupName(
+		KaleoTimerInstanceToken kaleoTimerInstanceToken) {
+
+		return SchedulerUtil.getGroupName(
+			kaleoTimerInstanceToken.getCompanyId(),
+			kaleoTimerInstanceToken.getKaleoTimerInstanceTokenId());
+	}
+
+	private static final String _KALEO_NODE_NAME_TIMER_NOTIFICATION =
+		"Timer Notification";
+
+	private static final String _KALEO_NODE_NAME_TIMER_REASSIGNMENT =
+		"Timer Reassignment";
 
 	private static ServiceRegistration<WorkflowHandler<?>>
 		_workflowHandlerServiceRegistration;
@@ -359,14 +432,12 @@ public class TimerExecutorTest {
 	@Inject
 	private KaleoTimerLocalService _kaleoTimerLocalService;
 
-	private ServiceContext _serviceContext;
-
 	@Inject(
-		filter = "component.name=com.liferay.portal.workflow.kaleo.runtime.internal.timer.TimerExecutor",
-		type = Inject.NoType.class
+		filter = "destination.name=" + KaleoRuntimeDestinationNames.WORKFLOW_TIMER
 	)
-	private Object _timerExecutor;
+	private MessageListener _messageListener;
 
+	private ServiceContext _serviceContext;
 	private Map<String, Serializable> _workflowContext;
 	private WorkflowDefinition _workflowDefinition;
 

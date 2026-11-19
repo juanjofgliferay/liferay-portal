@@ -160,13 +160,17 @@ public class TableJoinHolderFactory {
 			while (iterator.hasNext()) {
 				BridgePredicate bridgePredicate = iterator.next();
 
-				if (bridgePredicate.hasOnlyTable(primaryKeyColumn.getTable())) {
-					missingRequirementWherePredicate =
-						missingRequirementWherePredicate.and(
-							bridgePredicate._predicate);
+				if (!bridgePredicate.hasOnlyTable(
+						primaryKeyColumn.getTable())) {
 
-					iterator.remove();
+					continue;
 				}
+
+				missingRequirementWherePredicate =
+					missingRequirementWherePredicate.and(
+						bridgePredicate._predicate);
+
+				iterator.remove();
 			}
 
 			missingRequirementWhereStep = _getMissingRequirementWhereStep(
@@ -187,14 +191,14 @@ public class TableJoinHolderFactory {
 								return stringColumn.neq(StringPool.BLANK);
 							}
 
-							if (clazz == Long.class) {
-								Column<?, Long> longColumn =
-									(Column<?, Long>)column;
-
-								return longColumn.neq(0L);
+							if (clazz != Long.class) {
+								return null;
 							}
 
-							return null;
+							Column<?, Long> longColumn =
+								(Column<?, Long>)column;
+
+							return longColumn.neq(0L);
 						}
 					);
 			}
@@ -208,9 +212,10 @@ public class TableJoinHolderFactory {
 	private static List<BridgePredicate> _getBridgePredicates(
 		JoinStep joinStep) {
 
+		List<BridgePredicate> bridgePredicates = new LinkedList<>();
+
 		Queue<DefaultPredicate> defaultPredicateQueue = new LinkedList<>();
 		Queue<Expression<?>> expressionQueue = new LinkedList<>();
-		List<BridgePredicate> bridgePredicates = new LinkedList<>();
 
 		ASTNode astNode = joinStep;
 
@@ -343,15 +348,17 @@ public class TableJoinHolderFactory {
 				Table<?> table = null;
 
 				for (Table<?> predicateTable : bridgePredicate._tables) {
-					if (!tables.contains(predicateTable)) {
-						if (table != null) {
-							table = null;
-
-							break;
-						}
-
-						table = predicateTable;
+					if (tables.contains(predicateTable)) {
+						continue;
 					}
+
+					if (table != null) {
+						table = null;
+
+						break;
+					}
+
+					table = predicateTable;
 				}
 
 				if (table == null) {
@@ -366,21 +373,20 @@ public class TableJoinHolderFactory {
 						bridgePredicates) {
 
 					if (resolvedBridgePredicates.contains(
-							currentBridgePredicate)) {
+							currentBridgePredicate) ||
+						!tables.containsAll(currentBridgePredicate._tables)) {
 
 						continue;
 					}
 
-					if (tables.containsAll(currentBridgePredicate._tables)) {
-						resolvedBridgePredicates.add(currentBridgePredicate);
+					resolvedBridgePredicates.add(currentBridgePredicate);
 
-						if (predicate == null) {
-							predicate = currentBridgePredicate._predicate;
-						}
-						else {
-							predicate = predicate.and(
-								currentBridgePredicate._predicate);
-						}
+					if (predicate == null) {
+						predicate = currentBridgePredicate._predicate;
+					}
+					else {
+						predicate = predicate.and(
+							currentBridgePredicate._predicate);
 					}
 				}
 
@@ -394,10 +400,12 @@ public class TableJoinHolderFactory {
 			sb.append("Unable to apply predicates [");
 
 			for (BridgePredicate bridgePredicate : bridgePredicates) {
-				if (!resolvedBridgePredicates.contains(bridgePredicate)) {
-					sb.append(bridgePredicate._predicate);
-					sb.append(", ");
+				if (resolvedBridgePredicates.contains(bridgePredicate)) {
+					continue;
 				}
+
+				sb.append(bridgePredicate._predicate);
+				sb.append(", ");
 			}
 
 			sb.setStringAt("] to ", sb.index() - 1);
@@ -412,10 +420,10 @@ public class TableJoinHolderFactory {
 
 	private static final Consumer<String> _emptyStringConsumer = string -> {
 	};
-	private static final FromStep _validationFromStep =
-		new ValidationFromStep();
 	private static final Set<Operand> _validOperands = new HashSet<>(
 		Arrays.asList(Operand.AND, Operand.EQUAL, Operand.LIKE));
+	private static final FromStep _validationFromStep =
+		new ValidationFromStep();
 
 	private static class BridgePredicate {
 

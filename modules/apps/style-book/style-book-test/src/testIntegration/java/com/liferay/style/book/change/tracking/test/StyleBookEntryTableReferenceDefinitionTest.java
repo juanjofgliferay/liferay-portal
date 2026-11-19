@@ -39,12 +39,14 @@ public class StyleBookEntryTableReferenceDefinitionTest
 	@Override
 	protected CTModel<?> addCTModel() throws Exception {
 		return _styleBookEntryLocalService.addStyleBookEntry(
-			TestPropsValues.getUserId(), TestPropsValues.getGroupId(),
+			null, TestPropsValues.getUserId(), TestPropsValues.getGroupId(),
+			false, StringPool.BLANK, StringPool.BLANK,
 			RandomTestUtil.randomString(), StringPool.BLANK,
+			RandomTestUtil.randomString(),
 			ServiceContextTestUtil.getServiceContext());
 	}
 
 	@Inject
-	private static StyleBookEntryLocalService _styleBookEntryLocalService;
+	private StyleBookEntryLocalService _styleBookEntryLocalService;
 
 }

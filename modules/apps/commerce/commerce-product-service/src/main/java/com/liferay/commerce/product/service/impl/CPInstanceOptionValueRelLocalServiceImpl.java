@@ -109,15 +109,6 @@ public class CPInstanceOptionValueRelLocalServiceImpl
 	}
 
 	@Override
-	public List<CPInstanceOptionValueRel>
-		getCPInstanceCPInstanceOptionValueRels(
-			long cpDefinitionOptionRelId, long cpInstanceId) {
-
-		return cpInstanceOptionValueRelPersistence.findByCDORI_CII(
-			cpDefinitionOptionRelId, cpInstanceId);
-	}
-
-	@Override
 	public boolean hasCPInstanceCPDefinitionOptionRel(
 		long cpDefinitionOptionRelId, long cpInstanceId) {
 
@@ -168,8 +159,8 @@ public class CPInstanceOptionValueRelLocalServiceImpl
 			_cpDefinitionOptionRelPersistence.findByC_SC(cpDefinitionId, true);
 
 		List<CPInstanceOptionValueRel> cpInstanceCPInstanceOptionValueRels =
-			cpInstanceOptionValueRelLocalService.
-				getCPInstanceCPInstanceOptionValueRels(cpInstanceId);
+			cpInstanceOptionValueRelPersistence.findByCPInstanceId(
+				cpInstanceId);
 
 		if (cpDefinitionCPDefinitionOptionRels.size() !=
 				cpInstanceCPInstanceOptionValueRels.size()) {
@@ -225,15 +216,17 @@ public class CPInstanceOptionValueRelLocalServiceImpl
 			for (CPInstanceOptionValueRel currCPInstanceOptionValueRel :
 					cpInstanceCPInstanceOptionValueRels) {
 
-				if ((cpInstanceOptionValueRel.getCPDefinitionOptionRelId() ==
+				if ((cpInstanceOptionValueRel.getCPDefinitionOptionRelId() !=
 						currCPInstanceOptionValueRel.
-							getCPDefinitionOptionRelId()) &&
-					(cpInstanceOptionValueRel.getCPDefinitionOptionRelId() ==
+							getCPDefinitionOptionRelId()) ||
+					(cpInstanceOptionValueRel.getCPDefinitionOptionRelId() !=
 						currCPInstanceOptionValueRel.
 							getCPDefinitionOptionRelId())) {
 
-					matchCount++;
+					continue;
 				}
+
+				matchCount++;
 			}
 		}
 

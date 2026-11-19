@@ -6,12 +6,11 @@
 package com.liferay.commerce.theme.minium.internal.helper;
 
 import com.liferay.application.list.PanelAppRegistry;
-import com.liferay.application.list.PanelCategoryRegistry;
 import com.liferay.application.list.constants.PanelCategoryKeys;
 import com.liferay.application.list.display.context.logic.PanelCategoryHelper;
 import com.liferay.commerce.constants.CommercePortletKeys;
+import com.liferay.commerce.helper.CommerceAccountHelper;
 import com.liferay.commerce.product.constants.CPPortletKeys;
-import com.liferay.commerce.util.CommerceAccountHelper;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.NoSuchLayoutException;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -27,23 +26,29 @@ import com.liferay.portal.kernel.util.ResourceBundleUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.ResourceBundle;
 
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
-
-import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.Reference;
-
 /**
  * @author Marco Leo
  */
-@Component(service = CommerceThemeMiniumHttpHelper.class)
 public class CommerceThemeMiniumHttpHelper {
+
+	public CommerceThemeMiniumHttpHelper(
+		CommerceAccountHelper commerceAccountHelper, Language language,
+		PanelAppRegistry panelAppRegistry, Portal portal) {
+
+		_commerceAccountHelper = commerceAccountHelper;
+		_language = language;
+		_panelAppRegistry = panelAppRegistry;
+		_portal = portal;
+	}
 
 	public String getAccountManagementPortletURL(
 			HttpServletRequest httpServletRequest)
@@ -62,7 +67,7 @@ public class CommerceThemeMiniumHttpHelper {
 
 	public int getNotificationsCount(ThemeDisplay themeDisplay) {
 		PanelCategoryHelper panelCategoryHelper = new PanelCategoryHelper(
-			_panelAppRegistry, _panelCategoryRegistry);
+			_panelAppRegistry);
 
 		return panelCategoryHelper.getNotificationsCount(
 			PanelCategoryKeys.USER_MY_ACCOUNT,
@@ -160,19 +165,9 @@ public class CommerceThemeMiniumHttpHelper {
 		return String.valueOf(portletURL);
 	}
 
-	@Reference
-	private CommerceAccountHelper _commerceAccountHelper;
-
-	@Reference
-	private Language _language;
-
-	@Reference
-	private PanelAppRegistry _panelAppRegistry;
-
-	@Reference
-	private PanelCategoryRegistry _panelCategoryRegistry;
-
-	@Reference
-	private Portal _portal;
+	private final CommerceAccountHelper _commerceAccountHelper;
+	private final Language _language;
+	private final PanelAppRegistry _panelAppRegistry;
+	private final Portal _portal;
 
 }

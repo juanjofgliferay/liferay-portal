@@ -109,11 +109,7 @@ public class PluginSettingPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		PluginSetting newPluginSetting = _persistence.create(pk);
-
-		newPluginSetting.setMvccVersion(RandomTestUtil.nextLong());
+		PluginSetting newPluginSetting = addPluginSetting();
 
 		newPluginSetting.setCompanyId(RandomTestUtil.nextLong());
 
@@ -125,7 +121,9 @@ public class PluginSettingPersistenceTest {
 
 		newPluginSetting.setActive(RandomTestUtil.randomBoolean());
 
-		_pluginSettings.add(_persistence.update(newPluginSetting));
+		newPluginSetting = _persistence.update(newPluginSetting);
+
+		_pluginSettings.add(newPluginSetting);
 
 		PluginSetting existingPluginSetting = _persistence.findByPrimaryKey(
 			newPluginSetting.getPrimaryKey());
@@ -149,13 +147,6 @@ public class PluginSettingPersistenceTest {
 			existingPluginSetting.getRoles(), newPluginSetting.getRoles());
 		Assert.assertEquals(
 			existingPluginSetting.isActive(), newPluginSetting.isActive());
-	}
-
-	@Test
-	public void testCountByCompanyId() throws Exception {
-		_persistence.countByCompanyId(RandomTestUtil.nextLong());
-
-		_persistence.countByCompanyId(0L);
 	}
 
 	@Test
@@ -483,8 +474,6 @@ public class PluginSettingPersistenceTest {
 
 		PluginSetting pluginSetting = _persistence.create(pk);
 
-		pluginSetting.setMvccVersion(RandomTestUtil.nextLong());
-
 		pluginSetting.setCompanyId(RandomTestUtil.nextLong());
 
 		pluginSetting.setPluginId(RandomTestUtil.randomString());
@@ -506,3 +495,4 @@ public class PluginSettingPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-848931419

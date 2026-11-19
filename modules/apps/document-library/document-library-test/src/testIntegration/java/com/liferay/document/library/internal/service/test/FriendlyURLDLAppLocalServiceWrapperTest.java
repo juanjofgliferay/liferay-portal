@@ -11,8 +11,8 @@ import com.liferay.document.library.kernel.service.DLAppLocalService;
 import com.liferay.document.library.test.util.BaseDLAppTestCase;
 import com.liferay.friendly.url.model.FriendlyURLEntry;
 import com.liferay.friendly.url.service.FriendlyURLEntryLocalService;
+import com.liferay.petra.io.unsync.UnsyncByteArrayInputStream;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.io.unsync.UnsyncByteArrayInputStream;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.test.constants.TestDataConstants;
@@ -57,7 +57,8 @@ public class FriendlyURLDLAppLocalServiceWrapperTest extends BaseDLAppTestCase {
 			parentFolder.getFolderId(), RandomTestUtil.randomString(),
 			ContentTypes.TEXT_PLAIN, RandomTestUtil.randomString(), "urltitle",
 			StringPool.BLANK, StringPool.BLANK,
-			TestDataConstants.TEST_BYTE_ARRAY, null, null, serviceContext);
+			TestDataConstants.TEST_BYTE_ARRAY, null, null, null,
+			serviceContext);
 
 		FriendlyURLEntry friendlyURLEntry =
 			_friendlyURLEntryLocalService.getMainFriendlyURLEntry(
@@ -82,7 +83,7 @@ public class FriendlyURLDLAppLocalServiceWrapperTest extends BaseDLAppTestCase {
 			FileUtil.createTempFile(
 				new UnsyncByteArrayInputStream(
 					TestDataConstants.TEST_BYTE_ARRAY)),
-			null, null, serviceContext);
+			null, null, null, serviceContext);
 
 		FriendlyURLEntry friendlyURLEntry =
 			_friendlyURLEntryLocalService.getMainFriendlyURLEntry(
@@ -107,7 +108,7 @@ public class FriendlyURLDLAppLocalServiceWrapperTest extends BaseDLAppTestCase {
 			ContentTypes.TEXT_PLAIN, RandomTestUtil.randomString(), "urltitle",
 			StringPool.BLANK, StringPool.BLANK,
 			new UnsyncByteArrayInputStream(TestDataConstants.TEST_BYTE_ARRAY),
-			0, null, null, serviceContext);
+			0, null, null, null, serviceContext);
 
 		FriendlyURLEntry friendlyURLEntry =
 			_friendlyURLEntryLocalService.getMainFriendlyURLEntry(
@@ -133,13 +134,13 @@ public class FriendlyURLDLAppLocalServiceWrapperTest extends BaseDLAppTestCase {
 			parentFolder.getFolderId(), RandomTestUtil.randomString(),
 			ContentTypes.TEXT_PLAIN, RandomTestUtil.randomString(),
 			RandomTestUtil.randomString(), StringPool.BLANK, StringPool.BLANK,
-			bytes, null, null, serviceContext);
+			bytes, null, null, null, serviceContext);
 
 		fileEntry = _dlAppLocalService.updateFileEntry(
 			serviceContext.getUserId(), fileEntry.getFileEntryId(),
 			StringPool.BLANK, ContentTypes.TEXT_PLAIN,
 			RandomTestUtil.randomString(), "urltitle", StringPool.BLANK, null,
-			DLVersionNumberIncrease.AUTOMATIC, bytes, null, null,
+			DLVersionNumberIncrease.AUTOMATIC, bytes, null, null, null,
 			serviceContext);
 
 		FriendlyURLEntry friendlyURLEntry =
@@ -166,13 +167,13 @@ public class FriendlyURLDLAppLocalServiceWrapperTest extends BaseDLAppTestCase {
 			parentFolder.getFolderId(), RandomTestUtil.randomString(),
 			ContentTypes.TEXT_PLAIN, RandomTestUtil.randomString(),
 			RandomTestUtil.randomString(), StringPool.BLANK, StringPool.BLANK,
-			file, null, null, serviceContext);
+			file, null, null, null, serviceContext);
 
 		fileEntry = _dlAppLocalService.updateFileEntry(
 			serviceContext.getUserId(), fileEntry.getFileEntryId(),
 			StringPool.BLANK, ContentTypes.TEXT_PLAIN,
 			RandomTestUtil.randomString(), "urltitle", StringPool.BLANK, null,
-			DLVersionNumberIncrease.AUTOMATIC, file, null, null,
+			DLVersionNumberIncrease.AUTOMATIC, file, null, null, null,
 			serviceContext);
 
 		FriendlyURLEntry friendlyURLEntry =
@@ -200,14 +201,14 @@ public class FriendlyURLDLAppLocalServiceWrapperTest extends BaseDLAppTestCase {
 			parentFolder.getFolderId(), RandomTestUtil.randomString(),
 			ContentTypes.TEXT_PLAIN, RandomTestUtil.randomString(), "urltitle",
 			StringPool.BLANK, StringPool.BLANK, inputStream, size, null, null,
-			serviceContext);
+			null, serviceContext);
 
 		fileEntry = _dlAppLocalService.updateFileEntry(
 			serviceContext.getUserId(), fileEntry.getFileEntryId(),
 			StringPool.BLANK, ContentTypes.TEXT_PLAIN,
 			RandomTestUtil.randomString(), "urltitle", StringPool.BLANK, null,
 			DLVersionNumberIncrease.AUTOMATIC, inputStream, size, null, null,
-			serviceContext);
+			null, serviceContext);
 
 		FriendlyURLEntry friendlyURLEntry =
 			_friendlyURLEntryLocalService.getMainFriendlyURLEntry(
@@ -218,12 +219,12 @@ public class FriendlyURLDLAppLocalServiceWrapperTest extends BaseDLAppTestCase {
 	}
 
 	@Inject
-	private static DLAppLocalService _dlAppLocalService;
+	private DLAppLocalService _dlAppLocalService;
 
 	@Inject
-	private static FriendlyURLEntryLocalService _friendlyURLEntryLocalService;
+	private FriendlyURLEntryLocalService _friendlyURLEntryLocalService;
 
 	@Inject
-	private static Portal _portal;
+	private Portal _portal;
 
 }

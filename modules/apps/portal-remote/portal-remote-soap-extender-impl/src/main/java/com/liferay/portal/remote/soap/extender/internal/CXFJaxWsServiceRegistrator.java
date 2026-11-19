@@ -9,6 +9,9 @@ import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.lang.ThreadContextClassLoaderUtil;
 import com.liferay.portal.remote.soap.extender.SoapDescriptorBuilder;
 
+import jakarta.xml.ws.Binding;
+import jakarta.xml.ws.handler.Handler;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -18,8 +21,6 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 import javax.xml.namespace.QName;
-import javax.xml.ws.Binding;
-import javax.xml.ws.handler.Handler;
 
 import org.apache.cxf.Bus;
 import org.apache.cxf.endpoint.Server;
@@ -188,9 +189,11 @@ public class CXFJaxWsServiceRegistrator {
 		for (Map<Object, Server> servers : _busServers.values()) {
 			Server server = servers.get(service);
 
-			if (server != null) {
-				server.destroy();
+			if (server == null) {
+				continue;
 			}
+
+			server.destroy();
 		}
 	}
 
@@ -216,9 +219,9 @@ public class CXFJaxWsServiceRegistrator {
 		}
 	}
 
-	private final Collection<Bus> _buses = new ArrayList<>();
 	private final Map<Bus, Map<Object, Server>> _busServers =
 		new IdentityHashMap<>();
+	private final Collection<Bus> _buses = new ArrayList<>();
 
 	@SuppressWarnings("rawtypes")
 	private final List<Handler> _handlers = new ArrayList<>();

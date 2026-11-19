@@ -1,0 +1,135 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`EventSection render 1`] = `
+<div>
+  <section
+    aria-labelledby=":r0:"
+    class="event-section-root px-4 py-3"
+    tabindex="-1"
+  >
+    <div
+      class="align-items-center d-flex justify-content-between"
+    >
+      <h3
+        class="text-8 font-weight-normal"
+      >
+        <span
+          class="text-4"
+          id=":r0:"
+        >
+          Analyze
+        </span>
+      </h3>
+      <div
+        class="dropdown"
+      >
+        <button
+          aria-expanded="false"
+          aria-haspopup="true"
+          aria-label="Add Event"
+          class="dropdown-toggle btn btn-monospaced btn-sm btn-secondary"
+          data-html2canvas-ignore="true"
+          title="Add Event"
+          type="button"
+        >
+          <svg
+            class="lexicon-icon lexicon-icon-plus"
+            role="presentation"
+          >
+            <use
+              href="#plus"
+            />
+          </svg>
+        </button>
+      </div>
+    </div>
+  </section>
+</div>
+`;
+
+exports[`EventSection render with event 1`] = `
+<div>
+  <section
+    aria-labelledby=":r1:"
+    class="event-section-root px-4 py-3"
+    tabindex="-1"
+  >
+    <div
+      class="align-items-center d-flex justify-content-between"
+    >
+      <h3
+        class="text-8 font-weight-normal"
+      >
+        <span
+          class="text-4"
+          id=":r1:"
+        >
+          Analyze
+        </span>
+      </h3>
+    </div>
+    <div
+      class="event-container event-list mt-3"
+    >
+      <div
+        aria-label="View Article"
+        class="align-items-center condition-chip d-flex rounded-lg"
+        role="group"
+        tabindex="0"
+      >
+        <div
+          class="align-items-center condition-chip-content d-flex flex-grow-1 px-2 py-2"
+        >
+          <span
+            class="sticker condition-sticker flex-shrink-0 mr-2 sticker-primary"
+          >
+            <span
+              class="sticker-overlay"
+            >
+              <svg
+                class="lexicon-icon lexicon-icon-click"
+                role="presentation"
+              >
+                <use
+                  href="#click"
+                />
+              </svg>
+            </span>
+          </span>
+          <span
+            class="condition-chip-text d-flex flex-column text-break"
+          >
+            <span
+              class="d-block"
+            >
+              <span
+                class="text-4 font-weight-semi-bold"
+              >
+                View Article
+              </span>
+            </span>
+          </span>
+        </div>
+        <button
+          aria-label="Remove View Article"
+          class="condition-chip-remove flex-shrink-0 mr-1 btn btn-monospaced btn-sm btn-unstyled"
+          data-chip-control="true"
+          data-html2canvas-ignore="true"
+          tabindex="-1"
+          title="Remove View Article"
+          type="button"
+        >
+          <svg
+            class="lexicon-icon lexicon-icon-times-circle"
+            role="presentation"
+          >
+            <use
+              href="#times-circle"
+            />
+          </svg>
+        </button>
+      </div>
+    </div>
+  </section>
+</div>
+`;

@@ -357,6 +357,20 @@ public interface CommerceChannelModel
 	 */
 	public void setDiscountsTargetNetPrice(boolean discountsTargetNetPrice);
 
+	/**
+	 * Returns the status of this commerce channel.
+	 *
+	 * @return the status of this commerce channel
+	 */
+	public int getStatus();
+
+	/**
+	 * Sets the status of this commerce channel.
+	 *
+	 * @param status the status of this commerce channel
+	 */
+	public void setStatus(int status);
+
 	@Override
 	public CommerceChannel cloneWithOriginalValues();
 
@@ -365,3 +379,4 @@ public interface CommerceChannelModel
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-986479178

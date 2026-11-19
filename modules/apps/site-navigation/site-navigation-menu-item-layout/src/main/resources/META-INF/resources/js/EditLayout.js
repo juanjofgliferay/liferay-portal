@@ -3,34 +3,20 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-export default function ({namespace}) {
-	const layoutItemRemoveButton = document.getElementById(
-		`${namespace}layoutItemRemove`
-	);
-	const layoutNameInput = document.getElementById(
-		`${namespace}layoutNameInput`
-	);
+import {openLayoutSelectionModal} from './ChooseLayoutButtonPropsTransformer';
 
-	const layoutUuidInput = document.getElementById(`${namespace}layoutUuid`);
+export default function ({eventName, itemSelectorURL, namespace}) {
+	const itemInput = document.getElementById(`${namespace}itemInput`);
 
-	const onLayoutItemRemoveButtonClick = () => {
-		layoutNameInput.textContent = Liferay.Language.get('none');
-		layoutUuidInput.value = '';
-
-		layoutItemRemoveButton.classList.add('hide');
+	const onItemInputClick = () => {
+		openLayoutSelectionModal(namespace, itemSelectorURL, eventName);
 	};
 
-	layoutItemRemoveButton.addEventListener(
-		'click',
-		onLayoutItemRemoveButtonClick
-	);
+	itemInput.addEventListener('click', onItemInputClick);
 
 	return {
 		dispose() {
-			layoutItemRemoveButton.removeEventListener(
-				'click',
-				onLayoutItemRemoveButtonClick
-			);
+			itemInput.removeEventListener('click', onItemInputClick);
 		},
 	};
 }

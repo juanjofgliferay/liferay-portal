@@ -14,25 +14,26 @@ import com.liferay.oauth2.provider.service.OAuth2ApplicationScopeAliasesLocalSer
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
+import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
-import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.test.log.LogCapture;
 import com.liferay.portal.test.log.LoggerTestUtil;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 
+import jakarta.ws.rs.ClientErrorException;
+import jakarta.ws.rs.client.Invocation;
+import jakarta.ws.rs.client.WebTarget;
+import jakarta.ws.rs.core.Application;
+import jakarta.ws.rs.core.Response;
+
 import java.util.Collections;
 import java.util.Dictionary;
 
-import javax.ws.rs.ClientErrorException;
-import javax.ws.rs.client.Invocation;
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.Application;
-import javax.ws.rs.core.Response;
-
 import org.junit.Assert;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -54,7 +55,6 @@ public class TOCTOUTest extends BaseClientTestCase {
 	/**
 	 * OAUTH2-101 / OAUTH2-102
 	 */
-	@Ignore
 	@Test
 	public void testPreventTOCTOUWithNewScopes() {
 
@@ -64,8 +64,10 @@ public class TOCTOUTest extends BaseClientTestCase {
 		WebTarget webTarget1 = getWebTarget("/annotated");
 
 		String token = getToken(
-			"oauthTestApplicationCode", null,
-			getAuthorizationCodeBiFunction("test@liferay.com", "test", null),
+			_CLIENT_ID_CODE, null,
+			getAuthorizationCodeBiFunction(
+				_user.getEmailAddress(), PropsValues.DEFAULT_ADMIN_PASSWORD,
+				null),
 			this::parseTokenString);
 
 		Invocation.Builder webTarget1InvocationBuilder = authorize(
@@ -107,9 +109,10 @@ public class TOCTOUTest extends BaseClientTestCase {
 		webTarget2InvocationBuilder = authorize(
 			webTarget2.request(),
 			getToken(
-				"oauthTestApplicationCode", null,
+				_CLIENT_ID_CODE, null,
 				getAuthorizationCodeBiFunction(
-					"test@liferay.com", "test", null, "everything.read"),
+					_user.getEmailAddress(), PropsValues.DEFAULT_ADMIN_PASSWORD,
+					null, "everything.read"),
 				this::parseTokenString));
 
 		try (LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
@@ -155,16 +158,26 @@ public class TOCTOUTest extends BaseClientTestCase {
 		webTarget2InvocationBuilder = authorize(
 			webTarget2.request(),
 			getToken(
-				"oauthTestApplicationCode", null,
+				_CLIENT_ID_CODE, null,
 				getAuthorizationCodeBiFunction(
-					"test@liferay.com", "test", null),
+					_user.getEmailAddress(), PropsValues.DEFAULT_ADMIN_PASSWORD,
+					null),
 				this::parseTokenString));
 
 		Assert.assertEquals(
 			"everything.read", webTarget2InvocationBuilder.get(String.class));
 	}
 
-	public static class SecurityTestPreparatorBundleActivator
+	@Override
+	protected BundleActivator getBundleActivator() {
+		return new SecurityTestPreparatorBundleActivator();
+	}
+
+	private static final String _CLIENT_ID_CODE = RandomTestUtil.randomString();
+
+	private User _user;
+
+	private class SecurityTestPreparatorBundleActivator
 		extends BaseTestPreparatorBundleActivator {
 
 		public OAuth2Application updateOAuth2ApplicationScopeAliases(
@@ -211,12 +224,12 @@ public class TOCTOUTest extends BaseClientTestCase {
 
 		@Override
 		protected void prepareTest() throws Exception {
-			long defaultCompanyId = PortalUtil.getDefaultCompanyId();
+			long companyId = TestPropsValues.getCompanyId();
 
-			User user = UserTestUtil.getAdminUser(defaultCompanyId);
+			_user = UserTestUtil.getAdminUser(companyId);
 
 			OAuth2Application oAuth2Application = createOAuth2Application(
-				defaultCompanyId, user, "oauthTestApplicationCode",
+				companyId, _user, _CLIENT_ID_CODE,
 				Collections.singletonList(GrantType.AUTHORIZATION_CODE),
 				Collections.singletonList("everything.read"));
 
@@ -244,11 +257,6 @@ public class TOCTOUTest extends BaseClientTestCase {
 			updateOAuth2ApplicationScopeAliases(oAuth2Application);
 		}
 
-	}
-
-	@Override
-	protected BundleActivator getBundleActivator() {
-		return new SecurityTestPreparatorBundleActivator();
 	}
 
 }

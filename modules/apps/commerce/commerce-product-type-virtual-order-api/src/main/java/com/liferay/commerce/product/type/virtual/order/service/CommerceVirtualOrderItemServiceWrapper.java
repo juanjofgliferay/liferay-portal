@@ -51,11 +51,13 @@ public class CommerceVirtualOrderItemServiceWrapper
 	}
 
 	@Override
-	public java.io.File getFile(long commerceVirtualOrderItemId)
+	public java.io.File getFile(
+			long commerceVirtualOrderItemId,
+			long commerceVirtualOrderItemFileEntryId)
 		throws Exception {
 
 		return _commerceVirtualOrderItemService.getFile(
-			commerceVirtualOrderItemId);
+			commerceVirtualOrderItemId, commerceVirtualOrderItemFileEntryId);
 	}
 
 	/**
@@ -69,16 +71,24 @@ public class CommerceVirtualOrderItemServiceWrapper
 	}
 
 	@Override
+	public void propagateCPDVirtualSettingFileEntry(
+			long cpdVirtualSettingFileEntryId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		_commerceVirtualOrderItemService.propagateCPDVirtualSettingFileEntry(
+			cpdVirtualSettingFileEntryId);
+	}
+
+	@Override
 	public com.liferay.commerce.product.type.virtual.order.model.
 		CommerceVirtualOrderItem updateCommerceVirtualOrderItem(
-				long commerceVirtualOrderItemId, long fileEntryId, String url,
-				int activationStatus, long duration, int usages, int maxUsages,
-				boolean active)
+				long commerceVirtualOrderItemId, int activationStatus,
+				long duration, int maxUsages, boolean active)
 			throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commerceVirtualOrderItemService.updateCommerceVirtualOrderItem(
-			commerceVirtualOrderItemId, fileEntryId, url, activationStatus,
-			duration, usages, maxUsages, active);
+			commerceVirtualOrderItemId, activationStatus, duration, maxUsages,
+			active);
 	}
 
 	@Override
@@ -96,3 +106,4 @@ public class CommerceVirtualOrderItemServiceWrapper
 	private CommerceVirtualOrderItemService _commerceVirtualOrderItemService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1724070462

@@ -1,0 +1,82 @@
+affinity: {}
+clientExtensions:
+    enabled: false
+customEnv: {}
+customLabels: {}
+customVolumeMounts: {}
+customVolumes: {}
+debug: false
+downloadPollInterval: 15s
+expirationGracePeriod: 2160h
+fullnameOverride: ""
+heartbeatInterval: 10m
+image:
+    pullPolicy: IfNotPresent
+    pullSecrets: []
+    repository: us-central1-docker.pkg.dev/external-assets-prd/liferay-cloud-native/liferay-dxp-operator
+    tag: 0.2.0
+marketplace:
+    claimName: ""
+    csi:
+        driver: ""
+        volumeAttributes: {}
+        volumeHandle: ""
+    enabled: false
+    mountPath: /marketplace
+    size: 10Gi
+metrics:
+    port: 8080
+nameOverride: ""
+namespaceOverride: ""
+nodeSelector: {}
+onlineActivationWorkflow:
+    defaultEnvironmentName: liferay-default
+    enabled: false
+    image:
+        repository: dtzar/helm-kubectl
+        tag: 4.1.1
+    resources:
+        limits:
+            cpu: 250m
+            memory: 256Mi
+        requests:
+            cpu: 100m
+            memory: 128Mi
+    serviceAccountName: online-activation-service-account
+    ttlSecondsAfterCompletion: 3600
+    waitTimeoutSeconds: 300
+podAnnotations: {}
+podSecurityContext:
+    runAsNonRoot: true
+    seccompProfile:
+        type: RuntimeDefault
+probes:
+    port: 8081
+provisioning:
+    baseURL: https://api.one.liferay.com
+provisioningGracePeriod: 168h
+rbac:
+    create: true
+replicaCount: 1
+resources:
+    limits:
+        cpu: 500m
+        memory: 256Mi
+    requests:
+        cpu: 100m
+        memory: 128Mi
+retry:
+    initialDelay: 30s
+    maxDelay: 30m
+securityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+        drop:
+            -   ALL
+    readOnlyRootFilesystem: true
+    runAsNonRoot: true
+serviceAccount:
+    annotations: {}
+    create: true
+    name: ""
+tolerations: []

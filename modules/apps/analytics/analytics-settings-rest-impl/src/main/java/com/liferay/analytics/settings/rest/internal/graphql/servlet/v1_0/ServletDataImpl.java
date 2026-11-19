@@ -8,7 +8,6 @@ package com.liferay.analytics.settings.rest.internal.graphql.servlet.v1_0;
 import com.liferay.analytics.settings.rest.internal.graphql.mutation.v1_0.Mutation;
 import com.liferay.analytics.settings.rest.internal.graphql.query.v1_0.Query;
 import com.liferay.analytics.settings.rest.internal.resource.v1_0.ChannelResourceImpl;
-import com.liferay.analytics.settings.rest.internal.resource.v1_0.CommerceChannelResourceImpl;
 import com.liferay.analytics.settings.rest.internal.resource.v1_0.ContactAccountGroupResourceImpl;
 import com.liferay.analytics.settings.rest.internal.resource.v1_0.ContactConfigurationResourceImpl;
 import com.liferay.analytics.settings.rest.internal.resource.v1_0.ContactOrganizationResourceImpl;
@@ -16,9 +15,9 @@ import com.liferay.analytics.settings.rest.internal.resource.v1_0.ContactUserGro
 import com.liferay.analytics.settings.rest.internal.resource.v1_0.DataSourceResourceImpl;
 import com.liferay.analytics.settings.rest.internal.resource.v1_0.FieldResourceImpl;
 import com.liferay.analytics.settings.rest.internal.resource.v1_0.FieldSummaryResourceImpl;
+import com.liferay.analytics.settings.rest.internal.resource.v1_0.RecommendationConfigurationResourceImpl;
 import com.liferay.analytics.settings.rest.internal.resource.v1_0.SiteResourceImpl;
 import com.liferay.analytics.settings.rest.resource.v1_0.ChannelResource;
-import com.liferay.analytics.settings.rest.resource.v1_0.CommerceChannelResource;
 import com.liferay.analytics.settings.rest.resource.v1_0.ContactAccountGroupResource;
 import com.liferay.analytics.settings.rest.resource.v1_0.ContactConfigurationResource;
 import com.liferay.analytics.settings.rest.resource.v1_0.ContactOrganizationResource;
@@ -26,14 +25,15 @@ import com.liferay.analytics.settings.rest.resource.v1_0.ContactUserGroupResourc
 import com.liferay.analytics.settings.rest.resource.v1_0.DataSourceResource;
 import com.liferay.analytics.settings.rest.resource.v1_0.FieldResource;
 import com.liferay.analytics.settings.rest.resource.v1_0.FieldSummaryResource;
+import com.liferay.analytics.settings.rest.resource.v1_0.RecommendationConfigurationResource;
 import com.liferay.analytics.settings.rest.resource.v1_0.SiteResource;
 import com.liferay.portal.kernel.util.ObjectValuePair;
 import com.liferay.portal.vulcan.graphql.servlet.ServletData;
 
+import jakarta.annotation.Generated;
+
 import java.util.HashMap;
 import java.util.Map;
-
-import javax.annotation.Generated;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.service.component.ComponentServiceObjects;
@@ -60,11 +60,11 @@ public class ServletDataImpl implements ServletData {
 			_dataSourceResourceComponentServiceObjects);
 		Mutation.setFieldResourceComponentServiceObjects(
 			_fieldResourceComponentServiceObjects);
+		Mutation.setRecommendationConfigurationResourceComponentServiceObjects(
+			_recommendationConfigurationResourceComponentServiceObjects);
 
 		Query.setChannelResourceComponentServiceObjects(
 			_channelResourceComponentServiceObjects);
-		Query.setCommerceChannelResourceComponentServiceObjects(
-			_commerceChannelResourceComponentServiceObjects);
 		Query.setContactAccountGroupResourceComponentServiceObjects(
 			_contactAccountGroupResourceComponentServiceObjects);
 		Query.setContactConfigurationResourceComponentServiceObjects(
@@ -77,6 +77,8 @@ public class ServletDataImpl implements ServletData {
 			_fieldResourceComponentServiceObjects);
 		Query.setFieldSummaryResourceComponentServiceObjects(
 			_fieldSummaryResourceComponentServiceObjects);
+		Query.setRecommendationConfigurationResourceComponentServiceObjects(
+			_recommendationConfigurationResourceComponentServiceObjects);
 		Query.setSiteResourceComponentServiceObjects(
 			_siteResourceComponentServiceObjects);
 	}
@@ -141,27 +143,19 @@ public class ServletDataImpl implements ServletData {
 						new ObjectValuePair<>(
 							FieldResourceImpl.class, "patchFieldAccount"));
 					put(
-						"mutation#patchFieldOrder",
-						new ObjectValuePair<>(
-							FieldResourceImpl.class, "patchFieldOrder"));
-					put(
 						"mutation#patchFieldPeople",
 						new ObjectValuePair<>(
 							FieldResourceImpl.class, "patchFieldPeople"));
 					put(
-						"mutation#patchFieldProduct",
+						"mutation#updateRecommendationConfiguration",
 						new ObjectValuePair<>(
-							FieldResourceImpl.class, "patchFieldProduct"));
+							RecommendationConfigurationResourceImpl.class,
+							"putRecommendationConfiguration"));
 
 					put(
 						"query#channels",
 						new ObjectValuePair<>(
 							ChannelResourceImpl.class, "getChannelsPage"));
-					put(
-						"query#commerceChannels",
-						new ObjectValuePair<>(
-							CommerceChannelResourceImpl.class,
-							"getCommerceChannelsPage"));
 					put(
 						"query#contactAccountGroups",
 						new ObjectValuePair<>(
@@ -187,21 +181,18 @@ public class ServletDataImpl implements ServletData {
 						new ObjectValuePair<>(
 							FieldResourceImpl.class, "getFieldsAccountsPage"));
 					put(
-						"query#fieldsOrders",
-						new ObjectValuePair<>(
-							FieldResourceImpl.class, "getFieldsOrdersPage"));
-					put(
 						"query#fieldsPeople",
 						new ObjectValuePair<>(
 							FieldResourceImpl.class, "getFieldsPeoplePage"));
 					put(
-						"query#fieldsProducts",
-						new ObjectValuePair<>(
-							FieldResourceImpl.class, "getFieldsProductsPage"));
-					put(
 						"query#field",
 						new ObjectValuePair<>(
 							FieldSummaryResourceImpl.class, "getField"));
+					put(
+						"query#recommendationConfiguration",
+						new ObjectValuePair<>(
+							RecommendationConfigurationResourceImpl.class,
+							"getRecommendationConfiguration"));
 					put(
 						"query#sites",
 						new ObjectValuePair<>(
@@ -226,8 +217,8 @@ public class ServletDataImpl implements ServletData {
 		_fieldResourceComponentServiceObjects;
 
 	@Reference(scope = ReferenceScope.PROTOTYPE_REQUIRED)
-	private ComponentServiceObjects<CommerceChannelResource>
-		_commerceChannelResourceComponentServiceObjects;
+	private ComponentServiceObjects<RecommendationConfigurationResource>
+		_recommendationConfigurationResourceComponentServiceObjects;
 
 	@Reference(scope = ReferenceScope.PROTOTYPE_REQUIRED)
 	private ComponentServiceObjects<ContactAccountGroupResource>
@@ -250,3 +241,4 @@ public class ServletDataImpl implements ServletData {
 		_siteResourceComponentServiceObjects;
 
 }
+// LIFERAY-REST-BUILDER-HASH:-1344593850

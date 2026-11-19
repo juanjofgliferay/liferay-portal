@@ -5,18 +5,19 @@
 
 package com.liferay.portal.kernel.portlet;
 
-import com.liferay.osgi.service.tracker.collections.map.ServiceReferenceMapper;
-import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMap;
-import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMapFactory;
+import com.liferay.osgi.service.tracker.collections.list.ServiceTrackerList;
+import com.liferay.osgi.service.tracker.collections.list.ServiceTrackerListFactory;
+import com.liferay.petra.function.transform.TransformUtil;
+import com.liferay.petra.lang.CentralizedThreadLocal;
 import com.liferay.portal.kernel.module.util.SystemBundleUtil;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 
 import org.osgi.framework.BundleContext;
-import org.osgi.framework.ServiceReference;
 
 /**
  * @author Eduardo García
@@ -25,13 +26,11 @@ import org.osgi.framework.ServiceReference;
 public class FriendlyURLResolverRegistryUtil {
 
 	public static FriendlyURLResolver getFriendlyURLResolver(
-		String urlSeparator) {
+		long companyId, String urlSeparator) {
 
-		for (String key : _serviceTrackerMap.keySet()) {
-			FriendlyURLResolver friendlyURLResolver =
-				_serviceTrackerMap.getService(key);
-
-			if ((friendlyURLResolver != null) &&
+		for (FriendlyURLResolver friendlyURLResolver : _serviceTrackerList) {
+			if (((friendlyURLResolver.getCompanyId() == 0) ||
+				 (friendlyURLResolver.getCompanyId() == companyId)) &&
 				Objects.equals(
 					friendlyURLResolver.getURLSeparator(), urlSeparator)) {
 
@@ -42,62 +41,72 @@ public class FriendlyURLResolverRegistryUtil {
 		return null;
 	}
 
-	public static Collection<FriendlyURLResolver>
-		getFriendlyURLResolversAsCollection() {
+	public static FriendlyURLResolver
+		getFriendlyURLResolverByDefaultURLSeparator(
+			String defaultURLSeparator) {
 
-		List<FriendlyURLResolver> friendlyURLResolvers = new ArrayList<>();
+		for (FriendlyURLResolver friendlyURLResolver : _serviceTrackerList) {
+			if (Objects.equals(
+					friendlyURLResolver.getDefaultURLSeparator(),
+					defaultURLSeparator)) {
 
-		for (String key : _serviceTrackerMap.keySet()) {
-			FriendlyURLResolver friendlyURLResolver =
-				_serviceTrackerMap.getService(key);
-
-			if (friendlyURLResolver != null) {
-				friendlyURLResolvers.add(friendlyURLResolver);
+				return friendlyURLResolver;
 			}
+		}
+
+		return null;
+	}
+
+	public static Collection<FriendlyURLResolver>
+		getFriendlyURLResolversAsCollection(long companyId) {
+
+		Collection<FriendlyURLResolver> friendlyURLResolvers =
+			new ArrayList<>();
+
+		for (FriendlyURLResolver friendlyURLResolver : _serviceTrackerList) {
+			if ((friendlyURLResolver.getCompanyId() != 0) &&
+				(friendlyURLResolver.getCompanyId() != companyId)) {
+
+				continue;
+			}
+
+			friendlyURLResolvers.add(friendlyURLResolver);
 		}
 
 		return friendlyURLResolvers;
 	}
 
-	public static String[] getURLSeparators() {
-		List<String> urlSeparators = new ArrayList<>();
+	public static String[] getURLSeparators(long companyId) {
+		Map<Long, String[]> urlSeparatorsMap = _urlSeparatorsMap.get();
 
-		for (String key : _serviceTrackerMap.keySet()) {
-			FriendlyURLResolver friendlyURLResolver =
-				_serviceTrackerMap.getService(key);
+		String[] urlSeparators = urlSeparatorsMap.get(companyId);
 
-			if (friendlyURLResolver != null) {
-				urlSeparators.add(friendlyURLResolver.getURLSeparator());
-			}
+		if (urlSeparators != null) {
+			return urlSeparators;
 		}
 
-		return urlSeparators.toArray(new String[0]);
+		urlSeparators = TransformUtil.transformToArray(
+			getFriendlyURLResolversAsCollection(companyId),
+			FriendlyURLResolver::getURLSeparator, String.class);
+
+		urlSeparatorsMap.put(companyId, urlSeparators);
+
+		return urlSeparators;
+	}
+
+	public static void removeURLSeparators() {
+		_urlSeparatorsMap.remove();
 	}
 
 	private static final BundleContext _bundleContext =
 		SystemBundleUtil.getBundleContext();
-
-	private static final ServiceTrackerMap<String, FriendlyURLResolver>
-		_serviceTrackerMap = ServiceTrackerMapFactory.openSingleValueMap(
-			_bundleContext, FriendlyURLResolver.class, null,
-			new ServiceReferenceMapper<String, FriendlyURLResolver>() {
-
-				@Override
-				public void map(
-					ServiceReference<FriendlyURLResolver> serviceReference,
-					ServiceReferenceMapper.Emitter<String> emitter) {
-
-					FriendlyURLResolver friendlyURLResolver =
-						_bundleContext.getService(serviceReference);
-
-					Class<?> friendlyURLResolverClass =
-						friendlyURLResolver.getClass();
-
-					emitter.emit(friendlyURLResolverClass.getName());
-
-					_bundleContext.ungetService(serviceReference);
-				}
-
-			});
+	private static final ServiceTrackerList<FriendlyURLResolver>
+		_serviceTrackerList = ServiceTrackerListFactory.open(
+			_bundleContext, FriendlyURLResolver.class);
+	private static final ThreadLocal<Map<Long, String[]>> _urlSeparatorsMap =
+		new CentralizedThreadLocal<>(
+			FriendlyURLResolverRegistryUtil.class.getName() +
+				"._urlSeparatorsMap",
+			HashMap::new);
 
 }

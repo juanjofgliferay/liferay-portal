@@ -36,6 +36,37 @@ public class PackageRunBuildTask extends PackageRunTask {
 	@InputFile
 	@Optional
 	@PathSensitive(PathSensitivity.RELATIVE)
+	public File getNodeScriptsPackageJsonFile() {
+		Project project = getProject();
+
+		File portalRootDir = GradleUtil.getRootDir(
+			project.getRootProject(), "portal-impl");
+
+		if ((portalRootDir == null) || !portalRootDir.exists()) {
+			return null;
+		}
+
+		File file = new File(
+			portalRootDir, "modules/frontend-sdk/node-scripts/package.json");
+
+		if (!file.exists()) {
+
+			// Backwards compatibility
+
+			file = new File(
+				portalRootDir, "modules/_node-scripts/package.json");
+
+			if (!file.exists()) {
+				return null;
+			}
+		}
+
+		return file;
+	}
+
+	@InputFile
+	@Optional
+	@PathSensitive(PathSensitivity.RELATIVE)
 	public File getNpmBridgeRCFile() {
 		return _getExistentFile(".npmbridgerc");
 	}

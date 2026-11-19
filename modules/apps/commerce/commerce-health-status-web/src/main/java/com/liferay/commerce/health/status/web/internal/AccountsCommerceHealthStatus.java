@@ -8,9 +8,8 @@ package com.liferay.commerce.health.status.web.internal;
 import com.liferay.account.constants.AccountRoleConstants;
 import com.liferay.commerce.constants.CommerceHealthStatusConstants;
 import com.liferay.commerce.health.status.CommerceHealthStatus;
-import com.liferay.commerce.util.CommerceAccountRoleHelper;
+import com.liferay.commerce.helper.CommerceRoleHelper;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
@@ -23,11 +22,11 @@ import com.liferay.portal.kernel.transaction.TransactionConfig;
 import com.liferay.portal.kernel.transaction.TransactionInvokerUtil;
 import com.liferay.portal.kernel.util.ResourceBundleUtil;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.Locale;
 import java.util.ResourceBundle;
 import java.util.concurrent.Callable;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -105,16 +104,14 @@ public class AccountsCommerceHealthStatus implements CommerceHealthStatus {
 	public boolean isFixed(long companyId, long commerceChannelId)
 		throws PortalException {
 
-		if (FeatureFlagManagerUtil.isEnabled(companyId, "COMMERCE-10890")) {
-			Role accountSupplierRole = _roleLocalService.fetchRole(
-				companyId, AccountRoleConstants.ROLE_NAME_ACCOUNT_SUPPLIER);
+		Role accountSupplierRole = _roleLocalService.fetchRole(
+			companyId, AccountRoleConstants.ROLE_NAME_ACCOUNT_SUPPLIER);
 
-			Role supplierRole = _roleLocalService.fetchRole(
-				companyId, AccountRoleConstants.ROLE_NAME_SUPPLIER);
+		Role supplierRole = _roleLocalService.fetchRole(
+			companyId, AccountRoleConstants.ROLE_NAME_SUPPLIER);
 
-			if ((accountSupplierRole == null) || (supplierRole == null)) {
-				return false;
-			}
+		if ((accountSupplierRole == null) || (supplierRole == null)) {
+			return false;
 		}
 
 		Role role = _roleLocalService.fetchRole(
@@ -136,7 +133,7 @@ public class AccountsCommerceHealthStatus implements CommerceHealthStatus {
 			Propagation.REQUIRED, new Class<?>[] {Exception.class});
 
 	@Reference
-	private CommerceAccountRoleHelper _commerceAccountRoleHelper;
+	private CommerceRoleHelper _commerceRoleHelper;
 
 	@Reference
 	private Language _language;
@@ -148,8 +145,7 @@ public class AccountsCommerceHealthStatus implements CommerceHealthStatus {
 
 		@Override
 		public Object call() throws Exception {
-			_commerceAccountRoleHelper.checkCommerceAccountRoles(
-				_serviceContext);
+			_commerceRoleHelper.checkCommerceAccountRoles(_serviceContext);
 
 			return null;
 		}

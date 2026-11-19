@@ -8,9 +8,7 @@ package com.liferay.analytics.settings.rest.internal.resource.v1_0;
 import com.liferay.account.model.AccountEntry;
 import com.liferay.analytics.settings.configuration.AnalyticsConfiguration;
 import com.liferay.analytics.settings.rest.constants.FieldAccountConstants;
-import com.liferay.analytics.settings.rest.constants.FieldOrderConstants;
 import com.liferay.analytics.settings.rest.constants.FieldPeopleConstants;
-import com.liferay.analytics.settings.rest.constants.FieldProductConstants;
 import com.liferay.analytics.settings.rest.dto.v1_0.Field;
 import com.liferay.analytics.settings.rest.manager.AnalyticsSettingsManager;
 import com.liferay.analytics.settings.rest.resource.v1_0.FieldResource;
@@ -88,41 +86,6 @@ public class FieldResourceImpl extends BaseFieldResourceImpl {
 	}
 
 	@Override
-	public Page<Field> getFieldsOrdersPage(
-			String keyword, Pagination pagination, Sort[] sorts)
-		throws Exception {
-
-		AnalyticsConfiguration analyticsConfiguration =
-			_analyticsSettingsManager.getAnalyticsConfiguration(
-				contextCompany.getCompanyId());
-
-		List<Field> fields = _getFields(
-			FieldOrderConstants.FIELD_ORDER_EXAMPLES,
-			FieldOrderConstants.FIELD_ORDER_NAMES,
-			FieldOrderConstants.FIELD_ORDER_REQUIRED_NAMES, "order",
-			analyticsConfiguration.syncedOrderFieldNames(),
-			FieldOrderConstants.FIELD_ORDER_TYPES);
-
-		fields.addAll(
-			_getFields(
-				FieldOrderConstants.FIELD_ORDER_ITEM_EXAMPLES,
-				FieldOrderConstants.FIELD_ORDER_ITEM_NAMES,
-				FieldOrderConstants.FIELD_ORDER_ITEM_REQUIRED_NAMES,
-				"order-item", analyticsConfiguration.syncedOrderFieldNames(),
-				FieldOrderConstants.FIELD_ORDER_ITEM_TYPES));
-
-		fields = _filter(fields, keyword);
-
-		fields = _sort(fields, sorts);
-
-		return Page.of(
-			ListUtil.subList(
-				fields, pagination.getStartPosition(),
-				pagination.getEndPosition()),
-			pagination, fields.size());
-	}
-
-	@Override
 	public Page<Field> getFieldsPeoplePage(
 			String keyword, Pagination pagination, Sort[] sorts)
 		throws Exception {
@@ -163,49 +126,6 @@ public class FieldResourceImpl extends BaseFieldResourceImpl {
 	}
 
 	@Override
-	public Page<Field> getFieldsProductsPage(
-			String keyword, Pagination pagination, Sort[] sorts)
-		throws Exception {
-
-		AnalyticsConfiguration analyticsConfiguration =
-			_analyticsSettingsManager.getAnalyticsConfiguration(
-				contextCompany.getCompanyId());
-
-		List<Field> fields = _getFields(
-			FieldProductConstants.FIELD_CATEGORY_EXAMPLES,
-			FieldProductConstants.FIELD_CATEGORY_NAMES,
-			FieldProductConstants.FIELD_CATEGORY_REQUIRED_NAMES, "category",
-			analyticsConfiguration.syncedCategoryFieldNames(),
-			FieldProductConstants.FIELD_CATEGORY_TYPES);
-
-		fields.addAll(
-			_getFields(
-				FieldProductConstants.FIELD_PRODUCT_EXAMPLES,
-				FieldProductConstants.FIELD_PRODUCT_NAMES,
-				FieldProductConstants.FIELD_PRODUCT_REQUIRED_NAMES, "product",
-				analyticsConfiguration.syncedProductFieldNames(),
-				FieldProductConstants.FIELD_PRODUCT_TYPES));
-		fields.addAll(
-			_getFields(
-				FieldProductConstants.FIELD_PRODUCT_CHANNEL_EXAMPLES,
-				FieldProductConstants.FIELD_PRODUCT_CHANNEL_NAMES,
-				FieldProductConstants.FIELD_PRODUCT_CHANNEL_REQUIRED_NAMES,
-				"product-channel",
-				analyticsConfiguration.syncedProductChannelFieldNames(),
-				FieldProductConstants.FIELD_PRODUCT_CHANNEL_TYPES));
-
-		fields = _filter(fields, keyword);
-
-		fields = _sort(fields, sorts);
-
-		return Page.of(
-			ListUtil.subList(
-				fields, pagination.getStartPosition(),
-				pagination.getEndPosition()),
-			pagination, fields.size());
-	}
-
-	@Override
 	public void patchFieldAccount(Field[] fields) throws Exception {
 		AnalyticsConfiguration analyticsConfiguration =
 			_analyticsSettingsManager.getAnalyticsConfiguration(
@@ -224,29 +144,6 @@ public class FieldResourceImpl extends BaseFieldResourceImpl {
 						_getExpandoFieldNames(
 							AccountEntry.class.getName(),
 							contextCompany.getCompanyId())))
-			).build());
-	}
-
-	@Override
-	public void patchFieldOrder(Field[] fields) throws Exception {
-		AnalyticsConfiguration analyticsConfiguration =
-			_analyticsSettingsManager.getAnalyticsConfiguration(
-				contextCompany.getCompanyId());
-
-		_analyticsSettingsManager.updateCompanyConfiguration(
-			contextCompany.getCompanyId(),
-			HashMapBuilder.<String, Object>put(
-				"syncedOrderFieldNames",
-				_updateSelectedFields(
-					analyticsConfiguration.syncedOrderFieldNames(), fields,
-					FieldOrderConstants.FIELD_ORDER_REQUIRED_NAMES, "order",
-					FieldOrderConstants.FIELD_ORDER_NAMES)
-			).put(
-				"syncedOrderItemFieldNames",
-				_updateSelectedFields(
-					analyticsConfiguration.syncedOrderItemFieldNames(), fields,
-					FieldOrderConstants.FIELD_ORDER_ITEM_REQUIRED_NAMES,
-					"order-item", FieldOrderConstants.FIELD_ORDER_ITEM_NAMES)
 			).build());
 	}
 
@@ -274,37 +171,6 @@ public class FieldResourceImpl extends BaseFieldResourceImpl {
 						_getExpandoFieldNames(
 							User.class.getName(),
 							contextCompany.getCompanyId())))
-			).build());
-	}
-
-	@Override
-	public void patchFieldProduct(Field[] fields) throws Exception {
-		AnalyticsConfiguration analyticsConfiguration =
-			_analyticsSettingsManager.getAnalyticsConfiguration(
-				contextCompany.getCompanyId());
-
-		_analyticsSettingsManager.updateCompanyConfiguration(
-			contextCompany.getCompanyId(),
-			HashMapBuilder.<String, Object>put(
-				"syncedCategoryFieldNames",
-				_updateSelectedFields(
-					analyticsConfiguration.syncedCategoryFieldNames(), fields,
-					FieldProductConstants.FIELD_CATEGORY_REQUIRED_NAMES,
-					"category", FieldProductConstants.FIELD_CATEGORY_NAMES)
-			).put(
-				"syncedProductChannelFieldNames",
-				_updateSelectedFields(
-					analyticsConfiguration.syncedProductChannelFieldNames(),
-					fields,
-					FieldProductConstants.FIELD_PRODUCT_CHANNEL_REQUIRED_NAMES,
-					"product-channel",
-					FieldProductConstants.FIELD_PRODUCT_CHANNEL_NAMES)
-			).put(
-				"syncedProductFieldNames",
-				_updateSelectedFields(
-					analyticsConfiguration.syncedProductFieldNames(), fields,
-					FieldProductConstants.FIELD_PRODUCT_REQUIRED_NAMES,
-					"product", FieldProductConstants.FIELD_PRODUCT_NAMES)
 			).build());
 	}
 
@@ -389,14 +255,18 @@ public class FieldResourceImpl extends BaseFieldResourceImpl {
 		return transform(
 			_expandoColumnLocalService.getColumns(expandoTable.getTableId()),
 			expandoColumn -> {
-				Field field = new Field();
+				Field field = new Field() {
+					{
+						setName(expandoColumn::getName);
+						setRequired(() -> Boolean.FALSE);
+						setSelected(
+							() -> ArrayUtil.contains(
+								syncedNames, expandoColumn.getName()));
+						setType(() -> _getDataType(expandoColumn.getType()));
+					}
+				};
 
-				field.setName(expandoColumn.getName());
-				field.setRequired(false);
-				field.setSelected(
-					ArrayUtil.contains(syncedNames, expandoColumn.getName()));
-				field.setSource(source);
-				field.setType(_getDataType(expandoColumn.getType()));
+				field.setSource(() -> source);
 
 				return field;
 			});
@@ -409,16 +279,23 @@ public class FieldResourceImpl extends BaseFieldResourceImpl {
 		List<Field> fields = new ArrayList<>();
 
 		for (int i = 0; i < names.length; i++) {
-			Field field = new Field();
+			int index = i;
 
-			field.setExample(examples[i]);
-			field.setName(names[i]);
-			field.setRequired(ArrayUtil.contains(requiredNames, names[i]));
-			field.setSelected(
-				ArrayUtil.contains(syncedNames, names[i]) ||
-				field.getRequired());
-			field.setSource(source);
-			field.setType(types[i]);
+			Field field = new Field() {
+				{
+					setExample(() -> examples[index]);
+					setName(() -> names[index]);
+					setRequired(
+						() -> ArrayUtil.contains(requiredNames, names[index]));
+					setSelected(
+						() ->
+							ArrayUtil.contains(syncedNames, names[index]) ||
+							ArrayUtil.contains(requiredNames, names[index]));
+					setType(() -> types[index]);
+				}
+			};
+
+			field.setSource(() -> source);
 
 			fields.add(field);
 		}
@@ -465,9 +342,11 @@ public class FieldResourceImpl extends BaseFieldResourceImpl {
 					field -> StringUtil.toLowerCase(field.getType()));
 			}
 
-			if (sort.isReverse()) {
-				fieldComparator = fieldComparator.reversed();
+			if (!sort.isReverse()) {
+				continue;
 			}
+
+			fieldComparator = fieldComparator.reversed();
 		}
 
 		if (fieldComparator != null) {
@@ -486,16 +365,16 @@ public class FieldResourceImpl extends BaseFieldResourceImpl {
 			Arrays.asList(configurationFieldNames));
 
 		for (Field field : fields) {
-			if (Objects.equals(source, field.getSource())) {
-				if (!field.getSelected()) {
-					selectedFieldNames.remove(field.getName());
-				}
-				else {
-					if (ArrayUtil.contains(
-							validateFieldNames, field.getName())) {
+			if (!Objects.equals(source, field.getSource())) {
+				continue;
+			}
 
-						selectedFieldNames.add(field.getName());
-					}
+			if (!field.getSelected()) {
+				selectedFieldNames.remove(field.getName());
+			}
+			else {
+				if (ArrayUtil.contains(validateFieldNames, field.getName())) {
+					selectedFieldNames.add(field.getName());
 				}
 			}
 		}

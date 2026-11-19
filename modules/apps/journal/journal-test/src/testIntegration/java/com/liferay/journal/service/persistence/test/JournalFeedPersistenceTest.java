@@ -112,11 +112,7 @@ public class JournalFeedPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		JournalFeed newJournalFeed = _persistence.create(pk);
-
-		newJournalFeed.setMvccVersion(RandomTestUtil.nextLong());
+		JournalFeed newJournalFeed = addJournalFeed();
 
 		newJournalFeed.setCtCollectionId(RandomTestUtil.nextLong());
 
@@ -165,7 +161,9 @@ public class JournalFeedPersistenceTest {
 
 		newJournalFeed.setLastPublishDate(RandomTestUtil.nextDate());
 
-		_journalFeeds.add(_persistence.update(newJournalFeed));
+		newJournalFeed = _persistence.update(newJournalFeed);
+
+		_journalFeeds.add(newJournalFeed);
 
 		JournalFeed existingJournalFeed = _persistence.findByPrimaryKey(
 			newJournalFeed.getPrimaryKey());
@@ -266,13 +264,6 @@ public class JournalFeedPersistenceTest {
 	}
 
 	@Test
-	public void testCountByGroupId() throws Exception {
-		_persistence.countByGroupId(RandomTestUtil.nextLong());
-
-		_persistence.countByGroupId(0L);
-	}
-
-	@Test
 	public void testCountByG_F() throws Exception {
 		_persistence.countByG_F(RandomTestUtil.nextLong(), "");
 
@@ -302,12 +293,6 @@ public class JournalFeedPersistenceTest {
 	public void testFindAll() throws Exception {
 		_persistence.findAll(
 			QueryUtil.ALL_POS, QueryUtil.ALL_POS, getOrderByComparator());
-	}
-
-	@Test
-	public void testFilterFindByGroupId() throws Exception {
-		_persistence.filterFindByGroupId(
-			0, QueryUtil.ALL_POS, QueryUtil.ALL_POS, getOrderByComparator());
 	}
 
 	protected OrderByComparator<JournalFeed> getOrderByComparator() {
@@ -605,8 +590,6 @@ public class JournalFeedPersistenceTest {
 
 		JournalFeed journalFeed = _persistence.create(pk);
 
-		journalFeed.setMvccVersion(RandomTestUtil.nextLong());
-
 		journalFeed.setCtCollectionId(RandomTestUtil.nextLong());
 
 		journalFeed.setUuid(RandomTestUtil.randomString());
@@ -663,3 +646,4 @@ public class JournalFeedPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:904150981

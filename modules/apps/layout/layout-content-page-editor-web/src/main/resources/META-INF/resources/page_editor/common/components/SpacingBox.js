@@ -93,10 +93,8 @@ export default function SpacingBox({
 
 		event.preventDefault();
 
-		const {
-			position: currentPosition,
-			type: currentType,
-		} = document.activeElement.dataset;
+		const {position: currentPosition, type: currentType} =
+			document.activeElement.dataset;
 
 		let nextPosition = ARROW_TO_POSITION[event.key];
 		let nextType = currentType;
@@ -170,6 +168,7 @@ function SpacingSelectorButton({
 	const [active, setActive] = useState(false);
 	const disabled = !field || field.disabled;
 	const itemListRef = useRef();
+	const lengthInputRef = useRef();
 	const [labelElement, setLabelElement] = useState(null);
 	const {tokenValues} = useStyleBook();
 	const tooltipId = useId();
@@ -188,17 +187,18 @@ function SpacingSelectorButton({
 
 	useEffect(() => {
 		if (active && itemListRef.current) {
-			setTimeout(
-				() =>
-					itemListRef.current
-						.querySelector(
-							`button[data-value="${
-								value || field?.defaultValue
-							}"]`
-						)
-						?.focus(),
-				10
-			);
+			setTimeout(() => {
+				const optionElement = itemListRef.current?.querySelector(
+					`button[data-value="${value || field?.defaultValue}"]`
+				);
+
+				if (optionElement) {
+					optionElement.focus();
+				}
+				else {
+					lengthInputRef.current?.focus();
+				}
+			}, 10);
 		}
 	}, [active, field, value]);
 
@@ -259,7 +259,7 @@ function SpacingSelectorButton({
 				</ClayButton>
 			}
 		>
-			<div ref={itemListRef}>
+			<div className={DROPDOWN_CLASSNAME} ref={itemListRef}>
 				<ClayDropDown.ItemList aria-labelledby={triggerId}>
 					{active && canSetCustomValue ? (
 						<>
@@ -300,11 +300,8 @@ function SpacingSelectorButton({
 									<LengthInput
 										className="mb-3 mt-2 px-3"
 										field={field}
-										onEnter={() => {
-											setActive(false);
-											triggerElement?.focus();
-										}}
 										onValueSelect={onChange}
+										ref={lengthInputRef}
 										showLabel={false}
 										value={
 											isValidStyleValue(

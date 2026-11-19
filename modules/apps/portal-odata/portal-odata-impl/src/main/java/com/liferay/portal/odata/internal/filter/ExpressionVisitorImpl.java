@@ -9,17 +9,15 @@ import com.fasterxml.jackson.databind.util.ISO8601Utils;
 
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.search.BooleanClauseOccur;
 import com.liferay.portal.kernel.search.BooleanQuery;
+import com.liferay.portal.kernel.search.TermQuery;
+import com.liferay.portal.kernel.search.TermRangeQuery;
+import com.liferay.portal.kernel.search.WildcardQuery;
 import com.liferay.portal.kernel.search.filter.BooleanFilter;
 import com.liferay.portal.kernel.search.filter.ExistsFilter;
 import com.liferay.portal.kernel.search.filter.Filter;
 import com.liferay.portal.kernel.search.filter.QueryFilter;
-import com.liferay.portal.kernel.search.generic.BooleanQueryImpl;
-import com.liferay.portal.kernel.search.generic.TermQueryImpl;
-import com.liferay.portal.kernel.search.generic.TermRangeQueryImpl;
-import com.liferay.portal.kernel.search.generic.WildcardQueryImpl;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.odata.entity.CollectionEntityField;
 import com.liferay.portal.odata.entity.ComplexEntityField;
@@ -300,12 +298,22 @@ public class ExpressionVisitorImpl implements ExpressionVisitor<Object> {
 	private Filter _contains(
 		EntityField entityField, Object fieldValue, Locale locale) {
 
+		String value = _escapeWildcardCharacters(
+			entityField.getFilterableValue(fieldValue));
+
 		return new QueryFilter(
 			_nestedFieldQueryHelper.getQuery(
 				entityField.getFilterableName(locale),
-				fieldName -> new WildcardQueryImpl(
-					fieldName,
-					"*" + entityField.getFilterableValue(fieldValue) + "*")));
+				fieldName -> new WildcardQuery(fieldName, "*" + value + "*")));
+	}
+
+	private String _escapeWildcardCharacters(String value) {
+		return StringUtil.replace(
+			value,
+			new String[] {
+				StringPool.BACK_SLASH, StringPool.QUESTION, StringPool.STAR
+			},
+			new String[] {StringPool.DOUBLE_BACK_SLASH, "\\?", "\\*"});
 	}
 
 	private Filter _getANDFilter(Filter leftFilter, Filter rightFilter) {
@@ -333,7 +341,7 @@ public class ExpressionVisitorImpl implements ExpressionVisitor<Object> {
 		return new QueryFilter(
 			_nestedFieldQueryHelper.getQuery(
 				entityField.getFilterableName(locale),
-				fieldName -> new TermQueryImpl(
+				fieldName -> new TermQuery(
 					fieldName, entityField.getFilterableValue(fieldValue))));
 	}
 
@@ -354,7 +362,7 @@ public class ExpressionVisitorImpl implements ExpressionVisitor<Object> {
 			return new QueryFilter(
 				_nestedFieldQueryHelper.getQuery(
 					entityField.getFilterableName(locale),
-					fieldName -> new TermRangeQueryImpl(
+					fieldName -> new TermRangeQuery(
 						fieldName, entityField.getFilterableValue(fieldValue),
 						null, true, true)));
 		}
@@ -381,7 +389,7 @@ public class ExpressionVisitorImpl implements ExpressionVisitor<Object> {
 			return new QueryFilter(
 				_nestedFieldQueryHelper.getQuery(
 					entityField.getFilterableName(locale),
-					fieldName -> new TermRangeQueryImpl(
+					fieldName -> new TermRangeQuery(
 						fieldName, entityField.getFilterableValue(fieldValue),
 						null, false, true)));
 		}
@@ -394,43 +402,18 @@ public class ExpressionVisitorImpl implements ExpressionVisitor<Object> {
 	private Filter _getINFilter(
 		EntityField entityField, List<Object> fieldValues, Locale locale) {
 
-		BooleanQuery booleanQuery = new BooleanQueryImpl();
+		BooleanQuery booleanQuery = new BooleanQuery();
 
-		try {
-			for (Object fieldValue : fieldValues) {
-				booleanQuery.add(
-					_nestedFieldQueryHelper.getQuery(
-						entityField.getFilterableName(locale),
-						fieldName -> new TermQueryImpl(
-							fieldName,
-							entityField.getFilterableValue(fieldValue))),
-					BooleanClauseOccur.SHOULD);
-			}
-		}
-		catch (com.liferay.portal.kernel.search.ParseException parseException) {
-			throw new SystemException(parseException);
+		for (Object fieldValue : fieldValues) {
+			booleanQuery.add(
+				_nestedFieldQueryHelper.getQuery(
+					entityField.getFilterableName(locale),
+					fieldName -> new TermQuery(
+						fieldName, entityField.getFilterableValue(fieldValue))),
+				BooleanClauseOccur.SHOULD);
 		}
 
 		return new QueryFilter(booleanQuery);
-	}
-
-	private EntityModel _getLambdaEntityModel(
-		String variableName, CollectionEntityField collectionEntityField) {
-
-		return new EntityModel() {
-
-			@Override
-			public Map<String, EntityField> getEntityFieldsMap() {
-				return Collections.singletonMap(
-					variableName, collectionEntityField.getEntityField());
-			}
-
-			@Override
-			public String getName() {
-				return collectionEntityField.getName();
-			}
-
-		};
 	}
 
 	private Filter _getLEFilter(
@@ -450,7 +433,7 @@ public class ExpressionVisitorImpl implements ExpressionVisitor<Object> {
 			return new QueryFilter(
 				_nestedFieldQueryHelper.getQuery(
 					entityField.getFilterableName(locale),
-					fieldName -> new TermRangeQueryImpl(
+					fieldName -> new TermRangeQuery(
 						fieldName, null,
 						entityField.getFilterableValue(fieldValue), false,
 						true)));
@@ -478,7 +461,7 @@ public class ExpressionVisitorImpl implements ExpressionVisitor<Object> {
 			return new QueryFilter(
 				_nestedFieldQueryHelper.getQuery(
 					entityField.getFilterableName(locale),
-					fieldName -> new TermRangeQueryImpl(
+					fieldName -> new TermRangeQuery(
 						fieldName, null,
 						entityField.getFilterableValue(fieldValue), false,
 						false)));
@@ -487,6 +470,25 @@ public class ExpressionVisitorImpl implements ExpressionVisitor<Object> {
 		throw new UnsupportedOperationException(
 			"Unsupported method _getLTFilter with entity field type " +
 				entityField.getType());
+	}
+
+	private EntityModel _getLambdaEntityModel(
+		String variableName, CollectionEntityField collectionEntityField) {
+
+		return new EntityModel() {
+
+			@Override
+			public Map<String, EntityField> getEntityFieldsMap() {
+				return Collections.singletonMap(
+					variableName, collectionEntityField.getEntityField());
+			}
+
+			@Override
+			public String getName() {
+				return collectionEntityField.getName();
+			}
+
+		};
 	}
 
 	private Filter _getNEFilter(
@@ -502,7 +504,7 @@ public class ExpressionVisitorImpl implements ExpressionVisitor<Object> {
 			new QueryFilter(
 				_nestedFieldQueryHelper.getQuery(
 					entityField.getFilterableName(locale),
-					fieldName -> new TermQueryImpl(
+					fieldName -> new TermQuery(
 						fieldName,
 						entityField.getFilterableValue(fieldValue)))),
 			BooleanClauseOccur.MUST_NOT);
@@ -530,7 +532,7 @@ public class ExpressionVisitorImpl implements ExpressionVisitor<Object> {
 		return new QueryFilter(
 			_nestedFieldQueryHelper.getQuery(
 				entityField.getFilterableName(locale),
-				fieldName -> new WildcardQueryImpl(fieldName, "*")));
+				fieldName -> new WildcardQuery(fieldName, "*")));
 	}
 
 	private Filter _getORFilter(Filter leftFilter, Filter rightFilter) {
@@ -567,12 +569,13 @@ public class ExpressionVisitorImpl implements ExpressionVisitor<Object> {
 	private Filter _startsWith(
 		EntityField entityField, Object fieldValue, Locale locale) {
 
+		String value = _escapeWildcardCharacters(
+			entityField.getFilterableValue(fieldValue));
+
 		return new QueryFilter(
 			_nestedFieldQueryHelper.getQuery(
 				entityField.getFilterableName(locale),
-				fieldName -> new WildcardQueryImpl(
-					fieldName,
-					entityField.getFilterableValue(fieldValue) + "*")));
+				fieldName -> new WildcardQuery(fieldName, value + "*")));
 	}
 
 	private final EntityModel _entityModel;

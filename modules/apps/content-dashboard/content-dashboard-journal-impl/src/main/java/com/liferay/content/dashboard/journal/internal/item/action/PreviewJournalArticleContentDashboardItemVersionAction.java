@@ -5,7 +5,6 @@
 
 package com.liferay.content.dashboard.journal.internal.item.action;
 
-import com.liferay.asset.display.page.portlet.AssetDisplayPageFriendlyURLProvider;
 import com.liferay.content.dashboard.item.action.ContentDashboardItemVersionAction;
 import com.liferay.journal.constants.JournalPortletKeys;
 import com.liferay.journal.model.JournalArticle;
@@ -23,12 +22,12 @@ import com.liferay.portal.kernel.util.JavaConstants;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.portlet.PortletResponse;
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.Locale;
-
-import javax.portlet.PortletResponse;
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Cristina González
@@ -37,7 +36,6 @@ public class PreviewJournalArticleContentDashboardItemVersionAction
 	implements ContentDashboardItemVersionAction {
 
 	public PreviewJournalArticleContentDashboardItemVersionAction(
-		AssetDisplayPageFriendlyURLProvider assetDisplayPageFriendlyURLProvider,
 		HttpServletRequest httpServletRequest, JournalArticle journalArticle,
 		Language language,
 		LayoutDisplayPageProviderRegistry layoutDisplayPageProviderRegistry,
@@ -45,8 +43,6 @@ public class PreviewJournalArticleContentDashboardItemVersionAction
 		LayoutSEOLinkManager layoutSEOLinkManager, Portal portal,
 		RequestBackedPortletURLFactory requestBackedPortletURLFactory) {
 
-		_assetDisplayPageFriendlyURLProvider =
-			assetDisplayPageFriendlyURLProvider;
 		_httpServletRequest = httpServletRequest;
 		_journalArticle = journalArticle;
 		_language = language;
@@ -85,8 +81,7 @@ public class PreviewJournalArticleContentDashboardItemVersionAction
 		ViewJournalArticleContentDashboardItemAction
 			viewJournalArticleContentDashboardItemAction =
 				new ViewJournalArticleContentDashboardItemAction(
-					_assetDisplayPageFriendlyURLProvider, _httpServletRequest,
-					_journalArticle, _language,
+					_httpServletRequest, _journalArticle, _language,
 					_layoutDisplayPageProviderRegistry, _layoutLocalService,
 					_layoutSEOLinkManager, _portal);
 
@@ -109,7 +104,7 @@ public class PreviewJournalArticleContentDashboardItemVersionAction
 		LiferayPortletResponse liferayPortletResponse =
 			_portal.getLiferayPortletResponse(
 				(PortletResponse)_httpServletRequest.getAttribute(
-					JavaConstants.JAVAX_PORTLET_RESPONSE));
+					JavaConstants.JAKARTA_PORTLET_RESPONSE));
 
 		PortletURL portletURL = liferayPortletResponse.createRenderURL();
 
@@ -135,8 +130,6 @@ public class PreviewJournalArticleContentDashboardItemVersionAction
 		).buildString();
 	}
 
-	private final AssetDisplayPageFriendlyURLProvider
-		_assetDisplayPageFriendlyURLProvider;
 	private final HttpServletRequest _httpServletRequest;
 	private final JournalArticle _journalArticle;
 	private final Language _language;

@@ -7,6 +7,7 @@ package com.liferay.portal.kernel.upgrade;
 
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.dao.db.DBTypeToSQLMap;
 
 import java.util.Arrays;
 
@@ -39,18 +40,18 @@ public class UpgradeProcessFactory {
 	}
 
 	public static UpgradeProcess alterColumnName(
-		String tableName, String oldColumnName, String newColumnDefinition) {
+		String tableName, String oldColumnName, String newColumnName) {
 
 		return new UpgradeProcess(
 			_getUpgradeInfo(
 				tableName,
 				StringBundler.concat(
 					"alter the name of the column ", oldColumnName, " to ",
-					newColumnDefinition))) {
+					newColumnName))) {
 
 			@Override
 			protected void doUpgrade() throws Exception {
-				alterColumnName(tableName, oldColumnName, newColumnDefinition);
+				alterColumnName(tableName, oldColumnName, newColumnName);
 			}
 
 		};
@@ -106,21 +107,61 @@ public class UpgradeProcessFactory {
 		};
 	}
 
+	public static UpgradeProcess runSQL(DBTypeToSQLMap... dbTypeToSQLMaps) {
+		return new UpgradeProcess(_getUpgradeInfo("run SQL updates")) {
+
+			@Override
+			protected void doUpgrade() throws Exception {
+				for (DBTypeToSQLMap dbTypeToSQLMap : dbTypeToSQLMaps) {
+					runSQL(dbTypeToSQLMap);
+				}
+			}
+
+		};
+	}
+
+	public static UpgradeProcess runSQL(String... sqls) {
+		return new UpgradeProcess(_getUpgradeInfo("run SQL updates")) {
+
+			@Override
+			protected void doUpgrade() throws Exception {
+				for (String sql : sqls) {
+					runSQL(sql);
+				}
+			}
+
+		};
+	}
+
+	private static String _getCaller() {
+		Thread thread = Thread.currentThread();
+
+		for (StackTraceElement stackTraceElement : thread.getStackTrace()) {
+			String className = stackTraceElement.getClassName();
+
+			if (!className.equals(Thread.class.getName()) &&
+				!className.equals(UpgradeProcessFactory.class.getName())) {
+
+				return className + ":" + stackTraceElement.getLineNumber();
+			}
+		}
+
+		return UpgradeProcessFactory.class.getName();
+	}
+
 	private static String _getUpgradeInfo(String message) {
 		return _getUpgradeInfo(null, "Modifying schema to " + message);
 	}
 
 	private static String _getUpgradeInfo(String tableName, String message) {
-		Thread thread = Thread.currentThread();
-
-		String callerClassName = thread.getStackTrace()[3].getClassName();
+		String caller = _getCaller();
 
 		if (tableName == null) {
-			return callerClassName + " - " + message;
+			return caller + " - " + message;
 		}
 
 		return StringBundler.concat(
-			callerClassName, " - Modifying table ", tableName, " to ", message);
+			caller, " - Modifying table ", tableName, " to ", message);
 	}
 
 }

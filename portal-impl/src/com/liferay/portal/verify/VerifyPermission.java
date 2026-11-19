@@ -6,6 +6,7 @@
 package com.liferay.portal.verify;
 
 import com.liferay.counter.kernel.service.CounterLocalServiceUtil;
+import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.EntityCacheUtil;
 import com.liferay.portal.kernel.dao.orm.FinderCacheUtil;
@@ -32,8 +33,6 @@ import com.liferay.portal.kernel.service.RoleLocalServiceUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.LoggingTimer;
 import com.liferay.portal.kernel.util.PortalUtil;
-import com.liferay.portal.kernel.util.StringBundler;
-import com.liferay.portal.util.PortalInstances;
 
 import java.util.HashMap;
 import java.util.List;
@@ -47,7 +46,7 @@ import java.util.Map;
  */
 public class VerifyPermission extends VerifyProcess {
 
-	protected void checkPermissions() throws Exception {
+	protected void checkPermissions() {
 		try (LoggingTimer loggingTimer = new LoggingTimer()) {
 			List<String> modelNames = ResourceActionsUtil.getModelNames();
 
@@ -110,11 +109,13 @@ public class VerifyPermission extends VerifyProcess {
 
 						long organizationBitwiseValue = entry.getKey();
 
-						if ((oldActionIds & organizationBitwiseValue) != 0) {
-							long groupBitwiseValue = entry.getValue();
-
-							newGroupActionIds |= groupBitwiseValue;
+						if ((oldActionIds & organizationBitwiseValue) == 0) {
+							continue;
 						}
+
+						long groupBitwiseValue = entry.getValue();
+
+						newGroupActionIds |= groupBitwiseValue;
 					}
 
 					ResourcePermission groupResourcePermission =
@@ -172,8 +173,7 @@ public class VerifyPermission extends VerifyProcess {
 
 			CompanyLocalServiceUtil.forEachCompanyId(
 				companyId -> fixUserDefaultRolePermissions(
-					userClassNameId, userGroupClassNameId, companyId),
-				PortalInstances.getCompanyIdsBySQL());
+					userClassNameId, userGroupClassNameId, companyId));
 		}
 		finally {
 			EntityCacheUtil.clearCache();
@@ -237,12 +237,10 @@ public class VerifyPermission extends VerifyProcess {
 					" select resourcePermissionId, primKey, 0 as plidLength, ",
 					"NULL as plidString, 0 as plid, roleId, [$FALSE$] as ",
 					"conflict from ResourcePermission where companyId = ",
-					String.valueOf(companyId),
-					" and primKey LIKE '%_LAYOUT_%' and scope = ",
-					String.valueOf(ResourceConstants.SCOPE_INDIVIDUAL),
-					" and roleId in (",
-					String.valueOf(powerUserRole.getRoleId()), ", ",
-					String.valueOf(userRole.getRoleId()), ")"));
+					companyId, " and primKey LIKE '%_LAYOUT_%' and scope = ",
+					ResourceConstants.SCOPE_INDIVIDUAL, " and roleId in (",
+					powerUserRole.getRoleId(), ", ", userRole.getRoleId(),
+					")"));
 
 			if (_log.isInfoEnabled()) {
 				_log.info("Deriving plid for portlet permissions");
@@ -275,8 +273,7 @@ public class VerifyPermission extends VerifyProcess {
 					"Group_ on Layout.groupId = Group_.groupId where ",
 					userPagePermissionsTableName,
 					".plid = Layout.plid and Group_.classNameId in (",
-					String.valueOf(userClassNameId), ", ",
-					String.valueOf(userGroupClassNameId),
+					userClassNameId, ", ", userGroupClassNameId,
 					") and Layout.type_ = '", LayoutConstants.TYPE_PORTLET,
 					"')"));
 
@@ -295,7 +292,7 @@ public class VerifyPermission extends VerifyProcess {
 			runSQL(
 				StringBundler.concat(
 					"delete from ", userPagePermissionsTableName,
-					" where roleId = ", String.valueOf(userRole.getRoleId())));
+					" where roleId = ", userRole.getRoleId()));
 
 			runSQL(
 				StringBundler.concat(
@@ -327,7 +324,7 @@ public class VerifyPermission extends VerifyProcess {
 			runSQL(
 				StringBundler.concat(
 					"update ResourcePermission set roleId = ",
-					String.valueOf(userRole.getRoleId()),
+					userRole.getRoleId(),
 					" where resourcePermissionId in (select ",
 					"resourcePermissionId from ", userPagePermissionsTableName,
 					" where conflict = [$FALSE$])"));
@@ -356,20 +353,24 @@ public class VerifyPermission extends VerifyProcess {
 				ResourceActionLocalServiceUtil.fetchResourceAction(
 					Organization.class.getName(), actionId);
 
-			if (organizationResourceAction != null) {
-				deprecatedOrganizationBitwiseValues |=
-					organizationResourceAction.getBitwiseValue();
-
-				ResourceAction groupResourceAction =
-					ResourceActionLocalServiceUtil.fetchResourceAction(
-						Group.class.getName(), actionId);
-
-				if (groupResourceAction != null) {
-					_organizationToGroupBitwiseValues.put(
-						organizationResourceAction.getBitwiseValue(),
-						groupResourceAction.getBitwiseValue());
-				}
+			if (organizationResourceAction == null) {
+				continue;
 			}
+
+			deprecatedOrganizationBitwiseValues |=
+				organizationResourceAction.getBitwiseValue();
+
+			ResourceAction groupResourceAction =
+				ResourceActionLocalServiceUtil.fetchResourceAction(
+					Group.class.getName(), actionId);
+
+			if (groupResourceAction == null) {
+				continue;
+			}
+
+			_organizationToGroupBitwiseValues.put(
+				organizationResourceAction.getBitwiseValue(),
+				groupResourceAction.getBitwiseValue());
 		}
 
 		_DEPRECATED_ORGANIZATION_BITWISE_VALUES =

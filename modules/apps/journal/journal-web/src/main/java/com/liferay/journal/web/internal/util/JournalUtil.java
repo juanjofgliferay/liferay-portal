@@ -19,7 +19,6 @@ import com.liferay.journal.service.JournalFolderLocalServiceUtil;
 import com.liferay.journal.util.comparator.ArticleVersionComparator;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.configuration.module.configuration.ConfigurationProviderUtil;
-import com.liferay.portal.kernel.bean.BeanPropertiesUtil;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.LanguageUtil;
@@ -28,15 +27,12 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.GroupConstants;
 import com.liferay.portal.kernel.model.Layout;
-import com.liferay.portal.kernel.model.LayoutConstants;
 import com.liferay.portal.kernel.module.configuration.ConfigurationException;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
-import com.liferay.portal.kernel.security.permission.ActionKeys;
-import com.liferay.portal.kernel.service.LayoutLocalServiceUtil;
+import com.liferay.portal.kernel.service.LayoutServiceUtil;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
 import com.liferay.portal.kernel.service.WorkflowDefinitionLinkLocalServiceUtil;
-import com.liferay.portal.kernel.service.permission.LayoutPermissionUtil;
 import com.liferay.portal.kernel.theme.PortletDisplay;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ArrayUtil;
@@ -49,13 +45,13 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.subscription.service.SubscriptionLocalServiceUtil;
 
+import jakarta.portlet.PortletRequest;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
-import javax.portlet.PortletRequest;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Tom Wang
@@ -72,7 +68,7 @@ public class JournalUtil {
 		List<JournalArticle> articles =
 			JournalArticleServiceUtil.getArticlesByArticleId(
 				groupId, articleId, QueryUtil.ALL_POS, QueryUtil.ALL_POS,
-				new ArticleVersionComparator(true));
+				ArticleVersionComparator.getInstance(true));
 
 		for (JournalArticle article : articles) {
 			if ((article.getVersion() < sourceVersion) &&
@@ -81,18 +77,20 @@ public class JournalUtil {
 				previousVersion = article.getVersion();
 			}
 
-			if ((article.getVersion() > targetVersion) &&
-				((article.getVersion() < nextVersion) || (nextVersion == 0))) {
+			if ((article.getVersion() <= targetVersion) ||
+				((article.getVersion() >= nextVersion) && (nextVersion != 0))) {
 
-				nextVersion = article.getVersion();
+				continue;
 			}
+
+			nextVersion = article.getVersion();
 		}
 
 		List<DiffVersion> diffVersions = new ArrayList<>();
 
 		for (JournalArticle article : articles) {
 			DiffVersion diffVersion = new DiffVersion(
-				article.getUserId(), article.getVersion(),
+				article.getStatusByUserId(), article.getVersion(),
 				article.getModifiedDate());
 
 			diffVersions.add(diffVersion);
@@ -212,25 +210,12 @@ public class JournalUtil {
 			}
 		}
 
-		Layout layout = LayoutLocalServiceUtil.fetchFirstLayout(
-			themeDisplay.getScopeGroupId(), false,
-			LayoutConstants.DEFAULT_PARENT_LAYOUT_ID);
+		Layout layout = LayoutServiceUtil.fetchFirstLayout(
+			themeDisplay.getScopeGroupId(), false, false);
 
 		if (layout == null) {
-			layout = LayoutLocalServiceUtil.fetchFirstLayout(
-				themeDisplay.getScopeGroupId(), true,
-				LayoutConstants.DEFAULT_PARENT_LAYOUT_ID);
-		}
-
-		if ((layout != null) &&
-			!LayoutPermissionUtil.contains(
-				themeDisplay.getPermissionChecker(), layout, ActionKeys.VIEW)) {
-
-			layout = _getViewableLayout(false, themeDisplay);
-
-			if (layout == null) {
-				layout = _getViewableLayout(true, themeDisplay);
-			}
+			layout = LayoutServiceUtil.fetchFirstLayout(
+				themeDisplay.getScopeGroupId(), true, false);
 		}
 
 		if (layout != null) {
@@ -285,11 +270,13 @@ public class JournalUtil {
 
 		PortletRequest portletRequest =
 			(PortletRequest)httpServletRequest.getAttribute(
-				JavaConstants.JAVAX_PORTLET_REQUEST);
+				JavaConstants.JAKARTA_PORTLET_REQUEST);
 
-		long classNameId = BeanPropertiesUtil.getLong(
-			journalArticle, "classNameId",
-			JournalArticleConstants.CLASS_NAME_ID_DEFAULT);
+		long classNameId = JournalArticleConstants.CLASS_NAME_ID_DEFAULT;
+
+		if (journalArticle != null) {
+			classNameId = journalArticle.getClassNameId();
+		}
 
 		if (portletRequest != null) {
 			if (ParamUtil.getLong(portletRequest, "classNameId", classNameId) <=
@@ -318,11 +305,7 @@ public class JournalUtil {
 	}
 
 	public static boolean isEditDefaultValues(JournalArticle article) {
-		if (!isClassNameIdDefault(article)) {
-			return true;
-		}
-
-		return false;
+		return !isClassNameIdDefault(article);
 	}
 
 	public static boolean isIncludeVersionHistory() {
@@ -389,46 +372,10 @@ public class JournalUtil {
 	}
 
 	public static boolean isSubscribedToStructure(
-		long companyId, long groupId, long userId, long ddmStructureId) {
+		long companyId, long userId, long ddmStructureId) {
 
 		return SubscriptionLocalServiceUtil.isSubscribed(
 			companyId, userId, DDMStructure.class.getName(), ddmStructureId);
-	}
-
-	private static Layout _getViewableLayout(
-		boolean privateLayout, ThemeDisplay themeDisplay) {
-
-		for (int end = 0, interval = 20, start = 0;;) {
-			end = start + interval;
-
-			List<Layout> layouts = LayoutLocalServiceUtil.getLayouts(
-				themeDisplay.getScopeGroupId(), privateLayout,
-				LayoutConstants.DEFAULT_PARENT_LAYOUT_ID, false, start, end);
-
-			for (Layout layout : layouts) {
-				try {
-					if (LayoutPermissionUtil.contains(
-							themeDisplay.getPermissionChecker(), layout,
-							ActionKeys.VIEW)) {
-
-						return layout;
-					}
-				}
-				catch (PortalException portalException) {
-					if (_log.isDebugEnabled()) {
-						_log.debug(portalException);
-					}
-				}
-			}
-
-			start = start + interval;
-
-			if (layouts.size() < interval) {
-				break;
-			}
-		}
-
-		return null;
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(JournalUtil.class);

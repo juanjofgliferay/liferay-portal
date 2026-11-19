@@ -5,14 +5,22 @@
 
 package com.liferay.segments.service.impl;
 
+import com.liferay.exportimport.kernel.lar.ExportImportThreadLocal;
+import com.liferay.layout.page.template.model.LayoutPageTemplateEntry;
+import com.liferay.layout.page.template.service.LayoutPageTemplateEntryLocalService;
 import com.liferay.portal.aop.AopService;
+import com.liferay.portal.events.StartupHelperUtil;
 import com.liferay.portal.kernel.exception.LockedLayoutException;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.language.Language;
+import com.liferay.portal.kernel.model.CompanyConstants;
 import com.liferay.portal.kernel.model.Layout;
+import com.liferay.portal.kernel.model.LayoutConstants;
 import com.liferay.portal.kernel.model.ResourceConstants;
 import com.liferay.portal.kernel.model.SystemEventConstants;
 import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.security.auth.GuestOrUserUtil;
 import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.service.ResourceLocalService;
@@ -26,17 +34,24 @@ import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.util.PortalInstances;
 import com.liferay.segments.constants.SegmentsEntryConstants;
 import com.liferay.segments.constants.SegmentsExperienceConstants;
+import com.liferay.segments.exception.DefaultSegmentsExperienceException;
+import com.liferay.segments.exception.DuplicateSegmentsExperienceKeyException;
 import com.liferay.segments.exception.LockedSegmentsExperimentException;
 import com.liferay.segments.exception.RequiredSegmentsExperienceException;
 import com.liferay.segments.exception.SegmentsExperienceNameException;
 import com.liferay.segments.exception.SegmentsExperiencePriorityException;
+import com.liferay.segments.model.SegmentsEntry;
 import com.liferay.segments.model.SegmentsExperience;
 import com.liferay.segments.model.SegmentsExperiment;
+import com.liferay.segments.service.SegmentsExperienceAudienceEntryRelLocalService;
 import com.liferay.segments.service.base.SegmentsExperienceLocalServiceBaseImpl;
+import com.liferay.segments.service.persistence.SegmentsEntryPersistence;
 import com.liferay.segments.service.persistence.SegmentsExperimentPersistence;
 import com.liferay.segments.service.persistence.SegmentsExperimentRelPersistence;
+import com.liferay.segments.util.comparator.SegmentsExperiencePriorityComparator;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -60,54 +75,68 @@ public class SegmentsExperienceLocalServiceImpl
 
 	@Override
 	public SegmentsExperience addDefaultSegmentsExperience(
-			long userId, long plid, ServiceContext serviceContext)
+			String externalReferenceCode, long userId, long plid,
+			ServiceContext serviceContext)
 		throws PortalException {
 
 		Layout layout = _layoutLocalService.getLayout(plid);
 
 		return addSegmentsExperience(
-			userId, layout.getGroupId(), SegmentsEntryConstants.ID_DEFAULT,
+			externalReferenceCode, userId, layout.getGroupId(), null, null,
 			SegmentsExperienceConstants.KEY_DEFAULT, layout.getPlid(),
 			Collections.singletonMap(
 				LocaleUtil.getSiteDefault(),
-				_language.get(
-					LocaleUtil.getSiteDefault(), "default-experience-name")),
+				_language.get(LocaleUtil.getSiteDefault(), "default")),
 			0, true, new UnicodeProperties(true), serviceContext);
 	}
 
 	@Override
 	public SegmentsExperience addSegmentsExperience(
-			long userId, long groupId, long segmentsEntryId, long plid,
+		SegmentsExperience segmentsExperience) {
+
+		segmentsExperience.setActive(
+			_isActive(segmentsExperience.isActive(), segmentsExperience));
+
+		return super.addSegmentsExperience(segmentsExperience);
+	}
+
+	@Override
+	public SegmentsExperience addSegmentsExperience(
+			String externalReferenceCode, long userId, long groupId,
+			String segmentsEntryERC, String segmentsEntryScopeERC, long plid,
 			Map<Locale, String> nameMap, boolean active,
 			UnicodeProperties typeSettingsUnicodeProperties,
 			ServiceContext serviceContext)
 		throws PortalException {
 
-		int lowestPriority = _getLowestPriority(
-			groupId, _getPublishedLayoutPlid(plid));
+		int lowestPriority = getLowestPriority(groupId, plid);
 
 		return addSegmentsExperience(
-			userId, groupId, segmentsEntryId, plid, nameMap, lowestPriority - 1,
-			active, typeSettingsUnicodeProperties, serviceContext);
+			externalReferenceCode, userId, groupId, segmentsEntryERC,
+			segmentsEntryScopeERC, plid, nameMap, lowestPriority - 1, active,
+			typeSettingsUnicodeProperties, serviceContext);
 	}
 
 	@Override
 	public SegmentsExperience addSegmentsExperience(
-			long userId, long groupId, long segmentsEntryId, long plid,
+			String externalReferenceCode, long userId, long groupId,
+			String segmentsEntryERC, String segmentsEntryScopeERC, long plid,
 			Map<Locale, String> nameMap, int priority, boolean active,
 			UnicodeProperties typeSettingsUnicodeProperties,
 			ServiceContext serviceContext)
 		throws PortalException {
 
 		return addSegmentsExperience(
-			userId, groupId, segmentsEntryId,
+			externalReferenceCode, userId, groupId, segmentsEntryERC,
+			segmentsEntryScopeERC,
 			String.valueOf(counterLocalService.increment()), plid, nameMap,
 			priority, active, typeSettingsUnicodeProperties, serviceContext);
 	}
 
 	@Override
 	public SegmentsExperience addSegmentsExperience(
-			long userId, long groupId, long segmentsEntryId,
+			String externalReferenceCode, long userId, long groupId,
+			String segmentsEntryERC, String segmentsEntryScopeERC,
 			String segmentsExperienceKey, long plid,
 			Map<Locale, String> nameMap, int priority, boolean active,
 			UnicodeProperties typeSettingsUnicodeProperties,
@@ -116,14 +145,15 @@ public class SegmentsExperienceLocalServiceImpl
 
 		_checkUnlockedLayout(plid, userId);
 
-		// Segments experience
-
 		User user = _userLocalService.getUser(userId);
 
-		long publishedPlid = _getPublishedLayoutPlid(plid);
-
+		_validateDefaultSegmentsExperience(
+			segmentsEntryERC, segmentsExperienceKey);
+		_validateLayout(plid, segmentsExperienceKey);
 		_validateName(nameMap);
-		_validatePriority(groupId, publishedPlid, priority);
+		_validateSegmentsExperienceKey(groupId, plid, segmentsExperienceKey);
+
+		_validatePriority(groupId, plid, priority);
 
 		long segmentsExperienceId = counterLocalService.increment();
 
@@ -131,6 +161,7 @@ public class SegmentsExperienceLocalServiceImpl
 			segmentsExperiencePersistence.create(segmentsExperienceId);
 
 		segmentsExperience.setUuid(serviceContext.getUuid());
+		segmentsExperience.setExternalReferenceCode(externalReferenceCode);
 		segmentsExperience.setGroupId(groupId);
 		segmentsExperience.setCompanyId(user.getCompanyId());
 		segmentsExperience.setUserId(user.getUserId());
@@ -139,62 +170,83 @@ public class SegmentsExperienceLocalServiceImpl
 			serviceContext.getCreateDate(new Date()));
 		segmentsExperience.setModifiedDate(
 			serviceContext.getModifiedDate(new Date()));
-		segmentsExperience.setSegmentsEntryId(segmentsEntryId);
+		segmentsExperience.setSegmentsEntryERC(segmentsEntryERC);
+		segmentsExperience.setSegmentsEntryScopeERC(segmentsEntryScopeERC);
 		segmentsExperience.setSegmentsExperienceKey(segmentsExperienceKey);
-		segmentsExperience.setPlid(publishedPlid);
+		segmentsExperience.setPlid(plid);
 		segmentsExperience.setNameMap(nameMap);
 		segmentsExperience.setPriority(priority);
-		segmentsExperience.setActive(active);
+		segmentsExperience.setActive(_isActive(active, segmentsExperience));
 		segmentsExperience.setTypeSettingsUnicodeProperties(
 			typeSettingsUnicodeProperties);
 
 		segmentsExperience = segmentsExperiencePersistence.update(
 			segmentsExperience);
 
-		// Resources
+		segmentsExperiencePersistence.flush();
 
 		_resourceLocalService.addModelResources(
 			segmentsExperience, serviceContext);
 
-		return segmentsExperience;
+		_compactSegmentsExperiencesPriorities(segmentsExperience);
+
+		return segmentsExperiencePersistence.findByPrimaryKey(
+			segmentsExperience.getSegmentsExperienceId());
 	}
 
 	@Override
 	public SegmentsExperience appendSegmentsExperience(
-			long userId, long groupId, long segmentsEntryId, long plid,
+			long userId, long groupId, String segmentsEntryERC,
+			String segmentsEntryScopeERC, long plid,
 			Map<Locale, String> nameMap, boolean active,
 			ServiceContext serviceContext)
 		throws PortalException {
 
 		return appendSegmentsExperience(
-			userId, groupId, segmentsEntryId, plid, nameMap, active,
-			new UnicodeProperties(true), serviceContext);
+			userId, groupId, segmentsEntryERC, segmentsEntryScopeERC, plid,
+			nameMap, active, new UnicodeProperties(true), serviceContext);
 	}
 
 	@Override
 	public SegmentsExperience appendSegmentsExperience(
-			long userId, long groupId, long segmentsEntryId, long plid,
+			long userId, long groupId, String segmentsEntryERC,
+			String segmentsEntryScopeERC, long plid,
 			Map<Locale, String> nameMap, boolean active,
 			UnicodeProperties typeSettingsUnicodeProperties,
 			ServiceContext serviceContext)
 		throws PortalException {
 
-		int highestPriority = _getHighestPriority(
-			groupId, _getPublishedLayoutPlid(plid));
+		int highestPriority = _getHighestPriority(groupId, plid);
 
 		return addSegmentsExperience(
-			userId, groupId, segmentsEntryId, plid, nameMap,
-			highestPriority + 1, active, typeSettingsUnicodeProperties,
-			serviceContext);
+			null, userId, groupId, segmentsEntryERC, segmentsEntryScopeERC,
+			plid, nameMap, highestPriority + 1, active,
+			typeSettingsUnicodeProperties, serviceContext);
 	}
 
 	@Override
-	public void deleteSegmentsEntrySegmentsExperiences(long segmentsEntryId)
+	public void deleteSegmentsEntrySegmentsExperiences(
+			long groupId, String segmentsEntryERC, String segmentsEntryScopeERC)
 		throws PortalException {
 
 		List<SegmentsExperience> segmentsExperiences =
-			segmentsExperiencePersistence.findBySegmentsEntryId(
-				segmentsEntryId);
+			segmentsExperiencePersistence.findByG_SEERC_SESERC(
+				groupId, segmentsEntryERC, segmentsEntryScopeERC);
+
+		for (SegmentsExperience segmentsExperience : segmentsExperiences) {
+			segmentsExperienceLocalService.deleteSegmentsExperience(
+				segmentsExperience);
+		}
+	}
+
+	@Override
+	public void deleteSegmentsEntrySegmentsExperiences(
+			String segmentsEntryERC, String segmentsEntryScopeERC)
+		throws PortalException {
+
+		List<SegmentsExperience> segmentsExperiences =
+			segmentsExperiencePersistence.findBySEERC_SESERC(
+				segmentsEntryERC, segmentsEntryScopeERC);
 
 		for (SegmentsExperience segmentsExperience : segmentsExperiences) {
 			segmentsExperienceLocalService.deleteSegmentsExperience(
@@ -211,9 +263,6 @@ public class SegmentsExperienceLocalServiceImpl
 			segmentsExperiencePersistence.findByPrimaryKey(
 				segmentsExperienceId);
 
-		_checkUnlockedLayout(
-			segmentsExperience.getPlid(), GuestOrUserUtil.getUserId());
-
 		return segmentsExperienceLocalService.deleteSegmentsExperience(
 			segmentsExperience);
 	}
@@ -227,6 +276,7 @@ public class SegmentsExperienceLocalServiceImpl
 		// Segments experience
 
 		if (!GroupThreadLocal.isDeleteInProcess() &&
+			!PortalInstances.isCurrentCompanyInDeletionProcess() &&
 			segmentsExperience.hasSegmentsExperiment()) {
 
 			throw new RequiredSegmentsExperienceException.
@@ -234,16 +284,29 @@ public class SegmentsExperienceLocalServiceImpl
 					segmentsExperience.getSegmentsExperienceId());
 		}
 
-		_checkUnlockedLayout(
-			segmentsExperience.getPlid(), GuestOrUserUtil.getUserId());
+		if (!GroupThreadLocal.isDeleteInProcess() &&
+			!PortalInstances.isCurrentCompanyInDeletionProcess()) {
+
+			_checkUnlockedLayout(
+				segmentsExperience.getPlid(), GuestOrUserUtil.getUserId());
+		}
 
 		segmentsExperiencePersistence.remove(segmentsExperience);
 
 		segmentsExperiencePersistence.flush();
 
+		// Segments experience audience entry rels
+
+		_segmentsExperienceAudienceEntryRelLocalService.
+			deleteSegmentsExperienceAudienceEntryRelsBySegmentsExperienceERC(
+				segmentsExperience.getGroupId(),
+				segmentsExperience.getExternalReferenceCode());
+
 		// Segments experiences priorities
 
-		if (!GroupThreadLocal.isDeleteInProcess()) {
+		if (!GroupThreadLocal.isDeleteInProcess() &&
+			!PortalInstances.isCurrentCompanyInDeletionProcess()) {
+
 			_compactSegmentsExperiencesPriorities(segmentsExperience);
 		}
 
@@ -252,7 +315,7 @@ public class SegmentsExperienceLocalServiceImpl
 		_deleteSegmentsExperiment(
 			segmentsExperience.getGroupId(),
 			segmentsExperience.getSegmentsExperienceId(),
-			_getPublishedLayoutPlid(segmentsExperience.getPlid()));
+			segmentsExperience.getPlid());
 
 		// Resources
 
@@ -260,6 +323,19 @@ public class SegmentsExperienceLocalServiceImpl
 			segmentsExperience, ResourceConstants.SCOPE_INDIVIDUAL);
 
 		return segmentsExperience;
+	}
+
+	@Override
+	public SegmentsExperience deleteSegmentsExperience(
+			String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		SegmentsExperience segmentsExperience =
+			segmentsExperiencePersistence.findByERC_G(
+				externalReferenceCode, groupId);
+
+		return segmentsExperienceLocalService.deleteSegmentsExperience(
+			segmentsExperience);
 	}
 
 	@Override
@@ -274,19 +350,30 @@ public class SegmentsExperienceLocalServiceImpl
 		if (defaultSegmentsExperience != null) {
 			_deleteSegmentsExperiment(
 				groupId, defaultSegmentsExperience.getSegmentsExperienceId(),
-				_getPublishedLayoutPlid(plid));
+				plid);
 		}
 
 		// Segments experiences
 
 		List<SegmentsExperience> segmentsExperiences =
-			segmentsExperiencePersistence.findByG_P(
-				groupId, _getPublishedLayoutPlid(plid));
+			segmentsExperiencePersistence.findByG_P(groupId, plid);
 
 		for (SegmentsExperience segmentsExperience : segmentsExperiences) {
 			segmentsExperienceLocalService.deleteSegmentsExperience(
 				segmentsExperience);
 		}
+	}
+
+	@Override
+	public SegmentsExperience fetchDefaultSegmentsExperience(long plid) {
+		Layout layout = _layoutLocalService.fetchLayout(plid);
+
+		if (layout == null) {
+			return null;
+		}
+
+		return fetchSegmentsExperience(
+			layout.getGroupId(), SegmentsExperienceConstants.KEY_DEFAULT, plid);
 	}
 
 	@Override
@@ -320,7 +407,7 @@ public class SegmentsExperienceLocalServiceImpl
 		long groupId, long plid, int priority) {
 
 		return segmentsExperiencePersistence.fetchByG_P_P(
-			groupId, _getPublishedLayoutPlid(plid), priority);
+			groupId, plid, priority);
 	}
 
 	@Override
@@ -328,7 +415,21 @@ public class SegmentsExperienceLocalServiceImpl
 		long groupId, String segmentsExperienceKey, long plid) {
 
 		return segmentsExperiencePersistence.fetchByG_SEK_P(
-			groupId, segmentsExperienceKey, _getPublishedLayoutPlid(plid));
+			groupId, segmentsExperienceKey, plid);
+	}
+
+	@Override
+	public int getLowestPriority(long groupId, long plid) {
+		SegmentsExperience segmentsExperience =
+			segmentsExperiencePersistence.fetchByG_P_First(
+				groupId, plid,
+				SegmentsExperiencePriorityComparator.getInstance(true));
+
+		if (segmentsExperience == null) {
+			return 0;
+		}
+
+		return segmentsExperience.getPriority();
 	}
 
 	@Override
@@ -345,15 +446,22 @@ public class SegmentsExperienceLocalServiceImpl
 		throws PortalException {
 
 		return segmentsExperiencePersistence.findByG_SEK_P(
-			groupId, segmentsExperienceKey, _getPublishedLayoutPlid(plid));
+			groupId, segmentsExperienceKey, plid);
+	}
+
+	@Override
+	public List<SegmentsExperience> getSegmentsExperiences(
+			long groupId, boolean active)
+		throws PortalException {
+
+		return segmentsExperiencePersistence.findByG_A(groupId, active);
 	}
 
 	@Override
 	public List<SegmentsExperience> getSegmentsExperiences(
 		long groupId, long plid) {
 
-		return segmentsExperiencePersistence.findByG_P(
-			groupId, _getPublishedLayoutPlid(plid));
+		return segmentsExperiencePersistence.findByG_P(groupId, plid);
 	}
 
 	@Override
@@ -361,8 +469,7 @@ public class SegmentsExperienceLocalServiceImpl
 			long groupId, long plid, boolean active)
 		throws PortalException {
 
-		return segmentsExperiencePersistence.findByG_P_A(
-			groupId, _getPublishedLayoutPlid(plid), active);
+		return segmentsExperiencePersistence.findByG_P_A(groupId, plid, active);
 	}
 
 	@Override
@@ -371,33 +478,39 @@ public class SegmentsExperienceLocalServiceImpl
 		OrderByComparator<SegmentsExperience> orderByComparator) {
 
 		return segmentsExperiencePersistence.findByG_P_A(
-			groupId, _getPublishedLayoutPlid(plid), active, start, end,
-			orderByComparator);
+			groupId, plid, active, start, end, orderByComparator);
 	}
 
 	@Override
 	public List<SegmentsExperience> getSegmentsExperiences(
-		long groupId, long[] segmentsEntryIds, long plid, boolean active) {
+		long groupId, String[] segmentsEntryERCs, String segmentsEntryScopeERC,
+		long plid, boolean active) {
 
-		return segmentsExperiencePersistence.findByG_S_P_A(
-			groupId, segmentsEntryIds, _getPublishedLayoutPlid(plid), active);
+		return segmentsExperiencePersistence.findByG_SEERC_SESERC_P_A(
+			groupId, segmentsEntryERCs, segmentsEntryScopeERC, plid, active);
 	}
 
 	@Override
 	public List<SegmentsExperience> getSegmentsExperiences(
-		long groupId, long[] segmentsEntryIds, long plid, boolean active,
-		int start, int end,
+		long groupId, String[] segmentsEntryERCs, String segmentsEntryScopeERC,
+		long plid, boolean active, int start, int end,
 		OrderByComparator<SegmentsExperience> orderByComparator) {
 
-		return segmentsExperiencePersistence.findByG_S_P_A(
-			groupId, segmentsEntryIds, _getPublishedLayoutPlid(plid), active,
+		return segmentsExperiencePersistence.findByG_SEERC_SESERC_P_A(
+			groupId, segmentsEntryERCs, segmentsEntryScopeERC, plid, active,
 			start, end, orderByComparator);
 	}
 
 	@Override
+	public List<SegmentsExperience> getSegmentsExperiences(
+		long[] groupIds, boolean active) {
+
+		return segmentsExperiencePersistence.findByG_A(groupIds, active);
+	}
+
+	@Override
 	public int getSegmentsExperiencesCount(long groupId, long plid) {
-		return segmentsExperiencePersistence.countByG_P(
-			groupId, _getPublishedLayoutPlid(plid));
+		return segmentsExperiencePersistence.countByG_P(groupId, plid);
 	}
 
 	@Override
@@ -405,13 +518,14 @@ public class SegmentsExperienceLocalServiceImpl
 		long groupId, long plid, boolean active) {
 
 		return segmentsExperiencePersistence.countByG_P_A(
-			groupId, _getPublishedLayoutPlid(plid), active);
+			groupId, plid, active);
 	}
 
 	@Override
 	public SegmentsExperience updateSegmentsExperience(
-			long segmentsExperienceId, long segmentsEntryId,
-			Map<Locale, String> nameMap, boolean active)
+			long userId, long segmentsExperienceId, String segmentsEntryERC,
+			String segmentsEntryScopeERC, Map<Locale, String> nameMap,
+			boolean active)
 		throws PortalException {
 
 		SegmentsExperience segmentsExperience =
@@ -419,15 +533,16 @@ public class SegmentsExperienceLocalServiceImpl
 				segmentsExperienceId);
 
 		return updateSegmentsExperience(
-			segmentsExperienceId, segmentsEntryId, nameMap, active,
+			userId, segmentsExperienceId, segmentsEntryERC,
+			segmentsEntryScopeERC, nameMap, active,
 			segmentsExperience.getTypeSettingsUnicodeProperties());
 	}
 
 	@Override
 	public SegmentsExperience updateSegmentsExperience(
-			long segmentsExperienceId, long segmentsEntryId,
-			Map<Locale, String> nameMap, boolean active,
-			UnicodeProperties typeSettingsUnicodeProperties)
+			long userId, long segmentsExperienceId, String segmentsEntryERC,
+			String segmentsEntryScopeERC, Map<Locale, String> nameMap,
+			boolean active, UnicodeProperties typeSettingsUnicodeProperties)
 		throws PortalException {
 
 		_validateName(nameMap);
@@ -436,18 +551,21 @@ public class SegmentsExperienceLocalServiceImpl
 			segmentsExperiencePersistence.findByPrimaryKey(
 				segmentsExperienceId);
 
+		_validateDefaultSegmentsExperience(
+			segmentsEntryERC, segmentsExperience.getSegmentsExperienceKey());
+
 		if (segmentsExperience.hasSegmentsExperiment()) {
 			throw new LockedSegmentsExperimentException(
 				"Segments experience " + segmentsExperienceId +
 					" has a locked segments experiment");
 		}
 
-		_checkUnlockedLayout(
-			segmentsExperience.getPlid(), GuestOrUserUtil.getUserId());
+		_checkUnlockedLayout(segmentsExperience.getPlid(), userId);
 
-		segmentsExperience.setSegmentsEntryId(segmentsEntryId);
+		segmentsExperience.setSegmentsEntryERC(segmentsEntryERC);
+		segmentsExperience.setSegmentsEntryScopeERC(segmentsEntryScopeERC);
 		segmentsExperience.setNameMap(nameMap);
-		segmentsExperience.setActive(active);
+		segmentsExperience.setActive(_isActive(active, segmentsExperience));
 		segmentsExperience.setTypeSettingsUnicodeProperties(
 			typeSettingsUnicodeProperties);
 
@@ -456,24 +574,23 @@ public class SegmentsExperienceLocalServiceImpl
 
 	@Override
 	public SegmentsExperience updateSegmentsExperienceActive(
-			long segmentsExperienceId, boolean active)
+			long userId, long segmentsExperienceId, boolean active)
 		throws PortalException {
 
 		SegmentsExperience segmentsExperience =
 			segmentsExperiencePersistence.findByPrimaryKey(
 				segmentsExperienceId);
 
-		_checkUnlockedLayout(
-			segmentsExperience.getPlid(), GuestOrUserUtil.getUserId());
+		_checkUnlockedLayout(segmentsExperience.getPlid(), userId);
 
-		segmentsExperience.setActive(active);
+		segmentsExperience.setActive(_isActive(active, segmentsExperience));
 
 		return segmentsExperiencePersistence.update(segmentsExperience);
 	}
 
 	@Override
 	public SegmentsExperience updateSegmentsExperiencePriority(
-			long segmentsExperienceId, int newPriority)
+			long userId, long segmentsExperienceId, int newPriority)
 		throws PortalException {
 
 		SegmentsExperience segmentsExperience =
@@ -486,8 +603,7 @@ public class SegmentsExperienceLocalServiceImpl
 					" has a locked segments experiment");
 		}
 
-		_checkUnlockedLayout(
-			segmentsExperience.getPlid(), GuestOrUserUtil.getUserId());
+		_checkUnlockedLayout(segmentsExperience.getPlid(), userId);
 
 		boolean swap = true;
 
@@ -541,6 +657,10 @@ public class SegmentsExperienceLocalServiceImpl
 	private void _checkUnlockedLayout(long plid, long userId)
 		throws PortalException {
 
+		if (StartupHelperUtil.isUpgrading()) {
+			return;
+		}
+
 		Layout layout = _layoutLocalService.fetchLayout(plid);
 
 		if ((layout != null) && !layout.isUnlocked(Constants.EDIT, userId)) {
@@ -564,10 +684,12 @@ public class SegmentsExperienceLocalServiceImpl
 			SegmentsExperience curSegmentsExperience = segmentsExperiences.get(
 				i - 1);
 
-			if (curSegmentsExperience.getPriority() != updatedPriority) {
-				_updateSegmentsExperiencePriorityAndFlush(
-					updatedPriority, curSegmentsExperience);
+			if (curSegmentsExperience.getPriority() == updatedPriority) {
+				continue;
 			}
+
+			_updateSegmentsExperiencePriorityAndFlush(
+				updatedPriority, curSegmentsExperience);
 		}
 
 		segmentsExperiences = new ArrayList<>(
@@ -583,10 +705,12 @@ public class SegmentsExperienceLocalServiceImpl
 			SegmentsExperience curSegmentsExperience = segmentsExperiences.get(
 				i);
 
-			if (curSegmentsExperience.getPriority() != updatedPriority) {
-				_updateSegmentsExperiencePriorityAndFlush(
-					updatedPriority, curSegmentsExperience);
+			if (curSegmentsExperience.getPriority() == updatedPriority) {
+				continue;
 			}
+
+			_updateSegmentsExperiencePriorityAndFlush(
+				updatedPriority, curSegmentsExperience);
 		}
 	}
 
@@ -596,7 +720,7 @@ public class SegmentsExperienceLocalServiceImpl
 
 		SegmentsExperiment segmentsExperiment =
 			_segmentsExperimentPersistence.fetchByG_S_P(
-				groupId, segmentsExperienceId, _getPublishedLayoutPlid(plid));
+				groupId, segmentsExperienceId, plid);
 
 		if (segmentsExperiment == null) {
 			return;
@@ -622,25 +746,28 @@ public class SegmentsExperienceLocalServiceImpl
 		return segmentsExperience.getPriority();
 	}
 
-	private int _getLowestPriority(long groupId, long plid) {
-		SegmentsExperience segmentsExperience =
-			segmentsExperiencePersistence.fetchByG_P_Last(groupId, plid, null);
+	private boolean _isActive(
+		boolean active, SegmentsExperience segmentsExperience) {
 
-		if (segmentsExperience == null) {
-			return 0;
+		if (!active || ExportImportThreadLocal.isImportInProcess() ||
+			FeatureFlagManagerUtil.isEnabled(
+				CompanyConstants.SYSTEM, "LPD-78863")) {
+
+			return active;
 		}
 
-		return segmentsExperience.getPriority();
-	}
+		SegmentsEntry segmentsEntry =
+			_segmentsEntryPersistence.fetchByPrimaryKey(
+				segmentsExperience.getSegmentsEntryId());
 
-	private long _getPublishedLayoutPlid(long plid) {
-		Layout layout = _layoutLocalService.fetchLayout(plid);
+		if ((segmentsEntry == null) ||
+			SegmentsEntryConstants.SOURCE_ASAH_FARO_BACKEND.equals(
+				segmentsEntry.getSource())) {
 
-		if ((layout != null) && layout.isDraftLayout()) {
-			return layout.getClassPK();
+			return active;
 		}
 
-		return plid;
+		return false;
 	}
 
 	private void _releaseSegmentExperiencesPriority(
@@ -693,13 +820,70 @@ public class SegmentsExperienceLocalServiceImpl
 		segmentsExperiencePersistence.flush();
 	}
 
+	private void _validateDefaultSegmentsExperience(
+			String segmentsEntryERC, String segmentsExperienceKey)
+		throws PortalException {
+
+		if (SegmentsExperienceConstants.KEY_DEFAULT.equals(
+				segmentsExperienceKey) &&
+			Validator.isNotNull(segmentsEntryERC)) {
+
+			throw new DefaultSegmentsExperienceException();
+		}
+	}
+
+	private void _validateLayout(long plid, String segmentsExperienceKey) {
+		if (SegmentsExperienceConstants.KEY_DEFAULT.equals(
+				segmentsExperienceKey)) {
+
+			return;
+		}
+
+		Layout layout = _layoutLocalService.fetchLayout(plid);
+
+		if (layout == null) {
+			return;
+		}
+
+		if (!LayoutConstants.TYPE_CONTENT.equals(layout.getType())) {
+			throw new IllegalArgumentException(
+				"Segments experiences cannot be added to layout " + plid +
+					" because it is not a content page");
+		}
+
+		long layoutPageTemplateEntryPlid = layout.getPlid();
+
+		if (layout.getClassPK() > 0) {
+			layoutPageTemplateEntryPlid = layout.getClassPK();
+		}
+
+		LayoutPageTemplateEntryLocalService
+			layoutPageTemplateEntryLocalService =
+				_layoutPageTemplateEntryLocalServiceSnapshot.get();
+
+		if (layoutPageTemplateEntryLocalService == null) {
+			return;
+		}
+
+		LayoutPageTemplateEntry layoutPageTemplateEntry =
+			layoutPageTemplateEntryLocalService.
+				fetchLayoutPageTemplateEntryByPlid(layoutPageTemplateEntryPlid);
+
+		if (layoutPageTemplateEntry != null) {
+			throw new IllegalArgumentException(
+				"Segments experiences cannot be added to layout " + plid +
+					" because it belongs to a page template");
+		}
+	}
+
 	private void _validateName(Map<Locale, String> nameMap)
 		throws PortalException {
 
 		Locale locale = LocaleUtil.getSiteDefault();
 
 		if (nameMap.isEmpty() || Validator.isNull(nameMap.get(locale))) {
-			throw new SegmentsExperienceNameException();
+			throw new SegmentsExperienceNameException(
+				"A name in the site's default language is required");
 		}
 	}
 
@@ -709,12 +893,38 @@ public class SegmentsExperienceLocalServiceImpl
 		SegmentsExperience segmentsExperience =
 			segmentsExperiencePersistence.fetchByG_P_P(groupId, plid, priority);
 
-		if (segmentsExperience != null) {
+		if (segmentsExperience == null) {
+			return;
+		}
+
+		if (priority == 0) {
 			throw new SegmentsExperiencePriorityException(
-				"A segments experience with the priority " + priority +
-					" already exists");
+				"Only the default segments experience can have priority 0");
+		}
+
+		throw new SegmentsExperiencePriorityException(
+			"A segments experience with the priority " + priority +
+				" already exists");
+	}
+
+	private void _validateSegmentsExperienceKey(
+			long groupId, long plid, String segmentsExperienceKey)
+		throws PortalException {
+
+		SegmentsExperience segmentsExperience =
+			segmentsExperiencePersistence.fetchByG_SEK_P(
+				groupId, segmentsExperienceKey, plid);
+
+		if (segmentsExperience != null) {
+			throw new DuplicateSegmentsExperienceKeyException(
+				segmentsExperienceKey);
 		}
 	}
+
+	private static final Snapshot<LayoutPageTemplateEntryLocalService>
+		_layoutPageTemplateEntryLocalServiceSnapshot = new Snapshot<>(
+			SegmentsExperienceLocalServiceImpl.class,
+			LayoutPageTemplateEntryLocalService.class);
 
 	@Reference
 	private Language _language;
@@ -724,6 +934,13 @@ public class SegmentsExperienceLocalServiceImpl
 
 	@Reference
 	private ResourceLocalService _resourceLocalService;
+
+	@Reference
+	private SegmentsEntryPersistence _segmentsEntryPersistence;
+
+	@Reference
+	private SegmentsExperienceAudienceEntryRelLocalService
+		_segmentsExperienceAudienceEntryRelLocalService;
 
 	@Reference
 	private SegmentsExperimentPersistence _segmentsExperimentPersistence;

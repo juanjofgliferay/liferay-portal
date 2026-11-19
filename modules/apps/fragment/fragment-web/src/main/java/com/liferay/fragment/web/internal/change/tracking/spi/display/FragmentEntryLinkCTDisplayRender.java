@@ -12,15 +12,17 @@ import com.liferay.fragment.helper.FragmentEntryLinkHelper;
 import com.liferay.fragment.model.FragmentEntryLink;
 import com.liferay.fragment.renderer.DefaultFragmentRendererContext;
 import com.liferay.fragment.renderer.FragmentRendererController;
+import com.liferay.layout.util.LayoutServiceContextHelper;
 import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.change.tracking.CTCollectionThreadLocal;
-import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.service.LayoutLocalService;
+import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
+import com.liferay.portal.kernel.util.Validator;
 
 import java.util.Locale;
 
@@ -40,20 +42,23 @@ public class FragmentEntryLinkCTDisplayRender
 	}
 
 	@Override
-	public String getTitle(Locale locale, FragmentEntryLink fragmentEntryLink)
-		throws PortalException {
-
+	public String getTitle(Locale locale, FragmentEntryLink fragmentEntryLink) {
 		Layout layout = _layoutLocalService.fetchLayout(
 			fragmentEntryLink.getPlid());
+
+		if ((layout == null) || _layoutCTDisplayRenderer.isHideable(layout)) {
+			return null;
+		}
+
 		String name = _fragmentEntryLinkHelper.getFragmentEntryName(
 			fragmentEntryLink, locale);
 
-		if ((layout != null) && !name.equals(StringPool.BLANK)) {
-			return _language.format(
-				locale, "x-for-x", new String[] {name, layout.getName(locale)});
+		if (name.equals(StringPool.BLANK)) {
+			return null;
 		}
 
-		return null;
+		return _language.format(
+			locale, "x-for-x", new String[] {name, layout.getName(locale)});
 	}
 
 	@Override
@@ -72,16 +77,13 @@ public class FragmentEntryLinkCTDisplayRender
 			}
 		}
 
-		if (fragmentEntryLink.getOriginalFragmentEntryLinkId() == 0) {
-			return false;
-		}
-
-		return true;
+		return Validator.isNull(
+			fragmentEntryLink.getOriginalFragmentEntryLinkERC());
 	}
 
 	@Override
-	public boolean isMovable(FragmentEntryLink fragmentEntryLink) {
-		return false;
+	public boolean isShowPreviewDiff() {
+		return true;
 	}
 
 	@Override
@@ -91,15 +93,29 @@ public class FragmentEntryLinkCTDisplayRender
 
 		FragmentEntryLink fragmentEntryLink = displayContext.getModel();
 
+		Layout layout = _layoutLocalService.fetchLayout(
+			fragmentEntryLink.getPlid());
+
+		if (layout == null) {
+			return StringPool.BLANK;
+		}
+
 		DefaultFragmentRendererContext defaultFragmentRendererContext =
 			new DefaultFragmentRendererContext(fragmentEntryLink);
 
 		defaultFragmentRendererContext.setLocale(displayContext.getLocale());
 
-		return _fragmentRendererController.render(
-			defaultFragmentRendererContext,
-			displayContext.getHttpServletRequest(),
-			displayContext.getHttpServletResponse());
+		try (AutoCloseable autoCloseable =
+				_layoutServiceContextHelper.getServiceContextAutoCloseable(
+					layout)) {
+
+			ServiceContext serviceContext =
+				ServiceContextThreadLocal.getServiceContext();
+
+			return _fragmentRendererController.render(
+				defaultFragmentRendererContext, serviceContext.getRequest(),
+				displayContext.getHttpServletResponse());
+		}
 	}
 
 	@Override
@@ -110,8 +126,7 @@ public class FragmentEntryLinkCTDisplayRender
 
 		displayBuilder.display(
 			"name",
-			_fragmentEntryLinkHelper.getFragmentEntryName(
-				fragmentEntryLink, displayBuilder.getLocale())
+			() -> getTitle(displayBuilder.getLocale(), fragmentEntryLink)
 		).display(
 			"create-date", fragmentEntryLink.getCreateDate()
 		).display(
@@ -121,8 +136,8 @@ public class FragmentEntryLinkCTDisplayRender
 		).display(
 			"editable-values",
 			() -> {
-				JSONObject jsonObject = _jsonFactory.createJSONObject(
-					fragmentEntryLink.getEditableValues());
+				JSONObject jsonObject =
+					fragmentEntryLink.getEditableValuesJSONObject();
 
 				return jsonObject.toString(4);
 			},
@@ -137,9 +152,6 @@ public class FragmentEntryLinkCTDisplayRender
 	private FragmentRendererController _fragmentRendererController;
 
 	@Reference
-	private JSONFactory _jsonFactory;
-
-	@Reference
 	private Language _language;
 
 	@Reference(
@@ -149,5 +161,8 @@ public class FragmentEntryLinkCTDisplayRender
 
 	@Reference
 	private LayoutLocalService _layoutLocalService;
+
+	@Reference
+	private LayoutServiceContextHelper _layoutServiceContextHelper;
 
 }

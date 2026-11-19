@@ -1,0 +1,45 @@
+@import '_atlas-custom-properties-variables';
+@import 'cadmin-variables';
+
+html#{$cadmin-selector} {
+	.dsm-actions-icon-selection-modal ul li {
+		color: $gray-600;
+		cursor: pointer;
+		padding-bottom: 8px;
+		padding-top: 8px;
+
+		&:hover {
+			background-color: $primary-l3;
+			color: $gray-900;
+		}
+	}
+}
+
+html#{$cadmin-selector} .cadmin.fds-admin .fds-admin-actions .panel-unstyled {
+	margin-bottom: 0;
+	padding: 1rem 1.5rem;
+
+	.panel-header {
+		&,
+		&.collapsed {
+			border-color: $gray-400;
+		}
+
+		&.panel-header-link {
+			border-radius: 0;
+		}
+	}
+
+	.tab-content.status-messages-content .tab-pane {
+		padding: 2rem 0;
+	}
+
+	.field-feedback {
+		font-size: 14px;
+
+		&:last-child {
+			color: $gray-600;
+			font-weight: 600;
+		}
+	}
+}

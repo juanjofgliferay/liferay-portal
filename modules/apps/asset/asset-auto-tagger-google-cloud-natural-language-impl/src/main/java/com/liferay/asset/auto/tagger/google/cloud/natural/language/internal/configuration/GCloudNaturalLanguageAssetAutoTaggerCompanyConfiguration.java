@@ -39,7 +39,7 @@ public interface GCloudNaturalLanguageAssetAutoTaggerCompanyConfiguration {
 	)
 	@Meta.AD(
 		description = "set-the-api-key-for-the-google-cloud-natural-language-api",
-		name = "api-key", required = false
+		name = "api-key", required = false, type = Meta.Type.Password
 	)
 	public String apiKey();
 
@@ -65,6 +65,18 @@ public interface GCloudNaturalLanguageAssetAutoTaggerCompanyConfiguration {
 	public float confidence();
 
 	/**
+	 * Sets the class names to enable auto tagging of documents using the Google
+	 * Cloud Natural Language API.
+	 *
+	 * @review
+	 */
+	@Meta.AD(
+		deflt = "", name = "enabled-class-names[google-cloud-natural-language]",
+		required = false
+	)
+	public String[] enabledClassNames();
+
+	/**
 	 * Enables auto tagging of documents using the Google Cloud Natural Language
 	 * API.
 	 */
@@ -85,17 +97,5 @@ public interface GCloudNaturalLanguageAssetAutoTaggerCompanyConfiguration {
 		required = false
 	)
 	public float salience();
-
-	/**
-	 * Sets the class names to enable auto tagging of documents using the Google
-	 * Cloud Natural Language API.
-	 *
-	 * @review
-	 */
-	@Meta.AD(
-		deflt = "", name = "enabled-class-names[google-cloud-natural-language]",
-		required = false
-	)
-	public String[] enabledClassNames();
 
 }

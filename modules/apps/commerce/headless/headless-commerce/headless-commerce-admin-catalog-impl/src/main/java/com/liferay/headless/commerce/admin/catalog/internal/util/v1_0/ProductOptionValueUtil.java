@@ -8,6 +8,7 @@ package com.liferay.headless.commerce.admin.catalog.internal.util.v1_0;
 import com.liferay.commerce.product.model.CPDefinitionOptionValueRel;
 import com.liferay.commerce.product.model.CPInstance;
 import com.liferay.commerce.product.service.CPDefinitionOptionValueRelService;
+import com.liferay.commerce.product.service.CPInstanceService;
 import com.liferay.headless.commerce.admin.catalog.dto.v1_0.ProductOptionValue;
 import com.liferay.headless.commerce.core.util.LanguageUtils;
 import com.liferay.petra.string.StringPool;
@@ -15,6 +16,7 @@ import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.util.BigDecimalUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.Validator;
 
 import java.math.BigDecimal;
 
@@ -29,21 +31,45 @@ public class ProductOptionValueUtil {
 			addOrUpdateCPDefinitionOptionValueRel(
 				CPDefinitionOptionValueRelService
 					cpDefinitionOptionValueRelService,
+				CPInstanceService cpInstanceService,
 				ProductOptionValue productOptionValue,
 				long cpDefinitionOptionRelId, ServiceContext serviceContext)
 		throws PortalException {
 
-		CPDefinitionOptionValueRel cpDefinitionOptionValueRel =
-			cpDefinitionOptionValueRelService.fetchCPDefinitionOptionValueRel(
-				cpDefinitionOptionRelId, productOptionValue.getKey());
+		CPDefinitionOptionValueRel cpDefinitionOptionValueRel = null;
 
-		CPInstance cpInstance = null;
+		String externalReferenceCode =
+			productOptionValue.getExternalReferenceCode();
 
-		if (cpDefinitionOptionValueRel != null) {
-			cpInstance = cpDefinitionOptionValueRel.fetchCPInstance();
+		if (Validator.isNotNull(externalReferenceCode)) {
+			cpDefinitionOptionValueRel =
+				cpDefinitionOptionValueRelService.
+					fetchCPDefinitionOptionValueRelByExternalReferenceCode(
+						externalReferenceCode, serviceContext.getCompanyId());
+		}
+
+		if (cpDefinitionOptionValueRel == null) {
+			cpDefinitionOptionValueRel =
+				cpDefinitionOptionValueRelService.
+					fetchCPDefinitionOptionValueRel(
+						cpDefinitionOptionRelId, productOptionValue.getKey());
 		}
 
 		long cpInstanceId = 0;
+
+		CPInstance cpInstance =
+			cpInstanceService.fetchCPInstanceByExternalReferenceCode(
+				productOptionValue.getSkuExternalReferenceCode(),
+				serviceContext.getCompanyId());
+
+		if (cpInstance == null) {
+			cpInstance = cpInstanceService.fetchCPInstance(
+				GetterUtil.getLong(productOptionValue.getSkuId()));
+		}
+
+		if ((cpInstance == null) && (cpDefinitionOptionValueRel != null)) {
+			cpInstance = cpDefinitionOptionValueRel.fetchCPInstance();
+		}
 
 		if (cpInstance != null) {
 			cpInstanceId = cpInstance.getCPInstanceId();
@@ -59,8 +85,7 @@ public class ProductOptionValueUtil {
 		if (cpDefinitionOptionValueRel == null) {
 			cpDefinitionOptionValueRel =
 				cpDefinitionOptionValueRelService.addCPDefinitionOptionValueRel(
-					cpDefinitionOptionRelId,
-					GetterUtil.get(productOptionValue.getSkuId(), 0),
+					null, cpDefinitionOptionRelId, cpInstanceId,
 					productOptionValue.getKey(),
 					LanguageUtils.getLocalizedMap(nameMap),
 					GetterUtil.get(productOptionValue.getPreselected(), false),
@@ -80,8 +105,7 @@ public class ProductOptionValueUtil {
 					updateCPDefinitionOptionValueRel(
 						cpDefinitionOptionValueRel.
 							getCPDefinitionOptionValueRelId(),
-						GetterUtil.get(
-							productOptionValue.getSkuId(), cpInstanceId),
+						cpInstanceId,
 						GetterUtil.get(
 							productOptionValue.getKey(),
 							cpDefinitionOptionValueRel.getKey()),
@@ -102,6 +126,14 @@ public class ProductOptionValueUtil {
 							productOptionValue.getUnitOfMeasureKey(),
 							cpDefinitionOptionValueRel.getUnitOfMeasureKey()),
 						serviceContext);
+		}
+
+		if (Validator.isNotNull(externalReferenceCode)) {
+			cpDefinitionOptionValueRel =
+				cpDefinitionOptionValueRelService.updateExternalReferenceCode(
+					cpDefinitionOptionValueRel.
+						getCPDefinitionOptionValueRelId(),
+					externalReferenceCode);
 		}
 
 		return cpDefinitionOptionValueRel;

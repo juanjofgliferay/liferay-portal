@@ -50,7 +50,7 @@ public class LayoutPageTemplateStructureRelUpgradeProcess
 		return JSONFactoryUtil.createJSONObject();
 	}
 
-	private String _getPaginatiopnType(
+	private String _getPaginationType(
 		CollectionStyledLayoutStructureItem collectionStyledLayoutStructureItem,
 		JSONObject itemsJSONObject) {
 
@@ -71,47 +71,44 @@ public class LayoutPageTemplateStructureRelUpgradeProcess
 			layoutStructure.getLayoutStructureItems();
 
 		for (LayoutStructureItem layoutStructureItem : layoutStructureItems) {
-			if (layoutStructureItem instanceof
-					CollectionStyledLayoutStructureItem) {
+			if (!(layoutStructureItem instanceof
+					CollectionStyledLayoutStructureItem)) {
 
-				CollectionStyledLayoutStructureItem
-					collectionStyledLayoutStructureItem =
-						(CollectionStyledLayoutStructureItem)
-							layoutStructureItem;
-
-				collectionStyledLayoutStructureItem.setDisplayAllItems(false);
-
-				String paginationType = _getPaginatiopnType(
-					collectionStyledLayoutStructureItem, itemsJSONObject);
-
-				if (CollectionPaginationUtil.isPaginationEnabled(
-						paginationType)) {
-
-					collectionStyledLayoutStructureItem.setDisplayAllPages(
-						collectionStyledLayoutStructureItem.isShowAllItems());
-
-					int numberOfItemsPerPage =
-						collectionStyledLayoutStructureItem.
-							getNumberOfItemsPerPage();
-
-					if (numberOfItemsPerPage > 0) {
-						int numberOfItems =
-							collectionStyledLayoutStructureItem.
-								getNumberOfItems();
-
-						collectionStyledLayoutStructureItem.setNumberOfPages(
-							(int)Math.ceil(
-								numberOfItems / (double)numberOfItemsPerPage));
-					}
-				}
-				else {
-					paginationType =
-						CollectionPaginationUtil.PAGINATION_TYPE_NONE;
-				}
-
-				collectionStyledLayoutStructureItem.setPaginationType(
-					paginationType);
+				continue;
 			}
+
+			CollectionStyledLayoutStructureItem
+				collectionStyledLayoutStructureItem =
+					(CollectionStyledLayoutStructureItem)layoutStructureItem;
+
+			collectionStyledLayoutStructureItem.setDisplayAllItems(false);
+
+			String paginationType = _getPaginationType(
+				collectionStyledLayoutStructureItem, itemsJSONObject);
+
+			if (CollectionPaginationUtil.isPaginationEnabled(paginationType)) {
+				collectionStyledLayoutStructureItem.setDisplayAllPages(
+					collectionStyledLayoutStructureItem.isShowAllItems());
+
+				int numberOfItemsPerPage =
+					collectionStyledLayoutStructureItem.
+						getNumberOfItemsPerPage();
+
+				if (numberOfItemsPerPage > 0) {
+					int numberOfItems =
+						collectionStyledLayoutStructureItem.getNumberOfItems();
+
+					collectionStyledLayoutStructureItem.setNumberOfPages(
+						(int)Math.ceil(
+							numberOfItems / (double)numberOfItemsPerPage));
+				}
+			}
+			else {
+				paginationType = CollectionPaginationUtil.PAGINATION_TYPE_NONE;
+			}
+
+			collectionStyledLayoutStructureItem.setPaginationType(
+				paginationType);
 		}
 
 		JSONObject jsonObject = layoutStructure.toJSONObject();
@@ -121,24 +118,30 @@ public class LayoutPageTemplateStructureRelUpgradeProcess
 
 	private void _upgradeLayoutPageTemplateStructureRel() throws Exception {
 		try (Statement s = connection.createStatement();
+
 			ResultSet resultSet = s.executeQuery(
-				"select lPageTemplateStructureRelId, data_ from " +
-					"LayoutPageTemplateStructureRel");
+				"select ctCollectionId, lPageTemplateStructureRelId, data_ " +
+					"from LayoutPageTemplateStructureRel");
+
 			PreparedStatement preparedStatement =
 				AutoBatchPreparedStatementUtil.autoBatch(
 					connection,
 					"update LayoutPageTemplateStructureRel set data_ = ? " +
-						"where lPageTemplateStructureRelId = ?")) {
+						"where ctCollectionId = ? and " +
+							"lPageTemplateStructureRelId = ?")) {
 
 			while (resultSet.next()) {
 				long layoutPageTemplateStructureRelId = resultSet.getLong(
 					"lPageTemplateStructureRelId");
 
+				long ctCollectionId = resultSet.getLong("ctCollectionId");
+
 				String data = resultSet.getString("data_");
 
 				preparedStatement.setString(1, _upgradeLayoutData(data));
 
-				preparedStatement.setLong(2, layoutPageTemplateStructureRelId);
+				preparedStatement.setLong(2, ctCollectionId);
+				preparedStatement.setLong(3, layoutPageTemplateStructureRelId);
 
 				preparedStatement.addBatch();
 			}

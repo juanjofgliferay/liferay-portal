@@ -33,8 +33,10 @@ public abstract class ExtRepositoryObjectAdapter<T>
 			PermissionChecker permissionChecker, String actionId)
 		throws PortalException {
 
-		if (_unsupportedActionIds.containsKey(actionId)) {
-			return _unsupportedActionIds.get(actionId);
+		Boolean unsupportedActionIdValue = _unsupportedActionIds.get(actionId);
+
+		if (unsupportedActionIdValue != null) {
+			return unsupportedActionIdValue;
 		}
 
 		try {
@@ -87,13 +89,13 @@ public abstract class ExtRepositoryObjectAdapter<T>
 		return folders;
 	}
 
-	public String getExtension() {
-		return _extRepositoryObject.getExtension();
-	}
-
 	@Override
 	public ExtRepositoryObject getExtRepositoryModel() {
 		return _extRepositoryObject;
+	}
+
+	public String getExtension() {
+		return _extRepositoryObject.getExtension();
 	}
 
 	@Override

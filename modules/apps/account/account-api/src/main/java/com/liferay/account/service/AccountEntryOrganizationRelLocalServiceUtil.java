@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -282,14 +283,6 @@ public class AccountEntryOrganizationRelLocalServiceUtil {
 			accountEntryOrganizationRelId);
 	}
 
-	public static AccountEntryOrganizationRel getAccountEntryOrganizationRel(
-			long accountEntryId, long organizationId)
-		throws PortalException {
-
-		return getService().getAccountEntryOrganizationRel(
-			accountEntryId, organizationId);
-	}
-
 	/**
 	 * Returns a range of all the account entry organization rels.
 	 *
@@ -311,14 +304,6 @@ public class AccountEntryOrganizationRelLocalServiceUtil {
 		getAccountEntryOrganizationRels(long accountEntryId) {
 
 		return getService().getAccountEntryOrganizationRels(accountEntryId);
-	}
-
-	public static List<AccountEntryOrganizationRel>
-		getAccountEntryOrganizationRels(
-			long accountEntryId, int start, int end) {
-
-		return getService().getAccountEntryOrganizationRels(
-			accountEntryId, start, end);
 	}
 
 	public static List<AccountEntryOrganizationRel>
@@ -435,15 +420,13 @@ public class AccountEntryOrganizationRelLocalServiceUtil {
 	}
 
 	public static AccountEntryOrganizationRelLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(
-		AccountEntryOrganizationRelLocalService service) {
-
-		_service = service;
-	}
-
-	private static volatile AccountEntryOrganizationRelLocalService _service;
+	private static final Snapshot<AccountEntryOrganizationRelLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			AccountEntryOrganizationRelLocalServiceUtil.class,
+			AccountEntryOrganizationRelLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:431109800

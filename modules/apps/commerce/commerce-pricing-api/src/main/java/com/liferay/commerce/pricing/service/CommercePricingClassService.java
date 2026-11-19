@@ -67,13 +67,14 @@ public interface CommercePricingClassService extends BaseService {
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public CommercePricingClass fetchByExternalReferenceCode(
-			String externalReferenceCode, long companyId)
+	public CommercePricingClass fetchCommercePricingClass(
+			long commercePricingClassId)
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public CommercePricingClass fetchCommercePricingClass(
-			long commercePricingClassId)
+	public CommercePricingClass
+			fetchCommercePricingClassByExternalReferenceCode(
+				String externalReferenceCode, long companyId)
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
@@ -99,6 +100,11 @@ public interface CommercePricingClassService extends BaseService {
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public int getCommercePricingClassesCount(long cpDefinitionId, String title)
 		throws PrincipalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public CommercePricingClass getOrAddEmptyCommercePricingClass(
+			String externalReferenceCode)
+		throws PortalException;
 
 	/**
 	 * Returns the OSGi service identifier.
@@ -128,3 +134,4 @@ public interface CommercePricingClassService extends BaseService {
 		throws PortalException;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:714831715

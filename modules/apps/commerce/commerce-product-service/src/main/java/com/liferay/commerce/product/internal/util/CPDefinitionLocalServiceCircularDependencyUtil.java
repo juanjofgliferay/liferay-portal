@@ -11,7 +11,7 @@ import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.service.ServiceContext;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * @author Lily Chi
@@ -25,6 +25,15 @@ public class CPDefinitionLocalServiceCircularDependencyUtil {
 			_cpDefinitionLocalServiceSnapshot.get();
 
 		return cpDefinitionLocalService.copyCPDefinition(cpDefinitionId);
+	}
+
+	public static CPDefinition getCPDefinition(long cpDefinitionId)
+		throws PortalException {
+
+		CPDefinitionLocalService cpDefinitionLocalService =
+			_cpDefinitionLocalServiceSnapshot.get();
+
+		return cpDefinitionLocalService.getCPDefinition(cpDefinitionId);
 	}
 
 	public static boolean isVersionable(long cpDefinitionId) {

@@ -14,9 +14,9 @@ DLEditDDMStructureDisplayContext dlEditDDMStructureDisplayContext = new DLEditDD
 
 com.liferay.dynamic.data.mapping.model.DDMStructure ddmStructure = dlEditDDMStructureDisplayContext.getDDMStructure();
 
-long ddmStructureId = BeanParamUtil.getLong(ddmStructure, request, "structureId");
+long ddmStructureId = BeanParamUtil.getLong(ddmStructure, request, "structureId", DDMStructure::getStructureId);
 
-long groupId = BeanParamUtil.getLong(ddmStructure, request, "groupId", scopeGroupId);
+long groupId = BeanParamUtil.getLong(ddmStructure, request, "groupId", DDMStructure::getGroupId, scopeGroupId);
 
 String title = LanguageUtil.format(request, "new-x", LanguageUtil.get(resourceBundle, "metadata-set"), false);
 
@@ -51,7 +51,9 @@ renderResponse.setTitle(title);
 		<aui:model-context bean="<%= ddmStructure %>" model="<%= com.liferay.dynamic.data.mapping.model.DDMStructure.class %>" />
 
 		<nav class="component-tbar subnav-tbar-light tbar tbar-metadata-type">
-			<clay:container-fluid>
+			<clay:container-fluid
+				size="xxxl"
+			>
 				<ul class="tbar-nav">
 					<li class="tbar-item tbar-item-expand">
 						<aui:input cssClass="form-control-inline" label='<%= LanguageUtil.get(request, "name") %>' labelCssClass="sr-only" name="name" placeholder='<%= LanguageUtil.format(request, "untitled", "metadata-set") %>' wrapperCssClass="mb-0" />
@@ -84,7 +86,7 @@ renderResponse.setTitle(title);
 				</c:if>
 
 				<liferay-data-engine:data-layout-builder
-					additionalPanels="<%= dlEditDDMStructureDisplayContext.getAdditionalPanels(npmResolvedPackageName) %>"
+					additionalPanels="<%= dlEditDDMStructureDisplayContext.getAdditionalPanels() %>"
 					componentId='<%= liferayPortletResponse.getNamespace() + "dataLayoutBuilder" %>'
 					contentType="document-library"
 					dataDefinitionId="<%= ddmStructureId %>"
@@ -103,7 +105,7 @@ renderResponse.setTitle(title);
 <liferay-frontend:component
 	componentId='<%= liferayPortletResponse.getNamespace() + "LocaleChangedHandlerComponent" %>'
 	context="<%= dlEditDDMStructureDisplayContext.getComponentContext() %>"
-	module="document_library/js/data-engine/DataEngineLayoutBuilderHandler.es"
+	module="{DataEngineLayoutBuilderHandler} from document-library-web"
 	servletContext="<%= application %>"
 />
 
@@ -114,6 +116,6 @@ renderResponse.setTitle(title);
 			"namespace", liferayPortletResponse.getNamespace()
 		).build()
 	%>'
-	module="document_library/js/saveDDMStructure.es"
+	module="{saveDDMStructure} from document-library-web"
 	servletContext="<%= application %>"
 />

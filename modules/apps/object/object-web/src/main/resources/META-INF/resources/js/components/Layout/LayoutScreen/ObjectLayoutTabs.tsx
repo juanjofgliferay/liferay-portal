@@ -11,7 +11,7 @@ import {
 	Panel,
 	PanelBody,
 	PanelHeader,
-	getLocalizableLabel,
+	stringUtils,
 } from '@liferay/object-js-components-web';
 import React, {useState} from 'react';
 
@@ -23,15 +23,29 @@ import {ObjectLayoutBox} from './ObjectLayoutBox';
 import {ObjectLayoutRelationship} from './ObjectLayoutRelationship';
 
 const ObjectLayoutTabs: React.FC<React.HTMLAttributes<HTMLElement>> = () => {
-	const [
-		{creationLanguageId, isViewOnly, objectLayout},
-		dispatch,
-	] = useLayoutContext();
+	const [{creationLanguageId, isViewOnly, objectLayout}, dispatch] =
+		useLayoutContext();
 	const [visibleModal, setVisibleModal] = useState(false);
 	const [selectedTabIndex, setSelectedTabIndex] = useState(0);
 	const {observer, onClose} = useModal({
 		onClose: () => setVisibleModal(false),
 	});
+
+	const handleAddLayoutBox = (
+		box: {name: string; type: 'categorization' | 'seo'},
+		tabIndex: number
+	) => {
+		dispatch({
+			payload: {
+				name: {
+					[defaultLanguageId]: box.name,
+				},
+				tabIndex,
+				type: box.type,
+			},
+			type: TYPES.ADD_OBJECT_LAYOUT_BOX,
+		});
+	};
 
 	return (
 		<>
@@ -54,7 +68,7 @@ const ObjectLayoutTabs: React.FC<React.HTMLAttributes<HTMLElement>> = () => {
 										{isRelationshipType
 											? Liferay.Language.get(
 													'relationships'
-											  )
+												)
 											: Liferay.Language.get('fields')}
 									</ClayLabel>
 								}
@@ -83,37 +97,43 @@ const ObjectLayoutTabs: React.FC<React.HTMLAttributes<HTMLElement>> = () => {
 										)}
 
 										<HeaderDropdown
-											addCategorization={() => {
-												dispatch({
-													payload: {
-														name: {
-															[defaultLanguageId]: Liferay.Language.get(
-																'categorization'
-															),
-														},
-														tabIndex,
+											addCategorization={() =>
+												handleAddLayoutBox(
+													{
+														name: Liferay.Language.get(
+															'categorization'
+														),
 														type: 'categorization',
 													},
-													type:
-														TYPES.ADD_OBJECT_LAYOUT_BOX,
-												});
-											}}
+													tabIndex
+												)
+											}
+											addSeo={() =>
+												handleAddLayoutBox(
+													{
+														name: Liferay.Language.get(
+															'seo'
+														),
+														type: 'seo',
+													},
+													tabIndex
+												)
+											}
 											deleteElement={() => {
 												dispatch({
 													payload: {
 														tabIndex,
 													},
-													type:
-														TYPES.DELETE_OBJECT_LAYOUT_TAB,
+													type: TYPES.DELETE_OBJECT_LAYOUT_TAB,
 												});
 											}}
 										/>
 									</>
 								}
-								title={getLocalizableLabel(
-									creationLanguageId,
-									name
-								)}
+								title={stringUtils.getLocalizableLabel({
+									fallbackLanguageId: creationLanguageId,
+									labels: name,
+								})}
 								type="regular"
 							/>
 
@@ -134,9 +154,12 @@ const ObjectLayoutTabs: React.FC<React.HTMLAttributes<HTMLElement>> = () => {
 													boxIndex={boxIndex}
 													collapsable={collapsable}
 													key={`box_${boxIndex}`}
-													label={getLocalizableLabel(
-														creationLanguageId,
-														name
+													label={stringUtils.getLocalizableLabel(
+														{
+															fallbackLanguageId:
+																creationLanguageId,
+															labels: name,
+														}
 													)}
 													objectLayoutRows={
 														objectLayoutRows

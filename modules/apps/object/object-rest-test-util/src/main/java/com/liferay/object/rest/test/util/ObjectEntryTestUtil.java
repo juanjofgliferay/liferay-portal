@@ -6,9 +6,11 @@
 package com.liferay.object.rest.test.util;
 
 import com.liferay.object.constants.ObjectDefinitionConstants;
+import com.liferay.object.constants.ObjectEntryFolderConstants;
 import com.liferay.object.model.ObjectDefinition;
 import com.liferay.object.model.ObjectEntry;
 import com.liferay.object.service.ObjectEntryLocalServiceUtil;
+import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
@@ -17,6 +19,7 @@ import com.liferay.portal.kernel.util.StringUtil;
 
 import java.io.Serializable;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -26,8 +29,9 @@ public class ObjectEntryTestUtil {
 
 	public static ObjectEntry addObjectEntry(
 			long groupId, ObjectDefinition objectDefinition,
-			Map<String, Serializable> values, String... keywords)
-		throws Exception {
+			long objectEntryFolderId, Map<String, Serializable> values,
+			String... keywords)
+		throws PortalException {
 
 		ServiceContext serviceContext =
 			ServiceContextTestUtil.getServiceContext();
@@ -36,9 +40,24 @@ public class ObjectEntryTestUtil {
 			serviceContext.setAssetTagNames(keywords);
 		}
 
+		serviceContext.setAttribute(
+			"friendlyUrlMap", new HashMap<String, String>());
+
 		return ObjectEntryLocalServiceUtil.addObjectEntry(
-			TestPropsValues.getUserId(), groupId,
-			objectDefinition.getObjectDefinitionId(), values, serviceContext);
+			groupId, TestPropsValues.getUserId(),
+			objectDefinition.getObjectDefinitionId(), objectEntryFolderId, null,
+			values, serviceContext);
+	}
+
+	public static ObjectEntry addObjectEntry(
+			long groupId, ObjectDefinition objectDefinition,
+			Map<String, Serializable> values, String... keywords)
+		throws Exception {
+
+		return addObjectEntry(
+			groupId, objectDefinition,
+			ObjectEntryFolderConstants.PARENT_OBJECT_ENTRY_FOLDER_ID_DEFAULT,
+			values, keywords);
 	}
 
 	public static ObjectEntry addObjectEntry(

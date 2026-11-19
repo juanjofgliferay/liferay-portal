@@ -6,6 +6,7 @@
 package com.liferay.portal.kernel.cache;
 
 import com.liferay.petra.lang.CentralizedThreadLocal;
+import com.liferay.petra.lang.SafeCloseable;
 
 /**
  * @author Tina Tian
@@ -13,16 +14,16 @@ import com.liferay.petra.lang.CentralizedThreadLocal;
 public class SkipReplicationThreadLocal {
 
 	public static boolean isEnabled() {
-		return _skipReplicationThreadLocal.get();
+		return _skipReplication.get();
 	}
 
-	public static void setEnabled(boolean enabled) {
-		_skipReplicationThreadLocal.set(enabled);
+	public static SafeCloseable setEnabledWithSafeCloseable(boolean enabled) {
+		return _skipReplication.setWithSafeCloseable(enabled);
 	}
 
-	private static final ThreadLocal<Boolean> _skipReplicationThreadLocal =
+	private static final CentralizedThreadLocal<Boolean> _skipReplication =
 		new CentralizedThreadLocal<>(
-			SkipReplicationThreadLocal.class + "._skipReplicationThreadLocal",
+			SkipReplicationThreadLocal.class + "._skipReplication",
 			() -> Boolean.FALSE, false);
 
 }

@@ -6,18 +6,21 @@
 package com.liferay.redirect.web.internal.portlet.action;
 
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.model.Portlet;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCActionCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
+import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.service.permission.PortletPermissionUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.redirect.model.RedirectNotFoundEntry;
 import com.liferay.redirect.service.RedirectNotFoundEntryLocalService;
 import com.liferay.redirect.web.internal.constants.RedirectPortletKeys;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -27,7 +30,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + RedirectPortletKeys.REDIRECT,
+		"jakarta.portlet.name=" + RedirectPortletKeys.REDIRECT,
 		"mvc.command.name=/redirect/edit_redirect_not_found_entry"
 	},
 	service = MVCActionCommand.class
@@ -51,22 +54,38 @@ public class EditRedirectNotFoundEntryMVCActionCommand
 		long redirectNotFoundEntryId = ParamUtil.getLong(
 			actionRequest, "redirectNotFoundEntryId");
 
+		long[] editRedirectNotFoundEntryIds = null;
+
 		if (redirectNotFoundEntryId > 0) {
-			_redirectNotFoundEntryLocalService.updateRedirectNotFoundEntry(
-				redirectNotFoundEntryId,
-				ParamUtil.getBoolean(actionRequest, "ignored"));
+			editRedirectNotFoundEntryIds = new long[] {redirectNotFoundEntryId};
 		}
 		else {
-			long[] editRedirectNotFoundEntryIds = ParamUtil.getLongValues(
+			editRedirectNotFoundEntryIds = ParamUtil.getLongValues(
 				actionRequest, "rowIds");
+		}
 
-			for (long editRedirectNotFoundEntryId :
-					editRedirectNotFoundEntryIds) {
+		boolean ignored = ParamUtil.getBoolean(actionRequest, "ignored");
 
-				_redirectNotFoundEntryLocalService.updateRedirectNotFoundEntry(
-					editRedirectNotFoundEntryId,
-					ParamUtil.getBoolean(actionRequest, "ignored"));
+		for (long editRedirectNotFoundEntryId : editRedirectNotFoundEntryIds) {
+			RedirectNotFoundEntry redirectNotFoundEntry =
+				_redirectNotFoundEntryLocalService.fetchRedirectNotFoundEntry(
+					editRedirectNotFoundEntryId);
+
+			if (redirectNotFoundEntry == null) {
+				continue;
 			}
+
+			if (redirectNotFoundEntry.getGroupId() !=
+					themeDisplay.getScopeGroupId()) {
+
+				throw new PrincipalException.MustHavePermission(
+					themeDisplay.getPermissionChecker(),
+					Portlet.class.getName(), RedirectPortletKeys.REDIRECT,
+					ActionKeys.ACCESS_IN_CONTROL_PANEL);
+			}
+
+			_redirectNotFoundEntryLocalService.updateRedirectNotFoundEntry(
+				editRedirectNotFoundEntryId, ignored);
 		}
 	}
 

@@ -10,25 +10,25 @@ import com.liferay.oauth2.provider.internal.test.TestApplication;
 import com.liferay.oauth2.provider.internal.test.TestHeadHandlingApplication;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
+import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
-import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.test.log.LogCapture;
 import com.liferay.portal.test.log.LoggerTestUtil;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 
+import jakarta.ws.rs.client.Entity;
+import jakarta.ws.rs.client.Invocation;
+import jakarta.ws.rs.client.WebTarget;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+
 import java.util.Arrays;
 import java.util.Collections;
 
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.client.Invocation;
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-
 import org.junit.Assert;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -46,13 +46,12 @@ public class HttpMethodApplicationClientTest extends BaseClientTestCase {
 	public static final AggregateTestRule aggregateTestRule =
 		new LiferayIntegrationTestRule();
 
-	@Ignore
 	@Test
 	public void test() throws Exception {
 		WebTarget webTarget = getWebTarget("/methods");
 
 		Invocation.Builder builder = authorize(
-			webTarget.request(), getToken("oauthTestApplicationAfter"));
+			webTarget.request(), getToken(_CLIENT_ID_AFTER));
 
 		Assert.assertEquals("get", builder.get(String.class));
 
@@ -61,8 +60,7 @@ public class HttpMethodApplicationClientTest extends BaseClientTestCase {
 
 		Assert.assertEquals("post", response.readEntity(String.class));
 
-		builder = authorize(
-			webTarget.request(), getToken("oauthTestApplicationBefore"));
+		builder = authorize(webTarget.request(), getToken(_CLIENT_ID_BEFORE));
 
 		try (LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
 				"portal_web.docroot.errors.code_jsp", LoggerTestUtil.WARN)) {
@@ -72,7 +70,7 @@ public class HttpMethodApplicationClientTest extends BaseClientTestCase {
 			Assert.assertEquals(403, response.getStatus());
 
 			builder = authorize(
-				webTarget.request(), getToken("oauthTestApplicationWrong"));
+				webTarget.request(), getToken(_CLIENT_ID_WRONG));
 
 			response = builder.get();
 
@@ -80,13 +78,12 @@ public class HttpMethodApplicationClientTest extends BaseClientTestCase {
 		}
 	}
 
-	@Ignore
 	@Test
 	public void testIgnoredMethods() throws Exception {
 		WebTarget webTarget = getWebTarget("/methods");
 
 		Invocation.Builder builder = authorize(
-			webTarget.request(), getToken("oauthTestApplicationBefore"));
+			webTarget.request(), getToken(_CLIENT_ID_BEFORE));
 
 		Response response = builder.head();
 
@@ -94,15 +91,13 @@ public class HttpMethodApplicationClientTest extends BaseClientTestCase {
 
 		webTarget = getWebTarget("/methods-with-ignore-missing-scopes-empty");
 
-		builder = authorize(
-			webTarget.request(), getToken("oauthTestApplicationBefore"));
+		builder = authorize(webTarget.request(), getToken(_CLIENT_ID_BEFORE));
 
 		response = builder.head();
 
 		Assert.assertEquals(403, response.getStatus());
 
-		builder = authorize(
-			webTarget.request(), getToken("oauthTestApplicationAfter"));
+		builder = authorize(webTarget.request(), getToken(_CLIENT_ID_AFTER));
 
 		response = builder.head();
 
@@ -110,39 +105,55 @@ public class HttpMethodApplicationClientTest extends BaseClientTestCase {
 
 		webTarget = getWebTarget("/methods-with-head");
 
-		builder = authorize(
-			webTarget.request(), getToken("oauthTestApplicationAfter"));
+		builder = authorize(webTarget.request(), getToken(_CLIENT_ID_AFTER));
 
 		response = builder.head();
 
 		Assert.assertEquals(403, response.getStatus());
 
 		builder = authorize(
-			webTarget.request(), getToken("oauthTestApplicationWithHead"));
+			webTarget.request(), getToken(_CLIENT_ID_WITH_HEAD));
 
 		response = builder.head();
 
 		Assert.assertEquals(200, response.getStatus());
 
 		builder = authorize(
-			webTarget.request(), getToken("oauthTestApplicationWithHead"));
+			webTarget.request(), getToken(_CLIENT_ID_WITH_HEAD));
 
 		response = builder.method("CUSTOM");
 
 		Assert.assertEquals(403, response.getStatus());
 	}
 
-	public static class MethodApplicationTestPreparatorBundleActivator
+	@Override
+	protected BundleActivator getBundleActivator() {
+		return new MethodApplicationTestPreparatorBundleActivator();
+	}
+
+	private static final String _CLIENT_ID_AFTER =
+		RandomTestUtil.randomString();
+
+	private static final String _CLIENT_ID_BEFORE =
+		RandomTestUtil.randomString();
+
+	private static final String _CLIENT_ID_WITH_HEAD =
+		RandomTestUtil.randomString();
+
+	private static final String _CLIENT_ID_WRONG =
+		RandomTestUtil.randomString();
+
+	private class MethodApplicationTestPreparatorBundleActivator
 		extends BaseTestPreparatorBundleActivator {
 
 		@Override
 		protected void prepareTest() throws Exception {
-			long defaultCompanyId = PortalUtil.getDefaultCompanyId();
+			long companyId = TestPropsValues.getCompanyId();
 
-			User user = UserTestUtil.getAdminUser(defaultCompanyId);
+			User user = UserTestUtil.getAdminUser(companyId);
 
 			createOAuth2Application(
-				defaultCompanyId, user, "oauthTestApplicationBefore",
+				companyId, user, _CLIENT_ID_BEFORE,
 				Arrays.asList("GET", "POST"));
 
 			registerJaxRsApplication(new TestApplication(), "methods", null);
@@ -158,23 +169,17 @@ public class HttpMethodApplicationClientTest extends BaseClientTestCase {
 				).build());
 
 			createOAuth2Application(
-				defaultCompanyId, user, "oauthTestApplicationAfter",
+				companyId, user, _CLIENT_ID_AFTER,
 				Arrays.asList("GET", "POST"));
 
 			createOAuth2Application(
-				defaultCompanyId, user, "oauthTestApplicationWithHead",
-				Arrays.asList("HEAD"));
+				companyId, user, _CLIENT_ID_WITH_HEAD, Arrays.asList("HEAD"));
 
 			createOAuth2Application(
-				defaultCompanyId, user, "oauthTestApplicationWrong",
+				companyId, user, _CLIENT_ID_WRONG,
 				Collections.singletonList("everything"));
 		}
 
-	}
-
-	@Override
-	protected BundleActivator getBundleActivator() {
-		return new MethodApplicationTestPreparatorBundleActivator();
 	}
 
 }

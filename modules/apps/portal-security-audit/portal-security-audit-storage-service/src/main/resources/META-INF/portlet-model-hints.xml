@@ -10,19 +10,40 @@
 			<hint name="max-length">200</hint>
 		</field>
 		<field name="createDate" type="Date" />
-		<field name="eventType" type="String" />
+		<field name="accountEntryId" type="long" />
+		<field name="additionalInfo" type="String">
+			<hint-collection name="CLOB" />
+		</field>
 		<field name="className" type="String">
 			<hint name="max-length">200</hint>
 		</field>
 		<field name="classPK" type="String" />
-		<field name="message" type="String">
-			<hint-collection name="TEXTAREA" />
-		</field>
 		<field name="clientHost" type="String">
 			<hint name="max-length">255</hint>
 		</field>
 		<field name="clientIP" type="String">
 			<hint name="max-length">255</hint>
+		</field>
+		<field name="contextName" type="String" />
+		<field name="correlationId" type="String" />
+		<field name="eventType" type="String" />
+		<field name="httpMethod" type="String" />
+		<field name="impersonated" type="boolean" />
+		<field name="impersonatedUserEmailAddress" type="String" />
+		<field name="impersonatedUserId" type="long" />
+		<field name="impersonatedUserName" type="String" />
+		<field name="message" type="String">
+			<hint-collection name="TEXTAREA" />
+		</field>
+		<field name="objectName" type="String" />
+		<field name="requestId" type="String">
+			<hint name="max-length">200</hint>
+		</field>
+		<field name="requestIdGenerated" type="boolean" />
+		<field name="resourceAction" type="String" />
+		<field name="resourceType" type="String" />
+		<field name="roles" type="String">
+			<hint-collection name="CLOB" />
 		</field>
 		<field name="serverName" type="String">
 			<hint name="max-length">255</hint>
@@ -31,8 +52,20 @@
 		<field name="sessionID" type="String">
 			<hint name="max-length">255</hint>
 		</field>
-		<field name="additionalInfo" type="String">
-			<hint-collection name="CLOB" />
+		<field name="userAgent" type="String">
+			<hint name="max-length">255</hint>
 		</field>
+		<field name="userEmailAddress" type="String" />
+	</model>
+	<model name="com.liferay.portal.security.audit.storage.model.AuditEventPseudonymField">
+		<field name="auditEventPseudonymFieldId" type="long" />
+		<field name="companyId" type="long" />
+		<field name="createDate" type="Date" />
+		<field name="contextName" type="String" />
+		<field name="name" type="String" />
+		<field name="value" type="String">
+			<hint name="max-length">255</hint>
+		</field>
+		<field name="valueHash" type="String" />
 	</model>
 </model-hints>

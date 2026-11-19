@@ -9,10 +9,9 @@ import com.liferay.portal.kernel.model.Release;
 import com.liferay.portal.kernel.scheduler.SchedulerEngine;
 import com.liferay.portal.kernel.scheduler.TriggerFactory;
 import com.liferay.portal.kernel.util.GetterUtil;
-import com.liferay.portal.kernel.util.HashMapDictionary;
 import com.liferay.portal.kernel.util.MapUtil;
-import com.liferay.portal.kernel.util.Props;
 import com.liferay.portal.kernel.util.PropsKeys;
+import com.liferay.portal.kernel.util.PropsUtil;
 import com.liferay.portal.kernel.util.ProxyFactory;
 import com.liferay.portal.profile.BaseDSModulePortalProfile;
 import com.liferay.portal.profile.PortalProfile;
@@ -41,7 +40,7 @@ public class ModulePortalProfile extends BaseDSModulePortalProfile {
 	protected void activate(ComponentContext componentContext) {
 		List<String> supportedPortalProfileNames = null;
 
-		if (GetterUtil.getBoolean(_props.get(PropsKeys.SCHEDULER_ENABLED))) {
+		if (GetterUtil.getBoolean(PropsUtil.get(PropsKeys.SCHEDULER_ENABLED))) {
 			supportedPortalProfileNames = new ArrayList<>();
 
 			supportedPortalProfileNames.add(
@@ -62,8 +61,7 @@ public class ModulePortalProfile extends BaseDSModulePortalProfile {
 
 			_triggerFactoryServiceRegistration = bundleContext.registerService(
 				TriggerFactory.class,
-				ProxyFactory.newDummyInstance(TriggerFactory.class),
-				new HashMapDictionary<>());
+				ProxyFactory.newDummyInstance(TriggerFactory.class), null);
 		}
 
 		init(
@@ -82,9 +80,6 @@ public class ModulePortalProfile extends BaseDSModulePortalProfile {
 			_schedulerEngineServiceRegistration.unregister();
 		}
 	}
-
-	@Reference
-	private Props _props;
 
 	@Reference(
 		target = "(release.bundle.symbolic.name=com.liferay.portal.scheduler.quartz)"

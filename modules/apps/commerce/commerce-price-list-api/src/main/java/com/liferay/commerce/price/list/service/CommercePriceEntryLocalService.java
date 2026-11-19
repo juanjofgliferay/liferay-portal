@@ -263,10 +263,6 @@ public interface CommercePriceEntryLocalService
 		DynamicQuery dynamicQuery, Projection projection);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public CommercePriceEntry fetchByExternalReferenceCode(
-		String externalReferenceCode, long companyId);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public CommercePriceEntry fetchCommercePriceEntry(
 		long commercePriceEntryId);
 
@@ -330,10 +326,6 @@ public interface CommercePriceEntryLocalService
 	public List<CommercePriceEntry> getCommercePriceEntries(
 		String cpInstanceUuid, BigDecimal quantity, String unitOfMeasureKey);
 
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<CommercePriceEntry> getCommercePriceEntriesByCompanyId(
-		long companyId, int start, int end);
-
 	/**
 	 * Returns the number of commerce price entries.
 	 *
@@ -344,9 +336,6 @@ public interface CommercePriceEntryLocalService
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public int getCommercePriceEntriesCount(long commercePriceListId);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getCommercePriceEntriesCountByCompanyId(long companyId);
 
 	/**
 	 * Returns the commerce price entry with the primary key.
@@ -387,6 +376,11 @@ public interface CommercePriceEntryLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public CommercePriceEntry getInstanceBaseCommercePriceEntry(
 		String cpInstanceUuid, String priceListType, String unitOfMeasureKey);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<CommercePriceEntry> getInstanceCommercePriceEntries(
+		String cpInstanceUuid, int start, int end,
+		OrderByComparator<CommercePriceEntry> orderByComparator);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public int getInstanceCommercePriceEntriesCount(String cpInstanceUuid);
@@ -460,7 +454,7 @@ public interface CommercePriceEntryLocalService
 
 	@Indexable(type = IndexableType.REINDEX)
 	public CommercePriceEntry updateExternalReferenceCode(
-			String externalReferenceCode, CommercePriceEntry commercePriceEntry)
+			CommercePriceEntry commercePriceEntry, String externalReferenceCode)
 		throws PortalException;
 
 	public CommercePriceEntry updatePricingInfo(
@@ -492,3 +486,4 @@ public interface CommercePriceEntryLocalService
 		throws E;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-108467340

@@ -1,0 +1,189 @@
+/**
+ * SPDX-FileCopyrightText: (c) 2026 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
+ */
+
+package com.liferay.analytics.cms.rest.internal.resource.v1_0;
+
+import com.liferay.analytics.cms.rest.dto.v1_0.Metric;
+import com.liferay.analytics.cms.rest.dto.v1_0.PerformanceMetric;
+import com.liferay.analytics.cms.rest.internal.client.AnalyticsCloudClient;
+import com.liferay.analytics.cms.rest.internal.cmp.project.util.CMPProjectUtil;
+import com.liferay.analytics.cms.rest.internal.depot.entry.util.DepotEntryUtil;
+import com.liferay.analytics.cms.rest.resource.v1_0.PerformanceMetricResource;
+import com.liferay.analytics.settings.rest.manager.AnalyticsSettingsManager;
+import com.liferay.analytics.settings.rest.util.AnalyticsSettingsManagerUtil;
+import com.liferay.petra.io.StreamUtil;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.license.util.LicenseManagerUtil;
+import com.liferay.portal.kernel.security.permission.ActionKeys;
+import com.liferay.portal.kernel.util.ArrayUtil;
+import com.liferay.portal.kernel.util.Http;
+import com.liferay.portal.kernel.util.ListUtil;
+import com.liferay.portal.kernel.util.StringUtil;
+
+import jakarta.validation.ValidationException;
+
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.StreamingOutput;
+
+import java.io.InputStream;
+
+import java.time.LocalDate;
+
+import java.util.Arrays;
+
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.component.annotations.ServiceScope;
+
+/**
+ * @author Rachael Koestartyo
+ */
+@Component(
+	properties = "OSGI-INF/liferay/rest/v1_0/performance-metric.properties",
+	scope = ServiceScope.PROTOTYPE, service = PerformanceMetricResource.class
+)
+public class PerformanceMetricResourceImpl
+	extends BasePerformanceMetricResourceImpl {
+
+	@Override
+	public PerformanceMetric getPerformanceMetric(
+			Long[] cmpProjectIds, Long[] depotEntryIds, String groupBy,
+			String metricType, Integer rangeKey)
+		throws Exception {
+
+		LicenseManagerUtil.checkFreeTier();
+
+		_validateMetricType(metricType);
+
+		AnalyticsSettingsManagerUtil.checkAnalyticsEnabled(
+			_analyticsSettingsManager, contextCompany.getCompanyId());
+
+		Long[] groupIds = DepotEntryUtil.getGroupIds(
+			DepotEntryUtil.getDepotEntries(
+				ActionKeys.VIEW_SITE_ADMINISTRATION,
+				contextCompany.getCompanyId(), depotEntryIds));
+
+		if (ArrayUtil.isEmpty(groupIds)) {
+			return _getEmptyPerformanceMetric(metricType);
+		}
+
+		Long[] filteredCMPProjectIds = CMPProjectUtil.getFilteredCMPProjectIds(
+			ActionKeys.VIEW_SITE_ADMINISTRATION, cmpProjectIds);
+
+		if (CMPProjectUtil.hasNoVisibleCMPProjects(filteredCMPProjectIds)) {
+			return _getEmptyPerformanceMetric(metricType);
+		}
+
+		AnalyticsCloudClient analyticsCloudClient = new AnalyticsCloudClient(
+			_http);
+
+		return analyticsCloudClient.getPerformanceMetric(
+			_analyticsSettingsManager.getAnalyticsConfiguration(
+				contextCompany.getCompanyId()),
+			ListUtil.fromArray(filteredCMPProjectIds), Arrays.asList(groupIds),
+			metricType, _getPath(groupBy), rangeKey);
+	}
+
+	@Override
+	public Response getPerformanceMetricExport(
+			Long[] cmpProjectIds, Long[] depotEntryIds, String groupBy,
+			String metricType, Integer rangeKey)
+		throws Exception {
+
+		LicenseManagerUtil.checkFreeTier();
+
+		_validateMetricType(metricType);
+
+		AnalyticsSettingsManagerUtil.checkAnalyticsEnabled(
+			_analyticsSettingsManager, contextCompany.getCompanyId());
+
+		Long[] groupIds = DepotEntryUtil.getGroupIds(
+			DepotEntryUtil.getDepotEntries(
+				ActionKeys.VIEW_SITE_ADMINISTRATION,
+				contextCompany.getCompanyId(), depotEntryIds));
+
+		if (ArrayUtil.isEmpty(groupIds)) {
+			return _getResponse(
+				groupBy,
+				outputStream -> {
+				});
+		}
+
+		Long[] filteredCMPProjectIds = CMPProjectUtil.getFilteredCMPProjectIds(
+			ActionKeys.VIEW_SITE_ADMINISTRATION, cmpProjectIds);
+
+		if (CMPProjectUtil.hasNoVisibleCMPProjects(filteredCMPProjectIds)) {
+			return _getResponse(
+				groupBy,
+				outputStream -> {
+				});
+		}
+
+		AnalyticsCloudClient analyticsCloudClient = new AnalyticsCloudClient(
+			_http);
+
+		InputStream inputStream = analyticsCloudClient.getInputStream(
+			_analyticsSettingsManager.getAnalyticsConfiguration(
+				contextCompany.getCompanyId()),
+			ListUtil.fromArray(filteredCMPProjectIds), null,
+			Arrays.asList(groupIds), null, metricType,
+			_getPath(groupBy) + "/export", rangeKey, null);
+
+		return _getResponse(
+			groupBy,
+			outputStream -> StreamUtil.transfer(inputStream, outputStream));
+	}
+
+	private PerformanceMetric _getEmptyPerformanceMetric(String metricType) {
+		PerformanceMetric performanceMetric = new PerformanceMetric();
+
+		performanceMetric.setMetricType(() -> metricType);
+		performanceMetric.setMetrics(() -> new Metric[0]);
+
+		return performanceMetric;
+	}
+
+	private String _getPath(String groupBy) {
+		if (StringUtil.equalsIgnoreCase(groupBy, "categories")) {
+			return "/categories";
+		}
+
+		if (StringUtil.equalsIgnoreCase(groupBy, "location")) {
+			return "/geolocation";
+		}
+
+		throw new ValidationException("Invalid group by: " + groupBy);
+	}
+
+	private Response _getResponse(
+		String groupBy, StreamingOutput streamingOutput) {
+
+		return Response.ok(
+			streamingOutput
+		).header(
+			"Content-Disposition",
+			StringBundler.concat(
+				"attachment; filename=performance-metric-",
+				StringUtil.toLowerCase(groupBy), "-", LocalDate.now(), ".csv")
+		).build();
+	}
+
+	private void _validateMetricType(String metricType) {
+		if (!StringUtil.equalsIgnoreCase(metricType, "downloadsMetric") &&
+			!StringUtil.equalsIgnoreCase(metricType, "impressionsMetric") &&
+			!StringUtil.equalsIgnoreCase(metricType, "readsMetric") &&
+			!StringUtil.equalsIgnoreCase(metricType, "viewsMetric")) {
+
+			throw new ValidationException("Invalid metric type: " + metricType);
+		}
+	}
+
+	@Reference
+	private AnalyticsSettingsManager _analyticsSettingsManager;
+
+	@Reference
+	private Http _http;
+
+}

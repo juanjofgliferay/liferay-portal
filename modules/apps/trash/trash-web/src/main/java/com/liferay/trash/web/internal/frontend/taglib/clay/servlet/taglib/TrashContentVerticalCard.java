@@ -21,10 +21,10 @@ import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.trash.web.internal.servlet.taglib.util.TrashViewContentActionDropdownItemsProvider;
 
+import jakarta.portlet.RenderRequest;
+
 import java.util.Collections;
 import java.util.List;
-
-import javax.portlet.RenderRequest;
 
 /**
  * @author Pavel Savinov
@@ -114,8 +114,8 @@ public class TrashContentVerticalCard implements VerticalCard {
 
 	private final LiferayPortletRequest _liferayPortletRequest;
 	private final LiferayPortletResponse _liferayPortletResponse;
-	private final TrashedModel _trashedModel;
 	private final TrashRenderer _trashRenderer;
+	private final TrashedModel _trashedModel;
 	private final String _viewContentURL;
 
 }

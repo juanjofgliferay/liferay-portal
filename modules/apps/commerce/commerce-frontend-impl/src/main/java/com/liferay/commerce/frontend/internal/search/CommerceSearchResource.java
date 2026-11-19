@@ -21,19 +21,19 @@ import com.liferay.commerce.frontend.internal.account.model.Account;
 import com.liferay.commerce.frontend.internal.account.model.AccountList;
 import com.liferay.commerce.frontend.internal.account.model.Order;
 import com.liferay.commerce.frontend.internal.account.model.OrderList;
-import com.liferay.commerce.frontend.internal.order.CommerceOrderResource;
 import com.liferay.commerce.frontend.internal.search.model.SearchItemModel;
+import com.liferay.commerce.helper.CommerceAccountHelper;
 import com.liferay.commerce.model.CommerceOrder;
 import com.liferay.commerce.order.CommerceOrderHttpHelper;
 import com.liferay.commerce.product.catalog.CPCatalogEntry;
 import com.liferay.commerce.product.catalog.CPQuery;
 import com.liferay.commerce.product.constants.CPPortletKeys;
 import com.liferay.commerce.product.data.source.CPDataSourceResult;
+import com.liferay.commerce.product.helper.CPDefinitionHelper;
 import com.liferay.commerce.product.model.CommerceChannel;
 import com.liferay.commerce.product.service.CommerceChannelLocalService;
-import com.liferay.commerce.product.util.CPDefinitionHelper;
 import com.liferay.commerce.service.CommerceOrderService;
-import com.liferay.commerce.util.CommerceAccountHelper;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.Language;
@@ -43,6 +43,7 @@ import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.LayoutSet;
 import com.liferay.portal.kernel.portlet.PortletProvider;
 import com.liferay.portal.kernel.portlet.PortletProviderUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.kernel.search.SearchContext;
 import com.liferay.portal.kernel.service.LayoutLocalService;
@@ -57,25 +58,26 @@ import com.liferay.portal.kernel.util.ResourceBundleUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+
 import java.io.Serializable;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.ResourceBundle;
-
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
-
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -104,6 +106,13 @@ public class CommerceSearchResource {
 
 			List<SearchItemModel> searchItemModels = new ArrayList<>();
 
+			CommerceContext commerceContext = _commerceContextFactory.create(
+				0,
+				_commerceChannelLocalService.
+					getCommerceChannelGroupIdBySiteGroupId(
+						themeDisplay.getScopeGroupId()),
+				null, 0, themeDisplay.getCompanyId());
+
 			searchItemModels.addAll(
 				_searchProducts(
 					themeDisplay.getCompanyId(), layout.getGroupId(),
@@ -111,7 +120,8 @@ public class CommerceSearchResource {
 
 			if (themeDisplay.isSignedIn()) {
 				searchItemModels.addAll(
-					_searchAccounts(queryString, themeDisplay));
+					_searchAccounts(
+						commerceContext, queryString, themeDisplay));
 
 				searchItemModels.addAll(
 					_searchOrders(queryString, themeDisplay));
@@ -247,6 +257,84 @@ public class CommerceSearchResource {
 		}
 	}
 
+	private String _getOrderLinkURL(
+			long commerceOrderId, HttpServletRequest httpServletRequest)
+		throws PortalException {
+
+		PortletURL portletURL = PortletURLBuilder.create(
+			PortletProviderUtil.getPortletURL(
+				httpServletRequest, CommerceOrder.class.getName(),
+				PortletProvider.Action.EDIT)
+		).setActionName(
+			"/commerce_open_order_content/edit_commerce_order"
+		).setCMD(
+			"setCurrent"
+		).setParameter(
+			"commerceOrderId", commerceOrderId
+		).buildPortletURL();
+
+		String redirect = _portal.getCurrentURL(httpServletRequest);
+
+		portletURL.setParameter("redirect", redirect);
+
+		return portletURL.toString();
+	}
+
+	private OrderList _getOrderList(
+			long groupId, String keywords, int page, int pageSize,
+			HttpServletRequest httpServletRequest)
+		throws PortalException {
+
+		long companyId = _portal.getCompanyId(httpServletRequest);
+
+		groupId =
+			_commerceChannelLocalService.getCommerceChannelGroupIdBySiteGroupId(
+				groupId);
+
+		List<Order> orders = _getOrders(
+			companyId, groupId, keywords, page, pageSize, httpServletRequest);
+
+		return new OrderList(
+			orders,
+			(int)_commerceOrderService.getUserPendingCommerceOrdersCount(
+				companyId, groupId, keywords));
+	}
+
+	private List<Order> _getOrders(
+			long companyId, long groupId, String keywords, int page,
+			int pageSize, HttpServletRequest httpServletRequest)
+		throws PortalException {
+
+		int start = (page - 1) * pageSize;
+		int end = page * pageSize;
+
+		return TransformUtil.transform(
+			_commerceOrderService.getUserCommerceOrders(
+				companyId, groupId, keywords, start, end),
+			commerceOrder -> {
+				Date modifiedDate = commerceOrder.getModifiedDate();
+
+				String modifiedDateTimeDescription =
+					_language.getTimeDescription(
+						httpServletRequest,
+						System.currentTimeMillis() - modifiedDate.getTime(),
+						true);
+
+				return new Order(
+					commerceOrder.getCommerceOrderId(),
+					commerceOrder.getCommerceAccountId(),
+					commerceOrder.getCommerceAccountName(),
+					commerceOrder.getPurchaseOrderNumber(),
+					_language.format(
+						httpServletRequest, "x-ago",
+						modifiedDateTimeDescription),
+					WorkflowConstants.getStatusLabel(commerceOrder.getStatus()),
+					_getOrderLinkURL(
+						commerceOrder.getCommerceOrderId(),
+						httpServletRequest));
+			});
+	}
+
 	private String _getOrdersFriendlyURL(ThemeDisplay themeDisplay)
 		throws PortalException {
 
@@ -339,16 +427,11 @@ public class CommerceSearchResource {
 	}
 
 	private List<SearchItemModel> _searchAccounts(
-			String queryString, ThemeDisplay themeDisplay)
+			CommerceContext commerceContext, String queryString,
+			ThemeDisplay themeDisplay)
 		throws PortalException {
 
 		List<SearchItemModel> searchItemModels = new ArrayList<>();
-
-		CommerceContext commerceContext = _commerceContextFactory.create(
-			themeDisplay.getCompanyId(),
-			_commerceChannelLocalService.getCommerceChannelGroupIdBySiteGroupId(
-				themeDisplay.getScopeGroupId()),
-			themeDisplay.getUserId(), 0, 0);
 
 		AccountList accountList = _commerceAccountResource.getAccountList(
 			themeDisplay.getUserId(),
@@ -398,7 +481,7 @@ public class CommerceSearchResource {
 
 		List<SearchItemModel> searchItemModels = new ArrayList<>();
 
-		OrderList orderList = _commerceOrderResource.getOrderList(
+		OrderList orderList = _getOrderList(
 			themeDisplay.getScopeGroupId(), queryString, 1, 5,
 			themeDisplay.getRequest());
 
@@ -416,11 +499,9 @@ public class CommerceSearchResource {
 			searchItemModel.setIcon("document");
 			searchItemModel.setSubtitle(order.getAccountName());
 			searchItemModel.setUrl(
-				String.valueOf(
-					_commerceOrderHttpHelper.getCommerceCartPortletURL(
-						themeDisplay.getScopeGroupId(),
-						themeDisplay.getRequest(),
-						_getCommerceOrder(order.getId()))));
+				_commerceOrderHttpHelper.getCommerceCartPortletURL(
+					themeDisplay.getScopeGroupId(), themeDisplay.getRequest(),
+					_getCommerceOrder(order.getId())));
 
 			searchItemModels.add(searchItemModel);
 		}
@@ -462,11 +543,6 @@ public class CommerceSearchResource {
 			_commerceChannelLocalService.fetchCommerceChannelBySiteGroupId(
 				themeDisplay.getScopeGroupId());
 
-		if (commerceChannel != null) {
-			attributes.put(
-				"commerceChannelGroupId", commerceChannel.getGroupId());
-		}
-
 		long accountEntryId = 0;
 
 		AccountEntry accountEntry =
@@ -475,7 +551,14 @@ public class CommerceSearchResource {
 
 		if (accountEntry != null) {
 			accountEntryId = accountEntry.getAccountEntryId();
+		}
 
+		if (commerceChannel != null) {
+			attributes.put(
+				"commerceChannelGroupId", commerceChannel.getGroupId());
+		}
+
+		if (accountEntry != null) {
 			attributes.put(
 				"commerceAccountGroupIds",
 				_accountGroupLocalService.getAccountGroupIds(accountEntryId));
@@ -552,9 +635,6 @@ public class CommerceSearchResource {
 
 	@Reference
 	private CommerceOrderHttpHelper _commerceOrderHttpHelper;
-
-	@Reference
-	private CommerceOrderResource _commerceOrderResource;
 
 	@Reference
 	private CommerceOrderService _commerceOrderService;

@@ -4,7 +4,7 @@
  */
 
 import ClayAlert from '@clayui/alert';
-import ClayButton from '@clayui/button';
+import ClayButton, {ClayButtonWithIcon} from '@clayui/button';
 import ClayIcon from '@clayui/icon';
 import ClayLabel from '@clayui/label';
 import ClayLayout from '@clayui/layout';
@@ -15,8 +15,9 @@ import {
 	useEventListener,
 	useIsMounted,
 } from '@liferay/frontend-js-react-web';
-import {useId, useSessionState} from 'frontend-js-components-web';
-import {COOKIE_TYPES, navigate, openToast} from 'frontend-js-web';
+import classNames from 'classnames';
+import {openToast, useId, useSessionState} from 'frontend-js-components-web';
+import {COOKIE_TYPES, navigate} from 'frontend-js-web';
 import React, {useCallback, useEffect, useRef, useState} from 'react';
 
 import {config} from '../../../app/config/index';
@@ -231,12 +232,20 @@ const ExperienceSelector = ({experiences, segments, selectedExperience}) => {
 
 	const onExperienceCreation = ({
 		name,
+		segmentsEntryERC,
 		segmentsEntryId,
+		segmentsEntryScopeERC,
 		segmentsExperienceId,
 	}) => {
 		if (segmentsExperienceId) {
 			return dispatch(
-				updateExperience({name, segmentsEntryId, segmentsExperienceId})
+				updateExperience({
+					name,
+					segmentsEntryERC,
+					segmentsEntryId,
+					segmentsEntryScopeERC,
+					segmentsExperienceId,
+				})
 			)
 				.then(() => {
 					if (isMounted()) {
@@ -266,7 +275,8 @@ const ExperienceSelector = ({experiences, segments, selectedExperience}) => {
 			return dispatch(
 				createExperience({
 					name,
-					segmentsEntryId,
+					segmentsEntryERC,
+					segmentsEntryScopeERC,
 				})
 			)
 				.then(() => {
@@ -300,15 +310,37 @@ const ExperienceSelector = ({experiences, segments, selectedExperience}) => {
 		debouncedSetOpen(false);
 	};
 
+	const onCreateVariations = () => {
+		const url = new URL(
+			config.editElementVariationsURL,
+			window.location.origin
+		);
+
+		url.searchParams.set(
+			`${config.portletNamespace}segmentsExperienceId`,
+			selectedExperience.segmentsExperienceId
+		);
+
+		navigate(url.href);
+	};
+
 	const onEditExperience = (experienceData) => {
-		const {name, segmentsEntryId, segmentsExperienceId} = experienceData;
+		const {
+			name,
+			segmentsEntryERC,
+			segmentsEntryId,
+			segmentsEntryScopeERC,
+			segmentsExperienceId,
+		} = experienceData;
 
 		setOpenModal(true);
 		debouncedSetOpen(false);
 
 		setEditingExperience({
 			name,
+			segmentsEntryERC,
 			segmentsEntryId,
+			segmentsEntryScopeERC,
 			segmentsExperienceId,
 		});
 	};
@@ -334,9 +366,8 @@ const ExperienceSelector = ({experiences, segments, selectedExperience}) => {
 			) {
 				event.preventDefault();
 
-				const allFocusableElements = getKeyboardFocusableElements(
-					document
-				);
+				const allFocusableElements =
+					getKeyboardFocusableElements(document);
 
 				const index = allFocusableElements.indexOf(buttonRef.current);
 
@@ -416,49 +447,69 @@ const ExperienceSelector = ({experiences, segments, selectedExperience}) => {
 
 	return (
 		<>
-			<ClayButton
-				aria-controls={experienceSelectorContentId}
-				aria-expanded={open}
-				aria-haspopup="true"
-				aria-label={`${Liferay.Language.get('experience')}: ${
-					selectedExperience.name
-				}`}
-				className="form-control-select pr-4 text-left text-truncate"
-				disabled={!canUpdateExperiences}
-				displayType="secondary"
-				onClick={() => debouncedSetOpen(!open)}
-				ref={buttonRef}
-				size="sm"
-				type="button"
+			<ClayButton.Group
+				className={classNames({
+					'page-editor__experience-selector-group':
+						Liferay.FeatureFlags['LPD-85746'],
+				})}
 			>
-				<ClayLayout.ContentRow verticalAlign="center">
-					<ClayLayout.ContentCol expand>
-						<span className="text-truncate">
-							{selectedExperience.name}
-						</span>
-					</ClayLayout.ContentCol>
+				<ClayButton
+					aria-controls={experienceSelectorContentId}
+					aria-expanded={open}
+					aria-haspopup="true"
+					aria-label={`${Liferay.Language.get('experience')}: ${
+						selectedExperience.name
+					}`}
+					className="form-control-select page-editor__experience-selector pr-4 text-left text-truncate"
+					disabled={!canUpdateExperiences}
+					displayType="secondary"
+					onClick={() => debouncedSetOpen(!open)}
+					ref={buttonRef}
+					size="sm"
+					type="button"
+				>
+					<ClayLayout.ContentRow verticalAlign="center">
+						<ClayLayout.ContentCol expand>
+							<span className="text-truncate">
+								{selectedExperience.name}
+							</span>
+						</ClayLayout.ContentCol>
 
-					{experiences.length > 1 && (
+						{experiences.length > 1 && (
+							<ClayLayout.ContentCol>
+								{isSelectedExperienceActive ? (
+									<ClayLabel displayType="success">
+										{Liferay.Language.get('active')}
+									</ClayLabel>
+								) : (
+									<ClayLabel displayType="secondary">
+										{Liferay.Language.get('inactive')}
+									</ClayLabel>
+								)}
+							</ClayLayout.ContentCol>
+						)}
+
 						<ClayLayout.ContentCol>
-							{isSelectedExperienceActive ? (
-								<ClayLabel displayType="success">
-									{Liferay.Language.get('active')}
-								</ClayLabel>
-							) : (
-								<ClayLabel displayType="secondary">
-									{Liferay.Language.get('inactive')}
-								</ClayLabel>
+							{selectedExperience.hasLockedSegmentsExperiment && (
+								<ClayIcon symbol="lock" />
 							)}
 						</ClayLayout.ContentCol>
-					)}
+					</ClayLayout.ContentRow>
+				</ClayButton>
 
-					<ClayLayout.ContentCol>
-						{selectedExperience.hasLockedSegmentsExperiment && (
-							<ClayIcon symbol="lock" />
-						)}
-					</ClayLayout.ContentCol>
-				</ClayLayout.ContentRow>
-			</ClayButton>
+				{Liferay.FeatureFlags['LPD-85746'] && (
+					<ClayButtonWithIcon
+						aria-label={Liferay.Language.get('create-variations')}
+						className="align-self-stretch h-auto"
+						disabled={!canUpdateExperiences}
+						displayType="secondary"
+						onClick={onCreateVariations}
+						size="sm"
+						symbol="icon-rule-builder"
+						title={Liferay.Language.get('create-variations')}
+					/>
+				)}
+			</ClayButton.Group>
 
 			{open && (
 				<ReactPortal className="cadmin">
@@ -512,6 +563,10 @@ const ExperienceSelector = ({experiences, segments, selectedExperience}) => {
 					onSubmit={onExperienceCreation}
 					segmentId={editingExperience.segmentsEntryId}
 					segments={segments}
+					segmentsEntryERC={editingExperience.segmentsEntryERC}
+					segmentsEntryScopeERC={
+						editingExperience.segmentsEntryScopeERC
+					}
 				/>
 			)}
 		</>
@@ -555,6 +610,7 @@ const ExperiencesSelectorHeader = ({canCreateExperiences, onNewExperience}) => {
 						)} `}
 
 						<a
+							className="text-decoration-underline"
 							href={config.contentPagePersonalizationLearnURL}
 							target="_blank"
 						>
@@ -567,7 +623,7 @@ const ExperiencesSelectorHeader = ({canCreateExperiences, onNewExperience}) => {
 				</>
 			)}
 
-			{!config.isSegmentationEnabled && !dismissAlert ? (
+			{!config.isSegmentationEnabled && !dismissAlert && (
 				<ClayAlert
 					className="mx-0 segmentation-disabled-alert"
 					displayType="warning"
@@ -589,16 +645,6 @@ const ExperiencesSelectorHeader = ({canCreateExperiences, onNewExperience}) => {
 						Liferay.Language.get(
 							'contact-your-system-administrator-to-enable-it'
 						)
-					)}
-				</ClayAlert>
-			) : (
-				<ClayAlert
-					className="mx-0"
-					displayType="warning"
-					title={Liferay.Language.get('warning')}
-				>
-					{Liferay.Language.get(
-						'changes-to-experiences-are-applied-immediately'
 					)}
 				</ClayAlert>
 			)}

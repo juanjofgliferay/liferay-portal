@@ -11,12 +11,12 @@ import com.liferay.portal.kernel.util.CamelCaseUtil;
 import com.liferay.portal.kernel.util.ResourceBundleUtil;
 import com.liferay.segments.field.Field;
 
+import jakarta.portlet.PortletRequest;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.ResourceBundle;
-
-import javax.portlet.PortletRequest;
 
 /**
  * Provides an interface for customizing a {@link Field}.
@@ -25,11 +25,11 @@ import javax.portlet.PortletRequest;
  */
 public interface SegmentsFieldCustomizer {
 
-	public default ClassedModel getClassedModel(String fieldValue) {
+	public default String getClassName() {
 		return null;
 	}
 
-	public default String getClassName() {
+	public default ClassedModel getClassedModel(String fieldValue) {
 		return null;
 	}
 

@@ -1,0 +1,19 @@
+{
+	"friendlyURL": "/analytics",
+	"hidden": true,
+	"name": "Analytics",
+	"name_i18n": {
+		"[$FOR_EACH_LANGUAGE_ID$]": "analytics"
+	},
+	"permissions": [
+		{
+			"actionIds": [
+			],
+			"roleName": "Guest",
+			"scope": 4
+		}
+	],
+	"private": false,
+	"system": false,
+	"type": "Content"
+}

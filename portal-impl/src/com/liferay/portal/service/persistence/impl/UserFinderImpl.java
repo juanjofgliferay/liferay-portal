@@ -7,8 +7,6 @@ package com.liferay.portal.service.persistence.impl;
 
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.dao.db.DB;
-import com.liferay.portal.kernel.dao.db.DBType;
 import com.liferay.portal.kernel.dao.orm.CustomSQLParam;
 import com.liferay.portal.kernel.dao.orm.QueryPos;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
@@ -19,6 +17,7 @@ import com.liferay.portal.kernel.dao.orm.WildcardMode;
 import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Organization;
+import com.liferay.portal.kernel.model.OrganizationConstants;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
@@ -29,12 +28,12 @@ import com.liferay.portal.kernel.service.persistence.UserUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.TableNameOrderByComparator;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.model.impl.UserImpl;
-import com.liferay.portal.util.PropsValues;
 import com.liferay.util.dao.orm.CustomSQLUtil;
 
 import java.io.Serializable;
@@ -64,29 +63,11 @@ public class UserFinderImpl extends UserFinderBaseImpl implements UserFinder {
 	public static final String COUNT_BY_USER =
 		UserFinder.class.getName() + ".countByUser";
 
-	public static final String FIND_BY_NO_ANNOUNCEMENTS_DELIVERIES =
-		UserFinder.class.getName() + ".findByNoAnnouncementsDeliveries";
-
-	public static final String FIND_BY_NO_GROUPS =
-		UserFinder.class.getName() + ".findByNoGroups";
-
 	public static final String FIND_BY_SOCIAL_USERS =
 		UserFinder.class.getName() + ".findBySocialUsers";
 
-	public static final String FIND_BY_USERS_GROUPS =
-		UserFinder.class.getName() + ".findByUsersGroups";
-
-	public static final String FIND_BY_USERS_ORGS =
-		UserFinder.class.getName() + ".findByUsersOrgs";
-
-	public static final String FIND_BY_USERS_ORGS_GROUP =
-		UserFinder.class.getName() + ".findByUsersOrgsGroup";
-
 	public static final String FIND_BY_USERS_ORGS_GT_USER_ID =
 		UserFinder.class.getName() + ".findByUsersOrgsGtUserId";
-
-	public static final String FIND_BY_USERS_USER_GROUPS =
-		UserFinder.class.getName() + ".findByUsersUserGroups";
 
 	public static final String FIND_BY_USERS_USER_GROUPS_GT_USER_ID =
 		UserFinder.class.getName() + ".findByUsersUserGroupsGtUserId";
@@ -102,6 +83,10 @@ public class UserFinderImpl extends UserFinderBaseImpl implements UserFinder {
 
 	public static final String JOIN_BY_GROUPS_USER_GROUPS =
 		UserFinder.class.getName() + ".joinByGroupsUserGroups";
+
+	public static final String JOIN_BY_NO_ACCOUNT_ENTRIES_AND_NO_ORGANIZATIONS =
+		UserFinder.class.getName() +
+			".joinByNoAccountEntriesAndNoOrganizations";
 
 	public static final String JOIN_BY_NO_ORGANIZATIONS =
 		UserFinder.class.getName() + ".joinByNoOrganizations";
@@ -387,20 +372,7 @@ public class UserFinderImpl extends UserFinderBaseImpl implements UserFinder {
 				sql = StringUtil.removeSubstring(sql, _STATUS_SQL);
 			}
 
-			StringBundler sb = null;
-
-			DB db = getDB();
-
-			boolean sybase = false;
-
-			if (db.getDBType() == DBType.SYBASE) {
-				sybase = true;
-
-				sb = new StringBundler((paramsList.size() * 7) + 1);
-			}
-			else {
-				sb = new StringBundler((paramsList.size() * 4) + 1);
-			}
+			StringBundler sb = new StringBundler((paramsList.size() * 4) + 1);
 
 			sb.append("SELECT COUNT(userId) AS COUNT_VALUE FROM (");
 
@@ -409,18 +381,9 @@ public class UserFinderImpl extends UserFinderBaseImpl implements UserFinder {
 					sb.append(" UNION ");
 				}
 
-				if (sybase) {
-					sb.append("SELECT userId FROM ");
-				}
-
 				sb.append(StringPool.OPEN_PARENTHESIS);
 				sb.append(replaceJoinAndWhere(sql, paramsList.get(i)));
 				sb.append(StringPool.CLOSE_PARENTHESIS);
-
-				if (sybase) {
-					sb.append(" params");
-					sb.append(i);
-				}
 			}
 
 			sb.append(") userId");
@@ -445,9 +408,11 @@ public class UserFinderImpl extends UserFinderBaseImpl implements UserFinder {
 				queryPos.add(screenNames, 2);
 				queryPos.add(emailAddresses, 2);
 
-				if (status != WorkflowConstants.STATUS_ANY) {
-					queryPos.add(status);
+				if (status == WorkflowConstants.STATUS_ANY) {
+					continue;
 				}
+
+				queryPos.add(status);
 			}
 
 			Iterator<Long> iterator = sqlQuery.iterate();
@@ -505,56 +470,6 @@ public class UserFinderImpl extends UserFinderBaseImpl implements UserFinder {
 			companyId, firstNames, middleNames, lastNames, screenNames,
 			emailAddresses, status, params, andOperator, start, end,
 			orderByComparator);
-	}
-
-	@Override
-	public List<User> findByNoAnnouncementsDeliveries(String type) {
-		Session session = null;
-
-		try {
-			session = openSession();
-
-			String sql = CustomSQLUtil.get(FIND_BY_NO_ANNOUNCEMENTS_DELIVERIES);
-
-			SQLQuery sqlQuery = session.createSynchronizedSQLQuery(sql);
-
-			sqlQuery.addEntity("User_", UserImpl.class);
-
-			QueryPos queryPos = QueryPos.getInstance(sqlQuery);
-
-			queryPos.add(type);
-
-			return sqlQuery.list(true);
-		}
-		catch (Exception exception) {
-			throw new SystemException(exception);
-		}
-		finally {
-			closeSession(session);
-		}
-	}
-
-	@Override
-	public List<User> findByNoGroups() {
-		Session session = null;
-
-		try {
-			session = openSession();
-
-			String sql = CustomSQLUtil.get(FIND_BY_NO_GROUPS);
-
-			SQLQuery sqlQuery = session.createSynchronizedSQLQuery(sql);
-
-			sqlQuery.addEntity("User_", UserImpl.class);
-
-			return sqlQuery.list(true);
-		}
-		catch (Exception exception) {
-			throw new SystemException(exception);
-		}
-		finally {
-			closeSession(session);
-		}
 	}
 
 	@Override
@@ -806,9 +721,11 @@ public class UserFinderImpl extends UserFinderBaseImpl implements UserFinder {
 				queryPos.add(screenNames, 2);
 				queryPos.add(emailAddresses, 2);
 
-				if (status != WorkflowConstants.STATUS_ANY) {
-					queryPos.add(status);
+				if (status == WorkflowConstants.STATUS_ANY) {
+					continue;
 				}
+
+				queryPos.add(status);
 			}
 
 			return (List<Long>)QueryUtil.list(
@@ -834,6 +751,10 @@ public class UserFinderImpl extends UserFinderBaseImpl implements UserFinder {
 		sb.append("DISTINCT User_.userId AS userId");
 
 		for (String field : orderByFields) {
+			if (field.equals("userId")) {
+				continue;
+			}
+
 			sb.append(", User_.");
 			sb.append(field);
 			sb.append(" AS ");
@@ -853,15 +774,17 @@ public class UserFinderImpl extends UserFinderBaseImpl implements UserFinder {
 		for (Map.Entry<String, Object> entry : params.entrySet()) {
 			String key = entry.getKey();
 
-			if (key.equals("expandoAttributes")) {
+			if (key.equals("expandoAttributes") || key.equals("noLDAPUsers")) {
 				continue;
 			}
 
 			Object value = entry.getValue();
 
-			if (value != null) {
-				sb.append(getJoin(key, value));
+			if (value == null) {
+				continue;
 			}
+
+			sb.append(getJoin(key, value));
 		}
 
 		return sb.toString();
@@ -878,6 +801,10 @@ public class UserFinderImpl extends UserFinderBaseImpl implements UserFinder {
 		}
 		else if (key.equals("groupsUserGroups")) {
 			join = CustomSQLUtil.get(JOIN_BY_GROUPS_USER_GROUPS);
+		}
+		else if (key.equals("noAccountEntriesAndNoOrganizations")) {
+			join = CustomSQLUtil.get(
+				JOIN_BY_NO_ACCOUNT_ENTRIES_AND_NO_ORGANIZATIONS);
 		}
 		else if (key.equals("noOrganizations")) {
 			join = CustomSQLUtil.get(JOIN_BY_NO_ORGANIZATIONS);
@@ -945,6 +872,8 @@ public class UserFinderImpl extends UserFinderBaseImpl implements UserFinder {
 	protected List<LinkedHashMap<String, Object>> getParamsList(
 		LinkedHashMap<String, Object> params) {
 
+		List<LinkedHashMap<String, Object>> paramsList = new ArrayList<>();
+
 		if (params == null) {
 			params = _emptyLinkedHashMap;
 		}
@@ -1011,8 +940,8 @@ public class UserFinderImpl extends UserFinderBaseImpl implements UserFinder {
 		if (ArrayUtil.isNotEmpty(groupIds) && inherit &&
 			!socialRelationTypeUnionUserGroups) {
 
+			List<Long> depotOrSiteGroupIds = new ArrayList<>();
 			List<Long> organizationIds = new ArrayList<>();
-			List<Long> siteGroupIds = new ArrayList<>();
 			List<Long> userGroupIds = new ArrayList<>();
 
 			for (long groupId : groupIds) {
@@ -1022,16 +951,33 @@ public class UserFinderImpl extends UserFinderBaseImpl implements UserFinder {
 					continue;
 				}
 
+				if (group.isDepot() || group.isSite()) {
+					depotOrSiteGroupIds.add(groupId);
+				}
+
 				if (group.isOrganization()) {
 					organizationIds.add(group.getOrganizationId());
 				}
 				else if (group.isUserGroup()) {
 					userGroupIds.add(group.getClassPK());
 				}
+			}
 
-				if (group.isSite()) {
-					siteGroupIds.add(groupId);
-				}
+			if (!depotOrSiteGroupIds.isEmpty()) {
+				Long[] depotOrSiteGroupArray = depotOrSiteGroupIds.toArray(
+					new Long[0]);
+
+				params3 = new LinkedHashMap<>(params1);
+
+				params3.remove("usersGroups");
+
+				params3.put("groupsOrgs", depotOrSiteGroupArray);
+
+				params4 = new LinkedHashMap<>(params1);
+
+				params4.remove("usersGroups");
+
+				params4.put("groupsUserGroups", depotOrSiteGroupArray);
 			}
 
 			if (!organizationIds.isEmpty()) {
@@ -1052,22 +998,6 @@ public class UserFinderImpl extends UserFinderBaseImpl implements UserFinder {
 						"usersOrgsTree",
 						new ArrayList<Organization>(organizations.values()));
 				}
-			}
-
-			if (!siteGroupIds.isEmpty()) {
-				Long[] siteGroupIdsArray = siteGroupIds.toArray(new Long[0]);
-
-				params3 = new LinkedHashMap<>(params1);
-
-				params3.remove("usersGroups");
-
-				params3.put("groupsOrgs", siteGroupIdsArray);
-
-				params4 = new LinkedHashMap<>(params1);
-
-				params4.remove("usersGroups");
-
-				params4.put("groupsUserGroups", siteGroupIdsArray);
 			}
 
 			if (!userGroupIds.isEmpty()) {
@@ -1185,8 +1115,6 @@ public class UserFinderImpl extends UserFinderBaseImpl implements UserFinder {
 			}
 		}
 
-		List<LinkedHashMap<String, Object>> paramsList = new ArrayList<>();
-
 		paramsList.add(params1);
 
 		if (params2 != null) {
@@ -1232,9 +1160,11 @@ public class UserFinderImpl extends UserFinderBaseImpl implements UserFinder {
 
 			Object value = entry.getValue();
 
-			if (value != null) {
-				sb.append(getWhere(key, value));
+			if (value == null) {
+				continue;
 			}
+
+			sb.append(getWhere(key, value));
 		}
 
 		return sb.toString();
@@ -1301,6 +1231,13 @@ public class UserFinderImpl extends UserFinderBaseImpl implements UserFinder {
 					join, "Groups_UserGroups.groupId = ?",
 					"Groups_UserGroups.groupId = " + groupIds[0]);
 			}
+		}
+		else if (key.equals("noAccountEntriesAndNoOrganizations")) {
+			join = CustomSQLUtil.get(
+				JOIN_BY_NO_ACCOUNT_ENTRIES_AND_NO_ORGANIZATIONS);
+		}
+		else if (key.equals("noLDAPUsers")) {
+			join = "WHERE User_.ldapServerId = -1";
 		}
 		else if (key.equals("noOrganizations")) {
 			join = CustomSQLUtil.get(JOIN_BY_NO_ORGANIZATIONS);
@@ -1381,7 +1318,15 @@ public class UserFinderImpl extends UserFinderBaseImpl implements UserFinder {
 			else if (value instanceof Long[]) {
 				Long[] organizationIds = (Long[])value;
 
-				if (organizationIds.length > 1) {
+				if ((organizationIds.length == 1) &&
+					(organizationIds[0] ==
+						OrganizationConstants.ANY_ORGANIZATION_ID)) {
+
+					join = StringUtil.removeSubstring(
+						CustomSQLUtil.get(JOIN_BY_USERS_ORGS),
+						"WHERE Users_Orgs.organizationId = ?");
+				}
+				else if (organizationIds.length > 1) {
 					StringBundler sb = new StringBundler(
 						(organizationIds.length * 2) + 1);
 
@@ -1502,9 +1447,11 @@ public class UserFinderImpl extends UserFinderBaseImpl implements UserFinder {
 				for (int i = 0; i < socialRelationTypes.length; i++) {
 					sb.append(StringPool.QUESTION);
 
-					if ((i + 1) < socialRelationTypes.length) {
-						sb.append(StringPool.COMMA);
+					if ((i + 1) >= socialRelationTypes.length) {
+						continue;
 					}
+
+					sb.append(StringPool.COMMA);
 				}
 
 				sb.append("))");
@@ -1600,9 +1547,11 @@ public class UserFinderImpl extends UserFinderBaseImpl implements UserFinder {
 				Long[] valueArray = (Long[])value;
 
 				for (Long element : valueArray) {
-					if (Validator.isNotNull(element)) {
-						queryPos.add(element);
+					if (Validator.isNull(element)) {
+						continue;
 					}
+
+					queryPos.add(element);
 				}
 			}
 			else if (value instanceof Long[][]) {
@@ -1625,9 +1574,11 @@ public class UserFinderImpl extends UserFinderBaseImpl implements UserFinder {
 				String[] valueArray = (String[])value;
 
 				for (String element : valueArray) {
-					if (Validator.isNotNull(element)) {
-						queryPos.add(element);
+					if (Validator.isNull(element)) {
+						continue;
 					}
+
+					queryPos.add(element);
 				}
 			}
 			else if (value instanceof CustomSQLParam) {

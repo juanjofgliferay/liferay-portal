@@ -5,12 +5,10 @@
 
 package com.liferay.dynamic.data.mapping.form.web.internal.portlet.action;
 
-import com.liferay.document.library.kernel.exception.NoSuchFileEntryException;
+import com.liferay.document.library.helper.DLURLHelper;
 import com.liferay.document.library.kernel.model.DLFileEntry;
 import com.liferay.document.library.kernel.service.DLAppService;
-import com.liferay.document.library.kernel.service.DLFileEntryLocalService;
 import com.liferay.document.library.kernel.util.DLValidator;
-import com.liferay.document.library.util.DLURLHelper;
 import com.liferay.dynamic.data.mapping.constants.DDMPortletKeys;
 import com.liferay.expando.kernel.model.ExpandoBridge;
 import com.liferay.item.selector.ItemSelectorUploadResponseHandler;
@@ -48,12 +46,12 @@ import com.liferay.upload.UploadFileEntryHandler;
 import com.liferay.upload.UploadHandler;
 import com.liferay.upload.UploadResponseHandler;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.PortletRequest;
+
 import java.io.IOException;
 import java.io.InputStream;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.PortletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -63,7 +61,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + DDMPortletKeys.DYNAMIC_DATA_MAPPING_FORM,
+		"jakarta.portlet.name=" + DDMPortletKeys.DYNAMIC_DATA_MAPPING_FORM,
 		"mvc.command.name=/dynamic_data_mapping_form/upload_ddm_user_personal_folder"
 	},
 	service = MVCActionCommand.class
@@ -91,9 +89,6 @@ public class UploadDDMUserPersonalFolderMVCActionCommand
 
 	@Reference
 	private DLAppService _dlAppService;
-
-	@Reference
-	private DLFileEntryLocalService _dlFileEntryLocalService;
 
 	@Reference
 	private DLURLHelper _dlURLHelper;
@@ -147,14 +142,7 @@ public class UploadDDMUserPersonalFolderMVCActionCommand
 				uploadPortletRequest.getParameter("fileEntryId"));
 
 			if (fileEntryId > 0) {
-				try {
-					fileEntry = _dlAppService.getFileEntry(fileEntryId);
-				}
-				catch (NoSuchFileEntryException noSuchFileEntryException) {
-					if (_log.isDebugEnabled()) {
-						_log.debug(noSuchFileEntryException);
-					}
-				}
+				fileEntry = _dlAppService.fetchFileEntry(fileEntryId);
 			}
 
 			String fileName = uploadPortletRequest.getFileName(
@@ -230,7 +218,7 @@ public class UploadDDMUserPersonalFolderMVCActionCommand
 				null, repositoryId, folderId, uniqueFileName,
 				uploadPortletRequest.getContentType(parameterName),
 				uniqueFileName, uniqueFileName, description, StringPool.BLANK,
-				inputStream, size, null, null, serviceContext);
+				inputStream, size, null, null, null, serviceContext);
 		}
 
 		private boolean _exists(

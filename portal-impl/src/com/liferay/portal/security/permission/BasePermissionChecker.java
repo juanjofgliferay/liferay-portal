@@ -15,11 +15,11 @@ import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
 import com.liferay.portal.kernel.service.RoleLocalServiceUtil;
 import com.liferay.portal.kernel.service.UserLocalServiceUtil;
-import com.liferay.portal.util.PropsValues;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portlet.admin.util.OmniadminUtil;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author Brian Wing Shun Chan
@@ -41,6 +41,16 @@ public abstract class BasePermissionChecker implements PermissionChecker {
 
 	@Override
 	public long getOwnerRoleId() {
+		if (ownerRole == null) {
+			try {
+				ownerRole = RoleLocalServiceUtil.getRole(
+					user.getCompanyId(), RoleConstants.OWNER);
+			}
+			catch (Exception exception) {
+				_log.error(exception);
+			}
+		}
+
 		return ownerRole.getRoleId();
 	}
 
@@ -85,16 +95,14 @@ public abstract class BasePermissionChecker implements PermissionChecker {
 		long groupId, String name, long primKey, String actionId) {
 
 		return hasPermission(
-			GroupLocalServiceUtil.fetchGroup(groupId), name,
-			String.valueOf(primKey), actionId);
+			_fetchGroup(groupId), name, String.valueOf(primKey), actionId);
 	}
 
 	@Override
 	public boolean hasPermission(
 		long groupId, String name, String primKey, String actionId) {
 
-		return hasPermission(
-			GroupLocalServiceUtil.fetchGroup(groupId), name, primKey, actionId);
+		return hasPermission(_fetchGroup(groupId), name, primKey, actionId);
 	}
 
 	@Override
@@ -117,13 +125,7 @@ public abstract class BasePermissionChecker implements PermissionChecker {
 			signedIn = true;
 		}
 
-		try {
-			ownerRole = RoleLocalServiceUtil.getRole(
-				user.getCompanyId(), RoleConstants.OWNER);
-		}
-		catch (Exception exception) {
-			_log.error(exception);
-		}
+		ownerRole = null;
 	}
 
 	@Override
@@ -152,9 +154,18 @@ public abstract class BasePermissionChecker implements PermissionChecker {
 	protected boolean signedIn;
 	protected User user;
 
+	private Group _fetchGroup(long groupId) {
+		if (groupId <= 0) {
+			return null;
+		}
+
+		return GroupLocalServiceUtil.fetchGroup(groupId);
+	}
+
 	private static final Log _log = LogFactoryUtil.getLog(
 		BasePermissionChecker.class);
 
-	private final Map<Object, Object> _permissionChecksMap = new HashMap<>();
+	private final Map<Object, Object> _permissionChecksMap =
+		new ConcurrentHashMap<>();
 
 }

@@ -5,16 +5,16 @@
 
 package com.liferay.taglib.search;
 
-import java.io.Writer;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import java.io.Writer;
 
 /**
  * @author Brian Wing Shun Chan
  */
 public abstract class SearchEntry
-	implements Cloneable, com.liferay.portal.kernel.dao.search.SearchEntry {
+	implements com.liferay.portal.kernel.dao.search.SearchEntry {
 
 	@Override
 	public String getAlign() {

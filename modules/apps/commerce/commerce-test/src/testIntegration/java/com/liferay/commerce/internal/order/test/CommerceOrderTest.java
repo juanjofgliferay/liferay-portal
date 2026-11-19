@@ -21,6 +21,7 @@ import com.liferay.commerce.context.CommerceContextFactory;
 import com.liferay.commerce.currency.model.CommerceCurrency;
 import com.liferay.commerce.currency.test.util.CommerceCurrencyTestUtil;
 import com.liferay.commerce.exception.CommerceOrderAccountLimitException;
+import com.liferay.commerce.helper.CommerceAccountHelper;
 import com.liferay.commerce.model.CommerceAddress;
 import com.liferay.commerce.model.CommerceOrder;
 import com.liferay.commerce.order.engine.CommerceOrderEngine;
@@ -31,10 +32,7 @@ import com.liferay.commerce.service.CommerceAddressLocalService;
 import com.liferay.commerce.service.CommerceOrderLocalService;
 import com.liferay.commerce.service.CommerceOrderService;
 import com.liferay.commerce.test.util.CommerceTestUtil;
-import com.liferay.commerce.test.util.context.TestCustomCommerceContextFactory;
-import com.liferay.commerce.test.util.context.TestCustomCommerceContextHttp;
-import com.liferay.commerce.util.CommerceAccountHelper;
-import com.liferay.petra.lang.CentralizedThreadLocal;
+import com.liferay.commerce.util.CommerceOrderThreadLocal;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.model.Country;
@@ -44,7 +42,6 @@ import com.liferay.portal.kernel.model.OrganizationConstants;
 import com.liferay.portal.kernel.model.Region;
 import com.liferay.portal.kernel.model.Role;
 import com.liferay.portal.kernel.model.User;
-import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.service.CountryLocalService;
@@ -63,7 +60,6 @@ import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
-import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.ListUtil;
@@ -79,18 +75,10 @@ import org.frutilla.FrutillaRule;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
-import org.osgi.framework.FrameworkUtil;
-import org.osgi.service.component.runtime.ServiceComponentRuntime;
-import org.osgi.service.component.runtime.dto.ComponentDescriptionDTO;
-import org.osgi.util.promise.Promise;
-
-import org.springframework.mock.web.MockHttpServletRequest;
 
 /**
  * @author Alec Sloan
@@ -105,25 +93,8 @@ public class CommerceOrderTest {
 			new LiferayIntegrationTestRule(),
 			PermissionCheckerMethodTestRule.INSTANCE);
 
-	@BeforeClass
-	public static void setUpClass() throws Exception {
-		ComponentDescriptionDTO componentDescriptionDTO =
-			_serviceComponentRuntime.getComponentDescriptionDTO(
-				FrameworkUtil.getBundle(TestCustomCommerceContextFactory.class),
-				TestCustomCommerceContextFactory.class.getName());
-
-		Promise<Void> voidPromise = _serviceComponentRuntime.enableComponent(
-			componentDescriptionDTO);
-
-		voidPromise.getValue();
-	}
-
 	@Before
 	public void setUp() throws Exception {
-		_originalCompanyId = CompanyThreadLocal.getCompanyId();
-
-		CompanyThreadLocal.setCompanyId(TestPropsValues.getCompanyId());
-
 		_group = GroupTestUtil.addGroup();
 		_user = UserTestUtil.addUser(true);
 
@@ -152,37 +123,23 @@ public class CommerceOrderTest {
 			String.valueOf(CommerceChannelConstants.SITE_TYPE_B2B));
 
 		modifiableSettings.store();
-
-		_countryLocalService.deleteCompanyCountries(_group.getCompanyId());
 	}
 
 	@After
 	public void tearDown() throws Exception {
 		_commerceOrderLocalService.deleteCommerceOrders(
 			_commerceChannel.getGroupId());
-
-		CentralizedThreadLocal.clearShortLivedThreadLocals();
-
-		ComponentDescriptionDTO componentDescriptionDTO =
-			_serviceComponentRuntime.getComponentDescriptionDTO(
-				FrameworkUtil.getBundle(TestCustomCommerceContextFactory.class),
-				TestCustomCommerceContextFactory.class.getName());
-
-		Promise<Void> voidPromise = _serviceComponentRuntime.disableComponent(
-			componentDescriptionDTO);
-
-		voidPromise.getValue();
-
-		CompanyThreadLocal.setCompanyId(_originalCompanyId);
 	}
 
 	@Test
 	public void testCommerceOrderCurrency() throws Exception {
-		CommerceContext commerceContext = _commerceContextFactory.create(
-			new MockHttpServletRequest());
+		CommerceCurrency commerceCurrency =
+			CommerceCurrencyTestUtil.addCommerceCurrency(_group.getCompanyId());
 
-		Assert.assertTrue(
-			commerceContext instanceof TestCustomCommerceContextHttp);
+		CommerceContext commerceContext = _commerceContextFactory.create(
+			AccountConstants.ACCOUNT_ENTRY_ID_DEFAULT,
+			_commerceChannel.getGroupId(), commerceCurrency.getCode(), 0,
+			_group.getCompanyId());
 
 		CommerceOrder commerceOrder = CommerceTestUtil.addB2CCommerceOrder(
 			_user.getUserId(), _commerceChannel.getGroupId(),
@@ -226,8 +183,8 @@ public class CommerceOrderTest {
 		CommerceOrder commerceOrder =
 			_commerceOrderLocalService.addCommerceOrder(
 				_user.getUserId(), _commerceChannel.getGroupId(),
-				accountEntry.getAccountEntryId(),
-				_commerceCurrency.getCommerceCurrencyId(), 0);
+				accountEntry.getAccountEntryId(), _commerceCurrency.getCode(),
+				0);
 
 		User secondUser = UserTestUtil.addUser();
 
@@ -240,7 +197,7 @@ public class CommerceOrderTest {
 			_commerceOrderLocalService.addCommerceOrder(
 				secondUser.getUserId(), _commerceChannel.getGroupId(),
 				secondAccountEntry.getAccountEntryId(),
-				_commerceCurrency.getCommerceCurrencyId(), 0);
+				_commerceCurrency.getCode(), 0);
 
 		List<CommerceOrder> commerceOrders = _getUserOrders(
 			_commerceChannel.getGroupId(), false);
@@ -310,8 +267,8 @@ public class CommerceOrderTest {
 		CommerceOrder commerceOrder =
 			_commerceOrderLocalService.addCommerceOrder(
 				_user.getUserId(), commerceChannelGroupId,
-				accountEntry.getAccountEntryId(),
-				_commerceCurrency.getCommerceCurrencyId(), 0);
+				accountEntry.getAccountEntryId(), _commerceCurrency.getCode(),
+				0);
 
 		User secondUser = UserTestUtil.addUser();
 
@@ -330,7 +287,7 @@ public class CommerceOrderTest {
 			_commerceOrderLocalService.addCommerceOrder(
 				secondUser.getUserId(), commerceChannelGroupId,
 				secondAccountEntry.getAccountEntryId(),
-				_commerceCurrency.getCommerceCurrencyId(), 0);
+				_commerceCurrency.getCode(), 0);
 
 		List<CommerceOrder> commerceOrders = _getUserOrders(
 			commerceChannelGroupId, false);
@@ -369,7 +326,7 @@ public class CommerceOrderTest {
 	}
 
 	@Test
-	public void testGetCommerceOrdersForOmniAdmin() throws Exception {
+	public void testGetCommerceOrdersForOmniadmin() throws Exception {
 		frutillaRule.scenario(
 			"Ensure that the Omni-Admin is able to pull all orders"
 		).given(
@@ -416,7 +373,7 @@ public class CommerceOrderTest {
 					_commerceOrderLocalService.addCommerceOrder(
 						user.getUserId(), commerceChannelGroupId,
 						accountEntry.getAccountEntryId(),
-						_commerceCurrency.getCommerceCurrencyId(), 0));
+						_commerceCurrency.getCode(), 0));
 			}
 
 			ordersCreated += ordersToCreate;
@@ -445,22 +402,11 @@ public class CommerceOrderTest {
 		List<CommerceOrder> placedCommerceOrders = new ArrayList<>();
 
 		for (CommerceOrder commerceOrder : randomOrders) {
-			if (RandomTestUtil.randomBoolean()) {
-				CommerceAddress commerceAddress = _addAddressToAccount(
-					commerceOrder.getCommerceAccountId());
-
-				commerceOrder.setBillingAddressId(
-					commerceAddress.getCommerceAddressId());
-				commerceOrder.setShippingAddressId(
-					commerceAddress.getCommerceAddressId());
-
-				commerceOrder = _commerceOrderLocalService.updateCommerceOrder(
-					commerceOrder);
-
-				placedCommerceOrders.add(
-					_commerceOrderEngine.checkoutCommerceOrder(
-						commerceOrder, _user.getUserId()));
+			if (!RandomTestUtil.randomBoolean()) {
+				continue;
 			}
+
+			placedCommerceOrders.add(_checkoutCommerceOrder(commerceOrder));
 		}
 
 		ordersCount = _commerceOrderService.getUserPlacedCommerceOrdersCount(
@@ -544,22 +490,22 @@ public class CommerceOrderTest {
 				_serviceContext.getUserId(), "Test Business Account", null,
 				null, null, null, _serviceContext);
 
-		CommerceOrder commerceOrder =
+		CommerceOrder commerceOrder1 =
 			_commerceOrderLocalService.addCommerceOrder(
 				adminUserId, commerceChannelGroupId,
-				accountEntry.getAccountEntryId(),
-				_commerceCurrency.getCommerceCurrencyId(), 0);
+				accountEntry.getAccountEntryId(), _commerceCurrency.getCode(),
+				0);
 
 		AccountEntry secondAccountEntry =
 			CommerceAccountTestUtil.addBusinessAccountEntry(
 				_serviceContext.getUserId(), "Test Business Account 2", null,
 				null, null, null, _serviceContext);
 
-		CommerceOrder secondCommerceOrder =
+		CommerceOrder commerceOrder2 =
 			_commerceOrderLocalService.addCommerceOrder(
 				adminUserId, commerceChannelGroupId,
 				secondAccountEntry.getAccountEntryId(),
-				_commerceCurrency.getCommerceCurrencyId(), 0);
+				_commerceCurrency.getCode(), 0);
 
 		Role role = _roleLocalService.fetchRole(
 			_serviceContext.getCompanyId(), "Sales Agent");
@@ -599,12 +545,13 @@ public class CommerceOrderTest {
 
 		commerceOrders = _getUserOrders(commerceChannelGroupId, false);
 
-		Assert.assertEquals(commerceOrder.toString(), 1, commerceOrders.size());
+		Assert.assertEquals(
+			commerceOrder1.toString(), 1, commerceOrders.size());
 
 		Assert.assertEquals(
 			"The Sales Agent should see first order created, which belongs " +
 				"to the account their 1 organization is associated with",
-			commerceOrder, commerceOrders.get(0));
+			commerceOrder1, commerceOrders.get(0));
 
 		// The Sales Agent's Second organization is added to the second Account
 
@@ -627,27 +574,15 @@ public class CommerceOrderTest {
 		Assert.assertEquals(
 			"The first Order the Sales manager can see should match the " +
 				"first created",
-			true, commerceOrders.contains(commerceOrder));
+			true, commerceOrders.contains(commerceOrder1));
 		Assert.assertEquals(
 			"The second Order the Sales manager can see should match the " +
 				"second created",
-			true, commerceOrders.contains(secondCommerceOrder));
+			true, commerceOrders.contains(commerceOrder2));
 
 		// Checkout the first order
 
-		CommerceAddress commerceAddress = _addAddressToAccount(
-			accountEntry.getAccountEntryId());
-
-		commerceOrder.setBillingAddressId(
-			commerceAddress.getCommerceAddressId());
-		commerceOrder.setShippingAddressId(
-			commerceAddress.getCommerceAddressId());
-
-		commerceOrder = _commerceOrderLocalService.updateCommerceOrder(
-			commerceOrder);
-
-		commerceOrder = _commerceOrderEngine.checkoutCommerceOrder(
-			commerceOrder, _user.getUserId());
+		commerceOrder1 = _checkoutCommerceOrder(commerceOrder1);
 
 		ordersCountByUser = _getUserOrdersCount(commerceChannelGroupId, true);
 
@@ -661,23 +596,11 @@ public class CommerceOrderTest {
 		Assert.assertEquals(
 			"The Sales Agent should see first order created, which belongs " +
 				"to the account their 1 organization is associated with",
-			commerceOrder, commerceOrders.get(0));
+			commerceOrder1, commerceOrders.get(0));
 
 		// Checkout the second order
 
-		CommerceAddress secondCommerceAddress = _addAddressToAccount(
-			secondAccountEntry.getAccountEntryId());
-
-		secondCommerceOrder.setBillingAddressId(
-			secondCommerceAddress.getCommerceAddressId());
-		secondCommerceOrder.setShippingAddressId(
-			secondCommerceAddress.getCommerceAddressId());
-
-		secondCommerceOrder = _commerceOrderLocalService.updateCommerceOrder(
-			secondCommerceOrder);
-
-		secondCommerceOrder = _commerceOrderEngine.checkoutCommerceOrder(
-			secondCommerceOrder, _user.getUserId());
+		commerceOrder2 = _checkoutCommerceOrder(commerceOrder2);
 
 		ordersCountByUser = _getUserOrdersCount(commerceChannelGroupId, true);
 
@@ -692,11 +615,11 @@ public class CommerceOrderTest {
 		Assert.assertEquals(
 			"The first Order the Sales manager can see should match the " +
 				"first created",
-			true, commerceOrders.contains(commerceOrder));
+			true, commerceOrders.contains(commerceOrder1));
 		Assert.assertEquals(
 			"The second Order the Sales manager can see should match the " +
 				"second created",
-			true, commerceOrders.contains(secondCommerceOrder));
+			true, commerceOrders.contains(commerceOrder2));
 
 		// There shouldn't be any open orders
 
@@ -725,7 +648,7 @@ public class CommerceOrderTest {
 			commerceOrders.toString(), 1, commerceOrders.size());
 
 		Assert.assertEquals(
-			"The Sales Agent should only see the first order", commerceOrder,
+			"The Sales Agent should only see the first order", commerceOrder1,
 			commerceOrders.get(0));
 
 		// Remove the Organization association from the first account
@@ -742,11 +665,8 @@ public class CommerceOrderTest {
 		Assert.assertEquals(
 			commerceOrders.toString(), 0, commerceOrders.size());
 
-		_commerceOrderLocalService.deleteCommerceOrder(commerceOrder);
-		_commerceOrderLocalService.deleteCommerceOrder(secondCommerceOrder);
-		_commerceAddressLocalService.deleteCommerceAddress(commerceAddress);
-		_commerceAddressLocalService.deleteCommerceAddress(
-			secondCommerceAddress);
+		_commerceOrderLocalService.deleteCommerceOrder(commerceOrder1);
+		_commerceOrderLocalService.deleteCommerceOrder(commerceOrder2);
 		_accountEntryLocalService.deleteAccountEntry(accountEntry);
 		_accountEntryLocalService.deleteAccountEntry(secondAccountEntry);
 		_organizationLocalService.deleteUserOrganization(
@@ -784,8 +704,8 @@ public class CommerceOrderTest {
 		CommerceOrder commerceOrder =
 			_commerceOrderLocalService.addCommerceOrder(
 				_user.getUserId(), commerceChannelGroupId,
-				accountEntry.getAccountEntryId(),
-				_commerceCurrency.getCommerceCurrencyId(), 0);
+				accountEntry.getAccountEntryId(), _commerceCurrency.getCode(),
+				0);
 
 		int ordersCountByAccountId =
 			_commerceOrderService.getPendingCommerceOrdersCount(
@@ -844,8 +764,8 @@ public class CommerceOrderTest {
 		CommerceOrder commerceOrder1 =
 			_commerceOrderLocalService.addCommerceOrder(
 				_user.getUserId(), commerceChannelGroupId,
-				accountEntry.getAccountEntryId(),
-				_commerceCurrency.getCommerceCurrencyId(), 0);
+				accountEntry.getAccountEntryId(), _commerceCurrency.getCode(),
+				0);
 
 		String commerceOrderId = String.valueOf(
 			commerceOrder1.getCommerceOrderId());
@@ -883,6 +803,47 @@ public class CommerceOrderTest {
 	}
 
 	@Test
+	public void testGetPendingCommerceOrdersExceedingMaxAllowedBooleanClauses()
+		throws Exception {
+
+		List<AccountEntry> accountEntries = new ArrayList<>();
+
+		long accountEntryIdsCount = _MAX_CLAUSES_COUNT + 1;
+
+		for (int i = 0; i < accountEntryIdsCount; i++) {
+			AccountEntry accountEntry =
+				CommerceAccountTestUtil.addBusinessAccountEntry(
+					_user.getUserId(), "Test Business Account" + i, null, null,
+					new long[] {_user.getUserId()}, null, _serviceContext);
+
+			accountEntries.add(accountEntry);
+		}
+
+		long commerceChannelGroupId = _commerceChannel.getGroupId();
+
+		AccountEntry userAccountEntry = accountEntries.get(0);
+
+		CommerceOrder commerceOrder =
+			_commerceOrderLocalService.addCommerceOrder(
+				_user.getUserId(), commerceChannelGroupId,
+				userAccountEntry.getAccountEntryId(),
+				_commerceCurrency.getCode(), 0);
+
+		List<CommerceOrder> commerceOrders = _getUserOrders(
+			commerceChannelGroupId, false);
+
+		CommerceOrder actualCommerceOrder = commerceOrders.get(0);
+
+		Assert.assertEquals(commerceOrder, actualCommerceOrder);
+
+		_commerceOrderLocalService.deleteCommerceOrders(commerceChannelGroupId);
+
+		for (AccountEntry accountEntry : accountEntries) {
+			_accountEntryLocalService.deleteAccountEntry(accountEntry);
+		}
+	}
+
+	@Test
 	public void testGetPlacedCommerceOrder() throws Exception {
 		frutillaRule.scenario(
 			"Try to get a placed order based on the userId, and directly " +
@@ -906,25 +867,11 @@ public class CommerceOrderTest {
 
 		long commerceChannelGroupId = _commerceChannel.getGroupId();
 
-		CommerceOrder commerceOrder =
+		CommerceOrder commerceOrder = _checkoutCommerceOrder(
 			_commerceOrderLocalService.addCommerceOrder(
 				_user.getUserId(), commerceChannelGroupId,
-				accountEntry.getAccountEntryId(),
-				_commerceCurrency.getCommerceCurrencyId(), 0);
-
-		CommerceAddress commerceAddress = _addAddressToAccount(
-			accountEntry.getAccountEntryId());
-
-		commerceOrder.setBillingAddressId(
-			commerceAddress.getCommerceAddressId());
-		commerceOrder.setShippingAddressId(
-			commerceAddress.getCommerceAddressId());
-
-		commerceOrder = _commerceOrderLocalService.updateCommerceOrder(
-			commerceOrder);
-
-		commerceOrder = _commerceOrderEngine.checkoutCommerceOrder(
-			commerceOrder, _user.getUserId());
+				accountEntry.getAccountEntryId(), _commerceCurrency.getCode(),
+				0));
 
 		int ordersCountByAccountId =
 			_commerceOrderService.getPlacedCommerceOrdersCount(
@@ -955,6 +902,151 @@ public class CommerceOrderTest {
 
 		_commerceOrderLocalService.deleteCommerceOrders(commerceChannelGroupId);
 		_accountEntryLocalService.deleteAccountEntry(accountEntry);
+	}
+
+	@Test
+	public void testGetUserPendingCommerceOrders() throws Exception {
+		AccountEntry accountEntry =
+			CommerceAccountTestUtil.addBusinessAccountEntry(
+				_user.getUserId(), RandomTestUtil.randomString(), null, null,
+				new long[] {_user.getUserId()}, null, _serviceContext);
+
+		long groupId = _commerceChannel.getGroupId();
+
+		_commerceOrderLocalService.addCommerceOrder(
+			_user.getUserId(), groupId, accountEntry.getAccountEntryId(),
+			_commerceCurrency.getCode(), 0);
+
+		CommerceOrder commerceOrder =
+			_commerceOrderLocalService.addCommerceOrder(
+				_user.getUserId(), groupId, accountEntry.getAccountEntryId(),
+				_commerceCurrency.getCode(), 0);
+
+		String keywords = String.valueOf(commerceOrder.getCommerceOrderId());
+
+		Assert.assertEquals(
+			1,
+			_commerceOrderService.getUserPendingCommerceOrdersCount(
+				_group.getCompanyId(), groupId, keywords));
+
+		List<CommerceOrder> commerceOrders =
+			_commerceOrderService.getUserPendingCommerceOrders(
+				_group.getCompanyId(), groupId, keywords, QueryUtil.ALL_POS,
+				QueryUtil.ALL_POS);
+
+		Assert.assertEquals(
+			commerceOrders.toString(), 1, commerceOrders.size());
+		Assert.assertEquals(commerceOrder, commerceOrders.get(0));
+
+		_commerceOrderLocalService.deleteCommerceOrders(groupId);
+		_accountEntryLocalService.deleteAccountEntry(accountEntry);
+	}
+
+	@Test
+	public void testGetUserPlacedCommerceOrders() throws Exception {
+		AccountEntry accountEntry =
+			CommerceAccountTestUtil.addBusinessAccountEntry(
+				_user.getUserId(), RandomTestUtil.randomString(), null, null,
+				new long[] {_user.getUserId()}, null, _serviceContext);
+
+		long groupId = _commerceChannel.getGroupId();
+
+		_checkoutCommerceOrder(
+			_commerceOrderLocalService.addCommerceOrder(
+				_user.getUserId(), groupId, accountEntry.getAccountEntryId(),
+				_commerceCurrency.getCode(), 0));
+
+		CommerceOrder commerceOrder = _checkoutCommerceOrder(
+			_commerceOrderLocalService.addCommerceOrder(
+				_user.getUserId(), groupId, accountEntry.getAccountEntryId(),
+				_commerceCurrency.getCode(), 0));
+
+		String keywords = String.valueOf(commerceOrder.getCommerceOrderId());
+
+		Assert.assertEquals(
+			1,
+			_commerceOrderService.getUserPlacedCommerceOrdersCount(
+				_group.getCompanyId(), groupId, keywords));
+
+		List<CommerceOrder> commerceOrders =
+			_commerceOrderService.getUserPlacedCommerceOrders(
+				_group.getCompanyId(), groupId, keywords, QueryUtil.ALL_POS,
+				QueryUtil.ALL_POS);
+
+		Assert.assertEquals(
+			commerceOrders.toString(), 1, commerceOrders.size());
+		Assert.assertEquals(commerceOrder, commerceOrders.get(0));
+
+		_commerceOrderLocalService.deleteCommerceOrders(groupId);
+		_accountEntryLocalService.deleteAccountEntry(accountEntry);
+	}
+
+	@Test
+	public void testSkipValidateAccountLimit() throws Exception {
+		Settings settings = FallbackKeysSettingsUtil.getSettings(
+			new GroupServiceSettingsLocator(
+				_commerceChannel.getGroupId(),
+				CommerceConstants.SERVICE_NAME_COMMERCE_ORDER_FIELDS));
+
+		ModifiableSettings modifiableSettings =
+			settings.getModifiableSettings();
+
+		modifiableSettings.setValue("accountCartMaxAllowed", "1");
+
+		modifiableSettings.store();
+
+		AccountEntry accountEntry =
+			CommerceAccountTestUtil.addBusinessAccountEntry(
+				_user.getUserId(), "Test Business Account", null, null,
+				new long[] {_user.getUserId()}, null, _serviceContext);
+
+		long commerceChannelGroupId = _commerceChannel.getGroupId();
+
+		_commerceOrderLocalService.addCommerceOrder(
+			_user.getUserId(), commerceChannelGroupId,
+			accountEntry.getAccountEntryId(), _commerceCurrency.getCode(), 0);
+
+		try {
+			_commerceOrderLocalService.addCommerceOrder(
+				_user.getUserId(), commerceChannelGroupId,
+				accountEntry.getAccountEntryId(), _commerceCurrency.getCode(),
+				0);
+		}
+		catch (CommerceOrderAccountLimitException
+					commerceOrderAccountLimitException) {
+
+			Assert.assertNotNull(commerceOrderAccountLimitException);
+		}
+
+		Assert.assertEquals(
+			1,
+			_commerceOrderService.getPendingCommerceOrdersCount(
+				commerceChannelGroupId, accountEntry.getAccountEntryId(),
+				StringPool.BLANK));
+
+		boolean skipValidateAccountLimit =
+			CommerceOrderThreadLocal.isSkipValidateAccountLimit();
+
+		try {
+			CommerceOrderThreadLocal.setSkipValidateAccountLimit(true);
+
+			_commerceOrderLocalService.addCommerceOrder(
+				_user.getUserId(), commerceChannelGroupId,
+				accountEntry.getAccountEntryId(), _commerceCurrency.getCode(),
+				0);
+
+			Assert.assertEquals(
+				2,
+				_commerceOrderService.getPendingCommerceOrdersCount(
+					commerceChannelGroupId, accountEntry.getAccountEntryId(),
+					StringPool.BLANK));
+
+			_accountEntries.add(accountEntry);
+		}
+		finally {
+			CommerceOrderThreadLocal.setSkipValidateAccountLimit(
+				skipValidateAccountLimit);
+		}
 	}
 
 	@Test
@@ -995,19 +1087,17 @@ public class CommerceOrderTest {
 
 		_commerceOrderLocalService.addCommerceOrder(
 			_user.getUserId(), commerceChannelGroupId,
-			accountEntry.getAccountEntryId(),
-			_commerceCurrency.getCommerceCurrencyId(), 0);
+			accountEntry.getAccountEntryId(), _commerceCurrency.getCode(), 0);
 
 		_commerceOrderLocalService.addCommerceOrder(
 			_user.getUserId(), commerceChannelGroupId,
-			accountEntry.getAccountEntryId(),
-			_commerceCurrency.getCommerceCurrencyId(), 0);
+			accountEntry.getAccountEntryId(), _commerceCurrency.getCode(), 0);
 
 		try {
 			_commerceOrderLocalService.addCommerceOrder(
 				_user.getUserId(), commerceChannelGroupId,
-				accountEntry.getAccountEntryId(),
-				_commerceCurrency.getCommerceCurrencyId(), 0);
+				accountEntry.getAccountEntryId(), _commerceCurrency.getCode(),
+				0);
 		}
 		catch (CommerceOrderAccountLimitException
 					commerceOrderAccountLimitException) {
@@ -1035,13 +1125,15 @@ public class CommerceOrderTest {
 
 		if (_country == null) {
 			_country = _countryLocalService.addCountry(
-				"ZZ", "ZZZ", true, true, null, RandomTestUtil.randomString(),
-				"000", RandomTestUtil.randomDouble(), true, false, false,
+				null, "ZZ", "ZZZ", true, true, null,
+				RandomTestUtil.randomString(), "000",
+				RandomTestUtil.randomDouble(), true, false, false,
 				_serviceContext);
 
 			_region = _regionLocalService.addRegion(
-				_country.getCountryId(), true, RandomTestUtil.randomString(),
-				RandomTestUtil.randomDouble(), "ZZ", _serviceContext);
+				null, _country.getCountryId(), true,
+				RandomTestUtil.randomString(), RandomTestUtil.randomDouble(),
+				"ZZ", _serviceContext);
 		}
 		else {
 			_region = _regionLocalService.getRegion(
@@ -1049,19 +1141,20 @@ public class CommerceOrderTest {
 		}
 
 		return _commerceAddressLocalService.addCommerceAddress(
-			AccountEntry.class.getName(), commerceAccountId,
+			StringPool.BLANK, AccountEntry.class.getName(), commerceAccountId,
+			_country.getCountryId(), _region.getRegionId(),
 			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
 			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
 			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
-			String.valueOf(30133), _region.getRegionId(),
-			_country.getCountryId(), RandomTestUtil.randomString(),
+			RandomTestUtil.randomString(), StringPool.BLANK,
 			CommerceAddressConstants.ADDRESS_TYPE_BILLING_AND_SHIPPING,
-			_serviceContext);
+			String.valueOf(30133), _serviceContext);
 	}
 
 	private Role _addSalesAgentRole() throws Exception {
 		Role role = _roleLocalService.addRole(
-			_user.getUserId(), null, 0, "Sales Agent",
+			RandomTestUtil.randomString(), _user.getUserId(), null, 0,
+			"Sales Agent",
 			HashMapBuilder.put(
 				_serviceContext.getLocale(), "Sales Agent"
 			).build(),
@@ -1079,6 +1172,22 @@ public class CommerceOrderTest {
 			"MANAGE_ORGANIZATIONS");
 
 		return role;
+	}
+
+	private CommerceOrder _checkoutCommerceOrder(CommerceOrder commerceOrder)
+		throws Exception {
+
+		CommerceAddress commerceAddress = _addAddressToAccount(
+			commerceOrder.getCommerceAccountId());
+
+		commerceOrder.setBillingAddressId(
+			commerceAddress.getCommerceAddressId());
+		commerceOrder.setShippingAddressId(
+			commerceAddress.getCommerceAddressId());
+
+		return _commerceOrderEngine.checkoutCommerceOrder(
+			_commerceOrderLocalService.updateCommerceOrder(commerceOrder),
+			_user.getUserId());
 	}
 
 	private List<CommerceOrder> _getUserOrders(long groupId, boolean negate)
@@ -1116,8 +1225,7 @@ public class CommerceOrderTest {
 			new int[] {CommerceOrderConstants.ORDER_STATUS_OPEN}, negate);
 	}
 
-	@Inject
-	private static ServiceComponentRuntime _serviceComponentRuntime;
+	private static final int _MAX_CLAUSES_COUNT = 1024;
 
 	private final List<AccountEntry> _accountEntries = new ArrayList<>();
 
@@ -1166,7 +1274,6 @@ public class CommerceOrderTest {
 	@Inject
 	private OrganizationLocalService _organizationLocalService;
 
-	private long _originalCompanyId;
 	private Region _region;
 
 	@Inject

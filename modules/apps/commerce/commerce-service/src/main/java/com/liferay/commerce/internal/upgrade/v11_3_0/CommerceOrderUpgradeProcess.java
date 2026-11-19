@@ -22,22 +22,21 @@ public class CommerceOrderUpgradeProcess extends UpgradeProcess {
 
 	@Override
 	protected void doUpgrade() throws Exception {
-		try (PreparedStatement preparedStatement1 = connection.prepareStatement(
-				StringBundler.concat(
-					"select commerceOrderId from CommerceOrder where ",
-					"orderStatus = ",
-					CommerceOrderConstants.ORDER_STATUS_OPEN))) {
+		try (PreparedStatement preparedStatement = connection.prepareStatement(
+				"select commerceOrderId from CommerceOrder where orderStatus " +
+					"= ?")) {
 
-			try (ResultSet resultSet1 = preparedStatement1.executeQuery()) {
-				while (resultSet1.next()) {
-					long commerceOrderId = resultSet1.getLong(1);
+			preparedStatement.setInt(
+				1, CommerceOrderConstants.ORDER_STATUS_OPEN);
 
-					boolean shippable = _isShippable(
-						connection, commerceOrderId);
+			try (ResultSet resultSet = preparedStatement.executeQuery()) {
+				while (resultSet.next()) {
+					long commerceOrderId = resultSet.getLong("commerceOrderId");
 
 					runSQL(
 						StringBundler.concat(
-							"update CommerceOrder set shippable = ", shippable,
+							"update CommerceOrder set shippable = ",
+							_getShippable(connection, commerceOrderId),
 							" where commerceOrderId = ", commerceOrderId));
 				}
 			}
@@ -52,26 +51,24 @@ public class CommerceOrderUpgradeProcess extends UpgradeProcess {
 		};
 	}
 
-	private boolean _isShippable(Connection connection, long commerceOrderId)
+	private String _getShippable(Connection connection, long commerceOrderId)
 		throws Exception {
 
-		PreparedStatement preparedStatement3 = connection.prepareStatement(
+		PreparedStatement preparedStatement = connection.prepareStatement(
 			"select distinct shippable from CommerceOrderItem where " +
 				"commerceOrderId = ?");
 
-		preparedStatement3.setLong(1, commerceOrderId);
+		preparedStatement.setLong(1, commerceOrderId);
 
-		try (ResultSet resultSet3 = preparedStatement3.executeQuery()) {
-			while (resultSet3.next()) {
-				boolean shippable = resultSet3.getBoolean("shippable");
-
-				if (shippable) {
-					return true;
+		try (ResultSet resultSet = preparedStatement.executeQuery()) {
+			while (resultSet.next()) {
+				if (resultSet.getBoolean("shippable")) {
+					return "[$TRUE$]";
 				}
 			}
 		}
 
-		return false;
+		return "[$FALSE$]";
 	}
 
 }

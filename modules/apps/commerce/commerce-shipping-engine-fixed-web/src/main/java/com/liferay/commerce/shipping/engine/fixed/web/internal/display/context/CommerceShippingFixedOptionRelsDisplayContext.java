@@ -23,7 +23,6 @@ import com.liferay.commerce.shipping.engine.fixed.web.internal.constants.Commerc
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.CreationMenu;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.CreationMenuBuilder;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.model.Country;
@@ -37,11 +36,11 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import java.util.List;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
 
-import javax.portlet.PortletRequest;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
+import java.util.List;
 
 /**
  * @author Alessio Antonio Rendina
@@ -64,13 +63,12 @@ public class CommerceShippingFixedOptionRelsDisplayContext
 
 		super(
 			commerceChannelLocalService, commerceCurrencyLocalService,
-			commerceShippingMethodService, renderRequest, renderResponse);
+			commerceShippingFixedOptionService, commerceShippingMethodService,
+			renderRequest, renderResponse);
 
 		_commerceInventoryWarehouseService = commerceInventoryWarehouseService;
 		_commerceShippingFixedOptionRelService =
 			commerceShippingFixedOptionRelService;
-		_commerceShippingFixedOptionService =
-			commerceShippingFixedOptionService;
 		_countryService = countryService;
 		_cpMeasurementUnitLocalService = cpMeasurementUnitLocalService;
 		_portal = portal;
@@ -85,10 +83,27 @@ public class CommerceShippingFixedOptionRelsDisplayContext
 		).setMVCRenderCommandName(
 			"/commerce_shipping_methods/edit_commerce_shipping_fixed_option_rel"
 		).setParameter(
+			"commerceShippingFixedOptionId", getCommerceShippingFixedOptionId()
+		).setParameter(
 			"commerceShippingMethodId", getCommerceShippingMethodId()
 		).setWindowState(
 			LiferayWindowState.POP_UP
 		).buildString();
+	}
+
+	public String getCPMeasurementUnitName(int type) {
+		ThemeDisplay themeDisplay = (ThemeDisplay)renderRequest.getAttribute(
+			WebKeys.THEME_DISPLAY);
+
+		CPMeasurementUnit cpMeasurementUnit =
+			_cpMeasurementUnitLocalService.fetchPrimaryCPMeasurementUnit(
+				themeDisplay.getCompanyId(), type);
+
+		if (cpMeasurementUnit == null) {
+			return StringPool.BLANK;
+		}
+
+		return cpMeasurementUnit.getName(themeDisplay.getLanguageId());
 	}
 
 	public List<CommerceInventoryWarehouse> getCommerceInventoryWarehouses()
@@ -99,7 +114,7 @@ public class CommerceShippingFixedOptionRelsDisplayContext
 
 		return _commerceInventoryWarehouseService.
 			getCommerceInventoryWarehouses(
-				commerceShippingMethod.getCompanyId(),
+				commerceShippingMethod.getCompanyId(), 0,
 				commerceShippingMethod.getGroupId(), true);
 	}
 
@@ -135,13 +150,16 @@ public class CommerceShippingFixedOptionRelsDisplayContext
 		return commerceShippingFixedOptionRel;
 	}
 
-	public List<CommerceShippingFixedOption> getCommerceShippingFixedOptions()
-		throws PortalException {
+	public long getCommerceShippingFixedOptionRelId() throws PortalException {
+		CommerceShippingFixedOptionRel commerceShippingFixedOptionRel =
+			getCommerceShippingFixedOptionRel();
 
-		return _commerceShippingFixedOptionService.
-			getCommerceShippingFixedOptions(
-				getCommerceShippingMethodId(), QueryUtil.ALL_POS,
-				QueryUtil.ALL_POS);
+		if (commerceShippingFixedOptionRel == null) {
+			return 0;
+		}
+
+		return commerceShippingFixedOptionRel.
+			getCommerceShippingFixedOptionRelId();
 	}
 
 	public List<Country> getCountries() {
@@ -153,31 +171,14 @@ public class CommerceShippingFixedOptionRelsDisplayContext
 	}
 
 	public long getCountryId() throws PortalException {
-		long countryId = 0;
-
 		CommerceShippingFixedOptionRel commerceShippingFixedOptionRel =
 			getCommerceShippingFixedOptionRel();
 
-		if (commerceShippingFixedOptionRel != null) {
-			countryId = commerceShippingFixedOptionRel.getCountryId();
+		if (commerceShippingFixedOptionRel == null) {
+			return 0;
 		}
 
-		return countryId;
-	}
-
-	public String getCPMeasurementUnitName(int type) {
-		ThemeDisplay themeDisplay = (ThemeDisplay)renderRequest.getAttribute(
-			WebKeys.THEME_DISPLAY);
-
-		CPMeasurementUnit cpMeasurementUnit =
-			_cpMeasurementUnitLocalService.fetchPrimaryCPMeasurementUnit(
-				themeDisplay.getCompanyId(), type);
-
-		if (cpMeasurementUnit != null) {
-			return cpMeasurementUnit.getName(themeDisplay.getLanguageId());
-		}
-
-		return StringPool.BLANK;
+		return commerceShippingFixedOptionRel.getCountryId();
 	}
 
 	public CreationMenu getCreationMenu() throws Exception {
@@ -197,16 +198,14 @@ public class CommerceShippingFixedOptionRelsDisplayContext
 	}
 
 	public long getRegionId() throws PortalException {
-		long regionId = 0;
-
 		CommerceShippingFixedOptionRel commerceShippingFixedOptionRel =
 			getCommerceShippingFixedOptionRel();
 
-		if (commerceShippingFixedOptionRel != null) {
-			regionId = commerceShippingFixedOptionRel.getRegionId();
+		if (commerceShippingFixedOptionRel == null) {
+			return 0;
 		}
 
-		return regionId;
+		return commerceShippingFixedOptionRel.getRegionId();
 	}
 
 	public List<Region> getRegions() throws PortalException {
@@ -220,10 +219,10 @@ public class CommerceShippingFixedOptionRelsDisplayContext
 	}
 
 	public boolean isVisible() throws PortalException {
-		List<CommerceShippingFixedOption> commerceShippingFixedOptions =
-			getCommerceShippingFixedOptions();
+		CommerceShippingFixedOption commerceShippingFixedOption =
+			getCommerceShippingFixedOption();
 
-		if (commerceShippingFixedOptions.isEmpty()) {
+		if (commerceShippingFixedOption == null) {
 			return false;
 		}
 
@@ -234,8 +233,6 @@ public class CommerceShippingFixedOptionRelsDisplayContext
 		_commerceInventoryWarehouseService;
 	private final CommerceShippingFixedOptionRelService
 		_commerceShippingFixedOptionRelService;
-	private final CommerceShippingFixedOptionService
-		_commerceShippingFixedOptionService;
 	private final CountryService _countryService;
 	private final CPMeasurementUnitLocalService _cpMeasurementUnitLocalService;
 	private final Portal _portal;

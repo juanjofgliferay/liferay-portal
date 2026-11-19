@@ -68,19 +68,20 @@ public class CommerceChannelServiceWrapper
 	}
 
 	@Override
-	public CommerceChannel fetchByExternalReferenceCode(
-			String externalReferenceCode, long companyId)
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return _commerceChannelService.fetchByExternalReferenceCode(
-			externalReferenceCode, companyId);
-	}
-
-	@Override
 	public CommerceChannel fetchCommerceChannel(long commerceChannelId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commerceChannelService.fetchCommerceChannel(commerceChannelId);
+	}
+
+	@Override
+	public CommerceChannel fetchCommerceChannelByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _commerceChannelService.
+			fetchCommerceChannelByExternalReferenceCode(
+				externalReferenceCode, companyId);
 	}
 
 	@Override
@@ -103,6 +104,24 @@ public class CommerceChannelServiceWrapper
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commerceChannelService.getCommerceChannels(companyId);
+	}
+
+	@Override
+	public java.util.List<CommerceChannel> getEligibleCommerceChannels(
+			long accountEntryId, String name, int start, int end)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _commerceChannelService.getEligibleCommerceChannels(
+			accountEntryId, name, start, end);
+	}
+
+	@Override
+	public CommerceChannel getOrAddEmptyCommerceChannel(
+			String externalReferenceCode)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _commerceChannelService.getOrAddEmptyCommerceChannel(
+			externalReferenceCode);
 	}
 
 	/**
@@ -181,3 +200,4 @@ public class CommerceChannelServiceWrapper
 	private CommerceChannelService _commerceChannelService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1613734734

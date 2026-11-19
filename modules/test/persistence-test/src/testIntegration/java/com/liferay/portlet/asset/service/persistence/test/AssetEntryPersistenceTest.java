@@ -111,11 +111,7 @@ public class AssetEntryPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		AssetEntry newAssetEntry = _persistence.create(pk);
-
-		newAssetEntry.setMvccVersion(RandomTestUtil.nextLong());
+		AssetEntry newAssetEntry = addAssetEntry();
 
 		newAssetEntry.setCtCollectionId(RandomTestUtil.nextLong());
 
@@ -169,7 +165,9 @@ public class AssetEntryPersistenceTest {
 
 		newAssetEntry.setPriority(RandomTestUtil.nextDouble());
 
-		_assetEntries.add(_persistence.update(newAssetEntry));
+		newAssetEntry = _persistence.update(newAssetEntry);
+
+		_assetEntries.add(newAssetEntry);
 
 		AssetEntry existingAssetEntry = _persistence.findByPrimaryKey(
 			newAssetEntry.getPrimaryKey());
@@ -258,33 +256,12 @@ public class AssetEntryPersistenceTest {
 	}
 
 	@Test
-	public void testCountByVisible() throws Exception {
-		_persistence.countByVisible(RandomTestUtil.randomBoolean());
+	public void testCountByClassUuid() throws Exception {
+		_persistence.countByClassUuid("");
 
-		_persistence.countByVisible(RandomTestUtil.randomBoolean());
-	}
+		_persistence.countByClassUuid("null");
 
-	@Test
-	public void testCountByPublishDate() throws Exception {
-		_persistence.countByPublishDate(RandomTestUtil.nextDate());
-
-		_persistence.countByPublishDate(RandomTestUtil.nextDate());
-	}
-
-	@Test
-	public void testCountByExpirationDate() throws Exception {
-		_persistence.countByExpirationDate(RandomTestUtil.nextDate());
-
-		_persistence.countByExpirationDate(RandomTestUtil.nextDate());
-	}
-
-	@Test
-	public void testCountByLayoutUuid() throws Exception {
-		_persistence.countByLayoutUuid("");
-
-		_persistence.countByLayoutUuid("null");
-
-		_persistence.countByLayoutUuid((String)null);
+		_persistence.countByClassUuid((String)null);
 	}
 
 	@Test
@@ -311,16 +288,6 @@ public class AssetEntryPersistenceTest {
 			RandomTestUtil.randomBoolean());
 
 		_persistence.countByG_C_V(0L, 0L, RandomTestUtil.randomBoolean());
-	}
-
-	@Test
-	public void testCountByG_C_P_E() throws Exception {
-		_persistence.countByG_C_P_E(
-			RandomTestUtil.nextLong(), RandomTestUtil.nextLong(),
-			RandomTestUtil.nextDate(), RandomTestUtil.nextDate());
-
-		_persistence.countByG_C_P_E(
-			0L, 0L, RandomTestUtil.nextDate(), RandomTestUtil.nextDate());
 	}
 
 	@Test
@@ -640,8 +607,6 @@ public class AssetEntryPersistenceTest {
 
 		AssetEntry assetEntry = _persistence.create(pk);
 
-		assetEntry.setMvccVersion(RandomTestUtil.nextLong());
-
 		assetEntry.setCtCollectionId(RandomTestUtil.nextLong());
 
 		assetEntry.setGroupId(RandomTestUtil.nextLong());
@@ -704,3 +669,4 @@ public class AssetEntryPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1897280454

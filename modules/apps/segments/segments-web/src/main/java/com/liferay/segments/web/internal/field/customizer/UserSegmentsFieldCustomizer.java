@@ -21,11 +21,11 @@ import com.liferay.segments.field.Field;
 import com.liferay.segments.field.customizer.SegmentsFieldCustomizer;
 import com.liferay.users.admin.item.selector.UserItemSelectorCriterion;
 
+import jakarta.portlet.PortletRequest;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
-
-import javax.portlet.PortletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -46,13 +46,13 @@ public class UserSegmentsFieldCustomizer extends BaseSegmentsFieldCustomizer {
 	public static final String KEY = "user";
 
 	@Override
-	public ClassedModel getClassedModel(String fieldValue) {
-		return _getUser(fieldValue);
+	public String getClassName() {
+		return User.class.getName();
 	}
 
 	@Override
-	public String getClassName() {
-		return User.class.getName();
+	public ClassedModel getClassedModel(String fieldValue) {
+		return _getUser(fieldValue);
 	}
 
 	@Override

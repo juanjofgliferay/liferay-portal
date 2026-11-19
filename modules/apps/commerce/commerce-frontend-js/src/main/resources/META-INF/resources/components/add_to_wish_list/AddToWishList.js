@@ -11,6 +11,8 @@ import React, {useState} from 'react';
 import {showErrorNotification} from '../../utilities/notifications';
 import LegacyWishListResource from './util/LegacyWishListResource';
 
+import './add_to_wish_list.scss';
+
 function AddToWishList({iconOnly, isInWishList, large, ...productInfo}) {
 	const [isAdded, setIsAdded] = useState(isInWishList);
 
@@ -27,6 +29,7 @@ function AddToWishList({iconOnly, isInWishList, large, ...productInfo}) {
 	 */
 	return (
 		<ClayButton
+			aria-label={Liferay.Language.get('add-to-list')}
 			className={`btn-outline-borderless btn-${large ? 'lg' : 'sm'}`}
 			displayType="secondary"
 			onClick={toggleInWishList}

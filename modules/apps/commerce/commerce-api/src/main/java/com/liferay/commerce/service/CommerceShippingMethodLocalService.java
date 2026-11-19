@@ -238,16 +238,12 @@ public interface CommerceShippingMethodLocalService
 		long groupId, String engineKey);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public CommerceShippingMethod
+		fetchCommerceShippingMethodByExternalReferenceCode(
+			String externalReferenceCode, long companyId);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public ActionableDynamicQuery getActionableDynamicQuery();
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<CommerceAddressRestriction> getCommerceAddressRestrictions(
-		long commerceShippingMethodId, int start, int end,
-		OrderByComparator<CommerceAddressRestriction> orderByComparator);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getCommerceAddressRestrictionsCount(
-		long commerceShippingMethodId);
 
 	/**
 	 * Returns the commerce shipping method with the primary key.
@@ -259,6 +255,12 @@ public interface CommerceShippingMethodLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public CommerceShippingMethod getCommerceShippingMethod(
 			long commerceShippingMethodId)
+		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public CommerceShippingMethod
+			getCommerceShippingMethodByExternalReferenceCode(
+				String externalReferenceCode, long companyId)
 		throws PortalException;
 
 	/**
@@ -297,9 +299,6 @@ public interface CommerceShippingMethodLocalService
 	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public int getCommerceShippingMethodsCount();
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getCommerceShippingMethodsCount(long groupId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public int getCommerceShippingMethodsCount(long groupId, boolean active);
@@ -347,3 +346,4 @@ public interface CommerceShippingMethodLocalService
 		throws PortalException;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:194163994

@@ -70,7 +70,8 @@ public class AccountGroupModelImpl
 		{"userId", Types.BIGINT}, {"userName", Types.VARCHAR},
 		{"createDate", Types.TIMESTAMP}, {"modifiedDate", Types.TIMESTAMP},
 		{"defaultAccountGroup", Types.BOOLEAN}, {"description", Types.VARCHAR},
-		{"name", Types.VARCHAR}, {"type_", Types.VARCHAR}
+		{"name", Types.VARCHAR}, {"type_", Types.VARCHAR},
+		{"status", Types.INTEGER}
 	};
 
 	public static final Map<String, Integer> TABLE_COLUMNS_MAP =
@@ -90,18 +91,26 @@ public class AccountGroupModelImpl
 		TABLE_COLUMNS_MAP.put("description", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("name", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("type_", Types.VARCHAR);
+		TABLE_COLUMNS_MAP.put("status", Types.INTEGER);
 	}
 
 	public static final String TABLE_SQL_CREATE =
-		"create table AccountGroup (mvccVersion LONG default 0 not null,uuid_ VARCHAR(75) null,externalReferenceCode VARCHAR(75) null,accountGroupId LONG not null primary key,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,defaultAccountGroup BOOLEAN,description VARCHAR(75) null,name VARCHAR(75) null,type_ VARCHAR(75) null)";
+		"create table AccountGroup (mvccVersion LONG default 0 not null,uuid_ VARCHAR(75) null,externalReferenceCode VARCHAR(75) null,accountGroupId LONG not null primary key,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,defaultAccountGroup BOOLEAN,description VARCHAR(75) null,name VARCHAR(75) null,type_ VARCHAR(75) null,status INTEGER)";
 
 	public static final String TABLE_SQL_DROP = "drop table AccountGroup";
+
+	public static final String ENTITY_ALIAS = "accountGroup";
+
+	public static final String FILTER_PK_COLUMN_NAME = "accountGroupId";
 
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY accountGroup.accountGroupId ASC";
 
 	public static final String ORDER_BY_SQL =
 		" ORDER BY AccountGroup.accountGroupId ASC";
+
+	public static final String ORDER_BY_SQL_INLINE_DISTINCT =
+		" ORDER BY accountGroup.accountGroupId ASC";
 
 	public static final String DATA_SOURCE = "liferayDataSource";
 
@@ -137,19 +146,7 @@ public class AccountGroupModelImpl
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long NAME_COLUMN_BITMASK = 16L;
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
-	 */
-	@Deprecated
-	public static final long TYPE_COLUMN_BITMASK = 32L;
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
-	 */
-	@Deprecated
-	public static final long UUID_COLUMN_BITMASK = 64L;
+	public static final long UUID_COLUMN_BITMASK = 16L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
@@ -282,6 +279,7 @@ public class AccountGroupModelImpl
 				"description", AccountGroup::getDescription);
 			attributeGetterFunctions.put("name", AccountGroup::getName);
 			attributeGetterFunctions.put("type", AccountGroup::getType);
+			attributeGetterFunctions.put("status", AccountGroup::getStatus);
 
 			_attributeGetterFunctions = Collections.unmodifiableMap(
 				attributeGetterFunctions);
@@ -341,6 +339,9 @@ public class AccountGroupModelImpl
 			attributeSetterBiConsumers.put(
 				"type",
 				(BiConsumer<AccountGroup, String>)AccountGroup::setType);
+			attributeSetterBiConsumers.put(
+				"status",
+				(BiConsumer<AccountGroup, Integer>)AccountGroup::setStatus);
 
 			_attributeSetterBiConsumers = Collections.unmodifiableMap(
 				(Map)attributeSetterBiConsumers);
@@ -629,15 +630,6 @@ public class AccountGroupModelImpl
 		_name = name;
 	}
 
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #getColumnOriginalValue(String)}
-	 */
-	@Deprecated
-	public String getOriginalName() {
-		return getColumnOriginalValue("name");
-	}
-
 	@JSON
 	@Override
 	public String getType() {
@@ -658,13 +650,19 @@ public class AccountGroupModelImpl
 		_type = type;
 	}
 
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #getColumnOriginalValue(String)}
-	 */
-	@Deprecated
-	public String getOriginalType() {
-		return getColumnOriginalValue("type_");
+	@JSON
+	@Override
+	public int getStatus() {
+		return _status;
+	}
+
+	@Override
+	public void setStatus(int status) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_status = status;
 	}
 
 	@Override
@@ -742,6 +740,7 @@ public class AccountGroupModelImpl
 		accountGroupImpl.setDescription(getDescription());
 		accountGroupImpl.setName(getName());
 		accountGroupImpl.setType(getType());
+		accountGroupImpl.setStatus(getStatus());
 
 		accountGroupImpl.resetOriginalValues();
 
@@ -774,6 +773,8 @@ public class AccountGroupModelImpl
 			this.<String>getColumnOriginalValue("description"));
 		accountGroupImpl.setName(this.<String>getColumnOriginalValue("name"));
 		accountGroupImpl.setType(this.<String>getColumnOriginalValue("type_"));
+		accountGroupImpl.setStatus(
+			this.<Integer>getColumnOriginalValue("status"));
 
 		return accountGroupImpl;
 	}
@@ -932,6 +933,8 @@ public class AccountGroupModelImpl
 			accountGroupCacheModel.type = null;
 		}
 
+		accountGroupCacheModel.status = getStatus();
+
 		return accountGroupCacheModel;
 	}
 
@@ -1007,6 +1010,7 @@ public class AccountGroupModelImpl
 	private String _description;
 	private String _name;
 	private String _type;
+	private int _status;
 
 	public <T> T getColumnValue(String columnName) {
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
@@ -1052,6 +1056,7 @@ public class AccountGroupModelImpl
 		_columnOriginalValues.put("description", _description);
 		_columnOriginalValues.put("name", _name);
 		_columnOriginalValues.put("type_", _type);
+		_columnOriginalValues.put("status", _status);
 	}
 
 	private static final Map<String, String> _attributeNames;
@@ -1102,6 +1107,8 @@ public class AccountGroupModelImpl
 
 		columnBitmasks.put("type_", 4096L);
 
+		columnBitmasks.put("status", 8192L);
+
 		_columnBitmasks = Collections.unmodifiableMap(columnBitmasks);
 	}
 
@@ -1109,3 +1116,4 @@ public class AccountGroupModelImpl
 	private AccountGroup _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1474653917

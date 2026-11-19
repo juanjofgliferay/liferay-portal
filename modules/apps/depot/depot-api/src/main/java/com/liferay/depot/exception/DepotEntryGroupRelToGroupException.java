@@ -5,6 +5,7 @@
 
 package com.liferay.depot.exception;
 
+import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.exception.PortalException;
 
 /**
@@ -12,19 +13,16 @@ import com.liferay.portal.kernel.exception.PortalException;
  */
 public class DepotEntryGroupRelToGroupException extends PortalException {
 
-	public DepotEntryGroupRelToGroupException() {
-	}
+	public static class MustAcceptDepotEntryType
+		extends DepotEntryGroupException {
 
-	public DepotEntryGroupRelToGroupException(String msg) {
-		super(msg);
-	}
+		public MustAcceptDepotEntryType(int depotEntryType, long toGroupId) {
+			super(
+				StringBundler.concat(
+					"A depot entry of type ", depotEntryType,
+					" cannot be connected to group ", toGroupId));
+		}
 
-	public DepotEntryGroupRelToGroupException(String msg, Throwable throwable) {
-		super(msg, throwable);
-	}
-
-	public DepotEntryGroupRelToGroupException(Throwable throwable) {
-		super(throwable);
 	}
 
 	public static class MustBeLocallyStaged extends DepotEntryGroupException {
@@ -65,6 +63,10 @@ public class DepotEntryGroupRelToGroupException extends PortalException {
 					"site");
 		}
 
+	}
+
+	private DepotEntryGroupRelToGroupException(String msg) {
+		super(msg);
 	}
 
 }

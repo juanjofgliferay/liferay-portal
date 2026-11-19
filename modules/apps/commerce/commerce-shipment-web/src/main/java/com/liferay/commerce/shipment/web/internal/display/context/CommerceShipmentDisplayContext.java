@@ -6,9 +6,7 @@
 package com.liferay.commerce.shipment.web.internal.display.context;
 
 import com.liferay.account.model.AccountEntry;
-import com.liferay.account.service.AccountEntryServiceUtil;
 import com.liferay.commerce.address.CommerceAddressFormatter;
-import com.liferay.commerce.constants.CommerceOrderConstants;
 import com.liferay.commerce.constants.CommercePortletKeys;
 import com.liferay.commerce.constants.CommerceShipmentConstants;
 import com.liferay.commerce.constants.CommerceShipmentFDSNames;
@@ -24,13 +22,11 @@ import com.liferay.commerce.product.model.CommerceChannel;
 import com.liferay.commerce.product.service.CommerceChannelService;
 import com.liferay.commerce.service.CommerceAddressLocalService;
 import com.liferay.commerce.service.CommerceOrderItemService;
-import com.liferay.commerce.service.CommerceOrderLocalService;
 import com.liferay.commerce.service.CommerceShipmentItemService;
 import com.liferay.commerce.service.CommerceShippingMethodService;
 import com.liferay.commerce.shipment.web.internal.portlet.action.helper.ActionHelper;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.CreationMenu;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItem;
-import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
@@ -42,29 +38,26 @@ import com.liferay.portal.kernel.model.Country;
 import com.liferay.portal.kernel.model.Region;
 import com.liferay.portal.kernel.portlet.LiferayWindowState;
 import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
-import com.liferay.portal.kernel.search.BaseModelSearchResult;
-import com.liferay.portal.kernel.search.Field;
-import com.liferay.portal.kernel.search.QueryConfig;
-import com.liferay.portal.kernel.search.SearchContext;
-import com.liferay.portal.kernel.security.permission.resource.PortletResourcePermission;
+import com.liferay.portal.kernel.security.permission.ActionKeys;
+import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
+import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
 import com.liferay.portal.kernel.service.CountryService;
 import com.liferay.portal.kernel.service.RegionService;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.webserver.WebServerServletTokenUtil;
-import com.liferay.portal.kernel.workflow.WorkflowConstants;
+
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.WindowStateException;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
-import javax.portlet.WindowStateException;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Alessio Antonio Rendina
@@ -79,34 +72,25 @@ public class CommerceShipmentDisplayContext
 		CommerceAddressLocalService commerceAddressLocalService,
 		CommerceChannelService commerceChannelService,
 		CommerceOrderItemService commerceOrderItemService,
-		CommerceOrderLocalService commerceOrderLocalService,
 		CommerceShipmentItemService commerceShipmentItemService,
+		ModelResourcePermission<CommerceShipment>
+			commerceShipmentModelResourcePermission,
 		CommerceShippingMethodService commerceShippingMethodService,
 		CountryService countryService, HttpServletRequest httpServletRequest,
-		PortletResourcePermission portletResourcePermission,
 		RegionService regionService) {
 
-		super(actionHelper, httpServletRequest, portletResourcePermission);
+		super(
+			actionHelper, commerceShipmentModelResourcePermission,
+			httpServletRequest);
 
 		_commerceAddressFormatter = commerceAddressFormatter;
 		_commerceAddressLocalService = commerceAddressLocalService;
 		_commerceChannelService = commerceChannelService;
 		_commerceOrderItemService = commerceOrderItemService;
-		_commerceOrderLocalService = commerceOrderLocalService;
 		_commerceShipmentItemService = commerceShipmentItemService;
 		_commerceShippingMethodService = commerceShippingMethodService;
 		_countryService = countryService;
 		_regionService = regionService;
-	}
-
-	public List<AccountEntry> getCommerceAccountsWithShippableOrders()
-		throws PortalException {
-
-		return TransformUtil.transformToList(
-			ArrayUtil.unique(
-				TransformUtil.transformToLongArray(
-					getCommerceOrders(), CommerceOrder::getCommerceAccountId)),
-			AccountEntryServiceUtil::getAccountEntry);
 	}
 
 	public String getCommerceAccountThumbnailURL(
@@ -135,19 +119,6 @@ public class CommerceShipmentDisplayContext
 				commerceShipment.getGroupId());
 
 		return commerceChannel.getName();
-	}
-
-	public List<CommerceChannel> getCommerceChannels() throws PortalException {
-		return _commerceChannelService.search(cpRequestHelper.getCompanyId());
-	}
-
-	public List<CommerceOrder> getCommerceOrders() throws PortalException {
-		SearchContext searchContext = _buildSearchContext();
-
-		BaseModelSearchResult<CommerceOrder> baseModelSearchResult =
-			_commerceOrderLocalService.searchCommerceOrders(searchContext);
-
-		return baseModelSearchResult.getBaseModels();
 	}
 
 	public String getCommerceShippingMethodName(Locale locale) {
@@ -199,7 +170,9 @@ public class CommerceShipmentDisplayContext
 			cpRequestHelper.getCompanyId(), true);
 	}
 
-	public String getDescriptiveShippingAddress() throws PortalException {
+	public String getDescriptiveShippingAddress(Locale locale)
+		throws PortalException {
+
 		CommerceShipment commerceShipment = getCommerceShipment();
 
 		if (commerceShipment.getCommerceAddressId() == 0) {
@@ -213,7 +186,7 @@ public class CommerceShipmentDisplayContext
 		}
 
 		return _commerceAddressFormatter.getDescriptiveAddress(
-			commerceAddress, true);
+			commerceAddress, locale, true);
 	}
 
 	public String getFDSName() throws PortalException {
@@ -326,7 +299,9 @@ public class CommerceShipmentDisplayContext
 
 		CommerceShipment commerceShipment = getCommerceShipment();
 
-		if (hasManageCommerceShipmentsPermission() &&
+		if (commerceShipmentModelResourcePermission.contains(
+				PermissionThreadLocal.getPermissionChecker(),
+				commerceShipment.getCommerceShipmentId(), ActionKeys.VIEW) &&
 			(commerceShipment.getStatus() ==
 				CommerceShipmentConstants.SHIPMENT_STATUS_PROCESSING)) {
 
@@ -343,7 +318,9 @@ public class CommerceShipmentDisplayContext
 
 		CommerceShipment commerceShipment = getCommerceShipment();
 
-		if (hasManageCommerceShipmentsPermission() &&
+		if (commerceShipmentModelResourcePermission.contains(
+				PermissionThreadLocal.getPermissionChecker(),
+				commerceShipment.getCommerceShipmentId(), ActionKeys.UPDATE) &&
 			(commerceShipment.getStatus() ==
 				CommerceShipmentConstants.SHIPMENT_STATUS_PROCESSING)) {
 
@@ -448,42 +425,6 @@ public class CommerceShipmentDisplayContext
 		return false;
 	}
 
-	private SearchContext _buildSearchContext() throws PortalException {
-		SearchContext searchContext = new SearchContext();
-
-		int[] orderStatuses = {
-			CommerceOrderConstants.ORDER_STATUS_PROCESSING,
-			CommerceOrderConstants.ORDER_STATUS_PARTIALLY_SHIPPED
-		};
-
-		searchContext.setAttribute("orderStatuses", orderStatuses);
-
-		searchContext.setAttribute(
-			Field.STATUS, WorkflowConstants.STATUS_APPROVED);
-		searchContext.setAttribute(
-			"useSearchResultPermissionFilter", Boolean.FALSE);
-		searchContext.setCompanyId(cpRequestHelper.getCompanyId());
-		searchContext.setEnd(QueryUtil.ALL_POS);
-
-		long[] commerceChannelGroupIds = TransformUtil.transformToLongArray(
-			getCommerceChannels(), CommerceChannel::getGroupId);
-
-		if ((commerceChannelGroupIds != null) &&
-			(commerceChannelGroupIds.length > 0)) {
-
-			searchContext.setGroupIds(commerceChannelGroupIds);
-		}
-
-		searchContext.setStart(QueryUtil.ALL_POS);
-
-		QueryConfig queryConfig = searchContext.getQueryConfig();
-
-		queryConfig.setHighlightEnabled(false);
-		queryConfig.setScoreEnabled(false);
-
-		return searchContext;
-	}
-
 	private static final Log _log = LogFactoryUtil.getLog(
 		CommerceShipmentDisplayContext.class);
 
@@ -491,7 +432,6 @@ public class CommerceShipmentDisplayContext
 	private final CommerceAddressLocalService _commerceAddressLocalService;
 	private final CommerceChannelService _commerceChannelService;
 	private final CommerceOrderItemService _commerceOrderItemService;
-	private final CommerceOrderLocalService _commerceOrderLocalService;
 	private final CommerceShipmentItemService _commerceShipmentItemService;
 	private final CommerceShippingMethodService _commerceShippingMethodService;
 	private final CountryService _countryService;

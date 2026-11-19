@@ -22,12 +22,17 @@ if (role != null) {
 	roleName = role.getName();
 }
 
-String subtype = BeanParamUtil.getString(role, request, "subtype");
+String subtype = BeanParamUtil.getString(role, request, "subtype", Role::getSubtype);
 
 RoleTypeContributor currentRoleTypeContributor = RoleTypeContributorRetrieverUtil.getCurrentRoleTypeContributor(request);
 
+if (Validator.isNull(subtype)) {
+	subtype = currentRoleTypeContributor.getDefaultSubtype();
+}
+
 portletDisplay.setShowBackIcon(true);
 portletDisplay.setURLBack(backURL);
+portletDisplay.setURLBackTitle(portletDisplay.getPortletDisplayName());
 
 renderResponse.setTitle((role == null) ? LanguageUtil.get(request, "new-role") : role.getTitle(locale));
 %>
@@ -64,62 +69,40 @@ renderResponse.setTitle((role == null) ? LanguageUtil.get(request, "new-role") :
 
 	<liferay-ui:error exception="<%= DuplicateRoleException.class %>" message="please-enter-a-unique-name" />
 	<liferay-ui:error exception="<%= RequiredRoleException.class %>" message="old-role-name-is-a-required-system-role" />
+	<liferay-ui:error exception="<%= RoleSubtypeException.class %>" message="please-enter-a-valid-subtype" />
 
 	<aui:model-context bean="<%= role %>" model="<%= Role.class %>" />
 
-	<div class="sheet">
+	<div class="mt-4 sheet">
 		<div class="panel-group panel-group-flush">
 			<aui:fieldset>
-				<c:choose>
-					<c:when test="<%= role == null %>">
-						<aui:select label="type" name="roleType">
+				<aui:input label="type" name="typeLabel" type="resource" value="<%= LanguageUtil.get(request, currentRoleTypeContributor.getName()) %>" />
 
-							<%
-							for (RoleTypeContributor roleTypeContributor : RoleTypeContributorRetrieverUtil.getRoleTypeContributors(request)) {
-							%>
-
-								<aui:option label="<%= roleTypeContributor.getName() %>" value="<%= roleTypeContributor.getType() %>" />
-
-							<%
-							}
-							%>
-
-						</aui:select>
-					</c:when>
-					<c:otherwise>
-						<aui:input label="type" name="typeLabel" type="resource" value="<%= LanguageUtil.get(request, currentRoleTypeContributor.getName()) %>" />
-
-						<c:if test="<%= role == null %>">
-							<aui:input name="roleType" type="hidden" value="<%= String.valueOf(currentRoleTypeContributor.getType()) %>" />
-						</c:if>
-					</c:otherwise>
-				</c:choose>
+				<c:if test="<%= role == null %>">
+					<aui:input name="roleType" type="hidden" value="<%= String.valueOf(currentRoleTypeContributor.getType()) %>" />
+				</c:if>
 
 				<aui:input helpMessage="title-field-help" name="title" />
 				<aui:input name="description" />
 
-				<c:if test="<%= role != null %>">
+				<%
+				String[] subtypes = currentRoleTypeContributor.getSubtypes();
+				%>
 
-					<%
-					String[] subtypes = currentRoleTypeContributor.getSubtypes();
-					%>
+				<c:if test="<%= subtypes.length > 0 %>">
+					<aui:select name="subtype">
 
-					<c:if test="<%= subtypes.length > 0 %>">
-						<aui:select name="subtype">
-							<aui:option value="" />
+						<%
+						for (String curSubtype : subtypes) {
+						%>
 
-							<%
-							for (String curSubtype : subtypes) {
-							%>
+							<aui:option label="<%= curSubtype %>" selected="<%= subtype.equals(curSubtype) %>" />
 
-								<aui:option label="<%= curSubtype %>" selected="<%= subtype.equals(curSubtype) %>" />
+						<%
+						}
+						%>
 
-							<%
-							}
-							%>
-
-						</aui:select>
-					</c:if>
+					</aui:select>
 				</c:if>
 
 				<%
@@ -137,7 +120,7 @@ renderResponse.setTitle((role == null) ? LanguageUtil.get(request, "new-role") :
 				</liferay-ui:error>
 
 				<c:choose>
-					<c:when test="<%= (role != null) && role.isSystem() %>">
+					<c:when test="<%= RoleConstants.isUnmodifiable(role) %>">
 						<aui:input disabled="<%= true %>" helpMessage="key-field-help" label="key" name="viewNameField" type="text" value="<%= roleName %>" />
 						<aui:input name="name" type="hidden" value="<%= roleName %>" />
 					</c:when>
@@ -182,9 +165,7 @@ renderResponse.setTitle((role == null) ? LanguageUtil.get(request, "new-role") :
 </aui:form>
 
 <c:if test="<%= role == null %>">
-	<aui:script require="frontend-js-web/index as frontendJsWeb">
-		var {debounce} = frontendJsWeb;
-
+	<aui:script sandbox="<%= true %>">
 		var form = document.getElementById('<portlet:namespace />fm');
 
 		if (form) {
@@ -202,7 +183,10 @@ renderResponse.setTitle((role == null) ? LanguageUtil.get(request, "new-role") :
 					nameInput.value = value;
 				};
 
-				titleInput.addEventListener('input', debounce(handleOnTitleInput, 200));
+				titleInput.addEventListener(
+					'input',
+					Liferay.Util.debounce(handleOnTitleInput, 200)
+				);
 			}
 		}
 	</aui:script>

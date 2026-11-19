@@ -7,16 +7,18 @@ package com.liferay.saml.web.internal.portlet.action;
 
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCRenderCommand;
 import com.liferay.portal.kernel.util.ParamUtil;
+import com.liferay.portal.kernel.util.Portal;
 import com.liferay.saml.constants.SamlPortletKeys;
 import com.liferay.saml.constants.SamlWebKeys;
 import com.liferay.saml.persistence.model.SamlIdpSpConnection;
 import com.liferay.saml.persistence.service.SamlIdpSpConnectionLocalService;
 import com.liferay.saml.runtime.configuration.SamlProviderConfiguration;
 import com.liferay.saml.runtime.configuration.SamlProviderConfigurationHelper;
+import com.liferay.saml.web.internal.util.SamlPermissionUtil;
 
-import javax.portlet.PortletException;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -26,7 +28,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + SamlPortletKeys.SAML_ADMIN,
+		"jakarta.portlet.name=" + SamlPortletKeys.SAML_ADMIN,
 		"mvc.command.name=/admin/edit_service_provider_connection"
 	},
 	service = MVCRenderCommand.class
@@ -39,6 +41,15 @@ public class EditServiceProviderConnectionMVCRenderCommand
 			RenderRequest renderRequest, RenderResponse renderResponse)
 		throws PortletException {
 
+		try {
+			return _render(renderRequest);
+		}
+		catch (Exception exception) {
+			throw new PortletException(exception);
+		}
+	}
+
+	private String _render(RenderRequest renderRequest) throws Exception {
 		long samlIdpSpConnectionId = ParamUtil.getLong(
 			renderRequest, "samlIdpSpConnectionId");
 
@@ -59,6 +70,9 @@ public class EditServiceProviderConnectionMVCRenderCommand
 					samlIdpSpConnectionId);
 
 			if (samlIdpSpConnection != null) {
+				SamlPermissionUtil.checkPermission(
+					_portal.getCompanyId(renderRequest), samlIdpSpConnection);
+
 				assertionLifetime = ParamUtil.getInteger(
 					renderRequest, "assertionLifetime",
 					samlIdpSpConnection.getAssertionLifetime());
@@ -73,6 +87,9 @@ public class EditServiceProviderConnectionMVCRenderCommand
 
 		return "/admin/edit_service_provider_connection.jsp";
 	}
+
+	@Reference
+	private Portal _portal;
 
 	@Reference
 	private SamlIdpSpConnectionLocalService _samlIdpSpConnectionLocalService;

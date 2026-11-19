@@ -5,10 +5,10 @@
 
 package com.liferay.headless.portal.instances.client.aggregation;
 
+import jakarta.annotation.Generated;
+
 import java.util.HashMap;
 import java.util.Map;
-
-import javax.annotation.Generated;
 
 /**
  * @author Alberto Chaparro
@@ -28,3 +28,4 @@ public class Aggregation {
 	private Map<String, String> _aggregationTerms = new HashMap<>();
 
 }
+// LIFERAY-REST-BUILDER-HASH:-481335956

@@ -83,11 +83,22 @@ public interface CompanyService extends BaseService {
 	 */
 	@JSONWebService(mode = JSONWebServiceMode.IGNORE)
 	public Company addCompany(
-			String webId, String virtualHost, String mx, int maxUsers,
-			boolean active, String defaultAdminPassword,
+			Long companyId, String webId, String virtualHost, String mx,
+			int maxUsers, boolean active, String defaultAdminPassword,
 			String defaultAdminScreenName, String defaultAdminEmailAddress,
 			String defaultAdminFirstName, String defaultAdminMiddleName,
 			String defaultAdminLastName)
+		throws PortalException;
+
+	@JSONWebService(mode = JSONWebServiceMode.IGNORE)
+	public Company addDBPartitionCompany(
+			String schemaName, String name, String virtualHost, String webId)
+		throws PortalException;
+
+	@JSONWebService(mode = JSONWebServiceMode.IGNORE)
+	public Company copyDBPartitionCompany(
+			long fromCompanyId, Long toCompanyId, String name,
+			String virtualHost, String webId)
 		throws PortalException;
 
 	@JSONWebService(mode = JSONWebServiceMode.IGNORE)
@@ -100,6 +111,9 @@ public interface CompanyService extends BaseService {
 	 */
 	public void deleteLogo(long companyId) throws PortalException;
 
+	@JSONWebService(mode = JSONWebServiceMode.IGNORE)
+	public Company exportCompany(long companyId) throws PortalException;
+
 	public void forEachCompany(
 			UnsafeConsumer<Company, Exception> unsafeConsumer)
 		throws Exception;
@@ -110,7 +124,7 @@ public interface CompanyService extends BaseService {
 	 * @return the companies
 	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<Company> getCompanies();
+	public List<Company> getCompanies() throws PortalException;
 
 	/**
 	 * Returns the company with the primary key.
@@ -122,31 +136,13 @@ public interface CompanyService extends BaseService {
 	public Company getCompanyById(long companyId) throws PortalException;
 
 	/**
-	 * Returns the company with the logo.
-	 *
-	 * @param logoId the ID of the company's logo
-	 * @return Returns the company with the logo
-	 */
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public Company getCompanyByLogoId(long logoId) throws PortalException;
-
-	/**
-	 * Returns the company with the mail domian.
-	 *
-	 * @param mx the company's mail domain
-	 * @return Returns the company with the mail domain
-	 */
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public Company getCompanyByMx(String mx) throws PortalException;
-
-	/**
 	 * Returns the company with the virtual host name.
 	 *
-	 * @param virtualHost the company's virtual host name
+	 * @param virtualHostname the company's virtual host name
 	 * @return Returns the company with the virtual host name
 	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public Company getCompanyByVirtualHost(String virtualHost)
+	public Company getCompanyByVirtualHost(String virtualHostname)
 		throws PortalException;
 
 	/**
@@ -341,3 +337,4 @@ public interface CompanyService extends BaseService {
 		throws PortalException;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1707876381

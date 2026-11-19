@@ -8,7 +8,6 @@ package com.liferay.portal.tools.sample.sql.builder;
 import com.liferay.portal.kernel.dao.db.DBType;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.StringUtil;
-import com.liferay.portal.kernel.util.Validator;
 
 import java.io.FileReader;
 import java.io.Reader;
@@ -181,6 +180,11 @@ public class BenchmarksPropsValues {
 	public static final int MAX_DL_FOLDER_DEPTH = GetterUtil.getInteger(
 		PropertiesHolder._get(BenchmarksPropsKeys.MAX_DL_FOLDER_DEPTH));
 
+	public static final int MAX_FRAGMENT_ENTRY_LINK_COUNT =
+		GetterUtil.getInteger(
+			PropertiesHolder._get(
+				BenchmarksPropsKeys.MAX_FRAGMENT_ENTRY_LINK_COUNT));
+
 	public static final int MAX_GROUP_COUNT = GetterUtil.getInteger(
 		PropertiesHolder._get(BenchmarksPropsKeys.MAX_GROUP_COUNT));
 
@@ -200,6 +204,14 @@ public class BenchmarksPropsValues {
 			PropertiesHolder._get(
 				BenchmarksPropsKeys.MAX_JOURNAL_ARTICLE_VERSION_COUNT));
 
+	public static final int MAX_LIST_TYPE_DEFINITION_COUNT =
+		GetterUtil.getInteger(
+			PropertiesHolder._get(
+				BenchmarksPropsKeys.MAX_LIST_TYPE_DEFINITION_COUNT));
+
+	public static final int MAX_LIST_TYPE_ENTRY_COUNT = GetterUtil.getInteger(
+		PropertiesHolder._get(BenchmarksPropsKeys.MAX_LIST_TYPE_ENTRY_COUNT));
+
 	public static final int MAX_MB_CATEGORY_COUNT = GetterUtil.getInteger(
 		PropertiesHolder._get(BenchmarksPropsKeys.MAX_MB_CATEGORY_COUNT));
 
@@ -209,23 +221,33 @@ public class BenchmarksPropsValues {
 	public static final int MAX_MB_THREAD_COUNT = GetterUtil.getInteger(
 		PropertiesHolder._get(BenchmarksPropsKeys.MAX_MB_THREAD_COUNT));
 
+	public static final int MAX_OBJECT_ENTRY_COUNT = GetterUtil.getInteger(
+		PropertiesHolder._get(BenchmarksPropsKeys.MAX_OBJECT_ENTRY_COUNT));
+
+	public static final int MAX_OBJECT_ENTRY_PAGE_COUNT = GetterUtil.getInteger(
+		PropertiesHolder._get(BenchmarksPropsKeys.MAX_OBJECT_ENTRY_PAGE_COUNT));
+
+	public static final int MAX_RELATED_OBJECT_ENTRY_COUNT =
+		GetterUtil.getInteger(
+			PropertiesHolder._get(
+				BenchmarksPropsKeys.MAX_RELATED_OBJECT_ENTRY_COUNT));
+
 	public static final int MAX_SEGMENTS_ENTRY_COUNT = GetterUtil.getInteger(
 		PropertiesHolder._get(BenchmarksPropsKeys.MAX_SEGMENTS_ENTRY_COUNT));
 
-	public static final int MAX_USER_COUNT = GetterUtil.getInteger(
-		PropertiesHolder._get(BenchmarksPropsKeys.MAX_USER_COUNT));
+	public static final int MAX_SEGMENTS_ENTRY_SEGMENTS_EXPERIENCE_COUNT =
+		GetterUtil.getInteger(
+			PropertiesHolder._get(
+				BenchmarksPropsKeys.
+					MAX_SEGMENTS_ENTRY_SEGMENTS_EXPERIENCE_COUNT));
 
 	public static final int MAX_USER_TO_GROUP_COUNT = GetterUtil.getInteger(
 		PropertiesHolder._get(BenchmarksPropsKeys.MAX_USER_TO_GROUP_COUNT));
 
-	public static final int MAX_WIKI_NODE_COUNT = GetterUtil.getInteger(
-		PropertiesHolder._get(BenchmarksPropsKeys.MAX_WIKI_NODE_COUNT));
-
-	public static final int MAX_WIKI_PAGE_COMMENT_COUNT = GetterUtil.getInteger(
-		PropertiesHolder._get(BenchmarksPropsKeys.MAX_WIKI_PAGE_COMMENT_COUNT));
-
-	public static final int MAX_WIKI_PAGE_COUNT = GetterUtil.getInteger(
-		PropertiesHolder._get(BenchmarksPropsKeys.MAX_WIKI_PAGE_COUNT));
+	public static final String[] OBJECT_LAYOUT_DATA_ITEM_TYPES =
+		StringUtil.split(
+			PropertiesHolder._get(
+				BenchmarksPropsKeys.OBJECT_LAYOUT_DATA_ITEM_TYPES));
 
 	public static final int OPTIMIZE_BUFFER_SIZE = GetterUtil.getInteger(
 		PropertiesHolder._get(BenchmarksPropsKeys.OPTIMIZE_BUFFER_SIZE));
@@ -242,8 +264,12 @@ public class BenchmarksPropsValues {
 	public static final boolean SEARCH_BAR_ENABLED = GetterUtil.getBoolean(
 		PropertiesHolder._get(BenchmarksPropsKeys.SEARCH_BAR_ENABLED));
 
-	public static final String VIRTUAL_HOST_NAME = PropertiesHolder._get(
-		BenchmarksPropsKeys.VIRTUAL_HOST_NAME);
+	public static final String VIRTUAL_HOSTNAME_ADMIN_INSTANCE =
+		PropertiesHolder._get(
+			BenchmarksPropsKeys.VIRTUAL_HOSTNAME_ADMIN_INSTANCE);
+
+	public static final String VIRTUAL_HOSTNAME_PREFIX = PropertiesHolder._get(
+		BenchmarksPropsKeys.VIRTUAL_HOSTNAME_PREFIX);
 
 	private static class PropertiesHolder {
 
@@ -261,19 +287,7 @@ public class BenchmarksPropsValues {
 
 				properties.load(reader);
 
-				String timeZoneId = properties.getProperty(
-					"sample.sql.db.time.zone");
-
-				if (Validator.isNull(timeZoneId)) {
-					TimeZone timeZone = TimeZone.getDefault();
-
-					properties.setProperty(
-						"sample.sql.db.time.zone", timeZone.getID());
-				}
-				else {
-					TimeZone.setDefault(
-						TimeZone.getTimeZone(ZoneId.of(timeZoneId)));
-				}
+				TimeZone.setDefault(TimeZone.getTimeZone(ZoneId.of("GMT")));
 			}
 			catch (Exception exception) {
 				throw new ExceptionInInitializerError(exception);

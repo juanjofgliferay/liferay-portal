@@ -7,6 +7,7 @@ package com.liferay.commerce.discount.service;
 
 import com.liferay.commerce.discount.model.CommerceDiscountRule;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.util.List;
@@ -47,6 +48,18 @@ public class CommerceDiscountRuleServiceUtil {
 
 		return getService().addCommerceDiscountRule(
 			commerceDiscountId, name, type, typeSettings, serviceContext);
+	}
+
+	public static CommerceDiscountRule addOrUpdateCommerceDiscountRule(
+			String externalReferenceCode, long commerceDiscountRuleId,
+			long commerceDiscountId, String name, String type,
+			String typeSettings,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
+		throws PortalException {
+
+		return getService().addOrUpdateCommerceDiscountRule(
+			externalReferenceCode, commerceDiscountRuleId, commerceDiscountId,
+			name, type, typeSettings, serviceContext);
 	}
 
 	public static void deleteCommerceDiscountRule(long commerceDiscountRuleId)
@@ -127,13 +140,13 @@ public class CommerceDiscountRuleServiceUtil {
 	}
 
 	public static CommerceDiscountRuleService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(CommerceDiscountRuleService service) {
-		_service = service;
-	}
-
-	private static volatile CommerceDiscountRuleService _service;
+	private static final Snapshot<CommerceDiscountRuleService>
+		_serviceSnapshot = new Snapshot<>(
+			CommerceDiscountRuleServiceUtil.class,
+			CommerceDiscountRuleService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:447580640

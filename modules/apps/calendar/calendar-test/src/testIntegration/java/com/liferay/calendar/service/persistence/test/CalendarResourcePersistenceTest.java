@@ -18,14 +18,18 @@ import com.liferay.portal.kernel.dao.orm.ProjectionFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.orm.RestrictionsFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.Session;
+import com.liferay.portal.kernel.security.permission.InlineSQLHelperUtil;
+import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.transaction.Propagation;
 import com.liferay.portal.kernel.util.IntegerWrapper;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.OrderByComparatorFactoryUtil;
 import com.liferay.portal.kernel.util.Time;
+import com.liferay.portal.security.permission.SimplePermissionChecker;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PersistenceTestRule;
 import com.liferay.portal.test.rule.TransactionalTestRule;
@@ -111,11 +115,7 @@ public class CalendarResourcePersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		CalendarResource newCalendarResource = _persistence.create(pk);
-
-		newCalendarResource.setMvccVersion(RandomTestUtil.nextLong());
+		CalendarResource newCalendarResource = addCalendarResource();
 
 		newCalendarResource.setCtCollectionId(RandomTestUtil.nextLong());
 
@@ -149,7 +149,9 @@ public class CalendarResourcePersistenceTest {
 
 		newCalendarResource.setLastPublishDate(RandomTestUtil.nextDate());
 
-		_calendarResources.add(_persistence.update(newCalendarResource));
+		newCalendarResource = _persistence.update(newCalendarResource);
+
+		_calendarResources.add(newCalendarResource);
 
 		CalendarResource existingCalendarResource =
 			_persistence.findByPrimaryKey(newCalendarResource.getPrimaryKey());
@@ -266,31 +268,11 @@ public class CalendarResourcePersistenceTest {
 	}
 
 	@Test
-	public void testCountByG_A() throws Exception {
-		_persistence.countByG_A(
-			RandomTestUtil.nextLong(), RandomTestUtil.randomBoolean());
-
-		_persistence.countByG_A(0L, RandomTestUtil.randomBoolean());
-	}
-
-	@Test
 	public void testCountByC_C() throws Exception {
 		_persistence.countByC_C(
 			RandomTestUtil.nextLong(), RandomTestUtil.nextLong());
 
 		_persistence.countByC_C(0L, 0L);
-	}
-
-	@Test
-	public void testCountByC_LikeC_A() throws Exception {
-		_persistence.countByC_LikeC_A(
-			RandomTestUtil.nextLong(), "", RandomTestUtil.randomBoolean());
-
-		_persistence.countByC_LikeC_A(
-			0L, "null", RandomTestUtil.randomBoolean());
-
-		_persistence.countByC_LikeC_A(
-			0L, (String)null, RandomTestUtil.randomBoolean());
 	}
 
 	@Test
@@ -318,6 +300,24 @@ public class CalendarResourcePersistenceTest {
 
 	@Test
 	public void testFilterFindByGroupId() throws Exception {
+		PermissionThreadLocal.setPermissionChecker(
+			new SimplePermissionChecker() {
+				{
+					init(TestPropsValues.getUser());
+				}
+
+				@Override
+				public boolean isCompanyAdmin(long companyId) {
+					return false;
+				}
+
+			});
+
+		Assert.assertTrue(InlineSQLHelperUtil.isEnabled(0));
+
+		_persistence.filterFindByGroupId(
+			0, QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
+
 		_persistence.filterFindByGroupId(
 			0, QueryUtil.ALL_POS, QueryUtil.ALL_POS, getOrderByComparator());
 	}
@@ -629,8 +629,6 @@ public class CalendarResourcePersistenceTest {
 
 		CalendarResource calendarResource = _persistence.create(pk);
 
-		calendarResource.setMvccVersion(RandomTestUtil.nextLong());
-
 		calendarResource.setCtCollectionId(RandomTestUtil.nextLong());
 
 		calendarResource.setUuid(RandomTestUtil.randomString());
@@ -674,3 +672,4 @@ public class CalendarResourcePersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-907173692

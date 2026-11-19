@@ -15,15 +15,13 @@ import com.liferay.object.rest.filter.parser.ObjectDefinitionFilterParser;
 import com.liferay.object.rest.manager.v1_0.DefaultObjectEntryManager;
 import com.liferay.object.rest.manager.v1_0.ObjectEntryManager;
 import com.liferay.object.service.ObjectDefinitionLocalService;
-import com.liferay.object.service.ObjectEntryLocalService;
 import com.liferay.object.service.ObjectFieldLocalService;
 import com.liferay.object.service.ObjectRelationshipLocalService;
 import com.liferay.petra.function.UnsafeSupplier;
 import com.liferay.petra.function.transform.TransformUtil;
+import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.search.Sort;
-import com.liferay.portal.kernel.security.permission.PermissionCheckerFactory;
-import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
@@ -36,12 +34,12 @@ import com.liferay.portal.vulcan.fields.NestedFieldsContextThreadLocal;
 import com.liferay.portal.vulcan.pagination.Page;
 import com.liferay.portal.vulcan.pagination.Pagination;
 
+import jakarta.ws.rs.BadRequestException;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-
-import javax.ws.rs.BadRequestException;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -111,11 +109,6 @@ public class ObjectEntryHelper {
 		return _withNestedFields(
 			nestedFields,
 			() -> {
-				PermissionThreadLocal.setPermissionChecker(
-					_permissionCheckerFactory.create(
-						_userLocalService.getUser(
-							objectDefinition.getUserId())));
-
 				DefaultObjectEntryManager defaultObjectEntryManager =
 					(DefaultObjectEntryManager)_objectEntryManager;
 
@@ -165,11 +158,6 @@ public class ObjectEntryHelper {
 		return _withNestedFields(
 			nestedFields,
 			() -> {
-				PermissionThreadLocal.setPermissionChecker(
-					_permissionCheckerFactory.create(
-						_userLocalService.getUser(
-							objectDefinition.getUserId())));
-
 				DefaultObjectEntryManager defaultObjectEntryManager =
 					(DefaultObjectEntryManager)_objectEntryManager;
 
@@ -196,17 +184,9 @@ public class ObjectEntryHelper {
 
 		return _withNestedFields(
 			nestedFields,
-			() -> {
-				PermissionThreadLocal.setPermissionChecker(
-					_permissionCheckerFactory.create(
-						_userLocalService.getUser(
-							objectDefinition.getUserId())));
-
-				return _objectEntryManager.getObjectEntry(
-					companyId, _getDefaultDTOConverterContext(objectDefinition),
-					objetEntryExternalReferenceCode, objectDefinition,
-					scopeKey);
-			});
+			() -> _objectEntryManager.getObjectEntry(
+				companyId, _getDefaultDTOConverterContext(objectDefinition),
+				objetEntryExternalReferenceCode, objectDefinition, scopeKey));
 	}
 
 	public ObjectEntry getObjectEntry(
@@ -317,19 +297,13 @@ public class ObjectEntryHelper {
 			UnsafeSupplier<T, Exception> unsafeSupplier)
 		throws Exception {
 
-		NestedFieldsContext nestedFieldsContext = new NestedFieldsContext(
-			nestedFields.size(), nestedFields);
+		try (SafeCloseable safeCloseable =
+				NestedFieldsContextThreadLocal.
+					setNestedFieldsContextWithSafeCloseable(
+						new NestedFieldsContext(
+							nestedFields.size(), nestedFields))) {
 
-		NestedFieldsContext oldNestedFieldsContext =
-			NestedFieldsContextThreadLocal.getAndSetNestedFieldsContext(
-				nestedFieldsContext);
-
-		try {
 			return unsafeSupplier.get();
-		}
-		finally {
-			NestedFieldsContextThreadLocal.setNestedFieldsContext(
-				oldNestedFieldsContext);
 		}
 	}
 
@@ -339,9 +313,6 @@ public class ObjectEntryHelper {
 	@Reference
 	private ObjectDefinitionLocalService _objectDefinitionLocalService;
 
-	@Reference
-	private ObjectEntryLocalService _objectEntryLocalService;
-
 	@Reference(target = "(object.entry.manager.storage.type=default)")
 	private ObjectEntryManager _objectEntryManager;
 
@@ -350,9 +321,6 @@ public class ObjectEntryHelper {
 
 	@Reference
 	private ObjectRelationshipLocalService _objectRelationshipLocalService;
-
-	@Reference
-	private PermissionCheckerFactory _permissionCheckerFactory;
 
 	@Reference
 	private UserLocalService _userLocalService;

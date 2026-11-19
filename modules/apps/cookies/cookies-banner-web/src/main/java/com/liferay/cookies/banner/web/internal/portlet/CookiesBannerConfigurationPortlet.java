@@ -9,14 +9,16 @@ import com.liferay.cookies.banner.web.internal.constants.CookiesBannerPortletKey
 import com.liferay.cookies.banner.web.internal.constants.CookiesBannerWebKeys;
 import com.liferay.cookies.banner.web.internal.display.context.CookiesBannerConfigurationDisplayContext;
 import com.liferay.cookies.configuration.CookiesConfigurationProvider;
+import com.liferay.layout.utility.page.kernel.provider.LayoutUtilityPageEntryLayoutProvider;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCPortlet;
+import com.liferay.portal.kernel.util.Portal;
+
+import jakarta.portlet.Portlet;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
 
 import java.io.IOException;
-
-import javax.portlet.Portlet;
-import javax.portlet.PortletException;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -35,14 +37,14 @@ import org.osgi.service.component.annotations.Reference;
 		"com.liferay.portlet.show-portlet-access-denied=false",
 		"com.liferay.portlet.show-portlet-inactive=false",
 		"com.liferay.portlet.use-default-template=true",
-		"javax.portlet.display-name=Cookies Banner Configuration",
-		"javax.portlet.expiration-cache=0",
-		"javax.portlet.init-param.template-path=/META-INF/resources/",
-		"javax.portlet.init-param.view-template=/cookies_banner_configuration/view.jsp",
-		"javax.portlet.name=" + CookiesBannerPortletKeys.COOKIES_BANNER_CONFIGURATION,
-		"javax.portlet.resource-bundle=content.Language",
-		"javax.portlet.security-role-ref=power-user,user",
-		"javax.portlet.version=3.0"
+		"jakarta.portlet.display-name=Cookies Banner Configuration",
+		"jakarta.portlet.expiration-cache=0",
+		"jakarta.portlet.init-param.template-path=/META-INF/resources/",
+		"jakarta.portlet.init-param.view-template=/cookies_banner_configuration/view.jsp",
+		"jakarta.portlet.name=" + CookiesBannerPortletKeys.COOKIES_BANNER_CONFIGURATION,
+		"jakarta.portlet.resource-bundle=content.Language",
+		"jakarta.portlet.security-role-ref=power-user,user",
+		"jakarta.portlet.version=4.0"
 	},
 	service = Portlet.class
 )
@@ -56,8 +58,9 @@ public class CookiesBannerConfigurationPortlet extends MVCPortlet {
 		CookiesBannerConfigurationDisplayContext
 			cookiesBannerConfigurationDisplayContext =
 				new CookiesBannerConfigurationDisplayContext(
-					_cookiesConfigurationProvider, renderRequest,
-					renderResponse);
+					_cookiesConfigurationProvider,
+					_portal.getHttpServletRequest(renderRequest),
+					_layoutUtilityPageEntryLayoutProvider);
 
 		renderRequest.setAttribute(
 			CookiesBannerWebKeys.COOKIES_BANNER_CONFIGURATION_DISPLAY_CONTEXT,
@@ -68,5 +71,12 @@ public class CookiesBannerConfigurationPortlet extends MVCPortlet {
 
 	@Reference
 	private CookiesConfigurationProvider _cookiesConfigurationProvider;
+
+	@Reference
+	private LayoutUtilityPageEntryLayoutProvider
+		_layoutUtilityPageEntryLayoutProvider;
+
+	@Reference
+	private Portal _portal;
 
 }

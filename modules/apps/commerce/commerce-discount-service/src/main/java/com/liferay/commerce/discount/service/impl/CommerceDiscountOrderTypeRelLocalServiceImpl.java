@@ -117,17 +117,17 @@ public class CommerceDiscountOrderTypeRelLocalServiceImpl
 	}
 
 	@Override
-	public void deleteCommerceDiscountOrderTypeRels(long commerceDiscountId) {
-		commerceDiscountOrderTypeRelPersistence.removeByCommerceDiscountId(
-			commerceDiscountId);
-	}
+	public void deleteCommerceDiscountOrderTypeRels(long commerceDiscountId)
+		throws PortalException {
 
-	@Override
-	public CommerceDiscountOrderTypeRel fetchCommerceDiscountOrderTypeRel(
-		long commerceDiscountId, long commerceOrderTypeId) {
+		for (CommerceDiscountOrderTypeRel commerceDiscountOrderTypeRel :
+				commerceDiscountOrderTypeRelPersistence.
+					findByCommerceDiscountId(commerceDiscountId)) {
 
-		return commerceDiscountOrderTypeRelPersistence.fetchByCDI_COTI(
-			commerceDiscountId, commerceOrderTypeId);
+			commerceDiscountOrderTypeRelLocalService.
+				deleteCommerceDiscountOrderTypeRel(
+					commerceDiscountOrderTypeRel);
+		}
 	}
 
 	@Override
@@ -176,6 +176,27 @@ public class CommerceDiscountOrderTypeRelLocalServiceImpl
 					CommerceDiscountOrderTypeRelTable.INSTANCE.
 						commerceDiscountOrderTypeRelId),
 				commerceDiscountId, name));
+	}
+
+	@Override
+	public CommerceDiscountOrderTypeRel updatePriority(
+			long commerceDiscountOrderTypeRelId, int priority)
+		throws PortalException {
+
+		CommerceDiscountOrderTypeRel commerceDiscountOrderTypeRel =
+			commerceDiscountOrderTypeRelPersistence.findByPrimaryKey(
+				commerceDiscountOrderTypeRelId);
+
+		commerceDiscountOrderTypeRel.setPriority(priority);
+
+		commerceDiscountOrderTypeRel =
+			commerceDiscountOrderTypeRelPersistence.update(
+				commerceDiscountOrderTypeRel);
+
+		_reindexCommerceDiscount(
+			commerceDiscountOrderTypeRel.getCommerceDiscountId());
+
+		return commerceDiscountOrderTypeRel;
 	}
 
 	private GroupByStep _getGroupByStep(

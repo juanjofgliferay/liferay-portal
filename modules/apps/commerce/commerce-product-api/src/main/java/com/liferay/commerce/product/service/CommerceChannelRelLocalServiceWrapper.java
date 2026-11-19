@@ -60,6 +60,15 @@ public class CommerceChannelRelLocalServiceWrapper
 			className, classPK, commerceChannelId, serviceContext);
 	}
 
+	@Override
+	public java.util.List<CommerceChannelRel> addCommerceChannelRels(
+		String className, long[] classPKs, long commerceChannelId,
+		com.liferay.portal.kernel.service.ServiceContext serviceContext) {
+
+		return _commerceChannelRelLocalService.addCommerceChannelRels(
+			className, classPKs, commerceChannelId, serviceContext);
+	}
+
 	/**
 	 * Creates a new commerce channel rel with the primary key. Does not add the commerce channel rel to the database.
 	 *
@@ -359,11 +368,38 @@ public class CommerceChannelRelLocalServiceWrapper
 	}
 
 	@Override
-	public int getCommerceChannelRelsCount(
-		String className, long classPK, String name) {
+	public java.util.List<CommerceChannelRel>
+		getCommerceCurrencyCommerceChannelRels(
+			long commerceChannelId, String name, int start, int end) {
 
-		return _commerceChannelRelLocalService.getCommerceChannelRelsCount(
-			className, classPK, name);
+		return _commerceChannelRelLocalService.
+			getCommerceCurrencyCommerceChannelRels(
+				commerceChannelId, name, start, end);
+	}
+
+	@Override
+	public int getCommerceCurrencyCommerceChannelRelsCount(
+		long commerceChannelId, String name) {
+
+		return _commerceChannelRelLocalService.
+			getCommerceCurrencyCommerceChannelRelsCount(
+				commerceChannelId, name);
+	}
+
+	@Override
+	public java.util.List<CommerceChannelRel> getCountryCommerceChannelRels(
+		long commerceChannelId, String name, int start, int end) {
+
+		return _commerceChannelRelLocalService.getCountryCommerceChannelRels(
+			commerceChannelId, name, start, end);
+	}
+
+	@Override
+	public int getCountryCommerceChannelRelsCount(
+		long commerceChannelId, String name) {
+
+		return _commerceChannelRelLocalService.
+			getCountryCommerceChannelRelsCount(commerceChannelId, name);
 	}
 
 	@Override
@@ -453,3 +489,4 @@ public class CommerceChannelRelLocalServiceWrapper
 	private CommerceChannelRelLocalService _commerceChannelRelLocalService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:682421187

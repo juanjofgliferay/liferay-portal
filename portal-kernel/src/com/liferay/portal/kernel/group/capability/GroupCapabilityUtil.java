@@ -32,7 +32,17 @@ public class GroupCapabilityUtil {
 
 	public static boolean isSupportsPortlet(Group group, Portlet portlet) {
 		for (GroupCapability groupCapability : _getGroupCapabilities(group)) {
-			if (!groupCapability.isSupportPortlet(portlet)) {
+			if (!groupCapability.isSupportsPortlet(portlet)) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	public static boolean isSupportsScope(Group group) {
+		for (GroupCapability groupCapability : _getGroupCapabilities(group)) {
+			if (!groupCapability.isSupportsScopes()) {
 				return false;
 			}
 		}
@@ -53,9 +63,11 @@ public class GroupCapabilityUtil {
 			GroupCapability capability =
 				groupCapabilityContributor.getGroupCapability(group);
 
-			if (capability != null) {
-				groupCapabilities.add(capability);
+			if (capability == null) {
+				continue;
 			}
+
+			groupCapabilities.add(capability);
 		}
 
 		return groupCapabilities;

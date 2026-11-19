@@ -5,7 +5,7 @@
 
 package com.liferay.dynamic.data.lists.web.internal.template;
 
-import com.liferay.document.library.util.DLURLHelper;
+import com.liferay.document.library.helper.DLURLHelper;
 import com.liferay.dynamic.data.lists.constants.DDLConstants;
 import com.liferay.dynamic.data.lists.constants.DDLPortletKeys;
 import com.liferay.dynamic.data.lists.model.DDLRecord;
@@ -48,7 +48,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Marcellus Tavares
  */
 @Component(
-	property = "javax.portlet.name=" + DDLPortletKeys.DYNAMIC_DATA_LISTS_DISPLAY,
+	property = "jakarta.portlet.name=" + DDLPortletKeys.DYNAMIC_DATA_LISTS_DISPLAY,
 	service = TemplateHandler.class
 )
 public class DDLDisplayTemplateHandler extends BaseDDMTemplateHandler {
@@ -79,17 +79,6 @@ public class DDLDisplayTemplateHandler extends BaseDDMTemplateHandler {
 	@Override
 	public String getResourceName() {
 		return "com.liferay.dynamic.data.lists.template";
-	}
-
-	@Override
-	public String getTemplatesHelpPath(String language) {
-		return DDLWebConfigurationUtil.get(
-			getTemplatesHelpPropertyKey(), new Filter(language));
-	}
-
-	@Override
-	public String getTemplatesHelpPropertyKey() {
-		return DDLWebConfigurationKeys.DYNAMIC_DATA_LISTS_HELP_TEMPLATE;
 	}
 
 	@Override
@@ -137,6 +126,17 @@ public class DDLDisplayTemplateHandler extends BaseDDMTemplateHandler {
 			ddlServicesTemplateVariableGroup);
 
 		return templateVariableGroups;
+	}
+
+	@Override
+	public String getTemplatesHelpPath(String language) {
+		return DDLWebConfigurationUtil.get(
+			getTemplatesHelpPropertyKey(), new Filter(language));
+	}
+
+	@Override
+	public String getTemplatesHelpPropertyKey() {
+		return DDLWebConfigurationKeys.DYNAMIC_DATA_LISTS_HELP_TEMPLATE;
 	}
 
 	@Override

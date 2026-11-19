@@ -103,11 +103,18 @@ public class BatchPlannerPlanModelImpl
 
 	public static final String TABLE_SQL_DROP = "drop table BatchPlannerPlan";
 
+	public static final String ENTITY_ALIAS = "batchPlannerPlan";
+
+	public static final String FILTER_PK_COLUMN_NAME = "batchPlannerPlanId";
+
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY batchPlannerPlan.modifiedDate DESC";
 
 	public static final String ORDER_BY_SQL =
 		" ORDER BY BatchPlannerPlan.modifiedDate DESC";
+
+	public static final String ORDER_BY_SQL_INLINE_DISTINCT =
+		" ORDER BY batchPlannerPlan.modifiedDate DESC";
 
 	public static final String DATA_SOURCE = "liferayDataSource";
 
@@ -131,26 +138,14 @@ public class BatchPlannerPlanModelImpl
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long NAME_COLUMN_BITMASK = 4L;
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
-	 */
-	@Deprecated
-	public static final long TEMPLATE_COLUMN_BITMASK = 8L;
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
-	 */
-	@Deprecated
-	public static final long USERID_COLUMN_BITMASK = 16L;
+	public static final long TEMPLATE_COLUMN_BITMASK = 4L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
 	 *		#getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long MODIFIEDDATE_COLUMN_BITMASK = 32L;
+	public static final long MODIFIEDDATE_COLUMN_BITMASK = 8L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
@@ -475,15 +470,6 @@ public class BatchPlannerPlanModelImpl
 	public void setUserUuid(String userUuid) {
 	}
 
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #getColumnOriginalValue(String)}
-	 */
-	@Deprecated
-	public long getOriginalUserId() {
-		return GetterUtil.getLong(this.<Long>getColumnOriginalValue("userId"));
-	}
-
 	@JSON
 	@Override
 	public String getUserName() {
@@ -670,15 +656,6 @@ public class BatchPlannerPlanModelImpl
 		}
 
 		_name = name;
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #getColumnOriginalValue(String)}
-	 */
-	@Deprecated
-	public String getOriginalName() {
-		return getColumnOriginalValue("name");
 	}
 
 	@JSON
@@ -1264,3 +1241,4 @@ public class BatchPlannerPlanModelImpl
 	private BatchPlannerPlan _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1442583559

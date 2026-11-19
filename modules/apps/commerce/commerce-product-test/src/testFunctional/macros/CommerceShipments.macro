@@ -43,7 +43,7 @@ definition {
 		if (isSet(carrier)) {
 			AssertTextEquals(
 				key_entry = ${shipmentId},
-				key_index = 3,
+				key_index = 5,
 				locator1 = "CommerceEntry#MODAL_DATASET_ROW_ITEM",
 				value1 = ${carrier});
 		}
@@ -51,7 +51,7 @@ definition {
 		if (isSet(trackingNumber)) {
 			AssertTextEquals(
 				key_entry = ${shipmentId},
-				key_index = 4,
+				key_index = 6,
 				locator1 = "CommerceEntry#MODAL_DATASET_ROW_ITEM",
 				value1 = ${trackingNumber});
 		}
@@ -59,7 +59,7 @@ definition {
 		if (isSet(quantity)) {
 			AssertTextEquals(
 				key_entry = ${shipmentId},
-				key_index = 5,
+				key_index = 8,
 				locator1 = "CommerceEntry#MODAL_DATASET_ROW_ITEM",
 				value1 = ${quantity});
 		}
@@ -119,7 +119,11 @@ definition {
 				value1 = ${trackingURL});
 		}
 
-		Button.clickSubmitButton();
+		SelectFrame.selectFrameTop();
+
+		Click(
+			key_text = "Submit",
+			locator1 = "Modal#MODAL_FOOTER_BUTTON");
 	}
 
 	@summary = "Default summary"
@@ -155,9 +159,9 @@ definition {
 
 			Button.click(button = "Save");
 
-			SelectFrameTop();
-
-			Click(locator1 = "Icon#CLOSE");
+			Click(
+				key_frameTitle = "Edit ${productSku}",
+				locator1 = "CommerceEntry#SPECIFIC_SIDE_PANEL_CLOSE_BUTTON");
 
 			Refresh();
 		}

@@ -8,12 +8,12 @@ package com.liferay.headless.commerce.machine.learning.client.dto.v1_0;
 import com.liferay.headless.commerce.machine.learning.client.function.UnsafeSupplier;
 import com.liferay.headless.commerce.machine.learning.client.serdes.v1_0.FrequentPatternRecommendationSerDes;
 
+import jakarta.annotation.Generated;
+
 import java.io.Serializable;
 
 import java.util.Date;
 import java.util.Objects;
-
-import javax.annotation.Generated;
 
 /**
  * @author Riccardo Ferrari
@@ -186,3 +186,4 @@ public class FrequentPatternRecommendation implements Cloneable, Serializable {
 	}
 
 }
+// LIFERAY-REST-BUILDER-HASH:674781493

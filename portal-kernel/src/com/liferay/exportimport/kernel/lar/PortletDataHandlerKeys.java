@@ -31,8 +31,16 @@ public class PortletDataHandlerKeys {
 
 	public static final String DELETIONS = "DELETIONS";
 
+	public static final String FAVICON = "FAVICON";
+
+	public static final String GROUP_EXTERNAL_REFERENCE_CODES =
+		"GROUP_EXTERNAL_REFERENCE_CODES";
+
 	public static final String IGNORE_LAST_PUBLISH_DATE =
 		"IGNORE_LAST_PUBLISH_DATE";
+
+	public static final String LAYOUT_SET_PRIVATE_LAYOUT =
+		"LAYOUT_SET_PRIVATE_LAYOUT";
 
 	public static final String LAYOUT_SET_PROTOTYPE_LINK_ENABLED =
 		"LAYOUT_SET_PROTOTYPE_LINK_ENABLED";

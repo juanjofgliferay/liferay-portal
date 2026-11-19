@@ -250,8 +250,7 @@ public class ResourceLocalServiceUtil {
 	}
 
 	public static void copyModelResources(
-			long companyId, String name, long sourcePrimKey, long targetPrimKey)
-		throws PortalException {
+		long companyId, String name, long sourcePrimKey, long targetPrimKey) {
 
 		getService().copyModelResources(
 			companyId, name, sourcePrimKey, targetPrimKey);
@@ -356,6 +355,15 @@ public class ResourceLocalServiceUtil {
 
 		return getService().hasUserPermissions(
 			userId, resourceId, resources, actionId, roleIds);
+	}
+
+	public static void removeResource(
+			long companyId, String name, int scope, String primKey, long roleId,
+			String actionId)
+		throws PortalException {
+
+		getService().removeResource(
+			companyId, name, scope, primKey, roleId, actionId);
 	}
 
 	/**
@@ -492,3 +500,4 @@ public class ResourceLocalServiceUtil {
 	private static volatile ResourceLocalService _service;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1636999757

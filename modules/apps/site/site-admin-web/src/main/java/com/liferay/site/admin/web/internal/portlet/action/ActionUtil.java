@@ -28,14 +28,14 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.sites.kernel.util.Sites;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.PortletRequest;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.TreeMap;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.PortletRequest;
 
 /**
  * @author Jürgen Kappler
@@ -161,7 +161,8 @@ public class ActionUtil {
 	}
 
 	public static void updateLayoutSetPrototypesLinks(
-			ActionRequest actionRequest, Group liveGroup, Sites sites)
+			ActionRequest actionRequest, Group liveGroup,
+			boolean mergeLayoutSetPrototype, Sites sites)
 		throws Exception {
 
 		long privateLayoutSetPrototypeId = ParamUtil.getLong(
@@ -224,8 +225,8 @@ public class ActionUtil {
 		}
 
 		sites.updateLayoutSetPrototypesLinks(
-			group, publicLayoutSetPrototypeId, privateLayoutSetPrototypeId,
-			publicLayoutSetPrototypeLinkEnabled,
+			group, mergeLayoutSetPrototype, publicLayoutSetPrototypeId,
+			privateLayoutSetPrototypeId, publicLayoutSetPrototypeLinkEnabled,
 			privateLayoutSetPrototypeLinkEnabled);
 	}
 

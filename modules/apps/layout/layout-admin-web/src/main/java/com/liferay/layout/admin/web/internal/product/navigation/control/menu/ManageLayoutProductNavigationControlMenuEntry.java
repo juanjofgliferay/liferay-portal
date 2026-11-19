@@ -33,20 +33,20 @@ import com.liferay.taglib.aui.IconTag;
 import com.liferay.taglib.servlet.PageContextFactoryUtil;
 import com.liferay.taglib.ui.SuccessTag;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.jsp.JspException;
+import jakarta.servlet.jsp.PageContext;
+
 import java.io.IOException;
 import java.io.Writer;
 
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.jsp.JspException;
-import javax.servlet.jsp.PageContext;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -185,7 +185,8 @@ public class ManageLayoutProductNavigationControlMenuEntry
 			httpServletRequest, "p_l_mode", Constants.VIEW);
 
 		if ((layout.isTypeAssetDisplay() || layout.isTypeContent()) &&
-			Objects.equals(mode, Constants.EDIT)) {
+			(Objects.equals(mode, Constants.EDIT) ||
+			 Objects.equals(mode, Constants.HISTORY))) {
 
 			return false;
 		}
@@ -205,7 +206,7 @@ public class ManageLayoutProductNavigationControlMenuEntry
 			_layoutPageTemplateEntryLocalService.
 				fetchLayoutPageTemplateEntryByPlid(layout.getPlid());
 
-		if (layoutPageTemplateEntry == null) {
+		if ((layoutPageTemplateEntry == null) && (layout.getClassPK() > 0)) {
 			layoutPageTemplateEntry =
 				_layoutPageTemplateEntryLocalService.
 					fetchLayoutPageTemplateEntryByPlid(layout.getClassPK());

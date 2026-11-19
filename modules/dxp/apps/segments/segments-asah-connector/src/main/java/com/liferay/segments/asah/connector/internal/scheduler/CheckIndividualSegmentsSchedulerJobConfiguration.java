@@ -27,7 +27,10 @@ import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.Http;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.Portal;
-import com.liferay.segments.asah.connector.internal.cache.AsahSegmentsEntryCache;
+import com.liferay.portal.kernel.util.SetUtil;
+import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.Validator;
+import com.liferay.segments.asah.connector.cache.AsahSegmentsEntryCache;
 import com.liferay.segments.asah.connector.internal.client.AsahFaroBackendClient;
 import com.liferay.segments.asah.connector.internal.client.AsahFaroBackendClientImpl;
 import com.liferay.segments.asah.connector.internal.client.model.Individual;
@@ -37,6 +40,7 @@ import com.liferay.segments.asah.connector.internal.client.util.OrderByField;
 import com.liferay.segments.asah.connector.internal.configuration.SegmentsAsahConfiguration;
 import com.liferay.segments.constants.SegmentsEntryConstants;
 import com.liferay.segments.model.SegmentsEntry;
+import com.liferay.segments.model.SegmentsEntryRel;
 import com.liferay.segments.service.SegmentsEntryLocalService;
 import com.liferay.segments.service.SegmentsEntryRelLocalService;
 
@@ -97,7 +101,7 @@ public class CheckIndividualSegmentsSchedulerJobConfiguration
 			segmentsAsahConfiguration.checkInterval(), TimeUnit.MINUTE);
 	}
 
-	private void _addSegmentsEntry(
+	private void _addOrUpdateSegmentsEntry(
 		long companyId, IndividualSegment individualSegment) {
 
 		try {
@@ -105,25 +109,44 @@ public class CheckIndividualSegmentsSchedulerJobConfiguration
 
 			SegmentsEntry segmentsEntry =
 				_segmentsEntryLocalService.fetchSegmentsEntry(
-					serviceContext.getScopeGroupId(), individualSegment.getId(),
-					true);
+					serviceContext.getScopeGroupId(),
+					individualSegment.getId());
+
+			Locale locale = _portal.getSiteDefaultLocale(
+				serviceContext.getScopeGroupId());
 
 			Map<Locale, String> nameMap = Collections.singletonMap(
-				_portal.getSiteDefaultLocale(serviceContext.getScopeGroupId()),
-				individualSegment.getName());
+				locale, individualSegment.getName());
 
 			if (segmentsEntry == null) {
 				_segmentsEntryLocalService.addSegmentsEntry(
+					individualSegment.getExternalReferenceCode(),
 					individualSegment.getId(), nameMap, Collections.emptyMap(),
 					true, null, SegmentsEntryConstants.SOURCE_ASAH_FARO_BACKEND,
-					User.class.getName(), serviceContext);
+					_getType(individualSegment), serviceContext);
+
+				return;
+			}
+
+			if (segmentsEntry.isActive() &&
+				(Validator.isNull(
+					individualSegment.getExternalReferenceCode()) ||
+				 StringUtil.equals(
+					 segmentsEntry.getExternalReferenceCode(),
+					 individualSegment.getExternalReferenceCode())) &&
+				StringUtil.equals(
+					segmentsEntry.getName(locale),
+					individualSegment.getName()) &&
+				(segmentsEntry.getType() == _getType(individualSegment))) {
 
 				return;
 			}
 
 			_segmentsEntryLocalService.updateSegmentsEntry(
+				individualSegment.getExternalReferenceCode(),
 				segmentsEntry.getSegmentsEntryId(), individualSegment.getId(),
-				nameMap, null, true, null, serviceContext);
+				nameMap, Collections.emptyMap(), true, null,
+				_getType(individualSegment), serviceContext);
 		}
 		catch (PortalException portalException) {
 			_log.error(
@@ -133,132 +156,34 @@ public class CheckIndividualSegmentsSchedulerJobConfiguration
 		}
 	}
 
-	private void _addSegmentsEntryRels(
-		SegmentsEntry segmentsEntry, Set<Long> userIds) {
-
-		try {
-			_segmentsEntryLocalService.addSegmentsEntryClassPKs(
-				segmentsEntry.getSegmentsEntryId(),
-				ArrayUtil.toLongArray(userIds),
-				_getServiceContext(segmentsEntry.getCompanyId()));
-		}
-		catch (PortalException portalException) {
-			_log.error(
-				"Unable to process individuals " + userIds, portalException);
-		}
-	}
-
 	private void _checkIndividualSegmentMemberships(SegmentsEntry segmentsEntry)
 		throws Exception {
 
-		AnalyticsConfiguration analyticsConfiguration =
-			_analyticsSettingsManager.getAnalyticsConfiguration(
-				segmentsEntry.getCompanyId());
-
-		_segmentsEntryRelLocalService.deleteSegmentsEntryRels(
-			segmentsEntry.getSegmentsEntryId());
-
-		Results<Individual> individualResults;
+		Set<Long> userIds = null;
 
 		try {
-			individualResults = _asahFaroBackendClient.getIndividualResults(
-				segmentsEntry.getCompanyId(),
-				segmentsEntry.getSegmentsEntryKey(), 1, _DELTA,
-				Collections.singletonList(OrderByField.desc("dateModified")));
-
-			int totalElements = individualResults.getTotal();
-
-			if (_log.isDebugEnabled()) {
-				_log.debug(
-					totalElements +
-						" individuals found for individual segment " +
-							segmentsEntry.getSegmentsEntryKey());
-			}
-
-			if (totalElements == 0) {
-				return;
-			}
-
-			Set<Long> userIds = new HashSet<>();
-
-			int totalPages = (int)Math.ceil((double)totalElements / _DELTA);
-
-			int curPage = 1;
-
-			while (true) {
-				List<Individual> individuals = individualResults.getItems();
-
-				individuals.forEach(
-					individual -> {
-						Long userId = _getUserId(
-							segmentsEntry.getCompanyId(),
-							analyticsConfiguration.
-								liferayAnalyticsDataSourceId(),
-							individual);
-
-						if (userId != null) {
-							userIds.add(userId);
-						}
-						else {
-							List<String> individualSegmentIds =
-								individual.getIndividualSegmentIds();
-
-							if (ListUtil.isNotEmpty(individualSegmentIds)) {
-								String individualPK = _getIndividualPK(
-									analyticsConfiguration.
-										liferayAnalyticsDataSourceId(),
-									individual);
-
-								if (individualPK != null) {
-									try {
-										_putSegmentsEntryIdsCache(
-											segmentsEntry.getCompanyId(),
-											individualPK, individualSegmentIds);
-									}
-									catch (PortalException portalException) {
-										StringBuilder sb = new StringBuilder();
-
-										sb.append("Unable to cache ");
-										sb.append("segments entry IDs ");
-										sb.append("for user ID ");
-										sb.append(userId);
-
-										_log.error(
-											sb.toString(), portalException);
-									}
-								}
-							}
-						}
-					});
-
-				curPage++;
-
-				if (curPage > totalPages) {
-					break;
-				}
-
-				individualResults = _asahFaroBackendClient.getIndividualResults(
-					segmentsEntry.getCompanyId(),
-					segmentsEntry.getSegmentsEntryKey(), curPage, _DELTA,
-					Collections.singletonList(
-						OrderByField.desc("dateModified")));
-			}
-
-			if (!userIds.isEmpty()) {
-				_addSegmentsEntryRels(segmentsEntry, userIds);
-			}
+			userIds = _getUserIds(segmentsEntry);
 		}
 		catch (RuntimeException runtimeException) {
 			_log.error(
 				"Unable to retrieve individuals for individual segment " +
 					segmentsEntry.getSegmentsEntryKey(),
 				runtimeException);
+
+			return;
 		}
+
+		_updateSegmentsEntryRels(segmentsEntry, userIds);
 	}
 
 	private void _checkIndividualSegments() throws Exception {
-		_initialCheckIndividualSegments();
-		_checkIndividualSegmentsMemberships();
+		_companyLocalService.forEachCompanyId(
+			companyId -> {
+				if (_analyticsSettingsManager.isAnalyticsEnabled(companyId)) {
+					_checkIndividualSegments(companyId);
+					_checkIndividualSegmentsMemberships();
+				}
+			});
 	}
 
 	private void _checkIndividualSegments(long companyId) {
@@ -270,10 +195,17 @@ public class CheckIndividualSegmentsSchedulerJobConfiguration
 					companyId, 1, _DELTA,
 					Collections.singletonList(
 						OrderByField.desc("dateModified")));
+
+			_deleteSegmentsEntries(individualSegmentResults);
 		}
 		catch (RuntimeException runtimeException) {
 			_log.error(
 				"Unable to retrieve individual segments", runtimeException);
+
+			return;
+		}
+		catch (PortalException portalException) {
+			_log.error("Unable to delete segments", portalException);
 
 			return;
 		}
@@ -292,7 +224,7 @@ public class CheckIndividualSegmentsSchedulerJobConfiguration
 			individualSegmentResults.getItems();
 
 		individualSegments.forEach(
-			individualSegment -> _addSegmentsEntry(
+			individualSegment -> _addOrUpdateSegmentsEntry(
 				companyId, individualSegment));
 	}
 
@@ -300,10 +232,42 @@ public class CheckIndividualSegmentsSchedulerJobConfiguration
 		List<SegmentsEntry> segmentsEntries =
 			_segmentsEntryLocalService.getSegmentsEntriesBySource(
 				SegmentsEntryConstants.SOURCE_ASAH_FARO_BACKEND,
+				new int[] {
+					SegmentsEntryConstants.TYPE_BATCH,
+					SegmentsEntryConstants.TYPE_REAL_TIME
+				},
 				QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
 
 		for (SegmentsEntry segmentsEntry : segmentsEntries) {
 			_checkIndividualSegmentMemberships(segmentsEntry);
+		}
+	}
+
+	private void _deleteSegmentsEntries(
+			Results<IndividualSegment> individualSegmentResults)
+		throws PortalException {
+
+		List<SegmentsEntry> segmentsEntries =
+			_segmentsEntryLocalService.getSegmentsEntriesBySource(
+				SegmentsEntryConstants.SOURCE_ASAH_FARO_BACKEND,
+				new int[] {
+					SegmentsEntryConstants.TYPE_BATCH,
+					SegmentsEntryConstants.TYPE_REAL_TIME
+				},
+				0, _DELTA, null);
+
+		if (individualSegmentResults.getTotal() > 0) {
+			segmentsEntries = ListUtil.filter(
+				segmentsEntries,
+				segmentsEntry -> !ListUtil.exists(
+					individualSegmentResults.getItems(),
+					individualSegment -> StringUtil.equals(
+						individualSegment.getId(),
+						segmentsEntry.getSegmentsEntryKey())));
+		}
+
+		for (SegmentsEntry segmentsEntry : segmentsEntries) {
+			_segmentsEntryLocalService.deleteSegmentsEntry(segmentsEntry);
 		}
 	}
 
@@ -313,14 +277,16 @@ public class CheckIndividualSegmentsSchedulerJobConfiguration
 		for (Individual.DataSourceIndividualPK dataSourceIndividualPK :
 				individual.getDataSourceIndividualPKs()) {
 
-			if (Objects.equals(
+			if (!Objects.equals(
 					dataSourceId, dataSourceIndividualPK.getDataSourceId())) {
 
-				for (String individualPK :
-						dataSourceIndividualPK.getIndividualPKs()) {
+				continue;
+			}
 
-					return individualPK;
-				}
+			for (String individualPK :
+					dataSourceIndividualPK.getIndividualPKs()) {
+
+				return individualPK;
 			}
 		}
 
@@ -347,6 +313,17 @@ public class CheckIndividualSegmentsSchedulerJobConfiguration
 		serviceContext.setUserId(user.getUserId());
 
 		return serviceContext;
+	}
+
+	private int _getType(IndividualSegment individualSegment) {
+		if (Objects.equals(
+				individualSegment.getSegmentType(),
+				IndividualSegment.Type.REAL_TIME.name())) {
+
+			return SegmentsEntryConstants.TYPE_REAL_TIME;
+		}
+
+		return SegmentsEntryConstants.TYPE_BATCH;
 	}
 
 	private Long _getUserId(
@@ -382,13 +359,94 @@ public class CheckIndividualSegmentsSchedulerJobConfiguration
 		return null;
 	}
 
-	private void _initialCheckIndividualSegments() throws Exception {
-		_companyLocalService.forEachCompanyId(
-			companyId -> {
-				if (_analyticsSettingsManager.isAnalyticsEnabled(companyId)) {
-					_checkIndividualSegments(companyId);
-				}
-			});
+	private Set<Long> _getUserIds(SegmentsEntry segmentsEntry)
+		throws Exception {
+
+		Results<Individual> individualResults =
+			_asahFaroBackendClient.getIndividualResults(
+				segmentsEntry.getCompanyId(),
+				segmentsEntry.getSegmentsEntryKey(), 1, _DELTA,
+				Collections.singletonList(OrderByField.desc("dateModified")));
+
+		int totalElements = individualResults.getTotal();
+
+		if (_log.isDebugEnabled()) {
+			_log.debug(
+				totalElements + " individuals found for individual segment " +
+					segmentsEntry.getSegmentsEntryKey());
+		}
+
+		Set<Long> userIds = new HashSet<>();
+
+		if (totalElements == 0) {
+			return userIds;
+		}
+
+		AnalyticsConfiguration analyticsConfiguration =
+			_analyticsSettingsManager.getAnalyticsConfiguration(
+				segmentsEntry.getCompanyId());
+
+		int totalPages = (int)Math.ceil((double)totalElements / _DELTA);
+
+		int curPage = 1;
+
+		while (true) {
+			List<Individual> individuals = individualResults.getItems();
+
+			individuals.forEach(
+				individual -> {
+					Long userId = _getUserId(
+						segmentsEntry.getCompanyId(),
+						analyticsConfiguration.liferayAnalyticsDataSourceId(),
+						individual);
+
+					if (userId != null) {
+						userIds.add(userId);
+
+						return;
+					}
+
+					List<String> individualSegmentIds =
+						individual.getIndividualSegmentIds();
+
+					if (ListUtil.isEmpty(individualSegmentIds)) {
+						return;
+					}
+
+					String individualPK = _getIndividualPK(
+						analyticsConfiguration.liferayAnalyticsDataSourceId(),
+						individual);
+
+					if (individualPK == null) {
+						return;
+					}
+
+					try {
+						_putSegmentsEntryIdsCache(
+							segmentsEntry.getCompanyId(), individualPK,
+							individualSegmentIds);
+					}
+					catch (PortalException portalException) {
+						_log.error(
+							"Unable to cache segments entry IDs for " +
+								"individual " + individual.getId(),
+							portalException);
+					}
+				});
+
+			curPage++;
+
+			if (curPage > totalPages) {
+				break;
+			}
+
+			individualResults = _asahFaroBackendClient.getIndividualResults(
+				segmentsEntry.getCompanyId(),
+				segmentsEntry.getSegmentsEntryKey(), curPage, _DELTA,
+				Collections.singletonList(OrderByField.desc("dateModified")));
+		}
+
+		return userIds;
 	}
 
 	private void _putSegmentsEntryIdsCache(
@@ -402,8 +460,7 @@ public class CheckIndividualSegmentsSchedulerJobConfiguration
 			individualSegmentId -> {
 				SegmentsEntry curSegmentsEntry =
 					_segmentsEntryLocalService.fetchSegmentsEntry(
-						serviceContext.getScopeGroupId(), individualSegmentId,
-						true);
+						serviceContext.getScopeGroupId(), individualSegmentId);
 
 				if (curSegmentsEntry != null) {
 					return curSegmentsEntry.getSegmentsEntryId();
@@ -414,6 +471,47 @@ public class CheckIndividualSegmentsSchedulerJobConfiguration
 
 		_asahSegmentsEntryCache.putSegmentsEntryIds(
 			userId, ArrayUtil.toLongArray(segmentsEntryIds));
+	}
+
+	private void _updateSegmentsEntryRels(
+		SegmentsEntry segmentsEntry, Set<Long> userIds) {
+
+		try {
+			Set<Long> addUserIds = new HashSet<>(userIds);
+			Set<Long> deleteUserIds = new HashSet<>();
+
+			long segmentsEntryId = segmentsEntry.getSegmentsEntryId();
+
+			Set<Long> oldUserIds = SetUtil.fromList(
+				TransformUtil.transform(
+					_segmentsEntryRelLocalService.getSegmentsEntryRels(
+						segmentsEntryId),
+					SegmentsEntryRel::getClassPK));
+
+			for (Long oldUserId : oldUserIds) {
+				if (addUserIds.remove(oldUserId)) {
+					continue;
+				}
+
+				deleteUserIds.add(oldUserId);
+			}
+
+			if (!deleteUserIds.isEmpty()) {
+				_segmentsEntryRelLocalService.deleteSegmentsEntryRels(
+					segmentsEntryId, _portal.getClassNameId(User.class),
+					ArrayUtil.toLongArray(deleteUserIds));
+			}
+
+			if (!addUserIds.isEmpty()) {
+				_segmentsEntryLocalService.addSegmentsEntryClassPKs(
+					segmentsEntryId, ArrayUtil.toLongArray(addUserIds),
+					_getServiceContext(segmentsEntry.getCompanyId()));
+			}
+		}
+		catch (PortalException portalException) {
+			_log.error(
+				"Unable to process individuals " + userIds, portalException);
+		}
 	}
 
 	private static final int _DELTA = 100;

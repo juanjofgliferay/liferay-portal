@@ -19,7 +19,10 @@ import org.osgi.service.component.annotations.Reference;
  * @author Alessio Antonio Rendina
  */
 @Component(
-	property = "dto.class.name=com.liferay.account.model.AccountEntryOrganizationRel",
+	property = {
+		"default=true",
+		"dto.class.name=com.liferay.account.model.AccountEntryOrganizationRel"
+	},
 	service = DTOConverter.class
 )
 public class AccountOrganizationDTOConverter
@@ -44,10 +47,10 @@ public class AccountOrganizationDTOConverter
 
 		return new AccountOrganization() {
 			{
-				accountId = accountEntryOrganizationRel.getAccountEntryId();
-				name = organization.getName();
-				organizationId = organization.getOrganizationId();
-				treePath = organization.getTreePath();
+				setAccountId(accountEntryOrganizationRel::getAccountEntryId);
+				setName(organization::getName);
+				setOrganizationId(organization::getOrganizationId);
+				setTreePath(organization::getTreePath);
 			}
 		};
 	}

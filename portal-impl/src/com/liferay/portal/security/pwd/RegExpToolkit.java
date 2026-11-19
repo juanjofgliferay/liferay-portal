@@ -10,11 +10,13 @@ import com.liferay.portal.kernel.exception.UserPasswordException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.PasswordPolicy;
+import com.liferay.portal.kernel.security.fips.FIPSModeValidator;
 import com.liferay.portal.kernel.security.pwd.BasicToolkit;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
+import com.liferay.portal.kernel.util.PropsUtil;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.PwdGenerator;
-import com.liferay.portal.util.PropsUtil;
 
 /**
  * @author Brian Wing Shun Chan
@@ -30,7 +32,13 @@ public class RegExpToolkit extends BasicToolkit {
 
 	@Override
 	public String generate(PasswordPolicy passwordPolicy) {
-		return PwdGenerator.getPassword(_charset, _length);
+		int length = _length;
+
+		if (PropsValues.FIPS_ENABLED) {
+			length = Math.max(length, FIPSModeValidator.PASSWORDS_MIN_LENGTH);
+		}
+
+		return PwdGenerator.getPassword(_charset, length);
 	}
 
 	@Override

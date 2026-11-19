@@ -5,39 +5,50 @@
 
 package com.liferay.portal.servlet;
 
+import com.liferay.petra.lang.SafeCloseable;
+import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.cache.PortalCache;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.model.Portlet;
 import com.liferay.portal.kernel.model.PortletApp;
 import com.liferay.portal.kernel.model.PortletWrapper;
 import com.liferay.portal.kernel.service.PortletLocalServiceUtil;
 import com.liferay.portal.kernel.service.PortletLocalServiceWrapper;
+import com.liferay.portal.kernel.servlet.BufferCacheServletResponse;
+import com.liferay.portal.kernel.servlet.HttpHeaders;
+import com.liferay.portal.kernel.servlet.RequestDispatcherUtil;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
+import com.liferay.portal.kernel.test.rule.NewEnv;
+import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.PortletKeys;
 import com.liferay.portal.kernel.util.PrefsProps;
 import com.liferay.portal.kernel.util.PrefsPropsUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
-import com.liferay.portal.language.LanguageImpl;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.model.impl.PortletAppImpl;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 import com.liferay.portal.tools.ToolDependencies;
 import com.liferay.portal.util.PortalImpl;
-import com.liferay.portal.util.PropsValues;
+import com.liferay.portlet.documentlibrary.constants.DLFriendlyURLConstants;
+
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.util.Objects;
 
-import javax.servlet.RequestDispatcher;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletResponse;
-
+import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
+import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
 import org.springframework.mock.web.MockHttpServletRequest;
@@ -58,9 +69,11 @@ public class ComboServletTest {
 	@BeforeClass
 	public static void setUpClass() throws Exception {
 		ToolDependencies.wireCaches();
+	}
 
-		ReflectionTestUtil.setFieldValue(
-			PropsValues.class, "COMBO_CHECK_TIMESTAMP", true);
+	@AfterClass
+	public static void tearDownClass() {
+		_languageUtilMockedStatic.close();
 	}
 
 	@Before
@@ -187,12 +200,150 @@ public class ComboServletTest {
 				_TEST_PORTLET_ID + ":js/javascript.js"));
 	}
 
+	@NewEnv(type = NewEnv.Type.CLASSLOADER)
+	@Test
+	public void testMaxFileSizeDisabled() throws Exception {
+		ReflectionTestUtil.setFieldValue(
+			PropsValues.class, "COMBO_ALLOWED_FILE_MAX_SIZE", 0);
+
+		MockHttpServletRequest mockHttpServletRequest =
+			new MockHttpServletRequest();
+
+		String path = "/" + RandomTestUtil.randomString() + ".js";
+
+		mockHttpServletRequest.setQueryString(path);
+
+		MockHttpServletResponse mockHttpServletResponse =
+			new MockHttpServletResponse();
+
+		PortalCache<String, byte[][]> bytesArrayPortalCache =
+			ReflectionTestUtil.getFieldValue(
+				_comboServlet, "_bytesArrayPortalCache");
+
+		String key = "[" + path + "]#null";
+
+		Assert.assertNull(bytesArrayPortalCache.get(key));
+
+		String responseContent = RandomTestUtil.randomString();
+
+		try (SafeCloseable safeCloseable = _setUpHttpServletResponse(
+				mockHttpServletResponse, responseContent)) {
+
+			_comboServlet.service(
+				mockHttpServletRequest, mockHttpServletResponse);
+
+			byte[][] bytesArray = bytesArrayPortalCache.get(key);
+
+			Assert.assertNotNull(bytesArray);
+			Assert.assertEquals(
+				responseContent + StringPool.NEW_LINE,
+				new String(bytesArray[0], StringPool.UTF8));
+		}
+	}
+
+	@NewEnv(type = NewEnv.Type.CLASSLOADER)
+	@Test
+	public void testMaxFileSizeEnabled() throws Exception {
+		String responseContent = RandomTestUtil.randomString();
+
+		ReflectionTestUtil.setFieldValue(
+			PropsValues.class, "COMBO_ALLOWED_FILE_MAX_SIZE",
+			responseContent.length() + 1);
+
+		MockHttpServletRequest mockHttpServletRequest =
+			new MockHttpServletRequest();
+
+		String path = "/" + RandomTestUtil.randomString() + ".js";
+
+		mockHttpServletRequest.setQueryString(path);
+
+		MockHttpServletResponse mockHttpServletResponse =
+			new MockHttpServletResponse();
+
+		PortalCache<String, byte[][]> bytesArrayPortalCache =
+			ReflectionTestUtil.getFieldValue(
+				_comboServlet, "_bytesArrayPortalCache");
+
+		String key = "[" + path + "]#null";
+
+		Assert.assertNull(bytesArrayPortalCache.get(key));
+
+		try (SafeCloseable safeCloseable = _setUpHttpServletResponse(
+				mockHttpServletResponse, responseContent + StringPool.STAR)) {
+
+			_comboServlet.service(
+				mockHttpServletRequest, mockHttpServletResponse);
+
+			Assert.assertNull(bytesArrayPortalCache.get(key));
+		}
+
+		mockHttpServletResponse = new MockHttpServletResponse();
+
+		try (SafeCloseable safeCloseable = _setUpHttpServletResponse(
+				mockHttpServletResponse, responseContent)) {
+
+			_comboServlet.service(
+				mockHttpServletRequest, mockHttpServletResponse);
+
+			byte[][] bytesArray = bytesArrayPortalCache.get(key);
+
+			Assert.assertNotNull(bytesArray);
+			Assert.assertEquals(
+				responseContent + StringPool.NEW_LINE,
+				new String(bytesArray[0], StringPool.UTF8));
+		}
+	}
+
+	@Test
+	public void testMaxFiles() throws Exception {
+		MockHttpServletRequest mockHttpServletRequest =
+			new MockHttpServletRequest();
+
+		int comboMaxFiles = 10;
+
+		ReflectionTestUtil.setFieldValue(
+			PropsValues.class, "COMBO_MAX_FILES", comboMaxFiles);
+
+		StringBuilder sb = new StringBuilder();
+
+		for (int i = 0; i < comboMaxFiles; i++) {
+			if (i > 0) {
+				sb.append(StringPool.AMPERSAND);
+			}
+
+			sb.append("/js/javascript");
+			sb.append(i);
+			sb.append(".js");
+		}
+
+		mockHttpServletRequest.setQueryString(sb.toString());
+
+		MockHttpServletResponse mockHttpServletResponse =
+			new MockHttpServletResponse();
+
+		_comboServlet.service(mockHttpServletRequest, mockHttpServletResponse);
+
+		Assert.assertEquals(
+			HttpServletResponse.SC_OK, mockHttpServletResponse.getStatus());
+
+		sb.append(StringPool.AMPERSAND);
+		sb.append("/js/another_one.js");
+
+		mockHttpServletRequest = new MockHttpServletRequest();
+
+		mockHttpServletRequest.setQueryString(sb.toString());
+
+		mockHttpServletResponse = new MockHttpServletResponse();
+
+		_comboServlet.service(mockHttpServletRequest, mockHttpServletResponse);
+
+		Assert.assertEquals(
+			HttpServletResponse.SC_BAD_REQUEST,
+			mockHttpServletResponse.getStatus());
+	}
+
 	@Test
 	public void testMixedExtensionsRequest() throws Exception {
-		LanguageUtil languageUtil = new LanguageUtil();
-
-		languageUtil.setLanguage(new LanguageImpl());
-
 		MockHttpServletRequest mockHttpServletRequest =
 			new MockHttpServletRequest();
 
@@ -210,30 +361,12 @@ public class ComboServletTest {
 	}
 
 	@Test
-	public void testServiceWithoutPortletIdButWithContext() throws Exception {
-		_testService(
-			"/js/javascript.js", "/portal/js/javascript.js",
-			_portalServletContext);
-	}
-
-	@Test
-	public void testServiceWithoutPortletIdButWithProxy() throws Exception {
-		_setUpProxy();
-
-		_testService(
-			"/js/javascript.js", "/proxyPath/js/javascript.js",
-			_portalServletContext);
-	}
-
-	@Test
-	public void testServiceWithoutPortletIdButWithProxyAndContext()
-		throws Exception {
-
-		_setUpProxy();
-
-		_testService(
-			"/js/javascript.js", "/proxyPath/portal/js/javascript.js",
-			_portalServletContext);
+	public void testServiceWithNoncanonicalPaths() throws Exception {
+		_testService("/js/aui.js", "/./js/aui.js", _portalServletContext);
+		_testService("/js/aui.js", "/js/./aui.js", _portalServletContext);
+		_testService("/js/aui.js", "/js//aui.js", _portalServletContext);
+		_testService("/js/aui.js", "/js/down/../aui.js", _portalServletContext);
+		_testService(null, "/../js/aui.js", _portalServletContext);
 	}
 
 	@Test
@@ -262,6 +395,80 @@ public class ComboServletTest {
 			"/portal/js/javascript.js",
 			_TEST_PORTLET_ID + ":/proxyPath/portal/js/javascript.js",
 			_pluginServletContext);
+	}
+
+	@NewEnv(type = NewEnv.Type.CLASSLOADER)
+	@Test
+	public void testServiceWithPrivateResource() throws Exception {
+		ReflectionTestUtil.setFieldValue(
+			PropsValues.class, "COMBO_ALLOWED_FILE_MAX_SIZE", 0);
+
+		MockHttpServletRequest mockHttpServletRequest =
+			new MockHttpServletRequest();
+
+		String path = StringBundler.concat(
+			DLFriendlyURLConstants.PATH_PREFIX_DOCUMENT,
+			RandomTestUtil.randomString(), StringPool.SLASH,
+			RandomTestUtil.randomString());
+
+		mockHttpServletRequest.setQueryString(path);
+
+		MockHttpServletResponse mockHttpServletResponse =
+			new MockHttpServletResponse();
+
+		PortalCache<String, byte[][]> bytesArrayPortalCache =
+			ReflectionTestUtil.getFieldValue(
+				_comboServlet, "_bytesArrayPortalCache");
+
+		String key = "[" + path + "]#null";
+
+		Assert.assertNull(bytesArrayPortalCache.get(key));
+
+		String responseContent = RandomTestUtil.randomString();
+
+		try (SafeCloseable safeCloseable = _setUpHttpServletResponse(
+				HttpHeaders.CACHE_CONTROL_PRIVATE_VALUE, responseContent,
+				ContentTypes.TEXT_CSS, mockHttpServletResponse)) {
+
+			_comboServlet.service(
+				mockHttpServletRequest, mockHttpServletResponse);
+
+			Assert.assertNull(bytesArrayPortalCache.get(key));
+
+			String content = mockHttpServletResponse.getContentAsString();
+
+			Assert.assertTrue(content.contains(responseContent));
+
+			Assert.assertEquals(
+				HttpServletResponse.SC_OK, mockHttpServletResponse.getStatus());
+		}
+	}
+
+	@Test
+	public void testServiceWithoutPortletIdButWithContext() throws Exception {
+		_testService(
+			"/js/javascript.js", "/portal/js/javascript.js",
+			_portalServletContext);
+	}
+
+	@Test
+	public void testServiceWithoutPortletIdButWithProxy() throws Exception {
+		_setUpProxy();
+
+		_testService(
+			"/js/javascript.js", "/proxyPath/js/javascript.js",
+			_portalServletContext);
+	}
+
+	@Test
+	public void testServiceWithoutPortletIdButWithProxyAndContext()
+		throws Exception {
+
+		_setUpProxy();
+
+		_testService(
+			"/js/javascript.js", "/proxyPath/portal/js/javascript.js",
+			_portalServletContext);
 	}
 
 	@Test
@@ -300,6 +507,43 @@ public class ComboServletTest {
 		comboServlet.init(new MockServletConfig(portalServletContext));
 
 		return comboServlet;
+	}
+
+	private SafeCloseable _setUpHttpServletResponse(
+		HttpServletResponse httpServletResponse, String content) {
+
+		return _setUpHttpServletResponse(
+			null, content, ContentTypes.TEXT_JAVASCRIPT, httpServletResponse);
+	}
+
+	private SafeCloseable _setUpHttpServletResponse(
+		String cacheControl, String content, String contentType,
+		HttpServletResponse httpServletResponse) {
+
+		MockedStatic<RequestDispatcherUtil> requestDispatcherUtilMockedStatic =
+			Mockito.mockStatic(RequestDispatcherUtil.class);
+
+		BufferCacheServletResponse bufferCacheServletResponse =
+			new BufferCacheServletResponse(httpServletResponse);
+
+		bufferCacheServletResponse.setContentType(contentType);
+
+		if (cacheControl != null) {
+			bufferCacheServletResponse.setHeader(
+				HttpHeaders.CACHE_CONTROL, cacheControl);
+		}
+
+		bufferCacheServletResponse.setString(content);
+		bufferCacheServletResponse.setStatus(HttpServletResponse.SC_OK);
+
+		requestDispatcherUtilMockedStatic.when(
+			() -> RequestDispatcherUtil.getBufferCacheServletResponse(
+				Mockito.any(), Mockito.any(), Mockito.any())
+		).thenReturn(
+			bufferCacheServletResponse
+		);
+
+		return requestDispatcherUtilMockedStatic::close;
 	}
 
 	private Portlet _setUpPortalPortlet(ServletContext portalServletContext) {
@@ -391,7 +635,7 @@ public class ComboServletTest {
 			mockHttpServletRequest, new MockHttpServletResponse());
 
 		Mockito.verify(
-			servletContext
+			servletContext, Mockito.times((path == null) ? 0 : 1)
 		).getRequestDispatcher(
 			path
 		);
@@ -403,6 +647,8 @@ public class ComboServletTest {
 
 	private static final String _TEST_PORTLET_ID = "TEST_PORTLET_ID";
 
+	private static final MockedStatic<LanguageUtil> _languageUtilMockedStatic =
+		Mockito.mockStatic(LanguageUtil.class);
 	private static final PortalImpl _portalImpl = new PortalImpl();
 	private static final PortalUtil _portalUtil = new PortalUtil();
 

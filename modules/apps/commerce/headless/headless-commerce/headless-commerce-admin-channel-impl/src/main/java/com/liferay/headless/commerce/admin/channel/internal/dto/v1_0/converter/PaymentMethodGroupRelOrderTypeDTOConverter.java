@@ -20,7 +20,10 @@ import org.osgi.service.component.annotations.Reference;
  * @author Riccardo Alberti
  */
 @Component(
-	property = "dto.class.name=com.liferay.commerce.payment.model.CommercePaymentMethodGroupRelQualifier-OrderType",
+	property = {
+		"default=true",
+		"dto.class.name=com.liferay.commerce.payment.model.CommercePaymentMethodGroupRelQualifier-OrderType"
+	},
 	service = DTOConverter.class
 )
 public class PaymentMethodGroupRelOrderTypeDTOConverter
@@ -50,16 +53,16 @@ public class PaymentMethodGroupRelOrderTypeDTOConverter
 
 		return new PaymentMethodGroupRelOrderType() {
 			{
-				actions = dtoConverterContext.getActions();
-				orderTypeExternalReferenceCode =
-					commerceOrderType.getExternalReferenceCode();
-				orderTypeId = commerceOrderType.getCommerceOrderTypeId();
-				paymentMethodGroupRelId =
-					commercePaymentMethodGroupRelQualifier.
-						getCommercePaymentMethodGroupRelId();
-				paymentMethodGroupRelOrderTypeId =
-					commercePaymentMethodGroupRelQualifier.
-						getCommercePaymentMethodGroupRelQualifierId();
+				setActions(dtoConverterContext::getActions);
+				setOrderTypeExternalReferenceCode(
+					commerceOrderType::getExternalReferenceCode);
+				setOrderTypeId(commerceOrderType::getCommerceOrderTypeId);
+				setPaymentMethodGroupRelId(
+					commercePaymentMethodGroupRelQualifier::
+						getCommercePaymentMethodGroupRelId);
+				setPaymentMethodGroupRelOrderTypeId(
+					commercePaymentMethodGroupRelQualifier::
+						getCommercePaymentMethodGroupRelQualifierId);
 			}
 		};
 	}

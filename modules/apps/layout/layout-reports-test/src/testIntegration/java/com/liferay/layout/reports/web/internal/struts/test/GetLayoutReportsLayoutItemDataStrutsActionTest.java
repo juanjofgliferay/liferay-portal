@@ -9,6 +9,7 @@ import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.asset.list.constants.AssetListEntryTypeConstants;
 import com.liferay.asset.list.model.AssetListEntry;
 import com.liferay.asset.list.service.AssetListEntryLocalService;
+import com.liferay.document.library.kernel.model.DLFileEntry;
 import com.liferay.fragment.constants.FragmentConstants;
 import com.liferay.fragment.model.FragmentCollection;
 import com.liferay.fragment.model.FragmentEntry;
@@ -36,24 +37,34 @@ import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.LayoutSet;
 import com.liferay.portal.kernel.model.LayoutTypePortlet;
+import com.liferay.portal.kernel.model.ResourceConstants;
+import com.liferay.portal.kernel.model.Role;
+import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.model.role.RoleConstants;
+import com.liferay.portal.kernel.security.permission.ActionKeys;
+import com.liferay.portal.kernel.security.permission.PermissionCheckerFactoryUtil;
 import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.service.LayoutLocalService;
+import com.liferay.portal.kernel.service.ResourcePermissionLocalServiceUtil;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
+import com.liferay.portal.kernel.service.UserLocalServiceUtil;
 import com.liferay.portal.kernel.struts.StrutsAction;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.RoleTestUtil;
 import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
+import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.ScopeUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
-import com.liferay.portal.test.rule.FeatureFlags;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
@@ -73,7 +84,6 @@ import org.springframework.mock.web.MockHttpServletResponse;
 /**
  * @author Mikel Lorza
  */
-@FeatureFlags("LPS-187284")
 @RunWith(Arquillian.class)
 public class GetLayoutReportsLayoutItemDataStrutsActionTest {
 
@@ -102,6 +112,47 @@ public class GetLayoutReportsLayoutItemDataStrutsActionTest {
 	}
 
 	@Test
+	public void testExecute() throws Exception {
+		MockHttpServletRequest mockHttpServletRequest =
+			new MockHttpServletRequest();
+
+		ThemeDisplay themeDisplay = _getThemeDisplay();
+
+		User user = UserTestUtil.addUser();
+
+		themeDisplay.setPermissionChecker(
+			PermissionCheckerFactoryUtil.create(user));
+		themeDisplay.setUser(user);
+
+		mockHttpServletRequest.setAttribute(
+			WebKeys.THEME_DISPLAY, themeDisplay);
+
+		mockHttpServletRequest.setParameter(
+			"p_l_id", String.valueOf(_layout.getPlid()));
+
+		UserLocalServiceUtil.addGroupUser(
+			_group.getGroupId(), user.getUserId());
+
+		Role role = RoleTestUtil.addRole(RoleConstants.TYPE_REGULAR);
+
+		UserLocalServiceUtil.addRoleUser(role.getRoleId(), user.getUserId());
+
+		ResourcePermissionLocalServiceUtil.setResourcePermissions(
+			user.getCompanyId(), DLFileEntry.class.getName(),
+			ResourceConstants.SCOPE_COMPANY,
+			String.valueOf(user.getCompanyId()), role.getRoleId(),
+			new String[] {ActionKeys.UPDATE});
+
+		MockHttpServletResponse mockHttpServletResponse =
+			new MockHttpServletResponse();
+
+		_getLayoutReportsRenderTimesDataStrutsAction.execute(
+			mockHttpServletRequest, mockHttpServletResponse);
+
+		Assert.assertEquals(200, mockHttpServletResponse.getStatus());
+	}
+
+	@Test
 	public void testGetRenderTimesDataOfContentLayoutWithCollection()
 		throws Exception {
 
@@ -115,7 +166,7 @@ public class GetLayoutReportsLayoutItemDataStrutsActionTest {
 
 		AssetListEntry assetListEntry =
 			_assetListEntryLocalService.addAssetListEntry(
-				TestPropsValues.getUserId(), _group.getGroupId(),
+				null, TestPropsValues.getUserId(), _group.getGroupId(),
 				RandomTestUtil.randomString(),
 				AssetListEntryTypeConstants.TYPE_MANUAL, _serviceContext);
 
@@ -136,7 +187,8 @@ public class GetLayoutReportsLayoutItemDataStrutsActionTest {
 
 		_layoutPageTemplateStructureLocalService.
 			updateLayoutPageTemplateStructureData(
-				_layout.getGroupId(), _layout.getPlid(),
+				TestPropsValues.getUserId(), _layout.getGroupId(),
+				_layout.getPlid(),
 				_segmentsExperienceLocalService.
 					fetchDefaultSegmentsExperienceId(_layout.getPlid()),
 				layoutStructure.toString());
@@ -167,7 +219,7 @@ public class GetLayoutReportsLayoutItemDataStrutsActionTest {
 
 		LayoutPageTemplateEntry masterLayoutPageTemplateEntry =
 			_layoutPageTemplateEntryLocalService.addLayoutPageTemplateEntry(
-				TestPropsValues.getUserId(), _group.getGroupId(), 0,
+				null, TestPropsValues.getUserId(), _group.getGroupId(), 0, null,
 				RandomTestUtil.randomString(),
 				LayoutPageTemplateEntryTypeConstants.MASTER_LAYOUT, 0,
 				WorkflowConstants.STATUS_APPROVED,
@@ -185,7 +237,7 @@ public class GetLayoutReportsLayoutItemDataStrutsActionTest {
 
 		AssetListEntry assetListEntry =
 			_assetListEntryLocalService.addAssetListEntry(
-				TestPropsValues.getUserId(), _group.getGroupId(),
+				null, TestPropsValues.getUserId(), _group.getGroupId(),
 				RandomTestUtil.randomString(),
 				AssetListEntryTypeConstants.TYPE_MANUAL, _serviceContext);
 
@@ -206,6 +258,7 @@ public class GetLayoutReportsLayoutItemDataStrutsActionTest {
 
 		_layoutPageTemplateStructureLocalService.
 			updateLayoutPageTemplateStructureData(
+				TestPropsValues.getUserId(),
 				masterLayoutPageTemplateEntry.getGroupId(),
 				masterLayoutPageTemplateEntry.getPlid(),
 				_segmentsExperienceLocalService.
@@ -213,7 +266,8 @@ public class GetLayoutReportsLayoutItemDataStrutsActionTest {
 						masterLayoutPageTemplateEntry.getPlid()),
 				layoutStructure.toString());
 
-		_layout.setMasterLayoutPlid(masterLayoutPageTemplateEntry.getPlid());
+		_layout.setMasterLayoutPageTemplateEntryERC(
+			masterLayoutPageTemplateEntry.getExternalReferenceCode());
 
 		_layout = _layoutLocalService.updateLayout(_layout);
 
@@ -245,8 +299,10 @@ public class GetLayoutReportsLayoutItemDataStrutsActionTest {
 
 		FragmentEntryLink fragmentEntryLink =
 			_fragmentEntryLinkLocalService.addFragmentEntryLink(
-				TestPropsValues.getUserId(), _group.getGroupId(), 0,
-				fragmentEntry.getFragmentEntryId(),
+				null, TestPropsValues.getUserId(), _group.getGroupId(), null,
+				fragmentEntry.getExternalReferenceCode(),
+				ScopeUtil.getItemScopeExternalReferenceCode(
+					fragmentEntry.getGroupId(), _group.getGroupId()),
 				_segmentsExperienceLocalService.
 					fetchDefaultSegmentsExperienceId(_layout.getPlid()),
 				_layout.getPlid(), fragmentEntry.getCss(),
@@ -301,7 +357,8 @@ public class GetLayoutReportsLayoutItemDataStrutsActionTest {
 
 		_layoutPageTemplateStructureLocalService.
 			updateLayoutPageTemplateStructureData(
-				_layout.getGroupId(), _layout.getPlid(),
+				TestPropsValues.getUserId(), _layout.getGroupId(),
+				_layout.getPlid(),
 				_segmentsExperienceLocalService.
 					fetchDefaultSegmentsExperienceId(_layout.getPlid()),
 				layoutStructure.toString());
@@ -310,8 +367,10 @@ public class GetLayoutReportsLayoutItemDataStrutsActionTest {
 
 		FragmentEntryLink fragmentEntryLink =
 			_fragmentEntryLinkLocalService.addFragmentEntryLink(
-				TestPropsValues.getUserId(), _group.getGroupId(), 0,
-				fragmentEntry.getFragmentEntryId(),
+				null, TestPropsValues.getUserId(), _group.getGroupId(), null,
+				fragmentEntry.getExternalReferenceCode(),
+				ScopeUtil.getItemScopeExternalReferenceCode(
+					fragmentEntry.getGroupId(), _group.getGroupId()),
 				_segmentsExperienceLocalService.
 					fetchDefaultSegmentsExperienceId(_layout.getPlid()),
 				_layout.getPlid(), fragmentEntry.getCss(),
@@ -342,7 +401,8 @@ public class GetLayoutReportsLayoutItemDataStrutsActionTest {
 
 		FragmentEntryLink fragmentEntryLink =
 			_fragmentEntryLinkLocalService.addFragmentEntryLink(
-				_layout.getUserId(), _group.getGroupId(), 0, 0,
+				null, _layout.getUserId(), _group.getGroupId(), null, null,
+				null,
 				_segmentsExperienceLocalService.
 					fetchDefaultSegmentsExperienceId(_layout.getPlid()),
 				_layout.getPlid(), StringPool.BLANK, StringPool.BLANK,
@@ -380,16 +440,16 @@ public class GetLayoutReportsLayoutItemDataStrutsActionTest {
 
 		FragmentCollection fragmentCollection =
 			_fragmentCollectionLocalService.addFragmentCollection(
-				TestPropsValues.getUserId(), _group.getGroupId(),
+				null, TestPropsValues.getUserId(), _group.getGroupId(),
 				RandomTestUtil.randomString(), StringPool.BLANK,
 				_serviceContext);
 
 		return _fragmentEntryLocalService.addFragmentEntry(
-			TestPropsValues.getUserId(), _group.getGroupId(),
+			null, TestPropsValues.getUserId(), _group.getGroupId(),
 			fragmentCollection.getFragmentCollectionId(), null,
 			RandomTestUtil.randomString(), StringPool.BLANK,
 			"Fragment Entry HTML", StringPool.BLANK, cacheable, null, null, 0,
-			FragmentConstants.TYPE_COMPONENT, null,
+			false, false, FragmentConstants.TYPE_COMPONENT, null,
 			WorkflowConstants.STATUS_APPROVED, _serviceContext);
 	}
 
@@ -414,7 +474,8 @@ public class GetLayoutReportsLayoutItemDataStrutsActionTest {
 
 		_layoutPageTemplateStructureLocalService.
 			updateLayoutPageTemplateStructureData(
-				_layout.getGroupId(), _layout.getPlid(),
+				TestPropsValues.getUserId(), _layout.getGroupId(),
+				_layout.getPlid(),
 				_segmentsExperienceLocalService.
 					fetchDefaultSegmentsExperienceId(_layout.getPlid()),
 				layoutStructure.toString());
@@ -433,13 +494,7 @@ public class GetLayoutReportsLayoutItemDataStrutsActionTest {
 			layoutPageTemplateStructure.getDefaultSegmentsExperienceData());
 	}
 
-	private JSONArray _serveResource() throws Exception {
-		MockHttpServletRequest mockHttpServletRequest =
-			new MockHttpServletRequest();
-
-		mockHttpServletRequest.setParameter(
-			"p_l_id", String.valueOf(_layout.getPlid()));
-
+	private ThemeDisplay _getThemeDisplay() throws Exception {
 		ThemeDisplay themeDisplay = new ThemeDisplay();
 
 		themeDisplay.setCompany(
@@ -448,18 +503,36 @@ public class GetLayoutReportsLayoutItemDataStrutsActionTest {
 		themeDisplay.setLayoutSet(_layout.getLayoutSet());
 		themeDisplay.setLayoutTypePortlet(
 			(LayoutTypePortlet)_layout.getLayoutType());
-		themeDisplay.setPermissionChecker(
-			PermissionThreadLocal.getPermissionChecker());
-		themeDisplay.setScopeGroupId(_group.getGroupId());
-		themeDisplay.setSiteGroupId(_group.getGroupId());
-		themeDisplay.setUser(TestPropsValues.getUser());
 
 		LayoutSet layoutSet = _group.getPublicLayoutSet();
 
 		themeDisplay.setLookAndFeel(layoutSet.getTheme(), null);
 
+		themeDisplay.setScopeGroupId(_group.getGroupId());
+		themeDisplay.setSiteGroupId(_group.getGroupId());
+
+		return themeDisplay;
+	}
+
+	private JSONArray _serveResource() throws Exception {
+		MockHttpServletRequest mockHttpServletRequest =
+			new MockHttpServletRequest();
+
+		ThemeDisplay themeDisplay = _getThemeDisplay();
+
+		LayoutSet layoutSet = _group.getPublicLayoutSet();
+
+		themeDisplay.setLookAndFeel(layoutSet.getTheme(), null);
+
+		themeDisplay.setPermissionChecker(
+			PermissionThreadLocal.getPermissionChecker());
+		themeDisplay.setUser(TestPropsValues.getUser());
+
 		mockHttpServletRequest.setAttribute(
 			WebKeys.THEME_DISPLAY, themeDisplay);
+
+		mockHttpServletRequest.setParameter(
+			"p_l_id", String.valueOf(_layout.getPlid()));
 
 		MockHttpServletResponse mockHttpServletResponse =
 			new MockHttpServletResponse();

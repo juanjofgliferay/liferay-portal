@@ -19,7 +19,10 @@ import org.osgi.service.component.annotations.Reference;
  * @author Alessio Antonio Rendina
  */
 @Component(
-	property = "dto.class.name=com.liferay.commerce.inventory.model.CommerceInventoryWarehouse",
+	property = {
+		"default=true",
+		"dto.class.name=com.liferay.commerce.inventory.model.CommerceInventoryWarehouse"
+	},
 	service = DTOConverter.class
 )
 public class WarehouseDTOConverter
@@ -40,29 +43,35 @@ public class WarehouseDTOConverter
 
 		return new Warehouse() {
 			{
-				actions = dtoConverterContext.getActions();
-				active = commerceInventoryWarehouse.isActive();
-				city = commerceInventoryWarehouse.getCity();
-				countryISOCode =
-					commerceInventoryWarehouse.getCountryTwoLettersISOCode();
-				description = LanguageUtils.getLanguageIdMap(
-					commerceInventoryWarehouse.getDescriptionMap());
-				externalReferenceCode =
-					commerceInventoryWarehouse.getExternalReferenceCode();
-				id =
-					commerceInventoryWarehouse.
-						getCommerceInventoryWarehouseId();
-				latitude = commerceInventoryWarehouse.getLatitude();
-				longitude = commerceInventoryWarehouse.getLongitude();
-				name = LanguageUtils.getLanguageIdMap(
-					commerceInventoryWarehouse.getNameMap());
-				regionISOCode =
-					commerceInventoryWarehouse.getCommerceRegionCode();
-				street1 = commerceInventoryWarehouse.getStreet1();
-				street2 = commerceInventoryWarehouse.getStreet2();
-				street3 = commerceInventoryWarehouse.getStreet3();
-				type = commerceInventoryWarehouse.getType();
-				zip = commerceInventoryWarehouse.getZip();
+				setActions(dtoConverterContext::getActions);
+				setActive(commerceInventoryWarehouse::isActive);
+				setCity(commerceInventoryWarehouse::getCity);
+				setCountryISOCode(
+					() ->
+						commerceInventoryWarehouse.
+							getCountryTwoLettersISOCode());
+				setDescription(
+					() -> LanguageUtils.getLanguageIdMap(
+						commerceInventoryWarehouse.getDescriptionMap()));
+				setExternalReferenceCode(
+					() ->
+						commerceInventoryWarehouse.getExternalReferenceCode());
+				setId(
+					() ->
+						commerceInventoryWarehouse.
+							getCommerceInventoryWarehouseId());
+				setLatitude(commerceInventoryWarehouse::getLatitude);
+				setLongitude(commerceInventoryWarehouse::getLongitude);
+				setName(
+					() -> LanguageUtils.getLanguageIdMap(
+						commerceInventoryWarehouse.getNameMap()));
+				setRegionISOCode(
+					commerceInventoryWarehouse::getCommerceRegionCode);
+				setStreet1(commerceInventoryWarehouse::getStreet1);
+				setStreet2(commerceInventoryWarehouse::getStreet2);
+				setStreet3(commerceInventoryWarehouse::getStreet3);
+				setType(commerceInventoryWarehouse::getType);
+				setZip(commerceInventoryWarehouse::getZip);
 			}
 		};
 	}

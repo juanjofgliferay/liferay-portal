@@ -12,7 +12,6 @@ MasterLayoutDisplayContext masterLayoutDisplayContext = new MasterLayoutDisplayC
 %>
 
 <clay:navigation-bar
-	inverted="<%= true %>"
 	navigationItems="<%= layoutPageTemplatesAdminDisplayContext.getNavigationItems() %>"
 />
 
@@ -22,7 +21,7 @@ MasterLayoutManagementToolbarDisplayContext masterLayoutManagementToolbarDisplay
 
 <clay:management-toolbar
 	managementToolbarDisplayContext="<%= masterLayoutManagementToolbarDisplayContext %>"
-	propsTransformer="js/propsTransformers/MasterLayoutManagementToolbarPropsTransformer"
+	propsTransformer="{MasterLayoutManagementToolbarPropsTransformer} from layout-page-template-admin-web"
 />
 
 <liferay-ui:success key="masterPagePublished" message="the-master-page-was-published-successfully" />
@@ -31,7 +30,7 @@ MasterLayoutManagementToolbarDisplayContext masterLayoutManagementToolbarDisplay
 	<portlet:param name="redirect" value="<%= currentURL %>" />
 </portlet:actionURL>
 
-<aui:form action="<%= deleteMasterLayoutURL %>" cssClass="container-fluid container-fluid-max-xl" name="fm">
+<aui:form action="<%= deleteMasterLayoutURL %>" cssClass="container-fluid container-fluid-max-xxxl" name="fm">
 	<liferay-ui:error key="<%= PortalException.class.getName() %>" message="one-or-more-entries-could-not-be-deleted" />
 	<liferay-ui:error key="<%= RequiredLayoutPageTemplateEntryException.class.getName() %>" message="you-cannot-delete-master-pages-that-are-used-by-a-page,-a-page-template,-or-a-display-page-template" />
 
@@ -55,7 +54,7 @@ MasterLayoutManagementToolbarDisplayContext masterLayoutManagementToolbarDisplay
 
 			<liferay-ui:search-container-column-text>
 				<clay:vertical-card
-					propsTransformer="js/propsTransformers/MasterLayoutDropdownPropsTransformer"
+					propsTransformer="{MasterLayoutDropdownPropsTransformer} from layout-page-template-admin-web"
 					verticalCard="<%= new MasterLayoutVerticalCard(layoutPageTemplateEntry, renderRequest, renderResponse, searchContainer.getRowChecker()) %>"
 				/>
 			</liferay-ui:search-container-column-text>

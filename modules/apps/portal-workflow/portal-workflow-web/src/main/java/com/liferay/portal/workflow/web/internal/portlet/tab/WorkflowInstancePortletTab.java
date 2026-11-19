@@ -5,7 +5,6 @@
 
 package com.liferay.portal.workflow.web.internal.portlet.tab;
 
-import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
@@ -24,34 +23,29 @@ import com.liferay.portal.workflow.constants.WorkflowWebKeys;
 import com.liferay.portal.workflow.manager.WorkflowLogManager;
 import com.liferay.portal.workflow.portlet.tab.BaseWorkflowPortletTab;
 import com.liferay.portal.workflow.portlet.tab.WorkflowPortletTab;
-import com.liferay.portal.workflow.web.internal.configuration.WorkflowInstanceWebConfiguration;
 import com.liferay.portal.workflow.web.internal.display.context.MyWorkflowInstanceEditDisplayContext;
 import com.liferay.portal.workflow.web.internal.display.context.MyWorkflowInstanceViewDisplayContext;
 import com.liferay.portal.workflow.web.internal.display.context.WorkflowInstanceEditDisplayContext;
 import com.liferay.portal.workflow.web.internal.display.context.WorkflowInstanceViewDisplayContext;
-import com.liferay.portal.workflow.web.internal.request.preprocessor.helper.WorkflowPreprocessorHelper;
+import com.liferay.portal.workflow.web.internal.util.WorkflowPreprocessorUtil;
 
-import java.util.Map;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.ServletContext;
+
 import java.util.Objects;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.PortletException;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.ServletContext;
-
-import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.Modified;
 import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Adam Brandizzi
  */
 @Component(
-	configurationPid = "com.liferay.portal.workflow.web.internal.configuration.WorkflowInstanceWebConfiguration",
 	property = "portal.workflow.tabs.name=" + WorkflowWebKeys.WORKFLOW_TAB_INSTANCE,
 	service = WorkflowPortletTab.class
 )
@@ -68,16 +62,6 @@ public class WorkflowInstancePortletTab extends BaseWorkflowPortletTab {
 	}
 
 	@Override
-	public void prepareDispatch(
-			RenderRequest renderRequest, RenderResponse renderResponse)
-		throws PortletException {
-
-		renderRequest.setAttribute(
-			WorkflowInstanceWebConfiguration.class.getName(),
-			workflowInstanceWebConfiguration);
-	}
-
-	@Override
 	public void prepareProcessAction(
 			ActionRequest actionRequest, ActionResponse actionResponse)
 		throws PortletException {
@@ -86,7 +70,8 @@ public class WorkflowInstancePortletTab extends BaseWorkflowPortletTab {
 			actionRequest, ActionRequest.ACTION_NAME);
 
 		if (StringUtil.equalsIgnoreCase(actionName, "invokeTaglibDiscussion")) {
-			workflowPreprocessorHelper.hideDefaultSuccessMessage(actionRequest);
+			WorkflowPreprocessorUtil.hideDefaultSuccessMessage(
+				portal, actionRequest);
 		}
 	}
 
@@ -101,13 +86,13 @@ public class WorkflowInstancePortletTab extends BaseWorkflowPortletTab {
 			_setWorkflowInstanceRenderRequestAttribute(renderRequest);
 		}
 		catch (Exception exception) {
-			if (workflowPreprocessorHelper.isSessionErrorException(exception)) {
+			if (WorkflowPreprocessorUtil.isSessionErrorException(exception)) {
 				if (_log.isWarnEnabled()) {
 					_log.warn(exception);
 				}
 
-				workflowPreprocessorHelper.hideDefaultErrorMessage(
-					renderRequest);
+				WorkflowPreprocessorUtil.hideDefaultErrorMessage(
+					portal, renderRequest);
 
 				SessionErrors.add(renderRequest, exception.getClass());
 			}
@@ -115,13 +100,6 @@ public class WorkflowInstancePortletTab extends BaseWorkflowPortletTab {
 				throw new PortletException(exception);
 			}
 		}
-	}
-
-	@Activate
-	@Modified
-	protected void activate(Map<String, Object> properties) {
-		workflowInstanceWebConfiguration = ConfigurableUtil.createConfigurable(
-			WorkflowInstanceWebConfiguration.class, properties);
 	}
 
 	@Override
@@ -140,14 +118,8 @@ public class WorkflowInstancePortletTab extends BaseWorkflowPortletTab {
 	@Reference
 	protected WorkflowComparatorFactory workflowComparatorFactory;
 
-	protected volatile WorkflowInstanceWebConfiguration
-		workflowInstanceWebConfiguration;
-
 	@Reference
 	protected WorkflowLogManager workflowLogManager;
-
-	@Reference
-	protected WorkflowPreprocessorHelper workflowPreprocessorHelper;
 
 	private void _setWorkflowInstanceDisplayContextRenderRequestAttribute(
 			RenderRequest renderRequest, RenderResponse renderResponse)

@@ -65,9 +65,11 @@ public class BundleManagerUtil {
 		while (iterator.hasNext()) {
 			Bundle bundle = iterator.next();
 
-			if (!isInstalled(bundle)) {
-				iterator.remove();
+			if (isInstalled(bundle)) {
+				continue;
 			}
+
+			iterator.remove();
 		}
 
 		return bundles;
@@ -107,11 +109,7 @@ public class BundleManagerUtil {
 	}
 
 	public static boolean isInstalled(Bundle bundle) {
-		if (ArrayUtil.contains(_INSTALLED_BUNDLE_STATES, bundle.getState())) {
-			return true;
-		}
-
-		return false;
+		return ArrayUtil.contains(_INSTALLED_BUNDLE_STATES, bundle.getState());
 	}
 
 	public static boolean isInstalled(String symbolicName, String version) {

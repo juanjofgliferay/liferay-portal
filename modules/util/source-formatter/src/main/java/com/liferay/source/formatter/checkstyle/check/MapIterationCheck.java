@@ -26,10 +26,10 @@ public class MapIterationCheck extends BaseCheck {
 
 	@Override
 	protected void doVisitToken(DetailAST detailAST) {
-		List<DetailAST> forEachClauseDetailASTList = getAllChildTokens(
+		List<DetailAST> forEachClauseDetailASTs = getAllChildTokens(
 			detailAST, true, TokenTypes.FOR_EACH_CLAUSE);
 
-		for (DetailAST forEachClauseDetailAST : forEachClauseDetailASTList) {
+		for (DetailAST forEachClauseDetailAST : forEachClauseDetailASTs) {
 			_checkKeySetIteration(forEachClauseDetailAST);
 		}
 	}
@@ -40,12 +40,10 @@ public class MapIterationCheck extends BaseCheck {
 
 		String keyName = getName(variableDefinitionDetailAST);
 
-		List<DetailAST> keySetMethodCallDetailASTList = getMethodCalls(
+		List<DetailAST> keySetMethodCallDetailASTs = getMethodCalls(
 			forEachClauseDetailAST, "keySet");
 
-		for (DetailAST keySetMethodCallDetailAST :
-				keySetMethodCallDetailASTList) {
-
+		for (DetailAST keySetMethodCallDetailAST : keySetMethodCallDetailASTs) {
 			FullIdent fullIdent = FullIdent.createFullIdentBelow(
 				keySetMethodCallDetailAST);
 
@@ -61,24 +59,28 @@ public class MapIterationCheck extends BaseCheck {
 			DetailAST typeDetailAST = getVariableTypeDetailAST(
 				keySetMethodCallDetailAST, mapName);
 
-			if ((typeDetailAST != null) && isCollection(typeDetailAST)) {
-				List<DetailAST> wildcardTypeDetailASTList = getAllChildTokens(
-					typeDetailAST, true, TokenTypes.WILDCARD_TYPE);
-
-				if (wildcardTypeDetailASTList.isEmpty()) {
-					log(forEachClauseDetailAST, _MSG_USE_ENTRY_SET);
-				}
+			if ((typeDetailAST == null) || !isCollection(typeDetailAST)) {
+				continue;
 			}
+
+			List<DetailAST> wildcardTypeDetailASTs = getAllChildTokens(
+				typeDetailAST, true, TokenTypes.WILDCARD_TYPE);
+
+			if (!wildcardTypeDetailASTs.isEmpty()) {
+				continue;
+			}
+
+			log(forEachClauseDetailAST, _MSG_USE_ENTRY_SET);
 		}
 	}
 
 	private boolean _containsGetMethod(
 		DetailAST forDetailAST, String keyName, String mapName) {
 
-		List<DetailAST> getMethodCallDetailASTList = getMethodCalls(
+		List<DetailAST> getMethodCallDetailASTs = getMethodCalls(
 			forDetailAST, mapName, "get");
 
-		for (DetailAST getMethodCallDetailAST : getMethodCallDetailASTList) {
+		for (DetailAST getMethodCallDetailAST : getMethodCallDetailASTs) {
 			DetailAST eListDetailAST = getMethodCallDetailAST.findFirstToken(
 				TokenTypes.ELIST);
 
@@ -90,12 +92,14 @@ public class MapIterationCheck extends BaseCheck {
 
 			firstChildDetailAST = firstChildDetailAST.getFirstChild();
 
-			if (firstChildDetailAST.getType() == TokenTypes.IDENT) {
-				String parameterName = firstChildDetailAST.getText();
+			if (firstChildDetailAST.getType() != TokenTypes.IDENT) {
+				continue;
+			}
 
-				if (parameterName.equals(keyName)) {
-					return true;
-				}
+			String parameterName = firstChildDetailAST.getText();
+
+			if (parameterName.equals(keyName)) {
+				return true;
 			}
 		}
 

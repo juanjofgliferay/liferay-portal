@@ -19,11 +19,11 @@ import com.liferay.portal.kernel.workflow.WorkflowException;
 import com.liferay.portal.workflow.constants.WorkflowPortletKeys;
 import com.liferay.portal.workflow.kaleo.model.KaleoDefinition;
 
+import jakarta.portlet.PortletRequest;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.Locale;
-
-import javax.portlet.PortletRequest;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -72,6 +72,11 @@ public class KaleoDefinitionCTDisplayRenderer
 	}
 
 	@Override
+	public boolean isShowPreviewDiff() {
+		return true;
+	}
+
+	@Override
 	public String renderPreview(DisplayContext<KaleoDefinition> displayContext)
 		throws WorkflowException {
 
@@ -81,11 +86,6 @@ public class KaleoDefinitionCTDisplayRenderer
 			"<pre>",
 			HtmlUtil.escapeAttribute(kaleoDefinition.getContentAsXML()),
 			"</pre>");
-	}
-
-	@Override
-	public boolean showPreviewDiff() {
-		return true;
 	}
 
 	@Override

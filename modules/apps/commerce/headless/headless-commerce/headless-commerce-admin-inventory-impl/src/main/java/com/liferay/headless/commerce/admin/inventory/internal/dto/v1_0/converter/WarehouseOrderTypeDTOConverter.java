@@ -22,7 +22,10 @@ import org.osgi.service.component.annotations.Reference;
  * @author Crescenzo Rega
  */
 @Component(
-	property = "dto.class.name=com.liferay.commerce.inventory.model.CommerceInventoryWarehouseRel-OrderType",
+	property = {
+		"default=true",
+		"dto.class.name=com.liferay.commerce.inventory.model.CommerceInventoryWarehouseRel-OrderType"
+	},
 	service = DTOConverter.class
 )
 public class WarehouseOrderTypeDTOConverter
@@ -53,18 +56,21 @@ public class WarehouseOrderTypeDTOConverter
 
 		return new WarehouseOrderType() {
 			{
-				actions = dtoConverterContext.getActions();
-				orderTypeExternalReferenceCode =
-					commerceOrderType.getExternalReferenceCode();
-				orderTypeId = commerceOrderType.getCommerceOrderTypeId();
-				warehouseExternalReferenceCode =
-					commerceInventoryWarehouse.getExternalReferenceCode();
-				warehouseId =
-					commerceInventoryWarehouse.
-						getCommerceInventoryWarehouseId();
-				warehouseOrderTypeId =
-					commerceInventoryWarehouseRel.
-						getCommerceInventoryWarehouseRelId();
+				setActions(dtoConverterContext::getActions);
+				setOrderTypeExternalReferenceCode(
+					commerceOrderType::getExternalReferenceCode);
+				setOrderTypeId(commerceOrderType::getCommerceOrderTypeId);
+				setWarehouseExternalReferenceCode(
+					() ->
+						commerceInventoryWarehouse.getExternalReferenceCode());
+				setWarehouseId(
+					() ->
+						commerceInventoryWarehouse.
+							getCommerceInventoryWarehouseId());
+				setWarehouseOrderTypeId(
+					() ->
+						commerceInventoryWarehouseRel.
+							getCommerceInventoryWarehouseRelId());
 			}
 		};
 	}

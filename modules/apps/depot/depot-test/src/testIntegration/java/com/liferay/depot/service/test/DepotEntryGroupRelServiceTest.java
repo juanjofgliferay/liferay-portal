@@ -6,11 +6,14 @@
 package com.liferay.depot.service.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.depot.constants.DepotConstants;
 import com.liferay.depot.model.DepotEntry;
 import com.liferay.depot.model.DepotEntryGroupRel;
 import com.liferay.depot.service.DepotEntryGroupRelLocalService;
 import com.liferay.depot.service.DepotEntryGroupRelService;
 import com.liferay.depot.service.DepotEntryLocalService;
+import com.liferay.depot.test.util.DepotTestUtil;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.GroupConstants;
 import com.liferay.portal.kernel.model.User;
@@ -22,6 +25,7 @@ import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
+import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
@@ -40,6 +44,7 @@ import org.junit.Assert;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.function.ThrowingRunnable;
 import org.junit.runner.RunWith;
 
 /**
@@ -56,66 +61,60 @@ public class DepotEntryGroupRelServiceTest {
 			PermissionCheckerMethodTestRule.INSTANCE);
 
 	@Test
-	public void testGetDepotEntryGroupRelsWithoutPermissions()
+	public void testDepotEntryGroupRelWithoutToGroupPermissions()
 		throws Exception {
 
-		Group group = _groupLocalService.addGroup(
-			TestPropsValues.getUserId(), 0, null, 0,
-			GroupConstants.DEFAULT_LIVE_GROUP_ID,
-			Collections.singletonMap(
-				LocaleUtil.getDefault(), RandomTestUtil.randomString()),
-			Collections.singletonMap(
-				LocaleUtil.getDefault(), RandomTestUtil.randomString()),
-			GroupConstants.TYPE_SITE_RESTRICTED, true,
-			GroupConstants.DEFAULT_MEMBERSHIP_RESTRICTION,
-			FriendlyURLNormalizerUtil.normalize(RandomTestUtil.randomString()),
-			true, true, ServiceContextTestUtil.getServiceContext());
+		Group group = GroupTestUtil.addGroup();
 
 		DepotEntry depotEntry = _addDepotEntry();
 
-		_depotEntryGroupRelLocalService.addDepotEntryGroupRel(
-			depotEntry.getDepotEntryId(), group.getGroupId());
+		DepotEntryGroupRel depotEntryGroupRel =
+			_depotEntryGroupRelLocalService.addDepotEntryGroupRel(
+				depotEntry.getDepotEntryId(), group.getGroupId());
 
-		User user = UserTestUtil.addUser();
+		DepotTestUtil.withAssetLibraryAdministrator(
+			depotEntry,
+			user -> {
+				PermissionChecker permissionChecker =
+					PermissionThreadLocal.getPermissionChecker();
 
-		PermissionChecker permissionChecker =
-			PermissionThreadLocal.getPermissionChecker();
+				try {
+					PermissionThreadLocal.setPermissionChecker(
+						_permissionCheckerFactory.create(user));
 
-		try {
-			PermissionThreadLocal.setPermissionChecker(
-				_permissionCheckerFactory.create(user));
+					_assertMustHaveUpdatePermission(
+						user.getUserId(),
+						() -> _depotEntryGroupRelService.addDepotEntryGroupRel(
+							depotEntry.getDepotEntryId(), group.getGroupId()));
 
-			_depotEntryGroupRelService.getDepotEntryGroupRels(
-				group.getGroupId(), 0, 20);
-		}
-		catch (PrincipalException.MustHavePermission principalException) {
-			String message = principalException.getMessage();
+					_assertMustHaveUpdatePermission(
+						user.getUserId(),
+						() ->
+							_depotEntryGroupRelService.deleteDepotEntryGroupRel(
+								depotEntryGroupRel.getDepotEntryGroupRelId()));
+				}
+				finally {
+					PermissionThreadLocal.setPermissionChecker(
+						permissionChecker);
+				}
+			});
 
-			Assert.assertTrue(
-				message.contains(
-					"User " + user.getUserId() +
-						" must have VIEW permission for"));
-		}
-		finally {
-			PermissionThreadLocal.setPermissionChecker(permissionChecker);
-			_groupLocalService.deleteGroup(group);
-			_userLocalService.deleteUser(user);
-		}
+		_groupLocalService.deleteGroup(group);
 	}
 
 	@Test
 	public void testGetDepotEntryGroupRelsWithPermissions() throws Exception {
 		Group group = _groupLocalService.addGroup(
-			TestPropsValues.getUserId(), 0, null, 0,
+			StringPool.BLANK, TestPropsValues.getUserId(), 0, null, 0,
 			GroupConstants.DEFAULT_LIVE_GROUP_ID,
 			Collections.singletonMap(
 				LocaleUtil.getDefault(), RandomTestUtil.randomString()),
 			Collections.singletonMap(
 				LocaleUtil.getDefault(), RandomTestUtil.randomString()),
-			GroupConstants.TYPE_SITE_OPEN, true,
+			GroupConstants.TYPE_SITE_OPEN, null, true,
 			GroupConstants.DEFAULT_MEMBERSHIP_RESTRICTION,
 			FriendlyURLNormalizerUtil.normalize(RandomTestUtil.randomString()),
-			true, true, ServiceContextTestUtil.getServiceContext());
+			true, false, true, ServiceContextTestUtil.getServiceContext());
 
 		DepotEntry depotEntry = _addDepotEntry();
 
@@ -125,7 +124,8 @@ public class DepotEntryGroupRelServiceTest {
 		try {
 			List<DepotEntryGroupRel> depotEntryGroupRels =
 				_depotEntryGroupRelService.getDepotEntryGroupRels(
-					group.getGroupId(), 0, 20);
+					group.getGroupId(), DepotConstants.TYPE_ASSET_LIBRARY, 0,
+					20);
 
 			Assert.assertEquals(
 				depotEntryGroupRels.toString(), 1, depotEntryGroupRels.size());
@@ -143,17 +143,81 @@ public class DepotEntryGroupRelServiceTest {
 		}
 	}
 
+	@Test
+	public void testGetDepotEntryGroupRelsWithoutPermissions()
+		throws Exception {
+
+		Group group = _groupLocalService.addGroup(
+			StringPool.BLANK, TestPropsValues.getUserId(), 0, null, 0,
+			GroupConstants.DEFAULT_LIVE_GROUP_ID,
+			Collections.singletonMap(
+				LocaleUtil.getDefault(), RandomTestUtil.randomString()),
+			Collections.singletonMap(
+				LocaleUtil.getDefault(), RandomTestUtil.randomString()),
+			GroupConstants.TYPE_SITE_RESTRICTED, null, true,
+			GroupConstants.DEFAULT_MEMBERSHIP_RESTRICTION,
+			FriendlyURLNormalizerUtil.normalize(RandomTestUtil.randomString()),
+			true, false, true, ServiceContextTestUtil.getServiceContext());
+
+		DepotEntry depotEntry = _addDepotEntry();
+
+		_depotEntryGroupRelLocalService.addDepotEntryGroupRel(
+			depotEntry.getDepotEntryId(), group.getGroupId());
+
+		User user = UserTestUtil.addUser();
+
+		PermissionChecker permissionChecker =
+			PermissionThreadLocal.getPermissionChecker();
+
+		try {
+			PermissionThreadLocal.setPermissionChecker(
+				_permissionCheckerFactory.create(user));
+
+			_depotEntryGroupRelService.getDepotEntryGroupRels(
+				group.getGroupId(), DepotConstants.TYPE_ASSET_LIBRARY, 0, 20);
+		}
+		catch (PrincipalException.MustHavePermission principalException) {
+			String message = principalException.getMessage();
+
+			Assert.assertTrue(
+				message.contains(
+					"User " + user.getUserId() +
+						" must have VIEW permission for"));
+		}
+		finally {
+			PermissionThreadLocal.setPermissionChecker(permissionChecker);
+			_groupLocalService.deleteGroup(group);
+			_userLocalService.deleteUser(user);
+		}
+	}
+
 	private DepotEntry _addDepotEntry() throws Exception {
 		DepotEntry depotEntry = _depotEntryLocalService.addDepotEntry(
 			Collections.singletonMap(
 				LocaleUtil.getDefault(), RandomTestUtil.randomString()),
 			Collections.singletonMap(
 				LocaleUtil.getDefault(), RandomTestUtil.randomString()),
+			DepotConstants.TYPE_ASSET_LIBRARY,
 			ServiceContextTestUtil.getServiceContext());
 
 		_depotEntries.add(depotEntry);
 
 		return depotEntry;
+	}
+
+	private void _assertMustHaveUpdatePermission(
+		long userId, ThrowingRunnable throwingRunnable) {
+
+		PrincipalException.MustHavePermission principalException =
+			Assert.assertThrows(
+				PrincipalException.MustHavePermission.class, throwingRunnable);
+
+		String message = principalException.getMessage();
+
+		Assert.assertTrue(
+			message,
+			message.contains(
+				"User " + userId + " must have UPDATE permission for"));
 	}
 
 	@DeleteAfterTestRun

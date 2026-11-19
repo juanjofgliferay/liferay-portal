@@ -303,16 +303,6 @@ public class CPInstanceOptionValueRelLocalServiceWrapper
 			getCPInstanceCPInstanceOptionValueRels(cpInstanceId);
 	}
 
-	@Override
-	public java.util.List<CPInstanceOptionValueRel>
-		getCPInstanceCPInstanceOptionValueRels(
-			long cpDefinitionOptionRelId, long cpInstanceId) {
-
-		return _cpInstanceOptionValueRelLocalService.
-			getCPInstanceCPInstanceOptionValueRels(
-				cpDefinitionOptionRelId, cpInstanceId);
-	}
-
 	/**
 	 * Returns the cp instance option value rel with the primary key.
 	 *
@@ -581,3 +571,4 @@ public class CPInstanceOptionValueRelLocalServiceWrapper
 		_cpInstanceOptionValueRelLocalService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:2106294177

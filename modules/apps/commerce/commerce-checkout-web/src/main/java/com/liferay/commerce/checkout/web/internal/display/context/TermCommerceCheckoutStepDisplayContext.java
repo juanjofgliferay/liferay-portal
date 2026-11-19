@@ -24,10 +24,10 @@ import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.Collections;
 import java.util.List;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Luca Pellizzon
@@ -95,21 +95,23 @@ public class TermCommerceCheckoutStepDisplayContext {
 		for (CommerceShippingOption commerceShippingOption :
 				commerceShippingOptions) {
 
-			if (shippingOptionName.equals(commerceShippingOption.getKey())) {
-				CommerceShippingFixedOption commerceShippingFixedOption =
-					_commerceShippingFixedOptionLocalService.
-						fetchCommerceShippingFixedOption(
-							_commerceOrder.getCompanyId(),
-							commerceShippingOption.getKey());
+			if (!shippingOptionName.equals(commerceShippingOption.getKey())) {
+				continue;
+			}
 
-				if (commerceShippingFixedOption != null) {
-					return _commerceTermEntryLocalService.
-						getDeliveryCommerceTermEntries(
-							_commerceOrder.getCompanyId(),
-							_commerceOrder.getCommerceOrderTypeId(),
-							commerceShippingFixedOption.
-								getCommerceShippingFixedOptionId());
-				}
+			CommerceShippingFixedOption commerceShippingFixedOption =
+				_commerceShippingFixedOptionLocalService.
+					fetchCommerceShippingFixedOption(
+						_commerceOrder.getCompanyId(),
+						commerceShippingOption.getKey());
+
+			if (commerceShippingFixedOption != null) {
+				return _commerceTermEntryLocalService.
+					getDeliveryCommerceTermEntries(
+						_commerceOrder.getCompanyId(),
+						_commerceOrder.getCommerceOrderTypeId(),
+						commerceShippingFixedOption.
+							getCommerceShippingFixedOptionId());
 			}
 		}
 

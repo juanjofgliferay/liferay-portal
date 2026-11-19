@@ -34,12 +34,14 @@ public class BlogsEntryLocalServiceWrapper
 	@Override
 	public com.liferay.portal.kernel.repository.model.FileEntry
 			addAttachmentFileEntry(
-				BlogsEntry entry, long userId, String fileName, String mimeType,
+				String externalReferenceCode, long userId, long groupId,
+				String fileName, String mimeType,
 				java.io.InputStream inputStream)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _blogsEntryLocalService.addAttachmentFileEntry(
-			entry, userId, fileName, mimeType, inputStream);
+			externalReferenceCode, userId, groupId, fileName, mimeType,
+			inputStream);
 	}
 
 	@Override
@@ -270,6 +272,13 @@ public class BlogsEntryLocalServiceWrapper
 		return _blogsEntryLocalService.createPersistedModel(primaryKeyObj);
 	}
 
+	@Override
+	public void deleteAttachmentFileEntry(long fileEntryId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		_blogsEntryLocalService.deleteAttachmentFileEntry(fileEntryId);
+	}
+
 	/**
 	 * Deletes the blogs entry from the database. Also notifies the appropriate model listeners.
 	 *
@@ -484,6 +493,25 @@ public class BlogsEntryLocalServiceWrapper
 		return _blogsEntryLocalService.getActionableDynamicQuery();
 	}
 
+	@Override
+	public com.liferay.portal.kernel.repository.model.FileEntry
+			getAttachmentFileEntry(long fileEntryId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _blogsEntryLocalService.getAttachmentFileEntry(fileEntryId);
+	}
+
+	@Override
+	public com.liferay.portal.kernel.repository.model.FileEntry
+			getAttachmentFileEntryByExternalReferenceCode(
+				String externalReferenceCode, long groupId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _blogsEntryLocalService.
+			getAttachmentFileEntryByExternalReferenceCode(
+				externalReferenceCode, groupId);
+	}
+
 	/**
 	 * Returns a range of all the blogs entries.
 	 *
@@ -696,40 +724,10 @@ public class BlogsEntryLocalServiceWrapper
 	}
 
 	@Override
-	public int getGroupUserEntriesCount(
-		long groupId, long userId, java.util.Date displayDate,
-		com.liferay.portal.kernel.dao.orm.QueryDefinition<BlogsEntry>
-			queryDefinition) {
-
-		return _blogsEntryLocalService.getGroupUserEntriesCount(
-			groupId, userId, displayDate, queryDefinition);
-	}
-
-	@Override
 	public com.liferay.portal.kernel.dao.orm.IndexableActionableDynamicQuery
 		getIndexableActionableDynamicQuery() {
 
 		return _blogsEntryLocalService.getIndexableActionableDynamicQuery();
-	}
-
-	@Override
-	public java.util.List<BlogsEntry> getOrganizationEntries(
-		long organizationId, java.util.Date displayDate,
-		com.liferay.portal.kernel.dao.orm.QueryDefinition<BlogsEntry>
-			queryDefinition) {
-
-		return _blogsEntryLocalService.getOrganizationEntries(
-			organizationId, displayDate, queryDefinition);
-	}
-
-	@Override
-	public int getOrganizationEntriesCount(
-		long organizationId, java.util.Date displayDate,
-		com.liferay.portal.kernel.dao.orm.QueryDefinition<BlogsEntry>
-			queryDefinition) {
-
-		return _blogsEntryLocalService.getOrganizationEntriesCount(
-			organizationId, displayDate, queryDefinition);
 	}
 
 	/**
@@ -1016,3 +1014,4 @@ public class BlogsEntryLocalServiceWrapper
 	private BlogsEntryLocalService _blogsEntryLocalService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-447961015

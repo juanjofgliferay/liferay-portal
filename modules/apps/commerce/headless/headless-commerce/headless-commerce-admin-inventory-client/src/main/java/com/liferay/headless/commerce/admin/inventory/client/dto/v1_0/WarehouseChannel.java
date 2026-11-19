@@ -8,12 +8,12 @@ package com.liferay.headless.commerce.admin.inventory.client.dto.v1_0;
 import com.liferay.headless.commerce.admin.inventory.client.function.UnsafeSupplier;
 import com.liferay.headless.commerce.admin.inventory.client.serdes.v1_0.WarehouseChannelSerDes;
 
+import jakarta.annotation.Generated;
+
 import java.io.Serializable;
 
 import java.util.Map;
 import java.util.Objects;
-
-import javax.annotation.Generated;
 
 /**
  * @author Alessio Antonio Rendina
@@ -214,3 +214,4 @@ public class WarehouseChannel implements Cloneable, Serializable {
 	}
 
 }
+// LIFERAY-REST-BUILDER-HASH:-2132962218

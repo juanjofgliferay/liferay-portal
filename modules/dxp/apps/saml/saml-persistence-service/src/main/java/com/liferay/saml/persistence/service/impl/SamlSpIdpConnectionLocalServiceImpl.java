@@ -40,13 +40,13 @@ public class SamlSpIdpConnectionLocalServiceImpl
 
 	@Override
 	public SamlSpIdpConnection addSamlSpIdpConnection(
-			boolean assertionSignatureRequired, long clockSkew, boolean enabled,
-			boolean forceAuthn, boolean ldapImportEnabled, String metadataUrl,
+			String samlIdpEntityId, boolean assertionSignatureRequired,
+			long clockSkew, boolean enabled, boolean forceAuthn,
+			boolean ldapImportEnabled, String metadataUrl,
 			InputStream metadataXmlInputStream, String name,
-			String nameIdFormat, String samlIdpEntityId,
-			boolean signAuthnRequest, boolean unknownUsersAreStrangers,
-			String userAttributeMappings, String userIdentifierExpression,
-			ServiceContext serviceContext)
+			String nameIdFormat, boolean signAuthnRequest,
+			boolean unknownUsersAreStrangers, String userAttributeMappings,
+			String userIdentifierExpression, ServiceContext serviceContext)
 		throws PortalException {
 
 		if (Validator.isNull(samlIdpEntityId)) {
@@ -70,12 +70,11 @@ public class SamlSpIdpConnectionLocalServiceImpl
 			samlSpIdpConnectionPersistence.create(samlSpIdpConnectionId);
 
 		samlSpIdpConnection.setCompanyId(serviceContext.getCompanyId());
+		samlSpIdpConnection.setSamlIdpEntityId(samlIdpEntityId);
 		samlSpIdpConnection.setAssertionSignatureRequired(
 			assertionSignatureRequired);
 		samlSpIdpConnection.setClockSkew(clockSkew);
 		samlSpIdpConnection.setEnabled(enabled);
-		samlSpIdpConnection.setSamlIdpEntityId(samlIdpEntityId);
-		samlSpIdpConnection.setExpandoBridgeAttributes(serviceContext);
 		samlSpIdpConnection.setForceAuthn(forceAuthn);
 		samlSpIdpConnection.setLdapImportEnabled(ldapImportEnabled);
 		samlSpIdpConnection.setMetadataUpdatedDate(new Date());
@@ -102,17 +101,18 @@ public class SamlSpIdpConnectionLocalServiceImpl
 				"Unable to get metadata from " + metadataUrl);
 		}
 
+		samlSpIdpConnection.setSamlIdpEntityId(samlIdpEntityId);
 		samlSpIdpConnection.setMetadataXml(
 			_getMetadataXml(metadataXmlInputStream, samlIdpEntityId));
 		samlSpIdpConnection.setName(name);
 		samlSpIdpConnection.setNameIdFormat(nameIdFormat);
-		samlSpIdpConnection.setSamlIdpEntityId(samlIdpEntityId);
 		samlSpIdpConnection.setSignAuthnRequest(signAuthnRequest);
 		samlSpIdpConnection.setUnknownUsersAreStrangers(
 			unknownUsersAreStrangers);
 		samlSpIdpConnection.setUserAttributeMappings(userAttributeMappings);
 		samlSpIdpConnection.setUserIdentifierExpression(
 			userIdentifierExpression);
+		samlSpIdpConnection.setExpandoBridgeAttributes(serviceContext);
 
 		return samlSpIdpConnectionPersistence.update(samlSpIdpConnection);
 	}
@@ -203,14 +203,13 @@ public class SamlSpIdpConnectionLocalServiceImpl
 
 	@Override
 	public SamlSpIdpConnection updateSamlSpIdpConnection(
-			long samlSpIdpConnectionId, boolean assertionSignatureRequired,
-			long clockSkew, boolean enabled, boolean forceAuthn,
-			boolean ldapImportEnabled, String metadataUrl,
+			long samlSpIdpConnectionId, String samlIdpEntityId,
+			boolean assertionSignatureRequired, long clockSkew, boolean enabled,
+			boolean forceAuthn, boolean ldapImportEnabled, String metadataUrl,
 			InputStream metadataXmlInputStream, String name,
-			String nameIdFormat, String samlIdpEntityId,
-			boolean signAuthnRequest, boolean unknownUsersAreStrangers,
-			String userAttributeMappings, String userIdentifierExpression,
-			ServiceContext serviceContext)
+			String nameIdFormat, boolean signAuthnRequest,
+			boolean unknownUsersAreStrangers, String userAttributeMappings,
+			String userIdentifierExpression, ServiceContext serviceContext)
 		throws PortalException {
 
 		if (Validator.isNull(samlIdpEntityId)) {
@@ -234,11 +233,11 @@ public class SamlSpIdpConnectionLocalServiceImpl
 		}
 
 		samlSpIdpConnection.setCompanyId(serviceContext.getCompanyId());
+		samlSpIdpConnection.setSamlIdpEntityId(samlIdpEntityId);
 		samlSpIdpConnection.setAssertionSignatureRequired(
 			assertionSignatureRequired);
 		samlSpIdpConnection.setClockSkew(clockSkew);
 		samlSpIdpConnection.setEnabled(enabled);
-		samlSpIdpConnection.setExpandoBridgeAttributes(serviceContext);
 		samlSpIdpConnection.setForceAuthn(forceAuthn);
 		samlSpIdpConnection.setLdapImportEnabled(ldapImportEnabled);
 		samlSpIdpConnection.setMetadataUpdatedDate(new Date());
@@ -281,11 +280,11 @@ public class SamlSpIdpConnectionLocalServiceImpl
 
 		samlSpIdpConnection.setName(name);
 		samlSpIdpConnection.setNameIdFormat(nameIdFormat);
-		samlSpIdpConnection.setSamlIdpEntityId(samlIdpEntityId);
 		samlSpIdpConnection.setSignAuthnRequest(signAuthnRequest);
 		samlSpIdpConnection.setUserAttributeMappings(userAttributeMappings);
 		samlSpIdpConnection.setUserIdentifierExpression(
 			userIdentifierExpression);
+		samlSpIdpConnection.setExpandoBridgeAttributes(serviceContext);
 
 		return samlSpIdpConnectionPersistence.update(samlSpIdpConnection);
 	}

@@ -39,7 +39,7 @@ boolean hasOutgoingLinkPages = ListUtil.isNotEmpty(outgoingLinkPages);
 									%>
 
 										<dt class="h5">
-											<h4>
+											<div class="h4">
 												<a
 													class="text-default" href="<%=
 	PortletURLBuilder.createRenderURL(
@@ -52,9 +52,9 @@ boolean hasOutgoingLinkPages = ListUtil.isNotEmpty(outgoingLinkPages);
 											"nodeName", wikiNode.getName()
 										).setParameter(
 											"title", incomingLinkPage.getTitle()
-										).buildString() %>"><%= incomingLinkPage.getTitle() %></a
+										).buildString() %>"><%= HtmlUtil.escape(incomingLinkPage.getTitle()) %></a
 												>
-											</h4>
+											</div>
 										</dt>
 										<dd>
 											<small>
@@ -97,9 +97,9 @@ boolean hasOutgoingLinkPages = ListUtil.isNotEmpty(outgoingLinkPages);
 										<c:choose>
 											<c:when test="<%= outgoingLinkPage.isNew() %>">
 												<dt class="h5">
-													<h4 class="text-truncate">
-														<a class="text-default" href="<%= outgoingLinkPage.getTitle() %>"><%= outgoingLinkPage.getTitle() %></a>
-													</h4>
+													<div class="h4 text-truncate">
+														<a class="text-default" href="<%= HtmlUtil.escapeHREF(outgoingLinkPage.getTitle()) %>"><%= HtmlUtil.escape(outgoingLinkPage.getTitle()) %></a>
+													</div>
 												</dt>
 											</c:when>
 											<c:otherwise>
@@ -109,7 +109,7 @@ boolean hasOutgoingLinkPages = ListUtil.isNotEmpty(outgoingLinkPages);
 												%>
 
 												<dt class="h5">
-													<h4 class="text-truncate">
+													<div class="h4 text-truncate">
 														<a
 															class="text-default" href="<%=
 	PortletURLBuilder.createRenderURL(
@@ -122,9 +122,9 @@ boolean hasOutgoingLinkPages = ListUtil.isNotEmpty(outgoingLinkPages);
 													"nodeName", wikiNode.getName()
 												).setParameter(
 													"title", outgoingLinkPage.getTitle()
-												).buildString() %>"><%= outgoingLinkPage.getTitle() %></a
+												).buildString() %>"><%= HtmlUtil.escape(outgoingLinkPage.getTitle()) %></a
 														>
-													</h4>
+													</div>
 												</dt>
 												<dd>
 													<small>

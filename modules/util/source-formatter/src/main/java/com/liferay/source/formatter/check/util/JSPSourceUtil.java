@@ -58,9 +58,11 @@ public class JSPSourceUtil {
 			fileName = StringUtil.replace(
 				fileName, CharPool.SLASH, CharPool.BACK_SLASH);
 
-			if (!fileNames.contains(fileName)) {
-				fileNames.add(fileName);
+			if (fileNames.contains(fileName)) {
+				continue;
 			}
+
+			fileNames.add(fileName);
 		}
 
 		return addIncludedAndReferencedFileNames(
@@ -213,13 +215,15 @@ public class JSPSourceUtil {
 			includeFileName = buildFullPathIncludeFileName(
 				fileName, includeFileName, contentsMap);
 
-			if ((includeFileName.endsWith("jsp") ||
-				 includeFileName.endsWith("jspf") ||
-				 includeFileName.endsWith("tag")) &&
-				!fileNames.contains(includeFileName)) {
+			if ((!includeFileName.endsWith("jsp") &&
+				 !includeFileName.endsWith("jspf") &&
+				 !includeFileName.endsWith("tag")) ||
+				fileNames.contains(includeFileName)) {
 
-				includeFileNames.add(includeFileName);
+				continue;
 			}
+
+			includeFileNames.add(includeFileName);
 		}
 
 		return includeFileNames;
@@ -284,6 +288,42 @@ public class JSPSourceUtil {
 		return referenceFileNames;
 	}
 
+	public static boolean isJSSource(String content, int pos) {
+		if (isJavaSource(content, pos)) {
+			return false;
+		}
+
+		String s = content.substring(pos);
+
+		Matcher matcher = _auiScriptEndTagPattern.matcher(s);
+
+		if (matcher.find()) {
+			s = s.substring(0, matcher.start());
+
+			matcher = _auiScriptStartTagPattern.matcher(s);
+
+			if (!matcher.find()) {
+				return true;
+			}
+		}
+
+		s = content.substring(pos);
+
+		matcher = _scriptEndTagPattern.matcher(s);
+
+		if (matcher.find()) {
+			s = s.substring(0, matcher.start());
+
+			matcher = _scriptStartTagPattern.matcher(s);
+
+			if (!matcher.find()) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
 	public static boolean isJavaSource(String content, int pos) {
 		return isJavaSource(content, pos, false);
 	}
@@ -332,42 +372,6 @@ public class JSPSourceUtil {
 		return false;
 	}
 
-	public static boolean isJSSource(String content, int pos) {
-		if (isJavaSource(content, pos)) {
-			return false;
-		}
-
-		String s = content.substring(pos);
-
-		Matcher matcher = _auiScriptEndTagPattern.matcher(s);
-
-		if (matcher.find()) {
-			s = s.substring(0, matcher.start());
-
-			matcher = _auiScriptStartTagPattern.matcher(s);
-
-			if (!matcher.find()) {
-				return true;
-			}
-		}
-
-		s = content.substring(pos);
-
-		matcher = _scriptEndTagPattern.matcher(s);
-
-		if (matcher.find()) {
-			s = s.substring(0, matcher.start());
-
-			matcher = _scriptStartTagPattern.matcher(s);
-
-			if (!matcher.find()) {
-				return true;
-			}
-		}
-
-		return false;
-	}
-
 	private static final Pattern _auiScriptEndTagPattern = Pattern.compile(
 		"[\n\t]</aui:script>(\n|\\Z)");
 	private static final Pattern _auiScriptStartTagPattern = Pattern.compile(
@@ -377,9 +381,9 @@ public class JSPSourceUtil {
 	private static final Pattern _javaCodeTagPattern = Pattern.compile(
 		"<%\\s*[@=\n]");
 	private static final Pattern _javaEndTagPattern = Pattern.compile(
-		"[\n\t]%>(\n|\\Z)");
+		"[\n\t]%>('|\"|\n|\\Z)");
 	private static final Pattern _javaStartTagPattern = Pattern.compile(
-		"[\n\t]<%\\!?(\n|\\Z)");
+		"['\"\n\t]<%\\!?(=|\n|\\Z)");
 	private static final Pattern _jspIncludeFilePattern = Pattern.compile(
 		"/.*\\.(jsp[f]?|svg|tag)");
 	private static final Pattern _scriptEndTagPattern = Pattern.compile(

@@ -5,7 +5,7 @@
 
 package com.liferay.portal.workflow.metrics.rest.client.pagination;
 
-import javax.annotation.Generated;
+import jakarta.annotation.Generated;
 
 /**
  * @author Rafael Praxedes
@@ -63,3 +63,4 @@ public class Pagination {
 	private final int _pageSize;
 
 }
+// LIFERAY-REST-BUILDER-HASH:-2065669167

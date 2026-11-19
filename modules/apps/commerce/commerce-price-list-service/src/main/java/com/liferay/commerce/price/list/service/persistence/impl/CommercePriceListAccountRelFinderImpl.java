@@ -45,13 +45,6 @@ public class CommercePriceListAccountRelFinderImpl
 
 	@Override
 	public int countByCommercePriceListId(
-		long commercePriceListId, String name) {
-
-		return countByCommercePriceListId(commercePriceListId, name, false);
-	}
-
-	@Override
-	public int countByCommercePriceListId(
 		long commercePriceListId, String name, boolean inlineSQLHelper) {
 
 		Session session = null;
@@ -65,8 +58,7 @@ public class CommercePriceListAccountRelFinderImpl
 			if (inlineSQLHelper) {
 				sql = InlineSQLHelperUtil.replacePermissionCheck(
 					sql, CommercePriceList.class.getName(),
-					"CommercePriceList.commercePriceListId", null, null,
-					new long[] {0}, null);
+					"CommercePriceList.commercePriceListId");
 			}
 
 			String[] keywords = _customSQL.keywords(name, true);
@@ -142,8 +134,7 @@ public class CommercePriceListAccountRelFinderImpl
 			if (inlineSQLHelper) {
 				sql = InlineSQLHelperUtil.replacePermissionCheck(
 					sql, CommercePriceList.class.getName(),
-					"CommercePriceList.commercePriceListId", null, null,
-					new long[] {0}, null);
+					"CommercePriceList.commercePriceListId");
 			}
 
 			if (Validator.isNotNull(name)) {

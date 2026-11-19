@@ -22,8 +22,8 @@ import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
 import com.liferay.portal.kernel.service.UserLocalServiceUtil;
 import com.liferay.portal.kernel.util.LinkedHashMapBuilder;
 import com.liferay.portal.kernel.util.ListUtil;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.UnicodeProperties;
-import com.liferay.portal.util.PropsValues;
 
 import java.io.Serializable;
 
@@ -131,24 +131,26 @@ public class DefaultSiteMembershipPolicy extends BaseSiteMembershipPolicy {
 			}
 
 			for (long userId : userIds) {
-				if (!GroupLocalServiceUtil.hasUserGroup(
+				if (GroupLocalServiceUtil.hasUserGroup(
 						userId, group.getParentGroupId(), false)) {
 
-					if (membershipPolicyException == null) {
-						membershipPolicyException =
-							new MembershipPolicyException(
-								MembershipPolicyException.
-									SITE_MEMBERSHIP_NOT_ALLOWED);
-					}
-
-					membershipPolicyException.addUser(
-						UserLocalServiceUtil.getUser(userId));
+					continue;
 				}
+
+				if (membershipPolicyException == null) {
+					membershipPolicyException = new MembershipPolicyException(
+						MembershipPolicyException.SITE_MEMBERSHIP_NOT_ALLOWED);
+				}
+
+				membershipPolicyException.addUser(
+					UserLocalServiceUtil.getUser(userId));
 			}
 
-			if (membershipPolicyException != null) {
-				membershipPolicyException.addGroup(group);
+			if (membershipPolicyException == null) {
+				continue;
 			}
+
+			membershipPolicyException.addGroup(group);
 		}
 
 		if (membershipPolicyException != null) {
@@ -156,9 +158,7 @@ public class DefaultSiteMembershipPolicy extends BaseSiteMembershipPolicy {
 		}
 	}
 
-	protected List<Group> getLimitedChildrenGroups(Group group)
-		throws PortalException {
-
+	protected List<Group> getLimitedChildrenGroups(Group group) {
 		List<Group> childrenGroups = GroupLocalServiceUtil.search(
 			group.getCompanyId(), null, StringPool.BLANK,
 			LinkedHashMapBuilder.<String, Object>put(

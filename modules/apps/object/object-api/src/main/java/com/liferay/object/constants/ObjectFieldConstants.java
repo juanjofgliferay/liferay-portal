@@ -12,6 +12,8 @@ public class ObjectFieldConstants {
 
 	public static final String BUSINESS_TYPE_AGGREGATION = "Aggregation";
 
+	public static final String BUSINESS_TYPE_ASSIGNEE = "Assignee";
+
 	public static final String BUSINESS_TYPE_ATTACHMENT = "Attachment";
 
 	public static final String BUSINESS_TYPE_AUTO_INCREMENT = "AutoIncrement";
@@ -24,6 +26,8 @@ public class ObjectFieldConstants {
 
 	public static final String BUSINESS_TYPE_DECIMAL = "Decimal";
 
+	public static final String BUSINESS_TYPE_EMAIL_ADDRESS = "EmailAddress";
+
 	public static final String BUSINESS_TYPE_ENCRYPTED = "Encrypted";
 
 	public static final String BUSINESS_TYPE_FORMULA = "Formula";
@@ -32,12 +36,16 @@ public class ObjectFieldConstants {
 
 	public static final String BUSINESS_TYPE_LARGE_FILE = "LargeFile";
 
+	public static final String BUSINESS_TYPE_LOCATION = "Location";
+
 	public static final String BUSINESS_TYPE_LONG_INTEGER = "LongInteger";
 
 	public static final String BUSINESS_TYPE_LONG_TEXT = "LongText";
 
 	public static final String BUSINESS_TYPE_MULTISELECT_PICKLIST =
 		"MultiselectPicklist";
+
+	public static final String BUSINESS_TYPE_PHONE_NUMBER = "PhoneNumber";
 
 	public static final String BUSINESS_TYPE_PICKLIST = "Picklist";
 
@@ -49,6 +57,8 @@ public class ObjectFieldConstants {
 	public static final String BUSINESS_TYPE_RICH_TEXT = "RichText";
 
 	public static final String BUSINESS_TYPE_TEXT = "Text";
+
+	public static final int DB_COLUMN_NAME_MAX_LENGTH = 63;
 
 	public static final String DB_TYPE_BIG_DECIMAL = "BigDecimal";
 

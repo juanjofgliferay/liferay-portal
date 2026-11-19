@@ -14,10 +14,11 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.portal.security.key.secret.SecretResolver;
 
-import javax.portlet.PortletPreferences;
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
+import jakarta.portlet.PortletPreferences;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -46,8 +47,9 @@ public class FacebookPortletConfigurationIcon
 		PortletPreferences portletPreferences =
 			portletDisplay.getPortletPreferences();
 
-		String lfrFacebookAPIKey = portletPreferences.getValue(
-			"lfrFacebookApiKey", StringPool.BLANK);
+		String lfrFacebookAPIKey = _secretResolver.resolve(
+			themeDisplay.getCompanyId(),
+			portletPreferences.getValue("lfrFacebookApiKey", StringPool.BLANK));
 
 		return "http://www.facebook.com/add.php?api_key=" + lfrFacebookAPIKey +
 			"&ref=pd";
@@ -82,14 +84,13 @@ public class FacebookPortletConfigurationIcon
 			facebookShowAddAppLink = false;
 		}
 
-		if (facebookShowAddAppLink) {
-			return true;
-		}
-
-		return false;
+		return facebookShowAddAppLink;
 	}
 
 	@Reference
 	private Language _language;
+
+	@Reference
+	private SecretResolver _secretResolver;
 
 }

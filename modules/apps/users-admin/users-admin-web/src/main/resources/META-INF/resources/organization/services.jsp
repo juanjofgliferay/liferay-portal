@@ -134,7 +134,7 @@ Format timeFormat = FastDateFormatFactoryUtil.getSimpleDateFormat("HH:mm", local
 				%>
 
 					<div class="org-labor-entry">
-						<h5 class="org-labor-entry-title"><%= days[j] %></h5>
+						<div class="h5 org-labor-entry-title"><%= days[j] %></div>
 
 						<aui:select label="Open" name='<%= paramPrefix + "Open" + orgLaborsIndex %>'>
 							<aui:option value="-1" />
@@ -205,10 +205,12 @@ Format timeFormat = FastDateFormatFactoryUtil.getSimpleDateFormat("HH:mm", local
 	<aui:input name="orgLaborsIndexes" type="hidden" value="<%= StringUtil.merge(orgLaborsIndexes) %>" />
 </aui:fieldset>
 
-<aui:script use="liferay-auto-fields">
-	new Liferay.AutoFields({
+<aui:script type="module">
+	import {autoFields} from '<%= FrontendESMUtil.buildURL(themeDisplay, "frontend-js-web", "auto_fields") %>';
+
+	autoFields({
 		contentBox: '#<portlet:namespace />services',
 		fieldIndexes: '<portlet:namespace />orgLaborsIndexes',
 		namespace: '<portlet:namespace />',
-	}).render();
+	});
 </aui:script>

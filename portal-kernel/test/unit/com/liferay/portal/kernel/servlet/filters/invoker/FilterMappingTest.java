@@ -14,6 +14,10 @@ import com.liferay.portal.test.log.LogCapture;
 import com.liferay.portal.test.log.LogEntry;
 import com.liferay.portal.test.log.LoggerTestUtil;
 
+import jakarta.servlet.Filter;
+import jakarta.servlet.FilterConfig;
+import jakarta.servlet.ServletContext;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -24,10 +28,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.regex.Pattern;
-
-import javax.servlet.Filter;
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletContext;
 
 import org.junit.Assert;
 import org.junit.ClassRule;
@@ -53,6 +53,17 @@ public class FilterMappingTest {
 			_TEST_FILTER_NAME, _dummyFilter, _TEST_URL_REGEX_IGNORE_PATTERN,
 			_TEST_URL_REGEX_PATTERN, new String[] {_TEST_URL_PATTERN},
 			EnumSet.of(Dispatcher.ASYNC));
+	}
+
+	@Test
+	public void testHasURLRegexPattern() {
+		_testHasURLRegexPattern(false, Dispatcher.INCLUDE, null, null);
+		_testHasURLRegexPattern(
+			false, Dispatcher.REQUEST, _TEST_URL_REGEX_IGNORE_PATTERN, null);
+		_testHasURLRegexPattern(
+			true, Dispatcher.INCLUDE, _TEST_URL_REGEX_IGNORE_PATTERN, null);
+		_testHasURLRegexPattern(
+			true, Dispatcher.INCLUDE, null, _TEST_URL_REGEX_PATTERN);
 	}
 
 	@Test
@@ -276,6 +287,20 @@ public class FilterMappingTest {
 		return sb.toString();
 	}
 
+	private void _testHasURLRegexPattern(
+		boolean expectedResult, Dispatcher dispatcher,
+		String urlRegexIgnorePattern, String urlRegexPattern) {
+
+		FilterMapping filterMapping = new FilterMapping(
+			_TEST_FILTER_NAME, _dummyFilter,
+			new TestFilterConfig(urlRegexIgnorePattern, urlRegexPattern),
+			Collections.singletonList(_TEST_URL_PATTERN),
+			EnumSet.of(Dispatcher.INCLUDE));
+
+		Assert.assertEquals(
+			expectedResult, filterMapping.hasURLRegexPattern(dispatcher));
+	}
+
 	private void _testIsMatch(
 		boolean expectedResult, Dispatcher dispatcher, String uri,
 		List<String> urlPatterns) {
@@ -312,8 +337,8 @@ public class FilterMappingTest {
 	}
 
 	private void _testWithLog(String[] expectedMessages, Runnable runnable) {
-		try (LogCapture logCapture = LoggerTestUtil.configureJDKLogger(
-				FilterMapping.class.getName(), Level.INFO)) {
+		try (LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
+				FilterMapping.class.getName(), LoggerTestUtil.INFO)) {
 
 			runnable.run();
 

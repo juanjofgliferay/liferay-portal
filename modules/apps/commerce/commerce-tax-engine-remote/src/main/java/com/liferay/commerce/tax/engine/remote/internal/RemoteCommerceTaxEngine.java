@@ -23,11 +23,13 @@ import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Country;
+import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Region;
 import com.liferay.portal.kernel.module.configuration.ConfigurationException;
-import com.liferay.portal.kernel.settings.GroupServiceSettingsLocator;
+import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.util.ResourceBundleUtil;
 import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.security.key.secret.SecretResolver;
 
 import java.io.IOException;
 
@@ -97,6 +99,11 @@ public class RemoteCommerceTaxEngine implements CommerceTaxEngine {
 	}
 
 	@Override
+	public String getKey() {
+		return KEY;
+	}
+
+	@Override
 	public String getName(Locale locale) {
 		return _language.get(_getResourceBundle(locale), KEY);
 	}
@@ -157,11 +164,8 @@ public class RemoteCommerceTaxEngine implements CommerceTaxEngine {
 		throws CommerceTaxEngineException {
 
 		try {
-			return _configurationProvider.getConfiguration(
-				RemoteCommerceTaxConfiguration.class,
-				new GroupServiceSettingsLocator(
-					commerceChannelGroupId,
-					RemoteCommerceTaxConfiguration.class.getName()));
+			return _configurationProvider.getGroupConfiguration(
+				RemoteCommerceTaxConfiguration.class, commerceChannelGroupId);
 		}
 		catch (ConfigurationException configurationException) {
 			throw new CommerceTaxEngineException(configurationException);
@@ -289,9 +293,13 @@ public class RemoteCommerceTaxEngine implements CommerceTaxEngine {
 				remoteCommerceTaxConfiguration.
 					taxValueEndpointAuthorizationToken())) {
 
-			String taxValueEndpointAuthorizationToken =
+			Group group = _groupLocalService.getGroup(
+				commerceTaxCalculateRequest.getCommerceChannelGroupId());
+
+			String taxValueEndpointAuthorizationToken = _secretResolver.resolve(
+				group.getCompanyId(),
 				remoteCommerceTaxConfiguration.
-					taxValueEndpointAuthorizationToken();
+					taxValueEndpointAuthorizationToken());
 
 			httpGet.addHeader(
 				"Authorization", "token " + taxValueEndpointAuthorizationToken);
@@ -320,10 +328,16 @@ public class RemoteCommerceTaxEngine implements CommerceTaxEngine {
 	private ConfigurationProvider _configurationProvider;
 
 	@Reference
+	private GroupLocalService _groupLocalService;
+
+	@Reference
 	private Language _language;
 
 	private final ObjectMapper _objectMapper = new ObjectMapper();
 	private PoolingHttpClientConnectionManager
 		_poolingHttpClientConnectionManager;
+
+	@Reference
+	private SecretResolver _secretResolver;
 
 }

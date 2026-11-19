@@ -60,10 +60,10 @@ if (parentGroupId != GroupConstants.DEFAULT_PARENT_GROUP_ID) {
 <liferay-ui:error exception="<%= RequiredGroupException.MustNotDeleteGroupThatHasChild.class %>" message="you-cannot-delete-sites-that-have-subsites" />
 <liferay-ui:error exception="<%= RequiredGroupException.MustNotDeleteSystemGroup.class %>" message="the-site-cannot-be-deleted-or-deactivated-because-it-is-a-required-system-site" />
 
-<liferay-ui:error key="resetMergeFailCountAndMerge" message="unable-to-reset-the-failure-counter-and-propagate-the-changes" />
-
 <c:if test="<%= liveGroup != null %>">
 	<aui:input name="siteId" type="resource" value="<%= String.valueOf(liveGroup.getGroupId()) %>" />
+
+	<aui:input disabled="<%= true %>" name="externalReferenceCode" value="<%= String.valueOf(liveGroup.getExternalReferenceCode()) %>" />
 </c:if>
 
 <c:choose>
@@ -79,6 +79,34 @@ if (parentGroupId != GroupConstants.DEFAULT_PARENT_GROUP_ID) {
 
 <c:if test="<%= !siteGroup.isCompany() && !siteGroup.isGuest() %>">
 	<aui:input inlineLabel="right" labelCssClass="simple-toggle-switch" name="active" type="toggle-switch" value="<%= liveGroup.isActive() %>" />
+
+	<c:if test='<%= FeatureFlagManagerUtil.isEnabled("LPD-82960") %>'>
+		<aui:input disabled="<%= liveGroup.isActive() %>" helpMessage='<%= liveGroup.isActive() ? LanguageUtil.get(request, "the-site-must-be-deactivated-before-enabling-maintenance-mode") : LanguageUtil.get(request, "when-enabled-nonadmin-users-see-a-maintenance-page-instead-of-the-site-content") %>' inlineLabel="right" label="maintenance-mode" labelCssClass="simple-toggle-switch" name="maintenanceMode" type="toggle-switch" value="<%= liveGroup.isMaintenanceMode() %>" />
+
+		<aui:script>
+			var activeCheckbox = document.getElementById('<portlet:namespace />active');
+			var maintenanceModeCheckbox = document.getElementById(
+				'<portlet:namespace />maintenanceMode'
+			);
+			var maintenanceModeLabel = document.querySelector(
+				'label[for="<portlet:namespace />maintenanceMode"]'
+			);
+
+			if (activeCheckbox && maintenanceModeCheckbox && maintenanceModeLabel) {
+				activeCheckbox.addEventListener('change', function () {
+					if (activeCheckbox.checked) {
+						maintenanceModeCheckbox.checked = false;
+						maintenanceModeCheckbox.disabled = true;
+						maintenanceModeLabel.classList.add('disabled');
+					}
+					else {
+						maintenanceModeCheckbox.disabled = false;
+						maintenanceModeLabel.classList.remove('disabled');
+					}
+				});
+			}
+		</aui:script>
+	</c:if>
 </c:if>
 
 <c:if test="<%= (parentGroupId != GroupConstants.DEFAULT_PARENT_GROUP_ID) && PropsValues.SITES_SHOW_INHERIT_CONTENT_SCOPE_FROM_PARENT_SITE %>">
@@ -160,24 +188,26 @@ if (parentGroupId != GroupConstants.DEFAULT_PARENT_GROUP_ID) {
 
 	<aui:input inlineLabel="right" label="allow-manual-membership-management" labelCssClass="simple-toggle-switch" name="manualMembership" type="toggle-switch" value="<%= manualMembership %>" />
 
+	<%
+	ItemSelector itemSelector = (ItemSelector)request.getAttribute(ItemSelector.class.getName());
+
+	SiteItemSelectorCriterion siteItemSelectorCriterion = new SiteItemSelectorCriterion();
+
+	siteItemSelectorCriterion.setDesiredItemSelectorReturnTypes(new GroupItemSelectorReturnType());
+	siteItemSelectorCriterion.setExcludedGroupIds(new long[] {siteGroup.getGroupId()});
+	siteItemSelectorCriterion.setIncludeCompany(false);
+	siteItemSelectorCriterion.setIncludeRecentSites(false);
+	%>
+
 	<liferay-frontend:component
 		componentId='<%= liferayPortletResponse.getNamespace() + "details" %>'
 		context='<%=
 			HashMapBuilder.<String, Object>put(
 				"defaultParentGroupId", GroupConstants.DEFAULT_PARENT_GROUP_ID
 			).put(
-				"eventName", liferayPortletResponse.getNamespace() + "selectGroup"
-			).put(
-				"groupId", siteGroup.getGroupId()
-			).put(
-				"portletURL",
-				PortletURLBuilder.create(
-					PortletProviderUtil.getPortletURL(request, Group.class.getName(), PortletProvider.Action.BROWSE)
-				).buildString()
-			).put(
-				"windowState", LiferayWindowState.POP_UP.toString()
+				"portletURL", String.valueOf(itemSelector.getItemSelectorURL(RequestBackedPortletURLFactoryUtil.create(request), liferayPortletResponse.getNamespace() + "selectGroup", siteItemSelectorCriterion))
 			).build()
 		%>'
-		module="js/site/Details"
+		module="{Details} from site-admin-web"
 	/>
 </c:if>

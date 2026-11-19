@@ -69,7 +69,7 @@ public class StyleBookEntryVersionCacheModel
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(35);
+		StringBundler sb = new StringBundler(41);
 
 		sb.append("{mvccVersion=");
 		sb.append(mvccVersion);
@@ -81,6 +81,8 @@ public class StyleBookEntryVersionCacheModel
 		sb.append(version);
 		sb.append(", uuid=");
 		sb.append(uuid);
+		sb.append(", externalReferenceCode=");
+		sb.append(externalReferenceCode);
 		sb.append(", styleBookEntryId=");
 		sb.append(styleBookEntryId);
 		sb.append(", groupId=");
@@ -97,6 +99,8 @@ public class StyleBookEntryVersionCacheModel
 		sb.append(modifiedDate);
 		sb.append(", defaultStyleBookEntry=");
 		sb.append(defaultStyleBookEntry);
+		sb.append(", frontendTokenDefinition=");
+		sb.append(frontendTokenDefinition);
 		sb.append(", frontendTokensValues=");
 		sb.append(frontendTokensValues);
 		sb.append(", name=");
@@ -105,6 +109,8 @@ public class StyleBookEntryVersionCacheModel
 		sb.append(previewFileEntryId);
 		sb.append(", styleBookEntryKey=");
 		sb.append(styleBookEntryKey);
+		sb.append(", themeId=");
+		sb.append(themeId);
 		sb.append("}");
 
 		return sb.toString();
@@ -126,6 +132,14 @@ public class StyleBookEntryVersionCacheModel
 		}
 		else {
 			styleBookEntryVersionImpl.setUuid(uuid);
+		}
+
+		if (externalReferenceCode == null) {
+			styleBookEntryVersionImpl.setExternalReferenceCode("");
+		}
+		else {
+			styleBookEntryVersionImpl.setExternalReferenceCode(
+				externalReferenceCode);
 		}
 
 		styleBookEntryVersionImpl.setStyleBookEntryId(styleBookEntryId);
@@ -157,6 +171,14 @@ public class StyleBookEntryVersionCacheModel
 		styleBookEntryVersionImpl.setDefaultStyleBookEntry(
 			defaultStyleBookEntry);
 
+		if (frontendTokenDefinition == null) {
+			styleBookEntryVersionImpl.setFrontendTokenDefinition("");
+		}
+		else {
+			styleBookEntryVersionImpl.setFrontendTokenDefinition(
+				frontendTokenDefinition);
+		}
+
 		if (frontendTokensValues == null) {
 			styleBookEntryVersionImpl.setFrontendTokensValues("");
 		}
@@ -181,6 +203,13 @@ public class StyleBookEntryVersionCacheModel
 			styleBookEntryVersionImpl.setStyleBookEntryKey(styleBookEntryKey);
 		}
 
+		if (themeId == null) {
+			styleBookEntryVersionImpl.setThemeId("");
+		}
+		else {
+			styleBookEntryVersionImpl.setThemeId(themeId);
+		}
+
 		styleBookEntryVersionImpl.resetOriginalValues();
 
 		return styleBookEntryVersionImpl;
@@ -198,6 +227,7 @@ public class StyleBookEntryVersionCacheModel
 
 		version = objectInput.readInt();
 		uuid = objectInput.readUTF();
+		externalReferenceCode = objectInput.readUTF();
 
 		styleBookEntryId = objectInput.readLong();
 
@@ -211,11 +241,13 @@ public class StyleBookEntryVersionCacheModel
 		modifiedDate = objectInput.readLong();
 
 		defaultStyleBookEntry = objectInput.readBoolean();
+		frontendTokenDefinition = (String)objectInput.readObject();
 		frontendTokensValues = (String)objectInput.readObject();
 		name = objectInput.readUTF();
 
 		previewFileEntryId = objectInput.readLong();
 		styleBookEntryKey = objectInput.readUTF();
+		themeId = objectInput.readUTF();
 	}
 
 	@Override
@@ -233,6 +265,13 @@ public class StyleBookEntryVersionCacheModel
 		}
 		else {
 			objectOutput.writeUTF(uuid);
+		}
+
+		if (externalReferenceCode == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(externalReferenceCode);
 		}
 
 		objectOutput.writeLong(styleBookEntryId);
@@ -254,6 +293,13 @@ public class StyleBookEntryVersionCacheModel
 		objectOutput.writeLong(modifiedDate);
 
 		objectOutput.writeBoolean(defaultStyleBookEntry);
+
+		if (frontendTokenDefinition == null) {
+			objectOutput.writeObject("");
+		}
+		else {
+			objectOutput.writeObject(frontendTokenDefinition);
+		}
 
 		if (frontendTokensValues == null) {
 			objectOutput.writeObject("");
@@ -277,6 +323,13 @@ public class StyleBookEntryVersionCacheModel
 		else {
 			objectOutput.writeUTF(styleBookEntryKey);
 		}
+
+		if (themeId == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(themeId);
+		}
 	}
 
 	public long mvccVersion;
@@ -284,6 +337,7 @@ public class StyleBookEntryVersionCacheModel
 	public long styleBookEntryVersionId;
 	public int version;
 	public String uuid;
+	public String externalReferenceCode;
 	public long styleBookEntryId;
 	public long groupId;
 	public long companyId;
@@ -292,9 +346,12 @@ public class StyleBookEntryVersionCacheModel
 	public long createDate;
 	public long modifiedDate;
 	public boolean defaultStyleBookEntry;
+	public String frontendTokenDefinition;
 	public String frontendTokensValues;
 	public String name;
 	public long previewFileEntryId;
 	public String styleBookEntryKey;
+	public String themeId;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1386151244

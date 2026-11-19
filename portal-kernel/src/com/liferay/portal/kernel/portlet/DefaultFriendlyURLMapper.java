@@ -10,17 +10,19 @@ import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.LinkedHashMapBuilder;
+import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.ObjectValuePair;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.portlet.PortletMode;
+import jakarta.portlet.WindowState;
+
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
-
-import javax.portlet.PortletMode;
-import javax.portlet.WindowState;
 
 /**
  * The default friendly URL mapper to use with friendly URL routes.
@@ -126,7 +128,9 @@ public class DefaultFriendlyURLMapper extends BaseFriendlyURLMapper {
 		String friendlyURLPath, Map<String, String[]> parameterMap,
 		Map<String, Object> requestContext) {
 
-		friendlyURLPath = friendlyURLPath.substring(getMapping().length() + 1);
+		String mapping = getMapping();
+
+		friendlyURLPath = friendlyURLPath.substring(mapping.length() + 1);
 
 		if (friendlyURLPath.endsWith(StringPool.SLASH)) {
 			friendlyURLPath = friendlyURLPath.substring(
@@ -199,9 +203,11 @@ public class DefaultFriendlyURLMapper extends BaseFriendlyURLMapper {
 			liferayPortletURL.getParameterMap();
 
 		for (String name : portletURLParameters.keySet()) {
-			if (!routeParameters.containsKey(name)) {
-				liferayPortletURL.addParameterIncludedInPath(name);
+			if (routeParameters.containsKey(name)) {
+				continue;
 			}
+
+			liferayPortletURL.addParameterIncludedInPath(name);
 		}
 
 		// Hide reserved parameters removed by the router or set to the defaults
@@ -244,9 +250,11 @@ public class DefaultFriendlyURLMapper extends BaseFriendlyURLMapper {
 
 			String[] values = entry.getValue();
 
-			if (values.length > 0) {
-				routeParameters.put(entry.getKey(), values[0]);
+			if (values.length <= 0) {
+				continue;
 			}
+
+			routeParameters.put(entry.getKey(), values[0]);
 		}
 
 		// Populate virtual parameters for instanceable portlets
@@ -371,14 +379,25 @@ public class DefaultFriendlyURLMapper extends BaseFriendlyURLMapper {
 
 		// Copy default reserved parameters if they are not already set
 
+		Map<String, String[]> parentParameterMap =
+			FriendlyURLMapperThreadLocal.getParentParameters();
+
+		if (parentParameterMap == null) {
+			parentParameterMap = Collections.emptyMap();
+		}
+
 		for (Map.Entry<String, String> entry :
 				defaultReservedParameters.entrySet()) {
 
 			String key = entry.getKey();
 
-			if (!parameterMap.containsKey(key)) {
-				addParameter(namespace, parameterMap, key, entry.getValue());
+			if (parameterMap.containsKey(key)) {
+				continue;
 			}
+
+			addParameter(
+				namespace, parameterMap, key,
+				MapUtil.getString(parentParameterMap, key, entry.getValue()));
 		}
 	}
 

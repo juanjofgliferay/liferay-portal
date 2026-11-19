@@ -22,15 +22,11 @@ import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.site.navigation.admin.constants.SiteNavigationAdminPortletKeys;
 import com.liferay.site.navigation.taglib.servlet.taglib.NavigationMenuTag;
 
-import javax.portlet.ResourceRequest;
-import javax.portlet.ResourceResponse;
+import jakarta.portlet.ResourceRequest;
+import jakarta.portlet.ResourceResponse;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -40,7 +36,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + SiteNavigationAdminPortletKeys.SITE_NAVIGATION_ADMIN,
+		"jakarta.portlet.name=" + SiteNavigationAdminPortletKeys.SITE_NAVIGATION_ADMIN,
 		"mvc.command.name=/site_navigation_admin/get_site_navigation_menu_preview"
 	},
 	service = MVCResourceCommand.class
@@ -90,20 +86,14 @@ public class GetSiteNavigationMenuPreviewMVCResourceCommand
 
 		httpServletRequest.setAttribute(WebKeys.THEME_DISPLAY, themeDisplay);
 
-		Document document = Jsoup.parse(
-			ThemeUtil.include(
-				ServletContextPool.get(StringPool.BLANK), httpServletRequest,
-				httpServletResponse, "portal_normal.ftl", layoutSet.getTheme(),
-				false));
-
-		Element bodyElement = document.body();
-
-		bodyElement.html(unsyncStringWriter.toString());
-
-		ServletResponseUtil.write(httpServletResponse, document.html());
+		String html = ThemeUtil.include(
+			ServletContextPool.get(StringPool.BLANK), httpServletRequest,
+			httpServletResponse, "portal_normal.ftl", layoutSet.getTheme(),
+			false);
 
 		ServletResponseUtil.write(
-			httpServletResponse, unsyncStringWriter.toString());
+			httpServletResponse,
+			ThemeUtil.replaceBodyContent(html, unsyncStringWriter.toString()));
 	}
 
 	@Reference

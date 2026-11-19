@@ -36,6 +36,8 @@ public interface DLEditFileEntryDisplayContext extends DLDisplayContext {
 	public DLFilePicker getDLFilePicker(String onFilePickCallback)
 		throws PortalException;
 
+	public String getExternalReferenceCode();
+
 	public default String getFriendlyURLBase() throws PortalException {
 		return null;
 	}
@@ -65,11 +67,15 @@ public interface DLEditFileEntryDisplayContext extends DLDisplayContext {
 	public boolean isDDMStructureVisible(DDMStructure ddmStructure)
 		throws PortalException;
 
+	public boolean isERCFieldEnabled();
+
 	public default boolean isFileNameVisible() throws PortalException {
 		return true;
 	}
 
 	public boolean isFolderSelectionVisible() throws PortalException;
+
+	public boolean isFriendlyURLWithExtensionEnabled() throws PortalException;
 
 	public default boolean isNeverExpire() throws PortalException {
 		return true;

@@ -7,21 +7,22 @@
 
 <%@ include file="/init.jsp" %>
 
-<aui:script require="frontend-js-web/index as frontendJsWeb">
-	var {runScriptsInElement} = frontendJsWeb;
-
-	function handleIframeMessage(event) {
+<aui:script sandbox="<%= true %>">
+	Liferay.on('fragmentEditor:updatePreview', (event) => {
 		if (event.data) {
 			var virtualDocument = document.createElement('html');
 
-			virtualDocument.innerHTML = JSON.parse(event.data).data;
+			virtualDocument.innerHTML = event.data;
 
-			document.querySelector('.portlet-body').innerHTML =
-				virtualDocument.innerHTML;
+			const body = virtualDocument.querySelector('body');
 
-			runScriptsInElement(virtualDocument);
+			const portletBody = document.querySelector('.portlet-body');
+
+			portletBody.innerHTML = '';
+
+			portletBody.appendChild(body);
+
+			Liferay.Util.runScriptsInElement(body);
 		}
-	}
-
-	window.addEventListener('message', handleIframeMessage);
+	});
 </aui:script>

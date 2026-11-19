@@ -48,7 +48,7 @@ public class WikiActivityInterpreterTest
 
 		_attachmentFileName = RandomTestUtil.randomString() + ".docx";
 
-		WikiTestUtil.addWikiAttachment(
+		WikiTestUtil.addPageAttachment(
 			_page.getUserId(), _page.getNodeId(), _page.getTitle(),
 			_attachmentFileName, getClass());
 	}
@@ -72,7 +72,7 @@ public class WikiActivityInterpreterTest
 	}
 
 	@Override
-	protected boolean isSupportsRename(String className) {
+	protected boolean isSupportsRename() {
 		return false;
 	}
 

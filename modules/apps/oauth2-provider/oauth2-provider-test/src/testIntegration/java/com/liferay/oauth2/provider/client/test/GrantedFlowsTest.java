@@ -9,8 +9,11 @@ import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.oauth2.provider.constants.GrantType;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
+import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 
 import java.util.Collections;
@@ -37,104 +40,131 @@ public class GrantedFlowsTest extends BaseClientTestCase {
 	@Test
 	public void test() throws Exception {
 		String errorString = getToken(
-			"oauthTestApplicationPassword", null,
-			this::getClientCredentialsResponse, this::parseError);
+			_CLIENT_ID_PASSWORD, null, this::getClientCredentialsResponse,
+			this::parseError);
 
 		Assert.assertEquals("unauthorized_client", errorString);
 
 		String tokenString = getToken(
-			"oauthTestApplicationPassword", null,
-			getResourceOwnerPasswordBiFunction("test@liferay.com", "test"),
+			_CLIENT_ID_PASSWORD, null,
+			getResourceOwnerPasswordBiFunction(
+				_user.getEmailAddress(), PropsValues.DEFAULT_ADMIN_PASSWORD),
 			this::parseTokenString);
 
 		Assert.assertNotNull(tokenString);
 
 		errorString = getToken(
-			"oauthTestApplicationClient", null,
-			getResourceOwnerPasswordBiFunction("test@liferay.com", "test"),
+			_CLIENT_ID_CLIENT, null,
+			getResourceOwnerPasswordBiFunction(
+				_user.getEmailAddress(), PropsValues.DEFAULT_ADMIN_PASSWORD),
 			this::parseError);
 
 		Assert.assertEquals("unauthorized_client", errorString);
 
 		tokenString = getToken(
-			"oauthTestApplicationClient", null,
-			this::getClientCredentialsResponse, this::parseTokenString);
+			_CLIENT_ID_CLIENT, null, this::getClientCredentialsResponse,
+			this::parseTokenString);
 
 		Assert.assertNotNull(tokenString);
 
 		errorString = getToken(
-			"oauthTestApplicationNoGrants", null,
+			_CLIENT_ID_NO_GRANTS, null,
 			getAuthorizationCodePKCEBiFunction(
-				"test@liferay.com", "test", null),
+				_user.getEmailAddress(), PropsValues.DEFAULT_ADMIN_PASSWORD,
+				null),
 			this::parseError);
 
 		Assert.assertEquals("unauthorized_client", errorString);
 
 		tokenString = getToken(
-			"oauthTestApplicationCode", null,
-			getAuthorizationCodeBiFunction("test@liferay.com", "test", null),
+			_CLIENT_ID_CODE, null,
+			getAuthorizationCodeBiFunction(
+				_user.getEmailAddress(), PropsValues.DEFAULT_ADMIN_PASSWORD,
+				null),
 			this::parseTokenString);
 
 		Assert.assertNotNull(tokenString);
 
 		errorString = getToken(
-			"oauthTestApplicationPassword", null,
-			getAuthorizationCodeBiFunction("test@liferay.com", "test", null),
+			_CLIENT_ID_PASSWORD, null,
+			getAuthorizationCodeBiFunction(
+				_user.getEmailAddress(), PropsValues.DEFAULT_ADMIN_PASSWORD,
+				null),
 			this::parseError);
 
 		Assert.assertEquals("unauthorized_client", errorString);
 
 		tokenString = getToken(
-			"oauthTestApplicationCodePKCE", null,
+			_CLIENT_ID_CODE_PKCE, null,
 			getAuthorizationCodePKCEBiFunction(
-				"test@liferay.com", "test", null),
+				_user.getEmailAddress(), PropsValues.DEFAULT_ADMIN_PASSWORD,
+				null),
 			this::parseTokenString);
 
 		Assert.assertNotNull(tokenString);
-	}
-
-	public static class AnnotatedApplicationTestPreparatorBundleActivator
-		extends BaseTestPreparatorBundleActivator {
-
-		@Override
-		protected void prepareTest() throws Exception {
-			long defaultCompanyId = PortalUtil.getDefaultCompanyId();
-
-			User user = UserTestUtil.getAdminUser(defaultCompanyId);
-
-			createOAuth2Application(
-				defaultCompanyId, user, "oauthTestApplicationCode",
-				Collections.singletonList(GrantType.AUTHORIZATION_CODE),
-				Collections.singletonList("everything"));
-
-			createOAuth2ApplicationWithNone(
-				defaultCompanyId, user, "oauthTestApplicationCodePKCE",
-				Collections.singletonList(GrantType.AUTHORIZATION_CODE_PKCE),
-				Collections.singletonList("http://redirecturi:8080"), false,
-				Collections.singletonList("everything"), false);
-
-			createOAuth2Application(
-				defaultCompanyId, user, "oauthTestApplicationClient",
-				Collections.singletonList(GrantType.CLIENT_CREDENTIALS),
-				Collections.singletonList("everything"));
-
-			createOAuth2ApplicationWithNone(
-				defaultCompanyId, user, "oauthTestApplicationNoGrants",
-				Collections.emptyList(),
-				Collections.singletonList("http://redirecturi:8080"), false,
-				Collections.singletonList("everything"), false);
-
-			createOAuth2Application(
-				defaultCompanyId, user, "oauthTestApplicationPassword",
-				Collections.singletonList(GrantType.RESOURCE_OWNER_PASSWORD),
-				Collections.singletonList("everything"));
-		}
-
 	}
 
 	@Override
 	protected BundleActivator getBundleActivator() {
 		return new AnnotatedApplicationTestPreparatorBundleActivator();
+	}
+
+	private static final String _CLIENT_ID_CLIENT =
+		RandomTestUtil.randomString();
+
+	private static final String _CLIENT_ID_CODE = RandomTestUtil.randomString();
+
+	private static final String _CLIENT_ID_CODE_PKCE =
+		RandomTestUtil.randomString();
+
+	private static final String _CLIENT_ID_NO_GRANTS =
+		RandomTestUtil.randomString();
+
+	private static final String _CLIENT_ID_PASSWORD =
+		RandomTestUtil.randomString();
+
+	private User _user;
+
+	private class AnnotatedApplicationTestPreparatorBundleActivator
+		extends BaseTestPreparatorBundleActivator {
+
+		@Override
+		protected void prepareTest() throws Exception {
+			long companyId = TestPropsValues.getCompanyId();
+
+			_user = UserTestUtil.getAdminUser(companyId);
+
+			createOAuth2Application(
+				companyId, _user, _CLIENT_ID_CODE,
+				Collections.singletonList(GrantType.AUTHORIZATION_CODE),
+				Collections.singletonList("everything"));
+
+			createOAuth2ApplicationWithNone(
+				companyId, _user, _CLIENT_ID_CODE_PKCE,
+				Collections.singletonList(GrantType.AUTHORIZATION_CODE_PKCE),
+				Collections.singletonList(
+					"http://redirecturi:" +
+						PortalUtil.getPortalServerPort(false)),
+				false, Collections.singletonList("everything"), false);
+
+			createOAuth2Application(
+				companyId, _user, _CLIENT_ID_CLIENT,
+				Collections.singletonList(GrantType.CLIENT_CREDENTIALS),
+				Collections.singletonList("everything"));
+
+			createOAuth2ApplicationWithNone(
+				companyId, _user, _CLIENT_ID_NO_GRANTS, Collections.emptyList(),
+				Collections.singletonList(
+					"http://redirecturi:" +
+						PortalUtil.getPortalServerPort(false)),
+				false, Collections.singletonList("everything"), false);
+
+			createOAuth2Application(
+				companyId, _user, _CLIENT_ID_PASSWORD,
+				Collections.singletonList(GrantType.RESOURCE_OWNER_PASSWORD),
+				Collections.singletonList("everything"));
+		}
+
 	}
 
 }

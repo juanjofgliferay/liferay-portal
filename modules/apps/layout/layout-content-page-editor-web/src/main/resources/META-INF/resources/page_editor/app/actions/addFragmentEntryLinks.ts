@@ -11,10 +11,22 @@ import type {EditableType} from '../config/constants/editableTypes';
 import type {FragmentEntryType} from '../config/constants/fragmentEntryTypes';
 import type {FragmentEntryLinkComment} from './addFragmentEntryLinkComment';
 
+type LocalizedConfigurationValue = {
+	[key in Liferay.Language.Locale]?: boolean | number | string | string[];
+};
+
+export type ConfigurationValue =
+	| boolean
+	| number
+	| string
+	| string[]
+	| LocalizedConfigurationValue;
+
 export interface FragmentEntryLink<
 	EditableId extends string = string,
-	ConfigurationFieldId extends string = string
+	ConfigurationFieldId extends string = string,
 > {
+	actions?: Record<string, {icon: string; title: string; url: string}>;
 	collectionContent?: Record<string, string>;
 	comments: FragmentEntryLinkComment[];
 	configuration: Record<string, unknown>;
@@ -34,9 +46,11 @@ export interface FragmentEntryLink<
 			[key in EditableId]: EditableValue;
 		};
 		'com.liferay.fragment.entry.processor.freemarker.FreeMarkerFragmentEntryProcessor': {
-			[key in ConfigurationFieldId]: EditableValue;
+			[key in ConfigurationFieldId]: ConfigurationValue;
 		};
+		'portletId'?: string;
 	};
+	fieldTypes: string[];
 	fragmentEntryId: string;
 	fragmentEntryKey: string;
 	fragmentEntryLinkId: string;

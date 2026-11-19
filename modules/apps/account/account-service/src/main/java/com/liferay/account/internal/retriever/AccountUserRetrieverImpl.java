@@ -59,15 +59,6 @@ import org.osgi.service.component.annotations.Reference;
 public class AccountUserRetrieverImpl implements AccountUserRetriever {
 
 	@Override
-	public List<User> getAccountUsers(long accountEntryId) {
-		return TransformUtil.transform(
-			_accountEntryUserRelLocalService.
-				getAccountEntryUserRelsByAccountEntryId(accountEntryId),
-			accountEntryUserRel -> _userLocalService.getUserById(
-				accountEntryUserRel.getAccountUserId()));
-	}
-
-	@Override
 	public long getAccountUsersCount(long accountEntryId) {
 		return _accountEntryUserRelLocalService.
 			getAccountEntryUserRelsCountByAccountEntryId(accountEntryId);
@@ -175,10 +166,10 @@ public class AccountUserRetrieverImpl implements AccountUserRetriever {
 	private AccountRoleLocalService _accountRoleLocalService;
 
 	@Reference
-	private Searcher _searcher;
+	private SearchRequestBuilderFactory _searchRequestBuilderFactory;
 
 	@Reference
-	private SearchRequestBuilderFactory _searchRequestBuilderFactory;
+	private Searcher _searcher;
 
 	@Reference
 	private SortFieldBuilder _sortFieldBuilder;

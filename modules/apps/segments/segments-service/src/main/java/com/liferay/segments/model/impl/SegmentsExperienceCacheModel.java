@@ -69,7 +69,7 @@ public class SegmentsExperienceCacheModel
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(37);
+		StringBundler sb = new StringBundler(41);
 
 		sb.append("{mvccVersion=");
 		sb.append(mvccVersion);
@@ -77,6 +77,8 @@ public class SegmentsExperienceCacheModel
 		sb.append(ctCollectionId);
 		sb.append(", uuid=");
 		sb.append(uuid);
+		sb.append(", externalReferenceCode=");
+		sb.append(externalReferenceCode);
 		sb.append(", segmentsExperienceId=");
 		sb.append(segmentsExperienceId);
 		sb.append(", groupId=");
@@ -91,8 +93,10 @@ public class SegmentsExperienceCacheModel
 		sb.append(createDate);
 		sb.append(", modifiedDate=");
 		sb.append(modifiedDate);
-		sb.append(", segmentsEntryId=");
-		sb.append(segmentsEntryId);
+		sb.append(", segmentsEntryERC=");
+		sb.append(segmentsEntryERC);
+		sb.append(", segmentsEntryScopeERC=");
+		sb.append(segmentsEntryScopeERC);
 		sb.append(", segmentsExperienceKey=");
 		sb.append(segmentsExperienceKey);
 		sb.append(", plid=");
@@ -127,6 +131,14 @@ public class SegmentsExperienceCacheModel
 			segmentsExperienceImpl.setUuid(uuid);
 		}
 
+		if (externalReferenceCode == null) {
+			segmentsExperienceImpl.setExternalReferenceCode("");
+		}
+		else {
+			segmentsExperienceImpl.setExternalReferenceCode(
+				externalReferenceCode);
+		}
+
 		segmentsExperienceImpl.setSegmentsExperienceId(segmentsExperienceId);
 		segmentsExperienceImpl.setGroupId(groupId);
 		segmentsExperienceImpl.setCompanyId(companyId);
@@ -153,7 +165,20 @@ public class SegmentsExperienceCacheModel
 			segmentsExperienceImpl.setModifiedDate(new Date(modifiedDate));
 		}
 
-		segmentsExperienceImpl.setSegmentsEntryId(segmentsEntryId);
+		if (segmentsEntryERC == null) {
+			segmentsExperienceImpl.setSegmentsEntryERC("");
+		}
+		else {
+			segmentsExperienceImpl.setSegmentsEntryERC(segmentsEntryERC);
+		}
+
+		if (segmentsEntryScopeERC == null) {
+			segmentsExperienceImpl.setSegmentsEntryScopeERC("");
+		}
+		else {
+			segmentsExperienceImpl.setSegmentsEntryScopeERC(
+				segmentsEntryScopeERC);
+		}
 
 		if (segmentsExperienceKey == null) {
 			segmentsExperienceImpl.setSegmentsExperienceKey("");
@@ -201,6 +226,7 @@ public class SegmentsExperienceCacheModel
 
 		ctCollectionId = objectInput.readLong();
 		uuid = objectInput.readUTF();
+		externalReferenceCode = objectInput.readUTF();
 
 		segmentsExperienceId = objectInput.readLong();
 
@@ -212,8 +238,8 @@ public class SegmentsExperienceCacheModel
 		userName = objectInput.readUTF();
 		createDate = objectInput.readLong();
 		modifiedDate = objectInput.readLong();
-
-		segmentsEntryId = objectInput.readLong();
+		segmentsEntryERC = objectInput.readUTF();
+		segmentsEntryScopeERC = objectInput.readUTF();
 		segmentsExperienceKey = objectInput.readUTF();
 
 		plid = objectInput.readLong();
@@ -239,6 +265,13 @@ public class SegmentsExperienceCacheModel
 			objectOutput.writeUTF(uuid);
 		}
 
+		if (externalReferenceCode == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(externalReferenceCode);
+		}
+
 		objectOutput.writeLong(segmentsExperienceId);
 
 		objectOutput.writeLong(groupId);
@@ -257,7 +290,19 @@ public class SegmentsExperienceCacheModel
 		objectOutput.writeLong(createDate);
 		objectOutput.writeLong(modifiedDate);
 
-		objectOutput.writeLong(segmentsEntryId);
+		if (segmentsEntryERC == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(segmentsEntryERC);
+		}
+
+		if (segmentsEntryScopeERC == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(segmentsEntryScopeERC);
+		}
 
 		if (segmentsExperienceKey == null) {
 			objectOutput.writeUTF("");
@@ -292,6 +337,7 @@ public class SegmentsExperienceCacheModel
 	public long mvccVersion;
 	public long ctCollectionId;
 	public String uuid;
+	public String externalReferenceCode;
 	public long segmentsExperienceId;
 	public long groupId;
 	public long companyId;
@@ -299,7 +345,8 @@ public class SegmentsExperienceCacheModel
 	public String userName;
 	public long createDate;
 	public long modifiedDate;
-	public long segmentsEntryId;
+	public String segmentsEntryERC;
+	public String segmentsEntryScopeERC;
 	public String segmentsExperienceKey;
 	public long plid;
 	public String name;
@@ -309,3 +356,4 @@ public class SegmentsExperienceCacheModel
 	public long lastPublishDate;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-470316737

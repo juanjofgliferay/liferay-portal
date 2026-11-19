@@ -11,6 +11,7 @@ import com.liferay.portal.kernel.json.JSONArray;
 import java.io.Serializable;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -60,6 +61,8 @@ public class DDMForm implements Serializable {
 		ddmFormField.setDDMForm(this);
 
 		_ddmFormFields.add(ddmFormField);
+
+		_ddmFormFieldMap.put(ddmFormField.getName(), ddmFormField);
 	}
 
 	public void addDDMFormRule(DDMFormRule ddmFormRule) {
@@ -102,6 +105,27 @@ public class DDMForm implements Serializable {
 		return _availableLocales;
 	}
 
+	public DDMFormField getDDMFormField(
+		String name, boolean includeNestedDDMFormFields) {
+
+		DDMFormField ddmFormField = _ddmFormFieldMap.get(name);
+
+		if ((ddmFormField != null) || !includeNestedDDMFormFields) {
+			return ddmFormField;
+		}
+
+		for (DDMFormField curDDMFormField : _ddmFormFields) {
+			DDMFormField nestedDDMFormField =
+				curDDMFormField.getNestedDDMFormFieldsMap(name);
+
+			if (nestedDDMFormField != null) {
+				return nestedDDMFormField;
+			}
+		}
+
+		return null;
+	}
+
 	public List<DDMFormField> getDDMFormFields() {
 		return _ddmFormFields;
 	}
@@ -114,10 +138,18 @@ public class DDMForm implements Serializable {
 		for (DDMFormField ddmFormField : _ddmFormFields) {
 			ddmFormFieldsMap.put(ddmFormField.getName(), ddmFormField);
 
-			if (includeNestedDDMFormFields) {
-				ddmFormFieldsMap.putAll(
-					ddmFormField.getNestedDDMFormFieldsMap());
+			if (!includeNestedDDMFormFields) {
+				continue;
 			}
+
+			List<DDMFormField> nestedDDMFormFields =
+				ddmFormField.getNestedDDMFormFields();
+
+			if (nestedDDMFormFields.isEmpty()) {
+				continue;
+			}
+
+			ddmFormFieldsMap.putAll(ddmFormField.getNestedDDMFormFieldsMap());
 		}
 
 		return ddmFormFieldsMap;
@@ -133,10 +165,12 @@ public class DDMForm implements Serializable {
 			ddmFormFieldsReferencesMap.put(
 				ddmFormField.getFieldReference(), ddmFormField);
 
-			if (includeNestedDDMFormFields) {
-				ddmFormFieldsReferencesMap.putAll(
-					ddmFormField.getNestedDDMFormFieldsReferencesMap());
+			if (!includeNestedDDMFormFields) {
+				continue;
 			}
+
+			ddmFormFieldsReferencesMap.putAll(
+				ddmFormField.getNestedDDMFormFieldsReferencesMap());
 		}
 
 		return ddmFormFieldsReferencesMap;
@@ -168,10 +202,12 @@ public class DDMForm implements Serializable {
 				ddmFormFieldsMap.put(ddmFormField.getName(), ddmFormField);
 			}
 
-			if (includeNestedDDMFormFields) {
-				ddmFormFieldsMap.putAll(
-					ddmFormField.getNontransientNestedDDMFormFieldsMap());
+			if (!includeNestedDDMFormFields) {
+				continue;
 			}
+
+			ddmFormFieldsMap.putAll(
+				ddmFormField.getNontransientNestedDDMFormFieldsMap());
 		}
 
 		return ddmFormFieldsMap;
@@ -189,11 +225,12 @@ public class DDMForm implements Serializable {
 					ddmFormField.getFieldReference(), ddmFormField);
 			}
 
-			if (includeNestedDDMFormFields) {
-				ddmFormFieldsReferencesMap.putAll(
-					ddmFormField.
-						getNontransientNestedDDMFormFieldsReferencesMap());
+			if (!includeNestedDDMFormFields) {
+				continue;
 			}
+
+			ddmFormFieldsReferencesMap.putAll(
+				ddmFormField.getNontransientNestedDDMFormFieldsReferencesMap());
 		}
 
 		return ddmFormFieldsReferencesMap;
@@ -229,6 +266,8 @@ public class DDMForm implements Serializable {
 	public void setDDMFormFields(List<DDMFormField> ddmFormFields) {
 		for (DDMFormField ddmFormField : ddmFormFields) {
 			ddmFormField.setDDMForm(this);
+
+			_ddmFormFieldMap.put(ddmFormField.getName(), ddmFormField);
 		}
 
 		_ddmFormFields = ddmFormFields;
@@ -259,6 +298,7 @@ public class DDMForm implements Serializable {
 
 	private boolean _allowInvalidAvailableLocalesForProperty;
 	private Set<Locale> _availableLocales;
+	private final Map<String, DDMFormField> _ddmFormFieldMap = new HashMap<>();
 	private List<DDMFormField> _ddmFormFields;
 	private List<DDMFormRule> _ddmFormRules;
 	private DDMFormSuccessPageSettings _ddmFormSuccessPageSettings;

@@ -7,6 +7,7 @@ package com.liferay.segments.internal.events.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.layout.constants.LayoutTypeSettingsConstants;
+import com.liferay.layout.content.page.editor.constants.ContentPageEditorPortletKeys;
 import com.liferay.layout.test.util.LayoutTestUtil;
 import com.liferay.osgi.service.tracker.collections.list.ServiceTrackerList;
 import com.liferay.osgi.service.tracker.collections.list.ServiceTrackerListFactory;
@@ -17,29 +18,42 @@ import com.liferay.portal.kernel.events.LifecycleEvent;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.LayoutConstants;
+import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.UserLocalService;
+import com.liferay.portal.kernel.test.TestInfo;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
-import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
-import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ArrayUtil;
+import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
 import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.ScopeUtil;
+import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.kernel.util.UnicodePropertiesBuilder;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
+import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
 import com.liferay.segments.configuration.SegmentsCompanyConfiguration;
 import com.liferay.segments.configuration.SegmentsConfiguration;
+import com.liferay.segments.configuration.provider.SegmentsConfigurationProvider;
 import com.liferay.segments.constants.SegmentsWebKeys;
+import com.liferay.segments.criteria.Criteria;
+import com.liferay.segments.criteria.CriteriaSerializer;
+import com.liferay.segments.criteria.contributor.SegmentsCriteriaContributor;
+import com.liferay.segments.model.SegmentsEntry;
 import com.liferay.segments.model.SegmentsExperience;
 import com.liferay.segments.service.SegmentsExperienceLocalService;
+import com.liferay.segments.test.util.SegmentsTestUtil;
 
 import java.util.Collections;
 import java.util.List;
@@ -69,15 +83,17 @@ public class SegmentsServicePreActionTest {
 	@ClassRule
 	@Rule
 	public static final AggregateTestRule aggregateTestRule =
-		new LiferayIntegrationTestRule();
+		new AggregateTestRule(
+			new LiferayIntegrationTestRule(),
+			PermissionCheckerMethodTestRule.INSTANCE);
 
 	@Before
 	public void setUp() throws Exception {
-		_group = GroupTestUtil.addGroup();
+		_group = _groupLocalService.getGroup(TestPropsValues.getGroupId());
 	}
 
 	@Test
-	public void testProcessLifecycleEvent() throws Exception {
+	public void testProcessLifecycleEvent1() throws Exception {
 		try (ConfigurationTemporarySwapper configurationTemporarySwapper =
 				new ConfigurationTemporarySwapper(
 					SegmentsConfiguration.class.getName(),
@@ -94,6 +110,9 @@ public class SegmentsServicePreActionTest {
 								"segmentationEnabled", true
 							).build())) {
 
+				_segmentsConfigurationProvider.
+					clearSegmentsCompanyConfigurations();
+
 				LifecycleAction lifecycleAction = _getLifecycleAction();
 
 				MockHttpServletRequest mockHttpServletRequest =
@@ -107,14 +126,15 @@ public class SegmentsServicePreActionTest {
 					LocaleUtil.getDefault(), RandomTestUtil.randomString());
 
 				Layout layout = _layoutLocalService.addLayout(
-					TestPropsValues.getUserId(), _group.getGroupId(), false,
-					LayoutConstants.DEFAULT_PARENT_LAYOUT_ID, 0, 0, nameMap,
-					nameMap, Collections.emptyMap(), Collections.emptyMap(),
-					Collections.emptyMap(), LayoutConstants.TYPE_COLLECTION,
+					null, TestPropsValues.getUserId(), _group.getGroupId(),
+					false, LayoutConstants.DEFAULT_PARENT_LAYOUT_ID, 0, 0,
+					nameMap, nameMap, Collections.emptyMap(),
+					Collections.emptyMap(), Collections.emptyMap(),
+					LayoutConstants.TYPE_CONTENT,
 					UnicodePropertiesBuilder.put(
 						LayoutTypeSettingsConstants.KEY_PUBLISHED, "true"
 					).buildString(),
-					false, false, Collections.emptyMap(), 0, serviceContext);
+					false, false, Collections.emptyMap(), null, serviceContext);
 
 				mockHttpServletRequest.setAttribute(
 					WebKeys.THEME_DISPLAY, _getThemeDisplay(layout));
@@ -126,6 +146,182 @@ public class SegmentsServicePreActionTest {
 
 				Assert.assertNotNull(
 					mockHttpServletRequest.getAttribute(
+						SegmentsWebKeys.SEGMENTS_EXPERIENCE_IDS));
+			}
+		}
+	}
+
+	@Test
+	public void testProcessLifecycleEvent2() throws Exception {
+		try (ConfigurationTemporarySwapper configurationTemporarySwapper =
+				new ConfigurationTemporarySwapper(
+					SegmentsConfiguration.class.getName(),
+					HashMapDictionaryBuilder.<String, Object>put(
+						"segmentationEnabled", true
+					).build())) {
+
+			try (CompanyConfigurationTemporarySwapper
+					companyConfigurationTemporarySwapper =
+						new CompanyConfigurationTemporarySwapper(
+							TestPropsValues.getCompanyId(),
+							SegmentsCompanyConfiguration.class.getName(),
+							HashMapDictionaryBuilder.<String, Object>put(
+								"segmentationEnabled", true
+							).build())) {
+
+				_segmentsConfigurationProvider.
+					clearSegmentsCompanyConfigurations();
+
+				LifecycleAction lifecycleAction = _getLifecycleAction();
+
+				MockHttpServletRequest mockHttpServletRequest =
+					new MockHttpServletRequest();
+
+				Map<Locale, String> nameMap = Collections.singletonMap(
+					LocaleUtil.getDefault(), RandomTestUtil.randomString());
+
+				Layout layout = _layoutLocalService.addLayout(
+					null, TestPropsValues.getUserId(), _group.getGroupId(),
+					false, LayoutConstants.DEFAULT_PARENT_LAYOUT_ID, 0, 0,
+					nameMap, nameMap, Collections.emptyMap(),
+					Collections.emptyMap(), Collections.emptyMap(),
+					LayoutConstants.TYPE_CONTENT,
+					UnicodePropertiesBuilder.put(
+						LayoutTypeSettingsConstants.KEY_PUBLISHED, "true"
+					).buildString(),
+					false, false, Collections.emptyMap(), null,
+					ServiceContextTestUtil.getServiceContext(
+						_group.getGroupId(), TestPropsValues.getUserId()));
+
+				mockHttpServletRequest.setAttribute(
+					WebKeys.THEME_DISPLAY, _getThemeDisplay(layout));
+
+				mockHttpServletRequest.setParameter("p_l_mode", Constants.EDIT);
+
+				SegmentsExperience segmentsExperience =
+					_segmentsExperienceLocalService.addSegmentsExperience(
+						null, TestPropsValues.getUserId(), _group.getGroupId(),
+						null, null, layout.getPlid(),
+						RandomTestUtil.randomLocaleStringMap(), true,
+						new UnicodeProperties(true),
+						ServiceContextTestUtil.getServiceContext(
+							_group.getGroupId()));
+
+				String portletNamespace = _portal.getPortletNamespace(
+					ContentPageEditorPortletKeys.CONTENT_PAGE_EDITOR_PORTLET);
+
+				mockHttpServletRequest.setParameter(
+					portletNamespace + "segmentsExperienceId",
+					String.valueOf(
+						segmentsExperience.getSegmentsExperienceId()));
+
+				LifecycleEvent lifecycleEvent = new LifecycleEvent(
+					mockHttpServletRequest, new MockHttpServletResponse());
+
+				lifecycleAction.processLifecycleEvent(lifecycleEvent);
+
+				Assert.assertArrayEquals(
+					new long[] {segmentsExperience.getSegmentsExperienceId()},
+					(long[])mockHttpServletRequest.getAttribute(
+						SegmentsWebKeys.SEGMENTS_EXPERIENCE_IDS));
+			}
+		}
+	}
+
+	@Test
+	@TestInfo("LPD-73850")
+	public void testProcessLifecycleEventSegmentsExperienceIdsOrder()
+		throws Exception {
+
+		try (ConfigurationTemporarySwapper configurationTemporarySwapper =
+				new ConfigurationTemporarySwapper(
+					SegmentsConfiguration.class.getName(),
+					HashMapDictionaryBuilder.<String, Object>put(
+						"segmentationEnabled", true
+					).build())) {
+
+			try (CompanyConfigurationTemporarySwapper
+					companyConfigurationTemporarySwapper =
+						new CompanyConfigurationTemporarySwapper(
+							TestPropsValues.getCompanyId(),
+							SegmentsCompanyConfiguration.class.getName(),
+							HashMapDictionaryBuilder.<String, Object>put(
+								"segmentationEnabled", true
+							).build())) {
+
+				_segmentsConfigurationProvider.
+					clearSegmentsCompanyConfigurations();
+
+				Layout layout = _layoutLocalService.addLayout(
+					null, TestPropsValues.getUserId(), _group.getGroupId(),
+					false, LayoutConstants.DEFAULT_PARENT_LAYOUT_ID, 0, 0,
+					RandomTestUtil.randomLocaleStringMap(),
+					RandomTestUtil.randomLocaleStringMap(),
+					Collections.emptyMap(), Collections.emptyMap(),
+					Collections.emptyMap(), LayoutConstants.TYPE_CONTENT,
+					UnicodePropertiesBuilder.put(
+						LayoutTypeSettingsConstants.KEY_PUBLISHED, "true"
+					).buildString(),
+					false, false, Collections.emptyMap(), null,
+					ServiceContextTestUtil.getServiceContext(
+						_group.getGroupId(), TestPropsValues.getUserId()));
+
+				User user = _userLocalService.getUser(
+					TestPropsValues.getUserId());
+
+				SegmentsEntry segmentsEntry1 = _getSegmentsEntry(
+					_group.getGroupId(), user);
+
+				SegmentsExperience segmentsExperience1 =
+					_segmentsExperienceLocalService.appendSegmentsExperience(
+						TestPropsValues.getUserId(), _group.getGroupId(),
+						segmentsEntry1.getExternalReferenceCode(),
+						ScopeUtil.getItemScopeExternalReferenceCode(
+							segmentsEntry1.getGroupId(), _group.getGroupId()),
+						layout.getPlid(),
+						RandomTestUtil.randomLocaleStringMap(), true,
+						new UnicodeProperties(true),
+						ServiceContextTestUtil.getServiceContext(
+							_group.getGroupId()));
+
+				Group companyGroup = _groupLocalService.getCompanyGroup(
+					TestPropsValues.getCompanyId());
+
+				SegmentsEntry segmentsEntry2 = _getSegmentsEntry(
+					companyGroup.getGroupId(), user);
+
+				SegmentsExperience segmentsExperience2 =
+					_segmentsExperienceLocalService.appendSegmentsExperience(
+						TestPropsValues.getUserId(), _group.getGroupId(),
+						segmentsEntry2.getExternalReferenceCode(),
+						ScopeUtil.getItemScopeExternalReferenceCode(
+							segmentsEntry2.getGroupId(), _group.getGroupId()),
+						layout.getPlid(),
+						RandomTestUtil.randomLocaleStringMap(), true,
+						new UnicodeProperties(true),
+						ServiceContextTestUtil.getServiceContext(
+							_group.getGroupId()));
+
+				LifecycleAction lifecycleAction = _getLifecycleAction();
+
+				MockHttpServletRequest mockHttpServletRequest =
+					new MockHttpServletRequest();
+
+				mockHttpServletRequest.setAttribute(
+					WebKeys.THEME_DISPLAY, _getThemeDisplay(layout));
+
+				lifecycleAction.processLifecycleEvent(
+					new LifecycleEvent(
+						mockHttpServletRequest, new MockHttpServletResponse()));
+
+				Assert.assertArrayEquals(
+					new long[] {
+						segmentsExperience2.getSegmentsExperienceId(),
+						segmentsExperience1.getSegmentsExperienceId(),
+						_segmentsExperienceLocalService.
+							fetchDefaultSegmentsExperienceId(layout.getPlid())
+					},
+					(long[])mockHttpServletRequest.getAttribute(
 						SegmentsWebKeys.SEGMENTS_EXPERIENCE_IDS));
 			}
 		}
@@ -151,6 +347,9 @@ public class SegmentsServicePreActionTest {
 								"segmentationEnabled", true
 							).build())) {
 
+				_segmentsConfigurationProvider.
+					clearSegmentsCompanyConfigurations();
+
 				LifecycleAction lifecycleAction = _getLifecycleAction();
 
 				MockHttpServletRequest mockHttpServletRequest =
@@ -164,14 +363,15 @@ public class SegmentsServicePreActionTest {
 					LocaleUtil.getDefault(), RandomTestUtil.randomString());
 
 				Layout layout = _layoutLocalService.addLayout(
-					TestPropsValues.getUserId(), _group.getGroupId(), false,
-					LayoutConstants.DEFAULT_PARENT_LAYOUT_ID, 0, 0, nameMap,
-					nameMap, Collections.emptyMap(), Collections.emptyMap(),
-					Collections.emptyMap(), LayoutConstants.TYPE_COLLECTION,
+					null, TestPropsValues.getUserId(), _group.getGroupId(),
+					false, LayoutConstants.DEFAULT_PARENT_LAYOUT_ID, 0, 0,
+					nameMap, nameMap, Collections.emptyMap(),
+					Collections.emptyMap(), Collections.emptyMap(),
+					LayoutConstants.TYPE_CONTENT,
 					UnicodePropertiesBuilder.put(
 						LayoutTypeSettingsConstants.KEY_PUBLISHED, "true"
 					).buildString(),
-					false, false, Collections.emptyMap(), 0, serviceContext);
+					false, false, Collections.emptyMap(), null, serviceContext);
 
 				mockHttpServletRequest.setAttribute(
 					WebKeys.THEME_DISPLAY, _getThemeDisplay(layout));
@@ -214,6 +414,9 @@ public class SegmentsServicePreActionTest {
 								"segmentationEnabled", true
 							).build())) {
 
+				_segmentsConfigurationProvider.
+					clearSegmentsCompanyConfigurations();
+
 				LifecycleAction lifecycleAction = _getLifecycleAction();
 
 				MockHttpServletRequest mockHttpServletRequest =
@@ -255,6 +458,9 @@ public class SegmentsServicePreActionTest {
 								"segmentationEnabled", true
 							).build())) {
 
+				_segmentsConfigurationProvider.
+					clearSegmentsCompanyConfigurations();
+
 				LifecycleAction lifecycleAction = _getLifecycleAction();
 
 				MockHttpServletRequest mockHttpServletRequest =
@@ -295,6 +501,9 @@ public class SegmentsServicePreActionTest {
 								"segmentationEnabled", true
 							).build())) {
 
+				_segmentsConfigurationProvider.
+					clearSegmentsCompanyConfigurations();
+
 				LifecycleAction lifecycleAction = _getLifecycleAction();
 
 				MockHttpServletRequest mockHttpServletRequest =
@@ -308,14 +517,15 @@ public class SegmentsServicePreActionTest {
 					LocaleUtil.getDefault(), RandomTestUtil.randomString());
 
 				Layout layout = _layoutLocalService.addLayout(
-					TestPropsValues.getUserId(), _group.getGroupId(), false,
-					LayoutConstants.DEFAULT_PARENT_LAYOUT_ID, 0, 0, nameMap,
-					nameMap, Collections.emptyMap(), Collections.emptyMap(),
-					Collections.emptyMap(), LayoutConstants.TYPE_COLLECTION,
+					null, TestPropsValues.getUserId(), _group.getGroupId(),
+					false, LayoutConstants.DEFAULT_PARENT_LAYOUT_ID, 0, 0,
+					nameMap, nameMap, Collections.emptyMap(),
+					Collections.emptyMap(), Collections.emptyMap(),
+					LayoutConstants.TYPE_CONTENT,
 					UnicodePropertiesBuilder.put(
 						LayoutTypeSettingsConstants.KEY_PUBLISHED, "true"
 					).buildString(),
-					false, false, Collections.emptyMap(), 0, serviceContext);
+					false, false, Collections.emptyMap(), null, serviceContext);
 
 				mockHttpServletRequest.setAttribute(
 					WebKeys.THEME_DISPLAY, _getThemeDisplay(layout));
@@ -375,6 +585,19 @@ public class SegmentsServicePreActionTest {
 		throw new AssertionError("SegmentsServicePreAction is not registered");
 	}
 
+	private SegmentsEntry _getSegmentsEntry(long groupId, User user)
+		throws Exception {
+
+		Criteria criteria = new Criteria();
+
+		_userSegmentsCriteriaContributor.contribute(
+			criteria, String.format("(firstName eq '%s')", user.getFirstName()),
+			Criteria.Conjunction.AND);
+
+		return SegmentsTestUtil.addSegmentsEntry(
+			groupId, CriteriaSerializer.serialize(criteria));
+	}
+
 	private ThemeDisplay _getThemeDisplay(Layout layout) throws Exception {
 		ThemeDisplay themeDisplay = new ThemeDisplay();
 
@@ -382,6 +605,8 @@ public class SegmentsServicePreActionTest {
 			_companyLocalService.getCompany(TestPropsValues.getCompanyId()));
 		themeDisplay.setLayout(layout);
 		themeDisplay.setLifecycleRender(true);
+		themeDisplay.setPermissionChecker(
+			PermissionThreadLocal.getPermissionChecker());
 		themeDisplay.setUser(TestPropsValues.getUser());
 
 		return themeDisplay;
@@ -390,7 +615,6 @@ public class SegmentsServicePreActionTest {
 	@Inject
 	private CompanyLocalService _companyLocalService;
 
-	@DeleteAfterTestRun
 	private Group _group;
 
 	@Inject
@@ -400,6 +624,21 @@ public class SegmentsServicePreActionTest {
 	private LayoutLocalService _layoutLocalService;
 
 	@Inject
+	private Portal _portal;
+
+	@Inject
+	private SegmentsConfigurationProvider _segmentsConfigurationProvider;
+
+	@Inject
 	private SegmentsExperienceLocalService _segmentsExperienceLocalService;
+
+	@Inject
+	private UserLocalService _userLocalService;
+
+	@Inject(
+		filter = "segments.criteria.contributor.key=user",
+		type = SegmentsCriteriaContributor.class
+	)
+	private SegmentsCriteriaContributor _userSegmentsCriteriaContributor;
 
 }

@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -150,16 +151,6 @@ public class DDMStructureLayoutLocalServiceUtil {
 		return getService().deleteDDMStructureLayout(structureLayoutId);
 	}
 
-	public static void deleteDDMStructureLayouts(
-			long classNameId,
-			com.liferay.dynamic.data.mapping.model.DDMStructureVersion
-				ddmStructureVersion)
-		throws PortalException {
-
-		getService().deleteDDMStructureLayouts(
-			classNameId, ddmStructureVersion);
-	}
-
 	/**
 	 * @throws PortalException
 	 */
@@ -168,18 +159,6 @@ public class DDMStructureLayoutLocalServiceUtil {
 		throws PortalException {
 
 		return getService().deletePersistedModel(persistedModel);
-	}
-
-	public static void deleteStructureLayout(
-		DDMStructureLayout structureLayout) {
-
-		getService().deleteStructureLayout(structureLayout);
-	}
-
-	public static void deleteStructureLayout(long structureLayoutId)
-		throws PortalException {
-
-		getService().deleteStructureLayout(structureLayoutId);
 	}
 
 	public static <T> T dslQuery(DSLQuery dslQuery) {
@@ -285,19 +264,6 @@ public class DDMStructureLayoutLocalServiceUtil {
 
 		return getService().fetchDDMStructureLayoutByUuidAndGroupId(
 			uuid, groupId);
-	}
-
-	public static DDMStructureLayout fetchStructureLayout(
-		long structureLayoutId) {
-
-		return getService().fetchStructureLayout(structureLayoutId);
-	}
-
-	public static DDMStructureLayout fetchStructureLayout(
-		long groupId, long classNameId, String structureLayoutKey) {
-
-		return getService().fetchStructureLayout(
-			groupId, classNameId, structureLayoutKey);
 	}
 
 	public static com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery
@@ -464,14 +430,6 @@ public class DDMStructureLayoutLocalServiceUtil {
 	}
 
 	public static List<DDMStructureLayout> getStructureLayouts(
-		long groupId, long classNameId, int start, int end,
-		OrderByComparator<DDMStructureLayout> orderByComparator) {
-
-		return getService().getStructureLayouts(
-			groupId, classNameId, start, end, orderByComparator);
-	}
-
-	public static List<DDMStructureLayout> getStructureLayouts(
 		long groupId, long classNameId, long structureVersionId) {
 
 		return getService().getStructureLayouts(
@@ -487,38 +445,11 @@ public class DDMStructureLayoutLocalServiceUtil {
 			orderByComparator);
 	}
 
-	public static int getStructureLayoutsCount(long groupId) {
-		return getService().getStructureLayoutsCount(groupId);
-	}
-
-	public static int getStructureLayoutsCount(long groupId, long classNameId) {
-		return getService().getStructureLayoutsCount(groupId, classNameId);
-	}
-
 	public static int getStructureLayoutsCount(
 		long groupId, long classNameId, long structureVersionId) {
 
 		return getService().getStructureLayoutsCount(
 			groupId, classNameId, structureVersionId);
-	}
-
-	public static List<DDMStructureLayout> search(
-			long companyId, long[] groupIds, long classNameId, String keywords,
-			int start, int end,
-			OrderByComparator<DDMStructureLayout> orderByComparator)
-		throws PortalException {
-
-		return getService().search(
-			companyId, groupIds, classNameId, keywords, start, end,
-			orderByComparator);
-	}
-
-	public static int searchCount(
-			long companyId, long[] groupIds, long classNameId, String keywords)
-		throws PortalException {
-
-		return getService().searchCount(
-			companyId, groupIds, classNameId, keywords);
 	}
 
 	/**
@@ -538,16 +469,6 @@ public class DDMStructureLayoutLocalServiceUtil {
 	}
 
 	public static DDMStructureLayout updateStructureLayout(
-			long structureLayoutId,
-			com.liferay.dynamic.data.mapping.model.DDMFormLayout ddmFormLayout,
-			com.liferay.portal.kernel.service.ServiceContext serviceContext)
-		throws PortalException {
-
-		return getService().updateStructureLayout(
-			structureLayoutId, ddmFormLayout, serviceContext);
-	}
-
-	public static DDMStructureLayout updateStructureLayout(
 			long structureLayoutId, long structureVersionId,
 			Map<java.util.Locale, String> name,
 			Map<java.util.Locale, String> description, String definition,
@@ -560,13 +481,13 @@ public class DDMStructureLayoutLocalServiceUtil {
 	}
 
 	public static DDMStructureLayoutLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(DDMStructureLayoutLocalService service) {
-		_service = service;
-	}
-
-	private static volatile DDMStructureLayoutLocalService _service;
+	private static final Snapshot<DDMStructureLayoutLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			DDMStructureLayoutLocalServiceUtil.class,
+			DDMStructureLayoutLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1137544503

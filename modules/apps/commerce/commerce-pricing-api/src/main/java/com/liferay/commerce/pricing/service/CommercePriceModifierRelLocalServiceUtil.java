@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -252,21 +253,6 @@ public class CommercePriceModifierRelLocalServiceUtil {
 		return getService().getActionableDynamicQuery();
 	}
 
-	public static List<CommercePriceModifierRel>
-		getCategoriesCommercePriceModifierRels(
-			long commercePriceModifierId, String name, int start, int end) {
-
-		return getService().getCategoriesCommercePriceModifierRels(
-			commercePriceModifierId, name, start, end);
-	}
-
-	public static int getCategoriesCommercePriceModifierRelsCount(
-		long commercePriceModifierId, String name) {
-
-		return getService().getCategoriesCommercePriceModifierRelsCount(
-			commercePriceModifierId, name);
-	}
-
 	public static long[] getClassPKs(
 		long commercePriceModifierId, String className) {
 
@@ -312,14 +298,6 @@ public class CommercePriceModifierRelLocalServiceUtil {
 			commercePriceModifierId, className);
 	}
 
-	public static List<CommercePriceModifierRel> getCommercePriceModifierRels(
-		long commercePriceModifierId, String className, int start, int end,
-		OrderByComparator<CommercePriceModifierRel> orderByComparator) {
-
-		return getService().getCommercePriceModifierRels(
-			commercePriceModifierId, className, start, end, orderByComparator);
-	}
-
 	/**
 	 * Returns the number of commerce price modifier rels.
 	 *
@@ -329,49 +307,10 @@ public class CommercePriceModifierRelLocalServiceUtil {
 		return getService().getCommercePriceModifierRelsCount();
 	}
 
-	public static int getCommercePriceModifierRelsCount(
-		long commercePriceModifierId, String className) {
-
-		return getService().getCommercePriceModifierRelsCount(
-			commercePriceModifierId, className);
-	}
-
 	public static List<CommercePriceModifierRel> getCommercePriceModifiersRels(
 		String className, long classPK) {
 
 		return getService().getCommercePriceModifiersRels(className, classPK);
-	}
-
-	public static List<CommercePriceModifierRel>
-		getCommercePricingClassesCommercePriceModifierRels(
-			long commercePriceModifierId, String title, int start, int end) {
-
-		return getService().getCommercePricingClassesCommercePriceModifierRels(
-			commercePriceModifierId, title, start, end);
-	}
-
-	public static int getCommercePricingClassesCommercePriceModifierRelsCount(
-		long commercePriceModifierId, String title) {
-
-		return getService().
-			getCommercePricingClassesCommercePriceModifierRelsCount(
-				commercePriceModifierId, title);
-	}
-
-	public static List<CommercePriceModifierRel>
-		getCPDefinitionsCommercePriceModifierRels(
-			long commercePriceModifierId, String name, String languageId,
-			int start, int end) {
-
-		return getService().getCPDefinitionsCommercePriceModifierRels(
-			commercePriceModifierId, name, languageId, start, end);
-	}
-
-	public static int getCPDefinitionsCommercePriceModifierRelsCount(
-		long commercePriceModifierId, String name, String languageId) {
-
-		return getService().getCPDefinitionsCommercePriceModifierRelsCount(
-			commercePriceModifierId, name, languageId);
 	}
 
 	public static
@@ -417,15 +356,13 @@ public class CommercePriceModifierRelLocalServiceUtil {
 	}
 
 	public static CommercePriceModifierRelLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(
-		CommercePriceModifierRelLocalService service) {
-
-		_service = service;
-	}
-
-	private static volatile CommercePriceModifierRelLocalService _service;
+	private static final Snapshot<CommercePriceModifierRelLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			CommercePriceModifierRelLocalServiceUtil.class,
+			CommercePriceModifierRelLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1592518001

@@ -14,12 +14,12 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.SetUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.ActionRequest;
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
-import javax.portlet.ActionRequest;
 
 /**
  * @author Hugo Huijser
@@ -61,9 +61,11 @@ public abstract class BasePermissionPropagator implements PermissionPropagator {
 		Set<String> parentAndChildCommonActionIds = new HashSet<>();
 
 		for (String actionId : childActionIds) {
-			if (parentActionIds.contains(actionId)) {
-				parentAndChildCommonActionIds.add(actionId);
+			if (!parentActionIds.contains(actionId)) {
+				continue;
 			}
+
+			parentAndChildCommonActionIds.add(actionId);
 		}
 
 		Set<String> parentAvailableActionIds = getAvailableActionIds(
@@ -76,15 +78,19 @@ public abstract class BasePermissionPropagator implements PermissionPropagator {
 		List<String> actionIds = new ArrayList<>();
 
 		for (String actionId : parentAndChildCommonActionIds) {
-			if (parentAvailableActionIds.contains(actionId)) {
-				actionIds.add(actionId);
+			if (!parentAvailableActionIds.contains(actionId)) {
+				continue;
 			}
+
+			actionIds.add(actionId);
 		}
 
 		for (String actionId : childAvailableActionIds) {
-			if (!parentAndChildCommonActionIds.contains(actionId)) {
-				actionIds.add(actionId);
+			if (parentAndChildCommonActionIds.contains(actionId)) {
+				continue;
 			}
+
+			actionIds.add(actionId);
 		}
 
 		ResourcePermissionServiceUtil.setIndividualResourcePermissions(

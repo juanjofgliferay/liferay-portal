@@ -196,23 +196,16 @@ public class VirtualHostLocalServiceUtil {
 		return getService().dynamicQueryCount(dynamicQuery, projection);
 	}
 
+	public static VirtualHost fetchCompanyDefaultVirtualHost(long companyId) {
+		return getService().fetchCompanyDefaultVirtualHost(companyId);
+	}
+
 	public static VirtualHost fetchVirtualHost(long virtualHostId) {
 		return getService().fetchVirtualHost(virtualHostId);
 	}
 
-	/**
-	 * @deprecated As of Mueller (7.2.x), replaced by {@link
-	 #getVirtualHosts(long, long)}
-	 */
-	@Deprecated
-	public static VirtualHost fetchVirtualHost(
-		long companyId, long layoutSetId) {
-
-		return getService().fetchVirtualHost(companyId, layoutSetId);
-	}
-
-	public static VirtualHost fetchVirtualHost(String hostname) {
-		return getService().fetchVirtualHost(hostname);
+	public static VirtualHost fetchVirtualHost(String virtualHostname) {
+		return getService().fetchVirtualHost(virtualHostname);
 	}
 
 	public static com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery
@@ -259,21 +252,10 @@ public class VirtualHostLocalServiceUtil {
 		return getService().getVirtualHost(virtualHostId);
 	}
 
-	/**
-	 * @deprecated As of Mueller (7.2.x), replaced by {@link
-	 #getVirtualHosts(long, long)}
-	 */
-	@Deprecated
-	public static VirtualHost getVirtualHost(long companyId, long layoutSetId)
+	public static VirtualHost getVirtualHost(String virtualHostname)
 		throws PortalException {
 
-		return getService().getVirtualHost(companyId, layoutSetId);
-	}
-
-	public static VirtualHost getVirtualHost(String hostname)
-		throws PortalException {
-
-		return getService().getVirtualHost(hostname);
+		return getService().getVirtualHost(virtualHostname);
 	}
 
 	/**
@@ -318,17 +300,6 @@ public class VirtualHostLocalServiceUtil {
 	}
 
 	/**
-	 * @deprecated As of Mueller (7.2.x), replaced by {@link
-	 #updateVirtualHosts(long, long, TreeMap)}
-	 */
-	@Deprecated
-	public static VirtualHost updateVirtualHost(
-		long companyId, long layoutSetId, String hostname) {
-
-		return getService().updateVirtualHost(companyId, layoutSetId, hostname);
-	}
-
-	/**
 	 * Updates the virtual host in the database or adds it if it does not yet exist. Also notifies the appropriate model listeners.
 	 *
 	 * <p>
@@ -344,10 +315,10 @@ public class VirtualHostLocalServiceUtil {
 
 	public static List<VirtualHost> updateVirtualHosts(
 		long companyId, long layoutSetId,
-		java.util.TreeMap<String, String> hostnames) {
+		java.util.TreeMap<String, String> virtualHostnames) {
 
 		return getService().updateVirtualHosts(
-			companyId, layoutSetId, hostnames);
+			companyId, layoutSetId, virtualHostnames);
 	}
 
 	public static VirtualHostLocalService getService() {
@@ -361,3 +332,4 @@ public class VirtualHostLocalServiceUtil {
 	private static volatile VirtualHostLocalService _service;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1051235735

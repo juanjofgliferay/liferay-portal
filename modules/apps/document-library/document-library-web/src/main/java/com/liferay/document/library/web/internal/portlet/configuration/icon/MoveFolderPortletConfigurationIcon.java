@@ -9,6 +9,8 @@ import com.liferay.document.library.constants.DLPortletKeys;
 import com.liferay.document.library.web.internal.portlet.action.ActionUtil;
 import com.liferay.document.library.web.internal.util.DLFolderUtil;
 import com.liferay.document.library.web.internal.util.DLPortletConfigurationIconUtil;
+import com.liferay.document.library.web.internal.util.FolderItemSelectorURLProvider;
+import com.liferay.item.selector.ItemSelector;
 import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -21,11 +23,12 @@ import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermissionUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -35,7 +38,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + DLPortletKeys.DOCUMENT_LIBRARY_ADMIN,
+		"jakarta.portlet.name=" + DLPortletKeys.DOCUMENT_LIBRARY_ADMIN,
 		"path=/document_library/view_folder"
 	},
 	service = PortletConfigurationIcon.class
@@ -60,12 +63,21 @@ public class MoveFolderPortletConfigurationIcon
 		try {
 			LiferayPortletResponse liferayPortletResponse =
 				_portal.getLiferayPortletResponse(portletResponse);
-
 			Folder folder = ActionUtil.getFolder(portletRequest);
+			FolderItemSelectorURLProvider folderItemSelectorURLProvider =
+				new FolderItemSelectorURLProvider(
+					_portal.getHttpServletRequest(portletRequest),
+					(ItemSelector)portletRequest.getAttribute(
+						ItemSelector.class.getName()));
 
 			return StringBundler.concat(
 				"javascript: ", liferayPortletResponse.getNamespace(),
-				"move(1, 'rowIdsFolder', ", folder.getFolderId(), ");");
+				"move(1, 'rowIdsFolder', ", folder.getFolderId(), ", '",
+				HtmlUtil.escapeJS(
+					folderItemSelectorURLProvider.getSelectMoveToFolderURL(
+						folder.getRepositoryId(), folder.getParentFolderId(),
+						folder.getFolderId())),
+				"');");
 		}
 		catch (PortalException portalException) {
 			return ReflectionUtil.throwException(portalException);
@@ -92,16 +104,11 @@ public class MoveFolderPortletConfigurationIcon
 					(ThemeDisplay)portletRequest.getAttribute(
 						WebKeys.THEME_DISPLAY);
 
-				if (ModelResourcePermissionUtil.contains(
-						_folderModelResourcePermission,
-						themeDisplay.getPermissionChecker(),
-						themeDisplay.getScopeGroupId(), folder.getFolderId(),
-						ActionKeys.UPDATE)) {
-
-					return true;
-				}
-
-				return false;
+				return ModelResourcePermissionUtil.contains(
+					_folderModelResourcePermission,
+					themeDisplay.getPermissionChecker(),
+					themeDisplay.getScopeGroupId(), folder.getFolderId(),
+					ActionKeys.UPDATE);
 			});
 	}
 

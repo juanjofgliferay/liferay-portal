@@ -295,6 +295,25 @@ definition {
 	}
 
 	@summary = "Default summary"
+	macro enableDXPSegments() {
+		task ("Enable DXP segments deprecation feature flag") {
+			ApplicationsMenu.gotoRootPortlet(
+				panel = "Control Panel",
+				portlet = "System Settings");
+
+			SystemSettings.gotoConfiguration(
+				configurationCategory = "Feature Flags",
+				configurationName = "Deprecation",
+				configurationScope = "System Scope");
+
+			FeatureFlag.enableFeatureFlag(
+				configurationScope = "System Scope",
+				featureFlag = "DXP Segments",
+				scope = "Deprecation");
+		}
+	}
+
+	@summary = "Default summary"
 	macro fillProperty(selectEntry = null, dateValue = null, selectCheckbox = null, optionsValue = null, selectCard = null, criterionKey = null, indexNumber = null, criterionValue = null, selectLink = null, selectCategory = null) {
 		if (isSet(criterionKey)) {
 			Type(
@@ -318,7 +337,17 @@ definition {
 		else if (isSet(selectCategory)) {
 			Button.clickSelect();
 
-			AssetCategorization.selectCategory(categoryName = ${selectCategory});
+			AssetCategorization.gotoSelectCategory();
+
+			Portlet.expandTree();
+
+			AssertVisible(
+				key_nodeName = ${selectCategory},
+				locator1 = "Treeview#NODE_ITEM");
+
+			Click(
+				key_nodeName = ${selectCategory},
+				locator1 = "Treeview#NODE_UNSELECTED");
 
 			SelectFrame(value1 = "relative=top");
 		}
@@ -424,10 +453,7 @@ definition {
 
 	@summary = "Default summary"
 	macro gotoRoleAssigneeSegments(roleName = null) {
-		ApplicationsMenu.gotoPortlet(
-			category = "Users",
-			panel = "Control Panel",
-			portlet = "Roles");
+		Role.openRolesAdmin();
 
 		Role._goToRoleAssigneeType(
 			assigneeType = "Segments",
@@ -437,8 +463,7 @@ definition {
 	@summary = "Default summary"
 	macro gotoSegmeentsService(key_portlet = null) {
 		if (${key_portlet} == "Instance Settings") {
-			ApplicationsMenu.gotoPortlet(
-				category = "Configuration",
+			ApplicationsMenu.gotoRootPortlet(
 				panel = "Control Panel",
 				portlet = "Instance Settings");
 
@@ -448,8 +473,7 @@ definition {
 				configurationScope = "Virtual Instance Scope");
 		}
 		else if (${key_portlet} == "System Settings") {
-			ApplicationsMenu.gotoPortlet(
-				category = "Configuration",
+			ApplicationsMenu.gotoRootPortlet(
 				panel = "Control Panel",
 				portlet = "System Settings");
 
@@ -540,14 +564,13 @@ definition {
 
 	@summary = "Default summary"
 	macro updateSegmentsInterval(interval = null) {
-		ApplicationsMenu.gotoPortlet(
-			category = "Configuration",
+		ApplicationsMenu.gotoRootPortlet(
 			panel = "Control Panel",
 			portlet = "System Settings");
 
 		SystemSettings.gotoConfiguration(
 			configurationCategory = "Segments",
-			configurationName = "Analytics Cloud Segments",
+			configurationName = "Liferay Data Platform Segments",
 			configurationScope = "System Scope");
 
 		if (isSet(interval)) {

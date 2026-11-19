@@ -22,8 +22,8 @@ import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.StringUtil;
-import com.liferay.portal.util.PropsValues;
 import com.liferay.portlet.asset.util.AssetVocabularySettingsHelper;
 
 import java.util.Collections;
@@ -56,7 +56,7 @@ public class
 	protected void doPortalInstanceRegistered(long companyId) throws Exception {
 		Company company = _companyLocalService.getCompany(companyId);
 
-		_addAssetVocabulary(company);
+		_addDefaultAssetVocabulary(company);
 
 		Set<Long> searchClassNameIds = new HashSet<>();
 
@@ -74,14 +74,14 @@ public class
 					ContentDashboardConstants.
 						DefaultInternalAssetVocabularyName.values()) {
 
-			AssetVocabularyUtil.addAssetVocabulary(
+			AssetVocabularyUtil.addReservedAssetVocabulary(
 				_assetVocabularyLocalService, searchClassNameIds, company,
 				defaultInternalAssetVocabularyName.toString(),
 				AssetVocabularyConstants.VISIBILITY_TYPE_INTERNAL);
 		}
 	}
 
-	private void _addAssetVocabulary(Company company) throws Exception {
+	private void _addDefaultAssetVocabulary(Company company) throws Exception {
 		AssetVocabulary assetVocabulary =
 			_assetVocabularyLocalService.fetchGroupVocabulary(
 				company.getGroupId(),
@@ -114,7 +114,8 @@ public class
 		serviceContext.setAddGuestPermissions(true);
 
 		_assetVocabularyLocalService.addVocabulary(
-			null, guestUser.getUserId(), company.getGroupId(),
+			AssetVocabularyConstants.EXTERNAL_REFERENCE_CODE_TOPIC,
+			guestUser.getUserId(), company.getGroupId(),
 			PropsValues.ASSET_VOCABULARY_DEFAULT, StringPool.BLANK, titleMap,
 			Collections.emptyMap(), assetVocabularySettingsHelper.toString(),
 			AssetVocabularyConstants.VISIBILITY_TYPE_PUBLIC, serviceContext);

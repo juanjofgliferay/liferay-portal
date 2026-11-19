@@ -10,6 +10,7 @@ import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.portlet.LiferayWindowState;
 import com.liferay.portal.kernel.portlet.PortletProvider;
@@ -27,9 +28,9 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portlet.configuration.kernel.util.PortletConfigurationApplicationType;
 
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
-import javax.portlet.WindowState;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+import jakarta.portlet.WindowState;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -114,7 +115,7 @@ public class ConfigurationTemplatesPortletConfigurationIcon
 
 	@Override
 	public double getWeight() {
-		return 12.0;
+		return 13.0;
 	}
 
 	@Override
@@ -126,10 +127,7 @@ public class ConfigurationTemplatesPortletConfigurationIcon
 			themeDisplay.getPermissionChecker();
 
 		try {
-			if (!GroupPermissionUtil.contains(
-					permissionChecker, themeDisplay.getScopeGroupId(),
-					ActionKeys.MANAGE_ARCHIVED_SETUPS)) {
-
+			if (!_hasPermission(permissionChecker, themeDisplay)) {
 				return false;
 			}
 		}
@@ -171,6 +169,25 @@ public class ConfigurationTemplatesPortletConfigurationIcon
 	@Override
 	public boolean isUseDialog() {
 		return true;
+	}
+
+	private boolean _hasPermission(
+			PermissionChecker permissionChecker, ThemeDisplay themeDisplay)
+		throws PortalException {
+
+		Group scopeGroup = themeDisplay.getScopeGroup();
+
+		if ((scopeGroup != null) &&
+			(scopeGroup.getGroupId() == themeDisplay.getScopeGroupId())) {
+
+			return GroupPermissionUtil.contains(
+				permissionChecker, scopeGroup,
+				ActionKeys.MANAGE_ARCHIVED_SETUPS);
+		}
+
+		return GroupPermissionUtil.contains(
+			permissionChecker, themeDisplay.getScopeGroupId(),
+			ActionKeys.MANAGE_ARCHIVED_SETUPS);
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(

@@ -18,17 +18,13 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 
-import javax.portlet.ReadOnlyException;
-
 /**
  * @author Brian Wing Shun Chan
  * @author László Csontos
  */
 public class TemplatePortletPreferences {
 
-	public String getPreferences(Map<String, Object> preferences)
-		throws ReadOnlyException {
-
+	public String getPreferences(Map<String, Object> preferences) {
 		StringBundler sb = new StringBundler();
 
 		sb.append("<portlet-preferences>");
@@ -42,12 +38,14 @@ public class TemplatePortletPreferences {
 
 			if (valueObject instanceof Collection) {
 				for (Object value : (Collection)valueObject) {
-					if (value instanceof String) {
-						sb.append("<value>");
-						sb.append(
-							PreferencesValueUtil.toCompactSafe((String)value));
-						sb.append("</value>");
+					if (!(value instanceof String)) {
+						continue;
 					}
+
+					sb.append("<value>");
+					sb.append(
+						PreferencesValueUtil.toCompactSafe((String)value));
+					sb.append("</value>");
 				}
 			}
 			else if (valueObject instanceof String) {
@@ -77,9 +75,7 @@ public class TemplatePortletPreferences {
 		return sb.toString();
 	}
 
-	public String getPreferences(String key, String value)
-		throws ReadOnlyException {
-
+	public String getPreferences(String key, String value) {
 		return getPreferences(Collections.singletonMap(key, value));
 	}
 

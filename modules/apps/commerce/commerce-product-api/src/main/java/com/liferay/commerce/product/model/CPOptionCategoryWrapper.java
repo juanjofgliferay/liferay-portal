@@ -39,6 +39,7 @@ public class CPOptionCategoryWrapper
 		attributes.put("mvccVersion", getMvccVersion());
 		attributes.put("ctCollectionId", getCtCollectionId());
 		attributes.put("uuid", getUuid());
+		attributes.put("externalReferenceCode", getExternalReferenceCode());
 		attributes.put("CPOptionCategoryId", getCPOptionCategoryId());
 		attributes.put("companyId", getCompanyId());
 		attributes.put("userId", getUserId());
@@ -50,6 +51,7 @@ public class CPOptionCategoryWrapper
 		attributes.put("priority", getPriority());
 		attributes.put("key", getKey());
 		attributes.put("lastPublishDate", getLastPublishDate());
+		attributes.put("status", getStatus());
 
 		return attributes;
 	}
@@ -72,6 +74,13 @@ public class CPOptionCategoryWrapper
 
 		if (uuid != null) {
 			setUuid(uuid);
+		}
+
+		String externalReferenceCode = (String)attributes.get(
+			"externalReferenceCode");
+
+		if (externalReferenceCode != null) {
+			setExternalReferenceCode(externalReferenceCode);
 		}
 
 		Long CPOptionCategoryId = (Long)attributes.get("CPOptionCategoryId");
@@ -138,6 +147,12 @@ public class CPOptionCategoryWrapper
 
 		if (lastPublishDate != null) {
 			setLastPublishDate(lastPublishDate);
+		}
+
+		Integer status = (Integer)attributes.get("status");
+
+		if (status != null) {
+			setStatus(status);
 		}
 	}
 
@@ -273,6 +288,16 @@ public class CPOptionCategoryWrapper
 	}
 
 	/**
+	 * Returns the external reference code of this cp option category.
+	 *
+	 * @return the external reference code of this cp option category
+	 */
+	@Override
+	public String getExternalReferenceCode() {
+		return model.getExternalReferenceCode();
+	}
+
+	/**
 	 * Returns the key of this cp option category.
 	 *
 	 * @return the key of this cp option category
@@ -330,6 +355,16 @@ public class CPOptionCategoryWrapper
 	@Override
 	public double getPriority() {
 		return model.getPriority();
+	}
+
+	/**
+	 * Returns the status of this cp option category.
+	 *
+	 * @return the status of this cp option category
+	 */
+	@Override
+	public int getStatus() {
+		return model.getStatus();
 	}
 
 	/**
@@ -576,6 +611,16 @@ public class CPOptionCategoryWrapper
 	}
 
 	/**
+	 * Sets the external reference code of this cp option category.
+	 *
+	 * @param externalReferenceCode the external reference code of this cp option category
+	 */
+	@Override
+	public void setExternalReferenceCode(String externalReferenceCode) {
+		model.setExternalReferenceCode(externalReferenceCode);
+	}
+
+	/**
 	 * Sets the key of this cp option category.
 	 *
 	 * @param key the key of this cp option category
@@ -633,6 +678,16 @@ public class CPOptionCategoryWrapper
 	@Override
 	public void setPriority(double priority) {
 		model.setPriority(priority);
+	}
+
+	/**
+	 * Sets the status of this cp option category.
+	 *
+	 * @param status the status of this cp option category
+	 */
+	@Override
+	public void setStatus(int status) {
+		model.setStatus(status);
 	}
 
 	/**
@@ -769,3 +824,4 @@ public class CPOptionCategoryWrapper
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1760299407

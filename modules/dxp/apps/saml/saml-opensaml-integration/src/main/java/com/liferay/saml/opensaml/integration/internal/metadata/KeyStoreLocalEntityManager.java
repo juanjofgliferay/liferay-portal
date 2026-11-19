@@ -26,6 +26,7 @@ import java.security.cert.Certificate;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
 
+import java.util.Arrays;
 import java.util.List;
 
 import net.shibboleth.utilities.java.support.resolver.CriteriaSet;
@@ -43,7 +44,7 @@ import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
 /**
- * @author Joao Victor Alves
+ * @author João Victor Alves
  */
 @Component(
 	configurationPid = "com.liferay.saml.runtime.configuration.SamlKeyStoreManagerConfiguration",
@@ -164,11 +165,7 @@ public class KeyStoreLocalEntityManager implements LocalEntityManager {
 			_samlSpIdpConnectionLocalService.getSamlSpIdpConnections(
 				CompanyThreadLocal.getCompanyId());
 
-		if (samlSpIdpConnections.isEmpty()) {
-			return false;
-		}
-
-		return true;
+		return !samlSpIdpConnections.isEmpty();
 	}
 
 	@Override
@@ -179,13 +176,25 @@ public class KeyStoreLocalEntityManager implements LocalEntityManager {
 
 		KeyStore keyStore = _keyStoreManager.getKeyStore();
 
-		keyStore.setEntry(
-			KeyStoreUtil.getAlias(
-				getLocalEntityId(), _getUsageType(certificateUsage)),
-			new KeyStore.PrivateKeyEntry(
-				privateKey, new Certificate[] {x509Certificate}),
-			new KeyStore.PasswordProtection(
-				certificateKeyPassword.toCharArray()));
+		char[] certificateKeyPasswordChars =
+			certificateKeyPassword.toCharArray();
+
+		KeyStore.PasswordProtection keyStorePasswordProtection =
+			new KeyStore.PasswordProtection(certificateKeyPasswordChars);
+
+		try {
+			keyStore.setEntry(
+				KeyStoreUtil.getAlias(
+					getLocalEntityId(), _getUsageType(certificateUsage)),
+				new KeyStore.PrivateKeyEntry(
+					privateKey, new Certificate[] {x509Certificate}),
+				keyStorePasswordProtection);
+		}
+		finally {
+			Arrays.fill(certificateKeyPasswordChars, '\0');
+
+			KeyStoreUtil.destroyPasswordProtection(keyStorePasswordProtection);
+		}
 
 		_keyStoreManager.saveKeyStore(keyStore);
 	}

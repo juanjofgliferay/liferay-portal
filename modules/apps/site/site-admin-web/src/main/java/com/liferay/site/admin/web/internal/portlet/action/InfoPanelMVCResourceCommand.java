@@ -12,14 +12,12 @@ import com.liferay.portal.kernel.service.GroupService;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.site.admin.web.internal.constants.SiteAdminPortletKeys;
 import com.liferay.site.admin.web.internal.constants.SiteAdminWebKeys;
-import com.liferay.site.constants.SiteWebKeys;
-import com.liferay.site.util.GroupSearchProvider;
+
+import jakarta.portlet.ResourceRequest;
+import jakarta.portlet.ResourceResponse;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.portlet.ResourceRequest;
-import javax.portlet.ResourceResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -29,7 +27,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + SiteAdminPortletKeys.SITE_ADMIN,
+		"jakarta.portlet.name=" + SiteAdminPortletKeys.SITE_ADMIN,
 		"mvc.command.name=/site_admin/info_panel"
 	},
 	service = MVCResourceCommand.class
@@ -51,14 +49,8 @@ public class InfoPanelMVCResourceCommand extends BaseMVCResourceCommand {
 
 		resourceRequest.setAttribute(SiteAdminWebKeys.GROUP_ENTRIES, groups);
 
-		resourceRequest.setAttribute(
-			SiteWebKeys.GROUP_SEARCH_PROVIDER, _groupSearchProvider);
-
 		include(resourceRequest, resourceResponse, "/info_panel.jsp");
 	}
-
-	@Reference
-	private GroupSearchProvider _groupSearchProvider;
 
 	@Reference
 	private GroupService _groupService;

@@ -7,25 +7,31 @@
 
 <%@ include file="/init.jsp" %>
 
+<aui:style>
+	.tag-filter-input {
+		min-height: 2.125rem;
+	}
+</aui:style>
+
 <div class="form-group form-group-sm mb-0">
 	<div role="presentation">
-		<label class="control-label <%= fragmentCollectionFilterTagsDisplayContext.isShowLabel() ? "" : "sr-only" %>">
-			<%= fragmentCollectionFilterTagsDisplayContext.getLabel() %>
-		</label>
+		<span class="control-label <%= fragmentCollectionFilterTagsDisplayContext.isShowLabel() ? "" : "sr-only" %>">
+			<%= HtmlUtil.escape(fragmentCollectionFilterTagsDisplayContext.getLabel()) %>
+		</span>
 
-		<input class="form-control form-control-select form-control-sm w-100" style="min-height: 2.125rem;" type="text" />
+		<input class="form-control form-control-sm tag-filter-input w-100" type="text" />
 
 		<c:choose>
 			<c:when test="<%= fragmentCollectionFilterTagsDisplayContext.isShowHelpText() %>">
 				<p class="m-0 mt-1 small text-secondary">
-					<%= fragmentCollectionFilterTagsDisplayContext.getHelpText() %>
+					<%= HtmlUtil.escape(fragmentCollectionFilterTagsDisplayContext.getHelpText()) %>
 				</p>
 			</c:when>
 		</c:choose>
 	</div>
 
 	<react:component
-		module="js/SelectTags"
+		module="{SelectTags} from fragment-collection-filter-tags"
 		props="<%= fragmentCollectionFilterTagsDisplayContext.getProps() %>"
 	/>
 </div>

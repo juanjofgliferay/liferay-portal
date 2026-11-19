@@ -5,7 +5,7 @@
  */
 --%>
 
-<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<%@ taglib uri="jakarta.tags.core" prefix="c" %>
 
 <%@ taglib uri="http://java.sun.com/portlet_2_0" prefix="portlet" %>
 
@@ -25,14 +25,15 @@ taglib uri="http://liferay.com/tld/ui" prefix="liferay-ui" %><%@
 taglib uri="http://liferay.com/tld/user" prefix="liferay-user" %><%@
 taglib uri="http://liferay.com/tld/util" prefix="liferay-util" %>
 
-<%@ page import="com.liferay.admin.kernel.util.PortalMyAccountApplicationType" %><%@
+<%@ page import="com.liferay.account.model.AccountEntry" %><%@
+page import="com.liferay.admin.kernel.util.PortalMyAccountApplicationType" %><%@
 page import="com.liferay.announcements.kernel.model.AnnouncementsDelivery" %><%@
 page import="com.liferay.announcements.kernel.model.AnnouncementsEntryConstants" %><%@
 page import="com.liferay.announcements.kernel.service.AnnouncementsDeliveryLocalServiceUtil" %><%@
 page import="com.liferay.asset.kernel.model.AssetVocabularyConstants" %><%@
 page import="com.liferay.expando.kernel.model.ExpandoColumn" %><%@
 page import="com.liferay.expando.util.ExpandoAttributesUtil" %><%@
-page import="com.liferay.frontend.taglib.servlet.taglib.util.EmptyResultMessageKeys" %><%@
+page import="com.liferay.frontend.taglib.servlet.taglib.util.AnimationType" %><%@
 page import="com.liferay.petra.string.CharPool" %><%@
 page import="com.liferay.petra.string.StringBundler" %><%@
 page import="com.liferay.petra.string.StringPool" %><%@
@@ -70,6 +71,9 @@ page import="com.liferay.portal.kernel.exception.UserPasswordException" %><%@
 page import="com.liferay.portal.kernel.exception.UserScreenNameException" %><%@
 page import="com.liferay.portal.kernel.exception.UserSmsException" %><%@
 page import="com.liferay.portal.kernel.exception.WebsiteURLException" %><%@
+page import="com.liferay.portal.kernel.frontend.esm.FrontendESMUtil" %><%@
+page import="com.liferay.portal.kernel.json.JSONArray" %><%@
+page import="com.liferay.portal.kernel.json.JSONFactoryUtil" %><%@
 page import="com.liferay.portal.kernel.language.LanguageUtil" %><%@
 page import="com.liferay.portal.kernel.language.UnicodeLanguageUtil" %><%@
 page import="com.liferay.portal.kernel.model.Address" %><%@
@@ -82,6 +86,7 @@ page import="com.liferay.portal.kernel.model.LayoutSetPrototype" %><%@
 page import="com.liferay.portal.kernel.model.ListType" %><%@
 page import="com.liferay.portal.kernel.model.ListTypeConstants" %><%@
 page import="com.liferay.portal.kernel.model.ModelHintsConstants" %><%@
+page import="com.liferay.portal.kernel.model.ModelHintsUtil" %><%@
 page import="com.liferay.portal.kernel.model.OrgLabor" %><%@
 page import="com.liferay.portal.kernel.model.Organization" %><%@
 page import="com.liferay.portal.kernel.model.OrganizationConstants" %><%@
@@ -103,7 +108,6 @@ page import="com.liferay.portal.kernel.portlet.PortletProviderUtil" %><%@
 page import="com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder" %><%@
 page import="com.liferay.portal.kernel.security.auth.AuthTokenUtil" %><%@
 page import="com.liferay.portal.kernel.security.auth.ScreenNameValidator" %><%@
-page import="com.liferay.portal.kernel.security.ldap.LDAPSettingsUtil" %><%@
 page import="com.liferay.portal.kernel.security.membershippolicy.OrganizationMembershipPolicyUtil" %><%@
 page import="com.liferay.portal.kernel.security.permission.ActionKeys" %><%@
 page import="com.liferay.portal.kernel.service.AddressServiceUtil" %><%@
@@ -127,6 +131,7 @@ page import="com.liferay.portal.kernel.service.permission.OrganizationPermission
 page import="com.liferay.portal.kernel.service.permission.PortalPermissionUtil" %><%@
 page import="com.liferay.portal.kernel.service.permission.PortletPermissionUtil" %><%@
 page import="com.liferay.portal.kernel.service.permission.UserPermissionUtil" %><%@
+page import="com.liferay.portal.kernel.util.ArrayUtil" %><%@
 page import="com.liferay.portal.kernel.util.CalendarFactoryUtil" %><%@
 page import="com.liferay.portal.kernel.util.CalendarUtil" %><%@
 page import="com.liferay.portal.kernel.util.Constants" %><%@
@@ -145,6 +150,7 @@ page import="com.liferay.portal.kernel.util.PortalUtil" %><%@
 page import="com.liferay.portal.kernel.util.PortletKeys" %><%@
 page import="com.liferay.portal.kernel.util.PrefsPropsUtil" %><%@
 page import="com.liferay.portal.kernel.util.PropsKeys" %><%@
+page import="com.liferay.portal.kernel.util.PropsValues" %><%@
 page import="com.liferay.portal.kernel.util.StringUtil" %><%@
 page import="com.liferay.portal.kernel.util.TextFormatter" %><%@
 page import="com.liferay.portal.kernel.util.UnicodeFormatter" %><%@
@@ -155,7 +161,6 @@ page import="com.liferay.portal.model.impl.OrgLaborImpl" %><%@
 page import="com.liferay.portal.security.auth.ScreenNameValidatorFactory" %><%@
 page import="com.liferay.portal.security.membershippolicy.SiteMembershipPolicyUtil" %><%@
 page import="com.liferay.portal.security.membershippolicy.UserGroupMembershipPolicyUtil" %><%@
-page import="com.liferay.portal.util.PropsValues" %><%@
 page import="com.liferay.portlet.announcements.model.impl.AnnouncementsDeliveryImpl" %><%@
 page import="com.liferay.portlet.usersadmin.util.UsersAdminUtil" %><%@
 page import="com.liferay.site.navigation.taglib.servlet.taglib.util.BreadcrumbEntriesUtil" %><%@
@@ -169,6 +174,10 @@ page import="com.liferay.users.admin.web.internal.display.context.InitDisplayCon
 page import="com.liferay.users.admin.web.internal.display.context.OrgLaborDisplay" %><%@
 page import="com.liferay.users.admin.web.internal.display.context.OrgLaborFormDisplay" %><%@
 page import="com.liferay.users.admin.web.internal.display.context.OrganizationScreenNavigationDisplayContext" %><%@
+page import="com.liferay.users.admin.web.internal.display.context.SelectAccountEntriesDisplayContext" %><%@
+page import="com.liferay.users.admin.web.internal.display.context.SelectAccountEntriesManagementToolbarDisplayContext" %><%@
+page import="com.liferay.users.admin.web.internal.display.context.SelectOrganizationsDisplayContext" %><%@
+page import="com.liferay.users.admin.web.internal.display.context.SelectOrganizationsManagementToolbarDisplayContext" %><%@
 page import="com.liferay.users.admin.web.internal.display.context.UserDisplayContext" %><%@
 page import="com.liferay.users.admin.web.internal.display.context.ViewFlatUsersDisplayContext" %><%@
 page import="com.liferay.users.admin.web.internal.display.context.ViewFlatUsersDisplayContextFactory" %><%@
@@ -183,9 +192,12 @@ page import="com.liferay.users.admin.web.internal.servlet.taglib.util.UserAction
 page import="com.liferay.users.admin.web.internal.util.CSSClasses" %><%@
 page import="com.liferay.users.admin.web.internal.util.UsersAdminPortletURLUtil" %>
 
+<%@ page import="jakarta.portlet.PortletURL" %>
+
 <%@ page import="java.text.Format" %>
 
 <%@ page import="java.util.ArrayList" %><%@
+page import="java.util.Arrays" %><%@
 page import="java.util.Calendar" %><%@
 page import="java.util.Collections" %><%@
 page import="java.util.HashMap" %><%@
@@ -194,8 +206,6 @@ page import="java.util.List" %><%@
 page import="java.util.Map" %><%@
 page import="java.util.Set" %><%@
 page import="java.util.TimeZone" %>
-
-<%@ page import="javax.portlet.PortletURL" %>
 
 <liferay-frontend:defineObjects />
 

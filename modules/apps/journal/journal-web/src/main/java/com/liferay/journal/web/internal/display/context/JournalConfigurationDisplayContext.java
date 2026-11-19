@@ -5,8 +5,8 @@
 
 package com.liferay.journal.web.internal.display.context;
 
+import com.liferay.dynamic.data.mapping.item.selector.DDMStructureItemSelectorCriterion;
 import com.liferay.dynamic.data.mapping.item.selector.DDMStructureItemSelectorReturnType;
-import com.liferay.dynamic.data.mapping.item.selector.criterion.DDMStructureItemSelectorCriterion;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.VerticalNavItem;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.VerticalNavItemList;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.VerticalNavItemListBuilder;
@@ -14,27 +14,33 @@ import com.liferay.item.selector.ItemSelector;
 import com.liferay.journal.configuration.JournalGroupServiceConfiguration;
 import com.liferay.journal.constants.JournalPortletKeys;
 import com.liferay.journal.model.JournalArticle;
+import com.liferay.journal.web.internal.util.DDMStructureUtil;
 import com.liferay.journal.web.internal.util.JournalUtil;
 import com.liferay.petra.function.UnsafeConsumer;
+import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.json.JSONArray;
+import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.portlet.RequestBackedPortletURLFactory;
 import com.liferay.portal.kernel.portlet.RequestBackedPortletURLFactoryUtil;
 import com.liferay.portal.kernel.portlet.constants.PortletPreferencesFactoryConstants;
 import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
+import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.Map;
 import java.util.Objects;
-
-import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Jürgen Kappler
@@ -100,6 +106,30 @@ public class JournalConfigurationDisplayContext {
 			_journalGroupServiceConfiguration.emailFromName());
 
 		return _emailFromName;
+	}
+
+	public JSONArray getHighlightedDDMStructuresJSONArray() throws Exception {
+		return JSONUtil.toJSONArray(
+			DDMStructureUtil.getHighlightedDDMStructures(_themeDisplay),
+			ddmStructure -> JSONUtil.put(
+				"ddmStructureId", String.valueOf(ddmStructure.getStructureId())
+			).put(
+				"name", ddmStructure.getName(_themeDisplay.getLocale())
+			).put(
+				"scope",
+				() -> {
+					Group group = GroupLocalServiceUtil.fetchGroup(
+						ddmStructure.getGroupId());
+
+					if (group == null) {
+						return StringPool.BLANK;
+					}
+
+					return LanguageUtil.get(
+						_themeDisplay.getLocale(),
+						group.getScopeLabel(_themeDisplay));
+				}
+			));
 	}
 
 	public String getNavigation() {

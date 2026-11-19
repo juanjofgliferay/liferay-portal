@@ -65,9 +65,6 @@ public class PoshiProperties extends Properties {
 	public static final String IGNORE_ERRORS_FILE_NAME =
 		"ignore.errors.file.name";
 
-	public static final String LIFERAY_DATA_GUARD_ENABLED =
-		"liferay.data.guard.enabled";
-
 	public static final String LIFERAY_PORTAL_BRANCH = "liferay.portal.branch";
 
 	public static final String LIFERAY_PORTAL_BUNDLE = "liferay.portal.bundle";
@@ -80,6 +77,9 @@ public class PoshiProperties extends Properties {
 
 	public static final String POSHI_FILE_READ_THREAD_POOL =
 		"poshi.file.read.thread.pool";
+
+	public static final String POSHI_FILE_READ_TIMEOUT =
+		"poshi.file.read.timeout";
 
 	public static final String PRINT_JAVA_PROCESS_ON_FAIL =
 		"print.java.process.on.fail";
@@ -202,6 +202,9 @@ public class PoshiProperties extends Properties {
 
 	public static final String TIMEOUT_IMPLICIT_WAIT = "timeout.implicit.wait";
 
+	public static final String TIMEOUT_PAGE_LOAD_WAIT =
+		"timeout.page.load.wait";
+
 	public static final String VALIDATION_RESOURCE_FILE_TYPES =
 		"validation.resource.file.types";
 
@@ -218,30 +221,35 @@ public class PoshiProperties extends Properties {
 
 		try {
 			for (Field field : clazz.getFields()) {
-				if (Modifier.isFinal(field.getModifiers()) &&
-					(field.get(field) instanceof String)) {
+				if (!Modifier.isFinal(field.getModifiers()) ||
+					!(field.get(field) instanceof String)) {
 
-					String propertyName = (String)field.get(field);
-
-					String propertyValue = System.getProperty(
-						"thread." + propertyName);
-
-					if (Validator.isNull(propertyValue)) {
-						propertyValue = _classProperties.getProperty(
-							"thread." + propertyName);
-					}
-
-					if (Validator.isNotNull(propertyValue)) {
-						String[] propertyValues = propertyValue.split(",");
-
-						int index = _threadBasedPoshiProperties.size();
-
-						if (index < propertyValues.length) {
-							properties.setProperty(
-								propertyName, propertyValues[index]);
-						}
-					}
+					continue;
 				}
+
+				String propertyName = (String)field.get(field);
+
+				String propertyValue = System.getProperty(
+					"thread." + propertyName);
+
+				if (Validator.isNull(propertyValue)) {
+					propertyValue = _classProperties.getProperty(
+						"thread." + propertyName);
+				}
+
+				if (Validator.isNull(propertyValue)) {
+					continue;
+				}
+
+				String[] propertyValues = propertyValue.split(",");
+
+				int index = _threadBasedPoshiProperties.size();
+
+				if (index >= propertyValues.length) {
+					continue;
+				}
+
+				properties.setProperty(propertyName, propertyValues[index]);
 			}
 
 			_threadBasedPoshiProperties.put(
@@ -354,8 +362,6 @@ public class PoshiProperties extends Properties {
 	public String ignoreErrors = getProperty(IGNORE_ERRORS);
 	public String ignoreErrorsDelimiter = getProperty(IGNORE_ERRORS_DELIMITER);
 	public String ignoreErrorsFileName = getProperty(IGNORE_ERRORS_FILE_NAME);
-	public Boolean liferayDataGuardEnabled = GetterUtil.get(
-		getProperty(LIFERAY_DATA_GUARD_ENABLED), false);
 	public String liferayPortalBranch = getProperty(LIFERAY_PORTAL_BRANCH);
 	public String liferayPortalBundle = getProperty(LIFERAY_PORTAL_BUNDLE);
 	public String loggerResourcesURL = getProperty(LOGGER_RESOURCES_URL);
@@ -363,6 +369,8 @@ public class PoshiProperties extends Properties {
 	public String portalURL = getProperty(PORTAL_URL);
 	public int poshiFileReadThreadPool = GetterUtil.getInteger(
 		getProperty(POSHI_FILE_READ_THREAD_POOL));
+	public int poshiFileReadTimeout = GetterUtil.getInteger(
+		getProperty(POSHI_FILE_READ_TIMEOUT));
 	public String printJavaProcessOnFail = getProperty(
 		PRINT_JAVA_PROCESS_ON_FAIL);
 	public String projectDir = getProperty(PROJECT_DIR);
@@ -396,7 +404,7 @@ public class PoshiProperties extends Properties {
 		getProperty(TCAT_ENABLED));
 	public boolean testAssertConsoleErrors = GetterUtil.getBoolean(
 		getProperty(TEST_ASSERT_CONSOLE_ERRORS));
-	public boolean testAssertJavascriptErrors = GetterUtil.getBoolean(
+	public boolean testAssertJavaScriptErrors = GetterUtil.getBoolean(
 		getProperty(TEST_ASSERT_JAVASCRIPT_ERRORS));
 	public boolean testAssertWarningExceptions = GetterUtil.getBoolean(
 		getProperty(TEST_ASSERT_WARNING_EXCEPTIONS));
@@ -410,12 +418,12 @@ public class PoshiProperties extends Properties {
 	public String testBatchPropertyQuery = getProperty(
 		TEST_BATCH_PROPERTY_QUERY);
 	public String testBatchRunType = getProperty(TEST_BATCH_RUN_TYPE);
+	public String[] testCSVReportPropertyNames = StringUtil.split(
+		getProperty(TEST_CSV_REPORT_PROPERTY_NAMES));
 	public String testCaseAvailablePropertyNames = getProperty(
 		TEST_CASE_AVAILABLE_PROPERTY_NAMES);
 	public String testCaseRequiredPropertyNames = getProperty(
 		TEST_CASE_REQUIRED_PROPERTY_NAMES);
-	public String[] testCSVReportPropertyNames = StringUtil.split(
-		getProperty(TEST_CSV_REPORT_PROPERTY_NAMES));
 	public String testDependenciesDirName = getProperty(
 		TEST_DEPENDENCIES_DIR_NAME);
 	public String[] testDirs = StringUtil.split(getProperty(TEST_DIRS));
@@ -448,6 +456,8 @@ public class PoshiProperties extends Properties {
 		getProperty(TIMEOUT_EXPLICIT_WAIT));
 	public int timeoutImplicitWait = GetterUtil.getInteger(
 		getProperty(TIMEOUT_IMPLICIT_WAIT));
+	public int timeoutPageLoadWait = GetterUtil.getInteger(
+		getProperty(TIMEOUT_PAGE_LOAD_WAIT));
 	public String[] validationResourceFileTypes = StringUtil.split(
 		getProperty(VALIDATION_RESOURCE_FILE_TYPES));
 
@@ -505,13 +515,15 @@ public class PoshiProperties extends Properties {
 			InputStream inputStream = classLoader.getResourceAsStream(
 				propertiesFileName);
 
-			if (inputStream != null) {
-				try {
-					_classProperties.load(inputStream);
-				}
-				catch (IOException ioException) {
-					ioException.printStackTrace();
-				}
+			if (inputStream == null) {
+				continue;
+			}
+
+			try {
+				_classProperties.load(inputStream);
+			}
+			catch (IOException ioException) {
+				ioException.printStackTrace();
 			}
 		}
 
@@ -519,22 +531,25 @@ public class PoshiProperties extends Properties {
 
 		try {
 			for (Field field : clazz.getFields()) {
-				if (Modifier.isFinal(field.getModifiers()) &&
-					(field.get(field) instanceof String)) {
+				if (!Modifier.isFinal(field.getModifiers()) ||
+					!(field.get(field) instanceof String)) {
 
-					String propertyName = (String)field.get(field);
-
-					String propertyValue = System.getProperty(propertyName);
-
-					if (Validator.isNull(propertyValue)) {
-						propertyValue = _classProperties.getProperty(
-							propertyName);
-					}
-
-					if (Validator.isNotNull(propertyValue)) {
-						properties.setProperty(propertyName, propertyValue);
-					}
+					continue;
 				}
+
+				String propertyName = (String)field.get(field);
+
+				String propertyValue = System.getProperty(propertyName);
+
+				if (Validator.isNull(propertyValue)) {
+					propertyValue = _classProperties.getProperty(propertyName);
+				}
+
+				if (Validator.isNull(propertyValue)) {
+					continue;
+				}
+
+				properties.setProperty(propertyName, propertyValue);
 			}
 		}
 		catch (IllegalAccessException illegalAccessException) {

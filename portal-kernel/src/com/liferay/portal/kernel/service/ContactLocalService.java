@@ -27,6 +27,8 @@ import com.liferay.portal.kernel.util.OrderByComparator;
 import java.io.Serializable;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import org.osgi.annotation.versioning.ProviderType;
 
@@ -206,13 +208,11 @@ public interface ContactLocalService
 	public Contact fetchContact(long contactId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public Map<Serializable, Contact> fetchContacts(
+		Set<Serializable> primaryKeys);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public ActionableDynamicQuery getActionableDynamicQuery();
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<Contact> getCompanyContacts(long companyId, int start, int end);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getCompanyContactsCount(long companyId);
 
 	/**
 	 * Returns the contact with the primary key.
@@ -238,11 +238,6 @@ public interface ContactLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<Contact> getContacts(int start, int end);
 
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<Contact> getContacts(
-		long classNameId, long classPK, int start, int end,
-		OrderByComparator<Contact> orderByComparator);
-
 	/**
 	 * Returns the number of contacts.
 	 *
@@ -250,9 +245,6 @@ public interface ContactLocalService
 	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public int getContactsCount();
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getContactsCount(long classNameId, long classPK);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public IndexableActionableDynamicQuery getIndexableActionableDynamicQuery();
@@ -295,3 +287,4 @@ public interface ContactLocalService
 		throws PortalException;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1188475989

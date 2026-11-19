@@ -6,12 +6,23 @@
 package com.liferay.document.library.web.internal.layout.display.page.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.document.library.kernel.model.DLFileEntry;
 import com.liferay.document.library.kernel.model.DLFolderConstants;
 import com.liferay.document.library.kernel.service.DLAppLocalService;
+import com.liferay.friendly.url.configuration.manager.FriendlyURLSeparatorConfigurationManager;
+import com.liferay.info.item.ERCInfoItemIdentifier;
+import com.liferay.info.item.InfoItemReference;
+import com.liferay.layout.display.page.LayoutDisplayPageObjectProvider;
 import com.liferay.layout.display.page.LayoutDisplayPageProvider;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.json.JSONUtil;
+import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.portlet.constants.FriendlyURLResolverConstants;
 import com.liferay.portal.kernel.repository.model.FileEntry;
+import com.liferay.portal.kernel.service.CompanyLocalService;
+import com.liferay.portal.kernel.service.GroupLocalService;
+import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
@@ -22,6 +33,7 @@ import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -51,8 +63,57 @@ public class FileEntryLayoutDisplayPageProviderTest {
 			ContentTypes.APPLICATION_OCTET_STREAM,
 			RandomTestUtil.randomString(), StringPool.BLANK,
 			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
-			new byte[0], null, null,
+			new byte[0], null, null, null,
 			ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
+
+		ServiceContextThreadLocal.pushServiceContext(
+			ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
+	}
+
+	@After
+	public void tearDown() throws Exception {
+		ServiceContextThreadLocal.popServiceContext();
+	}
+
+	@Test
+	public void testGetLayoutDisplayPageObjectProvider() throws Exception {
+		LayoutDisplayPageObjectProvider layoutDisplayPageObjectProvider =
+			_layoutDisplayPageProvider.getLayoutDisplayPageObjectProvider(
+				_fileEntry.getGroupId(),
+				new InfoItemReference(
+					FileEntry.class.getName(),
+					new ERCInfoItemIdentifier(
+						_fileEntry.getExternalReferenceCode())));
+
+		Assert.assertEquals(
+			_fileEntry, layoutDisplayPageObjectProvider.getDisplayObject());
+
+		Company company = _companyLocalService.getCompany(
+			TestPropsValues.getCompanyId());
+
+		Group companyGroup = company.getGroup();
+
+		layoutDisplayPageObjectProvider =
+			_layoutDisplayPageProvider.getLayoutDisplayPageObjectProvider(
+				companyGroup.getGroupId(),
+				new InfoItemReference(
+					FileEntry.class.getName(),
+					new ERCInfoItemIdentifier(
+						_fileEntry.getExternalReferenceCode(),
+						_group.getExternalReferenceCode())));
+
+		Assert.assertEquals(
+			_fileEntry, layoutDisplayPageObjectProvider.getDisplayObject());
+
+		layoutDisplayPageObjectProvider =
+			_layoutDisplayPageProvider.getLayoutDisplayPageObjectProvider(
+				companyGroup.getGroupId(),
+				new InfoItemReference(
+					FileEntry.class.getName(),
+					new ERCInfoItemIdentifier(
+						_fileEntry.getExternalReferenceCode())));
+
+		Assert.assertNull(layoutDisplayPageObjectProvider);
 	}
 
 	@Test
@@ -87,13 +148,59 @@ public class FileEntryLayoutDisplayPageProviderTest {
 				_fileEntry.getGroupId(), _fileEntry.getTitle()));
 	}
 
+	@Test
+	public void testGetURLSeparator() {
+		Assert.assertEquals(
+			FriendlyURLResolverConstants.URL_SEPARATOR_FILE_ENTRY,
+			_layoutDisplayPageProvider.getURLSeparator());
+	}
+
+	@Test
+	public void testGetURLSeparatorWithConfiguredURLSeparator()
+		throws Exception {
+
+		long companyId = _group.getCompanyId();
+
+		String friendlyURLSeparatorsJSON = String.valueOf(
+			_friendlyURLSeparatorConfigurationManager.
+				getFriendlyURLSeparatorsJSONObject(companyId));
+
+		String fileEntryFriendlyURLSeparator = "/file-test1/";
+
+		_friendlyURLSeparatorConfigurationManager.
+			updateFriendlyURLSeparatorCompanyConfiguration(
+				companyId,
+				String.valueOf(
+					JSONUtil.put(
+						DLFileEntry.class.getName(),
+						fileEntryFriendlyURLSeparator)));
+
+		Assert.assertEquals(
+			fileEntryFriendlyURLSeparator,
+			_layoutDisplayPageProvider.getURLSeparator());
+
+		_friendlyURLSeparatorConfigurationManager.
+			updateFriendlyURLSeparatorCompanyConfiguration(
+				companyId, friendlyURLSeparatorsJSON);
+	}
+
+	@Inject
+	private CompanyLocalService _companyLocalService;
+
 	@Inject
 	private DLAppLocalService _dlAppLocalService;
 
 	private FileEntry _fileEntry;
 
+	@Inject
+	private FriendlyURLSeparatorConfigurationManager
+		_friendlyURLSeparatorConfigurationManager;
+
 	@DeleteAfterTestRun
 	private Group _group;
+
+	@Inject
+	private GroupLocalService _groupLocalService;
 
 	@Inject(
 		filter = "component.name=com.liferay.document.library.web.internal.layout.display.page.FileEntryLayoutDisplayPageProvider"

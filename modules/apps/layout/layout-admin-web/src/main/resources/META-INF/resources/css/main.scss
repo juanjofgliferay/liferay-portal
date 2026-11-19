@@ -1,3 +1,4 @@
+@import 'atlas-custom-properties/_variables';
 @import 'atlas-variables';
 
 @import 'LayoutPageTemplateEntryCard';
@@ -7,14 +8,19 @@
 @import '../js/layout/look_and_feel/GlobalCSSCETsConfiguration';
 @import '../js/layout/look_and_feel/GlobalJSCETsConfiguration';
 
-.portlet-layouts-admin {
-	.card-page-item-directory {
-		@include media-breakpoint-up(lg) {
-			flex-basis: 33.33333%;
-			max-width: 33.33333%;
-		}
+.style-book-selector-card {
+	.aspect-ratio {
+		margin-left: 0;
+		margin-right: 0;
+		top: 0;
 	}
 
+	.card-type-asset-icon {
+		color: $purple;
+	}
+}
+
+.portlet-layouts-admin {
 	.customization-settings #main-content .portlet-column {
 		border: 1px solid $primary;
 		text-align: center;
@@ -23,8 +29,29 @@
 	.add-layout-form .sheet-footer {
 		position: absolute;
 	}
+}
 
-	.nav-tabs + .tab-content .tab-pane {
-		padding: 1rem;
+.design-library-page-template-set {
+	.card-type-asset-icon {
+		color: $blue;
+	}
+
+	.label-inverse-content-5 {
+		color: $teal;
+
+		.sticker {
+			color: $teal;
+		}
+	}
+}
+
+.page-template-sets-vertical-nav {
+	.lexicon-icon-books-brush {
+		background-color: $teal-l5;
+		border-radius: 0.25rem;
+		color: $teal !important;
+		height: 1.75rem;
+		padding: 0.375rem;
+		width: 1.75rem;
 	}
 }

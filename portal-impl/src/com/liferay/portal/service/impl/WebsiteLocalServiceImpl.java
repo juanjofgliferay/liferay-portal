@@ -30,8 +30,9 @@ public class WebsiteLocalServiceImpl extends WebsiteLocalServiceBaseImpl {
 
 	@Override
 	public Website addWebsite(
-			long userId, String className, long classPK, String url,
-			long listTypeId, boolean primary, ServiceContext serviceContext)
+			String externalReferenceCode, long userId, String className,
+			long classPK, String url, long listTypeId, boolean primary,
+			ServiceContext serviceContext)
 		throws PortalException {
 
 		User user = _userPersistence.findByPrimaryKey(userId);
@@ -46,6 +47,7 @@ public class WebsiteLocalServiceImpl extends WebsiteLocalServiceBaseImpl {
 		Website website = websitePersistence.create(websiteId);
 
 		website.setUuid(serviceContext.getUuid());
+		website.setExternalReferenceCode(externalReferenceCode);
 		website.setCompanyId(user.getCompanyId());
 		website.setUserId(user.getUserId());
 		website.setUserName(user.getFullName());
@@ -88,11 +90,6 @@ public class WebsiteLocalServiceImpl extends WebsiteLocalServiceBaseImpl {
 	}
 
 	@Override
-	public List<Website> getWebsites() {
-		return websitePersistence.findAll();
-	}
-
-	@Override
 	public List<Website> getWebsites(
 		long companyId, String className, long classPK) {
 
@@ -103,13 +100,15 @@ public class WebsiteLocalServiceImpl extends WebsiteLocalServiceBaseImpl {
 
 	@Override
 	public Website updateWebsite(
-			long websiteId, String url, long listTypeId, boolean primary)
+			String externalReferenceCode, long websiteId, String url,
+			long listTypeId, boolean primary)
 		throws PortalException {
 
 		validate(websiteId, 0, 0, 0, url, listTypeId, primary);
 
 		Website website = websitePersistence.findByPrimaryKey(websiteId);
 
+		website.setExternalReferenceCode(externalReferenceCode);
 		website.setUrl(url);
 		website.setListTypeId(listTypeId);
 		website.setPrimary(primary);
@@ -129,11 +128,13 @@ public class WebsiteLocalServiceImpl extends WebsiteLocalServiceBaseImpl {
 				companyId, classNameId, classPK, primary);
 
 			for (Website website : websites) {
-				if ((websiteId <= 0) || (website.getWebsiteId() != websiteId)) {
-					website.setPrimary(false);
-
-					websitePersistence.update(website);
+				if ((websiteId > 0) && (website.getWebsiteId() == websiteId)) {
+					continue;
 				}
+
+				website.setPrimary(false);
+
+				websitePersistence.update(website);
 			}
 		}
 	}

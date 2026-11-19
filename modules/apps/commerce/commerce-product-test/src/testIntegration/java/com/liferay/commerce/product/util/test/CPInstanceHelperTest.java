@@ -5,36 +5,51 @@
 
 package com.liferay.commerce.product.util.test;
 
+import com.liferay.account.model.AccountEntry;
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.commerce.account.test.util.CommerceAccountTestUtil;
+import com.liferay.commerce.context.CommerceContextFactory;
+import com.liferay.commerce.currency.model.CommerceCurrency;
+import com.liferay.commerce.currency.test.util.CommerceCurrencyTestUtil;
+import com.liferay.commerce.product.helper.CPInstanceHelper;
 import com.liferay.commerce.product.model.CPDefinition;
 import com.liferay.commerce.product.model.CPDefinitionOptionRel;
 import com.liferay.commerce.product.model.CPDefinitionOptionValueRel;
 import com.liferay.commerce.product.model.CPInstance;
 import com.liferay.commerce.product.model.CPOption;
 import com.liferay.commerce.product.model.CommerceCatalog;
+import com.liferay.commerce.product.model.CommerceChannel;
 import com.liferay.commerce.product.service.CPDefinitionLocalService;
 import com.liferay.commerce.product.service.CPDefinitionOptionRelLocalService;
 import com.liferay.commerce.product.service.CPInstanceLocalService;
 import com.liferay.commerce.product.service.CPOptionLocalService;
 import com.liferay.commerce.product.service.CommerceCatalogLocalService;
-import com.liferay.commerce.product.service.CommerceCatalogLocalServiceUtil;
 import com.liferay.commerce.product.test.util.CPTestUtil;
 import com.liferay.commerce.product.type.simple.constants.SimpleCPTypeConstants;
-import com.liferay.commerce.product.util.CPInstanceHelper;
+import com.liferay.commerce.test.util.CommerceTestUtil;
+import com.liferay.commerce.util.CommerceContextThreadLocal;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.model.Company;
+import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.model.GroupConstants;
+import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
+import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.util.CompanyTestUtil;
+import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
+import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
-import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
+
+import java.math.BigDecimal;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -75,10 +90,24 @@ public class CPInstanceHelperTest {
 
 	@Before
 	public void setUp() throws Exception {
-		_commerceCatalog = CommerceCatalogLocalServiceUtil.addCommerceCatalog(
-			null, RandomTestUtil.randomString(), RandomTestUtil.randomString(),
-			LocaleUtil.US.getDisplayLanguage(),
-			ServiceContextTestUtil.getServiceContext(_company.getGroupId()));
+		_user = UserTestUtil.addUser();
+
+		_group = GroupTestUtil.addGroup(
+			_user.getCompanyId(), _user.getUserId(),
+			GroupConstants.DEFAULT_PARENT_GROUP_ID);
+
+		_serviceContext = ServiceContextTestUtil.getServiceContext(
+			_user.getCompanyId(), _group.getGroupId(), _user.getUserId());
+
+		_commerceCurrency = CommerceCurrencyTestUtil.addCommerceCurrency(
+			_user.getCompanyId());
+
+		_commerceCatalog = CommerceTestUtil.addCommerceCatalog(
+			_user.getCompanyId(), _group.getGroupId(), _user.getUserId(),
+			_commerceCurrency.getCode());
+
+		_commerceChannel = CommerceTestUtil.addCommerceChannel(
+			_group.getGroupId(), _commerceCurrency.getCode());
 	}
 
 	@After
@@ -100,7 +129,8 @@ public class CPInstanceHelperTest {
 		throws Exception {
 
 		frutillaRule.scenario(
-			"Fetch CP instance with specified SKU contributor options"
+			"Fetch commerce product instance with specified SKU contributor " +
+				"options"
 		).given(
 			StringBundler.concat(
 				"I have a product definition with SKU contributor options ",
@@ -108,13 +138,13 @@ public class CPInstanceHelperTest {
 				"them so there are Option_1_Value_1, Option_1_Value_2, ",
 				"Option_2_Value_1, Option_2_Value_2.")
 		).when(
-			"There is only CP instance A that represents SKU value " +
-				"combination Option_1_Value_2, Option_2_Value_1"
+			"There is only commerce product instance A that represents SKU " +
+				"value combination Option_1_Value_2, Option_2_Value_1"
 		).and(
 			"serialized form field values contains combination " +
 				"Option_1_Value_2, Option_2_Value_1"
 		).then(
-			"CP instance A must be fetched"
+			"Commerce product instance A must be fetched"
 		).but(
 			StringBundler.concat(
 				"If serialized form field values contains combination other ",
@@ -175,10 +205,12 @@ public class CPInstanceHelperTest {
 			cpDefinition.getCPDefinitionId(),
 			_getSerializedFormFieldValues(cpInstanceA));
 
-		Assert.assertNotNull("Fetched CP instance exist", fetchCPInstance);
+		Assert.assertNotNull(
+			"Fetched commerce product instance exist", fetchCPInstance);
 
 		Assert.assertEquals(
-			"Fetched CP instance equals CP instance A",
+			"Fetched commerce product instance equals commerce product " +
+				"instance A",
 			cpInstanceA.getCPInstanceId(), fetchCPInstance.getCPInstanceId());
 
 		for (String deletedCPInstanceFormFieldSerializedValue :
@@ -196,13 +228,14 @@ public class CPInstanceHelperTest {
 		throws Exception {
 
 		frutillaRule.scenario(
-			"Fetch CP instance for product with no SKU contributor options"
+			"Fetch commerce product instance for product with no SKU " +
+				"contributor options"
 		).given(
 			"I have a product definition with no SKU contributor options"
 		).when(
 			"Preview of product is invoked"
 		).then(
-			"Product default ACTIVE CP instance must be returned"
+			"Product default ACTIVE commerce product instance must be returned"
 		);
 
 		CPDefinition cpDefinition = CPTestUtil.addCPDefinitionFromCatalog(
@@ -234,7 +267,7 @@ public class CPInstanceHelperTest {
 			cpDefinition.getCPDefinitionId(), StringPool.BLANK);
 
 		Assert.assertEquals(
-			"Default CP instance cpInstanceId",
+			"Default commerce product instance cpInstanceId",
 			expectedCPInstance.getCPInstanceId(),
 			fetchCPInstance.getCPInstanceId());
 
@@ -253,7 +286,39 @@ public class CPInstanceHelperTest {
 			cpDefinition.getCPDefinitionId(), StringPool.BLANK);
 
 		Assert.assertNull(
-			"Fetched CP instance does not exist", fetchCPInstance);
+			"Fetched commerce product instance does not exist",
+			fetchCPInstance);
+	}
+
+	@Test
+	public void testFetchCPInstanceUnitPrice() throws Exception {
+		frutillaRule.scenario(
+			"Fetch unit price for cpInstance"
+		).given(
+			"a price entry is added for the cpInstance"
+		).when(
+			"the unit price for cpInstance is fetched"
+		).then(
+			"price is returned"
+		);
+
+		AccountEntry accountEntry =
+			CommerceAccountTestUtil.addBusinessAccountEntry(
+				_user.getUserId(), RandomTestUtil.randomString(),
+				RandomTestUtil.randomString() + "@liferay.com",
+				RandomTestUtil.randomString(), new long[] {_user.getUserId()},
+				null, _serviceContext);
+
+		CommerceContextThreadLocal.set(
+			_commerceContextFactory.create(
+				accountEntry.getAccountEntryId(), _commerceChannel.getGroupId(),
+				_commerceCurrency.getCode(), 0, _company.getCompanyId()));
+
+		BigDecimal unitPrice = _cpInstanceHelper.fetchCPInstanceUnitPrice(
+			CPTestUtil.addCPInstanceFromCatalog(
+				_commerceCatalog.getGroupId(), BigDecimal.TEN));
+
+		Assert.assertEquals(0, unitPrice.compareTo(BigDecimal.TEN));
 	}
 
 	@Test
@@ -293,8 +358,8 @@ public class CPInstanceHelperTest {
 			cpDefinition.getCPDefinitionId());
 
 		Assert.assertEquals(
-			"Default CP instance ID value", cpInstance.getCPInstanceId(),
-			defaultCPInstance.getCPInstanceId());
+			"Default commerce product instance ID value",
+			cpInstance.getCPInstanceId(), defaultCPInstance.getCPInstanceId());
 	}
 
 	@Test
@@ -302,8 +367,8 @@ public class CPInstanceHelperTest {
 		throws Exception {
 
 		frutillaRule.scenario(
-			"Failure if default CP instance is seeked on product with SKU " +
-				"contributor options"
+			"Failure if default commerce product instance is seeked on " +
+				"product with SKU contributor options"
 		).given(
 			"I have a product definition with one SKU contributor option " +
 				"with three values assigned to it."
@@ -528,17 +593,21 @@ public class CPInstanceHelperTest {
 				sb.append(optionValueKey);
 				sb.append(StringPool.QUOTE);
 
-				if (optionValueIterator.hasNext()) {
-					sb.append(StringPool.COMMA);
+				if (!optionValueIterator.hasNext()) {
+					continue;
 				}
+
+				sb.append(StringPool.COMMA);
 			}
 
 			sb.append(StringPool.CLOSE_BRACKET);
 			sb.append(StringPool.CLOSE_CURLY_BRACE);
 
-			if (iterator.hasNext()) {
-				sb.append(StringPool.COMMA);
+			if (!iterator.hasNext()) {
+				continue;
 			}
+
+			sb.append(StringPool.COMMA);
 		}
 
 		sb.append(StringPool.CLOSE_BRACKET);
@@ -552,6 +621,15 @@ public class CPInstanceHelperTest {
 
 	@Inject
 	private CommerceCatalogLocalService _commerceCatalogLocalService;
+
+	@DeleteAfterTestRun
+	private CommerceChannel _commerceChannel;
+
+	@Inject
+	private CommerceContextFactory _commerceContextFactory;
+
+	@DeleteAfterTestRun
+	private CommerceCurrency _commerceCurrency;
 
 	@Inject
 	private CPDefinitionLocalService _cpDefinitionLocalService;
@@ -568,5 +646,13 @@ public class CPInstanceHelperTest {
 
 	@Inject
 	private CPOptionLocalService _cpOptionLocalService;
+
+	@DeleteAfterTestRun
+	private Group _group;
+
+	private ServiceContext _serviceContext;
+
+	@DeleteAfterTestRun
+	private User _user;
 
 }

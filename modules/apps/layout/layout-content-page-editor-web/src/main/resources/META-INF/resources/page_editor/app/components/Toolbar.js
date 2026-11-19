@@ -3,16 +3,22 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import ClayButton from '@clayui/button';
+import {ClayButtonWithIcon} from '@clayui/button';
+import {ClayDropDownWithItems} from '@clayui/drop-down';
+import ClayIcon from '@clayui/icon';
 import ClayLayout from '@clayui/layout';
+import ClayLink from '@clayui/link';
 import {ReactPortal, useIsMounted} from '@liferay/frontend-js-react-web';
 import classNames from 'classnames';
-import {openConfirmModal} from 'frontend-js-web';
+import {
+	FeatureIndicator,
+	openConfirmModal,
+	openToast,
+} from 'frontend-js-components-web';
+import {fetch} from 'frontend-js-web';
 import React, {useEffect, useState} from 'react';
 
-import useLazy from '../../common/hooks/useLazy';
-import useLoad from '../../common/hooks/useLoad';
-import usePlugins from '../../common/hooks/usePlugins';
+import ExperienceToolbarSection from '../../plugins/experience/components/ExperienceToolbarSection';
 import * as Actions from '../actions/index';
 import {LAYOUT_TYPES} from '../config/constants/layoutTypes';
 import {SERVICE_NETWORK_STATUS_TYPES} from '../config/constants/serviceNetworkStatusTypes';
@@ -21,37 +27,34 @@ import {useSelectItem} from '../contexts/ControlsContext';
 import {useEditableProcessorUniqueId} from '../contexts/EditableProcessorContext';
 import {useDispatch, useSelector} from '../contexts/StoreContext';
 import selectCanPublish from '../selectors/selectCanPublish';
-import redo from '../thunks/redo';
-import undo from '../thunks/undo';
 import {useDropClear} from '../utils/drag_and_drop/useDragAndDrop';
+import DiscardDraftButton from './DiscardDraftButton';
 import EditModeSelector from './EditModeSelector';
 import ExperimentsLabel from './ExperimentsLabel';
 import HideSidebarButton from './HideSidebarButton';
 import NetworkStatusBar from './NetworkStatusBar';
 import PublishButton from './PublishButton';
+import ToggleConfigurationSidebarButton from './ToggleConfigurationSidebarButton';
+import ToolbarActionsDropdown from './ToolbarActionsDropdown';
 import Translation from './Translation';
-import UnsafeHTML from './UnsafeHTML';
 import ViewportSizeSelector from './ViewportSizeSelector';
 import ZoomAlert from './ZoomAlert';
 import Undo from './undo/Undo';
 
-const {Suspense, useCallback, useRef} = React;
+const {useRef} = React;
 
 function ToolbarBody({className}) {
+	const discardDraftFormRef = useRef();
 	const dispatch = useDispatch();
 	const dropClearRef = useDropClear();
 	const editableProcessorUniqueId = useEditableProcessorUniqueId();
 	const formRef = useRef();
-	const {getInstance, register} = usePlugins();
-	const isMounted = useIsMounted();
-	const load = useLoad();
 	const selectItem = useSelectItem();
 	const store = useSelector((state) => state);
 
 	const canPublish = selectCanPublish(store);
 
 	const [publishPending, setPublishPending] = useState(false);
-	const [enableDiscard, setEnableDiscard] = useState(false);
 
 	const {
 		network,
@@ -59,82 +62,6 @@ function ToolbarBody({className}) {
 		segmentsExperimentStatus,
 		selectedViewportSize,
 	} = store;
-
-	useEffect(() => {
-		setEnableDiscard(
-			network.status === SERVICE_NETWORK_STATUS_TYPES.draftSaved ||
-				store.draft ||
-				config.isConversionDraft
-		);
-	}, [network, store.draft]);
-
-	const loadingRef = useRef(() => {
-		Promise.all(
-			config.toolbarPlugins.map((toolbarPlugin) => {
-				const {pluginEntryPoint} = toolbarPlugin;
-				const promise = load(pluginEntryPoint, pluginEntryPoint);
-
-				const app = {
-					Actions,
-					config,
-					dispatch,
-					store,
-				};
-
-				return register(pluginEntryPoint, promise, {
-					app,
-					toolbarPlugin,
-				}).then((plugin) => {
-					if (!plugin) {
-						throw new Error(
-							`Failed to get instance from ${pluginEntryPoint}`
-						);
-					}
-					else if (isMounted()) {
-						if (typeof plugin.activate === 'function') {
-							plugin.activate();
-						}
-					}
-				});
-			})
-		).catch((error) => {
-			if (process.env.NODE_ENV === 'development') {
-				console.error(error);
-			}
-		});
-	});
-
-	if (loadingRef.current) {
-
-		// Do this once only.
-
-		loadingRef.current();
-		loadingRef.current = null;
-	}
-
-	const ToolbarSection = useLazy(
-		useCallback(({instance}) => {
-			if (typeof instance.renderToolbarSection === 'function') {
-				return instance.renderToolbarSection();
-			}
-			else {
-				return null;
-			}
-		}, [])
-	);
-
-	const handleDiscardDraft = (event) => {
-		openConfirmModal({
-			message: Liferay.Language.get(
-				'are-you-sure-you-want-to-discard-current-draft-and-apply-latest-published-changes'
-			),
-			onConfirm: (isConfirmed) => {
-				if (!isConfirmed) {
-					event.preventDefault();
-				}
-			},
-		});
-	};
 
 	const onPublish = () => {
 		if (!config.masterUsed) {
@@ -154,28 +81,13 @@ function ToolbarBody({className}) {
 		}
 	};
 
-	const onUndo = () => {
-		dispatch(undo({store}));
-	};
-
-	const onRedo = () => {
-		dispatch(redo({store}));
-	};
-
 	const deselectItem = (event) => {
 		if (event.target === event.currentTarget) {
 			selectItem(null);
 		}
 	};
 
-	let draftButtonLabel = Liferay.Language.get('discard-draft');
-
-	if (config.isConversionDraft) {
-		draftButtonLabel = Liferay.Language.get('discard-conversion-draft');
-	}
-	else if (config.singleSegmentsExperienceMode) {
-		draftButtonLabel = Liferay.Language.get('discard-variant');
-	}
+	const isCMSFreeTier = config.isCMS && config.freeTier;
 
 	let publishButtonLabel = Liferay.Language.get('publish');
 
@@ -189,6 +101,12 @@ function ToolbarBody({className}) {
 		publishButtonLabel = Liferay.Language.get('submit-for-workflow');
 	}
 
+	const ariaLabel = isCMSFreeTier
+		? Liferay.Language.get('publish-locked')
+		: publishButtonLabel;
+
+	const icon = isCMSFreeTier ? 'lock' : null;
+
 	useEffect(() => {
 		if (
 			(network.status === SERVICE_NETWORK_STATUS_TYPES.draftSaved ||
@@ -201,6 +119,8 @@ function ToolbarBody({className}) {
 		}
 	}, [publishPending, network, editableProcessorUniqueId]);
 
+	const backURL = new URLSearchParams(window.location.search).get('backURL');
+
 	return (
 		<ClayLayout.ContainerFluid
 			className={classNames(
@@ -209,36 +129,34 @@ function ToolbarBody({className}) {
 			)}
 			onClick={deselectItem}
 			ref={dropClearRef}
-			size={Liferay?.FeatureFlags?.['LPS-184404'] ? false : 'xl'}
+			size={false}
 		>
 			<ZoomAlert />
 
 			<ul className="navbar-nav start" onClick={deselectItem}>
-				{config.toolbarPlugins.map(
-					({loadingPlaceholder, pluginEntryPoint}) => {
-						return (
-							<li className="nav-item" key={pluginEntryPoint}>
-								<ErrorBoundary>
-									<Suspense
-										fallback={
-											<UnsafeHTML
-												hideFromAccessibilityTree={
-													false
-												}
-												markup={loadingPlaceholder}
-											/>
-										}
-									>
-										<ToolbarSection
-											getInstance={getInstance}
-											pluginId={pluginEntryPoint}
-										/>
-									</Suspense>
-								</ErrorBoundary>
-							</li>
-						);
-					}
+				{config.isCMS && backURL ? (
+					<li className="nav-item">
+						<ClayLink
+							aria-label={Liferay.Language.get('back')}
+							borderless
+							displayType="secondary"
+							href={backURL}
+							monospaced
+							outline
+							small
+						>
+							<ClayIcon symbol="angle-left" />
+						</ClayLink>
+					</li>
+				) : null}
+
+				{isCMSFreeTier && (
+					<FeatureIndicator interactive type="enterprise" />
 				)}
+
+				<li className="nav-item">
+					<ExperienceToolbarSection />
+				</li>
 
 				<li className="nav-item">
 					<Translation
@@ -262,8 +180,12 @@ function ToolbarBody({className}) {
 					)}
 			</ul>
 
-			<ul className="middle navbar-nav" onClick={deselectItem}>
-				<li className="nav-item">
+			<ul
+				className="middle navbar-nav"
+				onClick={deselectItem}
+				role="presentation"
+			>
+				<li className="nav-item" role="presentation">
 					<ViewportSizeSelector
 						onSizeSelected={(size) => {
 							if (size !== selectedViewportSize) {
@@ -280,15 +202,15 @@ function ToolbarBody({className}) {
 					<NetworkStatusBar {...network} />
 				</li>
 
-				<li className="nav-item">
-					<Undo onRedo={onRedo} onUndo={onUndo} />
+				<li className="d-lg-flex d-none nav-item">
+					<Undo />
 				</li>
 
 				<li className="nav-item">
 					<EditModeSelector />
 				</li>
 
-				<li className="nav-item">
+				<li className="d-lg-flex d-none nav-item">
 					<ul className="navbar-nav">
 						<li className="nav-item">
 							<HideSidebarButton />
@@ -296,58 +218,68 @@ function ToolbarBody({className}) {
 					</ul>
 				</li>
 
-				<li className="nav-item">
-					<form action={config.discardDraftURL} method="POST">
-						<ClayButton
-							disabled={!enableDiscard}
-							displayType="secondary"
-							onClick={handleDiscardDraft}
-							size="sm"
-							type="submit"
-						>
-							{draftButtonLabel}
-						</ClayButton>
+				<li className="d-lg-flex d-none nav-item">
+					<form
+						action={config.discardDraftURL}
+						method="POST"
+						ref={discardDraftFormRef}
+					>
+						<DiscardDraftButton />
 					</form>
+				</li>
+
+				<li className="d-lg-none nav-item">
+					<ToolbarActionsDropdown
+						discardDraftFormRef={discardDraftFormRef}
+					/>
 				</li>
 
 				<li className="nav-item">
 					<PublishButton
+						ariaLabel={ariaLabel}
 						canPublish={canPublish}
+						disabled={isCMSFreeTier}
 						formRef={formRef}
+						icon={icon}
 						label={publishButtonLabel}
 						onPublish={onPublish}
 					/>
 				</li>
+
+				{config.isCMS ? (
+					<li className="nav-item">
+						<ClayDropDownWithItems
+							hasLeftSymbols
+							items={[
+								{
+									label: Liferay.Language.get(
+										'autogenerate-default-experience'
+									),
+									onClick: regenerateDisplayPage,
+									symbolLeft: 'order-form-pencil',
+								},
+							]}
+							trigger={
+								<ClayButtonWithIcon
+									aria-label={Liferay.Language.get('actions')}
+									borderless
+									displayType="secondary"
+									monospaced
+									size="sm"
+									symbol="ellipsis-v"
+									title={Liferay.Language.get('actions')}
+								/>
+							}
+						/>
+					</li>
+				) : null}
+
+				<li className="d-md-none nav-item">
+					<ToggleConfigurationSidebarButton />
+				</li>
 			</ul>
 		</ClayLayout.ContainerFluid>
 	);
-}
-
-class ErrorBoundary extends React.Component {
-	static getDerivedStateFromError(_error) {
-		return {hasError: true};
-	}
-
-	constructor(props) {
-		super(props);
-
-		this.state = {hasError: false};
-	}
-
-	componentDidCatch(error) {
-		if (process.env.NODE_ENV === 'development') {
-			console.error(error);
-		}
-	}
-
-	render() {
-		if (this.state.hasError) {
-			return null;
-		}
-		else {
-			return this.props.children;
-		}
-	}
 }
 
 export default function Toolbar() {
@@ -367,5 +299,23 @@ export default function Toolbar() {
 		<ReactPortal container={container} wrapper={false}>
 			<ToolbarBody />
 		</ReactPortal>
+	);
+}
+
+function regenerateDisplayPage() {
+	fetch(config.regenerateDisplayPageURL, {method: 'POST'}).then(
+		(response) => {
+			if (response.ok) {
+				window.location.reload();
+			}
+			else {
+				openToast({
+					message: Liferay.Language.get(
+						'an-unexpected-error-occurred-while-autogenerating-default-experience'
+					),
+					type: 'danger',
+				});
+			}
+		}
 	);
 }

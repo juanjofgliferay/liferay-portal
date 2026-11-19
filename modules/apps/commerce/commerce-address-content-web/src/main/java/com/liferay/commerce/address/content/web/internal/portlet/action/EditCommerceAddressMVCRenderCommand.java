@@ -6,25 +6,25 @@
 package com.liferay.commerce.address.content.web.internal.portlet.action;
 
 import com.liferay.commerce.address.content.web.internal.display.context.CommerceAddressDisplayContext;
-import com.liferay.commerce.address.content.web.internal.portlet.action.helper.ActionHelper;
 import com.liferay.commerce.constants.CommercePortletKeys;
 import com.liferay.commerce.constants.CommerceWebKeys;
 import com.liferay.commerce.exception.NoSuchAddressException;
+import com.liferay.commerce.helper.CommerceAccountHelper;
 import com.liferay.commerce.model.CommerceAddress;
 import com.liferay.commerce.service.CommerceAddressService;
-import com.liferay.commerce.util.CommerceAccountHelper;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCRenderCommand;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.service.CountryService;
+import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.RegionService;
 import com.liferay.portal.kernel.servlet.SessionErrors;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import javax.portlet.PortletException;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -34,7 +34,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + CommercePortletKeys.COMMERCE_ADDRESS_CONTENT,
+		"jakarta.portlet.name=" + CommercePortletKeys.COMMERCE_ADDRESS_CONTENT,
 		"mvc.command.name=/commerce_address_content/edit_commerce_address"
 	},
 	service = MVCRenderCommand.class
@@ -49,8 +49,8 @@ public class EditCommerceAddressMVCRenderCommand implements MVCRenderCommand {
 		try {
 			CommerceAddressDisplayContext commerceAddressDisplayContext =
 				new CommerceAddressDisplayContext(
-					_actionHelper, _commerceAccountHelper,
-					_commerceAddressService, _countryService,
+					_commerceAccountHelper, _commerceAddressService,
+					_countryService, _groupLocalService,
 					_portal.getHttpServletRequest(renderRequest),
 					_regionService);
 
@@ -78,15 +78,12 @@ public class EditCommerceAddressMVCRenderCommand implements MVCRenderCommand {
 			RenderRequest renderRequest)
 		throws PortalException {
 
-		CommerceAddress commerceAddress = _actionHelper.getCommerceAddress(
-			renderRequest);
+		CommerceAddress commerceAddress = ActionUtil.getCommerceAddress(
+			_commerceAddressService, renderRequest);
 
 		renderRequest.setAttribute(
 			CommerceWebKeys.COMMERCE_ADDRESS, commerceAddress);
 	}
-
-	@Reference
-	private ActionHelper _actionHelper;
 
 	@Reference
 	private CommerceAccountHelper _commerceAccountHelper;
@@ -96,6 +93,9 @@ public class EditCommerceAddressMVCRenderCommand implements MVCRenderCommand {
 
 	@Reference
 	private CountryService _countryService;
+
+	@Reference
+	private GroupLocalService _groupLocalService;
 
 	@Reference
 	private Portal _portal;

@@ -12,7 +12,7 @@ import com.liferay.asset.kernel.model.BaseAssetRendererFactory;
 import com.liferay.asset.kernel.model.ClassTypeReader;
 import com.liferay.document.library.asset.model.DLFileEntryClassTypeReader;
 import com.liferay.document.library.constants.DLPortletKeys;
-import com.liferay.document.library.kernel.exception.NoSuchFileEntryException;
+import com.liferay.document.library.helper.DLURLHelper;
 import com.liferay.document.library.kernel.model.DLFileEntry;
 import com.liferay.document.library.kernel.model.DLFileEntryType;
 import com.liferay.document.library.kernel.model.DLFileEntryTypeConstants;
@@ -20,7 +20,6 @@ import com.liferay.document.library.kernel.model.DLFolderConstants;
 import com.liferay.document.library.kernel.service.DLAppLocalService;
 import com.liferay.document.library.kernel.service.DLFileEntryLocalService;
 import com.liferay.document.library.kernel.service.DLFileEntryTypeLocalService;
-import com.liferay.document.library.util.DLURLHelper;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
@@ -41,12 +40,12 @@ import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portlet.documentlibrary.constants.DLConstants;
 import com.liferay.trash.TrashHelper;
 
-import java.util.Locale;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.WindowState;
+import jakarta.portlet.WindowStateException;
 
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
-import javax.portlet.WindowState;
-import javax.portlet.WindowStateException;
+import java.util.Locale;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -58,7 +57,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Sergio González
  */
 @Component(
-	property = "javax.portlet.name=" + DLPortletKeys.DOCUMENT_LIBRARY,
+	property = "jakarta.portlet.name=" + DLPortletKeys.DOCUMENT_LIBRARY,
 	service = AssetRendererFactory.class
 )
 public class DLFileEntryAssetRendererFactory
@@ -77,34 +76,26 @@ public class DLFileEntryAssetRendererFactory
 	public AssetRenderer<FileEntry> getAssetRenderer(long classPK, int type)
 		throws PortalException {
 
-		FileEntry fileEntry = null;
+		FileEntry fileEntry = _dlAppLocalService.fetchFileEntry(classPK);
 		FileVersion fileVersion = null;
 
-		try {
-			fileEntry = _dlAppLocalService.getFileEntry(classPK);
-
-			if (type == TYPE_LATEST) {
-				fileVersion = fileEntry.getLatestFileVersion();
-			}
-			else if (type == TYPE_LATEST_APPROVED) {
-				fileVersion = fileEntry.getFileVersion();
-			}
-			else {
-				throw new IllegalArgumentException(
-					"Unknown asset renderer type " + type);
-			}
-		}
-		catch (NoSuchFileEntryException noSuchFileEntryException) {
+		if (fileEntry == null) {
 
 			// LPS-52675
-
-			if (_log.isDebugEnabled()) {
-				_log.debug(noSuchFileEntryException);
-			}
 
 			fileVersion = _dlAppLocalService.getFileVersion(classPK);
 
 			fileEntry = fileVersion.getFileEntry();
+		}
+		else if (type == TYPE_LATEST) {
+			fileVersion = fileEntry.getLatestFileVersion();
+		}
+		else if (type == TYPE_LATEST_APPROVED) {
+			fileVersion = fileEntry.getFileVersion();
+		}
+		else {
+			throw new IllegalArgumentException(
+				"Unknown asset renderer type " + type);
 		}
 
 		DLFileEntryAssetRenderer dlFileEntryAssetRenderer =

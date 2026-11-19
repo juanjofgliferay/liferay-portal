@@ -7,7 +7,7 @@
 
 <%@ include file="/dynamic_include/init.jsp" %>
 
-<script>
+<aui:script position="inline">
 	(function () {
 		function loadZendeskScript() {
 			function setZendeskUserInfo() {
@@ -16,7 +16,7 @@
 					<%
 					ClickToChatConfiguration clickToChatConfiguration = ClickToChatConfigurationUtil.getClickToChatConfiguration(themeDisplay.getCompanyId(), themeDisplay.getSiteGroupId());
 
-					String chatProviderSecretKey = clickToChatConfiguration.chatProviderSecretKey();
+					String chatProviderSecretKey = GetterUtil.getString(request.getAttribute(ClickToChatWebKeys.CLICK_TO_CHAT_CHAT_PROVIDER_SECRET_KEY));
 
 					String jwtToken = Jwts.builder(
 					).setHeaderParam(
@@ -30,7 +30,7 @@
 					).claim(
 						"external_id", String.valueOf(user.getUserId())
 					).claim(
-						"name", user.getScreenName()
+						"name", user.getFullName()
 					).claim(
 						"scope", "user"
 					).signWith(
@@ -75,4 +75,4 @@
 			loadZendeskScript();
 		}
 	})();
-</script>
+</aui:script>

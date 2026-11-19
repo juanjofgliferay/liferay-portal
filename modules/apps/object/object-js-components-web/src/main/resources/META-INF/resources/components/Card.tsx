@@ -69,7 +69,8 @@ export function Card({
 					) : (
 						<div
 							className={classNames('lfr-objects__card-header', {
-								'lfr-objects__card-header--no-border': noHeaderBorder,
+								'lfr-objects__card-header--no-border':
+									noHeaderBorder,
 							})}
 						>
 							{customHeader ? (
@@ -80,7 +81,8 @@ export function Card({
 										className={classNames(
 											'lfr-objects__card-title',
 											{
-												'lfr-objects__card-title--disabled': disabled,
+												'lfr-objects__card-title--disabled':
+													disabled,
 											}
 										)}
 									>
@@ -106,6 +108,7 @@ export function Card({
 
 					{alert?.showAlert && (
 						<ClayAlert
+							className="lfr-objects__card-info-alert"
 							displayType={alert.otherProps.displayType}
 							onClose={() => alert.setShowAlert(false)}
 							title={alert.otherProps.title}

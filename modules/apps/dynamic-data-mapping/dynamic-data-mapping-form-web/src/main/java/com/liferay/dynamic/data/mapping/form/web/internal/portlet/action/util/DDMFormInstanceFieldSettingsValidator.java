@@ -36,6 +36,8 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.StringUtil;
 
+import jakarta.portlet.PortletRequest;
+
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -44,16 +46,21 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 
-import javax.portlet.PortletRequest;
-
-import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.Reference;
-
 /**
  * @author Rafael Praxedes
  */
-@Component(service = DDMFormInstanceFieldSettingsValidator.class)
 public class DDMFormInstanceFieldSettingsValidator {
+
+	public DDMFormInstanceFieldSettingsValidator(
+		DDMFormEvaluator ddmFormEvaluator,
+		DDMFormFieldTypeServicesRegistry ddmFormFieldTypeServicesRegistry,
+		JSONFactory jsonFactory, Portal portal) {
+
+		_ddmFormEvaluator = ddmFormEvaluator;
+		_ddmFormFieldTypeServicesRegistry = ddmFormFieldTypeServicesRegistry;
+		_jsonFactory = jsonFactory;
+		_portal = portal;
+	}
 
 	public void validate(PortletRequest portletRequest, DDMForm ddmForm)
 		throws PortalException {
@@ -85,15 +92,13 @@ public class DDMFormInstanceFieldSettingsValidator {
 
 				@Override
 				public void accept(JSONObject jsonObject) {
-					DDMFormFieldValue ddmFormFieldValue =
-						new DDMFormFieldValue();
+					DDMFormFieldValue ddmFormFieldValue = new DDMFormFieldValue(
+						jsonObject.getString("instanceId"));
 
 					ddmFormFieldValue.setDDMFormValues(
 						fieldSettingsDDMFormValues);
 					ddmFormFieldValue.setFieldReference(
 						jsonObject.getString("fieldReference"));
-					ddmFormFieldValue.setInstanceId(
-						jsonObject.getString("instanceId"));
 					ddmFormFieldValue.setName(
 						jsonObject.getString("fieldName"));
 					ddmFormFieldValue.setValue(getValue(jsonObject));
@@ -264,15 +269,17 @@ public class DDMFormInstanceFieldSettingsValidator {
 		for (Map.Entry<DDMFormEvaluatorFieldContextKey, Map<String, Object>>
 				entry : ddmFormFieldsPropertyChanges.entrySet()) {
 
-			if (!MapUtil.getBoolean(entry.getValue(), "valid", true)) {
-				DDMFormEvaluatorFieldContextKey ddmFormFieldContextKey =
-					entry.getKey();
-
-				DDMFormField propertyFormField = ddmFormFieldsMap.get(
-					ddmFormFieldContextKey.getName());
-
-				ddmFormFields.add(_getFieldLabel(propertyFormField, locale));
+			if (MapUtil.getBoolean(entry.getValue(), "valid", true)) {
+				continue;
 			}
+
+			DDMFormEvaluatorFieldContextKey ddmFormFieldContextKey =
+				entry.getKey();
+
+			DDMFormField propertyFormField = ddmFormFieldsMap.get(
+				ddmFormFieldContextKey.getName());
+
+			ddmFormFields.add(_getFieldLabel(propertyFormField, locale));
 		}
 
 		return ddmFormFields;
@@ -281,17 +288,11 @@ public class DDMFormInstanceFieldSettingsValidator {
 	private static final Log _log = LogFactoryUtil.getLog(
 		DDMFormInstanceFieldSettingsValidator.class);
 
-	@Reference
-	private DDMFormEvaluator _ddmFormEvaluator;
-
-	@Reference
-	private DDMFormFieldTypeServicesRegistry _ddmFormFieldTypeServicesRegistry;
-
-	@Reference
-	private JSONFactory _jsonFactory;
-
-	@Reference
-	private Portal _portal;
+	private final DDMFormEvaluator _ddmFormEvaluator;
+	private final DDMFormFieldTypeServicesRegistry
+		_ddmFormFieldTypeServicesRegistry;
+	private final JSONFactory _jsonFactory;
+	private final Portal _portal;
 
 	private class FieldJSONObjectConsumer implements Consumer<JSONObject> {
 

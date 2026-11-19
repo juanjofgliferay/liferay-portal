@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * @author Michael Hashimoto
@@ -23,16 +23,16 @@ public abstract class BaseTopLevelBuildData
 
 	@Override
 	public void addDownstreamBuildData(BuildData buildData) {
-		String downstreamRunIDs = optString("downstream_run_ids");
+		String downstreamRunIds = optString("downstream_run_ids");
 
-		if (downstreamRunIDs == null) {
-			downstreamRunIDs = buildData.getRunID();
+		if (downstreamRunIds == null) {
+			downstreamRunIds = buildData.getRunId();
 		}
 		else {
-			downstreamRunIDs += "," + buildData.getRunID();
+			downstreamRunIds += "," + buildData.getRunId();
 		}
 
-		put("downstream_run_ids", downstreamRunIDs);
+		put("downstream_run_ids", downstreamRunIds);
 	}
 
 	@Override
@@ -55,23 +55,28 @@ public abstract class BaseTopLevelBuildData
 	public List<BuildData> getDownstreamBuildDataList() {
 		List<BuildData> downstreamBuildDataList = new ArrayList<>();
 
-		String downstreamRunIDs = optString("downstream_run_ids");
+		String downstreamRunIds = optString("downstream_run_ids");
 
-		if (downstreamRunIDs == null) {
+		if (downstreamRunIds == null) {
 			return downstreamBuildDataList;
 		}
 
-		for (String downstreamRunID : downstreamRunIDs.split(",")) {
-			if ((downstreamRunID == null) || downstreamRunID.isEmpty()) {
+		for (String downstreamRunId : downstreamRunIds.split(",")) {
+			if ((downstreamRunId == null) || downstreamRunId.isEmpty()) {
 				continue;
 			}
 
 			downstreamBuildDataList.add(
 				BuildDataFactory.newBatchBuildData(
-					downstreamRunID, getJobName() + "-batch", null));
+					downstreamRunId, getJobName() + "-batch", null));
 		}
 
 		return downstreamBuildDataList;
+	}
+
+	@Override
+	public String getS3BucketDistPath() {
+		return optString("s3_bucket_dist_path");
 	}
 
 	@Override
@@ -100,8 +105,8 @@ public abstract class BaseTopLevelBuildData
 	}
 
 	@Override
-	public String getTopLevelRunID() {
-		return getRunID();
+	public String getTopLevelRunId() {
+		return getRunId();
 	}
 
 	@Override
@@ -114,27 +119,30 @@ public abstract class BaseTopLevelBuildData
 	}
 
 	protected BaseTopLevelBuildData(
-		String runID, String jobName, String buildURL) {
+		String runId, String jobName, String buildURL) {
 
-		super(_getDefaultRunID(runID), jobName, buildURL);
+		super(_getDefaultRunId(runId), jobName, buildURL);
 
 		put("dist_nodes", _getDistNodes());
 		put("dist_path", _getDistPath());
-		put("top_level_run_id", getRunID());
+		put("s3_bucket_dist_path", _getS3BucketDistPath());
+		put("top_level_run_id", getRunId());
 
 		validateKeys(_KEYS_REQUIRED);
 	}
 
-	private static String _getDefaultRunID(String runID) {
-		if (runID != null) {
-			return runID;
+	private static String _getDefaultRunId(String runId) {
+		if (runId != null) {
+			return runId;
 		}
 
 		return "top_level_" + JenkinsResultsParserUtil.getDistinctTimeStamp();
 	}
 
 	private String _getDistNodes() {
-		if (!JenkinsResultsParserUtil.isCINode()) {
+		if (!JenkinsResultsParserUtil.isCINode() ||
+			JenkinsResultsParserUtil.isCloudCINode()) {
+
 			return "";
 		}
 
@@ -148,25 +156,58 @@ public abstract class BaseTopLevelBuildData
 			throw new RuntimeException(ioException);
 		}
 
-		String cohortName = getCohortName();
-
 		List<JenkinsMaster> jenkinsMasters =
 			JenkinsResultsParserUtil.getJenkinsMasters(
 				buildProperties, JenkinsMaster.getSlaveRAMMinimumDefault(),
-				JenkinsMaster.getSlavesPerHostDefault(), cohortName);
+				JenkinsMaster.getSlavesPerHostDefault(), getCohortName());
 
-		List<String> distNodes = JenkinsResultsParserUtil.getRandomList(
-			JenkinsResultsParserUtil.getSlaves(
-				buildProperties, cohortName + "-[1-9]{1}[0-9]?"),
-			jenkinsMasters.size());
+		List<String> distNodes = new ArrayList<>(jenkinsMasters.size());
+
+		for (JenkinsMaster jenkinsMaster : jenkinsMasters) {
+			int retries = 0;
+
+			while (true) {
+				if (retries > jenkinsMaster.getOnlineJenkinsSlavesCount()) {
+					break;
+				}
+
+				JenkinsSlave randomJenkinsSlave =
+					jenkinsMaster.getRandomJenkinsSlave();
+
+				if ((randomJenkinsSlave != null) &&
+					!randomJenkinsSlave.isOffline() &&
+					randomJenkinsSlave.isReachable()) {
+
+					distNodes.add(randomJenkinsSlave.getName());
+
+					break;
+				}
+
+				retries++;
+			}
+		}
 
 		return StringUtils.join(distNodes, ",");
 	}
 
 	private String _getDistPath() {
 		return JenkinsResultsParserUtil.combine(
-			BuildData.FILE_PATH_DIST_ROOT, "/", getMasterHostname(), "/",
-			getJobName(), "/", String.valueOf(getBuildNumber()), "/dist");
+			JenkinsResultsParserUtil.getJenkinsDistRootPath(), "/",
+			getMasterHostname(), "/", getJobName(), "/",
+			String.valueOf(getBuildNumber()), "/dist");
+	}
+
+	private String _getS3BucketDistPath() {
+		try {
+			return JenkinsResultsParserUtil.combine(
+				JenkinsResultsParserUtil.getBuildProperty(
+					"cloud.ci.s3.bucket.dist.path"),
+				"/", getMasterHostname(), "/", getJobName(), "/",
+				String.valueOf(getBuildNumber()), "/dist");
+		}
+		catch (IOException ioException) {
+			throw new RuntimeException(ioException);
+		}
 	}
 
 	private static final String[] _KEYS_REQUIRED = {

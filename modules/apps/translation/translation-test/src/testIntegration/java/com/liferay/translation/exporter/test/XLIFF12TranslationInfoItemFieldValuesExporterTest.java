@@ -11,6 +11,9 @@ import com.liferay.dynamic.data.mapping.io.DDMFormDeserializerDeserializeRequest
 import com.liferay.dynamic.data.mapping.io.DDMFormDeserializerDeserializeResponse;
 import com.liferay.dynamic.data.mapping.model.DDMStructure;
 import com.liferay.dynamic.data.mapping.test.util.DDMStructureTestUtil;
+import com.liferay.info.field.InfoFieldValue;
+import com.liferay.info.item.InfoItemFieldValues;
+import com.liferay.info.item.InfoItemReference;
 import com.liferay.info.item.InfoItemServiceRegistry;
 import com.liferay.info.item.provider.InfoItemFieldValuesProvider;
 import com.liferay.journal.model.JournalArticle;
@@ -24,6 +27,7 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.translation.exporter.TranslationInfoItemFieldValuesExporter;
+import com.liferay.translation.importer.TranslationInfoItemFieldValuesImporter;
 import com.liferay.translation.test.util.TranslationTestUtil;
 
 import org.junit.Assert;
@@ -50,6 +54,148 @@ public class XLIFF12TranslationInfoItemFieldValuesExporterTest {
 	}
 
 	@Test
+	public void testExportProtectsHTMLFieldWithInlineCodes() throws Exception {
+		TranslationTestUtil.withHTMLInlineCodeProtectionEnabled(
+			() -> {
+				InfoItemFieldValuesProvider<JournalArticle>
+					infoItemFieldValuesProvider =
+						(InfoItemFieldValuesProvider<JournalArticle>)
+							_infoItemServiceRegistry.getFirstInfoItemService(
+								InfoItemFieldValuesProvider.class,
+								JournalArticle.class.getName());
+
+				JournalArticle journalArticle =
+					TranslationTestUtil.getJournalArticleWithRichHTML(
+						_group, _ddmFormDeserializer);
+
+				String xliff = StreamUtil.toString(
+					_xliffTranslationInfoItemFieldValuesExporter.
+						exportInfoItemFieldValues(
+							infoItemFieldValuesProvider.getInfoItemFieldValues(
+								journalArticle),
+							LocaleUtil.getDefault(),
+							LocaleUtil.fromLanguageId("es_ES")));
+
+				Assert.assertEquals(
+					TranslationTestUtil.toFormattedString(
+						StringUtil.replace(
+							TranslationTestUtil.readFileToString(
+								"test-journal-article-rich-html-v12.xlf"),
+							"[$JOURNAL_ARTICLE_ID$]",
+							String.valueOf(
+								journalArticle.getResourcePrimKey()))),
+					TranslationTestUtil.toFormattedString(xliff));
+				Assert.assertTrue(
+					xliff,
+					xliff.contains(
+						"<ept id=\"2\">&lt;/b&gt;</ept> <ph " +
+							"id=\"3\">&amp;amp;</ph> more"));
+			});
+	}
+
+	@Test
+	public void testExportProtectsRepeatableHTMLFieldWithInlineCodes()
+		throws Exception {
+
+		TranslationTestUtil.withHTMLInlineCodeProtectionEnabled(
+			() -> {
+				InfoItemFieldValuesProvider<JournalArticle>
+					infoItemFieldValuesProvider =
+						(InfoItemFieldValuesProvider<JournalArticle>)
+							_infoItemServiceRegistry.getFirstInfoItemService(
+								InfoItemFieldValuesProvider.class,
+								JournalArticle.class.getName());
+
+				JournalArticle journalArticle =
+					_getJournalArticleWithRepeatableHTMLField();
+
+				String xliff = StreamUtil.toString(
+					_xliffTranslationInfoItemFieldValuesExporter.
+						exportInfoItemFieldValues(
+							infoItemFieldValuesProvider.getInfoItemFieldValues(
+								journalArticle),
+							LocaleUtil.getDefault(),
+							LocaleUtil.fromLanguageId("es_ES")));
+
+				Assert.assertEquals(
+					TranslationTestUtil.toFormattedString(
+						StringUtil.replace(
+							TranslationTestUtil.readFileToString(
+								"test-journal-article-repeatable-html-inline-" +
+									"codes-v12.xlf"),
+							"[$JOURNAL_ARTICLE_ID$]",
+							String.valueOf(
+								journalArticle.getResourcePrimKey()))),
+					TranslationTestUtil.toFormattedString(xliff));
+				Assert.assertTrue(
+					xliff,
+					xliff.contains(
+						" one</mrk><mrk mid=\"1\" mtype=\"seg\">beta <bpt " +
+							"id=\"2\">"));
+			});
+	}
+
+	@Test
+	public void testExportReturnsCDATAForRichHTMLField() throws Exception {
+		InfoItemFieldValuesProvider<JournalArticle>
+			infoItemFieldValuesProvider =
+				(InfoItemFieldValuesProvider<JournalArticle>)
+					_infoItemServiceRegistry.getFirstInfoItemService(
+						InfoItemFieldValuesProvider.class,
+						JournalArticle.class.getName());
+
+		JournalArticle journalArticle =
+			TranslationTestUtil.getJournalArticleWithRichHTML(
+				_group, _ddmFormDeserializer);
+
+		Assert.assertEquals(
+			TranslationTestUtil.toFormattedString(
+				StringUtil.replace(
+					TranslationTestUtil.readFileToString(
+						"test-journal-article-rich-html-cdata-v12.xlf"),
+					"[$JOURNAL_ARTICLE_ID$]",
+					String.valueOf(journalArticle.getResourcePrimKey()))),
+			TranslationTestUtil.toFormattedString(
+				StreamUtil.toString(
+					_xliffTranslationInfoItemFieldValuesExporter.
+						exportInfoItemFieldValues(
+							infoItemFieldValuesProvider.getInfoItemFieldValues(
+								journalArticle),
+							LocaleUtil.getDefault(),
+							LocaleUtil.fromLanguageId("es_ES")))));
+	}
+
+	@Test
+	public void testExportReturnsEmptyTargetForUntranslatedField()
+		throws Exception {
+
+		InfoItemFieldValuesProvider<JournalArticle>
+			infoItemFieldValuesProvider =
+				(InfoItemFieldValuesProvider<JournalArticle>)
+					_infoItemServiceRegistry.getFirstInfoItemService(
+						InfoItemFieldValuesProvider.class,
+						JournalArticle.class.getName());
+
+		String xliff = StreamUtil.toString(
+			_xliffTranslationInfoItemFieldValuesExporter.
+				exportInfoItemFieldValues(
+					infoItemFieldValuesProvider.getInfoItemFieldValues(
+						TranslationTestUtil.getJournalArticle(
+							_group, _ddmFormDeserializer)),
+					LocaleUtil.getDefault(),
+					LocaleUtil.fromLanguageId("es_ES")));
+
+		Assert.assertTrue(
+			xliff, xliff.contains("<![CDATA[Test Article]]></source>"));
+		Assert.assertFalse(
+			xliff, xliff.contains("<![CDATA[Test Article]]></target>"));
+		Assert.assertTrue(
+			xliff, xliff.contains("<target xml:lang=\"es-ES\"></target>"));
+		Assert.assertTrue(
+			xliff, xliff.contains("<![CDATA[Un poco de texto]]></target>"));
+	}
+
+	@Test
 	public void testExportReturnsTheXLIFFRepresentationOfAJournalArticle()
 		throws Exception {
 
@@ -60,27 +206,75 @@ public class XLIFF12TranslationInfoItemFieldValuesExporterTest {
 						InfoItemFieldValuesProvider.class,
 						JournalArticle.class.getName());
 
-		JournalArticle journalArticle = _getJournalArticle();
+		JournalArticle journalArticle = TranslationTestUtil.getJournalArticle(
+			_group, _ddmFormDeserializer);
 
 		Assert.assertEquals(
-			StringUtil.replace(
-				TranslationTestUtil.readFileToString(
-					"test-journal-article-v12.xlf"),
-				"[$JOURNAL_ARTICLE_ID$]",
-				String.valueOf(journalArticle.getResourcePrimKey())),
-			StreamUtil.toString(
-				_xliffTranslationInfoItemFieldValuesExporter.
-					exportInfoItemFieldValues(
-						infoItemFieldValuesProvider.getInfoItemFieldValues(
-							journalArticle),
-						LocaleUtil.getDefault(),
-						LocaleUtil.fromLanguageId("es_ES"))));
+			TranslationTestUtil.toFormattedString(
+				StringUtil.replace(
+					TranslationTestUtil.readFileToString(
+						"test-journal-article-v12.xlf"),
+					"[$JOURNAL_ARTICLE_ID$]",
+					String.valueOf(journalArticle.getResourcePrimKey()))),
+			TranslationTestUtil.toFormattedString(
+				StreamUtil.toString(
+					_xliffTranslationInfoItemFieldValuesExporter.
+						exportInfoItemFieldValues(
+							infoItemFieldValuesProvider.getInfoItemFieldValues(
+								journalArticle),
+							LocaleUtil.getDefault(),
+							LocaleUtil.fromLanguageId("es_ES")))));
 	}
 
-	private JournalArticle _getJournalArticle() throws Exception {
+	@Test
+	public void testExportedInlineCodesSurviveImportRoundTrip()
+		throws Exception {
+
+		TranslationTestUtil.withHTMLInlineCodeProtectionEnabled(
+			() -> {
+				InfoItemFieldValuesProvider<JournalArticle>
+					infoItemFieldValuesProvider =
+						(InfoItemFieldValuesProvider<JournalArticle>)
+							_infoItemServiceRegistry.getFirstInfoItemService(
+								InfoItemFieldValuesProvider.class,
+								JournalArticle.class.getName());
+
+				JournalArticle journalArticle =
+					TranslationTestUtil.getJournalArticleWithRichHTML(
+						_group, _ddmFormDeserializer);
+
+				InfoItemFieldValues infoItemFieldValues =
+					_xliffTranslationInfoItemFieldValuesImporter.
+						importInfoItemFieldValues(
+							_group.getGroupId(),
+							new InfoItemReference(
+								JournalArticle.class.getName(),
+								journalArticle.getResourcePrimKey()),
+							_xliffTranslationInfoItemFieldValuesExporter.
+								exportInfoItemFieldValues(
+									infoItemFieldValuesProvider.
+										getInfoItemFieldValues(journalArticle),
+									LocaleUtil.getDefault(),
+									LocaleUtil.fromLanguageId("es_ES")));
+
+				InfoFieldValue<Object> infoFieldValue =
+					infoItemFieldValues.getInfoFieldValue("HTML4acl");
+
+				Assert.assertEquals(
+					"<p class=\"intro\">Hola <b>mundo</b> &amp; mas</p><br/>" +
+						"<img src=\"/images/logo.png\"><script>console.log(" +
+							"\"protect\");</script><em>sin cerrar",
+					infoFieldValue.getValue(LocaleUtil.SPAIN));
+			});
+	}
+
+	private JournalArticle _getJournalArticleWithRepeatableHTMLField()
+		throws Exception {
+
 		DDMFormDeserializerDeserializeRequest.Builder builder =
 			DDMFormDeserializerDeserializeRequest.Builder.newBuilder(
-				TranslationTestUtil.readFileToString("test-ddm-form.json"));
+				TranslationTestUtil.readFileToString(
+					"test-ddm-form-repeatable-html.json"));
 
 		DDMFormDeserializerDeserializeResponse
 			ddmFormDeserializerDeserializeResponse =
@@ -92,7 +286,8 @@ public class XLIFF12TranslationInfoItemFieldValuesExporterTest {
 
 		return JournalTestUtil.addArticleWithXMLContent(
 			_group.getGroupId(),
-			TranslationTestUtil.readFileToString("test-journal-content.xml"),
+			TranslationTestUtil.readFileToString(
+				"test-journal-content-repeatable-html-inline-codes.xml"),
 			ddmStructure.getStructureKey(), null);
 	}
 
@@ -108,5 +303,9 @@ public class XLIFF12TranslationInfoItemFieldValuesExporterTest {
 	@Inject(filter = "content.type=application/x-xliff+xml")
 	private TranslationInfoItemFieldValuesExporter
 		_xliffTranslationInfoItemFieldValuesExporter;
+
+	@Inject(filter = "content.type=application/xliff+xml")
+	private TranslationInfoItemFieldValuesImporter
+		_xliffTranslationInfoItemFieldValuesImporter;
 
 }

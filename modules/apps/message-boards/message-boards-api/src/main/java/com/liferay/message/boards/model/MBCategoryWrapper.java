@@ -39,6 +39,7 @@ public class MBCategoryWrapper
 		attributes.put("mvccVersion", getMvccVersion());
 		attributes.put("ctCollectionId", getCtCollectionId());
 		attributes.put("uuid", getUuid());
+		attributes.put("externalReferenceCode", getExternalReferenceCode());
 		attributes.put("categoryId", getCategoryId());
 		attributes.put("groupId", getGroupId());
 		attributes.put("companyId", getCompanyId());
@@ -78,6 +79,13 @@ public class MBCategoryWrapper
 
 		if (uuid != null) {
 			setUuid(uuid);
+		}
+
+		String externalReferenceCode = (String)attributes.get(
+			"externalReferenceCode");
+
+		if (externalReferenceCode != null) {
+			setExternalReferenceCode(externalReferenceCode);
 		}
 
 		Long categoryId = (Long)attributes.get("categoryId");
@@ -280,6 +288,16 @@ public class MBCategoryWrapper
 	@Override
 	public String getDisplayStyle() {
 		return model.getDisplayStyle();
+	}
+
+	/**
+	 * Returns the external reference code of this message boards category.
+	 *
+	 * @return the external reference code of this message boards category
+	 */
+	@Override
+	public String getExternalReferenceCode() {
+		return model.getExternalReferenceCode();
 	}
 
 	/**
@@ -660,6 +678,16 @@ public class MBCategoryWrapper
 	}
 
 	/**
+	 * Sets the external reference code of this message boards category.
+	 *
+	 * @param externalReferenceCode the external reference code of this message boards category
+	 */
+	@Override
+	public void setExternalReferenceCode(String externalReferenceCode) {
+		model.setExternalReferenceCode(externalReferenceCode);
+	}
+
+	/**
 	 * Sets the friendly url of this message boards category.
 	 *
 	 * @param friendlyURL the friendly url of this message boards category
@@ -869,3 +897,4 @@ public class MBCategoryWrapper
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1767957921

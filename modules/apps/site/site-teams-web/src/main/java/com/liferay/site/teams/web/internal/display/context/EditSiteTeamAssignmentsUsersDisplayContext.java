@@ -5,15 +5,21 @@
 
 package com.liferay.site.teams.web.internal.display.context;
 
-import com.liferay.portal.kernel.dao.search.EmptyOnClickRowChecker;
+import com.liferay.petra.function.transform.TransformUtil;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
+import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.model.UserGroup;
 import com.liferay.portal.kernel.portlet.SearchDisplayStyleUtil;
 import com.liferay.portal.kernel.portlet.SearchOrderByUtil;
+import com.liferay.portal.kernel.service.TeamLocalServiceUtil;
+import com.liferay.portal.kernel.service.UserGroupLocalServiceUtil;
 import com.liferay.portal.kernel.service.UserLocalServiceUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.LinkedHashMapBuilder;
 import com.liferay.portal.kernel.util.ParamUtil;
+import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portlet.usersadmin.util.UsersAdminUtil;
@@ -21,13 +27,15 @@ import com.liferay.site.teams.web.internal.constants.SiteTeamsPortletKeys;
 import com.liferay.users.admin.search.UserSearch;
 import com.liferay.users.admin.search.UserSearchTerms;
 
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.LinkedHashMap;
-
-import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
+import java.util.List;
+import java.util.Locale;
 
 /**
  * @author Eudaldo Alonso
@@ -87,6 +95,30 @@ public class EditSiteTeamAssignmentsUsersDisplayContext
 		_keywords = ParamUtil.getString(httpServletRequest, "keywords");
 
 		return _keywords;
+	}
+
+	public String getMembershipLabel(long userId) {
+		ThemeDisplay themeDisplay =
+			(ThemeDisplay)httpServletRequest.getAttribute(
+				WebKeys.THEME_DISPLAY);
+
+		Locale locale = themeDisplay.getLocale();
+
+		return StringUtil.merge(
+			TransformUtil.transform(
+				_getTeamUserGroups(),
+				userGroup -> {
+					if (!UserLocalServiceUtil.hasUserGroupUser(
+							userGroup.getUserGroupId(), userId)) {
+
+						return null;
+					}
+
+					return LanguageUtil.format(
+						locale, "inherited-from-user-group-x",
+						userGroup.getName());
+				}),
+			StringPool.COMMA_AND_SPACE);
 	}
 
 	public String getOrderByCol() {
@@ -151,18 +183,33 @@ public class EditSiteTeamAssignmentsUsersDisplayContext
 				themeDisplay.getCompanyId(), searchTerms.getKeywords(),
 				searchTerms.getStatus(), userParams));
 
-		userSearchContainer.setRowChecker(
-			new EmptyOnClickRowChecker(renderResponse));
+		userSearchContainer.setRowChecker(getRowChecker());
 
 		_userSearchContainer = userSearchContainer;
 
 		return _userSearchContainer;
 	}
 
+	public boolean isInheritedMember(long userId) {
+		return !TeamLocalServiceUtil.hasUserTeam(userId, getTeamId());
+	}
+
+	private List<UserGroup> _getTeamUserGroups() {
+		if (_teamUserGroups != null) {
+			return _teamUserGroups;
+		}
+
+		_teamUserGroups = UserGroupLocalServiceUtil.getTeamUserGroups(
+			getTeamId());
+
+		return _teamUserGroups;
+	}
+
 	private String _displayStyle;
 	private String _keywords;
 	private String _orderByCol;
 	private String _orderByType;
+	private List<UserGroup> _teamUserGroups;
 	private SearchContainer<User> _userSearchContainer;
 
 }

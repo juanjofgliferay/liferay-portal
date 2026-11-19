@@ -88,27 +88,30 @@ const SXPElementList = ({
 			{showList && (
 				<ClayList>
 					{sxpElements.map((sxpElement, index) => {
-						const [
-							title,
-							description,
-						] = getSXPElementTitleAndDescription(
-							sxpElement,
-							locale
-						);
+						const [title, description] =
+							getSXPElementTitleAndDescription(
+								sxpElement,
+								locale
+							);
 
 						return (
 							<ClayList.Item
 								className={getCN('sxp-element-item', {
-									inactive: isElementInactiveFromNonCompanyIndex(
-										isIndexCompany,
-										sxpElement
-									),
+									inactive:
+										isElementInactiveFromNonCompanyIndex(
+											isIndexCompany,
+											sxpElement
+										),
 								})}
 								flex
 								key={index}
 							>
 								<ClayList.ItemField>
-									<ClaySticker size="md">
+									<ClaySticker
+										className="bg-light"
+										displayType="secondary"
+										size="md"
+									>
 										<ClayIcon
 											symbol={
 												sxpElement.elementDefinition
@@ -134,7 +137,7 @@ const SXPElementList = ({
 								</ClayList.ItemField>
 
 								<ClayList.ItemField>
-									<div className="add-sxp-element-button-background" />
+									<div className="add-sxp-element-button-background bg-primary-l3" />
 
 									{isElementInactiveFromNonCompanyIndex(
 										isIndexCompany,
@@ -146,7 +149,7 @@ const SXPElementList = ({
 												className="add-sxp-element-button disabled"
 												data-tooltip-align="left"
 												displayType="secondary"
-												small
+												size="sm"
 												title={Liferay.Language.get(
 													'query-element-inactive-from-index-help'
 												)}
@@ -164,7 +167,7 @@ const SXPElementList = ({
 											onClick={_handleAddSXPElement(
 												sxpElement
 											)}
-											small
+											size="sm"
 										>
 											{Liferay.Language.get('add')}
 										</ClayButton>

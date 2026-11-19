@@ -8,13 +8,11 @@ package com.liferay.fragment.entry.processor.styles;
 import com.liferay.fragment.exception.FragmentEntryContentException;
 import com.liferay.fragment.processor.FragmentEntryValidator;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.language.Language;
+import com.liferay.portal.kernel.util.StringUtil;
 
 import java.util.Locale;
-
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.select.Elements;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -30,32 +28,16 @@ public class StylesFragmentEntryValidator implements FragmentEntryValidator {
 
 	@Override
 	public void validateFragmentEntryHTML(
-			String html, String configuration, Locale locale)
+			String html, JSONObject configurationJSONObject, Locale locale)
 		throws PortalException {
 
-		Document document = _getDocument(html);
-
-		Elements elements = document.select("[data-lfr-styles]");
-
-		if (!elements.isEmpty() && (elements.size() > 1)) {
+		if (StringUtil.count(html, "data-lfr-styles") > 1) {
 			throw new FragmentEntryContentException(
 				_language.get(
 					locale,
 					"the-data-lfr-styles-attribute-can-be-used-only-once-on-" +
 						"the-same-fragment"));
 		}
-	}
-
-	private Document _getDocument(String html) {
-		Document document = Jsoup.parseBodyFragment(html);
-
-		Document.OutputSettings outputSettings = new Document.OutputSettings();
-
-		outputSettings.prettyPrint(false);
-
-		document.outputSettings(outputSettings);
-
-		return document;
 	}
 
 	@Reference

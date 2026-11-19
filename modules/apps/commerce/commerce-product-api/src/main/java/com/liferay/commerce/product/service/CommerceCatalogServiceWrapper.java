@@ -48,19 +48,20 @@ public class CommerceCatalogServiceWrapper
 	}
 
 	@Override
-	public CommerceCatalog fetchByExternalReferenceCode(
-			String externalReferenceCode, long companyId)
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return _commerceCatalogService.fetchByExternalReferenceCode(
-			externalReferenceCode, companyId);
-	}
-
-	@Override
 	public CommerceCatalog fetchCommerceCatalog(long commerceCatalogId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commerceCatalogService.fetchCommerceCatalog(commerceCatalogId);
+	}
+
+	@Override
+	public CommerceCatalog fetchCommerceCatalogByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _commerceCatalogService.
+			fetchCommerceCatalogByExternalReferenceCode(
+				externalReferenceCode, companyId);
 	}
 
 	@Override
@@ -83,6 +84,16 @@ public class CommerceCatalogServiceWrapper
 
 		return _commerceCatalogService.getCommerceCatalogs(
 			companyId, start, end);
+	}
+
+	@Override
+	public CommerceCatalog getOrAddEmptyCommerceCatalog(
+			String externalReferenceCode, String name,
+			String commerceCurrencyCode)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _commerceCatalogService.getOrAddEmptyCommerceCatalog(
+			externalReferenceCode, name, commerceCurrencyCode);
 	}
 
 	/**
@@ -149,3 +160,4 @@ public class CommerceCatalogServiceWrapper
 	private CommerceCatalogService _commerceCatalogService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1134723616

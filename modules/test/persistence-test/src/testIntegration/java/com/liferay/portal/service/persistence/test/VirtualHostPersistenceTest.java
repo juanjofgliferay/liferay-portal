@@ -109,11 +109,7 @@ public class VirtualHostPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		VirtualHost newVirtualHost = _persistence.create(pk);
-
-		newVirtualHost.setMvccVersion(RandomTestUtil.nextLong());
+		VirtualHost newVirtualHost = addVirtualHost();
 
 		newVirtualHost.setCtCollectionId(RandomTestUtil.nextLong());
 
@@ -127,7 +123,9 @@ public class VirtualHostPersistenceTest {
 
 		newVirtualHost.setLanguageId(RandomTestUtil.randomString());
 
-		_virtualHosts.add(_persistence.update(newVirtualHost));
+		newVirtualHost = _persistence.update(newVirtualHost);
+
+		_virtualHosts.add(newVirtualHost);
 
 		VirtualHost existingVirtualHost = _persistence.findByPrimaryKey(
 			newVirtualHost.getPrimaryKey());
@@ -196,15 +194,6 @@ public class VirtualHostPersistenceTest {
 			new String[] {
 				RandomTestUtil.randomString(), "", "null", null, null
 			});
-	}
-
-	@Test
-	public void testCountByC_L_D() throws Exception {
-		_persistence.countByC_L_D(
-			RandomTestUtil.nextLong(), RandomTestUtil.nextLong(),
-			RandomTestUtil.randomBoolean());
-
-		_persistence.countByC_L_D(0L, 0L, RandomTestUtil.randomBoolean());
 	}
 
 	@Test
@@ -502,30 +491,12 @@ public class VirtualHostPersistenceTest {
 			ReflectionTestUtil.invoke(
 				virtualHost, "getColumnOriginalValue",
 				new Class<?>[] {String.class}, "hostname"));
-
-		Assert.assertEquals(
-			Long.valueOf(virtualHost.getCompanyId()),
-			ReflectionTestUtil.<Long>invoke(
-				virtualHost, "getColumnOriginalValue",
-				new Class<?>[] {String.class}, "companyId"));
-		Assert.assertEquals(
-			Long.valueOf(virtualHost.getLayoutSetId()),
-			ReflectionTestUtil.<Long>invoke(
-				virtualHost, "getColumnOriginalValue",
-				new Class<?>[] {String.class}, "layoutSetId"));
-		Assert.assertEquals(
-			Boolean.valueOf(virtualHost.getDefaultVirtualHost()),
-			ReflectionTestUtil.<Boolean>invoke(
-				virtualHost, "getColumnOriginalValue",
-				new Class<?>[] {String.class}, "defaultVirtualHost"));
 	}
 
 	protected VirtualHost addVirtualHost() throws Exception {
 		long pk = RandomTestUtil.nextLong();
 
 		VirtualHost virtualHost = _persistence.create(pk);
-
-		virtualHost.setMvccVersion(RandomTestUtil.nextLong());
 
 		virtualHost.setCtCollectionId(RandomTestUtil.nextLong());
 
@@ -549,3 +520,4 @@ public class VirtualHostPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1304388921

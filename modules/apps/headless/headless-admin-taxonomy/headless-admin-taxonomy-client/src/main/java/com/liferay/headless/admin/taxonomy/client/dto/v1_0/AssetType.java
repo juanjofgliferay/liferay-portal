@@ -8,11 +8,11 @@ package com.liferay.headless.admin.taxonomy.client.dto.v1_0;
 import com.liferay.headless.admin.taxonomy.client.function.UnsafeSupplier;
 import com.liferay.headless.admin.taxonomy.client.serdes.v1_0.AssetTypeSerDes;
 
+import jakarta.annotation.Generated;
+
 import java.io.Serializable;
 
 import java.util.Objects;
-
-import javax.annotation.Generated;
 
 /**
  * @author Javier Gamarra
@@ -86,6 +86,27 @@ public class AssetType implements Cloneable, Serializable {
 
 	protected String type;
 
+	public Long getTypeId() {
+		return typeId;
+	}
+
+	public void setTypeId(Long typeId) {
+		this.typeId = typeId;
+	}
+
+	public void setTypeId(
+		UnsafeSupplier<Long, Exception> typeIdUnsafeSupplier) {
+
+		try {
+			typeId = typeIdUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected Long typeId;
+
 	@Override
 	public AssetType clone() throws CloneNotSupportedException {
 		return (AssetType)super.clone();
@@ -118,3 +139,4 @@ public class AssetType implements Cloneable, Serializable {
 	}
 
 }
+// LIFERAY-REST-BUILDER-HASH:-1767521691

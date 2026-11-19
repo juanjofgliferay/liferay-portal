@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -309,17 +310,6 @@ public class MemberRequestLocalServiceUtil {
 		return getService().getPersistedModel(primaryKeyObj);
 	}
 
-	public static List<MemberRequest> getReceiverMemberRequest(
-		long receiverUserId, int start, int end) {
-
-		return getService().getReceiverMemberRequest(
-			receiverUserId, start, end);
-	}
-
-	public static int getReceiverMemberRequestCount(long receiverUserId) {
-		return getService().getReceiverMemberRequestCount(receiverUserId);
-	}
-
 	public static List<MemberRequest> getReceiverStatusMemberRequest(
 		long receiverUserId, int status, int start, int end) {
 
@@ -372,13 +362,13 @@ public class MemberRequestLocalServiceUtil {
 	}
 
 	public static MemberRequestLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(MemberRequestLocalService service) {
-		_service = service;
-	}
-
-	private static volatile MemberRequestLocalService _service;
+	private static final Snapshot<MemberRequestLocalService> _serviceSnapshot =
+		new Snapshot<>(
+			MemberRequestLocalServiceUtil.class,
+			MemberRequestLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-543090717

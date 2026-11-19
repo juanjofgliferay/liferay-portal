@@ -5,9 +5,9 @@
 
 package com.liferay.source.formatter.check;
 
+import com.liferay.petra.io.unsync.UnsyncBufferedReader;
+import com.liferay.petra.io.unsync.UnsyncStringReader;
 import com.liferay.petra.string.StringBundler;
-import com.liferay.portal.kernel.io.unsync.UnsyncBufferedReader;
-import com.liferay.portal.kernel.io.unsync.UnsyncStringReader;
 import com.liferay.portal.kernel.util.StringUtil;
 
 import java.io.IOException;
@@ -51,6 +51,7 @@ public class FTLWhitespaceCheck extends WhitespaceCheck {
 		try (UnsyncBufferedReader unsyncBufferedReader =
 				new UnsyncBufferedReader(new UnsyncStringReader(content))) {
 
+			boolean assignBlock = false;
 			String line = null;
 
 			while ((line = unsyncBufferedReader.readLine()) != null) {
@@ -58,11 +59,14 @@ public class FTLWhitespaceCheck extends WhitespaceCheck {
 
 				String trimmedLine = StringUtil.trimLeading(line);
 
-				if (trimmedLine.startsWith("<#assign ")) {
+				if (trimmedLine.startsWith("<#assign ") || assignBlock) {
 					line = formatWhitespace(line, trimmedLine, true);
 
-					line = formatIncorrectSyntax(line, "=[", "= [", false);
 					line = formatIncorrectSyntax(line, "+[", "+ [", false);
+					line = formatIncorrectSyntax(line, "=[", "= [", false);
+					line = formatIncorrectSyntax(line, "=(", "= (", false);
+					line = formatIncorrectSyntax(line, "=.", "= .", false);
+					line = formatIncorrectSyntax(line, "=\"", "= \"", false);
 				}
 
 				if (line.endsWith(">")) {
@@ -72,10 +76,18 @@ public class FTLWhitespaceCheck extends WhitespaceCheck {
 
 							line = StringUtil.replaceLast(line, "/>", " />");
 						}
+
+						if (assignBlock) {
+							assignBlock = false;
+						}
 					}
 					else if (line.endsWith(" >")) {
 						line = StringUtil.replaceLast(line, " >", ">");
 					}
+				}
+
+				if (trimmedLine.equals("<#assign")) {
+					assignBlock = true;
 				}
 
 				sb.append(line);
@@ -85,7 +97,7 @@ public class FTLWhitespaceCheck extends WhitespaceCheck {
 
 		content = sb.toString();
 
-		if (content.endsWith("\n")) {
+		if (content.endsWith("\n") && !fileName.endsWith("_js.ftl")) {
 			content = content.substring(0, content.length() - 1);
 		}
 

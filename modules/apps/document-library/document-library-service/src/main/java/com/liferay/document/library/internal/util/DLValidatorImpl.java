@@ -6,8 +6,10 @@
 package com.liferay.document.library.internal.util;
 
 import com.liferay.document.library.configuration.DLConfiguration;
+import com.liferay.document.library.configuration.DLFileEntryMimeTypeConfiguration;
 import com.liferay.document.library.internal.configuration.helper.DLSizeLimitConfigurationHelper;
 import com.liferay.document.library.kernel.exception.FileExtensionException;
+import com.liferay.document.library.kernel.exception.FileMimeTypeException;
 import com.liferay.document.library.kernel.exception.FileNameException;
 import com.liferay.document.library.kernel.exception.FileSizeException;
 import com.liferay.document.library.kernel.exception.FolderNameException;
@@ -19,15 +21,17 @@ import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
+import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.upload.configuration.UploadServletRequestConfigurationProvider;
 import com.liferay.portal.kernel.util.FileUtil;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.UnicodeFormatter;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.util.PropsValues;
 import com.liferay.portlet.documentlibrary.webdav.DLWebDAVUtil;
 
 import java.io.File;
@@ -70,6 +74,19 @@ public final class DLValidatorImpl implements DLValidator {
 	}
 
 	@Override
+	public long getMaxAllowableDownloadSize(long groupId) {
+		long companyId = _getCompanyId(groupId);
+
+		return _min(
+			_dlSizeLimitConfigurationHelper.getSystemMaxSizeToDownload(),
+			_min(
+				_dlSizeLimitConfigurationHelper.getCompanyMaxSizeToDownload(
+					companyId),
+				_dlSizeLimitConfigurationHelper.getGroupMaxSizeToDownload(
+					companyId, groupId)));
+	}
+
+	@Override
 	public long getMaxAllowableSize(long groupId, String mimeType) {
 		return getMaxAllowableSize(groupId, mimeType, 0);
 	}
@@ -83,22 +100,36 @@ public final class DLValidatorImpl implements DLValidator {
 			_min(
 				_getGlobalMaxAllowableSize(companyId, groupId),
 				_min(
-					_dlSizeLimitConfigurationHelper.getCompanyMimeTypeSizeLimit(
-						companyId, mimeType),
-					_dlSizeLimitConfigurationHelper.getGroupMimeTypeSizeLimit(
-						groupId, mimeType))));
+					_dlSizeLimitConfigurationHelper.getSystemMimeTypeSizeLimit(
+						mimeType),
+					_min(
+						_dlSizeLimitConfigurationHelper.
+							getCompanyMimeTypeSizeLimit(companyId, mimeType),
+						_dlSizeLimitConfigurationHelper.
+							getGroupMimeTypeSizeLimit(
+								companyId, groupId, mimeType)))));
 	}
 
 	@Override
 	public Map<String, Long> getMimeTypeSizeLimit(long groupId) {
+		long companyId = _getCompanyId(groupId);
+
 		Map<String, Long> mimeTypeSizeLimit = new HashMap<>(
-			_dlSizeLimitConfigurationHelper.getGroupMimeTypeSizeLimit(groupId));
+			_dlSizeLimitConfigurationHelper.getGroupMimeTypeSizeLimit(
+				companyId, groupId));
 
 		Map<String, Long> companyMimeTypeSizeLimit =
 			_dlSizeLimitConfigurationHelper.getCompanyMimeTypeSizeLimit(
-				_getCompanyId(groupId));
+				companyId);
 
 		companyMimeTypeSizeLimit.forEach(
+			(key, value) -> mimeTypeSizeLimit.merge(
+				key, value, (value1, value2) -> _min(value1, value2)));
+
+		Map<String, Long> systemMimeTypeSizeLimit =
+			_dlSizeLimitConfigurationHelper.getSystemMimeTypeSizeLimit();
+
+		systemMimeTypeSizeLimit.forEach(
 			(key, value) -> mimeTypeSizeLimit.merge(
 				key, value, (value1, value2) -> _min(value1, value2)));
 
@@ -152,6 +183,21 @@ public final class DLValidatorImpl implements DLValidator {
 	}
 
 	@Override
+	public void validateDownloadSize(long groupId, long size)
+		throws FileSizeException {
+
+		long maxSize = getMaxAllowableDownloadSize(groupId);
+
+		if ((maxSize > 0) && (size > maxSize)) {
+			throw new FileSizeException(
+				StringBundler.concat(
+					size, " exceeds the maximum permitted download size of ",
+					maxSize),
+				maxSize);
+		}
+	}
+
+	@Override
 	public void validateFileExtension(String fileName)
 		throws FileExtensionException {
 
@@ -180,8 +226,40 @@ public final class DLValidatorImpl implements DLValidator {
 		}
 
 		if (!validFileExtension) {
-			throw new FileExtensionException(
+			throw new FileExtensionException.InvalidExtension(
 				"Invalid file extension for " + fileName);
+		}
+	}
+
+	@Override
+	public void validateFileMimeType(long companyId, String mimeType)
+		throws PortalException {
+
+		if (CompanyThreadLocal.isInitializingPortalInstance()) {
+			return;
+		}
+
+		boolean validFileMimeType = false;
+
+		DLFileEntryMimeTypeConfiguration dlFileEntryMimeTypeConfiguration =
+			_configurationProvider.getCompanyConfiguration(
+				DLFileEntryMimeTypeConfiguration.class, companyId);
+
+		for (String fileMimeType :
+				dlFileEntryMimeTypeConfiguration.fileMimeTypes()) {
+
+			if (StringPool.STAR.equals(fileMimeType) ||
+				StringUtil.equalsIgnoreCase(mimeType, fileMimeType)) {
+
+				validFileMimeType = true;
+
+				break;
+			}
+		}
+
+		if (!validFileMimeType) {
+			throw new FileMimeTypeException(
+				"Invalid file mime type " + mimeType);
 		}
 	}
 
@@ -254,11 +332,22 @@ public final class DLValidatorImpl implements DLValidator {
 		long maxSize = getMaxAllowableSize(groupId, mimeType, 0);
 
 		if ((maxSize > 0) && (size > maxSize)) {
+			if (maxSize == _getGlobalMaxAllowableSize(
+					_getCompanyId(groupId), groupId)) {
+
+				throw new FileSizeException(
+					StringBundler.concat(
+						size, " exceeds the global maximum permitted size of ",
+						maxSize, " for file ", fileName),
+					maxSize);
+			}
+
 			throw new FileSizeException(
 				StringBundler.concat(
-					size, " exceeds the maximum permitted size of ", maxSize,
-					" for file ", fileName),
-				maxSize);
+					size, " exceeds the mime type \"", mimeType,
+					"\" maximum permitted size of ", maxSize, " for file ",
+					fileName),
+				maxSize, mimeType);
 		}
 	}
 
@@ -301,6 +390,12 @@ public final class DLValidatorImpl implements DLValidator {
 			DLConfiguration.class, properties);
 	}
 
+	protected void setConfigurationProvider(
+		ConfigurationProvider configurationProvider) {
+
+		_configurationProvider = configurationProvider;
+	}
+
 	protected void setDLConfiguration(DLConfiguration dlConfiguration) {
 		_dlConfiguration = dlConfiguration;
 	}
@@ -331,9 +426,12 @@ public final class DLValidatorImpl implements DLValidator {
 		return _min(
 			_uploadServletRequestConfigurationProvider.getMaxSize(),
 			_min(
-				_dlSizeLimitConfigurationHelper.getCompanyFileMaxSize(
-					companyId),
-				_dlSizeLimitConfigurationHelper.getGroupFileMaxSize(groupId)));
+				_dlSizeLimitConfigurationHelper.getSystemFileMaxSize(),
+				_min(
+					_dlSizeLimitConfigurationHelper.getCompanyFileMaxSize(
+						companyId),
+					_dlSizeLimitConfigurationHelper.getGroupFileMaxSize(
+						companyId, groupId))));
 	}
 
 	private long _min(long a, long b) {
@@ -364,10 +462,12 @@ public final class DLValidatorImpl implements DLValidator {
 						blacklistLastChar);
 				}
 
-				if (title.endsWith(blacklistLastChar)) {
-					title = StringUtil.replaceLast(
-						title, blacklistLastChar, StringPool.BLANK);
+				if (!title.endsWith(blacklistLastChar)) {
+					continue;
 				}
+
+				title = StringUtil.replaceLast(
+					title, blacklistLastChar, StringPool.BLANK);
 			}
 		}
 
@@ -400,6 +500,9 @@ public final class DLValidatorImpl implements DLValidator {
 			title, PropsValues.DL_WEBDAV_SUBSTITUTION_CHAR,
 			StringPool.UNDERLINE);
 	}
+
+	@Reference
+	private ConfigurationProvider _configurationProvider;
 
 	private volatile DLConfiguration _dlConfiguration;
 

@@ -62,6 +62,15 @@ public class LanguageImplGetAvailableLocalesTest {
 	}
 
 	@Test
+	public void testGroupWithSpecificLocales() throws Exception {
+		long groupId = _getGuestGroupId();
+
+		GroupTestUtil.updateDisplaySettings(groupId, _locales, LocaleUtil.US);
+
+		Assert.assertEquals(_locales, _language.getAvailableLocales(groupId));
+	}
+
+	@Test
 	public void testGroupWithoutLocalesInheritsFromCompany() throws Exception {
 		long companyId = CompanyThreadLocal.getCompanyId();
 
@@ -74,15 +83,6 @@ public class LanguageImplGetAvailableLocalesTest {
 
 		Assert.assertEquals(
 			_locales, _language.getAvailableLocales(_getGuestGroupId()));
-	}
-
-	@Test
-	public void testGroupWithSpecificLocales() throws Exception {
-		long groupId = _getGuestGroupId();
-
-		GroupTestUtil.updateDisplaySettings(groupId, _locales, LocaleUtil.US);
-
-		Assert.assertEquals(_locales, _language.getAvailableLocales(groupId));
 	}
 
 	private long _getGuestGroupId() throws Exception {
@@ -98,16 +98,15 @@ public class LanguageImplGetAvailableLocalesTest {
 	}
 
 	private static Company _company;
-
-	@Inject
-	private static GroupLocalService _groupLocalService;
-
-	@Inject
-	private static Language _language;
-
 	private static final Set<Locale> _locales = new HashSet<>(
 		Arrays.asList(
 			LocaleUtil.BRAZIL, LocaleUtil.HUNGARY, LocaleUtil.JAPAN,
 			LocaleUtil.US));
+
+	@Inject
+	private GroupLocalService _groupLocalService;
+
+	@Inject
+	private Language _language;
 
 }

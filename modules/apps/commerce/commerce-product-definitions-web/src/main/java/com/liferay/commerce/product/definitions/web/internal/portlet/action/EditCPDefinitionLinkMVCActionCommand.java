@@ -25,12 +25,12 @@ import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -40,7 +40,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + CPPortletKeys.CP_DEFINITIONS,
+		"jakarta.portlet.name=" + CPPortletKeys.CP_DEFINITIONS,
 		"mvc.command.name=/cp_definitions/edit_cp_definition_link"
 	},
 	service = MVCActionCommand.class
@@ -128,21 +128,22 @@ public class EditCPDefinitionLinkMVCActionCommand extends BaseMVCActionCommand {
 
 			long cProductId = cpDefinition.getCProductId();
 
-			if (!ArrayUtil.contains(cProductIds, cProductId)) {
-				Calendar calendar = new GregorianCalendar();
-
-				calendar.setTime(new Date());
-
-				_cpDefinitionLinkService.addCPDefinitionLink(
-					cpDefinitionId, cProductId, calendar.get(Calendar.MONTH),
-					calendar.get(Calendar.DAY_OF_MONTH),
-					calendar.get(Calendar.YEAR),
-					calendar.get(Calendar.HOUR_OF_DAY),
-					calendar.get(Calendar.MINUTE), 0, 0, 0, 0, 0, true, 0.0,
-					type, serviceContext);
-
-				successMessage = true;
+			if (ArrayUtil.contains(cProductIds, cProductId)) {
+				continue;
 			}
+
+			Calendar calendar = new GregorianCalendar();
+
+			calendar.setTime(new Date());
+
+			_cpDefinitionLinkService.addCPDefinitionLink(
+				cpDefinitionId, cProductId, calendar.get(Calendar.MONTH),
+				calendar.get(Calendar.DAY_OF_MONTH),
+				calendar.get(Calendar.YEAR), calendar.get(Calendar.HOUR_OF_DAY),
+				calendar.get(Calendar.MINUTE), 0, 0, 0, 0, 0, true, 0.0, type,
+				serviceContext);
+
+			successMessage = true;
 		}
 
 		if (!successMessage) {
@@ -163,8 +164,7 @@ public class EditCPDefinitionLinkMVCActionCommand extends BaseMVCActionCommand {
 		}
 		else {
 			deleteCPDefinitionLinkIds = StringUtil.split(
-				ParamUtil.getString(actionRequest, "deleteCPDefinitionLinkIds"),
-				0L);
+				ParamUtil.getString(actionRequest, "cpdefinitionLinkId"), 0L);
 		}
 
 		for (long deleteCPDefinitionLinkId : deleteCPDefinitionLinkIds) {

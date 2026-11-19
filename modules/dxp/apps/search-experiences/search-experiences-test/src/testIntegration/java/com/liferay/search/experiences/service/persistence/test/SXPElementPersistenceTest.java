@@ -113,11 +113,7 @@ public class SXPElementPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		SXPElement newSXPElement = _persistence.create(pk);
-
-		newSXPElement.setMvccVersion(RandomTestUtil.nextLong());
+		SXPElement newSXPElement = addSXPElement();
 
 		newSXPElement.setUuid(RandomTestUtil.randomString());
 
@@ -155,7 +151,9 @@ public class SXPElementPersistenceTest {
 
 		newSXPElement.setStatus(RandomTestUtil.nextInt());
 
-		_sxpElements.add(_persistence.update(newSXPElement));
+		newSXPElement = _persistence.update(newSXPElement);
+
+		_sxpElements.add(newSXPElement);
 
 		SXPElement existingSXPElement = _persistence.findByPrimaryKey(
 			newSXPElement.getPrimaryKey());
@@ -263,23 +261,6 @@ public class SXPElementPersistenceTest {
 			RandomTestUtil.nextLong(), RandomTestUtil.randomBoolean());
 
 		_persistence.countByC_R(0L, RandomTestUtil.randomBoolean());
-	}
-
-	@Test
-	public void testCountByC_T() throws Exception {
-		_persistence.countByC_T(
-			RandomTestUtil.nextLong(), RandomTestUtil.nextInt());
-
-		_persistence.countByC_T(0L, 0);
-	}
-
-	@Test
-	public void testCountByC_T_S() throws Exception {
-		_persistence.countByC_T_S(
-			RandomTestUtil.nextLong(), RandomTestUtil.nextInt(),
-			RandomTestUtil.nextInt());
-
-		_persistence.countByC_T_S(0L, 0, 0);
 	}
 
 	@Test
@@ -602,8 +583,6 @@ public class SXPElementPersistenceTest {
 
 		SXPElement sxpElement = _persistence.create(pk);
 
-		sxpElement.setMvccVersion(RandomTestUtil.nextLong());
-
 		sxpElement.setUuid(RandomTestUtil.randomString());
 
 		sxpElement.setExternalReferenceCode(RandomTestUtil.randomString());
@@ -650,3 +629,4 @@ public class SXPElementPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:266729222

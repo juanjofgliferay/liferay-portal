@@ -16,8 +16,10 @@ import com.liferay.info.item.provider.InfoItemObjectProvider;
 import com.liferay.info.item.updater.InfoItemFieldValuesUpdater;
 import com.liferay.petra.io.StreamUtil;
 import com.liferay.petra.sql.dsl.DSLQueryFactoryUtil;
+import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
+import com.liferay.petra.string.StringUtil;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.RestrictionsFactoryUtil;
@@ -63,47 +65,6 @@ import org.osgi.service.component.annotations.Reference;
 )
 public class TranslationEntryLocalServiceImpl
 	extends TranslationEntryLocalServiceBaseImpl {
-
-	@Indexable(type = IndexableType.REINDEX)
-	@Override
-	public TranslationEntry addOrUpdateTranslationEntry(
-			long groupId, String languageId,
-			InfoItemReference infoItemReference,
-			InfoItemFieldValues infoItemFieldValues,
-			ServiceContext serviceContext)
-		throws PortalException {
-
-		try {
-			infoItemReference = infoItemFieldValues.getInfoItemReference();
-
-			InfoItemIdentifier infoItemIdentifier =
-				infoItemReference.getInfoItemIdentifier();
-
-			if (!(infoItemIdentifier instanceof ClassPKInfoItemIdentifier)) {
-				throw new NoSuchInfoItemException(
-					"Unable to add or update a translation entry without a " +
-						"class PK info item identifier");
-			}
-
-			ClassPKInfoItemIdentifier classPKInfoItemIdentifier =
-				(ClassPKInfoItemIdentifier)
-					infoItemReference.getInfoItemIdentifier();
-
-			return addOrUpdateTranslationEntry(
-				groupId, infoItemReference.getClassName(),
-				classPKInfoItemIdentifier.getClassPK(),
-				StreamUtil.toString(
-					_xliffTranslationInfoItemFieldValuesExporter.
-						exportInfoItemFieldValues(
-							infoItemFieldValues, LocaleUtil.getDefault(),
-							LocaleUtil.fromLanguageId(languageId))),
-				_xliffTranslationInfoItemFieldValuesExporter.getMimeType(),
-				languageId, serviceContext);
-		}
-		catch (IOException ioException) {
-			throw new PortalException(ioException);
-		}
-	}
 
 	@Indexable(type = IndexableType.REINDEX)
 	@Override
@@ -165,6 +126,48 @@ public class TranslationEntryLocalServiceImpl
 			serviceContext.getUserId(), TranslationEntry.class.getName(),
 			translationEntry.getTranslationEntryId(), translationEntry,
 			serviceContext, new HashMap<>());
+	}
+
+	@Indexable(type = IndexableType.REINDEX)
+	@Override
+	public TranslationEntry addOrUpdateTranslationEntry(
+			long groupId, String sourceLanguageId, String targetLanguageId,
+			InfoItemReference infoItemReference,
+			InfoItemFieldValues infoItemFieldValues,
+			ServiceContext serviceContext)
+		throws PortalException {
+
+		try {
+			infoItemReference = infoItemFieldValues.getInfoItemReference();
+
+			InfoItemIdentifier infoItemIdentifier =
+				infoItemReference.getInfoItemIdentifier();
+
+			if (!(infoItemIdentifier instanceof ClassPKInfoItemIdentifier)) {
+				throw new NoSuchInfoItemException(
+					"Unable to add or update a translation entry without a " +
+						"class PK info item identifier");
+			}
+
+			ClassPKInfoItemIdentifier classPKInfoItemIdentifier =
+				(ClassPKInfoItemIdentifier)
+					infoItemReference.getInfoItemIdentifier();
+
+			return addOrUpdateTranslationEntry(
+				groupId, infoItemReference.getClassName(),
+				classPKInfoItemIdentifier.getClassPK(),
+				StreamUtil.toString(
+					_xliffTranslationInfoItemFieldValuesExporter.
+						exportInfoItemFieldValues(
+							infoItemFieldValues,
+							LocaleUtil.fromLanguageId(sourceLanguageId),
+							LocaleUtil.fromLanguageId(targetLanguageId))),
+				_xliffTranslationInfoItemFieldValuesExporter.getMimeType(),
+				targetLanguageId, serviceContext);
+		}
+		catch (IOException ioException) {
+			throw new PortalException(ioException);
+		}
 	}
 
 	@Override
@@ -236,7 +239,11 @@ public class TranslationEntryLocalServiceImpl
 		try {
 			return _xliffTranslationInfoItemFieldValuesImporter.
 				importInfoItemFieldValues(
-					groupId, new InfoItemReference(className, classPK),
+					groupId,
+					new InfoItemReference(
+						StringUtil.replace(
+							className, CharPool.UNDERLINE, CharPool.POUND),
+						classPK),
 					new ByteArrayInputStream(content.getBytes()));
 		}
 		catch (IOException ioException) {

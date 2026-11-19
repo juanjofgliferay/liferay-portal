@@ -38,16 +38,16 @@ import com.liferay.wiki.model.WikiNode;
 import com.liferay.wiki.model.WikiPage;
 import com.liferay.wiki.service.WikiPageService;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.PortletRequest;
+
 import java.io.IOException;
 import java.io.InputStream;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.PortletRequest;
 
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -60,7 +60,7 @@ import org.osgi.service.component.annotations.Reference;
 @Component(
 	configurationPid = "com.liferay.wiki.configuration.WikiFileUploadConfiguration",
 	property = {
-		"javax.portlet.name=" + WikiPortletKeys.WIKI,
+		"jakarta.portlet.name=" + WikiPortletKeys.WIKI,
 		"mvc.command.name=/wiki/image_editor",
 		"mvc.command.name=/wiki/upload_page_attachment"
 	},
@@ -202,9 +202,11 @@ public class UploadPageAttachmentMVCActionCommand extends BaseMVCActionCommand {
 			List<String> validMimeTypes = new ArrayList<>();
 
 			for (String mimeType : mimeTypes) {
-				if (wikiAttachmentMimeTypes.contains(mimeType)) {
-					validMimeTypes.add(mimeType);
+				if (!wikiAttachmentMimeTypes.contains(mimeType)) {
+					continue;
 				}
+
+				validMimeTypes.add(mimeType);
 			}
 
 			return validMimeTypes.toArray(new String[0]);

@@ -12,21 +12,6 @@ import com.liferay.portal.kernel.exception.SystemException;
  */
 public class AMRuntimeException extends SystemException {
 
-	public AMRuntimeException() {
-	}
-
-	public AMRuntimeException(String s) {
-		super(s);
-	}
-
-	public AMRuntimeException(String s, Throwable throwable) {
-		super(s, throwable);
-	}
-
-	public AMRuntimeException(Throwable throwable) {
-		super(throwable);
-	}
-
 	/**
 	 * This exception is thrown when a value serialized as a <code>String</code>
 	 * cannot be converted by an {@link com.liferay.adaptive.media.AMAttribute}.
@@ -46,28 +31,6 @@ public class AMRuntimeException extends SystemException {
 		}
 
 		public AMAttributeFormatException(Throwable throwable) {
-			super(throwable);
-		}
-
-	}
-
-	/**
-	 * This exception is thrown when there is a processor configuration error.
-	 */
-	public static final class InvalidConfiguration extends AMRuntimeException {
-
-		public InvalidConfiguration() {
-		}
-
-		public InvalidConfiguration(String s) {
-			super(s);
-		}
-
-		public InvalidConfiguration(String s, Throwable throwable) {
-			super(s, throwable);
-		}
-
-		public InvalidConfiguration(Throwable throwable) {
 			super(throwable);
 		}
 
@@ -97,6 +60,28 @@ public class AMRuntimeException extends SystemException {
 	}
 
 	/**
+	 * This exception is thrown when there is a processor configuration error.
+	 */
+	public static final class InvalidConfiguration extends AMRuntimeException {
+
+		public InvalidConfiguration() {
+		}
+
+		public InvalidConfiguration(String s) {
+			super(s);
+		}
+
+		public InvalidConfiguration(String s, Throwable throwable) {
+			super(s, throwable);
+		}
+
+		public InvalidConfiguration(Throwable throwable) {
+			super(throwable);
+		}
+
+	}
+
+	/**
 	 * This exception wraps {@link java.io.UnsupportedEncodingException}
 	 * instances. Since it is a system error, it is reasonable to wrap it inside
 	 * a runtime exception.
@@ -119,6 +104,21 @@ public class AMRuntimeException extends SystemException {
 			super(throwable);
 		}
 
+	}
+
+	private AMRuntimeException() {
+	}
+
+	private AMRuntimeException(String s) {
+		super(s);
+	}
+
+	private AMRuntimeException(String s, Throwable throwable) {
+		super(s, throwable);
+	}
+
+	private AMRuntimeException(Throwable throwable) {
+		super(throwable);
 	}
 
 }

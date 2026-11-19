@@ -8,6 +8,7 @@ package com.liferay.portal.kernel.util;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.randomizerbumpers.RandomizerBumper;
 import com.liferay.portal.kernel.test.rule.CodeCoverageAssertor;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
@@ -158,6 +159,11 @@ public class StringUtilTest {
 
 	@Test
 	public void testGetTitleCase() {
+		Assert.assertTrue(
+			Objects.equals(
+				StringUtil.getTitleCase(
+					"a cat is going up with a letter a", false, ""),
+				"A Cat Is Going up With a Letter A"));
 		Assert.assertTrue(
 			Objects.equals(
 				StringUtil.getTitleCase("this is a title test", false, ""),
@@ -320,6 +326,46 @@ public class StringUtilTest {
 		Assert.assertEquals("%PATH%", StringUtil.quote("PATH", '%'));
 		Assert.assertEquals(
 			"Hello World Hello", StringUtil.quote(" World ", "Hello"));
+	}
+
+	@Test
+	public void testRandomIdNeverReturnsNull() {
+		int[] index = new int[1];
+		int[] offsets = {
+			_getOffset('n'), _getOffset('u'), _getOffset('l'), _getOffset('l'),
+			_getOffset('a'), _getOffset('b'), _getOffset('c'), _getOffset('d')
+		};
+
+		Random random = new Random() {
+
+			@Override
+			public int nextInt(int bound) {
+				return offsets[index[0]++];
+			}
+
+		};
+
+		String randomId = ReflectionTestUtil.invoke(
+			StringUtil.class, "_randomId",
+			new Class<?>[] {int.class, Random.class}, 4, random);
+
+		Assert.assertEquals(randomId, "abcd", randomId);
+
+		Assert.assertEquals(8, index[0]);
+
+		index[0] = 0;
+
+		randomId = ReflectionTestUtil.invoke(
+			StringUtil.class, "_randomId",
+			new Class<?>[] {int.class, Random.class}, 5, random);
+
+		Assert.assertEquals(randomId, "nulla", randomId);
+
+		Assert.assertEquals(5, index[0]);
+
+		randomId = StringUtil.randomId(4);
+
+		Assert.assertEquals(randomId, 4, randomId.length());
 	}
 
 	@Test
@@ -1266,6 +1312,10 @@ public class StringUtilTest {
 			StringUtil.wildcardMatches(
 				s, wildcard, CharPool.UNDERLINE, CharPool.PERCENT,
 				CharPool.BACK_SLASH, true));
+	}
+
+	private int _getOffset(char c) {
+		return c - CharPool.LOWER_CASE_A;
 	}
 
 }

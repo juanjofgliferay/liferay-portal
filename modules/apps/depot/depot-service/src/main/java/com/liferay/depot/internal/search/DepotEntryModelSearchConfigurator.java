@@ -6,10 +6,13 @@
 package com.liferay.depot.internal.search;
 
 import com.liferay.depot.model.DepotEntry;
+import com.liferay.depot.service.DepotEntryLocalService;
 import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.search.spi.model.index.contributor.ModelIndexerWriterContributor;
+import com.liferay.portal.search.spi.model.index.contributor.helper.IndexerWriterMode;
 import com.liferay.portal.search.spi.model.registrar.ModelSearchConfigurator;
 
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
@@ -46,9 +49,16 @@ public class DepotEntryModelSearchConfigurator
 		return _modelIndexWriterContributor;
 	}
 
-	@Reference(
-		target = "(indexer.class.name=com.liferay.depot.model.DepotEntry)"
-	)
+	@Activate
+	protected void activate() {
+		_modelIndexWriterContributor = new ModelIndexerWriterContributor<>(
+			IndexerWriterMode.UPDATE,
+			_depotEntryLocalService::getIndexableActionableDynamicQuery);
+	}
+
+	@Reference
+	private DepotEntryLocalService _depotEntryLocalService;
+
 	private ModelIndexerWriterContributor<DepotEntry>
 		_modelIndexWriterContributor;
 

@@ -22,19 +22,8 @@ public abstract class BasePortalReleaseJob
 	extends BaseJob implements PortalTestClassJob, TestSuiteJob {
 
 	@Override
-	public Set<String> getDistTypes() {
+	public Set<String> getAppServerTypes() {
 		return Collections.emptySet();
-	}
-
-	@Override
-	public List<String> getJobPropertyOptions() {
-		List<String> jobPropertyOptions = super.getJobPropertyOptions();
-
-		jobPropertyOptions.add(_upstreamBranchName);
-
-		jobPropertyOptions.removeAll(Collections.singleton(null));
-
-		return jobPropertyOptions;
 	}
 
 	@Override
@@ -49,6 +38,17 @@ public abstract class BasePortalReleaseJob
 		jsonObject.put("upstream_branch_name", _upstreamBranchName);
 
 		return jsonObject;
+	}
+
+	@Override
+	public List<String> getJobPropertyOptions() {
+		List<String> jobPropertyOptions = super.getJobPropertyOptions();
+
+		jobPropertyOptions.add(_upstreamBranchName);
+
+		jobPropertyOptions.removeAll(Collections.singleton(null));
+
+		return jobPropertyOptions;
 	}
 
 	@Override

@@ -19,17 +19,17 @@ import com.liferay.portal.kernel.service.RoleLocalService;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.Portal;
-import com.liferay.roles.item.selector.organization.role.OrganizationRoleItemSelectorCriterion;
-import com.liferay.roles.item.selector.site.role.SiteRoleItemSelectorCriterion;
+import com.liferay.roles.item.selector.OrganizationRoleItemSelectorCriterion;
+import com.liferay.roles.item.selector.SiteRoleItemSelectorCriterion;
 import com.liferay.segments.field.Field;
 import com.liferay.segments.field.customizer.SegmentsFieldCustomizer;
+
+import jakarta.portlet.PortletRequest;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
-
-import javax.portlet.PortletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -51,13 +51,13 @@ public class UserGroupRoleSegmentsFieldCustomizer
 	public static final String KEY = "userGroupRole";
 
 	@Override
-	public ClassedModel getClassedModel(String fieldValue) {
-		return _getRole(fieldValue);
+	public String getClassName() {
+		return Role.class.getName();
 	}
 
 	@Override
-	public String getClassName() {
-		return Role.class.getName();
+	public ClassedModel getClassedModel(String fieldValue) {
+		return _getRole(fieldValue);
 	}
 
 	@Override

@@ -1,0 +1,7 @@
+{
+	"contentType": {
+		"className": "[$OBJECT_DEFINITION_CLASS_NAME:CMPProject$]"
+	},
+	"defaultTemplate": true,
+	"name": "Project"
+}

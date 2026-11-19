@@ -39,16 +39,18 @@ public class ScopeActionDropdownItemsProvider {
 			_editAssetListDisplayContext.getSelectedGroups();
 
 		for (Group group : _editAssetListDisplayContext.getAvailableGroups()) {
-			if (!selectedGroups.contains(group)) {
-				dropdownItemList.add(
-					dropdownItem -> {
-						dropdownItem.putData("action", "addRow");
-						dropdownItem.putData(
-							"groupId", String.valueOf(group.getGroupId()));
-						dropdownItem.setLabel(
-							group.getScopeDescriptiveName(_themeDisplay));
-					});
+			if (selectedGroups.contains(group)) {
+				continue;
 			}
+
+			dropdownItemList.add(
+				dropdownItem -> {
+					dropdownItem.putData("action", "addRow");
+					dropdownItem.putData(
+						"groupId", String.valueOf(group.getGroupId()));
+					dropdownItem.setLabel(
+						group.getScopeDescriptiveName(_themeDisplay));
+				});
 		}
 
 		dropdownItemList.add(
@@ -62,7 +64,8 @@ public class ScopeActionDropdownItemsProvider {
 					_editAssetListDisplayContext.getSelectGroupEventName());
 
 				String otherSiteLabelLocalized = LanguageUtil.get(
-					_themeDisplay.getLocale(), "other-site-or-asset-library");
+					_themeDisplay.getLocale(),
+					"other-site-asset-library-or-space");
 
 				dropdownItem.setLabel(
 					otherSiteLabelLocalized + StringPool.TRIPLE_PERIOD);

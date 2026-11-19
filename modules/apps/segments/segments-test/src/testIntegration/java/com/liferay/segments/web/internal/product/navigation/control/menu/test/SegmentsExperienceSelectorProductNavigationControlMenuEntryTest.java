@@ -88,8 +88,7 @@ public class SegmentsExperienceSelectorProductNavigationControlMenuEntryTest {
 	public void testIsShowWithContentLayoutUpdateable() throws Exception {
 		Layout layout = LayoutTestUtil.addTypeContentLayout(_group);
 
-		layout.setLayoutPrototypeUuid(RandomTestUtil.randomString());
-		layout.setSourcePrototypeLayoutUuid(RandomTestUtil.randomString());
+		layout.setLayoutSetPrototypeLayoutERC(RandomTestUtil.randomString());
 
 		SegmentsTestUtil.addSegmentsExperience(
 			_group.getGroupId(), layout.getPlid());
@@ -102,7 +101,7 @@ public class SegmentsExperienceSelectorProductNavigationControlMenuEntryTest {
 	@Test
 	public void testIsShowWithFullPageApplication() throws Exception {
 		Layout layout = _layoutLocalService.addLayout(
-			TestPropsValues.getUserId(), _group.getGroupId(), false,
+			null, TestPropsValues.getUserId(), _group.getGroupId(), false,
 			LayoutConstants.DEFAULT_PARENT_LAYOUT_ID, "Full Page Application",
 			null, null, "full_page_application", false,
 			StringPool.SLASH +

@@ -5,11 +5,11 @@
 
 package com.liferay.portal.service.impl;
 
+import com.liferay.portal.format.util.PhoneNumberFormatUtil;
 import com.liferay.portal.kernel.bean.BeanReference;
 import com.liferay.portal.kernel.exception.PhoneNumberException;
 import com.liferay.portal.kernel.exception.PhoneNumberExtensionException;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.format.PhoneNumberFormatUtil;
 import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.Contact;
 import com.liferay.portal.kernel.model.ListTypeConstants;
@@ -34,9 +34,9 @@ public class PhoneLocalServiceImpl extends PhoneLocalServiceBaseImpl {
 
 	@Override
 	public Phone addPhone(
-			long userId, String className, long classPK, String number,
-			String extension, long listTypeId, boolean primary,
-			ServiceContext serviceContext)
+			String externalReferenceCode, long userId, String className,
+			long classPK, String number, String extension, long listTypeId,
+			boolean primary, ServiceContext serviceContext)
 		throws PortalException {
 
 		User user = _userPersistence.findByPrimaryKey(userId);
@@ -51,6 +51,7 @@ public class PhoneLocalServiceImpl extends PhoneLocalServiceBaseImpl {
 		Phone phone = phonePersistence.create(phoneId);
 
 		phone.setUuid(serviceContext.getUuid());
+		phone.setExternalReferenceCode(externalReferenceCode);
 		phone.setCompanyId(user.getCompanyId());
 		phone.setUserId(user.getUserId());
 		phone.setUserName(user.getFullName());
@@ -94,11 +95,6 @@ public class PhoneLocalServiceImpl extends PhoneLocalServiceBaseImpl {
 	}
 
 	@Override
-	public List<Phone> getPhones() {
-		return phonePersistence.findAll();
-	}
-
-	@Override
 	public List<Phone> getPhones(
 		long companyId, String className, long classPK) {
 
@@ -109,14 +105,15 @@ public class PhoneLocalServiceImpl extends PhoneLocalServiceBaseImpl {
 
 	@Override
 	public Phone updatePhone(
-			long phoneId, String number, String extension, long listTypeId,
-			boolean primary)
+			String externalReferenceCode, long phoneId, String number,
+			String extension, long listTypeId, boolean primary)
 		throws PortalException {
 
 		validate(phoneId, 0, 0, 0, number, extension, listTypeId, primary);
 
 		Phone phone = phonePersistence.findByPrimaryKey(phoneId);
 
+		phone.setExternalReferenceCode(externalReferenceCode);
 		phone.setNumber(number);
 		phone.setExtension(extension);
 		phone.setListTypeId(listTypeId);
@@ -137,11 +134,13 @@ public class PhoneLocalServiceImpl extends PhoneLocalServiceBaseImpl {
 				companyId, classNameId, classPK, primary);
 
 			for (Phone phone : phones) {
-				if ((phoneId <= 0) || (phone.getPhoneId() != phoneId)) {
-					phone.setPrimary(false);
-
-					phonePersistence.update(phone);
+				if ((phoneId > 0) && (phone.getPhoneId() == phoneId)) {
+					continue;
 				}
+
+				phone.setPrimary(false);
+
+				phonePersistence.update(phone);
 			}
 		}
 	}

@@ -5,17 +5,20 @@
 
 package com.liferay.portal.kernel.util;
 
+import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.test.log.LogCapture;
 import com.liferay.portal.test.log.LogEntry;
 import com.liferay.portal.test.log.LoggerTestUtil;
+import com.liferay.portal.test.rule.ExpectedLog;
+import com.liferay.portal.test.rule.ExpectedLogs;
+import com.liferay.portal.test.rule.ExpectedType;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
-import java.util.logging.Level;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -26,6 +29,42 @@ import org.mockito.Mockito;
  * @author Wesley Gong
  */
 public class LocaleUtilTest {
+
+	@Test
+	public void testFromBCP47LangTag() {
+		LanguageUtil languageUtil = new LanguageUtil();
+
+		Language language = Mockito.mock(Language.class);
+
+		languageUtil.setLanguage(language);
+
+		Mockito.when(
+			language.isAvailableLocale(Locale.US)
+		).thenReturn(
+			true
+		);
+
+		Assert.assertEquals(
+			Locale.US.toLanguageTag(), LocaleUtil.toBCP47LangTag(Locale.US));
+
+		Mockito.when(
+			language.isAvailableLocale(Locale.SIMPLIFIED_CHINESE)
+		).thenReturn(
+			true
+		);
+
+		Assert.assertEquals(
+			"zh-Hans", LocaleUtil.toBCP47LangTag(Locale.SIMPLIFIED_CHINESE));
+
+		Mockito.when(
+			language.isAvailableLocale(Locale.TRADITIONAL_CHINESE)
+		).thenReturn(
+			true
+		);
+
+		Assert.assertEquals(
+			"zh-Hant", LocaleUtil.toBCP47LangTag(Locale.TRADITIONAL_CHINESE));
+	}
 
 	@Test
 	public void testFromLanguageId() {
@@ -53,8 +92,8 @@ public class LocaleUtilTest {
 			true
 		);
 
-		try (LogCapture logCapture = LoggerTestUtil.configureJDKLogger(
-				LocaleUtil.class.getName(), Level.WARNING)) {
+		try (LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
+				LocaleUtil.class.getName(), LoggerTestUtil.WARN)) {
 
 			List<LogEntry> logEntries = logCapture.getLogEntries();
 
@@ -136,6 +175,30 @@ public class LocaleUtilTest {
 			LocaleUtil.fromLanguageId("it_IT", false));
 	}
 
+	@ExpectedLogs(
+		expectedLogs = {
+			@ExpectedLog(
+				expectedLog = "invalid is a not a valid language id",
+				expectedType = ExpectedType.EXACT
+			),
+			@ExpectedLog(
+				expectedLog = "invalid- is a not a valid language id",
+				expectedType = ExpectedType.EXACT
+			),
+			@ExpectedLog(
+				expectedLog = "invalid_ is a not a valid language id",
+				expectedType = ExpectedType.EXACT
+			)
+		},
+		level = "WARN", loggerClass = LocaleUtil.class
+	)
+	@Test
+	public void testFromLanguageIdValidationWithInvalidInput() {
+		Assert.assertNull(LocaleUtil.fromLanguageId("invalid", true, false));
+		Assert.assertNull(LocaleUtil.fromLanguageId("invalid-", true, false));
+		Assert.assertNull(LocaleUtil.fromLanguageId("invalid_", true, false));
+	}
+
 	@Test
 	public void testFromLanguageValidation() {
 		LanguageUtil languageUtil = new LanguageUtil();
@@ -188,7 +251,7 @@ public class LocaleUtilTest {
 		Locale catalanValenciaLocale = new Locale("ca", "ES", "VALENCIA");
 
 		Assert.assertEquals(
-			"Catalan (Spain, VALENCIA)",
+			"Catalan (Spain, Valencian)",
 			LocaleUtil.getLocaleDisplayName(catalanValenciaLocale, Locale.US));
 	}
 
@@ -221,9 +284,37 @@ public class LocaleUtilTest {
 		Locale catalanValenciaLocale = new Locale("ca", "ES", "VALENCIA");
 
 		Assert.assertEquals(
-			"catal\u00e0 (Espanya, VALENCIA)",
+			"catal\u00e0 (Espanya, valenci\u00e0)",
 			LocaleUtil.getLongDisplayName(
 				catalanValenciaLocale, duplicateLanguages));
+	}
+
+	@Test
+	public void testToJSON() {
+		Locale defaultDisplayLocale = Locale.getDefault(
+			Locale.Category.DISPLAY);
+
+		Locale.setDefault(Locale.Category.DISPLAY, Locale.US);
+
+		try {
+			String json = LocaleUtil.toJSON(Locale.US);
+
+			Assert.assertEquals(
+				StringBundler.concat(
+					"{\"country\": \"US\", \"displayCountry\": \"United ",
+					"States\", \"displayLanguage\": \"English\", ",
+					"\"displayName\": \"English (United States)\", ",
+					"\"displayScript\": \"\", \"displayVariant\": \"\", ",
+					"\"extensionKeys\":[],\"ISO3Country\": \"USA\", ",
+					"\"ISO3Language\": \"eng\", \"language\": \"en\", ",
+					"\"script\": \"\", \"unicodeLocaleAttributes\":[], ",
+					"\"unicodeLocaleKeys\":[], \"variant\": \"\"}"),
+				json);
+			Assert.assertSame(json, LocaleUtil.toJSON(Locale.US));
+		}
+		finally {
+			Locale.setDefault(Locale.Category.DISPLAY, defaultDisplayLocale);
+		}
 	}
 
 }

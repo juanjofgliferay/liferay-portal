@@ -17,6 +17,7 @@ import com.liferay.portal.kernel.dao.orm.Projection;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.model.SystemEventConstants;
 import com.liferay.portal.kernel.search.Indexable;
 import com.liferay.portal.kernel.search.IndexableType;
 import com.liferay.portal.kernel.service.BaseLocalService;
@@ -26,6 +27,7 @@ import com.liferay.portal.kernel.service.change.tracking.CTService;
 import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
 import com.liferay.portal.kernel.service.version.VersionService;
 import com.liferay.portal.kernel.service.version.VersionServiceListener;
+import com.liferay.portal.kernel.systemevent.SystemEvent;
 import com.liferay.portal.kernel.transaction.Isolation;
 import com.liferay.portal.kernel.transaction.Propagation;
 import com.liferay.portal.kernel.transaction.Transactional;
@@ -65,14 +67,12 @@ public interface StyleBookEntryLocalService
 	 *
 	 * Never modify this interface directly. Add custom service methods to <code>com.liferay.style.book.service.impl.StyleBookEntryLocalServiceImpl</code> and rerun ServiceBuilder to automatically copy the method declarations to this interface. Consume the style book entry local service via injection or a <code>org.osgi.util.tracker.ServiceTracker</code>. Use {@link StyleBookEntryLocalServiceUtil} if injection and service tracking are not available.
 	 */
+	@Indexable(type = IndexableType.REINDEX)
 	public StyleBookEntry addStyleBookEntry(
-			long userId, long groupId, String name, String styleBookEntryKey,
-			ServiceContext serviceContext)
-		throws PortalException;
-
-	public StyleBookEntry addStyleBookEntry(
-			long userId, long groupId, String frontendTokensValues, String name,
-			String styleBookEntryKey, ServiceContext serviceContext)
+			String externalReferenceCode, long userId, long groupId,
+			boolean defaultStyleBookEntry, String frontendTokenDefinition,
+			String frontendTokensValues, String name, String styleBookEntryKey,
+			String themeId, ServiceContext serviceContext)
 		throws PortalException;
 
 	/**
@@ -94,6 +94,7 @@ public interface StyleBookEntryLocalService
 			StyleBookEntry publishedStyleBookEntry, int version)
 		throws PortalException;
 
+	@Indexable(type = IndexableType.REINDEX)
 	public StyleBookEntry copyStyleBookEntry(
 			long userId, long groupId, long sourceStyleBookEntryId,
 			ServiceContext serviceContext)
@@ -131,6 +132,8 @@ public interface StyleBookEntryLocalService
 	public PersistedModel deletePersistedModel(PersistedModel persistedModel)
 		throws PortalException;
 
+	public void deleteStyleBookEntries(long groupId) throws PortalException;
+
 	/**
 	 * Deletes the style book entry with the primary key from the database. Also notifies the appropriate model listeners.
 	 *
@@ -146,6 +149,10 @@ public interface StyleBookEntryLocalService
 	public StyleBookEntry deleteStyleBookEntry(long styleBookEntryId)
 		throws PortalException;
 
+	public StyleBookEntry deleteStyleBookEntry(
+			String externalReferenceCode, long groupId)
+		throws PortalException;
+
 	/**
 	 * Deletes the style book entry from the database. Also notifies the appropriate model listeners.
 	 *
@@ -158,6 +165,10 @@ public interface StyleBookEntryLocalService
 	 * @throws PortalException
 	 */
 	@Indexable(type = IndexableType.DELETE)
+	@SystemEvent(
+		action = SystemEventConstants.ACTION_SKIP,
+		type = SystemEventConstants.TYPE_DELETE
+	)
 	public StyleBookEntry deleteStyleBookEntry(StyleBookEntry styleBookEntry)
 		throws PortalException;
 
@@ -239,7 +250,8 @@ public interface StyleBookEntryLocalService
 		DynamicQuery dynamicQuery, Projection projection);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public StyleBookEntry fetchDefaultStyleBookEntry(long groupId);
+	public StyleBookEntry fetchDefaultStyleBookEntry(
+		long groupId, String themeId);
 
 	@Override
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
@@ -270,10 +282,23 @@ public interface StyleBookEntryLocalService
 		long groupId, String styleBookEntryKey);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public StyleBookEntry fetchStyleBookEntryByExternalReferenceCode(
+		String externalReferenceCode, long groupId);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public StyleBookEntry fetchStyleBookEntryByExternalReferenceCode(
+		String externalReferenceCode, long groupId, boolean head);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public StyleBookEntry fetchStyleBookEntryByUuidAndGroupId(
 		String uuid, long groupId);
 
 	public String generateStyleBookEntryKey(long groupId, String name);
+
+	public String generateStyleBookEntryName(long groupId, String name);
+
+	public String generateStyleBookEntryName(
+		long groupId, String name, long styleBookEntryId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public ActionableDynamicQuery getActionableDynamicQuery();
@@ -330,7 +355,30 @@ public interface StyleBookEntryLocalService
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<StyleBookEntry> getStyleBookEntries(
+		long groupId, String themeId);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<StyleBookEntry> getStyleBookEntries(
 		long groupId, String name, int start, int end,
+		OrderByComparator<StyleBookEntry> orderByComparator);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<StyleBookEntry> getStyleBookEntries(
+		long[] groupIds, int start, int end,
+		OrderByComparator<StyleBookEntry> orderByComparator);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<StyleBookEntry> getStyleBookEntries(
+		long[] groupIds, String themeId);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<StyleBookEntry> getStyleBookEntries(
+		long[] groupIds, String themeId, int start, int end,
+		OrderByComparator<StyleBookEntry> orderByComparator);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<StyleBookEntry> getStyleBookEntries(
+		long[] groupIds, String name, String themeId, int start, int end,
 		OrderByComparator<StyleBookEntry> orderByComparator);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
@@ -351,6 +399,13 @@ public interface StyleBookEntryLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public int getStyleBookEntriesCount(long groupId, String name);
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public int getStyleBookEntriesCount(long[] groupIds, String themeId);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public int getStyleBookEntriesCount(
+		long[] groupIds, String name, String themeId);
+
 	/**
 	 * Returns the style book entry with the primary key.
 	 *
@@ -360,6 +415,16 @@ public interface StyleBookEntryLocalService
 	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public StyleBookEntry getStyleBookEntry(long styleBookEntryId)
+		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public StyleBookEntry getStyleBookEntryByExternalReferenceCode(
+			String externalReferenceCode, long groupId)
+		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public StyleBookEntry getStyleBookEntryByExternalReferenceCode(
+			String externalReferenceCode, long groupId, boolean head)
 		throws PortalException;
 
 	@Override
@@ -388,6 +453,7 @@ public interface StyleBookEntryLocalService
 		VersionServiceListener<StyleBookEntry, StyleBookEntryVersion>
 			versionServiceListener);
 
+	@Indexable(type = IndexableType.REINDEX)
 	public StyleBookEntry updateDefaultStyleBookEntry(
 			long styleBookEntryId, boolean defaultStyleBookEntry)
 		throws PortalException;
@@ -397,25 +463,44 @@ public interface StyleBookEntryLocalService
 	public StyleBookEntry updateDraft(StyleBookEntry draftStyleBookEntry)
 		throws PortalException;
 
+	@Indexable(type = IndexableType.REINDEX)
+	public StyleBookEntry updateFrontendTokenDefinition(
+			long styleBookEntryId, String frontendTokenDefinition,
+			ServiceContext serviceContext)
+		throws PortalException;
+
+	@Indexable(type = IndexableType.REINDEX)
+	public StyleBookEntry updateFrontendTokenDefinition(
+			long styleBookEntryId, String cssVariableMappingValue,
+			String defaultValue, String editorType,
+			String frontendTokenCategoryLabel, String frontendTokenCategoryName,
+			String frontendTokenDescription, String frontendTokenLabel,
+			String frontendTokenName, String frontendTokenSetDescription,
+			String frontendTokenSetLabel, String frontendTokenSetName,
+			String frontendTokenType, ServiceContext serviceContext)
+		throws PortalException;
+
+	@Indexable(type = IndexableType.REINDEX)
 	public StyleBookEntry updateFrontendTokensValues(
 			long styleBookEntryId, String frontendTokensValues)
 		throws PortalException;
 
+	@Indexable(type = IndexableType.REINDEX)
 	public StyleBookEntry updateName(long styleBookEntryId, String name)
 		throws PortalException;
 
+	@Indexable(type = IndexableType.REINDEX)
 	public StyleBookEntry updatePreviewFileEntryId(
-			long styleBookEntryId, long previewFileEntryId)
+			long styleBookEntryId, long previewFileEntryId,
+			ServiceContext serviceContext)
 		throws PortalException;
 
+	@Indexable(type = IndexableType.REINDEX)
 	public StyleBookEntry updateStyleBookEntry(
-			long userId, long styleBookEntryId, boolean defaultStylebookEntry,
-			String frontendTokensValues, String name, String styleBookEntryKey,
-			long previewFileEntryId)
-		throws PortalException;
-
-	public StyleBookEntry updateStyleBookEntry(
-			long styleBookEntryId, String frontendTokensValues, String name)
+			long userId, long styleBookEntryId, boolean defaultStyleBookEntry,
+			String frontendTokenDefinition, String frontendTokensValues,
+			String name, String styleBookEntryKey, long previewFileEntryId,
+			String themeId, ServiceContext serviceContext)
 		throws PortalException;
 
 	/**
@@ -449,3 +534,4 @@ public interface StyleBookEntryLocalService
 		throws E;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1027315156

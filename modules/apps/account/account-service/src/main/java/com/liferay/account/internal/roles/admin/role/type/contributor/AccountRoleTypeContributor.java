@@ -90,16 +90,12 @@ public class AccountRoleTypeContributor implements RoleTypeContributor {
 
 	@Override
 	public boolean isAutomaticallyAssigned(Role role) {
-		if (AccountRoleConstants.isImpliedRole(role)) {
-			return true;
-		}
-
-		return false;
+		return AccountRoleConstants.isImpliedRole(role);
 	}
 
 	@Override
 	public BaseModelSearchResult<Role> searchRoles(
-		long companyId, String keywords, int start, int end,
+		long companyId, String keywords, String subtype, int start, int end,
 		OrderByComparator<Role> orderByComparator) {
 
 		try {

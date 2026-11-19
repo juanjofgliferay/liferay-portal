@@ -12,8 +12,6 @@ import com.liferay.portal.kernel.model.CompanyConstants;
 import com.liferay.portal.kernel.model.GroupConstants;
 import com.liferay.portal.kernel.settings.LocationVariableResolver;
 import com.liferay.portal.kernel.util.GetterUtil;
-import com.liferay.portal.kernel.util.ListUtil;
-import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.Validator;
 
 import java.io.Serializable;
@@ -21,9 +19,9 @@ import java.io.Serializable;
 import java.util.Dictionary;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.SequencedMap;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -53,19 +51,17 @@ public class ScopedConfigurationManagedServiceFactory
 	}
 
 	public Object getConfiguration(
-		ExtendedObjectClassDefinition.Scope scope, Serializable scopePK) {
+		long companyId, ExtendedObjectClassDefinition.Scope scope,
+		Serializable scopePK) {
 
-		Map<String, Object> scopeConfigurationBeans = _configurationBeans.get(
-			new ScopeKey(scopePK, scope));
+		ScopeConfigurationBeans scopeConfigurationBeans =
+			_configurationBeans.get(_getScopeKey(companyId, scope, scopePK));
 
-		if (MapUtil.isNotEmpty(scopeConfigurationBeans)) {
-			List<Object> valuesList = ListUtil.fromCollection(
-				scopeConfigurationBeans.values());
-
-			return valuesList.get(valuesList.size() - 1);
+		if (scopeConfigurationBeans == null) {
+			return null;
 		}
 
-		return null;
+		return scopeConfigurationBeans.getLatestConfigurationBean();
 	}
 
 	public LocationVariableResolver getLocationVariableResolver() {
@@ -86,16 +82,18 @@ public class ScopedConfigurationManagedServiceFactory
 				ExtendedObjectClassDefinition.Scope.COMPANY.getPropertyKey()),
 			CompanyConstants.SYSTEM);
 
-		if (companyId != CompanyConstants.SYSTEM) {
-			_updateEntries(
-				pid, companyId, ExtendedObjectClassDefinition.Scope.COMPANY,
-				properties);
-		}
-
 		long groupId = GetterUtil.getLong(
 			properties.get(
 				ExtendedObjectClassDefinition.Scope.GROUP.getPropertyKey()),
 			GroupConstants.ANY_PARENT_GROUP_ID);
+
+		if ((companyId != CompanyConstants.SYSTEM) &&
+			(groupId == GroupConstants.ANY_PARENT_GROUP_ID)) {
+
+			_updateEntries(
+				pid, companyId, ExtendedObjectClassDefinition.Scope.COMPANY,
+				properties);
+		}
 
 		if (groupId != GroupConstants.ANY_PARENT_GROUP_ID) {
 			_updateEntries(
@@ -116,6 +114,19 @@ public class ScopedConfigurationManagedServiceFactory
 		}
 	}
 
+	private ScopeKey _getScopeKey(
+		long companyId, ExtendedObjectClassDefinition.Scope scope,
+		Serializable scopePK) {
+
+		ScopeKey scopeKey = new ScopeKey(scopePK, scope);
+
+		if (scope.equals(ExtendedObjectClassDefinition.Scope.GROUP)) {
+			scopeKey = new ScopeKey(companyId + _SEPARATOR + scopePK, scope);
+		}
+
+		return scopeKey;
+	}
+
 	private void _removePidConfigurations(String pid) {
 		_pidScopeKeys.computeIfPresent(
 			pid,
@@ -131,11 +142,15 @@ public class ScopedConfigurationManagedServiceFactory
 	private void _removeScopePidConfigurations(String pid, ScopeKey scopeKey) {
 		_configurationBeans.computeIfPresent(
 			scopeKey,
-			(key, scopeConfigurations) -> {
-				scopeConfigurations.remove(pid);
+			(key, scopeConfigurationBeans) -> {
+				SequencedMap<String, Object> configurationBeans =
+					new LinkedHashMap<>(
+						scopeConfigurationBeans.getConfigurationBeans());
 
-				if (!scopeConfigurations.isEmpty()) {
-					return scopeConfigurations;
+				configurationBeans.remove(pid);
+
+				if (!configurationBeans.isEmpty()) {
+					return new ScopeConfigurationBeans(configurationBeans);
 				}
 
 				return null;
@@ -147,7 +162,12 @@ public class ScopedConfigurationManagedServiceFactory
 		ExtendedObjectClassDefinition.Scope scope,
 		Dictionary<String, ?> properties) {
 
-		ScopeKey scopeKey = new ScopeKey(scopePK, scope);
+		ScopeKey scopeKey = _getScopeKey(
+			GetterUtil.getLong(
+				properties.get(
+					ExtendedObjectClassDefinition.Scope.COMPANY.
+						getPropertyKey())),
+			scope, scopePK);
 
 		_pidScopeKeys.compute(
 			pid,
@@ -163,29 +183,58 @@ public class ScopedConfigurationManagedServiceFactory
 
 		_configurationBeans.compute(
 			scopeKey,
-			(key, scopeConfigurations) -> {
-				if (scopeConfigurations == null) {
-					scopeConfigurations = new LinkedHashMap<>();
+			(key, scopeConfigurationBeans) -> {
+				SequencedMap<String, Object> configurationBeans =
+					new LinkedHashMap<>();
+
+				if (scopeConfigurationBeans != null) {
+					configurationBeans.putAll(
+						scopeConfigurationBeans.getConfigurationBeans());
 				}
 
-				scopeConfigurations.remove(pid);
-
-				scopeConfigurations.put(
+				configurationBeans.putLast(
 					pid,
 					ConfigurableUtil.createConfigurable(
 						_configurationBeanClass, properties));
 
-				return scopeConfigurations;
+				return new ScopeConfigurationBeans(configurationBeans);
 			});
 	}
 
+	private static final String _SEPARATOR = "--";
+
 	private final Class<?> _configurationBeanClass;
-	private final Map<ScopeKey, Map<String, Object>> _configurationBeans =
+	private final Map<ScopeKey, ScopeConfigurationBeans> _configurationBeans =
 		new ConcurrentHashMap<>();
 	private final String _factoryPid;
 	private final LocationVariableResolver _locationVariableResolver;
 	private final Map<String, Set<ScopeKey>> _pidScopeKeys =
 		new ConcurrentHashMap<>();
+
+	private static class ScopeConfigurationBeans {
+
+		public Map<String, Object> getConfigurationBeans() {
+			return _configurationBeans;
+		}
+
+		public Object getLatestConfigurationBean() {
+			return _latestConfigurationBean;
+		}
+
+		private ScopeConfigurationBeans(
+			SequencedMap<String, Object> configurationBeans) {
+
+			_configurationBeans = configurationBeans;
+
+			Map.Entry<String, Object> entry = configurationBeans.lastEntry();
+
+			_latestConfigurationBean = entry.getValue();
+		}
+
+		private final SequencedMap<String, Object> _configurationBeans;
+		private final Object _latestConfigurationBean;
+
+	}
 
 	private class ScopeKey {
 

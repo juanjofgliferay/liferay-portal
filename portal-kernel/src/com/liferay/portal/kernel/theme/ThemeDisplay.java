@@ -13,6 +13,7 @@ import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.change.tracking.CTCollectionThreadLocal;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.frontend.hashed.files.HashedFilesRegistryUtil;
 import com.liferay.portal.kernel.json.JSON;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.log.Log;
@@ -52,6 +53,13 @@ import com.liferay.portal.kernel.util.PropsUtil;
 import com.liferay.portal.kernel.util.TimeZoneThreadLocal;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.portlet.PortletPreferences;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.Serializable;
 
 import java.util.HashMap;
@@ -61,13 +69,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.TimeZone;
-
-import javax.portlet.PortletPreferences;
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * Provides general configuration methods for the portal, providing access to
@@ -190,8 +191,13 @@ public class ThemeDisplay
 			return _clayCSSURL;
 		}
 
-		return PortalUtil.getStaticResourceURL(
-			getRequest(), getPathThemeCss() + "/clay.css");
+		_clayCSSURL = _getResource(
+			"/clay.css", getPathThemeCss(),
+			PortalUtil.isRightToLeft(_httpServletRequest) ? "/clay_rtl.css" :
+				"/clay.css",
+			_theme.getCssPath());
+
+		return _clayCSSURL;
 	}
 
 	public ColorScheme getColorScheme() {
@@ -476,17 +482,14 @@ public class ThemeDisplay
 		return _getFriendlyURL(layout);
 	}
 
-	/**
-	 * Returns the site's top-level pages.
-	 *
-	 * <p>
-	 * Layout is Liferay's technical name for a page.
-	 * </p>
-	 *
-	 * @return the site's top-level pages
-	 */
-	public List<Layout> getLayouts() {
-		return _layouts;
+	public Group getLayoutGroup(Layout layout) {
+		if ((_siteGroup != null) &&
+			(_siteGroup.getGroupId() == layout.getGroupId())) {
+
+			return _siteGroup;
+		}
+
+		return layout.getGroup();
 	}
 
 	/**
@@ -518,6 +521,19 @@ public class ThemeDisplay
 
 	public LayoutTypePortlet getLayoutTypePortlet() {
 		return _layoutTypePortlet;
+	}
+
+	/**
+	 * Returns the site's top-level pages.
+	 *
+	 * <p>
+	 * Layout is Liferay's technical name for a page.
+	 * </p>
+	 *
+	 * @return the site's top-level pages
+	 */
+	public List<Layout> getLayouts() {
+		return _layouts;
 	}
 
 	/**
@@ -557,8 +573,13 @@ public class ThemeDisplay
 			return _mainCSSURL;
 		}
 
-		return PortalUtil.getStaticResourceURL(
-			getRequest(), getPathThemeCss() + "/main.css");
+		_mainCSSURL = _getResource(
+			"/main.css", getPathThemeCss(),
+			PortalUtil.isRightToLeft(_httpServletRequest) ? "/main_rtl.css" :
+				"/main.css",
+			_theme.getCssPath());
+
+		return _mainCSSURL;
 	}
 
 	public String getMainJSURL() {
@@ -566,8 +587,11 @@ public class ThemeDisplay
 			return _mainJSURL;
 		}
 
-		return PortalUtil.getStaticResourceURL(
-			getRequest(), getPathThemeJavaScript() + "/main.js");
+		_mainJSURL = _getResource(
+			"/main.js", getPathThemeJavaScript(), "/main.js",
+			_theme.getJavaScriptPath());
+
+		return _mainJSURL;
 	}
 
 	public List<NavItem> getNavItems() throws PortalException {
@@ -579,12 +603,12 @@ public class ThemeDisplay
 		return _navItems;
 	}
 
-	public String getPathApplet() {
-		return _pathApplet;
+	public long getParentSiteGroupId() {
+		return _parentSiteGroupId;
 	}
 
-	public String getPathCms() {
-		return _pathCms;
+	public String getPathApplet() {
+		return _pathApplet;
 	}
 
 	/**
@@ -598,7 +622,11 @@ public class ThemeDisplay
 	}
 
 	public String getPathContext() {
-		return _pathContext;
+		return _contextPath;
+	}
+
+	public String getPathControlPanelEmptyStatesSpritemap() {
+		return _pathControlPanelEmptyStatesSpritemap;
 	}
 
 	/**
@@ -680,6 +708,10 @@ public class ThemeDisplay
 	 */
 	public String getPathThemeCss() {
 		return _pathThemeCss;
+	}
+
+	public String getPathThemeEmptyStatesSpritemap() {
+		return _pathThemeEmptyStatesSpritemap;
 	}
 
 	/**
@@ -1035,9 +1067,11 @@ public class ThemeDisplay
 				value = themeSetting.getValue();
 			}
 
-			if (value != null) {
-				properties.put(key, value);
+			if (value == null) {
+				continue;
 			}
+
+			properties.put(key, value);
 		}
 
 		return properties;
@@ -1053,10 +1087,6 @@ public class ThemeDisplay
 
 	public TimeZone getTimeZone() {
 		return _timeZone;
-	}
-
-	public List<Layout> getUnfilteredLayouts() {
-		return _unfilteredLayouts;
 	}
 
 	public String getURLControlPanel() {
@@ -1100,6 +1130,10 @@ public class ThemeDisplay
 
 	public String getURLSignOut() {
 		return _urlSignOut;
+	}
+
+	public List<Layout> getUnfilteredLayouts() {
+		return _unfilteredLayouts;
 	}
 
 	/**
@@ -1168,6 +1202,10 @@ public class ThemeDisplay
 		return true;
 	}
 
+	public boolean isIncludePortletCssJs() {
+		return _includePortletCssJs;
+	}
+
 	public boolean isIncludedJs(String js) {
 		String path = getPathJavaScript();
 
@@ -1178,10 +1216,6 @@ public class ThemeDisplay
 		}
 
 		return false;
-	}
-
-	public boolean isIncludePortletCssJs() {
-		return _includePortletCssJs;
 	}
 
 	public boolean isIsolated() {
@@ -1347,7 +1381,7 @@ public class ThemeDisplay
 		_clayCSSURL = clayCSSURL;
 	}
 
-	public void setCompany(Company company) throws PortalException {
+	public void setCompany(Company company) {
 		_company = company;
 		_companyGroupId = company.getGroupId();
 	}
@@ -1440,10 +1474,6 @@ public class ThemeDisplay
 		_layout = layout;
 	}
 
-	public void setLayouts(List<Layout> layouts) {
-		_layouts = layouts;
-	}
-
 	public void setLayoutSet(LayoutSet layoutSet) {
 		_layoutSet = layoutSet;
 	}
@@ -1454,6 +1484,10 @@ public class ThemeDisplay
 
 	public void setLayoutTypePortlet(LayoutTypePortlet layoutTypePortlet) {
 		_layoutTypePortlet = layoutTypePortlet;
+	}
+
+	public void setLayouts(List<Layout> layouts) {
+		_layouts = layouts;
 	}
 
 	public void setLifecycle(String lifecycle) {
@@ -1506,6 +1540,10 @@ public class ThemeDisplay
 				_company.getCompanyId(),
 				PropsKeys.CONTROL_PANEL_LAYOUT_REGULAR_THEME_ID));
 
+		setPathControlPanelEmptyStatesSpritemap(
+			StringBundler.concat(
+				cdnBaseURL, controlPanelTheme.getStaticResourcePath(),
+				controlPanelTheme.getImagesPath(), "/clay/empty_states.svg"));
 		setPathControlPanelSpritemap(
 			StringBundler.concat(
 				cdnBaseURL, controlPanelTheme.getStaticResourcePath(),
@@ -1544,6 +1582,10 @@ public class ThemeDisplay
 			setPathThemeRoot(themeStaticResourcePath + rootPath);
 		}
 
+		setPathThemeEmptyStatesSpritemap(
+			StringBundler.concat(
+				cdnBaseURL, themeStaticResourcePath, theme.getImagesPath(),
+				"/clay/empty_states.svg"));
 		setPathThemeSpritemap(
 			StringBundler.concat(
 				cdnBaseURL, themeStaticResourcePath, theme.getImagesPath(),
@@ -1568,16 +1610,19 @@ public class ThemeDisplay
 		_pathApplet = pathApplet;
 	}
 
-	public void setPathCms(String pathCms) {
-		_pathCms = pathCms;
-	}
-
 	public void setPathColorSchemeImages(String pathColorSchemeImages) {
 		_pathColorSchemeImages = pathColorSchemeImages;
 	}
 
-	public void setPathContext(String pathContext) {
-		_pathContext = pathContext;
+	public void setPathContext(String contextPath) {
+		_contextPath = contextPath;
+	}
+
+	public void setPathControlPanelEmptyStatesSpritemap(
+		String pathControlPanelEmptyStatesSpritemap) {
+
+		_pathControlPanelEmptyStatesSpritemap =
+			pathControlPanelEmptyStatesSpritemap;
 	}
 
 	public void setPathControlPanelSpritemap(String pathControlPanelSpritemap) {
@@ -1618,6 +1663,12 @@ public class ThemeDisplay
 
 	public void setPathThemeCss(String pathThemeCss) {
 		_pathThemeCss = pathThemeCss;
+	}
+
+	public void setPathThemeEmptyStatesSpritemap(
+		String pathThemeEmptyStatesSpritemap) {
+
+		_pathThemeEmptyStatesSpritemap = pathThemeEmptyStatesSpritemap;
 	}
 
 	public void setPathThemeImages(String pathThemeImages) {
@@ -1808,9 +1859,15 @@ public class ThemeDisplay
 	public void setSiteGroupId(long siteGroupId) {
 		_siteGroupId = siteGroupId;
 
+		_parentSiteGroupId = 0;
+
 		if (_siteGroupId > 0) {
 			try {
 				_siteGroup = GroupLocalServiceUtil.getGroup(_siteGroupId);
+
+				if ((_siteGroup != null) && _siteGroup.isSite()) {
+					_parentSiteGroupId = _siteGroup.getParentGroupId();
+				}
 			}
 			catch (Exception exception) {
 				_log.error(exception);
@@ -1864,10 +1921,6 @@ public class ThemeDisplay
 		TimeZoneThreadLocal.setThemeDisplayTimeZone(timeZone);
 	}
 
-	public void setUnfilteredLayouts(List<Layout> unfilteredLayouts) {
-		_unfilteredLayouts = unfilteredLayouts;
-	}
-
 	public void setURLControlPanel(String urlControlPanel) {
 		_urlControlPanel = urlControlPanel;
 	}
@@ -1900,6 +1953,10 @@ public class ThemeDisplay
 		_urlSignOut = urlSignOut;
 	}
 
+	public void setUnfilteredLayouts(List<Layout> unfilteredLayouts) {
+		_unfilteredLayouts = unfilteredLayouts;
+	}
+
 	public void setUser(User user) {
 		_user = user;
 	}
@@ -1928,21 +1985,21 @@ public class ThemeDisplay
 
 	private String _getFriendlyURL(Layout layout) {
 		if (_layoutFriendlyURLs == null) {
-			if (ListUtil.isEmpty(_layouts)) {
+			int layoutManagePagesInitialChildren =
+				_getLayoutManagePagesInitialChildren();
+
+			if (ListUtil.isEmpty(_layouts) ||
+				(layoutManagePagesInitialChildren <= 0)) {
+
 				_layoutFriendlyURLs = new HashMap<>();
 			}
 			else {
-				int layoutManagePagesInitialChildren =
-					_getLayoutManagePagesInitialChildren();
-
-				if (layoutManagePagesInitialChildren != 0) {
-					_layoutFriendlyURLs =
-						LayoutFriendlyURLLocalServiceUtil.getLayoutFriendlyURLs(
-							_siteGroup,
-							_getFriendlyURLLayouts(
-								layoutManagePagesInitialChildren),
-							_i18nLanguageId);
-				}
+				_layoutFriendlyURLs =
+					LayoutFriendlyURLLocalServiceUtil.getLayoutFriendlyURLs(
+						_siteGroup,
+						_getFriendlyURLLayouts(
+							layoutManagePagesInitialChildren),
+						_i18nLanguageId);
 			}
 		}
 
@@ -1984,6 +2041,35 @@ public class ThemeDisplay
 		return _layoutManagePagesInitialChildren;
 	}
 
+	private String _getResource(
+		String staticResourceURLName, String staticResourceURLPath,
+		String unhashedFileURIName, String unhashedFileURIPath) {
+
+		String prefix = PortalUtil.getPathModule();
+
+		String proxyPath = PortalUtil.getPathProxy();
+
+		prefix = prefix.substring(proxyPath.length());
+
+		String hashedFileURI = HashedFilesRegistryUtil.getHashedFileURI(
+			StringBundler.concat(
+				prefix, StringPool.SLASH, _theme.getServletContextName(),
+				unhashedFileURIPath, unhashedFileURIName));
+
+		if (Validator.isNull(hashedFileURI)) {
+			return PortalUtil.getStaticResourceURL(
+				getRequest(), staticResourceURLPath + staticResourceURLName);
+		}
+
+		try {
+			return PortalUtil.getCDNHost(getRequest()) + proxyPath +
+				hashedFileURI;
+		}
+		catch (PortalException portalException) {
+			throw new RuntimeException(portalException);
+		}
+	}
+
 	private static final Log _log = LogFactoryUtil.getLog(ThemeDisplay.class);
 
 	private static int _layoutManagePagesInitialChildren = Integer.MIN_VALUE;
@@ -2002,6 +2088,7 @@ public class ThemeDisplay
 	private int _companyLogoHeight;
 	private int _companyLogoWidth;
 	private Contact _contact;
+	private String _contextPath = StringPool.BLANK;
 	private Group _controlPanelGroup;
 	private Layout _controlPanelLayout;
 	private Device _device;
@@ -2024,10 +2111,10 @@ public class ThemeDisplay
 	private Layout _layout;
 	private transient Map<Long, String> _layoutFriendlyURLs;
 	private transient Map<String, PortletPreferences> _layoutPortletPreferences;
-	private List<Layout> _layouts;
 	private LayoutSet _layoutSet;
 	private String _layoutSetLogo = StringPool.BLANK;
 	private LayoutTypePortlet _layoutTypePortlet;
+	private List<Layout> _layouts;
 	private String _lifecycle;
 	private boolean _lifecycleAction;
 	private boolean _lifecycleEvent;
@@ -2037,10 +2124,10 @@ public class ThemeDisplay
 	private String _mainCSSURL;
 	private String _mainJSURL;
 	private List<NavItem> _navItems;
+	private long _parentSiteGroupId;
 	private String _pathApplet = StringPool.BLANK;
-	private String _pathCms = StringPool.BLANK;
 	private String _pathColorSchemeImages = StringPool.BLANK;
-	private String _pathContext = StringPool.BLANK;
+	private String _pathControlPanelEmptyStatesSpritemap = StringPool.BLANK;
 	private String _pathControlPanelSpritemap = StringPool.BLANK;
 	private String _pathFriendlyURLPrivateGroup = StringPool.BLANK;
 	private String _pathFriendlyURLPrivateUser = StringPool.BLANK;
@@ -2050,6 +2137,7 @@ public class ThemeDisplay
 	private String _pathMain = StringPool.BLANK;
 	private String _pathSound = StringPool.BLANK;
 	private String _pathThemeCss = StringPool.BLANK;
+	private String _pathThemeEmptyStatesSpritemap = StringPool.BLANK;
 	private String _pathThemeImages = StringPool.BLANK;
 	private String _pathThemeJavaScript = StringPool.BLANK;
 	private String _pathThemeRoot = StringPool.BLANK;

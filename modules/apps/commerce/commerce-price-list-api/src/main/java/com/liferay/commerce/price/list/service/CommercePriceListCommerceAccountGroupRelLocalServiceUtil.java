@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -92,8 +93,9 @@ public class CommercePriceListCommerceAccountGroupRelLocalServiceUtil {
 	}
 
 	public static void
-		deleteCommercePriceListAccountGroupRelsByCommercePriceListId(
-			long commercePriceListId) {
+			deleteCommercePriceListAccountGroupRelsByCommercePriceListId(
+				long commercePriceListId)
+		throws PortalException {
 
 		getService().
 			deleteCommercePriceListAccountGroupRelsByCommercePriceListId(
@@ -368,20 +370,6 @@ public class CommercePriceListCommerceAccountGroupRelLocalServiceUtil {
 		return getService().getCommercePriceListCommerceAccountGroupRelsCount();
 	}
 
-	public static int getCommercePriceListCommerceAccountGroupRelsCount(
-		long commercePriceListId) {
-
-		return getService().getCommercePriceListCommerceAccountGroupRelsCount(
-			commercePriceListId);
-	}
-
-	public static int getCommercePriceListCommerceAccountGroupRelsCount(
-		long commercePriceListId, String name) {
-
-		return getService().getCommercePriceListCommerceAccountGroupRelsCount(
-			commercePriceListId, name);
-	}
-
 	public static com.liferay.portal.kernel.dao.orm.ExportActionableDynamicQuery
 		getExportActionableDynamicQuery(
 			com.liferay.exportimport.kernel.lar.PortletDataContext
@@ -447,16 +435,14 @@ public class CommercePriceListCommerceAccountGroupRelLocalServiceUtil {
 	public static CommercePriceListCommerceAccountGroupRelLocalService
 		getService() {
 
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(
-		CommercePriceListCommerceAccountGroupRelLocalService service) {
-
-		_service = service;
-	}
-
-	private static volatile CommercePriceListCommerceAccountGroupRelLocalService
-		_service;
+	private static final Snapshot
+		<CommercePriceListCommerceAccountGroupRelLocalService>
+			_serviceSnapshot = new Snapshot<>(
+				CommercePriceListCommerceAccountGroupRelLocalServiceUtil.class,
+				CommercePriceListCommerceAccountGroupRelLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-819434837

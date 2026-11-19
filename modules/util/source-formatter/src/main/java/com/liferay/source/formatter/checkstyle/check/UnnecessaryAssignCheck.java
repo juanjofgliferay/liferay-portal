@@ -7,6 +7,7 @@ package com.liferay.source.formatter.checkstyle.check;
 
 import com.puppycrawl.tools.checkstyle.api.DetailAST;
 import com.puppycrawl.tools.checkstyle.api.TokenTypes;
+import com.puppycrawl.tools.checkstyle.utils.TokenUtil;
 
 import java.util.List;
 
@@ -74,11 +75,10 @@ public class UnnecessaryAssignCheck extends BaseUnnecessaryStatementCheck {
 		DetailAST variableDefinitionDetailAST =
 			variableTypeDetailAST.getParent();
 
-		List<DetailAST> variableCallerDetailASTList =
-			getVariableCallerDetailASTList(
-				variableDefinitionDetailAST, variableName);
+		List<DetailAST> variableCallerDetailASTs = getVariableCallerDetailASTs(
+			variableDefinitionDetailAST, variableName);
 
-		if (variableCallerDetailASTList.isEmpty()) {
+		if (variableCallerDetailASTs.isEmpty()) {
 			return;
 		}
 
@@ -89,9 +89,8 @@ public class UnnecessaryAssignCheck extends BaseUnnecessaryStatementCheck {
 
 		int endLineNumber = getEndLineNumber(detailAST);
 
-		for (int i = 0; i < variableCallerDetailASTList.size(); i++) {
-			DetailAST variableCallerDetailAST = variableCallerDetailASTList.get(
-				i);
+		for (int i = 0; i < variableCallerDetailASTs.size(); i++) {
+			DetailAST variableCallerDetailAST = variableCallerDetailASTs.get(i);
 
 			if (variableCallerDetailAST.getLineNo() <= endLineNumber) {
 				continue;
@@ -99,9 +98,9 @@ public class UnnecessaryAssignCheck extends BaseUnnecessaryStatementCheck {
 
 			firstNextVariableCallerDetailAST = variableCallerDetailAST;
 
-			if (i < (variableCallerDetailASTList.size() - 1)) {
+			if (i < (variableCallerDetailASTs.size() - 1)) {
 				secondNextVariableCallerDetailAST =
-					variableCallerDetailASTList.get(i + 1);
+					variableCallerDetailASTs.get(i + 1);
 			}
 
 			break;
@@ -124,8 +123,9 @@ public class UnnecessaryAssignCheck extends BaseUnnecessaryStatementCheck {
 
 		parentDetailAST = variableDefinitionDetailAST.getParent();
 
-		if ((parentDetailAST.getType() != TokenTypes.FOR_EACH_CLAUSE) &&
-			(parentDetailAST.getType() != TokenTypes.SLIST)) {
+		if (!TokenUtil.isOfType(
+				parentDetailAST, TokenTypes.FOR_EACH_CLAUSE,
+				TokenTypes.SLIST)) {
 
 			return;
 		}
@@ -168,11 +168,7 @@ public class UnnecessaryAssignCheck extends BaseUnnecessaryStatementCheck {
 
 		firstChildDetailAST = firstChildDetailAST.getFirstChild();
 
-		if (variableName.equals(firstChildDetailAST.getText())) {
-			return true;
-		}
-
-		return false;
+		return variableName.equals(firstChildDetailAST.getText());
 	}
 
 	private boolean _isUsedInFinallyStatement(

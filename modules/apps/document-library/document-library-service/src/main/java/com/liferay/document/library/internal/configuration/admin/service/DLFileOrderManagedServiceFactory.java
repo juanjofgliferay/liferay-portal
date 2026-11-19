@@ -8,10 +8,7 @@ package com.liferay.document.library.internal.configuration.admin.service;
 import com.liferay.document.library.internal.configuration.DLFileOrderConfiguration;
 import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
 import com.liferay.portal.kernel.model.CompanyConstants;
-import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.GroupConstants;
-import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
-import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.util.GetterUtil;
 
 import java.util.Dictionary;
@@ -25,7 +22,6 @@ import org.osgi.service.cm.ManagedServiceFactory;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Modified;
-import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Sam Ziemer
@@ -56,16 +52,16 @@ public class DLFileOrderManagedServiceFactory implements ManagedServiceFactory {
 		return dlFileOrderConfiguration.sortBy();
 	}
 
-	public String getGroupOrderByColumn(long groupId) {
+	public String getGroupOrderByColumn(long companyId, long groupId) {
 		DLFileOrderConfiguration dlFileOrderConfiguration =
-			_getGroupDLFileOrderConfiguration(groupId);
+			_getGroupDLFileOrderConfiguration(companyId, groupId);
 
 		return dlFileOrderConfiguration.orderByColumn();
 	}
 
-	public String getGroupSortBy(long groupId) {
+	public String getGroupSortBy(long companyId, long groupId) {
 		DLFileOrderConfiguration dlFileOrderConfiguration =
-			_getGroupDLFileOrderConfiguration(groupId);
+			_getGroupDLFileOrderConfiguration(companyId, groupId);
 
 		return dlFileOrderConfiguration.sortBy();
 	}
@@ -93,16 +89,20 @@ public class DLFileOrderManagedServiceFactory implements ManagedServiceFactory {
 		long companyId = GetterUtil.getLong(
 			dictionary.get("companyId"), CompanyConstants.SYSTEM);
 
-		if (companyId != CompanyConstants.SYSTEM) {
-			_updateCompanyConfiguration(companyId, pid, dictionary);
+		if (companyId == CompanyConstants.SYSTEM) {
+			return;
 		}
 
 		long groupId = GetterUtil.getLong(
 			dictionary.get("groupId"), GroupConstants.DEFAULT_PARENT_GROUP_ID);
 
-		if (groupId != GroupConstants.DEFAULT_PARENT_GROUP_ID) {
-			_updateGroupConfiguration(groupId, pid, dictionary);
+		if (groupId == GroupConstants.DEFAULT_PARENT_GROUP_ID) {
+			_updateCompanyConfiguration(companyId, pid, dictionary);
+
+			return;
 		}
+
+		_updateGroupConfiguration(companyId, groupId, pid, dictionary);
 	}
 
 	@Activate
@@ -120,48 +120,48 @@ public class DLFileOrderManagedServiceFactory implements ManagedServiceFactory {
 			() -> _systemDLFileOrderConfiguration);
 	}
 
-	private DLFileOrderConfiguration _getDLFileOrderConfiguration(
-		Map<Long, DLFileOrderConfiguration> dlFileOrderConfigurations, long key,
+	private <T> DLFileOrderConfiguration _getDLFileOrderConfiguration(
+		Map<T, DLFileOrderConfiguration> dlFileOrderConfigurations, T key,
 		Supplier<DLFileOrderConfiguration> supplier) {
 
-		if (dlFileOrderConfigurations.containsKey(key)) {
-			return dlFileOrderConfigurations.get(key);
+		DLFileOrderConfiguration dlFileOrderConfiguration =
+			dlFileOrderConfigurations.get(key);
+
+		if (dlFileOrderConfiguration != null) {
+			return dlFileOrderConfiguration;
 		}
 
 		return supplier.get();
 	}
 
 	private DLFileOrderConfiguration _getGroupDLFileOrderConfiguration(
-		long groupId) {
+		long companyId, long groupId) {
 
 		return _getDLFileOrderConfiguration(
-			_groupDLFileOrderConfigurations, groupId,
-			() -> {
-				Group group = _groupLocalService.fetchGroup(groupId);
+			_groupDLFileOrderConfigurations, _getGroupKey(companyId, groupId),
+			() -> _getCompanyDLFileOrderConfiguration(companyId));
+	}
 
-				long companyId = CompanyThreadLocal.getCompanyId();
-
-				if (group != null) {
-					companyId = group.getCompanyId();
-				}
-
-				return _getCompanyDLFileOrderConfiguration(companyId);
-			});
+	private String _getGroupKey(long companyId, long groupId) {
+		return companyId + "--" + groupId;
 	}
 
 	private void _unmapPid(String pid) {
-		if (_companyIds.containsKey(pid)) {
-			long companyId = _companyIds.remove(pid);
+		Long companyId = _companyIds.remove(pid);
 
+		if (companyId != null) {
 			_companyDLFileOrderConfigurations.remove(companyId);
 
 			_groupDLFileOrderConfigurations.clear();
-			_groupIds.clear();
-		}
-		else if (_groupIds.containsKey(pid)) {
-			long groupId = _groupIds.remove(pid);
+			_groupKeys.clear();
 
-			_groupDLFileOrderConfigurations.remove(groupId);
+			return;
+		}
+
+		String groupKey = _groupKeys.remove(pid);
+
+		if (groupKey != null) {
+			_groupDLFileOrderConfigurations.remove(groupKey);
 		}
 	}
 
@@ -176,25 +176,24 @@ public class DLFileOrderManagedServiceFactory implements ManagedServiceFactory {
 	}
 
 	private void _updateGroupConfiguration(
-		long groupId, String pid, Dictionary<String, ?> dictionary) {
+		long companyId, long groupId, String pid,
+		Dictionary<String, ?> dictionary) {
+
+		String groupKey = _getGroupKey(companyId, groupId);
 
 		_groupDLFileOrderConfigurations.put(
-			groupId,
+			groupKey,
 			ConfigurableUtil.createConfigurable(
 				DLFileOrderConfiguration.class, dictionary));
-		_groupIds.put(pid, groupId);
+		_groupKeys.put(pid, groupKey);
 	}
 
 	private final Map<Long, DLFileOrderConfiguration>
 		_companyDLFileOrderConfigurations = new ConcurrentHashMap<>();
 	private final Map<String, Long> _companyIds = new ConcurrentHashMap<>();
-	private final Map<Long, DLFileOrderConfiguration>
+	private final Map<String, DLFileOrderConfiguration>
 		_groupDLFileOrderConfigurations = new ConcurrentHashMap<>();
-	private final Map<String, Long> _groupIds = new ConcurrentHashMap<>();
-
-	@Reference
-	private GroupLocalService _groupLocalService;
-
+	private final Map<String, String> _groupKeys = new ConcurrentHashMap<>();
 	private volatile DLFileOrderConfiguration _systemDLFileOrderConfiguration;
 
 }

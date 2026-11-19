@@ -32,7 +32,7 @@ interface ContentContainerProps {
 	editorConfig: object;
 	errors: FormError<NotificationTemplate>;
 	objectDefinitions: ObjectDefinition[];
-	selectedLocale: Locale;
+	selectedLocale: Liferay.Language.Locale;
 	setSelectedLocale: React.Dispatch<
 		React.SetStateAction<Liferay.Language.Locale>
 	>;
@@ -64,6 +64,7 @@ export default function ContentContainer({
 				})}
 				disabled={values.system}
 				error={errors.subject}
+				id="subject"
 				label={Liferay.Language.get('subject')}
 				name="subject"
 				onChange={(translation) => {
@@ -74,7 +75,6 @@ export default function ContentContainer({
 				}}
 				placeholder=""
 				required
-				selectedLocale={selectedLocale}
 				translations={values.subject}
 			/>
 
@@ -82,6 +82,7 @@ export default function ContentContainer({
 				<>
 					<SingleSelect<LabelValueObject<EditorTypeOptions>>
 						disabled={values.system}
+						id="editorType"
 						items={EDITOR_TYPES}
 						label={Liferay.Language.get('editor-type')}
 						onSelectionChange={(value) => {

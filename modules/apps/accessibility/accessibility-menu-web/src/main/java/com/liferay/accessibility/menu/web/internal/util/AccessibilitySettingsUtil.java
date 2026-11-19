@@ -20,9 +20,9 @@ import com.liferay.portal.kernel.util.SessionClicks;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import java.util.List;
+import jakarta.servlet.http.HttpServletRequest;
 
-import javax.servlet.http.HttpServletRequest;
+import java.util.List;
 
 /**
  * @author Evan Thibodeau
@@ -76,7 +76,40 @@ public class AccessibilitySettingsUtil {
 				_getSessionClicksValue(
 					httpServletRequest,
 					AccessibilitySettingConstants.
-						ACCESSIBILITY_SETTING_REDUCED_MOTION)));
+						ACCESSIBILITY_SETTING_REDUCED_MOTION)),
+			new AccessibilitySetting(
+				"c-prefers-focus-ring", false,
+				LanguageUtil.get(
+					httpServletRequest, "focus-ring-animation-description"),
+				AccessibilitySettingConstants.ACCESSIBILITY_SETTING_FOCUS_RING,
+				LanguageUtil.get(httpServletRequest, "focus-ring-animation"),
+				_getSessionClicksValue(
+					httpServletRequest,
+					AccessibilitySettingConstants.
+						ACCESSIBILITY_SETTING_FOCUS_RING)),
+			new AccessibilitySetting(
+				"c-prefers-persistent-alerts", false,
+				LanguageUtil.get(
+					httpServletRequest, "persistent-notifications-description"),
+				AccessibilitySettingConstants.
+					ACCESSIBILITY_SETTING_PERSISTENT_NOTIFICATIONS,
+				LanguageUtil.get(
+					httpServletRequest, "persistent-notifications"),
+				_getSessionClicksValue(
+					httpServletRequest,
+					AccessibilitySettingConstants.
+						ACCESSIBILITY_SETTING_PERSISTENT_NOTIFICATIONS)),
+			new AccessibilitySetting(
+				"data-prefers-contrast", "more", null, false,
+				LanguageUtil.get(
+					httpServletRequest, "high-contrast-description"),
+				AccessibilitySettingConstants.
+					ACCESSIBILITY_SETTING_HIGH_CONTRAST,
+				LanguageUtil.get(httpServletRequest, "high-contrast"),
+				_getSessionClicksValue(
+					httpServletRequest,
+					AccessibilitySettingConstants.
+						ACCESSIBILITY_SETTING_HIGH_CONTRAST)));
 	}
 
 	public static boolean isAccessibilityMenuEnabled(
@@ -91,6 +124,7 @@ public class AccessibilitySettingsUtil {
 			AccessibilityMenuConfiguration accessibilityMenuConfiguration =
 				configurationProvider.getGroupConfiguration(
 					AccessibilityMenuConfiguration.class,
+					themeDisplay.getCompanyId(),
 					themeDisplay.getScopeGroupId());
 
 			return accessibilityMenuConfiguration.enableAccessibilityMenu();

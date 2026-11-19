@@ -9,12 +9,12 @@ import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.workflow.kaleo.definition.ExecutionType;
 import com.liferay.portal.workflow.kaleo.model.KaleoInstanceToken;
 import com.liferay.portal.workflow.kaleo.model.KaleoNode;
-import com.liferay.portal.workflow.kaleo.model.KaleoTimer;
 import com.liferay.portal.workflow.kaleo.runtime.ExecutionContext;
 import com.liferay.portal.workflow.kaleo.runtime.action.KaleoActionExecutor;
 import com.liferay.portal.workflow.kaleo.runtime.graph.PathElement;
-import com.liferay.portal.workflow.kaleo.runtime.notification.NotificationHelper;
+import com.liferay.portal.workflow.kaleo.runtime.notification.KaleoNotificationSender;
 import com.liferay.portal.workflow.kaleo.runtime.util.ExecutionContextHelper;
+import com.liferay.portal.workflow.kaleo.service.KaleoInstanceTokenLocalServiceUtil;
 import com.liferay.portal.workflow.kaleo.service.KaleoTimerInstanceTokenLocalService;
 import com.liferay.portal.workflow.kaleo.service.KaleoTimerLocalService;
 
@@ -35,7 +35,15 @@ public abstract class BaseNodeExecutor implements NodeExecutor {
 		KaleoInstanceToken kaleoInstanceToken =
 			executionContext.getKaleoInstanceToken();
 
-		kaleoInstanceToken.setCurrentKaleoNode(currentKaleoNode);
+		if (kaleoInstanceToken.getCurrentKaleoNodeId() !=
+				currentKaleoNode.getKaleoNodeId()) {
+
+			executionContext.setKaleoInstanceToken(
+				KaleoInstanceTokenLocalServiceUtil.updateKaleoInstanceToken(
+					kaleoInstanceToken.getKaleoInstanceTokenId(),
+					currentKaleoNode.getKaleoNodeId(),
+					currentKaleoNode.getName()));
+		}
 
 		boolean performExecute = doEnter(currentKaleoNode, executionContext);
 
@@ -43,7 +51,7 @@ public abstract class BaseNodeExecutor implements NodeExecutor {
 			KaleoNode.class.getName(), currentKaleoNode.getKaleoNodeId(),
 			ExecutionType.ON_ENTRY, executionContext);
 
-		notificationHelper.sendKaleoNotifications(
+		kaleoNotificationSender.sendNotifications(
 			KaleoNode.class.getName(), currentKaleoNode.getKaleoNodeId(),
 			ExecutionType.ON_ENTRY, executionContext);
 
@@ -77,7 +85,7 @@ public abstract class BaseNodeExecutor implements NodeExecutor {
 			KaleoNode.class.getName(), currentKaleoNode.getKaleoNodeId(),
 			ExecutionType.ON_EXIT, executionContext);
 
-		notificationHelper.sendKaleoNotifications(
+		kaleoNotificationSender.sendNotifications(
 			KaleoNode.class.getName(), currentKaleoNode.getKaleoNodeId(),
 			ExecutionType.ON_EXIT, executionContext);
 	}
@@ -91,16 +99,6 @@ public abstract class BaseNodeExecutor implements NodeExecutor {
 			List<PathElement> remainingPathElements)
 		throws PortalException;
 
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), with no direct replacement
-	 */
-	@Deprecated
-	protected void doExecuteTimer(
-			KaleoNode currentKaleoNode, KaleoTimer kaleoTimer,
-			ExecutionContext executionContext)
-		throws PortalException {
-	}
-
 	protected abstract void doExit(
 			KaleoNode currentKaleoNode, ExecutionContext executionContext,
 			List<PathElement> remainingPathElements)
@@ -113,13 +111,13 @@ public abstract class BaseNodeExecutor implements NodeExecutor {
 	protected KaleoActionExecutor kaleoActionExecutor;
 
 	@Reference
+	protected KaleoNotificationSender kaleoNotificationSender;
+
+	@Reference
 	protected KaleoTimerInstanceTokenLocalService
 		kaleoTimerInstanceTokenLocalService;
 
 	@Reference
 	protected KaleoTimerLocalService kaleoTimerLocalService;
-
-	@Reference
-	protected NotificationHelper notificationHelper;
 
 }

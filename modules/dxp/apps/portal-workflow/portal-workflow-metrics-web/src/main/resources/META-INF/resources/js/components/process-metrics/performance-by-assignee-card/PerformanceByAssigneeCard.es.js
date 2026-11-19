@@ -13,7 +13,11 @@ import {useFilter} from '../../../shared/hooks/useFilter.es';
 import {usePost} from '../../../shared/hooks/usePost.es';
 import ProcessStepFilter from '../../filter/ProcessStepFilter.es';
 import TimeRangeFilter from '../../filter/TimeRangeFilter.es';
-import {getTimeRangeParams} from '../../filter/util/timeRangeUtil.es';
+import {
+	getDefaultEndDate,
+	getDefaultStartDate,
+	getTimeRangeParams,
+} from '../../filter/util/timeRangeUtil.es';
 import {Body, Footer} from './PerformanceByAssigneeCardBody.es';
 
 function Header({disableFilters, prefixKey, processId}) {
@@ -71,7 +75,11 @@ function PerformanceByAssigneeCard({routeParams}) {
 
 	const taskNames = taskName !== 'allSteps' ? [taskName] : undefined;
 	const timeRange = useMemo(
-		() => getTimeRangeParams(assigneeDateStart, assigneeDateEnd),
+		() =>
+			getTimeRangeParams(
+				assigneeDateStart ?? getDefaultStartDate(),
+				assigneeDateEnd ?? getDefaultEndDate()
+			),
 		[assigneeDateEnd, assigneeDateStart]
 	);
 
@@ -100,7 +108,7 @@ function PerformanceByAssigneeCard({routeParams}) {
 	}, [filtersError, routeParams, timeRange.dateEnd, timeRange.dateStart]);
 
 	return (
-		<ClayPanel className="mt-4 tabs-card">
+		<ClayPanel className="mt-4 tabs-card" displayType="secondary">
 			<PromisesResolver promises={promises}>
 				<PerformanceByAssigneeCard.Header
 					disableFilters={filtersError}

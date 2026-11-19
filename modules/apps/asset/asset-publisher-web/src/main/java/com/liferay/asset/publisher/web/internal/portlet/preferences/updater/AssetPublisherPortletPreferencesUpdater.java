@@ -19,7 +19,7 @@ import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.Portal;
 
-import javax.portlet.PortletPreferences;
+import jakarta.portlet.PortletPreferences;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -55,8 +55,7 @@ public class AssetPublisherPortletPreferencesUpdater
 			className, classPK);
 
 		_assetPublisherWebHelper.addSelection(
-			portletPreferences, assetEntry.getEntryId(), -1,
-			assetEntry.getClassName());
+			portletPreferences, assetEntry.getEntryId(), -1);
 
 		_addLayoutClassedModelUsage(
 			assetEntry.getClassNameId(), assetEntry.getClassPK(),
@@ -68,15 +67,16 @@ public class AssetPublisherPortletPreferencesUpdater
 
 		LayoutClassedModelUsage layoutClassedModelUsage =
 			_layoutClassedModelUsageLocalService.fetchLayoutClassedModelUsage(
-				classNameId, classPK, StringPool.BLANK, portletId,
-				_portal.getClassNameId(Portlet.class), layout.getPlid());
+				layout.getGroupId(), StringPool.BLANK, classNameId, classPK,
+				portletId, _portal.getClassNameId(Portlet.class),
+				layout.getPlid());
 
 		if (layoutClassedModelUsage != null) {
 			return;
 		}
 
 		_layoutClassedModelUsageLocalService.addLayoutClassedModelUsage(
-			layout.getGroupId(), classNameId, classPK, StringPool.BLANK,
+			layout.getGroupId(), StringPool.BLANK, classNameId, classPK,
 			portletId, _portal.getClassNameId(Portlet.class), layout.getPlid(),
 			ServiceContextThreadLocal.getServiceContext());
 	}

@@ -11,25 +11,27 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import com.liferay.petra.function.UnsafeSupplier;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Alejandro Tardín
@@ -50,42 +52,63 @@ public class DocumentBulkSelection implements Serializable {
 			DocumentBulkSelection.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String[] getDocumentIds() {
+		if (_documentIdsSupplier != null) {
+			documentIds = _documentIdsSupplier.get();
+
+			_documentIdsSupplier = null;
+		}
+
 		return documentIds;
 	}
 
 	public void setDocumentIds(String[] documentIds) {
 		this.documentIds = documentIds;
+
+		_documentIdsSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setDocumentIds(
 		UnsafeSupplier<String[], Exception> documentIdsUnsafeSupplier) {
 
-		try {
-			documentIds = documentIdsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_documentIdsSupplier = () -> {
+			try {
+				return documentIdsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String[] documentIds;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String[]> _documentIdsSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public SelectionScope getSelectionScope() {
+		if (_selectionScopeSupplier != null) {
+			selectionScope = _selectionScopeSupplier.get();
+
+			_selectionScopeSupplier = null;
+		}
+
 		return selectionScope;
 	}
 
 	public void setSelectionScope(SelectionScope selectionScope) {
 		this.selectionScope = selectionScope;
+
+		_selectionScopeSupplier = null;
 	}
 
 	@JsonIgnore
@@ -93,20 +116,25 @@ public class DocumentBulkSelection implements Serializable {
 		UnsafeSupplier<SelectionScope, Exception>
 			selectionScopeUnsafeSupplier) {
 
-		try {
-			selectionScope = selectionScopeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_selectionScopeSupplier = () -> {
+			try {
+				return selectionScopeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected SelectionScope selectionScope;
+
+	@JsonIgnore
+	private Supplier<SelectionScope> _selectionScopeSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -136,6 +164,8 @@ public class DocumentBulkSelection implements Serializable {
 
 		sb.append("{");
 
+		String[] documentIds = getDocumentIds();
+
 		if (documentIds != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -160,6 +190,8 @@ public class DocumentBulkSelection implements Serializable {
 			sb.append("]");
 		}
 
+		SelectionScope selectionScope = getSelectionScope();
+
 		if (selectionScope != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -175,8 +207,8 @@ public class DocumentBulkSelection implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.bulk.rest.dto.v1_0.DocumentBulkSelection",
 		name = "x-class-name"
 	)
@@ -222,7 +254,10 @@ public class DocumentBulkSelection implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -260,6 +295,27 @@ public class DocumentBulkSelection implements Serializable {
 		return sb.toString();
 	}
 
+	private static String _toJSON(Object value) {
+		if (value instanceof Collection) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONArray((Collection<?>)value));
+		}
+		else if (value instanceof Map) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONObject((Map<?, ?>)value));
+		}
+		else if (value instanceof Object[]) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONArray(
+					Arrays.asList((Object[])value)));
+		}
+		else if (value instanceof String) {
+			return StringBundler.concat("\"", _escape(value), "\"");
+		}
+
+		return String.valueOf(value);
+	}
+
 	private static final String[][] _JSON_ESCAPE_STRINGS = {
 		{"\\", "\"", "\b", "\f", "\n", "\r", "\t"},
 		{"\\\\", "\\\"", "\\b", "\\f", "\\n", "\\r", "\\t"}
@@ -268,3 +324,4 @@ public class DocumentBulkSelection implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:1950488010

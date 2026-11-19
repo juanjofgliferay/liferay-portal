@@ -11,26 +11,29 @@ import com.liferay.oauth2.provider.internal.test.AuthorizationGrant;
 import com.liferay.oauth2.provider.internal.test.PasswordAuthorizationGrant;
 import com.liferay.oauth2.provider.internal.test.RefreshTokenAuthorizationGrant;
 import com.liferay.oauth2.provider.internal.test.TestAnnotatedApplication;
+import com.liferay.oauth2.provider.model.OAuth2Authorization;
+import com.liferay.oauth2.provider.util.OAuth2TokenContentUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
-import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.test.log.LogCapture;
 import com.liferay.portal.test.log.LoggerTestUtil;
+
+import jakarta.ws.rs.client.Entity;
+import jakarta.ws.rs.client.Invocation;
+import jakarta.ws.rs.client.WebTarget;
+import jakarta.ws.rs.core.MultivaluedHashMap;
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.Response;
 
 import java.util.Arrays;
 import java.util.Collections;
 
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.client.Invocation;
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.MultivaluedHashMap;
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.Response;
-
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -43,12 +46,12 @@ import org.osgi.framework.BundleActivator;
 public class RefreshTokenAuthorizationGrantTest
 	extends BaseAuthorizationGrantTestCase {
 
-	@Ignore
 	@Test
 	public void test() throws Exception {
 		JSONObject jsonObject = getToken(
-			"oauthTestApplication", null,
-			getResourceOwnerPasswordBiFunction("test@liferay.com", "test"),
+			_CLIENT_ID, null,
+			getResourceOwnerPasswordBiFunction(
+				_user.getEmailAddress(), PropsValues.DEFAULT_ADMIN_PASSWORD),
 			this::parseJSONObject);
 
 		WebTarget webTarget = getWebTarget("/annotated");
@@ -67,8 +70,8 @@ public class RefreshTokenAuthorizationGrantTest
 
 		MultivaluedMap<String, String> formData = new MultivaluedHashMap<>();
 
-		formData.add("client_id", "oauthTestApplication");
-		formData.add("client_secret", "oauthTestApplicationSecret");
+		formData.add("client_id", _CLIENT_ID);
+		formData.add("client_secret", CLIENT_SECRET);
 		formData.add("grant_type", "refresh_token");
 		formData.add("refresh_token", jsonObject.getString("refresh_token"));
 
@@ -76,6 +79,13 @@ public class RefreshTokenAuthorizationGrantTest
 			tokenBuilder.post(Entity.form(formData)));
 
 		Assert.assertNotEquals(tokenString, accessTokenString);
+
+		OAuth2Authorization oAuth2Authorization =
+			fetchOAuth2AuthorizationByAccessTokenContent(tokenString);
+
+		Assert.assertEquals(
+			OAuth2TokenContentUtil.getTokenContent(tokenString),
+			oAuth2Authorization.getAccessTokenContent());
 
 		invocationBuilder = authorize(webTarget.request(), tokenString);
 
@@ -91,16 +101,67 @@ public class RefreshTokenAuthorizationGrantTest
 
 			Assert.assertEquals(401, response.getStatus());
 		}
+
+		jsonObject = getToken(
+			_CLIENT_ID, null,
+			getResourceOwnerPasswordBiFunction(
+				_user.getEmailAddress(), PropsValues.DEFAULT_ADMIN_PASSWORD),
+			this::parseJSONObject);
+
+		accessTokenString = jsonObject.getString("access_token");
+
+		formData.putSingle("client_id", TEST_CLIENT_ID_1);
+		formData.putSingle(
+			"refresh_token", jsonObject.getString("refresh_token"));
+
+		Response response = tokenBuilder.post(Entity.form(formData));
+
+		Assert.assertEquals(400, response.getStatus());
+
+		formData.putSingle("client_id", _CLIENT_ID);
+
+		response = tokenBuilder.post(Entity.form(formData));
+
+		Assert.assertEquals(400, response.getStatus());
+
+		invocationBuilder = authorize(webTarget.request(), accessTokenString);
+
+		try (LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
+				"portal_web.docroot.errors.code_jsp", LoggerTestUtil.WARN)) {
+
+			response = invocationBuilder.get();
+
+			Assert.assertEquals(401, response.getStatus());
+		}
 	}
 
-	public static class TokenExpeditionTestPreparatorBundleActivator
+	@Override
+	protected AuthorizationGrant getAuthorizationGrant(String clientId) {
+		return new RefreshTokenAuthorizationGrant(
+			getRefreshToken(
+				new PasswordAuthorizationGrant(
+					_user.getEmailAddress(),
+					PropsValues.DEFAULT_ADMIN_PASSWORD),
+				clientAuthentications.get(clientId)));
+	}
+
+	@Override
+	protected BundleActivator getBundleActivator() {
+		return new TokenExpeditionTestPreparatorBundleActivator();
+	}
+
+	private static final String _CLIENT_ID = RandomTestUtil.randomString();
+
+	private User _user;
+
+	private class TokenExpeditionTestPreparatorBundleActivator
 		extends BaseTokenEndpointTestCase.TestPreparatorBundleActivator {
 
 		@Override
 		protected void prepareTest() throws Exception {
-			long defaultCompanyId = PortalUtil.getDefaultCompanyId();
+			long companyId = TestPropsValues.getCompanyId();
 
-			User user = UserTestUtil.getAdminUser(defaultCompanyId);
+			_user = UserTestUtil.getAdminUser(companyId);
 
 			registerJaxRsApplication(
 				new TestAnnotatedApplication(), "annotated",
@@ -111,7 +172,7 @@ public class RefreshTokenAuthorizationGrantTest
 				).build());
 
 			createOAuth2Application(
-				defaultCompanyId, user, "oauthTestApplication",
+				companyId, _user, _CLIENT_ID,
 				Arrays.asList(
 					GrantType.RESOURCE_OWNER_PASSWORD, GrantType.REFRESH_TOKEN),
 				Collections.singletonList("everything"));
@@ -119,18 +180,6 @@ public class RefreshTokenAuthorizationGrantTest
 			super.prepareTest();
 		}
 
-	}
-
-	protected AuthorizationGrant getAuthorizationGrant(String clientId) {
-		return new RefreshTokenAuthorizationGrant(
-			getRefreshToken(
-				new PasswordAuthorizationGrant("test@liferay.com", "test"),
-				clientAuthentications.get(clientId)));
-	}
-
-	@Override
-	protected BundleActivator getBundleActivator() {
-		return new TokenExpeditionTestPreparatorBundleActivator();
 	}
 
 }

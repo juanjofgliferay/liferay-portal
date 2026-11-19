@@ -18,21 +18,22 @@ import com.liferay.portal.kernel.service.UserLocalServiceUtil;
 import com.liferay.portal.kernel.servlet.HttpHeaders;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.security.auth.http.HttpAuthManagerUtil;
 import com.liferay.portal.util.PortalInstances;
-import com.liferay.portal.util.PropsValues;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.net.HttpURLConnection;
 
-import java.security.Key;
+import java.nio.charset.StandardCharsets;
 
-import java.util.Objects;
+import java.security.Key;
+import java.security.MessageDigest;
 
 import javax.crypto.spec.SecretKeySpec;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Tomas Polesovsky
@@ -93,7 +94,11 @@ public class TunnelAuthenticationManagerImpl
 		String password = httpAuthorizationHeader.getAuthParameter(
 			HttpAuthorizationHeader.AUTH_PARAMETER_NAME_PASSWORD);
 
-		if (!Objects.equals(expectedPassword, password)) {
+		if ((password == null) ||
+			!MessageDigest.isEqual(
+				password.getBytes(StandardCharsets.UTF_8),
+				expectedPassword.getBytes(StandardCharsets.UTF_8))) {
+
 			AuthException authException = new RemoteAuthException();
 
 			authException.setType(RemoteAuthException.WRONG_SHARED_SECRET);

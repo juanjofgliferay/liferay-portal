@@ -26,6 +26,7 @@ import com.liferay.portal.kernel.template.TemplateVariableDefinition;
 import com.liferay.portal.kernel.template.TemplateVariableGroup;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.HashMapBuilder;
+import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.JavaConstants;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
@@ -35,13 +36,13 @@ import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.template.engine.TemplateContextHelper;
 import com.liferay.template.web.internal.util.TemplateDDMTemplateUtil;
 
+import jakarta.portlet.PortletConfig;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.Collection;
 import java.util.Map;
 import java.util.ResourceBundle;
-
-import javax.portlet.PortletConfig;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Eudaldo Alonso
@@ -77,7 +78,8 @@ public class EditDDMTemplateDisplayContext {
 		}
 
 		_classNameId = BeanParamUtil.getLong(
-			getDDMTemplate(), _liferayPortletRequest, "classNameId");
+			getDDMTemplate(), _liferayPortletRequest, "classNameId",
+			DDMTemplate::getClassNameId);
 
 		return _classNameId;
 	}
@@ -134,7 +136,7 @@ public class EditDDMTemplateDisplayContext {
 
 		PortletConfig portletConfig =
 			(PortletConfig)httpServletRequest.getAttribute(
-				JavaConstants.JAVAX_PORTLET_CONFIG);
+				JavaConstants.JAKARTA_PORTLET_CONFIG);
 
 		_refererWebDAVToken = ParamUtil.getString(
 			httpServletRequest, "refererWebDAVToken",
@@ -218,7 +220,8 @@ public class EditDDMTemplateDisplayContext {
 		}
 
 		_smallImage = BeanParamUtil.getBoolean(
-			getDDMTemplate(), _liferayPortletRequest, "smallImage");
+			getDDMTemplate(), _liferayPortletRequest, "smallImage",
+			DDMTemplate::isSmallImage);
 
 		return _smallImage;
 	}
@@ -280,7 +283,8 @@ public class EditDDMTemplateDisplayContext {
 		}
 
 		String script = BeanParamUtil.getString(
-			getDDMTemplate(), httpServletRequest, "script");
+			getDDMTemplate(), httpServletRequest, "script",
+			DDMTemplate::getScript);
 
 		if (Validator.isNull(script)) {
 			script = getDefaultScript();
@@ -293,7 +297,7 @@ public class EditDDMTemplateDisplayContext {
 			script = scriptContent;
 		}
 
-		_script = script;
+		_script = HtmlUtil.escape(script);
 
 		return _script;
 	}

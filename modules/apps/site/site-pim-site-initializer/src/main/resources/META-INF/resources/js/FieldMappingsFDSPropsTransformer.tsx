@@ -1,0 +1,102 @@
+/**
+ * SPDX-FileCopyrightText: (c) 2026 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
+ */
+
+import {openToast} from 'frontend-js-components-web';
+import {fetch} from 'frontend-js-web';
+
+import FieldMappingChannelFieldRenderer from './cell_renderers/FieldMappingChannelFieldRenderer';
+import FieldMappingSourceAttributesRenderer from './cell_renderers/FieldMappingSourceAttributesRenderer';
+import FieldMappingTransformationRulesRenderer from './cell_renderers/FieldMappingTransformationRulesRenderer';
+
+export const EVENT_FIELD_MAPPINGS_CHANGE = 'pimConnectorFieldMappings:change';
+
+export default function propsTransformer(props: {[key: string]: any}) {
+	return {
+		...props,
+		customRenderers: {
+			tableCell: [
+				{
+					component: FieldMappingChannelFieldRenderer,
+					name: 'channelFieldTableCellRenderer',
+					type: 'internal',
+				},
+				{
+					component: FieldMappingSourceAttributesRenderer,
+					name: 'sourceAttributesTableCellRenderer',
+					type: 'internal',
+				},
+				{
+					component: FieldMappingTransformationRulesRenderer,
+					name: 'transformationRulesTableCellRenderer',
+					type: 'internal',
+				},
+			],
+		},
+		hideManagementBarInEmptyState: true,
+		onActionDropdownItemClick({action, itemData, loadData}: any) {
+			if (action?.data?.id !== 'clear') {
+				return;
+			}
+
+			clearFieldMappings(
+				action.data.apiURL,
+				itemData.fieldMappingIds,
+				loadData,
+				action.data.mappingRuleAPIURL,
+				itemData.mappingRuleId,
+				itemData.required
+			);
+		},
+	};
+}
+
+function clearFieldMappings(
+	apiURL: string,
+	fieldMappingIds: number[],
+	loadData: Function,
+	mappingRuleAPIURL: string,
+	mappingRuleId: number,
+	required: boolean
+) {
+	const urls = (fieldMappingIds ?? []).map(
+		(fieldMappingId) => `${apiURL}/${fieldMappingId}`
+	);
+
+	if (mappingRuleId) {
+		urls.push(`${mappingRuleAPIURL}/${mappingRuleId}`);
+	}
+
+	if (!urls.length) {
+		return;
+	}
+
+	Promise.all(urls.map((url) => fetch(url, {method: 'DELETE'})))
+		.then((responses) => {
+			if (responses.some(({ok}) => !ok)) {
+				throw new Error();
+			}
+
+			loadData();
+
+			if (required) {
+				Liferay.fire(EVENT_FIELD_MAPPINGS_CHANGE, {
+					mappingStatus: 'incomplete',
+				});
+			}
+
+			openToast({
+				message: Liferay.Language.get(
+					'your-request-completed-successfully'
+				),
+				type: 'success',
+			});
+		})
+		.catch(() => {
+			openToast({
+				message: Liferay.Language.get('an-unexpected-error-occurred'),
+				type: 'danger',
+			});
+		});
+}

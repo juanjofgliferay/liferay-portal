@@ -28,9 +28,9 @@ import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermi
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermissionUtil;
 import com.liferay.portal.kernel.security.permission.resource.PortletResourcePermission;
 import com.liferay.portal.kernel.security.permission.resource.StagedModelPermissionLogic;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.workflow.permission.WorkflowPermissionUtil;
-import com.liferay.portal.util.PropsValues;
 import com.liferay.portlet.documentlibrary.constants.DLConstants;
 import com.liferay.sharing.security.permission.resource.SharingModelResourcePermissionConfigurator;
 
@@ -44,7 +44,10 @@ import org.osgi.service.component.annotations.Reference;
  * @author Preston Crary
  */
 @Component(
-	property = "model.class.name=com.liferay.document.library.kernel.model.DLFileEntry",
+	property = {
+		"model.class.name=com.liferay.document.library.kernel.model.DLFileEntry",
+		"permissions.view.dynamic.inheritance.checking=true"
+	},
 	service = ModelResourcePermission.class
 )
 public class DLFileEntryModelResourcePermissionWrapper
@@ -138,6 +141,10 @@ public class DLFileEntryModelResourcePermissionWrapper
 
 					consumer.accept(
 						(permissionChecker, name, model, actionId) -> {
+							if (model.getClassNameId() > 0) {
+								return null;
+							}
+
 							if (actionId.equals(ActionKeys.DOWNLOAD)) {
 								actionId = ActionKeys.VIEW;
 							}
@@ -159,8 +166,10 @@ public class DLFileEntryModelResourcePermissionWrapper
 				return null;
 			}
 
-			if (fileEntry.isInTrash()) {
-				return _dlFolderLocalService.fetchDLFolder(folderId);
+			DLFolder dlFolder = _dlFolderLocalService.fetchDLFolder(folderId);
+
+			if ((dlFolder != null) || fileEntry.isInTrash()) {
+				return dlFolder;
 			}
 
 			return _dlFolderLocalService.getFolder(folderId);
@@ -208,6 +217,10 @@ public class DLFileEntryModelResourcePermissionWrapper
 				PermissionChecker permissionChecker, String name,
 				DLFileEntry dlFileEntry, String actionId)
 			throws PortalException {
+
+			if (actionId.equals(ActionKeys.DOWNLOAD)) {
+				actionId = ActionKeys.VIEW;
+			}
 
 			DLFileVersion fileVersion = dlFileEntry.getFileVersion();
 

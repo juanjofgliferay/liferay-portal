@@ -12,11 +12,11 @@ import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.vulcan.internal.jaxrs.context.provider.test.util.MockFeature;
 import com.liferay.portal.vulcan.internal.jaxrs.context.provider.test.util.MockMessage;
 import com.liferay.portal.vulcan.internal.jaxrs.context.provider.test.util.MockResource;
-import com.liferay.portal.vulcan.internal.util.PaginationConfigurationTestUtil;
+import com.liferay.portal.vulcan.internal.test.util.PaginationConfigurationTestUtil;
 import com.liferay.portal.vulcan.pagination.Pagination;
 import com.liferay.portal.vulcan.resource.EntityModelResource;
 
-import javax.ws.rs.core.Feature;
+import jakarta.ws.rs.core.Feature;
 
 import org.apache.cxf.jaxrs.ext.ContextProvider;
 

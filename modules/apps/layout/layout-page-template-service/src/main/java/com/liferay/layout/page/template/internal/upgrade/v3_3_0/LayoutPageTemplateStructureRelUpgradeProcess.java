@@ -20,6 +20,7 @@ import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.model.PortletPreferences;
 import com.liferay.portal.kernel.service.PortletPreferencesLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
 import com.liferay.portal.kernel.upgrade.UpgradeProcess;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.StringUtil;
@@ -53,11 +54,14 @@ public class LayoutPageTemplateStructureRelUpgradeProcess
 	}
 
 	private List<PortletPreferences> _getPortletPreferencesByPlid(long plid) {
-		if (_portletPreferencesMap.containsKey(plid)) {
-			return _portletPreferencesMap.get(plid);
+		List<PortletPreferences> portletPreferencesList =
+			_portletPreferencesMap.get(plid);
+
+		if (portletPreferencesList != null) {
+			return portletPreferencesList;
 		}
 
-		List<PortletPreferences> portletPreferencesList =
+		portletPreferencesList =
 			_portletPreferencesLocalService.getPortletPreferencesByPlid(plid);
 
 		_portletPreferencesMap.put(
@@ -175,16 +179,28 @@ public class LayoutPageTemplateStructureRelUpgradeProcess
 				oldNamespace = instanceId;
 			}
 
-			_updatePortletPreferences(
-				newNamespace, oldNamespace, fragmentEntryLink.getPlid(),
-				segmentsExperienceId);
+			ServiceContext serviceContext = new ServiceContext();
+
+			serviceContext.setUserId(fragmentEntryLink.getUserId());
+
+			ServiceContextThreadLocal.pushServiceContext(serviceContext);
+
+			try {
+				_updatePortletPreferences(
+					newNamespace, oldNamespace, fragmentEntryLink.getPlid(),
+					segmentsExperienceId);
+			}
+			finally {
+				ServiceContextThreadLocal.popServiceContext();
+			}
 
 			FragmentEntryLink newFragmentEntryLink =
 				_fragmentEntryLinkLocalService.addFragmentEntryLink(
-					fragmentEntryLink.getUserId(),
+					null, fragmentEntryLink.getUserId(),
 					fragmentEntryLink.getGroupId(),
-					fragmentEntryLink.getOriginalFragmentEntryLinkId(),
-					fragmentEntryLink.getFragmentEntryId(),
+					fragmentEntryLink.getOriginalFragmentEntryLinkERC(),
+					fragmentEntryLink.getFragmentEntryERC(),
+					fragmentEntryLink.getFragmentEntryScopeERC(),
 					segmentsExperienceId, fragmentEntryLink.getPlid(),
 					fragmentEntryLink.getCss(), fragmentEntryLink.getHtml(),
 					fragmentEntryLink.getJs(),
@@ -194,7 +210,7 @@ public class LayoutPageTemplateStructureRelUpgradeProcess
 						segmentsExperienceId),
 					newNamespace, fragmentEntryLink.getPosition(),
 					fragmentEntryLink.getRendererKey(),
-					fragmentEntryLink.getType(), new ServiceContext());
+					fragmentEntryLink.getType(), serviceContext);
 
 			fragmentStyledLayoutStructureItem.setFragmentEntryLinkId(
 				newFragmentEntryLink.getFragmentEntryLinkId());
@@ -207,10 +223,12 @@ public class LayoutPageTemplateStructureRelUpgradeProcess
 
 	private void _upgradeLayoutPageTemplateStructureRel() throws Exception {
 		try (Statement s = connection.createStatement();
+
 			ResultSet resultSet = s.executeQuery(
 				"select lPageTemplateStructureRelId, segmentsExperienceId, " +
 					"data_ from LayoutPageTemplateStructureRel order by " +
 						"segmentsExperienceId desc");
+
 			PreparedStatement preparedStatement =
 				AutoBatchPreparedStatementUtil.autoBatch(
 					connection,

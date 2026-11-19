@@ -31,7 +31,9 @@ import com.liferay.source.formatter.exception.SourceMismatchException;
 import com.liferay.source.formatter.processor.BNDRunSourceProcessor;
 import com.liferay.source.formatter.processor.BNDSourceProcessor;
 import com.liferay.source.formatter.processor.CETSourceProcessor;
+import com.liferay.source.formatter.processor.CIMergeAndGitRepoSourceProcessor;
 import com.liferay.source.formatter.processor.CQLSourceProcessor;
+import com.liferay.source.formatter.processor.CSPSourceProcessor;
 import com.liferay.source.formatter.processor.CSSSourceProcessor;
 import com.liferay.source.formatter.processor.CodeownersSourceProcessor;
 import com.liferay.source.formatter.processor.ConfigSourceProcessor;
@@ -41,13 +43,16 @@ import com.liferay.source.formatter.processor.FTLSourceProcessor;
 import com.liferay.source.formatter.processor.GradleSourceProcessor;
 import com.liferay.source.formatter.processor.GroovySourceProcessor;
 import com.liferay.source.formatter.processor.HTMLSourceProcessor;
+import com.liferay.source.formatter.processor.IgnoreSourceProcessor;
 import com.liferay.source.formatter.processor.JSONSourceProcessor;
 import com.liferay.source.formatter.processor.JSPSourceProcessor;
 import com.liferay.source.formatter.processor.JSSourceProcessor;
+import com.liferay.source.formatter.processor.JakartaTransformSourceProcessor;
 import com.liferay.source.formatter.processor.JavaSourceProcessor;
 import com.liferay.source.formatter.processor.LDIFSourceProcessor;
 import com.liferay.source.formatter.processor.LFRBuildSourceProcessor;
 import com.liferay.source.formatter.processor.LibrarySourceProcessor;
+import com.liferay.source.formatter.processor.ListSourceProcessor;
 import com.liferay.source.formatter.processor.MarkdownSourceProcessor;
 import com.liferay.source.formatter.processor.PackageinfoSourceProcessor;
 import com.liferay.source.formatter.processor.PoshiSourceProcessor;
@@ -69,6 +74,7 @@ import com.liferay.source.formatter.util.DebugUtil;
 import com.liferay.source.formatter.util.FileUtil;
 import com.liferay.source.formatter.util.JIRAUtil;
 import com.liferay.source.formatter.util.SourceFormatterUtil;
+import com.liferay.source.formatter.util.ThrowableUtil;
 
 import com.puppycrawl.tools.checkstyle.api.CheckstyleException;
 
@@ -178,6 +184,14 @@ public class SourceFormatter {
 						baseDirName,
 						sourceFormatterArgs.getGitWorkingBranchName(), false),
 					baseDirName);
+				sourceFormatterArgs.setCurrentBranchAddedFileNames(
+					GitUtil.getCurrentBranchAddedFileNames(
+						sourceFormatterArgs.getBaseDirName(),
+						sourceFormatterArgs.getGitWorkingBranchName()));
+				sourceFormatterArgs.setCurrentBranchRenamedFileNames(
+					GitUtil.getCurrentBranchRenamedFileNames(
+						sourceFormatterArgs.getBaseDirName(),
+						sourceFormatterArgs.getGitWorkingBranchName()));
 			}
 			else if (sourceFormatterArgs.isFormatLatestAuthor()) {
 				sourceFormatterArgs.addRecentChangesFileNames(
@@ -290,19 +304,38 @@ public class SourceFormatter {
 
 			sourceFormatter.format();
 		}
-		catch (Exception exception) {
-			if (exception instanceof GitException) {
-				System.out.println(exception.getMessage());
+		catch (Throwable throwable) {
+			UnsupportedClassVersionError unsupportedClassVersionError =
+				ThrowableUtil.getNestedThrowable(
+					throwable, UnsupportedClassVersionError.class);
+
+			if (unsupportedClassVersionError != null) {
+				System.err.println(
+					StringBundler.concat(
+						"Unable to run Source Formatter under Java ",
+						System.getProperty("java.specification.version"),
+						"\nIt loads classes compiled for a newer Java ",
+						"version. Set JAVA_HOME to a newer JDK and run ",
+						"again.\nThis is a toolchain failure, not a ",
+						"formatting violation\n",
+						unsupportedClassVersionError));
+
+				System.exit(2);
+			}
+
+			if (throwable instanceof GitException) {
+				System.out.println(throwable.getMessage());
 			}
 			else {
 				CheckstyleException checkstyleException =
-					_getNestedCheckstyleException(exception);
+					ThrowableUtil.getNestedThrowable(
+						throwable, CheckstyleException.class);
 
 				if (checkstyleException != null) {
 					checkstyleException.printStackTrace();
 				}
 				else {
-					exception.printStackTrace();
+					throwable.printStackTrace();
 				}
 			}
 
@@ -327,19 +360,23 @@ public class SourceFormatter {
 			_validateCommitMessages();
 		}
 
+		_validatePullModeChanges();
+
 		if (!_sourceFormatterArgs.isJavaParserEnabled()) {
 			System.out.println(
 				StringBundler.concat(
-					"WARNING: Setting property 'java.parser.enabled' to ",
-					"'false' may prevent certain Java/JSP checks from working ",
-					"properly."));
+					"WARNING: Setting property \"java.parser.enabled\" to ",
+					"\"false\" may prevent certain Java/JSP checks from ",
+					"working properly."));
 		}
 
 		_sourceProcessors.add(new BNDRunSourceProcessor());
 		_sourceProcessors.add(new BNDSourceProcessor());
+		_sourceProcessors.add(new CIMergeAndGitRepoSourceProcessor());
 		_sourceProcessors.add(new CodeownersSourceProcessor());
 		_sourceProcessors.add(new ConfigSourceProcessor());
 		_sourceProcessors.add(new CQLSourceProcessor());
+		_sourceProcessors.add(new CSPSourceProcessor());
 		_sourceProcessors.add(new CSSSourceProcessor());
 		_sourceProcessors.add(new DockerfileSourceProcessor());
 		_sourceProcessors.add(new DTDSourceProcessor());
@@ -347,6 +384,8 @@ public class SourceFormatter {
 		_sourceProcessors.add(new GradleSourceProcessor());
 		_sourceProcessors.add(new GroovySourceProcessor());
 		_sourceProcessors.add(new HTMLSourceProcessor());
+		_sourceProcessors.add(new IgnoreSourceProcessor());
+		_sourceProcessors.add(new JakartaTransformSourceProcessor());
 		_sourceProcessors.add(new JavaSourceProcessor());
 		_sourceProcessors.add(new JSONSourceProcessor());
 		_sourceProcessors.add(new JSPSourceProcessor());
@@ -354,6 +393,7 @@ public class SourceFormatter {
 		_sourceProcessors.add(new LDIFSourceProcessor());
 		_sourceProcessors.add(new LFRBuildSourceProcessor());
 		_sourceProcessors.add(new LibrarySourceProcessor());
+		_sourceProcessors.add(new ListSourceProcessor());
 		_sourceProcessors.add(new MarkdownSourceProcessor());
 		_sourceProcessors.add(new PackageinfoSourceProcessor());
 		_sourceProcessors.add(new PoshiSourceProcessor());
@@ -473,24 +513,6 @@ public class SourceFormatter {
 
 	public List<SourceMismatchException> getSourceMismatchExceptions() {
 		return _sourceMismatchExceptions;
-	}
-
-	private static CheckstyleException _getNestedCheckstyleException(
-		Exception exception) {
-
-		Throwable throwable = exception;
-
-		while (true) {
-			if (throwable == null) {
-				return null;
-			}
-
-			if (throwable instanceof CheckstyleException) {
-				return (CheckstyleException)throwable;
-			}
-
-			throwable = throwable.getCause();
-		}
 	}
 
 	private Set<String> _addDependentFileName(
@@ -622,47 +644,86 @@ public class SourceFormatter {
 						new String[] {"**/package.json"},
 						_sourceFormatterExcludes, false));
 			}
-		}
-
-		if (_sourceFormatterArgs.isFormatCurrentBranch()) {
-			if (!buildPropertiesAdded) {
-				List<String> fileNames = GitUtil.getCurrentBranchFileNames(
-					_sourceFormatterArgs.getBaseDirName(),
-					_sourceFormatterArgs.getGitWorkingBranchName(), true);
-
-				for (String fileName : fileNames) {
-					if (!buildPropertiesAdded &&
-						fileName.endsWith(".lfrbuild-portal")) {
-
-						dependentFileNames = _addDependentFileName(
-							dependentFileNames, "build.properties");
-
-						break;
-					}
-				}
-			}
-
-			List<String> deletedFileNames =
-				GitUtil.getCurrentBranchDeletedFileNames(
-					_sourceFormatterArgs.getBaseDirName(),
-					_sourceFormatterArgs.getGitWorkingBranchName());
-
-			if (!deletedFileNames.isEmpty()) {
+			else if (_isRootTestPropertiesChanges(recentChangesFileName)) {
 				dependentFileNames.addAll(
 					SourceFormatterUtil.filterFileNames(
 						_allFileNames, new String[0],
-						new String[] {
-							"**/source-formatter.properties",
-							"**/source-formatter-suppressions.xml"
-						},
+						new String[] {"**/test.properties"},
 						_sourceFormatterExcludes, false));
 			}
+		}
 
-			if (_isFeatureFlagChanges()) {
-				File portalDir = SourceFormatterUtil.getPortalDir(
-					_sourceFormatterArgs.getBaseDirName(),
-					_sourceFormatterArgs.getMaxLineLength());
+		if (!_sourceFormatterArgs.isFormatCurrentBranch()) {
+			_sourceFormatterArgs.addRecentChangesFileNames(
+				dependentFileNames, null);
 
+			return;
+		}
+
+		List<String> fileNames = GitUtil.getCurrentBranchFileNames(
+			_sourceFormatterArgs.getBaseDirName(),
+			_sourceFormatterArgs.getGitWorkingBranchName(), true);
+
+		boolean testCaseFilesAdded = false;
+
+		for (String fileName : fileNames) {
+			if (!buildPropertiesAdded &&
+				fileName.endsWith(".lfrbuild-portal")) {
+
+				dependentFileNames = _addDependentFileName(
+					dependentFileNames, "build.properties");
+
+				buildPropertiesAdded = true;
+			}
+			else if (!testCaseFilesAdded && fileName.endsWith(".testcase")) {
+				dependentFileNames.addAll(
+					SourceFormatterUtil.filterFileNames(
+						_allFileNames, new String[0],
+						new String[] {"**/*.testcase"},
+						_sourceFormatterExcludes, false));
+
+				testCaseFilesAdded = true;
+			}
+
+			if (buildPropertiesAdded && testCaseFilesAdded) {
+				break;
+			}
+		}
+
+		List<String> deletedFileNames =
+			GitUtil.getCurrentBranchDeletedFileNames(
+				_sourceFormatterArgs.getBaseDirName(),
+				_sourceFormatterArgs.getGitWorkingBranchName());
+
+		if (!deletedFileNames.isEmpty()) {
+			for (String deletedFileName : deletedFileNames) {
+				if (deletedFileName.endsWith("/test.properties")) {
+					dependentFileNames.addAll(
+						SourceFormatterUtil.filterFileNames(
+							_allFileNames, new String[0],
+							new String[] {"**/test.properties"},
+							_sourceFormatterExcludes, false));
+
+					break;
+				}
+			}
+
+			dependentFileNames.addAll(
+				SourceFormatterUtil.filterFileNames(
+					_allFileNames, new String[0],
+					new String[] {
+						"**/source-formatter.properties",
+						"**/source-formatter-suppressions.xml"
+					},
+					_sourceFormatterExcludes, false));
+		}
+
+		if (_isFeatureFlagChanges()) {
+			File portalDir = SourceFormatterUtil.getPortalDir(
+				_sourceFormatterArgs.getBaseDirName(),
+				_sourceFormatterArgs.getMaxDirLevel());
+
+			if (portalDir != null) {
 				dependentFileNames.add(
 					portalDir + "/portal-impl/src/portal.properties");
 			}
@@ -698,14 +759,16 @@ public class SourceFormatter {
 		for (Object key : properties.keySet()) {
 			String s = (String)key;
 
-			if (s.matches("working.dir.checkout.private.apps.(\\w)+.dirs")) {
-				List<String> dirs = ListUtil.fromString(
-					properties.getProperty(s), StringPool.COMMA);
+			if (!s.matches("working.dir.checkout.private.apps.(\\w)+.dirs")) {
+				continue;
+			}
 
-				for (String dir : dirs) {
-					_sourceFormatterExcludes.addDefaultExcludeSyntaxPatterns(
-						_getExcludeSyntaxPatterns("**/" + dir + "/**"));
-				}
+			List<String> dirs = ListUtil.fromString(
+				properties.getProperty(s), StringPool.COMMA);
+
+			for (String dir : dirs) {
+				_sourceFormatterExcludes.addDefaultExcludeSyntaxPatterns(
+					_getExcludeSyntaxPatterns("**/" + dir + "/**"));
 			}
 		}
 	}
@@ -754,14 +817,16 @@ public class SourceFormatter {
 
 				String message = sourceMismatchException.getMessage();
 
-				if (!Objects.isNull(message)) {
-					sb.append(index);
-					sb.append(": ");
-					sb.append(message);
-					sb.append("\n");
-
-					index = index + 1;
+				if (Objects.isNull(message)) {
+					continue;
 				}
+
+				sb.append(index);
+				sb.append(": ");
+				sb.append(message);
+				sb.append("\n");
+
+				index = index + 1;
 			}
 		}
 
@@ -782,7 +847,7 @@ public class SourceFormatter {
 				new ExcludeSyntaxPattern(ExcludeSyntax.GLOB, exclude));
 		}
 
-		// See the source-format-jdk8 task in built-test-batch.xml for more
+		// See the source-format task in built-test-batch.xml for more
 		// information
 
 		String systemExcludes = System.getProperty("source.formatter.excludes");
@@ -981,11 +1046,13 @@ public class SourceFormatter {
 		for (Map.Entry<String, Properties> entry : _propertiesMap.entrySet()) {
 			Properties properties = entry.getValue();
 
-			if (properties.containsKey(key)) {
-				propertyValues.addAll(
-					ListUtil.fromString(
-						properties.getProperty(key), StringPool.COMMA));
+			if (!properties.containsKey(key)) {
+				continue;
 			}
+
+			propertyValues.addAll(
+				ListUtil.fromString(
+					properties.getProperty(key), StringPool.COMMA));
 		}
 
 		return propertyValues;
@@ -1017,11 +1084,6 @@ public class SourceFormatter {
 				new ExcludeSyntaxPattern(
 					ExcludeSyntax.GLOB, "**/node_modules_cache/**"),
 				new ExcludeSyntaxPattern(
-					ExcludeSyntax.GLOB,
-					"**/test*/**/dependencies/*.[jlw]ar/**"),
-				new ExcludeSyntaxPattern(
-					ExcludeSyntax.GLOB, "**/test*/**/dependencies/*.zip/**"),
-				new ExcludeSyntaxPattern(
 					ExcludeSyntax.REGEX,
 					".*/frontend-theme-unstyled/.*/_unstyled/css/clay/.+"),
 				new ExcludeSyntaxPattern(
@@ -1030,10 +1092,12 @@ public class SourceFormatter {
 						"clay|lexicon)/.+"),
 				new ExcludeSyntaxPattern(
 					ExcludeSyntax.REGEX,
-					"^((?!/frontend-js-node-shims/src/).)*/node_modules/.*"),
+					".*/tests?/.*/?dependencies/.+\\.(jar|lar|war|zip)/.+"),
 				new ExcludeSyntaxPattern(
 					ExcludeSyntax.REGEX,
-					".*(?<!/gradle-plugins-source-formatter)/build/.*")));
+					"^((?!/frontend-js-node-shims/src/).)*/node_modules/.*"),
+				new ExcludeSyntaxPattern(
+					ExcludeSyntax.REGEX, "^((?!/src/).)*/build/.*")));
 
 		_portalSource = _containsDir("portal-impl");
 
@@ -1041,7 +1105,7 @@ public class SourceFormatter {
 			_excludeWorkingDirCheckoutPrivateApps(
 				SourceFormatterUtil.getPortalDir(
 					_sourceFormatterArgs.getBaseDirName(),
-					_sourceFormatterArgs.getMaxLineLength()));
+					_sourceFormatterArgs.getMaxDirLevel()));
 		}
 
 		_propertiesMap = new HashMap<>();
@@ -1059,7 +1123,8 @@ public class SourceFormatter {
 		_allFileNames = SourceFormatterUtil.scanForFileNames(
 			_sourceFormatterArgs.getBaseDirName(), new String[0],
 			new String[] {
-				"**/*.*", "**/CODEOWNERS", "**/Dockerfile", "**/packageinfo"
+				"**/*.*", "**/CODEOWNERS", "**/Dockerfile", "**/ci-merge",
+				"**/packageinfo"
 			},
 			_sourceFormatterExcludes,
 			_sourceFormatterArgs.isIncludeSubrepositories());
@@ -1166,6 +1231,18 @@ public class SourceFormatter {
 		}
 
 		return false;
+	}
+
+	private boolean _isRootTestPropertiesChanges(String recentChangesFileName) {
+		File portalDir = SourceFormatterUtil.getPortalDir(
+			_sourceFormatterArgs.getBaseDirName(),
+			_sourceFormatterArgs.getMaxDirLevel());
+
+		if (portalDir == null) {
+			return false;
+		}
+
+		return recentChangesFileName.endsWith(portalDir + "/test.properties");
 	}
 
 	private boolean _isSubrepository() throws Exception {
@@ -1299,6 +1376,16 @@ public class SourceFormatter {
 		for (String commitMessage : commitMessages) {
 			String[] parts = commitMessage.split(":", 2);
 
+			if ((parts[1].contains("This reverts commit") &&
+				 parts[1].startsWith("Reapply \"")) ||
+				parts[1].startsWith("Revert \"Revert")) {
+
+				throw new Exception(
+					StringBundler.concat(
+						"Found formatting issue in SHA ", parts[0], ":\n",
+						"Illegal nested revert, i.e. revert of a revert."));
+			}
+
 			for (String keyword :
 					_getPropertyValues("git.commit.vulnerability.keywords")) {
 
@@ -1310,12 +1397,78 @@ public class SourceFormatter {
 				if (matcher.find()) {
 					throw new Exception(
 						StringBundler.concat(
-							"Found formatting issues in SHA ", parts[0], ":\n",
-							"The commit message contains the word '", keyword,
-							"', which could reveal potential security ",
-							"vulnerablities. Please see the vulnerability ",
+							"Found formatting issue in SHA ", parts[0], ":\n",
+							"The commit message contains the word \"", keyword,
+							"\", which could reveal potential security ",
+							"vulnerabilities. Please see the vulnerability ",
 							"keywords that are specified in source-formatter.",
 							"properties in the liferay-portal repository."));
+				}
+			}
+		}
+	}
+
+	private void _validatePullModeChanges() throws Exception {
+		if (!_sourceFormatterArgs.isFormatCurrentBranch()) {
+			return;
+		}
+
+		File portalDir = SourceFormatterUtil.getPortalDir(
+			_sourceFormatterArgs.getBaseDirName(),
+			_sourceFormatterArgs.getMaxDirLevel());
+
+		if (portalDir == null) {
+			return;
+		}
+
+		List<String> pullModeGitRepoDirLocations = new ArrayList<>();
+
+		List<String> gitRepoFileNames = SourceFormatterUtil.scanForFileNames(
+			portalDir.getCanonicalPath(), new String[] {"**/*.gitrepo"});
+
+		for (String gitRepoFileName : gitRepoFileNames) {
+			int x = gitRepoFileName.indexOf("/modules/");
+
+			if (x == -1) {
+				continue;
+			}
+
+			String content = FileUtil.read(new File(gitRepoFileName));
+
+			if (!content.contains("mode = pull")) {
+				continue;
+			}
+
+			int y = gitRepoFileName.lastIndexOf("/");
+
+			pullModeGitRepoDirLocations.add(
+				gitRepoFileName.substring(x + 1, y));
+		}
+
+		if (pullModeGitRepoDirLocations.isEmpty()) {
+			return;
+		}
+
+		List<String> fileNames = GitUtil.getCurrentBranchFileNames(
+			_sourceFormatterArgs.getBaseDirName(),
+			_sourceFormatterArgs.getGitWorkingBranchName(), true);
+
+		for (String fileName : fileNames) {
+			if (fileName.endsWith("/.gitrepo") ||
+				fileName.endsWith("/ci-merge")) {
+
+				continue;
+			}
+
+			for (String pullModeGitRepoDirLocation :
+					pullModeGitRepoDirLocations) {
+
+				if (fileName.startsWith(pullModeGitRepoDirLocation + "/")) {
+					throw new Exception(
+						StringBundler.concat(
+							"Found formatting issue:\n",
+							"Illegal change to a pull-only subdirectory ",
+							pullModeGitRepoDirLocation));
 				}
 			}
 		}

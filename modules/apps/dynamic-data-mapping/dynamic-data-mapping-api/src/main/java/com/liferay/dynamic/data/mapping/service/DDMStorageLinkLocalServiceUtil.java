@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -225,10 +226,6 @@ public class DDMStorageLinkLocalServiceUtil {
 		return getService().dynamicQueryCount(dynamicQuery, projection);
 	}
 
-	public static DDMStorageLink fetchClassStorageLink(long classPK) {
-		return getService().fetchClassStorageLink(classPK);
-	}
-
 	public static DDMStorageLink fetchDDMStorageLink(long storageLinkId) {
 		return getService().fetchDDMStorageLink(storageLinkId);
 	}
@@ -337,33 +334,8 @@ public class DDMStorageLinkLocalServiceUtil {
 		return getService().getPersistedModel(primaryKeyObj);
 	}
 
-	public static DDMStorageLink getStorageLink(long storageLinkId)
-		throws PortalException {
-
-		return getService().getStorageLink(storageLinkId);
-	}
-
-	public static List<DDMStorageLink> getStructureStorageLinks(
-		long structureId) {
-
-		return getService().getStructureStorageLinks(structureId);
-	}
-
 	public static int getStructureStorageLinksCount(long structureId) {
 		return getService().getStructureStorageLinksCount(structureId);
-	}
-
-	public static List<DDMStorageLink> getStructureVersionStorageLinks(
-		long structureVersionId) {
-
-		return getService().getStructureVersionStorageLinks(structureVersionId);
-	}
-
-	public static int getStructureVersionStorageLinksCount(
-		long structureVersionId) {
-
-		return getService().getStructureVersionStorageLinksCount(
-			structureVersionId);
 	}
 
 	/**
@@ -382,22 +354,14 @@ public class DDMStorageLinkLocalServiceUtil {
 		return getService().updateDDMStorageLink(ddmStorageLink);
 	}
 
-	public static DDMStorageLink updateStorageLink(
-			long storageLinkId, long classNameId, long classPK)
-		throws PortalException {
-
-		return getService().updateStorageLink(
-			storageLinkId, classNameId, classPK);
-	}
-
 	public static DDMStorageLinkLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(DDMStorageLinkLocalService service) {
-		_service = service;
-	}
-
-	private static volatile DDMStorageLinkLocalService _service;
+	private static final Snapshot<DDMStorageLinkLocalService> _serviceSnapshot =
+		new Snapshot<>(
+			DDMStorageLinkLocalServiceUtil.class,
+			DDMStorageLinkLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1666490152

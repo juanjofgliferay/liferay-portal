@@ -279,6 +279,20 @@ public interface AccountGroupModel
 	 */
 	public void setType(String type);
 
+	/**
+	 * Returns the status of this account group.
+	 *
+	 * @return the status of this account group
+	 */
+	public int getStatus();
+
+	/**
+	 * Sets the status of this account group.
+	 *
+	 * @param status the status of this account group
+	 */
+	public void setStatus(int status);
+
 	@Override
 	public AccountGroup cloneWithOriginalValues();
 
@@ -287,3 +301,4 @@ public interface AccountGroupModel
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1550590223

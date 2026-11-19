@@ -13,13 +13,18 @@ import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
+import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.FileUtil;
 import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
+import com.liferay.portal.test.log.LogCapture;
+import com.liferay.portal.test.log.LogEntry;
+import com.liferay.portal.test.log.LoggerTestUtil;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -54,25 +59,25 @@ public abstract class BaseOpenNLPDocumentAssetAutoTaggerTestCase {
 					assetEntry.getTagNames());
 
 				Collection<String> expectedTagNames = Arrays.asList(
-					"adventures", "at all.", "ah", "alice", "alice .",
-					"archive foundation", "australia", "beau--ootiful", "bill",
-					"chapter", "cheshire cat",
-					"dr. gregory b. newby chief executive", "edgar atheling",
-					"foundation", "general information about project",
-					"general terms", "geography", "herald", "i", "if", "irs",
-					"internal revenue service", "king", "latitude", "laughing",
-					"lewis carroll", "lewis carroll posting date",
-					"lewis carroll this", "lizard", "london", "mine", "ma !",
-					"mary ann", "michael hart", "michael s. hart",
-					"mississippi", "not", "new zealand", "paris", "pat",
-					"pat !", "pepper", "pray",
-					"project gutenberg literary archive foundation",
-					"project gutenberg literary archive foundation project " +
-						"gutenberg-tm",
-					"project gutenberg-tm", "public domain", "queen", "queens",
-					"rabbit", "rome", "salt lake city", "shakespeare", "shark",
-					"soup", "there", "the", "united states", "very", "would",
-					"white rabbit", "whoever", "william", "you.--come", "your");
+					"ADVENTURES", "AT ALL.", "Adventures", "Ah", "Alice",
+					"Alice .", "Archive Foundation", "Australia", "Bill",
+					"CHAPTER", "Beau--ootiful", "Cheshire Cat",
+					"Dr. Gregory B. Newby Chief Executive", "Edgar Atheling",
+					"Foundation", "General Information About Project",
+					"General Terms", "Geography", "Herald", "I", "IF", "IRS",
+					"Internal Revenue Service", "King", "Latitude", "Laughing",
+					"Lewis Carroll", "Lewis Carroll Posting Date",
+					"Lewis Carroll This", "Lizard", "London", "MINE", "Ma !",
+					"Mary Ann", "Michael Hart", "Michael S. Hart",
+					"Mississippi", "NOT", "New Zealand", "Paris", "Pat",
+					"Pat !", "Pepper", "Pray",
+					"Project Gutenberg Literary Archive Foundation",
+					"Project Gutenberg Literary Archive Foundation Project " +
+						"Gutenberg-tm",
+					"Project Gutenberg-tm", "Public Domain", "Queen", "Queens",
+					"Rabbit", "Rome", "Salt Lake City", "Shakespeare", "Shark",
+					"Soup", "THERE", "The", "United States", "VERY", "WOULD",
+					"White Rabbit", "Whoever", "William", "YOU.--Come", "YOUR");
 
 				Assert.assertEquals(
 					actualTagNames.toString(), expectedTagNames.size(),
@@ -96,6 +101,31 @@ public abstract class BaseOpenNLPDocumentAssetAutoTaggerTestCase {
 					assetEntry.getTagNames());
 
 				Assert.assertEquals(tagNames.toString(), 0, tagNames.size());
+			});
+	}
+
+	@Test
+	public void testAutoTagsAnAssetReusingNameFinders() throws Exception {
+		testWithOpenNLPDocumentAssetAutoTagProviderEnabled(
+			getClassName(),
+			() -> {
+				getAssetEntry(getTaggableText());
+
+				try (LogCapture logCapture =
+						LoggerTestUtil.configureLog4JLogger(
+							"opennlp.tools.util.XmlUtil",
+							LoggerTestUtil.WARN)) {
+
+					AssetEntry assetEntry = getAssetEntry(getTaggableText());
+
+					Assert.assertTrue(
+						ArrayUtil.isNotEmpty(assetEntry.getTagNames()));
+
+					List<LogEntry> logEntries = logCapture.getLogEntries();
+
+					Assert.assertEquals(
+						logEntries.toString(), 0, logEntries.size());
+				}
 			});
 	}
 
@@ -145,7 +175,9 @@ public abstract class BaseOpenNLPDocumentAssetAutoTaggerTestCase {
 					_OPEN_NLP_AUTO_TAG_CONFIGURATION_PID,
 					HashMapDictionaryBuilder.<String, Object>put(
 						"enabledClassNames", new String[] {className}
-					).build())) {
+					).build());
+			LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
+				"opennlp.tools.util.XmlUtil", LoggerTestUtil.OFF)) {
 
 			unsafeRunnable.run();
 		}

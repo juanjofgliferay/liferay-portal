@@ -29,7 +29,7 @@ public class RankingGetSearchResultsBuilderTest
 	public void setUp() throws Exception {
 		_rankingGetSearchResultsBuilder = new RankingGetSearchResultsBuilder(
 			complexQueryPartBuilderFactory, dlAppLocalService,
-			fastDateFormatFactory, groupLocalService, queries, resourceActions,
+			fastDateFormatFactory, groupLocalService, resourceActions,
 			resourceRequest, resourceResponse, searcher,
 			searchRequestBuilderFactory);
 	}
@@ -41,14 +41,13 @@ public class RankingGetSearchResultsBuilderTest
 		setUpGroupLocalServiceFetchGroup();
 		setUpFastDateFormatFactory();
 		setUpPortalUtil();
-		setUpQuery();
 		setUpResourceRequest();
 		setUpSearcher(setUpSearchResponse(setUpDocumentWithGetString()));
 		setUpSearchRequestBuilderFactory(setUpSearchRequestBuilder());
 
 		Assert.assertEquals(
-			mapper.readTree(_getExpectedDocumentsString()),
-			mapper.readTree(
+			objectMapper.readTree(_getExpectedDocumentsString()),
+			objectMapper.readTree(
 				_rankingGetSearchResultsBuilder.build(
 				).toJSONString()));
 	}

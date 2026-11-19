@@ -41,6 +41,11 @@
 	<td></td>
 </tr>
 <tr>
+	<td>ANY_PASSWORD</td>
+	<td>//input[@type='password'][contains(@name,'${key_text}') or contains(@title,'${key_text}')]</td>
+	<td></td>
+</tr>
+<tr>
 	<td>ANY_N</td>
 	<td>xpath=(//div[label[contains(.,'${key_text}')]]//input[not(contains(@type,'checkbox'))])[${key_indexNumber}]</td>
 	<td></td>
@@ -372,7 +377,7 @@
 </tr>
 <tr>
 	<td>GROUPED_TEXT_INPUT</td>
-	<td>//div[contains(@class,'panel')][@role='tablist'][contains(.,'${key_groupLabel}')]//div[contains(@class,'form-group')][label[normalize-space(text())='${key_fieldLabel}']]//input</td>
+	<td>//div[contains(@class,'panel-unstyled')][contains(.,'${key_groupLabel}')]//div[contains(@class,'form-group')][label[normalize-space(text())='${key_fieldLabel}']]//input</td>
 	<td></td>
 </tr>
 <tr>
@@ -467,7 +472,7 @@
 </tr>
 <tr>
 	<td>MAX_USERS</td>
-	<td>//input[contains(@id,'maxUsers') and contains(@class,'input-text')]</td>
+	<td>//input[contains(@id,'maxUsers')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -606,21 +611,6 @@
 	<td></td>
 </tr>
 <tr>
-	<td>REDIRECT_DESTINATION_URL</td>
-	<td>//input[contains(@id,'destinationURL')]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>REDIRECT_SOURCE_URL</td>
-	<td>//input[contains(@id,'sourceURL')]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>REDIRECT_SOURCE_URL_PREFIX</td>
-	<td>//div[contains(@class,'form-text')]</td>
-	<td></td>
-</tr>
-<tr>
 	<td>REMINDER_QUERY</td>
 	<td>//input[contains(@id,'reminderQueryAnswer')]</td>
 	<td></td>
@@ -692,17 +682,12 @@
 </tr>
 <tr>
 	<td>SEARCH</td>
-	<td>//input[contains(@title,'S') or contains(@title,'s')][contains(@title,'earch')] | //input[contains(@aria-label,'S') or contains(@aria-label,'s') or contains(@title,'s')][contains(@aria-label,'earch')] | //input[contains(@name,'keywords')] | //input[(ancestor::header[@id='banner'])][contains(@data-qa-id,'searchInput')]</td>
+	<td>//input[contains(@title,'S') or contains(@title,'s')][contains(@title,'earch')][not(@data-qa-id='sideNavigationSearchInput')] | //input[contains(@aria-label,'S') or contains(@aria-label,'s') or contains(@title,'s')][contains(@aria-label,'earch')][not(@data-qa-id='sideNavigationSearchInput')] | //input[contains(@name,'keywords')] | //input[(ancestor::header[@id='banner'])][contains(@data-qa-id,'searchInput')]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>SEARCH_DISABLED</td>
 	<td>//input[@disabled and contains(@name,'keywords')]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>SEARCH_2</td>
-	<td>xpath=(//input[@title='Search'])[2]</td>
 	<td></td>
 </tr>
 <tr>
@@ -773,11 +758,6 @@
 <tr>
 	<td>TITLE</td>
 	<td>//input[contains(@id,'title')]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>TRACKBACKS</td>
-	<td>//input[contains(@id,'trackbacks')]</td>
 	<td></td>
 </tr>
 <tr>

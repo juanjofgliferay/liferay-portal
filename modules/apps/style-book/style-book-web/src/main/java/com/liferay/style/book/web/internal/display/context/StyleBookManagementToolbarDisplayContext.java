@@ -21,15 +21,16 @@ import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.style.book.constants.StyleBookActionKeys;
 import com.liferay.style.book.model.StyleBookEntry;
+import com.liferay.style.book.util.StyleBookUtil;
 import com.liferay.style.book.web.internal.security.permissions.resource.StyleBookPermission;
+
+import jakarta.portlet.ResourceURL;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
-import javax.portlet.ResourceURL;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Eudaldo Alonso
@@ -107,6 +108,13 @@ public class StyleBookManagementToolbarDisplayContext
 	@Override
 	public Map<String, Object> getAdditionalProps() {
 		return HashMapBuilder.<String, Object>put(
+			"addStyleBookEntryURL",
+			PortletURLBuilder.createActionURL(
+				liferayPortletResponse
+			).setActionName(
+				"/style_book/add_style_book_entry"
+			).buildString()
+		).put(
 			"copyStyleBookEntryURL",
 			() -> PortletURLBuilder.createActionURL(
 				liferayPortletResponse
@@ -126,6 +134,10 @@ public class StyleBookManagementToolbarDisplayContext
 
 				return exportStyleBookEntriesURL.toString();
 			}
+		).put(
+			"frontendTokenDefinitionProviders",
+			() -> StyleBookUtil.getFrontendTokenDefinitionProviders(
+				_themeDisplay.getCompanyId(), _themeDisplay.getLocale())
 		).build();
 	}
 
@@ -168,24 +180,15 @@ public class StyleBookManagementToolbarDisplayContext
 
 	@Override
 	public Boolean isDisabled() {
-		if (getItemsTotal() > 1) {
-			return false;
-		}
-
-		return true;
+		return getItemsTotal() == 0;
 	}
 
 	@Override
 	public Boolean isShowCreationMenu() {
-		if (StyleBookPermission.contains(
-				_themeDisplay.getPermissionChecker(),
-				_themeDisplay.getScopeGroupId(),
-				StyleBookActionKeys.MANAGE_STYLE_BOOK_ENTRIES)) {
-
-			return true;
-		}
-
-		return false;
+		return StyleBookPermission.contains(
+			_themeDisplay.getPermissionChecker(),
+			_themeDisplay.getScopeGroupId(),
+			StyleBookActionKeys.MANAGE_STYLE_BOOK_ENTRIES);
 	}
 
 	@Override

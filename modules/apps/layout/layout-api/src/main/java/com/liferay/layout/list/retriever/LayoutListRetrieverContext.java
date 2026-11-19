@@ -18,6 +18,8 @@ import org.osgi.annotation.versioning.ProviderType;
 @ProviderType
 public interface LayoutListRetrieverContext {
 
+	public String[] getAudienceEntryERCs();
+
 	public Map<String, String[]> getConfiguration();
 
 	public Object getContextObject();
@@ -27,6 +29,8 @@ public interface LayoutListRetrieverContext {
 	public Map<String, InfoFilter> getInfoFilters();
 
 	public Pagination getPagination();
+
+	public long getScopeGroupId();
 
 	public long[] getSegmentsEntryIds();
 

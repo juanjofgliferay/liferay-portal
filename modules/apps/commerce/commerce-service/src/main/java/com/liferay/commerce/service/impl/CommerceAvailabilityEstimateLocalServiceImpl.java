@@ -8,15 +8,22 @@ package com.liferay.commerce.service.impl;
 import com.liferay.commerce.model.CommerceAvailabilityEstimate;
 import com.liferay.commerce.service.CPDAvailabilityEstimateLocalService;
 import com.liferay.commerce.service.base.CommerceAvailabilityEstimateLocalServiceBaseImpl;
+import com.liferay.exportimport.kernel.empty.model.EmptyModelManager;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.model.ResourceConstants;
 import com.liferay.portal.kernel.model.SystemEventConstants;
 import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.service.ResourceLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.systemevent.SystemEvent;
+import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
+import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -36,9 +43,11 @@ public class CommerceAvailabilityEstimateLocalServiceImpl
 
 	@Override
 	public CommerceAvailabilityEstimate addCommerceAvailabilityEstimate(
-			Map<Locale, String> titleMap, double priority,
-			ServiceContext serviceContext)
+			String externalReferenceCode, Map<Locale, String> titleMap,
+			double priority, ServiceContext serviceContext)
 		throws PortalException {
+
+		// Commerce availability estimate
 
 		User user = _userLocalService.getUser(serviceContext.getUserId());
 
@@ -48,14 +57,33 @@ public class CommerceAvailabilityEstimateLocalServiceImpl
 			commerceAvailabilityEstimatePersistence.create(
 				commerceAvailabilityEstimateId);
 
+		commerceAvailabilityEstimate.setExternalReferenceCode(
+			externalReferenceCode);
 		commerceAvailabilityEstimate.setCompanyId(user.getCompanyId());
 		commerceAvailabilityEstimate.setUserId(user.getUserId());
 		commerceAvailabilityEstimate.setUserName(user.getFullName());
 		commerceAvailabilityEstimate.setTitleMap(titleMap);
 		commerceAvailabilityEstimate.setPriority(priority);
 
-		return commerceAvailabilityEstimatePersistence.update(
-			commerceAvailabilityEstimate);
+		if (_emptyModelManager.isEmptyModel()) {
+			commerceAvailabilityEstimate.setStatus(
+				WorkflowConstants.STATUS_EMPTY);
+		}
+		else {
+			commerceAvailabilityEstimate.setStatus(
+				WorkflowConstants.STATUS_APPROVED);
+		}
+
+		commerceAvailabilityEstimate =
+			commerceAvailabilityEstimatePersistence.update(
+				commerceAvailabilityEstimate);
+
+		// Resources
+
+		_resourceLocalService.addModelResources(
+			commerceAvailabilityEstimate, serviceContext);
+
+		return commerceAvailabilityEstimate;
 	}
 
 	@Override
@@ -64,12 +92,17 @@ public class CommerceAvailabilityEstimateLocalServiceImpl
 			CommerceAvailabilityEstimate commerceAvailabilityEstimate)
 		throws PortalException {
 
-		// Commerce availability range
+		// Commerce availability estimate
 
 		commerceAvailabilityEstimatePersistence.remove(
 			commerceAvailabilityEstimate);
 
-		// Commerce product definition availability ranges
+		// Resources
+
+		_resourceLocalService.deleteResource(
+			commerceAvailabilityEstimate, ResourceConstants.SCOPE_INDIVIDUAL);
+
+		// Commerce product definition availability estimates
 
 		_cpdAvailabilityEstimateLocalService.deleteCPDAvailabilityEstimates(
 			commerceAvailabilityEstimate.getCommerceAvailabilityEstimateId());
@@ -116,31 +149,79 @@ public class CommerceAvailabilityEstimateLocalServiceImpl
 	}
 
 	@Override
-	public int getCommerceAvailabilityEstimatesCount(long companyId) {
-		return commerceAvailabilityEstimatePersistence.countByCompanyId(
-			companyId);
+	public CommerceAvailabilityEstimate
+			getOrAddEmptyCommerceAvailabilityEstimate(
+				String externalReferenceCode, long companyId, long userId,
+				Map<Locale, String> titleMap)
+		throws PortalException {
+
+		ServiceContext serviceContext = new ServiceContext();
+
+		serviceContext.setCompanyId(companyId);
+		serviceContext.setUserId(userId);
+
+		return _emptyModelManager.getOrAddEmptyModel(
+			CommerceAvailabilityEstimate.class, companyId,
+			() ->
+				commerceAvailabilityEstimateLocalService.
+					addCommerceAvailabilityEstimate(
+						externalReferenceCode,
+						_getTitleMap(externalReferenceCode, titleMap), 0,
+						serviceContext),
+			externalReferenceCode,
+			this::fetchCommerceAvailabilityEstimateByExternalReferenceCode,
+			this::getCommerceAvailabilityEstimateByExternalReferenceCode,
+			CommerceAvailabilityEstimate.class.getName());
 	}
 
 	@Override
 	public CommerceAvailabilityEstimate updateCommerceAvailabilityEstimate(
-			long commerceAvailabilityId, Map<Locale, String> titleMap,
-			double priority, ServiceContext serviceContext)
+			String externalReferenceCode, long commerceAvailabilityEstimateId,
+			Map<Locale, String> titleMap, double priority,
+			ServiceContext serviceContext)
 		throws PortalException {
 
 		CommerceAvailabilityEstimate commerceAvailabilityEstimate =
 			commerceAvailabilityEstimatePersistence.findByPrimaryKey(
-				commerceAvailabilityId);
+				commerceAvailabilityEstimateId);
 
+		commerceAvailabilityEstimate.setExternalReferenceCode(
+			externalReferenceCode);
 		commerceAvailabilityEstimate.setTitleMap(titleMap);
 		commerceAvailabilityEstimate.setPriority(priority);
+
+		commerceAvailabilityEstimate.setStatus(
+			_emptyModelManager.solveEmptyModel(
+				commerceAvailabilityEstimate.getExternalReferenceCode(),
+				commerceAvailabilityEstimate.getModelClassName(),
+				commerceAvailabilityEstimate.getCompanyId(), 0,
+				commerceAvailabilityEstimate.getStatus(),
+				() -> WorkflowConstants.STATUS_APPROVED));
 
 		return commerceAvailabilityEstimatePersistence.update(
 			commerceAvailabilityEstimate);
 	}
 
+	private Map<Locale, String> _getTitleMap(
+		String externalReferenceCode, Map<Locale, String> titleMap) {
+
+		if (MapUtil.isEmpty(titleMap)) {
+			return Collections.singletonMap(
+				LocaleUtil.getSiteDefault(), externalReferenceCode);
+		}
+
+		return titleMap;
+	}
+
 	@Reference
 	private CPDAvailabilityEstimateLocalService
 		_cpdAvailabilityEstimateLocalService;
+
+	@Reference
+	private EmptyModelManager _emptyModelManager;
+
+	@Reference
+	private ResourceLocalService _resourceLocalService;
 
 	@Reference
 	private UserLocalService _userLocalService;

@@ -1,0 +1,167 @@
+{
+	"pageElement": {
+		"pageElements": [
+			{
+				"definition": {
+					"fragment": {
+						"key": "sidebar",
+						"siteKey": "DSR"
+					},
+					"fragmentConfig": {
+						"sidebarAriaLabel": "DSR Product Menu"
+					},
+					"fragmentFields": [
+						{
+							"id": "sidebarTitle",
+							"value": {
+								"fragmentLink": {
+								}
+							}
+						}
+					],
+					"indexed": true
+				},
+				"pageElements": [
+					{
+						"definition": {
+							"fragmentDropZoneId": "topBar"
+						},
+						"pageElements": [
+							{
+								"definition": {
+									"fragment": {
+										"key": "dsr-license-expiration-alert-component-section"
+									},
+									"fragmentConfig": {
+									},
+									"fragmentFields": [
+									],
+									"indexed": true
+								},
+								"type": "Fragment"
+							},
+							{
+								"definition": {
+									"fragment": {
+										"key": "page-bar",
+										"siteKey": "DSR"
+									},
+									"fragmentConfig": {
+										"alt": "Site Logo"
+									},
+									"fragmentFields": [
+										{
+											"id": "sidebarImage",
+											"value": {
+												"fragmentImage": {
+													"url": {
+														"value_i18n": {
+														}
+													}
+												},
+												"fragmentLink": {
+												}
+											}
+										},
+										{
+											"id": "sidebarTitle",
+											"value": {
+												"fragmentLink": {
+												}
+											}
+										}
+									],
+									"indexed": true,
+									"widgetInstances": [
+										{
+											"widgetConfig": {
+											},
+											"widgetName": "com_liferay_product_navigation_applications_menu_web_internal_portlet_ProductNavigationApplicationsMenuPortlet"
+										}
+									]
+								},
+								"pageElements": [
+									{
+										"definition": {
+											"fragmentDropZoneId": "sidebarTrigger"
+										},
+										"pageElements": [
+											{
+												"definition": {
+													"fragment": {
+														"key": "sidebar-trigger",
+														"siteKey": "DSR"
+													},
+													"fragmentConfig": {
+													},
+													"fragmentFields": [
+													],
+													"indexed": true
+												},
+												"type": "Fragment"
+											}
+										],
+										"type": "FragmentDropZone"
+									}
+								],
+								"type": "Fragment"
+							}
+						],
+						"type": "FragmentDropZone"
+					},
+					{
+						"definition": {
+							"fragmentDropZoneId": "sidebarBody"
+						},
+						"pageElements": [
+							{
+								"definition": {
+									"fragment": {
+										"key": "vertical-navigation",
+										"siteKey": "DSR"
+									},
+									"fragmentConfig": {
+										"ariaLabel": "DSR Primary Navigation",
+										"displayStyle": "stacked",
+										"hoveredItemColor": "",
+										"selectedItemColor": "",
+										"source": "{\"parentSiteNavigationMenuItemId\": \"0\", \"privateLayout\": \"false\", \"siteNavigationMenuExternalReferenceCode\": \"DSRPRIMARYNAVIGATION\", \"title\": \"DSR Primary Navigation\", \"type\": \"class com.liferay.site.navigation.item.selector.SiteNavigationMenuItemSelectorReturnType\"}",
+										"sublevels": "-1"
+									},
+									"fragmentFields": [
+									],
+									"indexed": true
+								},
+								"type": "Fragment"
+							}
+						],
+						"type": "FragmentDropZone"
+					},
+					{
+						"definition": {
+							"fragmentDropZoneId": "content"
+						},
+						"pageElements": [
+							{
+								"definition": {
+									"fragmentSettings": {
+										"unallowedFragments": [
+										]
+									}
+								},
+								"type": "DropZone"
+							}
+						],
+						"type": "FragmentDropZone"
+					}
+				],
+				"type": "Fragment"
+			}
+		],
+		"type": "Root"
+	},
+	"settings": {
+		"themeName": "CMS"
+	},
+	"version": 1.1
+}

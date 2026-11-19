@@ -5,6 +5,7 @@
 
 package com.liferay.asset.categories.internal.service;
 
+import com.liferay.asset.categories.internal.constants.AssetCategoriesDestinationNames;
 import com.liferay.asset.categories.internal.util.comparator.AssetEntryAssetCategoryRelAssetCategoryIdComparator;
 import com.liferay.asset.entry.rel.model.AssetEntryAssetCategoryRel;
 import com.liferay.asset.entry.rel.service.AssetEntryAssetCategoryRelLocalService;
@@ -13,14 +14,18 @@ import com.liferay.asset.kernel.model.AssetEntry;
 import com.liferay.asset.kernel.service.AssetCategoryLocalService;
 import com.liferay.asset.kernel.service.AssetCategoryLocalServiceWrapper;
 import com.liferay.asset.kernel.service.AssetEntryLocalService;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.messaging.Message;
+import com.liferay.portal.kernel.messaging.MessageBus;
 import com.liferay.portal.kernel.model.ModelHintsUtil;
+import com.liferay.portal.kernel.service.ClassNameLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceWrapper;
+import com.liferay.portal.kernel.transaction.TransactionCallbackUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
@@ -46,10 +51,7 @@ public class AssetEntryAssetCategoryRelAssetCategoryLocalServiceWrapper
 			deleteAssetEntryAssetCategoryRelByAssetCategoryId(
 				category.getCategoryId());
 
-		List<AssetEntry> entries = _getAssetEntriesByAssetCategoryId(
-			category.getCategoryId());
-
-		_assetEntryLocalService.reindex(entries);
+		_reindexAssetCategoryAssetEntries(category.getCategoryId());
 
 		return super.deleteCategory(category, skipRebuildTree);
 	}
@@ -59,11 +61,19 @@ public class AssetEntryAssetCategoryRelAssetCategoryLocalServiceWrapper
 		AssetEntry entry = _assetEntryLocalService.fetchEntry(
 			classNameId, classPK);
 
-		if (entry == null) {
+		if ((entry == null) ||
+			(getCompanyCategoriesCount(entry.getCompanyId()) == 0)) {
+
 			return Collections.emptyList();
 		}
 
 		return _getAssetCategoriesByEntryId(entry.getEntryId());
+	}
+
+	@Override
+	public List<AssetCategory> getCategories(String className, long classPK) {
+		return getCategories(
+			_classNameLocalService.getClassNameId(className), classPK);
 	}
 
 	@Override
@@ -72,26 +82,11 @@ public class AssetEntryAssetCategoryRelAssetCategoryLocalServiceWrapper
 	}
 
 	@Override
-	public AssetCategory mergeCategories(long fromCategoryId, long toCategoryId)
-		throws PortalException {
-
-		List<AssetEntry> entries = _getAssetEntriesByAssetCategoryId(
-			fromCategoryId);
-
-		for (AssetEntry entry : entries) {
-			_assetEntryAssetCategoryRelLocalService.
-				addAssetEntryAssetCategoryRel(entry.getEntryId(), toCategoryId);
-		}
-
-		return super.mergeCategories(fromCategoryId, toCategoryId);
-	}
-
-	@Override
 	public AssetCategory updateCategory(
-			long userId, long categoryId, long parentCategoryId,
-			Map<Locale, String> titleMap, Map<Locale, String> descriptionMap,
-			long vocabularyId, String[] categoryProperties,
-			ServiceContext serviceContext)
+			String externalReferenceCode, long userId, long categoryId,
+			long parentCategoryId, Map<Locale, String> titleMap,
+			Map<Locale, String> descriptionMap, long vocabularyId,
+			String[] categoryProperties, ServiceContext serviceContext)
 		throws PortalException {
 
 		String name = titleMap.get(LocaleUtil.getSiteDefault());
@@ -103,15 +98,13 @@ public class AssetEntryAssetCategoryRelAssetCategoryLocalServiceWrapper
 			categoryId);
 
 		if (!Objects.equals(category.getName(), name)) {
-			List<AssetEntry> entries = _getAssetEntriesByAssetCategoryId(
-				category.getCategoryId());
-
-			_assetEntryLocalService.reindex(entries);
+			_reindexAssetCategoryAssetEntries(category.getCategoryId());
 		}
 
 		return super.updateCategory(
-			userId, categoryId, parentCategoryId, titleMap, descriptionMap,
-			vocabularyId, categoryProperties, serviceContext);
+			externalReferenceCode, userId, categoryId, parentCategoryId,
+			titleMap, descriptionMap, vocabularyId, categoryProperties,
+			serviceContext);
 	}
 
 	private List<AssetCategory> _getAssetCategoriesByEntryId(
@@ -121,46 +114,37 @@ public class AssetEntryAssetCategoryRelAssetCategoryLocalServiceWrapper
 			_assetEntryAssetCategoryRelLocalService.
 				getAssetEntryAssetCategoryRelsByAssetEntryId(
 					assetEntryId, QueryUtil.ALL_POS, QueryUtil.ALL_POS,
-					new AssetEntryAssetCategoryRelAssetCategoryIdComparator());
+					AssetEntryAssetCategoryRelAssetCategoryIdComparator.
+						getInstance(true));
 
-		List<AssetCategory> categories = new ArrayList<>();
+		return TransformUtil.transform(
+			assetEntryAssetCategoryRels,
+			assetEntryAssetCategoryRel -> {
+				AssetCategory category = fetchAssetCategory(
+					assetEntryAssetCategoryRel.getAssetCategoryId());
 
-		for (AssetEntryAssetCategoryRel assetEntryAssetCategoryRel :
-				assetEntryAssetCategoryRels) {
+				if (category != null) {
+					return category;
+				}
 
-			AssetCategory category = fetchAssetCategory(
-				assetEntryAssetCategoryRel.getAssetCategoryId());
-
-			if (category != null) {
-				categories.add(category);
-			}
-		}
-
-		return categories;
+				return null;
+			});
 	}
 
-	private List<AssetEntry> _getAssetEntriesByAssetCategoryId(
-		long assetCategoryId) {
+	private void _reindexAssetCategoryAssetEntries(long assetCategoryId) {
+		TransactionCallbackUtil.registerCommitCallback(
+			() -> {
+				Message message = new Message();
 
-		List<AssetEntryAssetCategoryRel> assetEntryAssetCategoryRels =
-			_assetEntryAssetCategoryRelLocalService.
-				getAssetEntryAssetCategoryRelsByAssetCategoryId(
-					assetCategoryId);
+				message.put("categoryId", assetCategoryId);
 
-		List<AssetEntry> entries = new ArrayList<>();
+				_messageBus.sendMessage(
+					AssetCategoriesDestinationNames.
+						ASSET_CATEGORY_ASSET_ENTRIES_REINDEX,
+					message);
 
-		for (AssetEntryAssetCategoryRel assetEntryAssetCategoryRel :
-				assetEntryAssetCategoryRels) {
-
-			AssetEntry entry = _assetEntryLocalService.fetchEntry(
-				assetEntryAssetCategoryRel.getAssetEntryId());
-
-			if (entry != null) {
-				entries.add(entry);
-			}
-		}
-
-		return entries;
+				return null;
+			});
 	}
 
 	@Reference
@@ -172,5 +156,11 @@ public class AssetEntryAssetCategoryRelAssetCategoryLocalServiceWrapper
 
 	@Reference
 	private AssetEntryLocalService _assetEntryLocalService;
+
+	@Reference
+	private ClassNameLocalService _classNameLocalService;
+
+	@Reference
+	private MessageBus _messageBus;
 
 }

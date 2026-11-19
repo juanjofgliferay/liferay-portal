@@ -98,7 +98,8 @@ public interface AssetCategoryLocalService
 			String externalReferenceCode, long userId, long groupId,
 			long parentCategoryId, Map<Locale, String> titleMap,
 			Map<Locale, String> descriptionMap, long vocabularyId,
-			String[] categoryProperties, ServiceContext serviceContext)
+			boolean system, String[] categoryProperties,
+			ServiceContext serviceContext)
 		throws PortalException;
 
 	public void addCategoryResources(
@@ -380,14 +381,7 @@ public interface AssetCategoryLocalService
 	public AssetCategory getCategory(long categoryId) throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public AssetCategory getCategory(String uuid, long groupId)
-		throws PortalException;
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public long[] getCategoryIds(String className, long classPK);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public String[] getCategoryNames();
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public String[] getCategoryNames(long classNameId, long classPK);
@@ -399,12 +393,10 @@ public interface AssetCategoryLocalService
 	public List<AssetCategory> getChildCategories(long parentCategoryId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<AssetCategory> getChildCategories(
-		long parentCategoryId, int start, int end,
-		OrderByComparator<AssetCategory> orderByComparator);
+	public int getChildCategoriesCount(long parentCategoryId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getChildCategoriesCount(long parentCategoryId);
+	public int getCompanyCategoriesCount(long companyId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<AssetCategory> getDescendantCategories(AssetCategory category);
@@ -418,6 +410,18 @@ public interface AssetCategoryLocalService
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public IndexableActionableDynamicQuery getIndexableActionableDynamicQuery();
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public AssetCategory getOrAddEmptyCategory(
+			String externalReferenceCode, long userId, long groupId)
+		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public AssetCategory getOrAddEmptyCategoryWithAncestors(
+			String externalReferenceCode, long userId, long groupId,
+			String parentCategoryExternalReferenceCode,
+			String vocabularyExternalReferenceCode)
+		throws PortalException;
 
 	/**
 	 * Returns the OSGi service identifier.
@@ -453,19 +457,17 @@ public interface AssetCategoryLocalService
 		OrderByComparator<AssetCategory> orderByComparator);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<AssetCategory> getVocabularyCategories(
+		long groupId, String name, long vocabularyId, int start, int end,
+		OrderByComparator<AssetCategory> orderByComparator);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public int getVocabularyCategoriesCount(long vocabularyId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<AssetCategory> getVocabularyRootCategories(
 		long vocabularyId, int start, int end,
 		OrderByComparator<AssetCategory> orderByComparator);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getVocabularyRootCategoriesCount(long vocabularyId);
-
-	@Indexable(type = IndexableType.REINDEX)
-	public AssetCategory mergeCategories(long fromCategoryId, long toCategoryId)
-		throws PortalException;
 
 	@Indexable(type = IndexableType.REINDEX)
 	public AssetCategory moveCategory(
@@ -517,10 +519,10 @@ public interface AssetCategoryLocalService
 
 	@Indexable(type = IndexableType.REINDEX)
 	public AssetCategory updateCategory(
-			long userId, long categoryId, long parentCategoryId,
-			Map<Locale, String> titleMap, Map<Locale, String> descriptionMap,
-			long vocabularyId, String[] categoryProperties,
-			ServiceContext serviceContext)
+			String externalReferenceCode, long userId, long categoryId,
+			long parentCategoryId, Map<Locale, String> titleMap,
+			Map<Locale, String> descriptionMap, long vocabularyId,
+			String[] categoryProperties, ServiceContext serviceContext)
 		throws PortalException;
 
 	@Override
@@ -539,3 +541,4 @@ public interface AssetCategoryLocalService
 		throws E;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1720656311

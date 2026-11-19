@@ -5,7 +5,7 @@
 
 package com.liferay.portal.instances.web.internal.portlet;
 
-import com.liferay.portal.instances.web.internal.constants.PortalInstancesPortletKeys;
+import com.liferay.portal.instances.constants.PortalInstancesPortletKeys;
 import com.liferay.portal.kernel.portlet.ControlPanelEntry;
 import com.liferay.portal.kernel.portlet.OmniadminControlPanelEntry;
 
@@ -15,7 +15,7 @@ import org.osgi.service.component.annotations.Component;
  * @author Alan Huang
  */
 @Component(
-	property = "javax.portlet.name=" + PortalInstancesPortletKeys.PORTAL_INSTANCES,
+	property = "jakarta.portlet.name=" + PortalInstancesPortletKeys.PORTAL_INSTANCES,
 	service = ControlPanelEntry.class
 )
 public class PortalInstancesControlPanelEntry

@@ -27,7 +27,11 @@ const PreviewModal = ({body, children, size = 'md', title}) => {
 					observer={observer}
 					size={size}
 				>
-					<ClayModal.Header>{title}</ClayModal.Header>
+					<ClayModal.Header
+						closeButtonAriaLabel={Liferay.Language.get('close')}
+					>
+						{title}
+					</ClayModal.Header>
 
 					<ClayModal.Body>{body}</ClayModal.Body>
 				</ClayModal>
@@ -59,7 +63,7 @@ export function PreviewModalWithCopyDownload({
 							className={COPY_BUTTON_CSS_CLASS}
 							data-clipboard-text={text}
 							displayType="secondary"
-							small
+							size="sm"
 						>
 							<span className="inline-item inline-item-before">
 								<ClayIcon symbol="copy" />

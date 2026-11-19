@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -349,12 +350,6 @@ public class CommercePaymentMethodGroupRelLocalServiceUtil {
 	}
 
 	public static List<CommercePaymentMethodGroupRel>
-		getCommercePaymentMethodGroupRels(long groupId) {
-
-		return getService().getCommercePaymentMethodGroupRels(groupId);
-	}
-
-	public static List<CommercePaymentMethodGroupRel>
 		getCommercePaymentMethodGroupRels(long groupId, boolean active) {
 
 		return getService().getCommercePaymentMethodGroupRels(groupId, active);
@@ -366,16 +361,6 @@ public class CommercePaymentMethodGroupRelLocalServiceUtil {
 
 		return getService().getCommercePaymentMethodGroupRels(
 			groupId, active, start, end);
-	}
-
-	public static List<CommercePaymentMethodGroupRel>
-		getCommercePaymentMethodGroupRels(
-			long groupId, boolean active, int start, int end,
-			OrderByComparator<CommercePaymentMethodGroupRel>
-				orderByComparator) {
-
-		return getService().getCommercePaymentMethodGroupRels(
-			groupId, active, start, end, orderByComparator);
 	}
 
 	public static List<CommercePaymentMethodGroupRel>
@@ -403,10 +388,6 @@ public class CommercePaymentMethodGroupRelLocalServiceUtil {
 	 */
 	public static int getCommercePaymentMethodGroupRelsCount() {
 		return getService().getCommercePaymentMethodGroupRelsCount();
-	}
-
-	public static int getCommercePaymentMethodGroupRelsCount(long groupId) {
-		return getService().getCommercePaymentMethodGroupRelsCount(groupId);
 	}
 
 	public static int getCommercePaymentMethodGroupRelsCount(
@@ -480,15 +461,13 @@ public class CommercePaymentMethodGroupRelLocalServiceUtil {
 	}
 
 	public static CommercePaymentMethodGroupRelLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(
-		CommercePaymentMethodGroupRelLocalService service) {
-
-		_service = service;
-	}
-
-	private static volatile CommercePaymentMethodGroupRelLocalService _service;
+	private static final Snapshot<CommercePaymentMethodGroupRelLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			CommercePaymentMethodGroupRelLocalServiceUtil.class,
+			CommercePaymentMethodGroupRelLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-805430474

@@ -1,0 +1,30 @@
+import {Metric} from '../../contacts/pages/account/utils/types';
+
+export enum AccountDataStatus {
+	Error = 'error',
+	Loading = 'loading',
+	NoAccountData = 'noAccountData',
+	NoDataSources = 'noDataSources',
+	Ready = 'ready',
+}
+
+export enum OverviewMetricType {
+	AtRisk = 'at-risk',
+	NewPipeline = 'new-pipeline',
+	Stalled = 'stalled',
+}
+
+export interface IOverviewMetric extends Metric {
+	metricType: OverviewMetricType;
+}
+
+export interface ILifecycleStage {
+	accountsCount: number;
+	averageStageDuration: number;
+	conversionRateToNextStage: number | null;
+	description: string;
+	id: string;
+	name: string;
+	percentage: number;
+	position: number;
+}

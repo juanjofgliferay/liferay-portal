@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {fetch, objectToFormData, openSelectionModal} from 'frontend-js-web';
+import {openSelectionModal} from 'frontend-js-components-web';
+import {fetch, objectToFormData, setCSPNonce} from 'frontend-js-web';
 
 export default function ({
 	changeThemeButtonId,
@@ -48,10 +49,11 @@ export default function ({
 					})
 						.then((response) => response.text())
 						.then((response) => {
+							response = setCSPNonce(response);
+
 							const range = document.createRange();
-							const fragment = range.createContextualFragment(
-								response
-							);
+							const fragment =
+								range.createContextualFragment(response);
 
 							themeContainer.removeChild(loadingIndicator);
 							themeContainer.appendChild(fragment);

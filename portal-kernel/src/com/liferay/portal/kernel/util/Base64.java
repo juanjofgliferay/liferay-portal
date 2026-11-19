@@ -5,11 +5,11 @@
 
 package com.liferay.portal.kernel.util;
 
+import com.liferay.petra.io.ProtectedClassLoaderObjectInputStream;
+import com.liferay.petra.io.ProtectedObjectInputStream;
+import com.liferay.petra.io.unsync.UnsyncByteArrayInputStream;
+import com.liferay.petra.io.unsync.UnsyncByteArrayOutputStream;
 import com.liferay.petra.string.CharPool;
-import com.liferay.petra.string.StringBundler;
-import com.liferay.portal.kernel.io.ProtectedObjectInputStream;
-import com.liferay.portal.kernel.io.unsync.UnsyncByteArrayInputStream;
-import com.liferay.portal.kernel.io.unsync.UnsyncByteArrayOutputStream;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 
@@ -76,11 +76,15 @@ public class Base64 {
 			return new byte[0];
 		}
 
+		char padChar = CharPool.EQUAL;
+
+		if (url) {
+			padChar = CharPool.STAR;
+		}
+
 		int pad = 0;
 
-		for (int i = base64.length() - 1; base64.charAt(i) == CharPool.EQUAL;
-			 i--) {
-
+		for (int i = base64.length() - 1; base64.charAt(i) == padChar; i--) {
 			pad++;
 		}
 
@@ -91,11 +95,11 @@ public class Base64 {
 		int rawindex = 0;
 
 		for (int i = 0; i < base64.length(); i += 4) {
-			int block = _getValue(base64.charAt(i), url) << 18;
+			int block = _getValue(base64, i, url) << 18;
 
-			block += _getValue(base64.charAt(i + 1), url) << 12;
-			block += _getValue(base64.charAt(i + 2), url) << 6;
-			block += _getValue(base64.charAt(i + 3), url);
+			block += _getValue(base64, i + 1, url) << 12;
+			block += _getValue(base64, i + 2, url) << 6;
+			block += _getValue(base64, i + 3, url);
 
 			for (int j = 0; (j < 3) && ((rawindex + j) < raw.length); j++) {
 				raw[rawindex + j] = (byte)((block >> (8 * (2 - j))) & 0xff);
@@ -112,18 +116,18 @@ public class Base64 {
 
 		int lastIndex = Math.min(raw.length, offset + length);
 
-		StringBundler sb = new StringBundler(
-			(((lastIndex - offset) / 3) + 1) * 4);
+		char[] chars = new char[((lastIndex - offset + 2) / 3) * 4];
 
 		for (int i = offset; i < lastIndex; i += 3) {
-			sb.append(_encodeBlock(raw, i, lastIndex, url));
+			_encodeBlock(raw, i, lastIndex, url, chars, ((i - offset) / 3) * 4);
 		}
 
-		return sb.toString();
+		return new String(chars);
 	}
 
-	private static char[] _encodeBlock(
-		byte[] raw, int offset, int lastIndex, boolean url) {
+	private static void _encodeBlock(
+		byte[] raw, int offset, int lastIndex, boolean url, char[] chars,
+		int index) {
 
 		int block = 0;
 
@@ -139,34 +143,30 @@ public class Base64 {
 			block += neuter << (8 * (2 - i));
 		}
 
-		char[] base64 = new char[4];
-
 		for (int i = 0; i < 4; i++) {
 			int sixbit = (block >>> (6 * (3 - i))) & 0x3f;
 
-			base64[i] = _getChar(sixbit, url);
+			chars[index + i] = _getChar(sixbit, url);
 		}
 
 		if (url) {
 			if (slack < 1) {
-				base64[2] = CharPool.STAR;
+				chars[index + 2] = CharPool.STAR;
 			}
 
 			if (slack < 2) {
-				base64[3] = CharPool.STAR;
+				chars[index + 3] = CharPool.STAR;
 			}
 		}
 		else {
 			if (slack < 1) {
-				base64[2] = CharPool.EQUAL;
+				chars[index + 2] = CharPool.EQUAL;
 			}
 
 			if (slack < 2) {
-				base64[3] = CharPool.EQUAL;
+				chars[index + 3] = CharPool.EQUAL;
 			}
 		}
-
-		return base64;
 	}
 
 	private static char _getChar(int sixbit, boolean url) {
@@ -201,7 +201,16 @@ public class Base64 {
 		return CharPool.SLASH;
 	}
 
-	private static int _getValue(char c, boolean url) {
+	private static int _getValue(String base64, int index, boolean url) {
+		if (index >= base64.length()) {
+
+			// Padding is missing. Pretend that it exists.
+
+			return 0;
+		}
+
+		char c = base64.charAt(index);
+
 		if ((c >= CharPool.UPPER_CASE_A) && (c <= CharPool.UPPER_CASE_Z)) {
 			return c - 65;
 		}
@@ -224,7 +233,8 @@ public class Base64 {
 			}
 
 			if (c != CharPool.STAR) {
-				return -1;
+				throw new IllegalArgumentException(
+					String.format("Found illegal character: %c", c));
 			}
 		}
 		else {
@@ -237,7 +247,8 @@ public class Base64 {
 			}
 
 			if (c != CharPool.EQUAL) {
-				return -1;
+				throw new IllegalArgumentException(
+					String.format("Found illegal character: %c", c));
 			}
 		}
 

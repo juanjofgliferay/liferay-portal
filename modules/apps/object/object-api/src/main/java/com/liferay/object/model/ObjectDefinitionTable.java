@@ -8,6 +8,7 @@ package com.liferay.object.model;
 import com.liferay.petra.sql.dsl.Column;
 import com.liferay.petra.sql.dsl.base.BaseTable;
 
+import java.sql.Clob;
 import java.sql.Types;
 
 import java.util.Date;
@@ -58,10 +59,6 @@ public class ObjectDefinitionTable extends BaseTable<ObjectDefinitionTable> {
 	public final Column<ObjectDefinitionTable, Long> objectFolderId =
 		createColumn(
 			"objectFolderId", Long.class, Types.BIGINT, Column.FLAG_DEFAULT);
-	public final Column<ObjectDefinitionTable, Long> rootObjectDefinitionId =
-		createColumn(
-			"rootObjectDefinitionId", Long.class, Types.BIGINT,
-			Column.FLAG_DEFAULT);
 	public final Column<ObjectDefinitionTable, Long> titleObjectFieldId =
 		createColumn(
 			"titleObjectFieldId", Long.class, Types.BIGINT,
@@ -72,13 +69,14 @@ public class ObjectDefinitionTable extends BaseTable<ObjectDefinitionTable> {
 			Column.FLAG_DEFAULT);
 	public final Column<ObjectDefinitionTable, Boolean> active = createColumn(
 		"active_", Boolean.class, Types.BOOLEAN, Column.FLAG_DEFAULT);
+	public final Column<ObjectDefinitionTable, String> className = createColumn(
+		"className", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
 	public final Column<ObjectDefinitionTable, String> dbTableName =
 		createColumn(
 			"dbTableName", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
-	public final Column<ObjectDefinitionTable, String> label = createColumn(
-		"label", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
-	public final Column<ObjectDefinitionTable, String> className = createColumn(
-		"className", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
+	public final Column<ObjectDefinitionTable, String> description =
+		createColumn(
+			"description", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
 	public final Column<ObjectDefinitionTable, Boolean> enableCategorization =
 		createColumn(
 			"enableCategorization", Boolean.class, Types.BOOLEAN,
@@ -87,9 +85,17 @@ public class ObjectDefinitionTable extends BaseTable<ObjectDefinitionTable> {
 		createColumn(
 			"enableComments", Boolean.class, Types.BOOLEAN,
 			Column.FLAG_DEFAULT);
-	public final Column<ObjectDefinitionTable, Boolean> enableLocalization =
+	public final Column<ObjectDefinitionTable, Boolean> enableFormContainer =
 		createColumn(
-			"enableLocalization", Boolean.class, Types.BOOLEAN,
+			"enableFormContainer", Boolean.class, Types.BOOLEAN,
+			Column.FLAG_DEFAULT);
+	public final Column<ObjectDefinitionTable, Boolean>
+		enableFriendlyURLCustomization = createColumn(
+			"enableFriendlyURLCustomization", Boolean.class, Types.BOOLEAN,
+			Column.FLAG_DEFAULT);
+	public final Column<ObjectDefinitionTable, Boolean> enableIndexSearch =
+		createColumn(
+			"enableIndexSearch", Boolean.class, Types.BOOLEAN,
 			Column.FLAG_DEFAULT);
 	public final Column<ObjectDefinitionTable, Boolean> enableObjectEntryDraft =
 		createColumn(
@@ -99,6 +105,24 @@ public class ObjectDefinitionTable extends BaseTable<ObjectDefinitionTable> {
 		enableObjectEntryHistory = createColumn(
 			"enableObjectEntryHistory", Boolean.class, Types.BOOLEAN,
 			Column.FLAG_DEFAULT);
+	public final Column<ObjectDefinitionTable, Boolean>
+		enableObjectEntrySchedule = createColumn(
+			"enableObjectEntrySchedule", Boolean.class, Types.BOOLEAN,
+			Column.FLAG_DEFAULT);
+	public final Column<ObjectDefinitionTable, Boolean>
+		enableObjectEntrySubscription = createColumn(
+			"enableObjectEntrySubscription", Boolean.class, Types.BOOLEAN,
+			Column.FLAG_DEFAULT);
+	public final Column<ObjectDefinitionTable, Boolean>
+		enableObjectEntryVersioning = createColumn(
+			"enableObjectEntryVersioning", Boolean.class, Types.BOOLEAN,
+			Column.FLAG_DEFAULT);
+	public final Column<ObjectDefinitionTable, String> friendlyURLSeparator =
+		createColumn(
+			"friendlyURLSeparator", String.class, Types.VARCHAR,
+			Column.FLAG_DEFAULT);
+	public final Column<ObjectDefinitionTable, Clob> label = createColumn(
+		"label", Clob.class, Types.CLOB, Column.FLAG_DEFAULT);
 	public final Column<ObjectDefinitionTable, Boolean> modifiable =
 		createColumn(
 			"modifiable", Boolean.class, Types.BOOLEAN, Column.FLAG_DEFAULT);
@@ -119,9 +143,8 @@ public class ObjectDefinitionTable extends BaseTable<ObjectDefinitionTable> {
 		createColumn(
 			"pkObjectFieldName", String.class, Types.VARCHAR,
 			Column.FLAG_DEFAULT);
-	public final Column<ObjectDefinitionTable, String> pluralLabel =
-		createColumn(
-			"pluralLabel", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
+	public final Column<ObjectDefinitionTable, Clob> pluralLabel = createColumn(
+		"pluralLabel", Clob.class, Types.CLOB, Column.FLAG_DEFAULT);
 	public final Column<ObjectDefinitionTable, Boolean> portlet = createColumn(
 		"portlet", Boolean.class, Types.BOOLEAN, Column.FLAG_DEFAULT);
 	public final Column<ObjectDefinitionTable, String> scope = createColumn(
@@ -141,3 +164,4 @@ public class ObjectDefinitionTable extends BaseTable<ObjectDefinitionTable> {
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-358755264

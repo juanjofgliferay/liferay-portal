@@ -17,12 +17,12 @@ import com.liferay.commerce.product.service.CommerceChannelLocalService;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.util.ParamUtil;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Alessio Antonio Rendina
@@ -127,13 +127,14 @@ public class CommerceNotificationTemplatesDisplayContext {
 				commerceDefinitionTermContributor :
 					definitionTermContributorsByContributorKey) {
 
-			if (definitionTermContributorsByNotificationTypeKey.contains(
+			if (!definitionTermContributorsByNotificationTypeKey.contains(
 					commerceDefinitionTermContributor)) {
 
-				results.putAll(
-					commerceDefinitionTermContributor.getDefinitionTerms(
-						locale));
+				continue;
 			}
+
+			results.putAll(
+				commerceDefinitionTermContributor.getDefinitionTerms(locale));
 		}
 
 		return results;
@@ -142,12 +143,12 @@ public class CommerceNotificationTemplatesDisplayContext {
 	private final CommerceChannelLocalService _commerceChannelLocalService;
 	private final CommerceDefinitionTermContributorRegistry
 		_commerceDefinitionTermContributorRegistry;
-	private final CommerceNotificationsRequestHelper
-		_commerceNotificationsRequestHelper;
 	private CommerceNotificationTemplate _commerceNotificationTemplate;
 	private final CommerceNotificationTemplateService
 		_commerceNotificationTemplateService;
 	private final CommerceNotificationTypeRegistry
 		_commerceNotificationTypeRegistry;
+	private final CommerceNotificationsRequestHelper
+		_commerceNotificationsRequestHelper;
 
 }

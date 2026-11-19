@@ -8,7 +8,6 @@ package com.liferay.portal.configuration.module.configuration.internal;
 import aQute.bnd.annotation.metatype.Meta;
 
 import com.liferay.portal.configuration.persistence.ConfigurationOverridePropertiesUtil;
-import com.liferay.portal.kernel.module.configuration.ConfigurationException;
 import com.liferay.portal.kernel.settings.LocalizedValuesMap;
 import com.liferay.portal.kernel.settings.TypedSettings;
 import com.liferay.portal.kernel.util.GetterUtil;
@@ -27,15 +26,11 @@ import java.util.Map;
 public class ConfigurationInvocationHandler<S> implements InvocationHandler {
 
 	public ConfigurationInvocationHandler(
-			Class<S> clazz, TypedSettings typedSettings)
-		throws ConfigurationException, ReflectiveOperationException {
+		Class<S> clazz, TypedSettings typedSettings) {
 
 		_clazz = clazz;
 		_typedSettings = typedSettings;
 
-		_configurationOverrideInstance =
-			ConfigurationOverrideInstance.getConfigurationOverrideInstance(
-				clazz, typedSettings);
 		_overrideProperties =
 			ConfigurationOverridePropertiesUtil.getOverrideProperties(
 				clazz.getName());
@@ -57,14 +52,6 @@ public class ConfigurationInvocationHandler<S> implements InvocationHandler {
 
 				if (overrideValue != null) {
 					return overrideValue;
-				}
-			}
-
-			if (_configurationOverrideInstance != null) {
-				Object result = _configurationOverrideInstance.invoke(method);
-
-				if (result != ConfigurationOverrideInstance.NULL_RESULT) {
-					return result;
 				}
 			}
 
@@ -129,10 +116,7 @@ public class ConfigurationInvocationHandler<S> implements InvocationHandler {
 				return value;
 			}
 
-			Method valueOfMethod = returnType.getDeclaredMethod(
-				"valueOf", String.class);
-
-			return valueOfMethod.invoke(returnType, value);
+			return Enum.valueOf((Class<Enum>)returnType, value);
 		}
 
 		Constructor<?> constructor = returnType.getConstructor(String.class);
@@ -180,11 +164,9 @@ public class ConfigurationInvocationHandler<S> implements InvocationHandler {
 			return _typedSettings.getValues(method.getName());
 		}
 		else if (returnType.isEnum()) {
-			Method valueOfMethod = returnType.getDeclaredMethod(
-				"valueOf", String.class);
-
-			return valueOfMethod.invoke(
-				returnType, _typedSettings.getValue(method.getName()));
+			return Enum.valueOf(
+				(Class<Enum>)returnType,
+				_typedSettings.getValue(method.getName()));
 		}
 
 		Constructor<?> constructor = returnType.getConstructor(String.class);
@@ -194,7 +176,6 @@ public class ConfigurationInvocationHandler<S> implements InvocationHandler {
 	}
 
 	private final Class<S> _clazz;
-	private final ConfigurationOverrideInstance _configurationOverrideInstance;
 	private final Map<String, Object> _overrideProperties;
 	private final TypedSettings _typedSettings;
 

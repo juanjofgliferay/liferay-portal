@@ -38,6 +38,7 @@ public class CommerceCurrencyWrapper
 
 		attributes.put("mvccVersion", getMvccVersion());
 		attributes.put("uuid", getUuid());
+		attributes.put("externalReferenceCode", getExternalReferenceCode());
 		attributes.put("commerceCurrencyId", getCommerceCurrencyId());
 		attributes.put("companyId", getCompanyId());
 		attributes.put("userId", getUserId());
@@ -56,6 +57,7 @@ public class CommerceCurrencyWrapper
 		attributes.put("priority", getPriority());
 		attributes.put("active", isActive());
 		attributes.put("lastPublishDate", getLastPublishDate());
+		attributes.put("status", getStatus());
 
 		return attributes;
 	}
@@ -72,6 +74,13 @@ public class CommerceCurrencyWrapper
 
 		if (uuid != null) {
 			setUuid(uuid);
+		}
+
+		String externalReferenceCode = (String)attributes.get(
+			"externalReferenceCode");
+
+		if (externalReferenceCode != null) {
+			setExternalReferenceCode(externalReferenceCode);
 		}
 
 		Long commerceCurrencyId = (Long)attributes.get("commerceCurrencyId");
@@ -183,6 +192,12 @@ public class CommerceCurrencyWrapper
 		if (lastPublishDate != null) {
 			setLastPublishDate(lastPublishDate);
 		}
+
+		Integer status = (Integer)attributes.get("status");
+
+		if (status != null) {
+			setStatus(status);
+		}
 	}
 
 	@Override
@@ -248,6 +263,16 @@ public class CommerceCurrencyWrapper
 	@Override
 	public String getDefaultLanguageId() {
 		return model.getDefaultLanguageId();
+	}
+
+	/**
+	 * Returns the external reference code of this commerce currency.
+	 *
+	 * @return the external reference code of this commerce currency
+	 */
+	@Override
+	public String getExternalReferenceCode() {
+		return model.getExternalReferenceCode();
 	}
 
 	/**
@@ -505,6 +530,16 @@ public class CommerceCurrencyWrapper
 	}
 
 	/**
+	 * Returns the status of this commerce currency.
+	 *
+	 * @return the status of this commerce currency
+	 */
+	@Override
+	public int getStatus() {
+		return model.getStatus();
+	}
+
+	/**
 	 * Returns the symbol of this commerce currency.
 	 *
 	 * @return the symbol of this commerce currency
@@ -652,6 +687,16 @@ public class CommerceCurrencyWrapper
 	@Override
 	public void setCreateDate(Date createDate) {
 		model.setCreateDate(createDate);
+	}
+
+	/**
+	 * Sets the external reference code of this commerce currency.
+	 *
+	 * @param externalReferenceCode the external reference code of this commerce currency
+	 */
+	@Override
+	public void setExternalReferenceCode(String externalReferenceCode) {
+		model.setExternalReferenceCode(externalReferenceCode);
 	}
 
 	/**
@@ -887,6 +932,16 @@ public class CommerceCurrencyWrapper
 	}
 
 	/**
+	 * Sets the status of this commerce currency.
+	 *
+	 * @param status the status of this commerce currency
+	 */
+	@Override
+	public void setStatus(int status) {
+		model.setStatus(status);
+	}
+
+	/**
 	 * Sets the symbol of this commerce currency.
 	 *
 	 * @param symbol the symbol of this commerce currency
@@ -952,3 +1007,4 @@ public class CommerceCurrencyWrapper
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-38534840

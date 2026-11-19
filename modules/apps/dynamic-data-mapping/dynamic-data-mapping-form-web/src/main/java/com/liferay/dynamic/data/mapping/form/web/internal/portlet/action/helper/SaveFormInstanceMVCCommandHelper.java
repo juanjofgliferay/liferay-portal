@@ -12,6 +12,8 @@ import com.liferay.dynamic.data.mapping.exception.StructureDefinitionException;
 import com.liferay.dynamic.data.mapping.exception.StructureLayoutException;
 import com.liferay.dynamic.data.mapping.form.builder.context.DDMFormContextDeserializer;
 import com.liferay.dynamic.data.mapping.form.builder.context.DDMFormContextDeserializerRequest;
+import com.liferay.dynamic.data.mapping.form.evaluator.DDMFormEvaluator;
+import com.liferay.dynamic.data.mapping.form.field.type.DDMFormFieldTypeServicesRegistry;
 import com.liferay.dynamic.data.mapping.form.web.internal.portlet.action.util.DDMFormInstanceFieldSettingsValidator;
 import com.liferay.dynamic.data.mapping.model.DDMForm;
 import com.liferay.dynamic.data.mapping.model.DDMFormField;
@@ -45,6 +47,11 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.net.InetAddress;
 import java.net.URI;
 import java.net.UnknownHostException;
@@ -60,11 +67,7 @@ import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.Set;
 
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
-
-import javax.servlet.http.HttpServletRequest;
-
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
@@ -116,6 +119,14 @@ public class SaveFormInstanceMVCCommandHelper {
 			portletRequest, formInstanceId, validateDDMFormFieldSettings);
 	}
 
+	@Activate
+	protected void activate() {
+		formInstanceFieldSettingsValidator =
+			new DDMFormInstanceFieldSettingsValidator(
+				_ddmFormEvaluator, _ddmFormFieldTypeServicesRegistry,
+				jsonFactory, _portal);
+	}
+
 	protected DDMFormLayout getDDMFormLayout(PortletRequest portletRequest)
 		throws PortalException {
 
@@ -150,8 +161,7 @@ public class SaveFormInstanceMVCCommandHelper {
 	protected DDMFormContextDeserializer<DDMFormValues>
 		ddmFormTemplateContextToDDMFormValues;
 
-	@Reference
-	protected volatile DDMFormInstanceFieldSettingsValidator
+	protected DDMFormInstanceFieldSettingsValidator
 		formInstanceFieldSettingsValidator;
 
 	@Reference
@@ -279,7 +289,7 @@ public class SaveFormInstanceMVCCommandHelper {
 				"field-of-the-x-configuration-in-x-to-allow-it",
 			new String[] {
 				value, fieldName, "redirect-url-configuration-name",
-				"javax.portlet.title." +
+				"jakarta.portlet.title." +
 					ConfigurationAdminPortletKeys.INSTANCE_SETTINGS
 			});
 	}
@@ -517,6 +527,12 @@ public class SaveFormInstanceMVCCommandHelper {
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		SaveFormInstanceMVCCommandHelper.class);
+
+	@Reference
+	private DDMFormEvaluator _ddmFormEvaluator;
+
+	@Reference
+	private DDMFormFieldTypeServicesRegistry _ddmFormFieldTypeServicesRegistry;
 
 	@Reference
 	private Language _language;

@@ -5,18 +5,36 @@
 
 package com.liferay.jenkins.results.parser;
 
-import java.io.File;
+import com.sun.net.httpserver.HttpServer;
 
-import java.net.URI;
+import java.io.File;
+import java.io.IOException;
+import java.io.OutputStream;
+
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.ServerSocket;
 import java.net.URL;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.locks.ReentrantLock;
+
+import org.apache.http.client.utils.URIBuilder;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import org.junit.Before;
+import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Test;
+
+import org.mockito.Mockito;
 
 /**
  * @author Peter Yoo
@@ -24,18 +42,102 @@ import org.junit.Test;
 public class JenkinsResultsParserUtilTest
 	extends com.liferay.jenkins.results.parser.Test {
 
-	@Before
-	@Override
-	public void setUp() throws Exception {
-		downloadSample(
-			"axis-integration-db2-1", "0,label_exp=!master", "129",
-			"test-portal-acceptance-pullrequest-batch(master)", "test-4-1");
-		downloadSample(
-			"axis-plugin-1", "9,label_exp=!master", "233",
-			"test-portal-acceptance-pullrequest-batch(ee-6.2.x)", "test-1-20");
-		downloadSample(
-			"job-1", null, "267",
-			"test-portal-acceptance-pullrequest-source(ee-6.2.x)", "test-1-1");
+	@Test
+	public void testBuildFormContent() {
+		testEquals(
+			"client_id=a%26b&grant_type=client_credentials",
+			JenkinsResultsParserUtil.buildFormContent(
+				_newParameters(
+					"grant_type", "client_credentials", "client_id", "a&b")));
+	}
+
+	@Test
+	public void testBuildFormContentWithReservedCharacters() {
+		testEquals(
+			"A=a%23b&B=a%26b&C=100%25+pass&D=a%3Db&E=a%2Bb&F=a+b",
+			JenkinsResultsParserUtil.buildFormContent(
+				_newParameters(
+					"A", "a#b", "B", "a&b", "C", "100% pass", "D", "a=b", "E",
+					"a+b", "F", "a b")));
+	}
+
+	@Test
+	public void testBuildFormContentWithoutParameters() {
+		testEquals(
+			"",
+			JenkinsResultsParserUtil.buildFormContent(Collections.emptyMap()));
+		testEquals("", JenkinsResultsParserUtil.buildFormContent(null));
+	}
+
+	@Test
+	public void testDecodeURLParameterPart() {
+		testEquals(
+			"100% pass",
+			JenkinsResultsParserUtil.decodeURLParameterPart("100%25%20pass"));
+		testEquals(
+			"100%%20pass",
+			JenkinsResultsParserUtil.decodeURLParameterPart("100%%20pass"));
+		testEquals(
+			"AWS & CI",
+			JenkinsResultsParserUtil.decodeURLParameterPart("AWS%20%26%20CI"));
+		testEquals(
+			"PortalSmoke#Smoke",
+			JenkinsResultsParserUtil.decodeURLParameterPart(
+				"PortalSmoke%23Smoke"));
+		testEquals(
+			"a+b", JenkinsResultsParserUtil.decodeURLParameterPart("a%2Bb"));
+		testEquals(
+			"master",
+			JenkinsResultsParserUtil.decodeURLParameterPart("master"));
+	}
+
+	@Test
+	public void testEncodeLegacyURLPart() {
+		testEquals(
+			"!master", JenkinsResultsParserUtil.encodeLegacyURLPart("!master"));
+		testEquals(
+			"0%201%202", JenkinsResultsParserUtil.encodeLegacyURLPart("0 1 2"));
+		testEquals(
+			"100%%20pass",
+			JenkinsResultsParserUtil.encodeLegacyURLPart("100% pass"));
+		testEquals(
+			"ABC%28123",
+			JenkinsResultsParserUtil.encodeLegacyURLPart("ABC(123"));
+		testEquals(
+			"ABC%29123",
+			JenkinsResultsParserUtil.encodeLegacyURLPart("ABC)123"));
+		testEquals(
+			"ABC%5B123",
+			JenkinsResultsParserUtil.encodeLegacyURLPart("ABC[123"));
+		testEquals(
+			"ABC%5D123",
+			JenkinsResultsParserUtil.encodeLegacyURLPart("ABC]123"));
+		testEquals("a+b", JenkinsResultsParserUtil.encodeLegacyURLPart("a+b"));
+	}
+
+	@Test(timeout = 30000)
+	public void testExecuteJenkinsScriptReadTimeout() throws Exception {
+		try (ServerSocket serverSocket = _createServerSocket()) {
+			int port = serverSocket.getLocalPort();
+
+			long startTime = System.currentTimeMillis();
+
+			String result = JenkinsResultsParserUtil.executeJenkinsScript(
+				"localhost:" + port, "println 'hello'", true, 2000);
+
+			long duration = System.currentTimeMillis() - startTime;
+
+			testEquals(null, result);
+
+			if (duration < 1500) {
+				errorCollector.addError(
+					new Throwable(
+						JenkinsResultsParserUtil.combine(
+							"The read timeout was not reached after ",
+							JenkinsResultsParserUtil.toDurationString(
+								duration))));
+			}
+		}
 	}
 
 	@Test
@@ -50,6 +152,59 @@ public class JenkinsResultsParserUtilTest
 				"cloud-10-50-0-2,cloud-10-50-0-49,cloud-10-50-0-50",
 			JenkinsResultsParserUtil.expandSlaveRange(
 				"cloud-10-50-0-47, cloud-10-50-0-0..2, cloud-10-50-0-49..50"));
+	}
+
+	@Test
+	public void testFetchBuildURL() throws Exception {
+		String buildURL =
+			"https://" + RandomTestUtil.randomString() + "/job/" +
+				RandomTestUtil.randomString() + "/1/";
+
+		_testFetchBuildURL(buildURL, buildURL);
+
+		_testFetchBuildURL(null, "");
+		_testFetchBuildURL(null, RandomTestUtil.randomString());
+
+		JenkinsMaster jenkinsMaster = Mockito.mock(JenkinsMaster.class);
+		String jobName = RandomTestUtil.randomString();
+
+		for (long queueId : new long[] {0, -1, Long.MIN_VALUE}) {
+			Assert.assertNull(
+				JenkinsResultsParserUtil.fetchBuildURL(
+					jobName, jenkinsMaster, queueId));
+		}
+
+		Assert.assertNull(
+			JenkinsResultsParserUtil.fetchBuildURL("", jenkinsMaster, 1));
+		Assert.assertNull(
+			JenkinsResultsParserUtil.fetchBuildURL(jobName, null, 1));
+
+		Mockito.verify(
+			jenkinsMaster, Mockito.never()
+		).getName();
+	}
+
+	@Test
+	public void testFetchBuildURLFailure() throws Exception {
+		JenkinsMaster jenkinsMaster = Mockito.mock(JenkinsMaster.class);
+
+		try (ServerSocket serverSocket = _createServerSocket()) {
+			Mockito.doReturn(
+				"localhost:" + serverSocket.getLocalPort()
+			).when(
+				jenkinsMaster
+			).getName();
+		}
+
+		String jobName = RandomTestUtil.randomString();
+
+		Assert.assertThrows(
+			IOException.class,
+			() -> JenkinsResultsParserUtil.fetchBuildURL(
+				jobName, jenkinsMaster, 1));
+
+		Assert.assertNull(
+			JenkinsResultsParserUtil.getBuildURL(jobName, jenkinsMaster, 1));
 	}
 
 	@Test
@@ -71,51 +226,64 @@ public class JenkinsResultsParserUtilTest
 	}
 
 	@Test
-	public void testFixURL() {
-		testEquals("ABC%28123", _fixURLMultipleTimes("ABC(123"));
-		testEquals("ABC%29123", _fixURLMultipleTimes("ABC)123"));
-		testEquals("ABC%5B123", _fixURLMultipleTimes("ABC[123"));
-		testEquals("ABC%5D123", _fixURLMultipleTimes("ABC]123"));
-		testEquals("!master", _fixURLMultipleTimes("!master"));
-		testEquals("0%201%202", _fixURLMultipleTimes("0 1 2"));
-		testEquals(
-			"https://test-1-1.liferay.com/job(master)?" +
-				"AXIS_VARIABLE=0%201&label_exp=!master&job=test%287.2.x%29",
-			_fixURLMultipleTimes(
-				"https://test-1-1.liferay.com/job(master)?" +
-					"AXIS_VARIABLE=0 1&label_exp=!master&job=test(7.2.x)"));
+	public void testGetCohortName() {
+		Environment environment = mockEnvironment();
+
+		Mockito.when(
+			environment.doGet("JENKINS_URL")
+		).thenReturn(
+			"https://test-1-1.liferay.com"
+		);
+
+		testEquals("test-1", JenkinsResultsParserUtil.getCohortName());
 	}
 
 	@Test
-	public void testGetJobVariant() throws Exception {
-		TestSample testSample = testSamples.get("axis-integration-db2-1");
+	public void testGetGitHubApiSearchUrl() throws Exception {
+		URL url = new URL(
+			JenkinsResultsParserUtil.getGitHubApiSearchUrl(
+				Arrays.asList("head:a&b#c", "is:pr")));
 
+		Map<String, String> parameters =
+			JenkinsResultsParserUtil.getQueryParameters(url.getQuery());
+
+		testEquals("head:a&b#c is:pr", parameters.get("q"));
+		testEquals(1, parameters.size());
+	}
+
+	@Test
+	public void testGetJenkinsBuildQueueId() {
 		testEquals(
-			"integration-db2",
-			JenkinsResultsParserUtil.getJobVariant(
-				read(testSample.getSampleDir(), "/api/json")));
-
-		testSample = testSamples.get("axis-plugin-1");
-
+			"0",
+			String.valueOf(
+				JenkinsResultsParserUtil.getJenkinsBuildQueueId(
+					"https://test-1-1.liferay.com/job/test-job")));
 		testEquals(
-			"plugins",
-			JenkinsResultsParserUtil.getJobVariant(
-				read(testSample.getSampleDir(), "/api/json")));
-
-		testSample = testSamples.get("job-1");
-
+			"0",
+			String.valueOf(
+				JenkinsResultsParserUtil.getJenkinsBuildQueueId(null)));
 		testEquals(
-			"",
-			JenkinsResultsParserUtil.getJobVariant(
-				read(testSample.getSampleDir(), "/api/json")));
+			"12345",
+			String.valueOf(
+				JenkinsResultsParserUtil.getJenkinsBuildQueueId(
+					"https://test-1-1.liferay.com/queue/item/12345")));
+		testEquals(
+			"678",
+			String.valueOf(
+				JenkinsResultsParserUtil.getJenkinsBuildQueueId(
+					"http://test-1-1/queue/item/678/")));
+	}
+
+	@Test
+	public void testGetJobVariant() {
+		String jobVariant = RandomTestUtil.randomString();
+
+		_testGetJobVariant(jobVariant, "JOB_VARIANT", jobVariant);
+		_testGetJobVariant("", "JENKINS_GITHUB_BRANCH_NAME", jobVariant);
 	}
 
 	@Test
 	public void testGetLocalURL() {
-		testEquals(
-			"http://test-8/8/ABC?123=456&xyz=abc",
-			JenkinsResultsParserUtil.getLocalURL(
-				"https://test.liferay.com/8/ABC?123=456&xyz=abc"));
 		testEquals(
 			"http://test-1-20/ABC?123=456&xyz=abc",
 			JenkinsResultsParserUtil.getLocalURL(
@@ -124,14 +292,6 @@ public class JenkinsResultsParserUtilTest
 			"http://test-4-1/ABC?123=456&xyz=abc",
 			JenkinsResultsParserUtil.getLocalURL(
 				"http://test-4-1/ABC?123=456&xyz=abc"));
-		testEquals(
-			"https://release.liferay.com/1/ABC?123=456&xyz=abc",
-			JenkinsResultsParserUtil.getLocalURL(
-				"https://release.liferay.com/1/ABC?123=456&xyz=abc"));
-		testEquals(
-			"http://release-1/1/ABC?123=456&xyz=abc",
-			JenkinsResultsParserUtil.getLocalURL(
-				"http://release-1/1/ABC?123=456&xyz=abc"));
 		testEquals(
 			"http://mirrors.lax.liferay.com/files.liferay.com/private/",
 			JenkinsResultsParserUtil.getLocalURL(
@@ -164,6 +324,47 @@ public class JenkinsResultsParserUtilTest
 			"http://mirrors.lax.liferay.com/releases.liferay.com/portal/",
 			JenkinsResultsParserUtil.getLocalURL(
 				"https://releases.liferay.com/portal/"));
+	}
+
+	@Test
+	public void testGetMessage() {
+		testEquals(
+			"java.io.IOException",
+			JenkinsResultsParserUtil.getMessage(new IOException()));
+
+		String message = RandomTestUtil.randomString();
+
+		testEquals(
+			message,
+			JenkinsResultsParserUtil.getMessage(new IOException(message)));
+	}
+
+	@Test
+	public void testGetMostAvailableMasterURL() throws Exception {
+		Properties buildProperties = new Properties();
+
+		buildProperties.setProperty(
+			"jenkins.load.balancer.url", "http://test-1-0/load_balancer");
+
+		JenkinsResultsParserUtil.setBuildProperties(buildProperties);
+
+		mockURLReaders();
+
+		JSONObject jsonObject = new JSONObject();
+
+		jsonObject.put("mostAvailableMasterURL", "http://test-1-2");
+
+		setURLReaderOutput(
+			jsonObject.toString(),
+			JenkinsResultsParserUtil.combine(
+				"?baseInvocationURL=http%3A%2F%2Ftest-1%3Fa%3D1%26b%3D2",
+				"&blacklist=test-1-1%2Ctest-1-3&invokedJobBatchSize=2",
+				"&jobName=test%25job"));
+
+		testEquals(
+			"http://test-1-2",
+			JenkinsResultsParserUtil.getMostAvailableMasterURL(
+				"http://test-1?a=1&b=2", "test-1-1,test-1-3", 2, "test%job"));
 	}
 
 	@Test
@@ -245,11 +446,175 @@ public class JenkinsResultsParserUtilTest
 	}
 
 	@Test
-	public void testGetRemoteURL() {
+	public void testGetPropertyNameWithWildcards() {
+		Properties properties = new Properties();
+
+		properties.setProperty("build.caching.enabled", "false");
+		properties.setProperty(
+			"build.caching.enabled[test-portal-acceptance-pullrequest(*)]",
+			"true");
+		properties.setProperty(
+			"build.caching.enabled[test-portal-acceptance-pullrequest(master)]",
+			"false");
+
+		_testGetPropertyName(
+			"build.caching.enabled", "false", properties,
+			"build.caching.enabled", "test-portal-source-format");
+		_testGetPropertyName(
+			"build.caching.enabled[test-portal-acceptance-pullrequest(*)]",
+			"true", properties, "build.caching.enabled",
+			"test-portal-acceptance-pullrequest(ee-7.4.x)");
+		_testGetPropertyName(
+			"build.caching.enabled[test-portal-acceptance-pullrequest(master)]",
+			"false", properties, "build.caching.enabled",
+			"test-portal-acceptance-pullrequest(master)");
+	}
+
+	@Test
+	public void testGetPropertyWithBuildAwsProperties() {
+		Properties properties = _getBuildAwsProperties();
+
+		_testGetProperty(
+			"false", properties, "binaries.cache.enabled",
+			"forward-pullrequest");
+		_testGetProperty(
+			"true", properties, "binaries.cache.enabled",
+			"test-portal-release");
+		_testGetProperty(
+			"false", properties, "binaries.cache.enabled",
+			"test-portal-source-format");
+		_testGetProperty(
+			"false", properties, "build.caching.enabled",
+			"forward-pullrequest");
+		_testGetProperty(
+			"false", properties, "build.caching.enabled",
+			"merge-central-subrepository");
+		_testGetProperty(
+			"true", properties, "build.caching.enabled",
+			"test-portal-fixpack-release");
+		_testGetProperty(
+			"true", properties, "build.caching.enabled",
+			"test-portal-hotfix-release");
+		_testGetProperty(
+			"true", properties, "build.caching.enabled", "test-portal-release");
+		_testGetProperty(
+			"false", properties, "build.caching.enabled",
+			"test-portal-source-format");
+		_testGetProperty(
+			"false", properties, "git.archive.enabled", "forward-pullrequest");
+		_testGetProperty(
+			"false", properties, "git.archive.enabled",
+			"merge-portal-subrepository");
+		_testGetProperty(
+			"true", properties, "git.archive.enabled", "test-portal-release");
+		_testGetProperty(
+			"false", properties, "git.archive.enabled",
+			"test-portal-source-format");
+	}
+
+	@Test
+	public void testGetQueryParametersWithBuiltURL() throws Exception {
+		Map<String, String> parameters = _newParameters(
+			"A", "a#b", "B", "a&b", "C", "100% pass", "D", "a=b", "E", "a+b",
+			"F", "a b", "G a", "name with a space");
+
+		URIBuilder uriBuilder = JenkinsResultsParserUtil.newURIBuilder(
+			"http://" + RandomTestUtil.randomString(), parameters);
+
+		URL url = new URL(uriBuilder.toString());
+
 		testEquals(
-			"https://test.liferay.com/8/ABC?123=456&xyz=abc",
-			JenkinsResultsParserUtil.getRemoteURL(
-				"http://test-8/8/ABC?123=456&xyz=abc"));
+			parameters,
+			JenkinsResultsParserUtil.getQueryParameters(url.getQuery()));
+	}
+
+	@Test
+	public void testGetQueryParametersWithEmptyAndValuelessParameters() {
+		Map<String, String> parameters =
+			JenkinsResultsParserUtil.getQueryParameters(
+				"AXIS_VARIABLE=&pretty");
+
+		testEquals("", parameters.get("AXIS_VARIABLE"));
+		testEquals(null, parameters.get("pretty"));
+		testEquals(2, parameters.size());
+	}
+
+	@Test
+	public void testGetQueryParametersWithInvalidEscape() {
+		Map<String, String> parameters =
+			JenkinsResultsParserUtil.getQueryParameters(
+				"PORTAL_BUILD_NOTES=100% pass");
+
+		testEquals("100% pass", parameters.get("PORTAL_BUILD_NOTES"));
+		testEquals(1, parameters.size());
+	}
+
+	@Test
+	public void testGetQueryParametersWithNestedURL() {
+		Map<String, String> parameters =
+			JenkinsResultsParserUtil.getQueryParameters(
+				JenkinsResultsParserUtil.combine(
+					"JOB_VARIANT=functional&PARENT_BUILD_URL=",
+					"http%3A%2F%2Ftest-1-1%2Fjob%2Fy%2F1%2F"));
+
+		testEquals("functional", parameters.get("JOB_VARIANT"));
+		testEquals(
+			"http://test-1-1/job/y/1/", parameters.get("PARENT_BUILD_URL"));
+		testEquals(2, parameters.size());
+	}
+
+	@Test
+	public void testGetQueryParametersWithRawNumberSign() {
+		Map<String, String> parameters =
+			JenkinsResultsParserUtil.getQueryParameters(
+				"A=PortalSmoke#Smoke&B=1");
+
+		testEquals("PortalSmoke#Smoke", parameters.get("A"));
+		testEquals("1", parameters.get("B"));
+		testEquals(2, parameters.size());
+	}
+
+	@Test
+	public void testGetQueryParametersWithRepeatedName() {
+		Map<String, String> parameters =
+			JenkinsResultsParserUtil.getQueryParameters("V=1&V=2");
+
+		testEquals("1", parameters.get("V"));
+		testEquals(1, parameters.size());
+	}
+
+	@Test
+	public void testGetQueryParametersWithReservedCharacters() {
+		Map<String, String> parameters =
+			JenkinsResultsParserUtil.getQueryParameters(
+				JenkinsResultsParserUtil.combine(
+					"A=PortalSmoke%23Smoke&B=AWS%20%26%20CI&C=a%3Db&D=a%2Bb&",
+					"E=a+b&F=100%25%20pass"));
+
+		testEquals("PortalSmoke#Smoke", parameters.get("A"));
+		testEquals("AWS & CI", parameters.get("B"));
+		testEquals("a=b", parameters.get("C"));
+		testEquals("a+b", parameters.get("D"));
+		testEquals("a b", parameters.get("E"));
+		testEquals("100% pass", parameters.get("F"));
+		testEquals(6, parameters.size());
+	}
+
+	@Test
+	public void testGetQueryParametersWithoutQueryString() {
+		Map<String, String> emptyParameters =
+			JenkinsResultsParserUtil.getQueryParameters("");
+
+		testEquals(0, emptyParameters.size());
+
+		Map<String, String> nullParameters =
+			JenkinsResultsParserUtil.getQueryParameters(null);
+
+		testEquals(0, nullParameters.size());
+	}
+
+	@Test
+	public void testGetRemoteURL() {
 		testEquals(
 			"https://test-1-20.liferay.com/ABC?123=456&xyz=abc",
 			JenkinsResultsParserUtil.getRemoteURL(
@@ -258,14 +623,6 @@ public class JenkinsResultsParserUtilTest
 			"https://test-4-1.liferay.com/ABC?123=456&xyz=abc",
 			JenkinsResultsParserUtil.getRemoteURL(
 				"https://test-4-1.liferay.com/ABC?123=456&xyz=abc"));
-		testEquals(
-			"https://release.liferay.com/1/ABC?123=456&xyz=abc",
-			JenkinsResultsParserUtil.getRemoteURL(
-				"https://release.liferay.com/1/ABC?123=456&xyz=abc"));
-		testEquals(
-			"https://release.liferay.com/1/ABC?123=456&xyz=abc",
-			JenkinsResultsParserUtil.getRemoteURL(
-				"http://release-1/1/ABC?123=456&xyz=abc"));
 		testEquals(
 			"https://files.liferay.com/private/",
 			JenkinsResultsParserUtil.getRemoteURL(
@@ -298,6 +655,359 @@ public class JenkinsResultsParserUtilTest
 			"https://releases.liferay.com/portal/",
 			JenkinsResultsParserUtil.getRemoteURL(
 				"https://releases.liferay.com/portal/"));
+	}
+
+	@Test
+	public void testGetThreadDump() {
+		String threadDump = JenkinsResultsParserUtil.getThreadDump();
+
+		Assert.assertTrue(
+			threadDump.contains(
+				"JenkinsResultsParserUtilTest.testGetThreadDump"));
+
+		Thread currentThread = Thread.currentThread();
+
+		Assert.assertTrue(
+			threadDump.contains(
+				JenkinsResultsParserUtil.combine(
+					"\"", currentThread.getName(), "\"")));
+	}
+
+	@Test(timeout = 30000)
+	public void testGetThreadDumpBlockedThread() throws Exception {
+		String lockOwnerThreadName = "lock-owner";
+		String lockWaiterThreadName = "lock-waiter";
+
+		Object lock = new Object();
+
+		CountDownLatch holdCountDownLatch = new CountDownLatch(1);
+		CountDownLatch lockedCountDownLatch = new CountDownLatch(1);
+
+		Thread lockOwnerThread = new Thread(
+			() -> {
+				synchronized (lock) {
+					lockedCountDownLatch.countDown();
+
+					try {
+						holdCountDownLatch.await();
+					}
+					catch (InterruptedException interruptedException) {
+						throw new RuntimeException(interruptedException);
+					}
+				}
+			},
+			lockOwnerThreadName);
+
+		Thread lockWaiterThread = new Thread(
+			() -> {
+				synchronized (lock) {
+				}
+			},
+			lockWaiterThreadName);
+
+		try {
+			lockOwnerThread.start();
+
+			lockedCountDownLatch.await();
+
+			lockWaiterThread.start();
+
+			while (lockWaiterThread.getState() != Thread.State.BLOCKED) {
+				JenkinsResultsParserUtil.sleep(10);
+			}
+
+			String threadDump = JenkinsResultsParserUtil.getThreadDump();
+
+			String lockWaiterThreadDumpEntry = _getThreadDumpEntry(
+				threadDump, lockWaiterThreadName);
+
+			Assert.assertTrue(lockWaiterThreadDumpEntry.contains("BLOCKED"));
+
+			Assert.assertTrue(
+				lockWaiterThreadDumpEntry.contains(
+					JenkinsResultsParserUtil.combine(
+						" on ", Object.class.getName(), "@",
+						Integer.toHexString(System.identityHashCode(lock)))));
+
+			Assert.assertTrue(
+				lockWaiterThreadDumpEntry.contains(
+					JenkinsResultsParserUtil.combine(
+						"owned by \"", lockOwnerThreadName, "\"")));
+
+			String lockOwnerThreadDumpEntry = _getThreadDumpEntry(
+				threadDump, lockOwnerThreadName);
+
+			Assert.assertTrue(lockOwnerThreadDumpEntry.contains("- locked"));
+		}
+		finally {
+			holdCountDownLatch.countDown();
+
+			lockOwnerThread.join();
+
+			lockWaiterThread.join();
+		}
+	}
+
+	@Test(timeout = 30000)
+	public void testGetThreadDumpDeadlockedThreads() throws Exception {
+		String threadName0 = "deadlock-0";
+		String threadName1 = "deadlock-1";
+
+		ReentrantLock reentrantLock0 = new ReentrantLock();
+		ReentrantLock reentrantLock1 = new ReentrantLock();
+
+		CountDownLatch bothLockedCountDownLatch = new CountDownLatch(2);
+		CountDownLatch proceedCountDownLatch = new CountDownLatch(1);
+
+		Thread thread0 = new Thread(
+			() -> _awaitDeadlock(
+				bothLockedCountDownLatch, reentrantLock0, proceedCountDownLatch,
+				reentrantLock1),
+			threadName0);
+
+		Thread thread1 = new Thread(
+			() -> _awaitDeadlock(
+				bothLockedCountDownLatch, reentrantLock1, proceedCountDownLatch,
+				reentrantLock0),
+			threadName1);
+
+		thread0.setDaemon(true);
+		thread1.setDaemon(true);
+
+		try {
+			thread0.start();
+			thread1.start();
+
+			bothLockedCountDownLatch.await();
+
+			proceedCountDownLatch.countDown();
+
+			String threadDump = JenkinsResultsParserUtil.getThreadDump();
+
+			for (int i = 0; i < 500; i++) {
+				if (threadDump.contains(" deadlocked threads:")) {
+					break;
+				}
+
+				JenkinsResultsParserUtil.sleep(10);
+
+				threadDump = JenkinsResultsParserUtil.getThreadDump();
+			}
+
+			Assert.assertTrue(threadDump.contains(" deadlocked threads:"));
+
+			String deadlockSection = threadDump.substring(
+				threadDump.indexOf(" deadlocked threads:"));
+
+			Assert.assertTrue(
+				deadlockSection.contains(
+					JenkinsResultsParserUtil.combine("\"", threadName0, "\"")));
+
+			Assert.assertTrue(
+				deadlockSection.contains(
+					JenkinsResultsParserUtil.combine("\"", threadName1, "\"")));
+
+			String threadDumpEntry = _getThreadDumpEntry(
+				threadDump, threadName0);
+
+			Assert.assertTrue(
+				threadDumpEntry.contains("\tLocked synchronizers:\n"));
+		}
+		finally {
+			thread0.interrupt();
+			thread1.interrupt();
+
+			thread0.join();
+			thread1.join();
+		}
+	}
+
+	@Test(timeout = 30000)
+	public void testGetThreadDumpTruncatedStack() throws Exception {
+		String threadName = "deep-stack";
+
+		CountDownLatch deepStackCountDownLatch = new CountDownLatch(1);
+		CountDownLatch holdCountDownLatch = new CountDownLatch(1);
+
+		Object lock = new Object();
+
+		Thread thread = new Thread(
+			() -> {
+				synchronized (lock) {
+					_buildDeepStack(
+						deepStackCountDownLatch, 60, holdCountDownLatch);
+				}
+			},
+			threadName);
+
+		thread.setDaemon(true);
+
+		try {
+			thread.start();
+
+			deepStackCountDownLatch.await();
+
+			int stackTraceElementsCount = 0;
+
+			String threadDumpEntry = _getThreadDumpEntry(
+				JenkinsResultsParserUtil.getThreadDump(), threadName);
+
+			for (String line : threadDumpEntry.split("\n")) {
+				if (!line.startsWith("\tat ")) {
+					continue;
+				}
+
+				stackTraceElementsCount++;
+			}
+
+			Assert.assertEquals(40, stackTraceElementsCount);
+
+			Assert.assertTrue(threadDumpEntry.contains("\t...\n\t- locked "));
+		}
+		finally {
+			holdCountDownLatch.countDown();
+
+			thread.join();
+		}
+	}
+
+	@Test
+	public void testInvokeJenkinsBuild() throws Exception {
+		Environment environment = mockEnvironment();
+
+		Mockito.when(
+			environment.doGet("MASTER_NETWORK_NAME")
+		).thenReturn(
+			"aws-network"
+		);
+
+		Properties buildProperties = new Properties();
+
+		buildProperties.setProperty(
+			"jenkins.admin.user.name", RandomTestUtil.randomString());
+		buildProperties.setProperty(
+			"jenkins.admin.user.token", RandomTestUtil.randomString());
+
+		JenkinsResultsParserUtil.setBuildProperties(buildProperties);
+
+		mockURLReaders();
+
+		Mockito.doReturn(
+			"https://test-1-1.liferay.com/queue/item/12345"
+		).when(
+			getStreamURLReader()
+		).doGetResponseHeader(
+			Mockito.eq("Location"), Mockito.any(), Mockito.any(), Mockito.any(),
+			Mockito.any(), Mockito.anyInt(), Mockito.anyString()
+		);
+
+		JenkinsMaster jenkinsMaster = Mockito.mock(JenkinsMaster.class);
+
+		Mockito.when(
+			jenkinsMaster.getRemoteURL()
+		).thenReturn(
+			RandomTestUtil.randomString()
+		);
+
+		testEquals(
+			"12345",
+			String.valueOf(
+				JenkinsResultsParserUtil.invokeJenkinsBuild(
+					jenkinsMaster, "test-job", new HashMap<>())));
+	}
+
+	@Test(timeout = 30000)
+	public void testInvokeJenkinsBuildReadTimeout() throws Exception {
+		try (ServerSocket serverSocket = _createServerSocket()) {
+			JenkinsMaster jenkinsMaster = Mockito.mock(JenkinsMaster.class);
+
+			Mockito.when(
+				jenkinsMaster.getRemoteURL()
+			).thenReturn(
+				"http://localhost:" + serverSocket.getLocalPort() + "/"
+			);
+
+			long startTime = System.currentTimeMillis();
+
+			try {
+				JenkinsResultsParserUtil.invokeJenkinsBuild(
+					jenkinsMaster, "test-job", new HashMap<>(), 2000);
+
+				errorCollector.addError(
+					new Throwable("A RuntimeException was not thrown"));
+			}
+			catch (RuntimeException runtimeException) {
+			}
+
+			long duration = System.currentTimeMillis() - startTime;
+
+			if (duration < 1500) {
+				errorCollector.addError(
+					new Throwable(
+						JenkinsResultsParserUtil.combine(
+							"The read timeout was not reached after ",
+							JenkinsResultsParserUtil.toDurationString(
+								duration))));
+			}
+		}
+	}
+
+	@Test
+	public void testIsBuildCachingEnabledCloudCINode() {
+		Environment environment = mockEnvironment();
+
+		JenkinsResultsParserUtil.clearCache();
+
+		Mockito.when(
+			environment.doGet("BUILD_CACHING_ENABLED")
+		).thenReturn(
+			"true"
+		);
+
+		Mockito.when(
+			environment.doGet("MASTER_NETWORK_NAME")
+		).thenReturn(
+			"aws-network"
+		);
+
+		Assert.assertTrue(
+			JenkinsResultsParserUtil.isBuildCachingEnabled(
+				"test-portal-release", "default"));
+
+		Mockito.when(
+			environment.doGet("BUILD_CACHING_ENABLED")
+		).thenReturn(
+			"false"
+		);
+
+		Assert.assertFalse(
+			JenkinsResultsParserUtil.isBuildCachingEnabled(
+				"test-portal-release", "default"));
+	}
+
+	@Test
+	public void testIsBuildCachingEnabledNonCINode() {
+		Environment environment = mockEnvironment();
+
+		JenkinsResultsParserUtil.clearCache();
+
+		Mockito.when(
+			environment.doGet("BUILD_CACHING_ENABLED")
+		).thenReturn(
+			"true"
+		);
+
+		Assert.assertFalse(
+			JenkinsResultsParserUtil.isBuildCachingEnabled(
+				"test-portal-release", "default"));
+	}
+
+	@Test
+	public void testIsCINode() {
+		_testIsCINode("https://test-1-1.liferay.com/", "test-network", true);
+		_testIsCINode("https://test-1-1.liferay.com/", null, true);
+		_testIsCINode(null, "test-network", true);
+		_testIsCINode(null, null, false);
 	}
 
 	@Test
@@ -443,56 +1153,336 @@ public class JenkinsResultsParserUtilTest
 	}
 
 	@Test
-	public void testToJSONObject() throws Exception {
-		for (TestSample testSample : testSamples.values()) {
-			testToJSONObject(new File(testSample.getSampleDir(), "api/json"));
-		}
+	public void testNewURIBuilder() {
+		URIBuilder uriBuilder = JenkinsResultsParserUtil.newURIBuilder(
+			"http://test-1-1/job/x/buildWithParameters",
+			_newParameters(
+				"PARENT_BUILD_URL", "http://test-1-1/job/y/1/", "JOB_VARIANT",
+				"functional"));
+
+		testEquals(
+			JenkinsResultsParserUtil.combine(
+				"http://test-1-1/job/x/buildWithParameters?",
+				"JOB_VARIANT=functional&PARENT_BUILD_URL=",
+				"http%3A%2F%2Ftest-1-1%2Fjob%2Fy%2F1%2F"),
+			uriBuilder.toString());
 	}
 
 	@Test
-	public void testToString() throws Exception {
-		for (TestSample testSample : testSamples.values()) {
-			testToString(new File(testSample.getSampleDir(), "api/json"));
+	public void testNewURIBuilderWithFragment() {
+		URIBuilder uriBuilder = JenkinsResultsParserUtil.newURIBuilder(
+			"http://test-1-1/job/x?a=1#summary");
+
+		uriBuilder.addParameter("b", "2");
+
+		testEquals(
+			"http://test-1-1/job/x?a=1&b=2#summary", uriBuilder.toString());
+	}
+
+	@Test
+	public void testNewURIBuilderWithIllegalBaseURL() {
+		URIBuilder uriBuilder = JenkinsResultsParserUtil.newURIBuilder(
+			"http://test-1-1/job/a b/api/json");
+
+		uriBuilder.addParameter("tree", "result");
+
+		testEquals(
+			"http://test-1-1/job/a%20b/api/json?tree=result",
+			uriBuilder.toString());
+	}
+
+	@Test
+	public void testNewURIBuilderWithUnsortedParameters() {
+		URIBuilder uriBuilder = JenkinsResultsParserUtil.newURIBuilder(
+			"http://test-1-1/job/x",
+			_newParameters("gamma", "3", "beta", "2", "alpha", "1"));
+
+		testEquals(
+			"http://test-1-1/job/x?alpha=1&beta=2&gamma=3",
+			uriBuilder.toString());
+	}
+
+	@Test
+	public void testNewURIBuilderWithoutParameters() {
+		URIBuilder uriBuilder = JenkinsResultsParserUtil.newURIBuilder(
+			"http://test-1-1/job/x/buildWithParameters",
+			Collections.emptyMap());
+
+		testEquals(
+			"http://test-1-1/job/x/buildWithParameters", uriBuilder.toString());
+
+		uriBuilder = JenkinsResultsParserUtil.newURIBuilder(
+			"http://test-1-1/job/x/buildWithParameters", null);
+
+		testEquals(
+			"http://test-1-1/job/x/buildWithParameters", uriBuilder.toString());
+	}
+
+	@Test
+	public void testNormalizeURLWithBarePercent() {
+		testEquals(
+			"http://test-1-1/job/x?V=100%25%20pass&W=a%2Bb",
+			JenkinsResultsParserUtil.normalizeURL(
+				"http://test-1-1/job/x?V=100% pass&W=a%2Bb"));
+	}
+
+	@Test
+	public void testNormalizeURLWithEncodedParameters() {
+		String url = JenkinsResultsParserUtil.combine(
+			"http://test-1-1/job/x/buildWithParameters?",
+			"A=a%23b&B=a%26b&C=100%25%20pass&D=a%3Db&E=a%2Bb&F=a%20b");
+
+		testSame(url, JenkinsResultsParserUtil.normalizeURL(url));
+	}
+
+	@Test
+	public void testNormalizeURLWithEscapeSequences() {
+		testEquals(
+			JenkinsResultsParserUtil.combine(
+				"http://test-1-1/job/x?V=%250/%20%250:%20%250@%20%250G%20",
+				"%250%60%20%250g%20%09%20%0A%20%0F%20%0a%20%0f"),
+			JenkinsResultsParserUtil.normalizeURL(
+				"http://test-1-1/job/x?V=%0/ %0: %0@ %0G %0` %0g %09 %0A %0F " +
+					"%0a %0f"));
+	}
+
+	@Test
+	public void testNormalizeURLWithFragment() {
+		testEquals(
+			"http://test-1-1/job/x?a=1%202#summary",
+			JenkinsResultsParserUtil.normalizeURL(
+				"http://test-1-1/job/x?a=1 2#summary"));
+	}
+
+	@Test
+	public void testNormalizeURLWithIllegalPathCharacters() {
+		testEquals(
+			"http://test-1-1/job/a%20b/1/",
+			JenkinsResultsParserUtil.normalizeURL(
+				"http://test-1-1/job/a b/1/"));
+		testEquals(
+			"http://test-1-1/job/x?tree=result%5B0%5D",
+			JenkinsResultsParserUtil.normalizeURL(
+				"http://test-1-1/job/x?tree=result[0]"));
+	}
+
+	@Test
+	public void testNormalizeURLWithLegalURL() {
+		String url = JenkinsResultsParserUtil.combine(
+			"http://test-1-1/job/test-portal-acceptance-pullrequest(master)/",
+			"buildWithParameters?V=a%2Bb&W=AWS%20%26%20CI");
+
+		testSame(url, JenkinsResultsParserUtil.normalizeURL(url));
+	}
+
+	@Test
+	public void testNormalizeURLWithNonASCIICharacters() {
+		String normalizedURL = JenkinsResultsParserUtil.normalizeURL(
+			"http://test-1-1/job/café/x?name=é");
+
+		testEquals(
+			"http://test-1-1/job/caf%C3%A9/x?name=%C3%A9", normalizedURL);
+		testEquals(
+			normalizedURL,
+			JenkinsResultsParserUtil.normalizeURL(normalizedURL));
+	}
+
+	@Test
+	public void testNormalizeURLWithNormalizedURL() {
+		String normalizedURL = JenkinsResultsParserUtil.normalizeURL(
+			"http://test-1-1/job/x?tree=actions[parameters[name,value]]");
+
+		testEquals(
+			JenkinsResultsParserUtil.combine(
+				"http://test-1-1/job/x?tree=actions%5Bparameters%5Bname,",
+				"value%5D%5D"),
+			normalizedURL);
+		testEquals(
+			normalizedURL,
+			JenkinsResultsParserUtil.normalizeURL(normalizedURL));
+	}
+
+	protected Environment mockEnvironment() {
+		Environment environment = Mockito.mock(Environment.class);
+
+		Environment.setInstance(environment);
+
+		return environment;
+	}
+
+	private void _awaitDeadlock(
+		CountDownLatch bothLockedLatch, ReentrantLock heldLock,
+		CountDownLatch proceedLatch, ReentrantLock requestedLock) {
+
+		heldLock.lock();
+
+		try {
+			bothLockedLatch.countDown();
+
+			proceedLatch.await();
+
+			requestedLock.lockInterruptibly();
+
+			requestedLock.unlock();
+		}
+		catch (InterruptedException interruptedException) {
+			Thread currentThread = Thread.currentThread();
+
+			currentThread.interrupt();
+		}
+		finally {
+			heldLock.unlock();
 		}
 	}
 
-	@Override
-	protected void downloadSample(TestSample testSample, URL url)
+	private void _buildDeepStack(
+		CountDownLatch deepStackLatch, int depth, CountDownLatch holdLatch) {
+
+		if (depth > 0) {
+			_buildDeepStack(deepStackLatch, depth - 1, holdLatch);
+
+			return;
+		}
+
+		deepStackLatch.countDown();
+
+		try {
+			holdLatch.await();
+		}
+		catch (InterruptedException interruptedException) {
+			Thread currentThread = Thread.currentThread();
+
+			currentThread.interrupt();
+		}
+	}
+
+	private ServerSocket _createServerSocket() throws Exception {
+		return new ServerSocket(0, 1, InetAddress.getByName("localhost"));
+	}
+
+	private Properties _getBuildAwsProperties() {
+		File jenkinsRepositoryDir =
+			JenkinsResultsParserUtil.getJenkinsRepositoryDir();
+
+		File buildAwsPropertiesFile = new File(
+			jenkinsRepositoryDir, "commands/build-aws.properties");
+
+		Assume.assumeTrue(
+			JenkinsResultsParserUtil.getCanonicalPath(buildAwsPropertiesFile) +
+				" does not exist",
+			buildAwsPropertiesFile.exists());
+
+		return JenkinsResultsParserUtil.getProperties(buildAwsPropertiesFile);
+	}
+
+	private String _getThreadDumpEntry(String threadDump, String threadName) {
+		StringBuilder sb = new StringBuilder();
+
+		boolean matched = false;
+
+		for (String line : threadDump.split("\n")) {
+			if (line.startsWith(
+					JenkinsResultsParserUtil.combine("\"", threadName, "\""))) {
+
+				matched = true;
+			}
+			else if (matched && line.isEmpty()) {
+				break;
+			}
+
+			if (!matched) {
+				continue;
+			}
+
+			sb.append(line);
+			sb.append("\n");
+		}
+
+		return sb.toString();
+	}
+
+	private Map<String, String> _newParameters(String... namesAndValues) {
+		Map<String, String> parameters = new LinkedHashMap<>();
+
+		for (int i = 0; i < namesAndValues.length; i = i + 2) {
+			parameters.put(namesAndValues[i], namesAndValues[i + 1]);
+		}
+
+		return parameters;
+	}
+
+	private void _testFetchBuildURL(
+			String expectedBuildURL, String scriptOutput)
 		throws Exception {
 
-		downloadSampleURL(testSample.getSampleDir(), url, "/api/json");
+		HttpServer httpServer = HttpServer.create(
+			new InetSocketAddress(InetAddress.getByName("localhost"), 0), 0);
+
+		httpServer.createContext(
+			"/script",
+			httpExchange -> {
+				byte[] bytes = JenkinsResultsParserUtil.combine(
+					"<pre>", scriptOutput, "</pre>"
+				).getBytes();
+
+				httpExchange.sendResponseHeaders(200, bytes.length);
+
+				try (OutputStream outputStream =
+						httpExchange.getResponseBody()) {
+
+					outputStream.write(bytes);
+				}
+			});
+
+		httpServer.start();
+
+		try {
+			JenkinsMaster jenkinsMaster = Mockito.mock(JenkinsMaster.class);
+
+			InetSocketAddress inetSocketAddress = httpServer.getAddress();
+
+			Mockito.doReturn(
+				"localhost:" + inetSocketAddress.getPort()
+			).when(
+				jenkinsMaster
+			).getName();
+
+			Assert.assertEquals(
+				expectedBuildURL,
+				JenkinsResultsParserUtil.fetchBuildURL(
+					RandomTestUtil.randomString(), jenkinsMaster, 1));
+		}
+		finally {
+			httpServer.stop(0);
+		}
 	}
 
-	protected void testToJSONObject(File file) throws Exception {
-		JSONObject expectedJSONObject = new JSONObject(read(file));
-		JSONObject actualJSONObject = JenkinsResultsParserUtil.toJSONObject(
-			JenkinsResultsParserUtil.getLocalURL(toURLString(file)));
-
-		testEquals(expectedJSONObject.toString(), actualJSONObject.toString());
-	}
-
-	protected void testToString(File file) throws Exception {
-		String expectedJSON = read(file);
-		String actualJSON = JenkinsResultsParserUtil.toString(
-			JenkinsResultsParserUtil.getLocalURL(toURLString(file)));
+	private void _testGetJobVariant(
+		String expectedJobVariant, String name, String value) {
 
 		testEquals(
-			expectedJSON.replace("\n", ""), actualJSON.replace("\n", ""));
-	}
-
-	@Override
-	protected String toURLString(File file) throws Exception {
-		URI uri = file.toURI();
-
-		URL url = uri.toURL();
-
-		return url.toString();
-	}
-
-	private String _fixURLMultipleTimes(String urlString) {
-		return JenkinsResultsParserUtil.fixURL(
-			JenkinsResultsParserUtil.fixURL(
-				JenkinsResultsParserUtil.fixURL(urlString)));
+			expectedJobVariant,
+			JenkinsResultsParserUtil.getJobVariant(
+				new JSONObject(
+				).put(
+					"actions",
+					new JSONArray(
+					).put(
+						new JSONObject(
+						).put(
+							"parameters",
+							new JSONArray(
+							).put(
+								new JSONObject(
+								).put(
+									"name", name
+								).put(
+									"value", value
+								)
+							)
+						)
+					)
+				)));
 	}
 
 	private void _testGetProperty(
@@ -519,6 +1509,33 @@ public class JenkinsResultsParserUtilTest
 			expectedPropertyValue,
 			JenkinsResultsParserUtil.getProperty(
 				properties, actualPropertyName));
+	}
+
+	private void _testIsCINode(
+		String jenkinsURL, String masterNetworkName, boolean expected) {
+
+		Environment environment = mockEnvironment();
+
+		Mockito.when(
+			environment.doGet("JENKINS_URL")
+		).thenReturn(
+			jenkinsURL
+		);
+
+		Mockito.when(
+			environment.doGet("MASTER_NETWORK_NAME")
+		).thenReturn(
+			masterNetworkName
+		);
+
+		ReflectionTestUtil.setFieldValue(
+			JenkinsResultsParserUtil.class, "_ciNode", null);
+
+		Assert.assertEquals(
+			JenkinsResultsParserUtil.combine(
+				"Unexpected isCINode() value for JENKINS_URL=", jenkinsURL,
+				" and MASTER_NETWORK_NAME=", masterNetworkName),
+			expected, JenkinsResultsParserUtil.isCINode());
 	}
 
 }

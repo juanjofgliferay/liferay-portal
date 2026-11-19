@@ -6,6 +6,7 @@
 package com.liferay.commerce.product.search.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.commerce.product.helper.CPDefinitionHelper;
 import com.liferay.commerce.product.model.CPDefinition;
 import com.liferay.commerce.product.model.CPOptionCategory;
 import com.liferay.commerce.product.model.CPSpecificationOption;
@@ -16,7 +17,8 @@ import com.liferay.commerce.product.service.CPOptionCategoryLocalService;
 import com.liferay.commerce.product.service.CPSpecificationOptionLocalService;
 import com.liferay.commerce.product.service.CommerceCatalogLocalService;
 import com.liferay.commerce.product.test.util.CPTestUtil;
-import com.liferay.commerce.product.util.CPDefinitionHelper;
+import com.liferay.petra.function.transform.TransformUtil;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.search.Indexer;
@@ -39,7 +41,6 @@ import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.frutilla.FrutillaRule;
@@ -98,7 +99,7 @@ public class SpecificationOptionFacetsTest {
 
 		CPOptionCategory cpOptionCategory =
 			_cpOptionCategoryLocalService.addCPOptionCategory(
-				serviceContext.getUserId(),
+				RandomTestUtil.randomString(), serviceContext.getUserId(),
 				RandomTestUtil.randomLocaleStringMap(),
 				RandomTestUtil.randomLocaleStringMap(),
 				RandomTestUtil.randomDouble(), RandomTestUtil.randomString(),
@@ -106,19 +107,20 @@ public class SpecificationOptionFacetsTest {
 
 		CPSpecificationOption cpSpecificationOption =
 			_cpSpecificationOptionLocalService.addCPSpecificationOption(
-				serviceContext.getUserId(),
-				cpOptionCategory.getCPOptionCategoryId(),
+				RandomTestUtil.randomString(), serviceContext.getUserId(),
+				cpOptionCategory.getCPOptionCategoryId(), null,
 				RandomTestUtil.randomLocaleStringMap(),
 				RandomTestUtil.randomLocaleStringMap(), true,
-				RandomTestUtil.randomString(), serviceContext);
+				RandomTestUtil.randomString(), RandomTestUtil.randomDouble(),
+				true, serviceContext);
 
 		_cpDefinitionSpecificationOptionValueLocalService.
 			addCPDefinitionSpecificationOptionValue(
-				cpDefinition.getCPDefinitionId(),
+				StringPool.BLANK, cpDefinition.getCPDefinitionId(),
 				cpSpecificationOption.getCPSpecificationOptionId(),
 				cpOptionCategory.getCPOptionCategoryId(),
-				RandomTestUtil.randomLocaleStringMap(),
-				RandomTestUtil.randomDouble(), serviceContext);
+				RandomTestUtil.randomDouble(),
+				RandomTestUtil.randomLocaleStringMap(), true, serviceContext);
 
 		SearchContext searchContext = SearchContextTestUtil.getSearchContext(
 			_commerceCatalog.getGroupId());
@@ -139,11 +141,9 @@ public class SpecificationOptionFacetsTest {
 
 		FacetCollector facetCollector = facet.getFacetCollector();
 
-		List<Long> terms = new ArrayList<>();
-
-		for (TermCollector termCollector : facetCollector.getTermCollectors()) {
-			terms.add(Long.valueOf(termCollector.getTerm()));
-		}
+		List<Long> terms = TransformUtil.transform(
+			facetCollector.getTermCollectors(),
+			termCollector -> Long.valueOf(termCollector.getTerm()));
 
 		long expectedTerm = cpSpecificationOption.getCPSpecificationOptionId();
 
@@ -175,7 +175,7 @@ public class SpecificationOptionFacetsTest {
 
 		CPOptionCategory cpOptionCategory =
 			_cpOptionCategoryLocalService.addCPOptionCategory(
-				serviceContext.getUserId(),
+				RandomTestUtil.randomString(), serviceContext.getUserId(),
 				RandomTestUtil.randomLocaleStringMap(),
 				RandomTestUtil.randomLocaleStringMap(),
 				RandomTestUtil.randomDouble(), RandomTestUtil.randomString(),
@@ -183,19 +183,19 @@ public class SpecificationOptionFacetsTest {
 
 		CPSpecificationOption cpSpecificationOption =
 			_cpSpecificationOptionLocalService.addCPSpecificationOption(
-				serviceContext.getUserId(),
-				cpOptionCategory.getCPOptionCategoryId(),
+				RandomTestUtil.randomString(), serviceContext.getUserId(),
+				cpOptionCategory.getCPOptionCategoryId(), null,
 				RandomTestUtil.randomLocaleStringMap(),
 				RandomTestUtil.randomLocaleStringMap(), false,
-				RandomTestUtil.randomString(), serviceContext);
+				RandomTestUtil.randomString(), 0, true, serviceContext);
 
 		_cpDefinitionSpecificationOptionValueLocalService.
 			addCPDefinitionSpecificationOptionValue(
-				cpDefinition.getCPDefinitionId(),
+				StringPool.BLANK, cpDefinition.getCPDefinitionId(),
 				cpSpecificationOption.getCPSpecificationOptionId(),
 				cpOptionCategory.getCPOptionCategoryId(),
-				RandomTestUtil.randomLocaleStringMap(),
-				RandomTestUtil.randomDouble(), serviceContext);
+				RandomTestUtil.randomDouble(),
+				RandomTestUtil.randomLocaleStringMap(), true, serviceContext);
 
 		SearchContext searchContext = SearchContextTestUtil.getSearchContext(
 			_commerceCatalog.getGroupId());
@@ -224,8 +224,6 @@ public class SpecificationOptionFacetsTest {
 	@Rule
 	public FrutillaRule frutillaRule = new FrutillaRule();
 
-	private static User _user;
-
 	private CommerceCatalog _commerceCatalog;
 
 	@Inject
@@ -250,5 +248,7 @@ public class SpecificationOptionFacetsTest {
 
 	@DeleteAfterTestRun
 	private Group _group;
+
+	private User _user;
 
 }

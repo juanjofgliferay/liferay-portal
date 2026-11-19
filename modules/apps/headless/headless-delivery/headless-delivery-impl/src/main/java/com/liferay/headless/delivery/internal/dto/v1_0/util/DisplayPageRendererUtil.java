@@ -19,6 +19,7 @@ import com.liferay.layout.page.template.constants.LayoutPageTemplateEntryTypeCon
 import com.liferay.layout.page.template.exception.NoSuchPageTemplateEntryException;
 import com.liferay.layout.page.template.model.LayoutPageTemplateEntry;
 import com.liferay.layout.page.template.service.LayoutPageTemplateEntryService;
+import com.liferay.layout.util.LayoutServiceContextHelper;
 import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
@@ -26,26 +27,28 @@ import com.liferay.portal.events.ServicePreAction;
 import com.liferay.portal.events.ThemeServicePreAction;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.LayoutSet;
-import com.liferay.portal.kernel.service.LayoutLocalService;
+import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.service.LayoutService;
+import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
 import com.liferay.portal.kernel.servlet.DummyHttpServletResponse;
 import com.liferay.portal.kernel.servlet.DynamicServletRequest;
 import com.liferay.portal.kernel.servlet.ServletContextPool;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.theme.ThemeUtil;
+import com.liferay.portal.kernel.util.LocaleThreadLocal;
+import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.vulcan.dto.converter.DTOConverterContext;
 import com.liferay.portal.vulcan.util.JaxRsLinkUtil;
 
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
-import javax.ws.rs.core.UriInfo;
+import jakarta.ws.rs.core.UriInfo;
 
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
+import java.util.Locale;
 
 /**
  * @author Jürgen Kappler
@@ -58,8 +61,9 @@ public class DisplayPageRendererUtil {
 		long groupId, Object item,
 		InfoItemServiceRegistry infoItemServiceRegistry,
 		LayoutDisplayPageProviderRegistry layoutDisplayPageProviderRegistry,
-		LayoutLocalService layoutLocalService,
+		LayoutService layoutService,
 		LayoutPageTemplateEntryService layoutPageTemplateEntryService,
+		LayoutServiceContextHelper layoutServiceContextHelper,
 		String methodName) {
 
 		UriInfo uriInfo = dtoConverterContext.getUriInfo();
@@ -75,17 +79,19 @@ public class DisplayPageRendererUtil {
 				LayoutPageTemplateEntryTypeConstants.DISPLAY_PAGE),
 			layoutPageTemplateEntry -> new RenderedContent() {
 				{
-					contentTemplateId =
-						layoutPageTemplateEntry.getLayoutPageTemplateEntryKey();
-					contentTemplateName = layoutPageTemplateEntry.getName();
-					markedAsDefault =
-						layoutPageTemplateEntry.isDefaultTemplate();
-					renderedContentURL = JaxRsLinkUtil.getJaxRsLink(
-						"headless-delivery", baseClass, methodName, uriInfo,
-						itemClassPK,
-						layoutPageTemplateEntry.
-							getLayoutPageTemplateEntryKey());
-
+					setContentTemplateId(
+						() ->
+							layoutPageTemplateEntry.
+								getLayoutPageTemplateEntryKey());
+					setContentTemplateName(layoutPageTemplateEntry::getName);
+					setMarkedAsDefault(
+						layoutPageTemplateEntry::isDefaultTemplate);
+					setRenderedContentURL(
+						() -> JaxRsLinkUtil.getJaxRsLink(
+							"headless-delivery", baseClass, methodName, uriInfo,
+							itemClassPK,
+							layoutPageTemplateEntry.
+								getLayoutPageTemplateEntryKey()));
 					setRenderedContentValue(
 						() -> {
 							if (!dtoConverterContext.containsNestedFieldsValue(
@@ -98,13 +104,13 @@ public class DisplayPageRendererUtil {
 								itemClassName, itemClassTypeId,
 								layoutPageTemplateEntry.
 									getLayoutPageTemplateEntryKey(),
-								groupId,
-								dtoConverterContext.getHttpServletRequest(),
-								new DummyHttpServletResponse(), item,
+								groupId, new DummyHttpServletResponse(), item,
+								dtoConverterContext.getLocale(),
+								dtoConverterContext.getUser(),
 								infoItemServiceRegistry,
 								layoutDisplayPageProviderRegistry,
-								layoutLocalService,
-								layoutPageTemplateEntryService);
+								layoutService, layoutPageTemplateEntryService,
+								layoutServiceContextHelper);
 						});
 				}
 			},
@@ -113,12 +119,13 @@ public class DisplayPageRendererUtil {
 
 	public static String toHTML(
 			String itemClassName, long itemClassTypeId, String displayPageKey,
-			long groupId, HttpServletRequest httpServletRequest,
-			HttpServletResponse httpServletResponse, Object item,
+			long groupId, HttpServletResponse httpServletResponse, Object item,
+			Locale locale, User user,
 			InfoItemServiceRegistry infoItemServiceRegistry,
 			LayoutDisplayPageProviderRegistry layoutDisplayPageProviderRegistry,
-			LayoutLocalService layoutLocalService,
-			LayoutPageTemplateEntryService layoutPageTemplateEntryService)
+			LayoutService layoutService,
+			LayoutPageTemplateEntryService layoutPageTemplateEntryService,
+			LayoutServiceContextHelper layoutServiceContextHelper)
 		throws Exception {
 
 		LayoutPageTemplateEntry layoutPageTemplateEntry =
@@ -134,69 +141,85 @@ public class DisplayPageRendererUtil {
 			throw new NoSuchPageTemplateEntryException();
 		}
 
-		Layout layout = layoutLocalService.getLayout(
+		Layout layout = layoutService.getLayout(
 			layoutPageTemplateEntry.getPlid());
 
-		httpServletRequest = DynamicServletRequest.addQueryString(
-			httpServletRequest, "p_l_id=" + layout.getPlid(), false);
+		Locale originalThemeDisplayLocale =
+			LocaleThreadLocal.getThemeDisplayLocale();
 
-		httpServletRequest.setAttribute(InfoDisplayWebKeys.INFO_ITEM, item);
+		try (AutoCloseable autoCloseable =
+				layoutServiceContextHelper.getServiceContextAutoCloseable(
+					layout, user)) {
 
-		InfoItemDetailsProvider infoItemDetailsProvider =
-			infoItemServiceRegistry.getFirstInfoItemService(
-				InfoItemDetailsProvider.class, itemClassName);
+			ServiceContext serviceContext =
+				ServiceContextThreadLocal.getServiceContext();
 
-		InfoItemDetails infoItemDetails =
-			infoItemDetailsProvider.getInfoItemDetails(item);
+			ThemeDisplay themeDisplay = serviceContext.getThemeDisplay();
 
-		httpServletRequest.setAttribute(
-			InfoDisplayWebKeys.INFO_ITEM_DETAILS, infoItemDetails);
-		httpServletRequest.setAttribute(
-			LayoutDisplayPageWebKeys.LAYOUT_DISPLAY_PAGE_OBJECT_PROVIDER,
-			_getLayoutDisplayPageObjectProvider(
-				infoItemDetails.getInfoItemReference(),
-				layoutDisplayPageProviderRegistry));
+			themeDisplay.setLanguageId(LocaleUtil.toLanguageId(locale));
+			themeDisplay.setLocale(locale);
 
-		httpServletRequest.setAttribute(
-			WebKeys.THEME_DISPLAY,
-			_getThemeDisplay(httpServletRequest, layout));
+			HttpServletRequest httpServletRequest =
+				PortalUtil.getOriginalServletRequest(
+					serviceContext.getRequest());
 
-		layout.includeLayoutContent(httpServletRequest, httpServletResponse);
+			httpServletRequest.setAttribute(WebKeys.LOCALE, locale);
 
-		StringBundler sb = (StringBundler)httpServletRequest.getAttribute(
-			WebKeys.LAYOUT_CONTENT);
+			httpServletRequest = DynamicServletRequest.addQueryString(
+				httpServletRequest, "p_l_id=" + layout.getPlid(), false);
 
-		LayoutSet layoutSet = layout.getLayoutSet();
+			httpServletRequest.setAttribute(InfoDisplayWebKeys.INFO_ITEM, item);
 
-		ServletContext servletContext = ServletContextPool.get(
-			StringPool.BLANK);
+			InfoItemDetailsProvider infoItemDetailsProvider =
+				infoItemServiceRegistry.getFirstInfoItemService(
+					InfoItemDetailsProvider.class, itemClassName);
 
-		if (httpServletRequest.getAttribute(WebKeys.CTX) == null) {
-			httpServletRequest.setAttribute(WebKeys.CTX, servletContext);
+			InfoItemDetails infoItemDetails =
+				infoItemDetailsProvider.getInfoItemDetails(item);
+
+			httpServletRequest.setAttribute(
+				InfoDisplayWebKeys.INFO_ITEM_DETAILS, infoItemDetails);
+			httpServletRequest.setAttribute(
+				LayoutDisplayPageWebKeys.LAYOUT_DISPLAY_PAGE_OBJECT_PROVIDER,
+				_getLayoutDisplayPageObjectProvider(
+					layout.getCompanyId(),
+					infoItemDetails.getInfoItemReference(),
+					layoutDisplayPageProviderRegistry));
+
+			httpServletRequest.setAttribute(
+				WebKeys.THEME_DISPLAY,
+				_getThemeDisplay(httpServletRequest, layout));
+
+			layout.includeLayoutContent(
+				httpServletRequest, httpServletResponse);
+
+			StringBundler sb = (StringBundler)httpServletRequest.getAttribute(
+				WebKeys.LAYOUT_CONTENT);
+
+			LayoutSet layoutSet = layout.getLayoutSet();
+
+			String html = ThemeUtil.include(
+				ServletContextPool.get(StringPool.BLANK), httpServletRequest,
+				httpServletResponse, "portal_normal.ftl", layoutSet.getTheme(),
+				false);
+
+			return ThemeUtil.replaceBodyContent(html, sb.toString());
 		}
-
-		Document document = Jsoup.parse(
-			ThemeUtil.include(
-				servletContext, httpServletRequest, httpServletResponse,
-				"portal_normal.ftl", layoutSet.getTheme(), false));
-
-		Element bodyElement = document.body();
-
-		bodyElement.html(sb.toString());
-
-		return document.html();
+		finally {
+			LocaleThreadLocal.setThemeDisplayLocale(originalThemeDisplayLocale);
+		}
 	}
 
 	private static LayoutDisplayPageObjectProvider<?>
 		_getLayoutDisplayPageObjectProvider(
-			InfoItemReference infoItemReference,
+			long companyId, InfoItemReference infoItemReference,
 			LayoutDisplayPageProviderRegistry
 				layoutDisplayPageProviderRegistry) {
 
 		LayoutDisplayPageProvider<?> layoutDisplayPageProvider =
 			layoutDisplayPageProviderRegistry.
 				getLayoutDisplayPageProviderByClassName(
-					infoItemReference.getClassName());
+					companyId, infoItemReference.getClassName());
 
 		return layoutDisplayPageProvider.getLayoutDisplayPageObjectProvider(
 			infoItemReference);

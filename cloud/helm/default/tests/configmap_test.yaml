@@ -1,0 +1,177 @@
+suite: ConfigMap
+templates:
+    -   templates/configmap.yaml
+tests:
+    -   asserts:
+            -   isKind:
+                    of: ConfigMap
+            -   matchRegex:
+                    path: data["portal-cloud.properties"]
+                    pattern: "\"com.example.a\""
+            -   matchRegex:
+                    path: data["portal-cloud.properties"]
+                    pattern: "\"com.example.b\""
+            -   matchRegex:
+                    path: data["portal-cloud.properties"]
+                    pattern: "\"com.example.c\""
+        it: Adds every entry of the bundle deny list through the loop
+        set:
+            portalBundleDenyList:
+                -   com.example.a
+                -   com.example.b
+                -   com.example.c
+    -   asserts:
+            -   matchRegex:
+                    path: data["portal-cloud.properties"]
+                    pattern: ComponentBlacklistConfiguration_blacklistComponentNames
+            -   matchRegex:
+                    path: data["portal-cloud.properties"]
+                    pattern: "\"com.example.d\""
+        it: Adds every entry of the component deny list through the loop
+        set:
+            portalComponentDenyList:
+                -   com.example.d
+    -   asserts:
+            -   matchRegex:
+                    path: data["portal-cloud.properties"]
+                    pattern: "\"com.liferay.portal.search.elasticsearch7.impl\""
+            -   matchRegex:
+                    path: data["portal-cloud.properties"]
+                    pattern: "\"com.liferay.portal.search.elasticsearch8.impl\""
+        it: Adds the Elasticsearch bundles to the deny list when the engine is opensearch
+        set:
+            search.engine: opensearch
+    -   asserts:
+            -   matchRegex:
+                    path: data["unicast-control.xml"]
+                    pattern: bind_port="7800"
+            -   matchRegex:
+                    path: data["unicast-control.xml"]
+                    pattern: dns_query='_cluster\._tcp\.
+            -   matchRegex:
+                    path: data["unicast-transport.xml"]
+                    pattern: bind_port="7801"
+            -   matchRegex:
+                    path: data["unicast-transport.xml"]
+                    pattern: dns_query='_cluster-tx\._tcp\.
+        it: Binds each cluster channel to its own port and discovery query
+        set:
+            replicaCount: 2
+    -   asserts:
+            -   notExists:
+                    path: data["portal-cloud.properties"]
+        it: Drops the default data when configmap defaults are overridden
+        set:
+            configmap.overrideDefaults: true
+    -   asserts:
+            -   matchRegex:
+                    path: data["portal-cloud.properties"]
+                    pattern: cluster.link.enabled=true
+        it: Enables the cluster link properties when autoscaling is enabled
+        set:
+            autoscaling.enabled: true
+            replicaCount: 1
+    -   asserts:
+            -   matchRegex:
+                    path: data["portal-cloud.properties"]
+                    pattern: cluster.link.enabled=true
+        it: Enables the cluster link properties when more than one replica is requested
+        set:
+            autoscaling.enabled: false
+            replicaCount: 2
+    -   asserts:
+            -   matchRegex:
+                    path: data["portal-cloud.properties"]
+                    pattern: cluster\.link\.channel\.properties\.control=/opt/liferay/unicast-control\.xml
+            -   matchRegex:
+                    path: data["portal-cloud.properties"]
+                    pattern: cluster\.link\.channel\.properties\.transport\.0=/opt/liferay/unicast-transport\.xml
+        it: Gives the control and transport channels separate JGroups configurations
+        set:
+            replicaCount: 2
+    -   asserts:
+            -   matchRegex:
+                    path: data["portal-cloud.properties"]
+                    pattern: "\"com.example.a\""
+            -   matchRegex:
+                    path: data["portal-cloud.properties"]
+                    pattern: "\"com.liferay.marketplace.app.manager.web\""
+            -   matchRegex:
+                    path: data["portal-cloud.properties"]
+                    pattern: "\"com.liferay.portal.scripting.groovy\""
+        it: Keeps the online config bundles alongside a customer deny list
+        set:
+            portalBundleDenyList:
+                -   com.example.a
+    -   asserts:
+            -   matchRegex:
+                    path: data["portal-cloud.properties"]
+                    pattern: "\"com.example.a\""
+            -   matchRegex:
+                    path: data["portal-cloud.properties"]
+                    pattern: "\"com.example.b\""
+            -   matchRegex:
+                    path: data["portal-cloud.properties"]
+                    pattern: "\"com.example.d\""
+        it: Merges the deny list entries contributed by dependencies
+        set:
+            dependencies:
+                x-example:
+                    portalBundleDenyList:
+                        -   com.example.b
+                    portalComponentDenyList:
+                        -   com.example.d
+            portalBundleDenyList:
+                -   com.example.a
+    -   asserts:
+            -   equal:
+                    path: metadata.name
+                    value: my-portal
+        it: Names the ConfigMap after the chart name override
+        set:
+            nameOverride: my-portal
+    -   asserts:
+            -   notMatchRegex:
+                    path: data["portal-cloud.properties"]
+                    pattern: elasticsearch8
+        it: Omits the Elasticsearch bundles from the deny list when the engine is elasticsearch
+        set:
+            search.engine: elasticsearch
+    -   asserts:
+            -   notMatchRegex:
+                    path: data["portal-cloud.properties"]
+                    pattern: cluster.link.enabled=true
+        it: Omits the cluster link properties for a single replica
+        set:
+            autoscaling.enabled: false
+            replicaCount: 1
+    -   asserts:
+            -   notMatchRegex:
+                    path: data["portal-cloud.properties"]
+                    pattern: ComponentBlacklistConfiguration_blacklistComponentNames
+        it: Omits the component deny list override when the deny list is empty
+        set:
+            portalComponentDenyList: []
+    -   asserts:
+            -   matchRegex:
+                    path: data["unicast-control.xml"]
+                    pattern: bind_port="7800"
+            -   matchRegex:
+                    path: data["unicast-transport.xml"]
+                    pattern: bind_port="7801"
+        it: Resolves the JGroups bind port by name regardless of service port order
+        set:
+            replicaCount: 2
+            service.ports:
+                -   name: http
+                    port: 8080
+                    protocol: TCP
+                    targetPort: http
+                -   name: cluster-tx
+                    port: 7801
+                    protocol: TCP
+                    targetPort: cluster-tx
+                -   name: cluster
+                    port: 7800
+                    protocol: TCP
+                    targetPort: cluster

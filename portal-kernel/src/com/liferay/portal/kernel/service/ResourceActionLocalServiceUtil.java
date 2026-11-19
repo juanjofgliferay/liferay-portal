@@ -263,6 +263,10 @@ public class ResourceActionLocalServiceUtil {
 		return getService().getPersistedModel(primaryKeyObj);
 	}
 
+	public static String getRegistryName() {
+		return getService().getRegistryName();
+	}
+
 	/**
 	 * Returns the resource action with the primary key.
 	 *
@@ -314,6 +318,10 @@ public class ResourceActionLocalServiceUtil {
 		return getService().getResourceActionsCount(name);
 	}
 
+	public static void invalidate() {
+		getService().invalidate();
+	}
+
 	/**
 	 * Updates the resource action in the database or adds it if it does not yet exist. Also notifies the appropriate model listeners.
 	 *
@@ -341,3 +349,4 @@ public class ResourceActionLocalServiceUtil {
 	private static volatile ResourceActionLocalService _service;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1650648669

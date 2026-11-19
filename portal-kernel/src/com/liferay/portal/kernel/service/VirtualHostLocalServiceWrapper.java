@@ -215,24 +215,19 @@ public class VirtualHostLocalServiceWrapper
 	}
 
 	@Override
+	public VirtualHost fetchCompanyDefaultVirtualHost(long companyId) {
+		return _virtualHostLocalService.fetchCompanyDefaultVirtualHost(
+			companyId);
+	}
+
+	@Override
 	public VirtualHost fetchVirtualHost(long virtualHostId) {
 		return _virtualHostLocalService.fetchVirtualHost(virtualHostId);
 	}
 
-	/**
-	 * @deprecated As of Mueller (7.2.x), replaced by {@link
-	 #getVirtualHosts(long, long)}
-	 */
-	@Deprecated
 	@Override
-	public VirtualHost fetchVirtualHost(long companyId, long layoutSetId) {
-		return _virtualHostLocalService.fetchVirtualHost(
-			companyId, layoutSetId);
-	}
-
-	@Override
-	public VirtualHost fetchVirtualHost(String hostname) {
-		return _virtualHostLocalService.fetchVirtualHost(hostname);
+	public VirtualHost fetchVirtualHost(String virtualHostname) {
+		return _virtualHostLocalService.fetchVirtualHost(virtualHostname);
 	}
 
 	@Override
@@ -284,23 +279,11 @@ public class VirtualHostLocalServiceWrapper
 		return _virtualHostLocalService.getVirtualHost(virtualHostId);
 	}
 
-	/**
-	 * @deprecated As of Mueller (7.2.x), replaced by {@link
-	 #getVirtualHosts(long, long)}
-	 */
-	@Deprecated
 	@Override
-	public VirtualHost getVirtualHost(long companyId, long layoutSetId)
+	public VirtualHost getVirtualHost(String virtualHostname)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
-		return _virtualHostLocalService.getVirtualHost(companyId, layoutSetId);
-	}
-
-	@Override
-	public VirtualHost getVirtualHost(String hostname)
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return _virtualHostLocalService.getVirtualHost(hostname);
+		return _virtualHostLocalService.getVirtualHost(virtualHostname);
 	}
 
 	/**
@@ -350,19 +333,6 @@ public class VirtualHostLocalServiceWrapper
 	}
 
 	/**
-	 * @deprecated As of Mueller (7.2.x), replaced by {@link
-	 #updateVirtualHosts(long, long, TreeMap)}
-	 */
-	@Deprecated
-	@Override
-	public VirtualHost updateVirtualHost(
-		long companyId, long layoutSetId, String hostname) {
-
-		return _virtualHostLocalService.updateVirtualHost(
-			companyId, layoutSetId, hostname);
-	}
-
-	/**
 	 * Updates the virtual host in the database or adds it if it does not yet exist. Also notifies the appropriate model listeners.
 	 *
 	 * <p>
@@ -380,10 +350,10 @@ public class VirtualHostLocalServiceWrapper
 	@Override
 	public java.util.List<VirtualHost> updateVirtualHosts(
 		long companyId, long layoutSetId,
-		java.util.TreeMap<String, String> hostnames) {
+		java.util.TreeMap<String, String> virtualHostnames) {
 
 		return _virtualHostLocalService.updateVirtualHosts(
-			companyId, layoutSetId, hostnames);
+			companyId, layoutSetId, virtualHostnames);
 	}
 
 	@Override
@@ -426,3 +396,4 @@ public class VirtualHostLocalServiceWrapper
 	private VirtualHostLocalService _virtualHostLocalService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-932651249

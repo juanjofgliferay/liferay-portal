@@ -5,9 +5,12 @@
 
 package com.liferay.jenkins.results.parser;
 
+import com.liferay.jenkins.results.parser.history.TestClassHistory;
 import com.liferay.jenkins.results.parser.test.clazz.TestClass;
 
 import org.dom4j.Element;
+
+import org.json.JSONObject;
 
 /**
  * @author Kenji Heigel
@@ -36,15 +39,21 @@ public interface TestResult {
 
 	public TestClass getTestClass();
 
-	public TestClassResult getTestClassResult();
+	public TestClassHistory getTestClassHistory();
 
-	public TestHistory getTestHistory();
+	public TestClassResult getTestClassResult();
 
 	public String getTestName();
 
+	public JSONObject getTestReportJSONObject();
+
 	public String getTestReportURL();
 
+	public String getTestResultKey();
+
 	public boolean isFailing();
+
+	public boolean isSkipped();
 
 	public boolean isUniqueFailure();
 

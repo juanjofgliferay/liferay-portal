@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -296,6 +297,13 @@ public class AssetListEntrySegmentsEntryRelLocalServiceUtil {
 			assetListEntryId, segmentsEntryIds);
 	}
 
+	public static List<AssetListEntrySegmentsEntryRel>
+		fetchDynamicAssetListEntrySegmentsEntryRels(long companyId) {
+
+		return getService().fetchDynamicAssetListEntrySegmentsEntryRels(
+			companyId);
+	}
+
 	public static com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery
 		getActionableDynamicQuery() {
 
@@ -377,6 +385,14 @@ public class AssetListEntrySegmentsEntryRelLocalServiceUtil {
 
 		return getService().getAssetListEntrySegmentsEntryRels(
 			assetListEntryId, segmentsEntryIds, start, end, orderByComparator);
+	}
+
+	public static List<AssetListEntrySegmentsEntryRel>
+		getAssetListEntrySegmentsEntryRelsByClassNameId(
+			long companyId, long classNameId) {
+
+		return getService().getAssetListEntrySegmentsEntryRelsByClassNameId(
+			companyId, classNameId);
 	}
 
 	/**
@@ -496,15 +512,13 @@ public class AssetListEntrySegmentsEntryRelLocalServiceUtil {
 	}
 
 	public static AssetListEntrySegmentsEntryRelLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(
-		AssetListEntrySegmentsEntryRelLocalService service) {
-
-		_service = service;
-	}
-
-	private static volatile AssetListEntrySegmentsEntryRelLocalService _service;
+	private static final Snapshot<AssetListEntrySegmentsEntryRelLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			AssetListEntrySegmentsEntryRelLocalServiceUtil.class,
+			AssetListEntrySegmentsEntryRelLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-923458522

@@ -69,7 +69,7 @@ public class CPOptionCategoryCacheModel
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(29);
+		StringBundler sb = new StringBundler(33);
 
 		sb.append("{mvccVersion=");
 		sb.append(mvccVersion);
@@ -77,6 +77,8 @@ public class CPOptionCategoryCacheModel
 		sb.append(ctCollectionId);
 		sb.append(", uuid=");
 		sb.append(uuid);
+		sb.append(", externalReferenceCode=");
+		sb.append(externalReferenceCode);
 		sb.append(", CPOptionCategoryId=");
 		sb.append(CPOptionCategoryId);
 		sb.append(", companyId=");
@@ -99,6 +101,8 @@ public class CPOptionCategoryCacheModel
 		sb.append(key);
 		sb.append(", lastPublishDate=");
 		sb.append(lastPublishDate);
+		sb.append(", status=");
+		sb.append(status);
 		sb.append("}");
 
 		return sb.toString();
@@ -116,6 +120,14 @@ public class CPOptionCategoryCacheModel
 		}
 		else {
 			cpOptionCategoryImpl.setUuid(uuid);
+		}
+
+		if (externalReferenceCode == null) {
+			cpOptionCategoryImpl.setExternalReferenceCode("");
+		}
+		else {
+			cpOptionCategoryImpl.setExternalReferenceCode(
+				externalReferenceCode);
 		}
 
 		cpOptionCategoryImpl.setCPOptionCategoryId(CPOptionCategoryId);
@@ -173,6 +185,8 @@ public class CPOptionCategoryCacheModel
 			cpOptionCategoryImpl.setLastPublishDate(new Date(lastPublishDate));
 		}
 
+		cpOptionCategoryImpl.setStatus(status);
+
 		cpOptionCategoryImpl.resetOriginalValues();
 
 		return cpOptionCategoryImpl;
@@ -184,6 +198,7 @@ public class CPOptionCategoryCacheModel
 
 		ctCollectionId = objectInput.readLong();
 		uuid = objectInput.readUTF();
+		externalReferenceCode = objectInput.readUTF();
 
 		CPOptionCategoryId = objectInput.readLong();
 
@@ -199,6 +214,8 @@ public class CPOptionCategoryCacheModel
 		priority = objectInput.readDouble();
 		key = objectInput.readUTF();
 		lastPublishDate = objectInput.readLong();
+
+		status = objectInput.readInt();
 	}
 
 	@Override
@@ -212,6 +229,13 @@ public class CPOptionCategoryCacheModel
 		}
 		else {
 			objectOutput.writeUTF(uuid);
+		}
+
+		if (externalReferenceCode == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(externalReferenceCode);
 		}
 
 		objectOutput.writeLong(CPOptionCategoryId);
@@ -254,11 +278,14 @@ public class CPOptionCategoryCacheModel
 		}
 
 		objectOutput.writeLong(lastPublishDate);
+
+		objectOutput.writeInt(status);
 	}
 
 	public long mvccVersion;
 	public long ctCollectionId;
 	public String uuid;
+	public String externalReferenceCode;
 	public long CPOptionCategoryId;
 	public long companyId;
 	public long userId;
@@ -270,5 +297,7 @@ public class CPOptionCategoryCacheModel
 	public double priority;
 	public String key;
 	public long lastPublishDate;
+	public int status;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-759711145

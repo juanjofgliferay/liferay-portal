@@ -110,11 +110,7 @@ public class KaleoLogPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		KaleoLog newKaleoLog = _persistence.create(pk);
-
-		newKaleoLog.setMvccVersion(RandomTestUtil.nextLong());
+		KaleoLog newKaleoLog = addKaleoLog();
 
 		newKaleoLog.setCtCollectionId(RandomTestUtil.nextLong());
 
@@ -178,7 +174,9 @@ public class KaleoLogPersistenceTest {
 
 		newKaleoLog.setWorkflowContext(RandomTestUtil.randomString());
 
-		_kaleoLogs.add(_persistence.update(newKaleoLog));
+		newKaleoLog = _persistence.update(newKaleoLog);
+
+		_kaleoLogs.add(newKaleoLog);
 
 		KaleoLog existingKaleoLog = _persistence.findByPrimaryKey(
 			newKaleoLog.getPrimaryKey());
@@ -292,13 +290,6 @@ public class KaleoLogPersistenceTest {
 		_persistence.countByKaleoInstanceId(RandomTestUtil.nextLong());
 
 		_persistence.countByKaleoInstanceId(0L);
-	}
-
-	@Test
-	public void testCountByKaleoTaskInstanceTokenId() throws Exception {
-		_persistence.countByKaleoTaskInstanceTokenId(RandomTestUtil.nextLong());
-
-		_persistence.countByKaleoTaskInstanceTokenId(0L);
 	}
 
 	@Test
@@ -571,8 +562,6 @@ public class KaleoLogPersistenceTest {
 
 		KaleoLog kaleoLog = _persistence.create(pk);
 
-		kaleoLog.setMvccVersion(RandomTestUtil.nextLong());
-
 		kaleoLog.setCtCollectionId(RandomTestUtil.nextLong());
 
 		kaleoLog.setGroupId(RandomTestUtil.nextLong());
@@ -645,3 +634,4 @@ public class KaleoLogPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1795938139

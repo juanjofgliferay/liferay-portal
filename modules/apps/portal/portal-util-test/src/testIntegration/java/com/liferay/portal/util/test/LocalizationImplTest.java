@@ -11,7 +11,10 @@ import com.liferay.petra.memory.FinalizeManager;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.language.Language;
+import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.settings.LocalizedValuesMap;
+import com.liferay.portal.kernel.test.TestInfo;
+import com.liferay.portal.kernel.test.portlet.MockPortletRequest;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.LocaleUtil;
@@ -19,21 +22,22 @@ import com.liferay.portal.kernel.util.Localization;
 import com.liferay.portal.kernel.util.LocalizationUtil;
 import com.liferay.portal.kernel.xml.DocumentException;
 import com.liferay.portal.kernel.xml.SAXReader;
+import com.liferay.portal.language.LanguageResources;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.util.LocalizationImpl;
 import com.liferay.portlet.PortletPreferencesImpl;
-import com.liferay.portletmvc4spring.test.mock.web.portlet.MockPortletRequest;
+
+import jakarta.portlet.PortletPreferences;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-
-import javax.portlet.PortletPreferences;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -76,19 +80,13 @@ public class LocalizationImplTest {
 
 	@Before
 	public void setUp() throws Exception {
-		StringBundler sb = new StringBundler(10);
+		StringBundler sb = new StringBundler(5);
 
-		sb.append("<?xml version=\"1.0\"?>");
-
-		sb.append("<root available-locales=\"en_US,es_ES\" ");
-		sb.append("default-locale=\"en_US\">");
-		sb.append("<static-content language-id=\"es_ES\">");
-		sb.append("foo&amp;bar");
-		sb.append("</static-content>");
-		sb.append("<static-content language-id=\"en_US\">");
-		sb.append("<![CDATA[Example in English]]>");
-		sb.append("</static-content>");
-		sb.append("</root>");
+		sb.append("<?xml version=\"1.0\"?><root available-locales=\"en_US,");
+		sb.append("es_ES\" default-locale=\"en_US\"><static-content language-");
+		sb.append("id=\"es_ES\">foo&amp;bar</static-content><static-content ");
+		sb.append("language-id=\"en_US\"><![CDATA[Example in English]]><");
+		sb.append("/static-content></root>");
 
 		_xml = sb.toString();
 
@@ -143,6 +141,53 @@ public class LocalizationImplTest {
 			"The default language ids from Document and XML do not match",
 			LocalizationUtil.getDefaultLanguageId(_saxReader.read(_xml)),
 			LocalizationUtil.getDefaultLanguageId(_xml));
+	}
+
+	@Test
+	@TestInfo("LPD-90780")
+	public void testGetLocalizationMap() throws Exception {
+		Method method = LanguageResources.class.getDeclaredMethod(
+			"_getMapHolder", Locale.class);
+
+		method.setAccessible(true);
+
+		Object object1 = method.invoke(null, LocaleUtil.BRAZIL);
+
+		Class<?> class1 = object1.getClass();
+
+		Field field = class1.getDeclaredField("_map");
+
+		field.setAccessible(true);
+
+		@SuppressWarnings("unchecked")
+		Map<String, String> fieldMap1 = (Map<String, String>)field.get(object1);
+
+		Object object2 = method.invoke(null, new Locale("es"));
+
+		@SuppressWarnings("unchecked")
+		Map<String, String> fieldMap2 = (Map<String, String>)field.get(object2);
+
+		String key = RandomTestUtil.randomString();
+		String value = RandomTestUtil.randomString();
+
+		fieldMap1.put(key, key);
+		fieldMap2.put(key, value);
+
+		Map<Locale, String> localizationMap = _localization.getLocalizationMap(
+			Arrays.asList(
+				LocaleUtil.BRAZIL, LocaleUtil.GERMANY, LocaleUtil.SPAIN,
+				_defaultLocale),
+			_defaultLocale, key);
+
+		Assert.assertEquals(key, localizationMap.get(LocaleUtil.BRAZIL));
+		Assert.assertFalse(localizationMap.containsKey(LocaleUtil.GERMANY));
+		Assert.assertEquals(
+			localizationMap.get(_defaultLocale),
+			LanguageUtil.get(LocaleUtil.GERMANY, key));
+		Assert.assertEquals(value, localizationMap.get(LocaleUtil.SPAIN));
+
+		fieldMap1.remove(key);
+		fieldMap2.remove(key);
 	}
 
 	@Test

@@ -142,6 +142,10 @@ public class SoftCircularDependencyUtil {
 
 						Bundle bundle = serviceReference.getBundle();
 
+						if (bundle == null) {
+							continue;
+						}
+
 						Class<?> clazz = service.getClass();
 
 						bundleContext.ungetService(serviceReference);
@@ -151,12 +155,14 @@ public class SoftCircularDependencyUtil {
 								new ComponentDescriptionKey(
 									bundle.getBundleId(), clazz.getName()));
 
-						if (toComponentDescriptionDTO != null) {
-							dependencies.add(
-								new Dependency(
-									fromComponentDescriptionDTO,
-									toComponentDescriptionDTO, referenceDTO));
+						if (toComponentDescriptionDTO == null) {
+							continue;
 						}
+
+						dependencies.add(
+							new Dependency(
+								fromComponentDescriptionDTO,
+								toComponentDescriptionDTO, referenceDTO));
 					}
 				}
 
@@ -186,11 +192,13 @@ public class SoftCircularDependencyUtil {
 			while (iterator.hasNext()) {
 				Dependency dependency = iterator.next();
 
-				if (!closureNavigationMap.containsKey(
+				if (closureNavigationMap.containsKey(
 						dependency.getToComponentDescriptionDTO())) {
 
-					iterator.remove();
+					continue;
 				}
+
+				iterator.remove();
 			}
 		}
 
@@ -388,9 +396,7 @@ public class SoftCircularDependencyUtil {
 				sb.append(_referenceDTO.field);
 			}
 
-			sb.append(StringPool.CLOSE_BRACKET);
-
-			sb.append(" -> ");
+			sb.append("] -> ");
 		}
 
 		@Override
@@ -432,7 +438,7 @@ public class SoftCircularDependencyUtil {
 
 		@Override
 		public String toString() {
-			StringBundler sb = new StringBundler(7);
+			StringBundler sb = new StringBundler(6);
 
 			if (_fromComponentDescriptionDTO != null) {
 				sb.append(_fromComponentDescriptionDTO.implementationClass);
@@ -449,9 +455,7 @@ public class SoftCircularDependencyUtil {
 					sb.append(_referenceDTO.field);
 				}
 
-				sb.append(StringPool.CLOSE_BRACKET);
-
-				sb.append(" -> ");
+				sb.append("] -> ");
 			}
 
 			sb.append(_toComponentDescriptionDTO.implementationClass);

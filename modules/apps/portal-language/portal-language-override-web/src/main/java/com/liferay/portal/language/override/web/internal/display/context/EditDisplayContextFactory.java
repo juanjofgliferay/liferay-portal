@@ -17,9 +17,9 @@ import com.liferay.portal.language.override.model.PLOEntry;
 import com.liferay.portal.language.override.provider.PLOOriginalTranslationProvider;
 import com.liferay.portal.language.override.service.PLOEntryLocalService;
 
-import java.util.Locale;
+import jakarta.portlet.RenderRequest;
 
-import javax.portlet.RenderRequest;
+import java.util.Locale;
 
 /**
  * @author Drew Brokke
@@ -111,9 +111,11 @@ public class EditDisplayContextFactory {
 			String originalValue = _ploOriginalTranslationProvider.get(
 				locale, key);
 
-			if (Validator.isNotNull(originalValue)) {
-				originalValuesLocalizedValuesMap.put(locale, originalValue);
+			if (Validator.isNull(originalValue)) {
+				continue;
 			}
+
+			originalValuesLocalizedValuesMap.put(locale, originalValue);
 		}
 	}
 

@@ -11,25 +11,26 @@ import com.liferay.headless.builder.internal.application.endpoint.EndpointMatche
 import com.liferay.headless.builder.internal.helper.EndpointHelper;
 import com.liferay.petra.function.UnsafeFunction;
 import com.liferay.portal.kernel.model.Company;
+import com.liferay.portal.kernel.util.Http;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.vulcan.accept.language.AcceptLanguage;
 import com.liferay.portal.vulcan.pagination.Pagination;
+
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.Response;
 
 import java.security.InvalidParameterException;
 
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
-
-import javax.ws.rs.Consumes;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.Response;
 
 /**
  * @author Luis Miguel Barcos
@@ -151,7 +152,8 @@ public class HeadlessBuilderResourceImpl {
 				successUnsafeFunction)
 		throws Exception {
 
-		APIApplication.Endpoint endpoint = _getEndpoint(path, scope);
+		APIApplication.Endpoint endpoint = _getEndpoint(
+			Http.Method.GET, path, scope);
 
 		if (endpoint == null) {
 			return Response.status(
@@ -178,7 +180,7 @@ public class HeadlessBuilderResourceImpl {
 	}
 
 	private APIApplication.Endpoint _getEndpoint(
-		String path, APIApplication.Endpoint.Scope scope) {
+		Http.Method method, String path, APIApplication.Endpoint.Scope scope) {
 
 		EndpointMatcher endpointMatcher = _endpointMatcherFunction.apply(
 			_company.getCompanyId());
@@ -187,7 +189,7 @@ public class HeadlessBuilderResourceImpl {
 			return null;
 		}
 
-		return endpointMatcher.getEndpoint("/" + path, scope);
+		return endpointMatcher.getEndpoint(method, "/" + path, scope);
 	}
 
 	private <T> Response _post(
@@ -196,7 +198,8 @@ public class HeadlessBuilderResourceImpl {
 				successUnsafeFunction)
 		throws Exception {
 
-		APIApplication.Endpoint endpoint = _getEndpoint(path, scope);
+		APIApplication.Endpoint endpoint = _getEndpoint(
+			Http.Method.POST, path, scope);
 
 		if (endpoint == null) {
 			return Response.status(
@@ -204,8 +207,15 @@ public class HeadlessBuilderResourceImpl {
 			).build();
 		}
 
+		Object object = successUnsafeFunction.apply(endpoint);
+
+		if (object == null) {
+			return Response.noContent(
+			).build();
+		}
+
 		return Response.ok(
-			successUnsafeFunction.apply(endpoint)
+			object
 		).build();
 	}
 

@@ -11,7 +11,7 @@ create table ObjectAction (
 	objectDefinitionId LONG,
 	active_ BOOLEAN,
 	conditionExpression TEXT null,
-	description VARCHAR(75) null,
+	description STRING null,
 	errorMessage STRING null,
 	label STRING null,
 	name VARCHAR(75) null,
@@ -35,25 +35,31 @@ create table ObjectDefinition (
 	accountERObjectFieldId LONG,
 	descriptionObjectFieldId LONG,
 	objectFolderId LONG,
-	rootObjectDefinitionId LONG,
 	titleObjectFieldId LONG,
 	accountEntryRestricted BOOLEAN,
 	active_ BOOLEAN,
-	dbTableName VARCHAR(75) null,
-	label STRING null,
 	className VARCHAR(255) null,
+	dbTableName VARCHAR(75) null,
+	description STRING null,
 	enableCategorization BOOLEAN,
 	enableComments BOOLEAN,
-	enableLocalization BOOLEAN,
+	enableFormContainer BOOLEAN,
+	enableFriendlyURLCustomization BOOLEAN,
+	enableIndexSearch BOOLEAN,
 	enableObjectEntryDraft BOOLEAN,
 	enableObjectEntryHistory BOOLEAN,
+	enableObjectEntrySchedule BOOLEAN,
+	enableObjectEntrySubscription BOOLEAN,
+	enableObjectEntryVersioning BOOLEAN,
+	friendlyURLSeparator VARCHAR(75) null,
+	label TEXT null,
 	modifiable BOOLEAN,
 	name VARCHAR(75) null,
 	panelAppOrder VARCHAR(75) null,
 	panelCategoryKey VARCHAR(75) null,
 	pkObjectFieldDBColumnName VARCHAR(75) null,
 	pkObjectFieldName VARCHAR(75) null,
-	pluralLabel STRING null,
+	pluralLabel TEXT null,
 	portlet BOOLEAN,
 	scope VARCHAR(75) null,
 	storageType VARCHAR(255) null,
@@ -62,10 +68,24 @@ create table ObjectDefinition (
 	status INTEGER
 );
 
+create table ObjectDefinitionSetting (
+	mvccVersion LONG default 0 not null,
+	uuid_ VARCHAR(75) null,
+	objectDefinitionSettingId LONG not null primary key,
+	companyId LONG,
+	userId LONG,
+	userName VARCHAR(75) null,
+	createDate DATE null,
+	modifiedDate DATE null,
+	objectDefinitionId LONG,
+	name VARCHAR(75) null,
+	value VARCHAR(75) null
+);
+
 create table ObjectEntry (
 	mvccVersion LONG default 0 not null,
 	uuid_ VARCHAR(75) null,
-	externalReferenceCode VARCHAR(75) null,
+	externalReferenceCode VARCHAR(500) null,
 	objectEntryId LONG not null primary key,
 	groupId LONG,
 	companyId LONG,
@@ -73,9 +93,58 @@ create table ObjectEntry (
 	userName VARCHAR(75) null,
 	createDate DATE null,
 	modifiedDate DATE null,
+	headObjectEntryId LONG,
 	objectDefinitionId LONG,
+	objectEntryFolderId LONG,
 	rootObjectEntryId LONG,
+	defaultLanguageId VARCHAR(75) null,
+	displayDate DATE null,
+	expirationDate DATE null,
+	reviewDate DATE null,
+	treePath STRING null,
+	version INTEGER,
 	lastPublishDate DATE null,
+	status INTEGER,
+	statusByUserId LONG,
+	statusByUserName VARCHAR(75) null,
+	statusDate DATE null
+);
+
+create table ObjectEntryFolder (
+	mvccVersion LONG default 0 not null,
+	uuid_ VARCHAR(75) null,
+	externalReferenceCode VARCHAR(75) null,
+	objectEntryFolderId LONG not null primary key,
+	groupId LONG,
+	companyId LONG,
+	userId LONG,
+	userName VARCHAR(75) null,
+	createDate DATE null,
+	modifiedDate DATE null,
+	parentObjectEntryFolderId LONG,
+	description STRING null,
+	label STRING null,
+	name VARCHAR(75) null,
+	treePath STRING null,
+	status INTEGER
+);
+
+create table ObjectEntryVersion (
+	mvccVersion LONG default 0 not null,
+	uuid_ VARCHAR(75) null,
+	objectEntryVersionId LONG not null primary key,
+	companyId LONG,
+	userId LONG,
+	userName VARCHAR(75) null,
+	createDate DATE null,
+	modifiedDate DATE null,
+	objectDefinitionId LONG,
+	objectEntryId LONG,
+	content TEXT null,
+	displayDate DATE null,
+	expirationDate DATE null,
+	reviewDate DATE null,
+	version INTEGER,
 	status INTEGER,
 	statusByUserId LONG,
 	statusByUserName VARCHAR(75) null,
@@ -98,10 +167,11 @@ create table ObjectField (
 	dbColumnName VARCHAR(75) null,
 	dbTableName VARCHAR(75) null,
 	dbType VARCHAR(75) null,
+	description STRING null,
 	indexed BOOLEAN,
 	indexedAsKeyword BOOLEAN,
 	indexedLanguageId VARCHAR(75) null,
-	label STRING null,
+	label TEXT null,
 	localized BOOLEAN,
 	name VARCHAR(75) null,
 	readOnly VARCHAR(75) null,
@@ -123,7 +193,7 @@ create table ObjectFieldSetting (
 	modifiedDate DATE null,
 	objectFieldId LONG,
 	name VARCHAR(75) null,
-	value VARCHAR(255) null
+	value TEXT null
 );
 
 create table ObjectFilter (
@@ -152,7 +222,8 @@ create table ObjectFolder (
 	createDate DATE null,
 	modifiedDate DATE null,
 	label STRING null,
-	name VARCHAR(75) null
+	name VARCHAR(75) null,
+	status INTEGER
 );
 
 create table ObjectFolderItem (
@@ -259,6 +330,7 @@ create table ObjectRelationship (
 	parameterObjectFieldId LONG,
 	deletionType VARCHAR(75) null,
 	dbTableName VARCHAR(75) null,
+	description STRING null,
 	edge BOOLEAN,
 	label STRING null,
 	name VARCHAR(75) null,
@@ -343,6 +415,7 @@ create table ObjectValidationRuleSetting (
 create table ObjectView (
 	mvccVersion LONG default 0 not null,
 	uuid_ VARCHAR(75) null,
+	externalReferenceCode VARCHAR(75) null,
 	objectViewId LONG not null primary key,
 	companyId LONG,
 	userId LONG,

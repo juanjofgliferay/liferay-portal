@@ -9,18 +9,22 @@ import com.liferay.depot.constants.DepotActionKeys;
 import com.liferay.depot.constants.DepotConstants;
 import com.liferay.depot.model.DepotEntry;
 import com.liferay.depot.service.base.DepotEntryServiceBaseImpl;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.model.role.RoleConstants;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
 import com.liferay.portal.kernel.security.permission.resource.PortletResourcePermission;
+import com.liferay.portal.kernel.service.RoleLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.permission.GroupPermissionUtil;
 import com.liferay.portal.kernel.util.UnicodeProperties;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
@@ -46,7 +50,7 @@ public class DepotEntryServiceImpl extends DepotEntryServiceBaseImpl {
 	@Override
 	public DepotEntry addDepotEntry(
 			Map<Locale, String> nameMap, Map<Locale, String> descriptionMap,
-			ServiceContext serviceContext)
+			int type, ServiceContext serviceContext)
 		throws PortalException {
 
 		_portletResourcePermission.check(
@@ -54,7 +58,7 @@ public class DepotEntryServiceImpl extends DepotEntryServiceBaseImpl {
 			DepotActionKeys.ADD_DEPOT_ENTRY);
 
 		return depotEntryLocalService.addDepotEntry(
-			nameMap, descriptionMap, serviceContext);
+			nameMap, descriptionMap, type, serviceContext);
 	}
 
 	@Override
@@ -68,15 +72,28 @@ public class DepotEntryServiceImpl extends DepotEntryServiceBaseImpl {
 	}
 
 	@Override
+	public DepotEntry fetchGroupDepotEntry(long groupId)
+		throws PortalException {
+
+		DepotEntry depotEntry = depotEntryPersistence.fetchByGroupId(groupId);
+
+		if (depotEntry != null) {
+			_depotEntryModelResourcePermission.check(
+				getPermissionChecker(), depotEntry, ActionKeys.VIEW);
+		}
+
+		return depotEntry;
+	}
+
+	@Override
 	public List<DepotEntry> getCurrentAndGroupConnectedDepotEntries(
-			long groupId, int start, int end)
+			long groupId, int type, int start, int end)
 		throws PortalException {
 
 		List<DepotEntry> filteredDepotEntries = getGroupConnectedDepotEntries(
-			groupId, start, end);
+			groupId, type, start, end);
 
-		DepotEntry depotEntry = depotEntryLocalService.fetchGroupDepotEntry(
-			groupId);
+		DepotEntry depotEntry = depotEntryPersistence.fetchByGroupId(groupId);
 
 		if (depotEntry != null) {
 			filteredDepotEntries.add(depotEntry);
@@ -97,7 +114,40 @@ public class DepotEntryServiceImpl extends DepotEntryServiceBaseImpl {
 				getPermissionChecker(), depotEntryId, ActionKeys.VIEW);
 		}
 
-		return depotEntryLocalService.getDepotEntry(depotEntryId);
+		return depotEntryPersistence.findByPrimaryKey(depotEntryId);
+	}
+
+	@Override
+	public List<Long> getDepotEntryGroupIds(
+		long companyId, long userId, int type) {
+
+		try {
+			PermissionChecker permissionChecker = getPermissionChecker();
+
+			if (permissionChecker.isCompanyAdmin() ||
+				((type == DepotConstants.TYPE_SPACE) &&
+				 _roleLocalService.hasUserRole(
+					 getUserId(), companyId, RoleConstants.CMS_ADMINISTRATOR,
+					 true))) {
+
+				return depotEntryLocalService.getDepotEntryGroupIds(
+					companyId, type);
+			}
+
+			if (userId != getUserId()) {
+				return Collections.emptyList();
+			}
+
+			return depotEntryLocalService.getDepotEntryGroupIds(
+				companyId, userId, type);
+		}
+		catch (PortalException portalException) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(portalException);
+			}
+		}
+
+		return Collections.emptyList();
 	}
 
 	@Override
@@ -117,7 +167,7 @@ public class DepotEntryServiceImpl extends DepotEntryServiceBaseImpl {
 
 	@Override
 	public List<DepotEntry> getGroupConnectedDepotEntries(
-			long groupId, int start, int end)
+			long groupId, int type, int start, int end)
 		throws PortalException {
 
 		PermissionChecker permissionChecker = getPermissionChecker();
@@ -128,28 +178,27 @@ public class DepotEntryServiceImpl extends DepotEntryServiceBaseImpl {
 			return Collections.emptyList();
 		}
 
-		List<DepotEntry> filteredDepotEntries = new ArrayList<>();
+		return TransformUtil.transform(
+			depotEntryLocalService.getGroupConnectedDepotEntries(
+				groupId, type, start, end),
+			depotEntry -> {
+				Group group = depotEntry.getGroup();
 
-		for (DepotEntry depotEntry :
-				depotEntryLocalService.getGroupConnectedDepotEntries(
-					groupId, start, end)) {
+				if (group.isCompany() ||
+					GroupPermissionUtil.contains(
+						permissionChecker, group.getGroupId(),
+						ActionKeys.VIEW) ||
+					permissionChecker.isGroupAdmin(group.getGroupId())) {
 
-			Group group = depotEntry.getGroup();
+					return depotEntry;
+				}
 
-			if (group.isCompany() ||
-				GroupPermissionUtil.contains(
-					permissionChecker, group.getGroupId(), ActionKeys.VIEW) ||
-				permissionChecker.isGroupAdmin(group.getGroupId())) {
-
-				filteredDepotEntries.add(depotEntry);
-			}
-		}
-
-		return filteredDepotEntries;
+				return null;
+			});
 	}
 
 	@Override
-	public int getGroupConnectedDepotEntriesCount(long groupId)
+	public int getGroupConnectedDepotEntriesCount(long groupId, int type)
 		throws PortalException {
 
 		if (!GroupPermissionUtil.contains(
@@ -159,13 +208,12 @@ public class DepotEntryServiceImpl extends DepotEntryServiceBaseImpl {
 		}
 
 		return depotEntryLocalService.getGroupConnectedDepotEntriesCount(
-			groupId);
+			groupId, type);
 	}
 
 	@Override
 	public DepotEntry getGroupDepotEntry(long groupId) throws PortalException {
-		DepotEntry depotEntry = depotEntryLocalService.getGroupDepotEntry(
-			groupId);
+		DepotEntry depotEntry = depotEntryPersistence.findByGroupId(groupId);
 
 		_depotEntryModelResourcePermission.check(
 			getPermissionChecker(), depotEntry, ActionKeys.VIEW);
@@ -177,7 +225,7 @@ public class DepotEntryServiceImpl extends DepotEntryServiceBaseImpl {
 	public DepotEntry updateDepotEntry(
 			long depotEntryId, Map<Locale, String> nameMap,
 			Map<Locale, String> descriptionMap,
-			Map<String, Boolean> depotAppCustomizationMap,
+			Map<String, Boolean> depotAppCustomizationMap, String friendlyURL,
 			UnicodeProperties typeSettingsUnicodeProperties,
 			ServiceContext serviceContext)
 		throws PortalException {
@@ -187,8 +235,11 @@ public class DepotEntryServiceImpl extends DepotEntryServiceBaseImpl {
 
 		return depotEntryLocalService.updateDepotEntry(
 			depotEntryId, nameMap, descriptionMap, depotAppCustomizationMap,
-			typeSettingsUnicodeProperties, serviceContext);
+			friendlyURL, typeSettingsUnicodeProperties, serviceContext);
 	}
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		DepotEntryServiceImpl.class);
 
 	@Reference(
 		policy = ReferencePolicy.DYNAMIC,
@@ -204,5 +255,8 @@ public class DepotEntryServiceImpl extends DepotEntryServiceBaseImpl {
 		target = "(resource.name=" + DepotConstants.RESOURCE_NAME + ")"
 	)
 	private volatile PortletResourcePermission _portletResourcePermission;
+
+	@Reference
+	private RoleLocalService _roleLocalService;
 
 }

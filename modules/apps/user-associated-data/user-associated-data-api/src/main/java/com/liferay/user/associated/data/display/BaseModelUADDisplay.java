@@ -111,11 +111,7 @@ public abstract class BaseModelUADDisplay<T extends BaseModel>
 
 	@Override
 	public boolean isSiteScoped() {
-		if (GroupedModel.class.isAssignableFrom(getTypeClass())) {
-			return true;
-		}
-
-		return false;
+		return GroupedModel.class.isAssignableFrom(getTypeClass());
 	}
 
 	@Override
@@ -202,16 +198,6 @@ public abstract class BaseModelUADDisplay<T extends BaseModel>
 	}
 
 	/**
-	 * Returns the field names that are queried when using the {@link #search}
-	 * or {@link #searchCount} methods.
-	 *
-	 * @return the field names to be queried
-	 */
-	protected String[] getSearchableFields() {
-		return getDisplayFieldNames();
-	}
-
-	/**
 	 * Returns a dynamic query that can be used to perform a database search for
 	 * type {@code T} entities that are associated with the user.
 	 *
@@ -292,6 +278,16 @@ public abstract class BaseModelUADDisplay<T extends BaseModel>
 		}
 
 		return dynamicQuery;
+	}
+
+	/**
+	 * Returns the field names that are queried when using the {@link #search}
+	 * or {@link #searchCount} methods.
+	 *
+	 * @return the field names to be queried
+	 */
+	protected String[] getSearchableFields() {
+		return getDisplayFieldNames();
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(

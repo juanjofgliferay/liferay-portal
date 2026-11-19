@@ -1,6 +1,6 @@
 Bundle-Name: Liferay SAML OpenSAML Integration
 Bundle-SymbolicName: com.liferay.saml.opensaml.integration
-Bundle-Version: 6.2.5
+Bundle-Version: 6.2.40
 Export-Package:\
 	com.liferay.saml.opensaml.integration.field.expression.handler,\
 	com.liferay.saml.opensaml.integration.field.expression.handler.registry,\
@@ -25,6 +25,8 @@ Import-Package:\
 	!com.werken.*,\
 	\
 	!javax.annotation.*,\
+	\
+	!javax.servlet.*,\
 	\
 	!junit.*,\
 	\
@@ -52,13 +54,17 @@ Import-Package:\
 	!org.apache.xml.utils.*,\
 	!org.apache.xpath.*,\
 	\
+	!org.bouncycastle.crypto.engines.*,\
+	!org.bouncycastle.crypto.modes.*,\
+	!org.bouncycastle.crypto.params.*,\
+	!org.bouncycastle.openssl.*,\
+	!org.bouncycastle.pqc.*,\
+	\
 	!org.checkerframework.*,\
 	\
 	!org.jdom.*,\
 	\
 	!org.joda.convert,\
-	\
-	!org.ldaptive.*,\
 	\
 	!org.owasp.validator.html,\
 	\
@@ -71,17 +77,15 @@ Import-Package:\
 -fixupmessages: Classes found in the wrong directory: ...;is:=ignore
 -includeresource:\
 	opensaml-core-*;lib:=true,\
-	opensaml-messaging-api-*;lib:=true,\
-	opensaml-messaging-impl-*;lib:=true,\
 	opensaml-profile-api-*;lib:=true,\
-	opensaml-profile-impl-*;lib:=true,\
 	opensaml-saml-api-*;lib:=true,\
-	opensaml-saml-impl-*;lib:=true,\
-	opensaml-security-api-*;lib:=true,\
 	opensaml-security-impl-*;lib:=true,\
 	opensaml-soap-api-*;lib:=true,\
 	opensaml-soap-impl-*;lib:=true,\
 	opensaml-storage-api-*;lib:=true,\
-	opensaml-storage-impl-*;lib:=true,\
 	opensaml-xmlsec-api-*;lib:=true,\
-	opensaml-xmlsec-impl-*;lib:=true
+	opensaml-xmlsec-impl-*;lib:=true,\
+	org.opensaml.impl-*;lib:=true,\
+	org.opensaml.messaging-*;lib:=true,\
+	org.opensaml.messaging.impl-*;lib:=true,\
+	org.opensaml.security.api-*;lib:=true

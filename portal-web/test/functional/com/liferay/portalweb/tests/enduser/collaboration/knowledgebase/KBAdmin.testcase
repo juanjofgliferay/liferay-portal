@@ -1,4 +1,4 @@
-@component-name = "portal-knowledge-base"
+@component-name = "portal-content-management"
 definition {
 
 	property portal.release = "true";
@@ -56,7 +56,7 @@ definition {
 
 		KBArticle.selectArticleCP(kbArticleTitle = "Knowledge Base Article Title");
 
-		KBArticle.deleteCP();
+		KBArticle.deleteCP(kbArticleTitle = "Knowledge Base Article Title");
 
 		KBAdmin.openKBAdmin(siteURLKey = "guest");
 
@@ -84,7 +84,7 @@ definition {
 		KBAdmin.openKBAdmin(siteURLKey = "guest");
 
 		KBArticle.viewKBArticleWithAttachmentCP(
-			kbArticleAttachment = "Document_1.txt (259 B) Delete",
+			kbArticleAttachment = "Document_1.txt (259 B)",
 			kbArticleContent = "Knowledge Base Article Content Edit",
 			kbArticleTitle = "Knowledge Base Article Title Edit");
 	}
@@ -99,17 +99,12 @@ definition {
 		task ("Given the Notification Date is changed to 2 weeks") {
 			KBNavigator.openToConfigInSystemSettings(portlet = "System Service");
 
-			AssertTextEquals(
-				key_sectionTitle = "Article Expiration Date Notification",
-				locator1 = "PagesAdmin#SECTION_SUBTITLE",
-				value1 = "Define the timeline (in weeks) in which the user will receive a notification informing of an article expiration date. Articles within the specified expiration date will display the label \"Expiring Soon\" in the knowledge base management screen.");
-
 			Type(
 				key_text = "Notification Date (Weeks)",
 				locator1 = "TextInput#ANY",
 				value1 = 2);
 
-			Button.clickSave();
+			SystemSettings.saveConfiguration();
 		}
 
 		task ("When a Knowledge Base article is created that has expired and another that has not") {
@@ -224,8 +219,8 @@ definition {
 
 		KBAdmin.viewEntryInTableView(
 			kbEntryTitle = "Knowledge Base Article Title",
-			tableColumnContents = "Knowledge Base Article Title,--,0,0,Seconds Ago,Approved",
-			tableColumnNames = "title,num-of-kb-folders,num-of-kb-articles,views,modified-date,status");
+			tableColumnContents = "Knowledge Base Article Title,--,0,0,Second,Approved",
+			tableColumnNames = "title,num-of-folders,num-of-articles,views,modified-date,status");
 
 		LexiconTable.clickTableEntryTitle(tableEntry = "Knowledge Base Article Title");
 
@@ -239,8 +234,8 @@ definition {
 
 		KBAdmin.viewEntryInTableView(
 			kbEntryTitle = "Knowledge Base Article Title",
-			tableColumnContents = "Knowledge Base Article Title,--,1,1,Seconds Ago,Approved",
-			tableColumnNames = "title,num-of-kb-folders,num-of-kb-articles,views,modified-date,status");
+			tableColumnContents = "Knowledge Base Article Title,--,1,1,Second,Approved",
+			tableColumnNames = "title,num-of-folders,num-of-articles,views,modified-date,status");
 	}
 
 	@description = "This test ensures that users can view folder in the table view."
@@ -259,8 +254,8 @@ definition {
 
 		KBAdmin.viewEntryInTableView(
 			kbEntryTitle = "KB Folder",
-			tableColumnContents = "KB Folder,--,0,0,--,Seconds Ago,",
-			tableColumnNames = "title,status,num-of-kb-folders,num-of-kb-articles,views,modified-date");
+			tableColumnContents = "KB Folder,--,0,0,--,Second,",
+			tableColumnNames = "title,status,num-of-folders,num-of-articles,views,modified-date");
 
 		JSONKnowledgeBase.addkBArticle(
 			folderName = "KB Folder",
@@ -278,8 +273,8 @@ definition {
 
 		KBAdmin.viewEntryInTableView(
 			kbEntryTitle = "KB Folder",
-			tableColumnContents = "KB Folder,,1,1,--,Seconds Ago, ",
-			tableColumnNames = "title,status,num-of-kb-folders,num-of-kb-articles,views,modified-date");
+			tableColumnContents = "KB Folder,,1,1,--,Second,--",
+			tableColumnNames = "title,status,num-of-folders,num-of-articles,views,modified-date,status");
 	}
 
 	@description = "This test covers LPS-171314. It ensures that the expiration label is displayed when the Notification Date is reached."

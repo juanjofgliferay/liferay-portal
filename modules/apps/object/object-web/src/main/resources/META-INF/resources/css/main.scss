@@ -1,10 +1,19 @@
-@import 'atlas-variables';
+@import '_atlas-custom-properties-variables';
 
 @import 'management-toolbar';
 
 .lfr-objects__side-panel-content {
 	.nav-tabs + .tab-content .tab-pane {
 		padding: 0;
+	}
+}
+
+.side-navigation-container.c-slideout-push-start
+	~ .flex-grow-1
+	.lfr-objects__model-builder-custom-vertical-bar.c-slideout-start {
+	@include media-breakpoint-up(md) {
+		inset-inline-start: 280px;
+		z-index: calc(#{$zindex-c-slideout} - 1);
 	}
 }
 

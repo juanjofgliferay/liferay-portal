@@ -14,6 +14,7 @@
 
 <clay:container-fluid
 	cssClass="container-view"
+	size="xl"
 >
 	<liferay-site-navigation:breadcrumb
 		breadcrumbEntries="<%= BreadcrumbEntriesUtil.getBreadcrumbEntries(request, true, false, false, true, true) %>"
@@ -47,6 +48,7 @@
 										%>
 
 										<clay:link
+											aria-label='<%= LanguageUtil.get(request, "add-new-vocabulary") %>'
 											borderless="<%= true %>"
 											cssClass="component-action"
 											href="<%= editVocabularyURL.toString() %>"
@@ -59,7 +61,7 @@
 									<clay:dropdown-actions
 										aria-label='<%= LanguageUtil.get(request, "show-actions") %>'
 										dropdownItems="<%= assetCategoriesDisplayContext.getVocabulariesDropdownItems() %>"
-										propsTransformer="js/ActionsComponentPropsTransformer"
+										propsTransformer="{ActionsComponentPropsTransformer} from asset-categories-admin-web"
 									/>
 								</li>
 							</ul>
@@ -102,7 +104,7 @@
 
 					<liferay-frontend:empty-result-message
 						actionDropdownItems="<%= assetCategoriesDisplayContext.getVocabularyActionDropdownItems() %>"
-						animationType="<%= EmptyResultMessageKeys.AnimationType.NONE %>"
+						animationType="<%= AnimationType.NONE %>"
 						componentId='<%= liferayPortletResponse.getNamespace() + "emptyResultMessageComponent" %>'
 						description='<%= LanguageUtil.get(request, "vocabularies-are-needed-to-create-categories") %>'
 						elementType='<%= LanguageUtil.get(request, "vocabularies") %>'
@@ -128,7 +130,17 @@
 							verticalAlign="center"
 						>
 							<clay:content-col>
-								<%= HtmlUtil.escape(vocabulary.getTitle(locale)) %>
+								<div class="inline-item">
+									<%= HtmlUtil.escape(vocabulary.getTitle(locale)) %>
+
+									<c:if test="<%= vocabulary.getVisibilityType() == AssetVocabularyConstants.VISIBILITY_TYPE_EMPTY %>">
+										<clay:label
+											cssClass="c-ml-3"
+											displayType="warning"
+											label='<%= LanguageUtil.get(request, "empty") %>'
+										/>
+									</c:if>
+								</div>
 							</clay:content-col>
 
 							<clay:content-col
@@ -143,7 +155,7 @@
 									aria-label='<%= LanguageUtil.get(request, "show-actions") %>'
 									cssClass="component-action"
 									dropdownItems="<%= assetVocabularyActionDropdownItemsProvider.getActionDropdownItems(vocabulary) %>"
-									propsTransformer="js/VocabularyActionDropdownPropsTransformer"
+									propsTransformer="{VocabularyActionDropdownPropsTransformer} from asset-categories-admin-web"
 								/>
 							</clay:content-col>
 						</clay:content-row>
@@ -152,7 +164,7 @@
 					<div class="mb-5">
 						<div class="mb-2">
 							<span class="mr-1"><liferay-ui:message key="asset-types" />:</span>
-							<span class="text-secondary"><%= assetCategoriesDisplayContext.getAssetType(vocabulary) %></span>
+							<span class="text-secondary"><%= HtmlUtil.escape(assetCategoriesDisplayContext.getAssetType(vocabulary)) %></span>
 						</div>
 
 						<%

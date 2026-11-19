@@ -14,19 +14,19 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.portlet.PortletConfig;
+import jakarta.portlet.PortletRequest;
+
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 
 import java.util.Locale;
 import java.util.Map;
-
-import javax.portlet.PortletConfig;
-import javax.portlet.PortletRequest;
-
-import javax.servlet.RequestDispatcher;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * @author Iván Zaera
@@ -97,11 +97,13 @@ public class BaseJSPSettingsConfigurationAction
 
 			String value = getParameter(portletRequest, languageKeyId);
 
-			if (defaultValue.equals(value) ||
-				StringUtil.equalsIgnoreBreakLine(defaultValue, value)) {
+			if (!defaultValue.equals(value) &&
+				!StringUtil.equalsIgnoreBreakLine(defaultValue, value)) {
 
-				modifiableSettings.reset(languageKeyId);
+				continue;
 			}
+
+			modifiableSettings.reset(languageKeyId);
 		}
 	}
 

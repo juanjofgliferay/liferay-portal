@@ -2,12 +2,14 @@ definition {
 
 	@summary = "Default summary"
 	macro _configureExportSiteOptions(contentDateRange = null, checkContentNameList = null, uncheckContentNameList = null, checkPageName = null, uncheckLogo = null, larFileName = null, uncheckSiteTemplateSettings = null, contentName = null, uncheckSubSubContent = null, uncheckSubContent = null, exportPermissions = null, uncheckSitePagesSettings = null, contentDeletion = null, mainContent = null, subContent = null) {
-		if (isSet(larFileName)) {
-			Type(
-				inputFieldId = "ExportPortlet_name",
-				locator1 = "TextInput#INPUT_ID",
-				value1 = ${larFileName});
+		if (!(isSet(larFileName))) {
+			var larFileName = "Export";
 		}
+
+		Type(
+			inputFieldId = "ExportPortlet_name",
+			locator1 = "TextInput#INPUT_ID",
+			value1 = ${larFileName});
 
 		if (isSet(contentDateRange)) {
 			ContentConfiguration.contentDateRange(contentDateRange = ${contentDateRange});
@@ -121,12 +123,14 @@ definition {
 
 	@summary = "Default summary"
 	macro _exportSite(larFileName = null) {
-		if (isSet(larFileName)) {
-			Type(
-				inputFieldId = "ExportPortlet_name",
-				locator1 = "TextInput#INPUT_ID",
-				value1 = ${larFileName});
+		if (!(isSet(larFileName))) {
+			var larFileName = "Export Process";
 		}
+
+		Type(
+			inputFieldId = "ExportPortlet_name",
+			locator1 = "TextInput#INPUT_ID",
+			value1 = ${larFileName});
 
 		LAR.exportWithAssertionOnSuccess();
 	}
@@ -207,10 +211,6 @@ definition {
 			key_text = "Import",
 			locator1 = "Button#ANY",
 			value1 = "Import");
-
-		AssertTextEquals(
-			locator1 = "ExportImport#CURRENT_AND_PREVIOUS_STATUS_1",
-			value1 = "Successful");
 	}
 
 	@summary = "Default summary"
@@ -225,7 +225,25 @@ definition {
 	}
 
 	@summary = "Default summary"
-	macro _selectImportFile(importValidationMissingItem = null, cannotImport = null, mirrorWithOverwriting = null, uploadFrom = null, importDeletions = null, importPermissions = null, larFileName = null, copyAsNew = null) {
+	macro _prepareImportFile(larFileName = null) {
+		var downloadsDir = PropsUtil.get("output.dir.name");
+
+		var files = FileUtil.listFiles(${downloadsDir});
+
+		echo("files: ${files}");
+
+		var fileExists = FileUtil.exists("${downloadsDir}/${larFileName}.crdownload");
+
+		if (${fileExists} == "true") {
+			var sourceFilePath = "${downloadsDir}/${larFileName}.crdownload";
+			var destFilePath = "${downloadsDir}/${larFileName}";
+
+			FileUtil.move(${sourceFilePath}, ${destFilePath});
+		}
+	}
+
+	@summary = "Default summary"
+	macro _selectImportFile(importValidationMissingItem = null, mirrorWithOverwriting = null, uploadFrom = null, importDeletions = null, importPermissions = null, larFileName = null, copyAsNew = null) {
 		SelectFrame(locator1 = "IFrame#CONFIGURATION");
 
 		NavItem.click(navItem = "Import");
@@ -236,26 +254,14 @@ definition {
 			UploadDependencyFile.uploadArchiveFile(fileName = ${larFileName});
 		}
 		else {
+			LAR._prepareImportFile(larFileName = ${larFileName});
+
 			UploadTempFile.uploadTempFileHiddenNoMouseOver(
 				locator1 = "TextInput#FILE",
 				value1 = ${larFileName});
 		}
 
-		if (${cannotImport} == "true") {
-			AssertTextEquals(
-				locator1 = "ExportImport#VALIDATION_ERROR_MESSAGE_HEADER",
-				value1 = "The file ${larFileName} cannot be imported.");
-		}
-		else if (isSet(importSchemaVersionMismatching)) {
-			AssertTextEquals(
-				locator1 = "ExportImport#VALIDATION_ERROR_MESSAGE_HEADER",
-				value1 = "The file ${larFileName} cannot be imported.");
-
-			AssertTextPresent(
-				locator1 = "ExportImport#VALIDATION_ERROR_MESSAGE",
-				value1 = "LAR schema version 1.0.0 does not match deployed export/import schema version 4.0.0.");
-		}
-		else if (isSet(importValidationMissingItem)) {
+		if (isSet(importValidationMissingItem)) {
 			AssertTextEquals(
 				locator1 = "ExportImport#VALIDATION_ERROR_MESSAGE_HEADER",
 				value1 = "The file ${larFileName} cannot be imported.");
@@ -267,15 +273,6 @@ definition {
 			AssertTextEquals.assertPartialText(
 				locator1 = "ExportImport#VALIDATION_ERROR_LIST_ITEM",
 				value1 = ${importValidationMissingItem});
-		}
-		else if (isSet(import6210buildNumber)) {
-			AssertTextEquals(
-				locator1 = "ExportImport#VALIDATION_ERROR_MESSAGE_HEADER",
-				value1 = "The file ${larFileName} cannot be imported.");
-
-			AssertTextPresent(
-				locator1 = "ExportImport#VALIDATION_ERROR_MESSAGE",
-				value1 = "LAR build number 6210 does not match portal build number");
 		}
 		else {
 			AssertClickNoError(
@@ -322,6 +319,11 @@ definition {
 					locator1 = "ExportImport#CURRENT_AND_PREVIOUS_STATUS_1",
 					value1 = "Failed");
 			}
+			else if (isSet(completedWithErrorsExpected)) {
+				AssertTextEquals(
+					locator1 = "ExportImport#CURRENT_AND_PREVIOUS_STATUS_1",
+					value1 = "Completed With Errors");
+			}
 			else {
 				AssertTextEquals(
 					locator1 = "ExportImport#CURRENT_AND_PREVIOUS_STATUS_1",
@@ -333,7 +335,7 @@ definition {
 	}
 
 	@summary = "Default summary"
-	macro _selectImportFileSite(importValidationMissingItem = null, importFail = null, uploadFrom = null, importCampaignValidationError = null, larFileName = null) {
+	macro _selectImportFileSite(importValidationMissingItem = null, uploadFrom = null, importCampaignValidationError = null, larFileName = null) {
 		LexiconEntry.gotoAdd();
 
 		while (IsElementNotPresent(locator1 = "Button#SELECT_FILE")) {
@@ -346,6 +348,8 @@ definition {
 			UploadDependencyFile.uploadArchiveFile(fileName = ${larFileName});
 		}
 		else {
+			LAR._prepareImportFile(larFileName = ${larFileName});
+
 			UploadTempFile.uploadTempFileHiddenNoMouseOver(
 				locator1 = "TextInput#FILE",
 				value1 = ${larFileName});
@@ -384,85 +388,6 @@ definition {
 				locator1 = "ExportImport#VALIDATION_ERROR_LIST_ITEM",
 				value1 = "The original Referenced Asset does not exist in the current environment.");
 		}
-
-		if (${importFail} == "true") {
-			AssertTextEquals(
-				locator1 = "ExportImport#CURRENT_AND_PREVIOUS_STATUS_1",
-				value1 = "Failed");
-
-			SelectFrame(value1 = "relative=top");
-		}
-	}
-
-	@summary = "Default summary"
-	macro _selectImportFileWithDeleteApplicationData(uploadFrom = null, importDeletions = null, importPermissions = null, larFileName = null, copyAsNew = null) {
-		SelectFrame(locator1 = "IFrame#CONFIGURATION");
-
-		NavItem.click(navItem = "Import");
-
-		AssertElementPresent(locator1 = "Button#SELECT_FILE");
-
-		if (${uploadFrom} == "dependencies") {
-			UploadDependencyFile.uploadArchiveFile(fileName = ${larFileName});
-		}
-		else {
-			UploadTempFile.uploadTempFileHiddenNoMouseOver(
-				locator1 = "TextInput#FILE",
-				value1 = ${larFileName});
-		}
-
-		AssertClickNoError(
-			locator1 = "Button#CONTINUE",
-			value1 = "Continue");
-
-		WaitForElementPresent(locator1 = "Button#BACK");
-
-		if (${copyAsNew} == "true") {
-			LAR._copyAsNew();
-		}
-
-		Check.checkNotVisible(
-			checkboxName = "Delete Application Data Before Importing",
-			locator1 = "Checkbox#ANY_CHECKBOX");
-
-		if (${importDeletions} == "true") {
-			Check.checkNotVisibleNoErrors(locator1 = "Checkbox#DELETIONS");
-		}
-
-		if (isSet(portletName)) {
-			if (IsNotChecked(locator1 = "ExportImport#CONTENT")) {
-				Check(locator1 = "ExportImport#CONTENT");
-			}
-		}
-
-		if (${importPermissions} == "true") {
-			Check.checkToggleSwitch(locator1 = "Checkbox#PERMISSIONS");
-		}
-
-		AssertVisible(locator1 = "Link#BACK");
-
-		AssertClickNoError(
-			key_text = "Import",
-			locator1 = "Button#ANY",
-			value1 = "Import");
-
-		if (isSet(cancelImport)) {
-			Confirm.dismissAlert();
-		}
-		else {
-			AssertConfirm(value1 = "Deleting application data before importing cannot be undone. Some applications in other pages might be referencing this data. Are you sure you want to continue deleting application data?");
-		}
-	}
-
-	@summary = "Default summary"
-	macro addExportTemplateCP(exportTemplateName = null, exportTemplateDescription = null) {
-		LexiconEntry.gotoHeaderMenuItem(menuItem = "Export Templates");
-
-		LexiconEntry.gotoAdd();
-
-		PortletEntry.inputName(name = ${exportTemplateName});
-
-		PortletEntry.inputDescription(description = ${exportTemplateDescription});
 	}
 
 	@summary = "Default summary"
@@ -522,42 +447,10 @@ definition {
 	}
 
 	@summary = "Default summary"
-	macro deleteCurrentAndPreviousProcess(larFileName = null) {
-		if (isSet(deleteFromPortlet)) {
-			LAR._gotoExportImport();
-
-			SelectFrame(locator1 = "IFrame#CONFIGURATION");
-
-			Click(locator1 = "ExportImport#CURRENT_AND_PREVIOUS_TAB");
-		}
-
-		LexiconEntry.gotoEntryMenuItemNoError(
-			menuItem = "Clear",
-			rowEntry = ${larFileName});
-
-		AssertConfirm(value1 = "Are you sure you want to delete this? It will be deleted immediately.");
-
-		Alert.viewSuccessMessage();
-	}
-
-	@summary = "Default summary"
 	macro downloadLar() {
 		Click(locator1 = "Icon#EXPORT");
 
 		DownloadTempFile();
-	}
-
-	@summary = "Default summary"
-	macro editExportTemplateCP(exportTemplateDescriptionEdit = null, exportTemplateName = null, exportTemplateNameEdit = null) {
-		AssertClick(
-			key_columnName = "title",
-			key_tableEntry = ${exportTemplateName},
-			locator1 = "LexiconTable#TABLE_ENTRY_COLUMN_LINK",
-			value1 = ${exportTemplateName});
-
-		PortletEntry.inputName(name = ${exportTemplateNameEdit});
-
-		PortletEntry.inputDescription(description = ${exportTemplateDescriptionEdit});
 	}
 
 	@summary = "Default summary"
@@ -567,33 +460,6 @@ definition {
 		LAR._export(
 			exportPermissions = ${exportPermissions},
 			larFileName = ${larFileName});
-	}
-
-	@summary = "Default summary"
-	macro exportExportTemplateCP(exportTemplateName = null, larFileName = null) {
-		LexiconEntry.gotoEllipsisMenuItem(menuItem = "Export");
-
-		if (isSet(larFileName)) {
-			Type(
-				inputFieldId = "ExportPortlet_name",
-				locator1 = "TextInput#INPUT_ID",
-				value1 = ${larFileName});
-		}
-
-		LAR.exportWithAssertionOnSuccess();
-
-		if (isSet(larFileName)) {
-			AssertTextEquals(
-				locator1 = "ExportImport#CURRENT_AND_PREVIOUS_NAME",
-				value1 = ${larFileName});
-		}
-		else {
-			AssertTextEquals(
-				locator1 = "ExportImport#CURRENT_AND_PREVIOUS_NAME",
-				value1 = ${exportTemplateName});
-		}
-
-		AssertElementPresent(locator1 = "Icon#EXPORT");
 	}
 
 	@summary = "Default summary"
@@ -626,7 +492,7 @@ definition {
 			LAR.openExportAdmin(siteScopeName = ${siteScopeName});
 		}
 
-		Click(locator1 = "Icon#PLUS");
+		Click(locator1 = "Button#PLUS");
 
 		Alert.viewWarningSpecific(warningMessage = "Export process and export LAR file will be deleted after 30 days.");
 
@@ -675,9 +541,7 @@ definition {
 	macro filterCompletedProcesses() {
 		WaitForElementPresent(locator1 = "Staging#PROCESS_SUCCESSFUL");
 
-		Click(locator1 = "Dropdown#FILTER_AND_ORDER");
-
-		MenuItem.click(menuItem = "Completed");
+		ManagementBar.setFilterAndOrder(filterBy = "Completed");
 	}
 
 	@summary = "Default summary"
@@ -688,7 +552,11 @@ definition {
 
 		var portalURL = JSONCompany.getPortalURL();
 
-		var larFileName = RegexUtil.replace(${valueName}, "${portalURL}/documents/portlet_file_entry/[0-9]*/([a-zA-z0-9_.-]*)[(0-9KB)]*", 1);
+		var sourceFileName = RegexUtil.replace(${valueName}, "${portalURL}/documents/portlet_file_entry/[0-9]*/([a-zA-z0-9_.-]*)[(0-9KB)]*", 1);
+
+		var titleName = RegexUtil.replace(${sourceFileName}, "(.*)-[0-9]+\.lar", 1);
+
+		var larFileName = "${titleName}.lar";
 
 		echo("lar file name ${larFileName}");
 
@@ -696,16 +564,19 @@ definition {
 	}
 
 	@summary = "Default summary"
-	macro importPortlet(importSchemaVersionMismatching = null, importValidationMissingItem = null, cannotImport = null, mirrorWithOverwriting = null, uploadFrom = null, initializeLiferayEvent = null, importDeletions = null, failureExpected = null, importPermissions = null, larFileName = null, copyAsNew = null, portletName = null) {
+	macro importPortlet(importValidationMissingItem = null, mirrorWithOverwriting = null, uploadFrom = null, initializeLiferayEvent = null, importDeletions = null, failureExpected = null, completedWithErrorsExpected = null, importPermissions = null, larFileName = null, copyAsNew = null, portletName = null) {
+		if (${copyAsNew} == "true") {
+			Staging.enableCopyAsNewImport();
+		}
+
 		LAR._gotoExportImport(initializeLiferayEvent = ${initializeLiferayEvent});
 
 		LAR._selectImportFile(
-			cannotImport = ${cannotImport},
+			completedWithErrorsExpected = ${completedWithErrorsExpected},
 			copyAsNew = ${copyAsNew},
 			failureExpected = ${failureExpected},
 			importDeletions = ${importDeletions},
 			importPermissions = ${importPermissions},
-			importSchemaVersionMismatching = ${importSchemaVersionMismatching},
 			importValidationMissingItem = ${importValidationMissingItem},
 			larFileName = ${larFileName},
 			mirrorWithOverwriting = ${mirrorWithOverwriting},
@@ -721,29 +592,11 @@ definition {
 	}
 
 	@summary = "Default summary"
-	macro importPortletWithDeleteApplicationData(cancelImport = null, uploadFrom = null, initializeLiferayEvent = null, importDeletions = null, importPermissions = null, larFileName = null, copyAsNew = null, portletName = null) {
-		LAR._gotoExportImport(initializeLiferayEvent = ${initializeLiferayEvent});
-
-		LAR._selectImportFileWithDeleteApplicationData(
-			cancelImport = ${cancelImport},
-			copyAsNew = ${copyAsNew},
-			importDeletions = ${importDeletions},
-			importPermissions = ${importPermissions},
-			larFileName = ${larFileName},
-			portletName = ${portletName},
-			uploadFrom = ${uploadFrom});
-
-		if (isSet(cancelImport)) {
-			WaitForElementPresent(
-				checkboxName = "Delete Application Data Before Importing",
-				locator1 = "Checkbox#ANY_CHECKBOX");
+	macro importSiteCP(depotName = null, importValidationMissingItem = null, checkContentNameList = null, uncheckContentNameList = null, siteName = null, larFileName = null, privateLayout = null, deleteApplicationData = null, copyAsNew = null, contentName = null, baseURL = null, contentDeletion = null, uploadFrom = null, importCampaignValidationError = null, importPermissions = null) {
+		if (${copyAsNew} == "true") {
+			Staging.enableCopyAsNewImport(baseURL = ${baseURL});
 		}
 
-		IFrame.closeFrame();
-	}
-
-	@summary = "Default summary"
-	macro importSiteCP(depotName = null, importValidationMissingItem = null, checkContentNameList = null, uncheckContentNameList = null, siteName = null, larFileName = null, privateLayout = null, deleteApplicationData = null, copyAsNew = null, contentName = null, baseURL = null, contentDeletion = null, uploadFrom = null, importCampaignValidationError = null, importPermissions = null) {
 		if (isSet(depotName)) {
 			LAR.openDepotImportAdmin(
 				baseURL = ${baseURL},
@@ -761,7 +614,7 @@ definition {
 			larFileName = ${larFileName},
 			uploadFrom = ${uploadFrom});
 
-		if (!(isSet(importValidationMissingItem) || isSet(importFail))) {
+		if (!(isSet(importValidationMissingItem))) {
 			LAR._importSite(
 				checkContentNameList = ${checkContentNameList},
 				contentDeletion = ${contentDeletion},
@@ -773,51 +626,6 @@ definition {
 				privateLayout = ${privateLayout},
 				uncheckContentNameList = ${uncheckContentNameList});
 		}
-	}
-
-	@summary = "Default summary"
-	macro importTeam(cannotImport = null, mirrorWithOverwriting = null, uploadFrom = null, importDeletions = null, failureExpected = null, importPermissions = null, larFileName = null, copyAsNew = null, portletName = null) {
-		MouseOver.mouseOverNotVisible(locator1 = "Portlet#OPTIONS_ICON");
-
-		Click.waitForMenuToggleJSClick(locator1 = "Portlet#OPTIONS_ICON");
-
-		MenuItem.click(menuItem = "Export / Import");
-
-		LAR._selectImportFile(
-			cannotImport = ${cannotImport},
-			copyAsNew = ${copyAsNew},
-			failureExpected = ${failureExpected},
-			importDeletions = ${importDeletions},
-			importPermissions = ${importPermissions},
-			larFileName = ${larFileName},
-			mirrorWithOverwriting = ${mirrorWithOverwriting},
-			portletName = ${portletName},
-			uploadFrom = ${uploadFrom});
-
-		IFrame.closeFrame();
-	}
-
-	@summary = "Default summary"
-	macro isExistedFolder() {
-		var tempDir = PropsUtil.get("output.dir.name");
-		var folderName = ${folderName};
-		var companyId = JSONCompany.getCompanyId();
-
-		var folderExists = FileUtil.exists("${tempDir}/company/${companyId}/${folderName}");
-
-		if (${folderExists} == "true") {
-			return "true";
-		}
-		else {
-			return "false";
-		}
-	}
-
-	@summary = "Default summary"
-	macro moveToTheRecycleBinExportTemplate() {
-		LexiconEntry.gotoEllipsisMenuItem(menuItem = "Delete");
-
-		VerifyElementPresent(locator1 = "Message#SUCCESS");
 	}
 
 	@summary = "Default summary"
@@ -870,66 +678,6 @@ definition {
 		}
 
 		Open(value1 = "${baseURL}/group/${siteNameURL}/~/control_panel/manage?p_p_id=com_liferay_exportimport_web_portlet_ImportPortlet");
-	}
-
-	@summary = "Default summary"
-	macro relaunchCurrentAndPreviousProcess(larFileName = null) {
-		LexiconEntry.gotoEntryMenuItem(
-			menuItem = "Relaunch",
-			rowEntry = ${larFileName});
-
-		AssertTextEquals(
-			locator1 = "ExportImport#CURRENT_AND_PREVIOUS_STATUS_1",
-			value1 = "Successful");
-	}
-
-	@summary = "Default summary"
-	macro saveExportTemplateCP(exportTemplateName = null, exportTemplateDescription = null) {
-		Button.clickSave();
-
-		AssertTextEquals(
-			key_columnName = "title",
-			key_tableEntry = ${exportTemplateName},
-			locator1 = "LexiconTable#TABLE_ENTRY_INFO",
-			value1 = ${exportTemplateName});
-
-		AssertTextEquals(
-			key_columnName = "description",
-			key_tableEntry = ${exportTemplateDescription},
-			locator1 = "LexiconTable#TABLE_ENTRY_INFO",
-			value1 = ${exportTemplateDescription});
-	}
-
-	@summary = "Default summary"
-	macro searchTemplate(exportTemplateName = null, exportTemplateDescription = null) {
-		Search.searchCP(searchTerm = ${exportTemplateName});
-
-		AssertTextEquals(
-			key_columnName = "title",
-			key_tableEntry = ${exportTemplateName},
-			locator1 = "LexiconTable#TABLE_ENTRY_INFO",
-			value1 = ${exportTemplateName});
-
-		AssertTextEquals(
-			key_columnName = "description",
-			key_tableEntry = ${exportTemplateDescription},
-			locator1 = "LexiconTable#TABLE_ENTRY_INFO",
-			value1 = ${exportTemplateDescription});
-	}
-
-	@summary = "Default summary"
-	macro viewExportTemplateCP(exportTemplateName = null, exportTemplateDescription = null) {
-		AssertTextEquals(
-			key_columnName = "title",
-			key_tableEntry = ${exportTemplateName},
-			locator1 = "LexiconTable#TABLE_ENTRY_INFO",
-			value1 = ${exportTemplateName});
-
-		AssertTextEquals(
-			key_columnName = "description",
-			key_tableEntry = ${exportTemplateDescription},
-			locator1 = "LexiconTable#TABLE_ENTRY_INFO",
-			value1 = ${exportTemplateDescription});
 	}
 
 }

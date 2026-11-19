@@ -79,19 +79,19 @@ if (!linkCssClass.contains("keep-aria-attributes") && (useDialog || (urlIsNotNul
 </c:choose>
 
 <c:if test="<%= Validator.isNotNull(srcHover) || forcePost || useDialog %>">
-	<aui:script use="liferay-icon">
-		Liferay.Icon.register(
-			{
-				forcePost: <%= forcePost %>,
-				id: '<portlet:namespace /><%= id %>',
+	<aui:script type="module">
+		import {registerIcon} from '<%= FrontendESMUtil.buildURL(themeDisplay, "frontend-js-web", "legacy") %>';
 
-				<c:if test="<%= Validator.isNotNull(srcHover) %>">
-					src: '<%= src %>',
-					srcHover: '<%= srcHover %>',
-				</c:if>
+		registerIcon({
+			forcePost: <%= forcePost %>,
+			id: '<portlet:namespace /><%= id %>',
 
-				useDialog: <%= useDialog %>
-			}
-		);
+			<c:if test="<%= Validator.isNotNull(srcHover) %>">
+				src: '<%= HtmlUtil.escapeJS(src) %>',
+				srcHover: '<%= HtmlUtil.escapeJS(srcHover) %>',
+			</c:if>
+
+			useDialog: <%= useDialog %>,
+		});
 	</aui:script>
 </c:if>

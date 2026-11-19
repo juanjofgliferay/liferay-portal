@@ -46,13 +46,13 @@ import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.PortletConfig;
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.PortletConfig;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletURL;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -63,8 +63,8 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + LoginPortletKeys.FAST_LOGIN,
-		"javax.portlet.name=" + LoginPortletKeys.LOGIN,
+		"jakarta.portlet.name=" + LoginPortletKeys.FAST_LOGIN,
+		"jakarta.portlet.name=" + LoginPortletKeys.LOGIN,
 		"mvc.command.name=/login/create_anonymous_account"
 	},
 	service = MVCActionCommand.class
@@ -90,7 +90,7 @@ public class CreateAnonymousAccountMVCActionCommand
 		throws Exception {
 
 		PortletConfig portletConfig = (PortletConfig)actionRequest.getAttribute(
-			JavaConstants.JAVAX_PORTLET_CONFIG);
+			JavaConstants.JAKARTA_PORTLET_CONFIG);
 
 		String portletName = portletConfig.getPortletName();
 
@@ -144,8 +144,7 @@ public class CreateAnonymousAccountMVCActionCommand
 						PropsKeys.COMPANY_SECURITY_STRANGERS);
 				}
 
-				jsonObject = updateIncompleteUser(
-					actionRequest, actionResponse);
+				jsonObject = _updateIncompleteUser(actionRequest);
 
 				JSONPortletResponseUtil.writeJSON(
 					actionRequest, actionResponse, jsonObject);
@@ -190,67 +189,18 @@ public class CreateAnonymousAccountMVCActionCommand
 		}
 	}
 
-	protected CaptchaConfiguration getCaptchaConfiguration()
+	protected CaptchaConfiguration getCaptchaConfiguration(
+			ActionRequest actionRequest)
 		throws CaptchaConfigurationException {
 
 		try {
-			return _configurationProvider.getSystemConfiguration(
-				CaptchaConfiguration.class);
+			return _configurationProvider.getCompanyConfiguration(
+				CaptchaConfiguration.class,
+				_portal.getCompanyId(actionRequest));
 		}
 		catch (Exception exception) {
 			throw new CaptchaConfigurationException(exception);
 		}
-	}
-
-	protected JSONObject updateIncompleteUser(
-			ActionRequest actionRequest, ActionResponse actionResponse)
-		throws Exception {
-
-		ThemeDisplay themeDisplay = (ThemeDisplay)actionRequest.getAttribute(
-			WebKeys.THEME_DISPLAY);
-
-		ServiceContext serviceContext = ServiceContextFactory.getInstance(
-			User.class.getName(), actionRequest);
-
-		boolean autoPassword = true;
-		String password1 = null;
-		String password2 = null;
-		boolean autoScreenName = false;
-		String screenName = null;
-		String emailAddress = ParamUtil.getString(
-			actionRequest, "emailAddress");
-		long facebookId = 0;
-		String openId = null;
-		String firstName = null;
-		String middleName = null;
-		String lastName = null;
-		long prefixListTypeId = 0;
-		long suffixListTypeId = 0;
-		boolean male = true;
-		int birthdayMonth = 0;
-		int birthdayDay = 1;
-		int birthdayYear = 1970;
-		String jobTitle = null;
-		boolean updateUserInformation = false;
-		boolean sendEmail = true;
-
-		User user = _userService.updateIncompleteUser(
-			themeDisplay.getCompanyId(), autoPassword, password1, password2,
-			autoScreenName, screenName, emailAddress, facebookId, openId,
-			themeDisplay.getLocale(), firstName, middleName, lastName,
-			prefixListTypeId, suffixListTypeId, male, birthdayMonth,
-			birthdayDay, birthdayYear, jobTitle, updateUserInformation,
-			sendEmail, serviceContext);
-
-		return JSONUtil.put(
-			"userStatus",
-			() -> {
-				if (user.getStatus() == WorkflowConstants.STATUS_APPROVED) {
-					return "user_added";
-				}
-
-				return "user_pending";
-			});
 	}
 
 	private void _addAnonymousUser(ActionRequest actionRequest)
@@ -291,7 +241,8 @@ public class CreateAnonymousAccountMVCActionCommand
 
 		serviceContext.setAttribute("anonymousUser", Boolean.TRUE);
 
-		CaptchaConfiguration captchaConfiguration = getCaptchaConfiguration();
+		CaptchaConfiguration captchaConfiguration = getCaptchaConfiguration(
+			actionRequest);
 
 		if (captchaConfiguration.createAccountCaptchaEnabled()) {
 			CaptchaUtil.check(actionRequest);
@@ -308,8 +259,7 @@ public class CreateAnonymousAccountMVCActionCommand
 			roleIds, userGroupIds, sendEmail, serviceContext);
 
 		_userLocalService.updateStatus(
-			user.getUserId(), WorkflowConstants.STATUS_INCOMPLETE,
-			new ServiceContext());
+			user, WorkflowConstants.STATUS_INCOMPLETE, new ServiceContext());
 
 		// Session messages
 
@@ -318,6 +268,56 @@ public class CreateAnonymousAccountMVCActionCommand
 		SessionMessages.add(
 			httpServletRequest, "userAddedPassword",
 			user.getPasswordUnencrypted());
+	}
+
+	private JSONObject _updateIncompleteUser(ActionRequest actionRequest)
+		throws Exception {
+
+		ThemeDisplay themeDisplay = (ThemeDisplay)actionRequest.getAttribute(
+			WebKeys.THEME_DISPLAY);
+
+		boolean autoPassword = true;
+		String password1 = null;
+		String password2 = null;
+		boolean autoScreenName = false;
+		String screenName = null;
+		String emailAddress = ParamUtil.getString(
+			actionRequest, "emailAddress");
+		long facebookId = 0;
+		String openId = null;
+		String firstName = null;
+		String middleName = null;
+		String lastName = null;
+		long prefixListTypeId = 0;
+		long suffixListTypeId = 0;
+		boolean male = true;
+		int birthdayMonth = 0;
+		int birthdayDay = 1;
+		int birthdayYear = 1970;
+		String jobTitle = null;
+		boolean updateUserInformation = false;
+		boolean sendEmail = true;
+
+		ServiceContext serviceContext = ServiceContextFactory.getInstance(
+			User.class.getName(), actionRequest);
+
+		User user = _userService.updateIncompleteUser(
+			themeDisplay.getCompanyId(), autoPassword, password1, password2,
+			autoScreenName, screenName, emailAddress, facebookId, openId,
+			themeDisplay.getLocale(), firstName, middleName, lastName,
+			prefixListTypeId, suffixListTypeId, male, birthdayMonth,
+			birthdayDay, birthdayYear, jobTitle, updateUserInformation,
+			sendEmail, serviceContext);
+
+		return JSONUtil.put(
+			"userStatus",
+			() -> {
+				if (user.getStatus() == WorkflowConstants.STATUS_APPROVED) {
+					return "user_added";
+				}
+
+				return "user_pending";
+			});
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(

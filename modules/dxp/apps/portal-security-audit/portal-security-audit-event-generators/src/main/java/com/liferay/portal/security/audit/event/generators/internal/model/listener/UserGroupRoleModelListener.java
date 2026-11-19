@@ -47,8 +47,8 @@ public class UserGroupRoleModelListener
 
 		try {
 			AuditMessage auditMessage = AuditMessageBuilder.buildAuditMessage(
-				eventType, User.class.getName(), userGroupRole.getUserId(),
-				null);
+				null, User.class.getName(), userGroupRole.getUserId(),
+				eventType, "role", null);
 
 			JSONObject additionalInfoJSONObject =
 				auditMessage.getAdditionalInfo();
@@ -66,6 +66,8 @@ public class UserGroupRoleModelListener
 			).put(
 				"scopeClassPK", group.getClassPK()
 			);
+
+			auditMessage.setCompanyId(role.getCompanyId());
 
 			_auditRouter.route(auditMessage);
 		}

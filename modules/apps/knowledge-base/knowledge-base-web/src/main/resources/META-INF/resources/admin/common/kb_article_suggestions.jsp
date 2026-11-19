@@ -51,7 +51,6 @@ if (ratingsType == null) {
 
 		<aui:form action="<%= updateKBCommentURL %>" cssClass="mb-5" method="post" name="suggestionFm">
 			<aui:input name="<%= Constants.CMD %>" type="hidden" value="<%= Constants.ADD %>" />
-			<aui:input name="classNameId" type="hidden" value="<%= PortalUtil.getClassNameId(KBArticle.class) %>" />
 			<aui:input name="classPK" type="hidden" value="<%= kbArticle.getResourcePrimKey() %>" />
 
 			<liferay-ui:error exception="<%= KBCommentContentException.class %>" message="please-enter-valid-content" />
@@ -72,7 +71,7 @@ if (ratingsType == null) {
 
 	<liferay-ui:success key="suggestionSaved" message="suggestion-was-saved-successfully" />
 
-	<h5 class="mb-0">
+	<div class="h5 mb-0">
 		<c:choose>
 			<c:when test="<%= kbCommentsCount == 1 %>">
 				<c:choose>
@@ -103,7 +102,7 @@ if (ratingsType == null) {
 				</c:choose>
 			</c:when>
 		</c:choose>
-	</h5>
+	</div>
 
 	<c:if test="<%= kbCommentsCount > 0 %>">
 		<c:choose>

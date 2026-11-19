@@ -93,24 +93,24 @@ public class CommercePriceListCacheModel
 		sb.append(createDate);
 		sb.append(", modifiedDate=");
 		sb.append(modifiedDate);
-		sb.append(", commerceCurrencyId=");
-		sb.append(commerceCurrencyId);
 		sb.append(", parentCommercePriceListId=");
 		sb.append(parentCommercePriceListId);
 		sb.append(", catalogBasePriceList=");
 		sb.append(catalogBasePriceList);
-		sb.append(", netPrice=");
-		sb.append(netPrice);
-		sb.append(", type=");
-		sb.append(type);
-		sb.append(", name=");
-		sb.append(name);
-		sb.append(", priority=");
-		sb.append(priority);
+		sb.append(", commerceCurrencyCode=");
+		sb.append(commerceCurrencyCode);
 		sb.append(", displayDate=");
 		sb.append(displayDate);
 		sb.append(", expirationDate=");
 		sb.append(expirationDate);
+		sb.append(", name=");
+		sb.append(name);
+		sb.append(", netPrice=");
+		sb.append(netPrice);
+		sb.append(", priority=");
+		sb.append(priority);
+		sb.append(", type=");
+		sb.append(type);
 		sb.append(", lastPublishDate=");
 		sb.append(lastPublishDate);
 		sb.append(", status=");
@@ -175,27 +175,16 @@ public class CommercePriceListCacheModel
 			commercePriceListImpl.setModifiedDate(new Date(modifiedDate));
 		}
 
-		commercePriceListImpl.setCommerceCurrencyId(commerceCurrencyId);
 		commercePriceListImpl.setParentCommercePriceListId(
 			parentCommercePriceListId);
 		commercePriceListImpl.setCatalogBasePriceList(catalogBasePriceList);
-		commercePriceListImpl.setNetPrice(netPrice);
 
-		if (type == null) {
-			commercePriceListImpl.setType("");
+		if (commerceCurrencyCode == null) {
+			commercePriceListImpl.setCommerceCurrencyCode("");
 		}
 		else {
-			commercePriceListImpl.setType(type);
+			commercePriceListImpl.setCommerceCurrencyCode(commerceCurrencyCode);
 		}
-
-		if (name == null) {
-			commercePriceListImpl.setName("");
-		}
-		else {
-			commercePriceListImpl.setName(name);
-		}
-
-		commercePriceListImpl.setPriority(priority);
 
 		if (displayDate == Long.MIN_VALUE) {
 			commercePriceListImpl.setDisplayDate(null);
@@ -209,6 +198,23 @@ public class CommercePriceListCacheModel
 		}
 		else {
 			commercePriceListImpl.setExpirationDate(new Date(expirationDate));
+		}
+
+		if (name == null) {
+			commercePriceListImpl.setName("");
+		}
+		else {
+			commercePriceListImpl.setName(name);
+		}
+
+		commercePriceListImpl.setNetPrice(netPrice);
+		commercePriceListImpl.setPriority(priority);
+
+		if (type == null) {
+			commercePriceListImpl.setType("");
+		}
+		else {
+			commercePriceListImpl.setType(type);
 		}
 
 		if (lastPublishDate == Long.MIN_VALUE) {
@@ -259,19 +265,18 @@ public class CommercePriceListCacheModel
 		createDate = objectInput.readLong();
 		modifiedDate = objectInput.readLong();
 
-		commerceCurrencyId = objectInput.readLong();
-
 		parentCommercePriceListId = objectInput.readLong();
 
 		catalogBasePriceList = objectInput.readBoolean();
-
-		netPrice = objectInput.readBoolean();
-		type = objectInput.readUTF();
-		name = objectInput.readUTF();
-
-		priority = objectInput.readDouble();
+		commerceCurrencyCode = objectInput.readUTF();
 		displayDate = objectInput.readLong();
 		expirationDate = objectInput.readLong();
+		name = objectInput.readUTF();
+
+		netPrice = objectInput.readBoolean();
+
+		priority = objectInput.readDouble();
+		type = objectInput.readUTF();
 		lastPublishDate = objectInput.readLong();
 
 		status = objectInput.readInt();
@@ -319,20 +324,19 @@ public class CommercePriceListCacheModel
 		objectOutput.writeLong(createDate);
 		objectOutput.writeLong(modifiedDate);
 
-		objectOutput.writeLong(commerceCurrencyId);
-
 		objectOutput.writeLong(parentCommercePriceListId);
 
 		objectOutput.writeBoolean(catalogBasePriceList);
 
-		objectOutput.writeBoolean(netPrice);
-
-		if (type == null) {
+		if (commerceCurrencyCode == null) {
 			objectOutput.writeUTF("");
 		}
 		else {
-			objectOutput.writeUTF(type);
+			objectOutput.writeUTF(commerceCurrencyCode);
 		}
+
+		objectOutput.writeLong(displayDate);
+		objectOutput.writeLong(expirationDate);
 
 		if (name == null) {
 			objectOutput.writeUTF("");
@@ -341,9 +345,17 @@ public class CommercePriceListCacheModel
 			objectOutput.writeUTF(name);
 		}
 
+		objectOutput.writeBoolean(netPrice);
+
 		objectOutput.writeDouble(priority);
-		objectOutput.writeLong(displayDate);
-		objectOutput.writeLong(expirationDate);
+
+		if (type == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(type);
+		}
+
 		objectOutput.writeLong(lastPublishDate);
 
 		objectOutput.writeInt(status);
@@ -371,15 +383,15 @@ public class CommercePriceListCacheModel
 	public String userName;
 	public long createDate;
 	public long modifiedDate;
-	public long commerceCurrencyId;
 	public long parentCommercePriceListId;
 	public boolean catalogBasePriceList;
-	public boolean netPrice;
-	public String type;
-	public String name;
-	public double priority;
+	public String commerceCurrencyCode;
 	public long displayDate;
 	public long expirationDate;
+	public String name;
+	public boolean netPrice;
+	public double priority;
+	public String type;
 	public long lastPublishDate;
 	public int status;
 	public long statusByUserId;
@@ -387,3 +399,4 @@ public class CommercePriceListCacheModel
 	public long statusDate;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-2063411591

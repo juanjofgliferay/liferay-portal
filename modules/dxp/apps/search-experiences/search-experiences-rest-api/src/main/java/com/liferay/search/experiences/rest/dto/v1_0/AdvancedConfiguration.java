@@ -11,25 +11,27 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import com.liferay.petra.function.UnsafeSupplier;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Brian Wing Shun Chan
@@ -50,91 +52,171 @@ public class AdvancedConfiguration implements Serializable {
 			AdvancedConfiguration.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public Collapse getCollapse() {
+		if (_collapseSupplier != null) {
+			collapse = _collapseSupplier.get();
+
+			_collapseSupplier = null;
+		}
+
 		return collapse;
 	}
 
 	public void setCollapse(Collapse collapse) {
 		this.collapse = collapse;
+
+		_collapseSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setCollapse(
 		UnsafeSupplier<Collapse, Exception> collapseUnsafeSupplier) {
 
-		try {
-			collapse = collapseUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_collapseSupplier = () -> {
+			try {
+				return collapseUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Collapse collapse;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Collapse> _collapseSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
+	public String[] getFields() {
+		if (_fieldsSupplier != null) {
+			fields = _fieldsSupplier.get();
+
+			_fieldsSupplier = null;
+		}
+
+		return fields;
+	}
+
+	public void setFields(String[] fields) {
+		this.fields = fields;
+
+		_fieldsSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setFields(
+		UnsafeSupplier<String[], Exception> fieldsUnsafeSupplier) {
+
+		_fieldsSupplier = () -> {
+			try {
+				return fieldsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected String[] fields;
+
+	@JsonIgnore
+	private Supplier<String[]> _fieldsSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public Source getSource() {
+		if (_sourceSupplier != null) {
+			source = _sourceSupplier.get();
+
+			_sourceSupplier = null;
+		}
+
 		return source;
 	}
 
 	public void setSource(Source source) {
 		this.source = source;
+
+		_sourceSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setSource(
 		UnsafeSupplier<Source, Exception> sourceUnsafeSupplier) {
 
-		try {
-			source = sourceUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_sourceSupplier = () -> {
+			try {
+				return sourceUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Source source;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Source> _sourceSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String[] getStored_fields() {
+		if (_stored_fieldsSupplier != null) {
+			stored_fields = _stored_fieldsSupplier.get();
+
+			_stored_fieldsSupplier = null;
+		}
+
 		return stored_fields;
 	}
 
 	public void setStored_fields(String[] stored_fields) {
 		this.stored_fields = stored_fields;
+
+		_stored_fieldsSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setStored_fields(
 		UnsafeSupplier<String[], Exception> stored_fieldsUnsafeSupplier) {
 
-		try {
-			stored_fields = stored_fieldsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_stored_fieldsSupplier = () -> {
+			try {
+				return stored_fieldsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String[] stored_fields;
+
+	@JsonIgnore
+	private Supplier<String[]> _stored_fieldsSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -164,6 +246,8 @@ public class AdvancedConfiguration implements Serializable {
 
 		sb.append("{");
 
+		Collapse collapse = getCollapse();
+
 		if (collapse != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -174,6 +258,34 @@ public class AdvancedConfiguration implements Serializable {
 			sb.append(String.valueOf(collapse));
 		}
 
+		String[] fields = getFields();
+
+		if (fields != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"fields\": ");
+
+			sb.append("[");
+
+			for (int i = 0; i < fields.length; i++) {
+				sb.append("\"");
+
+				sb.append(_escape(fields[i]));
+
+				sb.append("\"");
+
+				if ((i + 1) < fields.length) {
+					sb.append(", ");
+				}
+			}
+
+			sb.append("]");
+		}
+
+		Source source = getSource();
+
 		if (source != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -183,6 +295,8 @@ public class AdvancedConfiguration implements Serializable {
 
 			sb.append(String.valueOf(source));
 		}
+
+		String[] stored_fields = getStored_fields();
 
 		if (stored_fields != null) {
 			if (sb.length() > 1) {
@@ -213,8 +327,8 @@ public class AdvancedConfiguration implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.search.experiences.rest.dto.v1_0.AdvancedConfiguration",
 		name = "x-class-name"
 	)
@@ -260,7 +374,10 @@ public class AdvancedConfiguration implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -298,6 +415,27 @@ public class AdvancedConfiguration implements Serializable {
 		return sb.toString();
 	}
 
+	private static String _toJSON(Object value) {
+		if (value instanceof Collection) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONArray((Collection<?>)value));
+		}
+		else if (value instanceof Map) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONObject((Map<?, ?>)value));
+		}
+		else if (value instanceof Object[]) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONArray(
+					Arrays.asList((Object[])value)));
+		}
+		else if (value instanceof String) {
+			return StringBundler.concat("\"", _escape(value), "\"");
+		}
+
+		return String.valueOf(value);
+	}
+
 	private static final String[][] _JSON_ESCAPE_STRINGS = {
 		{"\\", "\"", "\b", "\f", "\n", "\r", "\t"},
 		{"\\\\", "\\\"", "\\b", "\\f", "\\n", "\\r", "\\t"}
@@ -306,3 +444,4 @@ public class AdvancedConfiguration implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:-1158137027

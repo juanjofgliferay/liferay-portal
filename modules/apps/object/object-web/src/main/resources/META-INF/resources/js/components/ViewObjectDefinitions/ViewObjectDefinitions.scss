@@ -1,4 +1,4 @@
-@import 'atlas-variables';
+@import 'atlas-custom-properties/_variables';
 
 .lfr__object-web-view-object-definitions {
 	display: flex;
@@ -27,20 +27,9 @@
 			margin-bottom: 1rem;
 		}
 
-		&-item {
-			background-color: $gray-200;
-			border: none;
-			margin-bottom: 5px;
-			padding: 0.5rem;
-		}
-
-		&-item-label {
-			max-width: 15rem;
-			padding-left: 8px;
-		}
-
 		&-title {
-			font-weight: 700;
+			font-size: 1rem;
+			font-weight: 600;
 		}
 	}
 
@@ -61,14 +50,10 @@
 	}
 }
 
-.cursor-pointer {
-	cursor: pointer;
-}
-
 .dropdown-menu {
 	width: auto;
 }
 
 .treeview-light .treeview-link.active {
-	background-color: #f0f5ff;
+	background-color: $primary-l3;
 }

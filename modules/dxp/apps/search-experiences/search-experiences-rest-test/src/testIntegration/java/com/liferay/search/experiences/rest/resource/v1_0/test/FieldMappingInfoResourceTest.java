@@ -16,7 +16,6 @@ import com.liferay.search.experiences.rest.client.dto.v1_0.FieldMappingInfo;
 import com.liferay.search.experiences.rest.client.pagination.Page;
 
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -47,12 +46,17 @@ public class FieldMappingInfoResourceTest
 
 			assertValid(page);
 		}
+
+		_testGetFieldMappingInfosPageWithoutExternal();
 	}
 
-	@Ignore
-	@Override
-	@Test
-	public void testGraphQLGetFieldMappingInfosPage() throws Exception {
+	private void _testGetFieldMappingInfosPageWithoutExternal()
+		throws Exception {
+
+		assertHttpResponseStatusCode(
+			200,
+			fieldMappingInfoResource.getFieldMappingInfosPageHttpResponse(
+				null, null, null));
 	}
 
 	@Inject

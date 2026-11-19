@@ -38,10 +38,8 @@ export function Item({index, item, onDropItem}: ItemProps) {
 	const itemDescriptionId = useId();
 	const {name} = item;
 
-	const {
-		handlerRef: mouseDragHandlerRef,
-		isDragging: isMouseDragging,
-	} = useMouseDragItem(item);
+	const {handlerRef: mouseDragHandlerRef, isDragging: isMouseDragging} =
+		useMouseDragItem(item);
 
 	const {
 		dragOverPosition: keyboardDragOverPosition,
@@ -84,13 +82,12 @@ export function Item({index, item, onDropItem}: ItemProps) {
 							<ContentCol gutters>
 								<ClayButton
 									aria-labelledby={`${dragButtonDescriptionId} ${itemDescriptionId}`}
+									className="reorder-list-drag-handle"
 									data-item-id={item.id}
 									displayType="unstyled"
 									monospaced
 									ref={
-										(keyboardDragHandlerRef as unknown) as RefObject<
-											HTMLButtonElement
-										>
+										keyboardDragHandlerRef as unknown as RefObject<HTMLButtonElement>
 									}
 									size="xs"
 									tabIndex={-1}
@@ -104,7 +101,9 @@ export function Item({index, item, onDropItem}: ItemProps) {
 										className="sr-only"
 										id={dragButtonDescriptionId}
 									>
-										{Liferay.Language.get('reorder')}
+										{Liferay.Language.get(
+											'reorder[arrange]'
+										)}
 									</span>
 								</ClayButton>
 							</ContentCol>

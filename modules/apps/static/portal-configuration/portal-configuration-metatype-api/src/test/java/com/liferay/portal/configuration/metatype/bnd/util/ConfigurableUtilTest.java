@@ -9,16 +9,14 @@ import aQute.bnd.annotation.metatype.Meta;
 
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringBundler;
-import com.liferay.portal.kernel.test.SwappableSecurityManager;
+import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.CodeCoverageAssertor;
 import com.liferay.portal.kernel.test.rule.NewEnv;
-import com.liferay.portal.kernel.test.util.ReflectionUtilTestUtil;
 import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
 import com.liferay.portal.kernel.util.PropsUtil;
 import com.liferay.portal.test.rule.AdviseWith;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
-import com.liferay.portal.util.PropsImpl;
 
 import java.util.Collections;
 import java.util.concurrent.Callable;
@@ -30,7 +28,6 @@ import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -46,33 +43,25 @@ public class ConfigurableUtilTest {
 		new AggregateTestRule(
 			CodeCoverageAssertor.INSTANCE, LiferayUnitTestRule.INSTANCE);
 
-	@Before
-	public void setUp() {
-		PropsUtil.setProps(new PropsImpl());
-	}
-
 	@Test
 	public void testBigString() {
 		_testBigString(65535);
 		_testBigString(65536);
 	}
 
-	@NewEnv(type = NewEnv.Type.CLASSLOADER)
 	@Test
-	public void testClassInitializationFailure() throws Exception {
-		SecurityException securityException = new SecurityException();
-
-		try (SwappableSecurityManager swappableSecurityManager =
-				ReflectionUtilTestUtil.throwForSuppressAccessChecks(
-					securityException)) {
-
-			Class.forName(ConfigurableUtil.class.getName());
-
-			Assert.fail();
-		}
-		catch (ExceptionInInitializerError eiie) {
-			Assert.assertSame(securityException, eiie.getCause());
-		}
+	public void testClassInitialization() throws Exception {
+		Assert.assertEquals(
+			ClassLoader.class.getDeclaredMethod(
+				"defineClass", String.class, byte[].class, int.class,
+				int.class),
+			ReflectionTestUtil.getFieldValue(
+				ConfigurableUtil.class, "_defineClassMethod"));
+		Assert.assertEquals(
+			ClassLoader.class.getDeclaredMethod(
+				"findLoadedClass", String.class),
+			ReflectionTestUtil.getFieldValue(
+				ConfigurableUtil.class, "_findLoadedClassMethod"));
 	}
 
 	@AdviseWith(adviceClasses = ConfigurableUtilAdvice.class)
@@ -165,7 +154,7 @@ public class ConfigurableUtilTest {
 
 		// Test dictionary override
 
-		com.liferay.portal.util.PropsUtil.set(
+		PropsUtil.set(
 			"configuration.override." + TestConfiguration.class.getName() +
 				"_testReqiredString",
 			"\"testReqiredString3\"");

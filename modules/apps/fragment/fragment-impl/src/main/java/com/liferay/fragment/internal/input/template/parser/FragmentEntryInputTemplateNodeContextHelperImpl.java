@@ -1,0 +1,1542 @@
+/**
+ * SPDX-FileCopyrightText: (c) 2024 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
+ */
+
+package com.liferay.fragment.internal.input.template.parser;
+
+import com.liferay.depot.constants.DepotConstants;
+import com.liferay.depot.model.DepotEntry;
+import com.liferay.depot.service.DepotEntryLocalService;
+import com.liferay.document.library.helper.DLURLHelper;
+import com.liferay.document.library.kernel.processor.ImageProcessor;
+import com.liferay.document.library.kernel.processor.ImageProcessorUtil;
+import com.liferay.document.library.kernel.service.DLAppLocalService;
+import com.liferay.fragment.constants.FragmentConfigurationFieldDataType;
+import com.liferay.fragment.input.template.parser.FragmentEntryInputTemplateNodeContextHelper;
+import com.liferay.fragment.input.template.parser.InputTemplateNode;
+import com.liferay.fragment.model.FragmentEntryLink;
+import com.liferay.fragment.util.configuration.FragmentConfigurationField;
+import com.liferay.fragment.util.configuration.FragmentEntryConfigurationParser;
+import com.liferay.info.constants.InfoDisplayWebKeys;
+import com.liferay.info.exception.InfoFormValidationException;
+import com.liferay.info.field.InfoField;
+import com.liferay.info.field.InfoFieldValue;
+import com.liferay.info.field.RelatedInfoFieldValue;
+import com.liferay.info.field.type.DateInfoFieldType;
+import com.liferay.info.field.type.DateTimeInfoFieldType;
+import com.liferay.info.field.type.EmailInfoFieldType;
+import com.liferay.info.field.type.FileInfoFieldType;
+import com.liferay.info.field.type.InfoFieldType;
+import com.liferay.info.field.type.LongTextInfoFieldType;
+import com.liferay.info.field.type.MultiselectInfoFieldType;
+import com.liferay.info.field.type.NumberInfoFieldType;
+import com.liferay.info.field.type.OptionInfoFieldType;
+import com.liferay.info.field.type.PhoneNumberInfoFieldType;
+import com.liferay.info.field.type.PicklistMultiselectInfoFieldType;
+import com.liferay.info.field.type.PicklistSelectInfoFieldType;
+import com.liferay.info.field.type.RelationshipInfoFieldType;
+import com.liferay.info.field.type.SelectInfoFieldType;
+import com.liferay.info.field.type.TextInfoFieldType;
+import com.liferay.info.form.InfoForm;
+import com.liferay.info.item.InfoItemEntry;
+import com.liferay.info.item.InfoItemFieldValues;
+import com.liferay.info.item.InfoItemServiceRegistry;
+import com.liferay.info.item.provider.InfoItemFieldValuesProvider;
+import com.liferay.info.localized.InfoLocalizedValue;
+import com.liferay.info.search.InfoSearchClassMapperRegistry;
+import com.liferay.info.type.KeyLocalizedLabelPair;
+import com.liferay.item.selector.ItemSelector;
+import com.liferay.item.selector.criteria.FileEntryItemSelectorReturnType;
+import com.liferay.item.selector.criteria.file.criterion.CustomFileItemSelectorCriterion;
+import com.liferay.layout.constants.LayoutWebKeys;
+import com.liferay.layout.display.page.LayoutDisplayPageObjectProvider;
+import com.liferay.layout.display.page.constants.LayoutDisplayPageWebKeys;
+import com.liferay.layout.page.template.model.LayoutPageTemplateStructure;
+import com.liferay.layout.page.template.service.LayoutPageTemplateStructureLocalService;
+import com.liferay.layout.taglib.constants.LayoutStructureRendererConstants;
+import com.liferay.layout.util.constants.LayoutDataItemTypeConstants;
+import com.liferay.layout.util.structure.FormStyledLayoutStructureItem;
+import com.liferay.layout.util.structure.LayoutStructure;
+import com.liferay.layout.util.structure.LayoutStructureItem;
+import com.liferay.layout.util.structure.LayoutStructureItemUtil;
+import com.liferay.petra.function.transform.TransformUtil;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.exception.InfoFormException;
+import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.json.JSONObject;
+import com.liferay.portal.kernel.language.Language;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.Country;
+import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.model.GroupedModel;
+import com.liferay.portal.kernel.portlet.RequestBackedPortletURLFactoryUtil;
+import com.liferay.portal.kernel.repository.model.FileEntry;
+import com.liferay.portal.kernel.service.CountryLocalService;
+import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
+import com.liferay.portal.kernel.servlet.SessionErrors;
+import com.liferay.portal.kernel.servlet.SessionMessages;
+import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.Constants;
+import com.liferay.portal.kernel.util.DateFormatFactoryUtil;
+import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.HashMapBuilder;
+import com.liferay.portal.kernel.util.HtmlUtil;
+import com.liferay.portal.kernel.util.KeyValuePair;
+import com.liferay.portal.kernel.util.ListUtil;
+import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.ParamUtil;
+import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.PropsValues;
+import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.TempFileEntryUtil;
+import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.kernel.util.WebKeys;
+
+import jakarta.servlet.http.HttpServletRequest;
+
+import java.io.Serializable;
+
+import java.math.BigDecimal;
+
+import java.text.DateFormat;
+
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.TemporalAccessor;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
+
+/**
+ * @author Eudaldo Alonso
+ */
+@Component(service = FragmentEntryInputTemplateNodeContextHelper.class)
+public class FragmentEntryInputTemplateNodeContextHelperImpl
+	implements FragmentEntryInputTemplateNodeContextHelper {
+
+	@Override
+	public InputTemplateNode toInputTemplateNode(
+		Map<String, Serializable> attributes, String defaultInputLabel,
+		FragmentEntryLink fragmentEntryLink,
+		HttpServletRequest httpServletRequest, InfoForm infoForm,
+		Locale locale) {
+
+		String errorMessage = StringPool.BLANK;
+
+		InfoField infoField = null;
+
+		if (infoForm != null) {
+			String fieldName = GetterUtil.getString(
+				_fragmentEntryConfigurationParser.getFieldValue(
+					fragmentEntryLink.getEditableValuesJSONObject(),
+					new FragmentConfigurationField(
+						"inputFieldId", "string", "", false, "text"),
+					locale));
+
+			infoField = infoForm.getInfoField(fieldName);
+		}
+
+		if (SessionErrors.contains(
+				httpServletRequest, InfoFormException.class)) {
+
+			InfoFormException infoFormException =
+				(InfoFormException)SessionErrors.get(
+					httpServletRequest, InfoFormException.class);
+
+			if ((infoField != null) &&
+				(infoFormException instanceof InfoFormValidationException)) {
+
+				InfoFormValidationException infoFormValidationException =
+					(InfoFormValidationException)infoFormException;
+
+				if (_isShowErrorMessage(
+						httpServletRequest, infoField,
+						infoFormValidationException)) {
+
+					errorMessage =
+						infoFormValidationException.getLocalizedMessage(locale);
+
+					SessionErrors.remove(
+						httpServletRequest, InfoFormException.class);
+				}
+			}
+			else if (infoFormException instanceof
+						InfoFormValidationException.InvalidCaptcha) {
+
+				InfoFormValidationException.InvalidCaptcha
+					infoFormValidationExceptionInvalidCaptcha =
+						(InfoFormValidationException.InvalidCaptcha)
+							infoFormException;
+
+				if (fragmentEntryLink.getFragmentEntryLinkId() ==
+						infoFormValidationExceptionInvalidCaptcha.
+							getFragmentEntryLinkId()) {
+
+					errorMessage = infoFormException.getLocalizedMessage(
+						locale);
+
+					SessionErrors.remove(
+						httpServletRequest, InfoFormException.class);
+				}
+			}
+		}
+
+		String inputHelpText = GetterUtil.getString(
+			_fragmentEntryConfigurationParser.getFieldValue(
+				fragmentEntryLink.getEditableValuesJSONObject(),
+				new FragmentConfigurationField(
+					"inputHelpText", "string",
+					_language.get(locale, "add-your-help-text-here"), true,
+					"text"),
+				locale));
+
+		if (infoField != null) {
+			defaultInputLabel = infoField.getLabel(locale);
+		}
+
+		String inputLabel = _getInputLabel(
+			defaultInputLabel, fragmentEntryLink.getEditableValuesJSONObject(),
+			infoField, locale);
+
+		boolean localizable = false;
+		String name = "name";
+		boolean readOnly = false;
+
+		if (infoField != null) {
+			name = _getName(httpServletRequest, infoField);
+			readOnly = infoField.isReadOnly();
+			localizable = infoField.isLocalizable();
+		}
+
+		boolean inputReadOnly = GetterUtil.getBoolean(
+			_fragmentEntryConfigurationParser.getFieldValue(
+				fragmentEntryLink.getEditableValuesJSONObject(),
+				new FragmentConfigurationField(
+					"inputReadOnly", "boolean", "false", false, "checkbox"),
+				locale));
+		String layoutMode = ParamUtil.getString(
+			httpServletRequest, "p_l_mode", Constants.VIEW);
+
+		if (inputReadOnly || Objects.equals(layoutMode, Constants.READ)) {
+			readOnly = true;
+		}
+
+		boolean required = false;
+
+		if (((infoField != null) && infoField.isRequired()) ||
+			GetterUtil.getBoolean(
+				_fragmentEntryConfigurationParser.getFieldValue(
+					fragmentEntryLink.getEditableValuesJSONObject(),
+					new FragmentConfigurationField(
+						"inputRequired", "boolean", "false", false, "checkbox"),
+					locale))) {
+
+			required = true;
+		}
+
+		boolean inputShowHelpText = GetterUtil.getBoolean(
+			_fragmentEntryConfigurationParser.getFieldValue(
+				fragmentEntryLink.getEditableValuesJSONObject(),
+				new FragmentConfigurationField(
+					"inputShowHelpText", "boolean", "false", false, "checkbox"),
+				locale));
+
+		boolean inputShowLabel = GetterUtil.getBoolean(
+			_fragmentEntryConfigurationParser.getFieldValue(
+				fragmentEntryLink.getEditableValuesJSONObject(),
+				new FragmentConfigurationField(
+					"inputShowLabel", "boolean", "true", false, "checkbox"),
+				locale));
+
+		if (infoField == null) {
+			InputTemplateNode inputTemplateNode = new InputTemplateNode(
+				errorMessage, inputHelpText, inputLabel, localizable, name,
+				readOnly, required, inputShowHelpText, inputShowLabel, "type",
+				StringPool.BLANK, Collections.emptyMap());
+
+			for (Map.Entry<String, Serializable> entry :
+					attributes.entrySet()) {
+
+				inputTemplateNode.addAttribute(
+					entry.getKey(), entry.getValue());
+			}
+
+			return inputTemplateNode;
+		}
+
+		InfoFieldType infoFieldType = infoField.getInfoFieldType();
+
+		String label = StringPool.BLANK;
+		String value = StringPool.BLANK;
+
+		if (infoFieldType instanceof MultiselectInfoFieldType) {
+			List<OptionInfoFieldType> optionInfoFieldTypes =
+				(List<OptionInfoFieldType>)infoField.getAttribute(
+					MultiselectInfoFieldType.OPTIONS);
+
+			if (optionInfoFieldTypes == null) {
+				optionInfoFieldTypes = Collections.emptyList();
+			}
+
+			for (OptionInfoFieldType optionInfoFieldType :
+					optionInfoFieldTypes) {
+
+				if (optionInfoFieldType.isActive()) {
+					label = optionInfoFieldType.getLabel(locale);
+					value = optionInfoFieldType.getValue();
+
+					break;
+				}
+			}
+		}
+		else if (infoFieldType instanceof SelectInfoFieldType) {
+			List<OptionInfoFieldType> optionInfoFieldTypes =
+				(List<OptionInfoFieldType>)infoField.getAttribute(
+					SelectInfoFieldType.OPTIONS);
+
+			if (optionInfoFieldTypes == null) {
+				optionInfoFieldTypes = Collections.emptyList();
+			}
+
+			for (OptionInfoFieldType optionInfoFieldType :
+					optionInfoFieldTypes) {
+
+				if (optionInfoFieldType.isActive()) {
+					label = optionInfoFieldType.getLabel(locale);
+					value = optionInfoFieldType.getValue();
+
+					break;
+				}
+			}
+		}
+
+		Map<Locale, String> valueI18n = new HashMap<>();
+
+		Map<String, String> infoFormParameterMap =
+			(Map<String, String>)SessionMessages.get(
+				httpServletRequest, "infoFormParameterMap");
+
+		long groupId = _getGroupId(httpServletRequest);
+
+		Set<Locale> availableLocales = _language.getAvailableLocales(groupId);
+
+		Locale siteDefaultLocale = _getSiteDefaultLocale(
+			groupId, httpServletRequest, locale);
+
+		Locale currentLocale = _getCurrentLocale(
+			availableLocales, locale, siteDefaultLocale);
+
+		if (infoFormParameterMap != null) {
+			label = String.valueOf(
+				infoFormParameterMap.get(infoField.getUniqueId() + "-label"));
+
+			Object infoParameterMapValue = _getInfoParameterMapValue(
+				infoField, infoFormParameterMap, httpServletRequest);
+
+			if (infoParameterMapValue instanceof Map) {
+				Map<Locale, String> map =
+					(Map<Locale, String>)infoParameterMapValue;
+
+				value = String.valueOf(map.get(currentLocale));
+				valueI18n = map;
+			}
+			else {
+				value = String.valueOf(infoParameterMapValue);
+			}
+		}
+		else {
+			Object infoFieldValue = _getValue(
+				value, httpServletRequest, infoField, infoForm.getName(),
+				currentLocale);
+
+			if (infoFieldValue instanceof KeyValuePair) {
+				KeyValuePair keyValuePair = (KeyValuePair)infoFieldValue;
+
+				label = keyValuePair.getValue();
+				value = keyValuePair.getKey();
+			}
+			else if (infoFieldValue instanceof Map) {
+				Map<Locale, String> map = (Map<Locale, String>)infoFieldValue;
+
+				value = map.get(currentLocale);
+				valueI18n = map;
+			}
+			else {
+				value = String.valueOf(infoFieldValue);
+			}
+		}
+
+		value = HtmlUtil.escape(value);
+
+		Map<Locale, String> escapedValueI18n = new HashMap<>();
+
+		for (Map.Entry<Locale, String> entry : valueI18n.entrySet()) {
+			escapedValueI18n.put(
+				entry.getKey(), HtmlUtil.escape(entry.getValue()));
+		}
+
+		valueI18n = escapedValueI18n;
+
+		InputTemplateNode inputTemplateNode = new InputTemplateNode(
+			errorMessage, inputHelpText, inputLabel, localizable, name,
+			readOnly, required, inputShowHelpText, inputShowLabel,
+			infoFieldType.getName(), value, valueI18n);
+
+		_addInputTemplateNodeAttributes(
+			attributes, availableLocales, fragmentEntryLink, groupId,
+			httpServletRequest, infoField, inputTemplateNode, label, locale,
+			siteDefaultLocale, value, valueI18n);
+
+		if (!localizable) {
+			_addLocalizationOptionsAttributes(
+				fragmentEntryLink, httpServletRequest, inputLabel,
+				inputTemplateNode, locale);
+		}
+
+		return inputTemplateNode;
+	}
+
+	private void _addEmailInfoFieldTypeInputTemplateNodeAttributes(
+		InfoField infoField, InputTemplateNode inputTemplateNode) {
+
+		inputTemplateNode.addAttribute(
+			"preferredDomains",
+			infoField.getAttribute(EmailInfoFieldType.PREFERRED_DOMAINS));
+	}
+
+	private void _addFileInfoFieldTypeInputTemplateNodeAttributes(
+		FragmentEntryLink fragmentEntryLink, long groupId,
+		HttpServletRequest httpServletRequest, InfoField infoField,
+		InputTemplateNode inputTemplateNode, String value,
+		Map<Locale, String> valueI18n) {
+
+		String allowedFileExtensions = _getAllowedFileExtensions(
+			(String)infoField.getAttribute(
+				FileInfoFieldType.ALLOWED_FILE_EXTENSIONS));
+
+		inputTemplateNode.addAttribute(
+			"allowedFileExtensions", allowedFileExtensions);
+
+		Long maximumFileSize = (Long)infoField.getAttribute(
+			FileInfoFieldType.MAX_FILE_SIZE);
+
+		if (maximumFileSize == null) {
+			maximumFileSize = 0L;
+		}
+
+		inputTemplateNode.addAttribute("maxFileSize", maximumFileSize);
+
+		FileInfoFieldType.FileSourceType fileSourceType =
+			(FileInfoFieldType.FileSourceType)infoField.getAttribute(
+				FileInfoFieldType.FILE_SOURCE);
+
+		if (fileSourceType == null) {
+			return;
+		}
+
+		FileEntry fileEntry = _fetchFileEntry(value);
+
+		String fileName = _getFileName(fileEntry, fileSourceType);
+
+		if (fileName != null) {
+			inputTemplateNode.addAttribute("fileName", fileName);
+		}
+
+		Map<String, String> fileNameI18n = new HashMap<>();
+		Map<String, String> previewURLI18n = new HashMap<>();
+
+		for (Map.Entry<Locale, String> entry : valueI18n.entrySet()) {
+			FileEntry localizedFileEntry = _fetchFileEntry(entry.getValue());
+
+			String localizedFileName = _getFileName(
+				localizedFileEntry, fileSourceType);
+
+			if (localizedFileName != null) {
+				fileNameI18n.put(
+					_language.getLanguageId(entry.getKey()), localizedFileName);
+			}
+
+			String localizedPreviewURL = _getPreviewURL(
+				localizedFileEntry, httpServletRequest);
+
+			if (localizedPreviewURL == null) {
+				continue;
+			}
+
+			previewURLI18n.put(
+				_language.getLanguageId(entry.getKey()), localizedPreviewURL);
+		}
+
+		inputTemplateNode.addAttribute("fileNameI18n", fileNameI18n);
+
+		inputTemplateNode.addAttribute("groupId", groupId);
+
+		ThemeDisplay themeDisplay =
+			(ThemeDisplay)httpServletRequest.getAttribute(
+				WebKeys.THEME_DISPLAY);
+
+		Group group = themeDisplay.getScopeGroup();
+
+		inputTemplateNode.addAttribute("isCMS", _isCMSGroup(group));
+
+		String previewURL = _getPreviewURL(fileEntry, httpServletRequest);
+
+		if (previewURL != null) {
+			inputTemplateNode.addAttribute("previewURL", previewURL);
+		}
+
+		inputTemplateNode.addAttribute("previewURLI18n", previewURLI18n);
+
+		boolean selectFromDocumentLibrary = false;
+
+		if (fileSourceType ==
+				FileInfoFieldType.FileSourceType.DOCUMENTS_AND_MEDIA) {
+
+			selectFromDocumentLibrary = true;
+		}
+
+		inputTemplateNode.addAttribute(
+			"selectFromDocumentLibrary", selectFromDocumentLibrary);
+
+		if (selectFromDocumentLibrary &&
+			Validator.isNotNull(allowedFileExtensions)) {
+
+			CustomFileItemSelectorCriterion customFileItemSelectorCriterion =
+				new CustomFileItemSelectorCriterion();
+
+			customFileItemSelectorCriterion.setExtensions(
+				StringUtil.split(allowedFileExtensions));
+			customFileItemSelectorCriterion.setMaxFileSize(maximumFileSize);
+
+			customFileItemSelectorCriterion.setDesiredItemSelectorReturnTypes(
+				new FileEntryItemSelectorReturnType());
+
+			inputTemplateNode.addAttribute(
+				"selectFromDocumentLibraryURL",
+				String.valueOf(
+					_itemSelector.getItemSelectorURL(
+						RequestBackedPortletURLFactoryUtil.create(
+							httpServletRequest),
+						fragmentEntryLink.getNamespace() + "selectFileEntry",
+						customFileItemSelectorCriterion)));
+		}
+	}
+
+	private void _addInputTemplateNodeAttributes(
+		Map<String, Serializable> attributes, Set<Locale> availableLocales,
+		FragmentEntryLink fragmentEntryLink, long groupId,
+		HttpServletRequest httpServletRequest, InfoField infoField,
+		InputTemplateNode inputTemplateNode, String label, Locale locale,
+		Locale siteDefaultLocale, String value, Map<Locale, String> valueI18n) {
+
+		if (infoField.getInfoFieldType() instanceof EmailInfoFieldType) {
+			_addEmailInfoFieldTypeInputTemplateNodeAttributes(
+				infoField, inputTemplateNode);
+		}
+		else if (infoField.getInfoFieldType() instanceof FileInfoFieldType) {
+			_addFileInfoFieldTypeInputTemplateNodeAttributes(
+				fragmentEntryLink, groupId, httpServletRequest, infoField,
+				inputTemplateNode, value, valueI18n);
+		}
+		else if (infoField.getInfoFieldType() instanceof
+					LongTextInfoFieldType) {
+
+			_addLongTextInfoFieldTypeInputTemplateNodeAttributes(
+				infoField, inputTemplateNode);
+		}
+		else if (infoField.getInfoFieldType() instanceof
+					MultiselectInfoFieldType) {
+
+			_addMultiselectInfoFieldTypeInputTemplateNodeAttributes(
+				infoField, inputTemplateNode, locale);
+		}
+		else if (infoField.getInfoFieldType() instanceof NumberInfoFieldType) {
+			_addNumberInfoFieldTypeInputTemplateNodeAttributes(
+				infoField, inputTemplateNode);
+		}
+		else if (infoField.getInfoFieldType() instanceof
+					PhoneNumberInfoFieldType) {
+
+			_addPhoneNumberInfoFieldTypeInputTemplateNodeAttributes(
+				infoField, inputTemplateNode, locale);
+		}
+		else if (infoField.getInfoFieldType() instanceof
+					RelationshipInfoFieldType) {
+
+			_addRelationshipInfoFieldTypeInputTemplateNodeAttributes(
+				infoField, inputTemplateNode, label, value);
+		}
+		else if (infoField.getInfoFieldType() instanceof SelectInfoFieldType) {
+			_addSelectInfoFieldTypeInputTemplateNodeAttributes(
+				infoField, inputTemplateNode, locale, value);
+		}
+		else if (infoField.getInfoFieldType() instanceof TextInfoFieldType) {
+			_addTextInfoFieldTypeInputTemplateNodeAttributes(
+				infoField, inputTemplateNode);
+		}
+
+		inputTemplateNode.addAttribute(
+			"availableLanguageIds", LocaleUtil.toLanguageIds(availableLocales));
+		inputTemplateNode.addAttribute(
+			"defaultLanguageId", LocaleUtil.toLanguageId(siteDefaultLocale));
+
+		for (Map.Entry<String, Serializable> entry : attributes.entrySet()) {
+			inputTemplateNode.addAttribute(entry.getKey(), entry.getValue());
+		}
+	}
+
+	private void _addLocalizationOptionsAttributes(
+		FragmentEntryLink fragmentEntryLink,
+		HttpServletRequest httpServletRequest, String inputLabel,
+		InputTemplateNode inputTemplateNode, Locale locale) {
+
+		LayoutStructure layoutStructure = null;
+
+		if (httpServletRequest != null) {
+			layoutStructure = (LayoutStructure)httpServletRequest.getAttribute(
+				LayoutWebKeys.LAYOUT_STRUCTURE);
+		}
+
+		if (layoutStructure == null) {
+			LayoutPageTemplateStructure layoutPageTemplateStructure =
+				_layoutPageTemplateStructureLocalService.
+					fetchLayoutPageTemplateStructure(
+						fragmentEntryLink.getGroupId(),
+						fragmentEntryLink.getPlid());
+
+			layoutStructure = LayoutStructure.of(
+				layoutPageTemplateStructure.getData(
+					fragmentEntryLink.getSegmentsExperienceId()));
+		}
+
+		LayoutStructureItem layoutStructureItem =
+			layoutStructure.getLayoutStructureItemByFragmentEntryLinkId(
+				fragmentEntryLink.getFragmentEntryLinkId());
+
+		if (layoutStructureItem == null) {
+			return;
+		}
+
+		LayoutStructureItem ancestorLayoutStructureItem =
+			LayoutStructureItemUtil.getAncestor(
+				layoutStructureItem.getItemId(),
+				LayoutDataItemTypeConstants.TYPE_FORM, layoutStructure);
+
+		if (ancestorLayoutStructureItem == null) {
+			return;
+		}
+
+		FormStyledLayoutStructureItem formStyledLayoutStructureItem =
+			(FormStyledLayoutStructureItem)ancestorLayoutStructureItem;
+
+		JSONObject localizationConfigJSONObject =
+			formStyledLayoutStructureItem.getLocalizationConfigJSONObject();
+
+		if (localizationConfigJSONObject == null) {
+			inputTemplateNode.addAttribute(
+				"unlocalizedFieldsMessage",
+				_language.format(
+					locale, "x-field-cannot-be-localized",
+					HtmlUtil.escape(inputLabel)));
+			inputTemplateNode.addAttribute(
+				"unlocalizedFieldsState", "disabled");
+
+			return;
+		}
+
+		inputTemplateNode.addAttribute(
+			"unlocalizedFieldsState",
+			localizationConfigJSONObject.getString(
+				"unlocalizedFieldsState", "disabled"));
+
+		JSONObject jsonObject = localizationConfigJSONObject.getJSONObject(
+			"unlocalizedFieldsMessage");
+
+		String unlocalizedFieldsMessage = StringPool.BLANK;
+
+		if (jsonObject != null) {
+			unlocalizedFieldsMessage = HtmlUtil.escape(
+				jsonObject.getString(
+					_language.getLanguageId(locale),
+					jsonObject.getString(
+						_language.getLanguageId(LocaleUtil.getSiteDefault()))));
+		}
+
+		if (Validator.isNull(unlocalizedFieldsMessage)) {
+			unlocalizedFieldsMessage = _language.get(
+				locale, "this-field-cannot-be-localized");
+		}
+
+		inputTemplateNode.addAttribute(
+			"unlocalizedFieldsMessage", unlocalizedFieldsMessage);
+	}
+
+	private void _addLongTextInfoFieldTypeInputTemplateNodeAttributes(
+		InfoField infoField, InputTemplateNode inputTemplateNode) {
+
+		inputTemplateNode.addAttribute(
+			"maxLength",
+			infoField.getAttribute(LongTextInfoFieldType.MAX_LENGTH));
+	}
+
+	private void _addMultiselectInfoFieldTypeInputTemplateNodeAttributes(
+		InfoField infoField, InputTemplateNode inputTemplateNode,
+		Locale locale) {
+
+		inputTemplateNode.addAttribute(
+			"options",
+			TransformUtil.transform(
+				(List<OptionInfoFieldType>)infoField.getAttribute(
+					MultiselectInfoFieldType.OPTIONS),
+				optionInfoFieldType -> new InputTemplateNode.Option(
+					optionInfoFieldType.getLabel(locale),
+					optionInfoFieldType.getValue())));
+	}
+
+	private void _addNumberInfoFieldTypeInputTemplateNodeAttributes(
+		InfoField infoField, InputTemplateNode inputTemplateNode) {
+
+		String dataType = "integer";
+
+		if (GetterUtil.getBoolean(
+				infoField.getAttribute(NumberInfoFieldType.DECIMAL))) {
+
+			dataType = "decimal";
+
+			Integer decimalPartMaxLength = (Integer)infoField.getAttribute(
+				NumberInfoFieldType.DECIMAL_PART_MAX_LENGTH);
+
+			if (decimalPartMaxLength != null) {
+				inputTemplateNode.addAttribute(
+					"step", _getStep(decimalPartMaxLength));
+			}
+		}
+
+		inputTemplateNode.addAttribute("dataType", dataType);
+
+		BigDecimal maxValue = (BigDecimal)infoField.getAttribute(
+			NumberInfoFieldType.MAX_VALUE);
+
+		if (maxValue != null) {
+			inputTemplateNode.addAttribute("max", maxValue);
+		}
+
+		BigDecimal minValue = (BigDecimal)infoField.getAttribute(
+			NumberInfoFieldType.MIN_VALUE);
+
+		if (minValue != null) {
+			inputTemplateNode.addAttribute("min", minValue);
+		}
+	}
+
+	private void _addPhoneNumberInfoFieldTypeInputTemplateNodeAttributes(
+		InfoField infoField, InputTemplateNode inputTemplateNode,
+		Locale locale) {
+
+		inputTemplateNode.addAttribute("countries", _getCountries(locale));
+		inputTemplateNode.addAttribute(
+			"country",
+			infoField.getAttribute(PhoneNumberInfoFieldType.COUNTRY));
+		inputTemplateNode.addAttribute(
+			"countrySource",
+			infoField.getAttribute(PhoneNumberInfoFieldType.COUNTRY_SOURCE));
+	}
+
+	private void _addRelationshipInfoFieldTypeInputTemplateNodeAttributes(
+		InfoField infoField, InputTemplateNode inputTemplateNode, String label,
+		String value) {
+
+		inputTemplateNode.addAttribute(
+			"relationshipLabelFieldName",
+			infoField.getAttribute(RelationshipInfoFieldType.LABEL_FIELD_NAME));
+		inputTemplateNode.addAttribute(
+			"relationshipURL",
+			infoField.getAttribute(RelationshipInfoFieldType.URL));
+		inputTemplateNode.addAttribute(
+			"relationshipValueFieldName",
+			infoField.getAttribute(RelationshipInfoFieldType.VALUE_FIELD_NAME));
+
+		if (Validator.isNotNull(label)) {
+			inputTemplateNode.addAttribute(
+				"selectedOptionLabel", HtmlUtil.escape(label));
+		}
+
+		if (Validator.isNotNull(value)) {
+			inputTemplateNode.addAttribute("selectedOptionValue", value);
+		}
+	}
+
+	private void _addSelectInfoFieldTypeInputTemplateNodeAttributes(
+		InfoField infoField, InputTemplateNode inputTemplateNode, Locale locale,
+		String value) {
+
+		List<InputTemplateNode.Option> options = new ArrayList<>();
+
+		List<OptionInfoFieldType> optionInfoFieldTypes =
+			(List<OptionInfoFieldType>)infoField.getAttribute(
+				SelectInfoFieldType.OPTIONS);
+
+		if (optionInfoFieldTypes == null) {
+			optionInfoFieldTypes = Collections.emptyList();
+		}
+
+		for (OptionInfoFieldType optionInfoFieldType : optionInfoFieldTypes) {
+			options.add(
+				new InputTemplateNode.Option(
+					optionInfoFieldType.getLabel(locale),
+					optionInfoFieldType.getValue()));
+
+			if ((value == null) ||
+				!value.equals(optionInfoFieldType.getValue())) {
+
+				continue;
+			}
+
+			inputTemplateNode.addAttribute(
+				"selectedOptionLabel",
+				HtmlUtil.escape(optionInfoFieldType.getLabel(locale)));
+			inputTemplateNode.addAttribute("selectedOptionValue", value);
+		}
+
+		inputTemplateNode.addAttribute("options", options);
+	}
+
+	private void _addTextInfoFieldTypeInputTemplateNodeAttributes(
+		InfoField infoField, InputTemplateNode inputTemplateNode) {
+
+		inputTemplateNode.addAttribute(
+			"maxLength", infoField.getAttribute(TextInfoFieldType.MAX_LENGTH));
+	}
+
+	private FileEntry _fetchFileEntry(String value) {
+		if (Validator.isNull(value)) {
+			return null;
+		}
+
+		long fileEntryId = GetterUtil.getLong(value);
+
+		try {
+			return _dlAppLocalService.fetchFileEntry(fileEntryId);
+		}
+		catch (PortalException portalException) {
+			if (_log.isWarnEnabled()) {
+				_log.warn(
+					"Unable to get file entry " + fileEntryId, portalException);
+			}
+
+			return null;
+		}
+	}
+
+	private String _getAllowedFileExtensions(String allowedFileExtensions) {
+		if (Validator.isNull(allowedFileExtensions)) {
+			return StringPool.BLANK;
+		}
+
+		if (allowedFileExtensions.contains(StringPool.STAR)) {
+			return StringPool.STAR;
+		}
+
+		String[] allowedFileExtensionsArray = StringUtil.split(
+			allowedFileExtensions);
+
+		StringBundler sb = new StringBundler(
+			(allowedFileExtensionsArray.length * 3) - 1);
+
+		for (String allowedFileExtension : allowedFileExtensionsArray) {
+			sb.append(StringPool.PERIOD);
+			sb.append(allowedFileExtension.trim());
+			sb.append(StringPool.COMMA);
+		}
+
+		sb.setIndex(sb.index() - 1);
+
+		return sb.toString();
+	}
+
+	private List<Map<String, Object>> _getCountries(Locale locale) {
+		ServiceContext serviceContext =
+			ServiceContextThreadLocal.getServiceContext();
+
+		if (serviceContext == null) {
+			return Collections.emptyList();
+		}
+
+		long companyId = serviceContext.getCompanyId();
+
+		if (companyId == 0) {
+			return Collections.emptyList();
+		}
+
+		Set<String> a2s = new HashSet<>();
+
+		for (String languageId : PropsValues.LOCALES) {
+			Locale availableLocale = LocaleUtil.fromLanguageId(
+				languageId, false);
+
+			String a2 = availableLocale.getCountry();
+
+			if (Validator.isNull(a2)) {
+				continue;
+			}
+
+			a2s.add(a2);
+		}
+
+		List<Map<String, Object>> countries = new ArrayList<>();
+
+		String languageId = LocaleUtil.toLanguageId(locale);
+
+		for (Country country :
+				_countryLocalService.getCompanyCountries(companyId, true)) {
+
+			String a2 = country.getA2();
+
+			if (!a2s.contains(a2)) {
+				continue;
+			}
+
+			String idd = country.getIdd();
+
+			if (Validator.isNull(idd)) {
+				continue;
+			}
+
+			countries.add(
+				HashMapBuilder.<String, Object>put(
+					"a2", a2
+				).put(
+					"name", country.getTitle(languageId)
+				).put(
+					"prefix", idd
+				).build());
+		}
+
+		return ListUtil.sort(
+			countries,
+			Comparator.comparing(country -> (String)country.get("name")));
+	}
+
+	private Locale _getCurrentLocale(
+		Set<Locale> availableLocales, Locale locale, Locale siteDefaultLocale) {
+
+		if (availableLocales.contains(locale)) {
+			return locale;
+		}
+
+		return siteDefaultLocale;
+	}
+
+	private String _getFileName(
+		FileEntry fileEntry, FileInfoFieldType.FileSourceType fileSourceType) {
+
+		if (fileEntry == null) {
+			return null;
+		}
+
+		if (fileSourceType ==
+				FileInfoFieldType.FileSourceType.DOCUMENTS_AND_MEDIA) {
+
+			return fileEntry.getFileName();
+		}
+
+		if (fileSourceType == FileInfoFieldType.FileSourceType.USER_COMPUTER) {
+			return TempFileEntryUtil.getOriginalTempFileName(
+				fileEntry.getFileName());
+		}
+
+		return null;
+	}
+
+	private long _getGroupId(HttpServletRequest httpServletRequest) {
+		Object infoItem = httpServletRequest.getAttribute(
+			InfoDisplayWebKeys.INFO_ITEM);
+
+		if (infoItem instanceof GroupedModel) {
+			GroupedModel groupedModel = (GroupedModel)infoItem;
+
+			return groupedModel.getGroupId();
+		}
+
+		ThemeDisplay themeDisplay =
+			(ThemeDisplay)httpServletRequest.getAttribute(
+				WebKeys.THEME_DISPLAY);
+
+		return themeDisplay.getScopeGroupId();
+	}
+
+	private InfoFieldValue<?> _getInfoFieldValue(
+		List<InfoFieldValue<Object>> infoFieldValues) {
+
+		if (ListUtil.isEmpty(infoFieldValues)) {
+			return null;
+		}
+
+		for (InfoFieldValue<Object> infoFieldValue : infoFieldValues) {
+			InfoField infoField = infoFieldValue.getInfoField();
+
+			String uniqueId = infoField.getUniqueId();
+
+			if (!uniqueId.contains(StringPool.POUND)) {
+				return infoFieldValue;
+			}
+		}
+
+		return null;
+	}
+
+	private Object _getInfoParameterMapValue(
+		InfoField infoField, Map<String, String> infoFormParameterMap,
+		HttpServletRequest httpServletRequest) {
+
+		Object infoParameterMapValue = infoFormParameterMap.get(
+			infoField.getUniqueId());
+
+		InfoItemEntry infoItemEntry =
+			(InfoItemEntry)httpServletRequest.getAttribute(
+				LayoutStructureRendererConstants.LAYOUT_INFO_ITEM_ENTRY);
+
+		if ((infoItemEntry != null) &&
+			Validator.isNotNull(infoItemEntry.getExternalReferenceCode())) {
+
+			infoParameterMapValue = infoItemEntry.getValue(
+				infoField.getUniqueId());
+		}
+
+		if ((infoParameterMapValue == null) ||
+			(infoParameterMapValue instanceof RelatedInfoFieldValue<?>)) {
+
+			return StringPool.BLANK;
+		}
+
+		if (infoParameterMapValue instanceof Map) {
+			return _parseLocalizedValues(
+				infoField, (Map<Locale, ?>)infoParameterMapValue);
+		}
+
+		return infoParameterMapValue;
+	}
+
+	private String _getInputLabel(
+		String defaultInputLabel, JSONObject editableValuesJSONObject,
+		InfoField<?> infoField, Locale locale) {
+
+		String inputLabel = null;
+
+		JSONObject inputLabelJSONObject =
+			(JSONObject)
+				_fragmentEntryConfigurationParser.getConfigurationFieldValue(
+					editableValuesJSONObject, "inputLabel",
+					FragmentConfigurationFieldDataType.OBJECT);
+
+		if (inputLabelJSONObject != null) {
+			inputLabel = inputLabelJSONObject.getString(
+				_language.getLanguageId(locale));
+		}
+
+		if (Validator.isNull(inputLabel) && (infoField != null)) {
+			InfoLocalizedValue<String> labelInfoLocalizedValue =
+				infoField.getLabelInfoLocalizedValue();
+
+			Set<Locale> availableLocales =
+				labelInfoLocalizedValue.getAvailableLocales();
+
+			if (availableLocales.contains(locale)) {
+				inputLabel = labelInfoLocalizedValue.getValue(locale);
+			}
+			else if (inputLabelJSONObject != null) {
+				inputLabel = inputLabelJSONObject.getString(
+					_language.getLanguageId(LocaleUtil.getSiteDefault()));
+			}
+		}
+
+		if (Validator.isNull(inputLabel) && (infoField != null)) {
+			inputLabel = infoField.getLabel(locale);
+		}
+
+		if (Validator.isNotNull(inputLabel)) {
+			return inputLabel;
+		}
+
+		return defaultInputLabel;
+	}
+
+	private String _getName(
+		HttpServletRequest httpServletRequest, InfoField<?> infoField) {
+
+		String parentExternalReferenceCode =
+			(String)httpServletRequest.getAttribute(
+				LayoutStructureRendererConstants.
+					LAYOUT_PARENT_ITEM_EXTERNAL_REFERENCE_CODE);
+		String relatedItemExternalReferenceCode =
+			(String)httpServletRequest.getAttribute(
+				LayoutStructureRendererConstants.
+					LAYOUT_RELATED_ITEM_EXTERNAL_REFERENCE_CODE);
+
+		if (Validator.isNotNull(parentExternalReferenceCode) &&
+			Validator.isNotNull(relatedItemExternalReferenceCode)) {
+
+			return StringBundler.concat(
+				infoField.getUniqueId(), "[$", relatedItemExternalReferenceCode,
+				StringPool.DOLLAR, parentExternalReferenceCode, "$]");
+		}
+
+		return infoField.getUniqueId();
+	}
+
+	private String _getPreviewURL(
+		FileEntry fileEntry, HttpServletRequest httpServletRequest) {
+
+		if (fileEntry == null) {
+			return null;
+		}
+
+		ImageProcessor imageProcessor = ImageProcessorUtil.getImageProcessor();
+
+		if (imageProcessor.isImageSupported(fileEntry.getMimeType())) {
+			try {
+				return _dlURLHelper.getPreviewURL(
+					fileEntry, fileEntry.getFileVersion(),
+					(ThemeDisplay)httpServletRequest.getAttribute(
+						WebKeys.THEME_DISPLAY),
+					StringPool.BLANK, false, false);
+			}
+			catch (Exception exception) {
+				_log.error(exception);
+
+				return null;
+			}
+		}
+
+		return null;
+	}
+
+	private List<String> _getSelectedOptions(
+		List<OptionInfoFieldType> optionInfoFieldTypes,
+		List<KeyLocalizedLabelPair> keyLocalizedLabelPairs) {
+
+		List<String> selectedOptions = new ArrayList<>();
+
+		for (KeyLocalizedLabelPair keyLocalizedLabelPair :
+				keyLocalizedLabelPairs) {
+
+			for (OptionInfoFieldType optionInfoFieldType :
+					optionInfoFieldTypes) {
+
+				if (!Objects.equals(
+						keyLocalizedLabelPair.getKey(),
+						optionInfoFieldType.getValue())) {
+
+					continue;
+				}
+
+				selectedOptions.add(optionInfoFieldType.getValue());
+			}
+		}
+
+		return selectedOptions;
+	}
+
+	private Locale _getSiteDefaultLocale(
+		long groupId, HttpServletRequest httpServletRequest, Locale locale) {
+
+		ThemeDisplay themeDisplay =
+			(ThemeDisplay)httpServletRequest.getAttribute(
+				WebKeys.THEME_DISPLAY);
+
+		if ((themeDisplay != null) &&
+			(themeDisplay.getSiteDefaultLocale() != null) &&
+			(themeDisplay.getSiteGroupId() == groupId)) {
+
+			return themeDisplay.getSiteDefaultLocale();
+		}
+
+		try {
+			return _portal.getSiteDefaultLocale(groupId);
+		}
+		catch (PortalException portalException) {
+			_log.error(portalException);
+		}
+
+		return locale;
+	}
+
+	private String _getStep(Integer decimalPartMaxLength) {
+		if (decimalPartMaxLength == null) {
+			return StringPool.BLANK;
+		}
+
+		if (decimalPartMaxLength <= 0) {
+			return "0";
+		}
+
+		return StringBundler.concat(
+			"0.",
+			StringUtil.merge(
+				Collections.nCopies(decimalPartMaxLength - 1, "0"),
+				StringPool.BLANK),
+			"1");
+	}
+
+	private Object _getValue(
+		String defaultValue, HttpServletRequest httpServletRequest,
+		InfoField infoField, String infoFormName, Locale locale) {
+
+		if (httpServletRequest == null) {
+			return defaultValue;
+		}
+
+		boolean checkInfoFormName = false;
+		LayoutDisplayPageObjectProvider<?> layoutDisplayPageObjectProvider =
+			(LayoutDisplayPageObjectProvider<?>)httpServletRequest.getAttribute(
+				LayoutStructureRendererConstants.
+					LAYOUT_RELATED_ITEM_DISPLAY_PAGE_OBJECT_PROVIDER);
+
+		if (layoutDisplayPageObjectProvider == null) {
+			checkInfoFormName = true;
+			layoutDisplayPageObjectProvider =
+				(LayoutDisplayPageObjectProvider<?>)
+					httpServletRequest.getAttribute(
+						LayoutDisplayPageWebKeys.
+							LAYOUT_DISPLAY_PAGE_OBJECT_PROVIDER);
+		}
+
+		if (layoutDisplayPageObjectProvider == null) {
+			return defaultValue;
+		}
+
+		String className = _infoSearchClassMapperRegistry.getClassName(
+			layoutDisplayPageObjectProvider.getClassName());
+
+		if (checkInfoFormName && !Objects.equals(className, infoFormName)) {
+			return defaultValue;
+		}
+
+		InfoItemFieldValuesProvider<Object> infoItemFieldValuesProvider =
+			_infoItemServiceRegistry.getFirstInfoItemService(
+				InfoItemFieldValuesProvider.class, className);
+
+		if (infoItemFieldValuesProvider == null) {
+			if (_log.isWarnEnabled()) {
+				_log.warn(
+					"Unable to get info item form provider for class " +
+						layoutDisplayPageObjectProvider.getClassName());
+			}
+
+			return defaultValue;
+		}
+
+		InfoItemFieldValues infoItemFieldValues =
+			infoItemFieldValuesProvider.getInfoItemFieldValues(
+				layoutDisplayPageObjectProvider.getDisplayObject());
+
+		InfoFieldValue<?> infoFieldValue =
+			infoItemFieldValues.getInfoFieldValue(infoField.getUniqueId());
+
+		if (infoFieldValue == null) {
+			infoFieldValue = _getInfoFieldValue(
+				new ArrayList<>(
+					infoItemFieldValues.getInfoFieldValues(
+						infoField.getName())));
+		}
+
+		if (infoFieldValue == null) {
+			return defaultValue;
+		}
+
+		return _parseValue(
+			defaultValue, infoField, locale, infoFieldValue.getValue());
+	}
+
+	private boolean _isCMSGroup(Group group) {
+		if (group.isCMS()) {
+			return true;
+		}
+
+		if (group.isDepot()) {
+			DepotEntry depotEntry =
+				_depotEntryLocalService.fetchGroupDepotEntry(
+					group.getGroupId());
+
+			if ((depotEntry != null) &&
+				(depotEntry.getType() == DepotConstants.TYPE_SPACE)) {
+
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	private boolean _isShowErrorMessage(
+		HttpServletRequest httpServletRequest, InfoField<?> infoField,
+		InfoFormValidationException infoFormValidationException) {
+
+		if (!Objects.equals(
+				infoField.getUniqueId(),
+				infoFormValidationException.getInfoFieldUniqueId())) {
+
+			return false;
+		}
+
+		String externalReferenceCode =
+			infoFormValidationException.getExternalReferenceCode();
+
+		if (Validator.isNull(externalReferenceCode)) {
+			return true;
+		}
+
+		String layoutRelatedItemExternalReferenceCode =
+			(String)httpServletRequest.getAttribute(
+				LayoutStructureRendererConstants.
+					LAYOUT_RELATED_ITEM_EXTERNAL_REFERENCE_CODE);
+
+		if (Validator.isNull(layoutRelatedItemExternalReferenceCode)) {
+			return true;
+		}
+
+		return Objects.equals(
+			externalReferenceCode, layoutRelatedItemExternalReferenceCode);
+	}
+
+	private Map<Locale, String> _parseLocalizedValues(
+		InfoField infoField, Map<Locale, ?> values) {
+
+		Map<Locale, String> localizedValues = new HashMap<>();
+
+		for (Map.Entry<Locale, ?> entry : values.entrySet()) {
+			localizedValues.put(
+				entry.getKey(),
+				String.valueOf(
+					_parseValue(
+						StringPool.BLANK, infoField, entry.getKey(),
+						entry.getValue())));
+		}
+
+		return localizedValues;
+	}
+
+	private Object _parseValue(
+		String defaultValue, InfoField infoField, Locale locale, Object value) {
+
+		if (infoField.isLocalizable() &&
+			(value instanceof InfoLocalizedValue)) {
+
+			HashMap<Locale, Object> parsedValues = new HashMap<>();
+
+			InfoLocalizedValue<?> infoLocalizedValue =
+				(InfoLocalizedValue<?>)value;
+
+			Map<Locale, Object> values =
+				(Map<Locale, Object>)infoLocalizedValue.getValues();
+
+			for (Map.Entry<Locale, Object> entry : values.entrySet()) {
+				parsedValues.put(
+					entry.getKey(),
+					_parseValue(
+						defaultValue, infoField, locale, entry.getValue()));
+			}
+
+			return parsedValues;
+		}
+
+		if (infoField.getInfoFieldType() == DateInfoFieldType.INSTANCE) {
+			try {
+				DateFormat dateFormat =
+					DateFormatFactoryUtil.getSimpleDateFormat(
+						"yyyy-MM-dd", locale);
+
+				return dateFormat.format(value);
+			}
+			catch (Exception exception) {
+				if (_log.isDebugEnabled()) {
+					_log.debug("Unable to parse date from " + value, exception);
+				}
+			}
+
+			return StringPool.BLANK;
+		}
+
+		if (infoField.getInfoFieldType() == DateTimeInfoFieldType.INSTANCE) {
+			try {
+				DateTimeFormatter dateTimeFormatter =
+					DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm");
+
+				return dateTimeFormatter.format((TemporalAccessor)value);
+			}
+			catch (Exception exception) {
+				if (_log.isDebugEnabled()) {
+					_log.debug("Unable to parse date from " + value, exception);
+				}
+			}
+
+			return StringPool.BLANK;
+		}
+
+		if (infoField.getInfoFieldType() == MultiselectInfoFieldType.INSTANCE) {
+			if (!(value instanceof List)) {
+				return defaultValue;
+			}
+
+			List<KeyLocalizedLabelPair> keyLocalizedLabelPairs =
+				(List<KeyLocalizedLabelPair>)value;
+
+			if (ListUtil.isEmpty(keyLocalizedLabelPairs)) {
+				return defaultValue;
+			}
+
+			List<OptionInfoFieldType> optionInfoFieldTypes =
+				(List<OptionInfoFieldType>)infoField.getAttribute(
+					MultiselectInfoFieldType.OPTIONS);
+
+			return ListUtil.toString(
+				_getSelectedOptions(
+					optionInfoFieldTypes, keyLocalizedLabelPairs),
+				StringPool.BLANK);
+		}
+
+		if ((infoField.getInfoFieldType() == NumberInfoFieldType.INSTANCE) &&
+			(value instanceof BigDecimal)) {
+
+			BigDecimal bigDecimal = (BigDecimal)value;
+
+			if (Objects.equals(bigDecimal.signum(), 0)) {
+				return "0";
+			}
+		}
+
+		if (infoField.getInfoFieldType() ==
+				RelationshipInfoFieldType.INSTANCE) {
+
+			return value;
+		}
+
+		if (infoField.getInfoFieldType() ==
+				PicklistMultiselectInfoFieldType.INSTANCE) {
+
+			if (!(value instanceof List)) {
+				return defaultValue;
+			}
+
+			List<KeyLocalizedLabelPair> keyLocalizedLabelPairs =
+				(List<KeyLocalizedLabelPair>)value;
+
+			if (ListUtil.isEmpty(keyLocalizedLabelPairs)) {
+				return defaultValue;
+			}
+
+			List<OptionInfoFieldType> optionInfoFieldTypes =
+				(List<OptionInfoFieldType>)infoField.getAttribute(
+					PicklistMultiselectInfoFieldType.OPTIONS);
+
+			return ListUtil.toString(
+				_getSelectedOptions(
+					optionInfoFieldTypes, keyLocalizedLabelPairs),
+				StringPool.BLANK);
+		}
+
+		if (infoField.getInfoFieldType() ==
+				PicklistSelectInfoFieldType.INSTANCE) {
+
+			if (!(value instanceof List)) {
+				return defaultValue;
+			}
+
+			List<KeyLocalizedLabelPair> keyLocalizedLabelPairs =
+				(List<KeyLocalizedLabelPair>)value;
+
+			if (ListUtil.isEmpty(keyLocalizedLabelPairs)) {
+				return defaultValue;
+			}
+
+			List<OptionInfoFieldType> optionInfoFieldTypes =
+				(List<OptionInfoFieldType>)infoField.getAttribute(
+					PicklistSelectInfoFieldType.OPTIONS);
+
+			return ListUtil.toString(
+				_getSelectedOptions(
+					optionInfoFieldTypes, keyLocalizedLabelPairs),
+				StringPool.BLANK);
+		}
+
+		if (infoField.getInfoFieldType() == SelectInfoFieldType.INSTANCE) {
+			if (!(value instanceof List)) {
+				return defaultValue;
+			}
+
+			List<KeyLocalizedLabelPair> keyLocalizedLabelPairs =
+				(List<KeyLocalizedLabelPair>)value;
+
+			if (ListUtil.isEmpty(keyLocalizedLabelPairs)) {
+				return defaultValue;
+			}
+
+			List<OptionInfoFieldType> optionInfoFieldTypes =
+				(List<OptionInfoFieldType>)infoField.getAttribute(
+					SelectInfoFieldType.OPTIONS);
+
+			return ListUtil.toString(
+				_getSelectedOptions(
+					optionInfoFieldTypes, keyLocalizedLabelPairs),
+				StringPool.BLANK);
+		}
+
+		if (Validator.isNull(value)) {
+			return defaultValue;
+		}
+
+		return String.valueOf(value);
+	}
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		FragmentEntryInputTemplateNodeContextHelperImpl.class);
+
+	@Reference
+	private CountryLocalService _countryLocalService;
+
+	@Reference
+	private DepotEntryLocalService _depotEntryLocalService;
+
+	@Reference
+	private DLAppLocalService _dlAppLocalService;
+
+	@Reference
+	private DLURLHelper _dlURLHelper;
+
+	@Reference
+	private FragmentEntryConfigurationParser _fragmentEntryConfigurationParser;
+
+	@Reference
+	private InfoItemServiceRegistry _infoItemServiceRegistry;
+
+	@Reference
+	private InfoSearchClassMapperRegistry _infoSearchClassMapperRegistry;
+
+	@Reference
+	private ItemSelector _itemSelector;
+
+	@Reference
+	private Language _language;
+
+	@Reference
+	private LayoutPageTemplateStructureLocalService
+		_layoutPageTemplateStructureLocalService;
+
+	@Reference
+	private Portal _portal;
+
+}

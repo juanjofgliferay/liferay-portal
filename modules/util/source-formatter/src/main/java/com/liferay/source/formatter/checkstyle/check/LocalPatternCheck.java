@@ -8,6 +8,7 @@ package com.liferay.source.formatter.checkstyle.check;
 import com.puppycrawl.tools.checkstyle.api.DetailAST;
 import com.puppycrawl.tools.checkstyle.api.TokenTypes;
 import com.puppycrawl.tools.checkstyle.utils.ScopeUtil;
+import com.puppycrawl.tools.checkstyle.utils.TokenUtil;
 
 import java.util.List;
 
@@ -27,14 +28,14 @@ public class LocalPatternCheck extends BaseCheck {
 			return;
 		}
 
-		List<DetailAST> methodCallDetailASTList = getMethodCalls(
+		List<DetailAST> methodCallDetailASTs = getMethodCalls(
 			detailAST, "Pattern", "compile");
 
-		if (methodCallDetailASTList.isEmpty()) {
+		if (methodCallDetailASTs.isEmpty()) {
 			return;
 		}
 
-		DetailAST methodCallDetailAST = methodCallDetailASTList.get(0);
+		DetailAST methodCallDetailAST = methodCallDetailASTs.get(0);
 
 		DetailAST elistDetailAST = methodCallDetailAST.findFirstToken(
 			TokenTypes.ELIST);
@@ -42,12 +43,13 @@ public class LocalPatternCheck extends BaseCheck {
 		DetailAST expressionDetailAST = elistDetailAST.findFirstToken(
 			TokenTypes.EXPR);
 
-		List<DetailAST> childDetailASTList = getAllChildTokens(
+		List<DetailAST> childDetailASTs = getAllChildTokens(
 			expressionDetailAST, true, ALL_TYPES);
 
-		for (DetailAST childDetailAST : childDetailASTList) {
-			if ((childDetailAST.getType() != TokenTypes.PLUS) &&
-				(childDetailAST.getType() != TokenTypes.STRING_LITERAL)) {
+		for (DetailAST childDetailAST : childDetailASTs) {
+			if (!TokenUtil.isOfType(
+					childDetailAST, TokenTypes.PLUS,
+					TokenTypes.STRING_LITERAL)) {
 
 				return;
 			}

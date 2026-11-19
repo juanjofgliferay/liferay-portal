@@ -1,0 +1,93 @@
+.criteria-card-root {
+	overflow-y: hidden;
+
+	.card-body {
+		display: flex;
+		overflow-y: auto;
+
+		&.truncate {
+			overflow-y: hidden;
+		}
+	}
+
+	.card-header {
+		display: flex;
+		justify-content: space-between;
+	}
+
+	.criteria-view-root {
+		font-size: $fontSizeSmall;
+
+		.criteria-group {
+			border-left: 1px dashed $mainLighten28;
+			color: $secondary;
+			margin-left: 12px;
+
+			> .conjunction {
+				font-weight: $fontWeightBold;
+				padding: 4px;
+				padding-left: 0;
+				text-transform: uppercase;
+			}
+
+			.criteria-group {
+				& .criteria-row {
+					padding-left: 8px;
+				}
+
+				& .conjunction {
+					padding-left: 8px;
+				}
+			}
+
+			.criteria-step {
+				align-items: center;
+				display: inline-flex;
+
+				.criteria-step-number {
+					align-items: center;
+					background-color: var(--cadmin-gray-300);
+					border-radius: 100%;
+					display: inline-flex;
+					font-size: 10px;
+					font-weight: $fontWeightBold;
+					height: 1rem;
+					justify-content: center;
+					width: 1rem;
+				}
+			}
+		}
+
+		.criteria-row {
+			> b {
+				color: $main;
+				margin-left: 4px;
+			}
+
+			> span {
+				margin-left: 4px;
+				text-transform: lowercase;
+			}
+
+			.sentence-start {
+				margin: 0;
+				text-transform: capitalize;
+			}
+
+			.undefined-entity,
+			.undefined-property {
+				color: $error;
+				font-style: italic;
+			}
+
+			.undefined-property {
+				margin: 0;
+			}
+		}
+
+		> .criteria-group {
+			border-left-width: 0;
+			margin-left: 0;
+		}
+	}
+}

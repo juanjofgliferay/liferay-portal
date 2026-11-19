@@ -64,15 +64,6 @@ public class CPOptionServiceWrapper
 	}
 
 	@Override
-	public CPOption fetchByExternalReferenceCode(
-			String externalReferenceCode, long companyId)
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return _cpOptionService.fetchByExternalReferenceCode(
-			externalReferenceCode, companyId);
-	}
-
-	@Override
 	public CPOption fetchCPOption(long cpOptionId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
@@ -84,6 +75,15 @@ public class CPOptionServiceWrapper
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _cpOptionService.fetchCPOption(companyId, key);
+	}
+
+	@Override
+	public CPOption fetchCPOptionByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _cpOptionService.fetchCPOptionByExternalReferenceCode(
+			externalReferenceCode, companyId);
 	}
 
 	@Override
@@ -102,6 +102,18 @@ public class CPOptionServiceWrapper
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _cpOptionService.getCPOption(cpOptionId);
+	}
+
+	@Override
+	public CPOption getOrAddEmptyCPOption(
+			String externalReferenceCode,
+			java.util.Map<java.util.Locale, String> nameMap,
+			String commerceOptionTypeKey, boolean skuContributor, String key)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _cpOptionService.getOrAddEmptyCPOption(
+			externalReferenceCode, nameMap, commerceOptionTypeKey,
+			skuContributor, key);
 	}
 
 	/**
@@ -161,3 +173,4 @@ public class CPOptionServiceWrapper
 	private CPOptionService _cpOptionService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-342135763

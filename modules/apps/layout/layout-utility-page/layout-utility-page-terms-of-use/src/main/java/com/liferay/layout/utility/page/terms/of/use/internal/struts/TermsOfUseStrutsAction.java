@@ -6,6 +6,10 @@
 package com.liferay.layout.utility.page.terms.of.use.internal.struts;
 
 import com.liferay.petra.io.unsync.UnsyncStringWriter;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.LayoutSet;
 import com.liferay.portal.kernel.service.LayoutSetLocalService;
 import com.liferay.portal.kernel.servlet.PipingServletResponse;
@@ -14,16 +18,15 @@ import com.liferay.portal.kernel.struts.StrutsAction;
 import com.liferay.portal.kernel.terms.of.use.TermsOfUseContentProvider;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.theme.ThemeUtil;
+import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.portal.struts.Definition;
+import com.liferay.portal.struts.TilesUtil;
 
-import javax.servlet.RequestDispatcher;
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -67,20 +70,54 @@ public class TermsOfUseStrutsAction implements StrutsAction {
 
 		requestDispatcher.include(httpServletRequest, pipingServletResponse);
 
-		Document document = Jsoup.parse(
-			ThemeUtil.include(
+		Object originalDefinition = httpServletRequest.getAttribute(
+			TilesUtil.DEFINITION);
+
+		httpServletRequest.setAttribute(TilesUtil.DEFINITION, _definition);
+		httpServletRequest.setAttribute(
+			WebKeys.LAYOUT_CONTENT, unsyncStringWriter.getStringBundler());
+
+		String html = null;
+
+		try {
+			html = ThemeUtil.include(
 				httpServletRequest.getServletContext(), httpServletRequest,
 				httpServletResponse, "portal_normal.ftl", layoutSet.getTheme(),
-				false));
+				false);
+		}
+		finally {
+			httpServletRequest.setAttribute(
+				TilesUtil.DEFINITION, originalDefinition);
+		}
 
-		Element contentElement = document.getElementById("content");
+		StringBundler sb = (StringBundler)httpServletRequest.getAttribute(
+			WebKeys.LAYOUT_CONTENT);
 
-		contentElement.html(unsyncStringWriter.toString());
+		if (sb != null) {
+			if (_log.isWarnEnabled()) {
+				_log.warn(
+					"Replacing all body content because theme " +
+						layoutSet.getThemeId() + " lacks a content include");
+			}
 
-		ServletResponseUtil.write(httpServletResponse, document.html());
+			html = ThemeUtil.replaceBodyContent(html, sb.toString());
+		}
+
+		ServletResponseUtil.write(httpServletResponse, html);
 
 		return null;
 	}
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		TermsOfUseStrutsAction.class);
+
+	private static final Definition _definition = new Definition(
+		StringPool.BLANK,
+		HashMapBuilder.put(
+			"content", "/portal/layout_content.jsp"
+		).put(
+			"selectable", "true"
+		).build());
 
 	@Reference
 	private LayoutSetLocalService _layoutSetLocalService;

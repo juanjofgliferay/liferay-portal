@@ -259,7 +259,9 @@ public interface MFATimeBasedOTPEntryLocalService
 	public PersistedModel getPersistedModel(Serializable primaryKeyObj)
 		throws PortalException;
 
-	public MFATimeBasedOTPEntry resetFailedAttempts(long userId)
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public String getPlaintextSharedSecret(
+			MFATimeBasedOTPEntry mfaTimeBasedOTPEntry)
 		throws PortalException;
 
 	public MFATimeBasedOTPEntry updateAttempts(
@@ -285,3 +287,4 @@ public interface MFATimeBasedOTPEntryLocalService
 		MFATimeBasedOTPEntry mfaTimeBasedOTPEntry);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1845889294

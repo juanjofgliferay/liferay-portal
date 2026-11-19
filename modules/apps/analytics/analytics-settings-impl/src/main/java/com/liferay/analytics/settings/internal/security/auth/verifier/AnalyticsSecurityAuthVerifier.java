@@ -23,6 +23,9 @@ import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.util.Base64;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.PropsValues;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.nio.charset.Charset;
 
@@ -37,8 +40,6 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.TreeMap;
 
-import javax.servlet.http.HttpServletRequest;
-
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.ConfigurationPolicy;
 import org.osgi.service.component.annotations.Reference;
@@ -49,7 +50,7 @@ import org.osgi.service.component.annotations.Reference;
 @Component(
 	configurationPid = "com.liferay.analytics.settings.configuration.AnalyticsConfiguration.scoped",
 	configurationPolicy = ConfigurationPolicy.REQUIRE,
-	property = "auth.verifier.AnalyticsSecurityAuthVerifier.urls.includes=/o/segments-asah/v1.0/experiments/*,/v1.0/experiments/*",
+	property = "auth.verifier.AnalyticsSecurityAuthVerifier.urls.includes=/o/segments-asah/v1.0/asah-segments-entry,/o/segments-asah/v1.0/experiments/*,/v1.0/asah-segments-entry,/v1.0/experiments/*",
 	service = AuthVerifier.class
 )
 public class AnalyticsSecurityAuthVerifier implements AuthVerifier {
@@ -166,9 +167,11 @@ public class AnalyticsSecurityAuthVerifier implements AuthVerifier {
 			String signatureString, String timestamp)
 		throws Exception {
 
-		Signature signature = Signature.getInstance("DSA");
+		Signature signature = Signature.getInstance(
+			PropsValues.FIPS_ENABLED ? "SHA256withECDSA" : "DSA");
 
-		KeyFactory keyFactory = KeyFactory.getInstance("DSA");
+		KeyFactory keyFactory = KeyFactory.getInstance(
+			PropsValues.FIPS_ENABLED ? "EC" : "DSA");
 
 		signature.initVerify(
 			keyFactory.generatePublic(

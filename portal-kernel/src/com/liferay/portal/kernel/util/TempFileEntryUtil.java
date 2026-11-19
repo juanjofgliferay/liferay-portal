@@ -79,6 +79,29 @@ public class TempFileEntryUtil {
 		}
 	}
 
+	public static FileEntry addTempFileEntry(
+			String externalReferenceCode, long groupId, long userId,
+			String folderName, String fileName, InputStream inputStream,
+			String mimeType)
+		throws PortalException {
+
+		boolean dlAppHelperEnabled = DLAppHelperThreadLocal.isEnabled();
+
+		try {
+			DLAppHelperThreadLocal.setEnabled(false);
+
+			TemporaryFileEntriesCapability temporaryFileEntriesCapability =
+				_getTemporaryFileEntriesCapability(groupId);
+
+			return temporaryFileEntriesCapability.addTemporaryFileEntry(
+				new TemporaryFileEntriesScope(_UUID, userId, folderName),
+				externalReferenceCode, fileName, mimeType, inputStream);
+		}
+		finally {
+			DLAppHelperThreadLocal.setEnabled(dlAppHelperEnabled);
+		}
+	}
+
 	public static void deleteTempFileEntry(long fileEntryId)
 		throws PortalException {
 
@@ -163,8 +186,20 @@ public class TempFileEntryUtil {
 			long groupId, long userId, String folderName)
 		throws PortalException {
 
+		Repository repository = RepositoryLocalServiceUtil.fetchRepository(
+			groupId, TempFileEntryUtil.class.getName(),
+			TempFileEntryUtil.class.getName());
+
+		if (repository == null) {
+			return StringPool.EMPTY_ARRAY;
+		}
+
+		LocalRepository localRepository =
+			RepositoryProviderUtil.getLocalRepository(
+				repository.getRepositoryId());
+
 		TemporaryFileEntriesCapability temporaryFileEntriesCapability =
-			_getTemporaryFileEntriesCapability(groupId);
+			localRepository.getCapability(TemporaryFileEntriesCapability.class);
 
 		List<FileEntry> fileEntries =
 			temporaryFileEntriesCapability.getTemporaryFileEntries(
@@ -209,7 +244,7 @@ public class TempFileEntryUtil {
 			DLAppHelperThreadLocal.setEnabled(false);
 
 			repository = RepositoryLocalServiceUtil.addRepository(
-				user.getUserId(), groupId, classNameId,
+				null, user.getUserId(), groupId, classNameId,
 				DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
 				TempFileEntryUtil.class.getName(), StringPool.BLANK,
 				TempFileEntryUtil.class.getName(),

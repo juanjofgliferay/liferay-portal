@@ -6,6 +6,7 @@
 package com.liferay.document.library.internal.repository.capabilities;
 
 import com.liferay.document.library.kernel.model.DLVersionNumberIncrease;
+import com.liferay.document.library.kernel.service.DLAppLocalService;
 import com.liferay.document.library.versioning.VersionPurger;
 import com.liferay.osgi.service.tracker.collections.list.ServiceTrackerList;
 import com.liferay.osgi.service.tracker.collections.list.ServiceTrackerListFactory;
@@ -16,8 +17,7 @@ import com.liferay.portal.kernel.repository.capabilities.Capability;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.repository.model.FileVersion;
 import com.liferay.portal.kernel.service.ServiceContext;
-import com.liferay.portal.kernel.transaction.TransactionCommitCallbackUtil;
-import com.liferay.portal.repository.capabilities.util.DLAppServiceAdapter;
+import com.liferay.portal.kernel.transaction.TransactionCallbackUtil;
 import com.liferay.portal.repository.util.LocalRepositoryWrapper;
 import com.liferay.portal.repository.util.RepositoryWrapper;
 import com.liferay.portal.repository.util.RepositoryWrapperAware;
@@ -50,9 +50,6 @@ public class LiferayVersioningCapability
 	public LocalRepository wrapLocalRepository(
 		LocalRepository localRepository) {
 
-		DLAppServiceAdapter dlAppServiceAdapter = DLAppServiceAdapter.create(
-			localRepository);
-
 		return new LocalRepositoryWrapper(localRepository) {
 
 			@Override
@@ -66,8 +63,7 @@ public class LiferayVersioningCapability
 					userId, fileEntryId, dlVersionNumberIncrease, changeLog,
 					serviceContext);
 
-				_purgeVersions(
-					dlAppServiceAdapter, super.getFileEntry(fileEntryId));
+				_purgeVersions(super.getFileEntry(fileEntryId));
 			}
 
 			@Override
@@ -76,17 +72,16 @@ public class LiferayVersioningCapability
 					String mimeType, String title, String urlTitle,
 					String description, String changeLog,
 					DLVersionNumberIncrease dlVersionNumberIncrease, File file,
-					Date expirationDate, Date reviewDate,
+					Date displayDate, Date expirationDate, Date reviewDate,
 					ServiceContext serviceContext)
 				throws PortalException {
 
 				return _purgeVersions(
-					dlAppServiceAdapter,
 					super.updateFileEntry(
 						userId, fileEntryId, sourceFileName, mimeType, title,
 						urlTitle, description, changeLog,
-						dlVersionNumberIncrease, file, expirationDate,
-						reviewDate, serviceContext));
+						dlVersionNumberIncrease, file, displayDate,
+						expirationDate, reviewDate, serviceContext));
 			}
 
 			@Override
@@ -95,16 +90,16 @@ public class LiferayVersioningCapability
 					String mimeType, String title, String urlTitle,
 					String description, String changeLog,
 					DLVersionNumberIncrease dlVersionNumberIncrease,
-					InputStream inputStream, long size, Date expirationDate,
-					Date reviewDate, ServiceContext serviceContext)
+					InputStream inputStream, long size, Date displayDate,
+					Date expirationDate, Date reviewDate,
+					ServiceContext serviceContext)
 				throws PortalException {
 
 				return _purgeVersions(
-					dlAppServiceAdapter,
 					super.updateFileEntry(
 						userId, fileEntryId, sourceFileName, mimeType, title,
 						urlTitle, description, changeLog,
-						dlVersionNumberIncrease, inputStream, size,
+						dlVersionNumberIncrease, inputStream, size, displayDate,
 						expirationDate, reviewDate, serviceContext));
 			}
 
@@ -113,9 +108,6 @@ public class LiferayVersioningCapability
 
 	@Override
 	public Repository wrapRepository(Repository repository) {
-		DLAppServiceAdapter dlAppServiceAdapter = DLAppServiceAdapter.create(
-			repository);
-
 		return new RepositoryWrapper(repository) {
 
 			@Override
@@ -129,8 +121,7 @@ public class LiferayVersioningCapability
 					userId, fileEntryId, dlVersionNumberIncrease, changeLog,
 					serviceContext);
 
-				_purgeVersions(
-					dlAppServiceAdapter, super.getFileEntry(fileEntryId));
+				_purgeVersions(super.getFileEntry(fileEntryId));
 			}
 
 			@Override
@@ -139,17 +130,16 @@ public class LiferayVersioningCapability
 					String mimeType, String title, String urlTitle,
 					String description, String changeLog,
 					DLVersionNumberIncrease dlVersionNumberIncrease, File file,
-					Date expirationDate, Date reviewDate,
+					Date displayDate, Date expirationDate, Date reviewDate,
 					ServiceContext serviceContext)
 				throws PortalException {
 
 				return _purgeVersions(
-					dlAppServiceAdapter,
 					super.updateFileEntry(
 						userId, fileEntryId, sourceFileName, mimeType, title,
 						urlTitle, description, changeLog,
-						dlVersionNumberIncrease, file, expirationDate,
-						reviewDate, serviceContext));
+						dlVersionNumberIncrease, file, displayDate,
+						expirationDate, reviewDate, serviceContext));
 			}
 
 			@Override
@@ -158,16 +148,16 @@ public class LiferayVersioningCapability
 					String mimeType, String title, String urlTitle,
 					String description, String changeLog,
 					DLVersionNumberIncrease dlVersionNumberIncrease,
-					InputStream inputStream, long size, Date expirationDate,
-					Date reviewDate, ServiceContext serviceContext)
+					InputStream inputStream, long size, Date displayDate,
+					Date expirationDate, Date reviewDate,
+					ServiceContext serviceContext)
 				throws PortalException {
 
 				return _purgeVersions(
-					dlAppServiceAdapter,
 					super.updateFileEntry(
 						userId, fileEntryId, sourceFileName, mimeType, title,
 						urlTitle, description, changeLog,
-						dlVersionNumberIncrease, inputStream, size,
+						dlVersionNumberIncrease, inputStream, size, displayDate,
 						expirationDate, reviewDate, serviceContext));
 			}
 
@@ -185,14 +175,12 @@ public class LiferayVersioningCapability
 		_versionPurgedListeners.close();
 	}
 
-	private FileEntry _purgeVersions(
-		DLAppServiceAdapter dlAppServiceAdapter, FileEntry fileEntry) {
-
+	private FileEntry _purgeVersions(FileEntry fileEntry) {
 		if ((_versionPurger == null) || fileEntry.isCheckedOut()) {
 			return fileEntry;
 		}
 
-		TransactionCommitCallbackUtil.registerCallback(
+		TransactionCallbackUtil.registerCommitCallback(
 			(Callable<Void>)() -> {
 				for (FileVersion fileVersion :
 						_versionPurger.getToPurgeFileVersions(fileEntry)) {
@@ -203,7 +191,7 @@ public class LiferayVersioningCapability
 						versionPurgedListener.versionPurged(fileVersion);
 					}
 
-					dlAppServiceAdapter.deleteFileVersion(
+					_dlAppLocalService.deleteFileVersion(
 						fileVersion.getFileVersionId());
 				}
 
@@ -212,6 +200,9 @@ public class LiferayVersioningCapability
 
 		return fileEntry;
 	}
+
+	@Reference
+	private DLAppLocalService _dlAppLocalService;
 
 	private ServiceTrackerList<VersionPurger.VersionPurgedListener>
 		_versionPurgedListeners;

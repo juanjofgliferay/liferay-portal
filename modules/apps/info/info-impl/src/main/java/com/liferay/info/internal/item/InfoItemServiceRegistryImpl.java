@@ -9,6 +9,7 @@ import com.liferay.friendly.url.info.item.provider.InfoItemFriendlyURLProvider;
 import com.liferay.friendly.url.info.item.updater.InfoItemFriendlyURLUpdater;
 import com.liferay.info.collection.provider.InfoCollectionProvider;
 import com.liferay.info.collection.provider.RelatedInfoItemCollectionProvider;
+import com.liferay.info.collection.provider.RepeatableFieldInfoItemCollectionProvider;
 import com.liferay.info.exception.CapabilityVerificationException;
 import com.liferay.info.filter.InfoFilterProvider;
 import com.liferay.info.filter.InfoRequestItemProvider;
@@ -32,8 +33,11 @@ import com.liferay.info.item.provider.InfoItemObjectVariationProvider;
 import com.liferay.info.item.provider.InfoItemPermissionProvider;
 import com.liferay.info.item.provider.InfoItemScopeProvider;
 import com.liferay.info.item.provider.InfoItemStatusProvider;
+import com.liferay.info.item.provider.RelatedInfoItemProvider;
+import com.liferay.info.item.provider.RepeatableFieldsInfoItemFormProvider;
 import com.liferay.info.item.provider.filter.InfoItemServiceFilter;
 import com.liferay.info.item.provider.filter.OptionalPropertyInfoItemServiceFilter;
+import com.liferay.info.item.provider.filter.PropertyInfoItemServiceFilter;
 import com.liferay.info.item.renderer.InfoItemRenderer;
 import com.liferay.info.item.translator.InfoItemIdentifierTranslator;
 import com.liferay.info.item.updater.InfoItemFieldValuesUpdater;
@@ -44,10 +48,12 @@ import com.liferay.info.type.Keyed;
 import com.liferay.osgi.service.tracker.collections.ServiceReferenceServiceTuple;
 import com.liferay.osgi.service.tracker.collections.map.PropertyServiceReferenceComparator;
 import com.liferay.osgi.service.tracker.collections.map.ServiceReferenceMapperFactory;
-import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerCustomizerFactory;
 import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMap;
 import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMapFactory;
 import com.liferay.petra.function.transform.TransformUtil;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.util.ListUtil;
@@ -63,14 +69,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Predicate;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.Filter;
 import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.InvalidSyntaxException;
+import org.osgi.framework.ServiceReference;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.util.tracker.ServiceTrackerCustomizer;
 
 /**
  * @author Jürgen Kappler
@@ -93,36 +102,21 @@ public class InfoItemServiceRegistryImpl implements InfoItemServiceRegistry {
 		Class<P> serviceClass, String itemClassName,
 		InfoItemServiceFilter infoItemServiceFilter) {
 
-		ServiceTrackerMap
-			<String, ? extends List<ServiceReferenceServiceTuple<P, P>>>
-				infoItemServiceTrackerMap =
-					(ServiceTrackerMap)
-						_getItemClassNameInfoItemServiceTrackerMap(
-							serviceClass);
+		List<CompanyIdServiceReferenceServiceTuple<P>>
+			serviceReferenceServiceTuples = _getServiceReferenceServiceTuples(
+				serviceClass, itemClassName);
 
-		List<ServiceReferenceServiceTuple<P, P>> serviceReferenceServiceTuples =
-			infoItemServiceTrackerMap.getService(itemClassName);
-
-		if (serviceReferenceServiceTuples != null) {
-			serviceReferenceServiceTuples =
-				_filterServiceReferenceServiceTuples(
-					new OptionalPropertyInfoItemServiceFilter(
-						"company.id",
-						String.valueOf(CompanyThreadLocal.getCompanyId())),
-					serviceReferenceServiceTuples);
-
-			if (infoItemServiceFilter != null) {
-				serviceReferenceServiceTuples =
-					_filterServiceReferenceServiceTuples(
-						infoItemServiceFilter, serviceReferenceServiceTuples);
-			}
-
-			return ListUtil.toList(
-				serviceReferenceServiceTuples,
-				ServiceReferenceServiceTuple::getService);
+		if (serviceReferenceServiceTuples == null) {
+			return Collections.emptyList();
 		}
 
-		return Collections.emptyList();
+		serviceReferenceServiceTuples = ListUtil.filter(
+			serviceReferenceServiceTuples,
+			_getPredicate(infoItemServiceFilter));
+
+		return ListUtil.toList(
+			serviceReferenceServiceTuples,
+			ServiceReferenceServiceTuple::getService);
 	}
 
 	@Override
@@ -130,14 +124,26 @@ public class InfoItemServiceRegistryImpl implements InfoItemServiceRegistry {
 		Class<P> serviceClass, String itemClassName,
 		InfoItemServiceFilter infoItemServiceFilter) {
 
-		List<?> infoItemServices = getAllInfoItemServices(
-			serviceClass, itemClassName, infoItemServiceFilter);
+		List<CompanyIdServiceReferenceServiceTuple<P>>
+			serviceReferenceServiceTuples = _getServiceReferenceServiceTuples(
+				serviceClass, itemClassName);
 
-		if (ListUtil.isEmpty(infoItemServices)) {
+		if (serviceReferenceServiceTuples == null) {
 			return null;
 		}
 
-		return (P)infoItemServices.get(0);
+		Predicate<CompanyIdServiceReferenceServiceTuple<P>> predicate =
+			_getPredicate(infoItemServiceFilter);
+
+		for (CompanyIdServiceReferenceServiceTuple<P>
+				serviceReferenceServiceTuple : serviceReferenceServiceTuples) {
+
+			if (predicate.test(serviceReferenceServiceTuple)) {
+				return serviceReferenceServiceTuple.getService();
+			}
+		}
+
+		return null;
 	}
 
 	@Override
@@ -198,12 +204,32 @@ public class InfoItemServiceRegistryImpl implements InfoItemServiceRegistry {
 			List<InfoItemCapability> infoItemCapabilities =
 				infoItemCapabilitiesProvider.getInfoItemCapabilities();
 
-			if (infoItemCapabilities.contains(infoItemCapability)) {
+			if (!infoItemCapabilities.contains(infoItemCapability)) {
+				continue;
+			}
+
+			try {
 				infoItemCapability.verify(
 					curInfoItemClassDetails.getClassName());
-
-				infoItemClassDetailsList.add(curInfoItemClassDetails);
 			}
+			catch (CapabilityVerificationException
+						capabilityVerificationException) {
+
+				if (_log.isWarnEnabled()) {
+					_log.warn(
+						StringBundler.concat(
+							"Skipping item class name ",
+							curInfoItemClassDetails.getClassName(),
+							" because info item capability ",
+							infoItemCapability.getKey(),
+							" failed verification"),
+						capabilityVerificationException);
+				}
+
+				continue;
+			}
+
+			infoItemClassDetailsList.add(curInfoItemClassDetails);
 		}
 
 		return infoItemClassDetailsList;
@@ -225,11 +251,13 @@ public class InfoItemServiceRegistryImpl implements InfoItemServiceRegistry {
 					InfoPermissionProvider.class,
 					infoItemClassDetail.getClassName());
 
-			if ((infoPermissionProvider == null) ||
-				infoPermissionProvider.hasViewPermission(permissionChecker)) {
+			if ((infoPermissionProvider != null) &&
+				!infoPermissionProvider.hasViewPermission(permissionChecker)) {
 
-				infoItemClassDetails.add(infoItemClassDetail);
+				continue;
 			}
+
+			infoItemClassDetails.add(infoItemClassDetail);
 		}
 
 		return infoItemClassDetails;
@@ -284,8 +312,8 @@ public class InfoItemServiceRegistryImpl implements InfoItemServiceRegistry {
 
 	@Deactivate
 	protected void deactivate() {
-		if (_infoItemCapabilityServiceTrackerMap != null) {
-			_infoItemCapabilityServiceTrackerMap.close();
+		if (_serviceTrackerMap != null) {
+			_serviceTrackerMap.close();
 		}
 
 		for (ServiceTrackerMap<?, ?> serviceTrackerMap :
@@ -301,39 +329,18 @@ public class InfoItemServiceRegistryImpl implements InfoItemServiceRegistry {
 		}
 	}
 
-	private <P> List<ServiceReferenceServiceTuple<P, P>>
-		_filterServiceReferenceServiceTuples(
-			InfoItemServiceFilter infoItemServiceFilter,
-			List<ServiceReferenceServiceTuple<P, P>> serviceReferenceTuples) {
-
-		try {
-			Filter filter = FrameworkUtil.createFilter(
-				infoItemServiceFilter.getFilterString());
-
-			return ListUtil.filter(
-				serviceReferenceTuples,
-				serviceReferenceTuple -> filter.match(
-					serviceReferenceTuple.getServiceReference()));
-		}
-		catch (InvalidSyntaxException invalidSyntaxException) {
-			throw new RuntimeException(
-				"Invalid filter string", invalidSyntaxException);
-		}
-	}
-
 	private ServiceTrackerMap<String, InfoItemCapability>
 		_getInfoItemCapabilityServiceTrackerMap() {
 
-		if (_infoItemCapabilityServiceTrackerMap == null) {
-			_infoItemCapabilityServiceTrackerMap =
-				ServiceTrackerMapFactory.openSingleValueMap(
-					_bundleContext, InfoItemCapability.class, null,
-					ServiceReferenceMapperFactory.create(
-						_bundleContext,
-						(service, emitter) -> emitter.emit(service.getKey())));
+		if (_serviceTrackerMap == null) {
+			_serviceTrackerMap = ServiceTrackerMapFactory.openSingleValueMap(
+				_bundleContext, InfoItemCapability.class, null,
+				ServiceReferenceMapperFactory.create(
+					_bundleContext,
+					(service, emitter) -> emitter.emit(service.getKey())));
 		}
 
-		return _infoItemCapabilityServiceTrackerMap;
+		return _serviceTrackerMap;
 	}
 
 	private InfoItemClassDetails _getInfoItemClassDetails(
@@ -363,8 +370,7 @@ public class InfoItemServiceRegistryImpl implements InfoItemServiceRegistry {
 			keyClass -> ServiceTrackerMapFactory.openMultiValueMap(
 				_bundleContext, (Class<Object>)keyClass, null,
 				new ItemClassNameServiceReferenceMapper(_bundleContext),
-				ServiceTrackerCustomizerFactory.serviceReferenceServiceTuple(
-					_bundleContext)));
+				new CompanyIdServiceTrackerCustomizer()));
 	}
 
 	private ServiceTrackerMap<String, ?> _getKeyedInfoItemServiceTrackerMap(
@@ -394,6 +400,63 @@ public class InfoItemServiceRegistryImpl implements InfoItemServiceRegistry {
 				new PropertyServiceReferenceComparator<>("service.ranking")));
 	}
 
+	private <P> Predicate<CompanyIdServiceReferenceServiceTuple<P>>
+		_getPredicate(InfoItemServiceFilter infoItemServiceFilter) {
+
+		PropertyInfoItemServiceFilter companyIdPropertyInfoItemServiceFilter =
+			new OptionalPropertyInfoItemServiceFilter(
+				"company.id",
+				String.valueOf(CompanyThreadLocal.getCompanyId()));
+
+		if (infoItemServiceFilter == null) {
+			return serviceReferenceServiceTuple ->
+				companyIdPropertyInfoItemServiceFilter.matchPropertyValue(
+					serviceReferenceServiceTuple.getCompanyIdPropertyValue());
+		}
+
+		if (infoItemServiceFilter instanceof
+				PropertyInfoItemServiceFilter propertyInfoItemServiceFilter) {
+
+			return serviceReferenceServiceTuple ->
+				companyIdPropertyInfoItemServiceFilter.matchPropertyValue(
+					serviceReferenceServiceTuple.getCompanyIdPropertyValue()) &&
+				propertyInfoItemServiceFilter.match(
+					serviceReferenceServiceTuple.getServiceReference());
+		}
+
+		try {
+			Filter filter = FrameworkUtil.createFilter(
+				infoItemServiceFilter.getFilterString());
+
+			return serviceReferenceServiceTuple ->
+				filter.match(
+					serviceReferenceServiceTuple.getServiceReference()) &&
+				companyIdPropertyInfoItemServiceFilter.matchPropertyValue(
+					serviceReferenceServiceTuple.getCompanyIdPropertyValue());
+		}
+		catch (InvalidSyntaxException invalidSyntaxException) {
+			throw new RuntimeException(
+				"Invalid filter string", invalidSyntaxException);
+		}
+	}
+
+	private <P> List<CompanyIdServiceReferenceServiceTuple<P>>
+		_getServiceReferenceServiceTuples(
+			Class<P> serviceClass, String itemClassName) {
+
+		ServiceTrackerMap
+			<String, ? extends List<CompanyIdServiceReferenceServiceTuple<P>>>
+				infoItemServiceTrackerMap =
+					(ServiceTrackerMap)
+						_getItemClassNameInfoItemServiceTrackerMap(
+							serviceClass);
+
+		return infoItemServiceTrackerMap.getService(itemClassName);
+	}
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		InfoItemServiceRegistryImpl.class);
+
 	private static final Set<Class<?>> _validInfoClasses = new HashSet<>(
 		Arrays.asList(
 			InfoCollectionProvider.class, InfoCollectionTextFormatter.class,
@@ -410,18 +473,85 @@ public class InfoItemServiceRegistryImpl implements InfoItemServiceRegistry {
 			InfoItemScopeProvider.class, InfoItemStatusProvider.class,
 			InfoListRenderer.class, InfoPermissionProvider.class,
 			InfoRequestItemProvider.class, InfoTextFormatter.class,
-			RelatedInfoItemCollectionProvider.class));
+			RelatedInfoItemCollectionProvider.class,
+			RelatedInfoItemProvider.class,
+			RepeatableFieldInfoItemCollectionProvider.class,
+			RepeatableFieldsInfoItemFormProvider.class));
 
 	private BundleContext _bundleContext;
-	private ServiceTrackerMap<String, InfoItemCapability>
-		_infoItemCapabilityServiceTrackerMap;
 	private final Map
 		<Class<?>,
 		 ServiceTrackerMap
-			 <String, List<ServiceReferenceServiceTuple<Object, Object>>>>
+			 <String, List<CompanyIdServiceReferenceServiceTuple<Object>>>>
 				_itemClassNameInfoItemServiceTrackerMap =
 					new ConcurrentHashMap<>();
 	private final Map<Class<?>, ServiceTrackerMap<String, ?>>
 		_keyedInfoItemServiceTrackerMap = new ConcurrentHashMap<>();
+	private ServiceTrackerMap<String, InfoItemCapability> _serviceTrackerMap;
+
+	private static class CompanyIdServiceReferenceServiceTuple<S>
+		extends ServiceReferenceServiceTuple<S, S> {
+
+		public Object getCompanyIdPropertyValue() {
+			return _companyIdPropertyValue;
+		}
+
+		private CompanyIdServiceReferenceServiceTuple(
+			ServiceReference<S> serviceReference, S service) {
+
+			super(serviceReference, service);
+
+			_updateCompanyIdPropertyValue();
+		}
+
+		private void _updateCompanyIdPropertyValue() {
+			ServiceReference<S> serviceReference = getServiceReference();
+
+			_companyIdPropertyValue = serviceReference.getProperty(
+				"company.id");
+		}
+
+		private volatile Object _companyIdPropertyValue;
+
+	}
+
+	private class CompanyIdServiceTrackerCustomizer
+		implements ServiceTrackerCustomizer
+			<Object, CompanyIdServiceReferenceServiceTuple<Object>> {
+
+		@Override
+		public CompanyIdServiceReferenceServiceTuple<Object> addingService(
+			ServiceReference<Object> serviceReference) {
+
+			Object service = _bundleContext.getService(serviceReference);
+
+			if (service == null) {
+				return null;
+			}
+
+			return new CompanyIdServiceReferenceServiceTuple<>(
+				serviceReference, service);
+		}
+
+		@Override
+		public void modifiedService(
+			ServiceReference<Object> serviceReference,
+			CompanyIdServiceReferenceServiceTuple<Object>
+				companyIdServiceReferenceServiceTuple) {
+
+			companyIdServiceReferenceServiceTuple.
+				_updateCompanyIdPropertyValue();
+		}
+
+		@Override
+		public void removedService(
+			ServiceReference<Object> serviceReference,
+			CompanyIdServiceReferenceServiceTuple<Object>
+				companyIdServiceReferenceServiceTuple) {
+
+			_bundleContext.ungetService(serviceReference);
+		}
+
+	}
 
 }

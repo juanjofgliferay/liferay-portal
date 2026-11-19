@@ -155,6 +155,14 @@ public class ProjectTemplatesTest implements BaseProjectTemplatesTestCase {
 			"mvc-portlet", "test", "--liferay-version", "10.0.0");
 	}
 
+	@Test
+	public void testBuildTemplateLiferayVersionValidLiferayQuarterly()
+		throws Exception {
+
+		_buildTemplateWithGradle(
+			"mvc-portlet", "test", "--liferay-version", "2024.q1.1");
+	}
+
 	@Test(expected = IllegalArgumentException.class)
 	public void testBuildTemplateOnExistingDirectory() throws Exception {
 		File destinationDir = temporaryFolder.newFolder("gradle");
@@ -202,15 +210,17 @@ public class ProjectTemplatesTest implements BaseProjectTemplatesTestCase {
 				String template = fileName.substring(
 					FileTestUtil.PROJECT_TEMPLATE_DIR_PREFIX.length());
 
-				if (!template.equals(WorkspaceUtil.WORKSPACE)) {
-					Properties properties = FileUtil.readProperties(
-						path.resolve("bnd.bnd"));
-
-					String bundleDescription = properties.getProperty(
-						"Bundle-Description");
-
-					expectedTemplates.put(template, bundleDescription);
+				if (template.equals(WorkspaceUtil.WORKSPACE)) {
+					continue;
 				}
+
+				Properties properties = FileUtil.readProperties(
+					path.resolve("bnd.bnd"));
+
+				String bundleDescription = properties.getProperty(
+					"Bundle-Description");
+
+				expectedTemplates.put(template, bundleDescription);
 			}
 		}
 

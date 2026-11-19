@@ -15,6 +15,7 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.portletfilerepository.PortletFileRepositoryUtil;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.zip.ZipWriter;
 
 /**
@@ -49,30 +50,48 @@ public class StyleBookEntryImpl extends StyleBookEntryBaseImpl {
 	public void populateZipWriter(ZipWriter zipWriter, String path)
 		throws Exception {
 
-		path = path + StringPool.SLASH + getStyleBookEntryKey();
+		String frontendTokenDefinition = getFrontendTokenDefinition();
+		FileEntry previewFileEntry = _getPreviewFileEntry();
 
 		JSONObject jsonObject = JSONUtil.put(
+			"defaultStyleBookEntry", isDefaultStyleBookEntry()
+		).put(
+			"frontendTokenDefinitionPath",
+			() -> {
+				if (Validator.isBlank(frontendTokenDefinition)) {
+					return null;
+				}
+
+				return "frontend-token-definition.json";
+			}
+		).put(
 			"frontendTokensValuesPath", "frontend-tokens-values.json"
 		).put(
 			"name", getName()
+		).put(
+			"themeId", getThemeId()
+		).put(
+			"thumbnailPath", () -> _getThumbnailFileName(previewFileEntry)
 		);
 
-		FileEntry previewFileEntry = _getPreviewFileEntry();
+		path = path + StringPool.SLASH + getStyleBookEntryKey();
 
-		if (previewFileEntry != null) {
-			jsonObject.put(
-				"thumbnailPath",
-				"thumbnail." + previewFileEntry.getExtension());
+		zipWriter.addEntry(
+			path + "/style-book.json", JSONUtil.toString(jsonObject));
+
+		if (!Validator.isBlank(frontendTokenDefinition)) {
+			zipWriter.addEntry(
+				path + "/frontend-token-definition.json",
+				frontendTokenDefinition);
 		}
-
-		zipWriter.addEntry(path + "/style-book.json", jsonObject.toString());
 
 		zipWriter.addEntry(
 			path + "/frontend-tokens-values.json", getFrontendTokensValues());
 
 		if (previewFileEntry != null) {
 			zipWriter.addEntry(
-				path + "/thumbnail." + previewFileEntry.getExtension(),
+				path + StringPool.SLASH +
+					_getThumbnailFileName(previewFileEntry),
 				previewFileEntry.getContentStream());
 		}
 	}
@@ -94,6 +113,14 @@ public class StyleBookEntryImpl extends StyleBookEntryBaseImpl {
 		}
 
 		return null;
+	}
+
+	private String _getThumbnailFileName(FileEntry previewFileEntry) {
+		if (previewFileEntry == null) {
+			return null;
+		}
+
+		return "thumbnail." + previewFileEntry.getExtension();
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(

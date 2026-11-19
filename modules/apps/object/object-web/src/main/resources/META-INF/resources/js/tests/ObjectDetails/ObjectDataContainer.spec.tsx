@@ -1,200 +1,101 @@
 /**
- * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-FileCopyrightText: (c) 2026 Liferay, Inc. https://liferay.com
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import '@testing-library/jest-dom/extend-expect';
+import '@testing-library/jest-dom';
 import {render, screen} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import React from 'react';
 
 import {ObjectDataContainer} from '../../components/ObjectDetails/ObjectDataContainer';
 
-const baseValuesMock = {
-	active: false,
-	defaultLanguageId: 'en_US',
-	externalReferenceCode: '',
-	id: 0,
-	label: {en_US: 'Label Test'},
-	modifiable: false,
-	name: 'Object Name',
-	pluralLabel: {en_US: 'Plural Label Test'},
-	system: false,
-	titleObjectFieldName: '',
-} as Partial<ObjectDefinition>;
+const objectDataContainerDefaultProps = {
+	dbTableName: 'WarrantyClaim',
+	errors: {},
+	handleChange: () => {},
+	hasUpdateObjectDefinitionPermission: true,
+	isApproved: true,
+	setValues: () => {},
+	values: {
+		active: true,
+		label: {en_US: 'Warranty Claim'},
+		modifiable: true,
+		name: 'WarrantyClaim',
+		pluralLabel: {en_US: 'Warranty Claims'},
+		system: false,
+	},
+};
 
-describe('ObjectDataContainer component', () => {
-	describe('if the object definition is published', () => {
-		it('shows object name input as disabled', () => {
-			render(
-				<ObjectDataContainer
-					dbTableName=""
-					errors={{}}
-					handleChange={() => {}}
-					hasUpdateObjectDefinitionPermission={true}
-					isApproved={true}
-					isLinkedObjectDefinition={false}
-					onSubmit={() => {}}
-					setValues={() => {}}
-					values={baseValuesMock}
-				/>
-			);
+const renderComponent = (customProps = {}) =>
+	render(
+		<ObjectDataContainer
+			{...objectDataContainerDefaultProps}
+			{...customProps}
+		/>
+	);
 
-			const objectNameInput = document.getElementById(
-				'lfr-objects__object-data-container-name'
-			);
-
-			expect(objectNameInput).toBeDisabled();
+describe('Object definition description', () => {
+	it('does not render when the object definition is an unmodifiable system object', () => {
+		renderComponent({
+			values: {
+				...objectDataContainerDefaultProps.values,
+				modifiable: false,
+				system: true,
+			},
 		});
 
-		it('shows the active object toggle as checked and not disabled', () => {
-			render(
-				<ObjectDataContainer
-					dbTableName=""
-					errors={{}}
-					handleChange={() => {}}
-					hasUpdateObjectDefinitionPermission={true}
-					isApproved={true}
-					isLinkedObjectDefinition={false}
-					onSubmit={() => {}}
-					setValues={() => {}}
-					values={{
-						...baseValuesMock,
-						active: true,
-					}}
-				/>
-			);
+		expect(screen.queryByLabelText('description')).not.toBeInTheDocument();
+	});
 
-			const toggleElement = screen.getByLabelText('activate-x');
+	it('is disabled without the update object definition permission', () => {
+		renderComponent({hasUpdateObjectDefinitionPermission: false});
 
-			expect(toggleElement).toBeChecked();
-			expect(toggleElement).not.toBeDisabled();
+		expect(screen.getByLabelText('description')).toBeDisabled();
+	});
+
+	it('renders for a modifiable system object', () => {
+		renderComponent({
+			values: {
+				...objectDataContainerDefaultProps.values,
+				modifiable: true,
+				system: true,
+			},
 		});
+
+		expect(screen.getByLabelText('description')).toBeInTheDocument();
 	});
 
-	it('shows the object definition name input value and makes it required', () => {
-		render(
-			<ObjectDataContainer
-				dbTableName=""
-				errors={{}}
-				handleChange={() => {}}
-				hasUpdateObjectDefinitionPermission={true}
-				isApproved={false}
-				isLinkedObjectDefinition={false}
-				onSubmit={() => {}}
-				setValues={() => {}}
-				values={baseValuesMock}
-			/>
-		);
-
-		const objectNameInput = document.getElementById(
-			'lfr-objects__object-data-container-name'
-		);
-
-		const objectNameInputLabel = screen.getByText('name');
-
-		expect(objectNameInputLabel).toHaveTextContent('mandatory');
-		expect(objectNameInput).toHaveValue('Object Name');
-	});
-
-	it('shows the object definition name input value disable when there is no editing permission ', () => {
-		render(
-			<ObjectDataContainer
-				dbTableName=""
-				errors={{}}
-				handleChange={() => {}}
-				hasUpdateObjectDefinitionPermission={false}
-				isApproved={false}
-				isLinkedObjectDefinition={false}
-				onSubmit={() => {}}
-				setValues={() => {}}
-				values={baseValuesMock}
-			/>
-		);
-
-		const objectNameInput = document.getElementById(
-			'lfr-objects__object-data-container-name'
-		);
-
-		expect(objectNameInput).toBeDisabled();
-	});
-
-	it('shows the object label input value', () => {
-		render(
-			<ObjectDataContainer
-				dbTableName=""
-				errors={{}}
-				handleChange={() => {}}
-				hasUpdateObjectDefinitionPermission={false}
-				isApproved={false}
-				isLinkedObjectDefinition={false}
-				onSubmit={() => {}}
-				setValues={() => {}}
-				values={baseValuesMock}
-			/>
-		);
-
-		expect(screen.getByDisplayValue('Label Test')).toBeInTheDocument();
-	});
-
-	it('shows the object definition plural label', () => {
-		render(
-			<ObjectDataContainer
-				dbTableName=""
-				errors={{}}
-				handleChange={() => {}}
-				hasUpdateObjectDefinitionPermission={false}
-				isApproved={false}
-				isLinkedObjectDefinition={false}
-				onSubmit={() => {}}
-				setValues={() => {}}
-				values={baseValuesMock}
-			/>
-		);
+	it('renders the help message explaining the English fallback', () => {
+		renderComponent();
 
 		expect(
-			screen.getByDisplayValue('Plural Label Test')
+			screen.getByText(
+				'provide-descriptive-text-used-only-by-ai-agents-and-api-consumers'
+			)
 		).toBeInTheDocument();
 	});
 
-	it('shows object definition table name and makes it disabled', () => {
-		render(
-			<ObjectDataContainer
-				dbTableName="DBTableName"
-				errors={{}}
-				handleChange={() => {}}
-				hasUpdateObjectDefinitionPermission={false}
-				isApproved={false}
-				isLinkedObjectDefinition={false}
-				onSubmit={() => {}}
-				setValues={() => {}}
-				values={baseValuesMock}
-			/>
-		);
+	it('reports every typed character to the form', async () => {
+		const setValues = jest.fn();
 
-		const tableNameInput = screen.getByDisplayValue('DBTableName');
+		renderComponent({setValues});
 
-		expect(tableNameInput).toBeInTheDocument();
-		expect(tableNameInput).toBeDisabled();
+		await userEvent.type(screen.getByLabelText('description'), 'A');
+
+		expect(setValues).toHaveBeenCalledWith({description: {en_US: 'A'}});
 	});
 
-	it('shows the toggle not checked and disabled by default', () => {
-		render(
-			<ObjectDataContainer
-				dbTableName=""
-				errors={{}}
-				handleChange={() => {}}
-				hasUpdateObjectDefinitionPermission={false}
-				isApproved={false}
-				isLinkedObjectDefinition={false}
-				onSubmit={() => {}}
-				setValues={() => {}}
-				values={baseValuesMock}
-			/>
+	it('shows the authored value for the default locale', () => {
+		renderComponent({
+			values: {
+				...objectDataContainerDefaultProps.values,
+				description: {en_US: 'Claims raised against a warranty.'},
+			},
+		});
+
+		expect(screen.getByLabelText('description')).toHaveValue(
+			'Claims raised against a warranty.'
 		);
-
-		const toggleElement = screen.getByLabelText('activate-x');
-
-		expect(toggleElement).not.toBeChecked();
-		expect(toggleElement).toBeDisabled();
 	});
 });

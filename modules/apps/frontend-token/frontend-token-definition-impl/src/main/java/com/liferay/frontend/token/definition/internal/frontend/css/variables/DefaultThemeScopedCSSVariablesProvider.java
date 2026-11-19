@@ -7,22 +7,18 @@ package com.liferay.frontend.token.definition.internal.frontend.css.variables;
 
 import com.liferay.frontend.css.variables.ScopedCSSVariables;
 import com.liferay.frontend.css.variables.ScopedCSSVariablesProvider;
-import com.liferay.frontend.token.definition.FrontendToken;
 import com.liferay.frontend.token.definition.FrontendTokenDefinition;
 import com.liferay.frontend.token.definition.FrontendTokenDefinitionRegistry;
-import com.liferay.frontend.token.definition.FrontendTokenMapping;
-import com.liferay.portal.kernel.model.Group;
-import com.liferay.portal.kernel.model.LayoutSet;
-import com.liferay.portal.kernel.service.LayoutSetLocalService;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.ParamUtil;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -45,37 +41,28 @@ public class DefaultThemeScopedCSSVariablesProvider
 			(ThemeDisplay)httpServletRequest.getAttribute(
 				WebKeys.THEME_DISPLAY);
 
-		Group group = themeDisplay.getScopeGroup();
+		FrontendTokenDefinition frontendTokenDefinition = null;
 
-		LayoutSet layoutSet = _layoutSetLocalService.fetchLayoutSet(
-			themeDisplay.getSiteGroupId(), group.isLayoutSetPrototype());
+		String styleBookEntryThemeId = ParamUtil.getString(
+			httpServletRequest, "styleBookEntryThemeId");
 
-		FrontendTokenDefinition frontendTokenDefinition =
-			_frontendTokenDefinitionRegistry.getFrontendTokenDefinition(
-				layoutSet.getThemeId());
+		if (Validator.isNotNull(styleBookEntryThemeId)) {
+			frontendTokenDefinition =
+				_frontendTokenDefinitionRegistry.getFrontendTokenDefinition(
+					themeDisplay.getCompanyId(), styleBookEntryThemeId);
+		}
+		else {
+			frontendTokenDefinition =
+				_frontendTokenDefinitionRegistry.getFrontendTokenDefinition(
+					themeDisplay.getLayout());
+		}
 
 		if (frontendTokenDefinition == null) {
 			return Collections.emptyList();
 		}
 
-		Map<String, String> cssVariables = new HashMap<>();
-
-		Collection<FrontendToken> frontendTokens =
-			frontendTokenDefinition.getFrontendTokens();
-
-		for (FrontendToken frontendToken : frontendTokens) {
-			Collection<FrontendTokenMapping> frontendTokenMappings =
-				frontendToken.getFrontendTokenMappings(
-					FrontendTokenMapping.TYPE_CSS_VARIABLE);
-
-			for (FrontendTokenMapping frontendTokenMapping :
-					frontendTokenMappings) {
-
-				cssVariables.put(
-					frontendTokenMapping.getValue(),
-					frontendToken.getDefaultValue());
-			}
-		}
+		Map<String, String> cssVariables =
+			frontendTokenDefinition.getCSSVariables();
 
 		return Collections.singletonList(
 			new ScopedCSSVariables() {
@@ -95,8 +82,5 @@ public class DefaultThemeScopedCSSVariablesProvider
 
 	@Reference
 	private FrontendTokenDefinitionRegistry _frontendTokenDefinitionRegistry;
-
-	@Reference
-	private LayoutSetLocalService _layoutSetLocalService;
 
 }

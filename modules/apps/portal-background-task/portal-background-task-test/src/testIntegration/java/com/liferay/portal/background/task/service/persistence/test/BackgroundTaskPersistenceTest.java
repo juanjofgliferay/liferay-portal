@@ -111,11 +111,7 @@ public class BackgroundTaskPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		BackgroundTask newBackgroundTask = _persistence.create(pk);
-
-		newBackgroundTask.setMvccVersion(RandomTestUtil.nextLong());
+		BackgroundTask newBackgroundTask = addBackgroundTask();
 
 		newBackgroundTask.setGroupId(RandomTestUtil.nextLong());
 
@@ -143,11 +139,15 @@ public class BackgroundTaskPersistenceTest {
 
 		newBackgroundTask.setCompletionDate(RandomTestUtil.nextDate());
 
+		newBackgroundTask.setErrorStackTrace(RandomTestUtil.randomString());
+
 		newBackgroundTask.setStatus(RandomTestUtil.nextInt());
 
 		newBackgroundTask.setStatusMessage(RandomTestUtil.randomString());
 
-		_backgroundTasks.add(_persistence.update(newBackgroundTask));
+		newBackgroundTask = _persistence.update(newBackgroundTask);
+
+		_backgroundTasks.add(newBackgroundTask);
 
 		BackgroundTask existingBackgroundTask = _persistence.findByPrimaryKey(
 			newBackgroundTask.getPrimaryKey());
@@ -193,6 +193,9 @@ public class BackgroundTaskPersistenceTest {
 			Time.getShortTimestamp(existingBackgroundTask.getCompletionDate()),
 			Time.getShortTimestamp(newBackgroundTask.getCompletionDate()));
 		Assert.assertEquals(
+			existingBackgroundTask.getErrorStackTrace(),
+			newBackgroundTask.getErrorStackTrace());
+		Assert.assertEquals(
 			existingBackgroundTask.getStatus(), newBackgroundTask.getStatus());
 		Assert.assertEquals(
 			existingBackgroundTask.getStatusMessage(),
@@ -218,13 +221,6 @@ public class BackgroundTaskPersistenceTest {
 		_persistence.countByCompleted(RandomTestUtil.randomBoolean());
 
 		_persistence.countByCompleted(RandomTestUtil.randomBoolean());
-	}
-
-	@Test
-	public void testCountByStatus() throws Exception {
-		_persistence.countByStatus(RandomTestUtil.nextInt());
-
-		_persistence.countByStatus(0);
 	}
 
 	@Test
@@ -602,8 +598,6 @@ public class BackgroundTaskPersistenceTest {
 
 		BackgroundTask backgroundTask = _persistence.create(pk);
 
-		backgroundTask.setMvccVersion(RandomTestUtil.nextLong());
-
 		backgroundTask.setGroupId(RandomTestUtil.nextLong());
 
 		backgroundTask.setCompanyId(RandomTestUtil.nextLong());
@@ -628,6 +622,8 @@ public class BackgroundTaskPersistenceTest {
 
 		backgroundTask.setCompletionDate(RandomTestUtil.nextDate());
 
+		backgroundTask.setErrorStackTrace(RandomTestUtil.randomString());
+
 		backgroundTask.setStatus(RandomTestUtil.nextInt());
 
 		backgroundTask.setStatusMessage(RandomTestUtil.randomString());
@@ -643,3 +639,4 @@ public class BackgroundTaskPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:406199094

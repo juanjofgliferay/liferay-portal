@@ -291,7 +291,7 @@ public class PortletPreferenceValueLocalServiceUtil {
 			companyId, name, smallValue);
 	}
 
-	public static javax.portlet.PortletPreferences getPreferences(
+	public static jakarta.portlet.PortletPreferences getPreferences(
 		com.liferay.portal.kernel.model.PortletPreferences portletPreferences) {
 
 		return getService().getPreferences(portletPreferences);
@@ -325,3 +325,4 @@ public class PortletPreferenceValueLocalServiceUtil {
 	private static volatile PortletPreferenceValueLocalService _service;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1709895114

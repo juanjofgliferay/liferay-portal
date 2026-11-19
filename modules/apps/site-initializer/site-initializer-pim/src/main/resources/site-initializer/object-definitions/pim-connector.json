@@ -1,0 +1,110 @@
+{
+	"className": "com.liferay.object.model.ObjectDefinition#C0N1",
+	"enableCategorization": false,
+	"enableComments": false,
+	"enableFriendlyURLCustomization": false,
+	"enableIndexSearch": true,
+	"enableLocalization": false,
+	"enableObjectEntryDraft": false,
+	"enableObjectEntryHistory": false,
+	"enableObjectEntrySchedule": false,
+	"enableObjectEntrySubscription": false,
+	"externalReferenceCode": "L_PIM_CONNECTOR",
+	"label": {
+		"en_US": "PIM Connector"
+	},
+	"modifiable": true,
+	"name": "PIMConnector",
+	"objectActions": [
+	],
+	"objectDefinitionSettings": [
+	],
+	"objectFields": [
+		{
+			"DBType": "Boolean",
+			"businessType": "Boolean",
+			"defaultValue": false,
+			"externalReferenceCode": "ACTIVE",
+			"indexed": true,
+			"indexedAsKeyword": false,
+			"indexedLanguageId": "",
+			"label": {
+				"en_US": "Active"
+			},
+			"name": "active",
+			"required": false,
+			"system": true
+		},
+		{
+			"DBType": "String",
+			"businessType": "Text",
+			"externalReferenceCode": "KEY",
+			"indexed": true,
+			"indexedAsKeyword": true,
+			"indexedLanguageId": "",
+			"label": {
+				"en_US": "Key"
+			},
+			"name": "key",
+			"required": true,
+			"system": true
+		},
+		{
+			"DBType": "String",
+			"businessType": "Text",
+			"externalReferenceCode": "NAME",
+			"indexed": true,
+			"indexedAsKeyword": true,
+			"indexedLanguageId": "",
+			"label": {
+				"en_US": "Name"
+			},
+			"name": "name",
+			"required": true,
+			"system": true
+		}
+	],
+	"objectFolderExternalReferenceCode": "L_PIM_DEFINITIONS",
+	"objectRelationships": [
+		{
+			"deletionType": "cascade",
+			"externalReferenceCode": "L_PIM_CONNECTOR_TO_PIM_CONNECTOR_FIELD_MAPPINGS",
+			"label": {
+				"en_US": "PIM Connector to PIM Connector Field Mappings"
+			},
+			"name": "pimConnectorToPIMConnectorFieldMappings",
+			"objectDefinitionExternalReferenceCode1": "L_PIM_CONNECTOR",
+			"objectDefinitionExternalReferenceCode2": "L_PIM_CONNECTOR_FIELD_MAPPING",
+			"objectDefinitionName2": "PIMConnectorFieldMapping",
+			"parameterObjectFieldId": 0,
+			"parameterObjectFieldName": "",
+			"reverse": false,
+			"system": true,
+			"type": "oneToMany"
+		},
+		{
+			"deletionType": "cascade",
+			"externalReferenceCode": "L_PIM_CONNECTOR_TO_PIM_CONNECTOR_FIELD_MAPPING_RULES",
+			"label": {
+				"en_US": "PIM Connector to PIM Connector Field Mapping Rules"
+			},
+			"name": "pimConnectorToPIMFieldMappingRules",
+			"objectDefinitionExternalReferenceCode1": "L_PIM_CONNECTOR",
+			"objectDefinitionExternalReferenceCode2": "L_PIM_CONNECTOR_FIELD_MAPPING_RULE",
+			"objectDefinitionName2": "PIMConnectorFieldMappingRule",
+			"parameterObjectFieldId": 0,
+			"parameterObjectFieldName": "",
+			"reverse": false,
+			"system": true,
+			"type": "oneToMany"
+		}
+	],
+	"panelCategoryKey": "",
+	"pluralLabel": {
+		"en_US": "PIM Connectors"
+	},
+	"scope": "company",
+	"system": true,
+	"titleObjectFieldName": "name",
+	"updateStrategy": "UPDATE"
+}

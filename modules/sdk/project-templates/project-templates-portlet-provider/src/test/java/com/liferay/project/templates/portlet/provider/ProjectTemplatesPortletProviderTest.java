@@ -43,7 +43,8 @@ public class ProjectTemplatesPortletProviderTest
 			new Object[][] {
 				{"dxp", "7.0.10.17"}, {"dxp", "7.1.10.7"}, {"dxp", "7.2.10.7"},
 				{"portal", "7.3.7"}, {"portal", "7.4.3.56"},
-				{"portal", "7.4.3.86"}
+				{"portal", "7.4.3.86"}, {"dxp", "2024.q1.1"},
+				{"dxp", "2025.q3.1"}
 			});
 	}
 
@@ -100,15 +101,7 @@ public class ProjectTemplatesPortletProviderTest
 			gradleProjectDir,
 			"src/main/resources/META-INF/resources/css/main.scss");
 
-		if (VersionUtil.getMinorVersion(_liferayVersion) < 3) {
-			testContains(
-				gradleProjectDir, "build.gradle", DEPENDENCY_RELEASE_DXP_API);
-		}
-		else {
-			testContains(
-				gradleProjectDir, "build.gradle",
-				DEPENDENCY_RELEASE_PORTAL_API);
-		}
+		testGradlePortalReleaseDependency(gradleProjectDir, _liferayVersion);
 
 		testContains(
 			gradleProjectDir,
@@ -118,19 +111,28 @@ public class ProjectTemplatesPortletProviderTest
 			"public class ProviderTestPortletKeys",
 			"public static final String PROVIDERTEST",
 			"\"provider_test_ProviderTestPortlet\";");
+
+		String packagePrefix = getJavaxOrJakartaPackagePrefix(_liferayVersion);
+
 		testContains(
 			gradleProjectDir,
 			"src/main/java/provider/test/portlet/ProviderTestPortlet.java",
-			"javax.portlet.display-name=ProviderTest",
-			"javax.portlet.name=\" + ProviderTestPortletKeys.PROVIDERTEST",
+			packagePrefix + ".portlet.display-name=ProviderTest",
+			packagePrefix +
+				".portlet.name=\" + ProviderTestPortletKeys.PROVIDERTEST",
 			"public class ProviderTestPortlet extends MVCPortlet {");
 		testContains(
 			gradleProjectDir, "src/main/resources/content/Language.properties",
-			"javax.portlet.title.provider_test_ProviderTestPortlet=" +
-				"ProviderTest",
+			packagePrefix +
+				".portlet.title.provider_test_ProviderTestPortlet=ProviderTest",
 			"providertest.caption=Hello from ProviderTest!");
 
 		testNotContains(gradleProjectDir, "build.gradle", "version: \"[0-9].*");
+
+		if (VersionUtil.isJakartaCompatibleVersion(_liferayVersion)) {
+			testPortletUpdatedForJakarta(
+				gradleProjectDir, name, "ProviderTest");
+		}
 
 		File mavenWorkspaceDir = buildWorkspace(
 			temporaryFolder, "maven", "mavenWS", _liferayVersion,
@@ -138,27 +140,20 @@ public class ProjectTemplatesPortletProviderTest
 
 		File mavenModulesDir = new File(mavenWorkspaceDir, "modules");
 
-		String newTemplate = "false";
+		boolean newTemplate = false;
 
-		if (_liferayVersion.startsWith("7.4")) {
-			String qualifiedVersion = _liferayVersion.substring(
-				_liferayVersion.lastIndexOf(".") + 1);
+		if (_liferayVersion.equals("7.4.3.86") ||
+			VersionUtil.isLiferayQuarterlyVersion(_liferayVersion)) {
 
-			if (_liferayProduct.equals("dxp")) {
-				qualifiedVersion = qualifiedVersion.substring(1);
-			}
-
-			if (Integer.valueOf(qualifiedVersion) > 71) {
-				newTemplate = "true";
-			}
+			newTemplate = true;
 		}
 
 		File mavenProjectDir = buildTemplateWithMaven(
 			mavenModulesDir, mavenModulesDir, template, name, "com.test",
 			mavenExecutor, "-DclassName=ProviderTest",
 			"-DliferayProduct=" + _liferayProduct,
-			"-DnewTemplate=" + newTemplate,
-			"-DliferayVersion=" + _liferayVersion, "-Dpackage=provider.test");
+			"-DliferayVersion=" + _liferayVersion,
+			"-DnewTemplate=" + newTemplate, "-Dpackage=provider.test");
 
 		if (!_liferayVersion.startsWith("7.0")) {
 			testContains(

@@ -1,0 +1,27 @@
+.contributor-builder-root {
+	height: 100%;
+
+	.criteria-builder-section-main {
+		height: 100%;
+		overflow: auto;
+	}
+
+	.drag-icon {
+		color: $mainLighten52;
+
+		&:hover {
+			cursor: grab;
+		}
+	}
+
+	.empty-state {
+		background-color: $lightBackground;
+		border: 1px solid $mainLighten74;
+		border-left: 3px solid $chartBlue;
+		border-radius: 4px;
+		color: $mainLighten28;
+		cursor: pointer;
+		font-weight: 600;
+		padding: 16px 32px;
+	}
+}

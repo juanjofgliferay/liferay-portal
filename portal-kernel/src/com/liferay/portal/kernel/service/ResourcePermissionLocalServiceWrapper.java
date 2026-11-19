@@ -211,8 +211,7 @@ public class ResourcePermissionLocalServiceWrapper
 
 	@Override
 	public void copyModelResourcePermissions(
-			long companyId, String name, long sourcePrimKey, long targetPrimKey)
-		throws com.liferay.portal.kernel.exception.PortalException {
+		long companyId, String name, long sourcePrimKey, long targetPrimKey) {
 
 		_resourcePermissionLocalService.copyModelResourcePermissions(
 			companyId, name, sourcePrimKey, targetPrimKey);
@@ -294,6 +293,14 @@ public class ResourcePermissionLocalServiceWrapper
 			resourcePermission);
 	}
 
+	@Override
+	public void deleteResourcePermissions(
+		long companyId, String name, int scope) {
+
+		_resourcePermissionLocalService.deleteResourcePermissions(
+			companyId, name, scope);
+	}
+
 	/**
 	 * Deletes all resource permissions at the scope to resources of the type.
 	 * This method should not be confused with any of the
@@ -352,6 +359,11 @@ public class ResourcePermissionLocalServiceWrapper
 
 		_resourcePermissionLocalService.deleteResourcePermissions(
 			companyId, name, scope, primKey);
+	}
+
+	@Override
+	public void deleteResourcePermissions(String name) {
+		_resourcePermissionLocalService.deleteResourcePermissions(name);
 	}
 
 	@Override
@@ -524,14 +536,6 @@ public class ResourcePermissionLocalServiceWrapper
 			getIndexableActionableDynamicQuery();
 	}
 
-	@Override
-	public java.util.Map<String, java.util.List<ResourcePermission>>
-		getIndividualPortletResourcePermissions(long companyId) {
-
-		return _resourcePermissionLocalService.
-			getIndividualPortletResourcePermissions(companyId);
-	}
-
 	/**
 	 * Returns the OSGi service identifier.
 	 *
@@ -609,6 +613,23 @@ public class ResourcePermissionLocalServiceWrapper
 			start, end);
 	}
 
+	@Override
+	public java.util.List<ResourcePermission> getResourcePermissions(
+		long companyId, String name, int scope) {
+
+		return _resourcePermissionLocalService.getResourcePermissions(
+			companyId, name, scope);
+	}
+
+	@Override
+	public java.util.List<ResourcePermission> getResourcePermissions(
+		long companyId, String name, int scope, long roleId,
+		boolean viewActionId) {
+
+		return _resourcePermissionLocalService.getResourcePermissions(
+			companyId, name, scope, roleId, viewActionId);
+	}
+
 	/**
 	 * Returns all the resource permissions at the scope of the type.
 	 *
@@ -663,24 +684,6 @@ public class ResourcePermissionLocalServiceWrapper
 	}
 
 	/**
-	 * Returns the resource permissions that apply to the resource.
-	 *
-	 * @param companyId the primary key of the resource's company
-	 * @param groupId the primary key of the resource's group
-	 * @param name the resource's name, which can be either a class name or a
-	 portlet ID
-	 * @param primKey the primary key of the resource
-	 * @return the resource permissions associated with the resource
-	 */
-	@Override
-	public java.util.List<ResourcePermission> getResourceResourcePermissions(
-		long companyId, long groupId, String name, String primKey) {
-
-		return _resourcePermissionLocalService.getResourceResourcePermissions(
-			companyId, groupId, name, primKey);
-	}
-
-	/**
 	 * Returns all the resource permissions for the role.
 	 *
 	 * @param roleId the primary key of the role
@@ -724,9 +727,8 @@ public class ResourcePermissionLocalServiceWrapper
 
 	@Override
 	public java.util.List<com.liferay.portal.kernel.model.Role> getRoles(
-			long companyId, String name, int scope, String primKey,
-			String actionId)
-		throws com.liferay.portal.kernel.exception.PortalException {
+		long companyId, String name, int scope, String primKey,
+		String actionId) {
 
 		return _resourcePermissionLocalService.getRoles(
 			companyId, name, scope, primKey, actionId);
@@ -890,6 +892,15 @@ public class ResourcePermissionLocalServiceWrapper
 
 		return _resourcePermissionLocalService.hasScopeResourcePermission(
 			companyId, name, scope, roleId, actionId);
+	}
+
+	@Override
+	public void initDefaultModelResourcePermissions(
+			long companyId, java.util.Collection<String> modelResources)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		_resourcePermissionLocalService.initDefaultModelResourcePermissions(
+			companyId, modelResources);
 	}
 
 	@Override
@@ -1217,3 +1228,4 @@ public class ResourcePermissionLocalServiceWrapper
 	private ResourcePermissionLocalService _resourcePermissionLocalService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:11624452

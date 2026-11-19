@@ -115,12 +115,8 @@ public class CommerceSubscriptionEntryPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
 		CommerceSubscriptionEntry newCommerceSubscriptionEntry =
-			_persistence.create(pk);
-
-		newCommerceSubscriptionEntry.setMvccVersion(RandomTestUtil.nextLong());
+			addCommerceSubscriptionEntry();
 
 		newCommerceSubscriptionEntry.setUuid(RandomTestUtil.randomString());
 
@@ -196,8 +192,10 @@ public class CommerceSubscriptionEntryPersistenceTest {
 		newCommerceSubscriptionEntry.setDeliveryStartDate(
 			RandomTestUtil.nextDate());
 
-		_commerceSubscriptionEntries.add(
-			_persistence.update(newCommerceSubscriptionEntry));
+		newCommerceSubscriptionEntry = _persistence.update(
+			newCommerceSubscriptionEntry);
+
+		_commerceSubscriptionEntries.add(newCommerceSubscriptionEntry);
 
 		CommerceSubscriptionEntry existingCommerceSubscriptionEntry =
 			_persistence.findByPrimaryKey(
@@ -347,13 +345,6 @@ public class CommerceSubscriptionEntryPersistenceTest {
 		_persistence.countByGroupId(RandomTestUtil.nextLong());
 
 		_persistence.countByGroupId(0L);
-	}
-
-	@Test
-	public void testCountByCompanyId() throws Exception {
-		_persistence.countByCompanyId(RandomTestUtil.nextLong());
-
-		_persistence.countByCompanyId(0L);
 	}
 
 	@Test
@@ -786,8 +777,6 @@ public class CommerceSubscriptionEntryPersistenceTest {
 		CommerceSubscriptionEntry commerceSubscriptionEntry =
 			_persistence.create(pk);
 
-		commerceSubscriptionEntry.setMvccVersion(RandomTestUtil.nextLong());
-
 		commerceSubscriptionEntry.setUuid(RandomTestUtil.randomString());
 
 		commerceSubscriptionEntry.setGroupId(RandomTestUtil.nextLong());
@@ -874,3 +863,4 @@ public class CommerceSubscriptionEntryPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1222307697

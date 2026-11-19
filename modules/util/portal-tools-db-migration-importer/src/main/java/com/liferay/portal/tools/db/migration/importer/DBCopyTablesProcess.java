@@ -1,0 +1,939 @@
+/**
+ * SPDX-FileCopyrightText: (c) 2024 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
+ */
+
+package com.liferay.portal.tools.db.migration.importer;
+
+import com.liferay.petra.reflect.ReflectionUtil;
+import com.liferay.petra.string.CharPool;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
+import com.liferay.portal.dao.jdbc.postgresql.PostgreSQLJDBCUtil;
+import com.liferay.portal.kernel.dao.db.DB;
+import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.module.framework.ThrowableCollector;
+import com.liferay.portal.kernel.util.Base64;
+import com.liferay.portal.kernel.util.DateUtil;
+import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.ListUtil;
+import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.tools.db.migration.importer.jdbc.AutoBatchPreparedStatementUtil;
+import com.liferay.portal.tools.db.migration.importer.jdbc.ConnectionConfigUtil;
+
+import java.math.BigDecimal;
+
+import java.nio.charset.StandardCharsets;
+
+import java.sql.Blob;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Timestamp;
+import java.sql.Types;
+
+import java.text.DateFormat;
+
+import java.time.LocalTime;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import javax.sql.DataSource;
+
+/**
+ * @author Mariano Álvaro Sáiz
+ */
+public class DBCopyTablesProcess {
+
+	public DBCopyTablesProcess(
+		DataSource sourceDataSource, DataSource targetDataSource) {
+
+		this(null, sourceDataSource, targetDataSource);
+	}
+
+	public DBCopyTablesProcess(
+		String partitionName, DataSource sourceDataSource,
+		DataSource targetDataSource) {
+
+		_sourceDataSource = sourceDataSource;
+		_targetDataSource = targetDataSource;
+
+		if (partitionName == null) {
+			_partitionMessage = " in the default schema";
+		}
+		else {
+			_partitionMessage = " in partition " + partitionName;
+		}
+	}
+
+	public void run() throws Exception {
+		_loadColumnsMetadata();
+
+		_addCustomColumnsAndTables();
+
+		_copyTables();
+	}
+
+	private void _addCustomColumnsAndTables() throws Exception {
+		try (Connection sourceConnection = _sourceDataSource.getConnection();
+
+			Connection targetConnection = _targetDataSource.getConnection();
+
+			Statement statement = targetConnection.createStatement()) {
+
+			DatabaseMetaData databaseMetaData = sourceConnection.getMetaData();
+
+			Map<String, List<String>> columnDefinitionsMap = new TreeMap<>(
+				String.CASE_INSENSITIVE_ORDER);
+			Set<String> longNameTableNames = new TreeSet<>(
+				String.CASE_INSENSITIVE_ORDER);
+
+			try (ResultSet resultSet = databaseMetaData.getColumns(
+					sourceConnection.getCatalog(), sourceConnection.getSchema(),
+					null, null)) {
+
+				while (resultSet.next()) {
+					String tableName = resultSet.getString("TABLE_NAME");
+
+					if (!_sourceColumnNamesMap.containsKey(tableName)) {
+						continue;
+					}
+
+					String columnName = resultSet.getString("COLUMN_NAME");
+
+					List<String> targetColumnNames = _targetColumnNamesMap.get(
+						tableName);
+
+					if (targetColumnNames == null) {
+						if (_isLongName(columnName) || _isLongName(tableName)) {
+							longNameTableNames.add(tableName);
+
+							continue;
+						}
+
+						String columnDefinition = _getColumnDefinition(
+							columnName, resultSet);
+
+						if (resultSet.getInt("NULLABLE") ==
+								DatabaseMetaData.columnNoNulls) {
+
+							columnDefinition += " not null";
+						}
+
+						List<String> columnDefinitions =
+							columnDefinitionsMap.computeIfAbsent(
+								tableName, newTableName -> new ArrayList<>());
+
+						columnDefinitions.add(columnDefinition);
+
+						continue;
+					}
+
+					if (ListUtil.exists(
+							targetColumnNames,
+							targetColumnName -> StringUtil.equalsIgnoreCase(
+								targetColumnName, columnName))) {
+
+						continue;
+					}
+
+					if (_isLongName(columnName)) {
+						System.out.println(
+							StringBundler.concat(
+								"Unable to add column ", columnName,
+								" to table ", tableName, _partitionMessage,
+								" because its name is longer than ",
+								_POSTGRESQL_NAME_MAX_LENGTH, " bytes"));
+
+						continue;
+					}
+
+					statement.executeUpdate(
+						StringBundler.concat(
+							"alter table ",
+							_getQuotedName(StringUtil.toLowerCase(tableName)),
+							" add ",
+							_getColumnDefinition(columnName, resultSet)));
+				}
+			}
+
+			for (String longNameTableName : longNameTableNames) {
+				columnDefinitionsMap.remove(longNameTableName);
+
+				System.out.println(
+					StringBundler.concat(
+						"Unable to create table ", longNameTableName,
+						_partitionMessage, " because its name or the name of ",
+						"one of its columns is longer than ",
+						_POSTGRESQL_NAME_MAX_LENGTH, " bytes"));
+			}
+
+			for (Map.Entry<String, List<String>> entry :
+					columnDefinitionsMap.entrySet()) {
+
+				statement.executeUpdate(
+					StringBundler.concat(
+						"create table ",
+						_getQuotedName(StringUtil.toLowerCase(entry.getKey())),
+						" (", StringUtil.merge(entry.getValue()), ")"));
+			}
+		}
+
+		_targetColumnNamesMap.clear();
+		_targetColumnsType.clear();
+
+		_loadColumnNamesMap(
+			_targetColumnNamesMap, _targetColumnsType, _targetDataSource);
+	}
+
+	private void _copyTable(String sourceTableName, String targetTableName)
+		throws Exception {
+
+		List<String> sourceColumnNames = _sourceColumnNamesMap.get(
+			sourceTableName);
+		List<String> targetColumnNames = _targetColumnNamesMap.get(
+			targetTableName);
+
+		Set<String> sourceColumnNamesSet = new TreeSet<String>(
+			String.CASE_INSENSITIVE_ORDER) {
+
+			{
+				addAll(sourceColumnNames);
+			}
+		};
+
+		targetColumnNames.removeIf(
+			columnName -> !sourceColumnNamesSet.contains(columnName));
+
+		String selectSQL = StringBundler.concat(
+			"select ", StringUtil.merge(sourceColumnNames), " from ",
+			sourceTableName);
+		String insertSQL = StringBundler.concat(
+			"insert into ", _getQuotedName(targetTableName), " (",
+			StringUtil.merge(
+				ListUtil.toList(targetColumnNames, this::_getQuotedName), ", "),
+			") values (",
+			StringUtil.merge(
+				Collections.nCopies(targetColumnNames.size(), "?")),
+			")");
+
+		try (Connection sourceConnection = _sourceDataSource.getConnection();
+			Connection targetConnection = _targetDataSource.getConnection();
+			PreparedStatement preparedStatement1 =
+				sourceConnection.prepareStatement(selectSQL);
+			PreparedStatement preparedStatement2 =
+				AutoBatchPreparedStatementUtil.concurrentAutoBatch(
+					targetConnection, insertSQL)) {
+
+			preparedStatement1.setFetchSize(
+				ConnectionConfigUtil.getFetchSize());
+
+			try (ResultSet resultSet = preparedStatement1.executeQuery()) {
+				while (resultSet.next()) {
+					for (int i = 0; i < sourceColumnNames.size(); i++) {
+						String columnName = sourceColumnNames.get(i);
+
+						_getAndSetColumn(
+							columnName, i + 1, preparedStatement2, resultSet,
+							_sourceColumnsType.get(
+								sourceTableName + "." + columnName),
+							_targetColumnsType.get(
+								targetTableName + "." +
+									targetColumnNames.get(i)));
+					}
+
+					preparedStatement2.addBatch();
+				}
+			}
+
+			preparedStatement2.executeBatch();
+		}
+	}
+
+	private void _copyTables() throws Exception {
+		List<Future<?>> futures = new ArrayList<>();
+
+		ExecutorService executorService = Executors.newFixedThreadPool(5);
+
+		Set<String> sourceTableNames = _sourceColumnNamesMap.keySet();
+		Set<String> targetTableNames = _targetColumnNamesMap.keySet();
+
+		sourceTableNames.retainAll(targetTableNames);
+
+		targetTableNames.retainAll(sourceTableNames);
+
+		_validateTables(sourceTableNames, targetTableNames);
+
+		AtomicInteger count = new AtomicInteger();
+		Iterator<String> sourceIterator = sourceTableNames.iterator();
+		Iterator<String> targetIterator = targetTableNames.iterator();
+
+		ThrowableCollector throwableCollector = new ThrowableCollector();
+
+		while (sourceIterator.hasNext()) {
+			String sourceTableName = sourceIterator.next();
+			String targetTableName = targetIterator.next();
+
+			futures.add(
+				executorService.submit(
+					() -> {
+						try {
+							_copyTable(sourceTableName, targetTableName);
+
+							if ((count.incrementAndGet() % 10) == 0) {
+								System.out.println(
+									StringBundler.concat(
+										"Copied ", count, " tables out of ",
+										sourceTableNames.size(),
+										_partitionMessage));
+							}
+						}
+						catch (Exception exception) {
+							throwableCollector.collect(exception);
+						}
+					}));
+		}
+
+		for (Future<?> future : futures) {
+			future.get();
+		}
+
+		System.out.println("All tables copied" + _partitionMessage);
+
+		Throwable throwable = throwableCollector.getThrowable();
+
+		if (throwable != null) {
+			ReflectionUtil.throwException(throwable);
+		}
+	}
+
+	private void _getAndSetColumn(
+			String columnName, int index, PreparedStatement preparedStatement,
+			ResultSet resultSet, int sourceType, int targetType)
+		throws Exception {
+
+		String valueString = null;
+
+		if (sourceType == Types.BIGINT) {
+			long value = resultSet.getLong(columnName);
+
+			if ((value == 0L) && resultSet.wasNull()) {
+				preparedStatement.setNull(index, targetType);
+
+				return;
+			}
+
+			if ((targetType == Types.BIGINT) || (targetType == Types.NUMERIC)) {
+				preparedStatement.setLong(index, value);
+
+				return;
+			}
+
+			valueString = String.valueOf(value);
+		}
+		else if ((sourceType == Types.BINARY) ||
+				 (sourceType == Types.LONGVARBINARY) ||
+				 (sourceType == Types.VARBINARY)) {
+
+			byte[] value = resultSet.getBytes(columnName);
+
+			if (value == null) {
+				preparedStatement.setNull(index, targetType);
+
+				return;
+			}
+
+			if ((targetType == Types.BINARY) ||
+				(targetType == Types.LONGVARBINARY)) {
+
+				preparedStatement.setBytes(index, value);
+
+				return;
+			}
+			else if (targetType == Types.BIGINT) {
+				PostgreSQLJDBCUtil.setLargeObject(
+					preparedStatement, index, value);
+
+				return;
+			}
+
+			valueString = new String(value);
+		}
+		else if (sourceType == Types.BLOB) {
+			Blob value = resultSet.getBlob(columnName);
+
+			if (value == null) {
+				preparedStatement.setNull(index, targetType);
+
+				return;
+			}
+
+			if (targetType == Types.BIGINT) {
+				PostgreSQLJDBCUtil.setLargeObject(
+					preparedStatement, index,
+					value.getBytes(1, (int)value.length()));
+
+				return;
+			}
+			else if (targetType == Types.BINARY) {
+				preparedStatement.setBinaryStream(
+					index, value.getBinaryStream());
+
+				return;
+			}
+
+			valueString = new String(value.getBytes(1, (int)value.length()));
+		}
+		else if ((sourceType == Types.BOOLEAN) || (sourceType == Types.BIT)) {
+			boolean value = resultSet.getBoolean(columnName);
+
+			if (!value && resultSet.wasNull()) {
+				preparedStatement.setNull(index, targetType);
+
+				return;
+			}
+
+			if ((targetType == Types.BOOLEAN) || (targetType == Types.BIT)) {
+				preparedStatement.setBoolean(index, value);
+
+				return;
+			}
+
+			valueString = value ? "1" : "0";
+		}
+		else if ((sourceType == Types.CHAR) ||
+				 (sourceType == Types.LONGNVARCHAR) ||
+				 (sourceType == Types.LONGVARCHAR) ||
+				 (sourceType == Types.NCHAR) || (sourceType == Types.NCLOB) ||
+				 (sourceType == Types.NVARCHAR) || (sourceType == Types.TIME) ||
+				 (sourceType == Types.VARCHAR)) {
+
+			String value = resultSet.getString(columnName);
+
+			if (value == null) {
+				preparedStatement.setNull(index, targetType);
+
+				return;
+			}
+
+			if ((targetType == Types.LONGNVARCHAR) ||
+				(targetType == Types.VARCHAR)) {
+
+				preparedStatement.setString(index, _getSanitizedString(value));
+
+				return;
+			}
+
+			valueString = value;
+		}
+		else if (sourceType == Types.CLOB) {
+			String value = resultSet.getString(columnName);
+
+			if (value == null) {
+				preparedStatement.setNull(index, targetType);
+
+				return;
+			}
+
+			valueString = value;
+		}
+		else if ((sourceType == Types.DATE) ||
+				 (sourceType == Types.TIMESTAMP) ||
+				 (sourceType == Types.TIMESTAMP_WITH_TIMEZONE) ||
+				 (sourceType ==
+					 _SQL_TYPE_ORACLE_TIMESTAMP_WITH_LOCAL_TIME_ZONE) ||
+				 (sourceType == _SQL_TYPE_ORACLE_TIMESTAMP_WITH_TIME_ZONE) ||
+				 (sourceType == _SQL_TYPE_SQL_SERVER_DATETIMEOFFSET)) {
+
+			Timestamp value = resultSet.getTimestamp(columnName);
+
+			if (value == null) {
+				preparedStatement.setNull(index, targetType);
+
+				return;
+			}
+
+			if (targetType == Types.TIMESTAMP) {
+				preparedStatement.setTimestamp(index, value);
+
+				return;
+			}
+
+			valueString = value.toString();
+		}
+		else if ((sourceType == Types.DECIMAL) ||
+				 (sourceType == Types.NUMERIC)) {
+
+			BigDecimal value = resultSet.getBigDecimal(columnName);
+
+			if (value == null) {
+				preparedStatement.setNull(index, targetType);
+
+				return;
+			}
+
+			if (targetType == Types.BIGINT) {
+				preparedStatement.setLong(index, value.longValue());
+
+				return;
+			}
+
+			if (targetType == Types.BIT) {
+				preparedStatement.setBoolean(index, value.signum() != 0);
+
+				return;
+			}
+
+			if (targetType == Types.INTEGER) {
+				preparedStatement.setInt(index, value.intValue());
+
+				return;
+			}
+
+			if (targetType == Types.NUMERIC) {
+				preparedStatement.setBigDecimal(index, value);
+
+				return;
+			}
+
+			valueString = value.toString();
+		}
+		else if ((sourceType == Types.DOUBLE) || (sourceType == Types.FLOAT) ||
+				 (sourceType == _SQL_TYPE_ORACLE_BINARY_DOUBLE)) {
+
+			double value = resultSet.getDouble(columnName);
+
+			if ((value == 0.0) && resultSet.wasNull()) {
+				preparedStatement.setNull(index, targetType);
+
+				return;
+			}
+
+			if (targetType == Types.DOUBLE) {
+				preparedStatement.setDouble(index, value);
+
+				return;
+			}
+
+			valueString = String.valueOf(value);
+		}
+		else if (sourceType == Types.INTEGER) {
+			int value = resultSet.getInt(columnName);
+
+			if ((value == 0) && resultSet.wasNull()) {
+				preparedStatement.setNull(index, targetType);
+
+				return;
+			}
+
+			if (targetType == Types.INTEGER) {
+				preparedStatement.setInt(index, value);
+
+				return;
+			}
+
+			valueString = String.valueOf(value);
+		}
+		else if ((sourceType == Types.REAL) ||
+				 (sourceType == _SQL_TYPE_ORACLE_BINARY_FLOAT)) {
+
+			float value = resultSet.getFloat(columnName);
+
+			if ((value == 0.0F) && resultSet.wasNull()) {
+				preparedStatement.setNull(index, targetType);
+
+				return;
+			}
+
+			valueString = String.valueOf(value);
+		}
+		else if ((sourceType == Types.TINYINT) ||
+				 (sourceType == Types.SMALLINT)) {
+
+			short value = resultSet.getShort(columnName);
+
+			if ((value == 0) && resultSet.wasNull()) {
+				preparedStatement.setNull(index, targetType);
+
+				return;
+			}
+
+			valueString = String.valueOf(value);
+		}
+		else if ((targetType == Types.LONGVARCHAR) ||
+				 (targetType == Types.VARCHAR)) {
+
+			String value = resultSet.getString(columnName);
+
+			if (value == null) {
+				preparedStatement.setNull(index, targetType);
+
+				return;
+			}
+
+			valueString = value;
+		}
+		else {
+			throw new PortalException("Invalid type " + sourceType);
+		}
+
+		_setColumn(index, preparedStatement, targetType, valueString);
+	}
+
+	private String _getColumnDefinition(String columnName, ResultSet resultSet)
+		throws SQLException {
+
+		return StringBundler.concat(
+			_getQuotedName(StringUtil.toLowerCase(columnName)), " ",
+			_getPostgreSQLColumnType(
+				resultSet.getInt("COLUMN_SIZE"), resultSet.getInt("DATA_TYPE"),
+				resultSet.getInt("DECIMAL_DIGITS")));
+	}
+
+	private String _getPostgreSQLColumnType(
+		int columnSize, int dataType, int decimalDigits) {
+
+		if (dataType == Types.BIGINT) {
+			return "bigint";
+		}
+
+		if ((dataType == Types.BINARY) || (dataType == Types.LONGVARBINARY) ||
+			(dataType == Types.VARBINARY)) {
+
+			return "bytea";
+		}
+
+		if ((dataType == Types.BIT) || (dataType == Types.BOOLEAN)) {
+			return "bool";
+		}
+
+		if (dataType == Types.BLOB) {
+			return "oid";
+		}
+
+		if (((dataType == Types.CHAR) || (dataType == Types.NCHAR) ||
+			 (dataType == Types.NVARCHAR) || (dataType == Types.VARCHAR)) &&
+			(columnSize > 0) &&
+			(columnSize < DB.SQL_VARCHAR_MAX_SIZE_THRESHOLD)) {
+
+			return "varchar(" + columnSize + ")";
+		}
+
+		if ((dataType == Types.DATE) || (dataType == Types.TIMESTAMP)) {
+			return "timestamp";
+		}
+
+		if ((dataType == Types.DECIMAL) || (dataType == Types.NUMERIC)) {
+			if ((columnSize <= 0) || (decimalDigits < 0)) {
+				return "numeric";
+			}
+
+			if ((decimalDigits > 0) && ((columnSize - decimalDigits) <= 14) &&
+				(decimalDigits <= 16)) {
+
+				return "decimal(30, 16)";
+			}
+
+			return StringBundler.concat(
+				"numeric(", columnSize, ", ", decimalDigits, ")");
+		}
+
+		if ((dataType == Types.DOUBLE) || (dataType == Types.FLOAT) ||
+			(dataType == Types.REAL) ||
+			(dataType == _SQL_TYPE_ORACLE_BINARY_DOUBLE) ||
+			(dataType == _SQL_TYPE_ORACLE_BINARY_FLOAT)) {
+
+			return "double precision";
+		}
+
+		if ((dataType == Types.INTEGER) || (dataType == Types.SMALLINT) ||
+			(dataType == Types.TINYINT)) {
+
+			return "integer";
+		}
+
+		if (dataType == Types.TIME) {
+			return "time";
+		}
+
+		if ((dataType == Types.TIMESTAMP_WITH_TIMEZONE) ||
+			(dataType == _SQL_TYPE_ORACLE_TIMESTAMP_WITH_LOCAL_TIME_ZONE) ||
+			(dataType == _SQL_TYPE_ORACLE_TIMESTAMP_WITH_TIME_ZONE) ||
+			(dataType == _SQL_TYPE_SQL_SERVER_DATETIMEOFFSET)) {
+
+			return "timestamp with time zone";
+		}
+
+		return "text";
+	}
+
+	private String _getQuotedName(String name) {
+		return StringBundler.concat(
+			StringPool.QUOTE,
+			StringUtil.replace(name, CharPool.QUOTE, StringPool.DOUBLE_QUOTE),
+			StringPool.QUOTE);
+	}
+
+	private String _getSanitizedString(String value) {
+		return StringUtil.removeSubstring(value, StringPool.NULL_CHAR);
+	}
+
+	private Set<String> _getViews(DataSource dataSource) throws Exception {
+		Set<String> views = new HashSet<>();
+
+		try (Connection connection = dataSource.getConnection()) {
+			DatabaseMetaData databaseMetaData = connection.getMetaData();
+
+			try (ResultSet resultSet = databaseMetaData.getTables(
+					connection.getCatalog(), connection.getSchema(), null,
+					new String[] {"VIEW"})) {
+
+				while (resultSet.next()) {
+					views.add(resultSet.getString("TABLE_NAME"));
+				}
+			}
+		}
+
+		return views;
+	}
+
+	private boolean _isLongName(String name) {
+		byte[] bytes = name.getBytes(StandardCharsets.UTF_8);
+
+		if (bytes.length > _POSTGRESQL_NAME_MAX_LENGTH) {
+			return true;
+		}
+
+		return false;
+	}
+
+	private void _loadColumnNamesMap(
+			Map<String, List<String>> columnNamesMap,
+			Map<String, Integer> columnTypes, DataSource dataSource)
+		throws Exception {
+
+		Set<String> views = _getViews(dataSource);
+
+		try (Connection connection = dataSource.getConnection()) {
+			DatabaseMetaData databaseMetaData = connection.getMetaData();
+
+			try (ResultSet resultSet = databaseMetaData.getColumns(
+					connection.getCatalog(), connection.getSchema(), null,
+					null)) {
+
+				while (resultSet.next()) {
+					String tableName = resultSet.getString("TABLE_NAME");
+
+					if (views.contains(tableName)) {
+						continue;
+					}
+
+					String columnName = resultSet.getString("COLUMN_NAME");
+
+					List<String> columnNames = columnNamesMap.computeIfAbsent(
+						tableName, key -> new ArrayList<>());
+
+					columnNames.add(columnName);
+
+					columnTypes.put(
+						tableName + "." + columnName,
+						resultSet.getInt("DATA_TYPE"));
+				}
+			}
+		}
+
+		for (List<String> columnNames : columnNamesMap.values()) {
+			Collections.sort(columnNames, String.CASE_INSENSITIVE_ORDER);
+		}
+	}
+
+	private void _loadColumnsMetadata() throws Exception {
+		_loadColumnNamesMap(
+			_sourceColumnNamesMap, _sourceColumnsType, _sourceDataSource);
+
+		Set<String> toolTableNames = new HashSet<>();
+
+		try (Connection connection = _sourceDataSource.getConnection()) {
+			DatabaseMetaData databaseMetaData = connection.getMetaData();
+
+			String databaseProductName =
+				databaseMetaData.getDatabaseProductName();
+
+			String sql = null;
+
+			if (databaseProductName.startsWith("DB2")) {
+				Collections.addAll(
+					toolTableNames, "ADVISE_INDEX", "ADVISE_INSTANCE",
+					"ADVISE_MQT", "ADVISE_PARTITION", "ADVISE_TABLE",
+					"ADVISE_WORKLOAD", "EXPLAIN_ACTUALS", "EXPLAIN_ARGUMENT",
+					"EXPLAIN_DIAGNOSTIC", "EXPLAIN_DIAGNOSTIC_DATA",
+					"EXPLAIN_INSTANCE", "EXPLAIN_OBJECT", "EXPLAIN_OPERATOR",
+					"EXPLAIN_PREDICATE", "EXPLAIN_STATEMENT", "EXPLAIN_STREAM",
+					"OBJECT_METRICS");
+			}
+			else if (databaseProductName.equals("Microsoft SQL Server")) {
+				sql = "select name from sys.tables where is_ms_shipped = 1";
+			}
+			else if (databaseProductName.equals("Oracle")) {
+				sql =
+					"select job_name from user_datapump_jobs union select " +
+						"log_table from user_mview_logs";
+			}
+
+			if (sql != null) {
+				try (PreparedStatement preparedStatement =
+						connection.prepareStatement(sql);
+
+					ResultSet resultSet = preparedStatement.executeQuery()) {
+
+					while (resultSet.next()) {
+						toolTableNames.add(resultSet.getString(1));
+					}
+				}
+			}
+		}
+
+		for (String toolTableName : toolTableNames) {
+			if (_sourceColumnNamesMap.remove(toolTableName) == null) {
+				continue;
+			}
+
+			System.out.println(
+				StringBundler.concat(
+					"Skipping table ", toolTableName, _partitionMessage,
+					" because it belongs to a database tool"));
+		}
+
+		_loadColumnNamesMap(
+			_targetColumnNamesMap, _targetColumnsType, _targetDataSource);
+	}
+
+	private void _setColumn(
+			int index, PreparedStatement preparedStatement, int targetType,
+			String value)
+		throws Exception {
+
+		if (targetType == Types.BIGINT) {
+			preparedStatement.setLong(index, GetterUtil.getLong(value));
+		}
+		else if ((targetType == Types.BIT) || (targetType == Types.BOOLEAN)) {
+			preparedStatement.setBoolean(index, GetterUtil.getBoolean(value));
+		}
+		else if ((targetType == Types.LONGVARBINARY) ||
+				 (targetType == Types.BINARY)) {
+
+			preparedStatement.setBytes(index, Base64.decode(value));
+		}
+		else if ((targetType == Types.LONGVARCHAR) ||
+				 (targetType == Types.VARCHAR)) {
+
+			preparedStatement.setString(index, _getSanitizedString(value));
+		}
+		else if (targetType == Types.DOUBLE) {
+			preparedStatement.setDouble(index, GetterUtil.getDouble(value));
+		}
+		else if (targetType == Types.INTEGER) {
+			preparedStatement.setInt(index, GetterUtil.getInteger(value));
+		}
+		else if (targetType == Types.NUMERIC) {
+			preparedStatement.setBigDecimal(
+				index, (BigDecimal)GetterUtil.get(value, BigDecimal.ZERO));
+		}
+		else if (targetType == Types.TIME) {
+			preparedStatement.setObject(index, LocalTime.parse(value));
+		}
+		else if (targetType == Types.TIMESTAMP) {
+			DateFormat dateFormat = DateUtil.getISOFormat();
+
+			Date date = dateFormat.parse(value);
+
+			preparedStatement.setTimestamp(
+				index, new Timestamp(date.getTime()));
+		}
+		else {
+			throw new PortalException("Invalid type: " + targetType);
+		}
+	}
+
+	private void _validateTables(
+		Set<String> sourceTableNames, Set<String> targetTableNames) {
+
+		StringBundler sb = new StringBundler();
+
+		Iterator<String> sourceIterator = sourceTableNames.iterator();
+		Iterator<String> targetIterator = targetTableNames.iterator();
+
+		while (sourceIterator.hasNext()) {
+			String sourceTableName = sourceIterator.next();
+			String targetTableName = targetIterator.next();
+
+			Set<String> targetColumnNames = new TreeSet<>(
+				String.CASE_INSENSITIVE_ORDER);
+
+			targetColumnNames.addAll(
+				_targetColumnNamesMap.get(targetTableName));
+
+			for (String sourceColumnName :
+					_sourceColumnNamesMap.get(sourceTableName)) {
+
+				if (targetColumnNames.contains(sourceColumnName)) {
+					continue;
+				}
+
+				sb.append("Column ");
+				sb.append(sourceColumnName);
+				sb.append(" of source table ");
+				sb.append(sourceTableName);
+				sb.append(" does not exist in target table ");
+				sb.append(targetTableName);
+				sb.append(_partitionMessage);
+				sb.append(StringPool.NEW_LINE);
+			}
+		}
+
+		if (sb.length() > 0) {
+			throw new IllegalArgumentException(sb.toString());
+		}
+	}
+
+	private static final int _POSTGRESQL_NAME_MAX_LENGTH = 63;
+
+	private static final int _SQL_TYPE_ORACLE_BINARY_DOUBLE = 101;
+
+	private static final int _SQL_TYPE_ORACLE_BINARY_FLOAT = 100;
+
+	private static final int _SQL_TYPE_ORACLE_TIMESTAMP_WITH_LOCAL_TIME_ZONE =
+		-102;
+
+	private static final int _SQL_TYPE_ORACLE_TIMESTAMP_WITH_TIME_ZONE = -101;
+
+	private static final int _SQL_TYPE_SQL_SERVER_DATETIMEOFFSET = -155;
+
+	private final String _partitionMessage;
+	private final Map<String, List<String>> _sourceColumnNamesMap =
+		new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+	private final Map<String, Integer> _sourceColumnsType = new HashMap<>();
+	private final DataSource _sourceDataSource;
+	private final Map<String, List<String>> _targetColumnNamesMap =
+		new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+	private final Map<String, Integer> _targetColumnsType = new HashMap<>();
+	private final DataSource _targetDataSource;
+
+}

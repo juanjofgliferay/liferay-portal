@@ -28,27 +28,27 @@
 			<@getEditIcon />
 		</div>
 
-		<h3 class="asset-title">
+		<h3 class="asset-title" ${assetAnalyticsAttributesHelper.buildAttributes(entry, "impression", "title", locale)}>
 			<a href="${viewURL}">
 				${entryTitle}
 			</a>
 		</h3>
 
-		<@getMetadataField fieldName="tags" />
+		<@getMetadataField fieldName = "tags" />
 
-		<@getMetadataField fieldName="create-date" />
+		<@getMetadataField fieldName = "create-date" />
 
-		<@getMetadataField fieldName="view-count" />
+		<@getMetadataField fieldName = "view-count" />
 
-		<div class="asset-content">
+		<div class="asset-content" ${assetAnalyticsAttributesHelper.buildAttributes(entry, "view", "content", locale)}>
 			<@getSocialBookmarks />
 
 			<div class="asset-summary">
-				<@getMetadataField fieldName="author" />
+				<@getMetadataField fieldName = "author" />
 
 				${htmlUtil.escape(assetRenderer.getSummary(renderRequest, renderResponse))}
 
-				<a href="${viewURL}"><@liferay.language key="read-more" /><span class="hide-accessible sr-only"><@liferay.language key="about" />${entryTitle}</span> &raquo;</a>
+				<a href="${viewURL}"><@liferay.language key="read-more" /><span class="hide-accessible sr-only"><@liferay.language key="about[preposition]" />${entryTitle}</span> &raquo;</a>
 			</div>
 
 			<@getRatings />
@@ -109,7 +109,7 @@
 	fieldName
 >
 	<#if stringUtil.split(metadataFields)?seq_contains(fieldName)>
-		<span class="metadata-entry metadata-${fieldName}">
+		<span class="metadata-entry metadata-${fieldName}" ${assetAnalyticsAttributesHelper.buildAttributes(entry, "impression", fieldName, locale)}>
 			<#assign dateFormat = "dd MMM yyyy - HH:mm:ss" />
 
 			<#if stringUtil.equals(fieldName, "author")>

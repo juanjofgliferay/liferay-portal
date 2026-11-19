@@ -5,12 +5,21 @@
 
 package com.liferay.batch.engine.internal.writer;
 
+import com.liferay.batch.engine.csv.ColumnDescriptor;
+import com.liferay.batch.engine.csv.ColumnDescriptorProvider;
+import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.util.ObjectValuePair;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import java.io.StringReader;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
@@ -38,23 +47,23 @@ public class ColumnValuesExtractorTest {
 			new String[] {"A,BC", "D\"EF", "GHI", "J'KL", "``NO,P"});
 
 		ColumnValuesExtractor columnValuesExtractor = new ColumnValuesExtractor(
-			ItemClassIndexUtil.index(arraysAggregator.getClass()),
-			Arrays.asList("doubles", "length", "strings"));
+			null, 0, ItemClassIndexUtil.index(arraysAggregator.getClass()),
+			Arrays.asList("doubles", "length", "strings"), null);
 
 		_assertHeaders(
 			new String[] {"doubles", "length", "strings"},
 			columnValuesExtractor.getHeaders());
 
-		List<Object[]> valuesList = columnValuesExtractor.extractValues(
+		List<Object[]> values1 = columnValuesExtractor.extractValues(
 			arraysAggregator);
 
-		Assert.assertFalse(valuesList.isEmpty());
+		Assert.assertFalse(values1.isEmpty());
 
-		Object[] values = valuesList.get(0);
+		Object[] values2 = values1.get(0);
 
-		Assert.assertEquals(values.toString(), 3, values.length);
+		Assert.assertEquals(values2.toString(), 3, values2.length);
 
-		CSVRecord csvRecord = _toCSVRecord((String)values[0]);
+		CSVRecord csvRecord = _toCSVRecord((String)values2[0]);
 
 		Assert.assertEquals(5, csvRecord.size());
 
@@ -63,9 +72,9 @@ public class ColumnValuesExtractorTest {
 				arraysAggregator.doubles[i], Double.valueOf(csvRecord.get(i)));
 		}
 
-		Assert.assertEquals(Integer.valueOf(5), values[1]);
+		Assert.assertEquals(Integer.valueOf(5), values2[1]);
 
-		csvRecord = _toCSVRecord((String)values[2]);
+		csvRecord = _toCSVRecord((String)values2[2]);
 
 		Assert.assertEquals(5, csvRecord.size());
 
@@ -84,8 +93,10 @@ public class ColumnValuesExtractorTest {
 			new NestedObjectsAggregator(arraysAggregator, arraysAggregator);
 
 		ColumnValuesExtractor columnValuesExtractor = new ColumnValuesExtractor(
+			null, 0,
 			ItemClassIndexUtil.index(nestedObjectsAggregator.getClass()),
-			Arrays.asList("arraysAggregator1", "arraysAggregator2", "length"));
+			Arrays.asList("arraysAggregator1", "arraysAggregator2", "length"),
+			null);
 
 		_assertHeaders(
 			new String[] {
@@ -96,19 +107,19 @@ public class ColumnValuesExtractorTest {
 			},
 			columnValuesExtractor.getHeaders());
 
-		List<Object[]> valuesList = columnValuesExtractor.extractValues(
+		List<Object[]> values1 = columnValuesExtractor.extractValues(
 			nestedObjectsAggregator);
 
-		Assert.assertFalse(valuesList.isEmpty());
+		Assert.assertFalse(values1.isEmpty());
 
-		Object[] values = valuesList.get(0);
+		Object[] values2 = values1.get(0);
 
-		Assert.assertEquals(Arrays.toString(values), 7, values.length);
-		Assert.assertEquals(Integer.valueOf(2), values[6]);
+		Assert.assertEquals(Arrays.toString(values2), 7, values2.length);
+		Assert.assertEquals(Integer.valueOf(2), values2[6]);
 
-		values = valuesList.get(1);
+		values2 = values1.get(1);
 
-		CSVRecord csvRecord = _toCSVRecord((String)values[0]);
+		CSVRecord csvRecord = _toCSVRecord((String)values2[0]);
 
 		Assert.assertEquals(5, csvRecord.size());
 
@@ -117,13 +128,50 @@ public class ColumnValuesExtractorTest {
 				arraysAggregator.doubles[i], Double.valueOf(csvRecord.get(i)));
 		}
 
-		csvRecord = _toCSVRecord((String)values[2]);
+		csvRecord = _toCSVRecord((String)values2[2]);
 
 		Assert.assertEquals(5, csvRecord.size());
 
 		for (int i = 0; i < arraysAggregator.length; i++) {
 			Assert.assertEquals(arraysAggregator.strings[i], csvRecord.get(i));
 		}
+	}
+
+	@Test
+	public void testExtractValuesWithObjectEntry() throws Exception {
+		TestObjectEntry testObjectEntry = new TestObjectEntry(
+			RandomTestUtil.randomLong(), RandomTestUtil.randomString());
+
+		testObjectEntry._putProperty(
+			"propertyString", RandomTestUtil.randomString());
+		testObjectEntry._putProperty(
+			"propertyLong", RandomTestUtil.randomLong());
+
+		ColumnValuesExtractor columnValuesExtractor = new ColumnValuesExtractor(
+			new ColumnDescriptorProviderImpl(), 0,
+			ItemClassIndexUtil.index(testObjectEntry.getClass()),
+			Arrays.asList("id", "name", "propertyString", "propertyLong"),
+			null);
+
+		_assertHeaders(
+			new String[] {"id", "name", "propertyString", "propertyLong"},
+			columnValuesExtractor.getHeaders());
+
+		List<Object[]> values1 = columnValuesExtractor.extractValues(
+			testObjectEntry);
+
+		Assert.assertFalse(values1.isEmpty());
+
+		Object[] values2 = values1.get(0);
+
+		Assert.assertEquals(values2.toString(), 4, values2.length);
+
+		Assert.assertEquals(testObjectEntry._id, values2[0]);
+		Assert.assertEquals(testObjectEntry._name, values2[1]);
+		Assert.assertEquals(
+			testObjectEntry._properties.get("propertyString"), values2[2]);
+		Assert.assertEquals(
+			testObjectEntry._properties.get("propertyLong"), values2[3]);
 	}
 
 	private void _assertHeaders(String[] expected, String[] actual) {
@@ -139,14 +187,14 @@ public class ColumnValuesExtractorTest {
 		CSVParser csvParser = new CSVParser(
 			new StringReader(value), CSVFormat.DEFAULT);
 
-		List<CSVRecord> records = csvParser.getRecords();
+		List<CSVRecord> csvRecords = csvParser.getRecords();
 
-		if (records.isEmpty()) {
+		if (csvRecords.isEmpty()) {
 			throw new IllegalArgumentException(
 				"Unable to parse value " + value);
 		}
 
-		return records.get(0);
+		return csvRecords.get(0);
 	}
 
 	private class ArraysAggregator {
@@ -160,6 +208,35 @@ public class ColumnValuesExtractorTest {
 			this.strings = strings;
 
 			length = strings.length;
+		}
+
+	}
+
+	private class ColumnDescriptorProviderImpl
+		implements ColumnDescriptorProvider {
+
+		@Override
+		public ColumnDescriptor[] getColumnDescriptors(
+			long companyId, String fieldName, int index,
+			Map<String, ObjectValuePair<Field, Method>> objectValuePairs,
+			String taskItemDelegateName) {
+
+			return new ColumnDescriptor[] {
+				ColumnDescriptor.from(
+					fieldName, index,
+					object -> {
+						ObjectValuePair<Field, Method>
+							propertiesObjectValuePair = objectValuePairs.get(
+								"properties");
+
+						Method method = propertiesObjectValuePair.getValue();
+
+						Map<String, Object> map =
+							(Map<String, Object>)method.invoke(object);
+
+						return map.get(fieldName);
+					})
+			};
 		}
 
 	}
@@ -179,6 +256,27 @@ public class ColumnValuesExtractorTest {
 
 			length = 2;
 		}
+
+	}
+
+	private class TestObjectEntry {
+
+		public Map<String, Object> getProperties() {
+			return _properties;
+		}
+
+		private TestObjectEntry(long id, String name) {
+			_id = id;
+			_name = name;
+		}
+
+		private Object _putProperty(String name, Object value) {
+			return _properties.put(name, value);
+		}
+
+		private final long _id;
+		private final String _name;
+		private Map<String, Object> _properties = new HashMap<>();
 
 	}
 

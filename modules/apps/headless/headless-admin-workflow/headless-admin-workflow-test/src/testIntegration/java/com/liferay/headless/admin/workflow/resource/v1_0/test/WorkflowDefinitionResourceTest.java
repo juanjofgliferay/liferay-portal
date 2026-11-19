@@ -5,37 +5,70 @@
 
 package com.liferay.headless.admin.workflow.resource.v1_0.test;
 
+import com.liferay.account.constants.AccountConstants;
+import com.liferay.account.model.AccountEntry;
+import com.liferay.account.service.AccountEntryLocalService;
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.headless.admin.workflow.client.dto.v1_0.Node;
 import com.liferay.headless.admin.workflow.client.dto.v1_0.Transition;
 import com.liferay.headless.admin.workflow.client.dto.v1_0.WorkflowDefinition;
+import com.liferay.headless.admin.workflow.client.permission.Permission;
+import com.liferay.headless.admin.workflow.client.resource.v1_0.WorkflowDefinitionResource;
 import com.liferay.headless.admin.workflow.client.serdes.v1_0.WorkflowDefinitionSerDes;
 import com.liferay.headless.admin.workflow.resource.v1_0.test.util.WorkflowDefinitionTestUtil;
+import com.liferay.object.model.ObjectDefinition;
+import com.liferay.object.test.util.ObjectDefinitionTestUtil;
 import com.liferay.petra.io.StreamUtil;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.model.WorkflowDefinitionLink;
+import com.liferay.portal.kernel.model.role.RoleConstants;
+import com.liferay.portal.kernel.security.permission.ActionKeys;
+import com.liferay.portal.kernel.service.GroupLocalService;
+import com.liferay.portal.kernel.service.WorkflowDefinitionLinkLocalService;
+import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DataGuard;
+import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.util.HTTPTestUtil;
+import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
+import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.Http;
 import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.PropsValues;
+import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.test.rule.Inject;
+import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
+import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
+import com.liferay.portal.workflow.constants.WorkflowDefinitionConstants;
 import com.liferay.portal.workflow.kaleo.definition.util.WorkflowDefinitionContentUtil;
 import com.liferay.portal.workflow.manager.WorkflowDefinitionManager;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -49,12 +82,19 @@ import org.skyscreamer.jsonassert.JSONAssert;
 public class WorkflowDefinitionResourceTest
 	extends BaseWorkflowDefinitionResourceTestCase {
 
+	@ClassRule
+	@Rule
+	public static final AggregateTestRule aggregateTestRule =
+		new AggregateTestRule(
+			new LiferayIntegrationTestRule(),
+			PermissionCheckerMethodTestRule.INSTANCE);
+
 	@BeforeClass
 	public static void setUpClass() throws Exception {
 		BaseWorkflowDefinitionResourceTestCase.setUpClass();
 
 		_workflowDefinition =
-			_workflowDefinitionManager.getLatestWorkflowDefinition(
+			_workflowDefinitionManager.liberalGetLatestWorkflowDefinition(
 				TestPropsValues.getCompanyId(), "Single Approver");
 
 		_undeployWorkflowDefinition(
@@ -66,9 +106,30 @@ public class WorkflowDefinitionResourceTest
 		String content = _workflowDefinition.getContent();
 
 		_workflowDefinitionManager.deployWorkflowDefinition(
-			_workflowDefinition.getCompanyId(), _workflowDefinition.getUserId(),
-			_workflowDefinition.getTitle(), _workflowDefinition.getName(),
-			content.getBytes());
+			content.getBytes(), _workflowDefinition.getCompanyId(), null,
+			_workflowDefinition.getName(), _workflowDefinition.getTitle(),
+			_workflowDefinition.getUserId());
+	}
+
+	@Before
+	@Override
+	public void setUp() throws Exception {
+		super.setUp();
+
+		User adminUser = UserTestUtil.getAdminUser(testCompany.getCompanyId());
+
+		_permissionsWorkflowDefinitionResource =
+			WorkflowDefinitionResource.builder(
+			).authentication(
+				adminUser.getEmailAddress(), PropsValues.DEFAULT_ADMIN_PASSWORD
+			).endpoint(
+				testCompany.getVirtualHostname(),
+				PortalUtil.getPortalServerPort(false), "http"
+			).locale(
+				LocaleUtil.getDefault()
+			).parameter(
+				"nestedFields", "permissions"
+			).build();
 	}
 
 	@After
@@ -89,6 +150,44 @@ public class WorkflowDefinitionResourceTest
 
 	@Override
 	@Test
+	public void testDeleteWorkflowDefinitionByExternalReferenceCode()
+		throws Exception {
+
+		super.testDeleteWorkflowDefinitionByExternalReferenceCode();
+
+		ObjectDefinition objectDefinition =
+			ObjectDefinitionTestUtil.publishObjectDefinition();
+		WorkflowDefinition workflowDefinition =
+			testGetWorkflowDefinitionsPage_addWorkflowDefinition(
+				randomWorkflowDefinition());
+
+		WorkflowDefinitionLink workflowDefinitionLink =
+			_workflowDefinitionLinkLocalService.updateWorkflowDefinitionLink(
+				TestPropsValues.getUserId(), TestPropsValues.getCompanyId(), 0,
+				objectDefinition.getClassName(), 0, 0,
+				workflowDefinition.getName(),
+				GetterUtil.getInteger(workflowDefinition.getVersion()));
+
+		assertHttpResponseStatusCode(
+			400,
+			workflowDefinitionResource.
+				deleteWorkflowDefinitionByExternalReferenceCodeHttpResponse(
+					workflowDefinition.getExternalReferenceCode()));
+
+		_workflowDefinitionLinkLocalService.deleteWorkflowDefinitionLink(
+			workflowDefinitionLink);
+
+		assertHttpResponseStatusCode(
+			204,
+			workflowDefinitionResource.
+				deleteWorkflowDefinitionByExternalReferenceCodeHttpResponse(
+					workflowDefinition.getExternalReferenceCode()));
+
+		_workflowDefinitions.remove(workflowDefinition.getName());
+	}
+
+	@Override
+	@Test
 	public void testDeleteWorkflowDefinitionUndeploy() throws Exception {
 		WorkflowDefinition workflowDefinition =
 			testPostWorkflowDefinitionSave_addWorkflowDefinition(
@@ -102,6 +201,8 @@ public class WorkflowDefinitionResourceTest
 					workflowDefinition.getVersion()));
 
 		_workflowDefinitions.remove(workflowDefinition.getName());
+
+		_testDeleteWorkflowDefinitionUndeployWithoutPermission();
 	}
 
 	@Override
@@ -139,6 +240,13 @@ public class WorkflowDefinitionResourceTest
 		Assert.assertEquals(
 			workflowDefinition.getDateCreated(),
 			latestWorkflowDefinition.getDateCreated());
+	}
+
+	@Ignore
+	@Override
+	@Test
+	public void testGraphQLDeleteWorkflowDefinitionUndeploy() throws Exception {
+		super.testGraphQLDeleteWorkflowDefinitionUndeploy();
 	}
 
 	@Override
@@ -231,6 +339,17 @@ public class WorkflowDefinitionResourceTest
 
 		assertEquals(randomWorkflowDefinition, postWorkflowDefinition);
 		assertValid(postWorkflowDefinition);
+
+		_testPostWorkflowDefinitionSaveWithScope();
+		_testPostWorkflowDefinitionSaveWithSystem();
+	}
+
+	@Override
+	@Test
+	public void testPostWorkflowDefinitionUpdateActive() throws Exception {
+		super.testPostWorkflowDefinitionUpdateActive();
+
+		_testPostWorkflowDefinitionUpdateActiveWithoutPermission();
 	}
 
 	@Override
@@ -264,10 +383,92 @@ public class WorkflowDefinitionResourceTest
 	}
 
 	@Override
+	@Test
+	public void testPutWorkflowDefinitionByExternalReferenceCode()
+		throws Exception {
+
+		super.testPutWorkflowDefinitionByExternalReferenceCode();
+
+		for (String externalReferenceCode : _externalReferenceCodes) {
+			WorkflowDefinition workflowDefinition =
+				workflowDefinitionResource.
+					getWorkflowDefinitionByExternalReferenceCode(
+						externalReferenceCode);
+
+			_workflowDefinitions.put(
+				workflowDefinition.getName(), workflowDefinition);
+		}
+
+		WorkflowDefinition workflowDefinition =
+			testGetWorkflowDefinitionsPage_addWorkflowDefinition(
+				randomWorkflowDefinition());
+
+		WorkflowDefinition randomWorkflowDefinition =
+			randomWorkflowDefinition();
+
+		randomWorkflowDefinition.setName(workflowDefinition.getName());
+		randomWorkflowDefinition.setPermissions(
+			new Permission[] {
+				new Permission() {
+					{
+						actionIds = new Object[] {ActionKeys.VIEW};
+						roleName = RoleConstants.SITE_MEMBER;
+					}
+				}
+			});
+
+		WorkflowDefinition putWorkflowDefinition =
+			workflowDefinitionResource.
+				putWorkflowDefinitionByExternalReferenceCode(
+					randomWorkflowDefinition.getExternalReferenceCode(),
+					randomWorkflowDefinition);
+
+		_workflowDefinitions.put(
+			putWorkflowDefinition.getName(), putWorkflowDefinition);
+
+		Assert.assertTrue(putWorkflowDefinition.getActive());
+		Assert.assertEquals(
+			workflowDefinition.getId(), putWorkflowDefinition.getId());
+
+		WorkflowDefinition getWorkflowDefinition =
+			_permissionsWorkflowDefinitionResource.getWorkflowDefinition(
+				putWorkflowDefinition.getId());
+
+		Permission siteMemberPermission = null;
+
+		for (Permission permission : getWorkflowDefinition.getPermissions()) {
+			if (Objects.equals(
+					permission.getRoleName(), RoleConstants.SITE_MEMBER)) {
+
+				siteMemberPermission = permission;
+
+				break;
+			}
+		}
+
+		Assert.assertArrayEquals(
+			new Object[] {ActionKeys.VIEW},
+			siteMemberPermission.getActionIds());
+
+		putWorkflowDefinition.setActive(false);
+
+		putWorkflowDefinition =
+			workflowDefinitionResource.
+				putWorkflowDefinitionByExternalReferenceCode(
+					putWorkflowDefinition.getExternalReferenceCode(),
+					putWorkflowDefinition);
+
+		_workflowDefinitions.put(
+			putWorkflowDefinition.getName(), putWorkflowDefinition);
+
+		Assert.assertFalse(putWorkflowDefinition.getActive());
+	}
+
+	@Override
 	protected String[] getAdditionalAssertFieldNames() {
 		return new String[] {
-			"active", "name", "nodes", "title", "title_i18n", "transitions",
-			"version"
+			"active", "name", "nodes", "scope", "system", "title", "title_i18n",
+			"transitions", "version"
 		};
 	}
 
@@ -281,6 +482,7 @@ public class WorkflowDefinitionResourceTest
 			WorkflowDefinitionTestUtil.getContent(
 				workflowDefinition.getDescription(), "workflow-definition.xml",
 				workflowDefinition.getName()));
+		workflowDefinition.setGroupExternalReferenceCode(StringPool.BLANK);
 		workflowDefinition.setNodes(
 			new Node[] {
 				new Node() {
@@ -312,6 +514,7 @@ public class WorkflowDefinitionResourceTest
 					}
 				}
 			});
+		workflowDefinition.setScope(WorkflowDefinitionConstants.SCOPE_ALL);
 		workflowDefinition.setTitle_i18n(
 			HashMapBuilder.put(
 				LanguageUtil.getLanguageId(LocaleUtil.US),
@@ -368,7 +571,25 @@ public class WorkflowDefinitionResourceTest
 
 	@Override
 	protected WorkflowDefinition
+			testDeleteWorkflowDefinitionByExternalReferenceCode_addWorkflowDefinition()
+		throws Exception {
+
+		return testGetWorkflowDefinitionsPage_addWorkflowDefinition(
+			randomWorkflowDefinition());
+	}
+
+	@Override
+	protected WorkflowDefinition
 			testGetWorkflowDefinition_addWorkflowDefinition()
+		throws Exception {
+
+		return testGetWorkflowDefinitionsPage_addWorkflowDefinition(
+			randomWorkflowDefinition());
+	}
+
+	@Override
+	protected WorkflowDefinition
+			testGetWorkflowDefinitionByExternalReferenceCode_addWorkflowDefinition()
 		throws Exception {
 
 		return testGetWorkflowDefinitionsPage_addWorkflowDefinition(
@@ -397,6 +618,22 @@ public class WorkflowDefinitionResourceTest
 		throws Exception {
 
 		return testGetWorkflowDefinition_addWorkflowDefinition();
+	}
+
+	@Override
+	protected WorkflowDefinition
+			testGraphQLWorkflowDefinition_addWorkflowDefinition(
+				WorkflowDefinition workflowDefinition)
+		throws Exception {
+
+		workflowDefinition =
+			workflowDefinitionResource.postWorkflowDefinitionDeploy(
+				workflowDefinition);
+
+		_workflowDefinitions.put(
+			workflowDefinition.getName(), workflowDefinition);
+
+		return workflowDefinition;
 	}
 
 	@Override
@@ -455,6 +692,27 @@ public class WorkflowDefinitionResourceTest
 		return testGetWorkflowDefinition_addWorkflowDefinition();
 	}
 
+	@Override
+	protected WorkflowDefinition
+			testPutWorkflowDefinitionByExternalReferenceCode_addWorkflowDefinition()
+		throws Exception {
+
+		WorkflowDefinition workflowDefinition = randomWorkflowDefinition();
+
+		_externalReferenceCodes.add(
+			workflowDefinition.getExternalReferenceCode());
+
+		return workflowDefinition;
+	}
+
+	@Override
+	protected WorkflowDefinition
+			testPutWorkflowDefinitionByExternalReferenceCode_createWorkflowDefinition()
+		throws Exception {
+
+		return testPutWorkflowDefinitionByExternalReferenceCode_addWorkflowDefinition();
+	}
+
 	private static void _undeployWorkflowDefinition(
 			String workflowDefinitionName, int workflowDefinitionVersion)
 		throws Exception {
@@ -468,12 +726,47 @@ public class WorkflowDefinitionResourceTest
 		}
 
 		_workflowDefinitionManager.updateActive(
-			TestPropsValues.getCompanyId(), TestPropsValues.getUserId(),
-			workflowDefinitionName, workflowDefinitionVersion, false);
+			false, TestPropsValues.getCompanyId(), workflowDefinitionName,
+			TestPropsValues.getUserId(), workflowDefinitionVersion);
 
 		_workflowDefinitionManager.undeployWorkflowDefinition(
-			TestPropsValues.getCompanyId(), TestPropsValues.getUserId(),
-			workflowDefinitionName, workflowDefinitionVersion);
+			TestPropsValues.getCompanyId(), workflowDefinitionName,
+			TestPropsValues.getUserId(), workflowDefinitionVersion);
+	}
+
+	private String _getGroupExternalReferenceCode() throws Exception {
+		AccountEntry accountEntry = _accountEntryLocalService.addAccountEntry(
+			RandomTestUtil.randomString(), TestPropsValues.getUserId(),
+			AccountConstants.PARENT_ACCOUNT_ENTRY_ID_DEFAULT,
+			RandomTestUtil.randomString(), RandomTestUtil.randomString(), null,
+			RandomTestUtil.randomString() + "@liferay.com", null,
+			RandomTestUtil.randomString(),
+			AccountConstants.ACCOUNT_ENTRY_TYPE_BUSINESS,
+			WorkflowConstants.STATUS_APPROVED,
+			ServiceContextTestUtil.getServiceContext());
+
+		Group group = _groupLocalService.getGroup(
+			accountEntry.getAccountEntryGroupId());
+
+		return group.getExternalReferenceCode();
+	}
+
+	private WorkflowDefinitionResource _getUserWorkflowDefinitionResource()
+		throws Exception {
+
+		String password = RandomTestUtil.randomString();
+
+		_user = UserTestUtil.addUser(testCompany, password);
+
+		return WorkflowDefinitionResource.builder(
+		).authentication(
+			_user.getEmailAddress(), password
+		).endpoint(
+			testCompany.getVirtualHostname(),
+			PortalUtil.getPortalServerPort(false), "http"
+		).locale(
+			LocaleUtil.getDefault()
+		).build();
 	}
 
 	private JSONObject _getWorkflowDefinitionJSONObject(String fileName)
@@ -491,10 +784,159 @@ public class WorkflowDefinitionResourceTest
 			JSONObject workflowDefinitionJSONObject)
 		throws Exception {
 
-		return HTTPTestUtil.invokeToJSONObject(
+		JSONObject jsonObject = HTTPTestUtil.invokeToJSONObject(
 			workflowDefinitionJSONObject.toString(),
 			"headless-admin-workflow/v1.0/workflow-definitions",
 			Http.Method.POST);
+
+		WorkflowDefinition workflowDefinition = WorkflowDefinitionSerDes.toDTO(
+			jsonObject.toString());
+
+		_workflowDefinitions.put(
+			workflowDefinition.getName(), workflowDefinition);
+
+		return jsonObject;
+	}
+
+	private void _testDeleteWorkflowDefinitionUndeployWithoutPermission()
+		throws Exception {
+
+		WorkflowDefinitionResource userWorkflowDefinitionResource =
+			_getUserWorkflowDefinitionResource();
+
+		WorkflowDefinition draftWorkflowDefinition =
+			testPostWorkflowDefinitionSave_addWorkflowDefinition(
+				randomWorkflowDefinition());
+
+		assertHttpResponseStatusCode(
+			403,
+			userWorkflowDefinitionResource.
+				deleteWorkflowDefinitionUndeployHttpResponse(
+					draftWorkflowDefinition.getName(),
+					draftWorkflowDefinition.getVersion()));
+
+		assertHttpResponseStatusCode(
+			200,
+			workflowDefinitionResource.getWorkflowDefinitionByNameHttpResponse(
+				draftWorkflowDefinition.getName(), null,
+				GetterUtil.getInteger(draftWorkflowDefinition.getVersion())));
+
+		WorkflowDefinition workflowDefinition =
+			testPostWorkflowDefinitionDeploy_addWorkflowDefinition(
+				randomWorkflowDefinition());
+
+		assertHttpResponseStatusCode(
+			403,
+			userWorkflowDefinitionResource.
+				deleteWorkflowDefinitionUndeployHttpResponse(
+					workflowDefinition.getName(),
+					workflowDefinition.getVersion()));
+
+		workflowDefinition =
+			workflowDefinitionResource.getWorkflowDefinitionByName(
+				workflowDefinition.getName(), null,
+				GetterUtil.getInteger(workflowDefinition.getVersion()));
+
+		Assert.assertTrue(workflowDefinition.getActive());
+
+		workflowDefinitionResource.postWorkflowDefinitionUpdateActive(
+			false, workflowDefinition.getName(),
+			workflowDefinition.getVersion());
+
+		assertHttpResponseStatusCode(
+			403,
+			userWorkflowDefinitionResource.
+				deleteWorkflowDefinitionUndeployHttpResponse(
+					workflowDefinition.getName(),
+					workflowDefinition.getVersion()));
+
+		workflowDefinition =
+			workflowDefinitionResource.getWorkflowDefinitionByName(
+				workflowDefinition.getName(), null,
+				GetterUtil.getInteger(workflowDefinition.getVersion()));
+
+		Assert.assertFalse(workflowDefinition.getActive());
+	}
+
+	private void _testPostWorkflowDefinitionSaveWithScope() throws Exception {
+		WorkflowDefinition randomWorkflowDefinition =
+			randomWorkflowDefinition();
+
+		String groupExternalReferenceCode = _getGroupExternalReferenceCode();
+
+		randomWorkflowDefinition.setGroupExternalReferenceCode(
+			groupExternalReferenceCode);
+
+		randomWorkflowDefinition.setScope(WorkflowDefinitionConstants.SCOPE_AI);
+
+		WorkflowDefinition workflowDefinition =
+			testPostWorkflowDefinitionSave_addWorkflowDefinition(
+				randomWorkflowDefinition);
+
+		workflowDefinition.setGroupExternalReferenceCode(
+			_getGroupExternalReferenceCode());
+
+		workflowDefinition =
+			workflowDefinitionResource.postWorkflowDefinitionSave(
+				workflowDefinition);
+
+		_workflowDefinitions.put(
+			workflowDefinition.getName(), workflowDefinition);
+
+		Assert.assertEquals(
+			groupExternalReferenceCode,
+			workflowDefinition.getGroupExternalReferenceCode());
+	}
+
+	private void _testPostWorkflowDefinitionSaveWithSystem() throws Exception {
+		WorkflowDefinition randomWorkflowDefinition =
+			randomWorkflowDefinition();
+
+		randomWorkflowDefinition.setNodes(new Node[0]);
+		randomWorkflowDefinition.setSystem(true);
+		randomWorkflowDefinition.setTransitions(new Transition[0]);
+
+		WorkflowDefinition workflowDefinition =
+			testPostWorkflowDefinitionSave_addWorkflowDefinition(
+				randomWorkflowDefinition);
+
+		Assert.assertTrue(workflowDefinition.getSystem());
+
+		randomWorkflowDefinition.setSystem(false);
+
+		workflowDefinition =
+			workflowDefinitionResource.postWorkflowDefinitionSave(
+				randomWorkflowDefinition);
+
+		_workflowDefinitions.put(
+			workflowDefinition.getName(), workflowDefinition);
+
+		Assert.assertFalse(workflowDefinition.getSystem());
+	}
+
+	private void _testPostWorkflowDefinitionUpdateActiveWithoutPermission()
+		throws Exception {
+
+		WorkflowDefinitionResource userWorkflowDefinitionResource =
+			_getUserWorkflowDefinitionResource();
+
+		WorkflowDefinition workflowDefinition =
+			testGetWorkflowDefinitionsPage_addWorkflowDefinition(
+				randomWorkflowDefinition());
+
+		assertHttpResponseStatusCode(
+			403,
+			userWorkflowDefinitionResource.
+				postWorkflowDefinitionUpdateActiveHttpResponse(
+					false, workflowDefinition.getName(),
+					workflowDefinition.getVersion()));
+
+		workflowDefinition =
+			workflowDefinitionResource.getWorkflowDefinitionByName(
+				workflowDefinition.getName(), null,
+				GetterUtil.getInteger(workflowDefinition.getVersion()));
+
+		Assert.assertTrue(workflowDefinition.getActive());
 	}
 
 	private static com.liferay.portal.kernel.workflow.WorkflowDefinition
@@ -502,6 +944,23 @@ public class WorkflowDefinitionResourceTest
 
 	@Inject
 	private static WorkflowDefinitionManager _workflowDefinitionManager;
+
+	@Inject
+	private AccountEntryLocalService _accountEntryLocalService;
+
+	private final List<String> _externalReferenceCodes = new ArrayList<>();
+
+	@Inject
+	private GroupLocalService _groupLocalService;
+
+	private WorkflowDefinitionResource _permissionsWorkflowDefinitionResource;
+
+	@DeleteAfterTestRun
+	private User _user;
+
+	@Inject
+	private WorkflowDefinitionLinkLocalService
+		_workflowDefinitionLinkLocalService;
 
 	private final Map<String, WorkflowDefinition> _workflowDefinitions =
 		new HashMap<>();

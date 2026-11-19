@@ -18,13 +18,14 @@ import com.liferay.commerce.service.CommerceOrderService;
 import com.liferay.frontend.data.set.provider.FDSDataProvider;
 import com.liferay.frontend.data.set.provider.search.FDSKeywords;
 import com.liferay.frontend.data.set.provider.search.FDSPagination;
-import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.model.UserConstants;
 import com.liferay.portal.kernel.portlet.LiferayWindowState;
 import com.liferay.portal.kernel.portlet.PortletProvider;
 import com.liferay.portal.kernel.portlet.PortletProviderUtil;
@@ -37,14 +38,13 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import java.util.ArrayList;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.WindowStateException;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.Date;
 import java.util.List;
-
-import javax.portlet.PortletURL;
-import javax.portlet.WindowStateException;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -65,30 +65,24 @@ public class CommerceNotificationFDSDataProvider
 			HttpServletRequest httpServletRequest, Sort sort)
 		throws PortalException {
 
-		List<Notification> notifications = new ArrayList<>();
-
 		long commerceOrderId = ParamUtil.getLong(
 			httpServletRequest, "commerceOrderId");
 
 		CommerceOrder commerceOrder = _commerceOrderService.getCommerceOrder(
 			commerceOrderId);
 
-		List<CommerceNotificationQueueEntry> commerceNotificationQueueEntries =
+		return TransformUtil.transform(
 			_commerceNotificationQueueEntryLocalService.
 				getCommerceNotificationQueueEntries(
 					commerceOrder.getGroupId(), CommerceOrder.class.getName(),
 					commerceOrder.getCommerceOrderId(), true,
 					fdsPagination.getStartPosition(),
-					fdsPagination.getEndPosition(), null);
+					fdsPagination.getEndPosition(), null),
+			commerceNotificationQueueEntry -> {
+				User user = _userLocalService.fetchUser(
+					commerceNotificationQueueEntry.getUserId());
 
-		for (CommerceNotificationQueueEntry commerceNotificationQueueEntry :
-				commerceNotificationQueueEntries) {
-
-			User user = _userLocalService.fetchUser(
-				commerceNotificationQueueEntry.getUserId());
-
-			notifications.add(
-				new Notification(
+				return new Notification(
 					commerceNotificationQueueEntry.
 						getCommerceNotificationQueueEntryId(),
 					new AuthorField(
@@ -106,10 +100,8 @@ public class CommerceNotificationFDSDataProvider
 					_getNotificationPanelURL(
 						commerceNotificationQueueEntry.
 							getCommerceNotificationQueueEntryId(),
-						httpServletRequest)));
-		}
-
-		return notifications;
+						httpServletRequest));
+			});
 	}
 
 	@Override
@@ -195,22 +187,16 @@ public class CommerceNotificationFDSDataProvider
 	}
 
 	private String _getUserPortraitSrc(
-		User user, HttpServletRequest httpServletRequest) {
-
-		StringBundler sb = new StringBundler(5);
+			User user, HttpServletRequest httpServletRequest)
+		throws PortalException {
 
 		ThemeDisplay themeDisplay =
 			(ThemeDisplay)httpServletRequest.getAttribute(
 				WebKeys.THEME_DISPLAY);
 
-		sb.append(themeDisplay.getPathImage());
-
-		sb.append("/user_portrait?screenName=");
-		sb.append(user.getScreenName());
-		sb.append("&amp;companyId=");
-		sb.append(user.getCompanyId());
-
-		return sb.toString();
+		return UserConstants.getPortraitURL(
+			themeDisplay.getPathImage(), user.isMale(), user.getPortraitId(),
+			user.getUserUuid());
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(

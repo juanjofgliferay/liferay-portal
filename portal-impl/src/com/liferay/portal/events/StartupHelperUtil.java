@@ -10,11 +10,11 @@ import com.liferay.petra.io.Deserializer;
 import com.liferay.petra.io.Serializer;
 import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.cache.thread.local.ThreadLocalCacheManager;
 import com.liferay.portal.kernel.dao.jdbc.DataAccess;
 import com.liferay.portal.kernel.exception.ResourceActionsException;
 import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.log.Log;
-import com.liferay.portal.kernel.log.LogContextRegistryUtil;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.module.util.SystemBundleUtil;
 import com.liferay.portal.kernel.patcher.PatcherValues;
@@ -24,15 +24,13 @@ import com.liferay.portal.kernel.upgrade.UpgradeException;
 import com.liferay.portal.kernel.upgrade.UpgradeProcess;
 import com.liferay.portal.kernel.upgrade.util.UpgradeProcessUtil;
 import com.liferay.portal.kernel.util.FileUtil;
-import com.liferay.portal.kernel.util.LoggingTimer;
 import com.liferay.portal.kernel.util.PortalClassLoaderUtil;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.version.Version;
 import com.liferay.portal.tools.DBUpgrader;
 import com.liferay.portal.upgrade.PortalUpgradeProcess;
-import com.liferay.portal.upgrade.log.UpgradeLogContext;
-import com.liferay.portal.util.PropsValues;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -63,7 +61,7 @@ public class StartupHelperUtil {
 			ReflectionUtil.throwException(exception);
 		}
 
-		try (LoggingTimer loggingTimer = new LoggingTimer()) {
+		try {
 			ResourceActionsUtil.populateModelResources(
 				StartupHelperUtil.class.getClassLoader(),
 				PropsValues.RESOURCE_ACTIONS_CONFIGS);
@@ -80,6 +78,14 @@ public class StartupHelperUtil {
 	public static boolean isDBWarmed() {
 		return _dbWarmedSCLSingleton.getSingleton(
 			StartupHelperUtil::_isDBWarmed);
+	}
+
+	public static boolean isNewRelease() {
+		return _newRelease;
+	}
+
+	public static boolean isRunOnPortalUpgradeVerifiers() {
+		return _runOnPortalUpgradeVerifiers;
 	}
 
 	public static boolean isUpgrading() {
@@ -110,26 +116,30 @@ public class StartupHelperUtil {
 		}
 	}
 
-	public static void setUpgrading(boolean upgrading) {
-		if (upgrading != _upgrading) {
-			_dbWarmedSCLSingleton.destroy(null);
+	public static void setNewRelease(boolean newRelease) {
+		_newRelease = newRelease;
+	}
 
-			_upgrading = upgrading;
+	public static void setRunOnPortalUpgradeVerifiers(
+		boolean runOnPortalUpgradeVerifiers) {
+
+		_runOnPortalUpgradeVerifiers = runOnPortalUpgradeVerifiers;
+	}
+
+	public static void setUpgrading(boolean upgrading) {
+		if (upgrading == _upgrading) {
+			return;
 		}
+
+		_dbWarmedSCLSingleton.destroy(null);
+
+		_upgrading = upgrading;
 
 		if (upgrading) {
-			if (PropsValues.UPGRADE_LOG_CONTEXT_ENABLED) {
-				LogContextRegistryUtil.registerLogContext(
-					UpgradeLogContext.getInstance());
-			}
-
-			DBUpgrader.startUpgradeLogAppender();
+			ThreadLocalCacheManager.disable();
 		}
 		else {
-			DBUpgrader.stopUpgradeLogAppender();
-
-			LogContextRegistryUtil.unregisterLogContext(
-				UpgradeLogContext.getInstance());
+			ThreadLocalCacheManager.enable();
 		}
 	}
 
@@ -199,9 +209,7 @@ public class StartupHelperUtil {
 	private static boolean _isDBWarmed() {
 		boolean dbWarmed = true;
 
-		if (_dbNew || _upgrading ||
-			DBUpgrader.isUpgradeDatabaseAutoRunEnabled()) {
-
+		if (_dbNew || DBUpgrader.isUpgradeDatabaseAutoRunEnabled()) {
 			dbWarmed = false;
 		}
 
@@ -247,6 +255,8 @@ public class StartupHelperUtil {
 	private static volatile boolean _dbNew;
 	private static final DCLSingleton<Boolean> _dbWarmedSCLSingleton =
 		new DCLSingleton<>();
+	private static boolean _newRelease;
+	private static volatile boolean _runOnPortalUpgradeVerifiers;
 	private static volatile boolean _upgrading;
 
 }

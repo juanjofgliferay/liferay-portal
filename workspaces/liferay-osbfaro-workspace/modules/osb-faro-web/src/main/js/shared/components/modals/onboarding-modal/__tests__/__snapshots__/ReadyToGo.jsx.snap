@@ -1,0 +1,91 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`ReadyToGo renders 1`] = `
+<div>
+  <div
+    class="modal-header"
+  >
+    <h1
+      class="modal-title"
+      tabindex="-1"
+    />
+    <button
+      aria-label="Close"
+      class="close btn btn-unstyled"
+      type="button"
+    >
+      <svg
+        class="lexicon-icon lexicon-icon-times"
+        role="presentation"
+      >
+        <use
+          href="#times"
+        />
+      </svg>
+    </button>
+  </div>
+  <div
+    class="modal-body"
+  >
+    <img
+      alt=""
+      class="d-block mb-4 w-100"
+      height="300"
+      src="ac_ready_to_use.svg"
+    />
+    <div
+      class="text-center mb-4"
+    >
+      <span
+        class="text-6 font-weight-bold"
+      >
+        You are Ready to Go
+      </span>
+      <p>
+        <span
+          class="text-4 text-secondary"
+        >
+          Your workspace is all set up.
+        </span>
+      </p>
+    </div>
+    <div
+      class="text-center"
+    >
+      <p>
+        <span
+          class="text-4 text-secondary"
+        >
+          Tracking will start immediately, however it may take some time for data to appear in your workspace.
+        </span>
+      </p>
+      <p>
+        <span
+          class="text-4 text-secondary"
+        >
+          Make sure to set your time period to last 24 hours to see if your data is coming in correctly.
+        </span>
+      </p>
+    </div>
+  </div>
+  <div
+    class="modal-footer d-flex justify-content-end"
+  >
+    <div
+      class="modal-item-last"
+    >
+      <div
+        class="btn-group-spaced"
+        role="group"
+      >
+        <button
+          class="button-root btn btn-primary"
+          type="button"
+        >
+          Done
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+`;

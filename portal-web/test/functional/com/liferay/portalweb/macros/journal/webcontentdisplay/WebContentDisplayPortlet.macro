@@ -39,7 +39,7 @@ definition {
 			webContentContent = ${webContentContent},
 			webContentTitle = ${webContentTitle});
 
-		PortletEntry.publish();
+		WebContent.publishWithPermissions();
 	}
 
 	@summary = "Default summary"
@@ -52,22 +52,7 @@ definition {
 	}
 
 	@summary = "Default summary"
-	macro addLocalized(webContentTitle = null, portletNameTranslation = null, localizedBasicWebContent = null, webContentContent = null) {
-		WebContentDisplayPortletNavigator.gotoAdd(
-			portletNameTranslation = ${portletNameTranslation},
-			structureName = ${localizedBasicWebContent});
-
-		WebContent.addCP(
-			webContentContent = ${webContentContent},
-			webContentTitle = ${webContentTitle});
-
-		Click(locator1 = "Button#PUBLISH_LOCALIZED");
-
-		SelectFrame(value1 = "relative=top");
-	}
-
-	@summary = "Default summary"
-	macro addTag(tagNameList = null) {
+	macro addTag(tagNameList = null, edit = null) {
 		Panel.expandPanel(panel = "Categorization");
 
 		for (var tagName : list ${tagNameList}) {
@@ -92,7 +77,12 @@ definition {
 				value1 = ${tagName});
 		}
 
-		PortletEntry.publish();
+		if (${edit} == "true") {
+			WebContent.publishExistingWCArticleWithPermissions();
+		}
+		else {
+			WebContent.publishWithPermissions();
+		}
 
 		SelectFrame(value1 = "relative=top");
 	}
@@ -105,7 +95,9 @@ definition {
 			webContentContent = ${webContentContent},
 			webContentTitle = ${webContentTitle});
 
-		Button.click(button = "Submit for Workflow");
+		WebContent.submitForWorkflowWithPermission();
+
+		WaitForElementPresent(locator1 = "Message#ERROR_3");
 
 		AssertTextEquals(
 			locator1 = "Message#ERROR_3",
@@ -120,7 +112,7 @@ definition {
 
 		SelectFrame(locator1 = "IFrame#MODAL_BODY");
 
-		Navigator.gotoNavItem(navItem = "Scope");
+		Click(locator1 = "Configuration#NAVIGATION_SCOPE");
 
 		Select(
 			locator1 = "Select#SCOPE",
@@ -176,7 +168,7 @@ definition {
 				fieldLabel = "Content");
 		}
 
-		PortletEntry.publish();
+		WebContent.publishExistingWCArticleWithPermissions();
 
 		SelectFrame(value1 = "relative=top");
 	}
@@ -514,7 +506,7 @@ definition {
 
 		SelectFrame(locator1 = "IFrame#MODAL_BODY");
 
-		Navigator.gotoNavItem(navItem = "Scope");
+		Click(locator1 = "Configuration#NAVIGATION_SCOPE");
 
 		AssertSelectedLabel(
 			locator1 = "Select#SCOPE",
@@ -541,18 +533,18 @@ definition {
 				locator1 = "WCD#WEB_CONTENT_TITLE",
 				value1 = ${webContentTitle});
 
-			WaitForElementPresent(locator1 = "YoutubePortlet#VIDEO_IFRAME");
+			// LPD-108628 Assert the embed, not YouTube's own player markup,
+			// which changes without notice and is a bot check on CI
 
-			SelectFrame(locator1 = "IFrame#IFRAME");
-
-			AssertElementPresent(
-				key_videoShortcutTitle = ${videoShortcutTitle},
-				locator1 = "WCD#WEB_CONTENT_VIDEO");
-
-			SelectFrame(value1 = "relative=top");
+			AssertElementPresent(locator1 = "YoutubePortlet#VIDEO_IFRAME");
 		}
 		else if (isSet(displayText)) {
-			Click(
+			WaitForElementPresent(
+				key_displayText = ${displayText},
+				key_webContentTitle = ${webContentTitle},
+				locator1 = "WCD#WEB_CONTENT_LINK");
+
+			Click.clickNoMouseOverNoWaitForVisible(
 				key_displayText = ${displayText},
 				key_webContentTitle = ${webContentTitle},
 				locator1 = "WCD#WEB_CONTENT_LINK");
@@ -685,15 +677,9 @@ definition {
 			locator1 = "TextInput#TITLE",
 			value1 = ${webContentTitle});
 
-		SelectFrame.selectFrameNoLoading(
-			key_fieldLabel = "Content",
-			locator1 = "CKEditor#BODY_FIELD_IFRAME_WEB_CONTENT_ARTICLE");
-
-		AssertTextEquals(
-			locator1 = "CKEditor#BODY",
-			value1 = ${webContentContent});
-
-		SelectFrameTop();
+		CKEditor.assertContentInWebContent(
+			content = ${webContentContent},
+			fieldLabel = "Content");
 	}
 
 }

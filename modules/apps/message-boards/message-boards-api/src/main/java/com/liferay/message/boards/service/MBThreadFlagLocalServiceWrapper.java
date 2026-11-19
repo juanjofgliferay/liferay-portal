@@ -268,6 +268,13 @@ public class MBThreadFlagLocalServiceWrapper
 	}
 
 	@Override
+	public MBThreadFlag fetchThreadFlag(
+		long userId, com.liferay.message.boards.model.MBThread thread) {
+
+		return _mbThreadFlagLocalService.fetchThreadFlag(userId, thread);
+	}
+
+	@Override
 	public com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery
 		getActionableDynamicQuery() {
 
@@ -475,3 +482,4 @@ public class MBThreadFlagLocalServiceWrapper
 	private MBThreadFlagLocalService _mbThreadFlagLocalService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1602459440

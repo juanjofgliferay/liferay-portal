@@ -14,7 +14,7 @@ AssetCategoryActionDropdownItemsProvider assetCategoryActionDropdownItemsProvide
 
 <clay:management-toolbar
 	managementToolbarDisplayContext="<%= assetCategoriesManagementToolbarDisplayContext %>"
-	propsTransformer="js/AssetCategoriesManagementToolbarPropsTransformer"
+	propsTransformer="{AssetCategoriesManagementToolbarPropsTransformer} from asset-categories-admin-web"
 />
 
 <portlet:actionURL name="/asset_categories_admin/delete_asset_category" var="deleteCategoryURL">
@@ -74,7 +74,31 @@ AssetCategoryActionDropdownItemsProvider assetCategoryActionDropdownItemsProvide
 						</span>
 
 						<h2 class="h5">
-							<aui:a href="<%= rowURL.toString() %>"><%= HtmlUtil.escape(curCategory.getTitle(locale)) %></aui:a>
+							<c:choose>
+								<c:when test="<%= assetCategoriesDisplayContext.isSystemCategory(curCategory) %>">
+									<clay:link
+										aria-describedby='<%= liferayPortletResponse.getNamespace() + "systemCategory" + curCategory.getCategoryId() %>'
+										href="<%= rowURL.toString() %>"
+										label="<%= HtmlUtil.escape(curCategory.getTitle(locale)) %>"
+									/>
+								</c:when>
+								<c:otherwise>
+									<clay:link
+										href="<%= rowURL.toString() %>"
+										label="<%= HtmlUtil.escape(curCategory.getTitle(locale)) %>"
+									/>
+								</c:otherwise>
+							</c:choose>
+
+							<c:if test="<%= assetCategoriesDisplayContext.isSystemCategory(curCategory) %>">
+								<span class="lfr-portal-tooltip" id="<portlet:namespace />systemCategory<%= curCategory.getCategoryId() %>" title="<%= LanguageUtil.get(request, "system-category") %>">
+									<clay:icon
+										symbol="lock"
+									/>
+
+									<span class="sr-only"><liferay-ui:message key="system-category" /></span>
+								</span>
+							</c:if>
 						</h2>
 
 						<span class="text-default">
@@ -92,7 +116,7 @@ AssetCategoryActionDropdownItemsProvider assetCategoryActionDropdownItemsProvide
 						<clay:dropdown-actions
 							aria-label='<%= LanguageUtil.get(request, "show-actions") %>'
 							dropdownItems="<%= assetCategoryActionDropdownItemsProvider.getActionDropdownItems(curCategory) %>"
-							propsTransformer="js/CategoryActionDropdownPropsTransformer"
+							propsTransformer="{CategoryActionDropdownPropsTransformer} from asset-categories-admin-web"
 						/>
 					</liferay-ui:search-container-column-text>
 				</c:when>
@@ -102,8 +126,19 @@ AssetCategoryActionDropdownItemsProvider assetCategoryActionDropdownItemsProvide
 							<liferay-ui:search-container-column-text
 								cssClass="table-cell-expand table-cell-minw-200 table-title"
 								name="category"
-								value="<%= HtmlUtil.escape(curCategory.getTitle(locale)) %>"
-							/>
+							>
+								<%= HtmlUtil.escape(curCategory.getTitle(locale)) %>
+
+								<c:if test="<%= assetCategoriesDisplayContext.isSystemCategory(curCategory) %>">
+									<span class="lfr-portal-tooltip" title="<%= LanguageUtil.get(request, "system-category") %>">
+										<clay:icon
+											symbol="lock"
+										/>
+
+										<span class="sr-only"><liferay-ui:message key="system-category" /></span>
+									</span>
+								</c:if>
+							</liferay-ui:search-container-column-text>
 
 							<liferay-ui:search-container-column-text
 								cssClass="table-cell-expand table-cell-minw-200"
@@ -121,10 +156,34 @@ AssetCategoryActionDropdownItemsProvider assetCategoryActionDropdownItemsProvide
 						<c:otherwise>
 							<liferay-ui:search-container-column-text
 								cssClass="table-cell-expand table-cell-minw-200 table-title"
-								href="<%= rowURL %>"
 								name="category"
-								value="<%= HtmlUtil.escape(curCategory.getTitle(locale)) %>"
-							/>
+							>
+								<c:choose>
+									<c:when test="<%= assetCategoriesDisplayContext.isSystemCategory(curCategory) %>">
+										<clay:link
+											aria-describedby='<%= liferayPortletResponse.getNamespace() + "systemCategory" + curCategory.getCategoryId() %>'
+											href="<%= rowURL.toString() %>"
+											label="<%= HtmlUtil.escape(curCategory.getTitle(locale)) %>"
+										/>
+									</c:when>
+									<c:otherwise>
+										<clay:link
+											href="<%= rowURL.toString() %>"
+											label="<%= HtmlUtil.escape(curCategory.getTitle(locale)) %>"
+										/>
+									</c:otherwise>
+								</c:choose>
+
+								<c:if test="<%= assetCategoriesDisplayContext.isSystemCategory(curCategory) %>">
+									<span class="lfr-portal-tooltip" id="<portlet:namespace />systemCategory<%= curCategory.getCategoryId() %>" title="<%= LanguageUtil.get(request, "system-category") %>">
+										<clay:icon
+											symbol="lock"
+										/>
+
+										<span class="sr-only"><liferay-ui:message key="system-category" /></span>
+									</span>
+								</c:if>
+							</liferay-ui:search-container-column-text>
 
 							<liferay-ui:search-container-column-text
 								cssClass="table-cell-expand table-cell-minw-200"
@@ -140,7 +199,7 @@ AssetCategoryActionDropdownItemsProvider assetCategoryActionDropdownItemsProvide
 
 							<liferay-ui:search-container-column-text
 								cssClass="table-cell-expand-smaller table-column-text-center"
-								name="subcategories"
+								name="subcategories[category]"
 								value="<%= String.valueOf(subcategoriesCount) %>"
 							/>
 						</c:otherwise>
@@ -156,7 +215,7 @@ AssetCategoryActionDropdownItemsProvider assetCategoryActionDropdownItemsProvide
 						<clay:dropdown-actions
 							aria-label='<%= LanguageUtil.get(request, "show-actions") %>'
 							dropdownItems="<%= assetCategoryActionDropdownItemsProvider.getActionDropdownItems(curCategory) %>"
-							propsTransformer="js/CategoryActionDropdownPropsTransformer"
+							propsTransformer="{CategoryActionDropdownPropsTransformer} from asset-categories-admin-web"
 						/>
 					</liferay-ui:search-container-column-text>
 				</c:when>

@@ -13,6 +13,10 @@ import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.search.Indexable;
 import com.liferay.portal.kernel.search.IndexableType;
+import com.liferay.portal.kernel.service.SQLStateAcceptor;
+import com.liferay.portal.kernel.spring.aop.Property;
+import com.liferay.portal.kernel.spring.aop.Retry;
+import com.liferay.portal.kernel.util.FriendlyURLNormalizer;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.Portal;
@@ -38,8 +42,19 @@ public class RedirectNotFoundEntryLocalServiceImpl
 
 	@Indexable(type = IndexableType.REINDEX)
 	@Override
+	@Retry(
+		acceptor = SQLStateAcceptor.class,
+		properties = {
+			@Property(
+				name = SQLStateAcceptor.SQLSTATE,
+				value = SQLStateAcceptor.SQLSTATE_INTEGRITY_CONSTRAINT_VIOLATION
+			)
+		}
+	)
 	public RedirectNotFoundEntry addOrUpdateRedirectNotFoundEntry(
 		Group group, String url) {
+
+		url = _friendlyURLNormalizer.normalizeWithEncoding(url);
 
 		RedirectNotFoundEntry redirectNotFoundEntry =
 			redirectNotFoundEntryPersistence.fetchByG_U(
@@ -66,6 +81,32 @@ public class RedirectNotFoundEntryLocalServiceImpl
 	}
 
 	@Override
+	public void deleteRedirectNotFoundEntries(long groupId)
+		throws PortalException {
+
+		for (RedirectNotFoundEntry redirectNotFoundEntry :
+				redirectNotFoundEntryPersistence.findByGroupId(groupId)) {
+
+			redirectNotFoundEntryLocalService.deleteRedirectNotFoundEntry(
+				redirectNotFoundEntry);
+		}
+	}
+
+	@Indexable(type = IndexableType.DELETE)
+	@Override
+	public RedirectNotFoundEntry deleteRedirectNotFoundEntry(
+			RedirectNotFoundEntry redirectNotFoundEntry)
+		throws PortalException {
+
+		_viewCountManager.deleteViewCount(
+			redirectNotFoundEntry.getCompanyId(),
+			_portal.getClassNameId(RedirectNotFoundEntry.class),
+			redirectNotFoundEntry.getRedirectNotFoundEntryId());
+
+		return super.deleteRedirectNotFoundEntry(redirectNotFoundEntry);
+	}
+
+	@Override
 	public RedirectNotFoundEntry fetchRedirectNotFoundEntry(
 		long groupId, String url) {
 
@@ -77,7 +118,7 @@ public class RedirectNotFoundEntryLocalServiceImpl
 		long groupId, Boolean ignored, Date minModifiedDate, int start, int end,
 		OrderByComparator<RedirectNotFoundEntry> orderByComparator) {
 
-		return redirectNotFoundEntryLocalService.dynamicQuery(
+		return redirectNotFoundEntryPersistence.findWithDynamicQuery(
 			_getRedirectNotFoundEntriesDynamicQuery(
 				groupId, ignored, minModifiedDate, orderByComparator),
 			start, end);
@@ -88,7 +129,7 @@ public class RedirectNotFoundEntryLocalServiceImpl
 		long groupId, Date minModifiedDate, int start, int end,
 		OrderByComparator<RedirectNotFoundEntry> orderByComparator) {
 
-		return redirectNotFoundEntryLocalService.dynamicQuery(
+		return redirectNotFoundEntryPersistence.findWithDynamicQuery(
 			_getRedirectNotFoundEntriesDynamicQuery(
 				groupId, null, minModifiedDate, orderByComparator),
 			start, end);
@@ -113,7 +154,7 @@ public class RedirectNotFoundEntryLocalServiceImpl
 		long groupId, Boolean ignored, Date minModifiedDate) {
 
 		return GetterUtil.getInteger(
-			redirectNotFoundEntryLocalService.dynamicQueryCount(
+			redirectNotFoundEntryPersistence.countWithDynamicQuery(
 				_getRedirectNotFoundEntriesDynamicQuery(
 					groupId, ignored, minModifiedDate)));
 	}
@@ -123,7 +164,7 @@ public class RedirectNotFoundEntryLocalServiceImpl
 		long groupId, Date minModifiedDate) {
 
 		return GetterUtil.getInteger(
-			redirectNotFoundEntryLocalService.dynamicQueryCount(
+			redirectNotFoundEntryPersistence.countWithDynamicQuery(
 				_getRedirectNotFoundEntriesDynamicQuery(
 					groupId, null, minModifiedDate)));
 	}
@@ -135,7 +176,7 @@ public class RedirectNotFoundEntryLocalServiceImpl
 		throws PortalException {
 
 		RedirectNotFoundEntry redirectNotFoundEntry =
-			redirectNotFoundEntryLocalService.getRedirectNotFoundEntry(
+			redirectNotFoundEntryPersistence.findByPrimaryKey(
 				redirectNotFoundEntryId);
 
 		redirectNotFoundEntry.setIgnored(ignored);
@@ -184,6 +225,9 @@ public class RedirectNotFoundEntryLocalServiceImpl
 
 		return redirectNotFoundEntriesDynamicQuery;
 	}
+
+	@Reference
+	private FriendlyURLNormalizer _friendlyURLNormalizer;
 
 	@Reference
 	private Portal _portal;

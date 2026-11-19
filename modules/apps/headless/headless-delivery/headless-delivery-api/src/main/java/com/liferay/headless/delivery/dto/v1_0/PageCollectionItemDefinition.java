@@ -17,20 +17,21 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Javier Gamarra
@@ -40,6 +41,9 @@ import javax.xml.bind.annotation.XmlRootElement;
 @GraphQLName(
 	description = "Represents a definition of a Page Collection Item.",
 	value = "PageCollectionItemDefinition"
+)
+@io.swagger.v3.oas.annotations.media.Schema(
+	description = "Represents a definition of a Page Collection Item."
 )
 @JsonFilter("Liferay.Vulcan")
 @XmlRootElement(name = "PageCollectionItemDefinition")
@@ -55,34 +59,49 @@ public class PageCollectionItemDefinition implements Serializable {
 			PageCollectionItemDefinition.class, json);
 	}
 
-	@Schema(description = "The page collection item's configuration.")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The page collection item's configuration."
+	)
 	@Valid
 	public Object getCollectionItemConfig() {
+		if (_collectionItemConfigSupplier != null) {
+			collectionItemConfig = _collectionItemConfigSupplier.get();
+
+			_collectionItemConfigSupplier = null;
+		}
+
 		return collectionItemConfig;
 	}
 
 	public void setCollectionItemConfig(Object collectionItemConfig) {
 		this.collectionItemConfig = collectionItemConfig;
+
+		_collectionItemConfigSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setCollectionItemConfig(
 		UnsafeSupplier<Object, Exception> collectionItemConfigUnsafeSupplier) {
 
-		try {
-			collectionItemConfig = collectionItemConfigUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_collectionItemConfigSupplier = () -> {
+			try {
+				return collectionItemConfigUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The page collection item's configuration.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Object collectionItemConfig;
+
+	@JsonIgnore
+	private Supplier<Object> _collectionItemConfigSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -113,6 +132,8 @@ public class PageCollectionItemDefinition implements Serializable {
 
 		sb.append("{");
 
+		Object collectionItemConfig = getCollectionItemConfig();
+
 		if (collectionItemConfig != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -120,19 +141,7 @@ public class PageCollectionItemDefinition implements Serializable {
 
 			sb.append("\"collectionItemConfig\": ");
 
-			if (collectionItemConfig instanceof Map) {
-				sb.append(
-					JSONFactoryUtil.createJSONObject(
-						(Map<?, ?>)collectionItemConfig));
-			}
-			else if (collectionItemConfig instanceof String) {
-				sb.append("\"");
-				sb.append(_escape((String)collectionItemConfig));
-				sb.append("\"");
-			}
-			else {
-				sb.append(collectionItemConfig);
-			}
+			sb.append(_toJSON(collectionItemConfig));
 		}
 
 		sb.append("}");
@@ -140,8 +149,8 @@ public class PageCollectionItemDefinition implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.delivery.dto.v1_0.PageCollectionItemDefinition",
 		name = "x-class-name"
 	)
@@ -187,7 +196,10 @@ public class PageCollectionItemDefinition implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -225,6 +237,27 @@ public class PageCollectionItemDefinition implements Serializable {
 		return sb.toString();
 	}
 
+	private static String _toJSON(Object value) {
+		if (value instanceof Collection) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONArray((Collection<?>)value));
+		}
+		else if (value instanceof Map) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONObject((Map<?, ?>)value));
+		}
+		else if (value instanceof Object[]) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONArray(
+					Arrays.asList((Object[])value)));
+		}
+		else if (value instanceof String) {
+			return StringBundler.concat("\"", _escape(value), "\"");
+		}
+
+		return String.valueOf(value);
+	}
+
 	private static final String[][] _JSON_ESCAPE_STRINGS = {
 		{"\\", "\"", "\b", "\f", "\n", "\r", "\t"},
 		{"\\\\", "\\\"", "\\b", "\\f", "\\n", "\\r", "\\t"}
@@ -233,3 +266,4 @@ public class PageCollectionItemDefinition implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:1456809076

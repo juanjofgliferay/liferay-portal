@@ -27,6 +27,11 @@ import org.osgi.service.component.annotations.Reference;
 public class CommerceTaxCategoryPanelApp extends BasePanelApp {
 
 	@Override
+	public String getIcon() {
+		return "calculator";
+	}
+
+	@Override
 	public Portlet getPortlet() {
 		return _portlet;
 	}
@@ -37,7 +42,7 @@ public class CommerceTaxCategoryPanelApp extends BasePanelApp {
 	}
 
 	@Reference(
-		target = "(javax.portlet.name=" + CPPortletKeys.CP_TAX_CATEGORY + ")"
+		target = "(jakarta.portlet.name=" + CPPortletKeys.CP_TAX_CATEGORY + ")"
 	)
 	private Portlet _portlet;
 

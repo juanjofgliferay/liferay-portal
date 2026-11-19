@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+
+<Configuration strict="true">
+	<Appenders>
+		<Appender name="CONSOLE" target="SYSTEM_OUT" type="CompanyWebIdConsole">
+			<JsonTemplateLayout eventTemplateUri="file:///${env:LIFERAY_HOME}/tomcat/webapps/ROOT/WEB-INF/classes/META-INF/log_layout.json" maxStringLength="131072" stackTraceEnabled="true" />
+		</Appender>
+	</Appenders>
+
+	<Loggers>
+		<Logger level="INFO" name="com.liferay.portal.security.audit.router.internal" />
+
+		<Root level="INFO">
+			<AppenderRef ref="CONSOLE" />
+		</Root>
+	</Loggers>
+</Configuration>

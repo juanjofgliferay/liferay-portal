@@ -18,13 +18,13 @@ import com.liferay.site.navigation.taglib.internal.servlet.ServletContextUtil;
 import com.liferay.site.navigation.taglib.servlet.taglib.util.NavItemUtil;
 import com.liferay.taglib.util.IncludeTag;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.jsp.JspWriter;
+import jakarta.servlet.jsp.PageContext;
+
 import java.util.List;
 import java.util.Map;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.jsp.JspWriter;
-import javax.servlet.jsp.PageContext;
 
 /**
  * @author Brian Wing Shun Chan
@@ -79,6 +79,9 @@ public class NavigationTag extends IncludeTag {
 
 		JspWriter jspWriter = pageContext.getOut();
 
+		PortletDisplayTemplate portletDisplayTemplate =
+			ServletContextUtil.getPortletDisplayTemplate();
+
 		HttpServletRequest httpServletRequest = getRequest();
 
 		Map<String, Object> navigationMenuContext =
@@ -88,10 +91,10 @@ public class NavigationTag extends IncludeTag {
 				_rootLayoutLevel, _rootLayoutType, 0);
 
 		jspWriter.write(
-			PortletDisplayTemplateUtil.renderDDMTemplate(
+			portletDisplayTemplate.renderDDMTemplate(
 				httpServletRequest,
 				(HttpServletResponse)pageContext.getResponse(),
-				portletDisplayDDMTemplate.getTemplateId(),
+				portletDisplayDDMTemplate,
 				(List<NavItem>)navigationMenuContext.get("navItems"),
 				navigationMenuContext));
 

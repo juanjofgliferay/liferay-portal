@@ -13,7 +13,6 @@ import com.liferay.headless.admin.workflow.internal.dto.v1_0.util.AssigneeUtil;
 import com.liferay.headless.admin.workflow.resource.v1_0.WorkflowTaskAssignableUsersResource;
 import com.liferay.portal.kernel.change.tracking.CTAware;
 import com.liferay.portal.kernel.model.User;
-import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.comparator.UserFirstNameComparator;
 import com.liferay.portal.kernel.workflow.WorkflowTaskManager;
 
@@ -62,7 +61,7 @@ public class WorkflowTaskAssignableUsersResourceImpl
 
 							if (commonAssignableUsers == null) {
 								commonAssignableUsers = new TreeSet<>(
-									new UserFirstNameComparator(true));
+									UserFirstNameComparator.getInstance(true));
 
 								commonAssignableUsers.addAll(assignableUsers);
 							}
@@ -95,18 +94,14 @@ public class WorkflowTaskAssignableUsersResourceImpl
 			new WorkflowTaskAssignableUser();
 
 		workflowTaskAssignableUser.setAssignableUsers(
-			transformToArray(
-				assignableUsers, user -> AssigneeUtil.toAssignee(_portal, user),
-				Assignee.class));
-		workflowTaskAssignableUser.setWorkflowTaskId(workflowTaskId);
+			() -> transformToArray(
+				assignableUsers, AssigneeUtil::toAssignee, Assignee.class));
+		workflowTaskAssignableUser.setWorkflowTaskId(() -> workflowTaskId);
 
 		return workflowTaskAssignableUser;
 	}
 
 	private static final Long _COMMON_WORKFLOW_TASK_ID = 0L;
-
-	@Reference
-	private Portal _portal;
 
 	@Reference
 	private WorkflowTaskManager _workflowTaskManager;

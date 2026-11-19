@@ -15,7 +15,6 @@ import com.liferay.commerce.product.configuration.AttachmentsConfiguration;
 import com.liferay.commerce.product.constants.CPPortletKeys;
 import com.liferay.commerce.product.model.CommerceCatalog;
 import com.liferay.commerce.product.service.CommerceCatalogService;
-import com.liferay.document.library.kernel.service.DLAppService;
 import com.liferay.item.selector.ItemSelector;
 import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
 import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
@@ -24,11 +23,11 @@ import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermi
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import java.util.Map;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
 
-import javax.portlet.PortletException;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
+import java.util.Map;
 
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -41,7 +40,7 @@ import org.osgi.service.component.annotations.Reference;
 @Component(
 	configurationPid = "com.liferay.commerce.product.configuration.AttachmentsConfiguration",
 	property = {
-		"javax.portlet.name=" + CPPortletKeys.COMMERCE_CATALOGS,
+		"jakarta.portlet.name=" + CPPortletKeys.COMMERCE_CATALOGS,
 		"mvc.command.name=/commerce_catalogs/edit_commerce_catalog_external_reference_code"
 	},
 	service = MVCRenderCommand.class
@@ -62,7 +61,7 @@ public class EditCommerceCatalogExternalReferenceCodeMVCRenderCommand
 				_commerceCatalogModelResourcePermission,
 				_commerceCurrencyLocalService, _commerceInventoryMethodRegistry,
 				_commercePriceListService, _configurationProvider,
-				_dlAppService, _itemSelector, _portal);
+				_itemSelector, _portal);
 
 		renderRequest.setAttribute(
 			WebKeys.PORTLET_DISPLAY_CONTEXT, commerceCatalogDisplayContext);
@@ -105,9 +104,6 @@ public class EditCommerceCatalogExternalReferenceCodeMVCRenderCommand
 
 	@Reference
 	private ConfigurationProvider _configurationProvider;
-
-	@Reference
-	private DLAppService _dlAppService;
 
 	@Reference
 	private ItemSelector _itemSelector;

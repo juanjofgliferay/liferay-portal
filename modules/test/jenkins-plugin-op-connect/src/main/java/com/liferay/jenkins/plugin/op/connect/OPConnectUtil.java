@@ -1,0 +1,76 @@
+/**
+ * SPDX-FileCopyrightText: (c) 2026 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
+ */
+
+package com.liferay.jenkins.plugin.op.connect;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+import jenkins.model.Jenkins;
+
+/**
+ * @author Michael Hashimoto
+ */
+public class OPConnectUtil {
+
+	public static List<String> getIgnoredValues() {
+		OPConnectDescriptor opConnectDescriptor = _getOPConnectDescriptor();
+
+		if (opConnectDescriptor == null) {
+			return Collections.emptyList();
+		}
+
+		return opConnectDescriptor.getIgnoredValues();
+	}
+
+	public static long getRefreshIntervalMinutes() {
+		OPConnectDescriptor opConnectDescriptor = _getOPConnectDescriptor();
+
+		if (opConnectDescriptor == null) {
+			return 0;
+		}
+
+		return opConnectDescriptor.getRefreshIntervalMinutes();
+	}
+
+	public static List<String> getSecretValues() {
+		OPConnectDescriptor opConnectDescriptor = _getOPConnectDescriptor();
+
+		if (opConnectDescriptor == null) {
+			return Collections.emptyList();
+		}
+
+		List<String> secretValues = new ArrayList<>(
+			opConnectDescriptor.getSecretValues());
+
+		String accessToken = opConnectDescriptor.getAccessToken();
+
+		if ((accessToken != null) && !accessToken.isEmpty()) {
+			secretValues.add(accessToken);
+		}
+
+		return secretValues;
+	}
+
+	public static void refreshSecretValues() {
+		OPConnectDescriptor opConnectDescriptor = _getOPConnectDescriptor();
+
+		if (opConnectDescriptor != null) {
+			opConnectDescriptor.refreshSecretValues();
+		}
+	}
+
+	private static OPConnectDescriptor _getOPConnectDescriptor() {
+		Jenkins jenkins = Jenkins.getInstanceOrNull();
+
+		if (jenkins == null) {
+			return null;
+		}
+
+		return jenkins.getDescriptorByType(OPConnectDescriptor.class);
+	}
+
+}

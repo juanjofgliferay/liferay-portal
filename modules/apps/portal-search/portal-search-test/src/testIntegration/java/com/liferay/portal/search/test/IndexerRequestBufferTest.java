@@ -24,7 +24,7 @@ import com.liferay.portal.kernel.transaction.TransactionConfig;
 import com.liferay.portal.kernel.transaction.TransactionInvokerUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.Portal;
-import com.liferay.portal.search.test.util.SearchTestRule;
+import com.liferay.portal.search.test.rule.SearchTestRule;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 
@@ -120,20 +120,20 @@ public class IndexerRequestBufferTest {
 			indexerRequestBuffer, "size", new Class<?>[0]);
 	}
 
-	@Inject
-	private static DDMStructureLocalService _ddmStructureLocalService;
-
-	@Inject
-	private static JournalArticleLocalService _journalArticleLocalService;
-
-	@Inject
-	private static Portal _portal;
-
 	private static TransactionConfig _transactionConfig;
+
+	@Inject
+	private DDMStructureLocalService _ddmStructureLocalService;
 
 	@DeleteAfterTestRun
 	private Group _group;
 
+	@Inject
+	private JournalArticleLocalService _journalArticleLocalService;
+
 	private JournalArticleSearchFixture _journalArticleSearchFixture;
+
+	@Inject
+	private Portal _portal;
 
 }

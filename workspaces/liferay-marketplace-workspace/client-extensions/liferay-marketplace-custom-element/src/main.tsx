@@ -4,44 +4,29 @@
  */
 
 import {Root, createRoot} from 'react-dom/client';
-import {SWRConfig} from 'swr';
 
-import App from './App';
-import MarketplaceContextProvider from './context/MarketplaceContext';
-import {AppContextProvider} from './manage-app-state/AppManageState';
-import SWRCacheProvider from './services/SWRCacheProvider';
+import Routes, {RouteType} from './Routes';
+import {getAttributes} from './utils/attributes';
 
-const GRAVATAR_API = `https://www.gravatar.com/avatar`;
+import './main.scss';
 
 class WebComponent extends HTMLElement {
 	private root: Root | undefined;
 
 	connectedCallback() {
-		const properties = {
-			cloudBaseURL: this.getAttribute('cloudBaseURL') || '',
-		};
-
 		if (!this.root) {
 			this.root = createRoot(this);
 
 			this.root.render(
-				<SWRConfig
-					value={{
-						provider: SWRCacheProvider,
-						revalidateIfStale: true,
-						revalidateOnFocus: false,
-					}}
-				>
-					<MarketplaceContextProvider properties={properties}>
-						<AppContextProvider gravatarAPI={GRAVATAR_API}>
-							<App route={this.getAttribute('route') || '/'} />
-						</AppContextProvider>
-					</MarketplaceContextProvider>
-				</SWRConfig>
+				<Routes
+					path={this.getAttribute('path') as RouteType}
+					properties={getAttributes(this)}
+				/>
 			);
 		}
 	}
 }
+
 const ELEMENT_ID = 'liferay-marketplace-custom-element';
 
 if (!customElements.get(ELEMENT_ID)) {

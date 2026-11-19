@@ -22,7 +22,6 @@ import com.liferay.portal.kernel.search.Hits;
 import com.liferay.portal.kernel.search.SearchContext;
 import com.liferay.portal.kernel.security.RandomUtil;
 import com.liferay.portal.kernel.service.ServiceContext;
-import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
@@ -36,11 +35,11 @@ import com.liferay.portal.kernel.util.DateFormatFactoryUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.Time;
-import com.liferay.portal.search.test.util.SearchTestRule;
+import com.liferay.portal.search.test.rule.SearchTestRule;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
-import com.liferay.portal.util.PropsValues;
 
 import java.text.DateFormat;
 
@@ -52,8 +51,6 @@ import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-
-import org.apache.commons.lang.ArrayUtils;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -135,22 +132,23 @@ public abstract class BaseAssetSearchTestCase {
 			serviceContext = ServiceContextTestUtil.getServiceContext(groupId);
 
 			AssetTagLocalServiceUtil.addTag(
-				TestPropsValues.getUserId(), groupId, "liferay",
+				null, TestPropsValues.getUserId(), groupId, "liferay",
 				serviceContext);
 
 			AssetTagLocalServiceUtil.addTag(
-				TestPropsValues.getUserId(), groupId, "architecture",
+				null, TestPropsValues.getUserId(), groupId, "architecture",
 				serviceContext);
 
 			AssetTagLocalServiceUtil.addTag(
-				TestPropsValues.getUserId(), groupId, "modularity",
+				null, TestPropsValues.getUserId(), groupId, "modularity",
 				serviceContext);
 
 			AssetTagLocalServiceUtil.addTag(
-				TestPropsValues.getUserId(), groupId, "osgi", serviceContext);
+				null, TestPropsValues.getUserId(), groupId, "osgi",
+				serviceContext);
 
 			AssetTagLocalServiceUtil.addTag(
-				TestPropsValues.getUserId(), groupId, "services",
+				null, TestPropsValues.getUserId(), groupId, "services",
 				serviceContext);
 		}
 
@@ -583,18 +581,12 @@ public abstract class BaseAssetSearchTestCase {
 		ServiceContext serviceContext1 =
 			ServiceContextTestUtil.getServiceContext(group1.getGroupId());
 
-		BaseModel<?> parentBaseModel1 = getParentBaseModel(
-			group1, serviceContext1);
-
-		addBaseModel(parentBaseModel1, getSearchKeywords(), serviceContext1);
+		addBaseModel(group1, getSearchKeywords(), serviceContext1);
 
 		ServiceContext serviceContext2 =
 			ServiceContextTestUtil.getServiceContext(group2.getGroupId());
 
-		BaseModel<?> parentBaseModel2 = getParentBaseModel(
-			group1, serviceContext2);
-
-		addBaseModel(parentBaseModel2, getSearchKeywords(), serviceContext2);
+		addBaseModel(group1, getSearchKeywords(), serviceContext2);
 
 		assertCount(initialEntries + 2, assetEntryQuery, searchContext);
 	}
@@ -1008,6 +1000,14 @@ public abstract class BaseAssetSearchTestCase {
 			ServiceContext serviceContext)
 		throws Exception;
 
+	protected BaseModel<?> addBaseModelWithClassType(
+			BaseModel<?> parentBaseModel, String keywords,
+			ServiceContext serviceContext)
+		throws Exception {
+
+		return addBaseModel(parentBaseModel, keywords, serviceContext);
+	}
+
 	protected List<BaseModel<?>> addBaseModels(
 			Group[] groups, String keywords, ServiceContext serviceContext)
 		throws Exception {
@@ -1021,29 +1021,10 @@ public abstract class BaseAssetSearchTestCase {
 			serviceContext.setScopeGroupId(group.getGroupId());
 			serviceContext.setUserId(user.getUserId());
 
-			baseModels.add(
-				addBaseModel(
-					getParentBaseModel(group, serviceContext), keywords,
-					serviceContext));
+			baseModels.add(addBaseModel(group, keywords, serviceContext));
 		}
 
 		return baseModels;
-	}
-
-	protected BaseModel<?> addBaseModelWithClassType(
-			BaseModel<?> parentBaseModel, String keywords,
-			ServiceContext serviceContext)
-		throws Exception {
-
-		return addBaseModel(parentBaseModel, keywords, serviceContext);
-	}
-
-	protected BaseModel<?> addBaseModelWithWorkflow(
-			BaseModel<?> parentBaseModel, String keywords, boolean approved,
-			ServiceContext serviceContext)
-		throws Exception {
-
-		return addBaseModel(parentBaseModel, keywords, serviceContext);
 	}
 
 	protected void assertCount(
@@ -1146,13 +1127,6 @@ public abstract class BaseAssetSearchTestCase {
 		return titles;
 	}
 
-	protected BaseModel<?> getParentBaseModel(
-			Group group, ServiceContext serviceContext)
-		throws Exception {
-
-		return group;
-	}
-
 	protected abstract String getSearchKeywords();
 
 	protected String[] getTitles(List<AssetEntry> assetEntries, Locale locale)
@@ -1237,12 +1211,6 @@ public abstract class BaseAssetSearchTestCase {
 			AssetEntryQuery assetEntryQuery, int expectedResult)
 		throws Exception {
 
-		ServiceContext serviceContext =
-			ServiceContextTestUtil.getServiceContext(_group1.getGroupId());
-
-		BaseModel<?> parentBaseModel = getParentBaseModel(
-			_group1, serviceContext);
-
 		SearchContext searchContext = SearchContextTestUtil.getSearchContext();
 
 		searchContext.setGroupIds(assetEntryQuery.getGroupIds());
@@ -1251,7 +1219,10 @@ public abstract class BaseAssetSearchTestCase {
 
 		assertCount(initialEntries, assetEntryQuery, searchContext);
 
-		addBaseModel(parentBaseModel, getSearchKeywords(), serviceContext);
+		ServiceContext serviceContext =
+			ServiceContextTestUtil.getServiceContext(_group1.getGroupId());
+
+		addBaseModel(_group1, getSearchKeywords(), serviceContext);
 
 		assertCount(
 			initialEntries + expectedResult, assetEntryQuery, searchContext);
@@ -1261,12 +1232,6 @@ public abstract class BaseAssetSearchTestCase {
 			AssetEntryQuery assetEntryQuery, boolean classType)
 		throws Exception {
 
-		ServiceContext serviceContext =
-			ServiceContextTestUtil.getServiceContext(_group1.getGroupId());
-
-		BaseModel<?> parentBaseModel = getParentBaseModel(
-			_group1, serviceContext);
-
 		SearchContext searchContext = SearchContextTestUtil.getSearchContext();
 
 		searchContext.setGroupIds(assetEntryQuery.getGroupIds());
@@ -1275,8 +1240,10 @@ public abstract class BaseAssetSearchTestCase {
 
 		assertCount(initialEntries, assetEntryQuery, searchContext);
 
-		addBaseModelWithClassType(
-			parentBaseModel, getSearchKeywords(), serviceContext);
+		ServiceContext serviceContext =
+			ServiceContextTestUtil.getServiceContext(_group1.getGroupId());
+
+		addBaseModelWithClassType(_group1, getSearchKeywords(), serviceContext);
 
 		if (classType) {
 			assetEntryQuery.setClassTypeIds(getClassTypeIds());
@@ -1290,62 +1257,21 @@ public abstract class BaseAssetSearchTestCase {
 		}
 	}
 
-	protected void testOrderByCreateDate(
-			AssetEntryQuery assetEntryQuery, String orderByType,
-			String[] titles, String[] orderedTitles)
-		throws Exception {
-
-		SearchContext searchContext = SearchContextTestUtil.getSearchContext();
-
-		searchContext.setGroupIds(assetEntryQuery.getGroupIds());
-
-		for (String title : titles) {
-			ServiceContext serviceContext =
-				ServiceContextTestUtil.getServiceContext(_group1.getGroupId());
-
-			serviceContext.setCreateDate(new Date());
-
-			ServiceContextThreadLocal.pushServiceContext(serviceContext);
-
-			try {
-				addBaseModel(
-					getParentBaseModel(_group1, serviceContext), title,
-					serviceContext);
-			}
-			finally {
-				ServiceContextThreadLocal.popServiceContext();
-			}
-		}
-
-		assetEntryQuery.setOrderByCol1("createDate");
-		assetEntryQuery.setOrderByType1(orderByType);
-
-		List<AssetEntry> assetEntries = search(assetEntryQuery, searchContext);
-
-		Assert.assertEquals(
-			ArrayUtils.toString(orderedTitles),
-			ArrayUtils.toString(
-				getTitles(assetEntries, LocaleUtil.getDefault())));
-	}
-
 	protected void testOrderByExpirationDate(
 			AssetEntryQuery assetEntryQuery, String orderByType,
 			Date[] expirationDates)
 		throws Exception {
 
-		ServiceContext serviceContext =
-			ServiceContextTestUtil.getServiceContext(_group1.getGroupId());
-
-		BaseModel<?> parentBaseModel = getParentBaseModel(
-			_group1, serviceContext);
-
 		SearchContext searchContext = SearchContextTestUtil.getSearchContext();
 
 		searchContext.setGroupIds(assetEntryQuery.getGroupIds());
 
+		ServiceContext serviceContext =
+			ServiceContextTestUtil.getServiceContext(_group1.getGroupId());
+
 		for (Date expirationDate : expirationDates) {
 			addBaseModel(
-				parentBaseModel, RandomTestUtil.randomString(), expirationDate,
+				_group1, RandomTestUtil.randomString(), expirationDate,
 				serviceContext);
 		}
 
@@ -1359,12 +1285,9 @@ public abstract class BaseAssetSearchTestCase {
 
 		List<AssetEntry> assetEntries = search(assetEntryQuery, searchContext);
 
-		Assert.assertEquals(
-			ArrayUtils.toString(format(expirationDates, dateFormat)),
-			ArrayUtils.toString(
-				format(
-					getExpirationDates(assetEntries, orderByType),
-					dateFormat)));
+		Assert.assertArrayEquals(
+			format(expirationDates, dateFormat),
+			format(getExpirationDates(assetEntries, orderByType), dateFormat));
 	}
 
 	protected void testOrderByTitle(
@@ -1376,11 +1299,8 @@ public abstract class BaseAssetSearchTestCase {
 		ServiceContext serviceContext =
 			ServiceContextTestUtil.getServiceContext(_group1.getGroupId());
 
-		BaseModel<?> parentBaseModel = getParentBaseModel(
-			_group1, serviceContext);
-
 		for (Map<Locale, String> titleMap : titleMaps) {
-			addBaseModel(parentBaseModel, titleMap, serviceContext);
+			addBaseModel(_group1, titleMap, serviceContext);
 		}
 
 		assetEntryQuery.setOrderByCol1("title");
@@ -1396,28 +1316,25 @@ public abstract class BaseAssetSearchTestCase {
 			List<AssetEntry> assetEntries = search(
 				assetEntryQuery, searchContext);
 
-			Assert.assertEquals(
-				ArrayUtils.toString(getOrderedTitles(orderedTitleMaps, locale)),
-				ArrayUtils.toString(getTitles(assetEntries, locale)));
+			Assert.assertArrayEquals(
+				getOrderedTitles(orderedTitleMaps, locale),
+				getTitles(assetEntries, locale));
 		}
 	}
 
 	protected void testPaginationType(AssetEntryQuery assetEntryQuery, int size)
 		throws Exception {
 
-		ServiceContext serviceContext =
-			ServiceContextTestUtil.getServiceContext(_group1.getGroupId());
-
-		BaseModel<?> parentBaseModel = getParentBaseModel(
-			_group1, serviceContext);
-
 		SearchContext searchContext = SearchContextTestUtil.getSearchContext();
 
 		searchContext.setGroupIds(assetEntryQuery.getGroupIds());
 
+		ServiceContext serviceContext =
+			ServiceContextTestUtil.getServiceContext(_group1.getGroupId());
+
 		for (int i = 0; i < size; i++) {
 			addBaseModel(
-				parentBaseModel, RandomTestUtil.randomString(), serviceContext);
+				_group1, RandomTestUtil.randomString(), serviceContext);
 		}
 
 		assertCount(size, assetEntryQuery, searchContext, 0, 1);

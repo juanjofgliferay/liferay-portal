@@ -1,0 +1,197 @@
+import DataValue from 'shared/components/DataValue';
+import React from 'react';
+import {
+	columns,
+	FrontendDataSet,
+	pagination,
+} from 'shared/components/FrontendDataSet';
+import {Routes, setUriQueryValues} from 'shared/util/router';
+import {useParams} from 'react-router-dom';
+import {useRangeQueryValues} from 'shared/hooks/useRangeQueryValues';
+
+const FDS_ID = 'account-individuals-dataset';
+
+const PREVIEW_FDS_ID = 'most-engaged-individuals-dataset';
+
+const PREVIEW_DELTA = 5;
+
+const SORTS = [
+	{
+		active: true,
+		default: true,
+		direction: 'desc' as const,
+		key: 'activitiesCount',
+		label: Liferay.Language.get('total-events'),
+	},
+];
+
+interface IIndividualItemData {
+	id: string | number;
+	properties?: {jobTitle?: string};
+}
+
+export const getVisitorType = (sessionsCount: number) => {
+	if (!sessionsCount) {
+		return {
+			displayType: 'secondary' as const,
+			label: Liferay.Language.get('no-activities'),
+		};
+	}
+
+	if (sessionsCount === 1) {
+		return {
+			displayType: 'success' as const,
+			label: Liferay.Language.get('first-time'),
+		};
+	}
+
+	return {
+		displayType: 'info' as const,
+		label: Liferay.Language.get('returning'),
+	};
+};
+
+interface IIndividualsDataSetProps {
+
+	/**
+	 * Renders the read only preview shown on the overview tab: the first few
+	 * individuals with no search, sorting or pagination. The full table on the
+	 * profile tab is the default.
+	 */
+	preview?: boolean;
+}
+
+const IndividualsDataSet: React.FC<IIndividualsDataSetProps> = ({
+	preview = false,
+}) => {
+	const {
+		channelId = '',
+		groupId = '',
+		id = '',
+	} = useParams<{
+		channelId: string;
+		groupId: string;
+		id: string;
+	}>();
+
+	const {apiRangeParams, routeRangeParams} = useRangeQueryValues();
+
+	return (
+		<FrontendDataSet
+			apiURL={setUriQueryValues(
+				{channelId, ...apiRangeParams},
+				`/o/faro/contacts/${groupId}/account/${id}/individuals`
+			)}
+			customDataRenderers={{
+				avgSessionDurationRenderer: ({value}: {value?: number}) => (
+					<DataValue type="duration" value={value} />
+				),
+				individualNameRenderer: ({
+					itemData,
+					value,
+				}: {
+					itemData: IIndividualItemData;
+					value: string;
+				}) =>
+					columns.nameAndLinkRenderer({
+						channelId,
+						groupId,
+						itemData,
+						queryValues: routeRangeParams,
+						route: Routes.CONTACTS_INDIVIDUAL,
+						value,
+					}),
+				jobTitleRenderer: ({
+					itemData,
+				}: {
+					itemData: IIndividualItemData;
+				}) =>
+					columns.textRenderer({
+						itemData: {},
+						value: itemData.properties?.jobTitle,
+					}),
+				lastActiveRenderer: ({value}: {value: string}) =>
+					columns.dateRenderer({itemData: {}, value}),
+				totalEventsRenderer: ({value}: {value?: number}) => (
+					<DataValue type="count" value={value} />
+				),
+				visitorTypeRenderer: ({value}: {value?: number}) => (
+					<DataValue
+						format={(visitorType: number) =>
+							columns.cmsLabelRenderer(
+								getVisitorType(visitorType)
+							)
+						}
+						value={value}
+					/>
+				),
+			}}
+			emptyState={{
+				description: Liferay.Language.get(
+					'no-activities-were-found-on-the-selected-period'
+				),
+				title: Liferay.Language.get('no-individuals-were-found'),
+			}}
+			id={preview ? PREVIEW_FDS_ID : FDS_ID}
+			pagination={preview ? undefined : pagination}
+			showManagementBar={!preview}
+			showPagination={!preview}
+			showSearch={!preview}
+			sorts={SORTS}
+			views={[
+				{
+					contentRenderer: 'table',
+					default: true,
+					...(preview && {initialPaginationDelta: PREVIEW_DELTA}),
+					label: Liferay.Language.get('default-view'),
+					name: 'table',
+					schema: {
+						fields: [
+							{
+								contentRenderer: 'individualNameRenderer',
+								fieldName: 'name',
+								label: Liferay.Language.get('individual-name'),
+								sortable: !preview,
+							},
+							{
+								contentRenderer: 'jobTitleRenderer',
+								fieldName: 'jobTitle',
+								label: Liferay.Language.get('job-title'),
+								sortable: !preview,
+							},
+							{
+								contentRenderer: 'visitorTypeRenderer',
+								fieldName: 'sessionsCount',
+								label: Liferay.Language.get('visitor-type'),
+								sortable: !preview,
+							},
+							{
+								contentRenderer: 'totalEventsRenderer',
+								fieldName: 'activitiesCount',
+								label: Liferay.Language.get('total-events'),
+								sortable: !preview,
+							},
+							{
+								contentRenderer: 'avgSessionDurationRenderer',
+								fieldName: 'averageSessionDuration',
+								label: Liferay.Language.get(
+									'avg-session-duration'
+								),
+								sortable: !preview,
+							},
+							{
+								contentRenderer: 'lastActiveRenderer',
+								fieldName: 'lastActivityDate',
+								label: Liferay.Language.get('last-active'),
+								sortable: !preview,
+							},
+						],
+					},
+					thumbnail: 'table',
+				},
+			]}
+		/>
+	);
+};
+
+export default IndividualsDataSet;

@@ -1,0 +1,233 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`ConfigureWorkspace renders 1`] = `
+<div>
+  <form
+    class="form-root"
+  >
+    <div
+      class="modal-header"
+    >
+      <h1
+        class="modal-title"
+        tabindex="-1"
+      />
+      <button
+        aria-label="Close"
+        class="close btn btn-unstyled"
+        type="button"
+      >
+        <svg
+          class="lexicon-icon lexicon-icon-times"
+          role="presentation"
+        >
+          <use
+            href="#times"
+          />
+        </svg>
+      </button>
+    </div>
+    <div
+      class="modal-body"
+    >
+      <div
+        class="text-center"
+      >
+        <svg
+          class="lexicon-icon lexicon-icon-analytics_onboarding_welcome icon-root"
+          data-file="analytics_onboarding_welcome.svg"
+          role="presentation"
+          style="font-size: 10rem;"
+        />
+      </div>
+      <div
+        class="text-center mb-4"
+      >
+        <span
+          class="text-6 font-weight-bold"
+        >
+          Configure Your Workspace Access
+        </span>
+      </div>
+      <div
+        class="form-group"
+      >
+        <div>
+          <span
+            class="text-6 font-weight-semi-bold"
+          >
+            Set a Friendly Workspace URL
+          </span>
+        </div>
+        <span
+          class="text-4 text-secondary"
+        >
+          Define a friendly URL that others can use to access and share this workspace. This value cannot be changed after it is set.
+        </span>
+        <div
+          class="mb-1"
+        >
+          <span
+            class="text-4 text-secondary"
+          >
+            e.g. 
+            <span>
+              http://localhost:3000
+            </span>
+            <strong>
+              /workspace-name
+            </strong>
+            .
+          </span>
+        </div>
+        <div
+          class=""
+        >
+          <div
+            class="input-group"
+          >
+            <div
+              class="input-group-item input-group-item-shrink input-group-prepend"
+            >
+              <div
+                class="input-group-text"
+              >
+                /
+              </div>
+            </div>
+            <div
+              class="input-group-item input-group-append"
+            >
+              <input
+                class="input-root form-control"
+                data-testid="friendly-url-input"
+                id="friendlyURL"
+                name="friendlyURL"
+                type="text"
+                value=""
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+      <div
+        class="form-group mb-0"
+      >
+        <div>
+          <span
+            class="text-6 font-weight-semi-bold"
+          >
+            Allowed Email Domains
+          </span>
+        </div>
+        <span
+          class="text-4 text-secondary"
+        >
+          Define which email domains can request access to this workspace.
+        </span>
+        <div
+          class="mb-1"
+        >
+          <span
+            class="text-4 text-secondary"
+          >
+            e.g. 
+            <span>
+              user.name@
+            </span>
+            <strong>
+              company-domain.com
+            </strong>
+            .
+          </span>
+        </div>
+        <div
+          class=""
+        >
+          <div
+            class="input-group"
+          >
+            <div
+              class="input-group"
+            >
+              <div
+                class="input-group-item input-group-item-shrink input-group-prepend"
+              >
+                <div
+                  class="input-group-text"
+                >
+                  @
+                </div>
+              </div>
+              <div
+                class="input-group-item input-group-append"
+              >
+                <div
+                  class="input-group-item input-list-root"
+                >
+                  <div
+                    class="form-control form-control-tag-group"
+                  >
+                    <span
+                      class="label label-dismissible label-inverse-secondary"
+                    >
+                      <span
+                        class="label-item label-item-expand"
+                      >
+                        liferay.com
+                      </span>
+                      <span
+                        class="label-item label-item-after"
+                      >
+                        <button
+                          aria-label="Close"
+                          class="close"
+                          type="button"
+                        >
+                          <svg
+                            class="lexicon-icon lexicon-icon-times-small"
+                            role="presentation"
+                          >
+                            <use
+                              href="#times-small"
+                            />
+                          </svg>
+                        </button>
+                      </span>
+                    </span>
+                    <input
+                      class="form-control-inset"
+                      placeholder=""
+                      type="text"
+                      value=""
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div
+      class="modal-footer"
+    >
+      <div
+        class="modal-item-last"
+      >
+        <div
+          class="btn-group-spaced"
+          role="group"
+        >
+          <button
+            class="button-root ml-2 btn btn-primary"
+            type="submit"
+          >
+            Next
+          </button>
+        </div>
+      </div>
+    </div>
+  </form>
+</div>
+`;

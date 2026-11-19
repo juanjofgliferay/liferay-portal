@@ -3,7 +3,7 @@ oauth:
     .serviceScheme: http
     name: oauth
     scopes:
-        - Liferay.Headless.Site.everything
+        -   Liferay.Headless.Site.everything
     type: oAuthApplicationHeadlessServer
 site-initializer:
     builtInTemplateKey: Sample Template Key
@@ -14,4 +14,7 @@ site-initializer:
     parentSiteKey: Parent Site Name
     siteExternalReferenceCode: External Reference Code
     siteName: Site Name
+    siteName_i18n:
+        de_DE: Site Name DE
+        en_US: Site Name US
     type: siteInitializer

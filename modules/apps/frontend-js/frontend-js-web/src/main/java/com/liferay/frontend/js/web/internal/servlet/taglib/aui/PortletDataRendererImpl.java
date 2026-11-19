@@ -5,9 +5,9 @@
 
 package com.liferay.frontend.js.web.internal.servlet.taglib.aui;
 
+import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.content.security.policy.ContentSecurityPolicyNonceProviderUtil;
-import com.liferay.portal.kernel.frontend.esm.FrontendESMUtil;
 import com.liferay.portal.kernel.servlet.taglib.aui.AMDRequire;
 import com.liferay.portal.kernel.servlet.taglib.aui.ESImport;
 import com.liferay.portal.kernel.servlet.taglib.aui.JSFragment;
@@ -39,14 +39,16 @@ public class PortletDataRendererImpl implements PortletDataRenderer {
 	public void write(Collection<PortletData> portletDatas, Writer writer)
 		throws IOException {
 
-		String rawCode = _computeRawCode(portletDatas);
+		StringBundler rawCodeSB = _computeRawCode(portletDatas);
 
-		if (!Validator.isBlank(rawCode)) {
+		if (rawCodeSB.index() > 0) {
 			writer.write("<script");
 			writer.write(
 				ContentSecurityPolicyNonceProviderUtil.getNonceAttribute(null));
 			writer.write(" type=\"text/javascript\">\n");
-			writer.write(rawCode);
+
+			rawCodeSB.writeTo(writer);
+
 			writer.write("\n</script>");
 		}
 
@@ -65,9 +67,7 @@ public class PortletDataRendererImpl implements PortletDataRenderer {
 			writer.write("<script");
 			writer.write(
 				ContentSecurityPolicyNonceProviderUtil.getNonceAttribute(null));
-			writer.write(" type=\"");
-			writer.write(FrontendESMUtil.getScriptType());
-			writer.write("\">\n");
+			writer.write(" type=\"module\">\n");
 		}
 
 		// Write ES prologue
@@ -128,18 +128,17 @@ public class PortletDataRendererImpl implements PortletDataRenderer {
 				delimiter = StringPool.COMMA_AND_SPACE;
 			}
 
-			writer.write(") {\n");
-			writer.write("try {\n");
+			writer.write(") {\ntry {\n");
 		}
 
 		// Write AUI prologue
 
-		Set<String> auiUseSet = _computeAUIUseSet(portletDatas);
+		Set<String> auiUses = _computeAUIUseSet(portletDatas);
 
-		if (!auiUseSet.isEmpty()) {
+		if (!auiUses.isEmpty()) {
 			writer.write("AUI().use(\n");
 
-			for (String auiUse : auiUseSet) {
+			for (String auiUse : auiUses) {
 				writer.write("  '");
 				writer.write(auiUse);
 				writer.write("',\n");
@@ -150,23 +149,21 @@ public class PortletDataRendererImpl implements PortletDataRenderer {
 
 		// Write actual JS code
 
-		writer.write(
-			_computeNonrawCode(amdRequiresMap, esImportsMap, portletDatas));
+		StringBundler nonrawCodeSB = _computeNonrawCode(
+			amdRequiresMap, esImportsMap, portletDatas);
+
+		nonrawCodeSB.writeTo(writer);
 
 		// Write AUI epilogue
 
-		if (!auiUseSet.isEmpty()) {
+		if (!auiUses.isEmpty()) {
 			writer.write("});\n");
 		}
 
 		// Write AMD epilogue
 
 		if (!amdRequiresMap.isEmpty()) {
-			writer.write("} catch (err) {\n");
-			writer.write("\tconsole.error(err);\n");
-			writer.write("}\n");
-
-			writer.write("});\n");
+			writer.write("} catch (err) {\n\tconsole.error(err);\n}\n});\n");
 		}
 
 		writer.write("\n</script>");
@@ -194,9 +191,9 @@ public class PortletDataRendererImpl implements PortletDataRenderer {
 
 					String alias = amdRequire.getAlias();
 
-					if (usedAliases.containsKey(alias)) {
-						IntegerWrapper integerWrapper = usedAliases.get(alias);
+					IntegerWrapper integerWrapper = usedAliases.get(alias);
 
+					if (integerWrapper != null) {
 						alias += integerWrapper.getValue();
 
 						integerWrapper.increment();
@@ -218,15 +215,15 @@ public class PortletDataRendererImpl implements PortletDataRenderer {
 	private Set<String> _computeAUIUseSet(
 		Collection<PortletData> portletDatas) {
 
-		Set<String> auiUseSet = new HashSet<>();
+		Set<String> auiUses = new HashSet<>();
 
 		for (PortletData portletData : portletDatas) {
 			for (JSFragment jsFragment : portletData.getJSFragments()) {
-				auiUseSet.addAll(jsFragment.getAUIUses());
+				auiUses.addAll(jsFragment.getAUIUses());
 			}
 		}
 
-		return auiUseSet;
+		return auiUses;
 	}
 
 	private Map<ESImport, ESImport> _computeESImportsMap(
@@ -251,10 +248,9 @@ public class PortletDataRendererImpl implements PortletDataRenderer {
 					String alias = esImport.getAlias();
 
 					if (!Validator.isBlank(alias)) {
-						if (usedAliases.containsKey(alias)) {
-							IntegerWrapper integerWrapper = usedAliases.get(
-								alias);
+						IntegerWrapper integerWrapper = usedAliases.get(alias);
 
+						if (integerWrapper != null) {
 							alias += integerWrapper.getValue();
 
 							integerWrapper.increment();
@@ -275,12 +271,12 @@ public class PortletDataRendererImpl implements PortletDataRenderer {
 		return esImportsMap;
 	}
 
-	private String _computeNonrawCode(
+	private StringBundler _computeNonrawCode(
 		Map<AMDRequire, AMDRequire> amdRequiresMap,
 		Map<ESImport, ESImport> esImportsMap,
 		Collection<PortletData> portletDatas) {
 
-		StringBuilder sb = new StringBuilder();
+		StringBundler sb = new StringBundler();
 
 		for (PortletData portletData : portletDatas) {
 			for (JSFragment jsFragment : portletData.getJSFragments()) {
@@ -315,16 +311,18 @@ public class PortletDataRendererImpl implements PortletDataRenderer {
 					AMDRequire amdRequire = amdRequiresMap.get(
 						fragmentAMDRequire);
 
-					if (!Objects.equals(
+					if (Objects.equals(
 							amdRequire.getAlias(),
 							fragmentAMDRequire.getAlias())) {
 
-						sb.append("const ");
-						sb.append(fragmentAMDRequire.getAlias());
-						sb.append(" = ");
-						sb.append(amdRequire.getAlias());
-						sb.append(";\n");
+						continue;
 					}
+
+					sb.append("const ");
+					sb.append(fragmentAMDRequire.getAlias());
+					sb.append(" = ");
+					sb.append(amdRequire.getAlias());
+					sb.append(";\n");
 				}
 
 				// Map ES imports to their requested aliases
@@ -334,15 +332,17 @@ public class PortletDataRendererImpl implements PortletDataRenderer {
 				for (ESImport fragmentESImport : fragmentESImports) {
 					ESImport esImport = esImportsMap.get(fragmentESImport);
 
-					if (!Objects.equals(
+					if (Objects.equals(
 							esImport.getAlias(), fragmentESImport.getAlias())) {
 
-						sb.append("const ");
-						sb.append(fragmentESImport.getAlias());
-						sb.append(" = ");
-						sb.append(esImport.getAlias());
-						sb.append(";\n");
+						continue;
 					}
+
+					sb.append("const ");
+					sb.append(fragmentESImport.getAlias());
+					sb.append(" = ");
+					sb.append(esImport.getAlias());
+					sb.append(";\n");
 				}
 
 				sb.append(code);
@@ -360,11 +360,13 @@ public class PortletDataRendererImpl implements PortletDataRenderer {
 			}
 		}
 
-		return sb.toString();
+		return sb;
 	}
 
-	private String _computeRawCode(Collection<PortletData> portletDatas) {
-		StringBuilder sb = new StringBuilder();
+	private StringBundler _computeRawCode(
+		Collection<PortletData> portletDatas) {
+
+		StringBundler sb = new StringBundler();
 
 		for (PortletData portletData : portletDatas) {
 			for (JSFragment jsFragment : portletData.getJSFragments()) {
@@ -379,7 +381,7 @@ public class PortletDataRendererImpl implements PortletDataRenderer {
 			}
 		}
 
-		return sb.toString();
+		return sb;
 	}
 
 }

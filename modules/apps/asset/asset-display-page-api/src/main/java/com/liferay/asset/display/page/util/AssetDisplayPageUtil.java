@@ -10,13 +10,15 @@ import com.liferay.asset.display.page.info.display.contributor.LayoutDisplayPage
 import com.liferay.asset.display.page.model.AssetDisplayPageEntry;
 import com.liferay.asset.display.page.service.AssetDisplayPageEntryLocalServiceUtil;
 import com.liferay.asset.kernel.model.AssetEntry;
+import com.liferay.design.library.util.DesignLibraryUtil;
 import com.liferay.info.item.InfoItemReference;
 import com.liferay.layout.display.page.LayoutDisplayPageObjectProvider;
 import com.liferay.layout.display.page.LayoutDisplayPageProvider;
 import com.liferay.layout.display.page.LayoutDisplayPageProviderRegistry;
 import com.liferay.layout.page.template.model.LayoutPageTemplateEntry;
 import com.liferay.layout.page.template.service.LayoutPageTemplateEntryLocalServiceUtil;
-import com.liferay.layout.page.template.service.LayoutPageTemplateEntryServiceUtil;
+import com.liferay.layout.page.template.util.LayoutPageTemplateEntryUtil;
+import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.util.PortalUtil;
 
 /**
@@ -26,12 +28,7 @@ public class AssetDisplayPageUtil {
 
 	public static LayoutPageTemplateEntry
 		getAssetDisplayPageLayoutPageTemplateEntry(
-			long groupId, long classNameId, long classPK, long classTypeId) {
-
-		LayoutPageTemplateEntry defaultLayoutPageTemplateEntry =
-			LayoutPageTemplateEntryServiceUtil.
-				fetchDefaultLayoutPageTemplateEntry(
-					groupId, classNameId, classTypeId);
+			long groupId, InfoItemReference infoItemReference) {
 
 		LayoutDisplayPageProviderRegistry layoutDisplayPageProviderRegistry =
 			LayoutDisplayPageProviderRegistryUtil.
@@ -40,11 +37,54 @@ public class AssetDisplayPageUtil {
 		LayoutDisplayPageProvider<?> layoutDisplayPageProvider =
 			layoutDisplayPageProviderRegistry.
 				getLayoutDisplayPageProviderByClassName(
-					PortalUtil.getClassName(classNameId));
+					CompanyThreadLocal.getCompanyId(),
+					infoItemReference.getClassName());
+
+		if (layoutDisplayPageProvider == null) {
+			return null;
+		}
+
+		LayoutDisplayPageObjectProvider<?> layoutDisplayPageObjectProvider =
+			layoutDisplayPageProvider.getLayoutDisplayPageObjectProvider(
+				groupId, infoItemReference);
+
+		if (layoutDisplayPageObjectProvider == null) {
+			return null;
+		}
+
+		LayoutPageTemplateEntry defaultLayoutPageTemplateEntry =
+			LayoutPageTemplateEntryUtil.fetchDefaultLayoutPageTemplateEntry(
+				layoutDisplayPageObjectProvider.getClassNameId(),
+				layoutDisplayPageObjectProvider.getClassTypeId(),
+				DesignLibraryUtil.fetchConnectedDesignLibraryGroupIds(groupId),
+				groupId);
+
+		return _getAssetDisplayPage(
+			groupId, layoutDisplayPageObjectProvider.getClassNameId(),
+			layoutDisplayPageObjectProvider.getClassPK(),
+			defaultLayoutPageTemplateEntry, layoutDisplayPageProvider);
+	}
+
+	public static LayoutPageTemplateEntry
+		getAssetDisplayPageLayoutPageTemplateEntry(
+			long groupId, long classNameId, long classPK, long classTypeId) {
+
+		LayoutPageTemplateEntry defaultLayoutPageTemplateEntry =
+			LayoutPageTemplateEntryUtil.fetchDefaultLayoutPageTemplateEntry(
+				classNameId, classTypeId,
+				DesignLibraryUtil.fetchConnectedDesignLibraryGroupIds(groupId),
+				groupId);
+
+		LayoutDisplayPageProviderRegistry layoutDisplayPageProviderRegistry =
+			LayoutDisplayPageProviderRegistryUtil.
+				getLayoutDisplayPageProviderRegistry();
 
 		return _getAssetDisplayPage(
 			groupId, classNameId, classPK, defaultLayoutPageTemplateEntry,
-			layoutDisplayPageProvider);
+			layoutDisplayPageProviderRegistry.
+				getLayoutDisplayPageProviderByClassName(
+					CompanyThreadLocal.getCompanyId(),
+					PortalUtil.getClassName(classNameId)));
 	}
 
 	public static boolean hasAssetDisplayPage(
@@ -60,6 +100,37 @@ public class AssetDisplayPageUtil {
 		}
 
 		return false;
+	}
+
+	public static boolean hasAssetDisplayPage(
+		long groupId, InfoItemReference infoItemReference) {
+
+		LayoutDisplayPageProviderRegistry layoutDisplayPageProviderRegistry =
+			LayoutDisplayPageProviderRegistryUtil.
+				getLayoutDisplayPageProviderRegistry();
+
+		LayoutDisplayPageProvider<?> layoutDisplayPageProvider =
+			layoutDisplayPageProviderRegistry.
+				getLayoutDisplayPageProviderByClassName(
+					CompanyThreadLocal.getCompanyId(),
+					infoItemReference.getClassName());
+
+		if (layoutDisplayPageProvider == null) {
+			return false;
+		}
+
+		LayoutDisplayPageObjectProvider<?> layoutDisplayPageObjectProvider =
+			layoutDisplayPageProvider.getLayoutDisplayPageObjectProvider(
+				groupId, infoItemReference);
+
+		if (layoutDisplayPageObjectProvider == null) {
+			return false;
+		}
+
+		return hasAssetDisplayPage(
+			groupId, layoutDisplayPageObjectProvider.getClassNameId(),
+			layoutDisplayPageObjectProvider.getClassPK(),
+			layoutDisplayPageObjectProvider.getClassTypeId());
 	}
 
 	public static boolean hasAssetDisplayPage(
@@ -81,11 +152,21 @@ public class AssetDisplayPageUtil {
 		LayoutPageTemplateEntry defaultLayoutPageTemplateEntry,
 		LayoutDisplayPageProvider<?> layoutDisplayPageProvider) {
 
+		int count =
+			AssetDisplayPageEntryLocalServiceUtil.
+				getAssetDisplayPageEntriesCount(groupId, classNameId);
+
+		if (count == 0) {
+			return defaultLayoutPageTemplateEntry;
+		}
+
 		AssetDisplayPageEntry assetDisplayPageEntry =
 			AssetDisplayPageEntryLocalServiceUtil.fetchAssetDisplayPageEntry(
 				groupId, classNameId, classPK);
 
-		if (assetDisplayPageEntry == null) {
+		if ((assetDisplayPageEntry == null) ||
+			(layoutDisplayPageProvider == null)) {
+
 			return defaultLayoutPageTemplateEntry;
 		}
 

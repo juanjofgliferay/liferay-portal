@@ -20,7 +20,10 @@ import org.osgi.service.component.annotations.Reference;
  * @author Alessio Antonio Rendina
  */
 @Component(
-	property = "dto.class.name=com.liferay.commerce.price.list.model.CommercePriceListChannelRel",
+	property = {
+		"default=true",
+		"dto.class.name=com.liferay.commerce.price.list.model.CommercePriceListChannelRel"
+	},
 	service = DTOConverter.class
 )
 public class PriceListChannelDTOConverter
@@ -46,17 +49,17 @@ public class PriceListChannelDTOConverter
 
 		return new PriceListChannel() {
 			{
-				actions = dtoConverterContext.getActions();
-				channelExternalReferenceCode =
-					commerceChannel.getExternalReferenceCode();
-				channelId = commerceChannel.getCommerceChannelId();
-				order = commercePriceListChannelRel.getOrder();
-				priceListChannelId =
-					commercePriceListChannelRel.
-						getCommercePriceListChannelRelId();
-				priceListExternalReferenceCode =
-					commercePriceList.getExternalReferenceCode();
-				priceListId = commercePriceList.getCommercePriceListId();
+				setActions(dtoConverterContext::getActions);
+				setChannelExternalReferenceCode(
+					commerceChannel::getExternalReferenceCode);
+				setChannelId(commerceChannel::getCommerceChannelId);
+				setOrder(commercePriceListChannelRel::getOrder);
+				setPriceListChannelId(
+					commercePriceListChannelRel::
+						getCommercePriceListChannelRelId);
+				setPriceListExternalReferenceCode(
+					commercePriceList::getExternalReferenceCode);
+				setPriceListId(commercePriceList::getCommercePriceListId);
 			}
 		};
 	}

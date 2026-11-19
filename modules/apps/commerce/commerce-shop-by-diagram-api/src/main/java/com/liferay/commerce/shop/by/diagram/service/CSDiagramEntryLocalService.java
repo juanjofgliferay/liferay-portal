@@ -218,6 +218,10 @@ public interface CSDiagramEntryLocalService
 		long cpDefinitionId, String sequence);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public CSDiagramEntry fetchCSDiagramEntryByExternalReferenceCode(
+		String externalReferenceCode, long companyId);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public ActionableDynamicQuery getActionableDynamicQuery();
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
@@ -244,10 +248,6 @@ public interface CSDiagramEntryLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<CSDiagramEntry> getCSDiagramEntries(int start, int end);
 
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<CSDiagramEntry> getCSDiagramEntries(
-		long cpDefinitionId, int start, int end);
-
 	/**
 	 * Returns the number of cs diagram entries.
 	 *
@@ -255,9 +255,6 @@ public interface CSDiagramEntryLocalService
 	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public int getCSDiagramEntriesCount();
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getCSDiagramEntriesCount(long cpDefinitionId);
 
 	/**
 	 * Returns the cs diagram entry with the primary key.
@@ -274,6 +271,11 @@ public interface CSDiagramEntryLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public CSDiagramEntry getCSDiagramEntry(
 			long cpDefinitionId, String sequence)
+		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public CSDiagramEntry getCSDiagramEntryByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
@@ -329,3 +331,4 @@ public interface CSDiagramEntryLocalService
 		throws E;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:249229912

@@ -13,9 +13,9 @@ import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.wiki.configuration.WikiGroupServiceConfiguration;
 import com.liferay.wiki.model.WikiNode;
 
-import javax.portlet.PortletResponse;
-import javax.portlet.PortletURL;
-import javax.portlet.RenderResponse;
+import jakarta.portlet.PortletResponse;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderResponse;
 
 /**
  * @author Adolfo Pérez
@@ -111,14 +111,6 @@ public class WikiURLHelper {
 		).buildPortletURL();
 	}
 
-	public PortletURL getViewPagesURL(WikiNode wikiNode) {
-		return PortletURLBuilder.create(
-			_getWikiNodeBaseURL(wikiNode)
-		).setMVCRenderCommandName(
-			"/wiki/view_pages"
-		).buildPortletURL();
-	}
-
 	public PortletURL getViewPageURL(WikiNode wikiNode, String title) {
 		return PortletURLBuilder.createRenderURL(
 			_liferayPortletResponse
@@ -128,6 +120,14 @@ public class WikiURLHelper {
 			"nodeName", wikiNode.getName()
 		).setParameter(
 			"title", title
+		).buildPortletURL();
+	}
+
+	public PortletURL getViewPagesURL(WikiNode wikiNode) {
+		return PortletURLBuilder.create(
+			_getWikiNodeBaseURL(wikiNode)
+		).setMVCRenderCommandName(
+			"/wiki/view_pages"
 		).buildPortletURL();
 	}
 

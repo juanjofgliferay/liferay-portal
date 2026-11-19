@@ -8,13 +8,15 @@ package com.liferay.roles.admin.web.internal.display.context;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.CreationMenu;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.CreationMenuBuilder;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItem;
+import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItemList;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItemListBuilder;
+import com.liferay.frontend.taglib.clay.servlet.taglib.util.LabelItem;
+import com.liferay.frontend.taglib.clay.servlet.taglib.util.LabelItemListBuilder;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.ViewTypeItem;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.ViewTypeItemList;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.model.Role;
 import com.liferay.portal.kernel.portlet.SearchOrderByUtil;
@@ -22,6 +24,7 @@ import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.service.permission.PortalPermissionUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
@@ -32,14 +35,14 @@ import com.liferay.roles.admin.search.RoleSearchTerms;
 import com.liferay.roles.admin.web.internal.role.type.contributor.util.RoleTypeContributorRetrieverUtil;
 import com.liferay.roles.admin.web.internal.search.RoleChecker;
 
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.List;
 import java.util.Objects;
-
-import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Pei-Jung Lan
@@ -77,6 +80,8 @@ public class ViewRolesManagementToolbarDisplayContext {
 			getPortletURL()
 		).setKeywords(
 			StringPool.BLANK
+		).setParameter(
+			"subtype", (String)null
 		).buildString();
 	}
 
@@ -97,21 +102,76 @@ public class ViewRolesManagementToolbarDisplayContext {
 		).build();
 	}
 
-	public List<DropdownItem> getFilterDropdownItems() {
+	public List<DropdownItem> getFilterItemsDropdownItems() {
+		String[] subtypes = _currentRoleTypeContributor.getSubtypes();
+
+		if (ArrayUtil.isEmpty(subtypes)) {
+			return null;
+		}
+
 		return DropdownItemListBuilder.addGroup(
 			dropdownGroupItem -> {
 				dropdownGroupItem.setDropdownItems(
-					_getFilterNavigationDropdownItems());
+					new DropdownItemList() {
+						{
+							add(
+								dropdownItem -> {
+									dropdownItem.setActive(
+										Validator.isNull(getSubtype()));
+									dropdownItem.setHref(
+										PortletURLBuilder.create(
+											getPortletURL()
+										).setParameter(
+											"subtype", (String)null
+										).buildString());
+									dropdownItem.setLabel(
+										LanguageUtil.get(
+											_httpServletRequest, "all"));
+								});
+
+							for (String subtype : subtypes) {
+								add(
+									dropdownItem -> {
+										dropdownItem.setActive(
+											Objects.equals(
+												subtype, getSubtype()));
+										dropdownItem.setHref(
+											PortletURLBuilder.create(
+												getPortletURL()
+											).setParameter(
+												"subtype", subtype
+											).buildString());
+										dropdownItem.setLabel(
+											LanguageUtil.get(
+												_httpServletRequest, subtype));
+									});
+							}
+						}
+					});
 				dropdownGroupItem.setLabel(
-					LanguageUtil.get(
-						_httpServletRequest, "filter-by-navigation"));
+					LanguageUtil.get(_httpServletRequest, "filter-by-subtype"));
 			}
-		).addGroup(
-			() -> !FeatureFlagManagerUtil.isEnabled("LPS-144527"),
-			dropdownGroupItem -> {
-				dropdownGroupItem.setDropdownItems(getOrderByDropdownItems());
-				dropdownGroupItem.setLabel(
-					LanguageUtil.get(_httpServletRequest, "order-by"));
+		).build();
+	}
+
+	public List<LabelItem> getFilterLabelItems() {
+		return LabelItemListBuilder.add(
+			() -> Validator.isNotNull(getSubtype()),
+			labelItem -> {
+				labelItem.putData(
+					"removeLabelURL",
+					PortletURLBuilder.create(
+						getPortletURL()
+					).setParameter(
+						"subtype", (String)null
+					).buildString());
+
+				labelItem.setCloseable(true);
+				labelItem.setLabel(
+					String.format(
+						"%s: %s",
+						LanguageUtil.get(_httpServletRequest, "subtype"),
+						LanguageUtil.get(_httpServletRequest, getSubtype())));
 			}
 		).build();
 	}
@@ -181,6 +241,15 @@ public class ViewRolesManagementToolbarDisplayContext {
 			"orderByType", getOrderByType()
 		).setParameter(
 			"roleType", _currentRoleTypeContributor.getType()
+		).setParameter(
+			"subtype",
+			() -> {
+				if (Validator.isNotNull(getSubtype())) {
+					return getSubtype();
+				}
+
+				return null;
+			}
 		).buildPortletURL();
 
 		if (_roleSearch != null) {
@@ -218,7 +287,7 @@ public class ViewRolesManagementToolbarDisplayContext {
 		roleSearch.setResultsAndTotal(
 			_currentRoleTypeContributor.searchRoles(
 				themeDisplay.getCompanyId(), roleSearchTerms.getKeywords(),
-				roleSearch.getStart(), roleSearch.getEnd(),
+				getSubtype(), roleSearch.getStart(), roleSearch.getEnd(),
 				roleSearch.getOrderByComparator()));
 
 		roleSearch.setRowChecker(
@@ -236,6 +305,16 @@ public class ViewRolesManagementToolbarDisplayContext {
 			"orderByType",
 			Objects.equals(getOrderByType(), "asc") ? "desc" : "asc"
 		).buildString();
+	}
+
+	public String getSubtype() {
+		if (_subtype != null) {
+			return _subtype;
+		}
+
+		_subtype = ParamUtil.getString(_httpServletRequest, "subtype");
+
+		return _subtype;
 	}
 
 	public List<ViewTypeItem> getViewTypeItems() {
@@ -256,17 +335,6 @@ public class ViewRolesManagementToolbarDisplayContext {
 			themeDisplay.getPermissionChecker(), ActionKeys.ADD_ROLE);
 	}
 
-	private List<DropdownItem> _getFilterNavigationDropdownItems() {
-		return DropdownItemListBuilder.add(
-			dropdownItem -> {
-				dropdownItem.setActive(true);
-				dropdownItem.setHref(StringPool.BLANK);
-				dropdownItem.setLabel(
-					LanguageUtil.get(_httpServletRequest, "all"));
-			}
-		).build();
-	}
-
 	private final RoleTypeContributor _currentRoleTypeContributor;
 	private final String _displayStyle;
 	private final HttpServletRequest _httpServletRequest;
@@ -276,5 +344,6 @@ public class ViewRolesManagementToolbarDisplayContext {
 	private final RenderRequest _renderRequest;
 	private final RenderResponse _renderResponse;
 	private RoleSearch _roleSearch;
+	private String _subtype;
 
 }

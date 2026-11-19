@@ -8,11 +8,14 @@ package com.liferay.account.service.impl;
 import com.liferay.account.exception.DuplicateAccountEntryOrganizationRelException;
 import com.liferay.account.model.AccountEntry;
 import com.liferay.account.model.AccountEntryOrganizationRel;
-import com.liferay.account.service.AccountEntryLocalService;
 import com.liferay.account.service.base.AccountEntryOrganizationRelLocalServiceBaseImpl;
+import com.liferay.account.service.persistence.AccountEntryPersistence;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.model.Organization;
+import com.liferay.portal.kernel.search.Indexable;
+import com.liferay.portal.kernel.search.IndexableType;
 import com.liferay.portal.kernel.search.Indexer;
 import com.liferay.portal.kernel.search.IndexerRegistryUtil;
 import com.liferay.portal.kernel.service.OrganizationLocalService;
@@ -46,7 +49,7 @@ public class AccountEntryOrganizationRelLocalServiceImpl
 			throw new DuplicateAccountEntryOrganizationRelException();
 		}
 
-		_accountEntryLocalService.getAccountEntry(accountEntryId);
+		_accountEntryPersistence.findByPrimaryKey(accountEntryId);
 		_organizationLocalService.getOrganization(organizationId);
 
 		AccountEntryOrganizationRel accountEntryOrganizationRel =
@@ -78,16 +81,48 @@ public class AccountEntryOrganizationRelLocalServiceImpl
 		}
 	}
 
+	@Indexable(type = IndexableType.DELETE)
+	@Override
+	public AccountEntryOrganizationRel deleteAccountEntryOrganizationRel(
+		AccountEntryOrganizationRel accountEntryOrganizationRel) {
+
+		accountEntryOrganizationRelPersistence.remove(
+			accountEntryOrganizationRel);
+
+		try {
+			_reindexAccountEntry(
+				accountEntryOrganizationRel.getAccountEntryId());
+			_reindexOrganization(
+				accountEntryOrganizationRel.getOrganizationId());
+		}
+		catch (PortalException portalException) {
+			throw new SystemException(portalException);
+		}
+
+		return accountEntryOrganizationRel;
+	}
+
+	@Indexable(type = IndexableType.DELETE)
+	@Override
+	public AccountEntryOrganizationRel deleteAccountEntryOrganizationRel(
+			long accountEntryOrganizationRelId)
+		throws PortalException {
+
+		return accountEntryOrganizationRelLocalService.
+			deleteAccountEntryOrganizationRel(
+				accountEntryOrganizationRelPersistence.findByPrimaryKey(
+					accountEntryOrganizationRelId));
+	}
+
 	@Override
 	public void deleteAccountEntryOrganizationRel(
 			long accountEntryId, long organizationId)
 		throws PortalException {
 
-		accountEntryOrganizationRelPersistence.removeByA_O(
-			accountEntryId, organizationId);
-
-		_reindexAccountEntry(accountEntryId);
-		_reindexOrganization(organizationId);
+		accountEntryOrganizationRelLocalService.
+			deleteAccountEntryOrganizationRel(
+				accountEntryOrganizationRelPersistence.findByA_O(
+					accountEntryId, organizationId));
 	}
 
 	@Override
@@ -104,16 +139,26 @@ public class AccountEntryOrganizationRelLocalServiceImpl
 	public void deleteAccountEntryOrganizationRelsByAccountEntryId(
 		long accountEntryId) {
 
-		accountEntryOrganizationRelPersistence.removeByAccountEntryId(
-			accountEntryId);
+		for (AccountEntryOrganizationRel accountEntryOrganizationRel :
+				accountEntryOrganizationRelPersistence.findByAccountEntryId(
+					accountEntryId)) {
+
+			accountEntryOrganizationRelLocalService.
+				deleteAccountEntryOrganizationRel(accountEntryOrganizationRel);
+		}
 	}
 
 	@Override
 	public void deleteAccountEntryOrganizationRelsByOrganizationId(
 		long organizationId) {
 
-		accountEntryOrganizationRelPersistence.removeByOrganizationId(
-			organizationId);
+		for (AccountEntryOrganizationRel accountEntryOrganizationRel :
+				accountEntryOrganizationRelPersistence.findByOrganizationId(
+					organizationId)) {
+
+			accountEntryOrganizationRelLocalService.
+				deleteAccountEntryOrganizationRel(accountEntryOrganizationRel);
+		}
 	}
 
 	@Override
@@ -125,28 +170,11 @@ public class AccountEntryOrganizationRelLocalServiceImpl
 	}
 
 	@Override
-	public AccountEntryOrganizationRel getAccountEntryOrganizationRel(
-			long accountEntryId, long organizationId)
-		throws PortalException {
-
-		return accountEntryOrganizationRelPersistence.findByA_O(
-			accountEntryId, organizationId);
-	}
-
-	@Override
 	public List<AccountEntryOrganizationRel> getAccountEntryOrganizationRels(
 		long accountEntryId) {
 
 		return accountEntryOrganizationRelPersistence.findByAccountEntryId(
 			accountEntryId);
-	}
-
-	@Override
-	public List<AccountEntryOrganizationRel> getAccountEntryOrganizationRels(
-		long accountEntryId, int start, int end) {
-
-		return accountEntryOrganizationRelPersistence.findByAccountEntryId(
-			accountEntryId, start, end);
 	}
 
 	@Override
@@ -215,25 +243,24 @@ public class AccountEntryOrganizationRelLocalServiceImpl
 			return;
 		}
 
-		Set<Long> newOrganizationIdsSet = SetUtil.fromArray(organizationIds);
+		Set<Long> newOrganizationIds = SetUtil.fromArray(organizationIds);
 
-		Set<Long> oldOrganizationIdsSet = SetUtil.fromCollection(
+		Set<Long> oldOrganizationIds = SetUtil.fromCollection(
 			ListUtil.toList(
 				getAccountEntryOrganizationRels(accountEntryId),
 				AccountEntryOrganizationRel::getOrganizationId));
 
-		Set<Long> removeOrganizationIdsSet = new HashSet<>(
-			oldOrganizationIdsSet);
+		Set<Long> removeOrganizationIds = new HashSet<>(oldOrganizationIds);
 
-		removeOrganizationIdsSet.removeAll(newOrganizationIdsSet);
+		removeOrganizationIds.removeAll(newOrganizationIds);
 
 		deleteAccountEntryOrganizationRels(
-			accountEntryId, ArrayUtil.toLongArray(removeOrganizationIdsSet));
+			accountEntryId, ArrayUtil.toLongArray(removeOrganizationIds));
 
-		newOrganizationIdsSet.removeAll(oldOrganizationIdsSet);
+		newOrganizationIds.removeAll(oldOrganizationIds);
 
 		addAccountEntryOrganizationRels(
-			accountEntryId, ArrayUtil.toLongArray(newOrganizationIdsSet));
+			accountEntryId, ArrayUtil.toLongArray(newOrganizationIds));
 	}
 
 	private void _reindexAccountEntry(long accountEntryId)
@@ -255,7 +282,7 @@ public class AccountEntryOrganizationRelLocalServiceImpl
 	}
 
 	@Reference
-	private AccountEntryLocalService _accountEntryLocalService;
+	private AccountEntryPersistence _accountEntryPersistence;
 
 	@Reference
 	private OrganizationLocalService _organizationLocalService;

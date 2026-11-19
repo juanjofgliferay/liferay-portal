@@ -10,6 +10,7 @@ import com.liferay.exportimport.kernel.lar.PortletDataContext;
 import com.liferay.exportimport.kernel.lar.PortletDataException;
 import com.liferay.exportimport.kernel.lar.StagedModelDataHandlerUtil;
 import com.liferay.exportimport.portlet.preferences.processor.Capability;
+import com.liferay.exportimport.portlet.preferences.processor.ExportImportPortletPreferencesProcessorHelper;
 import com.liferay.portal.kernel.model.Portlet;
 import com.liferay.portal.kernel.service.PortletLocalService;
 import com.liferay.portal.kernel.template.TemplateHandler;
@@ -18,7 +19,7 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portlet.display.template.PortletDisplayTemplate;
 import com.liferay.portlet.display.template.exportimport.portlet.preferences.processor.PortletDisplayTemplateRegister;
 
-import javax.portlet.PortletPreferences;
+import jakarta.portlet.PortletPreferences;
 
 /**
  * @author Máté Thurzó
@@ -26,15 +27,29 @@ import javax.portlet.PortletPreferences;
 public class PortletDisplayTemplateExportCapability implements Capability {
 
 	public PortletDisplayTemplateExportCapability(
+		ExportImportPortletPreferencesProcessorHelper
+			exportImportPortletPreferencesProcessorHelper,
 		Portal portal, PortletLocalService portletLocalService,
 		PortletDisplayTemplate portletDisplayTemplate,
 		PortletDisplayTemplateRegister portletDisplayTemplateExportRegister) {
 
+		_exportImportPortletPreferencesProcessorHelper =
+			exportImportPortletPreferencesProcessorHelper;
 		_portal = portal;
 		_portletLocalService = portletLocalService;
 		_portletDisplayTemplate = portletDisplayTemplate;
 		_portletDisplayTemplateExportRegister =
 			portletDisplayTemplateExportRegister;
+	}
+
+	@Override
+	public void process(long companyId, PortletPreferences portletPreferences)
+		throws PortletDataException {
+
+		_exportImportPortletPreferencesProcessorHelper.
+			updateGroupExportPortletPreferencesExternalReferenceCode(
+				companyId, "displayStyleGroupExternalReferenceCode",
+				portletPreferences);
 	}
 
 	@Override
@@ -105,8 +120,12 @@ public class PortletDisplayTemplateExportCapability implements Capability {
 		}
 
 		portletDataContext.setScopeGroupId(previousScopeGroupId);
+
+		process(portletDataContext.getCompanyId(), portletPreferences);
 	}
 
+	private final ExportImportPortletPreferencesProcessorHelper
+		_exportImportPortletPreferencesProcessorHelper;
 	private final Portal _portal;
 	private final PortletDisplayTemplate _portletDisplayTemplate;
 	private final PortletDisplayTemplateRegister

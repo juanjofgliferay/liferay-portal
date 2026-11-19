@@ -1,0 +1,140 @@
+import {gql} from '@apollo/client';
+import {SessionEntityTypes} from 'shared/util/constants';
+
+export interface UserSessionEvent {
+	acquisitionProperties: Array<{name: string; value: string}>;
+	applicationId: string;
+	assetTitle: string;
+	campaignEntityId: string | null;
+	campaignId: string | null;
+	campaignName: string | null;
+	canonicalUrl: string;
+	createDate: string;
+	eventDate: string;
+	eventId: string;
+	experienceId?: string | null;
+	experienceName?: string | null;
+	name: string;
+	pageDescription: string;
+	pageGroupId?: string | null;
+	pageKeywords: string;
+	pageTitle: string;
+	properties: Array<{name: string; value: string}>;
+	referrer: string;
+	url: string;
+}
+
+export interface BaseUserSession {
+	browserName: string;
+	completeDate: string | null;
+	contentLanguageId: string;
+	createDate: string;
+	devicePixelRatio: number;
+	deviceType: string;
+	events: UserSessionEvent[] | null;
+	languageId: string;
+	screenHeight: number;
+	screenWidth: number;
+	timezoneOffset: string;
+	userAgent: string;
+}
+
+export interface UserSession extends BaseUserSession {
+	becameKnown: boolean;
+}
+
+export interface UserSessionData {
+	eventsByUserSessions: {
+		totalEvents: number;
+		totalPageGroupsMetric: {value: number} | null;
+		userSessions: UserSession[];
+	};
+}
+
+export interface UserSessionVariables {
+	channelId: string;
+	entityId: string;
+	entityType: SessionEntityTypes;
+	keywords?: string;
+	page: number;
+	rangeEnd?: string | null;
+	rangeKey?: number | null;
+	rangeStart?: string | null;
+	size: number;
+}
+
+export default gql`
+	query UserSession(
+		$channelId: String!
+		$entityId: String!
+		$entityType: EntityType!
+		$keywords: String
+		$page: Int!
+		$rangeEnd: String
+		$rangeKey: Int
+		$rangeStart: String
+		$size: Int!
+	) {
+		eventsByUserSessions(
+			channelId: $channelId
+			entityId: $entityId
+			entityType: $entityType
+			includeWebhookEvents: true
+			keywords: $keywords
+			page: $page
+			rangeEnd: $rangeEnd
+			rangeKey: $rangeKey
+			rangeStart: $rangeStart
+			size: $size
+		) {
+			userSessions {
+				... on UserSession {
+					becameKnown
+					browserName
+					completeDate
+					contentLanguageId
+					createDate
+					devicePixelRatio
+					deviceType
+					events {
+						acquisitionProperties {
+							name
+							value
+						}
+						applicationId
+						assetTitle
+						campaignEntityId
+						campaignId
+						campaignName
+						canonicalUrl
+						createDate
+						eventDate
+						eventId
+						experienceId
+						experienceName
+						name
+						pageDescription
+						pageGroupId
+						pageKeywords
+						pageTitle
+						properties {
+							name
+							value
+						}
+						referrer
+						url
+					}
+					languageId
+					screenHeight
+					screenWidth
+					timezoneOffset
+					userAgent
+				}
+			}
+			totalEvents
+			totalPageGroupsMetric {
+				value
+			}
+		}
+	}
+`;

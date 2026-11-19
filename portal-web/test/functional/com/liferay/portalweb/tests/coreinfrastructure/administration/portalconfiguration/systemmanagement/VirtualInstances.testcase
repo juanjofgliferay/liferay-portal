@@ -1,4 +1,4 @@
-@component-name = "portal-portal-configuration"
+@component-name = "portal-db-infrastructure"
 definition {
 
 	property portal.release = "true";
@@ -28,10 +28,9 @@ definition {
 	test CanAddAndDeletePortalInstance {
 		property portal.acceptance = "true";
 		property test.liferay.virtual.instance = "false";
-		property test.run.type = "single";
+		property test.run.type = "sequential";
 
-		ApplicationsMenu.gotoPortlet(
-			category = "System",
+		ApplicationsMenu.gotoRootPortlet(
 			panel = "Control Panel",
 			portlet = "Virtual Instances");
 
@@ -48,14 +47,12 @@ definition {
 	@description = "This automates LPS-157752. It asserts that email settings can be configured in a Virtual Instance."
 	@priority = 4
 	test CanConfigureEmailSettingsInVirtualInstance {
+		property portal.acceptance = "true";
 		property test.liferay.virtual.instance = "false";
-		property test.run.type = "single";
+		property test.run.type = "sequential";
 
 		task ("Given a new Virtual Instance is created") {
-			ApplicationsMenu.gotoPortlet(
-				category = "System",
-				panel = "Control Panel",
-				portlet = "Virtual Instances");
+			PortalInstances.openVirtualInstancesAdmin();
 
 			PortalInstances.addCP(
 				mailDomain = "www.able.com",
@@ -63,7 +60,7 @@ definition {
 				webId = "www.able.com");
 
 			User.firstLoginPG(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				userEmailAddress = "test@www.able.com",
 				virtualHostsURL = "http://www.able.com:8080");
 		}
@@ -75,17 +72,191 @@ definition {
 				configurationName = "Mail Settings",
 				configurationScope = "Virtual Instance Scope");
 
-			FormFields.editText(
-				fieldName = "pop3Port",
-				fieldValue = 995);
+			SystemSettings.editTextAreaSetting(
+				settingName = "Incoming Port",
+				settingValue = 995);
 
-			PortletEntry.save();
+			SystemSettings.saveConfiguration();
 		}
 
 		task ("Then the new configuration should now be displayed") {
-			FormFields.viewTextValue(
-				fieldName = "pop3Port",
+			SystemSettings.viewInputText(
+				fieldLabel = "Incoming Port",
 				fieldValue = 995);
+		}
+	}
+
+	@description = "This test asserts that a user can update the general informations. Including update the default site name, default mail domain and so."
+	@priority = 4
+	test CanUpdateGeneralInfos {
+		property portal.acceptance = "true";
+		property test.assert.warning.exceptions = "false";
+
+		var databasePartitionEnabled = PropsUtil.get("database.partition.enabled");
+		var portalInstanceName = JSONCompany.getPortalInstanceName();
+
+		PortalSettings.gotoConfiguration(
+			configurationCategory = "Instance Configuration",
+			configurationName = "General",
+			configurationScope = "Virtual Instance Scope");
+
+		FormFields.editText(
+			fieldName = "name",
+			fieldValue = "EditedLiferay");
+
+		if (${databasePartitionEnabled} != "true") {
+
+			// The mail domain of a virtual instance is read-only when
+			// database partitioning is enabled
+
+			FormFields.editText(
+				fieldName = "mx",
+				fieldValue = "newliferay.com");
+		}
+
+		FormFields.editText(
+			fieldName = "virtualHostname",
+			fieldValue = "www.able.com");
+
+		PortletEntry.save();
+
+		task ("Follow the instance to its new virtual host") {
+			Navigator.openSpecificURL(url = "http://www.able.com:8080");
+		}
+
+		AssertElementPresent(
+			key_pageName = "Home",
+			locator1 = "Home#PAGE");
+
+		Navigator.gotoLoginPage();
+
+		if (${databasePartitionEnabled} != "true") {
+			AssertTextEquals(
+				locator1 = "TextInput#EMAIL_ADDRESS",
+				value1 = "@newliferay.com");
+		}
+
+		User.firstLoginUI(specificURL = "http://www.able.com:8080");
+
+		task ("Assert the instance was renamed once signed in to its new virtual host") {
+			ApplicationsMenu.openApplicationsMenu();
+
+			AssertElementPresent(
+				key_site = "EditedLiferay",
+				locator1 = "ApplicationsMenu#SITE_LINK");
+
+			ApplicationsMenu.gotoSite(site = "EditedLiferay");
+		}
+
+		PortalSettings.gotoConfiguration(
+			baseURL = "http://www.able.com:8080",
+			configurationCategory = "Instance Configuration",
+			configurationName = "General",
+			configurationScope = "Virtual Instance Scope");
+
+		FormFields.editText(
+			fieldName = "cdn-host-http",
+			fieldValue = "http://www.able.com:8080");
+
+		FormFields.editText(
+			fieldName = "cdn-host-https",
+			fieldValue = "https://www.able.com:8080");
+
+		for (var fieldName : list "legalName,tickerSymbol,legalId,industry,legalType,type,sicCode") {
+			FormFields.editText(
+				fieldName = ${fieldName},
+				fieldValue = ${fieldName});
+		}
+
+		PortletEntry.save();
+
+		PortalSettings.gotoConfiguration(
+			baseURL = "http://www.able.com:8080",
+			configurationCategory = "Instance Configuration",
+			configurationName = "General",
+			configurationScope = "Virtual Instance Scope");
+
+		FormFields.viewTextValue(
+			fieldName = "cdn-host-http",
+			fieldValue = "http://www.able.com:8080");
+
+		FormFields.viewTextValue(
+			fieldName = "cdn-host-https",
+			fieldValue = "https://www.able.com:8080");
+
+		for (var fieldName : list "legalName,tickerSymbol,legalId,industry,legalType,type,sicCode") {
+			FormFields.viewTextValue(
+				fieldName = ${fieldName},
+				fieldValue = ${fieldName});
+		}
+
+		task ("Restore the virtual host once the changes are validated so the tear down can reach the instance") {
+			FormFields.editText(
+				fieldName = "virtualHostname",
+				fieldValue = ${portalInstanceName});
+
+			PortletEntry.save();
+		}
+	}
+
+	@description = "Verify the default company can be set to a virtual instance via property."
+	@priority = 3
+	test ChangeDefaultCompanyToDifferentInstance {
+		property portal.acceptance = "true";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
+		task ("Given a virtual instance") {
+			HeadlessPortalInstanceAPI.addPortalInstance(
+				domain = "www.able.com",
+				portalInstanceId = "www.able.com",
+				virtualHost = "www.able.com");
+		}
+
+		task ("And given the virtual instance is not the default company") {
+			User.firstLoginPG(
+				password = PropsUtil.get("default.admin.password"),
+				userEmailAddress = "test@www.able.com",
+				virtualHostsURL = "http://www.able.com:8080");
+
+			ApplicationsMenu.openApplicationsMenu();
+
+			ApplicationsMenu.gotoPanel(panel = "Control Panel");
+
+			AssertElementNotPresent(
+				key_portlet = "System Settings",
+				locator1 = "ApplicationsMenu#ROOT_PORTLET");
+		}
+
+		task ("When the portal is shutdown") {
+			Portlet.shutdownServer();
+		}
+
+		task ("And the portal is restarted with the virtual instance set as the default company via property company.default.web.id") {
+			AntCommands.runCommand("build-test.xml", "portal-ext-properties-update -Dadd.new.properties=true -Dupdate.properties=company.default.web.id=www.able.com");
+
+			Portlet.startServer(deleteLiferayHome = "false");
+		}
+
+		task ("Then system settings can now be accessed from the instance") {
+			User.logoutPG(specificURL = "http://www.able.com:8080");
+
+			User.firstLoginUI(
+				password = PropsUtil.get("default.admin.password"),
+				specificURL = "http://www.able.com:8080",
+				userEmailAddress = "test@www.able.com");
+
+			ApplicationsMenu.gotoRootPortlet(
+				panel = "Control Panel",
+				portlet = "System Settings");
+		}
+
+		task ("And the original default instance can be removed") {
+			PortalInstances.openVirtualInstancesAdmin(baseURL = "http://www.able.com:8080");
+
+			PortalInstances.deleteCP(
+				virtualHost = "localhost",
+				webId = "liferay.com");
 		}
 	}
 
@@ -94,7 +265,7 @@ definition {
 	test NonAdminUserCanCreateUserInUserLimitedVirtualInstance {
 		property test.assert.warning.exceptions = "true";
 		property test.liferay.virtual.instance = "false";
-		property test.run.type = "single";
+		property test.run.type = "sequential";
 
 		task ("Given a user limited virtual instance") {
 			PortalInstances.openVirtualInstancesAdmin();
@@ -107,14 +278,14 @@ definition {
 				webId = "www.able.com");
 
 			User.firstLoginUI(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				specificURL = "http://www.able.com:8080",
 				userEmailAddress = "test@www.able.com");
 		}
 
 		task ("And given a user exists in that instance with permission to create other users") {
 			JSONRole.addRegularRole(
-				roleTitle = "Test Role",
+				roleKey = "Test Role",
 				specificURL = "http://www.able.com:8080");
 
 			Permissions.definePermissionsViaJSONAPI(
@@ -125,7 +296,7 @@ definition {
 
 			JSONUser.addUser(
 				creatorEmailAddress = "test@www.able.com",
-				creatorPassword = "test",
+				creatorPassword = PropsUtil.get("default.admin.password"),
 				portalInstanceName = "www.able.com",
 				specificURL = "http://www.able.com:8080",
 				userEmailAddress = "userea@www.able.com",
@@ -139,7 +310,7 @@ definition {
 				roleTitle = "Test Role",
 				userScreenName = "usersn");
 
-			User.editPassword(newPassword = "test");
+			User.editPassword(newPassword = PropsUtil.get("default.admin.password"));
 		}
 
 		task ("Then that user can create another user in the instance without error") {
@@ -161,13 +332,11 @@ definition {
 
 	@priority = 4
 	test PermissionCheckPortalInstances {
+		property portal.acceptance = "true";
 		property test.liferay.virtual.instance = "false";
-		property test.run.type = "single";
+		property test.run.type = "sequential";
 
-		ApplicationsMenu.gotoPortlet(
-			category = "System",
-			panel = "Control Panel",
-			portlet = "Virtual Instances");
+		PortalInstances.openVirtualInstancesAdmin();
 
 		PortalInstances.addCP(
 			mailDomain = "www.able.com",
@@ -180,7 +349,7 @@ definition {
 			webId = "www.baker.com");
 
 		User.firstLoginPG(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			userEmailAddress = "test@www.able.com",
 			virtualHostsURL = "http://www.able.com:8080");
 
@@ -204,7 +373,7 @@ definition {
 		var otherInstanceAccessAttempt = StringUtil.replace(${documentURL}, "able", "baker");
 
 		User.firstLoginPG(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			userEmailAddress = "test@www.baker.com",
 			virtualHostsURL = "http://www.baker.com:8080");
 
@@ -212,18 +381,36 @@ definition {
 
 		Alert.viewRequestFailedToComplete();
 
-		AssertTextEquals.assertPartialText(
-			locator1 = "Message#ERROR_1",
-			value1 = "You do not have the required permissions.");
+		var databasePartitionEnabled = PropsUtil.get("database.partition.enabled");
+
+		if (${databasePartitionEnabled} == "true") {
+
+			// Each virtual instance stores its data in its own database
+			// schema, so the document of the other virtual instance cannot be
+			// found
+
+			AssertTextEquals.assertPartialText(
+				locator1 = "Message#ERROR_1",
+				value1 = "The document could not be found.");
+		}
+		else {
+			AssertTextEquals.assertPartialText(
+				locator1 = "Message#ERROR_1",
+				value1 = "You do not have the required permissions.");
+		}
 	}
 
 	@priority = 5
 	test ViewDeactivatedPortalInstance {
+		property portal.acceptance = "true";
 		property test.liferay.virtual.instance = "false";
 		property test.run.type = "single";
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Configuration",
+		task ("Enable widget pages") {
+			PagesAdmin.enableWidgetPages();
+		}
+
+		ApplicationsMenu.gotoRootPortlet(
 			panel = "Control Panel",
 			portlet = "System Settings");
 
@@ -236,10 +423,7 @@ definition {
 
 		SystemSettings.saveConfiguration();
 
-		ApplicationsMenu.gotoPortlet(
-			category = "System",
-			panel = "Control Panel",
-			portlet = "Virtual Instances");
+		PortalInstances.openVirtualInstancesAdmin();
 
 		PortalInstances.addCP(
 			mailDomain = "www.able.com",
@@ -262,16 +446,6 @@ definition {
 			category = "Site Builder",
 			portlet = "Pages");
 
-		PagesAdmin.addPage(pageName = "Wiki Page");
-
-		Navigator.gotoPage(pageName = "Wiki Page");
-
-		Portlet.addPG(portletName = "Wiki");
-
-		ProductMenu.gotoPortlet(
-			category = "Site Builder",
-			portlet = "Pages");
-
 		PagesAdmin.addPage(pageName = "Language Page");
 
 		Navigator.gotoPage(pageName = "Language Page");
@@ -281,13 +455,11 @@ definition {
 		User.logoutPG();
 
 		User.firstLoginPG(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			userEmailAddress = "test@www.able.com",
 			virtualHostsURL = "http://www.able.com:8080");
 
 		Page.viewNoPG(pageName = "Blogs Page");
-
-		Page.viewNoPG(pageName = "Wiki Page");
 
 		Page.viewNoPG(pageName = "Language Page");
 
@@ -296,6 +468,12 @@ definition {
 		// Assert the Home page is a content page in the new virtual instance
 
 		AssertVisible(locator1 = "Icon#EDIT_PENCIL");
+
+		task ("Enable widget pages in the new virtual instance") {
+			PagesAdmin.enableWidgetPages();
+
+			Navigator.openSpecificURL(url = "http://www.able.com:8080");
+		}
 
 		ProductMenu.gotoPortlet(
 			category = "Site Builder",
@@ -319,10 +497,7 @@ definition {
 
 		User.loginPG();
 
-		ApplicationsMenu.gotoPortlet(
-			category = "System",
-			panel = "Control Panel",
-			portlet = "Virtual Instances");
+		PortalInstances.openVirtualInstancesAdmin();
 
 		PortalInstances.deactivatePortalInstance(virtualHost = "www.able.com");
 
@@ -331,13 +506,51 @@ definition {
 		Page.viewInactiveRequestMessage(resource = "instance");
 	}
 
-	@ignore = "true"
-	@priority = 4
-	test ViewVirtualHostPrivateSitePage {
-		property custom.properties = "virtual.hosts.valid.hosts=localhost,127.0.0.1,www.able.com,www.baker.com,www.charlie.com";
-		property release.feature.flags.disable.DISABLE_PRIVATE_LAYOUTS = "true";
+	@description = "This test covers LPS-127840. It ensures that the Canonical URL has page name."
+	@priority = 3
+	test ViewPageNameInCanonicalURL {
+		property custom.properties = "virtual.hosts.valid.hosts=localhost,127.0.0.1,www.able.com";
 		property test.liferay.virtual.instance = "false";
 		property test.run.type = "single";
+
+		for (var num : list "1,2") {
+			JSONLayout.addPublicLayout(
+				groupName = "Guest",
+				layoutName = "page${num}");
+		}
+
+		Site.openSiteSettingsAdmin(siteURLKey = "guest");
+
+		Site.addVirtualHostsURLCP(
+			pageVirtualHosts = "true",
+			pageVirtualHostURL = "www.able.com");
+
+		User.logoutPG();
+
+		Navigator.openSpecificURL(url = "http://www.able.com:8080/page2");
+
+		Page.assertCanonicalURL(customCanonicalURL = "http://www.able.com:8080/page2");
+	}
+
+	@priority = 4
+	test ViewVirtualHostPrivateSitePage {
+		property custom.properties = "feature.flag.LPD-35013=false${line.separator}virtual.hosts.valid.hosts=localhost,127.0.0.1,www.able.com,www.baker.com,www.charlie.com";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
+		task ("Enable private pages") {
+			PagesAdmin.enablePrivatePages();
+		}
+
+		task ("Add a public page and a private page") {
+			JSONLayout.addPublicLayout(
+				groupName = "Guest",
+				layoutName = "Public Page");
+
+			JSONLayout.addPrivateLayout(
+				groupName = "Guest",
+				layoutName = "Private Page");
+		}
 
 		PortalSettings.gotoConfiguration(
 			configurationCategory = "Instance Configuration",
@@ -358,35 +571,38 @@ definition {
 			privatePageVirtualHostURL = "www.charlie.com",
 			privateVirtualHosts = ${privatePageVirtualHostURL});
 
-		ProductMenu.gotoPortlet(
-			category = "Site Builder",
-			portlet = "Pages");
-
-		PagesAdmin.addPublicPage(pageName = "Public Page");
-
-		PagesAdmin.addPrivatePage(pageName = "Private Page");
-
 		Navigator.openSpecificURL(url = "http://www.charlie.com:8080");
 
 		AssertElementPresent(
-			key_pageName = "Home",
+			key_pageName = "Public Page",
 			locator1 = "Home#PAGE");
 
-		User.loginPG(
-			password = "test",
-			specificURL = "http://www.charlie.com:8080/group/guest",
+		User.firstLoginUI(
+			password = PropsUtil.get("default.admin.password"),
+			specificURL = "http://www.charlie.com:8080",
 			userEmailAddress = "test@liferay.com");
+
+		Navigator.openSpecificURL(url = "http://www.charlie.com:8080");
 
 		AssertTextEquals(
 			key_pageName = "Private Page",
 			locator1 = "Home#PAGE",
 			value1 = "Private Page");
 
-		User.logoutPG();
+		task ("Restore the virtual host so the tear down can reach the instance") {
+			User.firstLoginUI(
+				password = PropsUtil.get("default.admin.password"),
+				specificURL = "http://www.able.com:8080",
+				userEmailAddress = "test@liferay.com");
 
-		User.loginUserPG(
-			password = "test",
-			userEmailAddress = "test@liferay.com");
+			PortalSettings.gotoConfiguration(
+				baseURL = "http://www.able.com:8080",
+				configurationCategory = "Instance Configuration",
+				configurationName = "General",
+				configurationScope = "Virtual Instance Scope");
+
+			PortalSettings.editVirtualHostCP(virtualHostName = "localhost");
+		}
 	}
 
 	@priority = 4
@@ -401,24 +617,18 @@ definition {
 
 		PortalSettings.viewToggleSwitchNotChecked(portalSetting = "Show in Control Menu");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Configuration",
+		ApplicationsMenu.gotoRootPortlet(
 			panel = "Control Panel",
 			portlet = "System Settings");
 
 		SystemSettings.gotoConfiguration(
 			configurationCategory = "Users",
 			configurationName = "Personal Menu",
-			configurationScope = "Virtual Instance Scope");
+			configurationScope = "System Scope");
 
 		PortalSettings.editConfigurationUsersPersonalMenuShowInControlMenu(toggleSwitchLabel = "Show in Control Menu");
 
-		Navigator.openURL();
-
-		ApplicationsMenu.gotoPortlet(
-			category = "System",
-			panel = "Control Panel",
-			portlet = "Virtual Instances");
+		PortalInstances.openVirtualInstancesAdmin();
 
 		PortalInstances.addCP(
 			mailDomain = "www.able.com",
@@ -426,7 +636,7 @@ definition {
 			webId = "www.able.com");
 
 		User.firstLoginPG(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			userEmailAddress = "test@www.able.com",
 			virtualHostsURL = "http://www.able.com:8080");
 

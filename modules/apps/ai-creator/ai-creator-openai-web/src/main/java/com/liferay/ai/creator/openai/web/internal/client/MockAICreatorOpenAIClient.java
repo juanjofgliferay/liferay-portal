@@ -6,6 +6,7 @@
 package com.liferay.ai.creator.openai.web.internal.client;
 
 import com.liferay.ai.creator.openai.web.internal.exception.AICreatorOpenAIClientException;
+import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
@@ -15,6 +16,7 @@ import java.io.IOException;
 
 import java.net.HttpURLConnection;
 
+import java.util.Arrays;
 import java.util.Locale;
 import java.util.Objects;
 
@@ -24,6 +26,7 @@ import org.osgi.service.component.annotations.Component;
 
 /**
  * @author Lourdes Fernández Besada
+ * @author Roberto Díaz
  */
 @Component(
 	enabled = false, property = "service.ranking:Integer=200",
@@ -54,12 +57,32 @@ public class MockAICreatorOpenAIClient implements AICreatorOpenAIClient {
 	}
 
 	@Override
-	public void validateAPIKey(String apiKey) {
-		if (Objects.equals(apiKey, "VALID_API_KEY")) {
-			return;
+	public String[] getGenerations(
+		String apiKey, String model, int numberOfImages, String prompt,
+		String size) {
+
+		if (Objects.equals(apiKey, "VALID_API_KEY") &&
+			Objects.equals(prompt, "USER_IMAGES")) {
+
+			String[] generations = new String[numberOfImages];
+
+			Arrays.fill(generations, "data:image/png;base64," + _IMAGE);
+
+			return generations;
 		}
 
-		throw _getAICreatorOpenAIClientException(apiKey);
+		throw _getAICreatorOpenAIClientException(prompt);
+	}
+
+	@Override
+	public void validateAPIKey(String apiKey, String model) {
+		if (!Objects.equals(apiKey, "VALID_API_KEY")) {
+			throw _getAICreatorOpenAIClientException(apiKey);
+		}
+
+		if (Validator.isNotNull(model) && model.startsWith("OPENAI_API_")) {
+			throw _getAICreatorOpenAIClientException(model);
+		}
 	}
 
 	private AICreatorOpenAIClientException _getAICreatorOpenAIClientException(
@@ -98,6 +121,11 @@ public class MockAICreatorOpenAIClient implements AICreatorOpenAIClient {
 
 		return "OPENAI_API_COMPLETION_RESPONSE_CONTENT";
 	}
+
+	private static final String _IMAGE = StringBundler.concat(
+		"iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC+aJAAAAT0lEQVR42u3PQQkA",
+		"AAgEsPsb0v4pNIJvYbACS/W8FgEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEB",
+		"AQEBAQEBAQEBAQEBAQEBAQGBywLV/pFLvCMoJQAAAABJRU5ErkJggg==");
 
 	private static final String _USER_CONTENT_SLEEP_MILLIS_PREFIX =
 		"USER_CONTENT_SLEEP_MILLIS_";

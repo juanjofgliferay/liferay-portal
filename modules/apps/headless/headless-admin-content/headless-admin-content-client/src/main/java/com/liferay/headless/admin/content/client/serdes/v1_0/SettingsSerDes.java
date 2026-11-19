@@ -9,13 +9,14 @@ import com.liferay.headless.admin.content.client.dto.v1_0.ClientExtension;
 import com.liferay.headless.admin.content.client.dto.v1_0.Settings;
 import com.liferay.headless.admin.content.client.json.BaseJSONParser;
 
+import jakarta.annotation.Generated;
+
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
-
-import javax.annotation.Generated;
 
 /**
  * @author Javier Gamarra
@@ -80,14 +81,7 @@ public class SettingsSerDes {
 
 			sb.append("\"favIcon\": ");
 
-			if (settings.getFavIcon() instanceof String) {
-				sb.append("\"");
-				sb.append((String)settings.getFavIcon());
-				sb.append("\"");
-			}
-			else {
-				sb.append(settings.getFavIcon());
-			}
+			sb.append(_toJSON(settings.getFavIcon()));
 		}
 
 		if (settings.getGlobalCSSClientExtensions() != null) {
@@ -102,7 +96,8 @@ public class SettingsSerDes {
 			for (int i = 0; i < settings.getGlobalCSSClientExtensions().length;
 				 i++) {
 
-				sb.append(settings.getGlobalCSSClientExtensions()[i]);
+				sb.append(
+					String.valueOf(settings.getGlobalCSSClientExtensions()[i]));
 
 				if ((i + 1) < settings.getGlobalCSSClientExtensions().length) {
 					sb.append(", ");
@@ -124,7 +119,8 @@ public class SettingsSerDes {
 			for (int i = 0; i < settings.getGlobalJSClientExtensions().length;
 				 i++) {
 
-				sb.append(settings.getGlobalJSClientExtensions()[i]);
+				sb.append(
+					String.valueOf(settings.getGlobalJSClientExtensions()[i]));
 
 				if ((i + 1) < settings.getGlobalJSClientExtensions().length) {
 					sb.append(", ");
@@ -155,7 +151,7 @@ public class SettingsSerDes {
 
 			sb.append("\"masterPage\": ");
 
-			sb.append(settings.getMasterPage());
+			sb.append(String.valueOf(settings.getMasterPage()));
 		}
 
 		if (settings.getStyleBook() != null) {
@@ -165,7 +161,7 @@ public class SettingsSerDes {
 
 			sb.append("\"styleBook\": ");
 
-			sb.append(settings.getStyleBook());
+			sb.append(String.valueOf(settings.getStyleBook()));
 		}
 
 		if (settings.getThemeCSSClientExtension() != null) {
@@ -175,7 +171,7 @@ public class SettingsSerDes {
 
 			sb.append("\"themeCSSClientExtension\": ");
 
-			sb.append(settings.getThemeCSSClientExtension());
+			sb.append(String.valueOf(settings.getThemeCSSClientExtension()));
 		}
 
 		if (settings.getThemeName() != null) {
@@ -199,14 +195,18 @@ public class SettingsSerDes {
 
 			sb.append("\"themeSettings\": ");
 
-			if (settings.getThemeSettings() instanceof String) {
-				sb.append("\"");
-				sb.append((String)settings.getThemeSettings());
-				sb.append("\"");
+			sb.append(_toJSON(settings.getThemeSettings()));
+		}
+
+		if (settings.getThemeSpritemapClientExtension() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
 			}
-			else {
-				sb.append(settings.getThemeSettings());
-			}
+
+			sb.append("\"themeSpritemapClientExtension\": ");
+
+			sb.append(
+				String.valueOf(settings.getThemeSpritemapClientExtension()));
 		}
 
 		sb.append("}");
@@ -313,6 +313,15 @@ public class SettingsSerDes {
 				"themeSettings", String.valueOf(settings.getThemeSettings()));
 		}
 
+		if (settings.getThemeSpritemapClientExtension() == null) {
+			map.put("themeSpritemapClientExtension", null);
+		}
+		else {
+			map.put(
+				"themeSpritemapClientExtension",
+				String.valueOf(settings.getThemeSpritemapClientExtension()));
+		}
+
 		return map;
 	}
 
@@ -326,6 +335,56 @@ public class SettingsSerDes {
 		@Override
 		protected Settings[] createDTOArray(int size) {
 			return new Settings[size];
+		}
+
+		@Override
+		protected boolean parseMaps(String jsonParserFieldName) {
+			if (Objects.equals(jsonParserFieldName, "colorSchemeName")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "css")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "favIcon")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "globalCSSClientExtensions")) {
+
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "globalJSClientExtensions")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "javascript")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "masterPage")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "styleBook")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "themeCSSClientExtension")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "themeName")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "themeSettings")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "themeSpritemapClientExtension")) {
+
+				return false;
+			}
+
+			return false;
 		}
 
 		@Override
@@ -428,6 +487,15 @@ public class SettingsSerDes {
 					settings.setThemeSettings((Object)jsonParserFieldValue);
 				}
 			}
+			else if (Objects.equals(
+						jsonParserFieldName, "themeSpritemapClientExtension")) {
+
+				if (jsonParserFieldValue != null) {
+					settings.setThemeSpritemapClientExtension(
+						ClientExtensionSerDes.toDTO(
+							(String)jsonParserFieldValue));
+				}
+			}
 		}
 
 	}
@@ -460,36 +528,7 @@ public class SettingsSerDes {
 
 			Object value = entry.getValue();
 
-			Class<?> valueClass = value.getClass();
-
-			if (value instanceof Map) {
-				sb.append(_toJSON((Map)value));
-			}
-			else if (valueClass.isArray()) {
-				Object[] values = (Object[])value;
-
-				sb.append("[");
-
-				for (int i = 0; i < values.length; i++) {
-					sb.append("\"");
-					sb.append(_escape(values[i]));
-					sb.append("\"");
-
-					if ((i + 1) < values.length) {
-						sb.append(", ");
-					}
-				}
-
-				sb.append("]");
-			}
-			else if (value instanceof String) {
-				sb.append("\"");
-				sb.append(_escape(entry.getValue()));
-				sb.append("\"");
-			}
-			else {
-				sb.append(String.valueOf(entry.getValue()));
-			}
+			sb.append(_toJSON(value));
 
 			if (iterator.hasNext()) {
 				sb.append(", ");
@@ -501,4 +540,47 @@ public class SettingsSerDes {
 		return sb.toString();
 	}
 
+	private static String _toJSON(Object value) {
+		if (value == null) {
+			return "null";
+		}
+
+		if (value instanceof Collection) {
+			Collection<?> collection = (Collection<?>)value;
+
+			return _toJSON(collection.toArray());
+		}
+
+		if (value instanceof Map) {
+			return _toJSON((Map)value);
+		}
+
+		Class<?> clazz = value.getClass();
+
+		if (clazz.isArray()) {
+			StringBuilder sb = new StringBuilder("[");
+
+			Object[] values = (Object[])value;
+
+			for (int i = 0; i < values.length; i++) {
+				sb.append(_toJSON(values[i]));
+
+				if ((i + 1) < values.length) {
+					sb.append(", ");
+				}
+			}
+
+			sb.append("]");
+
+			return sb.toString();
+		}
+
+		if (value instanceof String) {
+			return "\"" + _escape(value) + "\"";
+		}
+
+		return String.valueOf(value);
+	}
+
 }
+// LIFERAY-REST-BUILDER-HASH:-1244307871

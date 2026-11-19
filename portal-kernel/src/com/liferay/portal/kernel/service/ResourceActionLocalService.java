@@ -206,7 +206,7 @@ public interface ResourceActionLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public ResourceAction fetchResourceAction(long resourceActionId);
 
-	@Transactional(enabled = false)
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public ResourceAction fetchResourceAction(String name, String actionId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
@@ -230,6 +230,9 @@ public interface ResourceActionLocalService
 	public PersistedModel getPersistedModel(Serializable primaryKeyObj)
 		throws PortalException;
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public String getRegistryName();
+
 	/**
 	 * Returns the resource action with the primary key.
 	 *
@@ -241,7 +244,7 @@ public interface ResourceActionLocalService
 	public ResourceAction getResourceAction(long resourceActionId)
 		throws PortalException;
 
-	@Transactional(enabled = false)
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public ResourceAction getResourceAction(String name, String actionId)
 		throws PortalException;
 
@@ -273,6 +276,8 @@ public interface ResourceActionLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public int getResourceActionsCount(String name);
 
+	public void invalidate();
+
 	/**
 	 * Updates the resource action in the database or adds it if it does not yet exist. Also notifies the appropriate model listeners.
 	 *
@@ -287,3 +292,4 @@ public interface ResourceActionLocalService
 	public ResourceAction updateResourceAction(ResourceAction resourceAction);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1423421919

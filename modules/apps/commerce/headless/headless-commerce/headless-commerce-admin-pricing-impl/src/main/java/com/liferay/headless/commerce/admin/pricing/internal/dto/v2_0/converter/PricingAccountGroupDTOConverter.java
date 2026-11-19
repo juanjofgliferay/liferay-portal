@@ -26,7 +26,7 @@ public class PricingAccountGroupDTOConverter
 
 	@Override
 	public String getContentType() {
-		return AccountGroup.class.getSimpleName();
+		return PricingAccountGroup.class.getSimpleName();
 	}
 
 	@Override
@@ -38,8 +38,8 @@ public class PricingAccountGroupDTOConverter
 
 		return new PricingAccountGroup() {
 			{
-				id = accountGroup.getAccountGroupId();
-				name = accountGroup.getName();
+				setId(accountGroup::getAccountGroupId);
+				setName(accountGroup::getName);
 			}
 		};
 	}

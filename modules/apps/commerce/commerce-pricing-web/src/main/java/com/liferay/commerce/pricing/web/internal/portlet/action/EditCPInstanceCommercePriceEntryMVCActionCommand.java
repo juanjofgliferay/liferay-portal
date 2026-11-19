@@ -5,7 +5,12 @@
 
 package com.liferay.commerce.pricing.web.internal.portlet.action;
 
+import com.liferay.commerce.currency.util.CommercePriceFormatter;
+import com.liferay.commerce.price.list.exception.CommercePriceEntryPriceException;
+import com.liferay.commerce.price.list.exception.CommercePriceListMaxPriceValueException;
+import com.liferay.commerce.price.list.exception.CommercePriceListMinPriceValueException;
 import com.liferay.commerce.price.list.exception.DuplicateCommercePriceEntryException;
+import com.liferay.commerce.price.list.exception.DuplicateCommercePriceEntryExternalReferenceCodeException;
 import com.liferay.commerce.price.list.exception.NoSuchPriceEntryException;
 import com.liferay.commerce.price.list.exception.NoSuchPriceListException;
 import com.liferay.commerce.price.list.model.CommercePriceEntry;
@@ -24,12 +29,12 @@ import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+
 import java.math.BigDecimal;
 
 import java.util.Calendar;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -39,7 +44,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + CPPortletKeys.CP_DEFINITIONS,
+		"jakarta.portlet.name=" + CPPortletKeys.CP_DEFINITIONS,
 		"mvc.command.name=/cp_definitions/edit_cp_instance_commerce_price_entry"
 	},
 	service = MVCActionCommand.class
@@ -124,17 +129,10 @@ public class EditCPInstanceCommercePriceEntryMVCActionCommand
 			}
 		}
 		catch (Exception exception) {
-			if (exception instanceof NoSuchCPInstanceException ||
-				exception instanceof NoSuchPriceEntryException ||
-				exception instanceof NoSuchPriceListException ||
-				exception instanceof PrincipalException) {
-
-				SessionErrors.add(actionRequest, exception.getClass());
-
-				actionResponse.setRenderParameter("mvcPath", "/error.jsp");
-			}
-			else if (exception instanceof
-						DuplicateCommercePriceEntryException) {
+			if (exception instanceof CommercePriceEntryPriceException ||
+				exception instanceof CommercePriceListMaxPriceValueException ||
+				exception instanceof CommercePriceListMinPriceValueException ||
+				exception instanceof DuplicateCommercePriceEntryException) {
 
 				hideDefaultErrorMessage(actionRequest);
 				hideDefaultSuccessMessage(actionRequest);
@@ -145,6 +143,17 @@ public class EditCPInstanceCommercePriceEntryMVCActionCommand
 					actionRequest, "redirect");
 
 				sendRedirect(actionRequest, actionResponse, redirect);
+			}
+			else if (exception instanceof
+						DuplicateCommercePriceEntryExternalReferenceCodeException ||
+					 exception instanceof NoSuchCPInstanceException ||
+					 exception instanceof NoSuchPriceEntryException ||
+					 exception instanceof NoSuchPriceListException ||
+					 exception instanceof PrincipalException) {
+
+				SessionErrors.add(actionRequest, exception.getClass());
+
+				actionResponse.setRenderParameter("mvcPath", "/error.jsp");
 			}
 			else {
 				throw exception;
@@ -167,14 +176,18 @@ public class EditCPInstanceCommercePriceEntryMVCActionCommand
 			actionRequest, "bulkPricing");
 		boolean overrideDiscount = ParamUtil.getBoolean(
 			actionRequest, "overrideDiscount");
-		BigDecimal discountLevel1 = (BigDecimal)ParamUtil.getNumber(
-			actionRequest, "discountLevel1", BigDecimal.ZERO);
-		BigDecimal discountLevel2 = (BigDecimal)ParamUtil.getNumber(
-			actionRequest, "discountLevel2", BigDecimal.ZERO);
-		BigDecimal discountLevel3 = (BigDecimal)ParamUtil.getNumber(
-			actionRequest, "discountLevel3", BigDecimal.ZERO);
-		BigDecimal discountLevel4 = (BigDecimal)ParamUtil.getNumber(
-			actionRequest, "discountLevel4", BigDecimal.ZERO);
+		BigDecimal discountLevel1 = _commercePriceFormatter.parse(
+			actionRequest, false, CommercePriceEntry.class.getName(),
+			"discountLevel1");
+		BigDecimal discountLevel2 = _commercePriceFormatter.parse(
+			actionRequest, false, CommercePriceEntry.class.getName(),
+			"discountLevel2");
+		BigDecimal discountLevel3 = _commercePriceFormatter.parse(
+			actionRequest, false, CommercePriceEntry.class.getName(),
+			"discountLevel3");
+		BigDecimal discountLevel4 = _commercePriceFormatter.parse(
+			actionRequest, false, CommercePriceEntry.class.getName(),
+			"discountLevel4");
 		int displayDateMonth = ParamUtil.getInteger(
 			actionRequest, "displayDateMonth");
 		int displayDateDay = ParamUtil.getInteger(
@@ -212,8 +225,8 @@ public class EditCPInstanceCommercePriceEntryMVCActionCommand
 		boolean neverExpire = ParamUtil.getBoolean(
 			actionRequest, "neverExpire");
 
-		BigDecimal price = (BigDecimal)ParamUtil.getNumber(
-			actionRequest, "price", BigDecimal.ZERO);
+		BigDecimal price = _commercePriceFormatter.parse(
+			actionRequest, false, CommercePriceEntry.class.getName(), "price");
 		boolean priceOnApplication = ParamUtil.getBoolean(
 			actionRequest, "priceOnApplication");
 
@@ -241,6 +254,9 @@ public class EditCPInstanceCommercePriceEntryMVCActionCommand
 
 	@Reference
 	private CommercePriceEntryService _commercePriceEntryService;
+
+	@Reference
+	private CommercePriceFormatter _commercePriceFormatter;
 
 	@Reference
 	private CPInstanceService _cpInstanceService;

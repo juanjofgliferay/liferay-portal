@@ -10,6 +10,7 @@ import com.liferay.commerce.inventory.model.CommerceInventoryWarehouse;
 import com.liferay.commerce.inventory.model.CommerceInventoryWarehouseItem;
 import com.liferay.commerce.inventory.service.CommerceInventoryWarehouseItemLocalService;
 import com.liferay.commerce.inventory.service.CommerceInventoryWarehouseLocalService;
+import com.liferay.commerce.inventory.service.persistence.CommerceInventoryWarehouseItemUtil;
 import com.liferay.commerce.product.model.CPDefinition;
 import com.liferay.commerce.product.model.CPInstance;
 import com.liferay.commerce.product.model.CPInstanceUnitOfMeasure;
@@ -19,7 +20,6 @@ import com.liferay.commerce.product.service.CommerceCatalogLocalServiceUtil;
 import com.liferay.commerce.product.test.util.CPTestUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
-import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.service.ServiceContext;
@@ -28,9 +28,9 @@ import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.util.CompanyTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
+import com.liferay.portal.kernel.test.util.TransactionTestUtil;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
-import com.liferay.portal.test.rule.FeatureFlags;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
@@ -52,7 +52,6 @@ import org.junit.runner.RunWith;
 /**
  * @author Stefano Motta
  */
-@FeatureFlags("COMMERCE-11287")
 @RunWith(Arquillian.class)
 public class CPInstanceUnitOfMeasureModelListenerTest {
 
@@ -109,7 +108,7 @@ public class CPInstanceUnitOfMeasureModelListenerTest {
 	}
 
 	@Test
-	public void testAddFirstCPInstanceUnitOfMeasure() throws PortalException {
+	public void testAddFirstCPInstanceUnitOfMeasure() throws Exception {
 		frutillaRule.scenario(
 			"Create the first CP Instance Unit Of Measure for a CPInstance"
 		).given(
@@ -125,7 +124,8 @@ public class CPInstanceUnitOfMeasureModelListenerTest {
 			addCommerceInventoryWarehouseItem(
 				RandomTestUtil.randomString(), _user.getUserId(),
 				_commerceInventoryWarehouse.getCommerceInventoryWarehouseId(),
-				BigDecimal.TEN, _cpInstance.getSku(), StringPool.BLANK);
+				BigDecimal.TEN, BigDecimal.ZERO, _cpInstance.getSku(),
+				StringPool.BLANK);
 
 		String key = RandomTestUtil.randomString();
 
@@ -133,7 +133,8 @@ public class CPInstanceUnitOfMeasureModelListenerTest {
 			_cpInstanceUnitOfMeasureLocalService.addCPInstanceUnitOfMeasure(
 				_user.getUserId(), _cpInstance.getCPInstanceId(), true,
 				BigDecimal.ONE, key, RandomTestUtil.randomLocaleStringMap(), 2,
-				true, 0.0, BigDecimal.ONE, _cpInstance.getSku());
+				BigDecimal.ZERO, true, 0.0, BigDecimal.ONE,
+				_cpInstance.getSku());
 
 		List<CommerceInventoryWarehouseItem> commerceInventoryWarehouseItems =
 			_commerceInventoryWarehouseItemLocalService.
@@ -147,11 +148,9 @@ public class CPInstanceUnitOfMeasureModelListenerTest {
 			commerceInventoryWarehouseItems.size());
 
 		CommerceInventoryWarehouseItem commerceInventoryWarehouseItem =
-			_commerceInventoryWarehouseItemLocalService.
-				getCommerceInventoryWarehouseItem(
-					_commerceInventoryWarehouse.
-						getCommerceInventoryWarehouseId(),
-					_cpInstance.getSku(), _cpInstanceUnitOfMeasure.getKey());
+			_getCommerceInventoryWarehouseItem(
+				_commerceInventoryWarehouse.getCommerceInventoryWarehouseId(),
+				_cpInstance.getSku(), _cpInstanceUnitOfMeasure.getKey());
 
 		Assert.assertNotNull(commerceInventoryWarehouseItem);
 
@@ -172,9 +171,7 @@ public class CPInstanceUnitOfMeasureModelListenerTest {
 	}
 
 	@Test
-	public void testAddMultipleCPInstanceUnitOfMeasure()
-		throws PortalException {
-
+	public void testAddMultipleCPInstanceUnitOfMeasure() throws Exception {
 		frutillaRule.scenario(
 			"Create multiple CP Instance Unit Of Measure for a CPInstance"
 		).given(
@@ -191,14 +188,15 @@ public class CPInstanceUnitOfMeasureModelListenerTest {
 			addCommerceInventoryWarehouseItem(
 				RandomTestUtil.randomString(), _user.getUserId(),
 				_commerceInventoryWarehouse.getCommerceInventoryWarehouseId(),
-				BigDecimal.TEN, _cpInstance.getSku(), StringPool.BLANK);
+				BigDecimal.TEN, BigDecimal.ZERO, _cpInstance.getSku(),
+				StringPool.BLANK);
 
 		_cpInstanceUnitOfMeasure =
 			_cpInstanceUnitOfMeasureLocalService.addCPInstanceUnitOfMeasure(
 				_user.getUserId(), _cpInstance.getCPInstanceId(), true,
 				BigDecimal.ONE, RandomTestUtil.randomString(),
-				RandomTestUtil.randomLocaleStringMap(), 2, true, 0.0,
-				BigDecimal.ONE, _cpInstance.getSku());
+				RandomTestUtil.randomLocaleStringMap(), 2, BigDecimal.ZERO,
+				true, 0.0, BigDecimal.ONE, _cpInstance.getSku());
 
 		List<CommerceInventoryWarehouseItem> commerceInventoryWarehouseItems =
 			_commerceInventoryWarehouseItemLocalService.
@@ -212,11 +210,9 @@ public class CPInstanceUnitOfMeasureModelListenerTest {
 			commerceInventoryWarehouseItems.size());
 
 		CommerceInventoryWarehouseItem commerceInventoryWarehouseItem =
-			_commerceInventoryWarehouseItemLocalService.
-				getCommerceInventoryWarehouseItem(
-					_commerceInventoryWarehouse.
-						getCommerceInventoryWarehouseId(),
-					_cpInstance.getSku(), _cpInstanceUnitOfMeasure.getKey());
+			_getCommerceInventoryWarehouseItem(
+				_commerceInventoryWarehouse.getCommerceInventoryWarehouseId(),
+				_cpInstance.getSku(), _cpInstanceUnitOfMeasure.getKey());
 
 		Assert.assertNotNull(commerceInventoryWarehouseItem);
 
@@ -224,8 +220,8 @@ public class CPInstanceUnitOfMeasureModelListenerTest {
 			_cpInstanceUnitOfMeasureLocalService.addCPInstanceUnitOfMeasure(
 				_user.getUserId(), _cpInstance.getCPInstanceId(), true,
 				BigDecimal.ONE, RandomTestUtil.randomString(),
-				RandomTestUtil.randomLocaleStringMap(), 2, true, 0.0,
-				BigDecimal.ONE, _cpInstance.getSku());
+				RandomTestUtil.randomLocaleStringMap(), 2, BigDecimal.ZERO,
+				true, 0.0, BigDecimal.ONE, _cpInstance.getSku());
 
 		commerceInventoryWarehouseItems =
 			_commerceInventoryWarehouseItemLocalService.
@@ -238,18 +234,15 @@ public class CPInstanceUnitOfMeasureModelListenerTest {
 			commerceInventoryWarehouseItems.toString(), 2,
 			commerceInventoryWarehouseItems.size());
 
-		commerceInventoryWarehouseItem =
-			_commerceInventoryWarehouseItemLocalService.
-				getCommerceInventoryWarehouseItem(
-					_commerceInventoryWarehouse.
-						getCommerceInventoryWarehouseId(),
-					_cpInstance.getSku(), _cpInstanceUnitOfMeasure.getKey());
+		commerceInventoryWarehouseItem = _getCommerceInventoryWarehouseItem(
+			_commerceInventoryWarehouse.getCommerceInventoryWarehouseId(),
+			_cpInstance.getSku(), _cpInstanceUnitOfMeasure.getKey());
 
 		Assert.assertNotNull(commerceInventoryWarehouseItem);
 	}
 
 	@Test
-	public void testDeleteCPInstanceUnitOfMeasure() throws PortalException {
+	public void testDeleteCPInstanceUnitOfMeasure() throws Exception {
 		frutillaRule.scenario(
 			"Delete a CP Instance Unit Of Measure for a CPInstance"
 		).given(
@@ -266,7 +259,8 @@ public class CPInstanceUnitOfMeasureModelListenerTest {
 			addCommerceInventoryWarehouseItem(
 				RandomTestUtil.randomString(), _user.getUserId(),
 				_commerceInventoryWarehouse.getCommerceInventoryWarehouseId(),
-				BigDecimal.TEN, _cpInstance.getSku(), StringPool.BLANK);
+				BigDecimal.TEN, BigDecimal.ZERO, _cpInstance.getSku(),
+				StringPool.BLANK);
 
 		String key = RandomTestUtil.randomString();
 
@@ -274,14 +268,15 @@ public class CPInstanceUnitOfMeasureModelListenerTest {
 			_cpInstanceUnitOfMeasureLocalService.addCPInstanceUnitOfMeasure(
 				_user.getUserId(), _cpInstance.getCPInstanceId(), true,
 				BigDecimal.ONE, key, RandomTestUtil.randomLocaleStringMap(), 2,
-				true, 0.0, BigDecimal.ONE, _cpInstance.getSku());
+				BigDecimal.ZERO, true, 0.0, BigDecimal.ONE,
+				_cpInstance.getSku());
 
 		_cpInstanceUnitOfMeasure =
 			_cpInstanceUnitOfMeasureLocalService.addCPInstanceUnitOfMeasure(
 				_user.getUserId(), _cpInstance.getCPInstanceId(), true,
 				BigDecimal.ONE, RandomTestUtil.randomString(),
-				RandomTestUtil.randomLocaleStringMap(), 2, true, 0.0,
-				BigDecimal.ONE, _cpInstance.getSku());
+				RandomTestUtil.randomLocaleStringMap(), 2, BigDecimal.ZERO,
+				true, 0.0, BigDecimal.ONE, _cpInstance.getSku());
 
 		List<CommerceInventoryWarehouseItem> commerceInventoryWarehouseItems =
 			_commerceInventoryWarehouseItemLocalService.
@@ -317,7 +312,7 @@ public class CPInstanceUnitOfMeasureModelListenerTest {
 	}
 
 	@Test
-	public void testDeleteLastCPInstanceUnitOfMeasure() throws PortalException {
+	public void testDeleteLastCPInstanceUnitOfMeasure() throws Exception {
 		frutillaRule.scenario(
 			"Delete the last CP Instance Unit Of Measure for a CPInstance"
 		).given(
@@ -334,7 +329,8 @@ public class CPInstanceUnitOfMeasureModelListenerTest {
 			addCommerceInventoryWarehouseItem(
 				RandomTestUtil.randomString(), _user.getUserId(),
 				_commerceInventoryWarehouse.getCommerceInventoryWarehouseId(),
-				BigDecimal.TEN, _cpInstance.getSku(), StringPool.BLANK);
+				BigDecimal.TEN, BigDecimal.ZERO, _cpInstance.getSku(),
+				StringPool.BLANK);
 
 		String key = RandomTestUtil.randomString();
 
@@ -342,14 +338,13 @@ public class CPInstanceUnitOfMeasureModelListenerTest {
 			_cpInstanceUnitOfMeasureLocalService.addCPInstanceUnitOfMeasure(
 				_user.getUserId(), _cpInstance.getCPInstanceId(), true,
 				BigDecimal.ONE, key, RandomTestUtil.randomLocaleStringMap(), 2,
-				true, 0.0, BigDecimal.ONE, _cpInstance.getSku());
+				BigDecimal.ZERO, true, 0.0, BigDecimal.ONE,
+				_cpInstance.getSku());
 
 		CommerceInventoryWarehouseItem commerceInventoryWarehouseItem =
-			_commerceInventoryWarehouseItemLocalService.
-				getCommerceInventoryWarehouseItem(
-					_commerceInventoryWarehouse.
-						getCommerceInventoryWarehouseId(),
-					_cpInstance.getSku(), _cpInstanceUnitOfMeasure.getKey());
+			_getCommerceInventoryWarehouseItem(
+				_commerceInventoryWarehouse.getCommerceInventoryWarehouseId(),
+				_cpInstance.getSku(), _cpInstanceUnitOfMeasure.getKey());
 
 		Assert.assertNotNull(commerceInventoryWarehouseItem);
 
@@ -379,7 +374,7 @@ public class CPInstanceUnitOfMeasureModelListenerTest {
 	}
 
 	@Test
-	public void testUpdateCPInstanceUnitOfMeasure() throws PortalException {
+	public void testUpdateCPInstanceUnitOfMeasure() throws Exception {
 		frutillaRule.scenario(
 			"Update a CP Instance Unit Of Measure for a CPInstance"
 		).given(
@@ -396,7 +391,8 @@ public class CPInstanceUnitOfMeasureModelListenerTest {
 			addCommerceInventoryWarehouseItem(
 				RandomTestUtil.randomString(), _user.getUserId(),
 				_commerceInventoryWarehouse.getCommerceInventoryWarehouseId(),
-				BigDecimal.TEN, _cpInstance.getSku(), StringPool.BLANK);
+				BigDecimal.TEN, BigDecimal.ZERO, _cpInstance.getSku(),
+				StringPool.BLANK);
 
 		String key = RandomTestUtil.randomString();
 
@@ -404,14 +400,13 @@ public class CPInstanceUnitOfMeasureModelListenerTest {
 			_cpInstanceUnitOfMeasureLocalService.addCPInstanceUnitOfMeasure(
 				_user.getUserId(), _cpInstance.getCPInstanceId(), true,
 				BigDecimal.ONE, key, RandomTestUtil.randomLocaleStringMap(), 2,
-				true, 0.0, BigDecimal.ONE, _cpInstance.getSku());
+				BigDecimal.ZERO, true, 0.0, BigDecimal.ONE,
+				_cpInstance.getSku());
 
 		CommerceInventoryWarehouseItem commerceInventoryWarehouseItem =
-			_commerceInventoryWarehouseItemLocalService.
-				getCommerceInventoryWarehouseItem(
-					_commerceInventoryWarehouse.
-						getCommerceInventoryWarehouseId(),
-					_cpInstance.getSku(), _cpInstanceUnitOfMeasure.getKey());
+			_getCommerceInventoryWarehouseItem(
+				_commerceInventoryWarehouse.getCommerceInventoryWarehouseId(),
+				_cpInstance.getSku(), _cpInstanceUnitOfMeasure.getKey());
 
 		Assert.assertNotNull(commerceInventoryWarehouseItem);
 
@@ -425,8 +420,8 @@ public class CPInstanceUnitOfMeasureModelListenerTest {
 			_cpInstanceUnitOfMeasureLocalService.updateCPInstanceUnitOfMeasure(
 				_cpInstanceUnitOfMeasure.getCPInstanceUnitOfMeasureId(),
 				_cpInstance.getCPInstanceId(), true, BigDecimal.ONE, key,
-				RandomTestUtil.randomLocaleStringMap(), 2, true, 0.0,
-				BigDecimal.ONE, _cpInstance.getSku());
+				RandomTestUtil.randomLocaleStringMap(), 2, BigDecimal.ZERO,
+				true, 0.0, BigDecimal.ONE, _cpInstance.getSku());
 
 		commerceInventoryWarehouseItem =
 			_commerceInventoryWarehouseItemLocalService.
@@ -439,8 +434,91 @@ public class CPInstanceUnitOfMeasureModelListenerTest {
 			commerceInventoryWarehouseItem.getUnitOfMeasureKey());
 	}
 
+	@Test
+	public void testWarehouseItemQuantityIsPreservedAcrossUnitOfMeasureChanges()
+		throws Exception {
+
+		frutillaRule.scenario(
+			"Preserve the warehouse item quantity across the Unit Of Measure " +
+				"lifecycle"
+		).given(
+			"A CPInstance with a warehouse item with a quantity"
+		).when(
+			"A Unit Of Measure is added and then deleted"
+		).then(
+			"The warehouse item quantity is unchanged at every step"
+		);
+
+		BigDecimal quantity = BigDecimal.TEN;
+
+		CommerceInventoryWarehouseItem commerceInventoryWarehouseItem =
+			_commerceInventoryWarehouseItemLocalService.
+				addCommerceInventoryWarehouseItem(
+					RandomTestUtil.randomString(), _user.getUserId(),
+					_commerceInventoryWarehouse.
+						getCommerceInventoryWarehouseId(),
+					quantity, BigDecimal.ZERO, _cpInstance.getSku(),
+					StringPool.BLANK);
+
+		Assert.assertEquals(
+			0,
+			quantity.compareTo(commerceInventoryWarehouseItem.getQuantity()));
+		Assert.assertEquals(
+			StringPool.BLANK,
+			commerceInventoryWarehouseItem.getUnitOfMeasureKey());
+
+		String key = RandomTestUtil.randomString();
+
+		_cpInstanceUnitOfMeasure =
+			_cpInstanceUnitOfMeasureLocalService.addCPInstanceUnitOfMeasure(
+				_user.getUserId(), _cpInstance.getCPInstanceId(), true,
+				BigDecimal.ONE, key, RandomTestUtil.randomLocaleStringMap(), 3,
+				BigDecimal.ZERO, true, 0.0, BigDecimal.ONE,
+				_cpInstance.getSku());
+
+		commerceInventoryWarehouseItem =
+			_commerceInventoryWarehouseItemLocalService.
+				getCommerceInventoryWarehouseItem(
+					commerceInventoryWarehouseItem.
+						getCommerceInventoryWarehouseItemId());
+
+		Assert.assertEquals(
+			key, commerceInventoryWarehouseItem.getUnitOfMeasureKey());
+		Assert.assertEquals(
+			0,
+			quantity.compareTo(commerceInventoryWarehouseItem.getQuantity()));
+
+		_cpInstanceUnitOfMeasureLocalService.deleteCPInstanceUnitOfMeasure(
+			_cpInstanceUnitOfMeasure.getCPInstanceUnitOfMeasureId());
+
+		commerceInventoryWarehouseItem =
+			_commerceInventoryWarehouseItemLocalService.
+				getCommerceInventoryWarehouseItem(
+					commerceInventoryWarehouseItem.
+						getCommerceInventoryWarehouseItemId());
+
+		Assert.assertEquals(
+			StringPool.BLANK,
+			commerceInventoryWarehouseItem.getUnitOfMeasureKey());
+		Assert.assertEquals(
+			0,
+			quantity.compareTo(commerceInventoryWarehouseItem.getQuantity()));
+	}
+
 	@Rule
 	public final FrutillaRule frutillaRule = new FrutillaRule();
+
+	private CommerceInventoryWarehouseItem _getCommerceInventoryWarehouseItem(
+			long commerceInventoryWarehouseId, String sku,
+			String unitOfMeasureKey)
+		throws Exception {
+
+		return TransactionTestUtil.invoke(
+			CommerceInventoryWarehouseItemUtil.getPersistence(),
+			commerceInventoryWarehouseItemPersistence ->
+				commerceInventoryWarehouseItemPersistence.findByCIWI_S_U(
+					commerceInventoryWarehouseId, sku, unitOfMeasureKey));
+	}
 
 	private static Company _company;
 	private static User _user;

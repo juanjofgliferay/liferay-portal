@@ -1,0 +1,138 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`InvitePeople renders 1`] = `
+<div>
+  <div
+    class="modal-header"
+  >
+    <h1
+      class="modal-title"
+      tabindex="-1"
+    />
+    <button
+      aria-label="Close"
+      class="close btn btn-unstyled"
+      type="button"
+    >
+      <svg
+        class="lexicon-icon lexicon-icon-times"
+        role="presentation"
+      >
+        <use
+          href="#times"
+        />
+      </svg>
+    </button>
+  </div>
+  <div
+    class="modal-body"
+  >
+    <img
+      alt=""
+      class="d-block mb-4 w-100"
+      height="300"
+      src="ac_invite.svg"
+    />
+    <div
+      class="text-center mb-4"
+    >
+      <span
+        class="text-6 font-weight-bold"
+      >
+        Invite People to Workspace
+      </span>
+    </div>
+    <div>
+      <div
+        class="mb-2"
+      >
+        <label
+          class="form-control-label label-root"
+        >
+          <span
+            class="content-container"
+          >
+            <span
+              class="text-6 font-weight-bold"
+            >
+              Add Other Members
+            </span>
+            <span
+              aria-label="Member Permissions"
+              class="info-popover-root ml-2"
+              role="button"
+              tabindex="0"
+            >
+              <svg
+                class="lexicon-icon lexicon-icon-question-circle-full icon-root"
+                role="presentation"
+              >
+                <use
+                  href="#question-circle-full"
+                />
+              </svg>
+            </span>
+          </span>
+        </label>
+      </div>
+      <div
+        class="input-group"
+      >
+        <div
+          class="input-group-item"
+        >
+          <div
+            class="input-group-item input-list-root"
+          >
+            <div
+              class="form-control form-control-tag-group"
+            >
+              <input
+                class="form-control-inset"
+                placeholder="Enter Email Address"
+                type="text"
+                value=""
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+      <div
+        class="mt-1"
+      >
+        <span
+          class="text-4 text-secondary"
+        >
+          Enter email addresses, separated by spaces or commas.
+        </span>
+      </div>
+    </div>
+  </div>
+  <div
+    class="modal-footer"
+  >
+    <div
+      class="modal-item-last"
+    >
+      <div
+        class="btn-group-spaced"
+        role="group"
+      >
+        <button
+          class="button-root btn btn-secondary"
+          type="button"
+        >
+          Skip
+        </button>
+        <button
+          class="button-root ml-2 btn btn-primary"
+          disabled=""
+          type="button"
+        >
+          Send Invitations
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+`;

@@ -70,29 +70,27 @@ public class UpgradeJavaGetFileMethodCheck extends BaseFileCheck {
 	private String _formatMethodCall(
 		String content, String methodCall, String variableName) {
 
-		List<String> parameterList = JavaSourceUtil.getParameterList(
+		List<String> parameterNames = JavaSourceUtil.getParameterNames(
 			methodCall);
 
-		if (parameterList.size() != 3) {
+		if (parameterNames.size() != 3) {
 			return content;
 		}
 
 		return StringUtil.replace(
 			content, variableName + methodCall,
-			_getNewMethodCall(methodCall, parameterList, variableName));
+			_getNewMethodCall(methodCall, parameterNames, variableName));
 	}
 
 	private String _getNewMethodCall(
-		String methodCall, List<String> parameterList, String variableName) {
+		String methodCall, List<String> parameterNames, String variableName) {
 
-		StringBundler sb = new StringBundler(12);
+		StringBundler sb = new StringBundler(10);
 
-		sb.append(StringPool.TAB);
-		sb.append(StringPool.TAB);
-		sb.append("InputStream inputStream = ");
+		sb.append("\t\tInputStream inputStream = ");
 		sb.append(getVariableName(methodCall));
 		sb.append(".getFileAsStream(");
-		sb.append(StringUtil.merge(parameterList, ", "));
+		sb.append(StringUtil.merge(parameterNames, ", "));
 		sb.append(StringPool.CLOSE_PARENTHESIS);
 		sb.append(StringPool.SEMICOLON);
 		sb.append(StringPool.NEW_LINE);

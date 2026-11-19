@@ -21,7 +21,10 @@ import org.osgi.service.component.annotations.Reference;
  * @author Alessio Antonio Rendina
  */
 @Component(
-	property = "dto.class.name=com.liferay.commerce.account.model.AccountEntry",
+	property = {
+		"default=true",
+		"dto.class.name=com.liferay.commerce.account.model.AccountEntry"
+	},
 	service = DTOConverter.class
 )
 public class AccountDTOConverter
@@ -56,9 +59,9 @@ public class AccountDTOConverter
 
 		return new Account() {
 			{
-				id = accountEntry.getAccountEntryId();
-				logoId = accountEntry.getLogoId();
-				name = accountEntry.getName();
+				setId(accountEntry::getAccountEntryId);
+				setLogoId(accountEntry::getLogoId);
+				setName(accountEntry::getName);
 			}
 		};
 	}

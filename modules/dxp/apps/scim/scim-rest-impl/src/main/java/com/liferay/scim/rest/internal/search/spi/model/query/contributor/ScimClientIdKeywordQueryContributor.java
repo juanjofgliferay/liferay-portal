@@ -17,7 +17,10 @@ import org.osgi.service.component.annotations.Reference;
  * @author Stian Sigvartsen
  */
 @Component(
-	property = "indexer.class.name=com.liferay.portal.kernel.model.User",
+	property = {
+		"indexer.class.name=com.liferay.portal.kernel.model.User",
+		"indexer.class.name=com.liferay.portal.kernel.model.UserGroup"
+	},
 	service = KeywordQueryContributor.class
 )
 public class ScimClientIdKeywordQueryContributor
@@ -31,6 +34,12 @@ public class ScimClientIdKeywordQueryContributor
 		queryHelper.addSearchTerm(
 			booleanQuery, keywordQueryContributorHelper.getSearchContext(),
 			"expando__keyword__custom_fields__scimClientId", false);
+		queryHelper.addSearchTerm(
+			booleanQuery, keywordQueryContributorHelper.getSearchContext(),
+			"externalReferenceCode", false);
+		queryHelper.addSearchTerm(
+			booleanQuery, keywordQueryContributorHelper.getSearchContext(),
+			"name", false);
 	}
 
 	@Reference

@@ -33,6 +33,7 @@ import com.liferay.portal.kernel.settings.ModifiableSettings;
 import com.liferay.portal.kernel.settings.Settings;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
+import com.liferay.portal.kernel.test.rule.SynchronousDestinationTestRule;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
@@ -76,7 +77,8 @@ public class JournalArticleAssetEntryTest {
 	public static final AggregateTestRule aggregateTestRule =
 		new AggregateTestRule(
 			new LiferayIntegrationTestRule(),
-			PermissionCheckerMethodTestRule.INSTANCE);
+			PermissionCheckerMethodTestRule.INSTANCE,
+			SynchronousDestinationTestRule.INSTANCE);
 
 	@BeforeClass
 	public static void setUpClass() throws Exception {
@@ -123,6 +125,42 @@ public class JournalArticleAssetEntryTest {
 	}
 
 	@Test
+	public void testSearchLocalizedAssetCategoryTitle() throws Exception {
+		ServiceContext serviceContext =
+			ServiceContextTestUtil.getServiceContext(
+				_group.getGroupId(), TestPropsValues.getUserId());
+
+		AssetVocabulary assetVocabulary =
+			_assetVocabularyLocalService.addVocabulary(
+				TestPropsValues.getUserId(), _group.getGroupId(),
+				RandomTestUtil.randomString(), serviceContext);
+
+		String germanAssetCategoryTitle = RandomTestUtil.randomString();
+
+		AssetCategory assetCategory = _assetCategoryLocalService.addCategory(
+			null, TestPropsValues.getUserId(), _group.getGroupId(), 0,
+			HashMapBuilder.put(
+				LocaleUtil.GERMANY, germanAssetCategoryTitle
+			).put(
+				LocaleUtil.US, RandomTestUtil.randomString()
+			).build(),
+			null, assetVocabulary.getVocabularyId(), false, null,
+			serviceContext);
+
+		serviceContext.setAssetCategoryIds(
+			new long[] {assetCategory.getCategoryId()});
+
+		JournalArticle journalArticle = JournalTestUtil.addArticle(
+			_group.getGroupId(),
+			JournalFolderConstants.DEFAULT_PARENT_FOLDER_ID, serviceContext);
+
+		_assertArticleId(
+			_indexerFixture.searchOnlyOne(
+				germanAssetCategoryTitle, LocaleUtil.GERMANY),
+			journalArticle);
+	}
+
+	@Test
 	public void testUpdateAssetCategoryTitle() throws Exception {
 		ServiceContext serviceContext =
 			ServiceContextTestUtil.getServiceContext(
@@ -152,6 +190,7 @@ public class JournalArticleAssetEntryTest {
 		String updatedAssetCategoryTitle = RandomTestUtil.randomString();
 
 		_assetCategoryLocalService.updateCategory(
+			assetCategory.getExternalReferenceCode(),
 			TestPropsValues.getUserId(), assetCategory.getCategoryId(),
 			assetCategory.getParentCategoryId(),
 			HashMapBuilder.put(
@@ -170,7 +209,7 @@ public class JournalArticleAssetEntryTest {
 				_group.getGroupId(), TestPropsValues.getUserId());
 
 		AssetTag assetTag1 = _assetTagLocalService.addTag(
-			TestPropsValues.getUserId(), _group.getGroupId(),
+			null, TestPropsValues.getUserId(), _group.getGroupId(),
 			RandomTestUtil.randomString(), serviceContext);
 
 		serviceContext.setAssetTagNames(new String[] {assetTag1.getName()});
@@ -187,7 +226,7 @@ public class JournalArticleAssetEntryTest {
 			false, true, serviceContext);
 
 		AssetTag assetTag2 = _assetTagLocalService.addTag(
-			TestPropsValues.getUserId(), _group.getGroupId(),
+			null, TestPropsValues.getUserId(), _group.getGroupId(),
 			RandomTestUtil.randomString(), serviceContext);
 
 		serviceContext.setAssetTagNames(new String[] {assetTag2.getName()});
@@ -216,7 +255,7 @@ public class JournalArticleAssetEntryTest {
 				_group.getGroupId(), TestPropsValues.getUserId());
 
 		AssetTag assetTag = _assetTagLocalService.addTag(
-			TestPropsValues.getUserId(), _group.getGroupId(),
+			null, TestPropsValues.getUserId(), _group.getGroupId(),
 			RandomTestUtil.randomString(), serviceContext);
 
 		serviceContext.setAssetTagNames(new String[] {assetTag.getName()});
@@ -230,8 +269,8 @@ public class JournalArticleAssetEntryTest {
 		String updatedAssetTagName = RandomTestUtil.randomString();
 
 		_assetTagLocalService.updateTag(
-			TestPropsValues.getUserId(), assetTag.getTagId(),
-			updatedAssetTagName, serviceContext);
+			assetTag.getExternalReferenceCode(), TestPropsValues.getUserId(),
+			assetTag.getTagId(), updatedAssetTagName, serviceContext);
 
 		_assertSearch(updatedAssetTagName, journalArticle);
 	}

@@ -24,19 +24,18 @@ import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.segments.constants.SegmentsEntryConstants;
 import com.liferay.segments.manager.SegmentsExperienceManager;
-import com.liferay.segments.model.SegmentsEntry;
 import com.liferay.segments.model.SegmentsExperience;
 import com.liferay.segments.model.SegmentsExperiment;
 import com.liferay.segments.model.SegmentsExperimentRel;
-import com.liferay.segments.service.SegmentsEntryLocalService;
 import com.liferay.segments.service.SegmentsExperienceLocalService;
 import com.liferay.segments.service.SegmentsExperimentLocalService;
 import com.liferay.segments.service.SegmentsExperimentRelLocalService;
+import com.liferay.segments.util.SegmentsExperienceUtil;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.util.List;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -154,12 +153,13 @@ public class GetLayoutReportsDataStrutsAction implements StrutsAction {
 	}
 
 	private SegmentsExperience _getParentSegmentsExperience(
-		SegmentsExperience segmentsExperience) {
+		SegmentsExperience segmentsExperience, ThemeDisplay themeDisplay) {
 
 		List<SegmentsExperimentRel> segmentsExperimentRels =
 			_segmentsExperimentRelLocalService.
-				getSegmentsExperimentRelsBySegmentsExperienceId(
-					segmentsExperience.getSegmentsExperienceId());
+				getSegmentsExperimentRelsBySegmentsExperienceKey(
+					segmentsExperience.getSegmentsExperienceKey(),
+					themeDisplay.getPlid());
 
 		if (segmentsExperimentRels.isEmpty()) {
 			return null;
@@ -210,27 +210,21 @@ public class GetLayoutReportsDataStrutsAction implements StrutsAction {
 			ThemeDisplay themeDisplay)
 		throws Exception {
 
-		boolean segmentsExperienceIsActive = _isActive(
+		boolean active = SegmentsExperienceUtil.isActive(
 			segmentsExperience, segmentsExperiences);
 
 		return JSONUtil.put(
-			"active", segmentsExperienceIsActive
+			"active", active
+		).put(
+			"segmentsEntryERC", segmentsExperience.getSegmentsEntryERC()
 		).put(
 			"segmentsEntryId", segmentsExperience.getSegmentsEntryId()
 		).put(
 			"segmentsEntryName",
-			() -> {
-				SegmentsEntry segmentsEntry =
-					_segmentsEntryLocalService.fetchSegmentsEntry(
-						segmentsExperience.getSegmentsEntryId());
-
-				if (segmentsEntry != null) {
-					return segmentsEntry.getName(themeDisplay.getLocale());
-				}
-
-				return SegmentsEntryConstants.getDefaultSegmentsEntryName(
-					themeDisplay.getLocale());
-			}
+			segmentsExperience.getSegmentsEntryName(themeDisplay.getLocale())
+		).put(
+			"segmentsEntryScopeERC",
+			segmentsExperience.getSegmentsEntryScopeERC()
 		).put(
 			"segmentsExperienceId", segmentsExperience.getSegmentsExperienceId()
 		).put(
@@ -241,7 +235,7 @@ public class GetLayoutReportsDataStrutsAction implements StrutsAction {
 			() -> {
 				String statusLabelKey = "inactive";
 
-				if (segmentsExperienceIsActive) {
+				if (active) {
 					statusLabelKey = "active";
 				}
 
@@ -321,7 +315,7 @@ public class GetLayoutReportsDataStrutsAction implements StrutsAction {
 		SegmentsExperience segmentsExperience, ThemeDisplay themeDisplay) {
 
 		SegmentsExperience parentSegmentsExperience =
-			_getParentSegmentsExperience(segmentsExperience);
+			_getParentSegmentsExperience(segmentsExperience, themeDisplay);
 
 		if (parentSegmentsExperience != null) {
 			segmentsExperience = parentSegmentsExperience;
@@ -333,29 +327,6 @@ public class GetLayoutReportsDataStrutsAction implements StrutsAction {
 
 		return SegmentsEntryConstants.getDefaultSegmentsEntryName(
 			themeDisplay.getLocale());
-	}
-
-	private boolean _isActive(
-		SegmentsExperience segmentsExperience,
-		List<SegmentsExperience> segmentsExperiences) {
-
-		for (SegmentsExperience curSegmentsExperience : segmentsExperiences) {
-			if ((curSegmentsExperience.getSegmentsEntryId() ==
-					segmentsExperience.getSegmentsEntryId()) ||
-				(curSegmentsExperience.getSegmentsEntryId() ==
-					SegmentsEntryConstants.ID_DEFAULT)) {
-
-				if (curSegmentsExperience.getSegmentsExperienceId() ==
-						segmentsExperience.getSegmentsExperienceId()) {
-
-					return true;
-				}
-
-				return false;
-			}
-		}
-
-		return false;
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
@@ -373,9 +344,6 @@ public class GetLayoutReportsDataStrutsAction implements StrutsAction {
 
 	@Reference
 	private Portal _portal;
-
-	@Reference
-	private SegmentsEntryLocalService _segmentsEntryLocalService;
 
 	@Reference
 	private SegmentsExperienceLocalService _segmentsExperienceLocalService;

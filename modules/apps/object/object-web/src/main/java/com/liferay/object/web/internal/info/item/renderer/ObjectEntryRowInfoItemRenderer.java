@@ -10,6 +10,7 @@ import com.liferay.info.item.renderer.InfoItemRenderer;
 import com.liferay.list.type.model.ListTypeEntry;
 import com.liferay.object.constants.ObjectFieldConstants;
 import com.liferay.object.constants.ObjectWebKeys;
+import com.liferay.object.info.item.util.ObjectEntryInfoItemUtil;
 import com.liferay.object.model.ObjectDefinition;
 import com.liferay.object.model.ObjectEntry;
 import com.liferay.object.model.ObjectField;
@@ -30,6 +31,11 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.vulcan.dto.converter.DefaultDTOConverterContext;
 
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.Serializable;
 
 import java.text.DateFormat;
@@ -45,11 +51,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.TreeMap;
-
-import javax.servlet.RequestDispatcher;
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * @author Jorge Ferrer
@@ -68,19 +69,26 @@ public class ObjectEntryRowInfoItemRenderer
 
 		_assetDisplayPageFriendlyURLProvider =
 			assetDisplayPageFriendlyURLProvider;
-		_objectDefinition = objectDefinition;
 		_objectEntryManager = objectEntryManager;
 		_objectFieldLocalService = objectFieldLocalService;
 		_objectScopeProviderRegistry = objectScopeProviderRegistry;
 		_servletContext = servletContext;
+
+		_className = objectDefinition.getClassName();
+		_key = StringBundler.concat(
+			ObjectEntryRowInfoItemRenderer.class.getName(),
+			StringPool.UNDERLINE, objectDefinition.getCompanyId(),
+			StringPool.UNDERLINE, objectDefinition.getName());
+	}
+
+	@Override
+	public String getItemClassName() {
+		return _className;
 	}
 
 	@Override
 	public String getKey() {
-		return StringBundler.concat(
-			ObjectEntryRowInfoItemRenderer.class.getName(),
-			StringPool.UNDERLINE, _objectDefinition.getCompanyId(),
-			StringPool.UNDERLINE, _objectDefinition.getName());
+		return _key;
 	}
 
 	@Override
@@ -94,17 +102,21 @@ public class ObjectEntryRowInfoItemRenderer
 		HttpServletResponse httpServletResponse) {
 
 		try {
+			ObjectDefinition objectDefinition =
+				objectEntry.getObjectDefinition();
+
 			httpServletRequest.setAttribute(
 				AssetDisplayPageFriendlyURLProvider.class.getName(),
 				_assetDisplayPageFriendlyURLProvider);
 			httpServletRequest.setAttribute(
-				ObjectWebKeys.OBJECT_DEFINITION, _objectDefinition);
+				ObjectWebKeys.OBJECT_DEFINITION, objectDefinition);
 			httpServletRequest.setAttribute(
 				ObjectWebKeys.OBJECT_ENTRY, objectEntry);
 			httpServletRequest.setAttribute(
 				ObjectWebKeys.OBJECT_ENTRY_VALUES,
 				_getValues(
 					objectEntry.getExternalReferenceCode(),
+					objectEntry.getGroupId(), objectDefinition,
 					(ThemeDisplay)httpServletRequest.getAttribute(
 						WebKeys.THEME_DISPLAY)));
 
@@ -120,7 +132,8 @@ public class ObjectEntryRowInfoItemRenderer
 	}
 
 	private Map<String, Serializable> _getValues(
-			String externalReferenceCode, ThemeDisplay themeDisplay)
+			String externalReferenceCode, long groupId,
+			ObjectDefinition objectDefinition, ThemeDisplay themeDisplay)
 		throws Exception {
 
 		com.liferay.object.rest.dto.v1_0.ObjectEntry objectEntry;
@@ -131,10 +144,9 @@ public class ObjectEntryRowInfoItemRenderer
 				new DefaultDTOConverterContext(
 					false, null, null, null, null, themeDisplay.getLocale(),
 					null, themeDisplay.getUser()),
-				externalReferenceCode, _objectDefinition,
-				ObjectEntryUtil.getScopeKey(
-					themeDisplay.getScopeGroupId(), _objectDefinition,
-					_objectScopeProviderRegistry));
+				externalReferenceCode, objectDefinition,
+				ObjectEntryInfoItemUtil.getScopeKey(
+					groupId, objectDefinition, _objectScopeProviderRegistry));
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
@@ -146,14 +158,17 @@ public class ObjectEntryRowInfoItemRenderer
 
 		Map<String, Serializable> values = new TreeMap<>();
 
+		List<ObjectField> objectFields = ListUtil.filter(
+			_objectFieldLocalService.getObjectFields(
+				objectDefinition.getObjectDefinitionId()),
+			objectField -> !objectField.isMetadata());
+
 		for (ObjectField objectField :
-				_objectFieldLocalService.getActiveObjectFields(
-					_objectFieldLocalService.getObjectFields(
-						_objectDefinition.getObjectDefinitionId(), false))) {
+				_objectFieldLocalService.getActiveObjectFields(objectFields)) {
 
 			Object value = ObjectEntryUtil.getValue(
 				themeDisplay.getLocale(), objectField,
-				themeDisplay.getTimeZone(), objectEntry.getProperties());
+				objectEntry.getProperties());
 
 			if (value == null) {
 				values.put(objectField.getName(), StringPool.BLANK);
@@ -226,7 +241,8 @@ public class ObjectEntryRowInfoItemRenderer
 
 	private final AssetDisplayPageFriendlyURLProvider
 		_assetDisplayPageFriendlyURLProvider;
-	private final ObjectDefinition _objectDefinition;
+	private final String _className;
+	private final String _key;
 	private final ObjectEntryManager _objectEntryManager;
 	private final ObjectFieldLocalService _objectFieldLocalService;
 	private final ObjectScopeProviderRegistry _objectScopeProviderRegistry;

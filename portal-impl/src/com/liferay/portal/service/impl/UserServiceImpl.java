@@ -14,6 +14,7 @@ import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.RequiredUserException;
 import com.liferay.portal.kernel.exception.UserEmailAddressException;
 import com.liferay.portal.kernel.exception.UserFieldException;
+import com.liferay.portal.kernel.exception.UserPasswordException;
 import com.liferay.portal.kernel.jsonwebservice.JSONWebService;
 import com.liferay.portal.kernel.jsonwebservice.JSONWebServiceMode;
 import com.liferay.portal.kernel.log.Log;
@@ -25,6 +26,7 @@ import com.liferay.portal.kernel.model.Contact;
 import com.liferay.portal.kernel.model.EmailAddress;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.GroupConstants;
+import com.liferay.portal.kernel.model.ListTypeConstants;
 import com.liferay.portal.kernel.model.Organization;
 import com.liferay.portal.kernel.model.Phone;
 import com.liferay.portal.kernel.model.Role;
@@ -36,6 +38,7 @@ import com.liferay.portal.kernel.model.Website;
 import com.liferay.portal.kernel.model.role.RoleConstants;
 import com.liferay.portal.kernel.search.Indexer;
 import com.liferay.portal.kernel.search.IndexerRegistryUtil;
+import com.liferay.portal.kernel.security.auth.Authenticator;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.security.membershippolicy.OrganizationMembershipPolicyUtil;
@@ -46,7 +49,6 @@ import com.liferay.portal.kernel.service.OrganizationLocalService;
 import com.liferay.portal.kernel.service.RoleLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserGroupLocalService;
-import com.liferay.portal.kernel.service.UserGroupRoleLocalService;
 import com.liferay.portal.kernel.service.permission.GroupPermissionUtil;
 import com.liferay.portal.kernel.service.permission.OrganizationPermissionUtil;
 import com.liferay.portal.kernel.service.permission.PortalPermissionUtil;
@@ -55,18 +57,16 @@ import com.liferay.portal.kernel.service.permission.TeamPermissionUtil;
 import com.liferay.portal.kernel.service.permission.UserGroupRolePermissionUtil;
 import com.liferay.portal.kernel.service.permission.UserPermissionUtil;
 import com.liferay.portal.kernel.service.persistence.CompanyPersistence;
-import com.liferay.portal.kernel.service.persistence.GroupPersistence;
-import com.liferay.portal.kernel.service.persistence.OrganizationPersistence;
-import com.liferay.portal.kernel.service.persistence.RolePersistence;
-import com.liferay.portal.kernel.service.persistence.UserGroupPersistence;
 import com.liferay.portal.kernel.service.persistence.UserGroupRolePersistence;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.CalendarFactoryUtil;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.ParamUtil;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.SetUtil;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.comparator.UserIdComparator;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.kernel.workflow.WorkflowThreadLocal;
@@ -76,13 +76,13 @@ import com.liferay.portal.security.membershippolicy.UserGroupMembershipPolicyUti
 import com.liferay.portal.service.base.UserServiceBaseImpl;
 import com.liferay.portal.service.permission.PasswordPolicyPermissionUtil;
 import com.liferay.portal.service.permission.UserGroupPermissionUtil;
-import com.liferay.portal.util.PropsValues;
 import com.liferay.portlet.admin.util.OmniadminUtil;
 import com.liferay.portlet.usersadmin.util.UsersAdminUtil;
 
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -129,7 +129,7 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 				User user = getUser();
 
 				if (user.getUserId() == userIds[0]) {
-					Group group = _groupPersistence.findByPrimaryKey(groupId);
+					Group group = groupPersistence.findByPrimaryKey(groupId);
 
 					if (user.getCompanyId() == group.getCompanyId()) {
 						int type = group.getType();
@@ -157,34 +157,6 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 			userIds, new long[] {groupId}, null);
 	}
 
-	/**
-	 * Adds the users to the organization.
-	 *
-	 * @param organizationId the primary key of the organization
-	 * @param userIds the primary keys of the users
-	 */
-	@Override
-	public void addOrganizationUsers(long organizationId, long[] userIds)
-		throws PortalException {
-
-		if (userIds.length == 0) {
-			return;
-		}
-
-		OrganizationPermissionUtil.check(
-			getPermissionChecker(), organizationId, ActionKeys.ASSIGN_MEMBERS);
-
-		validateOrganizationUsers(userIds);
-
-		OrganizationMembershipPolicyUtil.checkMembership(
-			userIds, new long[] {organizationId}, null);
-
-		userLocalService.addOrganizationUsers(organizationId, userIds);
-
-		OrganizationMembershipPolicyUtil.propagateMembership(
-			userIds, new long[] {organizationId}, null);
-	}
-
 	@Override
 	public User addOrUpdateUser(
 			String externalReferenceCode, long creatorUserId, long companyId,
@@ -204,7 +176,7 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 		try {
 			WorkflowThreadLocal.setEnabled(false);
 
-			User user = userLocalService.fetchUserByExternalReferenceCode(
+			User user = userPersistence.fetchByERC_C(
 				externalReferenceCode, companyId);
 
 			if (user == null) {
@@ -245,7 +217,8 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 
 			if (addresses != null) {
 				UsersAdminUtil.updateAddresses(
-					Contact.class.getName(), user.getContactId(), addresses);
+					Contact.class.getName(), user.getContactId(), addresses,
+					ListTypeConstants.CONTACT_ADDRESS);
 			}
 
 			if (emailAddresses != null) {
@@ -269,6 +242,36 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 		finally {
 			WorkflowThreadLocal.setEnabled(workflowEnabled);
 		}
+	}
+
+	/**
+	 * Adds the users to the organization.
+	 *
+	 * @param organizationId the primary key of the organization
+	 * @param userIds the primary keys of the users
+	 */
+	@Override
+	public void addOrganizationUsers(long organizationId, long[] userIds)
+		throws PortalException {
+
+		if (userIds.length == 0) {
+			return;
+		}
+
+		validateUserIds(userIds);
+
+		OrganizationPermissionUtil.check(
+			getPermissionChecker(), organizationId, ActionKeys.ASSIGN_MEMBERS);
+
+		validateOrganizationUsers(organizationId, userIds);
+
+		OrganizationMembershipPolicyUtil.checkMembership(
+			userIds, new long[] {organizationId}, null);
+
+		userLocalService.addOrganizationUsers(organizationId, userIds);
+
+		OrganizationMembershipPolicyUtil.propagateMembership(
+			userIds, new long[] {organizationId}, null);
 	}
 
 	/**
@@ -864,7 +867,8 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 				serviceContext);
 
 			UsersAdminUtil.updateAddresses(
-				Contact.class.getName(), user.getContactId(), addresses);
+				Contact.class.getName(), user.getContactId(), addresses,
+				ListTypeConstants.CONTACT_ADDRESS);
 
 			UsersAdminUtil.updateEmailAddresses(
 				Contact.class.getName(), user.getContactId(), emailAddresses);
@@ -1085,7 +1089,8 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 				serviceContext);
 
 			UsersAdminUtil.updateAddresses(
-				Contact.class.getName(), user.getContactId(), addresses);
+				Contact.class.getName(), user.getContactId(), addresses,
+				ListTypeConstants.CONTACT_ADDRESS);
 
 			UsersAdminUtil.updateEmailAddresses(
 				Contact.class.getName(), user.getContactId(), emailAddresses);
@@ -1163,10 +1168,10 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 
 	@Override
 	public User fetchUserByExternalReferenceCode(
-			long companyId, String externalReferenceCode)
+			String externalReferenceCode, long companyId)
 		throws PortalException {
 
-		User user = userLocalService.fetchUserByExternalReferenceCode(
+		User user = userPersistence.fetchByERC_C(
 			externalReferenceCode, companyId);
 
 		if (user != null) {
@@ -1314,7 +1319,7 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 		}
 
 		return userPersistence.findByGtU_C(
-			gtUserId, companyId, 0, size, new UserIdComparator(true));
+			gtUserId, companyId, 0, size, UserIdComparator.getInstance(true));
 	}
 
 	@Override
@@ -1322,7 +1327,7 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 			long gtUserId, long organizationId, int size)
 		throws PortalException {
 
-		Organization organization = _organizationPersistence.findByPrimaryKey(
+		Organization organization = organizationPersistence.findByPrimaryKey(
 			organizationId);
 
 		PermissionChecker permissionChecker = getPermissionChecker();
@@ -1345,7 +1350,7 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 			long gtUserId, long userGroupId, int size)
 		throws PortalException {
 
-		UserGroup userGroup = _userGroupPersistence.findByPrimaryKey(
+		UserGroup userGroup = userGroupPersistence.findByPrimaryKey(
 			userGroupId);
 
 		PermissionChecker permissionChecker = getPermissionChecker();
@@ -1361,35 +1366,6 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 
 		return userFinder.findByUsersUserGroupsGtUserId(
 			userGroup.getCompanyId(), userGroupId, gtUserId, size);
-	}
-
-	@Override
-	public int getOrganizationsAndUserGroupsUsersCount(
-			long[] organizationIds, long[] userGroupIds)
-		throws PrincipalException {
-
-		PermissionChecker permissionChecker = getPermissionChecker();
-
-		if (!permissionChecker.hasPermission(
-				null, Organization.class.getName(),
-				CompanyThreadLocal.getCompanyId(), ActionKeys.VIEW_MEMBERS)) {
-
-			throw new PrincipalException.MustHavePermission(
-				permissionChecker, Organization.class.getName(), 0,
-				ActionKeys.VIEW_MEMBERS);
-		}
-
-		if (!permissionChecker.hasPermission(
-				null, UserGroup.class.getName(),
-				CompanyThreadLocal.getCompanyId(), ActionKeys.VIEW_MEMBERS)) {
-
-			throw new PrincipalException.MustHavePermission(
-				permissionChecker, UserGroup.class.getName(), 0,
-				ActionKeys.VIEW_MEMBERS);
-		}
-
-		return userLocalService.getOrganizationsAndUserGroupsUsersCount(
-			organizationIds, userGroupIds);
 	}
 
 	/**
@@ -1489,6 +1465,35 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 			organizationId, status);
 	}
 
+	@Override
+	public int getOrganizationsAndUserGroupsUsersCount(
+			long[] organizationIds, long[] userGroupIds)
+		throws PrincipalException {
+
+		PermissionChecker permissionChecker = getPermissionChecker();
+
+		if (!permissionChecker.hasPermission(
+				null, Organization.class.getName(),
+				CompanyThreadLocal.getCompanyId(), ActionKeys.VIEW_MEMBERS)) {
+
+			throw new PrincipalException.MustHavePermission(
+				permissionChecker, Organization.class.getName(), 0,
+				ActionKeys.VIEW_MEMBERS);
+		}
+
+		if (!permissionChecker.hasPermission(
+				null, UserGroup.class.getName(),
+				CompanyThreadLocal.getCompanyId(), ActionKeys.VIEW_MEMBERS)) {
+
+			throw new PrincipalException.MustHavePermission(
+				permissionChecker, UserGroup.class.getName(), 0,
+				ActionKeys.VIEW_MEMBERS);
+		}
+
+		return userLocalService.getOrganizationsAndUserGroupsUsersCount(
+			organizationIds, userGroupIds);
+	}
+
 	/**
 	 * Returns the primary keys of all the users belonging to the role.
 	 *
@@ -1498,7 +1503,7 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	@Override
 	public long[] getRoleUserIds(long roleId) throws PortalException {
 		RolePermissionUtil.check(
-			getPermissionChecker(), roleId, ActionKeys.VIEW);
+			getPermissionChecker(), roleId, ActionKeys.ASSIGN_MEMBERS);
 
 		return userLocalService.getRoleUserIds(roleId);
 	}
@@ -1523,19 +1528,12 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 		return user;
 	}
 
-	/**
-	 * Returns the user with the external reference code.
-	 *
-	 * @param  companyId the primary key of the user's company
-	 * @param  externalReferenceCode the user's external reference code
-	 * @return the user with the external reference code
-	 */
 	@Override
 	public User getUserByExternalReferenceCode(
-			long companyId, String externalReferenceCode)
+			String externalReferenceCode, long companyId)
 		throws PortalException {
 
-		User user = userLocalService.getUserByExternalReferenceCode(
+		User user = userPersistence.findByERC_C(
 			externalReferenceCode, companyId);
 
 		UserPermissionUtil.check(
@@ -1586,7 +1584,7 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 		UserGroupPermissionUtil.check(
 			getPermissionChecker(), userGroupId, ActionKeys.VIEW_MEMBERS);
 
-		return _userGroupPersistence.getUsers(userGroupId);
+		return userGroupPersistence.getUsers(userGroupId);
 	}
 
 	@Override
@@ -1702,7 +1700,7 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 		if (!UserPermissionUtil.contains(
 				getPermissionChecker(), userId, ActionKeys.VIEW)) {
 
-			Role role = _roleLocalService.getRole(companyId, name);
+			Role role = rolePersistence.findByC_N(companyId, name);
 
 			RolePermissionUtil.check(
 				getPermissionChecker(), role.getRoleId(),
@@ -1738,6 +1736,12 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 			long companyId, String emailAddress)
 		throws PortalException {
 
+		User user = userLocalService.getUserByEmailAddress(
+			companyId, emailAddress);
+
+		UserPermissionUtil.check(
+			getPermissionChecker(), user.getUserId(), ActionKeys.UPDATE);
+
 		return userLocalService.sendPasswordByEmailAddress(
 			companyId, emailAddress);
 	}
@@ -1766,6 +1770,11 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	public boolean sendPasswordByScreenName(long companyId, String screenName)
 		throws PortalException {
 
+		User user = userLocalService.getUserByScreenName(companyId, screenName);
+
+		UserPermissionUtil.check(
+			getPermissionChecker(), user.getUserId(), ActionKeys.UPDATE);
+
 		return userLocalService.sendPasswordByScreenName(companyId, screenName);
 	}
 
@@ -1790,6 +1799,9 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	@JSONWebService(mode = JSONWebServiceMode.IGNORE)
 	@Override
 	public boolean sendPasswordByUserId(long userId) throws PortalException {
+		UserPermissionUtil.check(
+			getPermissionChecker(), userId, ActionKeys.UPDATE);
+
 		return userLocalService.sendPasswordByUserId(userId);
 	}
 
@@ -1808,7 +1820,7 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 			getPermissionChecker(), roleId, ActionKeys.ASSIGN_MEMBERS);
 
 		Set<Long> unsetUserIds = SetUtil.fromArray(
-			_rolePersistence.getUserPrimaryKeys(roleId));
+			rolePersistence.getUserPrimaryKeys(roleId));
 
 		unsetUserIds.removeAll(SetUtil.fromArray(userIds));
 
@@ -1850,7 +1862,7 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 			getPermissionChecker(), userGroupId, ActionKeys.ASSIGN_MEMBERS);
 
 		Set<Long> unsetUserIds = SetUtil.fromArray(
-			_userGroupPersistence.getUserPrimaryKeys(userGroupId));
+			userGroupPersistence.getUserPrimaryKeys(userGroupId));
 
 		unsetUserIds.removeAll(SetUtil.fromArray(userIds));
 
@@ -1932,7 +1944,7 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 				User user = getUser();
 
 				if (user.getUserId() == userIds[0]) {
-					Group group = _groupPersistence.findByPrimaryKey(groupId);
+					Group group = groupPersistence.findByPrimaryKey(groupId);
 
 					if (user.getCompanyId() == group.getCompanyId()) {
 						int type = group.getType();
@@ -2126,10 +2138,36 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 
 		User user = userPersistence.findByPrimaryKey(userId);
 
+		_validateCurrentPassword(
+			emailAddress2, null, null, password, user.getScreenName(), user);
 		validateEmailAddress(user, emailAddress2);
 
 		return userLocalService.updateEmailAddress(
 			userId, password, emailAddress1, emailAddress2, serviceContext);
+	}
+
+	@Override
+	public User updateExternalReferenceCode(
+			long userId, String externalReferenceCode)
+		throws PortalException {
+
+		UserPermissionUtil.check(
+			getPermissionChecker(), userId, ActionKeys.UPDATE);
+
+		return userLocalService.updateExternalReferenceCode(
+			userId, externalReferenceCode);
+	}
+
+	@Override
+	public User updateExternalReferenceCode(
+			User user, String externalReferenceCode)
+		throws PortalException {
+
+		UserPermissionUtil.check(
+			getPermissionChecker(), user.getUserId(), ActionKeys.UPDATE);
+
+		return userLocalService.updateExternalReferenceCode(
+			user, externalReferenceCode);
 	}
 
 	/**
@@ -2283,6 +2321,16 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 			updateUserInformation, sendEmail, serviceContext);
 	}
 
+	@Override
+	public User updateLanguageId(long userId, String languageId)
+		throws PortalException {
+
+		UserPermissionUtil.check(
+			getPermissionChecker(), userId, ActionKeys.UPDATE);
+
+		return userLocalService.updateLanguageId(userId, languageId);
+	}
+
 	/**
 	 * Updates whether the user is locked out from logging in.
 	 *
@@ -2298,25 +2346,6 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 			getPermissionChecker(), userId, ActionKeys.DELETE);
 
 		return userLocalService.updateLockoutById(userId, lockout);
-	}
-
-	/**
-	 * Updates the user's OpenID.
-	 *
-	 * @param      userId the primary key of the user
-	 * @param      openId the new OpenID
-	 * @return     the user
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	@Override
-	public User updateOpenId(long userId, String openId)
-		throws PortalException {
-
-		UserPermissionUtil.check(
-			getPermissionChecker(), userId, ActionKeys.UPDATE);
-
-		return userLocalService.updateOpenId(userId, openId);
 	}
 
 	/**
@@ -2434,6 +2463,17 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 			long userId, int status, ServiceContext serviceContext)
 		throws PortalException {
 
+		return updateStatus(
+			userPersistence.findByPrimaryKey(userId), status, serviceContext);
+	}
+
+	@Override
+	public User updateStatus(
+			User user, int status, ServiceContext serviceContext)
+		throws PortalException {
+
+		long userId = user.getUserId();
+
 		if ((getUserId() == userId) &&
 			(status != WorkflowConstants.STATUS_APPROVED)) {
 
@@ -2469,7 +2509,7 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 				getPermissionChecker(), userId, ActionKeys.DELETE);
 		}
 
-		return userLocalService.updateStatus(userId, status, serviceContext);
+		return userLocalService.updateStatus(user, status, serviceContext);
 	}
 
 	/**
@@ -2552,7 +2592,8 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 
 		if (addresses != null) {
 			UsersAdminUtil.updateAddresses(
-				Contact.class.getName(), user.getContactId(), addresses);
+				Contact.class.getName(), user.getContactId(), addresses,
+				ListTypeConstants.CONTACT_ADDRESS);
 		}
 
 		if (emailAddresses != null) {
@@ -2588,6 +2629,9 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 			}
 		}
 
+		_validateCurrentPassword(
+			emailAddress, newPassword1, newPassword2, oldPassword, screenName,
+			user);
 		validateUpdatePermission(
 			user, screenName, emailAddress, firstName, middleName, lastName,
 			prefixListTypeId, suffixListTypeId, birthdayMonth, birthdayDay,
@@ -2920,7 +2964,8 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 
 		if (addresses != null) {
 			UsersAdminUtil.updateAddresses(
-				Contact.class.getName(), user.getContactId(), addresses);
+				Contact.class.getName(), user.getContactId(), addresses,
+				ListTypeConstants.CONTACT_ADDRESS);
 		}
 
 		if (emailAddresses != null) {
@@ -2956,6 +3001,9 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 			}
 		}
 
+		_validateCurrentPassword(
+			emailAddress, newPassword1, newPassword2, oldPassword, screenName,
+			user);
 		validateUpdatePermission(
 			user, screenName, emailAddress, firstName, middleName, lastName,
 			prefixListTypeId, suffixListTypeId, birthdayMonth, birthdayDay,
@@ -3467,7 +3515,7 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 				continue;
 			}
 
-			Group group = _groupPersistence.findByPrimaryKey(groupId);
+			Group group = groupPersistence.findByPrimaryKey(groupId);
 
 			GroupPermissionUtil.check(
 				permissionChecker, group, ActionKeys.ASSIGN_MEMBERS);
@@ -3507,6 +3555,14 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 
 		PermissionChecker permissionChecker = getPermissionChecker();
 
+		boolean strictAssignment = false;
+
+		if (PropsValues.ORGANIZATIONS_ASSIGNMENT_STRICT ||
+			!permissionChecker.isCompanyAdmin()) {
+
+			strictAssignment = true;
+		}
+
 		if (userId != CompanyConstants.SYSTEM) {
 
 			// Add back any mandatory organizations or organizations that the
@@ -3526,6 +3582,10 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 					(!OrganizationPermissionUtil.contains(
 						permissionChecker, organization,
 						ActionKeys.ASSIGN_MEMBERS) ||
+					 (strictAssignment &&
+					  !OrganizationPermissionUtil.contains(
+						  permissionChecker, organization,
+						  ActionKeys.MANAGE_USERS)) ||
 					 OrganizationMembershipPolicyUtil.isMembershipProtected(
 						 permissionChecker, userId,
 						 organization.getOrganizationId()) ||
@@ -3551,10 +3611,17 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 			}
 
 			Organization organization =
-				_organizationPersistence.findByPrimaryKey(organizationId);
+				organizationPersistence.findByPrimaryKey(organizationId);
 
 			OrganizationPermissionUtil.check(
 				permissionChecker, organization, ActionKeys.ASSIGN_MEMBERS);
+
+			if (!strictAssignment) {
+				continue;
+			}
+
+			OrganizationPermissionUtil.check(
+				permissionChecker, organization, ActionKeys.MANAGE_USERS);
 		}
 
 		return organizationIds;
@@ -3655,12 +3722,14 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 		// group and that the user group membership is allowed
 
 		for (long userGroupId : userGroupIds) {
-			if ((oldUserGroupIds == null) ||
-				!ArrayUtil.contains(oldUserGroupIds, userGroupId)) {
+			if ((oldUserGroupIds != null) &&
+				ArrayUtil.contains(oldUserGroupIds, userGroupId)) {
 
-				UserGroupPermissionUtil.check(
-					permissionChecker, userGroupId, ActionKeys.ASSIGN_MEMBERS);
+				continue;
 			}
+
+			UserGroupPermissionUtil.check(
+				permissionChecker, userGroupId, ActionKeys.ASSIGN_MEMBERS);
 		}
 
 		return userGroupIds;
@@ -3679,8 +3748,7 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 			// Add back any user group roles that the administrator does not
 			// have the rights to remove or that have a mandatory membership
 
-			oldUserGroupRoles = _userGroupRoleLocalService.getUserGroupRoles(
-				userId);
+			oldUserGroupRoles = _userGroupRolePersistence.findByUserId(userId);
 
 			for (UserGroupRole oldUserGroupRole : oldUserGroupRoles) {
 				Role role = oldUserGroupRole.getRole();
@@ -3692,7 +3760,7 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 
 				if (role.getType() == RoleConstants.TYPE_ORGANIZATION) {
 					Organization organization =
-						_organizationPersistence.findByPrimaryKey(
+						organizationPersistence.findByPrimaryKey(
 							group.getOrganizationId());
 
 					if (!UserGroupRolePermissionUtil.contains(
@@ -3728,13 +3796,15 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 		// group role and that the user group role membership is allowed
 
 		for (UserGroupRole userGroupRole : userGroupRoles) {
-			if ((oldUserGroupRoles == null) ||
-				!oldUserGroupRoles.contains(userGroupRole)) {
+			if ((oldUserGroupRoles != null) &&
+				oldUserGroupRoles.contains(userGroupRole)) {
 
-				UserGroupRolePermissionUtil.check(
-					permissionChecker, userGroupRole.getGroupId(),
-					userGroupRole.getRoleId());
+				continue;
 			}
+
+			UserGroupRolePermissionUtil.check(
+				permissionChecker, userGroupRole.getGroupId(),
+				userGroupRole.getRoleId());
 		}
 
 		return userGroupRoles;
@@ -3792,13 +3862,15 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 		}
 	}
 
-	protected void validateOrganizationUsers(long[] userIds)
+	protected void validateOrganizationUsers(
+			long organizationId, long[] userIds)
 		throws PortalException {
 
 		PermissionChecker permissionChecker = getPermissionChecker();
 
 		if (!PropsValues.ORGANIZATIONS_ASSIGNMENT_STRICT ||
-			permissionChecker.isCompanyAdmin()) {
+			OrganizationPermissionUtil.contains(
+				permissionChecker, organizationId, ActionKeys.MANAGE_USERS)) {
 
 			return;
 		}
@@ -3891,15 +3963,63 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 		UserFieldException userFieldException = new UserFieldException();
 
 		for (String field : fields) {
-			if (!UsersAdminUtil.hasUpdateFieldPermission(
+			if (UsersAdminUtil.hasUpdateFieldPermission(
 					getPermissionChecker(), getUser(), user, field)) {
 
-				userFieldException.addField(field);
+				continue;
 			}
+
+			userFieldException.addField(field);
 		}
 
 		if (userFieldException.hasFields()) {
 			throw userFieldException;
+		}
+	}
+
+	protected void validateUserIds(long[] userIds) throws PortalException {
+		for (long userId : userIds) {
+			getUserById(userId);
+		}
+	}
+
+	private void _validateCurrentPassword(
+			String emailAddress, String newPassword1, String newPassword2,
+			String password, String screenName, User user)
+		throws PortalException {
+
+		if (user.getUserId() != getUserId()) {
+			return;
+		}
+
+		if (Validator.isNull(newPassword1) && Validator.isNull(newPassword2)) {
+			Company company = _companyPersistence.findByPrimaryKey(
+				user.getCompanyId());
+
+			if (!company.isUpdatePasswordRequired()) {
+				return;
+			}
+
+			String oldEmailAddress = user.getEmailAddress();
+
+			if (StringUtil.equalsIgnoreCase(screenName, user.getScreenName()) &&
+				(!user.isEmailAddressVerificationComplete() ||
+				 StringUtil.endsWith(
+					 oldEmailAddress,
+					 UserConstants.USERS_EMAIL_ADDRESS_AUTO_SUFFIX) ||
+				 StringUtil.equalsIgnoreCase(emailAddress, oldEmailAddress))) {
+
+				return;
+			}
+		}
+
+		int authResult = userLocalService.authenticateByUserId(
+			user.getCompanyId(), user.getUserId(), password, new HashMap<>(),
+			new HashMap<>(), new HashMap<>());
+
+		if (authResult != Authenticator.SUCCESS) {
+			throw new UserPasswordException.MustMatchCurrentPassword(
+				user.getUserId());
 		}
 	}
 
@@ -3915,29 +4035,14 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	@BeanReference(type = GroupLocalService.class)
 	private GroupLocalService _groupLocalService;
 
-	@BeanReference(type = GroupPersistence.class)
-	private GroupPersistence _groupPersistence;
-
 	@BeanReference(type = OrganizationLocalService.class)
 	private OrganizationLocalService _organizationLocalService;
-
-	@BeanReference(type = OrganizationPersistence.class)
-	private OrganizationPersistence _organizationPersistence;
 
 	@BeanReference(type = RoleLocalService.class)
 	private RoleLocalService _roleLocalService;
 
-	@BeanReference(type = RolePersistence.class)
-	private RolePersistence _rolePersistence;
-
 	@BeanReference(type = UserGroupLocalService.class)
 	private UserGroupLocalService _userGroupLocalService;
-
-	@BeanReference(type = UserGroupPersistence.class)
-	private UserGroupPersistence _userGroupPersistence;
-
-	@BeanReference(type = UserGroupRoleLocalService.class)
-	private UserGroupRoleLocalService _userGroupRoleLocalService;
 
 	@BeanReference(type = UserGroupRolePersistence.class)
 	private UserGroupRolePersistence _userGroupRolePersistence;

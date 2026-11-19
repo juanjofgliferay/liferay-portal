@@ -146,12 +146,6 @@ public class CommerceAddressRestrictionLocalServiceWrapper
 	}
 
 	@Override
-	public void deleteCommerceAddressRestrictions(long countryId) {
-		_commerceAddressRestrictionLocalService.
-			deleteCommerceAddressRestrictions(countryId);
-	}
-
-	@Override
 	public void deleteCommerceAddressRestrictions(
 		String className, long classPK) {
 
@@ -282,15 +276,6 @@ public class CommerceAddressRestrictionLocalServiceWrapper
 
 		return _commerceAddressRestrictionLocalService.
 			fetchCommerceAddressRestriction(commerceAddressRestrictionId);
-	}
-
-	@Override
-	public com.liferay.commerce.model.CommerceAddressRestriction
-		fetchCommerceAddressRestriction(
-			String className, long classPK, long countryId) {
-
-		return _commerceAddressRestrictionLocalService.
-			fetchCommerceAddressRestriction(className, classPK, countryId);
 	}
 
 	@Override
@@ -459,3 +444,4 @@ public class CommerceAddressRestrictionLocalServiceWrapper
 		_commerceAddressRestrictionLocalService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1090489536

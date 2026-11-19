@@ -13,9 +13,9 @@ import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.taglib.util.IncludeTag;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.jsp.JspException;
-import javax.servlet.jsp.PageContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.jsp.JspException;
+import jakarta.servlet.jsp.PageContext;
 
 /**
  * @author Stefano Motta
@@ -30,6 +30,12 @@ public class UnitOfMeasureTierPriceTag extends IncludeTag {
 			CommerceContext commerceContext =
 				(CommerceContext)httpServletRequest.getAttribute(
 					CommerceWebKeys.COMMERCE_CONTEXT);
+
+			if ((commerceContext == null) ||
+				(commerceContext.getCommerceChannelId() == 0)) {
+
+				return SKIP_BODY;
+			}
 
 			_commerceAccountId = CommerceUtil.getCommerceAccountId(
 				commerceContext);
@@ -80,10 +86,10 @@ public class UnitOfMeasureTierPriceTag extends IncludeTag {
 	protected void cleanUp() {
 		super.cleanUp();
 
+		_cProductId = 0;
 		_commerceAccountId = 0;
 		_commerceChannelId = 0;
 		_cpInstanceId = 0;
-		_cProductId = 0;
 		_namespace = null;
 	}
 
@@ -114,10 +120,10 @@ public class UnitOfMeasureTierPriceTag extends IncludeTag {
 	private static final Log _log = LogFactoryUtil.getLog(
 		UnitOfMeasureTierPriceTag.class);
 
+	private long _cProductId;
 	private long _commerceAccountId;
 	private long _commerceChannelId;
 	private long _cpInstanceId;
-	private long _cProductId;
 	private String _namespace;
 
 }

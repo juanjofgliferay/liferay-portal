@@ -15,7 +15,9 @@ import com.liferay.portal.kernel.template.TemplateResource;
 import com.liferay.portal.kernel.template.TemplateResourceCache;
 import com.liferay.portal.kernel.template.TemplateResourceLoader;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
+import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
+import com.liferay.portal.kernel.util.SetUtil;
 import com.liferay.portal.template.engine.TemplateContextHelper;
 import com.liferay.portal.template.freemarker.configuration.FreeMarkerEngineConfiguration;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
@@ -29,6 +31,8 @@ import freemarker.ext.beans.BeansWrapper;
 import freemarker.template.Configuration;
 import freemarker.template.SimpleNumber;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
@@ -41,8 +45,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -61,7 +63,7 @@ public class FreeMarkerTemplateTest {
 		LiferayUnitTestRule.INSTANCE;
 
 	@BeforeClass
-	public static void setUpClass() throws Exception {
+	public static void setUpClass() {
 		_freeMarkerManager = new FreeMarkerManager();
 
 		FreeMarkerEngineConfiguration freeMarkerEngineConfiguration =
@@ -73,8 +75,7 @@ public class FreeMarkerTemplateTest {
 			freeMarkerEngineConfiguration);
 
 		_templateResourceCache =
-			_freeMarkerManager.new FreeMarkerTemplateResourceCache(
-				freeMarkerEngineConfiguration) {
+			_freeMarkerManager.new FreeMarkerTemplateResourceCache() {
 
 				@Override
 				public boolean isEnabled() {
@@ -194,25 +195,8 @@ public class FreeMarkerTemplateTest {
 
 	@Test
 	public void testPrepare() throws Exception {
-		Template template = new FreeMarkerTemplate(
-			new MockTemplateResource(_TEMPLATE_FILE_NAME), null, _configuration,
-			_templateContextHelper, _templateResourceCache, false,
-			(BeansWrapper)_configuration.getObjectWrapper(),
-			_freeMarkerManager);
-
-		template.put(_TEST_KEY, _TEST_VALUE);
-
-		template.prepare(null);
-
-		Object result = template.get(_TEST_VALUE);
-
-		Assert.assertNotNull(result);
-
-		Assert.assertTrue(result instanceof String);
-
-		String stringResult = (String)result;
-
-		Assert.assertEquals(_TEST_VALUE, stringResult);
+		_testPrepare(false);
+		_testPrepare(true);
 	}
 
 	@Test
@@ -429,6 +413,31 @@ public class FreeMarkerTemplateTest {
 		Assert.assertEquals(expectedResult, unsyncStringWriter.toString());
 	}
 
+	private void _testPrepare(boolean restricted) throws Exception {
+		Template template = new FreeMarkerTemplate(
+			new MockTemplateResource(_TEMPLATE_FILE_NAME), null, _configuration,
+			_templateContextHelper, _templateResourceCache, restricted,
+			(BeansWrapper)_configuration.getObjectWrapper(),
+			_freeMarkerManager);
+
+		template.put(_TEST_KEY, _TEST_VALUE);
+
+		template.prepare(null);
+
+		Object result = template.get(_TEST_VALUE);
+
+		Assert.assertTrue(result instanceof String);
+		Assert.assertEquals(_TEST_VALUE, (String)result);
+
+		for (String restrictedVariable :
+				_freeMarkerManager.getRestrictedVariables()) {
+
+			Assert.assertEquals(
+				restrictedVariable, !restricted,
+				template.containsKey(restrictedVariable));
+		}
+	}
+
 	private static final String _TEMPLATE_FILE_NAME = "test.ftl";
 
 	private static final String _TEST_KEY = "TEST_KEY";
@@ -459,13 +468,21 @@ public class FreeMarkerTemplateTest {
 
 		@Override
 		public Set<String> getRestrictedVariables() {
-			return Collections.emptySet();
+			return SetUtil.fromArray(
+				_freeMarkerManager.getRestrictedVariables());
 		}
 
 		@Override
 		public void prepare(
 			Map<String, Object> contextObjects,
 			HttpServletRequest httpServletRequest) {
+
+			for (String restrictedVariable :
+					_freeMarkerManager.getRestrictedVariables()) {
+
+				contextObjects.put(
+					restrictedVariable, RandomTestUtil.randomString());
+			}
 
 			String testValue = (String)contextObjects.get(_TEST_KEY);
 

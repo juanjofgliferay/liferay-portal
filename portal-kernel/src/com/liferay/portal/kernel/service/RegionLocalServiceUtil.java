@@ -36,14 +36,6 @@ public class RegionLocalServiceUtil {
 	 *
 	 * Never modify this class directly. Add custom service methods to <code>com.liferay.portal.service.impl.RegionLocalServiceImpl</code> and rerun ServiceBuilder to regenerate this class.
 	 */
-	public static Region addRegion(
-			long countryId, boolean active, String name, double position,
-			String regionCode, ServiceContext serviceContext)
-		throws PortalException {
-
-		return getService().addRegion(
-			countryId, active, name, position, regionCode, serviceContext);
-	}
 
 	/**
 	 * Adds the region to the database. Also notifies the appropriate model listeners.
@@ -57,6 +49,25 @@ public class RegionLocalServiceUtil {
 	 */
 	public static Region addRegion(Region region) {
 		return getService().addRegion(region);
+	}
+
+	public static Region addRegion(
+			String externalReferenceCode, long countryId, boolean active,
+			String name, double position, String regionCode,
+			ServiceContext serviceContext)
+		throws PortalException {
+
+		return getService().addRegion(
+			externalReferenceCode, countryId, active, name, position,
+			regionCode, serviceContext);
+	}
+
+	public static com.liferay.portal.kernel.model.RegionLocalization
+			addRegionLocalization(
+				Region region, String languageId, String title)
+		throws PortalException {
+
+		return getService().addRegionLocalization(region, languageId, title);
 	}
 
 	/**
@@ -215,6 +226,13 @@ public class RegionLocalServiceUtil {
 		return getService().fetchRegion(countryId, regionCode);
 	}
 
+	public static Region fetchRegionByExternalReferenceCode(
+		String externalReferenceCode, long companyId) {
+
+		return getService().fetchRegionByExternalReferenceCode(
+			externalReferenceCode, companyId);
+	}
+
 	/**
 	 * Returns the region with the matching UUID and company.
 	 *
@@ -290,6 +308,14 @@ public class RegionLocalServiceUtil {
 		return getService().getRegion(countryId, regionCode);
 	}
 
+	public static Region getRegionByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws PortalException {
+
+		return getService().getRegionByExternalReferenceCode(
+			externalReferenceCode, companyId);
+	}
+
 	/**
 	 * Returns the region with the matching UUID and company.
 	 *
@@ -333,18 +359,8 @@ public class RegionLocalServiceUtil {
 		return getService().getRegions(start, end);
 	}
 
-	public static List<Region> getRegions(long countryId, boolean active)
-		throws PortalException {
-
+	public static List<Region> getRegions(long countryId, boolean active) {
 		return getService().getRegions(countryId, active);
-	}
-
-	public static List<Region> getRegions(
-		long countryId, boolean active, int start, int end,
-		OrderByComparator<Region> orderByComparator) {
-
-		return getService().getRegions(
-			countryId, active, start, end, orderByComparator);
 	}
 
 	public static List<Region> getRegions(
@@ -371,14 +387,6 @@ public class RegionLocalServiceUtil {
 		return getService().getRegionsCount();
 	}
 
-	public static int getRegionsCount(long countryId) {
-		return getService().getRegionsCount(countryId);
-	}
-
-	public static int getRegionsCount(long countryId, boolean active) {
-		return getService().getRegionsCount(countryId, active);
-	}
-
 	public static com.liferay.portal.kernel.search.BaseModelSearchResult<Region>
 			searchRegions(
 				long companyId, Boolean active, String keywords,
@@ -396,15 +404,6 @@ public class RegionLocalServiceUtil {
 		return getService().updateActive(regionId, active);
 	}
 
-	public static Region updateRegion(
-			long regionId, boolean active, String name, double position,
-			String regionCode)
-		throws PortalException {
-
-		return getService().updateRegion(
-			regionId, active, name, position, regionCode);
-	}
-
 	/**
 	 * Updates the region in the database or adds it if it does not yet exist. Also notifies the appropriate model listeners.
 	 *
@@ -417,6 +416,16 @@ public class RegionLocalServiceUtil {
 	 */
 	public static Region updateRegion(Region region) {
 		return getService().updateRegion(region);
+	}
+
+	public static Region updateRegion(
+			String externalReferenceCode, long regionId, boolean active,
+			String name, double position, String regionCode)
+		throws PortalException {
+
+		return getService().updateRegion(
+			externalReferenceCode, regionId, active, name, position,
+			regionCode);
 	}
 
 	public static com.liferay.portal.kernel.model.RegionLocalization
@@ -446,3 +455,4 @@ public class RegionLocalServiceUtil {
 	private static volatile RegionLocalService _service;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-2085718220

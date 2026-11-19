@@ -5,11 +5,11 @@
 
 package com.liferay.portal.tools.wsdd.builder.util;
 
+import com.liferay.petra.io.unsync.UnsyncByteArrayOutputStream;
+import com.liferay.petra.io.unsync.UnsyncStringReader;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.io.unsync.UnsyncByteArrayOutputStream;
-import com.liferay.portal.kernel.io.unsync.UnsyncStringReader;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.SystemProperties;
 import com.liferay.portal.kernel.util.Validator;
@@ -98,9 +98,11 @@ public class Java2WsddTask {
 		for (int i = packagePaths.length - 1; i >= 0; i--) {
 			namespace += packagePaths[i];
 
-			if (i > 0) {
-				namespace += ".";
+			if (i <= 0) {
+				continue;
 			}
+
+			namespace += ".";
 		}
 
 		String location = "http://localhost/services/" + serviceName;

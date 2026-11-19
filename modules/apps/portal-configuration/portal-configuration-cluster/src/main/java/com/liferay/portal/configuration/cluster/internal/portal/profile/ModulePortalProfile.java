@@ -6,11 +6,9 @@
 package com.liferay.portal.configuration.cluster.internal.portal.profile;
 
 import com.liferay.portal.configuration.cluster.internal.ConfigurationSynchronousConfigurationListener;
-import com.liferay.portal.configuration.cluster.internal.messaging.ConfigurationClusterConfigurator;
-import com.liferay.portal.configuration.cluster.internal.messaging.ConfigurationMessageListener;
 import com.liferay.portal.kernel.util.GetterUtil;
-import com.liferay.portal.kernel.util.Props;
 import com.liferay.portal.kernel.util.PropsKeys;
+import com.liferay.portal.kernel.util.PropsUtil;
 import com.liferay.portal.profile.BaseDSModulePortalProfile;
 import com.liferay.portal.profile.PortalProfile;
 
@@ -21,7 +19,6 @@ import java.util.List;
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Tina Tian
@@ -33,7 +30,9 @@ public class ModulePortalProfile extends BaseDSModulePortalProfile {
 	protected void activate(ComponentContext componentContext) {
 		List<String> supportedPortalProfileNames = null;
 
-		if (GetterUtil.getBoolean(_props.get(PropsKeys.CLUSTER_LINK_ENABLED))) {
+		if (GetterUtil.getBoolean(
+				PropsUtil.get(PropsKeys.CLUSTER_LINK_ENABLED))) {
+
 			supportedPortalProfileNames = new ArrayList<>();
 
 			supportedPortalProfileNames.add(
@@ -47,12 +46,7 @@ public class ModulePortalProfile extends BaseDSModulePortalProfile {
 
 		init(
 			componentContext, supportedPortalProfileNames,
-			ConfigurationClusterConfigurator.class.getName(),
-			ConfigurationMessageListener.class.getName(),
 			ConfigurationSynchronousConfigurationListener.class.getName());
 	}
-
-	@Reference
-	private Props _props;
 
 }

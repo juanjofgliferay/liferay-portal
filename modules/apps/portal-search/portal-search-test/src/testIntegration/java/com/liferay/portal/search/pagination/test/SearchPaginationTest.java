@@ -26,7 +26,7 @@ import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
-import com.liferay.portal.search.test.util.SearchTestRule;
+import com.liferay.portal.search.test.rule.SearchTestRule;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 
 import java.util.ArrayList;
@@ -137,45 +137,6 @@ public class SearchPaginationTest {
 	}
 
 	@Test
-	public void testSearchWithoutResults() throws Exception {
-		Hits hits = getSearchWithoutResults(
-			QueryUtil.ALL_POS, QueryUtil.ALL_POS);
-
-		Assert.assertEquals(hits.toString(), 0, hits.getLength());
-	}
-
-	@Test
-	public void testSearchWithoutResultsWhenTotalEqualsStart()
-		throws Exception {
-
-		Hits hits = getSearchWithoutResults(_USERS_COUNT, 2 * _USERS_COUNT);
-
-		Assert.assertEquals(hits.toString(), 0, hits.getLength());
-	}
-
-	@Test
-	public void testSearchWithoutResultsWhenTotalLessThanStart()
-		throws Exception {
-
-		Hits hits = getSearchWithoutResults(1000, 1000 + _USERS_COUNT);
-
-		Assert.assertEquals(hits.toString(), 0, hits.getLength());
-	}
-
-	@Test
-	public void testSearchWithoutResultsWhenTotalLessThanStartAndDeltaIsOne()
-		throws Exception {
-
-		Hits hits = getSearchWithoutResults(1000, 1001);
-
-		Assert.assertEquals(hits.toString(), 0, hits.getLength());
-
-		Document[] docs = hits.getDocs();
-
-		Assert.assertEquals(hits.toString(), 0, docs.length);
-	}
-
-	@Test
 	public void testSearchWithResults() throws Exception {
 		Hits hits = getHits(QueryUtil.ALL_POS, QueryUtil.ALL_POS);
 
@@ -215,6 +176,45 @@ public class SearchPaginationTest {
 		Document[] docs = hits.getDocs();
 
 		Assert.assertEquals(hits.toString(), 1, docs.length);
+	}
+
+	@Test
+	public void testSearchWithoutResults() throws Exception {
+		Hits hits = getSearchWithoutResults(
+			QueryUtil.ALL_POS, QueryUtil.ALL_POS);
+
+		Assert.assertEquals(hits.toString(), 0, hits.getLength());
+	}
+
+	@Test
+	public void testSearchWithoutResultsWhenTotalEqualsStart()
+		throws Exception {
+
+		Hits hits = getSearchWithoutResults(_USERS_COUNT, 2 * _USERS_COUNT);
+
+		Assert.assertEquals(hits.toString(), 0, hits.getLength());
+	}
+
+	@Test
+	public void testSearchWithoutResultsWhenTotalLessThanStart()
+		throws Exception {
+
+		Hits hits = getSearchWithoutResults(1000, 1000 + _USERS_COUNT);
+
+		Assert.assertEquals(hits.toString(), 0, hits.getLength());
+	}
+
+	@Test
+	public void testSearchWithoutResultsWhenTotalLessThanStartAndDeltaIsOne()
+		throws Exception {
+
+		Hits hits = getSearchWithoutResults(1000, 1001);
+
+		Assert.assertEquals(hits.toString(), 0, hits.getLength());
+
+		Document[] docs = hits.getDocs();
+
+		Assert.assertEquals(hits.toString(), 0, docs.length);
 	}
 
 	@Rule

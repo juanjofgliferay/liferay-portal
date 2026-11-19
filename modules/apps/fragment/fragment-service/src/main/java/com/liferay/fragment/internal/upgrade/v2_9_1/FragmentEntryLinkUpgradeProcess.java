@@ -24,16 +24,19 @@ public class FragmentEntryLinkUpgradeProcess extends UpgradeProcess {
 	@Override
 	protected void doUpgrade() throws Exception {
 		try (PreparedStatement preparedStatement1 = connection.prepareStatement(
-				"select fragmentEntryLinkId, editableValues from " +
-					"FragmentEntryLink");
+				"select ctCollectionId, fragmentEntryLinkId, editableValues " +
+					"from FragmentEntryLink");
+
 			ResultSet resultSet = preparedStatement1.executeQuery();
+
 			PreparedStatement preparedStatement2 =
 				AutoBatchPreparedStatementUtil.autoBatch(
 					connection,
 					"update FragmentEntryLink set editableValues = ? where " +
-						"fragmentEntryLinkId = ?")) {
+						"ctCollectionId = ? and fragmentEntryLinkId = ?")) {
 
 			while (resultSet.next()) {
+				long ctCollectionId = resultSet.getLong("ctCollectionId");
 				long fragmentEntryLinkId = resultSet.getLong(
 					"fragmentEntryLinkId");
 
@@ -42,7 +45,8 @@ public class FragmentEntryLinkUpgradeProcess extends UpgradeProcess {
 				preparedStatement2.setString(
 					1, _stripEmptyFragmentEntryProcessor(editableValues));
 
-				preparedStatement2.setLong(2, fragmentEntryLinkId);
+				preparedStatement2.setLong(2, ctCollectionId);
+				preparedStatement2.setLong(3, fragmentEntryLinkId);
 
 				preparedStatement2.addBatch();
 			}
@@ -63,11 +67,13 @@ public class FragmentEntryLinkUpgradeProcess extends UpgradeProcess {
 					editableValuesJSONObject.getJSONObject(
 						fragmentEntryProcessorKey);
 
-				if ((fragmentEntryProcessorJSONObject != null) &&
-					(fragmentEntryProcessorJSONObject.length() == 0)) {
+				if ((fragmentEntryProcessorJSONObject == null) ||
+					(fragmentEntryProcessorJSONObject.length() != 0)) {
 
-					editableValuesJSONObject.remove(fragmentEntryProcessorKey);
+					continue;
 				}
+
+				editableValuesJSONObject.remove(fragmentEntryProcessorKey);
 			}
 
 			return editableValuesJSONObject.toString();

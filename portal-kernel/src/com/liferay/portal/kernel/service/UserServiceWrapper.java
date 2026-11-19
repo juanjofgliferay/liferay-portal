@@ -769,11 +769,11 @@ public class UserServiceWrapper
 
 	@Override
 	public User fetchUserByExternalReferenceCode(
-			long companyId, String externalReferenceCode)
+			String externalReferenceCode, long companyId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _userService.fetchUserByExternalReferenceCode(
-			companyId, externalReferenceCode);
+			externalReferenceCode, companyId);
 	}
 
 	@Override
@@ -1033,20 +1033,13 @@ public class UserServiceWrapper
 		return _userService.getUserByEmailAddress(companyId, emailAddress);
 	}
 
-	/**
-	 * Returns the user with the external reference code.
-	 *
-	 * @param companyId the primary key of the user's company
-	 * @param externalReferenceCode the user's external reference code
-	 * @return the user with the external reference code
-	 */
 	@Override
 	public User getUserByExternalReferenceCode(
-			long companyId, String externalReferenceCode)
+			String externalReferenceCode, long companyId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _userService.getUserByExternalReferenceCode(
-			companyId, externalReferenceCode);
+			externalReferenceCode, companyId);
 	}
 
 	/**
@@ -1409,6 +1402,24 @@ public class UserServiceWrapper
 			userId, password, emailAddress1, emailAddress2, serviceContext);
 	}
 
+	@Override
+	public User updateExternalReferenceCode(
+			long userId, String externalReferenceCode)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _userService.updateExternalReferenceCode(
+			userId, externalReferenceCode);
+	}
+
+	@Override
+	public User updateExternalReferenceCode(
+			User user, String externalReferenceCode)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _userService.updateExternalReferenceCode(
+			user, externalReferenceCode);
+	}
+
 	/**
 	 * Updates a user account that was automatically created when a guest user
 	 * participated in an action (e.g. posting a comment) and only provided his
@@ -1526,6 +1537,13 @@ public class UserServiceWrapper
 			updateUserInformation, sendEmail, serviceContext);
 	}
 
+	@Override
+	public User updateLanguageId(long userId, String languageId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _userService.updateLanguageId(userId, languageId);
+	}
+
 	/**
 	 * Updates whether the user is locked out from logging in.
 	 *
@@ -1538,22 +1556,6 @@ public class UserServiceWrapper
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _userService.updateLockoutById(userId, lockout);
-	}
-
-	/**
-	 * Updates the user's OpenID.
-	 *
-	 * @param userId the primary key of the user
-	 * @param openId the new OpenID
-	 * @return the user
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	@Override
-	public User updateOpenId(long userId, String openId)
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return _userService.updateOpenId(userId, openId);
 	}
 
 	/**
@@ -1653,6 +1655,14 @@ public class UserServiceWrapper
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _userService.updateStatus(userId, status, serviceContext);
+	}
+
+	@Override
+	public User updateStatus(
+			User user, int status, ServiceContext serviceContext)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _userService.updateStatus(user, status, serviceContext);
 	}
 
 	/**
@@ -2017,3 +2027,4 @@ public class UserServiceWrapper
 	private UserService _userService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:471752895

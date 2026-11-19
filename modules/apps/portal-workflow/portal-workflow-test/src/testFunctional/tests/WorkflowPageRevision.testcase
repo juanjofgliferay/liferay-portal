@@ -1,4 +1,4 @@
-@component-name = "portal-workflow"
+@component-name = "portal-bpm"
 definition {
 
 	property portal.release = "true";
@@ -14,6 +14,10 @@ definition {
 		TestCase.setUpPortalInstance();
 
 		User.firstLoginPG();
+
+		task ("Enable the Staging Page Variations deprecation feature flag") {
+			Staging.enablePageVariationsFeatureFlag();
+		}
 
 		HeadlessSite.addSite(siteName = "Site Name");
 
@@ -114,6 +118,10 @@ definition {
 		property test.run.type = "single";
 
 		var pageName = "Page Revision Page";
+
+		task ("Enable widget pages") {
+			PagesAdmin.enableWidgetPages();
+		}
 
 		Navigator.gotoStagedSitePage(
 			pageName = "Site Page Name",
@@ -255,10 +263,6 @@ definition {
 			workflowStatus = "Draft");
 
 		Staging.submitForWorkflowPageRevision();
-
-		Page.viewWithWorkflowPG(
-			pageName = ${pageName},
-			workflowStatus = "Pending (Created)");
 	}
 
 	@description = "Verify that when the Approved page is edited the button Submit for Workflow is displayed"
@@ -310,6 +314,10 @@ definition {
 		property test.run.type = "single";
 
 		var pageName = "New Site Page Name";
+
+		task ("Enable widget pages") {
+			PagesAdmin.enableWidgetPages();
+		}
 
 		Navigator.gotoStagedSitePage(
 			pageName = "Site Page Name",
@@ -455,19 +463,13 @@ definition {
 			workflowDefinition = "No Workflow",
 			workflowResourceValue = "Page Revision");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Users",
-			panel = "Control Panel",
-			portlet = "Users and Organizations");
+		User.openUsersAdmin();
 
 		User.deactivateCP(userFirstName = "userfn");
 
 		User.deleteCP();
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Submissions");
+		ObjectAdmin.openSubmissions();
 
 		Workflow.viewDefaultWorkflowSubmissions();
 	}

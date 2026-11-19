@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -234,13 +235,6 @@ public class CommercePriceListChannelRelLocalServiceUtil {
 			CommercePriceListChannelRelId);
 	}
 
-	public static CommercePriceListChannelRel fetchCommercePriceListChannelRel(
-		long commerceChannelId, long commercePriceListId) {
-
-		return getService().fetchCommercePriceListChannelRel(
-			commerceChannelId, commercePriceListId);
-	}
-
 	/**
 	 * Returns the commerce price list channel rel with the matching UUID and company.
 	 *
@@ -344,20 +338,6 @@ public class CommercePriceListChannelRelLocalServiceUtil {
 		return getService().getCommercePriceListChannelRelsCount();
 	}
 
-	public static int getCommercePriceListChannelRelsCount(
-		long commercePriceListId) {
-
-		return getService().getCommercePriceListChannelRelsCount(
-			commercePriceListId);
-	}
-
-	public static int getCommercePriceListChannelRelsCount(
-		long commercePriceListId, String name) {
-
-		return getService().getCommercePriceListChannelRelsCount(
-			commercePriceListId, name);
-	}
-
 	public static com.liferay.portal.kernel.dao.orm.ExportActionableDynamicQuery
 		getExportActionableDynamicQuery(
 			com.liferay.exportimport.kernel.lar.PortletDataContext
@@ -409,15 +389,13 @@ public class CommercePriceListChannelRelLocalServiceUtil {
 	}
 
 	public static CommercePriceListChannelRelLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(
-		CommercePriceListChannelRelLocalService service) {
-
-		_service = service;
-	}
-
-	private static volatile CommercePriceListChannelRelLocalService _service;
+	private static final Snapshot<CommercePriceListChannelRelLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			CommercePriceListChannelRelLocalServiceUtil.class,
+			CommercePriceListChannelRelLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-2124688236

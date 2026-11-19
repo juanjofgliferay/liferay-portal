@@ -10,6 +10,11 @@ package com.liferay.style.book.constants;
  */
 public class StyleBookConstants {
 
+	public static final String FRONTEND_TOKEN_DEFINITION_ID_CUSTOM = "custom";
+
+	public static final String FRONTEND_TOKEN_DEFINITION_ID_GLOBAL =
+		"com.liferay.frontend.js.clay.web";
+
 	public static final String RESOURCE_NAME = "com.liferay.style.book";
 
 	public static final String SERVICE_NAME = "com.liferay.style.book";

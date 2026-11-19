@@ -66,18 +66,35 @@ public class CompanyServiceUtil {
 	 * @return the company
 	 */
 	public static Company addCompany(
-			String webId, String virtualHost, String mx, int maxUsers,
-			boolean active, String defaultAdminPassword,
+			Long companyId, String webId, String virtualHost, String mx,
+			int maxUsers, boolean active, String defaultAdminPassword,
 			String defaultAdminScreenName, String defaultAdminEmailAddress,
 			String defaultAdminFirstName, String defaultAdminMiddleName,
 			String defaultAdminLastName)
 		throws PortalException {
 
 		return getService().addCompany(
-			webId, virtualHost, mx, maxUsers, active, defaultAdminPassword,
-			defaultAdminScreenName, defaultAdminEmailAddress,
-			defaultAdminFirstName, defaultAdminMiddleName,
-			defaultAdminLastName);
+			companyId, webId, virtualHost, mx, maxUsers, active,
+			defaultAdminPassword, defaultAdminScreenName,
+			defaultAdminEmailAddress, defaultAdminFirstName,
+			defaultAdminMiddleName, defaultAdminLastName);
+	}
+
+	public static Company addDBPartitionCompany(
+			String schemaName, String name, String virtualHost, String webId)
+		throws PortalException {
+
+		return getService().addDBPartitionCompany(
+			schemaName, name, virtualHost, webId);
+	}
+
+	public static Company copyDBPartitionCompany(
+			long fromCompanyId, Long toCompanyId, String name,
+			String virtualHost, String webId)
+		throws PortalException {
+
+		return getService().copyDBPartitionCompany(
+			fromCompanyId, toCompanyId, name, virtualHost, webId);
 	}
 
 	public static Company deleteCompany(long companyId) throws PortalException {
@@ -93,6 +110,10 @@ public class CompanyServiceUtil {
 		getService().deleteLogo(companyId);
 	}
 
+	public static Company exportCompany(long companyId) throws PortalException {
+		return getService().exportCompany(companyId);
+	}
+
 	public static void forEachCompany(
 			com.liferay.petra.function.UnsafeConsumer<Company, Exception>
 				unsafeConsumer)
@@ -106,7 +127,7 @@ public class CompanyServiceUtil {
 	 *
 	 * @return the companies
 	 */
-	public static List<Company> getCompanies() {
+	public static List<Company> getCompanies() throws PortalException {
 		return getService().getCompanies();
 	}
 
@@ -123,37 +144,15 @@ public class CompanyServiceUtil {
 	}
 
 	/**
-	 * Returns the company with the logo.
-	 *
-	 * @param logoId the ID of the company's logo
-	 * @return Returns the company with the logo
-	 */
-	public static Company getCompanyByLogoId(long logoId)
-		throws PortalException {
-
-		return getService().getCompanyByLogoId(logoId);
-	}
-
-	/**
-	 * Returns the company with the mail domian.
-	 *
-	 * @param mx the company's mail domain
-	 * @return Returns the company with the mail domain
-	 */
-	public static Company getCompanyByMx(String mx) throws PortalException {
-		return getService().getCompanyByMx(mx);
-	}
-
-	/**
 	 * Returns the company with the virtual host name.
 	 *
-	 * @param virtualHost the company's virtual host name
+	 * @param virtualHostname the company's virtual host name
 	 * @return Returns the company with the virtual host name
 	 */
-	public static Company getCompanyByVirtualHost(String virtualHost)
+	public static Company getCompanyByVirtualHost(String virtualHostname)
 		throws PortalException {
 
-		return getService().getCompanyByVirtualHost(virtualHost);
+		return getService().getCompanyByVirtualHost(virtualHostname);
 	}
 
 	/**
@@ -401,3 +400,4 @@ public class CompanyServiceUtil {
 	private static volatile CompanyService _service;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:336559248

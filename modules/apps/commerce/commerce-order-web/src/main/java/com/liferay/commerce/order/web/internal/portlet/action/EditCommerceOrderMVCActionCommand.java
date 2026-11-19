@@ -7,10 +7,12 @@ package com.liferay.commerce.order.web.internal.portlet.action;
 
 import com.liferay.account.model.AccountEntry;
 import com.liferay.commerce.constants.CommerceAddressConstants;
+import com.liferay.commerce.constants.CommerceOrderActionKeys;
 import com.liferay.commerce.constants.CommerceOrderConstants;
 import com.liferay.commerce.constants.CommercePortletKeys;
 import com.liferay.commerce.constants.CommerceWebKeys;
 import com.liferay.commerce.context.CommerceContext;
+import com.liferay.commerce.currency.util.CommercePriceFormatter;
 import com.liferay.commerce.inventory.constants.CommerceInventoryConstants;
 import com.liferay.commerce.inventory.model.CommerceInventoryBookedQuantity;
 import com.liferay.commerce.inventory.service.CommerceInventoryBookedQuantityLocalService;
@@ -33,25 +35,33 @@ import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCActionCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
 import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
+import com.liferay.portal.kernel.security.permission.ActionKeys;
+import com.liferay.portal.kernel.security.permission.PermissionChecker;
+import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
+import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
+import com.liferay.portal.kernel.security.permission.resource.PortletResourcePermission;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextFactory;
 import com.liferay.portal.kernel.servlet.SessionErrors;
+import com.liferay.portal.kernel.util.CalendarFactoryUtil;
 import com.liferay.portal.kernel.util.Constants;
+import com.liferay.portal.kernel.util.DateUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.PortletRequest;
+
 import java.io.IOException;
 
 import java.math.BigDecimal;
 
 import java.util.Calendar;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.PortletRequest;
+import java.util.Date;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -62,7 +72,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + CommercePortletKeys.COMMERCE_ORDER,
+		"jakarta.portlet.name=" + CommercePortletKeys.COMMERCE_ORDER,
 		"mvc.command.name=/commerce_order/edit_commerce_order"
 	},
 	service = MVCActionCommand.class
@@ -89,6 +99,9 @@ public class EditCommerceOrderMVCActionCommand extends BaseMVCActionCommand {
 			else if (cmd.equals("customFields")) {
 				updateCustomFields(actionRequest);
 			}
+			else if (cmd.equals("name")) {
+				_updateName(actionRequest);
+			}
 			else if (cmd.equals("orderSummary")) {
 				_updateOrderSummary(actionRequest);
 			}
@@ -103,6 +116,9 @@ public class EditCommerceOrderMVCActionCommand extends BaseMVCActionCommand {
 			}
 			else if (cmd.equals("purchaseOrderNumber")) {
 				_updatePurchaseOrderNumber(actionRequest);
+			}
+			else if (cmd.equals("recalculateOrderSummary")) {
+				_recalculateOrderSummary(actionRequest);
 			}
 			else if (cmd.equals("requestedDeliveryDate")) {
 				_updateRequestedDeliveryDate(actionRequest);
@@ -170,27 +186,23 @@ public class EditCommerceOrderMVCActionCommand extends BaseMVCActionCommand {
 		CommerceOrder commerceOrder = _commerceOrderService.getCommerceOrder(
 			commerceOrderId);
 
-		String name = ParamUtil.getString(actionRequest, "name");
-		String description = ParamUtil.getString(actionRequest, "description");
-		String street1 = ParamUtil.getString(actionRequest, "street1");
-		String street2 = ParamUtil.getString(actionRequest, "street2");
-		String street3 = ParamUtil.getString(actionRequest, "street3");
-		String city = ParamUtil.getString(actionRequest, "city");
-		String zip = ParamUtil.getString(actionRequest, "zip");
-		long regionId = ParamUtil.getLong(actionRequest, "regionId");
-		long countryId = ParamUtil.getLong(actionRequest, "countryId");
-		String phoneNumber = ParamUtil.getString(actionRequest, "phoneNumber");
-
-		ServiceContext serviceContext = ServiceContextFactory.getInstance(
-			CommerceAddress.class.getName(), actionRequest);
-
 		CommerceAddress commerceAddress =
 			_commerceAddressService.addCommerceAddress(
-				AccountEntry.class.getName(),
-				commerceOrder.getCommerceAccountId(), name, description,
-				street1, street2, street3, city, zip, regionId, countryId,
-				phoneNumber, CommerceAddressConstants.ADDRESS_TYPE_BILLING,
-				serviceContext);
+				StringPool.BLANK, AccountEntry.class.getName(),
+				commerceOrder.getCommerceAccountId(),
+				ParamUtil.getLong(actionRequest, "countryId"),
+				ParamUtil.getLong(actionRequest, "regionId"),
+				ParamUtil.getString(actionRequest, "city"),
+				ParamUtil.getString(actionRequest, "description"),
+				ParamUtil.getString(actionRequest, "name"),
+				ParamUtil.getString(actionRequest, "phoneNumber"),
+				ParamUtil.getString(actionRequest, "street1"),
+				ParamUtil.getString(actionRequest, "street2"),
+				ParamUtil.getString(actionRequest, "street3"), StringPool.BLANK,
+				CommerceAddressConstants.ADDRESS_TYPE_BILLING,
+				ParamUtil.getString(actionRequest, "zip"),
+				ServiceContextFactory.getInstance(
+					CommerceAddress.class.getName(), actionRequest));
 
 		_commerceOrderService.updateBillingAddress(
 			commerceOrder.getCommerceOrderId(),
@@ -217,31 +229,40 @@ public class EditCommerceOrderMVCActionCommand extends BaseMVCActionCommand {
 		CommerceOrder commerceOrder = _commerceOrderService.getCommerceOrder(
 			commerceOrderId);
 
-		String name = ParamUtil.getString(actionRequest, "name");
-		String description = ParamUtil.getString(actionRequest, "description");
-		String street1 = ParamUtil.getString(actionRequest, "street1");
-		String street2 = ParamUtil.getString(actionRequest, "street2");
-		String street3 = ParamUtil.getString(actionRequest, "street3");
-		String city = ParamUtil.getString(actionRequest, "city");
-		String zip = ParamUtil.getString(actionRequest, "zip");
-		long regionId = ParamUtil.getLong(actionRequest, "regionId");
-		long countryId = ParamUtil.getLong(actionRequest, "countryId");
-		String phoneNumber = ParamUtil.getString(actionRequest, "phoneNumber");
-
-		ServiceContext serviceContext = ServiceContextFactory.getInstance(
-			CommerceAddress.class.getName(), actionRequest);
-
 		CommerceAddress commerceAddress =
 			_commerceAddressService.addCommerceAddress(
-				AccountEntry.class.getName(),
-				commerceOrder.getCommerceAccountId(), name, description,
-				street1, street2, street3, city, zip, regionId, countryId,
-				phoneNumber, CommerceAddressConstants.ADDRESS_TYPE_SHIPPING,
-				serviceContext);
+				StringPool.BLANK, AccountEntry.class.getName(),
+				commerceOrder.getCommerceAccountId(),
+				ParamUtil.getLong(actionRequest, "countryId"),
+				ParamUtil.getLong(actionRequest, "regionId"),
+				ParamUtil.getString(actionRequest, "city"),
+				ParamUtil.getString(actionRequest, "description"),
+				ParamUtil.getString(actionRequest, "name"),
+				ParamUtil.getString(actionRequest, "phoneNumber"),
+				ParamUtil.getString(actionRequest, "street1"),
+				ParamUtil.getString(actionRequest, "street2"),
+				ParamUtil.getString(actionRequest, "street3"), StringPool.BLANK,
+				CommerceAddressConstants.ADDRESS_TYPE_SHIPPING,
+				ParamUtil.getString(actionRequest, "zip"),
+				ServiceContextFactory.getInstance(
+					CommerceAddress.class.getName(), actionRequest));
 
 		_commerceOrderService.updateShippingAddress(
 			commerceOrder.getCommerceOrderId(),
 			commerceAddress.getCommerceAddressId());
+	}
+
+	private void _checkPermission(CommerceOrder commerceOrder, String actionId)
+		throws PortalException {
+
+		PermissionChecker permissionChecker =
+			PermissionThreadLocal.getPermissionChecker();
+
+		_commerceOrderModelResourcePermission.check(
+			permissionChecker, commerceOrder, ActionKeys.UPDATE);
+
+		_commerceOrderPortletResourcePermission.check(
+			permissionChecker, commerceOrder.getGroupId(), actionId);
 	}
 
 	private void _deleteCommerceOrders(ActionRequest actionRequest)
@@ -297,33 +318,35 @@ public class EditCommerceOrderMVCActionCommand extends BaseMVCActionCommand {
 						commerceOrderItem.
 							getCommerceInventoryBookedQuantityId();
 
-					if (commerceInventoryBookedQuantityId > 0) {
-						CommerceInventoryBookedQuantity
-							commerceInventoryBookedQuantity =
-								_commerceInventoryBookedQuantityLocalService.
-									fetchCommerceInventoryBookedQuantity(
-										commerceOrderItem.
-											getCommerceInventoryBookedQuantityId());
-
-						if (commerceInventoryBookedQuantity != null) {
-							_commerceInventoryBookedQuantityLocalService.
-								deleteCommerceInventoryBookedQuantity(
-									_portal.getUserId(actionRequest),
-									commerceOrderItem.
-										getCommerceInventoryBookedQuantityId(),
-									HashMapBuilder.put(
-										CommerceInventoryAuditTypeConstants.
-											ORDER_ID,
-										String.valueOf(
-											commerceOrderItem.
-												getCommerceOrderId())
-									).build(),
-									_commerceInventoryAuditTypeRegistry.
-										getCommerceInventoryAuditType(
-											CommerceInventoryConstants.
-												AUDIT_TYPE_CANCEL_BOOKED_QUANTITY));
-						}
+					if (commerceInventoryBookedQuantityId <= 0) {
+						continue;
 					}
+
+					CommerceInventoryBookedQuantity
+						commerceInventoryBookedQuantity =
+							_commerceInventoryBookedQuantityLocalService.
+								fetchCommerceInventoryBookedQuantity(
+									commerceOrderItem.
+										getCommerceInventoryBookedQuantityId());
+
+					if (commerceInventoryBookedQuantity == null) {
+						continue;
+					}
+
+					_commerceInventoryBookedQuantityLocalService.
+						deleteCommerceInventoryBookedQuantity(
+							_portal.getUserId(actionRequest),
+							commerceOrderItem.
+								getCommerceInventoryBookedQuantityId(),
+							HashMapBuilder.put(
+								CommerceInventoryAuditTypeConstants.ORDER_ID,
+								String.valueOf(
+									commerceOrderItem.getCommerceOrderId())
+							).build(),
+							_commerceInventoryAuditTypeRegistry.
+								getCommerceInventoryAuditType(
+									CommerceInventoryConstants.
+										AUDIT_TYPE_CANCEL_BOOKED_QUANTITY));
 				}
 			}
 
@@ -356,6 +379,60 @@ public class EditCommerceOrderMVCActionCommand extends BaseMVCActionCommand {
 
 		_commerceOrderService.executeWorkflowTransition(
 			commerceOrderId, workflowTaskId, transitionName, comment);
+	}
+
+	private void _recalculateOrderSummary(ActionRequest actionRequest)
+		throws Exception {
+
+		CommerceOrder commerceOrder = _commerceOrderService.getCommerceOrder(
+			ParamUtil.getLong(actionRequest, "commerceOrderId"));
+		BigDecimal subtotal = BigDecimal.ZERO;
+		BigDecimal subtotalDiscountAmount = BigDecimal.ZERO;
+
+		for (CommerceOrderItem commerceOrderItem :
+				commerceOrder.getCommerceOrderItems()) {
+
+			subtotal = subtotal.add(commerceOrderItem.getFinalPrice());
+			subtotalDiscountAmount = subtotalDiscountAmount.add(
+				commerceOrderItem.getDiscountAmount());
+		}
+
+		BigDecimal totalDiscountAmount = commerceOrder.getTotalDiscountAmount();
+
+		BigDecimal newTotalDiscountAmount = totalDiscountAmount.subtract(
+			commerceOrder.getSubtotalDiscountAmount()
+		).add(
+			subtotalDiscountAmount
+		);
+
+		_commerceOrderService.updateCommerceOrderPrices(
+			commerceOrder.getCommerceOrderId(),
+			commerceOrder.getShippingAmount(),
+			commerceOrder.getShippingDiscountAmount(),
+			commerceOrder.getShippingDiscountPercentageLevel1(),
+			commerceOrder.getShippingDiscountPercentageLevel2(),
+			commerceOrder.getShippingDiscountPercentageLevel3(),
+			commerceOrder.getShippingDiscountPercentageLevel4(), subtotal,
+			subtotalDiscountAmount,
+			commerceOrder.getSubtotalDiscountPercentageLevel1(),
+			commerceOrder.getSubtotalDiscountPercentageLevel2(),
+			commerceOrder.getSubtotalDiscountPercentageLevel3(),
+			commerceOrder.getSubtotalDiscountPercentageLevel4(),
+			commerceOrder.getTaxAmount(),
+			subtotal.subtract(
+				newTotalDiscountAmount
+			).add(
+				commerceOrder.getTaxAmount()
+			).add(
+				commerceOrder.getShippingAmount()
+			).subtract(
+				commerceOrder.getShippingDiscountAmount()
+			),
+			newTotalDiscountAmount,
+			commerceOrder.getTotalDiscountPercentageLevel1(),
+			commerceOrder.getTotalDiscountPercentageLevel2(),
+			commerceOrder.getTotalDiscountPercentageLevel3(),
+			commerceOrder.getTotalDiscountPercentageLevel4());
 	}
 
 	private void _redirectToShipments(
@@ -406,23 +483,20 @@ public class EditCommerceOrderMVCActionCommand extends BaseMVCActionCommand {
 		long commerceOrderId = ParamUtil.getLong(
 			actionRequest, "commerceOrderId");
 
-		String name = ParamUtil.getString(actionRequest, "name");
-		String description = ParamUtil.getString(actionRequest, "description");
-		String street1 = ParamUtil.getString(actionRequest, "street1");
-		String street2 = ParamUtil.getString(actionRequest, "street2");
-		String street3 = ParamUtil.getString(actionRequest, "street3");
-		String city = ParamUtil.getString(actionRequest, "city");
-		String zip = ParamUtil.getString(actionRequest, "zip");
-		long regionId = ParamUtil.getLong(actionRequest, "regionId");
-		long countryId = ParamUtil.getLong(actionRequest, "countryId");
-		String phoneNumber = ParamUtil.getString(actionRequest, "phoneNumber");
-
-		ServiceContext serviceContext = ServiceContextFactory.getInstance(
-			CommerceOrder.class.getName(), actionRequest);
-
 		_commerceOrderService.updateBillingAddress(
-			commerceOrderId, name, description, street1, street2, street3, city,
-			zip, regionId, countryId, phoneNumber, serviceContext);
+			commerceOrderId, ParamUtil.getLong(actionRequest, "countryId"),
+			ParamUtil.getLong(actionRequest, "regionId"),
+			ParamUtil.getString(actionRequest, "city"),
+			ParamUtil.getString(actionRequest, "description"),
+			ParamUtil.getString(actionRequest, "name"),
+			ParamUtil.getString(actionRequest, "street1"),
+			ParamUtil.getString(actionRequest, "street2"),
+			ParamUtil.getString(actionRequest, "street3"),
+			ParamUtil.getString(actionRequest, "subtype"),
+			ParamUtil.getString(actionRequest, "phoneNumber"),
+			ParamUtil.getString(actionRequest, "zip"),
+			ServiceContextFactory.getInstance(
+				CommerceOrder.class.getName(), actionRequest));
 	}
 
 	private void _updateDeliveryTerms(
@@ -452,8 +526,31 @@ public class EditCommerceOrderMVCActionCommand extends BaseMVCActionCommand {
 			_language.getLanguageId(actionRequest.getLocale()));
 	}
 
-	private void _updateOrderSummary(ActionRequest actionRequest)
+	private void _updateName(ActionRequest actionRequest)
 		throws PortalException {
+
+		long commerceOrderId = ParamUtil.getLong(
+			actionRequest, "commerceOrderId");
+		String name = ParamUtil.getString(actionRequest, "name");
+
+		CommerceOrder commerceOrder = _commerceOrderService.getCommerceOrder(
+			commerceOrderId);
+
+		_commerceOrderService.updateCommerceOrder(
+			commerceOrder.getExternalReferenceCode(), commerceOrderId,
+			commerceOrder.getBillingAddressId(),
+			commerceOrder.getCommerceShippingMethodId(),
+			commerceOrder.getShippingAddressId(),
+			commerceOrder.getAdvanceStatus(),
+			commerceOrder.getCommercePaymentMethodKey(), name,
+			commerceOrder.getPurchaseOrderNumber(),
+			commerceOrder.getShippingAmount(),
+			commerceOrder.getShippingOptionName(), commerceOrder.getSubtotal(),
+			commerceOrder.getTotal());
+	}
+
+	private void _updateOrderSummary(ActionRequest actionRequest)
+		throws Exception {
 
 		long commerceOrderId = ParamUtil.getLong(
 			actionRequest, "commerceOrderId");
@@ -461,32 +558,36 @@ public class EditCommerceOrderMVCActionCommand extends BaseMVCActionCommand {
 		CommerceOrder commerceOrder = _commerceOrderService.getCommerceOrder(
 			commerceOrderId);
 
-		String subtotal = ParamUtil.getString(actionRequest, "subtotal");
-		String subtotalDiscountAmount = ParamUtil.getString(
-			actionRequest, "subtotalDiscountAmount");
-		String shippingAmount = ParamUtil.getString(
-			actionRequest, "shippingAmount");
-		String shippingDiscountAmount = ParamUtil.getString(
-			actionRequest, "shippingDiscountAmount");
-		String taxAmount = ParamUtil.getString(actionRequest, "taxAmount");
-		String total = ParamUtil.getString(actionRequest, "total");
-		String totalDiscountAmount = ParamUtil.getString(
-			actionRequest, "totalDiscountAmount");
-
 		_commerceOrderService.updateCommerceOrderPrices(
-			commerceOrder.getCommerceOrderId(), new BigDecimal(shippingAmount),
-			new BigDecimal(shippingDiscountAmount),
+			commerceOrder.getCommerceOrderId(),
+			_commercePriceFormatter.parse(
+				actionRequest, false, CommerceOrder.class.getName(),
+				"shippingAmount"),
+			_commercePriceFormatter.parse(
+				actionRequest, false, CommerceOrder.class.getName(),
+				"shippingDiscountAmount"),
 			commerceOrder.getShippingDiscountPercentageLevel1(),
 			commerceOrder.getShippingDiscountPercentageLevel2(),
 			commerceOrder.getShippingDiscountPercentageLevel3(),
 			commerceOrder.getShippingDiscountPercentageLevel4(),
-			new BigDecimal(subtotal), new BigDecimal(subtotalDiscountAmount),
+			_commercePriceFormatter.parse(
+				actionRequest, false, CommerceOrder.class.getName(),
+				"subtotal"),
+			_commercePriceFormatter.parse(
+				actionRequest, false, CommerceOrder.class.getName(),
+				"subtotalDiscountAmount"),
 			commerceOrder.getSubtotalDiscountPercentageLevel1(),
 			commerceOrder.getSubtotalDiscountPercentageLevel2(),
 			commerceOrder.getSubtotalDiscountPercentageLevel3(),
 			commerceOrder.getSubtotalDiscountPercentageLevel4(),
-			new BigDecimal(taxAmount), new BigDecimal(total),
-			new BigDecimal(totalDiscountAmount),
+			_commercePriceFormatter.parse(
+				actionRequest, false, CommerceOrder.class.getName(),
+				"taxAmount"),
+			_commercePriceFormatter.parse(
+				actionRequest, false, CommerceOrder.class.getName(), "total"),
+			_commercePriceFormatter.parse(
+				actionRequest, false, CommerceOrder.class.getName(),
+				"totalDiscountAmount"),
 			commerceOrder.getTotalDiscountPercentageLevel1(),
 			commerceOrder.getTotalDiscountPercentageLevel2(),
 			commerceOrder.getTotalDiscountPercentageLevel3(),
@@ -498,6 +599,10 @@ public class EditCommerceOrderMVCActionCommand extends BaseMVCActionCommand {
 
 		long commerceOrderId = ParamUtil.getLong(
 			actionRequest, "commerceOrderId");
+
+		_checkPermission(
+			_commerceOrderService.getCommerceOrder(commerceOrderId),
+			CommerceOrderActionKeys.MANAGE_COMMERCE_ORDER_PAYMENT_METHODS);
 
 		String paymentMethodKey = ParamUtil.getString(
 			actionRequest, "paymentMethodKey");
@@ -512,11 +617,15 @@ public class EditCommerceOrderMVCActionCommand extends BaseMVCActionCommand {
 		long commerceOrderId = ParamUtil.getLong(
 			actionRequest, "commerceOrderId");
 
-		int paymentStatus = ParamUtil.getInteger(
-			actionRequest, "paymentStatus");
-
 		CommerceOrder commerceOrder = _commerceOrderService.getCommerceOrder(
 			commerceOrderId);
+
+		_checkPermission(
+			commerceOrder,
+			CommerceOrderActionKeys.MANAGE_COMMERCE_ORDER_PAYMENT_STATUSES);
+
+		int paymentStatus = ParamUtil.getInteger(
+			actionRequest, "paymentStatus");
 
 		_commercePaymentEngine.updateOrderPaymentStatus(
 			commerceOrderId, paymentStatus, commerceOrder.getTransactionId(),
@@ -573,7 +682,7 @@ public class EditCommerceOrderMVCActionCommand extends BaseMVCActionCommand {
 	}
 
 	private void _updateRequestedDeliveryDate(ActionRequest actionRequest)
-		throws PortalException {
+		throws Exception {
 
 		long commerceOrderId = ParamUtil.getLong(
 			actionRequest, "commerceOrderId");
@@ -581,31 +690,22 @@ public class EditCommerceOrderMVCActionCommand extends BaseMVCActionCommand {
 		CommerceOrder commerceOrder = _commerceOrderService.getCommerceOrder(
 			commerceOrderId);
 
-		int requestedDeliveryDateMonth = ParamUtil.getInteger(
-			actionRequest, "requestedDeliveryDateMonth");
-		int requestedDeliveryDateDay = ParamUtil.getInteger(
-			actionRequest, "requestedDeliveryDateDay");
-		int requestedDeliveryDateYear = ParamUtil.getInteger(
-			actionRequest, "requestedDeliveryDateYear");
-		int requestedDeliveryDateHour = ParamUtil.getInteger(
-			actionRequest, "requestedDeliveryDateHour");
-		int requestedDeliveryDateMinute = ParamUtil.getInteger(
-			actionRequest, "requestedDeliveryDateMinute");
-		int requestedDeliveryDateAmPm = ParamUtil.getInteger(
-			actionRequest, "requestedDeliveryDateAmPm");
+		Date requestedDeliveryDate = DateUtil.parseDate(
+			"yyyy-MM-dd",
+			ParamUtil.getString(actionRequest, "requestedDeliveryDate"),
+			actionRequest.getLocale());
 
-		if (requestedDeliveryDateAmPm == Calendar.PM) {
-			requestedDeliveryDateHour += 12;
-		}
+		Calendar calendar = CalendarFactoryUtil.getCalendar(
+			requestedDeliveryDate.getTime());
 
 		ServiceContext serviceContext = ServiceContextFactory.getInstance(
 			CommerceOrder.class.getName(), actionRequest);
 
 		_commerceOrderService.updateInfo(
 			commerceOrder.getCommerceOrderId(), commerceOrder.getPrintedNote(),
-			requestedDeliveryDateMonth, requestedDeliveryDateDay,
-			requestedDeliveryDateYear, requestedDeliveryDateHour,
-			requestedDeliveryDateMinute, serviceContext);
+			calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH),
+			calendar.get(Calendar.YEAR), calendar.get(Calendar.HOUR_OF_DAY),
+			calendar.get(Calendar.MINUTE), serviceContext);
 	}
 
 	private void _updateShippingAddress(ActionRequest actionRequest)
@@ -614,38 +714,28 @@ public class EditCommerceOrderMVCActionCommand extends BaseMVCActionCommand {
 		long commerceOrderId = ParamUtil.getLong(
 			actionRequest, "commerceOrderId");
 
-		String name = ParamUtil.getString(actionRequest, "name");
-		String description = ParamUtil.getString(actionRequest, "description");
-		String street1 = ParamUtil.getString(actionRequest, "street1");
-		String street2 = ParamUtil.getString(actionRequest, "street2");
-		String street3 = ParamUtil.getString(actionRequest, "street3");
-		String city = ParamUtil.getString(actionRequest, "city");
-		String zip = ParamUtil.getString(actionRequest, "zip");
-		long regionId = ParamUtil.getLong(actionRequest, "regionId");
-		long countryId = ParamUtil.getLong(actionRequest, "countryId");
-		String phoneNumber = ParamUtil.getString(actionRequest, "phoneNumber");
-
-		ServiceContext serviceContext = ServiceContextFactory.getInstance(
-			CommerceOrder.class.getName(), actionRequest);
-
 		_commerceOrderService.updateShippingAddress(
-			commerceOrderId, name, description, street1, street2, street3, city,
-			zip, regionId, countryId, phoneNumber, serviceContext);
+			commerceOrderId, ParamUtil.getLong(actionRequest, "countryId"),
+			ParamUtil.getLong(actionRequest, "regionId"),
+			ParamUtil.getString(actionRequest, "city"),
+			ParamUtil.getString(actionRequest, "description"),
+			ParamUtil.getString(actionRequest, "name"),
+			ParamUtil.getString(actionRequest, "phoneNumber"),
+			ParamUtil.getString(actionRequest, "street1"),
+			ParamUtil.getString(actionRequest, "street2"),
+			ParamUtil.getString(actionRequest, "street3"),
+			ParamUtil.getString(actionRequest, "subtype"),
+			ParamUtil.getString(actionRequest, "zip"),
+			ServiceContextFactory.getInstance(
+				CommerceOrder.class.getName(), actionRequest));
 	}
 
-	private void _updateTotals(ActionRequest actionRequest)
-		throws PortalException {
-
+	private void _updateTotals(ActionRequest actionRequest) throws Exception {
 		long commerceOrderId = ParamUtil.getLong(
 			actionRequest, "commerceOrderId");
 
 		CommerceOrder commerceOrder = _commerceOrderService.getCommerceOrder(
 			commerceOrderId);
-
-		String subtotal = ParamUtil.getString(actionRequest, "subtotal");
-		String shippingPrice = ParamUtil.getString(
-			actionRequest, "shippingPrice");
-		String total = ParamUtil.getString(actionRequest, "total");
 
 		CommerceContext commerceContext =
 			(CommerceContext)actionRequest.getAttribute(
@@ -659,12 +749,19 @@ public class EditCommerceOrderMVCActionCommand extends BaseMVCActionCommand {
 			commerceOrder.getShippingAddressId(),
 			commerceOrder.getAdvanceStatus(),
 			commerceOrder.getCommercePaymentMethodKey(),
-			commerceOrder.getPurchaseOrderNumber(),
-			new BigDecimal(shippingPrice),
+			commerceOrder.getName(), commerceOrder.getPurchaseOrderNumber(),
+			_commercePriceFormatter.parse(
+				actionRequest, false, CommerceOrder.class.getName(),
+				"shippingPrice"),
 			commerceOrder.getShippingOptionName(),
-			commerceOrder.getShippingWithTaxAmount(), new BigDecimal(subtotal),
+			commerceOrder.getShippingWithTaxAmount(),
+			_commercePriceFormatter.parse(
+				actionRequest, false, CommerceOrder.class.getName(),
+				"subtotal"),
 			commerceOrder.getSubtotalWithTaxAmount(),
-			commerceOrder.getTaxAmount(), new BigDecimal(total),
+			commerceOrder.getTaxAmount(),
+			_commercePriceFormatter.parse(
+				actionRequest, false, CommerceOrder.class.getName(), "total"),
 			commerceOrder.getTotalDiscountAmount(),
 			commerceOrder.getTotalWithTaxAmount(), commerceContext, false);
 	}
@@ -689,11 +786,25 @@ public class EditCommerceOrderMVCActionCommand extends BaseMVCActionCommand {
 	@Reference
 	private CommerceOrderLocalService _commerceOrderLocalService;
 
+	@Reference(
+		target = "(model.class.name=com.liferay.commerce.model.CommerceOrder)"
+	)
+	private ModelResourcePermission<CommerceOrder>
+		_commerceOrderModelResourcePermission;
+
+	@Reference(
+		target = "(resource.name=" + CommerceOrderConstants.RESOURCE_NAME + ")"
+	)
+	private PortletResourcePermission _commerceOrderPortletResourcePermission;
+
 	@Reference
 	private CommerceOrderService _commerceOrderService;
 
 	@Reference
 	private CommercePaymentEngine _commercePaymentEngine;
+
+	@Reference
+	private CommercePriceFormatter _commercePriceFormatter;
 
 	@Reference
 	private CommerceShipmentService _commerceShipmentService;

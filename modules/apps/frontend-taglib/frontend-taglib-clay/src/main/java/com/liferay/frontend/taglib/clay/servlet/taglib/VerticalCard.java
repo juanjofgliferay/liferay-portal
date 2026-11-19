@@ -31,11 +31,11 @@ public interface VerticalCard extends BaseClayCard {
 		return null;
 	}
 
-	public default List<LabelItem> getLabels() {
+	public default Map<String, String> getLabelStylesMap() {
 		return null;
 	}
 
-	public default Map<String, String> getLabelStylesMap() {
+	public default List<LabelItem> getLabels() {
 		return null;
 	}
 
@@ -91,6 +91,10 @@ public interface VerticalCard extends BaseClayCard {
 
 	public default Boolean isStickerShown() {
 		return null;
+	}
+
+	public default boolean isTranslated() {
+		return true;
 	}
 
 }

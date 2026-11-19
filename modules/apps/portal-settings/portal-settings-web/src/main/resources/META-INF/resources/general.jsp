@@ -7,21 +7,15 @@
 
 <%@ include file="/init.jsp" %>
 
-<%
-VirtualHost virtualHost = null;
-
-try {
-	virtualHost = VirtualHostLocalServiceUtil.getVirtualHost(company.getCompanyId(), 0);
-}
-catch (Exception e) {
-}
-%>
-
 <aui:input name="<%= Constants.CMD %>" type="hidden" value="<%= Constants.UPDATE %>" />
 
-<h4><liferay-ui:message key="main-configuration" /></h4>
+<div class="h4"><liferay-ui:message key="main-configuration" /></div>
 
 <aui:model-context bean="<%= company %>" model="<%= Company.class %>" />
+
+<%
+CompanyInfo companyInfo = company.getCompanyInfo();
+%>
 
 <clay:row>
 	<clay:col
@@ -29,15 +23,15 @@ catch (Exception e) {
 	>
 		<liferay-ui:error exception="<%= CompanyNameException.class %>" message="please-enter-a-valid-name" />
 
-		<aui:input name="name" />
+		<aui:input bean="<%= companyInfo %>" model="<%= CompanyInfo.class %>" name="name" />
 
 		<liferay-ui:error exception="<%= CompanyMxException.class %>" message="please-enter-a-valid-mail-domain" />
 
-		<aui:input disabled="<%= !PropsValues.MAIL_MX_UPDATE %>" label="mail-domain" name="mx" />
+		<aui:input disabled="<%= !PropsValues.COMPANY_MX_UPDATE || DBPartition.isCurrentCompanyRestricted() %>" label="mail-domain" name="mx" />
 
 		<liferay-ui:error exception="<%= CompanyVirtualHostException.class %>" message="please-enter-a-valid-virtual-host" />
 
-		<aui:input bean="<%= virtualHost %>" fieldParam="virtualHostname" label="virtual-host" model="<%= VirtualHost.class %>" name="hostname" />
+		<aui:input bean="<%= VirtualHostLocalServiceUtil.fetchCompanyDefaultVirtualHost(company.getCompanyId()) %>" fieldParam="virtualHostname" label="virtual-host" model="<%= VirtualHost.class %>" name="hostname" />
 	</clay:col>
 
 	<clay:col
@@ -51,13 +45,13 @@ catch (Exception e) {
 	</clay:col>
 </clay:row>
 
-<h4><liferay-ui:message key="navigation" /></h4>
+<div class="h4"><liferay-ui:message key="navigation" /></div>
 
 <clay:row>
 	<clay:col
 		md="6"
 	>
-		<aui:input bean="<%= company %>" helpMessage="home-url-help" label="home-url" model="<%= Company.class %>" name="homeURL" />
+		<aui:input bean="<%= companyInfo %>" helpMessage="home-url-help" label="home-url" model="<%= CompanyInfo.class %>" name="homeURL" />
 
 		<aui:input helpMessage="default-landing-page-help" label="default-landing-page" name='<%= "settings--" + PropsKeys.DEFAULT_LANDING_PAGE_PATH + "--" %>' type="text" value="<%= PrefsPropsUtil.getString(company.getCompanyId(), PropsKeys.DEFAULT_LANDING_PAGE_PATH, PropsValues.DEFAULT_LANDING_PAGE_PATH) %>" />
 	</clay:col>
@@ -69,28 +63,28 @@ catch (Exception e) {
 	</clay:col>
 </clay:row>
 
-<h4><liferay-ui:message key="additional-information" /></h4>
+<div class="h4"><liferay-ui:message key="additional-information" /></div>
 
 <clay:row>
 	<clay:col
 		md="6"
 	>
-		<aui:input name="legalName" />
+		<aui:input bean="<%= companyInfo %>" model="<%= CompanyInfo.class %>" name="legalName" />
 
-		<aui:input name="legalId" />
+		<aui:input bean="<%= companyInfo %>" model="<%= CompanyInfo.class %>" name="legalId" />
 
-		<aui:input name="legalType" />
+		<aui:input bean="<%= companyInfo %>" model="<%= CompanyInfo.class %>" name="legalType" />
 
-		<aui:input name="sicCode" />
+		<aui:input bean="<%= companyInfo %>" model="<%= CompanyInfo.class %>" name="sicCode" />
 	</clay:col>
 
 	<clay:col
 		md="6"
 	>
-		<aui:input name="tickerSymbol" />
+		<aui:input bean="<%= companyInfo %>" model="<%= CompanyInfo.class %>" name="tickerSymbol" />
 
-		<aui:input name="industry" />
+		<aui:input bean="<%= companyInfo %>" model="<%= CompanyInfo.class %>" name="industry" />
 
-		<aui:input name="type" />
+		<aui:input bean="<%= companyInfo %>" model="<%= CompanyInfo.class %>" name="type" />
 	</clay:col>
 </clay:row>

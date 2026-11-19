@@ -5,9 +5,16 @@
 
 package com.liferay.commerce.internal.order.test;
 
+import com.liferay.account.constants.AccountConstants;
+import com.liferay.account.constants.AccountRoleConstants;
 import com.liferay.account.model.AccountEntry;
+import com.liferay.account.role.AccountRolePermissionThreadLocal;
+import com.liferay.account.service.AccountEntryLocalService;
+import com.liferay.account.service.AccountEntryUserRelLocalService;
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.commerce.account.test.util.CommerceAccountTestUtil;
+import com.liferay.commerce.constants.CommerceOrderActionKeys;
+import com.liferay.commerce.constants.CommerceOrderConstants;
 import com.liferay.commerce.constants.CommerceWebKeys;
 import com.liferay.commerce.context.CommerceContext;
 import com.liferay.commerce.currency.model.CommerceCurrency;
@@ -26,18 +33,29 @@ import com.liferay.commerce.test.util.CommerceInventoryTestUtil;
 import com.liferay.commerce.test.util.CommerceTestUtil;
 import com.liferay.commerce.test.util.context.TestCommerceContext;
 import com.liferay.petra.lang.CentralizedThreadLocal;
+import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.model.GroupConstants;
+import com.liferay.portal.kernel.model.ResourceConstants;
+import com.liferay.portal.kernel.model.Role;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.security.auth.PrincipalThreadLocal;
+import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.security.permission.PermissionCheckerFactoryUtil;
 import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
+import com.liferay.portal.kernel.service.ResourcePermissionLocalService;
+import com.liferay.portal.kernel.service.RoleLocalService;
+import com.liferay.portal.kernel.service.UserGroupRoleLocalService;
+import com.liferay.portal.kernel.test.ReflectionTestUtil;
+import com.liferay.portal.kernel.test.context.ContextUserReplace;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.rule.Sync;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
+import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
@@ -48,12 +66,12 @@ import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
 import com.liferay.portal.theme.ThemeDisplayFactory;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.math.BigDecimal;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.frutilla.FrutillaRule;
 
@@ -87,6 +105,8 @@ public class CommerceOrderHttpHelperImplTest {
 
 		_user = UserTestUtil.addUser();
 
+		_permissionChecker = PermissionThreadLocal.getPermissionChecker();
+
 		PermissionThreadLocal.setPermissionChecker(
 			PermissionCheckerFactoryUtil.create(_user));
 
@@ -108,8 +128,6 @@ public class CommerceOrderHttpHelperImplTest {
 
 		PrincipalThreadLocal.setName(_user.getUserId());
 
-		_httpServletRequest = new MockHttpServletRequest();
-
 		_commerceCurrency = CommerceCurrencyTestUtil.addCommerceCurrency(
 			_group.getCompanyId());
 
@@ -122,6 +140,8 @@ public class CommerceOrderHttpHelperImplTest {
 		CommerceContext commerceContext = new TestCommerceContext(
 			_accountEntry, _commerceCurrency, _commerceChannel, _user, _group,
 			null);
+
+		_httpServletRequest = new MockHttpServletRequest();
 
 		_httpServletRequest.setAttribute(
 			CommerceWebKeys.COMMERCE_CONTEXT, commerceContext);
@@ -145,11 +165,11 @@ public class CommerceOrderHttpHelperImplTest {
 
 	@After
 	public void tearDown() throws PortalException {
-		CentralizedThreadLocal.clearShortLivedThreadLocals();
-
 		for (CommerceOrder commerceOrder : _commerceOrders) {
 			_commerceOrderLocalService.deleteCommerceOrder(commerceOrder);
 		}
+
+		CentralizedThreadLocal.clearShortLivedCentralizedThreadLocals();
 	}
 
 	@Test
@@ -175,6 +195,24 @@ public class CommerceOrderHttpHelperImplTest {
 
 		Assert.assertEquals(
 			expectedCommerceOrder.getCommerceOrderId(),
+			actualCommerceOrder.getCommerceOrderId());
+
+		CommerceOrder commerceOrder =
+			_commerceOrderLocalService.addCommerceOrder(
+				_user.getUserId(), _commerceChannel.getGroupId(),
+				_accountEntry.getAccountEntryId(), _commerceCurrency.getCode(),
+				0);
+
+		_commerceOrders.add(commerceOrder);
+
+		actualCommerceOrder = _commerceOrderHttpHelper.getCurrentCommerceOrder(
+			_httpServletRequest);
+
+		Assert.assertEquals(
+			expectedCommerceOrder.getCommerceOrderId(),
+			actualCommerceOrder.getCommerceOrderId());
+		Assert.assertNotEquals(
+			commerceOrder.getCommerceOrderId(),
 			actualCommerceOrder.getCommerceOrderId());
 	}
 
@@ -225,13 +263,191 @@ public class CommerceOrderHttpHelperImplTest {
 					_httpServletRequest)));
 	}
 
+	@Test
+	public void testGetCommerceOrderWithNullCommerceContext() throws Exception {
+		frutillaRule.scenario(
+			"Attempt to get a commerce order from http servlet request"
+		).given(
+			"An HttpServletRequest and a ThemeDisplay"
+		).when(
+			"I use an empty HttpServletRequest with null CommerceContext"
+		).then(
+			"I should get a null value"
+		);
+
+		CommerceOrder commerceOrder =
+			_commerceOrderHttpHelper.getCurrentCommerceOrder(
+				new MockHttpServletRequest());
+
+		Assert.assertNull(commerceOrder);
+	}
+
+	@Test
+	public void testGetCurrentCommerceOrder() throws Exception {
+		AccountEntry accountEntry =
+			CommerceAccountTestUtil.addBusinessAccountEntry(
+				_user.getUserId(), "Test Business Account", null, null,
+				new long[] {_user.getUserId()}, null,
+				ServiceContextTestUtil.getServiceContext());
+
+		_commerceOrders.add(
+			_commerceOrderLocalService.addCommerceOrder(
+				_user.getUserId(), _commerceChannel.getGroupId(),
+				accountEntry.getAccountEntryId(), _commerceCurrency.getCode(),
+				0));
+
+		User user = UserTestUtil.addUser();
+
+		_accountEntryUserRelLocalService.addAccountEntryUserRel(
+			accountEntry.getAccountEntryId(), user.getUserId());
+
+		Role role = _roleLocalService.getRole(
+			_group.getCompanyId(),
+			AccountRoleConstants.ROLE_NAME_ACCOUNT_BUYER);
+
+		_userGroupRoleLocalService.addUserGroupRole(
+			user.getUserId(), accountEntry.getAccountEntryGroupId(),
+			role.getRoleId());
+
+		try (ContextUserReplace contextUserReplace = new ContextUserReplace(
+				user, PermissionCheckerFactoryUtil.create(user))) {
+
+			Assert.assertNotNull(_getCurrentCommerceOrder(accountEntry, user));
+		}
+
+		ReflectionTestUtil.<Long>invoke(
+			_commerceOrderHttpHelper, "_unsetCurrentCommerceOrder",
+			new Class<?>[0]);
+
+		_resourcePermissionLocalService.removeResourcePermission(
+			_group.getCompanyId(), CommerceOrderConstants.RESOURCE_NAME,
+			ResourceConstants.SCOPE_GROUP_TEMPLATE,
+			String.valueOf(GroupConstants.DEFAULT_PARENT_GROUP_ID),
+			role.getRoleId(),
+			CommerceOrderActionKeys.VIEW_OPEN_COMMERCE_ORDERS);
+
+		try (ContextUserReplace contextUserReplace = new ContextUserReplace(
+				user, PermissionCheckerFactoryUtil.create(user))) {
+
+			Assert.assertNull(_getCurrentCommerceOrder(accountEntry, user));
+
+			ReflectionTestUtil.<Long>invoke(
+				_commerceOrderHttpHelper, "_unsetCurrentCommerceOrder",
+				new Class<?>[0]);
+
+			_commerceOrders.add(
+				_commerceOrderLocalService.addCommerceOrder(
+					user.getUserId(), _commerceChannel.getGroupId(),
+					accountEntry.getAccountEntryId(),
+					_commerceCurrency.getCode(), 0));
+
+			Assert.assertNotNull(_getCurrentCommerceOrder(accountEntry, user));
+		}
+		finally {
+			_resourcePermissionLocalService.addResourcePermission(
+				_group.getCompanyId(), CommerceOrderConstants.RESOURCE_NAME,
+				ResourceConstants.SCOPE_GROUP_TEMPLATE,
+				String.valueOf(GroupConstants.DEFAULT_PARENT_GROUP_ID),
+				role.getRoleId(),
+				CommerceOrderActionKeys.VIEW_OPEN_COMMERCE_ORDERS);
+		}
+	}
+
+	@Test
+	public void testSetCurrentCommerceOrder() throws Exception {
+		CommerceOrder commerceOrder = _commerceOrderHttpHelper.addCommerceOrder(
+			_httpServletRequest);
+
+		_commerceOrders.add(commerceOrder);
+
+		try (SafeCloseable safeCloseable =
+				AccountRolePermissionThreadLocal.
+					setAccountEntryIdWithSafeCloseable(
+						RandomTestUtil.nextInt())) {
+
+			_commerceOrderHttpHelper.setCurrentCommerceOrder(
+				_httpServletRequest, commerceOrder);
+
+			Assert.assertEquals(
+				commerceOrder.getCommerceAccountId(),
+				AccountRolePermissionThreadLocal.getAccountEntryId());
+		}
+
+		_accountEntry.setType(AccountConstants.ACCOUNT_ENTRY_TYPE_BUSINESS);
+
+		_accountEntry = _accountEntryLocalService.updateAccountEntry(
+			_accountEntry);
+
+		try (SafeCloseable safeCloseable =
+				AccountRolePermissionThreadLocal.
+					setAccountEntryIdWithSafeCloseable(
+						RandomTestUtil.nextInt())) {
+
+			_commerceOrderHttpHelper.setCurrentCommerceOrder(
+				_httpServletRequest, commerceOrder);
+
+			Assert.fail();
+		}
+		catch (PortalException portalException) {
+			Assert.assertNotNull(portalException);
+		}
+
+		try (SafeCloseable safeCloseable =
+				AccountRolePermissionThreadLocal.
+					setAccountEntryIdWithSafeCloseable(
+						commerceOrder.getCommerceAccountId())) {
+
+			_commerceOrderHttpHelper.setCurrentCommerceOrder(
+				_httpServletRequest, commerceOrder);
+
+			Assert.assertEquals(
+				commerceOrder.getCommerceAccountId(),
+				AccountRolePermissionThreadLocal.getAccountEntryId());
+		}
+	}
+
 	@Rule
 	public FrutillaRule frutillaRule = new FrutillaRule();
 
-	private static User _user;
+	private CommerceOrder _getCurrentCommerceOrder(
+			AccountEntry accountEntry, User user)
+		throws PortalException {
+
+		MockHttpServletRequest mockHttpServletRequest =
+			new MockHttpServletRequest();
+
+		mockHttpServletRequest.setAttribute(
+			CommerceWebKeys.COMMERCE_CONTEXT,
+			new TestCommerceContext(
+				accountEntry, _commerceCurrency, _commerceChannel, user, _group,
+				null));
+
+		ThemeDisplay themeDisplay = ThemeDisplayFactory.create();
+
+		themeDisplay.setPermissionChecker(
+			PermissionCheckerFactoryUtil.create(user));
+		themeDisplay.setRequest(mockHttpServletRequest);
+		themeDisplay.setScopeGroupId(_group.getGroupId());
+		themeDisplay.setSignedIn(true);
+		themeDisplay.setUser(user);
+
+		mockHttpServletRequest.setAttribute(
+			WebKeys.THEME_DISPLAY, themeDisplay);
+
+		mockHttpServletRequest.setAttribute(WebKeys.USER_ID, user.getUserId());
+
+		return _commerceOrderHttpHelper.getCurrentCommerceOrder(
+			mockHttpServletRequest);
+	}
 
 	@DeleteAfterTestRun
 	private AccountEntry _accountEntry;
+
+	@Inject
+	private AccountEntryLocalService _accountEntryLocalService;
+
+	@Inject
+	private AccountEntryUserRelLocalService _accountEntryUserRelLocalService;
 
 	@DeleteAfterTestRun
 	private CommerceChannel _commerceChannel;
@@ -255,6 +471,18 @@ public class CommerceOrderHttpHelperImplTest {
 	private final List<CommerceOrder> _commerceOrders = new ArrayList<>();
 	private Group _group;
 	private HttpServletRequest _httpServletRequest;
+	private PermissionChecker _permissionChecker;
+
+	@Inject
+	private ResourcePermissionLocalService _resourcePermissionLocalService;
+
+	@Inject
+	private RoleLocalService _roleLocalService;
+
 	private ThemeDisplay _themeDisplay;
+	private User _user;
+
+	@Inject
+	private UserGroupRoleLocalService _userGroupRoleLocalService;
 
 }

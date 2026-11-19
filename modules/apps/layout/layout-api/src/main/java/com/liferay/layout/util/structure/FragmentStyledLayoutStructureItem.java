@@ -7,16 +7,13 @@ package com.liferay.layout.util.structure;
 
 import com.liferay.fragment.model.FragmentEntry;
 import com.liferay.fragment.model.FragmentEntryLink;
-import com.liferay.fragment.service.FragmentEntryLocalServiceUtil;
 import com.liferay.layout.util.constants.LayoutDataItemTypeConstants;
 import com.liferay.petra.lang.HashUtil;
+import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
-import com.liferay.portal.kernel.log.Log;
-import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.portlet.PortletIdCodec;
-import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 
 import java.util.Objects;
@@ -63,9 +60,8 @@ public class FragmentStyledLayoutStructureItem
 	public String getFragmentEntryLinkCssClass(
 		FragmentEntryLink fragmentEntryLink) {
 
-		return _normalizeCssClass(
-			LAYOUT_STRUCTURE_ITEM_CSS_CLASS_PREFIX +
-				_getFragmentEntryLinkIdentifier(fragmentEntryLink));
+		return LAYOUT_STRUCTURE_ITEM_CSS_CLASS_PREFIX +
+			_getFragmentEntryLinkIdentifier(fragmentEntryLink);
 	}
 
 	public long getFragmentEntryLinkId() {
@@ -134,56 +130,76 @@ public class FragmentStyledLayoutStructureItem
 		}
 	}
 
-	private JSONObject _createJSONObject(String value) {
-		try {
-			return JSONFactoryUtil.createJSONObject(value);
-		}
-		catch (Exception exception) {
-			if (_log.isDebugEnabled()) {
-				_log.debug(exception);
-			}
-
-			return JSONFactoryUtil.createJSONObject();
-		}
-	}
-
 	private String _getFragmentEntryLinkIdentifier(
 		FragmentEntryLink fragmentEntryLink) {
 
 		String rendererKey = fragmentEntryLink.getRendererKey();
 
 		if (Validator.isNotNull(rendererKey)) {
-			return rendererKey;
+			return _normalizeCssClass(rendererKey);
 		}
 
-		JSONObject jsonObject = _createJSONObject(
-			fragmentEntryLink.getEditableValues());
+		String portletId = null;
 
-		String portletId = jsonObject.getString("portletId");
+		JSONObject jsonObject = fragmentEntryLink.getEditableValuesJSONObject();
+
+		if (jsonObject != null) {
+			portletId = jsonObject.getString("portletId");
+		}
 
 		if (Validator.isNotNull(portletId)) {
-			return PortletIdCodec.decodePortletName(portletId);
+			return _normalizeCssClass(
+				PortletIdCodec.decodePortletName(portletId));
 		}
 
-		FragmentEntry fragmentEntry =
-			FragmentEntryLocalServiceUtil.fetchFragmentEntry(
-				fragmentEntryLink.getFragmentEntryId());
+		FragmentEntry fragmentEntry = fragmentEntryLink.fetchFragmentEntry();
 
 		if (fragmentEntry != null) {
-			return fragmentEntry.getFragmentEntryKey();
+			return _normalizeCssClass(fragmentEntry.getFragmentEntryKey());
 		}
 
 		return StringPool.BLANK;
 	}
 
 	private String _normalizeCssClass(String cssClass) {
-		cssClass = StringUtil.toLowerCase(cssClass);
+		StringBuilder sb = null;
 
-		return cssClass.replaceAll("[^A-Za-z0-9-]", StringPool.DASH);
+		for (int i = 0; i < cssClass.length(); i++) {
+			char c = cssClass.charAt(i);
+
+			if (((c >= CharPool.LOWER_CASE_A) &&
+				 (c <= CharPool.LOWER_CASE_Z)) ||
+				((c >= CharPool.NUMBER_0) && (c <= CharPool.NUMBER_9)) ||
+				(c == CharPool.DASH)) {
+
+				if (sb != null) {
+					sb.append(c);
+				}
+			}
+			else {
+				if (sb == null) {
+					sb = new StringBuilder(cssClass.length());
+
+					sb.append(cssClass, 0, i);
+				}
+
+				if ((c >= CharPool.UPPER_CASE_A) &&
+					(c <= CharPool.UPPER_CASE_Z)) {
+
+					sb.append((char)(c + 32));
+				}
+				else {
+					sb.append(CharPool.DASH);
+				}
+			}
+		}
+
+		if (sb == null) {
+			return cssClass;
+		}
+
+		return sb.toString();
 	}
-
-	private static final Log _log = LogFactoryUtil.getLog(
-		FragmentStyledLayoutStructureItem.class);
 
 	private long _fragmentEntryLinkId;
 	private boolean _indexed = true;

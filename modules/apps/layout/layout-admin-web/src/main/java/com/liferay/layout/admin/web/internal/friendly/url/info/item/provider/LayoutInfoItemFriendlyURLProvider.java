@@ -46,12 +46,12 @@ public class LayoutInfoItemFriendlyURLProvider
 			_friendlyURLEntryLocalizationComparator);
 	}
 
-	private final FriendlyURLEntryLocalizationComparator
-		_friendlyURLEntryLocalizationComparator =
-			new FriendlyURLEntryLocalizationComparator();
-
 	@Reference
 	private FriendlyURLEntryLocalService _friendlyURLEntryLocalService;
+
+	private final FriendlyURLEntryLocalizationComparator
+		_friendlyURLEntryLocalizationComparator =
+			FriendlyURLEntryLocalizationComparator.getInstance(false);
 
 	@Reference
 	private LayoutFriendlyURLEntryHelper _layoutFriendlyURLEntryHelper;

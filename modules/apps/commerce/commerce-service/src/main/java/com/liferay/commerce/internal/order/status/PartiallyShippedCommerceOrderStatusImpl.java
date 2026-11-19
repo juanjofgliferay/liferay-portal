@@ -6,12 +6,12 @@
 package com.liferay.commerce.internal.order.status;
 
 import com.liferay.commerce.constants.CommerceOrderConstants;
+import com.liferay.commerce.helper.CommerceShippingHelper;
 import com.liferay.commerce.model.CommerceOrder;
 import com.liferay.commerce.model.CommerceOrderItem;
 import com.liferay.commerce.order.status.CommerceOrderStatus;
 import com.liferay.commerce.service.CommerceOrderLocalService;
 import com.liferay.commerce.service.CommerceOrderService;
-import com.liferay.commerce.util.CommerceShippingHelper;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.util.BigDecimalUtil;
@@ -83,6 +83,7 @@ public class PartiallyShippedCommerceOrderStatusImpl
 		return !commerceOrder.isQuote();
 	}
 
+	@Override
 	public boolean isTransitionCriteriaMet(CommerceOrder commerceOrder)
 		throws PortalException {
 
@@ -91,31 +92,25 @@ public class PartiallyShippedCommerceOrderStatusImpl
 		for (CommerceOrderItem shippedCommerceOrderItem :
 				commerceOrder.getCommerceOrderItems()) {
 
-			if (BigDecimalUtil.lt(
+			if (!BigDecimalUtil.lt(
 					shippedCommerceOrderItem.getShippedQuantity(),
-					shippedCommerceOrderItem.getQuantity()) &&
-				shippedCommerceOrderItem.isShippable()) {
+					shippedCommerceOrderItem.getQuantity()) ||
+				!shippedCommerceOrderItem.isShippable()) {
 
-				allOrderItemsShipped = false;
+				continue;
 			}
+
+			allOrderItemsShipped = false;
 		}
 
-		if (!allOrderItemsShipped) {
-			return true;
-		}
-
-		return false;
+		return !allOrderItemsShipped;
 	}
 
 	@Override
 	public boolean isValidForOrder(CommerceOrder commerceOrder)
 		throws PortalException {
 
-		if (!_commerceShippingHelper.isShippable(commerceOrder)) {
-			return false;
-		}
-
-		return true;
+		return _commerceShippingHelper.isShippable(commerceOrder);
 	}
 
 	@Reference

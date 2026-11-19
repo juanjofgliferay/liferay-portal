@@ -5,7 +5,6 @@
 
 package com.liferay.content.dashboard.journal.internal.item.action;
 
-import com.liferay.asset.display.page.portlet.AssetDisplayPageFriendlyURLProvider;
 import com.liferay.asset.display.page.util.AssetDisplayPageUtil;
 import com.liferay.content.dashboard.item.action.ContentDashboardItemAction;
 import com.liferay.info.item.InfoItemReference;
@@ -34,13 +33,13 @@ import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Cristina González
@@ -49,7 +48,6 @@ public class ViewJournalArticleContentDashboardItemAction
 	implements ContentDashboardItemAction {
 
 	public ViewJournalArticleContentDashboardItemAction(
-		AssetDisplayPageFriendlyURLProvider assetDisplayPageFriendlyURLProvider,
 		HttpServletRequest httpServletRequest, JournalArticle journalArticle,
 		Language language,
 		LayoutDisplayPageProviderRegistry layoutDisplayPageProviderRegistry,
@@ -131,6 +129,7 @@ public class ViewJournalArticleContentDashboardItemAction
 		LayoutDisplayPageProvider<?> layoutDisplayPageProvider =
 			_layoutDisplayPageProviderRegistry.
 				getLayoutDisplayPageProviderByClassName(
+					journalArticle.getCompanyId(),
 					JournalArticle.class.getName());
 
 		if (layoutDisplayPageProvider == null) {

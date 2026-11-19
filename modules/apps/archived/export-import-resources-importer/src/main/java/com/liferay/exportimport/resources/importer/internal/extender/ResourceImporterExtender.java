@@ -14,16 +14,12 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.messaging.Message;
 import com.liferay.portal.kernel.messaging.MessageBus;
 import com.liferay.portal.kernel.plugin.PluginPackage;
-import com.liferay.portal.kernel.util.HashMapDictionary;
 import com.liferay.portal.kernel.util.PropertiesUtil;
 import com.liferay.portal.plugin.PluginPackageUtil;
 
+import jakarta.servlet.ServletContext;
+
 import java.io.IOException;
-
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
-import javax.servlet.ServletContext;
 
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -46,28 +42,14 @@ public class ResourceImporterExtender {
 	protected void activate(BundleContext bundleContext) {
 		_bundleContext = bundleContext;
 
-		_serviceTracker = ServiceTrackerFactory.create(
+		_serviceTracker = ServiceTrackerFactory.open(
 			bundleContext, ResourceImporterBundleProvider.class,
 			new ResourceImporterBundleProviderServiceTrackerCustomizer());
-
-		_serviceTracker.open();
 	}
 
 	@Deactivate
 	protected void deactivate() {
-		for (ServiceRegistration<?> serviceRegistration :
-				_serviceRegistrations.values()) {
-
-			serviceRegistration.unregister();
-		}
-
-		_serviceRegistrations.clear();
-
 		_serviceTracker.close();
-
-		_serviceTracker = null;
-
-		_bundleContext = null;
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
@@ -81,18 +63,17 @@ public class ResourceImporterExtender {
 	@Reference
 	private MessageBus _messageBus;
 
-	private final Map<String, ServiceRegistration<ServletContext>>
-		_serviceRegistrations = new ConcurrentHashMap<>();
 	private ServiceTracker
-		<ResourceImporterBundleProvider, ResourceImporterBundleProvider>
+		<ResourceImporterBundleProvider, ServiceRegistration<ServletContext>>
 			_serviceTracker;
 
 	private class ResourceImporterBundleProviderServiceTrackerCustomizer
 		implements ServiceTrackerCustomizer
-			<ResourceImporterBundleProvider, ResourceImporterBundleProvider> {
+			<ResourceImporterBundleProvider,
+			 ServiceRegistration<ServletContext>> {
 
 		@Override
-		public ResourceImporterBundleProvider addingService(
+		public ServiceRegistration<ServletContext> addingService(
 			ServiceReference<ResourceImporterBundleProvider> serviceReference) {
 
 			if (!_clusterMasterExecutor.isMaster()) {
@@ -112,11 +93,7 @@ public class ResourceImporterExtender {
 
 				ServiceRegistration<ServletContext> serviceRegistration =
 					_bundleContext.registerService(
-						ServletContext.class, servletContext,
-						new HashMapDictionary<String, Object>());
-
-				_serviceRegistrations.put(
-					bundleSymbolicName, serviceRegistration);
+						ServletContext.class, servletContext, null);
 
 				Message message = new Message();
 
@@ -124,6 +101,8 @@ public class ResourceImporterExtender {
 				message.put("servletContextName", bundleSymbolicName);
 
 				_messageBus.sendMessage(DestinationNames.HOT_DEPLOY, message);
+
+				return serviceRegistration;
 			}
 			catch (Exception exception) {
 				if (_log.isWarnEnabled()) {
@@ -139,24 +118,19 @@ public class ResourceImporterExtender {
 		@Override
 		public void modifiedService(
 			ServiceReference<ResourceImporterBundleProvider> serviceReference,
-			ResourceImporterBundleProvider resourceImporterBundleProvider) {
+			ServiceRegistration<ServletContext> serviceRegistration) {
 		}
 
 		@Override
 		public void removedService(
 			ServiceReference<ResourceImporterBundleProvider> serviceReference,
-			ResourceImporterBundleProvider resourceImporterBundleProvider) {
+			ServiceRegistration<ServletContext> serviceRegistration) {
+
+			serviceRegistration.unregister();
 
 			Bundle bundle = serviceReference.getBundle();
 
 			String bundleSymbolicName = bundle.getSymbolicName();
-
-			ServiceRegistration<ServletContext> serviceRegistration =
-				_serviceRegistrations.remove(bundleSymbolicName);
-
-			if (serviceRegistration != null) {
-				serviceRegistration.unregister();
-			}
 
 			try {
 				PluginPackageUtil.unregisterInstalledPluginPackage(

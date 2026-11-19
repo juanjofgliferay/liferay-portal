@@ -1,11 +1,11 @@
 // Border Radius
 
-$border-radius-xxl: var(--border-radius-xxl);
-$border-radius-xl: var(--border-radius-xl);
-$border-radius-lg: var(--border-radius-lg);
 $border-radius: var(--border-radius);
+$border-radius-lg: var(--border-radius-lg);
 $border-radius-sm: var(--border-radius-sm);
+$border-radius-xl: var(--border-radius-xl);
 $border-radius-xs: var(--border-radius-xs);
+$border-radius-xxl: var(--border-radius-xxl);
 
 $rounded-border-radius: $border-radius;
 $rounded-circle-border-radius: var(--border-radius-circle);
@@ -23,9 +23,15 @@ $component-focus-box-shadow: 0 0 0 0.125rem $form-white-color#{','} 0 0 0 0.25re
 $component-focus-inset-box-shadow: inset 0 0 0 0.125rem $form-input-focus-color#{','}
 	inset 0 0 0 0.25rem $form-white-color;
 
+// Cursors
+
+$link-cursor: pointer;
+
+$disabled-cursor: not-allowed;
+
 // Colors
 
-$white: var(--color-neutral-0);
+$black: var(--color-neutral-10);
 $gray-100: var(--color-neutral-1);
 $gray-200: var(--color-neutral-2);
 $gray-300: var(--color-neutral-3);
@@ -35,7 +41,7 @@ $gray-600: var(--color-neutral-6);
 $gray-700: var(--color-neutral-7);
 $gray-800: var(--color-neutral-8);
 $gray-900: var(--color-neutral-9);
-$black: var(--color-neutral-10);
+$white: var(--color-neutral-0);
 
 $primary: var(--color-brand-primary);
 $primary-d1: var(--color-brand-primary-darken-1);
@@ -87,6 +93,10 @@ $dark-d2: var(--color-neutral-6);
 $dark-l1: var(--color-neutral-8);
 $dark-l2: var(--color-neutral-9);
 
+// Line Height
+
+$line-height-base: 1.5;
+
 // Headings h1-h6
 
 $headings-line-height: var(--headings-line-height);
@@ -125,11 +135,13 @@ $link-hover-decoration: var(--link-hover-text-decoration);
 // Transitions
 
 $transition-base: all var(--transition-base);
-$transition-fade: opacity var(--transition-fade);
 $transition-collapse: height var(--transition-collapse);
+$transition-fade: opacity var(--transition-fade);
 
-$btn-transition: color var(--transition-base),
-	background-color var(--transition-base), border-color var(--transition-base),
+$btn-transition:
+	color var(--transition-base),
+	background-color var(--transition-base),
+	border-color var(--transition-base),
 	box-shadow var(--transition-base);
 
 // Other

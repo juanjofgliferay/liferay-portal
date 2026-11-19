@@ -5,6 +5,8 @@
 
 package com.liferay.portlet.social.service.impl;
 
+import com.liferay.osgi.service.tracker.collections.list.ServiceTrackerList;
+import com.liferay.osgi.service.tracker.collections.list.ServiceTrackerListFactory;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.json.JSONException;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
@@ -21,12 +23,8 @@ import com.liferay.social.kernel.model.SocialRequestFeedEntry;
 import com.liferay.social.kernel.model.SocialRequestInterpreter;
 import com.liferay.social.kernel.model.impl.SocialRequestInterpreterImpl;
 
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
-
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
-import org.osgi.util.tracker.ServiceTracker;
 import org.osgi.util.tracker.ServiceTrackerCustomizer;
 
 /**
@@ -54,14 +52,12 @@ public class SocialRequestInterpreterLocalServiceImpl
 	public void afterPropertiesSet() {
 		super.afterPropertiesSet();
 
-		_serviceTracker = new ServiceTracker<>(
-			_bundleContext,
-			SystemBundleUtil.createFilter(
-				"(&(javax.portlet.name=*)(objectClass=" +
-					SocialRequestInterpreter.class.getName() + "))"),
-			new SocialRequestInterpreterServiceTrackerCustomizer());
-
-		_serviceTracker.open();
+		_serviceTrackerList =
+			(ServiceTrackerList<SocialRequestInterpreter>)
+				ServiceTrackerListFactory.open(
+					_bundleContext, SocialRequestInterpreter.class,
+					"(jakarta.portlet.name=*)",
+					new SocialRequestInterpreterServiceTrackerCustomizer());
 	}
 
 	/**
@@ -87,22 +83,23 @@ public class SocialRequestInterpreterLocalServiceImpl
 		String className = PortalUtil.getClassName(request.getClassNameId());
 
 		for (SocialRequestInterpreter requestInterpreter :
-				_requestInterpreters) {
+				_serviceTrackerList) {
 
 			SocialRequestInterpreterImpl socialRequestInterpreterImpl =
 				(SocialRequestInterpreterImpl)requestInterpreter;
 
-			if (matches(socialRequestInterpreterImpl, className, request)) {
-				SocialRequestFeedEntry requestFeedEntry =
-					socialRequestInterpreterImpl.interpret(
-						request, themeDisplay);
+			if (!matches(socialRequestInterpreterImpl, className, request)) {
+				continue;
+			}
 
-				if (requestFeedEntry != null) {
-					requestFeedEntry.setPortletId(
-						socialRequestInterpreterImpl.getPortletId());
+			SocialRequestFeedEntry requestFeedEntry =
+				socialRequestInterpreterImpl.interpret(request, themeDisplay);
 
-					return requestFeedEntry;
-				}
+			if (requestFeedEntry != null) {
+				requestFeedEntry.setPortletId(
+					socialRequestInterpreterImpl.getPortletId());
+
+				return requestFeedEntry;
 			}
 		}
 
@@ -130,19 +127,20 @@ public class SocialRequestInterpreterLocalServiceImpl
 		String className = PortalUtil.getClassName(request.getClassNameId());
 
 		for (SocialRequestInterpreter requestInterpreter :
-				_requestInterpreters) {
+				_serviceTrackerList) {
 
 			SocialRequestInterpreterImpl socialRequestInterpreterImpl =
 				(SocialRequestInterpreterImpl)requestInterpreter;
 
-			if (matches(socialRequestInterpreterImpl, className, request)) {
-				boolean value =
-					socialRequestInterpreterImpl.processConfirmation(
-						request, themeDisplay);
+			if (!matches(socialRequestInterpreterImpl, className, request)) {
+				continue;
+			}
 
-				if (value) {
-					return;
-				}
+			boolean value = socialRequestInterpreterImpl.processConfirmation(
+				request, themeDisplay);
+
+			if (value) {
+				return;
 			}
 		}
 	}
@@ -169,18 +167,20 @@ public class SocialRequestInterpreterLocalServiceImpl
 		String className = PortalUtil.getClassName(request.getClassNameId());
 
 		for (SocialRequestInterpreter requestInterpreter :
-				_requestInterpreters) {
+				_serviceTrackerList) {
 
 			SocialRequestInterpreterImpl socialRequestInterpreterImpl =
 				(SocialRequestInterpreterImpl)requestInterpreter;
 
-			if (matches(socialRequestInterpreterImpl, className, request)) {
-				boolean value = socialRequestInterpreterImpl.processRejection(
-					request, themeDisplay);
+			if (!matches(socialRequestInterpreterImpl, className, request)) {
+				continue;
+			}
 
-				if (value) {
-					return;
-				}
+			boolean value = socialRequestInterpreterImpl.processRejection(
+				request, themeDisplay);
+
+			if (value) {
+				return;
 			}
 		}
 	}
@@ -226,10 +226,7 @@ public class SocialRequestInterpreterLocalServiceImpl
 
 	private final BundleContext _bundleContext =
 		SystemBundleUtil.getBundleContext();
-	private final List<SocialRequestInterpreter> _requestInterpreters =
-		new CopyOnWriteArrayList<>();
-	private ServiceTracker<SocialRequestInterpreter, SocialRequestInterpreter>
-		_serviceTracker;
+	private ServiceTrackerList<SocialRequestInterpreter> _serviceTrackerList;
 
 	private class SocialRequestInterpreterServiceTrackerCustomizer
 		implements ServiceTrackerCustomizer
@@ -244,13 +241,11 @@ public class SocialRequestInterpreterLocalServiceImpl
 
 			if (!(requestInterpreter instanceof SocialRequestInterpreterImpl)) {
 				String portletId = (String)serviceReference.getProperty(
-					"javax.portlet.name");
+					"jakarta.portlet.name");
 
 				requestInterpreter = new SocialRequestInterpreterImpl(
 					portletId, requestInterpreter);
 			}
-
-			_requestInterpreters.add(requestInterpreter);
 
 			return requestInterpreter;
 		}
@@ -267,8 +262,6 @@ public class SocialRequestInterpreterLocalServiceImpl
 			SocialRequestInterpreter requestInterpreter) {
 
 			_bundleContext.ungetService(serviceReference);
-
-			_requestInterpreters.remove(requestInterpreter);
 		}
 
 	}

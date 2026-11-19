@@ -64,6 +64,7 @@ AssetListEntry assetListEntry = assetListDisplayContext.getAssetListEntry();
 			<aui:input name="redirect" type="hidden" value="<%= currentURL %>" />
 			<aui:input name="backURL" type="hidden" value="<%= editAssetListDisplayContext.getBackURL() %>" />
 			<aui:input name="assetListEntryId" type="hidden" value="<%= assetListDisplayContext.getAssetListEntryId() %>" />
+			<aui:input name="audienceEntryERC" type="hidden" value="<%= assetListDisplayContext.getAudienceEntryERC() %>" />
 			<aui:input name="segmentsEntryId" type="hidden" value="<%= assetListDisplayContext.getSegmentsEntryId() %>" />
 			<aui:input name="assetEntryIds" type="hidden" />
 
@@ -73,7 +74,7 @@ AssetListEntry assetListEntry = assetListDisplayContext.getAssetListEntry();
 						verticalAlign="center"
 					>
 						<clay:content-col>
-							<%= HtmlUtil.escape(editAssetListDisplayContext.getSegmentsEntryName(editAssetListDisplayContext.getSegmentsEntryId(), locale)) %>
+							<%= HtmlUtil.escape(editAssetListDisplayContext.getVariationName(locale)) %>
 						</clay:content-col>
 
 						<clay:content-col
@@ -87,7 +88,7 @@ AssetListEntry assetListEntry = assetListDisplayContext.getAssetListEntry();
 							<clay:dropdown-actions
 								aria-label='<%= LanguageUtil.get(request, "show-actions") %>'
 								dropdownItems="<%= assetListEntryVariationActionDropdownItemsProvider.getActionDropdownItems() %>"
-								propsTransformer="js/AssetListEntryVariationDefaultPropsTransformer"
+								propsTransformer="{AssetListEntryVariationDefaultPropsTransformer} from asset-list-web"
 								title='<%= LanguageUtil.get(request, "show-actions") %>'
 							/>
 						</clay:content-col>
@@ -108,16 +109,26 @@ AssetListEntry assetListEntry = assetListDisplayContext.getAssetListEntry();
 							</span>
 						</clay:content-col>
 
-						<c:if test="<%= !editAssetListDisplayContext.isLiveGroup() %>">
+						<%
+						JSONArray assetEntryTypesJSONArray = editAssetListDisplayContext.getAssetEntryTypesJSONArray();
+						%>
+
+						<c:if test="<%= !editAssetListDisplayContext.isLiveGroup() && (assetEntryTypesJSONArray.length() > 0) %>">
 							<clay:content-col
 								containerElement="span"
 							>
-								<clay:dropdown-menu
+								<clay:button
+									additionalProps='<%=
+										HashMapBuilder.<String, Object>put(
+											"assetEntryTypes", assetEntryTypesJSONArray
+										).put(
+											"groupIds", editAssetListDisplayContext.getConnectedGroupIdsString()
+										).build()
+									%>'
 									aria-label='<%= LanguageUtil.get(request, "select-items") %>'
 									cssClass="btn btn-secondary btn-sm"
-									dropdownItems="<%= editAssetListDisplayContext.getActionDropdownItems() %>"
 									label='<%= LanguageUtil.get(request, "select") %>'
-									propsTransformer="js/EditAssetListEntryManualDefaultPropsTransformer"
+									propsTransformer="{EditAssetListEntryManualDefaultPropsTransformer} from asset-list-web"
 								/>
 							</clay:content-col>
 						</c:if>
@@ -133,7 +144,7 @@ AssetListEntry assetListEntry = assetListDisplayContext.getAssetListEntry();
 					<liferay-ui:search-container-row
 						className="com.liferay.asset.list.model.AssetListEntryAssetEntryRel"
 						escapedModel="<%= true %>"
-						keyProperty="entryId"
+						keyProperty="assetEntryId"
 						modelVar="assetListEntryAssetEntryRel"
 					>
 

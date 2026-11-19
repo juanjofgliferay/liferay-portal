@@ -11,6 +11,7 @@ import com.liferay.info.field.type.BooleanInfoFieldType;
 import com.liferay.info.field.type.DateInfoFieldType;
 import com.liferay.info.field.type.NumberInfoFieldType;
 import com.liferay.info.field.type.TextInfoFieldType;
+import com.liferay.info.field.type.URLInfoFieldType;
 import com.liferay.info.localized.InfoLocalizedValue;
 
 /**
@@ -18,15 +19,6 @@ import com.liferay.info.localized.InfoLocalizedValue;
  */
 public class CPAttachmentFileEntryInfoItemFields {
 
-	public static final InfoField<BooleanInfoFieldType> approvedInfoField =
-		BuilderHolder._builder.infoFieldType(
-			BooleanInfoFieldType.INSTANCE
-		).name(
-			"approved"
-		).labelInfoLocalizedValue(
-			InfoLocalizedValue.localize(
-				CPAttachmentFileEntryInfoItemFields.class, "approved")
-		).build();
 	public static final InfoField<BooleanInfoFieldType> CDNEnabledInfoField =
 		BuilderHolder._builder.infoFieldType(
 			BooleanInfoFieldType.INSTANCE
@@ -35,6 +27,24 @@ public class CPAttachmentFileEntryInfoItemFields {
 		).labelInfoLocalizedValue(
 			InfoLocalizedValue.localize(
 				CPAttachmentFileEntryInfoItemFields.class, "cdn-enabled")
+		).build();
+	public static final InfoField<TextInfoFieldType> URLInfoField =
+		BuilderHolder._builder.infoFieldType(
+			TextInfoFieldType.INSTANCE
+		).name(
+			"URL"
+		).labelInfoLocalizedValue(
+			InfoLocalizedValue.localize(
+				CPAttachmentFileEntryInfoItemFields.class, "url")
+		).build();
+	public static final InfoField<BooleanInfoFieldType> approvedInfoField =
+		BuilderHolder._builder.infoFieldType(
+			BooleanInfoFieldType.INSTANCE
+		).name(
+			"approved"
+		).labelInfoLocalizedValue(
+			InfoLocalizedValue.localize(
+				CPAttachmentFileEntryInfoItemFields.class, "approved")
 		).build();
 	public static final InfoField<NumberInfoFieldType> companyIdInfoField =
 		BuilderHolder._builder.infoFieldType(
@@ -91,11 +101,13 @@ public class CPAttachmentFileEntryInfoItemFields {
 			InfoLocalizedValue.localize(
 				CPAttachmentFileEntryInfoItemFields.class, "display-date")
 		).build();
-	public static final InfoField<TextInfoFieldType> downloadURLInfoField =
+	public static final InfoField<URLInfoFieldType> downloadURLInfoField =
 		BuilderHolder._builder.infoFieldType(
-			TextInfoFieldType.INSTANCE
+			URLInfoFieldType.INSTANCE
 		).name(
 			"downloadURL"
+		).attribute(
+			URLInfoFieldType.DOWNLOAD, Boolean.TRUE
 		).labelInfoLocalizedValue(
 			InfoLocalizedValue.localize(
 				CPAttachmentFileEntryInfoItemFields.class, "download-url")
@@ -297,15 +309,6 @@ public class CPAttachmentFileEntryInfoItemFields {
 		).labelInfoLocalizedValue(
 			InfoLocalizedValue.localize(
 				CPAttachmentFileEntryInfoItemFields.class, "title")
-		).build();
-	public static final InfoField<TextInfoFieldType> URLInfoField =
-		BuilderHolder._builder.infoFieldType(
-			TextInfoFieldType.INSTANCE
-		).name(
-			"URL"
-		).labelInfoLocalizedValue(
-			InfoLocalizedValue.localize(
-				CPAttachmentFileEntryInfoItemFields.class, "url")
 		).build();
 	public static final InfoField<NumberInfoFieldType> userIdInfoField =
 		BuilderHolder._builder.infoFieldType(

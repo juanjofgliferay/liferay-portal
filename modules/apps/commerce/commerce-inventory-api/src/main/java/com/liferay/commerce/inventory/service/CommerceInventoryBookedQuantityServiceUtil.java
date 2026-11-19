@@ -7,6 +7,7 @@ package com.liferay.commerce.inventory.service;
 
 import com.liferay.commerce.inventory.model.CommerceInventoryBookedQuantity;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.module.service.Snapshot;
 
 import java.util.List;
 
@@ -33,7 +34,7 @@ public class CommerceInventoryBookedQuantityServiceUtil {
 			getCommerceInventoryBookedQuantities(
 				long companyId, String sku, String unitOfMeasureKey, int start,
 				int end)
-		throws com.liferay.portal.kernel.security.auth.PrincipalException {
+		throws PortalException {
 
 		return getService().getCommerceInventoryBookedQuantities(
 			companyId, sku, unitOfMeasureKey, start, end);
@@ -51,7 +52,7 @@ public class CommerceInventoryBookedQuantityServiceUtil {
 
 	public static int getCommerceInventoryBookedQuantitiesCount(
 			long companyId, String sku, String unitOfMeasureKey)
-		throws com.liferay.portal.kernel.security.auth.PrincipalException {
+		throws PortalException {
 
 		return getService().getCommerceInventoryBookedQuantitiesCount(
 			companyId, sku, unitOfMeasureKey);
@@ -76,15 +77,13 @@ public class CommerceInventoryBookedQuantityServiceUtil {
 	}
 
 	public static CommerceInventoryBookedQuantityService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(
-		CommerceInventoryBookedQuantityService service) {
-
-		_service = service;
-	}
-
-	private static volatile CommerceInventoryBookedQuantityService _service;
+	private static final Snapshot<CommerceInventoryBookedQuantityService>
+		_serviceSnapshot = new Snapshot<>(
+			CommerceInventoryBookedQuantityServiceUtil.class,
+			CommerceInventoryBookedQuantityService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1374879429

@@ -40,7 +40,7 @@ public class AccountEntryOrganizationRelServiceImpl
 
 		_accountEntryModelResourcePermission.check(
 			getPermissionChecker(), accountEntryId,
-			AccountActionKeys.MANAGE_ORGANIZATIONS);
+			AccountActionKeys.UPDATE_ORGANIZATIONS);
 
 		return accountEntryOrganizationRelLocalService.
 			addAccountEntryOrganizationRel(accountEntryId, organizationId);
@@ -53,7 +53,7 @@ public class AccountEntryOrganizationRelServiceImpl
 
 		_accountEntryModelResourcePermission.check(
 			getPermissionChecker(), accountEntryId,
-			AccountActionKeys.MANAGE_ORGANIZATIONS);
+			AccountActionKeys.UPDATE_ORGANIZATIONS);
 
 		accountEntryOrganizationRelLocalService.addAccountEntryOrganizationRels(
 			accountEntryId, organizationIds);
@@ -66,7 +66,7 @@ public class AccountEntryOrganizationRelServiceImpl
 
 		_accountEntryModelResourcePermission.check(
 			getPermissionChecker(), accountEntryId,
-			AccountActionKeys.MANAGE_ORGANIZATIONS);
+			AccountActionKeys.UPDATE_ORGANIZATIONS);
 
 		accountEntryOrganizationRelLocalService.
 			deleteAccountEntryOrganizationRel(accountEntryId, organizationId);
@@ -79,7 +79,7 @@ public class AccountEntryOrganizationRelServiceImpl
 
 		_accountEntryModelResourcePermission.check(
 			getPermissionChecker(), accountEntryId,
-			AccountActionKeys.MANAGE_ORGANIZATIONS);
+			AccountActionKeys.UPDATE_ORGANIZATIONS);
 
 		accountEntryOrganizationRelLocalService.
 			deleteAccountEntryOrganizationRels(accountEntryId, organizationIds);
@@ -91,8 +91,8 @@ public class AccountEntryOrganizationRelServiceImpl
 		throws PortalException {
 
 		AccountEntryOrganizationRel accountEntryOrganizationRel =
-			accountEntryOrganizationRelLocalService.
-				fetchAccountEntryOrganizationRel(accountEntryOrganizationRelId);
+			accountEntryOrganizationRelPersistence.fetchByPrimaryKey(
+				accountEntryOrganizationRelId);
 
 		if (accountEntryOrganizationRel != null) {
 			_accountEntryModelResourcePermission.check(
@@ -110,15 +110,14 @@ public class AccountEntryOrganizationRelServiceImpl
 		throws PortalException {
 
 		AccountEntryOrganizationRel accountEntryOrganizationRel =
-			accountEntryOrganizationRelLocalService.
-				fetchAccountEntryOrganizationRel(
-					accountEntryId, organizationId);
+			accountEntryOrganizationRelPersistence.fetchByA_O(
+				accountEntryId, organizationId);
 
 		if (accountEntryOrganizationRel != null) {
 			_accountEntryModelResourcePermission.check(
 				getPermissionChecker(),
 				accountEntryOrganizationRel.getAccountEntryId(),
-				AccountActionKeys.MANAGE_ORGANIZATIONS);
+				AccountActionKeys.UPDATE_ORGANIZATIONS);
 		}
 
 		return accountEntryOrganizationRel;
@@ -131,10 +130,10 @@ public class AccountEntryOrganizationRelServiceImpl
 
 		_accountEntryModelResourcePermission.check(
 			getPermissionChecker(), accountEntryId,
-			AccountActionKeys.MANAGE_ORGANIZATIONS);
+			AccountActionKeys.UPDATE_ORGANIZATIONS);
 
-		return accountEntryOrganizationRelLocalService.
-			getAccountEntryOrganizationRel(accountEntryId, organizationId);
+		return accountEntryOrganizationRelPersistence.findByA_O(
+			accountEntryId, organizationId);
 	}
 
 	@Override
@@ -144,10 +143,10 @@ public class AccountEntryOrganizationRelServiceImpl
 
 		_accountEntryModelResourcePermission.check(
 			getPermissionChecker(), accountEntryId,
-			AccountActionKeys.MANAGE_ORGANIZATIONS);
+			AccountActionKeys.UPDATE_ORGANIZATIONS);
 
-		return accountEntryOrganizationRelLocalService.
-			getAccountEntryOrganizationRels(accountEntryId, start, end);
+		return accountEntryOrganizationRelPersistence.findByAccountEntryId(
+			accountEntryId, start, end);
 	}
 
 	@Override
@@ -156,10 +155,23 @@ public class AccountEntryOrganizationRelServiceImpl
 
 		_accountEntryModelResourcePermission.check(
 			getPermissionChecker(), accountEntryId,
-			AccountActionKeys.MANAGE_ORGANIZATIONS);
+			AccountActionKeys.UPDATE_ORGANIZATIONS);
 
-		return accountEntryOrganizationRelLocalService.
-			getAccountEntryOrganizationRelsCount(accountEntryId);
+		return accountEntryOrganizationRelPersistence.countByAccountEntryId(
+			accountEntryId);
+	}
+
+	@Override
+	public void setAccountEntryOrganizationRels(
+			long accountEntryId, long[] organizationIds)
+		throws PortalException {
+
+		_accountEntryModelResourcePermission.check(
+			getPermissionChecker(), accountEntryId,
+			AccountActionKeys.UPDATE_ORGANIZATIONS);
+
+		accountEntryOrganizationRelLocalService.setAccountEntryOrganizationRels(
+			accountEntryId, organizationIds);
 	}
 
 	@Reference(

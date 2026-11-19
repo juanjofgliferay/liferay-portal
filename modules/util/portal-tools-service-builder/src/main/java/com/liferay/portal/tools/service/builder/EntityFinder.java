@@ -20,13 +20,14 @@ public class EntityFinder {
 
 	public EntityFinder(
 		ServiceBuilder serviceBuilder, String name, String pluralName,
-		String returnType, boolean unique, String where, String dbWhere,
-		boolean dbIndex, List<EntityColumn> entityColumns) {
+		boolean pretouch, String returnType, boolean unique, String where,
+		String dbWhere, boolean dbIndex, List<EntityColumn> entityColumns) {
 
 		_serviceBuilder = serviceBuilder;
 		_name = name;
 		_pluralName = GetterUtil.getString(
 			pluralName, serviceBuilder.formatPlural(name));
+		_pretouch = pretouch;
 		_returnType = returnType;
 		_unique = unique;
 		_where = where;
@@ -36,9 +37,11 @@ public class EntityFinder {
 		_entityColumns = entityColumns;
 
 		for (EntityColumn column : _entityColumns) {
-			if (column.hasArrayableOperator()) {
-				_arrayableColumns.add(column);
+			if (!column.hasArrayableOperator()) {
+				continue;
 			}
+
+			_arrayableColumns.add(column);
 		}
 
 		if (isCollection() && isUnique() && !hasArrayableOperator()) {
@@ -54,8 +57,18 @@ public class EntityFinder {
 		}
 	}
 
-	public List<EntityColumn> getArrayableColumns() {
-		return _arrayableColumns;
+	public List<EntityColumn> getArrayableOrEntityColumns() {
+		List<EntityColumn> arrayableOrEntityColumns = new ArrayList<>();
+
+		for (EntityColumn arrayableEntityColumn : _arrayableColumns) {
+			if (arrayableEntityColumn.isArrayableAndOperator()) {
+				continue;
+			}
+
+			arrayableOrEntityColumns.add(arrayableEntityColumn);
+		}
+
+		return arrayableOrEntityColumns;
 	}
 
 	public String getDBWhere() {
@@ -157,12 +170,34 @@ public class EntityFinder {
 		return false;
 	}
 
+	public boolean isCollectionPersistenceFinderEnabled() {
+		if (_serviceBuilder.isVersionGTE_7_4_0() && isCollection()) {
+			return true;
+		}
+
+		return false;
+	}
+
 	public boolean isDBIndex() {
 		return _dbIndex;
 	}
 
+	public boolean isPretouch() {
+		return _pretouch;
+	}
+
 	public boolean isUnique() {
 		return _unique;
+	}
+
+	public boolean isUniquePersistenceFinderEnabled() {
+		if (_serviceBuilder.isVersionGTE_7_4_0() &&
+			(!isCollection() || isUnique())) {
+
+			return true;
+		}
+
+		return false;
 	}
 
 	private final List<EntityColumn> _arrayableColumns = new ArrayList<>();
@@ -171,6 +206,7 @@ public class EntityFinder {
 	private final List<EntityColumn> _entityColumns;
 	private final String _name;
 	private final String _pluralName;
+	private final boolean _pretouch;
 	private final String _returnType;
 	private final ServiceBuilder _serviceBuilder;
 	private final boolean _unique;

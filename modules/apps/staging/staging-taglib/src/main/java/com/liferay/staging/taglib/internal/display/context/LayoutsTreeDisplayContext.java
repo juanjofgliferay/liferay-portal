@@ -14,34 +14,42 @@ import com.liferay.exportimport.kernel.model.ExportImportConfiguration;
 import com.liferay.exportimport.kernel.service.ExportImportConfigurationLocalServiceUtil;
 import com.liferay.exportimport.kernel.staging.LayoutStagingUtil;
 import com.liferay.layout.util.LayoutsTree;
-import com.liferay.portal.configuration.module.configuration.ConfigurationProviderUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.LayoutConstants;
 import com.liferay.portal.kernel.model.LayoutSetBranch;
-import com.liferay.portal.kernel.module.configuration.ConfigurationException;
+import com.liferay.portal.kernel.model.ResourceConstants;
+import com.liferay.portal.kernel.model.Role;
+import com.liferay.portal.kernel.model.role.RoleConstants;
+import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
 import com.liferay.portal.kernel.service.LayoutLocalServiceUtil;
 import com.liferay.portal.kernel.service.LayoutServiceUtil;
 import com.liferay.portal.kernel.service.LayoutSetBranchLocalServiceUtil;
+import com.liferay.portal.kernel.service.ResourcePermissionLocalServiceUtil;
+import com.liferay.portal.kernel.service.RoleLocalServiceUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ArrayUtil;
-import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.DateRange;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.SessionTreeJSClicks;
 import com.liferay.portal.kernel.util.SetUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.portal.util.PropsValues;
-import com.liferay.staging.configuration.StagingConfiguration;
 import com.liferay.staging.taglib.internal.servlet.ServletContextUtil;
+
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.io.Serializable;
 
@@ -49,13 +57,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
-
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Eudaldo Alonso
@@ -88,22 +90,40 @@ public class LayoutsTreeDisplayContext {
 		return _action;
 	}
 
-	public String getChildPageHelpMessage() throws ConfigurationException {
-		String childPageHelpMessage = "child-page-export-process-warning";
+	public String getChildPageHelpMessage() {
+		return "child-page-export-process-warning";
+	}
 
-		if (Objects.equals(getAction(), Constants.PUBLISH)) {
-			childPageHelpMessage = "child-page-publish-process-warning";
-
-			StagingConfiguration stagingConfiguration =
-				ConfigurationProviderUtil.getCompanyConfiguration(
-					StagingConfiguration.class, _themeDisplay.getCompanyId());
-
-			if (!stagingConfiguration.publishParentLayoutsByDefault()) {
-				childPageHelpMessage = null;
-			}
+	public long getLayoutSetBranchId() {
+		if (_layoutSetBranchId != null) {
+			return _layoutSetBranchId;
 		}
 
-		return childPageHelpMessage;
+		_layoutSetBranchId = MapUtil.getLong(
+			getParameterMap(), "layoutSetBranchId");
+
+		return _layoutSetBranchId;
+	}
+
+	public List<LayoutSetBranch> getLayoutSetBranches() throws PortalException {
+		List<LayoutSetBranch> layoutSetBranches = null;
+
+		long layoutSetBranchId = getLayoutSetBranchId();
+
+		if (isDisableInputs() && (layoutSetBranchId > 0)) {
+			layoutSetBranches = new ArrayList<>(1);
+
+			layoutSetBranches.add(
+				LayoutSetBranchLocalServiceUtil.getLayoutSetBranch(
+					layoutSetBranchId));
+		}
+		else {
+			layoutSetBranches =
+				LayoutSetBranchLocalServiceUtil.getLayoutSetBranches(
+					_getSelectPagesGroupId(), isSelectPagesPrivateLayout());
+		}
+
+		return layoutSetBranches;
 	}
 
 	public String getLayoutsCountMessageKey() throws PortalException {
@@ -128,38 +148,6 @@ public class LayoutsTreeDisplayContext {
 				"<strong>" + messageKeyLayoutsCount + "</strong>",
 				String.valueOf(totalLayoutsCount)
 			});
-	}
-
-	public List<LayoutSetBranch> getLayoutSetBranches() throws PortalException {
-		List<LayoutSetBranch> layoutSetBranches = null;
-
-		long layoutSetBranchId = getLayoutSetBranchId();
-
-		if (isDisableInputs() && (layoutSetBranchId > 0)) {
-			layoutSetBranches = new ArrayList<>(1);
-
-			layoutSetBranches.add(
-				LayoutSetBranchLocalServiceUtil.getLayoutSetBranch(
-					layoutSetBranchId));
-		}
-		else {
-			layoutSetBranches =
-				LayoutSetBranchLocalServiceUtil.getLayoutSetBranches(
-					_getSelectPagesGroupId(), isSelectPagesPrivateLayout());
-		}
-
-		return layoutSetBranches;
-	}
-
-	public long getLayoutSetBranchId() {
-		if (_layoutSetBranchId != null) {
-			return _layoutSetBranchId;
-		}
-
-		_layoutSetBranchId = MapUtil.getLong(
-			getParameterMap(), "layoutSetBranchId");
-
-		return _layoutSetBranchId;
 	}
 
 	public Map<String, Object> getPagesTreeData() throws Exception {
@@ -347,6 +335,20 @@ public class LayoutsTreeDisplayContext {
 			).put(
 				"hasChildren", true
 			).put(
+				"hasGuestViewPermission",
+				() -> {
+					Role role = RoleLocalServiceUtil.getRole(
+						_themeDisplay.getCompanyId(), RoleConstants.GUEST);
+
+					return ResourcePermissionLocalServiceUtil.
+						hasResourcePermission(
+							_themeDisplay.getCompanyId(),
+							Layout.class.getName(),
+							ResourceConstants.SCOPE_INDIVIDUAL,
+							String.valueOf(_themeDisplay.getPlid()),
+							role.getRoleId(), ActionKeys.VIEW);
+				}
+			).put(
 				"id", LayoutConstants.DEFAULT_PARENT_LAYOUT_ID
 			).put(
 				"name",
@@ -355,6 +357,10 @@ public class LayoutsTreeDisplayContext {
 			).put(
 				"paginated",
 				() -> {
+					if (PropsValues.LAYOUT_MANAGE_PAGES_INITIAL_CHILDREN <= 0) {
+						return false;
+					}
+
 					int layoutsCount = LayoutServiceUtil.getLayoutsCount(
 						_getSelectPagesGroupId(), isSelectPagesPrivateLayout(),
 						LayoutConstants.DEFAULT_PARENT_LAYOUT_ID);
@@ -368,6 +374,18 @@ public class LayoutsTreeDisplayContext {
 					return false;
 				}
 			));
+	}
+
+	private long _getSelectPagesGroupId() {
+		if (_selectPagesGroupId != null) {
+			return _selectPagesGroupId;
+		}
+
+		_selectPagesGroupId = GetterUtil.getLong(
+			_httpServletRequest.getAttribute(
+				"liferay-staging:select-pages:groupId"));
+
+		return _selectPagesGroupId;
 	}
 
 	private Set<Long> _getSelectedLayoutIdsArray() throws PortalException {
@@ -421,18 +439,6 @@ public class LayoutsTreeDisplayContext {
 		return _selectedLayoutIdsArray;
 	}
 
-	private long _getSelectPagesGroupId() {
-		if (_selectPagesGroupId != null) {
-			return _selectPagesGroupId;
-		}
-
-		_selectPagesGroupId = GetterUtil.getLong(
-			_httpServletRequest.getAttribute(
-				"liferay-staging:select-pages:groupId"));
-
-		return _selectPagesGroupId;
-	}
-
 	private String _getTreeId() {
 		if (_treeId != null) {
 			return _treeId;
@@ -446,13 +452,8 @@ public class LayoutsTreeDisplayContext {
 	}
 
 	private boolean _isIncomplete() {
-		if (LayoutStagingUtil.isBranchingLayoutSet(
-				getSelectPagesGroup(), isSelectPagesPrivateLayout())) {
-
-			return true;
-		}
-
-		return false;
+		return LayoutStagingUtil.isBranchingLayoutSet(
+			getSelectPagesGroup(), isSelectPagesPrivateLayout());
 	}
 
 	private String _action;
@@ -466,10 +467,10 @@ public class LayoutsTreeDisplayContext {
 	private Map<String, String[]> _parameterMap;
 	private final RenderRequest _renderRequest;
 	private final RenderResponse _renderResponse;
-	private Set<Long> _selectedLayoutIdsArray;
 	private Group _selectPagesGroup;
 	private Long _selectPagesGroupId;
 	private Boolean _selectPagesPrivateLayout;
+	private Set<Long> _selectedLayoutIdsArray;
 	private Map<String, Serializable> _settingsMap;
 	private final ThemeDisplay _themeDisplay;
 	private String _treeId;

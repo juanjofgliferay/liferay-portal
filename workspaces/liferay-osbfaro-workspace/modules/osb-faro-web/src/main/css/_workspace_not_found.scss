@@ -1,0 +1,23 @@
+.workspace-not-found-root {
+	.sheet {
+		.sheet-header {
+			display: flex;
+			flex-direction: column;
+			height: 222px;
+			justify-content: space-between;
+			margin: 40px 0;
+		}
+	}
+
+	.title {
+		font-size: 28px;
+		font-weight: $fontWeightBold;
+	}
+
+	.description {
+		font-size: 16px;
+		line-height: 30px;
+		margin: 25px auto;
+		max-width: 440px;
+	}
+}

@@ -8,12 +8,12 @@ package com.liferay.headless.commerce.admin.catalog.client.dto.v1_0;
 import com.liferay.headless.commerce.admin.catalog.client.function.UnsafeSupplier;
 import com.liferay.headless.commerce.admin.catalog.client.serdes.v1_0.GroupedProductSerDes;
 
+import jakarta.annotation.Generated;
+
 import java.io.Serializable;
 
 import java.util.Map;
 import java.util.Objects;
-
-import javax.annotation.Generated;
 
 /**
  * @author Zoltán Takács
@@ -94,6 +94,27 @@ public class GroupedProduct implements Cloneable, Serializable {
 	}
 
 	protected Map<String, String> entryProductName;
+
+	public String getEntryProductType() {
+		return entryProductType;
+	}
+
+	public void setEntryProductType(String entryProductType) {
+		this.entryProductType = entryProductType;
+	}
+
+	public void setEntryProductType(
+		UnsafeSupplier<String, Exception> entryProductTypeUnsafeSupplier) {
+
+		try {
+			entryProductType = entryProductTypeUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String entryProductType;
 
 	public Long getId() {
 		return id;
@@ -256,3 +277,4 @@ public class GroupedProduct implements Cloneable, Serializable {
 	}
 
 }
+// LIFERAY-REST-BUILDER-HASH:2130971446

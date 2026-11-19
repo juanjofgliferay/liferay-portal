@@ -34,6 +34,7 @@
 		<column name="hasTierPrice" type="boolean" />
 		<column name="price" type="BigDecimal" />
 		<column name="priceOnApplication" type="boolean" />
+		<column name="pricingQuantity" type="BigDecimal" />
 		<column name="promoPrice" type="BigDecimal" />
 		<column name="quantity" type="BigDecimal" />
 		<column name="unitOfMeasureKey" type="String" />
@@ -51,9 +52,6 @@
 
 		<!-- Finder methods -->
 
-		<finder name="CompanyId" return-type="Collection">
-			<finder-column name="companyId" />
-		</finder>
 		<finder name="CommercePriceListId" return-type="Collection">
 			<finder-column name="commercePriceListId" />
 		</finder>
@@ -103,15 +101,15 @@
 
 		<!-- Other fields -->
 
-		<column name="commerceCurrencyId" type="long" />
 		<column name="parentCommercePriceListId" type="long" />
 		<column name="catalogBasePriceList" type="boolean" />
-		<column name="netPrice" type="boolean" />
-		<column name="type" type="String" />
-		<column name="name" type="String" />
-		<column name="priority" type="double" />
+		<column name="commerceCurrencyCode" type="String" />
 		<column name="displayDate" type="Date" />
 		<column name="expirationDate" type="Date" />
+		<column name="name" type="String" />
+		<column name="netPrice" type="boolean" />
+		<column name="priority" type="double" />
+		<column name="type" type="String" />
 		<column name="lastPublishDate" type="Date" />
 		<column name="status" type="int" />
 		<column name="statusByUserId" type="long" />
@@ -128,22 +126,13 @@
 
 		<!-- Finder methods -->
 
-		<finder name="CompanyId" return-type="Collection">
-			<finder-column name="companyId" />
-		</finder>
-		<finder name="CommerceCurrencyId" return-type="Collection">
-			<finder-column name="commerceCurrencyId" />
-		</finder>
-		<finder name="ParentCommercePriceListId" return-type="CommercePriceList">
-			<finder-column name="parentCommercePriceListId" />
-		</finder>
 		<finder name="G_C" return-type="Collection">
 			<finder-column arrayable-operator="OR" name="groupId" />
 			<finder-column name="companyId" />
 		</finder>
-		<finder name="G_CatalogBasePriceList" return-type="CommercePriceList">
-			<finder-column name="groupId" />
-			<finder-column name="catalogBasePriceList" />
+		<finder name="C_C" return-type="Collection">
+			<finder-column name="companyId" />
+			<finder-column name="commerceCurrencyCode" />
 		</finder>
 		<finder name="LtD_S" return-type="Collection">
 			<finder-column comparator="&lt;" name="displayDate" />
@@ -159,7 +148,7 @@
 			<finder-column name="companyId" />
 			<finder-column comparator="!=" name="status" />
 		</finder>
-		<finder name="G_C_T" return-type="CommercePriceList">
+		<finder name="G_CBPL_T" return-type="Collection">
 			<finder-column name="groupId" />
 			<finder-column name="catalogBasePriceList" />
 			<finder-column name="type" />
@@ -413,9 +402,9 @@
 			<finder-column name="commercePriceEntryId" />
 			<finder-column name="minQuantity" />
 		</finder>
-		<finder name="C_LteM" return-type="Collection">
+		<finder name="C_S" return-type="Collection">
 			<finder-column name="commercePriceEntryId" />
-			<finder-column comparator="&lt;=" name="minQuantity" />
+			<finder-column name="status" />
 		</finder>
 		<finder name="LtD_S" return-type="Collection">
 			<finder-column comparator="&lt;" name="displayDate" />
@@ -432,7 +421,6 @@
 		</finder>
 	</entity>
 	<exceptions>
-		<exception>CommerceBasePriceListCannotDelete</exception>
 		<exception>CommercePriceEntryDisplayDate</exception>
 		<exception>CommercePriceEntryExpirationDate</exception>
 		<exception>CommercePriceEntryPrice</exception>
@@ -441,10 +429,13 @@
 		<exception>CommercePriceListDisplayDate</exception>
 		<exception>CommercePriceListExpirationDate</exception>
 		<exception>CommercePriceListMaxPriceValue</exception>
+		<exception>CommercePriceListMinPriceValue</exception>
 		<exception>CommercePriceListParentPriceListGroupId</exception>
 		<exception>CommerceTierPriceEntryDisplayDate</exception>
 		<exception>CommerceTierPriceEntryExpirationDate</exception>
 		<exception>CommerceTierPriceEntryMinQuantity</exception>
+		<exception>CommerceTierPriceEntryPrice</exception>
+		<exception>CommerceTierPriceEntryQuantity</exception>
 		<exception>DuplicateCommerceBasePriceList</exception>
 		<exception>DuplicateCommercePriceEntry</exception>
 		<exception>DuplicateCommercePriceList</exception>
@@ -453,5 +444,6 @@
 		<exception>DuplicateCommercePriceListCommerceAccountGroupRel</exception>
 		<exception>DuplicateCommercePriceListOrderTypeRel</exception>
 		<exception>DuplicateCommerceTierPriceEntry</exception>
+		<exception>RequiredCommerceBasePriceList</exception>
 	</exceptions>
 </service-builder>

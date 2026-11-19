@@ -5,14 +5,19 @@
 
 package com.liferay.commerce.pricing.web.internal.portlet.action;
 
+import com.liferay.commerce.currency.util.CommercePriceFormatter;
 import com.liferay.commerce.price.list.exception.CommerceTierPriceEntryMinQuantityException;
+import com.liferay.commerce.price.list.exception.CommerceTierPriceEntryPriceException;
+import com.liferay.commerce.price.list.exception.CommerceTierPriceEntryQuantityException;
 import com.liferay.commerce.price.list.exception.DuplicateCommerceTierPriceEntryException;
+import com.liferay.commerce.price.list.exception.DuplicateCommerceTierPriceEntryExternalReferenceCodeException;
 import com.liferay.commerce.price.list.exception.NoSuchTierPriceEntryException;
 import com.liferay.commerce.price.list.model.CommercePriceEntry;
 import com.liferay.commerce.price.list.model.CommerceTierPriceEntry;
 import com.liferay.commerce.price.list.service.CommercePriceEntryService;
 import com.liferay.commerce.price.list.service.CommerceTierPriceEntryService;
 import com.liferay.commerce.pricing.constants.CommercePricingPortletKeys;
+import com.liferay.commerce.util.CommerceOrderItemQuantityFormatter;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.portlet.LiferayWindowState;
@@ -29,16 +34,16 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.StringUtil;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.WindowStateException;
+
 import java.math.BigDecimal;
 
 import java.util.Calendar;
 import java.util.Date;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
-import javax.portlet.WindowStateException;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -48,8 +53,8 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + CommercePricingPortletKeys.COMMERCE_PRICE_LIST,
-		"javax.portlet.name=" + CommercePricingPortletKeys.COMMERCE_PROMOTION,
+		"jakarta.portlet.name=" + CommercePricingPortletKeys.COMMERCE_PRICE_LIST,
+		"jakarta.portlet.name=" + CommercePricingPortletKeys.COMMERCE_PROMOTION,
 		"mvc.command.name=/commerce_price_list/edit_commerce_tier_price_entry"
 	},
 	service = MVCActionCommand.class
@@ -109,17 +114,11 @@ public class EditCommerceTierPriceEntryMVCActionCommand
 			}
 		}
 		catch (Exception exception) {
-			if (exception instanceof NoSuchTierPriceEntryException ||
-				exception instanceof PrincipalException) {
-
-				SessionErrors.add(actionRequest, exception.getClass());
-
-				actionResponse.setRenderParameter("mvcPath", "/error.jsp");
-			}
-			else if (exception instanceof
-						CommerceTierPriceEntryMinQuantityException ||
-					 exception instanceof
-						 DuplicateCommerceTierPriceEntryException) {
+			if (exception instanceof
+					CommerceTierPriceEntryMinQuantityException ||
+				exception instanceof CommerceTierPriceEntryPriceException ||
+				exception instanceof CommerceTierPriceEntryQuantityException ||
+				exception instanceof DuplicateCommerceTierPriceEntryException) {
 
 				hideDefaultErrorMessage(actionRequest);
 				hideDefaultSuccessMessage(actionRequest);
@@ -134,6 +133,15 @@ public class EditCommerceTierPriceEntryMVCActionCommand
 				}
 
 				sendRedirect(actionRequest, actionResponse, redirect);
+			}
+			else if (exception instanceof
+						DuplicateCommerceTierPriceEntryExternalReferenceCodeException ||
+					 exception instanceof NoSuchTierPriceEntryException ||
+					 exception instanceof PrincipalException) {
+
+				SessionErrors.add(actionRequest, exception.getClass());
+
+				actionResponse.setRenderParameter("mvcPath", "/error.jsp");
 			}
 			else {
 				throw exception;
@@ -207,20 +215,26 @@ public class EditCommerceTierPriceEntryMVCActionCommand
 			_commercePriceEntryService.getCommercePriceEntry(
 				commercePriceEntryId);
 
-		BigDecimal price = (BigDecimal)ParamUtil.getNumber(
-			actionRequest, "price", BigDecimal.ZERO);
-		BigDecimal minQuantity = (BigDecimal)ParamUtil.getNumber(
-			actionRequest, "minQuantity", BigDecimal.ZERO);
+		BigDecimal price = _commercePriceFormatter.parse(
+			actionRequest, false, CommerceTierPriceEntry.class.getName(),
+			"price");
+		BigDecimal minQuantity = _commerceOrderItemQuantityFormatter.parse(
+			actionRequest, CommerceTierPriceEntry.class.getName(),
+			"minQuantity");
 		boolean overrideDiscount = ParamUtil.getBoolean(
 			actionRequest, "overrideDiscount");
-		BigDecimal discountLevel1 = (BigDecimal)ParamUtil.getNumber(
-			actionRequest, "discountLevel1", BigDecimal.ZERO);
-		BigDecimal discountLevel2 = (BigDecimal)ParamUtil.getNumber(
-			actionRequest, "discountLevel2", BigDecimal.ZERO);
-		BigDecimal discountLevel3 = (BigDecimal)ParamUtil.getNumber(
-			actionRequest, "discountLevel3", BigDecimal.ZERO);
-		BigDecimal discountLevel4 = (BigDecimal)ParamUtil.getNumber(
-			actionRequest, "discountLevel4", BigDecimal.ZERO);
+		BigDecimal discountLevel1 = _commercePriceFormatter.parse(
+			actionRequest, false, CommerceTierPriceEntry.class.getName(),
+			"discountLevel1");
+		BigDecimal discountLevel2 = _commercePriceFormatter.parse(
+			actionRequest, false, CommerceTierPriceEntry.class.getName(),
+			"discountLevel2");
+		BigDecimal discountLevel3 = _commercePriceFormatter.parse(
+			actionRequest, false, CommerceTierPriceEntry.class.getName(),
+			"discountLevel3");
+		BigDecimal discountLevel4 = _commercePriceFormatter.parse(
+			actionRequest, false, CommerceTierPriceEntry.class.getName(),
+			"discountLevel4");
 
 		Date date = new Date();
 
@@ -301,7 +315,14 @@ public class EditCommerceTierPriceEntryMVCActionCommand
 		EditCommerceTierPriceEntryMVCActionCommand.class);
 
 	@Reference
+	private CommerceOrderItemQuantityFormatter
+		_commerceOrderItemQuantityFormatter;
+
+	@Reference
 	private CommercePriceEntryService _commercePriceEntryService;
+
+	@Reference
+	private CommercePriceFormatter _commercePriceFormatter;
 
 	@Reference
 	private CommerceTierPriceEntryService _commerceTierPriceEntryService;

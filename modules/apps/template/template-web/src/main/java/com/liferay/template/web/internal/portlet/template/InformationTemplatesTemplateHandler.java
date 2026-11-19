@@ -16,10 +16,10 @@ import com.liferay.portal.kernel.util.Portal;
 import com.liferay.template.constants.TemplatePortletKeys;
 import com.liferay.template.web.internal.constants.TemplateConstants;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.Locale;
 import java.util.Map;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -28,7 +28,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Lourdes Fernández Besada
  */
 @Component(
-	property = "javax.portlet.name=" + TemplatePortletKeys.TEMPLATE,
+	property = "jakarta.portlet.name=" + TemplatePortletKeys.TEMPLATE,
 	service = TemplateHandler.class
 )
 public class InformationTemplatesTemplateHandler extends BaseTemplateHandler {
@@ -49,12 +49,6 @@ public class InformationTemplatesTemplateHandler extends BaseTemplateHandler {
 	@Override
 	public String getResourceName() {
 		return TemplateConstants.RESOURCE_NAME;
-	}
-
-	@Override
-	public String getTemplatesHelpPath(String language) {
-		return "com/liferay/template/web/internal/portlet/template" +
-			"/dependencies/template.ftl";
 	}
 
 	@Override
@@ -91,6 +85,12 @@ public class InformationTemplatesTemplateHandler extends BaseTemplateHandler {
 				return utilTemplateVariableGroup;
 			}
 		).build();
+	}
+
+	@Override
+	public String getTemplatesHelpPath(String language) {
+		return "com/liferay/template/web/internal/portlet/template" +
+			"/dependencies/template.ftl";
 	}
 
 	@Override

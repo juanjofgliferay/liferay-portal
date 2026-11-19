@@ -5,11 +5,14 @@
 
 package com.liferay.headless.commerce.admin.pricing.internal.dto.v2_0.converter;
 
+import com.liferay.commerce.currency.model.CommerceCurrency;
+import com.liferay.commerce.currency.service.CommerceCurrencyLocalService;
 import com.liferay.commerce.pricing.model.CommercePriceModifier;
 import com.liferay.commerce.pricing.model.CommercePriceModifierRel;
 import com.liferay.commerce.pricing.service.CommercePriceModifierRelService;
 import com.liferay.commerce.product.model.CPDefinition;
 import com.liferay.commerce.product.model.CProduct;
+import com.liferay.commerce.product.model.CommerceCatalog;
 import com.liferay.commerce.product.service.CPDefinitionService;
 import com.liferay.headless.commerce.admin.pricing.dto.v2_0.PriceModifierProduct;
 import com.liferay.portal.vulcan.dto.converter.DTOConverter;
@@ -22,7 +25,10 @@ import org.osgi.service.component.annotations.Reference;
  * @author Alessio Antonio Rendina
  */
 @Component(
-	property = "dto.class.name=com.liferay.commerce.pricing.model.CommercePriceModifierRel-Product",
+	property = {
+		"default=true",
+		"dto.class.name=com.liferay.commerce.pricing.model.CommercePriceModifierRel-Product"
+	},
 	service = DTOConverter.class
 )
 public class PriceModifierProductDTOConverter
@@ -51,19 +57,68 @@ public class PriceModifierProductDTOConverter
 
 		return new PriceModifierProduct() {
 			{
-				actions = dtoConverterContext.getActions();
-				priceModifierExternalReferenceCode =
-					commercePriceModifier.getExternalReferenceCode();
-				priceModifierId =
-					commercePriceModifier.getCommercePriceModifierId();
-				priceModifierProductId =
-					commercePriceModifierRel.getCommercePriceModifierRelId();
-				productExternalReferenceCode =
-					cProduct.getExternalReferenceCode();
-				productId = cProduct.getCProductId();
+				setActions(dtoConverterContext::getActions);
+				setCatalogCurrencyCode(
+					() -> {
+						CommerceCatalog commerceCatalog =
+							cpDefinition.getCommerceCatalog();
+
+						if (commerceCatalog == null) {
+							return null;
+						}
+
+						return commerceCatalog.getCommerceCurrencyCode();
+					});
+				setCatalogCurrencyExternalReferenceCode(
+					() -> {
+						CommerceCurrency commerceCurrency =
+							_fetchCommerceCurrency(cpDefinition);
+
+						if (commerceCurrency == null) {
+							return null;
+						}
+
+						return commerceCurrency.getExternalReferenceCode();
+					});
+				setCatalogExternalReferenceCode(
+					() -> {
+						CommerceCatalog commerceCatalog =
+							cpDefinition.getCommerceCatalog();
+
+						if (commerceCatalog == null) {
+							return null;
+						}
+
+						return commerceCatalog.getExternalReferenceCode();
+					});
+				setPriceModifierExternalReferenceCode(
+					commercePriceModifier::getExternalReferenceCode);
+				setPriceModifierId(
+					commercePriceModifier::getCommercePriceModifierId);
+				setPriceModifierProductId(
+					commercePriceModifierRel::getCommercePriceModifierRelId);
+				setProductExternalReferenceCode(
+					cProduct::getExternalReferenceCode);
+				setProductId(cProduct::getCProductId);
+				setProductType(cpDefinition::getProductTypeName);
 			}
 		};
 	}
+
+	private CommerceCurrency _fetchCommerceCurrency(CPDefinition cpDefinition) {
+		CommerceCatalog commerceCatalog = cpDefinition.getCommerceCatalog();
+
+		if (commerceCatalog == null) {
+			return null;
+		}
+
+		return _commerceCurrencyLocalService.fetchCommerceCurrency(
+			commerceCatalog.getCompanyId(),
+			commerceCatalog.getCommerceCurrencyCode());
+	}
+
+	@Reference
+	private CommerceCurrencyLocalService _commerceCurrencyLocalService;
 
 	@Reference
 	private CommercePriceModifierRelService _commercePriceModifierRelService;

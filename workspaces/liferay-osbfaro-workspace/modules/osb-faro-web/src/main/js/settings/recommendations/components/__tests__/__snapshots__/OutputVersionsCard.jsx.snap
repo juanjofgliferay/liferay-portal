@@ -1,0 +1,276 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`OutputVersionsCard should render 1`] = `
+<div>
+  <div
+    class="card card-root output-versions-card-root"
+  >
+    <div
+      class="card-header d-flex justify-content-between"
+    >
+      <div
+        class="card-title"
+      >
+        Output Versions
+      </div>
+      <div
+        class="training-frequency"
+      >
+        Training Frequency
+        <b>
+          Every 14 days
+        </b>
+        <b>
+          (Next now)
+        </b>
+      </div>
+    </div>
+    <div
+      class="card-body"
+    >
+      <div
+        class="flex-grow-1 mx-4 table-root"
+      >
+        <div
+          class="table-responsive"
+        >
+          <table
+            class="table table-autofit table-list table-nowrap table-head-bordered table-hover table-striped"
+          >
+            <thead>
+              <tr>
+                <th
+                  class="table-head-title table-cell-expand"
+                >
+                  Training Date
+                </th>
+                <th
+                  class="table-head-title table-column-text-end"
+                >
+                  Events
+                </th>
+                <th
+                  class="table-head-title table-column-text-end"
+                >
+                  Items
+                </th>
+                <th
+                  class="table-head-title"
+                >
+                  Status
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                class=""
+              >
+                <td
+                  class="table-cell-expand"
+                >
+                  <div
+                    class="h4 table-title text-truncate"
+                  >
+                    Apr 24, 2020
+                  </div>
+                </td>
+                <td
+                  class="table-column-text-end"
+                >
+                  321
+                </td>
+                <td
+                  class="table-column-text-end"
+                >
+                  123
+                </td>
+                <td>
+                  <span
+                    class="label status label-lg label-inverse-success"
+                  >
+                    <span
+                      class="label-item label-item-expand"
+                    >
+                      Completed
+                    </span>
+                  </span>
+                </td>
+              </tr>
+              <tr
+                class=""
+              >
+                <td
+                  class="table-cell-expand"
+                >
+                  <div
+                    class="h4 table-title text-truncate"
+                  >
+                    Apr 24, 2020
+                  </div>
+                </td>
+                <td
+                  class="table-column-text-end"
+                >
+                  321
+                </td>
+                <td
+                  class="table-column-text-end"
+                >
+                  123
+                </td>
+                <td>
+                  <span
+                    class="label status label-lg label-inverse-danger"
+                  >
+                    <span
+                      class="label-item label-item-expand"
+                    >
+                      Failed
+                    </span>
+                  </span>
+                </td>
+              </tr>
+              <tr
+                class=""
+              >
+                <td
+                  class="table-cell-expand"
+                >
+                  <div
+                    class="h4 table-title text-truncate"
+                  >
+                    Apr 24, 2020
+                  </div>
+                </td>
+                <td
+                  class="table-column-text-end"
+                >
+                  321
+                </td>
+                <td
+                  class="table-column-text-end"
+                >
+                  123
+                </td>
+                <td>
+                  <span
+                    class="label status label-lg label-inverse-secondary"
+                  >
+                    <span
+                      class="label-item label-item-expand"
+                    >
+                      Live Version
+                    </span>
+                  </span>
+                </td>
+              </tr>
+              <tr
+                class=""
+              >
+                <td
+                  class="table-cell-expand"
+                >
+                  <div
+                    class="h4 table-title text-truncate"
+                  >
+                    Apr 24, 2020
+                  </div>
+                </td>
+                <td
+                  class="table-column-text-end"
+                >
+                  321
+                </td>
+                <td
+                  class="table-column-text-end"
+                >
+                  123
+                </td>
+                <td>
+                  <span
+                    class="label status label-lg label-inverse-warning"
+                  >
+                    <span
+                      class="label-item label-item-expand"
+                    >
+                      Training
+                    </span>
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <nav
+        class="navbar navbar-root pagination-bar-root"
+      >
+        <div
+          class="container-fluid"
+        >
+          <div
+            class="pagination-results"
+          >
+            Showing 1 to 4 of 4 entries.
+          </div>
+          <ul
+            class="pagination pagination-root"
+          >
+            <li
+              class="page-item disabled"
+            >
+              <button
+                aria-label="Previous"
+                class="button-root btn btn-unstyled page-link btn btn-primary"
+                disabled=""
+                href=""
+                type="button"
+              >
+                <svg
+                  class="lexicon-icon lexicon-icon-angle-left-small icon-root"
+                  role="presentation"
+                >
+                  <use
+                    href="#angle-left-small"
+                  />
+                </svg>
+              </button>
+            </li>
+            <li
+              class="page-item active"
+            >
+              <button
+                class="button-root btn btn-unstyled page-link btn btn-primary"
+                href=""
+                type="button"
+              >
+                1
+              </button>
+            </li>
+            <li
+              class="page-item disabled"
+            >
+              <button
+                aria-label="Next"
+                class="button-root btn btn-unstyled page-link btn btn-primary"
+                disabled=""
+                href=""
+                type="button"
+              >
+                <svg
+                  class="lexicon-icon lexicon-icon-angle-right-small icon-root"
+                  role="presentation"
+                >
+                  <use
+                    href="#angle-right-small"
+                  />
+                </svg>
+              </button>
+            </li>
+          </ul>
+        </div>
+      </nav>
+    </div>
+  </div>
+</div>
+`;

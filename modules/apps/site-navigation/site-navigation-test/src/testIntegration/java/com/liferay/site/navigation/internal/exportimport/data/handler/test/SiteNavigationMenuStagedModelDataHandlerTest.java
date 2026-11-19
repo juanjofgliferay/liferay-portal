@@ -11,11 +11,12 @@ import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.StagedModel;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
+import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.site.navigation.model.SiteNavigationMenu;
 import com.liferay.site.navigation.service.SiteNavigationMenuLocalService;
-import com.liferay.site.navigation.util.SiteNavigationMenuTestUtil;
+import com.liferay.site.navigation.test.util.SiteNavigationMenuTestUtil;
 
 import java.util.List;
 import java.util.Map;
@@ -51,6 +52,16 @@ public class SiteNavigationMenuStagedModelDataHandlerTest
 		throws Exception {
 
 		return SiteNavigationMenuTestUtil.addSiteNavigationMenu(group);
+	}
+
+	@Override
+	protected StagedModel addStagedModelWithExternalReferenceCode(
+			Group group, String externalReferenceCode,
+			Map<String, List<StagedModel>> dependentStagedModelsMap)
+		throws Exception {
+
+		return SiteNavigationMenuTestUtil.addSiteNavigationMenu(
+			externalReferenceCode, group, RandomTestUtil.randomString());
 	}
 
 	@Override

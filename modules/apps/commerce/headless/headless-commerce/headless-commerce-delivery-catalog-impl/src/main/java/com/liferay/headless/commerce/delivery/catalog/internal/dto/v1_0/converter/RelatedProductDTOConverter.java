@@ -19,7 +19,8 @@ import org.osgi.service.component.annotations.Reference;
  * @author Andrea Sbarra
  */
 @Component(
-	property = "dto.class.name=CPDefinitionLink", service = DTOConverter.class
+	property = {"default=true", "dto.class.name=CPDefinitionLink"},
+	service = DTOConverter.class
 )
 public class RelatedProductDTOConverter
 	implements DTOConverter<CPDefinitionLink, RelatedProduct> {
@@ -37,14 +38,17 @@ public class RelatedProductDTOConverter
 			_cpDefinitionLinkLocalService.getCPDefinitionLink(
 				(Long)dtoConverterContext.getId());
 
-		CProduct cProduct = cpDefinitionLink.getCProduct();
-
 		return new RelatedProduct() {
 			{
-				id = cpDefinitionLink.getCPDefinitionLinkId();
-				priority = cpDefinitionLink.getPriority();
-				productId = cProduct.getCProductId();
-				type = cpDefinitionLink.getType();
+				setId(cpDefinitionLink::getCPDefinitionLinkId);
+				setPriority(cpDefinitionLink::getPriority);
+				setProductId(
+					() -> {
+						CProduct cProduct = cpDefinitionLink.getCProduct();
+
+						return cProduct.getCProductId();
+					});
+				setType(cpDefinitionLink::getType);
 			}
 		};
 	}

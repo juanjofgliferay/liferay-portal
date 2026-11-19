@@ -20,29 +20,54 @@ definition {
 
 		Button.clickSubmitButton();
 
-		if (isSet(amount)) {
-			Type(
-				key_text = ${orderRuleType},
-				locator1 = "TextInput#ANY",
-				value1 = ${amount});
-		}
+		if (${orderRuleType} == "Minimum Order Amount") {
+			if (isSet(amount)) {
+				Type(
+					key_text = ${orderRuleType},
+					locator1 = "TextInput#ANY",
+					value1 = ${amount});
+			}
 
-		if (isSet(orderRuleCurrency)) {
-			Select(
-				key_selectFieldLabel = "Currency",
-				locator1 = "Select#ANY",
-				value1 = ${orderRuleCurrency});
-		}
+			if (isSet(orderRuleCurrency)) {
+				Select(
+					key_selectFieldLabel = "Currency",
+					locator1 = "Select#ANY",
+					value1 = ${orderRuleCurrency});
+			}
 
-		if (isSet(applyTo)) {
-			Select(
-				key_selectFieldLabel = "Apply To",
-				locator1 = "Select#ANY",
-				value1 = ${applyTo});
+			if (isSet(applyTo)) {
+				Select(
+					key_selectFieldLabel = "Apply To",
+					locator1 = "Select#ANY",
+					value1 = ${applyTo});
+			}
+		}
+		else if (${orderRuleType} == "Products Limit") {
+			if (isSet(quantity)) {
+				Type(
+					key_fieldLabel = "Quantity",
+					locator1 = "TextInput#GENERIC_TEXT_INPUT",
+					value1 = ${quantity});
+			}
+
+			if (isSet(productNames)) {
+				for (var productName : list ${productNames}) {
+					CommerceRelations.assignSingleRelationToProductsEntry(
+						entryName = ${productName},
+						title = "Add Products");
+				}
+			}
 		}
 
 		if (${active} == "true") {
 			ClickNoError(locator1 = "ToggleSwitch#ACTIVE");
+		}
+
+		if (isSet(priority)) {
+			Type(
+				key_fieldLabel = "Priority",
+				locator1 = "TextInput#GENERIC_TEXT_INPUT",
+				value1 = ${priority});
 		}
 
 		Button.clickPublish();
@@ -71,129 +96,6 @@ definition {
 		Button.clickPublish();
 
 		Alert.viewSuccessMessage();
-	}
-
-	@summary = "Default summary"
-	macro assertOrderImportPreview(productNames = null) {
-		Variables.assertDefined(parameterList = ${productNames});
-
-		if (!(isSet(productImportStatuses))) {
-			var productImportStatuses = "";
-		}
-
-		if (!(isSet(productQuantities))) {
-			var productQuantities = "";
-		}
-
-		if (!(isSet(productRequestedDeliveryDates))) {
-			var productRequestedDeliveryDates = "";
-		}
-
-		if (!(isSet(productSkus))) {
-			var productSkus = "";
-		}
-
-		if (!(isSet(productTotalPrices))) {
-			var productTotalPrices = "";
-		}
-
-		if (!(isSet(productUnitPrices))) {
-			var productUnitPrices = "";
-		}
-
-		var productNamesList = ListUtil.newListFromString(${productNames});
-		var productSkusList = ListUtil.newListFromString(${productSkus});
-		var productUnitPricesList = ListUtil.newListFromString(${productUnitPrices});
-		var productQuantitiesList = ListUtil.newListFromString(${productQuantities});
-		var productTotalPricesList = ListUtil.newListFromString(${productTotalPrices});
-		var productImportStatusesList = ListUtil.newListFromString(${productImportStatuses});
-		var productRequestedDeliveryDatesList = ListUtil.newListFromString(${productRequestedDeliveryDates});
-		var size = ListUtil.size(${productNamesList});
-		var count = 0;
-
-		var isLessThanSize = MathUtil.isLessThan(${count}, ${size});
-
-		while ((${isLessThanSize} == "true")) {
-			var productName = ListUtil.get(${productNamesList}, ${count});
-			var productSku = ListUtil.get(${productSkusList}, ${count});
-			var productUnitPrice = ListUtil.get(${productUnitPricesList}, ${count});
-			var productQuantity = ListUtil.get(${productQuantitiesList}, ${count});
-			var productTotalPrice = ListUtil.get(${productTotalPricesList}, ${count});
-			var productImportStatus = ListUtil.get(${productImportStatusesList}, ${count});
-			var productRequestedDeliveryDate = ListUtil.get(${productRequestedDeliveryDatesList}, ${count});
-
-			CommerceOrders.assertOrderImportPreviewEntry(
-				importStatus = ${productImportStatus},
-				productName = ${productName},
-				productQuantity = ${productQuantity},
-				productSku = ${productSku},
-				requestedDeliveryDate = ${productRequestedDeliveryDate},
-				totalPrice = ${productTotalPrice},
-				unitPrice = ${productUnitPrice});
-
-			var count = ${count} + 1;
-
-			var count = StringUtil.valueOf(${count});
-
-			var isLessThanSize = MathUtil.isLessThan(${count}, ${size});
-		}
-	}
-
-	@summary = "Default summary"
-	macro assertOrderImportPreviewEntry(unitPrice = null, importStatus = null, productSku = null, productQuantity = null, totalPrice = null, requestedDeliveryDate = null, productName = null) {
-		if (isSet(productSku)) {
-			AssertTextEquals(
-				key_columnNumber = 1,
-				key_productName = ${productName},
-				key_value = ${productSku},
-				locator1 = "CommerceEntry#TABLE_SEARCH_BY_NAME_AND_COLUMN_CONTENT",
-				value1 = ${productSku});
-		}
-
-		if (isSet(unitPrice)) {
-			AssertTextEquals.assertPartialText(
-				key_columnNumber = 3,
-				key_productName = ${productName},
-				key_value = ${unitPrice},
-				locator1 = "CommerceEntry#TABLE_SEARCH_BY_NAME_AND_COLUMN_CONTENT",
-				value1 = ${unitPrice});
-		}
-
-		if (isSet(productQuantity)) {
-			AssertTextEquals(
-				key_columnNumber = 4,
-				key_productName = ${productName},
-				key_value = ${productQuantity},
-				locator1 = "CommerceEntry#TABLE_SEARCH_BY_NAME_AND_COLUMN_CONTENT",
-				value1 = ${productQuantity});
-		}
-
-		if (isSet(totalPrice)) {
-			AssertTextEquals.assertPartialText(
-				key_columnNumber = 5,
-				key_productName = ${productName},
-				key_value = ${totalPrice},
-				locator1 = "CommerceEntry#TABLE_SEARCH_BY_NAME_AND_COLUMN_CONTENT",
-				value1 = ${totalPrice});
-		}
-
-		if (isSet(importStatus)) {
-			AssertTextEquals.assertPartialText(
-				key_columnNumber = 6,
-				key_productName = ${productName},
-				key_value = ${importStatus},
-				locator1 = "CommerceEntry#TABLE_SEARCH_BY_NAME_AND_COLUMN_CONTENT",
-				value1 = ${importStatus});
-		}
-
-		if (isSet(requestedDeliveryDate)) {
-			AssertTextEquals.assertPartialText(
-				key_columnNumber = 8,
-				key_productName = ${productName},
-				key_value = ${requestedDeliveryDate},
-				locator1 = "CommerceEntry#TABLE_SEARCH_BY_NAME_AND_COLUMN_CONTENT",
-				value1 = ${requestedDeliveryDate});
-		}
 	}
 
 	@summary = "Default summary"
@@ -261,7 +163,7 @@ definition {
 
 		Click(
 			key_index = "Create Shipment",
-			locator1 = "WorkflowMetrics#SEARCH_FIELD_MAPPINGS_METRICS_INDEXES");
+			locator1 = "WorkflowMetrics#SEARCH_FIELD_MAPPINGS_METRICS_ACTIONS");
 
 		Click(locator1 = "Button#PLUS");
 
@@ -284,7 +186,7 @@ definition {
 				AssertTextEquals(
 					key_cellName1 = ${sku},
 					key_cellName2 = ${orderId},
-					key_columnNumber = 3,
+					key_columnNumber = 4,
 					locator1 = "CommerceEntry#TABLE_CELL_BY_COLUMN_ORDER_NO_TITLE",
 					value1 = ${outstandingQuantity});
 
@@ -329,15 +231,15 @@ definition {
 
 		Click(
 			key_index = "Finish Processing",
-			locator1 = "WorkflowMetrics#SEARCH_FIELD_MAPPINGS_METRICS_INDEXES");
+			locator1 = "WorkflowMetrics#SEARCH_FIELD_MAPPINGS_METRICS_ACTIONS");
 
 		Click(
 			key_index = "Ship",
-			locator1 = "WorkflowMetrics#SEARCH_FIELD_MAPPINGS_METRICS_INDEXES");
+			locator1 = "WorkflowMetrics#SEARCH_FIELD_MAPPINGS_METRICS_ACTIONS");
 
 		Click(
 			key_index = "Deliver",
-			locator1 = "WorkflowMetrics#SEARCH_FIELD_MAPPINGS_METRICS_INDEXES");
+			locator1 = "WorkflowMetrics#SEARCH_FIELD_MAPPINGS_METRICS_ACTIONS");
 	}
 
 	@summary = "Default summary"
@@ -458,7 +360,11 @@ definition {
 			locator1 = "TextInput#GENERIC_TEXT_INPUT",
 			value1 = ${keyReferenceCode});
 
-		Button.click(button = "Submit");
+		SelectFrame.selectFrameTop();
+
+		Click(
+			key_text = "Submit",
+			locator1 = "Modal#MODAL_FOOTER_BUTTON");
 
 		if (isSet(checkReferenceCode)) {
 			AssertElementPresent(
@@ -518,7 +424,7 @@ definition {
 	}
 
 	@summary = "Default summary"
-	macro editOrderAddressCP(editedCountry = null, editedName = null, editedStreet1 = null, editedCity = null, editedZipCode = null, editedRegion = null) {
+	macro editOrderAddressCP(editedCountry = null, editedName = null, editedStreet1 = null, editedCity = null, editedZipCode = null, editedRegion = null, selectOuterButton = null) {
 		SelectFrame.selectFrameNoLoading(locator1 = "IFrame#MODAL_BODY");
 
 		if (IsElementPresent(locator1 = "Button#PLUS")) {
@@ -567,8 +473,12 @@ definition {
 
 		if (isSet(editedRegion)) {
 			Select(
-				locator1 = "Select#REGION",
+				locator1 = "Select#NEW_REGION",
 				value1 = ${editedRegion});
+		}
+
+		if (isSet(selectOuterButton) && (${selectOuterButton} == "true")) {
+			SelectFrameTop();
 		}
 
 		Button.click(button = "Submit");
@@ -672,28 +582,28 @@ definition {
 		if (isSet(orderItemDiscount)) {
 			Type(
 				key_fieldLabel = "Discount",
-				locator1 = "TextInput#GENERIC_TEXT_INPUT",
+				locator1 = "CommerceOrders#ORDER_ITEM_CURRENCY_INPUT",
 				value1 = ${orderItemDiscount});
 		}
 
 		if (isSet(orderItemQuantity)) {
 			Type(
 				key_fieldLabel = "Quantity",
-				locator1 = "TextInput#GENERIC_TEXT_INPUT",
+				locator1 = "CommerceOrders#ORDER_ITEM_QUANTITY_INPUT",
 				value1 = ${orderItemQuantity});
 		}
 
 		if (isSet(orderItemPrice)) {
 			Type(
 				key_fieldLabel = "Price",
-				locator1 = "TextInput#GENERIC_TEXT_INPUT",
+				locator1 = "CommerceOrders#ORDER_ITEM_CURRENCY_INPUT",
 				value1 = ${orderItemPrice});
 		}
 
 		if (isSet(orderItemTotal)) {
 			Type(
 				key_fieldLabel = "Total",
-				locator1 = "TextInput#GENERIC_TEXT_INPUT",
+				locator1 = "CommerceOrders#ORDER_ITEM_CURRENCY_INPUT",
 				value1 = ${orderItemTotal});
 		}
 
@@ -728,7 +638,7 @@ definition {
 	}
 
 	@summary = "Default summary"
-	macro editOrdersEntryTerms(newTerm = null, type = null) {
+	macro editOrdersEntryTerms(newTerm = null, type = null, selectOuterButton = null) {
 		if (${type} == "Payment") {
 			Click(
 				key_buttonName = "Edit",
@@ -742,9 +652,9 @@ definition {
 				locator1 = "Select#GENERIC_SELECT_FIELD",
 				value1 = ${newTerm});
 
-			AssertClickNoError(
-				locator1 = "Button#SUBMIT",
-				value1 = "Submit");
+			if (isSet(selectOuterButton) && (${selectOuterButton} == "true")) {
+				SelectFrameTop();
+			}
 		}
 		else if (${type} == "Delivery") {
 			Click(
@@ -759,10 +669,14 @@ definition {
 				locator1 = "Select#GENERIC_SELECT_FIELD",
 				value1 = ${newTerm});
 
-			AssertClickNoError(
-				locator1 = "Button#SUBMIT",
-				value1 = "Submit");
+			if (isSet(selectOuterButton) && (${selectOuterButton} == "true")) {
+				SelectFrameTop();
+			}
 		}
+
+		Button.click(button = "Submit");
+
+		Alert.viewSuccessMessage();
 	}
 
 	@summary = "Default summary"
@@ -843,42 +757,42 @@ definition {
 		if (isSet(deliveryDiscountNewValue)) {
 			Type(
 				key_fieldLabel = "Delivery Discount",
-				locator1 = "TextInput#GENERIC_TEXT_INPUT",
+				locator1 = "CommerceOrders#ORDER_ITEM_CURRENCY_INPUT",
 				value1 = ${deliveryDiscountNewValue});
 		}
 
 		if (isSet(deliveryNewValue)) {
 			Type(
 				key_fieldLabel = "Delivery",
-				locator1 = "TextInput#GENERIC_TEXT_INPUT",
+				locator1 = "CommerceOrders#ORDER_ITEM_CURRENCY_INPUT",
 				value1 = ${deliveryNewValue});
 		}
 
 		if (isSet(subtotalDiscountNewValue)) {
 			Type(
 				key_fieldLabel = "Subtotal Discount",
-				locator1 = "TextInput#GENERIC_TEXT_INPUT",
+				locator1 = "CommerceOrders#ORDER_ITEM_CURRENCY_INPUT",
 				value1 = ${subtotalDiscountNewValue});
 		}
 
 		if (isSet(subtotalNewValue)) {
 			Type(
 				key_fieldLabel = "Subtotal",
-				locator1 = "TextInput#GENERIC_TEXT_INPUT",
+				locator1 = "CommerceOrders#ORDER_ITEM_CURRENCY_INPUT",
 				value1 = ${subtotalNewValue});
 		}
 
 		if (isSet(taxNewValue)) {
 			Type(
 				key_fieldLabel = "Tax",
-				locator1 = "TextInput#GENERIC_TEXT_INPUT",
+				locator1 = "CommerceOrders#ORDER_ITEM_CURRENCY_INPUT",
 				value1 = ${taxNewValue});
 		}
 
 		if (isSet(totalDiscountNewValue)) {
 			Type(
 				key_fieldLabel = "Total Discount",
-				locator1 = "TextInput#GENERIC_TEXT_INPUT",
+				locator1 = "CommerceOrders#ORDER_ITEM_CURRENCY_INPUT",
 				value1 = ${totalDiscountNewValue});
 		}
 
@@ -886,7 +800,7 @@ definition {
 			Type(
 				key_fieldLabel = "Total",
 				key_indexNumber = 2,
-				locator1 = "TextInput#GENERIC_TEXT_INPUT_N",
+				locator1 = "CommerceOrders#ORDER_ITEM_CURRENCY_INPUT_N",
 				value1 = ${totalNewValue});
 		}
 
@@ -950,9 +864,11 @@ definition {
 			key_radioOption = ${paymentMethod},
 			locator1 = "CommerceEntry#RADIO_BUTTON_SPECIFIC");
 
-		Click(locator1 = "Button#MODAL_IFRAME_FOOTER_SUBMIT");
-
 		IFrame.selectTopFrame();
+
+		Click(
+			key_text = "Submit",
+			locator1 = "Modal#MODAL_FOOTER_BUTTON");
 	}
 
 	@summary = "Default summary"
@@ -968,57 +884,19 @@ definition {
 			selectFieldId = "paymentStatus",
 			value1 = ${paymentStatus});
 
-		Click(locator1 = "Button#MODAL_IFRAME_FOOTER_SUBMIT");
-
 		IFrame.selectTopFrame();
+
+		Click(locator1 = "Button#SUBMIT");
 	}
 
 	@summary = "Default summary"
-	macro getOrderCreationDateFromTable(columnIndex = null, rowIndex = null) {
+	macro getOrderCreationDateFromTable(columnIndex = null, orderId = null, rowIndex = null) {
+		var key_cellContent = ${orderId};
 		var key_columnIndex = ${columnIndex};
 		var key_rowIndex = ${rowIndex};
 		var orderCreationDate = selenium.getText("CommerceEntry#TABLE_ENTRY_ROW_FIELD_GENERIC");
 
 		return ${orderCreationDate};
-	}
-
-	@summary = "Default summary"
-	macro importFromOrder(productImportStatuses = null, productSkus = null, orderId = null, productTotalPrices = null, productUnitPrices = null, productNames = null, productQuantities = null, productRequestedDeliveryDates = null) {
-		Click(locator1 = "CommerceFrontStore#SF_ORDER_BODY_VERTICAL_ELLIPSIS");
-
-		MenuItem.click(menuItem = "Import from Orders");
-
-		IFrame.selectModalFrame();
-
-		Search.searchCP(searchTerm = ${orderId});
-
-		Button.click(button = "Select");
-
-		if (isSet(productNames)) {
-			CommerceOrders.assertOrderImportPreview(
-				productImportStatuses = ${productImportStatuses},
-				productNames = ${productNames},
-				productQuantities = ${productQuantities},
-				productRequestedDeliveryDates = ${productRequestedDeliveryDates},
-				productSkus = ${productSkus},
-				productTotalPrices = ${productTotalPrices},
-				productUnitPrices = ${productUnitPrices});
-		}
-
-		Button.click(button = "Import");
-
-		IFrame.selectTopFrame();
-	}
-
-	@summary = "Default summary"
-	macro importOrderFromType(orderType = null) {
-		Click(locator1 = "CommerceFrontStore#SF_ORDER_BODY_VERTICAL_ELLIPSIS");
-
-		MenuItem.viewPresent(menuItem = "Import from ${orderType}");
-
-		MenuItem.click(menuItem = "Import from ${orderType}");
-
-		SelectFrame.selectFrameNoLoading(locator1 = "IFrame#MODAL_IFRAME");
 	}
 
 	@summary = "Default summary"

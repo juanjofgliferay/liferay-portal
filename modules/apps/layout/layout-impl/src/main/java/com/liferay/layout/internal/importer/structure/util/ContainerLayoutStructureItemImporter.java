@@ -22,7 +22,7 @@ import com.liferay.layout.util.structure.ContainerStyledLayoutStructureItem;
 import com.liferay.layout.util.structure.LayoutStructure;
 import com.liferay.layout.util.structure.LayoutStructureItem;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.json.JSONFactory;
+import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
@@ -36,13 +36,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.Reference;
-
 /**
  * @author Jürgen Kappler
  */
-@Component(service = LayoutStructureItemImporter.class)
 public class ContainerLayoutStructureItemImporter
 	extends BaseLayoutStructureItemImporter
 	implements LayoutStructureItemImporter {
@@ -81,7 +77,7 @@ public class ContainerLayoutStructureItemImporter
 		}
 
 		if (backgroundFragmentImageMap != null) {
-			JSONObject jsonObject = _jsonFactory.createJSONObject();
+			JSONObject jsonObject = JSONFactoryUtil.createJSONObject();
 
 			Map<String, Object> titleMap =
 				(Map<String, Object>)backgroundFragmentImageMap.get("title");
@@ -113,25 +109,24 @@ public class ContainerLayoutStructureItemImporter
 					contentVisibility));
 		}
 
-		if (definitionMap.containsKey("cssClasses")) {
-			List<String> cssClasses = (List<String>)definitionMap.get(
-				"cssClasses");
-
+		if (definitionMap.get("cssClasses") instanceof List<?> cssClasses) {
 			containerStyledLayoutStructureItem.setCssClasses(
-				new HashSet<>(cssClasses));
+				new HashSet<>((List<String>)cssClasses));
 		}
 
-		if (definitionMap.containsKey("customCSS")) {
+		Object customCSS = definitionMap.get("customCSS");
+
+		if (customCSS != null) {
 			containerStyledLayoutStructureItem.setCustomCSS(
-				String.valueOf(definitionMap.get("customCSS")));
+				String.valueOf(customCSS));
 		}
 
-		if (definitionMap.containsKey("customCSSViewports")) {
-			List<Map<String, Object>> customCSSViewports =
-				(List<Map<String, Object>>)definitionMap.get(
-					"customCSSViewports");
+		if (definitionMap.get("customCSSViewports") instanceof
+				List<?> customCSSViewports) {
 
-			for (Map<String, Object> customCSSViewport : customCSSViewports) {
+			for (Map<String, Object> customCSSViewport :
+					(List<Map<String, Object>>)customCSSViewports) {
+
 				containerStyledLayoutStructureItem.setCustomCSSViewport(
 					(String)customCSSViewport.get("id"),
 					(String)customCSSViewport.get("customCSS"));
@@ -318,7 +313,7 @@ public class ContainerLayoutStructureItemImporter
 			(Map<String, Object>)definitionMap.get("fragmentLink");
 
 		if (fragmentLinkMap != null) {
-			JSONObject jsonObject = _jsonFactory.createJSONObject();
+			JSONObject jsonObject = JSONFactoryUtil.createJSONObject();
 
 			Map<String, Object> hrefMap =
 				(Map<String, Object>)fragmentLinkMap.get("href");
@@ -366,12 +361,12 @@ public class ContainerLayoutStructureItemImporter
 			containerStyledLayoutStructureItem.updateItemConfig(jsonObject);
 		}
 
-		if (definitionMap.containsKey("fragmentViewports")) {
-			List<Map<String, Object>> fragmentViewports =
-				(List<Map<String, Object>>)definitionMap.get(
-					"fragmentViewports");
+		if (definitionMap.get("fragmentViewports") instanceof
+				List<?> fragmentViewports) {
 
-			for (Map<String, Object> fragmentViewport : fragmentViewports) {
+			for (Map<String, Object> fragmentViewport :
+					(List<Map<String, Object>>)fragmentViewports) {
+
 				JSONObject jsonObject = JSONUtil.put(
 					(String)fragmentViewport.get("id"),
 					toFragmentViewportStylesJSONObject(fragmentViewport));
@@ -380,14 +375,17 @@ public class ContainerLayoutStructureItemImporter
 			}
 		}
 
-		if (definitionMap.containsKey("indexed")) {
+		Object indexed = definitionMap.get("indexed");
+
+		if (indexed != null) {
 			containerStyledLayoutStructureItem.setIndexed(
-				GetterUtil.getBoolean(definitionMap.get("indexed")));
+				GetterUtil.getBoolean(indexed));
 		}
 
-		if (definitionMap.containsKey("name")) {
-			containerStyledLayoutStructureItem.setName(
-				GetterUtil.getString(definitionMap.get("name")));
+		String name = GetterUtil.getString(definitionMap.get("name"), null);
+
+		if (name != null) {
+			containerStyledLayoutStructureItem.setName(name);
 		}
 
 		return containerStyledLayoutStructureItem;
@@ -397,8 +395,5 @@ public class ContainerLayoutStructureItemImporter
 	public PageElement.Type getPageElementType() {
 		return PageElement.Type.SECTION;
 	}
-
-	@Reference
-	private JSONFactory _jsonFactory;
 
 }

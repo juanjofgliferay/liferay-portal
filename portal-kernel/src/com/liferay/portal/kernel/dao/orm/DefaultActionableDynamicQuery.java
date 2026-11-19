@@ -11,17 +11,15 @@ import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.model.BaseModel;
 import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.search.Indexer;
+import com.liferay.portal.kernel.security.auth.CompanyInheritableThreadLocalCallable;
 import com.liferay.portal.kernel.service.BaseLocalService;
-import com.liferay.portal.kernel.transaction.Propagation;
-import com.liferay.portal.kernel.transaction.TransactionConfig;
-import com.liferay.portal.kernel.transaction.TransactionInvokerUtil;
+import com.liferay.portal.kernel.util.PropsValues;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
@@ -30,18 +28,6 @@ import java.util.concurrent.Future;
  * @author Shuyang Zhou
  */
 public class DefaultActionableDynamicQuery implements ActionableDynamicQuery {
-
-	public static final TransactionConfig REQUIRES_NEW_TRANSACTION_CONFIG;
-
-	static {
-		TransactionConfig.Builder builder = new TransactionConfig.Builder();
-
-		builder.setPropagation(Propagation.REQUIRES_NEW);
-		builder.setRollbackForClasses(
-			PortalException.class, SystemException.class);
-
-		REQUIRES_NEW_TRANSACTION_CONFIG = builder.build();
-	}
 
 	@Override
 	public AddCriteriaMethod getAddCriteriaMethod() {
@@ -190,11 +176,6 @@ public class DefaultActionableDynamicQuery implements ActionableDynamicQuery {
 		_primaryKeyPropertyName = primaryKeyPropertyName;
 	}
 
-	@Override
-	public void setTransactionConfig(TransactionConfig transactionConfig) {
-		_transactionConfig = transactionConfig;
-	}
-
 	/**
 	 * @throws PortalException
 	 */
@@ -208,7 +189,7 @@ public class DefaultActionableDynamicQuery implements ActionableDynamicQuery {
 	}
 
 	protected void addDefaultCriteria(DynamicQuery dynamicQuery) {
-		if (_companyId > 0) {
+		if (!PropsValues.DATABASE_PARTITION_ENABLED && (_companyId > 0)) {
 			Property property = PropertyFactoryUtil.forName("companyId");
 
 			dynamicQuery.add(property.eq(_companyId));
@@ -229,6 +210,39 @@ public class DefaultActionableDynamicQuery implements ActionableDynamicQuery {
 		}
 		else {
 			_addOrderCriteriaMethod.addOrderCriteria(dynamicQuery);
+		}
+	}
+
+	protected void doPerformActions(List<Object> objects) throws Exception {
+		PortalExecutorManager portalExecutorManager =
+			_portalExecutorManagerSnapshot.get();
+
+		ExecutorService executorService =
+			portalExecutorManager.getPortalExecutor(
+				DefaultActionableDynamicQuery.class.getName());
+
+		if (_parallel && (executorService != null)) {
+			List<Future<Void>> futures = new ArrayList<>(objects.size());
+
+			for (Object object : objects) {
+				futures.add(
+					executorService.submit(
+						new CompanyInheritableThreadLocalCallable<>(
+							() -> {
+								performAction(object);
+
+								return null;
+							})));
+			}
+
+			for (Future<Void> future : futures) {
+				future.get();
+			}
+		}
+		else {
+			for (Object object : objects) {
+				performAction(object);
+			}
 		}
 	}
 
@@ -256,64 +270,8 @@ public class DefaultActionableDynamicQuery implements ActionableDynamicQuery {
 
 		addOrderCriteria(dynamicQuery);
 
-		Callable<Long> callable = () -> {
-			List<Object> objects = (List<Object>)executeDynamicQuery(
-				_dynamicQueryMethod, dynamicQuery);
-
-			_offset += objects.size();
-
-			if (objects.isEmpty()) {
-				return -1L;
-			}
-
-			PortalExecutorManager portalExecutorManager =
-				_portalExecutorManagerSnapshot.get();
-
-			ExecutorService executorService =
-				portalExecutorManager.getPortalExecutor(
-					DefaultActionableDynamicQuery.class.getName());
-
-			if (_parallel && (executorService != null)) {
-				List<Future<Void>> futures = new ArrayList<>(objects.size());
-
-				for (final Object object : objects) {
-					futures.add(
-						executorService.submit(
-							() -> {
-								performAction(object);
-
-								return null;
-							}));
-				}
-
-				for (Future<Void> future : futures) {
-					future.get();
-				}
-			}
-			else {
-				for (Object object : objects) {
-					performAction(object);
-				}
-			}
-
-			if (objects.size() < _interval) {
-				return -1L;
-			}
-
-			BaseModel<?> baseModel = (BaseModel<?>)objects.get(
-				objects.size() - 1);
-
-			return (Long)baseModel.getPrimaryKeyObj();
-		};
-
-		TransactionConfig transactionConfig = getTransactionConfig();
-
 		try {
-			if (transactionConfig == null) {
-				return callable.call();
-			}
-
-			return TransactionInvokerUtil.invoke(transactionConfig, callable);
+			return _performActions(dynamicQuery);
 		}
 		catch (Throwable throwable) {
 			if (throwable instanceof PortalException) {
@@ -368,10 +326,6 @@ public class DefaultActionableDynamicQuery implements ActionableDynamicQuery {
 		return _modelClass;
 	}
 
-	protected TransactionConfig getTransactionConfig() {
-		return _transactionConfig;
-	}
-
 	protected void intervalCompleted(long startPrimaryKey, long endPrimaryKey)
 		throws PortalException {
 	}
@@ -380,6 +334,30 @@ public class DefaultActionableDynamicQuery implements ActionableDynamicQuery {
 		if (_performActionMethod != null) {
 			_performActionMethod.performAction(object);
 		}
+	}
+
+	private long _performActions(DynamicQuery dynamicQuery) throws Exception {
+		List<Object> objects = (List<Object>)executeDynamicQuery(
+			_dynamicQueryMethod, dynamicQuery);
+
+		_offset += objects.size();
+
+		if (objects.isEmpty()) {
+			return -1L;
+		}
+
+		long lastPrimaryKey = -1L;
+
+		if (objects.size() >= _interval) {
+			BaseModel<?> baseModel = (BaseModel<?>)objects.get(
+				objects.size() - 1);
+
+			lastPrimaryKey = (Long)baseModel.getPrimaryKeyObj();
+		}
+
+		doPerformActions(objects);
+
+		return lastPrimaryKey;
 	}
 
 	private static final Snapshot<PortalExecutorManager>
@@ -405,6 +383,5 @@ public class DefaultActionableDynamicQuery implements ActionableDynamicQuery {
 
 	private PerformCountMethod _performCountMethod;
 	private String _primaryKeyPropertyName;
-	private TransactionConfig _transactionConfig;
 
 }

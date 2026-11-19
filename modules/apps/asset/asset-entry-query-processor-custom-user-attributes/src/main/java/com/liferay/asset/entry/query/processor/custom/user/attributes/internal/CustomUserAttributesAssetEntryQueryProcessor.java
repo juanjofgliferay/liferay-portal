@@ -21,18 +21,17 @@ import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.PrimitiveLongList;
 import com.liferay.portal.kernel.util.StringUtil;
 
+import jakarta.portlet.PortletPreferences;
+
 import java.io.Serializable;
 
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
-
-import javax.portlet.PortletPreferences;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -41,7 +40,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Jorge Ferrer
  */
 @Component(
-	property = "javax.portlet.name=" + AssetPublisherPortletKeys.ASSET_PUBLISHER,
+	property = "jakarta.portlet.name=" + AssetPublisherPortletKeys.ASSET_PUBLISHER,
 	service = AssetEntryQueryProcessor.class
 )
 public class CustomUserAttributesAssetEntryQueryProcessor
@@ -110,25 +109,22 @@ public class CustomUserAttributesAssetEntryQueryProcessor
 				continue;
 			}
 
-			String userCustomFieldValueString = userCustomFieldValue.toString();
+			AssetVocabulary assetVocabulary =
+				_assetVocabularyLocalService.fetchGroupVocabulary(
+					companyGroup.getGroupId(), customUserAttributeName);
 
-			List<AssetCategory> assetCategories =
-				_assetCategoryLocalService.search(
-					companyGroup.getGroupId(), userCustomFieldValueString,
-					new String[0], QueryUtil.ALL_POS, QueryUtil.ALL_POS);
-
-			for (AssetCategory assetCategory : assetCategories) {
-				AssetVocabulary assetVocabulary =
-					_assetVocabularyLocalService.fetchAssetVocabulary(
-						assetCategory.getVocabularyId());
-
-				if (Objects.equals(
-						StringUtil.toLowerCase(customUserAttributeName),
-						StringUtil.toLowerCase(assetVocabulary.getName()))) {
-
-					allCategoryIdsList.add(assetCategory.getCategoryId());
-				}
+			if (assetVocabulary == null) {
+				continue;
 			}
+
+			allCategoryIdsList.addAll(
+				ListUtil.toLongArray(
+					_assetCategoryLocalService.getVocabularyCategories(
+						companyGroup.getGroupId(),
+						userCustomFieldValue.toString(),
+						assetVocabulary.getVocabularyId(), QueryUtil.ALL_POS,
+						QueryUtil.ALL_POS, null),
+					AssetCategory.CATEGORY_ID_ACCESSOR));
 		}
 
 		assetEntryQuery.setAllCategoryIds(allCategoryIdsList.getArray());

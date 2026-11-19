@@ -10,6 +10,7 @@ import com.liferay.portal.kernel.upgrade.BaseSQLServerDatetimeUpgradeProcess;
 import com.liferay.portal.kernel.upgrade.DummyUpgradeStep;
 import com.liferay.portal.kernel.upgrade.UpgradeProcessFactory;
 import com.liferay.portal.security.audit.storage.internal.upgrade.v1_0_1.util.AuditEventTable;
+import com.liferay.portal.security.audit.storage.internal.upgrade.v2_4_0.util.AuditEventPseudonymFieldTable;
 import com.liferay.portal.upgrade.registry.UpgradeStepRegistrator;
 import com.liferay.portal.upgrade.release.ReleaseRenamingUpgradeStep;
 
@@ -48,6 +49,35 @@ public class AuditStorageServiceUpgradeStepRegistrator
 			"2.0.1", "2.1.0",
 			UpgradeProcessFactory.addColumns(
 				"Audit_AuditEvent", "groupId LONG"));
+
+		registry.register(
+			"2.1.0", "2.2.0",
+			UpgradeProcessFactory.addColumns(
+				"Audit_AuditEvent", "accountEntryId LONG",
+				"contextName VARCHAR(75) null"));
+
+		registry.register(
+			"2.2.0", "2.3.0",
+			UpgradeProcessFactory.addColumns(
+				"Audit_AuditEvent", "correlationId VARCHAR(75) null",
+				"httpMethod VARCHAR(75) null", "impersonated BOOLEAN",
+				"impersonatedUserEmailAddress VARCHAR(75) null",
+				"impersonatedUserId LONG",
+				"impersonatedUserName VARCHAR(75) null",
+				"objectName VARCHAR(75) null", "requestId VARCHAR(200) null",
+				"requestIdGenerated BOOLEAN", "resourceAction VARCHAR(75) null",
+				"resourceType VARCHAR(75) null", "roles TEXT null",
+				"userAgent VARCHAR(255) null",
+				"userEmailAddress VARCHAR(75) null"));
+
+		registry.register(
+			"2.3.0", "2.4.0", AuditEventPseudonymFieldTable.create());
+
+		registry.register(
+			"2.4.0", "2.5.0",
+			UpgradeProcessFactory.runSQL(
+				"update Audit_AuditEvent set contextName = 'INSTANCE' where " +
+					"contextName is null or contextName = ''"));
 	}
 
 	@Reference

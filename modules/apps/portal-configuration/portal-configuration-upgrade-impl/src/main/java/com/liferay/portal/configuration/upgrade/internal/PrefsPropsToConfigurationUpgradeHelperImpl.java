@@ -5,16 +5,23 @@
 
 package com.liferay.portal.configuration.upgrade.internal;
 
-import com.liferay.petra.string.StringBundler;
+import com.liferay.configuration.admin.util.ConfigurationFilterStringUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.configuration.upgrade.PrefsPropsToConfigurationUpgradeHelper;
+import com.liferay.portal.kernel.model.Company;
+import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapDictionary;
 import com.liferay.portal.kernel.util.KeyValuePair;
+import com.liferay.portal.kernel.util.PortletKeys;
 import com.liferay.portal.kernel.util.PrefsProps;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
+
+import jakarta.portlet.PortletPreferences;
+import jakarta.portlet.ReadOnlyException;
 
 import java.lang.reflect.Method;
 
@@ -22,10 +29,6 @@ import java.util.Arrays;
 import java.util.Dictionary;
 import java.util.Objects;
 
-import javax.portlet.PortletPreferences;
-import javax.portlet.ReadOnlyException;
-
-import org.osgi.framework.Constants;
 import org.osgi.service.cm.Configuration;
 import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.component.annotations.Component;
@@ -43,8 +46,32 @@ public class PrefsPropsToConfigurationUpgradeHelperImpl
 			Class<?> configurationClass, KeyValuePair... keyValuePairs)
 		throws Exception {
 
-		String filterString = StringBundler.concat(
-			"(", Constants.SERVICE_PID, "=", configurationClass.getName(), ")");
+		mapConfigurations(
+			PortletKeys.PREFS_OWNER_ID_DEFAULT, configurationClass,
+			keyValuePairs);
+	}
+
+	@Override
+	public void mapConfigurations(
+			long companyId, Class<?> configurationClass,
+			KeyValuePair... keyValuePairs)
+		throws Exception {
+
+		String filterString = null;
+
+		if (companyId == PortletKeys.PREFS_OWNER_ID_DEFAULT) {
+			filterString =
+				ConfigurationFilterStringUtil.getSystemScopedFilterString(
+					configurationClass.getName());
+		}
+		else {
+			Company company = _companyLocalService.getCompany(companyId);
+
+			filterString =
+				ConfigurationFilterStringUtil.getCompanyScopedFilterString(
+					companyId, configurationClass.getName(),
+					company.getWebId());
+		}
 
 		Configuration[] configurations = _configurationAdmin.listConfigurations(
 			filterString);
@@ -55,14 +82,15 @@ public class PrefsPropsToConfigurationUpgradeHelperImpl
 
 		Dictionary<String, Object> properties = new HashMapDictionary<>();
 
-		PortletPreferences portletPreferences = _prefsProps.getPreferences();
+		PortletPreferences portletPreferences = _prefsProps.getPreferences(
+			companyId);
 
 		Object defaultConfiguration = ConfigurableUtil.createConfigurable(
 			configurationClass, properties);
 
 		for (KeyValuePair keyValuePair : keyValuePairs) {
 			String valueString = _prefsProps.getString(
-				keyValuePair.getKey(), null);
+				portletPreferences, keyValuePair.getKey(), null);
 
 			if (Validator.isNull(valueString)) {
 				continue;
@@ -115,20 +143,27 @@ public class PrefsPropsToConfigurationUpgradeHelperImpl
 					"No valid return type found: " + method);
 			}
 
-			if (!Objects.equals(value, defaultValueObject)) {
-				_writeProperty(
-					properties, portletPreferences, keyValuePair, value);
+			if (Objects.equals(value, defaultValueObject)) {
+				continue;
 			}
+
+			_writeProperty(properties, portletPreferences, keyValuePair, value);
 		}
 
 		if (properties.isEmpty()) {
 			return;
 		}
 
-		Configuration configuration = _configurationAdmin.getConfiguration(
-			configurationClass.getName(), StringPool.QUESTION);
+		if (companyId == PortletKeys.PREFS_OWNER_ID_DEFAULT) {
+			Configuration configuration = _configurationAdmin.getConfiguration(
+				configurationClass.getName(), StringPool.QUESTION);
 
-		configuration.update(properties);
+			configuration.update(properties);
+		}
+		else {
+			_configurationProvider.saveCompanyConfiguration(
+				companyId, configurationClass.getName(), properties);
+		}
 
 		portletPreferences.store();
 	}
@@ -151,7 +186,13 @@ public class PrefsPropsToConfigurationUpgradeHelperImpl
 	}
 
 	@Reference
+	private CompanyLocalService _companyLocalService;
+
+	@Reference
 	private ConfigurationAdmin _configurationAdmin;
+
+	@Reference
+	private ConfigurationProvider _configurationProvider;
 
 	@Reference
 	private PrefsProps _prefsProps;

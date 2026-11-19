@@ -5,6 +5,7 @@
 
 package com.liferay.source.formatter.checkstyle.check;
 
+import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.source.formatter.checkstyle.util.CheckstyleUtil;
@@ -32,8 +33,7 @@ public abstract class BaseStringConcatenationCheck extends BaseCheck {
 
 		if ((text.startsWith("CharPool.") || text.startsWith("StringPool.")) &&
 			!text.endsWith(".DEFAULT_CHARSET_NAME") &&
-			!text.endsWith(".DELETE") && !text.endsWith(".NEW_LINE") &&
-			!text.endsWith(".NO_BREAK_SPACE") && !text.endsWith(".TAB")) {
+			!text.endsWith(".DELETE") && !text.endsWith(".NO_BREAK_SPACE")) {
 
 			log(
 				literalStringDetailAST, _MSG_COMBINE_STRING,
@@ -108,6 +108,10 @@ public abstract class BaseStringConcatenationCheck extends BaseCheck {
 	protected int getStringBreakPos(String s1, String s2, int i) {
 		if (s2.startsWith(StringPool.SLASH)) {
 			int pos = s2.lastIndexOf(StringPool.SLASH, i);
+
+			while ((pos > 0) && (s2.charAt(pos - 1) == CharPool.SLASH)) {
+				pos = s2.lastIndexOf(StringPool.SLASH, pos - 1);
+			}
 
 			if (pos > 0) {
 				return pos - 1;

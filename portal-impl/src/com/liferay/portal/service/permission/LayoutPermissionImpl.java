@@ -7,6 +7,7 @@ package com.liferay.portal.service.permission;
 
 import com.liferay.exportimport.kernel.staging.permission.StagingPermissionUtil;
 import com.liferay.petra.lang.HashUtil;
+import com.liferay.portal.kernel.change.tracking.CTCollectionThreadLocal;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
@@ -34,9 +35,9 @@ import com.liferay.portal.kernel.service.permission.LayoutSetPrototypePermission
 import com.liferay.portal.kernel.service.permission.OrganizationPermissionUtil;
 import com.liferay.portal.kernel.service.permission.UserPermissionUtil;
 import com.liferay.portal.kernel.spring.osgi.OSGiBeanProperties;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.workflow.permission.WorkflowPermissionUtil;
 import com.liferay.portal.util.LayoutTypeControllerTracker;
-import com.liferay.portal.util.PropsValues;
 
 import java.util.Arrays;
 import java.util.List;
@@ -205,6 +206,33 @@ public class LayoutPermissionImpl implements LayoutPermission {
 	}
 
 	@Override
+	public boolean containsLayoutPreviewDraftPermission(
+			PermissionChecker permissionChecker, Layout layout)
+		throws PortalException {
+
+		if (!layout.isTypeAssetDisplay() && !layout.isTypeContent()) {
+			return false;
+		}
+
+		if (containsLayoutUpdatePermission(permissionChecker, layout) ||
+			contains(permissionChecker, layout, ActionKeys.PREVIEW_DRAFT)) {
+
+			return true;
+		}
+
+		return false;
+	}
+
+	@Override
+	public boolean containsLayoutPreviewDraftPermission(
+			PermissionChecker permissionChecker, long plid)
+		throws PortalException {
+
+		return containsLayoutPreviewDraftPermission(
+			permissionChecker, LayoutLocalServiceUtil.getLayout(plid));
+	}
+
+	@Override
 	public boolean containsLayoutRestrictedUpdatePermission(
 			PermissionChecker permissionChecker, Layout layout)
 		throws PortalException {
@@ -264,144 +292,8 @@ public class LayoutPermissionImpl implements LayoutPermission {
 			boolean checkLayoutUpdateable, String actionId)
 		throws PortalException {
 
-		if (layout.isTypeControlPanel()) {
-			return false;
-		}
-
-		if (checkLayoutUpdateable && !actionId.equals(ActionKeys.CUSTOMIZE) &&
-			!actionId.equals(ActionKeys.VIEW) &&
-			(layout instanceof VirtualLayout)) {
-
-			return false;
-		}
-
-		if (actionId.equals(ActionKeys.CUSTOMIZE) &&
-			(layout instanceof VirtualLayout)) {
-
-			VirtualLayout virtualLayout = (VirtualLayout)layout;
-
-			layout = virtualLayout.getWrappedModel();
-		}
-
-		if (actionId.equals(ActionKeys.ADD_LAYOUT)) {
-			if ((layout instanceof VirtualLayout) ||
-				!layout.isLayoutSortable()) {
-
-				return false;
-			}
-
-			LayoutType layoutType = layout.getLayoutType();
-
-			if (!layoutType.isParentable()) {
-				return false;
-			}
-		}
-
-		if (actionId.equals(ActionKeys.DELETE) &&
-			((layout instanceof VirtualLayout) ||
-			 !layout.isLayoutDeleteable())) {
-
-			return false;
-		}
-
-		if (layout.isPending()) {
-			Boolean hasPermission = WorkflowPermissionUtil.hasPermission(
-				permissionChecker, layout.getGroupId(), Layout.class.getName(),
-				layout.getPlid(), actionId);
-
-			if (hasPermission != null) {
-				return hasPermission;
-			}
-		}
-
-		Group group = layout.getGroup();
-
-		if (checkLayoutUpdateable && !group.isLayoutSetPrototype() &&
-			isAttemptToModifyLockedLayout(layout, actionId)) {
-
-			return false;
-		}
-
-		if (actionId.equals(ActionKeys.ADD_LAYOUT) &&
-			GroupPermissionUtil.contains(
-				permissionChecker, group, ActionKeys.ADD_LAYOUT)) {
-
-			return true;
-		}
-
-		if (PropsValues.PERMISSIONS_VIEW_DYNAMIC_INHERITANCE &&
-			!actionId.equals(ActionKeys.VIEW)) {
-
-			// Check upward recursively to see if any pages above grant the
-			// action
-
-			long layoutGroupId = layout.getGroupId();
-
-			if (layout instanceof VirtualLayout) {
-				VirtualLayout virtualLayout = (VirtualLayout)layout;
-
-				layoutGroupId = virtualLayout.getSourceGroupId();
-			}
-
-			long parentLayoutId = layout.getParentLayoutId();
-
-			while (parentLayoutId != LayoutConstants.DEFAULT_PARENT_LAYOUT_ID) {
-				Layout parentLayout = LayoutLocalServiceUtil.getLayout(
-					layoutGroupId, layout.isPrivateLayout(), parentLayoutId);
-
-				if (contains(permissionChecker, parentLayout, actionId)) {
-					return true;
-				}
-
-				parentLayoutId = parentLayout.getParentLayoutId();
-			}
-		}
-
-		if ((layout.isDraftLayout() &&
-			 permissionChecker.hasPermission(
-				 group, Layout.class.getName(), layout.getClassPK(),
-				 actionId)) ||
-			permissionChecker.hasPermission(
-				group, Layout.class.getName(), layout.getPlid(), actionId)) {
-
-			return true;
-		}
-
-		if (GroupPermissionUtil.contains(
-				permissionChecker, group, ActionKeys.MANAGE_LAYOUTS)) {
-
-			return true;
-		}
-
-		User user = permissionChecker.getUser();
-
-		if (!user.isGuestUser() && !group.isUser()) {
-
-			// This is new way of doing an ownership check without having to
-			// have a userId field on the model. When the instance model was
-			// first created, we set the user's userId as the ownerId of the
-			// individual scope ResourcePermission of the Owner Role. Therefore,
-			// ownership can be determined by obtaining the Owner role
-			// ResourcePermission for the current instance model and testing it
-			// with the hasOwnerPermission call.
-
-			ResourcePermission resourcePermission =
-				ResourcePermissionLocalServiceUtil.getResourcePermission(
-					layout.getCompanyId(), Layout.class.getName(),
-					ResourceConstants.SCOPE_INDIVIDUAL,
-					String.valueOf(layout.getPlid()),
-					permissionChecker.getOwnerRoleId());
-
-			if (permissionChecker.hasOwnerPermission(
-					layout.getCompanyId(), Layout.class.getName(),
-					String.valueOf(layout.getPlid()),
-					resourcePermission.getOwnerId(), actionId)) {
-
-				return true;
-			}
-		}
-
-		return false;
+		return _containsWithoutViewableGroup(
+			permissionChecker, layout, null, checkLayoutUpdateable, actionId);
 	}
 
 	@Override
@@ -411,20 +303,6 @@ public class LayoutPermissionImpl implements LayoutPermission {
 
 		return containsWithoutViewableGroup(
 			permissionChecker, layout, true, actionId);
-	}
-
-	protected boolean containsWithViewableGroup(
-			PermissionChecker permissionChecker, Layout layout,
-			boolean checkViewableGroup, String actionId)
-		throws PortalException {
-
-		if (actionId.equals(ActionKeys.VIEW) && checkViewableGroup) {
-			return isViewableGroup(
-				permissionChecker, layout, checkViewableGroup);
-		}
-
-		return containsWithoutViewableGroup(
-			permissionChecker, layout, actionId);
 	}
 
 	protected boolean isAttemptToModifyLockedLayout(
@@ -449,16 +327,14 @@ public class LayoutPermissionImpl implements LayoutPermission {
 		Group group = GroupLocalServiceUtil.getGroup(layout.getGroupId());
 
 		if (group.isControlPanel() && layout.isTypeControlPanel()) {
-			if (!permissionChecker.isSignedIn()) {
-				return false;
-			}
-
-			return true;
+			return permissionChecker.isSignedIn();
 		}
 
 		// Inactive sites are not viewable
 
-		if (!GroupLocalServiceUtil.isLiveGroupActive(group)) {
+		if (!GroupLocalServiceUtil.isLiveGroupActive(group) &&
+			!GroupLocalServiceUtil.isMaintenanceMode(group)) {
+
 			return false;
 		}
 
@@ -496,13 +372,8 @@ public class LayoutPermissionImpl implements LayoutPermission {
 		// access it
 
 		if (group.isStagingGroup()) {
-			if (GroupPermissionUtil.contains(
-					permissionChecker, group, ActionKeys.VIEW_STAGING)) {
-
-				return true;
-			}
-
-			return false;
+			return GroupPermissionUtil.contains(
+				permissionChecker, group, ActionKeys.VIEW_STAGING);
 		}
 
 		// Site layouts are only viewable by users who are members of the site
@@ -531,22 +402,12 @@ public class LayoutPermissionImpl implements LayoutPermission {
 			return false;
 		}
 		else if (group.isLayoutPrototype()) {
-			if (LayoutPrototypePermissionUtil.contains(
-					permissionChecker, group.getClassPK(), ActionKeys.VIEW)) {
-
-				return true;
-			}
-
-			return false;
+			return LayoutPrototypePermissionUtil.contains(
+				permissionChecker, group.getClassPK(), ActionKeys.VIEW);
 		}
 		else if (group.isLayoutSetPrototype()) {
-			if (LayoutSetPrototypePermissionUtil.contains(
-					permissionChecker, group.getClassPK(), ActionKeys.VIEW)) {
-
-				return true;
-			}
-
-			return false;
+			return LayoutSetPrototypePermissionUtil.contains(
+				permissionChecker, group.getClassPK(), ActionKeys.VIEW);
 		}
 		else if (group.isOrganization()) {
 			long organizationId = group.getOrganizationId();
@@ -684,8 +545,179 @@ public class LayoutPermissionImpl implements LayoutPermission {
 			}
 		}
 
-		return containsWithViewableGroup(
-			permissionChecker, layout, checkViewableGroup, actionId);
+		if (actionId.equals(ActionKeys.VIEW) && checkViewableGroup) {
+			return isViewableGroup(permissionChecker, layout, true);
+		}
+
+		return _containsWithoutViewableGroup(
+			permissionChecker, layout, group, true, actionId);
+	}
+
+	private boolean _containsWithoutViewableGroup(
+			PermissionChecker permissionChecker, Layout layout, Group group,
+			boolean checkLayoutUpdateable, String actionId)
+		throws PortalException {
+
+		if (layout.isTypeControlPanel()) {
+			return false;
+		}
+
+		if (!CTCollectionThreadLocal.isProductionMode()) {
+			long primKey = layout.getPlid();
+
+			if (layout.isDraftLayout()) {
+				primKey = layout.getClassPK();
+			}
+
+			int resourcePermissionsCount =
+				ResourcePermissionLocalServiceUtil.getResourcePermissionsCount(
+					layout.getCompanyId(), Layout.class.getName(),
+					ResourceConstants.SCOPE_INDIVIDUAL,
+					String.valueOf(primKey));
+
+			if (resourcePermissionsCount == 0) {
+				return false;
+			}
+		}
+
+		if (checkLayoutUpdateable && !actionId.equals(ActionKeys.CUSTOMIZE) &&
+			!actionId.equals(ActionKeys.VIEW) &&
+			(layout instanceof VirtualLayout)) {
+
+			return false;
+		}
+
+		if (actionId.equals(ActionKeys.CUSTOMIZE) &&
+			(layout instanceof VirtualLayout)) {
+
+			VirtualLayout virtualLayout = (VirtualLayout)layout;
+
+			layout = virtualLayout.getWrappedModel();
+		}
+
+		if (actionId.equals(ActionKeys.ADD_LAYOUT)) {
+			if ((layout instanceof VirtualLayout) ||
+				!layout.isLayoutSortable()) {
+
+				return false;
+			}
+
+			LayoutType layoutType = layout.getLayoutType();
+
+			if (!layoutType.isParentable()) {
+				return false;
+			}
+		}
+
+		if (actionId.equals(ActionKeys.DELETE) &&
+			((layout instanceof VirtualLayout) ||
+			 !layout.isLayoutDeleteable())) {
+
+			return false;
+		}
+
+		if (layout.isPending() &&
+			(!actionId.equals(ActionKeys.VIEW) || !layout.isPublished())) {
+
+			Boolean hasPermission = WorkflowPermissionUtil.hasPermission(
+				permissionChecker, layout.getGroupId(), Layout.class.getName(),
+				layout.getPlid(), actionId);
+
+			if (hasPermission != null) {
+				return hasPermission;
+			}
+		}
+
+		if (group == null) {
+			group = layout.getGroup();
+		}
+
+		if (checkLayoutUpdateable && !group.isLayoutSetPrototype() &&
+			isAttemptToModifyLockedLayout(layout, actionId)) {
+
+			return false;
+		}
+
+		if (actionId.equals(ActionKeys.ADD_LAYOUT) &&
+			GroupPermissionUtil.contains(
+				permissionChecker, group, ActionKeys.ADD_LAYOUT)) {
+
+			return true;
+		}
+
+		if (PropsValues.PERMISSIONS_VIEW_DYNAMIC_INHERITANCE &&
+			actionId.equals(ActionKeys.VIEW)) {
+
+			// Check upward recursively to see if any pages above forbid the
+			// action
+
+			long layoutGroupId = layout.getGroupId();
+
+			if (layout instanceof VirtualLayout) {
+				VirtualLayout virtualLayout = (VirtualLayout)layout;
+
+				layoutGroupId = virtualLayout.getSourceGroupId();
+			}
+
+			long parentLayoutId = layout.getParentLayoutId();
+
+			while (parentLayoutId != LayoutConstants.DEFAULT_PARENT_LAYOUT_ID) {
+				Layout parentLayout = LayoutLocalServiceUtil.getLayout(
+					layoutGroupId, layout.isPrivateLayout(), parentLayoutId);
+
+				if (!contains(permissionChecker, parentLayout, actionId)) {
+					return false;
+				}
+
+				parentLayoutId = parentLayout.getParentLayoutId();
+			}
+		}
+
+		if ((layout.isDraftLayout() &&
+			 permissionChecker.hasPermission(
+				 group, Layout.class.getName(), layout.getClassPK(),
+				 actionId)) ||
+			permissionChecker.hasPermission(
+				group, Layout.class.getName(), layout.getPlid(), actionId)) {
+
+			return true;
+		}
+
+		if (GroupPermissionUtil.contains(
+				permissionChecker, group, ActionKeys.MANAGE_LAYOUTS)) {
+
+			return true;
+		}
+
+		User user = permissionChecker.getUser();
+
+		if (!user.isGuestUser() && !group.isUser()) {
+
+			// This is new way of doing an ownership check without having to
+			// have a userId field on the model. When the instance model was
+			// first created, we set the user's userId as the ownerId of the
+			// individual scope ResourcePermission of the Owner Role. Therefore,
+			// ownership can be determined by obtaining the Owner role
+			// ResourcePermission for the current instance model and testing it
+			// with the hasOwnerPermission call.
+
+			ResourcePermission resourcePermission =
+				ResourcePermissionLocalServiceUtil.getResourcePermission(
+					layout.getCompanyId(), Layout.class.getName(),
+					ResourceConstants.SCOPE_INDIVIDUAL,
+					String.valueOf(layout.getPlid()),
+					permissionChecker.getOwnerRoleId());
+
+			if (permissionChecker.hasOwnerPermission(
+					layout.getCompanyId(), Layout.class.getName(),
+					String.valueOf(layout.getPlid()),
+					resourcePermission.getOwnerId(), actionId)) {
+
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	private static class CacheKey {

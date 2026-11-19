@@ -13,14 +13,18 @@ import com.liferay.portal.kernel.dao.orm.ProjectionFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.orm.RestrictionsFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.Session;
+import com.liferay.portal.kernel.security.permission.InlineSQLHelperUtil;
+import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.transaction.Propagation;
 import com.liferay.portal.kernel.util.IntegerWrapper;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.OrderByComparatorFactoryUtil;
 import com.liferay.portal.kernel.util.Time;
+import com.liferay.portal.security.permission.SimplePermissionChecker;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PersistenceTestRule;
 import com.liferay.portal.test.rule.TransactionalTestRule;
@@ -112,11 +116,7 @@ public class WikiNodePersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		WikiNode newWikiNode = _persistence.create(pk);
-
-		newWikiNode.setMvccVersion(RandomTestUtil.nextLong());
+		WikiNode newWikiNode = addWikiNode();
 
 		newWikiNode.setCtCollectionId(RandomTestUtil.nextLong());
 
@@ -152,7 +152,9 @@ public class WikiNodePersistenceTest {
 
 		newWikiNode.setStatusDate(RandomTestUtil.nextDate());
 
-		_wikiNodes.add(_persistence.update(newWikiNode));
+		newWikiNode = _persistence.update(newWikiNode);
+
+		_wikiNodes.add(newWikiNode);
 
 		WikiNode existingWikiNode = _persistence.findByPrimaryKey(
 			newWikiNode.getPrimaryKey());
@@ -259,13 +261,6 @@ public class WikiNodePersistenceTest {
 	}
 
 	@Test
-	public void testCountByCompanyId() throws Exception {
-		_persistence.countByCompanyId(RandomTestUtil.nextLong());
-
-		_persistence.countByCompanyId(0L);
-	}
-
-	@Test
 	public void testCountByG_N() throws Exception {
 		_persistence.countByG_N(RandomTestUtil.nextLong(), "");
 
@@ -280,14 +275,6 @@ public class WikiNodePersistenceTest {
 			RandomTestUtil.nextLong(), RandomTestUtil.nextInt());
 
 		_persistence.countByG_S(0L, 0);
-	}
-
-	@Test
-	public void testCountByC_S() throws Exception {
-		_persistence.countByC_S(
-			RandomTestUtil.nextLong(), RandomTestUtil.nextInt());
-
-		_persistence.countByC_S(0L, 0);
 	}
 
 	@Test
@@ -324,6 +311,24 @@ public class WikiNodePersistenceTest {
 
 	@Test
 	public void testFilterFindByGroupId() throws Exception {
+		PermissionThreadLocal.setPermissionChecker(
+			new SimplePermissionChecker() {
+				{
+					init(TestPropsValues.getUser());
+				}
+
+				@Override
+				public boolean isCompanyAdmin(long companyId) {
+					return false;
+				}
+
+			});
+
+		Assert.assertTrue(InlineSQLHelperUtil.isEnabled(0));
+
+		_persistence.filterFindByGroupId(
+			0, QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
+
 		_persistence.filterFindByGroupId(
 			0, QueryUtil.ALL_POS, QueryUtil.ALL_POS, getOrderByComparator());
 	}
@@ -629,8 +634,6 @@ public class WikiNodePersistenceTest {
 
 		WikiNode wikiNode = _persistence.create(pk);
 
-		wikiNode.setMvccVersion(RandomTestUtil.nextLong());
-
 		wikiNode.setCtCollectionId(RandomTestUtil.nextLong());
 
 		wikiNode.setUuid(RandomTestUtil.randomString());
@@ -675,3 +678,4 @@ public class WikiNodePersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:747677626

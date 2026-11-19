@@ -10,8 +10,9 @@ import com.liferay.portal.kernel.audit.AuditRouter;
 import com.liferay.portal.kernel.events.Action;
 import com.liferay.portal.kernel.events.ActionException;
 import com.liferay.portal.kernel.events.LifecycleAction;
-import com.liferay.portal.kernel.json.JSONFactory;
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.json.JSONObject;
+import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ParamUtil;
@@ -19,9 +20,9 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.security.audit.event.generators.constants.EventTypes;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -42,18 +43,14 @@ public class ImpersonationAction extends Action {
 		throws ActionException {
 
 		try {
-			doRun(httpServletRequest, httpServletResponse);
+			_run(httpServletRequest);
 		}
 		catch (Exception exception) {
 			throw new ActionException(exception);
 		}
 	}
 
-	protected void doRun(
-			HttpServletRequest httpServletRequest,
-			HttpServletResponse httpServletResponse)
-		throws Exception {
-
+	private void _run(HttpServletRequest httpServletRequest) throws Exception {
 		long plid = ParamUtil.getLong(httpServletRequest, "p_l_id");
 
 		if (plid <= 0) {
@@ -78,22 +75,25 @@ public class ImpersonationAction extends Action {
 			if (impersonatingUser == null) {
 				httpSession.setAttribute(_IMPERSONATING_USER, Boolean.TRUE);
 
-				JSONObject additionalInfoJSONObject =
-					_jsonFactory.createJSONObject();
+				JSONObject additionalInfoJSONObject = null;
 
-				additionalInfoJSONObject.put(
-					"userEmailAddress", user.getEmailAddress()
-				).put(
-					"userId", user.getUserId()
-				).put(
-					"userName", user.getFullName()
-				);
+				if (!FeatureFlagManagerUtil.isEnabled(
+						themeDisplay.getCompanyId(), "LPD-6417")) {
+
+					additionalInfoJSONObject = JSONUtil.put(
+						"userEmailAddress", user.getEmailAddress()
+					).put(
+						"userId", user.getUserId()
+					).put(
+						"userName", user.getFullName()
+					);
+				}
 
 				AuditMessage auditMessage = new AuditMessage(
-					EventTypes.IMPERSONATE, themeDisplay.getCompanyId(),
-					realUser.getUserId(), realUser.getFullName(),
+					themeDisplay.getCompanyId(), realUser.getUserId(),
+					realUser.getFullName(), additionalInfoJSONObject,
 					User.class.getName(), String.valueOf(user.getUserId()),
-					null, additionalInfoJSONObject);
+					EventTypes.IMPERSONATE, null);
 
 				_auditRouter.route(auditMessage);
 			}
@@ -108,8 +108,5 @@ public class ImpersonationAction extends Action {
 
 	@Reference
 	private AuditRouter _auditRouter;
-
-	@Reference
-	private JSONFactory _jsonFactory;
 
 }

@@ -13,8 +13,8 @@ import com.liferay.petra.string.StringPool;
 import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
-import com.liferay.portal.kernel.settings.CompanyServiceSettingsLocator;
 import com.liferay.portal.kernel.util.Base64;
+import com.liferay.portal.security.key.secret.SecretResolver;
 
 import java.text.SimpleDateFormat;
 
@@ -42,12 +42,12 @@ public class CommerceAvalaraConnectorImpl implements CommerceAvalaraConnector {
 
 	@Override
 	public Map<String, String> getCompanyCodes() throws Exception {
+		Map<String, String> companyCodes = new HashMap<>();
+
 		AvaTaxClient avaTaxClient = _getAvaTaxClient();
 
 		FetchResult<CompanyModel> companyModelFetchResult =
 			avaTaxClient.queryCompanies(null, null, 0, 0, null);
-
-		Map<String, String> companyCodes = new HashMap<>();
 
 		for (CompanyModel companyModel : companyModelFetchResult.getValue()) {
 			companyCodes.put(
@@ -67,6 +67,7 @@ public class CommerceAvalaraConnectorImpl implements CommerceAvalaraConnector {
 		return taxCodeModelFetchResult.getValue();
 	}
 
+	@Override
 	public String getTaxRateByZipCode() throws Exception {
 		AvaTaxClient avaTaxClient = _getAvaTaxClient();
 
@@ -108,11 +109,9 @@ public class CommerceAvalaraConnectorImpl implements CommerceAvalaraConnector {
 	private AvaTaxClient _getAvaTaxClient() throws PortalException {
 		CommerceAvalaraConnectorConfiguration
 			commerceAvalaraConnectorConfiguration =
-				_configurationProvider.getConfiguration(
+				_configurationProvider.getCompanyConfiguration(
 					CommerceAvalaraConnectorConfiguration.class,
-					new CompanyServiceSettingsLocator(
-						CompanyThreadLocal.getCompanyId(),
-						CommerceAvalaraConnectorConfiguration.class.getName()));
+					CompanyThreadLocal.getCompanyId());
 
 		return _getAvaTaxClient(
 			commerceAvalaraConnectorConfiguration.accountNumber(),
@@ -127,7 +126,9 @@ public class CommerceAvalaraConnectorImpl implements CommerceAvalaraConnector {
 			"LiferayCommerceAvalaraConnector", "1.0", "Liferay", serviceURL);
 
 		String securityHeader = StringBundler.concat(
-			accountNumber, StringPool.COLON, licenseKey);
+			accountNumber, StringPool.COLON,
+			_secretResolver.resolve(
+				CompanyThreadLocal.getCompanyId(), licenseKey));
 
 		return avaTaxClient.withSecurity(
 			Base64.encode(securityHeader.getBytes()));
@@ -135,5 +136,8 @@ public class CommerceAvalaraConnectorImpl implements CommerceAvalaraConnector {
 
 	@Reference
 	private ConfigurationProvider _configurationProvider;
+
+	@Reference
+	private SecretResolver _secretResolver;
 
 }

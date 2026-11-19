@@ -27,13 +27,13 @@ import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.service.permission.LayoutPrototypePermissionUtil;
 import com.liferay.taglib.security.PermissionsURLTag;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.List;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Eudaldo Alonso
@@ -118,8 +118,10 @@ public class LayoutPrototypeActionDropdownItemsProvider {
 		return dropdownItem -> {
 			dropdownItem.setHref(
 				_renderResponse.createRenderURL(), "mvcPath",
-				"/edit_layout_prototype.jsp", "layoutPrototypeId",
-				_layoutPrototype.getLayoutPrototypeId());
+				"/edit_layout_prototype.jsp", "backURLTitle",
+				LanguageUtil.get(
+					_themeDisplay.getLocale(), "widget-page-templates"),
+				"layoutPrototypeId", _layoutPrototype.getLayoutPrototypeId());
 			dropdownItem.setIcon("cog");
 			dropdownItem.setLabel(
 				LanguageUtil.get(_httpServletRequest, "configure"));

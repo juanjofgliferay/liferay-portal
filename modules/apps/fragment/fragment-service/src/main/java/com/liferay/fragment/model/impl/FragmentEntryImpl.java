@@ -47,12 +47,6 @@ public class FragmentEntryImpl extends FragmentEntryBaseImpl {
 	}
 
 	@Override
-	public int getGlobalUsageCount() {
-		return FragmentEntryLinkLocalServiceUtil.
-			getFragmentEntryLinksCountByFragmentEntryId(getFragmentEntryId());
-	}
-
-	@Override
 	public String getIcon() {
 		if (Validator.isNull(_icon)) {
 			if (isTypeInput()) {
@@ -110,27 +104,27 @@ public class FragmentEntryImpl extends FragmentEntryBaseImpl {
 
 	@Override
 	public int getUsageCount() {
-		return FragmentEntryLinkLocalServiceUtil.
-			getAllFragmentEntryLinksCountByFragmentEntryId(
-				getGroupId(), getFragmentEntryId());
+		try {
+			return FragmentEntryLinkLocalServiceUtil.
+				getAllFragmentEntryLinksCountByFragmentEntry(this);
+		}
+		catch (PortalException portalException) {
+			if (_log.isDebugEnabled()) {
+				_log.debug("Unable to get usage count ", portalException);
+			}
+		}
+
+		return 0;
 	}
 
 	@Override
 	public boolean isApproved() {
-		if (isHead()) {
-			return true;
-		}
-
-		return false;
+		return isHead();
 	}
 
 	@Override
 	public boolean isDraft() {
-		if (isHead()) {
-			return false;
-		}
-
-		return true;
+		return !isHead();
 	}
 
 	@Override
@@ -181,6 +175,10 @@ public class FragmentEntryImpl extends FragmentEntryBaseImpl {
 	@Override
 	public void populateZipWriter(ZipWriter zipWriter, String path)
 		throws Exception {
+
+		if (isMarketplace() || isTypeReact()) {
+			return;
+		}
 
 		path = path + StringPool.SLASH + getFragmentEntryKey();
 

@@ -5,29 +5,32 @@
 
 package com.liferay.layout.internal.util;
 
+import com.liferay.layout.internal.servlet.IsolatedAttributesHttpServletRequest;
 import com.liferay.layout.util.LayoutServiceContextHelper;
+import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.ColorScheme;
 import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.GroupConstants;
+import com.liferay.portal.kernel.model.Image;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.LayoutConstants;
 import com.liferay.portal.kernel.model.LayoutSet;
 import com.liferay.portal.kernel.model.LayoutTypePortlet;
 import com.liferay.portal.kernel.model.Theme;
 import com.liferay.portal.kernel.model.User;
-import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.security.auth.PrincipalThreadLocal;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.security.permission.PermissionCheckerFactoryUtil;
 import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.service.GroupLocalService;
+import com.liferay.portal.kernel.service.ImageLocalService;
 import com.liferay.portal.kernel.service.LayoutLocalService;
-import com.liferay.portal.kernel.service.PortalPreferencesLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
 import com.liferay.portal.kernel.service.ThemeLocalService;
@@ -39,44 +42,31 @@ import com.liferay.portal.kernel.servlet.ServletContextPool;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ConcurrentHashMapBuilder;
 import com.liferay.portal.kernel.util.FriendlyURLNormalizer;
-import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.Http;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.PropsUtil;
+import com.liferay.portal.kernel.util.PropsValues;
+import com.liferay.portal.kernel.util.ProxyFactory;
+import com.liferay.portal.kernel.util.ProxyUtil;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.portal.kernel.webserver.WebServerServletToken;
 import com.liferay.portal.theme.ThemeDisplayFactory;
-import com.liferay.portal.util.PropsValues;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 
-import java.security.Principal;
-
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-
-import javax.servlet.AsyncContext;
-import javax.servlet.DispatcherType;
-import javax.servlet.RequestDispatcher;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.ServletInputStream;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
-import javax.servlet.http.HttpSessionContext;
-import javax.servlet.http.HttpUpgradeHandler;
-import javax.servlet.http.Part;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -96,11 +86,29 @@ public class LayoutServiceContextHelperImpl
 	}
 
 	@Override
+	public AutoCloseable getServiceContextAutoCloseable(
+			Company company, User user)
+		throws PortalException {
+
+		return new ServiceContextTemporarySwapper(company, user);
+	}
+
+	@Override
 	public AutoCloseable getServiceContextAutoCloseable(Layout layout)
 		throws PortalException {
 
 		return new ServiceContextTemporarySwapper(
 			_companyLocalService.getCompany(layout.getCompanyId()), layout);
+	}
+
+	@Override
+	public AutoCloseable getServiceContextAutoCloseable(
+			Layout layout, User user)
+		throws PortalException {
+
+		return new ServiceContextTemporarySwapper(
+			_companyLocalService.getCompany(layout.getCompanyId()), layout,
+			user);
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
@@ -116,13 +124,13 @@ public class LayoutServiceContextHelperImpl
 	private GroupLocalService _groupLocalService;
 
 	@Reference
+	private ImageLocalService _imageLocalService;
+
+	@Reference
 	private LayoutLocalService _layoutLocalService;
 
 	@Reference
 	private Portal _portal;
-
-	@Reference
-	private PortalPreferencesLocalService _portalPreferencesLocalService;
 
 	@Reference
 	private ThemeLocalService _themeLocalService;
@@ -130,505 +138,67 @@ public class LayoutServiceContextHelperImpl
 	@Reference
 	private UserLocalService _userLocalService;
 
-	private class MockHttpServletRequest implements HttpServletRequest {
-
-		@Override
-		public boolean authenticate(HttpServletResponse httpServletResponse)
-			throws IOException, ServletException {
-
-			return false;
-		}
-
-		@Override
-		public String changeSessionId() {
-			return null;
-		}
-
-		@Override
-		public AsyncContext getAsyncContext() {
-			return null;
-		}
-
-		@Override
-		public Object getAttribute(String name) {
-			return _attributes.get(name);
-		}
-
-		@Override
-		public Enumeration<String> getAttributeNames() {
-			return Collections.enumeration(_attributes.keySet());
-		}
-
-		@Override
-		public String getAuthType() {
-			return null;
-		}
-
-		@Override
-		public String getCharacterEncoding() {
-			return null;
-		}
-
-		@Override
-		public int getContentLength() {
-			return 0;
-		}
-
-		@Override
-		public long getContentLengthLong() {
-			return 0;
-		}
-
-		@Override
-		public String getContentType() {
-			return null;
-		}
-
-		@Override
-		public String getContextPath() {
-			return null;
-		}
-
-		@Override
-		public Cookie[] getCookies() {
-			return new Cookie[0];
-		}
-
-		@Override
-		public long getDateHeader(String name) {
-			return 0;
-		}
-
-		@Override
-		public DispatcherType getDispatcherType() {
-			return null;
-		}
-
-		@Override
-		public String getHeader(String name) {
-			return null;
-		}
-
-		@Override
-		public Enumeration<String> getHeaderNames() {
-			return Collections.emptyEnumeration();
-		}
-
-		@Override
-		public Enumeration<String> getHeaders(String name) {
-			return null;
-		}
-
-		@Override
-		public ServletInputStream getInputStream() throws IOException {
-			return null;
-		}
-
-		@Override
-		public int getIntHeader(String name) {
-			return 0;
-		}
-
-		@Override
-		public String getLocalAddr() {
-			return null;
-		}
-
-		@Override
-		public Locale getLocale() {
-			return null;
-		}
-
-		@Override
-		public Enumeration<Locale> getLocales() {
-			return null;
-		}
-
-		@Override
-		public String getLocalName() {
-			return null;
-		}
-
-		@Override
-		public int getLocalPort() {
-			return 0;
-		}
-
-		@Override
-		public String getMethod() {
-			return HttpMethods.GET;
-		}
-
-		@Override
-		public String getParameter(String name) {
-			return null;
-		}
-
-		@Override
-		public Map<String, String[]> getParameterMap() {
-			return Collections.emptyMap();
-		}
-
-		@Override
-		public Enumeration<String> getParameterNames() {
-			return null;
-		}
-
-		@Override
-		public String[] getParameterValues(String name) {
-			return new String[0];
-		}
-
-		@Override
-		public Part getPart(String name) throws IOException, ServletException {
-			return null;
-		}
-
-		@Override
-		public Collection<Part> getParts()
-			throws IOException, ServletException {
-
-			return null;
-		}
-
-		@Override
-		public String getPathInfo() {
-			return null;
-		}
-
-		@Override
-		public String getPathTranslated() {
-			return null;
-		}
-
-		@Override
-		public String getProtocol() {
-			return null;
-		}
-
-		@Override
-		public String getQueryString() {
-			return null;
-		}
-
-		@Override
-		public BufferedReader getReader() throws IOException {
-			return null;
-		}
-
-		@Override
-		public String getRealPath(String path) {
-			return null;
-		}
-
-		@Override
-		public String getRemoteAddr() {
-			return null;
-		}
-
-		@Override
-		public String getRemoteHost() {
-			return null;
-		}
-
-		@Override
-		public int getRemotePort() {
-			return 0;
-		}
-
-		@Override
-		public String getRemoteUser() {
-			return null;
-		}
-
-		@Override
-		public RequestDispatcher getRequestDispatcher(String path) {
-			return DirectRequestDispatcherFactoryUtil.getRequestDispatcher(
-				ServletContextPool.get(_portal.getServletContextName()), path);
-		}
-
-		@Override
-		public String getRequestedSessionId() {
-			return null;
-		}
-
-		@Override
-		public String getRequestURI() {
-			return StringPool.BLANK;
-		}
-
-		@Override
-		public StringBuffer getRequestURL() {
-			return null;
-		}
-
-		@Override
-		public String getScheme() {
-			return null;
-		}
-
-		@Override
-		public String getServerName() {
-			return null;
-		}
-
-		@Override
-		public int getServerPort() {
-			return 0;
-		}
-
-		@Override
-		public ServletContext getServletContext() {
-			return ServletContextPool.get(_portal.getServletContextName());
-		}
-
-		@Override
-		public String getServletPath() {
-			return null;
-		}
-
-		@Override
-		public HttpSession getSession() {
-			return _httpSession;
-		}
-
-		@Override
-		public HttpSession getSession(boolean create) {
-			return _httpSession;
-		}
-
-		@Override
-		public Principal getUserPrincipal() {
-			return null;
-		}
-
-		@Override
-		public boolean isAsyncStarted() {
-			return false;
-		}
-
-		@Override
-		public boolean isAsyncSupported() {
-			return false;
-		}
-
-		@Override
-		public boolean isRequestedSessionIdFromCookie() {
-			return false;
-		}
-
-		@Override
-		public boolean isRequestedSessionIdFromUrl() {
-			return false;
-		}
-
-		@Override
-		public boolean isRequestedSessionIdFromURL() {
-			return false;
-		}
-
-		@Override
-		public boolean isRequestedSessionIdValid() {
-			return false;
-		}
-
-		@Override
-		public boolean isSecure() {
-			return false;
-		}
-
-		@Override
-		public boolean isUserInRole(String role) {
-			return false;
-		}
-
-		@Override
-		public void login(String userName, String password)
-			throws ServletException {
-		}
-
-		@Override
-		public void logout() throws ServletException {
-		}
-
-		@Override
-		public void removeAttribute(String name) {
-			_attributes.remove(name);
-		}
-
-		@Override
-		public void setAttribute(String name, Object value) {
-			if ((name != null) && (value != null)) {
-				_attributes.put(name, value);
-			}
-		}
-
-		@Override
-		public void setCharacterEncoding(String encoding)
-			throws UnsupportedEncodingException {
-		}
-
-		@Override
-		public AsyncContext startAsync() throws IllegalStateException {
-			return null;
-		}
-
-		@Override
-		public AsyncContext startAsync(
-				ServletRequest servletRequest, ServletResponse servletResponse)
-			throws IllegalStateException {
-
-			return null;
-		}
-
-		@Override
-		public <T extends HttpUpgradeHandler> T upgrade(Class<T> handlerClass)
-			throws IOException, ServletException {
-
-			return null;
-		}
-
-		private final Map<String, Object> _attributes =
-			ConcurrentHashMapBuilder.<String, Object>put(
-				WebKeys.CTX,
-				ServletContextPool.get(_portal.getServletContextName())
-			).build();
-
-		private final HttpSession _httpSession = new HttpSession() {
-
-			@Override
-			public Object getAttribute(String name) {
-				return _attributes.get(name);
-			}
-
-			@Override
-			public Enumeration<String> getAttributeNames() {
-				return Collections.enumeration(_attributes.keySet());
-			}
-
-			@Override
-			public long getCreationTime() {
-				return 0;
-			}
-
-			@Override
-			public String getId() {
-				return StringPool.BLANK;
-			}
-
-			@Override
-			public long getLastAccessedTime() {
-				return 0;
-			}
-
-			@Override
-			public int getMaxInactiveInterval() {
-				return 0;
-			}
-
-			@Override
-			public ServletContext getServletContext() {
-				return null;
-			}
-
-			@Override
-			public HttpSessionContext getSessionContext() {
-				return null;
-			}
-
-			@Override
-			public Object getValue(String name) {
-				return null;
-			}
-
-			@Override
-			public String[] getValueNames() {
-				return new String[0];
-			}
-
-			@Override
-			public void invalidate() {
-			}
-
-			@Override
-			public boolean isNew() {
-				return true;
-			}
-
-			@Override
-			public void putValue(String name, Object value) {
-			}
-
-			@Override
-			public void removeAttribute(String name) {
-			}
-
-			@Override
-			public void removeValue(String name) {
-			}
-
-			@Override
-			public void setAttribute(String name, Object value) {
-				_attributes.put(name, value);
-			}
-
-			@Override
-			public void setMaxInactiveInterval(int interval) {
-			}
-
-		};
-
-	}
+	@Reference
+	private WebServerServletToken _webServerServletToken;
 
 	private class ServiceContextTemporarySwapper implements AutoCloseable {
 
 		public ServiceContextTemporarySwapper(Company company)
 			throws PortalException {
 
-			this(company, null);
+			this(company, null, null);
 		}
 
 		public ServiceContextTemporarySwapper(Company company, Layout layout)
 			throws PortalException {
 
+			this(company, layout, null);
+		}
+
+		public ServiceContextTemporarySwapper(
+				Company company, Layout layout, User user)
+			throws PortalException {
+
 			_company = company;
 
-			_originalCompanyId = CompanyThreadLocal.getCompanyId();
+			_attributes = ConcurrentHashMapBuilder.<String, Object>put(
+				WebKeys.CTX,
+				ServletContextPool.get(_portal.getServletContextName())
+			).build();
+
 			_originalPermissionChecker =
 				PermissionThreadLocal.getPermissionChecker();
 			_originalName = PrincipalThreadLocal.getName();
 
-			_originalServiceContext =
+			ServiceContext originalServiceContext =
 				ServiceContextThreadLocal.getServiceContext();
 
-			if (_originalServiceContext == null) {
-				_httpServletRequest = new MockHttpServletRequest();
+			if (originalServiceContext == null) {
+				_httpServletRequest = _createMockHttpServletRequest();
 				_httpServletResponse = new DummyHttpServletResponse();
-				_originalHttpServletRequest = null;
 			}
 			else {
 				ThemeDisplay themeDisplay =
-					_originalServiceContext.getThemeDisplay();
+					originalServiceContext.getThemeDisplay();
 
-				if (_originalServiceContext.getRequest() != null) {
-					_httpServletRequest = _originalServiceContext.getRequest();
-					_originalHttpServletRequest =
-						_originalServiceContext.getRequest();
+				if (originalServiceContext.getRequest() != null) {
+					_httpServletRequest =
+						new IsolatedAttributesHttpServletRequest(
+							originalServiceContext.getRequest());
 				}
 				else if ((themeDisplay != null) &&
 						 (themeDisplay.getRequest() != null)) {
 
-					_httpServletRequest = themeDisplay.getRequest();
-					_originalHttpServletRequest = themeDisplay.getRequest();
+					_httpServletRequest =
+						new IsolatedAttributesHttpServletRequest(
+							themeDisplay.getRequest());
 				}
 				else {
-					_httpServletRequest = new MockHttpServletRequest();
-					_originalHttpServletRequest = null;
+					_httpServletRequest = _createMockHttpServletRequest();
 				}
 
-				if (_originalServiceContext.getResponse() != null) {
-					_httpServletResponse =
-						_originalServiceContext.getResponse();
+				if (originalServiceContext.getResponse() != null) {
+					_httpServletResponse = originalServiceContext.getResponse();
 				}
 				else if ((themeDisplay != null) &&
 						 (themeDisplay.getResponse() != null)) {
@@ -669,44 +239,161 @@ public class LayoutServiceContextHelperImpl
 
 			_layout = layout;
 
-			_user = _userLocalService.fetchGuestUser(company.getCompanyId());
+			if (user == null) {
+				_user = _userLocalService.fetchGuestUser(
+					company.getCompanyId());
+			}
+			else {
+				_user = user;
+			}
 
 			_permissionChecker = PermissionCheckerFactoryUtil.create(_user);
 
-			_originalHttpServletRequestAttributesMap =
-				_setHttpServletRequestAttributes(_permissionChecker, _user);
+			_setHttpServletRequestAttributes(_permissionChecker, _user);
 
 			_setCompanyServiceContext();
 		}
 
+		public ServiceContextTemporarySwapper(Company company, User user)
+			throws PortalException {
+
+			this(company, null, user);
+		}
+
 		@Override
 		public void close() {
-			CompanyThreadLocal.setCompanyId(_originalCompanyId);
 			PermissionThreadLocal.setPermissionChecker(
 				_originalPermissionChecker);
 			PrincipalThreadLocal.setName(_originalName, false);
-			ServiceContextThreadLocal.pushServiceContext(
-				_originalServiceContext);
+			ServiceContextThreadLocal.popServiceContext();
+		}
 
-			if (_originalHttpServletRequest == null) {
-				return;
-			}
+		private HttpServletRequest _createMockHttpServletRequest() {
+			return ProxyUtil.newDelegateProxyInstance(
+				HttpServletRequest.class.getClassLoader(),
+				HttpServletRequest.class,
+				new Object() {
 
-			for (Map.Entry<String, Object> entry :
-					_originalHttpServletRequestAttributesMap.entrySet()) {
+					public Object getAttribute(String name) {
+						return _attributes.get(name);
+					}
 
-				_originalHttpServletRequest.setAttribute(
-					entry.getKey(), entry.getValue());
-			}
+					public Enumeration<String> getAttributeNames() {
+						return Collections.enumeration(_attributes.keySet());
+					}
+
+					public String getContextPath() {
+						return _portal.getPathContext();
+					}
+
+					public Cookie[] getCookies() {
+						return new Cookie[0];
+					}
+
+					public Enumeration<String> getHeaderNames() {
+						return Collections.emptyEnumeration();
+					}
+
+					public Locale getLocale() {
+						ThemeDisplay themeDisplay =
+							(ThemeDisplay)_attributes.get(
+								WebKeys.THEME_DISPLAY);
+
+						if (themeDisplay == null) {
+							return LocaleUtil.getDefault();
+						}
+
+						return themeDisplay.getLocale();
+					}
+
+					public Enumeration<Locale> getLocales() {
+						return Collections.enumeration(
+							Collections.singletonList(getLocale()));
+					}
+
+					public String getMethod() {
+						return HttpMethods.GET;
+					}
+
+					public Map<String, String[]> getParameterMap() {
+						return Collections.emptyMap();
+					}
+
+					public String[] getParameterValues(String name) {
+						return new String[0];
+					}
+
+					public RequestDispatcher getRequestDispatcher(String path) {
+						return DirectRequestDispatcherFactoryUtil.
+							getRequestDispatcher(
+								ServletContextPool.get(
+									_portal.getServletContextName()),
+								path);
+					}
+
+					public String getRequestURI() {
+						return StringPool.SLASH;
+					}
+
+					public String getScheme() {
+						return "http";
+					}
+
+					public ServletContext getServletContext() {
+						return ServletContextPool.get(
+							_portal.getServletContextName());
+					}
+
+					public HttpSession getSession() {
+						return _httpSession;
+					}
+
+					public HttpSession getSession(boolean create) {
+						return _httpSession;
+					}
+
+					public void removeAttribute(String name) {
+						_attributes.remove(name);
+					}
+
+					public void setAttribute(String name, Object value) {
+						_setAttribute(name, value);
+					}
+
+				},
+				ProxyFactory.newDummyInstance(HttpServletRequest.class));
 		}
 
 		private ThemeDisplay _getThemeDisplay(
-				Company company, PermissionChecker permissionChecker, User user)
+				Company company, ThemeDisplay originalThemeDisplay,
+				PermissionChecker permissionChecker, User user)
 			throws PortalException {
 
 			ThemeDisplay themeDisplay = ThemeDisplayFactory.create();
 
 			themeDisplay.setCompany(company);
+
+			themeDisplay.setPathContext(_portal.getPathContext());
+			themeDisplay.setPathFriendlyURLPrivateGroup(
+				_portal.getPathFriendlyURLPrivateGroup());
+			themeDisplay.setPathFriendlyURLPrivateUser(
+				_portal.getPathFriendlyURLPrivateUser());
+			themeDisplay.setPathFriendlyURLPublic(
+				_portal.getPathFriendlyURLPublic());
+			themeDisplay.setPathImage(_portal.getPathImage());
+			themeDisplay.setPathMain(_portal.getPathMain());
+			themeDisplay.setPermissionChecker(permissionChecker);
+			themeDisplay.setRealUser(user);
+			themeDisplay.setScopeGroupId(_group.getGroupId());
+			themeDisplay.setSignedIn(!user.isGuestUser());
+			themeDisplay.setSiteGroupId(_group.getGroupId());
+			themeDisplay.setThemeCssFastLoad(PropsValues.THEME_CSS_FAST_LOAD);
+			themeDisplay.setThemeJsFastLoad(PropsValues.JAVASCRIPT_FAST_LOAD);
+			themeDisplay.setTimeZone(user.getTimeZone());
+			themeDisplay.setUser(user);
+
+			_setCompanyLogo(themeDisplay, company);
+			_setPortalURL(company, originalThemeDisplay, themeDisplay);
 
 			if (_layout != null) {
 				themeDisplay.setLanguageId(_layout.getDefaultLanguageId());
@@ -721,18 +408,34 @@ public class LayoutServiceContextHelperImpl
 				themeDisplay.setLocale(
 					LocaleUtil.fromLanguageId(_layout.getDefaultLanguageId()));
 
-				Theme theme = _themeLocalService.fetchTheme(
-					company.getCompanyId(), layoutSet.getThemeId());
+				ColorScheme colorScheme = _layout.getColorScheme();
+
+				Theme theme = _layout.getTheme();
+
+				if (theme == null) {
+					if (_log.isDebugEnabled()) {
+						_log.debug(_layout.getThemeId() + " is not registered");
+					}
+
+					colorScheme = _themeLocalService.getColorScheme(
+						company.getCompanyId(), layoutSet.getThemeId(),
+						layoutSet.getColorSchemeId());
+					theme = _themeLocalService.getTheme(
+						company.getCompanyId(), layoutSet.getThemeId());
+				}
 
 				if (theme != null) {
-					themeDisplay.setLookAndFeel(
-						layoutSet.getTheme(), layoutSet.getColorScheme());
+					themeDisplay.setLookAndFeel(theme, colorScheme);
 				}
 				else if (_log.isDebugEnabled()) {
-					_log.debug(layoutSet.getThemeId() + " is not registered");
+					_log.debug(
+						"Unable to get theme for layout PLID " +
+							_layout.getPlid());
 				}
 
 				themeDisplay.setPlid(_layout.getPlid());
+				themeDisplay.setSiteDefaultLocale(
+					_portal.getSiteDefaultLocale(_group.getGroupId()));
 			}
 			else {
 				Locale locale = _portal.getSiteDefaultLocale(
@@ -740,30 +443,13 @@ public class LayoutServiceContextHelperImpl
 
 				themeDisplay.setLanguageId(LocaleUtil.toLanguageId(locale));
 				themeDisplay.setLocale(locale);
+				themeDisplay.setSiteDefaultLocale(locale);
 			}
-
-			themeDisplay.setPermissionChecker(permissionChecker);
-			themeDisplay.setPortalDomain(company.getVirtualHostname());
-
-			boolean secure = _isHttpsEnabled();
-
-			int portalServerPort = _portal.getPortalServerPort(secure);
-
-			themeDisplay.setPortalURL(
-				_portal.getPortalURL(
-					company.getVirtualHostname(), portalServerPort, secure));
-
-			themeDisplay.setRealUser(user);
-			themeDisplay.setScopeGroupId(_group.getGroupId());
-			themeDisplay.setServerPort(portalServerPort);
-			themeDisplay.setSiteGroupId(_group.getGroupId());
-			themeDisplay.setTimeZone(user.getTimeZone());
-			themeDisplay.setUser(user);
 
 			return themeDisplay;
 		}
 
-		private boolean _isHttpsEnabled() {
+		private boolean _isSecure() {
 			if (Objects.equals(
 					Http.HTTPS,
 					PropsUtil.get(PropsKeys.PORTAL_INSTANCE_PROTOCOL)) ||
@@ -776,9 +462,43 @@ public class LayoutServiceContextHelperImpl
 			return false;
 		}
 
-		private void _setCompanyServiceContext() throws PortalException {
-			CompanyThreadLocal.setCompanyId(_company.getCompanyId());
+		private void _setAttribute(String name, Object value) {
+			if ((name != null) && (value != null)) {
+				_attributes.put(name, value);
+			}
+			else if (name != null) {
+				_attributes.remove(name);
+			}
+		}
 
+		private void _setCompanyLogo(
+			ThemeDisplay themeDisplay, Company company) {
+
+			String companyLogo = _portal.getPathImage() + "/company_logo";
+
+			long companyLogoId = company.getLogoId();
+
+			if (companyLogoId <= 0) {
+				themeDisplay.setCompanyLogo(companyLogo);
+
+				return;
+			}
+
+			themeDisplay.setCompanyLogo(
+				StringBundler.concat(
+					companyLogo, "?img_id=", companyLogoId, "&t=",
+					_webServerServletToken.getToken(companyLogoId)));
+
+			Image companyLogoImage = _imageLocalService.getCompanyLogo(
+				companyLogoId);
+
+			if (companyLogoImage != null) {
+				themeDisplay.setCompanyLogoHeight(companyLogoImage.getHeight());
+				themeDisplay.setCompanyLogoWidth(companyLogoImage.getWidth());
+			}
+		}
+
+		private void _setCompanyServiceContext() throws PortalException {
 			PermissionThreadLocal.setPermissionChecker(_permissionChecker);
 
 			PrincipalThreadLocal.setName(_user.getUserId(), false);
@@ -788,38 +508,33 @@ public class LayoutServiceContextHelperImpl
 			serviceContext.setCompanyId(_company.getCompanyId());
 
 			serviceContext.setRequest(_httpServletRequest);
+			serviceContext.setScopeGroupId(_group.getGroupId());
 			serviceContext.setUserId(_user.getUserId());
 
 			ServiceContextThreadLocal.pushServiceContext(serviceContext);
 		}
 
-		private Map<String, Object> _setHttpServletRequestAttributes(
+		private void _setHttpServletRequestAttributes(
 				PermissionChecker permissionChecker, User user)
 			throws PortalException {
 
-			Map<String, Object> attributes = HashMapBuilder.<String, Object>put(
-				WebKeys.COMPANY_ID,
-				_httpServletRequest.getAttribute(WebKeys.COMPANY_ID)
-			).put(
-				WebKeys.LAYOUT, _httpServletRequest.getAttribute(WebKeys.LAYOUT)
-			).put(
-				WebKeys.THEME_DISPLAY,
-				_httpServletRequest.getAttribute(WebKeys.THEME_DISPLAY)
-			).put(
-				WebKeys.USER, _httpServletRequest.getAttribute(WebKeys.USER)
-			).put(
-				WebKeys.USER_ID,
-				_httpServletRequest.getAttribute(WebKeys.USER_ID)
-			).build();
-
 			_httpServletRequest.setAttribute(
 				WebKeys.COMPANY_ID, _company.getCompanyId());
+			_httpServletRequest.setAttribute(
+				WebKeys.CTX,
+				ServletContextPool.get(_portal.getServletContextName()));
+
+			ThemeDisplay originalThemeDisplay =
+				(ThemeDisplay)_httpServletRequest.getAttribute(
+					WebKeys.THEME_DISPLAY);
 
 			ThemeDisplay themeDisplay = _getThemeDisplay(
-				_company, permissionChecker, user);
+				_company, originalThemeDisplay, permissionChecker, user);
 
 			_httpServletRequest.setAttribute(
 				WebKeys.LAYOUT, themeDisplay.getLayout());
+			_httpServletRequest.setAttribute(
+				WebKeys.LOCALE, themeDisplay.getLocale());
 			_httpServletRequest.setAttribute(
 				WebKeys.THEME_DISPLAY, themeDisplay);
 
@@ -830,22 +545,83 @@ public class LayoutServiceContextHelperImpl
 			themeDisplay.setRequest(_httpServletRequest);
 
 			themeDisplay.setResponse(_httpServletResponse);
-
-			return attributes;
 		}
 
+		private void _setPortalURL(
+			Company company, ThemeDisplay originalThemeDisplay,
+			ThemeDisplay themeDisplay) {
+
+			if ((originalThemeDisplay != null) &&
+				Validator.isNotNull(originalThemeDisplay.getPortalURL())) {
+
+				themeDisplay.setPortalDomain(
+					originalThemeDisplay.getPortalDomain());
+				themeDisplay.setPortalURL(originalThemeDisplay.getPortalURL());
+				themeDisplay.setSecure(originalThemeDisplay.isSecure());
+				themeDisplay.setServerName(
+					originalThemeDisplay.getServerName());
+				themeDisplay.setServerPort(
+					originalThemeDisplay.getServerPort());
+			}
+			else {
+				themeDisplay.setPortalDomain(company.getVirtualHostname());
+
+				boolean secure = _isSecure();
+
+				int portalServerPort = _portal.getPortalServerPort(secure);
+
+				themeDisplay.setPortalURL(
+					_portal.getPortalURL(
+						company.getVirtualHostname(), portalServerPort,
+						secure));
+
+				themeDisplay.setSecure(secure);
+
+				themeDisplay.setServerName(company.getVirtualHostname());
+				themeDisplay.setServerPort(portalServerPort);
+			}
+
+			themeDisplay.setURLPortal(
+				themeDisplay.getPortalURL() + _portal.getPathContext());
+		}
+
+		private final Map<String, Object> _attributes;
 		private final Company _company;
 		private final Group _group;
 		private final HttpServletRequest _httpServletRequest;
 		private final HttpServletResponse _httpServletResponse;
+
+		private final HttpSession _httpSession =
+			ProxyUtil.newDelegateProxyInstance(
+				HttpSession.class.getClassLoader(), HttpSession.class,
+				new Object() {
+
+					public Object getAttribute(String name) {
+						return _attributes.get(name);
+					}
+
+					public Enumeration<String> getAttributeNames() {
+						return Collections.enumeration(_attributes.keySet());
+					}
+
+					public String getId() {
+						return StringPool.BLANK;
+					}
+
+					public boolean isNew() {
+						return true;
+					}
+
+					public void setAttribute(String name, Object value) {
+						_setAttribute(name, value);
+					}
+
+				},
+				ProxyFactory.newDummyInstance(HttpSession.class));
+
 		private final Layout _layout;
-		private final long _originalCompanyId;
-		private final HttpServletRequest _originalHttpServletRequest;
-		private final Map<String, Object>
-			_originalHttpServletRequestAttributesMap;
 		private final String _originalName;
 		private final PermissionChecker _originalPermissionChecker;
-		private final ServiceContext _originalServiceContext;
 		private final PermissionChecker _permissionChecker;
 		private final User _user;
 

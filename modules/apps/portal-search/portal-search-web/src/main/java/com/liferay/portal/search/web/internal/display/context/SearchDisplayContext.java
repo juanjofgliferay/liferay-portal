@@ -46,19 +46,19 @@ import com.liferay.portal.search.web.internal.search.request.SearchRequestImpl;
 import com.liferay.portal.search.web.internal.search.request.SearchResponseImpl;
 import com.liferay.portal.search.web.search.request.SearchSettings;
 
+import jakarta.portlet.PortletException;
+import jakarta.portlet.PortletPreferences;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderRequest;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.io.Serializable;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
-
-import javax.portlet.PortletException;
-import javax.portlet.PortletPreferences;
-import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Eudaldo Alonso
@@ -383,6 +383,16 @@ public class SearchDisplayContext {
 		return _collatedSpellCheckResultEnabled;
 	}
 
+	public boolean isDLLinkToViewURL() {
+		if (_dlLinkToViewURL != null) {
+			return _dlLinkToViewURL;
+		}
+
+		_dlLinkToViewURL = false;
+
+		return _dlLinkToViewURL;
+	}
+
 	public boolean isDisplayFacet(String className) {
 		return GetterUtil.getBoolean(
 			_portletPreferences.getValue(className, null), true);
@@ -412,16 +422,6 @@ public class SearchDisplayContext {
 
 	public boolean isDisplayResultsInDocumentForm() {
 		return _searchResultPreferences.isDisplayResultsInDocumentForm();
-	}
-
-	public boolean isDLLinkToViewURL() {
-		if (_dlLinkToViewURL != null) {
-			return _dlLinkToViewURL;
-		}
-
-		_dlLinkToViewURL = false;
-
-		return _dlLinkToViewURL;
 	}
 
 	public boolean isHighlightEnabled() {
@@ -469,11 +469,7 @@ public class SearchDisplayContext {
 
 		Group group = themeDisplay.getScopeGroup();
 
-		if (group.isStagingGroup()) {
-			return false;
-		}
-
-		return true;
+		return !group.isStagingGroup();
 	}
 
 	public boolean isSearchScopePreferenceLetTheUserChoose() {
@@ -549,10 +545,12 @@ public class SearchDisplayContext {
 				searchContext -> _getFacet(
 					searchFacet, companyId, searchContext));
 
-			if (facet != null) {
-				searchRequestBuilder.withFacetContext(
-					facetContext -> facetContext.addFacet(facet));
+			if (facet == null) {
+				continue;
 			}
+
+			searchRequestBuilder.withFacetContext(
+				facetContext -> facetContext.addFacet(facet));
 		}
 	}
 

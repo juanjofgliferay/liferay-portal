@@ -7,6 +7,7 @@ package com.liferay.fragment.service;
 
 import com.liferay.fragment.model.FragmentEntry;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.util.List;
@@ -32,20 +33,6 @@ public class FragmentEntryServiceUtil {
 	 */
 	public static FragmentEntry addFragmentEntry(
 			long groupId, long fragmentCollectionId, String fragmentEntryKey,
-			String name, String css, String html, String js, boolean cacheable,
-			String configuration, String icon, long previewFileEntryId,
-			int type, String typeOptions, int status,
-			com.liferay.portal.kernel.service.ServiceContext serviceContext)
-		throws PortalException {
-
-		return getService().addFragmentEntry(
-			groupId, fragmentCollectionId, fragmentEntryKey, name, css, html,
-			js, cacheable, configuration, icon, previewFileEntryId, type,
-			typeOptions, status, serviceContext);
-	}
-
-	public static FragmentEntry addFragmentEntry(
-			long groupId, long fragmentCollectionId, String fragmentEntryKey,
 			String name, String css, String html, String js,
 			String configuration, long previewFileEntryId, int type, int status,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
@@ -55,6 +42,23 @@ public class FragmentEntryServiceUtil {
 			groupId, fragmentCollectionId, fragmentEntryKey, name, css, html,
 			js, configuration, previewFileEntryId, type, status,
 			serviceContext);
+	}
+
+	public static FragmentEntry addFragmentEntry(
+			String externalReferenceCode, long groupId,
+			long fragmentCollectionId, String fragmentEntryKey, String name,
+			String css, String html, String js, boolean cacheable,
+			String configuration, String icon, long previewFileEntryId,
+			boolean marketplace, boolean readOnly, int type, String typeOptions,
+			int status,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
+		throws PortalException {
+
+		return getService().addFragmentEntry(
+			externalReferenceCode, groupId, fragmentCollectionId,
+			fragmentEntryKey, name, css, html, js, cacheable, configuration,
+			icon, previewFileEntryId, marketplace, readOnly, type, typeOptions,
+			status, serviceContext);
 	}
 
 	public static FragmentEntry copyFragmentEntry(
@@ -79,6 +83,13 @@ public class FragmentEntryServiceUtil {
 		return getService().deleteFragmentEntry(fragmentEntryId);
 	}
 
+	public static FragmentEntry deleteFragmentEntry(
+			String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		return getService().deleteFragmentEntry(externalReferenceCode, groupId);
+	}
+
 	public static FragmentEntry fetchDraft(long primaryKey) {
 		return getService().fetchDraft(primaryKey);
 	}
@@ -96,8 +107,9 @@ public class FragmentEntryServiceUtil {
 	}
 
 	public static List<Object> getFragmentCompositionsAndFragmentEntries(
-		long groupId, long fragmentCollectionId, int status, int start, int end,
-		OrderByComparator<?> orderByComparator) {
+			long groupId, long fragmentCollectionId, int status, int start,
+			int end, OrderByComparator<?> orderByComparator)
+		throws PortalException {
 
 		return getService().getFragmentCompositionsAndFragmentEntries(
 			groupId, fragmentCollectionId, status, start, end,
@@ -105,8 +117,9 @@ public class FragmentEntryServiceUtil {
 	}
 
 	public static List<Object> getFragmentCompositionsAndFragmentEntries(
-		long groupId, long fragmentCollectionId, String name, int status,
-		int start, int end, OrderByComparator<?> orderByComparator) {
+			long groupId, long fragmentCollectionId, String name, int status,
+			int start, int end, OrderByComparator<?> orderByComparator)
+		throws PortalException {
 
 		return getService().getFragmentCompositionsAndFragmentEntries(
 			groupId, fragmentCollectionId, name, status, start, end,
@@ -114,52 +127,59 @@ public class FragmentEntryServiceUtil {
 	}
 
 	public static int getFragmentCompositionsAndFragmentEntriesCount(
-		long groupId, long fragmentCollectionId, int status) {
+			long groupId, long fragmentCollectionId, int status)
+		throws PortalException {
 
 		return getService().getFragmentCompositionsAndFragmentEntriesCount(
 			groupId, fragmentCollectionId, status);
 	}
 
 	public static int getFragmentCompositionsAndFragmentEntriesCount(
-		long groupId, long fragmentCollectionId, String name, int status) {
+			long groupId, long fragmentCollectionId, String name, int status)
+		throws PortalException {
 
 		return getService().getFragmentCompositionsAndFragmentEntriesCount(
 			groupId, fragmentCollectionId, name, status);
 	}
 
 	public static List<FragmentEntry> getFragmentEntries(
-		long fragmentCollectionId) {
+			long fragmentCollectionId)
+		throws PortalException {
 
 		return getService().getFragmentEntries(fragmentCollectionId);
 	}
 
 	public static List<FragmentEntry> getFragmentEntries(
-		long groupId, long fragmentCollectionId, int start, int end) {
+			long groupId, long fragmentCollectionId, int start, int end)
+		throws PortalException {
 
 		return getService().getFragmentEntries(
 			groupId, fragmentCollectionId, start, end);
 	}
 
 	public static List<FragmentEntry> getFragmentEntries(
-		long groupId, long fragmentCollectionId, int start, int end,
-		OrderByComparator<FragmentEntry> orderByComparator) {
+			long groupId, long fragmentCollectionId, int start, int end,
+			OrderByComparator<FragmentEntry> orderByComparator)
+		throws PortalException {
 
 		return getService().getFragmentEntries(
 			groupId, fragmentCollectionId, start, end, orderByComparator);
 	}
 
 	public static List<FragmentEntry> getFragmentEntriesByName(
-		long groupId, long fragmentCollectionId, String name, int start,
-		int end, OrderByComparator<FragmentEntry> orderByComparator) {
+			long groupId, long fragmentCollectionId, String name, int start,
+			int end, OrderByComparator<FragmentEntry> orderByComparator)
+		throws PortalException {
 
 		return getService().getFragmentEntriesByName(
 			groupId, fragmentCollectionId, name, start, end, orderByComparator);
 	}
 
 	public static List<FragmentEntry> getFragmentEntriesByNameAndStatus(
-		long groupId, long fragmentCollectionId, String name, int status,
-		int start, int end,
-		OrderByComparator<FragmentEntry> orderByComparator) {
+			long groupId, long fragmentCollectionId, String name, int status,
+			int start, int end,
+			OrderByComparator<FragmentEntry> orderByComparator)
+		throws PortalException {
 
 		return getService().getFragmentEntriesByNameAndStatus(
 			groupId, fragmentCollectionId, name, status, start, end,
@@ -167,15 +187,17 @@ public class FragmentEntryServiceUtil {
 	}
 
 	public static List<FragmentEntry> getFragmentEntriesByStatus(
-		long groupId, long fragmentCollectionId, int status) {
+			long groupId, long fragmentCollectionId, int status)
+		throws PortalException {
 
 		return getService().getFragmentEntriesByStatus(
 			groupId, fragmentCollectionId, status);
 	}
 
 	public static List<FragmentEntry> getFragmentEntriesByStatus(
-		long groupId, long fragmentCollectionId, int status, int start, int end,
-		OrderByComparator<FragmentEntry> orderByComparator) {
+			long groupId, long fragmentCollectionId, int status, int start,
+			int end, OrderByComparator<FragmentEntry> orderByComparator)
+		throws PortalException {
 
 		return getService().getFragmentEntriesByStatus(
 			groupId, fragmentCollectionId, status, start, end,
@@ -183,24 +205,27 @@ public class FragmentEntryServiceUtil {
 	}
 
 	public static List<FragmentEntry> getFragmentEntriesByType(
-		long groupId, long fragmentCollectionId, int type, int start, int end,
-		OrderByComparator<FragmentEntry> orderByComparator) {
+			long groupId, long fragmentCollectionId, int type, int start,
+			int end, OrderByComparator<FragmentEntry> orderByComparator)
+		throws PortalException {
 
 		return getService().getFragmentEntriesByType(
 			groupId, fragmentCollectionId, type, start, end, orderByComparator);
 	}
 
 	public static List<FragmentEntry> getFragmentEntriesByTypeAndStatus(
-		long groupId, long fragmentCollectionId, int type, int status) {
+			long groupId, long fragmentCollectionId, int type, int status)
+		throws PortalException {
 
 		return getService().getFragmentEntriesByTypeAndStatus(
 			groupId, fragmentCollectionId, type, status);
 	}
 
 	public static List<FragmentEntry> getFragmentEntriesByTypeAndStatus(
-		long groupId, long fragmentCollectionId, int type, int status,
-		int start, int end,
-		OrderByComparator<FragmentEntry> orderByComparator) {
+			long groupId, long fragmentCollectionId, int type, int status,
+			int start, int end,
+			OrderByComparator<FragmentEntry> orderByComparator)
+		throws PortalException {
 
 		return getService().getFragmentEntriesByTypeAndStatus(
 			groupId, fragmentCollectionId, type, status, start, end,
@@ -208,45 +233,59 @@ public class FragmentEntryServiceUtil {
 	}
 
 	public static int getFragmentEntriesCount(
-		long groupId, long fragmentCollectionId) {
+			long groupId, long fragmentCollectionId)
+		throws PortalException {
 
 		return getService().getFragmentEntriesCount(
 			groupId, fragmentCollectionId);
 	}
 
 	public static int getFragmentEntriesCountByName(
-		long groupId, long fragmentCollectionId, String name) {
+			long groupId, long fragmentCollectionId, String name)
+		throws PortalException {
 
 		return getService().getFragmentEntriesCountByName(
 			groupId, fragmentCollectionId, name);
 	}
 
 	public static int getFragmentEntriesCountByNameAndStatus(
-		long groupId, long fragmentCollectionId, String name, int status) {
+			long groupId, long fragmentCollectionId, String name, int status)
+		throws PortalException {
 
 		return getService().getFragmentEntriesCountByNameAndStatus(
 			groupId, fragmentCollectionId, name, status);
 	}
 
 	public static int getFragmentEntriesCountByStatus(
-		long groupId, long fragmentCollectionId, int status) {
+			long groupId, long fragmentCollectionId, int status)
+		throws PortalException {
 
 		return getService().getFragmentEntriesCountByStatus(
 			groupId, fragmentCollectionId, status);
 	}
 
 	public static int getFragmentEntriesCountByType(
-		long groupId, long fragmentCollectionId, int type) {
+			long groupId, long fragmentCollectionId, int type)
+		throws PortalException {
 
 		return getService().getFragmentEntriesCountByType(
 			groupId, fragmentCollectionId, type);
 	}
 
 	public static int getFragmentEntriesCountByTypeAndStatus(
-		long groupId, long fragmentCollectionId, int type, int status) {
+			long groupId, long fragmentCollectionId, int type, int status)
+		throws PortalException {
 
 		return getService().getFragmentEntriesCountByTypeAndStatus(
 			groupId, fragmentCollectionId, type, status);
+	}
+
+	public static FragmentEntry getFragmentEntryByExternalReferenceCode(
+			String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		return getService().getFragmentEntryByExternalReferenceCode(
+			externalReferenceCode, groupId);
 	}
 
 	/**
@@ -309,25 +348,13 @@ public class FragmentEntryServiceUtil {
 			long fragmentEntryId, long fragmentCollectionId, String name,
 			String css, String html, String js, boolean cacheable,
 			String configuration, String icon, long previewFileEntryId,
-			int status)
+			boolean readOnly, String typeOptions, int status)
 		throws PortalException {
 
 		return getService().updateFragmentEntry(
 			fragmentEntryId, fragmentCollectionId, name, css, html, js,
-			cacheable, configuration, icon, previewFileEntryId, status);
-	}
-
-	public static FragmentEntry updateFragmentEntry(
-			long fragmentEntryId, long fragmentCollectionId, String name,
-			String css, String html, String js, boolean cacheable,
-			String configuration, String icon, long previewFileEntryId,
-			String typeOptions, int status)
-		throws PortalException {
-
-		return getService().updateFragmentEntry(
-			fragmentEntryId, fragmentCollectionId, name, css, html, js,
-			cacheable, configuration, icon, previewFileEntryId, typeOptions,
-			status);
+			cacheable, configuration, icon, previewFileEntryId, readOnly,
+			typeOptions, status);
 	}
 
 	public static FragmentEntry updateFragmentEntry(
@@ -338,13 +365,12 @@ public class FragmentEntryServiceUtil {
 	}
 
 	public static FragmentEntryService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(FragmentEntryService service) {
-		_service = service;
-	}
-
-	private static volatile FragmentEntryService _service;
+	private static final Snapshot<FragmentEntryService> _serviceSnapshot =
+		new Snapshot<>(
+			FragmentEntryServiceUtil.class, FragmentEntryService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-812016971

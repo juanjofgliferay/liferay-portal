@@ -8,7 +8,11 @@ package com.liferay.arquillian.extension.junit.bridge.client;
 import aQute.bnd.build.Project;
 import aQute.bnd.build.ProjectBuilder;
 import aQute.bnd.build.Workspace;
+import aQute.bnd.header.Parameters;
+import aQute.bnd.make.metatype.MetaTypeReader;
+import aQute.bnd.osgi.Clazz;
 import aQute.bnd.osgi.Jar;
+import aQute.bnd.service.AnalyzerPlugin;
 
 import com.liferay.arquillian.extension.junit.bridge.constants.Headers;
 import com.liferay.arquillian.extension.junit.bridge.server.TestBundleActivator;
@@ -28,6 +32,7 @@ import java.security.ProtectionDomain;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -44,16 +49,19 @@ import org.osgi.framework.Constants;
 public class BndBundleUtil {
 
 	public static byte[] createBundle(
-			Map<String, List<String>> filteredMethodNamesMap,
+			boolean dump, Map<String, List<String>> filteredMethodNamesMap,
 			String hostAddress, int port, long passCode)
 		throws Exception {
 
 		File buildDir = new File(System.getProperty("user.dir"));
 
-		try (Workspace workspace = new Workspace(buildDir);
+		try (Workspace workspace = Workspace.createDefaultWorkspace();
+
 			Project project = new Project(workspace, buildDir);
+
 			ProjectBuilder projectBuilder = _createProjectBuilder(
 				project, filteredMethodNamesMap, hostAddress, port, passCode);
+
 			Jar jar = projectBuilder.build()) {
 
 			Manifest manifest = jar.getManifest();
@@ -68,9 +76,7 @@ public class BndBundleUtil {
 							attributes.getValue("Import-Package"))),
 					","));
 
-			if (Boolean.valueOf(
-					System.getProperty("liferay.arquillian.copy.jar"))) {
-
+			if (dump) {
 				String symbolicName = attributes.getValue(
 					Constants.BUNDLE_SYMBOLICNAME);
 
@@ -129,13 +135,17 @@ public class BndBundleUtil {
 			Headers.TEST_BRIDGE_REPORT_SERVER_PORT, String.valueOf(port));
 		project.setProperty(
 			Headers.TEST_BRIDGE_PASS_CODE, String.valueOf(passCode));
+		project.setProperty("-contract", "!JavaPortlet,!JavaServlet");
 		project.setProperty(
 			"Bundle-Activator", TestBundleActivator.class.getCanonicalName());
 
 		Set<String> importPackages = new LinkedHashSet<>();
 
 		importPackages.add("!aQute.bnd.build");
+		importPackages.add("!aQute.bnd.header");
+		importPackages.add("!aQute.bnd.make.metatype");
 		importPackages.add("!aQute.bnd.osgi");
+		importPackages.add("!aQute.bnd.service");
 
 		String importPackageString = project.getProperty("Import-Package");
 
@@ -174,6 +184,29 @@ public class BndBundleUtil {
 
 		ProjectBuilder projectBuilder = new ProjectBuilder(project);
 
+		projectBuilder.addBasicPlugin(
+			(AnalyzerPlugin)analyzer -> {
+				Jar jar = analyzer.getJar();
+
+				Parameters parameters = analyzer.parseHeader(
+					analyzer.getProperty("-metatype"));
+
+				for (String name : parameters.keySet()) {
+					Collection<Clazz> metatypeClasses = analyzer.getClasses(
+						"", Clazz.QUERY.ANNOTATED.toString(),
+						"aQute.bnd.annotation.metatype.Meta$OCD",
+						Clazz.QUERY.NAMED.toString(), name);
+
+					for (Clazz metatypeClass : metatypeClasses) {
+						jar.putResource(
+							"OSGI-INF/metatype/" + metatypeClass.getFQN() +
+								".xml",
+							new MetaTypeReader(metatypeClass, analyzer));
+					}
+				}
+
+				return false;
+			});
 		projectBuilder.addClasspath(_getClassPathFiles());
 
 		return projectBuilder;
@@ -190,12 +223,14 @@ public class BndBundleUtil {
 
 			int length = fileName.length();
 
-			if (file.isDirectory() ||
-				fileName.regionMatches(true, length - 4, ".zip", 0, 4) ||
-				fileName.regionMatches(true, length - 4, ".jar", 0, 4)) {
+			if (!file.isDirectory() &&
+				!fileName.regionMatches(true, length - 4, ".zip", 0, 4) &&
+				!fileName.regionMatches(true, length - 4, ".jar", 0, 4)) {
 
-				classPathFiles.add(file);
+				continue;
 			}
+
+			classPathFiles.add(file);
 		}
 
 		return classPathFiles;

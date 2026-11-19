@@ -5,10 +5,12 @@
 
 package com.liferay.layout.page.template.admin.web.internal.display.context;
 
+import com.liferay.design.library.util.DesignLibraryUtil;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItem;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItemListBuilder;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.VerticalNavItemList;
 import com.liferay.layout.page.template.admin.constants.LayoutPageTemplateAdminPortletKeys;
+import com.liferay.layout.page.template.admin.web.internal.constants.LayoutPageTemplateAdminWebKeys;
 import com.liferay.layout.page.template.admin.web.internal.security.permission.resource.LayoutPageTemplateCollectionPermission;
 import com.liferay.layout.page.template.admin.web.internal.security.permission.resource.LayoutPageTemplatePermission;
 import com.liferay.layout.page.template.admin.web.internal.util.LayoutPageTemplatePortletUtil;
@@ -25,19 +27,19 @@ import com.liferay.portal.kernel.portlet.SearchOrderByUtil;
 import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
-import com.liferay.portal.kernel.util.HtmlUtil;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.List;
-
-import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Jürgen Kappler
@@ -114,26 +116,26 @@ public class LayoutPageTemplateDisplayContext {
 			return _layoutPageTemplateCollectionId;
 		}
 
-		long defaultLayoutPageTemplateCollectionId = 0;
+		long layoutPageTemplateCollectionId = GetterUtil.getLong(
+			_httpServletRequest.getAttribute(
+				LayoutPageTemplateAdminWebKeys.
+					LAYOUT_PAGE_TEMPLATE_COLLECTION_ID));
 
-		List<LayoutPageTemplateCollection> layoutPageTemplateCollections =
-			getLayoutPageTemplateCollections();
-
-		if (ListUtil.isNotEmpty(layoutPageTemplateCollections)) {
+		if (layoutPageTemplateCollectionId <= 0) {
 			LayoutPageTemplateCollection layoutPageTemplateCollection =
-				layoutPageTemplateCollections.get(0);
+				LayoutPageTemplatePortletUtil.fetchLayoutPageTemplateCollection(
+					_httpServletRequest, _themeDisplay.getScopeGroupId());
 
-			defaultLayoutPageTemplateCollectionId =
-				layoutPageTemplateCollection.
-					getLayoutPageTemplateCollectionId();
+			if (layoutPageTemplateCollection != null) {
+				layoutPageTemplateCollectionId =
+					layoutPageTemplateCollection.
+						getLayoutPageTemplateCollectionId();
+			}
 		}
-
-		long layoutPageTemplateCollectionId = ParamUtil.getLong(
-			_httpServletRequest, "layoutPageTemplateCollectionId");
 
 		if (layoutPageTemplateCollectionId <= 0) {
 			layoutPageTemplateCollectionId =
-				defaultLayoutPageTemplateCollectionId;
+				_getDefaultLayoutPageTemplateCollectionId();
 		}
 
 		_layoutPageTemplateCollectionId = layoutPageTemplateCollectionId;
@@ -332,8 +334,7 @@ public class LayoutPageTemplateDisplayContext {
 
 			verticalNavItemList.add(
 				verticalNavItem -> {
-					String name = HtmlUtil.escape(
-						layoutPageTemplateCollection.getName());
+					String name = layoutPageTemplateCollection.getName();
 
 					long layoutPageTemplateCollectionId =
 						layoutPageTemplateCollection.
@@ -361,23 +362,37 @@ public class LayoutPageTemplateDisplayContext {
 		return verticalNavItemList;
 	}
 
-	public boolean isSearch() {
-		if (Validator.isNotNull(getKeywords())) {
-			return true;
-		}
+	public boolean isDesignLibraryScope() {
+		return DesignLibraryUtil.isDesignLibraryScope(
+			_themeDisplay.getScopeGroup());
+	}
 
-		return false;
+	public boolean isHideCollectionsPanel() {
+		return isDesignLibraryScope();
+	}
+
+	public boolean isSearch() {
+		return Validator.isNotNull(getKeywords());
 	}
 
 	public boolean isShowAddButton(String actionId) {
-		if (LayoutPageTemplatePermission.contains(
-				_themeDisplay.getPermissionChecker(),
-				_themeDisplay.getSiteGroupId(), actionId)) {
+		return LayoutPageTemplatePermission.contains(
+			_themeDisplay.getPermissionChecker(),
+			_themeDisplay.getSiteGroupId(), actionId);
+	}
 
-			return true;
+	private long _getDefaultLayoutPageTemplateCollectionId() {
+		List<LayoutPageTemplateCollection> layoutPageTemplateCollections =
+			getLayoutPageTemplateCollections();
+
+		if (ListUtil.isEmpty(layoutPageTemplateCollections)) {
+			return 0;
 		}
 
-		return false;
+		LayoutPageTemplateCollection layoutPageTemplateCollection =
+			layoutPageTemplateCollections.get(0);
+
+		return layoutPageTemplateCollection.getLayoutPageTemplateCollectionId();
 	}
 
 	private final HttpServletRequest _httpServletRequest;

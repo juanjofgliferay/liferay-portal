@@ -9,6 +9,7 @@ import com.liferay.expando.kernel.service.ExpandoColumnLocalService;
 import com.liferay.expando.kernel.service.ExpandoTableLocalService;
 import com.liferay.expando.kernel.service.ExpandoValueLocalService;
 import com.liferay.portal.kernel.service.CompanyLocalService;
+import com.liferay.portal.kernel.upgrade.DeleteDuplicateUniqueFinderRowsUpgradeProcess;
 import com.liferay.portal.kernel.upgrade.DummyUpgradeStep;
 import com.liferay.portal.kernel.upgrade.UpgradeProcessFactory;
 import com.liferay.portal.upgrade.registry.UpgradeStepRegistrator;
@@ -34,11 +35,14 @@ public class MarketplaceServiceUpgradeStepRegistrator
 					_expandoTableLocalService, _expandoValueLocalService));
 
 		registry.register(
-			"1.0.0", "1.0.1",
+			"1.0.0", "1.0.0.step-1",
 			UpgradeProcessFactory.addColumns(
 				"Marketplace_App", "title VARCHAR(75)", "description STRING",
 				"category VARCHAR(75)", "iconURL STRING",
-				"version VARCHAR(75)"),
+				"version VARCHAR(75)"));
+
+		registry.register(
+			"1.0.0.step-1", "1.0.1",
 			new com.liferay.marketplace.internal.upgrade.v1_0_0.
 				ModuleUpgradeProcess());
 
@@ -56,8 +60,9 @@ public class MarketplaceServiceUpgradeStepRegistrator
 
 		registry.register(
 			"2.0.1", "2.0.2",
-			new com.liferay.marketplace.internal.upgrade.v2_0_2.
-				AppUpgradeProcess());
+			UpgradeProcessFactory.runSQL(
+				"delete from Marketplace_App where appId is not null",
+				"delete from Marketplace_Module where moduleId is not null"));
 
 		registry.register(
 			"2.0.2", "2.0.3",
@@ -65,6 +70,18 @@ public class MarketplaceServiceUpgradeStepRegistrator
 				"Marketplace_App", "title", "VARCHAR(255) null"),
 			UpgradeProcessFactory.alterColumnType(
 				"Marketplace_App", "category", "VARCHAR(255) null"));
+
+		registry.register(
+			"2.0.3", "3.0.0",
+			new DeleteDuplicateUniqueFinderRowsUpgradeProcess(
+				"Marketplace_App", new String[] {"remoteAppId"}, "appId asc"));
+
+		registry.register(
+			"3.0.0", "4.0.0",
+			new DeleteDuplicateUniqueFinderRowsUpgradeProcess(
+				"Marketplace_Module",
+				new String[] {"appId", "bundleSymbolicName", "bundleVersion"},
+				"moduleId asc"));
 	}
 
 	@Reference

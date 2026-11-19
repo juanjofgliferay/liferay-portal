@@ -1,0 +1,186 @@
+@import 'custom_clay';
+
+@import '@clayui/css/src/scss/cadmin-variables';
+
+:root {
+	@include clay-css($cadmin-c-root);
+
+	// Portal modules embedded in Faro (Frontend Data Set, Management Toolbar,
+	// portal search) are compiled against Clay's unprefixed custom properties,
+	// which only the Atlas root emits. Faro emits the cadmin root instead, so
+	// alias the unprefixed names those modules read onto their cadmin
+	// counterparts. Without this, every var() falls back to the initial value:
+	// a longhand such as border-color resolves to currentColor and a shorthand
+	// such as border is dropped entirely.
+
+	--danger: var(--cadmin-danger);
+	--danger-l1: var(--cadmin-danger-l1);
+	--font-weight-normal: 400;
+	--gray-100: var(--cadmin-gray-100);
+	--gray-200: var(--cadmin-gray-200);
+	--gray-300: var(--cadmin-gray-300);
+	--gray-900: var(--cadmin-gray-900);
+	--info: var(--cadmin-info);
+	--info-l2: var(--cadmin-info-l2);
+	--light: var(--cadmin-light);
+	--light-l1: var(--cadmin-light-l1);
+	--primary: var(--cadmin-primary);
+	--primary-l2: var(--cadmin-primary-l2);
+	--primary-l3: var(--cadmin-primary-l3);
+	--secondary: var(--cadmin-secondary);
+	--secondary-l2: var(--cadmin-secondary-l2);
+	--white: var(--cadmin-white);
+
+	color-scheme: light;
+}
+
+@import 'variables';
+
+@import 'mixins';
+
+@import 'global';
+
+// Components
+
+@import 'account_profile';
+@import 'add_workspace';
+@import 'alert_feed';
+@import 'applied_filters';
+@import 'associated_segments_card';
+@import 'attribute_view';
+@import 'avatar';
+@import 'bar_chart_html';
+@import 'base_edit_page';
+@import 'base_page';
+@import 'base_results';
+@import 'base_select';
+@import 'breadcrumbs';
+@import 'calendar';
+@import 'canvas';
+@import 'card';
+@import 'card_tabs';
+@import 'cerebro_summary_card';
+@import 'channels_menu';
+@import 'chart_legend';
+@import 'chart_tooltip';
+@import 'code_snippet';
+@import 'cohort_chart';
+@import 'collapsible_overlay';
+@import 'composed_chart_with_empty_state';
+@import 'condition_chip';
+@import 'contributor_builder';
+@import 'criteria_builder';
+@import 'criteria_card';
+@import 'criteria_group';
+@import 'criteria_row';
+@import 'criteria_sidebar';
+@import 'csv';
+@import 'csv_data_source';
+@import 'data_source_delete';
+@import 'data_transformation';
+@import 'data_transformation_list';
+@import 'date_picker';
+@import 'date_picker_select';
+@import 'definition_item';
+@import 'delete_data_source';
+@import 'devices_card';
+@import 'distribution_card';
+@import 'drop_zone';
+@import 'dropdown_range_key';
+@import 'entity_details_list';
+@import 'entity_list';
+@import 'error_display';
+@import 'error_page';
+@import 'event_analysis_breakdown';
+@import 'event_analysis_editor';
+@import 'file_drop_target';
+@import 'footer';
+@import 'form_control_inline';
+@import 'form_navigation';
+@import 'forms';
+@import 'frontend_data_set';
+@import 'geomap_chart';
+@import 'heatmap_chart';
+@import 'help_widget';
+@import 'hubspot_form';
+@import 'icon';
+@import 'individual_attributes';
+@import 'individual_details_card';
+@import 'individual_profile_card';
+@import 'individuals_dashboard_overview';
+@import 'info_popover';
+@import 'input_list';
+@import 'input_with_edit_toggle';
+@import 'interest_details';
+@import 'interests_card_individual';
+@import 'interval_selector';
+@import 'lifecycle_chart';
+@import 'list';
+@import 'list_card';
+@import 'loading';
+@import 'locations_card';
+@import 'metadata_tag';
+@import 'metric_bar';
+@import 'metrics';
+@import 'name_cell';
+@import 'nav';
+@import 'navbar';
+@import 'no_results_display';
+@import 'oauth_form';
+@import 'output_versions_card';
+@import 'overlay';
+@import 'overview';
+@import 'pagination_bar';
+@import 'popover';
+@import 'radio_group';
+@import 'recommendation_step_card';
+@import 'relative_metric_bar';
+@import 'rule_item';
+@import 'sankey';
+@import 'scrollable_section';
+@import 'search_card';
+@import 'search_toolbar';
+@import 'searchable_select';
+@import 'segment_distribution';
+@import 'segment_editor';
+@import 'segment_growth';
+@import 'segment_list';
+@import 'segment_overview';
+@import 'segment_profile';
+@import 'select_field_input';
+@import 'select_input';
+@import 'settings';
+@import 'settings_base_page';
+@import 'sheet';
+@import 'sidebar';
+@import 'sites_dashboard_overview';
+@import 'sites_interest_details';
+@import 'sites_synced_stripe';
+@import 'stage_configuration_panel';
+@import 'step_list';
+@import 'sticker';
+@import 'sticker_column';
+@import 'string_match_input';
+@import 'subnav_tbar';
+@import 'table';
+@import 'technology_chart';
+@import 'time_selector';
+@import 'timeline';
+@import 'title_editor';
+@import 'toolbar';
+@import 'tooltip_chart';
+@import 'training_items_card';
+@import 'transitions';
+@import 'trend';
+@import 'type_trend';
+@import 'usage_overview';
+@import 'user_list';
+@import 'user_menu';
+@import 'variant_card';
+@import 'vertical_timeline';
+@import 'wizard_page';
+@import 'workspace_list';
+@import 'workspace_not_found';
+@import 'workspaces_base_page';
+
+@import 'utils';

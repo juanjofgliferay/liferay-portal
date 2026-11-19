@@ -23,6 +23,7 @@ import com.liferay.document.library.kernel.service.DLFolderLocalService;
 import com.liferay.document.library.kernel.util.DLAppHelperThreadLocal;
 import com.liferay.document.library.kernel.util.DLUtil;
 import com.liferay.document.library.kernel.util.comparator.DLFileVersionVersionComparator;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.dao.orm.custom.sql.CustomSQL;
 import com.liferay.portal.kernel.dao.orm.WildcardMode;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -382,9 +383,22 @@ public class TrashEntryDLAppHelperLocalServiceWrapper
 		TrashEntry trashEntry = _trashEntryLocalService.getEntry(
 			DLFileEntryConstants.getClassName(), fileEntry.getFileEntryId());
 
+		int status = trashEntry.getStatus();
+
+		List<TrashVersion> trashVersions =
+			_trashVersionLocalService.getVersions(trashEntry.getEntryId());
+
+		for (TrashVersion trashVersion : trashVersions) {
+			if (trashVersion.getClassPK() == dlFileVersion.getFileVersionId()) {
+				status = trashVersion.getStatus();
+
+				break;
+			}
+		}
+
 		_dlFileEntryLocalService.updateStatus(
-			userId, dlFileEntry, dlFileVersion, trashEntry.getStatus(),
-			new ServiceContext(), new HashMap<>());
+			userId, dlFileEntry, dlFileVersion, status, new ServiceContext(),
+			new HashMap<>());
 
 		// File shortcut
 
@@ -399,9 +413,6 @@ public class TrashEntryDLAppHelperLocalServiceWrapper
 			fileEntry);
 
 		// Trash
-
-		List<TrashVersion> trashVersions =
-			_trashVersionLocalService.getVersions(trashEntry.getEntryId());
 
 		for (TrashVersion trashVersion : trashVersions) {
 			DLFileVersion trashDLFileVersion =
@@ -553,7 +564,7 @@ public class TrashEntryDLAppHelperLocalServiceWrapper
 				fileEntry.getFileEntryId(), WorkflowConstants.STATUS_IN_TRASH);
 
 		dlFileVersions = ListUtil.sort(
-			dlFileVersions, new DLFileVersionVersionComparator());
+			dlFileVersions, DLFileVersionVersionComparator.getInstance(false));
 
 		FileVersion fileVersion = new LiferayFileVersion(dlFileVersions.get(0));
 
@@ -592,9 +603,11 @@ public class TrashEntryDLAppHelperLocalServiceWrapper
 
 			// Trash
 
-			if (trashVersion != null) {
-				_trashVersionLocalService.deleteTrashVersion(trashVersion);
+			if (trashVersion == null) {
+				continue;
 			}
+
+			_trashVersionLocalService.deleteTrashVersion(trashVersion);
 		}
 
 		if (DLAppHelperThreadLocal.isEnabled()) {
@@ -648,13 +661,14 @@ public class TrashEntryDLAppHelperLocalServiceWrapper
 				fileEntry.getFileEntryId(), WorkflowConstants.STATUS_ANY);
 
 		dlFileVersions = ListUtil.sort(
-			dlFileVersions, new DLFileVersionVersionComparator());
+			dlFileVersions, DLFileVersionVersionComparator.getInstance(false));
 
-		List<ObjectValuePair<Long, Integer>> dlFileVersionStatusOVPs =
-			new ArrayList<>();
+		List<ObjectValuePair<Long, Integer>>
+			dlFileVersionStatusObjectValuePairs = new ArrayList<>();
 
 		if ((dlFileVersions != null) && !dlFileVersions.isEmpty()) {
-			dlFileVersionStatusOVPs = getDlFileVersionStatuses(dlFileVersions);
+			dlFileVersionStatusObjectValuePairs = getDLFileVersionStatuses(
+				dlFileVersions);
 		}
 
 		FileVersion fileVersion = fileEntry.getLatestFileVersion(true);
@@ -704,7 +718,7 @@ public class TrashEntryDLAppHelperLocalServiceWrapper
 			userId, dlFileEntry.getGroupId(),
 			DLFileEntryConstants.getClassName(), dlFileEntry.getFileEntryId(),
 			dlFileEntry.getUuid(), dlFileEntry.getClassName(),
-			oldDLFileVersionStatus, dlFileVersionStatusOVPs,
+			oldDLFileVersionStatus, dlFileVersionStatusObjectValuePairs,
 			UnicodePropertiesBuilder.put(
 				"fileName", dlFileEntry.getFileName()
 			).put(
@@ -869,26 +883,21 @@ public class TrashEntryDLAppHelperLocalServiceWrapper
 		return new LiferayFolder(dlFolder);
 	}
 
-	protected List<ObjectValuePair<Long, Integer>> getDlFileVersionStatuses(
+	protected List<ObjectValuePair<Long, Integer>> getDLFileVersionStatuses(
 		List<DLFileVersion> dlFileVersions) {
 
-		List<ObjectValuePair<Long, Integer>> dlFileVersionStatusOVPs =
-			new ArrayList<>(dlFileVersions.size());
+		return TransformUtil.transform(
+			dlFileVersions,
+			dlFileVersion -> {
+				int status = dlFileVersion.getStatus();
 
-		for (DLFileVersion dlFileVersion : dlFileVersions) {
-			int status = dlFileVersion.getStatus();
+				if (status == WorkflowConstants.STATUS_PENDING) {
+					status = WorkflowConstants.STATUS_DRAFT;
+				}
 
-			if (status == WorkflowConstants.STATUS_PENDING) {
-				status = WorkflowConstants.STATUS_DRAFT;
-			}
-
-			ObjectValuePair<Long, Integer> dlFileVersionStatusOVP =
-				new ObjectValuePair<>(dlFileVersion.getFileVersionId(), status);
-
-			dlFileVersionStatusOVPs.add(dlFileVersionStatusOVP);
-		}
-
-		return dlFileVersionStatusOVPs;
+				return new ObjectValuePair<>(
+					dlFileVersion.getFileVersionId(), status);
+			});
 	}
 
 	protected void trashOrRestoreFolder(DLFolder dlFolder, boolean moveToTrash)

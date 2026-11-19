@@ -7,30 +7,40 @@ package com.liferay.layout.seo.internal.canonical.url;
 
 import com.liferay.asset.display.page.portlet.AssetDisplayPageFriendlyURLProvider;
 import com.liferay.layout.seo.canonical.url.LayoutSEOCanonicalURLProvider;
+import com.liferay.layout.seo.contributor.LayoutSEOCanonicalURLContributor;
 import com.liferay.layout.seo.internal.configuration.LayoutSEOCompanyConfiguration;
 import com.liferay.layout.seo.internal.util.AlternateURLMapperProvider;
 import com.liferay.layout.seo.model.LayoutSEOEntry;
 import com.liferay.layout.seo.service.LayoutSEOEntryLocalService;
+import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMap;
+import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMapFactory;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.model.Layout;
-import com.liferay.portal.kernel.service.ClassNameLocalService;
+import com.liferay.portal.kernel.model.LayoutTypePortlet;
+import com.liferay.portal.kernel.model.Portlet;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.HashMapBuilder;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.servlet.http.HttpServletRequest;
+
+import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
-import javax.servlet.http.HttpServletRequest;
-
+import org.osgi.framework.BundleContext;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
@@ -51,12 +61,21 @@ public class LayoutSEOCanonicalURLProviderImpl
 
 		String layoutCanonicalURL = _getLayoutCanonicalURL(locale, layout);
 
-		if (Validator.isNotNull(layoutCanonicalURL)) {
-			return layoutCanonicalURL;
+		if (Validator.isNull(layoutCanonicalURL)) {
+			layoutCanonicalURL = _getDefaultCanonicalURL(
+				layout, locale, canonicalURL, themeDisplay);
 		}
 
-		return _getDefaultCanonicalURL(
-			layout, locale, canonicalURL, themeDisplay);
+		if (FeatureFlagManagerUtil.isEnabled(
+				themeDisplay.getCompanyId(), "LPD-71164")) {
+
+			layoutCanonicalURL = _appendContributedParameters(
+				layoutCanonicalURL, layout);
+
+			return HttpComponentsUtil.sortParameters(layoutCanonicalURL);
+		}
+
+		return layoutCanonicalURL;
 	}
 
 	@Override
@@ -76,11 +95,10 @@ public class LayoutSEOCanonicalURLProviderImpl
 			_language.getAvailableLocales(layout.getGroupId()));
 
 		LayoutSEOEntry layoutSEOEntry =
-			_layoutSEOEntryLocalService.fetchLayoutSEOEntry(
-				layout.getGroupId(), layout.isPrivateLayout(),
-				layout.getLayoutId());
+			_layoutSEOEntryLocalService.fetchLayoutSEOEntry(layout);
 
 		if ((layoutSEOEntry == null) ||
+			(layoutSEOEntry.getGroupId() != layout.getGroupId()) ||
 			!layoutSEOEntry.isCanonicalURLEnabled()) {
 
 			return alternateURLs;
@@ -107,15 +125,62 @@ public class LayoutSEOCanonicalURLProviderImpl
 	}
 
 	@Activate
-	protected void activate() {
+	protected void activate(BundleContext bundleContext) {
 		_alternateURLMapperProvider = new AlternateURLMapperProvider(
-			_assetDisplayPageFriendlyURLProvider, _classNameLocalService,
-			_portal);
+			_assetDisplayPageFriendlyURLProvider, _portal);
+
+		_serviceTrackerMap = ServiceTrackerMapFactory.openSingleValueMap(
+			bundleContext, LayoutSEOCanonicalURLContributor.class,
+			"jakarta.portlet.name");
 	}
 
 	@Deactivate
 	protected void deactivate() {
 		_alternateURLMapperProvider = null;
+
+		_serviceTrackerMap.close();
+	}
+
+	private String _appendContributedParameters(
+		String canonicalURL, Layout layout) {
+
+		HttpServletRequest httpServletRequest = _getHttpServletRequest();
+
+		if ((httpServletRequest == null) || !layout.isTypePortlet()) {
+			return canonicalURL;
+		}
+
+		Map<String, String[]> parameters = new HashMap<>();
+
+		LayoutTypePortlet layoutTypePortlet =
+			(LayoutTypePortlet)layout.getLayoutType();
+
+		for (Portlet portlet : layoutTypePortlet.getAllPortlets(false)) {
+			LayoutSEOCanonicalURLContributor layoutSEOCanonicalURLContributor =
+				_serviceTrackerMap.getService(portlet.getRootPortletId());
+
+			if (layoutSEOCanonicalURLContributor == null) {
+				continue;
+			}
+
+			parameters.putAll(
+				layoutSEOCanonicalURLContributor.contributeURLParameters(
+					httpServletRequest, layout.getPlid(),
+					portlet.getPortletId()));
+		}
+
+		if (MapUtil.isEmpty(parameters)) {
+			return canonicalURL;
+		}
+
+		String queryString = HttpComponentsUtil.parameterMapToString(
+			parameters, false);
+
+		if (canonicalURL.contains(StringPool.QUESTION)) {
+			return canonicalURL + StringPool.AMPERSAND + queryString;
+		}
+
+		return canonicalURL + StringPool.QUESTION + queryString;
 	}
 
 	private String _getDefaultCanonicalURL(
@@ -140,6 +205,13 @@ public class LayoutSEOCanonicalURLProviderImpl
 				layout);
 		}
 
+		Set<Locale> availableLocales = _language.getAvailableLocales(
+			layout.getGroupId());
+
+		if (!availableLocales.contains(locale)) {
+			locale = LocaleUtil.getSiteDefault();
+		}
+
 		return alternateURLMapper.getAlternateURL(
 			canonicalURL, themeDisplay, locale, layout);
 	}
@@ -157,11 +229,10 @@ public class LayoutSEOCanonicalURLProviderImpl
 
 	private String _getLayoutCanonicalURL(Locale locale, Layout layout) {
 		LayoutSEOEntry layoutSEOEntry =
-			_layoutSEOEntryLocalService.fetchLayoutSEOEntry(
-				layout.getGroupId(), layout.isPrivateLayout(),
-				layout.getLayoutId());
+			_layoutSEOEntryLocalService.fetchLayoutSEOEntry(layout);
 
 		if ((layoutSEOEntry == null) ||
+			(layoutSEOEntry.getGroupId() != layout.getGroupId()) ||
 			!layoutSEOEntry.isCanonicalURLEnabled()) {
 
 			return StringPool.BLANK;
@@ -177,9 +248,6 @@ public class LayoutSEOCanonicalURLProviderImpl
 		_assetDisplayPageFriendlyURLProvider;
 
 	@Reference
-	private ClassNameLocalService _classNameLocalService;
-
-	@Reference
 	private ConfigurationProvider _configurationProvider;
 
 	@Reference
@@ -190,5 +258,8 @@ public class LayoutSEOCanonicalURLProviderImpl
 
 	@Reference
 	private Portal _portal;
+
+	private ServiceTrackerMap<String, LayoutSEOCanonicalURLContributor>
+		_serviceTrackerMap;
 
 }

@@ -37,7 +37,7 @@ public class MVCCommandNameCheck extends BaseCheck {
 
 	@Override
 	protected void doVisitToken(DetailAST detailAST) {
-		if ((detailAST.getParent() != null) ||
+		if (!isDirectChildOfCompilationUnit(detailAST) ||
 			AnnotationUtil.containsAnnotation(detailAST, "Deprecated")) {
 
 			return;
@@ -101,12 +101,14 @@ public class MVCCommandNameCheck extends BaseCheck {
 		for (Map.Entry<String, Integer> entry : mvcCommandNamesMap.entrySet()) {
 			String mvcCommandName = entry.getKey();
 
-			if (!_hasValidMVCCommandName(
+			if (_hasValidMVCCommandName(
 					mvcCommandName, detailAST, annotationArrayInitDetailAST,
 					className, modulePath, validateActionName)) {
 
-				log(entry.getValue(), _MSG_INCORRECT_VALUE, mvcCommandName);
+				continue;
 			}
+
+			log(entry.getValue(), _MSG_INCORRECT_VALUE, mvcCommandName);
 		}
 	}
 
@@ -140,10 +142,10 @@ public class MVCCommandNameCheck extends BaseCheck {
 
 		Map<String, Integer> mvcCommandNamesMap = new HashMap<>();
 
-		List<DetailAST> expressionDetailASTList = getAllChildTokens(
+		List<DetailAST> expressionDetailASTs = getAllChildTokens(
 			annotationArrayInitDetailAST, false, TokenTypes.EXPR);
 
-		for (DetailAST expressionDetailAST : expressionDetailASTList) {
+		for (DetailAST expressionDetailAST : expressionDetailASTs) {
 			DetailAST firstChildDetailAST = expressionDetailAST.getFirstChild();
 
 			if (firstChildDetailAST.getType() != TokenTypes.STRING_LITERAL) {
@@ -152,13 +154,15 @@ public class MVCCommandNameCheck extends BaseCheck {
 
 			String value = firstChildDetailAST.getText();
 
-			if (value.startsWith("\"mvc.command.name=") &&
-				!value.equals("\"mvc.command.name=/\"")) {
+			if (!value.startsWith("\"mvc.command.name=") ||
+				value.equals("\"mvc.command.name=/\"")) {
 
-				mvcCommandNamesMap.put(
-					value.substring(18, value.length() - 1),
-					expressionDetailAST.getLineNo());
+				continue;
 			}
+
+			mvcCommandNamesMap.put(
+				value.substring(18, value.length() - 1),
+				expressionDetailAST.getLineNo());
 		}
 
 		return mvcCommandNamesMap;
@@ -238,10 +242,10 @@ public class MVCCommandNameCheck extends BaseCheck {
 			return true;
 		}
 
-		List<DetailAST> annotationDetailASTList = getAllChildTokens(
+		List<DetailAST> annotationDetailASTs = getAllChildTokens(
 			classDefinitionDetailAST, true, TokenTypes.ANNOTATION);
 
-		for (DetailAST annotationDetailAST : annotationDetailASTList) {
+		for (DetailAST annotationDetailAST : annotationDetailASTs) {
 			if (!Objects.equals(getName(annotationDetailAST), "Reference")) {
 				continue;
 			}
@@ -260,16 +264,17 @@ public class MVCCommandNameCheck extends BaseCheck {
 			Matcher matcher = _componentNamePattern.matcher(
 				fullIdent.getText());
 
-			if (matcher.find()) {
-				String expectedPath = StringUtil.replace(
-					matcher.group(1), CharPool.PERIOD, CharPool.UNDERLINE);
+			if (!matcher.find()) {
+				continue;
+			}
 
-				if (path.equals(expectedPath) &&
-					actionName.equals(
-						_getExpectedActionName(matcher.group(2)))) {
+			String expectedPath = StringUtil.replace(
+				matcher.group(1), CharPool.PERIOD, CharPool.UNDERLINE);
 
-					return true;
-				}
+			if (path.equals(expectedPath) &&
+				actionName.equals(_getExpectedActionName(matcher.group(2)))) {
+
+				return true;
 			}
 		}
 
@@ -287,13 +292,13 @@ public class MVCCommandNameCheck extends BaseCheck {
 			return true;
 		}
 
-		List<DetailAST> stringLiteralDetailASTList = getAllChildTokens(
+		List<DetailAST> stringLiteralDetailASTs = getAllChildTokens(
 			annotationArrayInitDetailAST, true, TokenTypes.STRING_LITERAL);
 
-		for (DetailAST stringLiteralDetailAST : stringLiteralDetailASTList) {
+		for (DetailAST stringLiteralDetailAST : stringLiteralDetailASTs) {
 			if (!Objects.equals(
 					stringLiteralDetailAST.getText(),
-					"\"javax.portlet.name=\"")) {
+					"\"jakarta.portlet.name=\"")) {
 
 				continue;
 			}

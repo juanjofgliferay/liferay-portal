@@ -19,7 +19,6 @@ import com.liferay.portal.kernel.search.SearchContext;
 import com.liferay.portal.kernel.search.SearchException;
 import com.liferay.portal.kernel.search.facet.faceted.searcher.FacetedSearcher;
 import com.liferay.portal.kernel.search.filter.BooleanFilter;
-import com.liferay.portal.kernel.search.generic.BooleanQueryImpl;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.search.asset.SearchableAssetClassNamesProvider;
@@ -71,7 +70,7 @@ public class FacetedSearcherImpl
 			BooleanFilter fullQueryBooleanFilter, SearchContext searchContext)
 		throws Exception {
 
-		BooleanQuery searchQuery = new BooleanQueryImpl();
+		BooleanQuery searchQuery = new BooleanQuery();
 
 		Map<String, Indexer<?>> entryClassNameIndexerMap =
 			_getEntryClassNameIndexerMap(
@@ -89,7 +88,7 @@ public class FacetedSearcherImpl
 		_addPreFilters(
 			fullQueryBooleanFilter, entryClassNameIndexerMap, searchContext);
 
-		BooleanQuery fullQuery = new BooleanQueryImpl();
+		BooleanQuery fullQuery = new BooleanQuery();
 
 		if (fullQueryBooleanFilter.hasClauses()) {
 			fullQuery.setPreBooleanFilter(fullQueryBooleanFilter);
@@ -263,13 +262,13 @@ public class FacetedSearcherImpl
 	private final AddSearchKeywordsQueryContributorHelper
 		_addSearchKeywordsQueryContributorHelper;
 	private final ExpandoQueryContributorHelper _expandoQueryContributorHelper;
-	private final IndexerRegistry _indexerRegistry;
 	private final IndexSearcherHelper _indexSearcherHelper;
+	private final IndexerRegistry _indexerRegistry;
 	private final PostProcessSearchQueryContributorHelper
 		_postProcessSearchQueryContributorHelper;
 	private final PreFilterContributorHelper _preFilterContributorHelper;
+	private final SearchRequestBuilderFactory _searchRequestBuilderFactory;
 	private final SearchableAssetClassNamesProvider
 		_searchableAssetClassNamesProvider;
-	private final SearchRequestBuilderFactory _searchRequestBuilderFactory;
 
 }

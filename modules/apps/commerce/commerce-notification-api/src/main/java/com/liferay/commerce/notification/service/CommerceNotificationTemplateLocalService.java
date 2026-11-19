@@ -44,8 +44,10 @@ import org.osgi.annotation.versioning.ProviderType;
  *
  * @author Alessio Antonio Rendina
  * @see CommerceNotificationTemplateLocalServiceUtil
+ * @deprecated As of Cavanaugh (7.4.x)
  * @generated
  */
+@Deprecated
 @ProviderType
 @Transactional(
 	isolation = Isolation.PORTAL,
@@ -80,17 +82,6 @@ public interface CommerceNotificationTemplateLocalService
 			String bcc, String type, boolean enabled,
 			Map<Locale, String> subjectMap, Map<Locale, String> bodyMap,
 			ServiceContext serviceContext)
-		throws PortalException;
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x)
-	 */
-	@Deprecated
-	public CommerceNotificationTemplate addCommerceNotificationTemplate(
-			String name, String description, String from,
-			Map<Locale, String> fromNameMap, String to, String cc, String bcc,
-			String type, boolean enabled, Map<Locale, String> subjectMap,
-			Map<Locale, String> bodyMap, ServiceContext serviceContext)
 		throws PortalException;
 
 	/**
@@ -286,16 +277,6 @@ public interface CommerceNotificationTemplateLocalService
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<CommerceNotificationTemplate> getCommerceNotificationTemplates(
-		long groupId, boolean enabled, int start, int end,
-		OrderByComparator<CommerceNotificationTemplate> orderByComparator);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<CommerceNotificationTemplate> getCommerceNotificationTemplates(
-		long groupId, int start, int end,
-		OrderByComparator<CommerceNotificationTemplate> orderByComparator);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<CommerceNotificationTemplate> getCommerceNotificationTemplates(
 		long groupId, String type, boolean enabled);
 
 	/**
@@ -333,13 +314,6 @@ public interface CommerceNotificationTemplateLocalService
 	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public int getCommerceNotificationTemplatesCount();
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getCommerceNotificationTemplatesCount(long groupId);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getCommerceNotificationTemplatesCount(
-		long groupId, boolean enabled);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public ExportActionableDynamicQuery getExportActionableDynamicQuery(
@@ -386,3 +360,4 @@ public interface CommerceNotificationTemplateLocalService
 		throws PortalException;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1160670129

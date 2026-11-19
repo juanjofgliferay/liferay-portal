@@ -112,6 +112,8 @@ public class DDLRecordSetVersionModelImpl
 	public static final String TABLE_SQL_DROP =
 		"drop table DDLRecordSetVersion";
 
+	public static final String ENTITY_ALIAS = "ddlRecordSetVersion";
+
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY ddlRecordSetVersion.recordSetVersionId ASC";
 
@@ -134,20 +136,14 @@ public class DDLRecordSetVersionModelImpl
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long STATUS_COLUMN_BITMASK = 2L;
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
-	 */
-	@Deprecated
-	public static final long VERSION_COLUMN_BITMASK = 4L;
+	public static final long VERSION_COLUMN_BITMASK = 2L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
 	 *		#getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long RECORDSETVERSIONID_COLUMN_BITMASK = 8L;
+	public static final long RECORDSETVERSIONID_COLUMN_BITMASK = 4L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
@@ -856,16 +852,6 @@ public class DDLRecordSetVersionModelImpl
 		}
 
 		_status = status;
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #getColumnOriginalValue(String)}
-	 */
-	@Deprecated
-	public int getOriginalStatus() {
-		return GetterUtil.getInteger(
-			this.<Integer>getColumnOriginalValue("status"));
 	}
 
 	@JSON
@@ -1589,3 +1575,4 @@ public class DDLRecordSetVersionModelImpl
 	private DDLRecordSetVersion _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1702110821

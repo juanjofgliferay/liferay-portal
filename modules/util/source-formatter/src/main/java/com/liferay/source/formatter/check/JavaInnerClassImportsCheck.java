@@ -156,24 +156,20 @@ public class JavaInnerClassImportsCheck extends BaseFileCheck {
 		String fullyQualifiedName = _getFullyQualifiedName(
 			outerClassName, null, imports);
 
-		if (fullyQualifiedName == null) {
-			if (outerClassFullyQualifiedName.equals(
-					"java.lang." + outerClassName) ||
-				outerClassFullyQualifiedName.equals(
-					packageName + "." + outerClassName) ||
-				!content.matches("(?s).*[^.\\w]" + outerClassName + "\\W.*")) {
-
-				return true;
-			}
-
-			return false;
+		if (fullyQualifiedName != null) {
+			return fullyQualifiedName.equals(outerClassFullyQualifiedName);
 		}
 
-		if (!fullyQualifiedName.equals(outerClassFullyQualifiedName)) {
-			return false;
+		if (outerClassFullyQualifiedName.equals(
+				"java.lang." + outerClassName) ||
+			outerClassFullyQualifiedName.equals(
+				packageName + "." + outerClassName) ||
+			!content.matches("(?s).*[^.\\w]" + outerClassName + "\\W.*")) {
+
+			return true;
 		}
 
-		return true;
+		return false;
 	}
 
 	private String _removeInnerClassImport(
@@ -234,10 +230,12 @@ public class JavaInnerClassImportsCheck extends BaseFileCheck {
 			String outerClassFullyQualifiedName =
 				innerClassFullyQualifiedName.substring(0, x);
 
-			if (imports.contains(outerClassFullyQualifiedName)) {
-				content = _stripRedundantOuterClass(
-					content, innerClassName, matcher.group(1));
+			if (!imports.contains(outerClassFullyQualifiedName)) {
+				continue;
 			}
+
+			content = _stripRedundantOuterClass(
+				content, innerClassName, matcher.group(1));
 		}
 
 		return content;

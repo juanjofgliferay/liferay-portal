@@ -13,6 +13,7 @@ import com.liferay.project.templates.extensions.util.ProjectTemplatesUtil;
 import com.liferay.project.templates.extensions.util.Validator;
 import com.liferay.project.templates.extensions.util.VersionUtil;
 import com.liferay.project.templates.extensions.util.WorkspaceUtil;
+import com.liferay.project.templates.internal.util.JakartaCompatabilityUtil;
 
 import java.io.File;
 
@@ -114,14 +115,6 @@ public class ProjectGenerator {
 				"EXT project is not supported for Maven");
 		}
 
-		if (buildType.equals("maven") && template.equals("form-field") &&
-			!liferayVersion.startsWith("7.0") &&
-			!liferayVersion.startsWith("7.1")) {
-
-			throw new IllegalArgumentException(
-				"Form Field project in Maven is only supported in 7.0 and 7.1");
-		}
-
 		Properties properties = new Properties();
 
 		_setProperty(properties, "author", author);
@@ -159,6 +152,11 @@ public class ProjectGenerator {
 			projectTemplateCustomizer.onAfterGenerateProject(
 				projectTemplatesArgs, destinationDir,
 				archetypeGenerationResult);
+		}
+
+		if (VersionUtil.isJakartaCompatibleVersion(liferayVersion)) {
+			JakartaCompatabilityUtil.updateForJakarta(
+				new File(destinationDir, artifactId));
 		}
 
 		return archetypeGenerationResult;

@@ -11,27 +11,29 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import com.liferay.petra.function.UnsafeSupplier;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Javier Gamarra
@@ -41,6 +43,9 @@ import javax.xml.bind.annotation.XmlRootElement;
 @GraphQLName(
 	description = "Represents a write-only schema to assign a workflow task to the currently logged-in user.",
 	value = "WorkflowTaskAssignToMe"
+)
+@io.swagger.v3.oas.annotations.media.Schema(
+	description = "Represents a write-only schema to assign a workflow task to the currently logged-in user."
 )
 @JsonFilter("Liferay.Vulcan")
 @XmlRootElement(name = "WorkflowTaskAssignToMe")
@@ -55,30 +60,40 @@ public class WorkflowTaskAssignToMe implements Serializable {
 			WorkflowTaskAssignToMe.class, json);
 	}
 
-	@Schema(
+	@io.swagger.v3.oas.annotations.media.Schema(
 		description = "An optional comment to add when accepting the workflow task."
 	)
 	public String getComment() {
+		if (_commentSupplier != null) {
+			comment = _commentSupplier.get();
+
+			_commentSupplier = null;
+		}
+
 		return comment;
 	}
 
 	public void setComment(String comment) {
 		this.comment = comment;
+
+		_commentSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setComment(
 		UnsafeSupplier<String, Exception> commentUnsafeSupplier) {
 
-		try {
-			comment = commentUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_commentSupplier = () -> {
+			try {
+				return commentUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -87,30 +102,43 @@ public class WorkflowTaskAssignToMe implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
 	protected String comment;
 
-	@Schema(
+	@JsonIgnore
+	private Supplier<String> _commentSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
 		description = "The date on which the workflow task should be executed."
 	)
 	public Date getDueDate() {
+		if (_dueDateSupplier != null) {
+			dueDate = _dueDateSupplier.get();
+
+			_dueDateSupplier = null;
+		}
+
 		return dueDate;
 	}
 
 	public void setDueDate(Date dueDate) {
 		this.dueDate = dueDate;
+
+		_dueDateSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setDueDate(
 		UnsafeSupplier<Date, Exception> dueDateUnsafeSupplier) {
 
-		try {
-			dueDate = dueDateUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_dueDateSupplier = () -> {
+			try {
+				return dueDateUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -119,33 +147,49 @@ public class WorkflowTaskAssignToMe implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
 	protected Date dueDate;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Date> _dueDateSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Long getWorkflowTaskId() {
+		if (_workflowTaskIdSupplier != null) {
+			workflowTaskId = _workflowTaskIdSupplier.get();
+
+			_workflowTaskIdSupplier = null;
+		}
+
 		return workflowTaskId;
 	}
 
 	public void setWorkflowTaskId(Long workflowTaskId) {
 		this.workflowTaskId = workflowTaskId;
+
+		_workflowTaskIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setWorkflowTaskId(
 		UnsafeSupplier<Long, Exception> workflowTaskIdUnsafeSupplier) {
 
-		try {
-			workflowTaskId = workflowTaskIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_workflowTaskIdSupplier = () -> {
+			try {
+				return workflowTaskIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
 	protected Long workflowTaskId;
+
+	@JsonIgnore
+	private Supplier<Long> _workflowTaskIdSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -178,6 +222,8 @@ public class WorkflowTaskAssignToMe implements Serializable {
 		DateFormat liferayToJSONDateFormat = new SimpleDateFormat(
 			"yyyy-MM-dd'T'HH:mm:ss'Z'");
 
+		String comment = getComment();
+
 		if (comment != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -192,6 +238,8 @@ public class WorkflowTaskAssignToMe implements Serializable {
 			sb.append("\"");
 		}
 
+		Date dueDate = getDueDate();
+
 		if (dueDate != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -205,6 +253,8 @@ public class WorkflowTaskAssignToMe implements Serializable {
 
 			sb.append("\"");
 		}
+
+		Long workflowTaskId = getWorkflowTaskId();
 
 		if (workflowTaskId != null) {
 			if (sb.length() > 1) {
@@ -221,8 +271,8 @@ public class WorkflowTaskAssignToMe implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.admin.workflow.dto.v1_0.WorkflowTaskAssignToMe",
 		name = "x-class-name"
 	)
@@ -268,7 +318,10 @@ public class WorkflowTaskAssignToMe implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -306,6 +359,27 @@ public class WorkflowTaskAssignToMe implements Serializable {
 		return sb.toString();
 	}
 
+	private static String _toJSON(Object value) {
+		if (value instanceof Collection) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONArray((Collection<?>)value));
+		}
+		else if (value instanceof Map) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONObject((Map<?, ?>)value));
+		}
+		else if (value instanceof Object[]) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONArray(
+					Arrays.asList((Object[])value)));
+		}
+		else if (value instanceof String) {
+			return StringBundler.concat("\"", _escape(value), "\"");
+		}
+
+		return String.valueOf(value);
+	}
+
 	private static final String[][] _JSON_ESCAPE_STRINGS = {
 		{"\\", "\"", "\b", "\f", "\n", "\r", "\t"},
 		{"\\\\", "\\\"", "\\b", "\\f", "\\n", "\\r", "\\t"}
@@ -314,3 +388,4 @@ public class WorkflowTaskAssignToMe implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:-668923021

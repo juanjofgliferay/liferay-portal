@@ -5,11 +5,13 @@
  */
 --%>
 
-<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<%@ taglib uri="jakarta.tags.core" prefix="c" %>
 
-<%@ taglib uri="http://liferay.com/tld/react" prefix="react" %>
+<%@ taglib uri="http://liferay.com/tld/aui" prefix="aui" %><%@
+taglib uri="http://liferay.com/tld/react" prefix="react" %>
 
-<%@ page import="com.liferay.fragment.collection.filter.tags.display.context.FragmentCollectionFilterTagsDisplayContext" %>
+<%@ page import="com.liferay.fragment.collection.filter.tags.display.context.FragmentCollectionFilterTagsDisplayContext" %><%@
+page import="com.liferay.portal.kernel.util.HtmlUtil" %>
 
 <%
 FragmentCollectionFilterTagsDisplayContext fragmentCollectionFilterTagsDisplayContext = (FragmentCollectionFilterTagsDisplayContext)request.getAttribute(FragmentCollectionFilterTagsDisplayContext.class.getName());

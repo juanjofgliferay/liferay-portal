@@ -12,8 +12,10 @@ import com.liferay.portal.kernel.service.ServiceWrapper;
  *
  * @author Alessio Antonio Rendina
  * @see CommerceNotificationTemplateCommerceAccountGroupRelService
+ * @deprecated As of Cavanaugh (7.4.x)
  * @generated
  */
+@Deprecated
 public class CommerceNotificationTemplateCommerceAccountGroupRelServiceWrapper
 	implements CommerceNotificationTemplateCommerceAccountGroupRelService,
 			   ServiceWrapper
@@ -118,3 +120,4 @@ public class CommerceNotificationTemplateCommerceAccountGroupRelServiceWrapper
 		_commerceNotificationTemplateCommerceAccountGroupRelService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1663748992

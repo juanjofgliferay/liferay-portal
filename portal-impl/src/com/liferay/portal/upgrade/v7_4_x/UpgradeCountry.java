@@ -11,9 +11,9 @@ import com.liferay.portal.kernel.dao.jdbc.AutoBatchPreparedStatementUtil;
 import com.liferay.portal.kernel.upgrade.UpgradeProcess;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.LoggingTimer;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.uuid.PortalUUIDUtil;
-import com.liferay.portal.util.PropsValues;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -25,7 +25,7 @@ public class UpgradeCountry extends UpgradeProcess {
 
 	@Override
 	protected void doUpgrade() throws Exception {
-		runSQLTemplate("update-7.3.0-7.4.0-country.sql", false);
+		runSQLFile("update-7.3.0-7.4.0-country.sql", false);
 
 		try (LoggingTimer loggingTimer = new LoggingTimer()) {
 			try (PreparedStatement preparedStatement1 =
@@ -39,7 +39,8 @@ public class UpgradeCountry extends UpgradeProcess {
 
 				while (resultSet.next()) {
 					preparedStatement2.setString(1, PortalUUIDUtil.generate());
-					preparedStatement2.setLong(2, resultSet.getLong(1));
+					preparedStatement2.setLong(
+						2, resultSet.getLong("countryId"));
 
 					preparedStatement2.addBatch();
 				}
@@ -60,6 +61,7 @@ public class UpgradeCountry extends UpgradeProcess {
 
 		try (PreparedStatement preparedStatement = connection.prepareStatement(
 				SQLTransformer.transform(sql));
+
 			ResultSet resultSet = preparedStatement.executeQuery()) {
 
 			if (resultSet.next()) {

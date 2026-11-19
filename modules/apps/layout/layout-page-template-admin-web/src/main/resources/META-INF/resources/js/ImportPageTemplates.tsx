@@ -7,7 +7,12 @@ import {Import} from '@liferay/layout-js-components-web';
 import React from 'react';
 
 interface Props {
+	addFragmentCollectionURL: string;
 	backURL: string;
+	fragmentCollections: {
+		fragmentCollectionId: number;
+		name: string;
+	}[];
 	importURL: string;
 	portletNamespace: string;
 }
@@ -16,8 +21,7 @@ export default function ImportPageTemplates(props: Props) {
 	return (
 		<Import
 			helpLink={{
-				href:
-					'https://learn.liferay.com/en/w/dxp/site-building/creating-pages/adding-pages/exporting-and-importing-page-templates',
+				href: 'https://learn.liferay.com/en/w/dxp/site-building/creating-pages/adding-pages/exporting-and-importing-page-templates',
 				message: Liferay.Language.get(
 					'read-more-about-exporting-and-importing-page-templates'
 				),

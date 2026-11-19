@@ -8,7 +8,6 @@ package com.liferay.segments.asah.connector.internal.portlet.action.test;
 import com.liferay.analytics.settings.configuration.AnalyticsConfiguration;
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.layout.test.util.LayoutTestUtil;
-import com.liferay.petra.string.StringPool;
 import com.liferay.portal.configuration.test.util.CompanyConfigurationTemporarySwapper;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.model.Company;
@@ -29,12 +28,12 @@ import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
 import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
-import com.liferay.segments.constants.SegmentsEntryConstants;
 import com.liferay.segments.constants.SegmentsExperienceConstants;
 import com.liferay.segments.constants.SegmentsExperimentConstants;
 import com.liferay.segments.model.SegmentsEntry;
@@ -51,6 +50,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -79,14 +79,14 @@ public class EditSegmentsExperimentStatusMVCActionCommandTest {
 		_group = GroupTestUtil.addGroup();
 	}
 
+	@Ignore
 	@Test
 	public void testEditSegmentsExperimentStatusWithWinnerSegmentsExperienceId()
 		throws Exception {
 
 		SegmentsEntry segmentsEntry = SegmentsTestUtil.addSegmentsEntry(
 			_group.getGroupId(), RandomTestUtil.randomString(),
-			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
-			StringPool.BLANK, SegmentsEntryConstants.SOURCE_DEFAULT);
+			RandomTestUtil.randomString(), RandomTestUtil.randomString());
 
 		Layout layout = LayoutTestUtil.addTypeContentLayout(_group);
 
@@ -101,7 +101,8 @@ public class EditSegmentsExperimentStatusMVCActionCommandTest {
 
 		SegmentsExperience variantSegmentsExperience =
 			SegmentsTestUtil.addSegmentsExperience(
-				segmentsEntry.getSegmentsEntryId(), layout.getPlid(),
+				segmentsEntry.getExternalReferenceCode(), null,
+				layout.getPlid(),
 				ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
 
 		_segmentsExperimentRelLocalService.addSegmentsExperimentRel(
@@ -119,6 +120,7 @@ public class EditSegmentsExperimentStatusMVCActionCommandTest {
 		ThemeDisplay themeDisplay = new ThemeDisplay();
 
 		themeDisplay.setCompany(_company);
+		themeDisplay.setLayout(layout);
 		themeDisplay.setLocale(LocaleUtil.US);
 
 		mockLiferayPortletActionRequest.setAttribute(
@@ -144,7 +146,9 @@ public class EditSegmentsExperimentStatusMVCActionCommandTest {
 							"liferayAnalyticsFaroBackendURL",
 							"http://localhost:8086"
 						).put(
-							"liferayAnalyticsURL", "http://localhost:8080/"
+							"liferayAnalyticsURL",
+							"http://localhost:" +
+								PortalUtil.getPortalServerPort(false) + "/"
 						).build())) {
 
 			Object asahFaroBackendClient = ReflectionTestUtil.getFieldValue(

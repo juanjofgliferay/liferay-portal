@@ -11,7 +11,7 @@ import ClayLayout from '@clayui/layout';
 import ClayModal, {useModal} from '@clayui/modal';
 import ClayPopover from '@clayui/popover';
 import ClayTable from '@clayui/table';
-import WorkflowInstanceTracker from '@liferay/portal-workflow-instance-tracker-web/js/components/WorkflowInstanceTracker';
+import {WorkflowInstanceTracker} from '@liferay/portal-workflow-instance-tracker-web';
 import {sub} from 'frontend-js-web';
 import React, {useContext, useState} from 'react';
 
@@ -25,7 +25,7 @@ import {InstanceListContext} from './InstanceListPageProvider.es';
 import {ModalContext} from './modal/ModalProvider.es';
 
 function Item({isAdmin, totalCount, ...instance}) {
-	const {userId} = useContext(AppContext);
+	const {baseResourceURL, userId} = useContext(AppContext);
 	const {
 		selectedItems = [],
 		setInstanceId,
@@ -47,9 +47,8 @@ function Item({isAdmin, totalCount, ...instance}) {
 		taskNames = [Liferay.Language.get('not-available')],
 	} = instance;
 
-	const [showInstanceTrackerModal, setShowInstanceTrackerModal] = useState(
-		false
-	);
+	const [showInstanceTrackerModal, setShowInstanceTrackerModal] =
+		useState(false);
 
 	const {observer} = useModal({
 		onClose: () => {
@@ -185,12 +184,17 @@ function Item({isAdmin, totalCount, ...instance}) {
 
 			{showInstanceTrackerModal && (
 				<ClayModal observer={observer} size="full-screen">
-					<ClayModal.Header>
+					<ClayModal.Header
+						closeButtonAriaLabel={Liferay.Language.get('close')}
+					>
 						{Liferay.Language.get('track-workflow')}
 					</ClayModal.Header>
 
 					<ClayModal.Body>
-						<WorkflowInstanceTracker workflowInstanceId={id} />
+						<WorkflowInstanceTracker
+							baseResourceURL={baseResourceURL}
+							workflowInstanceId={id}
+						/>
 					</ClayModal.Body>
 				</ClayModal>
 			)}

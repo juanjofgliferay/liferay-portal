@@ -8,13 +8,17 @@ package com.liferay.headless.commerce.admin.catalog.client.serdes.v1_0;
 import com.liferay.headless.commerce.admin.catalog.client.dto.v1_0.Catalog;
 import com.liferay.headless.commerce.admin.catalog.client.json.BaseJSONParser;
 
+import jakarta.annotation.Generated;
+
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
-
-import javax.annotation.Generated;
 
 /**
  * @author Zoltán Takács
@@ -44,6 +48,23 @@ public class CatalogSerDes {
 
 		sb.append("{");
 
+		DateFormat liferayToJSONDateFormat = new SimpleDateFormat(
+			"yyyy-MM-dd'T'HH:mm:ssXX");
+
+		if (catalog.getAccountExternalReferenceCode() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"accountExternalReferenceCode\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(catalog.getAccountExternalReferenceCode()));
+
+			sb.append("\"");
+		}
+
 		if (catalog.getAccountId() != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -52,6 +73,18 @@ public class CatalogSerDes {
 			sb.append("\"accountId\": ");
 
 			sb.append(catalog.getAccountId());
+		}
+
+		if (catalog.getAccountType() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"accountType\": ");
+
+			sb.append("\"");
+			sb.append(catalog.getAccountType());
+			sb.append("\"");
 		}
 
 		if (catalog.getActions() != null) {
@@ -64,6 +97,16 @@ public class CatalogSerDes {
 			sb.append(_toJSON(catalog.getActions()));
 		}
 
+		if (catalog.getCreator() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"creator\": ");
+
+			sb.append(String.valueOf(catalog.getCreator()));
+		}
+
 		if (catalog.getCurrencyCode() != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -74,6 +117,59 @@ public class CatalogSerDes {
 			sb.append("\"");
 
 			sb.append(_escape(catalog.getCurrencyCode()));
+
+			sb.append("\"");
+		}
+
+		if (catalog.getCurrencyExternalReferenceCode() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"currencyExternalReferenceCode\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(catalog.getCurrencyExternalReferenceCode()));
+
+			sb.append("\"");
+		}
+
+		if (catalog.getCurrencyId() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"currencyId\": ");
+
+			sb.append(catalog.getCurrencyId());
+		}
+
+		if (catalog.getDateCreated() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"dateCreated\": ");
+
+			sb.append("\"");
+
+			sb.append(liferayToJSONDateFormat.format(catalog.getDateCreated()));
+
+			sb.append("\"");
+		}
+
+		if (catalog.getDateModified() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"dateModified\": ");
+
+			sb.append("\"");
+
+			sb.append(
+				liferayToJSONDateFormat.format(catalog.getDateModified()));
 
 			sb.append("\"");
 		}
@@ -130,6 +226,26 @@ public class CatalogSerDes {
 			sb.append("\"");
 		}
 
+		if (catalog.getPermissions() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"permissions\": ");
+
+			sb.append("[");
+
+			for (int i = 0; i < catalog.getPermissions().length; i++) {
+				sb.append(catalog.getPermissions()[i]);
+
+				if ((i + 1) < catalog.getPermissions().length) {
+					sb.append(", ");
+				}
+			}
+
+			sb.append("]");
+		}
+
 		if (catalog.getSystem() != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -158,11 +274,30 @@ public class CatalogSerDes {
 
 		Map<String, String> map = new TreeMap<>();
 
+		DateFormat liferayToJSONDateFormat = new SimpleDateFormat(
+			"yyyy-MM-dd'T'HH:mm:ssXX");
+
+		if (catalog.getAccountExternalReferenceCode() == null) {
+			map.put("accountExternalReferenceCode", null);
+		}
+		else {
+			map.put(
+				"accountExternalReferenceCode",
+				String.valueOf(catalog.getAccountExternalReferenceCode()));
+		}
+
 		if (catalog.getAccountId() == null) {
 			map.put("accountId", null);
 		}
 		else {
 			map.put("accountId", String.valueOf(catalog.getAccountId()));
+		}
+
+		if (catalog.getAccountType() == null) {
+			map.put("accountType", null);
+		}
+		else {
+			map.put("accountType", String.valueOf(catalog.getAccountType()));
 		}
 
 		if (catalog.getActions() == null) {
@@ -172,11 +307,52 @@ public class CatalogSerDes {
 			map.put("actions", String.valueOf(catalog.getActions()));
 		}
 
+		if (catalog.getCreator() == null) {
+			map.put("creator", null);
+		}
+		else {
+			map.put("creator", String.valueOf(catalog.getCreator()));
+		}
+
 		if (catalog.getCurrencyCode() == null) {
 			map.put("currencyCode", null);
 		}
 		else {
 			map.put("currencyCode", String.valueOf(catalog.getCurrencyCode()));
+		}
+
+		if (catalog.getCurrencyExternalReferenceCode() == null) {
+			map.put("currencyExternalReferenceCode", null);
+		}
+		else {
+			map.put(
+				"currencyExternalReferenceCode",
+				String.valueOf(catalog.getCurrencyExternalReferenceCode()));
+		}
+
+		if (catalog.getCurrencyId() == null) {
+			map.put("currencyId", null);
+		}
+		else {
+			map.put("currencyId", String.valueOf(catalog.getCurrencyId()));
+		}
+
+		if (catalog.getDateCreated() == null) {
+			map.put("dateCreated", null);
+		}
+		else {
+			map.put(
+				"dateCreated",
+				liferayToJSONDateFormat.format(catalog.getDateCreated()));
+		}
+
+		if (catalog.getDateModified() == null) {
+			map.put("dateModified", null);
+		}
+		else {
+			map.put(
+				"dateModified",
+				liferayToJSONDateFormat.format(catalog.getDateModified()));
 		}
 
 		if (catalog.getDefaultLanguageId() == null) {
@@ -211,6 +387,13 @@ public class CatalogSerDes {
 			map.put("name", String.valueOf(catalog.getName()));
 		}
 
+		if (catalog.getPermissions() == null) {
+			map.put("permissions", null);
+		}
+		else {
+			map.put("permissions", String.valueOf(catalog.getPermissions()));
+		}
+
 		if (catalog.getSystem() == null) {
 			map.put("system", null);
 		}
@@ -234,25 +417,132 @@ public class CatalogSerDes {
 		}
 
 		@Override
+		protected boolean parseMaps(String jsonParserFieldName) {
+			if (Objects.equals(
+					jsonParserFieldName, "accountExternalReferenceCode")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "accountId")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "accountType")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "actions")) {
+				return true;
+			}
+			else if (Objects.equals(jsonParserFieldName, "creator")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "currencyCode")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "currencyExternalReferenceCode")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "currencyId")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "dateCreated")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "dateModified")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "defaultLanguageId")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "externalReferenceCode")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "id")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "name")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "permissions")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "system")) {
+				return false;
+			}
+
+			return false;
+		}
+
+		@Override
 		protected void setField(
 			Catalog catalog, String jsonParserFieldName,
 			Object jsonParserFieldValue) {
 
-			if (Objects.equals(jsonParserFieldName, "accountId")) {
+			if (Objects.equals(
+					jsonParserFieldName, "accountExternalReferenceCode")) {
+
+				if (jsonParserFieldValue != null) {
+					catalog.setAccountExternalReferenceCode(
+						(String)jsonParserFieldValue);
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "accountId")) {
 				if (jsonParserFieldValue != null) {
 					catalog.setAccountId(
 						Long.valueOf((String)jsonParserFieldValue));
 				}
 			}
+			else if (Objects.equals(jsonParserFieldName, "accountType")) {
+				if (jsonParserFieldValue != null) {
+					catalog.setAccountType(
+						Catalog.AccountType.create(
+							(String)jsonParserFieldValue));
+				}
+			}
 			else if (Objects.equals(jsonParserFieldName, "actions")) {
 				if (jsonParserFieldValue != null) {
 					catalog.setActions(
-						(Map)CatalogSerDes.toMap((String)jsonParserFieldValue));
+						(Map<String, Map<String, String>>)jsonParserFieldValue);
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "creator")) {
+				if (jsonParserFieldValue != null) {
+					catalog.setCreator(
+						CreatorSerDes.toDTO((String)jsonParserFieldValue));
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "currencyCode")) {
 				if (jsonParserFieldValue != null) {
 					catalog.setCurrencyCode((String)jsonParserFieldValue);
+				}
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "currencyExternalReferenceCode")) {
+
+				if (jsonParserFieldValue != null) {
+					catalog.setCurrencyExternalReferenceCode(
+						(String)jsonParserFieldValue);
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "currencyId")) {
+				if (jsonParserFieldValue != null) {
+					catalog.setCurrencyId(
+						Long.valueOf((String)jsonParserFieldValue));
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "dateCreated")) {
+				if (jsonParserFieldValue != null) {
+					catalog.setDateCreated(
+						toDate((String)jsonParserFieldValue));
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "dateModified")) {
+				if (jsonParserFieldValue != null) {
+					catalog.setDateModified(
+						toDate((String)jsonParserFieldValue));
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "defaultLanguageId")) {
@@ -276,6 +566,26 @@ public class CatalogSerDes {
 			else if (Objects.equals(jsonParserFieldName, "name")) {
 				if (jsonParserFieldValue != null) {
 					catalog.setName((String)jsonParserFieldValue);
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "permissions")) {
+				if (jsonParserFieldValue != null) {
+					Object[] jsonParserFieldValues =
+						(Object[])jsonParserFieldValue;
+
+					com.liferay.headless.commerce.admin.catalog.client.
+						permission.Permission[] permissionsArray = new
+						com.liferay.headless.commerce.admin.catalog.client.
+							permission.Permission[jsonParserFieldValues.length];
+
+					for (int i = 0; i < permissionsArray.length; i++) {
+						permissionsArray[i] =
+							com.liferay.headless.commerce.admin.catalog.client.
+								permission.Permission.toDTO(
+									(String)jsonParserFieldValues[i]);
+					}
+
+					catalog.setPermissions(permissionsArray);
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "system")) {
@@ -315,36 +625,7 @@ public class CatalogSerDes {
 
 			Object value = entry.getValue();
 
-			Class<?> valueClass = value.getClass();
-
-			if (value instanceof Map) {
-				sb.append(_toJSON((Map)value));
-			}
-			else if (valueClass.isArray()) {
-				Object[] values = (Object[])value;
-
-				sb.append("[");
-
-				for (int i = 0; i < values.length; i++) {
-					sb.append("\"");
-					sb.append(_escape(values[i]));
-					sb.append("\"");
-
-					if ((i + 1) < values.length) {
-						sb.append(", ");
-					}
-				}
-
-				sb.append("]");
-			}
-			else if (value instanceof String) {
-				sb.append("\"");
-				sb.append(_escape(entry.getValue()));
-				sb.append("\"");
-			}
-			else {
-				sb.append(String.valueOf(entry.getValue()));
-			}
+			sb.append(_toJSON(value));
 
 			if (iterator.hasNext()) {
 				sb.append(", ");
@@ -356,4 +637,47 @@ public class CatalogSerDes {
 		return sb.toString();
 	}
 
+	private static String _toJSON(Object value) {
+		if (value == null) {
+			return "null";
+		}
+
+		if (value instanceof Collection) {
+			Collection<?> collection = (Collection<?>)value;
+
+			return _toJSON(collection.toArray());
+		}
+
+		if (value instanceof Map) {
+			return _toJSON((Map)value);
+		}
+
+		Class<?> clazz = value.getClass();
+
+		if (clazz.isArray()) {
+			StringBuilder sb = new StringBuilder("[");
+
+			Object[] values = (Object[])value;
+
+			for (int i = 0; i < values.length; i++) {
+				sb.append(_toJSON(values[i]));
+
+				if ((i + 1) < values.length) {
+					sb.append(", ");
+				}
+			}
+
+			sb.append("]");
+
+			return sb.toString();
+		}
+
+		if (value instanceof String) {
+			return "\"" + _escape(value) + "\"";
+		}
+
+		return String.valueOf(value);
+	}
+
 }
+// LIFERAY-REST-BUILDER-HASH:-24211672

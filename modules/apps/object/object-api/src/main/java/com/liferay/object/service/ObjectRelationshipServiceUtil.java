@@ -7,6 +7,7 @@ package com.liferay.object.service;
 
 import com.liferay.object.model.ObjectRelationship;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.module.service.Snapshot;
 
 import java.util.List;
 import java.util.Map;
@@ -33,15 +34,16 @@ public class ObjectRelationshipServiceUtil {
 	public static ObjectRelationship addObjectRelationship(
 			String externalReferenceCode, long objectDefinitionId1,
 			long objectDefinitionId2, long parameterObjectFieldId,
-			String deletionType, Map<java.util.Locale, String> labelMap,
-			String name, boolean system, String type,
+			String deletionType, Map<java.util.Locale, String> descriptionMap,
+			boolean edge, Map<java.util.Locale, String> labelMap, String name,
+			boolean system, String type,
 			com.liferay.object.model.ObjectField objectField)
 		throws PortalException {
 
 		return getService().addObjectRelationship(
 			externalReferenceCode, objectDefinitionId1, objectDefinitionId2,
-			parameterObjectFieldId, deletionType, labelMap, name, system, type,
-			objectField);
+			parameterObjectFieldId, deletionType, descriptionMap, edge,
+			labelMap, name, system, type, objectField);
 	}
 
 	public static void addObjectRelationshipMappingTableValues(
@@ -103,24 +105,25 @@ public class ObjectRelationshipServiceUtil {
 
 	public static ObjectRelationship updateObjectRelationship(
 			String externalReferenceCode, long objectRelationshipId,
-			long parameterObjectFieldId, String deletionType, boolean edge,
+			long parameterObjectFieldId, String deletionType,
+			Map<java.util.Locale, String> descriptionMap, boolean edge,
 			Map<java.util.Locale, String> labelMap,
 			com.liferay.object.model.ObjectField objectField)
 		throws PortalException {
 
 		return getService().updateObjectRelationship(
 			externalReferenceCode, objectRelationshipId, parameterObjectFieldId,
-			deletionType, edge, labelMap, objectField);
+			deletionType, descriptionMap, edge, labelMap, objectField);
 	}
 
 	public static ObjectRelationshipService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(ObjectRelationshipService service) {
-		_service = service;
-	}
-
-	private static volatile ObjectRelationshipService _service;
+	private static final Snapshot<ObjectRelationshipService> _serviceSnapshot =
+		new Snapshot<>(
+			ObjectRelationshipServiceUtil.class,
+			ObjectRelationshipService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1776371229

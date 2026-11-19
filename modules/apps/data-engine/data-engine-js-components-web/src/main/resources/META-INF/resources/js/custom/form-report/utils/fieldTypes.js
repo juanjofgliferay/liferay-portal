@@ -6,7 +6,7 @@
 export default {
 	address: {
 		icon: 'geolocation',
-		title: Liferay.Language.get('address'),
+		title: Liferay.Language.get('address[postal]'),
 	},
 	checkbox: {
 		icon: 'check',
@@ -37,9 +37,17 @@ export default {
 		icon: 'date-time',
 		title: Liferay.Language.get('date-and-time'),
 	},
+	document_library: {
+		icon: 'upload',
+		title: Liferay.Language.get('upload'),
+	},
 	grid: {
 		icon: 'table2',
 		title: Liferay.Language.get('grid-field-type-label'),
+	},
+	image: {
+		icon: 'picture',
+		title: Liferay.Language.get('image'),
 	},
 	numeric: {
 		icon: 'integer',
@@ -67,7 +75,7 @@ export default {
 	},
 	state: {
 		icon: 'geolocation',
-		title: Liferay.Language.get('state'),
+		title: Liferay.Language.get('state[region]'),
 	},
 	text: {
 		icon: 'text',

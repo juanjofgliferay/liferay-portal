@@ -60,9 +60,9 @@ public class CompanyServiceWrapper
 	 */
 	@Override
 	public com.liferay.portal.kernel.model.Company addCompany(
-			java.lang.String webId, java.lang.String virtualHost,
-			java.lang.String mx, int maxUsers, boolean active,
-			java.lang.String defaultAdminPassword,
+			java.lang.Long companyId, java.lang.String webId,
+			java.lang.String virtualHost, java.lang.String mx, int maxUsers,
+			boolean active, java.lang.String defaultAdminPassword,
 			java.lang.String defaultAdminScreenName,
 			java.lang.String defaultAdminEmailAddress,
 			java.lang.String defaultAdminFirstName,
@@ -71,10 +71,31 @@ public class CompanyServiceWrapper
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _companyService.addCompany(
-			webId, virtualHost, mx, maxUsers, active, defaultAdminPassword,
-			defaultAdminScreenName, defaultAdminEmailAddress,
-			defaultAdminFirstName, defaultAdminMiddleName,
-			defaultAdminLastName);
+			companyId, webId, virtualHost, mx, maxUsers, active,
+			defaultAdminPassword, defaultAdminScreenName,
+			defaultAdminEmailAddress, defaultAdminFirstName,
+			defaultAdminMiddleName, defaultAdminLastName);
+	}
+
+	@Override
+	public com.liferay.portal.kernel.model.Company addDBPartitionCompany(
+			java.lang.String schemaName, java.lang.String name,
+			java.lang.String virtualHost, java.lang.String webId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _companyService.addDBPartitionCompany(
+			schemaName, name, virtualHost, webId);
+	}
+
+	@Override
+	public com.liferay.portal.kernel.model.Company copyDBPartitionCompany(
+			long fromCompanyId, java.lang.Long toCompanyId,
+			java.lang.String name, java.lang.String virtualHost,
+			java.lang.String webId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _companyService.copyDBPartitionCompany(
+			fromCompanyId, toCompanyId, name, virtualHost, webId);
 	}
 
 	@Override
@@ -97,6 +118,13 @@ public class CompanyServiceWrapper
 	}
 
 	@Override
+	public com.liferay.portal.kernel.model.Company exportCompany(long companyId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _companyService.exportCompany(companyId);
+	}
+
+	@Override
 	public void forEachCompany(
 			com.liferay.petra.function.UnsafeConsumer
 				<com.liferay.portal.kernel.model.Company, java.lang.Exception>
@@ -113,7 +141,8 @@ public class CompanyServiceWrapper
 	 */
 	@Override
 	public java.util.List<com.liferay.portal.kernel.model.Company>
-		getCompanies() {
+			getCompanies()
+		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _companyService.getCompanies();
 	}
@@ -133,45 +162,17 @@ public class CompanyServiceWrapper
 	}
 
 	/**
-	 * Returns the company with the logo.
-	 *
-	 * @param logoId the ID of the company's logo
-	 * @return Returns the company with the logo
-	 */
-	@Override
-	public com.liferay.portal.kernel.model.Company getCompanyByLogoId(
-			long logoId)
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return _companyService.getCompanyByLogoId(logoId);
-	}
-
-	/**
-	 * Returns the company with the mail domian.
-	 *
-	 * @param mx the company's mail domain
-	 * @return Returns the company with the mail domain
-	 */
-	@Override
-	public com.liferay.portal.kernel.model.Company getCompanyByMx(
-			java.lang.String mx)
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return _companyService.getCompanyByMx(mx);
-	}
-
-	/**
 	 * Returns the company with the virtual host name.
 	 *
-	 * @param virtualHost the company's virtual host name
+	 * @param virtualHostname the company's virtual host name
 	 * @return Returns the company with the virtual host name
 	 */
 	@Override
 	public com.liferay.portal.kernel.model.Company getCompanyByVirtualHost(
-			java.lang.String virtualHost)
+			java.lang.String virtualHostname)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
-		return _companyService.getCompanyByVirtualHost(virtualHost);
+		return _companyService.getCompanyByVirtualHost(virtualHostname);
 	}
 
 	/**
@@ -203,7 +204,7 @@ public class CompanyServiceWrapper
 	 *
 	 * This method is called by {@link
 	 * com.liferay.portlet.portalsettings.action.EditLDAPServerAction} remotely
-	 * through {@link CompanyService}.
+	 * through {@link com.liferay.portal.kernel.service.CompanyService}.
 	 *
 	 * @param companyId the primary key of the company
 	 * @param keys the company's preferences keys to be remove
@@ -443,3 +444,4 @@ public class CompanyServiceWrapper
 	private CompanyService _companyService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1174012437

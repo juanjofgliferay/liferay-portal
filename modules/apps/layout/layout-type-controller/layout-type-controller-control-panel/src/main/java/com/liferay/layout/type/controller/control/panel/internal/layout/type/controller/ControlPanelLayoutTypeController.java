@@ -6,7 +6,6 @@
 package com.liferay.layout.type.controller.control.panel.internal.layout.type.controller;
 
 import com.liferay.application.list.PanelAppRegistry;
-import com.liferay.application.list.PanelCategoryRegistry;
 import com.liferay.application.list.constants.ApplicationListWebKeys;
 import com.liferay.layout.type.controller.BaseLayoutTypeControllerImpl;
 import com.liferay.petra.io.unsync.UnsyncStringWriter;
@@ -16,10 +15,10 @@ import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.servlet.PipingServletResponse;
 
-import javax.servlet.ServletContext;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -44,11 +43,7 @@ public class ControlPanelLayoutTypeController
 		PermissionChecker permissionChecker =
 			PermissionThreadLocal.getPermissionChecker();
 
-		if (!permissionChecker.isSignedIn()) {
-			return true;
-		}
-
-		return false;
+		return !permissionChecker.isSignedIn();
 	}
 
 	@Override
@@ -80,9 +75,6 @@ public class ControlPanelLayoutTypeController
 	protected void addAttributes(HttpServletRequest httpServletRequest) {
 		httpServletRequest.setAttribute(
 			ApplicationListWebKeys.PANEL_APP_REGISTRY, _panelAppRegistry);
-		httpServletRequest.setAttribute(
-			ApplicationListWebKeys.PANEL_CATEGORY_REGISTRY,
-			_panelCategoryRegistry);
 	}
 
 	@Override
@@ -113,8 +105,6 @@ public class ControlPanelLayoutTypeController
 	protected void removeAttributes(HttpServletRequest httpServletRequest) {
 		httpServletRequest.removeAttribute(
 			ApplicationListWebKeys.PANEL_APP_REGISTRY);
-		httpServletRequest.removeAttribute(
-			ApplicationListWebKeys.PANEL_CATEGORY_REGISTRY);
 	}
 
 	private static final String _EDIT_PAGE = "/layout/edit/control_panel.jsp";
@@ -127,9 +117,6 @@ public class ControlPanelLayoutTypeController
 
 	@Reference
 	private PanelAppRegistry _panelAppRegistry;
-
-	@Reference
-	private PanelCategoryRegistry _panelCategoryRegistry;
 
 	@Reference(
 		target = "(osgi.web.symbolicname=com.liferay.layout.type.controller.control.panel)"

@@ -28,6 +28,8 @@ public class ActionKeys {
 
 	public static final String ADD_COMMUNITY = "ADD_COMMUNITY";
 
+	public static final String ADD_COUNTRY = "ADD_COUNTRY";
+
 	public static final String ADD_COUPON = "ADD_COUPON";
 
 	public static final String ADD_DEFINITION = "ADD_DEFINITION";
@@ -124,6 +126,8 @@ public class ActionKeys {
 
 	public static final String ADD_VOTE = "ADD_VOTE";
 
+	public static final String ADVANCED_UPDATE = "ADVANCED_UPDATE";
+
 	public static final String ASSIGN_MEMBERS = "ASSIGN_MEMBERS";
 
 	public static final String ASSIGN_USER_ROLES = "ASSIGN_USER_ROLES";
@@ -182,8 +186,6 @@ public class ActionKeys {
 	public static final String MANAGE_ARCHIVED_SETUPS =
 		"MANAGE_ARCHIVED_SETUPS";
 
-	public static final String MANAGE_COUNTRIES = "MANAGE_COUNTRIES";
-
 	public static final String MANAGE_COUPONS = "MANAGE_COUPONS";
 
 	public static final String MANAGE_LAYOUTS = "MANAGE_LAYOUTS";
@@ -196,6 +198,9 @@ public class ActionKeys {
 
 	public static final String MANAGE_SUBORGANIZATIONS =
 		"MANAGE_SUBORGANIZATIONS";
+
+	public static final String MANAGE_SUBORGANIZATIONS_USERS =
+		"MANAGE_SUBORGANIZATIONS_USERS";
 
 	public static final String MANAGE_TAG = "MANAGE_TAG";
 
@@ -214,6 +219,8 @@ public class ActionKeys {
 	public static final String PERMISSIONS_USER = "PERMISSIONS_USER";
 
 	public static final String PREFERENCES = "PREFERENCES";
+
+	public static final String PREVIEW_DRAFT = "PREVIEW_DRAFT";
 
 	public static final String PREVIEW_IN_DEVICE = "PREVIEW_IN_DEVICE";
 
@@ -246,6 +253,9 @@ public class ActionKeys {
 	public static final String UPDATE_LAYOUT_CONTENT = "UPDATE_LAYOUT_CONTENT";
 
 	public static final String UPDATE_LAYOUT_LIMITED = "UPDATE_LAYOUT_LIMITED";
+
+	public static final String UPDATE_SUBORGANIZATIONS =
+		"UPDATE_SUBORGANIZATIONS";
 
 	public static final String UPDATE_THREAD_PRIORITY =
 		"UPDATE_THREAD_PRIORITY";

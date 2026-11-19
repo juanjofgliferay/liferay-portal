@@ -14,10 +14,10 @@ import com.liferay.portal.kernel.transaction.Propagation;
 import com.liferay.portal.kernel.transaction.Transactional;
 import com.liferay.portal.kernel.xml.Element;
 
+import jakarta.servlet.ServletContext;
+
 import java.util.List;
 import java.util.Set;
-
-import javax.servlet.ServletContext;
 
 import org.osgi.annotation.versioning.ProviderType;
 
@@ -87,3 +87,4 @@ public interface LayoutTemplateLocalService extends BaseLocalService {
 	public void uninstallLayoutTemplates(String themeId);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:2088991597

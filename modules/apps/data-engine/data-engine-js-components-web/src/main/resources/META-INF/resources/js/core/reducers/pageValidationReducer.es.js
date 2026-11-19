@@ -20,6 +20,7 @@ export default function pageValidationReducer(state, action) {
 			let firstInvalidFieldLabel = null;
 			let firstInvalidFieldInput = null;
 			let firstInvalidFieldName;
+			let firstInvalidRichTextFieldWrapper = null;
 
 			const pages = visitor.mapFields(
 				(
@@ -40,9 +41,34 @@ export default function pageValidationReducer(state, action) {
 							firstInvalidFieldLabel === undefined)
 					) {
 						firstInvalidFieldLabel = field.label;
-						firstInvalidFieldInput = document.querySelector(
-							`[name='${field.name}']`
-						);
+
+						if (field.type === 'rich_text') {
+							firstInvalidRichTextFieldWrapper =
+								document.querySelector(
+									`[data-field-name='${field.name}']`
+								);
+
+							if (!Liferay.FeatureFlags['LPD-11235']) {
+								firstInvalidFieldInput =
+									firstInvalidRichTextFieldWrapper?.querySelector(
+										'.ck-editor__editable[contenteditable="true"]'
+									);
+							}
+							else {
+								const fieldInstance =
+									window.CKEDITOR?.instances[field.name];
+
+								if (fieldInstance) {
+									firstInvalidFieldInput = fieldInstance;
+								}
+							}
+						}
+						else {
+							firstInvalidFieldInput = document.querySelector(
+								`[name='${field.name}']`
+							);
+						}
+
 						firstInvalidFieldName = field.name;
 					}
 
@@ -58,6 +84,11 @@ export default function pageValidationReducer(state, action) {
 
 			if (firstInvalidFieldInput) {
 				if (firstInvalidFieldInput.type !== 'hidden') {
+					firstInvalidRichTextFieldWrapper?.scrollIntoView({
+						behavior: 'smooth',
+						block: 'center',
+					});
+
 					firstInvalidFieldInput.focus();
 				}
 				else {

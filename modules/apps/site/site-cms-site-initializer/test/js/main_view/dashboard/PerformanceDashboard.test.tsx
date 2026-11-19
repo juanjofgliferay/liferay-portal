@@ -1,0 +1,318 @@
+/**
+ * SPDX-FileCopyrightText: (c) 2025 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
+ */
+
+import '@testing-library/jest-dom';
+import {
+	fireEvent,
+	render,
+	screen,
+	waitFor,
+	within,
+} from '@testing-library/react';
+import React from 'react';
+
+import ApiHelper from '../../../../src/main/resources/META-INF/resources/js/common/services/ApiHelper';
+import ProjectLinkService from '../../../../src/main/resources/META-INF/resources/js/common/services/ProjectLinkService';
+import SpaceService from '../../../../src/main/resources/META-INF/resources/js/common/services/SpaceService';
+import {Space} from '../../../../src/main/resources/META-INF/resources/js/common/types/Space';
+import PerformanceDashboard from '../../../../src/main/resources/META-INF/resources/js/main_view/dashboard/performance/PerformanceDashboard';
+import PerformanceService from '../../../../src/main/resources/META-INF/resources/js/main_view/dashboard/performance/PerformanceService';
+import {
+	DashboardAdditionalProps,
+	OverviewMetrics,
+} from '../../../../src/main/resources/META-INF/resources/js/main_view/dashboard/performance/types';
+import {mockFetch} from '../../__mocks__/frontend-js-web';
+
+jest.mock(
+	'../../../../src/main/resources/META-INF/resources/js/common/services/ProjectLinkService'
+);
+jest.mock(
+	'../../../../src/main/resources/META-INF/resources/js/common/services/SpaceService'
+);
+
+const mockedProjectLinkService = ProjectLinkService as jest.Mocked<
+	typeof ProjectLinkService
+>;
+const mockedSpaceService = SpaceService as jest.Mocked<typeof SpaceService>;
+
+const constants = {
+	cmsGroupId: '123',
+	ercContentStructures: 'CONTENT_STRUCTURES',
+	ercFileTypes: 'FILE_TYPES',
+};
+
+function renderPerformanceDashboard({
+	additionalProps,
+	analyticsCloudEnabled = true,
+	spaceIds = ['1', '2'],
+}: {
+	additionalProps?: DashboardAdditionalProps;
+	analyticsCloudEnabled?: boolean;
+	spaceIds?: string[];
+} = {}) {
+	return render(
+		<PerformanceDashboard
+			additionalProps={additionalProps}
+			admin={false}
+			analyticsEnabled={analyticsCloudEnabled}
+			constants={constants}
+			spaceIds={spaceIds}
+		/>
+	);
+}
+
+const cmpAdditionalProps = {
+	cmpEnabled: true,
+	cmpProjectObjectDefinitionId: 42,
+} as DashboardAdditionalProps;
+
+describe('PerformanceDashboard', () => {
+	beforeEach(() => {
+		jest.clearAllMocks();
+
+		jest.spyOn(ApiHelper, 'get').mockResolvedValue({
+			data: {items: []},
+			error: null,
+		});
+
+		mockedProjectLinkService.getProjects.mockResolvedValue({
+			data: [{id: 10, title: 'Spring Campaign'}],
+			error: null,
+		});
+
+		mockedSpaceService.getSpaces.mockResolvedValue([]);
+
+		mockFetch.mockResolvedValue({
+			json: async () => ({
+				items: [],
+				lastPage: 1,
+				page: 1,
+				pageSize: 20,
+				totalCount: 0,
+			}),
+			ok: true,
+			status: 200,
+			text: async () => '',
+		} as Response);
+	});
+
+	it('shows the connect to Liferay Data Platform state when the instance is not connected', () => {
+		renderPerformanceDashboard({analyticsCloudEnabled: false});
+
+		expect(
+			screen.getByText('see-how-your-content-performs')
+		).toBeInTheDocument();
+	});
+
+	it('does not show the connect to Liferay Data Platform state when the instance is connected', () => {
+		renderPerformanceDashboard();
+
+		expect(
+			screen.queryByText('see-how-your-content-performs')
+		).not.toBeInTheDocument();
+	});
+
+	it('shows the connect sites state without a button when no space has connected sites', async () => {
+		mockedSpaceService.getSpaces.mockResolvedValue([
+			{id: 1, name: 'Marketing', siteId: 11},
+			{id: 2, name: 'HR', siteId: 22},
+		] as Space[]);
+
+		jest.spyOn(PerformanceService, 'getConnectionInfo').mockResolvedValue({
+			data: {
+				admin: true,
+				connectedToAnalyticsCloud: true,
+				connectedToSpace: false,
+				siteSyncedToAnalyticsCloud: true,
+			},
+			error: null,
+		});
+
+		renderPerformanceDashboard();
+
+		expect(
+			await screen.findByText('connect-sites-to-show-data')
+		).toBeInTheDocument();
+		expect(screen.queryByText('connect-sites')).not.toBeInTheDocument();
+		expect(
+			screen.queryByLabelText('filter-by-spaces')
+		).not.toBeInTheDocument();
+	});
+
+	it('shows the dashboard sections when some space has connected sites', async () => {
+		mockedSpaceService.getSpaces.mockResolvedValue([
+			{id: 1, name: 'Marketing', siteId: 11},
+			{id: 2, name: 'HR', siteId: 22},
+		] as Space[]);
+
+		jest.spyOn(PerformanceService, 'getConnectionInfo')
+			.mockResolvedValueOnce({
+				data: {
+					admin: true,
+					connectedToAnalyticsCloud: true,
+					connectedToSpace: false,
+					siteSyncedToAnalyticsCloud: true,
+				},
+				error: null,
+			})
+			.mockResolvedValueOnce({
+				data: {
+					admin: true,
+					connectedToAnalyticsCloud: true,
+					connectedToSpace: true,
+					siteSyncedToAnalyticsCloud: true,
+				},
+				error: null,
+			});
+
+		renderPerformanceDashboard();
+
+		expect(
+			await screen.findByText('performance-overview')
+		).toBeInTheDocument();
+		expect(
+			screen.queryByText('connect-sites-to-show-data')
+		).not.toBeInTheDocument();
+		expect(screen.getByLabelText('filter-by-spaces')).toBeInTheDocument();
+	});
+
+	it('keeps the filters when the selected space has no connected sites', async () => {
+		mockedSpaceService.getSpaces.mockResolvedValue([
+			{id: 1, name: 'Marketing', siteId: 11},
+			{id: 2, name: 'HR', siteId: 22},
+		] as Space[]);
+
+		jest.spyOn(PerformanceService, 'getConnectionInfo').mockImplementation(
+			async ({depotEntryGroupId}) => ({
+				data: {
+					admin: true,
+					connectedToAnalyticsCloud: true,
+					connectedToSpace: depotEntryGroupId === 11,
+					siteSyncedToAnalyticsCloud: true,
+				},
+				error: null,
+			})
+		);
+
+		renderPerformanceDashboard();
+
+		await screen.findByText('performance-overview');
+
+		fireEvent.click(screen.getByLabelText('filter-by-spaces'));
+
+		const listbox = await screen.findByRole('listbox');
+
+		fireEvent.click(
+			await within(listbox).findByRole('option', {name: 'HR'})
+		);
+
+		expect(
+			await screen.findByText('connect-sites-to-show-data')
+		).toBeInTheDocument();
+		expect(screen.getByLabelText('filter-by-spaces')).toBeInTheDocument();
+	});
+
+	it('shows the connect sites state when the connection info of the spaces cannot be fetched', async () => {
+		mockedSpaceService.getSpaces.mockResolvedValue([
+			{id: 1, name: 'Marketing', siteId: 11},
+			{id: 2, name: 'HR', siteId: 22},
+		] as Space[]);
+
+		jest.spyOn(PerformanceService, 'getConnectionInfo').mockResolvedValue({
+			data: null,
+			error: 'an-unexpected-error-occurred',
+		});
+
+		renderPerformanceDashboard();
+
+		expect(
+			await screen.findByText('connect-sites-to-show-data')
+		).toBeInTheDocument();
+		expect(
+			screen.queryByText('performance-overview')
+		).not.toBeInTheDocument();
+	});
+
+	it('shows the dashboard sections when there are no spaces', async () => {
+		renderPerformanceDashboard();
+
+		expect(
+			await screen.findByText('performance-overview')
+		).toBeInTheDocument();
+	});
+
+	it('does not show the project filter when CMP is not enabled', async () => {
+		renderPerformanceDashboard();
+
+		await screen.findByText('performance-overview');
+
+		expect(
+			screen.queryByLabelText('filter-by-projects')
+		).not.toBeInTheDocument();
+	});
+
+	it('shows the project filter when CMP is enabled', async () => {
+		renderPerformanceDashboard({additionalProps: cmpAdditionalProps});
+
+		await screen.findByText('performance-overview');
+
+		expect(screen.getByLabelText('filter-by-projects')).toBeInTheDocument();
+	});
+
+	it('requests the metrics of the selected project', async () => {
+		const getOverviewMetrics = jest
+			.spyOn(PerformanceService, 'getOverviewMetrics')
+			.mockResolvedValue({data: {} as OverviewMetrics, error: null});
+
+		renderPerformanceDashboard({additionalProps: cmpAdditionalProps});
+
+		await screen.findByText('performance-overview');
+
+		fireEvent.click(screen.getByLabelText('filter-by-projects'));
+
+		const listbox = await screen.findByRole('listbox');
+
+		fireEvent.click(
+			await within(listbox).findByRole('option', {
+				name: 'Spring Campaign',
+			})
+		);
+
+		await waitFor(() =>
+			expect(getOverviewMetrics).toHaveBeenLastCalledWith(
+				expect.objectContaining({cmpProjectIds: ['10']})
+			)
+		);
+	});
+
+	it('ignores the connection info of the spaces the user does not administer', async () => {
+		mockedSpaceService.getSpaces.mockResolvedValue([
+			{id: 1, name: 'Marketing', siteId: 11},
+			{id: 2, name: 'HR', siteId: 22},
+		] as Space[]);
+
+		const getConnectionInfo = jest
+			.spyOn(PerformanceService, 'getConnectionInfo')
+			.mockResolvedValue({
+				data: {
+					admin: true,
+					connectedToAnalyticsCloud: true,
+					connectedToSpace: true,
+					siteSyncedToAnalyticsCloud: true,
+				},
+				error: null,
+			});
+
+		renderPerformanceDashboard({spaceIds: ['2']});
+
+		await screen.findByText('performance-overview');
+
+		expect(getConnectionInfo).toHaveBeenCalledTimes(1);
+
+		expect(getConnectionInfo).toHaveBeenCalledWith({
+			depotEntryGroupId: 22,
+		});
+	});
+});

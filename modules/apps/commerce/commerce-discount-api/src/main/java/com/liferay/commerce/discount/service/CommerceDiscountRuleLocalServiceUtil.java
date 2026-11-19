@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -69,6 +70,29 @@ public class CommerceDiscountRuleLocalServiceUtil {
 
 		return getService().addCommerceDiscountRule(
 			commerceDiscountId, name, type, typeSettings, serviceContext);
+	}
+
+	public static CommerceDiscountRule addCommerceDiscountRule(
+			String externalReferenceCode, long commerceDiscountId, String name,
+			String type, String typeSettings,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
+		throws PortalException {
+
+		return getService().addCommerceDiscountRule(
+			externalReferenceCode, commerceDiscountId, name, type, typeSettings,
+			serviceContext);
+	}
+
+	public static CommerceDiscountRule addOrUpdateCommerceDiscountRule(
+			String externalReferenceCode, long commerceDiscountRuleId,
+			long commerceDiscountId, String name, String type,
+			String typeSettings,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
+		throws PortalException {
+
+		return getService().addOrUpdateCommerceDiscountRule(
+			externalReferenceCode, commerceDiscountRuleId, commerceDiscountId,
+			name, type, typeSettings, serviceContext);
 	}
 
 	/**
@@ -236,6 +260,14 @@ public class CommerceDiscountRuleLocalServiceUtil {
 		return getService().fetchCommerceDiscountRule(commerceDiscountRuleId);
 	}
 
+	public static CommerceDiscountRule
+		fetchCommerceDiscountRuleByExternalReferenceCode(
+			String externalReferenceCode, long companyId) {
+
+		return getService().fetchCommerceDiscountRuleByExternalReferenceCode(
+			externalReferenceCode, companyId);
+	}
+
 	public static com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery
 		getActionableDynamicQuery() {
 
@@ -254,6 +286,15 @@ public class CommerceDiscountRuleLocalServiceUtil {
 		throws PortalException {
 
 		return getService().getCommerceDiscountRule(commerceDiscountRuleId);
+	}
+
+	public static CommerceDiscountRule
+			getCommerceDiscountRuleByExternalReferenceCode(
+				String externalReferenceCode, long companyId)
+		throws PortalException {
+
+		return getService().getCommerceDiscountRuleByExternalReferenceCode(
+			externalReferenceCode, companyId);
 	}
 
 	/**
@@ -281,14 +322,6 @@ public class CommerceDiscountRuleLocalServiceUtil {
 			commerceDiscountId, start, end, orderByComparator);
 	}
 
-	public static List<CommerceDiscountRule> getCommerceDiscountRules(
-			long commerceDiscountId, String name, int start, int end)
-		throws PortalException {
-
-		return getService().getCommerceDiscountRules(
-			commerceDiscountId, name, start, end);
-	}
-
 	/**
 	 * Returns the number of commerce discount rules.
 	 *
@@ -296,18 +329,6 @@ public class CommerceDiscountRuleLocalServiceUtil {
 	 */
 	public static int getCommerceDiscountRulesCount() {
 		return getService().getCommerceDiscountRulesCount();
-	}
-
-	public static int getCommerceDiscountRulesCount(long commerceDiscountId) {
-		return getService().getCommerceDiscountRulesCount(commerceDiscountId);
-	}
-
-	public static int getCommerceDiscountRulesCount(
-			long commerceDiscountId, String name)
-		throws PortalException {
-
-		return getService().getCommerceDiscountRulesCount(
-			commerceDiscountId, name);
 	}
 
 	public static
@@ -369,13 +390,13 @@ public class CommerceDiscountRuleLocalServiceUtil {
 	}
 
 	public static CommerceDiscountRuleLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(CommerceDiscountRuleLocalService service) {
-		_service = service;
-	}
-
-	private static volatile CommerceDiscountRuleLocalService _service;
+	private static final Snapshot<CommerceDiscountRuleLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			CommerceDiscountRuleLocalServiceUtil.class,
+			CommerceDiscountRuleLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:340443860

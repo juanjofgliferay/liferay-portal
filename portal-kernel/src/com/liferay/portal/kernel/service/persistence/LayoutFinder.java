@@ -15,9 +15,6 @@ import org.osgi.annotation.versioning.ProviderType;
 public interface LayoutFinder {
 
 	public java.util.List<com.liferay.portal.kernel.model.Layout>
-		findByNullFriendlyURL();
-
-	public java.util.List<com.liferay.portal.kernel.model.Layout>
 		findByScopeGroup(long groupId);
 
 	public java.util.List<com.liferay.portal.kernel.model.Layout>
@@ -29,3 +26,4 @@ public interface LayoutFinder {
 			String preferencesValue);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:750608168

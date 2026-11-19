@@ -7,6 +7,8 @@ package com.liferay.portal.url.builder.internal;
 
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.frontend.hashed.files.CachingStrategy;
+import com.liferay.portal.kernel.frontend.hashed.files.HashedFilesRegistry;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.portlet.PortletDependency;
@@ -22,9 +24,11 @@ import com.liferay.portal.url.builder.PortalImageAbsolutePortalURLBuilder;
 import com.liferay.portal.url.builder.PortalMainResourceAbsolutePortalURLBuilder;
 import com.liferay.portal.url.builder.PortletDependencyAbsolutePortalURLBuilder;
 import com.liferay.portal.url.builder.ServletAbsolutePortalURLBuilder;
+import com.liferay.portal.url.builder.WebContextScriptAbsolutePortalURLBuilder;
+import com.liferay.portal.url.builder.WebContextStylesheetAbsolutePortalURLBuilder;
 import com.liferay.portal.url.builder.internal.util.CacheHelper;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.osgi.framework.Bundle;
 
@@ -34,10 +38,11 @@ import org.osgi.framework.Bundle;
 public class AbsolutePortalURLBuilderImpl implements AbsolutePortalURLBuilder {
 
 	public AbsolutePortalURLBuilderImpl(
-		CacheHelper cacheHelper, Portal portal,
-		HttpServletRequest httpServletRequest) {
+		CacheHelper cacheHelper, HashedFilesRegistry hashedFilesRegistry,
+		Portal portal, HttpServletRequest httpServletRequest) {
 
 		_cacheHelper = cacheHelper;
+		_hashedFilesRegistry = hashedFilesRegistry;
 		_portal = portal;
 		_httpServletRequest = httpServletRequest;
 
@@ -67,8 +72,8 @@ public class AbsolutePortalURLBuilderImpl implements AbsolutePortalURLBuilder {
 		Bundle bundle, String relativeURL) {
 
 		return new BundleScriptAbsolutePortalURLBuilderImpl(
-			bundle, _cacheHelper, _getCDNHost(_httpServletRequest),
-			_httpServletRequest, _pathModule, _pathProxy, relativeURL);
+			bundle, _cacheHelper, _getCDNHost(), _httpServletRequest,
+			_pathModule, _pathProxy, relativeURL);
 	}
 
 	@Override
@@ -76,24 +81,24 @@ public class AbsolutePortalURLBuilderImpl implements AbsolutePortalURLBuilder {
 		Bundle bundle, String relativeURL) {
 
 		return new BundleStylesheetAbsolutePortalURLBuilderImpl(
-			bundle, _cacheHelper, _getCDNHost(_httpServletRequest),
-			_httpServletRequest, _pathModule, _pathProxy, relativeURL);
+			bundle, _cacheHelper, _getCDNHost(), _httpServletRequest,
+			_pathModule, _pathProxy, relativeURL);
 	}
 
 	@Override
 	public ComboRequestAbsolutePortalURLBuilder forComboRequest() {
 		return new ComboRequestAbsolutePortalURLBuilderImpl(
-			_getCDNHost(_httpServletRequest), _httpServletRequest, _pathContext,
-			_pathProxy, _portal);
+			_getCDNHost(), _httpServletRequest, _pathContext, _pathProxy,
+			_portal);
 	}
 
 	@Override
 	public ESModuleAbsolutePortalURLBuilder forESModule(
-		String webContextPath, String esModulePath) {
+		String webContextName, String esModulePath) {
 
 		return new ESModuleAbsolutePortalURLBuilderImpl(
-			esModulePath, _getCDNHost(_httpServletRequest), _httpServletRequest,
-			_pathModule, _pathProxy, webContextPath);
+			_getCachingStrategy(), _getCDNHost(), esModulePath,
+			_hashedFilesRegistry, _pathModule, _pathProxy, webContextName);
 	}
 
 	@Override
@@ -101,8 +106,7 @@ public class AbsolutePortalURLBuilderImpl implements AbsolutePortalURLBuilder {
 		String relativeURL) {
 
 		return new PortalImageAbsolutePortalURLBuilderImpl(
-			_getCDNHost(_httpServletRequest), _pathImage, _pathProxy,
-			relativeURL);
+			_getCDNHost(), _pathImage, _pathProxy, relativeURL);
 	}
 
 	@Override
@@ -119,7 +123,7 @@ public class AbsolutePortalURLBuilderImpl implements AbsolutePortalURLBuilder {
 		String javaScriptURN) {
 
 		return new PortletDependencyAbsolutePortalURLBuilderImpl(
-			_getCDNHost(_httpServletRequest), cssURN, javaScriptURN, _pathProxy,
+			_getCDNHost(), cssURN, javaScriptURN, _pathProxy,
 			portletDependency);
 	}
 
@@ -127,6 +131,37 @@ public class AbsolutePortalURLBuilderImpl implements AbsolutePortalURLBuilder {
 	public ServletAbsolutePortalURLBuilder forServlet(String requestURL) {
 		return new ServletAbsolutePortalURLBuilderImpl(
 			_pathModule, _pathProxy, requestURL);
+	}
+
+	@Override
+	public WebContextScriptAbsolutePortalURLBuilder forWebContextScript(
+		String webContextName, String scriptPath) {
+
+		return new WebContextScriptAbsolutePortalURLBuilderImpl(
+			_getCachingStrategy(), _getCDNHost(), _hashedFilesRegistry,
+			_pathModule, _pathProxy, scriptPath, webContextName);
+	}
+
+	@Override
+	public WebContextStylesheetAbsolutePortalURLBuilder forWebContextStylesheet(
+		String webContextName, String stylesheetPath) {
+
+		if (_portal.isRightToLeft(_httpServletRequest)) {
+			int i = stylesheetPath.lastIndexOf(StringPool.PERIOD);
+
+			if (i == -1) {
+				stylesheetPath += "_rtl";
+			}
+			else {
+				stylesheetPath =
+					stylesheetPath.substring(0, i) + "_rtl" +
+						stylesheetPath.substring(i);
+			}
+		}
+
+		return new WebContextStylesheetAbsolutePortalURLBuilderImpl(
+			_getCachingStrategy(), _getCDNHost(), _hashedFilesRegistry,
+			_pathModule, _pathProxy, stylesheetPath, webContextName);
 	}
 
 	private String _computePathProxy() {
@@ -145,11 +180,15 @@ public class AbsolutePortalURLBuilderImpl implements AbsolutePortalURLBuilder {
 		return pathProxy;
 	}
 
-	private String _getCDNHost(HttpServletRequest httpServletRequest) {
+	private String _getCDNHost() {
+		if (_cdnHost != null) {
+			return _cdnHost;
+		}
+
 		String cdnHost;
 
 		try {
-			cdnHost = _portal.getCDNHost(httpServletRequest);
+			cdnHost = _portal.getCDNHost(_httpServletRequest);
 		}
 		catch (PortalException portalException) {
 			cdnHost = StringPool.BLANK;
@@ -165,13 +204,29 @@ public class AbsolutePortalURLBuilderImpl implements AbsolutePortalURLBuilder {
 			cdnHost = cdnHost.substring(0, cdnHost.length() - 1);
 		}
 
-		return cdnHost;
+		_cdnHost = cdnHost;
+
+		return _cdnHost;
+	}
+
+	private CachingStrategy _getCachingStrategy() {
+		if (_cachingStrategy != null) {
+			return _cachingStrategy;
+		}
+
+		_cachingStrategy = _hashedFilesRegistry.getCachingStrategy(
+			_httpServletRequest);
+
+		return _cachingStrategy;
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		AbsolutePortalURLBuilderImpl.class);
 
 	private final CacheHelper _cacheHelper;
+	private CachingStrategy _cachingStrategy;
+	private String _cdnHost;
+	private final HashedFilesRegistry _hashedFilesRegistry;
 	private final HttpServletRequest _httpServletRequest;
 
 	/**

@@ -5,7 +5,14 @@
 
 package com.liferay.portal.workflow.kaleo.definition.internal.parser;
 
+import com.liferay.petra.function.transform.TransformUtil;
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
+import com.liferay.portal.kernel.json.JSONFactory;
+import com.liferay.portal.kernel.model.Role;
+import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.model.role.RoleConstants;
+import com.liferay.portal.kernel.service.RoleLocalService;
+import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
@@ -16,6 +23,8 @@ import com.liferay.portal.kernel.workflow.WorkflowException;
 import com.liferay.portal.kernel.xml.Document;
 import com.liferay.portal.kernel.xml.Element;
 import com.liferay.portal.kernel.xml.SAXReaderUtil;
+import com.liferay.portal.workflow.kaleo.definition.AIDecision;
+import com.liferay.portal.workflow.kaleo.definition.AIHubAgent;
 import com.liferay.portal.workflow.kaleo.definition.Action;
 import com.liferay.portal.workflow.kaleo.definition.ActionAware;
 import com.liferay.portal.workflow.kaleo.definition.AddressRecipient;
@@ -26,8 +35,10 @@ import com.liferay.portal.workflow.kaleo.definition.Definition;
 import com.liferay.portal.workflow.kaleo.definition.DelayDuration;
 import com.liferay.portal.workflow.kaleo.definition.DurationScale;
 import com.liferay.portal.workflow.kaleo.definition.Fork;
+import com.liferay.portal.workflow.kaleo.definition.HTTPRequestNode;
 import com.liferay.portal.workflow.kaleo.definition.Join;
 import com.liferay.portal.workflow.kaleo.definition.JoinXor;
+import com.liferay.portal.workflow.kaleo.definition.LLM;
 import com.liferay.portal.workflow.kaleo.definition.Node;
 import com.liferay.portal.workflow.kaleo.definition.Notification;
 import com.liferay.portal.workflow.kaleo.definition.NotificationAware;
@@ -38,6 +49,8 @@ import com.liferay.portal.workflow.kaleo.definition.RoleRecipient;
 import com.liferay.portal.workflow.kaleo.definition.ScriptAction;
 import com.liferay.portal.workflow.kaleo.definition.ScriptAssignment;
 import com.liferay.portal.workflow.kaleo.definition.ScriptRecipient;
+import com.liferay.portal.workflow.kaleo.definition.ServiceNode;
+import com.liferay.portal.workflow.kaleo.definition.Setting;
 import com.liferay.portal.workflow.kaleo.definition.State;
 import com.liferay.portal.workflow.kaleo.definition.Task;
 import com.liferay.portal.workflow.kaleo.definition.TaskForm;
@@ -62,6 +75,7 @@ import java.util.Set;
 
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Michael C. Han
@@ -75,6 +89,88 @@ public class XMLWorkflowModelParser implements WorkflowModelParser {
 	public Definition parse(InputStream inputStream) throws WorkflowException {
 		try {
 			return parse(StringUtil.read(inputStream));
+		}
+		catch (Exception exception) {
+			throw new WorkflowDefinitionFileException(
+				"Unable to parse definition", exception);
+		}
+	}
+
+	@Override
+	public Definition parse(long companyId, InputStream inputStream)
+		throws WorkflowException {
+
+		if (!FeatureFlagManagerUtil.isEnabled(companyId, "LPD-49856")) {
+			return parse(inputStream);
+		}
+
+		try {
+			Document document = SAXReaderUtil.read(
+				WorkflowDefinitionContentUtil.toXML(
+					StringUtil.read(inputStream)),
+				_validate);
+
+			for (Element element :
+					TransformUtil.transform(
+						document.selectNodes("//*[local-name()='role']"),
+						node -> (Element)node)) {
+
+				if (Validator.isNotNull(
+						element.elementTextTrim(
+							"role-external-reference-code"))) {
+
+					continue;
+				}
+
+				long roleId = GetterUtil.getLong(
+					element.elementTextTrim("role-id"));
+
+				Role role = _roleLocalService.fetchRole(roleId);
+
+				if ((role == null) || (role.getCompanyId() != companyId)) {
+					continue;
+				}
+
+				element.clearContent();
+
+				_addTextElement(
+					element, "role-external-reference-code",
+					role.getExternalReferenceCode());
+				_addTextElement(element, "role-type", role.getTypeLabel());
+
+				_addTextElement(element, "role-id", String.valueOf(roleId));
+			}
+
+			for (Element element :
+					TransformUtil.transform(
+						document.selectNodes("//*[local-name()='user']"),
+						node -> (Element)node)) {
+
+				if (Validator.isNotNull(
+						element.elementTextTrim(
+							"user-external-reference-code"))) {
+
+					continue;
+				}
+
+				long userId = GetterUtil.getLong(
+					element.elementTextTrim("user-id"));
+
+				User user = _userLocalService.fetchUser(userId);
+
+				if ((user == null) || (user.getCompanyId() != companyId)) {
+					continue;
+				}
+
+				element.clearContent();
+
+				_addTextElement(
+					element, "user-external-reference-code",
+					user.getExternalReferenceCode());
+				_addTextElement(element, "user-id", String.valueOf(userId));
+			}
+
+			return _parse(document);
 		}
 		catch (Exception exception) {
 			throw new WorkflowDefinitionFileException(
@@ -106,6 +202,24 @@ public class XMLWorkflowModelParser implements WorkflowModelParser {
 		_validate = GetterUtil.getBoolean(properties.get("validating"), true);
 	}
 
+	private void _addTextElement(
+		Element element, String elementName, String text) {
+
+		Element childElement = element.addElement(elementName);
+
+		childElement.addText(text);
+	}
+
+	private String _normalizeJSONArrayJSON(String json) throws Exception {
+		if (Validator.isNull(json)) {
+			return json;
+		}
+
+		return _jsonFactory.createJSONArray(
+			json
+		).toString();
+	}
+
 	private Definition _parse(Document document) throws Exception {
 		Element rootElement = document.getRootElement();
 
@@ -118,59 +232,168 @@ public class XMLWorkflowModelParser implements WorkflowModelParser {
 		Definition definition = new Definition(
 			name, description, document.formattedString(), version);
 
+		List<Element> aiDecisionElements = rootElement.elements("ai-decision");
+
+		for (Element aiDecisionElement : aiDecisionElements) {
+			definition.addNode(_parseAIDecision(aiDecisionElement));
+		}
+
+		List<Element> aiHubAgentElements = rootElement.elements("ai-hub-agent");
+
+		for (Element aiHubAgentElement : aiHubAgentElements) {
+			definition.addNode(_parseAIHubAgent(aiHubAgentElement));
+		}
+
 		List<Element> conditionElements = rootElement.elements("condition");
 
 		for (Element conditionElement : conditionElements) {
-			Condition condition = _parseCondition(conditionElement);
-
-			definition.addNode(condition);
+			definition.addNode(_parseCondition(conditionElement));
 		}
 
 		List<Element> forkElements = rootElement.elements("fork");
 
 		for (Element forkElement : forkElements) {
-			Fork fork = _parseFork(forkElement);
+			definition.addNode(_parseFork(forkElement));
+		}
 
-			definition.addNode(fork);
+		List<Element> httpRequestElements = rootElement.elements(
+			"http-request");
+
+		for (Element httpRequestElement : httpRequestElements) {
+			definition.addNode(_parseHTTPRequestNode(httpRequestElement));
 		}
 
 		List<Element> joinElements = rootElement.elements("join");
 
 		for (Element joinElement : joinElements) {
-			Join join = _parseJoin(joinElement);
-
-			definition.addNode(join);
+			definition.addNode(_parseJoin(joinElement));
 		}
 
 		List<Element> joinXorElements = rootElement.elements("join-xor");
 
 		for (Element joinXorElement : joinXorElements) {
-			JoinXor joinXor = _parseJoinXor(joinXorElement);
+			definition.addNode(_parseJoinXor(joinXorElement));
+		}
 
-			definition.addNode(joinXor);
+		List<Element> llmElements = rootElement.elements("llm");
+
+		for (Element llmElement : llmElements) {
+			definition.addNode(_parseLLM(llmElement));
+		}
+
+		List<Element> serviceElements = rootElement.elements("service");
+
+		for (Element serviceElement : serviceElements) {
+			definition.addNode(_parseServiceNode(serviceElement));
 		}
 
 		List<Element> stateElements = rootElement.elements("state");
 
 		for (Element stateElement : stateElements) {
-			State state = _parseState(stateElement);
-
-			definition.addNode(state);
+			definition.addNode(_parseState(stateElement));
 		}
 
 		List<Element> taskElements = rootElement.elements("task");
 
 		for (Element taskElement : taskElements) {
-			Task task = _parseTask(taskElement);
-
-			definition.addNode(task);
+			definition.addNode(_parseTask(taskElement));
 		}
 
 		_parseTransitions(
-			definition, conditionElements, forkElements, joinElements,
-			joinXorElements, stateElements, taskElements);
+			definition, aiDecisionElements, aiHubAgentElements,
+			conditionElements, forkElements, httpRequestElements, joinElements,
+			joinXorElements, llmElements, serviceElements, stateElements,
+			taskElements);
 
 		return definition;
+	}
+
+	private AIDecision _parseAIDecision(Element aiDecisionElement)
+		throws Exception {
+
+		AIDecision aiDecision = new AIDecision(
+			StringUtil.trim(aiDecisionElement.elementText("description")),
+			aiDecisionElement.elementTextTrim("name"));
+
+		aiDecision.setLabelMap(
+			_parseLabels(aiDecisionElement.element("labels")));
+		aiDecision.setMetadata(aiDecisionElement.elementTextTrim("metadata"));
+
+		Set<Setting> settings = new HashSet<>();
+
+		String inputVariables = _normalizeJSONArrayJSON(
+			aiDecisionElement.elementTextTrim("input-variables"));
+
+		if (inputVariables != null) {
+			settings.add(new Setting("inputVariables", inputVariables));
+		}
+
+		String outputVariables = _normalizeJSONArrayJSON(
+			aiDecisionElement.elementTextTrim("output-variables"));
+
+		if (outputVariables != null) {
+			settings.add(new Setting("outputVariables", outputVariables));
+		}
+
+		settings.add(
+			new Setting("prompt", aiDecisionElement.elementTextTrim("prompt")));
+
+		String rag = aiDecisionElement.elementTextTrim("rag");
+
+		if (rag != null) {
+			settings.add(new Setting("rag", rag));
+		}
+
+		String tools = _normalizeJSONArrayJSON(
+			aiDecisionElement.elementTextTrim("tools"));
+
+		if (tools != null) {
+			settings.add(new Setting("tools", tools));
+		}
+
+		settings.add(
+			new Setting(
+				"userMessage",
+				aiDecisionElement.elementTextTrim("user-message")));
+
+		aiDecision.setSettings(settings);
+
+		return aiDecision;
+	}
+
+	private AIHubAgent _parseAIHubAgent(Element aiHubAgentElement)
+		throws Exception {
+
+		AIHubAgent aiHubAgent = new AIHubAgent(
+			StringUtil.trim(aiHubAgentElement.elementText("description")),
+			aiHubAgentElement.elementTextTrim("name"));
+
+		aiHubAgent.setLabelMap(
+			_parseLabels(aiHubAgentElement.element("labels")));
+		aiHubAgent.setMetadata(aiHubAgentElement.elementTextTrim("metadata"));
+
+		Set<Setting> settings = new HashSet<>();
+
+		String agentDefinitionExternalReferenceCode =
+			aiHubAgentElement.elementTextTrim(
+				"agent-definition-external-reference-code");
+
+		if (agentDefinitionExternalReferenceCode != null) {
+			settings.add(
+				new Setting(
+					"agentDefinitionExternalReferenceCode",
+					agentDefinitionExternalReferenceCode));
+		}
+
+		String timeout = aiHubAgentElement.elementTextTrim("timeout");
+
+		if (timeout != null) {
+			settings.add(new Setting("timeout", timeout));
+		}
+
+		aiHubAgent.setSettings(settings);
+
+		return aiHubAgent;
 	}
 
 	private void _parseActionElements(
@@ -254,12 +477,14 @@ public class XMLWorkflowModelParser implements WorkflowModelParser {
 			for (Element resourceActionElement : resourceActionElements) {
 				String actionId = resourceActionElement.getTextTrim();
 
-				if (Validator.isNotNull(actionId)) {
-					ResourceActionAssignment resourceActionAssignment =
-						new ResourceActionAssignment(actionId);
-
-					assignments.add(resourceActionAssignment);
+				if (Validator.isNull(actionId)) {
+					continue;
 				}
+
+				ResourceActionAssignment resourceActionAssignment =
+					new ResourceActionAssignment(actionId);
+
+				assignments.add(resourceActionAssignment);
 			}
 		}
 
@@ -270,16 +495,24 @@ public class XMLWorkflowModelParser implements WorkflowModelParser {
 				"role");
 
 			for (Element roleAssignmentElement : roleAssignmentElements) {
+				String name = roleAssignmentElement.elementTextTrim("name");
+				String roleExternalReferenceCode =
+					roleAssignmentElement.elementTextTrim(
+						"role-external-reference-code");
 				long roleId = GetterUtil.getLong(
 					roleAssignmentElement.elementTextTrim("role-id"));
 				String roleType = GetterUtil.getString(
 					roleAssignmentElement.elementTextTrim("role-type"),
 					RoleConstants.TYPE_REGULAR_LABEL);
-				String name = roleAssignmentElement.elementTextTrim("name");
 
 				RoleAssignment roleAssignment = null;
 
-				if (Validator.isNotNull(name)) {
+				if (Validator.isNotNull(roleExternalReferenceCode)) {
+					roleAssignment = new RoleAssignment(
+						roleExternalReferenceCode, roleId, name,
+						roleAssignmentElement.elementTextTrim("role-type"));
+				}
+				else if (Validator.isNotNull(name)) {
 					roleAssignment = new RoleAssignment(name, roleType);
 
 					roleAssignment.setAutoCreate(
@@ -318,15 +551,13 @@ public class XMLWorkflowModelParser implements WorkflowModelParser {
 			"user");
 
 		for (Element userAssignmentElement : userAssignmentElements) {
-			long userId = GetterUtil.getLong(
-				userAssignmentElement.elementTextTrim("user-id"));
-			String screenName = userAssignmentElement.elementTextTrim(
-				"screen-name");
-			String emailAddress = userAssignmentElement.elementTextTrim(
-				"email-address");
-
 			UserAssignment userAssignment = new UserAssignment(
-				userId, screenName, emailAddress);
+				userAssignmentElement.elementTextTrim(
+					"user-external-reference-code"),
+				GetterUtil.getLong(
+					userAssignmentElement.elementTextTrim("user-id")),
+				userAssignmentElement.elementTextTrim("screen-name"),
+				userAssignmentElement.elementTextTrim("email-address"));
 
 			assignments.add(userAssignment);
 		}
@@ -399,6 +630,61 @@ public class XMLWorkflowModelParser implements WorkflowModelParser {
 		return fork;
 	}
 
+	private HTTPRequestNode _parseHTTPRequestNode(Element httpRequestElement)
+		throws Exception {
+
+		HTTPRequestNode httpRequestNode = new HTTPRequestNode(
+			StringUtil.trim(httpRequestElement.elementText("description")),
+			httpRequestElement.elementTextTrim("name"));
+
+		httpRequestNode.setLabelMap(
+			_parseLabels(httpRequestElement.element("labels")));
+		httpRequestNode.setMetadata(
+			httpRequestElement.elementTextTrim("metadata"));
+
+		Set<Setting> settings = new HashSet<>();
+
+		String httpMethod = httpRequestElement.elementTextTrim("http-method");
+
+		if (httpMethod != null) {
+			settings.add(new Setting("httpMethod", httpMethod));
+		}
+
+		String inputVariables = _normalizeJSONArrayJSON(
+			httpRequestElement.elementTextTrim("input-variables"));
+
+		if (inputVariables != null) {
+			settings.add(new Setting("inputVariables", inputVariables));
+		}
+
+		String outputVariables = _normalizeJSONArrayJSON(
+			httpRequestElement.elementTextTrim("output-variables"));
+
+		if (outputVariables != null) {
+			settings.add(new Setting("outputVariables", outputVariables));
+		}
+
+		String requestBody = httpRequestElement.elementText("request-body");
+
+		if (requestBody != null) {
+			settings.add(
+				new Setting("requestBody", StringUtil.trim(requestBody)));
+		}
+
+		String timeout = httpRequestElement.elementTextTrim("timeout");
+
+		if (timeout != null) {
+			settings.add(new Setting("timeout", timeout));
+		}
+
+		settings.add(
+			new Setting("url", httpRequestElement.elementTextTrim("url")));
+
+		httpRequestNode.setSettings(settings);
+
+		return httpRequestNode;
+	}
+
 	private Join _parseJoin(Element joinElement) throws Exception {
 		String name = joinElement.elementTextTrim("name");
 		String description = StringUtil.trim(
@@ -443,6 +729,68 @@ public class XMLWorkflowModelParser implements WorkflowModelParser {
 		return joinXor;
 	}
 
+	private LLM _parseLLM(Element llmElement) throws Exception {
+		LLM llm = new LLM(
+			StringUtil.trim(llmElement.elementText("description")),
+			llmElement.elementTextTrim("name"));
+
+		llm.setLabelMap(_parseLabels(llmElement.element("labels")));
+
+		llm.setMetadata(llmElement.elementTextTrim("metadata"));
+
+		Set<Setting> settings = new HashSet<>();
+
+		String inputVariables = _normalizeJSONArrayJSON(
+			llmElement.elementTextTrim("input-variables"));
+
+		if (inputVariables != null) {
+			settings.add(new Setting("inputVariables", inputVariables));
+		}
+
+		String modelLocation = llmElement.elementTextTrim("model-location");
+
+		if (modelLocation != null) {
+			settings.add(new Setting("modelLocation", modelLocation));
+		}
+
+		String modelName = llmElement.elementTextTrim("model-name");
+
+		if (modelName != null) {
+			settings.add(new Setting("modelName", modelName));
+		}
+
+		String outputVariables = _normalizeJSONArrayJSON(
+			llmElement.elementTextTrim("output-variables"));
+
+		if (outputVariables != null) {
+			settings.add(new Setting("outputVariables", outputVariables));
+		}
+
+		settings.add(
+			new Setting("prompt", llmElement.elementTextTrim("prompt")));
+
+		String rag = llmElement.elementTextTrim("rag");
+
+		if (rag != null) {
+			settings.add(new Setting("rag", rag));
+		}
+
+		String tools = _normalizeJSONArrayJSON(
+			llmElement.elementTextTrim("tools"));
+
+		if (tools != null) {
+			settings.add(new Setting("tools", tools));
+		}
+
+		settings.add(
+			new Setting(
+				"userMessage", llmElement.elementTextTrim("user-message")));
+
+		llm.setSettings(settings);
+
+		return llm;
+	}
+
 	private Map<Locale, String> _parseLabels(Element labelsElement) {
 		if (labelsElement == null) {
 			return Collections.emptyMap();
@@ -454,7 +802,7 @@ public class XMLWorkflowModelParser implements WorkflowModelParser {
 			labelMap.put(
 				LocaleUtil.fromLanguageId(
 					labelElement.attributeValue("language-id")),
-				labelElement.getText());
+				labelElement.getTextTrim());
 		}
 
 		return labelMap;
@@ -550,6 +898,9 @@ public class XMLWorkflowModelParser implements WorkflowModelParser {
 				"role");
 
 			for (Element roleReceipientElement : roleReceipientElements) {
+				String roleExternalReferenceCode =
+					roleReceipientElement.elementTextTrim(
+						"role-external-reference-code");
 				long roleId = GetterUtil.getLong(
 					roleReceipientElement.elementTextTrim("role-id"));
 				String roleType = GetterUtil.getString(
@@ -558,7 +909,13 @@ public class XMLWorkflowModelParser implements WorkflowModelParser {
 
 				RoleRecipient roleRecipient = null;
 
-				if (roleId > 0) {
+				if (Validator.isNotNull(roleExternalReferenceCode)) {
+					roleRecipient = new RoleRecipient(
+						roleExternalReferenceCode, roleId,
+						roleReceipientElement.elementTextTrim("name"),
+						roleReceipientElement.elementTextTrim("role-type"));
+				}
+				else if (roleId > 0) {
 					roleRecipient = new RoleRecipient(roleId, roleType);
 				}
 				else {
@@ -604,21 +961,56 @@ public class XMLWorkflowModelParser implements WorkflowModelParser {
 			"user");
 
 		for (Element userRecipientElement : userRecipientElements) {
-			long userId = GetterUtil.getLong(
-				userRecipientElement.elementTextTrim("user-id"));
-			String screenName = userRecipientElement.elementTextTrim(
-				"screen-name");
-			String emailAddress = userRecipientElement.elementTextTrim(
-				"email-address");
-
 			UserRecipient userRecipient = new UserRecipient(
-				userId, screenName, emailAddress);
+				userRecipientElement.elementTextTrim(
+					"user-external-reference-code"),
+				GetterUtil.getLong(
+					userRecipientElement.elementTextTrim("user-id")),
+				userRecipientElement.elementTextTrim("screen-name"),
+				userRecipientElement.elementTextTrim("email-address"));
 
 			userRecipient.setNotificationReceptionType(
 				notificationReceptionType);
 
 			notification.addRecipients(userRecipient);
 		}
+	}
+
+	private ServiceNode _parseServiceNode(Element serviceElement)
+		throws Exception {
+
+		ServiceNode serviceNode = new ServiceNode(
+			StringUtil.trim(serviceElement.elementText("description")),
+			serviceElement.elementTextTrim("name"));
+
+		serviceNode.setLabelMap(_parseLabels(serviceElement.element("labels")));
+
+		serviceNode.setMetadata(serviceElement.elementTextTrim("metadata"));
+
+		Set<Setting> settings = new HashSet<>();
+
+		String inputVariables = _normalizeJSONArrayJSON(
+			serviceElement.elementTextTrim("input-variables"));
+
+		if (inputVariables != null) {
+			settings.add(new Setting("inputVariables", inputVariables));
+		}
+
+		settings.add(
+			new Setting(
+				"javaDelegate",
+				serviceElement.elementTextTrim("java-delegate")));
+
+		String outputVariables = _normalizeJSONArrayJSON(
+			serviceElement.elementTextTrim("output-variables"));
+
+		if (outputVariables != null) {
+			settings.add(new Setting("outputVariables", outputVariables));
+		}
+
+		serviceNode.setSettings(settings);
+
+		return serviceNode;
 	}
 
 	private State _parseState(Element stateElement) throws Exception {
@@ -884,18 +1276,30 @@ public class XMLWorkflowModelParser implements WorkflowModelParser {
 
 			sourceNode.addOutgoingTransition(transition);
 
-			if (targetNode != null) {
-				targetNode.addIncomingTransition(transition);
+			if (targetNode == null) {
+				continue;
 			}
+
+			targetNode.addIncomingTransition(transition);
 		}
 	}
 
 	private void _parseTransitions(
-			Definition definition, List<Element> conditionElements,
-			List<Element> forkElements, List<Element> joinElements,
-			List<Element> joinXorElements, List<Element> stateElements,
-			List<Element> taskElements)
+			Definition definition, List<Element> aiDecisionElements,
+			List<Element> aiHubAgentElements, List<Element> conditionElements,
+			List<Element> forkElements, List<Element> httpRequestElements,
+			List<Element> joinElements, List<Element> joinXorElements,
+			List<Element> llmElements, List<Element> serviceElements,
+			List<Element> stateElements, List<Element> taskElements)
 		throws Exception {
+
+		for (Element aiDecisionElement : aiDecisionElements) {
+			_parseTransition(definition, aiDecisionElement);
+		}
+
+		for (Element aiHubAgentElement : aiHubAgentElements) {
+			_parseTransition(definition, aiHubAgentElement);
+		}
 
 		for (Element conditionElement : conditionElements) {
 			_parseTransition(definition, conditionElement);
@@ -903,6 +1307,10 @@ public class XMLWorkflowModelParser implements WorkflowModelParser {
 
 		for (Element forkElement : forkElements) {
 			_parseTransition(definition, forkElement);
+		}
+
+		for (Element httpRequestElement : httpRequestElements) {
+			_parseTransition(definition, httpRequestElement);
 		}
 
 		for (Element joinElement : joinElements) {
@@ -913,6 +1321,14 @@ public class XMLWorkflowModelParser implements WorkflowModelParser {
 			_parseTransition(definition, joinXorElement);
 		}
 
+		for (Element llmElement : llmElements) {
+			_parseTransition(definition, llmElement);
+		}
+
+		for (Element serviceElement : serviceElements) {
+			_parseTransition(definition, serviceElement);
+		}
+
 		for (Element stateElement : stateElements) {
 			_parseTransition(definition, stateElement);
 		}
@@ -921,6 +1337,15 @@ public class XMLWorkflowModelParser implements WorkflowModelParser {
 			_parseTransition(definition, taskElement);
 		}
 	}
+
+	@Reference
+	private JSONFactory _jsonFactory;
+
+	@Reference
+	private RoleLocalService _roleLocalService;
+
+	@Reference
+	private UserLocalService _userLocalService;
 
 	private boolean _validate;
 

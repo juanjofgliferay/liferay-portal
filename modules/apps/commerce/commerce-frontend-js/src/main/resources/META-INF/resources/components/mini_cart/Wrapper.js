@@ -3,42 +3,37 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
+import ClayButton from '@clayui/button';
 import React, {useContext} from 'react';
 
+import {liferayNavigate} from '../../utilities';
 import MiniCartContext from './MiniCartContext';
 import {hasPriceOnApplication} from './util/index';
 
 function Wrapper() {
 	const {
 		CartViews,
+		actionURLs,
 		cartState,
 		editedItem,
 		isOpen,
+		isUpdating,
 		requestQuoteEnabled,
-		setEditedItem,
 	} = useContext(MiniCartContext);
-	const {cartItems = []} = cartState;
+
+	const {
+		cartItems = [],
+		summary: {itemsCount = 0},
+	} = cartState;
 	const cartHasPriceOnApplicationItems = hasPriceOnApplication(cartItems);
 
 	return (
 		<div className="mini-cart-wrapper">
 			<CartViews.Header />
 
-			{(Liferay.FeatureFlags['COMMERCE-9599'] ||
-				Liferay.FeatureFlags['COMMERCE-11287']) &&
-			editedItem ? (
+			{editedItem ? (
 				<>
-					{editedItem.type === 'uom' ? (
-						<CartViews.EditItemUnitOfMeasure
-							cartItemId={editedItem.cartItemId}
-							namespace="minicart-edituom-"
-							onBack={() => {
-								setEditedItem(null);
-							}}
-						/>
-					) : (
-						<CartViews.EditItem />
-					)}
+					<CartViews.EditItem />
 				</>
 			) : (
 				<>
@@ -56,12 +51,28 @@ function Wrapper() {
 
 					<CartViews.OrderButton
 						disabled={
-							!cartItems.length || cartHasPriceOnApplicationItems
+							!itemsCount ||
+							cartHasPriceOnApplicationItems ||
+							isUpdating
 						}
 					/>
 
 					{(requestQuoteEnabled || cartHasPriceOnApplicationItems) &&
-						!!cartItems.length && <CartViews.RequestQuoteButton />}
+						!!itemsCount && (
+							<div className="mini-cart-request-quote">
+								<ClayButton
+									block
+									displayType="secondary"
+									onClick={() => {
+										liferayNavigate(
+											actionURLs.orderDetailURL
+										);
+									}}
+								>
+									{Liferay.Language.get('request-a-quote')}
+								</ClayButton>
+							</div>
+						)}
 				</>
 			)}
 		</div>

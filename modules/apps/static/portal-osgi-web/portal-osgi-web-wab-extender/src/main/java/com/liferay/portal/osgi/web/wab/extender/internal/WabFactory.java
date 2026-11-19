@@ -14,10 +14,8 @@ import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.module.framework.ModuleServiceLifecycle;
 import com.liferay.portal.osgi.web.servlet.JSPServletFactory;
-import com.liferay.portal.osgi.web.servlet.JSPTaglibHelper;
 import com.liferay.portal.osgi.web.servlet.context.helper.ServletContextHelperFactory;
 import com.liferay.portal.osgi.web.wab.extender.internal.configuration.WabExtenderConfiguration;
-import com.liferay.portal.profile.PortalProfile;
 
 import java.util.Dictionary;
 import java.util.concurrent.CountDownLatch;
@@ -142,7 +140,7 @@ public class WabFactory
 		}
 
 		private final Bundle _bundle;
-		private ServiceRegistration<PortalProfile> _serviceRegistration;
+		private ServiceRegistration<?> _serviceRegistration;
 		private final CountDownLatch _started = new CountDownLatch(1);
 
 	}
@@ -160,7 +158,7 @@ public class WabFactory
 			WabExtenderConfiguration.class, properties);
 
 		_webBundleDeployer = new WebBundleDeployer(
-			bundleContext, _jspServletFactory, _jspTaglibHelper, properties);
+			bundleContext, _jspServletFactory, properties);
 
 		_bundleTracker = new BundleTracker<>(
 			bundleContext, Bundle.ACTIVE, this);
@@ -190,9 +188,6 @@ public class WabFactory
 
 	@Reference
 	private JSPServletFactory _jspServletFactory;
-
-	@Reference
-	private JSPTaglibHelper _jspTaglibHelper;
 
 	@Reference(target = ModuleServiceLifecycle.PORTAL_INITIALIZED)
 	private ModuleServiceLifecycle _moduleServiceLifecycle;

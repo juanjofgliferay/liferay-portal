@@ -418,6 +418,11 @@ public class BatchEngineImportTaskWrapper
 		return model.getParameters();
 	}
 
+	@Override
+	public String getParameterValue(String name) {
+		return model.getParameterValue(name);
+	}
+
 	/**
 	 * Returns the primary key of this batch engine import task.
 	 *
@@ -783,3 +788,4 @@ public class BatchEngineImportTaskWrapper
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1074576883

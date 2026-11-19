@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -311,10 +312,6 @@ public class DDLRecordLocalServiceUtil {
 		return getService().fetchDDLRecordByUuidAndGroupId(uuid, groupId);
 	}
 
-	public static DDLRecord fetchFirstRecord(String className, long classPK) {
-		return getService().fetchFirstRecord(className, classPK);
-	}
-
 	/**
 	 * Returns the record with the ID.
 	 *
@@ -330,59 +327,6 @@ public class DDLRecordLocalServiceUtil {
 		getActionableDynamicQuery() {
 
 		return getService().getActionableDynamicQuery();
-	}
-
-	/**
-	 * Returns an ordered range of all the records matching the company,
-	 * workflow status, and scope.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end -
-	 * start</code> instances. <code>start</code> and <code>end</code> are not
-	 * primary keys, they are indexes in the result set. Thus, <code>0</code>
-	 * refers to the first result in the set. Setting both <code>start</code>
-	 * and <code>end</code> to <code>QueryUtil.ALL_POS</code> will return the
-	 * full result set.
-	 * </p>
-	 *
-	 * @param companyId the primary key of the record's company
-	 * @param status the record's workflow status. For more information search
-	 the portal kernel's WorkflowConstants class for constants
-	 starting with the "STATUS_" prefix.
-	 * @param scope the record's scope. For more information search the
-	 dynamic-data-lists-api module's DDLRecordSetConstants class for
-	 constants starting with the "SCOPE_" prefix.
-	 * @param start the lower bound of the range of records to return
-	 * @param end the upper bound of the range of records to return (not
-	 inclusive)
-	 * @param orderByComparator the comparator to order the records
-	 * @return the range of matching records ordered by the comparator
-	 */
-	public static List<DDLRecord> getCompanyRecords(
-		long companyId, int status, int scope, int start, int end,
-		OrderByComparator<DDLRecord> orderByComparator) {
-
-		return getService().getCompanyRecords(
-			companyId, status, scope, start, end, orderByComparator);
-	}
-
-	/**
-	 * Returns the number of records matching the company, workflow status, and
-	 * scope.
-	 *
-	 * @param companyId the primary key of the record's company
-	 * @param status the record's workflow status. For more information search
-	 the portal kernel's WorkflowConstants class for constants
-	 starting with the "STATUS_" prefix.
-	 * @param scope the record's scope. For more information search the
-	 dynamic-data-lists-api module's DDLRecordSetConstants class for
-	 constants starting with the "SCOPE_" prefix.
-	 * @return the number of matching records
-	 */
-	public static int getCompanyRecordsCount(
-		long companyId, int status, int scope) {
-
-		return getService().getCompanyRecordsCount(companyId, status, scope);
 	}
 
 	/**
@@ -494,21 +438,6 @@ public class DDLRecordLocalServiceUtil {
 			getIndexableActionableDynamicQuery() {
 
 		return getService().getIndexableActionableDynamicQuery();
-	}
-
-	public static Long[] getMinAndMaxCompanyRecordIds(
-		long companyId, int status, int scope) {
-
-		return getService().getMinAndMaxCompanyRecordIds(
-			companyId, status, scope);
-	}
-
-	public static List<DDLRecord> getMinAndMaxCompanyRecords(
-		long companyId, int status, int scope, long minRecordId,
-		long maxRecordId) {
-
-		return getService().getMinAndMaxCompanyRecords(
-			companyId, status, scope, minRecordId, maxRecordId);
 	}
 
 	/**
@@ -788,13 +717,12 @@ public class DDLRecordLocalServiceUtil {
 	}
 
 	public static DDLRecordLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(DDLRecordLocalService service) {
-		_service = service;
-	}
-
-	private static volatile DDLRecordLocalService _service;
+	private static final Snapshot<DDLRecordLocalService> _serviceSnapshot =
+		new Snapshot<>(
+			DDLRecordLocalServiceUtil.class, DDLRecordLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1779975162

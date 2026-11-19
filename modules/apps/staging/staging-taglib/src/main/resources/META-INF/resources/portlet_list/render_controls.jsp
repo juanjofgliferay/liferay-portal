@@ -10,8 +10,8 @@
 <%
 String action = (String)request.getAttribute("render_controls.jsp-action");
 boolean childControl = GetterUtil.getBoolean(String.valueOf(request.getAttribute("render_controls.jsp-childControl")));
-PortletDataHandlerControl[] controls = (PortletDataHandlerControl[])request.getAttribute("render_controls.jsp-controls");
 ManifestSummary manifestSummary = (ManifestSummary)request.getAttribute("render_controls.jsp-manifestSummary");
+PortletDataHandlerControl[] portletDataHandlerControls = (PortletDataHandlerControl[])request.getAttribute("render_controls.jsp-controls");
 
 String portletId = (String)request.getAttribute("render_controls.jsp-portletId");
 
@@ -26,71 +26,71 @@ if (Validator.isNotNull(portletId)) {
 }
 
 control:
-for (int i = 0; i < controls.length; i++) {
+for (int i = 0; i < portletDataHandlerControls.length; i++) {
 %>
 
-	<li class="handler-control">
-		<c:choose>
-			<c:when test="<%= controls[i] instanceof PortletDataHandlerBoolean %>">
+	<c:choose>
+		<c:when test="<%= portletDataHandlerControls[i] instanceof PortletDataHandlerBoolean %>">
 
-				<%
-				PortletDataHandlerBoolean control = (PortletDataHandlerBoolean)controls[i];
+			<%
+			long modelAdditionCount = 0;
+			long modelDeletionCount = 0;
 
-				String controlLabel = LanguageUtil.get(request, resourceBundle, control.getControlLabel());
+			PortletDataHandlerBoolean portletDataHandlerBoolean = (PortletDataHandlerBoolean)portletDataHandlerControls[i];
 
-				String className = controls[i].getClassName();
+			String className = portletDataHandlerBoolean.getClassName();
+			String label = LanguageUtil.get(request, resourceBundle, portletDataHandlerBoolean.getLabel());
 
-				if (Validator.isNotNull(className) && (manifestSummary != null)) {
-					StagedModelType stagedModelType = new StagedModelType(className, controls[i].getReferrerClassName());
+			if (Validator.isNotNull(className) && (manifestSummary != null)) {
+				StagedModelType stagedModelType = new StagedModelType(className, portletDataHandlerBoolean.getReferrerClassName());
 
-					long modelAdditionCount = manifestSummary.getModelAdditionCount(stagedModelType);
+				modelAdditionCount = manifestSummary.getModelAdditionCount(stagedModelType);
+				modelDeletionCount = manifestSummary.getModelDeletionCount(stagedModelType);
 
-					if (modelAdditionCount != 0) {
-						controlLabel += (modelAdditionCount > 0) ? " (" + modelAdditionCount + ")" : StringPool.BLANK;
-					}
-					else if (!showAllPortlets) {
-						continue control;
-					}
+				if ((modelAdditionCount <= 0) && (modelDeletionCount <= 0) && !showAllPortlets) {
+					continue control;
 				}
+			}
 
-				Map<String, Object> data = HashMapBuilder.<String, Object>put(
-					"name", controlLabel
-				).build();
+			boolean disabled = portletDataHandlerBoolean.isDisabled() || disableInputs;
 
-				if (!childControl) {
-					data.put("root-control-id", liferayPortletResponse.getNamespace() + PortletDataHandlerKeys.PORTLET_DATA + StringPool.UNDERLINE + portletId);
-				}
+			String name = Validator.isNotNull(portletDataHandlerBoolean.getNamespace()) ? portletDataHandlerBoolean.getNamespacedName() : (portletDataHandlerBoolean.getName() + StringPool.UNDERLINE + portletId);
 
-				PortletDataHandlerControl[] children = control.getChildren();
+			String inputName = disabled ? (name + "Display") : name;
 
-				String controlName = Validator.isNotNull(control.getNamespace()) ? control.getNamespacedControlName() : (control.getControlName() + StringPool.UNDERLINE + portletId);
+			RenderControlsDisplayContext renderControlsDisplayContext = new RenderControlsDisplayContext(request);
 
-				String controlInputName = controlName;
+			Map<String, Object> data = HashMapBuilder.<String, Object>put(
+				"name", label
+			).build();
 
-				boolean disabled = controls[i].isDisabled() || disableInputs;
-				%>
+			if (!childControl) {
+				data.put("root-control-id", liferayPortletResponse.getNamespace() + PortletDataHandlerKeys.PORTLET_DATA + StringPool.UNDERLINE + portletId);
+			}
+			%>
 
+			<li class="handler-control <%= ((modelAdditionCount <= 0) && (modelDeletionCount > 0)) ? "deletions" : StringPool.BLANK %>">
 				<c:if test="<%= disabled %>">
-
-					<%
-					controlInputName += "Display";
-					%>
-
-					<aui:input name="<%= controlName %>" type="hidden" value="<%= MapUtil.getBoolean(parameterMap, controlName, control.getDefaultState()) || MapUtil.getBoolean(parameterMap, PortletDataHandlerKeys.PORTLET_DATA_ALL) %>" />
+					<aui:input name="<%= name %>" type="hidden" value="<%= MapUtil.getBoolean(parameterMap, name, portletDataHandlerBoolean.getDefaultState()) || MapUtil.getBoolean(parameterMap, PortletDataHandlerKeys.PORTLET_DATA_ALL) %>" />
 				</c:if>
 
-				<%
-				RenderControlsDisplayContext renderControlsDisplayContext = new RenderControlsDisplayContext(request);
-				%>
+				<liferay-staging:checkbox
+					checked="<%= renderControlsDisplayContext.isControlCheckboxEnabled(portletDataHandlerBoolean, parameterMap) %>"
+					data="<%= data %>"
+					deletions="<%= modelDeletionCount %>"
+					disabled="<%= disabled %>"
+					items="<%= modelAdditionCount %>"
+					label="<%= label %>"
+					name="<%= inputName %>"
+					popover="<%= portletDataHandlerBoolean.getHelpMessage(locale, action) %>"
+				/>
 
-				<aui:input checked="<%= renderControlsDisplayContext.isControlCheckboxEnabled(control, parameterMap) %>" data="<%= data %>" disabled="<%= disabled %>" helpMessage="<%= control.getHelpMessage(locale, action) %>" ignoreRequestValue="<%= disabled %>" label="<%= controlLabel %>" name="<%= controlInputName %>" type="checkbox" />
-
-				<c:if test="<%= children != null %>">
-					<ul class="list-unstyled" id="<portlet:namespace /><%= controlName %>Controls">
+				<c:if test="<%= portletDataHandlerBoolean.getChildrenPortletDataHandlerControls() != null %>">
+					<ul class="list-unstyled" id="<portlet:namespace /><%= name %>Controls">
 
 						<%
 						request.setAttribute("render_controls.jsp-childControl", true);
-						request.setAttribute("render_controls.jsp-controls", children);
+						request.setAttribute("render_controls.jsp-controls", portletDataHandlerBoolean.getChildrenPortletDataHandlerControls());
 						%>
 
 						<liferay-util:include page="/portlet_list/render_controls.jsp" servletContext="<%= application %>" />
@@ -98,46 +98,43 @@ for (int i = 0; i < controls.length; i++) {
 
 					<aui:script>
 						Liferay.Util.toggleBoxes(
-							'<portlet:namespace /><%= controlName %>',
-							'<portlet:namespace /><%= controlName %>Controls',
+							'<portlet:namespace /><%= name %>',
+							'<portlet:namespace /><%= name %>Controls',
 							false,
 							true
 						);
 					</aui:script>
 				</c:if>
-			</c:when>
-			<c:when test="<%= controls[i] instanceof PortletDataHandlerChoice %>">
+			</li>
+		</c:when>
+		<c:when test="<%= portletDataHandlerControls[i] instanceof PortletDataHandlerChoice %>">
+			<li class="handler-control">
 				<label>
-					<liferay-ui:message key="<%= controls[i].getControlLabel() %>" />
+					<liferay-ui:message key="<%= portletDataHandlerControls[i].getLabel() %>" />
 
 					<%
-					PortletDataHandlerChoice control = (PortletDataHandlerChoice)controls[i];
+					PortletDataHandlerChoice portletDataHandlerChoice = (PortletDataHandlerChoice)portletDataHandlerControls[i];
 
-					String[] choices = control.getChoices();
+					String[] choices = portletDataHandlerChoice.getChoices();
 
-					for (int j = 0; j < choices.length; j++) {
-						String choice = choices[j];
-
-						String defaultChoice = (choices != null) ? choices[control.getDefaultChoiceIndex()] : "";
-
-						String controlValue = MapUtil.getString(parameterMap, control.getNamespacedControlName(), defaultChoice);
-
-						String controlName = LanguageUtil.get(request, resourceBundle, choice);
+					for (String choice : choices) {
+						String name = LanguageUtil.get(request, resourceBundle, choice);
+						String value = MapUtil.getString(parameterMap, portletDataHandlerChoice.getNamespacedName(), choices[portletDataHandlerChoice.getDefaultChoiceIndex()]);
 					%>
 
 						<aui:input
-							checked="<%= controlValue.equals(choices[j]) %>"
+							checked="<%= value.equals(choice) %>"
 							data='<%=
 								HashMapBuilder.<String, Object>put(
-									"name", controlName
+									"name", name
 								).build()
 							%>'
 							disabled="<%= disableInputs %>"
-							helpMessage="<%= control.getHelpMessage(locale, action) %>"
+							helpMessage="<%= portletDataHandlerChoice.getHelpMessage(locale, action) %>"
 							label="<%= choice %>"
-							name="<%= control.getNamespacedControlName() %>"
+							name="<%= portletDataHandlerChoice.getNamespacedName() %>"
 							type="radio"
-							value="<%= choices[j] %>"
+							value="<%= choice %>"
 						/>
 
 					<%
@@ -145,9 +142,9 @@ for (int i = 0; i < controls.length; i++) {
 					%>
 
 				</label>
-			</c:when>
-		</c:choose>
-	</li>
+			</li>
+		</c:when>
+	</c:choose>
 
 <%
 }

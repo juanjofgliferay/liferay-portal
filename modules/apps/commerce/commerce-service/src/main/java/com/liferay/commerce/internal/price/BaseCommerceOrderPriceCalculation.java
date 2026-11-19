@@ -484,10 +484,7 @@ public abstract class BaseCommerceOrderPriceCalculation
 						parentQuantity));
 			}
 
-			unitPrice = unitPrice.add(
-				_getPricePerUnit(
-					commerceCurrency, incrementalOrderQuantity, childUnitPrice,
-					childCommerceOrderItem.getQuantity(), parentQuantity));
+			unitPrice = unitPrice.add(childUnitPrice);
 
 			promoPrice = promoPrice.add(
 				_getPricePerUnit(
@@ -499,9 +496,20 @@ public abstract class BaseCommerceOrderPriceCalculation
 			finalPrice = finalPrice.add(childFinalPrice);
 		}
 
+		BigDecimal unitOfMeasureIncrementalOrderQuantity =
+			commerceOrderItem.getUnitOfMeasureIncrementalOrderQuantity();
+
+		if ((unitOfMeasureIncrementalOrderQuantity == null) ||
+			unitOfMeasureIncrementalOrderQuantity.equals(BigDecimal.ZERO)) {
+
+			unitOfMeasureIncrementalOrderQuantity = BigDecimal.ONE;
+		}
+
 		if (unit) {
 			finalPrice = finalPrice.divide(
-				parentQuantity,
+				parentQuantity.divide(
+					unitOfMeasureIncrementalOrderQuantity,
+					RoundingMode.valueOf(commerceCurrency.getRoundingMode())),
 				RoundingMode.valueOf(commerceCurrency.getRoundingMode()));
 		}
 
@@ -520,7 +528,10 @@ public abstract class BaseCommerceOrderPriceCalculation
 			commerceCurrency, commerceOrderItemPrice, discountAmount,
 			discountPercentageLevel1, discountPercentageLevel2,
 			discountPercentageLevel3, discountPercentageLevel4,
-			commerceOrderItem.getQuantity(), unitPrice);
+			parentQuantity.divide(
+				unitOfMeasureIncrementalOrderQuantity,
+				RoundingMode.valueOf(commerceCurrency.getRoundingMode())),
+			unitPrice);
 
 		return commerceOrderItemPrice;
 	}

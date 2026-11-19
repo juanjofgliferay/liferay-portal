@@ -8,12 +8,12 @@ package com.liferay.digital.signature.rest.client.dto.v1_0;
 import com.liferay.digital.signature.rest.client.function.UnsafeSupplier;
 import com.liferay.digital.signature.rest.client.serdes.v1_0.DSEnvelopeSerDes;
 
+import jakarta.annotation.Generated;
+
 import java.io.Serializable;
 
 import java.util.Date;
 import java.util.Objects;
-
-import javax.annotation.Generated;
 
 /**
  * @author José Abelenda
@@ -285,3 +285,4 @@ public class DSEnvelope implements Cloneable, Serializable {
 	}
 
 }
+// LIFERAY-REST-BUILDER-HASH:483172295

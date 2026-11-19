@@ -18,6 +18,7 @@ import com.liferay.portal.events.EventsProcessorUtil;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.struts.StrutsAction;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
@@ -30,6 +31,7 @@ import com.liferay.portal.kernel.util.FileUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.ProgressTracker;
 import com.liferay.portal.kernel.util.PropsKeys;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.ProxyUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.WebKeys;
@@ -38,7 +40,8 @@ import com.liferay.portal.kernel.zip.ZipWriterFactory;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.upload.test.util.UploadTestUtil;
-import com.liferay.portal.util.PropsValues;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.io.File;
 import java.io.InputStream;
@@ -52,8 +55,6 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -97,8 +98,8 @@ public class ImportFragmentEntriesStrutsActionTest {
 	}
 
 	@Test
-	public void testImportZipFile() throws Exception {
-		_user = UserTestUtil.addOmniAdminUser();
+	public void testExecute() throws Exception {
+		_user = UserTestUtil.addOmniadminUser();
 
 		UserTestUtil.setUser(_user);
 
@@ -157,6 +158,40 @@ public class ImportFragmentEntriesStrutsActionTest {
 				_group.getGroupId(), "page-template"));
 	}
 
+	@Test(expected = PrincipalException.class)
+	public void testExecuteWithoutPermissions() throws Exception {
+		_user = UserTestUtil.addUser();
+
+		UserTestUtil.setUser(_user);
+
+		byte[] bytes = _getFileBytes();
+
+		Map<String, FileItem[]> fileParameters = _getFileParameters(
+			bytes, "file");
+
+		HttpServletRequest httpServletRequest = _getMultipartHttpServletRequest(
+			bytes, "file");
+
+		UploadPortletRequest uploadPortletRequest =
+			UploadTestUtil.createUploadPortletRequest(
+				UploadTestUtil.createUploadServletRequest(
+					httpServletRequest, fileParameters,
+					HashMapBuilder.put(
+						"groupId",
+						Collections.singletonList(
+							String.valueOf(_group.getGroupId()))
+					).build()),
+				null, RandomTestUtil.randomString());
+
+		MockHttpServletResponse mockHttpServletResponse =
+			new MockHttpServletResponse();
+
+		_processEvents(uploadPortletRequest, mockHttpServletResponse, _user);
+
+		_importFragmentEntriesStrutsAction.execute(
+			uploadPortletRequest, mockHttpServletResponse);
+	}
+
 	private FileItem _createFileItem(byte[] bytes) throws Exception {
 		Path tempFilePath = Files.createTempFile(null, null);
 
@@ -207,13 +242,14 @@ public class ImportFragmentEntriesStrutsActionTest {
 
 			String path = url.getPath();
 
-			if (!path.endsWith(StringPool.SLASH)) {
-				try (InputStream inputStream = url.openStream()) {
-					zipWriter.addEntry(
-						StringUtil.removeSubstring(
-							url.getPath(), _RESOURCES_PATH),
-						inputStream);
-				}
+			if (path.endsWith(StringPool.SLASH)) {
+				continue;
+			}
+
+			try (InputStream inputStream = url.openStream()) {
+				zipWriter.addEntry(
+					StringUtil.removeSubstring(url.getPath(), _RESOURCES_PATH),
+					inputStream);
 			}
 		}
 
@@ -252,17 +288,17 @@ public class ImportFragmentEntriesStrutsActionTest {
 	}
 
 	private void _processEvents(
-			HttpServletRequest mockHttpServletRequest,
+			HttpServletRequest httpServletRequest,
 			MockHttpServletResponse mockHttpServletResponse, User user)
 		throws Exception {
 
-		mockHttpServletRequest.setAttribute(
+		httpServletRequest.setAttribute(
 			WebKeys.CURRENT_URL, "/portal/fragment/import_fragment_entries");
-		mockHttpServletRequest.setAttribute(WebKeys.USER, user);
+		httpServletRequest.setAttribute(WebKeys.USER, user);
 
 		EventsProcessorUtil.process(
 			PropsKeys.SERVLET_SERVICE_EVENTS_PRE,
-			PropsValues.SERVLET_SERVICE_EVENTS_PRE, mockHttpServletRequest,
+			PropsValues.SERVLET_SERVICE_EVENTS_PRE, httpServletRequest,
 			mockHttpServletResponse);
 	}
 

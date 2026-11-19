@@ -5,9 +5,9 @@
 
 package com.liferay.users.admin.web.internal.manager;
 
-import java.util.List;
+import jakarta.portlet.ActionRequest;
 
-import javax.portlet.ActionRequest;
+import java.util.List;
 
 /**
  * @author Drew Brokke
@@ -53,14 +53,16 @@ public abstract class BaseContactInfoManager<T>
 			long size = contactInfos.size();
 
 			for (T tempContactInfo : contactInfos) {
-				if ((size == 1) ||
-					(getPrimaryKey(tempContactInfo) != getPrimaryKey(
+				if ((size != 1) &&
+					(getPrimaryKey(tempContactInfo) == getPrimaryKey(
 						contactInfo))) {
 
-					setPrimary(tempContactInfo, true);
-
-					doUpdate(tempContactInfo);
+					continue;
 				}
+
+				setPrimary(tempContactInfo, true);
+
+				doUpdate(tempContactInfo);
 			}
 		}
 	}

@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -249,15 +250,6 @@ public class CommercePaymentMethodGroupRelQualifierLocalServiceUtil {
 			commercePaymentMethodGroupRelQualifierId);
 	}
 
-	public static CommercePaymentMethodGroupRelQualifier
-		fetchCommercePaymentMethodGroupRelQualifier(
-			String className, long classPK,
-			long commercePaymentMethodGroupRelId) {
-
-		return getService().fetchCommercePaymentMethodGroupRelQualifier(
-			className, classPK, commercePaymentMethodGroupRelId);
-	}
-
 	public static com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery
 		getActionableDynamicQuery() {
 
@@ -319,16 +311,6 @@ public class CommercePaymentMethodGroupRelQualifierLocalServiceUtil {
 
 	public static List<CommercePaymentMethodGroupRelQualifier>
 		getCommercePaymentMethodGroupRelQualifiers(
-			long commercePaymentMethodGroupRelId, int start, int end,
-			OrderByComparator<CommercePaymentMethodGroupRelQualifier>
-				orderByComparator) {
-
-		return getService().getCommercePaymentMethodGroupRelQualifiers(
-			commercePaymentMethodGroupRelId, start, end, orderByComparator);
-	}
-
-	public static List<CommercePaymentMethodGroupRelQualifier>
-		getCommercePaymentMethodGroupRelQualifiers(
 			String className, long commercePaymentMethodGroupRelId) {
 
 		return getService().getCommercePaymentMethodGroupRelQualifiers(
@@ -342,13 +324,6 @@ public class CommercePaymentMethodGroupRelQualifierLocalServiceUtil {
 	 */
 	public static int getCommercePaymentMethodGroupRelQualifiersCount() {
 		return getService().getCommercePaymentMethodGroupRelQualifiersCount();
-	}
-
-	public static int getCommercePaymentMethodGroupRelQualifiersCount(
-		long commercePaymentMethodGroupRelId) {
-
-		return getService().getCommercePaymentMethodGroupRelQualifiersCount(
-			commercePaymentMethodGroupRelId);
 	}
 
 	public static List<CommercePaymentMethodGroupRelQualifier>
@@ -417,16 +392,14 @@ public class CommercePaymentMethodGroupRelQualifierLocalServiceUtil {
 	public static CommercePaymentMethodGroupRelQualifierLocalService
 		getService() {
 
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(
-		CommercePaymentMethodGroupRelQualifierLocalService service) {
-
-		_service = service;
-	}
-
-	private static volatile CommercePaymentMethodGroupRelQualifierLocalService
-		_service;
+	private static final Snapshot
+		<CommercePaymentMethodGroupRelQualifierLocalService> _serviceSnapshot =
+			new Snapshot<>(
+				CommercePaymentMethodGroupRelQualifierLocalServiceUtil.class,
+				CommercePaymentMethodGroupRelQualifierLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1599242053

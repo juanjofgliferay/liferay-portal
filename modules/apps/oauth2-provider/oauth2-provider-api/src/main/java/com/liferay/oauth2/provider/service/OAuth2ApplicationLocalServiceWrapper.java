@@ -157,6 +157,14 @@ public class OAuth2ApplicationLocalServiceWrapper
 			serviceContext);
 	}
 
+	@Override
+	public void checkDynamicRegistratorOAuth2Application(long companyId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		_oAuth2ApplicationLocalService.checkDynamicRegistratorOAuth2Application(
+			companyId);
+	}
+
 	/**
 	 * Creates a new o auth2 application with the primary key. Does not add the o auth2 application to the database.
 	 *
@@ -532,6 +540,16 @@ public class OAuth2ApplicationLocalServiceWrapper
 	}
 
 	@Override
+	public String getPlaintextClientSecret(
+			com.liferay.oauth2.provider.model.OAuth2Application
+				oAuth2Application)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _oAuth2ApplicationLocalService.getPlaintextClientSecret(
+			oAuth2Application);
+	}
+
+	@Override
 	public com.liferay.oauth2.provider.model.OAuth2Application
 			updateExternalReferenceCode(
 				long oAuth2ApplicationId, String externalReferenceCode)
@@ -637,3 +655,4 @@ public class OAuth2ApplicationLocalServiceWrapper
 	private OAuth2ApplicationLocalService _oAuth2ApplicationLocalService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:445038092

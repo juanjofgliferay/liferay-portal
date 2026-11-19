@@ -10,6 +10,7 @@ import com.liferay.commerce.product.model.CommerceChannel;
 import com.liferay.commerce.product.service.CommerceChannelLocalServiceUtil;
 import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.odata.entity.BooleanEntityField;
 import com.liferay.portal.odata.entity.CollectionEntityField;
 import com.liferay.portal.odata.entity.ComplexEntityField;
 import com.liferay.portal.odata.entity.DateTimeEntityField;
@@ -28,12 +29,9 @@ public class ProductEntityModel implements EntityModel {
 
 	public ProductEntityModel(List<EntityField> entityFields) {
 		_entityFieldsMap = EntityModel.toEntityFieldsMap(
-			new CollectionEntityField(
-				new StringEntityField(
-					"categoryIds", locale -> "assetCategoryIds")),
-			new CollectionEntityField(
-				new StringEntityField(
-					"categoryNames", locale -> "assetCategoryNames")),
+			new BooleanEntityField(
+				"productChannelFilter",
+				locale -> CPField.CHANNEL_FILTER_ENABLED),
 			new CollectionEntityField(
 				new EntityField(
 					"channelId", EntityField.Type.INTEGER,
@@ -44,6 +42,22 @@ public class ProductEntityModel implements EntityModel {
 			new CollectionEntityField(
 				new IntegerEntityField("statusCode", locale -> Field.STATUS)),
 			new CollectionEntityField(
+				new StringEntityField(
+					"categoryIds", locale -> "assetCategoryIds")),
+			new CollectionEntityField(
+				new StringEntityField(
+					"categoryNames", locale -> "assetCategoryNames")),
+			new CollectionEntityField(
+				new StringEntityField("gtins", locale -> CPField.GTINS)),
+			new CollectionEntityField(
+				new StringEntityField(
+					"specificationNames",
+					locale -> CPField.SPECIFICATION_NAMES)),
+			new CollectionEntityField(
+				new StringEntityField(
+					"specificationValues",
+					locale -> CPField.SPECIFICATION_VALUES_NAMES)),
+			new CollectionEntityField(
 				new StringEntityField("tags", locale -> "assetTagNames")),
 			new ComplexEntityField("customFields", entityFields),
 			new DateTimeEntityField(
@@ -51,10 +65,23 @@ public class ProductEntityModel implements EntityModel {
 				locale -> Field.getSortableFieldName(Field.CREATE_DATE),
 				locale -> Field.CREATE_DATE),
 			new DateTimeEntityField(
+				"dateCreated",
+				locale -> Field.getSortableFieldName(Field.CREATE_DATE),
+				locale -> Field.CREATE_DATE),
+			new DateTimeEntityField(
+				"dateModified",
+				locale -> Field.getSortableFieldName(Field.MODIFIED_DATE),
+				locale -> Field.MODIFIED_DATE),
+			new DateTimeEntityField(
 				"modifiedDate",
 				locale -> Field.getSortableFieldName(Field.MODIFIED_DATE),
 				locale -> Field.MODIFIED_DATE),
 			new IntegerEntityField("catalogId", locale -> "commerceCatalogId"),
+			new IntegerEntityField("productId", locale -> CPField.PRODUCT_ID),
+			new StringEntityField(
+				"externalReferenceCode",
+				locale -> Field.getSortableFieldName("externalReferenceCode"),
+				locale -> "externalReferenceCode"),
 			new StringEntityField(
 				"name", locale -> Field.getSortableFieldName("name")),
 			new StringEntityField("productType", locale -> "productTypeName"));

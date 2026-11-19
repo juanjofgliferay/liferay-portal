@@ -15,9 +15,9 @@ import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.Validator;
 
-import java.util.Locale;
+import jakarta.portlet.PortletPreferences;
 
-import javax.portlet.PortletPreferences;
+import java.util.Locale;
 
 /**
  * @author Brian Wing Shun Chan
@@ -93,12 +93,14 @@ public class PortletSetupUtil {
 		for (Locale locale : LanguageUtil.getAvailableLocales()) {
 			String languageId = LocaleUtil.toLanguageId(locale);
 
-			if (Validator.isNotNull(languageId)) {
-				String title = portletPreferences.getValue(
-					"portletSetupTitle_" + languageId, null);
-
-				titlesJSONObject.put(languageId, title);
+			if (Validator.isNull(languageId)) {
+				continue;
 			}
+
+			String title = portletPreferences.getValue(
+				"portletSetupTitle_" + languageId, null);
+
+			titlesJSONObject.put(languageId, title);
 		}
 
 		String portletDecoratorId = GetterUtil.getString(

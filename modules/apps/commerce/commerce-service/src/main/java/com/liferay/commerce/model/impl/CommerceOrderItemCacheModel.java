@@ -71,7 +71,7 @@ public class CommerceOrderItemCacheModel
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(137);
+		StringBundler sb = new StringBundler(139);
 
 		sb.append("{mvccVersion=");
 		sb.append(mvccVersion);
@@ -111,8 +111,8 @@ public class CommerceOrderItemCacheModel
 		sb.append(parentCommerceOrderItemId);
 		sb.append(", shippingAddressId=");
 		sb.append(shippingAddressId);
-		sb.append(", deliveryGroup=");
-		sb.append(deliveryGroup);
+		sb.append(", deliveryGroupName=");
+		sb.append(deliveryGroupName);
 		sb.append(", deliveryMaxSubscriptionCycles=");
 		sb.append(deliveryMaxSubscriptionCycles);
 		sb.append(", deliverySubscriptionLength=");
@@ -209,6 +209,8 @@ public class CommerceOrderItemCacheModel
 		sb.append(weight);
 		sb.append(", width=");
 		sb.append(width);
+		sb.append(", status=");
+		sb.append(status);
 		sb.append("}");
 
 		return sb.toString();
@@ -275,11 +277,11 @@ public class CommerceOrderItemCacheModel
 			parentCommerceOrderItemId);
 		commerceOrderItemImpl.setShippingAddressId(shippingAddressId);
 
-		if (deliveryGroup == null) {
-			commerceOrderItemImpl.setDeliveryGroup("");
+		if (deliveryGroupName == null) {
+			commerceOrderItemImpl.setDeliveryGroupName("");
 		}
 		else {
-			commerceOrderItemImpl.setDeliveryGroup(deliveryGroup);
+			commerceOrderItemImpl.setDeliveryGroupName(deliveryGroupName);
 		}
 
 		commerceOrderItemImpl.setDeliveryMaxSubscriptionCycles(
@@ -422,6 +424,7 @@ public class CommerceOrderItemCacheModel
 		commerceOrderItemImpl.setUnitPriceWithTaxAmount(unitPriceWithTaxAmount);
 		commerceOrderItemImpl.setWeight(weight);
 		commerceOrderItemImpl.setWidth(width);
+		commerceOrderItemImpl.setStatus(status);
 
 		commerceOrderItemImpl.resetOriginalValues();
 
@@ -464,7 +467,7 @@ public class CommerceOrderItemCacheModel
 		parentCommerceOrderItemId = objectInput.readLong();
 
 		shippingAddressId = objectInput.readLong();
-		deliveryGroup = objectInput.readUTF();
+		deliveryGroupName = objectInput.readUTF();
 
 		deliveryMaxSubscriptionCycles = objectInput.readLong();
 
@@ -536,6 +539,8 @@ public class CommerceOrderItemCacheModel
 		weight = objectInput.readDouble();
 
 		width = objectInput.readDouble();
+
+		status = objectInput.readInt();
 	}
 
 	@Override
@@ -592,11 +597,11 @@ public class CommerceOrderItemCacheModel
 
 		objectOutput.writeLong(shippingAddressId);
 
-		if (deliveryGroup == null) {
+		if (deliveryGroupName == null) {
 			objectOutput.writeUTF("");
 		}
 		else {
-			objectOutput.writeUTF(deliveryGroup);
+			objectOutput.writeUTF(deliveryGroupName);
 		}
 
 		objectOutput.writeLong(deliveryMaxSubscriptionCycles);
@@ -728,6 +733,8 @@ public class CommerceOrderItemCacheModel
 		objectOutput.writeDouble(weight);
 
 		objectOutput.writeDouble(width);
+
+		objectOutput.writeInt(status);
 	}
 
 	public long mvccVersion;
@@ -749,7 +756,7 @@ public class CommerceOrderItemCacheModel
 	public long customerCommerceOrderItemId;
 	public long parentCommerceOrderItemId;
 	public long shippingAddressId;
-	public String deliveryGroup;
+	public String deliveryGroupName;
 	public long deliveryMaxSubscriptionCycles;
 	public int deliverySubscriptionLength;
 	public String deliverySubscriptionType;
@@ -798,5 +805,7 @@ public class CommerceOrderItemCacheModel
 	public BigDecimal unitPriceWithTaxAmount;
 	public double weight;
 	public double width;
+	public int status;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-326351220

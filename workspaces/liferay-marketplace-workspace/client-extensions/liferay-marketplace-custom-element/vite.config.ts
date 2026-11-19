@@ -4,6 +4,7 @@
  */
 
 import react from '@vitejs/plugin-react';
+import path from 'path';
 import {defineConfig} from 'vite';
 
 export default defineConfig({
@@ -13,24 +14,26 @@ export default defineConfig({
 			output: {
 				assetFileNames: 'assets/[name][extname]',
 				chunkFileNames: '[name]-[hash].js',
-				entryFileNames: '[name]-[hash].js',
+				entryFileNames: 'main.js',
+				manualChunks(id) {
+					if (id.includes('node_modules')) {
+						return 'vendor';
+					}
+				},
 			},
 		},
 	},
 	experimental: {
 		renderBuiltUrl(filename: string) {
-			if (
-				filename.endsWith('.css') ||
-				filename.endsWith('.png') ||
-				filename.endsWith('.svg')
-			) {
-				return `/o/liferay-marketplace-custom-element/${filename}`;
-			}
-
-			return filename;
+			return `/o/liferay-marketplace-custom-element/${filename}`;
 		},
 	},
 	plugins: [react()],
+	resolve: {
+		alias: {
+			'~': path.resolve(__dirname, './src/'),
+		},
+	},
 	server: {
 		origin: 'http://localhost:5173',
 	},

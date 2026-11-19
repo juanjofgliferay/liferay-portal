@@ -12,7 +12,6 @@ import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Layout;
-import com.liferay.portal.kernel.model.LayoutType;
 import com.liferay.portal.kernel.model.LayoutTypePortlet;
 import com.liferay.portal.kernel.model.Portlet;
 import com.liferay.portal.kernel.model.PortletApp;
@@ -56,13 +55,13 @@ import com.liferay.portal.kernel.servlet.TransferHeadersHelperUtil;
 import com.liferay.portal.kernel.theme.PortletDisplay;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ArrayUtil;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.JavaConstants;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.util.comparator.PortletConfigurationIconComparator;
-import com.liferay.portal.kernel.webdav.WebDAVStorage;
 import com.liferay.portal.kernel.xml.QName;
 import com.liferay.portal.theme.PortletDisplayFactory;
 import com.liferay.portlet.ActionRequestFactory;
@@ -76,6 +75,24 @@ import com.liferay.portlet.ResourceRequestFactory;
 import com.liferay.portlet.ResourceResponseFactory;
 import com.liferay.util.SerializableUtil;
 
+import jakarta.portlet.Event;
+import jakarta.portlet.MimeResponse;
+import jakarta.portlet.PortletConfig;
+import jakarta.portlet.PortletContext;
+import jakarta.portlet.PortletMode;
+import jakarta.portlet.PortletPreferences;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+import jakarta.portlet.WindowState;
+
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.Serializable;
 import java.io.Writer;
 
@@ -83,24 +100,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import javax.portlet.Event;
-import javax.portlet.MimeResponse;
-import javax.portlet.PortletConfig;
-import javax.portlet.PortletContext;
-import javax.portlet.PortletMode;
-import javax.portlet.PortletPreferences;
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
-import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-import javax.portlet.WindowState;
-
-import javax.servlet.RequestDispatcher;
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * @author Shuyang Zhou
@@ -167,26 +166,8 @@ public class PortletContainerImpl implements PortletContainer {
 
 	@Override
 	public void processPublicRenderParameters(
-		HttpServletRequest httpServletRequest, Layout layout) {
-
-		processPublicRenderParameters(httpServletRequest, layout, null);
-	}
-
-	@Override
-	public void processPublicRenderParameters(
-		HttpServletRequest httpServletRequest, Layout layout, Portlet portlet) {
-
-		LayoutType layoutType = layout.getLayoutType();
-
-		if (!(layoutType instanceof LayoutTypePortlet)) {
-			return;
-		}
-
-		LayoutTypePortlet layoutTypePortlet = (LayoutTypePortlet)layoutType;
-
-		List<Portlet> portlets = layoutTypePortlet.getPortlets();
-
-		portlets.remove(portlet);
+		HttpServletRequest httpServletRequest, Layout layout,
+		List<Portlet> portlets) {
 
 		_processPublicRenderParameters(
 			httpServletRequest, layout, portlets, false);
@@ -405,14 +386,16 @@ public class PortletContainerImpl implements PortletContainer {
 		}
 		finally {
 			if (themeDisplay != null) {
-				if (GroupLocalServiceUtil.fetchGroup(previousScopeGroupId) !=
-						null) {
+				if ((themeDisplay.getScopeGroupId() != previousScopeGroupId) &&
+					(GroupLocalServiceUtil.fetchGroup(previousScopeGroupId) !=
+						null)) {
 
 					themeDisplay.setScopeGroupId(previousScopeGroupId);
 				}
 
-				if (GroupLocalServiceUtil.fetchGroup(previousSiteGroupId) !=
-						null) {
+				if ((themeDisplay.getSiteGroupId() != previousSiteGroupId) &&
+					(GroupLocalServiceUtil.fetchGroup(previousSiteGroupId) !=
+						null)) {
 
 					themeDisplay.setSiteGroupId(previousSiteGroupId);
 				}
@@ -522,8 +505,15 @@ public class PortletContainerImpl implements PortletContainer {
 				liferayActionResponse.getRedirectLocation();
 
 			if (Validator.isNotNull(redirectLocation)) {
-				return new ActionResult(
-					events, PortalUtil.escapeRedirect(redirectLocation));
+				if (!GetterUtil.getBoolean(
+						liferayActionResponse.getProperty(
+							LiferayActionResponse.SKIP_ESCAPE_REDIRECT))) {
+
+					redirectLocation = PortalUtil.escapeRedirect(
+						redirectLocation);
+				}
+
+				return new ActionResult(events, redirectLocation);
 			}
 
 			if (!portlet.isActionURLRedirect()) {
@@ -701,11 +691,19 @@ public class PortletContainerImpl implements PortletContainer {
 		long scopeGroupId = PortalUtil.getScopeGroupId(
 			httpServletRequest, portlet.getPortletId());
 
-		themeDisplay.setScopeGroupId(scopeGroupId);
-
-		long siteGroupId = 0;
+		if (scopeGroupId != themeDisplay.getScopeGroupId()) {
+			themeDisplay.setScopeGroupId(scopeGroupId);
+		}
 
 		Layout layout = (Layout)httpServletRequest.getAttribute(WebKeys.LAYOUT);
+
+		if (!layout.isTypeControlPanel() &&
+			(layout.getGroupId() == themeDisplay.getSiteGroupId())) {
+
+			return;
+		}
+
+		long siteGroupId = 0;
 
 		if (layout.isTypeControlPanel()) {
 			siteGroupId = PortalUtil.getSiteGroupId(scopeGroupId);
@@ -714,7 +712,9 @@ public class PortletContainerImpl implements PortletContainer {
 			siteGroupId = PortalUtil.getSiteGroupId(layout.getGroupId());
 		}
 
-		themeDisplay.setSiteGroupId(siteGroupId);
+		if (siteGroupId != themeDisplay.getSiteGroupId()) {
+			themeDisplay.setSiteGroupId(siteGroupId);
+		}
 	}
 
 	private void _processPublicRenderParameters(
@@ -821,11 +821,11 @@ public class PortletContainerImpl implements PortletContainer {
 
 		PortletConfig portletConfig =
 			(PortletConfig)httpServletRequest.getAttribute(
-				JavaConstants.JAVAX_PORTLET_CONFIG);
+				JavaConstants.JAKARTA_PORTLET_CONFIG);
 
 		PortletRequest portletRequest =
 			(PortletRequest)httpServletRequest.getAttribute(
-				JavaConstants.JAVAX_PORTLET_REQUEST);
+				JavaConstants.JAKARTA_PORTLET_REQUEST);
 
 		if (!(portletRequest instanceof RenderRequest)) {
 			portletRequest = null;
@@ -833,7 +833,7 @@ public class PortletContainerImpl implements PortletContainer {
 
 		PortletResponse portletResponse =
 			(PortletResponse)httpServletRequest.getAttribute(
-				JavaConstants.JAVAX_PORTLET_RESPONSE);
+				JavaConstants.JAKARTA_PORTLET_RESPONSE);
 
 		if (!(portletResponse instanceof RenderResponse)) {
 			portletResponse = null;
@@ -916,17 +916,17 @@ public class PortletContainerImpl implements PortletContainer {
 
 			if (portletConfig != null) {
 				httpServletRequest.setAttribute(
-					JavaConstants.JAVAX_PORTLET_CONFIG, portletConfig);
+					JavaConstants.JAKARTA_PORTLET_CONFIG, portletConfig);
 			}
 
 			if (portletRequest != null) {
 				httpServletRequest.setAttribute(
-					JavaConstants.JAVAX_PORTLET_REQUEST, portletRequest);
+					JavaConstants.JAKARTA_PORTLET_REQUEST, portletRequest);
 			}
 
 			if (portletResponse != null) {
 				httpServletRequest.setAttribute(
-					JavaConstants.JAVAX_PORTLET_RESPONSE, portletResponse);
+					JavaConstants.JAKARTA_PORTLET_RESPONSE, portletResponse);
 			}
 
 			if (lifecycle != null) {
@@ -990,21 +990,14 @@ public class PortletContainerImpl implements PortletContainer {
 		portletDisplay.setPortletName(portletConfig.getPortletName());
 		portletDisplay.setResourcePK(portletPrimaryKey);
 		portletDisplay.setRootPortletId(portlet.getRootPortletId());
-
-		WebDAVStorage webDAVStorage = portlet.getWebDAVStorageInstance();
-
-		if (webDAVStorage != null) {
-			portletDisplay.setWebDAVEnabled(true);
-		}
-		else {
-			portletDisplay.setWebDAVEnabled(false);
-		}
+		portletDisplay.setWebDAVEnabledSupplier(
+			() -> portlet.getWebDAVStorageInstance() != null);
 
 		LiferayResourceRequest liferayResourceRequest = null;
 
 		PortletRequest portletRequest =
 			(PortletRequest)httpServletRequest.getAttribute(
-				JavaConstants.JAVAX_PORTLET_REQUEST);
+				JavaConstants.JAKARTA_PORTLET_REQUEST);
 
 		if (portletRequest instanceof LiferayResourceRequest) {
 			liferayResourceRequest = (LiferayResourceRequest)portletRequest;
@@ -1032,7 +1025,7 @@ public class PortletContainerImpl implements PortletContainer {
 		else {
 			liferayResourceResponse =
 				(LiferayResourceResponse)httpServletRequest.getAttribute(
-					JavaConstants.JAVAX_PORTLET_RESPONSE);
+					JavaConstants.JAKARTA_PORTLET_RESPONSE);
 		}
 
 		liferayResourceRequest.defineObjects(

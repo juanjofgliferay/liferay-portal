@@ -13,26 +13,29 @@ import com.liferay.portal.kernel.util.PortletKeys;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portlet.PortalPreferencesWrapper;
 
-import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.Reference;
-
 /**
  * @author Drew Brokke
  */
-@Component(service = FeatureFlagPreferencesManager.class)
 public class FeatureFlagPreferencesManager {
+
+	public FeatureFlagPreferencesManager(
+		PortalPreferencesLocalService portalPreferencesLocalService) {
+
+		_portalPreferencesLocalService = portalPreferencesLocalService;
+	}
 
 	public Boolean isEnabled(long companyId, String key) {
 		if (Validator.isNull(
-				_portalPreferencesLocalService.fetchCompanyPortalPreferences(
-					companyId))) {
+				_portalPreferencesLocalService.fetchPortalPreferences(
+					companyId, PortletKeys.PREFS_OWNER_TYPE_COMPANY))) {
 
 			return null;
 		}
 
 		PortalPreferences portalPreferences = _getPortalPreferences(companyId);
 
-		String value = portalPreferences.getValue(_NAMESPACE, key);
+		String value = portalPreferences.getValue(
+			FeatureFlagConstants.PREFERENCE_NAMESPACE, key);
 
 		if (value == null) {
 			return null;
@@ -44,7 +47,9 @@ public class FeatureFlagPreferencesManager {
 	public void setEnabled(long companyId, String key, boolean enabled) {
 		PortalPreferences portalPreferences = _getPortalPreferences(companyId);
 
-		portalPreferences.setValue(_NAMESPACE, key, String.valueOf(enabled));
+		portalPreferences.setValue(
+			FeatureFlagConstants.PREFERENCE_NAMESPACE, key,
+			String.valueOf(enabled));
 
 		_portalPreferencesLocalService.updatePreferences(
 			companyId, PortletKeys.PREFS_OWNER_TYPE_COMPANY, portalPreferences);
@@ -59,9 +64,6 @@ public class FeatureFlagPreferencesManager {
 		return portalPreferencesWrapper.getPortalPreferencesImpl();
 	}
 
-	private static final String _NAMESPACE = FeatureFlagConstants.FEATURE_FLAG;
-
-	@Reference
-	private PortalPreferencesLocalService _portalPreferencesLocalService;
+	private final PortalPreferencesLocalService _portalPreferencesLocalService;
 
 }

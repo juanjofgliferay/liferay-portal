@@ -10,12 +10,15 @@ dependencies {
 	compileOnly group: "org.osgi", name: "osgi.core", transitive: false, version: "6.0.0"
 }
 
+jarSources {
+	mustRunAfter patch
+}
+
 patch {
 	ext {
 		autoClean = false
 	}
 
 	fileNames "org/apache/aries/component/dsl/OSGi.java"
-
 	originalLibModuleName = "org.apache.aries.component-dsl.component-dsl"
 }

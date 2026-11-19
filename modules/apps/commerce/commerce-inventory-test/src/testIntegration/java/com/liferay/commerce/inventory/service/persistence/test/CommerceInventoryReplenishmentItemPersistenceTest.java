@@ -122,13 +122,9 @@ public class CommerceInventoryReplenishmentItemPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
 		CommerceInventoryReplenishmentItem
-			newCommerceInventoryReplenishmentItem = _persistence.create(pk);
-
-		newCommerceInventoryReplenishmentItem.setMvccVersion(
-			RandomTestUtil.nextLong());
+			newCommerceInventoryReplenishmentItem =
+				addCommerceInventoryReplenishmentItem();
 
 		newCommerceInventoryReplenishmentItem.setUuid(
 			RandomTestUtil.randomString());
@@ -166,8 +162,11 @@ public class CommerceInventoryReplenishmentItemPersistenceTest {
 		newCommerceInventoryReplenishmentItem.setUnitOfMeasureKey(
 			RandomTestUtil.randomString());
 
+		newCommerceInventoryReplenishmentItem = _persistence.update(
+			newCommerceInventoryReplenishmentItem);
+
 		_commerceInventoryReplenishmentItems.add(
-			_persistence.update(newCommerceInventoryReplenishmentItem));
+			newCommerceInventoryReplenishmentItem);
 
 		CommerceInventoryReplenishmentItem
 			existingCommerceInventoryReplenishmentItem =
@@ -281,13 +280,6 @@ public class CommerceInventoryReplenishmentItemPersistenceTest {
 			RandomTestUtil.nextLong());
 
 		_persistence.countByCommerceInventoryWarehouseId(0L);
-	}
-
-	@Test
-	public void testCountByAvailabilityDate() throws Exception {
-		_persistence.countByAvailabilityDate(RandomTestUtil.nextDate());
-
-		_persistence.countByAvailabilityDate(RandomTestUtil.nextDate());
 	}
 
 	@Test
@@ -711,9 +703,6 @@ public class CommerceInventoryReplenishmentItemPersistenceTest {
 		CommerceInventoryReplenishmentItem commerceInventoryReplenishmentItem =
 			_persistence.create(pk);
 
-		commerceInventoryReplenishmentItem.setMvccVersion(
-			RandomTestUtil.nextLong());
-
 		commerceInventoryReplenishmentItem.setUuid(
 			RandomTestUtil.randomString());
 
@@ -762,3 +751,4 @@ public class CommerceInventoryReplenishmentItemPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-354449318

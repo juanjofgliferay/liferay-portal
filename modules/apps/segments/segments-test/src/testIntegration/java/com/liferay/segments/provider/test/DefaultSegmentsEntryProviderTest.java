@@ -5,7 +5,16 @@
 
 package com.liferay.segments.provider.test;
 
+import com.fasterxml.jackson.databind.util.ISO8601Utils;
+
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.expando.kernel.model.ExpandoColumn;
+import com.liferay.expando.kernel.model.ExpandoColumnConstants;
+import com.liferay.expando.kernel.model.ExpandoTable;
+import com.liferay.expando.kernel.service.ExpandoTableLocalService;
+import com.liferay.expando.kernel.service.ExpandoValueLocalService;
+import com.liferay.expando.test.util.ExpandoTestUtil;
+import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.petra.string.StringUtil;
 import com.liferay.portal.kernel.model.Company;
@@ -15,6 +24,7 @@ import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.model.role.RoleConstants;
 import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.service.UserLocalService;
+import com.liferay.portal.kernel.test.TestInfo;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
@@ -26,6 +36,7 @@ import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.odata.normalizer.Normalizer;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.segments.constants.SegmentsEntryConstants;
@@ -35,18 +46,25 @@ import com.liferay.segments.criteria.CriteriaSerializer;
 import com.liferay.segments.criteria.contributor.SegmentsCriteriaContributor;
 import com.liferay.segments.model.SegmentsEntry;
 import com.liferay.segments.provider.SegmentsEntryProvider;
+import com.liferay.segments.service.SegmentsEntryLocalService;
 import com.liferay.segments.service.SegmentsEntryRelLocalService;
 import com.liferay.segments.test.util.SegmentsTestUtil;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.FrameworkUtil;
+import org.osgi.util.tracker.ServiceTracker;
 
 /**
  * @author Eduardo García
@@ -62,6 +80,27 @@ public class DefaultSegmentsEntryProviderTest {
 	@Before
 	public void setUp() throws Exception {
 		_group = GroupTestUtil.addGroup();
+
+		Bundle bundle = FrameworkUtil.getBundle(
+			DefaultSegmentsEntryProviderTest.class);
+
+		BundleContext bundleContext = bundle.getBundleContext();
+
+		_serviceTracker = new ServiceTracker<>(
+			bundleContext,
+			bundleContext.createFilter(
+				StringBundler.concat(
+					"(&(objectClass=", SegmentsEntryProvider.class.getName(),
+					")(segments.entry.provider.source=",
+					SegmentsEntryConstants.SOURCE_DEFAULT, "))")),
+			null);
+
+		_serviceTracker.open();
+	}
+
+	@After
+	public void tearDown() {
+		_serviceTracker.close();
 	}
 
 	@Test
@@ -89,16 +128,18 @@ public class DefaultSegmentsEntryProviderTest {
 			Criteria.Conjunction.AND);
 
 		SegmentsEntry segmentsEntry = SegmentsTestUtil.addSegmentsEntry(
-			_group.getGroupId(), CriteriaSerializer.serialize(criteria),
-			User.class.getName());
+			_group.getGroupId(), CriteriaSerializer.serialize(criteria));
+
+		SegmentsEntryProvider segmentsEntryProvider =
+			_getSegmentsEntryProvider();
 
 		Assert.assertEquals(
 			1,
-			_segmentsEntryProvider.getSegmentsEntryClassPKsCount(
+			segmentsEntryProvider.getSegmentsEntryClassPKsCount(
 				segmentsEntry.getSegmentsEntryId()));
 		Assert.assertArrayEquals(
 			new long[] {_user1.getUserId()},
-			_segmentsEntryProvider.getSegmentsEntryClassPKs(
+			segmentsEntryProvider.getSegmentsEntryClassPKs(
 				segmentsEntry.getSegmentsEntryId(), 0, 1));
 	}
 
@@ -125,37 +166,15 @@ public class DefaultSegmentsEntryProviderTest {
 			Criteria.Conjunction.AND);
 
 		SegmentsEntry segmentsEntry = SegmentsTestUtil.addSegmentsEntry(
-			_group.getGroupId(), CriteriaSerializer.serialize(criteria),
-			User.class.getName());
+			_group.getGroupId(), CriteriaSerializer.serialize(criteria));
+
+		SegmentsEntryProvider segmentsEntryProvider =
+			_getSegmentsEntryProvider();
 
 		Assert.assertEquals(
 			0,
-			_segmentsEntryProvider.getSegmentsEntryClassPKsCount(
+			segmentsEntryProvider.getSegmentsEntryClassPKsCount(
 				segmentsEntry.getSegmentsEntryId()));
-	}
-
-	@Test
-	public void testGetSegmentsEntryClassPKsWithoutCriteria() throws Exception {
-		_user1 = UserTestUtil.addUser(_group.getGroupId());
-		_user2 = UserTestUtil.addUser(_group.getGroupId());
-
-		SegmentsEntry segmentsEntry = SegmentsTestUtil.addSegmentsEntry(
-			_group.getGroupId(), CriteriaSerializer.serialize(new Criteria()),
-			User.class.getName());
-
-		_segmentsEntryRelLocalService.addSegmentsEntryRel(
-			segmentsEntry.getSegmentsEntryId(),
-			_portal.getClassNameId(User.class.getName()), _user1.getUserId(),
-			ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
-
-		Assert.assertEquals(
-			1,
-			_segmentsEntryProvider.getSegmentsEntryClassPKsCount(
-				segmentsEntry.getSegmentsEntryId()));
-		Assert.assertArrayEquals(
-			new long[] {_user1.getUserId()},
-			_segmentsEntryProvider.getSegmentsEntryClassPKs(
-				segmentsEntry.getSegmentsEntryId(), 0, 1));
 	}
 
 	@Test
@@ -173,17 +192,85 @@ public class DefaultSegmentsEntryProviderTest {
 			Criteria.Conjunction.AND);
 
 		SegmentsEntry segmentsEntry = SegmentsTestUtil.addSegmentsEntry(
-			_group.getGroupId(), CriteriaSerializer.serialize(criteria),
-			User.class.getName());
+			_group.getGroupId(), CriteriaSerializer.serialize(criteria));
+
+		SegmentsEntryProvider segmentsEntryProvider =
+			_getSegmentsEntryProvider();
 
 		Assert.assertEquals(
 			1,
-			_segmentsEntryProvider.getSegmentsEntryClassPKsCount(
+			segmentsEntryProvider.getSegmentsEntryClassPKsCount(
 				segmentsEntry.getSegmentsEntryId()));
 		Assert.assertArrayEquals(
 			new long[] {_user1.getUserId()},
-			_segmentsEntryProvider.getSegmentsEntryClassPKs(
+			segmentsEntryProvider.getSegmentsEntryClassPKs(
 				segmentsEntry.getSegmentsEntryId(), 0, 1));
+	}
+
+	@Test
+	public void testGetSegmentsEntryClassPKsWithoutCriteria() throws Exception {
+		_user1 = UserTestUtil.addUser(_group.getGroupId());
+		_user2 = UserTestUtil.addUser(_group.getGroupId());
+
+		SegmentsEntry segmentsEntry = SegmentsTestUtil.addSegmentsEntry(
+			_group.getGroupId(), CriteriaSerializer.serialize(new Criteria()));
+
+		_segmentsEntryRelLocalService.addSegmentsEntryRel(
+			segmentsEntry.getSegmentsEntryId(),
+			_portal.getClassNameId(User.class.getName()), _user1.getUserId(),
+			ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
+
+		SegmentsEntryProvider segmentsEntryProvider =
+			_getSegmentsEntryProvider();
+
+		Assert.assertEquals(
+			1,
+			segmentsEntryProvider.getSegmentsEntryClassPKsCount(
+				segmentsEntry.getSegmentsEntryId()));
+		Assert.assertArrayEquals(
+			new long[] {_user1.getUserId()},
+			segmentsEntryProvider.getSegmentsEntryClassPKs(
+				segmentsEntry.getSegmentsEntryId(), 0, 1));
+	}
+
+	@Test
+	@TestInfo("LPD-86103")
+	public void testGetSegmentsEntryIdsWithBooleanCustomField()
+		throws Exception {
+
+		ExpandoTable expandoTable = _expandoTableLocalService.addDefaultTable(
+			TestPropsValues.getCompanyId(), User.class.getName());
+
+		ExpandoColumn expandoColumn = ExpandoTestUtil.addColumn(
+			expandoTable, RandomTestUtil.randomString(),
+			ExpandoColumnConstants.BOOLEAN);
+
+		_expandoValueLocalService.addValue(
+			TestPropsValues.getCompanyId(), User.class.getName(),
+			expandoTable.getName(), expandoColumn.getName(),
+			TestPropsValues.getUserId(), true);
+
+		Criteria criteria = new Criteria();
+
+		_userSegmentsCriteriaContributor.contribute(
+			criteria,
+			StringBundler.concat(
+				"(customField/_", expandoColumn.getColumnId(), "_",
+				Normalizer.normalizeIdentifier(expandoColumn.getName()),
+				" eq true)"),
+			Criteria.Conjunction.AND);
+
+		SegmentsEntry segmentsEntry = SegmentsTestUtil.addSegmentsEntry(
+			_group.getGroupId(), CriteriaSerializer.serialize(criteria));
+
+		SegmentsEntryProvider segmentsEntryProvider =
+			_getSegmentsEntryProvider();
+
+		Assert.assertArrayEquals(
+			new long[] {segmentsEntry.getSegmentsEntryId()},
+			segmentsEntryProvider.getSegmentsEntryIds(
+				_group.getGroupId(), User.class.getName(),
+				TestPropsValues.getUserId(), new Context()));
 	}
 
 	@Test
@@ -196,8 +283,7 @@ public class DefaultSegmentsEntryProviderTest {
 			criteria, "(languageId eq 'en')", Criteria.Conjunction.AND);
 
 		SegmentsEntry segmentsEntry = SegmentsTestUtil.addSegmentsEntry(
-			_group.getGroupId(), CriteriaSerializer.serialize(criteria),
-			User.class.getName());
+			_group.getGroupId(), CriteriaSerializer.serialize(criteria));
 
 		Company company = _companyLocalService.getCompany(
 			TestPropsValues.getCompanyId());
@@ -209,14 +295,18 @@ public class DefaultSegmentsEntryProviderTest {
 		context.put(Context.LANGUAGE_ID, "en");
 		context.put(Context.SIGNED_IN, false);
 
+		SegmentsEntryProvider segmentsEntryProvider =
+			_getSegmentsEntryProvider();
+
 		Assert.assertArrayEquals(
 			new long[] {segmentsEntry.getSegmentsEntryId()},
-			_segmentsEntryProvider.getSegmentsEntryIds(
+			segmentsEntryProvider.getSegmentsEntryIds(
 				_group.getGroupId(), User.class.getName(),
 				guestUser.getUserId(), context));
 	}
 
 	@Test
+	@TestInfo("LPS-127109")
 	public void testGetSegmentsEntryIdsWithContextCriterionAndGuestUserWithoutSignedInContext()
 		throws Exception {
 
@@ -226,8 +316,7 @@ public class DefaultSegmentsEntryProviderTest {
 			criteria, "(languageId eq 'en')", Criteria.Conjunction.AND);
 
 		SegmentsEntry segmentsEntry = SegmentsTestUtil.addSegmentsEntry(
-			_group.getGroupId(), CriteriaSerializer.serialize(criteria),
-			User.class.getName());
+			_group.getGroupId(), CriteriaSerializer.serialize(criteria));
 
 		Company company = _companyLocalService.getCompany(
 			TestPropsValues.getCompanyId());
@@ -238,9 +327,12 @@ public class DefaultSegmentsEntryProviderTest {
 
 		context.put(Context.LANGUAGE_ID, "en");
 
+		SegmentsEntryProvider segmentsEntryProvider =
+			_getSegmentsEntryProvider();
+
 		Assert.assertArrayEquals(
 			new long[] {segmentsEntry.getSegmentsEntryId()},
-			_segmentsEntryProvider.getSegmentsEntryIds(
+			segmentsEntryProvider.getSegmentsEntryIds(
 				_group.getGroupId(), User.class.getName(),
 				guestUser.getUserId(), context));
 	}
@@ -263,10 +355,9 @@ public class DefaultSegmentsEntryProviderTest {
 			Criteria.Conjunction.AND);
 
 		SegmentsEntry segmentsEntry1 = SegmentsTestUtil.addSegmentsEntry(
-			_group.getGroupId(), User.class.getName(), _user1.getUserId());
+			_group.getGroupId(), _user1.getUserId());
 		SegmentsEntry segmentsEntry2 = SegmentsTestUtil.addSegmentsEntry(
-			_group.getGroupId(), CriteriaSerializer.serialize(criteria1),
-			User.class.getName());
+			_group.getGroupId(), CriteriaSerializer.serialize(criteria1));
 
 		Criteria criteria2 = new Criteria();
 
@@ -279,15 +370,17 @@ public class DefaultSegmentsEntryProviderTest {
 			Criteria.Conjunction.AND);
 
 		SegmentsEntry segmentsEntry3 = SegmentsTestUtil.addSegmentsEntry(
-			_group.getGroupId(), CriteriaSerializer.serialize(criteria2),
-			User.class.getName());
+			_group.getGroupId(), CriteriaSerializer.serialize(criteria2));
 
 		Context context = new Context();
 
 		context.put(Context.LANGUAGE_ID, "en");
 		context.put(Context.SIGNED_IN, true);
 
-		long[] segmentsEntryIds = _segmentsEntryProvider.getSegmentsEntryIds(
+		SegmentsEntryProvider segmentsEntryProvider =
+			_getSegmentsEntryProvider();
+
+		long[] segmentsEntryIds = segmentsEntryProvider.getSegmentsEntryIds(
 			_group.getGroupId(), User.class.getName(), _user1.getUserId(),
 			context);
 
@@ -324,17 +417,19 @@ public class DefaultSegmentsEntryProviderTest {
 			Criteria.Conjunction.AND);
 
 		SegmentsTestUtil.addSegmentsEntry(
-			_group.getGroupId(), CriteriaSerializer.serialize(criteria),
-			User.class.getName());
+			_group.getGroupId(), CriteriaSerializer.serialize(criteria));
 
 		Context context = new Context();
 
 		context.put(Context.LANGUAGE_ID, "en");
 		context.put(Context.SIGNED_IN, false);
 
+		SegmentsEntryProvider segmentsEntryProvider =
+			_getSegmentsEntryProvider();
+
 		Assert.assertArrayEquals(
 			new long[0],
-			_segmentsEntryProvider.getSegmentsEntryIds(
+			segmentsEntryProvider.getSegmentsEntryIds(
 				_group.getGroupId(), User.class.getName(),
 				guestUser.getUserId(), context));
 	}
@@ -359,16 +454,18 @@ public class DefaultSegmentsEntryProviderTest {
 			Criteria.Conjunction.AND);
 
 		SegmentsTestUtil.addSegmentsEntry(
-			_group.getGroupId(), CriteriaSerializer.serialize(criteria),
-			User.class.getName());
+			_group.getGroupId(), CriteriaSerializer.serialize(criteria));
 
 		Context context = new Context();
 
 		context.put(Context.LANGUAGE_ID, "en");
 
+		SegmentsEntryProvider segmentsEntryProvider =
+			_getSegmentsEntryProvider();
+
 		Assert.assertArrayEquals(
 			new long[0],
-			_segmentsEntryProvider.getSegmentsEntryIds(
+			segmentsEntryProvider.getSegmentsEntryIds(
 				_group.getGroupId(), User.class.getName(),
 				guestUser.getUserId(), context));
 	}
@@ -393,17 +490,19 @@ public class DefaultSegmentsEntryProviderTest {
 			Criteria.Conjunction.AND);
 
 		SegmentsEntry segmentsEntry = SegmentsTestUtil.addSegmentsEntry(
-			_group.getGroupId(), CriteriaSerializer.serialize(criteria),
-			User.class.getName());
+			_group.getGroupId(), CriteriaSerializer.serialize(criteria));
 
 		Context context = new Context();
 
 		context.put(Context.LANGUAGE_ID, "en");
 		context.put(Context.SIGNED_IN, false);
 
+		SegmentsEntryProvider segmentsEntryProvider =
+			_getSegmentsEntryProvider();
+
 		Assert.assertArrayEquals(
 			new long[] {segmentsEntry.getSegmentsEntryId()},
-			_segmentsEntryProvider.getSegmentsEntryIds(
+			segmentsEntryProvider.getSegmentsEntryIds(
 				_group.getGroupId(), User.class.getName(),
 				guestUser.getUserId(), context));
 	}
@@ -428,18 +527,48 @@ public class DefaultSegmentsEntryProviderTest {
 			Criteria.Conjunction.AND);
 
 		SegmentsEntry segmentsEntry = SegmentsTestUtil.addSegmentsEntry(
-			_group.getGroupId(), CriteriaSerializer.serialize(criteria),
-			User.class.getName());
+			_group.getGroupId(), CriteriaSerializer.serialize(criteria));
 
 		Context context = new Context();
 
 		context.put(Context.LANGUAGE_ID, "en");
 
+		SegmentsEntryProvider segmentsEntryProvider =
+			_getSegmentsEntryProvider();
+
 		Assert.assertArrayEquals(
 			new long[] {segmentsEntry.getSegmentsEntryId()},
-			_segmentsEntryProvider.getSegmentsEntryIds(
+			segmentsEntryProvider.getSegmentsEntryIds(
 				_group.getGroupId(), User.class.getName(),
 				guestUser.getUserId(), context));
+	}
+
+	@Test
+	public void testGetSegmentsEntryIdsWithInvalidModelCriterion()
+		throws Exception {
+
+		_user1 = UserTestUtil.addUser(_group.getGroupId());
+
+		Criteria criteria = new Criteria();
+
+		_userSegmentsCriteriaContributor.contribute(
+			criteria, "('a'.equals('a'))", Criteria.Conjunction.AND);
+
+		SegmentsEntry segmentsEntry = SegmentsTestUtil.addSegmentsEntry(
+			_group.getGroupId());
+
+		segmentsEntry.setCriteria(CriteriaSerializer.serialize(criteria));
+
+		_segmentsEntryLocalService.updateSegmentsEntry(segmentsEntry);
+
+		SegmentsEntryProvider segmentsEntryProvider =
+			_getSegmentsEntryProvider();
+
+		Assert.assertArrayEquals(
+			new long[0],
+			segmentsEntryProvider.getSegmentsEntryIds(
+				_group.getGroupId(), User.class.getName(), _user1.getUserId(),
+				new Context()));
 	}
 
 	@Test
@@ -459,16 +588,18 @@ public class DefaultSegmentsEntryProviderTest {
 			Criteria.Conjunction.AND);
 
 		SegmentsTestUtil.addSegmentsEntry(
-			_group.getGroupId(), CriteriaSerializer.serialize(criteria),
-			User.class.getName());
+			_group.getGroupId(), CriteriaSerializer.serialize(criteria));
 
 		Context context = new Context();
 
 		context.put(Context.SIGNED_IN, false);
 
+		SegmentsEntryProvider segmentsEntryProvider =
+			_getSegmentsEntryProvider();
+
 		Assert.assertArrayEquals(
 			new long[0],
-			_segmentsEntryProvider.getSegmentsEntryIds(
+			segmentsEntryProvider.getSegmentsEntryIds(
 				_group.getGroupId(), User.class.getName(),
 				guestUser.getUserId(), context));
 	}
@@ -498,10 +629,9 @@ public class DefaultSegmentsEntryProviderTest {
 			Criteria.Conjunction.AND);
 
 		SegmentsEntry segmentsEntry1 = SegmentsTestUtil.addSegmentsEntry(
-			_group.getGroupId(), User.class.getName(), _user1.getUserId());
+			_group.getGroupId(), _user1.getUserId());
 		SegmentsEntry segmentsEntry2 = SegmentsTestUtil.addSegmentsEntry(
-			_group.getGroupId(), CriteriaSerializer.serialize(criteria1),
-			User.class.getName());
+			_group.getGroupId(), CriteriaSerializer.serialize(criteria1));
 
 		Criteria criteria2 = new Criteria();
 
@@ -511,12 +641,14 @@ public class DefaultSegmentsEntryProviderTest {
 			Criteria.Conjunction.AND);
 
 		SegmentsTestUtil.addSegmentsEntry(
-			_group.getGroupId(), User.class.getName(), _user2.getUserId());
+			_group.getGroupId(), _user2.getUserId());
 		SegmentsTestUtil.addSegmentsEntry(
-			_group.getGroupId(), CriteriaSerializer.serialize(criteria2),
-			User.class.getName());
+			_group.getGroupId(), CriteriaSerializer.serialize(criteria2));
 
-		long[] segmentsEntryIds = _segmentsEntryProvider.getSegmentsEntryIds(
+		SegmentsEntryProvider segmentsEntryProvider =
+			_getSegmentsEntryProvider();
+
+		long[] segmentsEntryIds = segmentsEntryProvider.getSegmentsEntryIds(
 			_group.getGroupId(), User.class.getName(), _user1.getUserId());
 
 		Assert.assertEquals(
@@ -541,8 +673,7 @@ public class DefaultSegmentsEntryProviderTest {
 			criteria, "(languageId eq 'en')", Criteria.Conjunction.AND);
 
 		SegmentsTestUtil.addSegmentsEntry(
-			_group.getGroupId(), CriteriaSerializer.serialize(criteria),
-			User.class.getName());
+			_group.getGroupId(), CriteriaSerializer.serialize(criteria));
 
 		Company company = _companyLocalService.getCompany(
 			TestPropsValues.getCompanyId());
@@ -554,9 +685,12 @@ public class DefaultSegmentsEntryProviderTest {
 		context.put(Context.LANGUAGE_ID, "es");
 		context.put(Context.SIGNED_IN, false);
 
+		SegmentsEntryProvider segmentsEntryProvider =
+			_getSegmentsEntryProvider();
+
 		Assert.assertArrayEquals(
 			new long[0],
-			_segmentsEntryProvider.getSegmentsEntryIds(
+			segmentsEntryProvider.getSegmentsEntryIds(
 				_group.getGroupId(), User.class.getName(),
 				guestUser.getUserId(), context));
 	}
@@ -571,8 +705,7 @@ public class DefaultSegmentsEntryProviderTest {
 			criteria, "(languageId eq 'en')", Criteria.Conjunction.AND);
 
 		SegmentsTestUtil.addSegmentsEntry(
-			_group.getGroupId(), CriteriaSerializer.serialize(criteria),
-			User.class.getName());
+			_group.getGroupId(), CriteriaSerializer.serialize(criteria));
 
 		Company company = _companyLocalService.getCompany(
 			TestPropsValues.getCompanyId());
@@ -583,9 +716,12 @@ public class DefaultSegmentsEntryProviderTest {
 
 		context.put(Context.LANGUAGE_ID, "es");
 
+		SegmentsEntryProvider segmentsEntryProvider =
+			_getSegmentsEntryProvider();
+
 		Assert.assertArrayEquals(
 			new long[0],
-			_segmentsEntryProvider.getSegmentsEntryIds(
+			segmentsEntryProvider.getSegmentsEntryIds(
 				_group.getGroupId(), User.class.getName(),
 				guestUser.getUserId(), context));
 	}
@@ -607,16 +743,18 @@ public class DefaultSegmentsEntryProviderTest {
 			Criteria.Conjunction.AND);
 
 		SegmentsTestUtil.addSegmentsEntry(
-			_group.getGroupId(), CriteriaSerializer.serialize(criteria),
-			User.class.getName());
+			_group.getGroupId(), CriteriaSerializer.serialize(criteria));
 
 		Context context = new Context();
 
 		context.put("languageId", "es");
 
+		SegmentsEntryProvider segmentsEntryProvider =
+			_getSegmentsEntryProvider();
+
 		Assert.assertArrayEquals(
 			new long[0],
-			_segmentsEntryProvider.getSegmentsEntryIds(
+			segmentsEntryProvider.getSegmentsEntryIds(
 				_group.getGroupId(), User.class.getName(), _user1.getUserId(),
 				context));
 	}
@@ -641,17 +779,19 @@ public class DefaultSegmentsEntryProviderTest {
 			Criteria.Conjunction.AND);
 
 		SegmentsTestUtil.addSegmentsEntry(
-			_group.getGroupId(), CriteriaSerializer.serialize(criteria),
-			User.class.getName());
+			_group.getGroupId(), CriteriaSerializer.serialize(criteria));
 
 		Context context = new Context();
 
 		context.put(Context.LANGUAGE_ID, "es");
 		context.put(Context.SIGNED_IN, false);
 
+		SegmentsEntryProvider segmentsEntryProvider =
+			_getSegmentsEntryProvider();
+
 		Assert.assertArrayEquals(
 			new long[0],
-			_segmentsEntryProvider.getSegmentsEntryIds(
+			segmentsEntryProvider.getSegmentsEntryIds(
 				_group.getGroupId(), User.class.getName(),
 				guestUser.getUserId(), context));
 	}
@@ -676,16 +816,18 @@ public class DefaultSegmentsEntryProviderTest {
 			Criteria.Conjunction.AND);
 
 		SegmentsTestUtil.addSegmentsEntry(
-			_group.getGroupId(), CriteriaSerializer.serialize(criteria),
-			User.class.getName());
+			_group.getGroupId(), CriteriaSerializer.serialize(criteria));
 
 		Context context = new Context();
 
 		context.put(Context.LANGUAGE_ID, "es");
 
+		SegmentsEntryProvider segmentsEntryProvider =
+			_getSegmentsEntryProvider();
+
 		Assert.assertArrayEquals(
 			new long[0],
-			_segmentsEntryProvider.getSegmentsEntryIds(
+			segmentsEntryProvider.getSegmentsEntryIds(
 				_group.getGroupId(), User.class.getName(),
 				guestUser.getUserId(), context));
 	}
@@ -710,17 +852,19 @@ public class DefaultSegmentsEntryProviderTest {
 			Criteria.Conjunction.AND);
 
 		SegmentsTestUtil.addSegmentsEntry(
-			_group.getGroupId(), CriteriaSerializer.serialize(criteria),
-			User.class.getName());
+			_group.getGroupId(), CriteriaSerializer.serialize(criteria));
 
 		Context context = new Context();
 
 		context.put(Context.LANGUAGE_ID, "es");
 		context.put(Context.SIGNED_IN, false);
 
+		SegmentsEntryProvider segmentsEntryProvider =
+			_getSegmentsEntryProvider();
+
 		Assert.assertArrayEquals(
 			new long[0],
-			_segmentsEntryProvider.getSegmentsEntryIds(
+			segmentsEntryProvider.getSegmentsEntryIds(
 				_group.getGroupId(), User.class.getName(),
 				guestUser.getUserId(), context));
 	}
@@ -745,16 +889,18 @@ public class DefaultSegmentsEntryProviderTest {
 			Criteria.Conjunction.AND);
 
 		SegmentsTestUtil.addSegmentsEntry(
-			_group.getGroupId(), CriteriaSerializer.serialize(criteria),
-			User.class.getName());
+			_group.getGroupId(), CriteriaSerializer.serialize(criteria));
 
 		Context context = new Context();
 
 		context.put(Context.LANGUAGE_ID, "es");
 
+		SegmentsEntryProvider segmentsEntryProvider =
+			_getSegmentsEntryProvider();
+
 		Assert.assertArrayEquals(
 			new long[0],
-			_segmentsEntryProvider.getSegmentsEntryIds(
+			segmentsEntryProvider.getSegmentsEntryIds(
 				_group.getGroupId(), User.class.getName(),
 				guestUser.getUserId(), context));
 	}
@@ -772,10 +918,9 @@ public class DefaultSegmentsEntryProviderTest {
 			criteria1, "(languageId eq 'en')", Criteria.Conjunction.AND);
 
 		SegmentsEntry segmentsEntry1 = SegmentsTestUtil.addSegmentsEntry(
-			_group.getGroupId(), User.class.getName(), _user1.getUserId());
+			_group.getGroupId(), _user1.getUserId());
 		SegmentsEntry segmentsEntry2 = SegmentsTestUtil.addSegmentsEntry(
-			_group.getGroupId(), CriteriaSerializer.serialize(criteria1),
-			User.class.getName());
+			_group.getGroupId(), CriteriaSerializer.serialize(criteria1));
 
 		Criteria criteria2 = new Criteria();
 
@@ -783,15 +928,17 @@ public class DefaultSegmentsEntryProviderTest {
 			criteria2, "(languageId eq 'fr')", Criteria.Conjunction.AND);
 
 		SegmentsTestUtil.addSegmentsEntry(
-			_group.getGroupId(), CriteriaSerializer.serialize(criteria2),
-			User.class.getName());
+			_group.getGroupId(), CriteriaSerializer.serialize(criteria2));
 
 		Context context = new Context();
 
 		context.put(Context.LANGUAGE_ID, "en");
 		context.put(Context.SIGNED_IN, true);
 
-		long[] segmentsEntryIds = _segmentsEntryProvider.getSegmentsEntryIds(
+		SegmentsEntryProvider segmentsEntryProvider =
+			_getSegmentsEntryProvider();
+
+		long[] segmentsEntryIds = segmentsEntryProvider.getSegmentsEntryIds(
 			_group.getGroupId(), User.class.getName(), _user1.getUserId(),
 			context);
 
@@ -822,10 +969,9 @@ public class DefaultSegmentsEntryProviderTest {
 			Criteria.Conjunction.AND);
 
 		SegmentsEntry segmentsEntry1 = SegmentsTestUtil.addSegmentsEntry(
-			_group.getGroupId(), User.class.getName(), _user1.getUserId());
+			_group.getGroupId(), _user1.getUserId());
 		SegmentsEntry segmentsEntry2 = SegmentsTestUtil.addSegmentsEntry(
-			_group.getGroupId(), CriteriaSerializer.serialize(criteria1),
-			User.class.getName());
+			_group.getGroupId(), CriteriaSerializer.serialize(criteria1));
 
 		Criteria criteria2 = new Criteria();
 
@@ -835,12 +981,14 @@ public class DefaultSegmentsEntryProviderTest {
 			Criteria.Conjunction.AND);
 
 		SegmentsTestUtil.addSegmentsEntry(
-			_group.getGroupId(), User.class.getName(), _user2.getUserId());
+			_group.getGroupId(), _user2.getUserId());
 		SegmentsTestUtil.addSegmentsEntry(
-			_group.getGroupId(), CriteriaSerializer.serialize(criteria2),
-			User.class.getName());
+			_group.getGroupId(), CriteriaSerializer.serialize(criteria2));
 
-		long[] segmentsEntryIds = _segmentsEntryProvider.getSegmentsEntryIds(
+		SegmentsEntryProvider segmentsEntryProvider =
+			_getSegmentsEntryProvider();
+
+		long[] segmentsEntryIds = segmentsEntryProvider.getSegmentsEntryIds(
 			_group.getGroupId(), User.class.getName(), _user1.getUserId(), null,
 			new long[0], new long[0]);
 
@@ -857,7 +1005,7 @@ public class DefaultSegmentsEntryProviderTest {
 	}
 
 	@Test
-	public void testGetSegmentsEntryIdsWithSingleModelCriterionAndFilterSegmenntEntryIds()
+	public void testGetSegmentsEntryIdsWithSingleModelCriterionAndFilterSegmentEntryIds()
 		throws Exception {
 
 		_user1 = UserTestUtil.addUser(_group.getGroupId());
@@ -871,11 +1019,10 @@ public class DefaultSegmentsEntryProviderTest {
 			Criteria.Conjunction.AND);
 
 		SegmentsEntry segmentsEntry1 = SegmentsTestUtil.addSegmentsEntry(
-			_group.getGroupId(), User.class.getName(), _user1.getUserId());
+			_group.getGroupId(), _user1.getUserId());
 
 		SegmentsTestUtil.addSegmentsEntry(
-			_group.getGroupId(), CriteriaSerializer.serialize(criteria1),
-			User.class.getName());
+			_group.getGroupId(), CriteriaSerializer.serialize(criteria1));
 
 		Criteria criteria2 = new Criteria();
 
@@ -885,12 +1032,14 @@ public class DefaultSegmentsEntryProviderTest {
 			Criteria.Conjunction.AND);
 
 		SegmentsTestUtil.addSegmentsEntry(
-			_group.getGroupId(), User.class.getName(), _user2.getUserId());
+			_group.getGroupId(), _user2.getUserId());
 		SegmentsTestUtil.addSegmentsEntry(
-			_group.getGroupId(), CriteriaSerializer.serialize(criteria2),
-			User.class.getName());
+			_group.getGroupId(), CriteriaSerializer.serialize(criteria2));
 
-		long[] segmentsEntryIds = _segmentsEntryProvider.getSegmentsEntryIds(
+		SegmentsEntryProvider segmentsEntryProvider =
+			_getSegmentsEntryProvider();
+
+		long[] segmentsEntryIds = segmentsEntryProvider.getSegmentsEntryIds(
 			_group.getGroupId(), User.class.getName(), _user1.getUserId(), null,
 			new long[] {segmentsEntry1.getSegmentsEntryId()}, new long[0]);
 
@@ -899,6 +1048,76 @@ public class DefaultSegmentsEntryProviderTest {
 			ArrayUtil.containsAll(
 				new long[] {segmentsEntry1.getSegmentsEntryId()},
 				segmentsEntryIds));
+	}
+
+	@Test
+	@TestInfo("LPD-86335")
+	public void testGetSegmentsEntryIdsWithSpecialCharactersInCustomFieldName()
+		throws Exception {
+
+		ExpandoTable expandoTable = _expandoTableLocalService.addDefaultTable(
+			TestPropsValues.getCompanyId(), User.class.getName());
+
+		ExpandoColumn expandoColumn = ExpandoTestUtil.addColumn(
+			expandoTable, "custom-field", ExpandoColumnConstants.STRING);
+
+		_expandoValueLocalService.addValue(
+			TestPropsValues.getCompanyId(), User.class.getName(),
+			expandoTable.getName(), expandoColumn.getName(),
+			TestPropsValues.getUserId(), "test");
+
+		Criteria criteria = new Criteria();
+
+		_userSegmentsCriteriaContributor.contribute(
+			criteria,
+			StringBundler.concat(
+				"(customField/_", expandoColumn.getColumnId(), "_",
+				Normalizer.normalizeIdentifier(expandoColumn.getName()),
+				" eq 'test')"),
+			Criteria.Conjunction.AND);
+
+		SegmentsEntry segmentsEntry = SegmentsTestUtil.addSegmentsEntry(
+			_group.getGroupId(), CriteriaSerializer.serialize(criteria));
+
+		SegmentsEntryProvider segmentsEntryProvider =
+			_getSegmentsEntryProvider();
+
+		Assert.assertArrayEquals(
+			new long[] {segmentsEntry.getSegmentsEntryId()},
+			segmentsEntryProvider.getSegmentsEntryIds(
+				_group.getGroupId(), User.class.getName(),
+				TestPropsValues.getUserId(), new Context()));
+	}
+
+	@Test
+	public void testGetSegmentsEntryIdsWithUserDateModifiedCriterion()
+		throws Exception {
+
+		_user1 = UserTestUtil.addUser(_group.getGroupId());
+
+		Criteria criteria = new Criteria();
+
+		_userSegmentsCriteriaContributor.contribute(
+			criteria,
+			String.format(
+				"dateModified eq %s",
+				ISO8601Utils.format(_user1.getModifiedDate())),
+			Criteria.Conjunction.AND);
+
+		SegmentsEntry segmentsEntry = SegmentsTestUtil.addSegmentsEntry(
+			_group.getGroupId(), CriteriaSerializer.serialize(criteria));
+
+		SegmentsEntryProvider segmentsEntryProvider =
+			_getSegmentsEntryProvider();
+
+		long[] segmentsEntryIds = segmentsEntryProvider.getSegmentsEntryIds(
+			_group.getGroupId(), User.class.getName(), _user1.getUserId());
+
+		Assert.assertArrayEquals(
+			new long[] {segmentsEntry.getSegmentsEntryId()}, segmentsEntryIds);
+		Assert.assertEquals(
+			StringUtil.merge(segmentsEntryIds, StringPool.COMMA), 1,
+			segmentsEntryIds.length);
 	}
 
 	@Test
@@ -914,14 +1133,16 @@ public class DefaultSegmentsEntryProviderTest {
 			Criteria.Conjunction.AND);
 
 		SegmentsEntry segmentsEntry = SegmentsTestUtil.addSegmentsEntry(
-			_group.getGroupId(), CriteriaSerializer.serialize(criteria),
-			User.class.getName());
+			_group.getGroupId(), CriteriaSerializer.serialize(criteria));
 
 		_user1 = UserTestUtil.addUser(
 			RandomTestUtil.randomString(), LocaleUtil.US, firstName,
 			RandomTestUtil.randomString(), new long[0]);
 
-		long[] segmentsEntryIds = _segmentsEntryProvider.getSegmentsEntryIds(
+		SegmentsEntryProvider segmentsEntryProvider =
+			_getSegmentsEntryProvider();
+
+		long[] segmentsEntryIds = segmentsEntryProvider.getSegmentsEntryIds(
 			_group.getGroupId(), User.class.getName(), _user1.getUserId());
 
 		Assert.assertArrayEquals(
@@ -929,6 +1150,43 @@ public class DefaultSegmentsEntryProviderTest {
 		Assert.assertEquals(
 			StringUtil.merge(segmentsEntryIds, StringPool.COMMA), 1,
 			segmentsEntryIds.length);
+	}
+
+	@Test
+	public void testGetSegmentsEntryIdsWithUserOrganizationDateModifiedCriterion()
+		throws Exception {
+
+		_user1 = UserTestUtil.addOrganizationUser(
+			OrganizationTestUtil.addOrganization(),
+			RoleConstants.ORGANIZATION_USER);
+
+		Criteria criteria = new Criteria();
+
+		_userOrganizationSegmentsCriteriaContributor.contribute(
+			criteria,
+			String.format(
+				"dateModified eq %s",
+				ISO8601Utils.format(_user1.getModifiedDate())),
+			Criteria.Conjunction.AND);
+
+		SegmentsEntry segmentsEntry = SegmentsTestUtil.addSegmentsEntry(
+			_group.getGroupId(), CriteriaSerializer.serialize(criteria));
+
+		SegmentsEntryProvider segmentsEntryProvider =
+			_getSegmentsEntryProvider();
+
+		long[] segmentsEntryIds = segmentsEntryProvider.getSegmentsEntryIds(
+			_group.getGroupId(), User.class.getName(), _user1.getUserId());
+
+		Assert.assertArrayEquals(
+			new long[] {segmentsEntry.getSegmentsEntryId()}, segmentsEntryIds);
+		Assert.assertEquals(
+			StringUtil.merge(segmentsEntryIds, StringPool.COMMA), 1,
+			segmentsEntryIds.length);
+	}
+
+	private SegmentsEntryProvider _getSegmentsEntryProvider() {
+		return _serviceTracker.getService();
 	}
 
 	@Inject
@@ -940,6 +1198,12 @@ public class DefaultSegmentsEntryProviderTest {
 	)
 	private SegmentsCriteriaContributor _contextSegmentsCriteriaContributor;
 
+	@Inject
+	private ExpandoTableLocalService _expandoTableLocalService;
+
+	@Inject
+	private ExpandoValueLocalService _expandoValueLocalService;
+
 	@DeleteAfterTestRun
 	private Group _group;
 
@@ -949,14 +1213,14 @@ public class DefaultSegmentsEntryProviderTest {
 	@Inject
 	private Portal _portal;
 
-	@Inject(
-		filter = "segments.entry.provider.source=" + SegmentsEntryConstants.SOURCE_DEFAULT,
-		type = SegmentsEntryProvider.class
-	)
-	private SegmentsEntryProvider _segmentsEntryProvider;
+	@Inject
+	private SegmentsEntryLocalService _segmentsEntryLocalService;
 
 	@Inject
 	private SegmentsEntryRelLocalService _segmentsEntryRelLocalService;
+
+	private ServiceTracker<SegmentsEntryProvider, SegmentsEntryProvider>
+		_serviceTracker;
 
 	@DeleteAfterTestRun
 	private User _user1;

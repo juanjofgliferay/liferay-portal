@@ -12,16 +12,18 @@ import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Organization;
 import com.liferay.portal.kernel.model.Role;
 import com.liferay.portal.kernel.model.Team;
+import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.model.UserGroup;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
-import com.liferay.portal.kernel.service.RoleLocalService;
-import com.liferay.portal.kernel.service.TeamLocalService;
 import com.liferay.portal.kernel.service.permission.GroupPermissionUtil;
 import com.liferay.portal.kernel.service.permission.OrganizationPermissionUtil;
 import com.liferay.portal.kernel.service.permission.PortalPermissionUtil;
 import com.liferay.portal.kernel.service.permission.RolePermissionUtil;
+import com.liferay.portal.kernel.service.permission.UserPermissionUtil;
+import com.liferay.portal.kernel.service.persistence.RolePersistence;
+import com.liferay.portal.kernel.service.persistence.TeamPersistence;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.PortletKeys;
 import com.liferay.portal.service.permission.UserGroupPermissionUtil;
@@ -58,31 +60,32 @@ public class AnnouncementsEntryServiceImpl
 		else {
 			String className = PortalUtil.getClassName(classNameId);
 
-			if (className.equals(Group.class.getName()) &&
-				!GroupPermissionUtil.contains(
-					permissionChecker, classPK,
-					ActionKeys.MANAGE_ANNOUNCEMENTS)) {
+			if (className.equals(Group.class.getName())) {
+				if (!GroupPermissionUtil.contains(
+						permissionChecker, classPK,
+						ActionKeys.MANAGE_ANNOUNCEMENTS)) {
 
-				throw new PrincipalException.MustHavePermission(
-					permissionChecker, className, classPK,
-					ActionKeys.MANAGE_ANNOUNCEMENTS);
+					throw new PrincipalException.MustHavePermission(
+						permissionChecker, className, classPK,
+						ActionKeys.MANAGE_ANNOUNCEMENTS);
+				}
 			}
+			else if (className.equals(Organization.class.getName())) {
+				if (!OrganizationPermissionUtil.contains(
+						permissionChecker, classPK,
+						ActionKeys.MANAGE_ANNOUNCEMENTS)) {
 
-			if (className.equals(Organization.class.getName()) &&
-				!OrganizationPermissionUtil.contains(
-					permissionChecker, classPK,
-					ActionKeys.MANAGE_ANNOUNCEMENTS)) {
-
-				throw new PrincipalException.MustHavePermission(
-					permissionChecker, className, classPK,
-					ActionKeys.MANAGE_ANNOUNCEMENTS);
+					throw new PrincipalException.MustHavePermission(
+						permissionChecker, className, classPK,
+						ActionKeys.MANAGE_ANNOUNCEMENTS);
+				}
 			}
-
-			if (className.equals(Role.class.getName())) {
-				Role role = _roleLocalService.getRole(classPK);
+			else if (className.equals(Role.class.getName())) {
+				Role role = _rolePersistence.findByPrimaryKey(classPK);
 
 				if (role.isTeam()) {
-					Team team = _teamLocalService.getTeam(role.getClassPK());
+					Team team = _teamPersistence.findByPrimaryKey(
+						role.getClassPK());
 
 					if (!GroupPermissionUtil.contains(
 							permissionChecker, team.getGroupId(),
@@ -105,12 +108,26 @@ public class AnnouncementsEntryServiceImpl
 						ActionKeys.MANAGE_ANNOUNCEMENTS);
 				}
 			}
+			else if (className.equals(User.class.getName())) {
+				if (!UserPermissionUtil.contains(
+						permissionChecker, classPK, ActionKeys.UPDATE)) {
 
-			if (className.equals(UserGroup.class.getName()) &&
-				!UserGroupPermissionUtil.contains(
-					permissionChecker, classPK,
-					ActionKeys.MANAGE_ANNOUNCEMENTS)) {
+					throw new PrincipalException.MustHavePermission(
+						permissionChecker, className, classPK,
+						ActionKeys.UPDATE);
+				}
+			}
+			else if (className.equals(UserGroup.class.getName())) {
+				if (!UserGroupPermissionUtil.contains(
+						permissionChecker, classPK,
+						ActionKeys.MANAGE_ANNOUNCEMENTS)) {
 
+					throw new PrincipalException.MustHavePermission(
+						permissionChecker, className, classPK,
+						ActionKeys.MANAGE_ANNOUNCEMENTS);
+				}
+			}
+			else {
 				throw new PrincipalException.MustHavePermission(
 					permissionChecker, className, classPK,
 					ActionKeys.MANAGE_ANNOUNCEMENTS);
@@ -132,8 +149,8 @@ public class AnnouncementsEntryServiceImpl
 
 	@Override
 	public AnnouncementsEntry getEntry(long entryId) throws PortalException {
-		AnnouncementsEntry entry = announcementsEntryLocalService.getEntry(
-			entryId);
+		AnnouncementsEntry entry =
+			announcementsEntryPersistence.findByPrimaryKey(entryId);
 
 		AnnouncementsEntryPermission.check(
 			getPermissionChecker(), entry, ActionKeys.VIEW);
@@ -155,10 +172,10 @@ public class AnnouncementsEntryServiceImpl
 			priority);
 	}
 
-	@BeanReference(type = RoleLocalService.class)
-	private RoleLocalService _roleLocalService;
+	@BeanReference(type = RolePersistence.class)
+	private RolePersistence _rolePersistence;
 
-	@BeanReference(type = TeamLocalService.class)
-	private TeamLocalService _teamLocalService;
+	@BeanReference(type = TeamPersistence.class)
+	private TeamPersistence _teamPersistence;
 
 }

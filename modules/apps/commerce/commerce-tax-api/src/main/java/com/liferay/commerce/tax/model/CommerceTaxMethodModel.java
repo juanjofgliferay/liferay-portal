@@ -455,6 +455,21 @@ public interface CommerceTaxMethodModel
 	 */
 	public void setActive(boolean active);
 
+	/**
+	 * Returns the type settings of this commerce tax method.
+	 *
+	 * @return the type settings of this commerce tax method
+	 */
+	@AutoEscape
+	public String getTypeSettings();
+
+	/**
+	 * Sets the type settings of this commerce tax method.
+	 *
+	 * @param typeSettings the type settings of this commerce tax method
+	 */
+	public void setTypeSettings(String typeSettings);
+
 	@Override
 	public String[] getAvailableLanguageIds();
 
@@ -476,3 +491,4 @@ public interface CommerceTaxMethodModel
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1245964574

@@ -11,7 +11,7 @@ import com.liferay.portal.kernel.bean.BeanParamUtil;
 import com.liferay.portal.kernel.display.context.helper.BaseRequestHelper;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * @author Iván Zaera
@@ -37,6 +37,7 @@ public class MBRequestHelper extends BaseRequestHelper {
 		if (_parentCategoryId == null) {
 			_parentCategoryId = BeanParamUtil.getLong(
 				getCategory(), getRequest(), "parentCategoryId",
+				MBCategory::getParentCategoryId,
 				MBCategoryConstants.DEFAULT_PARENT_CATEGORY_ID);
 		}
 

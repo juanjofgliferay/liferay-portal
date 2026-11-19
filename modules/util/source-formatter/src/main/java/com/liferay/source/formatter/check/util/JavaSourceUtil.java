@@ -18,6 +18,8 @@ import com.liferay.portal.tools.ToolsUtil;
 
 import java.io.File;
 
+import java.security.InvalidParameterException;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -104,6 +106,9 @@ public class JavaSourceUtil extends SourceUtil {
 	}
 
 	public static String getClassName(String fileName) {
+		fileName = StringUtil.replace(
+			fileName, CharPool.BACK_SLASH, CharPool.SLASH);
+
 		int x = fileName.lastIndexOf(CharPool.SLASH);
 		int y = fileName.lastIndexOf(CharPool.PERIOD);
 
@@ -117,10 +122,11 @@ public class JavaSourceUtil extends SourceUtil {
 			JavaImportsFormatter.getImports(content));
 
 		for (String importLine : importLines) {
-			if (Validator.isNotNull(importLine)) {
-				importNames.add(
-					importLine.substring(7, importLine.length() - 1));
+			if (Validator.isNull(importLine)) {
+				continue;
 			}
+
+			importNames.add(importLine.substring(7, importLine.length() - 1));
 		}
 
 		return importNames;
@@ -243,8 +249,50 @@ public class JavaSourceUtil extends SourceUtil {
 		return classPackageName;
 	}
 
+	/**
+	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
+	 * #getParameterNames(String)}
+	 */
+	@Deprecated
 	public static List<String> getParameterList(String methodCall) {
 		return splitParameters(getParameters(methodCall));
+	}
+
+	public static List<String> getParameterNames(String methodCall) {
+		List<String> parameterNames = new ArrayList<>();
+
+		List<String> parameters = splitParameters(getParameters(methodCall));
+
+		for (String parameter : parameters) {
+			int index = parameter.lastIndexOf(CharPool.SPACE);
+
+			if (index == -1) {
+				return parameters;
+			}
+
+			parameterNames.add(parameter.substring(index + 1));
+		}
+
+		return parameterNames;
+	}
+
+	public static List<String> getParameterTypes(String methodCall) {
+		List<String> parameterTypes = new ArrayList<>();
+
+		List<String> parameters = splitParameters(getParameters(methodCall));
+
+		for (String parameter : parameters) {
+			int index = parameter.lastIndexOf(CharPool.SPACE);
+
+			if (index == -1) {
+				throw new InvalidParameterException(
+					"Unable to get parameter type");
+			}
+
+			parameterTypes.add(parameter.substring(0, index));
+		}
+
+		return parameterTypes;
 	}
 
 	public static String getParameters(String methodCall) {
@@ -310,19 +358,24 @@ public class JavaSourceUtil extends SourceUtil {
 				continue;
 			}
 
-			String linePart = StringUtil.removeSubstring(
-				parameters.substring(0, x), "->");
+			String linePart = StringUtil.replace(
+				parameters.substring(0, x), "->", _LAMBDA_SYMBOL_PLACEHOLDER);
 
-			if ((ToolsUtil.getLevel(linePart, "(", ")") == 0) &&
-				(ToolsUtil.getLevel(linePart, "<", ">") == 0) &&
-				(ToolsUtil.getLevel(linePart, "{", "}") == 0)) {
+			if ((ToolsUtil.getLevel(linePart, "(", ")") != 0) ||
+				(ToolsUtil.getLevel(linePart, "<", ">") != 0) ||
+				(ToolsUtil.getLevel(linePart, "{", "}") != 0)) {
 
-				parametersList.add(StringUtil.trim(linePart));
-
-				parameters = parameters.substring(x + 1);
-
-				x = -1;
+				continue;
 			}
+
+			linePart = StringUtil.replace(
+				linePart, _LAMBDA_SYMBOL_PLACEHOLDER, "->");
+
+			parametersList.add(StringUtil.trim(linePart));
+
+			parameters = parameters.substring(x + 1);
+
+			x = -1;
 		}
 	}
 
@@ -344,7 +397,7 @@ public class JavaSourceUtil extends SourceUtil {
 
 			File file = new File(sb.toString());
 
-			if (file.exists()) {
+			if (file.isFile()) {
 				return file;
 			}
 		}
@@ -376,7 +429,7 @@ public class JavaSourceUtil extends SourceUtil {
 
 			File file = new File(sb.toString());
 
-			if (file.exists()) {
+			if (file.isFile()) {
 				return file;
 			}
 
@@ -389,7 +442,7 @@ public class JavaSourceUtil extends SourceUtil {
 
 			file = new File(sb.toString());
 
-			if (file.exists()) {
+			if (file.isFile()) {
 				return file;
 			}
 		}
@@ -430,6 +483,9 @@ public class JavaSourceUtil extends SourceUtil {
 		"UnsupportedOperationException", "VerifyError", "VirtualMachineError",
 		"Void"
 	};
+
+	private static final String _LAMBDA_SYMBOL_PLACEHOLDER =
+		"LAMBDA_SYMBOL_PLACEHOLDER";
 
 	private static final Log _log = LogFactoryUtil.getLog(JavaSourceUtil.class);
 

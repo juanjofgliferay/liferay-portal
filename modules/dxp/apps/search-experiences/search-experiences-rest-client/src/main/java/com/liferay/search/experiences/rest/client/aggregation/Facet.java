@@ -5,10 +5,10 @@
 
 package com.liferay.search.experiences.rest.client.aggregation;
 
+import jakarta.annotation.Generated;
+
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.annotation.Generated;
 
 /**
  * @author Brian Wing Shun Chan
@@ -68,3 +68,4 @@ public class Facet {
 	private List<FacetValue> _facetValues = new ArrayList<>();
 
 }
+// LIFERAY-REST-BUILDER-HASH:-1649290297

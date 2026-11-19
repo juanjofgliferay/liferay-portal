@@ -22,7 +22,6 @@ import com.liferay.portal.kernel.model.UserGroup;
 import com.liferay.portal.kernel.model.UserGroupGroupRole;
 import com.liferay.portal.kernel.model.UserGroupRole;
 import com.liferay.portal.kernel.service.GroupLocalService;
-import com.liferay.portal.kernel.service.RoleLocalService;
 import com.liferay.portal.kernel.service.UserGroupGroupRoleLocalService;
 import com.liferay.portal.kernel.service.UserGroupLocalService;
 import com.liferay.portal.kernel.service.UserGroupRoleLocalService;
@@ -544,9 +543,11 @@ public class KaleoTaskInstanceTokenFinderImpl
 		while (iterator.hasNext()) {
 			sb.append(iterator.next());
 
-			if (iterator.hasNext()) {
-				sb.append(", ");
+			if (!iterator.hasNext()) {
+				continue;
 			}
+
+			sb.append(", ");
 		}
 
 		sb.append("))");
@@ -643,9 +644,11 @@ public class KaleoTaskInstanceTokenFinderImpl
 				for (int i = 0; i < roleIds.size(); i++) {
 					sb.append(roleIds.get(i));
 
-					if (i < (roleIds.size() - 1)) {
-						sb.append(", ");
+					if (i >= (roleIds.size() - 1)) {
+						continue;
 					}
+
+					sb.append(", ");
 				}
 			}
 
@@ -676,9 +679,11 @@ public class KaleoTaskInstanceTokenFinderImpl
 					while (iterator.hasNext()) {
 						sb.append(iterator.next());
 
-						if (iterator.hasNext()) {
-							sb.append(", ");
+						if (!iterator.hasNext()) {
+							continue;
 						}
+
+						sb.append(", ");
 					}
 
 					sb.append("))) ");
@@ -937,9 +942,6 @@ public class KaleoTaskInstanceTokenFinderImpl
 
 	@Reference
 	private GroupLocalService _groupLocalService;
-
-	@Reference
-	private RoleLocalService _roleLocalService;
 
 	@Reference
 	private UserGroupGroupRoleLocalService _userGroupGroupRoleLocalService;

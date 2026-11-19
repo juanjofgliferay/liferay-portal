@@ -77,9 +77,9 @@ public interface LayoutClassedModelUsageLocalService
 		LayoutClassedModelUsage layoutClassedModelUsage);
 
 	public LayoutClassedModelUsage addLayoutClassedModelUsage(
-		long groupId, long classNameId, long classPK,
-		String classedModelExternalReferenceCode, String containerKey,
-		long containerType, long plid, ServiceContext serviceContext);
+		long groupId, String classExternalReferenceCode, long classNameId,
+		long classPK, String containerKey, long containerType, long plid,
+		ServiceContext serviceContext);
 
 	/**
 	 * Creates a new layout classed model usage with the primary key. Does not add the layout classed model usage to the database.
@@ -219,9 +219,8 @@ public interface LayoutClassedModelUsageLocalService
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public LayoutClassedModelUsage fetchLayoutClassedModelUsage(
-		long classNameId, long classPK,
-		String classedModelExternalReferenceCode, String containerKey,
-		long containerType, long plid);
+		long groupId, String classExternalReferenceCode, long classNameId,
+		long classPK, String containerKey, long containerType, long plid);
 
 	/**
 	 * Returns the layout classed model usage matching the UUID and group.
@@ -378,6 +377,11 @@ public interface LayoutClassedModelUsageLocalService
 	public LayoutClassedModelUsage updateLayoutClassedModelUsage(
 		LayoutClassedModelUsage layoutClassedModelUsage);
 
+	public LayoutClassedModelUsage updateLayoutClassedModelUsage(
+			long classNameId, long classPK, String containerKey,
+			long containerType, long layoutClassedModelUsageId, long plid)
+		throws PortalException;
+
 	@Override
 	@Transactional(enabled = false)
 	public CTPersistence<LayoutClassedModelUsage> getCTPersistence();
@@ -394,3 +398,4 @@ public interface LayoutClassedModelUsageLocalService
 		throws E;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:237564382

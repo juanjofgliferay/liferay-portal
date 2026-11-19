@@ -54,15 +54,19 @@ public class CommerceVirtualOrderItemLocalServiceWrapper
 	@Override
 	public com.liferay.commerce.product.type.virtual.order.model.
 		CommerceVirtualOrderItem addCommerceVirtualOrderItem(
-				long commerceOrderItemId, long fileEntryId, String url,
-				int activationStatus, long duration, int usages, int maxUsages,
+				long commerceOrderItemId,
+				java.util.List
+					<com.liferay.commerce.product.type.virtual.model.
+						CPDVirtualSettingFileEntry>
+							cpdVirtualSettingFileEntries,
+				int activationStatus, long duration, int maxUsages,
 				com.liferay.portal.kernel.service.ServiceContext serviceContext)
 			throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commerceVirtualOrderItemLocalService.
 			addCommerceVirtualOrderItem(
-				commerceOrderItemId, fileEntryId, url, activationStatus,
-				duration, usages, maxUsages, serviceContext);
+				commerceOrderItemId, cpdVirtualSettingFileEntries,
+				activationStatus, duration, maxUsages, serviceContext);
 	}
 
 	@Override
@@ -474,11 +478,13 @@ public class CommerceVirtualOrderItemLocalServiceWrapper
 	}
 
 	@Override
-	public java.io.File getFile(long commerceVirtualOrderItemId)
+	public java.io.File getFile(
+			long commerceVirtualOrderItemId,
+			long commerceVirtualOrderItemFileEntryId)
 		throws Exception {
 
 		return _commerceVirtualOrderItemLocalService.getFile(
-			commerceVirtualOrderItemId);
+			commerceVirtualOrderItemId, commerceVirtualOrderItemFileEntryId);
 	}
 
 	@Override
@@ -487,6 +493,19 @@ public class CommerceVirtualOrderItemLocalServiceWrapper
 
 		return _commerceVirtualOrderItemLocalService.
 			getIndexableActionableDynamicQuery();
+	}
+
+	@Override
+	public java.util.List
+		<com.liferay.commerce.product.type.virtual.order.model.
+			CommerceVirtualOrderItem>
+					getNoCPDVirtualSettingFileEntryCommerceVirtualOrderItems(
+						long cpdVirtualSettingFileEntryId)
+				throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _commerceVirtualOrderItemLocalService.
+			getNoCPDVirtualSettingFileEntryCommerceVirtualOrderItems(
+				cpdVirtualSettingFileEntryId);
 	}
 
 	/**
@@ -509,16 +528,6 @@ public class CommerceVirtualOrderItemLocalServiceWrapper
 
 		return _commerceVirtualOrderItemLocalService.getPersistedModel(
 			primaryKeyObj);
-	}
-
-	@Override
-	public com.liferay.commerce.product.type.virtual.order.model.
-		CommerceVirtualOrderItem incrementCommerceVirtualOrderItemUsages(
-				long commerceVirtualOrderItemId)
-			throws com.liferay.portal.kernel.exception.PortalException {
-
-		return _commerceVirtualOrderItemLocalService.
-			incrementCommerceVirtualOrderItemUsages(commerceVirtualOrderItemId);
 	}
 
 	@Override
@@ -552,15 +561,14 @@ public class CommerceVirtualOrderItemLocalServiceWrapper
 	@Override
 	public com.liferay.commerce.product.type.virtual.order.model.
 		CommerceVirtualOrderItem updateCommerceVirtualOrderItem(
-				long commerceVirtualOrderItemId, long fileEntryId, String url,
-				int activationStatus, long duration, int usages, int maxUsages,
-				boolean active)
+				long commerceVirtualOrderItemId, int activationStatus,
+				long duration, int maxUsages, boolean active)
 			throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commerceVirtualOrderItemLocalService.
 			updateCommerceVirtualOrderItem(
-				commerceVirtualOrderItemId, fileEntryId, url, activationStatus,
-				duration, usages, maxUsages, active);
+				commerceVirtualOrderItemId, activationStatus, duration,
+				maxUsages, active);
 	}
 
 	@Override
@@ -596,3 +604,4 @@ public class CommerceVirtualOrderItemLocalServiceWrapper
 		_commerceVirtualOrderItemLocalService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1930450120

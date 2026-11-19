@@ -54,6 +54,10 @@ public interface NotificationRecipientLocalService
 	 *
 	 * Never modify this interface directly. Add custom service methods to <code>com.liferay.notification.service.impl.NotificationRecipientLocalServiceImpl</code> and rerun ServiceBuilder to automatically copy the method declarations to this interface. Consume the notification recipient local service via injection or a <code>org.osgi.util.tracker.ServiceTracker</code>. Use {@link NotificationRecipientLocalServiceUtil} if injection and service tracking are not available.
 	 */
+	@Indexable(type = IndexableType.REINDEX)
+	public NotificationRecipient addNotificationRecipient(
+			long userId, long classNameId, long classPK)
+		throws PortalException;
 
 	/**
 	 * Adds the notification recipient to the database. Also notifies the appropriate model listeners.
@@ -198,6 +202,10 @@ public interface NotificationRecipientLocalService
 	public NotificationRecipient fetchNotificationRecipient(
 		long notificationRecipientId);
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public NotificationRecipient fetchNotificationRecipientByClassPK(
+		long classPK);
+
 	/**
 	 * Returns the notification recipient with the matching UUID and company.
 	 *
@@ -232,8 +240,8 @@ public interface NotificationRecipientLocalService
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public NotificationRecipient getNotificationRecipientByClassPK(
-		long classPK);
+	public NotificationRecipient getNotificationRecipientByClassPK(long classPK)
+		throws PortalException;
 
 	/**
 	 * Returns the notification recipient with the matching UUID and company.
@@ -301,3 +309,4 @@ public interface NotificationRecipientLocalService
 		NotificationRecipient notificationRecipient);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:445054226

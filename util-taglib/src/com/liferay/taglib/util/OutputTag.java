@@ -11,9 +11,9 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import javax.servlet.ServletRequest;
-import javax.servlet.jsp.JspException;
-import javax.servlet.jsp.JspWriter;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.jsp.JspException;
+import jakarta.servlet.jsp.JspWriter;
 
 /**
  * @author Shuyang Zhou
@@ -122,13 +122,14 @@ public class OutputTag extends PositionTagSupport {
 
 			String subcontent = content.substring(x, y);
 
-			if (!subcontent.contains(attributeName)) {
-				content = StringUtil.insert(
-					content,
-					StringBundler.concat(
-						" ", attributeName, "=", attributeValue),
-					x + tagName.length() + 1);
+			if (subcontent.contains(attributeName)) {
+				continue;
 			}
+
+			content = StringUtil.insert(
+				content,
+				StringBundler.concat(" ", attributeName, "=", attributeValue),
+				x + tagName.length() + 1);
 		}
 
 		return content;

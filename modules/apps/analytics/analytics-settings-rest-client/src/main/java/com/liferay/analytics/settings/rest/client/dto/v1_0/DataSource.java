@@ -8,11 +8,11 @@ package com.liferay.analytics.settings.rest.client.dto.v1_0;
 import com.liferay.analytics.settings.rest.client.function.UnsafeSupplier;
 import com.liferay.analytics.settings.rest.client.serdes.v1_0.DataSourceSerDes;
 
+import jakarta.annotation.Generated;
+
 import java.io.Serializable;
 
 import java.util.Objects;
-
-import javax.annotation.Generated;
 
 /**
  * @author Riccardo Ferrari
@@ -24,27 +24,6 @@ public class DataSource implements Cloneable, Serializable {
 	public static DataSource toDTO(String json) {
 		return DataSourceSerDes.toDTO(json);
 	}
-
-	public Long[] getCommerceChannelIds() {
-		return commerceChannelIds;
-	}
-
-	public void setCommerceChannelIds(Long[] commerceChannelIds) {
-		this.commerceChannelIds = commerceChannelIds;
-	}
-
-	public void setCommerceChannelIds(
-		UnsafeSupplier<Long[], Exception> commerceChannelIdsUnsafeSupplier) {
-
-		try {
-			commerceChannelIds = commerceChannelIdsUnsafeSupplier.get();
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
-	}
-
-	protected Long[] commerceChannelIds;
 
 	public String getDataSourceId() {
 		return dataSourceId;
@@ -120,3 +99,4 @@ public class DataSource implements Cloneable, Serializable {
 	}
 
 }
+// LIFERAY-REST-BUILDER-HASH:-1350641007

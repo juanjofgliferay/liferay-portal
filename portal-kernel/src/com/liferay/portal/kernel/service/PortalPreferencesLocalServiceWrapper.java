@@ -240,14 +240,6 @@ public class PortalPreferencesLocalServiceWrapper
 
 	@Override
 	public com.liferay.portal.kernel.model.PortalPreferences
-		fetchCompanyPortalPreferences(long companyId) {
-
-		return _portalPreferencesLocalService.fetchCompanyPortalPreferences(
-			companyId);
-	}
-
-	@Override
-	public com.liferay.portal.kernel.model.PortalPreferences
 		fetchPortalPreferences(long portalPreferencesId) {
 
 		return _portalPreferencesLocalService.fetchPortalPreferences(
@@ -344,7 +336,7 @@ public class PortalPreferencesLocalServiceWrapper
 	}
 
 	@Override
-	public javax.portlet.PortletPreferences getPreferences(
+	public jakarta.portlet.PortletPreferences getPreferences(
 		long ownerId, int ownerType) {
 
 		return _portalPreferencesLocalService.getPreferences(
@@ -352,7 +344,7 @@ public class PortalPreferencesLocalServiceWrapper
 	}
 
 	@Override
-	public javax.portlet.PortletPreferences getPreferences(
+	public jakarta.portlet.PortletPreferences getPreferences(
 		long ownerId, int ownerType, String defaultPreferences) {
 
 		return _portalPreferencesLocalService.getPreferences(
@@ -416,3 +408,4 @@ public class PortalPreferencesLocalServiceWrapper
 	private PortalPreferencesLocalService _portalPreferencesLocalService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:2121725503

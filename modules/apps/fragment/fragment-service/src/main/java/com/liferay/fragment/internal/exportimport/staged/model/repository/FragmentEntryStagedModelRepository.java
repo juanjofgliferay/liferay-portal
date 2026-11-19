@@ -24,6 +24,7 @@ import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.service.LayoutService;
 import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ListUtil;
@@ -53,18 +54,26 @@ public class FragmentEntryStagedModelRepository
 		ServiceContext serviceContext = portletDataContext.createServiceContext(
 			fragmentEntry);
 
+		ServiceContext currentServiceContext =
+			ServiceContextThreadLocal.getServiceContext();
+
+		if (currentServiceContext != null) {
+			serviceContext.setRequest(currentServiceContext.getRequest());
+		}
+
 		if (portletDataContext.isDataStrategyMirror()) {
 			serviceContext.setUuid(fragmentEntry.getUuid());
 		}
 
 		return _fragmentEntryLocalService.addFragmentEntry(
-			userId, fragmentEntry.getGroupId(),
-			fragmentEntry.getFragmentCollectionId(),
+			fragmentEntry.getExternalReferenceCode(), userId,
+			fragmentEntry.getGroupId(), fragmentEntry.getFragmentCollectionId(),
 			fragmentEntry.getFragmentEntryKey(), fragmentEntry.getName(),
 			fragmentEntry.getCss(), fragmentEntry.getHtml(),
 			fragmentEntry.getJs(), fragmentEntry.isCacheable(),
 			fragmentEntry.getConfiguration(), fragmentEntry.getIcon(),
-			fragmentEntry.getPreviewFileEntryId(), fragmentEntry.getType(),
+			fragmentEntry.getPreviewFileEntryId(), false,
+			fragmentEntry.isReadOnly(), fragmentEntry.getType(),
 			fragmentEntry.getTypeOptions(), fragmentEntry.getStatus(),
 			serviceContext);
 	}
@@ -152,7 +161,7 @@ public class FragmentEntryStagedModelRepository
 			fragmentEntry.getCss(), fragmentEntry.getHtml(),
 			fragmentEntry.getJs(), fragmentEntry.isCacheable(),
 			fragmentEntry.getConfiguration(), fragmentEntry.getIcon(),
-			fragmentEntry.getPreviewFileEntryId(),
+			fragmentEntry.getPreviewFileEntryId(), fragmentEntry.isReadOnly(),
 			fragmentEntry.getTypeOptions(), fragmentEntry.getStatus());
 	}
 
@@ -165,9 +174,8 @@ public class FragmentEntryStagedModelRepository
 		}
 
 		List<FragmentEntryLink> fragmentEntryLinks =
-			_fragmentEntryLinkLocalService.
-				getFragmentEntryLinksByFragmentEntryId(
-					fragmentEntry.getFragmentEntryId());
+			_fragmentEntryLinkLocalService.getFragmentEntryLinksByFragmentEntry(
+				groupId, fragmentEntry);
 
 		if (ListUtil.isEmpty(fragmentEntryLinks)) {
 			return;
@@ -192,9 +200,11 @@ public class FragmentEntryStagedModelRepository
 
 			Layout draftLayout = layout.fetchDraftLayout();
 
-			if (draftLayout != null) {
-				plids = ArrayUtil.append(plids, draftLayout.getPlid());
+			if (draftLayout == null) {
+				continue;
 			}
+
+			plids = ArrayUtil.append(plids, draftLayout.getPlid());
 		}
 
 		long[] fragmentEntryLinkIds = new long[fragmentEntryLinks.size()];
@@ -202,13 +212,12 @@ public class FragmentEntryStagedModelRepository
 		for (int i = 0; i < fragmentEntryLinks.size(); i++) {
 			FragmentEntryLink fragmentEntryLink = fragmentEntryLinks.get(i);
 
-			if (ArrayUtil.contains(plids, fragmentEntryLink.getPlid())) {
-				fragmentEntryLinkIds[i] =
-					fragmentEntryLink.getFragmentEntryLinkId();
-			}
-			else {
+			if (!ArrayUtil.contains(plids, fragmentEntryLink.getPlid())) {
 				throw new RequiredFragmentEntryException();
 			}
+
+			fragmentEntryLinkIds[i] =
+				fragmentEntryLink.getFragmentEntryLinkId();
 		}
 
 		_fragmentEntryLinkLocalService.deleteFragmentEntryLinks(

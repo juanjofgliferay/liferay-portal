@@ -6,23 +6,23 @@
 package com.liferay.portal.lpkg.deployer.internal;
 
 import com.liferay.osgi.util.bundle.BundleStartLevelUtil;
+import com.liferay.petra.concurrent.DefaultNoticeableFuture;
+import com.liferay.petra.io.StreamUtil;
+import com.liferay.petra.io.unsync.UnsyncByteArrayInputStream;
+import com.liferay.petra.io.unsync.UnsyncByteArrayOutputStream;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.concurrent.DefaultNoticeableFuture;
-import com.liferay.portal.kernel.io.unsync.UnsyncByteArrayInputStream;
-import com.liferay.portal.kernel.io.unsync.UnsyncByteArrayOutputStream;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.lpkg.StaticLPKGResolver;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ModuleFrameworkPropsValues;
 import com.liferay.portal.kernel.util.PropertiesUtil;
-import com.liferay.portal.kernel.util.StreamUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.URLCodec;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.lpkg.deployer.internal.wrapper.bundle.URLStreamHandlerServiceServiceTrackerCustomizer;
+import com.liferay.portal.lpkg.deployer.internal.osgi.util.tracker.URLStreamHandlerServiceServiceTrackerCustomizer;
 import com.liferay.portal.lpkg.deployer.internal.wrapper.bundle.activator.WARBundleWrapperBundleActivator;
 
 import java.io.File;
@@ -146,15 +146,14 @@ public class LPKGBundleTrackerCustomizer
 				for (Bundle installedBundle : _bundleContext.getBundles()) {
 					properties = _readMarketplaceProperties(installedBundle);
 
-					if (properties == null) {
+					if ((properties == null) ||
+						!_outdatedRemoteAppIds.contains(
+							properties.getProperty("remote-app-id"))) {
+
 						continue;
 					}
 
-					if (_outdatedRemoteAppIds.contains(
-							properties.getProperty("remote-app-id"))) {
-
-						_processOutdatedBundle(installedBundle);
-					}
+					_processOutdatedBundle(installedBundle);
 				}
 			}
 		}
@@ -418,15 +417,17 @@ public class LPKGBundleTrackerCustomizer
 			}
 
 			for (Bundle installedBundle : bundles) {
-				if (installedBundle.getState() != Bundle.UNINSTALLED) {
-					installedBundle.uninstall();
+				if (installedBundle.getState() == Bundle.UNINSTALLED) {
+					continue;
+				}
 
-					if (_log.isInfoEnabled()) {
-						_log.info(
-							StringBundler.concat(
-								"Uninstalled ", installedBundle, "because ",
-								bundle, " was updated"));
-					}
+				installedBundle.uninstall();
+
+				if (_log.isInfoEnabled()) {
+					_log.info(
+						StringBundler.concat(
+							"Uninstalled ", installedBundle, "because ", bundle,
+							" was updated"));
 				}
 			}
 
@@ -545,6 +546,7 @@ public class LPKGBundleTrackerCustomizer
 		throws IOException {
 
 		try (InputStream inputStream = url.openStream();
+
 			JarInputStream jarInputStream = new JarInputStream(inputStream)) {
 
 			Manifest manifest = jarInputStream.getManifest();
@@ -613,7 +615,9 @@ public class LPKGBundleTrackerCustomizer
 	private void _processOutdatedBundle(Bundle bundle) throws Exception {
 		Path path = Paths.get(bundle.getLocation());
 
-		try (FileSystem fileSystem = FileSystems.newFileSystem(path, null)) {
+		try (FileSystem fileSystem = FileSystems.newFileSystem(
+				path, (ClassLoader)null)) {
+
 			Files.createFile(fileSystem.getPath(_FILE_NAME_LFR_OUTDATED));
 		}
 
@@ -647,6 +651,7 @@ public class LPKGBundleTrackerCustomizer
 				StandardCopyOption.REPLACE_EXISTING);
 
 			try (ZipFile zipFile = new ZipFile(tempFilePath.toFile());
+
 				InputStream inputStream2 = zipFile.getInputStream(
 					new ZipEntry(
 						"WEB-INF/liferay-plugin-package.properties"))) {
@@ -797,14 +802,16 @@ public class LPKGBundleTrackerCustomizer
 			Version version = bundle.getVersion();
 
 			for (Bundle curBundle : _bundleContext.getBundles()) {
-				if (wrappedBundleSymbolicName.equals(
-						curBundle.getSymbolicName()) &&
-					version.equals(curBundle.getVersion())) {
+				if (!wrappedBundleSymbolicName.equals(
+						curBundle.getSymbolicName()) ||
+					!version.equals(curBundle.getVersion())) {
 
-					curBundle.uninstall();
-
-					uninstalledBundles.add(curBundle);
+					continue;
 				}
+
+				curBundle.uninstall();
+
+				uninstalledBundles.add(curBundle);
 			}
 		}
 

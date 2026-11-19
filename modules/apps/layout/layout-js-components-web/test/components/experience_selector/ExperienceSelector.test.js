@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import '@testing-library/jest-dom/extend-expect';
-import {fireEvent, render, screen} from '@testing-library/react';
+import '@testing-library/jest-dom';
+import {fireEvent, render} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {navigate} from 'frontend-js-web';
 import React from 'react';
@@ -51,6 +51,7 @@ jest.mock('frontend-js-web', () => ({
 const renderComponent = ({
 	displayType = 'light',
 	disabled,
+	onChangeExperience,
 	segmentsExperiences = mockSegments.segmentsExperiences,
 	selectedSegmentsExperience = mockSegments.selectedSegmentsExperience,
 } = {}) =>
@@ -58,58 +59,122 @@ const renderComponent = ({
 		<ExperienceSelector
 			disabled={disabled}
 			displayType={displayType}
+			onChangeExperience={onChangeExperience}
 			segmentsExperiences={segmentsExperiences}
 			selectedSegmentsExperience={selectedSegmentsExperience}
 		/>
 	);
 
 describe('ExperienceSelector', () => {
-	it('renders', () => {
-		renderComponent();
+	it('renders', async () => {
+		const {findByText} = renderComponent();
 
-		expect(screen.getByText('Experience Default')).toBeInTheDocument();
-		expect(screen.getByText('Active')).toBeInTheDocument();
+		expect(await findByText('Experience Default')).toBeInTheDocument();
+		expect(await findByText('Active')).toBeInTheDocument();
 	});
 
-	it('disabled the selector', () => {
-		renderComponent({disabled: true});
+	it('disabled the selector', async () => {
+		const {findByRole} = renderComponent({disabled: true});
 
-		expect(screen.getByRole('combobox')).toBeDisabled();
+		expect(await findByRole('combobox')).toBeDisabled();
 	});
 
-	it('displays selector as secondary button when the display type is "light"', () => {
-		renderComponent();
+	it('displays selector as secondary button when the display type is "light"', async () => {
+		const {findByRole} = renderComponent();
 
-		expect(screen.getByRole('combobox')).toHaveClass('btn-secondary');
+		expect(await findByRole('combobox')).toHaveClass('btn-secondary');
 	});
 
-	it('displays selector as button without styles when the display type is "dark"', () => {
-		renderComponent({displayType: 'dark'});
+	it('displays selector as button without styles when the display type is "dark"', async () => {
+		const {findByRole} = renderComponent({displayType: 'dark'});
 
-		expect(screen.getByRole('combobox')).not.toHaveClass('btn-secondary');
+		expect(await findByRole('combobox')).not.toHaveClass('btn-secondary');
 	});
 
-	it('renders name, status and segment in each option', () => {
-		renderComponent();
+	it('renders name, status and segment in each option', async () => {
+		const {findByRole, findByText} = renderComponent();
 
-		userEvent.click(screen.getByRole('combobox'));
+		await userEvent.click(await findByRole('combobox'));
 
-		expect(screen.getByText('Experience 1')).toBeInTheDocument();
-		expect(screen.getByText('Inactive')).toBeInTheDocument();
-		expect(screen.getByText('segment: Segment 1')).toBeInTheDocument();
+		expect(await findByText('Experience 1')).toBeInTheDocument();
+		expect(await findByText('Inactive')).toBeInTheDocument();
+		expect(await findByText('segment: Segment 1')).toBeInTheDocument();
 	});
 
-	it('calls navigate when an option is selected', () => {
-		renderComponent();
+	it('calls navigate when an option is selected', async () => {
+		const {findByRole} = renderComponent();
 
-		userEvent.click(screen.getByRole('combobox'));
+		await userEvent.click(await findByRole('combobox'));
 
-		const button = screen.getByRole('option', {
+		const button = await findByRole('option', {
 			name: 'Experience 1 segment: Segment 1 Inactive',
 		});
 
 		fireEvent.click(button);
 
 		expect(navigate).toHaveBeenCalled();
+	});
+
+	it('does not render the segment line when there is no segment name', async () => {
+		const segmentsExperiences = [
+			{
+				active: true,
+				segmentsExperienceERC: 'erc-0',
+				segmentsExperienceName: 'Experience Default',
+				statusLabel: 'Active',
+				url: 'url',
+			},
+			{
+				active: false,
+				segmentsExperienceERC: 'erc-1',
+				segmentsExperienceName: 'Experience 1',
+				statusLabel: 'Inactive',
+				url: 'url',
+			},
+		];
+
+		const {findByRole, queryByText} = renderComponent({
+			segmentsExperiences,
+			selectedSegmentsExperience: segmentsExperiences[0],
+		});
+
+		await userEvent.click(await findByRole('combobox'));
+
+		expect(await queryByText(/^segment:/)).not.toBeInTheDocument();
+	});
+
+	it('keys options by external reference code when provided', async () => {
+		const segmentsExperiences = [
+			{
+				active: true,
+				segmentsExperienceERC: 'erc-0',
+				segmentsExperienceName: 'Experience Default',
+				statusLabel: 'Active',
+				url: 'url',
+			},
+			{
+				active: false,
+				segmentsExperienceERC: 'erc-1',
+				segmentsExperienceName: 'Experience 1',
+				statusLabel: 'Inactive',
+				url: 'url-1',
+			},
+		];
+
+		const onChangeExperience = jest.fn();
+
+		const {findByRole} = renderComponent({
+			onChangeExperience,
+			segmentsExperiences,
+			selectedSegmentsExperience: segmentsExperiences[0],
+		});
+
+		await userEvent.click(await findByRole('combobox'));
+
+		fireEvent.click(
+			await findByRole('option', {name: 'Experience 1 Inactive'})
+		);
+
+		expect(onChangeExperience).toHaveBeenCalledWith('erc-1');
 	});
 });

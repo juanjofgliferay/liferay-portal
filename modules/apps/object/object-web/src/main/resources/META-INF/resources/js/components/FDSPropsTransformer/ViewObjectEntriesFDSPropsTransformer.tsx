@@ -3,15 +3,50 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import MultiselectPicklistDataRenderer from './FDSDataRenderers/MultiselectPicklistDataRenderer';
-import StatusDataRenderer from './FDSDataRenderers/StatusDataRenderer';
+import {IBulkActionItem} from '@liferay/frontend-data-set-web';
+import React from 'react';
 
-export default function ViewObjectEntriesFDSPropsTransformer({...otherProps}) {
+import AttachmentDataRenderer from './FDSDataRenderers/AttachmentDataRenderer';
+import DecimalDataRenderer from './FDSDataRenderers/DecimalDataRenderer';
+import LocalizedMultiselectPicklistDataRenderer from './FDSDataRenderers/LocalizedMultiselectPicklistDataRenderer';
+import LocalizedPicklistDataRenderer from './FDSDataRenderers/LocalizedPicklistDataRenderer';
+import LocalizedRichTextDataRenderer from './FDSDataRenderers/LocalizedRichTextDataRenderer';
+import LocalizedTextDataRenderer from './FDSDataRenderers/LocalizedTextDataRenderer';
+import MultiselectPicklistDataRenderer from './FDSDataRenderers/MultiselectPicklistDataRenderer';
+import ObjectEntryStatusDataRenderer from './FDSDataRenderers/ObjectEntryStatusDataRenderer';
+import transformFDSBulkActions from './utils/transformFDSBulkActions';
+
+type ObjectEntryStatusDataRendererProps = {
+	itemData: ObjectEntry;
+	restContextPath: string;
+};
+
+export default function ViewObjectEntriesFDSPropsTransformer({
+	bulkActions,
+	...otherProps
+}: {
+	bulkActions?: Array<IBulkActionItem>;
+	[key: string]: any;
+}) {
 	return {
 		...otherProps,
+		bulkActions:
+			bulkActions && transformFDSBulkActions<ObjectEntry>(bulkActions),
 		customDataRenderers: {
+			attachmentDataRenderer: AttachmentDataRenderer,
+			decimalDataRenderer: DecimalDataRenderer,
+			localizedMultiselectPicklistDataRenderer:
+				LocalizedMultiselectPicklistDataRenderer,
+			localizedPicklistDataRenderer: LocalizedPicklistDataRenderer,
+			localizedRichTextDataRenderer: LocalizedRichTextDataRenderer,
+			localizedTextDataRenderer: LocalizedTextDataRenderer,
 			multiselectPicklistDataRenderer: MultiselectPicklistDataRenderer,
-			statusDataRenderer: StatusDataRenderer,
+			statusDataRenderer: (props: ObjectEntryStatusDataRendererProps) => (
+				<ObjectEntryStatusDataRenderer
+					{...props}
+					restContextPath={otherProps.apiURL}
+				/>
+			),
 		},
 		onActionDropdownItemClick({
 			action,
@@ -21,9 +56,28 @@ export default function ViewObjectEntriesFDSPropsTransformer({...otherProps}) {
 			itemData: any;
 		}) {
 			if (action.data.id === 'deleteObjectEntry') {
-				Liferay.fire('openModalDeleteObjectEntry', {
-					objectEntry: itemData,
-				});
+				Liferay.fire(
+					`${otherProps.namespace}openModalDeleteObjectEntry`,
+					{
+						objectEntry: itemData,
+					}
+				);
+			}
+		},
+		onBulkActionItemClick: async ({
+			action,
+			selectedData,
+		}: {
+			action: {data: {id: string}};
+			selectedData: any;
+		}) => {
+			if (action?.data?.id === 'delete') {
+				Liferay.fire(
+					`${otherProps.namespace}openModalBulkDeleteObjectEntries`,
+					{
+						selectedData,
+					}
+				);
 			}
 		},
 	};

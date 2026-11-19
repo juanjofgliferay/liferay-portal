@@ -8,7 +8,7 @@ import React from 'react';
 import {act} from 'react-dom/test-utils';
 
 import TYPES from '../../src/main/resources/META-INF/resources/js/RATINGS_TYPES';
-import Ratings from '../../src/main/resources/META-INF/resources/js/Ratings';
+import {Ratings} from '../../src/main/resources/META-INF/resources/js/index';
 import {formDataToObj} from '../utils';
 
 const baseProps = {
@@ -46,7 +46,7 @@ describe('RatingsSelectStars', () => {
 		});
 
 		it('has vote title', () => {
-			expect(starsDropdownToggle.title).toBe('vote');
+			expect(starsDropdownToggle.title).toBe('vote[action]');
 		});
 
 		it('has delete option disabled', () => {
@@ -255,7 +255,9 @@ describe('RatingsSelectStars', () => {
 				});
 
 				it('updates the average score of 1 vote', async () => {
-					expect(result.queryByText('5.0 (1 vote)')).toBeTruthy();
+					expect(
+						result.queryByText('5.0 (1 vote[noun])')
+					).toBeTruthy();
 				});
 			});
 

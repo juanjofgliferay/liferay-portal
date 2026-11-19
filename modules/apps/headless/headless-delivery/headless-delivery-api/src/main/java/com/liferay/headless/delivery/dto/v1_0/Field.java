@@ -11,23 +11,25 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import com.liferay.petra.function.UnsafeSupplier;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Javier Gamarra
@@ -36,6 +38,9 @@ import javax.xml.bind.annotation.XmlRootElement;
 @Generated("")
 @GraphQLName(
 	description = "The list of fields for the reference.", value = "Field"
+)
+@io.swagger.v3.oas.annotations.media.Schema(
+	description = "The list of fields for the reference."
 )
 @JsonFilter("Liferay.Vulcan")
 @XmlRootElement(name = "Field")
@@ -49,61 +54,91 @@ public class Field implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(Field.class, json);
 	}
 
-	@Schema(description = "The name of the field.")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The name of the field."
+	)
 	public String getFieldName() {
+		if (_fieldNameSupplier != null) {
+			fieldName = _fieldNameSupplier.get();
+
+			_fieldNameSupplier = null;
+		}
+
 		return fieldName;
 	}
 
 	public void setFieldName(String fieldName) {
 		this.fieldName = fieldName;
+
+		_fieldNameSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setFieldName(
 		UnsafeSupplier<String, Exception> fieldNameUnsafeSupplier) {
 
-		try {
-			fieldName = fieldNameUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_fieldNameSupplier = () -> {
+			try {
+				return fieldNameUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The name of the field.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String fieldName;
 
-	@Schema(description = "The internal value of the field.")
+	@JsonIgnore
+	private Supplier<String> _fieldNameSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The internal value of the field."
+	)
 	public String getFieldValue() {
+		if (_fieldValueSupplier != null) {
+			fieldValue = _fieldValueSupplier.get();
+
+			_fieldValueSupplier = null;
+		}
+
 		return fieldValue;
 	}
 
 	public void setFieldValue(String fieldValue) {
 		this.fieldValue = fieldValue;
+
+		_fieldValueSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setFieldValue(
 		UnsafeSupplier<String, Exception> fieldValueUnsafeSupplier) {
 
-		try {
-			fieldValue = fieldValueUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_fieldValueSupplier = () -> {
+			try {
+				return fieldValueUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The internal value of the field.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String fieldValue;
+
+	@JsonIgnore
+	private Supplier<String> _fieldValueSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -132,6 +167,8 @@ public class Field implements Serializable {
 
 		sb.append("{");
 
+		String fieldName = getFieldName();
+
 		if (fieldName != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -145,6 +182,8 @@ public class Field implements Serializable {
 
 			sb.append("\"");
 		}
+
+		String fieldValue = getFieldValue();
 
 		if (fieldValue != null) {
 			if (sb.length() > 1) {
@@ -165,8 +204,8 @@ public class Field implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.delivery.dto.v1_0.Field",
 		name = "x-class-name"
 	)
@@ -212,7 +251,10 @@ public class Field implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -250,6 +292,27 @@ public class Field implements Serializable {
 		return sb.toString();
 	}
 
+	private static String _toJSON(Object value) {
+		if (value instanceof Collection) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONArray((Collection<?>)value));
+		}
+		else if (value instanceof Map) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONObject((Map<?, ?>)value));
+		}
+		else if (value instanceof Object[]) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONArray(
+					Arrays.asList((Object[])value)));
+		}
+		else if (value instanceof String) {
+			return StringBundler.concat("\"", _escape(value), "\"");
+		}
+
+		return String.valueOf(value);
+	}
+
 	private static final String[][] _JSON_ESCAPE_STRINGS = {
 		{"\\", "\"", "\b", "\f", "\n", "\r", "\t"},
 		{"\\\\", "\\\"", "\\b", "\\f", "\\n", "\\r", "\\t"}
@@ -258,3 +321,4 @@ public class Field implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:1509291543

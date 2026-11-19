@@ -7,7 +7,6 @@ package com.liferay.headless.admin.user.resource.v1_0.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.headless.admin.user.client.http.HttpInvoker;
-import com.liferay.mail.messaging.MailMessageListener;
 import com.liferay.oauth.client.LocalOAuthClient;
 import com.liferay.oauth2.provider.constants.GrantType;
 import com.liferay.oauth2.provider.model.OAuth2Application;
@@ -24,11 +23,13 @@ import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
+import com.liferay.portal.kernel.test.rule.AssumeTestRule;
 import com.liferay.portal.kernel.test.rule.DataGuard;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
+import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.PwdGenerator;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.test.log.LogCapture;
@@ -63,12 +64,15 @@ public class UserAccountResourcePerformanceTest {
 	@ClassRule
 	@Rule
 	public static final AggregateTestRule aggregateTestRule =
-		new LiferayIntegrationTestRule();
+		new AggregateTestRule(
+			new AssumeTestRule("assume"), new LiferayIntegrationTestRule());
+
+	public static void assume() {
+		Assume.assumeTrue(Validator.isNull(System.getenv("JENKINS_HOME")));
+	}
 
 	@BeforeClass
 	public static void setUpClass() throws Exception {
-		Assume.assumeTrue(Validator.isNull(System.getenv("JENKINS_HOME")));
-
 		_json = JSONUtil.put(
 			"additionalName", ""
 		).put(
@@ -172,7 +176,10 @@ public class UserAccountResourcePerformanceTest {
 				"client_secret_post", user.getUserId(),
 				RandomTestUtil.randomString(), 0, RandomTestUtil.randomString(),
 				"", Collections.emptyList(), "", 0, "", "rest_token", "",
-				Arrays.asList("http://localhost:8080"), false,
+				Arrays.asList(
+					"http://localhost:" +
+						PortalUtil.getPortalServerPort(false)),
+				false,
 				Arrays.asList(
 					"Liferay.Headless.Admin.User.everything",
 					"Liferay.Headless.Admin.User.everything.read",
@@ -196,7 +203,8 @@ public class UserAccountResourcePerformanceTest {
 		}
 
 		try (LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
-				MailMessageListener.class.getName(), LoggerTestUtil.OFF)) {
+				"com.liferay.mail.messaging.internal.MailMessageListener",
+				LoggerTestUtil.OFF)) {
 
 			long startTime = System.currentTimeMillis();
 
@@ -235,7 +243,8 @@ public class UserAccountResourcePerformanceTest {
 		List<String> jsons = _createJSONs(usersCount);
 
 		try (LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
-				MailMessageListener.class.getName(), LoggerTestUtil.OFF)) {
+				"com.liferay.mail.messaging.internal.MailMessageListener",
+				LoggerTestUtil.OFF)) {
 
 			long startTime = System.currentTimeMillis();
 
@@ -267,8 +276,10 @@ public class UserAccountResourcePerformanceTest {
 					"Bearer " + _jsonObject.getString("access_token"));
 				httpInvoker.httpMethod(HttpInvoker.HttpMethod.POST);
 				httpInvoker.path(
-					"http://localhost:8080/o/headless-admin-user/v1.0" +
-						"/user-accounts");
+					StringBundler.concat(
+						"http://localhost:",
+						PortalUtil.getPortalServerPort(false),
+						"/o/headless-admin-user/v1.0/user-accounts"));
 
 				httpInvoker.invoke();
 			}

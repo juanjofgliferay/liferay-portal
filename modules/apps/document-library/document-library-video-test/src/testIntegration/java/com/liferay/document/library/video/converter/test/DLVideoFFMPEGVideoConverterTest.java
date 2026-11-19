@@ -9,14 +9,18 @@ import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.document.library.kernel.model.DLFolderConstants;
 import com.liferay.document.library.kernel.processor.VideoProcessorUtil;
 import com.liferay.document.library.kernel.service.DLAppServiceUtil;
+import com.liferay.document.library.preview.processor.BasePreviewableDLProcessor;
 import com.liferay.petra.function.UnsafeRunnable;
+import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.portal.configuration.test.util.ConfigurationTemporarySwapper;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.test.TestInfo;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
+import com.liferay.portal.kernel.test.util.PropsValuesTestUtil;
 import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
@@ -29,7 +33,12 @@ import com.liferay.portal.test.log.LogEntry;
 import com.liferay.portal.test.log.LoggerTestUtil;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 
+import java.awt.image.BufferedImage;
+
 import java.util.Dictionary;
+import java.util.List;
+
+import javax.imageio.ImageIO;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -77,7 +86,7 @@ public class DLVideoFFMPEGVideoConverterTest {
 
 		try (LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
 				"com.liferay.document.library.preview.video.internal." +
-					"processor.VideoDLProcessorImpl",
+					"processor.VideoPreviewableDLProcessor",
 				LoggerTestUtil.ERROR)) {
 
 			_withDLVideoFFMPEGVideoConverterConfiguration(
@@ -91,7 +100,11 @@ public class DLVideoFFMPEGVideoConverterTest {
 							fileEntry.getFileVersion()));
 				});
 
-			_assertLogMessage(logCapture);
+			List<LogEntry> logEntries = logCapture.getLogEntries();
+
+			Assert.assertFalse(logEntries.isEmpty());
+
+			_assertLogMessage(logEntries);
 		}
 	}
 
@@ -145,7 +158,7 @@ public class DLVideoFFMPEGVideoConverterTest {
 
 		try (LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
 				"com.liferay.document.library.preview.video.internal." +
-					"processor.VideoDLProcessorImpl",
+					"processor.VideoPreviewableDLProcessor",
 				LoggerTestUtil.ERROR)) {
 
 			_withDLVideoFFMPEGVideoConverterConfiguration(
@@ -171,12 +184,31 @@ public class DLVideoFFMPEGVideoConverterTest {
 					Assert.assertTrue(ogvPreviewFileSize > 0);
 				});
 
-			_assertLogMessage(logCapture);
+			List<LogEntry> logEntries = logCapture.getLogEntries();
+
+			Assert.assertTrue(logEntries.isEmpty());
 		}
 	}
 
-	private void _assertLogMessage(LogCapture logCapture) {
-		for (LogEntry logEntry : logCapture.getLogEntries()) {
+	@Test
+	@TestInfo("LPD-111060")
+	public void testGeneratesVideoThumbnail() throws Exception {
+		_withDLVideoFFMPEGVideoConverterConfiguration(
+			true,
+			() -> {
+				_assertVideoThumbnailSize(360, 640);
+
+				try (SafeCloseable safeCloseable =
+						PropsValuesTestUtil.swapWithSafeCloseable(
+							"DL_FILE_ENTRY_PREVIEW_VIDEO_WIDTH", 0)) {
+
+					_assertVideoThumbnailSize(720, 1080);
+				}
+			});
+	}
+
+	private void _assertLogMessage(List<LogEntry> logEntries) {
+		for (LogEntry logEntry : logEntries) {
 			String logEntryMessage = logEntry.getMessage();
 
 			Assert.assertTrue(logEntryMessage.contains("Unable to process"));
@@ -191,6 +223,22 @@ public class DLVideoFFMPEGVideoConverterTest {
 		}
 	}
 
+	private void _assertVideoThumbnailSize(int height, int width)
+		throws Exception {
+
+		FileEntry fileEntry = _createVideoFileEntry("video.mp4");
+
+		BufferedImage bufferedImage = ImageIO.read(
+			VideoProcessorUtil.getThumbnailAsStream(
+				fileEntry.getFileVersion(),
+				BasePreviewableDLProcessor.THUMBNAIL_INDEX_DEFAULT));
+
+		Assert.assertEquals(height, bufferedImage.getHeight());
+		Assert.assertEquals(width, bufferedImage.getWidth());
+
+		DLAppServiceUtil.deleteFileEntry(fileEntry.getFileEntryId());
+	}
+
 	private FileEntry _createVideoFileEntry(String fileName) throws Exception {
 		return DLAppServiceUtil.addFileEntry(
 			null, _group.getGroupId(),
@@ -199,7 +247,7 @@ public class DLVideoFFMPEGVideoConverterTest {
 			StringUtil.randomString(), StringUtil.randomString(),
 			StringUtil.randomString(),
 			FileUtil.getBytes(getClass(), "dependencies/" + fileName), null,
-			null, _serviceContext);
+			null, null, _serviceContext);
 	}
 
 	private void _withDLVideoFFMPEGVideoConverterConfiguration(

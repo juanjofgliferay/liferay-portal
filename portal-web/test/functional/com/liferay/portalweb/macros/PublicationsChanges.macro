@@ -121,9 +121,7 @@ definition {
 
 		WaitForElementPresent(locator1 = "PublicationsChanges#CHANGE_TYPE_BUTTON");
 
-		Click(
-			key_name = "Filter",
-			locator1 = "PublicationsChanges#SORT_BUTTON");
+		Click(locator1 = "PublicationsChanges#FILTER_BUTTON");
 
 		MenuItem.clickNoError(menuItem = ${menuItem});
 
@@ -159,6 +157,8 @@ definition {
 			key_menuItem = "Move Changes",
 			locator1 = "PublicationsChanges#REVIEW_CHANGE_DROPDOWN_ITEM");
 
+		Check.checkToggleSwitch(locator1 = "Publications#SHOW_HIDEABLE_TOGGLE_SWITCH");
+
 		Select(
 			ariaLabel = "Publication",
 			locator1 = "Select#ANY_ARIA_LABEL",
@@ -187,25 +187,6 @@ definition {
 	@summary = "Default summary"
 	macro openCommentsSidebar() {
 		Click.javaScriptClick(locator1 = "PublicationsChanges#COMMENT_BUTTON");
-	}
-
-	@summary = "Default summary"
-	macro sortChanges(sortName = null, sort = null) {
-		Click(
-			key_name = ${sortName},
-			locator1 = "PublicationsChanges#SORT_BUTTON");
-
-		if (${sort} == "descending") {
-			if (IsElementPresent(locator1 = "PublicationsChanges#SORTED_ASCENDING_ICON")) {
-				Click(locator1 = "PublicationsChanges#SORTED_ASCENDING_ICON");
-			}
-		}
-
-		if (${sort} == "ascending") {
-			if (IsElementPresent(locator1 = "PublicationsChanges#SORTED_DESCENDING_ICON")) {
-				Click(locator1 = "PublicationsChanges#SORTED_DESCENDING_ICON");
-			}
-		}
 	}
 
 	@summary = "Default summary"
@@ -279,22 +260,6 @@ definition {
 		AssertElementNotPresent(
 			locator1 = "PublicationsChanges#PUBLICATIONS_CHANGE_TITLE",
 			value1 = ${changeTitle});
-	}
-
-	@summary = "Default summary"
-	macro viewChangesResultsOrder(changeCategory = null, changesList = null) {
-		var changeOrder = 0;
-
-		for (var changeTitle : list ${changesList}) {
-			var changeOrder = ${changeOrder} + 1;
-			var key_changeCategory = ${changeCategory};
-			var key_changeTitle = ${changeTitle};
-
-			AssertTextEquals(
-				changeOrder = ${changeOrder},
-				locator1 = "PublicationsChanges#PUBLICATIONS_CHANGE_TITLE",
-				value1 = ${changeTitle});
-		}
 	}
 
 }

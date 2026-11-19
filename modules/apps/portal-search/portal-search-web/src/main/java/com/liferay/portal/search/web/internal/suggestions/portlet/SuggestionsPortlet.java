@@ -8,7 +8,6 @@ package com.liferay.portal.search.web.internal.suggestions.portlet;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCPortlet;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.portal.search.web.internal.portlet.shared.task.helper.PortletSharedRequestHelper;
 import com.liferay.portal.search.web.internal.suggestions.constants.SuggestionsPortletKeys;
 import com.liferay.portal.search.web.internal.suggestions.display.context.SuggestionsPortletDisplayContext;
 import com.liferay.portal.search.web.internal.suggestions.display.context.builder.SuggestionsPortletDisplayContextBuilder;
@@ -16,12 +15,12 @@ import com.liferay.portal.search.web.portlet.shared.search.PortletSharedSearchRe
 import com.liferay.portal.search.web.portlet.shared.search.PortletSharedSearchResponse;
 import com.liferay.portal.search.web.search.request.SearchSettings;
 
-import java.io.IOException;
+import jakarta.portlet.Portlet;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
 
-import javax.portlet.Portlet;
-import javax.portlet.PortletException;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
+import java.io.IOException;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -43,14 +42,14 @@ import org.osgi.service.component.annotations.Reference;
 		"com.liferay.portlet.private-session-attributes=false",
 		"com.liferay.portlet.restore-current-view=false",
 		"com.liferay.portlet.use-default-template=true",
-		"javax.portlet.display-name=Suggestions",
-		"javax.portlet.expiration-cache=0",
-		"javax.portlet.init-param.template-path=/META-INF/resources/",
-		"javax.portlet.init-param.view-template=/suggestions/view.jsp",
-		"javax.portlet.name=" + SuggestionsPortletKeys.SUGGESTIONS,
-		"javax.portlet.resource-bundle=content.Language",
-		"javax.portlet.security-role-ref=guest,power-user,user",
-		"javax.portlet.version=3.0"
+		"jakarta.portlet.display-name=Suggestions",
+		"jakarta.portlet.expiration-cache=0",
+		"jakarta.portlet.init-param.template-path=/META-INF/resources/",
+		"jakarta.portlet.init-param.view-template=/suggestions/view.jsp",
+		"jakarta.portlet.name=" + SuggestionsPortletKeys.SUGGESTIONS,
+		"jakarta.portlet.resource-bundle=content.Language",
+		"jakarta.portlet.security-role-ref=guest,power-user,user",
+		"jakarta.portlet.version=4.0"
 	},
 	service = Portlet.class
 )
@@ -90,9 +89,6 @@ public class SuggestionsPortlet extends MVCPortlet {
 	protected Portal portal;
 
 	@Reference
-	protected PortletSharedRequestHelper portletSharedRequestHelper;
-
-	@Reference
 	protected PortletSharedSearchRequest portletSharedSearchRequest;
 
 	private SuggestionsPortletDisplayContext _buildDisplayContext(
@@ -128,7 +124,7 @@ public class SuggestionsPortlet extends MVCPortlet {
 				suggestionsPortletPreferences.
 					isRelatedQueriesSuggestionsEnabled());
 		suggestionsPortletDisplayContextBuilder.setSearchURL(
-			portletSharedRequestHelper.getCompleteURL(renderRequest));
+			portal.getCurrentURL(renderRequest));
 
 		String spellCheckSuggestion =
 			portletSharedSearchResponse.getSpellCheckSuggestion();

@@ -46,6 +46,37 @@ public class LVEntryTest {
 		new LiferayIntegrationTestRule();
 
 	@Test
+	public void testAddLVEntryLocalization() throws Exception {
+		LVEntry draftLVEntry = _versionService.create();
+
+		draftLVEntry = _versionService.updateDraft(draftLVEntry);
+
+		LVEntryLocalization lvEntryLocalization =
+			_lvEntryLocalService.addLVEntryLocalization(
+				draftLVEntry, _LANGUAGE_ID_1, _TITLE_1, _CONTENT_1);
+
+		Assert.assertEquals(
+			lvEntryLocalization,
+			_lvEntryLocalService.fetchLVEntryLocalization(
+				draftLVEntry.getPrimaryKey(), _LANGUAGE_ID_1));
+
+		_lvEntry = _versionService.publishDraft(draftLVEntry);
+
+		try {
+			_lvEntryLocalService.addLVEntryLocalization(
+				_lvEntry, _LANGUAGE_ID_2, _TITLE_2, _CONTENT_2);
+
+			Assert.fail();
+		}
+		catch (IllegalArgumentException illegalArgumentException) {
+			Assert.assertEquals(
+				"Unable to add a localization to published LVEntry " +
+					_lvEntry.getPrimaryKey(),
+				illegalArgumentException.getMessage());
+		}
+	}
+
+	@Test
 	public void testCheckout() throws Exception {
 		LVEntry draftLVEntry = _versionService.create();
 
@@ -333,29 +364,6 @@ public class LVEntryTest {
 	}
 
 	@Test
-	public void testDeleteLatestVersion() throws Exception {
-		LVEntry draftLVEntry = _versionService.create();
-
-		_lvEntry = _versionService.publishDraft(draftLVEntry);
-
-		LVEntryVersion lvEntryVersion = _versionService.fetchLatestVersion(
-			_lvEntry);
-
-		Assert.assertNotNull(lvEntryVersion);
-
-		try {
-			_versionService.deleteVersion(lvEntryVersion);
-
-			Assert.fail();
-		}
-		catch (IllegalArgumentException illegalArgumentException) {
-			Assert.assertEquals(
-				"Unable to delete latest version 1",
-				illegalArgumentException.getMessage());
-		}
-	}
-
-	@Test
 	public void testDeleteLVEntry() throws Exception {
 		LVEntry draftLVEntry = _versionService.create();
 
@@ -432,6 +440,29 @@ public class LVEntryTest {
 		}
 		finally {
 			_versionService.unregisterListener(testVersionServiceListener);
+		}
+	}
+
+	@Test
+	public void testDeleteLatestVersion() throws Exception {
+		LVEntry draftLVEntry = _versionService.create();
+
+		_lvEntry = _versionService.publishDraft(draftLVEntry);
+
+		LVEntryVersion lvEntryVersion = _versionService.fetchLatestVersion(
+			_lvEntry);
+
+		Assert.assertNotNull(lvEntryVersion);
+
+		try {
+			_versionService.deleteVersion(lvEntryVersion);
+
+			Assert.fail();
+		}
+		catch (IllegalArgumentException illegalArgumentException) {
+			Assert.assertEquals(
+				"Unable to delete latest version 1",
+				illegalArgumentException.getMessage());
 		}
 	}
 
@@ -932,16 +963,16 @@ public class LVEntryTest {
 
 	private static final String _TITLE_3 = "TITLE 3";
 
+	@DeleteAfterTestRun
+	private LVEntry _lvEntry;
+
 	@Inject
-	private static LVEntryLocalService _lvEntryLocalService;
+	private LVEntryLocalService _lvEntryLocalService;
 
 	@Inject(
 		filter = "model.class.name=com.liferay.portal.tools.service.builder.test.model.LVEntry"
 	)
-	private static VersionService<LVEntry, LVEntryVersion> _versionService;
-
-	@DeleteAfterTestRun
-	private LVEntry _lvEntry;
+	private VersionService<LVEntry, LVEntryVersion> _versionService;
 
 	private static class TestVersionServiceListener
 		implements VersionServiceListener<LVEntry, LVEntryVersion> {

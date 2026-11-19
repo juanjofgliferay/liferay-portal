@@ -7,6 +7,7 @@ package com.liferay.commerce.product.service;
 
 import com.liferay.commerce.product.model.CPTaxCategory;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.util.List;
@@ -54,6 +55,14 @@ public class CPTaxCategoryServiceUtil {
 		getService().deleteCPTaxCategory(cpTaxCategoryId);
 	}
 
+	public static CPTaxCategory fetchCPTaxCategoryByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws PortalException {
+
+		return getService().fetchCPTaxCategoryByExternalReferenceCode(
+			externalReferenceCode, companyId);
+	}
+
 	public static List<CPTaxCategory> findCPTaxCategoriesByCompanyId(
 			long companyId, String keyword, int start, int end)
 		throws PortalException {
@@ -89,6 +98,21 @@ public class CPTaxCategoryServiceUtil {
 		return getService().getCPTaxCategory(cpTaxCategoryId);
 	}
 
+	public static CPTaxCategory getCPTaxCategoryByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws PortalException {
+
+		return getService().getCPTaxCategoryByExternalReferenceCode(
+			externalReferenceCode, companyId);
+	}
+
+	public static CPTaxCategory getOrAddEmptyCPTaxCategory(
+			String externalReferenceCode)
+		throws PortalException {
+
+		return getService().getOrAddEmptyCPTaxCategory(externalReferenceCode);
+	}
+
 	/**
 	 * Returns the OSGi service identifier.
 	 *
@@ -119,13 +143,12 @@ public class CPTaxCategoryServiceUtil {
 	}
 
 	public static CPTaxCategoryService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(CPTaxCategoryService service) {
-		_service = service;
-	}
-
-	private static volatile CPTaxCategoryService _service;
+	private static final Snapshot<CPTaxCategoryService> _serviceSnapshot =
+		new Snapshot<>(
+			CPTaxCategoryServiceUtil.class, CPTaxCategoryService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1303738131

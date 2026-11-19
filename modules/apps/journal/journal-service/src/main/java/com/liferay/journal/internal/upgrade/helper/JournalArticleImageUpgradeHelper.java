@@ -29,14 +29,18 @@ import com.liferay.portal.kernel.util.StringUtil;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.Reference;
-
 /**
  * @author Jürgen Kappler
  */
-@Component(service = JournalArticleImageUpgradeHelper.class)
 public class JournalArticleImageUpgradeHelper {
+
+	public JournalArticleImageUpgradeHelper(
+		DLAppLocalService dlAppLocalService,
+		PortletFileRepository portletFileRepository) {
+
+		_dlAppLocalService = dlAppLocalService;
+		_portletFileRepository = portletFileRepository;
+	}
 
 	public String getDocumentLibraryValue(String url) {
 		try {
@@ -160,6 +164,10 @@ public class JournalArticleImageUpgradeHelper {
 		Matcher matcher = _oldDocumentLibraryURLPattern.matcher(url);
 
 		if (!matcher.find()) {
+			if (_log.isDebugEnabled()) {
+				_log.debug("Unable to parse file entry from URL " + url);
+			}
+
 			return null;
 		}
 
@@ -224,10 +232,7 @@ public class JournalArticleImageUpgradeHelper {
 	private static final Pattern _oldDocumentLibraryURLPattern =
 		Pattern.compile("uuid=([^&]+)&groupId=([^&]+)");
 
-	@Reference
-	private DLAppLocalService _dlAppLocalService;
-
-	@Reference
-	private PortletFileRepository _portletFileRepository;
+	private final DLAppLocalService _dlAppLocalService;
+	private final PortletFileRepository _portletFileRepository;
 
 }

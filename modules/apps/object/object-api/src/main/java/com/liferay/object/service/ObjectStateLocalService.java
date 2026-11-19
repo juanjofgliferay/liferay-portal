@@ -212,6 +212,10 @@ public interface ObjectStateLocalService
 		String uuid, long companyId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public ObjectState fetchObjectStateFlowObjectState(
+		long listTypeEntryId, long objectStateFlowId);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public ActionableDynamicQuery getActionableDynamicQuery();
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
@@ -308,3 +312,4 @@ public interface ObjectStateLocalService
 	public ObjectState updateObjectState(ObjectState objectState);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:678989513

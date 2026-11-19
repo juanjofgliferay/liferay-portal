@@ -1,0 +1,192 @@
+import com.liferay.gradle.util.FileUtil
+import com.liferay.gradle.util.GradleUtil
+import com.liferay.gradle.util.copy.StripPathSegmentsAction
+
+import de.undercouch.gradle.tasks.download.Download
+
+apply plugin: "org.ysb33r.gradletest"
+
+task copyBundle(type: Copy)
+task copyGradleTestDependencies(type: Copy)
+task copyGradleTestProjects(type: Copy)
+task copyHotFixZip(type: Copy)
+task copyRepo(type: Copy)
+task copyWorkspacesSamples
+task downloadBundle(type: Download)
+task downloadHotFixZip(type: Download)
+
+String bundleUrl = "https://releases-cdn.liferay.com/portal/7.1.2-ga3/liferay-ce-portal-tomcat-7.1.2-ga3-20190107144105508.tar.gz"
+File gradleTestDependenciesDir = new File(buildDir, "gradle-test-dependencies")
+String gradleVersion = "8.5"
+String hotFixZipUrl = "https://storage.googleapis.com/liferay-devtools/gradle-plugins-workspace/liferay-dxp-2024.q4.4-hotfix-10.zip"
+
+if (System.properties["http.proxyHost"] == "squid.lax.liferay.com") {
+	bundleUrl = "http://mirrors.liferay.com/releases.liferay.com/portal/7.1.2-ga3/liferay-ce-portal-tomcat-7.1.2-ga3-20190107144105508.tar.gz"
+}
+
+cleanCopyLibs {
+	enabled = false
+}
+
+configurations {
+	gradleTestDependencies {
+		extendsFrom configurations.runtimeClasspath
+	}
+}
+
+copyBundle {
+	dependsOn downloadBundle
+	eachFile new StripPathSegmentsAction(1)
+
+	from {
+		tarTree(downloadBundle.dest)
+	}
+
+	includeEmptyDirs = false
+	into new File(buildDir, "bundle")
+}
+
+copyGradleTestDependencies {
+	duplicatesStrategy = DuplicatesStrategy.INCLUDE
+
+	from configurations.gradleTestDependencies
+	from jar
+	into gradleTestDependenciesDir
+
+	doLast {
+		configurations.compileClasspath.forEach {
+			File compileClasspathFile ->
+
+			if (compileClasspathFile.name.startsWith("com.liferay.portal.tools.soy.builder") || compileClasspathFile.name.startsWith("jackson-dataformat-yaml")) {
+				copy {
+					from compileClasspathFile
+					into jar.destinationDirectory
+				}
+			}
+		}
+	}
+}
+
+copyGradleTestProjects {
+	ext {
+		autoClean = false
+	}
+
+	from("src/gradleTest/flexibleLayoutWildcard") {
+		include "modules/**"
+		include "themes/**"
+		include "wars/**"
+	}
+
+	into "src/gradleTest/excludePatterns"
+}
+
+copyHotFixZip {
+	ext {
+		autoClean = false
+	}
+
+	dependsOn downloadHotFixZip
+
+	from {
+		downloadHotFixZip.dest
+	}
+
+	into "src/gradleTest/startDockerContainerWithPatch/configs/common/patching"
+}
+
+copyRepo {
+	dependsOn copyGradleTestDependencies
+
+	from gradleTestDependenciesDir
+	into new File(buildDir, "gradleTest/repo")
+}
+
+copyWorkspacesSamples {
+	doLast {
+		[
+			"sample-custom-element-1",
+			"sample-iframe-1",
+			"sample-theme-css-1",
+			"sample-theme-favicon",
+		].each {
+			String sampleName ->
+
+			copy {
+				from new File(GradleUtil.getRootDir(project.getRootProject(), "portal-impl"), "workspaces/liferay-sample-workspace/client-extensions/liferay-${sampleName}")
+				into "src/gradleTest/clientExtensionSamples/${sampleName}"
+			}
+		}
+	}
+}
+
+dependencies {
+	gradleTestDependencies group: "com.google.guava", name: "guava", version: "32.0.1-jre"
+}
+
+downloadBundle {
+	dest new File(buildDir, "bundle.tar.gz")
+	onlyIfModified true
+	src bundleUrl
+}
+
+downloadHotFixZip {
+	dest new File(buildDir, "liferay-dxp-2024.q4.4-hotfix-10.zip")
+	onlyIfModified true
+	src hotFixZipUrl
+}
+
+gradleTest {
+	dependsOn copyGradleTestDependencies
+	dependsOn copyGradleTestProjects
+	dependsOn copyRepo
+	dependsOn copyWorkspacesSamples
+	dependsOn jar
+
+	if (!project.hasProperty("testLightExecution")) {
+		dependsOn copyBundle
+		dependsOn copyHotFixZip
+	}
+
+	deprecationMessagesAreFailures = false
+
+	exclude "src/gradleTest/*.gradle"
+
+	JavaVersion javaVersion = JavaVersion.current()
+
+	if (javaVersion.compareTo(JavaVersion.VERSION_17) >= 0) {
+		exclude "**/ExtAlternativeSpec*"
+		exclude "**/ExtSpec*"
+		exclude "**/Test_extSpec*"
+	}
+
+	fileTree(dir: "src/gradleTest", include: "*.gradle").each {
+		String propertyName = "commonScript.${it.name}"
+
+		gradleArguments "--project-prop", "${propertyName}=" + FileUtil.getAbsolutePath(it)
+
+		println ""
+		println "Script path: ${it}"
+		println "Property name: ${propertyName}"
+		println "Usage: 'apply from: project.property(\"${propertyName}\")'"
+	}
+
+	gradleArguments "--project-prop", "app.server.parent.dir=" + FileUtil.getAbsolutePath(copyBundle.destinationDir)
+	gradleArguments "--project-prop", "pluginClasspathDir=${uri(gradleTestDependenciesDir)}"
+	gradleArguments "--system-prop", "org.gradle.jvmargs=-Xmx8g"
+
+	versions gradleVersion
+
+	beforeTest {
+		println "  ${it.name}"
+	}
+}
+
+gradleTestGenerator {
+	mustRunAfter copyGradleTestProjects
+	mustRunAfter copyHotFixZip
+}
+
+jar {
+	destinationDirectory = file "build/testJar"
+}

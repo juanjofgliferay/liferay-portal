@@ -19,8 +19,8 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -30,8 +30,8 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + JournalPortletKeys.JOURNAL,
-		"path=/edit_article.jsp"
+		"jakarta.portlet.name=" + JournalPortletKeys.JOURNAL,
+		"path=/journal/edit_article"
 	},
 	service = PortletConfigurationIcon.class
 )
@@ -82,7 +82,7 @@ public class ViewSourcePortletConfigurationIcon
 
 	@Override
 	public double getWeight() {
-		return 100.0;
+		return 101;
 	}
 
 	@Override

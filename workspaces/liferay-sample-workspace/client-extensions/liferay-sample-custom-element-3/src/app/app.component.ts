@@ -7,8 +7,9 @@ import {Component, Input} from '@angular/core';
 
 @Component({
 	selector: 'liferay-sample-custom-element-3',
-	templateUrl: './app.component.html',
+	standalone: false,
 	styleUrls: ['./app.component.css'],
+	templateUrl: './app.component.html',
 })
 export class AppComponent {
 	@Input('title') title = 'liferay-sample-custom-element-3';

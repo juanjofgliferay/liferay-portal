@@ -314,18 +314,18 @@ public class JournalArticleFinderTest {
 
 		// Comparators
 
-		testQueryByG_F(new ArticleCreateDateComparator(true));
-		testQueryByG_F(new ArticleCreateDateComparator(false));
-		testQueryByG_F(new ArticleDisplayDateComparator(true));
-		testQueryByG_F(new ArticleDisplayDateComparator(false));
-		testQueryByG_F(new ArticleIDComparator(true));
-		testQueryByG_F(new ArticleIDComparator(false));
-		testQueryByG_F(new ArticleModifiedDateComparator(true));
-		testQueryByG_F(new ArticleModifiedDateComparator(false));
-		testQueryByG_F(new ArticleReviewDateComparator(true));
-		testQueryByG_F(new ArticleReviewDateComparator(false));
-		testQueryByG_F(new ArticleVersionComparator(true));
-		testQueryByG_F(new ArticleVersionComparator(false));
+		testQueryByG_F(ArticleCreateDateComparator.getInstance(true));
+		testQueryByG_F(ArticleCreateDateComparator.getInstance(false));
+		testQueryByG_F(ArticleDisplayDateComparator.getInstance(true));
+		testQueryByG_F(ArticleDisplayDateComparator.getInstance(false));
+		testQueryByG_F(ArticleIDComparator.getInstance(true));
+		testQueryByG_F(ArticleIDComparator.getInstance(false));
+		testQueryByG_F(ArticleModifiedDateComparator.getInstance(true));
+		testQueryByG_F(ArticleModifiedDateComparator.getInstance(false));
+		testQueryByG_F(ArticleReviewDateComparator.getInstance(true));
+		testQueryByG_F(ArticleReviewDateComparator.getInstance(false));
+		testQueryByG_F(ArticleVersionComparator.getInstance(true));
+		testQueryByG_F(ArticleVersionComparator.getInstance(false));
 	}
 
 	@Test
@@ -412,7 +412,7 @@ public class JournalArticleFinderTest {
 				"JournalArticleLocalization", "title", ascending));
 		queryDefinition.setStatus(WorkflowConstants.STATUS_ANY);
 
-		List<JournalArticle> articles = _journalArticleFinder.findByG_F_L(
+		List<JournalArticle> articles = _journalArticleFinder.filterFindByG_F_L(
 			groupId, folderIds, locale, queryDefinition);
 
 		int actualCount = articles.size();
@@ -435,15 +435,8 @@ public class JournalArticleFinderTest {
 			QueryDefinition<JournalArticle> queryDefinition, int expectedCount)
 		throws Exception {
 
-		int actualCount = _journalArticleFinder.countByG_F_C(
+		int actualCount = _journalArticleFinder.filterCountByG_F_C(
 			groupId, folderIds, classNameId, queryDefinition);
-
-		List<JournalArticle> articles = _journalArticleFinder.findByG_F_C(
-			groupId, folderIds, classNameId, queryDefinition);
-
-		Assert.assertEquals(expectedCount, actualCount);
-
-		actualCount = articles.size();
 
 		Assert.assertEquals(expectedCount, actualCount);
 	}
@@ -460,7 +453,7 @@ public class JournalArticleFinderTest {
 
 		Locale siteDefaultLocale = LocaleUtil.getSiteDefault();
 
-		List<JournalArticle> articles = _journalArticleFinder.findByG_F_L(
+		List<JournalArticle> articles = _journalArticleFinder.filterFindByG_F_L(
 			groupId, folderIds, siteDefaultLocale, queryDefinition);
 
 		actualCount = articles.size();
@@ -492,17 +485,15 @@ public class JournalArticleFinderTest {
 
 		Locale siteDefaultLocale = LocaleUtil.getSiteDefault();
 
-		List<JournalArticle> actualArticles = _journalArticleFinder.findByG_F_L(
-			_group.getGroupId(), _folderIds, siteDefaultLocale,
-			queryDefinition);
+		List<JournalArticle> actualArticles =
+			_journalArticleFinder.filterFindByG_F_L(
+				_group.getGroupId(), _folderIds, siteDefaultLocale,
+				queryDefinition);
 
 		Assert.assertEquals(expectedArticles, actualArticles);
 	}
 
 	private static final long _USER_ID = 1234L;
-
-	@Inject
-	private static JournalArticleFinder _journalArticleFinder;
 
 	private JournalArticle _article;
 	private final List<JournalArticle> _articles = new ArrayList<>();
@@ -514,5 +505,8 @@ public class JournalArticleFinderTest {
 
 	@DeleteAfterTestRun
 	private Group _group;
+
+	@Inject
+	private JournalArticleFinder _journalArticleFinder;
 
 }

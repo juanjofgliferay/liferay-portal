@@ -11,25 +11,27 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import com.liferay.petra.function.UnsafeSupplier;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Javier Gamarra
@@ -39,6 +41,9 @@ import javax.xml.bind.annotation.XmlRootElement;
 @GraphQLName(
 	description = "Represent a definition of a Page form.",
 	value = "PageFormDefinition"
+)
+@io.swagger.v3.oas.annotations.media.Schema(
+	description = "Represent a definition of a Page form."
 )
 @JsonFilter("Liferay.Vulcan")
 @XmlRootElement(name = "PageFormDefinition")
@@ -52,30 +57,40 @@ public class PageFormDefinition implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(PageFormDefinition.class, json);
 	}
 
-	@Schema(
+	@io.swagger.v3.oas.annotations.media.Schema(
 		description = "A list of CSS Classes that are applied to the element."
 	)
 	public String[] getCssClasses() {
+		if (_cssClassesSupplier != null) {
+			cssClasses = _cssClassesSupplier.get();
+
+			_cssClassesSupplier = null;
+		}
+
 		return cssClasses;
 	}
 
 	public void setCssClasses(String[] cssClasses) {
 		this.cssClasses = cssClasses;
+
+		_cssClassesSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setCssClasses(
 		UnsafeSupplier<String[], Exception> cssClassesUnsafeSupplier) {
 
-		try {
-			cssClasses = cssClassesUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_cssClassesSupplier = () -> {
+			try {
+				return cssClassesUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -84,42 +99,70 @@ public class PageFormDefinition implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String[] cssClasses;
 
-	@Schema(description = "Custom CSS that is applied on the fragment.")
+	@JsonIgnore
+	private Supplier<String[]> _cssClassesSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Custom CSS that is applied on the fragment."
+	)
 	public String getCustomCSS() {
+		if (_customCSSSupplier != null) {
+			customCSS = _customCSSSupplier.get();
+
+			_customCSSSupplier = null;
+		}
+
 		return customCSS;
 	}
 
 	public void setCustomCSS(String customCSS) {
 		this.customCSS = customCSS;
+
+		_customCSSSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setCustomCSS(
 		UnsafeSupplier<String, Exception> customCSSUnsafeSupplier) {
 
-		try {
-			customCSS = customCSSUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_customCSSSupplier = () -> {
+			try {
+				return customCSSUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "Custom CSS that is applied on the fragment.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String customCSS;
 
-	@Schema(description = "The custom CSS viewports of the page collection.")
+	@JsonIgnore
+	private Supplier<String> _customCSSSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The custom CSS viewports of the page collection."
+	)
 	@Valid
 	public CustomCSSViewport[] getCustomCSSViewports() {
+		if (_customCSSViewportsSupplier != null) {
+			customCSSViewports = _customCSSViewportsSupplier.get();
+
+			_customCSSViewportsSupplier = null;
+		}
+
 		return customCSSViewports;
 	}
 
 	public void setCustomCSSViewports(CustomCSSViewport[] customCSSViewports) {
 		this.customCSSViewports = customCSSViewports;
+
+		_customCSSViewportsSupplier = null;
 	}
 
 	@JsonIgnore
@@ -127,15 +170,17 @@ public class PageFormDefinition implements Serializable {
 		UnsafeSupplier<CustomCSSViewport[], Exception>
 			customCSSViewportsUnsafeSupplier) {
 
-		try {
-			customCSSViewports = customCSSViewportsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_customCSSViewportsSupplier = () -> {
+			try {
+				return customCSSViewportsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -144,72 +189,115 @@ public class PageFormDefinition implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected CustomCSSViewport[] customCSSViewports;
 
-	@Schema(description = "The page form's configuration.")
+	@JsonIgnore
+	private Supplier<CustomCSSViewport[]> _customCSSViewportsSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The page form's configuration."
+	)
 	@Valid
 	public FormConfig getFormConfig() {
+		if (_formConfigSupplier != null) {
+			formConfig = _formConfigSupplier.get();
+
+			_formConfigSupplier = null;
+		}
+
 		return formConfig;
 	}
 
 	public void setFormConfig(FormConfig formConfig) {
 		this.formConfig = formConfig;
+
+		_formConfigSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setFormConfig(
 		UnsafeSupplier<FormConfig, Exception> formConfigUnsafeSupplier) {
 
-		try {
-			formConfig = formConfigUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_formConfigSupplier = () -> {
+			try {
+				return formConfigUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The page form's configuration.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected FormConfig formConfig;
 
-	@Schema(description = "The fragment style of a Page form.")
+	@JsonIgnore
+	private Supplier<FormConfig> _formConfigSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The fragment style of a Page form."
+	)
 	@Valid
 	public FragmentStyle getFragmentStyle() {
+		if (_fragmentStyleSupplier != null) {
+			fragmentStyle = _fragmentStyleSupplier.get();
+
+			_fragmentStyleSupplier = null;
+		}
+
 		return fragmentStyle;
 	}
 
 	public void setFragmentStyle(FragmentStyle fragmentStyle) {
 		this.fragmentStyle = fragmentStyle;
+
+		_fragmentStyleSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setFragmentStyle(
 		UnsafeSupplier<FragmentStyle, Exception> fragmentStyleUnsafeSupplier) {
 
-		try {
-			fragmentStyle = fragmentStyleUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_fragmentStyleSupplier = () -> {
+			try {
+				return fragmentStyleUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The fragment style of a Page form.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected FragmentStyle fragmentStyle;
 
-	@Schema(description = "A list of fragment viewports of a Page form.")
+	@JsonIgnore
+	private Supplier<FragmentStyle> _fragmentStyleSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "A list of fragment viewports of a Page form."
+	)
 	@Valid
 	public FragmentViewport[] getFragmentViewports() {
+		if (_fragmentViewportsSupplier != null) {
+			fragmentViewports = _fragmentViewportsSupplier.get();
+
+			_fragmentViewportsSupplier = null;
+		}
+
 		return fragmentViewports;
 	}
 
 	public void setFragmentViewports(FragmentViewport[] fragmentViewports) {
 		this.fragmentViewports = fragmentViewports;
+
+		_fragmentViewportsSupplier = null;
 	}
 
 	@JsonIgnore
@@ -217,45 +305,60 @@ public class PageFormDefinition implements Serializable {
 		UnsafeSupplier<FragmentViewport[], Exception>
 			fragmentViewportsUnsafeSupplier) {
 
-		try {
-			fragmentViewports = fragmentViewportsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_fragmentViewportsSupplier = () -> {
+			try {
+				return fragmentViewportsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "A list of fragment viewports of a Page form.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected FragmentViewport[] fragmentViewports;
 
-	@Schema(
+	@JsonIgnore
+	private Supplier<FragmentViewport[]> _fragmentViewportsSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
 		description = "A flag that indicates whether the page fragment instance is indexed or not."
 	)
 	public Boolean getIndexed() {
+		if (_indexedSupplier != null) {
+			indexed = _indexedSupplier.get();
+
+			_indexedSupplier = null;
+		}
+
 		return indexed;
 	}
 
 	public void setIndexed(Boolean indexed) {
 		this.indexed = indexed;
+
+		_indexedSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setIndexed(
 		UnsafeSupplier<Boolean, Exception> indexedUnsafeSupplier) {
 
-		try {
-			indexed = indexedUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_indexedSupplier = () -> {
+			try {
+				return indexedUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -264,60 +367,93 @@ public class PageFormDefinition implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Boolean indexed;
 
-	@Schema(description = "the page section's layout.")
+	@JsonIgnore
+	private Supplier<Boolean> _indexedSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The page section's layout."
+	)
 	@Valid
 	public Layout getLayout() {
+		if (_layoutSupplier != null) {
+			layout = _layoutSupplier.get();
+
+			_layoutSupplier = null;
+		}
+
 		return layout;
 	}
 
 	public void setLayout(Layout layout) {
 		this.layout = layout;
+
+		_layoutSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setLayout(
 		UnsafeSupplier<Layout, Exception> layoutUnsafeSupplier) {
 
-		try {
-			layout = layoutUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_layoutSupplier = () -> {
+			try {
+				return layoutUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField(description = "the page section's layout.")
+	@GraphQLField(description = "The page section's layout.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Layout layout;
 
-	@Schema(description = "The custom name of of a Page form.")
+	@JsonIgnore
+	private Supplier<Layout> _layoutSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The custom name of of a Page form."
+	)
 	public String getName() {
+		if (_nameSupplier != null) {
+			name = _nameSupplier.get();
+
+			_nameSupplier = null;
+		}
+
 		return name;
 	}
 
 	public void setName(String name) {
 		this.name = name;
+
+		_nameSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setName(UnsafeSupplier<String, Exception> nameUnsafeSupplier) {
-		try {
-			name = nameUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_nameSupplier = () -> {
+			try {
+				return nameUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The custom name of of a Page form.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String name;
+
+	@JsonIgnore
+	private Supplier<String> _nameSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -346,6 +482,8 @@ public class PageFormDefinition implements Serializable {
 
 		sb.append("{");
 
+		String[] cssClasses = getCssClasses();
+
 		if (cssClasses != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -370,6 +508,8 @@ public class PageFormDefinition implements Serializable {
 			sb.append("]");
 		}
 
+		String customCSS = getCustomCSS();
+
 		if (customCSS != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -383,6 +523,8 @@ public class PageFormDefinition implements Serializable {
 
 			sb.append("\"");
 		}
+
+		CustomCSSViewport[] customCSSViewports = getCustomCSSViewports();
 
 		if (customCSSViewports != null) {
 			if (sb.length() > 1) {
@@ -404,6 +546,8 @@ public class PageFormDefinition implements Serializable {
 			sb.append("]");
 		}
 
+		FormConfig formConfig = getFormConfig();
+
 		if (formConfig != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -414,6 +558,8 @@ public class PageFormDefinition implements Serializable {
 			sb.append(String.valueOf(formConfig));
 		}
 
+		FragmentStyle fragmentStyle = getFragmentStyle();
+
 		if (fragmentStyle != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -423,6 +569,8 @@ public class PageFormDefinition implements Serializable {
 
 			sb.append(String.valueOf(fragmentStyle));
 		}
+
+		FragmentViewport[] fragmentViewports = getFragmentViewports();
 
 		if (fragmentViewports != null) {
 			if (sb.length() > 1) {
@@ -444,6 +592,8 @@ public class PageFormDefinition implements Serializable {
 			sb.append("]");
 		}
 
+		Boolean indexed = getIndexed();
+
 		if (indexed != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -454,6 +604,8 @@ public class PageFormDefinition implements Serializable {
 			sb.append(indexed);
 		}
 
+		Layout layout = getLayout();
+
 		if (layout != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -463,6 +615,8 @@ public class PageFormDefinition implements Serializable {
 
 			sb.append(String.valueOf(layout));
 		}
+
+		String name = getName();
 
 		if (name != null) {
 			if (sb.length() > 1) {
@@ -483,8 +637,8 @@ public class PageFormDefinition implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.delivery.dto.v1_0.PageFormDefinition",
 		name = "x-class-name"
 	)
@@ -530,7 +684,10 @@ public class PageFormDefinition implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -568,6 +725,27 @@ public class PageFormDefinition implements Serializable {
 		return sb.toString();
 	}
 
+	private static String _toJSON(Object value) {
+		if (value instanceof Collection) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONArray((Collection<?>)value));
+		}
+		else if (value instanceof Map) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONObject((Map<?, ?>)value));
+		}
+		else if (value instanceof Object[]) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONArray(
+					Arrays.asList((Object[])value)));
+		}
+		else if (value instanceof String) {
+			return StringBundler.concat("\"", _escape(value), "\"");
+		}
+
+		return String.valueOf(value);
+	}
+
 	private static final String[][] _JSON_ESCAPE_STRINGS = {
 		{"\\", "\"", "\b", "\f", "\n", "\r", "\t"},
 		{"\\\\", "\\\"", "\\b", "\\f", "\\n", "\\r", "\\t"}
@@ -576,3 +754,4 @@ public class PageFormDefinition implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:-1496623292

@@ -11,7 +11,15 @@
 AICreatorOpenAICompanyConfigurationDisplayContext aiCreatorOpenAICompanyConfigurationDisplayContext = (AICreatorOpenAICompanyConfigurationDisplayContext)request.getAttribute(AICreatorOpenAICompanyConfigurationDisplayContext.class.getName());
 %>
 
-<clay:content-row>
+<liferay-util:html-top
+	outputKey="com.liferay.ai.creator.openai.web#/configuration/openai_company_configuration.jsp"
+>
+	<aui:link hashedFile="<%= true %>" href="ai-creator-openai-web/css/configuration.css" rel="stylesheet" type="text/css" />
+</liferay-util:html-top>
+
+<clay:content-row
+	cssClass="c-mt-4"
+>
 	<clay:content-col>
 		<span>
 			<liferay-ui:message key="set-the-api-key-for-authentication" />
@@ -26,7 +34,7 @@ AICreatorOpenAICompanyConfigurationDisplayContext aiCreatorOpenAICompanyConfigur
 </clay:content-row>
 
 <clay:content-row
-	cssClass="c-mt-2"
+	cssClass="c-my-4"
 >
 	<clay:content-col
 		expand="<%= true %>"
@@ -35,8 +43,31 @@ AICreatorOpenAICompanyConfigurationDisplayContext aiCreatorOpenAICompanyConfigur
 	</clay:content-col>
 </clay:content-row>
 
+<clay:content-row
+	cssClass="c-mb-4"
+>
+	<clay:content-col
+		expand="<%= true %>"
+	>
+		<aui:input helpMessage="image-model-help" label="image-model" name="imageModel" type="text" value="<%= aiCreatorOpenAICompanyConfigurationDisplayContext.getImageModel() %>" />
+	</clay:content-col>
+</clay:content-row>
+
+<clay:content-row
+	cssClass="c-mb-4"
+>
+	<clay:content-col
+		expand="<%= true %>"
+	>
+		<liferay-ui:error key="imageSizesInvalid" message='<%= LanguageUtil.format(request, "each-image-size-must-be-a-width-and-height-in-pixels,-separated-by-x-(e.g.-x)", new Object[] {"x", "1536x1024"}, false) %>' />
+
+		<aui:input helpMessage='<%= StringBundler.concat(LanguageUtil.get(request, "image-sizes-help"), StringPool.SPACE, LanguageUtil.format(request, "each-image-size-must-be-a-width-and-height-in-pixels,-separated-by-x-(e.g.-x)", new Object[] {"x", "1536x1024"}, false)) %>' label="image-sizes" name="imageSizes" type="text" value="<%= aiCreatorOpenAICompanyConfigurationDisplayContext.getImageSizes() %>" />
+	</clay:content-col>
+</clay:content-row>
+
 <clay:content-row>
 	<clay:content-col
+		cssClass="ai-creator-config-checkbox"
 		expand="<%= true %>"
 	>
 		<clay:checkbox
@@ -48,21 +79,19 @@ AICreatorOpenAICompanyConfigurationDisplayContext aiCreatorOpenAICompanyConfigur
 	</clay:content-col>
 </clay:content-row>
 
-<c:if test='<%= FeatureFlagManagerUtil.isEnabled("LPS-196648") %>'>
-	<clay:content-row
-		cssClass="c-mt-2"
+<clay:content-row
+	cssClass="ai-creator-config-checkbox c-my-5"
+>
+	<clay:content-col
+		expand="<%= true %>"
 	>
-		<clay:content-col
-			expand="<%= true %>"
-		>
-			<clay:checkbox
-				checked="<%= aiCreatorOpenAICompanyConfigurationDisplayContext.isDALLEEnabled() %>"
-				id='<%= liferayPortletResponse.getNamespace() + "enableDALLE" %>'
-				label='<%= LanguageUtil.get(request, "enable-dalle-to-create-images") %>'
-				name='<%= liferayPortletResponse.getNamespace() + "enableDALLE" %>'
-			/>
-		</clay:content-col>
-	</clay:content-row>
-</c:if>
+		<clay:checkbox
+			checked="<%= aiCreatorOpenAICompanyConfigurationDisplayContext.isOpenAIImageGenerationEnabled() %>"
+			id='<%= liferayPortletResponse.getNamespace() + "enableOpenAIImageGeneration" %>'
+			label='<%= LanguageUtil.get(request, "enable-openai-image-generation") %>'
+			name='<%= liferayPortletResponse.getNamespace() + "enableOpenAIImageGeneration" %>'
+		/>
+	</clay:content-col>
+</clay:content-row>
 
 <%@ include file="/configuration/error_ai_creator_openai_client_exception.jspf" %>

@@ -7,6 +7,7 @@ package com.liferay.notification.service;
 
 import com.liferay.exportimport.kernel.lar.PortletDataContext;
 import com.liferay.notification.model.NotificationRecipientSetting;
+import com.liferay.notification.model.NotificationTemplate;
 import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
@@ -16,6 +17,7 @@ import com.liferay.portal.kernel.dao.orm.Projection;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.search.Indexable;
 import com.liferay.portal.kernel.search.IndexableType;
 import com.liferay.portal.kernel.service.BaseLocalService;
@@ -54,6 +56,11 @@ public interface NotificationRecipientSettingLocalService
 	 *
 	 * Never modify this interface directly. Add custom service methods to <code>com.liferay.notification.service.impl.NotificationRecipientSettingLocalServiceImpl</code> and rerun ServiceBuilder to automatically copy the method declarations to this interface. Consume the notification recipient setting local service via injection or a <code>org.osgi.util.tracker.ServiceTracker</code>. Use {@link NotificationRecipientSettingLocalServiceUtil} if injection and service tracking are not available.
 	 */
+	@Indexable(type = IndexableType.REINDEX)
+	public NotificationRecipientSetting addNotificationRecipientSetting(
+			long userId, long notificationRecipientId, String name,
+			Object value)
+		throws PortalException;
 
 	/**
 	 * Adds the notification recipient setting to the database. Also notifies the appropriate model listeners.
@@ -78,6 +85,12 @@ public interface NotificationRecipientSettingLocalService
 	@Transactional(enabled = false)
 	public NotificationRecipientSetting createNotificationRecipientSetting(
 		long notificationRecipientSettingId);
+
+	public List<NotificationRecipientSetting>
+		createNotificationRecipientSettings(
+			long notificationRecipientId,
+			NotificationTemplate notificationTemplate, Object[] recipients,
+			User user);
 
 	/**
 	 * @throws PortalException
@@ -292,6 +305,10 @@ public interface NotificationRecipientSettingLocalService
 	public PersistedModel getPersistedModel(Serializable primaryKeyObj)
 		throws PortalException;
 
+	@Indexable(type = IndexableType.REINDEX)
+	public NotificationRecipientSetting updateNotificationRecipientSetting(
+		long notificationRecipientId, String name, Object value);
+
 	/**
 	 * Updates the notification recipient setting in the database or adds it if it does not yet exist. Also notifies the appropriate model listeners.
 	 *
@@ -307,3 +324,4 @@ public interface NotificationRecipientSettingLocalService
 		NotificationRecipientSetting notificationRecipientSetting);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-138771518

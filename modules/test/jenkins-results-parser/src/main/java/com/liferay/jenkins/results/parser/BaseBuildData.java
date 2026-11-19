@@ -43,7 +43,7 @@ public abstract class BaseBuildData implements BuildData {
 
 	@Override
 	public File getArtifactDir() {
-		return new File(getWorkspaceDir(), getRunID());
+		return new File(getWorkspaceDir(), getRunId());
 	}
 
 	@Override
@@ -170,6 +170,11 @@ public abstract class BaseBuildData implements BuildData {
 	}
 
 	@Override
+	public JSONObject getJSONObject() {
+		return _jsonObject;
+	}
+
+	@Override
 	public String getJenkinsGitHubBranchName() {
 		return getGitHubBranchName(getJenkinsGitHubURL());
 	}
@@ -200,17 +205,12 @@ public abstract class BaseBuildData implements BuildData {
 	}
 
 	@Override
-	public JSONObject getJSONObject() {
-		return _jsonObject;
-	}
-
-	@Override
 	public String getMasterHostname() {
 		return optString("master_hostname");
 	}
 
 	@Override
-	public String getRunID() {
+	public String getRunId() {
 		return getString("run_id");
 	}
 
@@ -258,14 +258,6 @@ public abstract class BaseBuildData implements BuildData {
 
 	@Override
 	public void setBuildURL(String buildURL) {
-		String currentBuildURL = getBuildURL();
-
-		if ((currentBuildURL != null) && !currentBuildURL.isEmpty() &&
-			!currentBuildURL.equals(buildURL)) {
-
-			throw new IllegalStateException("Build URL may not be changed");
-		}
-
 		Matcher matcher = _buildURLPattern.matcher(buildURL);
 
 		if (!matcher.find()) {
@@ -315,8 +307,8 @@ public abstract class BaseBuildData implements BuildData {
 		return false;
 	}
 
-	protected BaseBuildData(String runID, String jobName, String buildURL) {
-		JSONObject jsonObject = buildDatabase.getBuildDataJSONObject(runID);
+	protected BaseBuildData(String runId, String jobName, String buildURL) {
+		JSONObject jsonObject = buildDatabase.getBuildDataJSONObject(runId);
 
 		String json = jsonObject.toString();
 
@@ -326,7 +318,7 @@ public abstract class BaseBuildData implements BuildData {
 					new URL(buildURL));
 
 				if (jsonObject.has("run_id")) {
-					runID = jsonObject.getString("run_id");
+					runId = jsonObject.getString("run_id");
 				}
 			}
 			catch (MalformedURLException malformedURLException) {
@@ -336,7 +328,7 @@ public abstract class BaseBuildData implements BuildData {
 
 		_jsonObject = jsonObject;
 
-		put("run_id", runID);
+		put("run_id", runId);
 
 		if (jobName == null) {
 			throw new RuntimeException("Please set a job name");
@@ -354,7 +346,7 @@ public abstract class BaseBuildData implements BuildData {
 			setBuildDescription(_getDefaultBuildDescription());
 		}
 
-		setJenkinsGitHubURL(URL_JENKINS_GITHUB_DEFAULT);
+		setJenkinsGitHubURL(JenkinsResultsParserUtil.getJenkinsGitHubURL());
 		setWorkspaceDir(DIR_WORKSPACE_DEFAULT);
 
 		validateKeys(_KEYS_REQUIRED);
@@ -457,7 +449,7 @@ public abstract class BaseBuildData implements BuildData {
 
 		BuildDatabase buildDatabase = BuildDatabaseUtil.getBuildDatabase();
 
-		buildDatabase.putBuildData(getRunID(), this);
+		buildDatabase.putBuildData(getRunId(), this);
 	}
 
 	protected void validateKeys(String[] requiredKeys) {
@@ -523,7 +515,7 @@ public abstract class BaseBuildData implements BuildData {
 	private static final Pattern _buildURLPattern = Pattern.compile(
 		JenkinsResultsParserUtil.combine(
 			"(?<jobURL>https?://(?<masterHostname>",
-			"(?<cohortName>test-\\d+)-\\d+)(\\.liferay\\.com)?/job/",
+			"(?<cohortName>test-\\d+)-\\d+)(-aws)?(\\.liferay\\.com)?/job/",
 			"(?<jobName>[^/]+)/(.*/)?)(?<buildNumber>\\d+)/?"));
 	private static final Pattern _gitHubBranchURLPattern = Pattern.compile(
 		"https://github.com/(?<username>[^/]+)/(?<repositoryName>[^/]+)/tree/" +

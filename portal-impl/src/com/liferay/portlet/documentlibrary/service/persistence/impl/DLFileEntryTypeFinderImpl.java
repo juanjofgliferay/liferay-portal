@@ -241,9 +241,11 @@ public class DLFileEntryTypeFinderImpl
 			while (iterator.hasNext()) {
 				Long count = iterator.next();
 
-				if (count != null) {
-					countValue += count.intValue();
+				if (count == null) {
+					continue;
 				}
+
+				countValue += count.intValue();
 			}
 
 			return countValue;
@@ -329,9 +331,11 @@ public class DLFileEntryTypeFinderImpl
 			while (iterator.hasNext()) {
 				Long count = iterator.next();
 
-				if (count != null) {
-					countValue += count.intValue();
+				if (count == null) {
+					continue;
 				}
+
+				countValue += count.intValue();
 			}
 
 			return countValue;
@@ -498,11 +502,10 @@ public class DLFileEntryTypeFinderImpl
 
 	protected String getBasicDocument(String prefix) {
 		return StringBundler.concat(
-			prefix, "((DLFileEntryType.companyId = 0) AND ",
-			"(DLFileEntryType.groupId = 0) AND (",
-			"(LOWER(DLFileEntryType.name) LIKE ? [$AND_OR_NULL_CHECK$]) ",
-			"[$AND_OR_CONNECTOR$] (DLFileEntryType.description LIKE ? ",
-			"[$AND_OR_NULL_CHECK$]) ))) UNION ALL (");
+			prefix, "((DLFileEntryType.companyId = 0) AND (DLFileEntryType.",
+			"groupId = 0) AND ((LOWER(DLFileEntryType.name) LIKE ? ",
+			"[$AND_OR_NULL_CHECK$]) [$AND_OR_CONNECTOR$] (DLFileEntryType.",
+			"description LIKE ? [$AND_OR_NULL_CHECK$]) ))) UNION ALL (");
 	}
 
 	protected String getBasicDocumentCount(boolean includeBasicFileEntryType) {

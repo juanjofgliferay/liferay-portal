@@ -11,11 +11,9 @@ import com.liferay.object.dynamic.data.mapping.form.field.type.constants.ObjectD
 import com.liferay.object.exception.ObjectFieldSettingValueException;
 import com.liferay.object.field.business.type.ObjectFieldBusinessType;
 import com.liferay.object.field.render.ObjectFieldRenderingContext;
-import com.liferay.object.model.ObjectDefinition;
 import com.liferay.object.model.ObjectField;
 import com.liferay.object.model.ObjectFieldSetting;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
@@ -80,10 +78,16 @@ public class AutoIncrementObjectFieldBusinessType
 
 	@Override
 	public Map<String, Object> getProperties(
-		ObjectField objectField,
-		ObjectFieldRenderingContext objectFieldRenderingContext) {
+			ObjectField objectField,
+			ObjectFieldRenderingContext objectFieldRenderingContext)
+		throws PortalException {
 
-		return Collections.emptyMap();
+		Map<String, Object> properties = super.getProperties(
+			objectField, objectFieldRenderingContext);
+
+		properties.remove(ObjectFieldSettingConstants.NAME_INITIAL_VALUE);
+
+		return properties;
 	}
 
 	@Override
@@ -99,6 +103,7 @@ public class AutoIncrementObjectFieldBusinessType
 			ObjectFieldSettingConstants.NAME_INITIAL_VALUE);
 	}
 
+	@Override
 	public Set<String> getUnmodifiableObjectFieldSettingsNames() {
 		return SetUtil.fromArray(
 			ObjectFieldSettingConstants.NAME_INITIAL_VALUE,
@@ -107,11 +112,7 @@ public class AutoIncrementObjectFieldBusinessType
 	}
 
 	@Override
-	public boolean isVisible(ObjectDefinition objectDefinition) {
-		if (FeatureFlagManagerUtil.isEnabled("LPS-196724")) {
-			return true;
-		}
-
+	public boolean isLocalizationSupported(ObjectField objectField) {
 		return false;
 	}
 

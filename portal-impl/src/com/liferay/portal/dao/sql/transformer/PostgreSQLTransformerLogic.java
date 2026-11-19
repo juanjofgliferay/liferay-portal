@@ -9,6 +9,7 @@ import com.liferay.portal.kernel.dao.db.DB;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -19,13 +20,13 @@ import java.util.regex.Pattern;
 public class PostgreSQLTransformerLogic extends BaseSQLTransformerLogic {
 
 	public PostgreSQLTransformerLogic(DB db) {
-		super(db);
-
 		Function[] functions = {
-			getBitwiseCheckFunction(), getBooleanFunction(),
-			getCastClobTextFunction(), getCastLongFunction(),
-			getCastTextFunction(), getDropTableIfExistsTextFunction(),
-			getInstrFunction(), getIntegerDivisionFunction(),
+			getAggregationFunction(), getBitwiseCheckFunction(),
+			getBitwiseOrFunction(), getBooleanFunction(),
+			getCastClobTextFunction(), getCastDecimalFunction(),
+			getCastLongFunction(), getCastTextFunction(),
+			getDropTableIfExistsTextFunction(), getInstrFunction(),
+			getIntegerDivisionFunction(), getTruncateTableFunction(),
 			_getNegativeComparisonFunction(), _getNullDateFunction()
 		};
 
@@ -34,6 +35,20 @@ public class PostgreSQLTransformerLogic extends BaseSQLTransformerLogic {
 		}
 
 		setFunctions(functions);
+	}
+
+	@Override
+	protected String replaceAggregation(Matcher matcher) {
+		if (matcher.find()) {
+			String type = matcher.group(1);
+
+			if (Objects.equals(type, "BOOLEAN")) {
+				return matcher.replaceAll(
+					"CASE WHEN $2(CAST($3 AS INTEGER)) = 1 THEN 1 ELSE 0 END");
+			}
+		}
+
+		return super.replaceAggregation(matcher);
 	}
 
 	@Override

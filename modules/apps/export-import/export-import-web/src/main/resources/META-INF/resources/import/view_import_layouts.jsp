@@ -13,11 +13,11 @@ boolean privateLayout = ParamUtil.getBoolean(request, "privateLayout");
 String displayStyle = ParamUtil.getString(request, "displayStyle");
 
 if (Validator.isNotNull(displayStyle) && Validator.isNotNull(displayStyle)) {
-	portalPreferences.setValue(ExportImportPortletKeys.IMPORT, "displayStyle", displayStyle);
-	portalPreferences.setValue(ExportImportPortletKeys.IMPORT, "displayStyle", displayStyle);
+	portalPreferences.setValue(portletDisplay.getPortletName(), "displayStyle", displayStyle);
+	portalPreferences.setValue(portletDisplay.getPortletName(), "displayStyle", displayStyle);
 }
 else {
-	displayStyle = portalPreferences.getValue(ExportImportPortletKeys.IMPORT, "displayStyle", "descriptive");
+	displayStyle = portalPreferences.getValue(portletDisplay.getPortletName(), "displayStyle", "descriptive");
 }
 
 String navigation = ParamUtil.getString(request, "navigation", "all");
@@ -40,34 +40,41 @@ GroupDisplayContextHelper groupDisplayContextHelper = new GroupDisplayContextHel
 %>
 
 <c:choose>
-	<c:when test="<%= !GroupPermissionUtil.contains(permissionChecker, groupDisplayContextHelper.getGroupId(), ActionKeys.EXPORT_IMPORT_LAYOUTS) %>">
+	<c:when test="<%= (!stagingGroupHelper.isCompanyGroup(groupDisplayContextHelper.getGroup()) && !GroupPermissionUtil.contains(permissionChecker, groupDisplayContextHelper.getGroupId(), ActionKeys.EXPORT_IMPORT_LAYOUTS)) || (stagingGroupHelper.isCompanyGroup(groupDisplayContextHelper.getGroup()) && !PortletPermissionUtil.contains(permissionChecker, layout, portletDisplay.getPortletName(), ActionKeys.ACCESS_IN_CONTROL_PANEL)) %>">
 		<div class="alert alert-info">
 			<liferay-ui:message key="you-do-not-have-permission-to-access-the-requested-resource" />
 		</div>
 	</c:when>
 	<c:otherwise>
-		<liferay-util:include page="/import/navigation.jsp" servletContext="<%= application %>" />
+		<c:choose>
+			<c:when test='<%= FeatureFlagManagerUtil.isEnabled(company.getCompanyId(), "LPD-57655") %>'>
+				<liferay-util:include page="/revamp/import/view_import.jsp" servletContext="<%= application %>" />
+			</c:when>
+			<c:otherwise>
+				<liferay-util:include page="/import/navigation.jsp" servletContext="<%= application %>" />
 
-		<liferay-util:include page="/toolbar.jsp" servletContext="<%= application %>">
-			<liferay-util:param name="mvcRenderCommandName" value="/export_import/view_import_layouts" />
-			<liferay-util:param name="groupId" value="<%= String.valueOf(groupDisplayContextHelper.getGroupId()) %>" />
-			<liferay-util:param name="privateLayout" value="<%= String.valueOf(privateLayout) %>" />
-			<liferay-util:param name="displayStyle" value="<%= displayStyle %>" />
-			<liferay-util:param name="navigation" value="<%= navigation %>" />
-			<liferay-util:param name="orderByCol" value="<%= orderByCol %>" />
-			<liferay-util:param name="orderByType" value="<%= orderByType %>" />
-			<liferay-util:param name="searchContainerId" value="<%= searchContainerId %>" />
-		</liferay-util:include>
+				<liferay-util:include page="/toolbar.jsp" servletContext="<%= application %>">
+					<liferay-util:param name="mvcRenderCommandName" value="/export_import/view_import_layouts" />
+					<liferay-util:param name="groupId" value="<%= String.valueOf(groupDisplayContextHelper.getGroupId()) %>" />
+					<liferay-util:param name="privateLayout" value="<%= String.valueOf(privateLayout) %>" />
+					<liferay-util:param name="displayStyle" value="<%= displayStyle %>" />
+					<liferay-util:param name="navigation" value="<%= navigation %>" />
+					<liferay-util:param name="orderByCol" value="<%= orderByCol %>" />
+					<liferay-util:param name="orderByType" value="<%= orderByType %>" />
+					<liferay-util:param name="searchContainerId" value="<%= searchContainerId %>" />
+				</liferay-util:include>
 
-		<liferay-util:include page="/import/processes_list/view.jsp" servletContext="<%= application %>">
-			<liferay-util:param name="groupId" value="<%= String.valueOf(groupDisplayContextHelper.getGroupId()) %>" />
-			<liferay-util:param name="displayStyle" value="<%= displayStyle %>" />
-			<liferay-util:param name="navigation" value="<%= navigation %>" />
-			<liferay-util:param name="orderByCol" value="<%= orderByCol %>" />
-			<liferay-util:param name="orderByType" value="<%= orderByType %>" />
-			<liferay-util:param name="privateLayout" value="<%= String.valueOf(privateLayout) %>" />
-			<liferay-util:param name="searchContainerId" value="<%= searchContainerId %>" />
-		</liferay-util:include>
+				<liferay-util:include page="/import/processes_list/view.jsp" servletContext="<%= application %>">
+					<liferay-util:param name="groupId" value="<%= String.valueOf(groupDisplayContextHelper.getGroupId()) %>" />
+					<liferay-util:param name="displayStyle" value="<%= displayStyle %>" />
+					<liferay-util:param name="navigation" value="<%= navigation %>" />
+					<liferay-util:param name="orderByCol" value="<%= orderByCol %>" />
+					<liferay-util:param name="orderByType" value="<%= orderByType %>" />
+					<liferay-util:param name="privateLayout" value="<%= String.valueOf(privateLayout) %>" />
+					<liferay-util:param name="searchContainerId" value="<%= searchContainerId %>" />
+				</liferay-util:include>
+			</c:otherwise>
+		</c:choose>
 	</c:otherwise>
 </c:choose>
 

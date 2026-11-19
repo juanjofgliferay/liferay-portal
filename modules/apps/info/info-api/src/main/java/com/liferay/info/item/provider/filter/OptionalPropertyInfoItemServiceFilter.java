@@ -25,4 +25,13 @@ public class OptionalPropertyInfoItemServiceFilter
 			"(|", super.getFilterString(), "(!(", getPropertyName(), "=*)))");
 	}
 
+	@Override
+	public boolean matchPropertyValue(Object propertyValue) {
+		if (propertyValue == null) {
+			return true;
+		}
+
+		return super.matchPropertyValue(propertyValue);
+	}
+
 }

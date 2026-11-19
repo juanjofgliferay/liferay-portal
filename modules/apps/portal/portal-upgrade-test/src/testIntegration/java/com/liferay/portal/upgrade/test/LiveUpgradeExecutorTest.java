@@ -13,6 +13,8 @@ import com.liferay.portal.kernel.dao.db.DBManagerUtil;
 import com.liferay.portal.kernel.dao.jdbc.DataAccess;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
+import com.liferay.portal.kernel.test.rule.AssumeTestRule;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.upgrade.live.LiveUpgradeExecutor;
@@ -25,6 +27,7 @@ import java.sql.ResultSet;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -41,7 +44,12 @@ public class LiveUpgradeExecutorTest {
 	@ClassRule
 	@Rule
 	public static final AggregateTestRule aggregateTestRule =
-		new LiferayIntegrationTestRule();
+		new AggregateTestRule(
+			new AssumeTestRule("assume"), new LiferayIntegrationTestRule());
+
+	public static void assume() {
+		Assume.assumeFalse(PropsValues.DATABASE_PARTITION_ENABLED);
+	}
 
 	@BeforeClass
 	public static void setUpClass() throws Exception {
@@ -93,6 +101,7 @@ public class LiveUpgradeExecutorTest {
 
 		try (PreparedStatement preparedStatement = _connection.prepareStatement(
 				"select * from " + _TABLE_NAME + " order by id asc");
+
 			ResultSet resultSet = preparedStatement.executeQuery()) {
 
 			Assert.assertTrue(resultSet.next());
@@ -113,8 +122,7 @@ public class LiveUpgradeExecutorTest {
 	public void testAlterColumnName() throws Exception {
 		_liveUpgradeExecutor.upgrade(
 			_TABLE_NAME,
-			LiveUpgradeProcessFactory.alterColumnName(
-				"name", "title VARCHAR(128) not null"));
+			LiveUpgradeProcessFactory.alterColumnName("name", "title"));
 
 		Assert.assertFalse(_dbInspector.hasColumn(_TABLE_NAME, "name"));
 		Assert.assertTrue(_dbInspector.hasColumn(_TABLE_NAME, "title"));
@@ -141,6 +149,7 @@ public class LiveUpgradeExecutorTest {
 
 		try (PreparedStatement preparedStatement = _connection.prepareStatement(
 				"select * from " + _TABLE_NAME + " order by id asc");
+
 			ResultSet resultSet = preparedStatement.executeQuery()) {
 
 			Assert.assertTrue(resultSet.next());
@@ -187,8 +196,7 @@ public class LiveUpgradeExecutorTest {
 			_TABLE_NAME,
 			LiveUpgradeProcessFactory.addColumns(
 				"content SBLOB", "version LONG null"),
-			LiveUpgradeProcessFactory.alterColumnName(
-				"name", "title VARCHAR(128) not null"),
+			LiveUpgradeProcessFactory.alterColumnName("name", "title"),
 			LiveUpgradeProcessFactory.alterColumnType(
 				"title", "VARCHAR(255) null"),
 			LiveUpgradeProcessFactory.dropColumns("content"));
@@ -205,6 +213,7 @@ public class LiveUpgradeExecutorTest {
 
 		try (PreparedStatement preparedStatement = _connection.prepareStatement(
 				"select * from " + _TABLE_NAME + " order by id asc");
+
 			ResultSet resultSet = preparedStatement.executeQuery()) {
 
 			Assert.assertTrue(resultSet.next());
@@ -226,6 +235,7 @@ public class LiveUpgradeExecutorTest {
 	private void _checkData(String columnName) throws Exception {
 		try (PreparedStatement preparedStatement = _connection.prepareStatement(
 				"select * from " + _TABLE_NAME + " order by id asc");
+
 			ResultSet resultSet = preparedStatement.executeQuery()) {
 
 			Assert.assertTrue(resultSet.next());

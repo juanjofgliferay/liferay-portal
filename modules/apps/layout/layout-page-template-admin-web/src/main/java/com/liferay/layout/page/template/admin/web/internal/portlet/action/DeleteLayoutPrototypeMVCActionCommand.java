@@ -6,6 +6,7 @@
 package com.liferay.layout.page.template.admin.web.internal.portlet.action;
 
 import com.liferay.layout.page.template.admin.constants.LayoutPageTemplateAdminPortletKeys;
+import com.liferay.portal.kernel.exception.ModelListenerException;
 import com.liferay.portal.kernel.exception.RequiredLayoutPrototypeException;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCActionCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
@@ -13,8 +14,8 @@ import com.liferay.portal.kernel.service.LayoutPrototypeService;
 import com.liferay.portal.kernel.servlet.SessionErrors;
 import com.liferay.portal.kernel.util.ParamUtil;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -24,7 +25,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + LayoutPageTemplateAdminPortletKeys.LAYOUT_PAGE_TEMPLATES,
+		"jakarta.portlet.name=" + LayoutPageTemplateAdminPortletKeys.LAYOUT_PAGE_TEMPLATES,
 		"mvc.command.name=/layout_page_template_admin/delete_layout_prototype"
 	},
 	service = MVCActionCommand.class
@@ -55,11 +56,14 @@ public class DeleteLayoutPrototypeMVCActionCommand
 				_layoutPrototypeService.deleteLayoutPrototype(
 					curLayoutPrototypeId);
 			}
-			catch (RequiredLayoutPrototypeException
-						requiredLayoutPrototypeException) {
+			catch (ModelListenerException modelListenerException) {
+				Throwable throwable = modelListenerException.getCause();
 
-				SessionErrors.add(
-					actionRequest, requiredLayoutPrototypeException.getClass());
+				if (!(throwable instanceof RequiredLayoutPrototypeException)) {
+					throw modelListenerException;
+				}
+
+				SessionErrors.add(actionRequest, throwable.getClass());
 
 				hideDefaultErrorMessage(actionRequest);
 

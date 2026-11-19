@@ -20,19 +20,20 @@ import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.portlet.JSONPortletResponseUtil;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCResourceCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCResourceCommand;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.StringUtil;
+
+import jakarta.portlet.ResourceRequest;
+import jakarta.portlet.ResourceResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.io.IOException;
 import java.io.Serializable;
 
 import java.util.Map;
-
-import javax.portlet.ResourceRequest;
-import javax.portlet.ResourceResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -42,7 +43,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + CTPortletKeys.PUBLICATIONS,
+		"jakarta.portlet.name=" + CTPortletKeys.PUBLICATIONS,
 		"mvc.command.name=/change_tracking/get_publication_status"
 	},
 	service = MVCResourceCommand.class
@@ -63,10 +64,15 @@ public class GetPublicationStatusMVCResourceCommand
 		CTProcess ctProcess = _ctProcessLocalService.fetchCTProcess(
 			ctProcessId);
 
+		String displayType = "danger";
+		String label = _language.get(httpServletRequest, "failed");
+		int percentage = -1;
+		boolean published = false;
+
 		if (ctProcess == null) {
 			_writeJSON(
-				resourceRequest, resourceResponse, "danger",
-				_language.get(httpServletRequest, "failed"), false);
+				resourceRequest, resourceResponse, displayType, label,
+				percentage, published);
 
 			return;
 		}
@@ -77,39 +83,35 @@ public class GetPublicationStatusMVCResourceCommand
 
 		if (backgroundTask == null) {
 			_writeJSON(
-				resourceRequest, resourceResponse, "danger",
-				_language.get(httpServletRequest, "failed"), false);
+				resourceRequest, resourceResponse, displayType, label,
+				percentage, published);
 
 			return;
 		}
+
+		BackgroundTaskDisplay backgroundTaskDisplay =
+			_backgroundTaskDisplayFactory.getBackgroundTaskDisplay(
+				backgroundTask.getBackgroundTaskId());
+
+		percentage = backgroundTaskDisplay.getPercentage();
 
 		if (backgroundTask.getStatus() ==
 				BackgroundTaskConstants.STATUS_IN_PROGRESS) {
 
 			JSONPortletResponseUtil.writeJSON(
 				resourceRequest, resourceResponse,
-				JSONUtil.put(
-					"percentage",
-					() -> {
-						BackgroundTaskDisplay backgroundTaskDisplay =
-							_backgroundTaskDisplayFactory.
-								getBackgroundTaskDisplay(
-									backgroundTask.getBackgroundTaskId());
-
-						return backgroundTaskDisplay.getPercentage();
-					}));
+				JSONUtil.put("percentage", percentage));
 
 			return;
 		}
 
-		String displayType = "danger";
-		String label = _language.get(httpServletRequest, "failed");
-		boolean published = false;
+		String errorStackTrace = GetterUtil.getString(
+			backgroundTask.getErrorStackTrace(),
+			GetterUtil.getString(backgroundTask.getStatusMessage()));
 
 		if ((backgroundTask.getStatus() ==
 				BackgroundTaskConstants.STATUS_FAILED) &&
-			StringUtil.matchesIgnoreCase(
-				backgroundTask.getStatusMessage(), "duplicate entry")) {
+			StringUtil.matchesIgnoreCase(errorStackTrace, "duplicate entry")) {
 
 			Map<String, Serializable> taskContextMap =
 				backgroundTask.getTaskContextMap();
@@ -118,16 +120,14 @@ public class GetPublicationStatusMVCResourceCommand
 
 			_writeJSON(
 				resourceRequest, resourceResponse, displayType, label,
-				published);
+				percentage, published);
 
 			throw new PortalException(
 				StringBundler.concat(
-					"The selected changes cannot be moved to the destination ",
-					"change tracking collection ",
-					taskContextMap.get("toCTCollectionId"),
-					" because one or more of your selected changes from the ",
+					"The selected changes cannot be published to production ",
+					"because one or more of your selected changes from the ",
 					"source change tracking collection ",
-					taskContextMap.get("fromCTCollectionId"),
+					taskContextMap.get("ctCollectionId"),
 					" conflicts with a preexisting change in the destination ",
 					"change tracking collection"));
 		}
@@ -141,12 +141,13 @@ public class GetPublicationStatusMVCResourceCommand
 		}
 
 		_writeJSON(
-			resourceRequest, resourceResponse, displayType, label, published);
+			resourceRequest, resourceResponse, displayType, label, percentage,
+			published);
 	}
 
 	private void _writeJSON(
 			ResourceRequest resourceRequest, ResourceResponse resourceResponse,
-			String displayType, String label, boolean published)
+			String displayType, String label, int percentage, boolean published)
 		throws IOException {
 
 		JSONPortletResponseUtil.writeJSON(
@@ -155,6 +156,15 @@ public class GetPublicationStatusMVCResourceCommand
 				"displayType", displayType
 			).put(
 				"label", label
+			).put(
+				"percentage",
+				() -> {
+					if (percentage < 0) {
+						return null;
+					}
+
+					return percentage;
+				}
 			).put(
 				"published", published
 			));

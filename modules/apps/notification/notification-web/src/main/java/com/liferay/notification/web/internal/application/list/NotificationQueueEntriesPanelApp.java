@@ -30,6 +30,11 @@ import org.osgi.service.component.annotations.Reference;
 public class NotificationQueueEntriesPanelApp extends BasePanelApp {
 
 	@Override
+	public String getIcon() {
+		return "order-list-down";
+	}
+
+	@Override
 	public Portlet getPortlet() {
 		return _portlet;
 	}
@@ -47,7 +52,7 @@ public class NotificationQueueEntriesPanelApp extends BasePanelApp {
 	}
 
 	@Reference(
-		target = "(javax.portlet.name=" + NotificationPortletKeys.NOTIFICATION_QUEUE_ENTRIES + ")"
+		target = "(jakarta.portlet.name=" + NotificationPortletKeys.NOTIFICATION_QUEUE_ENTRIES + ")"
 	)
 	private Portlet _portlet;
 

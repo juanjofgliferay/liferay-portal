@@ -196,13 +196,21 @@ public class FileUtil {
 			File[] files = baseDir.listFiles();
 
 			for (File file : files) {
-				if (file.isDirectory() || file.isFile()) {
-					fileNames.add(file.getName());
+				if (!file.isDirectory() && !file.isFile()) {
+					continue;
 				}
+
+				fileNames.add(file.getName());
 			}
 		}
 
 		return fileNames;
+	}
+
+	public static void move(String sourceFilePath, String newFilePath)
+		throws IOException {
+
+		FileUtils.moveFile(new File(sourceFilePath), new File(newFilePath));
 	}
 
 	public static String read(File file) throws IOException {

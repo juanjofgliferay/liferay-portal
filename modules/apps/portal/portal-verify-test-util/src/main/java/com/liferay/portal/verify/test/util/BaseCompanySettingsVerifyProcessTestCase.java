@@ -16,7 +16,7 @@ import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.verify.VerifyException;
 
-import javax.portlet.PortletPreferences;
+import jakarta.portlet.PortletPreferences;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -65,7 +65,9 @@ public abstract class BaseCompanySettingsVerifyProcessTestCase
 				ModifiableSettings modifiableSettings =
 					settings.getModifiableSettings();
 
-				modifiableSettings.reset();
+				for (String key : modifiableSettings.getModifiedKeys()) {
+					modifiableSettings.reset(key);
+				}
 
 				modifiableSettings.store();
 			});

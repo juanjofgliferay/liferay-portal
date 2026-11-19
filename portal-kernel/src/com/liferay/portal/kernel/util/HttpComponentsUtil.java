@@ -12,22 +12,26 @@ import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.RenderRequest;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
+
 import java.net.InetAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.RenderRequest;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
+import java.util.Set;
+import java.util.TreeMap;
 
 /**
  * @author Tina Tian
@@ -172,23 +176,21 @@ public class HttpComponentsUtil {
 
 		if (leading) {
 			for (int i = 0; i < path.length(); i++) {
-				if (path.charAt(i) == CharPool.SLASH) {
-					leadingSlashCount++;
-				}
-				else {
+				if (path.charAt(i) != CharPool.SLASH) {
 					break;
 				}
+
+				leadingSlashCount++;
 			}
 		}
 
 		if (trailing) {
 			for (int i = path.length() - 1; i >= 0; i--) {
-				if (path.charAt(i) == CharPool.SLASH) {
-					trailingSlashCount++;
-				}
-				else {
+				if (path.charAt(i) != CharPool.SLASH) {
 					break;
 				}
+
+				trailingSlashCount++;
 			}
 		}
 
@@ -338,6 +340,37 @@ public class HttpComponentsUtil {
 		return parameterMapFromString(queryString);
 	}
 
+	public static Set<String> getParameterNames(String queryString) {
+		if (Validator.isNull(queryString)) {
+			return Collections.emptySet();
+		}
+
+		Set<String> parameterNames = new HashSet<>();
+
+		int startIndex = 0;
+
+		while (true) {
+			int equalIndex = queryString.indexOf(CharPool.EQUAL, startIndex);
+
+			if (equalIndex <= 0) {
+				break;
+			}
+
+			parameterNames.add(queryString.substring(startIndex, equalIndex));
+
+			startIndex = queryString.indexOf(
+				CharPool.AMPERSAND, equalIndex + 1);
+
+			if (startIndex < 0) {
+				break;
+			}
+
+			startIndex++;
+		}
+
+		return parameterNames;
+	}
+
 	public static String getPath(String url) {
 		if (Validator.isNull(url)) {
 			return url;
@@ -420,7 +453,7 @@ public class HttpComponentsUtil {
 		if (isForwarded(httpServletRequest)) {
 			return GetterUtil.getString(
 				httpServletRequest.getAttribute(
-					JavaConstants.JAVAX_SERVLET_FORWARD_QUERY_STRING));
+					JavaConstants.JAKARTA_SERVLET_FORWARD_QUERY_STRING));
 		}
 
 		return httpServletRequest.getQueryString();
@@ -483,6 +516,18 @@ public class HttpComponentsUtil {
 		return Validator.isNotNull(getDomain(url));
 	}
 
+	public static boolean hasHTTPProtocol(String url) {
+		String protocol = getProtocol(url);
+
+		if (StringUtil.equalsIgnoreCase(protocol, Http.HTTP) ||
+			StringUtil.equalsIgnoreCase(protocol, Http.HTTPS)) {
+
+			return true;
+		}
+
+		return false;
+	}
+
 	public static boolean hasProtocol(String url) {
 		if (Validator.isNull(url) || (url.indexOf(CharPool.COLON) == -1)) {
 			return false;
@@ -493,7 +538,7 @@ public class HttpComponentsUtil {
 
 	public static boolean isForwarded(HttpServletRequest httpServletRequest) {
 		String forwardedRequestURI = (String)httpServletRequest.getAttribute(
-			JavaConstants.JAVAX_SERVLET_FORWARD_REQUEST_URI);
+			JavaConstants.JAKARTA_SERVLET_FORWARD_REQUEST_URI);
 
 		if (forwardedRequestURI != null) {
 			return true;
@@ -592,7 +637,20 @@ public class HttpComponentsUtil {
 	public static Map<String, String[]> parameterMapFromString(
 		String queryString) {
 
-		Map<String, String[]> parameterMap = new LinkedHashMap<>();
+		return parameterMapFromString(queryString, false);
+	}
+
+	public static Map<String, String[]> parameterMapFromString(
+		String queryString, boolean sort) {
+
+		Map<String, String[]> parameterMap = null;
+
+		if (sort) {
+			parameterMap = new TreeMap<>();
+		}
+		else {
+			parameterMap = new LinkedHashMap<>();
+		}
 
 		if (Validator.isNull(queryString)) {
 			return parameterMap;
@@ -774,24 +832,28 @@ public class HttpComponentsUtil {
 			url.substring(pos + 1), CharPool.AMPERSAND);
 
 		for (String parameter : parameters) {
-			if (parameter.length() > 0) {
-				String[] kvp = StringUtil.split(parameter, CharPool.EQUAL);
-
-				String key = kvp[0];
-
-				String value = StringPool.BLANK;
-
-				if (kvp.length > 1) {
-					value = kvp[1];
-				}
-
-				if (!key.equals(name)) {
-					sb.append(key);
-					sb.append(StringPool.EQUAL);
-					sb.append(value);
-					sb.append(StringPool.AMPERSAND);
-				}
+			if (parameter.length() <= 0) {
+				continue;
 			}
+
+			String[] kvp = StringUtil.split(parameter, CharPool.EQUAL);
+
+			String key = kvp[0];
+
+			String value = StringPool.BLANK;
+
+			if (kvp.length > 1) {
+				value = kvp[1];
+			}
+
+			if (key.equals(name)) {
+				continue;
+			}
+
+			sb.append(key);
+			sb.append(StringPool.EQUAL);
+			sb.append(value);
+			sb.append(StringPool.AMPERSAND);
 		}
 
 		url = StringUtil.replace(
@@ -838,10 +900,12 @@ public class HttpComponentsUtil {
 				continue;
 			}
 
-			if (pos != 0) {
-				sb.append(StringPool.SLASH);
-				sb.append(uriPart.substring(0, pos));
+			if (pos == 0) {
+				continue;
 			}
+
+			sb.append(StringPool.SLASH);
+			sb.append(uriPart.substring(0, pos));
 		}
 
 		if (sb.length() == 0) {
@@ -881,13 +945,15 @@ public class HttpComponentsUtil {
 		for (int i = 0; i < header.length(); i++) {
 			char c = header.charAt(i);
 
-			if (((c <= 31) && (c != 9)) || (c == 127) || (c > 255)) {
-				if (sb == null) {
-					sb = new StringBuilder(header);
-				}
-
-				sb.setCharAt(i, CharPool.SPACE);
+			if (((c > 31) || (c == 9)) && (c != 127) && (c <= 255)) {
+				continue;
 			}
+
+			if (sb == null) {
+				sb = new StringBuilder(header);
+			}
+
+			sb.setCharAt(i, CharPool.SPACE);
 		}
 
 		if (sb != null) {
@@ -935,6 +1001,35 @@ public class HttpComponentsUtil {
 		return _shortenURL(
 			url, 0, StringPool.QUESTION, StringPool.AMPERSAND,
 			StringPool.EQUAL);
+	}
+
+	public static String sortParameters(String url) {
+		if (Validator.isNull(url)) {
+			return url;
+		}
+
+		int pos = url.indexOf(CharPool.QUESTION);
+
+		if (pos == -1) {
+			return url;
+		}
+
+		String[] array = PortalUtil.stripURLAnchor(url, StringPool.POUND);
+
+		url = array[0];
+
+		String anchor = array[1];
+
+		String queryString = url.substring(pos + 1);
+
+		if (Validator.isNull(queryString)) {
+			return url + anchor;
+		}
+
+		String sortedQueryString = parameterMapToString(
+			parameterMapFromString(queryString, true), false);
+
+		return url.substring(0, pos + 1) + sortedQueryString + anchor;
 	}
 
 	private static String _shortenURL(

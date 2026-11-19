@@ -6,10 +6,12 @@
 package com.liferay.account.internal.search;
 
 import com.liferay.account.model.AccountRole;
+import com.liferay.account.service.AccountRoleLocalService;
 import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.search.spi.model.index.contributor.ModelIndexerWriterContributor;
 import com.liferay.portal.search.spi.model.registrar.ModelSearchConfigurator;
 
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
@@ -45,9 +47,15 @@ public class AccountRoleModelSearchConfigurator
 		return true;
 	}
 
-	@Reference(
-		target = "(indexer.class.name=com.liferay.account.model.AccountRole)"
-	)
+	@Activate
+	protected void activate() {
+		_modelIndexWriterContributor = new ModelIndexerWriterContributor<>(
+			_accountRoleLocalService::getIndexableActionableDynamicQuery);
+	}
+
+	@Reference
+	private AccountRoleLocalService _accountRoleLocalService;
+
 	private ModelIndexerWriterContributor<AccountRole>
 		_modelIndexWriterContributor;
 

@@ -52,7 +52,7 @@ public class AssetCategoryInfoItemFieldValuesProvider
 						AssetCategory.class.getName(),
 						assetCategory.getCategoryId()),
 					StringPool.BLANK, AssetCategory.class.getSimpleName(),
-					_getThemeDisplay())
+					assetCategory, _getThemeDisplay())
 			).infoFieldValues(
 				_infoItemFieldReaderFieldSetProvider.getInfoFieldValues(
 					AssetCategory.class.getName(), assetCategory)
@@ -66,7 +66,7 @@ public class AssetCategoryInfoItemFieldValuesProvider
 			).build();
 		}
 		catch (Exception exception) {
-			throw new RuntimeException("Unexpected exception", exception);
+			throw new RuntimeException(exception);
 		}
 	}
 

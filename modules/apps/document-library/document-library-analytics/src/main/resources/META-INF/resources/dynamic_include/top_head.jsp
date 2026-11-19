@@ -7,49 +7,66 @@
 
 <%@ include file="/dynamic_include/init.jsp" %>
 
-<script data-senna-track="temporary" type="text/javascript">
+<aui:script senna="temporary" type="text/javascript">
 	if (window.Analytics) {
 		window.<%= DocumentLibraryAnalyticsConstants.JS_PREFIX %>isViewFileEntry = false;
 	}
-</script>
+</aui:script>
 
 <aui:script>
-	function getValueByAttribute(node, attr) {
+	function <portlet:namespace />getValueByAttribute(node, attr) {
 		return (
 			node.dataset[attr] ||
 			(node.parentElement && node.parentElement.dataset[attr])
 		);
 	}
 
-	function sendAnalyticsEvent(anchor) {
-		var fileEntryId = getValueByAttribute(anchor, 'analyticsFileEntryId');
-		var title = getValueByAttribute(anchor, 'analyticsFileEntryTitle');
-		var version = getValueByAttribute(anchor, 'analyticsFileEntryVersion');
+	function <portlet:namespace />sendDocumentDownloadedAnalyticsEvent(anchor) {
+		var fileEntryId = <portlet:namespace />getValueByAttribute(
+			anchor,
+			'analyticsFileEntryId'
+		);
+		var title = <portlet:namespace />getValueByAttribute(
+			anchor,
+			'analyticsFileEntryTitle'
+		);
+		var version = <portlet:namespace />getValueByAttribute(
+			anchor,
+			'analyticsFileEntryVersion'
+		);
+		var externalReferenceCode = <portlet:namespace />getValueByAttribute(
+			anchor,
+			'analyticsExternalReferenceCode'
+		);
 
 		if (fileEntryId) {
 			Analytics.send('documentDownloaded', 'Document', {
-				groupId: themeDisplay.getScopeGroupId(),
+				externalReferenceCode,
 				fileEntryId,
-				preview: !!window.<%= DocumentLibraryAnalyticsConstants.JS_PREFIX %>isViewFileEntry,
+				groupId: themeDisplay.getScopeGroupId(),
+				preview:
+					!!window.<%= DocumentLibraryAnalyticsConstants.JS_PREFIX %>isViewFileEntry,
 				title,
 				version,
 			});
 		}
 	}
 
-	function handleDownloadClick(event) {
+	function <portlet:namespace />handleDownloadClick(event) {
 		if (window.Analytics) {
-			if (event.target.nodeName.toLowerCase() === 'a') {
-				sendAnalyticsEvent(event.target);
-			}
-			else if (
-				event.target.parentNode &&
-				event.target.parentNode.nodeName.toLowerCase() === 'a'
-			) {
-				sendAnalyticsEvent(event.target.parentNode);
+			var anchor =
+				event.target.closest &&
+				event.target.closest('a[data-analytics-file-entry-id]');
+
+			if (anchor) {
+				<portlet:namespace />sendDocumentDownloadedAnalyticsEvent(anchor);
 			}
 			else {
 				var target = event.target;
+				var matchTextContent =
+					target.textContent &&
+					target.textContent.toLowerCase() ===
+						'<%= StringUtil.toLowerCase(LanguageUtil.get(request, "download")) %>';
 				var matchTitle =
 					target.title && target.title.toLowerCase() === 'download';
 				var matchAction = target.action === 'download';
@@ -68,6 +85,7 @@
 					target.parentNode.classList.contains('lexicon-icon-download');
 
 				if (
+					matchTextContent ||
 					matchTitle ||
 					matchParentTitle ||
 					matchAction ||
@@ -84,7 +102,9 @@
 							'[data-analytics-file-entry-id="' + value + '"]'
 						);
 
-						sendAnalyticsEvent(selectedFile);
+						<portlet:namespace />sendDocumentDownloadedAnalyticsEvent(
+							selectedFile
+						);
 					});
 				}
 			}
@@ -92,10 +112,16 @@
 	}
 
 	Liferay.once('destroyPortlet', () => {
-		document.body.removeEventListener('click', handleDownloadClick);
+		document.body.removeEventListener(
+			'click',
+			<portlet:namespace />handleDownloadClick
+		);
 	});
 
 	Liferay.once('portletReady', () => {
-		document.body.addEventListener('click', handleDownloadClick);
+		document.body.addEventListener(
+			'click',
+			<portlet:namespace />handleDownloadClick
+		);
 	});
 </aui:script>

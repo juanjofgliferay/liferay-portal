@@ -3,7 +3,10 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import MapBase from '@liferay/map-common/js/MapBase';
+import {MapBase} from '@liferay/map-common';
+import L from 'leaflet';
+
+import 'leaflet/dist/leaflet.css';
 
 import OpenStreetMapDialog from './OpenStreetMapDialog';
 import OpenStreetMapGeoJSON from './OpenStreetMapGeoJSON';
@@ -11,6 +14,14 @@ import OpenStreetMapGeocoder from './OpenStreetMapGeocoder';
 import OpenStreetMapMarker from './OpenStreetMapMarker';
 
 const defaultTileURI = '//{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+
+L.Icon.Default.imagePath = `${Liferay.ThemeDisplay.getPathContext()}/o/map-openstreetmap/images/`;
+
+L.Icon.Default.mergeOptions({
+	iconRetinaUrl: 'marker_icon_2x.png',
+	iconUrl: 'marker_icon.png',
+	shadowUrl: 'marker_shadow.png',
+});
 
 /**
  * MapOpenStreetMap
@@ -50,6 +61,29 @@ class MapOpenStreetMap extends MapBase {
 	}
 
 	/**
+	 * Stops observing the container and removes the Leaflet map so it releases
+	 * its DOM and window listeners instead of staying in memory. It also lets
+	 * the container element hold a new map, which Leaflet refuses while the
+	 * old map is attached.
+	 * @review
+	 */
+	destructor() {
+		super.destructor();
+
+		if (this._resizeObserver) {
+			this._resizeObserver.disconnect();
+
+			this._resizeObserver = null;
+		}
+
+		if (this._map) {
+			this._map.remove();
+
+			this._map = null;
+		}
+	}
+
+	/**
 	 * @inheritDoc
 	 * @review
 	 */
@@ -65,12 +99,21 @@ class MapOpenStreetMap extends MapBase {
 			zoom: this.zoom,
 		};
 
-		const map = L.map(
-			document.querySelector(this.boundingBox),
-			Object.assign(mapConfig, controlsConfig)
-		);
+		const container = document.querySelector(this.boundingBox);
 
-		if (this.data && this.data.features) {
+		const map = L.map(container, Object.assign(mapConfig, controlsConfig));
+
+		// Keeps the tiles fully rendered and the center in view when the map
+		// is created inside a hidden element, such as an inactive tab.
+		// Leaflet measures its container only on creation and on window
+		// resize, so without this it keeps a zero size and draws a single
+		// corner of tiles once the element is shown.
+
+		this._resizeObserver = new ResizeObserver(() => map.invalidateSize());
+
+		this._resizeObserver.observe(container);
+
+		if (this.data?.features?.length) {
 			const bounds = new L.LatLngBounds();
 
 			this.data.features.forEach((feature) =>

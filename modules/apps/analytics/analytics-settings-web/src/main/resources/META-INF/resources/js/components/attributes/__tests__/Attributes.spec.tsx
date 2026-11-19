@@ -5,7 +5,7 @@
 
 import fetch from 'jest-fetch-mock';
 
-import '@testing-library/jest-dom/extend-expect';
+import '@testing-library/jest-dom';
 import {useModal} from '@clayui/modal';
 import {act, cleanup, render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -18,9 +18,7 @@ import Modal from '../Modal';
 
 const response = {
 	account: 25,
-	order: 0,
 	people: 44,
-	product: 34,
 };
 
 const responseModal = {
@@ -50,7 +48,9 @@ interface IComponentWithDataProps {
 	requestFn: (params: TTableRequestParams) => Promise<any>;
 }
 
-const ComponentWithData: React.FC<IComponentWithDataProps> = ({requestFn}) => {
+const ComponentWithData: React.FC<
+	{children?: React.ReactNode | undefined} & IComponentWithDataProps
+> = ({requestFn}) => {
 	const {observer} = useModal({onClose: () => {}});
 
 	return (
@@ -95,43 +95,25 @@ describe('Attributes', () => {
 		expect(screen.getByText('people')).toBeInTheDocument();
 
 		expect(screen.getByText('account')).toBeInTheDocument();
-
-		expect(screen.getByText('products')).toBeInTheDocument();
-
-		expect(screen.getByText('order')).toBeInTheDocument();
 	});
 
-	it('renders Attributes with values for account, order, people, product', async () => {
+	it('renders Attributes with values for account and people', async () => {
 		fetch.mockResponseOnce(JSON.stringify(response));
 
 		render(<Attributes />);
 
-		expect(await screen.findByRole(/people/i)).toHaveTextContent(
+		expect(await screen.findByRole('people')).toHaveTextContent(
 			/people44/i
 		);
-		expect(await screen.findByRole(/people/i)).toHaveTextContent(
+		expect(await screen.findByRole('people')).toHaveTextContent(
 			/selected/i
 		);
 
-		expect(await screen.findByRole(/account/i)).toHaveTextContent(
+		expect(await screen.findByRole('account')).toHaveTextContent(
 			/account25/i
 		);
 
-		expect(await screen.findByRole(/account/i)).toHaveTextContent(
-			/selected/i
-		);
-
-		expect(await screen.findByRole(/product/i)).toHaveTextContent(
-			/products34/i
-		);
-
-		expect(await screen.findByRole(/product/i)).toHaveTextContent(
-			/selected/i
-		);
-
-		expect(await screen.findByRole(/order/i)).toHaveTextContent(/order0/i);
-
-		expect(await screen.findByRole(/order/i)).toHaveTextContent(
+		expect(await screen.findByRole('account')).toHaveTextContent(
 			/selected/i
 		);
 	});
@@ -149,13 +131,9 @@ describe('Attributes', () => {
 
 		expect(buttons[1]).toBeInTheDocument();
 
-		expect(buttons[2]).toBeInTheDocument();
-
 		expect(buttons[0]).toHaveAttribute('type', 'button');
 
 		expect(buttons[1]).toHaveAttribute('type', 'button');
-
-		expect(buttons[2]).toHaveAttribute('type', 'button');
 	});
 
 	// This test works but its printing some warnings in the console.

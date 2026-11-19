@@ -5,40 +5,80 @@
 
 package com.liferay.jenkins.results.parser;
 
-import com.liferay.jenkins.results.parser.testray.TestrayS3Object;
+import com.liferay.jenkins.results.parser.testray.TestrayBuild;
+import com.liferay.jenkins.results.parser.testray.TestrayCloudObject;
+import com.liferay.jenkins.results.parser.testray.TestrayProductVersion;
+import com.liferay.jenkins.results.parser.testray.TestrayProject;
+import com.liferay.jenkins.results.parser.testray.TestrayRoutine;
+import com.liferay.jenkins.results.parser.testray.TestrayServer;
 
 import java.net.URL;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * @author Michael Hashimoto
  */
 public interface TopLevelBuildReport extends BuildReport {
 
-	public Map<String, String> getBuildParameters();
+	public void addDownstreamBuildReport(
+		DownstreamBuildReport downstreamBuildReport);
+
+	public void addDownstreamBuildReports(
+		List<DownstreamBuildReport> downstreamBuildReports);
+
+	public void addTestrayAttachmentURL(URL testrayAttachmentURL);
+
+	public Job.BuildProfile getBuildProfile();
 
 	public URL getBuildReportJSONTestrayURL();
 
 	public URL getBuildReportJSONUserContentURL();
 
-	public TestrayS3Object getBuildReportTestrayS3Object();
+	public TestrayCloudObject getBuildReportTestrayCloudObject();
 
-	public URL getBuildResultJSONTestrayURL();
+	public ControllerBuildReport getControllerBuildReport();
 
-	public URL getBuildResultJSONUserContentURL();
+	public List<FailureReport> getDistinctFailureReports();
 
-	public TestrayS3Object getBuildResultTestrayS3Object();
+	public DownstreamBuildReport getDownstreamBuildReport(String axisName);
 
 	public List<DownstreamBuildReport> getDownstreamBuildReports();
+
+	public URL getJenkinsReportURL();
+
+	public JobReport getJobReport();
+
+	public TopLevelBuildReport getPreviousTopLevelBuildReport();
 
 	public URL getTestResultsJSONUserContentURL();
 
 	public String getTestSuiteName();
 
+	public TestrayBuild getTestrayBuild();
+
+	public String getTestrayBuildDateString();
+
+	public URL getTestrayCaseResultURL();
+
+	public TestrayProductVersion getTestrayProductVersion();
+
+	public TestrayProject getTestrayProject();
+
+	public TestrayRoutine getTestrayRoutine();
+
+	public TestrayServer getTestrayServer();
+
 	public long getTopLevelActiveDuration();
 
 	public long getTopLevelPassiveDuration();
+
+	public long getTotalActualDuration();
+
+	public long getTotalCachedDuration();
+
+	public long getTotalDuration();
+
+	public List<FailureReport> getUniqueFailureReports();
 
 }

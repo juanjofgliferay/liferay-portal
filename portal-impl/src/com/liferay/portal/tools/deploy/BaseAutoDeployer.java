@@ -29,6 +29,7 @@ import com.liferay.portal.kernel.util.FileUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.PropertiesUtil;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.SystemProperties;
 import com.liferay.portal.kernel.util.TextFormatter;
@@ -38,7 +39,6 @@ import com.liferay.portal.kernel.xml.Element;
 import com.liferay.portal.kernel.xml.UnsecureSAXReaderUtil;
 import com.liferay.portal.plugin.PluginPackageUtil;
 import com.liferay.portal.tools.WebXMLBuilder;
-import com.liferay.portal.util.PropsValues;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -283,7 +283,7 @@ public class BaseAutoDeployer implements AutoDeployer {
 			displayName = displayName.substring(1);
 		}
 
-		StringBundler sb = new StringBundler(69);
+		StringBundler sb = new StringBundler(77);
 
 		sb.append("<display-name>");
 		sb.append(displayName);
@@ -341,6 +341,15 @@ public class BaseAutoDeployer implements AutoDeployer {
 			sb.append("<taglib>");
 			sb.append("<taglib-uri>");
 			sb.append("http://xmlns.jcp.org/portlet_3_0");
+			sb.append("</taglib-uri>");
+			sb.append("<taglib-location>");
+			sb.append("/WEB-INF/tld/liferay-portlet_3_0.tld");
+			sb.append("</taglib-location>");
+			sb.append("</taglib>");
+
+			sb.append("<taglib>");
+			sb.append("<taglib-uri>");
+			sb.append("jakarta.tags.portlet");
 			sb.append("</taglib-uri>");
 			sb.append("<taglib-location>");
 			sb.append("/WEB-INF/tld/liferay-portlet.tld");
@@ -454,9 +463,6 @@ public class BaseAutoDeployer implements AutoDeployer {
 			true);
 
 		return filterMap;
-	}
-
-	public void updateDeployDirectory(File srcFile) throws Exception {
 	}
 
 	protected String auiTaglibDTD;
@@ -587,6 +593,9 @@ public class BaseAutoDeployer implements AutoDeployer {
 				DeployUtil.getResourcePath(
 					tempDirPaths, "liferay-portlet_2_0.tld"),
 				srcFile + "/WEB-INF/tld/liferay-portlet_2_0.tld");
+			FileUtil.copyFile(
+				portletTaglibDTD,
+				srcFile + "/WEB-INF/tld/liferay-portlet_3_0.tld");
 		}
 
 		if (Validator.isNotNull(portletExtTaglibDTD)) {
@@ -641,8 +650,6 @@ public class BaseAutoDeployer implements AutoDeployer {
 		if (deployDir == null) {
 			return;
 		}
-
-		updateDeployDirectory(srcFile);
 
 		FileUtil.copyDirectory(srcFile, deployDir);
 	}
@@ -740,9 +747,11 @@ public class BaseAutoDeployer implements AutoDeployer {
 			sb.append(license.getName());
 			sb.append("</license>\r\n");
 
-			if ((i + 1) == licenses.size()) {
-				sb.append("\t");
+			if ((i + 1) != licenses.size()) {
+				continue;
 			}
+
+			sb.append("\t");
 		}
 
 		return sb.toString();
@@ -768,9 +777,11 @@ public class BaseAutoDeployer implements AutoDeployer {
 			sb.append(liferayVersion);
 			sb.append("</liferay-version>\r\n");
 
-			if ((i + 1) == liferayVersions.size()) {
-				sb.append("\t");
+			if ((i + 1) != liferayVersions.size()) {
+				continue;
 			}
+
+			sb.append("\t");
 		}
 
 		return sb.toString();
@@ -813,9 +824,11 @@ public class BaseAutoDeployer implements AutoDeployer {
 			sb.append(requiredDeploymentContext);
 			sb.append("</required-deployment-context>\r\n");
 
-			if ((i + 1) == requiredDeploymentContexts.size()) {
-				sb.append("\t");
+			if ((i + 1) != requiredDeploymentContexts.size()) {
+				continue;
 			}
+
+			sb.append("\t");
 		}
 
 		return sb.toString();
@@ -839,9 +852,11 @@ public class BaseAutoDeployer implements AutoDeployer {
 			sb.append(tag);
 			sb.append("</tag>\r\n");
 
-			if ((i + 1) == tags.size()) {
-				sb.append("\t");
+			if ((i + 1) != tags.size()) {
+				continue;
 			}
+
+			sb.append("\t");
 		}
 
 		return sb.toString();
@@ -1076,7 +1091,7 @@ public class BaseAutoDeployer implements AutoDeployer {
 		return null;
 	}
 
-	private void _rewriteFiles(File srcDir) throws Exception {
+	private void _rewriteFiles(File srcDir) {
 		String[] fileNames = FileUtil.listFiles(srcDir + "/WEB-INF/");
 
 		for (String fileName : fileNames) {

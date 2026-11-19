@@ -16,7 +16,7 @@ import org.osgi.service.component.annotations.Component;
  * @author Riccardo Ferrari
  */
 @Component(
-	property = "dto.class.name=AnalyticsDataSource",
+	property = {"default=true", "dto.class.name=AnalyticsDataSource"},
 	service = DTOConverter.class
 )
 public class DataSourceDTOConverter
@@ -35,10 +35,9 @@ public class DataSourceDTOConverter
 
 		return new DataSource() {
 			{
-				commerceChannelIds =
-					analyticsDataSource.getCommerceChannelIds();
-				dataSourceId = String.valueOf(analyticsDataSource.getId());
-				siteIds = analyticsDataSource.getSiteIds();
+				setDataSourceId(
+					() -> String.valueOf(analyticsDataSource.getId()));
+				setSiteIds(analyticsDataSource::getSiteIds);
 			}
 		};
 	}

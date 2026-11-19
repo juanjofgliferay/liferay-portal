@@ -12,10 +12,11 @@ import com.liferay.bulk.selection.BulkSelectionRunner;
 import com.liferay.bulk.selection.internal.constants.BulkSelectionBackgroundTaskConstants;
 import com.liferay.portal.background.task.model.BackgroundTask;
 import com.liferay.portal.background.task.service.BackgroundTaskLocalService;
+import com.liferay.portal.kernel.audit.AuditRequestContext;
+import com.liferay.portal.kernel.audit.AuditRequestContextThreadLocal;
 import com.liferay.portal.kernel.backgroundtask.constants.BackgroundTaskConstants;
 import com.liferay.portal.kernel.backgroundtask.constants.BackgroundTaskContextMapConstants;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.model.CompanyConstants;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.util.HashMapBuilder;
@@ -62,7 +63,7 @@ public class BulkSelectionSelectionRunnerImpl implements BulkSelectionRunner {
 			bulkSelectionAction.getClass();
 
 		_backgroundTaskLocalService.addBackgroundTask(
-			user.getUserId(), CompanyConstants.SYSTEM,
+			user.getUserId(), BackgroundTaskConstants.GROUP_ID_DEFAULT,
 			bulkSelectionActionClass.getName(),
 			BulkSelectionBackgroundTaskExecutor.class.getName(),
 			HashMapBuilder.<String, Serializable>put(
@@ -75,6 +76,10 @@ public class BulkSelectionSelectionRunnerImpl implements BulkSelectionRunner {
 				BulkSelectionBackgroundTaskConstants.
 					BULK_SELECTION_ACTION_INPUT_MAP,
 				new HashMap<>(inputMap)
+			).put(
+				BulkSelectionBackgroundTaskConstants.
+					BULK_SELECTION_AUDIT_REQUEST_CONTEXT_MAP,
+				_getAuditRequestContextMap()
 			).put(
 				BulkSelectionBackgroundTaskConstants.
 					BULK_SELECTION_FACTORY_CLASS_NAME,
@@ -91,6 +96,38 @@ public class BulkSelectionSelectionRunnerImpl implements BulkSelectionRunner {
 				new HashMap<>(bulkSelection.getParameterMap())
 			).build(),
 			new ServiceContext());
+	}
+
+	private HashMap<String, Serializable> _getAuditRequestContextMap() {
+		AuditRequestContext auditRequestContext =
+			AuditRequestContextThreadLocal.getAuditRequestContext();
+
+		return HashMapBuilder.<String, Serializable>put(
+			"clientHost", auditRequestContext.getClientHost()
+		).put(
+			"clientIP", auditRequestContext.getClientIP()
+		).put(
+			"correlationId", auditRequestContext.getCorrelationId()
+		).put(
+			"httpMethod", auditRequestContext.getHttpMethod()
+		).put(
+			"realUserEmailAddress",
+			auditRequestContext.getRealUserEmailAddress()
+		).put(
+			"realUserId", auditRequestContext.getRealUserId()
+		).put(
+			"requestId", auditRequestContext.getRequestId()
+		).put(
+			"requestIdGenerated", auditRequestContext.isRequestIdGenerated()
+		).put(
+			"serverName", auditRequestContext.getServerName()
+		).put(
+			"serverPort", auditRequestContext.getServerPort()
+		).put(
+			"sessionID", auditRequestContext.getSessionID()
+		).put(
+			"userAgent", auditRequestContext.getUserAgent()
+		).build();
 	}
 
 	@Reference

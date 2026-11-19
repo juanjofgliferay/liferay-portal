@@ -112,11 +112,7 @@ public class AddressPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		Address newAddress = _persistence.create(pk);
-
-		newAddress.setMvccVersion(RandomTestUtil.nextLong());
+		Address newAddress = addAddress();
 
 		newAddress.setCtCollectionId(RandomTestUtil.nextLong());
 
@@ -164,13 +160,19 @@ public class AddressPersistenceTest {
 
 		newAddress.setStreet3(RandomTestUtil.randomString());
 
+		newAddress.setSubtype(RandomTestUtil.randomString());
+
 		newAddress.setValidationDate(RandomTestUtil.nextDate());
 
 		newAddress.setValidationStatus(RandomTestUtil.nextInt());
 
 		newAddress.setZip(RandomTestUtil.randomString());
 
-		_addresses.add(_persistence.update(newAddress));
+		newAddress.setStatus(RandomTestUtil.nextInt());
+
+		newAddress = _persistence.update(newAddress);
+
+		_addresses.add(newAddress);
 
 		Address existingAddress = _persistence.findByPrimaryKey(
 			newAddress.getPrimaryKey());
@@ -227,12 +229,16 @@ public class AddressPersistenceTest {
 		Assert.assertEquals(
 			existingAddress.getStreet3(), newAddress.getStreet3());
 		Assert.assertEquals(
+			existingAddress.getSubtype(), newAddress.getSubtype());
+		Assert.assertEquals(
 			Time.getShortTimestamp(existingAddress.getValidationDate()),
 			Time.getShortTimestamp(newAddress.getValidationDate()));
 		Assert.assertEquals(
 			existingAddress.getValidationStatus(),
 			newAddress.getValidationStatus());
 		Assert.assertEquals(existingAddress.getZip(), newAddress.getZip());
+		Assert.assertEquals(
+			existingAddress.getStatus(), newAddress.getStatus());
 	}
 
 	@Test(expected = DuplicateAddressExternalReferenceCodeException.class)
@@ -273,20 +279,6 @@ public class AddressPersistenceTest {
 	}
 
 	@Test
-	public void testCountByCompanyId() throws Exception {
-		_persistence.countByCompanyId(RandomTestUtil.nextLong());
-
-		_persistence.countByCompanyId(0L);
-	}
-
-	@Test
-	public void testCountByUserId() throws Exception {
-		_persistence.countByUserId(RandomTestUtil.nextLong());
-
-		_persistence.countByUserId(0L);
-	}
-
-	@Test
 	public void testCountByCountryId() throws Exception {
 		_persistence.countByCountryId(RandomTestUtil.nextLong());
 
@@ -301,11 +293,11 @@ public class AddressPersistenceTest {
 	}
 
 	@Test
-	public void testCountByC_C() throws Exception {
-		_persistence.countByC_C(
+	public void testCountByCN_CPK() throws Exception {
+		_persistence.countByCN_CPK(
 			RandomTestUtil.nextLong(), RandomTestUtil.nextLong());
 
-		_persistence.countByC_C(0L, 0L);
+		_persistence.countByCN_CPK(0L, 0L);
 	}
 
 	@Test
@@ -393,8 +385,8 @@ public class AddressPersistenceTest {
 			"countryId", true, "listTypeId", true, "regionId", true, "city",
 			true, "description", true, "latitude", true, "longitude", true,
 			"mailing", true, "name", true, "primary", true, "street1", true,
-			"street2", true, "street3", true, "validationDate", true,
-			"validationStatus", true, "zip", true);
+			"street2", true, "street3", true, "subtype", true, "validationDate",
+			true, "validationStatus", true, "zip", true, "status", true);
 	}
 
 	@Test
@@ -666,8 +658,6 @@ public class AddressPersistenceTest {
 
 		Address address = _persistence.create(pk);
 
-		address.setMvccVersion(RandomTestUtil.nextLong());
-
 		address.setCtCollectionId(RandomTestUtil.nextLong());
 
 		address.setUuid(RandomTestUtil.randomString());
@@ -714,11 +704,15 @@ public class AddressPersistenceTest {
 
 		address.setStreet3(RandomTestUtil.randomString());
 
+		address.setSubtype(RandomTestUtil.randomString());
+
 		address.setValidationDate(RandomTestUtil.nextDate());
 
 		address.setValidationStatus(RandomTestUtil.nextInt());
 
 		address.setZip(RandomTestUtil.randomString());
+
+		address.setStatus(RandomTestUtil.nextInt());
 
 		_addresses.add(_persistence.update(address));
 
@@ -730,3 +724,4 @@ public class AddressPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-413678213

@@ -11,23 +11,25 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import com.liferay.petra.function.UnsafeSupplier;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Jaclyn Ong
@@ -47,117 +49,169 @@ public class Settings implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(Settings.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Integer[] getAllowedQuantities() {
+		if (_allowedQuantitiesSupplier != null) {
+			allowedQuantities = _allowedQuantitiesSupplier.get();
+
+			_allowedQuantitiesSupplier = null;
+		}
+
 		return allowedQuantities;
 	}
 
 	public void setAllowedQuantities(Integer[] allowedQuantities) {
 		this.allowedQuantities = allowedQuantities;
+
+		_allowedQuantitiesSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setAllowedQuantities(
 		UnsafeSupplier<Integer[], Exception> allowedQuantitiesUnsafeSupplier) {
 
-		try {
-			allowedQuantities = allowedQuantitiesUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_allowedQuantitiesSupplier = () -> {
+			try {
+				return allowedQuantitiesUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Integer[] allowedQuantities;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Integer[]> _allowedQuantitiesSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Integer getMaxQuantity() {
+		if (_maxQuantitySupplier != null) {
+			maxQuantity = _maxQuantitySupplier.get();
+
+			_maxQuantitySupplier = null;
+		}
+
 		return maxQuantity;
 	}
 
 	public void setMaxQuantity(Integer maxQuantity) {
 		this.maxQuantity = maxQuantity;
+
+		_maxQuantitySupplier = null;
 	}
 
 	@JsonIgnore
 	public void setMaxQuantity(
 		UnsafeSupplier<Integer, Exception> maxQuantityUnsafeSupplier) {
 
-		try {
-			maxQuantity = maxQuantityUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_maxQuantitySupplier = () -> {
+			try {
+				return maxQuantityUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Integer maxQuantity;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Integer> _maxQuantitySupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Integer getMinQuantity() {
+		if (_minQuantitySupplier != null) {
+			minQuantity = _minQuantitySupplier.get();
+
+			_minQuantitySupplier = null;
+		}
+
 		return minQuantity;
 	}
 
 	public void setMinQuantity(Integer minQuantity) {
 		this.minQuantity = minQuantity;
+
+		_minQuantitySupplier = null;
 	}
 
 	@JsonIgnore
 	public void setMinQuantity(
 		UnsafeSupplier<Integer, Exception> minQuantityUnsafeSupplier) {
 
-		try {
-			minQuantity = minQuantityUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_minQuantitySupplier = () -> {
+			try {
+				return minQuantityUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Integer minQuantity;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Integer> _minQuantitySupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Integer getMultipleQuantity() {
+		if (_multipleQuantitySupplier != null) {
+			multipleQuantity = _multipleQuantitySupplier.get();
+
+			_multipleQuantitySupplier = null;
+		}
+
 		return multipleQuantity;
 	}
 
 	public void setMultipleQuantity(Integer multipleQuantity) {
 		this.multipleQuantity = multipleQuantity;
+
+		_multipleQuantitySupplier = null;
 	}
 
 	@JsonIgnore
 	public void setMultipleQuantity(
 		UnsafeSupplier<Integer, Exception> multipleQuantityUnsafeSupplier) {
 
-		try {
-			multipleQuantity = multipleQuantityUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_multipleQuantitySupplier = () -> {
+			try {
+				return multipleQuantityUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Integer multipleQuantity;
+
+	@JsonIgnore
+	private Supplier<Integer> _multipleQuantitySupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -186,6 +240,8 @@ public class Settings implements Serializable {
 
 		sb.append("{");
 
+		Integer[] allowedQuantities = getAllowedQuantities();
+
 		if (allowedQuantities != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -206,6 +262,8 @@ public class Settings implements Serializable {
 			sb.append("]");
 		}
 
+		Integer maxQuantity = getMaxQuantity();
+
 		if (maxQuantity != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -216,6 +274,8 @@ public class Settings implements Serializable {
 			sb.append(maxQuantity);
 		}
 
+		Integer minQuantity = getMinQuantity();
+
 		if (minQuantity != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -225,6 +285,8 @@ public class Settings implements Serializable {
 
 			sb.append(minQuantity);
 		}
+
+		Integer multipleQuantity = getMultipleQuantity();
 
 		if (multipleQuantity != null) {
 			if (sb.length() > 1) {
@@ -241,8 +303,8 @@ public class Settings implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.commerce.punchout.dto.v1_0.Settings",
 		name = "x-class-name"
 	)
@@ -288,7 +350,10 @@ public class Settings implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -326,6 +391,27 @@ public class Settings implements Serializable {
 		return sb.toString();
 	}
 
+	private static String _toJSON(Object value) {
+		if (value instanceof Collection) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONArray((Collection<?>)value));
+		}
+		else if (value instanceof Map) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONObject((Map<?, ?>)value));
+		}
+		else if (value instanceof Object[]) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONArray(
+					Arrays.asList((Object[])value)));
+		}
+		else if (value instanceof String) {
+			return StringBundler.concat("\"", _escape(value), "\"");
+		}
+
+		return String.valueOf(value);
+	}
+
 	private static final String[][] _JSON_ESCAPE_STRINGS = {
 		{"\\", "\"", "\b", "\f", "\n", "\r", "\t"},
 		{"\\\\", "\\\"", "\\b", "\\f", "\\n", "\\r", "\\t"}
@@ -334,3 +420,4 @@ public class Settings implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:-827301036

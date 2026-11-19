@@ -10,11 +10,13 @@
 <%
 ConfigurationProvider<LDAPAuthConfiguration> ldapAuthConfigurationProvider = ConfigurationProviderUtil.getLDAPAuthConfigurationProvider();
 
-LDAPAuthConfiguration ldapAuthConfiguration = ldapAuthConfigurationProvider.getConfiguration(themeDisplay.getCompanyId());
+long companyId = ActionUtil.getCompanyId(request);
+
+LDAPAuthConfiguration ldapAuthConfiguration = ldapAuthConfigurationProvider.getConfiguration(companyId);
 
 ConfigurationProvider<LDAPServerConfiguration> ldapServerConfigurationProvider = ConfigurationProviderUtil.getLDAPServerConfigurationProvider();
 
-List<LDAPServerConfiguration> ldapServerConfigurations = ldapServerConfigurationProvider.getConfigurations(themeDisplay.getCompanyId(), false);
+List<LDAPServerConfiguration> ldapServerConfigurations = ldapServerConfigurationProvider.getConfigurations(companyId, false);
 
 String authenticationURL = currentURL + "#_LFR_FN_authentication";
 
@@ -45,8 +47,9 @@ boolean ldapAuthEnabled = ldapAuthConfiguration.enabled();
 
 <aui:fieldset>
 	<aui:input name="<%= Constants.CMD %>" type="hidden" value="<%= LDAPSettingsConstants.CMD_UPDATE_SERVER %>" />
-
 	<aui:input name='<%= "ldap--" + LDAPConstants.AUTH_SERVER_PRIORITY + "--" %>' type="hidden" />
+
+	<%@ include file="/error_ldap_configuration_model_listener_exception.jspf" %>
 
 	<c:if test="<%= !ldapServerConfigurations.isEmpty() %>">
 		<br /><br />
@@ -59,7 +62,7 @@ boolean ldapAuthEnabled = ldapAuthConfiguration.enabled();
 							<liferay-ui:message key="ldap-server-id" />
 						</th>
 						<th class="table-header">
-							<liferay-ui:message key="ldap-server-name" />
+							<liferay-ui:message key="name" />
 						</th>
 						<th class="table-header"></th>
 					</tr>
@@ -136,7 +139,7 @@ boolean ldapAuthEnabled = ldapAuthConfiguration.enabled();
 	</c:if>
 </aui:fieldset>
 
-<script>
+<aui:script>
 	function <portlet:namespace />changeLDAPServerPriority(ldapServerId, action) {
 		var ldapServer = document.querySelector(
 			'.ldap-servers tr[data-ldapServerId="' + ldapServerId + '"]'
@@ -185,9 +188,8 @@ boolean ldapAuthEnabled = ldapAuthConfiguration.enabled();
 		);
 
 		Liferay.Util.setFormValues(document.<portlet:namespace />fm, {
-			'ldap--<%= LDAPConstants.AUTH_SERVER_PRIORITY %>--': ldapServerIds.join(
-				','
-			),
+			'ldap--<%= LDAPConstants.AUTH_SERVER_PRIORITY %>--':
+				ldapServerIds.join(','),
 		});
 	}
 
@@ -195,4 +197,4 @@ boolean ldapAuthEnabled = ldapAuthConfiguration.enabled();
 		'<portlet:namespace />ldapImportEnabled',
 		'<portlet:namespace />importEnabledSettings'
 	);
-</script>
+</aui:script>

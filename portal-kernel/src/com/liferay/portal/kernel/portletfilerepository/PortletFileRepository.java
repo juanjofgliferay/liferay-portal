@@ -52,6 +52,13 @@ public interface PortletFileRepository {
 	public FileEntry addPortletFileEntry(
 			String externalReferenceCode, long groupId, long userId,
 			String className, long classPK, String portletId, long folderId,
+			File file, String sourceFileName, String title, String mimeType,
+			boolean indexingEnabled)
+		throws PortalException;
+
+	public FileEntry addPortletFileEntry(
+			String externalReferenceCode, long groupId, long userId,
+			String className, long classPK, String portletId, long folderId,
 			InputStream inputStream, String fileName, String mimeType,
 			boolean indexingEnabled)
 		throws PortalException;
@@ -90,6 +97,9 @@ public interface PortletFileRepository {
 
 	public FileEntry fetchPortletFileEntry(
 		long groupId, long folderId, String fileName);
+
+	public FileEntry fetchPortletFileEntryByExternalReferenceCode(
+		String externalReferenceCode, long groupId);
 
 	public Repository fetchPortletRepository(long groupId, String portletId);
 
@@ -187,6 +197,16 @@ public interface PortletFileRepository {
 
 	public Hits searchPortletFileEntries(
 			long repositoryId, SearchContext searchContext)
+		throws PortalException;
+
+	public FileEntry updatePortletFileEntry(
+			long userId, long fileEntryId, File file, String fileName,
+			String mimeType, ServiceContext serviceContext)
+		throws PortalException;
+
+	public FileEntry updatePortletFileEntry(
+			long userId, long fileEntryId, InputStream inputStream,
+			String fileName, String mimeType, ServiceContext serviceContext)
 		throws PortalException;
 
 }

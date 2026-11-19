@@ -20,6 +20,12 @@ import java.util.Objects;
 public class LayoutStructureRule {
 
 	public static LayoutStructureRule of(JSONObject jsonObject) {
+		if (Validator.isNotNull(jsonObject.getString("script"))) {
+			return new LayoutStructureRule(
+				jsonObject.getJSONArray("actions"), jsonObject.getString("id"),
+				jsonObject.getString("name"), jsonObject.getString("script"));
+		}
+
 		return new LayoutStructureRule(
 			jsonObject.getJSONArray("actions"),
 			jsonObject.getJSONArray("conditions"),
@@ -40,6 +46,15 @@ public class LayoutStructureRule {
 
 		_id = id;
 		_name = name;
+	}
+
+	public LayoutStructureRule(
+		JSONArray actionsJSONArray, String id, String name, String script) {
+
+		_actionsJSONArray = actionsJSONArray;
+		_id = id;
+		_name = name;
+		_script = script;
 	}
 
 	public LayoutStructureRule(String id, String name) {
@@ -73,16 +88,16 @@ public class LayoutStructureRule {
 		return _actionsJSONArray;
 	}
 
-	public JSONArray getConditionsJSONArray() {
-		return _conditionsJSONArray;
-	}
-
 	public String getConditionType() {
 		if (Validator.isNull(_conditionType)) {
 			return "all";
 		}
 
 		return _conditionType;
+	}
+
+	public JSONArray getConditionsJSONArray() {
+		return _conditionsJSONArray;
 	}
 
 	public String getId() {
@@ -93,21 +108,29 @@ public class LayoutStructureRule {
 		return _name;
 	}
 
+	public String getScript() {
+		return _script;
+	}
+
 	@Override
 	public int hashCode() {
 		return HashUtil.hash(0, getId());
+	}
+
+	public boolean isAdvancedRule() {
+		return Validator.isNotNull(_script);
 	}
 
 	public void setActionsJSONArray(JSONArray actionsJSONArray) {
 		_actionsJSONArray = actionsJSONArray;
 	}
 
-	public void setConditionsJSONArray(JSONArray conditionsJSONArray) {
-		_conditionsJSONArray = conditionsJSONArray;
-	}
-
 	public void setConditionType(String conditionType) {
 		_conditionType = conditionType;
+	}
+
+	public void setConditionsJSONArray(JSONArray conditionsJSONArray) {
+		_conditionsJSONArray = conditionsJSONArray;
 	}
 
 	public void setId(String id) {
@@ -116,6 +139,10 @@ public class LayoutStructureRule {
 
 	public void setName(String name) {
 		_name = name;
+	}
+
+	public void setScript(String script) {
+		_script = script;
 	}
 
 	public JSONObject toJSONObject() {
@@ -129,6 +156,8 @@ public class LayoutStructureRule {
 			"id", getId()
 		).put(
 			"name", getName()
+		).put(
+			"script", getScript()
 		);
 	}
 
@@ -140,9 +169,10 @@ public class LayoutStructureRule {
 	}
 
 	private JSONArray _actionsJSONArray;
-	private JSONArray _conditionsJSONArray;
 	private String _conditionType = "all";
+	private JSONArray _conditionsJSONArray;
 	private String _id;
 	private String _name;
+	private String _script;
 
 }

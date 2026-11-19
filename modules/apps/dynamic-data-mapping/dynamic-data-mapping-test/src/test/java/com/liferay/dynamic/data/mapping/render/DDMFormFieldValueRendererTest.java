@@ -36,10 +36,11 @@ import com.liferay.portal.kernel.service.LayoutServiceUtil;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.util.FastDateFormatFactoryUtil;
-import com.liferay.portal.kernel.util.JavaDetector;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 import com.liferay.portal.util.FastDateFormatFactoryImpl;
+
+import java.util.Locale;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -72,25 +73,6 @@ public class DDMFormFieldValueRendererTest extends BaseDDMTestCase {
 	}
 
 	@Test
-	public void testCheckboxFieldValueRendererWithoutRepeatableValues() {
-		DDMFormFieldValue ddmFormFieldValue = createDDMFormFieldValue(
-			"Checkbox", createLocalizedValue("false", "true", LocaleUtil.US));
-
-		DDMFormFieldValueRenderer ddmFormFieldValueRenderer =
-			new CheckboxDDMFormFieldValueRenderer();
-
-		String renderedValue = ddmFormFieldValueRenderer.render(
-			ddmFormFieldValue, LocaleUtil.US);
-
-		Assert.assertEquals("False", renderedValue);
-
-		renderedValue = ddmFormFieldValueRenderer.render(
-			ddmFormFieldValue, LocaleUtil.BRAZIL);
-
-		Assert.assertEquals("Verdadeiro", renderedValue);
-	}
-
-	@Test
 	public void testCheckboxFieldValueRendererWithRepeatableValues() {
 		DDMFormValues ddmFormValues = new DDMFormValues(null);
 
@@ -119,6 +101,25 @@ public class DDMFormFieldValueRendererTest extends BaseDDMTestCase {
 	}
 
 	@Test
+	public void testCheckboxFieldValueRendererWithoutRepeatableValues() {
+		DDMFormFieldValue ddmFormFieldValue = createDDMFormFieldValue(
+			"Checkbox", createLocalizedValue("false", "true", LocaleUtil.US));
+
+		DDMFormFieldValueRenderer ddmFormFieldValueRenderer =
+			new CheckboxDDMFormFieldValueRenderer();
+
+		String renderedValue = ddmFormFieldValueRenderer.render(
+			ddmFormFieldValue, LocaleUtil.US);
+
+		Assert.assertEquals("False", renderedValue);
+
+		renderedValue = ddmFormFieldValueRenderer.render(
+			ddmFormFieldValue, LocaleUtil.BRAZIL);
+
+		Assert.assertEquals("Verdadeiro", renderedValue);
+	}
+
+	@Test
 	public void testDateFieldValueRenderer() {
 		String valueString = "2014-10-22";
 
@@ -137,6 +138,11 @@ public class DDMFormFieldValueRendererTest extends BaseDDMTestCase {
 			ddmFormFieldValue, LocaleUtil.BRAZIL);
 
 		Assert.assertEquals("22/10/2014", renderedValue);
+
+		renderedValue = ddmFormFieldValueRenderer.render(
+			ddmFormFieldValue, Locale.forLanguageTag("zh-Hant"));
+
+		Assert.assertEquals("2014/10/22", renderedValue);
 	}
 
 	@Test
@@ -229,26 +235,12 @@ public class DDMFormFieldValueRendererTest extends BaseDDMTestCase {
 		String renderedValue = ddmFormFieldValueRenderer.render(
 			ddmFormFieldValue, LocaleUtil.SPAIN);
 
-		if (JavaDetector.isJDK8()) {
-			Assert.assertEquals(
-				"Latitud: 9,877, Longitud: 1,234", renderedValue);
-		}
-		else {
-			Assert.assertEquals(
-				"Latitud: 9,876, Longitud: 1,234", renderedValue);
-		}
+		Assert.assertEquals("Latitud: 9,877, Longitud: 1,234", renderedValue);
 
 		renderedValue = ddmFormFieldValueRenderer.render(
 			ddmFormFieldValue, LocaleUtil.US);
 
-		if (JavaDetector.isJDK8()) {
-			Assert.assertEquals(
-				"Latitude: 9.877, Longitude: 1.234", renderedValue);
-		}
-		else {
-			Assert.assertEquals(
-				"Latitude: 9.876, Longitude: 1.234", renderedValue);
-		}
+		Assert.assertEquals("Latitude: 9.877, Longitude: 1.234", renderedValue);
 	}
 
 	@Test
@@ -336,33 +328,6 @@ public class DDMFormFieldValueRendererTest extends BaseDDMTestCase {
 	}
 
 	@Test
-	public void testSelectFieldValueRendererWithoutRepeatableValues() {
-		DDMForm ddmForm = createDDMFormWithSelectField();
-
-		DDMFormValues ddmFormValues = new DDMFormValues(ddmForm);
-
-		JSONArray jsonArray = toJSONArray("Option 1", "Option 2");
-
-		ddmFormValues.addDDMFormFieldValue(
-			createDDMFormFieldValue(
-				"Select", new UnlocalizedValue(jsonArray.toString())));
-
-		DDMFormFieldValueRenderer ddmFormFieldValueRenderer =
-			new SelectDDMFormFieldValueRenderer();
-
-		String renderedValue = ddmFormFieldValueRenderer.render(
-			ddmFormValues.getDDMFormFieldValues(), LocaleUtil.US);
-
-		Assert.assertEquals("English Label 1, English Label 2", renderedValue);
-
-		renderedValue = ddmFormFieldValueRenderer.render(
-			ddmFormValues.getDDMFormFieldValues(), LocaleUtil.BRAZIL);
-
-		Assert.assertEquals(
-			"Portuguese Label 1, Portuguese Label 2", renderedValue);
-	}
-
-	@Test
 	public void testSelectFieldValueRendererWithRepeatableValues() {
 		DDMForm ddmForm = createDDMFormWithSelectField();
 
@@ -398,17 +363,30 @@ public class DDMFormFieldValueRendererTest extends BaseDDMTestCase {
 	}
 
 	@Test
-	public void testTextFieldValueRendererWithoutRepeatableValues() {
-		DDMFormFieldValue ddmFormFieldValue = createDDMFormFieldValue(
-			"Text", new UnlocalizedValue("Scott Joplin"));
+	public void testSelectFieldValueRendererWithoutRepeatableValues() {
+		DDMForm ddmForm = createDDMFormWithSelectField();
+
+		DDMFormValues ddmFormValues = new DDMFormValues(ddmForm);
+
+		JSONArray jsonArray = toJSONArray("Option 1", "Option 2");
+
+		ddmFormValues.addDDMFormFieldValue(
+			createDDMFormFieldValue(
+				"Select", new UnlocalizedValue(jsonArray.toString())));
 
 		DDMFormFieldValueRenderer ddmFormFieldValueRenderer =
-			new TextDDMFormFieldValueRenderer();
+			new SelectDDMFormFieldValueRenderer();
 
 		String renderedValue = ddmFormFieldValueRenderer.render(
-			ddmFormFieldValue, LocaleUtil.US);
+			ddmFormValues.getDDMFormFieldValues(), LocaleUtil.US);
 
-		Assert.assertEquals("Scott Joplin", renderedValue);
+		Assert.assertEquals("English Label 1, English Label 2", renderedValue);
+
+		renderedValue = ddmFormFieldValueRenderer.render(
+			ddmFormValues.getDDMFormFieldValues(), LocaleUtil.BRAZIL);
+
+		Assert.assertEquals(
+			"Portuguese Label 1, Portuguese Label 2", renderedValue);
 	}
 
 	@Test
@@ -430,6 +408,20 @@ public class DDMFormFieldValueRendererTest extends BaseDDMTestCase {
 			ddmFormValues.getDDMFormFieldValues(), LocaleUtil.US);
 
 		Assert.assertEquals("Charlie Parker, Dave Brubeck", renderedValue);
+	}
+
+	@Test
+	public void testTextFieldValueRendererWithoutRepeatableValues() {
+		DDMFormFieldValue ddmFormFieldValue = createDDMFormFieldValue(
+			"Text", new UnlocalizedValue("Scott Joplin"));
+
+		DDMFormFieldValueRenderer ddmFormFieldValueRenderer =
+			new TextDDMFormFieldValueRenderer();
+
+		String renderedValue = ddmFormFieldValueRenderer.render(
+			ddmFormFieldValue, LocaleUtil.US);
+
+		Assert.assertEquals("Scott Joplin", renderedValue);
 	}
 
 	protected DDMForm createDDMFormWithSelectField() {

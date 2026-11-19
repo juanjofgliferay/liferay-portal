@@ -7,24 +7,36 @@ package com.liferay.headless.admin.workflow.internal.resource.v1_0;
 
 import com.liferay.headless.admin.workflow.dto.v1_0.Role;
 import com.liferay.headless.admin.workflow.dto.v1_0.WorkflowLog;
+import com.liferay.headless.admin.workflow.dto.v1_0.WorkflowTask;
 import com.liferay.headless.admin.workflow.internal.dto.v1_0.util.CreatorUtil;
 import com.liferay.headless.admin.workflow.internal.dto.v1_0.util.RoleUtil;
 import com.liferay.headless.admin.workflow.internal.dto.v1_0.util.WorkflowLogUtil;
 import com.liferay.headless.admin.workflow.resource.v1_0.WorkflowLogResource;
 import com.liferay.portal.kernel.change.tracking.CTAware;
 import com.liferay.portal.kernel.language.Language;
+import com.liferay.portal.kernel.security.permission.ActionKeys;
+import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
+import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
 import com.liferay.portal.kernel.service.RoleLocalService;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.ResourceBundleUtil;
+import com.liferay.portal.vulcan.fields.NestedField;
+import com.liferay.portal.vulcan.fields.NestedFieldId;
 import com.liferay.portal.vulcan.pagination.Page;
 import com.liferay.portal.vulcan.pagination.Pagination;
 import com.liferay.portal.workflow.comparator.WorkflowComparatorFactory;
 import com.liferay.portal.workflow.kaleo.KaleoWorkflowModelConverter;
 import com.liferay.portal.workflow.kaleo.definition.LogType;
 import com.liferay.portal.workflow.kaleo.definition.util.KaleoLogUtil;
+import com.liferay.portal.workflow.kaleo.exception.NoSuchInstanceException;
+import com.liferay.portal.workflow.kaleo.model.KaleoInstance;
+import com.liferay.portal.workflow.kaleo.model.KaleoLog;
+import com.liferay.portal.workflow.kaleo.model.KaleoTaskInstanceToken;
+import com.liferay.portal.workflow.kaleo.service.KaleoInstanceLocalService;
 import com.liferay.portal.workflow.kaleo.service.KaleoLogLocalService;
+import com.liferay.portal.workflow.kaleo.service.KaleoTaskInstanceTokenLocalService;
 import com.liferay.portal.workflow.manager.WorkflowLogManager;
 
 import java.util.List;
@@ -39,7 +51,8 @@ import org.osgi.service.component.annotations.ServiceScope;
  */
 @Component(
 	properties = "OSGI-INF/liferay/rest/v1_0/workflow-log.properties",
-	scope = ServiceScope.PROTOTYPE, service = WorkflowLogResource.class
+	property = "nested.field.support=true", scope = ServiceScope.PROTOTYPE,
+	service = WorkflowLogResource.class
 )
 @CTAware
 public class WorkflowLogResourceImpl extends BaseWorkflowLogResourceImpl {
@@ -48,6 +61,8 @@ public class WorkflowLogResourceImpl extends BaseWorkflowLogResourceImpl {
 	public Page<WorkflowLog> getWorkflowInstanceWorkflowLogsPage(
 			Long workflowInstanceId, String[] types, Pagination pagination)
 		throws Exception {
+
+		_checkKaleoInstanceViewPermission(workflowInstanceId);
 
 		return Page.of(
 			transform(
@@ -66,15 +81,27 @@ public class WorkflowLogResourceImpl extends BaseWorkflowLogResourceImpl {
 
 	@Override
 	public WorkflowLog getWorkflowLog(Long workflowLogId) throws Exception {
+		KaleoLog kaleoLog = _kaleoLogLocalService.getKaleoLog(workflowLogId);
+
+		_checkKaleoInstanceViewPermission(kaleoLog.getKaleoInstanceId());
+
 		return _toWorkflowLog(
-			_kaleoWorkflowModelConverter.toWorkflowLog(
-				_kaleoLogLocalService.getKaleoLog(workflowLogId)));
+			_kaleoWorkflowModelConverter.toWorkflowLog(kaleoLog));
 	}
 
+	@NestedField(parentClass = WorkflowTask.class, value = "workflowLogs")
 	@Override
 	public Page<WorkflowLog> getWorkflowTaskWorkflowLogsPage(
-			Long workflowTaskId, String[] types, Pagination pagination)
+			@NestedFieldId(value = "id") Long workflowTaskId, String[] types,
+			Pagination pagination)
 		throws Exception {
+
+		KaleoTaskInstanceToken kaleoTaskInstanceToken =
+			_kaleoTaskInstanceTokenLocalService.getKaleoTaskInstanceToken(
+				workflowTaskId);
+
+		_checkKaleoInstanceViewPermission(
+			kaleoTaskInstanceToken.getKaleoInstanceId());
 
 		return Page.of(
 			transform(
@@ -91,9 +118,32 @@ public class WorkflowLogResourceImpl extends BaseWorkflowLogResourceImpl {
 				_toLogTypes(types)));
 	}
 
+	private void _checkKaleoInstanceViewPermission(long kaleoInstanceId)
+		throws Exception {
+
+		KaleoInstance kaleoInstance =
+			_kaleoInstanceLocalService.getKaleoInstance(kaleoInstanceId);
+
+		if (kaleoInstance.getCompanyId() != contextCompany.getCompanyId()) {
+			throw new NoSuchInstanceException(
+				"No Kaleo instance exists with the primary key " +
+					kaleoInstanceId);
+		}
+
+		_kaleoInstanceModelResourcePermission.check(
+			PermissionThreadLocal.getPermissionChecker(), kaleoInstance,
+			ActionKeys.VIEW);
+	}
+
 	private String _toLogTypeName(WorkflowLog.Type type) {
-		if (type == WorkflowLog.Type.NODE_ENTRY) {
+		if (type == WorkflowLog.Type.INSTANCE_FAIL) {
+			return LogType.INSTANCE_FAIL.name();
+		}
+		else if (type == WorkflowLog.Type.NODE_ENTRY) {
 			return LogType.NODE_ENTRY.name();
+		}
+		else if (type == WorkflowLog.Type.NODE_USAGE_METADATA) {
+			return LogType.NODE_USAGE_METADATA.name();
 		}
 		else if (type == WorkflowLog.Type.TASK_ASSIGN) {
 			return LogType.TASK_ASSIGNMENT.name();
@@ -142,44 +192,57 @@ public class WorkflowLogResourceImpl extends BaseWorkflowLogResourceImpl {
 
 		return new WorkflowLog() {
 			{
-				auditPerson = CreatorUtil.toCreator(
-					_portal,
-					_userLocalService.fetchUser(workflowLog.getAuditUserId()));
-				commentLog = _language.get(
-					ResourceBundleUtil.getBundle(
-						"content.Language",
-						contextAcceptLanguage.getPreferredLocale(), getClass()),
-					workflowLog.getComment());
-				dateCreated = workflowLog.getCreateDate();
-				description = WorkflowLogUtil.getDescription(
-					_language, contextAcceptLanguage.getPreferredLocale(),
-					_portal, _roleLocalService::fetchRole,
-					_userLocalService::fetchUser, workflowLog);
-				id = workflowLog.getWorkflowLogId();
-				person = CreatorUtil.toCreator(
-					_portal,
-					_userLocalService.fetchUser(workflowLog.getUserId()));
-				previousPerson = CreatorUtil.toCreator(
-					_portal,
-					_userLocalService.fetchUser(
-						workflowLog.getPreviousUserId()));
-				previousRole = _toRole(workflowLog.getPreviousRoleId());
-				previousState = workflowLog.getPreviousWorkflowNodeName();
-				previousStateLabel = workflowLog.getPreviousWorkflowNodeLabel(
-					contextAcceptLanguage.getPreferredLocale());
-				role = _toRole(workflowLog.getRoleId());
-				state = workflowLog.getCurrentWorkflowNodeName();
-				stateLabel = workflowLog.getCurrentWorkflowNodeLabel(
-					contextAcceptLanguage.getPreferredLocale());
-				type = _toWorkflowLogType(
-					KaleoLogUtil.convert(workflowLog.getType()));
-				workflowTaskId = workflowLog.getWorkflowTaskId();
+				setAuditPerson(
+					() -> CreatorUtil.toCreator(
+						_portal,
+						_userLocalService.fetchUser(
+							workflowLog.getAuditUserId())));
+				setCommentLog(
+					() -> _language.get(
+						ResourceBundleUtil.getBundle(
+							"content.Language",
+							contextAcceptLanguage.getPreferredLocale(),
+							getClass()),
+						workflowLog.getComment()));
+				setDateCreated(workflowLog::getCreateDate);
+				setDescription(
+					() -> WorkflowLogUtil.getDescription(
+						_language, contextAcceptLanguage.getPreferredLocale(),
+						_portal, _roleLocalService::fetchRole,
+						_userLocalService::fetchUser, workflowLog));
+				setId(workflowLog::getWorkflowLogId);
+				setPerson(
+					() -> CreatorUtil.toCreator(
+						_portal,
+						_userLocalService.fetchUser(workflowLog.getUserId())));
+				setPreviousPerson(
+					() -> CreatorUtil.toCreator(
+						_portal,
+						_userLocalService.fetchUser(
+							workflowLog.getPreviousUserId())));
+				setPreviousRole(() -> _toRole(workflowLog.getPreviousRoleId()));
+				setPreviousState(workflowLog::getPreviousWorkflowNodeName);
+				setPreviousStateLabel(
+					() -> workflowLog.getPreviousWorkflowNodeLabel(
+						contextAcceptLanguage.getPreferredLocale()));
+				setRole(() -> _toRole(workflowLog.getRoleId()));
+				setState(workflowLog::getCurrentWorkflowNodeName);
+				setStateLabel(
+					() -> workflowLog.getCurrentWorkflowNodeLabel(
+						contextAcceptLanguage.getPreferredLocale()));
+				setType(
+					() -> _toWorkflowLogType(
+						KaleoLogUtil.convert(workflowLog.getType())));
+				setWorkflowTaskId(workflowLog::getWorkflowTaskId);
 			}
 		};
 	}
 
 	private WorkflowLog.Type _toWorkflowLogType(String type) {
-		if (Objects.equals(type, LogType.NODE_ENTRY.name())) {
+		if (Objects.equals(type, LogType.INSTANCE_FAIL.name())) {
+			return WorkflowLog.Type.INSTANCE_FAIL;
+		}
+		else if (Objects.equals(type, LogType.NODE_ENTRY.name())) {
 			return WorkflowLog.Type.NODE_ENTRY;
 		}
 		else if (Objects.equals(type, LogType.NODE_EXIT.name())) {
@@ -199,7 +262,20 @@ public class WorkflowLogResourceImpl extends BaseWorkflowLogResourceImpl {
 	}
 
 	@Reference
+	private KaleoInstanceLocalService _kaleoInstanceLocalService;
+
+	@Reference(
+		target = "(model.class.name=com.liferay.portal.workflow.kaleo.model.KaleoInstance)"
+	)
+	private ModelResourcePermission<KaleoInstance>
+		_kaleoInstanceModelResourcePermission;
+
+	@Reference
 	private KaleoLogLocalService _kaleoLogLocalService;
+
+	@Reference
+	private KaleoTaskInstanceTokenLocalService
+		_kaleoTaskInstanceTokenLocalService;
 
 	@Reference
 	private KaleoWorkflowModelConverter _kaleoWorkflowModelConverter;

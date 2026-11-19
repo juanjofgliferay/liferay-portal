@@ -17,12 +17,10 @@ export default function PublishButton() {
 	const [openPublishModal, setOpenPublishModal] = useState(false);
 	const [openStyleErrorsModal, setOpenStyleErrorsModal] = useState(false);
 
-	const {
-		observer: observerPublishModal,
-		onClose: onClosePublishModal,
-	} = useModal({
-		onClose: () => setOpenPublishModal(false),
-	});
+	const {observer: observerPublishModal, onClose: onClosePublishModal} =
+		useModal({
+			onClose: () => setOpenPublishModal(false),
+		});
 
 	const handleSubmit = () => {
 		if (formRef.current) {
@@ -77,7 +75,9 @@ export default function PublishButton() {
 					observer={observerPublishModal}
 					status="info"
 				>
-					<ClayModal.Header>
+					<ClayModal.Header
+						closeButtonAriaLabel={Liferay.Language.get('close')}
+					>
 						{Liferay.Language.get('publishing-info')}
 					</ClayModal.Header>
 

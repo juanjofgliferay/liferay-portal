@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -348,16 +349,6 @@ public class BookmarksFolderLocalServiceUtil {
 		return getService().getBookmarksFoldersCount();
 	}
 
-	public static List<BookmarksFolder> getCompanyFolders(
-		long companyId, int start, int end) {
-
-		return getService().getCompanyFolders(companyId, start, end);
-	}
-
-	public static int getCompanyFoldersCount(long companyId) {
-		return getService().getCompanyFoldersCount(companyId);
-	}
-
 	public static com.liferay.portal.kernel.dao.orm.ExportActionableDynamicQuery
 		getExportActionableDynamicQuery(
 			com.liferay.exportimport.kernel.lar.PortletDataContext
@@ -405,13 +396,6 @@ public class BookmarksFolderLocalServiceUtil {
 		long groupId, long folderId, int status) {
 
 		return getService().getFoldersAndEntries(groupId, folderId, status);
-	}
-
-	public static List<Object> getFoldersAndEntries(
-		long groupId, long folderId, int status, int start, int end) {
-
-		return getService().getFoldersAndEntries(
-			groupId, folderId, status, start, end);
 	}
 
 	public static List<Object> getFoldersAndEntries(
@@ -578,13 +562,13 @@ public class BookmarksFolderLocalServiceUtil {
 	}
 
 	public static BookmarksFolderLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(BookmarksFolderLocalService service) {
-		_service = service;
-	}
-
-	private static volatile BookmarksFolderLocalService _service;
+	private static final Snapshot<BookmarksFolderLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			BookmarksFolderLocalServiceUtil.class,
+			BookmarksFolderLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1722610429

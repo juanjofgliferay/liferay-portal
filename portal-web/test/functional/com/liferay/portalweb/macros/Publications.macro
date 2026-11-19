@@ -133,15 +133,12 @@ definition {
 		PublicationsNavigator.openPublicationsSettings();
 
 		Uncheck.uncheckToggleSwitch(locator1 = "Publications#ENABLE_MANAGE_REMOTELY");
-
-		Click(locator1 = "Button#SAVE");
 	}
 
 	@summary = "Default summary"
 	macro disablePublications(gotoInstancesettings = null) {
 		if (${gotoInstancesettings} == "true") {
-			ApplicationsMenu.gotoPortlet(
-				category = "Configuration",
+			ApplicationsMenu.gotoRootPortlet(
 				panel = "Control Panel",
 				portlet = "Instance Settings");
 
@@ -160,7 +157,7 @@ definition {
 		}
 		else {
 			ApplicationsMenu.gotoPortlet(
-				category = "Publications",
+				category = "In Maintenance",
 				panel = "Applications",
 				portlet = "Publications");
 
@@ -169,8 +166,6 @@ definition {
 			MenuItem.click(menuItem = "Settings");
 
 			Uncheck.uncheckToggleSwitch(locator1 = "Publications#ENABLE_PUBLICATIONS_TOGGLE_SWITCH");
-
-			Click(locator1 = "Button#SAVE");
 		}
 	}
 
@@ -186,8 +181,6 @@ definition {
 		PublicationsNavigator.openPublicationsSettings();
 
 		Check.checkToggleSwitch(locator1 = "Publications#ENABLE_ALLOW_UNAPPROVED_CHANGES");
-
-		Click(locator1 = "Button#SAVE");
 	}
 
 	@summary = "Default summary"
@@ -195,15 +188,12 @@ definition {
 		PublicationsNavigator.openPublicationsSettings();
 
 		Check.checkToggleSwitch(locator1 = "Publications#ENABLE_MANAGE_REMOTELY");
-
-		Click(locator1 = "Button#SAVE");
 	}
 
 	@summary = "Default summary"
 	macro enablePublications(gotoInstancesettings = null, enableSandboxOnly = null) {
 		if (${gotoInstancesettings} == "true") {
-			ApplicationsMenu.gotoPortlet(
-				category = "Configuration",
+			ApplicationsMenu.gotoRootPortlet(
 				panel = "Control Panel",
 				portlet = "Instance Settings");
 
@@ -218,25 +208,27 @@ definition {
 				FormFields.enableCheckbox(fieldName = "Sandbox Enabled");
 			}
 
-			AssertClick(
-				locator1 = "Button#SAVE",
-				value1 = "Save");
+			if (IsElementPresent(locator1 = "Button#SAVE")) {
+				AssertClick(
+					locator1 = "Button#SAVE",
+					value1 = "Save");
+			}
+			else {
+				AssertClick(
+					locator1 = "Button#UPDATE",
+					value1 = "Update");
+			}
 
 			Alert.viewSuccessMessage();
 		}
 		else {
-			ApplicationsMenu.gotoPortlet(
-				category = "Publications",
-				panel = "Applications",
-				portlet = "Publications");
+			PublicationsNavigator.openPublicationsSettings();
 
 			Check.checkToggleSwitch(locator1 = "Publications#ENABLE_PUBLICATIONS_TOGGLE_SWITCH");
 
 			if (${enableSandboxOnly} == "true") {
 				Check.checkToggleSwitch(locator1 = "Publications#ENABLE_SANDBOX_ONLY_TOGGLE_SWITCH");
 			}
-
-			Click(locator1 = "Button#SAVE");
 		}
 	}
 
@@ -254,15 +246,11 @@ definition {
 		PublicationsNavigator.openPublicationsSettings();
 
 		Check.checkToggleSwitch(locator1 = "Publications#ENABLE_SANDBOX_ONLY_TOGGLE_SWITCH");
-
-		Click(locator1 = "Button#SAVE");
 	}
 
 	@summary = "Default summary"
 	macro filterPublishedPublication(Exclude = null, statusList = null) {
-		Click(
-			key_name = "Filter",
-			locator1 = "PublicationsChanges#SORT_BUTTON");
+		Click(locator1 = "PublicationsChanges#FILTER_BUTTON");
 
 		Click(locator1 = "Publications#FILTER_STATUS_BUTTON");
 
@@ -281,10 +269,9 @@ definition {
 
 	@summary = "Default summary"
 	macro generateSandboxedPublicationName(userScreenName = null) {
-		var sandboxTime = DateUtil.getFormattedCurrentDate("h:mm", "UTC");
 		var sandboxDate = DateUtil.getFormattedCurrentDate("M/d/yy", "UTC");
 
-		var sandboxedPublicationName = "${userScreenName} - ${sandboxDate} ${sandboxTime}";
+		var sandboxedPublicationName = "${userScreenName} - ${sandboxDate}";
 
 		return ${sandboxedPublicationName};
 	}
@@ -315,6 +302,8 @@ definition {
 			PublicationsNavigator.gotoPublicationEllipsisItem(
 				menuItem = "Review Changes",
 				publicationName = ${publicationName});
+
+			WaitForElementPresent(locator1 = "PublicationsChanges#INVITE_USERS_ICON");
 
 			Click.javaScriptClick(locator1 = "PublicationsChanges#INVITE_USERS_ICON");
 		}
@@ -377,8 +366,6 @@ definition {
 			WaitForElementPresent(
 				locator1 = "Publications#PUBLISHED_STATUS",
 				value1 = "Published");
-
-			Refresh();
 		}
 
 		AssertTextEquals(
@@ -466,13 +453,13 @@ definition {
 		var publishTimeHours = Time.getUTCHours();
 		var publishTimeMinutes = Time.getUTCMinutes();
 
-		if (${utcMinutes} == 58) {
+		if (${publishTimeMinutes} == 58) {
 			var publishTimeHours = ${publishTimeHours} + 1;
-			var publishTimeMinutes = 00;
+			var publishTimeMinutes = 0;
 		}
-		else if (${utcMinutes} == 59) {
+		else if (${publishTimeMinutes} == 59) {
 			var publishTimeHours = ${publishTimeHours} + 1;
-			var publishTimeMinutes = 01;
+			var publishTimeMinutes = 1;
 		}
 		else {
 			var publishTimeMinutes = ${publishTimeMinutes} + 2;
@@ -609,20 +596,6 @@ definition {
 			locator1 = "Publications#CONFLICTING_CHANGES_WARNING_CONTENT");
 
 		AssertVisible(locator1 = "Publications#DISABLED_PUBLISH_BUTTON");
-	}
-
-	@summary = "Default summary"
-	macro viewPublicationOrderInHistory(publicationList = null) {
-		var resultOrder = 0;
-
-		for (var publicationName : list ${publicationList}) {
-			var resultOrder = ${resultOrder} + 1;
-
-			AssertTextEquals.assertPartialText(
-				locator1 = "Publications#PUBLICATION_ORDER_IN_HISTORY",
-				resultOrder = ${resultOrder},
-				value1 = ${publicationName});
-		}
 	}
 
 	@summary = "Default summary"

@@ -56,11 +56,13 @@ public class ExceptionVariableNameCheck extends VariableNameCheck {
 					expectedName += String.valueOf(counter);
 				}
 
-				if (!name.equals(expectedName)) {
-					log(
-						exceptionDefinition.getLineNumber(),
-						MSG_RENAME_VARIABLE, name, expectedName);
+				if (name.equals(expectedName)) {
+					continue;
 				}
+
+				log(
+					exceptionDefinition.getLineNumber(), MSG_RENAME_VARIABLE,
+					name, expectedName);
 			}
 		}
 	}
@@ -133,12 +135,10 @@ public class ExceptionVariableNameCheck extends VariableNameCheck {
 		Map<String, Set<ExceptionDefinition>> exceptionDefinitionsMap =
 			new HashMap<>();
 
-		List<DetailAST> definitionDetailASTList =
-			DetailASTUtil.getAllChildTokens(
-				detailAST, true, TokenTypes.PARAMETER_DEF,
-				TokenTypes.VARIABLE_DEF);
+		List<DetailAST> definitionDetailASTs = DetailASTUtil.getAllChildTokens(
+			detailAST, true, TokenTypes.PARAMETER_DEF, TokenTypes.VARIABLE_DEF);
 
-		for (DetailAST definitionDetailAST : definitionDetailASTList) {
+		for (DetailAST definitionDetailAST : definitionDetailASTs) {
 			DetailAST parentDetailAST = definitionDetailAST.getParent();
 
 			if (parentDetailAST.getType() == TokenTypes.OBJBLOCK) {
@@ -189,20 +189,16 @@ public class ExceptionVariableNameCheck extends VariableNameCheck {
 
 		DetailAST parentDetailAST = definitionDetailAST.getParent();
 
-		if (parentDetailAST.getType() == TokenTypes.LITERAL_CATCH) {
-			DetailAST firstChildDetailAST = typeDetailAST.getFirstChild();
+		if ((parentDetailAST.getType() == TokenTypes.LITERAL_CATCH) &&
+			(typeDetailAST.findFirstToken(TokenTypes.BOR) != null)) {
 
-			if ((firstChildDetailAST != null) &&
-				(firstChildDetailAST.getType() == TokenTypes.BOR)) {
-
-				for (String name : getNames(firstChildDetailAST, true)) {
-					if (name.endsWith("Exception")) {
-						return "Exception";
-					}
+			for (String name : getNames(typeDetailAST, true)) {
+				if (name.endsWith("Exception")) {
+					return "Exception";
 				}
-
-				return null;
 			}
+
+			return null;
 		}
 
 		String exceptionTypeName = getTypeName(typeDetailAST, false);

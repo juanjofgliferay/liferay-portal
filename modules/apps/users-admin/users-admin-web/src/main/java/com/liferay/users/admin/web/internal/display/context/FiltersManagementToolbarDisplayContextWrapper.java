@@ -18,12 +18,13 @@ import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.users.admin.management.toolbar.FilterContributor;
+import com.liferay.users.admin.web.internal.util.UsersAdminPortletURLUtil;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Drew Brokke
@@ -78,7 +79,9 @@ public class FiltersManagementToolbarDisplayContextWrapper
 
 					dropdownGroupItem.setDropdownItems(
 						getDropdownItems(
-							entriesMap, getPortletURL(),
+							entriesMap,
+							UsersAdminPortletURLUtil.removeSelectionParameters(
+								getPortletURL()),
 							filterContributor.getParameter(),
 							_getCurrentValue(
 								httpServletRequest, filterContributor)));
@@ -100,30 +103,31 @@ public class FiltersManagementToolbarDisplayContextWrapper
 			String currentValue = _getCurrentValue(
 				httpServletRequest, filterContributor);
 
-			if (ArrayUtil.contains(
+			if (!ArrayUtil.contains(
 					filterContributor.getFilterLabelValues(), currentValue)) {
 
-				filterLabelItems.add(
-					labelItem -> {
-						labelItem.putData(
-							"removeLabelURL",
-							PortletURLBuilder.create(
-								getPortletURL()
-							).setParameter(
-								filterContributor.getParameter(), (String)null
-							).buildString());
-
-						labelItem.setCloseable(true);
-						labelItem.setLabel(
-							String.format(
-								"%s: %s",
-								filterContributor.getShortLabel(
-									httpServletRequest.getLocale()),
-								filterContributor.getValueLabel(
-									httpServletRequest.getLocale(),
-									currentValue)));
-					});
+				continue;
 			}
+
+			filterLabelItems.add(
+				labelItem -> {
+					labelItem.putData(
+						"removeLabelURL",
+						PortletURLBuilder.create(
+							getPortletURL()
+						).setParameter(
+							filterContributor.getParameter(), (String)null
+						).buildString());
+
+					labelItem.setDismissible(true);
+					labelItem.setLabel(
+						String.format(
+							"%s: %s",
+							filterContributor.getShortLabel(
+								httpServletRequest.getLocale()),
+							filterContributor.getValueLabel(
+								httpServletRequest.getLocale(), currentValue)));
+				});
 		}
 
 		return filterLabelItems;
@@ -133,9 +137,10 @@ public class FiltersManagementToolbarDisplayContextWrapper
 		HttpServletRequest httpServletRequest,
 		FilterContributor filterContributor) {
 
-		return ParamUtil.getString(
-			httpServletRequest, filterContributor.getParameter(),
-			filterContributor.getDefaultValue());
+		return filterContributor.getCurrentValue(
+			ParamUtil.getString(
+				httpServletRequest, filterContributor.getParameter(),
+				filterContributor.getDefaultValue()));
 	}
 
 	private final FilterContributor[] _filterContributors;

@@ -5,23 +5,59 @@
 
 package com.liferay.taglib.aui.base;
 
-import javax.servlet.jsp.JspException;
+import com.liferay.taglib.util.PositionTagSupport;
+
+import jakarta.servlet.jsp.JspException;
 
 /**
  * @author Eduardo Lundgren
  * @author Bruno Basto
  * @author Nathan Cavanaugh
  * @author Julio Camarero
- * @generated
  */
-public abstract class BaseScriptTag extends com.liferay.taglib.util.PositionTagSupport {
+public abstract class BaseScriptTag extends PositionTagSupport {
 
-	@Override
 	public int doStartTag() throws JspException {
 		return super.doStartTag();
 	}
 
-	public java.lang.String getRequire() {
+	public boolean getAsync() {
+		return _async;
+	}
+
+	public String getBlocking() {
+		return _blocking;
+	}
+
+	public String getCrossOrigin() {
+		return _crossOrigin;
+	}
+
+	public boolean getDefer() {
+		return _defer;
+	}
+
+	public String getFetchPriority() {
+		return _fetchPriority;
+	}
+
+	public boolean getHashedFile() {
+		return _hashedFile;
+	}
+
+	public String getId() {
+		return _id;
+	}
+
+	public String getIntegrity() {
+		return _integrity;
+	}
+
+	public String getReferrerPolicy() {
+		return _referrerPolicy;
+	}
+
+	public String getRequire() {
 		return _require;
 	}
 
@@ -29,11 +65,59 @@ public abstract class BaseScriptTag extends com.liferay.taglib.util.PositionTagS
 		return _sandbox;
 	}
 
-	public java.lang.String getUse() {
+	public String getSenna() {
+		return _senna;
+	}
+
+	public String getSrc() {
+		return _src;
+	}
+
+	public String getType() {
+		return _type;
+	}
+
+	public String getUse() {
 		return _use;
 	}
 
-	public void setRequire(java.lang.String require) {
+	public void setAsync(boolean async) {
+		_async = async;
+	}
+
+	public void setBlocking(String blocking) {
+		_blocking = blocking;
+	}
+
+	public void setCrossOrigin(String crossOrigin) {
+		_crossOrigin = crossOrigin;
+	}
+
+	public void setDefer(boolean defer) {
+		_defer = defer;
+	}
+
+	public void setFetchPriority(String fetchPriority) {
+		_fetchPriority = fetchPriority;
+	}
+
+	public void setHashedFile(boolean hashedFile) {
+		_hashedFile = hashedFile;
+	}
+
+	public void setId(String id) {
+		_id = id;
+	}
+
+	public void setIntegrity(String integrity) {
+		_integrity = integrity;
+	}
+
+	public void setReferrerPolicy(String referrerPolicy) {
+		_referrerPolicy = referrerPolicy;
+	}
+
+	public void setRequire(String require) {
 		_require = require;
 	}
 
@@ -41,7 +125,19 @@ public abstract class BaseScriptTag extends com.liferay.taglib.util.PositionTagS
 		_sandbox = sandbox;
 	}
 
-	public void setUse(java.lang.String use) {
+	public void setSenna(String senna) {
+		_senna = senna;
+	}
+
+	public void setSrc(String src) {
+		_src = src;
+	}
+
+	public void setType(String type) {
+		_type = type;
+	}
+
+	public void setUse(String use) {
 		_use = use;
 	}
 
@@ -49,8 +145,20 @@ public abstract class BaseScriptTag extends com.liferay.taglib.util.PositionTagS
 	protected void cleanUp() {
 		super.cleanUp();
 
+		_async = false;
+		_blocking = null;
+		_crossOrigin = null;
+		_defer = false;
+		_fetchPriority = null;
+		_hashedFile = false;
+		_id = null;
+		_integrity = null;
+		_referrerPolicy = null;
 		_require = null;
 		_sandbox = false;
+		_senna = null;
+		_src = null;
+		_type = null;
 		_use = null;
 	}
 
@@ -58,11 +166,22 @@ public abstract class BaseScriptTag extends com.liferay.taglib.util.PositionTagS
 		return _PAGE;
 	}
 
-	private static final String _PAGE =
-		"/html/taglib/aui/script/page.jsp";
+	private static final String _PAGE = "/html/taglib/aui/script/page.jsp";
 
-	private java.lang.String _require = null;
-	private boolean _sandbox = false;
-	private java.lang.String _use = null;
+	private boolean _async;
+	private String _blocking;
+	private String _crossOrigin;
+	private boolean _defer;
+	private String _fetchPriority;
+	private boolean _hashedFile;
+	private String _id;
+	private String _integrity;
+	private String _referrerPolicy;
+	private String _require;
+	private boolean _sandbox;
+	private String _senna;
+	private String _src;
+	private String _type;
+	private String _use;
 
 }

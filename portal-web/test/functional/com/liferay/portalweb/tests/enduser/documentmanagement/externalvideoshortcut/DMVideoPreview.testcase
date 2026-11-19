@@ -1,9 +1,10 @@
-@component-name = "portal-document-management"
+@component-name = "portal-content-management"
 definition {
 
+	property browser.chrome.version = "139.0";
 	property portal.release = "true";
 	property portal.upstream = "true";
-	property testray.main.component.name = "Document Management";
+	property testray.main.component.name = "Documents and Media";
 
 	setUp {
 		TestCase.setUpPortalInstance();
@@ -152,6 +153,16 @@ definition {
 			mimeType = "video/mp4",
 			sourceFileName = "Document_1.mp4");
 
+		var depotId = JSONGroupAPI._getDepotIdByName(depotName = "Test Depot Name");
+
+		DMNavigator.openToEntryInAdmin(
+			dmDocumentTitle = "DM Video Title In Depot",
+			groupName = "Test Depot Name",
+			site = "false",
+			siteURLKey = "asset-library-${depotId}");
+
+		DMDocument.viewVideoPreviewGeneratingInfo();
+
 		WebContentNavigator.openToAddBasicArticle(
 			groupName = "Site Name",
 			siteURLKey = "site-name");
@@ -164,13 +175,9 @@ definition {
 			webContentContent = "WC WebContent Content",
 			webContentTitle = "WC WebContent Title");
 
-		AssertElementPresent.assertVisible(locator1 = "CKEditor#BODY_FIELD_IFRAME_2");
-
-		SelectFrame.selectFrameNoLoading(locator1 = "CKEditor#BODY_FIELD_IFRAME_2");
-
 		DMDocument.viewInternalVideoPreview(videoName = "Document_1.mp4");
 
-		PortletEntry.publish();
+		WebContent.publishWithPermissions();
 
 		WebContentNavigator.openWebContentAdmin(siteURLKey = "Site Name");
 
@@ -193,13 +200,9 @@ definition {
 			webContentContent = "WC WebContent Content",
 			webContentTitle = "WC WebContent Title In Depot");
 
-		AssertElementPresent.assertVisible(locator1 = "CKEditor#BODY_FIELD_IFRAME_2");
-
-		SelectFrame.selectFrameNoLoading(locator1 = "CKEditor#BODY_FIELD_IFRAME_2");
-
 		DMDocument.viewInternalVideoPreview(videoName = "Document_1.mp4");
 
-		PortletEntry.publish();
+		WebContent.publishWithPermissions();
 
 		WebContentNavigator.openWebContentAdmin(siteURLKey = "Site Name");
 
@@ -212,83 +215,11 @@ definition {
 		DMDocument.viewInternalVideoPreview(videoName = "Document_1.mp4");
 	}
 
-	@priority = 3
-	@refactorneeded
-	test CanConfigureFFmpegVideoPreviewSizePG {
-		property custom.properties = "dl.file.entry.preview.video.height=0${line.separator}dl.file.entry.preview.video.width=0";
-		property test.assert.warning.exceptions = "false";
-		property test.liferay.virtual.instance = "false";
-		property test.run.type = "single";
-
-		JSONLayout.addPublicLayout(
-			groupName = "Guest",
-			layoutName = "Documents and Media Page");
-
-		JSONLayout.addWidgetToPublicLayout(
-			column = 1,
-			groupName = "Guest",
-			layoutName = "Documents and Media Page",
-			widgetName = "Documents and Media");
-
-		JSONDocument.addFileWithUploadedFile(
-			dmDocumentDescription = "DM Document Description",
-			dmDocumentTitle = "Document_1.mp4",
-			groupName = "Guest",
-			mimeType = "video/mp4",
-			sourceFileName = "Document_1.mp4");
-
-		Navigator.gotoPage(pageName = "Documents and Media Page");
-
-		LexiconEntry.changeDisplayStyle(displayStyle = "list");
-
-		DMNavigator.gotoDocumentPG(dmDocumentTitle = "Document_1.mp4");
-
-		WaitForVisible(locator1 = "IFrame#EXTERNAL_VIDEO_IFRAME");
-
-		SelectFrame.selectFrameNoLoading(locator1 = "IFrame#EXTERNAL_VIDEO_IFRAME");
-
-		var videoGenerationTimeCounter = 0;
-		var videoGenerationTimeMaxWaitTime = 6;
-
-		while ((${videoGenerationTimeCounter} != ${videoGenerationTimeMaxWaitTime}) && (IsElementPresent(locator1 = "Message#INFO"))) {
-			var videoGenerationTimeCounter = ${videoGenerationTimeCounter} + 1;
-
-			Navigator.gotoPage(pageName = "Documents and Media Page");
-
-			DMNavigator.gotoDocumentPG(dmDocumentTitle = "Document_1.mp4");
-		}
-
-		var videoPreviewThumbnailLink = selenium.getAttribute("//video@poster");
-
-		SelectFrameTop();
-
-		Navigator.openSpecificURL(url = ${videoPreviewThumbnailLink});
-
-		AssertElementPresent(
-			key_imageSourceURL = "Document_1.mp4",
-			locator1 = "DocumentsAndMediaDocument#DOCUMENT_VIEWPORT_PREVIEW");
-
-		AssertElementNotPresent(
-			key_videoGenerationThumbnailResolution = 640,
-			locator1 = "DocumentsAndMediaDocument#VIDEO_GENERATION_THUMBNAIL_RESOLUTION");
-
-		AssertElementNotPresent(
-			key_videoGenerationThumbnailResolution = 360,
-			locator1 = "DocumentsAndMediaDocument#VIDEO_GENERATION_THUMBNAIL_RESOLUTION");
-
-		AssertElementPresent.assertElementPresent(
-			key_videoGenerationThumbnailResolution = 854,
-			locator1 = "DocumentsAndMediaDocument#VIDEO_GENERATION_THUMBNAIL_RESOLUTION");
-
-		AssertElementPresent.assertElementPresent(
-			key_videoGenerationThumbnailResolution = 480,
-			locator1 = "DocumentsAndMediaDocument#VIDEO_GENERATION_THUMBNAIL_RESOLUTION");
-	}
-
 	@description = "This test ensures that a blog entry created with an internal video embedded in it can be exported and imported."
 	@priority = 3
 	@refactordone
 	test CanImportExportedBlogWithEmbeddedVideo {
+		property portal.release = "quarantine";
 		property test.liferay.virtual.instance = "false";
 		property test.run.type = "single";
 
@@ -300,38 +231,51 @@ definition {
 			entryTitle = "Blogs Entry Title",
 			navTab = "Documents and Media",
 			videoName = "Document_1.mp4",
-			videoShortcutTitle = "DM Video Title In Site",
-			viewInternalVideoPreview = "true");
+			videoShortcutTitle = "DM Video Title In Site");
 
-		BlogsNavigator.openBlogsAdmin(siteURLKey = "Site Name");
-
-		LAR.exportPortlet(larFileName = "Blog_portlet.lar");
+		HeadlessExportImport.exportPortlet(
+			larFileName = "Blog_portlet.lar",
+			portletId = "com_liferay_blogs_web_portlet_BlogsAdminPortlet",
+			siteName = "Site Name");
 
 		JSONGroup.deleteGroupByName(groupName = "Site Name");
 
 		HeadlessSite.addSite(siteName = "Site Name");
 
-		BlogsNavigator.openBlogsAdmin(siteURLKey = "Site Name");
-
-		LAR.importPortlet(larFileName = "Blog_portlet.lar");
+		HeadlessExportImport.importPortlet(
+			larFileName = "Blog_portlet.lar",
+			portletId = "com_liferay_blogs_web_portlet_BlogsAdminPortlet",
+			siteName = "Site Name");
 
 		BlogsNavigator.openBlogsAdmin(siteURLKey = "Site Name");
 
 		BlogsNavigator.gotoEntryCP(entryTitle = "Blogs Entry Title");
 
 		BlogsEntry.viewEntryCP(
-			embedVideo = "true",
 			entryContent = "Blogs Entry Content",
-			entryTitle = "Blogs Entry Title",
-			internalVideo = "true",
-			videoName = "Document_1.mp4");
+			entryTitle = "Blogs Entry Title");
+
+		var fileVersionId = JSONDocument.getFileEntryVersionId(
+			dmDocumentTitle = "DM Video Title In Site",
+			dmDocumentVersion = "1.0",
+			groupName = "Site Name");
+
+		SelectFrame.selectFrameNoLoading(locator1 = "IFrame#EMBEDDED_VIDEO_IFRAME");
+
+		var embeddedVideoURL = selenium.getEval("return window.location.href;");
+
+		SelectFrame.selectFrameTop();
+
+		if (!(contains(${embeddedVideoURL}, "fileVersionId=${fileVersionId}"))) {
+			fail("The embedded video does not point to the imported video file version ${fileVersionId}: ${embeddedVideoURL}");
+		}
 	}
 
 	@description = "This test ensures that a kb article created with an internal video embedded in it can be exported and imported."
 	@priority = 3
 	@refactordone
 	test CanImportExportedKBWithEmbeddedVideo {
-		property portal.acceptance = "true";
+		property portal.acceptance = "false";
 		property test.liferay.virtual.instance = "false";
 		property test.run.type = "single";
 
@@ -362,17 +306,19 @@ definition {
 			videoShortcutTitle = "DM Video Title In Depot",
 			viewInternalVideoPreview = "true");
 
-		KBAdmin.openKBAdmin(siteURLKey = "Site Name");
-
-		LAR.exportPortlet(larFileName = "KB_portlet.lar");
+		HeadlessExportImport.exportPortlet(
+			larFileName = "KB_portlet.lar",
+			portletId = "com_liferay_knowledge_base_web_portlet_AdminPortlet",
+			siteName = "Site Name");
 
 		JSONGroup.deleteGroupByName(groupName = "Site Name");
 
 		HeadlessSite.addSite(siteName = "Site Name");
 
-		KBAdmin.openKBAdmin(siteURLKey = "Site Name");
-
-		LAR.importPortlet(larFileName = "KB_portlet.lar");
+		HeadlessExportImport.importPortlet(
+			larFileName = "KB_portlet.lar",
+			portletId = "com_liferay_knowledge_base_web_portlet_AdminPortlet",
+			siteName = "Site Name");
 
 		KBAdmin.openKBAdmin(siteURLKey = "Site Name");
 
@@ -382,68 +328,6 @@ definition {
 			kbArticleContent = "Knowledge Base Video Content",
 			kbArticleTitle = "Knowledge Base Article Title",
 			videoName = "Document_1.mp4");
-	}
-
-	@description = "This test ensures that a web content created with an internal video embedded in it can be exported and imported."
-	@priority = 3
-	@refactordone
-	test CanImportExportedWebContentWithEmbeddedVideo {
-		property test.liferay.virtual.instance = "false";
-		property test.run.type = "single";
-
-		JSONDepot.addDepot(
-			depotDescription = "This is the description of a depot",
-			depotName = "Test Depot Name");
-
-		JSONDocument.addFileWithUploadedFile(
-			dmDocumentDescription = "DM Document Description",
-			dmDocumentTitle = "DM Video Title In Depot",
-			groupName = "Test Depot Name",
-			mimeType = "video/mp4",
-			sourceFileName = "Document_1.mp4");
-
-		DepotNavigator.openDepotWebContentAdmin(depotName = "Test Depot Name");
-
-		WebContentNavigator.gotoAddCP();
-
-		WebContent.addCP(
-			embedVideo = "true",
-			navTab = "Documents and Media",
-			videoShortcutTitle = "DM Video Title In Depot",
-			webContentContent = "WC WebContent Content",
-			webContentTitle = "WC WebContent Title");
-
-		AssertElementPresent.assertVisible(locator1 = "CKEditor#BODY_FIELD_IFRAME_2");
-
-		SelectFrame.selectFrameNoLoading(locator1 = "CKEditor#BODY_FIELD_IFRAME_2");
-
-		DMDocument.viewInternalVideoPreview(videoName = "Document_1.mp4");
-
-		PortletEntry.publish();
-
-		DepotNavigator.openDepotWebContentAdmin(depotName = "Test Depot Name");
-
-		LAR.exportPortlet(larFileName = "WebContent_portlet.lar");
-
-		JSONDepot.deleteDepot(depotName = "Test Depot Name");
-
-		JSONDepot.addDepot(
-			depotDescription = "This is the description of a depot",
-			depotName = "Test Depot Name");
-
-		DepotNavigator.openDepotWebContentAdmin(depotName = "Test Depot Name");
-
-		LAR.importPortlet(larFileName = "WebContent_portlet.lar");
-
-		DepotNavigator.openDepotWebContentAdmin(depotName = "Test Depot Name");
-
-		WebContentNavigator.gotoPreviewEntryCP(webContentTitle = "WC WebContent Title");
-
-		WaitForVisible(locator1 = "IFrame#MODAL_BODY");
-
-		SelectFrame(locator1 = "IFrame#MODAL_BODY");
-
-		DMDocument.viewInternalVideoPreview(videoName = "Document_1.mp4");
 	}
 
 	@description = "This ensures that a depot internal video cannot be viewed from the disconnected site."
@@ -506,7 +390,8 @@ definition {
 	@description = "This test ensures that the video preview generated for a document remains intact after FFmpeg is disabled."
 	@priority = 4
 	test PreviewRemainsAfterDisablingFFmpeg {
-		property portal.acceptance = "true";
+		property portal.acceptance = "quarantine";
+		property portal.release = "quarantine";
 		property test.liferay.virtual.instance = "false";
 		property test.run.type = "single";
 

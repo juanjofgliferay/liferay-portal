@@ -6,6 +6,7 @@
 package com.liferay.document.library.web.internal.info.item.provider;
 
 import com.liferay.asset.info.item.provider.AssetEntryInfoItemFieldSetProvider;
+import com.liferay.document.library.helper.DLURLHelper;
 import com.liferay.document.library.kernel.model.DLFileEntry;
 import com.liferay.document.library.kernel.model.DLFileEntryConstants;
 import com.liferay.document.library.kernel.model.DLFileEntryMetadata;
@@ -14,7 +15,6 @@ import com.liferay.document.library.kernel.model.DLFileVersion;
 import com.liferay.document.library.kernel.service.DLFileEntryMetadataLocalService;
 import com.liferay.document.library.kernel.service.DLFileEntryTypeLocalService;
 import com.liferay.document.library.util.DLFileEntryTypeUtil;
-import com.liferay.document.library.util.DLURLHelper;
 import com.liferay.document.library.web.internal.info.item.FileEntryInfoItemFields;
 import com.liferay.dynamic.data.mapping.info.item.provider.DDMFormValuesInfoFieldValuesProvider;
 import com.liferay.dynamic.data.mapping.model.DDMStructure;
@@ -91,7 +91,7 @@ public class FileEntryInfoItemFieldValuesProvider
 				"Caught unexpected exception", portalException);
 		}
 		catch (Exception exception) {
-			throw new RuntimeException("Unexpected exception", exception);
+			throw new RuntimeException(exception);
 		}
 	}
 
@@ -103,7 +103,8 @@ public class FileEntryInfoItemFieldValuesProvider
 			DLFileEntry dlFileEntry = (DLFileEntry)fileEntry.getModel();
 
 			return _assetEntryInfoItemFieldSetProvider.getInfoFieldValues(
-				DLFileEntry.class.getName(), dlFileEntry.getFileEntryId());
+				dlFileEntry.getCompanyId(), DLFileEntry.class.getName(),
+				dlFileEntry.getFileEntryId());
 		}
 
 		return Collections.emptyList();
@@ -167,7 +168,7 @@ public class FileEntryInfoItemFieldValuesProvider
 				new InfoItemReference(
 					FileEntry.class.getName(), fileEntry.getFileEntryId()),
 				String.valueOf(dlFileEntry.getFileEntryTypeId()),
-				FileEntry.class.getSimpleName(), _getThemeDisplay());
+				FileEntry.class.getSimpleName(), fileEntry, _getThemeDisplay());
 		}
 
 		return Collections.emptyList();
@@ -213,7 +214,7 @@ public class FileEntryInfoItemFieldValuesProvider
 			if (mimeType.startsWith("image")) {
 				WebImage fileURLWebImage = new WebImage(
 					_dlURLHelper.getDownloadURL(
-						fileEntry, fileEntry.getFileVersion(), null,
+						fileEntry, fileEntry.getFileVersion(), themeDisplay,
 						StringPool.BLANK),
 					new InfoItemReference(
 						FileEntry.class.getName(),
@@ -280,7 +281,8 @@ public class FileEntryInfoItemFieldValuesProvider
 					fileEntry.getModifiedDate()));
 
 			String downloadURL = _dlURLHelper.getDownloadURL(
-				fileEntry, fileEntry.getFileVersion(), null, StringPool.BLANK);
+				fileEntry, fileEntry.getFileVersion(), themeDisplay,
+				StringPool.BLANK);
 
 			if (Validator.isNotNull(downloadURL)) {
 				fileEntryFieldValues.add(
@@ -301,7 +303,7 @@ public class FileEntryInfoItemFieldValuesProvider
 			}
 
 			WebImage imagePreviewURLWebImage = new WebImage(
-				_dlURLHelper.getImagePreviewURL(fileEntry, null),
+				_dlURLHelper.getImagePreviewURL(fileEntry, themeDisplay),
 				new InfoItemReference(
 					FileEntry.class.getName(),
 					new ClassPKInfoItemIdentifier(fileEntry.getFileEntryId())));

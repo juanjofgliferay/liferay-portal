@@ -92,7 +92,7 @@ public class TrafficChannelTest {
 			).put(
 				"share", String.format("%.1f", trafficChannel.getTrafficShare())
 			).put(
-				"title", String.valueOf(trafficChannel.getType())
+				"title", "direct[traffic-channel]"
 			).put(
 				"value", Math.toIntExact(trafficChannel.getTrafficAmount())
 			).toString(),
@@ -116,7 +116,7 @@ public class TrafficChannelTest {
 			).put(
 				"name", TrafficChannel.Type.DIRECT.toString()
 			).put(
-				"title", TrafficChannel.Type.DIRECT.toString()
+				"title", "direct[traffic-channel]"
 			).toString(),
 			String.valueOf(
 				trafficChannel.toJSONObject(
@@ -152,6 +152,31 @@ public class TrafficChannelTest {
 					mockLiferayPortletActionRequest,
 					new MockLiferayPortletRenderResponse(),
 					_getResourceBundle(trafficChannel))));
+	}
+
+	@Test
+	public void testToTrafficChannelWithChatbotName() {
+		AcquisitionChannel acquisitionChannel = new AcquisitionChannel(
+			"CHATBOT", RandomTestUtil.randomInt(),
+			RandomTestUtil.randomDouble());
+
+		TrafficChannel trafficChannel = TrafficChannel.newInstance(
+			acquisitionChannel);
+
+		Assert.assertEquals(
+			"this-is-the-number-of-page-views-generated-by-people-coming-to-" +
+				"your-page-from-ai-chatbots",
+			trafficChannel.getHelpMessageKey());
+		Assert.assertEquals(
+			acquisitionChannel.getTrafficAmount(),
+			trafficChannel.getTrafficAmount());
+		Assert.assertEquals(
+			acquisitionChannel.getTrafficShare(),
+			trafficChannel.getTrafficShare(), 0);
+		Assert.assertNull(trafficChannel.getTuple());
+		Assert.assertEquals(
+			TrafficChannel.Type.valueOf(acquisitionChannel.getName()),
+			trafficChannel.getType());
 	}
 
 	@Test
@@ -271,6 +296,7 @@ public class TrafficChannelTest {
 			public Enumeration<String> getKeys() {
 				return Collections.enumeration(
 					Arrays.asList(
+						"direct[traffic-channel]",
 						String.valueOf(trafficChannel.getType()),
 						trafficChannel.getHelpMessageKey()));
 			}

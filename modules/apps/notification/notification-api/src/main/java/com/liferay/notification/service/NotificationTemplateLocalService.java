@@ -58,6 +58,11 @@ public interface NotificationTemplateLocalService
 	 * Never modify this interface directly. Add custom service methods to <code>com.liferay.notification.service.impl.NotificationTemplateLocalServiceImpl</code> and rerun ServiceBuilder to automatically copy the method declarations to this interface. Consume the notification template local service via injection or a <code>org.osgi.util.tracker.ServiceTracker</code>. Use {@link NotificationTemplateLocalServiceUtil} if injection and service tracking are not available.
 	 */
 	@Indexable(type = IndexableType.REINDEX)
+	public NotificationTemplate addAssigneeNotificationTemplate(
+			String externalReferenceCode, long userId, String termName)
+		throws PortalException;
+
+	@Indexable(type = IndexableType.REINDEX)
 	public NotificationTemplate addNotificationTemplate(
 			NotificationContext notificationContext)
 		throws PortalException;
@@ -81,6 +86,11 @@ public interface NotificationTemplateLocalService
 			String externalReferenceCode, long userId, String type)
 		throws PortalException;
 
+	@Indexable(type = IndexableType.REINDEX)
+	public NotificationTemplate addSubscriptionNotificationTemplate(
+			String externalReferenceCode, long userId)
+		throws PortalException;
+
 	/**
 	 * Creates a new notification template with the primary key. Does not add the notification template to the database.
 	 *
@@ -95,6 +105,9 @@ public interface NotificationTemplateLocalService
 	 * @throws PortalException
 	 */
 	public PersistedModel createPersistedModel(Serializable primaryKeyObj)
+		throws PortalException;
+
+	public void deleteCompanyNotificationTemplates(long companyId)
 		throws PortalException;
 
 	/**
@@ -327,3 +340,4 @@ public interface NotificationTemplateLocalService
 		NotificationTemplate notificationTemplate);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-430911467

@@ -5,14 +5,16 @@
 
 package com.liferay.saml.internal.upgrade.registry;
 
+import com.liferay.document.library.kernel.store.Store;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.util.PrefsProps;
-import com.liferay.portal.kernel.util.Props;
 import com.liferay.portal.upgrade.registry.UpgradeStepRegistrator;
 import com.liferay.saml.internal.upgrade.v1_0_0.SamlConfigurationPreferencesUpgradeProcess;
 import com.liferay.saml.internal.upgrade.v1_0_0.SamlIdpSsoSessionMaxAgePropertyUpgradeProcess;
 import com.liferay.saml.internal.upgrade.v1_0_0.SamlKeyStorePropertiesUpgradeProcess;
 import com.liferay.saml.internal.upgrade.v1_0_0.SamlProviderConfigurationPreferencesUpgradeProcess;
+import com.liferay.saml.internal.upgrade.v2_0_0.SamlConfigurationUpgradeProcess;
 import com.liferay.saml.runtime.configuration.SamlProviderConfigurationHelper;
 
 import org.osgi.service.cm.ConfigurationAdmin;
@@ -30,19 +32,31 @@ public class SamlImplUpgradeStepRegistrator implements UpgradeStepRegistrator {
 		registry.registerInitialization();
 
 		registry.register(
-			"0.0.1", "0.0.2",
+			"0.0.1", "0.0.1.step-1",
 			new SamlConfigurationPreferencesUpgradeProcess(
-				_configurationAdmin, _props),
+				_configurationAdmin));
+
+		registry.register(
+			"0.0.1.step-1", "0.0.1.step-2",
 			new SamlKeyStorePropertiesUpgradeProcess(
-				_configurationAdmin, _prefsProps),
+				_configurationAdmin, _prefsProps));
+
+		registry.register(
+			"0.0.1.step-2", "0.0.2",
 			new SamlProviderConfigurationPreferencesUpgradeProcess(
-				_companyLocalService, _prefsProps, _props,
+				_companyLocalService, _prefsProps,
 				_samlProviderConfigurationHelper));
 
 		registry.register(
 			"0.0.2", "1.0.0",
 			new SamlIdpSsoSessionMaxAgePropertyUpgradeProcess(
-				_configurationAdmin, _props));
+				_configurationAdmin));
+
+		registry.register(
+			"1.0.0", "2.0.0",
+			new SamlConfigurationUpgradeProcess(
+				_companyLocalService, _configurationAdmin,
+				_configurationProvider, _store));
 	}
 
 	@Reference
@@ -52,12 +66,15 @@ public class SamlImplUpgradeStepRegistrator implements UpgradeStepRegistrator {
 	private ConfigurationAdmin _configurationAdmin;
 
 	@Reference
+	private ConfigurationProvider _configurationProvider;
+
+	@Reference
 	private PrefsProps _prefsProps;
 
 	@Reference
-	private Props _props;
-
-	@Reference
 	private SamlProviderConfigurationHelper _samlProviderConfigurationHelper;
+
+	@Reference(target = "(default=true)")
+	private Store _store;
 
 }

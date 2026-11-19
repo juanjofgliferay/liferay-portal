@@ -217,6 +217,11 @@ public interface AssetCategoryPropertyLocalService
 		long categoryPropertyId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public AssetCategoryProperty
+		fetchAssetCategoryPropertyByExternalReferenceCode(
+			String externalReferenceCode, long companyId);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public AssetCategoryProperty fetchCategoryProperty(
 		long categoryId, String key);
 
@@ -259,19 +264,13 @@ public interface AssetCategoryPropertyLocalService
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<AssetCategoryProperty> getCategoryProperties();
+	public AssetCategoryProperty
+			getAssetCategoryPropertyByExternalReferenceCode(
+				String externalReferenceCode, long companyId)
+		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<AssetCategoryProperty> getCategoryProperties(long entryId);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public AssetCategoryProperty getCategoryProperty(long categoryPropertyId)
-		throws PortalException;
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public AssetCategoryProperty getCategoryProperty(
-			long categoryId, String key)
-		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<AssetCategoryProperty> getCategoryPropertyValues(
@@ -313,10 +312,6 @@ public interface AssetCategoryPropertyLocalService
 			long userId, long categoryPropertyId, String key, String value)
 		throws PortalException;
 
-	public AssetCategoryProperty updateCategoryProperty(
-			long categoryPropertyId, String key, String value)
-		throws PortalException;
-
 	@Override
 	@Transactional(enabled = false)
 	public CTPersistence<AssetCategoryProperty> getCTPersistence();
@@ -333,3 +328,4 @@ public interface AssetCategoryPropertyLocalService
 		throws E;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:352796589

@@ -27,9 +27,7 @@ public class ComponentExposureCheck extends BaseCheck {
 	protected void doVisitToken(DetailAST detailAST) {
 		List<String> importNames = getImportNames(detailAST);
 
-		DetailAST parentDetailAST = detailAST.getParent();
-
-		if ((parentDetailAST != null) ||
+		if (!isDirectChildOfCompilationUnit(detailAST) ||
 			!importNames.contains(
 				"org.osgi.service.component.annotations.Component")) {
 
@@ -56,17 +54,17 @@ public class ComponentExposureCheck extends BaseCheck {
 		DetailAST objBlockDetailAST = detailAST.findFirstToken(
 			TokenTypes.OBJBLOCK);
 
-		List<DetailAST> methodDefinitionDetailASTList = getAllChildTokens(
+		List<DetailAST> methodDefinitionDetailASTs = getAllChildTokens(
 			objBlockDetailAST, false, TokenTypes.METHOD_DEF);
 
-		if (ListUtil.isEmpty(methodDefinitionDetailASTList)) {
+		if (ListUtil.isEmpty(methodDefinitionDetailASTs)) {
 			return;
 		}
 
-		List<DetailAST> variableDefDetailASTList = getAllChildTokens(
+		List<DetailAST> variableDefDetailASTs = getAllChildTokens(
 			objBlockDetailAST, false, TokenTypes.VARIABLE_DEF);
 
-		for (DetailAST variableDefDetailAST : variableDefDetailASTList) {
+		for (DetailAST variableDefDetailAST : variableDefDetailASTs) {
 			String variableName = getName(variableDefDetailAST);
 
 			String variableTypeName = getVariableTypeName(
@@ -81,12 +79,10 @@ public class ComponentExposureCheck extends BaseCheck {
 				continue;
 			}
 
-			List<DetailAST> variableCallerDetailASTList =
-				getVariableCallerDetailASTList(variableDefDetailAST);
+			List<DetailAST> variableCallerDetailASTs =
+				getVariableCallerDetailASTs(variableDefDetailAST);
 
-			for (DetailAST variableCallerDetailAST :
-					variableCallerDetailASTList) {
-
+			for (DetailAST variableCallerDetailAST : variableCallerDetailASTs) {
 				if (_isInsidePublicStaticMethod(variableCallerDetailAST)) {
 					log(
 						variableDefDetailAST, _MSG_EXPOSED_STATIC_COMPONENT,

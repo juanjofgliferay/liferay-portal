@@ -16,8 +16,10 @@ import com.liferay.portal.kernel.util.OSDetector;
 import com.liferay.portal.kernel.util.PortalClassLoaderUtil;
 import com.liferay.portal.kernel.util.PrefsProps;
 import com.liferay.portal.kernel.util.PropsKeys;
+import com.liferay.portal.kernel.util.PropsUtil;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.util.PropsUtil;
+
+import jakarta.portlet.PortletPreferences;
 
 import java.io.File;
 
@@ -27,8 +29,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Future;
-
-import javax.portlet.PortletPreferences;
 
 import org.im4java.process.ArrayListOutputConsumer;
 import org.im4java.process.ProcessEvent;
@@ -168,7 +168,7 @@ public class ImageMagickImpl implements ImageMagick {
 					"Liferay is not configured to use ImageMagick and ",
 					"Ghostscript. For better quality document and image ",
 					"previews, install ImageMagick and Ghostscript. Enable ",
-					"ImageMagick in portal-ext.properties or in the Server ",
+					"ImageMagick in portal.properties or in the Server ",
 					"Administration section of the Control Panel at: ",
 					"http://<server>/group/control_panel/manage/-/server",
 					"/external-services."));
@@ -225,9 +225,18 @@ public class ImageMagickImpl implements ImageMagick {
 			arguments.add(StringBundler.concat(width, "x", height, ">"));
 			arguments.add(scaledImageFile.getAbsolutePath());
 
+			long start = System.currentTimeMillis();
+
 			Future<?> future = convert(arguments);
 
 			ProcessEvent processEvent = (ProcessEvent)future.get();
+
+			if (_log.isInfoEnabled()) {
+				_log.info(
+					StringBundler.concat(
+						"Converted image with ImageMagick in ",
+						System.currentTimeMillis() - start, "ms"));
+			}
 
 			if (_log.isDebugEnabled() &&
 				(processEvent.getException() != null)) {

@@ -29,9 +29,9 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.repository.model.FileVersion;
 import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.util.PropsValues;
 
 import java.util.List;
 import java.util.Locale;
@@ -62,11 +62,7 @@ public class AMImageValidatorImpl implements AMImageValidator {
 			return false;
 		}
 
-		if (isProcessingSupported(fileVersion)) {
-			return true;
-		}
-
-		return false;
+		return isProcessingSupported(fileVersion);
 	}
 
 	@Override
@@ -83,11 +79,8 @@ public class AMImageValidatorImpl implements AMImageValidator {
 
 	@Override
 	public boolean isProcessingSupported(String mimeType) {
-		if (StringUtil.equalsIgnoreCase(mimeType, ContentTypes.IMAGE_SVG_XML)) {
-			return false;
-		}
-
-		return true;
+		return !StringUtil.equalsIgnoreCase(
+			mimeType, ContentTypes.IMAGE_SVG_XML);
 	}
 
 	@Override
@@ -139,7 +132,7 @@ public class AMImageValidatorImpl implements AMImageValidator {
 			_ddmStructureLocalService.getClassStructures(
 				fileVersion.getCompanyId(),
 				_portal.getClassNameId(RawMetadataProcessor.class),
-				StructureStructureKeyComparator.INSTANCE_DESCENDING);
+				StructureStructureKeyComparator.getInstance(false));
 
 		for (DDMStructure ddmStructure : ddmStructures) {
 			DLFileEntryMetadata fileEntryMetadata =

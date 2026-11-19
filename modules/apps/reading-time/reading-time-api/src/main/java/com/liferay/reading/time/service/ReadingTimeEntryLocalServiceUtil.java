@@ -9,6 +9,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.reading.time.model.ReadingTimeEntry;
 
@@ -35,14 +36,6 @@ public class ReadingTimeEntryLocalServiceUtil {
 	 *
 	 * Never modify this class directly. Add custom service methods to <code>com.liferay.reading.time.service.impl.ReadingTimeEntryLocalServiceImpl</code> and rerun ServiceBuilder to regenerate this class.
 	 */
-	public static ReadingTimeEntry addReadingTimeEntry(
-		com.liferay.portal.kernel.model.GroupedModel groupedModel,
-		java.time.Duration readingTimeDuration) {
-
-		return getService().addReadingTimeEntry(
-			groupedModel, readingTimeDuration);
-	}
-
 	public static ReadingTimeEntry addReadingTimeEntry(
 		long groupId, long classNameId, long classPK,
 		java.time.Duration readingTimeDuration) {
@@ -121,13 +114,6 @@ public class ReadingTimeEntryLocalServiceUtil {
 		throws PortalException {
 
 		return getService().deleteReadingTimeEntry(readingTimeEntryId);
-	}
-
-	public static ReadingTimeEntry deleteReadingTimeEntry(
-		long groupId, long classNameId, long classPK) {
-
-		return getService().deleteReadingTimeEntry(
-			groupId, classNameId, classPK);
 	}
 
 	/**
@@ -427,13 +413,13 @@ public class ReadingTimeEntryLocalServiceUtil {
 	}
 
 	public static ReadingTimeEntryLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(ReadingTimeEntryLocalService service) {
-		_service = service;
-	}
-
-	private static volatile ReadingTimeEntryLocalService _service;
+	private static final Snapshot<ReadingTimeEntryLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			ReadingTimeEntryLocalServiceUtil.class,
+			ReadingTimeEntryLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:357203666

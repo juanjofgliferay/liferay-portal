@@ -125,14 +125,6 @@ public class JSONFactoryImpl implements JSONFactory {
 	}
 
 	@Override
-	public JSONTransformer createJavaScriptNormalizerJSONTransformer(
-		List<String> javaScriptAttributes) {
-
-		throw new UnsupportedOperationException(
-			"Temporally disabled until alloy-taglib.jar is updated");
-	}
-
-	@Override
 	public JSONArray createJSONArray() {
 		return new JSONArrayImpl();
 	}
@@ -175,6 +167,13 @@ public class JSONFactoryImpl implements JSONFactory {
 	@Override
 	public JSONSerializer createJSONSerializer() {
 		return new JSONSerializerImpl();
+	}
+
+	@Override
+	public JSONTransformer createJavaScriptNormalizerJSONTransformer(
+		List<String> javaScriptAttributes) {
+
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
@@ -285,6 +284,29 @@ public class JSONFactoryImpl implements JSONFactory {
 	}
 
 	@Override
+	public JSONObject safeCreateJSONObject(String json) {
+		return safeCreateJSONObject(json, false);
+	}
+
+	@Override
+	public JSONObject safeCreateJSONObject(String json, boolean strict) {
+		if (strict && Validator.isNull(json)) {
+			return null;
+		}
+
+		try {
+			return createJSONObject(json);
+		}
+		catch (JSONException jsonException) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(jsonException);
+			}
+
+			return null;
+		}
+	}
+
+	@Override
 	public String serialize(Object object) {
 		try {
 			return _jsonSerializer.toJSON(object);
@@ -354,6 +376,15 @@ public class JSONFactoryImpl implements JSONFactory {
 		);
 
 		jsonObject.put("rootCause", rootCauseJSONObject);
+
+		return jsonObject.toString();
+	}
+
+	@Override
+	public String toString(JSONObject jsonObject) {
+		if (jsonObject == null) {
+			return null;
+		}
 
 		return jsonObject.toString();
 	}

@@ -18,7 +18,7 @@ renderResponse.setTitle(LanguageUtil.get(resourceBundle, "import-translation"));
 
 <div class="translation">
 	<div class="translation-import">
-		<nav class="component-tbar subnav-tbar-light tbar">
+		<nav class="management-bar management-bar-light navbar navbar-expand-md">
 			<clay:container-fluid>
 				<ul class="tbar-nav">
 					<li class="tbar-item tbar-item-expand">
@@ -28,17 +28,24 @@ renderResponse.setTitle(LanguageUtil.get(resourceBundle, "import-translation"));
 							</div>
 						</div>
 					</li>
-					<li class="tbar-item">
-						<div class="tbar-section text-right">
-							<clay:link
-								displayType="primary"
-								href="<%= importTranslationResultsDisplayContext.getRedirect(request) %>"
-								label="done"
-								small="<%= true %>"
-								type="button"
-							/>
-						</div>
-					</li>
+
+					<%
+					String redirectURL = importTranslationResultsDisplayContext.getRedirect(request);
+					%>
+
+					<c:if test="<%= Validator.isNotNull(redirectURL) %>">
+						<li class="tbar-item">
+							<div class="tbar-section text-right">
+								<clay:link
+									displayType="primary"
+									href="<%= redirectURL %>"
+									label="done"
+									small="<%= true %>"
+									type="button"
+								/>
+							</div>
+						</li>
+					</c:if>
 				</ul>
 			</clay:container-fluid>
 		</nav>
@@ -47,7 +54,7 @@ renderResponse.setTitle(LanguageUtil.get(resourceBundle, "import-translation"));
 			cssClass="container-view"
 			size="lg"
 		>
-			<div class="translation-import-body-form">
+			<div>
 
 				<%
 				boolean importTranslationResultsErrors = false;
@@ -106,7 +113,7 @@ renderResponse.setTitle(LanguageUtil.get(resourceBundle, "import-translation"));
 						</div>
 
 						<react:component
-							module="js/ImportTranslationResultsPanelSuccess"
+							module="{ImportTranslationResultsPanelSuccess} from translation-web"
 							props='<%=
 								HashMapBuilder.<String, Object>put(
 									"defaultExpanded", !importTranslationResultsErrors

@@ -18,8 +18,10 @@ import com.liferay.portal.kernel.service.RecentLayoutRevisionLocalServiceUtil;
  * @author Brian Wing Shun Chan
  * @see RecentLayoutRevisionImpl
  * @see RecentLayoutRevision
+ * @deprecated As of Cavanaugh (7.4.x), with no direct replacement
  * @generated
  */
+@Deprecated
 public abstract class RecentLayoutRevisionBaseImpl
 	extends RecentLayoutRevisionModelImpl implements RecentLayoutRevision {
 
@@ -40,3 +42,4 @@ public abstract class RecentLayoutRevisionBaseImpl
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-689471387

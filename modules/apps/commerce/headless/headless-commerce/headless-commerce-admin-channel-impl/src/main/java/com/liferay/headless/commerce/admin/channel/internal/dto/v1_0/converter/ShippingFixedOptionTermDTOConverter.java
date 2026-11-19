@@ -20,7 +20,10 @@ import org.osgi.service.component.annotations.Reference;
  * @author Alessio Antonio Rendina
  */
 @Component(
-	property = "dto.class.name=com.liferay.commerce.payment.model.CommerceShippingFixedOptionQualifier-Term",
+	property = {
+		"default=true",
+		"dto.class.name=com.liferay.commerce.payment.model.CommerceShippingFixedOptionQualifier-Term"
+	},
 	service = DTOConverter.class
 )
 public class ShippingFixedOptionTermDTOConverter
@@ -49,16 +52,16 @@ public class ShippingFixedOptionTermDTOConverter
 
 		return new ShippingFixedOptionTerm() {
 			{
-				actions = dtoConverterContext.getActions();
-				shippingFixedOptionId =
-					commerceShippingFixedOptionQualifier.
-						getCommerceShippingFixedOptionId();
-				shippingFixedOptionTermId =
-					commerceShippingFixedOptionQualifier.
-						getCommerceShippingFixedOptionQualifierId();
-				termExternalReferenceCode =
-					commerceTermEntry.getExternalReferenceCode();
-				termId = commerceTermEntry.getCommerceTermEntryId();
+				setActions(dtoConverterContext::getActions);
+				setShippingFixedOptionId(
+					commerceShippingFixedOptionQualifier::
+						getCommerceShippingFixedOptionId);
+				setShippingFixedOptionTermId(
+					commerceShippingFixedOptionQualifier::
+						getCommerceShippingFixedOptionQualifierId);
+				setTermExternalReferenceCode(
+					commerceTermEntry::getExternalReferenceCode);
+				setTermId(commerceTermEntry::getCommerceTermEntryId);
 			}
 		};
 	}

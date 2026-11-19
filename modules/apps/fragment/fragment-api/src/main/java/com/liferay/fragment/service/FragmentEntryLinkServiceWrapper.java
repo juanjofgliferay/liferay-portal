@@ -31,8 +31,9 @@ public class FragmentEntryLinkServiceWrapper
 
 	@Override
 	public FragmentEntryLink addFragmentEntryLink(
-			long groupId, long originalFragmentEntryLinkId,
-			long fragmentEntryId, long segmentsExperienceId, long plid,
+			String externalReferenceCode, long groupId,
+			String originalFragmentEntryLinkERC, String fragmentEntryERC,
+			String fragmentEntryScopeERC, long segmentsExperienceId, long plid,
 			String css, String html, String js, String configuration,
 			String editableValues, String namespace, int position,
 			String rendererKey, int type,
@@ -40,10 +41,10 @@ public class FragmentEntryLinkServiceWrapper
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _fragmentEntryLinkService.addFragmentEntryLink(
-			groupId, originalFragmentEntryLinkId, fragmentEntryId,
-			segmentsExperienceId, plid, css, html, js, configuration,
-			editableValues, namespace, position, rendererKey, type,
-			serviceContext);
+			externalReferenceCode, groupId, originalFragmentEntryLinkERC,
+			fragmentEntryERC, fragmentEntryScopeERC, segmentsExperienceId, plid,
+			css, html, js, configuration, editableValues, namespace, position,
+			rendererKey, type, serviceContext);
 	}
 
 	@Override
@@ -54,6 +55,25 @@ public class FragmentEntryLinkServiceWrapper
 			fragmentEntryLinkId);
 	}
 
+	@Override
+	public FragmentEntryLink deleteFragmentEntryLink(
+			String externalReferenceCode, long groupId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _fragmentEntryLinkService.deleteFragmentEntryLink(
+			externalReferenceCode, groupId);
+	}
+
+	@Override
+	public FragmentEntryLink getFragmentEntryLinkByExternalReferenceCode(
+			String externalReferenceCode, long groupId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _fragmentEntryLinkService.
+			getFragmentEntryLinkByExternalReferenceCode(
+				externalReferenceCode, groupId);
+	}
+
 	/**
 	 * Returns the OSGi service identifier.
 	 *
@@ -62,6 +82,15 @@ public class FragmentEntryLinkServiceWrapper
 	@Override
 	public String getOSGiServiceIdentifier() {
 		return _fragmentEntryLinkService.getOSGiServiceIdentifier();
+	}
+
+	@Override
+	public FragmentEntryLink updateDeleted(
+			long fragmentEntryLinkId, boolean deleted)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _fragmentEntryLinkService.updateDeleted(
+			fragmentEntryLinkId, deleted);
 	}
 
 	@Override
@@ -98,3 +127,4 @@ public class FragmentEntryLinkServiceWrapper
 	private FragmentEntryLinkService _fragmentEntryLinkService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1669956514

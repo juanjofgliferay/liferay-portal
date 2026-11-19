@@ -12,7 +12,7 @@ import com.liferay.fragment.renderer.FragmentRenderer;
 import com.liferay.fragment.renderer.FragmentRendererContext;
 import com.liferay.fragment.util.configuration.FragmentEntryConfigurationParser;
 import com.liferay.fragment.util.configuration.FragmentEntryMenuDisplayConfiguration;
-import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.content.security.policy.ContentSecurityPolicyNonceProviderUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONException;
 import com.liferay.portal.kernel.json.JSONFactory;
@@ -33,15 +33,13 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.site.navigation.taglib.servlet.taglib.NavigationMenuTag;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.PrintWriter;
 
 import java.util.Locale;
 import java.util.Objects;
-import java.util.ResourceBundle;
-
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -58,11 +56,8 @@ public class MenuDisplayFragmentRenderer implements FragmentRenderer {
 	}
 
 	@Override
-	public String getConfiguration(
+	public JSONObject getConfigurationJSONObject(
 		FragmentRendererContext fragmentRendererContext) {
-
-		ResourceBundle resourceBundle = ResourceBundleUtil.getBundle(
-			"content.Language", getClass());
 
 		try {
 			JSONObject jsonObject = _jsonFactory.createJSONObject(
@@ -72,14 +67,15 @@ public class MenuDisplayFragmentRenderer implements FragmentRenderer {
 						"/dependencies/configuration.json"));
 
 			return _fragmentEntryConfigurationParser.translateConfiguration(
-				jsonObject, resourceBundle);
+				jsonObject,
+				ResourceBundleUtil.getBundle("content.Language", getClass()));
 		}
 		catch (JSONException jsonException) {
 			if (_log.isDebugEnabled()) {
 				_log.debug(jsonException);
 			}
 
-			return StringPool.BLANK;
+			return null;
 		}
 	}
 
@@ -110,19 +106,22 @@ public class MenuDisplayFragmentRenderer implements FragmentRenderer {
 
 			printWriter.write("<div id=\"" + fragmentElementId + "\">");
 
+			JSONObject configurationJSONObject = getConfigurationJSONObject(
+				fragmentRendererContext);
+
 			_writeCss(
-				getConfiguration(fragmentRendererContext),
-				fragmentEntryLink.getEditableValues(), fragmentElementId,
-				printWriter);
+				configurationJSONObject,
+				fragmentEntryLink.getEditableValuesJSONObject(),
+				fragmentElementId, httpServletRequest, printWriter);
 
 			ThemeDisplay themeDisplay =
 				(ThemeDisplay)httpServletRequest.getAttribute(
 					WebKeys.THEME_DISPLAY);
 
 			NavigationMenuTag navigationMenuTag = _getNavigationMenuTag(
-				themeDisplay.getCompanyId(),
-				getConfiguration(fragmentRendererContext),
-				fragmentEntryLink.getEditableValues());
+				themeDisplay.getCompanyId(), configurationJSONObject,
+				fragmentEntryLink.getEditableValuesJSONObject(),
+				themeDisplay.getScopeGroupId());
 
 			navigationMenuTag.doTag(httpServletRequest, httpServletResponse);
 
@@ -134,14 +133,15 @@ public class MenuDisplayFragmentRenderer implements FragmentRenderer {
 	}
 
 	private NavigationMenuTag _getNavigationMenuTag(
-			long companyId, String configuration, String editableValues)
+			long companyId, JSONObject configurationJSONObject,
+			JSONObject editableValuesJSONObject, long groupId)
 		throws PortalException {
 
 		NavigationMenuTag navigationMenuTag = new NavigationMenuTag();
 
 		String displayStyle = GetterUtil.getString(
 			_fragmentEntryConfigurationParser.getFieldValue(
-				configuration, editableValues,
+				configurationJSONObject, editableValuesJSONObject,
 				LocaleUtil.getMostRelevantLocale(), "displayStyle"));
 
 		DDMTemplate ddmTemplate = _getTagDDMTemplate(companyId, displayStyle);
@@ -153,19 +153,20 @@ public class MenuDisplayFragmentRenderer implements FragmentRenderer {
 
 		int sublevels = GetterUtil.getInteger(
 			_fragmentEntryConfigurationParser.getFieldValue(
-				configuration, editableValues,
+				configurationJSONObject, editableValuesJSONObject,
 				LocaleUtil.getMostRelevantLocale(), "sublevels"));
 
 		navigationMenuTag.setDisplayDepth(sublevels + 1);
 
 		String source = GetterUtil.getString(
 			_fragmentEntryConfigurationParser.getFieldValue(
-				configuration, editableValues,
+				configurationJSONObject, editableValuesJSONObject,
 				LocaleUtil.getMostRelevantLocale(), "source"));
 
 		FragmentEntryMenuDisplayConfiguration
 			fragmentEntryMenuDisplayConfiguration =
-				new FragmentEntryMenuDisplayConfiguration(source);
+				new FragmentEntryMenuDisplayConfiguration(
+					companyId, source, groupId);
 
 		navigationMenuTag.setNavigationMenuMode(
 			fragmentEntryMenuDisplayConfiguration.getNavigationMenuMode());
@@ -198,7 +199,8 @@ public class MenuDisplayFragmentRenderer implements FragmentRenderer {
 	}
 
 	private void _writeCss(
-		String configuration, String editableValues, String fragmentElementId,
+		JSONObject configurationJSONObject, JSONObject editableValuesJSONObject,
+		String fragmentElementId, HttpServletRequest httpServletRequest,
 		PrintWriter printWriter) {
 
 		String styles = StringUtil.replace(
@@ -213,14 +215,18 @@ public class MenuDisplayFragmentRenderer implements FragmentRenderer {
 				"hoveredItemColor",
 				GetterUtil.getString(
 					_fragmentEntryConfigurationParser.getFieldValue(
-						configuration, editableValues,
+						configurationJSONObject, editableValuesJSONObject,
 						LocaleUtil.getMostRelevantLocale(), "hoveredItemColor"),
 					"inherit")
+			).put(
+				"nonceAttribute",
+				ContentSecurityPolicyNonceProviderUtil.getNonceAttribute(
+					httpServletRequest)
 			).put(
 				"selectedItemColor",
 				GetterUtil.getString(
 					_fragmentEntryConfigurationParser.getFieldValue(
-						configuration, editableValues,
+						configurationJSONObject, editableValuesJSONObject,
 						LocaleUtil.getMostRelevantLocale(),
 						"selectedItemColor"),
 					"inherit")
@@ -249,10 +255,5 @@ public class MenuDisplayFragmentRenderer implements FragmentRenderer {
 
 	@Reference
 	private Portal _portal;
-
-	@Reference(
-		target = "(osgi.web.symbolicname=com.liferay.fragment.renderer.menu.display.impl)"
-	)
-	private ServletContext _servletContext;
 
 }

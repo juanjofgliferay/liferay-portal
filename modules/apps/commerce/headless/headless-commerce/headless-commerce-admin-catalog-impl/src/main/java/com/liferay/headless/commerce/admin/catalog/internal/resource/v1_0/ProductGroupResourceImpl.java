@@ -5,26 +5,28 @@
 
 package com.liferay.headless.commerce.admin.catalog.internal.resource.v1_0;
 
+import com.liferay.commerce.currency.service.CommerceCurrencyService;
 import com.liferay.commerce.pricing.exception.NoSuchPricingClassException;
 import com.liferay.commerce.pricing.model.CommercePricingClass;
 import com.liferay.commerce.pricing.model.CommercePricingClassCPDefinitionRel;
 import com.liferay.commerce.pricing.service.CommercePricingClassCPDefinitionRelService;
 import com.liferay.commerce.pricing.service.CommercePricingClassService;
-import com.liferay.commerce.product.exception.NoSuchCProductException;
-import com.liferay.commerce.product.model.CProduct;
+import com.liferay.commerce.product.service.CPDefinitionService;
 import com.liferay.commerce.product.service.CProductLocalService;
+import com.liferay.commerce.product.service.CommerceCatalogService;
 import com.liferay.headless.commerce.admin.catalog.dto.v1_0.ProductGroup;
 import com.liferay.headless.commerce.admin.catalog.dto.v1_0.ProductGroupProduct;
 import com.liferay.headless.commerce.admin.catalog.internal.odata.entity.v1_0.ProductGroupEntityModel;
 import com.liferay.headless.commerce.admin.catalog.internal.util.v1_0.ProductGroupProductUtil;
 import com.liferay.headless.commerce.admin.catalog.resource.v1_0.ProductGroupResource;
+import com.liferay.headless.commerce.core.helper.ServiceContextHelper;
 import com.liferay.headless.commerce.core.util.ExpandoUtil;
 import com.liferay.headless.commerce.core.util.LanguageUtils;
-import com.liferay.headless.commerce.core.util.ServiceContextHelper;
 import com.liferay.portal.kernel.change.tracking.CTAware;
 import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.search.filter.Filter;
+import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.odata.entity.EntityModel;
 import com.liferay.portal.vulcan.dto.converter.DTOConverter;
@@ -33,10 +35,10 @@ import com.liferay.portal.vulcan.pagination.Page;
 import com.liferay.portal.vulcan.pagination.Pagination;
 import com.liferay.portal.vulcan.util.SearchUtil;
 
-import java.util.Map;
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.Response;
 
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.Response;
+import java.util.Map;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -63,8 +65,9 @@ public class ProductGroupResourceImpl extends BaseProductGroupResourceImpl {
 		throws Exception {
 
 		CommercePricingClass commercePricingClass =
-			_commercePricingClassService.fetchByExternalReferenceCode(
-				externalReferenceCode, contextCompany.getCompanyId());
+			_commercePricingClassService.
+				fetchCommercePricingClassByExternalReferenceCode(
+					externalReferenceCode, contextCompany.getCompanyId());
 
 		if (commercePricingClass == null) {
 			throw new NoSuchPricingClassException(
@@ -94,8 +97,9 @@ public class ProductGroupResourceImpl extends BaseProductGroupResourceImpl {
 		throws Exception {
 
 		CommercePricingClass commercePricingClass =
-			_commercePricingClassService.fetchByExternalReferenceCode(
-				externalReferenceCode, contextCompany.getCompanyId());
+			_commercePricingClassService.
+				fetchCommercePricingClassByExternalReferenceCode(
+					externalReferenceCode, contextCompany.getCompanyId());
 
 		if (commercePricingClass == null) {
 			throw new NoSuchPricingClassException(
@@ -143,8 +147,9 @@ public class ProductGroupResourceImpl extends BaseProductGroupResourceImpl {
 		throws Exception {
 
 		CommercePricingClass commercePricingClass =
-			_commercePricingClassService.fetchByExternalReferenceCode(
-				externalReferenceCode, contextCompany.getCompanyId());
+			_commercePricingClassService.
+				fetchCommercePricingClassByExternalReferenceCode(
+					externalReferenceCode, contextCompany.getCompanyId());
 
 		if (commercePricingClass == null) {
 			throw new NoSuchPricingClassException(
@@ -164,19 +169,31 @@ public class ProductGroupResourceImpl extends BaseProductGroupResourceImpl {
 		throws Exception {
 
 		CommercePricingClass commercePricingClass = _addOrUpdateProductGroup(
-			productGroup);
+			productGroup.getExternalReferenceCode(), productGroup);
+
+		return _toProductGroup(
+			commercePricingClass.getCommercePricingClassId());
+	}
+
+	@Override
+	public ProductGroup putProductGroupByExternalReferenceCode(
+			String externalReferenceCode, ProductGroup productGroup)
+		throws Exception {
+
+		CommercePricingClass commercePricingClass = _addOrUpdateProductGroup(
+			externalReferenceCode, productGroup);
 
 		return _toProductGroup(
 			commercePricingClass.getCommercePricingClassId());
 	}
 
 	private CommercePricingClass _addOrUpdateProductGroup(
-			ProductGroup productGroup)
+			String externalReferenceCode, ProductGroup productGroup)
 		throws Exception {
 
 		CommercePricingClass commercePricingClass =
 			_commercePricingClassService.addOrUpdateCommercePricingClass(
-				productGroup.getExternalReferenceCode(), 0L,
+				externalReferenceCode, 0L,
 				LanguageUtils.getLocalizedMap(productGroup.getTitle()),
 				LanguageUtils.getLocalizedMap(productGroup.getDescription()),
 				_serviceContextHelper.getServiceContext());
@@ -205,29 +222,16 @@ public class ProductGroupResourceImpl extends BaseProductGroupResourceImpl {
 		ProductGroupProduct[] productGroupProducts = productGroup.getProducts();
 
 		if (productGroupProducts != null) {
+			ServiceContext serviceContext =
+				_serviceContextHelper.getServiceContext();
+
 			for (ProductGroupProduct productGroupProduct :
 					productGroupProducts) {
 
-				CProduct cProduct = _cProductLocalService.fetchCProduct(
-					productGroupProduct.getProductId());
-
-				if (cProduct == null) {
-					cProduct =
-						_cProductLocalService.
-							fetchCProductByExternalReferenceCode(
-								productGroupProduct.
-									getProductExternalReferenceCode(),
-								contextCompany.getCompanyId());
-				}
-
-				if (cProduct == null) {
-					String productExternalReferenceCode =
-						productGroupProduct.getProductExternalReferenceCode();
-
-					throw new NoSuchCProductException(
-						"Unable to find product with external reference code " +
-							productExternalReferenceCode);
-				}
+				long cpDefinitionId = ProductGroupProductUtil.getCPDefinitionId(
+					_cProductLocalService, _commerceCatalogService,
+					_commerceCurrencyService, _cpDefinitionService,
+					productGroupProduct, serviceContext);
 
 				CommercePricingClassCPDefinitionRel
 					commercePricingClassCPDefinitionRel =
@@ -235,17 +239,16 @@ public class ProductGroupResourceImpl extends BaseProductGroupResourceImpl {
 							fetchCommercePricingClassCPDefinitionRel(
 								commercePricingClass.
 									getCommercePricingClassId(),
-								cProduct.getPublishedCPDefinitionId());
+								cpDefinitionId);
 
 				if (commercePricingClassCPDefinitionRel != null) {
 					continue;
 				}
 
-				ProductGroupProductUtil.addCommercePricingClassCPDefinitionRel(
-					_cProductLocalService,
-					_commercePricingClassCPDefinitionRelService,
-					productGroupProduct, commercePricingClass,
-					_serviceContextHelper);
+				_commercePricingClassCPDefinitionRelService.
+					addCommercePricingClassCPDefinitionRel(
+						commercePricingClass.getCommercePricingClassId(),
+						cpDefinitionId, serviceContext);
 			}
 		}
 
@@ -283,6 +286,15 @@ public class ProductGroupResourceImpl extends BaseProductGroupResourceImpl {
 		new ProductGroupEntityModel();
 
 	@Reference
+	private CProductLocalService _cProductLocalService;
+
+	@Reference
+	private CommerceCatalogService _commerceCatalogService;
+
+	@Reference
+	private CommerceCurrencyService _commerceCurrencyService;
+
+	@Reference
 	private CommercePricingClassCPDefinitionRelService
 		_commercePricingClassCPDefinitionRelService;
 
@@ -290,7 +302,7 @@ public class ProductGroupResourceImpl extends BaseProductGroupResourceImpl {
 	private CommercePricingClassService _commercePricingClassService;
 
 	@Reference
-	private CProductLocalService _cProductLocalService;
+	private CPDefinitionService _cpDefinitionService;
 
 	@Reference(
 		target = "(component.name=com.liferay.headless.commerce.admin.catalog.internal.dto.v1_0.converter.ProductGroupDTOConverter)"

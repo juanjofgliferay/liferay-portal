@@ -111,9 +111,7 @@ public class ChangesetEntryPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		ChangesetEntry newChangesetEntry = _persistence.create(pk);
+		ChangesetEntry newChangesetEntry = addChangesetEntry();
 
 		newChangesetEntry.setGroupId(RandomTestUtil.nextLong());
 
@@ -129,11 +127,16 @@ public class ChangesetEntryPersistenceTest {
 
 		newChangesetEntry.setChangesetCollectionId(RandomTestUtil.nextLong());
 
+		newChangesetEntry.setClassExternalReferenceCode(
+			RandomTestUtil.randomString());
+
 		newChangesetEntry.setClassNameId(RandomTestUtil.nextLong());
 
 		newChangesetEntry.setClassPK(RandomTestUtil.nextLong());
 
-		_changesetEntries.add(_persistence.update(newChangesetEntry));
+		newChangesetEntry = _persistence.update(newChangesetEntry);
+
+		_changesetEntries.add(newChangesetEntry);
 
 		ChangesetEntry existingChangesetEntry = _persistence.findByPrimaryKey(
 			newChangesetEntry.getPrimaryKey());
@@ -162,25 +165,14 @@ public class ChangesetEntryPersistenceTest {
 			existingChangesetEntry.getChangesetCollectionId(),
 			newChangesetEntry.getChangesetCollectionId());
 		Assert.assertEquals(
+			existingChangesetEntry.getClassExternalReferenceCode(),
+			newChangesetEntry.getClassExternalReferenceCode());
+		Assert.assertEquals(
 			existingChangesetEntry.getClassNameId(),
 			newChangesetEntry.getClassNameId());
 		Assert.assertEquals(
 			existingChangesetEntry.getClassPK(),
 			newChangesetEntry.getClassPK());
-	}
-
-	@Test
-	public void testCountByGroupId() throws Exception {
-		_persistence.countByGroupId(RandomTestUtil.nextLong());
-
-		_persistence.countByGroupId(0L);
-	}
-
-	@Test
-	public void testCountByCompanyId() throws Exception {
-		_persistence.countByCompanyId(RandomTestUtil.nextLong());
-
-		_persistence.countByCompanyId(0L);
 	}
 
 	@Test
@@ -191,19 +183,21 @@ public class ChangesetEntryPersistenceTest {
 	}
 
 	@Test
-	public void testCountByG_C() throws Exception {
-		_persistence.countByG_C(
-			RandomTestUtil.nextLong(), RandomTestUtil.nextLong());
-
-		_persistence.countByG_C(0L, 0L);
-	}
-
-	@Test
 	public void testCountByC_C() throws Exception {
 		_persistence.countByC_C(
 			RandomTestUtil.nextLong(), RandomTestUtil.nextLong());
 
 		_persistence.countByC_C(0L, 0L);
+	}
+
+	@Test
+	public void testCountByC_CERC_C() throws Exception {
+		_persistence.countByC_CERC_C(
+			RandomTestUtil.nextLong(), "", RandomTestUtil.nextLong());
+
+		_persistence.countByC_CERC_C(0L, "null", 0L);
+
+		_persistence.countByC_CERC_C(0L, (String)null, 0L);
 	}
 
 	@Test
@@ -243,7 +237,8 @@ public class ChangesetEntryPersistenceTest {
 			"ChangesetEntry", "changesetEntryId", true, "groupId", true,
 			"companyId", true, "userId", true, "userName", true, "createDate",
 			true, "modifiedDate", true, "changesetCollectionId", true,
-			"classNameId", true, "classPK", true);
+			"classExternalReferenceCode", true, "classNameId", true, "classPK",
+			true);
 	}
 
 	@Test
@@ -517,6 +512,22 @@ public class ChangesetEntryPersistenceTest {
 				changesetEntry, "getColumnOriginalValue",
 				new Class<?>[] {String.class}, "changesetCollectionId"));
 		Assert.assertEquals(
+			changesetEntry.getClassExternalReferenceCode(),
+			ReflectionTestUtil.invoke(
+				changesetEntry, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "classExternalReferenceCode"));
+		Assert.assertEquals(
+			Long.valueOf(changesetEntry.getClassNameId()),
+			ReflectionTestUtil.<Long>invoke(
+				changesetEntry, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "classNameId"));
+
+		Assert.assertEquals(
+			Long.valueOf(changesetEntry.getChangesetCollectionId()),
+			ReflectionTestUtil.<Long>invoke(
+				changesetEntry, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "changesetCollectionId"));
+		Assert.assertEquals(
 			Long.valueOf(changesetEntry.getClassNameId()),
 			ReflectionTestUtil.<Long>invoke(
 				changesetEntry, "getColumnOriginalValue",
@@ -547,6 +558,9 @@ public class ChangesetEntryPersistenceTest {
 
 		changesetEntry.setChangesetCollectionId(RandomTestUtil.nextLong());
 
+		changesetEntry.setClassExternalReferenceCode(
+			RandomTestUtil.randomString());
+
 		changesetEntry.setClassNameId(RandomTestUtil.nextLong());
 
 		changesetEntry.setClassPK(RandomTestUtil.nextLong());
@@ -562,3 +576,4 @@ public class ChangesetEntryPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-644369376

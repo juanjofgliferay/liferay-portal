@@ -23,6 +23,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Joan Kim
  */
 @Component(
+	enabled = false,
 	property = {
 		"panel.app.order:Integer=100",
 		"panel.category.key=" + PanelCategoryKeys.CONTROL_PANEL_APPS
@@ -30,6 +31,11 @@ import org.osgi.service.component.annotations.Reference;
 	service = PanelApp.class
 )
 public class MarketplacePurchasedPanelApp extends BasePanelApp {
+
+	@Override
+	public String getIcon() {
+		return "products";
+	}
 
 	@Override
 	public Portlet getPortlet() {
@@ -56,7 +62,7 @@ public class MarketplacePurchasedPanelApp extends BasePanelApp {
 	private Portal _portal;
 
 	@Reference(
-		target = "(javax.portlet.name=" + MarketplaceStorePortletKeys.MARKETPLACE_PURCHASED + ")"
+		target = "(jakarta.portlet.name=" + MarketplaceStorePortletKeys.MARKETPLACE_PURCHASED + ")"
 	)
 	private Portlet _portlet;
 

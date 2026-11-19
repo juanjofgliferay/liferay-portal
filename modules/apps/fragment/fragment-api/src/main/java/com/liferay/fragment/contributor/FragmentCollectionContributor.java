@@ -57,6 +57,8 @@ public interface FragmentCollectionContributor {
 		return getFragmentEntries();
 	}
 
+	public String getFragmentEntryName(String fragmentEntryKey, Locale locale);
+
 	public String getName();
 
 	public default String getName(Locale locale) {
@@ -67,6 +69,14 @@ public interface FragmentCollectionContributor {
 
 	public default ResourceBundleLoader getResourceBundleLoader() {
 		return ResourceBundleLoaderUtil.getPortalResourceBundleLoader();
+	}
+
+	public default boolean isDeprecated() {
+		return false;
+	}
+
+	public default boolean isEnabled() {
+		return true;
 	}
 
 }

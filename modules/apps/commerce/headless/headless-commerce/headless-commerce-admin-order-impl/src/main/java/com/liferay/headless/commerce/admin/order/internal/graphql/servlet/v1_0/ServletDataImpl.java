@@ -8,6 +8,7 @@ package com.liferay.headless.commerce.admin.order.internal.graphql.servlet.v1_0;
 import com.liferay.headless.commerce.admin.order.internal.graphql.mutation.v1_0.Mutation;
 import com.liferay.headless.commerce.admin.order.internal.graphql.query.v1_0.Query;
 import com.liferay.headless.commerce.admin.order.internal.resource.v1_0.AccountResourceImpl;
+import com.liferay.headless.commerce.admin.order.internal.resource.v1_0.AttachmentResourceImpl;
 import com.liferay.headless.commerce.admin.order.internal.resource.v1_0.BillingAddressResourceImpl;
 import com.liferay.headless.commerce.admin.order.internal.resource.v1_0.ChannelResourceImpl;
 import com.liferay.headless.commerce.admin.order.internal.resource.v1_0.OrderAccountGroupResourceImpl;
@@ -25,6 +26,7 @@ import com.liferay.headless.commerce.admin.order.internal.resource.v1_0.Shipping
 import com.liferay.headless.commerce.admin.order.internal.resource.v1_0.TermOrderTypeResourceImpl;
 import com.liferay.headless.commerce.admin.order.internal.resource.v1_0.TermResourceImpl;
 import com.liferay.headless.commerce.admin.order.resource.v1_0.AccountResource;
+import com.liferay.headless.commerce.admin.order.resource.v1_0.AttachmentResource;
 import com.liferay.headless.commerce.admin.order.resource.v1_0.BillingAddressResource;
 import com.liferay.headless.commerce.admin.order.resource.v1_0.ChannelResource;
 import com.liferay.headless.commerce.admin.order.resource.v1_0.OrderAccountGroupResource;
@@ -44,10 +46,10 @@ import com.liferay.headless.commerce.admin.order.resource.v1_0.TermResource;
 import com.liferay.portal.kernel.util.ObjectValuePair;
 import com.liferay.portal.vulcan.graphql.servlet.ServletData;
 
+import jakarta.annotation.Generated;
+
 import java.util.HashMap;
 import java.util.Map;
-
-import javax.annotation.Generated;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.service.component.ComponentServiceObjects;
@@ -66,6 +68,8 @@ public class ServletDataImpl implements ServletData {
 
 	@Activate
 	public void activate(BundleContext bundleContext) {
+		Mutation.setAttachmentResourceComponentServiceObjects(
+			_attachmentResourceComponentServiceObjects);
 		Mutation.setBillingAddressResourceComponentServiceObjects(
 			_billingAddressResourceComponentServiceObjects);
 		Mutation.setOrderResourceComponentServiceObjects(
@@ -97,6 +101,8 @@ public class ServletDataImpl implements ServletData {
 
 		Query.setAccountResourceComponentServiceObjects(
 			_accountResourceComponentServiceObjects);
+		Query.setAttachmentResourceComponentServiceObjects(
+			_attachmentResourceComponentServiceObjects);
 		Query.setBillingAddressResourceComponentServiceObjects(
 			_billingAddressResourceComponentServiceObjects);
 		Query.setChannelResourceComponentServiceObjects(
@@ -166,6 +172,36 @@ public class ServletDataImpl implements ServletData {
 			new HashMap<String, ObjectValuePair<Class<?>, String>>() {
 				{
 					put(
+						"mutation#deleteOrderAttachment",
+						new ObjectValuePair<>(
+							AttachmentResourceImpl.class,
+							"deleteOrderAttachment"));
+					put(
+						"mutation#deleteOrderByExternalReferenceCodeAttachmentByExternalReferenceCode",
+						new ObjectValuePair<>(
+							AttachmentResourceImpl.class,
+							"deleteOrderByExternalReferenceCodeAttachmentByExternalReferenceCode"));
+					put(
+						"mutation#patchOrderAttachment",
+						new ObjectValuePair<>(
+							AttachmentResourceImpl.class,
+							"patchOrderAttachment"));
+					put(
+						"mutation#patchOrderByExternalReferenceCodeAttachmentByExternalReferenceCode",
+						new ObjectValuePair<>(
+							AttachmentResourceImpl.class,
+							"patchOrderByExternalReferenceCodeAttachmentByExternalReferenceCode"));
+					put(
+						"mutation#createOrderAttachment",
+						new ObjectValuePair<>(
+							AttachmentResourceImpl.class,
+							"postOrderAttachment"));
+					put(
+						"mutation#createOrderByExternalReferenceCodeAttachment",
+						new ObjectValuePair<>(
+							AttachmentResourceImpl.class,
+							"postOrderByExternalReferenceCodeAttachment"));
+					put(
 						"mutation#patchOrderByExternalReferenceCodeBillingAddress",
 						new ObjectValuePair<>(
 							BillingAddressResourceImpl.class,
@@ -176,10 +212,27 @@ public class ServletDataImpl implements ServletData {
 							BillingAddressResourceImpl.class,
 							"patchOrderIdBillingAddress"));
 					put(
-						"mutation#createOrdersPageExportBatch",
+						"mutation#deleteOrder",
+						new ObjectValuePair<>(
+							OrderResourceImpl.class, "deleteOrder"));
+					put(
+						"mutation#deleteOrderBatch",
+						new ObjectValuePair<>(
+							OrderResourceImpl.class, "deleteOrderBatch"));
+					put(
+						"mutation#deleteOrderByExternalReferenceCode",
 						new ObjectValuePair<>(
 							OrderResourceImpl.class,
-							"postOrdersPageExportBatch"));
+							"deleteOrderByExternalReferenceCode"));
+					put(
+						"mutation#patchOrder",
+						new ObjectValuePair<>(
+							OrderResourceImpl.class, "patchOrder"));
+					put(
+						"mutation#patchOrderByExternalReferenceCode",
+						new ObjectValuePair<>(
+							OrderResourceImpl.class,
+							"patchOrderByExternalReferenceCode"));
 					put(
 						"mutation#createOrder",
 						new ObjectValuePair<>(
@@ -189,47 +242,15 @@ public class ServletDataImpl implements ServletData {
 						new ObjectValuePair<>(
 							OrderResourceImpl.class, "postOrderBatch"));
 					put(
-						"mutation#deleteOrderByExternalReferenceCode",
+						"mutation#createOrdersPageExportBatch",
 						new ObjectValuePair<>(
 							OrderResourceImpl.class,
-							"deleteOrderByExternalReferenceCode"));
+							"postOrdersPageExportBatch"));
 					put(
-						"mutation#patchOrderByExternalReferenceCode",
+						"mutation#updateOrderByExternalReferenceCode",
 						new ObjectValuePair<>(
 							OrderResourceImpl.class,
-							"patchOrderByExternalReferenceCode"));
-					put(
-						"mutation#deleteOrder",
-						new ObjectValuePair<>(
-							OrderResourceImpl.class, "deleteOrder"));
-					put(
-						"mutation#deleteOrderBatch",
-						new ObjectValuePair<>(
-							OrderResourceImpl.class, "deleteOrderBatch"));
-					put(
-						"mutation#patchOrder",
-						new ObjectValuePair<>(
-							OrderResourceImpl.class, "patchOrder"));
-					put(
-						"mutation#createOrderItemsPageExportBatch",
-						new ObjectValuePair<>(
-							OrderItemResourceImpl.class,
-							"postOrderItemsPageExportBatch"));
-					put(
-						"mutation#deleteOrderItemByExternalReferenceCode",
-						new ObjectValuePair<>(
-							OrderItemResourceImpl.class,
-							"deleteOrderItemByExternalReferenceCode"));
-					put(
-						"mutation#patchOrderItemByExternalReferenceCode",
-						new ObjectValuePair<>(
-							OrderItemResourceImpl.class,
-							"patchOrderItemByExternalReferenceCode"));
-					put(
-						"mutation#updateOrderItemByExternalReferenceCode",
-						new ObjectValuePair<>(
-							OrderItemResourceImpl.class,
-							"putOrderItemByExternalReferenceCode"));
+							"putOrderByExternalReferenceCode"));
 					put(
 						"mutation#deleteOrderItem",
 						new ObjectValuePair<>(
@@ -240,17 +261,19 @@ public class ServletDataImpl implements ServletData {
 							OrderItemResourceImpl.class,
 							"deleteOrderItemBatch"));
 					put(
+						"mutation#deleteOrderItemByExternalReferenceCode",
+						new ObjectValuePair<>(
+							OrderItemResourceImpl.class,
+							"deleteOrderItemByExternalReferenceCode"));
+					put(
 						"mutation#patchOrderItem",
 						new ObjectValuePair<>(
 							OrderItemResourceImpl.class, "patchOrderItem"));
 					put(
-						"mutation#updateOrderItem",
+						"mutation#patchOrderItemByExternalReferenceCode",
 						new ObjectValuePair<>(
-							OrderItemResourceImpl.class, "putOrderItem"));
-					put(
-						"mutation#updateOrderItemBatch",
-						new ObjectValuePair<>(
-							OrderItemResourceImpl.class, "putOrderItemBatch"));
+							OrderItemResourceImpl.class,
+							"patchOrderItemByExternalReferenceCode"));
 					put(
 						"mutation#createOrderByExternalReferenceCodeOrderItem",
 						new ObjectValuePair<>(
@@ -267,15 +290,23 @@ public class ServletDataImpl implements ServletData {
 							OrderItemResourceImpl.class,
 							"postOrderIdOrderItemBatch"));
 					put(
-						"mutation#deleteOrderNoteByExternalReferenceCode",
+						"mutation#createOrderItemsPageExportBatch",
 						new ObjectValuePair<>(
-							OrderNoteResourceImpl.class,
-							"deleteOrderNoteByExternalReferenceCode"));
+							OrderItemResourceImpl.class,
+							"postOrderItemsPageExportBatch"));
 					put(
-						"mutation#patchOrderNoteByExternalReferenceCode",
+						"mutation#updateOrderItem",
 						new ObjectValuePair<>(
-							OrderNoteResourceImpl.class,
-							"patchOrderNoteByExternalReferenceCode"));
+							OrderItemResourceImpl.class, "putOrderItem"));
+					put(
+						"mutation#updateOrderItemBatch",
+						new ObjectValuePair<>(
+							OrderItemResourceImpl.class, "putOrderItemBatch"));
+					put(
+						"mutation#updateOrderItemByExternalReferenceCode",
+						new ObjectValuePair<>(
+							OrderItemResourceImpl.class,
+							"putOrderItemByExternalReferenceCode"));
 					put(
 						"mutation#deleteOrderNote",
 						new ObjectValuePair<>(
@@ -286,9 +317,19 @@ public class ServletDataImpl implements ServletData {
 							OrderNoteResourceImpl.class,
 							"deleteOrderNoteBatch"));
 					put(
+						"mutation#deleteOrderNoteByExternalReferenceCode",
+						new ObjectValuePair<>(
+							OrderNoteResourceImpl.class,
+							"deleteOrderNoteByExternalReferenceCode"));
+					put(
 						"mutation#patchOrderNote",
 						new ObjectValuePair<>(
 							OrderNoteResourceImpl.class, "patchOrderNote"));
+					put(
+						"mutation#patchOrderNoteByExternalReferenceCode",
+						new ObjectValuePair<>(
+							OrderNoteResourceImpl.class,
+							"patchOrderNoteByExternalReferenceCode"));
 					put(
 						"mutation#createOrderByExternalReferenceCodeOrderNote",
 						new ObjectValuePair<>(
@@ -305,29 +346,6 @@ public class ServletDataImpl implements ServletData {
 							OrderNoteResourceImpl.class,
 							"postOrderIdOrderNoteBatch"));
 					put(
-						"mutation#createOrderRulesPageExportBatch",
-						new ObjectValuePair<>(
-							OrderRuleResourceImpl.class,
-							"postOrderRulesPageExportBatch"));
-					put(
-						"mutation#createOrderRule",
-						new ObjectValuePair<>(
-							OrderRuleResourceImpl.class, "postOrderRule"));
-					put(
-						"mutation#createOrderRuleBatch",
-						new ObjectValuePair<>(
-							OrderRuleResourceImpl.class, "postOrderRuleBatch"));
-					put(
-						"mutation#deleteOrderRuleByExternalReferenceCode",
-						new ObjectValuePair<>(
-							OrderRuleResourceImpl.class,
-							"deleteOrderRuleByExternalReferenceCode"));
-					put(
-						"mutation#patchOrderRuleByExternalReferenceCode",
-						new ObjectValuePair<>(
-							OrderRuleResourceImpl.class,
-							"patchOrderRuleByExternalReferenceCode"));
-					put(
 						"mutation#deleteOrderRule",
 						new ObjectValuePair<>(
 							OrderRuleResourceImpl.class, "deleteOrderRule"));
@@ -337,9 +355,37 @@ public class ServletDataImpl implements ServletData {
 							OrderRuleResourceImpl.class,
 							"deleteOrderRuleBatch"));
 					put(
+						"mutation#deleteOrderRuleByExternalReferenceCode",
+						new ObjectValuePair<>(
+							OrderRuleResourceImpl.class,
+							"deleteOrderRuleByExternalReferenceCode"));
+					put(
 						"mutation#patchOrderRule",
 						new ObjectValuePair<>(
 							OrderRuleResourceImpl.class, "patchOrderRule"));
+					put(
+						"mutation#patchOrderRuleByExternalReferenceCode",
+						new ObjectValuePair<>(
+							OrderRuleResourceImpl.class,
+							"patchOrderRuleByExternalReferenceCode"));
+					put(
+						"mutation#createOrderRule",
+						new ObjectValuePair<>(
+							OrderRuleResourceImpl.class, "postOrderRule"));
+					put(
+						"mutation#createOrderRuleBatch",
+						new ObjectValuePair<>(
+							OrderRuleResourceImpl.class, "postOrderRuleBatch"));
+					put(
+						"mutation#createOrderRulesPageExportBatch",
+						new ObjectValuePair<>(
+							OrderRuleResourceImpl.class,
+							"postOrderRulesPageExportBatch"));
+					put(
+						"mutation#updateOrderRuleByExternalReferenceCode",
+						new ObjectValuePair<>(
+							OrderRuleResourceImpl.class,
+							"putOrderRuleByExternalReferenceCode"));
 					put(
 						"mutation#deleteOrderRuleAccount",
 						new ObjectValuePair<>(
@@ -441,29 +487,6 @@ public class ServletDataImpl implements ServletData {
 							OrderRuleOrderTypeResourceImpl.class,
 							"postOrderRuleIdOrderRuleOrderTypeBatch"));
 					put(
-						"mutation#createOrderTypesPageExportBatch",
-						new ObjectValuePair<>(
-							OrderTypeResourceImpl.class,
-							"postOrderTypesPageExportBatch"));
-					put(
-						"mutation#createOrderType",
-						new ObjectValuePair<>(
-							OrderTypeResourceImpl.class, "postOrderType"));
-					put(
-						"mutation#createOrderTypeBatch",
-						new ObjectValuePair<>(
-							OrderTypeResourceImpl.class, "postOrderTypeBatch"));
-					put(
-						"mutation#deleteOrderTypeByExternalReferenceCode",
-						new ObjectValuePair<>(
-							OrderTypeResourceImpl.class,
-							"deleteOrderTypeByExternalReferenceCode"));
-					put(
-						"mutation#patchOrderTypeByExternalReferenceCode",
-						new ObjectValuePair<>(
-							OrderTypeResourceImpl.class,
-							"patchOrderTypeByExternalReferenceCode"));
-					put(
 						"mutation#deleteOrderType",
 						new ObjectValuePair<>(
 							OrderTypeResourceImpl.class, "deleteOrderType"));
@@ -473,9 +496,37 @@ public class ServletDataImpl implements ServletData {
 							OrderTypeResourceImpl.class,
 							"deleteOrderTypeBatch"));
 					put(
+						"mutation#deleteOrderTypeByExternalReferenceCode",
+						new ObjectValuePair<>(
+							OrderTypeResourceImpl.class,
+							"deleteOrderTypeByExternalReferenceCode"));
+					put(
 						"mutation#patchOrderType",
 						new ObjectValuePair<>(
 							OrderTypeResourceImpl.class, "patchOrderType"));
+					put(
+						"mutation#patchOrderTypeByExternalReferenceCode",
+						new ObjectValuePair<>(
+							OrderTypeResourceImpl.class,
+							"patchOrderTypeByExternalReferenceCode"));
+					put(
+						"mutation#createOrderType",
+						new ObjectValuePair<>(
+							OrderTypeResourceImpl.class, "postOrderType"));
+					put(
+						"mutation#createOrderTypeBatch",
+						new ObjectValuePair<>(
+							OrderTypeResourceImpl.class, "postOrderTypeBatch"));
+					put(
+						"mutation#createOrderTypesPageExportBatch",
+						new ObjectValuePair<>(
+							OrderTypeResourceImpl.class,
+							"postOrderTypesPageExportBatch"));
+					put(
+						"mutation#updateOrderTypeByExternalReferenceCode",
+						new ObjectValuePair<>(
+							OrderTypeResourceImpl.class,
+							"putOrderTypeByExternalReferenceCode"));
 					put(
 						"mutation#deleteOrderTypeChannel",
 						new ObjectValuePair<>(
@@ -512,10 +563,27 @@ public class ServletDataImpl implements ServletData {
 							ShippingAddressResourceImpl.class,
 							"patchOrderIdShippingAddress"));
 					put(
-						"mutation#createTermsPageExportBatch",
+						"mutation#deleteTerm",
+						new ObjectValuePair<>(
+							TermResourceImpl.class, "deleteTerm"));
+					put(
+						"mutation#deleteTermBatch",
+						new ObjectValuePair<>(
+							TermResourceImpl.class, "deleteTermBatch"));
+					put(
+						"mutation#deleteTermByExternalReferenceCode",
 						new ObjectValuePair<>(
 							TermResourceImpl.class,
-							"postTermsPageExportBatch"));
+							"deleteTermByExternalReferenceCode"));
+					put(
+						"mutation#patchTerm",
+						new ObjectValuePair<>(
+							TermResourceImpl.class, "patchTerm"));
+					put(
+						"mutation#patchTermByExternalReferenceCode",
+						new ObjectValuePair<>(
+							TermResourceImpl.class,
+							"patchTermByExternalReferenceCode"));
 					put(
 						"mutation#createTerm",
 						new ObjectValuePair<>(
@@ -525,27 +593,15 @@ public class ServletDataImpl implements ServletData {
 						new ObjectValuePair<>(
 							TermResourceImpl.class, "postTermBatch"));
 					put(
-						"mutation#deleteTermByExternalReferenceCode",
+						"mutation#createTermsPageExportBatch",
 						new ObjectValuePair<>(
 							TermResourceImpl.class,
-							"deleteTermByExternalReferenceCode"));
+							"postTermsPageExportBatch"));
 					put(
-						"mutation#patchTermByExternalReferenceCode",
+						"mutation#updateTermByExternalReferenceCode",
 						new ObjectValuePair<>(
 							TermResourceImpl.class,
-							"patchTermByExternalReferenceCode"));
-					put(
-						"mutation#deleteTerm",
-						new ObjectValuePair<>(
-							TermResourceImpl.class, "deleteTerm"));
-					put(
-						"mutation#deleteTermBatch",
-						new ObjectValuePair<>(
-							TermResourceImpl.class, "deleteTermBatch"));
-					put(
-						"mutation#patchTerm",
-						new ObjectValuePair<>(
-							TermResourceImpl.class, "patchTerm"));
+							"putTermByExternalReferenceCode"));
 					put(
 						"mutation#deleteTermOrderType",
 						new ObjectValuePair<>(
@@ -573,11 +629,6 @@ public class ServletDataImpl implements ServletData {
 							"postTermIdTermOrderTypeBatch"));
 
 					put(
-						"query#orderRuleAccountAccount",
-						new ObjectValuePair<>(
-							AccountResourceImpl.class,
-							"getOrderRuleAccountAccount"));
-					put(
 						"query#orderByExternalReferenceCodeAccount",
 						new ObjectValuePair<>(
 							AccountResourceImpl.class,
@@ -586,6 +637,31 @@ public class ServletDataImpl implements ServletData {
 						"query#orderIdAccount",
 						new ObjectValuePair<>(
 							AccountResourceImpl.class, "getOrderIdAccount"));
+					put(
+						"query#orderRuleAccountAccount",
+						new ObjectValuePair<>(
+							AccountResourceImpl.class,
+							"getOrderRuleAccountAccount"));
+					put(
+						"query#orderAttachment",
+						new ObjectValuePair<>(
+							AttachmentResourceImpl.class,
+							"getOrderAttachment"));
+					put(
+						"query#orderAttachments",
+						new ObjectValuePair<>(
+							AttachmentResourceImpl.class,
+							"getOrderAttachmentsPage"));
+					put(
+						"query#orderByExternalReferenceCodeAttachmentByExternalReferenceCode",
+						new ObjectValuePair<>(
+							AttachmentResourceImpl.class,
+							"getOrderByExternalReferenceCodeAttachmentByExternalReferenceCode"));
+					put(
+						"query#orderByExternalReferenceCodeAttachments",
+						new ObjectValuePair<>(
+							AttachmentResourceImpl.class,
+							"getOrderByExternalReferenceCodeAttachmentsPage"));
 					put(
 						"query#orderByExternalReferenceCodeBillingAddress",
 						new ObjectValuePair<>(
@@ -597,6 +673,15 @@ public class ServletDataImpl implements ServletData {
 							BillingAddressResourceImpl.class,
 							"getOrderIdBillingAddress"));
 					put(
+						"query#orderByExternalReferenceCodeChannel",
+						new ObjectValuePair<>(
+							ChannelResourceImpl.class,
+							"getOrderByExternalReferenceCodeChannel"));
+					put(
+						"query#orderIdChannel",
+						new ObjectValuePair<>(
+							ChannelResourceImpl.class, "getOrderIdChannel"));
+					put(
 						"query#orderRuleChannelChannel",
 						new ObjectValuePair<>(
 							ChannelResourceImpl.class,
@@ -607,45 +692,23 @@ public class ServletDataImpl implements ServletData {
 							ChannelResourceImpl.class,
 							"getOrderTypeChannelChannel"));
 					put(
-						"query#orderByExternalReferenceCodeChannel",
+						"query#order",
 						new ObjectValuePair<>(
-							ChannelResourceImpl.class,
-							"getOrderByExternalReferenceCodeChannel"));
-					put(
-						"query#orderIdChannel",
-						new ObjectValuePair<>(
-							ChannelResourceImpl.class, "getOrderIdChannel"));
-					put(
-						"query#orders",
-						new ObjectValuePair<>(
-							OrderResourceImpl.class, "getOrdersPage"));
+							OrderResourceImpl.class, "getOrder"));
 					put(
 						"query#orderByExternalReferenceCode",
 						new ObjectValuePair<>(
 							OrderResourceImpl.class,
 							"getOrderByExternalReferenceCode"));
 					put(
-						"query#order",
+						"query#orders",
 						new ObjectValuePair<>(
-							OrderResourceImpl.class, "getOrder"));
+							OrderResourceImpl.class, "getOrdersPage"));
 					put(
 						"query#orderRuleAccountGroupAccountGroup",
 						new ObjectValuePair<>(
 							OrderAccountGroupResourceImpl.class,
 							"getOrderRuleAccountGroupAccountGroup"));
-					put(
-						"query#orderItems",
-						new ObjectValuePair<>(
-							OrderItemResourceImpl.class, "getOrderItemsPage"));
-					put(
-						"query#orderItemByExternalReferenceCode",
-						new ObjectValuePair<>(
-							OrderItemResourceImpl.class,
-							"getOrderItemByExternalReferenceCode"));
-					put(
-						"query#orderItem",
-						new ObjectValuePair<>(
-							OrderItemResourceImpl.class, "getOrderItem"));
 					put(
 						"query#orderByExternalReferenceCodeOrderItems",
 						new ObjectValuePair<>(
@@ -657,14 +720,18 @@ public class ServletDataImpl implements ServletData {
 							OrderItemResourceImpl.class,
 							"getOrderIdOrderItemsPage"));
 					put(
-						"query#orderNoteByExternalReferenceCode",
+						"query#orderItem",
 						new ObjectValuePair<>(
-							OrderNoteResourceImpl.class,
-							"getOrderNoteByExternalReferenceCode"));
+							OrderItemResourceImpl.class, "getOrderItem"));
 					put(
-						"query#orderNote",
+						"query#orderItemByExternalReferenceCode",
 						new ObjectValuePair<>(
-							OrderNoteResourceImpl.class, "getOrderNote"));
+							OrderItemResourceImpl.class,
+							"getOrderItemByExternalReferenceCode"));
+					put(
+						"query#orderItems",
+						new ObjectValuePair<>(
+							OrderItemResourceImpl.class, "getOrderItemsPage"));
 					put(
 						"query#orderByExternalReferenceCodeOrderNotes",
 						new ObjectValuePair<>(
@@ -676,18 +743,27 @@ public class ServletDataImpl implements ServletData {
 							OrderNoteResourceImpl.class,
 							"getOrderIdOrderNotesPage"));
 					put(
-						"query#orderRules",
+						"query#orderNote",
 						new ObjectValuePair<>(
-							OrderRuleResourceImpl.class, "getOrderRulesPage"));
+							OrderNoteResourceImpl.class, "getOrderNote"));
+					put(
+						"query#orderNoteByExternalReferenceCode",
+						new ObjectValuePair<>(
+							OrderNoteResourceImpl.class,
+							"getOrderNoteByExternalReferenceCode"));
+					put(
+						"query#orderRule",
+						new ObjectValuePair<>(
+							OrderRuleResourceImpl.class, "getOrderRule"));
 					put(
 						"query#orderRuleByExternalReferenceCode",
 						new ObjectValuePair<>(
 							OrderRuleResourceImpl.class,
 							"getOrderRuleByExternalReferenceCode"));
 					put(
-						"query#orderRule",
+						"query#orderRules",
 						new ObjectValuePair<>(
-							OrderRuleResourceImpl.class, "getOrderRule"));
+							OrderRuleResourceImpl.class, "getOrderRulesPage"));
 					put(
 						"query#orderRuleByExternalReferenceCodeOrderRuleAccounts",
 						new ObjectValuePair<>(
@@ -734,18 +810,18 @@ public class ServletDataImpl implements ServletData {
 							OrderTypeResourceImpl.class,
 							"getOrderRuleOrderTypeOrderType"));
 					put(
-						"query#orderTypes",
+						"query#orderType",
 						new ObjectValuePair<>(
-							OrderTypeResourceImpl.class, "getOrderTypesPage"));
+							OrderTypeResourceImpl.class, "getOrderType"));
 					put(
 						"query#orderTypeByExternalReferenceCode",
 						new ObjectValuePair<>(
 							OrderTypeResourceImpl.class,
 							"getOrderTypeByExternalReferenceCode"));
 					put(
-						"query#orderType",
+						"query#orderTypes",
 						new ObjectValuePair<>(
-							OrderTypeResourceImpl.class, "getOrderType"));
+							OrderTypeResourceImpl.class, "getOrderTypesPage"));
 					put(
 						"query#termOrderTypeOrderType",
 						new ObjectValuePair<>(
@@ -762,11 +838,6 @@ public class ServletDataImpl implements ServletData {
 							OrderTypeChannelResourceImpl.class,
 							"getOrderTypeIdOrderTypeChannelsPage"));
 					put(
-						"query#orderItemShippingAddress",
-						new ObjectValuePair<>(
-							ShippingAddressResourceImpl.class,
-							"getOrderItemShippingAddress"));
-					put(
 						"query#orderByExternalReferenceCodeShippingAddress",
 						new ObjectValuePair<>(
 							ShippingAddressResourceImpl.class,
@@ -777,18 +848,23 @@ public class ServletDataImpl implements ServletData {
 							ShippingAddressResourceImpl.class,
 							"getOrderIdShippingAddress"));
 					put(
-						"query#terms",
+						"query#orderItemShippingAddress",
 						new ObjectValuePair<>(
-							TermResourceImpl.class, "getTermsPage"));
+							ShippingAddressResourceImpl.class,
+							"getOrderItemShippingAddress"));
+					put(
+						"query#term",
+						new ObjectValuePair<>(
+							TermResourceImpl.class, "getTerm"));
 					put(
 						"query#termByExternalReferenceCode",
 						new ObjectValuePair<>(
 							TermResourceImpl.class,
 							"getTermByExternalReferenceCode"));
 					put(
-						"query#term",
+						"query#terms",
 						new ObjectValuePair<>(
-							TermResourceImpl.class, "getTerm"));
+							TermResourceImpl.class, "getTermsPage"));
 					put(
 						"query#termByExternalReferenceCodeTermOrderTypes",
 						new ObjectValuePair<>(
@@ -801,97 +877,111 @@ public class ServletDataImpl implements ServletData {
 							"getTermIdTermOrderTypesPage"));
 
 					put(
-						"query#Order.itemByExternalReferenceCode",
-						new ObjectValuePair<>(
-							OrderItemResourceImpl.class,
-							"getOrderItemByExternalReferenceCode"));
-					put(
-						"query#Order.byExternalReferenceCodeChannel",
-						new ObjectValuePair<>(
-							ChannelResourceImpl.class,
-							"getOrderByExternalReferenceCodeChannel"));
-					put(
-						"query#Order.ruleByExternalReferenceCode",
-						new ObjectValuePair<>(
-							OrderRuleResourceImpl.class,
-							"getOrderRuleByExternalReferenceCode"));
-					put(
-						"query#Order.byExternalReferenceCodeAccount",
-						new ObjectValuePair<>(
-							AccountResourceImpl.class,
-							"getOrderByExternalReferenceCodeAccount"));
-					put(
 						"query#OrderItem.orderByExternalReferenceCode",
 						new ObjectValuePair<>(
 							OrderResourceImpl.class,
 							"getOrderByExternalReferenceCode"));
 					put(
-						"query#Order.ruleByExternalReferenceCodeOrderRuleAccountGroups",
+						"query#Order.itemByExternalReferenceCode",
 						new ObjectValuePair<>(
-							OrderRuleAccountGroupResourceImpl.class,
-							"getOrderRuleByExternalReferenceCodeOrderRuleAccountGroupsPage"));
+							OrderItemResourceImpl.class,
+							"getOrderItemByExternalReferenceCode"));
 					put(
 						"query#Order.noteByExternalReferenceCode",
 						new ObjectValuePair<>(
 							OrderNoteResourceImpl.class,
 							"getOrderNoteByExternalReferenceCode"));
 					put(
-						"query#Order.byExternalReferenceCodeBillingAddress",
+						"query#Order.ruleByExternalReferenceCode",
 						new ObjectValuePair<>(
-							BillingAddressResourceImpl.class,
-							"getOrderByExternalReferenceCodeBillingAddress"));
+							OrderRuleResourceImpl.class,
+							"getOrderRuleByExternalReferenceCode"));
 					put(
 						"query#Order.typeByExternalReferenceCode",
 						new ObjectValuePair<>(
 							OrderTypeResourceImpl.class,
 							"getOrderTypeByExternalReferenceCode"));
 					put(
-						"query#Order.ruleByExternalReferenceCodeOrderRuleChannels",
+						"query#Order.termByExternalReferenceCode",
 						new ObjectValuePair<>(
-							OrderRuleChannelResourceImpl.class,
-							"getOrderRuleByExternalReferenceCodeOrderRuleChannelsPage"));
+							TermResourceImpl.class,
+							"getTermByExternalReferenceCode"));
+					put(
+						"query#Order.byExternalReferenceCodeAccount",
+						new ObjectValuePair<>(
+							AccountResourceImpl.class,
+							"getOrderByExternalReferenceCodeAccount"));
+					put(
+						"query#Order.byExternalReferenceCodeAttachments",
+						new ObjectValuePair<>(
+							AttachmentResourceImpl.class,
+							"getOrderByExternalReferenceCodeAttachmentsPage"));
+					put(
+						"query#Order.byExternalReferenceCodeBillingAddress",
+						new ObjectValuePair<>(
+							BillingAddressResourceImpl.class,
+							"getOrderByExternalReferenceCodeBillingAddress"));
+					put(
+						"query#Order.byExternalReferenceCodeChannel",
+						new ObjectValuePair<>(
+							ChannelResourceImpl.class,
+							"getOrderByExternalReferenceCodeChannel"));
+					put(
+						"query#Order.byExternalReferenceCodeOrderItems",
+						new ObjectValuePair<>(
+							OrderItemResourceImpl.class,
+							"getOrderByExternalReferenceCodeOrderItemsPage"));
 					put(
 						"query#Order.byExternalReferenceCodeOrderNotes",
 						new ObjectValuePair<>(
 							OrderNoteResourceImpl.class,
 							"getOrderByExternalReferenceCodeOrderNotesPage"));
 					put(
-						"query#Order.byExternalReferenceCodeShippingAddress",
-						new ObjectValuePair<>(
-							ShippingAddressResourceImpl.class,
-							"getOrderByExternalReferenceCodeShippingAddress"));
-					put(
 						"query#Order.ruleByExternalReferenceCodeOrderRuleAccounts",
 						new ObjectValuePair<>(
 							OrderRuleAccountResourceImpl.class,
 							"getOrderRuleByExternalReferenceCodeOrderRuleAccountsPage"));
 					put(
-						"query#Order.termByExternalReferenceCode",
+						"query#Order.ruleByExternalReferenceCodeOrderRuleAccountGroups",
 						new ObjectValuePair<>(
-							TermResourceImpl.class,
-							"getTermByExternalReferenceCode"));
+							OrderRuleAccountGroupResourceImpl.class,
+							"getOrderRuleByExternalReferenceCodeOrderRuleAccountGroupsPage"));
 					put(
-						"query#Order.termByExternalReferenceCodeTermOrderTypes",
+						"query#Order.ruleByExternalReferenceCodeOrderRuleChannels",
 						new ObjectValuePair<>(
-							TermOrderTypeResourceImpl.class,
-							"getTermByExternalReferenceCodeTermOrderTypesPage"));
-					put(
-						"query#Order.typeByExternalReferenceCodeOrderTypeChannels",
-						new ObjectValuePair<>(
-							OrderTypeChannelResourceImpl.class,
-							"getOrderTypeByExternalReferenceCodeOrderTypeChannelsPage"));
+							OrderRuleChannelResourceImpl.class,
+							"getOrderRuleByExternalReferenceCodeOrderRuleChannelsPage"));
 					put(
 						"query#Order.ruleByExternalReferenceCodeOrderRuleOrderTypes",
 						new ObjectValuePair<>(
 							OrderRuleOrderTypeResourceImpl.class,
 							"getOrderRuleByExternalReferenceCodeOrderRuleOrderTypesPage"));
 					put(
-						"query#Order.byExternalReferenceCodeOrderItems",
+						"query#Order.typeByExternalReferenceCodeOrderTypeChannels",
 						new ObjectValuePair<>(
-							OrderItemResourceImpl.class,
-							"getOrderByExternalReferenceCodeOrderItemsPage"));
+							OrderTypeChannelResourceImpl.class,
+							"getOrderTypeByExternalReferenceCodeOrderTypeChannelsPage"));
+					put(
+						"query#Order.byExternalReferenceCodeShippingAddress",
+						new ObjectValuePair<>(
+							ShippingAddressResourceImpl.class,
+							"getOrderByExternalReferenceCodeShippingAddress"));
+					put(
+						"query#Order.termByExternalReferenceCodeTermOrderTypes",
+						new ObjectValuePair<>(
+							TermOrderTypeResourceImpl.class,
+							"getTermByExternalReferenceCodeTermOrderTypesPage"));
+					put(
+						"query#Order.byExternalReferenceCodeAttachmentByExternalReferenceCode",
+						new ObjectValuePair<>(
+							AttachmentResourceImpl.class,
+							"getOrderByExternalReferenceCodeAttachmentByExternalReferenceCode"));
 				}
 			};
+
+	@Reference(scope = ReferenceScope.PROTOTYPE_REQUIRED)
+	private ComponentServiceObjects<AttachmentResource>
+		_attachmentResourceComponentServiceObjects;
 
 	@Reference(scope = ReferenceScope.PROTOTYPE_REQUIRED)
 	private ComponentServiceObjects<BillingAddressResource>
@@ -962,3 +1052,4 @@ public class ServletDataImpl implements ServletData {
 		_orderAccountGroupResourceComponentServiceObjects;
 
 }
+// LIFERAY-REST-BUILDER-HASH:-1694090567

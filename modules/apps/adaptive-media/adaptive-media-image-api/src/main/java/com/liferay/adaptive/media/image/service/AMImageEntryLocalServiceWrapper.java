@@ -518,21 +518,13 @@ public class AMImageEntryLocalServiceWrapper
 		return _amImageEntryLocalService.getOSGiServiceIdentifier();
 	}
 
-	/**
-	 * Returns the percentage of images that have an adaptive media image
-	 * generated based on the expected number of adaptive media images for a
-	 * configuration in a company.
-	 *
-	 * @param companyId the primary key of the company
-	 * @param configurationUuid the UUID of the configuration used to create
-	 the adaptive media image
-	 * @return the percentage of images that have an adaptive media image out of
-	 the expected adaptive media images
-	 */
 	@Override
-	public int getPercentage(long companyId, String configurationUuid) {
+	public int getPercentage(
+		long companyId, String configurationUuid,
+		int expectedAMImageEntriesCount) {
+
 		return _amImageEntryLocalService.getPercentage(
-			companyId, configurationUuid);
+			companyId, configurationUuid, expectedAMImageEntriesCount);
 	}
 
 	/**
@@ -610,3 +602,4 @@ public class AMImageEntryLocalServiceWrapper
 	private AMImageEntryLocalService _amImageEntryLocalService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1966264911

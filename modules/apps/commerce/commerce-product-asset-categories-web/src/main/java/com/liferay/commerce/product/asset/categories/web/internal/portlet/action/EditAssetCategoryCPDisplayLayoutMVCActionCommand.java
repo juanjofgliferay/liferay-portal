@@ -33,11 +33,11 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.StringUtil;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -47,7 +47,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + CPPortletKeys.COMMERCE_CHANNELS,
+		"jakarta.portlet.name=" + CPPortletKeys.COMMERCE_CHANNELS,
 		"mvc.command.name=/commerce_channels/edit_asset_category_cp_display_layout"
 	},
 	service = MVCActionCommand.class
@@ -167,10 +167,16 @@ public class EditAssetCategoryCPDisplayLayoutMVCActionCommand
 					actionRequest,
 					"classPK_" + assetVocabulary.getVocabularyId());
 
-				if (assetVocabularyClassPK > 0) {
-					classPKs.add(assetVocabularyClassPK);
+				if (assetVocabularyClassPK <= 0) {
+					continue;
 				}
+
+				classPKs.add(assetVocabularyClassPK);
 			}
+		}
+
+		if (classPKs.isEmpty()) {
+			throw new CPDisplayLayoutEntryException();
 		}
 
 		String layoutPageTemplateEntryUuid = ParamUtil.getString(
@@ -183,10 +189,6 @@ public class EditAssetCategoryCPDisplayLayoutMVCActionCommand
 				layoutUuid);
 		}
 		else {
-			if (classPKs.isEmpty()) {
-				throw new CPDisplayLayoutEntryException();
-			}
-
 			long commerceChannelId = ParamUtil.getLong(
 				actionRequest, "commerceChannelId");
 

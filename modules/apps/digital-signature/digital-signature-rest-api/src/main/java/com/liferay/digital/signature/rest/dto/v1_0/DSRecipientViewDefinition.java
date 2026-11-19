@@ -11,23 +11,25 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import com.liferay.petra.function.UnsafeSupplier;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author José Abelenda
@@ -49,145 +51,210 @@ public class DSRecipientViewDefinition implements Serializable {
 			DSRecipientViewDefinition.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getAuthenticationMethod() {
+		if (_authenticationMethodSupplier != null) {
+			authenticationMethod = _authenticationMethodSupplier.get();
+
+			_authenticationMethodSupplier = null;
+		}
+
 		return authenticationMethod;
 	}
 
 	public void setAuthenticationMethod(String authenticationMethod) {
 		this.authenticationMethod = authenticationMethod;
+
+		_authenticationMethodSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setAuthenticationMethod(
 		UnsafeSupplier<String, Exception> authenticationMethodUnsafeSupplier) {
 
-		try {
-			authenticationMethod = authenticationMethodUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_authenticationMethodSupplier = () -> {
+			try {
+				return authenticationMethodUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String authenticationMethod;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _authenticationMethodSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getDsClientUserId() {
+		if (_dsClientUserIdSupplier != null) {
+			dsClientUserId = _dsClientUserIdSupplier.get();
+
+			_dsClientUserIdSupplier = null;
+		}
+
 		return dsClientUserId;
 	}
 
 	public void setDsClientUserId(String dsClientUserId) {
 		this.dsClientUserId = dsClientUserId;
+
+		_dsClientUserIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setDsClientUserId(
 		UnsafeSupplier<String, Exception> dsClientUserIdUnsafeSupplier) {
 
-		try {
-			dsClientUserId = dsClientUserIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_dsClientUserIdSupplier = () -> {
+			try {
+				return dsClientUserIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String dsClientUserId;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _dsClientUserIdSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getEmailAddress() {
+		if (_emailAddressSupplier != null) {
+			emailAddress = _emailAddressSupplier.get();
+
+			_emailAddressSupplier = null;
+		}
+
 		return emailAddress;
 	}
 
 	public void setEmailAddress(String emailAddress) {
 		this.emailAddress = emailAddress;
+
+		_emailAddressSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setEmailAddress(
 		UnsafeSupplier<String, Exception> emailAddressUnsafeSupplier) {
 
-		try {
-			emailAddress = emailAddressUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_emailAddressSupplier = () -> {
+			try {
+				return emailAddressUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String emailAddress;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _emailAddressSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getReturnURL() {
+		if (_returnURLSupplier != null) {
+			returnURL = _returnURLSupplier.get();
+
+			_returnURLSupplier = null;
+		}
+
 		return returnURL;
 	}
 
 	public void setReturnURL(String returnURL) {
 		this.returnURL = returnURL;
+
+		_returnURLSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setReturnURL(
 		UnsafeSupplier<String, Exception> returnURLUnsafeSupplier) {
 
-		try {
-			returnURL = returnURLUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_returnURLSupplier = () -> {
+			try {
+				return returnURLUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String returnURL;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _returnURLSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getUserName() {
+		if (_userNameSupplier != null) {
+			userName = _userNameSupplier.get();
+
+			_userNameSupplier = null;
+		}
+
 		return userName;
 	}
 
 	public void setUserName(String userName) {
 		this.userName = userName;
+
+		_userNameSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setUserName(
 		UnsafeSupplier<String, Exception> userNameUnsafeSupplier) {
 
-		try {
-			userName = userNameUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_userNameSupplier = () -> {
+			try {
+				return userNameUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String userName;
+
+	@JsonIgnore
+	private Supplier<String> _userNameSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -217,6 +284,8 @@ public class DSRecipientViewDefinition implements Serializable {
 
 		sb.append("{");
 
+		String authenticationMethod = getAuthenticationMethod();
+
 		if (authenticationMethod != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -230,6 +299,8 @@ public class DSRecipientViewDefinition implements Serializable {
 
 			sb.append("\"");
 		}
+
+		String dsClientUserId = getDsClientUserId();
 
 		if (dsClientUserId != null) {
 			if (sb.length() > 1) {
@@ -245,6 +316,8 @@ public class DSRecipientViewDefinition implements Serializable {
 			sb.append("\"");
 		}
 
+		String emailAddress = getEmailAddress();
+
 		if (emailAddress != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -259,6 +332,8 @@ public class DSRecipientViewDefinition implements Serializable {
 			sb.append("\"");
 		}
 
+		String returnURL = getReturnURL();
+
 		if (returnURL != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -272,6 +347,8 @@ public class DSRecipientViewDefinition implements Serializable {
 
 			sb.append("\"");
 		}
+
+		String userName = getUserName();
 
 		if (userName != null) {
 			if (sb.length() > 1) {
@@ -292,8 +369,8 @@ public class DSRecipientViewDefinition implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.digital.signature.rest.dto.v1_0.DSRecipientViewDefinition",
 		name = "x-class-name"
 	)
@@ -339,7 +416,10 @@ public class DSRecipientViewDefinition implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -377,6 +457,27 @@ public class DSRecipientViewDefinition implements Serializable {
 		return sb.toString();
 	}
 
+	private static String _toJSON(Object value) {
+		if (value instanceof Collection) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONArray((Collection<?>)value));
+		}
+		else if (value instanceof Map) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONObject((Map<?, ?>)value));
+		}
+		else if (value instanceof Object[]) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONArray(
+					Arrays.asList((Object[])value)));
+		}
+		else if (value instanceof String) {
+			return StringBundler.concat("\"", _escape(value), "\"");
+		}
+
+		return String.valueOf(value);
+	}
+
 	private static final String[][] _JSON_ESCAPE_STRINGS = {
 		{"\\", "\"", "\b", "\f", "\n", "\r", "\t"},
 		{"\\\\", "\\\"", "\\b", "\\f", "\\n", "\\r", "\\t"}
@@ -385,3 +486,4 @@ public class DSRecipientViewDefinition implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:-1744397743

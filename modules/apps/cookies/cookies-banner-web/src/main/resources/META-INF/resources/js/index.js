@@ -13,8 +13,16 @@ export {
 
 export {default as CookiesBannerConfiguration} from '../cookies_banner_configuration/js/CookiesBannerConfiguration';
 
+export {default as ConfigurationFormEventHandler} from './ConfigurationFormEventHandler';
+
+export {
+	initGlobalPrivacyControl,
+	isGlobalPrivacyControlSignalActive,
+} from './GlobalPrivacyControlUtil';
+
 export {
 	default as toggleThirdPartyCookies,
 	runThirdPartyCookiesInterval,
 	flipThirdPartyCookiesOff,
+	suppressThirdPartyCookies,
 } from './toggleThirdPartyCookies';

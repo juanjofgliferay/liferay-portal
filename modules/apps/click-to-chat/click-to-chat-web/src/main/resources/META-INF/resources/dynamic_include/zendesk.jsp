@@ -7,14 +7,14 @@
 
 <%@ include file="/dynamic_include/init.jsp" %>
 
-<script>
+<aui:script position="inline">
 	(function () {
 		function loadZendeskScript() {
 			function setZendeskUserInfo() {
 				if ('<%= themeDisplay.isSignedIn() %>' === 'true') {
 					zE('webWidget', 'identify', {
-						email: '<%= user.getEmailAddress() %>',
-						name: '<%= user.getScreenName() %>',
+						email: '<%= HtmlUtil.escapeJS(user.getEmailAddress()) %>',
+						name: '<%= HtmlUtil.escapeJS(user.getScreenName()) %>',
 					});
 				}
 			}
@@ -25,7 +25,7 @@
 				scriptElement.setAttribute('id', 'ze-snippet');
 				scriptElement.setAttribute(
 					'src',
-					'https://static.zdassets.com/ekr/snippet.js?key=<%= clickToChatChatProviderAccountId %>'
+					'https://static.zdassets.com/ekr/snippet.js?key=<%= HtmlUtil.escapeJS(clickToChatChatProviderAccountId) %>'
 				);
 				scriptElement.setAttribute('type', 'text/javascript');
 				scriptElement.onload = function () {
@@ -49,4 +49,4 @@
 			loadZendeskScript();
 		}
 	})();
-</script>
+</aui:script>

@@ -114,6 +114,11 @@ public class WorkflowDefinitionImpl implements WorkflowDefinition {
 		return _active;
 	}
 
+	@Override
+	public boolean isSystem() {
+		return false;
+	}
+
 	private final boolean _active;
 	private final String _description;
 	private final Date _modifiedDate;

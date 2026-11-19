@@ -7,7 +7,7 @@
 
 <%@ include file="/dynamic_include/init.jsp" %>
 
-<script type="text/javascript">
+<aui:script position="inline" type="text/javascript">
 	(window.lpTag = window.lpTag || {}),
 		'undefined' == typeof window.lpTag._tagCount
 			? ((window.lpTag = {
@@ -18,8 +18,10 @@
 						0 === e
 							? ((this._defB = this._defB || []), this._defB.push(t))
 							: 1 === e
-							? ((this._defT = this._defT || []), this._defT.push(t))
-							: ((this._defL = this._defL || []), this._defL.push(t));
+								? ((this._defT = this._defT || []),
+									this._defT.push(t))
+								: ((this._defL = this._defL || []),
+									this._defL.push(t));
 					},
 					ev: lpTag.ev || [],
 					events: {
@@ -43,21 +45,21 @@
 						window.attachEvent
 							? window.attachEvent('onload', () => {
 									t._domReady('domReady');
-							  })
+								})
 							: (window.addEventListener(
 									'DOMContentLoaded',
 									() => {
 										t._domReady('contReady');
 									},
 									!1
-							  ),
-							  window.addEventListener(
+								),
+								window.addEventListener(
 									'load',
 									() => {
 										t._domReady('domReady');
 									},
 									!1
-							  )),
+								)),
 							'undefined' === typeof window._lptStop && this.load();
 					},
 					load: function (t, e, i) {
@@ -72,7 +74,9 @@
 					scp: lpTag.scp || null,
 					sdes: lpTag.sdes || [],
 					section: lpTag.section || '',
-					site: '<%= clickToChatChatProviderAccountId %>' || '',
+					site:
+						'<%= HtmlUtil.escapeJS(clickToChatChatProviderAccountId) %>' ||
+						'',
 					start: function () {
 						this.autoStart = !0;
 					},
@@ -108,8 +112,8 @@
 					},
 					_tagCount: 1,
 					_v: '1.10.0',
-			  }),
-			  lpTag.init())
+				}),
+				lpTag.init())
 			: (window.lpTag._tagCount += 1);
 
 	lpTag.sdes = lpTag.sdes || [];
@@ -118,20 +122,20 @@
 		personal: {
 			contacts: [
 				{
-					email: '<%= user.getEmailAddress() %>',
+					email: '<%= HtmlUtil.escapeJS(user.getEmailAddress()) %>',
 				},
 			],
-			firstname: '<%= user.getFirstName() %>',
-			lastname: '<%= user.getLastName() %>',
+			firstname: '<%= HtmlUtil.escapeJS(user.getFirstName()) %>',
+			lastname: '<%= HtmlUtil.escapeJS(user.getLastName()) %>',
 		},
 		type: 'personal',
 	});
 
 	lpTag.sdes.push({
 		info: {
-			customerId: '<%= user.getScreenName() %>',
+			customerId: '<%= HtmlUtil.escapeJS(user.getScreenName()) %>',
 			userName: '<%= user.getUserId() %>',
 		},
 		type: 'ctmrinfo',
 	});
-</script>
+</aui:script>

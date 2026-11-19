@@ -111,11 +111,7 @@ public class DDMFieldPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		DDMField newDDMField = _persistence.create(pk);
-
-		newDDMField.setMvccVersion(RandomTestUtil.nextLong());
+		DDMField newDDMField = addDDMField();
 
 		newDDMField.setCtCollectionId(RandomTestUtil.nextLong());
 
@@ -137,7 +133,9 @@ public class DDMFieldPersistenceTest {
 
 		newDDMField.setPriority(RandomTestUtil.nextInt());
 
-		_ddmFields.add(_persistence.update(newDDMField));
+		newDDMField = _persistence.update(newDDMField);
+
+		_ddmFields.add(newDDMField);
 
 		DDMField existingDDMField = _persistence.findByPrimaryKey(
 			newDDMField.getPrimaryKey());
@@ -176,22 +174,6 @@ public class DDMFieldPersistenceTest {
 		_persistence.countByStorageId(RandomTestUtil.nextLong());
 
 		_persistence.countByStorageId(0L);
-	}
-
-	@Test
-	public void testCountByStructureVersionId() throws Exception {
-		_persistence.countByStructureVersionId(RandomTestUtil.nextLong());
-
-		_persistence.countByStructureVersionId(0L);
-	}
-
-	@Test
-	public void testCountByC_F() throws Exception {
-		_persistence.countByC_F(RandomTestUtil.nextLong(), "");
-
-		_persistence.countByC_F(0L, "null");
-
-		_persistence.countByC_F(0L, (String)null);
 	}
 
 	@Test
@@ -511,8 +493,6 @@ public class DDMFieldPersistenceTest {
 
 		DDMField ddmField = _persistence.create(pk);
 
-		ddmField.setMvccVersion(RandomTestUtil.nextLong());
-
 		ddmField.setCtCollectionId(RandomTestUtil.nextLong());
 
 		ddmField.setCompanyId(RandomTestUtil.nextLong());
@@ -543,3 +523,4 @@ public class DDMFieldPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1516473446

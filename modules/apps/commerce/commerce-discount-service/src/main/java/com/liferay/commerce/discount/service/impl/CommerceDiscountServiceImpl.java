@@ -21,6 +21,7 @@ import com.liferay.portal.kernel.search.BaseModelSearchResult;
 import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
+import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
 import com.liferay.portal.kernel.security.permission.resource.PortletResourcePermission;
 import com.liferay.portal.kernel.service.ServiceContext;
@@ -244,15 +245,15 @@ public class CommerceDiscountServiceImpl
 
 			if (commerceDiscount != null) {
 				return updateCommerceDiscount(
-					commerceDiscountId, title, target, useCouponCode,
-					couponCode, usePercentage, maximumDiscountAmount, level,
-					level1, level2, level3, level4, limitationType,
-					limitationTimes, limitationTimesPerAccount,
-					rulesConjunction, active, displayDateMonth, displayDateDay,
-					displayDateYear, displayDateHour, displayDateMinute,
-					expirationDateMonth, expirationDateDay, expirationDateYear,
-					expirationDateHour, expirationDateMinute, neverExpire,
-					serviceContext);
+					commerceDiscount.getCommerceDiscountId(), title, target,
+					useCouponCode, couponCode, usePercentage,
+					maximumDiscountAmount, level, level1, level2, level3,
+					level4, limitationType, limitationTimes,
+					limitationTimesPerAccount, rulesConjunction, active,
+					displayDateMonth, displayDateDay, displayDateYear,
+					displayDateHour, displayDateMinute, expirationDateMonth,
+					expirationDateDay, expirationDateYear, expirationDateHour,
+					expirationDateMinute, neverExpire, serviceContext);
 			}
 		}
 
@@ -279,27 +280,12 @@ public class CommerceDiscountServiceImpl
 		commerceDiscountLocalService.deleteCommerceDiscount(commerceDiscountId);
 	}
 
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
-	 *             #fetchByExternalReferenceCode(String, long)}
-	 */
-	@Deprecated
 	@Override
-	public CommerceDiscount fetchByExternalReferenceCode(
-			long companyId, String externalReferenceCode)
-		throws PortalException {
-
-		return fetchByExternalReferenceCode(externalReferenceCode, companyId);
-	}
-
-	@Override
-	public CommerceDiscount fetchByExternalReferenceCode(
-			String externalReferenceCode, long companyId)
+	public CommerceDiscount fetchCommerceDiscount(long commerceDiscountId)
 		throws PortalException {
 
 		CommerceDiscount commerceDiscount =
-			commerceDiscountLocalService.fetchByExternalReferenceCode(
-				externalReferenceCode, companyId);
+			commerceDiscountPersistence.fetchByPrimaryKey(commerceDiscountId);
 
 		if (commerceDiscount != null) {
 			_commerceDiscountResourcePermission.check(
@@ -310,12 +296,13 @@ public class CommerceDiscountServiceImpl
 	}
 
 	@Override
-	public CommerceDiscount fetchCommerceDiscount(long commerceDiscountId)
+	public CommerceDiscount fetchCommerceDiscountByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
 		throws PortalException {
 
 		CommerceDiscount commerceDiscount =
-			commerceDiscountLocalService.fetchCommerceDiscount(
-				commerceDiscountId);
+			commerceDiscountPersistence.fetchByERC_C(
+				externalReferenceCode, companyId);
 
 		if (commerceDiscount != null) {
 			_commerceDiscountResourcePermission.check(
@@ -332,8 +319,7 @@ public class CommerceDiscountServiceImpl
 		_commerceDiscountResourcePermission.check(
 			getPermissionChecker(), commerceDiscountId, ActionKeys.VIEW);
 
-		return commerceDiscountLocalService.getCommerceDiscount(
-			commerceDiscountId);
+		return commerceDiscountPersistence.findByPrimaryKey(commerceDiscountId);
 	}
 
 	/**
@@ -361,7 +347,7 @@ public class CommerceDiscountServiceImpl
 			getPermissionChecker(), null,
 			CommerceDiscountActionKeys.VIEW_COMMERCE_DISCOUNTS);
 
-		return commerceDiscountLocalService.getCommerceDiscounts(
+		return commerceDiscountPersistence.findByC_L_A_S(
 			companyId, level, active, status);
 	}
 
@@ -384,6 +370,34 @@ public class CommerceDiscountServiceImpl
 
 		return commerceDiscountFinder.countByCommercePricingClassId(
 			commercePricingClassId, title, true);
+	}
+
+	@Override
+	public CommerceDiscount getOrAddEmptyCommerceDiscount(
+			String externalReferenceCode)
+		throws PortalException {
+
+		PermissionChecker permissionChecker = getPermissionChecker();
+
+		CommerceDiscount commerceDiscount =
+			commerceDiscountService.
+				fetchCommerceDiscountByExternalReferenceCode(
+					externalReferenceCode, permissionChecker.getCompanyId());
+
+		if (commerceDiscount != null) {
+			return commerceDiscount;
+		}
+
+		PortletResourcePermission portletResourcePermission =
+			_commerceDiscountResourcePermission.getPortletResourcePermission();
+
+		portletResourcePermission.check(
+			permissionChecker, null,
+			CommerceDiscountActionKeys.ADD_COMMERCE_DISCOUNT);
+
+		return commerceDiscountLocalService.getOrAddEmptyCommerceDiscount(
+			externalReferenceCode, permissionChecker.getCompanyId(),
+			permissionChecker.getUserId());
 	}
 
 	@Override

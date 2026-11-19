@@ -10,6 +10,7 @@ import com.liferay.portal.kernel.audit.AuditMessage;
 import com.liferay.portal.kernel.change.tracking.CTTransactionException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.util.BatchProcessor;
 import com.liferay.portal.security.audit.AuditEventManager;
 import com.liferay.portal.security.audit.AuditMessageProcessor;
 import com.liferay.portal.security.audit.router.configuration.PersistentAuditMessageProcessorConfiguration;
@@ -18,6 +19,7 @@ import java.util.Map;
 
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Modified;
 import org.osgi.service.component.annotations.Reference;
 
@@ -46,23 +48,56 @@ public class PersistentAuditMessageProcessor implements AuditMessageProcessor {
 	}
 
 	@Activate
-	@Modified
 	protected void activate(Map<String, Object> properties) {
+		modified(properties);
+	}
+
+	@Deactivate
+	protected void deactivate() {
+		if (_batchProcessor != null) {
+			_batchProcessor.close();
+		}
+	}
+
+	protected void doProcess(AuditMessage auditMessage) throws Exception {
+		PersistentAuditMessageProcessorConfiguration
+			persistentAuditMessageProcessorConfiguration =
+				_persistentAuditMessageProcessorConfiguration;
+
+		if (!persistentAuditMessageProcessorConfiguration.enabled()) {
+			return;
+		}
+
+		_batchProcessor.add(auditMessage);
+	}
+
+	@Modified
+	protected void modified(Map<String, Object> properties) {
 		PersistentAuditMessageProcessorConfiguration
 			persistentAuditMessageProcessorConfiguration =
 				ConfigurableUtil.createConfigurable(
 					PersistentAuditMessageProcessorConfiguration.class,
 					properties);
 
-		_enabled = persistentAuditMessageProcessorConfiguration.enabled();
-	}
-
-	protected void doProcess(AuditMessage auditMessage) throws Exception {
-		if (!_enabled) {
-			return;
+		if (persistentAuditMessageProcessorConfiguration.enabled()) {
+			if (_batchProcessor == null) {
+				_batchProcessor = new BatchProcessor<>(
+					persistentAuditMessageProcessorConfiguration.
+						flushInterval(),
+					persistentAuditMessageProcessorConfiguration.bufferSize(),
+					_auditEventManager::addAuditEvents,
+					PersistentAuditMessageProcessor.class.getName());
+			}
+			else {
+				_batchProcessor.configure(
+					persistentAuditMessageProcessorConfiguration.
+						flushInterval(),
+					persistentAuditMessageProcessorConfiguration.bufferSize());
+			}
 		}
 
-		_auditEventManager.addAuditEvent(auditMessage);
+		_persistentAuditMessageProcessorConfiguration =
+			persistentAuditMessageProcessorConfiguration;
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
@@ -71,6 +106,8 @@ public class PersistentAuditMessageProcessor implements AuditMessageProcessor {
 	@Reference
 	private AuditEventManager _auditEventManager;
 
-	private volatile boolean _enabled;
+	private volatile BatchProcessor<AuditMessage> _batchProcessor;
+	private volatile PersistentAuditMessageProcessorConfiguration
+		_persistentAuditMessageProcessorConfiguration;
 
 }

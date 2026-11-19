@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -150,13 +151,6 @@ public class CommerceTaxFixedRateAddressRelLocalServiceUtil {
 
 		getService().deleteCommerceTaxFixedRateAddressRelsByCommerceTaxMethodId(
 			commerceTaxMethodId);
-	}
-
-	public static void deleteCommerceTaxFixedRateAddressRelsByCountryId(
-		long countryId) {
-
-		getService().deleteCommerceTaxFixedRateAddressRelsByCountryId(
-			countryId);
 	}
 
 	public static void deleteCommerceTaxFixedRateAddressRelsByCPTaxCategoryId(
@@ -368,23 +362,6 @@ public class CommerceTaxFixedRateAddressRelLocalServiceUtil {
 			commerceTaxMethodId, start, end);
 	}
 
-	public static List<CommerceTaxFixedRateAddressRel>
-		getCommerceTaxMethodFixedRateAddressRels(
-			long commerceTaxMethodId, int start, int end,
-			OrderByComparator<CommerceTaxFixedRateAddressRel>
-				orderByComparator) {
-
-		return getService().getCommerceTaxMethodFixedRateAddressRels(
-			commerceTaxMethodId, start, end, orderByComparator);
-	}
-
-	public static int getCommerceTaxMethodFixedRateAddressRelsCount(
-		long commerceTaxMethodId) {
-
-		return getService().getCommerceTaxMethodFixedRateAddressRelsCount(
-			commerceTaxMethodId);
-	}
-
 	public static
 		com.liferay.portal.kernel.dao.orm.IndexableActionableDynamicQuery
 			getIndexableActionableDynamicQuery() {
@@ -439,15 +416,13 @@ public class CommerceTaxFixedRateAddressRelLocalServiceUtil {
 	}
 
 	public static CommerceTaxFixedRateAddressRelLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(
-		CommerceTaxFixedRateAddressRelLocalService service) {
-
-		_service = service;
-	}
-
-	private static volatile CommerceTaxFixedRateAddressRelLocalService _service;
+	private static final Snapshot<CommerceTaxFixedRateAddressRelLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			CommerceTaxFixedRateAddressRelLocalServiceUtil.class,
+			CommerceTaxFixedRateAddressRelLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-661892379

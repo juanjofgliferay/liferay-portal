@@ -52,17 +52,6 @@ public class CommerceShipmentServiceWrapper
 			commerceShippingOptionName, serviceContext);
 	}
 
-	/**
-	 * @deprecated As of Mueller (7.2.x), pass boolean for restoring stock
-	 */
-	@Deprecated
-	@Override
-	public void deleteCommerceShipment(long commerceShipmentId)
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		_commerceShipmentService.deleteCommerceShipment(commerceShipmentId);
-	}
-
 	@Override
 	public void deleteCommerceShipment(
 			long commerceShipmentId, boolean restoreStockQuantity)
@@ -145,8 +134,9 @@ public class CommerceShipmentServiceWrapper
 
 	@Override
 	public java.util.List<com.liferay.commerce.model.CommerceShipment>
-		getCommerceShipmentsByOrderId(
-			long commerceOrderId, int start, int end) {
+			getCommerceShipmentsByOrderId(
+				long commerceOrderId, int start, int end)
+		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commerceShipmentService.getCommerceShipmentsByOrderId(
 			commerceOrderId, start, end);
@@ -188,7 +178,9 @@ public class CommerceShipmentServiceWrapper
 	}
 
 	@Override
-	public int getCommerceShipmentsCountByOrderId(long commerceOrderId) {
+	public int getCommerceShipmentsCountByOrderId(long commerceOrderId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
 		return _commerceShipmentService.getCommerceShipmentsCountByOrderId(
 			commerceOrderId);
 	}
@@ -212,35 +204,19 @@ public class CommerceShipmentServiceWrapper
 			commerceShipmentId);
 	}
 
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
-	 #updateAddress(long, String, String, String, String, String, String,
-	 String, long, long, String, ServiceContext)}
-	 */
-	@Deprecated
 	@Override
 	public com.liferay.commerce.model.CommerceShipment updateAddress(
-			long commerceShipmentId, String name, String description,
-			String street1, String street2, String street3, String city,
-			String zip, long regionId, long countryId, String phoneNumber)
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return _commerceShipmentService.updateAddress(
-			commerceShipmentId, name, description, street1, street2, street3,
-			city, zip, regionId, countryId, phoneNumber);
-	}
-
-	@Override
-	public com.liferay.commerce.model.CommerceShipment updateAddress(
-			long commerceShipmentId, String name, String description,
-			String street1, String street2, String street3, String city,
-			String zip, long regionId, long countryId, String phoneNumber,
+			String externalReferenceCode, long commerceShipmentId, String name,
+			String description, String street1, String street2, String street3,
+			String city, String zip, long regionId, long countryId,
+			String phoneNumber,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commerceShipmentService.updateAddress(
-			commerceShipmentId, name, description, street1, street2, street3,
-			city, zip, regionId, countryId, phoneNumber, serviceContext);
+			externalReferenceCode, commerceShipmentId, name, description,
+			street1, street2, street3, city, zip, regionId, countryId,
+			phoneNumber, serviceContext);
 	}
 
 	@Override
@@ -362,3 +338,4 @@ public class CommerceShipmentServiceWrapper
 	private CommerceShipmentService _commerceShipmentService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-362710443

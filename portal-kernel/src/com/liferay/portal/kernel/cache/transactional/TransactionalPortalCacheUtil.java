@@ -5,14 +5,16 @@
 
 package com.liferay.portal.kernel.cache.transactional;
 
-import com.liferay.petra.concurrent.ConcurrentReferenceValueHashMap;
 import com.liferay.petra.lang.CentralizedThreadLocal;
-import com.liferay.petra.memory.FinalizeManager;
+import com.liferay.petra.lang.SafeCloseable;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.cache.PortalCache;
 import com.liferay.portal.kernel.cache.PortalCacheHelperUtil;
 import com.liferay.portal.kernel.cache.SkipReplicationThreadLocal;
 import com.liferay.portal.kernel.dao.orm.EntityCacheUtil;
 import com.liferay.portal.kernel.dao.orm.FinderCacheUtil;
+import com.liferay.portal.kernel.internal.cache.InvalidationSequence;
+import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.transaction.Propagation;
 import com.liferay.portal.kernel.transaction.TransactionAttribute;
 import com.liferay.portal.kernel.transaction.TransactionDefinition;
@@ -30,6 +32,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiFunction;
 
 /**
  * @author Shuyang Zhou
@@ -50,13 +53,21 @@ public class TransactionalPortalCacheUtil {
 
 				Propagation propagation = transactionAttribute.getPropagation();
 
-				if (propagation.value() >=
-						TransactionDefinition.PROPAGATION_NOT_SUPPORTED) {
+				if (propagation == Propagation.NESTED) {
+					if (transactionStatus.isNewTransaction()) {
+						commit(transactionAttribute.isReadOnly());
+					}
+					else {
+						commitSavepoint();
+					}
+				}
+				else if (propagation.value() >=
+							TransactionDefinition.PROPAGATION_NOT_SUPPORTED) {
 
 					List<List<PortalCacheMap>> backupPortalCacheMaps =
-						_backupPortalCacheMapsThreadLocal.get();
+						_backupPortalCacheMaps.get();
 
-					_portalCacheMapsThreadLocal.set(
+					_portalCacheMaps.set(
 						backupPortalCacheMaps.remove(
 							backupPortalCacheMaps.size() - 1));
 				}
@@ -76,16 +87,18 @@ public class TransactionalPortalCacheUtil {
 
 				Propagation propagation = transactionAttribute.getPropagation();
 
-				if (propagation.value() >=
-						TransactionDefinition.PROPAGATION_NOT_SUPPORTED) {
+				if (propagation == Propagation.NESTED) {
+					_begin(!transactionStatus.isNewTransaction());
+				}
+				else if (propagation.value() >=
+							TransactionDefinition.PROPAGATION_NOT_SUPPORTED) {
 
 					List<List<PortalCacheMap>> backupPortalCacheMaps =
-						_backupPortalCacheMapsThreadLocal.get();
+						_backupPortalCacheMaps.get();
 
-					backupPortalCacheMaps.add(
-						_portalCacheMapsThreadLocal.get());
+					backupPortalCacheMaps.add(_portalCacheMaps.get());
 
-					_portalCacheMapsThreadLocal.remove();
+					_portalCacheMaps.remove();
 				}
 				else if (transactionStatus.isNewTransaction()) {
 					begin();
@@ -103,13 +116,19 @@ public class TransactionalPortalCacheUtil {
 
 				Propagation propagation = transactionAttribute.getPropagation();
 
-				if (propagation.value() >=
-						TransactionDefinition.PROPAGATION_NOT_SUPPORTED) {
+				if (propagation == Propagation.NESTED) {
+					rollback();
+
+					EntityCacheUtil.clearLocalCache();
+					FinderCacheUtil.clearLocalCache();
+				}
+				else if (propagation.value() >=
+							TransactionDefinition.PROPAGATION_NOT_SUPPORTED) {
 
 					List<List<PortalCacheMap>> backupPortalCacheMaps =
-						_backupPortalCacheMapsThreadLocal.get();
+						_backupPortalCacheMaps.get();
 
-					_portalCacheMapsThreadLocal.set(
+					_portalCacheMaps.set(
 						backupPortalCacheMaps.remove(
 							backupPortalCacheMaps.size() - 1));
 				}
@@ -124,44 +143,167 @@ public class TransactionalPortalCacheUtil {
 		};
 
 	public static void begin() {
-		List<PortalCacheMap> portalCacheMaps =
-			_portalCacheMapsThreadLocal.get();
-
-		portalCacheMaps.add(new PortalCacheMap());
+		_begin(false);
 	}
 
 	public static void commit(boolean readOnly) {
 		PortalCacheMap portalCacheMap = _popPortalCacheMap();
 
 		for (UncommittedBuffer uncommittedBuffer : portalCacheMap.values()) {
-			uncommittedBuffer.commit(readOnly);
+			uncommittedBuffer.commit(readOnly, portalCacheMap._startSequence);
 		}
 
 		portalCacheMap.clear();
 	}
 
+	public static void commitSavepoint() {
+		PortalCacheMap portalCacheMap = _popPortalCacheMap();
+
+		PortalCacheMap parentPortalCacheMap = _peekPortalCacheMap();
+
+		for (PortalCache<? extends Serializable, ?> portalCache :
+				portalCacheMap.keySet()) {
+
+			UncommittedBuffer uncommittedBuffer = portalCacheMap.get(
+				portalCache);
+			UncommittedBuffer parentUncommittedBuffer =
+				parentPortalCacheMap.get(portalCache);
+
+			if (parentUncommittedBuffer == null) {
+				parentPortalCacheMap.put(portalCache, uncommittedBuffer);
+			}
+			else {
+				uncommittedBuffer.replay(parentUncommittedBuffer);
+			}
+		}
+
+		portalCacheMap.clear();
+	}
+
+	public static <K extends Serializable, V> boolean completePut(
+		PortalCache<K, V> portalCache, K key, V value) {
+
+		return completePut(
+			portalCache, key, value, PortalCache.DEFAULT_TIME_TO_LIVE);
+	}
+
+	public static <K extends Serializable, V> boolean completePut(
+		PortalCache<K, V> portalCache, K key, V value, int timeToLive) {
+
+		PendingPut pendingPut = _pendingPut.get();
+
+		if ((pendingPut == null) || (pendingPut._portalCache != portalCache) ||
+			!key.equals(pendingPut._key) || isEnabled()) {
+
+			PortalCacheHelperUtil.putWithoutReplicator(
+				portalCache, key, value, timeToLive);
+
+			return true;
+		}
+
+		_pendingPut.remove();
+
+		return completePut(
+			portalCache, key, value, pendingPut._sequence, timeToLive);
+	}
+
+	public static <K extends Serializable, V> boolean completePut(
+		PortalCache<K, V> portalCache, K key, V value, long sequence,
+		int timeToLive) {
+
+		return _invalidationSequence.publishKey(
+			_getRegionName(portalCache), key, sequence,
+			() -> PortalCacheHelperUtil.putWithoutReplicator(
+				portalCache, key, value, timeToLive),
+			() -> PortalCacheHelperUtil.removeWithoutReplicator(
+				portalCache, key));
+	}
+
 	public static <K extends Serializable, V> V get(
 		PortalCache<K, V> portalCache, K key) {
 
-		PortalCacheMap portalCacheMap = _peekPortalCacheMap();
+		// A nested savepoint shares its enclosing transaction's connection, so
+		// its reads must see the entries buffered by that transaction; search
+		// outward through savepoint scopes, but stop at the first independent
+		// transaction (such as REQUIRES_NEW), which must stay isolated
 
-		UncommittedBuffer uncommittedBuffer = portalCacheMap.get(portalCache);
+		List<PortalCacheMap> portalCacheMaps = _portalCacheMaps.get();
 
-		if (uncommittedBuffer == null) {
-			return null;
+		int index = portalCacheMaps.size() - 1;
+
+		V value = null;
+
+		while (true) {
+			PortalCacheMap portalCacheMap = portalCacheMaps.get(index);
+
+			UncommittedBuffer uncommittedBuffer = portalCacheMap.get(
+				portalCache);
+
+			if (uncommittedBuffer != null) {
+				ValueEntry valueEntry = uncommittedBuffer.get(key);
+
+				if (valueEntry != null) {
+					value = (V)valueEntry._value;
+
+					break;
+				}
+			}
+
+			if (!portalCacheMap._savepoint) {
+				break;
+			}
+
+			index--;
 		}
 
-		ValueEntry valueEntry = uncommittedBuffer.get(key);
+		if ((value == null) || (index != (portalCacheMaps.size() - 1))) {
+			boolean[] uncommittedBufferMissMarker =
+				_uncommittedBufferMissMarker.get();
 
-		if (valueEntry == null) {
-			return null;
+			if (uncommittedBufferMissMarker != null) {
+				uncommittedBufferMissMarker[0] = true;
+			}
 		}
 
-		return (V)valueEntry._value;
+		return value;
+	}
+
+	public static <K extends Serializable, V> V get(
+		PortalCache<K, V> portalCache, K key,
+		boolean[] uncommittedBufferMissMarker) {
+
+		try (SafeCloseable safeCloseable =
+				_uncommittedBufferMissMarker.setWithSafeCloseable(
+					uncommittedBufferMissMarker)) {
+
+			return portalCache.get(key);
+		}
 	}
 
 	public static Serializable getNullHolder() {
 		return _NULL_HOLDER;
+	}
+
+	public static long getStartSequence() {
+		List<PortalCacheMap> portalCacheMaps = _portalCacheMaps.get();
+
+		int index = portalCacheMaps.size() - 1;
+
+		while (true) {
+			PortalCacheMap portalCacheMap = portalCacheMaps.get(index);
+
+			if (!portalCacheMap._savepoint) {
+				return portalCacheMap._startSequence;
+			}
+
+			index--;
+		}
+	}
+
+	public static <K extends Serializable> void invalidate(
+		PortalCache<K, ?> portalCache, K key) {
+
+		_invalidationSequence.invalidateKey(_getRegionName(portalCache), key);
 	}
 
 	public static boolean isEnabled() {
@@ -169,31 +311,34 @@ public class TransactionalPortalCacheUtil {
 			return false;
 		}
 
-		List<PortalCacheMap> portalCacheMaps =
-			_portalCacheMapsThreadLocal.get();
+		List<PortalCacheMap> portalCacheMaps = _portalCacheMaps.get();
 
 		return !portalCacheMaps.isEmpty();
+	}
+
+	public static <K extends Serializable> void preparePut(
+		PortalCache<K, ?> portalCache, K key) {
+
+		if (!_isTransactionalCacheEnabled()) {
+			return;
+		}
+
+		List<PortalCacheMap> portalCacheMaps = _portalCacheMaps.get();
+
+		if (!portalCacheMaps.isEmpty()) {
+			return;
+		}
+
+		_pendingPut.set(
+			new PendingPut(
+				portalCache, key, _invalidationSequence.getSequence()));
 	}
 
 	public static <K extends Serializable, V> void put(
 		PortalCache<K, V> portalCache, K key, V value, int ttl, boolean mvcc) {
 
-		PortalCacheMap portalCacheMap = _peekPortalCacheMap();
-
-		UncommittedBuffer uncommittedBuffer = portalCacheMap.get(portalCache);
-
-		if (uncommittedBuffer == null) {
-			if (mvcc) {
-				uncommittedBuffer = new UncommittedBuffer(
-					(PortalCache<Serializable, Object>)portalCache);
-			}
-			else {
-				uncommittedBuffer = new MarkerUncommittedBuffer(
-					(PortalCache<Serializable, Object>)portalCache);
-			}
-
-			portalCacheMap.put(portalCache, uncommittedBuffer);
-		}
+		UncommittedBuffer uncommittedBuffer = _getUncommittedBuffer(
+			portalCache, mvcc);
 
 		uncommittedBuffer.put(
 			key,
@@ -203,22 +348,8 @@ public class TransactionalPortalCacheUtil {
 	public static <K extends Serializable, V> void removeAll(
 		PortalCache<K, V> portalCache, boolean mvcc) {
 
-		PortalCacheMap portalCacheMap = _peekPortalCacheMap();
-
-		UncommittedBuffer uncommittedBuffer = portalCacheMap.get(portalCache);
-
-		if (uncommittedBuffer == null) {
-			if (mvcc) {
-				uncommittedBuffer = new UncommittedBuffer(
-					(PortalCache<Serializable, Object>)portalCache);
-			}
-			else {
-				uncommittedBuffer = new MarkerUncommittedBuffer(
-					(PortalCache<Serializable, Object>)portalCache);
-			}
-
-			portalCacheMap.put(portalCache, uncommittedBuffer);
-		}
+		UncommittedBuffer uncommittedBuffer = _getUncommittedBuffer(
+			portalCache, mvcc);
 
 		uncommittedBuffer.removeAll(SkipReplicationThreadLocal.isEnabled());
 	}
@@ -232,6 +363,77 @@ public class TransactionalPortalCacheUtil {
 	protected static class PortalCacheMap
 		extends HashMap
 			<PortalCache<? extends Serializable, ?>, UncommittedBuffer> {
+
+		protected PortalCacheMap(boolean savepoint) {
+			_savepoint = savepoint;
+		}
+
+		private final boolean _savepoint;
+		private final long _startSequence = _invalidationSequence.getSequence();
+
+	}
+
+	private static void _begin(boolean savepoint) {
+		List<PortalCacheMap> portalCacheMaps = _portalCacheMaps.get();
+
+		portalCacheMaps.add(new PortalCacheMap(savepoint));
+	}
+
+	private static String _getRegionName(PortalCache<?, ?> portalCache) {
+		if (portalCache.isSharded()) {
+			return _getShardedRegionName(
+				CompanyThreadLocal.getNonsystemCompanyId(), portalCache);
+		}
+
+		return portalCache.getPortalCacheName();
+	}
+
+	private static String _getShardedRegionName(
+		long companyId, PortalCache<?, ?> portalCache) {
+
+		return portalCache.getPortalCacheName() + StringPool.UNDERLINE +
+			companyId;
+	}
+
+	@SuppressWarnings("unchecked")
+	private static <K extends Serializable, V> UncommittedBuffer
+		_getUncommittedBuffer(PortalCache<K, V> portalCache, boolean mvcc) {
+
+		PortalCacheMap portalCacheMap = _peekPortalCacheMap();
+
+		UncommittedBuffer uncommittedBuffer = portalCacheMap.get(portalCache);
+
+		if (uncommittedBuffer == null) {
+			if (mvcc) {
+				if (portalCache.isSharded()) {
+					uncommittedBuffer = new ShardedUncommittedBuffer(
+						(PortalCache<Serializable, Object>)portalCache,
+						(companyId, targetPortalCache) ->
+							new MVCCUncommittedBuffer(targetPortalCache));
+				}
+				else {
+					uncommittedBuffer = new MVCCUncommittedBuffer(
+						(PortalCache<Serializable, Object>)portalCache);
+				}
+			}
+			else {
+				if (portalCache.isSharded()) {
+					uncommittedBuffer = new ShardedUncommittedBuffer(
+						(PortalCache<Serializable, Object>)portalCache,
+						(companyId, targetPortalCache) ->
+							new InvalidatingUncommittedBuffer(
+								companyId, targetPortalCache));
+				}
+				else {
+					uncommittedBuffer = new InvalidatingUncommittedBuffer(
+						(PortalCache<Serializable, Object>)portalCache);
+				}
+			}
+
+			portalCacheMap.put(portalCache, uncommittedBuffer);
+		}
+
+		return uncommittedBuffer;
 	}
 
 	private static boolean _isTransactionalCacheEnabled() {
@@ -244,15 +446,13 @@ public class TransactionalPortalCacheUtil {
 	}
 
 	private static PortalCacheMap _peekPortalCacheMap() {
-		List<PortalCacheMap> portalCacheMaps =
-			_portalCacheMapsThreadLocal.get();
+		List<PortalCacheMap> portalCacheMaps = _portalCacheMaps.get();
 
 		return portalCacheMaps.get(portalCacheMaps.size() - 1);
 	}
 
 	private static PortalCacheMap _popPortalCacheMap() {
-		List<PortalCacheMap> portalCacheMaps =
-			_portalCacheMapsThreadLocal.get();
+		List<PortalCacheMap> portalCacheMaps = _portalCacheMaps.get();
 
 		return portalCacheMaps.remove(portalCacheMaps.size() - 1);
 	}
@@ -263,42 +463,45 @@ public class TransactionalPortalCacheUtil {
 		_NULL_HOLDER, PortalCache.DEFAULT_TIME_TO_LIVE, false);
 
 	private static final ThreadLocal<List<List<PortalCacheMap>>>
-		_backupPortalCacheMapsThreadLocal = new CentralizedThreadLocal<>(
+		_backupPortalCacheMaps = new CentralizedThreadLocal<>(
 			TransactionalPortalCacheUtil.class.getName() +
-				"._backupPortalCacheMapsThreadLocal",
+				"._backupPortalCacheMaps",
 			ArrayList::new, false);
-	private static final ThreadLocal<List<PortalCacheMap>>
-		_portalCacheMapsThreadLocal = new CentralizedThreadLocal<>(
-			TransactionalPortalCacheUtil.class.getName() +
-				"._portalCacheMapsThreadLocal",
+	private static final InvalidationSequence _invalidationSequence =
+		new InvalidationSequence();
+	private static final ThreadLocal<PendingPut> _pendingPut =
+		new CentralizedThreadLocal<>(
+			TransactionalPortalCacheUtil.class.getName() + "._pendingPut");
+	private static final ThreadLocal<List<PortalCacheMap>> _portalCacheMaps =
+		new CentralizedThreadLocal<>(
+			TransactionalPortalCacheUtil.class.getName() + "._portalCacheMaps",
 			ArrayList::new, false);
 	private static volatile Boolean _transactionalCacheEnabled;
+	private static final CentralizedThreadLocal<boolean[]>
+		_uncommittedBufferMissMarker = new CentralizedThreadLocal<>(
+			TransactionalPortalCacheUtil.class.getName() +
+				"._uncommittedBufferMissMarker");
 
-	private static class MarkerUncommittedBuffer extends UncommittedBuffer {
+	private static class InvalidatingUncommittedBuffer
+		extends MVCCUncommittedBuffer {
 
 		@Override
-		public void commit(boolean readOnly) {
+		public void commit(boolean readOnly, long startSequence) {
 			if (skipCommit(readOnly)) {
 				return;
 			}
 
-			_markers.compute(
-				_portalCacheName,
-				(key, placeHolder) -> {
-					if (placeHolder != _marker) {
-						commitByRemove = true;
-					}
-
-					if (!readOnly || !commitByRemove) {
-						doCommit();
-					}
-
-					if (readOnly) {
-						return placeHolder;
-					}
-
-					return null;
-				});
+			if (readOnly) {
+				_invalidationSequence.publish(
+					_regionName, startSequence, () -> doCommit(false),
+					() -> doCommit(true));
+			}
+			else {
+				doCommit(
+					_invalidationSequence.invalidate(
+						_regionName, _sequence, super._removeAll,
+						super._uncommittedMap.keySet()));
+			}
 		}
 
 		@Override
@@ -311,34 +514,35 @@ public class TransactionalPortalCacheUtil {
 			}
 		}
 
-		private MarkerUncommittedBuffer(
+		private InvalidatingUncommittedBuffer(
+			long companyId, PortalCache<Serializable, Object> portalCache) {
+
+			super(portalCache);
+
+			_regionName = _getShardedRegionName(companyId, portalCache);
+		}
+
+		private InvalidatingUncommittedBuffer(
 			PortalCache<Serializable, Object> portalCache) {
 
 			super(portalCache);
 
-			_portalCacheName = portalCache.getPortalCacheName();
-
-			_marker = _markers.computeIfAbsent(
-				_portalCacheName, key -> new Object());
+			_regionName = portalCache.getPortalCacheName();
 		}
 
-		private static final Map<String, Object> _markers =
-			new ConcurrentReferenceValueHashMap<>(
-				FinalizeManager.WEAK_REFERENCE_FACTORY);
-
-		private final Object _marker;
-		private final String _portalCacheName;
+		private final String _regionName;
+		private final long _sequence = _invalidationSequence.getSequence();
 
 	}
 
-	private static class UncommittedBuffer {
+	private static class MVCCUncommittedBuffer implements UncommittedBuffer {
 
-		public void commit(boolean readOnly) {
+		public void commit(boolean readOnly, long startSequence) {
 			if (skipCommit(readOnly)) {
 				return;
 			}
 
-			doCommit();
+			doCommit(false);
 		}
 
 		public ValueEntry get(Serializable key) {
@@ -373,7 +577,19 @@ public class TransactionalPortalCacheUtil {
 			}
 		}
 
-		protected void doCommit() {
+		public void replay(UncommittedBuffer uncommittedBuffer) {
+			if (_removeAll) {
+				uncommittedBuffer.removeAll(_skipReplicator);
+			}
+
+			for (Map.Entry<Serializable, ValueEntry> entry :
+					_uncommittedMap.entrySet()) {
+
+				uncommittedBuffer.put(entry.getKey(), entry.getValue());
+			}
+		}
+
+		protected void doCommit(boolean byRemove) {
 			if (_removeAll) {
 				if (_skipReplicator) {
 					PortalCacheHelperUtil.removeAllWithoutReplicator(
@@ -389,7 +605,7 @@ public class TransactionalPortalCacheUtil {
 
 				ValueEntry valueEntry = entry.getValue();
 
-				if (commitByRemove) {
+				if (byRemove) {
 					valueEntry.commitToByRemove(_portalCache, entry.getKey());
 				}
 				else {
@@ -409,9 +625,11 @@ public class TransactionalPortalCacheUtil {
 				while (iterator.hasNext()) {
 					ValueEntry valueEntry = iterator.next();
 
-					if (valueEntry.isRemove()) {
-						iterator.remove();
+					if (!valueEntry.isRemove()) {
+						continue;
 					}
+
+					iterator.remove();
 				}
 			}
 
@@ -422,9 +640,7 @@ public class TransactionalPortalCacheUtil {
 			return false;
 		}
 
-		protected boolean commitByRemove;
-
-		private UncommittedBuffer(
+		private MVCCUncommittedBuffer(
 			PortalCache<Serializable, Object> portalCache) {
 
 			_portalCache = portalCache;
@@ -435,6 +651,122 @@ public class TransactionalPortalCacheUtil {
 		private boolean _skipReplicator = true;
 		private final Map<Serializable, ValueEntry> _uncommittedMap =
 			new HashMap<>();
+
+	}
+
+	private static class PendingPut {
+
+		private PendingPut(
+			PortalCache<?, ?> portalCache, Serializable key, long sequence) {
+
+			_portalCache = portalCache;
+			_key = key;
+			_sequence = sequence;
+		}
+
+		private final Serializable _key;
+		private final PortalCache<?, ?> _portalCache;
+		private final long _sequence;
+
+	}
+
+	private static class ShardedUncommittedBuffer implements UncommittedBuffer {
+
+		@Override
+		public void commit(boolean readOnly, long startSequence) {
+			for (Map.Entry<Long, UncommittedBuffer> entry :
+					_shardedUncommittedBuffers.entrySet()) {
+
+				try (SafeCloseable safeCloseable =
+						CompanyThreadLocal.setCompanyIdWithSafeCloseable(
+							entry.getKey())) {
+
+					UncommittedBuffer uncommittedBuffer = entry.getValue();
+
+					uncommittedBuffer.commit(readOnly, startSequence);
+				}
+			}
+
+			_shardedUncommittedBuffers.clear();
+		}
+
+		@Override
+		public ValueEntry get(Serializable key) {
+			UncommittedBuffer uncommittedBuffer =
+				_shardedUncommittedBuffers.get(
+					CompanyThreadLocal.getNonsystemCompanyId());
+
+			if (uncommittedBuffer == null) {
+				return null;
+			}
+
+			return uncommittedBuffer.get(key);
+		}
+
+		@Override
+		public void put(Serializable key, ValueEntry valueEntry) {
+			UncommittedBuffer uncommittedBuffer =
+				_shardedUncommittedBuffers.computeIfAbsent(
+					CompanyThreadLocal.getNonsystemCompanyId(),
+					companyId -> _uncommittedBufferFunction.apply(
+						companyId, _portalCache));
+
+			uncommittedBuffer.put(key, valueEntry);
+		}
+
+		@Override
+		public void removeAll(boolean skipReplicator) {
+			UncommittedBuffer uncommittedBuffer =
+				_shardedUncommittedBuffers.computeIfAbsent(
+					CompanyThreadLocal.getNonsystemCompanyId(),
+					companyId -> _uncommittedBufferFunction.apply(
+						companyId, _portalCache));
+
+			uncommittedBuffer.removeAll(skipReplicator);
+		}
+
+		@Override
+		public void replay(UncommittedBuffer uncommittedBuffer) {
+			ShardedUncommittedBuffer shardedUncommittedBuffer =
+				(ShardedUncommittedBuffer)uncommittedBuffer;
+
+			Map<Long, UncommittedBuffer> shardedUncommittedBuffers =
+				shardedUncommittedBuffer._shardedUncommittedBuffers;
+
+			for (Map.Entry<Long, UncommittedBuffer> entry :
+					_shardedUncommittedBuffers.entrySet()) {
+
+				UncommittedBuffer parentUncommittedBuffer =
+					shardedUncommittedBuffers.get(entry.getKey());
+
+				if (parentUncommittedBuffer == null) {
+					shardedUncommittedBuffers.put(
+						entry.getKey(), entry.getValue());
+				}
+				else {
+					UncommittedBuffer uncommittedBuffer2 = entry.getValue();
+
+					uncommittedBuffer2.replay(parentUncommittedBuffer);
+				}
+			}
+		}
+
+		private ShardedUncommittedBuffer(
+			PortalCache<Serializable, Object> portalCache,
+			BiFunction
+				<Long, PortalCache<Serializable, Object>, UncommittedBuffer>
+					uncommittedBufferFunction) {
+
+			_portalCache = portalCache;
+			_uncommittedBufferFunction = uncommittedBufferFunction;
+		}
+
+		private final PortalCache<Serializable, Object> _portalCache;
+		private final Map<Long, UncommittedBuffer> _shardedUncommittedBuffers =
+			new HashMap<>();
+		private final BiFunction
+			<Long, PortalCache<Serializable, Object>, UncommittedBuffer>
+				_uncommittedBufferFunction;
 
 	}
 
@@ -501,6 +833,20 @@ public class TransactionalPortalCacheUtil {
 		private boolean _skipReplicator;
 		private final int _ttl;
 		private final Object _value;
+
+	}
+
+	private interface UncommittedBuffer {
+
+		public void commit(boolean readOnly, long startSequence);
+
+		public ValueEntry get(Serializable key);
+
+		public void put(Serializable key, ValueEntry valueEntry);
+
+		public void removeAll(boolean skipReplicator);
+
+		public void replay(UncommittedBuffer uncommittedBuffer);
 
 	}
 

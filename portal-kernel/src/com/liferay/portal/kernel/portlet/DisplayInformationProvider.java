@@ -5,7 +5,7 @@
 
 package com.liferay.portal.kernel.portlet;
 
-import javax.portlet.PortletPreferences;
+import jakarta.portlet.PortletPreferences;
 
 /**
  * @author Eudaldo Alonso
@@ -14,6 +14,7 @@ public interface DisplayInformationProvider {
 
 	public String getClassName();
 
-	public String getClassPK(PortletPreferences portletPreferences);
+	public String getClassPK(
+		PortletPreferences portletPreferences, long scopeGroupId);
 
 }

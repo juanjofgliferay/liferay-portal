@@ -8,14 +8,14 @@
 <%@ include file="/init.jsp" %>
 
 <%
-FragmentCollectionsDisplayContext fragmentCollectionsDisplayContext = new FragmentCollectionsDisplayContext(request, renderRequest, renderResponse);
+FragmentCollectionsDisplayContext fragmentCollectionsDisplayContext = (FragmentCollectionsDisplayContext)request.getAttribute(FragmentCollectionsDisplayContext.class.getName());
 %>
 
 <clay:management-toolbar
 	managementToolbarDisplayContext="<%= new FragmentCollectionsManagementToolbarDisplayContext(request, liferayPortletRequest, liferayPortletResponse, fragmentCollectionsDisplayContext) %>"
 />
 
-<aui:form cssClass="container-fluid container-fluid-max-xl" name="fm">
+<aui:form cssClass="container-fluid container-fluid-max-xxxl" name="fm">
 	<liferay-ui:search-container
 		id="fragmentCollections"
 		searchContainer="<%= fragmentCollectionsDisplayContext.getSearchContainer() %>"
@@ -39,7 +39,7 @@ FragmentCollectionsDisplayContext fragmentCollectionsDisplayContext = new Fragme
 
 				<liferay-ui:search-container-column-text
 					name="scope"
-					value="<%= group.getDescriptiveName(locale) %>"
+					value="<%= HtmlUtil.escape(group.getDescriptiveName(locale)) %>"
 				/>
 			</c:if>
 

@@ -9,12 +9,13 @@ import com.liferay.adaptive.media.processor.AMAsyncProcessor;
 import com.liferay.adaptive.media.web.internal.constants.AMDestinationNames;
 import com.liferay.adaptive.media.web.internal.messaging.AMProcessorCommand;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.change.tracking.CTCollectionThreadLocal;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.messaging.Message;
 import com.liferay.portal.kernel.messaging.MessageBus;
-import com.liferay.portal.kernel.transaction.TransactionCommitCallbackUtil;
+import com.liferay.portal.kernel.transaction.TransactionCallbackUtil;
 import com.liferay.portal.kernel.util.Validator;
 
 import java.util.Collections;
@@ -53,35 +54,39 @@ public final class AMAsyncProcessorImpl<M, T>
 
 	@Override
 	public void triggerCleanUp(M model, String modelId) throws PortalException {
-		if (Validator.isNotNull(modelId)) {
-			if (!_cleanUpModelIds.add(modelId)) {
-				if (_log.isInfoEnabled()) {
-					_log.info(
-						"Omitted clean up for model ID " + modelId +
-							" because it is already in progress");
+		long ctCollectionId = CTCollectionThreadLocal.getCTCollectionId();
+
+		TransactionCallbackUtil.registerCommitCallback(
+			() -> {
+				if (Validator.isNotNull(modelId)) {
+					if (!_cleanUpModelIds.add(modelId)) {
+						if (_log.isInfoEnabled()) {
+							_log.info(
+								"Omitted clean up for model ID " + modelId +
+									" because it is already in progress");
+						}
+
+						return null;
+					}
+
+					if (_log.isInfoEnabled()) {
+						_log.info(
+							"Added clean up for model ID " + modelId +
+								" to the queue");
+					}
 				}
 
-				return;
-			}
+				Message message = new Message();
 
-			if (_log.isInfoEnabled()) {
-				_log.info(
-					"Added clean up for model ID " + modelId + " to the queue");
-			}
-		}
+				message.put("className", _clazz.getName());
+				message.put("command", AMProcessorCommand.CLEAN_UP);
+				message.put("ctCollectionId", ctCollectionId);
+				message.put("model", model);
 
-		Message message = new Message();
+				if (Validator.isNotNull(modelId)) {
+					message.put("modelId", modelId);
+				}
 
-		message.put("className", _clazz.getName());
-		message.put("command", AMProcessorCommand.CLEAN_UP);
-		message.put("model", model);
-
-		if (Validator.isNotNull(modelId)) {
-			message.put("modelId", modelId);
-		}
-
-		TransactionCommitCallbackUtil.registerCallback(
-			() -> {
 				_messageBus.sendMessage(
 					AMDestinationNames.ADAPTIVE_MEDIA_PROCESSOR, message);
 
@@ -91,35 +96,39 @@ public final class AMAsyncProcessorImpl<M, T>
 
 	@Override
 	public void triggerProcess(M model, String modelId) throws PortalException {
-		if (Validator.isNotNull(modelId)) {
-			if (!_processModelIds.add(modelId)) {
-				if (_log.isInfoEnabled()) {
-					_log.info(
-						"Omitted process for model ID " + modelId +
-							" because it is already in progress");
+		long ctCollectionId = CTCollectionThreadLocal.getCTCollectionId();
+
+		TransactionCallbackUtil.registerCommitCallback(
+			() -> {
+				if (Validator.isNotNull(modelId)) {
+					if (!_processModelIds.add(modelId)) {
+						if (_log.isInfoEnabled()) {
+							_log.info(
+								"Omitted process for model ID " + modelId +
+									" because it is already in progress");
+						}
+
+						return null;
+					}
+
+					if (_log.isInfoEnabled()) {
+						_log.info(
+							"Added process for model ID " + modelId +
+								" to the queue");
+					}
 				}
 
-				return;
-			}
+				Message message = new Message();
 
-			if (_log.isInfoEnabled()) {
-				_log.info(
-					"Added process for model ID " + modelId + " to the queue");
-			}
-		}
+				message.put("className", _clazz.getName());
+				message.put("command", AMProcessorCommand.PROCESS);
+				message.put("ctCollectionId", ctCollectionId);
+				message.put("model", model);
 
-		Message message = new Message();
+				if (Validator.isNotNull(modelId)) {
+					message.put("modelId", modelId);
+				}
 
-		message.put("className", _clazz.getName());
-		message.put("command", AMProcessorCommand.PROCESS);
-		message.put("model", model);
-
-		if (Validator.isNotNull(modelId)) {
-			message.put("modelId", modelId);
-		}
-
-		TransactionCommitCallbackUtil.registerCallback(
-			() -> {
 				_messageBus.sendMessage(
 					AMDestinationNames.ADAPTIVE_MEDIA_PROCESSOR, message);
 

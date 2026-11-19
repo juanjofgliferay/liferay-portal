@@ -9,6 +9,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.workflow.metrics.model.WorkflowMetricsSLADefinitionVersion;
 
@@ -347,15 +348,6 @@ public class WorkflowMetricsSLADefinitionVersionLocalServiceUtil {
 
 	public static List<WorkflowMetricsSLADefinitionVersion>
 		getWorkflowMetricsSLADefinitionVersions(
-			long companyId, java.util.Date createDate, Long processId,
-			int status) {
-
-		return getService().getWorkflowMetricsSLADefinitionVersions(
-			companyId, createDate, processId, status);
-	}
-
-	public static List<WorkflowMetricsSLADefinitionVersion>
-		getWorkflowMetricsSLADefinitionVersions(
 			long workflowMetricsSLADefinitionId,
 			OrderByComparator<WorkflowMetricsSLADefinitionVersion>
 				orderByComparator) {
@@ -430,16 +422,14 @@ public class WorkflowMetricsSLADefinitionVersionLocalServiceUtil {
 	}
 
 	public static WorkflowMetricsSLADefinitionVersionLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(
-		WorkflowMetricsSLADefinitionVersionLocalService service) {
-
-		_service = service;
-	}
-
-	private static volatile WorkflowMetricsSLADefinitionVersionLocalService
-		_service;
+	private static final Snapshot
+		<WorkflowMetricsSLADefinitionVersionLocalService> _serviceSnapshot =
+			new Snapshot<>(
+				WorkflowMetricsSLADefinitionVersionLocalServiceUtil.class,
+				WorkflowMetricsSLADefinitionVersionLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1110709861

@@ -213,8 +213,7 @@ public interface ResourceLocalService extends BaseLocalService {
 		throws PortalException;
 
 	public void copyModelResources(
-			long companyId, String name, long sourcePrimKey, long targetPrimKey)
-		throws PortalException;
+		long companyId, String name, long sourcePrimKey, long targetPrimKey);
 
 	/**
 	 * Deletes the resource associated with the model at the scope.
@@ -296,6 +295,11 @@ public interface ResourceLocalService extends BaseLocalService {
 	public boolean hasUserPermissions(
 			long userId, long resourceId, List<Resource> resources,
 			String actionId, long[] roleIds)
+		throws PortalException;
+
+	public void removeResource(
+			long companyId, String name, int scope, String primKey, long roleId,
+			String actionId)
 		throws PortalException;
 
 	/**
@@ -394,3 +398,4 @@ public interface ResourceLocalService extends BaseLocalService {
 		String newPrimKey);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:2078219016

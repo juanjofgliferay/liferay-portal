@@ -25,9 +25,9 @@ public class StyleBookEntryVersionUpgradeProcess extends UpgradeProcess {
 
 	private void _upgradeSchema() throws Exception {
 		alterTableAddColumn(
-			"StyleBookEntryVersion", "modifiedDate", "DATE null");
-		alterTableAddColumn(
 			"StyleBookEntryVersion", "uuid_", "VARCHAR(75) null");
+		alterTableAddColumn(
+			"StyleBookEntryVersion", "modifiedDate", "DATE null");
 
 		try (LoggingTimer loggingTimer = new LoggingTimer()) {
 			try (PreparedStatement preparedStatement1 =
@@ -42,7 +42,8 @@ public class StyleBookEntryVersionUpgradeProcess extends UpgradeProcess {
 
 				while (resultSet.next()) {
 					preparedStatement2.setString(1, PortalUUIDUtil.generate());
-					preparedStatement2.setLong(2, resultSet.getLong(1));
+					preparedStatement2.setLong(
+						2, resultSet.getLong("styleBookEntryId"));
 
 					preparedStatement2.addBatch();
 				}

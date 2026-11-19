@@ -52,15 +52,24 @@ public class CountryLocalServiceUtil {
 	}
 
 	public static Country addCountry(
-			String a2, String a3, boolean active, boolean billingAllowed,
-			String idd, String name, String number, double position,
-			boolean shippingAllowed, boolean subjectToVAT, boolean zipRequired,
-			ServiceContext serviceContext)
+			String externalReferenceCode, String a2, String a3, boolean active,
+			boolean billingAllowed, String idd, String name, String number,
+			double position, boolean shippingAllowed, boolean subjectToVAT,
+			boolean zipRequired, ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().addCountry(
-			a2, a3, active, billingAllowed, idd, name, number, position,
-			shippingAllowed, subjectToVAT, zipRequired, serviceContext);
+			externalReferenceCode, a2, a3, active, billingAllowed, idd, name,
+			number, position, shippingAllowed, subjectToVAT, zipRequired,
+			serviceContext);
+	}
+
+	public static com.liferay.portal.kernel.model.CountryLocalization
+			addCountryLocalization(
+				Country country, String languageId, String title)
+		throws PortalException {
+
+		return getService().addCountryLocalization(country, languageId, title);
 	}
 
 	/**
@@ -228,6 +237,13 @@ public class CountryLocalServiceUtil {
 		return getService().fetchCountryByA3(companyId, a3);
 	}
 
+	public static Country fetchCountryByExternalReferenceCode(
+		String externalReferenceCode, long companyId) {
+
+		return getService().fetchCountryByExternalReferenceCode(
+			externalReferenceCode, companyId);
+	}
+
 	public static Country fetchCountryByName(long companyId, String name) {
 		return getService().fetchCountryByName(companyId, name);
 	}
@@ -271,28 +287,8 @@ public class CountryLocalServiceUtil {
 		return getService().getCompanyCountries(companyId, active);
 	}
 
-	public static List<Country> getCompanyCountries(
-		long companyId, boolean active, int start, int end,
-		OrderByComparator<Country> orderByComparator) {
-
-		return getService().getCompanyCountries(
-			companyId, active, start, end, orderByComparator);
-	}
-
-	public static List<Country> getCompanyCountries(
-		long companyId, int start, int end,
-		OrderByComparator<Country> orderByComparator) {
-
-		return getService().getCompanyCountries(
-			companyId, start, end, orderByComparator);
-	}
-
 	public static int getCompanyCountriesCount(long companyId) {
 		return getService().getCompanyCountriesCount(companyId);
-	}
-
-	public static int getCompanyCountriesCount(long companyId, boolean active) {
-		return getService().getCompanyCountriesCount(companyId, active);
 	}
 
 	/**
@@ -336,10 +332,12 @@ public class CountryLocalServiceUtil {
 		return getService().getCountryByA2(companyId, a2);
 	}
 
-	public static Country getCountryByA3(long companyId, String a3)
+	public static Country getCountryByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
 		throws PortalException {
 
-		return getService().getCountryByA3(companyId, a3);
+		return getService().getCountryByExternalReferenceCode(
+			externalReferenceCode, companyId);
 	}
 
 	public static Country getCountryByName(long companyId, String name)
@@ -446,14 +444,15 @@ public class CountryLocalServiceUtil {
 	}
 
 	public static Country updateCountry(
-			long countryId, String a2, String a3, boolean active,
-			boolean billingAllowed, String idd, String name, String number,
-			double position, boolean shippingAllowed, boolean subjectToVAT)
+			String externalReferenceCode, long countryId, String a2, String a3,
+			boolean active, boolean billingAllowed, String idd, String name,
+			String number, double position, boolean shippingAllowed,
+			boolean subjectToVAT)
 		throws PortalException {
 
 		return getService().updateCountry(
-			countryId, a2, a3, active, billingAllowed, idd, name, number,
-			position, shippingAllowed, subjectToVAT);
+			externalReferenceCode, countryId, a2, a3, active, billingAllowed,
+			idd, name, number, position, shippingAllowed, subjectToVAT);
 	}
 
 	public static com.liferay.portal.kernel.model.CountryLocalization
@@ -492,3 +491,4 @@ public class CountryLocalServiceUtil {
 	private static volatile CountryLocalService _service;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-207434744

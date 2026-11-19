@@ -6,6 +6,7 @@
 import ClayButton from '@clayui/button';
 import ClayLink from '@clayui/link';
 import ClayNavigationBar from '@clayui/navigation-bar';
+import {FeatureIndicator} from 'frontend-js-components-web';
 import React from 'react';
 
 export default function NavigationBar({
@@ -18,25 +19,41 @@ export default function NavigationBar({
 		<ClayNavigationBar
 			aria-current={activeItemAriaCurrent}
 			className={cssClass}
-			fluidSize={Liferay?.FeatureFlags?.['LPS-184404'] ? false : 'xl'}
+			fluidSize="xxxl"
 			inverted={inverted}
 			triggerLabel={navigationItems.find(({active}) => active)?.label}
 		>
-			{navigationItems.map(({active, href, label}, index) => {
-				return (
-					<ClayNavigationBar.Item
-						active={active}
-						data-nav-item-index={index}
-						key={label}
-					>
-						{href ? (
-							<ClayLink href={href}>{label}</ClayLink>
-						) : (
-							<ClayButton>{label}</ClayButton>
-						)}
-					</ClayNavigationBar.Item>
-				);
-			})}
+			{navigationItems.map(
+				(
+					{active, deprecated = false, disabled = false, href, label},
+					index
+				) => {
+					const LinkOrButton =
+						href && !disabled ? ClayLink : ClayButton;
+					const LinkOrButtonProps = href && !disabled ? {href} : {};
+
+					return (
+						<ClayNavigationBar.Item
+							active={active}
+							data-nav-item-index={index}
+							key={label}
+						>
+							<LinkOrButton
+								{...LinkOrButtonProps}
+								disabled={disabled}
+							>
+								{label}
+
+								{deprecated ? (
+									<span className="ml-2">
+										<FeatureIndicator type="deprecated" />
+									</span>
+								) : null}
+							</LinkOrButton>
+						</ClayNavigationBar.Item>
+					);
+				}
+			)}
 		</ClayNavigationBar>
 	);
 }

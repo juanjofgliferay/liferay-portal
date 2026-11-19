@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -102,12 +103,6 @@ public class LayoutSEOSiteLocalServiceUtil {
 		throws PortalException {
 
 		return getService().deleteLayoutSEOSite(layoutSEOSiteId);
-	}
-
-	public static void deleteLayoutSEOSite(String uuid, long groupId)
-		throws com.liferay.layout.seo.exception.NoSuchSiteException {
-
-		getService().deleteLayoutSEOSite(uuid, groupId);
 	}
 
 	/**
@@ -378,13 +373,13 @@ public class LayoutSEOSiteLocalServiceUtil {
 	}
 
 	public static LayoutSEOSiteLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(LayoutSEOSiteLocalService service) {
-		_service = service;
-	}
-
-	private static volatile LayoutSEOSiteLocalService _service;
+	private static final Snapshot<LayoutSEOSiteLocalService> _serviceSnapshot =
+		new Snapshot<>(
+			LayoutSEOSiteLocalServiceUtil.class,
+			LayoutSEOSiteLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:667253132

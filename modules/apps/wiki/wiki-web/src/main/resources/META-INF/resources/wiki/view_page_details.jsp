@@ -56,7 +56,7 @@ PortalUtil.addPortletBreadcrumbEntry(request, LanguageUtil.get(request, "details
 			<liferay-ui:message key="title" />
 		</th>
 		<td class="table-cell">
-			<%= wikiPage.getTitle() %>
+			<%= HtmlUtil.escape(wikiPage.getTitle()) %>
 		</td>
 	</tr>
 	<tr>
@@ -159,23 +159,23 @@ PortalUtil.addPortletBreadcrumbEntry(request, LanguageUtil.get(request, "details
 		</tr>
 	</c:if>
 
-	<c:if test="<%= wikiGroupServiceOverriddenConfiguration.enableRss() %>">
+	<c:if test="<%= WikiUtil.isRSSFeedsEnabled(siteWikiGroupServiceConfiguration) %>">
 		<tr>
 			<th class="table-header">
 				<liferay-ui:message key="rss-subscription" />
 			</th>
 			<td class="table-cell">
 				<liferay-rss:rss
-					delta="<%= GetterUtil.getInteger(wikiGroupServiceOverriddenConfiguration.rssDelta()) %>"
-					displayStyle="<%= wikiGroupServiceOverriddenConfiguration.rssDisplayStyle() %>"
-					feedType="<%= wikiGroupServiceOverriddenConfiguration.rssFeedType() %>"
+					delta="<%= GetterUtil.getInteger(siteWikiGroupServiceConfiguration.rssDelta()) %>"
+					displayStyle="<%= siteWikiGroupServiceConfiguration.rssDisplayStyle() %>"
+					feedType="<%= siteWikiGroupServiceConfiguration.rssFeedType() %>"
 					url='<%= themeDisplay.getPathMain() + "/wiki/rss?nodeId=" + wikiPage.getNodeId() + "&title=" + wikiPage.getTitle() %>'
 				/>
 			</td>
 		</tr>
 	</c:if>
 
-	<c:if test="<%= (WikiPagePermission.contains(permissionChecker, wikiPage, ActionKeys.SUBSCRIBE) || WikiNodePermission.contains(permissionChecker, node, ActionKeys.SUBSCRIBE)) && (wikiGroupServiceOverriddenConfiguration.emailPageAddedEnabled() || wikiGroupServiceOverriddenConfiguration.emailPageUpdatedEnabled()) %>">
+	<c:if test="<%= (WikiPagePermission.contains(permissionChecker, wikiPage, ActionKeys.SUBSCRIBE) || WikiNodePermission.contains(permissionChecker, node, ActionKeys.SUBSCRIBE)) && (siteWikiGroupServiceConfiguration.emailPageAddedEnabled() || siteWikiGroupServiceConfiguration.emailPageUpdatedEnabled()) %>">
 		<tr>
 			<th class="table-header">
 				<liferay-ui:message key="email-subscription" />
@@ -292,7 +292,7 @@ PortalUtil.addPortletBreadcrumbEntry(request, LanguageUtil.get(request, "details
 					<c:if test="<%= WikiPagePermission.contains(permissionChecker, wikiPage, ActionKeys.PERMISSIONS) %>">
 						<liferay-security:permissionsURL
 							modelResource="<%= WikiPage.class.getName() %>"
-							modelResourceDescription="<%= wikiPage.getTitle() %>"
+							modelResourceDescription="<%= HtmlUtil.escape(wikiPage.getTitle()) %>"
 							resourcePrimKey="<%= String.valueOf(wikiPage.getResourcePrimKey()) %>"
 							var="permissionsURL"
 							windowState="<%= LiferayWindowState.POP_UP.toString() %>"
@@ -308,7 +308,7 @@ PortalUtil.addPortletBreadcrumbEntry(request, LanguageUtil.get(request, "details
 							displayType="link"
 							icon="lock"
 							label="permissions"
-							propsTransformer="wiki/js/WikiPagePermissionsButtonPropsTransformer"
+							propsTransformer="{WikiPagePermissionsButtonPropsTransformer} from wiki-web"
 							small="<%= true %>"
 						/>
 					</c:if>
@@ -398,7 +398,7 @@ PortalUtil.addPortletBreadcrumbEntry(request, LanguageUtil.get(request, "details
 							displayType="link"
 							icon="trash"
 							label="delete"
-							propsTransformer="wiki/js/WikiPageDeleteButtonPropsTransformer"
+							propsTransformer="{WikiPageDeleteButtonPropsTransformer} from wiki-web"
 							small="<%= true %>"
 						/>
 					</c:if>

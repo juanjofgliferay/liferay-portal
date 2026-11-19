@@ -15,7 +15,8 @@ import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.http.client.utils.URIBuilder;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -43,6 +44,7 @@ public class MergeCentralGitSubrepositoryUtil {
 		}
 
 		List<String> failedGitrepoPaths = new ArrayList<>();
+		List<String> skippedGitrepoPaths = new ArrayList<>();
 		List<String> subrepoMergeBlacklist =
 			JenkinsResultsParserUtil.getBuildPropertyAsList(
 				false, "subrepo.merge.blacklist");
@@ -57,12 +59,13 @@ public class MergeCentralGitSubrepositoryUtil {
 
 				String remote = gitrepoProperties.getProperty("remote");
 
-				Matcher matcher = _githubRemotePattern.matcher(remote);
+				if (remote == null) {
+					skippedGitrepoPaths.add(gitrepoFile.getParent());
 
-				if (matcher.find() && !subrepoMergeBlacklist.isEmpty() &&
-					subrepoMergeBlacklist.contains(
-						matcher.group("gitSubrepositoryName"))) {
+					continue;
+				}
 
+				if (_isBlacklisted(remote, subrepoMergeBlacklist)) {
 					continue;
 				}
 
@@ -125,18 +128,19 @@ public class MergeCentralGitSubrepositoryUtil {
 			}
 		}
 
+		if (!skippedGitrepoPaths.isEmpty()) {
+			_sendEmail(
+				JenkinsResultsParserUtil.combine(
+					"Skipped these subrepositories with no \"remote\" key:\n",
+					StringUtils.join(skippedGitrepoPaths, "\n")));
+		}
+
 		if (!failedGitrepoPaths.isEmpty()) {
 			String message = JenkinsResultsParserUtil.combine(
 				"Unable to create a pull to merge these subrepositories:\n",
 				StringUtils.join(failedGitrepoPaths, "\n"));
 
-			Properties buildProperties =
-				JenkinsResultsParserUtil.getBuildProperties();
-
-			NotificationUtil.sendEmail(
-				message, "jenkins", "Merge Central Git Subrepository",
-				buildProperties.getProperty(
-					"email.list[merge-central-subrepository]"));
+			_sendEmail(message);
 
 			throw new RuntimeException(message);
 		}
@@ -203,7 +207,7 @@ public class MergeCentralGitSubrepositoryUtil {
 		String gitSubrepositoryUpstreamCommit =
 			centralGitSubrepository.getGitSubrepositoryUpstreamCommit();
 
-		String url = JenkinsResultsParserUtil.getGitHubApiUrl(
+		String url = JenkinsResultsParserUtil.getGitHubAPIURL(
 			gitSubrepositoryName, senderUserName,
 			"statuses/" + gitSubrepositoryUpstreamCommit);
 
@@ -256,8 +260,8 @@ public class MergeCentralGitSubrepositoryUtil {
 					upstreamGitRemote);
 		}
 
-		String mergeBranchNamePrefix = mergeBranchName.substring(
-			0, mergeBranchName.lastIndexOf("-"));
+		String mergeBranchNamePrefix = _getMergeBranchNamePrefix(
+			mergeBranchName);
 
 		for (String upstreamRemoteGitBranchName :
 				_upstreamRemoteGitBranchNames) {
@@ -287,12 +291,16 @@ public class MergeCentralGitSubrepositoryUtil {
 
 			int page = 1;
 
-			while (page < 10) {
-				String url = JenkinsResultsParserUtil.getGitHubApiUrl(
+			URIBuilder uriBuilder = JenkinsResultsParserUtil.newURIBuilder(
+				JenkinsResultsParserUtil.getGitHubAPIURL(
 					centralGitWorkingDirectory.getGitRepositoryName(),
-					receiverUserName, "pulls?page=" + String.valueOf(page));
+					receiverUserName, "pulls"));
 
-				JSONArray jsonArray = JenkinsResultsParserUtil.toJSONArray(url);
+			while (page < 10) {
+				uriBuilder.setParameter("page", String.valueOf(page));
+
+				JSONArray jsonArray = JenkinsResultsParserUtil.toJSONArray(
+					uriBuilder.toString());
 
 				if ((jsonArray != null) && (jsonArray.length() > 0)) {
 					for (int i = 0; i < jsonArray.length(); i++) {
@@ -303,9 +311,11 @@ public class MergeCentralGitSubrepositoryUtil {
 
 						String login = userJSONObject.getString("login");
 
-						if (login.equals("liferay-continuous-integration")) {
-							_pullsJSONArray.put(jsonObject);
+						if (!login.equals("liferay-continuous-integration")) {
+							continue;
 						}
+
+						_pullsJSONArray.put(jsonObject);
 					}
 				}
 				else {
@@ -316,8 +326,8 @@ public class MergeCentralGitSubrepositoryUtil {
 			}
 		}
 
-		String mergeBranchNamePrefix = mergeBranchName.substring(
-			0, mergeBranchName.lastIndexOf("-"));
+		String mergeBranchNamePrefix = _getMergeBranchNamePrefix(
+			mergeBranchName);
 
 		for (int i = 0; i < _pullsJSONArray.length(); i++) {
 			JSONObject jsonObject = _pullsJSONArray.getJSONObject(i);
@@ -384,6 +394,10 @@ public class MergeCentralGitSubrepositoryUtil {
 			"-", gitSubrepositoryUpstreamCommit);
 	}
 
+	private static String _getMergeBranchNamePrefix(String mergeBranchName) {
+		return mergeBranchName.substring(0, mergeBranchName.lastIndexOf("-"));
+	}
+
 	private static Properties _getPropertiesFromGitrepoFile(File gitrepoFile)
 		throws IOException {
 
@@ -392,6 +406,21 @@ public class MergeCentralGitSubrepositoryUtil {
 		properties.load(new FileInputStream(gitrepoFile));
 
 		return properties;
+	}
+
+	private static boolean _isBlacklisted(
+		String remote, List<String> subrepoMergeBlacklist) {
+
+		Matcher matcher = _githubRemotePattern.matcher(remote);
+
+		if (matcher.find() &&
+			subrepoMergeBlacklist.contains(
+				matcher.group("gitSubrepositoryName"))) {
+
+			return true;
+		}
+
+		return false;
 	}
 
 	private static void _pushMergeLocalGitBranchToRemote(
@@ -416,6 +445,16 @@ public class MergeCentralGitSubrepositoryUtil {
 		finally {
 			centralGitWorkingDirectory.removeGitRemote(originGitRemote);
 		}
+	}
+
+	private static void _sendEmail(String message) throws IOException {
+		Properties buildProperties =
+			JenkinsResultsParserUtil.getBuildProperties();
+
+		NotificationUtil.sendEmail(
+			message, "jenkins", "Merge central Git subrepository",
+			buildProperties.getProperty(
+				"email.list[merge-central-subrepository]"));
 	}
 
 	private static final Pattern _githubRemotePattern = Pattern.compile(

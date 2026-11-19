@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -271,14 +272,6 @@ public class CommercePaymentEntryAuditLocalServiceUtil {
 		return getService().getCommercePaymentEntryAudits(start, end);
 	}
 
-	public static List<CommercePaymentEntryAudit> getCommercePaymentEntryAudits(
-		long commercePaymentEntryId, int start, int end,
-		OrderByComparator<CommercePaymentEntryAudit> orderByComparator) {
-
-		return getService().getCommercePaymentEntryAudits(
-			commercePaymentEntryId, start, end, orderByComparator);
-	}
-
 	/**
 	 * Returns the number of commerce payment entry audits.
 	 *
@@ -348,15 +341,13 @@ public class CommercePaymentEntryAuditLocalServiceUtil {
 	}
 
 	public static CommercePaymentEntryAuditLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(
-		CommercePaymentEntryAuditLocalService service) {
-
-		_service = service;
-	}
-
-	private static volatile CommercePaymentEntryAuditLocalService _service;
+	private static final Snapshot<CommercePaymentEntryAuditLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			CommercePaymentEntryAuditLocalServiceUtil.class,
+			CommercePaymentEntryAuditLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-192407678

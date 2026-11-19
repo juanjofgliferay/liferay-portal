@@ -19,7 +19,7 @@ import com.liferay.portal.kernel.cluster.Clusterable;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.service.UserLocalService;
-import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
+import com.liferay.portal.kernel.util.MapUtil;
 
 import java.util.List;
 import java.util.Locale;
@@ -78,28 +78,6 @@ public class ObjectLayoutTabLocalServiceImpl
 	}
 
 	@Override
-	public ObjectLayoutTab deleteObjectLayoutTab(long objectLayoutTabId)
-		throws PortalException {
-
-		ObjectLayoutTab objectLayoutTab =
-			objectLayoutTabPersistence.findByPrimaryKey(objectLayoutTabId);
-
-		return deleteObjectLayoutTab(objectLayoutTab);
-	}
-
-	@Override
-	public ObjectLayoutTab deleteObjectLayoutTab(
-		ObjectLayoutTab objectLayoutTab) {
-
-		objectLayoutTabPersistence.remove(objectLayoutTab);
-
-		objectLayoutTabLocalService.
-			unregisterObjectLayoutTabScreenNavigationCategory(objectLayoutTab);
-
-		return objectLayoutTab;
-	}
-
-	@Override
 	public void deleteObjectRelationshipObjectLayoutTabs(
 			long objectRelationshipId)
 		throws PortalException {
@@ -125,11 +103,12 @@ public class ObjectLayoutTabLocalServiceImpl
 		ObjectDefinition objectDefinition,
 		List<ObjectLayoutTab> objectLayoutTabs) {
 
-		for (int i = objectLayoutTabs.size() - 1; i >= 0; i--) {
+		for (int i = 0; i < objectLayoutTabs.size(); i++) {
 			ObjectLayoutTab objectLayoutTab = objectLayoutTabs.get(i);
+			int order = i;
 
 			_serviceRegistrations.computeIfAbsent(
-				_getServiceRegistrationKey(objectLayoutTab),
+				_getServiceRegistrationKey(objectDefinition, objectLayoutTab),
 				serviceRegistrationKey -> _bundleContext.registerService(
 					new String[] {
 						ScreenNavigationCategory.class.getName(),
@@ -139,29 +118,31 @@ public class ObjectLayoutTabLocalServiceImpl
 						objectDefinition, objectLayoutTab,
 						_objectRelationshipPersistence.fetchByPrimaryKey(
 							objectLayoutTab.getObjectRelationshipId())),
-					HashMapDictionaryBuilder.<String, Object>put(
-						"screen.navigation.category.order:Integer",
-						objectLayoutTab.getObjectLayoutTabId()
-					).put(
-						"screen.navigation.entry.order:Integer",
-						objectLayoutTab.getObjectLayoutId()
-					).build()));
+					MapUtil.singletonDictionary(
+						"screen.navigation.category.order", order)));
 		}
 	}
 
-	@Clusterable
 	@Override
-	public void unregisterObjectLayoutTabScreenNavigationCategory(
-		ObjectLayoutTab objectLayoutTab) {
+	public void unregisterObjectLayoutTabScreenNavigationCategories(
+		ObjectDefinition objectDefinition) {
 
-		ServiceRegistration<?> serviceRegistration = _serviceRegistrations.get(
-			_getServiceRegistrationKey(objectLayoutTab));
+		for (String serviceRegistrationKey : _serviceRegistrations.keySet()) {
+			if (!serviceRegistrationKey.startsWith(
+					_getServiceRegistrationKey(objectDefinition) +
+						StringPool.POUND)) {
 
-		if (serviceRegistration != null) {
+				continue;
+			}
+
+			ServiceRegistration<?> serviceRegistration =
+				_serviceRegistrations.remove(serviceRegistrationKey);
+
+			if (serviceRegistration == null) {
+				continue;
+			}
+
 			serviceRegistration.unregister();
-
-			_serviceRegistrations.remove(
-				_getServiceRegistrationKey(objectLayoutTab));
 		}
 	}
 
@@ -170,9 +151,19 @@ public class ObjectLayoutTabLocalServiceImpl
 		_bundleContext = bundleContext;
 	}
 
-	private String _getServiceRegistrationKey(ObjectLayoutTab objectLayoutTab) {
+	private String _getServiceRegistrationKey(
+		ObjectDefinition objectDefinition) {
+
 		return StringBundler.concat(
-			objectLayoutTab.getCompanyId(), StringPool.POUND,
+			objectDefinition.getCompanyId(), StringPool.POUND,
+			objectDefinition.getObjectDefinitionId());
+	}
+
+	private String _getServiceRegistrationKey(
+		ObjectDefinition objectDefinition, ObjectLayoutTab objectLayoutTab) {
+
+		return StringBundler.concat(
+			_getServiceRegistrationKey(objectDefinition), StringPool.POUND,
 			objectLayoutTab.getObjectLayoutTabId());
 	}
 

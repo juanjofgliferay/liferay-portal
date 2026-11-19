@@ -11,13 +11,20 @@ import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.security.permission.PermissionChecker;
+import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
+import com.liferay.portal.kernel.service.permission.GroupPermissionUtil;
+import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.site.item.selector.display.context.SitesItemSelectorViewDisplayContext;
+import com.liferay.site.manager.RecentGroupManager;
 import com.liferay.site.search.GroupSearch;
-import com.liferay.site.util.RecentGroupManager;
 
-import javax.portlet.PortletURL;
+import jakarta.portlet.PortletURL;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author Julio Camarero
@@ -60,8 +67,30 @@ public class RecentSitesItemSelectorViewDisplayContext
 
 		groupSearch.setEmptyResultsMessage(
 			"you-have-not-visited-any-sites-recently");
-		groupSearch.setResultsAndTotal(
-			_recentGroupManager.getRecentGroups(httpServletRequest));
+
+		GroupItemSelectorCriterion groupItemSelectorCriterion =
+			getGroupItemSelectorCriterion();
+		List<Group> groups = new ArrayList<>();
+		PermissionChecker permissionChecker =
+			PermissionThreadLocal.getPermissionChecker();
+
+		for (Group group :
+				_recentGroupManager.getRecentGroups(httpServletRequest)) {
+
+			if (ArrayUtil.contains(
+					groupItemSelectorCriterion.getExcludedGroupIds(),
+					group.getGroupId()) ||
+				!GroupPermissionUtil.contains(
+					permissionChecker, group,
+					groupItemSelectorCriterion.getActionId())) {
+
+				continue;
+			}
+
+			groups.add(group);
+		}
+
+		groupSearch.setResultsAndTotal(groups);
 
 		return groupSearch;
 	}

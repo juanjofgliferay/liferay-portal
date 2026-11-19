@@ -107,8 +107,7 @@ public class CalendarServiceImpl extends CalendarServiceBaseImpl {
 		_calendarResourceModelResourcePermission.check(
 			getPermissionChecker(), calendarResourceId, ActionKeys.VIEW);
 
-		return calendarLocalService.getCalendarResourceCalendars(
-			groupId, calendarResourceId);
+		return calendarPersistence.findByG_C(groupId, calendarResourceId);
 	}
 
 	@Override
@@ -119,7 +118,7 @@ public class CalendarServiceImpl extends CalendarServiceBaseImpl {
 		_calendarResourceModelResourcePermission.check(
 			getPermissionChecker(), calendarResourceId, ActionKeys.VIEW);
 
-		return calendarLocalService.getCalendarResourceCalendars(
+		return calendarPersistence.findByG_C_D(
 			groupId, calendarResourceId, defaultCalendar);
 	}
 
@@ -318,11 +317,13 @@ public class CalendarServiceImpl extends CalendarServiceBaseImpl {
 		while (iterator.hasNext()) {
 			Calendar calendar = iterator.next();
 
-			if (!_calendarModelResourcePermission.contains(
+			if (_calendarModelResourcePermission.contains(
 					getPermissionChecker(), calendar, actionId)) {
 
-				iterator.remove();
+				continue;
 			}
+
+			iterator.remove();
 		}
 
 		return calendars;

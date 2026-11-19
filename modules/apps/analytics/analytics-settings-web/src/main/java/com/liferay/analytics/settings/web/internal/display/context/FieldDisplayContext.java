@@ -10,7 +10,7 @@ import com.liferay.analytics.settings.web.internal.constants.AnalyticsSettingsWe
 import com.liferay.analytics.settings.web.internal.model.Field;
 import com.liferay.analytics.settings.web.internal.search.FieldChecker;
 import com.liferay.analytics.settings.web.internal.search.FieldSearch;
-import com.liferay.analytics.settings.web.internal.user.AnalyticsUsersManager;
+import com.liferay.analytics.settings.web.internal.util.AnalyticsUsersUtil;
 import com.liferay.expando.kernel.model.ExpandoColumn;
 import com.liferay.expando.kernel.model.ExpandoColumnConstants;
 import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
@@ -21,14 +21,14 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.TreeMapBuilder;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-
-import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
 
 /**
  * @author Rachael Koestartyo
@@ -54,9 +54,6 @@ public class FieldDisplayContext {
 		_analyticsConfiguration =
 			(AnalyticsConfiguration)renderRequest.getAttribute(
 				AnalyticsSettingsWebKeys.ANALYTICS_CONFIGURATION);
-		_analyticsUsersManager =
-			(AnalyticsUsersManager)renderRequest.getAttribute(
-				AnalyticsSettingsWebKeys.ANALYTICS_USERS_MANAGER);
 
 		ThemeDisplay themeDisplay = (ThemeDisplay)renderRequest.getAttribute(
 			WebKeys.THEME_DISPLAY);
@@ -252,7 +249,7 @@ public class FieldDisplayContext {
 		Map<String, String> userCustomFieldNames = new TreeMap<>();
 
 		for (ExpandoColumn expandoColumn :
-				_analyticsUsersManager.getUserExpandoColumns(_companyId)) {
+				AnalyticsUsersUtil.getUserExpandoColumns(_companyId)) {
 
 			userCustomFieldNames.put(
 				expandoColumn.getName(), _getDataType(expandoColumn.getType()));
@@ -369,7 +366,6 @@ public class FieldDisplayContext {
 		).build();
 
 	private final AnalyticsConfiguration _analyticsConfiguration;
-	private final AnalyticsUsersManager _analyticsUsersManager;
 	private final long _companyId;
 	private final String _mvcRenderCommandName;
 	private final RenderRequest _renderRequest;

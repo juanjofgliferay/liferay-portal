@@ -5,10 +5,13 @@
 
 package com.liferay.portal.vulcan.extension.validation;
 
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 import com.liferay.portal.vulcan.extension.PropertyDefinition;
+
+import jakarta.validation.ValidationException;
 
 import java.io.Serializable;
 
@@ -19,8 +22,6 @@ import java.text.SimpleDateFormat;
 
 import java.util.Collections;
 import java.util.Map;
-
-import javax.validation.ValidationException;
 
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -84,6 +85,7 @@ public class DefaultPropertyValidatorTest {
 			PropertyDefinition.PropertyType.DATE_TIME, defaultPropertyValidator,
 			RandomTestUtil.randomBoolean());
 
+		defaultPropertyValidator.validate(propertyDefinition, StringPool.BLANK);
 		defaultPropertyValidator.validate(
 			propertyDefinition, _dateFormat.format(RandomTestUtil.nextDate()));
 	}
@@ -120,6 +122,10 @@ public class DefaultPropertyValidatorTest {
 			propertyDefinition, RandomTestUtil.randomDouble());
 		defaultPropertyValidator.validate(
 			propertyDefinition, RandomTestUtil.randomFloat());
+		defaultPropertyValidator.validate(
+			propertyDefinition, RandomTestUtil.randomInt());
+		defaultPropertyValidator.validate(
+			propertyDefinition, RandomTestUtil.randomLong());
 	}
 
 	@Test
@@ -245,6 +251,78 @@ public class DefaultPropertyValidatorTest {
 		defaultPropertyValidator.validate(
 			propertyDefinition,
 			new Map[] {_getTestClassAsMap(), _getTestClassAsMap()});
+	}
+
+	@Test(expected = ValidationException.class)
+	public void testValidateMultipleElementsWithBooleanValue() {
+		DefaultPropertyValidator defaultPropertyValidator =
+			new DefaultPropertyValidator();
+
+		PropertyDefinition propertyDefinition = new PropertyDefinition(
+			Collections.singleton(String.class), RandomTestUtil.randomString(),
+			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
+			RandomTestUtil.randomString(),
+			PropertyDefinition.PropertyType.MULTIPLE_ELEMENT,
+			defaultPropertyValidator, RandomTestUtil.randomBoolean());
+
+		defaultPropertyValidator.validate(
+			propertyDefinition,
+			new Object[] {
+				RandomTestUtil.randomBoolean(), RandomTestUtil.randomBoolean()
+			});
+	}
+
+	@Test(expected = ValidationException.class)
+	public void testValidateMultipleElementsWithNullValue() {
+		DefaultPropertyValidator defaultPropertyValidator =
+			new DefaultPropertyValidator();
+
+		PropertyDefinition propertyDefinition = new PropertyDefinition(
+			Collections.singleton(TestClass.class),
+			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
+			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
+			PropertyDefinition.PropertyType.MULTIPLE_ELEMENT,
+			defaultPropertyValidator, RandomTestUtil.randomBoolean());
+
+		defaultPropertyValidator.validate(propertyDefinition, null);
+	}
+
+	@Test(expected = ValidationException.class)
+	public void testValidateMultipleElementsWithNumberValue() {
+		DefaultPropertyValidator defaultPropertyValidator =
+			new DefaultPropertyValidator();
+
+		PropertyDefinition propertyDefinition = new PropertyDefinition(
+			Collections.singleton(String.class), RandomTestUtil.randomString(),
+			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
+			RandomTestUtil.randomString(),
+			PropertyDefinition.PropertyType.MULTIPLE_ELEMENT,
+			defaultPropertyValidator, RandomTestUtil.randomBoolean());
+
+		defaultPropertyValidator.validate(
+			propertyDefinition,
+			new Object[] {
+				RandomTestUtil.randomInt(), RandomTestUtil.randomInt()
+			});
+	}
+
+	@Test
+	public void testValidateMultipleElementsWithStringValue() {
+		DefaultPropertyValidator defaultPropertyValidator =
+			new DefaultPropertyValidator();
+
+		PropertyDefinition propertyDefinition = new PropertyDefinition(
+			Collections.singleton(String.class), RandomTestUtil.randomString(),
+			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
+			RandomTestUtil.randomString(),
+			PropertyDefinition.PropertyType.MULTIPLE_ELEMENT,
+			defaultPropertyValidator, RandomTestUtil.randomBoolean());
+
+		defaultPropertyValidator.validate(
+			propertyDefinition,
+			new Object[] {
+				RandomTestUtil.randomString(), RandomTestUtil.randomString()
+			});
 	}
 
 	@Test(expected = ValidationException.class)

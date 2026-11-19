@@ -24,11 +24,14 @@ import com.liferay.portal.configuration.module.configuration.ConfigurationProvid
 import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.settings.GroupServiceSettingsLocator;
 import com.liferay.portal.kernel.util.HttpComponentsUtil;
+import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.ResourceBundleUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.URLCodec;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.uuid.PortalUUIDUtil;
+import com.liferay.portal.security.key.secret.SecretResolver;
 
 import com.worldline.sips.model.CaptureMode;
 import com.worldline.sips.model.Currency;
@@ -165,38 +168,20 @@ public class MercanetCommercePaymentMethod implements CommercePaymentMethod {
 
 		URL returnURL = new URL(mercanetCommercePaymentRequest.getReturnUrl());
 
-		Map<String, String[]> parameters = HttpComponentsUtil.getParameterMap(
-			returnURL.getQuery());
-
 		URL baseURL = new URL(
 			returnURL.getProtocol(), returnURL.getHost(), returnURL.getPort(),
 			returnURL.getPath());
+		Map<String, String[]> parameterMap = HttpComponentsUtil.getParameterMap(
+			returnURL.getQuery());
 
-		URL automaticURL = new URL(
-			StringBundler.concat(
-				baseURL, "?groupId=", parameters.get("groupId")[0],
-				"&type=automatic&uuid=", parameters.get("uuid")[0]));
-
-		paymentRequest.setAutomaticResponseUrl(automaticURL);
+		paymentRequest.setAutomaticResponseUrl(
+			_getAutomaticResponseURL(baseURL, parameterMap));
 
 		paymentRequest.setCaptureMode(CaptureMode.IMMEDIATE);
 		paymentRequest.setCurrencyCode(Currency.EUR);
 		paymentRequest.setCustomerId(String.valueOf(commerceOrder.getUserId()));
-
-		StringBundler normalURLSB = new StringBundler(4);
-
-		normalURLSB.append(baseURL.toString());
-		normalURLSB.append("?redirect=");
-
-		String encodeURL = URLCodec.encodeURL(parameters.get("redirect")[0]);
-
-		normalURLSB.append(encodeURL);
-
-		normalURLSB.append("&type=normal");
-
-		URL normalURL = new URL(normalURLSB.toString());
-
-		paymentRequest.setNormalReturnUrl(normalURL);
+		paymentRequest.setNormalReturnUrl(
+			_getNormalReturnURL(baseURL, parameterMap));
 
 		paymentRequest.setOrderChannel(OrderChannel.INTERNET);
 		paymentRequest.setOrderId(
@@ -221,7 +206,9 @@ public class MercanetCommercePaymentMethod implements CommercePaymentMethod {
 			Environment.valueOf(environment),
 			mercanetGroupServiceConfiguration.merchantId(),
 			Integer.valueOf(keyVersion),
-			mercanetGroupServiceConfiguration.secretKey());
+			_secretResolver.resolve(
+				commerceOrder.getCompanyId(),
+				mercanetGroupServiceConfiguration.secretKey()));
 
 		InitializationResponse initializationResponse =
 			paypageClient.initialize(paymentRequest);
@@ -256,6 +243,21 @@ public class MercanetCommercePaymentMethod implements CommercePaymentMethod {
 			resultMessage, true);
 	}
 
+	private URL _getAutomaticResponseURL(
+			URL baseURL, Map<String, String[]> parameterMap)
+		throws Exception {
+
+		StringBundler sb = new StringBundler(5);
+
+		sb.append(baseURL.toString());
+		sb.append("?groupId=");
+		sb.append(MapUtil.getString(parameterMap, "groupId"));
+		sb.append("&type=automatic&uuid=");
+		sb.append(URLCodec.encodeURL(MapUtil.getString(parameterMap, "uuid")));
+
+		return new URL(sb.toString());
+	}
+
 	private MercanetGroupServiceConfiguration
 			_getMercanetGroupServiceConfiguration(long groupId)
 		throws Exception {
@@ -264,6 +266,32 @@ public class MercanetCommercePaymentMethod implements CommercePaymentMethod {
 			MercanetGroupServiceConfiguration.class,
 			new GroupServiceSettingsLocator(
 				groupId, MercanetCommercePaymentMethodConstants.SERVICE_NAME));
+	}
+
+	private URL _getNormalReturnURL(
+			URL baseURL, Map<String, String[]> parameterMap)
+		throws Exception {
+
+		StringBundler sb = new StringBundler(9);
+
+		sb.append(baseURL.toString());
+		sb.append("?groupId=");
+		sb.append(MapUtil.getString(parameterMap, "groupId"));
+
+		String guestToken = MapUtil.getString(parameterMap, "guestToken");
+
+		if (Validator.isNotNull(guestToken)) {
+			sb.append("&guestToken=");
+			sb.append(URLCodec.encodeURL(guestToken));
+		}
+
+		sb.append("&redirect=");
+		sb.append(
+			URLCodec.encodeURL(MapUtil.getString(parameterMap, "redirect")));
+		sb.append("&type=normal&uuid=");
+		sb.append(URLCodec.encodeURL(MapUtil.getString(parameterMap, "uuid")));
+
+		return new URL(sb.toString());
 	}
 
 	private ResourceBundle _getResourceBundle(Locale locale) {
@@ -292,5 +320,8 @@ public class MercanetCommercePaymentMethod implements CommercePaymentMethod {
 
 	@Reference
 	private Portal _portal;
+
+	@Reference
+	private SecretResolver _secretResolver;
 
 }

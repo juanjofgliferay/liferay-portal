@@ -7,8 +7,10 @@ package com.liferay.portal.model.impl;
 
 import com.liferay.expando.kernel.model.ExpandoBridge;
 import com.liferay.expando.kernel.util.ExpandoBridgeFactoryUtil;
+import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.bean.AutoEscapeBeanHandler;
+import com.liferay.portal.kernel.dao.orm.EntityCacheUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSON;
 import com.liferay.portal.kernel.model.CacheModel;
@@ -25,6 +27,8 @@ import com.liferay.portal.kernel.util.StringUtil;
 
 import java.io.Serializable;
 
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
@@ -66,14 +70,7 @@ public class CompanyModelImpl
 		{"userId", Types.BIGINT}, {"userName", Types.VARCHAR},
 		{"createDate", Types.TIMESTAMP}, {"modifiedDate", Types.TIMESTAMP},
 		{"webId", Types.VARCHAR}, {"mx", Types.VARCHAR},
-		{"homeURL", Types.VARCHAR}, {"logoId", Types.BIGINT},
-		{"maxUsers", Types.INTEGER}, {"active_", Types.BOOLEAN},
-		{"name", Types.VARCHAR}, {"legalName", Types.VARCHAR},
-		{"legalId", Types.VARCHAR}, {"legalType", Types.VARCHAR},
-		{"sicCode", Types.VARCHAR}, {"tickerSymbol", Types.VARCHAR},
-		{"industry", Types.VARCHAR}, {"type_", Types.VARCHAR},
-		{"size_", Types.VARCHAR}, {"indexNameCurrent", Types.VARCHAR},
-		{"indexNameNext", Types.VARCHAR}
+		{"maxUsers", Types.INTEGER}, {"active_", Types.BOOLEAN}
 	};
 
 	public static final Map<String, Integer> TABLE_COLUMNS_MAP =
@@ -88,27 +85,16 @@ public class CompanyModelImpl
 		TABLE_COLUMNS_MAP.put("modifiedDate", Types.TIMESTAMP);
 		TABLE_COLUMNS_MAP.put("webId", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("mx", Types.VARCHAR);
-		TABLE_COLUMNS_MAP.put("homeURL", Types.VARCHAR);
-		TABLE_COLUMNS_MAP.put("logoId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("maxUsers", Types.INTEGER);
 		TABLE_COLUMNS_MAP.put("active_", Types.BOOLEAN);
-		TABLE_COLUMNS_MAP.put("name", Types.VARCHAR);
-		TABLE_COLUMNS_MAP.put("legalName", Types.VARCHAR);
-		TABLE_COLUMNS_MAP.put("legalId", Types.VARCHAR);
-		TABLE_COLUMNS_MAP.put("legalType", Types.VARCHAR);
-		TABLE_COLUMNS_MAP.put("sicCode", Types.VARCHAR);
-		TABLE_COLUMNS_MAP.put("tickerSymbol", Types.VARCHAR);
-		TABLE_COLUMNS_MAP.put("industry", Types.VARCHAR);
-		TABLE_COLUMNS_MAP.put("type_", Types.VARCHAR);
-		TABLE_COLUMNS_MAP.put("size_", Types.VARCHAR);
-		TABLE_COLUMNS_MAP.put("indexNameCurrent", Types.VARCHAR);
-		TABLE_COLUMNS_MAP.put("indexNameNext", Types.VARCHAR);
 	}
 
 	public static final String TABLE_SQL_CREATE =
-		"create table Company (mvccVersion LONG default 0 not null,companyId LONG not null primary key,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,webId VARCHAR(75) null,mx VARCHAR(200) null,homeURL STRING null,logoId LONG,maxUsers INTEGER,active_ BOOLEAN,name VARCHAR(75) null,legalName VARCHAR(75) null,legalId VARCHAR(75) null,legalType VARCHAR(75) null,sicCode VARCHAR(75) null,tickerSymbol VARCHAR(75) null,industry VARCHAR(75) null,type_ VARCHAR(75) null,size_ VARCHAR(75) null,indexNameCurrent VARCHAR(75) null,indexNameNext VARCHAR(75) null)";
+		"create table Company (mvccVersion LONG default 0 not null,companyId LONG not null primary key,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,webId VARCHAR(75) null,mx VARCHAR(200) null,maxUsers INTEGER,active_ BOOLEAN)";
 
 	public static final String TABLE_SQL_DROP = "drop table Company";
+
+	public static final String ENTITY_ALIAS = "company";
 
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY company.companyId ASC";
@@ -143,29 +129,17 @@ public class CompanyModelImpl
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long LOGOID_COLUMN_BITMASK = 1L;
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
-	 */
-	@Deprecated
-	public static final long MX_COLUMN_BITMASK = 2L;
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
-	 */
-	@Deprecated
-	public static final long WEBID_COLUMN_BITMASK = 4L;
+	public static final long WEBID_COLUMN_BITMASK = 1L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
 	 *		#getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long COMPANYID_COLUMN_BITMASK = 8L;
+	public static final long COMPANYID_COLUMN_BITMASK = 2L;
 
 	public static final long LOCK_EXPIRATION_TIME = GetterUtil.getLong(
-		com.liferay.portal.util.PropsUtil.get(
+		com.liferay.portal.kernel.util.PropsUtil.get(
 			"lock.expiration.time.com.liferay.portal.kernel.model.Company"));
 
 	public CompanyModelImpl() {
@@ -271,24 +245,8 @@ public class CompanyModelImpl
 				"modifiedDate", Company::getModifiedDate);
 			attributeGetterFunctions.put("webId", Company::getWebId);
 			attributeGetterFunctions.put("mx", Company::getMx);
-			attributeGetterFunctions.put("homeURL", Company::getHomeURL);
-			attributeGetterFunctions.put("logoId", Company::getLogoId);
 			attributeGetterFunctions.put("maxUsers", Company::getMaxUsers);
 			attributeGetterFunctions.put("active", Company::getActive);
-			attributeGetterFunctions.put("name", Company::getName);
-			attributeGetterFunctions.put("legalName", Company::getLegalName);
-			attributeGetterFunctions.put("legalId", Company::getLegalId);
-			attributeGetterFunctions.put("legalType", Company::getLegalType);
-			attributeGetterFunctions.put("sicCode", Company::getSicCode);
-			attributeGetterFunctions.put(
-				"tickerSymbol", Company::getTickerSymbol);
-			attributeGetterFunctions.put("industry", Company::getIndustry);
-			attributeGetterFunctions.put("type", Company::getType);
-			attributeGetterFunctions.put("size", Company::getSize);
-			attributeGetterFunctions.put(
-				"indexNameCurrent", Company::getIndexNameCurrent);
-			attributeGetterFunctions.put(
-				"indexNameNext", Company::getIndexNameNext);
 
 			_attributeGetterFunctions = Collections.unmodifiableMap(
 				attributeGetterFunctions);
@@ -325,40 +283,9 @@ public class CompanyModelImpl
 			attributeSetterBiConsumers.put(
 				"mx", (BiConsumer<Company, String>)Company::setMx);
 			attributeSetterBiConsumers.put(
-				"homeURL", (BiConsumer<Company, String>)Company::setHomeURL);
-			attributeSetterBiConsumers.put(
-				"logoId", (BiConsumer<Company, Long>)Company::setLogoId);
-			attributeSetterBiConsumers.put(
 				"maxUsers", (BiConsumer<Company, Integer>)Company::setMaxUsers);
 			attributeSetterBiConsumers.put(
 				"active", (BiConsumer<Company, Boolean>)Company::setActive);
-			attributeSetterBiConsumers.put(
-				"name", (BiConsumer<Company, String>)Company::setName);
-			attributeSetterBiConsumers.put(
-				"legalName",
-				(BiConsumer<Company, String>)Company::setLegalName);
-			attributeSetterBiConsumers.put(
-				"legalId", (BiConsumer<Company, String>)Company::setLegalId);
-			attributeSetterBiConsumers.put(
-				"legalType",
-				(BiConsumer<Company, String>)Company::setLegalType);
-			attributeSetterBiConsumers.put(
-				"sicCode", (BiConsumer<Company, String>)Company::setSicCode);
-			attributeSetterBiConsumers.put(
-				"tickerSymbol",
-				(BiConsumer<Company, String>)Company::setTickerSymbol);
-			attributeSetterBiConsumers.put(
-				"industry", (BiConsumer<Company, String>)Company::setIndustry);
-			attributeSetterBiConsumers.put(
-				"type", (BiConsumer<Company, String>)Company::setType);
-			attributeSetterBiConsumers.put(
-				"size", (BiConsumer<Company, String>)Company::setSize);
-			attributeSetterBiConsumers.put(
-				"indexNameCurrent",
-				(BiConsumer<Company, String>)Company::setIndexNameCurrent);
-			attributeSetterBiConsumers.put(
-				"indexNameNext",
-				(BiConsumer<Company, String>)Company::setIndexNameNext);
 
 			_attributeSetterBiConsumers = Collections.unmodifiableMap(
 				(Map)attributeSetterBiConsumers);
@@ -532,59 +459,6 @@ public class CompanyModelImpl
 		_mx = mx;
 	}
 
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #getColumnOriginalValue(String)}
-	 */
-	@Deprecated
-	public String getOriginalMx() {
-		return getColumnOriginalValue("mx");
-	}
-
-	@JSON
-	@Override
-	public String getHomeURL() {
-		if (_homeURL == null) {
-			return "";
-		}
-		else {
-			return _homeURL;
-		}
-	}
-
-	@Override
-	public void setHomeURL(String homeURL) {
-		if (_columnOriginalValues == Collections.EMPTY_MAP) {
-			_setColumnOriginalValues();
-		}
-
-		_homeURL = homeURL;
-	}
-
-	@JSON
-	@Override
-	public long getLogoId() {
-		return _logoId;
-	}
-
-	@Override
-	public void setLogoId(long logoId) {
-		if (_columnOriginalValues == Collections.EMPTY_MAP) {
-			_setColumnOriginalValues();
-		}
-
-		_logoId = logoId;
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #getColumnOriginalValue(String)}
-	 */
-	@Deprecated
-	public long getOriginalLogoId() {
-		return GetterUtil.getLong(this.<Long>getColumnOriginalValue("logoId"));
-	}
-
 	@JSON
 	@Override
 	public int getMaxUsers() {
@@ -621,232 +495,11 @@ public class CompanyModelImpl
 		_active = active;
 	}
 
-	@JSON
-	@Override
-	public String getName() {
-		if (_name == null) {
-			return "";
-		}
-		else {
-			return _name;
-		}
+	public long getGroupId() {
+		return 0;
 	}
 
-	@Override
-	public void setName(String name) {
-		if (_columnOriginalValues == Collections.EMPTY_MAP) {
-			_setColumnOriginalValues();
-		}
-
-		_name = name;
-	}
-
-	@JSON
-	@Override
-	public String getLegalName() {
-		if (_legalName == null) {
-			return "";
-		}
-		else {
-			return _legalName;
-		}
-	}
-
-	@Override
-	public void setLegalName(String legalName) {
-		if (_columnOriginalValues == Collections.EMPTY_MAP) {
-			_setColumnOriginalValues();
-		}
-
-		_legalName = legalName;
-	}
-
-	@JSON
-	@Override
-	public String getLegalId() {
-		if (_legalId == null) {
-			return "";
-		}
-		else {
-			return _legalId;
-		}
-	}
-
-	@Override
-	public void setLegalId(String legalId) {
-		if (_columnOriginalValues == Collections.EMPTY_MAP) {
-			_setColumnOriginalValues();
-		}
-
-		_legalId = legalId;
-	}
-
-	@JSON
-	@Override
-	public String getLegalType() {
-		if (_legalType == null) {
-			return "";
-		}
-		else {
-			return _legalType;
-		}
-	}
-
-	@Override
-	public void setLegalType(String legalType) {
-		if (_columnOriginalValues == Collections.EMPTY_MAP) {
-			_setColumnOriginalValues();
-		}
-
-		_legalType = legalType;
-	}
-
-	@JSON
-	@Override
-	public String getSicCode() {
-		if (_sicCode == null) {
-			return "";
-		}
-		else {
-			return _sicCode;
-		}
-	}
-
-	@Override
-	public void setSicCode(String sicCode) {
-		if (_columnOriginalValues == Collections.EMPTY_MAP) {
-			_setColumnOriginalValues();
-		}
-
-		_sicCode = sicCode;
-	}
-
-	@JSON
-	@Override
-	public String getTickerSymbol() {
-		if (_tickerSymbol == null) {
-			return "";
-		}
-		else {
-			return _tickerSymbol;
-		}
-	}
-
-	@Override
-	public void setTickerSymbol(String tickerSymbol) {
-		if (_columnOriginalValues == Collections.EMPTY_MAP) {
-			_setColumnOriginalValues();
-		}
-
-		_tickerSymbol = tickerSymbol;
-	}
-
-	@JSON
-	@Override
-	public String getIndustry() {
-		if (_industry == null) {
-			return "";
-		}
-		else {
-			return _industry;
-		}
-	}
-
-	@Override
-	public void setIndustry(String industry) {
-		if (_columnOriginalValues == Collections.EMPTY_MAP) {
-			_setColumnOriginalValues();
-		}
-
-		_industry = industry;
-	}
-
-	@JSON
-	@Override
-	public String getType() {
-		if (_type == null) {
-			return "";
-		}
-		else {
-			return _type;
-		}
-	}
-
-	@Override
-	public void setType(String type) {
-		if (_columnOriginalValues == Collections.EMPTY_MAP) {
-			_setColumnOriginalValues();
-		}
-
-		_type = type;
-	}
-
-	@JSON
-	@Override
-	public String getSize() {
-		if (_size == null) {
-			return "";
-		}
-		else {
-			return _size;
-		}
-	}
-
-	@Override
-	public void setSize(String size) {
-		if (_columnOriginalValues == Collections.EMPTY_MAP) {
-			_setColumnOriginalValues();
-		}
-
-		_size = size;
-	}
-
-	@JSON
-	@Override
-	public String getIndexNameCurrent() {
-		if (_indexNameCurrent == null) {
-			return "";
-		}
-		else {
-			return _indexNameCurrent;
-		}
-	}
-
-	@Override
-	public void setIndexNameCurrent(String indexNameCurrent) {
-		if (_columnOriginalValues == Collections.EMPTY_MAP) {
-			_setColumnOriginalValues();
-		}
-
-		_indexNameCurrent = indexNameCurrent;
-	}
-
-	@JSON
-	@Override
-	public String getIndexNameNext() {
-		if (_indexNameNext == null) {
-			return "";
-		}
-		else {
-			return _indexNameNext;
-		}
-	}
-
-	@Override
-	public void setIndexNameNext(String indexNameNext) {
-		if (_columnOriginalValues == Collections.EMPTY_MAP) {
-			_setColumnOriginalValues();
-		}
-
-		_indexNameNext = indexNameNext;
-	}
-
-	public CompanyImpl.CompanySecurityBag getCompanySecurityBag() {
-		return null;
-	}
-
-	public void setCompanySecurityBag(
-		CompanyImpl.CompanySecurityBag companySecurityBag) {
+	public void setGroupId(long groupId) {
 	}
 
 	public String getVirtualHostname() {
@@ -920,21 +573,8 @@ public class CompanyModelImpl
 		companyImpl.setModifiedDate(getModifiedDate());
 		companyImpl.setWebId(getWebId());
 		companyImpl.setMx(getMx());
-		companyImpl.setHomeURL(getHomeURL());
-		companyImpl.setLogoId(getLogoId());
 		companyImpl.setMaxUsers(getMaxUsers());
 		companyImpl.setActive(isActive());
-		companyImpl.setName(getName());
-		companyImpl.setLegalName(getLegalName());
-		companyImpl.setLegalId(getLegalId());
-		companyImpl.setLegalType(getLegalType());
-		companyImpl.setSicCode(getSicCode());
-		companyImpl.setTickerSymbol(getTickerSymbol());
-		companyImpl.setIndustry(getIndustry());
-		companyImpl.setType(getType());
-		companyImpl.setSize(getSize());
-		companyImpl.setIndexNameCurrent(getIndexNameCurrent());
-		companyImpl.setIndexNameNext(getIndexNameNext());
 
 		companyImpl.resetOriginalValues();
 
@@ -958,28 +598,9 @@ public class CompanyModelImpl
 			this.<Date>getColumnOriginalValue("modifiedDate"));
 		companyImpl.setWebId(this.<String>getColumnOriginalValue("webId"));
 		companyImpl.setMx(this.<String>getColumnOriginalValue("mx"));
-		companyImpl.setHomeURL(this.<String>getColumnOriginalValue("homeURL"));
-		companyImpl.setLogoId(this.<Long>getColumnOriginalValue("logoId"));
 		companyImpl.setMaxUsers(
 			this.<Integer>getColumnOriginalValue("maxUsers"));
 		companyImpl.setActive(this.<Boolean>getColumnOriginalValue("active_"));
-		companyImpl.setName(this.<String>getColumnOriginalValue("name"));
-		companyImpl.setLegalName(
-			this.<String>getColumnOriginalValue("legalName"));
-		companyImpl.setLegalId(this.<String>getColumnOriginalValue("legalId"));
-		companyImpl.setLegalType(
-			this.<String>getColumnOriginalValue("legalType"));
-		companyImpl.setSicCode(this.<String>getColumnOriginalValue("sicCode"));
-		companyImpl.setTickerSymbol(
-			this.<String>getColumnOriginalValue("tickerSymbol"));
-		companyImpl.setIndustry(
-			this.<String>getColumnOriginalValue("industry"));
-		companyImpl.setType(this.<String>getColumnOriginalValue("type_"));
-		companyImpl.setSize(this.<String>getColumnOriginalValue("size_"));
-		companyImpl.setIndexNameCurrent(
-			this.<String>getColumnOriginalValue("indexNameCurrent"));
-		companyImpl.setIndexNameNext(
-			this.<String>getColumnOriginalValue("indexNameNext"));
 
 		return companyImpl;
 	}
@@ -996,6 +617,28 @@ public class CompanyModelImpl
 		}
 		else {
 			return 0;
+		}
+	}
+
+	@Override
+	public void copyCacheFields(Company source) {
+		if (getMvccVersion() != source.getMvccVersion()) {
+			return;
+		}
+
+		try {
+			_groupIdSetterMethodHandle.invokeExact(
+				(CompanyImpl)this,
+				(long)_groupIdGetterMethodHandle.invokeExact(
+					(CompanyImpl)source));
+
+			_virtualHostnameSetterMethodHandle.invokeExact(
+				(CompanyImpl)this,
+				(String)_virtualHostnameGetterMethodHandle.invokeExact(
+					(CompanyImpl)source));
+		}
+		catch (Throwable throwable) {
+			ReflectionUtil.throwException(throwable);
 		}
 	}
 
@@ -1049,8 +692,6 @@ public class CompanyModelImpl
 		_columnOriginalValues = Collections.emptyMap();
 
 		_setModifiedDate = false;
-
-		setCompanySecurityBag(null);
 
 		setVirtualHostname(null);
 
@@ -1109,115 +750,23 @@ public class CompanyModelImpl
 			companyCacheModel.mx = null;
 		}
 
-		companyCacheModel.homeURL = getHomeURL();
-
-		String homeURL = companyCacheModel.homeURL;
-
-		if ((homeURL != null) && (homeURL.length() == 0)) {
-			companyCacheModel.homeURL = null;
-		}
-
-		companyCacheModel.logoId = getLogoId();
-
 		companyCacheModel.maxUsers = getMaxUsers();
 
 		companyCacheModel.active = isActive();
 
-		companyCacheModel.name = getName();
+		try {
+			companyCacheModel.groupId =
+				(long)_groupIdGetterMethodHandle.invokeExact((CompanyImpl)this);
 
-		String name = companyCacheModel.name;
+			setVirtualHostname(null);
 
-		if ((name != null) && (name.length() == 0)) {
-			companyCacheModel.name = null;
+			companyCacheModel.virtualHostname =
+				(String)_virtualHostnameGetterMethodHandle.invokeExact(
+					(CompanyImpl)this);
 		}
-
-		companyCacheModel.legalName = getLegalName();
-
-		String legalName = companyCacheModel.legalName;
-
-		if ((legalName != null) && (legalName.length() == 0)) {
-			companyCacheModel.legalName = null;
+		catch (Throwable throwable) {
+			ReflectionUtil.throwException(throwable);
 		}
-
-		companyCacheModel.legalId = getLegalId();
-
-		String legalId = companyCacheModel.legalId;
-
-		if ((legalId != null) && (legalId.length() == 0)) {
-			companyCacheModel.legalId = null;
-		}
-
-		companyCacheModel.legalType = getLegalType();
-
-		String legalType = companyCacheModel.legalType;
-
-		if ((legalType != null) && (legalType.length() == 0)) {
-			companyCacheModel.legalType = null;
-		}
-
-		companyCacheModel.sicCode = getSicCode();
-
-		String sicCode = companyCacheModel.sicCode;
-
-		if ((sicCode != null) && (sicCode.length() == 0)) {
-			companyCacheModel.sicCode = null;
-		}
-
-		companyCacheModel.tickerSymbol = getTickerSymbol();
-
-		String tickerSymbol = companyCacheModel.tickerSymbol;
-
-		if ((tickerSymbol != null) && (tickerSymbol.length() == 0)) {
-			companyCacheModel.tickerSymbol = null;
-		}
-
-		companyCacheModel.industry = getIndustry();
-
-		String industry = companyCacheModel.industry;
-
-		if ((industry != null) && (industry.length() == 0)) {
-			companyCacheModel.industry = null;
-		}
-
-		companyCacheModel.type = getType();
-
-		String type = companyCacheModel.type;
-
-		if ((type != null) && (type.length() == 0)) {
-			companyCacheModel.type = null;
-		}
-
-		companyCacheModel.size = getSize();
-
-		String size = companyCacheModel.size;
-
-		if ((size != null) && (size.length() == 0)) {
-			companyCacheModel.size = null;
-		}
-
-		companyCacheModel.indexNameCurrent = getIndexNameCurrent();
-
-		String indexNameCurrent = companyCacheModel.indexNameCurrent;
-
-		if ((indexNameCurrent != null) && (indexNameCurrent.length() == 0)) {
-			companyCacheModel.indexNameCurrent = null;
-		}
-
-		companyCacheModel.indexNameNext = getIndexNameNext();
-
-		String indexNameNext = companyCacheModel.indexNameNext;
-
-		if ((indexNameNext != null) && (indexNameNext.length() == 0)) {
-			companyCacheModel.indexNameNext = null;
-		}
-
-		setCompanySecurityBag(null);
-
-		companyCacheModel._companySecurityBag = getCompanySecurityBag();
-
-		setVirtualHostname(null);
-
-		companyCacheModel._virtualHostname = getVirtualHostname();
 
 		return companyCacheModel;
 	}
@@ -1289,21 +838,8 @@ public class CompanyModelImpl
 	private boolean _setModifiedDate;
 	private String _webId;
 	private String _mx;
-	private String _homeURL;
-	private long _logoId;
 	private int _maxUsers;
 	private boolean _active;
-	private String _name;
-	private String _legalName;
-	private String _legalId;
-	private String _legalType;
-	private String _sicCode;
-	private String _tickerSymbol;
-	private String _industry;
-	private String _type;
-	private String _size;
-	private String _indexNameCurrent;
-	private String _indexNameNext;
 
 	public <T> T getColumnValue(String columnName) {
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
@@ -1343,21 +879,8 @@ public class CompanyModelImpl
 		_columnOriginalValues.put("modifiedDate", _modifiedDate);
 		_columnOriginalValues.put("webId", _webId);
 		_columnOriginalValues.put("mx", _mx);
-		_columnOriginalValues.put("homeURL", _homeURL);
-		_columnOriginalValues.put("logoId", _logoId);
 		_columnOriginalValues.put("maxUsers", _maxUsers);
 		_columnOriginalValues.put("active_", _active);
-		_columnOriginalValues.put("name", _name);
-		_columnOriginalValues.put("legalName", _legalName);
-		_columnOriginalValues.put("legalId", _legalId);
-		_columnOriginalValues.put("legalType", _legalType);
-		_columnOriginalValues.put("sicCode", _sicCode);
-		_columnOriginalValues.put("tickerSymbol", _tickerSymbol);
-		_columnOriginalValues.put("industry", _industry);
-		_columnOriginalValues.put("type_", _type);
-		_columnOriginalValues.put("size_", _size);
-		_columnOriginalValues.put("indexNameCurrent", _indexNameCurrent);
-		_columnOriginalValues.put("indexNameNext", _indexNameNext);
 	}
 
 	private static final Map<String, String> _attributeNames;
@@ -1366,8 +889,6 @@ public class CompanyModelImpl
 		Map<String, String> attributeNames = new HashMap<>();
 
 		attributeNames.put("active_", "active");
-		attributeNames.put("type_", "type");
-		attributeNames.put("size_", "size");
 
 		_attributeNames = Collections.unmodifiableMap(attributeNames);
 	}
@@ -1399,40 +920,72 @@ public class CompanyModelImpl
 
 		columnBitmasks.put("mx", 128L);
 
-		columnBitmasks.put("homeURL", 256L);
+		columnBitmasks.put("maxUsers", 256L);
 
-		columnBitmasks.put("logoId", 512L);
-
-		columnBitmasks.put("maxUsers", 1024L);
-
-		columnBitmasks.put("active_", 2048L);
-
-		columnBitmasks.put("name", 4096L);
-
-		columnBitmasks.put("legalName", 8192L);
-
-		columnBitmasks.put("legalId", 16384L);
-
-		columnBitmasks.put("legalType", 32768L);
-
-		columnBitmasks.put("sicCode", 65536L);
-
-		columnBitmasks.put("tickerSymbol", 131072L);
-
-		columnBitmasks.put("industry", 262144L);
-
-		columnBitmasks.put("type_", 524288L);
-
-		columnBitmasks.put("size_", 1048576L);
-
-		columnBitmasks.put("indexNameCurrent", 2097152L);
-
-		columnBitmasks.put("indexNameNext", 4194304L);
+		columnBitmasks.put("active_", 512L);
 
 		_columnBitmasks = Collections.unmodifiableMap(columnBitmasks);
 	}
 
 	private long _columnBitmask;
+
+	protected static final BiConsumer<Company, Long>
+		groupIdUpdateEntityCacheBiConsumer = (company, groupId) -> {
+			CompanyCacheModel companyCacheModel =
+				EntityCacheUtil.fetchCacheModel(
+					CompanyImpl.class, company.getPrimaryKey(),
+					CompanyCacheModel.class);
+
+			if ((companyCacheModel != null) &&
+				(companyCacheModel.getMvccVersion() ==
+					company.getMvccVersion())) {
+
+				companyCacheModel.groupId = groupId;
+			}
+		};
+
+	private static final MethodHandle _groupIdGetterMethodHandle;
+	private static final MethodHandle _groupIdSetterMethodHandle;
+
+	protected static final BiConsumer<Company, String>
+		virtualHostnameUpdateEntityCacheBiConsumer =
+			(company, virtualHostname) -> {
+				CompanyCacheModel companyCacheModel =
+					EntityCacheUtil.fetchCacheModel(
+						CompanyImpl.class, company.getPrimaryKey(),
+						CompanyCacheModel.class);
+
+				if ((companyCacheModel != null) &&
+					(companyCacheModel.getMvccVersion() ==
+						company.getMvccVersion())) {
+
+					companyCacheModel.virtualHostname = virtualHostname;
+				}
+			};
+
+	private static final MethodHandle _virtualHostnameGetterMethodHandle;
+	private static final MethodHandle _virtualHostnameSetterMethodHandle;
+
+	static {
+		MethodHandles.Lookup lookup = ReflectionUtil.getImplLookup();
+
+		try {
+			_groupIdGetterMethodHandle = lookup.findGetter(
+				CompanyImpl.class, "_groupId", long.class);
+			_groupIdSetterMethodHandle = lookup.findSetter(
+				CompanyImpl.class, "_groupId", long.class);
+
+			_virtualHostnameGetterMethodHandle = lookup.findGetter(
+				CompanyImpl.class, "_virtualHostname", String.class);
+			_virtualHostnameSetterMethodHandle = lookup.findSetter(
+				CompanyImpl.class, "_virtualHostname", String.class);
+		}
+		catch (ReflectiveOperationException reflectiveOperationException) {
+			throw new ExceptionInInitializerError(reflectiveOperationException);
+		}
+	}
+
 	private Company _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1754989453

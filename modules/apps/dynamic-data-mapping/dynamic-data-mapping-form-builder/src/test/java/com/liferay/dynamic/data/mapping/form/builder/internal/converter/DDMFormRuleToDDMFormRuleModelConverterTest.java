@@ -11,21 +11,25 @@ import com.liferay.dynamic.data.mapping.expression.DDMExpressionFunctionRegistry
 import com.liferay.dynamic.data.mapping.expression.internal.DDMExpressionFactoryImpl;
 import com.liferay.dynamic.data.mapping.model.DDMForm;
 import com.liferay.dynamic.data.mapping.model.DDMFormField;
+import com.liferay.dynamic.data.mapping.model.DDMFormFieldOptions;
 import com.liferay.dynamic.data.mapping.model.DDMFormRule;
 import com.liferay.dynamic.data.mapping.spi.converter.model.SPIDDMFormRule;
 import com.liferay.dynamic.data.mapping.spi.converter.serializer.SPIDDMFormRuleSerializerContext;
 import com.liferay.dynamic.data.mapping.storage.constants.FieldConstants;
+import com.liferay.dynamic.data.mapping.test.util.DDMFormTestUtil;
 import com.liferay.petra.string.CharPool;
-import com.liferay.petra.string.StringPool;
 import com.liferay.portal.json.JSONFactoryImpl;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
+import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.util.ListUtil;
-import com.liferay.portal.kernel.util.MapUtil;
+import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.SetUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -130,24 +134,20 @@ public class DDMFormRuleToDDMFormRuleModelConverterTest
 			expectedDDMDataProviderInstanceUUID,
 			actualDDMDataProviderInstanceUUID);
 
-		String expectedInputParametersExpression =
-			expectedCallFunctionParameters.get(1);
-
-		String actualInputParametersExpression =
-			actualCallFunctionParameters.get(1);
-
-		_assertCallFunctionParametersExpression(
-			expectedInputParametersExpression, actualInputParametersExpression);
-
-		String expectedOutputParametersExpression =
-			expectedCallFunctionParameters.get(2);
-
-		String actualOutputParametersExpression =
-			actualCallFunctionParameters.get(2);
-
-		_assertCallFunctionParametersExpression(
-			expectedOutputParametersExpression,
-			actualOutputParametersExpression);
+		Assert.assertEquals(
+			SetUtil.fromArray(
+				StringUtil.split(
+					expectedCallFunctionParameters.get(1), CharPool.SEMICOLON)),
+			SetUtil.fromArray(
+				StringUtil.split(
+					actualCallFunctionParameters.get(1), CharPool.SEMICOLON)));
+		Assert.assertEquals(
+			SetUtil.fromArray(
+				StringUtil.split(
+					expectedCallFunctionParameters.get(2), CharPool.SEMICOLON)),
+			SetUtil.fromArray(
+				StringUtil.split(
+					actualCallFunctionParameters.get(2), CharPool.SEMICOLON)));
 	}
 
 	@Test
@@ -246,6 +246,34 @@ public class DDMFormRuleToDDMFormRuleModelConverterTest
 	}
 
 	@Test
+	public void testEqualsToCondition() throws Exception {
+		DDMForm ddmForm = new DDMForm();
+
+		ddmForm.addDDMFormField(
+			_createDDMFormField("CheckboxMultiple", "checkbox_multiple"));
+		ddmForm.addDDMFormField(_createDDMFormField("Select", "select"));
+		ddmForm.addDDMFormField(
+			DDMFormTestUtil.createTextDDMFormField(
+				"Text1", false, false, false));
+		ddmForm.addDDMFormField(
+			DDMFormTestUtil.createTextDDMFormField(
+				"Text2", false, false, false));
+
+		Mockito.when(
+			_spiDDMFormRuleSerializerContext.getAttribute("form")
+		).thenReturn(
+			ddmForm
+		);
+
+		_assertConversionToConvertModel(
+			"ddm-form-rules-model-equals-to-condition.json",
+			"ddm-form-rules-equals-to-condition.json");
+		_assertConversionToModel(
+			"ddm-form-rules-equals-to-condition.json",
+			"ddm-form-rules-model-equals-to-condition.json");
+	}
+
+	@Test
 	public void testIsEmptyCondition1() throws Exception {
 		_assertConversionToModel(
 			"ddm-form-rules-is-empty-condition.json",
@@ -287,52 +315,33 @@ public class DDMFormRuleToDDMFormRuleModelConverterTest
 			"ddm-form-rules-model-jump-to-page-actions.json");
 	}
 
+	@Test
+	public void testNullCondition() {
+		List<DDMFormRule> ddmFormRules = new ArrayList<>();
+
+		ddmFormRules.add(
+			new DDMFormRule(
+				ListUtil.fromArray("setVisible('Text1', true)"), " null "));
+		ddmFormRules.add(
+			new DDMFormRule(
+				ListUtil.fromArray("setVisible('Text2', true)"),
+				"equals(getValue('Text1'), 'Bob')"));
+
+		List<DDMFormRule> newDDMFormRules = _ddmFormRuleConverterImpl.convert(
+			_ddmFormRuleConverterImpl.convert(ddmFormRules),
+			_spiDDMFormRuleSerializerContext);
+
+		Assert.assertEquals(
+			newDDMFormRules.toString(), 1, newDDMFormRules.size());
+		Assert.assertEquals(ddmFormRules.get(1), newDDMFormRules.get(0));
+	}
+
 	protected List<DDMFormRule> convert(String fileName) throws Exception {
 		String serializedDDMFormRules = read(fileName);
 
 		return _ddmFormRuleConverterImpl.convert(
 			_ddmFormRuleDeserializerImpl.deserialize(serializedDDMFormRules),
 			_spiDDMFormRuleSerializerContext);
-	}
-
-	private void _assertCallFunctionParametersExpression(
-		String expectedParametersExpression,
-		String actualParametersExpression) {
-
-		Map<String, String> expectedParametersExpressionMap =
-			MapUtil.toLinkedHashMap(
-				StringUtil.split(
-					expectedParametersExpression, CharPool.SEMICOLON),
-				StringPool.EQUAL);
-
-		Map<String, String> actualParametersExpressionMap =
-			MapUtil.toLinkedHashMap(
-				StringUtil.split(
-					actualParametersExpression, CharPool.SEMICOLON),
-				StringPool.EQUAL);
-
-		Assert.assertEquals(
-			actualParametersExpressionMap.toString(),
-			expectedParametersExpressionMap.size(),
-			actualParametersExpressionMap.size());
-
-		for (Map.Entry<String, String> expectedParameterExpression :
-				expectedParametersExpressionMap.entrySet()) {
-
-			String expectedParameterName = expectedParameterExpression.getKey();
-
-			String expectedParameterValue =
-				expectedParameterExpression.getValue();
-
-			Assert.assertTrue(
-				actualParametersExpressionMap.containsKey(
-					expectedParameterName));
-
-			String actualParameterValue = actualParametersExpressionMap.get(
-				expectedParameterName);
-
-			Assert.assertEquals(expectedParameterValue, actualParameterValue);
-		}
 	}
 
 	private void _assertConversionToConvertModel(
@@ -361,6 +370,23 @@ public class DDMFormRuleToDDMFormRuleModelConverterTest
 			read(toFileName), serialize(ddmFormRules), false);
 	}
 
+	private DDMFormField _createDDMFormField(String name, String type) {
+		DDMFormField ddmFormField = DDMFormTestUtil.createDDMFormField(
+			name, RandomTestUtil.randomString(), type, "string", false, false,
+			false);
+
+		DDMFormFieldOptions ddmFormFieldOptions = new DDMFormFieldOptions();
+
+		ddmFormFieldOptions.addOptionLabel(
+			"option1", LocaleUtil.US, "Option 1");
+		ddmFormFieldOptions.addOptionLabel(
+			"option2", LocaleUtil.US, "Option 2");
+
+		ddmFormField.setDDMFormFieldOptions(ddmFormFieldOptions);
+
+		return ddmFormField;
+	}
+
 	private List<String> _extractCallFunctionParameters(String callFunction) {
 		Matcher matcher = _callFunctionPattern.matcher(callFunction);
 
@@ -379,8 +405,8 @@ public class DDMFormRuleToDDMFormRuleModelConverterTest
 
 		List<String> ddmExpressionFunctionNames = Arrays.asList(
 			"belongsTo", "calculate", "call", "contains", "custom", "equals",
-			"getValue", "isEmpty", "jumpPage", "setEnabled", "setRequired",
-			"setVisible");
+			"getOptionLabel", "getValue", "isEmpty", "jumpPage", "setEnabled",
+			"setRequired", "setVisible");
 
 		for (String ddmExpressionFunctionName : ddmExpressionFunctionNames) {
 			ddmExpressionFunctionFactories.put(

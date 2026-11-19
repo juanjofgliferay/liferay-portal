@@ -14,6 +14,7 @@ import com.liferay.portal.kernel.util.TextFormatter;
 import com.puppycrawl.tools.checkstyle.api.DetailAST;
 import com.puppycrawl.tools.checkstyle.api.TokenTypes;
 import com.puppycrawl.tools.checkstyle.utils.AnnotationUtil;
+import com.puppycrawl.tools.checkstyle.utils.TokenUtil;
 
 import java.util.List;
 import java.util.regex.Matcher;
@@ -179,8 +180,8 @@ public class CamelCaseNameCheck extends BaseCheck {
 	private boolean _containsMatchingTypeName(
 		DetailAST detailAST, String name, Pattern pattern) {
 
-		if ((detailAST.getType() == TokenTypes.PARAMETER_DEF) ||
-			(detailAST.getType() == TokenTypes.VARIABLE_DEF)) {
+		if (TokenUtil.isOfType(
+				detailAST, TokenTypes.PARAMETER_DEF, TokenTypes.VARIABLE_DEF)) {
 
 			Matcher matcher = pattern.matcher(
 				getVariableTypeName(detailAST, name, false));
@@ -201,10 +202,10 @@ public class CamelCaseNameCheck extends BaseCheck {
 		DetailAST parametersDetailAST = detailAST.findFirstToken(
 			TokenTypes.PARAMETERS);
 
-		List<DetailAST> parameterDetailASTList = getAllChildTokens(
+		List<DetailAST> parameterDetailASTs = getAllChildTokens(
 			parametersDetailAST, false, TokenTypes.PARAMETER_DEF);
 
-		for (DetailAST parameterDetailAST : parameterDetailASTList) {
+		for (DetailAST parameterDetailAST : parameterDetailASTs) {
 			Matcher matcher = pattern.matcher(
 				getTypeName(parameterDetailAST, false));
 
@@ -232,10 +233,10 @@ public class CamelCaseNameCheck extends BaseCheck {
 		String upperCaseCamelCaseFormatName = TextFormatter.format(
 			lowerCaseCamelCaseFormatName, TextFormatter.G);
 
-		List<DetailAST> stringLiteralDetailASTlist = getAllChildTokens(
+		List<DetailAST> stringLiteralDetailASTs = getAllChildTokens(
 			assignDetailAST, true, TokenTypes.STRING_LITERAL);
 
-		if (!stringLiteralDetailASTlist.isEmpty()) {
+		if (!stringLiteralDetailASTs.isEmpty()) {
 			if (lowerCaseCamelCaseFormatName == null) {
 				return false;
 			}
@@ -243,9 +244,7 @@ public class CamelCaseNameCheck extends BaseCheck {
 			String propertyFormatName = _getPropertyFormatName(
 				lowerCaseCamelCaseFormatName);
 
-			for (DetailAST stringLiteralDetailAST :
-					stringLiteralDetailASTlist) {
-
+			for (DetailAST stringLiteralDetailAST : stringLiteralDetailASTs) {
 				String text = stringLiteralDetailAST.getText();
 
 				if (text.contains(constantFormatName) ||

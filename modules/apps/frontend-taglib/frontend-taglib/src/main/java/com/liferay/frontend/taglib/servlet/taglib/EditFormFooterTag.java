@@ -9,8 +9,8 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.taglib.util.IncludeTag;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.jsp.JspWriter;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.jsp.JspWriter;
 
 /**
  * @author Eudaldo Alonso
@@ -32,8 +32,6 @@ public class EditFormFooterTag extends IncludeTag {
 
 		jspWriter.write("<div class=\"");
 
-		String cssClass = "sheet-footer";
-
 		HttpServletRequest httpServletRequest = getRequest();
 
 		ThemeDisplay themeDisplay =
@@ -41,10 +39,12 @@ public class EditFormFooterTag extends IncludeTag {
 				WebKeys.THEME_DISPLAY);
 
 		if (themeDisplay.isStatePopUp()) {
-			cssClass = cssClass + " dialog-footer dialog-footer-not-reverse";
+			jspWriter.write(
+				"dialog-footer dialog-footer-not-reverse modal-footer");
 		}
-
-		jspWriter.write(cssClass);
+		else {
+			jspWriter.write("sheet-footer");
+		}
 
 		jspWriter.write("\">");
 

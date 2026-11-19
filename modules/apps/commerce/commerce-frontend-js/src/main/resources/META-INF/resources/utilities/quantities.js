@@ -23,6 +23,45 @@ export function getMinQuantity(
 	);
 }
 
+export function getMultipleQuantity(
+	incrementalOrderQuantity = 1,
+	multipleQuantity = 1,
+	precision = 0
+) {
+	let precisionAdjustment = 0;
+
+	if (!Number.isInteger(incrementalOrderQuantity)) {
+		precisionAdjustment = incrementalOrderQuantity
+			.toString()
+			.split('.')[1].length;
+	}
+
+	if (!Number.isInteger(multipleQuantity)) {
+		const multipleAdjustment = multipleQuantity
+			.toString()
+			.split('.')[1].length;
+		precisionAdjustment = Math.max(precisionAdjustment, multipleAdjustment);
+	}
+
+	if (precisionAdjustment > 0) {
+		const scale = Math.pow(10, precisionAdjustment);
+		incrementalOrderQuantity *= scale;
+		multipleQuantity *= scale;
+	}
+
+	const small = Math.min(incrementalOrderQuantity, multipleQuantity);
+	const large = Math.max(incrementalOrderQuantity, multipleQuantity);
+
+	let multiple = large;
+	while (multiple % small !== 0) {
+		multiple += large;
+	}
+
+	const result = multiple / Math.pow(10, precisionAdjustment);
+
+	return Number(result.toFixed(precision));
+}
+
 export function getProductMaxQuantity(
 	maxQuantity,
 	multipleQuantity = 1,
@@ -34,11 +73,33 @@ export function getProductMaxQuantity(
 
 	const maxDifference = maxQuantity % multipleQuantity;
 
-	if (!maxDifference) {
+	if (!maxDifference || maxQuantity < multipleQuantity) {
 		return maxQuantity.toFixed(precision);
 	}
 
 	return Number(maxQuantity - maxDifference).toFixed(precision);
+}
+
+export function getQuantity(productConfiguration = {}, skuUnitOfMeasure) {
+	if (productConfiguration.allowedOrderQuantities?.length) {
+		return Math.min(...productConfiguration.allowedOrderQuantities);
+	}
+
+	const precision = skuUnitOfMeasure?.precision || 0;
+
+	return Number(
+		getMinQuantity(
+			skuUnitOfMeasure
+				? productConfiguration.minOrderQuantity
+				: Math.ceil(productConfiguration.minOrderQuantity),
+			getMultipleQuantity(
+				skuUnitOfMeasure?.incrementalOrderQuantity,
+				productConfiguration.multipleOrderQuantity,
+				precision
+			),
+			precision
+		)
+	);
 }
 
 export function getProductMinQuantity({

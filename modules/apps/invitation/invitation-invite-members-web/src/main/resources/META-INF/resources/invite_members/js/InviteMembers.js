@@ -14,7 +14,7 @@ import {ClayTooltipProvider} from '@clayui/tooltip';
 import {debounce, fetch, sub} from 'frontend-js-web';
 import React, {useCallback, useEffect, useState} from 'react';
 
-export default function InviteMembers({
+export function InviteMembers({
 	assignRolesPermission,
 	getAvailableUsersURL,
 	manageTeamsPermission,
@@ -267,7 +267,9 @@ export default function InviteMembers({
 					observer={observer}
 					size="md"
 				>
-					<ClayModal.Header>
+					<ClayModal.Header
+						closeButtonAriaLabel={Liferay.Language.get('close')}
+					>
 						{Liferay.Language.get('invite-members')}
 					</ClayModal.Header>
 
@@ -443,67 +445,87 @@ export default function InviteMembers({
 									{!!invitedEmails && <InvitedEmails />}
 								</div>
 
-								{roles.length !== 0 && assignRolesPermission && (
-									<ClayForm.Group>
-										<label
-											htmlFor="roleSelector"
-											id="roleSelectorLabel"
-										>
-											{Liferay.Language.get(
-												'invite-to-role'
-											)}
-										</label>
+								{roles.length !== 0 &&
+									assignRolesPermission && (
+										<ClayForm.Group>
+											<label
+												htmlFor="roleSelector"
+												id="roleSelectorLabel"
+											>
+												{Liferay.Language.get(
+													'invite-to-role'
+												)}
+											</label>
 
-										<Picker
-											aria-labelledby="roleSelectorLabel"
-											id="roleSelector"
-											items={roles}
-											onSelectionChange={(roleId) =>
-												setRoleId(roleId)
-											}
-										>
-											{({label, value}) => (
-												<Option
-													key={value}
-													textValue={label}
-												>
-													{label}
-												</Option>
-											)}
-										</Picker>
-									</ClayForm.Group>
-								)}
+											<Picker
+												aria-labelledby="roleSelectorLabel"
+												id="roleSelector"
+												items={roles}
+												messages={{
+													itemDescribedby:
+														Liferay.Language.get(
+															'you-are-currently-on-a-text-element,-inside-of-a-list-box'
+														),
+													itemSelected:
+														Liferay.Language.get(
+															'x-selected'
+														),
+													scrollToBottomAriaLabel:
+														Liferay.Language.get(
+															'scroll-to-bottom'
+														),
+													scrollToTopAriaLabel:
+														Liferay.Language.get(
+															'scroll-to-top'
+														),
+												}}
+												onSelectionChange={(roleId) =>
+													setRoleId(roleId)
+												}
+											>
+												{({label, value}) => (
+													<Option
+														key={value}
+														textValue={label}
+													>
+														{label}
+													</Option>
+												)}
+											</Picker>
+										</ClayForm.Group>
+									)}
 
-								{teams.length !== 0 && manageTeamsPermission && (
-									<ClayForm.Group>
-										<label
-											htmlFor="teamSelector"
-											id="teamSelectorLabel"
-										>
-											{Liferay.Language.get(
-												'invite-to-team'
-											)}
-										</label>
+								{teams.length !== 0 &&
+									manageTeamsPermission && (
+										<ClayForm.Group>
+											<label
+												htmlFor="teamSelector"
+												id="teamSelectorLabel"
+											>
+												{Liferay.Language.get(
+													'invite-to-team'
+												)}
+											</label>
 
-										<Picker
-											aria-labelledby="teamSelectorLabel"
-											id="teamSelector"
-											items={teams}
-											onSelectionChange={(teamId) =>
-												setTeamId(teamId)
-											}
-										>
-											{({label, value}) => (
-												<Option
-													key={value}
-													textValue={label}
-												>
-													{label}
-												</Option>
-											)}
-										</Picker>
-									</ClayForm.Group>
-								)}
+											<Picker
+												aria-labelledby="teamSelectorLabel"
+												id="teamSelector"
+												items={teams}
+												onSelectionChange={(teamId) =>
+													setTeamId(teamId)
+												}
+											>
+												{({label, value}) => (
+													<Option
+														key={value}
+														textValue={label}
+													>
+														{label}
+													</Option>
+												)}
+											</Picker>
+										</ClayForm.Group>
+									)}
 							</div>
 						</ClayForm>
 					</ClayModal.Body>

@@ -33,6 +33,7 @@ public class AccountRoleWrapper
 		Map<String, Object> attributes = new HashMap<String, Object>();
 
 		attributes.put("mvccVersion", getMvccVersion());
+		attributes.put("externalReferenceCode", getExternalReferenceCode());
 		attributes.put("accountRoleId", getAccountRoleId());
 		attributes.put("companyId", getCompanyId());
 		attributes.put("accountEntryId", getAccountEntryId());
@@ -47,6 +48,13 @@ public class AccountRoleWrapper
 
 		if (mvccVersion != null) {
 			setMvccVersion(mvccVersion);
+		}
+
+		String externalReferenceCode = (String)attributes.get(
+			"externalReferenceCode");
+
+		if (externalReferenceCode != null) {
+			setExternalReferenceCode(externalReferenceCode);
 		}
 
 		Long accountRoleId = (Long)attributes.get("accountRoleId");
@@ -107,6 +115,16 @@ public class AccountRoleWrapper
 	@Override
 	public long getCompanyId() {
 		return model.getCompanyId();
+	}
+
+	/**
+	 * Returns the external reference code of this account role.
+	 *
+	 * @return the external reference code of this account role
+	 */
+	@Override
+	public String getExternalReferenceCode() {
+		return model.getExternalReferenceCode();
 	}
 
 	/**
@@ -189,6 +207,16 @@ public class AccountRoleWrapper
 	}
 
 	/**
+	 * Sets the external reference code of this account role.
+	 *
+	 * @param externalReferenceCode the external reference code of this account role
+	 */
+	@Override
+	public void setExternalReferenceCode(String externalReferenceCode) {
+		model.setExternalReferenceCode(externalReferenceCode);
+	}
+
+	/**
 	 * Sets the mvcc version of this account role.
 	 *
 	 * @param mvccVersion the mvcc version of this account role
@@ -229,3 +257,4 @@ public class AccountRoleWrapper
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:705641780

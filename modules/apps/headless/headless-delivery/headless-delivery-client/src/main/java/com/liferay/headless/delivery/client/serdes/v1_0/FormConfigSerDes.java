@@ -8,13 +8,14 @@ package com.liferay.headless.delivery.client.serdes.v1_0;
 import com.liferay.headless.delivery.client.dto.v1_0.FormConfig;
 import com.liferay.headless.delivery.client.json.BaseJSONParser;
 
+import jakarta.annotation.Generated;
+
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
-
-import javax.annotation.Generated;
 
 /**
  * @author Javier Gamarra
@@ -51,14 +52,7 @@ public class FormConfigSerDes {
 
 			sb.append("\"formReference\": ");
 
-			if (formConfig.getFormReference() instanceof String) {
-				sb.append("\"");
-				sb.append((String)formConfig.getFormReference());
-				sb.append("\"");
-			}
-			else {
-				sb.append(formConfig.getFormReference());
-			}
+			sb.append(_toJSON(formConfig.getFormReference()));
 		}
 
 		if (formConfig.getFormSuccessSubmissionResult() != null) {
@@ -68,14 +62,39 @@ public class FormConfigSerDes {
 
 			sb.append("\"formSuccessSubmissionResult\": ");
 
-			if (formConfig.getFormSuccessSubmissionResult() instanceof String) {
-				sb.append("\"");
-				sb.append((String)formConfig.getFormSuccessSubmissionResult());
-				sb.append("\"");
+			sb.append(_toJSON(formConfig.getFormSuccessSubmissionResult()));
+		}
+
+		if (formConfig.getFormType() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
 			}
-			else {
-				sb.append(formConfig.getFormSuccessSubmissionResult());
+
+			sb.append("\"formType\": ");
+
+			sb.append("\"");
+			sb.append(formConfig.getFormType());
+			sb.append("\"");
+		}
+
+		if (formConfig.getLocalizationConfig() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
 			}
+
+			sb.append("\"localizationConfig\": ");
+
+			sb.append(String.valueOf(formConfig.getLocalizationConfig()));
+		}
+
+		if (formConfig.getNumberOfSteps() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"numberOfSteps\": ");
+
+			sb.append(formConfig.getNumberOfSteps());
 		}
 
 		sb.append("}");
@@ -113,6 +132,30 @@ public class FormConfigSerDes {
 				String.valueOf(formConfig.getFormSuccessSubmissionResult()));
 		}
 
+		if (formConfig.getFormType() == null) {
+			map.put("formType", null);
+		}
+		else {
+			map.put("formType", String.valueOf(formConfig.getFormType()));
+		}
+
+		if (formConfig.getLocalizationConfig() == null) {
+			map.put("localizationConfig", null);
+		}
+		else {
+			map.put(
+				"localizationConfig",
+				String.valueOf(formConfig.getLocalizationConfig()));
+		}
+
+		if (formConfig.getNumberOfSteps() == null) {
+			map.put("numberOfSteps", null);
+		}
+		else {
+			map.put(
+				"numberOfSteps", String.valueOf(formConfig.getNumberOfSteps()));
+		}
+
 		return map;
 	}
 
@@ -127,6 +170,31 @@ public class FormConfigSerDes {
 		@Override
 		protected FormConfig[] createDTOArray(int size) {
 			return new FormConfig[size];
+		}
+
+		@Override
+		protected boolean parseMaps(String jsonParserFieldName) {
+			if (Objects.equals(jsonParserFieldName, "formReference")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "formSuccessSubmissionResult")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "formType")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "localizationConfig")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "numberOfSteps")) {
+				return false;
+			}
+
+			return false;
 		}
 
 		@Override
@@ -145,6 +213,28 @@ public class FormConfigSerDes {
 				if (jsonParserFieldValue != null) {
 					formConfig.setFormSuccessSubmissionResult(
 						(Object)jsonParserFieldValue);
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "formType")) {
+				if (jsonParserFieldValue != null) {
+					formConfig.setFormType(
+						FormConfig.FormType.create(
+							(String)jsonParserFieldValue));
+				}
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "localizationConfig")) {
+
+				if (jsonParserFieldValue != null) {
+					formConfig.setLocalizationConfig(
+						LocalizationConfigSerDes.toDTO(
+							(String)jsonParserFieldValue));
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "numberOfSteps")) {
+				if (jsonParserFieldValue != null) {
+					formConfig.setNumberOfSteps(
+						Integer.valueOf((String)jsonParserFieldValue));
 				}
 			}
 		}
@@ -179,36 +269,7 @@ public class FormConfigSerDes {
 
 			Object value = entry.getValue();
 
-			Class<?> valueClass = value.getClass();
-
-			if (value instanceof Map) {
-				sb.append(_toJSON((Map)value));
-			}
-			else if (valueClass.isArray()) {
-				Object[] values = (Object[])value;
-
-				sb.append("[");
-
-				for (int i = 0; i < values.length; i++) {
-					sb.append("\"");
-					sb.append(_escape(values[i]));
-					sb.append("\"");
-
-					if ((i + 1) < values.length) {
-						sb.append(", ");
-					}
-				}
-
-				sb.append("]");
-			}
-			else if (value instanceof String) {
-				sb.append("\"");
-				sb.append(_escape(entry.getValue()));
-				sb.append("\"");
-			}
-			else {
-				sb.append(String.valueOf(entry.getValue()));
-			}
+			sb.append(_toJSON(value));
 
 			if (iterator.hasNext()) {
 				sb.append(", ");
@@ -220,4 +281,47 @@ public class FormConfigSerDes {
 		return sb.toString();
 	}
 
+	private static String _toJSON(Object value) {
+		if (value == null) {
+			return "null";
+		}
+
+		if (value instanceof Collection) {
+			Collection<?> collection = (Collection<?>)value;
+
+			return _toJSON(collection.toArray());
+		}
+
+		if (value instanceof Map) {
+			return _toJSON((Map)value);
+		}
+
+		Class<?> clazz = value.getClass();
+
+		if (clazz.isArray()) {
+			StringBuilder sb = new StringBuilder("[");
+
+			Object[] values = (Object[])value;
+
+			for (int i = 0; i < values.length; i++) {
+				sb.append(_toJSON(values[i]));
+
+				if ((i + 1) < values.length) {
+					sb.append(", ");
+				}
+			}
+
+			sb.append("]");
+
+			return sb.toString();
+		}
+
+		if (value instanceof String) {
+			return "\"" + _escape(value) + "\"";
+		}
+
+		return String.valueOf(value);
+	}
+
 }
+// LIFERAY-REST-BUILDER-HASH:-1253217464

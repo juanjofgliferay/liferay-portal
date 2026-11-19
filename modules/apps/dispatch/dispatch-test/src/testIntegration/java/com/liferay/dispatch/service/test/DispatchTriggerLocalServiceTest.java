@@ -13,37 +13,49 @@ import com.liferay.dispatch.exception.DuplicateDispatchTriggerException;
 import com.liferay.dispatch.executor.DispatchTaskClusterMode;
 import com.liferay.dispatch.executor.DispatchTaskExecutorRegistry;
 import com.liferay.dispatch.executor.DispatchTaskStatus;
-import com.liferay.dispatch.internal.messaging.TestDispatchTaskExecutor;
+import com.liferay.dispatch.executor.internal.messaging.TestDispatchTaskExecutor;
 import com.liferay.dispatch.model.DispatchLog;
 import com.liferay.dispatch.model.DispatchTrigger;
 import com.liferay.dispatch.service.DispatchLogLocalService;
 import com.liferay.dispatch.service.DispatchTriggerLocalService;
-import com.liferay.dispatch.service.test.util.CronExpressionUtil;
-import com.liferay.dispatch.service.test.util.DispatchTriggerTestUtil;
-import com.liferay.portal.kernel.dao.orm.QueryUtil;
+import com.liferay.dispatch.test.util.CronExpressionTestUtil;
+import com.liferay.dispatch.test.util.DispatchTriggerTestUtil;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.cache.PortalCache;
+import com.liferay.portal.kernel.dao.orm.EntityCache;
+import com.liferay.portal.kernel.model.BaseModel;
+import com.liferay.portal.kernel.model.CacheModel;
 import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.scheduler.SchedulerEngineHelper;
+import com.liferay.portal.kernel.scheduler.messaging.SchedulerResponse;
+import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DataGuard;
 import com.liferay.portal.kernel.test.rule.SynchronousDestinationTestRule;
 import com.liferay.portal.kernel.test.util.CompanyTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.CalendarFactoryUtil;
+import com.liferay.portal.kernel.util.DateUtil;
 import com.liferay.portal.kernel.util.SystemProperties;
+import com.liferay.portal.kernel.util.Time;
 import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
 
+import java.io.Serializable;
+
 import java.text.SimpleDateFormat;
 
+import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
 
@@ -152,14 +164,15 @@ public class DispatchTriggerLocalServiceTest {
 				dispatchTrigger.getDispatchTaskClusterMode()),
 			0, 0, 0, 0, 0, true, false, calendar.get(Calendar.MONTH),
 			calendar.get(Calendar.DATE), calendar.get(Calendar.YEAR),
-			calendar.get(Calendar.HOUR), calendar.get(Calendar.MINUTE),
+			calendar.get(Calendar.HOUR_OF_DAY), calendar.get(Calendar.MINUTE),
 			timeZoneId);
 
 		TimeZone timeZone = TimeZone.getTimeZone(timeZoneId);
 
-		Assert.assertEquals(
-			dispatchTrigger.getStartDate(),
-			new Date(date.getTime() - timeZone.getOffset(date.getTime())));
+		Assert.assertTrue(
+			DateUtil.equals(
+				dispatchTrigger.getStartDate(),
+				new Date(date.getTime() - timeZone.getOffset(date.getTime()))));
 
 		Assert.assertEquals(dispatchTrigger.getTimeZoneStartDate(), date);
 
@@ -187,47 +200,143 @@ public class DispatchTriggerLocalServiceTest {
 	}
 
 	@Test
-	public void testGetUserDispatchTriggers() throws Exception {
-		Map<User, Integer> userDispatchTriggersCounts = new HashMap<>();
+	public void testDeleteDispatchTriggerWithDispatchLogs() throws Exception {
+		User user = UserTestUtil.addUser();
+
+		DispatchTrigger dispatchTrigger = _addDispatchTrigger(
+			DispatchTriggerTestUtil.randomDispatchTrigger(
+				user, _getRandomDispatchExecutorType(), 1));
 
 		for (int i = 0; i < 3; i++) {
-			User user = UserTestUtil.addUser();
+			Date date = new Date();
 
-			int dispatchTriggersCount = RandomTestUtil.randomInt(5, 15);
+			Date startDate = new Date(
+				date.getTime() - Time.WEEK + (Time.HOUR * i));
 
-			userDispatchTriggersCounts.put(user, dispatchTriggersCount);
+			Date endDate = new Date(
+				date.getTime() - Time.WEEK + (Time.HOUR * i) + Time.MINUTE);
 
-			while (dispatchTriggersCount-- > 0) {
-				_addDispatchTrigger(
-					DispatchTriggerTestUtil.randomDispatchTrigger(
-						user, _getRandomDispatchExecutorType(),
-						RandomTestUtil.nextInt()));
-			}
+			_dispatchLogLocalService.addDispatchLog(
+				user.getUserId(), dispatchTrigger.getDispatchTriggerId(),
+				endDate, null, RandomTestUtil.randomString(), startDate,
+				DispatchTaskStatus.SUCCESSFUL);
 		}
 
-		for (Map.Entry<User, Integer> userDispatchTriggersCountEntry :
-				userDispatchTriggersCounts.entrySet()) {
+		EntityCache originalEntityCache = ReflectionTestUtil.getFieldValue(
+			_dispatchLogLocalService.getBasePersistence(), "entityCache");
 
-			User user = userDispatchTriggersCountEntry.getKey();
-			Integer count = userDispatchTriggersCountEntry.getValue();
+		MockEntityCache mockEntityCache = new MockEntityCache(
+			originalEntityCache);
 
-			Assert.assertEquals(
-				count.intValue(),
-				_dispatchTriggerLocalService.getUserDispatchTriggersCount(
-					user.getCompanyId(), user.getUserId()));
+		try {
+			ReflectionTestUtil.setFieldValue(
+				_dispatchLogLocalService.getBasePersistence(), "entityCache",
+				mockEntityCache);
 
-			List<DispatchTrigger> userDispatchTriggers =
-				_dispatchTriggerLocalService.getUserDispatchTriggers(
-					user.getCompanyId(), user.getUserId(), QueryUtil.ALL_POS,
-					QueryUtil.ALL_POS);
+			_dispatchTriggerLocalService.deleteDispatchTrigger(
+				dispatchTrigger.getDispatchTriggerId());
+		}
+		finally {
+			ReflectionTestUtil.setFieldValue(
+				_dispatchLogLocalService.getBasePersistence(), "entityCache",
+				originalEntityCache);
+		}
 
-			for (DispatchTrigger dispatchTrigger : userDispatchTriggers) {
-				Assert.assertEquals(
-					user.getUserId(), dispatchTrigger.getUserId());
-				Assert.assertEquals(
-					DispatchTaskStatus.NEVER_RAN,
-					dispatchTrigger.getDispatchTaskStatus());
-			}
+		// Verify that the cache was not invalidated individually for each
+		// dispatch log deleted
+
+		Assert.assertEquals(0, mockEntityCache.getRemoveCount());
+
+		Assert.assertEquals(
+			0,
+			_dispatchLogLocalService.getDispatchLogsCount(
+				dispatchTrigger.getDispatchTriggerId()));
+		Assert.assertNull(
+			_dispatchTriggerLocalService.fetchDispatchTrigger(
+				dispatchTrigger.getDispatchTriggerId()));
+	}
+
+	@Test
+	public void testGetActiveDispatchTriggers() throws Exception {
+		User user = TestPropsValues.getUser();
+
+		DispatchTrigger activeAllNodesDispatchTrigger = _updateDispatchTrigger(
+			_addDispatchTrigger(
+				DispatchTriggerTestUtil.randomDispatchTrigger(
+					user,
+					TestDispatchTaskExecutor.DISPATCH_TASK_EXECUTOR_TYPE_TEST,
+					RandomTestUtil.nextInt())),
+			true, DispatchTaskClusterMode.ALL_NODES);
+		DispatchTrigger activeSingleNodeMemoryClusteredDispatchTrigger =
+			_updateDispatchTrigger(
+				_addDispatchTrigger(
+					DispatchTriggerTestUtil.randomDispatchTrigger(
+						user,
+						TestDispatchTaskExecutor.
+							DISPATCH_TASK_EXECUTOR_TYPE_TEST,
+						RandomTestUtil.nextInt())),
+				true, DispatchTaskClusterMode.SINGLE_NODE_MEMORY_CLUSTERED);
+		DispatchTrigger activeSingleNodePersistedDispatchTrigger =
+			_updateDispatchTrigger(
+				_addDispatchTrigger(
+					DispatchTriggerTestUtil.randomDispatchTrigger(
+						user,
+						TestDispatchTaskExecutor.
+							DISPATCH_TASK_EXECUTOR_TYPE_TEST,
+						RandomTestUtil.nextInt())),
+				true, DispatchTaskClusterMode.SINGLE_NODE_PERSISTED);
+		DispatchTrigger inactiveAllNodesDispatchTrigger =
+			_updateDispatchTrigger(
+				_addDispatchTrigger(
+					DispatchTriggerTestUtil.randomDispatchTrigger(
+						user,
+						TestDispatchTaskExecutor.
+							DISPATCH_TASK_EXECUTOR_TYPE_TEST,
+						RandomTestUtil.nextInt())),
+				false, DispatchTaskClusterMode.ALL_NODES);
+
+		List<DispatchTrigger> allNodesDispatchTriggers =
+			_dispatchTriggerLocalService.getActiveDispatchTriggers(
+				Collections.singletonList(DispatchTaskClusterMode.ALL_NODES));
+
+		Assert.assertTrue(
+			allNodesDispatchTriggers.contains(activeAllNodesDispatchTrigger));
+		Assert.assertFalse(
+			allNodesDispatchTriggers.contains(
+				activeSingleNodeMemoryClusteredDispatchTrigger));
+		Assert.assertFalse(
+			allNodesDispatchTriggers.contains(
+				activeSingleNodePersistedDispatchTrigger));
+		Assert.assertFalse(
+			allNodesDispatchTriggers.contains(inactiveAllNodesDispatchTrigger));
+
+		List<DispatchTaskClusterMode> singleNodeDispatchTaskClusterModes =
+			Arrays.asList(
+				DispatchTaskClusterMode.SINGLE_NODE_MEMORY_CLUSTERED,
+				DispatchTaskClusterMode.SINGLE_NODE_PERSISTED);
+
+		List<DispatchTrigger> singleNodeDispatchTriggers =
+			_dispatchTriggerLocalService.getActiveDispatchTriggers(
+				singleNodeDispatchTaskClusterModes);
+
+		Assert.assertFalse(
+			singleNodeDispatchTriggers.contains(activeAllNodesDispatchTrigger));
+		Assert.assertTrue(
+			singleNodeDispatchTriggers.contains(
+				activeSingleNodeMemoryClusteredDispatchTrigger));
+		Assert.assertTrue(
+			singleNodeDispatchTriggers.contains(
+				activeSingleNodePersistedDispatchTrigger));
+		Assert.assertFalse(
+			singleNodeDispatchTriggers.contains(
+				inactiveAllNodesDispatchTrigger));
+
+		for (DispatchTrigger dispatchTrigger : singleNodeDispatchTriggers) {
+			Assert.assertTrue(dispatchTrigger.isActive());
+			Assert.assertTrue(
+				singleNodeDispatchTaskClusterModes.contains(
+					DispatchTaskClusterMode.valueOf(
+						dispatchTrigger.getDispatchTaskClusterMode())));
 		}
 	}
 
@@ -257,10 +366,11 @@ public class DispatchTriggerLocalServiceTest {
 					dispatchTrigger.getDispatchTriggerId(),
 					expectedDispatchTrigger.isActive(),
 					expectedDispatchTrigger.getCronExpression(),
-					dispatchTaskClusterMode, CronExpressionUtil.getMonth() + 1,
-					20, CronExpressionUtil.getYear(), 23, 59, false, true,
-					CronExpressionUtil.getMonth() - 1, 1,
-					CronExpressionUtil.getYear(), 0, 0, "UTC");
+					dispatchTaskClusterMode,
+					CronExpressionTestUtil.getMonth() + 1, 20,
+					CronExpressionTestUtil.getYear(), 23, 59, false, true,
+					CronExpressionTestUtil.getMonth() - 1, 1,
+					CronExpressionTestUtil.getYear(), 0, 0, "UTC");
 
 			_basicAssertEquals(expectedDispatchTrigger, dispatchTrigger);
 
@@ -273,12 +383,8 @@ public class DispatchTriggerLocalServiceTest {
 
 			Assert.assertNull(
 				_schedulerEngineHelper.getScheduledJob(
-					String.format(
-						"DISPATCH_JOB_%07d",
-						dispatchTrigger.getDispatchTriggerId()),
-					String.format(
-						"DISPATCH_GROUP_%07d",
-						dispatchTrigger.getDispatchTriggerId()),
+					_getJobName(dispatchTrigger),
+					_getGroupName(dispatchTrigger),
 					dispatchTaskClusterMode.getStorageType()));
 		}
 	}
@@ -355,6 +461,117 @@ public class DispatchTriggerLocalServiceTest {
 			dispatchTrigger1.getName(), dispatchTrigger2.getName());
 	}
 
+	@Test
+	public void testUpdateDispatchTriggerWithCronExpressions()
+		throws Exception {
+
+		// Future start date after the cron expression
+
+		Calendar calendar = CalendarFactoryUtil.getCalendar();
+
+		calendar.setTime(new Date());
+
+		Calendar futureCalendar = (Calendar)calendar.clone();
+
+		futureCalendar.add(Calendar.HOUR_OF_DAY, 12);
+
+		String cronExpression = StringBundler.concat(
+			futureCalendar.get(Calendar.SECOND), " ",
+			futureCalendar.get(Calendar.MINUTE), " ",
+			futureCalendar.get(Calendar.HOUR_OF_DAY), " * * ? *");
+
+		Calendar startCalendar = (Calendar)calendar.clone();
+
+		startCalendar.add(Calendar.HOUR_OF_DAY, 14);
+
+		_testUpdateDispatchTriggerWithCronExpressions(
+			cronExpression, _getExpectedCalendar(futureCalendar, startCalendar),
+			startCalendar);
+
+		// Future start date before the cron expression
+
+		startCalendar = (Calendar)calendar.clone();
+
+		startCalendar.add(Calendar.HOUR_OF_DAY, 10);
+
+		_testUpdateDispatchTriggerWithCronExpressions(
+			cronExpression, _getExpectedCalendar(futureCalendar, startCalendar),
+			startCalendar);
+
+		// Past start Date after the cron expression
+
+		startCalendar = (Calendar)calendar.clone();
+
+		startCalendar.add(Calendar.DAY_OF_MONTH, -1);
+		startCalendar.add(Calendar.HOUR_OF_DAY, 14);
+
+		_testUpdateDispatchTriggerWithCronExpressions(
+			cronExpression, _getExpectedCalendar(futureCalendar, startCalendar),
+			startCalendar);
+
+		// Past start date before the cron expression
+
+		startCalendar = (Calendar)calendar.clone();
+
+		startCalendar.add(Calendar.DAY_OF_MONTH, -1);
+
+		_testUpdateDispatchTriggerWithCronExpressions(
+			cronExpression, _getExpectedCalendar(futureCalendar, startCalendar),
+			startCalendar);
+	}
+
+	@Test
+	public void testUpdateDispatchTriggerWithDifferentDispatchTaskClusterMode()
+		throws Exception {
+
+		DispatchTrigger dispatchTrigger = _addDispatchTrigger(
+			DispatchTriggerTestUtil.randomDispatchTrigger(
+				UserTestUtil.addUser(), _getRandomDispatchExecutorType(), 1));
+
+		dispatchTrigger = _dispatchTriggerLocalService.updateDispatchTrigger(
+			dispatchTrigger.getDispatchTriggerId(), true,
+			CronExpressionTestUtil.getCronExpression(),
+			DispatchTaskClusterMode.valueOf(
+				dispatchTrigger.getDispatchTaskClusterMode()),
+			CronExpressionTestUtil.getMonth() + 1, 20,
+			CronExpressionTestUtil.getYear(), 23, 59, false, true,
+			CronExpressionTestUtil.getMonth() - 1, 1,
+			CronExpressionTestUtil.getYear(), 0, 0, "UTC");
+
+		DispatchTaskClusterMode dispatchTaskClusterMode =
+			DispatchTaskClusterMode.valueOf(
+				dispatchTrigger.getDispatchTaskClusterMode());
+
+		DispatchTrigger updateDispatchTrigger =
+			_dispatchTriggerLocalService.updateDispatchTrigger(
+				dispatchTrigger.getDispatchTriggerId(), true,
+				CronExpressionTestUtil.getCronExpression(),
+				DispatchTaskClusterMode.SINGLE_NODE_MEMORY_CLUSTERED,
+				CronExpressionTestUtil.getMonth() + 1, 20,
+				CronExpressionTestUtil.getYear(), 23, 59, false, true,
+				CronExpressionTestUtil.getMonth() - 1, 1,
+				CronExpressionTestUtil.getYear(), 0, 0, "UTC");
+
+		DispatchTaskClusterMode updateDispatchTaskClusterMode =
+			DispatchTaskClusterMode.valueOf(
+				updateDispatchTrigger.getDispatchTaskClusterMode());
+
+		Assert.assertEquals(
+			DispatchTaskClusterMode.SINGLE_NODE_MEMORY_CLUSTERED,
+			updateDispatchTaskClusterMode);
+
+		Assert.assertNull(
+			_schedulerEngineHelper.getScheduledJob(
+				_getJobName(dispatchTrigger), _getGroupName(dispatchTrigger),
+				dispatchTaskClusterMode.getStorageType()));
+
+		Assert.assertNotNull(
+			_schedulerEngineHelper.getScheduledJob(
+				_getJobName(updateDispatchTrigger),
+				_getGroupName(updateDispatchTrigger),
+				updateDispatchTaskClusterMode.getStorageType()));
+	}
+
 	private DispatchTrigger _addDispatchTrigger(DispatchTrigger dispatchTrigger)
 		throws Exception {
 
@@ -376,8 +593,22 @@ public class DispatchTriggerLocalServiceTest {
 			expectedDispatchTrigger.getCronExpression(),
 			actualDispatchTrigger.getCronExpression());
 		Assert.assertNotNull(actualDispatchTrigger.getStartDate());
+
+		DispatchTaskClusterMode expectedDispatchTaskClusterMode =
+			DispatchTaskClusterMode.valueOf(
+				expectedDispatchTrigger.getDispatchTaskClusterMode());
+
+		if ((expectedDispatchTaskClusterMode ==
+				DispatchTaskClusterMode.ALL_NODES) &&
+			_dispatchTaskExecutorRegistry.isClusterModeSingle(
+				expectedDispatchTrigger.getDispatchTaskExecutorType())) {
+
+			expectedDispatchTaskClusterMode =
+				DispatchTaskClusterMode.SINGLE_NODE_MEMORY_CLUSTERED;
+		}
+
 		Assert.assertEquals(
-			expectedDispatchTrigger.getDispatchTaskClusterMode(),
+			expectedDispatchTaskClusterMode.getMode(),
 			actualDispatchTrigger.getDispatchTaskClusterMode());
 
 		DispatchLog dispatchLog =
@@ -436,6 +667,38 @@ public class DispatchTriggerLocalServiceTest {
 				value));
 	}
 
+	private Calendar _getExpectedCalendar(
+		Calendar futureCalendar, Calendar startCalendar) {
+
+		Calendar calendar = (Calendar)futureCalendar.clone();
+
+		calendar.set(Calendar.MILLISECOND, 0);
+
+		if (startCalendar.compareTo(calendar) >= 0) {
+			calendar.add(Calendar.DAY_OF_MONTH, 1);
+		}
+
+		return calendar;
+	}
+
+	private String _getGroupName(DispatchTrigger dispatchTrigger) {
+		String dispatchTriggerId = String.format(
+			"%07d", dispatchTrigger.getDispatchTriggerId());
+
+		return StringBundler.concat(
+			"DISPATCH_GROUP_", dispatchTriggerId, StringPool.AT,
+			dispatchTrigger.getCompanyId());
+	}
+
+	private String _getJobName(DispatchTrigger dispatchTrigger) {
+		String dispatchTriggerId = String.format(
+			"%07d", dispatchTrigger.getDispatchTriggerId());
+
+		return StringBundler.concat(
+			"DISPATCH_JOB_", dispatchTriggerId, StringPool.AT,
+			dispatchTrigger.getCompanyId());
+	}
+
 	private String _getRandomDispatchExecutorType() {
 		Set<String> dispatchTaskExecutorTypes =
 			_dispatchTaskExecutorRegistry.getDispatchTaskExecutorTypes();
@@ -453,6 +716,78 @@ public class DispatchTriggerLocalServiceTest {
 		return TestDispatchTaskExecutor.DISPATCH_TASK_EXECUTOR_TYPE_TEST;
 	}
 
+	private void _testUpdateDispatchTriggerWithCronExpressions(
+			String cronExpression, Calendar expectedCalendar,
+			Calendar startCalendar)
+		throws Exception {
+
+		DispatchTrigger dispatchTrigger = _addDispatchTrigger(
+			DispatchTriggerTestUtil.randomDispatchTrigger(
+				UserTestUtil.addUser(), _getRandomDispatchExecutorType(),
+				RandomTestUtil.nextInt()));
+
+		DispatchTaskClusterMode dispatchTaskClusterMode =
+			DispatchTaskClusterMode.SINGLE_NODE_MEMORY_CLUSTERED;
+
+		dispatchTrigger.setDispatchTaskClusterMode(
+			dispatchTaskClusterMode.getMode());
+
+		Calendar endCalendar = CalendarFactoryUtil.getCalendar();
+
+		endCalendar.setTime(new Date());
+
+		endCalendar.add(Calendar.YEAR, 1);
+
+		dispatchTrigger = _dispatchTriggerLocalService.updateDispatchTrigger(
+			dispatchTrigger.getDispatchTriggerId(), true, cronExpression,
+			dispatchTaskClusterMode, endCalendar.get(Calendar.MONTH),
+			endCalendar.get(Calendar.DAY_OF_MONTH),
+			endCalendar.get(Calendar.YEAR),
+			endCalendar.get(Calendar.HOUR_OF_DAY),
+			endCalendar.get(Calendar.MINUTE), false, true,
+			startCalendar.get(Calendar.MONTH),
+			startCalendar.get(Calendar.DAY_OF_MONTH),
+			startCalendar.get(Calendar.YEAR),
+			startCalendar.get(Calendar.HOUR_OF_DAY),
+			startCalendar.get(Calendar.MINUTE), "UTC");
+
+		Thread.sleep(1000);
+
+		Assert.assertEquals(
+			0,
+			_dispatchLogLocalService.getDispatchLogsCount(
+				dispatchTrigger.getDispatchTriggerId()));
+
+		SchedulerResponse schedulerResponse =
+			_schedulerEngineHelper.getScheduledJob(
+				_getJobName(dispatchTrigger), _getGroupName(dispatchTrigger),
+				dispatchTaskClusterMode.getStorageType());
+
+		Assert.assertNotNull(schedulerResponse);
+
+		Date date = _schedulerEngineHelper.getNextFireDate(schedulerResponse);
+
+		Calendar nextFireCalendar = CalendarFactoryUtil.getCalendar();
+
+		nextFireCalendar.setTime(date);
+
+		Assert.assertEquals(expectedCalendar, nextFireCalendar);
+	}
+
+	private DispatchTrigger _updateDispatchTrigger(
+			DispatchTrigger dispatchTrigger, boolean active,
+			DispatchTaskClusterMode dispatchTaskClusterMode)
+		throws Exception {
+
+		return _dispatchTriggerLocalService.updateDispatchTrigger(
+			dispatchTrigger.getDispatchTriggerId(), active,
+			CronExpressionTestUtil.getCronExpression(), dispatchTaskClusterMode,
+			CronExpressionTestUtil.getMonth() + 1, 20,
+			CronExpressionTestUtil.getYear(), 23, 59, false, true,
+			CronExpressionTestUtil.getMonth() - 1, 1,
+			CronExpressionTestUtil.getYear(), 0, 0, "UTC");
+	}
+
 	@Inject
 	private DispatchLogLocalService _dispatchLogLocalService;
 
@@ -464,5 +799,101 @@ public class DispatchTriggerLocalServiceTest {
 
 	@Inject
 	private SchedulerEngineHelper _schedulerEngineHelper;
+
+	private static class MockEntityCache implements EntityCache {
+
+		public MockEntityCache(EntityCache entityCache) {
+			_entityCache = entityCache;
+		}
+
+		@Override
+		public void clearCache() {
+			_entityCache.clearCache();
+		}
+
+		@Override
+		public void clearCache(Class<?> clazz) {
+			_entityCache.clearCache(clazz);
+		}
+
+		@Override
+		public void clearLocalCache() {
+			_entityCache.clearLocalCache();
+		}
+
+		@Override
+		public <T extends CacheModel<?>> T fetchCacheModel(
+			Class<?> clazz, Serializable primaryKey, Class<T> cacheModelClass) {
+
+			return _entityCache.fetchCacheModel(
+				clazz, primaryKey, cacheModelClass);
+		}
+
+		@Override
+		public Serializable getLocalCacheResult(
+			Class<?> clazz, Serializable primaryKey) {
+
+			return _entityCache.getLocalCacheResult(clazz, primaryKey);
+		}
+
+		@Override
+		public PortalCache<Serializable, Serializable> getPortalCache(
+			Class<?> clazz) {
+
+			return _entityCache.getPortalCache(clazz);
+		}
+
+		public int getRemoveCount() {
+			return _removeCount;
+		}
+
+		@Override
+		public Serializable getResult(Class<?> clazz, Serializable primaryKey) {
+			return _entityCache.getResult(clazz, primaryKey);
+		}
+
+		@Override
+		public void invalidate() {
+			_entityCache.invalidate();
+		}
+
+		@Override
+		public void putResult(
+			Class<?> clazz, BaseModel<?> baseModel, boolean quiet,
+			boolean updateFinderCache) {
+
+			_entityCache.putResult(clazz, baseModel, quiet, updateFinderCache);
+		}
+
+		@Override
+		public void putResult(
+			Class<?> clazz, Serializable primaryKey, Serializable result) {
+
+			_entityCache.putResult(clazz, primaryKey, result);
+		}
+
+		@Override
+		public void removeCache(String className) {
+			_entityCache.removeCache(className);
+		}
+
+		@Override
+		public void removeResult(Class<?> clazz, BaseModel<?> baseModel) {
+			if (baseModel instanceof DispatchLog) {
+				_removeCount++;
+			}
+
+			_entityCache.removeResult(clazz, baseModel);
+		}
+
+		@Override
+		public void removeResult(Class<?> clazz, Serializable primaryKey) {
+			_entityCache.removeResult(clazz, primaryKey);
+		}
+
+		private final EntityCache _entityCache;
+		private int _removeCount;
+
+	}
 
 }

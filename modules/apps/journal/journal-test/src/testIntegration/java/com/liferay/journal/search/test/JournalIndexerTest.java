@@ -26,7 +26,6 @@ import com.liferay.portal.kernel.search.Hits;
 import com.liferay.portal.kernel.search.Indexer;
 import com.liferay.portal.kernel.search.IndexerRegistryUtil;
 import com.liferay.portal.kernel.search.SearchContext;
-import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.service.PortalPreferencesLocalServiceUtil;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
@@ -69,8 +68,6 @@ public class JournalIndexerTest {
 	@Before
 	public void setUp() throws Exception {
 		_group = GroupTestUtil.addGroup();
-
-		CompanyThreadLocal.setCompanyId(TestPropsValues.getCompanyId());
 
 		ServiceContext serviceContext =
 			ServiceContextTestUtil.getServiceContext();
@@ -147,6 +144,11 @@ public class JournalIndexerTest {
 	}
 
 	@Test
+	public void testDeleteArticleVersion() throws Exception {
+		articleVersions(true, false);
+	}
+
+	@Test
 	public void testDeleteArticles() throws Exception {
 		SearchContext searchContext = SearchContextTestUtil.getSearchContext(
 			_group.getGroupId());
@@ -192,11 +194,6 @@ public class JournalIndexerTest {
 		JournalArticleLocalServiceUtil.deleteArticles(_group.getGroupId());
 
 		assertSearchCount(0, _group.getGroupId(), searchContext);
-	}
-
-	@Test
-	public void testDeleteArticleVersion() throws Exception {
-		articleVersions(true, false);
 	}
 
 	@Test

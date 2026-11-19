@@ -26,11 +26,14 @@ import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.LocalizationUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.SetUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.struts.JSONAction;
-import com.liferay.portal.util.PropsValues;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
@@ -43,9 +46,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * @author Brian Wing Shun Chan
@@ -453,9 +453,8 @@ public class JSONServiceAction extends JSONAction {
 	}
 
 	protected Object[] getMethodAndParameterTypes(
-			Class<?> clazz, String methodName, String[] parameters,
-			String[] parameterTypes)
-		throws Exception {
+		Class<?> clazz, String methodName, String[] parameters,
+		String[] parameterTypes) {
 
 		StringBundler sb = new StringBundler(5);
 
@@ -509,9 +508,11 @@ public class JSONServiceAction extends JSONAction {
 					String t2 = getTypeNameOrClassDescriptor(
 						curParameterTypes[j]);
 
-					if (!t1.equals(t2)) {
-						match = false;
+					if (t1.equals(t2)) {
+						continue;
 					}
+
+					match = false;
 				}
 
 				if (match) {
@@ -562,7 +563,7 @@ public class JSONServiceAction extends JSONAction {
 		return _REROUTE_PATH;
 	}
 
-	protected String getReturnValue(Object returnObject) throws Exception {
+	protected String getReturnValue(Object returnObject) {
 		if (returnObject instanceof JSONSerializable) {
 			JSONSerializable jsonSerializable = (JSONSerializable)returnObject;
 

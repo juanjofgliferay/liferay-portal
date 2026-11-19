@@ -15,19 +15,22 @@ import com.liferay.frontend.taglib.clay.servlet.taglib.display.context.BaseManag
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.CreationMenu;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.CreationMenuBuilder;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
 import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
+import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.Constants;
+import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.site.display.context.GroupDisplayContextHelper;
 
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.Objects;
-
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Péter Alius
@@ -97,6 +100,21 @@ public class ExportTemplatesToolbarDisplayContext
 		return searchContainer;
 	}
 
+	@Override
+	public Boolean isShowCreationMenu() {
+		ThemeDisplay themeDisplay =
+			(ThemeDisplay)httpServletRequest.getAttribute(
+				WebKeys.THEME_DISPLAY);
+
+		if (!FeatureFlagManagerUtil.isEnabled(
+				themeDisplay.getCompanyId(), "LPD-96546")) {
+
+			return false;
+		}
+
+		return super.isShowCreationMenu();
+	}
+
 	protected PortletURL getRenderURL() {
 		return liferayPortletResponse.createRenderURL();
 	}
@@ -122,7 +140,7 @@ public class ExportTemplatesToolbarDisplayContext
 
 		searchContainer.setOrderByCol("name");
 		searchContainer.setOrderByComparator(
-			new ExportImportConfigurationNameComparator(
+			ExportImportConfigurationNameComparator.getInstance(
 				Objects.equals(getOrderByType(), "asc")));
 		searchContainer.setOrderByType(getOrderByType());
 		searchContainer.setResultsAndTotal(

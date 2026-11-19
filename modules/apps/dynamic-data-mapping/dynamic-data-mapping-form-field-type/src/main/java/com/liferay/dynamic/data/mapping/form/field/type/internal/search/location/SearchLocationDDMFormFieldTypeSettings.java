@@ -71,7 +71,7 @@ import com.liferay.dynamic.data.mapping.model.LocalizedValue;
 						@DDMFormLayoutColumn(
 							size = 12,
 							value = {
-								"dataType", "name", "fieldReference",
+								"dataType", "fieldReference", "name",
 								"showLabel", "repeatable", "readOnly",
 								"rulesActionDisabled", "rulesConditionDisabled"
 							}
@@ -137,7 +137,7 @@ public interface SearchLocationDDMFormFieldTypeSettings
 	@DDMFormField(
 		label = "%visible-fields",
 		optionLabels = {
-			"%address", "%city", "%state", "%postal-code", "%country"
+			"%address", "%city", "%state[region]", "%postal-code", "%country"
 		},
 		optionValues = {"address", "city", "state", "postal-code", "country"},
 		properties = {

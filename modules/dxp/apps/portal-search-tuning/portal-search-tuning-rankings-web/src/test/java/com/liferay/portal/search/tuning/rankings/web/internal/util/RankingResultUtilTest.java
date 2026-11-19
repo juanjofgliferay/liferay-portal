@@ -11,15 +11,14 @@ import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.search.document.Document;
-import com.liferay.portal.search.document.DocumentBuilder;
 import com.liferay.portal.search.tuning.rankings.web.internal.BaseRankingsWebTestCase;
 import com.liferay.portal.search.web.interpreter.SearchResultInterpreter;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
-import javax.portlet.ResourceRequest;
-import javax.portlet.ResourceResponse;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.ResourceRequest;
+import jakarta.portlet.ResourceResponse;
 
 import org.junit.Assert;
 import org.junit.ClassRule;
@@ -40,8 +39,6 @@ public class RankingResultUtilTest extends BaseRankingsWebTestCase {
 
 	@Test
 	public void testGetAssetRenderer() {
-		_setUpDocumentBuilderFactory();
-
 		SearchResultInterpreter searchResultInterpreter = Mockito.mock(
 			SearchResultInterpreter.class);
 
@@ -149,38 +146,6 @@ public class RankingResultUtilTest extends BaseRankingsWebTestCase {
 		);
 
 		return document;
-	}
-
-	private void _setUpDocumentBuilderFactory() {
-		DocumentBuilder documentBuilder = Mockito.mock(DocumentBuilder.class);
-
-		Mockito.doReturn(
-			documentBuilder
-		).when(
-			documentBuilder
-		).setString(
-			Mockito.any(), Mockito.any()
-		);
-
-		Mockito.doReturn(
-			documentBuilder
-		).when(
-			documentBuilder
-		).setLong(
-			Mockito.any(), Mockito.any()
-		);
-
-		Mockito.doReturn(
-			Mockito.mock(Document.class)
-		).when(
-			documentBuilder
-		).build();
-
-		Mockito.doReturn(
-			documentBuilder
-		).when(
-			documentBuilderFactory
-		).builder();
 	}
 
 	private SearchResultInterpreter _setUpGetRankingResultViewURLMocks()

@@ -7,11 +7,13 @@ package com.liferay.knowledge.base.web.internal.layout.display.page;
 
 import com.liferay.asset.util.AssetHelper;
 import com.liferay.info.item.ClassPKInfoItemIdentifier;
+import com.liferay.info.item.ERCInfoItemIdentifier;
 import com.liferay.info.item.InfoItemIdentifier;
 import com.liferay.info.item.InfoItemReference;
 import com.liferay.knowledge.base.constants.KBFolderConstants;
 import com.liferay.knowledge.base.model.KBArticle;
 import com.liferay.knowledge.base.service.KBArticleLocalService;
+import com.liferay.layout.display.page.BaseLayoutDisplayPageProvider;
 import com.liferay.layout.display.page.LayoutDisplayPageObjectProvider;
 import com.liferay.layout.display.page.LayoutDisplayPageProvider;
 import com.liferay.petra.string.CharPool;
@@ -30,7 +32,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(service = LayoutDisplayPageProvider.class)
 public class KBArticleLayoutDisplayPageProvider
-	implements LayoutDisplayPageProvider<KBArticle> {
+	extends BaseLayoutDisplayPageProvider<KBArticle> {
 
 	@Override
 	public String getClassName() {
@@ -38,32 +40,21 @@ public class KBArticleLayoutDisplayPageProvider
 	}
 
 	@Override
+	public String getDefaultURLSeparator() {
+		return FriendlyURLResolverConstants.
+			URL_SEPARATOR_KNOWLEDGE_BASE_ARTICLE;
+	}
+
+	@Override
 	public LayoutDisplayPageObjectProvider<KBArticle>
-		getLayoutDisplayPageObjectProvider(
-			InfoItemReference infoItemReference) {
+		getLayoutDisplayPageObjectProvider(KBArticle kbArticle) {
 
 		try {
-			InfoItemIdentifier infoItemIdentifier =
-				infoItemReference.getInfoItemIdentifier();
+			KBArticle latestKBArticle =
+				_kbArticleLocalService.fetchLatestKBArticle(
+					kbArticle.getResourcePrimKey(), kbArticle.getGroupId());
 
-			if (!(infoItemIdentifier instanceof ClassPKInfoItemIdentifier)) {
-				return null;
-			}
-
-			ClassPKInfoItemIdentifier classPKInfoItemIdentifier =
-				(ClassPKInfoItemIdentifier)
-					infoItemReference.getInfoItemIdentifier();
-
-			KBArticle kbArticle = _kbArticleLocalService.fetchKBArticle(
-				classPKInfoItemIdentifier.getClassPK());
-
-			if (kbArticle == null) {
-				kbArticle = _kbArticleLocalService.fetchLatestKBArticle(
-					classPKInfoItemIdentifier.getClassPK(),
-					WorkflowConstants.STATUS_ANY);
-			}
-
-			if ((kbArticle == null) || kbArticle.isDraft()) {
+			if ((latestKBArticle == null) || latestKBArticle.isExpired()) {
 				return null;
 			}
 
@@ -81,6 +72,10 @@ public class KBArticleLayoutDisplayPageProvider
 
 		try {
 			List<String> parts = StringUtil.split(urlTitle, CharPool.SLASH);
+
+			if (parts.isEmpty()) {
+				return null;
+			}
 
 			KBArticle kbArticle =
 				_kbArticleLocalService.fetchKBArticleByUrlTitle(
@@ -108,9 +103,57 @@ public class KBArticleLayoutDisplayPageProvider
 	}
 
 	@Override
-	public String getURLSeparator() {
-		return FriendlyURLResolverConstants.
-			URL_SEPARATOR_KNOWLEDGE_BASE_ARTICLE;
+	protected KBArticleLayoutDisplayPageObjectProvider
+		doGetLayoutDisplayPageObjectProvider(
+			long groupId, InfoItemReference infoItemReference) {
+
+		try {
+			InfoItemIdentifier infoItemIdentifier =
+				infoItemReference.getInfoItemIdentifier();
+
+			if (!(infoItemIdentifier instanceof ClassPKInfoItemIdentifier) &&
+				!(infoItemIdentifier instanceof ERCInfoItemIdentifier)) {
+
+				return null;
+			}
+
+			KBArticle kbArticle = null;
+
+			if (infoItemIdentifier instanceof ClassPKInfoItemIdentifier) {
+				ClassPKInfoItemIdentifier classPKInfoItemIdentifier =
+					(ClassPKInfoItemIdentifier)
+						infoItemReference.getInfoItemIdentifier();
+
+				kbArticle = _kbArticleLocalService.fetchKBArticle(
+					classPKInfoItemIdentifier.getClassPK());
+
+				if (kbArticle == null) {
+					kbArticle = _kbArticleLocalService.fetchLatestKBArticle(
+						classPKInfoItemIdentifier.getClassPK(),
+						WorkflowConstants.STATUS_ANY);
+				}
+			}
+			else {
+				ERCInfoItemIdentifier ercInfoItemIdentifier =
+					(ERCInfoItemIdentifier)infoItemIdentifier;
+
+				kbArticle =
+					_kbArticleLocalService.
+						fetchLatestKBArticleByExternalReferenceCode(
+							groupId,
+							ercInfoItemIdentifier.getExternalReferenceCode());
+			}
+
+			if ((kbArticle == null) || kbArticle.isDraft()) {
+				return null;
+			}
+
+			return new KBArticleLayoutDisplayPageObjectProvider(
+				kbArticle, _assetHelper);
+		}
+		catch (PortalException portalException) {
+			throw new RuntimeException(portalException);
+		}
 	}
 
 	private long _getKBFolderId(long groupId, List<String> urlTitleParts) {

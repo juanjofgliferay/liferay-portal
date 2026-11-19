@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -51,12 +52,13 @@ public class AccountGroupLocalServiceUtil {
 	}
 
 	public static AccountGroup addAccountGroup(
-			long userId, String description, String name,
+			String externalReferenceCode, long userId, String description,
+			String name,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().addAccountGroup(
-			userId, description, name, serviceContext);
+			externalReferenceCode, userId, description, name, serviceContext);
 	}
 
 	public static AccountGroup checkGuestAccountGroup(long companyId)
@@ -294,22 +296,6 @@ public class AccountGroupLocalServiceUtil {
 		return getService().getAccountGroups(start, end);
 	}
 
-	public static List<AccountGroup> getAccountGroups(
-		long companyId, int start, int end,
-		OrderByComparator<AccountGroup> orderByComparator) {
-
-		return getService().getAccountGroups(
-			companyId, start, end, orderByComparator);
-	}
-
-	public static List<AccountGroup> getAccountGroups(
-		long companyId, String name, int start, int end,
-		OrderByComparator<AccountGroup> orderByComparator) {
-
-		return getService().getAccountGroups(
-			companyId, name, start, end, orderByComparator);
-	}
-
 	public static List<AccountGroup> getAccountGroupsByAccountEntryId(
 		long accountEntryId, int start, int end) {
 
@@ -332,14 +318,6 @@ public class AccountGroupLocalServiceUtil {
 		return getService().getAccountGroupsCount();
 	}
 
-	public static int getAccountGroupsCount(long companyId) {
-		return getService().getAccountGroupsCount(companyId);
-	}
-
-	public static long getAccountGroupsCount(long companyId, String name) {
-		return getService().getAccountGroupsCount(companyId, name);
-	}
-
 	public static int getAccountGroupsCountByAccountEntryId(
 		long accountEntryId) {
 
@@ -353,7 +331,9 @@ public class AccountGroupLocalServiceUtil {
 		return getService().getActionableDynamicQuery();
 	}
 
-	public static AccountGroup getDefaultAccountGroup(long companyId) {
+	public static AccountGroup getDefaultAccountGroup(long companyId)
+		throws PortalException {
+
 		return getService().getDefaultAccountGroup(companyId);
 	}
 
@@ -370,6 +350,15 @@ public class AccountGroupLocalServiceUtil {
 			getIndexableActionableDynamicQuery() {
 
 		return getService().getIndexableActionableDynamicQuery();
+	}
+
+	public static AccountGroup getOrAddEmptyAccountGroup(
+			String externalReferenceCode, long companyId, long userId,
+			String name)
+		throws PortalException {
+
+		return getService().getOrAddEmptyAccountGroup(
+			externalReferenceCode, companyId, userId, name);
 	}
 
 	/**
@@ -428,12 +417,14 @@ public class AccountGroupLocalServiceUtil {
 	}
 
 	public static AccountGroup updateAccountGroup(
-			long accountGroupId, String description, String name,
+			String externalReferenceCode, long accountGroupId,
+			String description, String name,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().updateAccountGroup(
-			accountGroupId, description, name, serviceContext);
+			externalReferenceCode, accountGroupId, description, name,
+			serviceContext);
 	}
 
 	public static AccountGroup updateExternalReferenceCode(
@@ -453,13 +444,12 @@ public class AccountGroupLocalServiceUtil {
 	}
 
 	public static AccountGroupLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(AccountGroupLocalService service) {
-		_service = service;
-	}
-
-	private static volatile AccountGroupLocalService _service;
+	private static final Snapshot<AccountGroupLocalService> _serviceSnapshot =
+		new Snapshot<>(
+			AccountGroupLocalServiceUtil.class, AccountGroupLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-144651661

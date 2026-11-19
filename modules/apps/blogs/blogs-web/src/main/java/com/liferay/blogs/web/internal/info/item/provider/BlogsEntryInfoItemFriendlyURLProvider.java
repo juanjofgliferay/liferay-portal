@@ -58,7 +58,7 @@ public class BlogsEntryInfoItemFriendlyURLProvider
 				blogsEntry.getEntryId(), mainFriendlyURLEntry);
 		}
 
-		return mainFriendlyURLEntry.getUrlTitle();
+		return mainFriendlyURLEntry.getCategorizedUrlTitle(languageId);
 	}
 
 	@Override
@@ -112,12 +112,12 @@ public class BlogsEntryInfoItemFriendlyURLProvider
 		return themeDisplay.getScopeGroupId();
 	}
 
-	private final FriendlyURLEntryLocalizationComparator
-		_friendlyURLEntryLocalizationComparator =
-			new FriendlyURLEntryLocalizationComparator();
-
 	@Reference
 	private FriendlyURLEntryLocalService _friendlyURLEntryLocalService;
+
+	private final FriendlyURLEntryLocalizationComparator
+		_friendlyURLEntryLocalizationComparator =
+			FriendlyURLEntryLocalizationComparator.getInstance(false);
 
 	@Reference
 	private GroupLocalService _groupLocalService;

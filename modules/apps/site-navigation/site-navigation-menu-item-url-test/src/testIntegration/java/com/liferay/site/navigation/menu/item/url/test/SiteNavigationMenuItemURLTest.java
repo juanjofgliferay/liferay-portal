@@ -29,6 +29,8 @@ import com.liferay.site.navigation.service.SiteNavigationMenuLocalService;
 import com.liferay.site.navigation.type.SiteNavigationMenuItemType;
 import com.liferay.site.navigation.type.SiteNavigationMenuItemTypeRegistry;
 
+import java.util.List;
+
 import org.hamcrest.CoreMatchers;
 
 import org.junit.Assert;
@@ -66,12 +68,12 @@ public class SiteNavigationMenuItemURLTest {
 
 		SiteNavigationMenu siteNavigationMenu =
 			_siteNavigationMenuLocalService.addSiteNavigationMenu(
-				TestPropsValues.getUserId(), _group.getGroupId(), "Menu",
+				null, TestPropsValues.getUserId(), _group.getGroupId(), "Menu",
 				SiteNavigationConstants.TYPE_DEFAULT, true, serviceContext);
 
 		SiteNavigationMenuItem siteNavigationMenuItem =
 			_siteNavigationMenuItemLocalService.addSiteNavigationMenuItem(
-				TestPropsValues.getUserId(), _group.getGroupId(),
+				null, TestPropsValues.getUserId(), _group.getGroupId(),
 				siteNavigationMenu.getSiteNavigationMenuId(), 0,
 				SiteNavigationMenuItemTypeConstants.URL,
 				UnicodePropertiesBuilder.put(
@@ -83,10 +85,13 @@ public class SiteNavigationMenuItemURLTest {
 				).buildString(),
 				serviceContext);
 
+		List<SiteNavigationMenuItem> siteNavigationMenuItems =
+			_siteNavigationMenuItemLocalService.getSiteNavigationMenuItems(
+				siteNavigationMenu.getSiteNavigationMenuId());
+
 		Assert.assertEquals(
-			1,
-			_siteNavigationMenuItemLocalService.getSiteNavigationMenuItemsCount(
-				siteNavigationMenu.getSiteNavigationMenuId()));
+			siteNavigationMenuItems.toString(), 1,
+			siteNavigationMenuItems.size());
 
 		SiteNavigationMenuItemType siteNavigationMenuItemType =
 			_siteNavigationMenuItemTypeRegistry.getSiteNavigationMenuItemType(
@@ -107,12 +112,12 @@ public class SiteNavigationMenuItemURLTest {
 
 		SiteNavigationMenu siteNavigationMenu =
 			_siteNavigationMenuLocalService.addSiteNavigationMenu(
-				TestPropsValues.getUserId(), _group.getGroupId(), "Menu",
+				null, TestPropsValues.getUserId(), _group.getGroupId(), "Menu",
 				SiteNavigationConstants.TYPE_DEFAULT, true, serviceContext);
 
 		SiteNavigationMenuItem siteNavigationMenuItem =
 			_siteNavigationMenuItemLocalService.addSiteNavigationMenuItem(
-				TestPropsValues.getUserId(), _group.getGroupId(),
+				null, TestPropsValues.getUserId(), _group.getGroupId(),
 				siteNavigationMenu.getSiteNavigationMenuId(), 0,
 				SiteNavigationMenuItemTypeConstants.URL,
 				UnicodePropertiesBuilder.put(
@@ -122,10 +127,13 @@ public class SiteNavigationMenuItemURLTest {
 				).buildString(),
 				serviceContext);
 
+		List<SiteNavigationMenuItem> siteNavigationMenuItems =
+			_siteNavigationMenuItemLocalService.getSiteNavigationMenuItems(
+				siteNavigationMenu.getSiteNavigationMenuId());
+
 		Assert.assertEquals(
-			1,
-			_siteNavigationMenuItemLocalService.getSiteNavigationMenuItemsCount(
-				siteNavigationMenu.getSiteNavigationMenuId()));
+			siteNavigationMenuItems.toString(), 1,
+			siteNavigationMenuItems.size());
 
 		SiteNavigationMenuItemType siteNavigationMenuItemType =
 			_siteNavigationMenuItemTypeRegistry.getSiteNavigationMenuItemType(

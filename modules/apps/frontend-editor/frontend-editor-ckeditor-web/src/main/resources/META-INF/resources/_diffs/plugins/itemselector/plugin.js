@@ -10,6 +10,9 @@
 	const STR_VIDEO_HTML_RETURN_TYPE =
 		'com.liferay.item.selector.criteria.VideoEmbeddableHTMLItemSelectorReturnType';
 
+	const ITEM_SELECTOR_FOLDER_ID_PARAM =
+		'_com_liferay_item_selector_web_portlet_ItemSelectorPortlet_folderId';
+
 	const TPL_AUDIO_SCRIPT =
 		'boundingBox: "#" + mediaId,' + 'oggUrl: "{oggUrl}",' + 'url: "{url}"';
 
@@ -23,6 +26,44 @@
 
 	const defaultVideoHeight = 300;
 	const defaultVideoWidth = 400;
+
+	function createFolderMemory() {
+		let lastFolderId = null;
+
+		const isFolderIdEmpty = (folderId) => {
+			return (
+				folderId === null || folderId === undefined || folderId === ''
+			);
+		};
+
+		return {
+			applyTo(url) {
+				if (isFolderIdEmpty(lastFolderId)) {
+					return url;
+				}
+
+				try {
+					const parsed = new URL(url, window.location.origin);
+
+					parsed.searchParams.set(
+						ITEM_SELECTOR_FOLDER_ID_PARAM,
+						String(lastFolderId)
+					);
+
+					return parsed.toString();
+				}
+				catch (error) {
+					return url;
+				}
+			},
+
+			remember(folderId) {
+				if (!isFolderIdEmpty(folderId)) {
+					lastFolderId = folderId;
+				}
+			},
+		};
+	}
 
 	CKEDITOR.plugins.add('itemselector', {
 		_bindBrowseButton(
@@ -48,6 +89,30 @@
 						});
 					};
 				}
+			}
+		},
+
+		_checkImageWidth(editor, editorContent, imageSrc) {
+			if (!editorContent) {
+				return;
+			}
+
+			const editorContentDocument =
+				!editor.window.$.AlloyEditor &&
+				!editorContent.id.endsWith('BalloonEditor')
+					? editorContent.querySelector('iframe').contentDocument
+					: editorContent;
+
+			const imgElement = editorContentDocument.querySelector(
+				`img[src='${imageSrc}']`
+			);
+
+			if (imgElement) {
+				imgElement.onload = function () {
+					if (this.width === 0) {
+						this.setAttribute('width', '150px');
+					}
+				};
 			}
 		},
 
@@ -201,6 +266,9 @@
 			else if (itemSrc.value) {
 				itemSrc = itemSrc.value;
 			}
+			else if (itemSrc.url) {
+				itemSrc = itemSrc.url;
+			}
 
 			if (selectedItem.returnType === STR_FILE_ENTRY_RETURN_TYPE) {
 				try {
@@ -208,7 +276,7 @@
 
 					itemSrc = editor.config.attachmentURLPrefix
 						? editor.config.attachmentURLPrefix +
-						  encodeURIComponent(itemValue.title)
+							encodeURIComponent(itemValue.title)
 						: itemValue.url;
 				}
 				catch (error) {}
@@ -252,16 +320,22 @@
 				const imageSrc = instance._getItemSrc(editor, selectedItem);
 
 				if (imageSrc) {
+					const editorContent = editor.window.$.AlloyEditor
+						? document.getElementById(`${editor.name}Container`)
+						: document.getElementById(`cke_${editor.name}`);
+
 					if (typeof callback === 'function') {
 						callback(imageSrc, selectedItem);
+
+						instance._checkImageWidth(
+							editor,
+							editorContent,
+							imageSrc
+						);
 					}
 					else {
-						const editorContent = document.getElementById(
-							`${editor.id}_contents`
-						);
-
-						const editorContentHeight = editorContent.getBoundingClientRect()
-							.height;
+						const editorContentHeight =
+							editorContent?.getBoundingClientRect().height;
 
 						const imgElement = new Image();
 
@@ -281,6 +355,12 @@
 							editor.insertHtml(elementOuterHtml);
 
 							editor.focus();
+
+							instance._checkImageWidth(
+								editor,
+								editorContent,
+								imageSrc
+							);
 						};
 					}
 				}
@@ -326,17 +406,31 @@
 		},
 
 		_openSelectionModal(editor, url, callback) {
+			const folderMemory = editor._lfrFolderMemory;
+
+			const rememberSelectionFolder = Boolean(
+				editor.config.itemSelectorRememberSelectionFolder
+			);
+
 			Liferay.Util.openSelectionModal({
-				onSelect: callback,
+				onSelect: (selectedItem) => {
+					if (rememberSelectionFolder && selectedItem) {
+						folderMemory.remember(selectedItem.folderId);
+					}
+
+					callback(selectedItem);
+				},
 				selectEventName: editor.name + 'selectItem',
 				title: Liferay.Language.get('select-item'),
-				url,
+				url: rememberSelectionFolder ? folderMemory.applyTo(url) : url,
 				zIndex: CKEDITOR.getNextZIndex(),
 			});
 		},
 
 		init(editor) {
 			const instance = this;
+
+			editor._lfrFolderMemory = createFolderMemory();
 
 			instance._audioTPL = new CKEDITOR.template(TPL_AUDIO_SCRIPT);
 			instance._videoTPL = new CKEDITOR.template(TPL_VIDEO_SCRIPT);

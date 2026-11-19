@@ -219,10 +219,10 @@ public class JSConfigGeneratorPackage {
 	private JSONObject _generateMapsConfigurationJSONObject(
 		String configuration, String[] jsSubmodulesExport) {
 
+		JSONObject mapsConfigurationJSONObject = new JSONObject();
+
 		boolean exportAll = ArrayUtil.contains(
 			jsSubmodulesExport, StringPool.STAR);
-
-		JSONObject mapsConfigurationJSONObject = new JSONObject();
 
 		JSONObject configurationJSONObject = new JSONObject(
 			StringPool.OPEN_CURLY_BRACE + configuration +
@@ -247,14 +247,16 @@ public class JSConfigGeneratorPackage {
 
 			String submoduleName = submodulePath.substring(0, index);
 
-			if (exportAll ||
-				ArrayUtil.exists(
+			if (!exportAll &&
+				!ArrayUtil.exists(
 					jsSubmodulesExport,
 					item -> _matchesWildcard(submoduleName, item))) {
 
-				mapsConfigurationJSONObject.put(
-					submoduleName, moduleRootPath.concat(submoduleName));
+				continue;
 			}
+
+			mapsConfigurationJSONObject.put(
+				submoduleName, moduleRootPath.concat(submoduleName));
 		}
 
 		return mapsConfigurationJSONObject;
@@ -332,6 +334,7 @@ public class JSConfigGeneratorPackage {
 		}
 
 		try (InputStream inputStream = url.openStream();
+
 			Reader reader = new InputStreamReader(inputStream)) {
 
 			JSONTokener jsonTokener = new JSONTokener(reader);

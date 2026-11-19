@@ -1,0 +1,693 @@
+/**
+ * SPDX-FileCopyrightText: (c) 2026 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
+ */
+
+package com.liferay.headless.cms.client.serdes.v1_0;
+
+import com.liferay.headless.cms.client.dto.v1_0.AssetStatistics;
+import com.liferay.headless.cms.client.json.BaseJSONParser;
+
+import jakarta.annotation.Generated;
+
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.TreeMap;
+
+/**
+ * @author Crescenzo Rega
+ * @generated
+ */
+@Generated("")
+public class AssetStatisticsSerDes {
+
+	public static AssetStatistics toDTO(String json) {
+		AssetStatisticsJSONParser assetStatisticsJSONParser =
+			new AssetStatisticsJSONParser();
+
+		return assetStatisticsJSONParser.parseToDTO(json);
+	}
+
+	public static AssetStatistics[] toDTOs(String json) {
+		AssetStatisticsJSONParser assetStatisticsJSONParser =
+			new AssetStatisticsJSONParser();
+
+		return assetStatisticsJSONParser.parseToDTOs(json);
+	}
+
+	public static String toJSON(AssetStatistics assetStatistics) {
+		if (assetStatistics == null) {
+			return "null";
+		}
+
+		StringBuilder sb = new StringBuilder();
+
+		sb.append("{");
+
+		if (assetStatistics.getApprovedCount() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"approvedCount\": ");
+
+			sb.append(assetStatistics.getApprovedCount());
+		}
+
+		if (assetStatistics.getBrokenLinksCount() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"brokenLinksCount\": ");
+
+			sb.append(assetStatistics.getBrokenLinksCount());
+		}
+
+		if (assetStatistics.getCompletedWorkflowTasksCount() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"completedWorkflowTasksCount\": ");
+
+			sb.append(assetStatistics.getCompletedWorkflowTasksCount());
+		}
+
+		if (assetStatistics.getExpiredCount() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"expiredCount\": ");
+
+			sb.append(assetStatistics.getExpiredCount());
+		}
+
+		if (assetStatistics.getExpiringSoonCount() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"expiringSoonCount\": ");
+
+			sb.append(assetStatistics.getExpiringSoonCount());
+		}
+
+		if (assetStatistics.getInDraftCount() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"inDraftCount\": ");
+
+			sb.append(assetStatistics.getInDraftCount());
+		}
+
+		if (assetStatistics.getLongStandingDraftsCount() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"longStandingDraftsCount\": ");
+
+			sb.append(assetStatistics.getLongStandingDraftsCount());
+		}
+
+		if (assetStatistics.getMissingRequiredFieldsCount() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"missingRequiredFieldsCount\": ");
+
+			sb.append(assetStatistics.getMissingRequiredFieldsCount());
+		}
+
+		if (assetStatistics.getOverdueWorkflowTasksCount() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"overdueWorkflowTasksCount\": ");
+
+			sb.append(assetStatistics.getOverdueWorkflowTasksCount());
+		}
+
+		if (assetStatistics.getPendingCount() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"pendingCount\": ");
+
+			sb.append(assetStatistics.getPendingCount());
+		}
+
+		if (assetStatistics.getReviewDateOverdueCount() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"reviewDateOverdueCount\": ");
+
+			sb.append(assetStatistics.getReviewDateOverdueCount());
+		}
+
+		if (assetStatistics.getScheduledCount() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"scheduledCount\": ");
+
+			sb.append(assetStatistics.getScheduledCount());
+		}
+
+		if (assetStatistics.getSlaBreachedWorkflowTasksCount() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"slaBreachedWorkflowTasksCount\": ");
+
+			sb.append(assetStatistics.getSlaBreachedWorkflowTasksCount());
+		}
+
+		if (assetStatistics.getTotalCount() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"totalCount\": ");
+
+			sb.append(assetStatistics.getTotalCount());
+		}
+
+		if (assetStatistics.getUnlinkedCount() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"unlinkedCount\": ");
+
+			sb.append(assetStatistics.getUnlinkedCount());
+		}
+
+		if (assetStatistics.getUpcomingReviewCount() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"upcomingReviewCount\": ");
+
+			sb.append(assetStatistics.getUpcomingReviewCount());
+		}
+
+		if (assetStatistics.getWorkflowTasksCount() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"workflowTasksCount\": ");
+
+			sb.append(assetStatistics.getWorkflowTasksCount());
+		}
+
+		sb.append("}");
+
+		return sb.toString();
+	}
+
+	public static Map<String, Object> toMap(String json) {
+		AssetStatisticsJSONParser assetStatisticsJSONParser =
+			new AssetStatisticsJSONParser();
+
+		return assetStatisticsJSONParser.parseToMap(json);
+	}
+
+	public static Map<String, String> toMap(AssetStatistics assetStatistics) {
+		if (assetStatistics == null) {
+			return null;
+		}
+
+		Map<String, String> map = new TreeMap<>();
+
+		if (assetStatistics.getApprovedCount() == null) {
+			map.put("approvedCount", null);
+		}
+		else {
+			map.put(
+				"approvedCount",
+				String.valueOf(assetStatistics.getApprovedCount()));
+		}
+
+		if (assetStatistics.getBrokenLinksCount() == null) {
+			map.put("brokenLinksCount", null);
+		}
+		else {
+			map.put(
+				"brokenLinksCount",
+				String.valueOf(assetStatistics.getBrokenLinksCount()));
+		}
+
+		if (assetStatistics.getCompletedWorkflowTasksCount() == null) {
+			map.put("completedWorkflowTasksCount", null);
+		}
+		else {
+			map.put(
+				"completedWorkflowTasksCount",
+				String.valueOf(
+					assetStatistics.getCompletedWorkflowTasksCount()));
+		}
+
+		if (assetStatistics.getExpiredCount() == null) {
+			map.put("expiredCount", null);
+		}
+		else {
+			map.put(
+				"expiredCount",
+				String.valueOf(assetStatistics.getExpiredCount()));
+		}
+
+		if (assetStatistics.getExpiringSoonCount() == null) {
+			map.put("expiringSoonCount", null);
+		}
+		else {
+			map.put(
+				"expiringSoonCount",
+				String.valueOf(assetStatistics.getExpiringSoonCount()));
+		}
+
+		if (assetStatistics.getInDraftCount() == null) {
+			map.put("inDraftCount", null);
+		}
+		else {
+			map.put(
+				"inDraftCount",
+				String.valueOf(assetStatistics.getInDraftCount()));
+		}
+
+		if (assetStatistics.getLongStandingDraftsCount() == null) {
+			map.put("longStandingDraftsCount", null);
+		}
+		else {
+			map.put(
+				"longStandingDraftsCount",
+				String.valueOf(assetStatistics.getLongStandingDraftsCount()));
+		}
+
+		if (assetStatistics.getMissingRequiredFieldsCount() == null) {
+			map.put("missingRequiredFieldsCount", null);
+		}
+		else {
+			map.put(
+				"missingRequiredFieldsCount",
+				String.valueOf(
+					assetStatistics.getMissingRequiredFieldsCount()));
+		}
+
+		if (assetStatistics.getOverdueWorkflowTasksCount() == null) {
+			map.put("overdueWorkflowTasksCount", null);
+		}
+		else {
+			map.put(
+				"overdueWorkflowTasksCount",
+				String.valueOf(assetStatistics.getOverdueWorkflowTasksCount()));
+		}
+
+		if (assetStatistics.getPendingCount() == null) {
+			map.put("pendingCount", null);
+		}
+		else {
+			map.put(
+				"pendingCount",
+				String.valueOf(assetStatistics.getPendingCount()));
+		}
+
+		if (assetStatistics.getReviewDateOverdueCount() == null) {
+			map.put("reviewDateOverdueCount", null);
+		}
+		else {
+			map.put(
+				"reviewDateOverdueCount",
+				String.valueOf(assetStatistics.getReviewDateOverdueCount()));
+		}
+
+		if (assetStatistics.getScheduledCount() == null) {
+			map.put("scheduledCount", null);
+		}
+		else {
+			map.put(
+				"scheduledCount",
+				String.valueOf(assetStatistics.getScheduledCount()));
+		}
+
+		if (assetStatistics.getSlaBreachedWorkflowTasksCount() == null) {
+			map.put("slaBreachedWorkflowTasksCount", null);
+		}
+		else {
+			map.put(
+				"slaBreachedWorkflowTasksCount",
+				String.valueOf(
+					assetStatistics.getSlaBreachedWorkflowTasksCount()));
+		}
+
+		if (assetStatistics.getTotalCount() == null) {
+			map.put("totalCount", null);
+		}
+		else {
+			map.put(
+				"totalCount", String.valueOf(assetStatistics.getTotalCount()));
+		}
+
+		if (assetStatistics.getUnlinkedCount() == null) {
+			map.put("unlinkedCount", null);
+		}
+		else {
+			map.put(
+				"unlinkedCount",
+				String.valueOf(assetStatistics.getUnlinkedCount()));
+		}
+
+		if (assetStatistics.getUpcomingReviewCount() == null) {
+			map.put("upcomingReviewCount", null);
+		}
+		else {
+			map.put(
+				"upcomingReviewCount",
+				String.valueOf(assetStatistics.getUpcomingReviewCount()));
+		}
+
+		if (assetStatistics.getWorkflowTasksCount() == null) {
+			map.put("workflowTasksCount", null);
+		}
+		else {
+			map.put(
+				"workflowTasksCount",
+				String.valueOf(assetStatistics.getWorkflowTasksCount()));
+		}
+
+		return map;
+	}
+
+	public static class AssetStatisticsJSONParser
+		extends BaseJSONParser<AssetStatistics> {
+
+		@Override
+		protected AssetStatistics createDTO() {
+			return new AssetStatistics();
+		}
+
+		@Override
+		protected AssetStatistics[] createDTOArray(int size) {
+			return new AssetStatistics[size];
+		}
+
+		@Override
+		protected boolean parseMaps(String jsonParserFieldName) {
+			if (Objects.equals(jsonParserFieldName, "approvedCount")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "brokenLinksCount")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "completedWorkflowTasksCount")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "expiredCount")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "expiringSoonCount")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "inDraftCount")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "longStandingDraftsCount")) {
+
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "missingRequiredFieldsCount")) {
+
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "overdueWorkflowTasksCount")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "pendingCount")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "reviewDateOverdueCount")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "scheduledCount")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "slaBreachedWorkflowTasksCount")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "totalCount")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "unlinkedCount")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "upcomingReviewCount")) {
+
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "workflowTasksCount")) {
+
+				return false;
+			}
+
+			return false;
+		}
+
+		@Override
+		protected void setField(
+			AssetStatistics assetStatistics, String jsonParserFieldName,
+			Object jsonParserFieldValue) {
+
+			if (Objects.equals(jsonParserFieldName, "approvedCount")) {
+				if (jsonParserFieldValue != null) {
+					assetStatistics.setApprovedCount(
+						Long.valueOf((String)jsonParserFieldValue));
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "brokenLinksCount")) {
+				if (jsonParserFieldValue != null) {
+					assetStatistics.setBrokenLinksCount(
+						Long.valueOf((String)jsonParserFieldValue));
+				}
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "completedWorkflowTasksCount")) {
+
+				if (jsonParserFieldValue != null) {
+					assetStatistics.setCompletedWorkflowTasksCount(
+						Long.valueOf((String)jsonParserFieldValue));
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "expiredCount")) {
+				if (jsonParserFieldValue != null) {
+					assetStatistics.setExpiredCount(
+						Long.valueOf((String)jsonParserFieldValue));
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "expiringSoonCount")) {
+				if (jsonParserFieldValue != null) {
+					assetStatistics.setExpiringSoonCount(
+						Long.valueOf((String)jsonParserFieldValue));
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "inDraftCount")) {
+				if (jsonParserFieldValue != null) {
+					assetStatistics.setInDraftCount(
+						Long.valueOf((String)jsonParserFieldValue));
+				}
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "longStandingDraftsCount")) {
+
+				if (jsonParserFieldValue != null) {
+					assetStatistics.setLongStandingDraftsCount(
+						Long.valueOf((String)jsonParserFieldValue));
+				}
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "missingRequiredFieldsCount")) {
+
+				if (jsonParserFieldValue != null) {
+					assetStatistics.setMissingRequiredFieldsCount(
+						Long.valueOf((String)jsonParserFieldValue));
+				}
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "overdueWorkflowTasksCount")) {
+
+				if (jsonParserFieldValue != null) {
+					assetStatistics.setOverdueWorkflowTasksCount(
+						Long.valueOf((String)jsonParserFieldValue));
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "pendingCount")) {
+				if (jsonParserFieldValue != null) {
+					assetStatistics.setPendingCount(
+						Long.valueOf((String)jsonParserFieldValue));
+				}
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "reviewDateOverdueCount")) {
+
+				if (jsonParserFieldValue != null) {
+					assetStatistics.setReviewDateOverdueCount(
+						Long.valueOf((String)jsonParserFieldValue));
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "scheduledCount")) {
+				if (jsonParserFieldValue != null) {
+					assetStatistics.setScheduledCount(
+						Long.valueOf((String)jsonParserFieldValue));
+				}
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "slaBreachedWorkflowTasksCount")) {
+
+				if (jsonParserFieldValue != null) {
+					assetStatistics.setSlaBreachedWorkflowTasksCount(
+						Long.valueOf((String)jsonParserFieldValue));
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "totalCount")) {
+				if (jsonParserFieldValue != null) {
+					assetStatistics.setTotalCount(
+						Long.valueOf((String)jsonParserFieldValue));
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "unlinkedCount")) {
+				if (jsonParserFieldValue != null) {
+					assetStatistics.setUnlinkedCount(
+						Long.valueOf((String)jsonParserFieldValue));
+				}
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "upcomingReviewCount")) {
+
+				if (jsonParserFieldValue != null) {
+					assetStatistics.setUpcomingReviewCount(
+						Long.valueOf((String)jsonParserFieldValue));
+				}
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "workflowTasksCount")) {
+
+				if (jsonParserFieldValue != null) {
+					assetStatistics.setWorkflowTasksCount(
+						Long.valueOf((String)jsonParserFieldValue));
+				}
+			}
+		}
+
+	}
+
+	private static String _escape(Object object) {
+		String string = String.valueOf(object);
+
+		for (String[] strings : BaseJSONParser.JSON_ESCAPE_STRINGS) {
+			string = string.replace(strings[0], strings[1]);
+		}
+
+		return string;
+	}
+
+	private static String _toJSON(Map<String, ?> map) {
+		StringBuilder sb = new StringBuilder("{");
+
+		@SuppressWarnings("unchecked")
+		Set set = map.entrySet();
+
+		@SuppressWarnings("unchecked")
+		Iterator<Map.Entry<String, ?>> iterator = set.iterator();
+
+		while (iterator.hasNext()) {
+			Map.Entry<String, ?> entry = iterator.next();
+
+			sb.append("\"");
+			sb.append(entry.getKey());
+			sb.append("\": ");
+
+			Object value = entry.getValue();
+
+			sb.append(_toJSON(value));
+
+			if (iterator.hasNext()) {
+				sb.append(", ");
+			}
+		}
+
+		sb.append("}");
+
+		return sb.toString();
+	}
+
+	private static String _toJSON(Object value) {
+		if (value == null) {
+			return "null";
+		}
+
+		if (value instanceof Collection) {
+			Collection<?> collection = (Collection<?>)value;
+
+			return _toJSON(collection.toArray());
+		}
+
+		if (value instanceof Map) {
+			return _toJSON((Map)value);
+		}
+
+		Class<?> clazz = value.getClass();
+
+		if (clazz.isArray()) {
+			StringBuilder sb = new StringBuilder("[");
+
+			Object[] values = (Object[])value;
+
+			for (int i = 0; i < values.length; i++) {
+				sb.append(_toJSON(values[i]));
+
+				if ((i + 1) < values.length) {
+					sb.append(", ");
+				}
+			}
+
+			sb.append("]");
+
+			return sb.toString();
+		}
+
+		if (value instanceof String) {
+			return "\"" + _escape(value) + "\"";
+		}
+
+		return String.valueOf(value);
+	}
+
+}
+// LIFERAY-REST-BUILDER-HASH:-627228664

@@ -21,7 +21,7 @@ import com.liferay.portal.kernel.security.permission.contributor.RoleContributor
 import com.liferay.portal.kernel.service.RoleLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
-import com.liferay.portal.util.PropsValues;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.segments.SegmentsEntryRetriever;
 import com.liferay.segments.configuration.provider.SegmentsConfigurationProvider;
 import com.liferay.segments.constants.SegmentsWebKeys;
@@ -29,11 +29,11 @@ import com.liferay.segments.context.RequestContextMapper;
 import com.liferay.segments.model.SegmentsEntryRole;
 import com.liferay.segments.service.SegmentsEntryRoleLocalService;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -111,7 +111,7 @@ public class SegmentsEntryRoleContributor implements RoleContributor {
 
 		long[] segmentsEntryIds = _segmentsEntryRetriever.getSegmentsEntryIds(
 			roleCollection.getGroupId(), user.getUserId(),
-			_requestContextMapper.map(httpServletRequest), new long[0]);
+			_requestContextMapper.map(httpServletRequest));
 
 		if ((segmentsEntryIds.length > 0) && _log.isDebugEnabled()) {
 			_log.debug(

@@ -78,8 +78,10 @@ public class UserGroupModelListener extends BaseModelListener<UserGroup> {
 			if (!attributes.isEmpty()) {
 				AuditMessage auditMessage =
 					AuditMessageBuilder.buildAuditMessage(
-						EventTypes.UPDATE, UserGroup.class.getName(),
-						userGroup.getUserGroupId(), attributes);
+						UserGroup.class.getName(), userGroup.getUserGroupId(),
+						EventTypes.UPDATE, attributes);
+
+				auditMessage.setCompanyId(userGroup.getCompanyId());
 
 				_auditRouter.route(auditMessage);
 			}
@@ -109,12 +111,13 @@ public class UserGroupModelListener extends BaseModelListener<UserGroup> {
 				Group group = _groupLocalService.getGroup(groupId);
 
 				auditMessage = AuditMessageBuilder.buildAuditMessage(
-					eventType, group.getClassName(), group.getClassPK(), null);
+					null, group.getClassName(), group.getClassPK(), eventType,
+					"usergroup", null);
 			}
 			else {
 				auditMessage = AuditMessageBuilder.buildAuditMessage(
-					eventType, associationClassName, (Long)associationClassPK,
-					null);
+					null, associationClassName, (Long)associationClassPK,
+					eventType, "usergroup", null);
 			}
 
 			JSONObject additionalInfoJSONObject =
@@ -129,6 +132,8 @@ public class UserGroupModelListener extends BaseModelListener<UserGroup> {
 
 			additionalInfoJSONObject.put("userGroupName", userGroup.getName());
 
+			auditMessage.setCompanyId(userGroup.getCompanyId());
+
 			_auditRouter.route(auditMessage);
 		}
 		catch (Exception exception) {
@@ -141,8 +146,10 @@ public class UserGroupModelListener extends BaseModelListener<UserGroup> {
 
 		try {
 			AuditMessage auditMessage = AuditMessageBuilder.buildAuditMessage(
-				eventType, UserGroup.class.getName(),
-				userGroup.getUserGroupId(), null);
+				UserGroup.class.getName(), userGroup.getUserGroupId(),
+				eventType, null);
+
+			auditMessage.setCompanyId(userGroup.getCompanyId());
 
 			_auditRouter.route(auditMessage);
 		}

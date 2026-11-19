@@ -9,7 +9,7 @@ import React from 'react';
 import HeaderKebab from '../../../../src/main/resources/META-INF/resources/js/shared/components/header/HeaderKebab.es';
 import {MockRouter} from '../../../mock/MockRouter.es';
 
-import '@testing-library/jest-dom/extend-expect';
+import '@testing-library/jest-dom';
 
 describe('The HeaderKebab component should', () => {
 	afterEach(cleanup);
@@ -49,8 +49,9 @@ describe('The HeaderKebab component should', () => {
 			</MockRouter>
 		);
 
-		const button = document.getElementById('headerKebab').children[0]
-			.children[0].children[0];
+		const button =
+			document.getElementById('headerKebab').children[0].children[0]
+				.children[0];
 
 		fireEvent.click(button);
 

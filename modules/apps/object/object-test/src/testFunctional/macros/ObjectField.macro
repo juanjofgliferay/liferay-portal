@@ -24,10 +24,40 @@ definition {
 	}
 
 	@summary = "Default summary"
+	macro addTranslatableTextEntryViaUI(mainEntryValue = null, fieldLabel = null, buttonFieldEntryLanguage = null, locale = null, translatedEntryValue = null) {
+		LexiconEntry.gotoAdd();
+
+		Type(
+			key_fieldLabel = ${fieldLabel},
+			locator1 = "TextInput#GENERIC_TEXT_INPUT",
+			value1 = ${mainEntryValue});
+
+		Click(
+			key_buttonFieldEntryLanguage = ${buttonFieldEntryLanguage},
+			locator1 = "ObjectField#BUTTON_FIELD_ENTRY_LANGUAGE");
+
+		Click(
+			key_locale = ${locale},
+			locator1 = "Translation#DROPDOWN_MENU_ITEM");
+
+		Type(
+			key_fieldLabel = ${fieldLabel},
+			locator1 = "TextInput#GENERIC_TEXT_INPUT",
+			value1 = ${translatedEntryValue});
+
+		Button.clickSave();
+	}
+
+	@summary = "Default summary"
 	macro checkLimitCharacters() {
 		Click(
 			key_labelName = "Limit Characters",
 			locator1 = "ObjectField#DEFAULT_TOGGLE_SWITCH");
+	}
+
+	@summary = "Default summary"
+	macro checkToggleEnableEntryTranslations() {
+		Check.checkToggleSwitch(locator1 = "ObjectField#ENABLE_ENTRY_TRANSLATION_TOGGLE");
 	}
 
 	@summary = "Default summary"

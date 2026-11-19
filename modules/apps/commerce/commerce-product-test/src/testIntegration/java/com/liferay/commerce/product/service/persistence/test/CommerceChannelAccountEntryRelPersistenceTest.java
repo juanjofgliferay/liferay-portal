@@ -116,13 +116,8 @@ public class CommerceChannelAccountEntryRelPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
 		CommerceChannelAccountEntryRel newCommerceChannelAccountEntryRel =
-			_persistence.create(pk);
-
-		newCommerceChannelAccountEntryRel.setMvccVersion(
-			RandomTestUtil.nextLong());
+			addCommerceChannelAccountEntryRel();
 
 		newCommerceChannelAccountEntryRel.setCtCollectionId(
 			RandomTestUtil.nextLong());
@@ -160,8 +155,10 @@ public class CommerceChannelAccountEntryRelPersistenceTest {
 
 		newCommerceChannelAccountEntryRel.setType(RandomTestUtil.nextInt());
 
-		_commerceChannelAccountEntryRels.add(
-			_persistence.update(newCommerceChannelAccountEntryRel));
+		newCommerceChannelAccountEntryRel = _persistence.update(
+			newCommerceChannelAccountEntryRel);
+
+		_commerceChannelAccountEntryRels.add(newCommerceChannelAccountEntryRel);
 
 		CommerceChannelAccountEntryRel existingCommerceChannelAccountEntryRel =
 			_persistence.findByPrimaryKey(
@@ -248,14 +245,6 @@ public class CommerceChannelAccountEntryRelPersistenceTest {
 			RandomTestUtil.nextLong(), RandomTestUtil.nextLong());
 
 		_persistence.countByC_C(0L, 0L);
-	}
-
-	@Test
-	public void testCountByC_T() throws Exception {
-		_persistence.countByC_T(
-			RandomTestUtil.nextLong(), RandomTestUtil.nextInt());
-
-		_persistence.countByC_T(0L, 0);
 	}
 
 	@Test
@@ -667,9 +656,6 @@ public class CommerceChannelAccountEntryRelPersistenceTest {
 		CommerceChannelAccountEntryRel commerceChannelAccountEntryRel =
 			_persistence.create(pk);
 
-		commerceChannelAccountEntryRel.setMvccVersion(
-			RandomTestUtil.nextLong());
-
 		commerceChannelAccountEntryRel.setCtCollectionId(
 			RandomTestUtil.nextLong());
 
@@ -716,3 +702,4 @@ public class CommerceChannelAccountEntryRelPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1735003298

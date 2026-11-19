@@ -7,13 +7,13 @@ package com.liferay.portal.kernel.portlet;
 
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.portlet.WindowState;
+
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 
 import java.util.HashMap;
 import java.util.Map;
-
-import javax.portlet.WindowState;
 
 /**
  * @author Brian Wing Shun Chan
@@ -49,14 +49,15 @@ public class WindowStateFactory {
 			{
 				try {
 					for (Field field : LiferayWindowState.class.getFields()) {
-						if (Modifier.isStatic(field.getModifiers()) &&
-							(field.getType() == WindowState.class)) {
+						if (!Modifier.isStatic(field.getModifiers()) ||
+							(field.getType() != WindowState.class)) {
 
-							WindowState windowState = (WindowState)field.get(
-								null);
-
-							put(windowState.toString(), windowState);
+							continue;
 						}
+
+						WindowState windowState = (WindowState)field.get(null);
+
+						put(windowState.toString(), windowState);
 					}
 				}
 				catch (IllegalAccessException illegalAccessException) {

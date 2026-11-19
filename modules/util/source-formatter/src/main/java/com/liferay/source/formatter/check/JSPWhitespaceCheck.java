@@ -5,11 +5,11 @@
 
 package com.liferay.source.formatter.check;
 
+import com.liferay.petra.io.unsync.UnsyncBufferedReader;
+import com.liferay.petra.io.unsync.UnsyncStringReader;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.io.unsync.UnsyncBufferedReader;
-import com.liferay.portal.kernel.io.unsync.UnsyncStringReader;
 import com.liferay.portal.kernel.util.StringUtil;
 
 import java.io.IOException;
@@ -80,10 +80,12 @@ public class JSPWhitespaceCheck extends WhitespaceCheck {
 			newDirectiveLine = formatIncorrectSyntax(
 				newDirectiveLine, "= ", "=", false);
 
-			if (!directiveLine.equals(newDirectiveLine)) {
-				content = StringUtil.replace(
-					content, directiveLine, newDirectiveLine);
+			if (directiveLine.equals(newDirectiveLine)) {
+				continue;
 			}
+
+			content = StringUtil.replace(
+				content, directiveLine, newDirectiveLine);
 		}
 
 		return content.replaceAll(
@@ -186,10 +188,11 @@ public class JSPWhitespaceCheck extends WhitespaceCheck {
 						break;
 					}
 
-					if (line.charAt(pos + 3) != CharPool.SPACE) {
-						line = StringUtil.replaceFirst(
-							line, "<%=", "<%= ", pos);
+					if (line.charAt(pos + 3) == CharPool.SPACE) {
+						continue;
 					}
+
+					line = StringUtil.replaceFirst(line, "<%=", "<%= ", pos);
 				}
 
 				if (trimmedLine.startsWith(StringPool.DOUBLE_SLASH) ||

@@ -16,16 +16,15 @@ import com.liferay.portal.kernel.template.TemplateException;
 import com.liferay.portal.kernel.template.TemplateManagerUtil;
 import com.liferay.portal.kernel.template.TemplateResourceLoaderUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
-import com.liferay.portal.kernel.util.UnsyncPrintWriterPool;
+
+import jakarta.portlet.MimeResponse;
+import jakarta.portlet.PortletContext;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
 
 import java.io.IOException;
 import java.io.Writer;
-
-import javax.portlet.MimeResponse;
-import javax.portlet.PortletContext;
-import javax.portlet.PortletException;
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
 
 /**
  * @author Raymond Augé
@@ -83,8 +82,7 @@ public class FreeMarkerPortlet extends MVCPortlet {
 				if (portletResponse instanceof MimeResponse) {
 					MimeResponse mimeResponse = (MimeResponse)portletResponse;
 
-					writer = UnsyncPrintWriterPool.borrow(
-						mimeResponse.getWriter());
+					writer = mimeResponse.getWriter();
 				}
 				else {
 					writer = new UnsyncStringWriter();

@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -294,25 +295,6 @@ public class AssetDisplayPageEntryLocalServiceUtil {
 			defaultTemplate, start, end, orderByComparator);
 	}
 
-	public static List<AssetDisplayPageEntry>
-		getAssetDisplayPageEntriesByLayoutPageTemplateEntryId(
-			long layoutPageTemplateEntryId) {
-
-		return getService().
-			getAssetDisplayPageEntriesByLayoutPageTemplateEntryId(
-				layoutPageTemplateEntryId);
-	}
-
-	public static List<AssetDisplayPageEntry>
-		getAssetDisplayPageEntriesByLayoutPageTemplateEntryId(
-			long layoutPageTemplateEntryId, int start, int end,
-			OrderByComparator<AssetDisplayPageEntry> orderByComparator) {
-
-		return getService().
-			getAssetDisplayPageEntriesByLayoutPageTemplateEntryId(
-				layoutPageTemplateEntryId, start, end, orderByComparator);
-	}
-
 	/**
 	 * Returns all the asset display page entries matching the UUID and company.
 	 *
@@ -354,6 +336,13 @@ public class AssetDisplayPageEntryLocalServiceUtil {
 	 */
 	public static int getAssetDisplayPageEntriesCount() {
 		return getService().getAssetDisplayPageEntriesCount();
+	}
+
+	public static int getAssetDisplayPageEntriesCount(
+		long groupId, long classNameId) {
+
+		return getService().getAssetDisplayPageEntriesCount(
+			groupId, classNameId);
 	}
 
 	public static int getAssetDisplayPageEntriesCount(
@@ -463,13 +452,13 @@ public class AssetDisplayPageEntryLocalServiceUtil {
 	}
 
 	public static AssetDisplayPageEntryLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(AssetDisplayPageEntryLocalService service) {
-		_service = service;
-	}
-
-	private static volatile AssetDisplayPageEntryLocalService _service;
+	private static final Snapshot<AssetDisplayPageEntryLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			AssetDisplayPageEntryLocalServiceUtil.class,
+			AssetDisplayPageEntryLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:927094867

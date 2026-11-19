@@ -9,6 +9,7 @@ import com.liferay.portal.kernel.util.StringUtil;
 
 import com.puppycrawl.tools.checkstyle.api.DetailAST;
 import com.puppycrawl.tools.checkstyle.api.TokenTypes;
+import com.puppycrawl.tools.checkstyle.utils.TokenUtil;
 
 import java.util.List;
 
@@ -24,26 +25,27 @@ public class AssertEqualsCheck extends BaseCheck {
 
 	@Override
 	protected void doVisitToken(DetailAST detailAST) {
-		List<DetailAST> methodCallDetailASTList = getMethodCalls(
+		List<DetailAST> methodCallDetailASTs = getMethodCalls(
 			detailAST, "Assert", "assertEquals");
 
-		for (DetailAST methodCallDetailAST : methodCallDetailASTList) {
+		for (DetailAST methodCallDetailAST : methodCallDetailASTs) {
 			DetailAST elistDetailAST = methodCallDetailAST.findFirstToken(
 				TokenTypes.ELIST);
 
-			List<DetailAST> exprDetailASTList = getAllChildTokens(
+			List<DetailAST> exprDetailASTs = getAllChildTokens(
 				elistDetailAST, false, TokenTypes.EXPR);
 
-			if (exprDetailASTList.size() != 2) {
+			if (exprDetailASTs.size() != 2) {
 				continue;
 			}
 
-			DetailAST firstExprDetailAST = exprDetailASTList.get(0);
+			DetailAST firstExprDetailAST = exprDetailASTs.get(0);
 
 			DetailAST firstChildDetailAST = firstExprDetailAST.getFirstChild();
 
-			if ((firstChildDetailAST.getType() == TokenTypes.LITERAL_FALSE) ||
-				(firstChildDetailAST.getType() == TokenTypes.LITERAL_TRUE)) {
+			if (TokenUtil.isOfType(
+					firstChildDetailAST, TokenTypes.LITERAL_FALSE,
+					TokenTypes.LITERAL_TRUE)) {
 
 				log(
 					methodCallDetailAST, _MSG_ASSERT_USE_BOOLEAN,
@@ -51,7 +53,7 @@ public class AssertEqualsCheck extends BaseCheck {
 						firstChildDetailAST.getText()));
 			}
 
-			DetailAST secondExprDetailAST = exprDetailASTList.get(1);
+			DetailAST secondExprDetailAST = exprDetailASTs.get(1);
 
 			firstChildDetailAST = secondExprDetailAST.getFirstChild();
 
@@ -90,16 +92,20 @@ public class AssertEqualsCheck extends BaseCheck {
 			variableName = _getVariableNameForMethodCall(
 				firstChildDetailAST, "size");
 
-			if (variableName != null) {
-				DetailAST typeDetailAST = getVariableTypeDetailAST(
-					methodCallDetailAST, variableName);
-
-				if ((typeDetailAST != null) && isCollection(typeDetailAST)) {
-					log(
-						methodCallDetailAST, _MSG_ASSERT_ADD_INFORMATION,
-						variableName + ".toString()");
-				}
+			if (variableName == null) {
+				continue;
 			}
+
+			DetailAST typeDetailAST = getVariableTypeDetailAST(
+				methodCallDetailAST, variableName);
+
+			if ((typeDetailAST == null) || !isCollection(typeDetailAST)) {
+				continue;
+			}
+
+			log(
+				methodCallDetailAST, _MSG_ASSERT_ADD_INFORMATION,
+				variableName + ".toString()");
 		}
 	}
 

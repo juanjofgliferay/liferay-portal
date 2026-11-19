@@ -6,7 +6,6 @@
 package com.liferay.wiki.service.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
-import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.Company;
@@ -24,8 +23,6 @@ import com.liferay.portal.kernel.util.FileUtil;
 import com.liferay.portal.kernel.util.ProgressTracker;
 import com.liferay.portal.kernel.util.ProgressTrackerThreadLocal;
 import com.liferay.portal.kernel.util.StringUtil;
-import com.liferay.portal.test.log.LogCapture;
-import com.liferay.portal.test.log.LoggerTestUtil;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.wiki.exception.DuplicateWikiNodeExternalReferenceCodeException;
 import com.liferay.wiki.model.WikiNode;
@@ -125,15 +122,10 @@ public class WikiNodeLocalServiceTest {
 
 		InputStream inputStream = new ByteArrayInputStream(bytes);
 
-		try (LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
-				"org.apache.xmlbeans.impl.common.SAXHelper",
-				LoggerTestUtil.WARN)) {
-
-			WikiNodeLocalServiceUtil.importPages(
-				TestPropsValues.getUserId(), _node.getNodeId(),
-				new InputStream[] {inputStream, null, null},
-				Collections.<String, String[]>emptyMap());
-		}
+		WikiNodeLocalServiceUtil.importPages(
+			TestPropsValues.getUserId(), _node.getNodeId(),
+			new InputStream[] {inputStream, null, null},
+			Collections.<String, String[]>emptyMap());
 
 		WikiPage importedPage = WikiPageLocalServiceUtil.fetchPage(
 			_node.getNodeId(), "Liferay");
@@ -162,15 +154,10 @@ public class WikiNodeLocalServiceTest {
 
 		InputStream filesInputStream = new ByteArrayInputStream(filesBytes);
 
-		try (LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
-				"org.apache.xmlbeans.impl.common.SAXHelper",
-				LoggerTestUtil.WARN)) {
-
-			WikiNodeLocalServiceUtil.importPages(
-				TestPropsValues.getUserId(), _node.getNodeId(),
-				new InputStream[] {pagesInputStream, null, filesInputStream},
-				Collections.<String, String[]>emptyMap());
-		}
+		WikiNodeLocalServiceUtil.importPages(
+			TestPropsValues.getUserId(), _node.getNodeId(),
+			new InputStream[] {pagesInputStream, null, filesInputStream},
+			Collections.<String, String[]>emptyMap());
 
 		WikiPage importedPage = WikiPageLocalServiceUtil.fetchPage(
 			_node.getNodeId(), "Media link migration test");
@@ -188,27 +175,19 @@ public class WikiNodeLocalServiceTest {
 		long sharedImagesPageAttachmentsFolderId =
 			sharedImagesPage.getAttachmentsFolderId();
 
-		String testFileName = "media_link_test.docx";
-
-		String linkLabel = "Download link";
-
 		FileEntry attachmentFileEntry =
 			PortletFileRepositoryUtil.getPortletFileEntry(
 				_node.getGroupId(), sharedImagesPageAttachmentsFolderId,
-				testFileName);
+				"media_link_test.docx");
 
 		String attachmentFileEntryURL =
 			PortletFileRepositoryUtil.getPortletFileEntryURL(
 				themeDisplay, attachmentFileEntry, StringPool.BLANK);
 
-		String linkTag = StringBundler.concat(
-			"[[", attachmentFileEntryURL, StringPool.PIPE, linkLabel, "]]");
+		String linkTag = "[[" + attachmentFileEntryURL + "|Download link]]";
 
-		String expectedContent = StringBundler.concat(
-			"<<TableOfContents>>", StringPool.NEW_LINE, StringPool.NEW_LINE,
-			linkTag);
-
-		Assert.assertEquals(expectedContent, importedPage.getContent());
+		Assert.assertEquals(
+			"<<TableOfContents>>\n\n" + linkTag, importedPage.getContent());
 	}
 
 	@DeleteAfterTestRun

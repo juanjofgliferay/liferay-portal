@@ -10,7 +10,9 @@ import com.liferay.ai.creator.openai.web.internal.constants.AICreatorOpenAIPortl
 import com.liferay.journal.constants.JournalPortletKeys;
 import com.liferay.portal.kernel.editor.configuration.BaseEditorConfigContributor;
 import com.liferay.portal.kernel.editor.configuration.EditorConfigContributor;
+import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONObject;
+import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.module.configuration.ConfigurationException;
@@ -21,9 +23,10 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
 
-import java.util.Map;
+import jakarta.portlet.PortletMode;
 
-import javax.portlet.PortletMode;
+import java.util.Map;
+import java.util.Objects;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -33,8 +36,8 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"editor.config.key=rich_text",
-		"javax.portlet.name=" + JournalPortletKeys.JOURNAL
+		"editor.name=ckeditor_classic", "editor.name=ckeditor5_classic",
+		"service.ranking:Integer=101"
 	},
 	service = EditorConfigContributor.class
 )
@@ -47,9 +50,7 @@ public class AICreatorOpenAIEditorConfigContributor
 		ThemeDisplay themeDisplay,
 		RequestBackedPortletURLFactory requestBackedPortletURLFactory) {
 
-		if (!_isAICreatorChatGPTGroupEnabled(
-				themeDisplay.getCompanyId(), themeDisplay.getScopeGroupId())) {
-
+		if (!_isAICreatorToolbarEnabled(themeDisplay)) {
 			return;
 		}
 
@@ -92,18 +93,69 @@ public class AICreatorOpenAIEditorConfigContributor
 
 				return false;
 			}
+		).put(
+			"showAICreator", true
 		);
+
+		// CKEditor 4 (ckeditor_classic) renders the AI Creator button from the
+		// "aicreator" plugin and a toolbar item. CKEditor 5 (ckeditor5_classic)
+		// reads the "showAICreator" configuration directly, so only the classic
+		// editor populates "extraPlugins".
+
+		String extraPlugins = jsonObject.getString("extraPlugins");
+
+		if (Validator.isNotNull(extraPlugins)) {
+			jsonObject.put("extraPlugins", extraPlugins + ",aicreator");
+
+			_addAICreatorToolbarItem(jsonObject);
+		}
 	}
 
-	private boolean _isAICreatorChatGPTGroupEnabled(
-		long companyId, long groupId) {
+	private void _addAICreatorToolbarItem(JSONObject jsonObject) {
+		for (String key : jsonObject.keySet()) {
+			if (!key.startsWith("toolbar_")) {
+				continue;
+			}
 
-		try {
-			if (_aiCreatorOpenAIConfigurationManager.
-					isAICreatorChatGPTGroupEnabled(companyId, groupId)) {
+			JSONArray toolbarJSONArray = jsonObject.getJSONArray(key);
+
+			if ((toolbarJSONArray == null) ||
+				_hasAICreatorToolbarItem(toolbarJSONArray)) {
+
+				continue;
+			}
+
+			toolbarJSONArray.put(toJSONArray("['AICreator']"));
+		}
+	}
+
+	private boolean _hasAICreatorToolbarItem(JSONArray toolbarJSONArray) {
+		for (int i = 0; i < toolbarJSONArray.length(); i++) {
+			JSONArray itemJSONArray = toolbarJSONArray.getJSONArray(i);
+
+			if ((itemJSONArray != null) &&
+				JSONUtil.hasValue(itemJSONArray, "AICreator")) {
 
 				return true;
 			}
+		}
+
+		return false;
+	}
+
+	private boolean _isAICreatorToolbarEnabled(ThemeDisplay themeDisplay) {
+		if (!Objects.equals(
+				_portal.getPortletNamespace(themeDisplay.getPpid()),
+				_portal.getPortletNamespace(JournalPortletKeys.JOURNAL))) {
+
+			return false;
+		}
+
+		try {
+			return _aiCreatorOpenAIConfigurationManager.
+				isAICreatorChatGPTGroupEnabled(
+					themeDisplay.getCompanyId(),
+					themeDisplay.getScopeGroupId());
 		}
 		catch (ConfigurationException configurationException) {
 			if (_log.isDebugEnabled()) {

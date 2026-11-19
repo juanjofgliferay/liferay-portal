@@ -11,23 +11,25 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import com.liferay.petra.function.UnsafeSupplier;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Javier Gamarra
@@ -37,6 +39,9 @@ import javax.xml.bind.annotation.XmlRootElement;
 @GraphQLName(
 	description = "Represents the average rating. See [AggregateRating](https://www.schema.org/AggregateRating) for more information.",
 	value = "AggregateRating"
+)
+@io.swagger.v3.oas.annotations.media.Schema(
+	description = "Represents the average rating. See [AggregateRating](https://www.schema.org/AggregateRating) for more information."
 )
 @JsonFilter("Liferay.Vulcan")
 @XmlRootElement(name = "AggregateRating")
@@ -50,30 +55,40 @@ public class AggregateRating implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(AggregateRating.class, json);
 	}
 
-	@Schema(
+	@io.swagger.v3.oas.annotations.media.Schema(
 		description = "The highest possible rating (by default normalized to 1.0)."
 	)
 	public Double getBestRating() {
+		if (_bestRatingSupplier != null) {
+			bestRating = _bestRatingSupplier.get();
+
+			_bestRatingSupplier = null;
+		}
+
 		return bestRating;
 	}
 
 	public void setBestRating(Double bestRating) {
 		this.bestRating = bestRating;
+
+		_bestRatingSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setBestRating(
 		UnsafeSupplier<Double, Exception> bestRatingUnsafeSupplier) {
 
-		try {
-			bestRating = bestRatingUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_bestRatingSupplier = () -> {
+			try {
+				return bestRatingUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -82,114 +97,172 @@ public class AggregateRating implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Double bestRating;
 
-	@Schema(description = "The average rating.")
+	@JsonIgnore
+	private Supplier<Double> _bestRatingSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The average rating."
+	)
 	public Double getRatingAverage() {
+		if (_ratingAverageSupplier != null) {
+			ratingAverage = _ratingAverageSupplier.get();
+
+			_ratingAverageSupplier = null;
+		}
+
 		return ratingAverage;
 	}
 
 	public void setRatingAverage(Double ratingAverage) {
 		this.ratingAverage = ratingAverage;
+
+		_ratingAverageSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setRatingAverage(
 		UnsafeSupplier<Double, Exception> ratingAverageUnsafeSupplier) {
 
-		try {
-			ratingAverage = ratingAverageUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_ratingAverageSupplier = () -> {
+			try {
+				return ratingAverageUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The average rating.")
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Double ratingAverage;
 
-	@Schema(description = "The number of ratings.")
+	@JsonIgnore
+	private Supplier<Double> _ratingAverageSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The number of ratings."
+	)
 	public Integer getRatingCount() {
+		if (_ratingCountSupplier != null) {
+			ratingCount = _ratingCountSupplier.get();
+
+			_ratingCountSupplier = null;
+		}
+
 		return ratingCount;
 	}
 
 	public void setRatingCount(Integer ratingCount) {
 		this.ratingCount = ratingCount;
+
+		_ratingCountSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setRatingCount(
 		UnsafeSupplier<Integer, Exception> ratingCountUnsafeSupplier) {
 
-		try {
-			ratingCount = ratingCountUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_ratingCountSupplier = () -> {
+			try {
+				return ratingCountUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The number of ratings.")
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Integer ratingCount;
 
-	@Schema(description = "The rating value.")
+	@JsonIgnore
+	private Supplier<Integer> _ratingCountSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The rating value."
+	)
 	public Double getRatingValue() {
+		if (_ratingValueSupplier != null) {
+			ratingValue = _ratingValueSupplier.get();
+
+			_ratingValueSupplier = null;
+		}
+
 		return ratingValue;
 	}
 
 	public void setRatingValue(Double ratingValue) {
 		this.ratingValue = ratingValue;
+
+		_ratingValueSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setRatingValue(
 		UnsafeSupplier<Double, Exception> ratingValueUnsafeSupplier) {
 
-		try {
-			ratingValue = ratingValueUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_ratingValueSupplier = () -> {
+			try {
+				return ratingValueUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The rating value.")
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Double ratingValue;
 
-	@Schema(
+	@JsonIgnore
+	private Supplier<Double> _ratingValueSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
 		description = "The lowest possible rating (by default normalized to 0.0)."
 	)
 	public Double getWorstRating() {
+		if (_worstRatingSupplier != null) {
+			worstRating = _worstRatingSupplier.get();
+
+			_worstRatingSupplier = null;
+		}
+
 		return worstRating;
 	}
 
 	public void setWorstRating(Double worstRating) {
 		this.worstRating = worstRating;
+
+		_worstRatingSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setWorstRating(
 		UnsafeSupplier<Double, Exception> worstRatingUnsafeSupplier) {
 
-		try {
-			worstRating = worstRatingUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_worstRatingSupplier = () -> {
+			try {
+				return worstRatingUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -197,6 +270,9 @@ public class AggregateRating implements Serializable {
 	)
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Double worstRating;
+
+	@JsonIgnore
+	private Supplier<Double> _worstRatingSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -225,6 +301,8 @@ public class AggregateRating implements Serializable {
 
 		sb.append("{");
 
+		Double bestRating = getBestRating();
+
 		if (bestRating != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -234,6 +312,8 @@ public class AggregateRating implements Serializable {
 
 			sb.append(bestRating);
 		}
+
+		Double ratingAverage = getRatingAverage();
 
 		if (ratingAverage != null) {
 			if (sb.length() > 1) {
@@ -245,6 +325,8 @@ public class AggregateRating implements Serializable {
 			sb.append(ratingAverage);
 		}
 
+		Integer ratingCount = getRatingCount();
+
 		if (ratingCount != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -255,6 +337,8 @@ public class AggregateRating implements Serializable {
 			sb.append(ratingCount);
 		}
 
+		Double ratingValue = getRatingValue();
+
 		if (ratingValue != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -264,6 +348,8 @@ public class AggregateRating implements Serializable {
 
 			sb.append(ratingValue);
 		}
+
+		Double worstRating = getWorstRating();
 
 		if (worstRating != null) {
 			if (sb.length() > 1) {
@@ -280,8 +366,8 @@ public class AggregateRating implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.delivery.dto.v1_0.AggregateRating",
 		name = "x-class-name"
 	)
@@ -327,7 +413,10 @@ public class AggregateRating implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -365,6 +454,27 @@ public class AggregateRating implements Serializable {
 		return sb.toString();
 	}
 
+	private static String _toJSON(Object value) {
+		if (value instanceof Collection) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONArray((Collection<?>)value));
+		}
+		else if (value instanceof Map) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONObject((Map<?, ?>)value));
+		}
+		else if (value instanceof Object[]) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONArray(
+					Arrays.asList((Object[])value)));
+		}
+		else if (value instanceof String) {
+			return StringBundler.concat("\"", _escape(value), "\"");
+		}
+
+		return String.valueOf(value);
+	}
+
 	private static final String[][] _JSON_ESCAPE_STRINGS = {
 		{"\\", "\"", "\b", "\f", "\n", "\r", "\t"},
 		{"\\\\", "\\\"", "\\b", "\\f", "\\n", "\\r", "\\t"}
@@ -373,3 +483,4 @@ public class AggregateRating implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:-1155424586

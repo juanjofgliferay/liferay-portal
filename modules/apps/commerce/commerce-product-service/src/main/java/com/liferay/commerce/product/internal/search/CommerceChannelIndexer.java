@@ -9,7 +9,6 @@ import com.liferay.commerce.product.constants.CPField;
 import com.liferay.commerce.product.model.CommerceChannel;
 import com.liferay.commerce.product.service.CommerceChannelLocalService;
 import com.liferay.portal.kernel.dao.orm.IndexableActionableDynamicQuery;
-import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Group;
@@ -26,10 +25,10 @@ import com.liferay.portal.kernel.search.filter.BooleanFilter;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.Validator;
 
-import java.util.Locale;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
 
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
+import java.util.Locale;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -112,7 +111,7 @@ public class CommerceChannelIndexer extends BaseIndexer<CommerceChannel> {
 		document.addKeyword(
 			CPField.COMMERCE_CHANNEL_GROUP_ID, group.getGroupId());
 
-		document.addKeyword(Field.NAME, commerceChannel.getName());
+		document.addKeyword(Field.NAME, commerceChannel.getName(), true);
 		document.addKeyword(
 			Field.SCOPE_GROUP_ID, commerceChannel.getSiteGroupId());
 		document.addKeyword(
@@ -152,10 +151,11 @@ public class CommerceChannelIndexer extends BaseIndexer<CommerceChannel> {
 	}
 
 	@Override
-	protected void doReindex(String[] ids) throws Exception {
-		long companyId = GetterUtil.getLong(ids[0]);
+	protected IndexableActionableDynamicQuery
+		getIndexableActionableDynamicQuery() {
 
-		_reindexCommerceChannels(companyId);
+		return _commerceChannelLocalService.
+			getIndexableActionableDynamicQuery();
 	}
 
 	@Override
@@ -171,30 +171,6 @@ public class CommerceChannelIndexer extends BaseIndexer<CommerceChannel> {
 		}
 
 		return super.isUseSearchResultPermissionFilter(searchContext);
-	}
-
-	private void _reindexCommerceChannels(long companyId) throws Exception {
-		IndexableActionableDynamicQuery indexableActionableDynamicQuery =
-			_commerceChannelLocalService.getIndexableActionableDynamicQuery();
-
-		indexableActionableDynamicQuery.setCompanyId(companyId);
-		indexableActionableDynamicQuery.setPerformActionMethod(
-			(CommerceChannel commerceChannel) -> {
-				try {
-					indexableActionableDynamicQuery.addDocuments(
-						getDocument(commerceChannel));
-				}
-				catch (PortalException portalException) {
-					if (_log.isWarnEnabled()) {
-						_log.warn(
-							"Unable to index commerce channel " +
-								commerceChannel,
-							portalException);
-					}
-				}
-			});
-
-		indexableActionableDynamicQuery.performActions();
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(

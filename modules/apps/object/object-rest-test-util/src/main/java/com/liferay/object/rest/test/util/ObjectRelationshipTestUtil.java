@@ -15,6 +15,9 @@ import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.vulcan.util.LocalizedMapUtil;
 
+import java.util.Locale;
+import java.util.Map;
+
 /**
  * @author Luis Miguel Barcos
  */
@@ -31,15 +34,39 @@ public class ObjectRelationshipTestUtil {
 	}
 
 	public static ObjectRelationship addObjectRelationship(
-			String deletionType, ObjectDefinition objectDefinition,
-			ObjectDefinition relatedObjectDefinition, long userId, String type)
+			String deletionType, Map<Locale, String> descriptionMap,
+			ObjectDefinition objectDefinition,
+			ObjectDefinition relatedObjectDefinition, long userId, String name,
+			String type)
 		throws Exception {
 
 		return ObjectRelationshipLocalServiceUtil.addObjectRelationship(
 			null, userId, objectDefinition.getObjectDefinitionId(),
 			relatedObjectDefinition.getObjectDefinitionId(), 0, deletionType,
+			descriptionMap, false,
 			LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
-			StringUtil.randomId(), false, type, null);
+			name, false, type, null);
+	}
+
+	public static ObjectRelationship addObjectRelationship(
+			String deletionType, ObjectDefinition objectDefinition,
+			ObjectDefinition relatedObjectDefinition, long userId, String type)
+		throws Exception {
+
+		return addObjectRelationship(
+			deletionType, objectDefinition, relatedObjectDefinition, userId,
+			StringUtil.randomId(), type);
+	}
+
+	public static ObjectRelationship addObjectRelationship(
+			String deletionType, ObjectDefinition objectDefinition,
+			ObjectDefinition relatedObjectDefinition, long userId, String name,
+			String type)
+		throws Exception {
+
+		return addObjectRelationship(
+			deletionType, null, objectDefinition, relatedObjectDefinition,
+			userId, name, type);
 	}
 
 	public static void relateObjectEntries(
@@ -56,6 +83,15 @@ public class ObjectRelationshipTestUtil {
 			addObjectRelationshipMappingTableValues(
 				userId, objectRelationship.getObjectRelationshipId(),
 				objectEntryId1, objectEntryId2, serviceContext);
+	}
+
+	public static ObjectRelationship updateObjectRelationship(
+			String deletionType, long objectRelationshipId)
+		throws Exception {
+
+		return ObjectRelationshipLocalServiceUtil.updateObjectRelationship(
+			null, objectRelationshipId, 0, deletionType, null, false, null,
+			null);
 	}
 
 }

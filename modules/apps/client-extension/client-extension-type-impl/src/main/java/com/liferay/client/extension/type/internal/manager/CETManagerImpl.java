@@ -13,6 +13,13 @@ import com.liferay.client.extension.type.configuration.CETConfiguration;
 import com.liferay.client.extension.type.deployer.CETDeployer;
 import com.liferay.client.extension.type.factory.CETFactory;
 import com.liferay.client.extension.type.manager.CETManager;
+import com.liferay.petra.function.transform.TransformUtil;
+import com.liferay.portal.kernel.annotation.ImplementationClassName;
+import com.liferay.portal.kernel.cache.PortalCache;
+import com.liferay.portal.kernel.cache.PortalCacheHelperUtil;
+import com.liferay.portal.kernel.cache.PortalCacheManagerNames;
+import com.liferay.portal.kernel.cache.PortalCacheMapSynchronizeUtil;
+import com.liferay.portal.kernel.dao.orm.EntityCache;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
@@ -25,13 +32,13 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.vulcan.pagination.Pagination;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.osgi.framework.ServiceRegistration;
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
@@ -49,7 +56,7 @@ public class CETManagerImpl implements CETManager {
 		throws PortalException {
 
 		CET cet = _cetFactory.create(
-			cetConfiguration, companyId, externalReferenceCode);
+			cetConfiguration, companyId, externalReferenceCode, true);
 
 		Map<String, CET> cetsMap = _getCETsMap(cet.getCompanyId());
 
@@ -82,7 +89,7 @@ public class CETManagerImpl implements CETManager {
 
 		if (clientExtensionEntry != null) {
 			try {
-				return _cetFactory.create(clientExtensionEntry);
+				return _getCET(clientExtensionEntry);
 			}
 			catch (PortalException portalException) {
 				if (_log.isDebugEnabled()) {
@@ -95,7 +102,17 @@ public class CETManagerImpl implements CETManager {
 
 		Map<String, CET> cetsMap = _getCETsMap(companyId);
 
-		return cetsMap.get(externalReferenceCode);
+		CET cet = cetsMap.get(externalReferenceCode);
+
+		if (cet == null) {
+			if (_log.isWarnEnabled()) {
+				_log.warn(
+					"No CET found for external reference code " +
+						externalReferenceCode);
+			}
+		}
+
+		return cet;
 	}
 
 	@Override
@@ -120,8 +137,27 @@ public class CETManagerImpl implements CETManager {
 		return cets.size();
 	}
 
+	@Activate
+	protected void activate() throws Exception {
+		PortalCacheMapSynchronizeUtil.synchronize(
+			_getPortalCache(), _cets,
+			new PortalCacheMapSynchronizeUtil.Synchronizer<Long, Object>() {
+
+				@Override
+				public void onSynchronize(
+					Map<? extends Long, ? extends Object> map, Long key,
+					Object value, int timeToLive) {
+
+					map.remove(key);
+				}
+
+			});
+	}
+
 	@Deactivate
 	protected void deactivate() {
+		_cets.clear();
+
 		for (Map.Entry<Long, Map<String, CET>> entry1 : _cetsMaps.entrySet()) {
 			Map<String, CET> cetsMap = entry1.getValue();
 
@@ -144,40 +180,80 @@ public class CETManagerImpl implements CETManager {
 		return string1.contains(string2);
 	}
 
+	private CET _getCET(ClientExtensionEntry clientExtensionEntry)
+		throws PortalException {
+
+		long clientExtensionEntryId =
+			clientExtensionEntry.getClientExtensionEntryId();
+
+		CETHolder cetHolder = _cets.get(clientExtensionEntryId);
+
+		if ((cetHolder != null) &&
+			(cetHolder._mvccVersion == clientExtensionEntry.getMvccVersion())) {
+
+			return cetHolder._cet;
+		}
+
+		CET cet = _cetFactory.create(clientExtensionEntry, true);
+
+		_cets.put(
+			clientExtensionEntryId,
+			new CETHolder(cet, clientExtensionEntry.getMvccVersion()));
+
+		return cet;
+	}
+
 	private List<CET> _getCETs(long companyId, String keywords, String type)
 		throws PortalException {
 
-		List<CET> cets = new ArrayList<>();
+		List<ClientExtensionEntry> clientExtensionEntries = null;
 
-		for (ClientExtensionEntry clientExtensionEntry :
+		if (Validator.isNotNull(type)) {
+			clientExtensionEntries =
 				_clientExtensionEntryLocalService.getClientExtensionEntries(
-					companyId, QueryUtil.ALL_POS, QueryUtil.ALL_POS)) {
-
-			try {
-				CET cet = _cetFactory.create(clientExtensionEntry);
-
-				if (_isInclude(cet, keywords, type)) {
-					cets.add(cet);
-				}
-			}
-			catch (ClientExtensionEntryTypeException
-						clientExtensionEntryTypeException) {
-
-				if (_log.isDebugEnabled()) {
-					_log.debug(clientExtensionEntryTypeException);
-				}
-			}
+					companyId, type, QueryUtil.ALL_POS, QueryUtil.ALL_POS);
 		}
+		else {
+			clientExtensionEntries =
+				_clientExtensionEntryLocalService.getClientExtensionEntries(
+					companyId, QueryUtil.ALL_POS, QueryUtil.ALL_POS);
+		}
+
+		List<CET> cets = TransformUtil.transform(
+			clientExtensionEntries,
+			clientExtensionEntry -> {
+				try {
+					CET cet = _getCET(clientExtensionEntry);
+
+					if (_isInclude(cet, keywords, type)) {
+						return cet;
+					}
+				}
+				catch (ClientExtensionEntryTypeException
+							clientExtensionEntryTypeException) {
+
+					if (_log.isDebugEnabled()) {
+						_log.debug(clientExtensionEntryTypeException);
+					}
+				}
+
+				return null;
+			});
 
 		Map<String, CET> cetsMap = _getCETsMap(companyId);
 
-		for (Map.Entry<String, CET> entry : cetsMap.entrySet()) {
-			CET cet = entry.getValue();
+		cets.addAll(
+			TransformUtil.transform(
+				cetsMap.entrySet(),
+				entry -> {
+					CET cet = entry.getValue();
 
-			if (_isInclude(cet, keywords, type)) {
-				cets.add(cet);
-			}
-		}
+					if (_isInclude(cet, keywords, type)) {
+						return cet;
+					}
+
+					return null;
+				}));
 
 		return cets;
 	}
@@ -192,6 +268,28 @@ public class CETManagerImpl implements CETManager {
 		}
 
 		return cetsMap;
+	}
+
+	private PortalCache<Long, Object> _getPortalCache() throws Exception {
+		ImplementationClassName implementationClassName =
+			ClientExtensionEntry.class.getAnnotation(
+				ImplementationClassName.class);
+
+		Class<?> clazz = _clientExtensionEntryLocalService.getClass();
+
+		ClassLoader classLoader = clazz.getClassLoader();
+
+		Class<?> implementationClass = classLoader.loadClass(
+			implementationClassName.value());
+
+		PortalCache<?, ?> portalCache = _entityCache.getPortalCache(
+			implementationClass);
+
+		return (PortalCache<Long, Object>)
+			(PortalCache<?, ?>)PortalCacheHelperUtil.getPortalCache(
+				PortalCacheManagerNames.MULTI_VM,
+				portalCache.getPortalCacheName(), portalCache.isMVCC(),
+				portalCache.isSharded());
 	}
 
 	private Map<String, List<ServiceRegistration<?>>>
@@ -225,7 +323,9 @@ public class CETManagerImpl implements CETManager {
 
 		String key = CETFactory.FEATURE_FLAG_KEYS.get(cet.getType());
 
-		if ((key != null) && !FeatureFlagManagerUtil.isEnabled(key)) {
+		if ((key != null) &&
+			!FeatureFlagManagerUtil.isEnabled(cet.getCompanyId(), key)) {
+
 			return false;
 		}
 
@@ -256,13 +356,29 @@ public class CETManagerImpl implements CETManager {
 	@Reference
 	private CETFactory _cetFactory;
 
+	private final Map<Long, CETHolder> _cets = new ConcurrentHashMap<>();
 	private final Map<Long, Map<String, CET>> _cetsMaps =
 		new ConcurrentHashMap<>();
 
 	@Reference
 	private ClientExtensionEntryLocalService _clientExtensionEntryLocalService;
 
+	@Reference
+	private EntityCache _entityCache;
+
 	private final Map<Long, Map<String, List<ServiceRegistration<?>>>>
 		_serviceRegistrationsMaps = new ConcurrentHashMap<>();
+
+	private static class CETHolder {
+
+		private CETHolder(CET cet, long mvccVersion) {
+			_cet = cet;
+			_mvccVersion = mvccVersion;
+		}
+
+		private final CET _cet;
+		private final long _mvccVersion;
+
+	}
 
 }

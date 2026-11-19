@@ -5,6 +5,7 @@
 
 package com.liferay.portal.search.internal.asset;
 
+import com.liferay.asset.kernel.AssetRendererFactoryRegistryUtil;
 import com.liferay.asset.kernel.model.AssetRendererFactory;
 import com.liferay.portal.kernel.search.SearchEngineHelper;
 import com.liferay.portal.kernel.util.ArrayUtil;
@@ -28,28 +29,30 @@ public class SearchableAssetClassNamesProviderImpl
 		List<String> classNames = new ArrayList<>();
 
 		List<AssetRendererFactory<?>> assetRendererFactories =
-			assetRendererFactoryRegistry.getAssetRendererFactories(companyId);
+			AssetRendererFactoryRegistryUtil.getAssetRendererFactories(
+				companyId);
 
 		for (AssetRendererFactory<?> assetRendererFactory :
 				assetRendererFactories) {
 
-			if (assetRendererFactory.isSearchable()) {
-				String className = assetRendererFactory.getClassName();
-
-				if (ArrayUtil.contains(
-						searchEngineHelper.getEntryClassNames(), className,
-						false)) {
-
-					classNames.add(className);
-				}
+			if (!assetRendererFactory.isSearchable()) {
+				continue;
 			}
+
+			String className = assetRendererFactory.getClassName();
+
+			if (!ArrayUtil.contains(
+					searchEngineHelper.getEntryClassNames(), className,
+					false)) {
+
+				continue;
+			}
+
+			classNames.add(className);
 		}
 
 		return classNames.toArray(new String[0]);
 	}
-
-	@Reference
-	protected AssetRendererFactoryRegistry assetRendererFactoryRegistry;
 
 	@Reference
 	protected SearchEngineHelper searchEngineHelper;

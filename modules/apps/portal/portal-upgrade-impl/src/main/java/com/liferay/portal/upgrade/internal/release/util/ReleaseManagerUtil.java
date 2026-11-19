@@ -5,6 +5,8 @@
 
 package com.liferay.portal.upgrade.internal.release.util;
 
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Release;
 import com.liferay.portal.kernel.service.ReleaseLocalService;
 import com.liferay.portal.kernel.util.Validator;
@@ -17,9 +19,13 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * @author Joao Victor Alves
+ * @author João Victor Alves
  */
 public class ReleaseManagerUtil {
+
+	public static String getFailedModuleMessage(String bundleSymbolicName) {
+		return "The upgrade of module " + bundleSymbolicName + " failed";
+	}
 
 	public static String getSchemaVersionString(Release release) {
 		if ((release != null) &&
@@ -39,11 +45,13 @@ public class ReleaseManagerUtil {
 		Set<String> upgradableBundleSymbolicNames = new HashSet<>();
 
 		for (String bundleSymbolicName : bundleSymbolicNames) {
-			if (isUpgradable(
+			if (!isUpgradable(
 					bundleSymbolicName, releaseLocalService, upgradeExecutor)) {
 
-				upgradableBundleSymbolicNames.add(bundleSymbolicName);
+				continue;
 			}
+
+			upgradableBundleSymbolicNames.add(bundleSymbolicName);
 		}
 
 		return upgradableBundleSymbolicNames;
@@ -53,8 +61,19 @@ public class ReleaseManagerUtil {
 		String bundleSymbolicName, ReleaseLocalService releaseLocalService,
 		UpgradeExecutor upgradeExecutor) {
 
-		ReleaseGraphManager releaseGraphManager = new ReleaseGraphManager(
-			upgradeExecutor.getUpgradeInfos(bundleSymbolicName));
+		ReleaseGraphManager releaseGraphManager = null;
+
+		try {
+			releaseGraphManager = new ReleaseGraphManager(
+				upgradeExecutor.getUpgradeInfos(bundleSymbolicName));
+		}
+		catch (Throwable throwable) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(throwable);
+			}
+
+			return false;
+		}
 
 		List<List<UpgradeInfo>> upgradeInfosList =
 			releaseGraphManager.getUpgradeInfosList(
@@ -67,5 +86,8 @@ public class ReleaseManagerUtil {
 
 		return false;
 	}
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		ReleaseManagerUtil.class);
 
 }

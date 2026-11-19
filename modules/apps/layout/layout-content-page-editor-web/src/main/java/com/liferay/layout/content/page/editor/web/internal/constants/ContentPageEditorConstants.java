@@ -9,7 +9,6 @@ import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.LinkedHashMapBuilder;
 import com.liferay.portal.kernel.util.ListUtil;
 
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -24,45 +23,45 @@ public class ContentPageEditorConstants {
 		layoutElementMapsListMap =
 			LinkedHashMapBuilder.<String, List<Map<String, Object>>>put(
 				"layout-elements",
-				() -> {
-					List<Map<String, Object>> layoutElementMapsList =
-						new LinkedList<>();
-
-					layoutElementMapsList.add(
-						HashMapBuilder.<String, Object>put(
-							"fragmentEntryKey", "container"
-						).put(
-							"icon", "container"
-						).put(
-							"itemType", "container"
-						).put(
-							"languageKey", "container"
-						).build());
-
-					layoutElementMapsList.add(
-						HashMapBuilder.<String, Object>put(
-							"fragmentEntryKey", "row"
-						).put(
-							"icon", "table"
-						).put(
-							"itemType", "row"
-						).put(
-							"languageKey", "grid"
-						).build());
-
-					return layoutElementMapsList;
-				}
+				() -> ListUtil.fromArray(
+					HashMapBuilder.<String, Object>put(
+						"fragmentEntryKey", "container"
+					).put(
+						"icon", "container"
+					).put(
+						"itemType", "container"
+					).put(
+						"languageKey", "container"
+					).build(),
+					HashMapBuilder.<String, Object>put(
+						"fragmentEntryKey", "row"
+					).put(
+						"icon", "table"
+					).put(
+						"itemType", "row"
+					).put(
+						"languageKey", "grid"
+					).build())
 			).put(
 				"INPUTS",
 				ListUtil.fromArray(
 					HashMapBuilder.<String, Object>put(
 						"fragmentEntryKey", "form"
 					).put(
-						"icon", "container"
+						"icon", "forms"
 					).put(
 						"itemType", "form"
 					).put(
 						"languageKey", "form-container"
+					).build(),
+					HashMapBuilder.<String, Object>put(
+						"fragmentEntryKey", "formRelationship"
+					).put(
+						"icon", "form-extensions"
+					).put(
+						"itemType", "form-relationship"
+					).put(
+						"languageKey", "form-relationship"
 					).build())
 			).put(
 				"content-display",

@@ -5,19 +5,25 @@
 
 package com.liferay.headless.commerce.admin.catalog.internal.util.v1_0;
 
+import com.liferay.commerce.product.exception.NoSuchCPOptionException;
 import com.liferay.commerce.product.model.CPDefinitionOptionRel;
 import com.liferay.commerce.product.model.CPOption;
 import com.liferay.commerce.product.service.CPDefinitionOptionRelService;
 import com.liferay.commerce.product.service.CPOptionService;
 import com.liferay.headless.commerce.admin.catalog.dto.v1_0.ProductOption;
-import com.liferay.headless.commerce.admin.catalog.internal.dto.v1_0.util.CustomFieldsUtil;
 import com.liferay.headless.commerce.core.util.LanguageUtils;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.lazy.referencing.LazyReferencingThreadLocal;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.vulcan.custom.field.CustomFieldsUtil;
 
+import java.io.Serializable;
+
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -31,12 +37,50 @@ public class ProductOptionUtil {
 			long cpDefinitionId, ServiceContext serviceContext)
 		throws PortalException {
 
-		CPOption cpOption = cpOptionService.getCPOption(
-			productOption.getOptionId());
+		CPOption cpOption = null;
 
-		CPDefinitionOptionRel cpDefinitionOptionRel =
-			cpDefinitionOptionRelService.fetchCPDefinitionOptionRel(
-				cpDefinitionId, cpOption.getCPOptionId());
+		String optionExternalReferenceCode =
+			productOption.getOptionExternalReferenceCode();
+
+		if (Validator.isNull(optionExternalReferenceCode)) {
+			cpOption = cpOptionService.getCPOption(
+				GetterUtil.getLong(productOption.getOptionId()));
+		}
+		else if (LazyReferencingThreadLocal.isEnabled()) {
+			cpOption = cpOptionService.getOrAddEmptyCPOption(
+				optionExternalReferenceCode,
+				LanguageUtils.getLocalizedMap(productOption.getName()),
+				productOption.getFieldType(),
+				GetterUtil.get(productOption.getSkuContributor(), false),
+				productOption.getKey());
+		}
+		else {
+			cpOption = cpOptionService.fetchCPOptionByExternalReferenceCode(
+				optionExternalReferenceCode, serviceContext.getCompanyId());
+
+			if (cpOption == null) {
+				throw new NoSuchCPOptionException(
+					"Unable to find option with external reference code " +
+						optionExternalReferenceCode);
+			}
+		}
+
+		CPDefinitionOptionRel cpDefinitionOptionRel = null;
+
+		String externalReferenceCode = productOption.getExternalReferenceCode();
+
+		if (Validator.isNotNull(externalReferenceCode)) {
+			cpDefinitionOptionRel =
+				cpDefinitionOptionRelService.
+					fetchCPDefinitionOptionRelByExternalReferenceCode(
+						externalReferenceCode, serviceContext.getCompanyId());
+		}
+
+		if (cpDefinitionOptionRel == null) {
+			cpDefinitionOptionRel =
+				cpDefinitionOptionRelService.fetchCPDefinitionOptionRel(
+					cpDefinitionId, cpOption.getCPOptionId());
+		}
 
 		Map<String, String> nameMap = productOption.getName();
 
@@ -52,16 +96,22 @@ public class ProductOptionUtil {
 				cpDefinitionOptionRel.getDescriptionMap());
 		}
 
-		serviceContext.setExpandoBridgeAttributes(
+		Map<String, Serializable> expandoBridgeAttributes =
 			CustomFieldsUtil.toMap(
 				CPDefinitionOptionRel.class.getName(),
 				serviceContext.getCompanyId(), productOption.getCustomFields(),
-				serviceContext.getLocale()));
+				serviceContext.getLocale());
+
+		if (expandoBridgeAttributes == null) {
+			expandoBridgeAttributes = new HashMap<>();
+		}
+
+		serviceContext.setExpandoBridgeAttributes(expandoBridgeAttributes);
 
 		if (cpDefinitionOptionRel == null) {
 			cpDefinitionOptionRel =
 				cpDefinitionOptionRelService.addCPDefinitionOptionRel(
-					cpDefinitionId, cpOption.getCPOptionId(),
+					null, cpDefinitionId, cpOption.getCPOptionId(),
 					LanguageUtils.getLocalizedMap(nameMap),
 					LanguageUtils.getLocalizedMap(descriptionMap),
 					GetterUtil.get(
@@ -121,6 +171,13 @@ public class ProductOptionUtil {
 						productOption.getTypeSettings(),
 						cpDefinitionOptionRel.getTypeSettings()),
 					serviceContext);
+		}
+
+		if (Validator.isNotNull(externalReferenceCode)) {
+			cpDefinitionOptionRel =
+				cpDefinitionOptionRelService.updateExternalReferenceCode(
+					cpDefinitionOptionRel.getCPDefinitionOptionRelId(),
+					externalReferenceCode);
 		}
 
 		return cpDefinitionOptionRel;

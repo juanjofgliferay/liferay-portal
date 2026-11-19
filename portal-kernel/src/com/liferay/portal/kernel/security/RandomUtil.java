@@ -6,6 +6,8 @@
 package com.liferay.portal.kernel.security;
 
 import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.Supplier;
 
 /**
  * @author Shuyang Zhou
@@ -13,6 +15,8 @@ import java.util.Random;
 public class RandomUtil {
 
 	public static int nextInt(int n) {
+		Random random = _supplier.get();
+
 		return random.nextInt(n);
 	}
 
@@ -27,7 +31,7 @@ public class RandomUtil {
 			numbers[i] = i;
 		}
 
-		shuffle(random, numbers);
+		shuffle(_supplier.get(), numbers);
 
 		if (size == n) {
 			return numbers;
@@ -44,12 +48,14 @@ public class RandomUtil {
 		for (int i = numbers.length; i > 1; i--) {
 			int position = random.nextInt(i);
 
-			if (position != (i - 1)) {
-				int number = numbers[position];
-
-				numbers[position] = numbers[i - 1];
-				numbers[i - 1] = number;
+			if (position == (i - 1)) {
+				continue;
 			}
+
+			int number = numbers[position];
+
+			numbers[position] = numbers[i - 1];
+			numbers[i - 1] = number;
 		}
 	}
 
@@ -65,19 +71,25 @@ public class RandomUtil {
 		for (int i = sb.length(); i > 1; i--) {
 			int position = random.nextInt(i);
 
-			if (position != (i - 1)) {
-				char c = sb.charAt(position);
-
-				sb.setCharAt(position, sb.charAt(i - 1));
-				sb.setCharAt(i - 1, c);
+			if (position == (i - 1)) {
+				continue;
 			}
+
+			char c = sb.charAt(position);
+
+			sb.setCharAt(position, sb.charAt(i - 1));
+			sb.setCharAt(i - 1, c);
 		}
 	}
 
 	public static String shuffle(String s) {
-		return shuffle(random, s);
+		return shuffle(_supplier.get(), s);
 	}
 
-	protected static Random random = new Random();
+	protected static void setSupplier(Supplier<Random> supplier) {
+		_supplier = supplier;
+	}
+
+	private static Supplier<Random> _supplier = ThreadLocalRandom::current;
 
 }

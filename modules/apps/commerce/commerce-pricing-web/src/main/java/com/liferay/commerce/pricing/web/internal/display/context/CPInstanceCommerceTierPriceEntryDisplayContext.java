@@ -5,6 +5,8 @@
 
 package com.liferay.commerce.pricing.web.internal.display.context;
 
+import com.liferay.commerce.currency.model.CommerceCurrency;
+import com.liferay.commerce.currency.util.CommercePriceFormatter;
 import com.liferay.commerce.price.list.model.CommercePriceEntry;
 import com.liferay.commerce.price.list.model.CommercePriceList;
 import com.liferay.commerce.price.list.model.CommerceTierPriceEntry;
@@ -17,6 +19,7 @@ import com.liferay.commerce.product.service.CPInstanceLocalService;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.CreationMenu;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.CreationMenuBuilder;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.portlet.LiferayWindowState;
@@ -25,9 +28,11 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.taglib.util.CustomAttributesUtil;
 
-import javax.portlet.PortletURL;
+import jakarta.portlet.PortletURL;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
+
+import java.math.BigDecimal;
 
 /**
  * @author Alessio Antonio Rendina
@@ -37,14 +42,39 @@ public class CPInstanceCommerceTierPriceEntryDisplayContext
 
 	public CPInstanceCommerceTierPriceEntryDisplayContext(
 		ActionHelper actionHelper,
+		CommercePriceFormatter commercePriceFormatter,
 		CommercePriceListActionHelper commercePriceListActionHelper,
 		CPInstanceLocalService cpInstanceLocalService,
 		HttpServletRequest httpServletRequest) {
 
 		super(actionHelper, httpServletRequest);
 
+		_commercePriceFormatter = commercePriceFormatter;
 		_commercePriceListActionHelper = commercePriceListActionHelper;
 		_cpInstanceLocalService = cpInstanceLocalService;
+	}
+
+	public CPInstance getCPInstance() throws PortalException {
+		if (_cpInstance != null) {
+			return _cpInstance;
+		}
+
+		_cpInstance = actionHelper.getCPInstance(
+			cpRequestHelper.getRenderRequest());
+
+		return _cpInstance;
+	}
+
+	public long getCPInstanceId() throws PortalException {
+		long cpInstanceId = 0;
+
+		CPInstance cpInstance = getCPInstance();
+
+		if (cpInstance != null) {
+			cpInstanceId = cpInstance.getCPInstanceId();
+		}
+
+		return cpInstanceId;
 	}
 
 	public CommercePriceEntry getCommercePriceEntry() throws PortalException {
@@ -135,29 +165,6 @@ public class CPInstanceCommerceTierPriceEntryDisplayContext
 		return sb.toString();
 	}
 
-	public CPInstance getCPInstance() throws PortalException {
-		if (_cpInstance != null) {
-			return _cpInstance;
-		}
-
-		_cpInstance = actionHelper.getCPInstance(
-			cpRequestHelper.getRenderRequest());
-
-		return _cpInstance;
-	}
-
-	public long getCPInstanceId() throws PortalException {
-		long cpInstanceId = 0;
-
-		CPInstance cpInstance = getCPInstance();
-
-		if (cpInstance != null) {
-			cpInstanceId = cpInstance.getCPInstanceId();
-		}
-
-		return cpInstanceId;
-	}
-
 	public CreationMenu getCreationMenu() throws Exception {
 		return CreationMenuBuilder.addDropdownItem(
 			dropdownItem -> {
@@ -167,6 +174,36 @@ public class CPInstanceCommerceTierPriceEntryDisplayContext
 				dropdownItem.setTarget("modal-lg");
 			}
 		).build();
+	}
+
+	public String getFormattedDiscount(
+			CommerceCurrency commerceCurrency, BigDecimal discount)
+		throws PortalException {
+
+		CommerceTierPriceEntry commerceTierPriceEntry =
+			getCommerceTierPriceEntry();
+
+		if ((commerceTierPriceEntry == null) || (discount == null)) {
+			return StringPool.BLANK;
+		}
+
+		return _commercePriceFormatter.format(
+			commerceCurrency, false, cpRequestHelper.getLocale(), discount);
+	}
+
+	public String getFormattedPrice(CommerceCurrency commerceCurrency)
+		throws PortalException {
+
+		CommerceTierPriceEntry commerceTierPriceEntry =
+			getCommerceTierPriceEntry();
+
+		if (commerceTierPriceEntry == null) {
+			return StringPool.BLANK;
+		}
+
+		return _commercePriceFormatter.format(
+			commerceCurrency, false, cpRequestHelper.getLocale(),
+			commerceTierPriceEntry.getPrice());
 	}
 
 	@Override
@@ -212,6 +249,7 @@ public class CPInstanceCommerceTierPriceEntryDisplayContext
 		).buildString();
 	}
 
+	private final CommercePriceFormatter _commercePriceFormatter;
 	private final CommercePriceListActionHelper _commercePriceListActionHelper;
 	private CommerceTierPriceEntry _commerceTierPriceEntry;
 	private CPInstance _cpInstance;

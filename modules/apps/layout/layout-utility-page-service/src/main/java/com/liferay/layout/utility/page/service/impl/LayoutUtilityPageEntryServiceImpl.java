@@ -9,6 +9,8 @@ import com.liferay.layout.utility.page.constants.LayoutUtilityPageActionKeys;
 import com.liferay.layout.utility.page.model.LayoutUtilityPageEntry;
 import com.liferay.layout.utility.page.service.base.LayoutUtilityPageEntryServiceBaseImpl;
 import com.liferay.portal.aop.AopService;
+import com.liferay.portal.dao.orm.custom.sql.CustomSQL;
+import com.liferay.portal.kernel.dao.orm.WildcardMode;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
@@ -38,7 +40,7 @@ public class LayoutUtilityPageEntryServiceImpl
 	public LayoutUtilityPageEntry addLayoutUtilityPageEntry(
 			String externalReferenceCode, long groupId, long plid,
 			long previewFileEntryId, boolean defaultLayoutUtilityPageEntry,
-			String name, String type, long masterLayoutPlid,
+			String name, String type, String masterLayoutPageTemplateEntryERC,
 			ServiceContext serviceContext)
 		throws PortalException {
 
@@ -49,7 +51,7 @@ public class LayoutUtilityPageEntryServiceImpl
 		return layoutUtilityPageEntryLocalService.addLayoutUtilityPageEntry(
 			externalReferenceCode, getUserId(), groupId, plid,
 			previewFileEntryId, defaultLayoutUtilityPageEntry, name, type,
-			masterLayoutPlid, serviceContext);
+			masterLayoutPageTemplateEntryERC, serviceContext);
 	}
 
 	@Override
@@ -62,6 +64,10 @@ public class LayoutUtilityPageEntryServiceImpl
 			getPermissionChecker(), groupId,
 			LayoutUtilityPageActionKeys.ADD_LAYOUT_UTILITY_PAGE_ENTRY);
 
+		_layoutUtilityPageEntryModelResourcePermission.check(
+			getPermissionChecker(), sourceLayoutUtilityPageEntryId,
+			ActionKeys.VIEW);
+
 		return layoutUtilityPageEntryLocalService.copyLayoutUtilityPageEntry(
 			getUserId(), groupId, sourceLayoutUtilityPageEntryId,
 			serviceContext);
@@ -73,7 +79,7 @@ public class LayoutUtilityPageEntryServiceImpl
 		throws PortalException {
 
 		LayoutUtilityPageEntry layoutUtilityPageEntry =
-			layoutUtilityPageEntryLocalService.getLayoutUtilityPageEntry(
+			layoutUtilityPageEntryPersistence.findByPrimaryKey(
 				layoutUtilityPageEntryId);
 
 		_layoutUtilityPageEntryModelResourcePermission.check(
@@ -92,11 +98,37 @@ public class LayoutUtilityPageEntryServiceImpl
 	}
 
 	@Override
+	public LayoutUtilityPageEntry deleteLayoutUtilityPageEntry(
+			String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		LayoutUtilityPageEntry layoutUtilityPageEntry =
+			layoutUtilityPageEntryPersistence.findByERC_G(
+				externalReferenceCode, groupId);
+
+		_layoutUtilityPageEntryModelResourcePermission.check(
+			getPermissionChecker(), layoutUtilityPageEntry, ActionKeys.DELETE);
+
+		return layoutUtilityPageEntryLocalService.deleteLayoutUtilityPageEntry(
+			layoutUtilityPageEntry);
+	}
+
+	@Override
 	public LayoutUtilityPageEntry fetchLayoutUtilityPageEntry(
 		long layoutUtilityPageEntryId) {
 
-		return layoutUtilityPageEntryLocalService.fetchLayoutUtilityPageEntry(
+		return layoutUtilityPageEntryPersistence.fetchByPrimaryKey(
 			layoutUtilityPageEntryId);
+	}
+
+	@Override
+	public LayoutUtilityPageEntry
+			fetchLayoutUtilityPageEntryByExternalReferenceCode(
+				String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		return layoutUtilityPageEntryPersistence.fetchByERC_G(
+			externalReferenceCode, groupId);
 	}
 
 	@Override
@@ -104,16 +136,15 @@ public class LayoutUtilityPageEntryServiceImpl
 			long groupId, String type)
 		throws PortalException {
 
-		return layoutUtilityPageEntryLocalService.
-			getDefaultLayoutUtilityPageEntry(groupId, type);
+		return layoutUtilityPageEntryPersistence.findByG_D_T_First(
+			groupId, true, type, null);
 	}
 
 	@Override
 	public List<LayoutUtilityPageEntry> getLayoutUtilityPageEntries(
 		long groupId) {
 
-		return layoutUtilityPageEntryLocalService.getLayoutUtilityPageEntries(
-			groupId);
+		return layoutUtilityPageEntryPersistence.filterFindByGroupId(groupId);
 	}
 
 	@Override
@@ -121,7 +152,7 @@ public class LayoutUtilityPageEntryServiceImpl
 		long groupId, int start, int end,
 		OrderByComparator<LayoutUtilityPageEntry> orderByComparator) {
 
-		return layoutUtilityPageEntryLocalService.getLayoutUtilityPageEntries(
+		return layoutUtilityPageEntryPersistence.filterFindByGroupId(
 			groupId, start, end, orderByComparator);
 	}
 
@@ -130,14 +161,59 @@ public class LayoutUtilityPageEntryServiceImpl
 		long groupId, String type, int start, int end,
 		OrderByComparator<LayoutUtilityPageEntry> orderByComparator) {
 
-		return layoutUtilityPageEntryLocalService.getLayoutUtilityPageEntries(
+		return layoutUtilityPageEntryPersistence.filterFindByG_T(
 			groupId, type, start, end, orderByComparator);
 	}
 
 	@Override
+	public List<LayoutUtilityPageEntry> getLayoutUtilityPageEntries(
+		long groupId, String keyword, String[] types, int start, int end,
+		OrderByComparator<LayoutUtilityPageEntry> orderByComparator) {
+
+		return layoutUtilityPageEntryPersistence.filterFindByG_LikeN_T(
+			groupId,
+			_customSQL.keywords(keyword, false, WildcardMode.SURROUND)[0],
+			types, start, end, orderByComparator);
+	}
+
+	@Override
+	public List<LayoutUtilityPageEntry> getLayoutUtilityPageEntries(
+		long groupId, String[] types, int start, int end,
+		OrderByComparator<LayoutUtilityPageEntry> orderByComparator) {
+
+		return layoutUtilityPageEntryPersistence.filterFindByG_T(
+			groupId, types, start, end, orderByComparator);
+	}
+
+	@Override
 	public int getLayoutUtilityPageEntriesCount(long groupId) {
-		return layoutUtilityPageEntryLocalService.
-			getLayoutUtilityPageEntriesCount(groupId);
+		return layoutUtilityPageEntryPersistence.filterCountByGroupId(groupId);
+	}
+
+	@Override
+	public int getLayoutUtilityPageEntriesCount(
+		long groupId, String keyword, String[] types) {
+
+		return layoutUtilityPageEntryPersistence.filterCountByG_LikeN_T(
+			groupId,
+			_customSQL.keywords(keyword, false, WildcardMode.SURROUND)[0],
+			types);
+	}
+
+	@Override
+	public int getLayoutUtilityPageEntriesCount(long groupId, String[] types) {
+		return layoutUtilityPageEntryPersistence.filterCountByG_T(
+			groupId, types);
+	}
+
+	@Override
+	public LayoutUtilityPageEntry
+			getLayoutUtilityPageEntryByExternalReferenceCode(
+				String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		return layoutUtilityPageEntryPersistence.findByERC_G(
+			externalReferenceCode, groupId);
 	}
 
 	@Override
@@ -146,7 +222,7 @@ public class LayoutUtilityPageEntryServiceImpl
 		throws PortalException {
 
 		LayoutUtilityPageEntry layoutUtilityPageEntry =
-			layoutUtilityPageEntryLocalService.getLayoutUtilityPageEntry(
+			layoutUtilityPageEntryPersistence.findByPrimaryKey(
 				layoutUtilityPageEntryId);
 
 		GroupPermissionUtil.check(
@@ -168,7 +244,7 @@ public class LayoutUtilityPageEntryServiceImpl
 		throws PortalException {
 
 		LayoutUtilityPageEntry layoutUtilityPageEntry =
-			layoutUtilityPageEntryLocalService.getLayoutUtilityPageEntry(
+			layoutUtilityPageEntryPersistence.findByPrimaryKey(
 				layoutUtilityPageEntryId);
 
 		GroupPermissionUtil.check(
@@ -192,7 +268,8 @@ public class LayoutUtilityPageEntryServiceImpl
 
 	@Override
 	public LayoutUtilityPageEntry updateLayoutUtilityPageEntry(
-			long layoutUtilityPageEntryId, long previewFileEntryId)
+			long layoutUtilityPageEntryId, long previewFileEntryId,
+			ServiceContext serviceContext)
 		throws PortalException {
 
 		_layoutUtilityPageEntryModelResourcePermission.check(
@@ -200,17 +277,25 @@ public class LayoutUtilityPageEntryServiceImpl
 			ActionKeys.UPDATE);
 
 		return layoutUtilityPageEntryLocalService.updateLayoutUtilityPageEntry(
-			layoutUtilityPageEntryId, previewFileEntryId);
+			layoutUtilityPageEntryId, previewFileEntryId, serviceContext);
 	}
 
 	@Override
 	public LayoutUtilityPageEntry updateLayoutUtilityPageEntry(
-			long layoutUtilityPageEntryId, String name)
+			long layoutUtilityPageEntryId, String name,
+			ServiceContext serviceContext)
 		throws PortalException {
 
+		_layoutUtilityPageEntryModelResourcePermission.check(
+			getPermissionChecker(), layoutUtilityPageEntryId,
+			ActionKeys.UPDATE);
+
 		return layoutUtilityPageEntryLocalService.updateLayoutUtilityPageEntry(
-			layoutUtilityPageEntryId, name);
+			layoutUtilityPageEntryId, name, serviceContext);
 	}
+
+	@Reference
+	private CustomSQL _customSQL;
 
 	@Reference(
 		target = "(model.class.name=com.liferay.layout.utility.page.model.LayoutUtilityPageEntry)"

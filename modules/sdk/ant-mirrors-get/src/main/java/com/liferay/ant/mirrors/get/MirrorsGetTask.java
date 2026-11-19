@@ -5,30 +5,45 @@
 
 package com.liferay.ant.mirrors.get;
 
+import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
 
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLConnection;
+import java.net.URLDecoder;
+
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.attribute.BasicFileAttributes;
 
 import java.util.Base64;
 import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.zip.GZIPInputStream;
 import java.util.zip.ZipFile;
 
 import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.Project;
 import org.apache.tools.ant.Task;
 import org.apache.tools.ant.taskdefs.Checksum;
+import org.apache.tools.tar.TarEntry;
+import org.apache.tools.tar.TarInputStream;
 
 /**
  * @author Peter Yoo
@@ -42,6 +57,9 @@ public class MirrorsGetTask extends Task {
 		}
 		catch (IOException ioException) {
 			throw new BuildException(ioException);
+		}
+		finally {
+			_deleteReadLinkFiles();
 		}
 	}
 
@@ -76,12 +94,23 @@ public class MirrorsGetTask extends Task {
 		_retries = retries;
 	}
 
+	public void setSSL(boolean ssl) {
+		_ssl = ssl;
+	}
+
 	public void setSkipChecksum(boolean skipChecksum) {
 		_skipChecksum = skipChecksum;
 	}
 
 	public void setSrc(String src) {
 		Matcher matcher = _basicAuthenticationURLPattern.matcher(src);
+
+		try {
+			src = URLDecoder.decode(src, StandardCharsets.UTF_8.name());
+		}
+		catch (UnsupportedEncodingException unsupportedEncodingException) {
+			unsupportedEncodingException.printStackTrace();
+		}
 
 		if (matcher.matches()) {
 			_username = matcher.group(2);
@@ -95,30 +124,86 @@ public class MirrorsGetTask extends Task {
 		_src = project.replaceProperties(src);
 
 		if (_src.startsWith("file:")) {
+			File file = new File(_src.substring("file:".length()));
+
+			_fileName = file.getName();
+
 			return;
 		}
 
-		matcher = _srcPattern.matcher(_src);
+		matcher = _gsURLPattern.matcher(_src);
+
+		if (matcher.matches()) {
+			_fileName = matcher.group("fileName");
+
+			_gcpBucketName = matcher.group("bucketName");
+
+			Map<String, Object> properties = project.getProperties();
+
+			for (String propertyName : properties.keySet()) {
+				Matcher bucketHostNamePropertyMatcher =
+					_gcpBucketHostNamePropertyPattern.matcher(propertyName);
+
+				if (!bucketHostNamePropertyMatcher.matches() ||
+					!Objects.equals(
+						_gcpBucketName,
+						bucketHostNamePropertyMatcher.group("bucketName"))) {
+
+					continue;
+				}
+
+				_hostName = project.getProperty(propertyName);
+
+				break;
+			}
+
+			if (_hostName == null) {
+				_hostName = "storage.googleapis.com";
+			}
+
+			_path = _normalizePath(matcher.group("path"));
+
+			return;
+		}
+
+		matcher = _httpURLPattern.matcher(_src);
 
 		if (!matcher.find()) {
 			throw new RuntimeException("Invalid src attribute: " + _src);
 		}
 
-		_fileName = matcher.group(2);
+		_fileName = matcher.group("fileName");
 
-		_path = matcher.group(1);
+		_hostName = matcher.group("hostName");
 
-		if (_path.startsWith("mirrors/")) {
-			_path = _path.replaceFirst("mirrors", _getMirrorsHostname());
+		Matcher releaseHostNameMatcher = _releaseHostNamePattern.matcher(
+			_hostName);
+		Matcher testHostNameMatcher = _testHostNamePattern.matcher(_hostName);
+
+		if (releaseHostNameMatcher.matches()) {
+			_hostName =
+				"release.liferay.com/" + releaseHostNameMatcher.group("id");
+		}
+		else if (testHostNameMatcher.matches()) {
+			_hostName += ".liferay.com";
 		}
 
-		while (_path.endsWith("/")) {
-			_path = _path.substring(0, _path.length() - 1);
-		}
-	}
+		_path = _normalizePath(matcher.group("path"));
 
-	public void setSSL(boolean ssl) {
-		_ssl = ssl;
+		if (Objects.equals(_hostName, "storage.googleapis.com")) {
+			int index = _path.indexOf("/");
+
+			if (index != -1) {
+				_gcpBucketName = _path.substring(0, index);
+
+				_path = _path.substring(index + 1);
+			}
+			else {
+				_gcpBucketName = _path;
+
+				_path = "";
+			}
+		}
 	}
 
 	public void setTryLocalNetwork(boolean tryLocalNetwork) {
@@ -135,6 +220,28 @@ public class MirrorsGetTask extends Task {
 		_verbose = verbose;
 	}
 
+	private File _addToCache(File tempFile, File cacheFile) throws IOException {
+		try {
+			Files.createLink(cacheFile.toPath(), tempFile.toPath());
+
+			return tempFile;
+		}
+		catch (IOException | UnsupportedOperationException exception) {
+			if (cacheFile.exists()) {
+				System.out.println(
+					cacheFile.getPath() + " was already cached.");
+
+				return tempFile;
+			}
+
+			if (_moveFile(tempFile, cacheFile)) {
+				return cacheFile;
+			}
+
+			return tempFile;
+		}
+	}
+
 	private void _copyFile(File sourceFile, File targetFile)
 		throws IOException {
 
@@ -148,11 +255,17 @@ public class MirrorsGetTask extends Task {
 
 		System.out.println(sb.toString());
 
-		URI sourceFileURI = sourceFile.toURI();
+		File readLinkFile = _getReadLinkFile(sourceFile);
+
+		if (readLinkFile == null) {
+			readLinkFile = sourceFile;
+		}
+
+		URI readLinkFileURI = readLinkFile.toURI();
 
 		long time = System.currentTimeMillis();
 
-		int size = _toFile(sourceFileURI.toURL(), targetFile);
+		int size = _toFile(readLinkFileURI.toString(), targetFile);
 
 		if (_verbose) {
 			sb = new StringBuilder();
@@ -167,13 +280,170 @@ public class MirrorsGetTask extends Task {
 		}
 	}
 
-	private void _downloadFile(URL sourceURL, File targetFile)
-		throws IOException {
+	private boolean _copyFromMirrorsMount(File targetFile) throws IOException {
+		File mirrorsMountFile = _getMirrorsMountFile();
 
+		if (!mirrorsMountFile.isFile()) {
+			return false;
+		}
+
+		try {
+			_copyFile(mirrorsMountFile, targetFile);
+		}
+		catch (IOException ioException) {
+			if (_verbose) {
+				System.out.println(
+					"Unable to copy from mirrors mount " +
+						mirrorsMountFile.getPath() + ".");
+			}
+		}
+
+		if (_isValidFile(targetFile)) {
+			return true;
+		}
+
+		_deleteFile(targetFile);
+
+		return false;
+	}
+
+	private void _copyFromSrc(File targetFile) throws IOException {
+		if (_tryLocalNetwork && _copyFromMirrorsMount(targetFile)) {
+			return;
+		}
+
+		IOException ioException1 = null;
+
+		for (String url : _getSrcURLs()) {
+			if (url == null) {
+				continue;
+			}
+
+			try {
+				_downloadFile(url, targetFile, _retries);
+
+				return;
+			}
+			catch (IOException ioException2) {
+				ioException1 = ioException2;
+
+				if (_verbose) {
+					System.out.println("Unable to connect to " + url + ".");
+				}
+			}
+		}
+
+		throw new IOException(
+			_getUnableToCopyMessage(targetFile), ioException1);
+	}
+
+	private boolean _copyToDest(File file) throws IOException {
+		if (!file.exists()) {
+			return false;
+		}
+
+		File destFile = _dest;
+
+		if (_dest.exists() && _dest.isDirectory()) {
+			destFile = new File(_dest, _fileName);
+		}
+
+		_copyFile(file, destFile);
+
+		if (_isValidFile(destFile)) {
+			return true;
+		}
+
+		_deleteFile(destFile);
+
+		File readLinkFile = _getReadLinkFile(file);
+
+		if (readLinkFile == null) {
+			readLinkFile = file;
+		}
+
+		if (!_isValidFile(readLinkFile)) {
+			return false;
+		}
+
+		throw new IOException(
+			destFile.getAbsolutePath() + " is not a valid file");
+	}
+
+	private void _deleteExpiredTempFiles(File cacheFile) {
+		File parentFile = cacheFile.getParentFile();
+
+		if (parentFile == null) {
+			return;
+		}
+
+		File[] files = parentFile.listFiles();
+
+		if (files == null) {
+			return;
+		}
+
+		Pattern pattern = _getTempFilePattern(cacheFile.getName());
+		long thresholdTime = System.currentTimeMillis() - _MAX_AGE_MILLIS;
+
+		for (File file : files) {
+			Matcher matcher = pattern.matcher(file.getName());
+
+			if (!matcher.matches()) {
+				continue;
+			}
+
+			long time = Long.parseLong(matcher.group("timestamp"));
+
+			if (time > thresholdTime) {
+				continue;
+			}
+
+			file.delete();
+		}
+	}
+
+	private void _deleteFile(File file) {
+		if (file == null) {
+			return;
+		}
+
+		File readLinkFile = _readLinkFiles.remove(file);
+
+		if (readLinkFile != null) {
+			readLinkFile.delete();
+		}
+
+		if (!file.exists()) {
+			return;
+		}
+
+		if (!file.isDirectory()) {
+			file.delete();
+
+			return;
+		}
+
+		for (File childFile : file.listFiles()) {
+			_deleteFile(childFile);
+		}
+
+		file.delete();
+	}
+
+	private void _deleteReadLinkFiles() {
+		for (File readLinkFile : _readLinkFiles.values()) {
+			readLinkFile.delete();
+		}
+
+		_readLinkFiles.clear();
+	}
+
+	private void _downloadFile(String url, File targetFile) throws IOException {
 		StringBuilder sb = new StringBuilder();
 
 		sb.append("Downloading ");
-		sb.append(sourceURL.toExternalForm());
+		sb.append(url);
 		sb.append(" to ");
 		sb.append(targetFile.getPath());
 		sb.append(".");
@@ -185,10 +455,10 @@ public class MirrorsGetTask extends Task {
 		int size = 0;
 
 		try {
-			size = _toFile(sourceURL, targetFile);
+			size = _toFile(url, targetFile);
 		}
 		catch (IOException ioException) {
-			targetFile.delete();
+			_deleteFile(targetFile);
 
 			if (!_ignoreErrors) {
 				throw ioException;
@@ -199,7 +469,7 @@ public class MirrorsGetTask extends Task {
 			sb = new StringBuilder();
 
 			sb.append("Downloaded ");
-			sb.append(sourceURL.toExternalForm());
+			sb.append(url);
 			sb.append(". ");
 			sb.append(size);
 			sb.append(" bytes in ");
@@ -209,47 +479,46 @@ public class MirrorsGetTask extends Task {
 			System.out.println(sb.toString());
 		}
 
-		if (!_isValidMD5(
-				targetFile, new URL(sourceURL.toExternalForm() + ".md5"))) {
-
-			targetFile.delete();
+		if (!_isValidMD5(targetFile, url + ".md5")) {
+			_deleteFile(targetFile);
 
 			throw new IOException(
 				targetFile.getAbsolutePath() + " failed checksum");
 		}
 
-		if (_isZipFileName(targetFile.getName()) && !_isZipFile(targetFile)) {
-			targetFile.delete();
+		if (!_isValidFile(targetFile)) {
+			_deleteFile(targetFile);
 
 			throw new IOException(
-				targetFile.getAbsolutePath() + " is an invalid ZIP file");
-		}
-
-		if (_is7zFileName(targetFile.getName()) && !_is7zFile(targetFile)) {
-			targetFile.delete();
-
-			throw new IOException(
-				targetFile.getAbsolutePath() + " is an invalid 7z file");
+				targetFile.getAbsolutePath() + " is not a valid file");
 		}
 	}
 
-	private void _downloadFile(URL sourceURL, File targetFile, int retries)
+	private void _downloadFile(String url, File targetFile, int retries)
 		throws IOException {
+
+		Matcher matcher = _gsURLPattern.matcher(url);
+
+		if (matcher.matches()) {
+			_downloadGCPFile(url, targetFile);
+
+			return;
+		}
 
 		if (retries > 0) {
 			for (int i = 0; i < retries; i++) {
 				try {
-					_downloadFile(sourceURL, targetFile);
+					_downloadFile(url, targetFile);
 
 					return;
 				}
 				catch (IOException ioException) {
 					System.out.println(
-						"Unable to connect to " + sourceURL +
-							", will retry in 30 seconds.");
+						"Unable to connect to " + url +
+							", will retry in 10 seconds.");
 
 					try {
-						Thread.sleep(30000);
+						Thread.sleep(10000);
 					}
 					catch (InterruptedException interruptedException) {
 					}
@@ -257,20 +526,54 @@ public class MirrorsGetTask extends Task {
 			}
 		}
 
-		_downloadFile(sourceURL, targetFile);
+		_downloadFile(url, targetFile);
+	}
+
+	private void _downloadGCPFile(String gsURL, File targetFile) {
+		File gcpCredentialsFile = _getGCPCredentialsFile();
+
+		try {
+			if (gcpCredentialsFile != null) {
+				Process process = _executeCommands(
+					new String[] {
+						"gcloud", "auth", "login", "--cred-file",
+						gcpCredentialsFile.toString(), "--quiet"
+					});
+
+				if (process.exitValue() != 0) {
+					System.out.println(
+						"Unable to authenticate with credential file.");
+				}
+			}
+
+			System.out.println(
+				"Downloading " + gsURL + " to " + targetFile + ".");
+
+			Process process = _executeCommands(
+				new String[] {
+					"gcloud", "storage", "cp", gsURL, targetFile.toString()
+				});
+
+			if (process.exitValue() != 0) {
+				System.out.println(
+					"Unable to download file from " + gsURL + ".");
+
+				_deleteFile(targetFile);
+			}
+		}
+		catch (InterruptedException | IOException | RuntimeException
+					exception) {
+
+			System.out.println(
+				"Unable to download file: " + exception.getMessage());
+		}
 	}
 
 	private void _execute() throws IOException {
 		if (_src.startsWith("file:")) {
-			File srcFile = new File(_src.substring("file:".length()));
-
-			File targetFile = _dest;
-
-			if (_dest.exists() && _dest.isDirectory()) {
-				targetFile = new File(_dest, srcFile.getName());
+			if (!_copyToDest(new File(_src.substring("file:".length())))) {
+				throw new IOException(_getUnableToCopyMessage(_dest));
 			}
-
-			_copyFile(srcFile, targetFile);
 
 			return;
 		}
@@ -282,77 +585,40 @@ public class MirrorsGetTask extends Task {
 
 			System.out.println(
 				"The src attribute has an unnecessary reference to " +
-					hostname);
+					hostname + ".");
 
 			_path = _path.substring(hostname.length());
+		}
 
-			while (_path.startsWith("/")) {
-				_path = _path.substring(1);
+		File mirrorsCacheFile = _getMirrorsCacheFile();
+
+		_deleteExpiredTempFiles(mirrorsCacheFile);
+
+		if (!_force) {
+			if (_copyToDest(mirrorsCacheFile)) {
+				return;
+			}
+
+			if (_isReadLinkFile(mirrorsCacheFile)) {
+				_deleteFile(mirrorsCacheFile);
 			}
 		}
 
-		StringBuilder sb = new StringBuilder();
+		File tempFile = _generateTempFile(mirrorsCacheFile);
 
-		sb.append(System.getProperty("user.home"));
-		sb.append(File.separator);
-		sb.append(".liferay");
-		sb.append(File.separator);
-		sb.append("mirrors");
-		sb.append(File.separator);
-		sb.append(_getPlatformIndependentPath(_path));
+		try {
+			_copyFromSrc(tempFile);
 
-		File localCacheDir = new File(sb.toString());
-
-		File localCacheFile = new File(localCacheDir, _fileName);
-
-		if (localCacheFile.exists() && !_force && _isZipFileName(_fileName)) {
-			_force = !_isZipFile(localCacheFile);
-		}
-
-		if (localCacheFile.exists() && _force) {
-			localCacheFile.delete();
-		}
-
-		if (!localCacheFile.exists()) {
-			String mirrorsHostname = _getMirrorsHostname();
-
-			if (_tryLocalNetwork && !mirrorsHostname.isEmpty()) {
-				sb = new StringBuilder();
-
-				sb.append(_getURLScheme());
-				sb.append(mirrorsHostname);
-				sb.append("/");
-				sb.append(_path);
-				sb.append("/");
-				sb.append(_fileName);
-
-				URL sourceURL = new URL(sb.toString());
-
-				try {
-					_downloadFile(sourceURL, localCacheFile, _retries);
-				}
-				catch (IOException ioException) {
-					URL defaultURL = new URL(_src);
-
-					if (_verbose) {
-						System.out.println(
-							"Unable to connect to " + sourceURL +
-								", defaulting to " + defaultURL);
-					}
-
-					_downloadFile(defaultURL, localCacheFile, 0);
-				}
+			if (_force) {
+				_deleteFile(mirrorsCacheFile);
 			}
-			else {
-				_downloadFile(new URL(_src), localCacheFile, 0);
+
+			if (!_copyToDest(_addToCache(tempFile, mirrorsCacheFile))) {
+				throw new IOException(_getUnableToCopyMessage(_dest));
 			}
 		}
-
-		if (_dest.exists() && _dest.isDirectory()) {
-			_copyFile(localCacheFile, new File(_dest, _fileName));
-		}
-		else {
-			_copyFile(localCacheFile, _dest);
+		finally {
+			_deleteFile(tempFile);
 		}
 	}
 
@@ -366,6 +632,167 @@ public class MirrorsGetTask extends Task {
 		process.waitFor();
 
 		return process;
+	}
+
+	private File _generateTempFile(File baseFile) {
+		String fileName = baseFile.getName();
+
+		Matcher matcher = _tempFileNamePattern.matcher(fileName);
+
+		if (matcher.matches()) {
+			fileName = matcher.group("fileName");
+		}
+
+		StringBuilder sb = new StringBuilder();
+
+		sb.append(System.currentTimeMillis());
+		sb.append("-");
+		sb.append(UUID.randomUUID());
+		sb.append("-");
+		sb.append(fileName);
+
+		File tempFile = new File(baseFile.getParentFile(), sb.toString());
+
+		tempFile.deleteOnExit();
+
+		return tempFile;
+	}
+
+	private Object _getFileKey(File file) {
+		try {
+			BasicFileAttributes basicFileAttributes = Files.readAttributes(
+				file.toPath(), BasicFileAttributes.class);
+
+			return basicFileAttributes.fileKey();
+		}
+		catch (IOException ioException) {
+			return null;
+		}
+	}
+
+	private String _getGCPBucketName() {
+		if (_gcpBucketName != null) {
+			return _gcpBucketName;
+		}
+
+		if (_hostName == null) {
+			return null;
+		}
+
+		Map<String, Object> properties = project.getProperties();
+
+		for (String propertyName : properties.keySet()) {
+			Matcher bucketHostNamePropertyMatcher =
+				_gcpBucketHostNamePropertyPattern.matcher(propertyName);
+
+			if (!bucketHostNamePropertyMatcher.matches() ||
+				!Objects.equals(_hostName, project.getProperty(propertyName))) {
+
+				continue;
+			}
+
+			_gcpBucketName = bucketHostNamePropertyMatcher.group("bucketName");
+
+			break;
+		}
+
+		return _gcpBucketName;
+	}
+
+	private File _getGCPCredentialsFile() {
+		if (_gcpCredentialsFile != null) {
+			return _gcpCredentialsFile;
+		}
+
+		String gcpBucketName = _getGCPBucketName();
+
+		if (gcpBucketName == null) {
+			return null;
+		}
+
+		Project project = getProject();
+
+		String gcpCredentialsFileName = project.getProperty(
+			"mirrors.gcp.credentials.file[" + gcpBucketName + "]");
+
+		if (gcpCredentialsFileName == null) {
+			return null;
+		}
+
+		File gcpCredentialsFile = new File(gcpCredentialsFileName);
+
+		if (gcpCredentialsFile.exists()) {
+			_gcpCredentialsFile = gcpCredentialsFile;
+		}
+
+		return _gcpCredentialsFile;
+	}
+
+	private String _getGSURL() {
+		String gcpBucketName = _getGCPBucketName();
+
+		if (gcpBucketName == null) {
+			return null;
+		}
+
+		String path = _normalizePath(_path);
+
+		if (!path.isEmpty()) {
+			path = "/" + path;
+		}
+
+		return "gs://" + gcpBucketName + path + "/" + _fileName;
+	}
+
+	private String _getLocalURL() {
+		StringBuilder sb = new StringBuilder();
+
+		Matcher releaseHostNameMatcher = _releaseHostNamePattern.matcher(
+			_hostName);
+		Matcher testHostNameMatcher = _testHostNamePattern.matcher(_hostName);
+
+		if (releaseHostNameMatcher.find()) {
+			sb.append("http://release-");
+			sb.append(releaseHostNameMatcher.group("id"));
+			sb.append("/");
+			sb.append(releaseHostNameMatcher.group("id"));
+		}
+		else if (testHostNameMatcher.find()) {
+			sb.append("http://");
+			sb.append(testHostNameMatcher.group());
+		}
+		else {
+			return _getRemoteURL();
+		}
+
+		sb.append("/");
+
+		String path = _getPath();
+
+		if (!path.isEmpty()) {
+			sb.append(path);
+			sb.append("/");
+		}
+
+		sb.append(_fileName);
+
+		return sb.toString();
+	}
+
+	private File _getMirrorsCacheFile() {
+		StringBuilder sb = new StringBuilder();
+
+		sb.append(System.getProperty("user.home"));
+		sb.append(File.separator);
+		sb.append(".liferay");
+		sb.append(File.separator);
+		sb.append("mirrors");
+		sb.append(File.separator);
+		sb.append(_hostName);
+		sb.append(File.separator);
+		sb.append(_getPlatformIndependentPath(_getPath()));
+
+		return new File(sb.toString(), _fileName);
 	}
 
 	private String _getMirrorsHostname() {
@@ -384,6 +811,70 @@ public class MirrorsGetTask extends Task {
 		return _mirrorsHostname;
 	}
 
+	private File _getMirrorsMountFile() {
+		StringBuilder sb = new StringBuilder();
+
+		sb.append("/mnt/shared/mirrors");
+		sb.append(File.separator);
+		sb.append(_hostName);
+		sb.append(File.separator);
+		sb.append(_getPlatformIndependentPath(_getPath()));
+
+		return new File(sb.toString(), _fileName);
+	}
+
+	private String _getMirrorsURL() {
+		String mirrorsHostname = _getMirrorsHostname();
+
+		if (mirrorsHostname.isEmpty()) {
+			return _getRemoteURL();
+		}
+
+		StringBuilder sb = new StringBuilder();
+
+		sb.append(_getURLScheme());
+		sb.append(mirrorsHostname);
+		sb.append("/");
+		sb.append(_hostName);
+		sb.append("/");
+
+		String path = _getPath();
+
+		if (!path.isEmpty()) {
+			sb.append(path);
+			sb.append("/");
+		}
+
+		sb.append(_fileName);
+
+		return sb.toString();
+	}
+
+	private String _getNexusTomcatURL() {
+		String remoteURL = _getRemoteURL();
+
+		if (remoteURL == null) {
+			return null;
+		}
+
+		Matcher matcher = _nexusTomcatURLPattern.matcher(remoteURL);
+
+		if (!matcher.find()) {
+			return null;
+		}
+
+		StringBuilder sb = new StringBuilder();
+
+		sb.append(_getURLScheme());
+		sb.append("repository.liferay.com/");
+		sb.append("nexus/content/groups/public/org/apache/tomcat/tomcat/");
+		sb.append(matcher.group("tomcatVersion"));
+		sb.append("/");
+		sb.append(matcher.group("tomcatFileName"));
+
+		return sb.toString();
+	}
+
 	private String _getPassword() {
 		if (_password != null) {
 			return _password;
@@ -396,13 +887,32 @@ public class MirrorsGetTask extends Task {
 		return _password;
 	}
 
+	private String _getPath() {
+		String path = _normalizePath(_path);
+
+		if (!Objects.equals(_hostName, "storage.googleapis.com") ||
+			path.startsWith(_gcpBucketName + "/") ||
+			Objects.equals(path, _gcpBucketName)) {
+
+			return path;
+		}
+
+		if (path.isEmpty()) {
+			return _gcpBucketName;
+		}
+
+		return _gcpBucketName + "/" + path;
+	}
+
 	private String _getPlatformIndependentPath(String path) {
 		String[] separators = {"/", "\\"};
 
 		for (String separator : separators) {
-			if (!separator.equals(File.separator)) {
-				path = path.replace(separator, File.separator);
+			if (separator.equals(File.separator)) {
+				continue;
 			}
+
+			path = path.replace(separator, File.separator);
 		}
 
 		return path;
@@ -431,6 +941,83 @@ public class MirrorsGetTask extends Task {
 		return processOutput.toString();
 	}
 
+	private File _getReadLinkFile(File file) {
+		File readLinkFile = _readLinkFiles.get(file);
+
+		if (readLinkFile != null) {
+			return readLinkFile;
+		}
+
+		readLinkFile = _generateTempFile(file);
+
+		try {
+			Files.createLink(readLinkFile.toPath(), file.toPath());
+		}
+		catch (IOException | UnsupportedOperationException exception) {
+			return null;
+		}
+
+		_readLinkFiles.put(file, readLinkFile);
+
+		return readLinkFile;
+	}
+
+	private String _getRemoteURL() {
+		if (_hostName == null) {
+			return null;
+		}
+
+		StringBuilder sb = new StringBuilder();
+
+		if (_hostName.contains(".liferay.com") ||
+			_hostName.contains("storage.googleapis.com") ||
+			_src.startsWith("https://")) {
+
+			sb.append("https://");
+		}
+		else {
+			sb.append("http://");
+		}
+
+		sb.append(_hostName);
+		sb.append("/");
+
+		String path = _getPath();
+
+		if (!path.isEmpty()) {
+			sb.append(path);
+			sb.append("/");
+		}
+
+		sb.append(_fileName);
+
+		return sb.toString();
+	}
+
+	private String[] _getSrcURLs() {
+		String localNetworkURL = null;
+
+		if (_tryLocalNetwork) {
+			localNetworkURL = _getNexusTomcatURL();
+
+			String mirrorsHostname = _getMirrorsHostname();
+
+			if ((localNetworkURL == null) && !mirrorsHostname.isEmpty()) {
+				localNetworkURL = _getMirrorsURL();
+			}
+		}
+
+		return new String[] {
+			localNetworkURL, _getLocalURL(), _getGSURL(), _getRemoteURL()
+		};
+	}
+
+	private Pattern _getTempFilePattern(String fileName) {
+		return Pattern.compile(
+			"(?<timestamp>" + _REGEX_TIMESTAMP + ")(-" + _REGEX_UUID + "-)?" +
+				Pattern.quote(fileName));
+	}
+
 	private String _getURLScheme() {
 		Project project = getProject();
 
@@ -447,6 +1034,17 @@ public class MirrorsGetTask extends Task {
 		}
 
 		return "http://";
+	}
+
+	private String _getUnableToCopyMessage(File targetFile) {
+		StringBuilder sb = new StringBuilder();
+
+		sb.append("Unable to copy ");
+		sb.append(_src);
+		sb.append(" to ");
+		sb.append(targetFile.getPath());
+
+		return sb.toString();
 	}
 
 	private String _getUserAgent() {
@@ -528,14 +1126,111 @@ public class MirrorsGetTask extends Task {
 	}
 
 	private boolean _is7zFileName(String fileName) {
-		if (fileName.endsWith(".7z")) {
+		return fileName.endsWith(".7z");
+	}
+
+	private boolean _isCINode() {
+		if (_isNullOrEmpty(System.getenv("JENKINS_URL")) &&
+			_isNullOrEmpty(System.getenv("MASTER_NETWORK_NAME"))) {
+
+			return false;
+		}
+
+		return true;
+	}
+
+	private boolean _isNullOrEmpty(String string) {
+		if (string == null) {
+			return true;
+		}
+
+		String trimmedString = string.trim();
+
+		return trimmedString.isEmpty();
+	}
+
+	private boolean _isReadLinkFile(File file) {
+		File readLinkFile = _readLinkFiles.get(file);
+
+		if (readLinkFile == null) {
+			return true;
+		}
+
+		Object fileKey = _getFileKey(file);
+
+		if (fileKey == null) {
+			return false;
+		}
+
+		return fileKey.equals(_getFileKey(readLinkFile));
+	}
+
+	private boolean _isTarGzFile(File file) throws IOException {
+		if (!file.exists()) {
+			return false;
+		}
+
+		try (GZIPInputStream gzipInputStream = new GZIPInputStream(
+				new FileInputStream(file));
+
+			InputStream bufferedInputStream = new BufferedInputStream(
+				gzipInputStream);
+
+			TarInputStream tarInputStream = new TarInputStream(
+				bufferedInputStream)) {
+
+			TarEntry tarEntry;
+
+			while ((tarEntry = tarInputStream.getNextEntry()) != null) {
+				if (tarEntry.isDirectory()) {
+					continue;
+				}
+
+				byte[] buffer = new byte[1024];
+				int bytesRead;
+
+				while ((bytesRead = tarInputStream.read(buffer)) != -1) {
+				}
+			}
+
+			return true;
+		}
+		catch (IOException ioException) {
+			System.out.println(file.getPath() + " is an invalid TAR GZ file.");
+
+			return false;
+		}
+	}
+
+	private boolean _isTarGzFileName(String fileName) {
+		if (fileName.endsWith(".tar.gz") || fileName.endsWith(".tgz")) {
 			return true;
 		}
 
 		return false;
 	}
 
-	private boolean _isValidMD5(File file, URL url) throws IOException {
+	private boolean _isValidFile(File file) throws IOException {
+		if (!file.exists()) {
+			return false;
+		}
+
+		if (_is7zFileName(_fileName)) {
+			return _is7zFile(file);
+		}
+
+		if (_isTarGzFileName(_fileName)) {
+			return _isTarGzFile(file);
+		}
+
+		if (_isZipFileName(_fileName)) {
+			return _isZipFile(file);
+		}
+
+		return true;
+	}
+
+	private boolean _isValidMD5(File file, String url) throws IOException {
 		if (_skipChecksum) {
 			return true;
 		}
@@ -551,7 +1246,7 @@ public class MirrorsGetTask extends Task {
 		}
 		catch (Exception exception) {
 			if (_verbose) {
-				System.out.println("Unable to access MD5 file");
+				System.out.println("Unable to access MD5 file.");
 			}
 
 			return true;
@@ -626,6 +1321,45 @@ public class MirrorsGetTask extends Task {
 		return false;
 	}
 
+	private boolean _moveFile(File tempFile, File cacheFile)
+		throws IOException {
+
+		if (tempFile.renameTo(cacheFile)) {
+			return true;
+		}
+
+		if (cacheFile.exists()) {
+			return false;
+		}
+
+		StringBuilder sb = new StringBuilder();
+
+		sb.append("Unable to move ");
+		sb.append(tempFile.getPath());
+		sb.append(" to ");
+		sb.append(cacheFile.getPath());
+
+		throw new IOException(sb.toString());
+	}
+
+	private String _normalizePath(String path) {
+		if (path == null) {
+			return "";
+		}
+
+		path = path.replaceAll("/+", "/");
+
+		if (path.startsWith("/")) {
+			path = path.substring(1);
+		}
+
+		if (path.endsWith("/")) {
+			path = path.substring(0, path.length() - 1);
+		}
+
+		return path;
+	}
+
 	private URLConnection _openConnection(URL url) throws IOException {
 		URLConnection urlConnection = null;
 
@@ -670,9 +1404,9 @@ public class MirrorsGetTask extends Task {
 		return urlConnection;
 	}
 
-	private int _toFile(URL url, File file) throws IOException {
+	private int _toFile(String url, File file) throws IOException {
 		if (file.exists()) {
-			file.delete();
+			_deleteFile(file);
 		}
 
 		File dir = file.getParentFile();
@@ -688,7 +1422,7 @@ public class MirrorsGetTask extends Task {
 		}
 		catch (IOException ioException) {
 			if (file.exists()) {
-				file.delete();
+				_deleteFile(file);
 			}
 
 			throw ioException;
@@ -700,10 +1434,10 @@ public class MirrorsGetTask extends Task {
 		}
 	}
 
-	private int _toOutputStream(URL url, OutputStream outputStream)
+	private int _toOutputStream(String url, OutputStream outputStream)
 		throws IOException {
 
-		URLConnection urlConnection = _openConnection(url);
+		URLConnection urlConnection = _openConnection(new URL(url));
 
 		InputStream inputStream = urlConnection.getInputStream();
 
@@ -717,11 +1451,13 @@ public class MirrorsGetTask extends Task {
 				outputStream.write(bytes, 0, read);
 				size += read;
 
-				if (_verbose && ((System.currentTimeMillis() - time) > 100)) {
-					System.out.print(".");
-
-					time = System.currentTimeMillis();
+				if (!_verbose || ((System.currentTimeMillis() - time) <= 100)) {
+					continue;
 				}
+
+				System.out.print(".");
+
+				time = System.currentTimeMillis();
 			}
 
 			if (_verbose) {
@@ -737,7 +1473,7 @@ public class MirrorsGetTask extends Task {
 		}
 	}
 
-	private String _toString(URL url) throws IOException {
+	private String _toString(String url) throws IOException {
 		OutputStream outputStream = new ByteArrayOutputStream();
 
 		try {
@@ -752,25 +1488,51 @@ public class MirrorsGetTask extends Task {
 		}
 	}
 
+	private static final long _MAX_AGE_MILLIS = 24 * 60 * 60 * 1000;
+
+	private static final String _REGEX_TIMESTAMP = "\\d{13,18}";
+
+	private static final String _REGEX_UUID = "[0-9a-fA-F-]{36}";
+
 	private static final Pattern _basicAuthenticationURLPattern =
 		Pattern.compile("(https?://)([^:]+):([^@]+)@(.+)");
+	private static final Pattern _gcpBucketHostNamePropertyPattern =
+		Pattern.compile(
+			"mirrors.gcp.bucket.hostname\\[(?<bucketName>[^\\]]+)\\]");
+	private static final Pattern _gsURLPattern = Pattern.compile(
+		"gs://(?<bucketName>[^/]+)/(?<path>.+/)?(?<fileName>[^/]+)");
+	private static final Pattern _httpURLPattern = Pattern.compile(
+		"https?://(?<mirrorsHostname>mirrors(\\.[^\\.]+\\.liferay.com)?/)?" +
+			"(?<hostName>[^/]+(/\\d+)?)/(?<path>.+/)(?<fileName>.+)");
 	private static final Pattern _mirrorsHostNamePattern = Pattern.compile(
 		"^mirrors\\.[^\\.]+\\.liferay.com/");
-	private static final Pattern _srcPattern = Pattern.compile(
-		"https?://(.+/)(.+)");
+	private static final Pattern _nexusTomcatURLPattern = Pattern.compile(
+		"http://archive.apache.org/dist/tomcat/tomcat-\\d+/" +
+			"v(?<tomcatVersion>[^/]+)/bin/" +
+				"apache-(?<tomcatFileName>.+(\\.tar\\.gz|\\.zip))");
+	private static final Pattern _releaseHostNamePattern = Pattern.compile(
+		"(release-\\d+|release.liferay.com)/(?<id>\\d+)");
+	private static final Pattern _tempFileNamePattern = Pattern.compile(
+		_REGEX_TIMESTAMP + "-" + _REGEX_UUID + "-(?<fileName>.+)");
+	private static final Pattern _testHostNamePattern = Pattern.compile(
+		"test-\\d+-\\d+");
 
 	private File _dest;
 	private String _fileName;
 	private boolean _force;
+	private String _gcpBucketName;
+	private File _gcpCredentialsFile;
+	private String _hostName;
 	private boolean _ignoreErrors;
 	private String _mirrorsHostname;
 	private String _password;
 	private String _path;
+	private final Map<File, File> _readLinkFiles = new HashMap<>();
 	private int _retries = 1;
 	private boolean _skipChecksum;
 	private String _src;
 	private boolean _ssl;
-	private boolean _tryLocalNetwork = true;
+	private boolean _tryLocalNetwork = _isCINode();
 	private String _userAgent;
 	private String _username;
 	private boolean _verbose;

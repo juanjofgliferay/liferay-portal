@@ -25,33 +25,53 @@ import com.liferay.portal.configuration.metatype.annotations.ExtendedObjectClass
 public interface OpenIdConnectProviderConfiguration {
 
 	@Meta.AD(
-		deflt = "", description = "provider-name-help", name = "provider-name"
+		deflt = "false", description = "allow-upstream-token-forwarding-help",
+		name = "allow-upstream-token-forwarding", required = false
 	)
-	public String providerName();
-
-	@Meta.AD(
-		deflt = "openid email profile", description = "scopes-help",
-		name = "scopes"
-	)
-	public String scopes();
-
-	@Meta.AD(
-		deflt = "", description = "discovery-endpoint-help",
-		name = "discovery-endpoint", required = false
-	)
-	public String discoveryEndPoint();
-
-	@Meta.AD(
-		deflt = "360000", description = "discovery-endpoint-cache-help",
-		name = "discovery-endpoint-cache-in-millis", required = false
-	)
-	public long discoveryEndPointCacheInMillis();
+	public boolean allowUpstreamTokenForwarding();
 
 	@Meta.AD(
 		deflt = "", description = "authorization-endpoint-help",
 		name = "authorization-endpoint", required = false
 	)
-	public String authorizationEndPoint();
+	public String authorizationEndpoint();
+
+	@Meta.AD(
+		deflt = "",
+		description = "custom-authorization-request-parameters-help",
+		name = "custom-authorization-request-parameters", required = false
+	)
+	public String[] customAuthorizationRequestParameters();
+
+	@Meta.AD(
+		deflt = "", description = "custom-claims-help", name = "custom-claims",
+		required = false
+	)
+	public String[] customClaims();
+
+	@Meta.AD(
+		deflt = "", description = "custom-token-request-parameters-help",
+		name = "custom-token-request-parameters", required = false
+	)
+	public String[] customTokenRequestParameters();
+
+	@Meta.AD(
+		deflt = "", description = "discovery-endpoint-help",
+		name = "discovery-endpoint", required = false
+	)
+	public String discoveryEndpoint();
+
+	@Meta.AD(
+		deflt = "360000", description = "discovery-endpoint-cache-help",
+		name = "discovery-endpoint-cache-in-millis", required = false
+	)
+	public long discoveryEndpointCacheInMillis();
+
+	@Meta.AD(
+		deflt = "RS256", description = "id-token-signing-alg-values-help",
+		name = "id-token-signing-alg-values", required = false
+	)
+	public String[] idTokenSigningAlgValues();
 
 	@Meta.AD(
 		deflt = "", description = "issuer-url-help", name = "issuer-url",
@@ -66,34 +86,10 @@ public interface OpenIdConnectProviderConfiguration {
 	public String jwksURI();
 
 	@Meta.AD(
-		deflt = "RS256", description = "id-token-signing-alg-values-help",
-		name = "id-token-signing-alg-values", required = false
+		deflt = "email", description = "matcher-field-help",
+		name = "matcher-field"
 	)
-	public String[] idTokenSigningAlgValues();
-
-	@Meta.AD(
-		deflt = "", description = "subject-types-help", name = "subject-types",
-		required = false
-	)
-	public String[] subjectTypes();
-
-	@Meta.AD(
-		deflt = "", description = "token-endpoint-help",
-		name = "token-endpoint", required = false
-	)
-	public String tokenEndPoint();
-
-	@Meta.AD(
-		deflt = "1000", description = "token-connection-timeout-help",
-		name = "token-connection-timeout", required = false
-	)
-	public int tokenConnectionTimeout();
-
-	@Meta.AD(
-		deflt = "", description = "user-info-endpoint-help",
-		name = "user-info-endpoint", required = false
-	)
-	public String userInfoEndPoint();
+	public String matcherField();
 
 	@Meta.AD(
 		deflt = "", description = "open-id-connect-client-id-help",
@@ -103,9 +99,14 @@ public interface OpenIdConnectProviderConfiguration {
 
 	@Meta.AD(
 		deflt = "", description = "open-id-connect-client-secret-help",
-		name = "open-id-connect-client-secret"
+		name = "open-id-connect-client-secret", type = Meta.Type.Password
 	)
 	public String openIdConnectClientSecret();
+
+	@Meta.AD(
+		deflt = "", description = "provider-name-help", name = "provider-name"
+	)
+	public String providerName();
 
 	@Meta.AD(
 		deflt = "", description = "registered-id-token-signing-alg-help",
@@ -114,16 +115,33 @@ public interface OpenIdConnectProviderConfiguration {
 	public String registeredIdTokenSigningAlg();
 
 	@Meta.AD(
-		deflt = "",
-		description = "custom-authorization-request-parameters-help",
-		name = "custom-authorization-request-parameters", required = false
+		deflt = "openid email profile", description = "scopes-help",
+		name = "scopes"
 	)
-	public String[] customAuthorizationRequestParameters();
+	public String scopes();
 
 	@Meta.AD(
-		deflt = "", description = "custom-token-request-parameters-help",
-		name = "custom-token-request-parameters", required = false
+		deflt = "", description = "subject-types-help", name = "subject-types",
+		required = false
 	)
-	public String[] customTokenRequestParameters();
+	public String[] subjectTypes();
+
+	@Meta.AD(
+		deflt = "1000", description = "token-connection-timeout-help",
+		name = "token-connection-timeout", required = false
+	)
+	public int tokenConnectionTimeout();
+
+	@Meta.AD(
+		deflt = "", description = "token-endpoint-help",
+		name = "token-endpoint", required = false
+	)
+	public String tokenEndpoint();
+
+	@Meta.AD(
+		deflt = "", description = "user-info-endpoint-help",
+		name = "user-info-endpoint", required = false
+	)
+	public String userInfoEndpoint();
 
 }

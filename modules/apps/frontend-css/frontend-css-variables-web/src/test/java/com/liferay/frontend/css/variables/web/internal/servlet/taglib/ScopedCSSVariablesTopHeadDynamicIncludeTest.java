@@ -7,12 +7,16 @@ package com.liferay.frontend.css.variables.web.internal.servlet.taglib;
 
 import com.liferay.frontend.css.variables.ScopedCSSVariables;
 import com.liferay.frontend.css.variables.ScopedCSSVariablesProvider;
+import com.liferay.petra.io.StreamUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.servlet.BufferCacheServletResponse;
-import com.liferay.portal.kernel.servlet.taglib.DynamicInclude;
+import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
-import com.liferay.portal.kernel.util.StreamUtil;
+import com.liferay.portal.kernel.util.TreeMapBuilder;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -20,11 +24,7 @@ import java.io.InputStream;
 
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Map;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.junit.Assert;
 import org.junit.ClassRule;
@@ -52,26 +52,42 @@ public class ScopedCSSVariablesTopHeadDynamicIncludeTest {
 		ScopedCSSVariablesProvider scopedCSSVariablesProvider = Mockito.mock(
 			ScopedCSSVariablesProvider.class);
 
-		Collection<ScopedCSSVariables> scopedCSSVariables = Arrays.asList(
-			new ScopedCSSVariables() {
+		Collection<ScopedCSSVariables> scopedCSSVariablesCollection =
+			Arrays.asList(
+				new ScopedCSSVariables() {
 
-				@Override
-				public Map<String, String> getCSSVariables() {
-					return Collections.singletonMap("color", "red");
-				}
+					@Override
+					public Map<String, String> getCSSVariables() {
+						return TreeMapBuilder.put(
+							"aspect-ratio-16-to-9", "56.25%"
+						).put(
+							"box-shadow", "0 0.5rem 1rem rgba(0, 0, 0, 0.15)"
+						).put(
+							"btn-link-color", "var(--primary)"
+						).put(
+							"color", "red"
+						).put(
+							"font-family-sans-serif",
+							"system-ui, -apple-system, 'Segoe UI', sans-serif"
+						).put(
+							"spacer-2", "0.5rem"
+						).put(
+							"white", "#fff"
+						).build();
+					}
 
-				@Override
-				public String getScope() {
-					return ":root";
-				}
+					@Override
+					public String getScope() {
+						return ":root";
+					}
 
-			});
+				});
 
 		Mockito.when(
 			scopedCSSVariablesProvider.getScopedCSSVariablesCollection(
 				Mockito.any(HttpServletRequest.class))
 		).thenReturn(
-			scopedCSSVariables
+			scopedCSSVariablesCollection
 		);
 
 		scopedCSSVariablesTopHeadDynamicInclude.setScopedCSSVariablesProviders(
@@ -96,6 +112,67 @@ public class ScopedCSSVariablesTopHeadDynamicIncludeTest {
 	}
 
 	@Test
+	public void testIncludeEscapesCSSVariableKeysAndValues()
+		throws IOException {
+
+		ScopedCSSVariablesTopHeadDynamicInclude
+			scopedCSSVariablesTopHeadDynamicInclude =
+				new ScopedCSSVariablesTopHeadDynamicInclude();
+
+		ScopedCSSVariablesProvider scopedCSSVariablesProvider = Mockito.mock(
+			ScopedCSSVariablesProvider.class);
+
+		String xssScript = "</style><script>alert(1)</script>";
+
+		Collection<ScopedCSSVariables> scopedCSSVariablesCollection =
+			Arrays.asList(
+				new ScopedCSSVariables() {
+
+					@Override
+					public Map<String, String> getCSSVariables() {
+						return HashMapBuilder.put(
+							xssScript, RandomTestUtil.randomString()
+						).put(
+							RandomTestUtil.randomString(), xssScript
+						).build();
+					}
+
+					@Override
+					public String getScope() {
+						return RandomTestUtil.randomString();
+					}
+
+				});
+
+		Mockito.when(
+			scopedCSSVariablesProvider.getScopedCSSVariablesCollection(
+				Mockito.any(HttpServletRequest.class))
+		).thenReturn(
+			scopedCSSVariablesCollection
+		);
+
+		scopedCSSVariablesTopHeadDynamicInclude.setScopedCSSVariablesProviders(
+			Arrays.asList(scopedCSSVariablesProvider));
+
+		HttpServletRequest httpServletRequest = Mockito.mock(
+			HttpServletRequest.class);
+
+		HttpServletResponse httpServletResponse = Mockito.mock(
+			HttpServletResponse.class);
+
+		BufferCacheServletResponse bufferCacheServletResponse =
+			new BufferCacheServletResponse(httpServletResponse);
+
+		scopedCSSVariablesTopHeadDynamicInclude.include(
+			httpServletRequest, bufferCacheServletResponse,
+			"/html/common/themes/top_head.jsp#post");
+
+		String content = bufferCacheServletResponse.getString();
+
+		Assert.assertFalse(content, content.contains(xssScript));
+	}
+
+	@Test
 	public void testIncludeWithMultipleProviders() throws IOException {
 		ScopedCSSVariablesTopHeadDynamicInclude
 			scopedCSSVariablesTopHeadDynamicInclude =
@@ -104,76 +181,78 @@ public class ScopedCSSVariablesTopHeadDynamicIncludeTest {
 		ScopedCSSVariablesProvider scopedCSSVariablesProvider1 = Mockito.mock(
 			ScopedCSSVariablesProvider.class);
 
-		Collection<ScopedCSSVariables> scopedCSSVariables1 = Arrays.asList(
-			new ScopedCSSVariables() {
+		Collection<ScopedCSSVariables> scopedCSSVariablesCollection1 =
+			Arrays.asList(
+				new ScopedCSSVariables() {
 
-				@Override
-				public Map<String, String> getCSSVariables() {
-					return HashMapBuilder.put(
-						"color", "red"
-					).build();
-				}
+					@Override
+					public Map<String, String> getCSSVariables() {
+						return HashMapBuilder.put(
+							"color", "red"
+						).build();
+					}
 
-				@Override
-				public String getScope() {
-					return ":root";
-				}
+					@Override
+					public String getScope() {
+						return ":root";
+					}
 
-			});
+				});
 
 		Mockito.when(
 			scopedCSSVariablesProvider1.getScopedCSSVariablesCollection(
 				Mockito.any(HttpServletRequest.class))
 		).thenReturn(
-			scopedCSSVariables1
+			scopedCSSVariablesCollection1
 		);
 
 		ScopedCSSVariablesProvider scopedCSSVariablesProvider2 = Mockito.mock(
 			ScopedCSSVariablesProvider.class);
 
-		Collection<ScopedCSSVariables> scopedCSSVariables2 = Arrays.asList(
-			new ScopedCSSVariables() {
+		Collection<ScopedCSSVariables> scopedCSSVariablesCollection2 =
+			Arrays.asList(
+				new ScopedCSSVariables() {
 
-				@Override
-				public Map<String, String> getCSSVariables() {
-					return HashMapBuilder.put(
-						"color", "green"
-					).put(
-						"fixed-font", "\"Lucida Console\""
-					).put(
-						"font", "Comic Sans"
-					).build();
-				}
+					@Override
+					public Map<String, String> getCSSVariables() {
+						return HashMapBuilder.put(
+							"color", "green"
+						).put(
+							"fixed-font", "\"Lucida Console\""
+						).put(
+							"font", "Comic Sans"
+						).build();
+					}
 
-				@Override
-				public String getScope() {
-					return "body";
-				}
+					@Override
+					public String getScope() {
+						return "body";
+					}
 
-			},
-			new ScopedCSSVariables() {
+				},
+				new ScopedCSSVariables() {
 
-				@Override
-				public Map<String, String> getCSSVariables() {
-					return HashMapBuilder.put(
-						"color", "yellow"
-					).put(
-						"font", "Arial"
-					).build();
-				}
+					@Override
+					public Map<String, String> getCSSVariables() {
+						return HashMapBuilder.put(
+							"color", "yellow"
+						).put(
+							"font", "Arial"
+						).build();
+					}
 
-				@Override
-				public String getScope() {
-					return ":root";
-				}
+					@Override
+					public String getScope() {
+						return ":root";
+					}
 
-			});
+				});
 
 		Mockito.when(
 			scopedCSSVariablesProvider2.getScopedCSSVariablesCollection(
 				Mockito.any(HttpServletRequest.class))
 		).thenReturn(
-			scopedCSSVariables2
+			scopedCSSVariablesCollection2
 		);
 
 		scopedCSSVariablesTopHeadDynamicInclude.setScopedCSSVariablesProviders(
@@ -196,25 +275,6 @@ public class ScopedCSSVariablesTopHeadDynamicIncludeTest {
 		Assert.assertEquals(
 			_read("liferay_css_variables_2.html", true),
 			bufferCacheServletResponse.getString());
-	}
-
-	@Test
-	public void testRegister() {
-		ScopedCSSVariablesTopHeadDynamicInclude
-			scopedCSSVariablesTopHeadDynamicInclude =
-				new ScopedCSSVariablesTopHeadDynamicInclude();
-
-		DynamicInclude.DynamicIncludeRegistry dynamicIncludeRegistry =
-			Mockito.mock(DynamicInclude.DynamicIncludeRegistry.class);
-
-		scopedCSSVariablesTopHeadDynamicInclude.register(
-			dynamicIncludeRegistry);
-
-		Mockito.verify(
-			dynamicIncludeRegistry
-		).register(
-			"/html/common/themes/top_head.jsp#post"
-		);
 	}
 
 	private final String _read(String fileName, boolean addNewLine) {

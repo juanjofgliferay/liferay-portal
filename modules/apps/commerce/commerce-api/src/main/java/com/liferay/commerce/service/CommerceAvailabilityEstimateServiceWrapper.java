@@ -33,13 +33,15 @@ public class CommerceAvailabilityEstimateServiceWrapper
 	@Override
 	public com.liferay.commerce.model.CommerceAvailabilityEstimate
 			addCommerceAvailabilityEstimate(
+				String externalReferenceCode,
 				java.util.Map<java.util.Locale, String> titleMap,
 				double priority,
 				com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commerceAvailabilityEstimateService.
-			addCommerceAvailabilityEstimate(titleMap, priority, serviceContext);
+			addCommerceAvailabilityEstimate(
+				externalReferenceCode, titleMap, priority, serviceContext);
 	}
 
 	@Override
@@ -49,6 +51,17 @@ public class CommerceAvailabilityEstimateServiceWrapper
 
 		_commerceAvailabilityEstimateService.deleteCommerceAvailabilityEstimate(
 			commerceAvailabilityEstimateId);
+	}
+
+	@Override
+	public com.liferay.commerce.model.CommerceAvailabilityEstimate
+			fetchCommerceAvailabilityEstimateByExternalReferenceCode(
+				String externalReferenceCode, long companyId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _commerceAvailabilityEstimateService.
+			fetchCommerceAvailabilityEstimateByExternalReferenceCode(
+				externalReferenceCode, companyId);
 	}
 
 	@Override
@@ -83,6 +96,18 @@ public class CommerceAvailabilityEstimateServiceWrapper
 			getCommerceAvailabilityEstimatesCount(companyId);
 	}
 
+	@Override
+	public com.liferay.commerce.model.CommerceAvailabilityEstimate
+			getOrAddEmptyCommerceAvailabilityEstimate(
+				String externalReferenceCode,
+				java.util.Map<java.util.Locale, String> titleMap)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _commerceAvailabilityEstimateService.
+			getOrAddEmptyCommerceAvailabilityEstimate(
+				externalReferenceCode, titleMap);
+	}
+
 	/**
 	 * Returns the OSGi service identifier.
 	 *
@@ -96,6 +121,7 @@ public class CommerceAvailabilityEstimateServiceWrapper
 	@Override
 	public com.liferay.commerce.model.CommerceAvailabilityEstimate
 			updateCommerceAvailabilityEstimate(
+				String externalReferenceCode,
 				long commerceAvailabilityEstimateId,
 				java.util.Map<java.util.Locale, String> titleMap,
 				double priority,
@@ -104,8 +130,8 @@ public class CommerceAvailabilityEstimateServiceWrapper
 
 		return _commerceAvailabilityEstimateService.
 			updateCommerceAvailabilityEstimate(
-				commerceAvailabilityEstimateId, titleMap, priority,
-				serviceContext);
+				externalReferenceCode, commerceAvailabilityEstimateId, titleMap,
+				priority, serviceContext);
 	}
 
 	@Override
@@ -126,3 +152,4 @@ public class CommerceAvailabilityEstimateServiceWrapper
 		_commerceAvailabilityEstimateService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1712433589

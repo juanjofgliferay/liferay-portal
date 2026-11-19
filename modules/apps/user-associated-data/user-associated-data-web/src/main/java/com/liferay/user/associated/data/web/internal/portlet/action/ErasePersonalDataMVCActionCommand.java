@@ -18,13 +18,15 @@ import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.servlet.SessionMessages;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
+import com.liferay.user.associated.data.anonymizer.UADAnonymousUserProvider;
 import com.liferay.user.associated.data.constants.UserAssociatedDataPortletKeys;
-import com.liferay.user.associated.data.web.internal.helper.SelectedUserHelper;
-import com.liferay.user.associated.data.web.internal.helper.UADApplicationSummaryHelper;
+import com.liferay.user.associated.data.web.internal.registry.UADRegistry;
+import com.liferay.user.associated.data.web.internal.util.SelectedUserUtil;
+import com.liferay.user.associated.data.web.internal.util.UADApplicationSummaryUtil;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.PortletRequest;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.PortletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -34,7 +36,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + UserAssociatedDataPortletKeys.USER_ASSOCIATED_DATA,
+		"jakarta.portlet.name=" + UserAssociatedDataPortletKeys.USER_ASSOCIATED_DATA,
 		"mvc.command.name=/user_associated_data/erase_personal_data"
 	},
 	service = MVCActionCommand.class
@@ -47,14 +49,15 @@ public class ErasePersonalDataMVCActionCommand
 			ActionRequest actionRequest, ActionResponse actionResponse)
 		throws Exception {
 
-		User selectedUser = _selectedUserHelper.getSelectedUser(actionRequest);
+		User selectedUser = SelectedUserUtil.getSelectedUser(
+			_portal, actionRequest, _uadAnonymousUserProvider);
 
 		if (selectedUser.isActive()) {
 			_userGroupLocalService.clearUserUserGroups(
 				selectedUser.getUserId());
 
-			_userLocalService.updateStatus(
-				selectedUser.getUserId(), WorkflowConstants.STATUS_INACTIVE,
+			selectedUser = _userLocalService.updateStatus(
+				selectedUser, WorkflowConstants.STATUS_INACTIVE,
 				new ServiceContext());
 
 			Group group = selectedUser.getGroup();
@@ -80,14 +83,13 @@ public class ErasePersonalDataMVCActionCommand
 		String mvcRenderCommandName = "/user_associated_data/review_uad_data";
 
 		int totalReviewableUADEntitiesCount =
-			_uadApplicationSummaryHelper.getTotalReviewableUADEntitiesCount(
-				selectedUser.getUserId());
+			UADApplicationSummaryUtil.getTotalReviewableUADEntitiesCount(
+				_uadRegistry, selectedUser.getUserId());
 
 		if (totalReviewableUADEntitiesCount == 0) {
 			int totalNonreviewableUADEntitiesCount =
-				_uadApplicationSummaryHelper.
-					getTotalNonreviewableUADEntitiesCount(
-						selectedUser.getUserId());
+				UADApplicationSummaryUtil.getTotalNonreviewableUADEntitiesCount(
+					_uadRegistry, selectedUser.getUserId());
 
 			if (totalNonreviewableUADEntitiesCount == 0) {
 				mvcRenderCommandName =
@@ -111,10 +113,10 @@ public class ErasePersonalDataMVCActionCommand
 	private Portal _portal;
 
 	@Reference
-	private SelectedUserHelper _selectedUserHelper;
+	private UADAnonymousUserProvider _uadAnonymousUserProvider;
 
 	@Reference
-	private UADApplicationSummaryHelper _uadApplicationSummaryHelper;
+	private UADRegistry _uadRegistry;
 
 	@Reference
 	private UserGroupLocalService _userGroupLocalService;

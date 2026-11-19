@@ -5,13 +5,12 @@
 
 package com.liferay.portal.dao.sql.transformer;
 
+import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.dao.db.DBType;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
-import org.junit.Assert;
 import org.junit.ClassRule;
 import org.junit.Rule;
-import org.junit.Test;
 
 /**
  * @author Manuel de la Peña
@@ -33,16 +32,14 @@ public class SQLServerSQLTransformerLogicTest
 		return "IF OBJECT_ID('Foo', 'U') IS NOT NULL DROP TABLE Foo";
 	}
 
-	@Test
-	public void testReplaceCastText() {
-		Assert.assertEquals(
-			"select CAST(foo AS NVARCHAR(MAX)) from Foo",
-			sqlTransformer.transform(getCastTextOriginalSQL()));
-	}
-
 	@Override
 	protected String getBitwiseCheckTransformedSQL() {
 		return "select (foo & bar) from Foo";
+	}
+
+	@Override
+	protected String getBitwiseOrTransformedSQL() {
+		return "select (foo | bar) from Foo";
 	}
 
 	@Override
@@ -52,7 +49,34 @@ public class SQLServerSQLTransformerLogicTest
 
 	@Override
 	protected String getCastClobTextTransformedSQL() {
-		return "select CAST(foo AS NVARCHAR(MAX)) from Foo";
+		return StringBundler.concat(
+			"select CAST(foo || (CAST(foo AS NVARCHAR(MAX)) || (bar || foo)) ",
+			"AS NVARCHAR(MAX)), CAST(foo || (bar || foo) AS NVARCHAR(MAX)) ",
+			"from Foo");
+	}
+
+	@Override
+	protected String getCastTextTransformedSQL() {
+		return StringBundler.concat(
+			"select CAST(foo || (CAST(foo AS NVARCHAR(MAX)) || (bar || foo)) ",
+			"AS NVARCHAR(MAX)), CAST(foo || (bar || foo) AS NVARCHAR(MAX)) ",
+			"from Foo");
+	}
+
+	@Override
+	protected String getInstrTransformedSQL() {
+		return "select CHARINDEX('fooText', foo) from Foo";
+	}
+
+	@Override
+	protected String getInstrWithPostColumnModificatorTransformedSQL() {
+		return "select CHARINDEX(CHR(10), foo COLLATE " +
+			"Latin1_General_100_BIN2) from Foo";
+	}
+
+	@Override
+	protected String getInstrWithPreColumnModificatorTransformedSQL() {
+		return "select CHARINDEX(CHAR(10), BINARY foo) from Foo";
 	}
 
 	@Override

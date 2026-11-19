@@ -32,8 +32,10 @@ import com.liferay.journal.exception.ArticleTitleException;
 import com.liferay.journal.exception.DuplicateArticleExternalReferenceCodeException;
 import com.liferay.journal.exception.DuplicateArticleIdException;
 import com.liferay.journal.exception.InvalidDDMStructureException;
+import com.liferay.journal.exception.InvalidFolderException;
 import com.liferay.journal.model.JournalArticle;
 import com.liferay.journal.model.JournalArticleLocalization;
+import com.liferay.journal.model.JournalFolder;
 import com.liferay.journal.service.JournalFolderLocalService;
 import com.liferay.journal.service.persistence.JournalArticlePersistence;
 import com.liferay.journal.util.JournalConverter;
@@ -324,7 +326,8 @@ public class JournalArticleModelValidator
 		List<DDMStructure> folderDDMStructures =
 			_journalFolderLocalService.getDDMStructures(
 				_siteConnectedGroupGroupProvider.
-					getCurrentAndAncestorSiteAndDepotGroupIds(groupId, true),
+					getCurrentAndAncestorSiteAndDepotGroupIds(
+						groupId, false, true),
 				folderId, restrictionType);
 
 		for (DDMStructure folderDDMStructure : folderDDMStructures) {
@@ -405,9 +408,8 @@ public class JournalArticleModelValidator
 		try {
 			validateReferences(
 				article.getGroupId(), article.getFolderId(),
-				article.getDDMStructureId(), ddmTemplateKey,
-				article.getLayoutUuid(), smallImage, smallImageURL,
-				smallImageBytes, article.getSmallImageId(),
+				article.getDDMStructureId(), ddmTemplateKey, smallImage,
+				smallImageURL, smallImageBytes, article.getSmallImageId(),
 				article.getSmallImageSource(), content);
 		}
 		catch (ExportImportContentValidationException
@@ -440,13 +442,19 @@ public class JournalArticleModelValidator
 
 	public void validateReferences(
 			long groupId, long folderId, long ddmStructureId,
-			String ddmTemplateKey, String layoutUuid, boolean smallImage,
-			String smallImageURL, byte[] smallImageBytes, long smallImageId,
-			int smallImageSource, String content)
+			String ddmTemplateKey, boolean smallImage, String smallImageURL,
+			byte[] smallImageBytes, long smallImageId, int smallImageSource,
+			String content)
 		throws PortalException {
 
 		if (folderId != 0) {
-			_journalFolderLocalService.getFolder(folderId);
+			JournalFolder folder = _journalFolderLocalService.getFolder(
+				folderId);
+
+			if (folder.getGroupId() != groupId) {
+				throw new InvalidFolderException(
+					folder, InvalidFolderException.INVALID_GROUP);
+			}
 		}
 
 		_ddmStructureLocalService.getDDMStructure(ddmStructureId);
@@ -528,7 +536,7 @@ public class JournalArticleModelValidator
 			throw new DuplicateArticleExternalReferenceCodeException(
 				StringBundler.concat(
 					"Duplicate journal article external reference code ",
-					externalReferenceCode, "in group ", groupId));
+					externalReferenceCode, " in group ", groupId));
 		}
 	}
 

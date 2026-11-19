@@ -347,11 +347,13 @@ public class MFATimeBasedOTPEntryLocalServiceWrapper
 	}
 
 	@Override
-	public com.liferay.multi.factor.authentication.timebased.otp.model.
-		MFATimeBasedOTPEntry resetFailedAttempts(long userId)
-			throws com.liferay.portal.kernel.exception.PortalException {
+	public String getPlaintextSharedSecret(
+			com.liferay.multi.factor.authentication.timebased.otp.model.
+				MFATimeBasedOTPEntry mfaTimeBasedOTPEntry)
+		throws com.liferay.portal.kernel.exception.PortalException {
 
-		return _mfaTimeBasedOTPEntryLocalService.resetFailedAttempts(userId);
+		return _mfaTimeBasedOTPEntryLocalService.getPlaintextSharedSecret(
+			mfaTimeBasedOTPEntry);
 	}
 
 	@Override
@@ -413,3 +415,4 @@ public class MFATimeBasedOTPEntryLocalServiceWrapper
 	private MFATimeBasedOTPEntryLocalService _mfaTimeBasedOTPEntryLocalService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1226640271

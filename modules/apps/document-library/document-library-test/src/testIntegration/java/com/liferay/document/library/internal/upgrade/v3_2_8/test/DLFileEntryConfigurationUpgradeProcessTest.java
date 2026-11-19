@@ -6,10 +6,17 @@
 package com.liferay.document.library.internal.upgrade.v3_2_8.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.configuration.admin.util.ConfigurationFilterStringUtil;
 import com.liferay.document.library.constants.DLFileEntryConfigurationConstants;
+import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.configuration.metatype.annotations.ExtendedObjectClassDefinition;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
+import com.liferay.portal.kernel.model.Company;
+import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
+import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
+import com.liferay.portal.kernel.test.util.CompanyTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.upgrade.UpgradeProcess;
 import com.liferay.portal.kernel.upgrade.UpgradeStep;
@@ -80,12 +87,14 @@ public class DLFileEntryConfigurationUpgradeProcessTest {
 		_originalPDFPreviewScopedConfigurationsProperties = new ArrayList<>();
 
 		for (Configuration scopedConfiguration : scopedConfigurations) {
-			if (scopedConfiguration != null) {
-				_originalPDFPreviewScopedConfigurationsProperties.add(
-					scopedConfiguration.getProperties());
-
-				scopedConfiguration.delete();
+			if (scopedConfiguration == null) {
+				continue;
 			}
+
+			_originalPDFPreviewScopedConfigurationsProperties.add(
+				scopedConfiguration.getProperties());
+
+			scopedConfiguration.delete();
 		}
 	}
 
@@ -109,8 +118,27 @@ public class DLFileEntryConfigurationUpgradeProcessTest {
 		for (Dictionary<String, Object> properties :
 				_originalPDFPreviewScopedConfigurationsProperties) {
 
+			Object groupId = properties.get(
+				ExtendedObjectClassDefinition.Scope.GROUP.getPropertyKey());
+
+			if (groupId != null) {
+				_createScopedConfiguration(
+					_CLASS_NAME_PDF_PREVIEW_CONFIGURATION, properties,
+					ExtendedObjectClassDefinition.Scope.GROUP, (long)groupId);
+
+				continue;
+			}
+
+			Object companyId = properties.get(
+				ExtendedObjectClassDefinition.Scope.COMPANY.getPropertyKey());
+
+			if (companyId == null) {
+				continue;
+			}
+
 			_createScopedConfiguration(
-				_CLASS_NAME_PDF_PREVIEW_CONFIGURATION, properties);
+				_CLASS_NAME_PDF_PREVIEW_CONFIGURATION, properties,
+				ExtendedObjectClassDefinition.Scope.COMPANY, (long)companyId);
 		}
 	}
 
@@ -128,38 +156,36 @@ public class DLFileEntryConfigurationUpgradeProcessTest {
 		_createScopedConfiguration(
 			_CLASS_NAME_PDF_PREVIEW_CONFIGURATION,
 			_createDictionary(_MAX_NUMBER_OF_PAGES_KEY, 8),
-			ExtendedObjectClassDefinition.Scope.COMPANY);
+			ExtendedObjectClassDefinition.Scope.COMPANY,
+			TestPropsValues.getCompanyId());
 		_createScopedConfiguration(
 			_CLASS_NAME_PDF_PREVIEW_CONFIGURATION,
 			_createDictionary(_MAX_NUMBER_OF_PAGES_KEY, 6),
-			ExtendedObjectClassDefinition.Scope.GROUP);
+			ExtendedObjectClassDefinition.Scope.GROUP,
+			TestPropsValues.getGroupId());
 
 		try {
-			try (LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
-					_CLASS_NAME_UPGRADE_PROCESS, LoggerTestUtil.OFF)) {
-
-				UpgradeProcess upgradeProcess = _getUpgradeProcess();
-
-				upgradeProcess.upgrade();
-			}
+			_upgrade();
 
 			Assert.assertNull(
 				_getConfigurations(_CLASS_NAME_PDF_PREVIEW_CONFIGURATION));
 			_assertConfigurationValuesEquals(
 				_getDLFileEntryConfiguration(
-					ExtendedObjectClassDefinition.Scope.COMPANY),
+					ExtendedObjectClassDefinition.Scope.COMPANY,
+					TestPropsValues.getCompanyId()),
 				8,
 				DLFileEntryConfigurationConstants.
 					PREVIEWABLE_PROCESSOR_MAX_SIZE_DEFAULT * 2);
 			_assertConfigurationValuesEquals(
 				_getDLFileEntryConfiguration(
-					ExtendedObjectClassDefinition.Scope.GROUP),
+					ExtendedObjectClassDefinition.Scope.GROUP,
+					TestPropsValues.getGroupId()),
 				6,
 				DLFileEntryConfigurationConstants.
 					PREVIEWABLE_PROCESSOR_MAX_SIZE_DEFAULT * 2);
 			_assertConfigurationValuesEquals(
 				_getDLFileEntryConfiguration(
-					ExtendedObjectClassDefinition.Scope.SYSTEM),
+					ExtendedObjectClassDefinition.Scope.SYSTEM, null),
 				10,
 				DLFileEntryConfigurationConstants.
 					PREVIEWABLE_PROCESSOR_MAX_SIZE_DEFAULT * 2);
@@ -183,68 +209,65 @@ public class DLFileEntryConfigurationUpgradeProcessTest {
 		_createScopedConfiguration(
 			_CLASS_NAME_PDF_PREVIEW_CONFIGURATION,
 			_createDictionary(_MAX_NUMBER_OF_PAGES_KEY, 8),
-			ExtendedObjectClassDefinition.Scope.COMPANY);
+			ExtendedObjectClassDefinition.Scope.COMPANY,
+			TestPropsValues.getCompanyId());
 		_createScopedConfiguration(
 			_CLASS_NAME_PDF_PREVIEW_CONFIGURATION,
 			_createDictionary(_MAX_NUMBER_OF_PAGES_KEY, 6),
-			ExtendedObjectClassDefinition.Scope.GROUP);
+			ExtendedObjectClassDefinition.Scope.GROUP,
+			TestPropsValues.getGroupId());
 
 		Dictionary<String, Object> properties = _createDictionary(
 			_MAX_NUMBER_OF_PAGES_KEY, 7);
 
-		properties.put(
-			ExtendedObjectClassDefinition.Scope.COMPANY.getPropertyKey(),
-			77777L);
+		_company = CompanyTestUtil.addCompany();
 
 		_createScopedConfiguration(
-			_CLASS_NAME_PDF_PREVIEW_CONFIGURATION, properties);
+			_CLASS_NAME_PDF_PREVIEW_CONFIGURATION, properties,
+			ExtendedObjectClassDefinition.Scope.COMPANY,
+			_company.getCompanyId());
 
 		properties = _createDictionary(_MAX_NUMBER_OF_PAGES_KEY, 5);
 
-		properties.put(
-			ExtendedObjectClassDefinition.Scope.GROUP.getPropertyKey(), 55555L);
-
 		_createScopedConfiguration(
-			_CLASS_NAME_PDF_PREVIEW_CONFIGURATION, properties);
+			_CLASS_NAME_PDF_PREVIEW_CONFIGURATION, properties,
+			ExtendedObjectClassDefinition.Scope.GROUP, 55555L);
 
 		try {
-			try (LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
-					_CLASS_NAME_UPGRADE_PROCESS, LoggerTestUtil.OFF)) {
-
-				UpgradeProcess upgradeProcess = _getUpgradeProcess();
-
-				upgradeProcess.upgrade();
-			}
+			_upgrade();
 
 			Assert.assertNull(
 				_getConfigurations(_CLASS_NAME_PDF_PREVIEW_CONFIGURATION));
 			_assertConfigurationValuesEquals(
 				_getDLFileEntryConfiguration(
-					ExtendedObjectClassDefinition.Scope.COMPANY),
+					ExtendedObjectClassDefinition.Scope.COMPANY,
+					TestPropsValues.getCompanyId()),
 				8,
 				DLFileEntryConfigurationConstants.
 					PREVIEWABLE_PROCESSOR_MAX_SIZE_DEFAULT);
 			_assertConfigurationValuesEquals(
 				_getDLFileEntryConfiguration(
-					ExtendedObjectClassDefinition.Scope.GROUP),
+					ExtendedObjectClassDefinition.Scope.GROUP,
+					TestPropsValues.getGroupId()),
 				6,
 				DLFileEntryConfigurationConstants.
 					PREVIEWABLE_PROCESSOR_MAX_SIZE_DEFAULT);
 			_assertConfigurationValuesEquals(
 				_getDLFileEntryConfiguration(
-					ExtendedObjectClassDefinition.Scope.SYSTEM),
+					ExtendedObjectClassDefinition.Scope.SYSTEM, null),
 				10, 1000L);
 			_assertConfigurationValuesEquals(
 				_getScopedConfiguration(
 					_CLASS_NAME_DL_FILE_ENTRY_CONFIGURATION,
-					ExtendedObjectClassDefinition.Scope.COMPANY, 77777),
+					ExtendedObjectClassDefinition.Scope.COMPANY,
+					_company.getCompanyId()),
 				7,
 				DLFileEntryConfigurationConstants.
 					PREVIEWABLE_PROCESSOR_MAX_SIZE_DEFAULT);
 			_assertConfigurationValuesEquals(
 				_getScopedConfiguration(
 					_CLASS_NAME_DL_FILE_ENTRY_CONFIGURATION,
-					ExtendedObjectClassDefinition.Scope.GROUP, 55555),
+					ExtendedObjectClassDefinition.Scope.GROUP, 55555L),
 				5,
 				DLFileEntryConfigurationConstants.
 					PREVIEWABLE_PROCESSOR_MAX_SIZE_DEFAULT);
@@ -262,31 +285,27 @@ public class DLFileEntryConfigurationUpgradeProcessTest {
 		_createScopedConfiguration(
 			_CLASS_NAME_PDF_PREVIEW_CONFIGURATION,
 			_createDictionary(_MAX_NUMBER_OF_PAGES_KEY, 8),
-			ExtendedObjectClassDefinition.Scope.COMPANY);
+			ExtendedObjectClassDefinition.Scope.COMPANY,
+			TestPropsValues.getCompanyId());
 
 		try {
-			try (LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
-					_CLASS_NAME_UPGRADE_PROCESS, LoggerTestUtil.OFF)) {
-
-				UpgradeProcess upgradeProcess = _getUpgradeProcess();
-
-				upgradeProcess.upgrade();
-			}
+			_upgrade();
 
 			Assert.assertNull(
 				_getConfigurations(_CLASS_NAME_PDF_PREVIEW_CONFIGURATION));
 			_assertConfigurationValuesEquals(
 				_getDLFileEntryConfiguration(
-					ExtendedObjectClassDefinition.Scope.COMPANY),
+					ExtendedObjectClassDefinition.Scope.COMPANY,
+					TestPropsValues.getCompanyId()),
 				8,
 				DLFileEntryConfigurationConstants.
 					PREVIEWABLE_PROCESSOR_MAX_SIZE_DEFAULT);
 			Assert.assertNull(
 				_getDLFileEntryConfiguration(
-					ExtendedObjectClassDefinition.Scope.GROUP));
+					ExtendedObjectClassDefinition.Scope.GROUP, null));
 			Assert.assertNull(
 				_getDLFileEntryConfiguration(
-					ExtendedObjectClassDefinition.Scope.SYSTEM));
+					ExtendedObjectClassDefinition.Scope.SYSTEM, null));
 		}
 		finally {
 			_deleteConfigurations(_CLASS_NAME_DL_FILE_ENTRY_CONFIGURATION);
@@ -301,59 +320,32 @@ public class DLFileEntryConfigurationUpgradeProcessTest {
 		_createScopedConfiguration(
 			_CLASS_NAME_PDF_PREVIEW_CONFIGURATION,
 			_createDictionary(_MAX_NUMBER_OF_PAGES_KEY, 6),
-			ExtendedObjectClassDefinition.Scope.GROUP);
+			ExtendedObjectClassDefinition.Scope.GROUP,
+			TestPropsValues.getGroupId());
 
 		try {
-			try (LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
-					_CLASS_NAME_UPGRADE_PROCESS, LoggerTestUtil.OFF)) {
-
-				UpgradeProcess upgradeProcess = _getUpgradeProcess();
-
-				upgradeProcess.upgrade();
-			}
+			_upgrade();
 
 			Assert.assertNull(
 				_getConfigurations(_CLASS_NAME_PDF_PREVIEW_CONFIGURATION));
 			Assert.assertNull(
 				_getDLFileEntryConfiguration(
-					ExtendedObjectClassDefinition.Scope.COMPANY));
+					ExtendedObjectClassDefinition.Scope.COMPANY, null));
 			_assertConfigurationValuesEquals(
 				_getDLFileEntryConfiguration(
-					ExtendedObjectClassDefinition.Scope.GROUP),
+					ExtendedObjectClassDefinition.Scope.GROUP,
+					TestPropsValues.getGroupId()),
 				6,
 				DLFileEntryConfigurationConstants.
 					PREVIEWABLE_PROCESSOR_MAX_SIZE_DEFAULT);
 			Assert.assertNull(
 				_getDLFileEntryConfiguration(
-					ExtendedObjectClassDefinition.Scope.SYSTEM));
+					ExtendedObjectClassDefinition.Scope.SYSTEM, null));
 		}
 		finally {
 			_deleteConfigurations(_CLASS_NAME_DL_FILE_ENTRY_CONFIGURATION);
 			_deleteConfigurations(_CLASS_NAME_PDF_PREVIEW_CONFIGURATION);
 		}
-	}
-
-	@Test
-	public void testUpgradeWithoutAnyConfiguration() throws Exception {
-		try (LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
-				_CLASS_NAME_UPGRADE_PROCESS, LoggerTestUtil.OFF)) {
-
-			UpgradeProcess upgradeProcess = _getUpgradeProcess();
-
-			upgradeProcess.upgrade();
-		}
-
-		Assert.assertNull(
-			_getConfigurations(_CLASS_NAME_PDF_PREVIEW_CONFIGURATION));
-		Assert.assertNull(
-			_getDLFileEntryConfiguration(
-				ExtendedObjectClassDefinition.Scope.COMPANY));
-		Assert.assertNull(
-			_getDLFileEntryConfiguration(
-				ExtendedObjectClassDefinition.Scope.GROUP));
-		Assert.assertNull(
-			_getDLFileEntryConfiguration(
-				ExtendedObjectClassDefinition.Scope.SYSTEM));
 	}
 
 	@Test
@@ -365,25 +357,19 @@ public class DLFileEntryConfigurationUpgradeProcessTest {
 			_createDictionary(_PREVIEWABLE_PROCESSOR_MAX_SIZE_KEY, 1000L));
 
 		try {
-			try (LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
-					_CLASS_NAME_UPGRADE_PROCESS, LoggerTestUtil.OFF)) {
-
-				UpgradeProcess upgradeProcess = _getUpgradeProcess();
-
-				upgradeProcess.upgrade();
-			}
+			_upgrade();
 
 			Assert.assertNull(
 				_getConfigurations(_CLASS_NAME_PDF_PREVIEW_CONFIGURATION));
 			Assert.assertNull(
 				_getDLFileEntryConfiguration(
-					ExtendedObjectClassDefinition.Scope.COMPANY));
+					ExtendedObjectClassDefinition.Scope.COMPANY, null));
 			Assert.assertNull(
 				_getDLFileEntryConfiguration(
-					ExtendedObjectClassDefinition.Scope.GROUP));
+					ExtendedObjectClassDefinition.Scope.GROUP, null));
 			_assertConfigurationValuesEquals(
 				_getDLFileEntryConfiguration(
-					ExtendedObjectClassDefinition.Scope.SYSTEM),
+					ExtendedObjectClassDefinition.Scope.SYSTEM, null),
 				DLFileEntryConfigurationConstants.MAX_NUMBER_OF_PAGES_DEFAULT,
 				1000L);
 		}
@@ -401,25 +387,19 @@ public class DLFileEntryConfigurationUpgradeProcessTest {
 			_createDictionary(_MAX_NUMBER_OF_PAGES_KEY, 10));
 
 		try {
-			try (LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
-					_CLASS_NAME_UPGRADE_PROCESS, LoggerTestUtil.OFF)) {
-
-				UpgradeProcess upgradeProcess = _getUpgradeProcess();
-
-				upgradeProcess.upgrade();
-			}
+			_upgrade();
 
 			Assert.assertNull(
 				_getConfigurations(_CLASS_NAME_PDF_PREVIEW_CONFIGURATION));
 			Assert.assertNull(
 				_getDLFileEntryConfiguration(
-					ExtendedObjectClassDefinition.Scope.COMPANY));
+					ExtendedObjectClassDefinition.Scope.COMPANY, null));
 			Assert.assertNull(
 				_getDLFileEntryConfiguration(
-					ExtendedObjectClassDefinition.Scope.GROUP));
+					ExtendedObjectClassDefinition.Scope.GROUP, null));
 			_assertConfigurationValuesEquals(
 				_getDLFileEntryConfiguration(
-					ExtendedObjectClassDefinition.Scope.SYSTEM),
+					ExtendedObjectClassDefinition.Scope.SYSTEM, null),
 				10,
 				DLFileEntryConfigurationConstants.
 					PREVIEWABLE_PROCESSOR_MAX_SIZE_DEFAULT);
@@ -428,6 +408,23 @@ public class DLFileEntryConfigurationUpgradeProcessTest {
 			_deleteConfigurations(_CLASS_NAME_DL_FILE_ENTRY_CONFIGURATION);
 			_deleteConfigurations(_CLASS_NAME_PDF_PREVIEW_CONFIGURATION);
 		}
+	}
+
+	@Test
+	public void testUpgradeWithoutAnyConfiguration() throws Exception {
+		_upgrade();
+
+		Assert.assertNull(
+			_getConfigurations(_CLASS_NAME_PDF_PREVIEW_CONFIGURATION));
+		Assert.assertNull(
+			_getDLFileEntryConfiguration(
+				ExtendedObjectClassDefinition.Scope.COMPANY, null));
+		Assert.assertNull(
+			_getDLFileEntryConfiguration(
+				ExtendedObjectClassDefinition.Scope.GROUP, null));
+		Assert.assertNull(
+			_getDLFileEntryConfiguration(
+				ExtendedObjectClassDefinition.Scope.SYSTEM, null));
 	}
 
 	private void _assertConfigurationValuesEquals(
@@ -456,34 +453,19 @@ public class DLFileEntryConfigurationUpgradeProcessTest {
 		).build();
 	}
 
-	private Configuration _createScopedConfiguration(
-			String className, Dictionary<String, Object> properties)
-		throws Exception {
-
-		Configuration configuration =
-			_configurationAdmin.createFactoryConfiguration(
-				className + ".scoped", StringPool.QUESTION);
-
-		configuration.update(properties);
-
-		return configuration;
-	}
-
 	private void _createScopedConfiguration(
 			String className, Dictionary<String, Object> properties,
-			ExtendedObjectClassDefinition.Scope scope)
+			ExtendedObjectClassDefinition.Scope scope, Long scopePK)
 		throws Exception {
 
 		if (scope == ExtendedObjectClassDefinition.Scope.COMPANY) {
-			properties.put(
-				scope.getPropertyKey(), TestPropsValues.getCompanyId());
+			_configurationProvider.saveCompanyConfiguration(
+				scopePK, className, properties);
 		}
 		else {
-			properties.put(
-				scope.getPropertyKey(), TestPropsValues.getGroupId());
+			_configurationProvider.saveGroupConfiguration(
+				TestPropsValues.getCompanyId(), scopePK, className, properties);
 		}
-
-		_createScopedConfiguration(className, properties);
 	}
 
 	private void _createSystemConfiguration(
@@ -516,18 +498,12 @@ public class DLFileEntryConfigurationUpgradeProcessTest {
 	}
 
 	private Configuration _getDLFileEntryConfiguration(
-			ExtendedObjectClassDefinition.Scope scope)
+			ExtendedObjectClassDefinition.Scope scope, Long scopePK)
 		throws Exception {
 
-		if (scope == ExtendedObjectClassDefinition.Scope.COMPANY) {
+		if (scope != ExtendedObjectClassDefinition.Scope.SYSTEM) {
 			return _getScopedConfiguration(
-				_CLASS_NAME_DL_FILE_ENTRY_CONFIGURATION, scope,
-				TestPropsValues.getCompanyId());
-		}
-		else if (scope == ExtendedObjectClassDefinition.Scope.GROUP) {
-			return _getScopedConfiguration(
-				_CLASS_NAME_DL_FILE_ENTRY_CONFIGURATION, scope,
-				TestPropsValues.getGroupId());
+				_CLASS_NAME_DL_FILE_ENTRY_CONFIGURATION, scope, scopePK);
 		}
 
 		return _getSystemConfiguration(_CLASS_NAME_DL_FILE_ENTRY_CONFIGURATION);
@@ -535,13 +511,24 @@ public class DLFileEntryConfigurationUpgradeProcessTest {
 
 	private Configuration _getScopedConfiguration(
 			String className, ExtendedObjectClassDefinition.Scope scope,
-			long scopePK)
+			Long scopePK)
 		throws Exception {
 
+		String filterString = null;
+
+		if (scope == ExtendedObjectClassDefinition.Scope.COMPANY) {
+			filterString =
+				ConfigurationFilterStringUtil.getCompanyScopedFilterString(
+					scopePK, className, null);
+		}
+		else {
+			filterString =
+				ConfigurationFilterStringUtil.getGroupScopedFilterString(
+					TestPropsValues.getCompanyId(), scopePK, className, null);
+		}
+
 		Configuration[] configurations = _configurationAdmin.listConfigurations(
-			String.format(
-				"(&(%s=%s)(%s=%d))", ConfigurationAdmin.SERVICE_FACTORYPID,
-				className + ".scoped", scope.getPropertyKey(), scopePK));
+			filterString);
 
 		if (configurations == null) {
 			return null;
@@ -569,7 +556,8 @@ public class DLFileEntryConfigurationUpgradeProcessTest {
 		throws Exception {
 
 		Configuration[] configurations = _configurationAdmin.listConfigurations(
-			String.format("(%s=%s)", Constants.SERVICE_PID, className));
+			ConfigurationFilterStringUtil.getSystemScopedFilterString(
+				className));
 
 		if (configurations == null) {
 			return null;
@@ -599,6 +587,19 @@ public class DLFileEntryConfigurationUpgradeProcessTest {
 		return upgradeProcesses[0];
 	}
 
+	private void _upgrade() throws Exception {
+		try (SafeCloseable safeCloseable =
+				CompanyThreadLocal.setUpgradingPortalInstanceWithSafeCloseable(
+					true);
+			LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
+				_CLASS_NAME_UPGRADE_PROCESS, LoggerTestUtil.OFF)) {
+
+			UpgradeProcess upgradeProcess = _getUpgradeProcess();
+
+			upgradeProcess.upgrade();
+		}
+	}
+
 	private static final String _CLASS_NAME_DL_FILE_ENTRY_CONFIGURATION =
 		"com.liferay.document.library.configuration.DLFileEntryConfiguration";
 
@@ -615,13 +616,14 @@ public class DLFileEntryConfigurationUpgradeProcessTest {
 	private static final String _PREVIEWABLE_PROCESSOR_MAX_SIZE_KEY =
 		"previewableProcessorMaxSize";
 
-	@Inject(
-		filter = "(&(component.name=com.liferay.document.library.internal.upgrade.registry.DLServiceUpgradeStepRegistrator))"
-	)
-	private static UpgradeStepRegistrator _upgradeStepRegistrator;
+	@DeleteAfterTestRun
+	private Company _company;
 
 	@Inject
 	private ConfigurationAdmin _configurationAdmin;
+
+	@Inject
+	private ConfigurationProvider _configurationProvider;
 
 	private Dictionary<String, Object>
 		_originalDLFileEntrySystemConfigurationProperties;
@@ -629,5 +631,10 @@ public class DLFileEntryConfigurationUpgradeProcessTest {
 		_originalPDFPreviewScopedConfigurationsProperties;
 	private Dictionary<String, Object>
 		_originalPDFPreviewSystemConfigurationProperties;
+
+	@Inject(
+		filter = "(&(component.name=com.liferay.document.library.internal.upgrade.registry.DLServiceUpgradeStepRegistrator))"
+	)
+	private UpgradeStepRegistrator _upgradeStepRegistrator;
 
 }

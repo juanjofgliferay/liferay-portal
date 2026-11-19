@@ -12,6 +12,7 @@ import com.liferay.asset.auto.tagger.text.extractor.TextExtractorRegistry;
 import com.liferay.asset.kernel.model.AssetEntry;
 import com.liferay.asset.kernel.model.AssetRenderer;
 import com.liferay.petra.concurrent.DCLSingleton;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.log.Log;
@@ -34,7 +35,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
 
-import opennlp.tools.namefind.NameFinderME;
+import opennlp.tools.namefind.ThreadSafeNameFinderME;
+import opennlp.tools.namefind.TokenNameFinder;
 import opennlp.tools.namefind.TokenNameFinderModel;
 import opennlp.tools.sentdetect.SentenceDetectorME;
 import opennlp.tools.sentdetect.SentenceModel;
@@ -96,23 +98,34 @@ public class OpenNLPDocumentAssetAutoTagProvider
 		_bundle = bundleContext.getBundle();
 	}
 
+	private TokenNameFinder _createTokenNameFinder(String resourceName)
+		throws IOException {
+
+		return new ThreadSafeNameFinderME(
+			new TokenNameFinderModel(_bundle.getResource(resourceName)));
+	}
+
 	private String[] _getTagNames(
-		List<TokenNameFinderModel> tokenNameFinderModels, String[] tokens,
+		List<TokenNameFinder> tokenNameFinders, String[] tokens,
 		double confidenceThreshold) {
 
 		List<Span> spans = new ArrayList<>();
 
-		for (TokenNameFinderModel tokenNameFinderModel :
-				tokenNameFinderModels) {
+		for (TokenNameFinder tokenNameFinder : tokenNameFinders) {
+			try {
+				spans.addAll(
+					TransformUtil.transformToList(
+						tokenNameFinder.find(tokens),
+						nameSpan -> {
+							if (nameSpan.getProb() > confidenceThreshold) {
+								return nameSpan;
+							}
 
-			NameFinderME nameFinderME = new NameFinderME(tokenNameFinderModel);
-
-			Span[] nameSpans = nameFinderME.find(tokens);
-
-			for (Span nameSpan : nameSpans) {
-				if (nameSpan.getProb() > confidenceThreshold) {
-					spans.add(nameSpan);
-				}
+							return null;
+						}));
+			}
+			finally {
+				tokenNameFinder.clearAdaptiveData();
 			}
 		}
 
@@ -158,23 +171,18 @@ public class OpenNLPDocumentAssetAutoTagProvider
 					}
 				}));
 
-		List<TokenNameFinderModel> tokenNameFinderModels =
-			_tokenNameFinderModelsDCLSingleton.getSingleton(
+		List<TokenNameFinder> tokenNameFinders =
+			_tokenNameFindersDCLSingleton.getSingleton(
 				() -> {
 					try {
 						return Arrays.asList(
-							new TokenNameFinderModel(
-								_bundle.getResource(
-									"org.apache.opennlp.model.en.ner." +
-										"location.bin")),
-							new TokenNameFinderModel(
-								_bundle.getResource(
-									"org.apache.opennlp.model.en.ner." +
-										"organization.bin")),
-							new TokenNameFinderModel(
-								_bundle.getResource(
-									"org.apache.opennlp.model.en.ner.person." +
-										"bin")));
+							_createTokenNameFinder(
+								"org.apache.opennlp.model.en.ner.location.bin"),
+							_createTokenNameFinder(
+								"org.apache.opennlp.model.en.ner." +
+									"organization.bin"),
+							_createTokenNameFinder(
+								"org.apache.opennlp.model.en.ner.person.bin"));
 					}
 					catch (IOException ioException) {
 						return ReflectionUtil.throwException(ioException);
@@ -195,7 +203,7 @@ public class OpenNLPDocumentAssetAutoTagProvider
 			Collections.addAll(
 				tagNames,
 				_getTagNames(
-					tokenNameFinderModels, tokenizerME.tokenize(sentence),
+					tokenNameFinders, tokenizerME.tokenize(sentence),
 					openNLPDocumentAssetAutoTaggerCompanyConfiguration.
 						confidenceThreshold()));
 		}
@@ -244,9 +252,9 @@ public class OpenNLPDocumentAssetAutoTagProvider
 	@Reference
 	private TextExtractorRegistry _textExtractorRegistry;
 
+	private final DCLSingleton<List<TokenNameFinder>>
+		_tokenNameFindersDCLSingleton = new DCLSingleton<>();
 	private final DCLSingleton<TokenizerModel> _tokenizerModelDCLSingleton =
 		new DCLSingleton<>();
-	private final DCLSingleton<List<TokenNameFinderModel>>
-		_tokenNameFinderModelsDCLSingleton = new DCLSingleton<>();
 
 }

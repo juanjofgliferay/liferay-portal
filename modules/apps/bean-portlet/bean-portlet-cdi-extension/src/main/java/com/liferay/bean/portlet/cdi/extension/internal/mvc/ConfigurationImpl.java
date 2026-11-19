@@ -5,18 +5,18 @@
 
 package com.liferay.bean.portlet.cdi.extension.internal.mvc;
 
+import jakarta.portlet.PortletConfig;
+import jakarta.portlet.PortletContext;
+
+import jakarta.ws.rs.RuntimeType;
+import jakarta.ws.rs.core.Configuration;
+import jakarta.ws.rs.core.Feature;
+
 import java.util.Collection;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-
-import javax.portlet.PortletConfig;
-import javax.portlet.PortletContext;
-
-import javax.ws.rs.RuntimeType;
-import javax.ws.rs.core.Configuration;
-import javax.ws.rs.core.Feature;
 
 /**
  * @author Neil Griffin
@@ -49,9 +49,7 @@ public class ConfigurationImpl implements Configuration {
 				portletContext.getInitParameter(initParameterName));
 		}
 
-		if (!_properties.containsKey(DEFAULT_VIEW_EXTENSION)) {
-			_properties.put(DEFAULT_VIEW_EXTENSION, "jsp");
-		}
+		_properties.putIfAbsent(DEFAULT_VIEW_EXTENSION, "jsp");
 	}
 
 	@Override

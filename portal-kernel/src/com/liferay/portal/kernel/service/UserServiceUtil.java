@@ -744,11 +744,11 @@ public class UserServiceUtil {
 	}
 
 	public static User fetchUserByExternalReferenceCode(
-			long companyId, String externalReferenceCode)
+			String externalReferenceCode, long companyId)
 		throws PortalException {
 
 		return getService().fetchUserByExternalReferenceCode(
-			companyId, externalReferenceCode);
+			externalReferenceCode, companyId);
 	}
 
 	public static List<User> getCompanyUsers(long companyId, int start, int end)
@@ -977,19 +977,12 @@ public class UserServiceUtil {
 		return getService().getUserByEmailAddress(companyId, emailAddress);
 	}
 
-	/**
-	 * Returns the user with the external reference code.
-	 *
-	 * @param companyId the primary key of the user's company
-	 * @param externalReferenceCode the user's external reference code
-	 * @return the user with the external reference code
-	 */
 	public static User getUserByExternalReferenceCode(
-			long companyId, String externalReferenceCode)
+			String externalReferenceCode, long companyId)
 		throws PortalException {
 
 		return getService().getUserByExternalReferenceCode(
-			companyId, externalReferenceCode);
+			externalReferenceCode, companyId);
 	}
 
 	/**
@@ -1331,6 +1324,22 @@ public class UserServiceUtil {
 			userId, password, emailAddress1, emailAddress2, serviceContext);
 	}
 
+	public static User updateExternalReferenceCode(
+			long userId, String externalReferenceCode)
+		throws PortalException {
+
+		return getService().updateExternalReferenceCode(
+			userId, externalReferenceCode);
+	}
+
+	public static User updateExternalReferenceCode(
+			User user, String externalReferenceCode)
+		throws PortalException {
+
+		return getService().updateExternalReferenceCode(
+			user, externalReferenceCode);
+	}
+
 	/**
 	 * Updates a user account that was automatically created when a guest user
 	 * participated in an action (e.g. posting a comment) and only provided his
@@ -1446,6 +1455,12 @@ public class UserServiceUtil {
 			updateUserInformation, sendEmail, serviceContext);
 	}
 
+	public static User updateLanguageId(long userId, String languageId)
+		throws PortalException {
+
+		return getService().updateLanguageId(userId, languageId);
+	}
+
 	/**
 	 * Updates whether the user is locked out from logging in.
 	 *
@@ -1457,21 +1472,6 @@ public class UserServiceUtil {
 		throws PortalException {
 
 		return getService().updateLockoutById(userId, lockout);
-	}
-
-	/**
-	 * Updates the user's OpenID.
-	 *
-	 * @param userId the primary key of the user
-	 * @param openId the new OpenID
-	 * @return the user
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static User updateOpenId(long userId, String openId)
-		throws PortalException {
-
-		return getService().updateOpenId(userId, openId);
 	}
 
 	/**
@@ -1566,6 +1566,13 @@ public class UserServiceUtil {
 		throws PortalException {
 
 		return getService().updateStatus(userId, status, serviceContext);
+	}
+
+	public static User updateStatus(
+			User user, int status, ServiceContext serviceContext)
+		throws PortalException {
+
+		return getService().updateStatus(user, status, serviceContext);
 	}
 
 	/**
@@ -1916,3 +1923,4 @@ public class UserServiceUtil {
 	private static volatile UserService _service;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1504031062

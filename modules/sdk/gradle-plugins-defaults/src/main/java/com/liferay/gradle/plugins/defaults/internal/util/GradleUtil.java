@@ -148,12 +148,14 @@ public class GradleUtil extends com.liferay.gradle.util.GradleUtil {
 
 	public static Project getProject(Project rootProject, String name) {
 		for (Project project : rootProject.getAllprojects()) {
-			if (name.equals(project.getName())) {
-				Set<Project> subprojects = project.getSubprojects();
+			if (!name.equals(project.getName())) {
+				continue;
+			}
 
-				if (subprojects.isEmpty()) {
-					return project;
-				}
+			Set<Project> subprojects = project.getSubprojects();
+
+			if (subprojects.isEmpty()) {
+				return project;
 			}
 		}
 
@@ -316,7 +318,7 @@ public class GradleUtil extends com.liferay.gradle.util.GradleUtil {
 		ComponentSelector projectComponentSelector =
 			dependencySubstitutions.project(project.getPath());
 
-		substitution.with(projectComponentSelector);
+		substitution.using(projectComponentSelector);
 	}
 
 	public static <P extends Plugin<? extends Project>> void withPlugin(

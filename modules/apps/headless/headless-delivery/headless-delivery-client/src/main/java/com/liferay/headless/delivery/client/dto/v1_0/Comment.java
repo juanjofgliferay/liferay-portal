@@ -8,13 +8,13 @@ package com.liferay.headless.delivery.client.dto.v1_0;
 import com.liferay.headless.delivery.client.function.UnsafeSupplier;
 import com.liferay.headless.delivery.client.serdes.v1_0.CommentSerDes;
 
+import jakarta.annotation.Generated;
+
 import java.io.Serializable;
 
 import java.util.Date;
 import java.util.Map;
 import java.util.Objects;
-
-import javax.annotation.Generated;
 
 /**
  * @author Javier Gamarra
@@ -173,6 +173,32 @@ public class Comment implements Cloneable, Serializable {
 
 	protected Integer numberOfComments;
 
+	public String getParentCommentExternalReferenceCode() {
+		return parentCommentExternalReferenceCode;
+	}
+
+	public void setParentCommentExternalReferenceCode(
+		String parentCommentExternalReferenceCode) {
+
+		this.parentCommentExternalReferenceCode =
+			parentCommentExternalReferenceCode;
+	}
+
+	public void setParentCommentExternalReferenceCode(
+		UnsafeSupplier<String, Exception>
+			parentCommentExternalReferenceCodeUnsafeSupplier) {
+
+		try {
+			parentCommentExternalReferenceCode =
+				parentCommentExternalReferenceCodeUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String parentCommentExternalReferenceCode;
+
 	public Long getParentCommentId() {
 		return parentCommentId;
 	}
@@ -245,3 +271,4 @@ public class Comment implements Cloneable, Serializable {
 	}
 
 }
+// LIFERAY-REST-BUILDER-HASH:-1638119774

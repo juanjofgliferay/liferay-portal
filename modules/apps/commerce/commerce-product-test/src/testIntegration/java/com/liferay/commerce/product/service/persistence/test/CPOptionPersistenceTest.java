@@ -112,11 +112,7 @@ public class CPOptionPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		CPOption newCPOption = _persistence.create(pk);
-
-		newCPOption.setMvccVersion(RandomTestUtil.nextLong());
+		CPOption newCPOption = addCPOption();
 
 		newCPOption.setCtCollectionId(RandomTestUtil.nextLong());
 
@@ -150,7 +146,11 @@ public class CPOptionPersistenceTest {
 
 		newCPOption.setLastPublishDate(RandomTestUtil.nextDate());
 
-		_cpOptions.add(_persistence.update(newCPOption));
+		newCPOption.setStatus(RandomTestUtil.nextInt());
+
+		newCPOption = _persistence.update(newCPOption);
+
+		_cpOptions.add(newCPOption);
 
 		CPOption existingCPOption = _persistence.findByPrimaryKey(
 			newCPOption.getPrimaryKey());
@@ -195,6 +195,8 @@ public class CPOptionPersistenceTest {
 		Assert.assertEquals(
 			Time.getShortTimestamp(existingCPOption.getLastPublishDate()),
 			Time.getShortTimestamp(newCPOption.getLastPublishDate()));
+		Assert.assertEquals(
+			existingCPOption.getStatus(), newCPOption.getStatus());
 	}
 
 	@Test(expected = DuplicateCPOptionExternalReferenceCodeException.class)
@@ -290,7 +292,8 @@ public class CPOptionPersistenceTest {
 			"companyId", true, "userId", true, "userName", true, "createDate",
 			true, "modifiedDate", true, "name", true, "description", true,
 			"commerceOptionTypeKey", true, "facetable", true, "required", true,
-			"skuContributor", true, "key", true, "lastPublishDate", true);
+			"skuContributor", true, "key", true, "lastPublishDate", true,
+			"status", true);
 	}
 
 	@Test
@@ -578,8 +581,6 @@ public class CPOptionPersistenceTest {
 
 		CPOption cpOption = _persistence.create(pk);
 
-		cpOption.setMvccVersion(RandomTestUtil.nextLong());
-
 		cpOption.setCtCollectionId(RandomTestUtil.nextLong());
 
 		cpOption.setUuid(RandomTestUtil.randomString());
@@ -612,6 +613,8 @@ public class CPOptionPersistenceTest {
 
 		cpOption.setLastPublishDate(RandomTestUtil.nextDate());
 
+		cpOption.setStatus(RandomTestUtil.nextInt());
+
 		_cpOptions.add(_persistence.update(cpOption));
 
 		return cpOption;
@@ -622,3 +625,4 @@ public class CPOptionPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:234068677

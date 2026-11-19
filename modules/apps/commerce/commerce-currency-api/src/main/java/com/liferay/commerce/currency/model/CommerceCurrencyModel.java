@@ -8,6 +8,7 @@ package com.liferay.commerce.currency.model;
 import com.liferay.portal.kernel.bean.AutoEscape;
 import com.liferay.portal.kernel.exception.LocaleException;
 import com.liferay.portal.kernel.model.BaseModel;
+import com.liferay.portal.kernel.model.ExternalReferenceCodeModel;
 import com.liferay.portal.kernel.model.LocalizedModel;
 import com.liferay.portal.kernel.model.MVCCModel;
 import com.liferay.portal.kernel.model.ShardedModel;
@@ -34,8 +35,8 @@ import org.osgi.annotation.versioning.ProviderType;
  */
 @ProviderType
 public interface CommerceCurrencyModel
-	extends BaseModel<CommerceCurrency>, LocalizedModel, MVCCModel,
-			ShardedModel, StagedAuditedModel {
+	extends BaseModel<CommerceCurrency>, ExternalReferenceCodeModel,
+			LocalizedModel, MVCCModel, ShardedModel, StagedAuditedModel {
 
 	/*
 	 * NOTE FOR DEVELOPERS:
@@ -89,6 +90,23 @@ public interface CommerceCurrencyModel
 	 */
 	@Override
 	public void setUuid(String uuid);
+
+	/**
+	 * Returns the external reference code of this commerce currency.
+	 *
+	 * @return the external reference code of this commerce currency
+	 */
+	@AutoEscape
+	@Override
+	public String getExternalReferenceCode();
+
+	/**
+	 * Sets the external reference code of this commerce currency.
+	 *
+	 * @param externalReferenceCode the external reference code of this commerce currency
+	 */
+	@Override
+	public void setExternalReferenceCode(String externalReferenceCode);
 
 	/**
 	 * Returns the commerce currency ID of this commerce currency.
@@ -558,6 +576,20 @@ public interface CommerceCurrencyModel
 	 */
 	public void setLastPublishDate(Date lastPublishDate);
 
+	/**
+	 * Returns the status of this commerce currency.
+	 *
+	 * @return the status of this commerce currency
+	 */
+	public int getStatus();
+
+	/**
+	 * Sets the status of this commerce currency.
+	 *
+	 * @param status the status of this commerce currency
+	 */
+	public void setStatus(int status);
+
 	@Override
 	public String[] getAvailableLanguageIds();
 
@@ -579,3 +611,4 @@ public interface CommerceCurrencyModel
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1556759394

@@ -1,4 +1,4 @@
-@component-name = "portal-workflow"
+@component-name = "portal-bpm"
 definition {
 
 	property portal.release = "true";
@@ -86,7 +86,7 @@ definition {
 
 		AssertTextEquals(
 			key_webContentTitle = "WC WebContent Title",
-			locator1 = "WC#ENTRY_LIST_WORKFLOW_TRANSLATIONE_STATUS",
+			locator1 = "WC#ENTRY_LIST_WORKFLOW_STATUS",
 			value1 = "Pending");
 	}
 
@@ -120,10 +120,7 @@ definition {
 			siteName = ${siteName},
 			userScreenName = "user1");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Users",
-			panel = "Control Panel",
-			portlet = "Users and Organizations");
+		User.openUsersAdmin();
 
 		User.assignSiteRoleCP(
 			siteRoleName = "Site Owner",
@@ -146,7 +143,7 @@ definition {
 			webContentContent = "WC WebContent Content",
 			webContentTitle = "EXAMPLE");
 
-		PortletEntry.submitForWorkflow();
+		WebContent.publishWithPermissions();
 
 		WebContentNavigator.gotoViewStatus(
 			webContentStatus = "PENDING",
@@ -171,11 +168,11 @@ definition {
 			assetType = "Web Content Article",
 			user = "user1 user1");
 
-		LexiconEntry.gotoEllipsisMenuItem(menuItem = "Assign to Me");
+		LexiconEntry.gotoVerticalEllipsisMenuItemNoError(menuItem = "Assign to Me");
 
 		Workflow.confirmWorkflowAction();
 
-		LexiconEntry.gotoEllipsisMenuItem(menuItem = "Approve");
+		LexiconEntry.gotoVerticalEllipsisMenuItemNoError(menuItem = "Approve");
 
 		Workflow.confirmWorkflowAction();
 
@@ -268,7 +265,7 @@ definition {
 			panel = "Site Administration",
 			portlet = "Web Content");
 
-		Workflow.configureWCWorkflowViaFolderInfo(workflowDefinition = "Single Approver");
+		DMDocument.expandInfo();
 
 		ProductMenu.gotoPortlet(
 			category = "Content & Data",
@@ -277,10 +274,9 @@ definition {
 
 		WebContentNavigator.gotoAddWithStructureCP(structureName = "WC Structure Name");
 
-		WebContent.addWithStructureAndWorkflowCP(
-			structureName = "WC Structure Name",
-			templateName = "WC Template Name",
-			webContentTitle = "WC WebContent Title");
+		WebContent.addCP(webContentTitle = "WC WebContent Title");
+
+		WebContent.submitForWorkflowWithPermission();
 
 		WebContent.viewTitle(webContentTitle = "WC WebContent Title");
 
@@ -383,7 +379,7 @@ definition {
 			workflowProcess = "Single Approver");
 
 		AssertElementPresent(
-			key_workflowItemSubject = "Web Content Article: Web Content Title",
+			key_workflowItemSubject = "Web Content Title",
 			locator1 = "WorkflowMetrics#METRICS_WORKFLOW_ALL_ITEMS_ITEM_SUBJECT");
 
 		Navigator.openURL();
@@ -426,8 +422,6 @@ definition {
 		Click(
 			key_webContentTitle = "Web Content Title",
 			locator1 = "WC#ENTRY_LIST_TITLE");
-
-		PortletEntry.submitForWorkflow();
 
 		WorkflowMetrics.goToDashboardAllItemsWithFilter(
 			workflowFilterOption = "PENDING",
@@ -489,6 +483,8 @@ definition {
 	@description = "LPS-190808 - Verify if the image added in the Web Content appears when the user enters the notification"
 	@priority = 4
 	test ViewLargeImageAddedByNotification {
+		property portal.upstream = "quarantine";
+
 		task ("Given a Structure created with a JSON file") {
 			NavItem.gotoStructures();
 
@@ -531,7 +527,7 @@ definition {
 		task ("and When the user attach an larger image on the created Web Content") {
 			WebContent.addWithStructureCP(
 				navTab = "Web Content Images",
-				webContentImage = "tree.png",
+				webContentImage = "blue-tree.png",
 				webContentTitle = "WC Title");
 
 			Button.click(button = "Submit for Workflow");
@@ -550,7 +546,7 @@ definition {
 
 			OcularAssertElementImage(
 				locator1 = "PageEditor#CONTENT_PAGE_WEB_CONTENT_CONTENT",
-				value1 = "tree.png",
+				value1 = "blue-tree.png",
 				value2 = 80);
 		}
 	}

@@ -6,13 +6,13 @@
 package com.liferay.site.configuration.manager.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
-import com.liferay.petra.string.StringBundler;
-import com.liferay.portal.configuration.metatype.annotations.ExtendedObjectClassDefinition;
+import com.liferay.configuration.admin.util.ConfigurationFilterStringUtil;
 import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.configuration.test.util.GroupConfigurationTemporarySwapper;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Role;
 import com.liferay.portal.kernel.model.role.RoleConstants;
+import com.liferay.portal.kernel.service.RoleLocalService;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
@@ -73,24 +73,52 @@ public class MenuAccessConfigurationManagerTest {
 	public void testAddAccessRoleToControlMenu() throws Exception {
 		Role role = RoleTestUtil.addRole(RoleConstants.TYPE_REGULAR);
 
-		_menuAccessConfigurationManager.addAccessRoleToControlMenu(role);
+		_menuAccessConfigurationManager.updateMenuAccessConfiguration(
+			_group.getGroupId(),
+			new String[] {String.valueOf(role.getRoleId())}, true);
 
 		_assertMenuAccessConfiguration(
 			new String[] {String.valueOf(role.getRoleId())});
+	}
+
+	@Test
+	public void testUpdateMenuAccessConfigurationWithDefaultRoles()
+		throws Exception {
+
+		_menuAccessConfigurationManager.updateMenuAccessConfiguration(
+			_group.getGroupId(), null, true);
+
+		Role administratorRole = _roleLocalService.getRole(
+			_group.getCompanyId(), RoleConstants.ADMINISTRATOR);
+
+		Role siteAdministratorRole = _roleLocalService.getRole(
+			_group.getCompanyId(), RoleConstants.SITE_ADMINISTRATOR);
+
+		_assertMenuAccessConfiguration(
+			new String[] {
+				String.valueOf(administratorRole.getRoleId()),
+				String.valueOf(siteAdministratorRole.getRoleId())
+			});
+	}
+
+	@Test
+	public void testUpdateMenuAccessConfigurationWithNoAccess()
+		throws Exception {
+
+		_menuAccessConfigurationManager.updateMenuAccessConfiguration(
+			_group.getGroupId(), new String[0], true);
+
+		_assertMenuAccessConfiguration(new String[0]);
 	}
 
 	private void _assertMenuAccessConfiguration(
 			String[] expectedAccessToControlMenuRoleIds)
 		throws Exception {
 
-		String filterString = StringBundler.concat(
-			"(&(service.factoryPid=", MenuAccessConfiguration.class.getName(),
-			".scoped)(",
-			ExtendedObjectClassDefinition.Scope.GROUP.getPropertyKey(), "=",
-			_group.getGroupId(), "))");
-
 		Configuration[] configurations = _configurationAdmin.listConfigurations(
-			filterString);
+			ConfigurationFilterStringUtil.getGroupScopedFilterString(
+				_group.getCompanyId(), _group.getGroupId(),
+				MenuAccessConfiguration.class.getName(), null));
 
 		Assert.assertNotNull(configurations);
 		Assert.assertEquals(
@@ -126,5 +154,8 @@ public class MenuAccessConfigurationManagerTest {
 
 	@Inject
 	private MenuAccessConfigurationManager _menuAccessConfigurationManager;
+
+	@Inject
+	private RoleLocalService _roleLocalService;
 
 }

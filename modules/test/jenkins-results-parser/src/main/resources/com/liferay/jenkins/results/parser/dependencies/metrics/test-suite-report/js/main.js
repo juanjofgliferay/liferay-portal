@@ -1,11 +1,17 @@
-window.onload = function () {
-	var statusChangesRowHeader = getElementByXpath("//th[contains(.,'Test Suite')]");
+addReportName();
 
-	triggerEvent(statusChangesRowHeader, 'click');
-}
+addDateText(document.getElementById("test-suite-data-date"), dataGeneratedDate);
 
 if ((typeof tableData !== 'undefined') && tableData) {
-	createTable(tableData, "test-suite-data-table");
+	let tableElement = createTable(tableData, 'test-suite-data-table');
 
-	Sortable.init();
+	addTotalColumn(tableElement);
+
+	window.onload = function () {
+		triggerEvent(getElementByXpath('//th[contains(.,"Test Suite Name")]'), 'click');
+
+		createBarChartFromTable('Daily Server Duration by Test Suite', 'hrs', 'server-duration-canvas', 'Total Server Duration', tableElement);
+	}
 }
+
+Sortable.init();

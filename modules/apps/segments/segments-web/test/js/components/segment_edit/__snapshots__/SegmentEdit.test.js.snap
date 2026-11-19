@@ -38,46 +38,51 @@ exports[`SegmentEdit renders 1`] = `
             value="Segment title"
           />
           <div
-            class="input-group input-localized input-localized-input"
+            class="clay-localized-input"
           >
             <div
-              class="dropdown"
+              class="input-group"
             >
-              <button
-                aria-controls="clay-dropdown-menu-1"
-                aria-expanded="false"
-                aria-haspopup="true"
-                class="dropdown-toggle btn-monospaced btn btn-secondary"
-                data-testid="localized-dropdown-button"
-                type="button"
+              <div
+                class="input-group-item"
               >
-                <svg
-                  class="lexicon-icon lexicon-icon-en-us"
-                  role="presentation"
+                <input
+                  class="form-control"
+                  data-testid="localized-input-button"
+                  placeholder="untitled-segment"
+                  readonly=""
+                  type="text"
+                  value="Segment title"
+                />
+              </div>
+              <div
+                class="input-group-item input-group-item-shrink"
+              >
+                <button
+                  aria-activedescendant=""
+                  aria-expanded="false"
+                  aria-haspopup="listbox"
+                  aria-label="Open Localizations"
+                  class="form-control form-control-select form-control-select-secondary form-control-shrink hidden-label"
+                  role="combobox"
+                  tabindex="0"
+                  title="en-US"
+                  type="button"
                 >
-                  <use
-                    href="#en-us"
-                  />
-                </svg>
-                <span
-                  class="btn-section"
-                >
-                  en-US
-                </span>
-              </button>
-            </div>
-            <div
-              class="input-group-item ml-2"
-            >
-              <input
-                aria-label="untitled-segment"
-                class="form-control field form-control-inline language-value rounded"
-                data-testid="localized-main-input"
-                placeholder="untitled-segment"
-                readonly=""
-                type="text"
-                value="Segment title"
-              />
+                  <span
+                    class="inline-item-before"
+                  >
+                    <svg
+                      class="lexicon-icon lexicon-icon-en-us"
+                      role="presentation"
+                    >
+                      <use
+                        href="#en-us"
+                      />
+                    </svg>
+                  </span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -128,46 +133,51 @@ exports[`SegmentEdit renders with edit buttons if the user has update permission
             value="Segment title"
           />
           <div
-            class="input-group input-localized input-localized-input"
+            class="clay-localized-input"
           >
             <div
-              class="dropdown"
+              class="input-group"
             >
-              <button
-                aria-controls="clay-dropdown-menu-2"
-                aria-expanded="false"
-                aria-haspopup="true"
-                class="dropdown-toggle btn-monospaced btn btn-secondary"
-                data-testid="localized-dropdown-button"
-                type="button"
+              <div
+                class="input-group-item"
               >
-                <svg
-                  class="lexicon-icon lexicon-icon-en-us"
-                  role="presentation"
+                <input
+                  class="form-control"
+                  data-testid="localized-input-button"
+                  placeholder="untitled-segment"
+                  readonly=""
+                  type="text"
+                  value="Segment title"
+                />
+              </div>
+              <div
+                class="input-group-item input-group-item-shrink"
+              >
+                <button
+                  aria-activedescendant=""
+                  aria-expanded="false"
+                  aria-haspopup="listbox"
+                  aria-label="Open Localizations"
+                  class="form-control form-control-select form-control-select-secondary form-control-shrink hidden-label"
+                  role="combobox"
+                  tabindex="0"
+                  title="en-US"
+                  type="button"
                 >
-                  <use
-                    href="#en-us"
-                  />
-                </svg>
-                <span
-                  class="btn-section"
-                >
-                  en-US
-                </span>
-              </button>
-            </div>
-            <div
-              class="input-group-item ml-2"
-            >
-              <input
-                aria-label="untitled-segment"
-                class="form-control field form-control-inline language-value rounded"
-                data-testid="localized-main-input"
-                placeholder="untitled-segment"
-                readonly=""
-                type="text"
-                value="Segment title"
-              />
+                  <span
+                    class="inline-item-before"
+                  >
+                    <svg
+                      class="lexicon-icon lexicon-icon-en-us"
+                      role="presentation"
+                    >
+                      <use
+                        href="#en-us"
+                      />
+                    </svg>
+                  </span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -267,45 +277,50 @@ exports[`SegmentEdit renders with given values 1`] = `
             value="Segment title"
           />
           <div
-            class="input-group input-localized input-localized-input"
+            class="clay-localized-input"
           >
             <div
-              class="dropdown"
+              class="input-group"
             >
-              <button
-                aria-controls="clay-dropdown-menu-4"
-                aria-expanded="false"
-                aria-haspopup="true"
-                class="dropdown-toggle btn-monospaced btn btn-secondary"
-                data-testid="localized-dropdown-button"
-                type="button"
+              <div
+                class="input-group-item"
               >
-                <svg
-                  class="lexicon-icon lexicon-icon-en-us"
-                  role="presentation"
+                <input
+                  class="form-control"
+                  data-testid="localized-input-button"
+                  placeholder="untitled-segment"
+                  type="text"
+                  value="Segment title"
+                />
+              </div>
+              <div
+                class="input-group-item input-group-item-shrink"
+              >
+                <button
+                  aria-activedescendant=""
+                  aria-expanded="false"
+                  aria-haspopup="listbox"
+                  aria-label="Open Localizations"
+                  class="form-control form-control-select form-control-select-secondary form-control-shrink hidden-label"
+                  role="combobox"
+                  tabindex="0"
+                  title="en-US"
+                  type="button"
                 >
-                  <use
-                    href="#en-us"
-                  />
-                </svg>
-                <span
-                  class="btn-section"
-                >
-                  en-US
-                </span>
-              </button>
-            </div>
-            <div
-              class="input-group-item ml-2"
-            >
-              <input
-                aria-label="untitled-segment"
-                class="form-control field form-control-inline language-value rounded"
-                data-testid="localized-main-input"
-                placeholder="untitled-segment"
-                type="text"
-                value="Segment title"
-              />
+                  <span
+                    class="inline-item-before"
+                  >
+                    <svg
+                      class="lexicon-icon lexicon-icon-en-us"
+                      role="presentation"
+                    >
+                      <use
+                        href="#en-us"
+                      />
+                    </svg>
+                  </span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -427,11 +442,11 @@ exports[`SegmentEdit renders with given values 1`] = `
         class="contributor-builder-root h-100 editing"
       >
         <div
-          class="criteria-builder-section-sidebar overflow-hidden position-fixed criteria-builder-section-sidebar--with-warning"
+          class="criteria-builder-section-sidebar overflow-hidden criteria-builder-section-sidebar--with-warning"
         >
           <div
-            aria-label="segments-contributors-panel"
-            class="criteria-sidebar-root d-flex flex-column position-absolute"
+            aria-label="contributors-panel"
+            class="criteria-sidebar-root d-flex flex-column"
             role="tabpanel"
             tabindex="-1"
           >
@@ -481,34 +496,26 @@ exports[`SegmentEdit renders with given values 1`] = `
               </div>
             </div>
             <div
-              class="c-p-4 overflow-y-auto position-relative sidebar-collapse"
+              class="c-p-4 position-relative sidebar-collapse"
             >
               <div
-                aria-orientation="vertical"
                 class="panel-group"
-                role="tablist"
               >
                 <div
                   class="panel panel-unstyled"
                   id="first-test-values-group"
-                  role="tablist"
                 >
                   <button
+                    aria-controls="clay-id-9"
                     aria-expanded="true"
                     class="panel-header panel-header-link collapse-icon collapse-icon-middle show btn btn-unstyled"
-                    role="tab"
                     tabindex="0"
                     type="button"
                   >
                     <div
-                      class="c-inner"
-                      tabindex="-1"
+                      class="d-flex justify-content-between text-uppercase"
                     >
-                      <div
-                        class="d-flex justify-content-between text-uppercase"
-                      >
-                        First Test Values Group
-                      </div>
+                      First Test Values Group
                     </div>
                     <span
                       class="collapse-icon-closed"
@@ -536,8 +543,10 @@ exports[`SegmentEdit renders with given values 1`] = `
                     </span>
                   </button>
                   <div
+                    aria-labelledby="clay-id-9"
                     class="panel-collapse"
-                    role="tabpanel"
+                    id="clay-id-9"
+                    role="region"
                   >
                     <div
                       class="panel-body c-px-0"
@@ -545,7 +554,7 @@ exports[`SegmentEdit renders with given values 1`] = `
                       <p
                         class="c-pt-1 text-secondary"
                       >
-                        inherited-attributes-are-not-taken-into-account-to-include-members-in-segments
+                        inherited-attributes-are-not-taken-into-account-to-include-members
                       </p>
                       <ul
                         class="c-pl-0"
@@ -594,9 +603,10 @@ exports[`SegmentEdit renders with given values 1`] = `
         </div>
         <div
           class="c-pr-0 criteria-builder-section-main d-flex h-100 w-100"
+          role="application"
         >
           <div
-            class="contributor-container h-100 overflow-auto position-absolute w-100"
+            class="contributor-container h-100 position-absolute w-100"
           >
             <div
               class="container-fluid container-fluid-max-xl"
@@ -622,7 +632,7 @@ exports[`SegmentEdit renders with given values 1`] = `
                         class="btn-group"
                       >
                         <div
-                          class="btn-group-item inline-item"
+                          class="btn-group-item d-flex flex-wrap inline-item"
                         >
                           <span
                             class="c-mr-4"
@@ -653,27 +663,28 @@ exports[`SegmentEdit renders with given values 1`] = `
                       x-with-property-x
                     </h3>
                     <div
-                      class="criteria-group-root w-100 color--first-test-values-group criteria-group-item-root"
+                      class="criteria-group-root my-2 p-2 w-100 color--first-test-values-group criteria-group-item-root"
                     >
                       <div
-                        class="drop-zone-root position-relative"
+                        class="drop-zone-root position-relative drop-zone-first-test-values-group drop-zone-first-test-values-group-group_01-0-top"
                       >
                         <div
-                          class="drop-zone-target drop-zone-target-before"
+                          class="drop-zone-target"
                         />
                       </div>
                       <div
                         class="criterion position-relative"
                       >
                         <div
-                          class="criterion-row-root"
+                          class="criterion-row-root drop-zone-first-test-values-group drop-zone-first-test-values-group-group_01-0-middle"
                         >
                           <div
                             class="edit-container"
                           >
-                            <div
-                              class="drag-icon"
+                            <button
+                              class="drag-icon text-secondary btn btn-monospaced btn-outline-borderless btn-sm btn-outline-unstyled"
                               draggable="true"
+                              type="button"
                             >
                               <svg
                                 class="lexicon-icon lexicon-icon-drag"
@@ -683,7 +694,7 @@ exports[`SegmentEdit renders with given values 1`] = `
                                   href="#drag"
                                 />
                               </svg>
-                            </div>
+                            </button>
                             <span
                               class="c-ml-2 criterion-string"
                             >
@@ -726,9 +737,9 @@ exports[`SegmentEdit renders with given values 1`] = `
                               value="value"
                             />
                             <button
-                              aria-label="duplicate-segment-property"
+                              aria-label="duplicate-property"
                               class="btn-outline-borderless btn-sm c-mr-1 btn btn-monospaced btn-secondary"
-                              title="duplicate-segment-property"
+                              title="duplicate-property"
                               type="button"
                             >
                               <svg
@@ -741,9 +752,9 @@ exports[`SegmentEdit renders with given values 1`] = `
                               </svg>
                             </button>
                             <button
-                              aria-label="delete-segment-property"
+                              aria-label="delete-property"
                               class="btn-outline-borderless btn-sm btn btn-monospaced btn-secondary"
-                              title="delete-segment-property"
+                              title="delete-property"
                               type="button"
                             >
                               <svg
@@ -758,7 +769,7 @@ exports[`SegmentEdit renders with given values 1`] = `
                           </div>
                         </div>
                         <div
-                          class="drop-zone-root position-relative"
+                          class="drop-zone-root position-relative drop-zone-first-test-values-group drop-zone-first-test-values-group-group_01-0-bottom"
                         >
                           <div
                             class="drop-zone-target"
@@ -832,46 +843,51 @@ exports[`SegmentEdit renders without edit buttons if the user does not have upda
             value="Segment title"
           />
           <div
-            class="input-group input-localized input-localized-input"
+            class="clay-localized-input"
           >
             <div
-              class="dropdown"
+              class="input-group"
             >
-              <button
-                aria-controls="clay-dropdown-menu-3"
-                aria-expanded="false"
-                aria-haspopup="true"
-                class="dropdown-toggle btn-monospaced btn btn-secondary"
-                data-testid="localized-dropdown-button"
-                type="button"
+              <div
+                class="input-group-item"
               >
-                <svg
-                  class="lexicon-icon lexicon-icon-en-us"
-                  role="presentation"
+                <input
+                  class="form-control"
+                  data-testid="localized-input-button"
+                  placeholder="untitled-segment"
+                  readonly=""
+                  type="text"
+                  value="Segment title"
+                />
+              </div>
+              <div
+                class="input-group-item input-group-item-shrink"
+              >
+                <button
+                  aria-activedescendant=""
+                  aria-expanded="false"
+                  aria-haspopup="listbox"
+                  aria-label="Open Localizations"
+                  class="form-control form-control-select form-control-select-secondary form-control-shrink hidden-label"
+                  role="combobox"
+                  tabindex="0"
+                  title="en-US"
+                  type="button"
                 >
-                  <use
-                    href="#en-us"
-                  />
-                </svg>
-                <span
-                  class="btn-section"
-                >
-                  en-US
-                </span>
-              </button>
-            </div>
-            <div
-              class="input-group-item ml-2"
-            >
-              <input
-                aria-label="untitled-segment"
-                class="form-control field form-control-inline language-value rounded"
-                data-testid="localized-main-input"
-                placeholder="untitled-segment"
-                readonly=""
-                type="text"
-                value="Segment title"
-              />
+                  <span
+                    class="inline-item-before"
+                  >
+                    <svg
+                      class="lexicon-icon lexicon-icon-en-us"
+                      role="presentation"
+                    >
+                      <use
+                        href="#en-us"
+                      />
+                    </svg>
+                  </span>
+                </button>
+              </div>
             </div>
           </div>
         </div>

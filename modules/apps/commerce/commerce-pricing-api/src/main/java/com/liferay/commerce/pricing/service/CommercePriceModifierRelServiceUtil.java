@@ -7,6 +7,7 @@ package com.liferay.commerce.pricing.service;
 
 import com.liferay.commerce.pricing.model.CommercePriceModifierRel;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.util.List;
@@ -70,10 +71,10 @@ public class CommercePriceModifierRelServiceUtil {
 	}
 
 	public static long[] getClassPKs(
-			long commercePriceModifierRelId, String className)
+			long commercePriceModifierId, String className)
 		throws PortalException {
 
-		return getService().getClassPKs(commercePriceModifierRelId, className);
+		return getService().getClassPKs(commercePriceModifierId, className);
 	}
 
 	public static CommercePriceModifierRel getCommercePriceModifierRel(
@@ -85,30 +86,28 @@ public class CommercePriceModifierRelServiceUtil {
 	}
 
 	public static List<CommercePriceModifierRel> getCommercePriceModifierRels(
-			long commercePriceModifierRelId, String className)
+			long commercePriceModifierId, String className)
 		throws PortalException {
 
 		return getService().getCommercePriceModifierRels(
-			commercePriceModifierRelId, className);
+			commercePriceModifierId, className);
 	}
 
 	public static List<CommercePriceModifierRel> getCommercePriceModifierRels(
-			long commercePriceModifierRelId, String className, int start,
-			int end,
+			long commercePriceModifierId, String className, int start, int end,
 			OrderByComparator<CommercePriceModifierRel> orderByComparator)
 		throws PortalException {
 
 		return getService().getCommercePriceModifierRels(
-			commercePriceModifierRelId, className, start, end,
-			orderByComparator);
+			commercePriceModifierId, className, start, end, orderByComparator);
 	}
 
 	public static int getCommercePriceModifierRelsCount(
-			long commercePriceModifierRelId, String className)
+			long commercePriceModifierId, String className)
 		throws PortalException {
 
 		return getService().getCommercePriceModifierRelsCount(
-			commercePriceModifierRelId, className);
+			commercePriceModifierId, className);
 	}
 
 	public static List<CommercePriceModifierRel> getCommercePriceModifiersRels(
@@ -159,13 +158,13 @@ public class CommercePriceModifierRelServiceUtil {
 	}
 
 	public static CommercePriceModifierRelService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(CommercePriceModifierRelService service) {
-		_service = service;
-	}
-
-	private static volatile CommercePriceModifierRelService _service;
+	private static final Snapshot<CommercePriceModifierRelService>
+		_serviceSnapshot = new Snapshot<>(
+			CommercePriceModifierRelServiceUtil.class,
+			CommercePriceModifierRelService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1465969273

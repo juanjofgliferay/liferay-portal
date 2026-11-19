@@ -1,0 +1,34 @@
+////
+/// @group utilities
+////
+
+/// A mixin that overwrites Bootstrap 4's `box-shadow` mixin. Shadows set to
+/// `c-unset`, `clay-unset`, `null`, or an empty list are dropped from the
+/// arglist. The remaining shadows are joined into a comma separated list.
+/// @param {Arglist} $shadow
+
+@mixin box-shadow($shadow...) {
+	$enable: if(
+		variable-exists(enable-shadows),
+		$enable-shadows,
+		if(variable-exists(cadmin-enable-shadows), $cadmin-enable-shadows, true)
+	);
+
+	@if ($enable) {
+		$shadows: ();
+
+		@each $value in $shadow {
+			@if (
+				(not clay-is-map-unset($value)) and
+					($value != null) and
+					($value != ())
+			) {
+				$shadows: append($shadows, $value, comma);
+			}
+		}
+
+		@if (length($shadows) > 0) {
+			box-shadow: $shadows;
+		}
+	}
+}

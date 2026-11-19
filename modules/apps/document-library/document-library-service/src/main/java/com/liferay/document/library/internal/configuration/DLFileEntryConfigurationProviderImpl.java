@@ -13,6 +13,7 @@ import com.liferay.document.library.internal.configuration.helper.DLFileEntryCon
 import com.liferay.portal.configuration.metatype.annotations.ExtendedObjectClassDefinition;
 import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.util.HashMapDictionary;
 import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
@@ -51,33 +52,25 @@ public class DLFileEntryConfigurationProviderImpl
 
 	@Override
 	public int getGroupMaxNumberOfPages(long groupId) {
-		Group group = _groupLocalService.fetchGroup(groupId);
-
-		if (group == null) {
-			return _dlFileEntryConfigurationHelper.getSystemMaxNumberOfPages();
-		}
+		long companyId = _getCompanyId(groupId);
 
 		return _getMinimumMaxNumberOfPages(
-			_dlFileEntryConfigurationHelper.getGroupMaxNumberOfPages(groupId),
+			_dlFileEntryConfigurationHelper.getGroupMaxNumberOfPages(
+				companyId, groupId),
 			_dlFileEntryConfigurationHelper.getCompanyMaxNumberOfPages(
-				group.getCompanyId()),
+				companyId),
 			_dlFileEntryConfigurationHelper.getSystemMaxNumberOfPages());
 	}
 
 	@Override
 	public long getGroupPreviewableProcessorMaxSize(long groupId) {
-		Group group = _groupLocalService.fetchGroup(groupId);
-
-		if (group == null) {
-			return _dlFileEntryConfigurationHelper.
-				getSystemPreviewableProcessorMaxSize();
-		}
+		long companyId = _getCompanyId(groupId);
 
 		return _getMinimumPreviewableProcessorMaxSize(
 			_dlFileEntryConfigurationHelper.getGroupPreviewableProcessorMaxSize(
-				groupId),
+				companyId, groupId),
 			_dlFileEntryConfigurationHelper.
-				getCompanyPreviewableProcessorMaxSize(group.getCompanyId()),
+				getCompanyPreviewableProcessorMaxSize(companyId),
 			_dlFileEntryConfigurationHelper.
 				getSystemPreviewableProcessorMaxSize());
 	}
@@ -92,13 +85,15 @@ public class DLFileEntryConfigurationProviderImpl
 
 			Group group = _groupLocalService.fetchGroup(groupId);
 
-			if ((group != null) &&
-				(previewableProcessorMaxSize !=
+			if ((group == null) ||
+				(previewableProcessorMaxSize ==
 					getCompanyPreviewableProcessorMaxSize(
 						group.getCompanyId()))) {
 
-				map.put(groupId, previewableProcessorMaxSize);
+				continue;
 			}
+
+			map.put(groupId, previewableProcessorMaxSize);
 		}
 
 		return map;
@@ -193,6 +188,18 @@ public class DLFileEntryConfigurationProviderImpl
 		).build();
 	}
 
+	private long _getCompanyId(long groupId) {
+		Group group = _groupLocalService.fetchGroup(groupId);
+
+		long companyId = CompanyThreadLocal.getCompanyId();
+
+		if (group != null) {
+			companyId = group.getCompanyId();
+		}
+
+		return companyId;
+	}
+
 	private int _getGroupMaxNumberOfPagesLimit(long groupId) {
 		Group group = _groupLocalService.fetchGroup(groupId);
 
@@ -217,9 +224,11 @@ public class DLFileEntryConfigurationProviderImpl
 		long minimum = Long.MAX_VALUE;
 
 		for (long value : values) {
-			if ((value != unlimitedValue) && (value < minimum)) {
-				minimum = value;
+			if ((value == unlimitedValue) || (value >= minimum)) {
+				continue;
 			}
+
+			minimum = value;
 		}
 
 		if (minimum == Long.MAX_VALUE) {
@@ -308,7 +317,7 @@ public class DLFileEntryConfigurationProviderImpl
 			getCompanyPreviewableProcessorMaxSize(group.getCompanyId()));
 
 		_configurationProvider.saveGroupConfiguration(
-			DLFileEntryConfiguration.class, groupId,
+			DLFileEntryConfiguration.class, group.getCompanyId(), groupId,
 			_createDictionary(maxNumberOfPages, previewableProcessorMaxSize));
 	}
 

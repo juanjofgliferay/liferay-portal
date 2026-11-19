@@ -17,13 +17,17 @@ import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.odata.entity.BooleanEntityField;
 import com.liferay.portal.odata.entity.DateTimeEntityField;
+import com.liferay.portal.odata.entity.DoubleEntityField;
 import com.liferay.portal.odata.entity.EntityField;
 import com.liferay.portal.odata.entity.StringEntityField;
 import com.liferay.portal.odata.normalizer.Normalizer;
-import com.liferay.portal.search.expando.ExpandoBridgeIndexer;
+import com.liferay.portal.odata.sort.InvalidSortException;
+import com.liferay.portal.search.expando.ExpandoBridgeUtil;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
+import java.util.function.Function;
 
 /**
  * @author Javier Gamarra
@@ -32,7 +36,6 @@ public class EntityFieldsUtil {
 
 	public static List<EntityField> getEntityFields(
 		long classNameId, long companyId,
-		ExpandoBridgeIndexer expandoBridgeIndexer,
 		ExpandoColumnLocalService expandoColumnLocalService,
 		ExpandoTableLocalService expandoTableLocalService) {
 
@@ -45,14 +48,10 @@ public class EntityFieldsUtil {
 
 		return TransformUtil.transform(
 			expandoColumnLocalService.getColumns(expandoTable.getTableId()),
-			expandoColumn -> _getEntityField(
-				expandoBridgeIndexer, expandoColumn));
+			expandoColumn -> _getEntityField(expandoColumn));
 	}
 
-	private static EntityField _getEntityField(
-		ExpandoBridgeIndexer expandoBridgeIndexer,
-		ExpandoColumn expandoColumn) {
-
+	private static EntityField _getEntityField(ExpandoColumn expandoColumn) {
 		UnicodeProperties unicodeProperties =
 			expandoColumn.getTypeSettingsProperties();
 
@@ -63,16 +62,21 @@ public class EntityFieldsUtil {
 			return null;
 		}
 
-		int type = expandoColumn.getType();
-
 		String externalName = Normalizer.normalizeIdentifier(
 			expandoColumn.getName());
 
-		String internalName = expandoBridgeIndexer.encodeFieldName(
-			expandoColumn);
+		Function<Locale, String> function = locale -> {
+			throw new InvalidSortException(
+				"Unable to sort by property: " + externalName);
+		};
+
+		String internalName = ExpandoBridgeUtil.encodeFieldName(expandoColumn);
+
+		int type = expandoColumn.getType();
 
 		if (type == ExpandoColumnConstants.BOOLEAN) {
-			return new BooleanEntityField(externalName, locale -> internalName);
+			return new BooleanEntityField(
+				externalName, function, locale -> internalName);
 		}
 		else if (type == ExpandoColumnConstants.DATE) {
 			return new DateTimeEntityField(
@@ -80,17 +84,23 @@ public class EntityFieldsUtil {
 				locale -> Field.getSortableFieldName(internalName),
 				locale -> internalName);
 		}
+		else if ((type == ExpandoColumnConstants.DOUBLE) ||
+				 (type == ExpandoColumnConstants.FLOAT)) {
+
+			return new DoubleEntityField(
+				externalName,
+				locale -> Field.getSortableFieldName(internalName + "_Number"));
+		}
 		else if (type == ExpandoColumnConstants.STRING_LOCALIZED) {
 			return new StringEntityField(
-				externalName,
+				externalName, function,
 				locale -> Field.getLocalizedName(locale, internalName));
 		}
 
 		return new StringEntityField(
-			externalName,
+			externalName, function,
 			locale -> {
-				String numericSuffix = expandoBridgeIndexer.getNumericSuffix(
-					type);
+				String numericSuffix = ExpandoBridgeUtil.getNumericSuffix(type);
 
 				if (!numericSuffix.equals(StringPool.BLANK)) {
 					return internalName.concat(".keyword");

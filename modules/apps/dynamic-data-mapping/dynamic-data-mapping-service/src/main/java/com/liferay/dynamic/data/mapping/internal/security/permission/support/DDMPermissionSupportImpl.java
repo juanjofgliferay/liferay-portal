@@ -6,7 +6,6 @@
 package com.liferay.dynamic.data.mapping.internal.security.permission.support;
 
 import com.liferay.dynamic.data.mapping.constants.DDMActionKeys;
-import com.liferay.dynamic.data.mapping.internal.security.permission.support.helper.DDMPermissionSupportHelper;
 import com.liferay.dynamic.data.mapping.model.DDMStructure;
 import com.liferay.dynamic.data.mapping.model.DDMTemplate;
 import com.liferay.dynamic.data.mapping.security.permission.DDMPermissionSupport;
@@ -16,10 +15,15 @@ import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerCustomizer
 import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerCustomizerFactory.ServiceWrapper;
 import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMap;
 import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMapFactory;
+import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.model.ClassName;
+import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.security.permission.ResourceActionsUtil;
+import com.liferay.portal.kernel.service.ClassNameLocalService;
+import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.permission.PortletPermissionUtil;
 import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.Portal;
@@ -102,7 +106,7 @@ public class DDMPermissionSupportImpl implements DDMPermissionSupport {
 				_ddmStructurePermissionSupportServiceTrackerMap.getService(
 					_portal.getClassName(classNameId));
 
-		return _ddmPermissionSupportHelper.contains(
+		return _contains(
 			permissionChecker,
 			getResourceName(structurePermissionSupportServiceWrapper), groupId,
 			_getAddStructureActionId(structurePermissionSupportServiceWrapper));
@@ -141,20 +145,33 @@ public class DDMPermissionSupportImpl implements DDMPermissionSupport {
 	}
 
 	@Override
-	public String getStructureModelResourceName(long classNameId) {
+	public String getStructureModelResourceName(long classNameId)
+		throws PortalException {
+
 		return getStructureModelResourceName(_portal.getClassName(classNameId));
 	}
 
 	@Override
-	public String getStructureModelResourceName(String className) {
+	public String getStructureModelResourceName(String classNameString)
+		throws PortalException {
+
+		ClassName className = _classNameLocalService.fetchClassName(
+			classNameString);
+
+		if (className.getClassNameId() == 0) {
+			throw new PortalException(
+				StringBundler.concat(
+					"Class name ", classNameString, " is not valid"));
+		}
+
 		ServiceWrapper<DDMStructurePermissionSupport>
 			structurePermissionSupportServiceWrapper =
 				_ddmStructurePermissionSupportServiceTrackerMap.getService(
-					className);
+					classNameString);
 
 		if (structurePermissionSupportServiceWrapper == null) {
 			return ResourceActionsUtil.getCompositeModelName(
-				className, DDMStructure.class.getName());
+				classNameString, DDMStructure.class.getName());
 		}
 
 		boolean defaultModelResourceName = MapUtil.getBoolean(
@@ -166,7 +183,7 @@ public class DDMPermissionSupportImpl implements DDMPermissionSupport {
 		}
 
 		return ResourceActionsUtil.getCompositeModelName(
-			className, DDMStructure.class.getName());
+			classNameString, DDMStructure.class.getName());
 	}
 
 	@Override
@@ -258,6 +275,19 @@ public class DDMPermissionSupportImpl implements DDMPermissionSupport {
 		}
 	}
 
+	private boolean _contains(
+		PermissionChecker permissionChecker, String name, long classPK,
+		String actionId) {
+
+		Group group = _groupLocalService.fetchGroup(classPK);
+
+		if ((group != null) && group.isStagingGroup()) {
+			group = group.getLiveGroup();
+		}
+
+		return permissionChecker.hasPermission(group, name, classPK, actionId);
+	}
+
 	private boolean _containsAddTemplatePermission(
 			PermissionChecker permissionChecker, long groupId, long classNameId,
 			ServiceWrapper<DDMTemplatePermissionSupport>
@@ -276,7 +306,7 @@ public class DDMPermissionSupportImpl implements DDMPermissionSupport {
 					templatePermissionSupportServiceWrapper));
 		}
 
-		return _ddmPermissionSupportHelper.contains(
+		return _contains(
 			permissionChecker, resourceName, groupId,
 			_getAddTemplateActionId(templatePermissionSupportServiceWrapper));
 	}
@@ -336,7 +366,7 @@ public class DDMPermissionSupportImpl implements DDMPermissionSupport {
 	}
 
 	@Reference
-	private DDMPermissionSupportHelper _ddmPermissionSupportHelper;
+	private ClassNameLocalService _classNameLocalService;
 
 	private ServiceTrackerMap
 		<String, ServiceWrapper<DDMStructurePermissionSupport>>
@@ -344,6 +374,9 @@ public class DDMPermissionSupportImpl implements DDMPermissionSupport {
 	private ServiceTrackerMap
 		<String, ServiceWrapper<DDMTemplatePermissionSupport>>
 			_ddmTemplatePermissionSupportServiceTrackerMap;
+
+	@Reference
+	private GroupLocalService _groupLocalService;
 
 	@Reference
 	private Portal _portal;

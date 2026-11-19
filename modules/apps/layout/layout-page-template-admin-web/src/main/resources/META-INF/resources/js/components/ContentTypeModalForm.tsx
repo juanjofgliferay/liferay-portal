@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
+import {ClayInput, ClaySelect} from '@clayui/form';
 import ClayIcon from '@clayui/icon';
 import classNames from 'classnames';
 import React, {
@@ -77,8 +78,7 @@ export default function ContentTypeModalForm({
 				id={`${namespace}name`}
 				name={Liferay.Language.get('name')}
 			>
-				<input
-					className="form-control"
+				<ClayInput
 					defaultValue={displayPageName}
 					id={`${namespace}name`}
 					name={`${namespace}name`}
@@ -125,7 +125,7 @@ function MappingTypeSelector({
 	});
 
 	const onChange = useCallback(
-		(event) => {
+		(event: React.ChangeEvent<HTMLSelectElement>) => {
 			setError({...error, classNameId: '', classTypeId: ''});
 
 			const select = event.target;
@@ -157,23 +157,21 @@ function MappingTypeSelector({
 				id={`${namespace}classNameId`}
 				name={Liferay.Language.get('content-type')}
 			>
-				<select
-					className="form-control"
+				<ClaySelect
 					defaultValue={selectedType}
 					id={`${namespace}classNameId`}
 					name={`${namespace}classNameId`}
 					onChange={onChange}
 				>
-					<option value="">
-						{`-- ${Liferay.Language.get('not-selected')} --`}
-					</option>
+					<ClaySelect.Option
+						label={`-- ${Liferay.Language.get('not-selected')} --`}
+						value=""
+					/>
 
 					{mappingTypes.map(({id, label}) => (
-						<option key={id} value={id}>
-							{label}
-						</option>
+						<ClaySelect.Option key={id} label={label} value={id} />
 					))}
-				</select>
+				</ClaySelect>
 			</FormField>
 
 			{Array.isArray(subtypes) && Boolean(subtypes.length) && (
@@ -182,8 +180,7 @@ function MappingTypeSelector({
 					id={`${namespace}classTypeId`}
 					name={Liferay.Language.get('subtype')}
 				>
-					<select
-						className="form-control"
+					<ClaySelect
 						defaultValue={selectedSubtype}
 						id={`${namespace}classTypeId`}
 						name={`${namespace}classTypeId`}
@@ -194,16 +191,19 @@ function MappingTypeSelector({
 							})
 						}
 					>
-						<option value="">
-							{`-- ${Liferay.Language.get('not-selected')} --`}
-						</option>
+						<ClaySelect.Option
+							label={`-- ${Liferay.Language.get('not-selected')} --`}
+							value=""
+						/>
 
 						{subtypes.map(({id, label}) => (
-							<option key={id} value={id}>
-								{label}
-							</option>
+							<ClaySelect.Option
+								key={id}
+								label={label}
+								value={id}
+							/>
 						))}
-					</select>
+					</ClaySelect>
 				</FormField>
 			)}
 		</fieldset>
@@ -245,4 +245,31 @@ function FormField({children, error, id, name}: FormFieldProps) {
 			)}
 		</div>
 	);
+}
+
+export function validateForm(form: any, namespace: string): ValidationError {
+	const {elements} = form;
+	const error: ValidationError = {};
+
+	const errorMessage = Liferay.Language.get('this-field-is-required');
+
+	const nameField = elements[`${namespace}name`];
+
+	if (nameField && !nameField.value) {
+		error.name = errorMessage;
+	}
+
+	const classNameIdField = elements[`${namespace}classNameId`];
+
+	if (classNameIdField && classNameIdField.selectedIndex === 0) {
+		error.classNameId = errorMessage;
+	}
+
+	const classTypeIdField = elements[`${namespace}classTypeId`];
+
+	if (classTypeIdField && classTypeIdField.selectedIndex === 0) {
+		error.classTypeId = errorMessage;
+	}
+
+	return error;
 }

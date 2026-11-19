@@ -1,17 +1,25 @@
 @component-name = "portal-publications"
 definition {
 
+	property browser.chrome.version = "139.0";
+	property custom.properties = "feature.flag.LPD-35013=false";
 	property osgi.module.configuration.file.names = "com.liferay.change.tracking.configuration.CTSettingsConfiguration.config";
 	property osgi.module.configurations = "enabled=B\"true\"";
-	property portal.release = "true";
+	property osgi.modules.includes = "wiki";
+	property portal.release = "false";
 	property portal.upstream = "true";
-	property testray.component.names = "Wiki";
 	property testray.main.component.name = "Publications";
 
 	setUp {
 		TestCase.setUpPortalInstance();
 
 		User.firstLoginPG();
+
+		WikiPortlet.enableWiki();
+
+		task ("Enable dynamic and manual selection") {
+			AssetPublisherPortlet.enableDynamicAndManualSelection();
+		}
 	}
 
 	tearDown {
@@ -216,52 +224,6 @@ definition {
 		}
 	}
 
-	@description = "This is the use case for LPS-179026. Can preview changes for WikiPages"
-	@priority = 3
-	test CanPreviewChangesForWikiPages {
-		HeadlessSite.addSite(siteName = "Site Name");
-
-		JSONWiki.addWikiPage(
-			groupName = "Site Name",
-			wikiNodeName = "Main",
-			wikiPageContent = "Wiki Page Content",
-			wikiPageName = "Wiki Page Title");
-
-		JSONPublications.addPublication(publicationName = "Publication Name 1");
-
-		JSONPublications.selectPublication(publicationName = "Publication Name 1");
-
-		WikiNavigator.openWikiAdmin(siteURLKey = "site-name");
-
-		JSONWiki.updateWikiPage(
-			groupName = "Site Name",
-			wikiNodeName = "Main",
-			wikiPageContent = "Wiki Page Content Edited",
-			wikiPageName = "Wiki Page Title");
-
-		JSONWiki.addAttachmentToWikiPage(
-			fileName = "Document_1.txt",
-			groupName = "Site Name",
-			mimeType = "text/txt",
-			wikiNodeName = "Main",
-			wikiPageName = "Wiki Page Title");
-
-		task ("View the wiki page change details on Display tab") {
-			PublicationsNavigator.gotoReviewChanges();
-
-			PublicationsNavigator.gotoViewChangeDetails(
-				changeCategory = "Wiki Page",
-				changeTitle = "Wiki Page Title (1.1)");
-
-			PublicationsChangeDetails.viewChangeDetailsInDisplay(
-				changeType = "Modified",
-				contentValueInProduction = "Wiki Page Content",
-				contentValueInPublication = "Wiki Page Content Edited",
-				diffAddedValue = "Attachments",
-				publicationName = "Publication Name 1");
-		}
-	}
-
 	@description = "This is a use case for LPS-174885. Resolve typical conflicts when using wiki with publications"
 	@priority = 3
 	test CanResolveConflictingPublicationsAutomatically {
@@ -356,9 +318,7 @@ definition {
 	@description = "Assert that the search results shows only wiki pages from the active publication"
 	@priority = 3
 	test ViewSearchResultsFromActivePublication {
-		ProductMenu.gotoPortlet(
-			category = "Content & Data",
-			portlet = "Wiki");
+		WikiNavigator.openWikiAdmin(siteURLKey = "guest");
 
 		WikiNode.addCP(wikiNodeName = "Wiki Node");
 

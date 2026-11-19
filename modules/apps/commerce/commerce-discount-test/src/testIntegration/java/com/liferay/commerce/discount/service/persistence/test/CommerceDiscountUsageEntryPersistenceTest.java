@@ -113,12 +113,8 @@ public class CommerceDiscountUsageEntryPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
 		CommerceDiscountUsageEntry newCommerceDiscountUsageEntry =
-			_persistence.create(pk);
-
-		newCommerceDiscountUsageEntry.setMvccVersion(RandomTestUtil.nextLong());
+			addCommerceDiscountUsageEntry();
 
 		newCommerceDiscountUsageEntry.setCompanyId(RandomTestUtil.nextLong());
 
@@ -141,8 +137,10 @@ public class CommerceDiscountUsageEntryPersistenceTest {
 		newCommerceDiscountUsageEntry.setCommerceDiscountId(
 			RandomTestUtil.nextLong());
 
-		_commerceDiscountUsageEntries.add(
-			_persistence.update(newCommerceDiscountUsageEntry));
+		newCommerceDiscountUsageEntry = _persistence.update(
+			newCommerceDiscountUsageEntry);
+
+		_commerceDiscountUsageEntries.add(newCommerceDiscountUsageEntry);
 
 		CommerceDiscountUsageEntry existingCommerceDiscountUsageEntry =
 			_persistence.findByPrimaryKey(
@@ -198,14 +196,6 @@ public class CommerceDiscountUsageEntryPersistenceTest {
 			RandomTestUtil.nextLong(), RandomTestUtil.nextLong());
 
 		_persistence.countByCAI_CDI(0L, 0L);
-	}
-
-	@Test
-	public void testCountByCOI_CDI() throws Exception {
-		_persistence.countByCOI_CDI(
-			RandomTestUtil.nextLong(), RandomTestUtil.nextLong());
-
-		_persistence.countByCOI_CDI(0L, 0L);
 	}
 
 	@Test
@@ -507,8 +497,6 @@ public class CommerceDiscountUsageEntryPersistenceTest {
 		CommerceDiscountUsageEntry commerceDiscountUsageEntry =
 			_persistence.create(pk);
 
-		commerceDiscountUsageEntry.setMvccVersion(RandomTestUtil.nextLong());
-
 		commerceDiscountUsageEntry.setCompanyId(RandomTestUtil.nextLong());
 
 		commerceDiscountUsageEntry.setUserId(RandomTestUtil.nextLong());
@@ -540,3 +528,4 @@ public class CommerceDiscountUsageEntryPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1168257168

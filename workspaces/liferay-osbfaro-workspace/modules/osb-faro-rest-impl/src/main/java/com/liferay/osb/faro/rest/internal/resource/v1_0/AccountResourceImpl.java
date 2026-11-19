@@ -1,0 +1,163 @@
+/**
+ * SPDX-FileCopyrightText: (c) 2026 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
+ */
+
+package com.liferay.osb.faro.rest.internal.resource.v1_0;
+
+import com.liferay.osb.faro.engine.client.ContactsEngineClient;
+import com.liferay.osb.faro.engine.client.exception.NoSuchEntryException;
+import com.liferay.osb.faro.engine.client.model.AccountLifecycle;
+import com.liferay.osb.faro.engine.client.model.AccountLifecycleStage;
+import com.liferay.osb.faro.engine.client.model.Results;
+import com.liferay.osb.faro.model.FaroProject;
+import com.liferay.osb.faro.rest.dto.v1_0.Account;
+import com.liferay.osb.faro.rest.internal.dto.v1_0.converter.FaroDTOConverterContext;
+import com.liferay.osb.faro.rest.internal.dto.v1_0.util.FaroPaginationUtil;
+import com.liferay.osb.faro.rest.resource.v1_0.AccountResource;
+import com.liferay.osb.faro.service.FaroProjectLocalService;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.search.Sort;
+import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.ListUtil;
+import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.vulcan.dto.converter.DTOConverter;
+import com.liferay.portal.vulcan.pagination.Page;
+import com.liferay.portal.vulcan.pagination.Pagination;
+
+import jakarta.ws.rs.BadRequestException;
+
+import java.util.List;
+
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.component.annotations.ServiceScope;
+
+/**
+ * @author Leslie Wong
+ */
+@Component(
+	properties = "OSGI-INF/liferay/rest/v1_0/account.properties",
+	scope = ServiceScope.PROTOTYPE, service = AccountResource.class
+)
+public class AccountResourceImpl extends BaseAccountResourceImpl {
+
+	@Override
+	public Account getWorkspaceGroupAccount(Long groupId, String accountId)
+		throws Exception {
+
+		com.liferay.osb.faro.engine.client.model.Account account =
+			_contactsEngineClient.getAccount(
+				_faroProjectLocalService.getFaroProjectByGroupId(groupId),
+				accountId, null);
+
+		if ((account == null) || Validator.isNull(account.getId())) {
+			throw new NoSuchEntryException();
+		}
+
+		return _accountDTOConverter.toDTO(
+			new FaroDTOConverterContext(
+				contextAcceptLanguage.isAcceptAllLanguages(), accountId,
+				contextAcceptLanguage.getPreferredLocale()),
+			account);
+	}
+
+	@Override
+	public Page<Account> getWorkspaceGroupChannelAccountsPage(
+			Long groupId, String channelId, String accountLifecycleId,
+			String lifecycleStage, String rangeEnd, String rangeKey,
+			String rangeStart, String search, Pagination pagination,
+			Sort[] sorts)
+		throws Exception {
+
+		FaroProject faroProject =
+			_faroProjectLocalService.getFaroProjectByGroupId(groupId);
+
+		Results<com.liferay.osb.faro.engine.client.model.Account> results =
+			_contactsEngineClient.getAccounts(
+				faroProject, accountLifecycleId, channelId,
+				_getLifecycleStageFilterString(
+					accountLifecycleId, channelId, faroProject, lifecycleStage),
+				true, search, rangeEnd, TimeRange.getRangeKey(rangeKey),
+				rangeStart, null, FaroPaginationUtil.getCur(pagination),
+				FaroPaginationUtil.getDelta(pagination),
+				FaroPaginationUtil.toSortString(sorts));
+
+		return Page.of(
+			transform(
+				results.getItems(),
+				account -> _accountDTOConverter.toDTO(
+					new FaroDTOConverterContext(
+						contextAcceptLanguage.isAcceptAllLanguages(),
+						account.getId(),
+						contextAcceptLanguage.getPreferredLocale()),
+					account)),
+			pagination, results.getTotal());
+	}
+
+	private AccountLifecycle _getAccountLifecycle(
+		String accountLifecycleId, String channelId, FaroProject faroProject) {
+
+		if (Validator.isNotNull(accountLifecycleId)) {
+			return _contactsEngineClient.getAccountLifecycle(
+				faroProject, accountLifecycleId);
+		}
+
+		Results<AccountLifecycle> results =
+			_contactsEngineClient.getAccountLifecycles(
+				faroProject, GetterUtil.getLong(channelId), Boolean.TRUE, null,
+				null, 1, 1, null);
+
+		List<AccountLifecycle> accountLifecycles = results.getItems();
+
+		if (ListUtil.isEmpty(accountLifecycles)) {
+			throw new BadRequestException(
+				"No default account lifecycle is configured for the channel");
+		}
+
+		return accountLifecycles.get(0);
+	}
+
+	private String _getLifecycleStageFilterString(
+		String accountLifecycleId, String channelId, FaroProject faroProject,
+		String lifecycleStage) {
+
+		if (Validator.isNull(lifecycleStage)) {
+			return null;
+		}
+
+		AccountLifecycle accountLifecycle = _getAccountLifecycle(
+			accountLifecycleId, channelId, faroProject);
+
+		AccountLifecycleStage accountLifecycleStage =
+			accountLifecycle.getAccountLifecycleStage(lifecycleStage);
+
+		if (accountLifecycleStage != null) {
+			return StringBundler.concat(
+				"(lifecycleStatus@",
+				accountLifecycle.getExternalReferenceCode(), " in ('",
+				accountLifecycleStage.getExternalReferenceCode(), "'))");
+		}
+
+		throw new BadRequestException(
+			StringBundler.concat(
+				"No account lifecycle stage was found with the name \"",
+				lifecycleStage, "\""));
+	}
+
+	@Reference(
+		target = "(component.name=com.liferay.osb.faro.rest.internal.dto.v1_0.converter.AccountDTOConverter)"
+	)
+	private DTOConverter
+		<com.liferay.osb.faro.engine.client.model.Account, Account>
+			_accountDTOConverter;
+
+	@Reference
+	private ContactsEngineClient _contactsEngineClient;
+
+	@Reference
+	private FaroProjectLocalService _faroProjectLocalService;
+
+}
+
+// LIFERAY-REST-BUILDER-HASH:126436837

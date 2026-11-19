@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -35,18 +36,6 @@ public class MicroblogsEntryLocalServiceUtil {
 	 *
 	 * Never modify this class directly. Add custom service methods to <code>com.liferay.microblogs.service.impl.MicroblogsEntryLocalServiceImpl</code> and rerun ServiceBuilder to regenerate this class.
 	 */
-	public static MicroblogsEntry addMicroblogsEntry(
-			long userId, long creatorClassNameId, long creatorClassPK,
-			String content, int type, long parentMicroblogsEntryId,
-			int socialRelationType,
-			com.liferay.portal.kernel.service.ServiceContext serviceContext)
-		throws PortalException {
-
-		return getService().addMicroblogsEntry(
-			userId, creatorClassNameId, creatorClassPK, content, type,
-			parentMicroblogsEntryId, socialRelationType, serviceContext);
-	}
-
 	public static MicroblogsEntry addMicroblogsEntry(
 			long userId, String content, int type, long parentMicroblogsEntryId,
 			int socialRelationType,
@@ -96,14 +85,6 @@ public class MicroblogsEntryLocalServiceUtil {
 		return getService().createPersistedModel(primaryKeyObj);
 	}
 
-	public static void deleteMicroblogsEntries(
-			long creatorClassNameId, long creatorClassPK)
-		throws PortalException {
-
-		getService().deleteMicroblogsEntries(
-			creatorClassNameId, creatorClassPK);
-	}
-
 	/**
 	 * Deletes the microblogs entry with the primary key from the database. Also notifies the appropriate model listeners.
 	 *
@@ -147,12 +128,6 @@ public class MicroblogsEntryLocalServiceUtil {
 		throws PortalException {
 
 		return getService().deletePersistedModel(persistedModel);
-	}
-
-	public static void deleteUserMicroblogsEntries(long userId)
-		throws PortalException {
-
-		getService().deleteUserMicroblogsEntries(userId);
 	}
 
 	public static <T> T dslQuery(DSLQuery dslQuery) {
@@ -250,16 +225,6 @@ public class MicroblogsEntryLocalServiceUtil {
 		return getService().getActionableDynamicQuery();
 	}
 
-	public static List<MicroblogsEntry> getCompanyMicroblogsEntries(
-		long companyId, int start, int end) {
-
-		return getService().getCompanyMicroblogsEntries(companyId, start, end);
-	}
-
-	public static int getCompanyMicroblogsEntriesCount(long companyId) {
-		return getService().getCompanyMicroblogsEntriesCount(companyId);
-	}
-
 	public static
 		com.liferay.portal.kernel.dao.orm.IndexableActionableDynamicQuery
 			getIndexableActionableDynamicQuery() {
@@ -284,39 +249,6 @@ public class MicroblogsEntryLocalServiceUtil {
 		return getService().getMicroblogsEntries(start, end);
 	}
 
-	public static List<MicroblogsEntry> getMicroblogsEntries(
-		long companyId, long creatorClassNameId, int type, int start, int end,
-		OrderByComparator<MicroblogsEntry> orderByComparator) {
-
-		return getService().getMicroblogsEntries(
-			companyId, creatorClassNameId, type, start, end, orderByComparator);
-	}
-
-	public static List<MicroblogsEntry> getMicroblogsEntries(
-		long companyId, long creatorClassNameId, long creatorClassPK, int start,
-		int end) {
-
-		return getService().getMicroblogsEntries(
-			companyId, creatorClassNameId, creatorClassPK, start, end);
-	}
-
-	public static List<MicroblogsEntry> getMicroblogsEntries(
-		long companyId, long creatorClassNameId, long creatorClassPK, int type,
-		int start, int end) {
-
-		return getService().getMicroblogsEntries(
-			companyId, creatorClassNameId, creatorClassPK, type, start, end);
-	}
-
-	public static List<MicroblogsEntry> getMicroblogsEntries(
-		long companyId, long creatorClassNameId, long creatorClassPK,
-		String assetTagName, boolean andOperator, int start, int end) {
-
-		return getService().getMicroblogsEntries(
-			companyId, creatorClassNameId, creatorClassPK, assetTagName,
-			andOperator, start, end);
-	}
-
 	/**
 	 * Returns the number of microblogs entries.
 	 *
@@ -324,37 +256,6 @@ public class MicroblogsEntryLocalServiceUtil {
 	 */
 	public static int getMicroblogsEntriesCount() {
 		return getService().getMicroblogsEntriesCount();
-	}
-
-	public static int getMicroblogsEntriesCount(
-		long companyId, long creatorClassNameId, long creatorClassPK) {
-
-		return getService().getMicroblogsEntriesCount(
-			companyId, creatorClassNameId, creatorClassPK);
-	}
-
-	public static int getMicroblogsEntriesCount(
-		long companyId, long creatorClassNameId, long creatorClassPK,
-		int type) {
-
-		return getService().getMicroblogsEntriesCount(
-			companyId, creatorClassNameId, creatorClassPK, type);
-	}
-
-	public static int getMicroblogsEntriesCount(
-		long companyId, long creatorClassNameId, long creatorClassPK,
-		String assetTagName, boolean andOperator) {
-
-		return getService().getMicroblogsEntriesCount(
-			companyId, creatorClassNameId, creatorClassPK, assetTagName,
-			andOperator);
-	}
-
-	public static int getMicroblogsEntriesCount(
-		long companyId, long creatorClassNameId, String assetTagName) {
-
-		return getService().getMicroblogsEntriesCount(
-			companyId, creatorClassNameId, assetTagName);
 	}
 
 	/**
@@ -428,10 +329,6 @@ public class MicroblogsEntryLocalServiceUtil {
 		return getService().getUserMicroblogsEntriesCount(userId);
 	}
 
-	public static int getUserMicroblogsEntriesCount(long userId, int type) {
-		return getService().getUserMicroblogsEntriesCount(userId, type);
-	}
-
 	public static void updateAsset(
 			MicroblogsEntry microblogsEntry, long[] assetCategoryIds,
 			String[] assetTagNames)
@@ -467,13 +364,13 @@ public class MicroblogsEntryLocalServiceUtil {
 	}
 
 	public static MicroblogsEntryLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(MicroblogsEntryLocalService service) {
-		_service = service;
-	}
-
-	private static volatile MicroblogsEntryLocalService _service;
+	private static final Snapshot<MicroblogsEntryLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			MicroblogsEntryLocalServiceUtil.class,
+			MicroblogsEntryLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:838401632

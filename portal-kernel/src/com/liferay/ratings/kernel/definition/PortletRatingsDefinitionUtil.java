@@ -20,11 +20,11 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.ratings.kernel.RatingsType;
 import com.liferay.ratings.kernel.transformer.RatingsDataTransformerUtil;
 
+import jakarta.portlet.PortletPreferences;
+
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-
-import javax.portlet.PortletPreferences;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
@@ -137,6 +137,8 @@ public class PortletRatingsDefinitionUtil {
 							portletRatingsDefinition.getDefaultRatingsType();
 
 						if (defaultRatingsType == null) {
+							_bundleContext.ungetService(serviceReference);
+
 							if (_log.isWarnEnabled()) {
 								_log.warn("Default ratings type is null");
 							}
@@ -148,6 +150,8 @@ public class PortletRatingsDefinitionUtil {
 							portletRatingsDefinition.getPortletId();
 
 						if (Validator.isNull(portletId)) {
+							_bundleContext.ungetService(serviceReference);
+
 							if (_log.isWarnEnabled()) {
 								_log.warn("Portlet ID is null");
 							}

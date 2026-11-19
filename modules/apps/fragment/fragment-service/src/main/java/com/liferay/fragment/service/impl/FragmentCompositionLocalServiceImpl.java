@@ -7,7 +7,9 @@ package com.liferay.fragment.service.impl;
 
 import com.liferay.fragment.exception.DuplicateFragmentCompositionKeyException;
 import com.liferay.fragment.exception.FragmentCompositionDescriptionException;
+import com.liferay.fragment.exception.FragmentCompositionGroupIdException;
 import com.liferay.fragment.exception.FragmentCompositionNameException;
+import com.liferay.fragment.internal.util.FragmentCompositionKeyUtil;
 import com.liferay.fragment.model.FragmentComposition;
 import com.liferay.fragment.service.base.FragmentCompositionLocalServiceBaseImpl;
 import com.liferay.petra.string.CharPool;
@@ -16,11 +18,14 @@ import com.liferay.portal.aop.AopService;
 import com.liferay.portal.dao.orm.custom.sql.CustomSQL;
 import com.liferay.portal.kernel.dao.orm.WildcardMode;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.ModelHintsUtil;
 import com.liferay.portal.kernel.model.ResourceConstants;
 import com.liferay.portal.kernel.model.SystemEventConstants;
 import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.portletfilerepository.PortletFileRepository;
 import com.liferay.portal.kernel.portletfilerepository.PortletFileRepositoryUtil;
+import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.ResourceLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserLocalService;
@@ -48,13 +53,15 @@ public class FragmentCompositionLocalServiceImpl
 
 	@Override
 	public FragmentComposition addFragmentComposition(
-			long userId, long groupId, long fragmentCollectionId,
-			String fragmentCompositionKey, String name, String description,
-			String data, long previewFileEntryId, int status,
-			ServiceContext serviceContext)
+			String externalReferenceCode, long userId, long groupId,
+			long fragmentCollectionId, String fragmentCompositionKey,
+			String name, String description, String data,
+			long previewFileEntryId, int status, ServiceContext serviceContext)
 		throws PortalException {
 
 		// Fragment composition
+
+		_validateGroupId(groupId);
 
 		User user = _userLocalService.getUser(userId);
 
@@ -63,8 +70,9 @@ public class FragmentCompositionLocalServiceImpl
 				groupId, name);
 		}
 
-		fragmentCompositionKey = _getFragmentCompositionKey(
-			fragmentCompositionKey);
+		fragmentCompositionKey =
+			FragmentCompositionKeyUtil.getFragmentCompositionKey(
+				fragmentCompositionKey);
 
 		_validateFragmentCompositionKey(groupId, fragmentCompositionKey);
 
@@ -77,6 +85,7 @@ public class FragmentCompositionLocalServiceImpl
 			fragmentCompositionPersistence.create(fragmentCompositionId);
 
 		fragmentComposition.setUuid(serviceContext.getUuid());
+		fragmentComposition.setExternalReferenceCode(externalReferenceCode);
 		fragmentComposition.setGroupId(groupId);
 		fragmentComposition.setCompanyId(user.getCompanyId());
 		fragmentComposition.setUserId(user.getUserId());
@@ -137,6 +146,16 @@ public class FragmentCompositionLocalServiceImpl
 	}
 
 	@Override
+	public FragmentComposition deleteFragmentComposition(
+			String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		return fragmentCompositionLocalService.deleteFragmentComposition(
+			getFragmentCompositionByExternalReferenceCode(
+				externalReferenceCode, groupId));
+	}
+
+	@Override
 	public FragmentComposition fetchFragmentComposition(
 		long fragmentCompositionId) {
 
@@ -149,12 +168,15 @@ public class FragmentCompositionLocalServiceImpl
 		long groupId, String fragmentCompositionKey) {
 
 		return fragmentCompositionPersistence.fetchByG_FCK(
-			groupId, _getFragmentCompositionKey(fragmentCompositionKey));
+			groupId,
+			FragmentCompositionKeyUtil.getFragmentCompositionKey(
+				fragmentCompositionKey));
 	}
 
 	@Override
 	public String generateFragmentCompositionKey(long groupId, String name) {
-		String fragmentCompositionKey = _getFragmentCompositionKey(name);
+		String fragmentCompositionKey =
+			FragmentCompositionKeyUtil.getFragmentCompositionKey(name);
 
 		fragmentCompositionKey = StringUtil.replace(
 			fragmentCompositionKey, CharPool.SPACE, CharPool.DASH);
@@ -298,9 +320,21 @@ public class FragmentCompositionLocalServiceImpl
 				fragmentCompositionId);
 
 		fragmentComposition.setModifiedDate(new Date());
+
+		long previousPreviewFileEntryId =
+			fragmentComposition.getPreviewFileEntryId();
+
 		fragmentComposition.setPreviewFileEntryId(previewFileEntryId);
 
-		return fragmentCompositionPersistence.update(fragmentComposition);
+		fragmentComposition = fragmentCompositionPersistence.update(
+			fragmentComposition);
+
+		if ((previewFileEntryId == 0) && (previousPreviewFileEntryId > 0)) {
+			_portletFileRepository.deletePortletFileEntry(
+				previousPreviewFileEntryId);
+		}
+
+		return fragmentComposition;
 	}
 
 	@Override
@@ -349,16 +383,6 @@ public class FragmentCompositionLocalServiceImpl
 		return fragmentCompositionPersistence.update(fragmentComposition);
 	}
 
-	private String _getFragmentCompositionKey(String fragmentCompositionKey) {
-		if (fragmentCompositionKey != null) {
-			fragmentCompositionKey = fragmentCompositionKey.trim();
-
-			return StringUtil.toLowerCase(fragmentCompositionKey);
-		}
-
-		return StringPool.BLANK;
-	}
-
 	private void _validateDescription(String description)
 		throws PortalException {
 
@@ -379,8 +403,9 @@ public class FragmentCompositionLocalServiceImpl
 			long groupId, String fragmentCompositionKey)
 		throws PortalException {
 
-		fragmentCompositionKey = _getFragmentCompositionKey(
-			fragmentCompositionKey);
+		fragmentCompositionKey =
+			FragmentCompositionKeyUtil.getFragmentCompositionKey(
+				fragmentCompositionKey);
 
 		FragmentComposition fragmentComposition =
 			fragmentCompositionPersistence.fetchByG_FCK(
@@ -388,6 +413,14 @@ public class FragmentCompositionLocalServiceImpl
 
 		if (fragmentComposition != null) {
 			throw new DuplicateFragmentCompositionKeyException();
+		}
+	}
+
+	private void _validateGroupId(long groupId) throws PortalException {
+		Group group = _groupLocalService.getGroup(groupId);
+
+		if (group.isDepot()) {
+			throw new FragmentCompositionGroupIdException();
 		}
 	}
 
@@ -414,6 +447,12 @@ public class FragmentCompositionLocalServiceImpl
 
 	@Reference
 	private CustomSQL _customSQL;
+
+	@Reference
+	private GroupLocalService _groupLocalService;
+
+	@Reference
+	private PortletFileRepository _portletFileRepository;
 
 	@Reference
 	private ResourceLocalService _resourceLocalService;

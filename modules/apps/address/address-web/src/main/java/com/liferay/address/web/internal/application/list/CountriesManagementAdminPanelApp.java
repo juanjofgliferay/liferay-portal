@@ -19,12 +19,17 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"panel.app.order:Integer=1100",
-		"panel.category.key=" + PortletCategoryKeys.CONTROL_PANEL_CONFIGURATION
+		"panel.app.order:Integer=600",
+		"panel.category.key=" + PortletCategoryKeys.CONTROL_PANEL_INSTANCE
 	},
 	service = PanelApp.class
 )
 public class CountriesManagementAdminPanelApp extends BasePanelApp {
+
+	@Override
+	public String getIcon() {
+		return "flag-full";
+	}
 
 	@Override
 	public Portlet getPortlet() {
@@ -37,7 +42,7 @@ public class CountriesManagementAdminPanelApp extends BasePanelApp {
 	}
 
 	@Reference(
-		target = "(javax.portlet.name=" + AddressPortletKeys.COUNTRIES_MANAGEMENT_ADMIN + ")"
+		target = "(jakarta.portlet.name=" + AddressPortletKeys.COUNTRIES_MANAGEMENT_ADMIN + ")"
 	)
 	private Portlet _portlet;
 

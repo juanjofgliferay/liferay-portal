@@ -9,6 +9,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.reports.engine.console.model.Source;
 
@@ -311,14 +312,6 @@ public class SourceLocalServiceUtil {
 		return getService().getSources(start, end);
 	}
 
-	public static List<Source> getSources(
-		long groupId, String name, String driverUrl, boolean andSearch,
-		int start, int end, OrderByComparator<Source> orderByComparator) {
-
-		return getService().getSources(
-			groupId, name, driverUrl, andSearch, start, end, orderByComparator);
-	}
-
 	/**
 	 * Returns all the sources matching the UUID and company.
 	 *
@@ -359,13 +352,6 @@ public class SourceLocalServiceUtil {
 		return getService().getSourcesCount();
 	}
 
-	public static int getSourcesCount(
-		long groupId, String name, String driverUrl, boolean andSearch) {
-
-		return getService().getSourcesCount(
-			groupId, name, driverUrl, andSearch);
-	}
-
 	public static Source updateSource(
 			long sourceId, Map<java.util.Locale, String> nameMap,
 			String driverClassName, String driverUrl, String driverUserName,
@@ -393,13 +379,11 @@ public class SourceLocalServiceUtil {
 	}
 
 	public static SourceLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(SourceLocalService service) {
-		_service = service;
-	}
-
-	private static volatile SourceLocalService _service;
+	private static final Snapshot<SourceLocalService> _serviceSnapshot =
+		new Snapshot<>(SourceLocalServiceUtil.class, SourceLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1160030405

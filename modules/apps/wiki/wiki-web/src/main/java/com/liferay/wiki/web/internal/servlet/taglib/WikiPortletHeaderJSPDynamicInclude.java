@@ -16,13 +16,13 @@ import com.liferay.wiki.constants.WikiPortletKeys;
 import com.liferay.wiki.constants.WikiWebKeys;
 import com.liferay.wiki.model.WikiNode;
 
+import jakarta.portlet.PortletRequest;
+
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
-
-import javax.portlet.PortletRequest;
-
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -30,7 +30,10 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Sergio González
  */
-@Component(service = DynamicInclude.class)
+@Component(
+	property = "dynamic.include.key=portlet_header_" + WikiPortletKeys.WIKI,
+	service = DynamicInclude.class
+)
 public class WikiPortletHeaderJSPDynamicInclude extends BaseJSPDynamicInclude {
 
 	@Override
@@ -46,7 +49,7 @@ public class WikiPortletHeaderJSPDynamicInclude extends BaseJSPDynamicInclude {
 
 		PortletRequest portletRequest =
 			(PortletRequest)httpServletRequest.getAttribute(
-				JavaConstants.JAVAX_PORTLET_REQUEST);
+				JavaConstants.JAKARTA_PORTLET_REQUEST);
 
 		String mvcRenderCommandName = ParamUtil.getString(
 			portletRequest, "mvcRenderCommandName");
@@ -78,12 +81,6 @@ public class WikiPortletHeaderJSPDynamicInclude extends BaseJSPDynamicInclude {
 		}
 
 		super.include(httpServletRequest, httpServletResponse, key);
-	}
-
-	@Override
-	public void register(DynamicIncludeRegistry dynamicIncludeRegistry) {
-		dynamicIncludeRegistry.register(
-			"portlet_header_" + WikiPortletKeys.WIKI);
 	}
 
 	@Override

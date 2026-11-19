@@ -34,6 +34,7 @@ import com.liferay.portal.workflow.kaleo.model.KaleoDefinitionVersion;
 import java.io.Serializable;
 
 import java.util.List;
+import java.util.Locale;
 
 import org.osgi.annotation.versioning.ProviderType;
 
@@ -239,12 +240,6 @@ public interface KaleoDefinitionVersionLocalService
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public KaleoDefinitionVersion fetchLatestKaleoDefinitionVersion(
-			long companyId, String name,
-			OrderByComparator<KaleoDefinitionVersion> orderByComparator)
-		throws PortalException;
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public ActionableDynamicQuery getActionableDynamicQuery();
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
@@ -328,13 +323,8 @@ public interface KaleoDefinitionVersionLocalService
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<KaleoDefinitionVersion> getLatestKaleoDefinitionVersions(
-		long companyId, int start, int end,
-		OrderByComparator<KaleoDefinitionVersion> orderByComparator);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<KaleoDefinitionVersion> getLatestKaleoDefinitionVersions(
-		long companyId, String keywords, int status, int start, int end,
-		OrderByComparator<KaleoDefinitionVersion> orderByComparator);
+		long companyId, String keywords, int status, Locale locale, int start,
+		int end, OrderByComparator<KaleoDefinitionVersion> orderByComparator);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public int getLatestKaleoDefinitionVersionsCount(
@@ -385,3 +375,4 @@ public interface KaleoDefinitionVersionLocalService
 		throws E;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1775282479

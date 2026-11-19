@@ -7,12 +7,14 @@ package com.liferay.asset.list.web.internal.portlet.action;
 
 import com.liferay.asset.list.constants.AssetListPortletKeys;
 import com.liferay.asset.list.service.AssetListEntryService;
+import com.liferay.asset.list.web.internal.util.AudienceVariationUtil;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCActionCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
 import com.liferay.portal.kernel.util.ParamUtil;
+import com.liferay.portal.kernel.util.Validator;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -22,7 +24,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + AssetListPortletKeys.ASSET_LIST,
+		"jakarta.portlet.name=" + AssetListPortletKeys.ASSET_LIST,
 		"mvc.command.name=/asset_list/move_asset_entry_selection"
 	},
 	service = MVCActionCommand.class
@@ -37,14 +39,23 @@ public class MoveAssetEntrySelectionMVCActionCommand
 
 		long assetListEntryId = ParamUtil.getLong(
 			actionRequest, "assetListEntryId");
-		long segmentsEntryId = ParamUtil.getLong(
-			actionRequest, "segmentsEntryId");
 
+		String audienceEntryERC = AudienceVariationUtil.getAudienceEntryERC(
+			actionRequest);
 		int position = ParamUtil.getInteger(actionRequest, "position");
 		int newPosition = ParamUtil.getInteger(actionRequest, "newPosition");
 
-		_assetListEntryService.moveAssetEntrySelection(
-			assetListEntryId, segmentsEntryId, position, newPosition);
+		if (Validator.isNotNull(audienceEntryERC)) {
+			_assetListEntryService.moveAssetEntrySelection(
+				assetListEntryId, audienceEntryERC, position, newPosition);
+		}
+		else {
+			long segmentsEntryId = ParamUtil.getLong(
+				actionRequest, "segmentsEntryId");
+
+			_assetListEntryService.moveAssetEntrySelection(
+				assetListEntryId, segmentsEntryId, position, newPosition);
+		}
 	}
 
 	@Reference

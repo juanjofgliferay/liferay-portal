@@ -9,6 +9,8 @@ import aQute.bnd.annotation.metatype.Meta;
 
 import com.liferay.portal.configuration.metatype.annotations.ExtendedObjectClassDefinition;
 
+import org.osgi.annotation.versioning.ProviderType;
+
 /**
  * @author José Abelenda
  */
@@ -21,20 +23,29 @@ import com.liferay.portal.configuration.metatype.annotations.ExtendedObjectClass
 	localization = "content/Language",
 	name = "digital-signature-configuration-name"
 )
+@ProviderType
 public interface DigitalSignatureConfiguration {
-
-	public boolean enabled();
-
-	public String apiUsername();
-
-	public String apiAccountId();
-
-	public String environment();
 
 	public String accountBaseURI();
 
+	public String apiAccountId();
+
+	public String apiUsername();
+
+	@Meta.AD(deflt = "false", required = false)
+	public boolean embeddedViewEnabled();
+
+	public boolean enabled();
+
+	public String environment();
+
+	@Meta.AD(deflt = "60000", required = false)
+	public int httpTimeout();
+
+	@Meta.AD(type = Meta.Type.Password)
 	public String integrationKey();
 
+	@Meta.AD(type = Meta.Type.Password)
 	public String rsaPrivateKey();
 
 	public String siteSettingsStrategy();

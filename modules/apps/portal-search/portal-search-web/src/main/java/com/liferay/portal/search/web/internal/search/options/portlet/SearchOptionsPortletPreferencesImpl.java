@@ -8,7 +8,7 @@ package com.liferay.portal.search.web.internal.search.options.portlet;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.search.web.internal.portlet.preferences.BasePortletPreferences;
 
-import javax.portlet.PortletPreferences;
+import jakarta.portlet.PortletPreferences;
 
 /**
  * @author Wade Cao
@@ -41,6 +41,14 @@ public class SearchOptionsPortletPreferencesImpl
 		return getBoolean(
 			SearchOptionsPortletPreferences.
 				PREFERENCE_KEY_BASIC_FACET_SELECTION,
+			false);
+	}
+
+	@Override
+	public boolean isRetainFacetSelections() {
+		return getBoolean(
+			SearchOptionsPortletPreferences.
+				PREFERENCE_KEY_RETAIN_FACET_SELECTIONS,
 			false);
 	}
 

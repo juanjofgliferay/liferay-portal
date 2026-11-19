@@ -8,9 +8,11 @@ package com.liferay.headless.commerce.admin.catalog.internal.resource.v1_0;
 import com.liferay.commerce.product.exception.NoSuchCPDefinitionException;
 import com.liferay.commerce.product.model.CPDefinition;
 import com.liferay.commerce.product.service.CPDefinitionService;
+import com.liferay.commerce.product.service.CPTaxCategoryService;
 import com.liferay.headless.commerce.admin.catalog.dto.v1_0.Product;
 import com.liferay.headless.commerce.admin.catalog.dto.v1_0.ProductTaxConfiguration;
 import com.liferay.headless.commerce.admin.catalog.internal.util.v1_0.ProductTaxConfigurationUtil;
+import com.liferay.headless.commerce.admin.catalog.internal.util.v1_0.ProductUtil;
 import com.liferay.headless.commerce.admin.catalog.resource.v1_0.ProductTaxConfigurationResource;
 import com.liferay.portal.kernel.change.tracking.CTAware;
 import com.liferay.portal.vulcan.dto.converter.DTOConverter;
@@ -18,7 +20,7 @@ import com.liferay.portal.vulcan.dto.converter.DefaultDTOConverterContext;
 import com.liferay.portal.vulcan.fields.NestedField;
 import com.liferay.portal.vulcan.fields.NestedFieldId;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -45,7 +47,14 @@ public class ProductTaxConfigurationResourceImpl
 		CPDefinition cpDefinition =
 			_cpDefinitionService.
 				fetchCPDefinitionByCProductExternalReferenceCode(
-					externalReferenceCode, contextCompany.getCompanyId());
+					externalReferenceCode, contextCompany.getCompanyId(),
+					false);
+
+		if (cpDefinition == null) {
+			throw new NoSuchCPDefinitionException(
+				"Unable to find product with external reference code " +
+					externalReferenceCode);
+		}
 
 		return _toProductTaxConfiguration(cpDefinition.getCPDefinitionId());
 	}
@@ -57,7 +66,7 @@ public class ProductTaxConfigurationResourceImpl
 		throws Exception {
 
 		CPDefinition cpDefinition =
-			_cpDefinitionService.fetchCPDefinitionByCProductId(id);
+			_cpDefinitionService.fetchCPDefinitionByCProductId(id, false);
 
 		if (cpDefinition == null) {
 			throw new NoSuchCPDefinitionException(
@@ -74,9 +83,9 @@ public class ProductTaxConfigurationResourceImpl
 		throws Exception {
 
 		CPDefinition cpDefinition =
-			_cpDefinitionService.
-				fetchCPDefinitionByCProductExternalReferenceCode(
-					externalReferenceCode, contextCompany.getCompanyId());
+			ProductUtil.fetchCPDefinitionByCProductExternalReferenceCode(
+				externalReferenceCode, contextCompany.getCompanyId(),
+				_cpDefinitionService);
 
 		if (cpDefinition == null) {
 			throw new NoSuchCPDefinitionException(
@@ -96,8 +105,8 @@ public class ProductTaxConfigurationResourceImpl
 			Long id, ProductTaxConfiguration productTaxConfiguration)
 		throws Exception {
 
-		CPDefinition cpDefinition =
-			_cpDefinitionService.fetchCPDefinitionByCProductId(id);
+		CPDefinition cpDefinition = ProductUtil.fetchCPDefinitionByCProductId(
+			id, _cpDefinitionService);
 
 		if (cpDefinition == null) {
 			throw new NoSuchCPDefinitionException(
@@ -127,13 +136,17 @@ public class ProductTaxConfigurationResourceImpl
 
 		cpDefinition =
 			ProductTaxConfigurationUtil.updateCPDefinitionTaxCategoryInfo(
-				_cpDefinitionService, productTaxConfiguration, cpDefinition);
+				cpDefinition, _cpDefinitionService, _cpTaxCategoryService,
+				productTaxConfiguration);
 
 		return _toProductTaxConfiguration(cpDefinition.getCPDefinitionId());
 	}
 
 	@Reference
 	private CPDefinitionService _cpDefinitionService;
+
+	@Reference
+	private CPTaxCategoryService _cpTaxCategoryService;
 
 	@Reference(
 		target = "(component.name=com.liferay.headless.commerce.admin.catalog.internal.dto.v1_0.converter.ProductTaxConfigurationDTOConverter)"

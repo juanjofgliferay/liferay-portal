@@ -8,13 +8,14 @@ package com.liferay.headless.commerce.admin.pricing.client.serdes.v2_0;
 import com.liferay.headless.commerce.admin.pricing.client.dto.v2_0.DiscountProduct;
 import com.liferay.headless.commerce.admin.pricing.client.json.BaseJSONParser;
 
+import jakarta.annotation.Generated;
+
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
-
-import javax.annotation.Generated;
 
 /**
  * @author Zoltán Takács
@@ -54,6 +55,51 @@ public class DiscountProductSerDes {
 			sb.append("\"actions\": ");
 
 			sb.append(_toJSON(discountProduct.getActions()));
+		}
+
+		if (discountProduct.getCatalogCurrencyCode() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"catalogCurrencyCode\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(discountProduct.getCatalogCurrencyCode()));
+
+			sb.append("\"");
+		}
+
+		if (discountProduct.getCatalogCurrencyExternalReferenceCode() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"catalogCurrencyExternalReferenceCode\": ");
+
+			sb.append("\"");
+
+			sb.append(
+				_escape(
+					discountProduct.getCatalogCurrencyExternalReferenceCode()));
+
+			sb.append("\"");
+		}
+
+		if (discountProduct.getCatalogExternalReferenceCode() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"catalogExternalReferenceCode\": ");
+
+			sb.append("\"");
+
+			sb.append(
+				_escape(discountProduct.getCatalogExternalReferenceCode()));
+
+			sb.append("\"");
 		}
 
 		if (discountProduct.getDiscountExternalReferenceCode() != null) {
@@ -126,6 +172,20 @@ public class DiscountProductSerDes {
 			sb.append(discountProduct.getProductId());
 		}
 
+		if (discountProduct.getProductType() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"productType\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(discountProduct.getProductType()));
+
+			sb.append("\"");
+		}
+
 		sb.append("}");
 
 		return sb.toString();
@@ -150,6 +210,35 @@ public class DiscountProductSerDes {
 		}
 		else {
 			map.put("actions", String.valueOf(discountProduct.getActions()));
+		}
+
+		if (discountProduct.getCatalogCurrencyCode() == null) {
+			map.put("catalogCurrencyCode", null);
+		}
+		else {
+			map.put(
+				"catalogCurrencyCode",
+				String.valueOf(discountProduct.getCatalogCurrencyCode()));
+		}
+
+		if (discountProduct.getCatalogCurrencyExternalReferenceCode() == null) {
+			map.put("catalogCurrencyExternalReferenceCode", null);
+		}
+		else {
+			map.put(
+				"catalogCurrencyExternalReferenceCode",
+				String.valueOf(
+					discountProduct.getCatalogCurrencyExternalReferenceCode()));
+		}
+
+		if (discountProduct.getCatalogExternalReferenceCode() == null) {
+			map.put("catalogExternalReferenceCode", null);
+		}
+		else {
+			map.put(
+				"catalogExternalReferenceCode",
+				String.valueOf(
+					discountProduct.getCatalogExternalReferenceCode()));
 		}
 
 		if (discountProduct.getDiscountExternalReferenceCode() == null) {
@@ -204,6 +293,15 @@ public class DiscountProductSerDes {
 				"productId", String.valueOf(discountProduct.getProductId()));
 		}
 
+		if (discountProduct.getProductType() == null) {
+			map.put("productType", null);
+		}
+		else {
+			map.put(
+				"productType",
+				String.valueOf(discountProduct.getProductType()));
+		}
+
 		return map;
 	}
 
@@ -221,6 +319,56 @@ public class DiscountProductSerDes {
 		}
 
 		@Override
+		protected boolean parseMaps(String jsonParserFieldName) {
+			if (Objects.equals(jsonParserFieldName, "actions")) {
+				return true;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "catalogCurrencyCode")) {
+
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName,
+						"catalogCurrencyExternalReferenceCode")) {
+
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "catalogExternalReferenceCode")) {
+
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "discountExternalReferenceCode")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "discountId")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "discountProductId")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "product")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "productExternalReferenceCode")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "productId")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "productType")) {
+				return false;
+			}
+
+			return false;
+		}
+
+		@Override
 		protected void setField(
 			DiscountProduct discountProduct, String jsonParserFieldName,
 			Object jsonParserFieldValue) {
@@ -228,8 +376,32 @@ public class DiscountProductSerDes {
 			if (Objects.equals(jsonParserFieldName, "actions")) {
 				if (jsonParserFieldValue != null) {
 					discountProduct.setActions(
-						(Map)DiscountProductSerDes.toMap(
-							(String)jsonParserFieldValue));
+						(Map<String, Map<String, String>>)jsonParserFieldValue);
+				}
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "catalogCurrencyCode")) {
+
+				if (jsonParserFieldValue != null) {
+					discountProduct.setCatalogCurrencyCode(
+						(String)jsonParserFieldValue);
+				}
+			}
+			else if (Objects.equals(
+						jsonParserFieldName,
+						"catalogCurrencyExternalReferenceCode")) {
+
+				if (jsonParserFieldValue != null) {
+					discountProduct.setCatalogCurrencyExternalReferenceCode(
+						(String)jsonParserFieldValue);
+				}
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "catalogExternalReferenceCode")) {
+
+				if (jsonParserFieldValue != null) {
+					discountProduct.setCatalogExternalReferenceCode(
+						(String)jsonParserFieldValue);
 				}
 			}
 			else if (Objects.equals(
@@ -272,6 +444,12 @@ public class DiscountProductSerDes {
 						Long.valueOf((String)jsonParserFieldValue));
 				}
 			}
+			else if (Objects.equals(jsonParserFieldName, "productType")) {
+				if (jsonParserFieldValue != null) {
+					discountProduct.setProductType(
+						(String)jsonParserFieldValue);
+				}
+			}
 		}
 
 	}
@@ -304,36 +482,7 @@ public class DiscountProductSerDes {
 
 			Object value = entry.getValue();
 
-			Class<?> valueClass = value.getClass();
-
-			if (value instanceof Map) {
-				sb.append(_toJSON((Map)value));
-			}
-			else if (valueClass.isArray()) {
-				Object[] values = (Object[])value;
-
-				sb.append("[");
-
-				for (int i = 0; i < values.length; i++) {
-					sb.append("\"");
-					sb.append(_escape(values[i]));
-					sb.append("\"");
-
-					if ((i + 1) < values.length) {
-						sb.append(", ");
-					}
-				}
-
-				sb.append("]");
-			}
-			else if (value instanceof String) {
-				sb.append("\"");
-				sb.append(_escape(entry.getValue()));
-				sb.append("\"");
-			}
-			else {
-				sb.append(String.valueOf(entry.getValue()));
-			}
+			sb.append(_toJSON(value));
 
 			if (iterator.hasNext()) {
 				sb.append(", ");
@@ -345,4 +494,47 @@ public class DiscountProductSerDes {
 		return sb.toString();
 	}
 
+	private static String _toJSON(Object value) {
+		if (value == null) {
+			return "null";
+		}
+
+		if (value instanceof Collection) {
+			Collection<?> collection = (Collection<?>)value;
+
+			return _toJSON(collection.toArray());
+		}
+
+		if (value instanceof Map) {
+			return _toJSON((Map)value);
+		}
+
+		Class<?> clazz = value.getClass();
+
+		if (clazz.isArray()) {
+			StringBuilder sb = new StringBuilder("[");
+
+			Object[] values = (Object[])value;
+
+			for (int i = 0; i < values.length; i++) {
+				sb.append(_toJSON(values[i]));
+
+				if ((i + 1) < values.length) {
+					sb.append(", ");
+				}
+			}
+
+			sb.append("]");
+
+			return sb.toString();
+		}
+
+		if (value instanceof String) {
+			return "\"" + _escape(value) + "\"";
+		}
+
+		return String.valueOf(value);
+	}
+
 }
+// LIFERAY-REST-BUILDER-HASH:-1897573510

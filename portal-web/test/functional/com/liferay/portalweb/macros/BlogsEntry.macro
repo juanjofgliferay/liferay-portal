@@ -145,12 +145,21 @@ definition {
 				locator1 = "Icon#ANY");
 		}
 
-		Type.typeAceEditor(
-			locator1 = "TextArea#ACE_EDITOR",
-			value1 = ${entryContent});
-
 		if (${viewMode} == "Fullscreen") {
+
+			// Full screen opens the editor in a modal while the inline
+			// editor stays on the page behind it, so type into the modal.
+
+			Type.typeAceEditor(
+				locator1 = "TextArea#ACE_EDITOR_MODAL",
+				value1 = ${entryContent});
+
 			Button.clickDone();
+		}
+		else {
+			Type.typeAceEditor(
+				locator1 = "TextArea#ACE_EDITOR",
+				value1 = ${entryContent});
 		}
 	}
 
@@ -186,51 +195,8 @@ definition {
 	}
 
 	@summary = "Default summary"
-	macro addRelatedAsset(depotName = null, assetTitle = null, assetType = null) {
-		Panel.expandPanel(panel = "Related Assets");
-
-		AssertClick(
-			locator1 = "AssetRelatedAssets#RELATED_ASSETS_SELECT",
-			value1 = "Select");
-
-		var key_assetType = ${assetType};
-
-		MenuItem.click(menuItem = ${assetType});
-
-		var key_assetTitle = ${assetTitle};
-
-		SelectFrame(value1 = "relative=top");
-
-		SelectFrame(locator1 = "IFrame#MODAL_BODY");
-
-		if (isSet(depotName)) {
-			AssertClick(
-				key_breadcrumbName = "Sites and Libraries",
-				locator1 = "Breadcrumb#BREADCRUMB_ENTRY",
-				value1 = "Sites and Libraries");
-
-			AssertClick(
-				key_groupTab = "Asset Library",
-				locator1 = "ItemSelector#NAVIGATION_GROUP_TAB",
-				value1 = "Asset Library");
-
-			LexiconCard.clickCard(card = ${depotName});
-		}
-
-		LexiconEntry.changeDisplayStyle(displayStyle = "table");
-
-		Click(
-			key_assetTitle = ${assetTitle},
-			locator1 = "AssetRelatedAssets#ASSET_TABLE_CHECKBOX");
-
-		SelectFrame(value1 = "relative=top");
-
-		Button.clickDone();
-	}
-
-	@summary = "Default summary"
 	macro addSmallImage(navTab = null, depotName = null, uploadFileName = null, imageFileName = null) {
-		Panel.expandPanel(panel = "Configuration");
+		Blogs.expandPanel(panel = "Configuration");
 
 		if (isSet(browseImage)) {
 			Click(locator1 = "BlogsEntry#SMALL_IMAGE_BROWSE_IMAGE");
@@ -278,46 +244,6 @@ definition {
 			key_text = "Title",
 			locator1 = "TextArea#ANY",
 			value1 = ${entryTitle});
-	}
-
-	@summary = "Default summary"
-	macro addWithTrackbackURLPG(virtualHosts = null, entryTitle2 = null, entryContent2 = null, virtualHostsURL = null, entryTitle = null, entryContent = null) {
-		BlogsNavigator.gotoEntryPG(
-			entryContent = ${entryContent},
-			entryTitle = ${entryTitle});
-
-		WaitForSPARefresh();
-
-		MouseOver(locator1 = "BlogsEntry#COMMENTS_TRACKBACK_URL");
-
-		var backtrackURL = selenium.getElementValue("BlogsEntry#COMMENTS_TRACKBACK_URL");
-
-		if (${virtualHosts} == "true") {
-			Navigator.gotoSpecificURLPage(
-				pageName = "Blogs Page",
-				url = ${virtualHostsURL});
-		}
-		else {
-			Navigator.gotoPage(pageName = "Blogs Page");
-		}
-
-		BlogsNavigator.gotoAddEntry();
-
-		BlogsEntry.addEntryContent(
-			entryContent = ${entryContent2},
-			entryTitle = ${entryTitle2});
-
-		Panel.expandPanel(panel = "Configuration");
-
-		Type(
-			locator1 = "TextInput#TRACKBACKS",
-			value1 = ${backtrackURL});
-
-		AssertClick(
-			locator1 = "Button#PUBLISH",
-			value1 = "Publish");
-
-		Alert.viewSuccessMessage();
 	}
 
 	@summary = "Default summary"
@@ -575,11 +501,12 @@ definition {
 	macro executePingbackViacURL(entryTitle = null) {
 		var ip = ${ip};
 		var portalURL = ${portalURL};
+		var userPassword = PropsUtil.get("default.admin.password");
 
 		var curl = '''
 			${portalURL}/xmlrpc/pingback \
 				-H 'Content-Type: text/xml' \
-				-u test@liferay.com:test \
+				-u test@liferay.com:${userPassword} \
 				-d '
 				<?xml version="1.0" encoding="iso-8859-1"?>
 				<methodCall>
@@ -674,11 +601,6 @@ definition {
 			locator1 = "MenuItem#DROPDOWN_MENU_ITEM");
 
 		Alert.viewSuccessMessage();
-	}
-
-	@summary = "Default summary"
-	macro moveToRecycleBinNoPermissionPG() {
-		AssertElementNotPresent(locator1 = "Link#MOVE_TO_RECYCLING_BIN");
 	}
 
 	@summary = "Default summary"
@@ -790,7 +712,7 @@ definition {
 
 	@summary = "Default summary"
 	macro removeSmallImage(uploadFileName = null) {
-		Panel.expandPanel(panel = "Configuration");
+		Blogs.expandPanel(panel = "Configuration");
 
 		if (isSet(images)) {
 			Click(locator1 = "Button#REMOVE_IMAGE_LAST");
@@ -861,7 +783,7 @@ definition {
 
 	@summary = "Default summary"
 	macro scheduleBlogEntry() {
-		Panel.expandPanel(panel = "Configuration");
+		Blogs.expandPanel(panel = "Configuration");
 
 		var displayDate = DateUtil.getFormattedCurrentDate("MM/dd/yyyy");
 
@@ -1015,8 +937,6 @@ definition {
 	@summary = "Default summary"
 	macro viewAutoTag(entryTitle = null) {
 		var key_entryTitle = ${entryTitle};
-		var tagName = StringUtil.lowerCase(${tagName});
-
 		var key_tagName = ${tagName};
 
 		if (IsElementNotPresent(locator1 = "BlogsEntry#TAG")) {
@@ -1162,7 +1082,7 @@ definition {
 		}
 
 		if (isSet(entrySmallImage)) {
-			Panel.expandPanel(panel = "Configuration");
+			Blogs.expandPanel(panel = "Configuration");
 
 			AssertVisible(
 				key_smallImage = ${entrySmallImage},
@@ -1350,13 +1270,6 @@ definition {
 	}
 
 	@summary = "Default summary"
-	macro viewNoAddPermissions() {
-		var key_text = "New Entry";
-
-		AssertElementNotPresent(locator1 = "Button#ANY");
-	}
-
-	@summary = "Default summary"
 	macro viewNoCP(entryTitle = null) {
 		AssertElementNotPresent(
 			key_entryTitle = ${entryTitle},
@@ -1426,12 +1339,12 @@ definition {
 		if (isSet(duplicate)) {
 			AssertElementNotPresent(
 				locator1 = "BlogsEntry#TAG_2",
-				tagName = StringUtil.lowerCase(${tagName}));
+				tagName = ${tagName});
 		}
 		else {
 			AssertElementNotPresent(
 				locator1 = "BlogsEntry#TAG",
-				tagName = StringUtil.lowerCase(${tagName}));
+				tagName = ${tagName});
 		}
 	}
 
@@ -1451,28 +1364,6 @@ definition {
 	@summary = "Default summary"
 	macro viewPermissionsNoPermission() {
 		AssertElementNotPresent(locator1 = "Link#PERMISSIONS");
-	}
-
-	@summary = "Default summary"
-	macro viewPermissionsNoPermissionPG(entryTitle = null) {
-		var key_entryTitle = ${entryTitle};
-
-		MenuItem.viewNotPresent(menuItem = "Permissions");
-	}
-
-	@summary = "Default summary"
-	macro viewPermissionsPG(entryTitle = null) {
-		Portlet.mouseOverPortletTitle(portletTitleName = "Blogs");
-
-		Click(
-			key_entryTitle = ${entryTitle},
-			locator1 = "Blogs#WIDGET_VIEW_ENTRY_ELLIPSIS");
-
-		MenuItem.clickNoError(menuItem = "Permissions");
-
-		IFrame.selectPermissionsFrame();
-
-		SelectFrame(value1 = "relative=top");
 	}
 
 	@summary = "Default summary"
@@ -1562,10 +1453,6 @@ definition {
 
 	@summary = "Default summary"
 	macro viewSharedAsset(contentSharingPermission = null, entryTitle = null, entryContent = null) {
-		AssertTextEquals(
-			locator1 = "Portlet#HEADER",
-			value1 = "Shared Content");
-
 		if (${contentSharingPermission} == "View") {
 			AssertElementNotPresent(locator1 = "CKEditor#BODY_FIELD_IFRAME");
 
@@ -1650,7 +1537,6 @@ definition {
 
 		if (isSet(tagNameList)) {
 			for (var tagName : list ${tagNameList}) {
-				var tagName = StringUtil.lowerCase(${tagName});
 				var key_tagName = "tagName";
 
 				AssertTextEquals(
@@ -1671,7 +1557,6 @@ definition {
 			}
 		}
 		else {
-			var tagName = StringUtil.lowerCase(${tagName});
 			var key_tagName = "tagName";
 
 			AssertTextEquals(
@@ -1696,11 +1581,9 @@ definition {
 	@summary = "Default summary"
 	macro viewTagNotPresentPG(tagNameList = null, entryTitle = null) {
 		for (var tagName : list ${tagNameList}) {
-			var lowerCaseTagName = StringUtil.lowerCase(${tagName});
-
 			AssertElementNotPresent(
 				key_entryTitle = ${entryTitle},
-				key_tagName = ${lowerCaseTagName},
+				key_tagName = ${tagName},
 				locator1 = "BlogsEntry#TAG");
 		}
 	}
@@ -1711,8 +1594,6 @@ definition {
 
 		if (isSet(tagNameList)) {
 			for (var tagName : list ${tagNameList}) {
-				var tagName = StringUtil.lowerCase(${tagName});
-
 				var key_tagName = ${tagName};
 
 				BlogsNavigator.gotoEntryPG(
@@ -1734,7 +1615,6 @@ definition {
 		}
 		else {
 			var key_tagName = ${tagName};
-			var tagName = StringUtil.upperCase(${tagName});
 
 			AssertClick(
 				locator1 = "BlogsEntry#TAG",
@@ -1863,62 +1743,6 @@ definition {
 		AssertTextNotPresent(
 			locator1 = "BlogsEntry#CONTENT",
 			value1 = ${entryContent});
-	}
-
-	@summary = "Default summary"
-	macro viewWithTrackbackURLPG(entryTitle2 = null, entryContent2 = null, entryTitle = null, entryContent = null) {
-		BlogsEntry.viewPG(
-			entryContent = ${entryContent},
-			entryTitle = ${entryTitle});
-
-		var key_entryContent = ${entryContent};
-		var key_entryTitle = ${entryTitle};
-
-		if (IsTextEqual.isPartialText(locator1 = "Blogs#ENTRY_COMMENTS_COUNT", value1 = 2)) {
-			AssertTextEquals.assertPartialText(
-				locator1 = "Blogs#ENTRY_COMMENTS_COUNT",
-				value1 = 2);
-		}
-		else {
-			AssertTextEquals.assertPartialText(
-				locator1 = "Blogs#ENTRY_COMMENTS_COUNT",
-				value1 = 1);
-		}
-
-		AssertClick(
-			locator1 = "BlogsEntry#TITLE_LINK",
-			value1 = ${entryTitle});
-
-		AssertTextEquals(
-			locator1 = "BlogsEntry#TITLE",
-			value1 = ${entryTitle});
-
-		AssertTextEquals(
-			locator1 = "BlogsEntry#CONTENT",
-			value1 = ${entryContent});
-
-		AssertTextEquals(
-			locator1 = "Comments#ENTRY_COUNT_PANEL",
-			value1 = "1 COMMENT");
-
-		AssertTextEquals(
-			locator1 = "Comments#COMMENT_BODY",
-			value1 = "[...] ${entryContent2} [...] Read More");
-
-		AssertClick(
-			locator1 = "Link#READ_MORE",
-			value1 = "Read More");
-
-		var key_entryContent = ${entryContent2};
-		var key_entryTitle = ${entryTitle2};
-
-		AssertTextEquals(
-			locator1 = "BlogsEntry#TITLE",
-			value1 = ${entryTitle2});
-
-		AssertTextEquals(
-			locator1 = "BlogsEntry#CONTENT",
-			value1 = ${entryContent2});
 	}
 
 	@summary = "Default summary"

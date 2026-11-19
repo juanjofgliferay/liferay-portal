@@ -3,6 +3,30 @@
 	"$schema": "http://json-schema.org/draft-07/schema#",
 	"additionalProperties": false,
 	"definitions": {
+		"dependency": {
+			"additionalProperties": {
+				"additionalProperties": false,
+				"properties": {
+					"type": {
+						"enum": [
+							"equal",
+							"not-equal"
+						],
+						"type": "string"
+					},
+					"value": {
+						"type": "string"
+					}
+				},
+				"required": [
+					"type",
+					"value"
+				],
+				"type": "object"
+			},
+			"title": "The Dependency Schema",
+			"type": "object"
+		},
 		"field": {
 			"additionalProperties": false,
 			"allOf": [
@@ -94,6 +118,18 @@
 					"if": {
 						"properties": {
 							"type": {
+								"const": "targetCollectionDisplay"
+							}
+						}
+					},
+					"then": {
+						"$ref": "#/definitions/fieldTargetCollectionDisplay"
+					}
+				},
+				{
+					"if": {
+						"properties": {
+							"type": {
 								"const": "text"
 							}
 						}
@@ -156,6 +192,7 @@
 						"length",
 						"navigationMenuSelector",
 						"select",
+						"targetCollectionDisplay",
 						"text",
 						"url",
 						"videoSelector"
@@ -164,6 +201,11 @@
 					"type": "string"
 				},
 				"typeOptions": {
+					"properties": {
+						"dependency": {
+							"$ref": "#/definitions/dependency"
+						}
+					},
 					"title": "The TypeOptions Schema",
 					"type": "object"
 				}
@@ -193,6 +235,9 @@
 				"typeOptions": {
 					"additionalProperties": false,
 					"properties": {
+						"dependency": {
+							"$ref": "#/definitions/dependency"
+						},
 						"displayType": {
 							"enum": [
 								"checkbox",
@@ -212,6 +257,9 @@
 				"typeOptions": {
 					"additionalProperties": false,
 					"properties": {
+						"dependency": {
+							"$ref": "#/definitions/dependency"
+						},
 						"itemSubtype": {
 							"title": "The ItemSubtype Schema",
 							"type": "string"
@@ -282,6 +330,18 @@
 			"properties": {
 				"defaultValue": {
 					"additionalProperties": false,
+					"anyOf": [
+						{
+							"required": [
+								"classPK"
+							]
+						},
+						{
+							"required": [
+								"externalReferenceCode"
+							]
+						}
+					],
 					"properties": {
 						"className": {
 							"title": "The ClassName Schema",
@@ -294,11 +354,18 @@
 						"classPK": {
 							"title": "The ClassPK Schema",
 							"type": "string"
+						},
+						"externalReferenceCode": {
+							"title": "The ExternalReferenceCode Schema",
+							"type": "string"
+						},
+						"scopeExternalReferenceCode": {
+							"title": "The ScopeExternalReferenceCode Schema",
+							"type": "string"
 						}
 					},
 					"required": [
-						"className",
-						"classPK"
+						"className"
 					],
 					"title": "The DefaultValue Schema"
 				},
@@ -308,6 +375,9 @@
 						"className": {
 							"title": "The ClassName Schema",
 							"type": "string"
+						},
+						"dependency": {
+							"$ref": "#/definitions/dependency"
 						},
 						"enableSelectTemplate": {
 							"title": "The EnableSelectTemplate Schema",
@@ -335,6 +405,11 @@
 			"properties": {
 				"typeOptions": {
 					"additionalProperties": false,
+					"properties": {
+						"dependency": {
+							"$ref": "#/definitions/dependency"
+						}
+					},
 					"title": "The Typeoptions Schema",
 					"type": "object"
 				}
@@ -345,6 +420,9 @@
 				"typeOptions": {
 					"additionalProperties": false,
 					"properties": {
+						"dependency": {
+							"$ref": "#/definitions/dependency"
+						},
 						"validValues": {
 							"items": {
 								"additionalProperties": false,
@@ -388,6 +466,11 @@
 			"$id": "#/properties/fieldSets/items",
 			"additionalProperties": false,
 			"properties": {
+				"collapsed": {
+					"default": false,
+					"title": "The Collapsed Schema",
+					"type": "boolean"
+				},
 				"configurationRole": {
 					"default": "",
 					"enum": [
@@ -395,6 +478,10 @@
 						"style"
 					],
 					"title": "The Configuration Role Schema",
+					"type": "string"
+				},
+				"customComponentModule": {
+					"title": "The CustomComponentModule Schema",
 					"type": "string"
 				},
 				"fields": {
@@ -416,11 +503,36 @@
 			"title": "The Items Schema",
 			"type": "object"
 		},
+		"fieldTargetCollectionDisplay": {
+			"properties": {
+				"defaultValue": {
+					"title": "The DefaultValue Schema",
+					"type": "array"
+				},
+				"typeOptions": {
+					"additionalProperties": false,
+					"properties": {
+						"dependency": {
+							"$ref": "#/definitions/dependency"
+						},
+						"enableCompatibleCollections": {
+							"title": "The EnableCompatibleCollections Schema",
+							"type": "boolean"
+						}
+					},
+					"title": "The Typeoptions Schema",
+					"type": "object"
+				}
+			}
+		},
 		"fieldText": {
 			"properties": {
 				"typeOptions": {
 					"additionalProperties": false,
 					"properties": {
+						"dependency": {
+							"$ref": "#/definitions/dependency"
+						},
 						"placeholder": {
 							"title": "The Placeholder Schema",
 							"type": "string"
@@ -442,6 +554,10 @@
 											"title": "The Min Schema",
 											"type": "number"
 										},
+										"required": {
+											"title": "The Required Schema",
+											"type": "boolean"
+										},
 										"type": {
 											"const": "number"
 										}
@@ -462,6 +578,10 @@
 											"title": "The MaxLength Schema",
 											"type": "number"
 										},
+										"required": {
+											"title": "The Required Schema",
+											"type": "boolean"
+										},
 										"type": {
 											"enum": [
 												"email",
@@ -481,6 +601,10 @@
 										"regexp": {
 											"title": "The RegExp Schema",
 											"type": "string"
+										},
+										"required": {
+											"title": "The Required Schema",
+											"type": "boolean"
 										},
 										"type": {
 											"const": "pattern"

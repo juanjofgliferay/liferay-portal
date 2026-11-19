@@ -8,13 +8,23 @@ package com.liferay.headless.admin.address.internal.dto.v1_0.converter;
 import com.liferay.headless.admin.address.dto.v1_0.Country;
 import com.liferay.headless.admin.address.dto.v1_0.Region;
 import com.liferay.headless.admin.address.internal.dto.v1_0.converter.constants.DTOConverterConstants;
+import com.liferay.headless.admin.address.internal.dto.v1_0.util.CreatorUtil;
 import com.liferay.petra.function.transform.TransformUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.service.CountryService;
+import com.liferay.portal.kernel.service.PermissionService;
 import com.liferay.portal.kernel.service.RegionService;
+import com.liferay.portal.kernel.service.ResourceActionLocalService;
+import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.vulcan.dto.converter.DTOConverter;
 import com.liferay.portal.vulcan.dto.converter.DTOConverterContext;
+import com.liferay.portal.vulcan.fields.NestedFieldsSupplier;
+import com.liferay.portal.vulcan.permission.Permission;
+import com.liferay.portal.vulcan.permission.PermissionUtil;
+import com.liferay.portal.vulcan.util.LocalizedMapUtil;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -23,7 +33,9 @@ import org.osgi.service.component.annotations.Reference;
  * @author Drew Brokke
  */
 @Component(
-	property = "dto.class.name=com.liferay.portal.kernel.model.Country",
+	property = {
+		"default=true", "dto.class.name=com.liferay.portal.kernel.model.Country"
+	},
 	service = DTOConverter.class
 )
 public class CountryResourceDTOConverter
@@ -39,6 +51,14 @@ public class CountryResourceDTOConverter
 			String externalReferenceCode)
 		throws Exception {
 
+		com.liferay.portal.kernel.model.Country serviceBuilderCountry =
+			_countryService.fetchCountryByExternalReferenceCode(
+				externalReferenceCode, _portal.getDefaultCompanyId());
+
+		if (serviceBuilderCountry != null) {
+			return serviceBuilderCountry;
+		}
+
 		return _countryService.getCountry(
 			GetterUtil.getLong(externalReferenceCode));
 	}
@@ -51,27 +71,24 @@ public class CountryResourceDTOConverter
 
 		return new Country() {
 			{
-				a2 = serviceBuilderCountry.getA2();
-				a3 = serviceBuilderCountry.getA3();
-				active = serviceBuilderCountry.getActive();
-				billingAllowed = serviceBuilderCountry.getBillingAllowed();
-				groupFilterEnabled =
-					serviceBuilderCountry.getGroupFilterEnabled();
-				id = serviceBuilderCountry.getCountryId();
-				name = serviceBuilderCountry.getName();
-				number = Integer.valueOf(serviceBuilderCountry.getNumber());
-				position = serviceBuilderCountry.getPosition();
-				regions = TransformUtil.transformToArray(
-					_regionService.getRegions(
-						serviceBuilderCountry.getCountryId()),
-					serviceBuilderRegion -> _regionResourceDTOConverter.toDTO(
-						serviceBuilderRegion),
-					Region.class);
-				shippingAllowed = serviceBuilderCountry.getShippingAllowed();
-				subjectToVAT = serviceBuilderCountry.getSubjectToVAT();
-				title_i18n = serviceBuilderCountry.getLanguageIdToTitleMap();
-				zipRequired = serviceBuilderCountry.getZipRequired();
-
+				setA2(serviceBuilderCountry::getA2);
+				setA3(serviceBuilderCountry::getA3);
+				setActive(serviceBuilderCountry::isActive);
+				setBillingAllowed(serviceBuilderCountry::isBillingAllowed);
+				setCreator(
+					() -> NestedFieldsSupplier.supply(
+						"creator",
+						fieldName -> CreatorUtil.toCreator(
+							_portal,
+							_userLocalService.fetchUser(
+								serviceBuilderCountry.getUserId()))));
+				setDateCreated(serviceBuilderCountry::getCreateDate);
+				setDateModified(serviceBuilderCountry::getModifiedDate);
+				setExternalReferenceCode(
+					serviceBuilderCountry::getExternalReferenceCode);
+				setGroupFilterEnabled(
+					serviceBuilderCountry::isGroupFilterEnabled);
+				setId(serviceBuilderCountry::getCountryId);
 				setIdd(
 					() -> {
 						if (Validator.isNull(serviceBuilderCountry.getIdd())) {
@@ -80,12 +97,64 @@ public class CountryResourceDTOConverter
 
 						return Integer.valueOf(serviceBuilderCountry.getIdd());
 					});
+				setName(serviceBuilderCountry::getName);
+				setNumber(
+					() -> Integer.valueOf(serviceBuilderCountry.getNumber()));
+				setPermissions(
+					() -> NestedFieldsSupplier.supply(
+						"permissions",
+						fieldName -> _toPermissions(serviceBuilderCountry)));
+				setPosition(serviceBuilderCountry::getPosition);
+				setRegions(
+					() -> TransformUtil.transformToArray(
+						_regionService.getRegions(
+							serviceBuilderCountry.getCountryId()),
+						serviceBuilderRegion ->
+							_regionResourceDTOConverter.toDTO(
+								serviceBuilderRegion),
+						Region.class));
+				setShippingAllowed(serviceBuilderCountry::isShippingAllowed);
+				setSubjectToVAT(serviceBuilderCountry::isSubjectToVAT);
+				setTitle_i18n(
+					() -> LocalizedMapUtil.getI18nMap(
+						true,
+						_language.getCompanyAvailableLocales(
+							serviceBuilderCountry.getCompanyId()),
+						serviceBuilderCountry.getLanguageIdToTitleMap()));
+				setZipRequired(serviceBuilderCountry::isZipRequired);
 			}
 		};
 	}
 
+	private Permission[] _toPermissions(
+			com.liferay.portal.kernel.model.Country serviceBuilderCountry)
+		throws Exception {
+
+		String className =
+			com.liferay.portal.kernel.model.Country.class.getName();
+
+		_permissionService.checkPermission(
+			0, className, serviceBuilderCountry.getCountryId());
+
+		return TransformUtil.transformToArray(
+			PermissionUtil.getPermissions(
+				serviceBuilderCountry.getCompanyId(),
+				_resourceActionLocalService.getResourceActions(className),
+				serviceBuilderCountry.getCountryId(), className, null),
+			permission -> permission, Permission.class);
+	}
+
 	@Reference
 	private CountryService _countryService;
+
+	@Reference
+	private Language _language;
+
+	@Reference
+	private PermissionService _permissionService;
+
+	@Reference
+	private Portal _portal;
 
 	@Reference(target = DTOConverterConstants.REGION_RESOURCE_DTO_CONVERTER)
 	private DTOConverter<com.liferay.portal.kernel.model.Region, Region>
@@ -93,5 +162,11 @@ public class CountryResourceDTOConverter
 
 	@Reference
 	private RegionService _regionService;
+
+	@Reference
+	private ResourceActionLocalService _resourceActionLocalService;
+
+	@Reference
+	private UserLocalService _userLocalService;
 
 }

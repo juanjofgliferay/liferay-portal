@@ -5,10 +5,10 @@
 
 package com.liferay.exportimport.kernel.configuration;
 
+import jakarta.portlet.PortletRequest;
+
 import java.util.List;
 import java.util.Map;
-
-import javax.portlet.PortletRequest;
 
 import org.osgi.annotation.versioning.ProviderType;
 
@@ -21,6 +21,9 @@ public interface ExportImportConfigurationParameterMapFactory {
 	public Map<String, String[]> buildFullPublishParameterMap();
 
 	public Map<String, String[]> buildParameterMap();
+
+	public Map<String, String[]> buildParameterMap(
+		Map<String, String[]> parameterMap);
 
 	public Map<String, String[]> buildParameterMap(
 		PortletRequest portletRequest);

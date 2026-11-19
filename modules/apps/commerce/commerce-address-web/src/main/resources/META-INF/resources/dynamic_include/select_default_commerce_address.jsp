@@ -40,7 +40,7 @@ int type = commerceChannelAccountEntryRelDisplayContext.getType();
 	</aui:form>
 </commerce-ui:modal-content>
 
-<aui:script use="liferay-dynamic-select">
+<aui:script>
 	new Liferay.DynamicSelect([
 		{
 			select: '<portlet:namespace />commerceChannelId',
@@ -49,8 +49,7 @@ int type = commerceChannelAccountEntryRelDisplayContext.getType();
 					var callbackList = [
 						{
 							commerceChannelId: '0',
-							name:
-								'<%= LanguageUtil.get(request, commerceChannelAccountEntryRelDisplayContext.getCommerceChannelsEmptyOptionKey()) %>',
+							name: '<%= LanguageUtil.get(request, commerceChannelAccountEntryRelDisplayContext.getCommerceChannelsEmptyOptionKey()) %>',
 						},
 					];
 
@@ -62,9 +61,12 @@ int type = commerceChannelAccountEntryRelDisplayContext.getType();
 				}
 
 				Liferay.Service(
-					'/commerce.commercechannel/get-commerce-channels',
+					'/commerce.commercechannel/get-eligible-commerce-channels',
 					{
-						companyId: '<%= company.getCompanyId() %>',
+						accountEntryId: '<%= accountEntry.getAccountEntryId() %>',
+						name: '',
+						start: '-1',
+						end: '-1',
 					},
 					injectCountryPlaceholder
 				);

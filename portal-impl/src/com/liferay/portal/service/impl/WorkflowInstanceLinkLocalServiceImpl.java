@@ -5,6 +5,7 @@
 
 package com.liferay.portal.service.impl;
 
+import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.bean.BeanReference;
@@ -110,6 +111,21 @@ public class WorkflowInstanceLinkLocalServiceImpl
 	}
 
 	@Override
+	public void deleteWorkflowInstanceLinkByWorkflowInstanceId(
+		long workflowInstanceId) {
+
+		WorkflowInstanceLink workflowInstanceLink =
+			workflowInstanceLinkPersistence.fetchByWorkflowInstanceId(
+				workflowInstanceId);
+
+		if (workflowInstanceLink == null) {
+			return;
+		}
+
+		workflowInstanceLinkPersistence.remove(workflowInstanceLink);
+	}
+
+	@Override
 	public void deleteWorkflowInstanceLinks(
 			long companyId, long groupId, String className, long classPK)
 		throws PortalException {
@@ -196,6 +212,14 @@ public class WorkflowInstanceLinkLocalServiceImpl
 
 		return workflowInstanceLinkPersistence.findByG_C_C_C(
 			groupId, companyId, classNameId, classPK);
+	}
+
+	@Override
+	public List<WorkflowInstanceLink> getWorkflowInstanceLinks(
+		long companyId, String className) {
+
+		return workflowInstanceLinkPersistence.findByC_C(
+			companyId, _classNameLocalService.getClassNameId(className));
 	}
 
 	@Override
@@ -290,12 +314,19 @@ public class WorkflowInstanceLinkLocalServiceImpl
 		workflowContext.put(
 			WorkflowConstants.CONTEXT_GROUP_ID, String.valueOf(groupId));
 
-		WorkflowInstance workflowInstance =
-			WorkflowInstanceManagerUtil.startWorkflowInstance(
-				companyId, groupId, userId,
-				workflowDefinitionLink.getWorkflowDefinitionName(),
-				workflowDefinitionLink.getWorkflowDefinitionVersion(), null,
-				workflowContext, waitForCompletion);
+		WorkflowInstance workflowInstance = null;
+
+		try (SafeCloseable safeCloseable =
+				WorkflowThreadLocal.setWaitForCompletionWithSafeCloseable(
+					waitForCompletion)) {
+
+			workflowInstance =
+				WorkflowInstanceManagerUtil.liberalStartWorkflowInstance(
+					companyId, groupId, userId,
+					workflowDefinitionLink.getWorkflowDefinitionName(),
+					workflowDefinitionLink.getWorkflowDefinitionVersion(), null,
+					workflowContext, waitForCompletion);
+		}
 
 		addWorkflowInstanceLink(
 			userId, companyId, groupId, className, classPK,

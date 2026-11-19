@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import '@testing-library/jest-dom/extend-expect';
+import '@testing-library/jest-dom';
 import {act, cleanup, fireEvent, render} from '@testing-library/react';
 import React from 'react';
 
@@ -44,7 +44,7 @@ describe('ImportMappingItem', () => {
 			});
 		});
 
-		expect(onChangeMock).toBeCalledWith('address');
+		expect(onChangeMock).toHaveBeenCalledWith('address');
 	});
 
 	it('must have a error status when the form is evaluated, the field is required and no value is selected', () => {

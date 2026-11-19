@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -56,15 +57,27 @@ public class ObjectRelationshipLocalServiceUtil {
 	public static ObjectRelationship addObjectRelationship(
 			String externalReferenceCode, long userId, long objectDefinitionId1,
 			long objectDefinitionId2, long parameterObjectFieldId,
-			String deletionType, Map<java.util.Locale, String> labelMap,
-			String name, boolean system, String type,
+			String deletionType, Map<java.util.Locale, String> descriptionMap,
+			boolean edge, Map<java.util.Locale, String> labelMap, String name,
+			boolean system, String type,
 			com.liferay.object.model.ObjectField objectField)
 		throws PortalException {
 
 		return getService().addObjectRelationship(
 			externalReferenceCode, userId, objectDefinitionId1,
-			objectDefinitionId2, parameterObjectFieldId, deletionType, labelMap,
-			name, system, type, objectField);
+			objectDefinitionId2, parameterObjectFieldId, deletionType,
+			descriptionMap, edge, labelMap, name, system, type, objectField);
+	}
+
+	public static ObjectRelationship addObjectRelationship(
+			String externalReferenceCode, long userId, long objectDefinitionId1,
+			long objectDefinitionId2,
+			com.liferay.object.model.ObjectField objectField)
+		throws PortalException {
+
+		return getService().addObjectRelationship(
+			externalReferenceCode, userId, objectDefinitionId1,
+			objectDefinitionId2, objectField);
 	}
 
 	public static void addObjectRelationshipMappingTableValues(
@@ -274,6 +287,13 @@ public class ObjectRelationshipLocalServiceUtil {
 		return getService().fetchObjectRelationship(objectRelationshipId);
 	}
 
+	public static ObjectRelationship fetchObjectRelationship(
+			long objectDefinitionId1, String name)
+		throws PortalException {
+
+		return getService().fetchObjectRelationship(objectDefinitionId1, name);
+	}
+
 	public static ObjectRelationship
 		fetchObjectRelationshipByExternalReferenceCode(
 			String externalReferenceCode, long objectDefinitionId1) {
@@ -395,7 +415,7 @@ public class ObjectRelationshipLocalServiceUtil {
 
 	public static ObjectRelationship getObjectRelationshipByObjectDefinitionId(
 			long objectDefinitionId, String name)
-		throws Exception {
+		throws PortalException {
 
 		return getService().getObjectRelationshipByObjectDefinitionId(
 			objectDefinitionId, name);
@@ -447,6 +467,13 @@ public class ObjectRelationshipLocalServiceUtil {
 	}
 
 	public static List<ObjectRelationship> getObjectRelationships(
+		long objectDefinitionId1, boolean reverse, String type) {
+
+		return getService().getObjectRelationships(
+			objectDefinitionId1, reverse, type);
+	}
+
+	public static List<ObjectRelationship> getObjectRelationships(
 		long objectDefinitionId1, int start, int end) {
 
 		return getService().getObjectRelationships(
@@ -480,6 +507,22 @@ public class ObjectRelationshipLocalServiceUtil {
 			objectDefinitionId2);
 	}
 
+	public static List<ObjectRelationship>
+		getObjectRelationshipsByObjectDefinitionId2(
+			long objectDefinitionId2, boolean edge) {
+
+		return getService().getObjectRelationshipsByObjectDefinitionId2(
+			objectDefinitionId2, edge);
+	}
+
+	public static List<ObjectRelationship>
+		getObjectRelationshipsByObjectDefinitionId2(
+			long objectDefinitionId2, String type) {
+
+		return getService().getObjectRelationshipsByObjectDefinitionId2(
+			objectDefinitionId2, type);
+	}
+
 	/**
 	 * Returns the number of object relationships.
 	 *
@@ -487,6 +530,12 @@ public class ObjectRelationshipLocalServiceUtil {
 	 */
 	public static int getObjectRelationshipsCount() {
 		return getService().getObjectRelationshipsCount();
+	}
+
+	public static Map<Long, List<ObjectRelationship>> getObjectRelationshipsMap(
+		long companyId) {
+
+		return getService().getObjectRelationshipsMap(companyId);
 	}
 
 	/**
@@ -509,11 +558,13 @@ public class ObjectRelationshipLocalServiceUtil {
 
 	public static void
 		registerObjectRelationshipsRelatedInfoCollectionProviders(
-			com.liferay.object.model.ObjectDefinition objectDefinition1,
-			ObjectDefinitionLocalService objectDefinitionLocalService) {
+			com.liferay.object.model.ObjectDefinition objectDefinition,
+			ObjectDefinitionLocalService objectDefinitionLocalService,
+			List<ObjectRelationship> objectRelationships) {
 
 		getService().registerObjectRelationshipsRelatedInfoCollectionProviders(
-			objectDefinition1, objectDefinitionLocalService);
+			objectDefinition, objectDefinitionLocalService,
+			objectRelationships);
 	}
 
 	/**
@@ -534,24 +585,32 @@ public class ObjectRelationshipLocalServiceUtil {
 
 	public static ObjectRelationship updateObjectRelationship(
 			String externalReferenceCode, long objectRelationshipId,
-			long parameterObjectFieldId, String deletionType, boolean edge,
+			long parameterObjectFieldId, String deletionType,
+			Map<java.util.Locale, String> descriptionMap, boolean edge,
 			Map<java.util.Locale, String> labelMap,
 			com.liferay.object.model.ObjectField objectField)
 		throws PortalException {
 
 		return getService().updateObjectRelationship(
 			externalReferenceCode, objectRelationshipId, parameterObjectFieldId,
-			deletionType, edge, labelMap, objectField);
+			deletionType, descriptionMap, edge, labelMap, objectField);
+	}
+
+	public static void updateUserId(
+			long companyId, long oldUserId, long newUserId)
+		throws PortalException {
+
+		getService().updateUserId(companyId, oldUserId, newUserId);
 	}
 
 	public static ObjectRelationshipLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(ObjectRelationshipLocalService service) {
-		_service = service;
-	}
-
-	private static volatile ObjectRelationshipLocalService _service;
+	private static final Snapshot<ObjectRelationshipLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			ObjectRelationshipLocalServiceUtil.class,
+			ObjectRelationshipLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1426069857

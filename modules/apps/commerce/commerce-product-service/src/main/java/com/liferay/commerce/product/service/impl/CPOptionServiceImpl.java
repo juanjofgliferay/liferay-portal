@@ -13,6 +13,7 @@ import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.search.BaseModelSearchResult;
 import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
+import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
 import com.liferay.portal.kernel.security.permission.resource.PortletResourcePermission;
 import com.liferay.portal.kernel.service.ServiceContext;
@@ -64,7 +65,7 @@ public class CPOptionServiceImpl extends CPOptionServiceBaseImpl {
 			String key, ServiceContext serviceContext)
 		throws PortalException {
 
-		CPOption cpOption = cpOptionLocalService.fetchByExternalReferenceCode(
+		CPOption cpOption = cpOptionPersistence.fetchByERC_C(
 			externalReferenceCode, serviceContext.getCompanyId());
 
 		if (cpOption == null) {
@@ -74,6 +75,10 @@ public class CPOptionServiceImpl extends CPOptionServiceBaseImpl {
 			portletResourcePermission.check(
 				getPermissionChecker(), null,
 				CPActionKeys.ADD_COMMERCE_PRODUCT_OPTION);
+		}
+		else {
+			_cpOptionModelResourcePermission.check(
+				getPermissionChecker(), cpOption, ActionKeys.UPDATE);
 		}
 
 		return cpOptionLocalService.addOrUpdateCPOption(
@@ -91,24 +96,8 @@ public class CPOptionServiceImpl extends CPOptionServiceBaseImpl {
 	}
 
 	@Override
-	public CPOption fetchByExternalReferenceCode(
-			String externalReferenceCode, long companyId)
-		throws PortalException {
-
-		CPOption cpOption = cpOptionLocalService.fetchByExternalReferenceCode(
-			externalReferenceCode, companyId);
-
-		if (cpOption != null) {
-			_cpOptionModelResourcePermission.check(
-				getPermissionChecker(), cpOption, ActionKeys.VIEW);
-		}
-
-		return cpOption;
-	}
-
-	@Override
 	public CPOption fetchCPOption(long cpOptionId) throws PortalException {
-		CPOption cpOption = cpOptionLocalService.fetchCPOption(cpOptionId);
+		CPOption cpOption = cpOptionPersistence.fetchByPrimaryKey(cpOptionId);
 
 		if (cpOption != null) {
 			_cpOptionModelResourcePermission.check(
@@ -122,7 +111,23 @@ public class CPOptionServiceImpl extends CPOptionServiceBaseImpl {
 	public CPOption fetchCPOption(long companyId, String key)
 		throws PortalException {
 
-		CPOption cpOption = cpOptionLocalService.fetchCPOption(companyId, key);
+		CPOption cpOption = cpOptionPersistence.fetchByC_K(companyId, key);
+
+		if (cpOption != null) {
+			_cpOptionModelResourcePermission.check(
+				getPermissionChecker(), cpOption, ActionKeys.VIEW);
+		}
+
+		return cpOption;
+	}
+
+	@Override
+	public CPOption fetchCPOptionByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws PortalException {
+
+		CPOption cpOption = cpOptionPersistence.fetchByERC_C(
+			externalReferenceCode, companyId);
 
 		if (cpOption != null) {
 			_cpOptionModelResourcePermission.check(
@@ -138,7 +143,7 @@ public class CPOptionServiceImpl extends CPOptionServiceBaseImpl {
 			OrderByComparator<CPOption> orderByComparator)
 		throws PortalException {
 
-		return cpOptionLocalService.findCPOptionByCompanyId(
+		return cpOptionPersistence.filterFindByCompanyId(
 			companyId, start, end, orderByComparator);
 	}
 
@@ -147,7 +152,35 @@ public class CPOptionServiceImpl extends CPOptionServiceBaseImpl {
 		_cpOptionModelResourcePermission.check(
 			getPermissionChecker(), cpOptionId, ActionKeys.VIEW);
 
-		return cpOptionLocalService.getCPOption(cpOptionId);
+		return cpOptionPersistence.findByPrimaryKey(cpOptionId);
+	}
+
+	@Override
+	public CPOption getOrAddEmptyCPOption(
+			String externalReferenceCode, Map<Locale, String> nameMap,
+			String commerceOptionTypeKey, boolean skuContributor, String key)
+		throws PortalException {
+
+		PermissionChecker permissionChecker = getPermissionChecker();
+
+		CPOption cpOption =
+			cpOptionService.fetchCPOptionByExternalReferenceCode(
+				externalReferenceCode, permissionChecker.getCompanyId());
+
+		if (cpOption != null) {
+			return cpOption;
+		}
+
+		PortletResourcePermission portletResourcePermission =
+			_cpOptionModelResourcePermission.getPortletResourcePermission();
+
+		portletResourcePermission.check(
+			permissionChecker, null, CPActionKeys.ADD_COMMERCE_PRODUCT_OPTION);
+
+		return cpOptionLocalService.getOrAddEmptyCPOption(
+			externalReferenceCode, permissionChecker.getCompanyId(),
+			permissionChecker.getUserId(), nameMap, commerceOptionTypeKey,
+			skuContributor, key);
 	}
 
 	@Override

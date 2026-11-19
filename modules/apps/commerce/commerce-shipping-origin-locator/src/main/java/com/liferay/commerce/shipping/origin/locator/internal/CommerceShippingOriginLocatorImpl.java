@@ -57,6 +57,7 @@ public class CommerceShippingOriginLocatorImpl
 		for (CommerceOrderItem commerceOrderItem : commerceOrderItems) {
 			CommerceInventoryWarehouse commerceInventoryWarehouse =
 				_getClosestCommerceInventoryWarehouse(
+					commerceOrder.getCommerceAccountId(),
 					commerceOrder.getGroupId(), commerceAddress,
 					commerceOrderItem.getSku());
 
@@ -95,14 +96,16 @@ public class CommerceShippingOriginLocatorImpl
 	}
 
 	private CommerceInventoryWarehouse _getClosestCommerceInventoryWarehouse(
-			long groupId, CommerceAddress commerceAddress, String sku)
+			long accountEntryId, long groupId, CommerceAddress commerceAddress,
+			String sku)
 		throws Exception {
+
+		CommerceInventoryWarehouse closestCommerceInventoryWarehouse = null;
 
 		List<CommerceInventoryWarehouse> commerceInventoryWarehouses =
 			_commerceInventoryWarehouseLocalService.
-				getCommerceInventoryWarehouses(groupId, sku);
+				getCommerceInventoryWarehouses(accountEntryId, groupId, sku);
 
-		CommerceInventoryWarehouse closestCommerceInventoryWarehouse = null;
 		double closestDistance = Double.MAX_VALUE;
 
 		for (CommerceInventoryWarehouse commerceInventoryWarehouse :
@@ -135,10 +138,12 @@ public class CommerceShippingOriginLocatorImpl
 				commerceInventoryWarehouse.getLatitude(),
 				commerceInventoryWarehouse.getLongitude());
 
-			if (distance < closestDistance) {
-				closestCommerceInventoryWarehouse = commerceInventoryWarehouse;
-				closestDistance = distance;
+			if (!(distance < closestDistance)) {
+				continue;
 			}
+
+			closestCommerceInventoryWarehouse = commerceInventoryWarehouse;
+			closestDistance = distance;
 		}
 
 		return closestCommerceInventoryWarehouse;

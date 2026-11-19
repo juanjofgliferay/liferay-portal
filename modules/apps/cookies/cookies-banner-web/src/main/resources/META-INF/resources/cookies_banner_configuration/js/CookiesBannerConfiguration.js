@@ -9,17 +9,44 @@ import {
 	acceptAllCookies,
 	declineAllCookies,
 	getCookie,
+	hasPreviouslyStoredConsent,
 	setCookie,
 	setUserConfigCookie,
 	userConfigCookieName,
 } from '../../js/CookiesUtil';
 
 export default function ({
+	consentRenewalPeriod,
+	consentRenewalPeriodTimeUnit,
+	dissentRenewalPeriod,
+	dissentRenewalPeriodTimeUnit,
 	namespace,
 	optionalConsentCookieTypeNames,
 	requiredConsentCookieTypeNames,
 	showButtons,
 }) {
+	const storeConsentCheckbox = document.getElementById(
+		`${namespace}storeConsent`
+	);
+
+	if (storeConsentCheckbox !== null) {
+		const notifyStoreConsentPreferenceUpdate = () =>
+			getOpener().Liferay.fire('storeCookiesConsentPreferenceUpdate', {
+				value: storeConsentCheckbox.checked,
+			});
+
+		storeConsentCheckbox.addEventListener(
+			'change',
+			notifyStoreConsentPreferenceUpdate
+		);
+
+		hasPreviouslyStoredConsent().then((storeConsent) => {
+			storeConsentCheckbox.checked = storeConsent;
+
+			storeConsentCheckbox.removeAttribute('disabled');
+		});
+	}
+
 	const toggleSwitches = Array.from(
 		document.querySelectorAll(
 			`#${namespace}cookiesBannerConfigurationForm [data-cookie-key]`
@@ -27,76 +54,132 @@ export default function ({
 	);
 
 	toggleSwitches.forEach((toggleSwitch) => {
-		const cookieKey = toggleSwitch.dataset.cookieKey;
+		toggleSwitch.checked = toggleSwitch.dataset.prechecked === 'true';
 
-		const notifyCookiePreferenceUpdate = () =>
-			getOpener().Liferay.fire('cookiePreferenceUpdate', {
-				key: cookieKey,
-				value: toggleSwitch.checked ? 'true' : 'false',
+		getCookie(userConfigCookieName)
+			.then((userConfigCookie) =>
+				userConfigCookie
+					? getCookie(toggleSwitch.dataset.cookieKey)
+					: undefined
+			)
+			.then((cookie) => {
+				if (cookie !== undefined) {
+					toggleSwitch.checked = cookie === 'true';
+				}
+
+				toggleSwitch.removeAttribute('disabled');
 			});
-
-		toggleSwitch.addEventListener('click', notifyCookiePreferenceUpdate);
-
-		if (getCookie(userConfigCookieName)) {
-			toggleSwitch.checked = getCookie(cookieKey) === 'true';
-		}
-		else {
-			toggleSwitch.checked = toggleSwitch.dataset.prechecked === 'true';
-		}
-
-		notifyCookiePreferenceUpdate();
-
-		toggleSwitch.removeAttribute('disabled');
 	});
 
 	if (showButtons) {
 		const acceptAllButton = document.getElementById(
 			`${namespace}acceptAllButton`
 		);
-		const confirmButton = document.getElementById(
-			`${namespace}confirmButton`
+		const acceptSelectedButton = document.getElementById(
+			`${namespace}acceptSelectedButton`
 		);
-		const declineAllButton = document.getElementById(
-			`${namespace}declineAllButton`
+		const useNecessaryCookiesOnlyButton = document.getElementById(
+			`${namespace}useNecessaryCookiesOnlyButton`
 		);
+
+		if (dissentRenewalPeriod === 0) {
+			dissentRenewalPeriod = consentRenewalPeriod;
+			dissentRenewalPeriodTimeUnit = consentRenewalPeriodTimeUnit;
+		}
 
 		acceptAllButton.addEventListener('click', () => {
 			acceptAllCookies(
+				consentRenewalPeriod,
 				optionalConsentCookieTypeNames,
-				requiredConsentCookieTypeNames
+				requiredConsentCookieTypeNames,
+				storeConsentCheckbox?.checked,
+				consentRenewalPeriodTimeUnit
 			);
 
-			setUserConfigCookie();
+			setUserConfigCookie(
+				consentRenewalPeriod,
+				storeConsentCheckbox?.checked,
+				consentRenewalPeriodTimeUnit
+			);
 
 			window.location.reload();
 		});
 
-		confirmButton.addEventListener('click', () => {
+		acceptSelectedButton.addEventListener('click', () => {
 			toggleSwitches.forEach((toggleSwitch) => {
+				let renewalPeriod = consentRenewalPeriod;
+				let timeUnit = consentRenewalPeriodTimeUnit;
+
+				if (!toggleSwitch.checked) {
+					renewalPeriod = dissentRenewalPeriod;
+					timeUnit = dissentRenewalPeriodTimeUnit;
+				}
+
 				setCookie(
+					renewalPeriod,
 					toggleSwitch.dataset.cookieKey,
+					storeConsentCheckbox?.checked,
+					timeUnit,
 					toggleSwitch.checked ? 'true' : 'false'
 				);
 			});
 
+			optionalConsentCookieTypeNames
+				.filter(
+					(optionalConsentCookieTypeName) =>
+						!toggleSwitches.some(
+							(toggleSwitch) =>
+								toggleSwitch.dataset.cookieKey ===
+								optionalConsentCookieTypeName
+						)
+				)
+				.forEach((optionalConsentCookieTypeName) => {
+					setCookie(
+						dissentRenewalPeriod,
+						optionalConsentCookieTypeName,
+						storeConsentCheckbox?.checked,
+						dissentRenewalPeriodTimeUnit,
+						'false'
+					);
+				});
+
 			requiredConsentCookieTypeNames.forEach(
 				(requiredConsentCookieTypeName) => {
-					setCookie(requiredConsentCookieTypeName, 'true');
+					setCookie(
+						consentRenewalPeriod,
+						requiredConsentCookieTypeName,
+						storeConsentCheckbox?.checked,
+						consentRenewalPeriodTimeUnit,
+						'true'
+					);
 				}
 			);
 
-			setUserConfigCookie();
+			setUserConfigCookie(
+				consentRenewalPeriod,
+				storeConsentCheckbox?.checked,
+				consentRenewalPeriodTimeUnit
+			);
 
 			window.location.reload();
 		});
 
-		declineAllButton.addEventListener('click', () => {
+		useNecessaryCookiesOnlyButton.addEventListener('click', () => {
 			declineAllCookies(
+				consentRenewalPeriod,
+				consentRenewalPeriodTimeUnit,
+				dissentRenewalPeriod,
+				dissentRenewalPeriodTimeUnit,
 				optionalConsentCookieTypeNames,
-				requiredConsentCookieTypeNames
+				requiredConsentCookieTypeNames,
+				storeConsentCheckbox?.checked
 			);
 
-			setUserConfigCookie();
+			setUserConfigCookie(
+				consentRenewalPeriod,
+				storeConsentCheckbox?.checked,
+				consentRenewalPeriodTimeUnit
+			);
 
 			window.location.reload();
 		});

@@ -10,15 +10,12 @@ import {FrontendDataSet} from '@liferay/frontend-data-set-web';
 import moment from 'moment/min/moment-with-locales';
 import React, {useEffect, useMemo, useState} from 'react';
 
-import {
-	IFDSTableProps,
-	defaultDataSetProps,
-	fdsItem,
-	formatActionURL,
-} from '../../utils/fds';
+import {defaultFDSDataSetProps, formatActionURL} from '../../utils/fds';
 import FDSSourceDataRenderer from '../FDSPropsTransformer/FDSSourceDataRenderer';
 import LabelRenderer from '../LabelRenderer';
 import {ModalAddObjectValidation} from './ModalAddObjectValidation';
+
+import type {FDSItem, IFDSTableProps} from '../../utils/fds';
 
 interface ItemData {
 	active: boolean;
@@ -34,10 +31,12 @@ function ObjectFieldActiveDataRenderer({itemData}: {itemData: ItemData}) {
 const language = Liferay.ThemeDisplay.getBCP47LanguageId();
 
 interface ValidationsProps extends IFDSTableProps {
+	allowScriptContentToBeExecutedOrIncluded: boolean;
 	objectValidationRuleEngines: LabelKeyObject[];
 }
 
 export default function Validations({
+	allowScriptContentToBeExecutedOrIncluded,
 	apiURL,
 	creationMenu,
 	formName,
@@ -47,10 +46,8 @@ export default function Validations({
 	style,
 	url,
 }: ValidationsProps) {
-	const [
-		showAddObjectRelationshipModal,
-		setShowAddObjectRelationshipModal,
-	] = useState(false);
+	const [showAddObjectRelationshipModal, setShowAddObjectRelationshipModal] =
+		useState(false);
 
 	const objectValidationRuleEnginesItems = useMemo(() => {
 		return objectValidationRuleEngines.map(({key, label}) => ({
@@ -63,7 +60,7 @@ export default function Validations({
 		itemData,
 		openSidePanel,
 		value,
-	}: fdsItem<ItemData>) {
+	}: FDSItem<ItemData>) {
 		return (
 			<LabelRenderer
 				onClick={() => {
@@ -82,8 +79,8 @@ export default function Validations({
 		return moment().format('MMMM D, YYYY, h:mm:ss A');
 	}
 
-	const dataSetProps = {
-		...defaultDataSetProps,
+	const frontendDataSetProps = {
+		...defaultFDSDataSetProps,
 		apiURL,
 		creationMenu,
 		customDataRenderers: {
@@ -167,10 +164,13 @@ export default function Validations({
 
 	return (
 		<>
-			<FrontendDataSet {...dataSetProps} />
+			<FrontendDataSet {...frontendDataSetProps} />
 
 			{showAddObjectRelationshipModal && (
 				<ModalAddObjectValidation
+					allowScriptContentToBeExecutedOrIncluded={
+						allowScriptContentToBeExecutedOrIncluded
+					}
 					apiURL={apiURL as string}
 					objectValidationRuleEngines={
 						objectValidationRuleEnginesItems

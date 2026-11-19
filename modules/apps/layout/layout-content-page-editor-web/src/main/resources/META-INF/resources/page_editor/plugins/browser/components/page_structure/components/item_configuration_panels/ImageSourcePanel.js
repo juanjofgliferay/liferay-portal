@@ -40,7 +40,7 @@ const SOURCE_OPTIONS = {
 		value: 'direct',
 	},
 	mapping: {
-		label: Liferay.Language.get('mapping'),
+		label: Liferay.Language.get('mapping[content]'),
 		value: 'mapping',
 	},
 };
@@ -260,11 +260,9 @@ function DirectImagePanel({item}) {
 				<CheckboxField
 					field={{
 						defaultValue: false,
-						description: Liferay.FeatureFlags['LPS-187285']
-							? Liferay.Language.get(
-									'lazy-loading-can-help-to-improve-page-performance'
-							  )
-							: undefined,
+						description: Liferay.Language.get(
+							'lazy-loading-can-help-to-improve-page-performance'
+						),
 						label: Liferay.Language.get('enable-lazy-loading'),
 						name: 'lazyLoading',
 					}}

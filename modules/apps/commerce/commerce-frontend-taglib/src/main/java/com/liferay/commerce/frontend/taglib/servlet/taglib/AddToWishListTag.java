@@ -18,9 +18,9 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.taglib.util.IncludeTag;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.jsp.JspException;
-import javax.servlet.jsp.PageContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.jsp.JspException;
+import jakarta.servlet.jsp.PageContext;
 
 /**
  * @author Gianmarco Brunialti Masera
@@ -28,9 +28,28 @@ import javax.servlet.jsp.PageContext;
 public class AddToWishListTag extends IncludeTag {
 
 	@Override
+	public int doEndTag() throws JspException {
+		if (_signedIn) {
+			return super.doEndTag();
+		}
+
+		return EVAL_PAGE;
+	}
+
+	@Override
 	public int doStartTag() throws JspException {
 		try {
 			HttpServletRequest httpServletRequest = getRequest();
+
+			ThemeDisplay themeDisplay =
+				(ThemeDisplay)httpServletRequest.getAttribute(
+					WebKeys.THEME_DISPLAY);
+
+			_signedIn = themeDisplay.isSignedIn();
+
+			if (!_signedIn) {
+				return SKIP_BODY;
+			}
 
 			_commerceAccountId = CommerceUtil.getCommerceAccountId(
 				(CommerceContext)httpServletRequest.getAttribute(
@@ -41,10 +60,6 @@ public class AddToWishListTag extends IncludeTag {
 			if (!_cpContentHelper.hasMultipleCPSkus(_cpCatalogEntry)) {
 				cpSku = _cpContentHelper.getDefaultCPSku(_cpCatalogEntry);
 			}
-
-			ThemeDisplay themeDisplay =
-				(ThemeDisplay)httpServletRequest.getAttribute(
-					WebKeys.THEME_DISPLAY);
 
 			_inWishList = _cpContentHelper.isInWishList(
 				cpSku, _cpCatalogEntry, themeDisplay);
@@ -72,15 +87,18 @@ public class AddToWishListTag extends IncludeTag {
 
 	@Override
 	public void setAttributes(HttpServletRequest httpServletRequest) {
-		setAttributeNamespace(_ATTRIBUTE_NAMESPACE);
-
-		setNamespacedAttribute(
-			httpServletRequest, "commerceAccountId", _commerceAccountId);
-		setNamespacedAttribute(
-			httpServletRequest, "cpCatalogEntry", _cpCatalogEntry);
-		setNamespacedAttribute(httpServletRequest, "inWishList", _inWishList);
-		setNamespacedAttribute(httpServletRequest, "large", _large);
-		setNamespacedAttribute(httpServletRequest, "skuId", _skuId);
+		httpServletRequest.setAttribute(
+			"liferay-commerce:add-to-wish-list:commerceAccountId",
+			_commerceAccountId);
+		httpServletRequest.setAttribute(
+			"liferay-commerce:add-to-wish-list:cpCatalogEntry",
+			_cpCatalogEntry);
+		httpServletRequest.setAttribute(
+			"liferay-commerce:add-to-wish-list:inWishList", _inWishList);
+		httpServletRequest.setAttribute(
+			"liferay-commerce:add-to-wish-list:large", _large);
+		httpServletRequest.setAttribute(
+			"liferay-commerce:add-to-wish-list:skuId", _skuId);
 	}
 
 	public void setCPCatalogEntry(CPCatalogEntry cpCatalogEntry) {
@@ -113,6 +131,7 @@ public class AddToWishListTag extends IncludeTag {
 		_cpContentHelper = null;
 		_inWishList = false;
 		_large = false;
+		_signedIn = false;
 		_skuId = 0;
 	}
 
@@ -120,9 +139,6 @@ public class AddToWishListTag extends IncludeTag {
 	protected String getPage() {
 		return _PAGE;
 	}
-
-	private static final String _ATTRIBUTE_NAMESPACE =
-		"liferay-commerce:add-to-wish-list:";
 
 	private static final String _PAGE = "/add_to_wish_list/page.jsp";
 
@@ -134,6 +150,7 @@ public class AddToWishListTag extends IncludeTag {
 	private CPContentHelper _cpContentHelper;
 	private boolean _inWishList;
 	private boolean _large;
+	private boolean _signedIn;
 	private long _skuId;
 
 }

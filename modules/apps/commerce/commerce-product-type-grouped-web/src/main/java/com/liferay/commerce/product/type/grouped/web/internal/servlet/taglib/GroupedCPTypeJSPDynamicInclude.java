@@ -11,13 +11,12 @@ import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.servlet.taglib.BaseJSPDynamicInclude;
 import com.liferay.portal.kernel.servlet.taglib.DynamicInclude;
-import com.liferay.portal.kernel.util.Portal;
+
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
-
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -25,7 +24,10 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Alessio Antonio Rendina
  */
-@Component(service = DynamicInclude.class)
+@Component(
+	property = "dynamic.include.key=com.liferay.commerce.product.type.grouped.web#/grouped_product_type.jsp#",
+	service = DynamicInclude.class
+)
 public class GroupedCPTypeJSPDynamicInclude extends BaseJSPDynamicInclude {
 
 	@Override
@@ -46,13 +48,6 @@ public class GroupedCPTypeJSPDynamicInclude extends BaseJSPDynamicInclude {
 	}
 
 	@Override
-	public void register(DynamicIncludeRegistry dynamicIncludeRegistry) {
-		dynamicIncludeRegistry.register(
-			"com.liferay.commerce.product.type.grouped.web#" +
-				"/grouped_product_type.jsp#");
-	}
-
-	@Override
 	protected String getJspPath() {
 		return "/dynamic_include/grouped_product_type.jsp";
 	}
@@ -67,9 +62,6 @@ public class GroupedCPTypeJSPDynamicInclude extends BaseJSPDynamicInclude {
 
 	@Reference
 	private GroupedCPTypeHelper _groupedCPTypeHelper;
-
-	@Reference
-	private Portal _portal;
 
 	@Reference(
 		target = "(osgi.web.symbolicname=com.liferay.commerce.product.type.grouped.web)"

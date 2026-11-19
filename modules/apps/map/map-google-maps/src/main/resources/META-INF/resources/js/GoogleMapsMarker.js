@@ -3,13 +3,25 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import MarkerBase from '@liferay/map-common/js/MarkerBase';
+import {MarkerBase} from '@liferay/map-common';
 
 /**
  * GoogleMapsMarker
  * @review
  */
 class GoogleMapsMarker extends MarkerBase {
+
+	/**
+	 * @inheritDoc
+	 * @review
+	 */
+	setDraggable(draggable) {
+		super.setDraggable(draggable);
+
+		if (this._nativeMarker) {
+			this._nativeMarker.setDraggable(draggable);
+		}
+	}
 
 	/**
 	 * If a marked has been created, sets the marker location to the given one
@@ -29,7 +41,7 @@ class GoogleMapsMarker extends MarkerBase {
 	_getNativeMarker(location, map) {
 		if (!this._nativeMarker) {
 			this._nativeMarker = new google.maps.Marker({
-				draggable: true,
+				draggable: this.draggable,
 				map,
 				position: location,
 			});

@@ -7,6 +7,80 @@
 
 <%@ include file="/init.jsp" %>
 
+<liferay-ui:error exception="<%= CaptchaConfigurationException.class %>" message="a-captcha-error-occurred-please-contact-an-administrator" />
+<liferay-ui:error exception="<%= CaptchaException.class %>" message="captcha-verification-failed" />
+<liferay-ui:error exception="<%= CaptchaTextException.class %>" message="text-verification-failed" />
+
+<c:if test="<%= SessionErrors.contains(renderRequest, VerifyException.class) %>">
+
+	<%
+	VerifyException verifyException = (VerifyException)SessionErrors.get(renderRequest, VerifyException.class);
+	%>
+
+	<clay:alert
+		dismissible="<%= true %>"
+		displayType="danger"
+	>
+		<%= HtmlUtil.escape(verifyException.getMessage()) %>
+	</clay:alert>
+</c:if>
+
+<c:if test='<%= SessionErrors.contains(renderRequest, "verifyDatabaseStateErrors") %>'>
+
+	<%
+	List<String> errorMessages = (List<String>)SessionErrors.get(renderRequest, "verifyDatabaseStateErrors");
+	%>
+
+	<clay:alert
+		dismissible="<%= true %>"
+		displayType="danger"
+	>
+		<liferay-ui:message key="the-database-state-verification-found-the-following-errors" />
+
+		<ul class="mb-0 mt-2">
+
+			<%
+			for (String errorMessage : errorMessages) {
+			%>
+
+				<li><%= HtmlUtil.escape(errorMessage) %></li>
+
+			<%
+			}
+			%>
+
+		</ul>
+	</clay:alert>
+</c:if>
+
+<c:if test='<%= SessionMessages.contains(renderRequest, "verifyDatabaseStateWarnings") %>'>
+
+	<%
+	List<String> warnMessages = (List<String>)SessionMessages.get(renderRequest, "verifyDatabaseStateWarnings");
+	%>
+
+	<clay:alert
+		dismissible="<%= true %>"
+		displayType="warning"
+	>
+		<liferay-ui:message key="the-database-state-verification-found-the-following-warnings" />
+
+		<ul class="mb-0 mt-2">
+
+			<%
+			for (String warnMessage : warnMessages) {
+			%>
+
+				<li><%= HtmlUtil.escape(warnMessage) %></li>
+
+			<%
+			}
+			%>
+
+		</ul>
+	</clay:alert>
+</c:if>
+
 <%
 String[] installedPatches = PatcherValues.INSTALLED_PATCH_NAMES;
 
@@ -103,6 +177,8 @@ long usedMemory = totalMemory - runtime.freeMemory();
 			</table>
 		</aui:fieldset>
 
+		<liferay-captcha:captcha />
+
 		<aui:fieldset collapsed="<%= false %>" collapsible="<%= true %>" label="system-actions">
 			<ul class="list-group system-action-group">
 				<li class="list-group-item list-group-item-flex">
@@ -184,6 +260,17 @@ long usedMemory = totalMemory - runtime.freeMemory();
 				<li class="list-group-item list-group-item-flex">
 					<div class="autofit-col autofit-col-expand">
 						<p class="list-group-title text-truncate">
+							<liferay-ui:message key="verify-the-database-state" />
+						</p>
+					</div>
+
+					<div class="autofit-col">
+						<aui:button cssClass="save-server-button" data-cmd="verifyDatabaseState" value="execute" />
+					</div>
+				</li>
+				<li class="list-group-item list-group-item-flex">
+					<div class="autofit-col autofit-col-expand">
+						<p class="list-group-title text-truncate">
 							<liferay-ui:message key="verify-membership-policies" />
 						</p>
 					</div>
@@ -195,14 +282,55 @@ long usedMemory = totalMemory - runtime.freeMemory();
 			</ul>
 		</aui:fieldset>
 
-		<aui:fieldset collapsed="<%= false %>" collapsible="<%= true %>" label="clean-up-actions">
+		<aui:fieldset collapsed="<%= false %>" collapsible="<%= true %>" label="system-cleanup-actions">
 			<ul class="list-group system-action-group">
+				<li class="list-group-item list-group-item-flex">
+					<div class="autofit-col autofit-col-expand">
+						<p class="list-group-title text-truncate">
+							<liferay-ui:message key="clean-up-all-system-data" />
+						</p>
+					</div>
+
+					<div class="autofit-col">
+						<aui:button cssClass="save-server-button" data-cmd="cleanUpAllSystemData" value="execute" />
+					</div>
+				</li>
+
+				<%
+				for (DataCleanup systemDataCleanup : DataCleanupUtil.getSystemDataCleanups()) {
+					if (systemDataCleanup.isEnabled() && (ReleaseLocalServiceUtil.fetchRelease(systemDataCleanup.getServletContextName()) == null)) {
+						continue;
+					}
+				%>
+
+					<li class="list-group-item list-group-item-flex">
+						<div class="autofit-col autofit-col-expand">
+							<p class="list-group-title text-truncate">
+								<liferay-ui:message key="<%= systemDataCleanup.getLabel() %>" />
+
+								<span aria-label="<%= LanguageUtil.get(request, systemDataCleanup.getHelpLabel()) %>" class="lfr-portal-tooltip pl-2" tabindex="0" title="<%= LanguageUtil.get(request, systemDataCleanup.getHelpLabel()) %>">
+									<clay:icon
+										symbol="question-circle-full"
+									/>
+								</span>
+							</p>
+						</div>
+
+						<div class="autofit-col">
+							<aui:button cssClass="save-server-button" data-cmd="<%= systemDataCleanup.getLabel() %>" disabled="<%= !systemDataCleanup.isEnabled() %>" value="execute" />
+						</div>
+					</li>
+
+				<%
+				}
+				%>
+
 				<li class="list-group-item list-group-item-flex">
 					<div class="autofit-col autofit-col-expand">
 						<p class="list-group-title text-truncate">
 							<liferay-ui:message key="reset-preview-and-thumbnail-files-for-documents-and-media" />
 
-							<span aria-label="<%= LanguageUtil.get(request, "reset-preview-and-thumbnail-files-for-documents-and-media-help") %>" class="lfr-portal-tooltip" tabindex="0" title="<%= LanguageUtil.get(request, "reset-preview-and-thumbnail-files-for-documents-and-media-help") %>">
+							<span aria-label="<%= LanguageUtil.get(request, "reset-preview-and-thumbnail-files-for-documents-and-media-help") %>" class="lfr-portal-tooltip pl-2" tabindex="0" title="<%= LanguageUtil.get(request, "reset-preview-and-thumbnail-files-for-documents-and-media-help") %>">
 								<clay:icon
 									symbol="question-circle-full"
 								/>
@@ -219,7 +347,7 @@ long usedMemory = totalMemory - runtime.freeMemory();
 						<p class="list-group-title text-truncate">
 							<liferay-ui:message key="clean-up-permissions" />
 
-							<span aria-label="<%= LanguageUtil.get(request, "clean-up-permissions-help") %>" class="lfr-portal-tooltip" tabindex="0" title="<%= LanguageUtil.get(request, "clean-up-permissions-help") %>">
+							<span aria-label="<%= LanguageUtil.get(request, "clean-up-permissions-help") %>" class="lfr-portal-tooltip pl-2" tabindex="0" title="<%= LanguageUtil.get(request, "clean-up-permissions-help") %>">
 								<clay:icon
 									symbol="question-circle-full"
 								/>
@@ -236,7 +364,7 @@ long usedMemory = totalMemory - runtime.freeMemory();
 						<p class="list-group-title text-truncate">
 							<liferay-ui:message key="clean-up-orphaned-page-revision-portlet-preferences" />
 
-							<span aria-label="<%= LanguageUtil.get(request, "clean-up-orphaned-page-revision-portlet-preferences-help") %>" class="lfr-portal-tooltip" tabindex="0" title="<%= LanguageUtil.get(request, "clean-up-orphaned-page-revision-portlet-preferences-help") %>">
+							<span aria-label="<%= LanguageUtil.get(request, "clean-up-orphaned-page-revision-portlet-preferences-help") %>" class="lfr-portal-tooltip pl-2" tabindex="0" title="<%= LanguageUtil.get(request, "clean-up-orphaned-page-revision-portlet-preferences-help") %>">
 								<clay:icon
 									symbol="question-circle-full"
 								/>
@@ -253,7 +381,7 @@ long usedMemory = totalMemory - runtime.freeMemory();
 						<p class="list-group-title text-truncate">
 							<liferay-ui:message key="clean-up-orphaned-theme-portlet-preferences" />
 
-							<span aria-label="<%= LanguageUtil.get(request, "clean-up-orphaned-theme-portlet-preferences-help") %>" class="lfr-portal-tooltip" tabindex="0" title="<%= LanguageUtil.get(request, "clean-up-orphaned-theme-portlet-preferences-help") %>">
+							<span aria-label="<%= LanguageUtil.get(request, "clean-up-orphaned-theme-portlet-preferences-help") %>" class="lfr-portal-tooltip pl-2" tabindex="0" title="<%= LanguageUtil.get(request, "clean-up-orphaned-theme-portlet-preferences-help") %>">
 								<clay:icon
 									symbol="question-circle-full"
 								/>
@@ -268,6 +396,63 @@ long usedMemory = totalMemory - runtime.freeMemory();
 			</ul>
 		</aui:fieldset>
 
+		<%
+		List<DataCleanup> moduleDataCleanups = TransformUtil.transform(
+			DataCleanupUtil.getModuleDataCleanups(),
+			moduleDataCleanup -> {
+				if (!moduleDataCleanup.isEnabled() || (ReleaseLocalServiceUtil.fetchRelease(moduleDataCleanup.getServletContextName()) != null)) {
+					return moduleDataCleanup;
+				}
+
+				return null;
+			});
+		%>
+
+		<c:if test="<%= ListUtil.isNotEmpty(moduleDataCleanups) %>">
+			<aui:fieldset collapsed="<%= false %>" collapsible="<%= true %>" label="module-cleanup-actions">
+				<ul class="list-group system-action-group">
+					<li class="list-group-item list-group-item-flex">
+						<div class="autofit-col autofit-col-expand">
+							<p class="list-group-title text-truncate">
+								<liferay-ui:message key="clean-up-all-module-data" />
+							</p>
+						</div>
+
+						<div class="autofit-col">
+							<aui:button cssClass="save-server-button" data-cmd="cleanUpAllModuleData" value="execute" />
+						</div>
+					</li>
+
+					<%
+					for (DataCleanup moduleDataCleanup : moduleDataCleanups) {
+					%>
+
+						<li class="list-group-item list-group-item-flex">
+							<div class="autofit-col autofit-col-expand">
+								<p class="list-group-title text-truncate">
+									<liferay-ui:message key="<%= moduleDataCleanup.getLabel() %>" />
+
+									<span aria-label="<%= LanguageUtil.get(request, moduleDataCleanup.getHelpLabel()) %>" class="lfr-portal-tooltip pl-2" tabindex="0" title="<%= LanguageUtil.get(request, moduleDataCleanup.getHelpLabel()) %>">
+										<clay:icon
+											symbol="question-circle-full"
+										/>
+									</span>
+								</p>
+							</div>
+
+							<div class="autofit-col">
+								<aui:button cssClass="save-server-button" data-cmd="<%= moduleDataCleanup.getLabel() %>" disabled="<%= !moduleDataCleanup.isEnabled() %>" value="execute" />
+							</div>
+						</li>
+
+					<%
+					}
+					%>
+
+				</ul>
+			</aui:fieldset>
+		</c:if>
+
 		<aui:fieldset collapsed="<%= false %>" collapsible="<%= true %>" label="regeneration-actions">
 			<ul class="list-group system-action-group">
 				<c:if test="<%= (audioConverter != null) && audioConverter.isEnabled() %>">
@@ -276,7 +461,7 @@ long usedMemory = totalMemory - runtime.freeMemory();
 							<p class="list-group-title text-truncate">
 								<liferay-ui:message key="regenerate-preview-of-audio-files-in-documents-and-media" />
 
-								<span aria-label="<%= LanguageUtil.get(request, "regenerate-preview-of-audio-files-in-documents-and-media-help") %>" class="lfr-portal-tooltip" tabindex="0" title="<%= LanguageUtil.get(request, "regenerate-preview-of-audio-files-in-documents-and-media-help") %>">
+								<span aria-label="<%= LanguageUtil.get(request, "regenerate-preview-of-audio-files-in-documents-and-media-help") %>" class="lfr-portal-tooltip pl-2" tabindex="0" title="<%= LanguageUtil.get(request, "regenerate-preview-of-audio-files-in-documents-and-media-help") %>">
 									<clay:icon
 										symbol="question-circle-full"
 									/>
@@ -304,7 +489,7 @@ long usedMemory = totalMemory - runtime.freeMemory();
 							<p class="list-group-title text-truncate">
 								<liferay-ui:message key="regenerate-preview-and-thumbnail-of-openoffice-files-in-documents-and-media" />
 
-								<span aria-label="<%= LanguageUtil.get(request, "regenerate-preview-and-thumbnail-of-openoffice-files-in-documents-and-media-help") %>" class="lfr-portal-tooltip" tabindex="0" title="<%= LanguageUtil.get(request, "regenerate-preview-and-thumbnail-of-pdf-files-in-documents-and-media-help") %>">
+								<span aria-label="<%= LanguageUtil.get(request, "regenerate-preview-and-thumbnail-of-openoffice-files-in-documents-and-media-help") %>" class="lfr-portal-tooltip pl-2" tabindex="0" title="<%= LanguageUtil.get(request, "regenerate-preview-and-thumbnail-of-pdf-files-in-documents-and-media-help") %>">
 									<clay:icon
 										symbol="question-circle-full"
 									/>
@@ -331,7 +516,7 @@ long usedMemory = totalMemory - runtime.freeMemory();
 						<p class="list-group-title text-truncate">
 							<liferay-ui:message key="regenerate-preview-and-thumbnail-of-pdf-files-in-documents-and-media" />
 
-							<span aria-label="<%= LanguageUtil.get(request, "regenerate-preview-and-thumbnail-of-pdf-files-in-documents-and-media-help") %>" class="lfr-portal-tooltip" tabindex="0" title="<%= LanguageUtil.get(request, "regenerate-preview-and-thumbnail-of-pdf-files-in-documents-and-media-help") %>">
+							<span aria-label="<%= LanguageUtil.get(request, "regenerate-preview-and-thumbnail-of-pdf-files-in-documents-and-media-help") %>" class="lfr-portal-tooltip pl-2" tabindex="0" title="<%= LanguageUtil.get(request, "regenerate-preview-and-thumbnail-of-pdf-files-in-documents-and-media-help") %>">
 								<clay:icon
 									symbol="question-circle-full"
 								/>
@@ -358,7 +543,7 @@ long usedMemory = totalMemory - runtime.freeMemory();
 							<p class="list-group-title text-truncate">
 								<liferay-ui:message key="regenerate-preview-and-thumbnail-of-video-files-in-documents-and-media" />
 
-								<span aria-label="<%= LanguageUtil.get(request, "regenerate-preview-and-thumbnail-of-video-files-in-documents-and-media-help") %>" class="lfr-portal-tooltip" tabindex="0" title="<%= LanguageUtil.get(request, "regenerate-preview-and-thumbnail-of-video-files-in-documents-and-media-help") %>">
+								<span aria-label="<%= LanguageUtil.get(request, "regenerate-preview-and-thumbnail-of-video-files-in-documents-and-media-help") %>" class="lfr-portal-tooltip pl-2" tabindex="0" title="<%= LanguageUtil.get(request, "regenerate-preview-and-thumbnail-of-video-files-in-documents-and-media-help") %>">
 									<clay:icon
 										symbol="question-circle-full"
 									/>

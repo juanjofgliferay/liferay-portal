@@ -1,0 +1,598 @@
+/**
+ * SPDX-FileCopyrightText: (c) 2026 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
+ */
+
+package com.liferay.osb.faro.web.internal.controller.main;
+
+import com.liferay.osb.faro.engine.client.model.AccountLifecycle;
+import com.liferay.osb.faro.model.FaroPreferences;
+import com.liferay.osb.faro.service.FaroPreferencesLocalService;
+import com.liferay.osb.faro.web.internal.constants.FaroPreferencesConstants;
+import com.liferay.osb.faro.web.internal.controller.BaseFaroController;
+import com.liferay.osb.faro.web.internal.controller.FaroController;
+import com.liferay.osb.faro.web.internal.helper.EmailReportHelper;
+import com.liferay.osb.faro.web.internal.model.display.contacts.FaroPreferencesDisplay;
+import com.liferay.osb.faro.web.internal.model.preferences.AccountLifecycleNotificationPreferences;
+import com.liferay.osb.faro.web.internal.model.preferences.DistributionCardTabPreferences;
+import com.liferay.osb.faro.web.internal.model.preferences.DistributionCardTabsPreferences;
+import com.liferay.osb.faro.web.internal.model.preferences.EmailReportPreferences;
+import com.liferay.osb.faro.web.internal.model.preferences.IndividualDashboardPreferences;
+import com.liferay.osb.faro.web.internal.model.preferences.IndividualSegmentPreferences;
+import com.liferay.osb.faro.web.internal.model.preferences.SegmentNotificationPreferences;
+import com.liferay.osb.faro.web.internal.model.preferences.WorkspacePreferences;
+import com.liferay.osb.faro.web.internal.param.FaroParam;
+import com.liferay.osb.faro.web.internal.util.JSONUtil;
+import com.liferay.petra.function.transform.TransformUtil;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.RoleConstants;
+import com.liferay.portal.kernel.util.ListUtil;
+import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.Validator;
+
+import jakarta.annotation.security.RolesAllowed;
+
+import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.DefaultValue;
+import jakarta.ws.rs.FormParam;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.MediaType;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
+
+/**
+ * @author Matthew Kong
+ */
+@Component(service = {FaroController.class, PreferencesFaroController.class})
+@Path("/{groupId}/preferences")
+@Produces(MediaType.APPLICATION_JSON)
+public class PreferencesFaroController extends BaseFaroController {
+
+	@Path("/lifecycle_notification")
+	@POST
+	@RolesAllowed(RoleConstants.SITE_MEMBER)
+	public AccountLifecycleNotificationPreferences
+			addAccountLifecycleNotificationPreference(
+				@PathParam("groupId") long groupId,
+				@FormParam("lifecycleId") String accountLifecycleId,
+				@FormParam("accountStageChanges") Boolean accountStageChanges,
+				@FormParam("emailFrequency") String emailFrequency,
+				@FormParam("netNewPipelineAccounts") Boolean
+					netNewPipelineAccounts,
+				@FormParam("newAccounts") Boolean newAccounts,
+				@FormParam("newAtRiskAccounts") Boolean newAtRiskAccounts,
+				@FormParam("newStalledAccounts") Boolean newStalledAccounts)
+		throws Exception {
+
+		String externalReferenceCode =
+			_getAccountLifecycleExternalReferenceCode(
+				accountLifecycleId, groupId);
+
+		long ownerId = _getOwnerId(
+			groupId, FaroPreferencesConstants.SCOPE_USER);
+
+		WorkspacePreferences workspacePreferences = _getWorkspacePreferences(
+			groupId, ownerId);
+
+		Map<String, AccountLifecycleNotificationPreferences>
+			accountLifecycleNotificationPreferences =
+				workspacePreferences.addAccountLifecycleNotificationPreference(
+					externalReferenceCode, accountStageChanges, emailFrequency,
+					netNewPipelineAccounts, newAccounts, newAtRiskAccounts,
+					newStalledAccounts);
+
+		workspacePreferences.removeAccountLifecycleNotificationPreferences(
+			_getAccountLifecycleIds(
+				externalReferenceCode, groupId, workspacePreferences));
+
+		_faroPreferencesLocalService.savePreferences(
+			getUserId(), groupId, ownerId,
+			JSONUtil.writeValueAsString(workspacePreferences));
+
+		return accountLifecycleNotificationPreferences.get(
+			externalReferenceCode);
+	}
+
+	@Path("/distribution_tabs")
+	@POST
+	@RolesAllowed(RoleConstants.SITE_MEMBER)
+	public DistributionCardTabsPreferences addDistributionTabPreferences(
+			@PathParam("groupId") long groupId,
+			@FormParam("distributionCardTabPreferences") FaroParam
+				<Map<String, Object>> distributionCardTabPreferencesFaroParam,
+			@FormParam("individualSegmentId") String individualSegmentId,
+			@FormParam("distributionTabId") String distributionTabId,
+			@DefaultValue(FaroPreferencesConstants.SCOPE_USER)
+			@FormParam("scope")
+			String scope)
+		throws Exception {
+
+		long ownerId = _getOwnerId(groupId, scope);
+
+		WorkspacePreferences workspacePreferences = _getWorkspacePreferences(
+			groupId, ownerId);
+
+		workspacePreferences.addDistributionCardTabPreferences(
+			distributionTabId, individualSegmentId,
+			JSONUtil.convertValue(
+				distributionCardTabPreferencesFaroParam.getValue(),
+				DistributionCardTabPreferences.class));
+
+		_faroPreferencesLocalService.savePreferences(
+			getUserId(), groupId, ownerId,
+			JSONUtil.writeValueAsString(workspacePreferences));
+
+		return workspacePreferences.getDistributionCardTabsPreferences(
+			individualSegmentId);
+	}
+
+	@Path("/email_report")
+	@POST
+	@RolesAllowed(RoleConstants.SITE_MEMBER)
+	public EmailReportPreferences addEmailReportPreference(
+			@PathParam("groupId") long groupId,
+			@FormParam("channelId") String channelId,
+			@FormParam("enabled") Boolean enabled,
+			@FormParam("frequency") String frequency,
+			@DefaultValue(FaroPreferencesConstants.SCOPE_USER)
+			@FormParam("scope")
+			String scope)
+		throws Exception {
+
+		long ownerId = _getOwnerId(groupId, scope);
+
+		WorkspacePreferences workspacePreferences = _getWorkspacePreferences(
+			groupId, ownerId);
+
+		Map<String, EmailReportPreferences> emailReportPreferences =
+			workspacePreferences.addEmailReportPreference(
+				channelId, enabled, frequency);
+
+		_faroPreferencesLocalService.savePreferences(
+			getUserId(), groupId, ownerId,
+			JSONUtil.writeValueAsString(workspacePreferences));
+
+		return emailReportPreferences.get(channelId);
+	}
+
+	@Path("/segment_notification")
+	@POST
+	@RolesAllowed(RoleConstants.SITE_MEMBER)
+	public SegmentNotificationPreferences addSegmentNotificationPreference(
+			@PathParam("groupId") long groupId,
+			@FormParam("emailFrequency") String emailFrequency,
+			@FormParam("newMemberAdded") Boolean newMemberAdded,
+			@FormParam("segmentId") String segmentId)
+		throws Exception {
+
+		long ownerId = _getOwnerId(
+			groupId, FaroPreferencesConstants.SCOPE_USER);
+
+		WorkspacePreferences workspacePreferences = _getWorkspacePreferences(
+			groupId, ownerId);
+
+		Map<String, SegmentNotificationPreferences>
+			segmentNotificationPreferences =
+				workspacePreferences.addSegmentNotificationPreference(
+					emailFrequency, newMemberAdded, segmentId);
+
+		_faroPreferencesLocalService.savePreferences(
+			getUserId(), groupId, ownerId,
+			JSONUtil.writeValueAsString(workspacePreferences));
+
+		return segmentNotificationPreferences.get(segmentId);
+	}
+
+	@GET
+	@Path("/lifecycle_notification")
+	@RolesAllowed(RoleConstants.SITE_MEMBER)
+	public Map<String, AccountLifecycleNotificationPreferences>
+			getAccountLifecycleNotificationPreferences(
+				@PathParam("groupId") long groupId,
+				@QueryParam("lifecycleId") String accountLifecycleId)
+		throws Exception {
+
+		WorkspacePreferences workspacePreferences = _getWorkspacePreferences(
+			groupId, _getOwnerId(groupId, FaroPreferencesConstants.SCOPE_USER));
+
+		if (Validator.isNull(accountLifecycleId)) {
+			return workspacePreferences.
+				getAccountLifecycleNotificationPreferences(null);
+		}
+
+		String externalReferenceCode =
+			_getAccountLifecycleExternalReferenceCode(
+				accountLifecycleId, groupId);
+
+		Map<String, AccountLifecycleNotificationPreferences>
+			accountLifecycleNotificationPreferencesMap =
+				workspacePreferences.getAccountLifecycleNotificationPreferences(
+					null);
+
+		AccountLifecycleNotificationPreferences
+			accountLifecycleNotificationPreferences =
+				accountLifecycleNotificationPreferencesMap.get(
+					externalReferenceCode);
+
+		if (accountLifecycleNotificationPreferences == null) {
+			accountLifecycleNotificationPreferences =
+				accountLifecycleNotificationPreferencesMap.get(
+					accountLifecycleId);
+		}
+
+		if ((accountLifecycleNotificationPreferences == null) &&
+			!Objects.equals(externalReferenceCode, accountLifecycleId)) {
+
+			List<String> accountLifecycleIds = _getAccountLifecycleIds(
+				externalReferenceCode, groupId, workspacePreferences);
+
+			if (ListUtil.isNotEmpty(accountLifecycleIds)) {
+				accountLifecycleNotificationPreferences =
+					accountLifecycleNotificationPreferencesMap.get(
+						accountLifecycleIds.get(0));
+			}
+		}
+
+		if (accountLifecycleNotificationPreferences == null) {
+			accountLifecycleNotificationPreferencesMap =
+				workspacePreferences.getAccountLifecycleNotificationPreferences(
+					externalReferenceCode);
+
+			accountLifecycleNotificationPreferences =
+				accountLifecycleNotificationPreferencesMap.get(
+					externalReferenceCode);
+		}
+
+		return Collections.singletonMap(
+			accountLifecycleId, accountLifecycleNotificationPreferences);
+	}
+
+	@GET
+	@Path("/default_channel_id")
+	@RolesAllowed(RoleConstants.SITE_MEMBER)
+	public Map<String, String> getDefaultChannelId(
+			@PathParam("groupId") long groupId,
+			@DefaultValue(FaroPreferencesConstants.SCOPE_USER)
+			@QueryParam("scope")
+			String scope)
+		throws Exception {
+
+		WorkspacePreferences workspacePreferences = _getWorkspacePreferences(
+			groupId, _getOwnerId(groupId, scope));
+
+		return Collections.singletonMap(
+			"defaultChannelId", workspacePreferences.getDefaultChannelId());
+	}
+
+	@GET
+	@Path("/distribution_tabs")
+	@RolesAllowed(RoleConstants.SITE_MEMBER)
+	public DistributionCardTabsPreferences getDistributionTabsPreferences(
+			@PathParam("groupId") long groupId,
+			@QueryParam("individualSegmentId") String individualSegmentId,
+			@DefaultValue(FaroPreferencesConstants.SCOPE_USER)
+			@QueryParam("scope")
+			String scope)
+		throws Exception {
+
+		WorkspacePreferences workspacePreferences = _getWorkspacePreferences(
+			groupId, _getOwnerId(groupId, scope));
+
+		if (Validator.isNull(individualSegmentId)) {
+			IndividualDashboardPreferences individualDashboardPreferences =
+				workspacePreferences.getIndividualDashboardPreferences();
+
+			return individualDashboardPreferences.
+				getDistributionCardTabsPreferences();
+		}
+
+		Map<String, IndividualSegmentPreferences>
+			individualSegmentPreferencesMap =
+				workspacePreferences.getIndividualSegmentPreferences();
+
+		IndividualSegmentPreferences individualSegmentPreferences =
+			individualSegmentPreferencesMap.getOrDefault(
+				individualSegmentId, new IndividualSegmentPreferences());
+
+		return individualSegmentPreferences.
+			getDistributionCardTabsPreferences();
+	}
+
+	@GET
+	@Path("/email_report")
+	@RolesAllowed(RoleConstants.SITE_MEMBER)
+	public Map<String, EmailReportPreferences> getEmailReportPreferences(
+			@PathParam("groupId") long groupId,
+			@DefaultValue(FaroPreferencesConstants.SCOPE_USER)
+			@QueryParam("scope")
+			String scope)
+		throws Exception {
+
+		WorkspacePreferences workspacePreferences = _getWorkspacePreferences(
+			groupId, _getOwnerId(groupId, scope));
+
+		return workspacePreferences.getEmailReportPreferences(null);
+	}
+
+	@GET
+	@RolesAllowed(RoleConstants.SITE_MEMBER)
+	public FaroPreferencesDisplay getFaroPreferencesDisplay(
+			@PathParam("groupId") long groupId,
+			@DefaultValue(FaroPreferencesConstants.SCOPE_USER)
+			@QueryParam("scope")
+			String scope)
+		throws Exception {
+
+		long ownerId = _getOwnerId(groupId, scope);
+
+		FaroPreferences faroPreferences =
+			_faroPreferencesLocalService.fetchFaroPreferences(groupId, ownerId);
+
+		if (faroPreferences == null) {
+			return new FaroPreferencesDisplay(groupId, ownerId);
+		}
+
+		return new FaroPreferencesDisplay(faroPreferences);
+	}
+
+	@GET
+	@Path("/segment_notification")
+	@RolesAllowed(RoleConstants.SITE_MEMBER)
+	public Map<String, SegmentNotificationPreferences>
+			getSegmentNotificationPreferences(
+				@PathParam("groupId") long groupId,
+				@QueryParam("segmentId") String segmentId)
+		throws Exception {
+
+		WorkspacePreferences workspacePreferences = _getWorkspacePreferences(
+			groupId, _getOwnerId(groupId, FaroPreferencesConstants.SCOPE_USER));
+
+		return workspacePreferences.getSegmentNotificationPreferences(
+			segmentId);
+	}
+
+	@GET
+	@Path("/upgrade_modal_seen")
+	@RolesAllowed(RoleConstants.SITE_MEMBER)
+	public boolean isUpgradeModalSeen(
+			@PathParam("groupId") long groupId,
+			@DefaultValue(FaroPreferencesConstants.SCOPE_USER)
+			@QueryParam("scope")
+			String scope)
+		throws Exception {
+
+		WorkspacePreferences workspacePreferences = _getWorkspacePreferences(
+			groupId, _getOwnerId(groupId, scope));
+
+		return workspacePreferences.isUpgradeModalSeen();
+	}
+
+	@DELETE
+	@Path("/distribution_tabs")
+	@RolesAllowed(RoleConstants.SITE_MEMBER)
+	public DistributionCardTabsPreferences removeDistributionTabPreferences(
+			@PathParam("groupId") long groupId,
+			@FormParam("individualSegmentId") String individualSegmentId,
+			@FormParam("distributionTabId") String distributionTabId,
+			@DefaultValue(FaroPreferencesConstants.SCOPE_USER)
+			@FormParam("scope")
+			String scope)
+		throws Exception {
+
+		long ownerId = _getOwnerId(groupId, scope);
+
+		WorkspacePreferences workspacePreferences = _getWorkspacePreferences(
+			groupId, ownerId);
+
+		workspacePreferences.removeDistributionCardTabPreferences(
+			distributionTabId, individualSegmentId);
+
+		_faroPreferencesLocalService.savePreferences(
+			getUserId(), groupId, ownerId,
+			JSONUtil.writeValueAsString(workspacePreferences));
+
+		return workspacePreferences.getDistributionCardTabsPreferences(
+			individualSegmentId);
+	}
+
+	public void removeIndividualSegmentsPreferences(
+			long groupId, List<String> individualSegmentIds, String scope)
+		throws Exception {
+
+		long ownerId = _getOwnerId(groupId, scope);
+
+		WorkspacePreferences workspacePreferences = _getWorkspacePreferences(
+			groupId, ownerId);
+
+		workspacePreferences.removeIndividualSegmentsPreferences(
+			individualSegmentIds);
+
+		_faroPreferencesLocalService.savePreferences(
+			getUserId(), groupId, ownerId,
+			JSONUtil.writeValueAsString(workspacePreferences));
+	}
+
+	@POST
+	@RolesAllowed(RoleConstants.SITE_MEMBER)
+	public FaroPreferencesDisplay save(
+			@PathParam("groupId") long groupId,
+			@FormParam("preferences") FaroParam<Map<String, Object>>
+				preferencesFaroParam,
+			@DefaultValue(FaroPreferencesConstants.SCOPE_USER)
+			@FormParam("scope")
+			String scope)
+		throws Exception {
+
+		return new FaroPreferencesDisplay(
+			_faroPreferencesLocalService.savePreferences(
+				getUserId(), groupId, _getOwnerId(groupId, scope),
+				JSONUtil.writeValueAsString(preferencesFaroParam.getValue())));
+	}
+
+	@Path("/default_channel_id")
+	@POST
+	@RolesAllowed(RoleConstants.SITE_MEMBER)
+	public Map<String, String> saveDefaultChannelId(
+			@PathParam("groupId") long groupId,
+			@FormParam("defaultChannelId") String defaultChannelId,
+			@DefaultValue(FaroPreferencesConstants.SCOPE_USER)
+			@FormParam("scope")
+			String scope)
+		throws Exception {
+
+		long ownerId = _getOwnerId(groupId, scope);
+
+		WorkspacePreferences workspacePreferences = _getWorkspacePreferences(
+			groupId, ownerId);
+
+		workspacePreferences.setDefaultChannelId(defaultChannelId);
+
+		_faroPreferencesLocalService.savePreferences(
+			getUserId(), groupId, ownerId,
+			JSONUtil.writeValueAsString(workspacePreferences));
+
+		return Collections.singletonMap("defaultChannelId", defaultChannelId);
+	}
+
+	@Path("/upgrade_modal_seen")
+	@POST
+	@RolesAllowed(RoleConstants.SITE_MEMBER)
+	public boolean saveUpgradeModalSeen(
+			@PathParam("groupId") long groupId,
+			@FormParam("upgradeModalSeen") Boolean upgradeModalSeen,
+			@DefaultValue(FaroPreferencesConstants.SCOPE_USER)
+			@QueryParam("scope")
+			String scope)
+		throws Exception {
+
+		long ownerId = _getOwnerId(groupId, scope);
+
+		WorkspacePreferences workspacePreferences = _getWorkspacePreferences(
+			groupId, ownerId);
+
+		workspacePreferences.setUpgradeModalSeen(upgradeModalSeen);
+
+		_faroPreferencesLocalService.savePreferences(
+			getUserId(), groupId, ownerId,
+			JSONUtil.writeValueAsString(workspacePreferences));
+
+		return upgradeModalSeen;
+	}
+
+	@Path("/send_email_report")
+	@POST
+	@RolesAllowed(RoleConstants.SITE_MEMBER)
+	public boolean sendEmailReport(
+			@PathParam("groupId") long groupId,
+			@FormParam("channelId") String channelId,
+			@FormParam("frequency") String frequency,
+			@FormParam("userId") long userId)
+		throws Exception {
+
+		_emailReportHelper.sendEmail(channelId, frequency, groupId, userId);
+
+		return true;
+	}
+
+	private String _getAccountLifecycleExternalReferenceCode(
+		String accountLifecycleId, long groupId) {
+
+		AccountLifecycle accountLifecycle = null;
+
+		try {
+			accountLifecycle = contactsEngineClient.getAccountLifecycle(
+				faroProjectLocalService.getFaroProjectByGroupId(groupId),
+				accountLifecycleId);
+		}
+		catch (Exception exception) {
+			if (_log.isWarnEnabled()) {
+				_log.warn(
+					"Unable to get account lifecycle " + accountLifecycleId,
+					exception);
+			}
+		}
+
+		if ((accountLifecycle == null) ||
+			Validator.isNull(accountLifecycle.getExternalReferenceCode())) {
+
+			return accountLifecycleId;
+		}
+
+		return accountLifecycle.getExternalReferenceCode();
+	}
+
+	private List<String> _getAccountLifecycleIds(
+		String externalReferenceCode, long groupId,
+		WorkspacePreferences workspacePreferences) {
+
+		Map<String, AccountLifecycleNotificationPreferences>
+			accountLifecycleNotificationPreferences =
+				workspacePreferences.getAccountLifecycleNotificationPreferences(
+					null);
+
+		return TransformUtil.transform(
+			accountLifecycleNotificationPreferences.keySet(),
+			key -> {
+				if (Objects.equals(key, externalReferenceCode) ||
+					!Validator.isNumber(key) ||
+					!Objects.equals(
+						_getAccountLifecycleExternalReferenceCode(key, groupId),
+						externalReferenceCode)) {
+
+					return null;
+				}
+
+				return key;
+			});
+	}
+
+	private long _getOwnerId(long groupId, String scope) throws Exception {
+		if (StringUtil.equals(scope, FaroPreferencesConstants.SCOPE_GROUP)) {
+			return groupId;
+		}
+		else if (StringUtil.equals(
+					scope, FaroPreferencesConstants.SCOPE_USER)) {
+
+			return getUserId();
+		}
+
+		throw new Exception("Invalid scope " + scope);
+	}
+
+	private WorkspacePreferences _getWorkspacePreferences(
+			long groupId, long ownerId)
+		throws Exception {
+
+		FaroPreferences faroPreferences =
+			_faroPreferencesLocalService.fetchFaroPreferences(groupId, ownerId);
+
+		if (faroPreferences == null) {
+			return new WorkspacePreferences();
+		}
+
+		return JSONUtil.readValue(
+			faroPreferences.getPreferences(), WorkspacePreferences.class);
+	}
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		PreferencesFaroController.class);
+
+	@Reference
+	private EmailReportHelper _emailReportHelper;
+
+	@Reference
+	private FaroPreferencesLocalService _faroPreferencesLocalService;
+
+}

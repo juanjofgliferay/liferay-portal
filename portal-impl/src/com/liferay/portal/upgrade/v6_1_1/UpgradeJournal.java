@@ -5,15 +5,15 @@
 
 package com.liferay.portal.upgrade.v6_1_1;
 
+import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.dao.jdbc.AutoBatchPreparedStatementUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.upgrade.UpgradeProcess;
 import com.liferay.portal.kernel.util.HtmlUtil;
-import com.liferay.portal.kernel.util.StringBundler;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.xml.SAXReaderUtil;
-import com.liferay.portal.util.PropsValues;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -29,7 +29,9 @@ public class UpgradeJournal extends UpgradeProcess {
 	protected void doUpgrade() throws Exception {
 		try (PreparedStatement preparedStatement1 = connection.prepareStatement(
 				"select id_, content from JournalArticle");
+
 			ResultSet resultSet = preparedStatement1.executeQuery();
+
 			PreparedStatement preparedStatement2 =
 				AutoBatchPreparedStatementUtil.concurrentAutoBatch(
 					connection,
@@ -41,24 +43,26 @@ public class UpgradeJournal extends UpgradeProcess {
 
 				String upgradedContent = _upgradeContent(id, content);
 
-				if (!Objects.equals(content, upgradedContent)) {
-					if (_log.isWarnEnabled()) {
-						_log.warn(
-							"Fixing invalid content in journal article " + id);
-					}
-
-					preparedStatement2.setString(1, upgradedContent);
-					preparedStatement2.setLong(2, id);
-
-					preparedStatement2.addBatch();
+				if (Objects.equals(content, upgradedContent)) {
+					continue;
 				}
+
+				if (_log.isWarnEnabled()) {
+					_log.warn(
+						"Fixing invalid content in journal article " + id);
+				}
+
+				preparedStatement2.setString(1, upgradedContent);
+				preparedStatement2.setLong(2, id);
+
+				preparedStatement2.addBatch();
 			}
 
 			preparedStatement2.executeBatch();
 		}
 	}
 
-	private String _upgradeContent(long id, String content) throws Exception {
+	private String _upgradeContent(long id, String content) {
 
 		// LPS-23332 and LPS-26009
 
@@ -118,8 +122,8 @@ public class UpgradeJournal extends UpgradeProcess {
 		catch (Exception exception) {
 			_log.error(
 				StringBundler.concat(
-					"Journal article ", String.valueOf(id),
-					" has invalid content due to: ", exception.getMessage()));
+					"Journal article ", id, " has invalid content due to: ",
+					exception.getMessage()));
 		}
 
 		return content;

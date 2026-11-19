@@ -10,15 +10,14 @@ import com.liferay.commerce.currency.service.CommerceCurrencyLocalService;
 import com.liferay.commerce.discount.model.CommerceDiscountRule;
 import com.liferay.commerce.discount.service.CommerceDiscountRuleService;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.bean.BeanParamUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import java.math.BigDecimal;
+import jakarta.servlet.http.HttpServletRequest;
 
-import javax.servlet.http.HttpServletRequest;
+import java.math.BigDecimal;
 
 /**
  * @author Alessio Antonio Rendina
@@ -71,8 +70,8 @@ public class CartTotalCommerceDiscountRuleDisplayContext {
 			return StringPool.BLANK;
 		}
 
-		String type = BeanParamUtil.getString(
-			commerceDiscountRule, _httpServletRequest, "type");
+		String type = ParamUtil.getString(
+			_httpServletRequest, "type", commerceDiscountRule.getType());
 
 		String typeSettings = commerceDiscountRule.getSettingsProperty(type);
 

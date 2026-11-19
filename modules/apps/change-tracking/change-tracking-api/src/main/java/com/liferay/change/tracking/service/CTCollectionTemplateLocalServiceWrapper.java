@@ -94,12 +94,14 @@ public class CTCollectionTemplateLocalServiceWrapper
 	 *
 	 * @param ctCollectionTemplate the ct collection template
 	 * @return the ct collection template that was removed
+	 * @throws PortalException
 	 */
 	@Override
 	public com.liferay.change.tracking.model.CTCollectionTemplate
-		deleteCTCollectionTemplate(
-			com.liferay.change.tracking.model.CTCollectionTemplate
-				ctCollectionTemplate) {
+			deleteCTCollectionTemplate(
+				com.liferay.change.tracking.model.CTCollectionTemplate
+					ctCollectionTemplate)
+		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _ctCollectionTemplateLocalService.deleteCTCollectionTemplate(
 			ctCollectionTemplate);
@@ -404,3 +406,4 @@ public class CTCollectionTemplateLocalServiceWrapper
 	private CTCollectionTemplateLocalService _ctCollectionTemplateLocalService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1302323473

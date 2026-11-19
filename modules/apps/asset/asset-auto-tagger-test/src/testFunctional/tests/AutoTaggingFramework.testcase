@@ -1,4 +1,4 @@
-@component-name = "portal-document-management"
+@component-name = "portal-content-management"
 definition {
 
 	property portal.release = "true";
@@ -49,27 +49,26 @@ definition {
 		Page.assertNodePortPG(nodePort = 8080);
 
 		User.logoutPG(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			userEmailAddress = "test@liferay.com");
 
 		User.loginPG(
 			nodePort = 9080,
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			userEmailAddress = "test@liferay.com");
 
 		Page.assertNodePortPG(nodePort = 9080);
 
 		Navigator.openSpecificURL(url = "http://localhost:9080");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Configuration",
+		ApplicationsMenu.gotoRootPortlet(
 			panel = "Control Panel",
 			portlet = "System Settings");
 
 		SystemSettings.gotoConfiguration(
 			configurationCategory = "Assets",
 			configurationName = "TensorFlow Image Auto Tagging",
-			configurationScope = "Virtual Instance Scope");
+			configurationScope = "System Scope");
 
 		FormFields.viewCheckboxChecked(fieldName = "enabled");
 
@@ -98,11 +97,11 @@ definition {
 
 		User.logoutPG(
 			nodePort = 9080,
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			userEmailAddress = "test@liferay.com");
 
 		User.loginPG(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			userEmailAddress = "test@liferay.com");
 
 		DMNavigator.openToEntryInAdmin(
@@ -130,12 +129,12 @@ definition {
 		DMDocument.viewTagInfo(tagName = "jersey");
 
 		User.logoutPG(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			userEmailAddress = "test@liferay.com");
 
 		User.loginPG(
 			nodePort = 9080,
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			userEmailAddress = "test@liferay.com");
 
 		DMNavigator.openToEntryInAdmin(
@@ -150,11 +149,11 @@ definition {
 
 		User.logoutPG(
 			nodePort = 9080,
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			userEmailAddress = "test@liferay.com");
 
 		User.loginPG(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			userEmailAddress = "test@liferay.com");
 	}
 
@@ -218,12 +217,11 @@ definition {
 	@priority = 5
 	@refactordone
 	test CanAddAutoTagAfterEnablingOpenNLP {
-		property environment.acceptance = "true";
+		property environment.acceptance = "false";
 		property operating.system.types = "alpine,amazonlinux,centos,debian,fedora,orcllinux,osx,redhat,rockylinux,solaris,suse,ubuntu,windows";
 		property portal.acceptance = "true";
 		property test.liferay.virtual.instance = "false";
 		property test.run.type = "single";
-		property websphere.ssl.truststore.enabled = "true";
 
 		AutoTagging.enableOpenNLP(
 			assetType = "Document",

@@ -20,7 +20,6 @@ import com.liferay.portal.kernel.search.Indexable;
 import com.liferay.portal.kernel.search.IndexableType;
 import com.liferay.portal.kernel.service.BaseLocalService;
 import com.liferay.portal.kernel.service.PersistedModelLocalService;
-import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.transaction.Isolation;
 import com.liferay.portal.kernel.transaction.Propagation;
 import com.liferay.portal.kernel.transaction.Transactional;
@@ -40,8 +39,10 @@ import org.osgi.annotation.versioning.ProviderType;
  *
  * @author Alessio Antonio Rendina
  * @see CommerceNotificationAttachmentLocalServiceUtil
+ * @deprecated As of Cavanaugh (7.4.x)
  * @generated
  */
+@Deprecated
 @ProviderType
 @Transactional(
 	isolation = Isolation.PORTAL,
@@ -69,11 +70,6 @@ public interface CommerceNotificationAttachmentLocalService
 	@Indexable(type = IndexableType.REINDEX)
 	public CommerceNotificationAttachment addCommerceNotificationAttachment(
 		CommerceNotificationAttachment commerceNotificationAttachment);
-
-	public CommerceNotificationAttachment addCommerceNotificationAttachment(
-			long commerceNotificationQueueEntryId, long fileEntryId,
-			boolean deleteOnSend, ServiceContext serviceContext)
-		throws PortalException;
 
 	/**
 	 * Creates a new commerce notification attachment with the primary key. Does not add the commerce notification attachment to the database.
@@ -263,13 +259,6 @@ public interface CommerceNotificationAttachmentLocalService
 	public List<CommerceNotificationAttachment>
 		getCommerceNotificationAttachments(int start, int end);
 
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<CommerceNotificationAttachment>
-		getCommerceNotificationAttachments(
-			long commerceNotificationQueueEntryId, int start, int end,
-			OrderByComparator<CommerceNotificationAttachment>
-				orderByComparator);
-
 	/**
 	 * Returns all the commerce notification attachments matching the UUID and company.
 	 *
@@ -344,3 +333,4 @@ public interface CommerceNotificationAttachmentLocalService
 		CommerceNotificationAttachment commerceNotificationAttachment);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:2080386247

@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -35,6 +36,13 @@ public class NotificationRecipientLocalServiceUtil {
 	 *
 	 * Never modify this class directly. Add custom service methods to <code>com.liferay.notification.service.impl.NotificationRecipientLocalServiceImpl</code> and rerun ServiceBuilder to regenerate this class.
 	 */
+	public static NotificationRecipient addNotificationRecipient(
+			long userId, long classNameId, long classPK)
+		throws PortalException {
+
+		return getService().addNotificationRecipient(
+			userId, classNameId, classPK);
+	}
 
 	/**
 	 * Adds the notification recipient to the database. Also notifies the appropriate model listeners.
@@ -211,6 +219,12 @@ public class NotificationRecipientLocalServiceUtil {
 		return getService().fetchNotificationRecipient(notificationRecipientId);
 	}
 
+	public static NotificationRecipient fetchNotificationRecipientByClassPK(
+		long classPK) {
+
+		return getService().fetchNotificationRecipientByClassPK(classPK);
+	}
+
 	/**
 	 * Returns the notification recipient with the matching UUID and company.
 	 *
@@ -262,7 +276,8 @@ public class NotificationRecipientLocalServiceUtil {
 	}
 
 	public static NotificationRecipient getNotificationRecipientByClassPK(
-		long classPK) {
+			long classPK)
+		throws PortalException {
 
 		return getService().getNotificationRecipientByClassPK(classPK);
 	}
@@ -345,13 +360,13 @@ public class NotificationRecipientLocalServiceUtil {
 	}
 
 	public static NotificationRecipientLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(NotificationRecipientLocalService service) {
-		_service = service;
-	}
-
-	private static volatile NotificationRecipientLocalService _service;
+	private static final Snapshot<NotificationRecipientLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			NotificationRecipientLocalServiceUtil.class,
+			NotificationRecipientLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1561036574

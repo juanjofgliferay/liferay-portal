@@ -14,13 +14,13 @@ import com.liferay.portal.kernel.util.JavaConstants;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.portlet.PortletRequest;
+
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
-
-import javax.portlet.PortletRequest;
-
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -28,7 +28,10 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Sergio González
  */
-@Component(service = DynamicInclude.class)
+@Component(
+	property = "dynamic.include.key=portlet_header_" + MBPortletKeys.MESSAGE_BOARDS,
+	service = DynamicInclude.class
+)
 public class MBPortletHeaderJSPDynamicInclude extends BaseJSPDynamicInclude {
 
 	@Override
@@ -44,7 +47,7 @@ public class MBPortletHeaderJSPDynamicInclude extends BaseJSPDynamicInclude {
 
 		PortletRequest portletRequest =
 			(PortletRequest)httpServletRequest.getAttribute(
-				JavaConstants.JAVAX_PORTLET_REQUEST);
+				JavaConstants.JAKARTA_PORTLET_REQUEST);
 
 		String mvcRenderCommandName = ParamUtil.getString(
 			portletRequest, "mvcRenderCommandName");
@@ -60,12 +63,6 @@ public class MBPortletHeaderJSPDynamicInclude extends BaseJSPDynamicInclude {
 		}
 
 		super.include(httpServletRequest, httpServletResponse, key);
-	}
-
-	@Override
-	public void register(DynamicIncludeRegistry dynamicIncludeRegistry) {
-		dynamicIncludeRegistry.register(
-			"portlet_header_" + MBPortletKeys.MESSAGE_BOARDS);
 	}
 
 	@Override

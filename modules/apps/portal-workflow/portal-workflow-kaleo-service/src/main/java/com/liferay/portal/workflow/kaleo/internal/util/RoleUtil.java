@@ -8,6 +8,7 @@ package com.liferay.portal.workflow.kaleo.internal.util;
 import com.liferay.account.constants.AccountConstants;
 import com.liferay.account.model.AccountRole;
 import com.liferay.account.service.AccountRoleLocalServiceUtil;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.exception.DuplicateRoleException;
 import com.liferay.portal.kernel.exception.NoSuchRoleException;
@@ -18,10 +19,10 @@ import com.liferay.portal.kernel.service.RoleLocalServiceUtil;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.roles.admin.role.type.contributor.RoleTypeContributor;
 import com.liferay.roles.admin.role.type.contributor.provider.RoleTypeContributorProvider;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -34,6 +35,24 @@ import org.osgi.util.tracker.ServiceTracker;
  * @author Michael C. Han
  */
 public class RoleUtil {
+
+	public static Role getOrAddEmptyRole(
+			String externalReferenceCode, String roleType,
+			ServiceContext serviceContext)
+		throws PortalException {
+
+		if (Validator.isNull(roleType) ||
+			(getRoleType(roleType) == RoleConstants.TYPE_ACCOUNT)) {
+
+			return RoleLocalServiceUtil.getRoleByExternalReferenceCode(
+				externalReferenceCode, serviceContext.getCompanyId());
+		}
+
+		return RoleLocalServiceUtil.getOrAddEmptyRole(
+			externalReferenceCode, serviceContext.getCompanyId(),
+			serviceContext.getUserId(), Role.class.getName(), 0,
+			externalReferenceCode, getRoleType(roleType));
+	}
 
 	public static Role getRole(
 			String name, int roleType, boolean autoCreate,
@@ -59,6 +78,7 @@ public class RoleUtil {
 			if (roleType == RoleConstants.TYPE_ACCOUNT) {
 				AccountRole accountRole =
 					AccountRoleLocalServiceUtil.addAccountRole(
+						RoleConstants.toSystemRoleExternalReferenceCode(name),
 						serviceContext.getUserId(),
 						AccountConstants.ACCOUNT_ENTRY_ID_DEFAULT, name, null,
 						descriptionMap);
@@ -67,6 +87,7 @@ public class RoleUtil {
 			}
 			else {
 				role = RoleLocalServiceUtil.addRole(
+					RoleConstants.toSystemRoleExternalReferenceCode(name),
 					serviceContext.getUserId(), null, 0, name, null,
 					descriptionMap, roleType, null, null);
 			}
@@ -80,16 +101,9 @@ public class RoleUtil {
 	}
 
 	public static List<Long> getRoleIds(ServiceContext serviceContext) {
-		List<Role> roles = RoleLocalServiceUtil.getUserRoles(
-			serviceContext.getUserId());
-
-		List<Long> roleIds = new ArrayList<>(roles.size());
-
-		for (Role role : roles) {
-			roleIds.add(role.getRoleId());
-		}
-
-		return roleIds;
+		return TransformUtil.transform(
+			RoleLocalServiceUtil.getUserRoles(serviceContext.getUserId()),
+			role -> role.getRoleId());
 	}
 
 	public static int getRoleType(String roleType) {

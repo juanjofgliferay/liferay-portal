@@ -47,8 +47,10 @@ import java.util.function.Function;
  *
  * @author Brian Wing Shun Chan
  * @see RecentLayoutRevisionImpl
+ * @deprecated As of Cavanaugh (7.4.x), with no direct replacement
  * @generated
  */
+@Deprecated
 public class RecentLayoutRevisionModelImpl
 	extends BaseModelImpl<RecentLayoutRevision>
 	implements RecentLayoutRevisionModel {
@@ -87,6 +89,8 @@ public class RecentLayoutRevisionModelImpl
 	public static final String TABLE_SQL_DROP =
 		"drop table RecentLayoutRevision";
 
+	public static final String ENTITY_ALIAS = "recentLayoutRevision";
+
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY recentLayoutRevision.recentLayoutRevisionId ASC";
 
@@ -121,41 +125,35 @@ public class RecentLayoutRevisionModelImpl
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long GROUPID_COLUMN_BITMASK = 1L;
+	public static final long LAYOUTREVISIONID_COLUMN_BITMASK = 1L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long LAYOUTREVISIONID_COLUMN_BITMASK = 2L;
+	public static final long LAYOUTSETBRANCHID_COLUMN_BITMASK = 2L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long LAYOUTSETBRANCHID_COLUMN_BITMASK = 4L;
+	public static final long PLID_COLUMN_BITMASK = 4L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long PLID_COLUMN_BITMASK = 8L;
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
-	 */
-	@Deprecated
-	public static final long USERID_COLUMN_BITMASK = 16L;
+	public static final long USERID_COLUMN_BITMASK = 8L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
 	 *		#getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long RECENTLAYOUTREVISIONID_COLUMN_BITMASK = 32L;
+	public static final long RECENTLAYOUTREVISIONID_COLUMN_BITMASK = 16L;
 
 	public static final long LOCK_EXPIRATION_TIME = GetterUtil.getLong(
-		com.liferay.portal.util.PropsUtil.get(
+		com.liferay.portal.kernel.util.PropsUtil.get(
 			"lock.expiration.time.com.liferay.portal.kernel.model.RecentLayoutRevision"));
 
 	public RecentLayoutRevisionModelImpl() {
@@ -369,15 +367,6 @@ public class RecentLayoutRevisionModelImpl
 		}
 
 		_groupId = groupId;
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #getColumnOriginalValue(String)}
-	 */
-	@Deprecated
-	public long getOriginalGroupId() {
-		return GetterUtil.getLong(this.<Long>getColumnOriginalValue("groupId"));
 	}
 
 	@Override
@@ -837,3 +826,4 @@ public class RecentLayoutRevisionModelImpl
 	private RecentLayoutRevision _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1827411756

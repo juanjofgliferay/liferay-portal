@@ -8,6 +8,7 @@ package com.liferay.iframe.web.internal.display.context;
 import com.liferay.iframe.web.internal.configuration.IFramePortletInstanceConfiguration;
 import com.liferay.iframe.web.internal.constants.IFrameWebKeys;
 import com.liferay.iframe.web.internal.util.IFrameUtil;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.configuration.module.configuration.ConfigurationProviderUtil;
@@ -19,13 +20,14 @@ import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.portal.security.key.secret.SecretResolverUtil;
+
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.WindowState;
 
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.WindowState;
 
 /**
  * @author Juergen Kappler
@@ -53,6 +55,18 @@ public class IFrameDisplayContext {
 		_authType = _iFramePortletInstanceConfiguration.authType();
 
 		return _authType;
+	}
+
+	public String getBasicPassword() {
+		if (_basicPassword != null) {
+			return _basicPassword;
+		}
+
+		_basicPassword = SecretResolverUtil.resolve(
+			_themeDisplay.getCompanyId(),
+			_iFramePortletInstanceConfiguration.basicPassword());
+
+		return _basicPassword;
 	}
 
 	public String getFormMethod() {
@@ -83,28 +97,24 @@ public class IFrameDisplayContext {
 	}
 
 	public List<KeyValuePair> getHiddenVariableKVPs() {
-		List<KeyValuePair> hiddenVariableKVPs = new ArrayList<>();
-
 		List<String> hiddenVariables = ListUtil.fromArray(
 			StringUtil.split(getHiddenVariables(), CharPool.PIPE));
 
 		hiddenVariables.addAll(getIFrameVariables());
 
-		for (String hiddenVariable : hiddenVariables) {
-			String key = StringPool.BLANK;
-			String value = StringPool.BLANK;
+		return TransformUtil.transform(
+			hiddenVariables,
+			hiddenVariable -> {
+				int pos = hiddenVariable.indexOf(StringPool.EQUAL);
 
-			int pos = hiddenVariable.indexOf(StringPool.EQUAL);
+				if (pos == -1) {
+					return new KeyValuePair(StringPool.BLANK, StringPool.BLANK);
+				}
 
-			if (pos != -1) {
-				key = hiddenVariable.substring(0, pos);
-				value = hiddenVariable.substring(pos + 1);
-			}
-
-			hiddenVariableKVPs.add(new KeyValuePair(key, value));
-		}
-
-		return hiddenVariableKVPs;
+				return new KeyValuePair(
+					hiddenVariable.substring(0, pos),
+					hiddenVariable.substring(pos + 1));
+			});
 	}
 
 	public String getHiddenVariables() {
@@ -117,6 +127,32 @@ public class IFrameDisplayContext {
 			StringPool.PIPE);
 
 		return _hiddenVariables;
+	}
+
+	public IFramePortletInstanceConfiguration
+		getIFramePortletInstanceConfiguration() {
+
+		return _iFramePortletInstanceConfiguration;
+	}
+
+	public List<String> getIFrameVariables() {
+		List<String> iFrameVariables = new ArrayList<>();
+
+		Enumeration<String> enumeration = _request.getParameterNames();
+
+		while (enumeration.hasMoreElements()) {
+			String name = enumeration.nextElement();
+
+			if (!name.startsWith(_IFRAME_PREFIX)) {
+				continue;
+			}
+
+			iFrameVariables.add(
+				name.substring(_IFRAME_PREFIX.length()) + StringPool.EQUAL +
+					_request.getParameter(name));
+		}
+
+		return iFrameVariables;
 	}
 
 	public String getIframeBaseSrc() {
@@ -137,12 +173,6 @@ public class IFrameDisplayContext {
 		}
 
 		return _iFrameBaseSrc;
-	}
-
-	public IFramePortletInstanceConfiguration
-		getIFramePortletInstanceConfiguration() {
-
-		return _iFramePortletInstanceConfiguration;
 	}
 
 	public String getIframeSrc() {
@@ -173,24 +203,6 @@ public class IFrameDisplayContext {
 		return _iFrameSrc;
 	}
 
-	public List<String> getIFrameVariables() {
-		List<String> iFrameVariables = new ArrayList<>();
-
-		Enumeration<String> enumeration = _request.getParameterNames();
-
-		while (enumeration.hasMoreElements()) {
-			String name = enumeration.nextElement();
-
-			if (name.startsWith(_IFRAME_PREFIX)) {
-				iFrameVariables.add(
-					name.substring(_IFRAME_PREFIX.length()) + StringPool.EQUAL +
-						_request.getParameter(name));
-			}
-		}
-
-		return iFrameVariables;
-	}
-
 	public String getPassword() throws PortalException {
 		if (_password != null) {
 			return _password;
@@ -208,6 +220,9 @@ public class IFrameDisplayContext {
 		if (Validator.isNull(_password)) {
 			return StringPool.BLANK;
 		}
+
+		_password = SecretResolverUtil.resolve(
+			_themeDisplay.getCompanyId(), _password);
 
 		String passwordField =
 			_iFramePortletInstanceConfiguration.passwordField();
@@ -274,6 +289,7 @@ public class IFrameDisplayContext {
 	private static final String _IFRAME_PREFIX = "iframe_";
 
 	private String _authType;
+	private String _basicPassword;
 	private String _formMethod;
 	private String _height;
 	private String _hiddenVariables;

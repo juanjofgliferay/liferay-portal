@@ -114,19 +114,6 @@ public class CommerceDiscountCommerceAccountGroupRelLocalServiceImpl
 				commerceDiscountCommerceAccountGroupRel);
 	}
 
-	/**
-	 * @deprecated As of Athanasius (7.3.x)
-	 */
-	@Deprecated
-	@Override
-	public void
-		deleteCommerceDiscountCommerceAccountGroupRelsBycommerceAccountGroupId(
-			long commerceAccountGroupId) {
-
-		commerceDiscountCommerceAccountGroupRelPersistence.
-			removeByCommerceAccountGroupId(commerceAccountGroupId);
-	}
-
 	@Override
 	public void
 			deleteCommerceDiscountCommerceAccountGroupRelsByCommerceDiscountId(
@@ -148,13 +135,25 @@ public class CommerceDiscountCommerceAccountGroupRelLocalServiceImpl
 		}
 	}
 
+	/**
+	 * @deprecated As of Athanasius (7.3.x)
+	 */
+	@Deprecated
 	@Override
-	public CommerceDiscountCommerceAccountGroupRel
-		fetchCommerceDiscountCommerceAccountGroupRel(
-			long commerceDiscountId, long commerceAccountGroupId) {
+	public void
+			deleteCommerceDiscountCommerceAccountGroupRelsBycommerceAccountGroupId(
+				long commerceAccountGroupId)
+		throws PortalException {
 
-		return commerceDiscountCommerceAccountGroupRelPersistence.
-			fetchByCDI_CAGI(commerceDiscountId, commerceAccountGroupId);
+		for (CommerceDiscountCommerceAccountGroupRel
+				commerceDiscountCommerceAccountGroupRel :
+					commerceDiscountCommerceAccountGroupRelPersistence.
+						findByCommerceAccountGroupId(commerceAccountGroupId)) {
+
+			commerceDiscountCommerceAccountGroupRelLocalService.
+				deleteCommerceDiscountCommerceAccountGroupRel(
+					commerceDiscountCommerceAccountGroupRel);
+		}
 	}
 
 	@Override
@@ -167,31 +166,6 @@ public class CommerceDiscountCommerceAccountGroupRelLocalServiceImpl
 		return commerceDiscountCommerceAccountGroupRelPersistence.
 			findByCommerceDiscountId(
 				commerceDiscountId, start, end, orderByComparator);
-	}
-
-	@Override
-	public List<CommerceDiscountCommerceAccountGroupRel>
-		getCommerceDiscountCommerceAccountGroupRels(
-			long commerceDiscountId, String name, int start, int end) {
-
-		return commerceDiscountCommerceAccountGroupRelFinder.
-			findByCommerceDiscountId(commerceDiscountId, name, start, end);
-	}
-
-	@Override
-	public int getCommerceDiscountCommerceAccountGroupRelsCount(
-		long commerceDiscountId) {
-
-		return commerceDiscountCommerceAccountGroupRelPersistence.
-			countByCommerceDiscountId(commerceDiscountId);
-	}
-
-	@Override
-	public int getCommerceDiscountCommerceAccountGroupRelsCount(
-		long commerceDiscountId, String name) {
-
-		return commerceDiscountCommerceAccountGroupRelFinder.
-			countByCommerceDiscountId(commerceDiscountId, name);
 	}
 
 	private void _reindexCommerceDiscount(long commerceDiscountId)

@@ -17,6 +17,7 @@ import com.liferay.exportimport.kernel.lar.MissingReferences;
 import com.liferay.exportimport.kernel.lar.PortletDataException;
 import com.liferay.exportimport.kernel.model.ExportImportConfiguration;
 import com.liferay.exportimport.kernel.service.ExportImportConfigurationLocalService;
+import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.portal.kernel.backgroundtask.BackgroundTask;
 import com.liferay.portal.kernel.backgroundtask.BackgroundTaskManagerUtil;
 import com.liferay.portal.kernel.backgroundtask.constants.BackgroundTaskContextMapConstants;
@@ -25,6 +26,7 @@ import com.liferay.portal.kernel.change.tracking.CTAware;
 import com.liferay.portal.kernel.exception.LocaleException;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
+import com.liferay.portal.kernel.lazy.referencing.LazyReferencingThreadLocal;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.Portlet;
 import com.liferay.portal.kernel.service.ServiceContext;
@@ -38,13 +40,15 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
 
+import java.util.Map;
+
 /**
  * @author Daniel Kocsis
  */
-@CTAware
 public class ExportImportLocalServiceImpl
 	extends ExportImportLocalServiceBaseImpl {
 
+	@CTAware
 	@Override
 	public File exportLayoutsAsFile(
 			ExportImportConfiguration exportImportConfiguration)
@@ -72,6 +76,7 @@ public class ExportImportLocalServiceImpl
 		}
 	}
 
+	@CTAware
 	@Override
 	public long exportLayoutsAsFileInBackground(
 			long userId, ExportImportConfiguration exportImportConfiguration)
@@ -96,6 +101,7 @@ public class ExportImportLocalServiceImpl
 		return backgroundTask.getBackgroundTaskId();
 	}
 
+	@CTAware
 	@Override
 	public long exportLayoutsAsFileInBackground(
 			long userId, long exportImportConfigurationId)
@@ -107,6 +113,7 @@ public class ExportImportLocalServiceImpl
 				exportImportConfigurationId));
 	}
 
+	@CTAware
 	@Override
 	public File exportPortletInfoAsFile(
 			ExportImportConfiguration exportImportConfiguration)
@@ -134,6 +141,7 @@ public class ExportImportLocalServiceImpl
 		}
 	}
 
+	@CTAware
 	@Override
 	public long exportPortletInfoAsFileInBackground(
 			long userId, ExportImportConfiguration exportImportConfiguration)
@@ -161,6 +169,7 @@ public class ExportImportLocalServiceImpl
 		return backgroundTask.getBackgroundTaskId();
 	}
 
+	@CTAware
 	@Override
 	public long exportPortletInfoAsFileInBackground(
 			long userId, long exportImportConfigurationId)
@@ -172,12 +181,41 @@ public class ExportImportLocalServiceImpl
 				exportImportConfigurationId));
 	}
 
+	@CTAware
+	@Override
+	public long importLayoutSetPrototypeInBackground(
+			long userId, ExportImportConfiguration exportImportConfiguration,
+			File file)
+		throws PortalException {
+
+		BackgroundTask backgroundTask =
+			BackgroundTaskManagerUtil.addBackgroundTask(
+				userId, exportImportConfiguration.getGroupId(),
+				exportImportConfiguration.getName(),
+				BackgroundTaskExecutorNames.
+					LAYOUT_SET_PROTOTYPE_IMPORT_BACKGROUND_TASK_EXECUTOR,
+				HashMapBuilder.<String, Serializable>put(
+					BackgroundTaskContextMapConstants.DELETE_ON_SUCCESS, true
+				).put(
+					"exportImportConfigurationId",
+					exportImportConfiguration.getExportImportConfigurationId()
+				).build(),
+				new ServiceContext());
+
+		backgroundTask.addAttachment(userId, file.getName(), file);
+
+		return backgroundTask.getBackgroundTaskId();
+	}
+
+	@CTAware
 	@Override
 	public void importLayouts(
 			ExportImportConfiguration exportImportConfiguration, File file)
 		throws PortalException {
 
-		try {
+		try (SafeCloseable safeCloseable =
+				LazyReferencingThreadLocal.setEnabledWithSafeCloseable(true)) {
+
 			ImportController layoutImportController =
 				ExportImportControllerRegistryUtil.getImportController(
 					Layout.class.getName());
@@ -208,6 +246,7 @@ public class ExportImportLocalServiceImpl
 		}
 	}
 
+	@CTAware
 	@Override
 	public void importLayouts(
 			ExportImportConfiguration exportImportConfiguration,
@@ -245,6 +284,7 @@ public class ExportImportLocalServiceImpl
 		}
 	}
 
+	@CTAware
 	@Override
 	public void importLayoutsDataDeletions(
 			ExportImportConfiguration exportImportConfiguration, File file)
@@ -282,31 +322,7 @@ public class ExportImportLocalServiceImpl
 		}
 	}
 
-	@Override
-	public long importLayoutSetPrototypeInBackground(
-			long userId, ExportImportConfiguration exportImportConfiguration,
-			File file)
-		throws PortalException {
-
-		BackgroundTask backgroundTask =
-			BackgroundTaskManagerUtil.addBackgroundTask(
-				userId, exportImportConfiguration.getGroupId(),
-				exportImportConfiguration.getName(),
-				BackgroundTaskExecutorNames.
-					LAYOUT_SET_PROTOTYPE_IMPORT_BACKGROUND_TASK_EXECUTOR,
-				HashMapBuilder.<String, Serializable>put(
-					BackgroundTaskContextMapConstants.DELETE_ON_SUCCESS, true
-				).put(
-					"exportImportConfigurationId",
-					exportImportConfiguration.getExportImportConfigurationId()
-				).build(),
-				new ServiceContext());
-
-		backgroundTask.addAttachment(userId, file.getName(), file);
-
-		return backgroundTask.getBackgroundTaskId();
-	}
-
+	@CTAware
 	@Override
 	public long importLayoutsInBackground(
 			long userId, ExportImportConfiguration exportImportConfiguration,
@@ -330,6 +346,7 @@ public class ExportImportLocalServiceImpl
 		return backgroundTask.getBackgroundTaskId();
 	}
 
+	@CTAware
 	@Override
 	public long importLayoutsInBackground(
 			long userId, ExportImportConfiguration exportImportConfiguration,
@@ -368,6 +385,7 @@ public class ExportImportLocalServiceImpl
 		}
 	}
 
+	@CTAware
 	@Override
 	public long importLayoutsInBackground(
 			long userId, long exportImportConfigurationId, File file)
@@ -380,6 +398,7 @@ public class ExportImportLocalServiceImpl
 			file);
 	}
 
+	@CTAware
 	@Override
 	public long importLayoutsInBackground(
 			long userId, long exportImportConfigurationId,
@@ -393,6 +412,7 @@ public class ExportImportLocalServiceImpl
 			inputStream);
 	}
 
+	@CTAware
 	@Override
 	public void importPortletDataDeletions(
 			ExportImportConfiguration exportImportConfiguration, File file)
@@ -430,12 +450,15 @@ public class ExportImportLocalServiceImpl
 		}
 	}
 
+	@CTAware
 	@Override
 	public void importPortletInfo(
 			ExportImportConfiguration exportImportConfiguration, File file)
 		throws PortalException {
 
-		try {
+		try (SafeCloseable safeCloseable =
+				LazyReferencingThreadLocal.setEnabledWithSafeCloseable(true)) {
+
 			ImportController portletImportController =
 				ExportImportControllerRegistryUtil.getImportController(
 					Portlet.class.getName());
@@ -454,12 +477,11 @@ public class ExportImportLocalServiceImpl
 					throw (PortalException)throwable;
 				}
 
-				if (throwable instanceof PortletDataException) {
-					throwable = throwable.getCause();
-				}
-				else {
+				if (!(throwable instanceof PortletDataException)) {
 					break;
 				}
+
+				throwable = throwable.getCause();
 			}
 
 			throw portalException;
@@ -479,6 +501,7 @@ public class ExportImportLocalServiceImpl
 		}
 	}
 
+	@CTAware
 	@Override
 	public void importPortletInfo(
 			ExportImportConfiguration exportImportConfiguration,
@@ -516,6 +539,7 @@ public class ExportImportLocalServiceImpl
 		}
 	}
 
+	@CTAware
 	@Override
 	public long importPortletInfoInBackground(
 			long userId, ExportImportConfiguration exportImportConfiguration,
@@ -539,6 +563,7 @@ public class ExportImportLocalServiceImpl
 		return backgroundTask.getBackgroundTaskId();
 	}
 
+	@CTAware
 	@Override
 	public long importPortletInfoInBackground(
 			long userId, ExportImportConfiguration exportImportConfiguration,
@@ -577,6 +602,7 @@ public class ExportImportLocalServiceImpl
 		}
 	}
 
+	@CTAware
 	@Override
 	public long importPortletInfoInBackground(
 			long userId, long exportImportConfigurationId, File file)
@@ -589,6 +615,7 @@ public class ExportImportLocalServiceImpl
 			file);
 	}
 
+	@CTAware
 	@Override
 	public long importPortletInfoInBackground(
 			long userId, long exportImportConfigurationId,
@@ -602,10 +629,23 @@ public class ExportImportLocalServiceImpl
 			inputStream);
 	}
 
+	@CTAware
 	@Override
 	public long mergeLayoutSetPrototypeInBackground(
 			long userId, long groupId,
 			ExportImportConfiguration exportImportConfiguration)
+		throws PortalException {
+
+		return exportImportLocalService.mergeLayoutSetPrototypeInBackground(
+			userId, groupId, exportImportConfiguration, null);
+	}
+
+	@CTAware
+	@Override
+	public long mergeLayoutSetPrototypeInBackground(
+			long userId, long groupId,
+			ExportImportConfiguration exportImportConfiguration,
+			Map<String, Serializable> taskContextMap)
 		throws PortalException {
 
 		BackgroundTask backgroundTask =
@@ -614,16 +654,19 @@ public class ExportImportLocalServiceImpl
 				BackgroundTaskExecutorNames.
 					LAYOUT_SET_PROTOTYPE_MERGE_BACKGROUND_TASK_EXECUTOR,
 				HashMapBuilder.<String, Serializable>put(
-					BackgroundTaskContextMapConstants.DELETE_ON_SUCCESS, true
+					BackgroundTaskContextMapConstants.SKIP_NOTIFICATION, true
 				).put(
 					"exportImportConfigurationId",
 					exportImportConfiguration.getExportImportConfigurationId()
+				).putAll(
+					taskContextMap
 				).build(),
 				new ServiceContext());
 
 		return backgroundTask.getBackgroundTaskId();
 	}
 
+	@CTAware
 	@Override
 	public MissingReferences validateImportLayoutsFile(
 			ExportImportConfiguration exportImportConfiguration, File file)
@@ -661,6 +704,7 @@ public class ExportImportLocalServiceImpl
 		}
 	}
 
+	@CTAware
 	@Override
 	public MissingReferences validateImportLayoutsFile(
 			ExportImportConfiguration exportImportConfiguration,
@@ -698,6 +742,7 @@ public class ExportImportLocalServiceImpl
 		}
 	}
 
+	@CTAware
 	@Override
 	public MissingReferences validateImportPortletInfo(
 			ExportImportConfiguration exportImportConfiguration, File file)
@@ -735,6 +780,7 @@ public class ExportImportLocalServiceImpl
 		}
 	}
 
+	@CTAware
 	@Override
 	public MissingReferences validateImportPortletInfo(
 			ExportImportConfiguration exportImportConfiguration,

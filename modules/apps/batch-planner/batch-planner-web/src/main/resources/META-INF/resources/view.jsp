@@ -49,7 +49,7 @@ SearchContainer<BatchPlannerPlanDisplay> batchPlannerPlanDisplaySearchContainer 
 					).buildPortletURL()
 				%>'
 				name="name"
-				value="<%= batchPlannerPlanDisplay.getTitle() %>"
+				value="<%= HtmlUtil.escape(batchPlannerPlanDisplay.getTitle()) %>"
 			/>
 
 			<liferay-ui:search-container-column-text
@@ -59,7 +59,7 @@ SearchContainer<BatchPlannerPlanDisplay> batchPlannerPlanDisplaySearchContainer 
 
 			<liferay-ui:search-container-column-text
 				name="type"
-				value="<%= batchPlannerPlanDisplayContext.getSimpleClassName(batchPlannerPlanDisplay.getInternalClassNameKey()) %>"
+				value="<%= HtmlUtil.escape(batchPlannerPlanDisplayContext.getSimpleClassName(batchPlannerPlanDisplay.getInternalClassNameKey())) %>"
 			/>
 
 			<liferay-ui:search-container-column-text
@@ -75,9 +75,9 @@ SearchContainer<BatchPlannerPlanDisplay> batchPlannerPlanDisplaySearchContainer 
 			<liferay-ui:search-container-column-text
 				name="status"
 			>
-				<h6 class="text-uppercase <%= BatchPlannerPlanConstants.getStatusCssClass(batchPlannerPlanDisplay.getStatus()) %>">
+				<div class="h6 text-uppercase <%= BatchPlannerPlanConstants.getStatusCssClass(batchPlannerPlanDisplay.getStatus()) %>">
 					<liferay-ui:message key="<%= BatchPlannerPlanConstants.getStatusLabel(batchPlannerPlanDisplay.getStatus()) %>" />
-				</h6>
+				</div>
 			</liferay-ui:search-container-column-text>
 
 			<liferay-ui:search-container-column-text

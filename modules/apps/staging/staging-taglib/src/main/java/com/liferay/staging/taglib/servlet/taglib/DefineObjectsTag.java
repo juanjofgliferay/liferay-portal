@@ -17,8 +17,8 @@ import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.staging.taglib.internal.servlet.ServletContextUtil;
 import com.liferay.taglib.util.IncludeTag;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.jsp.PageContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.jsp.PageContext;
 
 /**
  * @author Levente Hudák
@@ -34,9 +34,13 @@ public class DefineObjectsTag extends IncludeTag {
 			(ThemeDisplay)httpServletRequest.getAttribute(
 				WebKeys.THEME_DISPLAY);
 
+		Group group = null;
+
 		long groupId = ParamUtil.getLong(httpServletRequest, "groupId");
 
-		Group group = GroupLocalServiceUtil.fetchGroup(groupId);
+		if (groupId > 0) {
+			group = GroupLocalServiceUtil.fetchGroup(groupId);
+		}
 
 		if (group == null) {
 			group = (Group)httpServletRequest.getAttribute(WebKeys.GROUP);

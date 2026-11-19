@@ -36,7 +36,6 @@ import java.io.Serializable;
 import java.sql.Blob;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -116,9 +115,7 @@ public class LazyBlobEntryPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		LazyBlobEntry newLazyBlobEntry = _persistence.create(pk);
+		LazyBlobEntry newLazyBlobEntry = addLazyBlobEntry();
 
 		newLazyBlobEntry.setUuid(RandomTestUtil.randomString());
 
@@ -140,11 +137,16 @@ public class LazyBlobEntryPersistenceTest {
 
 		newLazyBlobEntry.setBlob2(newBlob2Blob);
 
-		_lazyBlobEntries.add(_persistence.update(newLazyBlobEntry));
+		newLazyBlobEntry = _persistence.update(newLazyBlobEntry);
+
+		_lazyBlobEntries.add(newLazyBlobEntry);
 
 		LazyBlobEntry existingLazyBlobEntry = _persistence.findByPrimaryKey(
 			newLazyBlobEntry.getPrimaryKey());
 
+		Assert.assertEquals(
+			existingLazyBlobEntry.getMvccVersion(),
+			newLazyBlobEntry.getMvccVersion());
 		Assert.assertEquals(
 			existingLazyBlobEntry.getUuid(), newLazyBlobEntry.getUuid());
 		Assert.assertEquals(
@@ -154,16 +156,14 @@ public class LazyBlobEntryPersistenceTest {
 			existingLazyBlobEntry.getGroupId(), newLazyBlobEntry.getGroupId());
 		Blob existingBlob1 = existingLazyBlobEntry.getBlob1();
 
-		Assert.assertTrue(
-			Arrays.equals(
-				existingBlob1.getBytes(1, (int)existingBlob1.length()),
-				newBlob1Bytes));
+		Assert.assertArrayEquals(
+			newBlob1Bytes,
+			existingBlob1.getBytes(1, (int)existingBlob1.length()));
 		Blob existingBlob2 = existingLazyBlobEntry.getBlob2();
 
-		Assert.assertTrue(
-			Arrays.equals(
-				existingBlob2.getBytes(1, (int)existingBlob2.length()),
-				newBlob2Bytes));
+		Assert.assertArrayEquals(
+			newBlob2Bytes,
+			existingBlob2.getBytes(1, (int)existingBlob2.length()));
 	}
 
 	@Test
@@ -209,8 +209,8 @@ public class LazyBlobEntryPersistenceTest {
 
 	protected OrderByComparator<LazyBlobEntry> getOrderByComparator() {
 		return OrderByComparatorFactoryUtil.create(
-			"LazyBlobEntry", "uuid", true, "lazyBlobEntryId", true, "groupId",
-			true);
+			"LazyBlobEntry", "mvccVersion", true, "uuid", true,
+			"lazyBlobEntryId", true, "groupId", true);
 	}
 
 	@Test
@@ -525,3 +525,4 @@ public class LazyBlobEntryPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1473817262

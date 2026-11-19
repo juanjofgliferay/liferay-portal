@@ -1,0 +1,30 @@
+Bundle-Name: Liferay Portal Search OpenSearch 2 Implementation
+Bundle-SymbolicName: com.liferay.portal.search.opensearch2.impl
+Bundle-Version: 1.0.28
+Import-Package:\
+	!com.aayushatharva.brotli4j.*,\
+	\
+	!com.github.luben.zstd.*,\
+	\
+	!jakarta.enterprise.context.*,\
+	!jakarta.enterprise.inject.*,\
+	\
+	!javax.annotation.*,\
+	\
+	!javax.servlet.*,\
+	\
+	!org.apache.avalon.framework.*,\
+	!org.apache.commons.compress.*,\
+	!org.apache.log.*,\
+	\
+	!org.brotli.dec.*,\
+	\
+	!org.conscrypt.*,\
+	\
+	!software.amazon.awssdk.*,\
+	\
+	com.liferay.portal.search.analysis,\
+	\
+	*
+-dsannotations-options: inherit
+-fixupmessages: Classes found in the wrong directory: ...;is:=ignore

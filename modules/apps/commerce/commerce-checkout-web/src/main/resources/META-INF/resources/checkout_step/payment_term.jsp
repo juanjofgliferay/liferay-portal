@@ -12,7 +12,7 @@ TermCommerceCheckoutStepDisplayContext termCommerceCheckoutStepDisplayContext = 
 
 List<CommerceTermEntry> paymentCommerceTermEntries = termCommerceCheckoutStepDisplayContext.getPaymentCommerceTermEntries();
 
-long paymentCommerceTermEntryId = BeanParamUtil.getLong(termCommerceCheckoutStepDisplayContext.getCommerceOrder(), request, "paymentCommerceTermEntryId");
+long paymentCommerceTermEntryId = BeanParamUtil.getLong(termCommerceCheckoutStepDisplayContext.getCommerceOrder(), request, "paymentCommerceTermEntryId", CommerceOrder::getPaymentCommerceTermEntryId);
 %>
 
 <div id="commercePaymentTermContainer">
@@ -64,7 +64,7 @@ long paymentCommerceTermEntryId = BeanParamUtil.getLong(termCommerceCheckoutStep
 										"modalTitle", commerceTermEntry.getLabel(LanguageUtil.getLanguageId(locale))
 									).build()
 								%>'
-								module="js/attachModalToHTMLElement"
+								module="{attachModalToHTMLElement} from commerce-checkout-web"
 							/>
 						</div>
 					</li>

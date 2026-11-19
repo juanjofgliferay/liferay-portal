@@ -22,7 +22,6 @@ renderResponse.setTitle(StringBundler.concat(selectedUser.getFullName(), " - ", 
 %>
 
 <clay:navigation-bar
-	inverted="<%= true %>"
 	navigationItems='<%=
 		new JSPNavigationItemList(pageContext) {
 			{
@@ -64,5 +63,5 @@ renderResponse.setTitle(StringBundler.concat(selectedUser.getFullName(), " - ", 
 			"exportProcessesResourceURL", exportProcessesURL.toString()
 		).build()
 	%>'
-	module="js/UADExportProcesses"
+	module="{UADExportProcesses} from user-associated-data-web"
 />

@@ -34,13 +34,8 @@ public class PasswordPolicyFinderImpl
 		PasswordPolicyFinder.class.getName() + ".findByC_N";
 
 	@Override
-	public int countByC_N(long companyId, String name) {
-		return doCountByC_N(companyId, name, false);
-	}
-
-	@Override
 	public int filterCountByC_N(long companyId, String name) {
-		return doCountByC_N(companyId, name, true);
+		return _countByC_N(companyId, name, true);
 	}
 
 	@Override
@@ -48,20 +43,10 @@ public class PasswordPolicyFinderImpl
 		long companyId, String name, int start, int end,
 		OrderByComparator<PasswordPolicy> orderByComparator) {
 
-		return doFindByC_N(
-			companyId, name, start, end, orderByComparator, true);
+		return _findByC_N(companyId, name, start, end, orderByComparator, true);
 	}
 
-	@Override
-	public List<PasswordPolicy> findByC_N(
-		long companyId, String name, int start, int end,
-		OrderByComparator<PasswordPolicy> orderByComparator) {
-
-		return doFindByC_N(
-			companyId, name, start, end, orderByComparator, false);
-	}
-
-	protected int doCountByC_N(
+	private int _countByC_N(
 		long companyId, String name, boolean inlineSQLHelper) {
 
 		name = CustomSQLUtil.keywords(name)[0];
@@ -78,8 +63,7 @@ public class PasswordPolicyFinderImpl
 
 				sql = InlineSQLHelperUtil.replacePermissionCheck(
 					sql, PasswordPolicy.class.getName(),
-					"PasswordPolicy.passwordPolicyId", null, null,
-					new long[] {0}, null);
+					"PasswordPolicy.passwordPolicyId");
 			}
 
 			SQLQuery sqlQuery = session.createSynchronizedSQLQuery(sql);
@@ -112,7 +96,7 @@ public class PasswordPolicyFinderImpl
 		}
 	}
 
-	protected List<PasswordPolicy> doFindByC_N(
+	private List<PasswordPolicy> _findByC_N(
 		long companyId, String name, int start, int end,
 		OrderByComparator<PasswordPolicy> orderByComparator,
 		boolean inlineSQLHelper) {
@@ -133,8 +117,7 @@ public class PasswordPolicyFinderImpl
 
 				sql = InlineSQLHelperUtil.replacePermissionCheck(
 					sql, PasswordPolicy.class.getName(),
-					"PasswordPolicy.passwordPolicyId", null, null,
-					new long[] {0}, null);
+					"PasswordPolicy.passwordPolicyId");
 			}
 
 			SQLQuery sqlQuery = session.createSynchronizedSQLQuery(sql);

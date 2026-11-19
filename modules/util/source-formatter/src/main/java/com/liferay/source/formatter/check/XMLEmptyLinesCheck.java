@@ -6,6 +6,7 @@
 package com.liferay.source.formatter.check;
 
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.source.formatter.check.util.XMLSourceUtil;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -31,13 +32,11 @@ public class XMLEmptyLinesCheck extends BaseEmptyLinesCheck {
 		}
 
 		content = fixEmptyLinesInMultiLineTags(content);
-
 		content = fixEmptyLinesInNestedTags(content);
-
 		content = fixMissingEmptyLineAfterDoctype(content);
-
+		content = _fixEmptyLinesAroundConditionalTags(content);
 		content = _fixEmptyLinesBetweenTags(fileName, content);
-
+		content = _fixEmptyLinesInTag(content);
 		content = _fixMissingEmptyLinesAroundComments(content);
 
 		Matcher matcher = _redundantEmptyLinePattern.matcher(content);
@@ -50,13 +49,36 @@ public class XMLEmptyLinesCheck extends BaseEmptyLinesCheck {
 		return content;
 	}
 
-	private String _fixEmptyLinesBetweenTags(String fileName, String content) {
-		if (fileName.startsWith(getBaseDirName() + "build") ||
-			fileName.matches(".*/(build|tools/).*")) {
+	private String _fixEmptyLinesAroundConditionalTags(String content) {
+		Matcher matcher = _emptyLineAroundConditionalTagsPattern.matcher(
+			content);
 
-			return content;
+		while (matcher.find()) {
+			if (XMLSourceUtil.isInsideCDATAMarkup(content, matcher.start())) {
+				continue;
+			}
+
+			String lineBreaks = matcher.group(3);
+
+			String tagName = matcher.group(2);
+
+			if (lineBreaks.equals("\n") && tagName.equals("if")) {
+				return StringUtil.replaceFirst(
+					content, "\n", "\n\n", matcher.start(3));
+			}
+			else if (lineBreaks.equals("\n\n") &&
+					 (tagName.equals("else") || tagName.equals("elseif") ||
+					  tagName.equals("then"))) {
+
+				return StringUtil.replaceFirst(
+					content, "\n\n", "\n", matcher.start(3));
+			}
 		}
 
+		return content;
+	}
+
+	private String _fixEmptyLinesBetweenTags(String fileName, String content) {
 		if (fileName.endsWith("-log4j-ext.xml") ||
 			fileName.endsWith("-log4j.xml") ||
 			fileName.endsWith("-logback.xml") ||
@@ -67,11 +89,47 @@ public class XMLEmptyLinesCheck extends BaseEmptyLinesCheck {
 			return fixEmptyLinesBetweenTags(content);
 		}
 
-		Matcher matcher = _emptyLineBetweenTagsPattern.matcher(content);
+		return content;
+	}
 
-		if (matcher.find()) {
+	private String _fixEmptyLinesInTag(String content) {
+		Matcher matcher = _emptyLineInTagPattern1.matcher(content);
+
+		while (matcher.find()) {
+			String trimmedLine = StringUtil.trimLeading(
+				getLine(content, getLineNumber(content, matcher.start())));
+
+			if (trimmedLine.startsWith("<content") ||
+				trimmedLine.startsWith("<echo") ||
+				XMLSourceUtil.isInsideCDATAMarkup(content, matcher.start())) {
+
+				continue;
+			}
+
 			return StringUtil.replaceFirst(
-				content, "\n\n", "\n", matcher.end(1));
+				content, "\n\n", "\n", matcher.start());
+		}
+
+		matcher = _emptyLineInTagPattern2.matcher(content);
+
+		while (matcher.find()) {
+			String tagName = matcher.group(1);
+
+			if (tagName.startsWith("content") || tagName.startsWith("echo")) {
+				continue;
+			}
+
+			String trimmedLine = StringUtil.trim(
+				getLine(content, getLineNumber(content, matcher.start())));
+
+			if (trimmedLine.startsWith("<") || trimmedLine.endsWith(">") ||
+				XMLSourceUtil.isInsideCDATAMarkup(content, matcher.start())) {
+
+				continue;
+			}
+
+			return StringUtil.replaceFirst(
+				content, "\n\n", "\n", matcher.start());
 		}
 
 		return content;
@@ -95,8 +153,12 @@ public class XMLEmptyLinesCheck extends BaseEmptyLinesCheck {
 		return content;
 	}
 
-	private static final Pattern _emptyLineBetweenTagsPattern = Pattern.compile(
-		"\n(\t*)<[\\w/].*[^-]>(\n\n)(\t*)<(\\w)");
+	private static final Pattern _emptyLineAroundConditionalTagsPattern =
+		Pattern.compile("\n(\t*)</([-\\w:]+)>(\n+)\\1<[-\\w:]+[> \n]");
+	private static final Pattern _emptyLineInTagPattern1 = Pattern.compile(
+		">\n\n\t*+(?!<)");
+	private static final Pattern _emptyLineInTagPattern2 = Pattern.compile(
+		"\n\n\t+</(.+)>");
 	private static final Pattern _missingEmptyLineAfterCommentPattern =
 		Pattern.compile("[\t ]-->\n[\t<]");
 	private static final Pattern _missingEmptyLineBeforeCommentPattern =

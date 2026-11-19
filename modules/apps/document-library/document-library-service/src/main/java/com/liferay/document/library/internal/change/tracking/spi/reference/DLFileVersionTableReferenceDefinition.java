@@ -22,6 +22,7 @@ import com.liferay.petra.sql.dsl.DSLFunctionFactoryUtil;
 import com.liferay.petra.sql.dsl.spi.expression.Scalar;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.model.ClassNameTable;
+import com.liferay.portal.kernel.model.WorkflowInstanceLinkTable;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.service.persistence.BasePersistence;
 import com.liferay.trash.model.TrashVersionTable;
@@ -73,28 +74,33 @@ public class DLFileVersionTableReferenceDefinition
 			)
 		).referenceInnerJoin(
 			fromStep -> fromStep.from(
-				FriendlyURLEntryTable.INSTANCE
+				CTSContentTable.INSTANCE
 			).innerJoinON(
 				DLFileVersionTable.INSTANCE,
-				DLFileVersionTable.INSTANCE.fileEntryId.eq(
-					FriendlyURLEntryTable.INSTANCE.classPK)
-			).innerJoinON(
-				DLFileEntryTable.INSTANCE,
-				DLFileEntryTable.INSTANCE.groupId.eq(
-					FriendlyURLEntryTable.INSTANCE.groupId
-				).and(
-					DLFileVersionTable.INSTANCE.fileEntryId.eq(
-						DLFileEntryTable.INSTANCE.fileEntryId)
-				).and(
-					DLFileEntryTable.INSTANCE.fileEntryId.eq(
-						FriendlyURLEntryTable.INSTANCE.classPK)
+				DSLFunctionFactoryUtil.concat(
+					DLFileVersionTable.INSTANCE.version,
+					new Scalar<>(StringPool.TILDE),
+					DLFileVersionTable.INSTANCE.storeUUID,
+					new Scalar<>(".index")
+				).eq(
+					CTSContentTable.INSTANCE.version
 				)
 			).innerJoinON(
-				ClassNameTable.INSTANCE,
-				ClassNameTable.INSTANCE.classNameId.eq(
-					FriendlyURLEntryTable.INSTANCE.classNameId
+				DLFileEntryTable.INSTANCE,
+				DLFileEntryTable.INSTANCE.companyId.eq(
+					CTSContentTable.INSTANCE.companyId
 				).and(
-					ClassNameTable.INSTANCE.value.eq(FileEntry.class.getName())
+					DLFileEntryTable.INSTANCE.repositoryId.eq(
+						CTSContentTable.INSTANCE.repositoryId)
+				).and(
+					DLFileEntryTable.INSTANCE.folderId.eq(
+						DLFolderConstants.DEFAULT_PARENT_FOLDER_ID)
+				).and(
+					DLFileEntryTable.INSTANCE.name.eq(
+						CTSContentTable.INSTANCE.path)
+				).and(
+					DLFileEntryTable.INSTANCE.fileEntryId.eq(
+						DLFileVersionTable.INSTANCE.fileEntryId)
 				)
 			)
 		).referenceInnerJoin(
@@ -106,6 +112,34 @@ public class DLFileVersionTableReferenceDefinition
 					DLFileVersionTable.INSTANCE.version,
 					new Scalar<>(StringPool.TILDE),
 					DLFileVersionTable.INSTANCE.storeUUID
+				).eq(
+					CTSContentTable.INSTANCE.version
+				)
+			).innerJoinON(
+				DLFileEntryTable.INSTANCE,
+				DLFileEntryTable.INSTANCE.companyId.eq(
+					CTSContentTable.INSTANCE.companyId
+				).and(
+					DLFileEntryTable.INSTANCE.folderId.eq(
+						CTSContentTable.INSTANCE.repositoryId)
+				).and(
+					DLFileEntryTable.INSTANCE.name.eq(
+						CTSContentTable.INSTANCE.path)
+				).and(
+					DLFileEntryTable.INSTANCE.fileEntryId.eq(
+						DLFileVersionTable.INSTANCE.fileEntryId)
+				)
+			)
+		).referenceInnerJoin(
+			fromStep -> fromStep.from(
+				CTSContentTable.INSTANCE
+			).innerJoinON(
+				DLFileVersionTable.INSTANCE,
+				DSLFunctionFactoryUtil.concat(
+					DLFileVersionTable.INSTANCE.version,
+					new Scalar<>(StringPool.TILDE),
+					DLFileVersionTable.INSTANCE.storeUUID,
+					new Scalar<>(".index")
 				).eq(
 					CTSContentTable.INSTANCE.version
 				)
@@ -148,6 +182,32 @@ public class DLFileVersionTableReferenceDefinition
 			)
 		).referenceInnerJoin(
 			fromStep -> fromStep.from(
+				FriendlyURLEntryTable.INSTANCE
+			).innerJoinON(
+				DLFileVersionTable.INSTANCE,
+				DLFileVersionTable.INSTANCE.fileEntryId.eq(
+					FriendlyURLEntryTable.INSTANCE.classPK)
+			).innerJoinON(
+				DLFileEntryTable.INSTANCE,
+				DLFileEntryTable.INSTANCE.groupId.eq(
+					FriendlyURLEntryTable.INSTANCE.groupId
+				).and(
+					DLFileVersionTable.INSTANCE.fileEntryId.eq(
+						DLFileEntryTable.INSTANCE.fileEntryId)
+				).and(
+					DLFileEntryTable.INSTANCE.fileEntryId.eq(
+						FriendlyURLEntryTable.INSTANCE.classPK)
+				)
+			).innerJoinON(
+				ClassNameTable.INSTANCE,
+				ClassNameTable.INSTANCE.classNameId.eq(
+					FriendlyURLEntryTable.INSTANCE.classNameId
+				).and(
+					ClassNameTable.INSTANCE.value.eq(FileEntry.class.getName())
+				)
+			)
+		).referenceInnerJoin(
+			fromStep -> fromStep.from(
 				TrashVersionTable.INSTANCE
 			).innerJoinON(
 				DLFileVersionTable.INSTANCE,
@@ -157,6 +217,22 @@ public class DLFileVersionTableReferenceDefinition
 				ClassNameTable.INSTANCE,
 				ClassNameTable.INSTANCE.classNameId.eq(
 					TrashVersionTable.INSTANCE.classNameId
+				).and(
+					ClassNameTable.INSTANCE.value.eq(
+						DLFileEntry.class.getName())
+				)
+			)
+		).referenceInnerJoin(
+			fromStep -> fromStep.from(
+				WorkflowInstanceLinkTable.INSTANCE
+			).innerJoinON(
+				DLFileVersionTable.INSTANCE,
+				DLFileVersionTable.INSTANCE.fileVersionId.eq(
+					WorkflowInstanceLinkTable.INSTANCE.classPK)
+			).innerJoinON(
+				ClassNameTable.INSTANCE,
+				ClassNameTable.INSTANCE.classNameId.eq(
+					WorkflowInstanceLinkTable.INSTANCE.classNameId
 				).and(
 					ClassNameTable.INSTANCE.value.eq(
 						DLFileEntry.class.getName())

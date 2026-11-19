@@ -14,16 +14,15 @@ import com.liferay.exportimport.kernel.lar.StagedModelType;
 import com.liferay.exportimport.portlet.data.handler.helper.PortletDataHandlerHelper;
 import com.liferay.exportimport.staged.model.repository.StagedModelRepository;
 import com.liferay.exportimport.test.util.internal.exportimport.staged.model.repository.DummyFolderStagedModelRepository;
-import com.liferay.exportimport.test.util.model.Dummy;
 import com.liferay.exportimport.test.util.model.DummyFolder;
 import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.xml.Element;
 
-import java.util.List;
+import jakarta.portlet.PortletPreferences;
 
-import javax.portlet.PortletPreferences;
+import java.util.List;
 
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -154,11 +153,6 @@ public class DummyFolderWithMissingLayoutPortletDataHandler
 	)
 	private StagedModelRepository<DummyFolder>
 		_dummyFolderStagedModelRepository;
-
-	@Reference(
-		target = "(model.class.name=com.liferay.exportimport.test.util.model.Dummy)"
-	)
-	private StagedModelRepository<Dummy> _dummyStagedModelRepository;
 
 	@Reference
 	private LayoutLocalService _layoutLocalService;

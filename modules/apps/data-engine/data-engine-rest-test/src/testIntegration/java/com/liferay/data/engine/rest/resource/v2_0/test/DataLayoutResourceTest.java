@@ -18,26 +18,34 @@ import com.liferay.data.engine.rest.client.pagination.Page;
 import com.liferay.data.engine.rest.client.pagination.Pagination;
 import com.liferay.data.engine.rest.client.problem.Problem;
 import com.liferay.data.engine.rest.client.resource.v2_0.DataDefinitionResource;
+import com.liferay.data.engine.rest.client.resource.v2_0.DataLayoutResource;
 import com.liferay.data.engine.rest.resource.v2_0.test.util.DataDefinitionTestUtil;
 import com.liferay.data.engine.rest.resource.v2_0.test.util.DataLayoutTestUtil;
-import com.liferay.data.engine.rest.resource.v2_0.test.util.content.type.ModelResourceActionTestUtil;
+import com.liferay.data.engine.rest.resource.v2_0.test.util.content.type.test.util.ModelResourceActionTestUtil;
 import com.liferay.data.engine.rest.strategy.util.DataRecordValueKeyUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
+import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.security.permission.ResourceActions;
-import com.liferay.portal.kernel.service.ResourceActionLocalService;
 import com.liferay.portal.kernel.test.rule.DataGuard;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.TestPropsValues;
+import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
+import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.MapUtil;
+import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.test.rule.Inject;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -66,9 +74,8 @@ public class DataLayoutResourceTest extends BaseDataLayoutResourceTestCase {
 	}
 
 	@AfterClass
-	public static void tearDownClass() {
-		ModelResourceActionTestUtil.deleteModelResourceAction(
-			_resourceActionLocalService, _resourceActions);
+	public static void tearDownClass() throws Exception {
+		ModelResourceActionTestUtil.deleteModelResourceAction(_resourceActions);
 	}
 
 	@Before
@@ -80,6 +87,14 @@ public class DataLayoutResourceTest extends BaseDataLayoutResourceTestCase {
 			testGroup.getGroupId());
 		_irrelevantDataDefinition = DataDefinitionTestUtil.addDataDefinition(
 			irrelevantGroup.getGroupId());
+	}
+
+	@Override
+	@Test
+	public void testDeleteDataDefinitionDataLayout() throws Exception {
+		super.testDeleteDataDefinitionDataLayout();
+
+		_testDeleteDataDefinitionDataLayoutWithoutPermissions();
 	}
 
 	@Override
@@ -100,6 +115,8 @@ public class DataLayoutResourceTest extends BaseDataLayoutResourceTestCase {
 			"abcdefghijklmnopqrstuvwxyz0123456789");
 		_testGetDataDefinitionDataLayoutsPage("form layout", "form layout");
 		_testGetDataDefinitionDataLayoutsPage("layo", "form layout");
+
+		_testGetDataDefinitionDataLayoutsPageWithoutPermissions();
 	}
 
 	@Override
@@ -225,7 +242,7 @@ public class DataLayoutResourceTest extends BaseDataLayoutResourceTestCase {
 			DataDefinitionResource.builder();
 
 		DataDefinitionResource dataDefinitionResource = builder.authentication(
-			"test@liferay.com", "test"
+			"test@liferay.com", TestPropsValues.USER_PASSWORD
 		).build();
 
 		DataDefinition dataDefinition =
@@ -334,6 +351,14 @@ public class DataLayoutResourceTest extends BaseDataLayoutResourceTestCase {
 	@Override
 	@Test
 	public void testPostDataLayoutContext() throws Exception {
+		DataLayoutResource.Builder builder = DataLayoutResource.builder();
+
+		dataLayoutResource = builder.authentication(
+			"test@liferay.com", PropsValues.DEFAULT_ADMIN_PASSWORD
+		).locale(
+			LocaleUtil.ENGLISH
+		).build();
+
 		DataDefinition dataDefinition =
 			DataDefinitionTestUtil.addDataDefinitionWithDataLayout(
 				testGroup.getGroupId());
@@ -371,6 +396,13 @@ public class DataLayoutResourceTest extends BaseDataLayoutResourceTestCase {
 			content, CoreMatchers.containsString("testContainer"));
 		Assert.assertThat(content, CoreMatchers.containsString("valor"));
 		Assert.assertThat(content, CoreMatchers.containsString("value"));
+
+		JSONObject contentJSONObject = JSONFactoryUtil.createJSONObject(
+			content);
+
+		Assert.assertEquals(
+			LocaleUtil.ENGLISH.getLanguage(),
+			contentJSONObject.getString("editingLanguageId"));
 
 		Assert.assertEquals(200, httpResponse.getStatusCode());
 	}
@@ -435,6 +467,13 @@ public class DataLayoutResourceTest extends BaseDataLayoutResourceTestCase {
 	}
 
 	@Override
+	protected Long testDeleteDataDefinitionDataLayout_getDataDefinitionId(
+		DataLayout dataLayout) {
+
+		return dataLayout.getDataDefinitionId();
+	}
+
+	@Override
 	protected DataLayout testDeleteDataLayout_addDataLayout() throws Exception {
 		return dataLayoutResource.postDataDefinitionDataLayout(
 			_dataDefinition.getId(), randomDataLayout());
@@ -476,6 +515,13 @@ public class DataLayoutResourceTest extends BaseDataLayoutResourceTestCase {
 	}
 
 	@Override
+	protected Long testGraphQLDataDefinitionDataLayout_getDataDefinitionId()
+		throws Exception {
+
+		return _dataDefinition.getId();
+	}
+
+	@Override
 	protected DataLayout testGraphQLDataLayout_addDataLayout()
 		throws Exception {
 
@@ -484,9 +530,97 @@ public class DataLayoutResourceTest extends BaseDataLayoutResourceTestCase {
 	}
 
 	@Override
+	protected Long
+			testGraphQLDeleteDataDefinitionDataLayout_getDataDefinitionId(
+				DataLayout dataLayout)
+		throws Exception {
+
+		return _dataDefinition.getId();
+	}
+
+	@Override
+	protected Long testGraphQLPostDataDefinitionDataLayout_getDataDefinitionId(
+			DataLayout dataLayout)
+		throws Exception {
+
+		return _dataDefinition.getId();
+	}
+
+	@Override
 	protected DataLayout testPutDataLayout_addDataLayout() throws Exception {
 		return dataLayoutResource.postDataDefinitionDataLayout(
 			_dataDefinition.getId(), randomDataLayout());
+	}
+
+	private DataDefinition _addDataDefinition() throws Exception {
+		User adminUser = UserTestUtil.getAdminUser(testCompany.getCompanyId());
+
+		DataDefinitionResource dataDefinitionResource =
+			DataDefinitionResource.builder(
+			).authentication(
+				adminUser.getEmailAddress(), PropsValues.DEFAULT_ADMIN_PASSWORD
+			).endpoint(
+				testCompany.getVirtualHostname(),
+				PortalUtil.getPortalServerPort(false), "http"
+			).locale(
+				LocaleUtil.getDefault()
+			).build();
+
+		DataDefinition dataDefinition =
+			dataDefinitionResource.postSiteDataDefinitionByContentType(
+				testGroup.getGroupId(), "journal",
+				new DataDefinition() {
+					{
+						availableLanguageIds = new String[] {"en_US"};
+						dataDefinitionFields = new DataDefinitionField[] {
+							new DataDefinitionField() {
+								{
+									fieldType = "text";
+									label = new HashMap<>(
+										RandomTestUtil.
+											randomLanguageIdStringMap());
+									name = "text";
+								}
+							}
+						};
+						dataDefinitionKey = RandomTestUtil.randomString();
+						defaultLanguageId = "en_US";
+						name = new HashMap<>(
+							RandomTestUtil.randomLanguageIdStringMap());
+						siteId = testGroup.getGroupId();
+					}
+				});
+
+		dataLayoutResource.postDataDefinitionDataLayout(
+			dataDefinition.getId(),
+			DataLayoutTestUtil.createDataLayout(
+				dataDefinition.getId(), RandomTestUtil.randomString(),
+				testGroup.getGroupId()));
+
+		return dataDefinition;
+	}
+
+	private DataLayoutResource _getDataLayoutResource() throws Exception {
+		User user = UserTestUtil.addUser(
+			testCompany, RandomTestUtil.randomString());
+
+		return DataLayoutResource.builder(
+		).authentication(
+			user.getEmailAddress(), user.getPasswordUnencrypted()
+		).endpoint(
+			testCompany.getVirtualHostname(),
+			PortalUtil.getPortalServerPort(false), "http"
+		).locale(
+			LocaleUtil.getDefault()
+		).build();
+	}
+
+	private long _getDataLayoutsCount(long dataDefinitionId) throws Exception {
+		Page<DataLayout> page =
+			dataLayoutResource.getDataDefinitionDataLayoutsPage(
+				dataDefinitionId, null, Pagination.of(1, 10), null);
+
+		return page.getTotalCount();
 	}
 
 	private DataLayout _randomDataLayout(boolean withVisualProperties) {
@@ -542,6 +676,21 @@ public class DataLayoutResourceTest extends BaseDataLayoutResourceTestCase {
 		return dataLayout;
 	}
 
+	private void _testDeleteDataDefinitionDataLayoutWithoutPermissions()
+		throws Exception {
+
+		DataDefinition dataDefinition = _addDataDefinition();
+
+		DataLayoutResource dataLayoutResource = _getDataLayoutResource();
+
+		assertHttpResponseStatusCode(
+			403,
+			dataLayoutResource.deleteDataDefinitionDataLayoutHttpResponse(
+				dataDefinition.getId()));
+
+		Assert.assertEquals(1, _getDataLayoutsCount(dataDefinition.getId()));
+	}
+
 	private void _testGetDataDefinitionDataLayoutsPage(
 			String keywords, String name)
 		throws Exception {
@@ -568,8 +717,22 @@ public class DataLayoutResourceTest extends BaseDataLayoutResourceTestCase {
 		dataLayoutResource.deleteDataLayout(dataLayout.getId());
 	}
 
-	@Inject
-	private static ResourceActionLocalService _resourceActionLocalService;
+	private void _testGetDataDefinitionDataLayoutsPageWithoutPermissions()
+		throws Exception {
+
+		DataLayoutResource dataLayoutResource = _getDataLayoutResource();
+
+		DataDefinition dataDefinition = _addDataDefinition();
+
+		assertHttpResponseStatusCode(
+			403,
+			dataLayoutResource.getDataDefinitionDataLayoutsPageHttpResponse(
+				dataDefinition.getId(), null, Pagination.of(1, 2), null));
+		assertHttpResponseStatusCode(
+			403,
+			dataLayoutResource.getDataDefinitionDataLayoutsPageHttpResponse(
+				dataDefinition.getId(), "layout", Pagination.of(1, 2), null));
+	}
 
 	@Inject
 	private static ResourceActions _resourceActions;

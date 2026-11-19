@@ -6,12 +6,12 @@
 package com.liferay.portal.service.impl;
 
 import com.liferay.portal.kernel.bean.BeanReference;
+import com.liferay.portal.kernel.change.tracking.CTAware;
 import com.liferay.portal.kernel.exception.NoSuchListTypeException;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.ClassName;
 import com.liferay.portal.kernel.model.ListType;
 import com.liferay.portal.kernel.service.ClassNameLocalService;
-import com.liferay.portal.kernel.transaction.Transactional;
 import com.liferay.portal.service.base.ListTypeLocalServiceBaseImpl;
 
 import java.util.List;
@@ -54,12 +54,21 @@ public class ListTypeLocalServiceImpl extends ListTypeLocalServiceBaseImpl {
 	}
 
 	@Override
-	public ListType getListType(long companyId, String name, String type) {
+	public ListType fetchListType(long companyId, String name, String type) {
 		return listTypePersistence.fetchByC_N_T(companyId, name, type);
 	}
 
 	@Override
-	public long getListTypeId(long companyId, String name, String type) {
+	public ListType getListType(long companyId, String name, String type)
+		throws PortalException {
+
+		return listTypePersistence.findByC_N_T(companyId, name, type);
+	}
+
+	@Override
+	public long getListTypeId(long companyId, String name, String type)
+		throws PortalException {
+
 		ListType listType = getListType(companyId, name, type);
 
 		return listType.getListTypeId();
@@ -70,8 +79,8 @@ public class ListTypeLocalServiceImpl extends ListTypeLocalServiceBaseImpl {
 		return listTypePersistence.findByC_T(companyId, type);
 	}
 
+	@CTAware(onProduction = true)
 	@Override
-	@Transactional(readOnly = true)
 	public void validate(long listTypeId, long classNameId, String type)
 		throws PortalException {
 
@@ -80,8 +89,8 @@ public class ListTypeLocalServiceImpl extends ListTypeLocalServiceBaseImpl {
 		validate(listTypeId, className.getValue() + type);
 	}
 
+	@CTAware(onProduction = true)
 	@Override
-	@Transactional(readOnly = true)
 	public void validate(long listTypeId, String type) throws PortalException {
 		ListType listType = listTypePersistence.fetchByPrimaryKey(listTypeId);
 

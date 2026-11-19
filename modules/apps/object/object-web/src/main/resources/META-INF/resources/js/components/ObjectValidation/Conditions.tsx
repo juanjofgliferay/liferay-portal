@@ -4,26 +4,30 @@
  */
 
 import ClayAlert from '@clayui/alert';
-
-import 'codemirror/mode/groovy/groovy';
 import {
 	Card,
 	CodeEditor,
 	SidebarCategory,
 	SingleSelect,
-	getLocalizableLabel,
+	stringUtils,
 } from '@liferay/object-js-components-web';
-import {LearnMessage, LearnResourcesContext} from 'frontend-js-components-web';
+import {
+	ILearnResourceContext,
+	LearnMessage,
+	LearnResourcesContext,
+} from 'frontend-js-components-web';
 import React, {useMemo} from 'react';
 
 import {NAME_OUTPUT_OBJECT_FIELD_EXTERNAL_REFERENCE_CODE} from '../../utils/constants';
+import {DisabledGroovyScriptAlert} from '../DisabledGroovyScriptAlert';
 import {ErrorMessage} from './ErrorMessage';
 import {TabProps} from './useObjectValidationForm';
 
 export interface ConditionsProps extends TabProps {
 	creationLanguageId: Liferay.Language.Locale;
 	customObjectFields: ObjectField[];
-	learnResources: ObjectWebLearnResources;
+	disabledGroovyValidation: boolean;
+	learnResources: ILearnResourceContext;
 	objectValidationRuleElements: SidebarCategory[];
 }
 
@@ -31,9 +35,12 @@ export function Conditions({
 	creationLanguageId,
 	customObjectFields,
 	disabled,
+	disabledGroovyValidation,
 	errors,
 	learnResources,
 	objectValidationRuleElements,
+	scriptManagementConfigurationPortletURL,
+	selectedPartialValidationField,
 	setValues,
 	values,
 }: ConditionsProps) {
@@ -63,32 +70,30 @@ export function Conditions({
 	const objectFieldsItems = useMemo(() => {
 		return customObjectFields.map(
 			({externalReferenceCode, label, name}) => ({
-				label: getLocalizableLabel(creationLanguageId, label, name),
+				label: stringUtils.getLocalizableLabel({
+					fallbackLabel: name,
+					fallbackLanguageId: creationLanguageId,
+					labels: label,
+				}),
 				value: externalReferenceCode,
 			})
 		);
 	}, [creationLanguageId, customObjectFields]);
 
-	const getSelectedPartialValidationField = () => {
-		if (values.objectValidationRuleSettings?.length) {
-			const [
-				partialValidationField,
-			] = values.objectValidationRuleSettings;
-
-			const customObjectField = customObjectFields.find(
-				(currentCustomObjectField) =>
-					currentCustomObjectField.externalReferenceCode ===
-					partialValidationField.value
-			);
-
-			return customObjectField?.externalReferenceCode;
-		}
-
-		return '';
-	};
+	const hasLocalizedField = useMemo(() => {
+		return customObjectFields.some((field) => field.localized);
+	}, [customObjectFields]);
 
 	return (
 		<>
+			{disabledGroovyValidation && (
+				<DisabledGroovyScriptAlert
+					scriptManagementConfigurationPortletURL={
+						scriptManagementConfigurationPortletURL
+					}
+				/>
+			)}
+
 			<ClayAlert
 				className="lfr-objects__side-panel-content-container"
 				displayType="info"
@@ -100,7 +105,7 @@ export function Conditions({
 					<LearnMessage
 						className="alert-link"
 						resource="object-web"
-						resourceKey="general"
+						resourceKey="expression-builder-validations-reference"
 					/>
 				</LearnResourcesContext.Provider>
 			</ClayAlert>
@@ -108,6 +113,19 @@ export function Conditions({
 				title={values.engineLabel!}
 				tooltip={engine === 'ddm' ? ddmTooltip : null}
 			>
+				{hasLocalizedField && (
+					<ClayAlert
+						displayType="info"
+						title={`${Liferay.Language.get('info')}:`}
+					>
+						{`${Liferay.Language.get(
+							'this-object-includes-translatable-fields'
+						)} ${Liferay.Language.get(
+							'validations-always-use-the-object-entrys-default-language'
+						)}`}
+					</ClayAlert>
+				)}
+
 				<CodeEditor
 					error={errors.script}
 					mode={engine}
@@ -115,7 +133,7 @@ export function Conditions({
 						setValues({lineCount, script})
 					}
 					placeholder={placeholder}
-					readOnly={disabled}
+					readOnly={disabled || disabledGroovyValidation}
 					sidebarElements={objectValidationRuleElements}
 					value={values.script ?? ''}
 				/>
@@ -143,7 +161,7 @@ export function Conditions({
 						});
 					}}
 					required
-					selectedKey={getSelectedPartialValidationField()}
+					selectedKey={selectedPartialValidationField}
 				/>
 			</ErrorMessage>
 		</>

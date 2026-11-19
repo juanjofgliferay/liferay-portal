@@ -42,6 +42,9 @@ public class DepotEntryGroupRelServiceImpl
 		_depotEntryModelResourcePermission.check(
 			getPermissionChecker(), depotEntryId, ActionKeys.UPDATE);
 
+		GroupPermissionUtil.check(
+			getPermissionChecker(), toGroupId, ActionKeys.UPDATE);
+
 		return depotEntryGroupRelLocalService.addDepotEntryGroupRel(
 			depotEntryId, toGroupId);
 	}
@@ -52,11 +55,15 @@ public class DepotEntryGroupRelServiceImpl
 		throws PortalException {
 
 		DepotEntryGroupRel depotEntryGroupRel =
-			depotEntryGroupRelLocalService.getDepotEntryGroupRel(
+			depotEntryGroupRelPersistence.findByPrimaryKey(
 				depotEntryGroupRelId);
 
 		_depotEntryModelResourcePermission.check(
 			getPermissionChecker(), depotEntryGroupRel.getDepotEntryId(),
+			ActionKeys.UPDATE);
+
+		GroupPermissionUtil.check(
+			getPermissionChecker(), depotEntryGroupRel.getToGroupId(),
 			ActionKeys.UPDATE);
 
 		return depotEntryGroupRelLocalService.deleteDepotEntryGroupRel(
@@ -64,15 +71,40 @@ public class DepotEntryGroupRelServiceImpl
 	}
 
 	@Override
+	public DepotEntryGroupRel getDepotEntryGroupRelByDepotEntryIdToGroupId(
+			long depotEntryId, long toGroupId)
+		throws PortalException {
+
+		_depotEntryModelResourcePermission.check(
+			getPermissionChecker(), depotEntryId, ActionKeys.VIEW);
+
+		return depotEntryGroupRelPersistence.findByD_TGI(
+			depotEntryId, toGroupId);
+	}
+
+	@Override
 	public List<DepotEntryGroupRel> getDepotEntryGroupRels(
-			long groupId, int start, int end)
+			DepotEntry depotEntry, int start, int end)
+		throws PortalException {
+
+		_depotEntryModelResourcePermission.check(
+			getPermissionChecker(), depotEntry.getDepotEntryId(),
+			ActionKeys.VIEW);
+
+		return depotEntryGroupRelPersistence.findByDepotEntryId(
+			depotEntry.getDepotEntryId(), start, end);
+	}
+
+	@Override
+	public List<DepotEntryGroupRel> getDepotEntryGroupRels(
+			long groupId, int type, int start, int end)
 		throws PortalException {
 
 		GroupPermissionUtil.check(
 			getPermissionChecker(), groupId, ActionKeys.VIEW);
 
 		return depotEntryGroupRelLocalService.getDepotEntryGroupRels(
-			groupId, start, end);
+			groupId, type, start, end);
 	}
 
 	@Override
@@ -83,19 +115,19 @@ public class DepotEntryGroupRelServiceImpl
 			getPermissionChecker(), depotEntry.getDepotEntryId(),
 			ActionKeys.VIEW);
 
-		return depotEntryGroupRelLocalService.getDepotEntryGroupRelsCount(
-			depotEntry);
+		return depotEntryGroupRelPersistence.countByDepotEntryId(
+			depotEntry.getDepotEntryId());
 	}
 
 	@Override
-	public int getDepotEntryGroupRelsCount(long groupId)
+	public int getDepotEntryGroupRelsCount(long groupId, int type)
 		throws PortalException {
 
 		GroupPermissionUtil.check(
 			getPermissionChecker(), groupId, ActionKeys.VIEW);
 
 		return depotEntryGroupRelLocalService.getDepotEntryGroupRelsCount(
-			groupId);
+			groupId, type);
 	}
 
 	@Override
@@ -104,7 +136,7 @@ public class DepotEntryGroupRelServiceImpl
 		throws PortalException {
 
 		DepotEntryGroupRel depotEntryGroupRel =
-			depotEntryGroupRelLocalService.getDepotEntryGroupRel(
+			depotEntryGroupRelPersistence.findByPrimaryKey(
 				depotEntryGroupRelId);
 
 		_depotEntryModelResourcePermission.check(
@@ -121,7 +153,7 @@ public class DepotEntryGroupRelServiceImpl
 		throws PortalException {
 
 		DepotEntryGroupRel depotEntryGroupRel =
-			depotEntryGroupRelLocalService.getDepotEntryGroupRel(
+			depotEntryGroupRelPersistence.findByPrimaryKey(
 				depotEntryGroupRelId);
 
 		_depotEntryModelResourcePermission.check(

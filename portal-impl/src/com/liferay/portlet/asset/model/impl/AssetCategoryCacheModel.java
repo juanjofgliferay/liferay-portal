@@ -68,7 +68,7 @@ public class AssetCategoryCacheModel
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(37);
+		StringBundler sb = new StringBundler(41);
 
 		sb.append("{mvccVersion=");
 		sb.append(mvccVersion);
@@ -104,8 +104,12 @@ public class AssetCategoryCacheModel
 		sb.append(description);
 		sb.append(", vocabularyId=");
 		sb.append(vocabularyId);
+		sb.append(", system=");
+		sb.append(system);
 		sb.append(", lastPublishDate=");
 		sb.append(lastPublishDate);
+		sb.append(", status=");
+		sb.append(status);
 		sb.append("}");
 
 		return sb.toString();
@@ -189,6 +193,7 @@ public class AssetCategoryCacheModel
 		}
 
 		assetCategoryImpl.setVocabularyId(vocabularyId);
+		assetCategoryImpl.setSystem(system);
 
 		if (lastPublishDate == Long.MIN_VALUE) {
 			assetCategoryImpl.setLastPublishDate(null);
@@ -196,6 +201,8 @@ public class AssetCategoryCacheModel
 		else {
 			assetCategoryImpl.setLastPublishDate(new Date(lastPublishDate));
 		}
+
+		assetCategoryImpl.setStatus(status);
 
 		assetCategoryImpl.resetOriginalValues();
 
@@ -230,7 +237,11 @@ public class AssetCategoryCacheModel
 		description = (String)objectInput.readObject();
 
 		vocabularyId = objectInput.readLong();
+
+		system = objectInput.readBoolean();
 		lastPublishDate = objectInput.readLong();
+
+		status = objectInput.readInt();
 	}
 
 	@Override
@@ -302,7 +313,11 @@ public class AssetCategoryCacheModel
 		}
 
 		objectOutput.writeLong(vocabularyId);
+
+		objectOutput.writeBoolean(system);
 		objectOutput.writeLong(lastPublishDate);
+
+		objectOutput.writeInt(status);
 	}
 
 	public long mvccVersion;
@@ -322,6 +337,9 @@ public class AssetCategoryCacheModel
 	public String title;
 	public String description;
 	public long vocabularyId;
+	public boolean system;
 	public long lastPublishDate;
+	public int status;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:299791781

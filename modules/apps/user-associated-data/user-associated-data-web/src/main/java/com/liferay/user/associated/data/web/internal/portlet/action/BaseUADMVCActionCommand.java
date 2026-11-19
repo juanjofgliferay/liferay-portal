@@ -17,26 +17,28 @@ import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCActionCommand;
 import com.liferay.portal.kernel.servlet.SessionErrors;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ParamUtil;
+import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.taglib.aui.AUIUtil;
 import com.liferay.user.associated.data.anonymizer.UADAnonymizer;
+import com.liferay.user.associated.data.anonymizer.UADAnonymousUserProvider;
 import com.liferay.user.associated.data.constants.UserAssociatedDataPortletKeys;
 import com.liferay.user.associated.data.display.UADDisplay;
-import com.liferay.user.associated.data.web.internal.helper.SelectedUserHelper;
-import com.liferay.user.associated.data.web.internal.helper.UADApplicationSummaryHelper;
 import com.liferay.user.associated.data.web.internal.registry.UADRegistry;
+import com.liferay.user.associated.data.web.internal.util.SelectedUserUtil;
+import com.liferay.user.associated.data.web.internal.util.UADApplicationSummaryUtil;
+
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.PortletRequest;
 
 import java.io.Serializable;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.PortletRequest;
 
 import org.osgi.service.component.annotations.Reference;
 
@@ -64,13 +66,13 @@ public abstract class BaseUADMVCActionCommand extends BaseMVCActionCommand {
 		long selectedUserId = getSelectedUserId(actionRequest);
 
 		int totalNonreviewableUADEntitiesCount =
-			uadApplicationSummaryHelper.getTotalNonreviewableUADEntitiesCount(
-				selectedUserId);
+			UADApplicationSummaryUtil.getTotalNonreviewableUADEntitiesCount(
+				uadRegistry, selectedUserId);
 
 		if (totalNonreviewableUADEntitiesCount == 0) {
 			int totalReviewableUADEntitiesCount =
-				uadApplicationSummaryHelper.getTotalReviewableUADEntitiesCount(
-					selectedUserId);
+				UADApplicationSummaryUtil.getTotalReviewableUADEntitiesCount(
+					uadRegistry, selectedUserId);
 
 			if (totalReviewableUADEntitiesCount == 0) {
 				mvcRenderCommandName =
@@ -107,13 +109,13 @@ public abstract class BaseUADMVCActionCommand extends BaseMVCActionCommand {
 		long selectedUserId = getSelectedUserId(actionRequest);
 
 		int totalReviewableUADEntitiesCount =
-			uadApplicationSummaryHelper.getTotalReviewableUADEntitiesCount(
-				selectedUserId);
+			UADApplicationSummaryUtil.getTotalReviewableUADEntitiesCount(
+				uadRegistry, selectedUserId);
 
 		if (totalReviewableUADEntitiesCount == 0) {
 			int totalNonreviewableUADEntitiesCount =
-				uadApplicationSummaryHelper.
-					getTotalNonreviewableUADEntitiesCount(selectedUserId);
+				UADApplicationSummaryUtil.getTotalNonreviewableUADEntitiesCount(
+					uadRegistry, selectedUserId);
 
 			if (totalNonreviewableUADEntitiesCount == 0) {
 				mvcRenderCommandName =
@@ -159,10 +161,12 @@ public abstract class BaseUADMVCActionCommand extends BaseMVCActionCommand {
 		Map<String, String[]> parameterMap = actionRequest.getParameterMap();
 
 		for (String key : parameterMap.keySet()) {
-			if (key.startsWith("uadRegistryKey__")) {
-				entityTypes.add(
-					StringUtil.removeSubstring(key, "uadRegistryKey__"));
+			if (!key.startsWith("uadRegistryKey__")) {
+				continue;
 			}
+
+			entityTypes.add(
+				StringUtil.removeSubstring(key, "uadRegistryKey__"));
 		}
 
 		return entityTypes;
@@ -187,13 +191,15 @@ public abstract class BaseUADMVCActionCommand extends BaseMVCActionCommand {
 	protected User getSelectedUser(ActionRequest actionRequest)
 		throws PortalException {
 
-		return selectedUserHelper.getSelectedUser(actionRequest);
+		return SelectedUserUtil.getSelectedUser(
+			portal, actionRequest, uadAnonymousUserProvider);
 	}
 
 	protected long getSelectedUserId(ActionRequest actionRequest)
 		throws PortalException {
 
-		return selectedUserHelper.getSelectedUserId(actionRequest);
+		return SelectedUserUtil.getSelectedUserId(
+			portal, actionRequest, uadAnonymousUserProvider);
 	}
 
 	protected UADAnonymizer<?> getUADAnonymizer(
@@ -229,10 +235,11 @@ public abstract class BaseUADMVCActionCommand extends BaseMVCActionCommand {
 		Map<Class<?>, String> exceptionMessageMap =
 			uadAnonymizer.getExceptionMessageMap(themeDisplay.getLocale());
 
-		if (exceptionMessageMap.containsKey(exception.getClass())) {
+		String exceptionMessage = exceptionMessageMap.get(exception.getClass());
+
+		if (exceptionMessage != null) {
 			SessionErrors.add(
-				actionRequest, "deleteUADEntityException",
-				exceptionMessageMap.get(exception.getClass()));
+				actionRequest, "deleteUADEntityException", exceptionMessage);
 
 			String redirect = ParamUtil.getString(actionRequest, "redirect");
 
@@ -246,10 +253,10 @@ public abstract class BaseUADMVCActionCommand extends BaseMVCActionCommand {
 	}
 
 	@Reference
-	protected SelectedUserHelper selectedUserHelper;
+	protected Portal portal;
 
 	@Reference
-	protected UADApplicationSummaryHelper uadApplicationSummaryHelper;
+	protected UADAnonymousUserProvider uadAnonymousUserProvider;
 
 	@Reference
 	protected UADRegistry uadRegistry;

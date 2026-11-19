@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import '@testing-library/jest-dom/extend-expect';
+import '@testing-library/jest-dom';
 import {render, screen} from '@testing-library/react';
 import React from 'react';
 
@@ -20,7 +20,7 @@ describe('State Renderer', () => {
 					<EmptyStateComponent
 						className="empty-state-border"
 						description="this is a description"
-						imgSrc=""
+						symbol="empty-state"
 						title="this is a title"
 					/>
 				</StateRenderer.Empty>
@@ -40,7 +40,7 @@ describe('State Renderer', () => {
 		const {container} = render(
 			<StateRenderer empty={false} error={false} loading>
 				<StateRenderer.Empty>
-					<EmptyStateComponent imgSrc="" />
+					<EmptyStateComponent />
 				</StateRenderer.Empty>
 			</StateRenderer>
 		);

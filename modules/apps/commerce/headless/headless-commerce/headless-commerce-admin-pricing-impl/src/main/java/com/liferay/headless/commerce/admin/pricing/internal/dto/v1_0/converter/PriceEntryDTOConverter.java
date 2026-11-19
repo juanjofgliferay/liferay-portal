@@ -6,7 +6,9 @@
 package com.liferay.headless.commerce.admin.pricing.internal.dto.v1_0.converter;
 
 import com.liferay.commerce.price.list.model.CommercePriceEntry;
+import com.liferay.commerce.price.list.model.CommercePriceList;
 import com.liferay.commerce.price.list.service.CommercePriceEntryService;
+import com.liferay.commerce.product.model.CPDefinition;
 import com.liferay.commerce.product.model.CPInstance;
 import com.liferay.commerce.product.service.CPInstanceLocalService;
 import com.liferay.expando.kernel.model.ExpandoBridge;
@@ -40,23 +42,49 @@ public class PriceEntryDTOConverter
 			_commercePriceEntryService.getCommercePriceEntry(
 				(Long)dtoConverterContext.getId());
 
+		CommercePriceList commercePriceList =
+			commercePriceEntry.getCommercePriceList();
+
 		CPInstance cpInstance = _cpInstanceLocalService.fetchCProductInstance(
 			commercePriceEntry.getCProductId(),
 			commercePriceEntry.getCPInstanceUuid());
 
-		ExpandoBridge expandoBridge = commercePriceEntry.getExpandoBridge();
+		CPDefinition cpDefinition = _fetchCPDefinition(cpInstance);
 
 		return new PriceEntry() {
 			{
-				customFields = expandoBridge.getAttributes();
-				externalReferenceCode =
-					commercePriceEntry.getExternalReferenceCode();
-				hasTierPrice = commercePriceEntry.isHasTierPrice();
-				id = commercePriceEntry.getCommercePriceEntryId();
-				price = commercePriceEntry.getPrice();
-				priceListId = commercePriceEntry.getCommercePriceListId();
-				promoPrice = commercePriceEntry.getPromoPrice();
+				setCustomFields(
+					() -> {
+						ExpandoBridge expandoBridge =
+							commercePriceEntry.getExpandoBridge();
 
+						return expandoBridge.getAttributes();
+					});
+				setExternalReferenceCode(
+					commercePriceEntry::getExternalReferenceCode);
+				setHasTierPrice(commercePriceEntry::isHasTierPrice);
+				setId(commercePriceEntry::getCommercePriceEntryId);
+				setPrice(commercePriceEntry::getPrice);
+				setPriceListExternalReferenceCode(
+					commercePriceList::getExternalReferenceCode);
+				setPriceListId(commercePriceEntry::getCommercePriceListId);
+				setProductExternalReferenceCode(
+					() -> {
+						if (cpDefinition == null) {
+							return null;
+						}
+
+						return cpDefinition.getCProductExternalReferenceCode();
+					});
+				setProductType(
+					() -> {
+						if (cpDefinition == null) {
+							return null;
+						}
+
+						return cpDefinition.getProductTypeName();
+					});
+				setPromoPrice(commercePriceEntry::getPromoPrice);
 				setSku(
 					() -> {
 						if (cpInstance == null) {
@@ -83,6 +111,16 @@ public class PriceEntryDTOConverter
 					});
 			}
 		};
+	}
+
+	private CPDefinition _fetchCPDefinition(CPInstance cpInstance)
+		throws Exception {
+
+		if (cpInstance == null) {
+			return null;
+		}
+
+		return cpInstance.getCPDefinition();
 	}
 
 	@Reference

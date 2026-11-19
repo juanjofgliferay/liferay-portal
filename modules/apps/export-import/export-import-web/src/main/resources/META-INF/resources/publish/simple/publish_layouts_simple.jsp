@@ -36,7 +36,7 @@ Map<String, String[]> parameterMap = (Map<String, String[]>)settingsMap.get("par
 %>
 
 <clay:container-fluid
-	cssClass="mt-2 publish-navbar text-right"
+	cssClass="mt-2 p-0 publish-navbar text-right"
 >
 	<clay:link
 		displayType="link"
@@ -120,8 +120,6 @@ Map<String, String[]> parameterMap = (Map<String, String[]>)settingsMap.get("par
 								<ul class="portlet-list">
 
 									<%
-									Set<String> portletDataHandlerClassNames = new HashSet<String>();
-
 									List<Portlet> dataSiteLevelPortlets = ExportImportHelperUtil.getDataSiteLevelPortlets(company.getCompanyId(), false);
 									%>
 
@@ -133,15 +131,9 @@ Map<String, String[]> parameterMap = (Map<String, String[]>)settingsMap.get("par
 										for (Portlet portlet : dataSiteLevelPortlets) {
 											PortletDataHandler portletDataHandler = portlet.getPortletDataHandlerInstance();
 
-											Class<?> portletDataHandlerClass = portletDataHandler.getClass();
-
-											String portletDataHandlerClassName = portletDataHandlerClass.getName();
-
-											if (portletDataHandlerClassNames.contains(portletDataHandlerClassName)) {
+											if (portletDataHandler.isBatch() || !portletDataHandler.isEnabled(company.getCompanyId())) {
 												continue;
 											}
-
-											portletDataHandlerClassNames.add(portletDataHandlerClassName);
 
 											settingsMap.put("portletId", portlet.getRootPortletId());
 

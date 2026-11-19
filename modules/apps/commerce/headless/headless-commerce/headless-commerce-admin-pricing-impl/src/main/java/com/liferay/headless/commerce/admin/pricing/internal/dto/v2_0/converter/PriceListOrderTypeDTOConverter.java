@@ -21,7 +21,10 @@ import org.osgi.service.component.annotations.Reference;
  * @author Alessio Antonio Rendina
  */
 @Component(
-	property = "dto.class.name=com.liferay.commerce.price.list.model.CommercePriceListOrderTypeRel",
+	property = {
+		"default=true",
+		"dto.class.name=com.liferay.commerce.price.list.model.CommercePriceListOrderTypeRel"
+	},
 	service = DTOConverter.class
 )
 public class PriceListOrderTypeDTOConverter
@@ -41,26 +44,30 @@ public class PriceListOrderTypeDTOConverter
 				getCommercePriceListOrderTypeRel(
 					(Long)dtoConverterContext.getId());
 
-		CommerceOrderType commerceOrderType =
-			_commerceOrderTypeService.getCommerceOrderType(
-				commercePriceListOrderTypeRel.getCommerceOrderTypeId());
 		CommercePriceList commercePriceList =
 			commercePriceListOrderTypeRel.getCommercePriceList();
 
 		return new PriceListOrderType() {
 			{
-				actions = dtoConverterContext.getActions();
-				orderTypeExternalReferenceCode =
-					commerceOrderType.getExternalReferenceCode();
-				orderTypeId =
-					commercePriceListOrderTypeRel.getCommerceOrderTypeId();
-				priceListExternalReferenceCode =
-					commercePriceList.getExternalReferenceCode();
-				priceListId = commercePriceList.getCommercePriceListId();
-				priceListOrderTypeId =
-					commercePriceListOrderTypeRel.
-						getCommercePriceListOrderTypeRelId();
-				priority = commercePriceListOrderTypeRel.getPriority();
+				setActions(dtoConverterContext::getActions);
+				setOrderTypeExternalReferenceCode(
+					() -> {
+						CommerceOrderType commerceOrderType =
+							_commerceOrderTypeService.getCommerceOrderType(
+								commercePriceListOrderTypeRel.
+									getCommerceOrderTypeId());
+
+						return commerceOrderType.getExternalReferenceCode();
+					});
+				setOrderTypeId(
+					commercePriceListOrderTypeRel::getCommerceOrderTypeId);
+				setPriceListExternalReferenceCode(
+					commercePriceList::getExternalReferenceCode);
+				setPriceListId(commercePriceList::getCommercePriceListId);
+				setPriceListOrderTypeId(
+					commercePriceListOrderTypeRel::
+						getCommercePriceListOrderTypeRelId);
+				setPriority(commercePriceListOrderTypeRel::getPriority);
 			}
 		};
 	}

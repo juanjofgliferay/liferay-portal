@@ -1,0 +1,15 @@
+suite: Marketplace Overrides
+templates:
+    -   charts/liferay-aws/charts/liferay-default/templates/workloads.yaml
+tests:
+    -   asserts:
+            -   equal:
+                    path: spec.template.spec.containers[0].image
+                    value: 709825985650.dkr.ecr.us-east-1.amazonaws.com/liferay/dxp:2025.q2.0
+        documentSelector:
+            path: kind
+            skipEmptyTemplates: true
+            value: StatefulSet
+        it: Honors an overridden image tag
+        set:
+            liferay-aws.liferay-default.image.tag: 2025.q2.0

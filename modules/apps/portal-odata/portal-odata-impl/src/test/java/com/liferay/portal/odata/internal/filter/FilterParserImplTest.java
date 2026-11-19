@@ -645,6 +645,33 @@ public class FilterParserImplTest {
 	}
 
 	@Test
+	public void testParseWithLambdaAnyWithNoArgumentOnCollectionField()
+		throws ExpressionVisitException {
+
+		Expression expression = _filterParserImpl.parse(
+			"collectionFieldExternal/any()");
+
+		Assert.assertNotNull(expression);
+
+		MemberExpression memberExpression = (MemberExpression)expression;
+
+		CollectionPropertyExpression collectionPropertyExpression =
+			(CollectionPropertyExpression)memberExpression.getExpression();
+
+		Assert.assertEquals(
+			"collectionFieldExternal", collectionPropertyExpression.getName());
+
+		LambdaFunctionExpression lambdaFunctionExpression =
+			collectionPropertyExpression.getLambdaFunctionExpression();
+
+		Assert.assertNull(lambdaFunctionExpression.getExpression());
+		Assert.assertEquals(
+			LambdaFunctionExpression.Type.ANY,
+			lambdaFunctionExpression.getType());
+		Assert.assertNull(lambdaFunctionExpression.getVariableName());
+	}
+
+	@Test
 	public void testParseWithLeBinaryExpression()
 		throws ExpressionVisitException {
 
@@ -750,6 +777,17 @@ public class FilterParserImplTest {
 	}
 
 	@Test
+	public void testParseWithStarsWithMethodAnDoubleType() {
+		AbstractThrowableAssert exception = Assertions.assertThatThrownBy(
+			() -> _filterParserImpl.parse("contains(doubleExternal, 7)")
+		).isInstanceOf(
+			ExpressionVisitException.class
+		);
+
+		exception.hasMessage("Incompatible types.");
+	}
+
+	@Test
 	public void testParseWithStarsWithMethodAndBooleanType() {
 		AbstractThrowableAssert exception = Assertions.assertThatThrownBy(
 			() -> _filterParserImpl.parse("startswith(booleanExternal, 7)")
@@ -765,17 +803,6 @@ public class FilterParserImplTest {
 		AbstractThrowableAssert exception = Assertions.assertThatThrownBy(
 			() -> _filterParserImpl.parse(
 				"contains(dateExternal, 2012-05-29T09:13:28Z)")
-		).isInstanceOf(
-			ExpressionVisitException.class
-		);
-
-		exception.hasMessage("Incompatible types.");
-	}
-
-	@Test
-	public void testParseWithStarsWithMethodAnDoubleType() {
-		AbstractThrowableAssert exception = Assertions.assertThatThrownBy(
-			() -> _filterParserImpl.parse("contains(doubleExternal, 7)")
 		).isInstanceOf(
 			ExpressionVisitException.class
 		);

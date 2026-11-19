@@ -29,16 +29,20 @@ interface ObjectFolderContextProviderProps
 const ObjectFolderContext = createContext({} as ObjectFolderContextProps);
 
 const initialState = {
+	countries: [] as TState['countries'],
+	deletedObjectDefinition: {} as DeletedObjectDefinition,
 	elements: [] as Elements<
-		ObjectDefinitionNodeData | ObjectRelationshipEdgeData
+		ObjectDefinitionNodeData | ObjectRelationshipEdgeData[]
 	>,
-	isLoadingObjectFolder: false,
+	hasUnsavedObjectFolderItemPositions: false,
+	isLoadingObjectFolder: true,
 	leftSidebarItems: [] as LeftSidebarItem[],
-	objectDefinitions: [] as ObjectDefinition[],
+	modelBuilderModals: {} as ModelBuilderModals,
+	nodeHandleConnectable: false,
 	objectFolderName: getObjectFolderName(),
 	objectFolders: [] as ObjectFolder[],
 	rightSidebarType: 'empty' as RightSidebarType,
-	selectedObjectFolder: {},
+	selectedObjectFolder: {} as ObjectFolder,
 	showChangesSaved: false,
 	showSidebars: true,
 } as TState;

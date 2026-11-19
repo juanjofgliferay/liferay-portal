@@ -18,14 +18,14 @@ import com.liferay.portal.monitoring.internal.configuration.MonitoringConfigurat
 import com.liferay.portal.monitoring.internal.constants.MonitoringWebKeys;
 import com.liferay.portal.monitoring.internal.statistics.portal.PortalRequestDataSample;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 import java.io.PrintWriter;
 
 import java.util.List;
 import java.util.Map;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -36,7 +36,9 @@ import org.osgi.service.component.annotations.Modified;
  */
 @Component(
 	configurationPid = "com.liferay.portal.monitoring.internal.configuration.MonitoringConfiguration",
-	enabled = false, service = DynamicInclude.class
+	enabled = false,
+	property = "dynamic.include.key=/html/common/themes/bottom.jsp#post",
+	service = DynamicInclude.class
 )
 public class MonitoringBottomDynamicInclude extends BaseDynamicInclude {
 
@@ -85,11 +87,6 @@ public class MonitoringBottomDynamicInclude extends BaseDynamicInclude {
 		PrintWriter printWriter = httpServletResponse.getWriter();
 
 		printWriter.println(sb);
-	}
-
-	@Override
-	public void register(DynamicIncludeRegistry dynamicIncludeRegistry) {
-		dynamicIncludeRegistry.register("/html/common/themes/bottom.jsp#post");
 	}
 
 	@Activate

@@ -21,13 +21,13 @@ import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.Date;
 import java.util.List;
-
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Eudaldo Alonso
@@ -78,8 +78,8 @@ public class JournalDDMTemplateVerticalCard extends BaseVerticalCard {
 
 			return PortletURLBuilder.createRenderURL(
 				_renderResponse
-			).setMVCPath(
-				"/edit_ddm_template.jsp"
+			).setMVCRenderCommandName(
+				"/journal/edit_ddm_template"
 			).setRedirect(
 				themeDisplay.getURLCurrent()
 			).setParameter(

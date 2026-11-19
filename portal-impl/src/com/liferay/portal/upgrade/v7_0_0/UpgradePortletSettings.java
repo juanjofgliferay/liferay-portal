@@ -10,17 +10,20 @@ import com.liferay.portal.kernel.dao.jdbc.AutoBatchPreparedStatementUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.PortletPreferenceValue;
-import com.liferay.portal.kernel.settings.SettingsDescriptor;
-import com.liferay.portal.kernel.settings.SettingsLocatorHelper;
+import com.liferay.portal.kernel.settings.Settings;
 import com.liferay.portal.kernel.upgrade.UpgradeProcess;
 import com.liferay.portal.kernel.util.LoggingTimer;
 import com.liferay.portal.kernel.util.PortletKeys;
+import com.liferay.portal.kernel.util.StringUtil;
+
+import java.lang.reflect.Method;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
 import java.util.Set;
+import java.util.TreeSet;
 
 /**
  * @author Sergio González
@@ -28,8 +31,59 @@ import java.util.Set;
  */
 public abstract class UpgradePortletSettings extends UpgradeProcess {
 
-	public UpgradePortletSettings(SettingsLocatorHelper settingsLocatorHelper) {
-		_settingsLocatorHelper = settingsLocatorHelper;
+	protected static String[] getKeys(Class<?>... classes) {
+		Set<String> keys = new TreeSet<>();
+
+		for (Class<?> clazz : classes) {
+			for (Method method : clazz.getMethods()) {
+				keys.add(method.getName());
+			}
+		}
+
+		return keys.toArray(new String[0]);
+	}
+
+	protected static String[] getSettingsKeys(Class<?> settingsClass) {
+		Set<String> keys = new TreeSet<>();
+
+		for (Method method : settingsClass.getMethods()) {
+			String name = method.getName();
+
+			if (name.equals("getClass")) {
+				continue;
+			}
+
+			if (name.startsWith("get")) {
+				name = name.substring(3);
+			}
+			else if (name.startsWith("is")) {
+				name = name.substring(2);
+			}
+			else {
+				continue;
+			}
+
+			Settings.Property settingsProperty = method.getAnnotation(
+				Settings.Property.class);
+
+			if (settingsProperty != null) {
+				if (settingsProperty.ignore()) {
+					continue;
+				}
+
+				String propertyName = settingsProperty.name();
+
+				if (!propertyName.isEmpty()) {
+					keys.add(propertyName);
+
+					continue;
+				}
+			}
+
+			keys.add(StringUtil.lowerCaseFirstLetter(name));
+		}
+
+		return keys.toArray(new String[0]);
 	}
 
 	protected void copyPortletSettingsAsServiceSettings(
@@ -47,72 +101,78 @@ public abstract class UpgradePortletSettings extends UpgradeProcess {
 						"PortletPreferences.ownerId, PortletPreferences.plid, ",
 						"Layout.groupId from PortletPreferences left join ",
 						"Layout on Layout.plid = PortletPreferences.plid ",
-						"where PortletPreferences.ownerType = ", ownerType,
-						" and PortletPreferences.portletId = '", portletId,
-						"'"));
-			ResultSet resultSet = selectPreparedStatement.executeQuery()) {
+						"where PortletPreferences.ownerType = ? and ",
+						"PortletPreferences.portletId = ?"))) {
 
-			while (resultSet.next()) {
-				long oldPortletPreferencesId = resultSet.getLong(1);
+			selectPreparedStatement.setInt(1, ownerType);
+			selectPreparedStatement.setString(2, portletId);
 
-				long ownerId = 0;
-				long plid = 0;
+			try (PreparedStatement insertPreparedStatement =
+					AutoBatchPreparedStatementUtil.autoBatch(
+						connection,
+						StringBundler.concat(
+							"insert into PortletPreferences (",
+							"mvccVersion, ctCollectionId, ",
+							"portletPreferencesId, ownerId, ownerType, plid, ",
+							"portletId) values (0, 0, ?, ?, ?, ?, ?)"));
+				ResultSet resultSet = selectPreparedStatement.executeQuery()) {
 
-				if (ownerType == PortletKeys.PREFS_OWNER_TYPE_LAYOUT) {
-					ownerId = resultSet.getLong(3);
-					plid = 0;
-				}
-				else {
-					ownerId = resultSet.getLong(1);
-					plid = resultSet.getLong(2);
-				}
+				while (resultSet.next()) {
+					long oldPortletPreferencesId = resultSet.getLong(
+						"portletPreferencesId");
 
-				long newPortletPreferencesId = increment();
+					long ownerId = 0;
+					long plid = 0;
 
-				try (PreparedStatement insertPreparedStatement =
-						connection.prepareStatement(
-							StringBundler.concat(
-								"insert into PortletPreferences (mvccVersion, ",
-								"ctCollectionId, portletPreferencesId, ",
-								"ownerId, ownerType, plid, portletId) values ",
-								"(0, 0, ?, ?, ?, ?, ?)"))) {
+					if (ownerType == PortletKeys.PREFS_OWNER_TYPE_LAYOUT) {
+						ownerId = resultSet.getLong("plid");
+						plid = 0;
+					}
+					else {
+						ownerId = resultSet.getLong("portletPreferencesId");
+						plid = resultSet.getLong("ownerId");
+					}
 
-					insertPreparedStatement.setLong(1, newPortletPreferencesId);
-					insertPreparedStatement.setLong(2, ownerId);
-					insertPreparedStatement.setInt(
-						3, PortletKeys.PREFS_OWNER_TYPE_GROUP);
-					insertPreparedStatement.setLong(4, plid);
-					insertPreparedStatement.setString(5, serviceName);
+					long newPortletPreferencesId = increment();
 
-					insertPreparedStatement.executeUpdate();
+					try {
+						insertPreparedStatement.setLong(
+							1, newPortletPreferencesId);
+						insertPreparedStatement.setLong(2, ownerId);
+						insertPreparedStatement.setInt(
+							3, PortletKeys.PREFS_OWNER_TYPE_GROUP);
+						insertPreparedStatement.setLong(4, plid);
+						insertPreparedStatement.setString(5, serviceName);
 
-					_copyPortletPreferenceValues(
-						oldPortletPreferencesId, newPortletPreferencesId);
-				}
-				catch (SQLException sqlException) {
-					if (_log.isDebugEnabled()) {
-						_log.debug(
-							"Unable to copy portlet preferences " +
-								oldPortletPreferencesId,
-							sqlException);
+						insertPreparedStatement.addBatch();
+
+						_copyPortletPreferenceValues(
+							oldPortletPreferencesId, newPortletPreferencesId);
+					}
+					catch (SQLException sqlException) {
+						if (_log.isDebugEnabled()) {
+							_log.debug(
+								"Unable to copy portlet preferences " +
+									oldPortletPreferencesId,
+								sqlException);
+						}
 					}
 				}
+
+				insertPreparedStatement.executeBatch();
 			}
 		}
 	}
 
 	protected void resetPortletPreferencesValues(
-			String portletId, int ownerType,
-			SettingsDescriptor settingsDescriptor)
+			String portletId, int ownerType, String[] keys)
 		throws Exception {
 
-		Set<String> allKeys = settingsDescriptor.getAllKeys();
-
-		if (allKeys.isEmpty()) {
+		if (keys.length == 0) {
 			return;
 		}
 
-		StringBundler sb = new StringBundler(allKeys.size() + 8);
+		StringBundler sb = new StringBundler(keys.length + 8);
 
 		sb.append("delete from PortletPreferenceValue where ");
 		sb.append("PortletPreferenceValue.portletPreferencesId in (select ");
@@ -123,7 +183,7 @@ public abstract class UpgradePortletSettings extends UpgradeProcess {
 		sb.append(portletId);
 		sb.append("') and PortletPreferenceValue.name in (?");
 
-		for (int i = 1; i < allKeys.size(); i++) {
+		for (int i = 1; i < keys.length; i++) {
 			sb.append(", ?");
 		}
 
@@ -134,7 +194,7 @@ public abstract class UpgradePortletSettings extends UpgradeProcess {
 
 			int i = 0;
 
-			for (String key : allKeys) {
+			for (String key : keys) {
 				preparedStatement.setString(++i, key);
 			}
 
@@ -143,7 +203,7 @@ public abstract class UpgradePortletSettings extends UpgradeProcess {
 	}
 
 	protected void upgradeDisplayPortlet(
-			String portletId, String serviceName, int ownerType)
+			String portletId, int ownerType, String[] serviceKeys)
 		throws Exception {
 
 		try (LoggingTimer loggingTimer = new LoggingTimer(portletId)) {
@@ -154,21 +214,16 @@ public abstract class UpgradePortletSettings extends UpgradeProcess {
 				_log.debug("Delete service keys from portlet settings");
 			}
 
-			SettingsDescriptor settingsDescriptor =
-				_settingsLocatorHelper.getSettingsDescriptor(serviceName);
+			resetPortletPreferencesValues(portletId, ownerType, serviceKeys);
 
 			resetPortletPreferencesValues(
-				portletId, ownerType, settingsDescriptor);
-
-			resetPortletPreferencesValues(
-				portletId, PortletKeys.PREFS_OWNER_TYPE_ARCHIVED,
-				settingsDescriptor);
+				portletId, PortletKeys.PREFS_OWNER_TYPE_ARCHIVED, serviceKeys);
 		}
 	}
 
 	protected void upgradeMainPortlet(
 			String portletId, String serviceName, int ownerType,
-			boolean resetPortletInstancePreferences)
+			String[] portletInstanceKeys, String[] serviceKeys)
 		throws Exception {
 
 		try (LoggingTimer loggingTimer = new LoggingTimer(portletId)) {
@@ -179,10 +234,7 @@ public abstract class UpgradePortletSettings extends UpgradeProcess {
 			copyPortletSettingsAsServiceSettings(
 				portletId, ownerType, serviceName);
 
-			if (resetPortletInstancePreferences) {
-				SettingsDescriptor portletInstanceSettingsDescriptor =
-					_settingsLocatorHelper.getSettingsDescriptor(portletId);
-
+			if (portletInstanceKeys.length > 0) {
 				if (_log.isDebugEnabled()) {
 					_log.debug(
 						"Delete portlet instance keys from service settings");
@@ -190,22 +242,17 @@ public abstract class UpgradePortletSettings extends UpgradeProcess {
 
 				resetPortletPreferencesValues(
 					serviceName, PortletKeys.PREFS_OWNER_TYPE_GROUP,
-					portletInstanceSettingsDescriptor);
+					portletInstanceKeys);
 			}
 
 			if (_log.isDebugEnabled()) {
 				_log.debug("Delete service keys from portlet settings");
 			}
 
-			SettingsDescriptor serviceSettingsDescriptor =
-				_settingsLocatorHelper.getSettingsDescriptor(serviceName);
+			resetPortletPreferencesValues(portletId, ownerType, serviceKeys);
 
 			resetPortletPreferencesValues(
-				portletId, ownerType, serviceSettingsDescriptor);
-
-			resetPortletPreferencesValues(
-				portletId, PortletKeys.PREFS_OWNER_TYPE_ARCHIVED,
-				serviceSettingsDescriptor);
+				portletId, PortletKeys.PREFS_OWNER_TYPE_ARCHIVED, serviceKeys);
 		}
 	}
 
@@ -242,7 +289,8 @@ public abstract class UpgradePortletSettings extends UpgradeProcess {
 					insertPreparedStatement.setLong(
 						1, increment(PortletPreferenceValue.class.getName()));
 					insertPreparedStatement.setLong(2, newPortletPreferencesId);
-					insertPreparedStatement.setLong(3, resultSet.getLong(1));
+					insertPreparedStatement.setLong(
+						3, resultSet.getLong("portletPreferenceValueId"));
 
 					insertPreparedStatement.addBatch();
 				}
@@ -254,7 +302,5 @@ public abstract class UpgradePortletSettings extends UpgradeProcess {
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		UpgradePortletSettings.class);
-
-	private final SettingsLocatorHelper _settingsLocatorHelper;
 
 }

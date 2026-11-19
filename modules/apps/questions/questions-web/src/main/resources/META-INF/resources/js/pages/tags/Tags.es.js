@@ -6,14 +6,15 @@
 import {ClayButtonWithIcon} from '@clayui/button';
 import ClayEmptyState from '@clayui/empty-state';
 import {ClayInput, ClaySelect} from '@clayui/form';
+import ClayIcon from '@clayui/icon';
 import ClayLoadingIndicator from '@clayui/loading-indicator';
 import React from 'react';
-import {withRouter} from 'react-router-dom';
 
 import Alert from '../../components/Alert.es';
 import PaginatedList from '../../components/PaginatedList.es';
 import TagsLayout from '../../components/TagsLayout.es';
 import useTags from '../../hooks/useTags.es';
+import {withRouter} from '../../hooks/withRouter.es';
 
 export default withRouter(({history, location}) => {
 	const {
@@ -146,10 +147,16 @@ export default withRouter(({history, location}) => {
 								aria-label={Liferay.Language.get(
 									'there-are-no-results'
 								)}
-								className="empty-state-icon"
 								description={Liferay.Language.get(
 									'sorry,-no-results-were-found'
 								)}
+								image={
+									<ClayIcon
+										className="c-empty-state-icon c-empty-state-icon-empty-state"
+										illustration
+										symbol="empty-state"
+									/>
+								}
 								title={Liferay.Language.get(
 									'there-are-no-results'
 								)}

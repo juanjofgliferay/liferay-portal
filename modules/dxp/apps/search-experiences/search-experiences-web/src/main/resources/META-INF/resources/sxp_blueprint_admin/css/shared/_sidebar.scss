@@ -34,7 +34,6 @@
 		}
 
 		button {
-			color: $secondary;
 			margin-left: 8px;
 		}
 
@@ -68,13 +67,12 @@
 .clause-contributors-sidebar,
 .info-sidebar,
 .preview-sidebar {
-	background-color: $white;
 	display: flex;
 	flex-direction: column;
 	height: calc(
 		100% - var(--control-menu-container-height) - #{$navigationBarHeight}
 	);
-	margin-top: $navigationBarHeight;
+	margin-top: -$tabsNavigationBarHeight;
 	position: fixed;
 	right: 0;
 	transform: translateX(100%);

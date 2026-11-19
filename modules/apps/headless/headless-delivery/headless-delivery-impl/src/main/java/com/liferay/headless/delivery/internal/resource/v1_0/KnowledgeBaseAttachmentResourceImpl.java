@@ -5,7 +5,6 @@
 
 package com.liferay.headless.delivery.internal.resource.v1_0;
 
-import com.liferay.document.library.util.DLURLHelper;
 import com.liferay.headless.delivery.dto.v1_0.KnowledgeBaseAttachment;
 import com.liferay.headless.delivery.dto.v1_0.util.ContentValueUtil;
 import com.liferay.headless.delivery.resource.v1_0.KnowledgeBaseAttachmentResource;
@@ -15,15 +14,17 @@ import com.liferay.knowledge.base.model.KBArticle;
 import com.liferay.knowledge.base.service.KBArticleService;
 import com.liferay.portal.kernel.portletfilerepository.PortletFileRepository;
 import com.liferay.portal.kernel.repository.model.FileEntry;
+import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
+import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.vulcan.multipart.BinaryFile;
 import com.liferay.portal.vulcan.multipart.MultipartBody;
 import com.liferay.portal.vulcan.pagination.Page;
 
-import java.util.Map;
+import jakarta.ws.rs.BadRequestException;
 
-import javax.ws.rs.BadRequestException;
+import java.util.Map;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -44,8 +45,7 @@ public class KnowledgeBaseAttachmentResourceImpl
 	public void deleteKnowledgeBaseAttachment(Long knowledgeBaseAttachmentId)
 		throws Exception {
 
-		_portletFileRepository.deletePortletFileEntry(
-			knowledgeBaseAttachmentId);
+		_kbArticleService.deleteKBArticleAttachment(knowledgeBaseAttachmentId);
 	}
 
 	@Override
@@ -63,8 +63,7 @@ public class KnowledgeBaseAttachmentResourceImpl
 			kbArticle.getAttachmentsFileEntryByExternalReferenceCode(
 				externalReferenceCode);
 
-		_portletFileRepository.deletePortletFileEntry(
-			fileEntry.getFileEntryId());
+		_kbArticleService.deleteKBArticleAttachment(fileEntry.getFileEntryId());
 	}
 
 	@Override
@@ -80,10 +79,9 @@ public class KnowledgeBaseAttachmentResourceImpl
 			HashMapBuilder.<String, Map<String, String>>put(
 				"createBatch",
 				addAction(
-					KBActionKeys.ADD_KB_ARTICLE, kbArticle.getResourcePrimKey(),
+					KBActionKeys.UPDATE, kbArticle.getResourcePrimKey(),
 					"postKnowledgeBaseArticleKnowledgeBaseAttachmentBatch",
-					kbArticle.getUserId(), KBConstants.RESOURCE_NAME_ADMIN,
-					kbArticle.getGroupId())
+					_kbArticleModelResourcePermission)
 			).build(),
 			transform(
 				kbArticle.getAttachmentsFileEntries(),
@@ -96,7 +94,7 @@ public class KnowledgeBaseAttachmentResourceImpl
 		throws Exception {
 
 		return _toKnowledgeBaseAttachment(
-			_portletFileRepository.getPortletFileEntry(
+			_kbArticleService.getKBArticleAttachment(
 				knowledgeBaseAttachmentId));
 	}
 
@@ -131,6 +129,10 @@ public class KnowledgeBaseAttachmentResourceImpl
 		KBArticle kbArticle = _kbArticleService.getLatestKBArticle(
 			knowledgeBaseArticleId, WorkflowConstants.STATUS_APPROVED);
 
+		_kbArticleModelResourcePermission.check(
+			PermissionThreadLocal.getPermissionChecker(), kbArticle,
+			KBActionKeys.UPDATE);
+
 		return _toKnowledgeBaseAttachment(
 			_portletFileRepository.addPortletFileEntry(
 				_getKnowledgeBaseAttachmentExternalReferenceCode(multipartBody),
@@ -162,23 +164,28 @@ public class KnowledgeBaseAttachmentResourceImpl
 
 		return new KnowledgeBaseAttachment() {
 			{
-				contentUrl = _portletFileRepository.getPortletFileEntryURL(
-					null, fileEntry, null);
-				contentValue = ContentValueUtil.toContentValue(
-					"contentValue", fileEntry::getContentStream,
-					contextUriInfo);
-				encodingFormat = fileEntry.getMimeType();
-				externalReferenceCode = fileEntry.getExternalReferenceCode();
-				fileExtension = fileEntry.getExtension();
-				id = fileEntry.getFileEntryId();
-				sizeInBytes = fileEntry.getSize();
-				title = fileEntry.getTitle();
+				setContentUrl(
+					() -> _portletFileRepository.getPortletFileEntryURL(
+						null, fileEntry, null));
+				setContentValue(
+					() -> ContentValueUtil.toContentValue(
+						"contentValue", fileEntry::getContentStream,
+						contextUriInfo));
+				setEncodingFormat(fileEntry::getMimeType);
+				setExternalReferenceCode(fileEntry::getExternalReferenceCode);
+				setFileExtension(fileEntry::getExtension);
+				setId(fileEntry::getFileEntryId);
+				setSizeInBytes(fileEntry::getSize);
+				setTitle(fileEntry::getTitle);
 			}
 		};
 	}
 
-	@Reference
-	private DLURLHelper _dlURLHelper;
+	@Reference(
+		target = "(model.class.name=com.liferay.knowledge.base.model.KBArticle)"
+	)
+	private ModelResourcePermission<KBArticle>
+		_kbArticleModelResourcePermission;
 
 	@Reference
 	private KBArticleService _kbArticleService;

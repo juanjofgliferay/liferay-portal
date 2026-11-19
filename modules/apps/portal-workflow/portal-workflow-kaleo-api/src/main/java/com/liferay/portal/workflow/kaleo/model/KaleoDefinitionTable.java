@@ -30,6 +30,12 @@ public class KaleoDefinitionTable extends BaseTable<KaleoDefinitionTable> {
 	public final Column<KaleoDefinitionTable, Long> ctCollectionId =
 		createColumn(
 			"ctCollectionId", Long.class, Types.BIGINT, Column.FLAG_PRIMARY);
+	public final Column<KaleoDefinitionTable, String> uuid = createColumn(
+		"uuid_", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
+	public final Column<KaleoDefinitionTable, String> externalReferenceCode =
+		createColumn(
+			"externalReferenceCode", String.class, Types.VARCHAR,
+			Column.FLAG_DEFAULT);
 	public final Column<KaleoDefinitionTable, Long> kaleoDefinitionId =
 		createColumn(
 			"kaleoDefinitionId", Long.class, Types.BIGINT, Column.FLAG_PRIMARY);
@@ -47,8 +53,8 @@ public class KaleoDefinitionTable extends BaseTable<KaleoDefinitionTable> {
 		"modifiedDate", Date.class, Types.TIMESTAMP, Column.FLAG_DEFAULT);
 	public final Column<KaleoDefinitionTable, String> name = createColumn(
 		"name", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
-	public final Column<KaleoDefinitionTable, String> title = createColumn(
-		"title", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
+	public final Column<KaleoDefinitionTable, Clob> title = createColumn(
+		"title", Clob.class, Types.CLOB, Column.FLAG_DEFAULT);
 	public final Column<KaleoDefinitionTable, String> description =
 		createColumn(
 			"description", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
@@ -60,9 +66,14 @@ public class KaleoDefinitionTable extends BaseTable<KaleoDefinitionTable> {
 		"version", Integer.class, Types.INTEGER, Column.FLAG_DEFAULT);
 	public final Column<KaleoDefinitionTable, Boolean> active = createColumn(
 		"active_", Boolean.class, Types.BOOLEAN, Column.FLAG_DEFAULT);
+	public final Column<KaleoDefinitionTable, Boolean> system = createColumn(
+		"system_", Boolean.class, Types.BOOLEAN, Column.FLAG_DEFAULT);
+	public final Column<KaleoDefinitionTable, Integer> status = createColumn(
+		"status", Integer.class, Types.INTEGER, Column.FLAG_DEFAULT);
 
 	private KaleoDefinitionTable() {
 		super("KaleoDefinition", KaleoDefinitionTable::new);
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:942797876

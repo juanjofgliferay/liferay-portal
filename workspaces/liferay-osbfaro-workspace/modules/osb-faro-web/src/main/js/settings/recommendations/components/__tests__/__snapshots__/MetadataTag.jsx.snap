@@ -1,0 +1,15 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`MetadataTag should render 1`] = `
+<div>
+  <span
+    class="label metadata-tag-root label-lg label-inverse-secondary"
+  >
+    <span
+      class="label-item label-item-expand"
+    >
+      og:url
+    </span>
+  </span>
+</div>
+`;

@@ -13,6 +13,7 @@ import com.liferay.change.tracking.service.CTCollectionLocalService;
 import com.liferay.change.tracking.service.CTEntryLocalService;
 import com.liferay.change.tracking.spi.exception.CTEventException;
 import com.liferay.change.tracking.spi.listener.CTEventListener;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.portal.kernel.change.tracking.CTCollectionThreadLocal;
 import com.liferay.portal.kernel.log.Log;
@@ -23,7 +24,7 @@ import com.liferay.portal.kernel.search.Indexer;
 import com.liferay.portal.kernel.search.IndexerRegistry;
 import com.liferay.portal.kernel.search.SearchException;
 import com.liferay.portal.kernel.service.change.tracking.CTService;
-import com.liferay.portal.kernel.transaction.TransactionCommitCallbackUtil;
+import com.liferay.portal.kernel.transaction.TransactionCallbackUtil;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.search.model.uid.UIDFactory;
 
@@ -52,7 +53,7 @@ public class CTSearchEventListener implements CTEventListener {
 	public void onAfterCopy(
 		long sourceCTCollectionId, long targetCTCollectionId) {
 
-		TransactionCommitCallbackUtil.registerCallback(
+		TransactionCallbackUtil.registerCommitCallback(
 			() -> {
 				try (SafeCloseable safeCloseable =
 						CTCollectionThreadLocal.
@@ -80,7 +81,7 @@ public class CTSearchEventListener implements CTEventListener {
 			return;
 		}
 
-		TransactionCommitCallbackUtil.registerCallback(
+		TransactionCallbackUtil.registerCommitCallback(
 			() -> {
 				try (SafeCloseable safeCloseable =
 						CTCollectionThreadLocal.
@@ -100,22 +101,20 @@ public class CTSearchEventListener implements CTEventListener {
 
 						List<CTEntry> ctEntries = ctEntryEntry.getValue();
 
-						List<String> uids = new ArrayList<>(ctEntries.size());
-
-						for (CTEntry ctEntry : ctEntries) {
-							uids.add(
-								_uidFactory.getUID(
-									indexer.getClassName(),
-									ctEntry.getModelClassPK(),
-									CTConstants.CT_COLLECTION_ID_PRODUCTION));
-						}
+						List<String> uids = TransformUtil.transform(
+							ctEntries,
+							ctEntry -> _uidFactory.getUID(
+								indexer.getClassName(),
+								ctEntry.getModelClassPK(),
+								CTConstants.CT_COLLECTION_ID_PRODUCTION));
 
 						_indexWriterHelper.deleteDocuments(
 							ctCollection.getCompanyId(), uids,
 							indexer.isCommitImmediately());
 
-						_reindex(
-							ctEntryEntry.getKey(), ctEntryEntry.getValue());
+						_reindex(ctEntryEntry.getKey(), ctEntries);
+
+						_ctEntryIndexer.reindex(ctEntries);
 					}
 				}
 
@@ -146,20 +145,19 @@ public class CTSearchEventListener implements CTEventListener {
 				continue;
 			}
 
-			List<CTEntry> ctEntries = ctEntryEntry.getValue();
+			List<String> uids = TransformUtil.transform(
+				ctEntryEntry.getValue(),
+				ctEntry -> {
+					if (ctEntry.getChangeType() ==
+							CTConstants.CT_CHANGE_TYPE_DELETION) {
 
-			List<String> uids = new ArrayList<>(ctEntries.size());
+						return null;
+					}
 
-			for (CTEntry ctEntry : ctEntries) {
-				if (ctEntry.getChangeType() !=
-						CTConstants.CT_CHANGE_TYPE_DELETION) {
-
-					uids.add(
-						_uidFactory.getUID(
-							indexer.getClassName(), ctEntry.getModelClassPK(),
-							ctEntry.getCtCollectionId()));
-				}
-			}
+					return _uidFactory.getUID(
+						indexer.getClassName(), ctEntry.getModelClassPK(),
+						ctEntry.getCtCollectionId());
+				});
 
 			try {
 				_indexWriterHelper.deleteDocuments(
@@ -199,7 +197,7 @@ public class CTSearchEventListener implements CTEventListener {
 			if (entry == null) {
 				if (_log.isWarnEnabled()) {
 					_log.warn(
-						"No CTService found for classNameId " +
+						"No CT service found for class name ID " +
 							ctEntry.getModelClassNameId());
 				}
 			}
@@ -227,11 +225,13 @@ public class CTSearchEventListener implements CTEventListener {
 		Set<Serializable> primaryKeys = new HashSet<>();
 
 		for (CTEntry ctEntry : ctEntries) {
-			if (ctEntry.getChangeType() !=
+			if (ctEntry.getChangeType() ==
 					CTConstants.CT_CHANGE_TYPE_DELETION) {
 
-				primaryKeys.add(ctEntry.getModelClassPK());
+				continue;
 			}
+
+			primaryKeys.add(ctEntry.getModelClassPK());
 		}
 
 		if (primaryKeys.isEmpty()) {
@@ -255,6 +255,11 @@ public class CTSearchEventListener implements CTEventListener {
 	@Reference
 	private CTCollectionLocalService _ctCollectionLocalService;
 
+	@Reference(
+		target = "(indexer.class.name=com.liferay.change.tracking.model.CTEntry)"
+	)
+	private Indexer<CTEntry> _ctEntryIndexer;
+
 	@Reference
 	private CTEntryLocalService _ctEntryLocalService;
 
@@ -262,10 +267,10 @@ public class CTSearchEventListener implements CTEventListener {
 	private CTServiceRegistry _ctServiceRegistry;
 
 	@Reference
-	private IndexerRegistry _indexerRegistry;
+	private IndexWriterHelper _indexWriterHelper;
 
 	@Reference
-	private IndexWriterHelper _indexWriterHelper;
+	private IndexerRegistry _indexerRegistry;
 
 	@Reference
 	private UIDFactory _uidFactory;

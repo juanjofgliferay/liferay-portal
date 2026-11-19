@@ -10,6 +10,7 @@ import com.liferay.portal.background.task.model.BackgroundTask;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.InputStream;
@@ -96,6 +97,15 @@ public class BackgroundTaskLocalServiceUtil {
 			userId, backgroundTaskId, fileName, inputStream);
 	}
 
+	public static void addBackgroundTaskAttachment(
+			long userId, long backgroundTaskId, String sourceFileName,
+			String title, java.io.File file)
+		throws PortalException {
+
+		getService().addBackgroundTaskAttachment(
+			userId, backgroundTaskId, sourceFileName, title, file);
+	}
+
 	public static BackgroundTask amendBackgroundTask(
 		long backgroundTaskId, Map<String, Serializable> taskContextMap,
 		int status,
@@ -107,12 +117,12 @@ public class BackgroundTaskLocalServiceUtil {
 
 	public static BackgroundTask amendBackgroundTask(
 		long backgroundTaskId, Map<String, Serializable> taskContextMap,
-		int status, String statusMessage,
+		String errorStackTrace, int status, String statusMessage,
 		com.liferay.portal.kernel.service.ServiceContext serviceContext) {
 
 		return getService().amendBackgroundTask(
-			backgroundTaskId, taskContextMap, status, statusMessage,
-			serviceContext);
+			backgroundTaskId, taskContextMap, errorStackTrace, status,
+			statusMessage, serviceContext);
 	}
 
 	public static void cleanUpBackgroundTask(
@@ -633,13 +643,13 @@ public class BackgroundTaskLocalServiceUtil {
 	}
 
 	public static BackgroundTaskLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(BackgroundTaskLocalService service) {
-		_service = service;
-	}
-
-	private static volatile BackgroundTaskLocalService _service;
+	private static final Snapshot<BackgroundTaskLocalService> _serviceSnapshot =
+		new Snapshot<>(
+			BackgroundTaskLocalServiceUtil.class,
+			BackgroundTaskLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:388018999

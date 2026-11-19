@@ -6,19 +6,24 @@
 package com.liferay.users.admin.web.internal.display.context;
 
 import com.liferay.frontend.taglib.clay.servlet.taglib.display.context.ManagementToolbarDisplayContext;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.search.EmptyOnClickRowChecker;
 import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
 import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.service.UserLocalServiceUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.PropsValues;
+import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
-import com.liferay.portal.util.PropsValues;
+import com.liferay.users.admin.constants.UserScreenNavigationEntryConstants;
 import com.liferay.users.admin.constants.UsersAdminPortletKeys;
 import com.liferay.users.admin.management.toolbar.FilterContributor;
 import com.liferay.users.admin.search.UserSearch;
@@ -26,14 +31,14 @@ import com.liferay.users.admin.search.UserSearchTerms;
 import com.liferay.users.admin.web.internal.constants.UsersAdminWebKeys;
 import com.liferay.users.admin.web.internal.util.DisplayStyleUtil;
 
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.LinkedHashMap;
 import java.util.Objects;
-
-import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Drew Brokke
@@ -61,7 +66,10 @@ public class ViewFlatUsersDisplayContextFactory {
 		UserSearchTerms userSearchTerms =
 			(UserSearchTerms)searchContainer.getSearchTerms();
 
-		ManagementToolbarDisplayContext managementToolbarDisplayContext;
+		FilterContributor[] filterContributors = _getFilterContributors(
+			httpServletRequest);
+
+		ManagementToolbarDisplayContext managementToolbarDisplayContext = null;
 
 		if (Objects.equals(
 				UsersAdminPortletKeys.SERVICE_ACCOUNTS,
@@ -69,20 +77,19 @@ public class ViewFlatUsersDisplayContextFactory {
 
 			managementToolbarDisplayContext =
 				new ViewServiceAccountUsersManagementToolbarDisplayContext(
-					liferayPortletRequest, liferayPortletResponse,
-					searchContainer, _isShowDeleteButton(userSearchTerms),
+					filterContributors, liferayPortletRequest,
+					liferayPortletResponse, searchContainer,
+					_isShowDeleteButton(userSearchTerms),
 					_isShowRestoreButton(userSearchTerms));
 		}
 		else {
 			managementToolbarDisplayContext =
 				new ViewFlatUsersManagementToolbarDisplayContext(
-					liferayPortletRequest, liferayPortletResponse,
-					searchContainer, _isShowDeleteButton(userSearchTerms),
+					filterContributors, liferayPortletRequest,
+					liferayPortletResponse, searchContainer,
+					_isShowDeleteButton(userSearchTerms),
 					_isShowRestoreButton(userSearchTerms));
 		}
-
-		FilterContributor[] filterContributors = _getFilterContributors(
-			httpServletRequest);
 
 		if (filterContributors != null) {
 			managementToolbarDisplayContext =
@@ -95,11 +102,12 @@ public class ViewFlatUsersDisplayContextFactory {
 		viewFlatUsersDisplayContext.setManagementToolbarDisplayContext(
 			managementToolbarDisplayContext);
 
+		viewFlatUsersDisplayContext.setScreenNavigationCategoryKey(
+			ParamUtil.getString(
+				httpServletRequest, "screenNavigationCategoryKey",
+				UserScreenNavigationEntryConstants.CATEGORY_KEY_USERS));
 		viewFlatUsersDisplayContext.setSearchContainer(searchContainer);
 		viewFlatUsersDisplayContext.setStatus(userSearchTerms.getStatus());
-		viewFlatUsersDisplayContext.setToolbarItem(
-			ParamUtil.getString(
-				httpServletRequest, "toolbarItem", "view-all-users"));
 		viewFlatUsersDisplayContext.setUsersListView(
 			GetterUtil.getString(
 				httpServletRequest.getAttribute("view.jsp-usersListView")));
@@ -157,16 +165,71 @@ public class ViewFlatUsersDisplayContextFactory {
 		FilterContributor[] filterContributors = _getFilterContributors(
 			httpServletRequest);
 
+		boolean hasActiveFilter = false;
+
 		if (filterContributors != null) {
 			for (FilterContributor filterContributor : filterContributors) {
+				String parameterValue = filterContributor.getCurrentValue(
+					ParamUtil.getString(
+						httpServletRequest, filterContributor.getParameter(),
+						filterContributor.getDefaultValue()));
+
+				if (!Objects.equals(
+						parameterValue, filterContributor.getDefaultValue())) {
+
+					hasActiveFilter = true;
+				}
+
 				params.putAll(
-					filterContributor.getSearchParameters(
-						ParamUtil.getString(
-							httpServletRequest,
-							filterContributor.getParameter(),
-							filterContributor.getDefaultValue())));
+					filterContributor.getSearchParameters(parameterValue));
+
+				if (Validator.isNull(parameterValue)) {
+					continue;
+				}
+
+				portletURL.setParameter(
+					filterContributor.getParameter(), parameterValue);
 			}
 		}
+
+		String selection = ParamUtil.getString(
+			httpServletRequest, "selection", "all");
+
+		if (hasActiveFilter) {
+			selection = "all";
+		}
+		else if (Objects.equals(selection, "selected-account-users")) {
+			long[] accountEntryIds = ParamUtil.getLongValues(
+				httpServletRequest, "accountEntryIds");
+
+			if (accountEntryIds.length > 0) {
+				params.put("accountEntryIds", accountEntryIds);
+
+				portletURL.setParameter(
+					"accountEntryIds",
+					StringUtil.merge(accountEntryIds, StringPool.COMMA));
+			}
+			else {
+				selection = "all";
+			}
+		}
+		else if (Objects.equals(selection, "selected-organization-users")) {
+			long[] organizationIds = ParamUtil.getLongValues(
+				httpServletRequest, "organizationIds");
+
+			if (organizationIds.length > 0) {
+				params.put("usersOrgs", ArrayUtil.toArray(organizationIds));
+
+				portletURL.setParameter(
+					"organizationIds",
+					StringUtil.merge(organizationIds, StringPool.COMMA));
+			}
+			else {
+				selection = "all";
+			}
+		}
+
+		portletURL.setParameter("selection", selection);
 
 		userSearch.setResultsAndTotal(
 			() -> UserLocalServiceUtil.search(

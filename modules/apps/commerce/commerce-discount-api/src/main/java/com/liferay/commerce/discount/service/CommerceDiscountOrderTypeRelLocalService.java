@@ -126,7 +126,8 @@ public interface CommerceDiscountOrderTypeRelLocalService
 			long commerceDiscountOrderTypeRelId)
 		throws PortalException;
 
-	public void deleteCommerceDiscountOrderTypeRels(long commerceDiscountId);
+	public void deleteCommerceDiscountOrderTypeRels(long commerceDiscountId)
+		throws PortalException;
 
 	/**
 	 * @throws PortalException
@@ -210,10 +211,6 @@ public interface CommerceDiscountOrderTypeRelLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public CommerceDiscountOrderTypeRel fetchCommerceDiscountOrderTypeRel(
 		long commerceDiscountOrderTypeRelId);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public CommerceDiscountOrderTypeRel fetchCommerceDiscountOrderTypeRel(
-		long commerceDiscountId, long commerceOrderTypeId);
 
 	/**
 	 * Returns the commerce discount order type rel with the matching UUID and company.
@@ -330,4 +327,9 @@ public interface CommerceDiscountOrderTypeRelLocalService
 	public CommerceDiscountOrderTypeRel updateCommerceDiscountOrderTypeRel(
 		CommerceDiscountOrderTypeRel commerceDiscountOrderTypeRel);
 
+	public CommerceDiscountOrderTypeRel updatePriority(
+			long commerceDiscountOrderTypeRelId, int priority)
+		throws PortalException;
+
 }
+// LIFERAY-SERVICE-BUILDER-HASH:366556832

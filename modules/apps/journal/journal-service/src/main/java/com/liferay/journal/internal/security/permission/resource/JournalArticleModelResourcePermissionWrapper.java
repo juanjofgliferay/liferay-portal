@@ -25,7 +25,7 @@ import com.liferay.portal.kernel.security.permission.resource.PortletResourcePer
 import com.liferay.portal.kernel.security.permission.resource.StagedModelPermissionLogic;
 import com.liferay.portal.kernel.security.permission.resource.WorkflowedModelPermissionLogic;
 import com.liferay.portal.kernel.service.GroupLocalService;
-import com.liferay.portal.util.PropsValues;
+import com.liferay.portal.kernel.util.PropsValues;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -34,7 +34,10 @@ import org.osgi.service.component.annotations.Reference;
  * @author Preston Crary
  */
 @Component(
-	property = "model.class.name=com.liferay.journal.model.JournalArticle",
+	property = {
+		"model.class.name=com.liferay.journal.model.JournalArticle",
+		"permissions.view.dynamic.inheritance.checking=true"
+	},
 	service = ModelResourcePermission.class
 )
 public class JournalArticleModelResourcePermissionWrapper

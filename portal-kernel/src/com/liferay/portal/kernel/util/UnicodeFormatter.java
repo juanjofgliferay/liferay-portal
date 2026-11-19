@@ -5,6 +5,7 @@
 
 package com.liferay.portal.kernel.util;
 
+import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 
@@ -15,19 +16,6 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 public class UnicodeFormatter {
 
 	public static final String UNICODE_PREFIX = "\\u";
-
-	public static String bytesToHex(byte[] bytes) {
-		char[] array = new char[bytes.length * 2];
-
-		for (int i = 0; i < bytes.length; i++) {
-			byte b = bytes[i];
-
-			array[(i * 2) + 0] = _HEX_DIGITS[(b >> 4) & 0x0f];
-			array[(i * 2) + 1] = _HEX_DIGITS[b & 0x0f];
-		}
-
-		return new String(array);
-	}
 
 	public static String byteToHex(byte b) {
 		char[] array = {_HEX_DIGITS[(b >> 4) & 0x0f], _HEX_DIGITS[b & 0x0f]};
@@ -47,16 +35,31 @@ public class UnicodeFormatter {
 		return _byteToHex(b, hexes, _HEX_DIGITS);
 	}
 
-	public static String charToHex(char c) {
-		byte hi = (byte)(c >>> 8);
-		byte lo = (byte)(c & 0xff);
+	public static String bytesToHex(byte[] bytes) {
+		char[] array = new char[bytes.length * 2];
 
-		char[] array = {
-			_HEX_DIGITS[(hi >> 4) & 0x0f], _HEX_DIGITS[hi & 0x0f],
-			_HEX_DIGITS[(lo >> 4) & 0x0f], _HEX_DIGITS[lo & 0x0f]
-		};
+		for (int i = 0; i < bytes.length; i++) {
+			byte b = bytes[i];
+
+			array[(i * 2) + 0] = _HEX_DIGITS[(b >> 4) & 0x0f];
+			array[(i * 2) + 1] = _HEX_DIGITS[b & 0x0f];
+		}
 
 		return new String(array);
+	}
+
+	public static String charToHex(char c) {
+		return charToHex(c, false);
+	}
+
+	public static String charToHex(char c, boolean upperCase) {
+		char[] hexes = new char[4];
+
+		if (upperCase) {
+			return new String(_charToHex(c, hexes, _HEX_DIGITS_UPPER_CASE));
+		}
+
+		return new String(_charToHex(c, hexes, _HEX_DIGITS));
 	}
 
 	public static byte[] hexToBytes(String hexString) {
@@ -120,7 +123,7 @@ public class UnicodeFormatter {
 
 		for (char c : array) {
 			sb.append(UNICODE_PREFIX);
-			sb.append(_charToHex(c, hexes));
+			sb.append(_charToHex(c, hexes, _HEX_DIGITS));
 		}
 
 		return sb.toString();
@@ -137,7 +140,7 @@ public class UnicodeFormatter {
 
 		for (int i = 0; i < s.length(); i++) {
 			sb.append(UNICODE_PREFIX);
-			sb.append(_charToHex(s.charAt(i), hexes));
+			sb.append(_charToHex(s.charAt(i), hexes, _HEX_DIGITS));
 		}
 
 		return sb.toString();
@@ -150,14 +153,14 @@ public class UnicodeFormatter {
 		return hexes;
 	}
 
-	private static char[] _charToHex(char c, char[] hexes) {
+	private static char[] _charToHex(char c, char[] hexes, char[] table) {
 		byte hi = (byte)(c >>> 8);
 		byte lo = (byte)(c & 0xff);
 
-		hexes[0] = _HEX_DIGITS[(hi >> 4) & 0x0f];
-		hexes[1] = _HEX_DIGITS[hi & 0x0f];
-		hexes[2] = _HEX_DIGITS[(lo >> 4) & 0x0f];
-		hexes[3] = _HEX_DIGITS[lo & 0x0f];
+		hexes[0] = table[(hi >> 4) & 0x0f];
+		hexes[1] = table[hi & 0x0f];
+		hexes[2] = table[(lo >> 4) & 0x0f];
+		hexes[3] = table[lo & 0x0f];
 
 		return hexes;
 	}

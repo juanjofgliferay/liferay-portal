@@ -6,11 +6,12 @@
 package com.liferay.analytics.batch.exportimport.internal.engine;
 
 import com.liferay.analytics.batch.exportimport.internal.dto.v1_0.converter.constants.DTOConverterConstants;
+import com.liferay.analytics.batch.exportimport.internal.engine.util.DTOConverterUtil;
 import com.liferay.analytics.dxp.entity.rest.dto.v1_0.DXPEntity;
+import com.liferay.analytics.settings.rest.manager.AnalyticsSettingsManager;
 import com.liferay.batch.engine.BatchEngineTaskItemDelegate;
 import com.liferay.batch.engine.pagination.Page;
 import com.liferay.batch.engine.pagination.Pagination;
-import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.sql.dsl.DSLQueryFactoryUtil;
 import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.model.BaseModel;
@@ -23,34 +24,45 @@ import com.liferay.portal.vulcan.dto.converter.DTOConverter;
 
 import java.io.Serializable;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.component.annotations.ServiceScope;
 
 /**
  * @author Marcos Martins
  */
 @Component(
 	property = "batch.engine.task.item.delegate.name=user-group-analytics-dxp-entities",
-	service = BatchEngineTaskItemDelegate.class
+	scope = ServiceScope.PROTOTYPE, service = BatchEngineTaskItemDelegate.class
 )
 public class UserGroupAnalyticsDXPEntityBatchEngineTaskItemDelegate
 	extends BaseAnalyticsDXPEntityBatchEngineTaskItemDelegate<DXPEntity> {
 
 	@Override
-	public Page<DXPEntity> read(
+	protected Page<DXPEntity> doRead(
 			Filter filter, Pagination pagination, Sort[] sorts,
 			Map<String, Serializable> parameters, String search)
 		throws Exception {
 
+		if (!_analyticsSettingsManager.syncedContactSettingsEnabled(
+				contextCompany.getCompanyId())) {
+
+			return Page.of(
+				Collections.emptyList(),
+				Pagination.of(pagination.getPage(), pagination.getPageSize()),
+				0);
+		}
+
 		return Page.of(
-			TransformUtil.transform(
+			DTOConverterUtil.toDTOs(
 				_userGroupLocalService.<List<UserGroup>>dslQuery(
 					_createSelectDSLQuery(
 						contextCompany.getCompanyId(), pagination, parameters)),
-				userGroup -> _dxpEntityDTOConverter.toDTO(userGroup)),
+				_dxpEntityDTOConverter),
 			Pagination.of(pagination.getPage(), pagination.getPageSize()),
 			_userGroupLocalService.dslQuery(
 				_createCountDSLQuery(
@@ -82,6 +94,9 @@ public class UserGroupAnalyticsDXPEntityBatchEngineTaskItemDelegate
 			pagination.getPage() * pagination.getPageSize()
 		);
 	}
+
+	@Reference
+	private AnalyticsSettingsManager _analyticsSettingsManager;
 
 	@Reference(target = DTOConverterConstants.DXP_ENTITY_DTO_CONVERTER)
 	private DTOConverter<BaseModel<?>, DXPEntity> _dxpEntityDTOConverter;

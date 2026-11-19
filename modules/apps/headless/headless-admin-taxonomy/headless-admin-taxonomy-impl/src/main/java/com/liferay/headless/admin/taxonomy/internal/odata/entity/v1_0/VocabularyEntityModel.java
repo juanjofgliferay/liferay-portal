@@ -8,9 +8,12 @@ package com.liferay.headless.admin.taxonomy.internal.odata.entity.v1_0;
 import com.liferay.headless.common.spi.odata.entity.EntityFieldsMapFactory;
 import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.odata.entity.CollectionEntityField;
 import com.liferay.portal.odata.entity.DateTimeEntityField;
 import com.liferay.portal.odata.entity.EntityField;
 import com.liferay.portal.odata.entity.EntityModel;
+import com.liferay.portal.odata.entity.IdEntityField;
+import com.liferay.portal.odata.entity.IntegerEntityField;
 import com.liferay.portal.odata.entity.StringEntityField;
 
 import java.util.Map;
@@ -22,6 +25,8 @@ public class VocabularyEntityModel implements EntityModel {
 
 	public VocabularyEntityModel() {
 		_entityFieldsMap = EntityFieldsMapFactory.create(
+			new CollectionEntityField(
+				new IntegerEntityField("assetLibraries", locale -> "groupIds")),
 			new DateTimeEntityField(
 				"dateCreated",
 				locale -> Field.getSortableFieldName(Field.CREATE_DATE),
@@ -30,6 +35,16 @@ public class VocabularyEntityModel implements EntityModel {
 				"dateModified",
 				locale -> Field.getSortableFieldName(Field.MODIFIED_DATE),
 				locale -> Field.MODIFIED_DATE),
+			new IdEntityField(
+				"assetTypes", locale -> "classNameIds", String::valueOf),
+			new IntegerEntityField(
+				"numberOfTaxonomyCategories",
+				locale -> Field.getSortableFieldName("categoriesCount")),
+			new IntegerEntityField("siteId", locale -> Field.GROUP_ID),
+			new IntegerEntityField(
+				"visibilityType", locale -> Field.VISIBILITY_TYPE),
+			new StringEntityField(
+				"externalReferenceCode", locale -> "externalReferenceCode"),
 			new StringEntityField(
 				"name",
 				locale -> Field.getSortableFieldName(

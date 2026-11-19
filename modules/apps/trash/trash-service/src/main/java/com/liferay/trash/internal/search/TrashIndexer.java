@@ -5,6 +5,7 @@
 
 package com.liferay.trash.internal.search;
 
+import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.search.BaseIndexer;
 import com.liferay.portal.kernel.search.BooleanClauseOccur;
 import com.liferay.portal.kernel.search.BooleanQuery;
@@ -18,19 +19,23 @@ import com.liferay.portal.kernel.search.filter.BooleanFilter;
 import com.liferay.portal.kernel.search.filter.Filter;
 import com.liferay.portal.kernel.search.filter.TermsFilter;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
+import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.trash.TrashHandler;
 import com.liferay.portal.kernel.trash.TrashHandlerRegistryUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
+import com.liferay.portal.kernel.util.Localization;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.trash.model.TrashEntry;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+
 import java.util.List;
 import java.util.Locale;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
+import java.util.Objects;
 
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Julio Camarero
@@ -71,10 +76,11 @@ public class TrashIndexer extends BaseIndexer<TrashEntry> {
 			for (TrashHandler trashHandler : trashHandlers) {
 				Filter filter = trashHandler.getExcludeFilter(searchContext);
 
-				if (filter != null) {
-					fullQueryBooleanFilter.add(
-						filter, BooleanClauseOccur.MUST_NOT);
+				if (filter == null) {
+					continue;
 				}
+
+				fullQueryBooleanFilter.add(filter, BooleanClauseOccur.MUST_NOT);
 			}
 
 			long[] groupIds = searchContext.getGroupIds();
@@ -99,6 +105,11 @@ public class TrashIndexer extends BaseIndexer<TrashEntry> {
 		catch (Exception exception) {
 			throw new SearchException(exception);
 		}
+	}
+
+	@Override
+	public long getReindexEntryCount(long companyId) {
+		return 0;
 	}
 
 	@Override
@@ -132,6 +143,37 @@ public class TrashIndexer extends BaseIndexer<TrashEntry> {
 		addSearchLocalizedTerm(searchQuery, searchContext, Field.TITLE, true);
 		addSearchTerm(searchQuery, searchContext, Field.TYPE, false);
 		addSearchTerm(searchQuery, searchContext, Field.USER_NAME, true);
+
+		Group group = null;
+
+		long[] groupIds = searchContext.getGroupIds();
+
+		if ((groupIds != null) && (groupIds.length > 0)) {
+			group = _groupLocalService.fetchGroup(groupIds[0]);
+		}
+
+		if ((group == null) ||
+			Objects.equals(
+				group.getDefaultLanguageId(), searchContext.getLanguageId())) {
+
+			return;
+		}
+
+		addSearchTerm(
+			searchQuery, searchContext,
+			_localization.getLocalizedName(
+				Field.DESCRIPTION, group.getDefaultLanguageId()),
+			true);
+		addSearchTerm(
+			searchQuery, searchContext,
+			_localization.getLocalizedName(
+				Field.CONTENT, group.getDefaultLanguageId()),
+			true);
+		addSearchTerm(
+			searchQuery, searchContext,
+			_localization.getLocalizedName(
+				Field.TITLE, group.getDefaultLanguageId()),
+			true);
 	}
 
 	@Override
@@ -156,11 +198,17 @@ public class TrashIndexer extends BaseIndexer<TrashEntry> {
 	}
 
 	@Override
-	protected void doReindex(String[] ids) {
+	protected void doReindex(TrashEntry trashEntry) {
 	}
 
 	@Override
-	protected void doReindex(TrashEntry trashEntry) {
+	protected void doReindexCompany(long companyId) {
 	}
+
+	@Reference
+	private GroupLocalService _groupLocalService;
+
+	@Reference
+	private Localization _localization;
 
 }

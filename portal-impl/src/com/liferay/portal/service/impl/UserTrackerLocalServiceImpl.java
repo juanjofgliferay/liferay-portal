@@ -10,8 +10,8 @@ import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.UserTracker;
 import com.liferay.portal.kernel.model.UserTrackerPath;
 import com.liferay.portal.kernel.service.persistence.UserTrackerPathPersistence;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.service.base.UserTrackerLocalServiceBaseImpl;
-import com.liferay.portal.util.PropsValues;
 
 import java.util.Date;
 import java.util.List;
@@ -83,13 +83,6 @@ public class UserTrackerLocalServiceImpl
 		// User tracker
 
 		return userTrackerPersistence.remove(userTracker);
-	}
-
-	@Override
-	public List<UserTracker> getUserTrackers(
-		long companyId, int start, int end) {
-
-		return userTrackerPersistence.findByCompanyId(companyId, start, end);
 	}
 
 	@BeanReference(type = UserTrackerPathPersistence.class)

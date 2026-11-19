@@ -15,10 +15,10 @@ import com.liferay.portal.kernel.search.SearchContext;
 import com.liferay.portal.kernel.search.Summary;
 import com.liferay.portal.kernel.search.filter.BooleanFilter;
 
-import java.util.Locale;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
 
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
+import java.util.Locale;
 
 import org.osgi.service.component.annotations.Component;
 
@@ -39,6 +39,11 @@ public class AssetEntryIndexer extends BaseIndexer<AssetEntry> {
 	@Override
 	public String getClassName() {
 		return CLASS_NAME;
+	}
+
+	@Override
+	public long getReindexEntryCount(long companyId) {
+		return 0;
 	}
 
 	@Override
@@ -82,7 +87,7 @@ public class AssetEntryIndexer extends BaseIndexer<AssetEntry> {
 	}
 
 	@Override
-	protected void doReindex(String[] ids) {
+	protected void doReindexCompany(long companyId) {
 	}
 
 }

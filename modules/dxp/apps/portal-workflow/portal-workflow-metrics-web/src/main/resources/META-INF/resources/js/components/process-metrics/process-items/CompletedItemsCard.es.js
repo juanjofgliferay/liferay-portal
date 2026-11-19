@@ -7,7 +7,11 @@ import React from 'react';
 
 import {useFilter} from '../../../shared/hooks/useFilter.es';
 import TimeRangeFilter from '../../filter/TimeRangeFilter.es';
-import {getTimeRangeParams} from '../../filter/util/timeRangeUtil.es';
+import {
+	getDefaultEndDate,
+	getDefaultStartDate,
+	getTimeRangeParams,
+} from '../../filter/util/timeRangeUtil.es';
 import ProcessItemsCard from './ProcessItemsCard.es';
 
 const CompletedItemsCard = ({routeParams}) => {
@@ -25,8 +29,8 @@ const CompletedItemsCard = ({routeParams}) => {
 	} = useFilter({filterKeys, prefixKeys});
 
 	const timeRange = getTimeRangeParams(
-		completionDateStart,
-		completionDateEnd
+		completionDateStart ?? getDefaultStartDate(),
+		completionDateEnd ?? getDefaultEndDate()
 	);
 
 	return (

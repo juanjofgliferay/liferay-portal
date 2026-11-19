@@ -12,6 +12,8 @@ import com.liferay.account.model.AccountGroup;
 import com.liferay.account.model.AccountGroupRel;
 import com.liferay.account.service.base.AccountGroupLocalServiceBaseImpl;
 import com.liferay.account.service.persistence.AccountGroupRelPersistence;
+import com.liferay.exportimport.kernel.empty.model.EmptyModelManager;
+import com.liferay.exportimport.kernel.empty.model.EmptyModelManagerUtil;
 import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.StringPool;
@@ -40,13 +42,12 @@ import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
-import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Objects;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -64,8 +65,8 @@ public class AccountGroupLocalServiceImpl
 	@Indexable(type = IndexableType.REINDEX)
 	@Override
 	public AccountGroup addAccountGroup(
-			long userId, String description, String name,
-			ServiceContext serviceContext)
+			String externalReferenceCode, long userId, String description,
+			String name, ServiceContext serviceContext)
 		throws PortalException {
 
 		_validateName(name);
@@ -77,6 +78,7 @@ public class AccountGroupLocalServiceImpl
 
 		User user = _userLocalService.getUser(userId);
 
+		accountGroup.setExternalReferenceCode(externalReferenceCode);
 		accountGroup.setCompanyId(user.getCompanyId());
 		accountGroup.setUserId(user.getUserId());
 		accountGroup.setUserName(user.getFullName());
@@ -85,6 +87,14 @@ public class AccountGroupLocalServiceImpl
 		accountGroup.setDescription(description);
 		accountGroup.setName(name);
 		accountGroup.setType(AccountConstants.ACCOUNT_GROUP_TYPE_STATIC);
+
+		if (_emptyModelManager.isEmptyModel()) {
+			accountGroup.setStatus(WorkflowConstants.STATUS_EMPTY);
+		}
+		else {
+			accountGroup.setStatus(WorkflowConstants.STATUS_APPROVED);
+		}
+
 		accountGroup.setExpandoBridgeAttributes(serviceContext);
 
 		accountGroup = accountGroupPersistence.update(accountGroup);
@@ -158,8 +168,8 @@ public class AccountGroupLocalServiceImpl
 	public AccountGroup deleteAccountGroup(long accountGroupId)
 		throws PortalException {
 
-		return deleteAccountGroup(
-			accountGroupLocalService.getAccountGroup(accountGroupId));
+		return accountGroupLocalService.deleteAccountGroup(
+			accountGroupPersistence.findByPrimaryKey(accountGroupId));
 	}
 
 	@Override
@@ -177,30 +187,6 @@ public class AccountGroupLocalServiceImpl
 		return ArrayUtil.sortedUnique(
 			TransformUtil.transformToLongArray(
 				accountGroupRels, AccountGroupRel::getAccountGroupId));
-	}
-
-	@Override
-	public List<AccountGroup> getAccountGroups(
-		long companyId, int start, int end,
-		OrderByComparator<AccountGroup> orderByComparator) {
-
-		return accountGroupPersistence.findByCompanyId(
-			companyId, start, end, orderByComparator);
-	}
-
-	@Override
-	public List<AccountGroup> getAccountGroups(
-		long companyId, String name, int start, int end,
-		OrderByComparator<AccountGroup> orderByComparator) {
-
-		if (Validator.isNull(name)) {
-			return accountGroupPersistence.findByCompanyId(
-				companyId, start, end, orderByComparator);
-		}
-
-		return accountGroupPersistence.findByC_LikeN(
-			companyId, StringUtil.quote(name, StringPool.PERCENT), start, end,
-			orderByComparator);
 	}
 
 	@Override
@@ -230,21 +216,6 @@ public class AccountGroupLocalServiceImpl
 	}
 
 	@Override
-	public int getAccountGroupsCount(long companyId) {
-		return accountGroupPersistence.countByCompanyId(companyId);
-	}
-
-	@Override
-	public long getAccountGroupsCount(long companyId, String name) {
-		if (Validator.isNull(name)) {
-			return accountGroupPersistence.countByCompanyId(companyId);
-		}
-
-		return accountGroupPersistence.countByC_LikeN(
-			companyId, StringUtil.quote(name, StringPool.PERCENT));
-	}
-
-	@Override
 	public int getAccountGroupsCountByAccountEntryId(long accountEntryId) {
 		return _accountGroupRelPersistence.countByC_C(
 			_classNameLocalService.getClassNameId(AccountEntry.class.getName()),
@@ -252,8 +223,28 @@ public class AccountGroupLocalServiceImpl
 	}
 
 	@Override
-	public AccountGroup getDefaultAccountGroup(long companyId) {
-		return accountGroupPersistence.fetchByC_D_First(companyId, true, null);
+	public AccountGroup getDefaultAccountGroup(long companyId)
+		throws PortalException {
+
+		return accountGroupPersistence.findByC_D_First(companyId, true, null);
+	}
+
+	@Indexable(type = IndexableType.REINDEX)
+	public AccountGroup getOrAddEmptyAccountGroup(
+			String externalReferenceCode, long companyId, long userId,
+			String name)
+		throws PortalException {
+
+		return _emptyModelManager.getOrAddEmptyModel(
+			AccountGroup.class, companyId,
+			() -> accountGroupLocalService.addAccountGroup(
+				externalReferenceCode, userId, StringPool.BLANK,
+				Validator.isNull(name) ? externalReferenceCode : name,
+				new ServiceContext()),
+			externalReferenceCode,
+			this::fetchAccountGroupByExternalReferenceCode,
+			this::getAccountGroupByExternalReferenceCode,
+			AccountGroup.class.getName());
 	}
 
 	@Override
@@ -313,17 +304,23 @@ public class AccountGroupLocalServiceImpl
 	@Indexable(type = IndexableType.REINDEX)
 	@Override
 	public AccountGroup updateAccountGroup(
-			long accountGroupId, String description, String name,
-			ServiceContext serviceContext)
+			String externalReferenceCode, long accountGroupId,
+			String description, String name, ServiceContext serviceContext)
 		throws PortalException {
 
 		_validateName(name);
 
-		AccountGroup accountGroup = accountGroupPersistence.fetchByPrimaryKey(
+		AccountGroup accountGroup = accountGroupPersistence.findByPrimaryKey(
 			accountGroupId);
 
+		accountGroup.setExternalReferenceCode(externalReferenceCode);
 		accountGroup.setDescription(description);
 		accountGroup.setName(name);
+		accountGroup.setStatus(
+			EmptyModelManagerUtil.solveEmptyModel(
+				externalReferenceCode, accountGroup.getModelClassName(),
+				accountGroup.getCompanyId(), 0, accountGroup.getStatus(),
+				() -> WorkflowConstants.STATUS_APPROVED));
 		accountGroup.setExpandoBridgeAttributes(serviceContext);
 
 		return accountGroupPersistence.update(accountGroup);
@@ -334,13 +331,6 @@ public class AccountGroupLocalServiceImpl
 	public AccountGroup updateExternalReferenceCode(
 			AccountGroup accountGroup, String externalReferenceCode)
 		throws PortalException {
-
-		if (Objects.equals(
-				accountGroup.getExternalReferenceCode(),
-				externalReferenceCode)) {
-
-			return accountGroup;
-		}
 
 		accountGroup.setExternalReferenceCode(externalReferenceCode);
 
@@ -442,6 +432,9 @@ public class AccountGroupLocalServiceImpl
 
 	@Reference
 	private ClassNameLocalService _classNameLocalService;
+
+	@Reference
+	private EmptyModelManager _emptyModelManager;
 
 	@Reference
 	private ResourceLocalService _resourceLocalService;

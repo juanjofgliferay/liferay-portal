@@ -10,12 +10,11 @@ import com.liferay.diff.DiffResult;
 import com.liferay.document.library.constants.DLPortletKeys;
 import com.liferay.document.library.kernel.document.conversion.DocumentConversionUtil;
 import com.liferay.document.library.kernel.exception.NoSuchFileEntryException;
-import com.liferay.document.library.kernel.service.DLAppLocalService;
 import com.liferay.document.library.kernel.service.DLAppService;
 import com.liferay.document.library.kernel.util.DLUtil;
+import com.liferay.petra.io.unsync.UnsyncByteArrayInputStream;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.io.unsync.UnsyncByteArrayInputStream;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCRenderCommand;
 import com.liferay.portal.kernel.repository.model.FileVersion;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
@@ -24,6 +23,10 @@ import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.WebKeys;
+
+import jakarta.portlet.PortletException;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -34,10 +37,6 @@ import java.nio.charset.StandardCharsets;
 
 import java.util.List;
 
-import javax.portlet.PortletException;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
@@ -46,9 +45,9 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + DLPortletKeys.DOCUMENT_LIBRARY,
-		"javax.portlet.name=" + DLPortletKeys.DOCUMENT_LIBRARY_ADMIN,
-		"javax.portlet.name=" + DLPortletKeys.MEDIA_GALLERY_DISPLAY,
+		"jakarta.portlet.name=" + DLPortletKeys.DOCUMENT_LIBRARY,
+		"jakarta.portlet.name=" + DLPortletKeys.DOCUMENT_LIBRARY_ADMIN,
+		"jakarta.portlet.name=" + DLPortletKeys.MEDIA_GALLERY_DISPLAY,
 		"mvc.command.name=/document_library/compare_versions"
 	},
 	service = MVCRenderCommand.class
@@ -89,7 +88,7 @@ public class CompareVersionsMVCRenderCommand implements MVCRenderCommand {
 		InputStream sourceInputStream = _getFileVersionInputStream(
 			sourceFileVersion);
 
-		FileVersion targetFileVersion = _dlAppLocalService.getFileVersion(
+		FileVersion targetFileVersion = _dlAppService.getFileVersion(
 			targetFileVersionId);
 
 		InputStream targetInputStream = _getFileVersionInputStream(
@@ -144,9 +143,6 @@ public class CompareVersionsMVCRenderCommand implements MVCRenderCommand {
 
 	@Reference
 	private Diff _diff;
-
-	@Reference
-	private DLAppLocalService _dlAppLocalService;
 
 	@Reference
 	private DLAppService _dlAppService;

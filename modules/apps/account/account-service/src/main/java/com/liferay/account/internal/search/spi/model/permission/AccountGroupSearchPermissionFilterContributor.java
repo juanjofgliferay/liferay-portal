@@ -18,7 +18,7 @@ import com.liferay.portal.kernel.search.filter.BooleanFilter;
 import com.liferay.portal.kernel.search.filter.TermsFilter;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
-import com.liferay.portal.search.spi.model.permission.SearchPermissionFilterContributor;
+import com.liferay.portal.search.spi.model.permission.contributor.SearchPermissionFilterContributor;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -54,15 +54,16 @@ public class AccountGroupSearchPermissionFilterContributor
 					_accountEntryUserRelLocalService.
 						getAccountEntryUserRelsByAccountUserId(userId)) {
 
-				if (_accountEntryModelResourcePermission.contains(
+				if (!_accountEntryModelResourcePermission.contains(
 						permissionChecker,
 						accountEntryUserRel.getAccountEntryId(),
 						AccountActionKeys.VIEW_ACCOUNT_GROUPS)) {
 
-					accountEntryIdsTermsFilter.addValue(
-						String.valueOf(
-							accountEntryUserRel.getAccountEntryId()));
+					continue;
 				}
+
+				accountEntryIdsTermsFilter.addValue(
+					String.valueOf(accountEntryUserRel.getAccountEntryId()));
 			}
 		}
 		catch (PortalException portalException) {

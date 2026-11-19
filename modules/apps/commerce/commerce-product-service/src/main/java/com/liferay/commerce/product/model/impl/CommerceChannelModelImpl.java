@@ -75,7 +75,7 @@ public class CommerceChannelModelImpl
 		{"typeSettings", Types.VARCHAR},
 		{"commerceCurrencyCode", Types.VARCHAR},
 		{"priceDisplayType", Types.VARCHAR},
-		{"discountsTargetNetPrice", Types.BOOLEAN}
+		{"discountsTargetNetPrice", Types.BOOLEAN}, {"status", Types.INTEGER}
 	};
 
 	public static final Map<String, Integer> TABLE_COLUMNS_MAP =
@@ -100,18 +100,26 @@ public class CommerceChannelModelImpl
 		TABLE_COLUMNS_MAP.put("commerceCurrencyCode", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("priceDisplayType", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("discountsTargetNetPrice", Types.BOOLEAN);
+		TABLE_COLUMNS_MAP.put("status", Types.INTEGER);
 	}
 
 	public static final String TABLE_SQL_CREATE =
-		"create table CommerceChannel (mvccVersion LONG default 0 not null,ctCollectionId LONG default 0 not null,uuid_ VARCHAR(75) null,externalReferenceCode VARCHAR(75) null,commerceChannelId LONG not null,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,accountEntryId LONG,siteGroupId LONG,name VARCHAR(75) null,type_ VARCHAR(75) null,typeSettings VARCHAR(75) null,commerceCurrencyCode VARCHAR(75) null,priceDisplayType VARCHAR(75) null,discountsTargetNetPrice BOOLEAN,primary key (commerceChannelId, ctCollectionId))";
+		"create table CommerceChannel (mvccVersion LONG default 0 not null,ctCollectionId LONG default 0 not null,uuid_ VARCHAR(75) null,externalReferenceCode VARCHAR(75) null,commerceChannelId LONG not null,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,accountEntryId LONG,siteGroupId LONG,name VARCHAR(75) null,type_ VARCHAR(75) null,typeSettings VARCHAR(75) null,commerceCurrencyCode VARCHAR(75) null,priceDisplayType VARCHAR(75) null,discountsTargetNetPrice BOOLEAN,status INTEGER,primary key (commerceChannelId, ctCollectionId))";
 
 	public static final String TABLE_SQL_DROP = "drop table CommerceChannel";
+
+	public static final String ENTITY_ALIAS = "commerceChannel";
+
+	public static final String FILTER_PK_COLUMN_NAME = "commerceChannelId";
 
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY commerceChannel.createDate DESC";
 
 	public static final String ORDER_BY_SQL =
 		" ORDER BY CommerceChannel.createDate DESC";
+
+	public static final String ORDER_BY_SQL_INLINE_DISTINCT =
+		" ORDER BY commerceChannel.createDate DESC";
 
 	public static final String DATA_SOURCE = "liferayDataSource";
 
@@ -301,6 +309,7 @@ public class CommerceChannelModelImpl
 			attributeGetterFunctions.put(
 				"discountsTargetNetPrice",
 				CommerceChannel::getDiscountsTargetNetPrice);
+			attributeGetterFunctions.put("status", CommerceChannel::getStatus);
 
 			_attributeGetterFunctions = Collections.unmodifiableMap(
 				attributeGetterFunctions);
@@ -386,6 +395,10 @@ public class CommerceChannelModelImpl
 				"discountsTargetNetPrice",
 				(BiConsumer<CommerceChannel, Boolean>)
 					CommerceChannel::setDiscountsTargetNetPrice);
+			attributeSetterBiConsumers.put(
+				"status",
+				(BiConsumer<CommerceChannel, Integer>)
+					CommerceChannel::setStatus);
 
 			_attributeSetterBiConsumers = Collections.unmodifiableMap(
 				(Map)attributeSetterBiConsumers);
@@ -779,6 +792,21 @@ public class CommerceChannelModelImpl
 		_discountsTargetNetPrice = discountsTargetNetPrice;
 	}
 
+	@JSON
+	@Override
+	public int getStatus() {
+		return _status;
+	}
+
+	@Override
+	public void setStatus(int status) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_status = status;
+	}
+
 	@Override
 	public StagedModelType getStagedModelType() {
 		return new StagedModelType(
@@ -861,6 +889,7 @@ public class CommerceChannelModelImpl
 		commerceChannelImpl.setPriceDisplayType(getPriceDisplayType());
 		commerceChannelImpl.setDiscountsTargetNetPrice(
 			isDiscountsTargetNetPrice());
+		commerceChannelImpl.setStatus(getStatus());
 
 		commerceChannelImpl.resetOriginalValues();
 
@@ -907,6 +936,8 @@ public class CommerceChannelModelImpl
 			this.<String>getColumnOriginalValue("priceDisplayType"));
 		commerceChannelImpl.setDiscountsTargetNetPrice(
 			this.<Boolean>getColumnOriginalValue("discountsTargetNetPrice"));
+		commerceChannelImpl.setStatus(
+			this.<Integer>getColumnOriginalValue("status"));
 
 		return commerceChannelImpl;
 	}
@@ -1093,6 +1124,8 @@ public class CommerceChannelModelImpl
 		commerceChannelCacheModel.discountsTargetNetPrice =
 			isDiscountsTargetNetPrice();
 
+		commerceChannelCacheModel.status = getStatus();
+
 		return commerceChannelCacheModel;
 	}
 
@@ -1173,6 +1206,7 @@ public class CommerceChannelModelImpl
 	private String _commerceCurrencyCode;
 	private String _priceDisplayType;
 	private boolean _discountsTargetNetPrice;
+	private int _status;
 
 	public <T> T getColumnValue(String columnName) {
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
@@ -1225,6 +1259,7 @@ public class CommerceChannelModelImpl
 		_columnOriginalValues.put("priceDisplayType", _priceDisplayType);
 		_columnOriginalValues.put(
 			"discountsTargetNetPrice", _discountsTargetNetPrice);
+		_columnOriginalValues.put("status", _status);
 	}
 
 	private static final Map<String, String> _attributeNames;
@@ -1285,6 +1320,8 @@ public class CommerceChannelModelImpl
 
 		columnBitmasks.put("discountsTargetNetPrice", 131072L);
 
+		columnBitmasks.put("status", 262144L);
+
 		_columnBitmasks = Collections.unmodifiableMap(columnBitmasks);
 	}
 
@@ -1292,3 +1329,4 @@ public class CommerceChannelModelImpl
 	private CommerceChannel _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-36400656

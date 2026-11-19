@@ -5,6 +5,7 @@
 
 package com.liferay.layout.set.prototype.internal.exportimport.data.handler;
 
+import com.liferay.exportimport.constants.ExportImportConstants;
 import com.liferay.exportimport.kernel.lar.BasePortletDataHandler;
 import com.liferay.exportimport.kernel.lar.DataLevel;
 import com.liferay.exportimport.kernel.lar.PortletDataContext;
@@ -20,9 +21,9 @@ import com.liferay.portal.kernel.module.framework.ModuleServiceLifecycle;
 import com.liferay.portal.kernel.service.LayoutSetPrototypeLocalService;
 import com.liferay.portal.kernel.xml.Element;
 
-import java.util.List;
+import jakarta.portlet.PortletPreferences;
 
-import javax.portlet.PortletPreferences;
+import java.util.List;
 
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -32,7 +33,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Daniela Zapata Riesco
  */
 @Component(
-	property = "javax.portlet.name=" + LayoutSetPrototypePortletKeys.LAYOUT_SET_PROTOTYPE,
+	property = "jakarta.portlet.name=" + LayoutSetPrototypePortletKeys.LAYOUT_SET_PROTOTYPE,
 	service = PortletDataHandler.class
 )
 public class LayoutSetPrototypePortletDataHandler
@@ -47,12 +48,17 @@ public class LayoutSetPrototypePortletDataHandler
 		return SCHEMA_VERSION;
 	}
 
+	@Override
+	public String getSectionKey() {
+		return ExportImportConstants.SECTION_KEY_SITE_BUILDER;
+	}
+
 	@Activate
 	protected void activate() {
 		setDataLevel(DataLevel.PORTAL);
 		setDeletionSystemEventStagedModelTypes(
 			new StagedModelType(LayoutSetPrototype.class));
-		setExportControls(
+		setExportPortletDataHandlerControls(
 			new PortletDataHandlerBoolean(
 				NAMESPACE, "site-templates", true, true,
 				new PortletDataHandlerControl[] {

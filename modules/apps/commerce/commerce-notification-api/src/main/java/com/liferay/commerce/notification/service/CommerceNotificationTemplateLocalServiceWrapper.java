@@ -13,8 +13,10 @@ import com.liferay.portal.kernel.service.persistence.BasePersistence;
  *
  * @author Alessio Antonio Rendina
  * @see CommerceNotificationTemplateLocalService
+ * @deprecated As of Cavanaugh (7.4.x)
  * @generated
  */
+@Deprecated
 public class CommerceNotificationTemplateLocalServiceWrapper
 	implements CommerceNotificationTemplateLocalService,
 			   ServiceWrapper<CommerceNotificationTemplateLocalService> {
@@ -67,27 +69,6 @@ public class CommerceNotificationTemplateLocalServiceWrapper
 			addCommerceNotificationTemplate(
 				userId, groupId, name, description, from, fromNameMap, to, cc,
 				bcc, type, enabled, subjectMap, bodyMap, serviceContext);
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x)
-	 */
-	@Deprecated
-	@Override
-	public com.liferay.commerce.notification.model.CommerceNotificationTemplate
-			addCommerceNotificationTemplate(
-				String name, String description, String from,
-				java.util.Map<java.util.Locale, String> fromNameMap, String to,
-				String cc, String bcc, String type, boolean enabled,
-				java.util.Map<java.util.Locale, String> subjectMap,
-				java.util.Map<java.util.Locale, String> bodyMap,
-				com.liferay.portal.kernel.service.ServiceContext serviceContext)
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return _commerceNotificationTemplateLocalService.
-			addCommerceNotificationTemplate(
-				name, description, from, fromNameMap, to, cc, bcc, type,
-				enabled, subjectMap, bodyMap, serviceContext);
 	}
 
 	/**
@@ -376,34 +357,6 @@ public class CommerceNotificationTemplateLocalServiceWrapper
 	public java.util.List
 		<com.liferay.commerce.notification.model.CommerceNotificationTemplate>
 			getCommerceNotificationTemplates(
-				long groupId, boolean enabled, int start, int end,
-				com.liferay.portal.kernel.util.OrderByComparator
-					<com.liferay.commerce.notification.model.
-						CommerceNotificationTemplate> orderByComparator) {
-
-		return _commerceNotificationTemplateLocalService.
-			getCommerceNotificationTemplates(
-				groupId, enabled, start, end, orderByComparator);
-	}
-
-	@Override
-	public java.util.List
-		<com.liferay.commerce.notification.model.CommerceNotificationTemplate>
-			getCommerceNotificationTemplates(
-				long groupId, int start, int end,
-				com.liferay.portal.kernel.util.OrderByComparator
-					<com.liferay.commerce.notification.model.
-						CommerceNotificationTemplate> orderByComparator) {
-
-		return _commerceNotificationTemplateLocalService.
-			getCommerceNotificationTemplates(
-				groupId, start, end, orderByComparator);
-	}
-
-	@Override
-	public java.util.List
-		<com.liferay.commerce.notification.model.CommerceNotificationTemplate>
-			getCommerceNotificationTemplates(
 				long groupId, String type, boolean enabled) {
 
 		return _commerceNotificationTemplateLocalService.
@@ -460,20 +413,6 @@ public class CommerceNotificationTemplateLocalServiceWrapper
 	public int getCommerceNotificationTemplatesCount() {
 		return _commerceNotificationTemplateLocalService.
 			getCommerceNotificationTemplatesCount();
-	}
-
-	@Override
-	public int getCommerceNotificationTemplatesCount(long groupId) {
-		return _commerceNotificationTemplateLocalService.
-			getCommerceNotificationTemplatesCount(groupId);
-	}
-
-	@Override
-	public int getCommerceNotificationTemplatesCount(
-		long groupId, boolean enabled) {
-
-		return _commerceNotificationTemplateLocalService.
-			getCommerceNotificationTemplatesCount(groupId, enabled);
 	}
 
 	@Override
@@ -579,3 +518,4 @@ public class CommerceNotificationTemplateLocalServiceWrapper
 		_commerceNotificationTemplateLocalService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-900652774

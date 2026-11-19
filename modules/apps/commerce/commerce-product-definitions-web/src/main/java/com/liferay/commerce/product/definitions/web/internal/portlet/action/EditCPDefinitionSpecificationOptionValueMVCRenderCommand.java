@@ -10,16 +10,16 @@ import com.liferay.commerce.product.definitions.web.internal.display.context.CPD
 import com.liferay.commerce.product.exception.NoSuchCPDefinitionSpecificationOptionValueException;
 import com.liferay.commerce.product.portlet.action.ActionHelper;
 import com.liferay.commerce.product.service.CPOptionCategoryService;
-import com.liferay.item.selector.ItemSelector;
+import com.liferay.list.type.service.ListTypeEntryService;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCRenderCommand;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.servlet.SessionErrors;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import javax.portlet.PortletException;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -29,7 +29,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + CPPortletKeys.CP_DEFINITIONS,
+		"jakarta.portlet.name=" + CPPortletKeys.CP_DEFINITIONS,
 		"mvc.command.name=/cp_definitions/edit_cp_definition_specification_option_value"
 	},
 	service = MVCRenderCommand.class
@@ -48,7 +48,7 @@ public class EditCPDefinitionSpecificationOptionValueMVCRenderCommand
 					new CPDefinitionSpecificationOptionValueDisplayContext(
 						_actionHelper,
 						_portal.getHttpServletRequest(renderRequest),
-						_cpOptionCategoryService, _itemSelector);
+						_cpOptionCategoryService, _listTypeEntryService);
 
 			renderRequest.setAttribute(
 				WebKeys.PORTLET_DISPLAY_CONTEXT,
@@ -77,7 +77,7 @@ public class EditCPDefinitionSpecificationOptionValueMVCRenderCommand
 	private CPOptionCategoryService _cpOptionCategoryService;
 
 	@Reference
-	private ItemSelector _itemSelector;
+	private ListTypeEntryService _listTypeEntryService;
 
 	@Reference
 	private Portal _portal;

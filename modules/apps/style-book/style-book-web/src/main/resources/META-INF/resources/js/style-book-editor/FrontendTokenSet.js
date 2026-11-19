@@ -4,9 +4,13 @@
  */
 
 import ClayPanel from '@clayui/panel';
+import {openToast} from 'frontend-js-components-web';
 import PropTypes from 'prop-types';
 import React, {useCallback} from 'react';
 
+import CustomTokenIcon from './CustomTokenIcon';
+import {config} from './config';
+import {FRONTEND_TOKEN_EDITOR_TYPES} from './constants/frontendTokenEditorTypes';
 import {FRONTEND_TOKEN_TYPES} from './constants/frontendTokenTypes';
 import {
 	useFrontendTokensValues,
@@ -29,23 +33,48 @@ export default function FrontendTokenSet({
 
 	const updateFrontendTokensValues = useCallback(
 		(frontendToken, value) => {
-			const {mappings = [], label, name} = frontendToken;
+			const {
+				label,
+				mappings = [],
+				name,
+				tokenDefinitionId,
+			} = frontendToken;
 
 			const cssVariableMapping = mappings.find(
 				(mapping) => mapping.type === 'cssVariable'
 			);
 
-			if (value) {
-				saveTokenValue({
-					label,
-					name,
-					value: {
-						cssVariableMapping: cssVariableMapping.value,
-						name: tokenValues[value]?.name,
-						value: tokenValues[value]?.value || value,
-					},
-				});
+			if (!value) {
+				return;
 			}
+
+			if (!cssVariableMapping) {
+				openToast({
+					message: Liferay.Language.get(
+						'unable-to-save-due-to-invalid-or-missing-configuration-values'
+					),
+					type: 'danger',
+				});
+
+				return;
+			}
+
+			const linkedCSSVariableMapping = tokenValues[value]?.mappings?.find(
+				(mapping) => mapping.type === 'cssVariable'
+			);
+
+			saveTokenValue({
+				label,
+				name,
+				value: {
+					cssVariableMapping: cssVariableMapping.value,
+					name: tokenValues[value]?.name,
+					tokenDefinitionId,
+					value: linkedCSSVariableMapping
+						? `var(--${linkedCSSVariableMapping.value})`
+						: tokenValues[value]?.value || value,
+				},
+			});
 		},
 		[saveTokenValue, tokenValues]
 	);
@@ -60,13 +89,16 @@ export default function FrontendTokenSet({
 		>
 			<ClayPanel.Body>
 				{frontendTokens.map((frontendToken) => {
-					const FrontendTokenComponent = getFrontendTokenComponent(
-						frontendToken
-					);
+					const FrontendTokenComponent =
+						getFrontendTokenComponent(frontendToken);
 
 					const props = {
 						frontendToken,
 						frontendTokensValues,
+						labelAfter: frontendToken.tokenDefinitionId ===
+							config.customTokenDefinitionId && (
+							<CustomTokenIcon />
+						),
 						onValueSelect: (value) =>
 							updateFrontendTokensValues(frontendToken, value),
 						tokenValues,
@@ -89,11 +121,11 @@ export default function FrontendTokenSet({
 }
 
 function getFrontendTokenComponent(frontendToken) {
-	if (frontendToken.editorType === 'ColorPicker') {
+	if (frontendToken.editorType === FRONTEND_TOKEN_EDITOR_TYPES.colorPicker) {
 		return ColorFrontendToken;
 	}
 
-	if (frontendToken.editorType === 'Length') {
+	if (frontendToken.editorType === FRONTEND_TOKEN_EDITOR_TYPES.length) {
 		return LengthFrontendToken;
 	}
 

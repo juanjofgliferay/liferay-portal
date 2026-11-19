@@ -6,6 +6,7 @@
 package com.liferay.portal.upgrade.v6_2_0.util;
 
 import com.liferay.document.library.kernel.exception.FileExtensionException;
+import com.liferay.document.library.kernel.exception.FileMimeTypeException;
 import com.liferay.document.library.kernel.exception.FileNameException;
 import com.liferay.document.library.kernel.exception.FileSizeException;
 import com.liferay.document.library.kernel.exception.FolderNameException;
@@ -13,13 +14,14 @@ import com.liferay.document.library.kernel.exception.InvalidFileVersionException
 import com.liferay.document.library.kernel.exception.SourceFileNameException;
 import com.liferay.document.library.kernel.util.DLUtil;
 import com.liferay.document.library.kernel.util.DLValidator;
+import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.util.FileUtil;
-import com.liferay.portal.kernel.util.StringBundler;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.UnicodeFormatter;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.util.PropsValues;
 import com.liferay.portlet.documentlibrary.webdav.DLWebDAVUtil;
 
 import java.io.File;
@@ -51,6 +53,11 @@ public final class DLValidatorImpl implements DLValidator {
 		name = replaceDLCharLastBlacklist(name);
 
 		return replaceDLNameBlacklist(name);
+	}
+
+	@Override
+	public long getMaxAllowableDownloadSize(long groupId) {
+		return 0;
 	}
 
 	/**
@@ -117,6 +124,10 @@ public final class DLValidatorImpl implements DLValidator {
 	}
 
 	@Override
+	public void validateDownloadSize(long groupId, long size) {
+	}
+
+	@Override
 	public void validateFileExtension(String fileName)
 		throws FileExtensionException {
 
@@ -137,7 +148,31 @@ public final class DLValidatorImpl implements DLValidator {
 		}
 
 		if (!validFileExtension) {
-			throw new FileExtensionException(fileName);
+			throw new FileExtensionException.InvalidExtension(fileName);
+		}
+	}
+
+	@Override
+	public void validateFileMimeType(long companyId, String mimeType)
+		throws PortalException {
+
+		boolean validFileMimeType = false;
+
+		String[] fileMimeTypes = {"*"};
+
+		for (String fileMimeType : fileMimeTypes) {
+			if (StringPool.STAR.equals(fileMimeType) ||
+				StringUtil.equalsIgnoreCase(mimeType, fileMimeType)) {
+
+				validFileMimeType = true;
+
+				break;
+			}
+		}
+
+		if (!validFileMimeType) {
+			throw new FileMimeTypeException(
+				"Invalid file mime type " + mimeType);
 		}
 	}
 
@@ -254,10 +289,12 @@ public final class DLValidatorImpl implements DLValidator {
 						blacklistLastChar);
 				}
 
-				if (title.endsWith(blacklistLastChar)) {
-					title = StringUtil.replaceLast(
-						title, blacklistLastChar, StringPool.BLANK);
+				if (!title.endsWith(blacklistLastChar)) {
+					continue;
 				}
+
+				title = StringUtil.replaceLast(
+					title, blacklistLastChar, StringPool.BLANK);
 			}
 		}
 

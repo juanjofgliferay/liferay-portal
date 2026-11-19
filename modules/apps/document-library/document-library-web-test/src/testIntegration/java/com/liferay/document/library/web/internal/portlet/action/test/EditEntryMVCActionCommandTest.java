@@ -19,6 +19,7 @@ import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.repository.model.FileVersion;
 import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.service.CompanyLocalService;
+import com.liferay.portal.kernel.test.portlet.MockActionResponse;
 import com.liferay.portal.kernel.test.portlet.MockLiferayPortletActionRequest;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
@@ -30,17 +31,17 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.HashMapBuilder;
+import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
-import com.liferay.portletmvc4spring.test.mock.web.portlet.MockActionResponse;
+
+import jakarta.portlet.PortletException;
 
 import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
-
-import javax.portlet.PortletException;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -75,7 +76,7 @@ public class EditEntryMVCActionCommandTest {
 			null, TestPropsValues.getUserId(), _group.getGroupId(),
 			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
 			RandomTestUtil.randomString(), ContentTypes.TEXT_PLAIN, null, null,
-			null, ServiceContextTestUtil.getServiceContext());
+			null, null, ServiceContextTestUtil.getServiceContext());
 
 		_dlAppService.checkOutFileEntry(
 			initialFileEntry.getFileEntryId(),
@@ -116,7 +117,7 @@ public class EditEntryMVCActionCommandTest {
 			null, TestPropsValues.getUserId(), _group.getGroupId(),
 			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
 			RandomTestUtil.randomString(), ContentTypes.TEXT_PLAIN, null, null,
-			null, ServiceContextTestUtil.getServiceContext());
+			null, null, ServiceContextTestUtil.getServiceContext());
 
 		_dlAppService.checkOutFileEntry(
 			initialFileEntry.getFileEntryId(),
@@ -154,7 +155,7 @@ public class EditEntryMVCActionCommandTest {
 			null, TestPropsValues.getUserId(), _group.getGroupId(),
 			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
 			RandomTestUtil.randomString(), ContentTypes.TEXT_PLAIN, null, null,
-			null, ServiceContextTestUtil.getServiceContext());
+			null, null, ServiceContextTestUtil.getServiceContext());
 
 		Company company = _companyLocalService.getCompany(
 			TestPropsValues.getCompanyId());
@@ -184,7 +185,7 @@ public class EditEntryMVCActionCommandTest {
 			null, TestPropsValues.getUserId(), _group.getGroupId(),
 			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
 			RandomTestUtil.randomString(), ContentTypes.TEXT_PLAIN, null, null,
-			null, ServiceContextTestUtil.getServiceContext());
+			null, null, ServiceContextTestUtil.getServiceContext());
 
 		Company company = _companyLocalService.getCompany(
 			TestPropsValues.getCompanyId());
@@ -284,10 +285,14 @@ public class EditEntryMVCActionCommandTest {
 			themeDisplay.setPermissionChecker(
 				PermissionThreadLocal.getPermissionChecker());
 			themeDisplay.setRequest(new MockHttpServletRequest());
-			themeDisplay.setScopeGroupId(_group.getGroupId());
+
+			long groupId = _group.getGroupId();
+
+			themeDisplay.setScopeGroupId(groupId);
+
 			themeDisplay.setServerName("localhost");
-			themeDisplay.setServerPort(8080);
-			themeDisplay.setSiteGroupId(_group.getGroupId());
+			themeDisplay.setServerPort(PortalUtil.getPortalServerPort(false));
+			themeDisplay.setSiteGroupId(groupId);
 			themeDisplay.setUser(TestPropsValues.getUser());
 
 			return themeDisplay;

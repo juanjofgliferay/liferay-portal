@@ -112,9 +112,7 @@ public class MemberRequestPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		MemberRequest newMemberRequest = _persistence.create(pk);
+		MemberRequest newMemberRequest = addMemberRequest();
 
 		newMemberRequest.setGroupId(RandomTestUtil.nextLong());
 
@@ -138,7 +136,9 @@ public class MemberRequestPersistenceTest {
 
 		newMemberRequest.setStatus(RandomTestUtil.nextInt());
 
-		_memberRequests.add(_persistence.update(newMemberRequest));
+		newMemberRequest = _persistence.update(newMemberRequest);
+
+		_memberRequests.add(newMemberRequest);
 
 		MemberRequest existingMemberRequest = _persistence.findByPrimaryKey(
 			newMemberRequest.getPrimaryKey());
@@ -184,13 +184,6 @@ public class MemberRequestPersistenceTest {
 		_persistence.countByKey("null");
 
 		_persistence.countByKey((String)null);
-	}
-
-	@Test
-	public void testCountByReceiverUserId() throws Exception {
-		_persistence.countByReceiverUserId(RandomTestUtil.nextLong());
-
-		_persistence.countByReceiverUserId(0L);
 	}
 
 	@Test
@@ -566,3 +559,4 @@ public class MemberRequestPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1426147888

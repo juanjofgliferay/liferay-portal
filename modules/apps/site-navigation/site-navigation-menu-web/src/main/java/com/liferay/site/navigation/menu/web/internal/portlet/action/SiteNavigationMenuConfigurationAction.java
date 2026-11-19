@@ -6,30 +6,30 @@
 package com.liferay.site.navigation.menu.web.internal.portlet.action;
 
 import com.liferay.item.selector.ItemSelector;
-import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.portlet.ConfigurationAction;
-import com.liferay.portal.kernel.portlet.DefaultConfigurationAction;
-import com.liferay.portal.kernel.settings.ModifiableSettings;
-import com.liferay.portal.kernel.settings.Settings;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portlet.display.template.PortletDisplayTemplate;
+import com.liferay.portlet.display.template.portlet.action.BaseConfigurationAction;
 import com.liferay.site.navigation.constants.SiteNavigationMenuPortletKeys;
 import com.liferay.site.navigation.menu.web.internal.constants.SiteNavigationMenuWebKeys;
 import com.liferay.site.navigation.type.SiteNavigationMenuItemTypeRegistry;
 
+import jakarta.portlet.PortletConfig;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.PortletPreferences;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.ReadOnlyException;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 
 import java.util.Objects;
-
-import javax.portlet.PortletConfig;
-import javax.portlet.PortletException;
-import javax.portlet.PortletRequest;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -40,11 +40,11 @@ import org.osgi.service.component.annotations.Reference;
  * @author Raymond Augé
  */
 @Component(
-	property = "javax.portlet.name=" + SiteNavigationMenuPortletKeys.SITE_NAVIGATION_MENU,
+	property = "jakarta.portlet.name=" + SiteNavigationMenuPortletKeys.SITE_NAVIGATION_MENU,
 	service = ConfigurationAction.class
 )
 public class SiteNavigationMenuConfigurationAction
-	extends DefaultConfigurationAction {
+	extends BaseConfigurationAction {
 
 	@Override
 	public String getJspPath(HttpServletRequest httpServletRequest) {
@@ -67,24 +67,6 @@ public class SiteNavigationMenuConfigurationAction
 	}
 
 	@Override
-	public void postProcess(
-			long companyId, PortletRequest portletRequest, Settings settings)
-		throws PortalException {
-
-		ModifiableSettings modifiableSettings =
-			settings.getModifiableSettings();
-
-		modifiableSettings.reset("included-layouts");
-
-		String rootMenuItemType = modifiableSettings.getValue(
-			"rootMenuItemType", StringPool.BLANK);
-
-		if (!Objects.equals(rootMenuItemType, "select")) {
-			modifiableSettings.reset("rootMenuItemId");
-		}
-	}
-
-	@Override
 	protected void doDispatch(
 			RenderRequest renderRequest, RenderResponse renderResponse)
 		throws IOException, PortletException {
@@ -93,6 +75,31 @@ public class SiteNavigationMenuConfigurationAction
 			WebKeys.PORTLET_DISPLAY_TEMPLATE, _portletDisplayTemplate);
 
 		super.doDispatch(renderRequest, renderResponse);
+	}
+
+	@Override
+	protected void postProcess(
+			long companyId, PortletRequest portletRequest,
+			PortletPreferences portletPreferences)
+		throws PortalException {
+
+		super.postProcess(companyId, portletRequest, portletPreferences);
+
+		try {
+			portletPreferences.reset("included-layouts");
+			portletPreferences.reset("rootMenuItemId");
+			portletPreferences.reset("siteNavigationMenuId");
+
+			if (!Objects.equals(
+					portletPreferences.getValue("rootMenuItemType", null),
+					"select")) {
+
+				portletPreferences.reset("rootMenuItemExternalReferenceCode");
+			}
+		}
+		catch (ReadOnlyException readOnlyException) {
+			throw new SystemException(readOnlyException);
+		}
 	}
 
 	@Reference

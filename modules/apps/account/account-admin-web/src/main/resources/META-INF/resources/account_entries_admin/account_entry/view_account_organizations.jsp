@@ -22,7 +22,7 @@ renderResponse.setTitle(accountEntryDisplay.getName());
 
 <clay:management-toolbar
 	managementToolbarDisplayContext="<%= viewAccountOrganizationsManagementToolbarDisplayContext %>"
-	propsTransformer="account_entries_admin/js/AccountOrganizationsManagementToolbarPropsTransformer"
+	propsTransformer="{AccountOrganizationsManagementToolbarPropsTransformer} from account-admin-web"
 />
 
 <clay:container-fluid>
@@ -50,7 +50,17 @@ renderResponse.setTitle(accountEntryDisplay.getName());
 					value="<%= HtmlUtil.escape(accountOrganization.getParentOrganizationName()) %>"
 				/>
 
-				<c:if test="<%= AccountEntryPermission.contains(permissionChecker, accountEntryDisplay.getAccountEntryId(), AccountActionKeys.MANAGE_ORGANIZATIONS) %>">
+				<liferay-ui:search-container-column-text
+					cssClass="table-cell-expand-small table-cell-minw-150"
+					name="status"
+				>
+					<clay:label
+						displayType="<%= WorkflowConstants.getStatusStyle(accountOrganization.getStatus()) %>"
+						label="<%= WorkflowConstants.getStatusLabel(accountOrganization.getStatus()) %>"
+					/>
+				</liferay-ui:search-container-column-text>
+
+				<c:if test="<%= AccountEntryPermission.hasEditOrManageOrganizationsPermission(permissionChecker, accountEntryDisplay.getAccountEntryId()) %>">
 					<liferay-ui:search-container-column-text>
 						<portlet:actionURL name="/account_admin/remove_account_organizations" var="removeAccountOrganizationsURL">
 							<portlet:param name="redirect" value="<%= currentURL %>" />

@@ -9,7 +9,7 @@ import com.liferay.accessibility.menu.web.internal.util.AccessibilitySettingsUti
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONUtil;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * @author Evan Thibodeau
@@ -27,6 +27,10 @@ public class AccessibilityMenuDisplayContext {
 			AccessibilitySettingsUtil.getAccessibilitySettings(
 				_httpServletRequest),
 			accessibilitySetting -> JSONUtil.put(
+				"attributeName", accessibilitySetting.getAttributeName()
+			).put(
+				"attributeValue", accessibilitySetting.getAttributeValue()
+			).put(
 				"className", accessibilitySetting.getCssClass()
 			).put(
 				"defaultValue", accessibilitySetting.getDefaultValue()

@@ -5,6 +5,8 @@
 
 package com.liferay.util.dao.orm;
 
+import com.liferay.petra.io.unsync.UnsyncBufferedReader;
+import com.liferay.petra.io.unsync.UnsyncStringReader;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
@@ -13,8 +15,6 @@ import com.liferay.portal.kernel.configuration.ConfigurationFactoryUtil;
 import com.liferay.portal.kernel.dao.jdbc.DataAccess;
 import com.liferay.portal.kernel.dao.orm.QueryDefinition;
 import com.liferay.portal.kernel.dao.orm.WildcardMode;
-import com.liferay.portal.kernel.io.unsync.UnsyncBufferedReader;
-import com.liferay.portal.kernel.io.unsync.UnsyncStringReader;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
@@ -36,7 +36,6 @@ import java.io.InputStream;
 
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
-import java.sql.SQLException;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -69,13 +68,7 @@ public class CustomSQL {
 
 	public static final String MYSQL_FUNCTION_IS_NULL = "IFNULL(?, '1') = '1'";
 
-	public static final String SYBASE_FUNCTION_IS_NOT_NULL =
-		"CONVERT(VARCHAR,?) IS NOT NULL";
-
-	public static final String SYBASE_FUNCTION_IS_NULL =
-		"CONVERT(VARCHAR,?) IS NULL";
-
-	public CustomSQL() throws SQLException {
+	public CustomSQL() {
 		reloadCustomSQL();
 	}
 
@@ -246,16 +239,6 @@ public class CustomSQL {
 		return _vendorPostgreSQL;
 	}
 
-	/**
-	 * Returns <code>true</code> if Hibernate is connecting to a Sybase
-	 * database.
-	 *
-	 * @return <code>true</code> if Hibernate is connecting to a Sybase database
-	 */
-	public boolean isVendorSybase() {
-		return _vendorSybase;
-	}
-
 	public String[] keywords(String keywords) {
 		return keywords(keywords, true, WildcardMode.SURROUND);
 	}
@@ -351,9 +334,7 @@ public class CustomSQL {
 		return keywordsArray;
 	}
 
-	public void reloadCustomSQL() throws SQLException {
-		PortalUtil.initCustomSQL();
-
+	public void reloadCustomSQL() {
 		String functionIsNull = PortalUtil.getCustomSQLFunctionIsNull();
 		String functionIsNotNull = PortalUtil.getCustomSQLFunctionIsNotNull();
 
@@ -416,16 +397,6 @@ public class CustomSQL {
 					if (_log.isInfoEnabled()) {
 						_log.info(
 							"Detected MySQL with database name " + dbName);
-					}
-				}
-				else if (dbName.startsWith("Sybase") || dbName.equals("ASE")) {
-					_vendorSybase = true;
-					_functionIsNull = SYBASE_FUNCTION_IS_NULL;
-					_functionIsNotNull = SYBASE_FUNCTION_IS_NOT_NULL;
-
-					if (_log.isInfoEnabled()) {
-						_log.info(
-							"Detected Sybase with database name " + dbName);
 					}
 				}
 				else if (dbName.startsWith("Oracle")) {
@@ -802,9 +773,11 @@ public class CustomSQL {
 
 				sb.append(line);
 
-				if (!line.endsWith(StringPool.OPEN_PARENTHESIS)) {
-					sb.append(StringPool.SPACE);
+				if (line.endsWith(StringPool.OPEN_PARENTHESIS)) {
+					continue;
 				}
+
+				sb.append(StringPool.SPACE);
 			}
 		}
 		catch (IOException ioException) {
@@ -834,11 +807,13 @@ public class CustomSQL {
 				continue;
 			}
 
-			if ((c == CharPool.UNDERLINE) || (c == CharPool.PERCENT)) {
-				sb.insert(i, CharPool.BACK_SLASH);
-
-				i++;
+			if ((c != CharPool.UNDERLINE) && (c != CharPool.PERCENT)) {
+				continue;
 			}
+
+			sb.insert(i, CharPool.BACK_SLASH);
+
+			i++;
 		}
 
 		return sb.toString();
@@ -917,6 +892,5 @@ public class CustomSQL {
 	private boolean _vendorMySQL;
 	private boolean _vendorOracle;
 	private boolean _vendorPostgreSQL;
-	private boolean _vendorSybase;
 
 }

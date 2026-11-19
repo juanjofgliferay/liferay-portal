@@ -6,11 +6,12 @@
 package com.liferay.commerce.warehouse.web.internal.portlet.action;
 
 import com.liferay.commerce.exception.NoSuchWarehouseItemException;
+import com.liferay.commerce.inventory.exception.CommerceInventoryWarehouseItemQuantityException;
 import com.liferay.commerce.inventory.model.CommerceInventoryWarehouseItem;
 import com.liferay.commerce.inventory.service.CommerceInventoryWarehouseItemService;
 import com.liferay.commerce.product.constants.CPPortletKeys;
+import com.liferay.commerce.util.CommerceOrderItemQuantityFormatter;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCActionCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
@@ -18,10 +19,10 @@ import com.liferay.portal.kernel.servlet.SessionErrors;
 import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.ParamUtil;
 
-import java.math.BigDecimal;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
+import java.math.BigDecimal;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -32,7 +33,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + CPPortletKeys.CP_DEFINITIONS,
+		"jakarta.portlet.name=" + CPPortletKeys.CP_DEFINITIONS,
 		"mvc.command.name=/cp_definitions/edit_commerce_inventory_warehouse_item"
 	},
 	service = MVCActionCommand.class
@@ -60,6 +61,16 @@ public class EditCommerceInventoryWarehouseItemMVCActionCommand
 
 				actionResponse.setRenderParameter("mvcPath", "/error.jsp");
 			}
+			else if (exception instanceof
+						CommerceInventoryWarehouseItemQuantityException) {
+
+				SessionErrors.add(actionRequest, exception.getClass());
+
+				String redirect = ParamUtil.getString(
+					actionRequest, "redirect");
+
+				sendRedirect(actionRequest, actionResponse, redirect);
+			}
 			else {
 				throw exception;
 			}
@@ -68,37 +79,41 @@ public class EditCommerceInventoryWarehouseItemMVCActionCommand
 
 	private CommerceInventoryWarehouseItem
 			_updateCommerceInventoryWarehouseItem(ActionRequest actionRequest)
-		throws PortalException {
+		throws Exception {
 
 		CommerceInventoryWarehouseItem commerceInventoryWarehouseItem = null;
 
 		long commerceInventoryWarehouseItemId = ParamUtil.getLong(
 			actionRequest, "commerceInventoryWarehouseItemId");
 
-		BigDecimal quantity = (BigDecimal)ParamUtil.getNumber(
-			actionRequest, "quantity", BigDecimal.ZERO);
+		BigDecimal quantity = _commerceOrderItemQuantityFormatter.parse(
+			actionRequest, CommerceInventoryWarehouseItem.class.getName(),
+			"quantity");
 		String unitOfMeasureKey = ParamUtil.getString(
 			actionRequest, "unitOfMeasureKey");
 
 		if (commerceInventoryWarehouseItemId > 0) {
-			long mvccVersion = ParamUtil.getLong(actionRequest, "mvccVersion");
-
 			commerceInventoryWarehouseItem =
 				_commerceInventoryWarehouseItemService.
 					updateCommerceInventoryWarehouseItem(
-						commerceInventoryWarehouseItemId, mvccVersion, quantity,
-						unitOfMeasureKey);
+						commerceInventoryWarehouseItemId, quantity,
+						_commerceOrderItemQuantityFormatter.parse(
+							actionRequest,
+							CommerceInventoryWarehouseItem.class.getName(),
+							"reservedQuantity"),
+						unitOfMeasureKey,
+						ParamUtil.getLong(actionRequest, "mvccVersion"));
 		}
 		else {
-			long commerceInventoryWarehouseId = ParamUtil.getLong(
-				actionRequest, "commerceInventoryWarehouseId");
-			String sku = ParamUtil.getString(actionRequest, "sku");
-
 			commerceInventoryWarehouseItem =
 				_commerceInventoryWarehouseItemService.
 					addCommerceInventoryWarehouseItem(
-						StringPool.BLANK, commerceInventoryWarehouseId,
-						quantity, sku, unitOfMeasureKey);
+						StringPool.BLANK,
+						ParamUtil.getLong(
+							actionRequest, "commerceInventoryWarehouseId"),
+						quantity, BigDecimal.ZERO,
+						ParamUtil.getString(actionRequest, "sku"),
+						unitOfMeasureKey);
 		}
 
 		return commerceInventoryWarehouseItem;
@@ -107,5 +122,9 @@ public class EditCommerceInventoryWarehouseItemMVCActionCommand
 	@Reference
 	private CommerceInventoryWarehouseItemService
 		_commerceInventoryWarehouseItemService;
+
+	@Reference
+	private CommerceOrderItemQuantityFormatter
+		_commerceOrderItemQuantityFormatter;
 
 }

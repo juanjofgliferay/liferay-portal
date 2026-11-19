@@ -45,7 +45,7 @@ public class AdminHelperImpl implements AdminHelper {
 		List<KBArticle> kbArticles = _kbArticleService.getKBArticleVersions(
 			groupId, kbArticleResourcePrimKey,
 			WorkflowConstants.STATUS_APPROVED, QueryUtil.ALL_POS,
-			QueryUtil.ALL_POS, new KBArticleVersionComparator());
+			QueryUtil.ALL_POS, KBArticleVersionComparator.getInstance(false));
 
 		for (KBArticle curKBArticle : kbArticles) {
 			if ((curKBArticle.getVersion() < sourceVersion) &&
@@ -54,12 +54,14 @@ public class AdminHelperImpl implements AdminHelper {
 				previousVersion = curKBArticle.getVersion();
 			}
 
-			if ((curKBArticle.getVersion() > targetVersion) &&
-				((curKBArticle.getVersion() < nextVersion) ||
-				 (nextVersion == 0))) {
+			if ((curKBArticle.getVersion() <= targetVersion) ||
+				((curKBArticle.getVersion() >= nextVersion) &&
+				 (nextVersion != 0))) {
 
-				nextVersion = curKBArticle.getVersion();
+				continue;
 			}
+
+			nextVersion = curKBArticle.getVersion();
 		}
 
 		List<DiffVersion> diffVersions = new ArrayList<>();

@@ -230,10 +230,6 @@ public interface CPOptionValueLocalService
 		DynamicQuery dynamicQuery, Projection projection);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public CPOptionValue fetchByExternalReferenceCode(
-		String externalReferenceCode, long companyId);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public CPOptionValue fetchCPOptionValue(long CPOptionValueId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
@@ -328,6 +324,12 @@ public interface CPOptionValueLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public IndexableActionableDynamicQuery getIndexableActionableDynamicQuery();
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public CPOptionValue getOrAddEmptyCPOptionValue(
+			String externalReferenceCode, long cpOptionId, long companyId,
+			long userId)
+		throws PortalException;
+
 	/**
 	 * Returns the OSGi service identifier.
 	 *
@@ -392,3 +394,4 @@ public interface CPOptionValueLocalService
 		throws E;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1884059968

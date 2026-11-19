@@ -5,26 +5,30 @@
 
 package com.liferay.portal.search.internal.indexer.helper;
 
+import com.liferay.osgi.service.tracker.collections.list.ServiceTrackerList;
+import com.liferay.osgi.service.tracker.collections.list.ServiceTrackerListFactory;
 import com.liferay.portal.kernel.search.BooleanClauseOccur;
 import com.liferay.portal.kernel.search.BooleanQuery;
-import com.liferay.portal.kernel.search.ParseException;
 import com.liferay.portal.kernel.search.SearchContext;
-import com.liferay.portal.kernel.search.generic.StringQuery;
+import com.liferay.portal.kernel.search.StringQuery;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.search.constants.SearchContextAttributes;
+import com.liferay.portal.search.internal.indexer.IncludeExcludeUtil;
 import com.liferay.portal.search.internal.indexer.IndexerProvidedClausesUtil;
-import com.liferay.portal.search.internal.indexer.KeywordQueryContributorsRegistry;
-import com.liferay.portal.search.internal.util.SearchStringUtil;
+import com.liferay.portal.search.spi.model.query.contributor.HighlightFieldNamesQueryConfigContributor;
 import com.liferay.portal.search.spi.model.query.contributor.KeywordQueryContributor;
 import com.liferay.portal.search.spi.model.query.contributor.helper.KeywordQueryContributorHelper;
+import com.liferay.portal.search.util.SearchStringUtil;
 
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
+import org.osgi.framework.BundleContext;
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.component.annotations.Deactivate;
 
 /**
  * @author André de Oliveira
@@ -44,6 +48,22 @@ public class AddSearchKeywordsQueryContributorHelperImpl
 		_addKeywordQueryContributorClauses(booleanQuery, searchContext);
 	}
 
+	@Activate
+	protected void activate(BundleContext bundleContext) {
+		_highlightFieldNamesQueryConfigContributors =
+			ServiceTrackerListFactory.open(
+				bundleContext, HighlightFieldNamesQueryConfigContributor.class);
+		_keywordQueryContributors = ServiceTrackerListFactory.open(
+			bundleContext, KeywordQueryContributor.class,
+			"(!(indexer.class.name=*))");
+	}
+
+	@Deactivate
+	protected void deactivate() {
+		_highlightFieldNamesQueryConfigContributors.close();
+		_keywordQueryContributors.close();
+	}
+
 	protected Collection<String> getStrings(
 		String string, SearchContext searchContext) {
 
@@ -51,9 +71,6 @@ public class AddSearchKeywordsQueryContributorHelperImpl
 			SearchStringUtil.splitAndUnquote(
 				(String)searchContext.getAttribute(string)));
 	}
-
-	@Reference
-	protected KeywordQueryContributorsRegistry keywordQueryContributorsRegistry;
 
 	private void _addKeywordQueryContributorClauses(
 		BooleanQuery booleanQuery, SearchContext searchContext) {
@@ -65,19 +82,29 @@ public class AddSearchKeywordsQueryContributorHelperImpl
 		String keywords = searchContext.getKeywords();
 
 		if (luceneSyntax) {
+			for (HighlightFieldNamesQueryConfigContributor
+					highlightFieldNamesQueryConfigContributor :
+						_highlightFieldNamesQueryConfigContributors) {
+
+				highlightFieldNamesQueryConfigContributor.
+					contributeHighlightFieldNames(searchContext);
+			}
+
 			_addStringQuery(booleanQuery, keywords);
 
 			return;
 		}
 
 		List<KeywordQueryContributor> filteredKeywordQueryContributors =
-			keywordQueryContributorsRegistry.filterKeywordQueryContributors(
+			IncludeExcludeUtil.filter(
+				_keywordQueryContributors.toList(),
+				getStrings(
+					"search.full.query.clause.contributors.includes",
+					searchContext),
 				getStrings(
 					"search.full.query.clause.contributors.excludes",
 					searchContext),
-				getStrings(
-					"search.full.query.clause.contributors.includes",
-					searchContext));
+				this::_getClassName);
 
 		for (KeywordQueryContributor keywordQueryContributor :
 				filteredKeywordQueryContributors) {
@@ -110,13 +137,18 @@ public class AddSearchKeywordsQueryContributorHelperImpl
 			return;
 		}
 
-		try {
-			booleanQuery.add(
-				new StringQuery(keywords), BooleanClauseOccur.MUST);
-		}
-		catch (ParseException parseException) {
-			throw new RuntimeException(parseException);
-		}
+		booleanQuery.add(new StringQuery(keywords), BooleanClauseOccur.MUST);
 	}
+
+	private String _getClassName(Object object) {
+		Class<?> clazz = object.getClass();
+
+		return clazz.getName();
+	}
+
+	private ServiceTrackerList<HighlightFieldNamesQueryConfigContributor>
+		_highlightFieldNamesQueryConfigContributors;
+	private ServiceTrackerList<KeywordQueryContributor>
+		_keywordQueryContributors;
 
 }

@@ -7,6 +7,8 @@ package com.liferay.headless.commerce.admin.pricing.internal.resource.v2_0;
 
 import com.liferay.asset.kernel.model.AssetCategory;
 import com.liferay.asset.kernel.service.AssetCategoryLocalService;
+import com.liferay.asset.kernel.service.AssetCategoryService;
+import com.liferay.asset.kernel.service.AssetVocabularyService;
 import com.liferay.commerce.pricing.exception.NoSuchPriceModifierException;
 import com.liferay.commerce.pricing.model.CommercePriceModifier;
 import com.liferay.commerce.pricing.model.CommercePriceModifierRel;
@@ -16,7 +18,7 @@ import com.liferay.headless.commerce.admin.pricing.dto.v2_0.PriceModifier;
 import com.liferay.headless.commerce.admin.pricing.dto.v2_0.PriceModifierCategory;
 import com.liferay.headless.commerce.admin.pricing.internal.util.v2_0.PriceModifierCategoryUtil;
 import com.liferay.headless.commerce.admin.pricing.resource.v2_0.PriceModifierCategoryResource;
-import com.liferay.headless.commerce.core.util.ServiceContextHelper;
+import com.liferay.headless.commerce.core.helper.ServiceContextHelper;
 import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.search.filter.Filter;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
@@ -28,7 +30,6 @@ import com.liferay.portal.vulcan.fields.NestedField;
 import com.liferay.portal.vulcan.pagination.Page;
 import com.liferay.portal.vulcan.pagination.Pagination;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -59,8 +60,9 @@ public class PriceModifierCategoryResourceImpl
 		throws Exception {
 
 		CommercePriceModifier commercePriceModifier =
-			_commercePriceModifierService.fetchByExternalReferenceCode(
-				externalReferenceCode, contextCompany.getCompanyId());
+			_commercePriceModifierService.
+				fetchCommercePriceModifierByExternalReferenceCode(
+					externalReferenceCode, contextCompany.getCompanyId());
 
 		if (commercePriceModifier == null) {
 			throw new NoSuchPriceModifierException(
@@ -74,14 +76,14 @@ public class PriceModifierCategoryResourceImpl
 				AssetCategory.class.getName(), pagination.getStartPosition(),
 				pagination.getEndPosition(), null);
 
-		int totalItems =
+		int totalCount =
 			_commercePriceModifierRelService.getCommercePriceModifierRelsCount(
 				commercePriceModifier.getCommercePriceModifierId(),
 				AssetCategory.class.getName());
 
 		return Page.of(
 			_toPriceModifierCategories(commercePriceModifierRels), pagination,
-			totalItems);
+			totalCount);
 	}
 
 	@NestedField(
@@ -100,13 +102,13 @@ public class PriceModifierCategoryResourceImpl
 					id, search, pagination.getStartPosition(),
 					pagination.getEndPosition());
 
-		int totalItems =
+		int totalCount =
 			_commercePriceModifierRelService.
 				getCategoriesCommercePriceModifierRelsCount(id, search);
 
 		return Page.of(
 			_toPriceModifierCategories(commercePriceModifierRels), pagination,
-			totalItems);
+			totalCount);
 	}
 
 	@Override
@@ -117,8 +119,9 @@ public class PriceModifierCategoryResourceImpl
 		throws Exception {
 
 		CommercePriceModifier commercePriceModifier =
-			_commercePriceModifierService.fetchByExternalReferenceCode(
-				externalReferenceCode, contextCompany.getCompanyId());
+			_commercePriceModifierService.
+				fetchCommercePriceModifierByExternalReferenceCode(
+					externalReferenceCode, contextCompany.getCompanyId());
 
 		if (commercePriceModifier == null) {
 			throw new NoSuchPriceModifierException(
@@ -128,9 +131,10 @@ public class PriceModifierCategoryResourceImpl
 
 		CommercePriceModifierRel commercePriceModifierRel =
 			PriceModifierCategoryUtil.addCommercePriceModifierRel(
-				contextCompany.getGroupId(), _assetCategoryLocalService,
-				_commercePriceModifierRelService, priceModifierCategory,
-				commercePriceModifier, _serviceContextHelper);
+				_assetCategoryLocalService, _assetCategoryService,
+				_assetVocabularyService, commercePriceModifier,
+				_commercePriceModifierRelService, contextCompany.getGroupId(),
+				priceModifierCategory, _serviceContextHelper);
 
 		return _toPriceModifierCategory(
 			commercePriceModifierRel.getCommercePriceModifierRelId());
@@ -143,10 +147,11 @@ public class PriceModifierCategoryResourceImpl
 
 		CommercePriceModifierRel commercePriceModifierRel =
 			PriceModifierCategoryUtil.addCommercePriceModifierRel(
-				contextCompany.getGroupId(), _assetCategoryLocalService,
-				_commercePriceModifierRelService, priceModifierCategory,
+				_assetCategoryLocalService, _assetCategoryService,
+				_assetVocabularyService,
 				_commercePriceModifierService.getCommercePriceModifier(id),
-				_serviceContextHelper);
+				_commercePriceModifierRelService, contextCompany.getGroupId(),
+				priceModifierCategory, _serviceContextHelper);
 
 		return _toPriceModifierCategory(
 			commercePriceModifierRel.getCommercePriceModifierRelId());
@@ -170,17 +175,10 @@ public class PriceModifierCategoryResourceImpl
 			List<CommercePriceModifierRel> commercePriceModifierRels)
 		throws Exception {
 
-		List<PriceModifierCategory> priceModifierCategories = new ArrayList<>();
-
-		for (CommercePriceModifierRel commercePriceModifierRel :
-				commercePriceModifierRels) {
-
-			priceModifierCategories.add(
-				_toPriceModifierCategory(
-					commercePriceModifierRel.getCommercePriceModifierRelId()));
-		}
-
-		return priceModifierCategories;
+		return transform(
+			commercePriceModifierRels,
+			commercePriceModifierRel -> _toPriceModifierCategory(
+				commercePriceModifierRel.getCommercePriceModifierRelId()));
 	}
 
 	private PriceModifierCategory _toPriceModifierCategory(
@@ -202,6 +200,12 @@ public class PriceModifierCategoryResourceImpl
 
 	@Reference
 	private AssetCategoryLocalService _assetCategoryLocalService;
+
+	@Reference
+	private AssetCategoryService _assetCategoryService;
+
+	@Reference
+	private AssetVocabularyService _assetVocabularyService;
 
 	@Reference(
 		target = "(model.class.name=com.liferay.commerce.pricing.model.CommercePriceModifierRel)"

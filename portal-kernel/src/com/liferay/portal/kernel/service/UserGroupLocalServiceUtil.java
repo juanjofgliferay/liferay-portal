@@ -103,12 +103,13 @@ public class UserGroupLocalServiceUtil {
 	 * @return the user group
 	 */
 	public static UserGroup addUserGroup(
-			long userId, long companyId, String name, String description,
-			ServiceContext serviceContext)
+			String externalReferenceCode, long userId, long companyId,
+			String name, String description, ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().addUserGroup(
-			userId, companyId, name, description, serviceContext);
+			externalReferenceCode, userId, companyId, name, description,
+			serviceContext);
 	}
 
 	/**
@@ -469,6 +470,15 @@ public class UserGroupLocalServiceUtil {
 			getIndexableActionableDynamicQuery() {
 
 		return getService().getIndexableActionableDynamicQuery();
+	}
+
+	public static UserGroup getOrAddEmptyUserGroup(
+			String externalReferenceCode, long companyId, long userId,
+			String name)
+		throws PortalException {
+
+		return getService().getOrAddEmptyUserGroup(
+			externalReferenceCode, companyId, userId, name);
 	}
 
 	/**
@@ -957,6 +967,7 @@ public class UserGroupLocalServiceUtil {
 	/**
 	 * Updates the user group.
 	 *
+	 * @param externalReferenceCode the user group's external reference code
 	 * @param companyId the primary key of the user group's company
 	 * @param userGroupId the primary key of the user group
 	 * @param name the user group's name
@@ -967,12 +978,13 @@ public class UserGroupLocalServiceUtil {
 	 * @return the user group
 	 */
 	public static UserGroup updateUserGroup(
-			long companyId, long userGroupId, String name, String description,
-			ServiceContext serviceContext)
+			String externalReferenceCode, long companyId, long userGroupId,
+			String name, String description, ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().updateUserGroup(
-			companyId, userGroupId, name, description, serviceContext);
+			externalReferenceCode, companyId, userGroupId, name, description,
+			serviceContext);
 	}
 
 	/**
@@ -1000,3 +1012,4 @@ public class UserGroupLocalServiceUtil {
 	private static volatile UserGroupLocalService _service;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:67191497

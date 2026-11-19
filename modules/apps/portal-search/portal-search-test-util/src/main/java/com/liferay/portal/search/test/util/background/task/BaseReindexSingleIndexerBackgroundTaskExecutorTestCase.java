@@ -18,18 +18,15 @@ import com.liferay.portal.kernel.search.background.task.ReindexStatusMessageSend
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
-import com.liferay.portal.kernel.util.PropsUtil;
 import com.liferay.portal.search.index.IndexNameBuilder;
 import com.liferay.portal.search.internal.SearchEngineHelperImpl;
 import com.liferay.portal.search.internal.background.task.ReindexSingleIndexerBackgroundTaskExecutor;
 import com.liferay.portal.search.test.util.search.engine.SearchEngineFixture;
-import com.liferay.portal.util.PropsImpl;
 
 import java.io.Serializable;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.mockito.Mockito;
@@ -41,11 +38,6 @@ import org.osgi.framework.ServiceRegistration;
  * @author Adam Brandizzi
  */
 public abstract class BaseReindexSingleIndexerBackgroundTaskExecutorTestCase {
-
-	@BeforeClass
-	public static void setUpClass() {
-		PropsUtil.setProps(new PropsImpl());
-	}
 
 	@Before
 	public void setUp() throws Exception {
@@ -149,11 +141,11 @@ public abstract class BaseReindexSingleIndexerBackgroundTaskExecutorTestCase {
 	private final BackgroundTask _backgroundTask = Mockito.mock(
 		BackgroundTask.class);
 	private long _companyId;
+	private final IndexWriterHelper _indexWriterHelper = Mockito.mock(
+		IndexWriterHelper.class);
 	private final Indexer<Object> _indexer = Mockito.mock(Indexer.class);
 	private final IndexerRegistry _indexerRegistry = Mockito.mock(
 		IndexerRegistry.class);
-	private final IndexWriterHelper _indexWriterHelper = Mockito.mock(
-		IndexWriterHelper.class);
 	private final ReindexStatusMessageSender _reindexStatusMessageSender =
 		Mockito.mock(ReindexStatusMessageSender.class);
 	private SearchEngineFixture _searchEngineFixture;

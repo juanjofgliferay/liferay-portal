@@ -12,13 +12,18 @@ import com.liferay.batch.engine.unit.BatchEngineUnit;
 import com.liferay.batch.engine.unit.BatchEngineUnitConfiguration;
 import com.liferay.batch.engine.unit.BatchEngineUnitMetaInfo;
 import com.liferay.batch.engine.unit.BatchEngineUnitReader;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.io.Deserializer;
 import com.liferay.petra.io.Serializer;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.Company;
+import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.util.FileUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.NaturalOrderStringComparator;
 import com.liferay.portal.kernel.util.StringUtil;
 
 import java.io.File;
@@ -37,12 +42,13 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Dictionary;
 import java.util.Enumeration;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 import org.osgi.framework.Bundle;
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Alejandro Tardín
@@ -76,29 +82,19 @@ public class BatchEngineUnitReaderImpl implements BatchEngineUnitReader {
 		return Collections.emptyList();
 	}
 
-	public boolean isBatchEngineTechnical(String zipEntryName) {
-		if (zipEntryName.endsWith(
-				BatchEngineTaskContentType.JSONT.getFileExtension())) {
-
-			return true;
-		}
-
-		return false;
-	}
-
 	private String _getBatchEngineBundleEntryKey(URL url) {
 		String zipEntryName = url.getPath();
 
-		if (isBatchEngineTechnical(zipEntryName)) {
+		if (_isBatchEngineTechnical(zipEntryName)) {
 			return zipEntryName;
 		}
 
 		if (!zipEntryName.contains(StringPool.SLASH)) {
-			return StringPool.BLANK;
+			return StringPool.SLASH;
 		}
 
 		return zipEntryName.substring(
-			0, zipEntryName.lastIndexOf(StringPool.SLASH));
+			0, zipEntryName.lastIndexOf(StringPool.SLASH) + 1);
 	}
 
 	private Collection<BatchEngineUnit> _getBatchEngineBundleUnitsCollection(
@@ -112,8 +108,8 @@ public class BatchEngineUnitReaderImpl implements BatchEngineUnitReader {
 
 		batchEngineUnits = new ArrayList<>();
 
-		Map<String, List<URL>> classicBundleBatchEngineUnitURLs =
-			new HashMap<>();
+		Map<String, List<URL>> bundleBatchEngineUnitURLs = new TreeMap<>(
+			new NaturalOrderStringComparator());
 
 		Enumeration<URL> enumeration = bundle.findEntries(batchPath, "*", true);
 
@@ -124,9 +120,50 @@ public class BatchEngineUnitReaderImpl implements BatchEngineUnitReader {
 				continue;
 			}
 
-			String key = _getBatchEngineBundleEntryKey(url);
+			bundleBatchEngineUnitURLs.compute(
+				_getBatchEngineBundleEntryKey(url),
+				(k, urls) -> {
+					if (urls == null) {
+						urls = new ArrayList<>();
+					}
 
-			if (_isAdvancedBundleBatchEngineUnit(url.toString())) {
+					urls.add(url);
+
+					return urls;
+				});
+		}
+
+		long bundleCompanyId = -1;
+
+		Dictionary<String, String> headers = bundle.getHeaders(
+			StringPool.BLANK);
+
+		String liferayVirtualInstanceId = headers.get(
+			"Liferay-Virtual-Instance-Id");
+
+		if (liferayVirtualInstanceId != null) {
+			try {
+				Company company = _companyLocalService.getCompanyByWebId(
+					liferayVirtualInstanceId);
+
+				bundleCompanyId = company.getCompanyId();
+			}
+			catch (PortalException portalException) {
+				_log.error(
+					"Unable to get company ID by web ID " +
+						liferayVirtualInstanceId,
+					portalException);
+			}
+		}
+
+		for (Map.Entry<String, List<URL>> entry :
+				bundleBatchEngineUnitURLs.entrySet()) {
+
+			List<URL> urls = entry.getValue();
+
+			if (_isBatchEngineTechnical(entry.getKey())) {
+				URL url = urls.get(0);
+
 				AdvancedBundleBatchEngineUnitImpl
 					advancedBundleBatchEngineUnitImpl =
 						new AdvancedBundleBatchEngineUnitImpl(bundle, url);
@@ -136,32 +173,24 @@ public class BatchEngineUnitReaderImpl implements BatchEngineUnitReader {
 						setBatchEngineUnitMetaInfo(
 							_toBatchEngineUnitMetaInfo(
 								advancedBundleBatchEngineUnitImpl,
-								Arrays.asList(url)));
+								bundleCompanyId, Arrays.asList(url)));
 
 					batchEngineUnits.add(advancedBundleBatchEngineUnitImpl);
 				}
-
-				continue;
 			}
+			else {
+				ClassicBundleBatchEngineUnitImpl
+					classicBundleBatchEngineUnitImpl =
+						new ClassicBundleBatchEngineUnitImpl(bundle, urls);
 
-			classicBundleBatchEngineUnitURLs.computeIfAbsent(
-				key, k -> new ArrayList<>());
+				if (classicBundleBatchEngineUnitImpl.isValid()) {
+					classicBundleBatchEngineUnitImpl.setBatchEngineUnitMetaInfo(
+						_toBatchEngineUnitMetaInfo(
+							classicBundleBatchEngineUnitImpl, bundleCompanyId,
+							urls));
 
-			List<URL> urls = classicBundleBatchEngineUnitURLs.get(key);
-
-			urls.add(url);
-		}
-
-		for (List<URL> urls : classicBundleBatchEngineUnitURLs.values()) {
-			ClassicBundleBatchEngineUnitImpl classicBundleBatchEngineUnitImpl =
-				new ClassicBundleBatchEngineUnitImpl(bundle, urls);
-
-			if (classicBundleBatchEngineUnitImpl.isValid()) {
-				classicBundleBatchEngineUnitImpl.setBatchEngineUnitMetaInfo(
-					_toBatchEngineUnitMetaInfo(
-						classicBundleBatchEngineUnitImpl, urls));
-
-				batchEngineUnits.add(classicBundleBatchEngineUnitImpl);
+					batchEngineUnits.add(classicBundleBatchEngineUnitImpl);
+				}
 			}
 		}
 
@@ -183,8 +212,8 @@ public class BatchEngineUnitReaderImpl implements BatchEngineUnitReader {
 		return GetterUtil.getString(parameters.get("featureFlag"));
 	}
 
-	private boolean _isAdvancedBundleBatchEngineUnit(String url) {
-		return url.endsWith(
+	private boolean _isBatchEngineTechnical(String zipEntryName) {
+		return zipEntryName.endsWith(
 			BatchEngineTaskContentType.JSONT.getFileExtension());
 	}
 
@@ -264,11 +293,8 @@ public class BatchEngineUnitReaderImpl implements BatchEngineUnitReader {
 			return advancedBundleBatchEngineUnitImpl;
 		}
 
-		List<URL> urls = new ArrayList<>();
-
-		for (String path : paths) {
-			urls.add(bundle.getEntry(path));
-		}
+		List<URL> urls = TransformUtil.transformToList(
+			paths, path -> bundle.getEntry(path));
 
 		ClassicBundleBatchEngineUnitImpl classicBundleBatchEngineUnitImpl =
 			new ClassicBundleBatchEngineUnitImpl(bundle, urls);
@@ -280,7 +306,7 @@ public class BatchEngineUnitReaderImpl implements BatchEngineUnitReader {
 	}
 
 	private BatchEngineUnitMetaInfo _toBatchEngineUnitMetaInfo(
-		BatchEngineUnit batchEngineUnit, List<URL> urls) {
+		BatchEngineUnit batchEngineUnit, long bundleCompanyId, List<URL> urls) {
 
 		try {
 			BatchEngineUnitConfiguration batchEngineUnitConfiguration =
@@ -296,7 +322,8 @@ public class BatchEngineUnitReaderImpl implements BatchEngineUnitReader {
 
 			return new BatchEngineUnitMetaInfo(
 				batchEngineUnit instanceof AdvancedBundleBatchEngineUnitImpl,
-				batchEngineUnitConfiguration.getCompanyId(),
+				(bundleCompanyId > 0) ? bundleCompanyId :
+					batchEngineUnitConfiguration.getCompanyId(),
 				_getFeatureFlagKey(batchEngineUnitConfiguration),
 				batchEngineUnitConfiguration.isMultiCompany(), paths);
 		}
@@ -310,5 +337,8 @@ public class BatchEngineUnitReaderImpl implements BatchEngineUnitReader {
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		BatchEngineUnitReaderImpl.class);
+
+	@Reference
+	private CompanyLocalService _companyLocalService;
 
 }

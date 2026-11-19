@@ -6,14 +6,16 @@
 package com.liferay.portal.kernel.portlet;
 
 import com.liferay.portal.kernel.model.Portlet;
+import com.liferay.portal.kernel.template.TemplateRestricted;
 
-import javax.portlet.PortletContext;
+import jakarta.portlet.PortletContext;
 
-import javax.servlet.ServletContext;
+import jakarta.servlet.ServletContext;
 
 /**
  * @author Raymond Augé
  */
+@TemplateRestricted
 public interface LiferayPortletContext extends PortletContext {
 
 	public Portlet getPortlet();

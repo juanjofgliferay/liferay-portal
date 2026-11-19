@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -269,14 +270,6 @@ public class CPInstanceOptionValueRelLocalServiceUtil {
 			cpInstanceId);
 	}
 
-	public static List<CPInstanceOptionValueRel>
-		getCPInstanceCPInstanceOptionValueRels(
-			long cpDefinitionOptionRelId, long cpInstanceId) {
-
-		return getService().getCPInstanceCPInstanceOptionValueRels(
-			cpDefinitionOptionRelId, cpInstanceId);
-	}
-
 	/**
 	 * Returns the cp instance option value rel with the primary key.
 	 *
@@ -474,15 +467,13 @@ public class CPInstanceOptionValueRelLocalServiceUtil {
 	}
 
 	public static CPInstanceOptionValueRelLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(
-		CPInstanceOptionValueRelLocalService service) {
-
-		_service = service;
-	}
-
-	private static volatile CPInstanceOptionValueRelLocalService _service;
+	private static final Snapshot<CPInstanceOptionValueRelLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			CPInstanceOptionValueRelLocalServiceUtil.class,
+			CPInstanceOptionValueRelLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:88075732

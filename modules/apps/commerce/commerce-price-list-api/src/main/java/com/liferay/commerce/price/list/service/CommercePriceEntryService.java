@@ -96,12 +96,12 @@ public interface CommercePriceEntryService extends BaseService {
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public CommercePriceEntry fetchByExternalReferenceCode(
-			String externalReferenceCode, long companyId)
+	public CommercePriceEntry fetchCommercePriceEntry(long commercePriceEntryId)
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public CommercePriceEntry fetchCommercePriceEntry(long commercePriceEntryId)
+	public CommercePriceEntry fetchCommercePriceEntryByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
@@ -168,7 +168,7 @@ public interface CommercePriceEntryService extends BaseService {
 		throws PortalException;
 
 	public CommercePriceEntry updateExternalReferenceCode(
-			String externalReferenceCode, CommercePriceEntry commercePriceEntry)
+			CommercePriceEntry commercePriceEntry, String externalReferenceCode)
 		throws PortalException;
 
 	public CommercePriceEntry updatePricingInfo(
@@ -178,3 +178,4 @@ public interface CommercePriceEntryService extends BaseService {
 		throws PortalException;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1556527082

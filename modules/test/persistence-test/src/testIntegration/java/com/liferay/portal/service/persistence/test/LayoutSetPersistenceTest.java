@@ -110,11 +110,7 @@ public class LayoutSetPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		LayoutSet newLayoutSet = _persistence.create(pk);
-
-		newLayoutSet.setMvccVersion(RandomTestUtil.nextLong());
+		LayoutSet newLayoutSet = addLayoutSet();
 
 		newLayoutSet.setCtCollectionId(RandomTestUtil.nextLong());
 
@@ -145,7 +141,9 @@ public class LayoutSetPersistenceTest {
 		newLayoutSet.setLayoutSetPrototypeLinkEnabled(
 			RandomTestUtil.randomBoolean());
 
-		_layoutSets.add(_persistence.update(newLayoutSet));
+		newLayoutSet = _persistence.update(newLayoutSet);
+
+		_layoutSets.add(newLayoutSet);
 
 		LayoutSet existingLayoutSet = _persistence.findByPrimaryKey(
 			newLayoutSet.getPrimaryKey());
@@ -189,13 +187,6 @@ public class LayoutSetPersistenceTest {
 		Assert.assertEquals(
 			existingLayoutSet.isLayoutSetPrototypeLinkEnabled(),
 			newLayoutSet.isLayoutSetPrototypeLinkEnabled());
-	}
-
-	@Test
-	public void testCountByGroupId() throws Exception {
-		_persistence.countByGroupId(RandomTestUtil.nextLong());
-
-		_persistence.countByGroupId(0L);
 	}
 
 	@Test
@@ -535,25 +526,12 @@ public class LayoutSetPersistenceTest {
 			ReflectionTestUtil.<Boolean>invoke(
 				layoutSet, "getColumnOriginalValue",
 				new Class<?>[] {String.class}, "privateLayout"));
-
-		Assert.assertEquals(
-			Boolean.valueOf(layoutSet.getPrivateLayout()),
-			ReflectionTestUtil.<Boolean>invoke(
-				layoutSet, "getColumnOriginalValue",
-				new Class<?>[] {String.class}, "privateLayout"));
-		Assert.assertEquals(
-			Long.valueOf(layoutSet.getLogoId()),
-			ReflectionTestUtil.<Long>invoke(
-				layoutSet, "getColumnOriginalValue",
-				new Class<?>[] {String.class}, "logoId"));
 	}
 
 	protected LayoutSet addLayoutSet() throws Exception {
 		long pk = RandomTestUtil.nextLong();
 
 		LayoutSet layoutSet = _persistence.create(pk);
-
-		layoutSet.setMvccVersion(RandomTestUtil.nextLong());
 
 		layoutSet.setCtCollectionId(RandomTestUtil.nextLong());
 
@@ -594,3 +572,4 @@ public class LayoutSetPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-310615209

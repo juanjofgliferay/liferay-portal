@@ -23,13 +23,14 @@ import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.ListUtil;
+import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.Validator;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.util.List;
 import java.util.Locale;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * @author Guilherme Camacho
@@ -51,6 +52,11 @@ public class ObjectEntryTableInfoListRenderer
 	public List<InfoItemRenderer<?>> getAvailableInfoItemRenderers() {
 		return _infoItemRendererRegistry.getInfoItemRenderers(
 			ObjectEntry.class.getName());
+	}
+
+	@Override
+	public String getCollectionItemClassName() {
+		return _objectDefinition.getClassName();
 	}
 
 	@Override
@@ -81,12 +87,13 @@ public class ObjectEntryTableInfoListRenderer
 		InfoListRendererContext infoListRendererContext) {
 
 		InfoListBasicTableTag infoListBasicTableTag =
-			new InfoListBasicTableTag();
+			getInfoListBasicTableTag();
 
 		if ((objectEntries != null) && !objectEntries.isEmpty()) {
-			List<ObjectField> objectFields =
+			List<ObjectField> objectFields = ListUtil.filter(
 				_objectFieldLocalService.getObjectFields(
-					_objectDefinition.getObjectDefinitionId(), false);
+					_objectDefinition.getObjectDefinitionId()),
+				objectField -> !objectField.isMetadata());
 
 			try {
 				objectFields = _objectFieldLocalService.getActiveObjectFields(
@@ -97,7 +104,11 @@ public class ObjectEntryTableInfoListRenderer
 			}
 
 			infoListBasicTableTag.setInfoListObjectColumnNames(
-				ListUtil.toList(objectFields, ObjectField::getLabel));
+				ListUtil.toList(
+					objectFields,
+					objectField -> objectField.getLabel(
+						PortalUtil.getLocale(
+							infoListRendererContext.getHttpServletRequest()))));
 		}
 
 		infoListBasicTableTag.setInfoListObjects(objectEntries);
@@ -122,6 +133,10 @@ public class ObjectEntryTableInfoListRenderer
 		catch (Exception exception) {
 			_log.error("Unable to render object entries list", exception);
 		}
+	}
+
+	protected InfoListBasicTableTag getInfoListBasicTableTag() {
+		return new InfoListBasicTableTag();
 	}
 
 	private String _getCompanyScopedKey(String className) {

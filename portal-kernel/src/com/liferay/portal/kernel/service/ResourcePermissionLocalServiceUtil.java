@@ -206,8 +206,7 @@ public class ResourcePermissionLocalServiceUtil {
 	}
 
 	public static void copyModelResourcePermissions(
-			long companyId, String name, long sourcePrimKey, long targetPrimKey)
-		throws PortalException {
+		long companyId, String name, long sourcePrimKey, long targetPrimKey) {
 
 		getService().copyModelResourcePermissions(
 			companyId, name, sourcePrimKey, targetPrimKey);
@@ -279,6 +278,12 @@ public class ResourcePermissionLocalServiceUtil {
 		return getService().deleteResourcePermission(resourcePermission);
 	}
 
+	public static void deleteResourcePermissions(
+		long companyId, String name, int scope) {
+
+		getService().deleteResourcePermissions(companyId, name, scope);
+	}
+
 	/**
 	 * Deletes all resource permissions at the scope to resources of the type.
 	 * This method should not be confused with any of the
@@ -333,6 +338,10 @@ public class ResourcePermissionLocalServiceUtil {
 		throws PortalException {
 
 		getService().deleteResourcePermissions(companyId, name, scope, primKey);
+	}
+
+	public static void deleteResourcePermissions(String name) {
+		getService().deleteResourcePermissions(name);
 	}
 
 	public static <T> T dslQuery(DSLQuery dslQuery) {
@@ -478,12 +487,6 @@ public class ResourcePermissionLocalServiceUtil {
 		return getService().getIndexableActionableDynamicQuery();
 	}
 
-	public static Map<String, List<ResourcePermission>>
-		getIndividualPortletResourcePermissions(long companyId) {
-
-		return getService().getIndividualPortletResourcePermissions(companyId);
-	}
-
 	/**
 	 * Returns the OSGi service identifier.
 	 *
@@ -554,6 +557,20 @@ public class ResourcePermissionLocalServiceUtil {
 		return getService().getResourcePermissions(start, end);
 	}
 
+	public static List<ResourcePermission> getResourcePermissions(
+		long companyId, String name, int scope) {
+
+		return getService().getResourcePermissions(companyId, name, scope);
+	}
+
+	public static List<ResourcePermission> getResourcePermissions(
+		long companyId, String name, int scope, long roleId,
+		boolean viewActionId) {
+
+		return getService().getResourcePermissions(
+			companyId, name, scope, roleId, viewActionId);
+	}
+
 	/**
 	 * Returns all the resource permissions at the scope of the type.
 	 *
@@ -602,23 +619,6 @@ public class ResourcePermissionLocalServiceUtil {
 	}
 
 	/**
-	 * Returns the resource permissions that apply to the resource.
-	 *
-	 * @param companyId the primary key of the resource's company
-	 * @param groupId the primary key of the resource's group
-	 * @param name the resource's name, which can be either a class name or a
-	 portlet ID
-	 * @param primKey the primary key of the resource
-	 * @return the resource permissions associated with the resource
-	 */
-	public static List<ResourcePermission> getResourceResourcePermissions(
-		long companyId, long groupId, String name, String primKey) {
-
-		return getService().getResourceResourcePermissions(
-			companyId, groupId, name, primKey);
-	}
-
-	/**
 	 * Returns all the resource permissions for the role.
 	 *
 	 * @param roleId the primary key of the role
@@ -658,9 +658,8 @@ public class ResourcePermissionLocalServiceUtil {
 	}
 
 	public static List<com.liferay.portal.kernel.model.Role> getRoles(
-			long companyId, String name, int scope, String primKey,
-			String actionId)
-		throws PortalException {
+		long companyId, String name, int scope, String primKey,
+		String actionId) {
 
 		return getService().getRoles(companyId, name, scope, primKey, actionId);
 	}
@@ -814,6 +813,14 @@ public class ResourcePermissionLocalServiceUtil {
 
 		return getService().hasScopeResourcePermission(
 			companyId, name, scope, roleId, actionId);
+	}
+
+	public static void initDefaultModelResourcePermissions(
+			long companyId, java.util.Collection<String> modelResources)
+		throws PortalException {
+
+		getService().initDefaultModelResourcePermissions(
+			companyId, modelResources);
 	}
 
 	public static void initPortletDefaultPermissions(
@@ -1097,3 +1104,4 @@ public class ResourcePermissionLocalServiceUtil {
 	private static volatile ResourcePermissionLocalService _service;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-418465419

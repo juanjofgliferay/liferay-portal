@@ -10,6 +10,7 @@ import ClayIcon from '@clayui/icon';
 import {ClayTooltipProvider} from '@clayui/tooltip';
 import getCN from 'classnames';
 import {sub} from 'frontend-js-web';
+import {autoFields} from 'frontend-js-web/auto_fields';
 import React, {useEffect, useState} from 'react';
 
 import InputSets, {useInputSets} from '../shared/input_sets/index';
@@ -31,7 +32,7 @@ const VIEWS = {
 		value: 'classic',
 	},
 	NEW: {
-		label: Liferay.Language.get('new'),
+		label: Liferay.Language.get('new[adjective]'),
 		value: 'new',
 	},
 };
@@ -134,9 +135,8 @@ function Inputs({index, onInputSetItemChange, value}) {
 					<ClayTooltipProvider>
 						<span
 							className="c-ml-2"
-							data-title={Liferay.Language.get(
-								'indexed-field-help'
-							)}
+							tabIndex={0}
+							title={Liferay.Language.get('indexed-field-help')}
 						>
 							<ClayIcon symbol="question-circle-full" />
 						</span>
@@ -262,16 +262,14 @@ function SortConfigurationOptions({
 			return;
 		}
 
-		AUI().use('liferay-auto-fields', () => {
-			new Liferay.AutoFields({
-				contentBox: `#${namespace}fieldsId`,
-				namespace: `${namespace}`,
-			}).render();
+		autoFields({
+			contentBox: `#${namespace}fieldsId`,
+			namespace,
 		});
 	}, [namespace, view]);
 
 	/**
-	 * Since the classic view is controlled by the Liferay.AutoFields component,
+	 * Since the classic view is controlled by the AutoFields component,
 	 * the `classicFields` state isn't updated when items are added or removed.
 	 * This is needed to grab the current values when switching to the new view
 	 * or submitting the form.
@@ -287,8 +285,8 @@ function SortConfigurationOptions({
 		});
 
 		autoFieldFormRows.forEach((item) => {
-			const field = item.getElementsByClassName('sort-field-input')[0]
-				.value;
+			const field =
+				item.getElementsByClassName('sort-field-input')[0].value;
 			const label = item.getElementsByClassName('label-input')[0].value;
 
 			newFields.push({
@@ -319,7 +317,7 @@ function SortConfigurationOptions({
 					? [
 							{field: '', label: relevanceLabel},
 							...addOrdersToFieldNames(removeEmptyFields(fields)),
-					  ]
+						]
 					: addOrdersToFieldNames(removeEmptyFields(fields))
 			);
 
@@ -397,7 +395,9 @@ function SortConfigurationOptions({
 									<ClayToggle
 										label={
 											relevanceOn
-												? Liferay.Language.get('on')
+												? Liferay.Language.get(
+														'on[toggle]'
+													)
 												: Liferay.Language.get('off')
 										}
 										onToggle={() =>
@@ -410,6 +410,7 @@ function SortConfigurationOptions({
 						</ClayForm.Group>
 
 						{fields.map((valueItem, valueIndex) => (
+
 							// eslint-disable-next-line react/jsx-key
 							<InputSets.Item
 								{...getInputSetItemProps(valueItem, valueIndex)}
@@ -424,7 +425,8 @@ function SortConfigurationOptions({
 
 						<ClayButton
 							aria-label={Liferay.Language.get('add-option')}
-							className={getCN({
+							borderless
+							className={getCN('input-sets-add', {
 								'c-mt-4': !fields.length,
 							})}
 							displayType="secondary"
@@ -448,10 +450,10 @@ function SortConfigurationOptions({
 										...addOrdersToFieldNames(
 											removeEmptyFields(fields)
 										),
-								  ]
+									]
 								: addOrdersToFieldNames(
 										removeEmptyFields(fields)
-								  )
+									)
 						)}
 					/>
 				</>

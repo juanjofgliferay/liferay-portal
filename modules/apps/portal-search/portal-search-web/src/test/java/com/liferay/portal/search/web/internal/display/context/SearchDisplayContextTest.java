@@ -15,7 +15,6 @@ import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.module.util.SystemBundleUtil;
 import com.liferay.portal.kernel.search.Hits;
 import com.liferay.portal.kernel.search.SearchContext;
-import com.liferay.portal.kernel.test.util.PropsTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.upgrade.MockPortletPreferences;
@@ -33,13 +32,11 @@ import com.liferay.portal.search.web.constants.SearchPortletParameterNames;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 import com.liferay.portlet.portletconfiguration.util.ConfigurationRenderRequest;
 
-import java.util.Collections;
+import jakarta.portlet.PortletPreferences;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderRequest;
 
-import javax.portlet.PortletPreferences;
-import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
-
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -127,7 +124,6 @@ public class SearchDisplayContextTest {
 	protected RenderRequest renderRequest = Mockito.mock(RenderRequest.class);
 	protected SearchContextFactory searchContextFactory = Mockito.mock(
 		SearchContextFactory.class);
-	protected Searcher searcher = Mockito.mock(Searcher.class);
 	protected SearchRequestBuilderFactory searchRequestBuilderFactory =
 		new SearchRequestBuilderFactoryImpl();
 	protected SearchResponse searchResponse = Mockito.mock(
@@ -136,6 +132,7 @@ public class SearchDisplayContextTest {
 		SearchResponseBuilder.class);
 	protected SearchResponseBuilderFactory searchResponseBuilderFactory =
 		Mockito.mock(SearchResponseBuilderFactory.class);
+	protected Searcher searcher = Mockito.mock(Searcher.class);
 	protected ThemeDisplay themeDisplay;
 
 	private void _assertSearchKeywords(
@@ -253,8 +250,6 @@ public class SearchDisplayContextTest {
 
 		_setUpRequestKeywords(keywords);
 
-		PropsTestUtil.setProps(Collections.emptyMap());
-
 		return new SearchDisplayContext(
 			renderRequest, portletPreferences, _createPortal(renderRequest),
 			Mockito.mock(Language.class), searcher,
@@ -330,6 +325,22 @@ public class SearchDisplayContextTest {
 		);
 	}
 
+	private void _setUpSearchResponseBuilderFactory() {
+		Mockito.doReturn(
+			searchResponseBuilder
+		).when(
+			searchResponseBuilderFactory
+		).builder(
+			Mockito.any()
+		);
+
+		Mockito.doReturn(
+			searchResponse
+		).when(
+			searchResponseBuilder
+		).build();
+	}
+
 	private void _setUpSearcher() throws Exception {
 		Mockito.doReturn(
 			Mockito.mock(Hits.class)
@@ -346,22 +357,6 @@ public class SearchDisplayContextTest {
 		).search(
 			Mockito.any()
 		);
-	}
-
-	private void _setUpSearchResponseBuilderFactory() {
-		Mockito.doReturn(
-			searchResponseBuilder
-		).when(
-			searchResponseBuilderFactory
-		).builder(
-			Mockito.any()
-		);
-
-		Mockito.doReturn(
-			searchResponse
-		).when(
-			searchResponseBuilder
-		).build();
 	}
 
 	private static final MockedStatic<FrameworkUtil>

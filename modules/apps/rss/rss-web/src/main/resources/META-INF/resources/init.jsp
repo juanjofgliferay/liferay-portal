@@ -5,7 +5,7 @@
  */
 --%>
 
-<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<%@ taglib uri="jakarta.tags.core" prefix="c" %>
 
 <%@ taglib uri="http://java.sun.com/portlet_2_0" prefix="portlet" %>
 
@@ -19,6 +19,7 @@ taglib uri="http://liferay.com/tld/theme" prefix="liferay-theme" %><%@
 taglib uri="http://liferay.com/tld/ui" prefix="liferay-ui" %>
 
 <%@ page import="com.liferay.petra.string.StringPool" %><%@
+page import="com.liferay.portal.kernel.frontend.esm.FrontendESMUtil" %><%@
 page import="com.liferay.portal.kernel.language.LanguageUtil" %><%@
 page import="com.liferay.portal.kernel.util.Constants" %><%@
 page import="com.liferay.portal.kernel.util.FastDateFormatFactoryUtil" %><%@
@@ -36,14 +37,14 @@ page import="com.liferay.rss.web.internal.util.RSSFeedEntry" %>
 page import="com.rometools.rome.feed.synd.SyndFeed" %><%@
 page import="com.rometools.rome.feed.synd.SyndImage" %>
 
+<%@ page import="jakarta.portlet.ValidatorException" %>
+
 <%@ page import="java.text.Format" %>
 
 <%@ page import="java.util.Enumeration" %><%@
 page import="java.util.List" %><%@
 page import="java.util.Map" %><%@
 page import="java.util.Objects" %>
-
-<%@ page import="javax.portlet.ValidatorException" %>
 
 <liferay-theme:defineObjects />
 

@@ -48,9 +48,11 @@ public class FragmentCollectionStagedModelRepository
 		}
 
 		return _fragmentCollectionLocalService.addFragmentCollection(
-			userId, fragmentCollection.getGroupId(),
+			fragmentCollection.getExternalReferenceCode(), userId,
+			fragmentCollection.getGroupId(),
+			fragmentCollection.getFragmentCollectionKey(),
 			fragmentCollection.getName(), fragmentCollection.getDescription(),
-			serviceContext);
+			fragmentCollection.isMarketplace(), serviceContext);
 	}
 
 	@Override

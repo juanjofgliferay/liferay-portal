@@ -15,7 +15,7 @@ ViewAccountGroupsManagementToolbarDisplayContext viewAccountGroupsManagementTool
 
 <clay:management-toolbar
 	managementToolbarDisplayContext="<%= viewAccountGroupsManagementToolbarDisplayContext %>"
-	propsTransformer="account_groups_admin/js/AccountGroupsManagementToolbarPropsTransformer"
+	propsTransformer="{AccountGroupsManagementToolbarPropsTransformer} from account-admin-web"
 />
 
 <clay:container-fluid>
@@ -71,6 +71,16 @@ ViewAccountGroupsManagementToolbarDisplayContext viewAccountGroupsManagementTool
 					name="accounts"
 					value="<%= String.valueOf(accountGroupDisplay.getAccountEntriesCount()) %>"
 				/>
+
+				<liferay-ui:search-container-column-text
+					cssClass="table-cell-expand"
+					name="status"
+				>
+					<clay:label
+						displayType="<%= WorkflowConstants.getStatusStyle(accountGroupDisplay.getStatus()) %>"
+						label="<%= WorkflowConstants.getStatusLabel(accountGroupDisplay.getStatus()) %>"
+					/>
+				</liferay-ui:search-container-column-text>
 
 				<liferay-ui:search-container-column-jsp
 					path="/account_groups_admin/account_group_action.jsp"

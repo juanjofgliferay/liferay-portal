@@ -33,24 +33,6 @@ public class DDLRecordVersionLocalServiceImpl
 	extends DDLRecordVersionLocalServiceBaseImpl {
 
 	/**
-	 * Returns the latest record version matching the user, the record set, the
-	 * record set version and workflow status.
-	 *
-	 * @param  userId the primary key of the user
-	 * @param  recordSetId the primary key of the record set
-	 * @param  recordSetVersion the version of the record set
-	 * @param  status the workflow status
-	 * @return the latest matching record version or <code>null</code>
-	 */
-	@Override
-	public DDLRecordVersion fetchLatestRecordVersion(
-		long userId, long recordSetId, String recordSetVersion, int status) {
-
-		return ddlRecordVersionPersistence.fetchByU_R_R_S_Last(
-			userId, recordSetId, recordSetVersion, status, null);
-	}
-
-	/**
 	 * Returns the record's latest record version.
 	 *
 	 * @param  recordId the primary key of the record
@@ -61,20 +43,20 @@ public class DDLRecordVersionLocalServiceImpl
 	public DDLRecordVersion getLatestRecordVersion(long recordId)
 		throws PortalException {
 
-		List<DDLRecordVersion> recordVersions =
+		List<DDLRecordVersion> ddlRecordVersions =
 			ddlRecordVersionPersistence.findByRecordId(recordId);
 
-		if (recordVersions.isEmpty()) {
+		if (ddlRecordVersions.isEmpty()) {
 			throw new NoSuchRecordVersionException(
 				"No record versions found for record ID " + recordId);
 		}
 
-		recordVersions = ListUtil.copy(recordVersions);
+		ddlRecordVersions = ListUtil.copy(ddlRecordVersions);
 
 		Collections.sort(
-			recordVersions, new DDLRecordVersionVersionComparator());
+			ddlRecordVersions, new DDLRecordVersionVersionComparator());
 
-		return recordVersions.get(0);
+		return ddlRecordVersions.get(0);
 	}
 
 	/**

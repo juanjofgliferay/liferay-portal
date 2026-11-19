@@ -1,8 +1,25 @@
+<#assign totalHitsLabel = searchContainer.getTotal() />
+
+<#if !searchResultsPortletDisplayContext.isTotalHitsExact()>
+	<#assign totalHitsLabel = languageUtil.format(locale, "x-plus", [totalHitsLabel], false) />
+</#if>
+
 <div class="c-mb-4 c-mt-4 search-total-label">
 	<#if searchContainer.getTotal() == 1>
-		${languageUtil.format(locale, "x-result-for-x", [searchContainer.getTotal(), "<strong>" + htmlUtil.escape(searchResultsPortletDisplayContext.getKeywords()) + "</strong>"], false)}
+		${languageUtil.format(locale, "x-result-for-x", [totalHitsLabel, "<strong>" + htmlUtil.escape(searchResultsPortletDisplayContext.getKeywords()) + "</strong>"], false)}
 	<#else>
-		${languageUtil.format(locale, "x-results-for-x", [searchContainer.getTotal(), "<strong>" + htmlUtil.escape(searchResultsPortletDisplayContext.getKeywords()) + "</strong>"], false)}
+		${languageUtil.format(locale, "x-results-for-x", [totalHitsLabel, "<strong>" + htmlUtil.escape(searchResultsPortletDisplayContext.getKeywords()) + "</strong>"], false)}
+	</#if>
+
+	<#if !searchResultsPortletDisplayContext.isTotalHitsExact()>
+		<span
+			aria-label="${languageUtil.get(locale, 'approximate-result-count-help')}"
+			class="c-ml-1 inline-item lfr-portal-tooltip text-secondary"
+			tabindex="0"
+			title="${languageUtil.get(locale, 'approximate-result-count-help')}"
+		>
+			<@clay["icon"] symbol="info-circle" />
+		</span>
 	</#if>
 </div>
 
@@ -16,7 +33,7 @@
 							<span class="sticker">
 								<span class="sticker-overlay">
 									<img
-										alt="${languageUtil.get(locale, "thumbnail")}"
+										alt="${htmlUtil.escape(entry.getTitle()) + ' ' + languageUtil.get(locale, 'thumbnail')}"
 										class="sticker-img"
 										src="${entry.getThumbnailURLString()}"
 									/>
@@ -57,7 +74,7 @@
 										<span class="subtext-item">
 											&#183;
 
-											<@liferay.language key="written-by" />
+											<@liferay.language key="by" />
 
 											<strong>${htmlUtil.escape(entry.getCreatorUserName())}</strong>
 										</span>
@@ -119,14 +136,14 @@
 								<#if entry.isDocumentFormVisible()>
 									<div class="expand-details text-default">
 										<span class="list-group-text text-2">
-											<a class="shadow-none" href="javascript:void(0);">
+											<a href="javascript:void(0);" role="button">
 												<@liferay.language key="details" />...
 											</a>
 										</span>
 									</div>
 
 									<div class="hide search-results-list table-details table-responsive">
-										<table class="table table-sm">
+										<table class="table table-head-bordered table-hover table-sm table-striped">
 											<thead>
 												<tr>
 													<th class="table-cell-expand-smaller table-cell-text-end">
@@ -158,6 +175,24 @@
 							</div>
 						</section>
 					</div>
+
+					<#if entry.isAssetRendererURLDownloadVisible()>
+						<div class="autofit-col">
+							<span
+								class="c-mt-2 lfr-portal-tooltip"
+								title="${(entry.getAssetRendererDownloadSize() > 0)?then(languageUtil.format(locale, 'download-x', ['(' + languageUtil.formatStorageSize(entry.getAssetRendererDownloadSize(), locale) + ')']), languageUtil.get(locale, 'download'))}"
+							>
+								<@clay.link
+									aria\-label="${languageUtil.format(locale, 'download-x', [entry.getTitle()])}"
+									cssClass="link-monospaced link-outline link-outline-borderless link-outline-secondary"
+									displayType="secondary"
+									href="${entry.getAssetRendererURLDownload()}"
+								>
+									<@clay.icon symbol="download" />
+								</@clay.link>
+							</span>
+						</div>
+					</#if>
 				</li>
 			</#list>
 		</#if>

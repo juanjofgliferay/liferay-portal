@@ -10,20 +10,21 @@ import com.liferay.oauth2.provider.internal.test.TestAnnotatedApplication;
 import com.liferay.oauth2.provider.model.OAuth2Authorization;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
+import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
-import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.Time;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 
-import java.util.Date;
+import jakarta.ws.rs.client.Entity;
+import jakarta.ws.rs.client.Invocation;
+import jakarta.ws.rs.client.WebTarget;
+import jakarta.ws.rs.core.MultivaluedHashMap;
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.Response;
 
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.client.Invocation;
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.MultivaluedHashMap;
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.Response;
+import java.util.Date;
 
 import org.junit.Assert;
 import org.junit.ClassRule;
@@ -54,8 +55,8 @@ public class OAuth2AuthorizationClientTest extends BaseClientTestCase {
 
 		MultivaluedMap<String, String> formData = new MultivaluedHashMap<>();
 
-		formData.add("client_id", "oauthTestApplication");
-		formData.add("client_secret", "oauthTestApplicationSecret");
+		formData.add("client_id", _CLIENT_ID);
+		formData.add("client_secret", CLIENT_SECRET);
 		formData.add("grant_type", "client_credentials");
 
 		String tokenString = parseTokenString(
@@ -80,14 +81,21 @@ public class OAuth2AuthorizationClientTest extends BaseClientTestCase {
 		Assert.assertEquals(401, response.getStatus());
 	}
 
-	public static class ExpiredAuthorizationTestPreparator
+	@Override
+	protected BundleActivator getBundleActivator() {
+		return new ExpiredAuthorizationTestPreparator();
+	}
+
+	private static final String _CLIENT_ID = RandomTestUtil.randomString();
+
+	private class ExpiredAuthorizationTestPreparator
 		extends BaseTestPreparatorBundleActivator {
 
 		@Override
 		protected void prepareTest() throws Exception {
-			long defaultCompanyId = PortalUtil.getDefaultCompanyId();
+			long companyId = TestPropsValues.getCompanyId();
 
-			User user = UserTestUtil.getAdminUser(defaultCompanyId);
+			User user = UserTestUtil.getAdminUser(companyId);
 
 			registerJaxRsApplication(
 				new TestAnnotatedApplication(), "annotated",
@@ -97,15 +105,9 @@ public class OAuth2AuthorizationClientTest extends BaseClientTestCase {
 					"oauth2.scope.checker.type", "annotations"
 				).build());
 
-			createOAuth2Application(
-				defaultCompanyId, user, "oauthTestApplication");
+			createOAuth2Application(companyId, user, _CLIENT_ID);
 		}
 
-	}
-
-	@Override
-	protected BundleActivator getBundleActivator() {
-		return new ExpiredAuthorizationTestPreparator();
 	}
 
 }

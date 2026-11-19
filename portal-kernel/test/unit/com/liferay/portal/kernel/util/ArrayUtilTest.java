@@ -295,6 +295,22 @@ public class ArrayUtilTest {
 	}
 
 	@Test
+	public void testEqualsIgnoreCase() {
+		Assert.assertFalse(
+			ArrayUtil.equalsIgnoreCase(
+				new String[] {"A", "A"}, new String[] {"B", "B"}));
+		Assert.assertTrue(
+			ArrayUtil.equalsIgnoreCase(
+				new String[] {"A", "B"}, new String[] {"A", "B"}));
+		Assert.assertTrue(
+			ArrayUtil.equalsIgnoreCase(
+				new String[] {"a", "A"}, new String[] {"A", "a"}));
+		Assert.assertTrue(
+			ArrayUtil.equalsIgnoreCase(
+				new String[] {"a", "b"}, new String[] {"a", "b"}));
+	}
+
+	@Test
 	public void testFilterDoubleArray() {
 		double[] array = ArrayUtil.filter(
 			new double[] {0.1, 0.2, 1.2, 1.3}, _doublePredicate);
@@ -817,12 +833,15 @@ public class ArrayUtilTest {
 	}
 
 	@Test
-	public void testSoredUnique() {
+	public void testSortedUnique() {
 		byte[] bytes = {2, 3, 1};
 
 		byte[] sortedUniqueBytes = ArrayUtil.sortedUnique(bytes);
 
-		Assert.assertSame(bytes, sortedUniqueBytes);
+		Assert.assertNotSame(bytes, sortedUniqueBytes);
+
+		Assert.assertArrayEquals(new byte[] {2, 3, 1}, bytes);
+
 		Assert.assertArrayEquals(new byte[] {1, 2, 3}, sortedUniqueBytes);
 
 		bytes = new byte[] {2, 3, 1, 2, 3, 3, 1};
@@ -830,13 +849,29 @@ public class ArrayUtilTest {
 		sortedUniqueBytes = ArrayUtil.sortedUnique(bytes);
 
 		Assert.assertNotSame(bytes, sortedUniqueBytes);
+
+		Assert.assertArrayEquals(new byte[] {2, 3, 1, 2, 3, 3, 1}, bytes);
+
 		Assert.assertArrayEquals(new byte[] {1, 2, 3}, sortedUniqueBytes);
+
+		bytes = new byte[] {1};
+
+		sortedUniqueBytes = ArrayUtil.sortedUnique(bytes);
+
+		Assert.assertNotSame(bytes, sortedUniqueBytes);
+
+		Assert.assertArrayEquals(new byte[] {1}, bytes);
+
+		Assert.assertArrayEquals(new byte[] {1}, sortedUniqueBytes);
 
 		double[] doubles = {2.0, 3.0, 1.0};
 
 		double[] sortedUniqueDoubles = ArrayUtil.sortedUnique(doubles);
 
-		Assert.assertSame(doubles, sortedUniqueDoubles);
+		Assert.assertNotSame(doubles, sortedUniqueDoubles);
+
+		Assert.assertArrayEquals(new double[] {2.0, 3.0, 1.0}, doubles, 0.0001);
+
 		Assert.assertArrayEquals(
 			new double[] {1.0, 2.0, 3.0}, sortedUniqueDoubles, 0.0001);
 
@@ -845,14 +880,33 @@ public class ArrayUtilTest {
 		sortedUniqueDoubles = ArrayUtil.sortedUnique(doubles);
 
 		Assert.assertNotSame(doubles, sortedUniqueDoubles);
+
+		Assert.assertArrayEquals(
+			new double[] {2.0, 3.0, 1.0, 2.0, 3.0, 3.0, 1.0}, doubles, 0.0001);
+
 		Assert.assertArrayEquals(
 			new double[] {1.0, 2.0, 3.0}, sortedUniqueDoubles, 0.0001);
+
+		doubles = new double[] {1.0};
+
+		sortedUniqueDoubles = ArrayUtil.sortedUnique(doubles);
+
+		Assert.assertNotSame(doubles, sortedUniqueDoubles);
+
+		Assert.assertArrayEquals(new double[] {1.0}, doubles, 0.0001);
+
+		Assert.assertArrayEquals(
+			new double[] {1.0}, sortedUniqueDoubles, 0.0001);
 
 		float[] floats = {2.0F, 3.0F, 1.0F};
 
 		float[] sortedUniqueFloats = ArrayUtil.sortedUnique(floats);
 
-		Assert.assertSame(floats, sortedUniqueFloats);
+		Assert.assertNotSame(floats, sortedUniqueFloats);
+
+		Assert.assertArrayEquals(
+			new float[] {2.0F, 3.0F, 1.0F}, floats, 0.0001F);
+
 		Assert.assertArrayEquals(
 			new float[] {1.0F, 2.0F, 3.0F}, sortedUniqueFloats, 0.0001F);
 
@@ -861,14 +915,33 @@ public class ArrayUtilTest {
 		sortedUniqueFloats = ArrayUtil.sortedUnique(floats);
 
 		Assert.assertNotSame(floats, sortedUniqueFloats);
+
+		Assert.assertArrayEquals(
+			new float[] {2.0F, 3.0F, 1.0F, 2.0F, 3.0F, 3.0F, 1.0F}, floats,
+			0.0001F);
+
 		Assert.assertArrayEquals(
 			new float[] {1.0F, 2.0F, 3.0F}, sortedUniqueFloats, 0.0001F);
+
+		floats = new float[] {1.0F};
+
+		sortedUniqueFloats = ArrayUtil.sortedUnique(floats);
+
+		Assert.assertNotSame(floats, sortedUniqueFloats);
+
+		Assert.assertArrayEquals(new float[] {1.0F}, floats, 0.0001F);
+
+		Assert.assertArrayEquals(
+			new float[] {1.0F}, sortedUniqueFloats, 0.0001F);
 
 		int[] ints = {2, 3, 1};
 
 		int[] sortedUniqueInts = ArrayUtil.sortedUnique(ints);
 
-		Assert.assertSame(ints, sortedUniqueInts);
+		Assert.assertNotSame(ints, sortedUniqueInts);
+
+		Assert.assertArrayEquals(new int[] {2, 3, 1}, ints);
+
 		Assert.assertArrayEquals(new int[] {1, 2, 3}, sortedUniqueInts);
 
 		ints = new int[] {2, 3, 1, 2, 3, 3, 1};
@@ -876,13 +949,29 @@ public class ArrayUtilTest {
 		sortedUniqueInts = ArrayUtil.sortedUnique(ints);
 
 		Assert.assertNotSame(ints, sortedUniqueInts);
+
+		Assert.assertArrayEquals(new int[] {2, 3, 1, 2, 3, 3, 1}, ints);
+
 		Assert.assertArrayEquals(new int[] {1, 2, 3}, sortedUniqueInts);
+
+		ints = new int[] {1};
+
+		sortedUniqueInts = ArrayUtil.sortedUnique(ints);
+
+		Assert.assertNotSame(ints, sortedUniqueInts);
+
+		Assert.assertArrayEquals(new int[] {1}, ints);
+
+		Assert.assertArrayEquals(new int[] {1}, sortedUniqueInts);
 
 		long[] longs = {2, 3, 1};
 
 		long[] sortedUniqueLongs = ArrayUtil.sortedUnique(longs);
 
-		Assert.assertSame(longs, sortedUniqueLongs);
+		Assert.assertNotSame(longs, sortedUniqueLongs);
+
+		Assert.assertArrayEquals(new long[] {2, 3, 1}, longs);
+
 		Assert.assertArrayEquals(new long[] {1, 2, 3}, sortedUniqueLongs);
 
 		longs = new long[] {2, 3, 1, 2, 3, 3, 1};
@@ -890,13 +979,29 @@ public class ArrayUtilTest {
 		sortedUniqueLongs = ArrayUtil.sortedUnique(longs);
 
 		Assert.assertNotSame(longs, sortedUniqueLongs);
+
+		Assert.assertArrayEquals(new long[] {2, 3, 1, 2, 3, 3, 1}, longs);
+
 		Assert.assertArrayEquals(new long[] {1, 2, 3}, sortedUniqueLongs);
+
+		longs = new long[] {1};
+
+		sortedUniqueLongs = ArrayUtil.sortedUnique(longs);
+
+		Assert.assertNotSame(longs, sortedUniqueLongs);
+
+		Assert.assertArrayEquals(new long[] {1}, longs);
+
+		Assert.assertArrayEquals(new long[] {1}, sortedUniqueLongs);
 
 		short[] shorts = {2, 3, 1};
 
 		short[] sortedUniqueShorts = ArrayUtil.sortedUnique(shorts);
 
-		Assert.assertSame(shorts, sortedUniqueShorts);
+		Assert.assertNotSame(shorts, sortedUniqueShorts);
+
+		Assert.assertArrayEquals(new short[] {2, 3, 1}, shorts);
+
 		Assert.assertArrayEquals(new short[] {1, 2, 3}, sortedUniqueShorts);
 
 		shorts = new short[] {2, 3, 1, 2, 3, 3, 1};
@@ -904,13 +1009,29 @@ public class ArrayUtilTest {
 		sortedUniqueShorts = ArrayUtil.sortedUnique(shorts);
 
 		Assert.assertNotSame(shorts, sortedUniqueShorts);
+
+		Assert.assertArrayEquals(new short[] {2, 3, 1, 2, 3, 3, 1}, shorts);
+
 		Assert.assertArrayEquals(new short[] {1, 2, 3}, sortedUniqueShorts);
+
+		shorts = new short[] {1};
+
+		sortedUniqueShorts = ArrayUtil.sortedUnique(shorts);
+
+		Assert.assertNotSame(shorts, sortedUniqueShorts);
+
+		Assert.assertArrayEquals(new short[] {1}, shorts);
+
+		Assert.assertArrayEquals(new short[] {1}, sortedUniqueShorts);
 
 		String[] strings = {"world", "hello"};
 
 		String[] sortedUniqueStrings = ArrayUtil.sortedUnique(strings);
 
-		Assert.assertSame(strings, sortedUniqueStrings);
+		Assert.assertNotSame(strings, sortedUniqueStrings);
+
+		Assert.assertArrayEquals(new String[] {"world", "hello"}, strings);
+
 		Assert.assertArrayEquals(
 			new String[] {"hello", "world"}, sortedUniqueStrings);
 
@@ -919,8 +1040,23 @@ public class ArrayUtilTest {
 		sortedUniqueStrings = ArrayUtil.sortedUnique(strings);
 
 		Assert.assertNotSame(strings, sortedUniqueStrings);
+
+		Assert.assertArrayEquals(
+			new String[] {"world", "hello", null, "hello", null, "world"},
+			strings);
+
 		Assert.assertArrayEquals(
 			new String[] {"hello", "world", null}, sortedUniqueStrings);
+
+		strings = new String[] {"hello"};
+
+		sortedUniqueStrings = ArrayUtil.sortedUnique(strings);
+
+		Assert.assertNotSame(strings, sortedUniqueStrings);
+
+		Assert.assertArrayEquals(new String[] {"hello"}, strings);
+
+		Assert.assertArrayEquals(new String[] {"hello"}, sortedUniqueStrings);
 	}
 
 	@Test

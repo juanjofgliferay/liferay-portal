@@ -9,7 +9,7 @@ import com.liferay.portal.json.JSONFactoryImpl;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -35,14 +35,11 @@ public class ValidateRankingMVCResourceCommandTest
 			new ValidateRankingMVCResourceCommand();
 
 		ReflectionTestUtil.setFieldValue(
-			_validateRankingMVCResourceCommand, "duplicateQueryStringsDetector",
-			duplicateQueryStringsDetector);
+			_validateRankingMVCResourceCommand,
+			"_duplicateQueryStringsDetector", duplicateQueryStringsDetector);
 		ReflectionTestUtil.setFieldValue(
 			_validateRankingMVCResourceCommand, "indexNameBuilder",
 			indexNameBuilder);
-		ReflectionTestUtil.setFieldValue(
-			_validateRankingMVCResourceCommand, "_jsonFactory",
-			new JSONFactoryImpl());
 		ReflectionTestUtil.setFieldValue(
 			_validateRankingMVCResourceCommand, "portal", portal);
 		ReflectionTestUtil.setFieldValue(
@@ -51,6 +48,12 @@ public class ValidateRankingMVCResourceCommandTest
 		ReflectionTestUtil.setFieldValue(
 			_validateRankingMVCResourceCommand, "searchRequestBuilderFactory",
 			searchRequestBuilderFactory);
+		ReflectionTestUtil.setFieldValue(
+			_validateRankingMVCResourceCommand, "_jsonFactory",
+			new JSONFactoryImpl());
+		ReflectionTestUtil.setFieldValue(
+			_validateRankingMVCResourceCommand, "_rankingHelper",
+			rankingHelper);
 	}
 
 	@Test

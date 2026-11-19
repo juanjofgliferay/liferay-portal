@@ -19,6 +19,7 @@ import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
+import com.liferay.portal.kernel.test.portlet.MockActionRequest;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
@@ -29,12 +30,9 @@ import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
-import com.liferay.portal.model.impl.LayoutModelImpl;
-import com.liferay.portal.test.rule.FeatureFlags;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
-import com.liferay.portletmvc4spring.test.mock.web.portlet.MockActionRequest;
 
 import java.util.Date;
 import java.util.List;
@@ -49,7 +47,6 @@ import org.junit.runner.RunWith;
 /**
  * @author Jürgen Kappler
  */
-@FeatureFlags("LPS-180328")
 @RunWith(Arquillian.class)
 public class LayoutLockManagerTest {
 
@@ -77,6 +74,60 @@ public class LayoutLockManagerTest {
 			Layout.class.getName(), draftLayout.getPlid());
 
 		Assert.assertNotNull(lock);
+	}
+
+	@Test(expected = LockedLayoutException.class)
+	public void testGetLockWithDifferentUser() throws Exception {
+		Layout draftLayout = _getDraftLayout();
+
+		User newUser = UserTestUtil.addUser();
+
+		try {
+			_lockLayout(draftLayout, _user);
+			_lockLayout(draftLayout, newUser);
+		}
+		finally {
+			_userLocalService.deleteUser(newUser);
+		}
+	}
+
+	@Test
+	public void testGetLockWithSameUser() throws Exception {
+		long originalLockExpirationTime =
+			ReflectionTestUtil.getAndSetFieldValue(
+				_layoutLockManager, "_lockExpirationTime", 60000L);
+
+		Layout draftLayout = _getDraftLayout();
+
+		try {
+			_lockLayout(draftLayout, _user);
+
+			Lock lock1 = _lockManager.fetchLock(
+				Layout.class.getName(), draftLayout.getPlid());
+
+			Assert.assertNotNull(lock1);
+			Assert.assertNotNull(lock1.getExpirationDate());
+
+			_lockLayout(draftLayout, _user);
+
+			Lock lock2 = _lockManager.fetchLock(
+				Layout.class.getName(), draftLayout.getPlid());
+
+			Assert.assertNotNull(lock2);
+			Assert.assertNotNull(lock2.getExpirationDate());
+
+			Assert.assertEquals(lock1.getLockId(), lock2.getLockId());
+
+			Date lock1ExpirationDate = lock1.getExpirationDate();
+			Date lock2ExpirationDate = lock2.getExpirationDate();
+
+			Assert.assertTrue(lock2ExpirationDate.after(lock1ExpirationDate));
+		}
+		finally {
+			ReflectionTestUtil.setFieldValue(
+				_layoutLockManager, "_lockExpirationTime",
+				originalLockExpirationTime);
+		}
 	}
 
 	@Test
@@ -110,59 +161,23 @@ public class LayoutLockManagerTest {
 		}
 	}
 
-	@Test(expected = LockedLayoutException.class)
-	public void testGetLockWithDifferentUser() throws Exception {
-		Layout draftLayout = _getDraftLayout();
-
-		User newUser = UserTestUtil.addUser();
-
-		try {
-			_lockLayout(draftLayout, _user);
-			_lockLayout(draftLayout, newUser);
-		}
-		finally {
-			_userLocalService.deleteUser(newUser);
-		}
-	}
-
 	@Test
-	public void testGetLockWithSameUser() throws Exception {
-		long originalLockExpirationTime = LayoutModelImpl.LOCK_EXPIRATION_TIME;
+	public void testGetLockedLayoutsWithDifferentGroups() throws Exception {
+		Layout draftLayout = _getDraftLayout(_group);
 
-		Layout draftLayout = _getDraftLayout();
+		_lockLayout(draftLayout, _user);
 
-		try {
-			ReflectionTestUtil.setFieldValue(
-				LayoutModelImpl.class, "LOCK_EXPIRATION_TIME", 60000);
+		_lockLayout(_getDraftLayout(GroupTestUtil.addGroup()), _user);
 
-			_lockLayout(draftLayout, _user);
+		List<LockedLayout> lockedLayouts = _layoutLockManager.getLockedLayouts(
+			TestPropsValues.getCompanyId(), _group.getGroupId(),
+			LocaleUtil.getDefault());
 
-			Lock lock1 = _lockManager.fetchLock(
-				Layout.class.getName(), draftLayout.getPlid());
+		Assert.assertEquals(lockedLayouts.toString(), 1, lockedLayouts.size());
 
-			Assert.assertNotNull(lock1);
-			Assert.assertNotNull(lock1.getExpirationDate());
+		LockedLayout lockedLayout = lockedLayouts.get(0);
 
-			_lockLayout(draftLayout, _user);
-
-			Lock lock2 = _lockManager.fetchLock(
-				Layout.class.getName(), draftLayout.getPlid());
-
-			Assert.assertNotNull(lock2);
-			Assert.assertNotNull(lock2.getExpirationDate());
-
-			Assert.assertEquals(lock1.getLockId(), lock2.getLockId());
-
-			Date lock1ExpirationDate = lock1.getExpirationDate();
-			Date lock2ExpirationDate = lock2.getExpirationDate();
-
-			Assert.assertTrue(lock2ExpirationDate.after(lock1ExpirationDate));
-		}
-		finally {
-			ReflectionTestUtil.setFieldValue(
-				LayoutModelImpl.class, "LOCK_EXPIRATION_TIME",
-				originalLockExpirationTime);
-		}
+		Assert.assertEquals(draftLayout.getPlid(), lockedLayout.getPlid());
 	}
 
 	@Test
@@ -185,7 +200,11 @@ public class LayoutLockManagerTest {
 	}
 
 	private Layout _getDraftLayout() throws Exception {
-		Layout layout = LayoutTestUtil.addTypeContentLayout(_group);
+		return _getDraftLayout(_group);
+	}
+
+	private Layout _getDraftLayout(Group group) throws Exception {
+		Layout layout = LayoutTestUtil.addTypeContentLayout(group);
 
 		Layout draftLayout = layout.fetchDraftLayout();
 

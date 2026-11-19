@@ -17,10 +17,12 @@ import com.liferay.commerce.product.service.CPInstanceLocalService;
 import com.liferay.commerce.product.service.CPInstanceUnitOfMeasureLocalService;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.ModelListenerException;
+import com.liferay.portal.kernel.lazy.referencing.LazyReferencingThreadLocal;
 import com.liferay.portal.kernel.model.BaseModelListener;
 import com.liferay.portal.kernel.model.ModelListener;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
+import com.liferay.portal.kernel.util.BigDecimalUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 
 import java.math.BigDecimal;
@@ -41,17 +43,35 @@ public class CPInstanceUnitOfMeasureModelListener
 			CPInstance cpInstance = _cpInstanceLocalService.getCPInstance(
 				cpInstanceUnitOfMeasure.getCPInstanceId());
 
+			if (LazyReferencingThreadLocal.isEnabled()) {
+				for (CommercePriceEntry commercePriceEntry :
+						_commercePriceEntryLocalService.getCommercePriceEntries(
+							cpInstance.getCPInstanceUuid(), null,
+							cpInstanceUnitOfMeasure.getKey())) {
+
+					commercePriceEntry.setPricingQuantity(
+						cpInstanceUnitOfMeasure.getPricingQuantity());
+					commercePriceEntry.setQuantity(
+						cpInstanceUnitOfMeasure.getIncrementalOrderQuantity());
+
+					_commercePriceEntryLocalService.updateCommercePriceEntry(
+						commercePriceEntry);
+				}
+			}
+
 			int count =
 				_cpInstanceUnitOfMeasureLocalService.
 					getCPInstanceUnitOfMeasuresCount(
 						cpInstanceUnitOfMeasure.getCPInstanceId());
 
-			if (count == 1) {
+			if ((count == 1) && !LazyReferencingThreadLocal.isEnabled()) {
 				for (CommercePriceEntry commercePriceEntry :
 						_commercePriceEntryLocalService.getCommercePriceEntries(
 							cpInstance.getCPInstanceUuid(), null,
 							StringPool.BLANK)) {
 
+					commercePriceEntry.setPricingQuantity(
+						cpInstanceUnitOfMeasure.getPricingQuantity());
 					commercePriceEntry.setQuantity(
 						cpInstanceUnitOfMeasure.getIncrementalOrderQuantity());
 					commercePriceEntry.setUnitOfMeasureKey(
@@ -61,7 +81,7 @@ public class CPInstanceUnitOfMeasureModelListener
 						commercePriceEntry);
 				}
 			}
-			else {
+			else if (count > 1) {
 				_addCommercePriceEntry(
 					cpInstance, cpInstanceUnitOfMeasure,
 					CommercePriceListConstants.TYPE_PRICE_LIST);
@@ -100,6 +120,7 @@ public class CPInstanceUnitOfMeasureModelListener
 								getIncrementalOrderQuantity(),
 							cpInstanceUnitOfMeasure.getKey())) {
 
+					commercePriceEntry.setPricingQuantity(null);
 					commercePriceEntry.setQuantity(null);
 					commercePriceEntry.setUnitOfMeasureKey(null);
 
@@ -138,6 +159,17 @@ public class CPInstanceUnitOfMeasureModelListener
 			int compare = originalIncrementalOrderQuantity.compareTo(
 				incrementalOrderQuantity);
 
+			BigDecimal pricingQuantity =
+				cpInstanceUnitOfMeasure.getPricingQuantity();
+
+			if ((compare == 0) &&
+				!BigDecimalUtil.eq(
+					originalCPInstanceUnitOfMeasure.getPricingQuantity(),
+					pricingQuantity)) {
+
+				compare = 1;
+			}
+
 			if (!StringUtil.equals(
 					originalUnitOfMeasureKey, unitOfMeasureKey) ||
 				(compare != 0)) {
@@ -151,6 +183,7 @@ public class CPInstanceUnitOfMeasureModelListener
 							originalIncrementalOrderQuantity,
 							originalUnitOfMeasureKey)) {
 
+					commercePriceEntry.setPricingQuantity(pricingQuantity);
 					commercePriceEntry.setQuantity(incrementalOrderQuantity);
 					commercePriceEntry.setUnitOfMeasureKey(unitOfMeasureKey);
 
@@ -174,25 +207,38 @@ public class CPInstanceUnitOfMeasureModelListener
 				fetchCatalogBaseCommercePriceListByType(
 					cpInstance.getGroupId(), type);
 
-		if (commercePriceList != null) {
-			ServiceContext serviceContext =
-				ServiceContextThreadLocal.getServiceContext();
-
-			if ((serviceContext == null) || (serviceContext.getUserId() == 0)) {
-				serviceContext = new ServiceContext();
-
-				serviceContext.setUserId(cpInstanceUnitOfMeasure.getUserId());
-			}
-
-			CPDefinition cpDefinition = cpInstance.getCPDefinition();
-
-			_commercePriceEntryLocalService.addCommercePriceEntry(
-				StringPool.BLANK, cpDefinition.getCProductId(),
-				cpInstance.getCPInstanceUuid(),
-				commercePriceList.getCommercePriceListId(), BigDecimal.ZERO,
-				false, BigDecimal.ZERO, cpInstanceUnitOfMeasure.getKey(),
-				serviceContext);
+		if (commercePriceList == null) {
+			return;
 		}
+
+		if (LazyReferencingThreadLocal.isEnabled()) {
+			CommercePriceEntry commercePriceEntry =
+				_commercePriceEntryLocalService.fetchCommercePriceEntry(
+					commercePriceList.getCommercePriceListId(),
+					cpInstance.getCPInstanceUuid(),
+					cpInstanceUnitOfMeasure.getKey());
+
+			if (commercePriceEntry != null) {
+				return;
+			}
+		}
+
+		ServiceContext serviceContext =
+			ServiceContextThreadLocal.getServiceContext();
+
+		if ((serviceContext == null) || (serviceContext.getUserId() == 0)) {
+			serviceContext = new ServiceContext();
+
+			serviceContext.setUserId(cpInstanceUnitOfMeasure.getUserId());
+		}
+
+		CPDefinition cpDefinition = cpInstance.getCPDefinition();
+
+		_commercePriceEntryLocalService.addCommercePriceEntry(
+			StringPool.BLANK, cpDefinition.getCProductId(),
+			cpInstance.getCPInstanceUuid(),
+			commercePriceList.getCommercePriceListId(), BigDecimal.ZERO, false,
+			BigDecimal.ZERO, cpInstanceUnitOfMeasure.getKey(), serviceContext);
 	}
 
 	@Reference

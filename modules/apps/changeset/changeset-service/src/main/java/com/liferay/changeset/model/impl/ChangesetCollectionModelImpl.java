@@ -89,6 +89,8 @@ public class ChangesetCollectionModelImpl
 	public static final String TABLE_SQL_DROP =
 		"drop table ChangesetCollection";
 
+	public static final String ENTITY_ALIAS = "changesetCollection";
+
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY changesetCollection.changesetCollectionId ASC";
 
@@ -105,32 +107,20 @@ public class ChangesetCollectionModelImpl
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long COMPANYID_COLUMN_BITMASK = 1L;
+	public static final long GROUPID_COLUMN_BITMASK = 1L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long GROUPID_COLUMN_BITMASK = 2L;
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
-	 */
-	@Deprecated
-	public static final long NAME_COLUMN_BITMASK = 4L;
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
-	 */
-	@Deprecated
-	public static final long USERID_COLUMN_BITMASK = 8L;
+	public static final long NAME_COLUMN_BITMASK = 2L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
 	 *		#getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long CHANGESETCOLLECTIONID_COLUMN_BITMASK = 16L;
+	public static final long CHANGESETCOLLECTIONID_COLUMN_BITMASK = 4L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
@@ -373,16 +363,6 @@ public class ChangesetCollectionModelImpl
 		_companyId = companyId;
 	}
 
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #getColumnOriginalValue(String)}
-	 */
-	@Deprecated
-	public long getOriginalCompanyId() {
-		return GetterUtil.getLong(
-			this.<Long>getColumnOriginalValue("companyId"));
-	}
-
 	@Override
 	public long getUserId() {
 		return _userId;
@@ -411,15 +391,6 @@ public class ChangesetCollectionModelImpl
 
 	@Override
 	public void setUserUuid(String userUuid) {
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #getColumnOriginalValue(String)}
-	 */
-	@Deprecated
-	public long getOriginalUserId() {
-		return GetterUtil.getLong(this.<Long>getColumnOriginalValue("userId"));
 	}
 
 	@Override
@@ -897,3 +868,4 @@ public class ChangesetCollectionModelImpl
 	private ChangesetCollection _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1150161369

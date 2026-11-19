@@ -31,12 +31,13 @@ public class CommercePermissionUpgradeProcess extends UpgradeProcess {
 	@Override
 	protected void doUpgrade() throws Exception {
 		try (PreparedStatement preparedStatement = connection.prepareStatement(
-			StringBundler.concat(
-				"select resourcePermissionId, companyId, roleId from ",
-				"ResourcePermission where name = 'com.liferay.commerce.",
-				"inventory.model.CommerceInventoryWarehouse' and scope = 4"));
+				StringBundler.concat(
+					"select resourcePermissionId, companyId, roleId from ",
+					"ResourcePermission where name = 'com.liferay.commerce.",
+					"inventory.model.CommerceInventoryWarehouse' and scope = ",
+					"4"));
 
-			 ResultSet resultSet = preparedStatement.executeQuery()) {
+			ResultSet resultSet = preparedStatement.executeQuery()) {
 
 			while (resultSet.next()) {
 				long roleId = resultSet.getLong("roleId");
@@ -60,10 +61,12 @@ public class CommercePermissionUpgradeProcess extends UpgradeProcess {
 				role = _roleLocalService.fetchRole(
 					resultSet.getLong("companyId"), RoleConstants.USER);
 
-				if ((role != null) && (roleId == role.getRoleId())) {
-					_resourcePermissionLocalService.deleteResourcePermission(
-						resultSet.getLong("resourcePermissionId"));
+				if ((role == null) || (roleId != role.getRoleId())) {
+					continue;
 				}
+
+				_resourcePermissionLocalService.deleteResourcePermission(
+					resultSet.getLong("resourcePermissionId"));
 			}
 		}
 	}

@@ -8,15 +8,15 @@ package com.liferay.portal.remote.rest.extender.internal;
 import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.lang.ThreadContextClassLoaderUtil;
 
+import jakarta.ws.rs.core.Application;
+import jakarta.ws.rs.ext.RuntimeDelegate;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.function.Consumer;
-
-import javax.ws.rs.core.Application;
-import javax.ws.rs.ext.RuntimeDelegate;
 
 import org.apache.cxf.Bus;
 import org.apache.cxf.endpoint.Server;
@@ -136,9 +136,11 @@ public class CXFJaxRsServiceRegistrator {
 		for (Map<Object, Server> servers : _busServers.values()) {
 			Server server = servers.remove(application);
 
-			if (server != null) {
-				server.destroy();
+			if (server == null) {
+				continue;
 			}
+
+			server.destroy();
 		}
 	}
 
@@ -205,9 +207,9 @@ public class CXFJaxRsServiceRegistrator {
 	}
 
 	private final Collection<Application> _applications = new ArrayList<>();
-	private final Collection<Bus> _buses = new ArrayList<>();
 	private final Map<Bus, Map<Object, Server>> _busServers =
 		new IdentityHashMap<>();
+	private final Collection<Bus> _buses = new ArrayList<>();
 	private final Map<String, Object> _properties;
 	private final Collection<Object> _providers = new ArrayList<>();
 	private final Collection<Object> _services = new ArrayList<>();

@@ -8,11 +8,11 @@ package com.liferay.headless.portal.instances.client.dto.v1_0;
 import com.liferay.headless.portal.instances.client.function.UnsafeSupplier;
 import com.liferay.headless.portal.instances.client.serdes.v1_0.PortalInstanceSerDes;
 
+import jakarta.annotation.Generated;
+
 import java.io.Serializable;
 
 import java.util.Objects;
-
-import javax.annotation.Generated;
 
 /**
  * @author Alberto Chaparro
@@ -106,6 +106,27 @@ public class PortalInstance implements Cloneable, Serializable {
 	}
 
 	protected String domain;
+
+	public Integer getMaxUsers() {
+		return maxUsers;
+	}
+
+	public void setMaxUsers(Integer maxUsers) {
+		this.maxUsers = maxUsers;
+	}
+
+	public void setMaxUsers(
+		UnsafeSupplier<Integer, Exception> maxUsersUnsafeSupplier) {
+
+		try {
+			maxUsers = maxUsersUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected Integer maxUsers;
 
 	public String getPortalInstanceId() {
 		return portalInstanceId;
@@ -202,3 +223,4 @@ public class PortalInstance implements Cloneable, Serializable {
 	}
 
 }
+// LIFERAY-REST-BUILDER-HASH:-1864671653

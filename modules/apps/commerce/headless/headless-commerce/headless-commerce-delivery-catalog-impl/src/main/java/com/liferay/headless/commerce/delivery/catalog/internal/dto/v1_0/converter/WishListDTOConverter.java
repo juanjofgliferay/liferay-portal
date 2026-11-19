@@ -18,7 +18,10 @@ import org.osgi.service.component.annotations.Reference;
  * @author Mahmoud Azzam
  */
 @Component(
-	property = "dto.class.name=com.liferay.headless.commerce.delivery.catalog.dto.v1_0.WishList",
+	property = {
+		"default=true",
+		"dto.class.name=com.liferay.headless.commerce.delivery.catalog.dto.v1_0.WishList"
+	},
 	service = DTOConverter.class
 )
 public class WishListDTOConverter
@@ -39,9 +42,9 @@ public class WishListDTOConverter
 
 		return new WishList() {
 			{
-				defaultWishList = commerceWishList.isDefaultWishList();
-				id = commerceWishList.getCommerceWishListId();
-				name = commerceWishList.getName();
+				setDefaultWishList(commerceWishList::isDefaultWishList);
+				setId(commerceWishList::getCommerceWishListId);
+				setName(commerceWishList::getName);
 			}
 		};
 	}

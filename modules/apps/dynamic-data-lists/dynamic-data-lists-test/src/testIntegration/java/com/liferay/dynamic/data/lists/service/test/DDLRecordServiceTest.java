@@ -10,12 +10,11 @@ import com.liferay.dynamic.data.lists.constants.DDLRecordConstants;
 import com.liferay.dynamic.data.lists.exception.RecordGroupIdException;
 import com.liferay.dynamic.data.lists.helper.DDLRecordSetTestHelper;
 import com.liferay.dynamic.data.lists.helper.DDLRecordTestHelper;
-import com.liferay.dynamic.data.lists.helper.DDLRecordTestUtil;
+import com.liferay.dynamic.data.lists.helper.test.util.DDLRecordTestUtil;
 import com.liferay.dynamic.data.lists.model.DDLRecord;
 import com.liferay.dynamic.data.lists.model.DDLRecordSet;
 import com.liferay.dynamic.data.lists.model.DDLRecordVersion;
 import com.liferay.dynamic.data.lists.service.DDLRecordLocalServiceUtil;
-import com.liferay.dynamic.data.lists.service.DDLRecordVersionLocalServiceUtil;
 import com.liferay.dynamic.data.mapping.model.DDMForm;
 import com.liferay.dynamic.data.mapping.model.DDMFormField;
 import com.liferay.dynamic.data.mapping.model.DDMStructure;
@@ -35,7 +34,6 @@ import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
-import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 
@@ -97,18 +95,16 @@ public class DDLRecordServiceTest {
 		serviceContext.setAttribute("status", WorkflowConstants.STATUS_DRAFT);
 		serviceContext.setAttribute("validateDDMFormValues", Boolean.FALSE);
 
-		DDLRecordLocalServiceUtil.addRecord(
+		DDLRecord record = DDLRecordLocalServiceUtil.addRecord(
 			TestPropsValues.getUserId(), _group.getGroupId(),
 			recordSet.getRecordSetId(),
 			DDLRecordConstants.DISPLAY_INDEX_DEFAULT, expectedDDMFormValues,
 			serviceContext);
 
-		DDLRecordVersion recordVersion =
-			DDLRecordVersionLocalServiceUtil.fetchLatestRecordVersion(
-				TestPropsValues.getUserId(), recordSet.getRecordSetId(),
-				recordSet.getVersion(), WorkflowConstants.STATUS_DRAFT);
+		DDLRecordVersion recordVersion = record.getLatestRecordVersion();
 
-		Assert.assertNotNull(recordVersion);
+		Assert.assertEquals(
+			WorkflowConstants.STATUS_DRAFT, recordVersion.getStatus());
 
 		DDMFormValues ddmFormValues = recordVersion.getDDMFormValues();
 
@@ -510,7 +506,6 @@ public class DDLRecordServiceTest {
 		DDMFormFieldValue ddmFormFieldValue = new DDMFormFieldValue();
 
 		ddmFormFieldValue.setName(name);
-		ddmFormFieldValue.setInstanceId(StringUtil.randomString());
 
 		return ddmFormFieldValue;
 	}

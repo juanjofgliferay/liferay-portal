@@ -10,10 +10,21 @@ package com.liferay.layout.utility.page.kernel.constants;
  */
 public class LayoutUtilityPageEntryConstants {
 
+	public static final String TYPE_COOKIE_POLICY = "COOKIE_POLICY";
+
+	public static final String TYPE_CREATE_ACCOUNT = "CREATE_ACCOUNT";
+
+	public static final String TYPE_FORGOT_PASSWORD = "FORGOT_PASSWORD";
+
+	public static final String TYPE_LOGIN = "LOGIN";
+
 	public static final String TYPE_SC_INTERNAL_SERVER_ERROR =
 		"SC_INTERNAL_SERVER_ERROR";
 
 	public static final String TYPE_SC_NOT_FOUND = "SC_NOT_FOUND";
+
+	public static final String TYPE_SC_SERVICE_UNAVAILABLE =
+		"SC_SERVICE_UNAVAILABLE";
 
 	public static final String TYPE_STATUS = "STATUS";
 

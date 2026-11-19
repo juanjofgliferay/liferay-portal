@@ -23,6 +23,9 @@ import com.liferay.portal.url.builder.AbsolutePortalURLBuilderFactory;
 import com.liferay.portal.url.builder.ComboRequestAbsolutePortalURLBuilder;
 import com.liferay.portal.util.JavaScriptBundleUtil;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 import java.io.PrintWriter;
 
@@ -31,9 +34,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.TreeSet;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
@@ -47,7 +47,10 @@ import org.osgi.util.tracker.ServiceTrackerCustomizer;
 /**
  * @author Iván Zaera Avellón
  */
-@Component(service = DynamicInclude.class)
+@Component(
+	property = "dynamic.include.key=/html/common/themes/top_js.jspf#resources",
+	service = DynamicInclude.class
+)
 public class TopHeadDynamicInclude implements DynamicInclude {
 
 	@Override
@@ -86,12 +89,6 @@ public class TopHeadDynamicInclude implements DynamicInclude {
 					resourceURLsHolder._allJsResourceURLs);
 			}
 		}
-	}
-
-	@Override
-	public void register(DynamicIncludeRegistry dynamicIncludeRegistry) {
-		dynamicIncludeRegistry.register(
-			"/html/common/themes/top_js.jspf#resources");
 	}
 
 	@Activate

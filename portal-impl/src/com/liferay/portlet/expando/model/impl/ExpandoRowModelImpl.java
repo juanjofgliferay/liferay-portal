@@ -78,6 +78,8 @@ public class ExpandoRowModelImpl
 
 	public static final String TABLE_SQL_DROP = "drop table ExpandoRow";
 
+	public static final String ENTITY_ALIAS = "expandoRow";
+
 	public static final String ORDER_BY_JPQL = " ORDER BY expandoRow.rowId ASC";
 
 	public static final String ORDER_BY_SQL = " ORDER BY ExpandoRow.rowId_ ASC";
@@ -126,7 +128,7 @@ public class ExpandoRowModelImpl
 	public static final long ROWID_COLUMN_BITMASK = 4L;
 
 	public static final long LOCK_EXPIRATION_TIME = GetterUtil.getLong(
-		com.liferay.portal.util.PropsUtil.get(
+		com.liferay.portal.kernel.util.PropsUtil.get(
 			"lock.expiration.time.com.liferay.expando.kernel.model.ExpandoRow"));
 
 	public ExpandoRowModelImpl() {
@@ -717,3 +719,4 @@ public class ExpandoRowModelImpl
 	private ExpandoRow _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1960008266

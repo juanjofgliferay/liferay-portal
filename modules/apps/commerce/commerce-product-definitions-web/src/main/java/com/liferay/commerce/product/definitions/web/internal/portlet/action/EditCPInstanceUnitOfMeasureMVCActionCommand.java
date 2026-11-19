@@ -5,11 +5,15 @@
 
 package com.liferay.commerce.product.definitions.web.internal.portlet.action;
 
+import com.liferay.commerce.currency.util.CommercePriceFormatter;
 import com.liferay.commerce.price.list.constants.CommercePriceListConstants;
+import com.liferay.commerce.price.list.exception.CommercePriceEntryPriceException;
 import com.liferay.commerce.price.list.model.CommercePriceEntry;
 import com.liferay.commerce.price.list.service.CommercePriceEntryService;
 import com.liferay.commerce.product.constants.CPPortletKeys;
 import com.liferay.commerce.product.exception.CPInstanceUnitOfMeasureIncrementalOrderQuantityException;
+import com.liferay.commerce.product.exception.CPInstanceUnitOfMeasurePriceException;
+import com.liferay.commerce.product.exception.CPInstanceUnitOfMeasureQuantityException;
 import com.liferay.commerce.product.exception.CPInstanceUnitOfMeasureRateException;
 import com.liferay.commerce.product.exception.DuplicateCPInstanceUnitOfMeasureKeyException;
 import com.liferay.commerce.product.model.CPDefinition;
@@ -17,6 +21,7 @@ import com.liferay.commerce.product.model.CPInstance;
 import com.liferay.commerce.product.model.CPInstanceUnitOfMeasure;
 import com.liferay.commerce.product.service.CPInstanceService;
 import com.liferay.commerce.product.service.CPInstanceUnitOfMeasureService;
+import com.liferay.commerce.util.CommerceOrderItemQuantityFormatter;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.portlet.LiferayWindowState;
@@ -35,14 +40,14 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.PortletException;
+
 import java.math.BigDecimal;
 
 import java.util.Locale;
 import java.util.Map;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.PortletException;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -52,7 +57,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + CPPortletKeys.CP_DEFINITIONS,
+		"jakarta.portlet.name=" + CPPortletKeys.CP_DEFINITIONS,
 		"mvc.command.name=/cp_definitions/edit_cp_instance_unit_of_measure"
 	},
 	service = MVCActionCommand.class
@@ -85,8 +90,11 @@ public class EditCPInstanceUnitOfMeasureMVCActionCommand
 			}
 		}
 		catch (Throwable throwable) {
-			if (throwable instanceof
+			if (throwable instanceof CommercePriceEntryPriceException ||
+				throwable instanceof
 					CPInstanceUnitOfMeasureIncrementalOrderQuantityException ||
+				throwable instanceof CPInstanceUnitOfMeasurePriceException ||
+				throwable instanceof CPInstanceUnitOfMeasureQuantityException ||
 				throwable instanceof CPInstanceUnitOfMeasureRateException ||
 				throwable instanceof
 					DuplicateCPInstanceUnitOfMeasureKeyException) {
@@ -143,19 +151,24 @@ public class EditCPInstanceUnitOfMeasureMVCActionCommand
 
 		long cpInstanceUnitOfMeasureId = ParamUtil.getLong(
 			actionRequest, "cpInstanceUnitOfMeasureId");
-
 		long cpInstanceId = ParamUtil.getLong(actionRequest, "cpInstanceId");
 		boolean active = ParamUtil.getBoolean(actionRequest, "active");
-		BigDecimal incrementalOrderQuantity = (BigDecimal)ParamUtil.getNumber(
-			actionRequest, "incrementalOrderQuantity", BigDecimal.ZERO);
+		BigDecimal incrementalOrderQuantity =
+			_commerceOrderItemQuantityFormatter.parse(
+				actionRequest, CPInstanceUnitOfMeasure.class.getName(),
+				"incrementalOrderQuantity");
 		String key = ParamUtil.getString(actionRequest, "key");
 		Map<Locale, String> nameMap = _localization.getLocalizationMap(
 			actionRequest, "name");
 		int precision = ParamUtil.getInteger(actionRequest, "precision");
+		BigDecimal pricingQuantity = _commerceOrderItemQuantityFormatter.parse(
+			actionRequest, CPInstanceUnitOfMeasure.class.getName(),
+			"pricingQuantity");
 		boolean primary = ParamUtil.getBoolean(actionRequest, "primary");
 		double priority = ParamUtil.getDouble(actionRequest, "priority");
-		BigDecimal rate = (BigDecimal)ParamUtil.getNumber(
-			actionRequest, "rate", BigDecimal.ONE);
+		BigDecimal rate = _commercePriceFormatter.parse(
+			actionRequest, false, CPInstanceUnitOfMeasure.class.getName(),
+			"rate");
 		String sku = ParamUtil.getString(actionRequest, "sku");
 
 		if (cpInstanceUnitOfMeasureId > 0) {
@@ -170,13 +183,13 @@ public class EditCPInstanceUnitOfMeasureMVCActionCommand
 			return _cpInstanceUnitOfMeasureService.
 				updateCPInstanceUnitOfMeasure(
 					cpInstanceUnitOfMeasureId, cpInstanceId, active,
-					incrementalOrderQuantity, key, nameMap, precision, primary,
-					priority, rate, sku);
+					incrementalOrderQuantity, key, nameMap, precision,
+					pricingQuantity, primary, priority, rate, sku);
 		}
 
 		_cpInstanceUnitOfMeasureService.addCPInstanceUnitOfMeasure(
 			cpInstanceId, active, incrementalOrderQuantity, key, nameMap,
-			precision, primary, priority, rate, sku);
+			precision, pricingQuantity, primary, priority, rate, sku);
 
 		_updateCommercePriceEntries(actionRequest, cpInstanceId, key);
 
@@ -204,8 +217,9 @@ public class EditCPInstanceUnitOfMeasureMVCActionCommand
 		CPInstance cpInstance = _cpInstanceService.fetchCPInstance(
 			cpInstanceId);
 
-		BigDecimal basePrice = (BigDecimal)ParamUtil.getNumber(
-			actionRequest, "basePrice", BigDecimal.ZERO);
+		BigDecimal basePrice = _commercePriceFormatter.parse(
+			actionRequest, false, CommercePriceEntry.class.getName(),
+			"basePrice");
 
 		ServiceContext serviceContext = ServiceContextFactory.getInstance(
 			CPInstanceUnitOfMeasure.class.getName(), actionRequest);
@@ -216,8 +230,9 @@ public class EditCPInstanceUnitOfMeasureMVCActionCommand
 				CommercePriceListConstants.TYPE_PRICE_LIST, serviceContext);
 		}
 
-		BigDecimal promoPrice = (BigDecimal)ParamUtil.getNumber(
-			actionRequest, "promoPrice", BigDecimal.ZERO);
+		BigDecimal promoPrice = _commercePriceFormatter.parse(
+			actionRequest, false, CommercePriceEntry.class.getName(),
+			"promoPrice");
 
 		if (promoPrice != null) {
 			_updateCommercePriceEntry(
@@ -249,7 +264,14 @@ public class EditCPInstanceUnitOfMeasureMVCActionCommand
 		EditCPInstanceUnitOfMeasureMVCActionCommand.class);
 
 	@Reference
+	private CommerceOrderItemQuantityFormatter
+		_commerceOrderItemQuantityFormatter;
+
+	@Reference
 	private CommercePriceEntryService _commercePriceEntryService;
+
+	@Reference
+	private CommercePriceFormatter _commercePriceFormatter;
 
 	@Reference
 	private CPInstanceService _cpInstanceService;

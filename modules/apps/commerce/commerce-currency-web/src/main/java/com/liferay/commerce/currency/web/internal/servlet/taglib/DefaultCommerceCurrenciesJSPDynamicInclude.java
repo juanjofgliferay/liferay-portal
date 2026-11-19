@@ -20,11 +20,11 @@ import com.liferay.portal.kernel.servlet.taglib.BaseJSPDynamicInclude;
 import com.liferay.portal.kernel.servlet.taglib.DynamicInclude;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import java.io.IOException;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -34,7 +34,10 @@ import org.osgi.service.component.annotations.ReferencePolicyOption;
 /**
  * @author Alessio Antonio Rendina
  */
-@Component(service = DynamicInclude.class)
+@Component(
+	property = "dynamic.include.key=com.liferay.commerce.account.web#/account_entry/channel_defaults.jsp#currencies",
+	service = DynamicInclude.class
+)
 public class DefaultCommerceCurrenciesJSPDynamicInclude
 	extends BaseJSPDynamicInclude {
 
@@ -68,13 +71,6 @@ public class DefaultCommerceCurrenciesJSPDynamicInclude
 		}
 
 		super.include(httpServletRequest, httpServletResponse, key);
-	}
-
-	@Override
-	public void register(DynamicIncludeRegistry dynamicIncludeRegistry) {
-		dynamicIncludeRegistry.register(
-			"com.liferay.commerce.account.web#/account_entry" +
-				"/channel_defaults.jsp#currencies");
 	}
 
 	@Override

@@ -27,11 +27,11 @@ import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.ListUtil;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.math.BigDecimal;
 
 import java.util.List;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Crescenzo Rega
@@ -69,36 +69,6 @@ public class CPInstanceUnitOfMeasureDisplayContext
 				null));
 	}
 
-	@Override
-	public String getCatalogDefaultLanguageId() throws PortalException {
-		CPInstance cpInstance = getCPInstance();
-
-		if (cpInstance == null) {
-			return null;
-		}
-
-		CommerceCatalog commerceCatalog = cpInstance.getCommerceCatalog();
-
-		return commerceCatalog.getCatalogDefaultLanguageId();
-	}
-
-	public String getCommerceCurrencyCode() throws PortalException {
-		if (_commerceCurrencyCode != null) {
-			return _commerceCurrencyCode;
-		}
-
-		CommerceCurrency commerceCurrency = _getCommerceCurrency();
-
-		if (commerceCurrency != null) {
-			_commerceCurrencyCode = commerceCurrency.getCode();
-		}
-		else {
-			_commerceCurrencyCode = StringPool.BLANK;
-		}
-
-		return _commerceCurrencyCode;
-	}
-
 	public CPInstance getCPInstance() throws PortalException {
 		if (_cpInstance != null) {
 			return _cpInstance;
@@ -131,6 +101,36 @@ public class CPInstanceUnitOfMeasureDisplayContext
 			cpRequestHelper.getRenderRequest());
 
 		return _cpInstanceUnitOfMeasure;
+	}
+
+	@Override
+	public String getCatalogDefaultLanguageId() throws PortalException {
+		CPInstance cpInstance = getCPInstance();
+
+		if (cpInstance == null) {
+			return null;
+		}
+
+		CommerceCatalog commerceCatalog = cpInstance.getCommerceCatalog();
+
+		return commerceCatalog.getCatalogDefaultLanguageId();
+	}
+
+	public String getCommerceCurrencyCode() throws PortalException {
+		if (_commerceCurrencyCode != null) {
+			return _commerceCurrencyCode;
+		}
+
+		CommerceCurrency commerceCurrency = _getCommerceCurrency();
+
+		if (commerceCurrency != null) {
+			_commerceCurrencyCode = commerceCurrency.getCode();
+		}
+		else {
+			_commerceCurrencyCode = StringPool.BLANK;
+		}
+
+		return _commerceCurrencyCode;
 	}
 
 	public CreationMenu getCreationMenu() throws Exception {

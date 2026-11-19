@@ -6,8 +6,8 @@
 package com.liferay.layout.set.prototype.exportimport.data.handler.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
-import com.liferay.exportimport.kernel.lar.ExportImportPathUtil;
 import com.liferay.exportimport.test.util.lar.BaseStagedModelDataHandlerTestCase;
+import com.liferay.layout.page.template.kernel.provider.util.LayoutPageTemplateEntryLayoutProviderUtil;
 import com.liferay.layout.test.util.LayoutTestUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.Group;
@@ -23,20 +23,10 @@ import com.liferay.portal.kernel.service.LayoutPrototypeLocalServiceUtil;
 import com.liferay.portal.kernel.service.LayoutSetPrototypeLocalServiceUtil;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.StringUtil;
-import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.kernel.xml.Document;
-import com.liferay.portal.kernel.xml.DocumentException;
-import com.liferay.portal.kernel.xml.Element;
-import com.liferay.portal.kernel.xml.UnsecureSAXReaderUtil;
-import com.liferay.portal.kernel.zip.ZipReader;
-import com.liferay.portal.kernel.zip.ZipReaderFactory;
-import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
-
-import java.io.IOException;
-import java.io.InputStream;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -73,8 +63,10 @@ public class LayoutSetPrototypeStagedModelDataHandlerTest
 						_layoutSetPrototype.getUuid(),
 						_layoutSetPrototype.getCompanyId());
 
-			LayoutSetPrototypeLocalServiceUtil.deleteLayoutSetPrototype(
-				_layoutSetPrototype);
+			if (_layoutSetPrototype != null) {
+				LayoutSetPrototypeLocalServiceUtil.deleteLayoutSetPrototype(
+					_layoutSetPrototype);
+			}
 		}
 
 		if (_layoutPrototype != null) {
@@ -84,8 +76,10 @@ public class LayoutSetPrototypeStagedModelDataHandlerTest
 						_layoutPrototype.getUuid(),
 						_layoutPrototype.getCompanyId());
 
-			LayoutPrototypeLocalServiceUtil.deleteLayoutPrototype(
-				_layoutPrototype);
+			if (_layoutPrototype != null) {
+				LayoutPrototypeLocalServiceUtil.deleteLayoutPrototype(
+					_layoutPrototype);
+			}
 		}
 	}
 
@@ -99,15 +93,6 @@ public class LayoutSetPrototypeStagedModelDataHandlerTest
 		}
 
 		layouts.add(layout);
-
-		UnicodeProperties typeSettingsUnicodeProperties =
-			layout.getTypeSettingsProperties();
-
-		typeSettingsUnicodeProperties.setProperty(
-			LayoutSetPrototypeStagedModelDataHandlerTest.class.getName(),
-			Boolean.TRUE.toString());
-
-		LayoutLocalServiceUtil.updateLayout(layout);
 	}
 
 	protected void addLayoutFriendlyURLs(Class<?> clazz, long plid)
@@ -260,56 +245,6 @@ public class LayoutSetPrototypeStagedModelDataHandlerTest
 		return LayoutSetPrototype.class;
 	}
 
-	protected Layout importLayoutFromLAR(StagedModel stagedModel)
-		throws DocumentException, IOException {
-
-		LayoutSetPrototype layoutSetPrototype = (LayoutSetPrototype)stagedModel;
-
-		String fileName = layoutSetPrototype.getLayoutSetPrototypeId() + ".lar";
-
-		String modelPath = ExportImportPathUtil.getModelPath(
-			stagedModel, fileName);
-
-		try (InputStream inputStream =
-				portletDataContext.getZipEntryAsInputStream(modelPath)) {
-
-			ZipReader zipReader = _zipReaderFactory.getZipReader(inputStream);
-
-			Document document = UnsecureSAXReaderUtil.read(
-				zipReader.getEntryAsString("manifest.xml"));
-
-			Element rootElement = document.getRootElement();
-
-			Element layoutElement = rootElement.element("Layout");
-
-			List<Element> elements = layoutElement.elements();
-
-			List<Layout> importedLayouts = new ArrayList<>(elements.size());
-
-			for (Element element : elements) {
-				String layoutPrototypeUuid = element.attributeValue(
-					"layout-prototype-uuid");
-
-				if (Validator.isNotNull(layoutPrototypeUuid)) {
-					String path = element.attributeValue("path");
-
-					Layout layout = (Layout)portletDataContext.fromXML(
-						zipReader.getEntryAsString(path));
-
-					importedLayouts.add(layout);
-				}
-			}
-
-			Assert.assertEquals(
-				importedLayouts.toString(), 1, importedLayouts.size());
-
-			return importedLayouts.get(0);
-		}
-		finally {
-			zipReader.close();
-		}
-	}
-
 	@Override
 	protected void validateImport(
 			StagedModel stagedModel, StagedModelAssets stagedModelAssets,
@@ -322,14 +257,10 @@ public class LayoutSetPrototypeStagedModelDataHandlerTest
 
 		Assert.assertNotNull(importedLayoutSetPrototype);
 
-		LayoutPrototype importedLayoutPrototype = getImportedLayoutPrototype(
-			dependentStagedModelsMap, group);
-
-		Layout importedLayout = importLayoutFromLAR(stagedModel);
-
 		validateLayouts(
-			importedLayoutSetPrototype, importedLayoutPrototype,
-			importedLayout);
+			importedLayoutSetPrototype,
+			getImportedLayoutPrototype(dependentStagedModelsMap, group),
+			_getPrototypedLayout());
 	}
 
 	@Override
@@ -365,8 +296,6 @@ public class LayoutSetPrototypeStagedModelDataHandlerTest
 		validatePrototypedLayouts(
 			LayoutPrototype.class, importedLayoutPrototype.getGroupId());
 
-		Assert.assertNotNull(layoutSetPrototypeLayout.getLayoutPrototypeUuid());
-
 		Layout importedLayout =
 			LayoutLocalServiceUtil.fetchLayoutByUuidAndGroupId(
 				layoutSetPrototypeLayout.getUuid(),
@@ -376,9 +305,17 @@ public class LayoutSetPrototypeStagedModelDataHandlerTest
 		Assert.assertEquals(
 			importedLayoutSetPrototype.getGroupId(),
 			importedLayout.getGroupId());
+
+		LayoutPrototype layoutPrototype =
+			LayoutPageTemplateEntryLayoutProviderUtil.
+				getLayoutPageTemplateEntryLayoutPrototype(
+					importedLayout.getCompanyId(),
+					importedLayout.getPortletLayoutPageTemplateEntryERC(),
+					importedLayout.getPortletLayoutPageTemplateEntryScopeERC(),
+					importedLayout.getGroupId());
+
 		Assert.assertEquals(
-			importedLayoutPrototype.getUuid(),
-			importedLayout.getLayoutPrototypeUuid());
+			importedLayoutPrototype.getUuid(), layoutPrototype.getUuid());
 	}
 
 	protected void validatePrototypedLayouts(Class<?> clazz, long groupId)
@@ -392,13 +329,6 @@ public class LayoutSetPrototypeStagedModelDataHandlerTest
 					layout.getUuid(), groupId, layout.isPrivateLayout());
 
 			Assert.assertNotNull(importedLayout);
-			Assert.assertEquals(
-				layout.getTypeSettingsProperty(
-					LayoutSetPrototypeStagedModelDataHandlerTest.class.
-						getName()),
-				importedLayout.getTypeSettingsProperty(
-					LayoutSetPrototypeStagedModelDataHandlerTest.class.
-						getName()));
 		}
 
 		List<LayoutFriendlyURL> layoutFriendlyURLs = getLayoutFriendlyURLs(
@@ -417,13 +347,22 @@ public class LayoutSetPrototypeStagedModelDataHandlerTest
 		}
 	}
 
+	private Layout _getPrototypedLayout() {
+		List<Layout> prototypedLayouts = ListUtil.filter(
+			getLayouts(LayoutSetPrototype.class),
+			layout -> Validator.isNotNull(
+				layout.getPortletLayoutPageTemplateEntryERC()));
+
+		Assert.assertEquals(
+			prototypedLayouts.toString(), 1, prototypedLayouts.size());
+
+		return prototypedLayouts.get(0);
+	}
+
 	private final Map<String, List<LayoutFriendlyURL>> _layoutFriendlyURLs =
 		new HashMap<>();
 	private LayoutPrototype _layoutPrototype;
-	private final Map<String, List<Layout>> _layouts = new HashMap<>();
 	private LayoutSetPrototype _layoutSetPrototype;
-
-	@Inject
-	private ZipReaderFactory _zipReaderFactory;
+	private final Map<String, List<Layout>> _layouts = new HashMap<>();
 
 }

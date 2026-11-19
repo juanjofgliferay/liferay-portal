@@ -6,12 +6,12 @@
 package com.liferay.dynamic.data.mapping.web.internal.info.item.provider;
 
 import com.liferay.dynamic.data.mapping.exception.NoSuchStructureException;
-import com.liferay.dynamic.data.mapping.form.field.type.constants.DDMFormFieldTypeConstants;
 import com.liferay.dynamic.data.mapping.info.field.converter.DDMFormFieldInfoFieldConverter;
 import com.liferay.dynamic.data.mapping.info.item.provider.DDMStructureInfoItemFieldSetProvider;
 import com.liferay.dynamic.data.mapping.model.DDMFormField;
 import com.liferay.dynamic.data.mapping.model.DDMStructure;
 import com.liferay.dynamic.data.mapping.service.DDMStructureLocalService;
+import com.liferay.dynamic.data.mapping.web.internal.info.item.provider.constants.InfoItemConstants;
 import com.liferay.info.field.InfoFieldSet;
 import com.liferay.info.localized.InfoLocalizedValue;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -63,14 +63,17 @@ public class DDMStructureInfoItemFieldSetProviderImpl
 					for (DDMFormField ddmFormField :
 							ddmStructure.getDDMFormFields(false)) {
 
-						if (ArrayUtil.contains(
-								_SELECTABLE_DDM_STRUCTURE_FIELDS,
+						if (!ArrayUtil.contains(
+								InfoItemConstants.
+									SELECTABLE_DDM_STRUCTURE_FIELDS,
 								ddmFormField.getType())) {
 
-							unsafeConsumer.accept(
-								_ddmFormFieldInfoFieldConverter.convert(
-									ddmFormField));
+							continue;
 						}
+
+						unsafeConsumer.accept(
+							_ddmFormFieldInfoFieldConverter.convert(
+								ddmFormField));
 					}
 				}
 			).labelInfoLocalizedValue(
@@ -87,16 +90,6 @@ public class DDMStructureInfoItemFieldSetProviderImpl
 				"Caught unexpected exception", portalException);
 		}
 	}
-
-	private static final String[] _SELECTABLE_DDM_STRUCTURE_FIELDS = {
-		DDMFormFieldTypeConstants.CHECKBOX,
-		DDMFormFieldTypeConstants.CHECKBOX_MULTIPLE,
-		DDMFormFieldTypeConstants.DATE, DDMFormFieldTypeConstants.DATE_TIME,
-		DDMFormFieldTypeConstants.LINK_TO_LAYOUT,
-		DDMFormFieldTypeConstants.NUMERIC, DDMFormFieldTypeConstants.IMAGE,
-		DDMFormFieldTypeConstants.TEXT, DDMFormFieldTypeConstants.RADIO,
-		DDMFormFieldTypeConstants.RICH_TEXT, DDMFormFieldTypeConstants.SELECT
-	};
 
 	@Reference
 	private DDMFormFieldInfoFieldConverter _ddmFormFieldInfoFieldConverter;

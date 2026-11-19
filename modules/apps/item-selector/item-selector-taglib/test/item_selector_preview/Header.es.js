@@ -6,7 +6,7 @@
 import {cleanup, fireEvent, render} from '@testing-library/react';
 import React from 'react';
 
-import Header from '../../src/main/resources/META-INF/resources/item_selector_preview/js/Header.es';
+import Header from '../../src/main/resources/META-INF/resources/js/item_selector_preview/Header';
 
 const headerTitle = 'Images';
 
@@ -85,23 +85,23 @@ describe('Header', () => {
 		expect(headerProps.handleClickAdd).toHaveBeenCalled();
 	});
 
-	it('renders the "info-panel-open" icon when "showInfoIcon" prop is set to true', () => {
+	it('renders the "info-circle-open" icon when "showInfoIcon" prop is set to true', () => {
 		const {container} = render(<Header {...headerProps} />);
 
 		const infoIcon = container.querySelector(
-			'.lexicon-icon-info-panel-open'
+			'.lexicon-icon-info-circle-open'
 		);
 
 		expect(infoIcon).not.toBeNull();
 	});
 
-	it('does not render the "info-panel-open" icon when "showInfoIcon" prop is set to false', () => {
+	it('does not render the "info-circle-open" icon when "showInfoIcon" prop is set to false', () => {
 		const props = {...headerProps, showInfoIcon: false};
 
 		const {container} = render(<Header {...props} />);
 
 		const infoIcon = container.querySelector(
-			'.lexicon-icon-info-panel-open'
+			'.lexicon-icon-info-circle-open'
 		);
 
 		expect(infoIcon).toBeNull();

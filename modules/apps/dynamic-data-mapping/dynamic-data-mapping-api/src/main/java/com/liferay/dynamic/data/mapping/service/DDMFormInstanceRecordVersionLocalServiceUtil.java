@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -305,13 +306,6 @@ public class DDMFormInstanceRecordVersionLocalServiceUtil {
 			userId, formInstanceId);
 	}
 
-	public static int getFormInstanceRecordVersionsCount(
-		long ddmFormInstanceRecordId) {
-
-		return getService().getFormInstanceRecordVersionsCount(
-			ddmFormInstanceRecordId);
-	}
-
 	public static
 		com.liferay.portal.kernel.dao.orm.IndexableActionableDynamicQuery
 			getIndexableActionableDynamicQuery() {
@@ -373,15 +367,13 @@ public class DDMFormInstanceRecordVersionLocalServiceUtil {
 	}
 
 	public static DDMFormInstanceRecordVersionLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(
-		DDMFormInstanceRecordVersionLocalService service) {
-
-		_service = service;
-	}
-
-	private static volatile DDMFormInstanceRecordVersionLocalService _service;
+	private static final Snapshot<DDMFormInstanceRecordVersionLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			DDMFormInstanceRecordVersionLocalServiceUtil.class,
+			DDMFormInstanceRecordVersionLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1259766418

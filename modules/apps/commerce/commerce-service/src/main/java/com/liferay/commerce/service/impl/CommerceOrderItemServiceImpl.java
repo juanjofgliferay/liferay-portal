@@ -13,9 +13,9 @@ import com.liferay.commerce.model.CommerceOrder;
 import com.liferay.commerce.model.CommerceOrderItem;
 import com.liferay.commerce.product.permission.CommerceProductViewPermission;
 import com.liferay.commerce.product.service.CPInstanceLocalService;
-import com.liferay.commerce.service.CommerceOrderLocalService;
 import com.liferay.commerce.service.CommerceOrderService;
 import com.liferay.commerce.service.base.CommerceOrderItemServiceBaseImpl;
+import com.liferay.commerce.service.persistence.CommerceOrderPersistence;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.search.BaseModelSearchResult;
@@ -24,6 +24,7 @@ import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
 import com.liferay.portal.kernel.security.permission.resource.PortletResourcePermission;
 import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.math.BigDecimal;
 
@@ -92,8 +93,7 @@ public class CommerceOrderItemServiceImpl
 		_commerceOrderModelResourcePermission.check(
 			getPermissionChecker(), commerceOrderId, ActionKeys.VIEW);
 
-		return commerceOrderItemLocalService.
-			countSubscriptionCommerceOrderItems(commerceOrderId);
+		return commerceOrderItemPersistence.countByC_S(commerceOrderId, true);
 	}
 
 	@Override
@@ -101,8 +101,7 @@ public class CommerceOrderItemServiceImpl
 		throws PortalException {
 
 		CommerceOrderItem commerceOrderItem =
-			commerceOrderItemLocalService.getCommerceOrderItem(
-				commerceOrderItemId);
+			commerceOrderItemPersistence.findByPrimaryKey(commerceOrderItemId);
 
 		_commerceOrderModelResourcePermission.check(
 			getPermissionChecker(), commerceOrderItem.getCommerceOrderId(),
@@ -118,8 +117,7 @@ public class CommerceOrderItemServiceImpl
 		throws PortalException {
 
 		CommerceOrderItem commerceOrderItem =
-			commerceOrderItemLocalService.getCommerceOrderItem(
-				commerceOrderItemId);
+			commerceOrderItemPersistence.findByPrimaryKey(commerceOrderItemId);
 
 		_commerceOrderModelResourcePermission.check(
 			getPermissionChecker(), commerceOrderItem.getCommerceOrderId(),
@@ -155,13 +153,11 @@ public class CommerceOrderItemServiceImpl
 	}
 
 	@Override
-	public CommerceOrderItem fetchByExternalReferenceCode(
-			String externalReferenceCode, long companyId)
+	public CommerceOrderItem fetchCommerceOrderItem(long commerceOrderItemId)
 		throws PortalException {
 
 		CommerceOrderItem commerceOrderItem =
-			commerceOrderItemLocalService.fetchByExternalReferenceCode(
-				externalReferenceCode, companyId);
+			commerceOrderItemPersistence.fetchByPrimaryKey(commerceOrderItemId);
 
 		if (commerceOrderItem != null) {
 			_commerceOrderModelResourcePermission.check(
@@ -173,12 +169,13 @@ public class CommerceOrderItemServiceImpl
 	}
 
 	@Override
-	public CommerceOrderItem fetchCommerceOrderItem(long commerceOrderItemId)
+	public CommerceOrderItem fetchCommerceOrderItemByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
 		throws PortalException {
 
 		CommerceOrderItem commerceOrderItem =
-			commerceOrderItemLocalService.fetchCommerceOrderItem(
-				commerceOrderItemId);
+			commerceOrderItemPersistence.fetchByERC_C(
+				externalReferenceCode, companyId);
 
 		if (commerceOrderItem != null) {
 			_commerceOrderModelResourcePermission.check(
@@ -207,7 +204,7 @@ public class CommerceOrderItemServiceImpl
 		throws PortalException {
 
 		CommerceOrderItem commerceOrderItem =
-			commerceOrderItemLocalService.fetchCommerceOrderItem(
+			commerceOrderItemPersistence.fetchByPrimaryKey(
 				parentCommerceOrderItemId);
 
 		if (commerceOrderItem != null) {
@@ -215,7 +212,7 @@ public class CommerceOrderItemServiceImpl
 				getPermissionChecker(), commerceOrderItem.getCommerceOrderId(),
 				ActionKeys.VIEW);
 
-			return commerceOrderItemLocalService.getChildCommerceOrderItems(
+			return commerceOrderItemPersistence.findByParentCommerceOrderItemId(
 				parentCommerceOrderItemId);
 		}
 
@@ -228,8 +225,7 @@ public class CommerceOrderItemServiceImpl
 		throws PortalException {
 
 		CommerceOrderItem commerceOrderItem =
-			commerceOrderItemLocalService.getCommerceOrderItem(
-				commerceOrderItemId);
+			commerceOrderItemPersistence.findByPrimaryKey(commerceOrderItemId);
 
 		_commerceOrderModelResourcePermission.check(
 			getPermissionChecker(), commerceOrderItem.getCommerceOrderId(),
@@ -245,8 +241,7 @@ public class CommerceOrderItemServiceImpl
 		throws PortalException {
 
 		CommerceOrderItem commerceOrderItem =
-			commerceOrderItemLocalService.getCommerceOrderItem(
-				commerceOrderItemId);
+			commerceOrderItemPersistence.findByPrimaryKey(commerceOrderItemId);
 
 		_commerceOrderModelResourcePermission.check(
 			getPermissionChecker(), commerceOrderItem.getCommerceOrderId(),
@@ -263,7 +258,7 @@ public class CommerceOrderItemServiceImpl
 		_commerceOrderModelResourcePermission.check(
 			getPermissionChecker(), commerceOrderId, ActionKeys.VIEW);
 
-		return commerceOrderItemLocalService.getCommerceOrderItems(
+		return commerceOrderItemPersistence.findByCommerceOrderId(
 			commerceOrderId, start, end);
 	}
 
@@ -287,7 +282,7 @@ public class CommerceOrderItemServiceImpl
 		_commerceOrderModelResourcePermission.check(
 			getPermissionChecker(), commerceOrderId, ActionKeys.VIEW);
 
-		return commerceOrderItemLocalService.getCommerceOrderItemsCount(
+		return commerceOrderItemPersistence.countByCommerceOrderId(
 			commerceOrderId);
 	}
 
@@ -299,7 +294,7 @@ public class CommerceOrderItemServiceImpl
 		_commerceOrderModelResourcePermission.check(
 			getPermissionChecker(), commerceOrderId, ActionKeys.VIEW);
 
-		return commerceOrderItemLocalService.getCommerceOrderItemsCount(
+		return commerceOrderItemPersistence.countByC_CPI(
 			commerceOrderId, cpInstanceId);
 	}
 
@@ -327,12 +322,38 @@ public class CommerceOrderItemServiceImpl
 	}
 
 	@Override
+	public List<CommerceOrderItem> getParentCommerceOrderItems(
+			long commerceOrderId, long parentCommerceOrderItemId, int start,
+			int end, OrderByComparator<CommerceOrderItem> orderByComparator)
+		throws PortalException {
+
+		_commerceOrderModelResourcePermission.check(
+			getPermissionChecker(), commerceOrderId, ActionKeys.VIEW);
+
+		return commerceOrderItemPersistence.findByC_PCOI(
+			commerceOrderId, parentCommerceOrderItemId, start, end,
+			orderByComparator);
+	}
+
+	@Override
+	public int getParentCommerceOrderItemsCount(
+			long commerceOrderId, long parentCommerceOrderItemId)
+		throws PortalException {
+
+		_commerceOrderModelResourcePermission.check(
+			getPermissionChecker(), commerceOrderId, ActionKeys.VIEW);
+
+		return commerceOrderItemPersistence.countByC_PCOI(
+			commerceOrderId, parentCommerceOrderItemId);
+	}
+
+	@Override
 	public List<CommerceOrderItem> getSupplierCommerceOrderItems(
 			long customerCommerceOrderItemId, int start, int end)
 		throws PortalException {
 
 		CommerceOrderItem commerceOrderItem =
-			commerceOrderItemLocalService.fetchCommerceOrderItem(
+			commerceOrderItemPersistence.fetchByPrimaryKey(
 				customerCommerceOrderItemId);
 
 		if (commerceOrderItem != null) {
@@ -340,8 +361,9 @@ public class CommerceOrderItemServiceImpl
 				getPermissionChecker(), commerceOrderItem.getCommerceOrderId(),
 				ActionKeys.VIEW);
 
-			return commerceOrderItemLocalService.getSupplierCommerceOrderItems(
-				customerCommerceOrderItemId, start, end);
+			return commerceOrderItemPersistence.
+				findByCustomerCommerceOrderItemId(
+					customerCommerceOrderItemId, start, end);
 		}
 
 		return Collections.emptyList();
@@ -351,7 +373,7 @@ public class CommerceOrderItemServiceImpl
 	public CommerceOrderItem importCommerceOrderItem(
 			String externalReferenceCode, long commerceOrderItemId,
 			long commerceOrderId, long cpInstanceId,
-			String cpMeasurementUnitKey, BigDecimal quantity,
+			String cpMeasurementUnitKey, String json, BigDecimal quantity,
 			BigDecimal shippedQuantity,
 			BigDecimal unitOfMeasureIncrementalOrderQuantity,
 			String unitOfMeasureKey, ServiceContext serviceContext)
@@ -362,7 +384,7 @@ public class CommerceOrderItemServiceImpl
 
 		return commerceOrderItemLocalService.importCommerceOrderItem(
 			getUserId(), externalReferenceCode, commerceOrderItemId,
-			commerceOrderId, cpInstanceId, cpMeasurementUnitKey, quantity,
+			commerceOrderId, cpInstanceId, cpMeasurementUnitKey, json, quantity,
 			shippedQuantity, unitOfMeasureIncrementalOrderQuantity,
 			unitOfMeasureKey, serviceContext);
 	}
@@ -414,8 +436,7 @@ public class CommerceOrderItemServiceImpl
 		throws PortalException {
 
 		CommerceOrderItem commerceOrderItem =
-			commerceOrderItemLocalService.getCommerceOrderItem(
-				commerceOrderItemId);
+			commerceOrderItemPersistence.findByPrimaryKey(commerceOrderItemId);
 
 		_commerceOrderModelResourcePermission.check(
 			getPermissionChecker(), commerceOrderItem.getCommerceOrderId(),
@@ -434,8 +455,7 @@ public class CommerceOrderItemServiceImpl
 		throws PortalException {
 
 		CommerceOrderItem commerceOrderItem =
-			commerceOrderItemLocalService.getCommerceOrderItem(
-				commerceOrderItemId);
+			commerceOrderItemPersistence.findByPrimaryKey(commerceOrderItemId);
 
 		_commerceOrderModelResourcePermission.check(
 			getPermissionChecker(), commerceOrderItem.getCommerceOrderId(),
@@ -453,8 +473,7 @@ public class CommerceOrderItemServiceImpl
 		throws PortalException {
 
 		CommerceOrderItem commerceOrderItem =
-			commerceOrderItemLocalService.getCommerceOrderItem(
-				commerceOrderItemId);
+			commerceOrderItemPersistence.findByPrimaryKey(commerceOrderItemId);
 
 		_commerceOrderModelResourcePermission.check(
 			getPermissionChecker(), commerceOrderItem.getCommerceOrderId(),
@@ -467,21 +486,22 @@ public class CommerceOrderItemServiceImpl
 
 	@Override
 	public CommerceOrderItem updateCommerceOrderItem(
-			long commerceOrderItemId, String json, BigDecimal quantity,
-			CommerceContext commerceContext, ServiceContext serviceContext)
+			String externalReferenceCode, long commerceOrderItemId, String json,
+			BigDecimal quantity, CommerceContext commerceContext,
+			ServiceContext serviceContext)
 		throws PortalException {
 
 		CommerceOrderItem commerceOrderItem =
-			commerceOrderItemLocalService.getCommerceOrderItem(
-				commerceOrderItemId);
+			commerceOrderItemPersistence.findByPrimaryKey(commerceOrderItemId);
 
 		_commerceOrderModelResourcePermission.check(
 			getPermissionChecker(), commerceOrderItem.getCommerceOrderId(),
 			ActionKeys.UPDATE);
 
 		return commerceOrderItemLocalService.updateCommerceOrderItem(
-			getUserId(), commerceOrderItem.getCommerceOrderItemId(), json,
-			quantity, commerceContext, serviceContext);
+			externalReferenceCode, getUserId(),
+			commerceOrderItem.getCommerceOrderItemId(), json, quantity,
+			commerceContext, serviceContext);
 	}
 
 	@Override
@@ -490,8 +510,7 @@ public class CommerceOrderItemServiceImpl
 		throws PortalException {
 
 		CommerceOrderItem commerceOrderItem =
-			commerceOrderItemLocalService.getCommerceOrderItem(
-				commerceOrderItemId);
+			commerceOrderItemPersistence.findByPrimaryKey(commerceOrderItemId);
 
 		_commerceOrderModelResourcePermission.check(
 			getPermissionChecker(), commerceOrderItem.getCommerceOrderId(),
@@ -505,40 +524,39 @@ public class CommerceOrderItemServiceImpl
 	@Override
 	public CommerceOrderItem updateCommerceOrderItemInfo(
 			long commerceOrderItemId, long shippingAddressId,
-			String deliveryGroup, String printedNote)
+			String deliveryGroupName, String printedNote)
 		throws PortalException {
 
 		CommerceOrderItem commerceOrderItem =
-			commerceOrderItemLocalService.getCommerceOrderItem(
-				commerceOrderItemId);
+			commerceOrderItemPersistence.findByPrimaryKey(commerceOrderItemId);
 
 		_commerceOrderModelResourcePermission.check(
 			getPermissionChecker(), commerceOrderItem.getCommerceOrderId(),
 			ActionKeys.UPDATE);
 
 		return commerceOrderItemLocalService.updateCommerceOrderItemInfo(
-			commerceOrderItemId, shippingAddressId, deliveryGroup, printedNote);
+			commerceOrderItemId, shippingAddressId, deliveryGroupName,
+			printedNote);
 	}
 
 	@Override
 	public CommerceOrderItem updateCommerceOrderItemInfo(
 			long commerceOrderItemId, long shippingAddressId,
-			String deliveryGroup, String printedNote,
+			String deliveryGroupName, String printedNote,
 			int requestedDeliveryDateMonth, int requestedDeliveryDateDay,
 			int requestedDeliveryDateYear)
 		throws PortalException {
 
 		CommerceOrderItem commerceOrderItem =
-			commerceOrderItemLocalService.getCommerceOrderItem(
-				commerceOrderItemId);
+			commerceOrderItemPersistence.findByPrimaryKey(commerceOrderItemId);
 
 		_commerceOrderModelResourcePermission.check(
 			getPermissionChecker(), commerceOrderItem.getCommerceOrderId(),
 			ActionKeys.UPDATE);
 
 		return commerceOrderItemLocalService.updateCommerceOrderItemInfo(
-			commerceOrderItemId, shippingAddressId, deliveryGroup, printedNote,
-			requestedDeliveryDateMonth, requestedDeliveryDateDay,
+			commerceOrderItemId, shippingAddressId, deliveryGroupName,
+			printedNote, requestedDeliveryDateMonth, requestedDeliveryDateDay,
 			requestedDeliveryDateYear);
 	}
 
@@ -548,7 +566,7 @@ public class CommerceOrderItemServiceImpl
 	@Deprecated
 	@Override
 	public CommerceOrderItem updateCommerceOrderItemInfo(
-			long commerceOrderItemId, String deliveryGroup,
+			long commerceOrderItemId, String deliveryGroupName,
 			long shippingAddressId, String printedNote,
 			int requestedDeliveryDateMonth, int requestedDeliveryDateDay,
 			int requestedDeliveryDateYear, int requestedDeliveryDateHour,
@@ -556,8 +574,8 @@ public class CommerceOrderItemServiceImpl
 		throws PortalException {
 
 		return commerceOrderItemService.updateCommerceOrderItemInfo(
-			commerceOrderItemId, shippingAddressId, deliveryGroup, printedNote,
-			requestedDeliveryDateMonth, requestedDeliveryDateDay,
+			commerceOrderItemId, shippingAddressId, deliveryGroupName,
+			printedNote, requestedDeliveryDateMonth, requestedDeliveryDateDay,
 			requestedDeliveryDateYear);
 	}
 
@@ -572,15 +590,14 @@ public class CommerceOrderItemServiceImpl
 		throws PortalException {
 
 		CommerceOrderItem commerceOrderItem =
-			commerceOrderItemLocalService.getCommerceOrderItem(
-				commerceOrderItemId);
+			commerceOrderItemPersistence.findByPrimaryKey(commerceOrderItemId);
 
 		_commerceOrderModelResourcePermission.check(
 			getPermissionChecker(), commerceOrderItem.getCommerceOrderId(),
 			ActionKeys.UPDATE);
 
 		CommerceOrder commerceOrder =
-			_commerceOrderLocalService.getCommerceOrder(
+			_commerceOrderPersistence.findByPrimaryKey(
 				commerceOrderItem.getCommerceOrderId());
 
 		_portletResourcePermission.check(
@@ -611,15 +628,14 @@ public class CommerceOrderItemServiceImpl
 		throws PortalException {
 
 		CommerceOrderItem commerceOrderItem =
-			commerceOrderItemLocalService.getCommerceOrderItem(
-				commerceOrderItemId);
+			commerceOrderItemPersistence.findByPrimaryKey(commerceOrderItemId);
 
 		_commerceOrderModelResourcePermission.check(
 			getPermissionChecker(), commerceOrderItem.getCommerceOrderId(),
 			ActionKeys.UPDATE);
 
 		CommerceOrder commerceOrder =
-			_commerceOrderLocalService.getCommerceOrder(
+			_commerceOrderPersistence.findByPrimaryKey(
 				commerceOrderItem.getCommerceOrderId());
 
 		_portletResourcePermission.check(
@@ -636,6 +652,26 @@ public class CommerceOrderItemServiceImpl
 			promoPriceWithTaxAmount, unitPrice, unitPriceWithTaxAmount);
 	}
 
+	@Override
+	public CommerceOrderItem updateCommerceOrderItemUnitOfMeasure(
+			long commerceOrderItemId, BigDecimal quantity,
+			String unitOfMeasureKey, CommerceContext commerceContext,
+			ServiceContext serviceContext)
+		throws PortalException {
+
+		CommerceOrderItem commerceOrderItem =
+			commerceOrderItemPersistence.findByPrimaryKey(commerceOrderItemId);
+
+		_commerceOrderModelResourcePermission.check(
+			getPermissionChecker(), commerceOrderItem.getCommerceOrderId(),
+			ActionKeys.UPDATE);
+
+		return commerceOrderItemLocalService.
+			updateCommerceOrderItemUnitOfMeasure(
+				getUserId(), commerceOrderItemId, quantity, unitOfMeasureKey,
+				commerceContext, serviceContext);
+	}
+
 	/**
 	 * @deprecated As of Athanasius (7.3.x)
 	 */
@@ -646,15 +682,14 @@ public class CommerceOrderItemServiceImpl
 		throws PortalException {
 
 		CommerceOrderItem commerceOrderItem =
-			commerceOrderItemLocalService.getCommerceOrderItem(
-				commerceOrderItemId);
+			commerceOrderItemPersistence.findByPrimaryKey(commerceOrderItemId);
 
 		_commerceOrderModelResourcePermission.check(
 			getPermissionChecker(), commerceOrderItem.getCommerceOrderId(),
 			ActionKeys.UPDATE);
 
 		CommerceOrder commerceOrder =
-			_commerceOrderLocalService.getCommerceOrder(
+			_commerceOrderPersistence.findByPrimaryKey(
 				commerceOrderItem.getCommerceOrderId());
 
 		_portletResourcePermission.check(
@@ -671,15 +706,14 @@ public class CommerceOrderItemServiceImpl
 		throws PortalException {
 
 		CommerceOrderItem commerceOrderItem =
-			commerceOrderItemLocalService.getCommerceOrderItem(
-				commerceOrderItemId);
+			commerceOrderItemPersistence.findByPrimaryKey(commerceOrderItemId);
 
 		_commerceOrderModelResourcePermission.check(
 			getPermissionChecker(), commerceOrderItem.getCommerceOrderId(),
 			ActionKeys.UPDATE);
 
 		CommerceOrder commerceOrder =
-			_commerceOrderLocalService.getCommerceOrder(
+			_commerceOrderPersistence.findByPrimaryKey(
 				commerceOrderItem.getCommerceOrderId());
 
 		_portletResourcePermission.check(
@@ -696,8 +730,7 @@ public class CommerceOrderItemServiceImpl
 		throws PortalException {
 
 		CommerceOrderItem commerceOrderItem =
-			commerceOrderItemLocalService.getCommerceOrderItem(
-				commerceOrderItemId);
+			commerceOrderItemPersistence.findByPrimaryKey(commerceOrderItemId);
 
 		_commerceOrderModelResourcePermission.check(
 			getPermissionChecker(), commerceOrderItem.getCommerceOrderId(),
@@ -713,8 +746,7 @@ public class CommerceOrderItemServiceImpl
 		throws PortalException {
 
 		CommerceOrderItem commerceOrderItem =
-			commerceOrderItemLocalService.getCommerceOrderItem(
-				commerceOrderItemId);
+			commerceOrderItemPersistence.findByPrimaryKey(commerceOrderItemId);
 
 		_commerceOrderModelResourcePermission.check(
 			getPermissionChecker(), commerceOrderItem.getCommerceOrderId(),
@@ -736,14 +768,14 @@ public class CommerceOrderItemServiceImpl
 	private ModelResourcePermission<AccountEntry>
 		_accountEntryModelResourcePermission;
 
-	@Reference
-	private CommerceOrderLocalService _commerceOrderLocalService;
-
 	@Reference(
 		target = "(model.class.name=com.liferay.commerce.model.CommerceOrder)"
 	)
 	private ModelResourcePermission<CommerceOrder>
 		_commerceOrderModelResourcePermission;
+
+	@Reference
+	private CommerceOrderPersistence _commerceOrderPersistence;
 
 	@Reference
 	private CommerceOrderService _commerceOrderService;

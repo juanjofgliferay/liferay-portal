@@ -11,7 +11,7 @@ import com.liferay.headless.admin.workflow.dto.v1_0.WorkflowInstanceSubmit;
 import com.liferay.headless.admin.workflow.internal.dto.v1_0.util.ObjectReviewedUtil;
 import com.liferay.headless.admin.workflow.resource.v1_0.WorkflowInstanceResource;
 import com.liferay.portal.kernel.change.tracking.CTAware;
-import com.liferay.portal.kernel.exception.NoSuchModelException;
+import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
 import com.liferay.portal.kernel.service.ServiceContext;
@@ -49,28 +49,15 @@ public class WorkflowInstanceResourceImpl
 	public void deleteWorkflowInstance(Long workflowInstanceId)
 		throws Exception {
 
-		_workflowInstanceManager.deleteWorkflowInstance(
-			contextCompany.getCompanyId(), workflowInstanceId);
+		_workflowInstanceManager.deleteWorkflowInstance(workflowInstanceId);
 	}
 
 	@Override
 	public WorkflowInstance getWorkflowInstance(Long workflowInstanceId)
 		throws Exception {
 
-		try {
-			return _toWorkflowInstance(
-				_workflowInstanceManager.getWorkflowInstance(
-					contextCompany.getCompanyId(), workflowInstanceId));
-		}
-		catch (WorkflowException workflowException) {
-			Throwable throwable = workflowException.getCause();
-
-			if (throwable instanceof NoSuchModelException) {
-				throw (NoSuchModelException)throwable;
-			}
-
-			throw workflowException;
-		}
+		return _toWorkflowInstance(
+			_workflowInstanceManager.getWorkflowInstance(workflowInstanceId));
 	}
 
 	@Override
@@ -102,15 +89,38 @@ public class WorkflowInstanceResourceImpl
 	}
 
 	@Override
+	public WorkflowInstance patchWorkflowInstance(
+			Long workflowInstanceId, WorkflowInstance workflowInstance)
+		throws Exception {
+
+		return _toWorkflowInstance(
+			_workflowInstanceManager.updateContext(
+				workflowInstanceId,
+				_getWorkflowContext(
+					workflowInstance.getContext(), workflowInstanceId)));
+	}
+
+	@Override
 	public WorkflowInstance postWorkflowInstanceChangeTransition(
 			Long workflowInstanceId, ChangeTransition changeTransition)
 		throws Exception {
 
-		return _toWorkflowInstance(
-			_workflowInstanceManager.signalWorkflowInstance(
-				contextCompany.getCompanyId(), contextUser.getUserId(),
-				workflowInstanceId, changeTransition.getTransitionName(),
-				null));
+		try {
+			return _toWorkflowInstance(
+				_workflowInstanceManager.signalWorkflowInstance(
+					contextCompany.getCompanyId(), contextUser.getUserId(),
+					workflowInstanceId, changeTransition.getTransitionName(),
+					null));
+		}
+		catch (WorkflowException workflowException) {
+			Throwable throwable = workflowException.getCause();
+
+			if (throwable instanceof PrincipalException) {
+				throw (PrincipalException)throwable;
+			}
+
+			throw workflowException;
+		}
 	}
 
 	@Override
@@ -118,40 +128,83 @@ public class WorkflowInstanceResourceImpl
 			WorkflowInstanceSubmit workflowInstanceSubmit)
 		throws Exception {
 
-		return _toWorkflowInstance(
-			_workflowInstanceManager.startWorkflowInstance(
-				contextCompany.getCompanyId(),
-				workflowInstanceSubmit.getSiteId(), contextUser.getUserId(),
-				workflowInstanceSubmit.getWorkflowDefinitionName(),
-				GetterUtil.getInteger(
-					workflowInstanceSubmit.getWorkflowDefinitionVersion()),
-				workflowInstanceSubmit.getTransitionName(),
-				_toWorkflowContext(
-					workflowInstanceSubmit.getContext(),
-					workflowInstanceSubmit.getSiteId())));
+		try {
+			return _toWorkflowInstance(
+				_workflowInstanceManager.startWorkflowInstance(
+					contextCompany.getCompanyId(),
+					GetterUtil.getLong(workflowInstanceSubmit.getSiteId()),
+					contextUser.getUserId(),
+					workflowInstanceSubmit.getWorkflowDefinitionName(),
+					GetterUtil.getInteger(
+						workflowInstanceSubmit.getWorkflowDefinitionVersion()),
+					workflowInstanceSubmit.getTransitionName(),
+					_toWorkflowContext(
+						workflowInstanceSubmit.getContext(), false,
+						GetterUtil.getLong(
+							workflowInstanceSubmit.getSiteId()))));
+		}
+		catch (WorkflowException workflowException) {
+			Throwable throwable = workflowException.getCause();
+
+			if (throwable instanceof PrincipalException) {
+				throw (PrincipalException)throwable;
+			}
+
+			throw workflowException;
+		}
+	}
+
+	private Map<String, Serializable> _getWorkflowContext(
+			Map<String, ?> context, long workflowInstanceId)
+		throws Exception {
+
+		com.liferay.portal.kernel.workflow.WorkflowInstance workflowInstance =
+			_workflowInstanceManager.getWorkflowInstance(
+				contextCompany.getCompanyId(), workflowInstanceId);
+
+		Map<String, Serializable> actualWorkflowContext =
+			workflowInstance.getWorkflowContext();
+
+		Map<String, Serializable> workflowContext = _toWorkflowContext(
+			context, true, GetterUtil.getLong(workflowInstance.getGroupId()));
+
+		for (Map.Entry<String, Serializable> entry :
+				workflowContext.entrySet()) {
+
+			actualWorkflowContext.putIfAbsent(entry.getKey(), entry.getValue());
+		}
+
+		return actualWorkflowContext;
 	}
 
 	private Map<String, Serializable> _toWorkflowContext(
-			Map<String, ?> context, long siteId)
+			Map<String, ?> context, boolean readOnly, long siteId)
 		throws Exception {
 
 		Map<String, Serializable> workflowContext = new HashMap<>();
 
 		for (Map.Entry<String, ?> entry : context.entrySet()) {
-			Object value = entry.getValue();
-
-			if (value instanceof Serializable) {
-				workflowContext.put(entry.getKey(), (Serializable)value);
+			if (!(entry.getValue() instanceof Serializable value)) {
+				continue;
 			}
+
+			workflowContext.put(entry.getKey(), value);
 		}
 
-		ServiceContext serviceContext = ServiceContextFactory.getInstance(
-			contextHttpServletRequest);
+		if (readOnly) {
+			workflowContext.remove(WorkflowConstants.CONTEXT_SERVICE_CONTEXT);
+		}
+		else if (!workflowContext.containsKey(
+					WorkflowConstants.CONTEXT_SERVICE_CONTEXT)) {
 
-		serviceContext.setScopeGroupId(siteId);
+			ServiceContext serviceContext = ServiceContextFactory.getInstance(
+				contextHttpServletRequest);
 
-		workflowContext.put(
-			WorkflowConstants.CONTEXT_SERVICE_CONTEXT, serviceContext);
+			serviceContext.setScopeGroupId(siteId);
+
+			workflowContext.put(
+				WorkflowConstants.CONTEXT_SERVICE_CONTEXT, serviceContext);
+		}
 
 		return workflowContext;
 	}
@@ -163,21 +216,6 @@ public class WorkflowInstanceResourceImpl
 
 		return new WorkflowInstance() {
 			{
-				completed = workflowInstance.isComplete();
-				currentNodeNames = transformToArray(
-					workflowInstance.getCurrentWorkflowNodes(),
-					WorkflowNode::getName, String.class);
-				dateCompletion = workflowInstance.getEndDate();
-				dateCreated = workflowInstance.getStartDate();
-				id = workflowInstance.getWorkflowInstanceId();
-				objectReviewed = ObjectReviewedUtil.toObjectReviewed(
-					contextAcceptLanguage.getPreferredLocale(),
-					workflowInstance.getWorkflowContext());
-				workflowDefinitionName =
-					workflowInstance.getWorkflowDefinitionName();
-				workflowDefinitionVersion = String.valueOf(
-					workflowInstance.getWorkflowDefinitionVersion());
-
 				setActions(
 					() -> HashMapBuilder.put(
 						"changeTransition",
@@ -194,6 +232,27 @@ public class WorkflowInstanceResourceImpl
 							"deleteWorkflowInstance",
 							_kaleoInstanceModelResourcePermission)
 					).build());
+				setCompleted(workflowInstance::isComplete);
+				setContext(
+					() -> _toWorkflowContext(
+						workflowInstance.getWorkflowContext(), true,
+						workflowInstance.getGroupId()));
+				setCurrentNodeNames(
+					() -> transformToArray(
+						workflowInstance.getCurrentWorkflowNodes(),
+						WorkflowNode::getName, String.class));
+				setDateCompletion(workflowInstance::getEndDate);
+				setDateCreated(workflowInstance::getStartDate);
+				setId(workflowInstance::getWorkflowInstanceId);
+				setObjectReviewed(
+					() -> ObjectReviewedUtil.toObjectReviewed(
+						contextAcceptLanguage.getPreferredLocale(),
+						workflowInstance.getWorkflowContext()));
+				setWorkflowDefinitionName(
+					workflowInstance::getWorkflowDefinitionName);
+				setWorkflowDefinitionVersion(
+					() -> String.valueOf(
+						workflowInstance.getWorkflowDefinitionVersion()));
 			}
 		};
 	}

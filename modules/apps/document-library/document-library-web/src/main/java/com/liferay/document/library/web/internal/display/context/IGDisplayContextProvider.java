@@ -7,8 +7,8 @@ package com.liferay.document.library.web.internal.display.context;
 
 import com.liferay.document.library.display.context.IGDisplayContextFactory;
 import com.liferay.document.library.display.context.IGViewFileVersionDisplayContext;
+import com.liferay.document.library.helper.DLURLHelper;
 import com.liferay.document.library.kernel.versioning.VersioningStrategy;
-import com.liferay.document.library.util.DLURLHelper;
 import com.liferay.document.library.web.internal.helper.DLTrashHelper;
 import com.liferay.osgi.service.tracker.collections.list.ServiceTrackerList;
 import com.liferay.osgi.service.tracker.collections.list.ServiceTrackerListFactory;
@@ -17,8 +17,8 @@ import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.repository.model.FileShortcut;
 import com.liferay.portal.kernel.repository.model.FileVersion;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.service.component.annotations.Activate;
@@ -104,7 +104,7 @@ public class IGDisplayContextProvider {
 	}
 
 	@Deactivate
-	protected void deactivate(BundleContext bundleContext) {
+	protected void deactivate() {
 		_igDisplayContextFactories.close();
 	}
 

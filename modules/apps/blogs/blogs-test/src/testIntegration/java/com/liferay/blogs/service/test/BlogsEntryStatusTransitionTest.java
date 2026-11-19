@@ -35,7 +35,7 @@ import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
-import com.liferay.portal.search.test.util.SearchTestRule;
+import com.liferay.portal.search.test.rule.SearchTestRule;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.social.kernel.model.SocialActivity;
 import com.liferay.social.kernel.service.SocialActivityLocalServiceUtil;
@@ -379,11 +379,13 @@ public class BlogsEntryStatusTransitionTest {
 		int count = 0;
 
 		for (SocialActivity socialActivity : socialActivities) {
-			if ((activityType == ACTIVITY_KEY_ANY) ||
-				(activityType == socialActivity.getType())) {
+			if ((activityType != ACTIVITY_KEY_ANY) &&
+				(activityType != socialActivity.getType())) {
 
-				count = count + 1;
+				continue;
 			}
+
+			count = count + 1;
 		}
 
 		Assert.assertEquals(expectedCount, count);

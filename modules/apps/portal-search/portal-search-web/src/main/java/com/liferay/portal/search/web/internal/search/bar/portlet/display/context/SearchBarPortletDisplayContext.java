@@ -5,7 +5,11 @@
 
 package com.liferay.portal.search.web.internal.search.bar.portlet.display.context;
 
+import com.liferay.portal.kernel.util.HashMapBuilder;
+import com.liferay.portal.kernel.util.ReleaseInfo;
 import com.liferay.portal.search.web.internal.search.bar.portlet.configuration.SearchBarPortletInstanceConfiguration;
+
+import java.util.Map;
 
 /**
  * @author André de Oliveira
@@ -42,6 +46,49 @@ public class SearchBarPortletDisplayContext {
 
 	public String getPaginationStartParameterName() {
 		return _paginationStartParameterName;
+	}
+
+	public Map<String, Object> getReactData() {
+		return HashMapBuilder.<String, Object>put(
+			"destinationFriendlyURL", getDestinationFriendlyURL()
+		).put(
+			"emptySearchEnabled", isEmptySearchEnabled()
+		).put(
+			"initialKeywords", getKeywords()
+		).put(
+			"inputPlaceholder", getInputPlaceholder()
+		).put(
+			"isDXP", ReleaseInfo.isDXP()
+		).put(
+			"isSearchExperiencesSupported", isSearchExperiencesSupported()
+		).put(
+			"keywordsParameterName", getKeywordsParameterName()
+		).put(
+			"letUserChooseScope", isLetTheUserChooseTheSearchScope()
+		).put(
+			"paginationStartParameterName", getPaginationStartParameterName()
+		).put(
+			"retainFacetSelections", isRetainFacetSelections()
+		).put(
+			"scopeParameterName", getScopeParameterName()
+		).put(
+			"scopeParameterStringCurrentSite",
+			getCurrentSiteSearchScopeParameterString()
+		).put(
+			"scopeParameterStringEverything",
+			getEverythingSearchScopeParameterString()
+		).put(
+			"searchURL", getSearchURL()
+		).put(
+			"selectedEverythingSearchScope", isSelectedEverythingSearchScope()
+		).put(
+			"suggestionsContributorConfiguration",
+			getSuggestionsContributorConfiguration()
+		).put(
+			"suggestionsDisplayThreshold", getSuggestionsDisplayThreshold()
+		).put(
+			"suggestionsURL", getSuggestionsURL()
+		).build();
 	}
 
 	public String getScopeParameterName() {
@@ -82,6 +129,10 @@ public class SearchBarPortletDisplayContext {
 		return _destinationUnreachable;
 	}
 
+	public boolean isDisplayIncludeAttachments() {
+		return _displayIncludeAttachments;
+	}
+
 	public boolean isDisplayWarningIgnoredConfiguration() {
 		return _displayWarningIgnoredConfiguration;
 	}
@@ -96,6 +147,10 @@ public class SearchBarPortletDisplayContext {
 
 	public boolean isRenderNothing() {
 		return _renderNothing;
+	}
+
+	public boolean isRetainFacetSelections() {
+		return _retainFacetSelections;
 	}
 
 	public boolean isSearchExperiencesSupported() {
@@ -137,6 +192,12 @@ public class SearchBarPortletDisplayContext {
 
 	public void setDestinationUnreachable(boolean destinationUnreachable) {
 		_destinationUnreachable = destinationUnreachable;
+	}
+
+	public void setDisplayIncludeAttachments(
+		boolean displayIncludeAttachments) {
+
+		_displayIncludeAttachments = displayIncludeAttachments;
 	}
 
 	public void setDisplayStyleGroupId(long displayStyleGroupId) {
@@ -187,6 +248,10 @@ public class SearchBarPortletDisplayContext {
 
 	public void setRenderNothing(boolean renderNothing) {
 		_renderNothing = renderNothing;
+	}
+
+	public void setRetainFacetSelections(boolean retainFacetSelections) {
+		_retainFacetSelections = retainFacetSelections;
 	}
 
 	public void setScopeParameterName(String scopeParameterName) {
@@ -258,6 +323,7 @@ public class SearchBarPortletDisplayContext {
 	private String _currentSiteSearchScopeParameterString;
 	private String _destinationFriendlyURL;
 	private boolean _destinationUnreachable;
+	private boolean _displayIncludeAttachments;
 	private long _displayStyleGroupId;
 	private boolean _displayWarningIgnoredConfiguration;
 	private boolean _emptySearchEnabled;
@@ -268,6 +334,7 @@ public class SearchBarPortletDisplayContext {
 	private boolean _letTheUserChooseTheSearchScope;
 	private String _paginationStartParameterName;
 	private boolean _renderNothing;
+	private boolean _retainFacetSelections;
 	private String _scopeParameterName;
 	private String _scopeParameterValue;
 	private SearchBarPortletInstanceConfiguration

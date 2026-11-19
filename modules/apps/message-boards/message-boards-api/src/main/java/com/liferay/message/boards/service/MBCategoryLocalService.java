@@ -65,19 +65,20 @@ public interface MBCategoryLocalService
 	 * Never modify this interface directly. Add custom service methods to <code>com.liferay.message.boards.service.impl.MBCategoryLocalServiceImpl</code> and rerun ServiceBuilder to automatically copy the method declarations to this interface. Consume the message boards category local service via injection or a <code>org.osgi.util.tracker.ServiceTracker</code>. Use {@link MBCategoryLocalServiceUtil} if injection and service tracking are not available.
 	 */
 	public MBCategory addCategory(
-			long userId, long parentCategoryId, String name, String description,
-			ServiceContext serviceContext)
+			String externalReferenceCode, long userId, long parentCategoryId,
+			String name, String description, ServiceContext serviceContext)
 		throws PortalException;
 
 	public MBCategory addCategory(
-			long userId, long parentCategoryId, String name, String description,
-			String displayStyle, String emailAddress, String inProtocol,
-			String inServerName, int inServerPort, boolean inUseSSL,
-			String inUserName, String inPassword, int inReadInterval,
-			String outEmailAddress, boolean outCustom, String outServerName,
-			int outServerPort, boolean outUseSSL, String outUserName,
-			String outPassword, boolean allowAnonymous,
-			boolean mailingListActive, ServiceContext serviceContext)
+			String externalReferenceCode, long userId, long parentCategoryId,
+			String name, String description, String displayStyle,
+			String emailAddress, String inProtocol, String inServerName,
+			int inServerPort, boolean inUseSSL, String inUserName,
+			String inPassword, int inReadInterval, String outEmailAddress,
+			boolean outCustom, String outServerName, int outServerPort,
+			boolean outUseSSL, String outUserName, String outPassword,
+			boolean allowAnonymous, boolean mailingListActive,
+			ServiceContext serviceContext)
 		throws PortalException;
 
 	public void addCategoryResources(
@@ -138,6 +139,10 @@ public interface MBCategoryLocalService
 	)
 	public void deleteCategory(
 			MBCategory category, boolean includeTrashedEntries)
+		throws PortalException;
+
+	public void deleteCategoryByExternalReferenceCode(
+			String externalReferenceCode, long groupId)
 		throws PortalException;
 
 	/**
@@ -252,6 +257,10 @@ public interface MBCategoryLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public MBCategory fetchMBCategory(long groupId, String friendlyURL);
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public MBCategory fetchMBCategoryByExternalReferenceCode(
+		String externalReferenceCode, long groupId);
+
 	/**
 	 * Returns the message boards category matching the UUID and group.
 	 *
@@ -310,9 +319,6 @@ public interface MBCategoryLocalService
 		long groupId, long categoryId, int status, int start, int end);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getCategoriesAndThreadsCount(long groupId, long categoryId);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public int getCategoriesAndThreadsCount(
 		long groupId, long categoryId, int status);
 
@@ -348,13 +354,6 @@ public interface MBCategoryLocalService
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public MBCategory getCategory(long categoryId) throws PortalException;
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<MBCategory> getCompanyCategories(
-		long companyId, int start, int end);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getCompanyCategoriesCount(long companyId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public ExportActionableDynamicQuery getExportActionableDynamicQuery(
@@ -425,6 +424,11 @@ public interface MBCategoryLocalService
 	public MBCategory getMBCategory(long groupId, String friendlyURL)
 		throws PortalException;
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public MBCategory getMBCategoryByExternalReferenceCode(
+			String externalReferenceCode, long groupId)
+		throws PortalException;
+
 	/**
 	 * Returns the message boards category matching the UUID and group.
 	 *
@@ -455,13 +459,6 @@ public interface MBCategoryLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<Long> getSubcategoryIds(
 		List<Long> categoryIds, long groupId, long categoryId);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<MBCategory> getSubscribedCategories(
-		long groupId, long userId, int start, int end);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getSubscribedCategoriesCount(long groupId, long userId);
 
 	public void moveCategoriesToTrash(long groupId, long userId)
 		throws PortalException;
@@ -531,3 +528,4 @@ public interface MBCategoryLocalService
 		throws E;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1444454554

@@ -95,29 +95,12 @@ public class SocialActivitySetLocalServiceImpl
 	}
 
 	@Override
-	public SocialActivitySet getClassActivitySet(
-		long classNameId, long classPK, int type) {
-
-		return socialActivitySetPersistence.fetchByC_C_T_First(
-			classNameId, classPK, type,
-			new SocialActivitySetModifiedDateComparator());
-	}
-
-	@Override
-	public SocialActivitySet getClassActivitySet(
-		long userId, long classNameId, long classPK, int type) {
-
-		return socialActivitySetPersistence.fetchByU_C_C_T_First(
-			userId, classNameId, classPK, type,
-			new SocialActivitySetModifiedDateComparator());
-	}
-
-	@Override
 	public List<SocialActivitySet> getGroupActivitySets(
 		long groupId, int start, int end) {
 
 		return socialActivitySetPersistence.findByGroupId(
-			groupId, start, end, new SocialActivitySetModifiedDateComparator());
+			groupId, start, end,
+			SocialActivitySetModifiedDateComparator.getInstance(false));
 	}
 
 	@Override
@@ -140,13 +123,6 @@ public class SocialActivitySetLocalServiceImpl
 
 	@Override
 	public List<SocialActivitySet> getRelationActivitySets(
-		long userId, int start, int end) {
-
-		return socialActivitySetFinder.findByRelation(userId, start, end);
-	}
-
-	@Override
-	public List<SocialActivitySet> getRelationActivitySets(
 		long userId, int type, int start, int end) {
 
 		return socialActivitySetFinder.findByRelationType(
@@ -154,31 +130,8 @@ public class SocialActivitySetLocalServiceImpl
 	}
 
 	@Override
-	public int getRelationActivitySetsCount(long userId) {
-		return socialActivitySetFinder.countByRelation(userId);
-	}
-
-	@Override
 	public int getRelationActivitySetsCount(long userId, int type) {
 		return socialActivitySetFinder.countByRelationType(userId, type);
-	}
-
-	@Override
-	public SocialActivitySet getUserActivitySet(
-		long groupId, long userId, int type) {
-
-		return socialActivitySetPersistence.fetchByG_U_T_First(
-			groupId, userId, type,
-			new SocialActivitySetModifiedDateComparator());
-	}
-
-	@Override
-	public SocialActivitySet getUserActivitySet(
-		long groupId, long userId, long classNameId, int type) {
-
-		return socialActivitySetPersistence.fetchByG_U_C_T_First(
-			groupId, userId, classNameId, type,
-			new SocialActivitySetModifiedDateComparator());
 	}
 
 	@Override

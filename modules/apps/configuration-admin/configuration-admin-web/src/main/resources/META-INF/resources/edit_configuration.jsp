@@ -16,22 +16,6 @@ if (Validator.isNull(redirect)) {
 	redirect = portletURL.toString();
 }
 
-String bindRedirectURL = currentURL;
-
-ConfigurationModel configurationModel = (ConfigurationModel)request.getAttribute(ConfigurationAdminWebKeys.CONFIGURATION_MODEL);
-
-PortletURL viewFactoryInstancesURL = PortletURLBuilder.createRenderURL(
-	renderResponse
-).setMVCRenderCommandName(
-	"/configuration_admin/view_factory_instances"
-).setParameter(
-	"factoryPid", configurationModel.getFactoryPid()
-).buildPortletURL();
-
-if (configurationModel.isFactory()) {
-	bindRedirectURL = viewFactoryInstancesURL.toString();
-}
-
 PortalUtil.addPortletBreadcrumbEntry(request, portletDisplay.getPortletDisplayName(), String.valueOf(renderResponse.createRenderURL()));
 
 ConfigurationCategoryMenuDisplay configurationCategoryMenuDisplay = (ConfigurationCategoryMenuDisplay)request.getAttribute(ConfigurationAdminWebKeys.CONFIGURATION_CATEGORY_MENU_DISPLAY);
@@ -44,11 +28,21 @@ String viewCategoryHREF = ConfigurationCategoryUtil.getHREF(configurationCategor
 
 PortalUtil.addPortletBreadcrumbEntry(request, categoryDisplayName, viewCategoryHREF);
 
+ConfigurationModel configurationModel = (ConfigurationModel)request.getAttribute(ConfigurationAdminWebKeys.CONFIGURATION_MODEL);
+
 ResourceBundleLoader resourceBundleLoader = ResourceBundleLoaderProviderUtil.getResourceBundleLoader(configurationModel.getBundleSymbolicName());
 
 ResourceBundle componentResourceBundle = resourceBundleLoader.loadResourceBundle(PortalUtil.getLocale(request));
 
 String configurationModelName = (componentResourceBundle != null) ? LanguageUtil.get(componentResourceBundle, configurationModel.getName()) : configurationModel.getName();
+
+PortletURL viewFactoryInstancesURL = PortletURLBuilder.createRenderURL(
+	renderResponse
+).setMVCRenderCommandName(
+	"/configuration_admin/view_factory_instances"
+).setParameter(
+	"factoryPid", configurationModel.getFactoryPid()
+).buildPortletURL();
 
 if (configurationModel.isFactory()) {
 	PortalUtil.addPortletBreadcrumbEntry(request, configurationModelName, viewFactoryInstancesURL.toString());
@@ -60,13 +54,22 @@ portletDisplay.setURLBack(redirect);
 renderResponse.setTitle(categoryDisplayName);
 %>
 
+<liferay-ui:error exception="<%= ConfigurationValidationException.class %>">
+
+	<%
+	ConfigurationValidationException configurationValidationException = (ConfigurationValidationException)errorException;
+	%>
+
+	<liferay-ui:message arguments="<%= configurationValidationException.getMessageArguments() %>" key="<%= configurationValidationException.getMessageKey() %>" translateArguments="<%= false %>" />
+</liferay-ui:error>
+
 <liferay-ui:error exception="<%= ConfigurationModelListenerException.class %>">
 
 	<%
-	ConfigurationModelListenerException cmle = (ConfigurationModelListenerException)errorException;
+	ConfigurationModelListenerException configurationModelListenerException = (ConfigurationModelListenerException)errorException;
 	%>
 
-	<liferay-ui:message key="<%= HtmlUtil.escape(cmle.causeMessage) %>" localizeKey="<%= false %>" />
+	<liferay-ui:message key="<%= HtmlUtil.escape(configurationModelListenerException.causeMessage) %>" localizeKey="<%= false %>" />
 </liferay-ui:error>
 
 <portlet:actionURL name="/configuration_admin/bind_configuration" var="bindConfigurationActionURL" />
@@ -97,7 +100,6 @@ renderResponse.setTitle(categoryDisplayName);
 				size="full"
 			>
 				<aui:form action="<%= bindConfigurationActionURL %>" method="post" name="fm">
-					<aui:input name="redirect" type="hidden" value="<%= bindRedirectURL %>" />
 					<aui:input name="factoryPid" type="hidden" value="<%= configurationModel.getFactoryPid() %>" />
 					<aui:input name="pid" type="hidden" value="<%= configurationModel.getID() %>" />
 
@@ -119,81 +121,46 @@ renderResponse.setTitle(categoryDisplayName);
 					}
 					%>
 
-					<h2>
-						<%= HtmlUtil.escape(configurationTitle) %>
+					<clay:content-row
+						cssClass="autofit-padded-no-gutters-x sheet-title"
+					>
+						<clay:content-col
+							containerElement="h2"
+							expand="<%= true %>"
+						>
+							<clay:content-row
+								cssClass="autofit-padded-no-gutters-x"
+							>
+								<clay:content-col>
+									<%= HtmlUtil.escape(configurationTitle) %>
+								</clay:content-col>
+
+								<c:if test="<%= configurationModel.isDeprecated() %>">
+									<clay:content-col>
+										<liferay-frontend:feature-indicator
+											interactive="<%= true %>"
+											type="deprecated"
+										/>
+									</clay:content-col>
+								</c:if>
+							</clay:content-row>
+						</clay:content-col>
 
 						<c:if test="<%= configurationModel.hasScopeConfiguration(configurationScopeDisplayContext.getScope()) %>">
-							<liferay-ui:icon-menu
-								cssClass="float-right"
-								direction="right"
-								markupView="lexicon"
-								showWhenSingleIcon="<%= true %>"
-							>
-								<c:choose>
-									<c:when test="<%= configurationModel.isFactory() %>">
-										<portlet:actionURL name="/configuration_admin/delete_configuration" var="deleteConfigActionURL">
-											<portlet:param name="redirect" value="<%= currentURL %>" />
-											<portlet:param name="factoryPid" value="<%= configurationModel.getFactoryPid() %>" />
-											<portlet:param name="pid" value="<%= configurationModel.getID() %>" />
-										</portlet:actionURL>
-
-										<liferay-ui:icon
-											message="delete"
-											method="post"
-											url="<%= deleteConfigActionURL %>"
-										/>
-									</c:when>
-									<c:otherwise>
-										<portlet:actionURL name="/configuration_admin/delete_configuration" var="deleteConfigActionURL">
-											<portlet:param name="redirect" value="<%= currentURL %>" />
-											<portlet:param name="factoryPid" value="<%= configurationModel.getFactoryPid() %>" />
-											<portlet:param name="pid" value="<%= configurationModel.getID() %>" />
-										</portlet:actionURL>
-
-										<liferay-ui:icon
-											message="reset-default-values"
-											method="post"
-											url="<%= deleteConfigActionURL %>"
-										/>
-									</c:otherwise>
-								</c:choose>
-
-								<portlet:resourceURL id="/configuration_admin/export_configuration" var="exportURL">
-									<portlet:param name="factoryPid" value="<%= configurationModel.getFactoryPid() %>" />
-									<portlet:param name="pid" value="<%= configurationModel.getID() %>" />
-								</portlet:resourceURL>
-
-								<liferay-ui:icon
-									message="export"
-									method="get"
-									url="<%= exportURL %>"
-								/>
+							<clay:content-col>
 
 								<%
-								List<ConfigurationMenuItem> configurationMenuItems = (List<ConfigurationMenuItem>)request.getAttribute(ConfigurationAdminWebKeys.CONFIGURATION_MENU_ITEMS);
+								EditConfigurationDisplayContext editConfigurationDisplayContext = new EditConfigurationDisplayContext(request, renderRequest, renderResponse);
 								%>
 
-								<c:if test="<%= ListUtil.isNotEmpty(configurationMenuItems) %>">
-
-									<%
-									for (ConfigurationMenuItem configurationMenuItem : configurationMenuItems) {
-										Configuration configuration = configurationModel.getConfiguration();
-									%>
-
-										<liferay-ui:icon
-											message="<%= configurationMenuItem.getLabel(locale) %>"
-											url="<%= configurationMenuItem.getURL(renderRequest, renderResponse, configurationModel.getID(), configurationModel.getFactoryPid(), configuration.getProperties()) %>"
-											useDialog="<%= true %>"
-										/>
-
-									<%
-									}
-									%>
-
-								</c:if>
-							</liferay-ui:icon-menu>
+								<clay:dropdown-actions
+									dropdownItems="<%= editConfigurationDisplayContext.getDropdownItems() %>"
+									propsTransformer="{EditConfigurationActionDropdownPropsTransformer} from configuration-admin-web"
+									title='<%= LanguageUtil.get(request, "actions") %>'
+								/>
+							</clay:content-col>
 						</c:if>
-					</h2>
+					</clay:content-row>
 
 					<c:if test="<%= configurationModel.hasScopeConfiguration(configurationScopeDisplayContext.getScope()) && configurationModel.isReadOnly() %>">
 						<clay:alert
@@ -232,10 +199,10 @@ renderResponse.setTitle(categoryDisplayName);
 							<aui:button-row>
 								<c:choose>
 									<c:when test="<%= configurationModel.hasScopeConfiguration(configurationScopeDisplayContext.getScope()) %>">
-										<aui:button name="update" type="submit" value="update" />
+										<aui:button cssClass="configuration-submit-button" data-qa-id="submitConfiguration" disabled="<%= true %>" name="update" type="submit" value="update" />
 									</c:when>
 									<c:otherwise>
-										<aui:button name="save" type="submit" value="save" />
+										<aui:button cssClass="configuration-submit-button" data-qa-id="submitConfiguration" disabled="<%= true %>" name="save" type="submit" value="save" />
 									</c:otherwise>
 								</c:choose>
 
@@ -255,3 +222,34 @@ renderResponse.setTitle(categoryDisplayName);
 		</clay:col>
 	</clay:row>
 </clay:container-fluid>
+
+<c:if test="<%= !configurationModel.isReadOnly() %>">
+	<aui:script>
+		var form = document.forms['<portlet:namespace />fm'];
+
+		if (form) {
+			var handleInputs = function () {
+				var inputs = form.querySelectorAll(
+					'button[role="combobox"], input:not([type="hidden"]), select, textarea'
+				);
+
+				if (inputs.length) {
+					observer.disconnect();
+
+					form.querySelectorAll('.configuration-submit-button').forEach(
+						function (button) {
+							button.removeAttribute('disabled');
+							button.classList.remove('disabled');
+						}
+					);
+				}
+			};
+
+			var observer = new MutationObserver(handleInputs);
+
+			observer.observe(form, {childList: true, subtree: true});
+
+			handleInputs();
+		}
+	</aui:script>
+</c:if>

@@ -18,11 +18,6 @@ public interface BuildData {
 
 	public static final File DIR_WORKSPACE_DEFAULT = new File(".");
 
-	public static final String FILE_PATH_DIST_ROOT = "/tmp/dist";
-
-	public static final String URL_JENKINS_GITHUB_DEFAULT =
-		"https://github.com/liferay/liferay-jenkins-ee/tree/master";
-
 	public File getArtifactDir();
 
 	public String getBuildDescription();
@@ -49,6 +44,8 @@ public interface BuildData {
 
 	public String getHostname();
 
+	public JSONObject getJSONObject();
+
 	public String getJenkinsGitHubBranchName();
 
 	public String getJenkinsGitHubRepositoryName();
@@ -61,11 +58,9 @@ public interface BuildData {
 
 	public String getJobURL();
 
-	public JSONObject getJSONObject();
-
 	public String getMasterHostname();
 
-	public String getRunID();
+	public String getRunId();
 
 	public Long getStartTime();
 
@@ -81,7 +76,7 @@ public interface BuildData {
 
 	public String getTopLevelMasterHostname();
 
-	public String getTopLevelRunID();
+	public String getTopLevelRunId();
 
 	public String getUserContentRelativePath();
 

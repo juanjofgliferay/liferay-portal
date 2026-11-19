@@ -39,6 +39,8 @@ import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.wiki.model.WikiPage;
 import com.liferay.wiki.model.WikiPageDisplay;
 
+import jakarta.portlet.PortletURL;
+
 import java.io.File;
 import java.io.InputStream;
 import java.io.Serializable;
@@ -47,8 +49,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
-
-import javax.portlet.PortletURL;
 
 import org.osgi.annotation.versioning.ProviderType;
 
@@ -324,7 +324,7 @@ public interface WikiPageLocalService
 	 * reference code
 	 *
 	 * @param groupId the primary key of the group
-	 * @param externalReferenceCode the wiki page external reference code
+	 * @param externalReferenceCode the wiki page's external reference code
 	 * @return the latest matching wiki page, or <code>null</code> if no
 	 matching wiki page could be found
 	 */
@@ -336,10 +336,16 @@ public interface WikiPageLocalService
 	public WikiPage fetchPage(long resourcePrimKey);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public WikiPage fetchPage(long resourcePrimKey, Boolean head);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public WikiPage fetchPage(long nodeId, String title);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public WikiPage fetchPage(long nodeId, String title, double version);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public PersistedModel fetchPersistedModel(Serializable primaryKeyObj);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public WikiPage fetchWikiPage(long pageId);
@@ -428,7 +434,7 @@ public interface WikiPageLocalService
 	 * reference code
 	 *
 	 * @param groupId the primary key of the group
-	 * @param externalReferenceCode the wiki page external reference code
+	 * @param externalReferenceCode the wiki page's external reference code
 	 * @return the latest matching wiki page
 	 * @throws PortalException if a portal exception occurred
 	 */
@@ -533,10 +539,6 @@ public interface WikiPageLocalService
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<WikiPage> getPages(
-		long userId, long nodeId, int status, int start, int end);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<WikiPage> getPages(
 		long groupId, long nodeId, int status, long statusByUserId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
@@ -553,9 +555,6 @@ public interface WikiPageLocalService
 		OrderByComparator<WikiPage> orderByComparator);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<WikiPage> getPages(String format);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public int getPagesCount(long nodeId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
@@ -565,19 +564,10 @@ public interface WikiPageLocalService
 	public int getPagesCount(long nodeId, boolean head, int status);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getPagesCount(long nodeId, int status);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getPagesCount(long userId, long nodeId, int status);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public int getPagesCount(long nodeId, String title);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public int getPagesCount(long nodeId, String title, boolean head);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getPagesCount(String format);
 
 	@Override
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
@@ -596,13 +586,6 @@ public interface WikiPageLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public WikiPage getPreviousVersionPage(WikiPage page)
 		throws PortalException;
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<WikiPage> getRecentChanges(
-		long groupId, long nodeId, int start, int end);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getRecentChangesCount(long groupId, long nodeId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<WikiPage> getRedirectorPages(
@@ -798,3 +781,4 @@ public interface WikiPageLocalService
 		throws E;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-2094897427

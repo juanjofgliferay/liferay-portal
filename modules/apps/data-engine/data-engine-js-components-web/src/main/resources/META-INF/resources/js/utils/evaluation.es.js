@@ -84,15 +84,17 @@ export function mergePages(
 				field.visible &&
 				viewMode
 			) {
-				fieldValue = '';
+				fieldValue =
+					field.predefinedValue ?? sourceField.predefinedValue ?? '';
 			}
 
 			let newField = {
 				...sourceField,
 				...field,
 				defaultLanguageId,
-				displayErrors:
-					sourceField.displayErrors || field.fieldName === fieldName,
+				displayErrors: field.visible
+					? sourceField.displayErrors || field.fieldName === fieldName
+					: false,
 				editingLanguageId,
 				valid: field.valid !== false,
 				value: fieldValue,
@@ -113,6 +115,13 @@ export function mergePages(
 					},
 				};
 			}
+			else {
+				newField = {
+					...newField,
+					editOnlyInDefaultLanguage:
+						sourceField.editOnlyInDefaultLanguage,
+				};
+			}
 
 			return newField;
 		},
@@ -123,6 +132,7 @@ export function mergePages(
 
 const doEvaluate = debounce((fieldName, evaluatorContext, callback) => {
 	const {
+		containerId,
 		defaultLanguageId,
 		editingLanguageId,
 		formId,
@@ -146,7 +156,11 @@ const doEvaluate = debounce((fieldName, evaluatorContext, callback) => {
 
 	makeFetch({
 		body: convertToFormData({
-			languageId: editingLanguageId,
+			languageId:
+				containerId === `${portletNamespace}editConfiguration` ||
+				containerId === `${portletNamespace}editObjectEntry`
+					? defaultLanguageId
+					: editingLanguageId,
 			p_auth: Liferay.authToken,
 			p_l_id: themeDisplay.getPlid(),
 			p_v_l_s_g_id: themeDisplay.getSiteGroupId(),
@@ -161,12 +175,20 @@ const doEvaluate = debounce((fieldName, evaluatorContext, callback) => {
 			}),
 			trigger: fieldName,
 		}),
+		headers: {
+			'Accept': 'application/json',
+			'Accept-Language': Liferay.ThemeDisplay.getBCP47LanguageId(),
+		},
 		signal: controller && controller.signal,
 		url: EVALUATOR_URL,
 	})
 		.then((newPages) => {
+			if (newPages.error) {
+				return callback(new Error(newPages.error));
+			}
+
 			if (newPages.statusCode) {
-				callback(newPages);
+				return callback(newPages);
 			}
 
 			const mergedPages = mergePages(
@@ -181,7 +203,7 @@ const doEvaluate = debounce((fieldName, evaluatorContext, callback) => {
 			callback(null, mergedPages);
 		})
 		.catch((error) => callback(error));
-}, 200);
+}, 350);
 
 export function evaluate(fieldName, evaluatorContext) {
 	return new Promise((resolve, reject) => {

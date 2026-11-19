@@ -25,6 +25,27 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.EventRequest;
+import jakarta.portlet.EventResponse;
+import jakarta.portlet.HeaderRequest;
+import jakarta.portlet.HeaderResponse;
+import jakarta.portlet.PortletConfig;
+import jakarta.portlet.PortletContext;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.PortletPreferences;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletRequestDispatcher;
+import jakarta.portlet.PortletResponse;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+import jakarta.portlet.ResourceRequest;
+import jakarta.portlet.ResourceResponse;
+import jakarta.portlet.WindowState;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.io.IOException;
 
 import java.net.URL;
@@ -37,27 +58,6 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.EventRequest;
-import javax.portlet.EventResponse;
-import javax.portlet.HeaderRequest;
-import javax.portlet.HeaderResponse;
-import javax.portlet.PortletConfig;
-import javax.portlet.PortletContext;
-import javax.portlet.PortletException;
-import javax.portlet.PortletPreferences;
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletRequestDispatcher;
-import javax.portlet.PortletResponse;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-import javax.portlet.ResourceRequest;
-import javax.portlet.ResourceResponse;
-import javax.portlet.WindowState;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Brian Wing Shun Chan
@@ -402,13 +402,15 @@ public class MVCPortlet extends LiferayPortlet {
 				boolean valid = true;
 
 				for (MVCActionCommand mvcActionCommand : mvcActionCommands) {
-					if (mvcActionCommand instanceof FormMVCActionCommand) {
-						FormMVCActionCommand formMVCActionCommand =
-							(FormMVCActionCommand)mvcActionCommand;
-
-						valid &= formMVCActionCommand.validateForm(
-							actionRequest, actionResponse);
+					if (!(mvcActionCommand instanceof FormMVCActionCommand)) {
+						continue;
 					}
+
+					FormMVCActionCommand formMVCActionCommand =
+						(FormMVCActionCommand)mvcActionCommand;
+
+					valid &= formMVCActionCommand.validateForm(
+						actionRequest, actionResponse);
 				}
 
 				if (!valid) {
@@ -708,18 +710,20 @@ public class MVCPortlet extends LiferayPortlet {
 		while ((path = queue.poll()) != null) {
 			Set<String> childPaths = portletContext.getResourcePaths(path);
 
-			if (childPaths != null) {
-				for (String childPath : childPaths) {
-					if (childPath.charAt(childPath.length() - 1) ==
-							CharPool.SLASH) {
+			if (childPaths == null) {
+				continue;
+			}
 
-						queue.add(childPath);
-					}
-					else if (childPath.endsWith(".jsp") ||
-							 childPath.endsWith(".jspx")) {
+			for (String childPath : childPaths) {
+				if (childPath.charAt(childPath.length() - 1) ==
+						CharPool.SLASH) {
 
-						paths.add(childPath);
-					}
+					queue.add(childPath);
+				}
+				else if (childPath.endsWith(".jsp") ||
+						 childPath.endsWith(".jspx")) {
+
+					paths.add(childPath);
 				}
 			}
 		}

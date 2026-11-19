@@ -21,13 +21,15 @@ import com.liferay.portal.kernel.service.PhoneLocalService;
 import com.liferay.portal.kernel.service.WebsiteLocalService;
 import com.liferay.portal.kernel.service.persistence.UserPersistence;
 import com.liferay.portal.kernel.systemevent.SystemEvent;
-import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.service.base.ContactLocalServiceBaseImpl;
 
+import java.io.Serializable;
+
 import java.util.Date;
-import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * @author Brian Wing Shun Chan
@@ -143,29 +145,10 @@ public class ContactLocalServiceImpl extends ContactLocalServiceBaseImpl {
 	}
 
 	@Override
-	public List<Contact> getCompanyContacts(
-		long companyId, int start, int end) {
+	public Map<Serializable, Contact> fetchContacts(
+		Set<Serializable> primaryKeys) {
 
-		return contactPersistence.findByCompanyId(companyId, start, end);
-	}
-
-	@Override
-	public int getCompanyContactsCount(long companyId) {
-		return contactPersistence.countByCompanyId(companyId);
-	}
-
-	@Override
-	public List<Contact> getContacts(
-		long classNameId, long classPK, int start, int end,
-		OrderByComparator<Contact> orderByComparator) {
-
-		return contactPersistence.findByC_C(
-			classNameId, classPK, start, end, orderByComparator);
-	}
-
-	@Override
-	public int getContactsCount(long classNameId, long classPK) {
-		return contactPersistence.countByC_C(classNameId, classPK);
+		return contactPersistence.fetchByPrimaryKeys(primaryKeys);
 	}
 
 	@Indexable(type = IndexableType.REINDEX)

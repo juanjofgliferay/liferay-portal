@@ -5,7 +5,7 @@
 
 import Diagram from '../../../src/main/resources/META-INF/resources/js/Diagram/Diagram';
 
-import '@testing-library/jest-dom/extend-expect';
+import '@testing-library/jest-dom';
 import {act, fireEvent, render} from '@testing-library/react';
 import fetchMock from 'fetch-mock';
 import React from 'react';
@@ -21,11 +21,13 @@ import {
 
 describe('Diagram', () => {
 	beforeEach(() => {
+		fetchMock.mockGlobal();
+
 		mockCommonEndpoints();
 	});
 
 	afterEach(() => {
-		fetchMock.restore();
+		fetchMock.hardReset();
 	});
 
 	describe('Default Renderer Admin', () => {

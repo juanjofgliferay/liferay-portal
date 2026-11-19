@@ -1,0 +1,269 @@
+{
+	"deletedItems": [
+	],
+	"items": {
+		"0a0d3f2a-a2b8-bcce-a9f2-6f5e5e2df010": {
+			"children": [
+			],
+			"config": {
+				"cssClasses": [
+				],
+				"fragmentEntryLinkId": "${fragmentEntryLinkId}",
+				"landscapeMobile": {
+					"styles": {
+					}
+				},
+				"portraitMobile": {
+					"styles": {
+					}
+				},
+				"styles": {
+				},
+				"tablet": {
+					"styles": {
+					}
+				}
+			},
+			"itemId": "0a0d3f2a-a2b8-bcce-a9f2-6f5e5e2df010",
+			"parentId": "c4e1ec22-e9bb-1929-6ab3-374a6797e230",
+			"type": "fragment"
+		},
+		"261a158a-2e6e-fec7-e9a6-c0f7b257bae4": {
+			"children": [
+			],
+			"config": {
+				"cssClasses": [
+				],
+				"fragmentEntryLinkId": "${fragmentEntryLinkId}",
+				"landscapeMobile": {
+					"styles": {
+					}
+				},
+				"portraitMobile": {
+					"styles": {
+					}
+				},
+				"styles": {
+				},
+				"tablet": {
+					"styles": {
+					}
+				}
+			},
+			"itemId": "261a158a-2e6e-fec7-e9a6-c0f7b257bae4",
+			"parentId": "c4e1ec22-e9bb-1929-6ab3-374a6797e230",
+			"type": "fragment"
+		},
+		"3a0b2168-7e27-2fab-8dde-dbf7834bf74c": {
+			"children": [
+			],
+			"config": {
+				"cssClasses": [
+				],
+				"fragmentEntryLinkId": "${fragmentEntryLinkId}",
+				"landscapeMobile": {
+					"styles": {
+					}
+				},
+				"portraitMobile": {
+					"styles": {
+					}
+				},
+				"styles": {
+				},
+				"tablet": {
+					"styles": {
+					}
+				}
+			},
+			"itemId": "3a0b2168-7e27-2fab-8dde-dbf7834bf74c",
+			"parentId": "c4e1ec22-e9bb-1929-6ab3-374a6797e230",
+			"type": "fragment"
+		},
+		"4464ec98-5d17-e03b-1d6e-3c5b549bc67b": {
+			"children": [
+			],
+			"config": {
+				"cssClasses": [
+				],
+				"fragmentEntryLinkId": "${fragmentEntryLinkId}",
+				"landscapeMobile": {
+					"styles": {
+					}
+				},
+				"portraitMobile": {
+					"styles": {
+					}
+				},
+				"styles": {
+				},
+				"tablet": {
+					"styles": {
+					}
+				}
+			},
+			"itemId": "4464ec98-5d17-e03b-1d6e-3c5b549bc67b",
+			"parentId": "c4e1ec22-e9bb-1929-6ab3-374a6797e230",
+			"type": "fragment"
+		},
+		"4886f6fe-3932-f0a9-a746-2eefa37438cc": {
+			"children": [
+			],
+			"config": {
+				"cssClasses": [
+				],
+				"fragmentEntryLinkId": "${fragmentEntryLinkId}",
+				"landscapeMobile": {
+					"styles": {
+					}
+				},
+				"portraitMobile": {
+					"styles": {
+					}
+				},
+				"styles": {
+				},
+				"tablet": {
+					"styles": {
+					}
+				}
+			},
+			"itemId": "4886f6fe-3932-f0a9-a746-2eefa37438cc",
+			"parentId": "c4e1ec22-e9bb-1929-6ab3-374a6797e230",
+			"type": "fragment"
+		},
+		"9ab00146-4c26-cce3-6e2a-85f71eb10d10": {
+			"children": [
+			],
+			"config": {
+				"cssClasses": [
+				],
+				"fragmentEntryLinkId": "${fragmentEntryLinkId}",
+				"landscapeMobile": {
+					"styles": {
+					}
+				},
+				"portraitMobile": {
+					"styles": {
+					}
+				},
+				"styles": {
+				},
+				"tablet": {
+					"styles": {
+					}
+				}
+			},
+			"itemId": "9ab00146-4c26-cce3-6e2a-85f71eb10d10",
+			"parentId": "c4e1ec22-e9bb-1929-6ab3-374a6797e230",
+			"type": "fragment"
+		},
+		"c3a0ccaf-dec3-e8d7-34be-01c19ffecf9a": {
+			"children": [
+			],
+			"config": {
+				"cssClasses": [
+				],
+				"fragmentEntryLinkId": "${fragmentEntryLinkId}",
+				"landscapeMobile": {
+					"styles": {
+					}
+				},
+				"portraitMobile": {
+					"styles": {
+					}
+				},
+				"styles": {
+				},
+				"tablet": {
+					"styles": {
+					}
+				}
+			},
+			"itemId": "c3a0ccaf-dec3-e8d7-34be-01c19ffecf9a",
+			"parentId": "c4e1ec22-e9bb-1929-6ab3-374a6797e230",
+			"type": "fragment"
+		},
+		"c4e1ec22-e9bb-1929-6ab3-374a6797e230": {
+			"children": [
+				"0a0d3f2a-a2b8-bcce-a9f2-6f5e5e2df010",
+				"261a158a-2e6e-fec7-e9a6-c0f7b257bae4",
+				"3a0b2168-7e27-2fab-8dde-dbf7834bf74c",
+				"4464ec98-5d17-e03b-1d6e-3c5b549bc67b",
+				"4886f6fe-3932-f0a9-a746-2eefa37438cc",
+				"9ab00146-4c26-cce3-6e2a-85f71eb10d10",
+				"c3a0ccaf-dec3-e8d7-34be-01c19ffecf9a",
+				"e5bb81b0-f97c-e988-deec-4e5611954ffd"
+			],
+			"config": {
+				"classNameId": "${objectDefinitionClassNameId}",
+				"classTypeId": "0",
+				"cssClasses": [
+				],
+				"formConfig": 2,
+				"formType": "simple",
+				"landscapeMobile": {
+					"styles": {
+					}
+				},
+				"numberOfSteps": 0,
+				"portraitMobile": {
+					"styles": {
+					}
+				},
+				"styles": {
+				},
+				"tablet": {
+					"styles": {
+					}
+				}
+			},
+			"itemId": "c4e1ec22-e9bb-1929-6ab3-374a6797e230",
+			"parentId": "f7654fb4-459e-a9cf-2913-fb748d40d73f",
+			"type": "form"
+		},
+		"e5bb81b0-f97c-e988-deec-4e5611954ffd": {
+			"children": [
+			],
+			"config": {
+				"cssClasses": [
+				],
+				"fragmentEntryLinkId": "${fragmentEntryLinkId}",
+				"landscapeMobile": {
+					"styles": {
+					}
+				},
+				"portraitMobile": {
+					"styles": {
+					}
+				},
+				"styles": {
+				},
+				"tablet": {
+					"styles": {
+					}
+				}
+			},
+			"itemId": "e5bb81b0-f97c-e988-deec-4e5611954ffd",
+			"parentId": "c4e1ec22-e9bb-1929-6ab3-374a6797e230",
+			"type": "fragment"
+		},
+		"f7654fb4-459e-a9cf-2913-fb748d40d73f": {
+			"children": [
+				"c4e1ec22-e9bb-1929-6ab3-374a6797e230"
+			],
+			"config": {
+			},
+			"itemId": "f7654fb4-459e-a9cf-2913-fb748d40d73f",
+			"parentId": "",
+			"type": "root"
+		}
+	},
+	"pageRules": [
+	],
+	"rootItems": {
+		"dropZone": "",
+		"main": "f7654fb4-459e-a9cf-2913-fb748d40d73f"
+	},
+	"version": 1.1
+}

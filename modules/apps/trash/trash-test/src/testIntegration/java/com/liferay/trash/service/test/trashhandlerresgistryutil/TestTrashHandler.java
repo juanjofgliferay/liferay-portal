@@ -16,9 +16,9 @@ import com.liferay.portal.kernel.trash.TrashHandler;
 import com.liferay.portal.kernel.trash.TrashRenderer;
 import com.liferay.trash.kernel.model.TrashEntry;
 
-import java.util.List;
+import jakarta.portlet.PortletRequest;
 
-import javax.portlet.PortletRequest;
+import java.util.List;
 
 import org.osgi.service.component.annotations.Component;
 
@@ -174,17 +174,17 @@ public class TestTrashHandler implements TrashHandler {
 	}
 
 	@Override
-	public TrashedModel getTrashedModel(long classPK) {
-		return null;
-	}
-
-	@Override
 	public int getTrashModelsCount(long classPK) {
 		return 0;
 	}
 
 	@Override
 	public TrashRenderer getTrashRenderer(long classPK) {
+		return null;
+	}
+
+	@Override
+	public TrashedModel getTrashedModel(long classPK) {
 		return null;
 	}
 

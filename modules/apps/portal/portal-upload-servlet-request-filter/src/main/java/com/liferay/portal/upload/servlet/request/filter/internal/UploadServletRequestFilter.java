@@ -9,6 +9,7 @@ import com.liferay.portal.kernel.model.Portlet;
 import com.liferay.portal.kernel.portlet.InvokerPortlet;
 import com.liferay.portal.kernel.portlet.LiferayPortletConfig;
 import com.liferay.portal.kernel.portlet.PortletInstanceFactoryUtil;
+import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.service.PortletLocalService;
 import com.liferay.portal.kernel.servlet.HttpHeaders;
 import com.liferay.portal.kernel.upload.UploadServletRequest;
@@ -19,11 +20,11 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.servlet.filters.BasePortalFilter;
 import com.liferay.portal.upload.LiferayInputStream;
 
-import javax.servlet.Filter;
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.Filter;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.FilterConfig;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -66,11 +67,10 @@ public class UploadServletRequestFilter extends BasePortalFilter {
 		String portletId = ParamUtil.getString(httpServletRequest, "p_p_id");
 
 		int fileSizeThreshold = 0;
-		String location = null;
 
 		if (Validator.isNotNull(portletId)) {
 			Portlet portlet = _portletLocalService.getPortletById(
-				_portal.getCompanyId(httpServletRequest), portletId);
+				CompanyThreadLocal.getCompanyId(), portletId);
 
 			if (portlet != null) {
 				FilterConfig filterConfig = getFilterConfig();
@@ -91,13 +91,12 @@ public class UploadServletRequestFilter extends BasePortalFilter {
 				}
 
 				fileSizeThreshold = portlet.getMultipartFileSizeThreshold();
-				location = portlet.getMultipartLocation();
 			}
 		}
 
 		UploadServletRequest uploadServletRequest =
 			_portal.getUploadServletRequest(
-				httpServletRequest, fileSizeThreshold, location);
+				httpServletRequest, fileSizeThreshold, null);
 
 		try {
 			processFilter(

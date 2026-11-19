@@ -12,6 +12,7 @@ import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.db.index.IndexUpdaterUtil;
+import com.liferay.portal.events.StartupHelperUtil;
 import com.liferay.portal.kernel.cache.CacheRegistryUtil;
 import com.liferay.portal.kernel.dao.jdbc.DataAccess;
 import com.liferay.portal.kernel.log.Log;
@@ -30,15 +31,18 @@ import com.liferay.portal.upgrade.internal.graph.ReleaseGraphManager;
 import com.liferay.portal.upgrade.internal.registry.UpgradeInfo;
 import com.liferay.portal.upgrade.internal.registry.UpgradeStepRegistry;
 import com.liferay.portal.upgrade.internal.release.ReleasePublisher;
+import com.liferay.portal.upgrade.internal.release.util.ReleaseManagerUtil;
 import com.liferay.portal.upgrade.log.UpgradeLogContext;
 import com.liferay.portal.upgrade.registry.UpgradeStepRegistrator;
 
 import java.sql.Connection;
 import java.sql.SQLException;
 
+import java.util.Collections;
 import java.util.Dictionary;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -85,6 +89,8 @@ public class UpgradeExecutor {
 			release = executeUpgradeInfos(bundle, upgradeInfosList.get(0));
 		}
 
+		_failedBundleSymbolicNames.remove(bundle.getSymbolicName());
+
 		if (release != null) {
 			String schemaVersion = release.getSchemaVersion();
 
@@ -123,6 +129,8 @@ public class UpgradeExecutor {
 
 			_executeUpgradeInfos(bundle, upgradeInfos);
 
+			_failedBundleSymbolicNames.remove(bundleSymbolicName);
+
 			Release release = _releaseLocalService.fetchRelease(
 				bundleSymbolicName);
 
@@ -152,11 +160,31 @@ public class UpgradeExecutor {
 		return _serviceTrackerMap.keySet();
 	}
 
+	public Set<String> getFailedBundleSymbolicNames() {
+		return _failedBundleSymbolicNames;
+	}
+
 	public List<UpgradeInfo> getUpgradeInfos(String bundleSymbolicName) {
 		UpgradeStepRegistry upgradeStepRegistry = _serviceTrackerMap.getService(
 			bundleSymbolicName);
 
-		return upgradeStepRegistry.getUpgradeInfos();
+		if (upgradeStepRegistry == null) {
+			return null;
+		}
+
+		try {
+			return upgradeStepRegistry.getUpgradeInfos();
+		}
+		catch (Throwable throwable) {
+			if (_failedBundleSymbolicNames.add(bundleSymbolicName)) {
+				_log.error(
+					ReleaseManagerUtil.getFailedModuleMessage(
+						bundleSymbolicName),
+					throwable);
+			}
+
+			return ReflectionUtil.throwException(throwable);
+		}
 	}
 
 	@Activate
@@ -164,7 +192,7 @@ public class UpgradeExecutor {
 		_bundleContext = bundleContext;
 
 		try (Connection connection = DataAccess.getConnection()) {
-			_portalUpgraded = PortalUpgradeProcess.isInLatestSchemaVersion(
+			_portalUpgraded = PortalUpgradeProcess.isInCompatibleSchemaVersion(
 				connection);
 		}
 		catch (SQLException sqlException) {
@@ -194,7 +222,12 @@ public class UpgradeExecutor {
 		String bundleSymbolicName = bundle.getSymbolicName();
 
 		try {
-			_updateReleaseState(bundleSymbolicName, _STATE_IN_PROGRESS);
+			Release release = _updateReleaseState(
+				bundleSymbolicName, _STATE_IN_PROGRESS);
+
+			if (release != null) {
+				StartupHelperUtil.setRunOnPortalUpgradeVerifiers(true);
+			}
 
 			for (UpgradeInfo upgradeInfo : upgradeInfos) {
 				UpgradeStep upgradeStep = upgradeInfo.getUpgradeStep();
@@ -216,7 +249,7 @@ public class UpgradeExecutor {
 				bundleSymbolicName);
 
 			if (release != null) {
-				release.setVerified(_isInitialRelease(upgradeInfos));
+				release.setVerified(false);
 				release.setState(state);
 
 				_releaseLocalService.updateRelease(release);
@@ -240,17 +273,15 @@ public class UpgradeExecutor {
 
 		String fromSchemaVersion = upgradeInfo.getFromSchemaVersionString();
 
-		if (fromSchemaVersion.equals("0.0.0")) {
-			return true;
-		}
-
-		return false;
+		return fromSchemaVersion.equals("0.0.0");
 	}
 
 	private boolean _requiresUpdateIndexes(
 		Bundle bundle, List<UpgradeInfo> upgradeInfos) {
 
-		if (!BundleUtil.isLiferayServiceBundle(bundle)) {
+		if (!BundleUtil.isLiferayRequireSchemaVersionBundle(bundle) &&
+			!BundleUtil.isLiferayServiceBundle(bundle)) {
+
 			return false;
 		}
 
@@ -261,14 +292,16 @@ public class UpgradeExecutor {
 		return !_isInitialRelease(upgradeInfos);
 	}
 
-	private void _updateReleaseState(String bundleSymbolicName, int state) {
+	private Release _updateReleaseState(String bundleSymbolicName, int state) {
 		Release release = _releaseLocalService.fetchRelease(bundleSymbolicName);
 
 		if (release != null) {
 			release.setState(state);
 
-			_releaseLocalService.updateRelease(release);
+			release = _releaseLocalService.updateRelease(release);
 		}
+
+		return release;
 	}
 
 	private static final int _STATE_IN_PROGRESS = -1;
@@ -277,6 +310,8 @@ public class UpgradeExecutor {
 		UpgradeExecutor.class);
 
 	private BundleContext _bundleContext;
+	private final Set<String> _failedBundleSymbolicNames =
+		Collections.newSetFromMap(new ConcurrentHashMap<>());
 	private boolean _portalUpgraded;
 
 	@Reference
@@ -302,39 +337,42 @@ public class UpgradeExecutor {
 
 			String bundleSymbolicName = bundle.getSymbolicName();
 
-			Release release = _releaseLocalService.fetchRelease(
-				bundleSymbolicName);
+			try {
+				Release release = _releaseLocalService.fetchRelease(
+					bundleSymbolicName);
 
-			if (release == null) {
-				for (UpgradeStep releaseUpgradeStep :
-						upgradeStepRegistry.getReleaseCreationUpgradeSteps()) {
+				if (release == null) {
+					for (UpgradeStep releaseUpgradeStep :
+							upgradeStepRegistry.
+								getReleaseCreationUpgradeSteps()) {
 
-					try {
-						UpgradeLogContext.setContext(bundleSymbolicName);
+						try {
+							UpgradeLogContext.setContext(bundleSymbolicName);
 
-						releaseUpgradeStep.upgrade();
-					}
-					catch (UpgradeException upgradeException) {
-						_log.error(upgradeException);
-					}
-					finally {
-						UpgradeLogContext.clearContext();
+							releaseUpgradeStep.upgrade();
+						}
+						catch (UpgradeException upgradeException) {
+							_log.error(upgradeException);
+						}
+						finally {
+							UpgradeLogContext.clearContext();
+						}
 					}
 				}
-			}
 
-			if (DBUpgrader.isUpgradeDatabaseAutoRunEnabled() ||
-				(release == null)) {
+				if (DBUpgrader.isUpgradeDatabaseAutoRunEnabled() ||
+					(release == null)) {
 
-				try {
 					execute(bundle, upgradeStepRegistry.getUpgradeInfos());
 				}
-				catch (Throwable throwable) {
-					_log.error(
-						"Failed upgrade process for module ".concat(
-							bundleSymbolicName),
-						throwable);
-				}
+			}
+			catch (Throwable throwable) {
+				_failedBundleSymbolicNames.add(bundleSymbolicName);
+
+				_log.error(
+					ReleaseManagerUtil.getFailedModuleMessage(
+						bundleSymbolicName),
+					throwable);
 			}
 
 			return upgradeStepRegistry;
@@ -350,6 +388,10 @@ public class UpgradeExecutor {
 		public void removedService(
 			ServiceReference<UpgradeStepRegistrator> serviceReference,
 			UpgradeStepRegistry upgradeStepRegistry) {
+
+			Bundle bundle = serviceReference.getBundle();
+
+			_failedBundleSymbolicNames.remove(bundle.getSymbolicName());
 
 			upgradeStepRegistry.destroy();
 		}

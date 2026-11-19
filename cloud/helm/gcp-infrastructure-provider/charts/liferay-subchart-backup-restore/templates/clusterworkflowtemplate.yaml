@@ -1,0 +1,480 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ClusterWorkflowTemplate
+metadata:
+    labels:
+        component: backup-restore-platform
+    name: backup-restore-cluster-workflow-template
+spec:
+    arguments:
+        parameters:
+            -   name: liferay-backup-name
+            -   name: liferay-backup-namespace
+                value: "{{ "{{" }}workflow.namespace}}"
+    entrypoint: main
+    onExit: reset-restore-phase
+    podGC:
+        {{- .Values.argo.workflowSpec.podGC | toYaml | nindent 8 }}
+    serviceAccountName: backup-restore-service-account
+    templates:
+        -   inputs:
+                parameters:
+                    -   name: liferay-infrastructure-name
+                    -   name: restore-phase
+                    -   name: target-active-data-plane
+            name: apply-infrastructure
+            outputs:
+                parameters:
+                    -   name: generation
+                        valueFrom:
+                            jsonPath: "{.metadata.generation}"
+            resource:
+                action: patch
+                manifest: |-
+                    apiVersion: liferay.com/v1alpha1
+                    kind: LiferayInfrastructure
+                    metadata:
+                        name: {{ "{{" }}inputs.parameters.liferay-infrastructure-name}}
+                        namespace: {{ "{{" }}workflow.namespace}}
+                    spec:
+                        restorePhase: {{ "{{" }}inputs.parameters.restore-phase}}
+                        targetActiveDataPlane: {{ "{{" }}inputs.parameters.target-active-data-plane}}
+                mergeStrategy: merge
+        -   inputs:
+                parameters:
+                    -   name: liferay-infrastructure-name
+                    -   name: restore-phase
+                    -   name: target-active-data-plane
+            name: apply-wait-infrastructure
+            steps:
+                -   -   arguments:
+                            parameters:
+                                -   name: liferay-infrastructure-name
+                                    value: "{{ "{{" }}inputs.parameters.liferay-infrastructure-name}}"
+                                -   name: restore-phase
+                                    value: "{{ "{{" }}inputs.parameters.restore-phase}}"
+                                -   name: target-active-data-plane
+                                    value: "{{ "{{" }}inputs.parameters.target-active-data-plane}}"
+                        name: apply-infrastructure
+                        template: apply-infrastructure
+                -   -   arguments:
+                            parameters:
+                                -   name: expected-generation
+                                    value: "{{ "{{" }}steps.apply-infrastructure.outputs.parameters.generation}}"
+                        name: wait-for-infrastructure
+                        template: wait-for-infrastructure
+        -   inputs:
+                parameters:
+                    -   name: liferay-backup-namespace
+            name: get-current-infrastructure-state
+            outputs:
+                parameters:
+                    -   name: data-active
+                        valueFrom:
+                            path: /tmp/data-plane-active.txt
+                    -   name: data-inactive
+                        valueFrom:
+                            path: /tmp/data-plane-inactive.txt
+                    -   name: database-snapshot-uuid
+                        valueFrom:
+                            path: /tmp/database-snapshot-uuid.txt
+                    -   name: liferay-infrastructure-name
+                        valueFrom:
+                            path: /tmp/liferay-infrastructure-name.txt
+                    -   name: liferay-workload-name
+                        valueFrom:
+                            path: /tmp/liferay-workload-name.txt
+                    -   name: vault-bucket
+                        valueFrom:
+                            path: /tmp/vault-bucket.txt
+                    -   name: vault-path
+                        valueFrom:
+                            path: /tmp/vault-path.txt
+            script:
+                command: [sh]
+                image: "{{ .Values.images.helmKubectl.repository }}:{{ .Values.images.helmKubectl.tag }}"
+                resources:
+                    {{- .Values.resources.default | toYaml | nindent 20 }}
+                source: |-
+                    {{- tpl (.Files.Get "scripts/get-current-infrastructure-state.sh") . | nindent 20 }}
+        -   container:
+                args:
+                    -   get
+                    -   "{{ "{{" }}inputs.parameters.resource-type}}"
+                    -   --output
+                    -   jsonpath={{ "{{" }}inputs.parameters.jsonpath}}
+                    -   --selector
+                    -   dataPlane={{ "{{" }}inputs.parameters.data-inactive}}
+                command: [kubectl]
+                image: "{{ .Values.images.helmKubectl.repository }}:{{ .Values.images.helmKubectl.tag }}"
+                resources:
+                    {{- .Values.resources.default | toYaml | nindent 20 }}
+            inputs:
+                parameters:
+                    -   name: data-inactive
+                    -   default: "{.items[0].metadata.name}"
+                        name: jsonpath
+                    -   name: resource-type
+            name: get-inactive-resource
+        -   container:
+                args:
+                    -   rollout
+                    -   restart
+                    -   statefulset
+                    -   "{{ "{{" }}inputs.parameters.liferay-workload-name}}"
+                command: [kubectl]
+                image: "{{ .Values.images.helmKubectl.repository }}:{{ .Values.images.helmKubectl.tag }}"
+                resources:
+                    {{- .Values.resources.default | toYaml | nindent 20 }}
+            inputs:
+                parameters:
+                    -   name: liferay-workload-name
+            name: kubectl-rollout-restart
+        -   container:
+                args:
+                    -   rollout
+                    -   status
+                    -   statefulset
+                    -   "{{ "{{" }}inputs.parameters.liferay-workload-name}}"
+                    -   --timeout={{ .Values.liferayWorkload.rolloutTimeout }}
+                command: [kubectl]
+                image: "{{ .Values.images.helmKubectl.repository }}:{{ .Values.images.helmKubectl.tag }}"
+                resources:
+                    {{- .Values.resources.default | toYaml | nindent 20 }}
+            inputs:
+                parameters:
+                    -   name: liferay-workload-name
+            name: kubectl-rollout-status
+        -   dag:
+                tasks:
+                    -   arguments:
+                            parameters:
+                                -   name: liferay-infrastructure-name
+                                    value: "{{ "{{" }}tasks.get-current-infrastructure-state.outputs.parameters.liferay-infrastructure-name}}"
+                                -   name: restore-phase
+                                    value: none
+                                -   name: target-active-data-plane
+                                    value: "{{ "{{" }}tasks.get-current-infrastructure-state.outputs.parameters.data-inactive}}"
+                        depends: restart-liferay
+                        name: clean-up-original-data-plane
+                        template: apply-wait-infrastructure
+                    -   arguments:
+                            parameters:
+                                -   name: liferay-infrastructure-name
+                                    value: "{{ "{{" }}tasks.get-current-infrastructure-state.outputs.parameters.liferay-infrastructure-name}}"
+                                -   name: restore-phase
+                                    value: none
+                                -   name: target-active-data-plane
+                                    value: "{{ "{{" }}tasks.get-current-infrastructure-state.outputs.parameters.data-active}}"
+                        depends: "!prepare-target-data-plane.Omitted && !prepare-target-data-plane.Skipped && !promote-target-data-plane.Succeeded"
+                        name: clean-up-target-data-plane
+                        template: apply-wait-infrastructure
+                    -   arguments:
+                            parameters:
+                                -   name: liferay-backup-namespace
+                                    value: "{{ "{{" }}workflow.parameters.liferay-backup-namespace}}"
+                        name: get-current-infrastructure-state
+                        template: get-current-infrastructure-state
+                    -   arguments:
+                            parameters:
+                                -   name: database-snapshot-uuid
+                                    value: "{{ "{{" }}tasks.get-current-infrastructure-state.outputs.parameters.database-snapshot-uuid}}"
+                                -   name: data-inactive
+                                    value: "{{ "{{" }}tasks.get-current-infrastructure-state.outputs.parameters.data-inactive}}"
+                                -   name: liferay-infrastructure-name
+                                    value: "{{ "{{" }}tasks.get-current-infrastructure-state.outputs.parameters.liferay-infrastructure-name}}"
+                                -   name: vault-bucket
+                                    value: "{{ "{{" }}tasks.get-current-infrastructure-state.outputs.parameters.vault-bucket}}"
+                                -   name: vault-path
+                                    value: "{{ "{{" }}tasks.get-current-infrastructure-state.outputs.parameters.vault-path}}"
+                        depends: get-current-infrastructure-state
+                        name: prepare-target-data-plane
+                        template: prepare-target-data-plane
+                    -   arguments:
+                            parameters:
+                                -   name: liferay-infrastructure-name
+                                    value: "{{ "{{" }}tasks.get-current-infrastructure-state.outputs.parameters.liferay-infrastructure-name}}"
+                                -   name: restore-phase
+                                    value: promoting
+                                -   name: target-active-data-plane
+                                    value: "{{ "{{" }}tasks.get-current-infrastructure-state.outputs.parameters.data-inactive}}"
+                        depends: prepare-target-data-plane
+                        name: promote-target-data-plane
+                        template: apply-wait-infrastructure
+                    -   arguments:
+                            parameters:
+                                -   name: liferay-workload-name
+                                    value: "{{ "{{" }}tasks.get-current-infrastructure-state.outputs.parameters.liferay-workload-name}}"
+                        depends: promote-target-data-plane
+                        name: restart-liferay
+                        template: restart-liferay
+                    -   arguments:
+                            parameters:
+                                -   name: liferay-infrastructure-name
+                                    value: "{{ "{{" }}tasks.get-current-infrastructure-state.outputs.parameters.liferay-infrastructure-name}}"
+                                -   name: liferay-workload-name
+                                    value: "{{ "{{" }}tasks.get-current-infrastructure-state.outputs.parameters.liferay-workload-name}}"
+                                -   name: target-active-data-plane
+                                    value: "{{ "{{" }}tasks.get-current-infrastructure-state.outputs.parameters.data-active}}"
+                        depends: "promote-target-data-plane.Succeeded && !restart-liferay.Succeeded"
+                        name: roll-back-restart
+                        template: roll-back-restart
+            name: main
+        -   dag:
+                tasks:
+                    -   arguments:
+                            parameters:
+                                -   name: data-inactive
+                                    value: "{{ "{{" }}inputs.parameters.data-inactive}}"
+                                -   name: jsonpath
+                                    value: "{.items[0].status.atProvider.connectionName}"
+                                -   name: resource-type
+                                    value: databaseinstances.sql.gcp.m.upbound.io
+                        depends: provision-target-data-plane
+                        name: get-inactive-cloudsql-connection-name
+                        template: get-inactive-resource
+                    -   arguments:
+                            parameters:
+                                -   name: data-inactive
+                                    value: "{{ "{{" }}inputs.parameters.data-inactive}}"
+                                -   name: resource-type
+                                    value: databaseinstances.sql.gcp.m.upbound.io
+                        depends: provision-target-data-plane
+                        name: get-inactive-cloudsql-instance
+                        template: get-inactive-resource
+                    -   arguments:
+                            parameters:
+                                -   name: data-inactive
+                                    value: "{{ "{{" }}inputs.parameters.data-inactive}}"
+                                -   name: resource-type
+                                    value: buckets.storage.gcp.m.upbound.io
+                        depends: provision-target-data-plane
+                        name: get-inactive-dl-bucket
+                        template: get-inactive-resource
+                    -   arguments:
+                            parameters:
+                                -   name: liferay-infrastructure-name
+                                    value: "{{ "{{" }}inputs.parameters.liferay-infrastructure-name}}"
+                                -   name: restore-phase
+                                    value: provisioning-database-user
+                                -   name: target-active-data-plane
+                                    value: "{{ "{{" }}inputs.parameters.data-inactive}}"
+                        depends: restore-cloudsql-backup && restore-dl-bucket
+                        name: provision-database-user
+                        template: apply-wait-infrastructure
+                    -   arguments:
+                            parameters:
+                                -   name: liferay-infrastructure-name
+                                    value: "{{ "{{" }}inputs.parameters.liferay-infrastructure-name}}"
+                                -   name: restore-phase
+                                    value: provisioning
+                                -   name: target-active-data-plane
+                                    value: "{{ "{{" }}inputs.parameters.data-inactive}}"
+                        name: provision-target-data-plane
+                        template: apply-wait-infrastructure
+                    -   arguments:
+                            parameters:
+                                -   name: database-snapshot-uuid
+                                    value: "{{ "{{" }}inputs.parameters.database-snapshot-uuid}}"
+                                -   name: restore-instance
+                                    value: "{{ "{{" }}tasks.get-inactive-cloudsql-instance.outputs.result}}"
+                        depends: get-inactive-cloudsql-instance
+                        name: restore-cloudsql-backup
+                        template: restore-cloudsql-backup
+                    -   arguments:
+                            parameters:
+                                -   name: dl-bucket-inactive
+                                    value: "{{ "{{" }}tasks.get-inactive-dl-bucket.outputs.result}}"
+                                -   name: vault-bucket
+                                    value: "{{ "{{" }}inputs.parameters.vault-bucket}}"
+                                -   name: vault-path
+                                    value: "{{ "{{" }}inputs.parameters.vault-path}}"
+                        depends: get-inactive-dl-bucket
+                        name: restore-dl-bucket
+                        template: restore-dl-bucket
+                    -   arguments:
+                            parameters:
+                                -   name: restore-instance-connection-name
+                                    value: "{{ "{{" }}tasks.get-inactive-cloudsql-connection-name.outputs.result}}"
+                        depends: get-inactive-cloudsql-connection-name && provision-database-user
+                        name: sanitize-database
+                        template: sanitize-database
+            inputs:
+                parameters:
+                    -   name: database-snapshot-uuid
+                    -   name: data-inactive
+                    -   name: liferay-infrastructure-name
+                    -   name: vault-bucket
+                    -   name: vault-path
+            name: prepare-target-data-plane
+        -   name: reset-restore-phase
+            script:
+                command: [sh]
+                image: "{{ .Values.images.helmKubectl.repository }}:{{ .Values.images.helmKubectl.tag }}"
+                resources:
+                    {{- .Values.resources.default | toYaml | nindent 20 }}
+                source: |-
+                    {{- tpl (.Files.Get "scripts/reset-restore-phase.sh") . | nindent 20 }}
+        -   inputs:
+                parameters:
+                    -   name: liferay-workload-name
+            name: restart-liferay
+            steps:
+                -   -   arguments:
+                            parameters:
+                                -   name: liferay-workload-name
+                                    value: "{{ "{{" }}inputs.parameters.liferay-workload-name}}"
+                        name: kubectl-rollout-restart
+                        template: kubectl-rollout-restart
+                -   -   arguments:
+                            parameters:
+                                -   name: liferay-workload-name
+                                    value: "{{ "{{" }}inputs.parameters.liferay-workload-name}}"
+                        name: kubectl-rollout-status
+                        template: kubectl-rollout-status
+        -   container:
+                args:
+                    -   sql
+                    -   backups
+                    -   restore
+                    -   "{{ "{{" }}inputs.parameters.database-snapshot-uuid}}"
+                    -   --quiet
+                    -   --restore-instance
+                    -   "{{ "{{" }}inputs.parameters.restore-instance}}"
+                command: [gcloud]
+                env:
+                    -   name: CLOUDSDK_CONFIG
+                        value: /tmp/gcloud
+                image: "{{ .Values.images.gcloud.repository }}:{{ .Values.images.gcloud.tag }}"
+                resources:
+                    {{- .Values.resources.default | toYaml | nindent 20 }}
+            inputs:
+                parameters:
+                    -   name: database-snapshot-uuid
+                    -   name: restore-instance
+            name: restore-cloudsql-backup
+        -   container:
+                args:
+                    -   transfer
+                    -   jobs
+                    -   create
+                    -   "gs://{{ "{{" }}inputs.parameters.vault-bucket}}/{{ "{{" }}inputs.parameters.vault-path}}/"
+                    -   "gs://{{ "{{" }}inputs.parameters.dl-bucket-inactive}}/"
+                    -   --delete-from=destination-if-unique
+                    -   --no-async
+                    -   --overwrite-when=always
+                command: [gcloud]
+                env:
+                    -   name: CLOUDSDK_CONFIG
+                        value: /tmp/gcloud
+                image: "{{ .Values.images.gcloud.repository }}:{{ .Values.images.gcloud.tag }}"
+                resources:
+                    {{- .Values.resources.default | toYaml | nindent 20 }}
+            inputs:
+                parameters:
+                    -   name: dl-bucket-inactive
+                    -   name: vault-bucket
+                    -   name: vault-path
+            name: restore-dl-bucket
+        -   inputs:
+                parameters:
+                    -   name: liferay-infrastructure-name
+                    -   name: liferay-workload-name
+                    -   name: target-active-data-plane
+            name: roll-back-restart
+            steps:
+                -   -   arguments:
+                            parameters:
+                                -   name: liferay-infrastructure-name
+                                    value: "{{ "{{" }}inputs.parameters.liferay-infrastructure-name}}"
+                                -   name: restore-phase
+                                    value: promoting
+                                -   name: target-active-data-plane
+                                    value: "{{ "{{" }}inputs.parameters.target-active-data-plane}}"
+                        name: promote-original-data-plane
+                        template: apply-wait-infrastructure
+                -   -   arguments:
+                            parameters:
+                                -   name: liferay-workload-name
+                                    value: "{{ "{{" }}inputs.parameters.liferay-workload-name}}"
+                        name: restart-liferay
+                        template: restart-liferay
+                -   -   arguments:
+                            parameters:
+                                -   name: liferay-infrastructure-name
+                                    value: "{{ "{{" }}inputs.parameters.liferay-infrastructure-name}}"
+                                -   name: restore-phase
+                                    value: none
+                                -   name: target-active-data-plane
+                                    value: "{{ "{{" }}inputs.parameters.target-active-data-plane}}"
+                        name: clean-up-target-data-plane
+                        template: apply-wait-infrastructure
+        -   activeDeadlineSeconds: {{ .Values.restoreSanitization.timeoutSeconds }}
+            executor:
+                serviceAccountName: backup-restore-service-account
+            initContainers:
+                -   args:
+                        -   "{{ "{{" }}inputs.parameters.restore-instance-connection-name}}"
+                        -   --auto-iam-authn
+                        -   --port=5432
+                        -   --private-ip
+                        -   --structured-logs
+                    env:
+                        -   name: CSQL_PROXY_HEALTH_CHECK
+                            value: "true"
+                        -   name: CSQL_PROXY_HTTP_ADDRESS
+                            value: 0.0.0.0
+                        -   name: CSQL_PROXY_HTTP_PORT
+                            value: "9801"
+                    image: "{{ .Values.images.cloudSQLProxy.repository }}:{{ .Values.images.cloudSQLProxy.tag }}"
+                    name: cloud-sql-proxy
+                    resources:
+                        {{- .Values.resources.default | toYaml | nindent 24 }}
+                    restartPolicy: Always
+                    securityContext:
+                        allowPrivilegeEscalation: false
+                        capabilities:
+                            drop:
+                                -   ALL
+                    startupProbe:
+                        failureThreshold: 30
+                        httpGet:
+                            path: /startup
+                            port: 9801
+                        periodSeconds: 2
+            inputs:
+                parameters:
+                    -   name: restore-instance-connection-name
+            name: sanitize-database
+            script:
+                command: [sh]
+                envFrom:
+                    -   configMapRef:
+                            name: database-server-details
+                image: "{{ .Values.images.postgres.repository }}:{{ .Values.images.postgres.tag }}"
+                resources:
+                    {{- .Values.resources.default | toYaml | nindent 20 }}
+                source: |-
+                    {{- tpl (.Files.Get "scripts/sanitize-database.sh") . | nindent 20 }}
+                volumeMounts:
+                    -   mountPath: /restore-sanitization
+                        name: restore-sanitization
+                        readOnly: true
+            serviceAccountName: liferay-default
+            volumes:
+                -   configMap:
+                        name: backup-restore-sanitization
+                        optional: true
+                    name: restore-sanitization
+        -   inputs:
+                parameters:
+                    -   name: expected-generation
+            name: wait-for-infrastructure
+            script:
+                command: [sh]
+                image: "{{ .Values.images.helmKubectl.repository }}:{{ .Values.images.helmKubectl.tag }}"
+                resources:
+                    {{- .Values.resources.default | toYaml | nindent 20 }}
+                source: |-
+                    {{- tpl (.Files.Get "scripts/wait-for-infrastructure.sh") . | nindent 20 }}
+    ttlStrategy:
+        {{- .Values.argo.workflowSpec.ttlStrategy | toYaml | nindent 8 }}

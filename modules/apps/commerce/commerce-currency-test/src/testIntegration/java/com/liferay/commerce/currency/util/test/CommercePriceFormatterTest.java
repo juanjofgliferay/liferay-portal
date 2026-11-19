@@ -20,6 +20,8 @@ import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 
 import java.math.BigDecimal;
 
+import java.util.Locale;
+
 import org.hamcrest.CustomMatcher;
 import org.hamcrest.Matcher;
 
@@ -68,7 +70,7 @@ public class CommercePriceFormatterTest {
 		_commerceCurrency.setFormatPattern("###,##0.00 $", LocaleUtil.FRANCE);
 
 		String formattedPrice = _commercePriceFormatter.format(
-			_commerceCurrency, _price, LocaleUtil.FRANCE);
+			_commerceCurrency, true, LocaleUtil.FRANCE, _price);
 
 		Matcher<String> regexMatcher = new CustomMatcher<String>(
 			"Matches regex " + regexFR) {
@@ -93,7 +95,7 @@ public class CommercePriceFormatterTest {
 		_commerceCurrency.setFormatPattern("$ ###,##0.00", LocaleUtil.ITALY);
 
 		String formattedPrice = _commercePriceFormatter.format(
-			_commerceCurrency, _price, LocaleUtil.ITALY);
+			_commerceCurrency, true, LocaleUtil.ITALY, _price);
 
 		Matcher<String> regexMatcher = new CustomMatcher<String>(
 			"Matches regex " + regexIT) {
@@ -118,7 +120,7 @@ public class CommercePriceFormatterTest {
 		_commerceCurrency.setFormatPattern("$###,##0.00", LocaleUtil.US);
 
 		String formattedPrice = _commercePriceFormatter.format(
-			_commerceCurrency, _price, LocaleUtil.US);
+			_commerceCurrency, true, LocaleUtil.US, _price);
 
 		Matcher<String> regexMatcher = new CustomMatcher<String>(
 			"Matches regex " + regexUS) {
@@ -134,6 +136,58 @@ public class CommercePriceFormatterTest {
 		Assert.assertThat(
 			"Formatted price does not match expected pattern", formattedPrice,
 			regexMatcher);
+	}
+
+	@Test
+	public void testFormatCurrencyFractionDigits() throws Exception {
+		_commerceCurrency.setMaxFractionDigits(4);
+		_commerceCurrency.setMinFractionDigits(4);
+
+		String formattedPrice = _commercePriceFormatter.format(
+			_commerceCurrency, false, LocaleUtil.getDefault(), _price);
+
+		Assert.assertEquals("1,234,560.7800", formattedPrice);
+	}
+
+	@Test
+	public void testFormatCurrencySymbol() throws Exception {
+		_commerceCurrency.setFormatPattern("$###,##0.00", LocaleUtil.US);
+
+		String formattedPrice = _commercePriceFormatter.format(
+			_commerceCurrency, false, LocaleUtil.getDefault(), _price);
+
+		Assert.assertEquals("1,234,560.78", formattedPrice);
+
+		formattedPrice = _commercePriceFormatter.format(
+			_commerceCurrency, true, LocaleUtil.getDefault(), _price);
+
+		Assert.assertEquals("$1,234,560.78", formattedPrice);
+	}
+
+	@Test
+	public void testParsePriceBigDecimal() throws Exception {
+		_commerceCurrency.setFormatPattern("$###,##0.00", LocaleUtil.ITALY);
+
+		String expectedParsedPrice = "1234567.89";
+
+		_assertPrice("1,234,567.89", expectedParsedPrice, LocaleUtil.ITALY);
+		_assertPrice("1.234.567,89", expectedParsedPrice, LocaleUtil.ITALY);
+		_assertPrice("1234567,89", expectedParsedPrice, LocaleUtil.ITALY);
+		_assertPrice("1234567.89", expectedParsedPrice, LocaleUtil.ITALY);
+
+		Assert.assertNotEquals(
+			expectedParsedPrice,
+			_commercePriceFormatter.parse(
+				false, null, "1,234,0", LocaleUtil.ITALY));
+	}
+
+	private void _assertPrice(
+			String actualPrice, String expectedPrice, Locale locale)
+		throws Exception {
+
+		Assert.assertEquals(
+			expectedPrice,
+			_commercePriceFormatter.parse(false, null, actualPrice, locale));
 	}
 
 	private static final String _SYMBOLS = "€$¥£R$₹";

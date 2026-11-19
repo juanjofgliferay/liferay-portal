@@ -30,10 +30,10 @@ import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.Collections;
 import java.util.List;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Alessio Antonio Rendina
@@ -161,8 +161,9 @@ public class CommerceChannelAccountEntryRelDisplayContext {
 		long[] commerceChannelIds = _getFilteredCommerceChannelIds();
 
 		return ListUtil.filter(
-			_commerceChannelService.getCommerceChannels(
-				_commerceTermEntryRequestHelper.getCompanyId()),
+			_commerceChannelService.getEligibleCommerceChannels(
+				_accountEntry.getAccountEntryId(), null, QueryUtil.ALL_POS,
+				QueryUtil.ALL_POS),
 			commerceChannel -> !ArrayUtil.contains(
 				commerceChannelIds, commerceChannel.getCommerceChannelId()));
 	}

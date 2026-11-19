@@ -10,7 +10,6 @@ import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
-import com.liferay.source.formatter.check.util.BNDSourceUtil;
 import com.liferay.source.formatter.check.util.JavaSourceUtil;
 import com.liferay.source.formatter.check.util.SourceUtil;
 import com.liferay.source.formatter.parser.JavaClass;
@@ -49,15 +48,17 @@ public class JavaDuplicateVariableCheck extends BaseJavaTermCheck {
 		List<String> extendedClassNames = javaClass.getExtendedClassNames(true);
 
 		for (JavaTerm childJavaTerm : javaClass.getChildJavaTerms()) {
-			if ((childJavaTerm instanceof JavaVariable) &&
-				!childJavaTerm.isFinal() &&
-				!childJavaTerm.hasAnnotation("Deprecated") &&
-				(childJavaTerm.isPublic() || childJavaTerm.isProtected())) {
+			if (!(childJavaTerm instanceof JavaVariable) ||
+				childJavaTerm.isFinal() ||
+				childJavaTerm.hasAnnotation("Deprecated") ||
+				(!childJavaTerm.isPublic() && !childJavaTerm.isProtected())) {
 
-				_checkDuplicateVariable(
-					fileName, absolutePath, extendedClassNames,
-					(JavaVariable)childJavaTerm, javaClass.getPackageName());
+				continue;
 			}
+
+			_checkDuplicateVariable(
+				fileName, absolutePath, extendedClassNames,
+				(JavaVariable)childJavaTerm, javaClass.getPackageName());
 		}
 
 		return javaTerm.getContent();
@@ -98,53 +99,45 @@ public class JavaDuplicateVariableCheck extends BaseJavaTermCheck {
 					String variablePackageName =
 						fullyQualifiedClassName.substring(0, pos);
 
-					if (curJavaVariable.isPublic() ||
-						(curJavaVariable.isProtected() &&
-						 packageName.equals(variablePackageName))) {
+					if (!curJavaVariable.isPublic() &&
+						(!curJavaVariable.isProtected() ||
+						 !packageName.equals(variablePackageName))) {
 
-						String variableClassName =
-							fullyQualifiedClassName.substring(pos + 1);
-
-						addMessage(
-							fileName,
-							StringBundler.concat(
-								javaVariable.getAccessModifier(), " variable '",
-								variableName,
-								"' already exists in extended class '",
-								variableClassName, "'"),
-							javaVariable.getLineNumber());
+						continue;
 					}
+
+					String variableClassName =
+						fullyQualifiedClassName.substring(pos + 1);
+
+					addMessage(
+						fileName,
+						StringBundler.concat(
+							javaVariable.getAccessModifier(), " variable \"",
+							variableName,
+							"\" already exists in extended class \"",
+							variableClassName, "\""),
+						javaVariable.getLineNumber());
 				}
 			}
 		}
-	}
-
-	private synchronized Map<String, String> _getBundleSymbolicNamesMap(
-		String absolutePath) {
-
-		if (_bundleSymbolicNamesMap != null) {
-			return _bundleSymbolicNamesMap;
-		}
-
-		_bundleSymbolicNamesMap = BNDSourceUtil.getBundleSymbolicNamesMap(
-			_getRootDirName(absolutePath));
-
-		return _bundleSymbolicNamesMap;
 	}
 
 	private Map<String, List<JavaVariable>> _getJavaVariablesMap(
 			String absolutePath, String fullyQualifiedClassName)
 		throws IOException {
 
-		if (_javaVariablesMap.containsKey(fullyQualifiedClassName)) {
-			return _javaVariablesMap.get(fullyQualifiedClassName);
+		Map<String, List<JavaVariable>> javaVariablesMap =
+			_javaVariablesMap.get(fullyQualifiedClassName);
+
+		if (javaVariablesMap != null) {
+			return javaVariablesMap;
 		}
 
-		Map<String, List<JavaVariable>> javaVariablesMap = new HashMap<>();
+		javaVariablesMap = new HashMap<>();
 
 		File file = JavaSourceUtil.getJavaFile(
 			fullyQualifiedClassName, _getRootDirName(absolutePath),
-			_getBundleSymbolicNamesMap(absolutePath));
+			getBundleSymbolicNamesMap(absolutePath));
 
 		if (file != null) {
 			try {
@@ -178,11 +171,13 @@ public class JavaDuplicateVariableCheck extends BaseJavaTermCheck {
 					List<JavaVariable> javaVariables = new ArrayList<>();
 
 					for (JavaTerm javaTerm : javaClass.getChildJavaTerms()) {
-						if ((javaTerm instanceof JavaVariable) &&
-							(javaTerm.isProtected() || javaTerm.isPublic())) {
+						if (!(javaTerm instanceof JavaVariable) ||
+							(!javaTerm.isProtected() && !javaTerm.isPublic())) {
 
-							javaVariables.add((JavaVariable)javaTerm);
+							continue;
 						}
+
+						javaVariables.add((JavaVariable)javaTerm);
 					}
 
 					return javaVariables;
@@ -212,7 +207,6 @@ public class JavaDuplicateVariableCheck extends BaseJavaTermCheck {
 	private static final Log _log = LogFactoryUtil.getLog(
 		JavaDuplicateVariableCheck.class);
 
-	private Map<String, String> _bundleSymbolicNamesMap;
 	private final Map<String, Map<String, List<JavaVariable>>>
 		_javaVariablesMap = new HashMap<>();
 	private String _rootDirName;

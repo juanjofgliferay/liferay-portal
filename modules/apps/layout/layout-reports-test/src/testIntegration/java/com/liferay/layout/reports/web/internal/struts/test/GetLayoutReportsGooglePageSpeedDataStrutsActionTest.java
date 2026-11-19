@@ -14,7 +14,7 @@ import com.liferay.info.item.InfoItemClassDetails;
 import com.liferay.info.item.InfoItemDetails;
 import com.liferay.info.item.InfoItemFieldValues;
 import com.liferay.info.item.provider.InfoItemFieldValuesProvider;
-import com.liferay.layout.reports.web.internal.util.LayoutReportsTestUtil;
+import com.liferay.layout.reports.web.internal.test.util.LayoutReportsTestUtil;
 import com.liferay.layout.seo.service.LayoutSEOEntryLocalService;
 import com.liferay.layout.test.util.LayoutTestUtil;
 import com.liferay.petra.string.StringPool;
@@ -37,7 +37,6 @@ import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.HashMapBuilder;
-import com.liferay.portal.kernel.util.HashMapDictionary;
 import com.liferay.portal.kernel.util.LocaleThreadLocal;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.ObjectValuePair;
@@ -180,8 +179,7 @@ public class GetLayoutReportsGooglePageSpeedDataStrutsActionTest {
 							bundleContext.registerService(
 								(Class<InfoItemFieldValuesProvider<?>>)
 									(Class<?>)InfoItemFieldValuesProvider.class,
-								new MockInfoItemFieldValuesProvider(),
-								new HashMapDictionary<>());
+								new MockInfoItemFieldValuesProvider(), null);
 
 					try {
 						Layout layout = LayoutTestUtil.addTypePortletLayout(
@@ -375,13 +373,13 @@ public class GetLayoutReportsGooglePageSpeedDataStrutsActionTest {
 	private MockHttpServletRequest _getMockHttpServletRequest(Layout layout)
 		throws Exception {
 
+		MockHttpServletRequest mockHttpServletRequest =
+			new MockHttpServletRequest();
+
 		ServiceContext serviceContext =
 			ServiceContextTestUtil.getServiceContext(_group.getGroupId());
 
 		ServiceContextThreadLocal.pushServiceContext(serviceContext);
-
-		MockHttpServletRequest mockHttpServletRequest =
-			new MockHttpServletRequest();
 
 		serviceContext.setRequest(mockHttpServletRequest);
 

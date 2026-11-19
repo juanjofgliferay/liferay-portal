@@ -5,10 +5,10 @@
 
 package com.liferay.data.engine.renderer;
 
-import java.util.Map;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import java.util.Map;
 
 /**
  * @author Leonardo Barros
@@ -31,6 +31,10 @@ public class DataLayoutRendererContext {
 		return _defaultLanguageId;
 	}
 
+	public String getDisplayType() {
+		return _displayType;
+	}
+
 	public HttpServletRequest getHttpServletRequest() {
 		return _httpServletRequest;
 	}
@@ -45,6 +49,10 @@ public class DataLayoutRendererContext {
 
 	public String getPortletNamespace() {
 		return _portletNamespace;
+	}
+
+	public boolean isDisableFieldRepetition() {
+		return _disableFieldRepetition;
 	}
 
 	public boolean isPersistDefaultValues() {
@@ -77,6 +85,14 @@ public class DataLayoutRendererContext {
 
 	public void setDefaultLanguageId(String defaultLanguageId) {
 		_defaultLanguageId = defaultLanguageId;
+	}
+
+	public void setDisableFieldRepetition(boolean disableFieldRepetition) {
+		_disableFieldRepetition = disableFieldRepetition;
+	}
+
+	public void setDisplayType(String displayType) {
+		_displayType = displayType;
 	}
 
 	public void setHttpServletRequest(HttpServletRequest httpServletRequest) {
@@ -117,6 +133,8 @@ public class DataLayoutRendererContext {
 	private String _contentType;
 	private Map<String, Object> _dataRecordValues;
 	private String _defaultLanguageId;
+	private boolean _disableFieldRepetition;
+	private String _displayType;
 	private HttpServletRequest _httpServletRequest;
 	private HttpServletResponse _httpServletResponse;
 	private String _languageId;

@@ -23,7 +23,7 @@ CommerceOrderType commerceOrderType = commerceOrderTypeDisplayContext.getCommerc
 	bean="<%= commerceOrderType %>"
 	beanIdLabel="id"
 	externalReferenceCode="<%= commerceOrderType.getExternalReferenceCode() %>"
-	externalReferenceCodeEditUrl="<%= editCommerceOrderTypeExternalReferenceCodeURL %>"
+	externalReferenceCodeEditURL="<%= editCommerceOrderTypeExternalReferenceCodeURL %>"
 	model="<%= CommerceOrderType.class %>"
 	title="<%= commerceOrderType.getName(locale) %>"
 />
@@ -41,5 +41,5 @@ CommerceOrderType commerceOrderType = commerceOrderTypeDisplayContext.getCommerc
 			"workflowAction", WorkflowConstants.ACTION_PUBLISH
 		).build()
 	%>'
-	module="js/editCommerceOrderType"
+	module="{editCommerceOrderType} from commerce-order-web"
 />

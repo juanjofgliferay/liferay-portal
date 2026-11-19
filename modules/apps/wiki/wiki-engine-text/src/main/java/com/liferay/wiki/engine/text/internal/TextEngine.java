@@ -6,16 +6,17 @@
 package com.liferay.wiki.engine.text.internal;
 
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.wiki.engine.BaseWikiEngine;
 import com.liferay.wiki.engine.WikiEngine;
 import com.liferay.wiki.model.WikiPage;
 
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.ServletContext;
+
 import java.util.Collections;
 import java.util.Map;
-
-import javax.portlet.PortletURL;
-
-import javax.servlet.ServletContext;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -35,7 +36,7 @@ public class TextEngine extends BaseWikiEngine {
 			return StringPool.BLANK;
 		}
 
-		return "<pre>" + page.getContent() + "</pre>";
+		return "<pre>" + HtmlUtil.escape(page.getContent()) + "</pre>";
 	}
 
 	@Override

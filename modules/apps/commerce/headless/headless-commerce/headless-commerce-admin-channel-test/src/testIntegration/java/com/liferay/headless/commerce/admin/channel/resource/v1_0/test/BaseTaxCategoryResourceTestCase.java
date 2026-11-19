@@ -19,32 +19,59 @@ import com.liferay.headless.commerce.admin.channel.client.pagination.Page;
 import com.liferay.headless.commerce.admin.channel.client.pagination.Pagination;
 import com.liferay.headless.commerce.admin.channel.client.resource.v1_0.TaxCategoryResource;
 import com.liferay.headless.commerce.admin.channel.client.serdes.v1_0.TaxCategorySerDes;
+import com.liferay.oauth2.provider.scope.ScopeChecker;
 import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.json.JSONDeserializer;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.model.Company;
-import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
+import com.liferay.portal.kernel.service.GroupLocalService;
+import com.liferay.portal.kernel.service.ResourceActionLocalService;
+import com.liferay.portal.kernel.service.ResourcePermissionLocalService;
+import com.liferay.portal.kernel.service.RoleLocalService;
+import com.liferay.portal.kernel.service.UserLocalService;
+import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
+import com.liferay.portal.kernel.test.util.JAXRSWhiteboardTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
-import com.liferay.portal.kernel.util.DateFormatFactoryUtil;
+import com.liferay.portal.kernel.util.DateUtil;
+import com.liferay.portal.kernel.util.FastDateFormatFactoryUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.odata.entity.EntityField;
 import com.liferay.portal.odata.entity.EntityModel;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
+import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
+import com.liferay.portal.vulcan.accept.language.AcceptLanguage;
+import com.liferay.portal.vulcan.crud.VulcanCRUDItemDelegate;
+import com.liferay.portal.vulcan.crud.VulcanCRUDItemDelegateBuilderRegistry;
 import com.liferay.portal.vulcan.resource.EntityModelResource;
+
+import jakarta.annotation.Generated;
+
+import jakarta.servlet.http.HttpServletRequest;
+
+import jakarta.ws.rs.core.MultivaluedHashMap;
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.PathSegment;
+import jakarta.ws.rs.core.UriBuilder;
+import jakarta.ws.rs.core.UriInfo;
 
 import java.lang.reflect.Method;
 
-import java.text.DateFormat;
+import java.net.URI;
+
+import java.text.Format;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -53,13 +80,11 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.ws.rs.core.MultivaluedHashMap;
+import java.util.TimeZone;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -68,6 +93,9 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.mock.web.MockHttpServletResponse;
 
 /**
  * @author Andrea Sbarra
@@ -78,13 +106,17 @@ public abstract class BaseTaxCategoryResourceTestCase {
 
 	@ClassRule
 	@Rule
-	public static final LiferayIntegrationTestRule liferayIntegrationTestRule =
-		new LiferayIntegrationTestRule();
+	public static final AggregateTestRule aggregateTestRule =
+		new AggregateTestRule(
+			new LiferayIntegrationTestRule(),
+			PermissionCheckerMethodTestRule.INSTANCE);
 
 	@BeforeClass
 	public static void setUpClass() throws Exception {
-		_dateFormat = DateFormatFactoryUtil.getSimpleDateFormat(
+		_format = FastDateFormatFactoryUtil.getSimpleDateFormat(
 			"yyyy-MM-dd'T'HH:mm:ss'Z'");
+
+		JAXRSWhiteboardTestUtil.ensureReady();
 	}
 
 	@Before
@@ -97,10 +129,16 @@ public abstract class BaseTaxCategoryResourceTestCase {
 
 		_taxCategoryResource.setContextCompany(testCompany);
 
-		TaxCategoryResource.Builder builder = TaxCategoryResource.builder();
+		_testCompanyAdminUser = UserTestUtil.getAdminUser(
+			testCompany.getCompanyId());
 
-		taxCategoryResource = builder.authentication(
-			"test@liferay.com", "test"
+		taxCategoryResource = TaxCategoryResource.builder(
+		).authentication(
+			_testCompanyAdminUser.getEmailAddress(),
+			PropsValues.DEFAULT_ADMIN_PASSWORD
+		).endpoint(
+			testCompany.getVirtualHostname(),
+			PortalUtil.getPortalServerPort(false), "http"
 		).locale(
 			LocaleUtil.getDefault()
 		).build();
@@ -114,7 +152,32 @@ public abstract class BaseTaxCategoryResourceTestCase {
 
 	@Test
 	public void testClientSerDesToDTO() throws Exception {
-		ObjectMapper objectMapper = new ObjectMapper() {
+		ObjectMapper objectMapper = getClientSerDesObjectMapper();
+
+		TaxCategory taxCategory1 = randomTaxCategory();
+
+		String json = objectMapper.writeValueAsString(taxCategory1);
+
+		TaxCategory taxCategory2 = TaxCategorySerDes.toDTO(json);
+
+		Assert.assertTrue(equals(taxCategory1, taxCategory2));
+	}
+
+	@Test
+	public void testClientSerDesToJSON() throws Exception {
+		ObjectMapper objectMapper = getClientSerDesObjectMapper();
+
+		TaxCategory taxCategory = randomTaxCategory();
+
+		String json1 = objectMapper.writeValueAsString(taxCategory);
+		String json2 = TaxCategorySerDes.toJSON(taxCategory);
+
+		Assert.assertEquals(
+			objectMapper.readTree(json1), objectMapper.readTree(json2));
+	}
+
+	protected ObjectMapper getClientSerDesObjectMapper() {
+		return new ObjectMapper() {
 			{
 				configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
 				configure(
@@ -129,40 +192,6 @@ public abstract class BaseTaxCategoryResourceTestCase {
 					PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE);
 			}
 		};
-
-		TaxCategory taxCategory1 = randomTaxCategory();
-
-		String json = objectMapper.writeValueAsString(taxCategory1);
-
-		TaxCategory taxCategory2 = TaxCategorySerDes.toDTO(json);
-
-		Assert.assertTrue(equals(taxCategory1, taxCategory2));
-	}
-
-	@Test
-	public void testClientSerDesToJSON() throws Exception {
-		ObjectMapper objectMapper = new ObjectMapper() {
-			{
-				configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
-				configure(
-					SerializationFeature.WRITE_ENUMS_USING_TO_STRING, true);
-				setDateFormat(new ISO8601DateFormat());
-				setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
-				setSerializationInclusion(JsonInclude.Include.NON_NULL);
-				setVisibility(
-					PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
-				setVisibility(
-					PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE);
-			}
-		};
-
-		TaxCategory taxCategory = randomTaxCategory();
-
-		String json1 = objectMapper.writeValueAsString(taxCategory);
-		String json2 = TaxCategorySerDes.toJSON(taxCategory);
-
-		Assert.assertEquals(
-			objectMapper.readTree(json1), objectMapper.readTree(json2));
 	}
 
 	@Test
@@ -171,11 +200,15 @@ public abstract class BaseTaxCategoryResourceTestCase {
 
 		TaxCategory taxCategory = randomTaxCategory();
 
+		taxCategory.setExternalReferenceCode(regex);
+
 		String json = TaxCategorySerDes.toJSON(taxCategory);
 
 		Assert.assertFalse(json.contains(regex));
 
 		taxCategory = TaxCategorySerDes.toDTO(json);
+
+		Assert.assertEquals(regex, taxCategory.getExternalReferenceCode());
 	}
 
 	@Test
@@ -192,7 +225,7 @@ public abstract class BaseTaxCategoryResourceTestCase {
 			randomTaxCategory());
 
 		page = taxCategoryResource.getTaxCategoriesPage(
-			null, Pagination.of(1, 10));
+			null, Pagination.of(1, (int)totalCount + 2));
 
 		Assert.assertEquals(totalCount + 2, page.getTotalCount());
 
@@ -212,10 +245,11 @@ public abstract class BaseTaxCategoryResourceTestCase {
 
 	@Test
 	public void testGetTaxCategoriesPageWithPagination() throws Exception {
-		Page<TaxCategory> taxCategoryPage =
+		Page<TaxCategory> taxCategoriesPage =
 			taxCategoryResource.getTaxCategoriesPage(null, null);
 
-		int totalCount = GetterUtil.getInteger(taxCategoryPage.getTotalCount());
+		int totalCount = GetterUtil.getInteger(
+			taxCategoriesPage.getTotalCount());
 
 		TaxCategory taxCategory1 = testGetTaxCategoriesPage_addTaxCategory(
 			randomTaxCategory());
@@ -226,30 +260,66 @@ public abstract class BaseTaxCategoryResourceTestCase {
 		TaxCategory taxCategory3 = testGetTaxCategoriesPage_addTaxCategory(
 			randomTaxCategory());
 
-		Page<TaxCategory> page1 = taxCategoryResource.getTaxCategoriesPage(
-			null, Pagination.of(1, totalCount + 2));
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<TaxCategory> taxCategories1 = (List<TaxCategory>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(
-			taxCategories1.toString(), totalCount + 2, taxCategories1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<TaxCategory> page1 = taxCategoryResource.getTaxCategoriesPage(
+				null,
+				Pagination.of(
+					(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+					pageSizeLimit));
 
-		Page<TaxCategory> page2 = taxCategoryResource.getTaxCategoriesPage(
-			null, Pagination.of(2, totalCount + 2));
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+			assertContains(taxCategory1, (List<TaxCategory>)page1.getItems());
 
-		List<TaxCategory> taxCategories2 = (List<TaxCategory>)page2.getItems();
+			Page<TaxCategory> page2 = taxCategoryResource.getTaxCategoriesPage(
+				null,
+				Pagination.of(
+					(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+					pageSizeLimit));
 
-		Assert.assertEquals(
-			taxCategories2.toString(), 1, taxCategories2.size());
+			assertContains(taxCategory2, (List<TaxCategory>)page2.getItems());
 
-		Page<TaxCategory> page3 = taxCategoryResource.getTaxCategoriesPage(
-			null, Pagination.of(1, (int)totalCount + 3));
+			Page<TaxCategory> page3 = taxCategoryResource.getTaxCategoriesPage(
+				null,
+				Pagination.of(
+					(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+					pageSizeLimit));
 
-		assertContains(taxCategory1, (List<TaxCategory>)page3.getItems());
-		assertContains(taxCategory2, (List<TaxCategory>)page3.getItems());
-		assertContains(taxCategory3, (List<TaxCategory>)page3.getItems());
+			assertContains(taxCategory3, (List<TaxCategory>)page3.getItems());
+		}
+		else {
+			Page<TaxCategory> page1 = taxCategoryResource.getTaxCategoriesPage(
+				null, Pagination.of(1, totalCount + 2));
+
+			List<TaxCategory> taxCategories1 =
+				(List<TaxCategory>)page1.getItems();
+
+			Assert.assertEquals(
+				taxCategories1.toString(), totalCount + 2,
+				taxCategories1.size());
+
+			Page<TaxCategory> page2 = taxCategoryResource.getTaxCategoriesPage(
+				null, Pagination.of(2, totalCount + 2));
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<TaxCategory> taxCategories2 =
+				(List<TaxCategory>)page2.getItems();
+
+			Assert.assertEquals(
+				taxCategories2.toString(), 1, taxCategories2.size());
+
+			Page<TaxCategory> page3 = taxCategoryResource.getTaxCategoriesPage(
+				null, Pagination.of(1, (int)totalCount + 3));
+
+			assertContains(taxCategory1, (List<TaxCategory>)page3.getItems());
+			assertContains(taxCategory2, (List<TaxCategory>)page3.getItems());
+			assertContains(taxCategory3, (List<TaxCategory>)page3.getItems());
+		}
 	}
 
 	protected TaxCategory testGetTaxCategoriesPage_addTaxCategory(
@@ -262,16 +332,10 @@ public abstract class BaseTaxCategoryResourceTestCase {
 
 	@Test
 	public void testGraphQLGetTaxCategoriesPage() throws Exception {
-		GraphQLField graphQLField = new GraphQLField(
-			"taxCategories",
-			new HashMap<String, Object>() {
-				{
-					put("page", 1);
-					put("pageSize", 10);
-				}
-			},
-			new GraphQLField("items", getGraphQLFields()),
-			new GraphQLField("page"), new GraphQLField("totalCount"));
+		GraphQLField graphQLField =
+			testGraphQLGetTaxCategoriesPageTaxCategory_getGraphQLField();
+
+		// No namespace
 
 		JSONObject taxCategoriesJSONObject = JSONUtil.getValueAsJSONObject(
 			invokeGraphQLQuery(graphQLField), "JSONObject/data",
@@ -279,10 +343,11 @@ public abstract class BaseTaxCategoryResourceTestCase {
 
 		long totalCount = taxCategoriesJSONObject.getLong("totalCount");
 
-		TaxCategory taxCategory1 =
-			testGraphQLGetTaxCategoriesPage_addTaxCategory();
-		TaxCategory taxCategory2 =
-			testGraphQLGetTaxCategoriesPage_addTaxCategory();
+		TaxCategory taxCategory1 = testGraphQLTaxCategory_addTaxCategory(
+			randomTaxCategory());
+
+		TaxCategory taxCategory2 = testGraphQLTaxCategory_addTaxCategory(
+			randomTaxCategory());
 
 		taxCategoriesJSONObject = JSONUtil.getValueAsJSONObject(
 			invokeGraphQLQuery(graphQLField), "JSONObject/data",
@@ -301,12 +366,46 @@ public abstract class BaseTaxCategoryResourceTestCase {
 			Arrays.asList(
 				TaxCategorySerDes.toDTOs(
 					taxCategoriesJSONObject.getString("items"))));
+
+		// Using the namespace headlessCommerceAdminChannel_v1_0
+
+		taxCategoriesJSONObject = JSONUtil.getValueAsJSONObject(
+			invokeGraphQLQuery(
+				new GraphQLField(
+					"headlessCommerceAdminChannel_v1_0", graphQLField)),
+			"JSONObject/data", "JSONObject/headlessCommerceAdminChannel_v1_0",
+			"JSONObject/taxCategories");
+
+		Assert.assertEquals(
+			totalCount + 2, taxCategoriesJSONObject.getLong("totalCount"));
+
+		assertContains(
+			taxCategory1,
+			Arrays.asList(
+				TaxCategorySerDes.toDTOs(
+					taxCategoriesJSONObject.getString("items"))));
+		assertContains(
+			taxCategory2,
+			Arrays.asList(
+				TaxCategorySerDes.toDTOs(
+					taxCategoriesJSONObject.getString("items"))));
 	}
 
-	protected TaxCategory testGraphQLGetTaxCategoriesPage_addTaxCategory()
+	protected GraphQLField
+			testGraphQLGetTaxCategoriesPageTaxCategory_getGraphQLField()
 		throws Exception {
 
-		return testGraphQLTaxCategory_addTaxCategory();
+		return new GraphQLField(
+			"taxCategories",
+			new HashMap<String, Object>() {
+				{
+					put("search", null);
+					put("page", 1);
+					put("pageSize", 10);
+				}
+			},
+			new GraphQLField("items", getGraphQLFields()),
+			new GraphQLField("page"), new GraphQLField("totalCount"));
 	}
 
 	@Test
@@ -320,6 +419,201 @@ public abstract class BaseTaxCategoryResourceTestCase {
 		assertValid(getTaxCategory);
 	}
 
+	@Test
+	public void testVulcanCRUDItemDelegateGetItem() throws Exception {
+		TaxCategory postTaxCategory = testGetTaxCategory_addTaxCategory();
+
+		TaxCategory getTaxCategory = taxCategoryResource.getTaxCategory(
+			postTaxCategory.getId());
+
+		VulcanCRUDItemDelegate vulcanCRUDItemDelegate =
+			_vulcanCRUDItemDelegateBuilderRegistry.builder(
+				testCompany,
+				"com.liferay.headless.commerce.admin.channel.dto.v1_0.TaxCategory"
+			).acceptLanguage(
+				new AcceptLanguage() {
+
+					@Override
+					public List<Locale> getLocales() {
+						return Arrays.asList(LocaleUtil.getDefault());
+					}
+
+					@Override
+					public String getPreferredLanguageId() {
+						return LocaleUtil.toLanguageId(LocaleUtil.getDefault());
+					}
+
+					@Override
+					public Locale getPreferredLocale() {
+						return LocaleUtil.getDefault();
+					}
+
+				}
+			).groupLocalService(
+				_groupLocalService
+			).httpServletRequest(
+				testVulcanCRUDItemDelegate_getHttpServletRequest()
+			).httpServletResponse(
+				new MockHttpServletResponse()
+			).resourceActionLocalService(
+				_resourceActionLocalService
+			).resourcePermissionLocalService(
+				_resourcePermissionLocalService
+			).roleLocalService(
+				_roleLocalService
+			).scopeChecker(
+				_scopeChecker
+			).uriInfo(
+				testVulcanCRUDItemDelegate_getUriInfo()
+			).user(
+				testVulcanCRUDItemDelegate_getUser()
+			).build();
+
+		Object item = vulcanCRUDItemDelegate.getItem(postTaxCategory.getId());
+
+		assertEquals(getTaxCategory, TaxCategorySerDes.toDTO(item.toString()));
+	}
+
+	protected HttpServletRequest
+		testVulcanCRUDItemDelegate_getHttpServletRequest() {
+
+		return new MockHttpServletRequest() {
+
+			@Override
+			public StringBuffer getRequestURL() {
+				return new StringBuffer(
+					StringBundler.concat(
+						"http://localhost:",
+						String.valueOf(PortalUtil.getPortalServerPort(false)),
+						"/o/v1.0/", RandomTestUtil.randomString(), "/",
+						RandomTestUtil.randomString()));
+			}
+
+		};
+	}
+
+	protected UriInfo testVulcanCRUDItemDelegate_getUriInfo() {
+		String applicationPath = RandomTestUtil.randomString() + "/";
+		String resourcePath = RandomTestUtil.randomString();
+
+		return new UriInfo() {
+
+			@Override
+			public String getPath() {
+				return resourcePath;
+			}
+
+			@Override
+			public String getPath(boolean decode) {
+				return getPath();
+			}
+
+			@Override
+			public List<PathSegment> getPathSegments() {
+				return Collections.emptyList();
+			}
+
+			@Override
+			public List<PathSegment> getPathSegments(boolean decode) {
+				return getPathSegments();
+			}
+
+			@Override
+			public URI getRequestUri() {
+				return URI.create(
+					StringBundler.concat(
+						"http://localhost:",
+						PortalUtil.getPortalServerPort(false), "/o/",
+						applicationPath, resourcePath));
+			}
+
+			@Override
+			public UriBuilder getRequestUriBuilder() {
+				return UriBuilder.fromUri(getRequestUri());
+			}
+
+			@Override
+			public URI getAbsolutePath() {
+				return getRequestUri();
+			}
+
+			@Override
+			public UriBuilder getAbsolutePathBuilder() {
+				return getRequestUriBuilder();
+			}
+
+			@Override
+			public URI getBaseUri() {
+				return URI.create(
+					StringBundler.concat(
+						"http://localhost:",
+						PortalUtil.getPortalServerPort(false), "/o/",
+						applicationPath));
+			}
+
+			@Override
+			public UriBuilder getBaseUriBuilder() {
+				return UriBuilder.fromUri(getBaseUri());
+			}
+
+			@Override
+			public MultivaluedMap<String, String> getPathParameters() {
+				return new MultivaluedHashMap<>();
+			}
+
+			@Override
+			public MultivaluedMap<String, String> getPathParameters(
+				boolean decode) {
+
+				return getPathParameters();
+			}
+
+			@Override
+			public MultivaluedMap<String, String> getQueryParameters() {
+				return new MultivaluedHashMap<>();
+			}
+
+			@Override
+			public MultivaluedMap<String, String> getQueryParameters(
+				boolean decode) {
+
+				return getQueryParameters();
+			}
+
+			@Override
+			public List<String> getMatchedURIs() {
+				return Collections.emptyList();
+			}
+
+			@Override
+			public List<String> getMatchedURIs(boolean decode) {
+				return getMatchedURIs();
+			}
+
+			@Override
+			public List<Object> getMatchedResources() {
+				return Collections.emptyList();
+			}
+
+			@Override
+			public URI resolve(URI requestUri) {
+				return getBaseUri().resolve(requestUri);
+			}
+
+			@Override
+			public URI relativize(URI uri) {
+				return getBaseUri().relativize(uri);
+			}
+
+		};
+	}
+
+	protected com.liferay.portal.kernel.model.User
+		testVulcanCRUDItemDelegate_getUser() {
+
+		return _testCompanyAdminUser;
+	}
+
 	protected TaxCategory testGetTaxCategory_addTaxCategory() throws Exception {
 		throw new UnsupportedOperationException(
 			"This method needs to be implemented");
@@ -328,6 +622,8 @@ public abstract class BaseTaxCategoryResourceTestCase {
 	@Test
 	public void testGraphQLGetTaxCategory() throws Exception {
 		TaxCategory taxCategory = testGraphQLGetTaxCategory_addTaxCategory();
+
+		// No namespace
 
 		Assert.assertTrue(
 			equals(
@@ -344,11 +640,35 @@ public abstract class BaseTaxCategoryResourceTestCase {
 								},
 								getGraphQLFields())),
 						"JSONObject/data", "Object/taxCategory"))));
+
+		// Using the namespace headlessCommerceAdminChannel_v1_0
+
+		Assert.assertTrue(
+			equals(
+				taxCategory,
+				TaxCategorySerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"headlessCommerceAdminChannel_v1_0",
+								new GraphQLField(
+									"taxCategory",
+									new HashMap<String, Object>() {
+										{
+											put("id", taxCategory.getId());
+										}
+									},
+									getGraphQLFields()))),
+						"JSONObject/data",
+						"JSONObject/headlessCommerceAdminChannel_v1_0",
+						"Object/taxCategory"))));
 	}
 
 	@Test
 	public void testGraphQLGetTaxCategoryNotFound() throws Exception {
 		Long irrelevantId = RandomTestUtil.randomLong();
+
+		// No namespace
 
 		Assert.assertEquals(
 			"Not Found",
@@ -364,6 +684,25 @@ public abstract class BaseTaxCategoryResourceTestCase {
 						getGraphQLFields())),
 				"JSONArray/errors", "Object/0", "JSONObject/extensions",
 				"Object/code"));
+
+		// Using the namespace headlessCommerceAdminChannel_v1_0
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"headlessCommerceAdminChannel_v1_0",
+						new GraphQLField(
+							"taxCategory",
+							new HashMap<String, Object>() {
+								{
+									put("id", irrelevantId);
+								}
+							},
+							getGraphQLFields()))),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
 	}
 
 	protected TaxCategory testGraphQLGetTaxCategory_addTaxCategory()
@@ -372,11 +711,359 @@ public abstract class BaseTaxCategoryResourceTestCase {
 		return testGraphQLTaxCategory_addTaxCategory();
 	}
 
-	protected TaxCategory testGraphQLTaxCategory_addTaxCategory()
+	@Test
+	public void testGetTaxCategoryByExternalReferenceCode() throws Exception {
+		TaxCategory postTaxCategory =
+			testGetTaxCategoryByExternalReferenceCode_addTaxCategory();
+
+		TaxCategory getTaxCategory =
+			taxCategoryResource.getTaxCategoryByExternalReferenceCode(
+				postTaxCategory.getExternalReferenceCode());
+
+		assertEquals(postTaxCategory, getTaxCategory);
+		assertValid(getTaxCategory);
+	}
+
+	protected TaxCategory
+			testGetTaxCategoryByExternalReferenceCode_addTaxCategory()
 		throws Exception {
 
 		throw new UnsupportedOperationException(
 			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testGraphQLGetTaxCategoryByExternalReferenceCode()
+		throws Exception {
+
+		TaxCategory taxCategory =
+			testGraphQLGetTaxCategoryByExternalReferenceCode_addTaxCategory();
+
+		// No namespace
+
+		Assert.assertTrue(
+			equals(
+				taxCategory,
+				TaxCategorySerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"taxCategoryByExternalReferenceCode",
+								new HashMap<String, Object>() {
+									{
+										put(
+											"externalReferenceCode",
+											"\"" +
+												taxCategory.
+													getExternalReferenceCode() +
+														"\"");
+									}
+								},
+								getGraphQLFields())),
+						"JSONObject/data",
+						"Object/taxCategoryByExternalReferenceCode"))));
+
+		// Using the namespace headlessCommerceAdminChannel_v1_0
+
+		Assert.assertTrue(
+			equals(
+				taxCategory,
+				TaxCategorySerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"headlessCommerceAdminChannel_v1_0",
+								new GraphQLField(
+									"taxCategoryByExternalReferenceCode",
+									new HashMap<String, Object>() {
+										{
+											put(
+												"externalReferenceCode",
+												"\"" +
+													taxCategory.
+														getExternalReferenceCode() +
+															"\"");
+										}
+									},
+									getGraphQLFields()))),
+						"JSONObject/data",
+						"JSONObject/headlessCommerceAdminChannel_v1_0",
+						"Object/taxCategoryByExternalReferenceCode"))));
+	}
+
+	@Test
+	public void testGraphQLGetTaxCategoryByExternalReferenceCodeNotFound()
+		throws Exception {
+
+		String irrelevantExternalReferenceCode =
+			"\"" + RandomTestUtil.randomString() + "\"";
+
+		// No namespace
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"taxCategoryByExternalReferenceCode",
+						new HashMap<String, Object>() {
+							{
+								put(
+									"externalReferenceCode",
+									irrelevantExternalReferenceCode);
+							}
+						},
+						getGraphQLFields())),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
+
+		// Using the namespace headlessCommerceAdminChannel_v1_0
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"headlessCommerceAdminChannel_v1_0",
+						new GraphQLField(
+							"taxCategoryByExternalReferenceCode",
+							new HashMap<String, Object>() {
+								{
+									put(
+										"externalReferenceCode",
+										irrelevantExternalReferenceCode);
+								}
+							},
+							getGraphQLFields()))),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
+	}
+
+	protected TaxCategory
+			testGraphQLGetTaxCategoryByExternalReferenceCode_addTaxCategory()
+		throws Exception {
+
+		return testGraphQLTaxCategory_addTaxCategory();
+	}
+
+	@Test
+	public void testPatchTaxCategory() throws Exception {
+		TaxCategory postTaxCategory = testPatchTaxCategory_addTaxCategory();
+
+		TaxCategory randomPatchTaxCategory = randomPatchTaxCategory();
+
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		TaxCategory patchTaxCategory = taxCategoryResource.patchTaxCategory(
+			postTaxCategory.getId(), randomPatchTaxCategory);
+
+		TaxCategory expectedPatchTaxCategory = postTaxCategory.clone();
+
+		BeanTestUtil.copyProperties(
+			randomPatchTaxCategory, expectedPatchTaxCategory);
+
+		TaxCategory getTaxCategory = taxCategoryResource.getTaxCategory(
+			patchTaxCategory.getId());
+
+		assertEquals(expectedPatchTaxCategory, getTaxCategory);
+		assertValid(getTaxCategory);
+	}
+
+	protected TaxCategory testPatchTaxCategory_addTaxCategory()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testPatchTaxCategoryByExternalReferenceCode() throws Exception {
+		TaxCategory postTaxCategory =
+			testPatchTaxCategoryByExternalReferenceCode_addTaxCategory();
+
+		TaxCategory randomPatchTaxCategory = randomPatchTaxCategory();
+
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		TaxCategory patchTaxCategory =
+			taxCategoryResource.patchTaxCategoryByExternalReferenceCode(
+				postTaxCategory.getExternalReferenceCode(),
+				randomPatchTaxCategory);
+
+		TaxCategory expectedPatchTaxCategory = postTaxCategory.clone();
+
+		BeanTestUtil.copyProperties(
+			randomPatchTaxCategory, expectedPatchTaxCategory);
+
+		TaxCategory getTaxCategory =
+			taxCategoryResource.getTaxCategoryByExternalReferenceCode(
+				patchTaxCategory.getExternalReferenceCode());
+
+		assertEquals(expectedPatchTaxCategory, getTaxCategory);
+		assertValid(getTaxCategory);
+	}
+
+	protected TaxCategory
+			testPatchTaxCategoryByExternalReferenceCode_addTaxCategory()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testPostTaxCategory() throws Exception {
+		TaxCategory randomTaxCategory = randomTaxCategory();
+
+		TaxCategory postTaxCategory = testPostTaxCategory_addTaxCategory(
+			randomTaxCategory);
+
+		assertEquals(randomTaxCategory, postTaxCategory);
+		assertValid(postTaxCategory);
+	}
+
+	protected TaxCategory testPostTaxCategory_addTaxCategory(
+			TaxCategory taxCategory)
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testGraphQLPostTaxCategory() throws Exception {
+		TaxCategory randomTaxCategory = randomTaxCategory();
+
+		TaxCategory taxCategory = testGraphQLTaxCategory_addTaxCategory(
+			randomTaxCategory);
+
+		Assert.assertTrue(equals(randomTaxCategory, taxCategory));
+	}
+
+	@Test
+	public void testBatchEngineDeleteImportTask() throws Exception {
+		Assert.assertTrue(true);
+	}
+
+	protected TaxCategory testGraphQLTaxCategory_addTaxCategory()
+		throws Exception {
+
+		return testGraphQLTaxCategory_addTaxCategory(randomTaxCategory());
+	}
+
+	protected TaxCategory testGraphQLTaxCategory_addTaxCategory(
+			TaxCategory taxCategory)
+		throws Exception {
+
+		JSONDeserializer<TaxCategory> jsonDeserializer =
+			JSONFactoryUtil.createJSONDeserializer();
+
+		StringBuilder sb = new StringBuilder("{");
+
+		for (java.lang.reflect.Field field :
+				getDeclaredFields(TaxCategory.class)) {
+
+			if (getGraphQLValue(field.get(taxCategory)) != null) {
+				if (sb.length() > 1) {
+					sb.append(", ");
+				}
+
+				sb.append(field.getName());
+				sb.append(": ");
+				sb.append(getGraphQLValue(field.get(taxCategory)));
+			}
+		}
+
+		sb.append("}");
+
+		List<GraphQLField> graphQLFields = getGraphQLFields();
+
+		return jsonDeserializer.deserialize(
+			JSONUtil.getValueAsString(
+				invokeGraphQLMutation(
+					new GraphQLField(
+						"createTaxCategory",
+						new HashMap<String, Object>() {
+							{
+								put("taxCategory", sb.toString());
+							}
+						},
+						graphQLFields)),
+				"JSONObject/data", "JSONObject/createTaxCategory"),
+			TaxCategory.class);
+	}
+
+	protected String getGraphQLValue(Object value) throws Exception {
+		if (value == null) {
+			return null;
+		}
+		else if (value instanceof Boolean || value instanceof Number) {
+			return value.toString();
+		}
+		else if (value instanceof Date) {
+			Date date = (Date)value;
+
+			return "\"" +
+				DateUtil.getDate(
+					date, "yyyy-MM-dd'T'HH:mm:ss'Z'", LocaleUtil.getDefault(),
+					TimeZone.getTimeZone("UTC")) + "\"";
+		}
+		else if (value instanceof Enum) {
+			Enum<?> enm = (Enum<?>)value;
+
+			return enm.name();
+		}
+		else if (value instanceof Map) {
+			Map<?, ?> map = (Map<?, ?>)value;
+
+			List<String> entries = new ArrayList<>();
+
+			for (Map.Entry<?, ?> entry : map.entrySet()) {
+				String graphQLValue = getGraphQLValue(entry.getValue());
+
+				if (graphQLValue != null) {
+					entries.add(entry.getKey() + ": " + graphQLValue);
+				}
+			}
+
+			return "{" + String.join(", ", entries) + "}";
+		}
+		else if (value instanceof Object[]) {
+			Object[] array = (Object[])value;
+
+			List<String> entries = new ArrayList<>();
+
+			for (Object entry : array) {
+				String graphQLValue = getGraphQLValue(entry);
+
+				if (graphQLValue != null) {
+					entries.add(graphQLValue);
+				}
+			}
+
+			return "[" + String.join(", ", entries) + "]";
+		}
+		else if (value instanceof String) {
+			return "\"" + value + "\"";
+		}
+		else {
+			List<String> entries = new ArrayList<>();
+
+			Class<?> clazz = value.getClass();
+			java.lang.reflect.Field[] declaredFields = getDeclaredFields(clazz);
+
+			if (declaredFields.length == 0) {
+				declaredFields = getDeclaredFields(clazz.getSuperclass());
+			}
+
+			for (java.lang.reflect.Field field : declaredFields) {
+				String graphQLValue = getGraphQLValue(field.get(value));
+
+				if (graphQLValue != null) {
+					entries.add(field.getName() + ": " + graphQLValue);
+				}
+			}
+
+			return "{" + String.join(", ", entries) + "}";
+		}
 	}
 
 	protected void assertContains(
@@ -464,6 +1151,16 @@ public abstract class BaseTaxCategoryResourceTestCase {
 				continue;
 			}
 
+			if (Objects.equals(
+					"externalReferenceCode", additionalAssertFieldName)) {
+
+				if (taxCategory.getExternalReferenceCode() == null) {
+					valid = false;
+				}
+
+				continue;
+			}
+
 			if (Objects.equals("groupId", additionalAssertFieldName)) {
 				if (taxCategory.getGroupId() == null) {
 					valid = false;
@@ -538,6 +1235,10 @@ public abstract class BaseTaxCategoryResourceTestCase {
 	protected List<GraphQLField> getGraphQLFields() throws Exception {
 		List<GraphQLField> graphQLFields = new ArrayList<>();
 
+		graphQLFields.add(new GraphQLField("externalReferenceCode"));
+
+		graphQLFields.add(new GraphQLField("id"));
+
 		for (java.lang.reflect.Field field :
 				getDeclaredFields(
 					com.liferay.headless.commerce.admin.channel.dto.v1_0.
@@ -603,6 +1304,19 @@ public abstract class BaseTaxCategoryResourceTestCase {
 				if (!equals(
 						(Map)taxCategory1.getDescription(),
 						(Map)taxCategory2.getDescription())) {
+
+					return false;
+				}
+
+				continue;
+			}
+
+			if (Objects.equals(
+					"externalReferenceCode", additionalAssertFieldName)) {
+
+				if (!Objects.deepEquals(
+						taxCategory1.getExternalReferenceCode(),
+						taxCategory2.getExternalReferenceCode())) {
 
 					return false;
 				}
@@ -678,6 +1392,10 @@ public abstract class BaseTaxCategoryResourceTestCase {
 	protected java.lang.reflect.Field[] getDeclaredFields(Class clazz)
 		throws Exception {
 
+		if (clazz.getClassLoader() == null) {
+			return new java.lang.reflect.Field[0];
+		}
+
 		return TransformUtil.transform(
 			ReflectionUtil.getDeclaredFields(clazz),
 			field -> {
@@ -749,6 +1467,52 @@ public abstract class BaseTaxCategoryResourceTestCase {
 				"Invalid entity field " + entityFieldName);
 		}
 
+		if (entityFieldName.equals("externalReferenceCode")) {
+			Object object = taxCategory.getExternalReferenceCode();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
+
+			return sb.toString();
+		}
+
 		if (entityFieldName.equals("groupId")) {
 			throw new IllegalArgumentException(
 				"Invalid entity field " + entityFieldName);
@@ -777,8 +1541,11 @@ public abstract class BaseTaxCategoryResourceTestCase {
 			).toString(),
 			"application/json");
 		httpInvoker.httpMethod(HttpInvoker.HttpMethod.POST);
-		httpInvoker.path("http://localhost:8080/o/graphql");
-		httpInvoker.userNameAndPassword("test@liferay.com:test");
+		httpInvoker.path(
+			"http://localhost:" + PortalUtil.getPortalServerPort(false) +
+				"/o/graphql");
+		httpInvoker.userNameAndPassword(
+			"test@liferay.com:" + PropsValues.DEFAULT_ADMIN_PASSWORD);
 
 		HttpInvoker.HttpResponse httpResponse = httpInvoker.invoke();
 
@@ -808,6 +1575,8 @@ public abstract class BaseTaxCategoryResourceTestCase {
 	protected TaxCategory randomTaxCategory() throws Exception {
 		return new TaxCategory() {
 			{
+				externalReferenceCode = StringUtil.toLowerCase(
+					RandomTestUtil.randomString());
 				groupId = RandomTestUtil.randomLong();
 				id = RandomTestUtil.randomLong();
 			}
@@ -825,21 +1594,21 @@ public abstract class BaseTaxCategoryResourceTestCase {
 	}
 
 	protected TaxCategoryResource taxCategoryResource;
-	protected Group irrelevantGroup;
-	protected Company testCompany;
-	protected Group testGroup;
+	protected com.liferay.portal.kernel.model.Group irrelevantGroup;
+	protected com.liferay.portal.kernel.model.Company testCompany;
+	protected com.liferay.portal.kernel.model.Group testGroup;
 
 	protected static class BeanTestUtil {
 
 		public static void copyProperties(Object source, Object target)
 			throws Exception {
 
-			Class<?> sourceClass = _getSuperClass(source.getClass());
+			Class<?> sourceClass = source.getClass();
 
 			Class<?> targetClass = target.getClass();
 
 			for (java.lang.reflect.Field field :
-					sourceClass.getDeclaredFields()) {
+					_getAllDeclaredFields(sourceClass)) {
 
 				if (field.isSynthetic()) {
 					continue;
@@ -848,11 +1617,16 @@ public abstract class BaseTaxCategoryResourceTestCase {
 				Method getMethod = _getMethod(
 					sourceClass, field.getName(), "get");
 
-				Method setMethod = _getMethod(
-					targetClass, field.getName(), "set",
-					getMethod.getReturnType());
+				try {
+					Method setMethod = _getMethod(
+						targetClass, field.getName(), "set",
+						getMethod.getReturnType());
 
-				setMethod.invoke(target, getMethod.invoke(source));
+					setMethod.invoke(target, getMethod.invoke(source));
+				}
+				catch (Exception e) {
+					continue;
+				}
 			}
 		}
 
@@ -884,6 +1658,24 @@ public abstract class BaseTaxCategoryResourceTestCase {
 			setMethod.invoke(bean, _translateValue(parameterTypes[0], value));
 		}
 
+		private static List<java.lang.reflect.Field> _getAllDeclaredFields(
+			Class<?> clazz) {
+
+			List<java.lang.reflect.Field> fields = new ArrayList<>();
+
+			while ((clazz != null) && (clazz != Object.class)) {
+				for (java.lang.reflect.Field field :
+						clazz.getDeclaredFields()) {
+
+					fields.add(field);
+				}
+
+				clazz = clazz.getSuperclass();
+			}
+
+			return fields;
+		}
+
 		private static Method _getMethod(Class<?> clazz, String name) {
 			for (Method method : clazz.getMethods()) {
 				if (name.equals(method.getName()) &&
@@ -905,16 +1697,6 @@ public abstract class BaseTaxCategoryResourceTestCase {
 			return clazz.getMethod(
 				prefix + StringUtil.upperCaseFirstLetter(fieldName),
 				parameterTypes);
-		}
-
-		private static Class<?> _getSuperClass(Class<?> clazz) {
-			Class<?> superClass = clazz.getSuperclass();
-
-			if ((superClass == null) || (superClass == Object.class)) {
-				return clazz;
-			}
-
-			return superClass;
 		}
 
 		private static Object _translateValue(
@@ -1012,10 +1794,35 @@ public abstract class BaseTaxCategoryResourceTestCase {
 	private static final com.liferay.portal.kernel.log.Log _log =
 		LogFactoryUtil.getLog(BaseTaxCategoryResourceTestCase.class);
 
-	private static DateFormat _dateFormat;
+	private static Format _format;
+
+	private com.liferay.portal.kernel.model.User _testCompanyAdminUser;
 
 	@Inject
 	private com.liferay.headless.commerce.admin.channel.resource.v1_0.
 		TaxCategoryResource _taxCategoryResource;
 
+	@Inject
+	private GroupLocalService _groupLocalService;
+
+	@Inject
+	private ResourceActionLocalService _resourceActionLocalService;
+
+	@Inject
+	private ResourcePermissionLocalService _resourcePermissionLocalService;
+
+	@Inject
+	private RoleLocalService _roleLocalService;
+
+	@Inject
+	private ScopeChecker _scopeChecker;
+
+	@Inject
+	private UserLocalService _userLocalService;
+
+	@Inject
+	private VulcanCRUDItemDelegateBuilderRegistry
+		_vulcanCRUDItemDelegateBuilderRegistry;
+
 }
+// LIFERAY-REST-BUILDER-HASH:1108093500

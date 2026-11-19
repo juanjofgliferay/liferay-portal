@@ -268,8 +268,10 @@ definition {
 	}
 
 	@summary = "Default summary"
-	macro openRolesAdmin() {
-		Navigator.openWithAppendToBaseURL(urlAppend = "group/control_panel/manage?p_p_id=com_liferay_roles_admin_web_portlet_RolesAdminPortlet");
+	macro openRolesAdmin(baseURL = null) {
+		Navigator.openWithAppendToBaseURL(
+			baseURL = ${baseURL},
+			urlAppend = "group/control_panel/manage?p_p_id=com_liferay_roles_admin_web_portlet_RolesAdminPortlet");
 	}
 
 	@summary = "Default summary"
@@ -282,7 +284,9 @@ definition {
 
 		LexiconEntry.selectEntry(key_rowEntry = ${assigneeName});
 
-		ClickNoError(locator1 = "Icon#DELETE");
+		ClickNoError(
+			key_text = "times-circle",
+			locator1 = "ManagementBar#ANY_ICON");
 	}
 
 	@summary = "Default summary"
@@ -297,12 +301,8 @@ definition {
 
 		SelectFrame(locator1 = "IFrame#MODAL_BODY");
 
-		if ((IsElementNotPresent(key_tableEntry = ${roleTitle}, locator1 = "LexiconTable#TABLE_ENTRY_EXACT_MATCH")) && (IsEditable(locator1 = "Pagination#NEXT_LINK"))) {
-			Type.typeKeys(
-				locator1 = "//body",
-				value1 = "keys=CONTROL,END");
-
-			Pagination.changePaginationViaKeyboard(itemsPerPage = 60);
+		if (IsElementNotPresent(key_tableEntry = ${roleTitle}, locator1 = "LexiconTable#TABLE_ENTRY_EXACT_MATCH")) {
+			Search.searchCP(searchTerm = ${roleTitle});
 		}
 
 		ScrollWebElementIntoView(locator1 = "Permissions#${permissionDefinitionKey}");
@@ -348,7 +348,7 @@ definition {
 
 	@summary = "Default summary"
 	macro viewCP(toolTip = null, roleType = null, roleDescription = null) {
-		if (contains("Asset Library,Organization,Site", ${roleType})) {
+		if (contains("Organization,Site,Space", ${roleType})) {
 			Navigator.gotoNavItem(navItem = "${roleType} Roles");
 		}
 		else {

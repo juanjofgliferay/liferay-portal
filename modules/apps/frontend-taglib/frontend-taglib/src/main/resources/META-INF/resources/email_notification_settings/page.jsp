@@ -42,24 +42,50 @@ String fieldPrefixSeparator = (String)request.getAttribute("liferay-frontend:ema
 	<aui:field-wrapper helpMessage='<%= (String)request.getAttribute("liferay-frontend:email-notification-settings:helpMessage") %>' label='<%= (String)request.getAttribute("liferay-frontend:email-notification-settings:bodyLabel") %>'>
 		<c:choose>
 			<c:when test="<%= Validator.isNotNull(emailBody) && Validator.isXml(emailBody) %>">
-				<liferay-ui:input-localized
-					editorName='<%= PropsUtil.get("editor.wysiwyg.portal-web.docroot.html.taglib.ui.email_notification_settings.jsp") %>'
-					fieldPrefix="<%= fieldPrefix %>"
-					fieldPrefixSeparator="<%= fieldPrefixSeparator %>"
-					name='<%= emailParam + "Body" %>'
-					toolbarSet="email"
-					type="editor"
-					xml="<%= emailBody %>"
-				/>
+				<c:choose>
+					<c:when test='<%= !FeatureFlagManagerUtil.isEnabled("LPD-11235") %>'>
+						<liferay-editor:input-localized
+							defaultLanguageId="<%= themeDisplay.getLanguageId() %>"
+							fieldPrefix="<%= fieldPrefix %>"
+							fieldPrefixSeparator="<%= fieldPrefixSeparator %>"
+							name='<%= emailParam + "Body" %>'
+							xml="<%= emailBody %>"
+						/>
+					</c:when>
+					<c:otherwise>
+						<liferay-ui:input-localized
+							editorName='<%= PropsUtil.get("editor.wysiwyg.portal-web.docroot.html.taglib.ui.email_notification_settings.jsp") %>'
+							fieldPrefix="<%= fieldPrefix %>"
+							fieldPrefixSeparator="<%= fieldPrefixSeparator %>"
+							name='<%= emailParam + "Body" %>'
+							toolbarSet="email"
+							type="editor"
+							xml="<%= emailBody %>"
+						/>
+					</c:otherwise>
+				</c:choose>
 			</c:when>
 			<c:otherwise>
-				<liferay-editor:editor
-					contents="<%= emailBody %>"
-					editorName='<%= PropsUtil.get("editor.wysiwyg.portal-web.docroot.html.taglib.ui.email_notification_settings.jsp") %>'
-					name="<%= emailParam %>"
-				/>
+				<c:choose>
+					<c:when test='<%= !FeatureFlagManagerUtil.isEnabled("LPD-11235") %>'>
+						<liferay-editor:editor
+							contents="<%= emailBody %>"
+							editorName="ckeditor5_classic"
+							formInputEnabled="<%= true %>"
+							formInputName='<%= fieldPrefix + fieldPrefixSeparator + emailParam + "Body" + fieldPrefixSeparator %>'
+							name="<%= emailParam %>"
+						/>
+					</c:when>
+					<c:otherwise>
+						<liferay-editor:editor
+							contents="<%= emailBody %>"
+							editorName='<%= PropsUtil.get("editor.wysiwyg.portal-web.docroot.html.taglib.ui.email_notification_settings.jsp") %>'
+							name="<%= emailParam %>"
+						/>
 
-				<aui:input name='<%= fieldPrefix + fieldPrefixSeparator + emailParam + "Body" + fieldPrefixSeparator %>' type="hidden" />
+						<aui:input name='<%= fieldPrefix + fieldPrefixSeparator + emailParam + "Body" + fieldPrefixSeparator %>' type="hidden" />
+					</c:otherwise>
+				</c:choose>
 			</c:otherwise>
 		</c:choose>
 	</aui:field-wrapper>

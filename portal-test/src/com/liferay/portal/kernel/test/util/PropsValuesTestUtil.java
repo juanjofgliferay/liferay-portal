@@ -8,8 +8,8 @@ package com.liferay.portal.kernel.test.util;
 import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
-import com.liferay.portal.util.PropsUtil;
-import com.liferay.portal.util.PropsValues;
+import com.liferay.portal.kernel.util.PropsUtil;
+import com.liferay.portal.kernel.util.PropsValues;
 
 /**
  * @author Shuyang Zhou
@@ -19,6 +19,12 @@ public class PropsValuesTestUtil {
 	public static SafeCloseable swapWithSafeCloseable(
 		String propsKeysFieldName, Object value) {
 
+		return swapWithSafeCloseable(propsKeysFieldName, value, true);
+	}
+
+	public static SafeCloseable swapWithSafeCloseable(
+		String propsKeysFieldName, Object value, boolean updateField) {
+
 		String propsKeysName = ReflectionTestUtil.getFieldValue(
 			PropsKeys.class, propsKeysFieldName);
 
@@ -26,14 +32,23 @@ public class PropsValuesTestUtil {
 
 		PropsUtil.set(propsKeysName, String.valueOf(value));
 
-		Object originalValue = ReflectionTestUtil.getAndSetFieldValue(
-			PropsValues.class, propsKeysFieldName, value);
+		Object originalValue;
+
+		if (updateField) {
+			originalValue = ReflectionTestUtil.getAndSetFieldValue(
+				PropsValues.class, propsKeysFieldName, value);
+		}
+		else {
+			originalValue = null;
+		}
 
 		return () -> {
 			PropsUtil.set(propsKeysName, originalPropsValue);
 
-			ReflectionTestUtil.setFieldValue(
-				PropsValues.class, propsKeysFieldName, originalValue);
+			if (updateField) {
+				ReflectionTestUtil.setFieldValue(
+					PropsValues.class, propsKeysFieldName, originalValue);
+			}
 		};
 	}
 

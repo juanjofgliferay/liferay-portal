@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -308,10 +309,6 @@ public class CalendarResourceLocalServiceUtil {
 		return getService().getCalendarResources(start, end);
 	}
 
-	public static List<CalendarResource> getCalendarResources(long groupId) {
-		return getService().getCalendarResources(groupId);
-	}
-
 	/**
 	 * Returns all the calendar resources matching the UUID and company.
 	 *
@@ -386,17 +383,6 @@ public class CalendarResourceLocalServiceUtil {
 		return getService().getPersistedModel(primaryKeyObj);
 	}
 
-	public static List<CalendarResource> search(
-		long companyId, long[] groupIds, long[] classNameIds, String code,
-		String name, String description, boolean active, boolean andOperator,
-		int start, int end,
-		OrderByComparator<CalendarResource> orderByComparator) {
-
-		return getService().search(
-			companyId, groupIds, classNameIds, code, name, description, active,
-			andOperator, start, end, orderByComparator);
-	}
-
 	public static List<CalendarResource> searchByKeywords(
 		long companyId, long[] groupIds, long[] classNameIds, String keywords,
 		boolean active, boolean andOperator, int start, int end,
@@ -413,15 +399,6 @@ public class CalendarResourceLocalServiceUtil {
 
 		return getService().searchCount(
 			companyId, groupIds, classNameIds, keywords, active);
-	}
-
-	public static int searchCount(
-		long companyId, long[] groupIds, long[] classNameIds, String code,
-		String name, String description, boolean active, boolean andOperator) {
-
-		return getService().searchCount(
-			companyId, groupIds, classNameIds, code, name, description, active,
-			andOperator);
 	}
 
 	public static void updateAsset(
@@ -462,13 +439,13 @@ public class CalendarResourceLocalServiceUtil {
 	}
 
 	public static CalendarResourceLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(CalendarResourceLocalService service) {
-		_service = service;
-	}
-
-	private static volatile CalendarResourceLocalService _service;
+	private static final Snapshot<CalendarResourceLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			CalendarResourceLocalServiceUtil.class,
+			CalendarResourceLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1768988909

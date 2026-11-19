@@ -79,7 +79,8 @@ public class AssetCategoryModelImpl
 		{"modifiedDate", Types.TIMESTAMP}, {"parentCategoryId", Types.BIGINT},
 		{"treePath", Types.VARCHAR}, {"name", Types.VARCHAR},
 		{"title", Types.CLOB}, {"description", Types.CLOB},
-		{"vocabularyId", Types.BIGINT}, {"lastPublishDate", Types.TIMESTAMP}
+		{"vocabularyId", Types.BIGINT}, {"system_", Types.BOOLEAN},
+		{"lastPublishDate", Types.TIMESTAMP}, {"status", Types.INTEGER}
 	};
 
 	public static final Map<String, Integer> TABLE_COLUMNS_MAP =
@@ -103,19 +104,28 @@ public class AssetCategoryModelImpl
 		TABLE_COLUMNS_MAP.put("title", Types.CLOB);
 		TABLE_COLUMNS_MAP.put("description", Types.CLOB);
 		TABLE_COLUMNS_MAP.put("vocabularyId", Types.BIGINT);
+		TABLE_COLUMNS_MAP.put("system_", Types.BOOLEAN);
 		TABLE_COLUMNS_MAP.put("lastPublishDate", Types.TIMESTAMP);
+		TABLE_COLUMNS_MAP.put("status", Types.INTEGER);
 	}
 
 	public static final String TABLE_SQL_CREATE =
-		"create table AssetCategory (mvccVersion LONG default 0 not null,ctCollectionId LONG default 0 not null,uuid_ VARCHAR(75) null,externalReferenceCode VARCHAR(75) null,categoryId LONG not null,groupId LONG,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,parentCategoryId LONG,treePath STRING null,name VARCHAR(255) null,title TEXT null,description TEXT null,vocabularyId LONG,lastPublishDate DATE null,primary key (categoryId, ctCollectionId))";
+		"create table AssetCategory (mvccVersion LONG default 0 not null,ctCollectionId LONG default 0 not null,uuid_ VARCHAR(75) null,externalReferenceCode VARCHAR(75) null,categoryId LONG not null,groupId LONG,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,parentCategoryId LONG,treePath STRING null,name VARCHAR(255) null,title TEXT null,description TEXT null,vocabularyId LONG,system_ BOOLEAN,lastPublishDate DATE null,status INTEGER,primary key (categoryId, ctCollectionId))";
 
 	public static final String TABLE_SQL_DROP = "drop table AssetCategory";
+
+	public static final String ENTITY_ALIAS = "assetCategory";
+
+	public static final String FILTER_PK_COLUMN_NAME = "categoryId";
 
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY assetCategory.name ASC";
 
 	public static final String ORDER_BY_SQL =
 		" ORDER BY AssetCategory.name ASC";
+
+	public static final String ORDER_BY_SQL_INLINE_DISTINCT =
+		" ORDER BY assetCategory.name ASC";
 
 	public static final String DATA_SOURCE = "liferayDataSource";
 
@@ -190,7 +200,7 @@ public class AssetCategoryModelImpl
 	public static final long VOCABULARYID_COLUMN_BITMASK = 128L;
 
 	public static final long LOCK_EXPIRATION_TIME = GetterUtil.getLong(
-		com.liferay.portal.util.PropsUtil.get(
+		com.liferay.portal.kernel.util.PropsUtil.get(
 			"lock.expiration.time.com.liferay.asset.kernel.model.AssetCategory"));
 
 	public AssetCategoryModelImpl() {
@@ -319,8 +329,10 @@ public class AssetCategoryModelImpl
 				"description", AssetCategory::getDescription);
 			attributeGetterFunctions.put(
 				"vocabularyId", AssetCategory::getVocabularyId);
+			attributeGetterFunctions.put("system", AssetCategory::getSystem);
 			attributeGetterFunctions.put(
 				"lastPublishDate", AssetCategory::getLastPublishDate);
+			attributeGetterFunctions.put("status", AssetCategory::getStatus);
 
 			_attributeGetterFunctions = Collections.unmodifiableMap(
 				attributeGetterFunctions);
@@ -396,9 +408,15 @@ public class AssetCategoryModelImpl
 				(BiConsumer<AssetCategory, Long>)
 					AssetCategory::setVocabularyId);
 			attributeSetterBiConsumers.put(
+				"system",
+				(BiConsumer<AssetCategory, Boolean>)AssetCategory::setSystem);
+			attributeSetterBiConsumers.put(
 				"lastPublishDate",
 				(BiConsumer<AssetCategory, Date>)
 					AssetCategory::setLastPublishDate);
+			attributeSetterBiConsumers.put(
+				"status",
+				(BiConsumer<AssetCategory, Integer>)AssetCategory::setStatus);
 
 			_attributeSetterBiConsumers = Collections.unmodifiableMap(
 				(Map)attributeSetterBiConsumers);
@@ -976,6 +994,27 @@ public class AssetCategoryModelImpl
 
 	@JSON
 	@Override
+	public boolean getSystem() {
+		return _system;
+	}
+
+	@JSON
+	@Override
+	public boolean isSystem() {
+		return _system;
+	}
+
+	@Override
+	public void setSystem(boolean system) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_system = system;
+	}
+
+	@JSON
+	@Override
 	public Date getLastPublishDate() {
 		return _lastPublishDate;
 	}
@@ -987,6 +1026,21 @@ public class AssetCategoryModelImpl
 		}
 
 		_lastPublishDate = lastPublishDate;
+	}
+
+	@JSON
+	@Override
+	public int getStatus() {
+		return _status;
+	}
+
+	@Override
+	public void setStatus(int status) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_status = status;
 	}
 
 	@Override
@@ -1156,7 +1210,9 @@ public class AssetCategoryModelImpl
 		assetCategoryImpl.setTitle(getTitle());
 		assetCategoryImpl.setDescription(getDescription());
 		assetCategoryImpl.setVocabularyId(getVocabularyId());
+		assetCategoryImpl.setSystem(isSystem());
 		assetCategoryImpl.setLastPublishDate(getLastPublishDate());
+		assetCategoryImpl.setStatus(getStatus());
 
 		assetCategoryImpl.resetOriginalValues();
 
@@ -1199,8 +1255,12 @@ public class AssetCategoryModelImpl
 			this.<String>getColumnOriginalValue("description"));
 		assetCategoryImpl.setVocabularyId(
 			this.<Long>getColumnOriginalValue("vocabularyId"));
+		assetCategoryImpl.setSystem(
+			this.<Boolean>getColumnOriginalValue("system_"));
 		assetCategoryImpl.setLastPublishDate(
 			this.<Date>getColumnOriginalValue("lastPublishDate"));
+		assetCategoryImpl.setStatus(
+			this.<Integer>getColumnOriginalValue("status"));
 
 		return assetCategoryImpl;
 	}
@@ -1371,6 +1431,8 @@ public class AssetCategoryModelImpl
 
 		assetCategoryCacheModel.vocabularyId = getVocabularyId();
 
+		assetCategoryCacheModel.system = isSystem();
+
 		Date lastPublishDate = getLastPublishDate();
 
 		if (lastPublishDate != null) {
@@ -1379,6 +1441,8 @@ public class AssetCategoryModelImpl
 		else {
 			assetCategoryCacheModel.lastPublishDate = Long.MIN_VALUE;
 		}
+
+		assetCategoryCacheModel.status = getStatus();
 
 		return assetCategoryCacheModel;
 	}
@@ -1461,7 +1525,9 @@ public class AssetCategoryModelImpl
 	private String _description;
 	private String _descriptionCurrentLanguageId;
 	private long _vocabularyId;
+	private boolean _system;
 	private Date _lastPublishDate;
+	private int _status;
 
 	public <T> T getColumnValue(String columnName) {
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
@@ -1511,7 +1577,9 @@ public class AssetCategoryModelImpl
 		_columnOriginalValues.put("title", _title);
 		_columnOriginalValues.put("description", _description);
 		_columnOriginalValues.put("vocabularyId", _vocabularyId);
+		_columnOriginalValues.put("system_", _system);
 		_columnOriginalValues.put("lastPublishDate", _lastPublishDate);
+		_columnOriginalValues.put("status", _status);
 	}
 
 	private static final Map<String, String> _attributeNames;
@@ -1520,6 +1588,7 @@ public class AssetCategoryModelImpl
 		Map<String, String> attributeNames = new HashMap<>();
 
 		attributeNames.put("uuid_", "uuid");
+		attributeNames.put("system_", "system");
 
 		_attributeNames = Collections.unmodifiableMap(attributeNames);
 	}
@@ -1569,7 +1638,11 @@ public class AssetCategoryModelImpl
 
 		columnBitmasks.put("vocabularyId", 65536L);
 
-		columnBitmasks.put("lastPublishDate", 131072L);
+		columnBitmasks.put("system_", 131072L);
+
+		columnBitmasks.put("lastPublishDate", 262144L);
+
+		columnBitmasks.put("status", 524288L);
 
 		_columnBitmasks = Collections.unmodifiableMap(columnBitmasks);
 	}
@@ -1578,3 +1651,4 @@ public class AssetCategoryModelImpl
 	private AssetCategory _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1057895887

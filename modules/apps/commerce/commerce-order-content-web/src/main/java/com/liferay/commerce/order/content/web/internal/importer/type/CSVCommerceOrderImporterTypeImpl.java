@@ -18,12 +18,12 @@ import com.liferay.commerce.order.importer.type.CommerceOrderImporterType;
 import com.liferay.commerce.price.CommerceOrderPriceCalculation;
 import com.liferay.commerce.product.availability.CPAvailabilityChecker;
 import com.liferay.commerce.product.constants.CommerceChannelConstants;
+import com.liferay.commerce.product.helper.CPInstanceHelper;
 import com.liferay.commerce.product.model.CPDefinition;
 import com.liferay.commerce.product.model.CPInstance;
 import com.liferay.commerce.product.model.CommerceChannel;
 import com.liferay.commerce.product.service.CPInstanceLocalService;
 import com.liferay.commerce.product.service.CommerceChannelLocalService;
-import com.liferay.commerce.product.util.CPInstanceHelper;
 import com.liferay.commerce.service.CommerceOrderItemService;
 import com.liferay.commerce.service.CommerceOrderService;
 import com.liferay.document.library.kernel.service.DLAppLocalService;
@@ -48,6 +48,9 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.ResourceBundleUtil;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 
 import java.math.BigDecimal;
@@ -60,9 +63,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.ResourceBundle;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
@@ -121,8 +121,9 @@ public class CSVCommerceOrderImporterTypeImpl
 				commerceOrder.getGroupId());
 
 		_commerceOrderImporterItemImpls = _getCommerceOrderImporterItemImpls(
-			commerceOrder.getCompanyId(), commerceChannel.getGroupId(),
-			(FileEntry)object);
+			commerceOrder.getCompanyId(), commerceOrder.getCommerceAccountId(),
+			commerceChannel.getGroupId(),
+			commerceOrder.getCommerceOrderTypeId(), (FileEntry)object);
 
 		int start = 0;
 		int end = _commerceOrderImporterItemImpls.length;
@@ -173,10 +174,6 @@ public class CSVCommerceOrderImporterTypeImpl
 	@Override
 	public boolean isActive(CommerceOrder commerceOrder)
 		throws PortalException {
-
-		if (!_commerceOrderImporterTypeConfiguration.enabled()) {
-			return false;
-		}
 
 		CommerceChannel commerceChannel =
 			_commerceChannelLocalService.getCommerceChannelByOrderGroupId(
@@ -229,19 +226,6 @@ public class CSVCommerceOrderImporterTypeImpl
 				CommerceOrderImporterTypeConfiguration.class, properties);
 	}
 
-	private CommerceOrderImporterItemImpl[] _getCommerceOrderImporterItemImpls(
-			long companyId, long commerceChannelGroupId, FileEntry fileEntry)
-		throws Exception {
-
-		CSVParser csvParser = _getCSVParser(fileEntry);
-
-		return TransformUtil.transformToArray(
-			csvParser.getRecords(),
-			csvRecord -> _toCommerceOrderImporterItemImpl(
-				companyId, commerceChannelGroupId, csvRecord),
-			CommerceOrderImporterItemImpl.class);
-	}
-
 	private CSVParser _getCSVParser(FileEntry fileEntry) throws Exception {
 		CSVFormat csvFormat = CommerceOrderImporterTypeUtil.getCSVFormat(
 			_commerceOrderImporterTypeConfiguration);
@@ -260,8 +244,24 @@ public class CSVCommerceOrderImporterTypeImpl
 		}
 	}
 
+	private CommerceOrderImporterItemImpl[] _getCommerceOrderImporterItemImpls(
+			long companyId, long accountEntryId, long commerceChannelGroupId,
+			long commerceOrderTypeId, FileEntry fileEntry)
+		throws Exception {
+
+		CSVParser csvParser = _getCSVParser(fileEntry);
+
+		return TransformUtil.transformToArray(
+			csvParser.getRecords(),
+			csvRecord -> _toCommerceOrderImporterItemImpl(
+				companyId, accountEntryId, commerceChannelGroupId,
+				commerceOrderTypeId, csvRecord),
+			CommerceOrderImporterItemImpl.class);
+	}
+
 	private CommerceOrderImporterItemImpl _toCommerceOrderImporterItemImpl(
-			long companyId, long commerceChannelGroupId, CSVRecord csvRecord)
+			long companyId, long accountEntryId, long commerceChannelGroupId,
+			long commerceOrderTypeId, CSVRecord csvRecord)
 		throws Exception {
 
 		String sku = GetterUtil.getString(csvRecord.get("sku"));
@@ -307,12 +307,13 @@ public class CSVCommerceOrderImporterTypeImpl
 		else {
 			CPInstance firstAvailableReplacementCPInstance =
 				_cpInstanceHelper.fetchFirstAvailableReplacementCPInstance(
-					commerceChannelGroupId, cpInstance.getCPInstanceId());
+					accountEntryId, commerceChannelGroupId, commerceOrderTypeId,
+					cpInstance.getCPInstanceId());
 
 			if ((firstAvailableReplacementCPInstance != null) &&
 				!_cpAvailabilityChecker.check(
-					commerceChannelGroupId, cpInstance, StringPool.BLANK,
-					quantity)) {
+					accountEntryId, commerceChannelGroupId, cpInstance,
+					StringPool.BLANK, quantity)) {
 
 				commerceOrderImporterItemImpl.setReplacingSKU(
 					cpInstance.getSku());

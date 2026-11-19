@@ -23,14 +23,14 @@ import com.liferay.social.kernel.model.SocialActivityInterpreter;
 import com.liferay.social.kernel.service.SocialActivityLocalServiceUtil;
 import com.liferay.trash.TrashHelper;
 
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -111,7 +111,7 @@ public abstract class BaseSocialActivityInterpreterTestCase {
 			for (ServiceReference<SocialActivityInterpreter> serviceReference :
 					bundleContext.getServiceReferences(
 						SocialActivityInterpreter.class,
-						"(javax.portlet.name=" + portletId + ")")) {
+						"(jakarta.portlet.name=" + portletId + ")")) {
 
 				SocialActivityInterpreter socialActivityInterpreter =
 					bundleContext.getService(serviceReference);
@@ -161,7 +161,7 @@ public abstract class BaseSocialActivityInterpreterTestCase {
 		return false;
 	}
 
-	protected boolean isSupportsRename(String className) {
+	protected boolean isSupportsRename() {
 		return true;
 	}
 
@@ -192,20 +192,22 @@ public abstract class BaseSocialActivityInterpreterTestCase {
 			getActivityInterpreter();
 
 		for (SocialActivity activity : activities) {
-			if (hasClassName(activityInterpreter, activity.getClassName()) &&
-				hasActivityType(activity.getType())) {
+			if (!hasClassName(activityInterpreter, activity.getClassName()) ||
+				!hasActivityType(activity.getType())) {
 
-				SocialActivityFeedEntry activityFeedEntry =
-					activityInterpreter.interpret(activity, serviceContext);
-
-				Assert.assertNotNull(activityFeedEntry);
-
-				String title = activityFeedEntry.getTitle();
-
-				Assert.assertFalse(
-					"Title contains parameters: " + title,
-					title.matches("\\{\\d\\}"));
+				continue;
 			}
+
+			SocialActivityFeedEntry activityFeedEntry =
+				activityInterpreter.interpret(activity, serviceContext);
+
+			Assert.assertNotNull(activityFeedEntry);
+
+			String title = activityFeedEntry.getTitle();
+
+			Assert.assertFalse(
+				"Title contains parameters: " + title,
+				title.matches("\\{\\d\\}"));
 		}
 	}
 
@@ -218,25 +220,27 @@ public abstract class BaseSocialActivityInterpreterTestCase {
 			getActivityInterpreter();
 
 		for (SocialActivity activity : activities) {
-			if (hasClassName(activityInterpreter, activity.getClassName()) &&
-				hasActivityType(activity.getType())) {
+			if (!hasClassName(activityInterpreter, activity.getClassName()) ||
+				!hasActivityType(activity.getType())) {
 
-				SocialActivityFeedEntry activityFeedEntry =
-					activityInterpreter.interpret(activity, serviceContext);
-
-				PortletURL portletURL = trashHelper.getViewContentURL(
-					serviceContext.getRequest(), activity.getClassName(),
-					activity.getClassPK());
-
-				if (Validator.isNull(activityFeedEntry.getLink()) &&
-					(portletURL == null)) {
-
-					continue;
-				}
-
-				Assert.assertEquals(
-					portletURL.toString(), activityFeedEntry.getLink());
+				continue;
 			}
+
+			SocialActivityFeedEntry activityFeedEntry =
+				activityInterpreter.interpret(activity, serviceContext);
+
+			PortletURL portletURL = trashHelper.getViewContentURL(
+				serviceContext.getRequest(), activity.getClassName(),
+				activity.getClassPK());
+
+			if (Validator.isNull(activityFeedEntry.getLink()) &&
+				(portletURL == null)) {
+
+				continue;
+			}
+
+			Assert.assertEquals(
+				portletURL.toString(), activityFeedEntry.getLink());
 		}
 	}
 
@@ -254,16 +258,18 @@ public abstract class BaseSocialActivityInterpreterTestCase {
 		Assert.assertFalse(activities.toString(), activities.isEmpty());
 
 		for (SocialActivity activity : activities) {
-			if (!originalActivitiesIds.contains(activity.getActivityId())) {
-				String title = activity.getExtraDataValue(
-					"title", serviceContext.getLocale());
-
-				if (isSupportsRename(activity.getClassName()) &&
-					Validator.isNotNull(title)) {
-
-					Assert.assertNotEquals(originalTitle, title);
-				}
+			if (originalActivitiesIds.contains(activity.getActivityId())) {
+				continue;
 			}
+
+			String title = activity.getExtraDataValue(
+				"title", serviceContext.getLocale());
+
+			if (!isSupportsRename() || Validator.isNull(title)) {
+				continue;
+			}
+
+			Assert.assertNotEquals(originalTitle, title);
 		}
 	}
 

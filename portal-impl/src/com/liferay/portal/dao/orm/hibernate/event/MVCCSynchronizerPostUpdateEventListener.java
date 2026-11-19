@@ -5,7 +5,11 @@
 
 package com.liferay.portal.dao.orm.hibernate.event;
 
+import com.liferay.petra.lang.SafeCloseable;
+import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.portal.kernel.cache.PortalCache;
+import com.liferay.portal.kernel.cache.transactional.TransactionalPortalCacheUtil;
+import com.liferay.portal.kernel.change.tracking.CTCollectionThreadLocal;
 import com.liferay.portal.kernel.dao.orm.EntityCacheUtil;
 import com.liferay.portal.kernel.model.BaseModel;
 import com.liferay.portal.kernel.model.MVCCModel;
@@ -31,46 +35,60 @@ public class MVCCSynchronizerPostUpdateEventListener
 		Object entity = postUpdateEvent.getEntity();
 
 		if (entity instanceof MVCCModel) {
-			if (entity instanceof CTModel) {
+			long ctCollectionId =
+				CTCollectionThreadLocal.CT_COLLECTION_ID_PRODUCTION;
+
+			if (entity instanceof CTModel<?>) {
 				CTModel<?> ctModel = (CTModel<?>)entity;
 
-				if (ctModel.getCtCollectionId() != 0) {
+				ctCollectionId = ctModel.getCtCollectionId();
+			}
+
+			try (SafeCloseable safeCloseable =
+					CTCollectionThreadLocal.setCTCollectionIdWithSafeCloseable(
+						ctCollectionId)) {
+
+				Class<?> modelClass = entity.getClass();
+
+				PortalCache<Serializable, Serializable> portalCache =
+					EntityCacheUtil.getPortalCache(modelClass);
+
+				if (portalCache == null) {
 					return;
 				}
-			}
 
-			MVCCModel mvccModel = (MVCCModel)entity;
+				MVCCModel mvccModel = (MVCCModel)entity;
 
-			long mvccVersion = mvccModel.getMvccVersion();
+				long mvccVersion = mvccModel.getMvccVersion();
 
-			Class<?> modelClass = entity.getClass();
+				BaseModel<?> baseModel = (BaseModel<?>)entity;
 
-			BaseModel<?> baseModel = (BaseModel<?>)entity;
+				Serializable primaryKeyObj = baseModel.getPrimaryKeyObj();
 
-			Serializable primaryKeyObj = baseModel.getPrimaryKeyObj();
+				boolean[] uncommittedBufferMissMarker = {false};
 
-			Serializable localCacheResult = EntityCacheUtil.getLocalCacheResult(
-				modelClass, primaryKeyObj);
+				Serializable entityCacheResult =
+					TransactionalPortalCacheUtil.get(
+						portalCache, primaryKeyObj,
+						uncommittedBufferMissMarker);
 
-			if (localCacheResult instanceof MVCCModel) {
-				MVCCModel localCacheMVCCModel = (MVCCModel)localCacheResult;
+				if ((entityCacheResult instanceof
+						MVCCModel entityCacheMVCCModel) &&
+					(mvccVersion > entityCacheMVCCModel.getMvccVersion())) {
 
-				localCacheMVCCModel.setMvccVersion(mvccVersion);
-			}
+					if (uncommittedBufferMissMarker[0]) {
+						entityCacheMVCCModel = ReflectionUtil.clone(
+							entityCacheMVCCModel);
 
-			PortalCache<Serializable, Serializable> portalCache =
-				EntityCacheUtil.getPortalCache(modelClass);
+						entityCacheMVCCModel.setMvccVersion(mvccVersion);
 
-			if (portalCache == null) {
-				return;
-			}
-
-			Serializable entityCacheResult = portalCache.get(primaryKeyObj);
-
-			if (entityCacheResult instanceof MVCCModel) {
-				MVCCModel entityCacheMVCCModel = (MVCCModel)entityCacheResult;
-
-				entityCacheMVCCModel.setMvccVersion(mvccVersion);
+						portalCache.put(
+							primaryKeyObj, (Serializable)entityCacheMVCCModel);
+					}
+					else {
+						entityCacheMVCCModel.setMvccVersion(mvccVersion);
+					}
+				}
 			}
 		}
 	}

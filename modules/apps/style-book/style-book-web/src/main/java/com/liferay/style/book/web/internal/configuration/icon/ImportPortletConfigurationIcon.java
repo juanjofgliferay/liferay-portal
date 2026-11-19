@@ -11,17 +11,16 @@ import com.liferay.portal.kernel.portlet.configuration.icon.PortletConfiguration
 import com.liferay.portal.kernel.security.permission.resource.PortletResourcePermission;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.HashMapBuilder;
-import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.style.book.constants.StyleBookActionKeys;
 import com.liferay.style.book.constants.StyleBookConstants;
 import com.liferay.style.book.constants.StyleBookPortletKeys;
 
+import jakarta.portlet.PortletRequest;
+
+import jakarta.servlet.ServletContext;
+
 import java.util.Map;
-
-import javax.portlet.PortletRequest;
-
-import javax.servlet.ServletContext;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -31,7 +30,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + StyleBookPortletKeys.STYLE_BOOK, "path=-",
+		"jakarta.portlet.name=" + StyleBookPortletKeys.STYLE_BOOK, "path=-",
 		"path=/style_books", "path=/style_books/style_books"
 	},
 	service = PortletConfigurationIcon.class
@@ -73,15 +72,9 @@ public class ImportPortletConfigurationIcon
 		ThemeDisplay themeDisplay = (ThemeDisplay)portletRequest.getAttribute(
 			WebKeys.THEME_DISPLAY);
 
-		if (_portletResourcePermission.contains(
-				themeDisplay.getPermissionChecker(),
-				themeDisplay.getScopeGroup(),
-				StyleBookActionKeys.MANAGE_STYLE_BOOK_ENTRIES)) {
-
-			return true;
-		}
-
-		return false;
+		return _portletResourcePermission.contains(
+			themeDisplay.getPermissionChecker(), themeDisplay.getScopeGroup(),
+			StyleBookActionKeys.MANAGE_STYLE_BOOK_ENTRIES);
 	}
 
 	@Override
@@ -91,9 +84,6 @@ public class ImportPortletConfigurationIcon
 
 	@Reference
 	private Language _language;
-
-	@Reference
-	private Portal _portal;
 
 	@Reference(
 		target = "(resource.name=" + StyleBookConstants.RESOURCE_NAME + ")"

@@ -117,6 +117,8 @@ public class MBMailingListModelImpl
 
 	public static final String TABLE_SQL_DROP = "drop table MBMailingList";
 
+	public static final String ENTITY_ALIAS = "mbMailingList";
+
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY mbMailingList.mailingListId ASC";
 
@@ -133,38 +135,32 @@ public class MBMailingListModelImpl
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long ACTIVE_COLUMN_BITMASK = 1L;
+	public static final long CATEGORYID_COLUMN_BITMASK = 1L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long CATEGORYID_COLUMN_BITMASK = 2L;
+	public static final long COMPANYID_COLUMN_BITMASK = 2L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long COMPANYID_COLUMN_BITMASK = 4L;
+	public static final long GROUPID_COLUMN_BITMASK = 4L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long GROUPID_COLUMN_BITMASK = 8L;
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
-	 */
-	@Deprecated
-	public static final long UUID_COLUMN_BITMASK = 16L;
+	public static final long UUID_COLUMN_BITMASK = 8L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
 	 *		#getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long MAILINGLISTID_COLUMN_BITMASK = 32L;
+	public static final long MAILINGLISTID_COLUMN_BITMASK = 16L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
@@ -986,16 +982,6 @@ public class MBMailingListModelImpl
 		_active = active;
 	}
 
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #getColumnOriginalValue(String)}
-	 */
-	@Deprecated
-	public boolean getOriginalActive() {
-		return GetterUtil.getBoolean(
-			this.<Boolean>getColumnOriginalValue("active_"));
-	}
-
 	@Override
 	public StagedModelType getStagedModelType() {
 		return new StagedModelType(
@@ -1601,3 +1587,4 @@ public class MBMailingListModelImpl
 	private MBMailingList _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1191932757

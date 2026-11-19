@@ -1,0 +1,33 @@
+/**
+ * SPDX-FileCopyrightText: (c) 2025 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
+ */
+
+package com.liferay.source.formatter.dependencies;
+
+import com.liferay.petra.string.StringBundler;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+
+/**
+ * @author Alan Huang
+ */
+public class MissingParameterizedSQLStatement {
+
+	protected ResultSet method(
+			Connection connection, String portletId, int ownerType)
+		throws Exception {
+
+		try (PreparedStatement preparedStatement = connection.prepareStatement(
+				StringBundler.concat(
+					"select companyId, preferences from PortletPreferences ",
+					"where portletId = '", portletId, "' AND ownerType = ",
+					ownerType))) {
+
+			return preparedStatement.executeQuery();
+		}
+	}
+
+}

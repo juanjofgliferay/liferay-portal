@@ -4,7 +4,7 @@ definition {
 	var userName = "Test Test";
 
 	@summary = "Default summary"
-	macro addCP(displayText = null, dmDocumentTitle = null, threadSubject = null, mbAttachmentFile = null, siteURLKey = null, fieldLabel = null, threadBody = null, vocabularyName = null, pageName = null, categoryName = null) {
+	macro addCP(threadSubject = null, mbAttachmentFile = null, siteURLKey = null, threadBody = null, vocabularyName = null, categoryName = null) {
 		if (isSet(siteURLKey)) {
 			MessageboardsThread.openToAddThread(siteURLKey = ${siteURLKey});
 		}
@@ -22,22 +22,13 @@ definition {
 			locator1 = "TextInput#SUBJECT",
 			value1 = ${threadSubject});
 
-		if (isSet(displayTextWithLink)) {
-			CKEditor.addTextWithLink(
-				displayText = ${displayText},
-				dmDocumentTitle = ${dmDocumentTitle},
-				fieldLabel = ${fieldLabel},
-				pageName = ${pageName});
-		}
-		else {
-			SelectFrame.selectFrameNoLoading(locator1 = "CKEditor#BODY_FIELD_IFRAME");
+		SelectFrame.selectFrameNoLoading(locator1 = "CKEditor#BODY_FIELD_IFRAME");
 
-			Type(
-				locator1 = "CKEditor#BODY",
-				value1 = ${threadBody});
+		Type(
+			locator1 = "CKEditor#BODY",
+			value1 = ${threadBody});
 
-			SelectFrame(value1 = "relative=top");
-		}
+		SelectFrame(value1 = "relative=top");
 
 		if (isSet(categoryName)) {
 			Panel.expandPanel(panel = "Categorization");
@@ -83,10 +74,11 @@ definition {
 		AssertElementPresent(locator1 = "Button#SELECT_FILES");
 
 		var key_attachmentFileName = ${mbThreadAttachment};
+		var dependencyFilePath = TestCase.getDependenciesDirPath(fileName = ${mbThreadAttachment});
 
-		UploadCommonFile.uploadCommonFileHiddenNoMouseOver(
+		UploadFile(
 			locator1 = "TextInput#FILE",
-			value1 = ${mbThreadAttachment});
+			value1 = ${dependencyFilePath});
 
 		if (${invalidSize} == "true") {
 			AssertTextEquals.assertPartialText(
@@ -1254,21 +1246,13 @@ definition {
 
 	@summary = "Default summary"
 	macro tearDownCP() {
-		Navigator.openURL();
 
-		ProductMenu.gotoPortlet(
-			category = "Content & Data",
-			portlet = "Message Boards");
+		// Delete through the JSON API rather than the Message Boards admin
+		// page. Driving the UI removed nothing whenever the navigation
+		// above did not land on that page, and reported success anyway,
+		// which is the normal state after a failed test. See LPD-106704.
 
-		if (IsElementPresent.isVisible(locator1 = "MessageBoards#THREAD_TABLE_ALL_CHECKBOX")) {
-			Check(locator1 = "MessageBoards#THREAD_TABLE_ALL_CHECKBOX");
-
-			AssertClick(
-				locator1 = "MessageBoardsAdmin#THREADS_RECYCLE_BIN_BUTTON",
-				value1 = "Delete");
-
-			VerifyElementPresent(locator1 = "Message#SUCCESS");
-		}
+		JSONMBMessage.deleteAllThreads(groupName = "Guest");
 
 		JSONRecycleBin.emptyRecycleBin();
 	}
@@ -2179,7 +2163,7 @@ definition {
 		LexiconEntry.gotoEntry(rowEntry = ${threadSubject});
 
 		AssertTextEquals(
-			locator1 = "Message#WORKFLOW_STATUS",
+			locator1 = "Message#RECYCLE_BIN_WORKFLOW_STATUS",
 			value1 = "In Recycle Bin");
 
 		AssertTextEquals(

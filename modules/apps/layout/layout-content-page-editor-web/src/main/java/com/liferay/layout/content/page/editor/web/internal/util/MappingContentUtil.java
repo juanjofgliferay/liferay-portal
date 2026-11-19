@@ -9,6 +9,10 @@ import com.liferay.info.field.InfoField;
 import com.liferay.info.field.InfoFieldSet;
 import com.liferay.info.field.InfoFieldSetEntry;
 import com.liferay.info.field.type.InfoFieldType;
+import com.liferay.info.field.type.MultiselectInfoFieldType;
+import com.liferay.info.field.type.OptionInfoFieldType;
+import com.liferay.info.field.type.PhoneNumberInfoFieldType;
+import com.liferay.info.field.type.SelectInfoFieldType;
 import com.liferay.info.form.InfoForm;
 import com.liferay.info.item.InfoItemServiceRegistry;
 import com.liferay.info.item.provider.InfoItemFormProvider;
@@ -17,9 +21,11 @@ import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
+import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 
+import java.util.Collection;
 import java.util.Locale;
 
 /**
@@ -38,26 +44,32 @@ public class MappingContentUtil {
 			itemClassName, locale);
 	}
 
-	public static JSONArray getMappingFieldsJSONArray(
-			String formVariationKey, long groupId,
-			InfoItemServiceRegistry infoItemServiceRegistry,
-			String itemClassName, Locale locale)
-		throws Exception {
-
-		return _getMappingFieldsJSONArray(
-			formVariationKey, groupId, false, infoItemServiceRegistry,
-			itemClassName, locale);
-	}
-
-	private static JSONObject _getInfoFieldJSONObject(
+	public static JSONObject getInfoFieldJSONObject(
 		InfoField<?> infoField, Locale locale) {
 
 		return JSONUtil.put(
+			"attributes", () -> _getAttributesJSONObject(infoField, locale)
+		).put(
+			"externalKey", infoField.getExternalUniqueId()
+		).put(
 			"key", infoField.getUniqueId()
 		).put(
-			"label", infoField.getLabel(locale)
+			"label",
+			() -> {
+				if (infoField.isMultivalued() || infoField.isRepeatable()) {
+					return LanguageUtil.format(
+						locale, "x-repeatable", infoField.getLabel(locale),
+						false);
+				}
+
+				return infoField.getLabel(locale);
+			}
+		).put(
+			"localizable", infoField.isLocalizable()
 		).put(
 			"name", infoField.getName()
+		).put(
+			"repeatable", infoField.isMultivalued() || infoField.isRepeatable()
 		).put(
 			"required", infoField.isRequired()
 		).put(
@@ -75,6 +87,89 @@ public class MappingContentUtil {
 				return infoFieldType.getLabel(locale);
 			}
 		);
+	}
+
+	public static JSONArray getMappingFieldsJSONArray(
+			String formVariationKey, long groupId,
+			InfoItemServiceRegistry infoItemServiceRegistry,
+			String itemClassName, Locale locale)
+		throws Exception {
+
+		return _getMappingFieldsJSONArray(
+			formVariationKey, groupId, false, infoItemServiceRegistry,
+			itemClassName, locale);
+	}
+
+	private static JSONObject _getAttributesJSONObject(
+		InfoField<?> infoField, Locale locale) {
+
+		InfoFieldType infoFieldType = infoField.getInfoFieldType();
+
+		if (infoFieldType instanceof PhoneNumberInfoFieldType) {
+			InfoField<PhoneNumberInfoFieldType> phoneNumberInfoField =
+				(InfoField<PhoneNumberInfoFieldType>)infoField;
+
+			return JSONUtil.put(
+				"country",
+				phoneNumberInfoField.getAttribute(
+					PhoneNumberInfoFieldType.COUNTRY)
+			).put(
+				"countrySource",
+				phoneNumberInfoField.getAttribute(
+					PhoneNumberInfoFieldType.COUNTRY_SOURCE)
+			);
+		}
+
+		JSONArray optionsJSONArray = _getOptionsJSONArray(infoField, locale);
+
+		if (optionsJSONArray == null) {
+			return null;
+		}
+
+		return JSONUtil.put("options", optionsJSONArray);
+	}
+
+	private static JSONObject _getInfoFieldSetJSONObject(
+		boolean includeEditableInfoFields, InfoFieldSet infoFieldSet,
+		Locale locale) {
+
+		JSONArray fieldSetFieldsJSONArray = JSONFactoryUtil.createJSONArray();
+
+		for (InfoFieldSetEntry infoFieldSetEntry :
+				infoFieldSet.getInfoFieldSetEntries()) {
+
+			if (infoFieldSetEntry instanceof InfoField) {
+				InfoField<?> infoField = (InfoField<?>)infoFieldSetEntry;
+
+				if (!includeEditableInfoFields || infoField.isEditable()) {
+					fieldSetFieldsJSONArray.put(
+						getInfoFieldJSONObject(infoField, locale));
+				}
+			}
+			else if (infoFieldSetEntry instanceof InfoFieldSet) {
+				JSONObject jsonObject = _getInfoFieldSetJSONObject(
+					includeEditableInfoFields, (InfoFieldSet)infoFieldSetEntry,
+					locale);
+
+				if (jsonObject != null) {
+					fieldSetFieldsJSONArray.put(jsonObject);
+				}
+			}
+		}
+
+		if (fieldSetFieldsJSONArray.length() > 0) {
+			return JSONUtil.put(
+				"fields", fieldSetFieldsJSONArray
+			).put(
+				"label", infoFieldSet.getLabel(locale)
+			).put(
+				"name", infoFieldSet.getName()
+			).put(
+				"relationship", infoFieldSet.isRelationship()
+			);
+		}
+
+		return null;
 	}
 
 	private static JSONArray _getMappingFieldsJSONArray(
@@ -118,34 +213,61 @@ public class MappingContentUtil {
 
 				if (!includeEditableInfoFields || infoField.isEditable()) {
 					defaultFieldSetFieldsJSONArray.put(
-						_getInfoFieldJSONObject(infoField, locale));
+						getInfoFieldJSONObject(infoField, locale));
 				}
 			}
 			else if (infoFieldSetEntry instanceof InfoFieldSet) {
-				JSONArray fieldSetFieldsJSONArray =
-					JSONFactoryUtil.createJSONArray();
+				JSONObject infoFieldSetJSONObject = _getInfoFieldSetJSONObject(
+					includeEditableInfoFields, (InfoFieldSet)infoFieldSetEntry,
+					locale);
 
-				InfoFieldSet infoFieldSet = (InfoFieldSet)infoFieldSetEntry;
-
-				for (InfoField<?> infoField : infoFieldSet.getAllInfoFields()) {
-					if (!includeEditableInfoFields || infoField.isEditable()) {
-						fieldSetFieldsJSONArray.put(
-							_getInfoFieldJSONObject(infoField, locale));
-					}
-				}
-
-				if (fieldSetFieldsJSONArray.length() > 0) {
-					fieldSetsJSONArray.put(
-						JSONUtil.put(
-							"fields", fieldSetFieldsJSONArray
-						).put(
-							"label", infoFieldSet.getLabel(locale)
-						));
+				if (infoFieldSetJSONObject != null) {
+					fieldSetsJSONArray.put(infoFieldSetJSONObject);
 				}
 			}
 		}
 
 		return fieldSetsJSONArray;
+	}
+
+	private static JSONArray _getOptionsJSONArray(
+		InfoField<?> infoField, Locale locale) {
+
+		InfoFieldType infoFieldType = infoField.getInfoFieldType();
+
+		Collection<OptionInfoFieldType> optionInfoFieldTypes = null;
+
+		if (infoFieldType instanceof MultiselectInfoFieldType) {
+			InfoField<MultiselectInfoFieldType> multiselectInfoField =
+				(InfoField<MultiselectInfoFieldType>)infoField;
+
+			optionInfoFieldTypes = multiselectInfoField.getAttribute(
+				MultiselectInfoFieldType.OPTIONS);
+		}
+		else if (infoFieldType instanceof SelectInfoFieldType) {
+			InfoField<SelectInfoFieldType> selectInfoField =
+				(InfoField<SelectInfoFieldType>)infoField;
+
+			optionInfoFieldTypes = selectInfoField.getAttribute(
+				SelectInfoFieldType.OPTIONS);
+		}
+
+		if (optionInfoFieldTypes == null) {
+			return null;
+		}
+
+		JSONArray optionsJSONArray = JSONFactoryUtil.createJSONArray();
+
+		for (OptionInfoFieldType optionInfoFieldType : optionInfoFieldTypes) {
+			optionsJSONArray.put(
+				JSONUtil.put(
+					"label", optionInfoFieldType.getLabel(locale)
+				).put(
+					"value", optionInfoFieldType.getValue()
+				));
+		}
+
+		return optionsJSONArray;
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(

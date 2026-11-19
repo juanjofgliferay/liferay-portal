@@ -40,18 +40,18 @@ import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.settings.GroupServiceSettingsLocator;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.FriendlyURLNormalizer;
+import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.HttpComponentsUtil;
-import com.liferay.portal.kernel.util.InheritableMap;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.List;
 import java.util.Map;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -80,10 +80,8 @@ public class AssetCategoryAssetDisplayPageFriendlyURLResolver
 
 		urlTitle = _friendlyURLNormalizer.normalizeWithEncoding(urlTitle);
 
-		FriendlyURLEntry friendlyURLEntry =
-			_friendlyURLEntryLocalService.fetchFriendlyURLEntry(
-				companyGroup.getGroupId(),
-				_portal.getClassNameId(AssetCategory.class), urlTitle);
+		FriendlyURLEntry friendlyURLEntry = _fetchAssetCategoryFriendlyURLEntry(
+			companyGroup.getGroupId(), urlTitle);
 
 		if (friendlyURLEntry == null) {
 			return null;
@@ -131,8 +129,7 @@ public class AssetCategoryAssetDisplayPageFriendlyURLResolver
 		}
 
 		return _getBasicLayoutURL(
-			groupId, privateLayout, mainPath, params, requestContext,
-			assetCategory);
+			groupId, privateLayout, mainPath, requestContext, assetCategory);
 	}
 
 	@Override
@@ -148,10 +145,8 @@ public class AssetCategoryAssetDisplayPageFriendlyURLResolver
 
 		String urlTitle = friendlyURL.substring(urlSeparator.length());
 
-		FriendlyURLEntry friendlyURLEntry =
-			_friendlyURLEntryLocalService.fetchFriendlyURLEntry(
-				companyGroup.getGroupId(),
-				_portal.getClassNameId(AssetCategory.class), urlTitle);
+		FriendlyURLEntry friendlyURLEntry = _fetchAssetCategoryFriendlyURLEntry(
+			companyGroup.getGroupId(), urlTitle);
 
 		if (friendlyURLEntry == null) {
 			return null;
@@ -198,6 +193,13 @@ public class AssetCategoryAssetDisplayPageFriendlyURLResolver
 	public String getURLSeparator() {
 		return _cpFriendlyURL.getAssetCategoryURLSeparator(
 			CompanyThreadLocal.getCompanyId());
+	}
+
+	private FriendlyURLEntry _fetchAssetCategoryFriendlyURLEntry(
+		long groupId, String urlTitle) {
+
+		return _friendlyURLEntryLocalService.fetchFriendlyURLEntry(
+			groupId, _portal.getClassNameId(AssetCategory.class), urlTitle);
 	}
 
 	private Layout _getAssetCategoryLayout(
@@ -258,8 +260,7 @@ public class AssetCategoryAssetDisplayPageFriendlyURLResolver
 
 	private String _getBasicLayoutURL(
 			long groupId, boolean privateLayout, String mainPath,
-			Map<String, String[]> params, Map<String, Object> requestContext,
-			AssetCategory assetCategory)
+			Map<String, Object> requestContext, AssetCategory assetCategory)
 		throws PortalException {
 
 		Layout layout = _getAssetCategoryLayout(
@@ -267,24 +268,20 @@ public class AssetCategoryAssetDisplayPageFriendlyURLResolver
 
 		String layoutActualURL = _portal.getLayoutActualURL(layout, mainPath);
 
-		InheritableMap<String, String[]> actualParams = new InheritableMap<>();
-
-		if (params != null) {
-			actualParams.setParentMap(params);
-		}
-
-		actualParams.put(
-			"p_p_id", new String[] {CPPortletKeys.CP_CATEGORY_CONTENT_WEB});
-		actualParams.put("p_p_lifecycle", new String[] {"0"});
-		actualParams.put("p_p_mode", new String[] {"view"});
-
 		HttpServletRequest httpServletRequest =
 			(HttpServletRequest)requestContext.get("request");
 
 		httpServletRequest.setAttribute(WebKeys.ASSET_CATEGORY, assetCategory);
 
 		String queryString = HttpComponentsUtil.parameterMapToString(
-			actualParams, false);
+			HashMapBuilder.put(
+				"p_p_id", new String[] {CPPortletKeys.CP_CATEGORY_CONTENT_WEB}
+			).put(
+				"p_p_lifecycle", new String[] {"0"}
+			).put(
+				"p_p_mode", new String[] {"view"}
+			).build(),
+			false);
 
 		if (layoutActualURL.contains(StringPool.QUESTION)) {
 			layoutActualURL =
@@ -322,6 +319,7 @@ public class AssetCategoryAssetDisplayPageFriendlyURLResolver
 		LayoutDisplayPageProvider<?> layoutDisplayPageProvider =
 			layoutDisplayPageProviderRegistry.
 				getLayoutDisplayPageProviderByClassName(
+					assetCategory.getCompanyId(),
 					AssetCategory.class.getName());
 
 		InfoItemReference infoItemReference = new InfoItemReference(

@@ -16,7 +16,8 @@ import org.osgi.annotation.versioning.ProviderType;
  * @author Iván Zaera
  */
 @ExtendedObjectClassDefinition(
-	category = "wiki", scope = ExtendedObjectClassDefinition.Scope.GROUP
+	category = "wiki", featureFlagKey = "LPD-35013",
+	scope = ExtendedObjectClassDefinition.Scope.GROUP
 )
 @Meta.OCD(
 	id = "com.liferay.wiki.configuration.WikiGroupServiceConfiguration",
@@ -77,6 +78,16 @@ public interface WikiGroupServiceConfiguration {
 		name = "email-page-updated-subject", required = false
 	)
 	public LocalizedValuesMap emailPageUpdatedSubject();
+
+	/**
+	 * Set this to <code>true</code> to enable the highlighting of links in
+	 * creole format to unexisting wiki pages.
+	 */
+	@Meta.AD(
+		deflt = "false", name = "enable-highlight-creole-format",
+		required = false
+	)
+	public boolean enableHighlightCreoleFormat();
 
 	@Meta.AD(deflt = "true", name = "enable-rss", required = false)
 	public boolean enableRss();
@@ -144,16 +155,6 @@ public interface WikiGroupServiceConfiguration {
 		name = "parsers-creole-supported-protocols", required = false
 	)
 	public String[] parsersCreoleSupportedProtocols();
-
-	/**
-	 * Set this to <code>true</code> to enable the highlighting of links in
-	 * creole format to unexisting wiki pages.
-	 */
-	@Meta.AD(
-		deflt = "false", name = "enable-highlight-creole-format",
-		required = false
-	)
-	public boolean enableHighlightCreoleFormat();
 
 	@Meta.AD(deflt = "200", name = "rss-abstract-length", required = false)
 	public int rssAbstractLength();

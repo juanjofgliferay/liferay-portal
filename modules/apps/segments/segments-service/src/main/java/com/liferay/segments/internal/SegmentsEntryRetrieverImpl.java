@@ -10,9 +10,12 @@ import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.User;
-import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.service.GroupLocalService;
+import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
 import com.liferay.portal.kernel.util.ArrayUtil;
+import com.liferay.portal.kernel.util.Constants;
+import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.SetUtil;
 import com.liferay.segments.SegmentsEntryRetriever;
@@ -20,7 +23,8 @@ import com.liferay.segments.configuration.provider.SegmentsConfigurationProvider
 import com.liferay.segments.constants.SegmentsEntryConstants;
 import com.liferay.segments.context.Context;
 import com.liferay.segments.provider.SegmentsEntryProviderRegistry;
-import com.liferay.segments.simulator.SegmentsEntrySimulator;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -33,7 +37,7 @@ public class SegmentsEntryRetrieverImpl implements SegmentsEntryRetriever {
 
 	@Override
 	public long[] getSegmentsEntryIds(
-		long groupId, long userId, Context context, long[] segmentEntryIds) {
+		long groupId, long userId, Context context) {
 
 		try {
 			if (!_segmentsConfigurationProvider.isSegmentationEnabled(
@@ -49,8 +53,7 @@ public class SegmentsEntryRetrieverImpl implements SegmentsEntryRetriever {
 		return ArrayUtil.toLongArray(
 			SetUtil.fromArray(
 				ArrayUtil.append(
-					_getSegmentEntryIds(
-						groupId, userId, context, segmentEntryIds),
+					_getSegmentEntryIds(groupId, userId, context),
 					SegmentsEntryConstants.ID_DEFAULT)));
 	}
 
@@ -69,21 +72,17 @@ public class SegmentsEntryRetrieverImpl implements SegmentsEntryRetriever {
 	}
 
 	private long[] _getSegmentEntryIds(
-		long groupId, long userId, Context context, long[] segmentEntryIds) {
+		long groupId, long userId, Context context) {
 
-		SegmentsEntrySimulator segmentsEntrySimulator =
-			_segmentsEntrySimulatorSnapshot.get();
+		long segmentsEntryId = _getSegmentsEntryId();
 
-		if ((segmentsEntrySimulator != null) &&
-			segmentsEntrySimulator.isSimulationActive(userId)) {
-
-			return segmentsEntrySimulator.getSimulatedSegmentsEntryIds(userId);
+		if (segmentsEntryId >= 0) {
+			return new long[] {segmentsEntryId};
 		}
 
 		try {
 			return _segmentsEntryProviderRegistry.getSegmentsEntryIds(
-				groupId, User.class.getName(), userId, context,
-				segmentEntryIds);
+				groupId, User.class.getName(), userId, context);
 		}
 		catch (PortalException portalException) {
 			if (_log.isWarnEnabled()) {
@@ -94,13 +93,32 @@ public class SegmentsEntryRetrieverImpl implements SegmentsEntryRetriever {
 		}
 	}
 
+	private long _getSegmentsEntryId() {
+		ServiceContext serviceContext =
+			ServiceContextThreadLocal.getServiceContext();
+
+		if (serviceContext == null) {
+			return -1;
+		}
+
+		HttpServletRequest httpServletRequest = serviceContext.getRequest();
+
+		if (httpServletRequest == null) {
+			return -1;
+		}
+
+		String layoutMode = ParamUtil.getString(
+			httpServletRequest, "p_l_mode", Constants.VIEW);
+
+		if (!layoutMode.equals(Constants.PREVIEW)) {
+			return -1;
+		}
+
+		return ParamUtil.getLong(httpServletRequest, "segmentsEntryId", -1);
+	}
+
 	private static final Log _log = LogFactoryUtil.getLog(
 		SegmentsEntryRetrieverImpl.class);
-
-	private static final Snapshot<SegmentsEntrySimulator>
-		_segmentsEntrySimulatorSnapshot = new Snapshot<>(
-			SegmentsEntryRetrieverImpl.class, SegmentsEntrySimulator.class,
-			"(model.class.name=com.liferay.portal.kernel.model.User)", true);
 
 	@Reference
 	private GroupLocalService _groupLocalService;

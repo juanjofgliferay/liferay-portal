@@ -1,0 +1,52 @@
+.card-title-rectangle {
+	background: $primaryLighten33;
+	border-radius: 4px;
+	flex: none;
+	height: 24px;
+	order: 0;
+	width: 203px;
+}
+
+.chart-bars {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+
+	.big-bar {
+		background: var(--cadmin-primary-l0);
+		border-radius: 4px;
+		height: 12px;
+		width: 95%;
+	}
+
+	.small-bar {
+		background: $primaryLighten33;
+		border-radius: 4px;
+		height: 24px;
+		width: 25%;
+	}
+}
+
+.donut-chart-item {
+	min-height: 150px;
+
+	.generic-pie-label {
+		fill: var(--cadmin-dark-l1);
+		font-size: 1.75rem;
+	}
+}
+
+.gradient-opaque {
+	mask-image: linear-gradient(
+		to bottom,
+		rgb(from var(--cadmin-black) r g b / 0.8) 0%,
+		rgb(from var(--cadmin-black) r g b / 0) 100%
+	);
+}
+
+.saas-banner {
+	background-image: url(../images/backgrounds/ac_banner.svg);
+	background-position: center;
+	background-repeat: no-repeat;
+	background-size: cover;
+}

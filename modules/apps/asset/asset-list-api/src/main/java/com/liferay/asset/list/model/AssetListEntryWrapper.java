@@ -39,6 +39,7 @@ public class AssetListEntryWrapper
 		attributes.put("mvccVersion", getMvccVersion());
 		attributes.put("ctCollectionId", getCtCollectionId());
 		attributes.put("uuid", getUuid());
+		attributes.put("externalReferenceCode", getExternalReferenceCode());
 		attributes.put("assetListEntryId", getAssetListEntryId());
 		attributes.put("groupId", getGroupId());
 		attributes.put("companyId", getCompanyId());
@@ -74,6 +75,13 @@ public class AssetListEntryWrapper
 
 		if (uuid != null) {
 			setUuid(uuid);
+		}
+
+		String externalReferenceCode = (String)attributes.get(
+			"externalReferenceCode");
+
+		if (externalReferenceCode != null) {
+			setExternalReferenceCode(externalReferenceCode);
 		}
 
 		Long assetListEntryId = (Long)attributes.get("assetListEntryId");
@@ -231,6 +239,16 @@ public class AssetListEntryWrapper
 	}
 
 	/**
+	 * Returns the external reference code of this asset list entry.
+	 *
+	 * @return the external reference code of this asset list entry
+	 */
+	@Override
+	public String getExternalReferenceCode() {
+		return model.getExternalReferenceCode();
+	}
+
+	/**
 	 * Returns the group ID of this asset list entry.
 	 *
 	 * @return the group ID of this asset list entry
@@ -308,6 +326,11 @@ public class AssetListEntryWrapper
 	@Override
 	public String getTypeSettings(long segmentsEntryId) {
 		return model.getTypeSettings(segmentsEntryId);
+	}
+
+	@Override
+	public String getTypeSettings(String audienceEntryERC) {
+		return model.getTypeSettings(audienceEntryERC);
 	}
 
 	@Override
@@ -430,6 +453,16 @@ public class AssetListEntryWrapper
 	@Override
 	public void setCtCollectionId(long ctCollectionId) {
 		model.setCtCollectionId(ctCollectionId);
+	}
+
+	/**
+	 * Sets the external reference code of this asset list entry.
+	 *
+	 * @param externalReferenceCode the external reference code of this asset list entry
+	 */
+	@Override
+	public void setExternalReferenceCode(String externalReferenceCode) {
+		model.setExternalReferenceCode(externalReferenceCode);
 	}
 
 	/**
@@ -572,3 +605,4 @@ public class AssetListEntryWrapper
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:758794307

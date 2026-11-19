@@ -435,6 +435,12 @@ public class LayoutFriendlyURLLocalServiceUtil {
 		return getService().getLayoutFriendlyURLsCount();
 	}
 
+	public static int getLayoutFriendlyURLsCount(
+		long companyId, String friendlyURL) {
+
+		return getService().getLayoutFriendlyURLsCount(companyId, friendlyURL);
+	}
+
 	/**
 	 * Returns the OSGi service identifier.
 	 *
@@ -502,3 +508,4 @@ public class LayoutFriendlyURLLocalServiceUtil {
 	private static volatile LayoutFriendlyURLLocalService _service;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1532032385

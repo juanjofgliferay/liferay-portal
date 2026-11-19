@@ -7,6 +7,7 @@ package com.liferay.commerce.service;
 
 import com.liferay.commerce.model.CommerceSubscriptionEntry;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.util.List;
@@ -46,20 +47,6 @@ public class CommerceSubscriptionEntryServiceUtil {
 			commerceSubscriptionEntryId);
 	}
 
-	/**
-	 * @deprecated As of Athanasius (7.3.x)
-	 */
-	@Deprecated
-	public static List<CommerceSubscriptionEntry>
-			getCommerceSubscriptionEntries(
-				long companyId, long userId, int start, int end,
-				OrderByComparator<CommerceSubscriptionEntry> orderByComparator)
-		throws PortalException {
-
-		return getService().getCommerceSubscriptionEntries(
-			companyId, userId, start, end, orderByComparator);
-	}
-
 	public static List<CommerceSubscriptionEntry>
 			getCommerceSubscriptionEntries(
 				long companyId, long groupId, long userId, int start, int end,
@@ -68,18 +55,6 @@ public class CommerceSubscriptionEntryServiceUtil {
 
 		return getService().getCommerceSubscriptionEntries(
 			companyId, groupId, userId, start, end, orderByComparator);
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x)
-	 */
-	@Deprecated
-	public static int getCommerceSubscriptionEntriesCount(
-			long companyId, long userId)
-		throws PortalException {
-
-		return getService().getCommerceSubscriptionEntriesCount(
-			companyId, userId);
 	}
 
 	public static int getCommerceSubscriptionEntriesCount(
@@ -109,22 +84,6 @@ public class CommerceSubscriptionEntryServiceUtil {
 		return getService().searchCommerceSubscriptionEntries(
 			companyId, maxSubscriptionCycles, subscriptionStatus, keywords,
 			start, end, sort);
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x)
-	 */
-	@Deprecated
-	public static com.liferay.portal.kernel.search.BaseModelSearchResult
-		<CommerceSubscriptionEntry> searchCommerceSubscriptionEntries(
-				long companyId, long[] groupIds, Long maxSubscriptionCycles,
-				Integer subscriptionStatus, String keywords, int start, int end,
-				com.liferay.portal.kernel.search.Sort sort)
-			throws PortalException {
-
-		return getService().searchCommerceSubscriptionEntries(
-			companyId, groupIds, maxSubscriptionCycles, subscriptionStatus,
-			keywords, start, end, sort);
 	}
 
 	public static CommerceSubscriptionEntry updateCommerceSubscriptionEntry(
@@ -160,26 +119,14 @@ public class CommerceSubscriptionEntryServiceUtil {
 			deliveryNextIterationDateMinute);
 	}
 
-	/**
-	 * @deprecated As of Athanasius (7.3.x)
-	 */
-	@Deprecated
-	public static CommerceSubscriptionEntry updateSubscriptionStatus(
-			long commerceSubscriptionEntryId, int subscriptionStatus)
-		throws PortalException {
-
-		return getService().updateSubscriptionStatus(
-			commerceSubscriptionEntryId, subscriptionStatus);
-	}
-
 	public static CommerceSubscriptionEntryService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(CommerceSubscriptionEntryService service) {
-		_service = service;
-	}
-
-	private static volatile CommerceSubscriptionEntryService _service;
+	private static final Snapshot<CommerceSubscriptionEntryService>
+		_serviceSnapshot = new Snapshot<>(
+			CommerceSubscriptionEntryServiceUtil.class,
+			CommerceSubscriptionEntryService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1077145488

@@ -31,7 +31,6 @@ import com.liferay.portal.kernel.search.IndexerRegistryUtil;
 import com.liferay.portal.kernel.service.ClassNameLocalService;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.systemevent.SystemEvent;
-import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.Validator;
 
 import java.util.List;
@@ -144,15 +143,6 @@ public class CommerceTermEntryRelLocalServiceImpl
 	}
 
 	@Override
-	public CommerceTermEntryRel fetchCommerceTermEntryRel(
-		String className, long classPK, long commerceTermEntryId) {
-
-		return commerceTermEntryRelPersistence.fetchByC_C_C(
-			_classNameLocalService.getClassNameId(className), classPK,
-			commerceTermEntryId);
-	}
-
-	@Override
 	public List<CommerceTermEntryRel> getCommerceOrderTypeCommerceTermEntryRels(
 		long commerceTermEntryId, String keywords, int start, int end) {
 
@@ -185,29 +175,6 @@ public class CommerceTermEntryRelLocalServiceImpl
 				keywords, CommerceOrderTypeTable.INSTANCE.name));
 	}
 
-	@Override
-	public List<CommerceTermEntryRel> getCommerceTermEntryRels(
-		long commerceTermEntryId) {
-
-		return commerceTermEntryRelPersistence.findByCommerceTermEntryId(
-			commerceTermEntryId);
-	}
-
-	@Override
-	public List<CommerceTermEntryRel> getCommerceTermEntryRels(
-		long commerceTermEntryId, int start, int end,
-		OrderByComparator<CommerceTermEntryRel> orderByComparator) {
-
-		return commerceTermEntryRelPersistence.findByCommerceTermEntryId(
-			commerceTermEntryId, start, end, orderByComparator);
-	}
-
-	@Override
-	public int getCommerceTermEntryRelsCount(long commerceTermEntryId) {
-		return commerceTermEntryRelPersistence.countByCommerceTermEntryId(
-			commerceTermEntryId);
-	}
-
 	private GroupByStep _getGroupByStep(
 		FromStep fromStep, Table innerJoinTable, Predicate innerJoinPredicate,
 		Long commerceTermEntryId, String className, String keywords,
@@ -231,15 +198,15 @@ public class CommerceTermEntryRelLocalServiceImpl
 					_classNameLocalService.getClassNameId(className))
 			).and(
 				() -> {
-					if (Validator.isNotNull(keywords)) {
-						return Predicate.withParentheses(
-							_customSQL.getKeywordsPredicate(
-								DSLFunctionFactoryUtil.lower(
-									keywordsPredicateExpression),
-								_customSQL.keywords(keywords, true)));
+					if (Validator.isNull(keywords)) {
+						return null;
 					}
 
-					return null;
+					return Predicate.withParentheses(
+						_customSQL.getKeywordsPredicate(
+							DSLFunctionFactoryUtil.lower(
+								keywordsPredicateExpression),
+							_customSQL.keywords(keywords, true)));
 				}
 			));
 	}

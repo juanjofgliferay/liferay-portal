@@ -28,6 +28,7 @@ import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.util.LocaleThreadLocal;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
@@ -254,10 +255,17 @@ public class DDMFormContextToDDMForm
 		LocalizedValue parameterLocalizedValue = new LocalizedValue(
 			defaultLocale);
 
+		String value = jsonObject.getString(
+			LocaleUtil.toLanguageId(defaultLocale));
+
+		if (Validator.isNull(value)) {
+			value = jsonObject.getString(
+				LocaleUtil.toLanguageId(
+					LocaleThreadLocal.getThemeDisplayLocale()));
+		}
+
 		for (Locale availableLocale : availableLocales) {
-			parameterLocalizedValue.addString(
-				availableLocale,
-				jsonObject.getString(LocaleUtil.toLanguageId(defaultLocale)));
+			parameterLocalizedValue.addString(availableLocale, value);
 		}
 
 		return parameterLocalizedValue;
@@ -408,56 +416,6 @@ public class DDMFormContextToDDMForm
 		ddmForm.setDefaultLocale(LocaleUtil.fromLanguageId(defaultLanguageId));
 	}
 
-	private void _setDDMFormFields(JSONArray jsonArray, DDMForm ddmForm) {
-		DDMFormContextVisitor ddmFormTemplateContextVisitor =
-			new DDMFormContextVisitor(jsonArray);
-
-		ddmFormTemplateContextVisitor.onVisitField(
-			new Consumer<JSONObject>() {
-
-				@Override
-				public void accept(JSONObject jsonObject) {
-					DDMFormField ddmFormField = createDDMFormField(jsonObject);
-
-					ddmForm.addDDMFormField(ddmFormField);
-				}
-
-				protected DDMFormField createDDMFormField(
-					JSONObject jsonObject) {
-
-					String name = jsonObject.getString("name");
-					String type = jsonObject.getString("type");
-
-					DDMFormField ddmFormField = new DDMFormField(name, type);
-
-					if (jsonObject.has("nestedFields")) {
-						JSONArray nestedFieldsJSONArray =
-							jsonObject.getJSONArray("nestedFields");
-
-						for (int i = 0; i < nestedFieldsJSONArray.length();
-							 i++) {
-
-							DDMFormField nestedDDMFormField =
-								createDDMFormField(
-									nestedFieldsJSONArray.getJSONObject(i));
-
-							ddmFormField.addNestedDDMFormField(
-								nestedDDMFormField);
-						}
-					}
-
-					_setDDMFormFieldSettings(
-						jsonObject.getJSONObject("settingsContext"), ddmForm,
-						ddmFormField);
-
-					return ddmFormField;
-				}
-
-			});
-
-		ddmFormTemplateContextVisitor.visit();
-	}
-
 	private void _setDDMFormFieldSettings(
 		JSONObject jsonObject, DDMForm ddmForm, DDMFormField ddmFormField) {
 
@@ -504,6 +462,56 @@ public class DDMFormContextToDDMForm
 					}
 
 					return "value";
+				}
+
+			});
+
+		ddmFormTemplateContextVisitor.visit();
+	}
+
+	private void _setDDMFormFields(JSONArray jsonArray, DDMForm ddmForm) {
+		DDMFormContextVisitor ddmFormTemplateContextVisitor =
+			new DDMFormContextVisitor(jsonArray);
+
+		ddmFormTemplateContextVisitor.onVisitField(
+			new Consumer<JSONObject>() {
+
+				@Override
+				public void accept(JSONObject jsonObject) {
+					DDMFormField ddmFormField = createDDMFormField(jsonObject);
+
+					ddmForm.addDDMFormField(ddmFormField);
+				}
+
+				protected DDMFormField createDDMFormField(
+					JSONObject jsonObject) {
+
+					String name = jsonObject.getString("name");
+					String type = jsonObject.getString("type");
+
+					DDMFormField ddmFormField = new DDMFormField(name, type);
+
+					if (jsonObject.has("nestedFields")) {
+						JSONArray nestedFieldsJSONArray =
+							jsonObject.getJSONArray("nestedFields");
+
+						for (int i = 0; i < nestedFieldsJSONArray.length();
+							 i++) {
+
+							DDMFormField nestedDDMFormField =
+								createDDMFormField(
+									nestedFieldsJSONArray.getJSONObject(i));
+
+							ddmFormField.addNestedDDMFormField(
+								nestedDDMFormField);
+						}
+					}
+
+					_setDDMFormFieldSettings(
+						jsonObject.getJSONObject("settingsContext"), ddmForm,
+						ddmFormField);
+
+					return ddmFormField;
 				}
 
 			});

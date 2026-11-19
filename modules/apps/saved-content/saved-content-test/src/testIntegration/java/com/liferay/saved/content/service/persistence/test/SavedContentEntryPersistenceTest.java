@@ -112,11 +112,7 @@ public class SavedContentEntryPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		SavedContentEntry newSavedContentEntry = _persistence.create(pk);
-
-		newSavedContentEntry.setMvccVersion(RandomTestUtil.nextLong());
+		SavedContentEntry newSavedContentEntry = addSavedContentEntry();
 
 		newSavedContentEntry.setCtCollectionId(RandomTestUtil.nextLong());
 
@@ -138,7 +134,9 @@ public class SavedContentEntryPersistenceTest {
 
 		newSavedContentEntry.setClassPK(RandomTestUtil.nextLong());
 
-		_savedContentEntries.add(_persistence.update(newSavedContentEntry));
+		newSavedContentEntry = _persistence.update(newSavedContentEntry);
+
+		_savedContentEntries.add(newSavedContentEntry);
 
 		SavedContentEntry existingSavedContentEntry =
 			_persistence.findByPrimaryKey(newSavedContentEntry.getPrimaryKey());
@@ -209,13 +207,6 @@ public class SavedContentEntryPersistenceTest {
 	}
 
 	@Test
-	public void testCountByGroupId() throws Exception {
-		_persistence.countByGroupId(RandomTestUtil.nextLong());
-
-		_persistence.countByGroupId(0L);
-	}
-
-	@Test
 	public void testCountByUserId() throws Exception {
 		_persistence.countByUserId(RandomTestUtil.nextLong());
 
@@ -231,11 +222,11 @@ public class SavedContentEntryPersistenceTest {
 	}
 
 	@Test
-	public void testCountByU_C() throws Exception {
-		_persistence.countByU_C(
+	public void testCountByG_CN() throws Exception {
+		_persistence.countByG_CN(
 			RandomTestUtil.nextLong(), RandomTestUtil.nextLong());
 
-		_persistence.countByU_C(0L, 0L);
+		_persistence.countByG_CN(0L, 0L);
 	}
 
 	@Test
@@ -303,12 +294,6 @@ public class SavedContentEntryPersistenceTest {
 	public void testFindAll() throws Exception {
 		_persistence.findAll(
 			QueryUtil.ALL_POS, QueryUtil.ALL_POS, getOrderByComparator());
-	}
-
-	@Test
-	public void testFilterFindByGroupId() throws Exception {
-		_persistence.filterFindByGroupId(
-			0, QueryUtil.ALL_POS, QueryUtil.ALL_POS, getOrderByComparator());
 	}
 
 	protected OrderByComparator<SavedContentEntry> getOrderByComparator() {
@@ -651,8 +636,6 @@ public class SavedContentEntryPersistenceTest {
 
 		SavedContentEntry savedContentEntry = _persistence.create(pk);
 
-		savedContentEntry.setMvccVersion(RandomTestUtil.nextLong());
-
 		savedContentEntry.setCtCollectionId(RandomTestUtil.nextLong());
 
 		savedContentEntry.setUuid(RandomTestUtil.randomString());
@@ -684,3 +667,4 @@ public class SavedContentEntryPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:441422435

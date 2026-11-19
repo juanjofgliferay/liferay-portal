@@ -107,9 +107,11 @@ public class PersistenceNestedSetsTreeManagerTest {
 	@After
 	public void tearDown() {
 		for (NestedSetsTreeEntry nestedSetsTreeEntry : _nestedSetsTreeEntries) {
-			if (nestedSetsTreeEntry != null) {
-				_nestedSetsTreeEntryPersistence.remove(nestedSetsTreeEntry);
+			if (nestedSetsTreeEntry == null) {
+				continue;
 			}
+
+			_nestedSetsTreeEntryPersistence.remove(nestedSetsTreeEntry);
 		}
 	}
 
@@ -752,11 +754,13 @@ public class PersistenceNestedSetsTreeManagerTest {
 		for (int i = 0; i < _nestedSetsTreeEntries.length; i++) {
 			nestedSetsTreeEntry = _nestedSetsTreeEntries[i];
 
-			if (nestedSetsTreeEntry != null) {
-				_nestedSetsTreeEntries[i] =
-					_nestedSetsTreeEntryPersistence.fetchByPrimaryKey(
-						nestedSetsTreeEntry.getNestedSetsTreeEntryId());
+			if (nestedSetsTreeEntry == null) {
+				continue;
 			}
+
+			_nestedSetsTreeEntries[i] =
+				_nestedSetsTreeEntryPersistence.fetchByPrimaryKey(
+					nestedSetsTreeEntry.getNestedSetsTreeEntryId());
 		}
 	}
 
@@ -768,10 +772,6 @@ public class PersistenceNestedSetsTreeManagerTest {
 	private static NestedSetsTreeEntry[] _nestedSetsTreeEntries;
 
 	@Inject
-	private static NestedSetsTreeEntryLocalService
-		_nestedSetsTreeEntryLocalService;
-
-	@Inject
 	private static NestedSetsTreeEntryPersistence
 		_nestedSetsTreeEntryPersistence;
 
@@ -779,6 +779,9 @@ public class PersistenceNestedSetsTreeManagerTest {
 		_nestedSetsTreeManager;
 	private static SessionFactoryInvocationHandler
 		_sessionFactoryInvocationHandler;
+
+	@Inject
+	private NestedSetsTreeEntryLocalService _nestedSetsTreeEntryLocalService;
 
 	private static class SessionFactoryInvocationHandler
 		implements InvocationHandler {

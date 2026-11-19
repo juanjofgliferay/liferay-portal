@@ -9,7 +9,7 @@ import com.liferay.application.list.BasePanelApp;
 import com.liferay.application.list.PanelApp;
 import com.liferay.application.list.constants.PanelCategoryKeys;
 import com.liferay.portal.kernel.model.Portlet;
-import com.liferay.portal.language.override.web.internal.constants.PLOPortletKeys;
+import com.liferay.portal.language.override.constants.PLOPortletKeys;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -19,12 +19,17 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"panel.app.order:Integer=800",
-		"panel.category.key=" + PanelCategoryKeys.CONTROL_PANEL_CONFIGURATION
+		"panel.app.order:Integer=400",
+		"panel.category.key=" + PanelCategoryKeys.CONTROL_PANEL_INSTANCE
 	},
 	service = PanelApp.class
 )
 public class PLOPanelApp extends BasePanelApp {
+
+	@Override
+	public String getIcon() {
+		return "automatic-translate";
+	}
 
 	@Override
 	public Portlet getPortlet() {
@@ -37,7 +42,7 @@ public class PLOPanelApp extends BasePanelApp {
 	}
 
 	@Reference(
-		target = "(javax.portlet.name=" + PLOPortletKeys.PORTAL_LANGUAGE_OVERRIDE + ")"
+		target = "(jakarta.portlet.name=" + PLOPortletKeys.PORTAL_LANGUAGE_OVERRIDE + ")"
 	)
 	private Portlet _portlet;
 

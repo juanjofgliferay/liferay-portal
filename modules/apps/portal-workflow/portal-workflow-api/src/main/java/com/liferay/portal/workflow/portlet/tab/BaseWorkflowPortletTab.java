@@ -12,15 +12,15 @@ import com.liferay.portal.kernel.servlet.taglib.BaseJSPDynamicInclude;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
 import java.util.HashMap;
 import java.util.Map;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.PortletException;
-import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
 
 /**
  * @author Adam Brandizzi
@@ -72,11 +72,7 @@ public abstract class BaseWorkflowPortletTab
 	protected Log getLog() {
 		Class<? extends BaseWorkflowPortletTab> clazz = getClass();
 
-		if (!_logs.containsKey(clazz)) {
-			_logs.put(clazz, LogFactoryUtil.getLog(clazz));
-		}
-
-		return _logs.get(clazz);
+		return _logs.computeIfAbsent(clazz, LogFactoryUtil::getLog);
 	}
 
 	private static final Map<Class<? extends BaseWorkflowPortletTab>, Log>

@@ -13,6 +13,7 @@ CPOptionDisplayContext cpOptionDisplayContext = (CPOptionDisplayContext)request.
 
 <commerce-ui:modal-content
 	title='<%= LanguageUtil.get(request, "create-new-option") %>'
+	useNativeSubmit="<%= false %>"
 >
 	<aui:form method="post" name="fm" onSubmit='<%= "event.preventDefault(); " + liferayPortletResponse.getNamespace() + "apiSubmit();" %>'>
 		<aui:input name="name" required="<%= true %>" type="text" />
@@ -48,6 +49,6 @@ CPOptionDisplayContext cpOptionDisplayContext = (CPOptionDisplayContext)request.
 				"windowState", LiferayWindowState.MAXIMIZED.toString()
 			).build()
 		%>'
-		module="js/add_cp_option"
+		module="{addCpOption} from commerce-product-options-web"
 	/>
 </commerce-ui:modal-content>

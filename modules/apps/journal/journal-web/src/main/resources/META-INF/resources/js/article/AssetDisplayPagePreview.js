@@ -5,7 +5,8 @@
 
 import ClayButton from '@clayui/button';
 import ClayDropDown from '@clayui/drop-down';
-import {openSelectionModal, sub} from 'frontend-js-web';
+import {openSelectionModal} from 'frontend-js-components-web';
+import {sub} from 'frontend-js-web';
 import React, {useMemo, useState} from 'react';
 
 import AssetDisplayPageSelector from './AssetDisplayPageSelector';
@@ -28,6 +29,8 @@ export default function AssetDisplayPagePreview({
 	const [assetDisplayPageSelected, setAssetDisplayPageSelected] = useState();
 
 	const siteInputId = `${namespace}siteInput`;
+	const siteLabelId = `${namespace}siteLabel`;
+	const siteValueId = `${namespace}siteValue`;
 
 	const items = useMemo(() => {
 		return [
@@ -48,20 +51,25 @@ export default function AssetDisplayPagePreview({
 
 	return (
 		<>
-			<label className="control-label" htmlFor={siteInputId}>
+			<label
+				className="control-label"
+				htmlFor={siteInputId}
+				id={siteLabelId}
+			>
 				{Liferay.Language.get('site')}
 			</label>
 			<ClayDropDown
 				active={active}
-				aria-labelledby={siteInputId}
 				onActiveChange={setActive}
 				trigger={
 					<ClayButton
+						aria-labelledby={`${siteLabelId} ${siteValueId}`}
 						className="bg-light form-control-select text-left w-100"
 						displayType="secondary"
+						id={siteInputId}
 						type="button"
 					>
-						<span>
+						<span id={siteValueId}>
 							{selectedSite?.name ||
 								`- ${Liferay.Language.get('not-selected')} -`}
 						</span>
@@ -96,8 +104,7 @@ export default function AssetDisplayPagePreview({
 										onSelect(selectedItem) {
 											setSelectedSite({
 												groupId: selectedItem.groupid,
-												name:
-													selectedItem.groupdescriptivename,
+												name: selectedItem.groupdescriptivename,
 											});
 										},
 										selectEventName: selectSiteEventName,

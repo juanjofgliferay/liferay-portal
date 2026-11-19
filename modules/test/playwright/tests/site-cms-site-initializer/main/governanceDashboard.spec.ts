@@ -1,0 +1,1483 @@
+/**
+ * SPDX-FileCopyrightText: (c) 2026 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
+ */
+
+import {ObjectDefinitionAPI} from '@liferay/object-admin-rest-client-js/v1_0';
+import {type Page, expect, mergeTests} from '@playwright/test';
+
+import {dataApiHelpersTest} from '../../../fixtures/dataApiHelpersTest';
+import {featureFlagsTest} from '../../../fixtures/featureFlagsTest';
+import {loginTest} from '../../../fixtures/loginTest';
+import {DataApiHelpers} from '../../../helpers/ApiHelpers';
+import {ServerAdministrationPage} from '../../../pages/server-admin-web/ServerAdministrationPage';
+import {addCMSAdministrator} from '../../../utils/addCMSAdministrator';
+import {getRandomInt} from '../../../utils/getRandomInt';
+import getRandomString from '../../../utils/getRandomString';
+import {
+	performLoginViaApi,
+	performUserSwitchViaApi,
+} from '../../../utils/performLogin';
+import {cmsPagesTest} from './fixtures/cmsPagesTest';
+import {registerUserCredentials} from './spaces/helpers/roleMembership';
+
+const test = mergeTests(
+	cmsPagesTest,
+	dataApiHelpersTest,
+	featureFlagsTest({
+		'LPD-82226': {enabled: true},
+	}),
+	loginTest()
+);
+
+const APPLICATION_NAME = 'cms/basic-web-contents';
+const DATE_DISPLAYED = '12/31/2099, 10:00 AM';
+const DATE_INPUT = '12/31/2099 10:00 AM';
+const FILE_APPLICATION_NAME = 'cms/basic-documents';
+const LONG_STANDING_DRAFT_AGE_DAYS = 45;
+const PAST_DATE = '2020-01-01T00:00:00Z';
+const PNG_BASE64 =
+	'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNgAAACAAEABToPCwAAAABJRU5ErkJggg==';
+const TIME_ZONE_BROWSER = 'America/Los_Angeles';
+const TIME_ZONE_USER = 'UTC';
+const UNLINKED_CONTENT_ALERT_MESSAGE =
+	'Unlinked content may still be in use. Some uses are not detected, such as default display pages, API requests or external links. Review it before deleting it.';
+
+test.use({timezoneId: TIME_ZONE_BROWSER});
+
+async function fillScheduleDateModal(page: Page, date: string) {
+	const dateInput = page.locator('.modal input.form-control').first();
+
+	await dateInput.fill(date);
+
+	await dateInput.blur();
+
+	await page.locator('.modal').getByRole('button', {name: 'Save'}).click();
+}
+
+function getLongStandingDraftScript(objectEntryId: number) {
+	return `
+		import com.liferay.object.service.ObjectDefinitionLocalServiceUtil
+		import com.liferay.object.service.ObjectEntryLocalServiceUtil
+		import com.liferay.portal.kernel.search.IndexerRegistryUtil
+
+		def objectEntry = ObjectEntryLocalServiceUtil.getObjectEntry(${objectEntryId})
+
+		objectEntry.setModifiedDate(new Date(System.currentTimeMillis() - ${LONG_STANDING_DRAFT_AGE_DAYS} * 86400000L))
+
+		objectEntry = ObjectEntryLocalServiceUtil.updateObjectEntry(objectEntry)
+
+		def objectDefinition = ObjectDefinitionLocalServiceUtil.getObjectDefinition(objectEntry.getObjectDefinitionId())
+
+		IndexerRegistryUtil.nullSafeGetIndexer(objectDefinition.getClassName()).reindex(objectEntry)
+	`;
+}
+
+function getUpcomingDate(hour: number) {
+	const date = new Date();
+
+	date.setDate(date.getDate() + 1);
+	date.setHours(hour, 0, 0, 0);
+
+	return date.toISOString().replace(/\.\d{3}Z$/, 'Z');
+}
+
+function formatInTimeZone(date: string, timeZone: string) {
+	return new Date(date).toLocaleString('en-US', {
+		day: '2-digit',
+		hour: '2-digit',
+		hour12: true,
+		minute: '2-digit',
+		month: '2-digit',
+		timeZone,
+		year: 'numeric',
+	});
+}
+
+function getDocumentHTML(externalReferenceCode: string) {
+	return (
+		`<img src="/documents/${getRandomInt()}/0/image.jpg/${getRandomString()}` +
+		'?download=true&amp;objectDefinitionExternalReferenceCode=' +
+		'L_CMS_BASIC_DOCUMENT&amp;objectEntryExternalReferenceCode=' +
+		`${externalReferenceCode}&amp;objectFieldExternalReferenceCode=FILE">`
+	);
+}
+
+async function openQualityList(
+	page: Page,
+	{
+		cardTitle,
+		spaceName,
+		text,
+	}: {cardTitle: string; spaceName: string; text: string}
+) {
+	const qualityList = page.getByRole('region', {name: cardTitle});
+
+	await expect(async () => {
+		await page.goto('/web/cms/dashboard');
+
+		await selectSpace(page, spaceName);
+
+		await page
+			.getByRole('button', {name: new RegExp(`^${cardTitle} `)})
+			.click();
+
+		await expect(qualityList.getByText(text, {exact: true})).toBeVisible({
+			timeout: 5000,
+		});
+	}).toPass();
+
+	return qualityList;
+}
+
+async function pollDate(
+	apiHelpers: DataApiHelpers,
+	objectEntryId: number,
+	fieldName: 'expirationDate' | 'reviewDate'
+) {
+	await expect
+		.poll(
+			async () => {
+				const objectEntry =
+					await apiHelpers.objectEntry.getObjectEntryById(
+						APPLICATION_NAME,
+						String(objectEntryId)
+					);
+
+				return formatInTimeZone(objectEntry[fieldName], TIME_ZONE_USER);
+			},
+			{timeout: 3000}
+		)
+		.toBe(DATE_DISPLAYED);
+}
+
+async function updateReviewDate(page: Page, title: string, reviewDate: string) {
+	await page.getByRole('button', {name: `${title} Actions`}).click();
+
+	await page.getByRole('menuitem', {name: 'Update Review Date'}).click();
+
+	await fillScheduleDateModal(page, reviewDate);
+}
+
+async function updateExpirationDate(
+	page: Page,
+	title: string,
+	expirationDate: string
+) {
+	await page.getByRole('button', {name: `${title} Actions`}).click();
+
+	await page.getByRole('menuitem', {name: 'Update Expiration Date'}).click();
+
+	await fillScheduleDateModal(page, expirationDate);
+}
+
+async function addSpaceMember(
+	apiHelpers: DataApiHelpers,
+	space: {externalReferenceCode: string},
+	user: TUserAccount,
+	roleName?: string
+) {
+	await apiHelpers.headlessAssetLibrary.putAssetLibraryUserAccount(
+		space.externalReferenceCode,
+		user.externalReferenceCode
+	);
+
+	if (roleName) {
+		await apiHelpers.headlessAssetLibrary.putAssetLibraryUserAccountRoles(
+			space.externalReferenceCode,
+			user.externalReferenceCode,
+			[roleName]
+		);
+	}
+}
+
+async function addSpaceWithOverdueContent(
+	apiHelpers: DataApiHelpers,
+	spaceName: string,
+	title: string
+) {
+	const space = await apiHelpers.headlessAssetLibrary.createSpace({
+		name: spaceName,
+	});
+
+	const overdueContent = await apiHelpers.objectEntry.postObjectEntry(
+		{
+			displayDate: PAST_DATE,
+			objectEntryFolderExternalReferenceCode: 'L_CONTENTS',
+			reviewDate: PAST_DATE,
+			title,
+		},
+		APPLICATION_NAME,
+		spaceName
+	);
+
+	apiHelpers.data.push({id: overdueContent.id, type: 'document'});
+
+	return space;
+}
+
+async function addSpaceMemberAndSwitch(
+	apiHelpers: DataApiHelpers,
+	page: Page,
+	spaceName: string,
+	roleName?: string
+) {
+	const space = await apiHelpers.headlessAssetLibrary.createSpace({
+		name: spaceName,
+	});
+
+	const user = await apiHelpers.headlessAdminUser.postUserAccount();
+
+	registerUserCredentials(user);
+
+	await addSpaceMember(apiHelpers, space, user, roleName);
+
+	await performUserSwitchViaApi(page, user.alternateName);
+}
+
+async function expectNoDashboardAccess(page: Page) {
+	await page.goto('/web/cms/home');
+
+	await expect(page.getByRole('menuitem', {name: 'Home'})).toBeVisible();
+
+	await expect(page.getByRole('menuitem', {name: 'Dashboard'})).toBeHidden();
+
+	await page.goto('/web/cms/dashboard');
+
+	await expect(
+		page.getByText('The requested resource could not be found.')
+	).toBeVisible();
+}
+
+async function expectSpaceOption(
+	page: Page,
+	spaceName: string,
+	visible: boolean
+) {
+	const searchInput = page.getByRole('textbox', {name: 'Search'});
+
+	await searchInput.fill(spaceName);
+
+	const option = page.getByRole('option', {name: spaceName});
+
+	if (visible) {
+		await expect(option).toBeVisible();
+	}
+	else {
+		await expect(option).toBeHidden();
+	}
+}
+
+async function viewAndEditContent(page: Page, title: string) {
+	const actionsButton = page.getByRole('button', {name: `${title} Actions`});
+
+	await actionsButton.click();
+
+	await page.getByRole('menuitem', {exact: true, name: 'View'}).click();
+
+	await expect(page.getByTestId('modal-header-name')).toHaveText(title);
+
+	await expect(
+		page
+			.frameLocator('iframe[title="Preview"]')
+			.getByLabel('Title (Read Only)')
+	).toHaveValue(title);
+
+	await page.locator('.modal').getByRole('button', {name: 'Close'}).click();
+
+	await actionsButton.click();
+
+	await page.getByRole('menuitem', {name: 'Edit'}).click();
+
+	await expect(page.getByLabel('Title')).toHaveValue(title);
+}
+
+async function selectSpace(page: Page, spaceName: string) {
+	const searchInput = page.getByRole('textbox', {name: 'Search'});
+
+	await expect(async () => {
+		await page.getByRole('combobox', {name: 'Filter by Spaces'}).click();
+
+		await expect(searchInput).toBeVisible();
+	}).toPass();
+
+	await searchInput.fill(spaceName);
+
+	await page.getByRole('option', {name: spaceName}).click();
+}
+
+test.beforeEach(async ({apiHelpers, page}) => {
+	const user = await addCMSAdministrator(apiHelpers);
+
+	await performUserSwitchViaApi(page, user.alternateName);
+});
+
+test.describe('Freshness section', () => {
+	test(
+		'Stores the review date the user picked in their account time zone rather than the browser one',
+		{tag: ['@LPD-98462', '@LPD-104263']},
+		async ({apiHelpers, page}) => {
+			const title = `overdue ${getRandomString()}`;
+
+			const space = await apiHelpers.headlessAssetLibrary.createSpace();
+
+			const overdueContent = await apiHelpers.objectEntry.postObjectEntry(
+				{
+					displayDate: PAST_DATE,
+					objectEntryFolderExternalReferenceCode: 'L_CONTENTS',
+					reviewDate: PAST_DATE,
+					title,
+				},
+				APPLICATION_NAME,
+				space.name
+			);
+
+			apiHelpers.data.push({id: overdueContent.id, type: 'document'});
+
+			await page.goto('/web/cms/dashboard');
+
+			await selectSpace(page, space.name);
+
+			await page.getByRole('button', {name: /^Overdue Reviews/}).click();
+
+			await updateReviewDate(page, title, DATE_INPUT);
+
+			await pollDate(apiHelpers, overdueContent.id, 'reviewDate');
+		}
+	);
+
+	test(
+		'Updates the review date of overdue contents from the dashboard',
+		{tag: '@LPD-98462'},
+		async ({apiHelpers, page}) => {
+			const firstSpaceName = `space ${getRandomString()}`;
+			const secondSpaceName = `space ${getRandomString()}`;
+			const secondSpaceTitle = `overdue ${getRandomString()}`;
+			const listTitle = `overdue ${getRandomString()}`;
+			const remainingTitles = [
+				`overdue ${getRandomString()}`,
+				`overdue ${getRandomString()}`,
+			];
+
+			const overdueReviewsCard = page.getByRole('button', {
+				name: /^Overdue Reviews/,
+			});
+
+			const overdueReviewsCount = overdueReviewsCard
+				.locator('.cms-dashboard__interactive-card__metric > div')
+				.first();
+
+			let overdueContents: Awaited<
+				ReturnType<typeof apiHelpers.objectEntry.postObjectEntry>
+			>[];
+
+			await test.step('Create overdue contents in two spaces', async () => {
+				await apiHelpers.headlessAssetLibrary.createSpace({
+					name: firstSpaceName,
+				});
+
+				await apiHelpers.headlessAssetLibrary.createSpace({
+					name: secondSpaceName,
+				});
+
+				const postOverdueContent = (spaceName: string, title: string) =>
+					apiHelpers.objectEntry.postObjectEntry(
+						{
+							displayDate: PAST_DATE,
+							objectEntryFolderExternalReferenceCode:
+								'L_CONTENTS',
+							reviewDate: PAST_DATE,
+							title,
+						},
+						APPLICATION_NAME,
+						spaceName
+					);
+
+				overdueContents = [
+					await postOverdueContent(
+						firstSpaceName,
+						`overdue ${getRandomString()}`
+					),
+					await postOverdueContent(secondSpaceName, secondSpaceTitle),
+					await postOverdueContent(secondSpaceName, listTitle),
+					await postOverdueContent(
+						secondSpaceName,
+						remainingTitles[0]
+					),
+					await postOverdueContent(
+						secondSpaceName,
+						remainingTitles[1]
+					),
+				];
+
+				for (const overdueContent of overdueContents) {
+					apiHelpers.data.push({
+						id: overdueContent.id,
+						type: 'document',
+					});
+
+					expect(overdueContent.id).toBeTruthy();
+				}
+			});
+
+			await test.step('Check the overdue reviews count per space', async () => {
+				await page.goto('/web/cms/dashboard');
+
+				await selectSpace(page, firstSpaceName);
+
+				await expect(overdueReviewsCount).toHaveText('1');
+
+				await selectSpace(page, secondSpaceName);
+
+				await expect(overdueReviewsCount).toHaveText('4');
+			});
+
+			const overdueReviewsList = page.getByRole('region', {
+				name: 'Overdue Reviews',
+			});
+
+			await test.step('Open the overdue reviews list', async () => {
+				await overdueReviewsCard.click();
+
+				await expect(
+					overdueReviewsList.getByText(secondSpaceTitle, {
+						exact: true,
+					})
+				).toBeVisible();
+			});
+
+			await test.step('Update a review date from the list', async () => {
+				await updateReviewDate(page, listTitle, DATE_INPUT);
+
+				await pollDate(apiHelpers, overdueContents[2].id, 'reviewDate');
+
+				await expect(
+					overdueReviewsList.getByText(listTitle, {exact: true})
+				).toBeHidden();
+
+				await expect(overdueReviewsCount).toHaveText('3');
+			});
+
+			await test.step('Open the all section from the list', async () => {
+				await page
+					.getByRole('link', {name: 'View All Overdue Reviews'})
+					.click();
+
+				await expect(page).toHaveURL(/cms\/all/);
+
+				await expect(
+					page.getByText(secondSpaceTitle, {exact: true})
+				).toBeVisible();
+			});
+
+			await test.step('Update a review date from its row action', async () => {
+				await updateReviewDate(page, secondSpaceTitle, DATE_INPUT);
+
+				await pollDate(apiHelpers, overdueContents[1].id, 'reviewDate');
+
+				await page.reload();
+
+				await expect(
+					page.getByText(secondSpaceTitle, {exact: true})
+				).toBeHidden();
+			});
+
+			await test.step('Update the remaining review dates in bulk', async () => {
+				for (const title of remainingTitles) {
+					await page
+						.getByLabel(`Select ${title}`, {exact: true})
+						.check();
+				}
+
+				await page
+					.locator('[data-qa-id="selectionToolbar"]')
+					.getByRole('button', {name: 'Actions'})
+					.click();
+
+				await page
+					.getByRole('menuitem', {name: 'Update Review Date'})
+					.click();
+
+				await fillScheduleDateModal(page, DATE_INPUT);
+
+				for (const overdueContent of overdueContents.slice(3)) {
+					await pollDate(apiHelpers, overdueContent.id, 'reviewDate');
+				}
+
+				await page.reload();
+
+				for (const title of remainingTitles) {
+					await expect(
+						page.getByText(title, {exact: true})
+					).toBeHidden();
+				}
+			});
+		}
+	);
+
+	test(
+		'Updates the expiration date of expired contents from the dashboard',
+		{tag: '@LPD-98348'},
+		async ({apiHelpers, page}) => {
+			const firstSpaceName = `space ${getRandomString()}`;
+			const secondSpaceName = `space ${getRandomString()}`;
+			const secondSpaceTitle = `expired ${getRandomString()}`;
+			const listTitle = `expired ${getRandomString()}`;
+			const remainingTitles = [
+				`expired ${getRandomString()}`,
+				`expired ${getRandomString()}`,
+			];
+
+			let expiredContents: Awaited<
+				ReturnType<typeof apiHelpers.objectEntry.postObjectEntry>
+			>[];
+
+			await test.step('Create and expire contents in two spaces', async () => {
+				await apiHelpers.headlessAssetLibrary.createSpace({
+					name: firstSpaceName,
+				});
+
+				await apiHelpers.headlessAssetLibrary.createSpace({
+					name: secondSpaceName,
+				});
+
+				const postExpiredContent = async (
+					spaceName: string,
+					title: string
+				) => {
+					const objectEntry =
+						await apiHelpers.objectEntry.postObjectEntry(
+							{
+								objectEntryFolderExternalReferenceCode:
+									'L_CONTENTS',
+								title,
+							},
+							APPLICATION_NAME,
+							spaceName
+						);
+
+					await apiHelpers.objectEntry.expireObjectEntryByExternalReferenceCode(
+						APPLICATION_NAME,
+						spaceName,
+						objectEntry.externalReferenceCode
+					);
+
+					return objectEntry;
+				};
+
+				expiredContents = [
+					await postExpiredContent(
+						firstSpaceName,
+						`expired ${getRandomString()}`
+					),
+					await postExpiredContent(secondSpaceName, secondSpaceTitle),
+					await postExpiredContent(secondSpaceName, listTitle),
+					await postExpiredContent(
+						secondSpaceName,
+						remainingTitles[0]
+					),
+					await postExpiredContent(
+						secondSpaceName,
+						remainingTitles[1]
+					),
+				];
+
+				for (const expiredContent of expiredContents) {
+					apiHelpers.data.push({
+						id: expiredContent.id,
+						type: 'document',
+					});
+
+					expect(expiredContent.id).toBeTruthy();
+				}
+			});
+
+			const expiredAssetsCard = page.getByRole('button', {
+				name: /^Expired/,
+			});
+
+			const expiredAssetsCount = expiredAssetsCard
+				.locator('.cms-dashboard__interactive-card__metric > div')
+				.first();
+
+			await test.step('Check the expired assets count per space', async () => {
+				await page.goto('/web/cms/dashboard');
+
+				await selectSpace(page, firstSpaceName);
+
+				await expect(expiredAssetsCount).toHaveText('1');
+
+				await selectSpace(page, secondSpaceName);
+
+				await expect(expiredAssetsCount).toHaveText('4');
+			});
+
+			const expiredAssetsList = page.getByRole('region', {
+				name: 'Expired Assets',
+			});
+
+			await test.step('Open the expired assets list from its card', async () => {
+				await expiredAssetsCard.click();
+
+				await expect(
+					expiredAssetsList.getByText(secondSpaceTitle, {exact: true})
+				).toBeVisible();
+			});
+
+			await test.step('Update an expiration date from the list', async () => {
+				await updateExpirationDate(page, listTitle, DATE_INPUT);
+
+				await pollDate(
+					apiHelpers,
+					expiredContents[2].id,
+					'expirationDate'
+				);
+
+				await expect(
+					expiredAssetsList.getByText(listTitle, {exact: true})
+				).toBeHidden();
+
+				await expect(expiredAssetsCount).toHaveText('3');
+			});
+
+			await test.step('Open the all section from the list', async () => {
+				await page
+					.getByRole('link', {name: 'View All Expired Assets'})
+					.click();
+
+				await expect(page).toHaveURL(/cms\/all/);
+
+				await expect(async () => {
+					await page.reload();
+
+					await expect(
+						page.getByText(secondSpaceTitle, {exact: true})
+					).toBeVisible({timeout: 3000});
+				}).toPass();
+			});
+
+			await test.step('Update an expiration date from its row action', async () => {
+				await updateExpirationDate(page, secondSpaceTitle, DATE_INPUT);
+
+				await pollDate(
+					apiHelpers,
+					expiredContents[1].id,
+					'expirationDate'
+				);
+
+				await expect(async () => {
+					await page.reload();
+
+					await expect(
+						page.getByText(secondSpaceTitle, {exact: true})
+					).toBeHidden({timeout: 3000});
+				}).toPass();
+			});
+
+			await test.step('Update the remaining expiration dates in bulk', async () => {
+				for (const title of remainingTitles) {
+					await page
+						.getByLabel(`Select ${title}`, {exact: true})
+						.check();
+				}
+
+				await page
+					.locator('[data-qa-id="selectionToolbar"]')
+					.getByRole('button', {name: 'Actions'})
+					.click();
+
+				await page
+					.getByRole('menuitem', {name: 'Update Expiration Date'})
+					.click();
+
+				await fillScheduleDateModal(page, DATE_INPUT);
+
+				for (const expiredContent of expiredContents.slice(3)) {
+					await pollDate(
+						apiHelpers,
+						expiredContent.id,
+						'expirationDate'
+					);
+				}
+
+				await expect(async () => {
+					await page.reload();
+
+					for (const title of remainingTitles) {
+						await expect(
+							page.getByText(title, {exact: true})
+						).toBeHidden({timeout: 3000});
+					}
+				}).toPass();
+			});
+		}
+	);
+});
+
+test.describe('Quality section', () => {
+	test(
+		'Lists the contents that point at an expired asset of the selected space',
+		{tag: '@LPD-103027'},
+		async ({apiHelpers, page}) => {
+			const firstSpaceName = `space ${getRandomString()}`;
+			const secondSpaceName = `space ${getRandomString()}`;
+			const expiredTitle = `expired ${getRandomString()}`;
+			const referringTitle = `referring ${getRandomString()}`;
+			const secondSpaceReferringTitle = `referring ${getRandomString()}`;
+
+			await test.step('Create a broken link in two spaces', async () => {
+				const postBrokenLink = async (
+					spaceName: string,
+					expiredTitle: string,
+					referringTitle: string
+				) => {
+					await apiHelpers.headlessAssetLibrary.createSpace({
+						name: spaceName,
+					});
+
+					const expiredContent =
+						await apiHelpers.objectEntry.postObjectEntry(
+							{
+								objectEntryFolderExternalReferenceCode:
+									'L_CONTENTS',
+								title: expiredTitle,
+							},
+							APPLICATION_NAME,
+							spaceName
+						);
+
+					await apiHelpers.objectEntry.expireObjectEntryByExternalReferenceCode(
+						APPLICATION_NAME,
+						spaceName,
+						expiredContent.externalReferenceCode
+					);
+
+					const referringContent =
+						await apiHelpers.objectEntry.postObjectEntry(
+							{
+								content: getDocumentHTML(
+									expiredContent.externalReferenceCode
+								),
+								objectEntryFolderExternalReferenceCode:
+									'L_CONTENTS',
+								title: referringTitle,
+							},
+							APPLICATION_NAME,
+							spaceName
+						);
+
+					for (const objectEntry of [
+						expiredContent,
+						referringContent,
+					]) {
+						apiHelpers.data.push({
+							id: objectEntry.id,
+							type: 'document',
+						});
+
+						expect(objectEntry.id).toBeTruthy();
+					}
+				};
+
+				await postBrokenLink(
+					firstSpaceName,
+					expiredTitle,
+					referringTitle
+				);
+				await postBrokenLink(
+					secondSpaceName,
+					`expired ${getRandomString()}`,
+					secondSpaceReferringTitle
+				);
+			});
+
+			await test.step('Confirm the second space lists its own broken link', async () => {
+				await openQualityList(page, {
+					cardTitle: 'Broken Links',
+					spaceName: secondSpaceName,
+					text: secondSpaceReferringTitle,
+				});
+			});
+
+			await test.step('Check that only the first space is listed', async () => {
+				const brokenLinksList = await openQualityList(page, {
+					cardTitle: 'Broken Links',
+					spaceName: firstSpaceName,
+					text: referringTitle,
+				});
+
+				await expect(
+					brokenLinksList.getByText('1 Expired Asset', {exact: true})
+				).toBeVisible();
+
+				await expect(
+					brokenLinksList.getByText(secondSpaceReferringTitle, {
+						exact: true,
+					})
+				).toBeHidden();
+			});
+
+			await test.step('Open the broken links page of the first space', async () => {
+				await page
+					.getByRole('link', {name: 'View All Broken Links'})
+					.click();
+
+				await expect(page).toHaveURL(/broken-links\?groupId=/);
+
+				await expect(
+					page.getByText(referringTitle, {exact: true})
+				).toBeVisible();
+			});
+
+			await test.step('View and edit the content from the page', async () => {
+				await viewAndEditContent(page, referringTitle);
+			});
+		}
+	);
+
+	test(
+		'Lists the contents missing a required field added to their published content structure',
+		{tag: '@LPD-110645'},
+		async ({apiHelpers, page}) => {
+			const spaceName = `space ${getRandomString()}`;
+			const title = `content ${getRandomString()}`;
+
+			let applicationName: string;
+			let objectDefinitionId: number;
+			let objectEntryId: number;
+
+			await test.step('Publish a content of a versioned content structure', async () => {
+				const space = await apiHelpers.headlessAssetLibrary.createSpace(
+					{
+						name: spaceName,
+					}
+				);
+
+				const objectDefinitionAPIClient =
+					await apiHelpers.buildRestClient(ObjectDefinitionAPI);
+
+				const {body: objectDefinition} =
+					await objectDefinitionAPIClient.postObjectDefinition({
+						enableComments: true,
+						enableFriendlyURLCustomization: true,
+						enableIndexSearch: true,
+						enableLocalization: true,
+						enableObjectEntryDraft: true,
+						enableObjectEntryHistory: true,
+						enableObjectEntrySchedule: true,
+						enableObjectEntryVersioning: true,
+						externalReferenceCode: getRandomString(),
+						label: {en_US: getRandomString()},
+						name: `Structure${getRandomInt()}`,
+						objectDefinitionSettings: [
+							{
+								name: 'acceptedGroupExternalReferenceCodes',
+								value: space.externalReferenceCode,
+							} as any,
+						],
+						objectFields: [
+							{
+								DBType: 'String',
+								businessType: 'Text',
+								externalReferenceCode: getRandomString(),
+								indexed: true,
+								indexedAsKeyword: false,
+								indexedLanguageId: 'en_US',
+								label: {en_US: 'Title'},
+								localized: true,
+								name: 'title',
+								required: true,
+							},
+						],
+						objectFolderExternalReferenceCode:
+							'L_CMS_CONTENT_STRUCTURES',
+						pluralLabel: {en_US: getRandomString()},
+						scope: 'depot',
+						status: {code: 0},
+						titleObjectFieldName: 'title',
+					});
+
+				apiHelpers.data.push({
+					id: objectDefinition.id as number,
+					type: 'objectDefinition',
+				});
+
+				applicationName = (
+					objectDefinition.restContextPath as string
+				).replace(/^\/o\//, '');
+				objectDefinitionId = objectDefinition.id as number;
+
+				const objectEntry =
+					await apiHelpers.objectEntry.postObjectEntry(
+						{
+							objectEntryFolderExternalReferenceCode:
+								'L_CONTENTS',
+							title,
+						},
+						applicationName,
+						spaceName
+					);
+
+				objectEntryId = objectEntry.id;
+			});
+
+			await test.step('Add a required field to the published structure', async () => {
+				await apiHelpers.objectAdmin.postObjectDefinitionObjectField(
+					objectDefinitionId,
+					{
+						DBType: 'String',
+						businessType: 'Text',
+						externalReferenceCode: getRandomString(),
+						indexed: true,
+						indexedAsKeyword: false,
+						indexedLanguageId: 'en_US',
+						label: {en_US: 'Summary'},
+						localized: true,
+						name: 'summary',
+						required: true,
+					}
+				);
+			});
+
+			await test.step('Check the dashboard lists the content with its missing field', async () => {
+				const missingRequiredDataList = await openQualityList(page, {
+					cardTitle: 'Missing Required Data',
+					spaceName,
+					text: title,
+				});
+
+				await expect(
+					missingRequiredDataList.getByText(
+						'1 Missing Required Field',
+						{exact: true}
+					)
+				).toBeVisible();
+			});
+
+			await test.step('Open the missing required data page of the space', async () => {
+				await page
+					.getByRole('link', {name: 'View All Missing Required Data'})
+					.click();
+
+				await expect(page).toHaveURL(/missing-required-data\?groupId=/);
+
+				await expect(
+					page.getByText(title, {exact: true})
+				).toBeVisible();
+			});
+
+			await test.step('View and edit the content from the page', async () => {
+				await viewAndEditContent(page, title);
+			});
+
+			await test.step('Check the content leaves the list once the field is filled', async () => {
+				const objectEntry =
+					await apiHelpers.objectEntry.patchObjectEntry(
+						{summary_i18n: {en_US: getRandomString()}},
+						applicationName,
+						objectEntryId
+					);
+
+				expect(objectEntry.id).toBe(objectEntryId);
+
+				await openQualityList(page, {
+					cardTitle: 'Missing Required Data',
+					spaceName,
+					text: 'No Missing Required Data',
+				});
+			});
+		}
+	);
+
+	test(
+		'Lists the approved assets nothing uses and drops a file once a content embeds it',
+		{tag: '@LPD-105769'},
+		async ({apiHelpers, page}) => {
+			const spaceName = `space ${getRandomString()}`;
+			const contentTitle = `content ${getRandomString()}`;
+			const fileTitle = `file ${getRandomString()}`;
+
+			let fileExternalReferenceCode: string;
+
+			await test.step('Publish a content and a file nothing uses', async () => {
+				await apiHelpers.headlessAssetLibrary.createSpace({
+					name: spaceName,
+				});
+
+				const content = await apiHelpers.objectEntry.postObjectEntry(
+					{
+						objectEntryFolderExternalReferenceCode: 'L_CONTENTS',
+						title: contentTitle,
+					},
+					APPLICATION_NAME,
+					spaceName
+				);
+
+				const file = await apiHelpers.objectEntry.postObjectEntry(
+					{
+						file: {
+							fileBase64: PNG_BASE64,
+							name: `${getRandomString()}.png`,
+						},
+						objectEntryFolderExternalReferenceCode: 'L_FILES',
+						title: fileTitle,
+					},
+					FILE_APPLICATION_NAME,
+					spaceName
+				);
+
+				fileExternalReferenceCode = file.externalReferenceCode;
+
+				for (const objectEntry of [content, file]) {
+					apiHelpers.data.push({
+						id: objectEntry.id,
+						type: 'document',
+					});
+
+					expect(objectEntry.id).toBeTruthy();
+				}
+			});
+
+			await test.step('Check the dashboard lists both as unlinked', async () => {
+				const unlinkedContentList = await openQualityList(page, {
+					cardTitle: 'Unlinked Content',
+					spaceName,
+					text: contentTitle,
+				});
+
+				await expect(
+					unlinkedContentList.getByText(
+						UNLINKED_CONTENT_ALERT_MESSAGE
+					)
+				).toBeVisible();
+
+				await expect(
+					unlinkedContentList.getByText(fileTitle, {exact: true})
+				).toBeVisible();
+
+				await expect(
+					unlinkedContentList.getByText(
+						'This asset is not used in any content or page.',
+						{exact: true}
+					)
+				).toHaveCount(2);
+			});
+
+			await test.step('Open the unlinked content page of the space', async () => {
+				await page
+					.getByRole('link', {name: 'View All Unlinked Content'})
+					.click();
+
+				await expect(page).toHaveURL(/unlinked-content\?groupId=/);
+
+				await expect(
+					page.getByText(UNLINKED_CONTENT_ALERT_MESSAGE)
+				).toBeVisible();
+
+				await expect(
+					page.getByText(contentTitle, {exact: true})
+				).toBeVisible();
+
+				await expect(
+					page.getByText(fileTitle, {exact: true})
+				).toBeVisible();
+			});
+
+			await test.step('View and edit the content from the page', async () => {
+				await viewAndEditContent(page, contentTitle);
+			});
+
+			await test.step('Check the file leaves the list once a content embeds it', async () => {
+				const embeddingContent =
+					await apiHelpers.objectEntry.postObjectEntry(
+						{
+							content: getDocumentHTML(fileExternalReferenceCode),
+							objectEntryFolderExternalReferenceCode:
+								'L_CONTENTS',
+							title: `content ${getRandomString()}`,
+						},
+						APPLICATION_NAME,
+						spaceName
+					);
+
+				apiHelpers.data.push({
+					id: embeddingContent.id,
+					type: 'document',
+				});
+
+				const unlinkedContentList = await openQualityList(page, {
+					cardTitle: 'Unlinked Content',
+					spaceName,
+					text: contentTitle,
+				});
+
+				await expect(
+					unlinkedContentList.getByText(fileTitle, {exact: true})
+				).toBeHidden();
+			});
+		}
+	);
+});
+
+test.describe('Operations section', () => {
+	test(
+		'Shows the distribution of contents by status for the selected space',
+		{tag: '@LPD-97421'},
+		async ({apiHelpers, page}) => {
+			const spaceName = `space ${getRandomString()}`;
+
+			let approvedTitle: string;
+			let draftTitle: string;
+
+			await test.step('Create contents in every status', async () => {
+				await apiHelpers.headlessAssetLibrary.createSpace({
+					name: spaceName,
+				});
+
+				const postContent = async (body: object = {}) => {
+					const content =
+						await apiHelpers.objectEntry.postObjectEntry(
+							{
+								displayDate: PAST_DATE,
+								objectEntryFolderExternalReferenceCode:
+									'L_CONTENTS',
+								title: getRandomString(),
+								...body,
+							},
+							APPLICATION_NAME,
+							spaceName
+						);
+
+					apiHelpers.data.push({id: content.id, type: 'document'});
+
+					expect(content.id).toBeTruthy();
+
+					return content;
+				};
+
+				const approvedContent = await postContent();
+
+				approvedTitle = approvedContent.title;
+
+				await postContent();
+
+				const draftContent = await postContent({status: {code: 2}});
+
+				draftTitle = draftContent.title;
+
+				await postContent({displayDate: getUpcomingDate(10)});
+
+				const expiredContent = await postContent();
+
+				await apiHelpers.objectEntry.expireObjectEntryByExternalReferenceCode(
+					APPLICATION_NAME,
+					spaceName,
+					expiredContent.externalReferenceCode
+				);
+			});
+
+			const contentProgressCard = page
+				.locator('.cms-dashboard__base-card')
+				.filter({hasText: 'Content Progress'});
+
+			await test.step('Check the distribution in the chart', async () => {
+
+				// Retry with a reload to absorb the search index lag the
+				// status facet reads from
+
+				await expect(async () => {
+					await page.goto('/web/cms/dashboard');
+
+					await selectSpace(page, spaceName);
+
+					await expect(
+						contentProgressCard.getByRole('link', {
+							name: 'Approved: 2',
+						})
+					).toBeVisible();
+				}).toPass();
+
+				await expect(
+					contentProgressCard.getByRole('link', {name: 'Draft: 1'})
+				).toBeVisible();
+
+				await expect(
+					contentProgressCard.getByRole('link', {
+						name: 'Scheduled: 1',
+					})
+				).toBeVisible();
+
+				await expect(
+					contentProgressCard.getByRole('link', {name: 'Others: 1'})
+				).toBeVisible();
+
+				await expect(
+					contentProgressCard.getByLabel(/Pending/)
+				).toBeHidden();
+			});
+
+			await test.step('Open the All section filtered by draft', async () => {
+				await contentProgressCard
+					.getByRole('link', {name: 'Draft: 1'})
+					.click();
+
+				await expect(page).toHaveURL(
+					/allSection_fdsConfig=.*filters.*status/
+				);
+
+				await expect(
+					page.getByText(draftTitle, {exact: true})
+				).toBeVisible();
+
+				await expect(
+					page.getByText(approvedTitle, {exact: true})
+				).toBeHidden();
+			});
+		}
+	);
+
+	test(
+		'Lists the drafts of the selected space not modified for more than 30 days',
+		{tag: '@LPD-101600'},
+		async ({apiHelpers, browser, page}) => {
+			const spaceName = `space ${getRandomString()}`;
+			const longStandingDraftTitle = `draft ${getRandomString()}`;
+			const recentDraftTitle = `draft ${getRandomString()}`;
+
+			await test.step('Create a long-standing draft and a recent one', async () => {
+				await apiHelpers.headlessAssetLibrary.createSpace({
+					name: spaceName,
+				});
+
+				const drafts = [];
+
+				for (const title of [
+					longStandingDraftTitle,
+					recentDraftTitle,
+				]) {
+					const draft = await apiHelpers.objectEntry.postObjectEntry(
+						{
+							objectEntryFolderExternalReferenceCode:
+								'L_CONTENTS',
+							status: {code: 2},
+							title,
+						},
+						APPLICATION_NAME,
+						spaceName
+					);
+
+					apiHelpers.data.push({id: draft.id, type: 'document'});
+
+					expect(draft.id).toBeTruthy();
+
+					drafts.push(draft);
+				}
+
+				const adminContext = await browser.newContext();
+
+				try {
+					const adminPage = await adminContext.newPage();
+
+					await performLoginViaApi({
+						page: adminPage,
+						screenName: 'test',
+					});
+
+					const serverAdministrationPage =
+						new ServerAdministrationPage(adminPage);
+
+					await serverAdministrationPage.goto();
+
+					await serverAdministrationPage.executeScript(
+						getLongStandingDraftScript(drafts[0].id)
+					);
+				}
+				finally {
+					await adminContext.close();
+				}
+			});
+
+			const card = page.getByRole('button', {
+				name: /^Long-Standing Drafts/,
+			});
+
+			await test.step('Count the long-standing draft in the card', async () => {
+				await expect(async () => {
+					await page.goto('/web/cms/dashboard');
+
+					await selectSpace(page, spaceName);
+
+					await expect(card).toContainText('50% of 2 Assets', {
+						timeout: 5000,
+					});
+				}).toPass();
+			});
+
+			const list = page.getByRole('region', {
+				name: 'Long-Standing Drafts',
+			});
+
+			await test.step('Expand the list of long-standing drafts', async () => {
+				await card.click();
+
+				await expect(card).toHaveAttribute('aria-expanded', 'true');
+
+				await expect(
+					list.getByRole('link', {name: longStandingDraftTitle})
+				).toBeVisible();
+
+				await expect(
+					list.getByText(
+						`${LONG_STANDING_DRAFT_AGE_DAYS} days in draft`
+					)
+				).toBeVisible();
+
+				await expect(
+					list.getByText(recentDraftTitle, {exact: true})
+				).toBeHidden();
+			});
+
+			await test.step('Collapse the list', async () => {
+				await card.click();
+
+				await expect(card).toHaveAttribute('aria-expanded', 'false');
+
+				await expect(list).toBeHidden();
+
+				await card.click();
+			});
+
+			await test.step('Open the All section filtered by draft and modified date', async () => {
+				await list
+					.getByRole('link', {name: 'View All Long-Standing Drafts'})
+					.click();
+
+				await expect(page).toHaveURL(
+					/allSection_fdsConfig=.*status.*dateModified/
+				);
+
+				await expect(
+					page.getByText(longStandingDraftTitle, {exact: true})
+				).toBeVisible();
+
+				await expect(
+					page.getByText(recentDraftTitle, {exact: true})
+				).toBeHidden();
+			});
+		}
+	);
+});
+
+test.describe('Permissions', () => {
+	test.beforeEach(async ({page}) => {
+		await performUserSwitchViaApi(page, 'test');
+	});
+
+	test(
+		'A Space Administrator only sees the data and the spaces they administer',
+		{tag: '@LPD-111502'},
+		async ({apiHelpers, page}) => {
+			const administeredSpaceName = `space ${getRandomString()}`;
+			const administeredTitle = `overdue ${getRandomString()}`;
+			const reviewedSpaceName = `space ${getRandomString()}`;
+			const reviewedTitle = `overdue ${getRandomString()}`;
+
+			const administeredSpace = await addSpaceWithOverdueContent(
+				apiHelpers,
+				administeredSpaceName,
+				administeredTitle
+			);
+
+			const reviewedSpace = await addSpaceWithOverdueContent(
+				apiHelpers,
+				reviewedSpaceName,
+				reviewedTitle
+			);
+
+			const user = await apiHelpers.headlessAdminUser.postUserAccount();
+
+			registerUserCredentials(user);
+
+			await addSpaceMember(
+				apiHelpers,
+				administeredSpace,
+				user,
+				'Asset Library Administrator'
+			);
+			await addSpaceMember(
+				apiHelpers,
+				reviewedSpace,
+				user,
+				'Asset Library Content Reviewer'
+			);
+
+			await performUserSwitchViaApi(page, user.alternateName);
+
+			await page.goto('/web/cms/home');
+
+			await page.getByRole('menuitem', {name: 'Dashboard'}).click();
+
+			await expect(
+				page.getByRole('button', {exact: true, name: 'Governance'})
+			).toBeVisible();
+
+			await test.step('Lists only the content of the administered space', async () => {
+				await page
+					.getByRole('button', {name: /^Overdue Reviews/})
+					.click();
+
+				const overdueReviewsList = page.getByRole('region', {
+					name: 'Overdue Reviews',
+				});
+
+				await expect(
+					overdueReviewsList.getByText(administeredTitle, {
+						exact: true,
+					})
+				).toBeVisible();
+
+				await expect(
+					overdueReviewsList.getByText(reviewedTitle, {exact: true})
+				).toBeHidden();
+			});
+
+			await test.step('Offers only the administered space in the filter', async () => {
+				await page
+					.getByRole('combobox', {name: 'Filter by Spaces'})
+					.click();
+
+				await expectSpaceOption(page, administeredSpaceName, true);
+				await expectSpaceOption(page, reviewedSpaceName, false);
+			});
+		}
+	);
+
+	test(
+		'A Space Content Reviewer does not see the Governance tab',
+		{tag: '@LPD-111502'},
+		async ({apiHelpers, page}) => {
+			await addSpaceMemberAndSwitch(
+				apiHelpers,
+				page,
+				`space ${getRandomString()}`,
+				'Asset Library Content Reviewer'
+			);
+
+			await expectNoDashboardAccess(page);
+		}
+	);
+
+	test(
+		'A Space Member does not see the Governance tab',
+		{tag: '@LPD-111502'},
+		async ({apiHelpers, page}) => {
+			await addSpaceMemberAndSwitch(
+				apiHelpers,
+				page,
+				`space ${getRandomString()}`
+			);
+
+			await expectNoDashboardAccess(page);
+		}
+	);
+});

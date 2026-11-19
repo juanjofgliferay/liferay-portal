@@ -5,28 +5,31 @@
 
 package com.liferay.jenkins.results.parser;
 
+import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-
-import java.util.Arrays;
 
 /**
  * @author Peter Yoo
  */
 public class BufferedProcess extends Process {
 
-	public BufferedProcess(int bufferSize, Process process) {
+	public BufferedProcess(Process process) {
 		_process = process;
 
 		_standardErrorInputStreamBuffer = new InputStreamBuffer(
-			bufferSize, process.getErrorStream());
+			process.getErrorStream());
 
 		_standardErrorInputStreamBuffer.start();
 
 		_standardOutInputStreamBuffer = new InputStreamBuffer(
-			bufferSize, process.getInputStream());
+			process.getInputStream());
 
 		_standardOutInputStreamBuffer.start();
 	}
@@ -34,6 +37,9 @@ public class BufferedProcess extends Process {
 	@Override
 	public void destroy() {
 		_process.destroy();
+
+		_standardErrorInputStreamBuffer._close();
+		_standardOutInputStreamBuffer._close();
 	}
 
 	@Override
@@ -67,6 +73,8 @@ public class BufferedProcess extends Process {
 		return _process.waitFor();
 	}
 
+	private static final int _MEMORY_THRESHOLD = 10 * 1024 * 1024;
+
 	private static final long _MILLIS_EXECUTION_TIME_MIN = 10;
 
 	private final Process _process;
@@ -75,40 +83,24 @@ public class BufferedProcess extends Process {
 
 	private class InputStreamBuffer extends Thread {
 
-		public InputStreamBuffer(int bufferSize, InputStream inputStream) {
+		public InputStreamBuffer(InputStream inputStream) {
 			_inputStream = inputStream;
-
-			_buffer = new byte[bufferSize];
 		}
 
 		public void run() {
 			try {
-				byte[] bytes = new byte[Math.min(256, _buffer.length)];
+				byte[] bytes = new byte[256];
 
 				int bytesRead = 0;
-
-				_index = 0;
 
 				while (bytesRead != -1) {
 					bytesRead = _inputStream.read(bytes);
 
-					if (bytesRead > 0) {
-						int spaceAvailable = _buffer.length - _index;
-
-						if (bytesRead > spaceAvailable) {
-							int spaceNeeded = bytesRead - spaceAvailable;
-
-							_makeSpace(spaceNeeded);
-						}
-
-						synchronized (_buffer) {
-							System.arraycopy(
-								bytes, 0, _buffer, _index, bytesRead);
-
-							_index += bytesRead;
-							_totalBytesRead += bytesRead;
-						}
+					if (bytesRead <= 0) {
+						continue;
 					}
+
+					_write(bytes, bytesRead);
 				}
 			}
 			catch (IOException ioException) {
@@ -116,50 +108,91 @@ public class BufferedProcess extends Process {
 			}
 		}
 
-		public InputStream toInputStream() {
-			byte[] bytes = null;
-
-			if (_totalBytesRead > _buffer.length) {
-				String message = JenkinsResultsParserUtil.combine(
-					"[Truncated ",
-					String.valueOf(_totalBytesRead - _buffer.length),
-					" bytes] \n...");
-
-				byte[] messageBytes = message.getBytes();
-
-				bytes = new byte[messageBytes.length + _index];
-
-				System.arraycopy(
-					messageBytes, 0, bytes, 0, messageBytes.length);
-
-				System.arraycopy(
-					_buffer, 0, bytes, messageBytes.length, _index);
-			}
-			else {
-				bytes = Arrays.copyOf(_buffer, _index);
+		public synchronized InputStream toInputStream() {
+			if (_closed) {
+				return new ByteArrayInputStream(new byte[0]);
 			}
 
-			return new ByteArrayInputStream(bytes);
+			if (_overflowFile == null) {
+				return new ByteArrayInputStream(
+					_byteArrayOutputStream.toByteArray());
+			}
+
+			try {
+				_overflowOutputStream.flush();
+
+				return new FileInputStream(_overflowFile);
+			}
+			catch (IOException ioException) {
+				throw new RuntimeException(ioException);
+			}
 		}
 
-		private void _makeSpace(int spacesNeeded) {
-			if ((_index - spacesNeeded) < 0) {
-				throw new IllegalArgumentException(
-					JenkinsResultsParserUtil.combine(
-						"Unable to shift buffer content left ",
-						String.valueOf(spacesNeeded), " spaces"));
+		private synchronized void _close() {
+			if (_closed) {
+				return;
 			}
 
-			System.arraycopy(
-				_buffer, spacesNeeded, _buffer, 0, _index - spacesNeeded);
+			_closed = true;
 
-			_index -= spacesNeeded;
+			if (_overflowOutputStream != null) {
+				try {
+					_overflowOutputStream.close();
+				}
+				catch (IOException ioException) {
+				}
+			}
+
+			if (_overflowFile != null) {
+				_overflowFile.delete();
+			}
 		}
 
-		private final byte[] _buffer;
-		private int _index;
+		private synchronized void _write(byte[] bytes, int length) {
+			if (_closed) {
+				return;
+			}
+
+			try {
+				if (_overflowOutputStream != null) {
+					_overflowOutputStream.write(bytes, 0, length);
+
+					return;
+				}
+
+				if ((_byteArrayOutputStream.size() + length) <=
+						_MEMORY_THRESHOLD) {
+
+					_byteArrayOutputStream.write(bytes, 0, length);
+
+					return;
+				}
+
+				_overflowFile = File.createTempFile(
+					"buffered-process-overflow-", ".tmp");
+
+				_overflowFile.deleteOnExit();
+
+				_overflowOutputStream = new BufferedOutputStream(
+					new FileOutputStream(_overflowFile));
+
+				_byteArrayOutputStream.writeTo(_overflowOutputStream);
+
+				_byteArrayOutputStream = null;
+
+				_overflowOutputStream.write(bytes, 0, length);
+			}
+			catch (IOException ioException) {
+				throw new RuntimeException(ioException);
+			}
+		}
+
+		private ByteArrayOutputStream _byteArrayOutputStream =
+			new ByteArrayOutputStream();
+		private boolean _closed;
 		private final InputStream _inputStream;
-		private int _totalBytesRead;
+		private File _overflowFile;
+		private OutputStream _overflowOutputStream;
 
 	}
 

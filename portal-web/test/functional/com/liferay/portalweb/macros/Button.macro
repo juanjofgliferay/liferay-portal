@@ -125,7 +125,9 @@ definition {
 
 	@summary = "Default summary"
 	macro clickRemove() {
-		Button.click(button = "Remove");
+		Click.javaScriptClick(
+			key_text = "Remove",
+			locator1 = "Button#ANY");
 	}
 
 	@summary = "Default summary"
@@ -162,8 +164,6 @@ definition {
 	@summary = "Default summary"
 	macro clickSubmitForWorkflow() {
 		Button.click(button = "Submit for Workflow");
-
-		WaitForLiferayEvent.initializeLiferayEventLog();
 	}
 
 	@summary = "Default summary"

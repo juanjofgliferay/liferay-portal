@@ -215,8 +215,6 @@ public class DDLRecordSetCacheModel
 
 		ddlRecordSetImpl.resetOriginalValues();
 
-		ddlRecordSetImpl.setDDMFormValues(_ddmFormValues);
-
 		return ddlRecordSetImpl;
 	}
 
@@ -254,10 +252,6 @@ public class DDLRecordSetCacheModel
 		scope = objectInput.readInt();
 		settings = (String)objectInput.readObject();
 		lastPublishDate = objectInput.readLong();
-
-		_ddmFormValues =
-			(com.liferay.dynamic.data.mapping.storage.DDMFormValues)
-				objectInput.readObject();
 	}
 
 	@Override
@@ -342,8 +336,6 @@ public class DDLRecordSetCacheModel
 		}
 
 		objectOutput.writeLong(lastPublishDate);
-
-		objectOutput.writeObject(_ddmFormValues);
 	}
 
 	public long mvccVersion;
@@ -367,7 +359,6 @@ public class DDLRecordSetCacheModel
 	public int scope;
 	public String settings;
 	public long lastPublishDate;
-	public com.liferay.dynamic.data.mapping.storage.DDMFormValues
-		_ddmFormValues;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1540806744

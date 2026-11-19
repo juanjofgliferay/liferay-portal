@@ -40,6 +40,16 @@ public class CommerceChannelRelServiceWrapper
 	}
 
 	@Override
+	public java.util.List<CommerceChannelRel> addCommerceChannelRels(
+			String className, long[] classPKs, long commerceChannelId,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _commerceChannelRelService.addCommerceChannelRels(
+			className, classPKs, commerceChannelId, serviceContext);
+	}
+
+	@Override
 	public void deleteCommerceChannelRel(long commerceChannelRelId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
@@ -117,6 +127,45 @@ public class CommerceChannelRelServiceWrapper
 			className, classPK, name);
 	}
 
+	@Override
+	public java.util.List<CommerceChannelRel>
+			getCommerceCurrencyCommerceChannelRels(
+				long commerceChannelId, String name, int start, int end)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _commerceChannelRelService.
+			getCommerceCurrencyCommerceChannelRels(
+				commerceChannelId, name, start, end);
+	}
+
+	@Override
+	public int getCommerceCurrencyCommerceChannelRelsCount(
+			long commerceChannelId, String name)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _commerceChannelRelService.
+			getCommerceCurrencyCommerceChannelRelsCount(
+				commerceChannelId, name);
+	}
+
+	@Override
+	public java.util.List<CommerceChannelRel> getCountryCommerceChannelRels(
+			long commerceChannelId, String name, int start, int end)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _commerceChannelRelService.getCountryCommerceChannelRels(
+			commerceChannelId, name, start, end);
+	}
+
+	@Override
+	public int getCountryCommerceChannelRelsCount(
+			long commerceChannelId, String name)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _commerceChannelRelService.getCountryCommerceChannelRelsCount(
+			commerceChannelId, name);
+	}
+
 	/**
 	 * Returns the OSGi service identifier.
 	 *
@@ -142,3 +191,4 @@ public class CommerceChannelRelServiceWrapper
 	private CommerceChannelRelService _commerceChannelRelService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:2059421893

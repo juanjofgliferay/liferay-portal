@@ -9,11 +9,20 @@ import com.liferay.frontend.js.loader.modules.extender.internal.configuration.De
 import com.liferay.frontend.js.loader.modules.extender.internal.resolution.BrowserModulesResolution;
 import com.liferay.frontend.js.loader.modules.extender.internal.resolution.BrowserModulesResolver;
 import com.liferay.frontend.js.loader.modules.extender.internal.servlet.util.JSLoaderModulesUtil;
+import com.liferay.frontend.js.loader.modules.extender.npm.NPMRegistry;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
+import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.servlet.HttpHeaders;
 import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.url.builder.AbsolutePortalURLBuilderFactory;
+
+import jakarta.servlet.Servlet;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -23,19 +32,19 @@ import java.net.URLDecoder;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
-import javax.servlet.Servlet;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
+import org.osgi.framework.BundleContext;
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Rodolfo Roza Miranda
  */
 @Component(
+	configurationPid = "com.liferay.frontend.js.loader.modules.extender.internal.configuration.Details",
 	property = {
 		"osgi.http.whiteboard.servlet.name=com.liferay.frontend.js.loader.modules.extender.internal.servlet.JSResolveModulesServlet",
 		"osgi.http.whiteboard.servlet.pattern=/js_resolve_modules",
@@ -45,11 +54,29 @@ import org.osgi.service.component.annotations.Reference;
 )
 public class JSResolveModulesServlet extends HttpServlet {
 
+	@Activate
+	protected void activate(
+		BundleContext bundleContext, Map<String, Object> properties) {
+
+		_browserModulesResolver = new BrowserModulesResolver(
+			_absolutePortalURLBuilderFactory, bundleContext, _jsonFactory,
+			_npmRegistry, properties);
+	}
+
+	@Deactivate
+	protected void deactivate() {
+		_browserModulesResolver.destroy();
+	}
+
 	@Override
 	protected void service(
 			HttpServletRequest httpServletRequest,
 			HttpServletResponse httpServletResponse)
 		throws IOException {
+
+		if (!FeatureFlagManagerUtil.isEnabled("LPD-48372")) {
+			return;
+		}
 
 		if (JSLoaderModulesUtil.eTagEquals(
 				httpServletRequest.getHeader(HttpHeaders.IF_NONE_MATCH))) {
@@ -65,12 +92,11 @@ public class JSResolveModulesServlet extends HttpServlet {
 		httpServletResponse.setCharacterEncoding(StringPool.UTF8);
 		httpServletResponse.setContentType(ContentTypes.APPLICATION_JSON);
 
-		PrintWriter printWriter = new PrintWriter(
-			httpServletResponse.getOutputStream(), true);
-
 		BrowserModulesResolution browserModulesResolution =
 			_browserModulesResolver.resolve(
 				_getModuleNames(httpServletRequest), httpServletRequest);
+
+		PrintWriter printWriter = httpServletResponse.getWriter();
 
 		printWriter.write(browserModulesResolution.toJSON());
 
@@ -109,6 +135,14 @@ public class JSResolveModulesServlet extends HttpServlet {
 	}
 
 	@Reference
+	private AbsolutePortalURLBuilderFactory _absolutePortalURLBuilderFactory;
+
 	private BrowserModulesResolver _browserModulesResolver;
+
+	@Reference
+	private JSONFactory _jsonFactory;
+
+	@Reference
+	private NPMRegistry _npmRegistry;
 
 }

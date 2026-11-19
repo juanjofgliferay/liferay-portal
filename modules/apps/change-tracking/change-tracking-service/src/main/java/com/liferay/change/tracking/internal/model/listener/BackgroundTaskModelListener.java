@@ -11,6 +11,7 @@ import com.liferay.change.tracking.model.CTProcess;
 import com.liferay.change.tracking.service.CTCollectionLocalService;
 import com.liferay.change.tracking.service.CTSchemaVersionLocalService;
 import com.liferay.portal.background.task.model.BackgroundTask;
+import com.liferay.portal.background.task.service.BackgroundTaskLocalService;
 import com.liferay.portal.kernel.backgroundtask.constants.BackgroundTaskConstants;
 import com.liferay.portal.kernel.exception.ModelListenerException;
 import com.liferay.portal.kernel.model.BaseModelListener;
@@ -45,38 +46,58 @@ public class BackgroundTaskModelListener
 			return;
 		}
 
-		if ((backgroundTask.getStatus() ==
-				BackgroundTaskConstants.STATUS_CANCELLED) ||
-			(backgroundTask.getStatus() ==
-				BackgroundTaskConstants.STATUS_FAILED)) {
+		try {
+			if ((backgroundTask.getStatus() ==
+					BackgroundTaskConstants.STATUS_CANCELLED) ||
+				(backgroundTask.getStatus() ==
+					BackgroundTaskConstants.STATUS_FAILED)) {
 
-			String name = backgroundTask.getName();
+				CTCollection ctCollection =
+					_ctCollectionLocalService.fetchCTCollection(
+						Long.valueOf(backgroundTask.getName()));
 
-			if (name.contains("_")) {
-				return;
+				if (ctCollection != null) {
+					if (ctCollection.getStatus() ==
+							WorkflowConstants.STATUS_APPROVED) {
+
+						backgroundTask.setStatus(
+							BackgroundTaskConstants.STATUS_SUCCESSFUL);
+
+						backgroundTask =
+							_backgroundTaskLocalService.updateBackgroundTask(
+								backgroundTask);
+
+						return;
+					}
+
+					int status = WorkflowConstants.STATUS_DRAFT;
+
+					if (!_ctSchemaVersionLocalService.isLatestCTSchemaVersion(
+							ctCollection.getSchemaVersionId())) {
+
+						status = WorkflowConstants.STATUS_EXPIRED;
+					}
+					else if (_ctCollectionLocalService.hasUnapprovedChanges(
+								ctCollection.getCtCollectionId())) {
+
+						status = WorkflowConstants.STATUS_INCOMPLETE;
+					}
+
+					ctCollection.setScheduledDate(null);
+					ctCollection.setStatus(status);
+
+					_ctCollectionLocalService.updateCTCollection(ctCollection);
+				}
 			}
 
-			CTCollection ctCollection =
-				_ctCollectionLocalService.fetchCTCollection(
-					Long.valueOf(backgroundTask.getName()));
+			if (backgroundTask.getStatus() !=
+					originalBackgroundTask.getStatus()) {
 
-			if (ctCollection != null) {
-				int status = WorkflowConstants.STATUS_DRAFT;
-
-				if (!_ctSchemaVersionLocalService.isLatestCTSchemaVersion(
-						ctCollection.getSchemaVersionId())) {
-
-					status = WorkflowConstants.STATUS_EXPIRED;
-				}
-
-				ctCollection.setStatus(status);
-
-				_ctCollectionLocalService.updateCTCollection(ctCollection);
+				_reindexCTProcess(backgroundTask);
 			}
 		}
-
-		if (backgroundTask.getStatus() != originalBackgroundTask.getStatus()) {
-			_reindexCTProcess(backgroundTask);
+		catch (Exception exception) {
+			throw new ModelListenerException(exception);
 		}
 	}
 
@@ -98,6 +119,9 @@ public class BackgroundTaskModelListener
 			throw new ModelListenerException(searchException);
 		}
 	}
+
+	@Reference
+	private BackgroundTaskLocalService _backgroundTaskLocalService;
 
 	@Reference
 	private CTCollectionLocalService _ctCollectionLocalService;

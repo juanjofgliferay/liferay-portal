@@ -22,6 +22,10 @@ public interface CommerceContext extends Serializable {
 
 	public String[] getAccountEntryAllowedTypes() throws PortalException;
 
+	public long getCPConfigurationListId(long groupId) throws PortalException;
+
+	public long[] getCPConfigurationListIds() throws PortalException;
+
 	public long[] getCommerceAccountGroupIds() throws PortalException;
 
 	public long getCommerceChannelGroupId() throws PortalException;

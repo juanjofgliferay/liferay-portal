@@ -18,6 +18,7 @@ import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.persistence.UserPersistence;
 import com.liferay.portal.kernel.social.SocialActivityManagerUtil;
 import com.liferay.portal.kernel.systemevent.SystemEvent;
+import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portlet.ratings.service.base.RatingsEntryLocalServiceBaseImpl;
 import com.liferay.ratings.kernel.exception.EntryScoreException;
 import com.liferay.ratings.kernel.model.RatingsEntry;
@@ -26,6 +27,7 @@ import com.liferay.ratings.kernel.service.RatingsStatsLocalService;
 import com.liferay.ratings.kernel.service.persistence.RatingsStatsPersistence;
 import com.liferay.social.kernel.model.SocialActivityConstants;
 
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -118,6 +120,10 @@ public class RatingsEntryLocalServiceImpl
 	public Map<Long, RatingsEntry> getEntries(
 		long userId, String className, long[] classPKs) {
 
+		if (ArrayUtil.isEmpty(classPKs)) {
+			return Collections.emptyMap();
+		}
+
 		long classNameId = _classNameLocalService.getClassNameId(className);
 
 		Map<Long, RatingsEntry> ratingsEntries = new HashMap<>();
@@ -136,20 +142,6 @@ public class RatingsEntryLocalServiceImpl
 	public List<RatingsEntry> getEntries(String className, long classPK) {
 		return ratingsEntryPersistence.findByC_C(
 			_classNameLocalService.getClassNameId(className), classPK);
-	}
-
-	@Override
-	public List<RatingsEntry> getEntries(
-		String className, long classPK, double score) {
-
-		return ratingsEntryPersistence.findByC_C_S(
-			_classNameLocalService.getClassNameId(className), classPK, score);
-	}
-
-	@Override
-	public int getEntriesCount(String className, long classPK, double score) {
-		return ratingsEntryPersistence.countByC_C_S(
-			_classNameLocalService.getClassNameId(className), classPK, score);
 	}
 
 	@Override
@@ -252,7 +244,7 @@ public class RatingsEntryLocalServiceImpl
 	}
 
 	protected void validate(double score) throws PortalException {
-		if ((score > 1) || (score < 0)) {
+		if ((score > 1) || (score < 0) || Double.isNaN(score)) {
 			throw new EntryScoreException(
 				"Score " + score + " is not a value between 0 and 1");
 		}

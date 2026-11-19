@@ -14,18 +14,23 @@ import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.search.BaseModelSearchResult;
 import com.liferay.portal.kernel.search.Sort;
+import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
+import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.service.ClassNameLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portlet.asset.service.base.AssetVocabularyServiceBaseImpl;
 import com.liferay.portlet.asset.service.permission.AssetCategoriesPermission;
 import com.liferay.portlet.asset.service.permission.AssetVocabularyPermission;
+import com.liferay.portlet.asset.util.AssetVocabularySettingsHelper;
 import com.liferay.util.dao.orm.CustomSQLUtil;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -51,6 +56,8 @@ public class AssetVocabularyServiceImpl extends AssetVocabularyServiceBaseImpl {
 		AssetCategoriesPermission.check(
 			getPermissionChecker(), groupId, ActionKeys.ADD_VOCABULARY);
 
+		_checkSystemVocabulary(settings);
+
 		return assetVocabularyLocalService.addVocabulary(
 			getUserId(), groupId, title, titleMap, descriptionMap, settings,
 			visibilityType, serviceContext);
@@ -65,6 +72,8 @@ public class AssetVocabularyServiceImpl extends AssetVocabularyServiceBaseImpl {
 
 		AssetCategoriesPermission.check(
 			getPermissionChecker(), groupId, ActionKeys.ADD_VOCABULARY);
+
+		_checkSystemVocabulary(settings);
 
 		return assetVocabularyLocalService.addVocabulary(
 			getUserId(), groupId, title, titleMap, descriptionMap, settings,
@@ -93,6 +102,8 @@ public class AssetVocabularyServiceImpl extends AssetVocabularyServiceBaseImpl {
 		AssetCategoriesPermission.check(
 			getPermissionChecker(), groupId, ActionKeys.ADD_VOCABULARY);
 
+		_checkSystemVocabulary(settings);
+
 		return assetVocabularyLocalService.addVocabulary(
 			getUserId(), groupId, name, title, titleMap, descriptionMap,
 			settings, serviceContext);
@@ -108,6 +119,8 @@ public class AssetVocabularyServiceImpl extends AssetVocabularyServiceBaseImpl {
 
 		AssetCategoriesPermission.check(
 			getPermissionChecker(), groupId, ActionKeys.ADD_VOCABULARY);
+
+		_checkSystemVocabulary(settings);
 
 		return assetVocabularyLocalService.addVocabulary(
 			externalReferenceCode, getUserId(), groupId, name, title, titleMap,
@@ -161,11 +174,42 @@ public class AssetVocabularyServiceImpl extends AssetVocabularyServiceBaseImpl {
 	}
 
 	@Override
+	public AssetVocabulary deleteVocabularyByExternalReferenceCode(
+			String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		AssetVocabulary vocabulary = assetVocabularyPersistence.findByERC_G(
+			externalReferenceCode, groupId);
+
+		AssetVocabularyPermission.check(
+			getPermissionChecker(), vocabulary.getVocabularyId(),
+			ActionKeys.DELETE);
+
+		return assetVocabularyLocalService.deleteVocabulary(vocabulary);
+	}
+
+	@Override
 	public AssetVocabulary fetchVocabulary(long vocabularyId)
 		throws PortalException {
 
 		AssetVocabulary vocabulary =
-			assetVocabularyLocalService.fetchAssetVocabulary(vocabularyId);
+			assetVocabularyPersistence.fetchByPrimaryKey(vocabularyId);
+
+		if (vocabulary != null) {
+			AssetVocabularyPermission.check(
+				getPermissionChecker(), vocabulary, ActionKeys.VIEW);
+		}
+
+		return vocabulary;
+	}
+
+	@Override
+	public AssetVocabulary fetchVocabularyByExternalReferenceCode(
+			String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		AssetVocabulary vocabulary = assetVocabularyPersistence.fetchByERC_G(
+			externalReferenceCode, groupId);
 
 		if (vocabulary != null) {
 			AssetVocabularyPermission.check(
@@ -180,49 +224,14 @@ public class AssetVocabularyServiceImpl extends AssetVocabularyServiceBaseImpl {
 			long groupId, String externalReferenceCode)
 		throws PortalException {
 
-		AssetVocabulary vocabulary =
-			assetVocabularyLocalService.
-				getAssetVocabularyByExternalReferenceCode(
-					externalReferenceCode, groupId);
+		AssetVocabulary vocabulary = assetVocabularyPersistence.findByERC_G(
+			externalReferenceCode, groupId);
 
 		AssetVocabularyPermission.check(
 			getPermissionChecker(), vocabulary.getVocabularyId(),
 			ActionKeys.VIEW);
 
 		return vocabulary;
-	}
-
-	@Override
-	public List<AssetVocabulary> getGroupsVocabularies(long[] groupIds) {
-		return getGroupsVocabularies(groupIds, null);
-	}
-
-	@Override
-	public List<AssetVocabulary> getGroupsVocabularies(
-		long[] groupIds, String className) {
-
-		return getGroupsVocabularies(
-			groupIds, className, AssetCategoryConstants.ALL_CLASS_TYPE_PK);
-	}
-
-	@Override
-	public List<AssetVocabulary> getGroupsVocabularies(
-		long[] groupIds, String className, long classTypePK) {
-
-		List<AssetVocabulary> vocabularies =
-			assetVocabularyPersistence.filterFindByGroupId(groupIds);
-
-		if (Validator.isNull(className)) {
-			return vocabularies;
-		}
-
-		long classNameId = _classNameLocalService.getClassNameId(className);
-
-		return ListUtil.filter(
-			vocabularies,
-			assetVocabulary ->
-				assetVocabulary.isAssociatedToClassNameIdAndClassTypePK(
-					classNameId, classTypePK));
 	}
 
 	@Override
@@ -255,7 +264,7 @@ public class AssetVocabularyServiceImpl extends AssetVocabularyServiceBaseImpl {
 			return vocabularies;
 		}
 
-		int count = assetVocabularyLocalService.getGroupVocabulariesCount(
+		int count = assetVocabularyPersistence.countByGroupId(
 			new long[] {groupId});
 
 		if (count > 0) {
@@ -300,12 +309,20 @@ public class AssetVocabularyServiceImpl extends AssetVocabularyServiceBaseImpl {
 
 	@Override
 	public List<AssetVocabulary> getGroupVocabularies(long[] groupIds) {
+		if (ArrayUtil.isEmpty(groupIds)) {
+			return Collections.emptyList();
+		}
+
 		return assetVocabularyPersistence.filterFindByGroupId(groupIds);
 	}
 
 	@Override
 	public List<AssetVocabulary> getGroupVocabularies(
 		long[] groupIds, int[] visibilityTypes) {
+
+		if (ArrayUtil.isEmpty(groupIds)) {
+			return Collections.emptyList();
+		}
 
 		return assetVocabularyPersistence.filterFindByG_V(
 			groupIds, visibilityTypes);
@@ -323,6 +340,10 @@ public class AssetVocabularyServiceImpl extends AssetVocabularyServiceBaseImpl {
 
 	@Override
 	public int getGroupVocabulariesCount(long[] groupIds) {
+		if (ArrayUtil.isEmpty(groupIds)) {
+			return 0;
+		}
+
 		return assetVocabularyPersistence.filterCountByGroupId(groupIds);
 	}
 
@@ -374,13 +395,69 @@ public class AssetVocabularyServiceImpl extends AssetVocabularyServiceBaseImpl {
 	}
 
 	@Override
+	public List<AssetVocabulary> getGroupsVocabularies(long[] groupIds) {
+		return getGroupsVocabularies(groupIds, null);
+	}
+
+	@Override
+	public List<AssetVocabulary> getGroupsVocabularies(
+		long[] groupIds, String className) {
+
+		return getGroupsVocabularies(
+			groupIds, className, AssetCategoryConstants.ALL_CLASS_TYPE_PK);
+	}
+
+	@Override
+	public List<AssetVocabulary> getGroupsVocabularies(
+		long[] groupIds, String className, long classTypePK) {
+
+		if (ArrayUtil.isEmpty(groupIds)) {
+			return Collections.emptyList();
+		}
+
+		List<AssetVocabulary> vocabularies =
+			assetVocabularyPersistence.filterFindByGroupId(groupIds);
+
+		if (Validator.isNull(className)) {
+			return vocabularies;
+		}
+
+		long classNameId = _classNameLocalService.getClassNameId(className);
+
+		return ListUtil.filter(
+			vocabularies,
+			assetVocabulary ->
+				assetVocabulary.isAssociatedToClassNameIdAndClassTypePK(
+					classNameId, classTypePK));
+	}
+
+	public AssetVocabulary getOrAddEmptyVocabulary(
+			String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		AssetVocabulary vocabulary =
+			assetVocabularyService.fetchVocabularyByExternalReferenceCode(
+				externalReferenceCode, groupId);
+
+		if (vocabulary != null) {
+			return vocabulary;
+		}
+
+		AssetCategoriesPermission.check(
+			getPermissionChecker(), groupId, ActionKeys.ADD_VOCABULARY);
+
+		return assetVocabularyLocalService.getOrAddEmptyVocabulary(
+			externalReferenceCode, getUserId(), groupId);
+	}
+
+	@Override
 	public AssetVocabulary getVocabulary(long vocabularyId)
 		throws PortalException {
 
 		AssetVocabularyPermission.check(
 			getPermissionChecker(), vocabularyId, ActionKeys.VIEW);
 
-		return assetVocabularyLocalService.getVocabulary(vocabularyId);
+		return assetVocabularyPersistence.findByPrimaryKey(vocabularyId);
 	}
 
 	@Override
@@ -430,44 +507,68 @@ public class AssetVocabularyServiceImpl extends AssetVocabularyServiceBaseImpl {
 
 	@Override
 	public AssetVocabulary updateVocabulary(
-			long vocabularyId, Map<Locale, String> titleMap,
-			Map<Locale, String> descriptionMap, String settings)
+			String externalReferenceCode, long vocabularyId,
+			Map<Locale, String> titleMap, Map<Locale, String> descriptionMap,
+			String settings)
 		throws PortalException {
 
 		AssetVocabularyPermission.check(
 			getPermissionChecker(), vocabularyId, ActionKeys.UPDATE);
 
+		_checkSystemVocabulary(settings);
+
 		return assetVocabularyLocalService.updateVocabulary(
-			vocabularyId, titleMap, descriptionMap, settings);
+			externalReferenceCode, vocabularyId, titleMap, descriptionMap,
+			settings);
 	}
 
 	@Override
 	public AssetVocabulary updateVocabulary(
-			long vocabularyId, Map<Locale, String> titleMap,
-			Map<Locale, String> descriptionMap, String settings,
-			int visibilityType)
+			String externalReferenceCode, long vocabularyId,
+			Map<Locale, String> titleMap, Map<Locale, String> descriptionMap,
+			String settings, int visibilityType)
 		throws PortalException {
 
 		AssetVocabularyPermission.check(
 			getPermissionChecker(), vocabularyId, ActionKeys.UPDATE);
 
+		_checkSystemVocabulary(settings);
+
 		return assetVocabularyLocalService.updateVocabulary(
-			vocabularyId, titleMap, descriptionMap, settings, visibilityType);
+			externalReferenceCode, vocabularyId, titleMap, descriptionMap,
+			settings, visibilityType);
 	}
 
 	@Override
 	public AssetVocabulary updateVocabulary(
-			long vocabularyId, String title, Map<Locale, String> titleMap,
-			Map<Locale, String> descriptionMap, String settings,
-			ServiceContext serviceContext)
+			String externalReferenceCode, long vocabularyId, String title,
+			Map<Locale, String> titleMap, Map<Locale, String> descriptionMap,
+			String settings, int visibilityType, ServiceContext serviceContext)
 		throws PortalException {
 
 		AssetVocabularyPermission.check(
 			getPermissionChecker(), vocabularyId, ActionKeys.UPDATE);
 
+		_checkSystemVocabulary(settings);
+
 		return assetVocabularyLocalService.updateVocabulary(
-			vocabularyId, title, titleMap, descriptionMap, settings,
-			serviceContext);
+			externalReferenceCode, vocabularyId, title, titleMap,
+			descriptionMap, settings, visibilityType, serviceContext);
+	}
+
+	private void _checkSystemVocabulary(String settings)
+		throws PortalException {
+
+		AssetVocabularySettingsHelper assetVocabularySettingsHelper =
+			new AssetVocabularySettingsHelper(settings);
+
+		PermissionChecker permissionChecker = getPermissionChecker();
+
+		if (assetVocabularySettingsHelper.isSystem() &&
+			!permissionChecker.isCompanyAdmin()) {
+
+			throw new PrincipalException.MustBeCompanyAdmin(getUserId());
+		}
 	}
 
 	@BeanReference(type = ClassNameLocalService.class)

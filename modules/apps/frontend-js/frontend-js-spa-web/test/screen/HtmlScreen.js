@@ -241,7 +241,6 @@ describe('HtmlScreen', () => {
 			const element = document.querySelector('link[rel="Shortcut Icon"]');
 			const uri = new URL(element.href);
 			expect(uri.pathname).toBe('/for/favicon.ico');
-			expect(uri.searchParams.has('q')).toBe(true);
 			exitDocumentElement('surfaceId');
 			done();
 		});
@@ -279,30 +278,6 @@ describe('HtmlScreen', () => {
 			);
 			screen.evaluateStyles({}).then(() => {
 				assertComputedStyle('backgroundColor', 'rgb(255, 0, 0)');
-				exitDocumentElement('temporaryStyle');
-				done();
-			});
-		});
-	});
-
-	it('appends existing teporary styles with id in the same place as the reference', (done) => {
-		const screen = new HtmlScreen();
-		screen.allocateVirtualDocumentForContent(
-			'<style id="temporaryStyle" data-senna-track="temporary">body{background-color:rgb(0, 255, 0);}</style>'
-		);
-		screen.evaluateStyles({}).then(() => {
-			document.head.appendChild(
-				buildFragment(
-					'<style id="mainStyle">body{background-color:rgb(255, 255, 255);}</style>'
-				)
-			);
-			assertComputedStyle('backgroundColor', 'rgb(255, 255, 255)');
-			screen.allocateVirtualDocumentForContent(
-				'<style id="temporaryStyle" data-senna-track="temporary">body{background-color:rgb(255, 0, 0);}</style>'
-			);
-			screen.evaluateStyles({}).then(() => {
-				assertComputedStyle('backgroundColor', 'rgb(255, 255, 255)');
-				exitDocumentElement('mainStyle');
 				exitDocumentElement('temporaryStyle');
 				done();
 			});

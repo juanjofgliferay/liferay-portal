@@ -7,7 +7,6 @@ package com.liferay.users.admin.test.util.search;
 
 import com.liferay.asset.kernel.model.AssetTag;
 import com.liferay.asset.kernel.service.AssetTagLocalServiceUtil;
-import com.liferay.petra.function.UnsafeFunction;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.Address;
 import com.liferay.portal.kernel.model.Contact;
@@ -104,11 +103,12 @@ public class UserSearchFixture {
 		Region region = regions.get(0);
 
 		Address address = AddressLocalServiceUtil.addAddress(
-			null, user.getUserId(), modelClassName, contactId, null, null,
-			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
-			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
-			RandomTestUtil.randomString(), region.getRegionId(), countryId,
-			listTypeId, false, false, null, new ServiceContext());
+			null, user.getUserId(), modelClassName, contactId, countryId,
+			listTypeId, region.getRegionId(), RandomTestUtil.randomString(),
+			RandomTestUtil.randomString(), false, RandomTestUtil.randomString(),
+			false, RandomTestUtil.randomString(), RandomTestUtil.randomString(),
+			RandomTestUtil.randomString(), null, RandomTestUtil.randomString(),
+			null, new ServiceContext());
 
 		_addresses.add(address);
 
@@ -447,25 +447,15 @@ public class UserSearchFixture {
 		return map;
 	}
 
-	public Map<String, String> toMap(
-			User user, UnsafeFunction<String, String, Exception> unsafeFunction,
-			String... tags)
-		throws Exception {
-
+	public Map<String, String> toMap(User user, String... tags) {
 		return Collections.singletonMap(
-			user.getScreenName(), toStringTags(tags, unsafeFunction));
+			user.getScreenName(), toStringTags(tags));
 	}
 
-	public String toStringTags(
-			String[] tags,
-			UnsafeFunction<String, String, Exception> unsafeFunction)
-		throws Exception {
-
+	public String toStringTags(String[] tags) {
 		List<String> list = new ArrayList<>(tags.length);
 
-		for (String tag : tags) {
-			list.add(unsafeFunction.apply(tag));
-		}
+		Collections.addAll(list, tags);
 
 		Collections.sort(list);
 

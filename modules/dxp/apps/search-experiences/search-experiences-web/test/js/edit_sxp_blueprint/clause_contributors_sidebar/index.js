@@ -11,7 +11,7 @@ import filterAndSortClassNames from '../../../../src/main/resources/META-INF/res
 const Toasts = require('../../../../src/main/resources/META-INF/resources/sxp_blueprint_admin/js/utils/toasts');
 import {mockClassNames} from '../../mocks/data';
 
-import '@testing-library/jest-dom/extend-expect';
+import '@testing-library/jest-dom';
 
 // Prevents "TypeError: Liferay.component is not a function" error on openToast
 
@@ -86,7 +86,7 @@ describe('QueryBuilder', () => {
 			},
 		});
 
-		expect(getAllByLabelText('on').length).toEqual(
+		expect(getAllByLabelText('on[toggle]').length).toEqual(
 			activeKeywordContributors.length
 		);
 	});

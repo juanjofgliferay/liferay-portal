@@ -51,6 +51,10 @@ public interface NotificationTemplate
 
 			};
 
-	public NotificationRecipient getNotificationRecipient();
+	public NotificationRecipient fetchNotificationRecipient();
+
+	public NotificationRecipient getNotificationRecipient()
+		throws com.liferay.portal.kernel.exception.PortalException;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:995283146

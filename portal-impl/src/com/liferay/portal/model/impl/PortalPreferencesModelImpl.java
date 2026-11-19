@@ -78,6 +78,8 @@ public class PortalPreferencesModelImpl
 
 	public static final String TABLE_SQL_DROP = "drop table PortalPreferences";
 
+	public static final String ENTITY_ALIAS = "portalPreferences";
+
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY portalPreferences.portalPreferencesId ASC";
 
@@ -128,7 +130,7 @@ public class PortalPreferencesModelImpl
 	public static final long PORTALPREFERENCESID_COLUMN_BITMASK = 4L;
 
 	public static final long LOCK_EXPIRATION_TIME = GetterUtil.getLong(
-		com.liferay.portal.util.PropsUtil.get(
+		com.liferay.portal.kernel.util.PropsUtil.get(
 			"lock.expiration.time.com.liferay.portal.kernel.model.PortalPreferences"));
 
 	public PortalPreferencesModelImpl() {
@@ -673,3 +675,4 @@ public class PortalPreferencesModelImpl
 	private PortalPreferences _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-312513538

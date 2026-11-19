@@ -1,0 +1,36 @@
+.wizard-page {
+	background-color: white;
+	height: 100vh;
+
+	&__content-col {
+		max-width: 608px;
+		padding: 8rem 1rem 0;
+	}
+
+	&__onboarding-col {
+		background-color: $lightBackground;
+		border: 1px solid $mainLighten74;
+		border-radius: 8px;
+		min-height: calc(100vh - 100px);
+	}
+
+	&__onboarding-image {
+		background-image: url(../images/backgrounds/ac_onboarding.svg);
+		background-position: 150px 0;
+		background-repeat: no-repeat;
+		background-size: 730px 100%;
+		height: 924px;
+	}
+
+	@media screen and (max-width: 768px) {
+		&__onboarding-col {
+			display: none;
+		}
+	}
+
+	@media screen and (max-width: 576px) {
+		&__content-col {
+			padding: 0 1rem;
+		}
+	}
+}

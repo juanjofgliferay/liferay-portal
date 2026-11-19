@@ -5,13 +5,13 @@
 
 package com.liferay.commerce.util;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.util.Locale;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * @author Marco Leo
@@ -26,6 +26,10 @@ public interface CommerceCheckoutStep {
 			HttpServletRequest httpServletRequest,
 			HttpServletResponse httpServletResponse)
 		throws Exception;
+
+	public default boolean isContinueAfterPayment() {
+		return false;
+	}
 
 	public boolean isOrder();
 

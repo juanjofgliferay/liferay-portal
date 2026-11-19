@@ -4,7 +4,11 @@
  */
 
 const Liferay = {
+	...global.Liferay,
 	FeatureFlags: {},
+	Icons: {
+		spritemap: '/assets',
+	},
 	Language: {
 		available: {
 			ar_SA: 'Arabic (Saudi Arabia)',
@@ -36,9 +40,11 @@ const Liferay = {
 		getDoAsUserIdEncoded: () => '',
 		getLanguageId: () => 'it_IT',
 		getPathContext: () => '',
+		getPathThemeEmptyStatesSpritemap: () => '/assets/clay/empty_states.svg',
 		getPathThemeImages: () => '/assets',
 		getPortalURL: () => window.location.origin,
 		getScopeGroupId: () => '123',
+		isSignedIn: () => true,
 	},
 	Util: {
 		sub: (key, ...values) => {

@@ -47,6 +47,8 @@ create table KaleoCondition (
 create table KaleoDefinition (
 	mvccVersion LONG default 0 not null,
 	ctCollectionId LONG default 0 not null,
+	uuid_ VARCHAR(75) null,
+	externalReferenceCode VARCHAR(75) null,
 	kaleoDefinitionId LONG not null,
 	groupId LONG,
 	companyId LONG,
@@ -55,12 +57,14 @@ create table KaleoDefinition (
 	createDate DATE null,
 	modifiedDate DATE null,
 	name VARCHAR(200) null,
-	title STRING null,
+	title TEXT null,
 	description STRING null,
 	content TEXT null,
 	scope VARCHAR(75) null,
 	version INTEGER,
 	active_ BOOLEAN,
+	system_ BOOLEAN,
+	status INTEGER,
 	primary key (kaleoDefinitionId, ctCollectionId)
 );
 
@@ -76,7 +80,7 @@ create table KaleoDefinitionVersion (
 	modifiedDate DATE null,
 	kaleoDefinitionId LONG,
 	name VARCHAR(200) null,
-	title STRING null,
+	title TEXT null,
 	description STRING null,
 	content TEXT null,
 	version VARCHAR(75) null,
@@ -192,6 +196,21 @@ create table KaleoNode (
 	initial_ BOOLEAN,
 	terminal BOOLEAN,
 	primary key (kaleoNodeId, ctCollectionId)
+);
+
+create table KaleoNodeSetting (
+	mvccVersion LONG default 0 not null,
+	ctCollectionId LONG default 0 not null,
+	kaleoNodeSettingId LONG not null,
+	companyId LONG,
+	userId LONG,
+	userName VARCHAR(75) null,
+	createDate DATE null,
+	modifiedDate DATE null,
+	kaleoNodeId LONG,
+	name VARCHAR(75) null,
+	value TEXT null,
+	primary key (kaleoNodeSettingId, ctCollectionId)
 );
 
 create table KaleoNotification (

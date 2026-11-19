@@ -5,14 +5,14 @@
 
 package com.liferay.portal.kernel.servlet;
 
+import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.PrintWriter;
 
 import java.util.Collection;
 import java.util.Locale;
-
-import javax.servlet.ServletOutputStream;
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * @author Cristina González Castellano
@@ -42,22 +42,20 @@ public class DummyHttpServletResponse implements HttpServletResponse {
 	}
 
 	@Override
+	public String encodeRedirectURL(String url) {
+		return null;
+	}
+
 	public String encodeRedirectUrl(String url) {
 		return null;
 	}
 
 	@Override
-	public String encodeRedirectURL(String url) {
-		return null;
-	}
-
-	@Override
-	public String encodeUrl(String url) {
-		return null;
-	}
-
-	@Override
 	public String encodeURL(String url) {
+		return null;
+	}
+
+	public String encodeUrl(String url) {
 		return null;
 	}
 
@@ -180,7 +178,6 @@ public class DummyHttpServletResponse implements HttpServletResponse {
 	public void setStatus(int status) {
 	}
 
-	@Override
 	public void setStatus(int status, String message) {
 	}
 

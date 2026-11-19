@@ -21,7 +21,7 @@
 			href="<%= layoutsAdminDisplayContext.getEditOrViewLayoutURL(layout) %>"
 			name="title"
 			target="<%= layoutsAdminDisplayContext.getTarget(layout) %>"
-			value="<%= layout.getName(locale) %>"
+			value="<%= HtmlUtil.escapeAttribute(layout.getName(locale)) %>"
 		/>
 
 		<liferay-ui:search-container-column-text
@@ -60,7 +60,7 @@
 			<clay:dropdown-actions
 				aria-label='<%= LanguageUtil.get(request, "show-actions") %>'
 				dropdownItems="<%= layoutActionDropdownItemsProvider.getActionDropdownItems(layout, true) %>"
-				propsTransformer="js/LayoutActionDropdownPropsTransformer"
+				propsTransformer="{LayoutActionDropdownPropsTransformer} from layout-admin-web"
 			/>
 		</liferay-ui:search-container-column-text>
 	</liferay-ui:search-container-row>

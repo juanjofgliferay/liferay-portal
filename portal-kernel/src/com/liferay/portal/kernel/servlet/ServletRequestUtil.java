@@ -8,8 +8,8 @@ package com.liferay.portal.kernel.servlet;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletRequestWrapper;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequestWrapper;
 
 /**
  * @author Brian Wing Shun Chan
@@ -28,16 +28,17 @@ public class ServletRequestUtil {
 				_log.info("Request class " + clazz.getName());
 			}
 
-			if (tempHttpServletRequest instanceof HttpServletRequestWrapper) {
-				HttpServletRequestWrapper requestWrapper =
-					(HttpServletRequestWrapper)tempHttpServletRequest;
+			if (!(tempHttpServletRequest instanceof
+					HttpServletRequestWrapper)) {
 
-				tempHttpServletRequest =
-					(HttpServletRequest)requestWrapper.getRequest();
-			}
-			else {
 				break;
 			}
+
+			HttpServletRequestWrapper requestWrapper =
+				(HttpServletRequestWrapper)tempHttpServletRequest;
+
+			tempHttpServletRequest =
+				(HttpServletRequest)requestWrapper.getRequest();
 		}
 	}
 

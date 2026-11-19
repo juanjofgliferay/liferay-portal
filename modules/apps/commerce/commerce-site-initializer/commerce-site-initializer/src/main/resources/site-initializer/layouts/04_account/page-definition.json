@@ -1,0 +1,32 @@
+{
+	"pageElement": {
+		"pageElements": [
+			{
+				"definition": {
+					"customCSS": ".[$FRAGMENT_CLASS$] .portlet-content {\nposition: relative;\n}\n\n.[$FRAGMENT_CLASS$] .portlet-content-container .navbar.navbar-expand-md > .container-fluid-max-xxxl {\npadding-left: 1.5rem;\n}\n\n.[$FRAGMENT_CLASS$] .portlet-header {\nleft: 0;\nmargin-left: auto;\nmargin-right: auto;\nmax-width: 800px;\nposition: absolute;\nright: 0;\ntop: 3.5rem;\n}",
+					"widgetInstance": {
+						"widgetConfig": {
+						},
+						"widgetName": "com_liferay_account_admin_web_internal_portlet_AccountEntriesManagementPortlet"
+					}
+				},
+				"type": "Widget"
+			}
+		],
+		"type": "Root"
+	},
+	"settings": {
+		"colorSchemeName": "01",
+		"masterPage": {
+			"key": "commerce-classic-master"
+		},
+		"themeName": "Classic",
+		"themeSettings": {
+			"lfr-theme:regular:show-footer": "false",
+			"lfr-theme:regular:show-header": "false",
+			"lfr-theme:regular:show-header-search": "false",
+			"lfr-theme:regular:wrap-widget-page-content": "false"
+		}
+	},
+	"version": 1.1
+}

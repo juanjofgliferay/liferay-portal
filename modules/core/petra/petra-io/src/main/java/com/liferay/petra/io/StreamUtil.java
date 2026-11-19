@@ -32,17 +32,19 @@ public class StreamUtil {
 		IOException ioException1 = null;
 
 		for (Closeable closeable : closeables) {
-			if (closeable != null) {
-				try {
-					closeable.close();
+			if (closeable == null) {
+				continue;
+			}
+
+			try {
+				closeable.close();
+			}
+			catch (IOException ioException2) {
+				if (ioException1 == null) {
+					ioException1 = ioException2;
 				}
-				catch (IOException ioException2) {
-					if (ioException1 == null) {
-						ioException1 = ioException2;
-					}
-					else {
-						ioException1.addSuppressed(ioException2);
-					}
+				else {
+					ioException1.addSuppressed(ioException2);
 				}
 			}
 		}
@@ -61,9 +63,21 @@ public class StreamUtil {
 			return null;
 		}
 
+		int available = inputStream.available();
+
+		int b = -1;
+
+		if ((available == 0) && ((b = inputStream.read()) == -1)) {
+			return _EMPTY_BYTES;
+		}
+
 		try {
 			UnsyncByteArrayOutputStream unsyncByteArrayOutputStream =
-				new UnsyncByteArrayOutputStream(inputStream.available());
+				new UnsyncByteArrayOutputStream(available);
+
+			if (b != -1) {
+				unsyncByteArrayOutputStream.write(b);
+			}
 
 			_transferByteArray(
 				inputStream, unsyncByteArrayOutputStream, BUFFER_SIZE, -1);
@@ -89,11 +103,17 @@ public class StreamUtil {
 	public static String toString(InputStream inputStream, String charsetName)
 		throws IOException {
 
-		if (inputStream == null) {
+		byte[] bytes = toByteArray(inputStream);
+
+		if (bytes == null) {
 			return null;
 		}
 
-		return new String(toByteArray(inputStream), charsetName);
+		if (bytes.length == 0) {
+			return StringPool.BLANK;
+		}
+
+		return new String(bytes, charsetName);
 	}
 
 	public static void transfer(
@@ -222,5 +242,7 @@ public class StreamUtil {
 				outputFileChannel);
 		}
 	}
+
+	private static final byte[] _EMPTY_BYTES = new byte[0];
 
 }

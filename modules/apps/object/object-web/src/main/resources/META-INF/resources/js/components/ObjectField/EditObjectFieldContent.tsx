@@ -4,7 +4,7 @@
  */
 
 import ClayTabs from '@clayui/tabs';
-import {SidebarCategory} from '@liferay/object-js-components-web';
+import {API, SidebarCategory} from '@liferay/object-js-components-web';
 import classNames from 'classnames';
 import {createResourceURL, fetch} from 'frontend-js-web';
 import React, {ElementType, useEffect, useState} from 'react';
@@ -15,6 +15,7 @@ import {AdvancedTab} from './Tabs/Advanced/AdvancedTab';
 import {BasicInfoTab} from './Tabs/BasicInfo/BasicInfoTab';
 
 import './EditObjectFieldContent.scss';
+import {DEFAULT_VALUE_SUPPORTED_BUSINESS_TYPES} from '../../utils/constants';
 
 interface EditObjectFieldContentProps
 	extends Omit<
@@ -22,12 +23,18 @@ interface EditObjectFieldContentProps
 		| 'forbiddenChars'
 		| 'forbiddenLastChars'
 		| 'forbiddenNames'
+		| 'objectDefinitionExternalReferenceCode'
 		| 'objectFieldId'
 	> {
+	ckEditor5Config?: object;
 	containerWrapper: ElementType;
+	decimalSeparator: string;
 	errors: ObjectFieldErrors;
 	handleChange: React.ChangeEventHandler<HTMLInputElement>;
+	hasDepotEntry?: boolean;
 	modelBuilder?: boolean;
+	objectDefinition?: ObjectDefinition | ObjectDefinitionNodeData;
+	objectFieldId: number;
 	onSubmit?: (editedObjectField?: Partial<ObjectField>) => void;
 	setValues: (values: Partial<ObjectField>) => void;
 	values: Partial<ObjectField>;
@@ -37,16 +44,24 @@ const TABS = [Liferay.Language.get('basic-info')];
 
 export function EditObjectFieldContent({
 	baseResourceURL,
+	ckEditor5Config,
 	containerWrapper,
+	countries,
 	creationLanguageId,
+	decimalSeparator,
 	errors,
 	filterOperators,
+	googleMapsAPIKey,
 	handleChange,
-	isApproved,
+	hasDepotEntry,
 	isDefaultStorageType,
+	isRootDescendantNode,
 	learnResources,
+	mapProviderKey,
+	metadataObjectFieldNames,
 	modelBuilder = false,
-	objectDefinitionExternalReferenceCode,
+	objectDefinition,
+	objectFieldId,
 	onSubmit,
 	readOnly,
 	setValues,
@@ -54,9 +69,14 @@ export function EditObjectFieldContent({
 	workflowStatuses,
 }: EditObjectFieldContentProps) {
 	const [activeIndex, setActiveIndex] = useState(0);
-	const [objectFieldTypes, setObjectFieldTypes] = useState<ObjectFieldType[]>(
-		[]
-	);
+
+	const [dbObjectFieldRequired, setDbObjectFieldRequired] =
+		useState<boolean>();
+	const [defaultValueSidebarElements, setDefaultValueSidebarElements] =
+		useState<SidebarCategory[]>([]);
+	const [objectFieldBusinessTypes, setObjectFieldBusinessTypes] = useState<
+		ObjectFieldBusinessType[]
+	>([]);
 	const [objectRelationshipId, setObjectRelationshipId] = useState(0);
 	const [readOnlySidebarElements, setReadOnlySidebarElements] = useState<
 		SidebarCategory[]
@@ -64,13 +84,29 @@ export function EditObjectFieldContent({
 	const [sidebarElements, setSidebarElements] = useState<SidebarCategory[]>(
 		[]
 	);
+	const hasDefaultValue =
+		(values.businessType &&
+			DEFAULT_VALUE_SUPPORTED_BUSINESS_TYPES.includes(
+				values.businessType
+			)) ||
+		values.businessType === 'Picklist';
 
-	if (
-		(isDefaultStorageType || values.businessType === 'Picklist') &&
-		TABS.length < 2
-	) {
+	if ((isDefaultStorageType || hasDefaultValue) && TABS.length < 2) {
 		TABS.push(Liferay.Language.get('advanced'));
 	}
+
+	useEffect(() => {
+		const makeFetch = async () => {
+			const objectFieldResponse = await API.getObjectField(objectFieldId);
+
+			setDbObjectFieldRequired(objectFieldResponse.required);
+			setValues(objectFieldResponse);
+		};
+
+		makeFetch();
+
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, []);
 
 	useEffect(() => {
 		const makeFetch = async () => {
@@ -85,12 +121,14 @@ export function EditObjectFieldContent({
 					method: 'GET',
 				});
 
-				const objectFieldInfoJSON = (await objectFieldInfoResponse.json()) as {
-					objectFieldTypes: ObjectFieldType[];
-					objectRelationshipId: number;
-					readOnlySidebarElements: SidebarCategory[];
-					sidebarElements: SidebarCategory[];
-				};
+				const objectFieldInfoJSON =
+					(await objectFieldInfoResponse.json()) as {
+						defaultValueSidebarElements: SidebarCategory[];
+						objectFieldBusinessTypes: ObjectFieldBusinessType[];
+						objectRelationshipId: number;
+						readOnlySidebarElements: SidebarCategory[];
+						sidebarElements: SidebarCategory[];
+					};
 
 				if (values.businessType === 'Relationship') {
 					setObjectRelationshipId(
@@ -98,7 +136,12 @@ export function EditObjectFieldContent({
 					);
 				}
 
-				setObjectFieldTypes(objectFieldInfoJSON.objectFieldTypes);
+				setDefaultValueSidebarElements(
+					objectFieldInfoJSON.defaultValueSidebarElements
+				);
+				setObjectFieldBusinessTypes(
+					objectFieldInfoJSON.objectFieldBusinessTypes
+				);
 				setReadOnlySidebarElements(
 					objectFieldInfoJSON.readOnlySidebarElements
 				);
@@ -107,12 +150,13 @@ export function EditObjectFieldContent({
 		};
 
 		makeFetch();
+
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [baseResourceURL, values.id]);
 
 	return (
 		<>
-			{isDefaultStorageType || values.businessType === 'Picklist' ? (
+			{isDefaultStorageType || hasDefaultValue ? (
 				<>
 					<ClayTabs className="side-panel-iframe__tabs">
 						{TABS.map((label, index) => (
@@ -129,25 +173,34 @@ export function EditObjectFieldContent({
 					<ClayTabs.Content activeIndex={activeIndex} fade>
 						<ClayTabs.TabPane
 							className={classNames({
-								'lfr-objects__edit-object-field-content-panel': modelBuilder,
+								'lfr-objects__edit-object-field-content-panel':
+									modelBuilder,
 							})}
 						>
 							<BasicInfoTab
 								baseResourceURL={baseResourceURL}
 								containerWrapper={containerWrapper}
+								countries={countries}
+								dbObjectFieldRequired={dbObjectFieldRequired}
 								errors={errors}
 								filterOperators={filterOperators}
 								handleChange={handleChange}
-								isApproved={isApproved}
-								isDefaultStorageType={isDefaultStorageType}
-								modelBuilder={modelBuilder}
-								objectDefinitionExternalReferenceCode={
-									objectDefinitionExternalReferenceCode
+								hasDepotEntry={hasDepotEntry}
+								learnResources={learnResources}
+								metadataObjectFieldNames={
+									metadataObjectFieldNames
 								}
-								objectFieldTypes={objectFieldTypes}
+								modelBuilder={modelBuilder}
+								objectDefinition={objectDefinition}
+								objectFieldBusinessTypes={
+									objectFieldBusinessTypes
+								}
 								objectRelationshipId={objectRelationshipId}
 								onSubmit={onSubmit}
 								readOnly={readOnly}
+								setDbObjectFieldRequired={
+									setDbObjectFieldRequired
+								}
 								setValues={setValues}
 								sidebarElements={sidebarElements}
 								values={values}
@@ -157,22 +210,30 @@ export function EditObjectFieldContent({
 
 						<ClayTabs.TabPane
 							className={classNames({
-								'lfr-objects__edit-object-field-content-panel': modelBuilder,
+								'lfr-objects__edit-object-field-content-panel':
+									modelBuilder,
 							})}
 						>
 							<AdvancedTab
+								ckEditor5Config={ckEditor5Config}
 								containerWrapper={containerWrapper}
 								creationLanguageId={creationLanguageId}
+								decimalSeparator={decimalSeparator}
+								defaultValueSidebarElements={
+									defaultValueSidebarElements
+								}
 								errors={errors}
+								googleMapsAPIKey={googleMapsAPIKey}
 								isDefaultStorageType={isDefaultStorageType}
+								isRootDescendantNode={isRootDescendantNode}
 								learnResources={learnResources}
+								mapProviderKey={mapProviderKey}
 								modelBuilder={modelBuilder}
 								onSubmit={onSubmit}
 								readOnlySidebarElements={
 									readOnlySidebarElements
 								}
 								setValues={setValues}
-								sidebarElements={sidebarElements}
 								values={values}
 							/>
 						</ClayTabs.TabPane>
@@ -182,19 +243,21 @@ export function EditObjectFieldContent({
 				<BasicInfoTab
 					baseResourceURL={baseResourceURL}
 					containerWrapper={containerWrapper}
+					countries={countries}
+					dbObjectFieldRequired={dbObjectFieldRequired}
 					errors={errors}
 					filterOperators={filterOperators}
 					handleChange={handleChange}
-					isApproved={isApproved}
-					isDefaultStorageType={isDefaultStorageType}
+					hasDepotEntry={hasDepotEntry}
+					learnResources={learnResources}
+					metadataObjectFieldNames={metadataObjectFieldNames}
 					modelBuilder={modelBuilder}
-					objectDefinitionExternalReferenceCode={
-						objectDefinitionExternalReferenceCode
-					}
-					objectFieldTypes={objectFieldTypes}
+					objectDefinition={objectDefinition}
+					objectFieldBusinessTypes={objectFieldBusinessTypes}
 					objectRelationshipId={objectRelationshipId}
 					onSubmit={onSubmit}
 					readOnly={readOnly}
+					setDbObjectFieldRequired={setDbObjectFieldRequired}
 					setValues={setValues}
 					sidebarElements={sidebarElements}
 					values={values}

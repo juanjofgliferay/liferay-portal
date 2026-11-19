@@ -3,9 +3,17 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
+import {
+	isComputedColor,
+	isHexFormat,
+	parseColor,
+	toHexColorString,
+	toHexValue,
+} from '@clayui/color-picker';
+
+import {Field, Token} from '../../types/ColorPicker';
 import convertRGBtoHex from '../../utils/convertRGBtoHex';
-import getValidHexColor from '../../utils/getValidHexColor';
-import {Field, Token} from './ColorPicker';
+import isTokenLinkedTo from '../../utils/isTokenLinkedTo';
 
 const ERROR_MESSAGES = {
 	mutuallyReferenced: Liferay.Language.get(
@@ -13,6 +21,10 @@ const ERROR_MESSAGES = {
 	),
 	selfReferenced: Liferay.Language.get('tokens-cannot-reference-itself'),
 };
+
+const HEX_LENGTH_6 = 6;
+
+const HEX_LENGTH_8 = 8;
 
 interface ColorValue {
 	color?: string;
@@ -40,27 +52,28 @@ export function parseColorValue({
 	let tokenLabel: string | undefined = undefined;
 	let pickerColor: string = '';
 
+	const color = parseColor(value);
+
 	if (token) {
 		if (token.name === field.name) {
 			return {error: ERROR_MESSAGES.selfReferenced};
 		}
 
-		if (editedTokenValues?.[token.name]?.name === field.name) {
+		if (
+			isTokenLinkedTo({
+				editedTokenValues,
+				linkedName: field.name,
+				name: token.name,
+			})
+		) {
 			return {error: ERROR_MESSAGES.mutuallyReferenced};
 		}
 
 		tokenLabel = token.label;
 	}
-	else if (value.startsWith('#')) {
-		validValue = getValidHexColor(value);
+	else if (isComputedColor(value)) {
+		validValue = value;
 
-		if (!validValue) {
-			return {};
-		}
-
-		pickerColor = validValue.replace('#', '');
-	}
-	else {
 		const element = document.createElement('div');
 
 		element.style.background = value;
@@ -68,23 +81,70 @@ export function parseColorValue({
 
 		document.body.appendChild(element);
 
-		validValue = element.style.background;
+		const computedColor = convertRGBtoHex(
+			window.getComputedStyle(element).backgroundColor
+		);
 
-		if (!validValue) {
+		element.remove();
+
+		if (computedColor.startsWith('#')) {
+			pickerColor = computedColor.replace(/^#/, '');
+		}
+	}
+	else if (color.isValid()) {
+		if (isHexFormat(color)) {
+			validValue = toHexValue(color);
+		}
+		else if (color.toString() !== value) {
+			validValue = color.toString();
+		}
+		else {
+			const element = document.createElement('div');
+
+			element.style.background = value;
+			element.style.display = 'none';
+
+			document.body.appendChild(element);
+
+			validValue = element.style.background;
+
+			if (!validValue) {
+				return {};
+			}
+
+			pickerColor = convertRGBtoHex(
+				window.getComputedStyle(element).backgroundColor
+			).replace(/^#/, '');
+
+			element.remove();
+		}
+	}
+	else {
+
+		// Hexadecimals with 7 characters or more than 8 are invalid. Here the
+		// value is truncated to 6 or 8 characters, and it is checked to ensure
+		// the resulting value is still a valid hexadecimal.
+
+		if (value.length === 7) {
+			value = value.substring(0, HEX_LENGTH_6);
+		}
+		else if (value.length > 8) {
+			value = value.substring(0, HEX_LENGTH_8);
+		}
+
+		const color = parseColor(value);
+
+		if (!isHexFormat(color)) {
 			return {};
 		}
 
-		pickerColor = convertRGBtoHex(
-			window.getComputedStyle(element).backgroundColor
-		).replace(/^#/, '');
-
-		element.parentElement!.removeChild(element);
+		validValue = toHexValue(color);
 	}
 
 	return {
 		color: token?.value,
 		label: tokenLabel,
 		pickerColor,
-		value: validValue,
+		value: toHexColorString({isHex: isHexFormat(color), value: validValue}),
 	};
 }

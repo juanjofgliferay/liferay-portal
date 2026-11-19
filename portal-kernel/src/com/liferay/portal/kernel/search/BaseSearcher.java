@@ -9,10 +9,10 @@ import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.search.filter.BooleanFilter;
 import com.liferay.portal.kernel.util.ArrayUtil;
 
-import java.util.Locale;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
 
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
+import java.util.Locale;
 
 /**
  * @author Eudaldo Alonso
@@ -97,7 +97,7 @@ public abstract class BaseSearcher extends BaseIndexer<Object> {
 	}
 
 	@Override
-	protected void doReindex(String[] ids) throws Exception {
+	protected void doReindexCompany(long companyId) throws Exception {
 		throw new UnsupportedOperationException();
 	}
 

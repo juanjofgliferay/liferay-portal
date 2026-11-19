@@ -42,11 +42,11 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
+import jakarta.portlet.PortletRequest;
+
 import java.util.HashMap;
 import java.util.Map;
-import java.util.TreeMap;
-
-import javax.portlet.PortletRequest;
+import java.util.NavigableMap;
 
 /**
  * @author Brian Wing Shun Chan
@@ -195,8 +195,7 @@ public class JournalUtil {
 			title = String.valueOf(id);
 		}
 		else {
-			title = FriendlyURLNormalizerUtil.normalizeWithPeriodsAndSlashes(
-				title);
+			title = FriendlyURLNormalizerUtil.normalizeWithEncoding(title);
 		}
 
 		return ModelHintsUtil.trimString(
@@ -351,7 +350,7 @@ public class JournalUtil {
 
 		String layoutSetFriendlyUrl = themeDisplay.getI18nPath();
 
-		TreeMap<String, String> virtualHostnames =
+		NavigableMap<String, String> virtualHostnames =
 			layoutSet.getVirtualHostnames();
 
 		if (virtualHostnames.isEmpty() ||
@@ -421,7 +420,7 @@ public class JournalUtil {
 
 		String layoutSetFriendlyUrl = themeDisplayModel.getI18nPath();
 
-		TreeMap<String, String> virtualHostnames =
+		NavigableMap<String, String> virtualHostnames =
 			layoutSet.getVirtualHostnames();
 
 		if (virtualHostnames.isEmpty() ||

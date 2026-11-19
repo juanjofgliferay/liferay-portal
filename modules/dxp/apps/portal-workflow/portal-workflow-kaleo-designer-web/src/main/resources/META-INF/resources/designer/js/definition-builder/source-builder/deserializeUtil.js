@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
+import {uuidv4} from 'frontend-js-web';
+
 import {defaultLanguageId} from '../constants';
 import {removeNewLine, replaceTabSpaces} from '../util/utils';
 import {DEFAULT_LANGUAGE} from './constants';
@@ -13,6 +15,25 @@ import {
 	parseTimers,
 } from './utils';
 import XMLDefinition from './xmlDefinition';
+
+function parseJSON(value, defaultValue) {
+	try {
+		return JSON.parse(value);
+	}
+	catch (error) {
+		return defaultValue;
+	}
+}
+
+function parseRAG(value) {
+	const rag = parseJSON(value, {});
+
+	if (Array.isArray(rag) && !rag.length) {
+		return {};
+	}
+
+	return rag;
+}
 
 export default function DeserializeUtil(content) {
 	const instance = this;
@@ -27,8 +48,6 @@ DeserializeUtil.prototype = {
 		const instance = this;
 
 		const elements = [];
-
-		const transitionsNames = [];
 
 		const nodesNames = [];
 
@@ -97,9 +116,60 @@ DeserializeUtil.prototype = {
 					script: node.script,
 				};
 
+				if (type === 'ai-decision' || type === 'llm') {
+					data.inputVariables = parseJSON(
+						node['input-variables'],
+						[]
+					);
+
+					data.outputVariables = parseJSON(
+						node['output-variables'],
+						[]
+					);
+
+					data.prompt = node.prompt || '';
+
+					data.rag = parseRAG(node.rag);
+
+					data.tools = parseJSON(node.tools, []);
+
+					data.userMessage = node['user-message'] || '';
+				}
+
+				if (type === 'ai-hub-agent') {
+					data.agentDefinitionExternalReferenceCode =
+						node['agent-definition-external-reference-code'] || '';
+
+					data.timeout = node.timeout || '';
+				}
+
 				if (type === 'condition') {
 					data.scriptLanguage =
 						node.scriptLanguage || DEFAULT_LANGUAGE;
+				}
+
+				if (type === 'http-request') {
+					data.httpMethod = node['http-method'] || 'GET';
+
+					data.inputVariables = parseJSON(
+						node['input-variables'],
+						[]
+					);
+
+					data.outputVariables = parseJSON(
+						node['output-variables'],
+						[]
+					);
+
+					data.requestBody = node['request-body'] || '';
+
+					data.timeout = node.timeout || '';
+
+					data.url = node.url || '';
+				}
+
+				if (type === 'service') {
+					data.javaDelegate = node['java-delegate'] || '';
 				}
 
 				if (type === 'task') {
@@ -145,6 +215,8 @@ DeserializeUtil.prototype = {
 						(transition) => transition?.default === 'true'
 					);
 
+					const transitionsNames = [];
+
 					transitions.forEach((transition) => {
 						let label = {};
 
@@ -175,10 +247,7 @@ DeserializeUtil.prototype = {
 							return;
 						}
 
-						if (
-							transitionsNames.includes(transitionName) ||
-							nodesNames.includes(transitionName)
-						) {
+						if (transitionsNames.includes(transitionName)) {
 							transitionName = `${nodeName}_${transitionName}_${transition.target}`;
 						}
 						else {
@@ -194,8 +263,9 @@ DeserializeUtil.prototype = {
 							data: {
 								defaultEdge,
 								label,
+								name: transitionName,
 							},
-							id: transitionName,
+							id: uuidv4(),
 							source: nodeName,
 							target: transition.target,
 							type: 'transition',

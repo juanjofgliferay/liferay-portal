@@ -11,8 +11,8 @@ import com.liferay.change.tracking.exception.CTStagingEnabledException;
 import com.liferay.change.tracking.model.CTCollection;
 import com.liferay.change.tracking.model.CTPreferences;
 import com.liferay.change.tracking.model.CTPreferencesTable;
-import com.liferay.change.tracking.service.CTCollectionLocalService;
 import com.liferay.change.tracking.service.base.CTPreferencesServiceBaseImpl;
+import com.liferay.change.tracking.service.persistence.CTCollectionPersistence;
 import com.liferay.petra.sql.dsl.DSLQueryFactoryUtil;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -23,7 +23,6 @@ import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.permission.PortletPermissionUtil;
-import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
 import java.util.List;
 
@@ -53,16 +52,14 @@ public class CTPreferencesServiceImpl extends CTPreferencesServiceBaseImpl {
 
 		if (ctCollectionId != CTConstants.CT_COLLECTION_ID_PRODUCTION) {
 			CTCollection ctCollection =
-				_ctCollectionLocalService.fetchCTCollection(ctCollectionId);
+				_ctCollectionPersistence.fetchByPrimaryKey(ctCollectionId);
 
-			if ((ctCollection == null) ||
-				(ctCollection.getStatus() != WorkflowConstants.STATUS_DRAFT)) {
-
+			if ((ctCollection == null) || !ctCollection.isInProgress()) {
 				return null;
 			}
 
 			_ctCollectionModelResourcePermission.check(
-				getPermissionChecker(), ctCollection, ActionKeys.UPDATE);
+				getPermissionChecker(), ctCollection, ActionKeys.VIEW);
 		}
 
 		CTPreferences ctPreferences =
@@ -139,14 +136,14 @@ public class CTPreferencesServiceImpl extends CTPreferencesServiceBaseImpl {
 		return null;
 	}
 
-	@Reference
-	private CTCollectionLocalService _ctCollectionLocalService;
-
 	@Reference(
 		target = "(model.class.name=com.liferay.change.tracking.model.CTCollection)"
 	)
 	private ModelResourcePermission<CTCollection>
 		_ctCollectionModelResourcePermission;
+
+	@Reference
+	private CTCollectionPersistence _ctCollectionPersistence;
 
 	@Reference
 	private GroupLocalService _groupLocalService;

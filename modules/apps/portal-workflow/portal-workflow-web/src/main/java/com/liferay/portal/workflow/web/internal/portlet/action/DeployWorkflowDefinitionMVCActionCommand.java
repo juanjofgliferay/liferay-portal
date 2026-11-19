@@ -24,12 +24,12 @@ import com.liferay.portal.workflow.constants.WorkflowPortletKeys;
 import com.liferay.portal.workflow.constants.WorkflowWebKeys;
 import com.liferay.portal.workflow.manager.WorkflowDefinitionManager;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+
 import java.util.Locale;
 import java.util.Map;
 import java.util.ResourceBundle;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -39,7 +39,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + WorkflowPortletKeys.CONTROL_PANEL_WORKFLOW,
+		"jakarta.portlet.name=" + WorkflowPortletKeys.CONTROL_PANEL_WORKFLOW,
 		"mvc.command.name=/portal_workflow/deploy_workflow_definition"
 	},
 	service = MVCActionCommand.class
@@ -55,7 +55,7 @@ public class DeployWorkflowDefinitionMVCActionCommand
 		Map<Locale, String> titleMap = localization.getLocalizationMap(
 			actionRequest, "title");
 
-		validateTitle(actionRequest, titleMap);
+		validateTitle(titleMap);
 
 		String content = ParamUtil.getString(actionRequest, "content");
 
@@ -84,8 +84,8 @@ public class DeployWorkflowDefinitionMVCActionCommand
 
 		WorkflowDefinition workflowDefinition =
 			unproxiedWorkflowDefinitionManager.deployWorkflowDefinition(
-				themeDisplay.getCompanyId(), themeDisplay.getUserId(),
-				getTitle(actionRequest, titleMap), name, content.getBytes());
+				content.getBytes(), themeDisplay.getCompanyId(), null, name,
+				getTitle(titleMap), themeDisplay.getUserId());
 
 		setRedirectAttribute(actionRequest, workflowDefinition);
 
@@ -124,8 +124,7 @@ public class DeployWorkflowDefinitionMVCActionCommand
 		return language.get(resourceBundle, "workflow-updated-successfully");
 	}
 
-	protected void validateTitle(
-			ActionRequest actionRequest, Map<Locale, String> titleMap)
+	protected void validateTitle(Map<Locale, String> titleMap)
 		throws WorkflowDefinitionTitleException {
 
 		String title = titleMap.get(LocaleUtil.getDefault());

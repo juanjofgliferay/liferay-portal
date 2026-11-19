@@ -5,21 +5,40 @@
 
 package com.liferay.exportimport.internal.portlet.preferences.processor;
 
+import com.liferay.exportimport.internal.lar.PortletDataContextThreadLocal;
+import com.liferay.exportimport.kernel.lar.ExportImportThreadLocal;
 import com.liferay.exportimport.kernel.lar.PortletDataContext;
+import com.liferay.exportimport.kernel.lar.PortletDataException;
+import com.liferay.exportimport.kernel.staging.StagingURLHelperUtil;
 import com.liferay.exportimport.portlet.preferences.processor.ExportImportPortletPreferencesProcessorHelper;
+import com.liferay.petra.lang.SafeCloseable;
+import com.liferay.petra.lang.ThreadContextClassLoaderUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Portlet;
+import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.security.auth.HttpPrincipal;
+import com.liferay.portal.kernel.security.permission.PermissionChecker;
+import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
+import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.MapUtil;
+import com.liferay.portal.kernel.util.PortalClassLoaderUtil;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.service.http.GroupServiceHttp;
 
+import jakarta.portlet.PortletPreferences;
+import jakarta.portlet.ReadOnlyException;
+
+import java.util.Map;
 import java.util.function.Function;
 
-import javax.portlet.PortletPreferences;
-
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Máté Thurzó
@@ -29,8 +48,216 @@ public class ExportImportPortletPreferencesProcessorHelperImpl
 	implements ExportImportPortletPreferencesProcessorHelper {
 
 	@Override
+	public String getGroupExportPortletPreferencesExternalReferenceCode(
+		long companyId, String externalReferenceCode) {
+
+		if (!ExportImportThreadLocal.isStagingInProcess()) {
+			return externalReferenceCode;
+		}
+
+		Group group = _groupLocalService.fetchGroupByExternalReferenceCode(
+			externalReferenceCode, companyId);
+
+		if (group == null) {
+			return externalReferenceCode;
+		}
+
+		if (group.isStagedRemotely()) {
+			String remoteGroupExternalReferenceCode =
+				_getRemoteGroupExternalReferenceCode(group);
+
+			if (Validator.isNotNull(remoteGroupExternalReferenceCode)) {
+				externalReferenceCode = remoteGroupExternalReferenceCode;
+			}
+		}
+
+		if (!group.isStagingGroup()) {
+			return externalReferenceCode;
+		}
+
+		Group liveGroup = _groupLocalService.fetchGroup(group.getLiveGroupId());
+
+		if (liveGroup == null) {
+			return externalReferenceCode;
+		}
+
+		return liveGroup.getExternalReferenceCode();
+	}
+
+	@Override
+	public String getGroupImportPortletPreferencesExternalReferenceCode(
+		long companyId, String externalReferenceCode) {
+
+		PortletDataContext portletDataContext =
+			PortletDataContextThreadLocal.getPortletDataContext();
+
+		if (portletDataContext == null) {
+			return externalReferenceCode;
+		}
+
+		return getGroupImportPortletPreferencesExternalReferenceCode(
+			portletDataContext, externalReferenceCode);
+	}
+
+	@Override
+	public String getGroupImportPortletPreferencesExternalReferenceCode(
+		PortletDataContext portletDataContext, String externalReferenceCode) {
+
+		Map<String, String> groupExternalReferenceCodes =
+			(Map<String, String>)portletDataContext.getNewPrimaryKeysMap(
+				Group.class + ".externalReferenceCode");
+
+		return MapUtil.getString(
+			groupExternalReferenceCodes, externalReferenceCode,
+			externalReferenceCode);
+	}
+
+	@Override
 	public void updateExportPortletPreferencesClassPKs(
 			PortletDataContext portletDataContext, Portlet portlet,
+			PortletPreferences portletPreferences, String key, String className,
+			Function<String, String> exportPortletPreferencesNewValueFunction)
+		throws Exception {
+
+		_updateExportPortletPreferencesClassPKs(
+			portletPreferences, key, className,
+			exportPortletPreferencesNewValueFunction);
+	}
+
+	@Override
+	public void updateExportPortletPreferencesClassPKs(
+			PortletPreferences portletPreferences, String key, String className,
+			Function<String, String> exportPortletPreferencesNewValueFunction)
+		throws Exception {
+
+		_updateExportPortletPreferencesClassPKs(
+			portletPreferences, key, className,
+			exportPortletPreferencesNewValueFunction);
+	}
+
+	@Override
+	public void updateGroupExportPortletPreferencesExternalReferenceCode(
+			long companyId, String externalReferenceCodePreferenceKey,
+			PortletPreferences portletPreferences)
+		throws PortletDataException {
+
+		_updateGroupPortletPreferencesExternalReferenceCode(
+			externalReferenceCodePreferenceKey, portletPreferences,
+			externalReferenceCode ->
+				getGroupExportPortletPreferencesExternalReferenceCode(
+					companyId, externalReferenceCode));
+	}
+
+	@Override
+	public void updateGroupImportPortletPreferencesExternalReferenceCode(
+			long companyId, String externalReferenceCodePreferenceKey,
+			PortletPreferences portletPreferences)
+		throws PortletDataException {
+
+		_updateGroupPortletPreferencesExternalReferenceCode(
+			externalReferenceCodePreferenceKey, portletPreferences,
+			externalReferenceCode ->
+				getGroupImportPortletPreferencesExternalReferenceCode(
+					companyId, externalReferenceCode));
+	}
+
+	@Override
+	public void updateGroupImportPortletPreferencesExternalReferenceCode(
+			PortletDataContext portletDataContext,
+			String externalReferenceCodePreferenceKey,
+			PortletPreferences portletPreferences)
+		throws PortletDataException {
+
+		_updateGroupPortletPreferencesExternalReferenceCode(
+			externalReferenceCodePreferenceKey, portletPreferences,
+			externalReferenceCode ->
+				getGroupImportPortletPreferencesExternalReferenceCode(
+					portletDataContext, externalReferenceCode));
+	}
+
+	@Override
+	public void updateImportPortletPreferencesClassPKs(
+			PortletDataContext portletDataContext,
+			PortletPreferences portletPreferences, String key,
+			long companyGroupId,
+			Function<String, Long> importPortletPreferencesNewValueSupplier)
+		throws Exception {
+
+		_updateImportPortletPreferencesClassPKs(
+			portletPreferences, key, importPortletPreferencesNewValueSupplier);
+	}
+
+	@Override
+	public void updateImportPortletPreferencesClassPKs(
+			PortletPreferences portletPreferences, String key,
+			Function<String, Long> importPortletPreferencesNewValueFunction)
+		throws Exception {
+
+		_updateImportPortletPreferencesClassPKs(
+			portletPreferences, key, importPortletPreferencesNewValueFunction);
+	}
+
+	private String _getRemoteGroupExternalReferenceCode(Group group) {
+		UnicodeProperties typeSettingsUnicodeProperties =
+			group.getTypeSettingsProperties();
+
+		String remoteGroupExternalReferenceCode =
+			typeSettingsUnicodeProperties.get(
+				"remoteGroupExternalReferenceCode");
+
+		if (Validator.isNotNull(remoteGroupExternalReferenceCode)) {
+			return remoteGroupExternalReferenceCode;
+		}
+
+		String remoteAddress = GetterUtil.getString(
+			typeSettingsUnicodeProperties.get("remoteAddress"));
+		long remoteGroupId = GetterUtil.getLong(
+			typeSettingsUnicodeProperties.get("remoteGroupId"));
+
+		if (Validator.isNull(remoteAddress) || (remoteGroupId <= 0)) {
+			return null;
+		}
+
+		int remotePort = GetterUtil.getInteger(
+			typeSettingsUnicodeProperties.get("remotePort"));
+		String remotePathContext = GetterUtil.getString(
+			typeSettingsUnicodeProperties.get("remotePathContext"));
+		boolean secureConnection = GetterUtil.getBoolean(
+			typeSettingsUnicodeProperties.get("secureConnection"));
+
+		String remoteURL = StagingURLHelperUtil.buildRemoteURL(
+			remoteAddress, remotePort, remotePathContext, secureConnection);
+
+		PermissionChecker permissionChecker =
+			PermissionThreadLocal.getPermissionChecker();
+
+		User user = permissionChecker.getUser();
+
+		try {
+			HttpPrincipal httpPrincipal = new HttpPrincipal(
+				remoteURL, user.getLogin(), user.getPassword(),
+				user.isPasswordEncrypted());
+
+			try (SafeCloseable safeCloseable =
+					ThreadContextClassLoaderUtil.swap(
+						PortalClassLoaderUtil.getClassLoader())) {
+
+				Group remoteGroup = GroupServiceHttp.getGroup(
+					httpPrincipal, remoteGroupId);
+
+				return remoteGroup.getExternalReferenceCode();
+			}
+		}
+		catch (Exception exception) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(exception);
+			}
+		}
+
+		return null;
+	}
+
+	private void _updateExportPortletPreferencesClassPKs(
 			PortletPreferences portletPreferences, String key, String className,
 			Function<String, String> exportPortletPreferencesNewValueFunction)
 		throws Exception {
@@ -82,12 +309,32 @@ public class ExportImportPortletPreferencesProcessorHelperImpl
 		portletPreferences.setValues(key, newValues);
 	}
 
-	@Override
-	public void updateImportPortletPreferencesClassPKs(
-			PortletDataContext portletDataContext,
+	private void _updateGroupPortletPreferencesExternalReferenceCode(
+			String externalReferenceCodePreferenceKey,
+			PortletPreferences portletPreferences,
+			Function<String, String> externalReferenceCodeFunction)
+		throws PortletDataException {
+
+		String externalReferenceCode = portletPreferences.getValue(
+			externalReferenceCodePreferenceKey, null);
+
+		if (Validator.isBlank(externalReferenceCode)) {
+			return;
+		}
+
+		try {
+			portletPreferences.setValue(
+				externalReferenceCodePreferenceKey,
+				externalReferenceCodeFunction.apply(externalReferenceCode));
+		}
+		catch (ReadOnlyException readOnlyException) {
+			throw new PortletDataException(readOnlyException);
+		}
+	}
+
+	private void _updateImportPortletPreferencesClassPKs(
 			PortletPreferences portletPreferences, String key,
-			long companyGroupId,
-			Function<String, Long> importPortletPreferencesNewValueSupplier)
+			Function<String, Long> importPortletPreferencesNewValueFunction)
 		throws Exception {
 
 		String[] oldValues = portletPreferences.getValues(key, null);
@@ -109,7 +356,7 @@ public class ExportImportPortletPreferencesProcessorHelperImpl
 					portletPreferencesOldValues) {
 
 				Long newPrimaryKey =
-					importPortletPreferencesNewValueSupplier.apply(
+					importPortletPreferencesNewValueFunction.apply(
 						portletPreferencesOldValue);
 
 				if (Validator.isNull(newPrimaryKey)) {
@@ -134,5 +381,8 @@ public class ExportImportPortletPreferencesProcessorHelperImpl
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		ExportImportPortletPreferencesProcessorHelperImpl.class);
+
+	@Reference
+	private GroupLocalService _groupLocalService;
 
 }

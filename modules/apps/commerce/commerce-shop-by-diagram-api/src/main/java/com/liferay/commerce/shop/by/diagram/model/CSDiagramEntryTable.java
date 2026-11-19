@@ -29,6 +29,10 @@ public class CSDiagramEntryTable extends BaseTable<CSDiagramEntryTable> {
 	public final Column<CSDiagramEntryTable, Long> ctCollectionId =
 		createColumn(
 			"ctCollectionId", Long.class, Types.BIGINT, Column.FLAG_PRIMARY);
+	public final Column<CSDiagramEntryTable, String> externalReferenceCode =
+		createColumn(
+			"externalReferenceCode", String.class, Types.VARCHAR,
+			Column.FLAG_DEFAULT);
 	public final Column<CSDiagramEntryTable, Long> CSDiagramEntryId =
 		createColumn(
 			"CSDiagramEntryId", Long.class, Types.BIGINT, Column.FLAG_PRIMARY);
@@ -63,3 +67,4 @@ public class CSDiagramEntryTable extends BaseTable<CSDiagramEntryTable> {
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1434255301

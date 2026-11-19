@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import '@testing-library/jest-dom/extend-expect';
+import '@testing-library/jest-dom';
 import {render, screen} from '@testing-library/react';
 import React from 'react';
 
@@ -16,7 +16,6 @@ const DEFAULT_PROPS = {
 	searchLocation: null,
 	searchLocationOptions: null,
 	searchResults: 'search-results',
-	searchResultsOptions: [{label: 'Search Results', value: 'search-results'}],
 	searchURL: 'search-url',
 };
 
@@ -32,10 +31,9 @@ describe('SearchOptions', () => {
 
 		const selectors = document.querySelectorAll('.form-control-select');
 
-		expect(selectors.length).toBe(2);
+		expect(selectors.length).toBe(1);
 
 		expect(screen.getByText('Search In')).toBeInTheDocument();
-		expect(screen.getByText('Search Results')).toBeInTheDocument();
 	});
 
 	it('renders search location selector if it has any location option', () => {
@@ -48,7 +46,7 @@ describe('SearchOptions', () => {
 
 		const selectors = document.querySelectorAll('.form-control-select');
 
-		expect(selectors.length).toBe(3);
+		expect(selectors.length).toBe(2);
 
 		expect(screen.getByText('Search Location')).toBeInTheDocument();
 	});

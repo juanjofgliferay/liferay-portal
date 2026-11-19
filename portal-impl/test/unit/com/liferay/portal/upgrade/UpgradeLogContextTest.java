@@ -14,7 +14,7 @@ import com.liferay.portal.kernel.util.LoggingTimer;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 import com.liferay.portal.tools.DBUpgrader;
 import com.liferay.portal.upgrade.log.UpgradeLogContext;
-import com.liferay.portal.verify.VerifyProperties;
+import com.liferay.portal.verify.PreupgradeVerifyProperties;
 
 import java.util.Collections;
 import java.util.Map;
@@ -63,39 +63,6 @@ public class UpgradeLogContextTest {
 	}
 
 	@Test
-	public void testUpgradeClassesDefaultContext() {
-		Assert.assertEquals(
-			_defaultContext,
-			_logContext.getContext(
-				BaseAdminPortletsUpgradeProcess.class.getName()));
-		Assert.assertEquals(
-			_defaultContext,
-			_logContext.getContext(
-				BasePortletIdUpgradeProcess.class.getName()));
-		Assert.assertEquals(
-			_defaultContext,
-			_logContext.getContext(DBUpgrader.class.getName()));
-		Assert.assertEquals(
-			_defaultContext,
-			_logContext.getContext(LoggingTimer.class.getName()));
-		Assert.assertEquals(
-			_defaultContext, _logContext.getContext(MySQLDB.class.getName()));
-		Assert.assertEquals(
-			_defaultContext,
-			_logContext.getContext(VerifyProperties.class.getName()));
-		Assert.assertEquals(
-			_defaultContext,
-			_logContext.getContext(
-				"com.liferay.portal.upgrade.internal.executor." +
-					"UpgradeExecutor"));
-		Assert.assertEquals(
-			_defaultContext,
-			_logContext.getContext(
-				"com.liferay.portal.upgrade.internal.release." +
-					"ReleaseManagerImpl"));
-	}
-
-	@Test
 	public void testUpgradeClassWithContext() {
 		Assert.assertEquals(
 			_defaultContext,
@@ -115,6 +82,39 @@ public class UpgradeLogContextTest {
 				_defaultContext,
 				_logContext.getContext(DBUpgrader.class.getName()));
 		}
+	}
+
+	@Test
+	public void testUpgradeClassesDefaultContext() {
+		Assert.assertEquals(
+			_defaultContext,
+			_logContext.getContext(
+				BaseAdminPortletsUpgradeProcess.class.getName()));
+		Assert.assertEquals(
+			_defaultContext,
+			_logContext.getContext(
+				BasePortletIdUpgradeProcess.class.getName()));
+		Assert.assertEquals(
+			_defaultContext,
+			_logContext.getContext(DBUpgrader.class.getName()));
+		Assert.assertEquals(
+			_defaultContext,
+			_logContext.getContext(LoggingTimer.class.getName()));
+		Assert.assertEquals(
+			_defaultContext, _logContext.getContext(MySQLDB.class.getName()));
+		Assert.assertEquals(
+			_defaultContext,
+			_logContext.getContext(PreupgradeVerifyProperties.class.getName()));
+		Assert.assertEquals(
+			_defaultContext,
+			_logContext.getContext(
+				"com.liferay.portal.upgrade.internal.executor." +
+					"UpgradeExecutor"));
+		Assert.assertEquals(
+			_defaultContext,
+			_logContext.getContext(
+				"com.liferay.portal.upgrade.internal.release." +
+					"ReleaseManagerImpl"));
 	}
 
 	private static final Map<String, String> _defaultContext =

@@ -22,12 +22,15 @@ import com.liferay.portal.kernel.portlet.PortletURLUtil;
 import com.liferay.portal.kernel.search.BaseModelSearchResult;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.LinkedHashMapBuilder;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.LinkedHashMap;
 import java.util.Objects;
@@ -110,6 +113,16 @@ public class AccountEntryDisplaySearchContainerFactory {
 					liferayPortletRequest, liferayPortletResponse),
 				null, "no-accounts-were-found");
 
+		HttpServletRequest httpServletRequest =
+			liferayPortletRequest.getOriginalHttpServletRequest();
+
+		if (Objects.equals(
+				Constants.SEARCH,
+				httpServletRequest.getParameter("p_l_mode"))) {
+
+			return accountEntryDisplaySearchContainer;
+		}
+
 		accountEntryDisplaySearchContainer.setId("accountEntries");
 
 		String orderByCol = ParamUtil.getString(
@@ -187,11 +200,7 @@ public class AccountEntryDisplaySearchContainerFactory {
 	}
 
 	private static boolean _isReverseOrder(String orderByType) {
-		if (Objects.equals(orderByType, "desc")) {
-			return true;
-		}
-
-		return false;
+		return Objects.equals(orderByType, "desc");
 	}
 
 }

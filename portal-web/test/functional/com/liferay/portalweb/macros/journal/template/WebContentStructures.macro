@@ -85,19 +85,6 @@ definition {
 	}
 
 	@summary = "Default summary"
-	macro addNullCP() {
-		LexiconEntry.gotoAdd();
-
-		AssertElementNotPresent(locator1 = "TextInput#REQUIRED_ALERT");
-
-		Button.clickSave();
-
-		AssertElementPresent(locator1 = "TextInput#REQUIRED_ALERT");
-
-		SelectFrame(value1 = "relative=top");
-	}
-
-	@summary = "Default summary"
 	macro addTranslations(localizedManageTranslations = null, localizedDone = null, localeList = null) {
 		if (isSet(localizedManageTranslations)) {
 			var manageTranslations = ${localizedManageTranslations};
@@ -327,7 +314,9 @@ definition {
 		if (IsElementNotPresent(locator1 = "Message#EMPTY_INFO", value1 = "There are no structures.")) {
 			PortletEntry.selectAll();
 
-			ClickNoError(locator1 = "Icon#DELETE");
+			ClickNoError(
+				key_text = "trash",
+				locator1 = "ManagementBar#ANY_ICON");
 
 			AssertConfirm(value1 = "Are you sure you want to delete this? It will be deleted immediately.");
 
@@ -385,15 +374,6 @@ definition {
 		AssertTextEquals(
 			locator1 = "WC#ADD_TO_FAVORITES",
 			value1 = "Add to Favorites (0)");
-	}
-
-	@summary = "Default summary"
-	macro viewScopesViaMoreIFrame(structureName = null, scopeName = null) {
-		AssertTextEquals(
-			key_tableEntry = ${structureName},
-			key_tableEntryText = ${scopeName},
-			locator1 = "LexiconTable#TABLE_ENTRY_TEXT",
-			value1 = ${scopeName});
 	}
 
 	@summary = "Default summary"

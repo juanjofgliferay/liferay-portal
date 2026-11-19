@@ -19,6 +19,7 @@ import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.Organization;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.model.UserGroup;
 import com.liferay.portal.kernel.search.Indexable;
 import com.liferay.portal.kernel.search.IndexableType;
@@ -81,20 +82,12 @@ public interface GroupLocalService
 	public Group addGroup(Group group);
 
 	public Group addGroup(
-			long userId, long parentGroupId, String className, long classPK,
-			long liveGroupId, Map<Locale, String> nameMap,
-			Map<Locale, String> descriptionMap, int type,
-			boolean manualMembership, int membershipRestriction,
-			String friendlyURL, boolean site, boolean inheritContent,
-			boolean active, ServiceContext serviceContext)
-		throws PortalException;
-
-	public Group addGroup(
-			long userId, long parentGroupId, String className, long classPK,
-			long liveGroupId, Map<Locale, String> nameMap,
-			Map<Locale, String> descriptionMap, int type,
-			boolean manualMembership, int membershipRestriction,
-			String friendlyURL, boolean site, boolean active,
+			String externalReferenceCode, long userId, long parentGroupId,
+			String className, long classPK, long liveGroupId,
+			Map<Locale, String> nameMap, Map<Locale, String> descriptionMap,
+			int type, String typeSettings, boolean manualMembership,
+			int membershipRestriction, String friendlyURL, boolean site,
+			boolean inheritContent, boolean active,
 			ServiceContext serviceContext)
 		throws PortalException;
 
@@ -139,16 +132,6 @@ public interface GroupLocalService
 	public boolean addUserGroups(long userId, List<Group> groups);
 
 	public boolean addUserGroups(long userId, long[] groupIds);
-
-	/**
-	 * Adds a company group if it does not exist. This method is typically used
-	 * when a virtual host is added.
-	 *
-	 * @param companyId the primary key of the company
-	 * @throws PortalException if a portal exception occurred
-	 */
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public void checkCompanyGroup(long companyId) throws PortalException;
 
 	public Group checkScopeGroup(Layout layout, long userId)
 		throws PortalException;
@@ -400,14 +383,10 @@ public interface GroupLocalService
 	 * @throws PortalException if a portal exception occurred
 	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public Group fetchUserPersonalSiteGroup(long companyId)
-		throws PortalException;
+	public Group fetchUserPersonalSiteGroup(long companyId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public ActionableDynamicQuery getActionableDynamicQuery();
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<Long> getActiveGroupIds(long userId);
 
 	/**
 	 * Returns all the active or inactive groups associated with the company.
@@ -832,21 +811,6 @@ public interface GroupLocalService
 		long companyId, long parentGroupId, boolean site);
 
 	/**
-	 * Returns the number of groups that are children or the parent group and
-	 * that have at least one layout
-	 *
-	 * @param companyId the primary key of the company
-	 * @param parentGroupId the primary key of the parent group
-	 * @param site whether the group is to be associated with a main site
-	 * @param active whether to return only active groups, or only inactive
-	 groups
-	 * @return the number of matching groups
-	 */
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getLayoutsGroupsCount(
-		long companyId, long parentGroupId, boolean site, boolean active);
-
-	/**
 	 * Returns all live groups.
 	 *
 	 * @return all live groups
@@ -963,16 +927,6 @@ public interface GroupLocalService
 	public List<Group> getStagedSites();
 
 	/**
-	 * Returns the staging group.
-	 *
-	 * @param liveGroupId the primary key of the live group
-	 * @return the staging group
-	 * @throws PortalException if a portal exception occurred
-	 */
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public Group getStagingGroup(long liveGroupId) throws PortalException;
-
-	/**
 	 * Returns the group directly associated with the user.
 	 *
 	 * @param companyId the primary key of the company
@@ -1081,6 +1035,15 @@ public interface GroupLocalService
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<Group> getUserGroups(User user, boolean inherit)
+		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<Group> getUserGroups(
+			User user, boolean inherit, int start, int end)
+		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public int getUserGroupsCount(long userId);
 
 	/**
@@ -1091,8 +1054,7 @@ public interface GroupLocalService
 	 * @throws PortalException if a portal exception occurred
 	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<Group> getUserGroupsGroups(List<UserGroup> userGroups)
-		throws PortalException;
+	public List<Group> getUserGroupsGroups(List<UserGroup> userGroups);
 
 	/**
 	 * Returns all the groups related to the user groups.
@@ -1102,6 +1064,9 @@ public interface GroupLocalService
 	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<Group> getUserGroupsRelatedGroups(List<UserGroup> userGroups);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public Map<Long, long[]> getUserInheritedSiteGroupIds(long companyId);
 
 	/**
 	 * Returns the range of all groups associated with the user's organization
@@ -1175,16 +1140,6 @@ public interface GroupLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public boolean hasRoleGroups(long roleId);
 
-	/**
-	 * Returns <code>true</code> if the live group has a staging group.
-	 *
-	 * @param liveGroupId the primary key of the live group
-	 * @return <code>true</code> if the live group has a staging group;
-	 <code>false</code> otherwise
-	 */
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public boolean hasStagingGroup(long liveGroupId);
-
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public boolean hasUserGroup(long userId, long groupId);
 
@@ -1214,6 +1169,9 @@ public interface GroupLocalService
 
 	@Transactional(enabled = false)
 	public boolean isLiveGroupActive(Group group);
+
+	@Transactional(enabled = false)
+	public boolean isMaintenanceMode(Group group);
 
 	/**
 	 * Returns the group with the matching group key by first searching the
@@ -1252,38 +1210,6 @@ public interface GroupLocalService
 	 * @throws PortalException if a portal exception occurred
 	 */
 	public void rebuildTree(long companyId) throws PortalException;
-
-	/**
-	 * Returns an ordered range of all the company's groups, optionally
-	 * including the user's inherited organization groups and user groups.
-	 * System and staged groups are not included.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end -
-	 * start</code> instances. <code>start</code> and <code>end</code> are not
-	 * primary keys, they are indexes in the result set. Thus, <code>0</code>
-	 * refers to the first result in the set. Setting both <code>start</code>
-	 * and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full
-	 * result set.
-	 * </p>
-	 *
-	 * @param companyId the primary key of the company
-	 * @param params the finder params (optionally <code>null</code>). To
-	 include a user's organizations, inherited organizations, and user
-	 groups in the search, add an entry with key
-	 &quot;usersGroups&quot; mapped to the user's ID and an entry with
-	 key &quot;inherit&quot; mapped to a non-<code>null</code> object.
-	 For more information see {@link
-	 com.liferay.portal.kernel.service.persistence.GroupFinder}.
-	 * @param start the lower bound of the range of groups to return
-	 * @param end the upper bound of the range of groups to return (not
-	 inclusive)
-	 * @return the matching groups ordered by name
-	 */
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<Group> search(
-		long companyId, LinkedHashMap<String, Object> params, int start,
-		int end);
 
 	/**
 	 * Returns an ordered range of all the groups belonging to the parent group
@@ -1943,33 +1869,6 @@ public interface GroupLocalService
 		LinkedHashMap<String, Object> params);
 
 	/**
-	 * Returns the number of groups belonging to the parent group and immediate
-	 * organization groups that match the name and description, optionally
-	 * including the user's inherited organization groups and user groups.
-	 * System and staged groups are not included.
-	 *
-	 * @param companyId the primary key of the company
-	 * @param parentGroupId the primary key of the parent group
-	 * @param name the group's name (optionally <code>null</code>)
-	 * @param description the group's description (optionally
-	 <code>null</code>)
-	 * @param params the finder params (optionally <code>null</code>). To
-	 include the user's inherited organization groups and user groups
-	 in the search, add entries having &quot;usersGroups&quot; and
-	 &quot;inherit&quot; as keys mapped to the the user's ID. For more
-	 information see {@link
-	 com.liferay.portal.kernel.service.persistence.GroupFinder}.
-	 * @param andOperator whether every field must match its keywords, or just
-	 one field.
-	 * @return the number of matching groups
-	 */
-	@ThreadLocalCachable
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int searchCount(
-		long companyId, long parentGroupId, String name, String description,
-		LinkedHashMap<String, Object> params, boolean andOperator);
-
-	/**
 	 * Returns the number of groups belonging to the parent group that match the
 	 * class name IDs, and keywords, optionally including the user's inherited
 	 * organization groups and user groups. System and staged groups are not
@@ -2048,33 +1947,6 @@ public interface GroupLocalService
 	public int searchCount(
 		long companyId, long[] classNameIds, String keywords,
 		LinkedHashMap<String, Object> params);
-
-	/**
-	 * Returns the number of groups that match the class name IDs, name, and
-	 * description, optionally including the user's inherited organization
-	 * groups and user groups. System and staged groups are not included.
-	 *
-	 * @param companyId the primary key of the company
-	 * @param classNameIds the primary keys of the class names of the entities
-	 the groups are related to (optionally <code>null</code>)
-	 * @param name the group's name (optionally <code>null</code>)
-	 * @param description the group's description (optionally
-	 <code>null</code>)
-	 * @param params the finder params (optionally <code>null</code>). To
-	 include the user's inherited organization groups and user groups
-	 in the search, add entries having &quot;usersGroups&quot; and
-	 &quot;inherit&quot; as keys mapped to the the user's ID. For more
-	 information see {@link
-	 com.liferay.portal.kernel.service.persistence.GroupFinder}.
-	 * @param andOperator whether every field must match its keywords, or just
-	 one field.
-	 * @return the number of matching groups
-	 */
-	@ThreadLocalCachable
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int searchCount(
-		long companyId, long[] classNameIds, String name, String description,
-		LinkedHashMap<String, Object> params, boolean andOperator);
 
 	/**
 	 * Returns the number of groups that match the keywords, optionally
@@ -2189,7 +2061,7 @@ public interface GroupLocalService
 
 	public Group updateGroup(
 			long groupId, long parentGroupId, Map<Locale, String> nameMap,
-			Map<Locale, String> descriptionMap, int type,
+			Map<Locale, String> descriptionMap, int type, String typeSettings,
 			boolean manualMembership, int membershipRestriction,
 			String friendlyURL, boolean inheritContent, boolean active,
 			ServiceContext serviceContext)
@@ -2238,3 +2110,4 @@ public interface GroupLocalService
 		throws E;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1821390865

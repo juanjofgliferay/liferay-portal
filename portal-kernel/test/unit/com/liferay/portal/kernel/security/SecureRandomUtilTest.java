@@ -5,7 +5,7 @@
 
 package com.liferay.portal.kernel.security;
 
-import com.liferay.portal.kernel.io.BigEndianCodec;
+import com.liferay.petra.io.BigEndianCodec;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.CodeCoverageAssertor;
@@ -14,12 +14,20 @@ import com.liferay.portal.kernel.test.rule.NewEnvTestRule;
 
 import java.security.SecureRandom;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Random;
-import java.util.concurrent.Callable;
+import java.util.Set;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -50,39 +58,47 @@ public class SecureRandomUtilTest {
 		System.clearProperty(_KEY_BUFFER_SIZE);
 	}
 
-	@Test
-	public void testConcurrentReload() throws Exception {
-		SecureRandom secureRandom = installPredictableRandom();
-
-		FutureTask<Long> futureTask = new FutureTask<>(
-			new Callable<Long>() {
-
-				@Override
-				public Long call() {
-					return reload();
-				}
-
-			});
-
-		Thread reloadThread = new Thread(futureTask);
-
-		synchronized (secureRandom) {
-			reloadThread.start();
-
-			while (reloadThread.getState() != Thread.State.BLOCKED);
-
-			Assert.assertEquals(getLong(0), reload());
-		}
-
-		reloadThread.join();
-
-		Assert.assertEquals((Long)(getLong(0) ^ 1), futureTask.get());
-	}
-
 	@NewEnv(type = NewEnv.Type.NONE)
 	@Test
 	public void testConstructor() {
 		new SecureRandomUtil();
+	}
+
+	@Test
+	public void testHighConcurrency() throws Exception {
+		AtomicInteger duplicateCounter = new AtomicInteger();
+		List<Future<Void>> list = new ArrayList<>();
+		Set<String> values = ConcurrentHashMap.newKeySet();
+
+		Runtime runtime = Runtime.getRuntime();
+
+		int processors = runtime.availableProcessors();
+
+		ExecutorService executorService = Executors.newFixedThreadPool(
+			processors);
+
+		for (int i = 0; i < (processors * 10000); i++) {
+			list.add(
+				executorService.submit(
+					() -> {
+						if (!values.add(
+								SecureRandomUtil.nextLong() + "-" +
+									SecureRandomUtil.nextLong())) {
+
+							duplicateCounter.incrementAndGet();
+						}
+
+						return null;
+					}));
+		}
+
+		for (Future<Void> future : list) {
+			future.get();
+		}
+
+		executorService.shutdownNow();
+
+		Assert.assertEquals(0, duplicateCounter.get());
 	}
 
 	@Test
@@ -94,20 +110,16 @@ public class SecureRandomUtilTest {
 			ReflectionTestUtil.getFieldValue(
 				SecureRandomUtil.class, "_BUFFER_SIZE"));
 
-		byte[] bytes = ReflectionTestUtil.getFieldValue(
-			SecureRandomUtil.class, "_BYTES");
+		byte[] bytes = ReflectionTestUtil.getFieldValue(getBuffer(), "_bytes");
 
 		Assert.assertEquals(Arrays.toString(bytes), 1024, bytes.length);
 	}
 
 	@Test
-	public void testNextBoolean() {
+	public void testNextBoolean() throws Exception {
+		AtomicInteger counter = installPredictableRandom();
 
-		// First load
-
-		installPredictableRandom();
-
-		for (int i = 0; i < 2048; i++) {
+		for (int i = 0; i < 4096; i++) {
 			byte b = (byte)i;
 
 			if (b < 0) {
@@ -118,73 +130,29 @@ public class SecureRandomUtilTest {
 			}
 		}
 
-		// Gap number
+		getNextBuffer(getBuffer());
 
-		if ((byte)getLong(7) < 0) {
-			Assert.assertFalse(SecureRandomUtil.nextBoolean());
-		}
-		else {
-			Assert.assertTrue(SecureRandomUtil.nextBoolean());
-		}
-
-		// Second load
-
-		for (int i = 0; i < 2048; i++) {
-			byte b = (byte)i;
-
-			if (b < 0) {
-				Assert.assertFalse(SecureRandomUtil.nextBoolean());
-			}
-			else {
-				Assert.assertTrue(SecureRandomUtil.nextBoolean());
-			}
-		}
-
-		// Gap number
-
-		if ((byte)(getLong(7) ^ 1) < 0) {
-			Assert.assertFalse(SecureRandomUtil.nextBoolean());
-		}
-		else {
-			Assert.assertTrue(SecureRandomUtil.nextBoolean());
-		}
+		Assert.assertEquals(6144, counter.get());
 	}
 
 	@Test
-	public void testNextByte() {
+	public void testNextByte() throws Exception {
+		AtomicInteger counter = installPredictableRandom();
 
-		// First load
-
-		installPredictableRandom();
-
-		for (int i = 0; i < 2048; i++) {
+		for (int i = 0; i < 4096; i++) {
 			Assert.assertEquals((byte)i, SecureRandomUtil.nextByte());
 		}
 
-		// Gap number
+		getNextBuffer(getBuffer());
 
-		Assert.assertEquals((byte)getLong(7), SecureRandomUtil.nextByte());
-
-		// Second load
-
-		for (int i = 0; i < 2048; i++) {
-			Assert.assertEquals((byte)i, SecureRandomUtil.nextByte());
-		}
-
-		// Gap number
-
-		Assert.assertEquals(
-			(byte)(getLong(7) ^ 1), SecureRandomUtil.nextByte());
+		Assert.assertEquals(6144, counter.get());
 	}
 
 	@Test
-	public void testNextDouble() {
+	public void testNextDouble() throws Exception {
+		AtomicInteger counter = installPredictableRandom();
 
-		// First load
-
-		installPredictableRandom();
-
-		for (int i = 0; i < 256; i++) {
+		for (int i = 0; i < 512; i++) {
 			byte b = (byte)(i * 8);
 
 			byte[] bytes = new byte[8];
@@ -198,43 +166,16 @@ public class SecureRandomUtilTest {
 				SecureRandomUtil.nextDouble(), 0);
 		}
 
-		// Gap number
+		getNextBuffer(getBuffer());
 
-		Assert.assertEquals(
-			Double.longBitsToDouble(getLong(7)), SecureRandomUtil.nextDouble(),
-			0);
-
-		// Second load
-
-		for (int i = 0; i < 256; i++) {
-			byte b = (byte)(i * 8);
-
-			byte[] bytes = new byte[8];
-
-			for (int j = 0; j < 8; j++) {
-				bytes[j] = (byte)(b + j);
-			}
-
-			Assert.assertEquals(
-				BigEndianCodec.getDouble(bytes, 0),
-				SecureRandomUtil.nextDouble(), 0);
-		}
-
-		// Gap number
-
-		Assert.assertEquals(
-			Double.longBitsToDouble(getLong(7) ^ 1),
-			SecureRandomUtil.nextDouble(), 0);
+		Assert.assertEquals(6144, counter.get());
 	}
 
 	@Test
-	public void testNextFloat() {
+	public void testNextFloat() throws Exception {
+		AtomicInteger counter = installPredictableRandom();
 
-		// First load
-
-		installPredictableRandom();
-
-		for (int i = 0; i < 512; i++) {
+		for (int i = 0; i < 1024; i++) {
 			byte b = (byte)(i * 4);
 
 			byte[] bytes = new byte[4];
@@ -248,43 +189,16 @@ public class SecureRandomUtilTest {
 				0);
 		}
 
-		// Gap number
+		getNextBuffer(getBuffer());
 
-		Assert.assertEquals(
-			Float.intBitsToFloat((int)getLong(7)), SecureRandomUtil.nextFloat(),
-			0);
-
-		// Second load
-
-		for (int i = 0; i < 512; i++) {
-			byte b = (byte)(i * 4);
-
-			byte[] bytes = new byte[4];
-
-			for (int j = 0; j < 4; j++) {
-				bytes[j] = (byte)(b + j);
-			}
-
-			Assert.assertEquals(
-				BigEndianCodec.getFloat(bytes, 0), SecureRandomUtil.nextFloat(),
-				0);
-		}
-
-		// Gap number
-
-		Assert.assertEquals(
-			Float.intBitsToFloat((int)getLong(7) ^ 1),
-			SecureRandomUtil.nextFloat(), 0);
+		Assert.assertEquals(6144, counter.get());
 	}
 
 	@Test
-	public void testNextInt() {
+	public void testNextInt() throws Exception {
+		AtomicInteger counter = installPredictableRandom();
 
-		// First load
-
-		installPredictableRandom();
-
-		for (int i = 0; i < 512; i++) {
+		for (int i = 0; i < 1024; i++) {
 			byte b = (byte)(i * 4);
 
 			byte[] bytes = new byte[4];
@@ -297,38 +211,16 @@ public class SecureRandomUtilTest {
 				BigEndianCodec.getInt(bytes, 0), SecureRandomUtil.nextInt());
 		}
 
-		// Gap number
+		getNextBuffer(getBuffer());
 
-		Assert.assertEquals((int)getLong(7), SecureRandomUtil.nextInt());
-
-		// Second load
-
-		for (int i = 0; i < 512; i++) {
-			byte b = (byte)(i * 4);
-
-			byte[] bytes = new byte[4];
-
-			for (int j = 0; j < 4; j++) {
-				bytes[j] = (byte)(b + j);
-			}
-
-			Assert.assertEquals(
-				BigEndianCodec.getInt(bytes, 0), SecureRandomUtil.nextInt());
-		}
-
-		// Gap number
-
-		Assert.assertEquals((int)(getLong(7) ^ 1L), SecureRandomUtil.nextInt());
+		Assert.assertEquals(6144, counter.get());
 	}
 
 	@Test
-	public void testNextLong() {
+	public void testNextLong() throws Exception {
+		AtomicInteger counter = installPredictableRandom();
 
-		// First load
-
-		installPredictableRandom();
-
-		for (int i = 0; i < 256; i++) {
+		for (int i = 0; i < 512; i++) {
 			byte b = (byte)(i * 8);
 
 			byte[] bytes = new byte[8];
@@ -341,69 +233,198 @@ public class SecureRandomUtilTest {
 				BigEndianCodec.getLong(bytes, 0), SecureRandomUtil.nextLong());
 		}
 
-		// Gap number
+		getNextBuffer(getBuffer());
 
-		Assert.assertEquals(getLong(7), SecureRandomUtil.nextLong());
+		Assert.assertEquals(6144, counter.get());
+	}
 
-		// Second load
+	@Test
+	public void testSwapWithCancelledPrefetch() throws Exception {
+		Future<?> nextBufferFuture = ReflectionTestUtil.getFieldValue(
+			getNextBuffer(getBuffer()), "_nextBufferFuture");
 
-		for (int i = 0; i < 256; i++) {
-			byte b = (byte)(i * 8);
+		nextBufferFuture.cancel(false);
 
-			byte[] bytes = new byte[8];
-
-			for (int j = 0; j < 8; j++) {
-				bytes[j] = (byte)(b + j);
-			}
-
-			Assert.assertEquals(
-				BigEndianCodec.getLong(bytes, 0), SecureRandomUtil.nextLong());
+		for (int i = 0; i < 512; i++) {
+			SecureRandomUtil.nextLong();
 		}
 
-		// Gap number
+		try {
+			SecureRandomUtil.nextLong();
 
-		Assert.assertEquals(getLong(7) ^ 1, SecureRandomUtil.nextLong());
+			Assert.fail();
+		}
+		catch (CancellationException cancellationException) {
+		}
 	}
 
-	protected long getLong(int offset) {
-		byte[] bytes = ReflectionTestUtil.getFieldValue(
-			SecureRandomUtil.class, "_BYTES");
+	@Test
+	public void testSwapWithFailedPrefetch() throws Exception {
+		Object buffer = getNextBuffer(getBuffer());
 
-		return BigEndianCodec.getLong(bytes, offset);
-	}
+		Random random = ReflectionTestUtil.getFieldValue(
+			SecureRandomUtil.class, "_random");
+		RuntimeException runtimeException = new RuntimeException();
 
-	protected SecureRandom installPredictableRandom() {
 		ReflectionTestUtil.setFieldValue(
-			SecureRandomUtil.class, "_gapRandom",
+			SecureRandomUtil.class, "_random",
 			new Random() {
 
 				@Override
-				public long nextLong() {
-					return _counter.getAndIncrement();
+				public void nextBytes(byte[] bytes) {
+					ReflectionTestUtil.setFieldValue(
+						SecureRandomUtil.class, "_random", random);
+
+					throw runtimeException;
 				}
-
-				private static final long serialVersionUID = 1L;
-
-				private final AtomicLong _counter = new AtomicLong();
 
 			});
 
-		SecureRandom predictableRandom = new PredictableRandom();
+		for (int i = 0; i < 513; i++) {
+			SecureRandomUtil.nextLong();
+		}
+
+		Future<?> nextBufferFuture = ReflectionTestUtil.getFieldValue(
+			buffer, "_nextBufferFuture");
+
+		try {
+			nextBufferFuture.get();
+
+			Assert.fail();
+		}
+		catch (ExecutionException executionException) {
+			Assert.assertSame(runtimeException, executionException.getCause());
+		}
+
+		Future<?> nextReadBufferFuture = ReflectionTestUtil.getFieldValue(
+			buffer, "_nextReadBufferFuture");
+
+		Object nextBuffer = nextReadBufferFuture.get();
+
+		Assert.assertSame(nextBuffer, getBuffer());
+		Assert.assertNotNull(getNextBuffer(nextBuffer));
+	}
+
+	@Test
+	public void testSwapWithInterrupt() throws Exception {
+		AtomicInteger counter = installPredictableRandom();
+
+		FutureTask<Boolean> futureTask = new FutureTask<>(
+			() -> {
+				for (int i = 0; i < 255; i++) {
+					SecureRandomUtil.nextLong();
+				}
+
+				Thread currentThread = Thread.currentThread();
+
+				currentThread.interrupt();
+
+				SecureRandomUtil.nextLong();
+
+				return currentThread.isInterrupted();
+			});
+
+		Thread thread = new Thread(futureTask);
+
+		synchronized (counter) {
+			for (int i = 0; i < 257; i++) {
+				SecureRandomUtil.nextLong();
+			}
+
+			thread.start();
+
+			while (thread.getState() != Thread.State.WAITING);
+		}
+
+		thread.join();
+
+		Assert.assertTrue(futureTask.get());
+	}
+
+	@Test
+	public void testSwapWithPendingPrefetch() throws Exception {
+		AtomicInteger counter = installPredictableRandom();
+
+		Object buffer = getNextBuffer(getBuffer());
+
+		FutureTask<Long> futureTask = new FutureTask<>(
+			() -> {
+				for (int i = 0; i < 255; i++) {
+					SecureRandomUtil.nextLong();
+				}
+
+				return SecureRandomUtil.nextLong();
+			});
+
+		Thread thread = new Thread(futureTask);
+
+		synchronized (counter) {
+			for (int i = 0; i < 257; i++) {
+				SecureRandomUtil.nextLong();
+			}
+
+			thread.start();
+
+			while (thread.getState() != Thread.State.WAITING);
+		}
+
+		thread.join();
+
+		byte[] bytes = ReflectionTestUtil.getFieldValue(
+			getNextBuffer(buffer), "_bytes");
+
+		Assert.assertEquals(
+			BigEndianCodec.getLong(bytes, 0), (long)futureTask.get());
+	}
+
+	@Test
+	public void testSwapWithStaleBuffer() {
+		Object buffer = getBuffer();
+
+		for (int i = 0; i < 257; i++) {
+			SecureRandomUtil.nextLong();
+		}
+
+		Object nextBuffer = getBuffer();
+
+		ReflectionTestUtil.invoke(
+			SecureRandomUtil.class, "_swap", new Class<?>[] {buffer.getClass()},
+			buffer);
+
+		Assert.assertSame(nextBuffer, getBuffer());
+	}
+
+	protected Object getBuffer() {
+		AtomicReference<?> readBufferAtomicReference =
+			ReflectionTestUtil.getFieldValue(
+				SecureRandomUtil.class, "_readBufferAtomicReference");
+
+		return readBufferAtomicReference.get();
+	}
+
+	protected Object getNextBuffer(Object buffer) throws Exception {
+		Future<?> nextBufferFuture = ReflectionTestUtil.getFieldValue(
+			buffer, "_nextBufferFuture");
+
+		return nextBufferFuture.get();
+	}
+
+	protected AtomicInteger installPredictableRandom() throws Exception {
+		Object buffer = getBuffer();
+
+		Object nextBuffer = getNextBuffer(buffer);
+
+		PredictableRandom predictableRandom = new PredictableRandom();
 
 		ReflectionTestUtil.setFieldValue(
 			SecureRandomUtil.class, "_random", predictableRandom);
 
-		byte[] bytes = ReflectionTestUtil.getFieldValue(
-			SecureRandomUtil.class, "_BYTES");
+		predictableRandom.nextBytes(
+			ReflectionTestUtil.getFieldValue(buffer, "_bytes"));
+		predictableRandom.nextBytes(
+			ReflectionTestUtil.getFieldValue(nextBuffer, "_bytes"));
 
-		predictableRandom.nextBytes(bytes);
-
-		return predictableRandom;
-	}
-
-	protected long reload() {
-		return ReflectionTestUtil.invoke(
-			SecureRandomUtil.class, "_reload", new Class<?>[] {int.class}, 0);
+		return predictableRandom._counter;
 	}
 
 	private static final String _KEY_BUFFER_SIZE =
@@ -412,15 +433,12 @@ public class SecureRandomUtilTest {
 	private static class PredictableRandom extends SecureRandom {
 
 		@Override
-		public synchronized void nextBytes(byte[] bytes) {
-			for (int i = 0; i < bytes.length; i++) {
-				bytes[i] = (byte)_counter.getAndIncrement();
+		public void nextBytes(byte[] bytes) {
+			synchronized (_counter) {
+				for (int i = 0; i < bytes.length; i++) {
+					bytes[i] = (byte)_counter.getAndIncrement();
+				}
 			}
-		}
-
-		@Override
-		public long nextLong() {
-			return 0;
 		}
 
 		private static final long serialVersionUID = 1L;

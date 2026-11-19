@@ -27,25 +27,32 @@ import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.model.Company;
-import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
+import com.liferay.portal.kernel.test.util.JAXRSWhiteboardTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
-import com.liferay.portal.kernel.util.DateFormatFactoryUtil;
+import com.liferay.portal.kernel.util.FastDateFormatFactoryUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.Time;
 import com.liferay.portal.odata.entity.EntityField;
 import com.liferay.portal.odata.entity.EntityModel;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.vulcan.resource.EntityModelResource;
 
+import jakarta.annotation.Generated;
+
+import jakarta.ws.rs.core.MultivaluedHashMap;
+
 import java.lang.reflect.Method;
 
-import java.text.DateFormat;
+import java.text.Format;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -57,12 +64,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.ws.rs.core.MultivaluedHashMap;
-
-import org.apache.commons.lang.time.DateUtils;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -86,8 +87,10 @@ public abstract class BaseFieldResourceTestCase {
 
 	@BeforeClass
 	public static void setUpClass() throws Exception {
-		_dateFormat = DateFormatFactoryUtil.getSimpleDateFormat(
+		_format = FastDateFormatFactoryUtil.getSimpleDateFormat(
 			"yyyy-MM-dd'T'HH:mm:ss'Z'");
+
+		JAXRSWhiteboardTestUtil.ensureReady();
 	}
 
 	@Before
@@ -100,10 +103,16 @@ public abstract class BaseFieldResourceTestCase {
 
 		_fieldResource.setContextCompany(testCompany);
 
-		FieldResource.Builder builder = FieldResource.builder();
+		_testCompanyAdminUser = UserTestUtil.getAdminUser(
+			testCompany.getCompanyId());
 
-		fieldResource = builder.authentication(
-			"test@liferay.com", "test"
+		fieldResource = FieldResource.builder(
+		).authentication(
+			_testCompanyAdminUser.getEmailAddress(),
+			PropsValues.DEFAULT_ADMIN_PASSWORD
+		).endpoint(
+			testCompany.getVirtualHostname(),
+			PortalUtil.getPortalServerPort(false), "http"
 		).locale(
 			LocaleUtil.getDefault()
 		).build();
@@ -117,7 +126,32 @@ public abstract class BaseFieldResourceTestCase {
 
 	@Test
 	public void testClientSerDesToDTO() throws Exception {
-		ObjectMapper objectMapper = new ObjectMapper() {
+		ObjectMapper objectMapper = getClientSerDesObjectMapper();
+
+		Field field1 = randomField();
+
+		String json = objectMapper.writeValueAsString(field1);
+
+		Field field2 = FieldSerDes.toDTO(json);
+
+		Assert.assertTrue(equals(field1, field2));
+	}
+
+	@Test
+	public void testClientSerDesToJSON() throws Exception {
+		ObjectMapper objectMapper = getClientSerDesObjectMapper();
+
+		Field field = randomField();
+
+		String json1 = objectMapper.writeValueAsString(field);
+		String json2 = FieldSerDes.toJSON(field);
+
+		Assert.assertEquals(
+			objectMapper.readTree(json1), objectMapper.readTree(json2));
+	}
+
+	protected ObjectMapper getClientSerDesObjectMapper() {
+		return new ObjectMapper() {
 			{
 				configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
 				configure(
@@ -132,40 +166,6 @@ public abstract class BaseFieldResourceTestCase {
 					PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE);
 			}
 		};
-
-		Field field1 = randomField();
-
-		String json = objectMapper.writeValueAsString(field1);
-
-		Field field2 = FieldSerDes.toDTO(json);
-
-		Assert.assertTrue(equals(field1, field2));
-	}
-
-	@Test
-	public void testClientSerDesToJSON() throws Exception {
-		ObjectMapper objectMapper = new ObjectMapper() {
-			{
-				configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
-				configure(
-					SerializationFeature.WRITE_ENUMS_USING_TO_STRING, true);
-				setDateFormat(new ISO8601DateFormat());
-				setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
-				setSerializationInclusion(JsonInclude.Include.NON_NULL);
-				setVisibility(
-					PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
-				setVisibility(
-					PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE);
-			}
-		};
-
-		Field field = randomField();
-
-		String json1 = objectMapper.writeValueAsString(field);
-		String json2 = FieldSerDes.toJSON(field);
-
-		Assert.assertEquals(
-			objectMapper.readTree(json1), objectMapper.readTree(json2));
 	}
 
 	@Test
@@ -203,7 +203,7 @@ public abstract class BaseFieldResourceTestCase {
 		Field field2 = testGetFieldsAccountsPage_addField(randomField());
 
 		page = fieldResource.getFieldsAccountsPage(
-			null, Pagination.of(1, 10), null);
+			null, Pagination.of(1, (int)totalCount + 2), null);
 
 		Assert.assertEquals(totalCount + 2, page.getTotalCount());
 
@@ -223,10 +223,10 @@ public abstract class BaseFieldResourceTestCase {
 
 	@Test
 	public void testGetFieldsAccountsPageWithPagination() throws Exception {
-		Page<Field> fieldPage = fieldResource.getFieldsAccountsPage(
+		Page<Field> fieldsPage = fieldResource.getFieldsAccountsPage(
 			null, null, null);
 
-		int totalCount = GetterUtil.getInteger(fieldPage.getTotalCount());
+		int totalCount = GetterUtil.getInteger(fieldsPage.getTotalCount());
 
 		Field field1 = testGetFieldsAccountsPage_addField(randomField());
 
@@ -234,28 +234,65 @@ public abstract class BaseFieldResourceTestCase {
 
 		Field field3 = testGetFieldsAccountsPage_addField(randomField());
 
-		Page<Field> page1 = fieldResource.getFieldsAccountsPage(
-			null, Pagination.of(1, totalCount + 2), null);
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<Field> fields1 = (List<Field>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(fields1.toString(), totalCount + 2, fields1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<Field> page1 = fieldResource.getFieldsAccountsPage(
+				null,
+				Pagination.of(
+					(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+					pageSizeLimit),
+				null);
 
-		Page<Field> page2 = fieldResource.getFieldsAccountsPage(
-			null, Pagination.of(2, totalCount + 2), null);
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+			assertContains(field1, (List<Field>)page1.getItems());
 
-		List<Field> fields2 = (List<Field>)page2.getItems();
+			Page<Field> page2 = fieldResource.getFieldsAccountsPage(
+				null,
+				Pagination.of(
+					(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+					pageSizeLimit),
+				null);
 
-		Assert.assertEquals(fields2.toString(), 1, fields2.size());
+			assertContains(field2, (List<Field>)page2.getItems());
 
-		Page<Field> page3 = fieldResource.getFieldsAccountsPage(
-			null, Pagination.of(1, (int)totalCount + 3), null);
+			Page<Field> page3 = fieldResource.getFieldsAccountsPage(
+				null,
+				Pagination.of(
+					(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+					pageSizeLimit),
+				null);
 
-		assertContains(field1, (List<Field>)page3.getItems());
-		assertContains(field2, (List<Field>)page3.getItems());
-		assertContains(field3, (List<Field>)page3.getItems());
+			assertContains(field3, (List<Field>)page3.getItems());
+		}
+		else {
+			Page<Field> page1 = fieldResource.getFieldsAccountsPage(
+				null, Pagination.of(1, totalCount + 2), null);
+
+			List<Field> fields1 = (List<Field>)page1.getItems();
+
+			Assert.assertEquals(
+				fields1.toString(), totalCount + 2, fields1.size());
+
+			Page<Field> page2 = fieldResource.getFieldsAccountsPage(
+				null, Pagination.of(2, totalCount + 2), null);
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<Field> fields2 = (List<Field>)page2.getItems();
+
+			Assert.assertEquals(fields2.toString(), 1, fields2.size());
+
+			Page<Field> page3 = fieldResource.getFieldsAccountsPage(
+				null, Pagination.of(1, (int)totalCount + 3), null);
+
+			assertContains(field1, (List<Field>)page3.getItems());
+			assertContains(field2, (List<Field>)page3.getItems());
+			assertContains(field3, (List<Field>)page3.getItems());
+		}
 	}
 
 	@Test
@@ -265,7 +302,7 @@ public abstract class BaseFieldResourceTestCase {
 			(entityField, field1, field2) -> {
 				BeanTestUtil.setProperty(
 					field1, entityField.getName(),
-					DateUtils.addMinutes(new Date(), -2));
+					new Date(System.currentTimeMillis() - (2 * Time.MINUTE)));
 			});
 	}
 
@@ -391,214 +428,6 @@ public abstract class BaseFieldResourceTestCase {
 	}
 
 	@Test
-	public void testPatchFieldAccount() throws Exception {
-		Assert.assertTrue(false);
-	}
-
-	@Test
-	public void testGetFieldsOrdersPage() throws Exception {
-		Page<Field> page = fieldResource.getFieldsOrdersPage(
-			RandomTestUtil.randomString(), Pagination.of(1, 10), null);
-
-		long totalCount = page.getTotalCount();
-
-		Field field1 = testGetFieldsOrdersPage_addField(randomField());
-
-		Field field2 = testGetFieldsOrdersPage_addField(randomField());
-
-		page = fieldResource.getFieldsOrdersPage(
-			null, Pagination.of(1, 10), null);
-
-		Assert.assertEquals(totalCount + 2, page.getTotalCount());
-
-		assertContains(field1, (List<Field>)page.getItems());
-		assertContains(field2, (List<Field>)page.getItems());
-		assertValid(page, testGetFieldsOrdersPage_getExpectedActions());
-	}
-
-	protected Map<String, Map<String, String>>
-			testGetFieldsOrdersPage_getExpectedActions()
-		throws Exception {
-
-		Map<String, Map<String, String>> expectedActions = new HashMap<>();
-
-		return expectedActions;
-	}
-
-	@Test
-	public void testGetFieldsOrdersPageWithPagination() throws Exception {
-		Page<Field> fieldPage = fieldResource.getFieldsOrdersPage(
-			null, null, null);
-
-		int totalCount = GetterUtil.getInteger(fieldPage.getTotalCount());
-
-		Field field1 = testGetFieldsOrdersPage_addField(randomField());
-
-		Field field2 = testGetFieldsOrdersPage_addField(randomField());
-
-		Field field3 = testGetFieldsOrdersPage_addField(randomField());
-
-		Page<Field> page1 = fieldResource.getFieldsOrdersPage(
-			null, Pagination.of(1, totalCount + 2), null);
-
-		List<Field> fields1 = (List<Field>)page1.getItems();
-
-		Assert.assertEquals(fields1.toString(), totalCount + 2, fields1.size());
-
-		Page<Field> page2 = fieldResource.getFieldsOrdersPage(
-			null, Pagination.of(2, totalCount + 2), null);
-
-		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
-
-		List<Field> fields2 = (List<Field>)page2.getItems();
-
-		Assert.assertEquals(fields2.toString(), 1, fields2.size());
-
-		Page<Field> page3 = fieldResource.getFieldsOrdersPage(
-			null, Pagination.of(1, (int)totalCount + 3), null);
-
-		assertContains(field1, (List<Field>)page3.getItems());
-		assertContains(field2, (List<Field>)page3.getItems());
-		assertContains(field3, (List<Field>)page3.getItems());
-	}
-
-	@Test
-	public void testGetFieldsOrdersPageWithSortDateTime() throws Exception {
-		testGetFieldsOrdersPageWithSort(
-			EntityField.Type.DATE_TIME,
-			(entityField, field1, field2) -> {
-				BeanTestUtil.setProperty(
-					field1, entityField.getName(),
-					DateUtils.addMinutes(new Date(), -2));
-			});
-	}
-
-	@Test
-	public void testGetFieldsOrdersPageWithSortDouble() throws Exception {
-		testGetFieldsOrdersPageWithSort(
-			EntityField.Type.DOUBLE,
-			(entityField, field1, field2) -> {
-				BeanTestUtil.setProperty(field1, entityField.getName(), 0.1);
-				BeanTestUtil.setProperty(field2, entityField.getName(), 0.5);
-			});
-	}
-
-	@Test
-	public void testGetFieldsOrdersPageWithSortInteger() throws Exception {
-		testGetFieldsOrdersPageWithSort(
-			EntityField.Type.INTEGER,
-			(entityField, field1, field2) -> {
-				BeanTestUtil.setProperty(field1, entityField.getName(), 0);
-				BeanTestUtil.setProperty(field2, entityField.getName(), 1);
-			});
-	}
-
-	@Test
-	public void testGetFieldsOrdersPageWithSortString() throws Exception {
-		testGetFieldsOrdersPageWithSort(
-			EntityField.Type.STRING,
-			(entityField, field1, field2) -> {
-				Class<?> clazz = field1.getClass();
-
-				String entityFieldName = entityField.getName();
-
-				Method method = clazz.getMethod(
-					"get" + StringUtil.upperCaseFirstLetter(entityFieldName));
-
-				Class<?> returnType = method.getReturnType();
-
-				if (returnType.isAssignableFrom(Map.class)) {
-					BeanTestUtil.setProperty(
-						field1, entityFieldName,
-						Collections.singletonMap("Aaa", "Aaa"));
-					BeanTestUtil.setProperty(
-						field2, entityFieldName,
-						Collections.singletonMap("Bbb", "Bbb"));
-				}
-				else if (entityFieldName.contains("email")) {
-					BeanTestUtil.setProperty(
-						field1, entityFieldName,
-						"aaa" +
-							StringUtil.toLowerCase(
-								RandomTestUtil.randomString()) +
-									"@liferay.com");
-					BeanTestUtil.setProperty(
-						field2, entityFieldName,
-						"bbb" +
-							StringUtil.toLowerCase(
-								RandomTestUtil.randomString()) +
-									"@liferay.com");
-				}
-				else {
-					BeanTestUtil.setProperty(
-						field1, entityFieldName,
-						"aaa" +
-							StringUtil.toLowerCase(
-								RandomTestUtil.randomString()));
-					BeanTestUtil.setProperty(
-						field2, entityFieldName,
-						"bbb" +
-							StringUtil.toLowerCase(
-								RandomTestUtil.randomString()));
-				}
-			});
-	}
-
-	protected void testGetFieldsOrdersPageWithSort(
-			EntityField.Type type,
-			UnsafeTriConsumer<EntityField, Field, Field, Exception>
-				unsafeTriConsumer)
-		throws Exception {
-
-		List<EntityField> entityFields = getEntityFields(type);
-
-		if (entityFields.isEmpty()) {
-			return;
-		}
-
-		Field field1 = randomField();
-		Field field2 = randomField();
-
-		for (EntityField entityField : entityFields) {
-			unsafeTriConsumer.accept(entityField, field1, field2);
-		}
-
-		field1 = testGetFieldsOrdersPage_addField(field1);
-
-		field2 = testGetFieldsOrdersPage_addField(field2);
-
-		Page<Field> page = fieldResource.getFieldsOrdersPage(null, null, null);
-
-		for (EntityField entityField : entityFields) {
-			Page<Field> ascPage = fieldResource.getFieldsOrdersPage(
-				null, Pagination.of(1, (int)page.getTotalCount() + 1),
-				entityField.getName() + ":asc");
-
-			assertContains(field1, (List<Field>)ascPage.getItems());
-			assertContains(field2, (List<Field>)ascPage.getItems());
-
-			Page<Field> descPage = fieldResource.getFieldsOrdersPage(
-				null, Pagination.of(1, (int)page.getTotalCount() + 1),
-				entityField.getName() + ":desc");
-
-			assertContains(field2, (List<Field>)descPage.getItems());
-			assertContains(field1, (List<Field>)descPage.getItems());
-		}
-	}
-
-	protected Field testGetFieldsOrdersPage_addField(Field field)
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
-	}
-
-	@Test
-	public void testPatchFieldOrder() throws Exception {
-		Assert.assertTrue(false);
-	}
-
-	@Test
 	public void testGetFieldsPeoplePage() throws Exception {
 		Page<Field> page = fieldResource.getFieldsPeoplePage(
 			RandomTestUtil.randomString(), Pagination.of(1, 10), null);
@@ -610,7 +439,7 @@ public abstract class BaseFieldResourceTestCase {
 		Field field2 = testGetFieldsPeoplePage_addField(randomField());
 
 		page = fieldResource.getFieldsPeoplePage(
-			null, Pagination.of(1, 10), null);
+			null, Pagination.of(1, (int)totalCount + 2), null);
 
 		Assert.assertEquals(totalCount + 2, page.getTotalCount());
 
@@ -630,10 +459,10 @@ public abstract class BaseFieldResourceTestCase {
 
 	@Test
 	public void testGetFieldsPeoplePageWithPagination() throws Exception {
-		Page<Field> fieldPage = fieldResource.getFieldsPeoplePage(
+		Page<Field> fieldsPage = fieldResource.getFieldsPeoplePage(
 			null, null, null);
 
-		int totalCount = GetterUtil.getInteger(fieldPage.getTotalCount());
+		int totalCount = GetterUtil.getInteger(fieldsPage.getTotalCount());
 
 		Field field1 = testGetFieldsPeoplePage_addField(randomField());
 
@@ -641,28 +470,65 @@ public abstract class BaseFieldResourceTestCase {
 
 		Field field3 = testGetFieldsPeoplePage_addField(randomField());
 
-		Page<Field> page1 = fieldResource.getFieldsPeoplePage(
-			null, Pagination.of(1, totalCount + 2), null);
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<Field> fields1 = (List<Field>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(fields1.toString(), totalCount + 2, fields1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<Field> page1 = fieldResource.getFieldsPeoplePage(
+				null,
+				Pagination.of(
+					(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+					pageSizeLimit),
+				null);
 
-		Page<Field> page2 = fieldResource.getFieldsPeoplePage(
-			null, Pagination.of(2, totalCount + 2), null);
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+			assertContains(field1, (List<Field>)page1.getItems());
 
-		List<Field> fields2 = (List<Field>)page2.getItems();
+			Page<Field> page2 = fieldResource.getFieldsPeoplePage(
+				null,
+				Pagination.of(
+					(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+					pageSizeLimit),
+				null);
 
-		Assert.assertEquals(fields2.toString(), 1, fields2.size());
+			assertContains(field2, (List<Field>)page2.getItems());
 
-		Page<Field> page3 = fieldResource.getFieldsPeoplePage(
-			null, Pagination.of(1, (int)totalCount + 3), null);
+			Page<Field> page3 = fieldResource.getFieldsPeoplePage(
+				null,
+				Pagination.of(
+					(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+					pageSizeLimit),
+				null);
 
-		assertContains(field1, (List<Field>)page3.getItems());
-		assertContains(field2, (List<Field>)page3.getItems());
-		assertContains(field3, (List<Field>)page3.getItems());
+			assertContains(field3, (List<Field>)page3.getItems());
+		}
+		else {
+			Page<Field> page1 = fieldResource.getFieldsPeoplePage(
+				null, Pagination.of(1, totalCount + 2), null);
+
+			List<Field> fields1 = (List<Field>)page1.getItems();
+
+			Assert.assertEquals(
+				fields1.toString(), totalCount + 2, fields1.size());
+
+			Page<Field> page2 = fieldResource.getFieldsPeoplePage(
+				null, Pagination.of(2, totalCount + 2), null);
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<Field> fields2 = (List<Field>)page2.getItems();
+
+			Assert.assertEquals(fields2.toString(), 1, fields2.size());
+
+			Page<Field> page3 = fieldResource.getFieldsPeoplePage(
+				null, Pagination.of(1, (int)totalCount + 3), null);
+
+			assertContains(field1, (List<Field>)page3.getItems());
+			assertContains(field2, (List<Field>)page3.getItems());
+			assertContains(field3, (List<Field>)page3.getItems());
+		}
 	}
 
 	@Test
@@ -672,7 +538,7 @@ public abstract class BaseFieldResourceTestCase {
 			(entityField, field1, field2) -> {
 				BeanTestUtil.setProperty(
 					field1, entityField.getName(),
-					DateUtils.addMinutes(new Date(), -2));
+					new Date(System.currentTimeMillis() - (2 * Time.MINUTE)));
 			});
 	}
 
@@ -797,211 +663,12 @@ public abstract class BaseFieldResourceTestCase {
 	}
 
 	@Test
-	public void testPatchFieldPeople() throws Exception {
+	public void testPatchFieldAccount() throws Exception {
 		Assert.assertTrue(false);
 	}
 
 	@Test
-	public void testGetFieldsProductsPage() throws Exception {
-		Page<Field> page = fieldResource.getFieldsProductsPage(
-			RandomTestUtil.randomString(), Pagination.of(1, 10), null);
-
-		long totalCount = page.getTotalCount();
-
-		Field field1 = testGetFieldsProductsPage_addField(randomField());
-
-		Field field2 = testGetFieldsProductsPage_addField(randomField());
-
-		page = fieldResource.getFieldsProductsPage(
-			null, Pagination.of(1, 10), null);
-
-		Assert.assertEquals(totalCount + 2, page.getTotalCount());
-
-		assertContains(field1, (List<Field>)page.getItems());
-		assertContains(field2, (List<Field>)page.getItems());
-		assertValid(page, testGetFieldsProductsPage_getExpectedActions());
-	}
-
-	protected Map<String, Map<String, String>>
-			testGetFieldsProductsPage_getExpectedActions()
-		throws Exception {
-
-		Map<String, Map<String, String>> expectedActions = new HashMap<>();
-
-		return expectedActions;
-	}
-
-	@Test
-	public void testGetFieldsProductsPageWithPagination() throws Exception {
-		Page<Field> fieldPage = fieldResource.getFieldsProductsPage(
-			null, null, null);
-
-		int totalCount = GetterUtil.getInteger(fieldPage.getTotalCount());
-
-		Field field1 = testGetFieldsProductsPage_addField(randomField());
-
-		Field field2 = testGetFieldsProductsPage_addField(randomField());
-
-		Field field3 = testGetFieldsProductsPage_addField(randomField());
-
-		Page<Field> page1 = fieldResource.getFieldsProductsPage(
-			null, Pagination.of(1, totalCount + 2), null);
-
-		List<Field> fields1 = (List<Field>)page1.getItems();
-
-		Assert.assertEquals(fields1.toString(), totalCount + 2, fields1.size());
-
-		Page<Field> page2 = fieldResource.getFieldsProductsPage(
-			null, Pagination.of(2, totalCount + 2), null);
-
-		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
-
-		List<Field> fields2 = (List<Field>)page2.getItems();
-
-		Assert.assertEquals(fields2.toString(), 1, fields2.size());
-
-		Page<Field> page3 = fieldResource.getFieldsProductsPage(
-			null, Pagination.of(1, (int)totalCount + 3), null);
-
-		assertContains(field1, (List<Field>)page3.getItems());
-		assertContains(field2, (List<Field>)page3.getItems());
-		assertContains(field3, (List<Field>)page3.getItems());
-	}
-
-	@Test
-	public void testGetFieldsProductsPageWithSortDateTime() throws Exception {
-		testGetFieldsProductsPageWithSort(
-			EntityField.Type.DATE_TIME,
-			(entityField, field1, field2) -> {
-				BeanTestUtil.setProperty(
-					field1, entityField.getName(),
-					DateUtils.addMinutes(new Date(), -2));
-			});
-	}
-
-	@Test
-	public void testGetFieldsProductsPageWithSortDouble() throws Exception {
-		testGetFieldsProductsPageWithSort(
-			EntityField.Type.DOUBLE,
-			(entityField, field1, field2) -> {
-				BeanTestUtil.setProperty(field1, entityField.getName(), 0.1);
-				BeanTestUtil.setProperty(field2, entityField.getName(), 0.5);
-			});
-	}
-
-	@Test
-	public void testGetFieldsProductsPageWithSortInteger() throws Exception {
-		testGetFieldsProductsPageWithSort(
-			EntityField.Type.INTEGER,
-			(entityField, field1, field2) -> {
-				BeanTestUtil.setProperty(field1, entityField.getName(), 0);
-				BeanTestUtil.setProperty(field2, entityField.getName(), 1);
-			});
-	}
-
-	@Test
-	public void testGetFieldsProductsPageWithSortString() throws Exception {
-		testGetFieldsProductsPageWithSort(
-			EntityField.Type.STRING,
-			(entityField, field1, field2) -> {
-				Class<?> clazz = field1.getClass();
-
-				String entityFieldName = entityField.getName();
-
-				Method method = clazz.getMethod(
-					"get" + StringUtil.upperCaseFirstLetter(entityFieldName));
-
-				Class<?> returnType = method.getReturnType();
-
-				if (returnType.isAssignableFrom(Map.class)) {
-					BeanTestUtil.setProperty(
-						field1, entityFieldName,
-						Collections.singletonMap("Aaa", "Aaa"));
-					BeanTestUtil.setProperty(
-						field2, entityFieldName,
-						Collections.singletonMap("Bbb", "Bbb"));
-				}
-				else if (entityFieldName.contains("email")) {
-					BeanTestUtil.setProperty(
-						field1, entityFieldName,
-						"aaa" +
-							StringUtil.toLowerCase(
-								RandomTestUtil.randomString()) +
-									"@liferay.com");
-					BeanTestUtil.setProperty(
-						field2, entityFieldName,
-						"bbb" +
-							StringUtil.toLowerCase(
-								RandomTestUtil.randomString()) +
-									"@liferay.com");
-				}
-				else {
-					BeanTestUtil.setProperty(
-						field1, entityFieldName,
-						"aaa" +
-							StringUtil.toLowerCase(
-								RandomTestUtil.randomString()));
-					BeanTestUtil.setProperty(
-						field2, entityFieldName,
-						"bbb" +
-							StringUtil.toLowerCase(
-								RandomTestUtil.randomString()));
-				}
-			});
-	}
-
-	protected void testGetFieldsProductsPageWithSort(
-			EntityField.Type type,
-			UnsafeTriConsumer<EntityField, Field, Field, Exception>
-				unsafeTriConsumer)
-		throws Exception {
-
-		List<EntityField> entityFields = getEntityFields(type);
-
-		if (entityFields.isEmpty()) {
-			return;
-		}
-
-		Field field1 = randomField();
-		Field field2 = randomField();
-
-		for (EntityField entityField : entityFields) {
-			unsafeTriConsumer.accept(entityField, field1, field2);
-		}
-
-		field1 = testGetFieldsProductsPage_addField(field1);
-
-		field2 = testGetFieldsProductsPage_addField(field2);
-
-		Page<Field> page = fieldResource.getFieldsProductsPage(
-			null, null, null);
-
-		for (EntityField entityField : entityFields) {
-			Page<Field> ascPage = fieldResource.getFieldsProductsPage(
-				null, Pagination.of(1, (int)page.getTotalCount() + 1),
-				entityField.getName() + ":asc");
-
-			assertContains(field1, (List<Field>)ascPage.getItems());
-			assertContains(field2, (List<Field>)ascPage.getItems());
-
-			Page<Field> descPage = fieldResource.getFieldsProductsPage(
-				null, Pagination.of(1, (int)page.getTotalCount() + 1),
-				entityField.getName() + ":desc");
-
-			assertContains(field2, (List<Field>)descPage.getItems());
-			assertContains(field1, (List<Field>)descPage.getItems());
-		}
-	}
-
-	protected Field testGetFieldsProductsPage_addField(Field field)
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
-	}
-
-	@Test
-	public void testPatchFieldProduct() throws Exception {
+	public void testPatchFieldPeople() throws Exception {
 		Assert.assertTrue(false);
 	}
 
@@ -1326,6 +993,10 @@ public abstract class BaseFieldResourceTestCase {
 	protected java.lang.reflect.Field[] getDeclaredFields(Class clazz)
 		throws Exception {
 
+		if (clazz.getClassLoader() == null) {
+			return new java.lang.reflect.Field[0];
+		}
+
 		return TransformUtil.transform(
 			ReflectionUtil.getDeclaredFields(clazz),
 			field -> {
@@ -1599,8 +1270,11 @@ public abstract class BaseFieldResourceTestCase {
 			).toString(),
 			"application/json");
 		httpInvoker.httpMethod(HttpInvoker.HttpMethod.POST);
-		httpInvoker.path("http://localhost:8080/o/graphql");
-		httpInvoker.userNameAndPassword("test@liferay.com:test");
+		httpInvoker.path(
+			"http://localhost:" + PortalUtil.getPortalServerPort(false) +
+				"/o/graphql");
+		httpInvoker.userNameAndPassword(
+			"test@liferay.com:" + PropsValues.DEFAULT_ADMIN_PASSWORD);
 
 		HttpInvoker.HttpResponse httpResponse = httpInvoker.invoke();
 
@@ -1651,21 +1325,21 @@ public abstract class BaseFieldResourceTestCase {
 	}
 
 	protected FieldResource fieldResource;
-	protected Group irrelevantGroup;
-	protected Company testCompany;
-	protected Group testGroup;
+	protected com.liferay.portal.kernel.model.Group irrelevantGroup;
+	protected com.liferay.portal.kernel.model.Company testCompany;
+	protected com.liferay.portal.kernel.model.Group testGroup;
 
 	protected static class BeanTestUtil {
 
 		public static void copyProperties(Object source, Object target)
 			throws Exception {
 
-			Class<?> sourceClass = _getSuperClass(source.getClass());
+			Class<?> sourceClass = source.getClass();
 
 			Class<?> targetClass = target.getClass();
 
 			for (java.lang.reflect.Field field :
-					sourceClass.getDeclaredFields()) {
+					_getAllDeclaredFields(sourceClass)) {
 
 				if (field.isSynthetic()) {
 					continue;
@@ -1674,11 +1348,16 @@ public abstract class BaseFieldResourceTestCase {
 				Method getMethod = _getMethod(
 					sourceClass, field.getName(), "get");
 
-				Method setMethod = _getMethod(
-					targetClass, field.getName(), "set",
-					getMethod.getReturnType());
+				try {
+					Method setMethod = _getMethod(
+						targetClass, field.getName(), "set",
+						getMethod.getReturnType());
 
-				setMethod.invoke(target, getMethod.invoke(source));
+					setMethod.invoke(target, getMethod.invoke(source));
+				}
+				catch (Exception e) {
+					continue;
+				}
 			}
 		}
 
@@ -1710,6 +1389,24 @@ public abstract class BaseFieldResourceTestCase {
 			setMethod.invoke(bean, _translateValue(parameterTypes[0], value));
 		}
 
+		private static List<java.lang.reflect.Field> _getAllDeclaredFields(
+			Class<?> clazz) {
+
+			List<java.lang.reflect.Field> fields = new ArrayList<>();
+
+			while ((clazz != null) && (clazz != Object.class)) {
+				for (java.lang.reflect.Field field :
+						clazz.getDeclaredFields()) {
+
+					fields.add(field);
+				}
+
+				clazz = clazz.getSuperclass();
+			}
+
+			return fields;
+		}
+
 		private static Method _getMethod(Class<?> clazz, String name) {
 			for (Method method : clazz.getMethods()) {
 				if (name.equals(method.getName()) &&
@@ -1731,16 +1428,6 @@ public abstract class BaseFieldResourceTestCase {
 			return clazz.getMethod(
 				prefix + StringUtil.upperCaseFirstLetter(fieldName),
 				parameterTypes);
-		}
-
-		private static Class<?> _getSuperClass(Class<?> clazz) {
-			Class<?> superClass = clazz.getSuperclass();
-
-			if ((superClass == null) || (superClass == Object.class)) {
-				return clazz;
-			}
-
-			return superClass;
 		}
 
 		private static Object _translateValue(
@@ -1838,10 +1525,13 @@ public abstract class BaseFieldResourceTestCase {
 	private static final com.liferay.portal.kernel.log.Log _log =
 		LogFactoryUtil.getLog(BaseFieldResourceTestCase.class);
 
-	private static DateFormat _dateFormat;
+	private static Format _format;
+
+	private com.liferay.portal.kernel.model.User _testCompanyAdminUser;
 
 	@Inject
 	private com.liferay.analytics.settings.rest.resource.v1_0.FieldResource
 		_fieldResource;
 
 }
+// LIFERAY-REST-BUILDER-HASH:240802553

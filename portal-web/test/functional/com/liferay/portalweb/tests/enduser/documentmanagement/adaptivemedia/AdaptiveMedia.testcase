@@ -1,4 +1,4 @@
-@component-name = "portal-lima"
+@component-name = "portal-content-management"
 definition {
 
 	property custom.properties = "default.layout.template.id=1_column";
@@ -63,10 +63,6 @@ definition {
 
 		WebContentNavigator.gotoEditCP(webContentTitle = "Web Content Title");
 
-		SelectFrame.selectFrameNoLoading(
-			key_fieldLabel = "Content",
-			locator1 = "CKEditor#BODY_FIELD_IFRAME_WEB_CONTENT_ARTICLE");
-
 		AdaptiveMedia.viewImageVariantURL(imageName = "high_resolution_photo-jpg");
 	}
 
@@ -100,8 +96,7 @@ definition {
 	@priority = 5
 	@refactordone
 	test CanAddEntryWithHighDensityResolution {
-		ApplicationsMenu.gotoPortlet(
-			category = "Configuration",
+		ApplicationsMenu.gotoRootPortlet(
 			panel = "Control Panel",
 			portlet = "Adaptive Media");
 
@@ -489,8 +484,7 @@ definition {
 			virtualHost = "www.able.com",
 			webId = "www.able.com");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Configuration",
+		ApplicationsMenu.gotoRootPortlet(
 			panel = "Control Panel",
 			portlet = "Adaptive Media");
 
@@ -500,14 +494,13 @@ definition {
 			maxWidth = 300);
 
 		User.firstLoginUI(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			specificURL = "http://www.able.com:8080",
 			userEmailAddress = "test@www.able.com");
 
 		Navigator.openSpecificURL(url = "http://www.able.com:8080");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Configuration",
+		ApplicationsMenu.gotoRootPortlet(
 			panel = "Control Panel",
 			portlet = "Adaptive Media");
 
@@ -518,6 +511,8 @@ definition {
 	@priority = 4
 	test ImageVariantsAreGeneratedAfterEditingWebContentWithImage {
 		property portal.acceptance = "false";
+
+		CKEditor.enableCKEditor4();
 
 		WebContentNavigator.openToAddBasicArticle(
 			groupName = "Guest",
@@ -531,14 +526,14 @@ definition {
 			webContentContent = "Web Content Content",
 			webContentTitle = "WC WebContent Title");
 
-		PortletEntry.publish();
+		WebContent.publishWithPermissions();
 
 		WebContentNavigator.openToEditWCInSite(
 			groupName = "Guest",
 			siteURLKey = "guest",
 			webContentTitle = "WC WebContent Title");
 
-		PortletEntry.publish();
+		WebContent.publishExistingWCArticleWithPermissions();
 
 		Navigator.gotoPage(pageName = "Home");
 

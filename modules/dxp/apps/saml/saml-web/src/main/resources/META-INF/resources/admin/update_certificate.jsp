@@ -15,14 +15,14 @@ LocalEntityManager.CertificateUsage certificateUsage = LocalEntityManager.Certif
 X509Certificate x509Certificate = (X509Certificate)request.getAttribute(SamlWebKeys.SAML_X509_CERTIFICATE);
 %>
 
-<script>
+<aui:script>
 	window['<portlet:namespace />requestCloseDialog'] = function (stateChange) {
 		parent.window.<portlet:namespace />closeDialog(
 			'<portlet:namespace />certificateDialog',
 			stateChange
 		);
 	};
-</script>
+</aui:script>
 
 <c:if test='<%= cmd.equals("replace") || cmd.equals("import") %>'>
 	<clay:navigation-bar
@@ -75,15 +75,15 @@ X509Certificate x509Certificate = (X509Certificate)request.getAttribute(SamlWebK
 
 			<%
 			String certificateKeyAlgorithm = ParamUtil.getString(request, "certificateKeyAlgorithm", "RSA");
-			String certificateKeyLength = ParamUtil.getString(request, "certificateKeyLength", "2048");
+			String certificateKeySize = ParamUtil.getString(request, "certificateKeySize", "2048");
 			%>
 
 			<div class="lfr-form-content" id="<portlet:namespace />certificateForm">
 				<div class="inline-alert-container lfr-alert-container"></div>
 
-				<liferay-ui:error exception="<%= CertificateException.class %>" message="please-enter-a-valid-key-length-and-algorithm" />
+				<liferay-ui:error exception="<%= CertificateException.class %>" message="please-enter-a-valid-algorithm-and-key-size" />
 				<liferay-ui:error exception="<%= CertificateKeyPasswordException.class %>" message="please-enter-a-valid-key-password" />
-				<liferay-ui:error exception="<%= InvalidParameterException.class %>" message="please-enter-a-valid-key-length-and-algorithm" />
+				<liferay-ui:error exception="<%= InvalidParameterException.class %>" message="please-enter-a-valid-algorithm-and-key-size" />
 				<liferay-ui:error key="certificateValidityDays" message="please-enter-a-valid-certificate-validity" />
 
 				<c:choose>
@@ -96,7 +96,7 @@ X509Certificate x509Certificate = (X509Certificate)request.getAttribute(SamlWebK
 
 						<aui:input label="locality" name="certificateLocality" value='<%= ParamUtil.getString(request, "certificateLocality") %>' />
 
-						<aui:input label="state" name="certificateState" value='<%= ParamUtil.getString(request, "certificateState") %>' />
+						<aui:input label="state[region]" name="certificateState" value='<%= ParamUtil.getString(request, "certificateState") %>' />
 
 						<aui:input label="country" name="certificateCountry" value='<%= ParamUtil.getString(request, "certificateCountry") %>' />
 
@@ -105,21 +105,41 @@ X509Certificate x509Certificate = (X509Certificate)request.getAttribute(SamlWebK
 						<c:choose>
 							<c:when test="<%= certificateUsage == LocalEntityManager.CertificateUsage.SIGNING %>">
 								<aui:select label="key-algorithm" name="certificateKeyAlgorithm" required="<%= true %>">
-									<aui:option label="rsa" selected='<%= certificateKeyAlgorithm.equals("RSA") %>' value="RSA" />
-									<aui:option label="dsa" selected='<%= certificateKeyAlgorithm.equals("DSA") %>' value="DSA" />
+
+									<%
+									String[] keyAlgorithms = PropsValues.FIPS_ENABLED ? new String[] {"RSA"} : new String[] {"RSA", "DSA"};
+
+									for (String keyAlgorithm : keyAlgorithms) {
+									%>
+
+										<aui:option label="<%= keyAlgorithm.toLowerCase() %>" selected="<%= certificateKeyAlgorithm.equals(keyAlgorithm) %>" value="<%= keyAlgorithm %>" />
+
+									<%
+									}
+									%>
+
 								</aui:select>
 							</c:when>
-							<c:when test="<%= certificateUsage == LocalEntityManager.CertificateUsage.ENCRYPTION %>">
+							<c:otherwise>
 								<aui:input disabled="<%= true %>" label="key-algorithm" name="certificateKeyAlgorithm" value="RSA" />
 								<aui:input label="key-algorithm" name="certificateKeyAlgorithm" type="hidden" value="RSA" />
-							</c:when>
+							</c:otherwise>
 						</c:choose>
 
-						<aui:select label="key-length-bits" name="certificateKeyLength" required="<%= true %>">
-							<aui:option label="4096" selected='<%= certificateKeyLength.equals("4096") %>' value="4096" />
-							<aui:option label="2048" selected='<%= certificateKeyLength.equals("2048") %>' value="2048" />
-							<aui:option label="1024" selected='<%= certificateKeyLength.equals("1024") %>' value="1024" />
-							<aui:option label="512" selected='<%= certificateKeyLength.equals("512") %>' value="512" />
+						<aui:select label="key-size-bits" name="certificateKeySize" required="<%= true %>">
+
+							<%
+							String[] keySizes = PropsValues.FIPS_ENABLED ? new String[] {"4096", "3072", "2048"} : new String[] {"4096", "2048", "1024", "512"};
+
+							for (String keySize : keySizes) {
+							%>
+
+								<aui:option label="<%= keySize %>" selected="<%= certificateKeySize.equals(keySize) %>" value="<%= keySize %>" />
+
+							<%
+							}
+							%>
+
 						</aui:select>
 					</c:when>
 				</c:choose>

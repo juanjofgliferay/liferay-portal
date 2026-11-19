@@ -32,7 +32,9 @@ public class JournalArticleDataFileEntryIdUpgradeProcess
 	protected void doUpgrade() throws Exception {
 		try (PreparedStatement preparedStatement1 = connection.prepareStatement(
 				"select id_, content from JournalArticle");
+
 			ResultSet resultSet = preparedStatement1.executeQuery();
+
 			PreparedStatement preparedStatement2 =
 				AutoBatchPreparedStatementUtil.concurrentAutoBatch(
 					connection,
@@ -43,12 +45,14 @@ public class JournalArticleDataFileEntryIdUpgradeProcess
 
 				String upgradedContent = _upgradeContent(content);
 
-				if (!Objects.equals(content, upgradedContent)) {
-					preparedStatement2.setString(1, upgradedContent);
-					preparedStatement2.setLong(2, resultSet.getLong("id_"));
-
-					preparedStatement2.addBatch();
+				if (Objects.equals(content, upgradedContent)) {
+					continue;
 				}
+
+				preparedStatement2.setString(1, upgradedContent);
+				preparedStatement2.setLong(2, resultSet.getLong("id_"));
+
+				preparedStatement2.addBatch();
 			}
 
 			preparedStatement2.executeBatch();
@@ -77,11 +81,13 @@ public class JournalArticleDataFileEntryIdUpgradeProcess
 				String upgradedStringValue = matcher.replaceAll(
 					"data-fileentryid=");
 
-				if (!upgradedStringValue.equals(stringValue)) {
-					dynamicContentElement.clearContent();
-
-					dynamicContentElement.addCDATA(upgradedStringValue);
+				if (upgradedStringValue.equals(stringValue)) {
+					continue;
 				}
+
+				dynamicContentElement.clearContent();
+
+				dynamicContentElement.addCDATA(upgradedStringValue);
 			}
 		}
 

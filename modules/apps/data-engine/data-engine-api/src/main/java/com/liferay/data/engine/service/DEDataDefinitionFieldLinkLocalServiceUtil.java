@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -130,10 +131,6 @@ public class DEDataDefinitionFieldLinkLocalServiceUtil {
 
 		return getService().deleteDEDataDefinitionFieldLink(
 			deDataDefinitionFieldLinkId);
-	}
-
-	public static void deleteDEDataDefinitionFieldLinks(long ddmStructureId) {
-		getService().deleteDEDataDefinitionFieldLinks(ddmStructureId);
 	}
 
 	public static void deleteDEDataDefinitionFieldLinks(
@@ -353,13 +350,6 @@ public class DEDataDefinitionFieldLinkLocalServiceUtil {
 		return getService().getDEDataDefinitionFieldLinks(ddmStructureId);
 	}
 
-	public static List<DEDataDefinitionFieldLink> getDEDataDefinitionFieldLinks(
-		long classNameId, long ddmStructureId) {
-
-		return getService().getDEDataDefinitionFieldLinks(
-			classNameId, ddmStructureId);
-	}
-
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
 	 DEDataDefinitionFieldLinkLocalServiceImpl#getDEDataDefinitionFieldLinks(
@@ -490,15 +480,13 @@ public class DEDataDefinitionFieldLinkLocalServiceUtil {
 	}
 
 	public static DEDataDefinitionFieldLinkLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(
-		DEDataDefinitionFieldLinkLocalService service) {
-
-		_service = service;
-	}
-
-	private static volatile DEDataDefinitionFieldLinkLocalService _service;
+	private static final Snapshot<DEDataDefinitionFieldLinkLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			DEDataDefinitionFieldLinkLocalServiceUtil.class,
+			DEDataDefinitionFieldLinkLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1026760672

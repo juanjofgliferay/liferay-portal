@@ -10,27 +10,52 @@ import com.liferay.document.library.kernel.model.DLFileEntryMetadata;
 import com.liferay.document.library.kernel.model.DLFileEntryType;
 import com.liferay.document.library.kernel.model.DLFileEntryTypeConstants;
 import com.liferay.document.library.kernel.service.DLFileEntryTypeLocalServiceUtil;
+import com.liferay.dynamic.data.mapping.constants.DDMStructureConstants;
+import com.liferay.dynamic.data.mapping.model.DDMForm;
 import com.liferay.dynamic.data.mapping.model.DDMStructure;
 import com.liferay.dynamic.data.mapping.service.DDMStructureLocalServiceUtil;
+import com.liferay.dynamic.data.mapping.storage.StorageType;
 import com.liferay.dynamic.data.mapping.test.util.DDMStructureTestUtil;
+import com.liferay.dynamic.data.mapping.util.DDMUtil;
+import com.liferay.exportimport.kernel.lar.ExportImportThreadLocal;
+import com.liferay.exportimport.kernel.lar.StagedModelDataHandler;
+import com.liferay.exportimport.kernel.lar.StagedModelDataHandlerRegistryUtil;
+import com.liferay.exportimport.kernel.lar.StagedModelDataHandlerUtil;
 import com.liferay.exportimport.test.util.lar.BaseStagedModelDataHandlerTestCase;
+import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.StagedModel;
+import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
+import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
+import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.UserLocalServiceUtil;
+import com.liferay.portal.kernel.test.TestInfo;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
+import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
+import com.liferay.portal.kernel.test.util.CompanyTestUtil;
+import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
+import com.liferay.portal.kernel.test.util.UserTestUtil;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 
 import org.junit.Assert;
 import org.junit.ClassRule;
 import org.junit.Rule;
+import org.junit.Test;
 import org.junit.runner.RunWith;
 
 /**
@@ -44,6 +69,225 @@ public class DLFileEntryTypeStagedModelDataHandlerTest
 	@Rule
 	public static final AggregateTestRule aggregateTestRule =
 		new LiferayIntegrationTestRule();
+
+	@Test
+	public void testExportDLFileEntryType() throws Exception {
+		initExport();
+
+		DLFileEntryType dlFileEntryType = _addSystemFileEntryType(
+			stagingGroup, TestPropsValues.getUserId(),
+			RandomTestUtil.randomString());
+
+		Assert.assertNotEquals(
+			UserLocalServiceUtil.getGuestUserId(dlFileEntryType.getCompanyId()),
+			dlFileEntryType.getUserId());
+
+		Map<String, String> referenceAttributes =
+			_getStagedModelDataHandler().getReferenceAttributes(
+				portletDataContext, dlFileEntryType);
+
+		Assert.assertTrue(
+			referenceAttributes.toString(),
+			GetterUtil.getBoolean(referenceAttributes.get("preloaded")));
+	}
+
+	@Test
+	public void testImportDLFileEntryType() throws Exception {
+		String name = RandomTestUtil.randomString();
+
+		DLFileEntryType dlFileEntryType = _addSystemFileEntryType(
+			stagingGroup, TestPropsValues.getUserId(), name);
+
+		initExport();
+
+		try {
+			ExportImportThreadLocal.setPortletExportInProcess(true);
+
+			StagedModelDataHandlerUtil.exportStagedModel(
+				portletDataContext, dlFileEntryType);
+		}
+		finally {
+			ExportImportThreadLocal.setPortletExportInProcess(false);
+		}
+
+		_targetCompany = CompanyTestUtil.addCompany(true);
+
+		Group targetCompanyGroup = null;
+		DLFileEntryType targetDLFileEntryType = null;
+		User targetUser = null;
+
+		try (SafeCloseable safeCloseable =
+				CompanyThreadLocal.setCompanyIdWithSafeCloseable(
+					_targetCompany.getCompanyId())) {
+
+			targetUser = UserTestUtil.getAdminUser(
+				_targetCompany.getCompanyId());
+
+			Assert.assertNotNull(targetUser);
+
+			UserTestUtil.setUser(targetUser);
+
+			targetCompanyGroup = _targetCompany.getGroup();
+
+			targetDLFileEntryType = _addSystemFileEntryType(
+				targetCompanyGroup, targetUser.getUserId(),
+				RandomTestUtil.randomString());
+		}
+
+		Assert.assertNotEquals(
+			dlFileEntryType.getUuid(), targetDLFileEntryType.getUuid());
+
+		try (SafeCloseable safeCloseable1 = initImportWithSafeCloseable(
+				stagingGroup, targetCompanyGroup)) {
+
+			portletDataContext.setUserIdStrategy(
+				new TestUserIdStrategy(targetUser));
+
+			StagedModel exportedStagedModel = readExportedStagedModel(
+				dlFileEntryType);
+
+			Assert.assertNotNull(exportedStagedModel);
+
+			try (SafeCloseable safeCloseable2 =
+					CompanyThreadLocal.setCompanyIdWithSafeCloseable(
+						_targetCompany.getCompanyId())) {
+
+				ExportImportThreadLocal.setPortletImportInProcess(true);
+
+				StagedModelDataHandlerUtil.importReferenceStagedModels(
+					portletDataContext, exportedStagedModel,
+					DDMStructure.class);
+
+				StagedModelDataHandlerUtil.importStagedModel(
+					portletDataContext, exportedStagedModel);
+			}
+			finally {
+				ExportImportThreadLocal.setPortletImportInProcess(false);
+			}
+
+			Map<Long, Long> fileEntryTypeIds =
+				(Map<Long, Long>)portletDataContext.getNewPrimaryKeysMap(
+					DLFileEntryType.class);
+
+			Assert.assertEquals(
+				fileEntryTypeIds.toString(),
+				Long.valueOf(targetDLFileEntryType.getFileEntryTypeId()),
+				fileEntryTypeIds.get(dlFileEntryType.getFileEntryTypeId()));
+		}
+
+		try (SafeCloseable safeCloseable =
+				CompanyThreadLocal.setCompanyIdWithSafeCloseable(
+					_targetCompany.getCompanyId())) {
+
+			DLFileEntryType importedDLFileEntryType =
+				DLFileEntryTypeLocalServiceUtil.fetchFileEntryType(
+					targetCompanyGroup.getGroupId(), _FILE_ENTRY_TYPE_KEY);
+
+			Assert.assertEquals(
+				targetDLFileEntryType.getFileEntryTypeId(),
+				importedDLFileEntryType.getFileEntryTypeId());
+			Assert.assertEquals(
+				name, importedDLFileEntryType.getName(LocaleUtil.US));
+		}
+	}
+
+	@Test
+	@TestInfo({"LPD-113633", "LPS-119234"})
+	public void testImportDLFileEntryTypeWithAutoDataDefinition()
+		throws Exception {
+
+		DDMForm ddmForm = DDMStructureTestUtil.getSampleDDMForm();
+
+		DDMStructure ddmStructure = DDMStructureLocalServiceUtil.addStructure(
+			null, TestPropsValues.getUserId(), stagingGroup.getGroupId(),
+			DDMStructureConstants.DEFAULT_PARENT_STRUCTURE_ID,
+			PortalUtil.getClassNameId(DLFileEntryMetadata.class.getName()),
+			null,
+			Collections.singletonMap(
+				LocaleUtil.US, RandomTestUtil.randomString()),
+			null, ddmForm, DDMUtil.getDefaultDDMFormLayout(ddmForm),
+			StorageType.DEFAULT.toString(), DDMStructureConstants.TYPE_AUTO,
+			ServiceContextTestUtil.getServiceContext(
+				stagingGroup.getGroupId(), TestPropsValues.getUserId()));
+
+		_exportImportFileEntryType(_addFileEntryType(ddmStructure));
+
+		DDMStructure importedDDMStructure =
+			DDMStructureLocalServiceUtil.getDDMStructureByUuidAndGroupId(
+				ddmStructure.getUuid(), liveGroup.getGroupId());
+
+		Assert.assertEquals(
+			DDMStructureConstants.TYPE_AUTO, importedDDMStructure.getType());
+	}
+
+	@Test
+	@TestInfo("LPD-110143")
+	public void testImportDLFileEntryTypeWithDeletedDataDefinition()
+		throws Exception {
+
+		DDMStructure ddmStructure = DDMStructureTestUtil.addStructure(
+			stagingGroup.getGroupId(), DLFileEntryMetadata.class.getName());
+
+		DLFileEntryType dlFileEntryType = _addFileEntryType(ddmStructure);
+
+		DDMStructure metadataSetDDMStructure =
+			DDMStructureTestUtil.addStructure(
+				stagingGroup.getGroupId(), DLFileEntryMetadata.class.getName());
+
+		DLFileEntryTypeLocalServiceUtil.addDDMStructureLinks(
+			dlFileEntryType.getFileEntryTypeId(),
+			Collections.singleton(metadataSetDDMStructure.getStructureId()));
+
+		DDMStructureLocalServiceUtil.deleteStructure(
+			ddmStructure.getStructureId());
+
+		DLFileEntryType importedDLFileEntryType = _exportImportFileEntryType(
+			dlFileEntryType);
+
+		DDMStructure importedDDMStructure =
+			DDMStructureLocalServiceUtil.getDDMStructureByUuidAndGroupId(
+				metadataSetDDMStructure.getUuid(), liveGroup.getGroupId());
+
+		Assert.assertEquals(
+			importedDDMStructure.getStructureId(),
+			importedDLFileEntryType.getDataDefinitionId());
+	}
+
+	@Test
+	@TestInfo("LPD-110143")
+	public void testImportDLFileEntryTypeWithMetadataSetOfAnotherGroup()
+		throws Exception {
+
+		DDMStructure ddmStructure = DDMStructureTestUtil.addStructure(
+			stagingGroup.getGroupId(), DLFileEntryMetadata.class.getName());
+
+		DLFileEntryType dlFileEntryType = _addFileEntryType(ddmStructure);
+
+		Group companyGroup = GroupLocalServiceUtil.getCompanyGroup(
+			stagingGroup.getCompanyId());
+
+		DDMStructure companyGroupDDMStructure =
+			DDMStructureTestUtil.addStructure(
+				companyGroup.getGroupId(), DLFileEntryMetadata.class.getName());
+
+		DLFileEntryTypeLocalServiceUtil.addDDMStructureLinks(
+			dlFileEntryType.getFileEntryTypeId(),
+			new LinkedHashSet<>(
+				Arrays.asList(
+					companyGroupDDMStructure.getStructureId(),
+					ddmStructure.getStructureId())));
+
+		DLFileEntryType importedDLFileEntryType = _exportImportFileEntryType(
+			dlFileEntryType);
+
+		DDMStructure importedDDMStructure =
+			DDMStructureLocalServiceUtil.getDDMStructureByUuidAndGroupId(
+				ddmStructure.getUuid(), liveGroup.getGroupId());
+
+		Assert.assertEquals(
+			importedDDMStructure.getStructureId(),
+			importedDLFileEntryType.getDataDefinitionId());
+	}
 
 	@Override
 	protected Map<String, List<StagedModel>> addDependentStagedModelsMap(
@@ -74,7 +318,7 @@ public class DLFileEntryTypeStagedModelDataHandlerTest
 		DDMStructure ddmStructure = (DDMStructure)dependentStagedModels.get(0);
 
 		return DLFileEntryTypeLocalServiceUtil.addFileEntryType(
-			TestPropsValues.getUserId(), group.getGroupId(),
+			null, TestPropsValues.getUserId(), group.getGroupId(),
 			ddmStructure.getStructureId(), null,
 			Collections.singletonMap(LocaleUtil.US, "New File Entry Type"),
 			Collections.singletonMap(LocaleUtil.US, "New File Entry Type"),
@@ -131,5 +375,101 @@ public class DLFileEntryTypeStagedModelDataHandlerTest
 			dlFileEntryType.getDescription(),
 			importedDLFileEntryType.getDescription());
 	}
+
+	private DLFileEntryType _addFileEntryType(DDMStructure ddmStructure)
+		throws Exception {
+
+		return DLFileEntryTypeLocalServiceUtil.addFileEntryType(
+			null, TestPropsValues.getUserId(), stagingGroup.getGroupId(),
+			ddmStructure.getStructureId(), null,
+			Collections.singletonMap(
+				LocaleUtil.US, RandomTestUtil.randomString()),
+			Collections.singletonMap(
+				LocaleUtil.US, RandomTestUtil.randomString()),
+			DLFileEntryTypeConstants.FILE_ENTRY_TYPE_SCOPE_DEFAULT,
+			ServiceContextTestUtil.getServiceContext(
+				stagingGroup.getGroupId(), TestPropsValues.getUserId()));
+	}
+
+	private DLFileEntryType _addSystemFileEntryType(
+			Group group, long userId, String name)
+		throws Exception {
+
+		ServiceContext serviceContext =
+			ServiceContextTestUtil.getServiceContext(
+				group.getGroupId(), userId);
+
+		DDMForm ddmForm = DDMStructureTestUtil.getSampleDDMForm();
+
+		DDMStructure ddmStructure = DDMStructureLocalServiceUtil.addStructure(
+			null, userId, group.getGroupId(),
+			DDMStructureConstants.DEFAULT_PARENT_STRUCTURE_ID,
+			PortalUtil.getClassNameId(DLFileEntryMetadata.class.getName()),
+			null, Collections.singletonMap(LocaleUtil.US, name), null, ddmForm,
+			DDMUtil.getDefaultDDMFormLayout(ddmForm),
+			StorageType.DEFAULT.toString(), DDMStructureConstants.TYPE_DEFAULT,
+			serviceContext);
+
+		return DLFileEntryTypeLocalServiceUtil.addFileEntryType(
+			null, userId, group.getGroupId(), ddmStructure.getStructureId(),
+			_FILE_ENTRY_TYPE_KEY, Collections.singletonMap(LocaleUtil.US, name),
+			Collections.singletonMap(LocaleUtil.US, name),
+			DLFileEntryTypeConstants.FILE_ENTRY_TYPE_SCOPE_SYSTEM,
+			serviceContext);
+	}
+
+	private DLFileEntryType _exportImportFileEntryType(
+			DLFileEntryType dlFileEntryType)
+		throws Exception {
+
+		initExport();
+
+		try {
+			ExportImportThreadLocal.setPortletExportInProcess(true);
+
+			StagedModelDataHandlerUtil.exportStagedModel(
+				portletDataContext, dlFileEntryType);
+		}
+		finally {
+			ExportImportThreadLocal.setPortletExportInProcess(false);
+		}
+
+		try (SafeCloseable safeCloseable = initImportWithSafeCloseable()) {
+			StagedModel exportedStagedModel = readExportedStagedModel(
+				dlFileEntryType);
+
+			try {
+				ExportImportThreadLocal.setPortletImportInProcess(true);
+
+				StagedModelDataHandlerUtil.importReferenceStagedModels(
+					portletDataContext, exportedStagedModel,
+					DDMStructure.class);
+
+				StagedModelDataHandlerUtil.importStagedModel(
+					portletDataContext, exportedStagedModel);
+			}
+			finally {
+				ExportImportThreadLocal.setPortletImportInProcess(false);
+			}
+		}
+
+		return DLFileEntryTypeLocalServiceUtil.
+			getDLFileEntryTypeByUuidAndGroupId(
+				dlFileEntryType.getUuid(), liveGroup.getGroupId());
+	}
+
+	private StagedModelDataHandler<DLFileEntryType>
+		_getStagedModelDataHandler() {
+
+		return (StagedModelDataHandler<DLFileEntryType>)
+			StagedModelDataHandlerRegistryUtil.getStagedModelDataHandler(
+				DLFileEntryType.class.getName());
+	}
+
+	private static final String _FILE_ENTRY_TYPE_KEY =
+		RandomTestUtil.randomString();
+
+	@DeleteAfterTestRun
+	private Company _targetCompany;
 
 }

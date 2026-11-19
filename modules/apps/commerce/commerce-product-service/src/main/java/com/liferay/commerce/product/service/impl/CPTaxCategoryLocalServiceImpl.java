@@ -10,10 +10,12 @@ import com.liferay.commerce.product.exception.DuplicateCPTaxCategoryException;
 import com.liferay.commerce.product.model.CPTaxCategory;
 import com.liferay.commerce.product.service.CPDefinitionLocalService;
 import com.liferay.commerce.product.service.base.CPTaxCategoryLocalServiceBaseImpl;
+import com.liferay.exportimport.kernel.empty.model.EmptyModelManager;
 import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.model.ResourceConstants;
 import com.liferay.portal.kernel.model.SystemEventConstants;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.search.BaseModelSearchResult;
@@ -24,6 +26,7 @@ import com.liferay.portal.kernel.search.Indexer;
 import com.liferay.portal.kernel.search.IndexerRegistryUtil;
 import com.liferay.portal.kernel.search.SearchContext;
 import com.liferay.portal.kernel.search.Sort;
+import com.liferay.portal.kernel.service.ResourceLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.systemevent.SystemEvent;
@@ -32,6 +35,7 @@ import com.liferay.portal.kernel.util.LinkedHashMapBuilder;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.search.document.Document;
 import com.liferay.portal.search.hits.SearchHits;
 import com.liferay.portal.search.searcher.SearchRequest;
@@ -43,9 +47,11 @@ import com.liferay.portal.search.sort.FieldSort;
 import com.liferay.portal.search.sort.SortFieldBuilder;
 import com.liferay.portal.search.sort.SortOrder;
 import com.liferay.portal.search.sort.Sorts;
+import com.liferay.portal.util.PortalInstances;
 
 import java.io.Serializable;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -70,6 +76,8 @@ public class CPTaxCategoryLocalServiceImpl
 			Map<Locale, String> descriptionMap, ServiceContext serviceContext)
 		throws PortalException {
 
+		// Commerce product tax category
+
 		User user = _userLocalService.getUser(serviceContext.getUserId());
 
 		_validate(user.getCompanyId(), 0, externalReferenceCode, nameMap);
@@ -86,7 +94,23 @@ public class CPTaxCategoryLocalServiceImpl
 		cpTaxCategory.setNameMap(nameMap);
 		cpTaxCategory.setDescriptionMap(descriptionMap);
 
-		return cpTaxCategoryPersistence.update(cpTaxCategory);
+		if (_emptyModelManager.isEmptyModel()) {
+			cpTaxCategory.setStatus(WorkflowConstants.STATUS_EMPTY);
+		}
+		else {
+			cpTaxCategory.setStatus(WorkflowConstants.STATUS_APPROVED);
+		}
+
+		cpTaxCategory = cpTaxCategoryPersistence.update(cpTaxCategory);
+
+		// Resources
+
+		_resourceLocalService.addResources(
+			cpTaxCategory.getCompanyId(), 0, user.getUserId(),
+			CPTaxCategory.class.getName(), cpTaxCategory.getCPTaxCategoryId(),
+			false, false, false);
+
+		return cpTaxCategory;
 	}
 
 	@Override
@@ -97,6 +121,12 @@ public class CPTaxCategoryLocalServiceImpl
 
 	@Override
 	public void deleteCPTaxCategories(long companyId) {
+		if (!PortalInstances.isCurrentCompanyInDeletionProcess()) {
+			throw new UnsupportedOperationException(
+				"Deleting tax categories by company must be called when " +
+					"deleting a company");
+		}
+
 		cpTaxCategoryPersistence.removeByCompanyId(companyId);
 	}
 
@@ -113,6 +143,13 @@ public class CPTaxCategoryLocalServiceImpl
 		// Commerce product definitions
 
 		_cpDefinitionLocalService.updateCPDefinitionsByCPTaxCategoryId(
+			cpTaxCategory.getCPTaxCategoryId());
+
+		// Resources
+
+		_resourceLocalService.deleteResource(
+			cpTaxCategory.getCompanyId(), CPTaxCategory.class.getName(),
+			ResourceConstants.SCOPE_INDIVIDUAL,
 			cpTaxCategory.getCPTaxCategoryId());
 
 		return cpTaxCategory;
@@ -153,6 +190,29 @@ public class CPTaxCategoryLocalServiceImpl
 	@Override
 	public int getCPTaxCategoriesCount(long companyId) {
 		return cpTaxCategoryPersistence.countByCompanyId(companyId);
+	}
+
+	@Override
+	public CPTaxCategory getOrAddEmptyCPTaxCategory(
+			String externalReferenceCode, long companyId, long userId)
+		throws PortalException {
+
+		ServiceContext serviceContext = new ServiceContext();
+
+		serviceContext.setCompanyId(companyId);
+		serviceContext.setUserId(userId);
+
+		return _emptyModelManager.getOrAddEmptyModel(
+			CPTaxCategory.class, companyId,
+			() -> cpTaxCategoryLocalService.addCPTaxCategory(
+				externalReferenceCode,
+				Collections.singletonMap(
+					LocaleUtil.getSiteDefault(), externalReferenceCode),
+				null, serviceContext),
+			externalReferenceCode,
+			this::fetchCPTaxCategoryByExternalReferenceCode,
+			this::getCPTaxCategoryByExternalReferenceCode,
+			CPTaxCategory.class.getName());
 	}
 
 	@Override
@@ -208,6 +268,12 @@ public class CPTaxCategoryLocalServiceImpl
 		cpTaxCategory.setExternalReferenceCode(externalReferenceCode);
 		cpTaxCategory.setNameMap(nameMap);
 		cpTaxCategory.setDescriptionMap(descriptionMap);
+		cpTaxCategory.setStatus(
+			_emptyModelManager.solveEmptyModel(
+				cpTaxCategory.getExternalReferenceCode(),
+				cpTaxCategory.getModelClassName(), cpTaxCategory.getCompanyId(),
+				0, cpTaxCategory.getStatus(),
+				() -> WorkflowConstants.STATUS_APPROVED));
 
 		return cpTaxCategoryPersistence.update(cpTaxCategory);
 	}
@@ -316,10 +382,16 @@ public class CPTaxCategoryLocalServiceImpl
 	private CPDefinitionLocalService _cpDefinitionLocalService;
 
 	@Reference
-	private Searcher _searcher;
+	private EmptyModelManager _emptyModelManager;
+
+	@Reference
+	private ResourceLocalService _resourceLocalService;
 
 	@Reference
 	private SearchRequestBuilderFactory _searchRequestBuilderFactory;
+
+	@Reference
+	private Searcher _searcher;
 
 	@Reference
 	private SortFieldBuilder _sortFieldBuilder;

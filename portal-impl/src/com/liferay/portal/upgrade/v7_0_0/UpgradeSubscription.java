@@ -146,17 +146,13 @@ public class UpgradeSubscription extends UpgradeProcess {
 
 	protected boolean hasGroup(long groupId) throws Exception {
 		try (PreparedStatement preparedStatement = connection.prepareStatement(
-				"select count(*) from Group_ where groupId = ?")) {
+				"select count(*) as count from Group_ where groupId = ?")) {
 
 			preparedStatement.setLong(1, groupId);
 
 			try (ResultSet resultSet = preparedStatement.executeQuery()) {
-				if (resultSet.next()) {
-					int count = resultSet.getInt(1);
-
-					if (count > 0) {
-						return true;
-					}
+				if (resultSet.next() && (resultSet.getLong("count") > 0)) {
+					return true;
 				}
 			}
 
@@ -199,15 +195,17 @@ public class UpgradeSubscription extends UpgradeProcess {
 					groupId = classPK;
 				}
 
-				if (groupId != 0) {
-					preparedStatement2.setLong(1, groupId);
-
-					long subscriptionId = resultSet.getLong("subscriptionId");
-
-					preparedStatement2.setLong(2, subscriptionId);
-
-					preparedStatement2.addBatch();
+				if (groupId == 0) {
+					continue;
 				}
+
+				preparedStatement2.setLong(1, groupId);
+
+				long subscriptionId = resultSet.getLong("subscriptionId");
+
+				preparedStatement2.setLong(2, subscriptionId);
+
+				preparedStatement2.addBatch();
 			}
 
 			preparedStatement2.executeBatch();

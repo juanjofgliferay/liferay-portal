@@ -7,36 +7,53 @@
 
 <%@ include file="/request_quote/init.jsp" %>
 
+<%
+Map<String, Object> requestQuoteData = HashMapBuilder.<String, Object>put(
+	"baseOrderDetailURL", baseOrderDetailURL
+).put(
+	"cpDefinitionId", cpDefinitionId
+).put(
+	"cpInstance",
+	HashMapBuilder.<String, Object>put(
+		"priceOnApplication", priceOnApplication
+	).put(
+		"skuId", cpInstanceId
+	).put(
+		"skuOptions", skuOptions
+	).build()
+).put(
+	"createCart", createCart
+).put(
+	"namespace", namespace
+).put(
+	"notesPermission", notesPermission
+).put(
+	"orderDetailURL", orderDetailURL
+).put(
+	"requestQuoteElementId", requestQuoteElementId
+).put(
+	"restrictedNotesPermission", restrictedNotesPermission
+).build();
+%>
+
 <c:if test="<%= priceOnApplication || requestQuoteEnabled %>">
 	<div class="request-quote-wrapper" id="<%= requestQuoteElementId %>">
 		<button class="btn btn-lg request-quote skeleton">
 			<liferay-ui:message key="request-a-quote" />
 		</button>
+
+		<react:component
+			module="{RequestQuote} from commerce-frontend-js"
+			props='<%=
+				HashMapBuilder.<String, Object>put(
+					"data", requestQuoteData
+				).put(
+					"style",
+					HashMapBuilder.<String, Object>put(
+						"displayType", displayType
+					).build()
+				).build()
+			%>'
+		/>
 	</div>
-
-	<aui:script require="commerce-frontend-js/components/request_quote/entry as RequestQuote">
-		const props = {
-			accountId: <%= commerceAccountId %>,
-			channel: {
-				currencyCode: '<%= HtmlUtil.escapeJS(commerceCurrencyCode) %>',
-				id: <%= commerceChannelId %>,
-				requestQuoteEnabled: <%= requestQuoteEnabled %>,
-			},
-			cpDefinitionId: <%= cpDefinitionId %>,
-			cpInstance: {
-				skuId: <%= cpInstanceId %>,
-				skuOptions: <%= skuOptions %> || [],
-				priceOnApplication: <%= priceOnApplication %>,
-			},
-			disabled: <%= disabled %>,
-			namespace: '<%= namespace %>',
-			orderDetailURL: '<%= orderDetailURL %>',
-		};
-
-		RequestQuote.default(
-			'<%= requestQuoteElementId %>',
-			'<%= requestQuoteElementId %>',
-			props
-		);
-	</aui:script>
 </c:if>

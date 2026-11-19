@@ -31,10 +31,10 @@ import com.liferay.portal.kernel.trash.TrashRenderer;
 import com.liferay.trash.constants.TrashActionKeys;
 import com.liferay.trash.kernel.model.TrashEntry;
 
+import jakarta.portlet.PortletRequest;
+
 import java.util.Collections;
 import java.util.List;
-
-import javax.portlet.PortletRequest;
 
 import org.osgi.annotation.versioning.ProviderType;
 
@@ -57,9 +57,9 @@ public abstract class BaseTrashHandler implements TrashHandler {
 		JSONObject extraDataJSONObject = JSONUtil.put("inTrash", true);
 
 		return SystemEventLocalServiceUtil.addSystemEvent(
-			userId, groupId, getSystemEventClassName(), classPK, classUuid,
-			referrerClassName, SystemEventConstants.TYPE_DELETE,
-			extraDataJSONObject.toString());
+			userId, groupId, StringPool.BLANK, getSystemEventClassName(),
+			classPK, classUuid, referrerClassName,
+			SystemEventConstants.TYPE_DELETE, extraDataJSONObject.toString());
 	}
 
 	@Override
@@ -215,11 +215,6 @@ public abstract class BaseTrashHandler implements TrashHandler {
 	}
 
 	@Override
-	public TrashedModel getTrashedModel(long classPK) {
-		return null;
-	}
-
-	@Override
 	public int getTrashModelsCount(long classPK) throws PortalException {
 		return 0;
 	}
@@ -238,6 +233,11 @@ public abstract class BaseTrashHandler implements TrashHandler {
 			}
 		}
 
+		return null;
+	}
+
+	@Override
+	public TrashedModel getTrashedModel(long classPK) {
 		return null;
 	}
 

@@ -21,7 +21,10 @@ import org.osgi.service.component.annotations.Reference;
  * @author Riccardo Alberti
  */
 @Component(
-	property = "dto.class.name=com.liferay.commerce.discount.model.CommerceChannelRel",
+	property = {
+		"default=true",
+		"dto.class.name=com.liferay.commerce.discount.model.CommerceChannelRel"
+	},
 	service = DTOConverter.class
 )
 public class DiscountChannelDTOConverter
@@ -49,15 +52,15 @@ public class DiscountChannelDTOConverter
 
 		return new DiscountChannel() {
 			{
-				actions = dtoConverterContext.getActions();
-				channelExternalReferenceCode =
-					commerceChannel.getExternalReferenceCode();
-				channelId = commerceChannel.getCommerceChannelId();
-				discountChannelId =
-					commerceDiscountChannelRel.getCommerceChannelRelId();
-				discountExternalReferenceCode =
-					commerceDiscount.getExternalReferenceCode();
-				discountId = commerceDiscount.getCommerceDiscountId();
+				setActions(dtoConverterContext::getActions);
+				setChannelExternalReferenceCode(
+					commerceChannel::getExternalReferenceCode);
+				setChannelId(commerceChannel::getCommerceChannelId);
+				setDiscountChannelId(
+					commerceDiscountChannelRel::getCommerceChannelRelId);
+				setDiscountExternalReferenceCode(
+					commerceDiscount::getExternalReferenceCode);
+				setDiscountId(commerceDiscount::getCommerceDiscountId);
 			}
 		};
 	}

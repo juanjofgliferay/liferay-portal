@@ -31,6 +31,18 @@ public class NotificationRecipientSettingLocalServiceWrapper
 			notificationRecipientSettingLocalService;
 	}
 
+	@Override
+	public com.liferay.notification.model.NotificationRecipientSetting
+			addNotificationRecipientSetting(
+				long userId, long notificationRecipientId, String name,
+				Object value)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _notificationRecipientSettingLocalService.
+			addNotificationRecipientSetting(
+				userId, notificationRecipientId, name, value);
+	}
+
 	/**
 	 * Adds the notification recipient setting to the database. Also notifies the appropriate model listeners.
 	 *
@@ -64,6 +76,22 @@ public class NotificationRecipientSettingLocalServiceWrapper
 
 		return _notificationRecipientSettingLocalService.
 			createNotificationRecipientSetting(notificationRecipientSettingId);
+	}
+
+	@Override
+	public java.util.List
+		<com.liferay.notification.model.NotificationRecipientSetting>
+			createNotificationRecipientSettings(
+				long notificationRecipientId,
+				com.liferay.notification.model.NotificationTemplate
+					notificationTemplate,
+				Object[] recipients,
+				com.liferay.portal.kernel.model.User user) {
+
+		return _notificationRecipientSettingLocalService.
+			createNotificationRecipientSettings(
+				notificationRecipientId, notificationTemplate, recipients,
+				user);
 	}
 
 	/**
@@ -394,6 +422,16 @@ public class NotificationRecipientSettingLocalServiceWrapper
 			primaryKeyObj);
 	}
 
+	@Override
+	public com.liferay.notification.model.NotificationRecipientSetting
+		updateNotificationRecipientSetting(
+			long notificationRecipientId, String name, Object value) {
+
+		return _notificationRecipientSettingLocalService.
+			updateNotificationRecipientSetting(
+				notificationRecipientId, name, value);
+	}
+
 	/**
 	 * Updates the notification recipient setting in the database or adds it if it does not yet exist. Also notifies the appropriate model listeners.
 	 *
@@ -437,3 +475,4 @@ public class NotificationRecipientSettingLocalServiceWrapper
 		_notificationRecipientSettingLocalService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-361508605

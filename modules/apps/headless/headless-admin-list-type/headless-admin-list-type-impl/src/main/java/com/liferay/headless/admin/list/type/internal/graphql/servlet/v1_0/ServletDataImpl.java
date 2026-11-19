@@ -14,10 +14,10 @@ import com.liferay.headless.admin.list.type.resource.v1_0.ListTypeEntryResource;
 import com.liferay.portal.kernel.util.ObjectValuePair;
 import com.liferay.portal.vulcan.graphql.servlet.ServletData;
 
+import jakarta.annotation.Generated;
+
 import java.util.HashMap;
 import java.util.Map;
-
-import javax.annotation.Generated;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.service.component.ComponentServiceObjects;
@@ -82,10 +82,25 @@ public class ServletDataImpl implements ServletData {
 			new HashMap<String, ObjectValuePair<Class<?>, String>>() {
 				{
 					put(
-						"mutation#createListTypeDefinitionsPageExportBatch",
+						"mutation#deleteListTypeDefinition",
 						new ObjectValuePair<>(
 							ListTypeDefinitionResourceImpl.class,
-							"postListTypeDefinitionsPageExportBatch"));
+							"deleteListTypeDefinition"));
+					put(
+						"mutation#deleteListTypeDefinitionBatch",
+						new ObjectValuePair<>(
+							ListTypeDefinitionResourceImpl.class,
+							"deleteListTypeDefinitionBatch"));
+					put(
+						"mutation#deleteListTypeDefinitionByExternalReferenceCode",
+						new ObjectValuePair<>(
+							ListTypeDefinitionResourceImpl.class,
+							"deleteListTypeDefinitionByExternalReferenceCode"));
+					put(
+						"mutation#patchListTypeDefinition",
+						new ObjectValuePair<>(
+							ListTypeDefinitionResourceImpl.class,
+							"patchListTypeDefinition"));
 					put(
 						"mutation#createListTypeDefinition",
 						new ObjectValuePair<>(
@@ -97,25 +112,10 @@ public class ServletDataImpl implements ServletData {
 							ListTypeDefinitionResourceImpl.class,
 							"postListTypeDefinitionBatch"));
 					put(
-						"mutation#updateListTypeDefinitionByExternalReferenceCode",
+						"mutation#createListTypeDefinitionsPageExportBatch",
 						new ObjectValuePair<>(
 							ListTypeDefinitionResourceImpl.class,
-							"putListTypeDefinitionByExternalReferenceCode"));
-					put(
-						"mutation#deleteListTypeDefinition",
-						new ObjectValuePair<>(
-							ListTypeDefinitionResourceImpl.class,
-							"deleteListTypeDefinition"));
-					put(
-						"mutation#deleteListTypeDefinitionBatch",
-						new ObjectValuePair<>(
-							ListTypeDefinitionResourceImpl.class,
-							"deleteListTypeDefinitionBatch"));
-					put(
-						"mutation#patchListTypeDefinition",
-						new ObjectValuePair<>(
-							ListTypeDefinitionResourceImpl.class,
-							"patchListTypeDefinition"));
+							"postListTypeDefinitionsPageExportBatch"));
 					put(
 						"mutation#updateListTypeDefinition",
 						new ObjectValuePair<>(
@@ -126,6 +126,21 @@ public class ServletDataImpl implements ServletData {
 						new ObjectValuePair<>(
 							ListTypeDefinitionResourceImpl.class,
 							"putListTypeDefinitionBatch"));
+					put(
+						"mutation#updateListTypeDefinitionByExternalReferenceCode",
+						new ObjectValuePair<>(
+							ListTypeDefinitionResourceImpl.class,
+							"putListTypeDefinitionByExternalReferenceCode"));
+					put(
+						"mutation#deleteListTypeEntry",
+						new ObjectValuePair<>(
+							ListTypeEntryResourceImpl.class,
+							"deleteListTypeEntry"));
+					put(
+						"mutation#deleteListTypeEntryBatch",
+						new ObjectValuePair<>(
+							ListTypeEntryResourceImpl.class,
+							"deleteListTypeEntryBatch"));
 					put(
 						"mutation#createListTypeDefinitionByExternalReferenceCodeListTypeEntry",
 						new ObjectValuePair<>(
@@ -147,16 +162,6 @@ public class ServletDataImpl implements ServletData {
 							ListTypeEntryResourceImpl.class,
 							"postListTypeDefinitionListTypeEntryBatch"));
 					put(
-						"mutation#deleteListTypeEntry",
-						new ObjectValuePair<>(
-							ListTypeEntryResourceImpl.class,
-							"deleteListTypeEntry"));
-					put(
-						"mutation#deleteListTypeEntryBatch",
-						new ObjectValuePair<>(
-							ListTypeEntryResourceImpl.class,
-							"deleteListTypeEntryBatch"));
-					put(
 						"mutation#updateListTypeEntry",
 						new ObjectValuePair<>(
 							ListTypeEntryResourceImpl.class,
@@ -168,20 +173,20 @@ public class ServletDataImpl implements ServletData {
 							"putListTypeEntryBatch"));
 
 					put(
-						"query#listTypeDefinitions",
+						"query#listTypeDefinition",
 						new ObjectValuePair<>(
 							ListTypeDefinitionResourceImpl.class,
-							"getListTypeDefinitionsPage"));
+							"getListTypeDefinition"));
 					put(
 						"query#listTypeDefinitionByExternalReferenceCode",
 						new ObjectValuePair<>(
 							ListTypeDefinitionResourceImpl.class,
 							"getListTypeDefinitionByExternalReferenceCode"));
 					put(
-						"query#listTypeDefinition",
+						"query#listTypeDefinitions",
 						new ObjectValuePair<>(
 							ListTypeDefinitionResourceImpl.class,
-							"getListTypeDefinition"));
+							"getListTypeDefinitionsPage"));
 					put(
 						"query#listTypeDefinitionByExternalReferenceCodeListTypeEntries",
 						new ObjectValuePair<>(
@@ -215,3 +220,4 @@ public class ServletDataImpl implements ServletData {
 		_listTypeEntryResourceComponentServiceObjects;
 
 }
+// LIFERAY-REST-BUILDER-HASH:-994815170

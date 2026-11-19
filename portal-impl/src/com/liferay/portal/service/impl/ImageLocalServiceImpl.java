@@ -8,9 +8,9 @@ package com.liferay.portal.service.impl;
 import com.liferay.document.library.kernel.store.Store;
 import com.liferay.document.library.kernel.util.DLValidatorUtil;
 import com.liferay.petra.io.unsync.UnsyncByteArrayInputStream;
-import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.image.ImageToolUtil;
+import com.liferay.portal.kernel.change.tracking.CTCollectionThreadLocal;
 import com.liferay.portal.kernel.exception.ImageTypeException;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
@@ -19,6 +19,7 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.CompanyConstants;
 import com.liferay.portal.kernel.model.Image;
 import com.liferay.portal.kernel.module.service.Snapshot;
+import com.liferay.portal.kernel.util.FileUtil;
 import com.liferay.portal.kernel.util.GroupThreadLocal;
 import com.liferay.portal.kernel.util.MimeTypesUtil;
 import com.liferay.portal.kernel.webserver.WebServerServletTokenUtil;
@@ -28,6 +29,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
@@ -44,7 +46,7 @@ public class ImageLocalServiceImpl extends ImageLocalServiceBaseImpl {
 			return null;
 		}
 
-		Image image = getImage(imageId);
+		Image image = fetchImage(imageId);
 
 		if (image == null) {
 			return null;
@@ -54,43 +56,23 @@ public class ImageLocalServiceImpl extends ImageLocalServiceBaseImpl {
 
 		Store store = _storeSnapshot.get();
 
-		store.deleteDirectory(
+		store.deleteFile(
 			image.getCompanyId(), _REPOSITORY_ID,
-			_getFileName(image.getImageId(), image.getType()));
+			_getFileName(image.getImageId(), image.getType()),
+			Store.VERSION_DEFAULT);
 
 		return image;
 	}
 
 	@Override
 	public Image getCompanyLogo(long imageId) {
-		Image image = getImage(imageId);
+		Image image = fetchImage(imageId);
 
 		if (image != null) {
 			return image;
 		}
 
 		return ImageToolUtil.getDefaultCompanyLogo();
-	}
-
-	@Override
-	public Image getImage(long imageId) {
-		try {
-			if (imageId <= 0) {
-				return null;
-			}
-
-			return imagePersistence.fetchByPrimaryKey(imageId);
-		}
-		catch (Exception exception) {
-			if (_log.isWarnEnabled()) {
-				_log.warn(
-					StringBundler.concat(
-						"Unable to get image ", imageId, ": ",
-						exception.getMessage()));
-			}
-
-			return null;
-		}
 	}
 
 	@Override
@@ -119,7 +101,7 @@ public class ImageLocalServiceImpl extends ImageLocalServiceBaseImpl {
 
 	@Override
 	public Image getImageOrDefault(long imageId) {
-		Image image = getImage(imageId);
+		Image image = fetchImage(imageId);
 
 		if (image != null) {
 			return image;
@@ -134,85 +116,37 @@ public class ImageLocalServiceImpl extends ImageLocalServiceBaseImpl {
 	}
 
 	@Override
-	public List<Image> getImagesBySize(int size) {
-		return imagePersistence.findByLtSize(size);
-	}
-
-	@Override
 	public Image moveImage(long imageId, byte[] bytes) throws PortalException {
-		Image image = updateImage(
+		Image image = fetchImage(imageId);
+
+		if (CTCollectionThreadLocal.isProductionMode() && (image != null) &&
+			(image.getSize() == bytes.length)) {
+
+			Store store = _storeSnapshot.get();
+
+			try (InputStream inputStream = store.getFileAsStream(
+					image.getCompanyId(), _REPOSITORY_ID,
+					_getFileName(image.getImageId(), image.getType()),
+					StringPool.BLANK)) {
+
+				if (Arrays.equals(bytes, FileUtil.getBytes(inputStream))) {
+					return image;
+				}
+			}
+			catch (IOException | PortalException | SystemException exception) {
+				if (_log.isDebugEnabled()) {
+					_log.debug(exception);
+				}
+			}
+		}
+
+		image = updateImage(
 			_getImageCompanyId(imageId), counterLocalService.increment(),
 			bytes);
 
 		deleteImage(imageId);
 
 		return image;
-	}
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link #updateImage(long, long, byte[])}
-	 */
-	@Deprecated
-	@Override
-	public Image updateImage(long imageId, byte[] bytes)
-		throws PortalException {
-
-		return updateImage(CompanyConstants.SYSTEM, imageId, bytes);
-	}
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link #updateImage(long, long, byte[], String, int, int, int)}
-	 */
-	@Deprecated
-	@Override
-	public Image updateImage(
-			long imageId, byte[] bytes, String type, int height, int width,
-			int size)
-		throws PortalException {
-
-		return updateImage(
-			CompanyConstants.SYSTEM, imageId, bytes, type, height, width, size);
-	}
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link #updateImage(long, long, File)}
-	 */
-	@Deprecated
-	@Override
-	public Image updateImage(long imageId, File file) throws PortalException {
-		return updateImage(CompanyConstants.SYSTEM, imageId, file);
-	}
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link #updateImage(long, long, InputStream)}
-	 */
-	@Deprecated
-	@Override
-	public Image updateImage(long imageId, InputStream inputStream)
-		throws PortalException {
-
-		return updateImage(CompanyConstants.SYSTEM, imageId, inputStream);
-	}
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link #updateImage(long, long, InputStream, boolean)}
-	 */
-	@Deprecated
-	@Override
-	public Image updateImage(
-			long imageId, InputStream inputStream, boolean cleanUpStream)
-		throws PortalException {
-
-		try {
-			Image image = ImageToolUtil.getImage(inputStream, cleanUpStream);
-
-			return updateImage(
-				imageId, image.getTextObj(), image.getType(), image.getHeight(),
-				image.getWidth(), image.getSize());
-		}
-		catch (IOException ioException) {
-			throw new SystemException(ioException);
-		}
 	}
 
 	@Override
@@ -269,8 +203,9 @@ public class ImageLocalServiceImpl extends ImageLocalServiceBaseImpl {
 				image.getCompanyId(), _REPOSITORY_ID, fileName,
 				Store.VERSION_DEFAULT)) {
 
-			store.deleteDirectory(
-				image.getCompanyId(), _REPOSITORY_ID, fileName);
+			store.deleteFile(
+				image.getCompanyId(), _REPOSITORY_ID, fileName,
+				Store.VERSION_DEFAULT);
 		}
 
 		try (InputStream inputStream = new UnsyncByteArrayInputStream(bytes)) {
@@ -362,7 +297,7 @@ public class ImageLocalServiceImpl extends ImageLocalServiceBaseImpl {
 	}
 
 	private long _getImageCompanyId(long imageId) {
-		Image image = getImage(imageId);
+		Image image = fetchImage(imageId);
 
 		if (image == null) {
 			if (_log.isWarnEnabled()) {

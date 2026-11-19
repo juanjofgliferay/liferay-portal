@@ -27,6 +27,11 @@ import org.osgi.service.component.annotations.Reference;
 public class SiteTemplatesPanelApp extends BasePanelApp {
 
 	@Override
+	public String getIcon() {
+		return "site-template";
+	}
+
+	@Override
 	public Portlet getPortlet() {
 		return _portlet;
 	}
@@ -37,7 +42,7 @@ public class SiteTemplatesPanelApp extends BasePanelApp {
 	}
 
 	@Reference(
-		target = "(javax.portlet.name=" + LayoutSetPrototypePortletKeys.LAYOUT_SET_PROTOTYPE + ")"
+		target = "(jakarta.portlet.name=" + LayoutSetPrototypePortletKeys.LAYOUT_SET_PROTOTYPE + ")"
 	)
 	private Portlet _portlet;
 

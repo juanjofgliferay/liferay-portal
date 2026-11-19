@@ -12,7 +12,6 @@ RedirectDisplayContext redirectDisplayContext = (RedirectDisplayContext)request.
 %>
 
 <clay:navigation-bar
-	inverted="<%= true %>"
 	navigationItems="<%= redirectDisplayContext.getNavigationItems() %>"
 />
 
@@ -31,7 +30,7 @@ RedirectDisplayContext redirectDisplayContext = (RedirectDisplayContext)request.
 
 		<div>
 			<react:component
-				module="js/RedirectPatterns"
+				module="{RedirectPatterns} from redirect-web"
 				props="<%= redirectPatternConfigurationDisplayContext.getRedirectPatterns() %>"
 			/>
 		</div>

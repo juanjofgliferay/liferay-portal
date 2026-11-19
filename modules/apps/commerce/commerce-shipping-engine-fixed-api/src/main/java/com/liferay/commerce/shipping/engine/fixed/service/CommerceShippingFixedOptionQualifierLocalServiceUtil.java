@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -247,15 +248,6 @@ public class CommerceShippingFixedOptionQualifierLocalServiceUtil {
 			commerceShippingFixedOptionQualifierId);
 	}
 
-	public static CommerceShippingFixedOptionQualifier
-		fetchCommerceShippingFixedOptionQualifier(
-			String className, long classPK,
-			long commerceShippingFixedOptionId) {
-
-		return getService().fetchCommerceShippingFixedOptionQualifier(
-			className, classPK, commerceShippingFixedOptionId);
-	}
-
 	public static com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery
 		getActionableDynamicQuery() {
 
@@ -317,24 +309,6 @@ public class CommerceShippingFixedOptionQualifierLocalServiceUtil {
 
 	public static List<CommerceShippingFixedOptionQualifier>
 		getCommerceShippingFixedOptionQualifiers(
-			long commerceShippingFixedOptionId) {
-
-		return getService().getCommerceShippingFixedOptionQualifiers(
-			commerceShippingFixedOptionId);
-	}
-
-	public static List<CommerceShippingFixedOptionQualifier>
-		getCommerceShippingFixedOptionQualifiers(
-			long commerceShippingFixedOptionId, int start, int end,
-			OrderByComparator<CommerceShippingFixedOptionQualifier>
-				orderByComparator) {
-
-		return getService().getCommerceShippingFixedOptionQualifiers(
-			commerceShippingFixedOptionId, start, end, orderByComparator);
-	}
-
-	public static List<CommerceShippingFixedOptionQualifier>
-		getCommerceShippingFixedOptionQualifiers(
 			String className, long commerceShippingFixedOptionId) {
 
 		return getService().getCommerceShippingFixedOptionQualifiers(
@@ -348,13 +322,6 @@ public class CommerceShippingFixedOptionQualifierLocalServiceUtil {
 	 */
 	public static int getCommerceShippingFixedOptionQualifiersCount() {
 		return getService().getCommerceShippingFixedOptionQualifiersCount();
-	}
-
-	public static int getCommerceShippingFixedOptionQualifiersCount(
-		long commerceShippingFixedOptionId) {
-
-		return getService().getCommerceShippingFixedOptionQualifiersCount(
-			commerceShippingFixedOptionId);
 	}
 
 	public static List<CommerceShippingFixedOptionQualifier>
@@ -423,16 +390,14 @@ public class CommerceShippingFixedOptionQualifierLocalServiceUtil {
 	public static CommerceShippingFixedOptionQualifierLocalService
 		getService() {
 
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(
-		CommerceShippingFixedOptionQualifierLocalService service) {
-
-		_service = service;
-	}
-
-	private static volatile CommerceShippingFixedOptionQualifierLocalService
-		_service;
+	private static final Snapshot
+		<CommerceShippingFixedOptionQualifierLocalService> _serviceSnapshot =
+			new Snapshot<>(
+				CommerceShippingFixedOptionQualifierLocalServiceUtil.class,
+				CommerceShippingFixedOptionQualifierLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1864832843

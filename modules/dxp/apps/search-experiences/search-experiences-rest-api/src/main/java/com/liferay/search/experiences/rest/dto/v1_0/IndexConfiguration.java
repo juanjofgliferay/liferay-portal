@@ -11,23 +11,25 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import com.liferay.petra.function.UnsafeSupplier;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Brian Wing Shun Chan
@@ -47,61 +49,87 @@ public class IndexConfiguration implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(IndexConfiguration.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Boolean getExternal() {
+		if (_externalSupplier != null) {
+			external = _externalSupplier.get();
+
+			_externalSupplier = null;
+		}
+
 		return external;
 	}
 
 	public void setExternal(Boolean external) {
 		this.external = external;
+
+		_externalSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setExternal(
 		UnsafeSupplier<Boolean, Exception> externalUnsafeSupplier) {
 
-		try {
-			external = externalUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_externalSupplier = () -> {
+			try {
+				return externalUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Boolean external;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Boolean> _externalSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getIndexName() {
+		if (_indexNameSupplier != null) {
+			indexName = _indexNameSupplier.get();
+
+			_indexNameSupplier = null;
+		}
+
 		return indexName;
 	}
 
 	public void setIndexName(String indexName) {
 		this.indexName = indexName;
+
+		_indexNameSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setIndexName(
 		UnsafeSupplier<String, Exception> indexNameUnsafeSupplier) {
 
-		try {
-			indexName = indexNameUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_indexNameSupplier = () -> {
+			try {
+				return indexNameUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String indexName;
+
+	@JsonIgnore
+	private Supplier<String> _indexNameSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -130,6 +158,8 @@ public class IndexConfiguration implements Serializable {
 
 		sb.append("{");
 
+		Boolean external = getExternal();
+
 		if (external != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -139,6 +169,8 @@ public class IndexConfiguration implements Serializable {
 
 			sb.append(external);
 		}
+
+		String indexName = getIndexName();
 
 		if (indexName != null) {
 			if (sb.length() > 1) {
@@ -159,8 +191,8 @@ public class IndexConfiguration implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.search.experiences.rest.dto.v1_0.IndexConfiguration",
 		name = "x-class-name"
 	)
@@ -206,7 +238,10 @@ public class IndexConfiguration implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -244,6 +279,27 @@ public class IndexConfiguration implements Serializable {
 		return sb.toString();
 	}
 
+	private static String _toJSON(Object value) {
+		if (value instanceof Collection) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONArray((Collection<?>)value));
+		}
+		else if (value instanceof Map) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONObject((Map<?, ?>)value));
+		}
+		else if (value instanceof Object[]) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONArray(
+					Arrays.asList((Object[])value)));
+		}
+		else if (value instanceof String) {
+			return StringBundler.concat("\"", _escape(value), "\"");
+		}
+
+		return String.valueOf(value);
+	}
+
 	private static final String[][] _JSON_ESCAPE_STRINGS = {
 		{"\\", "\"", "\b", "\f", "\n", "\r", "\t"},
 		{"\\\\", "\\\"", "\\b", "\\f", "\\n", "\\r", "\\t"}
@@ -252,3 +308,4 @@ public class IndexConfiguration implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:247741547

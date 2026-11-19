@@ -94,6 +94,8 @@ public class SubscriptionModelImpl
 
 	public static final String TABLE_SQL_DROP = "drop table Subscription";
 
+	public static final String ENTITY_ALIAS = "subscription";
+
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY subscription.subscriptionId ASC";
 
@@ -162,7 +164,7 @@ public class SubscriptionModelImpl
 	public static final long SUBSCRIPTIONID_COLUMN_BITMASK = 32L;
 
 	public static final long LOCK_EXPIRATION_TIME = GetterUtil.getLong(
-		com.liferay.portal.util.PropsUtil.get(
+		com.liferay.portal.kernel.util.PropsUtil.get(
 			"lock.expiration.time.com.liferay.portal.kernel.model.Subscription"));
 
 	public SubscriptionModelImpl() {
@@ -968,3 +970,4 @@ public class SubscriptionModelImpl
 	private Subscription _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-644205544

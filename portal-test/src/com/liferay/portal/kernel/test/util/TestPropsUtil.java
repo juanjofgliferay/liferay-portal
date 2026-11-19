@@ -84,9 +84,11 @@ public class TestPropsUtil {
 		}
 
 		for (String key : keys) {
-			if (!_doNotPrintKeys.contains(key)) {
-				System.out.println(key + "=" + _props.getProperty(key));
+			if (_doNotPrintKeys.contains(key)) {
+				continue;
 			}
+
+			System.out.println(key + "=" + _props.getProperty(key));
 		}
 
 		System.out.println("");
@@ -105,7 +107,12 @@ public class TestPropsUtil {
 		"object.storage.salesforce.consumer.secret",
 		"object.storage.salesforce.login.url",
 		"object.storage.salesforce.password",
-		"object.storage.salesforce.username");
+		"object.storage.salesforce.username",
+		"object.storage.sugarcrm.access.token.url",
+		"object.storage.sugarcrm.base.url", "object.storage.sugarcrm.client.id",
+		"object.storage.sugarcrm.grant.type",
+		"object.storage.sugarcrm.password", "object.storage.sugarcrm.username",
+		"vertex.ai.project.id");
 	private static final TestPropsUtil _testPropsUtil = new TestPropsUtil();
 
 	private final Properties _props = new Properties();

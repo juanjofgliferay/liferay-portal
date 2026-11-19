@@ -11,6 +11,7 @@ import com.liferay.commerce.model.CommerceAddressRestriction;
 import com.liferay.commerce.model.CommerceShippingMethod;
 import com.liferay.commerce.service.CommerceAddressRestrictionLocalService;
 import com.liferay.commerce.service.base.CommerceShippingMethodLocalServiceBaseImpl;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.SystemEventConstants;
@@ -22,10 +23,10 @@ import com.liferay.portal.kernel.systemevent.SystemEvent;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
 import java.io.File;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -109,6 +110,7 @@ public class CommerceShippingMethodLocalServiceImpl
 		commerceShippingMethod.setEngineKey(engineKey);
 		commerceShippingMethod.setPriority(priority);
 		commerceShippingMethod.setTrackingURL(trackingURL);
+		commerceShippingMethod.setStatus(WorkflowConstants.STATUS_APPROVED);
 
 		commerceShippingMethod = commerceShippingMethodPersistence.update(
 			commerceShippingMethod);
@@ -195,27 +197,6 @@ public class CommerceShippingMethodLocalServiceImpl
 	}
 
 	@Override
-	public List<CommerceAddressRestriction> getCommerceAddressRestrictions(
-		long commerceShippingMethodId, int start, int end,
-		OrderByComparator<CommerceAddressRestriction> orderByComparator) {
-
-		return _commerceAddressRestrictionLocalService.
-			getCommerceAddressRestrictions(
-				CommerceShippingMethod.class.getName(),
-				commerceShippingMethodId, start, end, orderByComparator);
-	}
-
-	@Override
-	public int getCommerceAddressRestrictionsCount(
-		long commerceShippingMethodId) {
-
-		return _commerceAddressRestrictionLocalService.
-			getCommerceAddressRestrictionsCount(
-				CommerceShippingMethod.class.getName(),
-				commerceShippingMethodId);
-	}
-
-	@Override
 	public List<CommerceShippingMethod> getCommerceShippingMethods(
 		long groupId, boolean active, int start, int end,
 		OrderByComparator<CommerceShippingMethod> orderByComparator) {
@@ -237,33 +218,23 @@ public class CommerceShippingMethodLocalServiceImpl
 	public List<CommerceShippingMethod> getCommerceShippingMethods(
 		long groupId, long countryId, boolean active) {
 
-		List<CommerceShippingMethod> filteredCommerceShippingMethods =
-			new ArrayList<>();
+		return TransformUtil.transform(
+			commerceShippingMethodPersistence.findByG_A(groupId, active),
+			commerceShippingMethod -> {
+				boolean restricted =
+					_commerceAddressRestrictionLocalService.
+						isCommerceAddressRestricted(
+							CommerceShippingMethod.class.getName(),
+							commerceShippingMethod.
+								getCommerceShippingMethodId(),
+							countryId);
 
-		List<CommerceShippingMethod> commerceShippingMethods =
-			commerceShippingMethodPersistence.findByG_A(groupId, active);
+				if (!restricted) {
+					return commerceShippingMethod;
+				}
 
-		for (CommerceShippingMethod commerceShippingMethod :
-				commerceShippingMethods) {
-
-			boolean restricted =
-				_commerceAddressRestrictionLocalService.
-					isCommerceAddressRestricted(
-						CommerceShippingMethod.class.getName(),
-						commerceShippingMethod.getCommerceShippingMethodId(),
-						countryId);
-
-			if (!restricted) {
-				filteredCommerceShippingMethods.add(commerceShippingMethod);
-			}
-		}
-
-		return filteredCommerceShippingMethods;
-	}
-
-	@Override
-	public int getCommerceShippingMethodsCount(long groupId) {
-		return commerceShippingMethodPersistence.countByGroupId(groupId);
+				return null;
+			});
 	}
 
 	@Override
@@ -320,6 +291,7 @@ public class CommerceShippingMethodLocalServiceImpl
 
 		if (imageFile != null) {
 			_imageLocalService.updateImage(
+				commerceShippingMethod.getCompanyId(),
 				commerceShippingMethod.getImageId(), imageFile);
 		}
 

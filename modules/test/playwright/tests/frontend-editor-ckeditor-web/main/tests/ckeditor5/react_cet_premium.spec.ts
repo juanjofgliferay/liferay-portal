@@ -1,0 +1,144 @@
+/**
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
+ */
+
+import {expect, mergeTests} from '@playwright/test';
+
+import {featureFlagsTest} from '../../../../../fixtures/featureFlagsTest';
+import {loginTest} from '../../../../../fixtures/loginTest';
+import {reactPlusCETPremiumClassicPageTest} from '../../../../frontend-editor-ckeditor5-sample-web/fixtures/classicPageTest';
+
+export const test = mergeTests(
+	reactPlusCETPremiumClassicPageTest,
+	featureFlagsTest({
+		'LPD-11235': {enabled: false},
+		'LPS-178052': {enabled: true},
+	}),
+	loginTest()
+);
+
+test(
+	'Enhanced Paste from Office is loaded alongside the standard plugin',
+	{tag: ['@LPD-101122', '@LPD-95090']},
+	async ({classicPage, page}) => {
+		await expect(classicPage.editable).toBeVisible();
+
+		const loadedPlugins = await page.evaluate(() => {
+			const editorElement = Array.from(
+				document.querySelectorAll('.lfr-ck *')
+			).find((element) => (element as any).ckeditorInstance);
+
+			const editor = (editorElement as any)?.ckeditorInstance;
+
+			return {
+				pasteFromOffice:
+					editor?.plugins.has('PasteFromOffice') ?? false,
+				pasteFromOfficeEnhanced:
+					editor?.plugins.has('PasteFromOfficeEnhanced') ?? false,
+			};
+		});
+
+		expect(loadedPlugins).toEqual({
+			pasteFromOffice: true,
+			pasteFromOfficeEnhanced: true,
+		});
+	}
+);
+
+test(
+	'Enhanced source editing opens the source view in a modal',
+	{tag: ['@LPD-101122', '@LPD-83978']},
+	async ({classicPage, page}) => {
+		await classicPage.toolbar.container
+			.getByRole('button', {exact: true, name: 'Source'})
+			.click();
+
+		await expect(
+			page.getByRole('dialog', {name: 'Edit source'})
+		).toBeVisible();
+
+		await expect(page.locator('.cm-editor')).toBeVisible();
+	}
+);
+
+test(
+	'Content edited in the enhanced source modal is applied to the editor',
+	{tag: '@LPD-101122'},
+	async ({classicPage}) => {
+		await classicPage.toolbar.container
+			.getByRole('button', {exact: true, name: 'Source'})
+			.click();
+
+		await classicPage.sourceEditingEnhancedDialog.editable.fill(
+			'<h2>Heading Two</h2><p>Paragraph with <i>italic</i> text.</p>'
+		);
+
+		await classicPage.sourceEditingEnhancedDialog.saveButton.click();
+
+		await expect(classicPage.editable.locator('h2')).toContainText(
+			'Heading Two'
+		);
+
+		await expect(classicPage.editable.locator('i')).toContainText('italic');
+	}
+);
+
+test(
+	'Email editing buttons added via client extension appear in the toolbar',
+	{tag: '@LPD-95092'},
+	async ({classicPage}) => {
+		const emailEditingButtons = [
+			{name: 'Insert merge field'},
+			{name: 'Insert template'},
+			{name: 'Merge fields preview'},
+			{exact: true, name: 'Preview with Inline Styles'},
+		];
+
+		for (const options of emailEditingButtons) {
+			await expect(
+				classicPage.toolbar.container.getByRole('button', options)
+			).toBeVisible();
+		}
+	}
+);
+
+test(
+	'Content styled only via the editor content stylesheet is inlined without unresolved CSS variables in the exported preview',
+	{tag: '@LPD-105914'},
+	async ({classicPage, page}) => {
+		await classicPage.toolbar.container
+			.getByRole('button', {exact: true, name: 'Insert table'})
+			.click();
+
+		await page.getByRole('button', {exact: true, name: '1 × 1'}).click();
+
+		const editableTable = classicPage.editable
+			.locator('figure.table')
+			.first();
+
+		await expect(editableTable).toBeVisible();
+		await expect(editableTable).toHaveAttribute('class', /.+/);
+
+		const [popup] = await Promise.all([
+			page.waitForEvent('popup'),
+			classicPage.toolbar.container
+				.getByRole('button', {
+					exact: true,
+					name: 'Preview with Inline Styles',
+				})
+				.click(),
+		]);
+
+		await popup.waitForLoadState();
+
+		const exportedHTML = await popup.content();
+
+		expect(exportedHTML).not.toContain('var(--');
+
+		const exportedTable = popup.locator('table').first();
+
+		await expect(exportedTable).not.toHaveAttribute('class', /.+/);
+		await expect(exportedTable).toHaveAttribute('style', /.+/);
+	}
+);

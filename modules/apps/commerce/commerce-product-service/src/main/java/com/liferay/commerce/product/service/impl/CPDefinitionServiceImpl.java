@@ -10,11 +10,10 @@ import com.liferay.commerce.product.model.CPAttachmentFileEntry;
 import com.liferay.commerce.product.model.CPDefinition;
 import com.liferay.commerce.product.model.CProduct;
 import com.liferay.commerce.product.model.CommerceCatalog;
-import com.liferay.commerce.product.service.CPDisplayLayoutLocalService;
-import com.liferay.commerce.product.service.CProductLocalService;
 import com.liferay.commerce.product.service.CommerceCatalogLocalService;
 import com.liferay.commerce.product.service.CommerceCatalogService;
 import com.liferay.commerce.product.service.base.CPDefinitionServiceBaseImpl;
+import com.liferay.commerce.product.service.persistence.CProductPersistence;
 import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
@@ -23,6 +22,7 @@ import com.liferay.portal.kernel.search.BaseModelSearchResult;
 import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
+import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.util.OrderByComparator;
@@ -52,186 +52,104 @@ public class CPDefinitionServiceImpl extends CPDefinitionServiceBaseImpl {
 
 	@Override
 	public CPDefinition addCPDefinition(
-			String externalReferenceCode, long groupId,
-			Map<Locale, String> nameMap,
-			Map<Locale, String> shortDescriptionMap,
-			Map<Locale, String> descriptionMap, Map<Locale, String> urlTitleMap,
-			Map<Locale, String> metaTitleMap,
-			Map<Locale, String> metaDescriptionMap,
-			Map<Locale, String> metaKeywordsMap, String productTypeName,
-			boolean ignoreSKUCombinations, boolean shippable,
-			boolean freeShipping, boolean shipSeparately,
-			double shippingExtraPrice, double width, double height,
-			double depth, double weight, long cpTaxCategoryId,
-			boolean taxExempt, boolean telcoOrElectronics,
-			String ddmStructureKey, boolean published, int displayDateMonth,
-			int displayDateDay, int displayDateYear, int displayDateHour,
-			int displayDateMinute, int expirationDateMonth,
-			int expirationDateDay, int expirationDateYear,
-			int expirationDateHour, int expirationDateMinute,
-			boolean neverExpire, String defaultSku, boolean subscriptionEnabled,
-			int subscriptionLength, String subscriptionType,
-			UnicodeProperties subscriptionTypeSettingsUnicodeProperties,
-			long maxSubscriptionCycles, boolean deliverySubscriptionEnabled,
-			int deliverySubscriptionLength, String deliverySubscriptionType,
+			String externalReferenceCode, long groupId, long cpTaxCategoryId,
+			boolean accountGroupFilterEnabled, boolean channelFilterEnabled,
+			String ddmStructureKey, String defaultSku,
+			long deliveryMaxSubscriptionCycles,
+			boolean deliverySubscriptionEnabled, int deliverySubscriptionLength,
+			String deliverySubscriptionType,
 			UnicodeProperties deliverySubscriptionTypeSettingsUnicodeProperties,
-			long deliveryMaxSubscriptionCycles, int status,
-			ServiceContext serviceContext)
+			double depth, Map<Locale, String> descriptionMap,
+			int displayDateDay, int displayDateHour, int displayDateMinute,
+			int displayDateMonth, int displayDateYear, int expirationDateDay,
+			int expirationDateHour, int expirationDateMinute,
+			int expirationDateMonth, int expirationDateYear,
+			boolean freeShipping, double height, boolean ignoreSKUCombinations,
+			long maxSubscriptionCycles, Map<Locale, String> metaDescriptionMap,
+			Map<Locale, String> metaKeywordsMap,
+			Map<Locale, String> metaTitleMap, Map<Locale, String> nameMap,
+			boolean neverExpire, String productTypeName, boolean published,
+			boolean shipSeparately, boolean shippable,
+			double shippingExtraPrice, Map<Locale, String> shortDescriptionMap,
+			boolean subscriptionEnabled, int subscriptionLength,
+			String subscriptionType,
+			UnicodeProperties subscriptionTypeSettingsUnicodeProperties,
+			boolean taxExempt, boolean telcoOrElectronics,
+			Map<Locale, String> urlTitleMap, double weight, double width,
+			int status, ServiceContext serviceContext)
 		throws PortalException {
 
 		_checkCommerceCatalog(groupId, ActionKeys.UPDATE);
 
 		return cpDefinitionLocalService.addCPDefinition(
-			externalReferenceCode, groupId, getUserId(), nameMap,
-			shortDescriptionMap, descriptionMap, urlTitleMap, metaTitleMap,
-			metaDescriptionMap, metaKeywordsMap, productTypeName,
-			ignoreSKUCombinations, shippable, freeShipping, shipSeparately,
-			shippingExtraPrice, width, height, depth, weight, cpTaxCategoryId,
-			taxExempt, telcoOrElectronics, ddmStructureKey, published,
-			displayDateMonth, displayDateDay, displayDateYear, displayDateHour,
-			displayDateMinute, expirationDateMonth, expirationDateDay,
-			expirationDateYear, expirationDateHour, expirationDateMinute,
-			neverExpire, defaultSku, subscriptionEnabled, subscriptionLength,
-			subscriptionType, subscriptionTypeSettingsUnicodeProperties,
-			maxSubscriptionCycles, deliverySubscriptionEnabled,
-			deliverySubscriptionLength, deliverySubscriptionType,
-			deliverySubscriptionTypeSettingsUnicodeProperties,
-			deliveryMaxSubscriptionCycles, status, serviceContext);
-	}
-
-	@Override
-	public CPDefinition addCPDefinition(
-			String externalReferenceCode, long groupId,
-			Map<Locale, String> nameMap,
-			Map<Locale, String> shortDescriptionMap,
-			Map<Locale, String> descriptionMap, Map<Locale, String> urlTitleMap,
-			Map<Locale, String> metaTitleMap,
-			Map<Locale, String> metaDescriptionMap,
-			Map<Locale, String> metaKeywordsMap, String productTypeName,
-			boolean ignoreSKUCombinations, boolean shippable,
-			boolean freeShipping, boolean shipSeparately,
-			double shippingExtraPrice, double width, double height,
-			double depth, double weight, long cpTaxCategoryId,
-			boolean taxExempt, boolean telcoOrElectronics,
-			String ddmStructureKey, boolean published, int displayDateMonth,
-			int displayDateDay, int displayDateYear, int displayDateHour,
-			int displayDateMinute, int expirationDateMonth,
-			int expirationDateDay, int expirationDateYear,
-			int expirationDateHour, int expirationDateMinute,
-			boolean neverExpire, String defaultSku, boolean subscriptionEnabled,
-			int subscriptionLength, String subscriptionType,
-			UnicodeProperties subscriptionTypeSettingsUnicodeProperties,
-			long maxSubscriptionCycles, int status,
-			ServiceContext serviceContext)
-		throws PortalException {
-
-		_checkCommerceCatalog(groupId, ActionKeys.UPDATE);
-
-		return cpDefinitionLocalService.addCPDefinition(
-			externalReferenceCode, groupId, getUserId(), nameMap,
-			shortDescriptionMap, descriptionMap, urlTitleMap, metaTitleMap,
-			metaDescriptionMap, metaKeywordsMap, productTypeName,
-			ignoreSKUCombinations, shippable, freeShipping, shipSeparately,
-			shippingExtraPrice, width, height, depth, weight, cpTaxCategoryId,
-			taxExempt, telcoOrElectronics, ddmStructureKey, published,
-			displayDateMonth, displayDateDay, displayDateYear, displayDateHour,
-			displayDateMinute, expirationDateMonth, expirationDateDay,
-			expirationDateYear, expirationDateHour, expirationDateMinute,
-			neverExpire, defaultSku, subscriptionEnabled, subscriptionLength,
-			subscriptionType, subscriptionTypeSettingsUnicodeProperties,
-			maxSubscriptionCycles, status, serviceContext);
+			externalReferenceCode, getUserId(), groupId, cpTaxCategoryId,
+			accountGroupFilterEnabled, channelFilterEnabled, ddmStructureKey,
+			defaultSku, deliveryMaxSubscriptionCycles,
+			deliverySubscriptionEnabled, deliverySubscriptionLength,
+			deliverySubscriptionType,
+			deliverySubscriptionTypeSettingsUnicodeProperties, depth,
+			descriptionMap, displayDateDay, displayDateHour, displayDateMinute,
+			displayDateMonth, displayDateYear, expirationDateDay,
+			expirationDateHour, expirationDateMinute, expirationDateMonth,
+			expirationDateYear, freeShipping, height, ignoreSKUCombinations,
+			maxSubscriptionCycles, metaDescriptionMap, metaKeywordsMap,
+			metaTitleMap, nameMap, neverExpire, productTypeName, published,
+			shipSeparately, shippable, shippingExtraPrice, shortDescriptionMap,
+			subscriptionEnabled, subscriptionLength, subscriptionType,
+			subscriptionTypeSettingsUnicodeProperties, taxExempt,
+			telcoOrElectronics, urlTitleMap, weight, width, status,
+			serviceContext);
 	}
 
 	@Override
 	public CPDefinition addOrUpdateCPDefinition(
-			String externalReferenceCode, long groupId,
-			Map<Locale, String> nameMap,
-			Map<Locale, String> shortDescriptionMap,
-			Map<Locale, String> descriptionMap, Map<Locale, String> urlTitleMap,
-			Map<Locale, String> metaTitleMap,
-			Map<Locale, String> metaDescriptionMap,
-			Map<Locale, String> metaKeywordsMap, String productTypeName,
-			boolean ignoreSKUCombinations, boolean shippable,
-			boolean freeShipping, boolean shipSeparately,
-			double shippingExtraPrice, double width, double height,
-			double depth, double weight, long cpTaxCategoryId,
-			boolean taxExempt, boolean telcoOrElectronics,
-			String ddmStructureKey, boolean published, int displayDateMonth,
-			int displayDateDay, int displayDateYear, int displayDateHour,
-			int displayDateMinute, int expirationDateMonth,
-			int expirationDateDay, int expirationDateYear,
-			int expirationDateHour, int expirationDateMinute,
-			boolean neverExpire, String defaultSku, boolean subscriptionEnabled,
-			int subscriptionLength, String subscriptionType,
-			UnicodeProperties subscriptionTypeSettingsUnicodeProperties,
-			long maxSubscriptionCycles, boolean deliverySubscriptionEnabled,
-			int deliverySubscriptionLength, String deliverySubscriptionType,
+			String externalReferenceCode, long groupId, long cpDefinitionId,
+			long cpTaxCategoryId, boolean accountGroupFilterEnabled,
+			boolean channelFilterEnabled, String ddmStructureKey,
+			String defaultSku, long deliveryMaxSubscriptionCycles,
+			boolean deliverySubscriptionEnabled, int deliverySubscriptionLength,
+			String deliverySubscriptionType,
 			UnicodeProperties deliverySubscriptionTypeSettingsUnicodeProperties,
-			long deliveryMaxSubscriptionCycles, int status,
-			ServiceContext serviceContext)
-		throws PortalException {
-
-		_checkCommerceCatalog(groupId, ActionKeys.UPDATE);
-
-		return cpDefinitionLocalService.addOrUpdateCPDefinition(
-			externalReferenceCode, groupId, getUserId(), nameMap,
-			shortDescriptionMap, descriptionMap, urlTitleMap, metaTitleMap,
-			metaDescriptionMap, metaKeywordsMap, productTypeName,
-			ignoreSKUCombinations, shippable, freeShipping, shipSeparately,
-			shippingExtraPrice, width, height, depth, weight, cpTaxCategoryId,
-			taxExempt, telcoOrElectronics, ddmStructureKey, published,
-			displayDateMonth, displayDateDay, displayDateYear, displayDateHour,
-			displayDateMinute, expirationDateMonth, expirationDateDay,
-			expirationDateYear, expirationDateHour, expirationDateMinute,
-			neverExpire, defaultSku, subscriptionEnabled, subscriptionLength,
-			subscriptionType, subscriptionTypeSettingsUnicodeProperties,
-			maxSubscriptionCycles, deliverySubscriptionEnabled,
-			deliverySubscriptionLength, deliverySubscriptionType,
-			deliverySubscriptionTypeSettingsUnicodeProperties,
-			deliveryMaxSubscriptionCycles, status, serviceContext);
-	}
-
-	@Override
-	public CPDefinition addOrUpdateCPDefinition(
-			String externalReferenceCode, long groupId,
-			Map<Locale, String> nameMap,
-			Map<Locale, String> shortDescriptionMap,
-			Map<Locale, String> descriptionMap, Map<Locale, String> urlTitleMap,
-			Map<Locale, String> metaTitleMap,
-			Map<Locale, String> metaDescriptionMap,
-			Map<Locale, String> metaKeywordsMap, String productTypeName,
-			boolean ignoreSKUCombinations, boolean shippable,
-			boolean freeShipping, boolean shipSeparately,
-			double shippingExtraPrice, double width, double height,
-			double depth, double weight, long cpTaxCategoryId,
-			boolean taxExempt, boolean telcoOrElectronics,
-			String ddmStructureKey, boolean published, int displayDateMonth,
-			int displayDateDay, int displayDateYear, int displayDateHour,
-			int displayDateMinute, int expirationDateMonth,
-			int expirationDateDay, int expirationDateYear,
+			double depth, Map<Locale, String> descriptionMap,
+			int displayDateDay, int displayDateHour, int displayDateMinute,
+			int displayDateMonth, int displayDateYear, int expirationDateDay,
 			int expirationDateHour, int expirationDateMinute,
-			boolean neverExpire, String defaultSku, boolean subscriptionEnabled,
-			int subscriptionLength, String subscriptionType,
+			int expirationDateMonth, int expirationDateYear,
+			boolean freeShipping, double height, boolean ignoreSKUCombinations,
+			long maxSubscriptionCycles, Map<Locale, String> metaDescriptionMap,
+			Map<Locale, String> metaKeywordsMap,
+			Map<Locale, String> metaTitleMap, Map<Locale, String> nameMap,
+			boolean neverExpire, String productTypeName, boolean published,
+			boolean shipSeparately, boolean shippable,
+			double shippingExtraPrice, Map<Locale, String> shortDescriptionMap,
+			boolean subscriptionEnabled, int subscriptionLength,
+			String subscriptionType,
 			UnicodeProperties subscriptionTypeSettingsUnicodeProperties,
-			long maxSubscriptionCycles, int status,
-			ServiceContext serviceContext)
+			boolean taxExempt, boolean telcoOrElectronics,
+			Map<Locale, String> urlTitleMap, double weight, double width,
+			int status, ServiceContext serviceContext)
 		throws PortalException {
 
 		_checkCommerceCatalog(groupId, ActionKeys.UPDATE);
 
 		return cpDefinitionLocalService.addOrUpdateCPDefinition(
-			externalReferenceCode, groupId, getUserId(), nameMap,
-			shortDescriptionMap, descriptionMap, urlTitleMap, metaTitleMap,
-			metaDescriptionMap, metaKeywordsMap, productTypeName,
-			ignoreSKUCombinations, shippable, freeShipping, shipSeparately,
-			shippingExtraPrice, width, height, depth, weight, cpTaxCategoryId,
-			taxExempt, telcoOrElectronics, ddmStructureKey, published,
-			displayDateMonth, displayDateDay, displayDateYear, displayDateHour,
-			displayDateMinute, expirationDateMonth, expirationDateDay,
-			expirationDateYear, expirationDateHour, expirationDateMinute,
-			neverExpire, defaultSku, subscriptionEnabled, subscriptionLength,
-			subscriptionType, subscriptionTypeSettingsUnicodeProperties,
-			maxSubscriptionCycles, status, serviceContext);
+			externalReferenceCode, getUserId(), groupId, cpDefinitionId,
+			cpTaxCategoryId, accountGroupFilterEnabled, channelFilterEnabled,
+			ddmStructureKey, defaultSku, deliveryMaxSubscriptionCycles,
+			deliverySubscriptionEnabled, deliverySubscriptionLength,
+			deliverySubscriptionType,
+			deliverySubscriptionTypeSettingsUnicodeProperties, depth,
+			descriptionMap, displayDateDay, displayDateHour, displayDateMinute,
+			displayDateMonth, displayDateYear, expirationDateDay,
+			expirationDateHour, expirationDateMinute, expirationDateMonth,
+			expirationDateYear, freeShipping, height, ignoreSKUCombinations,
+			maxSubscriptionCycles, metaDescriptionMap, metaKeywordsMap,
+			metaTitleMap, nameMap, neverExpire, productTypeName, published,
+			shipSeparately, shippable, shippingExtraPrice, shortDescriptionMap,
+			subscriptionEnabled, subscriptionLength, subscriptionType,
+			subscriptionTypeSettingsUnicodeProperties, taxExempt,
+			telcoOrElectronics, urlTitleMap, weight, width, status,
+			serviceContext);
 	}
 
 	@Override
@@ -280,7 +198,7 @@ public class CPDefinitionServiceImpl extends CPDefinitionServiceBaseImpl {
 	public CPDefinition fetchCPDefinition(long cpDefinitionId)
 		throws PortalException {
 
-		CPDefinition cpDefinition = cpDefinitionLocalService.fetchCPDefinition(
+		CPDefinition cpDefinition = cpDefinitionPersistence.fetchByPrimaryKey(
 			cpDefinitionId);
 
 		if (cpDefinition != null) {
@@ -293,13 +211,13 @@ public class CPDefinitionServiceImpl extends CPDefinitionServiceBaseImpl {
 
 	@Override
 	public CPDefinition fetchCPDefinitionByCProductExternalReferenceCode(
-			String externalReferenceCode, long companyId)
+			String externalReferenceCode, long companyId, boolean excludeDraft)
 		throws PortalException {
 
 		CPDefinition cpDefinition =
 			cpDefinitionLocalService.
 				fetchCPDefinitionByCProductExternalReferenceCode(
-					externalReferenceCode, companyId);
+					externalReferenceCode, companyId, excludeDraft);
 
 		if (cpDefinition != null) {
 			_checkCommerceCatalogByCPDefinitionId(
@@ -310,11 +228,48 @@ public class CPDefinitionServiceImpl extends CPDefinitionServiceBaseImpl {
 	}
 
 	@Override
-	public CPDefinition fetchCPDefinitionByCProductId(long cProductId)
+	public CPDefinition fetchCPDefinitionByCProductExternalReferenceCode(
+			String externalReferenceCode, long companyId, int status)
 		throws PortalException {
 
 		CPDefinition cpDefinition =
-			cpDefinitionLocalService.fetchCPDefinitionByCProductId(cProductId);
+			cpDefinitionLocalService.
+				fetchCPDefinitionByCProductExternalReferenceCode(
+					externalReferenceCode, companyId, status);
+
+		if (cpDefinition != null) {
+			_checkCommerceCatalogByCPDefinitionId(
+				cpDefinition.getCPDefinitionId(), ActionKeys.VIEW);
+		}
+
+		return cpDefinition;
+	}
+
+	@Override
+	public CPDefinition fetchCPDefinitionByCProductId(
+			long cProductId, boolean excludeDraft)
+		throws PortalException {
+
+		CPDefinition cpDefinition =
+			cpDefinitionLocalService.fetchCPDefinitionByCProductId(
+				cProductId, excludeDraft);
+
+		if (cpDefinition != null) {
+			_checkCommerceCatalogByCPDefinitionId(
+				cpDefinition.getCPDefinitionId(), ActionKeys.VIEW);
+		}
+
+		return cpDefinition;
+	}
+
+	@Override
+	public CPDefinition fetchCPDefinitionByCProductId(
+			long cProductId, int status)
+		throws PortalException {
+
+		CPDefinition cpDefinition =
+			cpDefinitionLocalService.fetchCPDefinitionByCProductId(
+				cProductId, status);
 
 		if (cpDefinition != null) {
 			_checkCommerceCatalogByCPDefinitionId(
@@ -330,7 +285,7 @@ public class CPDefinitionServiceImpl extends CPDefinitionServiceBaseImpl {
 
 		_checkCommerceCatalogByCPDefinitionId(cpDefinitionId, ActionKeys.VIEW);
 
-		return cpDefinitionLocalService.getCPDefinition(cpDefinitionId);
+		return cpDefinitionPersistence.findByPrimaryKey(cpDefinitionId);
 	}
 
 	@Override
@@ -358,12 +313,11 @@ public class CPDefinitionServiceImpl extends CPDefinitionServiceBaseImpl {
 	public CPDefinition getCProductCPDefinition(long cProductId, int version)
 		throws PortalException {
 
-		CProduct cProduct = _cProductLocalService.getCProduct(cProductId);
+		CProduct cProduct = _cProductPersistence.findByPrimaryKey(cProductId);
 
 		_checkCommerceCatalog(cProduct.getGroupId(), ActionKeys.VIEW);
 
-		return cpDefinitionLocalService.getCProductCPDefinition(
-			cProductId, version);
+		return cpDefinitionPersistence.findByC_V(cProductId, version);
 	}
 
 	@Override
@@ -371,11 +325,11 @@ public class CPDefinitionServiceImpl extends CPDefinitionServiceBaseImpl {
 			long cProductId, int status, int start, int end)
 		throws PortalException {
 
-		CProduct cProduct = _cProductLocalService.getCProduct(cProductId);
+		CProduct cProduct = _cProductPersistence.findByPrimaryKey(cProductId);
 
 		_checkCommerceCatalog(cProduct.getGroupId(), ActionKeys.VIEW);
 
-		return cpDefinitionLocalService.getCProductCPDefinitions(
+		return cpDefinitionPersistence.findByC_S(
 			cProduct.getCProductId(), status, start, end);
 	}
 
@@ -388,6 +342,31 @@ public class CPDefinitionServiceImpl extends CPDefinitionServiceBaseImpl {
 
 		return cpDefinitionLocalService.getDefaultImageCPAttachmentFileEntry(
 			cpDefinitionId);
+	}
+
+	@Override
+	public CPDefinition getOrAddEmptyCPDefinition(
+			String externalReferenceCode, long groupId,
+			Map<Locale, String> nameMap, String productTypeName)
+		throws PortalException {
+
+		PermissionChecker permissionChecker = getPermissionChecker();
+
+		CPDefinition cpDefinition =
+			cpDefinitionService.
+				fetchCPDefinitionByCProductExternalReferenceCode(
+					externalReferenceCode, permissionChecker.getCompanyId(),
+					false);
+
+		if (cpDefinition != null) {
+			return cpDefinition;
+		}
+
+		_checkCommerceCatalog(groupId, ActionKeys.UPDATE);
+
+		return cpDefinitionLocalService.getOrAddEmptyCPDefinition(
+			externalReferenceCode, permissionChecker.getCompanyId(),
+			permissionChecker.getUserId(), groupId, nameMap, productTypeName);
 	}
 
 	@Override
@@ -406,6 +385,20 @@ public class CPDefinitionServiceImpl extends CPDefinitionServiceBaseImpl {
 		_checkCommerceCatalogByCPDefinitionId(cpDefinitionId, ActionKeys.VIEW);
 
 		return cpDefinitionLocalService.getUrlTitleMapAsXML(cpDefinitionId);
+	}
+
+	@Override
+	public boolean isVersionable(CPDefinition cpDefinition)
+		throws PortalException {
+
+		if (cpDefinition == null) {
+			return false;
+		}
+
+		_checkCommerceCatalogByCPDefinitionId(
+			cpDefinition.getCPDefinitionId(), ActionKeys.VIEW);
+
+		return cpDefinitionLocalService.isVersionable(cpDefinition);
 	}
 
 	@Override
@@ -460,31 +453,39 @@ public class CPDefinitionServiceImpl extends CPDefinitionServiceBaseImpl {
 
 	@Override
 	public CPDefinition updateCPDefinition(
-			long cpDefinitionId, Map<Locale, String> nameMap,
-			Map<Locale, String> shortDescriptionMap,
-			Map<Locale, String> descriptionMap, Map<Locale, String> urlTitleMap,
-			Map<Locale, String> metaTitleMap,
+			long cpDefinitionId, long cpTaxCategoryId,
+			boolean accountGroupFilterEnabled, boolean channelFilterEnabled,
+			String ddmStructureKey, double depth,
+			Map<Locale, String> descriptionMap, int displayDateDay,
+			int displayDateHour, int displayDateMinute, int displayDateMonth,
+			int displayDateYear, int expirationDateDay, int expirationDateHour,
+			int expirationDateMinute, int expirationDateMonth,
+			int expirationDateYear, boolean freeShipping, double height,
+			boolean ignoreSKUCombinations,
 			Map<Locale, String> metaDescriptionMap,
-			Map<Locale, String> metaKeywordsMap, boolean ignoreSKUCombinations,
-			String ddmStructureKey, boolean published, int displayDateMonth,
-			int displayDateDay, int displayDateYear, int displayDateHour,
-			int displayDateMinute, int expirationDateMonth,
-			int expirationDateDay, int expirationDateYear,
-			int expirationDateHour, int expirationDateMinute,
-			boolean neverExpire, ServiceContext serviceContext)
+			Map<Locale, String> metaKeywordsMap,
+			Map<Locale, String> metaTitleMap, Map<Locale, String> nameMap,
+			boolean neverExpire, boolean published, boolean shipSeparately,
+			boolean shippable, double shippingExtraPrice,
+			Map<Locale, String> shortDescriptionMap, boolean taxExempt,
+			boolean telcoOrElectronics, Map<Locale, String> urlTitleMap,
+			double weight, double width, ServiceContext serviceContext)
 		throws PortalException {
 
 		_checkCommerceCatalogByCPDefinitionId(
 			cpDefinitionId, ActionKeys.UPDATE);
 
 		return cpDefinitionLocalService.updateCPDefinition(
-			cpDefinitionId, nameMap, shortDescriptionMap, descriptionMap,
-			urlTitleMap, metaTitleMap, metaDescriptionMap, metaKeywordsMap,
-			ignoreSKUCombinations, ddmStructureKey, published, displayDateMonth,
-			displayDateDay, displayDateYear, displayDateHour, displayDateMinute,
-			expirationDateMonth, expirationDateDay, expirationDateYear,
-			expirationDateHour, expirationDateMinute, neverExpire,
-			serviceContext);
+			cpDefinitionId, cpTaxCategoryId, accountGroupFilterEnabled,
+			channelFilterEnabled, ddmStructureKey, depth, descriptionMap,
+			displayDateDay, displayDateHour, displayDateMinute,
+			displayDateMonth, displayDateYear, expirationDateDay,
+			expirationDateHour, expirationDateMinute, expirationDateMonth,
+			expirationDateYear, freeShipping, height, ignoreSKUCombinations,
+			metaDescriptionMap, metaKeywordsMap, metaTitleMap, nameMap,
+			neverExpire, published, shipSeparately, shippable,
+			shippingExtraPrice, shortDescriptionMap, taxExempt,
+			telcoOrElectronics, urlTitleMap, weight, width, serviceContext);
 	}
 
 	@Override
@@ -525,14 +526,14 @@ public class CPDefinitionServiceImpl extends CPDefinitionServiceBaseImpl {
 
 	@Override
 	public CPDefinition updateExternalReferenceCode(
-			String externalReferenceCode, long cpDefinitionId)
+			long cpDefinitionId, String externalReferenceCode)
 		throws PortalException {
 
 		_checkCommerceCatalogByCPDefinitionId(
 			cpDefinitionId, ActionKeys.UPDATE);
 
 		return cpDefinitionLocalService.updateExternalReferenceCode(
-			externalReferenceCode, cpDefinitionId);
+			cpDefinitionId, externalReferenceCode);
 	}
 
 	@Override
@@ -619,7 +620,7 @@ public class CPDefinitionServiceImpl extends CPDefinitionServiceBaseImpl {
 			long cpDefinitionId, String actionId)
 		throws PortalException {
 
-		CPDefinition cpDefinition = cpDefinitionLocalService.fetchCPDefinition(
+		CPDefinition cpDefinition = cpDefinitionPersistence.fetchByPrimaryKey(
 			cpDefinitionId);
 
 		if (cpDefinition == null) {
@@ -635,6 +636,9 @@ public class CPDefinitionServiceImpl extends CPDefinitionServiceBaseImpl {
 	}
 
 	@Reference
+	private CProductPersistence _cProductPersistence;
+
+	@Reference
 	private CommerceCatalogLocalService _commerceCatalogLocalService;
 
 	@Reference(
@@ -645,11 +649,5 @@ public class CPDefinitionServiceImpl extends CPDefinitionServiceBaseImpl {
 
 	@Reference
 	private CommerceCatalogService _commerceCatalogService;
-
-	@Reference
-	private CPDisplayLayoutLocalService _cpDisplayLayoutLocalService;
-
-	@Reference
-	private CProductLocalService _cProductLocalService;
 
 }

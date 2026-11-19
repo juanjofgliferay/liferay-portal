@@ -17,20 +17,21 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author José Abelenda
@@ -50,62 +51,90 @@ public class CompareRuns implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(CompareRuns.class, json);
 	}
 
-	@Schema(description = "A list of status of runs.")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "A list of status of runs."
+	)
 	public String[] getDueStatuses() {
+		if (_dueStatusesSupplier != null) {
+			dueStatuses = _dueStatusesSupplier.get();
+
+			_dueStatusesSupplier = null;
+		}
+
 		return dueStatuses;
 	}
 
 	public void setDueStatuses(String[] dueStatuses) {
 		this.dueStatuses = dueStatuses;
+
+		_dueStatusesSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setDueStatuses(
 		UnsafeSupplier<String[], Exception> dueStatusesUnsafeSupplier) {
 
-		try {
-			dueStatuses = dueStatusesUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_dueStatusesSupplier = () -> {
+			try {
+				return dueStatusesUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "A list of status of runs.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String[] dueStatuses;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String[]> _dueStatusesSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public Object getValues() {
+		if (_valuesSupplier != null) {
+			values = _valuesSupplier.get();
+
+			_valuesSupplier = null;
+		}
+
 		return values;
 	}
 
 	public void setValues(Object values) {
 		this.values = values;
+
+		_valuesSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setValues(
 		UnsafeSupplier<Object, Exception> valuesUnsafeSupplier) {
 
-		try {
-			values = valuesUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_valuesSupplier = () -> {
+			try {
+				return valuesUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Object values;
+
+	@JsonIgnore
+	private Supplier<Object> _valuesSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -134,6 +163,8 @@ public class CompareRuns implements Serializable {
 
 		sb.append("{");
 
+		String[] dueStatuses = getDueStatuses();
+
 		if (dueStatuses != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -158,6 +189,8 @@ public class CompareRuns implements Serializable {
 			sb.append("]");
 		}
 
+		Object values = getValues();
+
 		if (values != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -165,17 +198,7 @@ public class CompareRuns implements Serializable {
 
 			sb.append("\"values\": ");
 
-			if (values instanceof Map) {
-				sb.append(JSONFactoryUtil.createJSONObject((Map<?, ?>)values));
-			}
-			else if (values instanceof String) {
-				sb.append("\"");
-				sb.append(_escape((String)values));
-				sb.append("\"");
-			}
-			else {
-				sb.append(values);
-			}
+			sb.append(_toJSON(values));
 		}
 
 		sb.append("}");
@@ -183,8 +206,8 @@ public class CompareRuns implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.osb.testray.rest.dto.v1_0.CompareRuns",
 		name = "x-class-name"
 	)
@@ -230,7 +253,10 @@ public class CompareRuns implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -268,6 +294,27 @@ public class CompareRuns implements Serializable {
 		return sb.toString();
 	}
 
+	private static String _toJSON(Object value) {
+		if (value instanceof Collection) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONArray((Collection<?>)value));
+		}
+		else if (value instanceof Map) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONObject((Map<?, ?>)value));
+		}
+		else if (value instanceof Object[]) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONArray(
+					Arrays.asList((Object[])value)));
+		}
+		else if (value instanceof String) {
+			return StringBundler.concat("\"", _escape(value), "\"");
+		}
+
+		return String.valueOf(value);
+	}
+
 	private static final String[][] _JSON_ESCAPE_STRINGS = {
 		{"\\", "\"", "\b", "\f", "\n", "\r", "\t"},
 		{"\\\\", "\\\"", "\\b", "\\f", "\\n", "\\r", "\\t"}
@@ -276,3 +323,4 @@ public class CompareRuns implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:1804447910

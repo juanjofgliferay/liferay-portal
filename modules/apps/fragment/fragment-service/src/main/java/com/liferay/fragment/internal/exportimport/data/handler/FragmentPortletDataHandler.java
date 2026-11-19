@@ -5,6 +5,7 @@
 
 package com.liferay.fragment.internal.exportimport.data.handler;
 
+import com.liferay.exportimport.constants.ExportImportConstants;
 import com.liferay.exportimport.kernel.lar.BasePortletDataHandler;
 import com.liferay.exportimport.kernel.lar.ExportImportDateUtil;
 import com.liferay.exportimport.kernel.lar.PortletDataContext;
@@ -19,13 +20,16 @@ import com.liferay.fragment.constants.FragmentConstants;
 import com.liferay.fragment.constants.FragmentPortletKeys;
 import com.liferay.fragment.model.FragmentCollection;
 import com.liferay.fragment.model.FragmentEntry;
+import com.liferay.layout.util.LayoutServiceContextHelper;
 import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
 import com.liferay.portal.kernel.module.framework.ModuleServiceLifecycle;
+import com.liferay.portal.kernel.service.CompanyLocalService;
+import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.xml.Element;
 
-import java.util.List;
+import jakarta.portlet.PortletPreferences;
 
-import javax.portlet.PortletPreferences;
+import java.util.List;
 
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -35,7 +39,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Pavel Savinov
  */
 @Component(
-	property = "javax.portlet.name=" + FragmentPortletKeys.FRAGMENT,
+	property = "jakarta.portlet.name=" + FragmentPortletKeys.FRAGMENT,
 	service = PortletDataHandler.class
 )
 public class FragmentPortletDataHandler extends BasePortletDataHandler {
@@ -47,6 +51,11 @@ public class FragmentPortletDataHandler extends BasePortletDataHandler {
 	@Override
 	public String getSchemaVersion() {
 		return SCHEMA_VERSION;
+	}
+
+	@Override
+	public String getSectionKey() {
+		return ExportImportConstants.SECTION_KEY_DESIGN;
 	}
 
 	@Override
@@ -70,12 +79,13 @@ public class FragmentPortletDataHandler extends BasePortletDataHandler {
 		setDeletionSystemEventStagedModelTypes(
 			new StagedModelType(FragmentCollection.class),
 			new StagedModelType(FragmentEntry.class));
-		setExportControls(
+		setExportPortletDataHandlerControls(
 			new PortletDataHandlerBoolean(
 				NAMESPACE, "entries", true, false, null,
 				FragmentEntry.class.getName()));
 		setPublishToLiveByDefault(true);
-		setStagingControls(getExportControls());
+		setStagingPortletDataHandlerControls(
+			getExportPortletDataHandlerControls());
 	}
 
 	@Override
@@ -161,9 +171,19 @@ public class FragmentPortletDataHandler extends BasePortletDataHandler {
 
 		List<Element> fragmentEntryElements = fragmentEntriesElement.elements();
 
-		for (Element fragmentEntryElement : fragmentEntryElements) {
-			StagedModelDataHandlerUtil.importStagedModel(
-				portletDataContext, fragmentEntryElement);
+		if (ListUtil.isEmpty(fragmentEntryElements)) {
+			return null;
+		}
+
+		try (AutoCloseable autoCloseable =
+				_layoutServiceContextHelper.getServiceContextAutoCloseable(
+					_companyLocalService.getCompany(
+						portletDataContext.getCompanyId()))) {
+
+			for (Element fragmentEntryElement : fragmentEntryElements) {
+				StagedModelDataHandlerUtil.importStagedModel(
+					portletDataContext, fragmentEntryElement);
+			}
 		}
 
 		return null;
@@ -201,6 +221,9 @@ public class FragmentPortletDataHandler extends BasePortletDataHandler {
 		fragmentEntryExportActionableDynamicQuery.performCount();
 	}
 
+	@Reference
+	private CompanyLocalService _companyLocalService;
+
 	@Reference(
 		target = "(model.class.name=com.liferay.fragment.model.FragmentCollection)",
 		unbind = "-"
@@ -214,6 +237,9 @@ public class FragmentPortletDataHandler extends BasePortletDataHandler {
 	)
 	private StagedModelRepository<FragmentEntry>
 		_fragmentEntryStagedModelRepository;
+
+	@Reference
+	private LayoutServiceContextHelper _layoutServiceContextHelper;
 
 	@Reference(target = ModuleServiceLifecycle.PORTAL_INITIALIZED)
 	private ModuleServiceLifecycle _moduleServiceLifecycle;

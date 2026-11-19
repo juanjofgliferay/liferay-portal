@@ -111,11 +111,7 @@ public class UserPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		User newUser = _persistence.create(pk);
-
-		newUser.setMvccVersion(RandomTestUtil.nextLong());
+		User newUser = addUser();
 
 		newUser.setCtCollectionId(RandomTestUtil.nextLong());
 
@@ -201,7 +197,9 @@ public class UserPersistenceTest {
 
 		newUser.setStatus(RandomTestUtil.nextInt());
 
-		_users.add(_persistence.update(newUser));
+		newUser = _persistence.update(newUser);
+
+		_users.add(newUser);
 
 		User existingUser = _persistence.findByPrimaryKey(
 			newUser.getPrimaryKey());
@@ -348,15 +346,6 @@ public class UserPersistenceTest {
 	}
 
 	@Test
-	public void testCountByEmailAddress() throws Exception {
-		_persistence.countByEmailAddress("");
-
-		_persistence.countByEmailAddress("null");
-
-		_persistence.countByEmailAddress((String)null);
-	}
-
-	@Test
 	public void testCountByPortraitId() throws Exception {
 		_persistence.countByPortraitId(RandomTestUtil.nextLong());
 
@@ -377,14 +366,6 @@ public class UserPersistenceTest {
 			RandomTestUtil.nextLong(), RandomTestUtil.nextLong());
 
 		_persistence.countByC_U(0L, 0L);
-	}
-
-	@Test
-	public void testCountByC_CD() throws Exception {
-		_persistence.countByC_CD(
-			RandomTestUtil.nextLong(), RandomTestUtil.nextDate());
-
-		_persistence.countByC_CD(0L, RandomTestUtil.nextDate());
 	}
 
 	@Test
@@ -422,24 +403,6 @@ public class UserPersistenceTest {
 	}
 
 	@Test
-	public void testCountByC_GUID() throws Exception {
-		_persistence.countByC_GUID(RandomTestUtil.nextLong(), "");
-
-		_persistence.countByC_GUID(0L, "null");
-
-		_persistence.countByC_GUID(0L, (String)null);
-	}
-
-	@Test
-	public void testCountByC_O() throws Exception {
-		_persistence.countByC_O(RandomTestUtil.nextLong(), "");
-
-		_persistence.countByC_O(0L, "null");
-
-		_persistence.countByC_O(0L, (String)null);
-	}
-
-	@Test
 	public void testCountByC_T() throws Exception {
 		_persistence.countByC_T(
 			RandomTestUtil.nextLong(), RandomTestUtil.nextInt());
@@ -453,16 +416,6 @@ public class UserPersistenceTest {
 			RandomTestUtil.nextLong(), RandomTestUtil.nextInt());
 
 		_persistence.countByC_S(0L, 0);
-	}
-
-	@Test
-	public void testCountByC_CD_MD() throws Exception {
-		_persistence.countByC_CD_MD(
-			RandomTestUtil.nextLong(), RandomTestUtil.nextDate(),
-			RandomTestUtil.nextDate());
-
-		_persistence.countByC_CD_MD(
-			0L, RandomTestUtil.nextDate(), RandomTestUtil.nextDate());
 	}
 
 	@Test
@@ -780,12 +733,6 @@ public class UserPersistenceTest {
 				"contactId"));
 
 		Assert.assertEquals(
-			Long.valueOf(user.getPortraitId()),
-			ReflectionTestUtil.<Long>invoke(
-				user, "getColumnOriginalValue", new Class<?>[] {String.class},
-				"portraitId"));
-
-		Assert.assertEquals(
 			Long.valueOf(user.getCompanyId()),
 			ReflectionTestUtil.<Long>invoke(
 				user, "getColumnOriginalValue", new Class<?>[] {String.class},
@@ -819,39 +766,6 @@ public class UserPersistenceTest {
 				"emailAddress"));
 
 		Assert.assertEquals(
-			Long.valueOf(user.getCompanyId()),
-			ReflectionTestUtil.<Long>invoke(
-				user, "getColumnOriginalValue", new Class<?>[] {String.class},
-				"companyId"));
-		Assert.assertEquals(
-			Long.valueOf(user.getFacebookId()),
-			ReflectionTestUtil.<Long>invoke(
-				user, "getColumnOriginalValue", new Class<?>[] {String.class},
-				"facebookId"));
-
-		Assert.assertEquals(
-			Long.valueOf(user.getCompanyId()),
-			ReflectionTestUtil.<Long>invoke(
-				user, "getColumnOriginalValue", new Class<?>[] {String.class},
-				"companyId"));
-		Assert.assertEquals(
-			user.getGoogleUserId(),
-			ReflectionTestUtil.invoke(
-				user, "getColumnOriginalValue", new Class<?>[] {String.class},
-				"googleUserId"));
-
-		Assert.assertEquals(
-			Long.valueOf(user.getCompanyId()),
-			ReflectionTestUtil.<Long>invoke(
-				user, "getColumnOriginalValue", new Class<?>[] {String.class},
-				"companyId"));
-		Assert.assertEquals(
-			user.getOpenId(),
-			ReflectionTestUtil.invoke(
-				user, "getColumnOriginalValue", new Class<?>[] {String.class},
-				"openId"));
-
-		Assert.assertEquals(
 			user.getExternalReferenceCode(),
 			ReflectionTestUtil.invoke(
 				user, "getColumnOriginalValue", new Class<?>[] {String.class},
@@ -867,8 +781,6 @@ public class UserPersistenceTest {
 		long pk = RandomTestUtil.nextLong();
 
 		User user = _persistence.create(pk);
-
-		user.setMvccVersion(RandomTestUtil.nextLong());
 
 		user.setCtCollectionId(RandomTestUtil.nextLong());
 
@@ -964,3 +876,4 @@ public class UserPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1575383592

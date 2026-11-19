@@ -25,6 +25,7 @@ import com.liferay.portal.kernel.util.OrderByComparator;
 import java.io.Serializable;
 
 import java.util.List;
+import java.util.function.Supplier;
 
 import org.osgi.annotation.versioning.ProviderType;
 
@@ -226,6 +227,12 @@ public interface ClassNameLocalService
 	@Transactional(enabled = false)
 	public long getClassNameId(String value);
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public Supplier<long[]> getClassNameIdsSupplier(String[] classNames);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public Supplier<Long> getClassNameIdSupplier(String className);
+
 	/**
 	 * Returns a range of all the class names.
 	 *
@@ -285,3 +292,4 @@ public interface ClassNameLocalService
 	public ClassName updateClassName(ClassName className);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1292733893

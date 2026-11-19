@@ -1,0 +1,397 @@
+#!/usr/bin/env bash
+
+set -o errexit
+set -o nounset
+set -o pipefail
+
+source "$(dirname "${BASH_SOURCE[0]}")/_chart_version_common.sh"
+
+_BUMPED_BOOTSTRAPS=()
+_MODIFIED_BOOTSTRAPS=()
+
+_VERSIONS_JSON_FILE="${SCRIPTS_DIR}/versions.json"
+
+readonly _VERSIONS_JSON_FILE
+
+function main {
+	if [[ ${1:-} == --sync ]]
+	then
+		_sync_default_versions
+
+		return
+	fi
+
+	local aws_bootstrap_sources=(
+		"${ROOT_CLOUD_DIR}/scripts/_aws_common.sh"
+		"${ROOT_CLOUD_DIR}/scripts/_aws_platform_values.jq"
+		"${ROOT_CLOUD_DIR}/scripts/_common.sh"
+		"${ROOT_CLOUD_DIR}/scripts/_platform_values.jq"
+		"${ROOT_CLOUD_DIR}/scripts/config.json.defaults"
+		"${ROOT_CLOUD_DIR}/scripts/setup_aws.sh"
+		"${ROOT_CLOUD_DIR}/scripts/teardown_aws.sh"
+		"${ROOT_CLOUD_DIR}/terraform/aws/eks"
+		"${ROOT_CLOUD_DIR}/terraform/aws/platform"
+		"${ROOT_CLOUD_DIR}/terraform/modules/argocd"
+	)
+
+	_check_bootstrap "aws" "${aws_bootstrap_sources[@]}"
+
+	local azure_bootstrap_sources=(
+		"${ROOT_CLOUD_DIR}/scripts/_azure_common.sh"
+		"${ROOT_CLOUD_DIR}/scripts/_azure_platform_values.jq"
+		"${ROOT_CLOUD_DIR}/scripts/_common.sh"
+		"${ROOT_CLOUD_DIR}/scripts/_platform_values.jq"
+		"${ROOT_CLOUD_DIR}/scripts/config.json.defaults"
+		"${ROOT_CLOUD_DIR}/scripts/setup_azure.sh"
+		"${ROOT_CLOUD_DIR}/scripts/teardown_azure.sh"
+		"${ROOT_CLOUD_DIR}/terraform/azure/aks"
+		"${ROOT_CLOUD_DIR}/terraform/azure/platform"
+		"${ROOT_CLOUD_DIR}/terraform/modules/argocd"
+	)
+
+	_check_bootstrap "azure" "${azure_bootstrap_sources[@]}"
+
+	local gcp_bootstrap_sources=(
+		"${ROOT_CLOUD_DIR}/scripts/_common.sh"
+		"${ROOT_CLOUD_DIR}/scripts/_gcp_common.sh"
+		"${ROOT_CLOUD_DIR}/scripts/_gcp_platform_values.jq"
+		"${ROOT_CLOUD_DIR}/scripts/_platform_values.jq"
+		"${ROOT_CLOUD_DIR}/scripts/config.json.defaults"
+		"${ROOT_CLOUD_DIR}/scripts/setup_gcp.sh"
+		"${ROOT_CLOUD_DIR}/scripts/teardown_gcp.sh"
+		"${ROOT_CLOUD_DIR}/terraform/gcp/gke"
+		"${ROOT_CLOUD_DIR}/terraform/gcp/platform"
+		"${ROOT_CLOUD_DIR}/terraform/modules/argocd"
+	)
+
+	_check_bootstrap "gcp" "${gcp_bootstrap_sources[@]}"
+
+	_check_operator
+
+	while true
+	do
+		_update_default_versions
+
+		if has_modified_charts
+		then
+			bump_modified_charts
+
+			continue
+		fi
+
+		if ! _has_modified_bootstraps
+		then
+			return
+		fi
+
+		_bump_modified_bootstraps
+	done
+}
+
+function _bump_bootstrap_version {
+	local bootstrap_name=${1}
+
+	_BUMPED_BOOTSTRAPS+=("${bootstrap_name}")
+
+	local current_version
+
+	current_version=$(jq --raw-output '."liferay-'"${bootstrap_name}"'-bootstrap"' "${_VERSIONS_JSON_FILE}")
+
+	local new_version
+
+	new_version=$(echo "${current_version}" | awk -F "." -v OFS="." '{$NF += 1; print}')
+
+	local config_json_example_file="${ROOT_CLOUD_DIR}/scripts/config.json.example_${bootstrap_name}"
+
+	_write_json_file \
+		"${config_json_example_file}" \
+		--arg version "${new_version}" \
+		--tab \
+		'.options.version = $version'
+
+	local blame_line
+
+	blame_line=$(git_blame_line '"liferay-'"${bootstrap_name}"'-bootstrap": "[0-9]+\.[0-9]+\.[0-9]+"' "${_VERSIONS_JSON_FILE}")
+
+	sed \
+		--in-place \
+		--regexp-extended \
+		--expression "${blame_line}s/\"liferay-${bootstrap_name}-bootstrap\": \"[0-9]+\.[0-9]+\.[0-9]+\"/\"liferay-${bootstrap_name}-bootstrap\": \"${new_version}\"/" \
+		"${_VERSIONS_JSON_FILE}"
+}
+
+function _bump_modified_bootstraps {
+	count_pass
+
+	local bootstrap_names=("${_MODIFIED_BOOTSTRAPS[@]}")
+
+	_MODIFIED_BOOTSTRAPS=()
+
+	local bootstrap_name
+
+	for bootstrap_name in "${bootstrap_names[@]}"
+	do
+		echo "A source packaged in the liferay-${bootstrap_name}-bootstrap tarball was rewritten. Updating liferay-${bootstrap_name}-bootstrap version." >&2
+		echo "" >&2
+
+		_bump_bootstrap_version "${bootstrap_name}"
+	done
+}
+
+function _bump_operator_version {
+	local current_version
+
+	current_version=$(jq --raw-output '."liferay-dxp-operator"' "${_VERSIONS_JSON_FILE}")
+
+	local new_version
+
+	new_version=$(echo "${current_version}" | awk -F "." -v OFS="." '{$NF += 1; print}')
+
+	local blame_line
+
+	blame_line=$(git_blame_line '"liferay-dxp-operator": "[0-9]+\.[0-9]+\.[0-9]+"' "${_VERSIONS_JSON_FILE}")
+
+	sed \
+		--in-place \
+		--regexp-extended \
+		--expression "${blame_line}s/\"liferay-dxp-operator\": \"[0-9]+\.[0-9]+\.[0-9]+\"/\"liferay-dxp-operator\": \"${new_version}\"/" \
+		"${_VERSIONS_JSON_FILE}"
+
+	_update_operator_image_version "${new_version}"
+}
+
+function _check_bootstrap {
+	local bootstrap_name=${1}
+
+	shift
+
+	local blame_sha
+
+	blame_sha=$(git_blame_sha '"liferay-'"${bootstrap_name}"'-bootstrap": ".*"' "${_VERSIONS_JSON_FILE}")
+
+	if ! is_commit "${blame_sha}"
+	then
+		echo "The blame boundary commit for liferay-${bootstrap_name}-bootstrap cannot be resolved." >&2
+
+		return
+	fi
+
+	local bootstrap_source
+
+	for bootstrap_source in "${@}"
+	do
+		local commit_count
+
+		commit_count=$(git rev-list --count "${blame_sha}..HEAD" -- "${bootstrap_source}")
+
+		if [[ "${commit_count}" -gt 0 ]]
+		then
+			git rev-list --oneline "${blame_sha}..HEAD" -- "${bootstrap_source}"
+
+			echo "The version in ${_VERSIONS_JSON_FILE} is outdated. Updating liferay-${bootstrap_name}-bootstrap version." >&2
+			echo "" >&2
+
+			_bump_bootstrap_version "${bootstrap_name}"
+
+			return
+		fi
+	done
+}
+
+function _check_operator {
+	local blame_sha
+
+	blame_sha=$(git_blame_sha '"liferay-dxp-operator": ".*"' "${_VERSIONS_JSON_FILE}")
+
+	if ! is_commit "${blame_sha}"
+	then
+		echo "The blame boundary commit for liferay-dxp-operator cannot be resolved." >&2
+
+		return
+	fi
+
+	local commit_count
+
+	commit_count=$(git rev-list --count "${blame_sha}..HEAD" -- "${ROOT_CLOUD_DIR}/operator")
+
+	if [[ "${commit_count}" -gt 0 ]]
+	then
+		git rev-list --oneline "${blame_sha}..HEAD" -- "${ROOT_CLOUD_DIR}/operator"
+
+		echo "The version in ${_VERSIONS_JSON_FILE} is outdated. Updating liferay-dxp-operator version." >&2
+		echo "" >&2
+
+		_bump_operator_version
+	fi
+}
+
+function _has_modified_bootstraps {
+	if [[ "${#_MODIFIED_BOOTSTRAPS[@]}" -eq 0 ]]
+	then
+		return 1
+	fi
+
+	return 0
+}
+
+function _record_modified_bootstrap {
+	local bootstrap_name=${1}
+
+	if has_array_element "${bootstrap_name}" "${_BUMPED_BOOTSTRAPS[@]}" "${_MODIFIED_BOOTSTRAPS[@]}"
+	then
+		return
+	fi
+
+	_MODIFIED_BOOTSTRAPS+=("${bootstrap_name}")
+}
+
+function _sync_default_versions {
+	_update_default_versions
+
+	local operator_version
+
+	operator_version=$(jq --raw-output '."liferay-dxp-operator"' "${_VERSIONS_JSON_FILE}")
+
+	_update_operator_image_version "${operator_version}"
+
+	local default_version_files=(
+		"${ROOT_CLOUD_DIR}/scripts/config.json.defaults"
+	)
+
+	if ! git diff --exit-code -- "${default_version_files[@]}"
+	then
+		echo "" >&2
+		echo "The default versions above are out of sync with their Chart.yaml and versions.json versions. Run cloud/scripts/update_default_versions.sh --sync locally and commit the synchronized files." >&2
+
+		exit 1
+	fi
+}
+
+function _update_artifact {
+	local name=${1}
+	local type=${2}
+	local version=${3}
+
+	local config_json_defaults_file="${SCRIPTS_DIR}/config.json.defaults"
+
+	local previous_checksum
+
+	previous_checksum=$(get_file_checksum "${config_json_defaults_file}")
+
+	_write_json_file \
+		"${config_json_defaults_file}" \
+		--arg name "${name}" \
+		--arg type "${type}" \
+		--arg version "${version}" \
+		--tab \
+		'.artifacts[$type][$name].version = $version'
+
+	if [ "${previous_checksum}" != "$(get_file_checksum "${config_json_defaults_file}")" ]
+	then
+		_record_modified_bootstrap "aws"
+		_record_modified_bootstrap "azure"
+		_record_modified_bootstrap "gcp"
+	fi
+}
+
+function _update_default_chart_version {
+	local helm_chart_yaml=${1}
+
+	local helm_chart_name
+
+	helm_chart_name=$(basename "$(dirname "${helm_chart_yaml}")")
+
+	local chart_name
+
+	chart_name=$(yq '.name' "${helm_chart_yaml}")
+
+	local version
+
+	version=$(yq '.version' "${helm_chart_yaml}")
+
+	if [[ ${helm_chart_name} == aws ]] || [[ ${helm_chart_name} == aws-infrastructure-provider ]] || [[ ${helm_chart_name} == aws-marketplace ]] || [[ ${helm_chart_name} == azure ]] || [[ ${helm_chart_name} == azure-infrastructure-provider ]] || [[ ${helm_chart_name} == gcp ]] || [[ ${helm_chart_name} == gcp-infrastructure-provider ]] || [[ ${helm_chart_name} == infrastructure ]] || [[ ${helm_chart_name} == platform ]]
+	then
+		_update_artifact "${chart_name}" "charts" "${version}"
+	elif [[ ${helm_chart_name} == dxp-operator ]]
+	then
+		_update_artifact "${chart_name}" "charts" "${version}"
+
+		_update_platform_components_target_revision "liferay-dxp-operator" "${version}"
+	elif [[ ${helm_chart_name} == observability ]]
+	then
+		_update_artifact "${chart_name}" "charts" "${version}"
+
+		_update_platform_components_target_revision "observability" "${version}"
+	elif [[ ${helm_chart_name} == platform-components ]]
+	then
+		_update_artifact "${chart_name}" "charts" "${version}"
+
+		_update_platform_target_revision "${version}"
+	fi
+}
+
+function _update_default_versions {
+	local chart_yaml_file
+
+	while read -r chart_yaml_file
+	do
+		_update_default_chart_version "${chart_yaml_file}"
+	done < <(find "${ROOT_CLOUD_DIR}" -name "Chart.yaml" -type f)
+}
+
+function _update_operator_image_version {
+	local version=${1}
+
+	local operator_values_yaml="${ROOT_CLOUD_DIR}/helm/dxp-operator/values.yaml"
+
+	record_chart_file_update \
+		"${operator_values_yaml}" \
+		sed \
+			--in-place \
+			--regexp-extended \
+			--expression "/^image:/,/^[^[:space:]]/ s/^(    tag: ).*/\1${version}/" \
+			"${operator_values_yaml}"
+
+	_update_artifact "liferay-dxp-operator" "images" "${version}"
+}
+
+function _update_platform_components_target_revision {
+	local chart_repository_name=${1}
+	local version=${2}
+
+	local platform_components_values_yaml="${ROOT_CLOUD_DIR}/helm/platform-components/values.yaml"
+
+	record_chart_file_update \
+		"${platform_components_values_yaml}" \
+		sed \
+			--expression "\|repoURL: .*/${chart_repository_name}\$|,/targetRevision: / s/\(targetRevision: \).*/\1${version}/" \
+			--in-place \
+			"${platform_components_values_yaml}"
+}
+
+function _update_platform_target_revision {
+	local version=${1}
+
+	local platform_values_yaml="${ROOT_CLOUD_DIR}/helm/platform/values.yaml"
+
+	record_chart_file_update \
+		"${platform_values_yaml}" \
+		sed \
+			--expression "s/^\(    targetRevision: \).*/\1${version}/" \
+			--in-place \
+			"${platform_values_yaml}"
+}
+
+function _write_json_file {
+	local file=${1}
+
+	shift
+
+	local updated_json
+
+	updated_json=$(jq "${@}" "${file}")
+
+	printf '%s' "${updated_json}" > "${file}"
+}
+
+main "${@}"

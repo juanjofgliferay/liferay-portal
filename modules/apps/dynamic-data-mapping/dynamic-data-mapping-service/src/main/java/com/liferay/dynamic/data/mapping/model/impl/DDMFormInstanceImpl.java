@@ -16,7 +16,6 @@ import com.liferay.dynamic.data.mapping.service.DDMFormInstanceVersionLocalServi
 import com.liferay.dynamic.data.mapping.service.DDMStructureLocalServiceUtil;
 import com.liferay.dynamic.data.mapping.storage.DDMFormValues;
 import com.liferay.dynamic.data.mapping.storage.StorageType;
-import com.liferay.dynamic.data.mapping.util.DDMFormInstanceFactory;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.cache.CacheField;
 import com.liferay.portal.kernel.util.GetterUtil;
@@ -52,15 +51,15 @@ public class DDMFormInstanceImpl extends DDMFormInstanceBaseImpl {
 
 	@Override
 	public long getObjectDefinitionId() throws PortalException {
-		DDMFormInstanceSettings ddmFormInstanceSettings =
-			DDMFormInstanceFactory.create(
-				DDMFormInstanceSettings.class, getSettingsDDMFormValues());
+		if (_objectDefinitionId == null) {
+			_computeObjectDefinitionIdAndStorageType();
+		}
 
-		return GetterUtil.getLong(ddmFormInstanceSettings.objectDefinitionId());
+		return _objectDefinitionId;
 	}
 
 	@Override
-	public DDMFormValues getSettingsDDMFormValues() throws PortalException {
+	public DDMFormValues getSettingsDDMFormValues() {
 		if (_ddmFormValues == null) {
 			_ddmFormValues =
 				DDMFormInstanceLocalServiceUtil.
@@ -83,17 +82,11 @@ public class DDMFormInstanceImpl extends DDMFormInstanceBaseImpl {
 
 	@Override
 	public String getStorageType() throws PortalException {
-		DDMFormInstanceSettings ddmFormInstanceSettings =
-			DDMFormInstanceFactory.create(
-				DDMFormInstanceSettings.class, getSettingsDDMFormValues());
-
-		String storageType = ddmFormInstanceSettings.storageType();
-
-		if (Validator.isNotNull(storageType)) {
-			return storageType;
+		if (_storageType == null) {
+			_computeObjectDefinitionIdAndStorageType();
 		}
 
-		return StorageType.DEFAULT.toString();
+		return _storageType;
 	}
 
 	@Override
@@ -105,12 +98,54 @@ public class DDMFormInstanceImpl extends DDMFormInstanceBaseImpl {
 	public void setSettings(String settings) {
 		super.setSettings(settings);
 
+		_ddmFormValues = null;
 		_formInstanceSettings = null;
+		_objectDefinitionId = null;
+		_storageType = null;
 	}
 
-	@CacheField(methodName = "DDMFormValues", propagateToInterface = true)
-	private DDMFormValues _ddmFormValues;
+	@Override
+	public void setSettingsDDMFormValues(DDMFormValues ddmFormValues) {
+		_ddmFormValues = ddmFormValues;
+	}
 
+	@Override
+	public void setSettingsObjectDefinitionId(Long objectDefinitionId) {
+		_objectDefinitionId = objectDefinitionId;
+	}
+
+	@Override
+	public void setSettingsStorageType(String storageType) {
+		_storageType = storageType;
+	}
+
+	private void _computeObjectDefinitionIdAndStorageType()
+		throws PortalException {
+
+		DDMFormInstanceSettings ddmFormInstanceSettings = getSettingsModel();
+
+		String storageType = ddmFormInstanceSettings.storageType();
+
+		if (Validator.isNull(storageType)) {
+			storageType = StorageType.DEFAULT.toString();
+		}
+
+		_objectDefinitionId = GetterUtil.getLong(
+			ddmFormInstanceSettings.objectDefinitionId());
+		_storageType = storageType;
+
+		objectDefinitionIdUpdateEntityCacheBiConsumer.accept(
+			this, _objectDefinitionId);
+		storageTypeUpdateEntityCacheBiConsumer.accept(this, _storageType);
+	}
+
+	private DDMFormValues _ddmFormValues;
 	private DDMFormInstanceSettings _formInstanceSettings;
+
+	@CacheField(methodName = "SettingsObjectDefinitionId")
+	private Long _objectDefinitionId;
+
+	@CacheField(methodName = "SettingsStorageType")
+	private String _storageType;
 
 }

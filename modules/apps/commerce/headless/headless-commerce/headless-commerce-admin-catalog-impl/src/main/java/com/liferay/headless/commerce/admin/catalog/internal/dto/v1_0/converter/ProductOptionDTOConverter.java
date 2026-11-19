@@ -14,16 +14,14 @@ import com.liferay.commerce.product.service.CPOptionLocalService;
 import com.liferay.headless.commerce.admin.catalog.dto.v1_0.ProductOption;
 import com.liferay.headless.commerce.admin.catalog.dto.v1_0.ProductOptionValue;
 import com.liferay.headless.commerce.admin.catalog.internal.dto.v1_0.converter.constants.DTOConverterConstants;
-import com.liferay.headless.commerce.admin.catalog.internal.dto.v1_0.util.CustomFieldsUtil;
 import com.liferay.headless.commerce.core.util.LanguageUtils;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.vulcan.custom.field.CustomFieldsUtil;
 import com.liferay.portal.vulcan.dto.converter.DTOConverter;
 import com.liferay.portal.vulcan.dto.converter.DTOConverterContext;
 import com.liferay.portal.vulcan.dto.converter.DefaultDTOConverterContext;
-
-import java.util.ArrayList;
-import java.util.List;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -32,7 +30,10 @@ import org.osgi.service.component.annotations.Reference;
  * @author Alessio Antonio Rendina
  */
 @Component(
-	property = "dto.class.name=com.liferay.commerce.product.model.CPDefinitionOptionRel",
+	property = {
+		"default=true",
+		"dto.class.name=com.liferay.commerce.product.model.CPDefinitionOptionRel"
+	},
 	service = DTOConverter.class
 )
 public class ProductOptionDTOConverter
@@ -51,52 +52,62 @@ public class ProductOptionDTOConverter
 			_cpDefinitionOptionRelService.getCPDefinitionOptionRel(
 				(Long)dtoConverterContext.getId());
 
-		return new ProductOption() {
-			{
-				customFields = CustomFieldsUtil.toCustomFields(
-					dtoConverterContext.isAcceptAllLanguages(),
-					CPDefinitionOptionRel.class.getName(),
-					cpDefinitionOptionRel.getCPDefinitionOptionRelId(),
-					cpDefinitionOptionRel.getCompanyId(),
-					dtoConverterContext.getLocale());
-				description = LanguageUtils.getLanguageIdMap(
-					cpDefinitionOptionRel.getDescriptionMap());
-				facetable = cpDefinitionOptionRel.isFacetable();
-				fieldType = cpDefinitionOptionRel.getCommerceOptionTypeKey();
-				id = cpDefinitionOptionRel.getCPDefinitionOptionRelId();
-				key = cpDefinitionOptionRel.getKey();
-				name = LanguageUtils.getLanguageIdMap(
-					cpDefinitionOptionRel.getNameMap());
-				priceType = cpDefinitionOptionRel.getPriceType();
-				required = cpDefinitionOptionRel.isRequired();
-				skuContributor = cpDefinitionOptionRel.isSkuContributor();
-				typeSettings = cpDefinitionOptionRel.getTypeSettings();
+		CPOption cpOption = _cpOptionLocalService.fetchCPOption(
+			cpDefinitionOptionRel.getCPOptionId());
 
+		ProductOption productOption = new ProductOption() {
+			{
+				setCustomFields(
+					() -> CustomFieldsUtil.toCustomFields(
+						dtoConverterContext.isAcceptAllLanguages(),
+						CPDefinitionOptionRel.class.getName(),
+						cpDefinitionOptionRel.getCPDefinitionOptionRelId(),
+						cpDefinitionOptionRel.getCompanyId(),
+						dtoConverterContext.getLocale()));
+				setDescription(
+					() -> LanguageUtils.getLanguageIdMap(
+						cpDefinitionOptionRel.getDescriptionMap()));
+				setExternalReferenceCode(
+					cpDefinitionOptionRel::getExternalReferenceCode);
+				setFacetable(cpDefinitionOptionRel::isFacetable);
+				setFieldType(cpDefinitionOptionRel::getCommerceOptionTypeKey);
+				setId(cpDefinitionOptionRel::getCPDefinitionOptionRelId);
+				setKey(cpDefinitionOptionRel::getKey);
+				setName(
+					() -> LanguageUtils.getLanguageIdMap(
+						cpDefinitionOptionRel.getNameMap()));
+				setOptionExternalReferenceCode(
+					() -> {
+						if (cpOption == null) {
+							return null;
+						}
+
+						return cpOption.getExternalReferenceCode();
+					});
 				setOptionId(
 					() -> {
-						CPOption cpOption = _cpOptionLocalService.fetchCPOption(
-							cpDefinitionOptionRel.getCPOptionId());
-
 						if (cpOption == null) {
 							return null;
 						}
 
 						return cpOption.getCPOptionId();
 					});
-				setProductOptionValues(
-					() -> {
-						if (!GetterUtil.getBoolean(
-								dtoConverterContext.getAttribute(
-									"showProductOptionValues"))) {
-
-							return null;
-						}
-
-						return _toProductOptionValues(
-							cpDefinitionOptionRel, dtoConverterContext);
-					});
+				setPriceType(cpDefinitionOptionRel::getPriceType);
+				setRequired(cpDefinitionOptionRel::isRequired);
+				setSkuContributor(cpDefinitionOptionRel::isSkuContributor);
+				setTypeSettings(cpDefinitionOptionRel::getTypeSettings);
 			}
 		};
+
+		if (GetterUtil.getBoolean(
+				dtoConverterContext.getAttribute("showProductOptionValues"))) {
+
+			productOption.setProductOptionValues(
+				() -> _toProductOptionValues(
+					cpDefinitionOptionRel, dtoConverterContext));
+		}
+
+		return productOption;
 	}
 
 	private ProductOptionValue[] _toProductOptionValues(
@@ -104,26 +115,17 @@ public class ProductOptionDTOConverter
 			DTOConverterContext dtoConverterContext)
 		throws Exception {
 
-		List<CPDefinitionOptionValueRel> cpDefinitionOptionValueRels =
+		return TransformUtil.transformToArray(
 			_cpDefinitionOptionValueRelService.getCPDefinitionOptionValueRels(
 				cpDefinitionOptionRel.getCPDefinitionOptionRelId(),
-				QueryUtil.ALL_POS, QueryUtil.ALL_POS);
-
-		List<ProductOptionValue> productOptionValues = new ArrayList<>();
-
-		for (CPDefinitionOptionValueRel cpDefinitionOptionValueRel :
-				cpDefinitionOptionValueRels) {
-
-			productOptionValues.add(
-				_productOptionValueDTOConverter.toDTO(
-					new DefaultDTOConverterContext(
-						cpDefinitionOptionValueRel.
-							getCPDefinitionOptionValueRelId(),
-						dtoConverterContext.getLocale()),
-					cpDefinitionOptionValueRel));
-		}
-
-		return productOptionValues.toArray(new ProductOptionValue[0]);
+				QueryUtil.ALL_POS, QueryUtil.ALL_POS),
+			cpDefinitionOptionValueRel -> _productOptionValueDTOConverter.toDTO(
+				new DefaultDTOConverterContext(
+					cpDefinitionOptionValueRel.
+						getCPDefinitionOptionValueRelId(),
+					dtoConverterContext.getLocale()),
+				cpDefinitionOptionValueRel),
+			ProductOptionValue.class);
 	}
 
 	@Reference

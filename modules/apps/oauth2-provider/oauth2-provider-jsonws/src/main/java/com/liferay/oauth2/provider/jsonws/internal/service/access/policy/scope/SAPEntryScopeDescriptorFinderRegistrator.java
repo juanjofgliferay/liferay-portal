@@ -123,8 +123,8 @@ public class SAPEntryScopeDescriptorFinderRegistrator {
 
 		_serviceTracker = ServiceTrackerFactory.open(
 			bundleContext,
-			"(&(osgi.jaxrs.name=*)(sap.scope.finder=true)(objectClass=" +
-				ScopeFinder.class.getName() + "))",
+			"(&(objectClass=" + ScopeFinder.class.getName() +
+				")(osgi.jaxrs.name=*)(sap.scope.finder=true))",
 			new ServiceTrackerCustomizer<ScopeFinder, ScopeFinder>() {
 
 				@Override
@@ -221,10 +221,12 @@ public class SAPEntryScopeDescriptorFinderRegistrator {
 				_sapEntryLocalService.getCompanySAPEntries(
 					companyId, QueryUtil.ALL_POS, QueryUtil.ALL_POS)) {
 
-			if (_isOAuth2ExportedSAPEntry(sapEntry)) {
-				sapEntryScopes.add(
-					new SAPEntryScope(sapEntry, _parseScope(sapEntry)));
+			if (!_isOAuth2ExportedSAPEntry(sapEntry)) {
+				continue;
 			}
+
+			sapEntryScopes.add(
+				new SAPEntryScope(sapEntry, _parseScope(sapEntry)));
 		}
 
 		return sapEntryScopes;

@@ -10,27 +10,36 @@ import com.liferay.dynamic.data.mapping.service.DDMStructureService;
 import com.liferay.journal.constants.JournalArticleConstants;
 import com.liferay.journal.constants.JournalConstants;
 import com.liferay.journal.constants.JournalFolderConstants;
+import com.liferay.journal.internal.util.JournalArticleViewableStatusUtil;
 import com.liferay.journal.model.JournalArticle;
 import com.liferay.journal.model.JournalFolder;
 import com.liferay.journal.service.JournalFolderService;
 import com.liferay.journal.service.base.JournalArticleServiceBaseImpl;
+import com.liferay.journal.util.comparator.ArticleVersionComparator;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.dao.orm.QueryDefinition;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.WorkflowDefinitionLink;
 import com.liferay.portal.kernel.portlet.PortletRequestModel;
+import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
+import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermissionUtil;
 import com.liferay.portal.kernel.security.permission.resource.PortletResourcePermission;
-import com.liferay.portal.kernel.service.ClassNameLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
+import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
+import com.liferay.portal.kernel.workflow.WorkflowHandler;
+import com.liferay.portal.kernel.workflow.WorkflowHandlerRegistryUtil;
 
 import java.io.File;
 import java.io.Serializable;
@@ -68,81 +77,81 @@ public class JournalArticleServiceImpl extends JournalArticleServiceBaseImpl {
 	 * parameters (display date, expiration date, and review date) use the
 	 * current user's timezone.
 	 *
-	 * @param externalReferenceCode the external reference code of the web
-	 *                              content article
-	 * @param groupId               the primary key of the web content article's group
-	 * @param folderId              the primary key of the web content article folder
-	 * @param classNameId           the primary key of the DDMStructure class if the web
-	 *                              content article is related to a DDM structure, the primary key of
-	 *                              the class name associated with the article, or
-	 *                              JournalArticleConstants.CLASS_NAME_ID_DEFAULT in the journal-api
-	 *                              module otherwise
-	 * @param classPK               the primary key of the DDM structure, if the primary key
-	 *                              of the DDMStructure class is given as the
-	 *                              <code>classNameId</code> parameter, the primary key of the class
-	 *                              associated with the web content article, or <code>0</code>
-	 *                              otherwise
-	 * @param articleId             the primary key of the web content article
-	 * @param autoArticleId         whether to auto generate the web content article ID
-	 * @param titleMap              the web content article's locales and localized titles
-	 * @param descriptionMap        the web content article's locales and localized
-	 *                              descriptions
-	 * @param friendlyURLMap        the web content article's locales and localized
-	 *                              friendly URLs
-	 * @param content               the HTML content wrapped in XML. For more information,
-	 *                              see the content example in the {@link #updateArticle(long, long,
-	 *                              String, double, String, ServiceContext)} description.
-	 * @param ddmStructureId        the primary key of the web content article's DDM
-	 *                              structure, if the article is related to a DDM structure, or
-	 *                              <code>0</code> otherwise
-	 * @param ddmTemplateKey        the primary key of the web content article's DDM
-	 *                              template
-	 * @param layoutUuid            the unique string identifying the web content
-	 *                              article's display page
-	 * @param displayDateMonth      the month the web content article is set to
-	 *                              display
-	 * @param displayDateDay        the calendar day the web content article is set to
-	 *                              display
-	 * @param displayDateYear       the year the web content article is set to
-	 *                              display
-	 * @param displayDateHour       the hour the web content article is set to
-	 *                              display
-	 * @param displayDateMinute     the minute the web content article is set to
-	 *                              display
-	 * @param expirationDateMonth   the month the web content article is set to
-	 *                              expire
-	 * @param expirationDateDay     the calendar day the web content article is set
-	 *                              to expire
-	 * @param expirationDateYear    the year the web content article is set to
-	 *                              expire
-	 * @param expirationDateHour    the hour the web content article is set to
-	 *                              expire
-	 * @param expirationDateMinute  the minute the web content article is set to
-	 *                              expire
-	 * @param neverExpire           whether the web content article is not set to auto
-	 *                              expire
-	 * @param reviewDateMonth       the month the web content article is set for
-	 *                              review
-	 * @param reviewDateDay         the calendar day the web content article is set for
-	 *                              review
-	 * @param reviewDateYear        the year the web content article is set for review
-	 * @param reviewDateHour        the hour the web content article is set for review
-	 * @param reviewDateMinute      the minute the web content article is set for
-	 *                              review
-	 * @param neverReview           whether the web content article is not set for review
-	 * @param indexable             whether the web content article is searchable
-	 * @param smallImage            whether the web content article has a small image
-	 * @param smallImageSource      the web content article's small image source
-	 * @param smallImageURL         the web content article's small image URL
-	 * @param smallFile             the web content article's small image file
-	 * @param images                the web content's images
-	 * @param articleURL            the web content article's accessible URL
-	 * @param serviceContext        the service context to be applied. Can set the
-	 *                              UUID, creation date, modification date, expando bridge
-	 *                              attributes, guest permissions, group permissions, asset category
-	 *                              IDs, asset tag names, asset link entry IDs, asset priority, URL
-	 *                              title, and workflow actions for the web content article. Can also
-	 *                              set whether to add the default guest and group permissions.
+	 * @param  externalReferenceCode the external reference code of the web
+	 *         content article
+	 * @param  groupId the primary key of the web content article's group
+	 * @param  folderId the primary key of the web content article folder
+	 * @param  classNameId the primary key of the DDMStructure class if the web
+	 *         content article is related to a DDM structure, the primary key of
+	 *         the class name associated with the article, or
+	 *         JournalArticleConstants.CLASS_NAME_ID_DEFAULT in the journal-api
+	 *         module otherwise
+	 * @param  classPK the primary key of the DDM structure, if the primary key
+	 *         of the DDMStructure class is given as the
+	 *         <code>classNameId</code> parameter, the primary key of the class
+	 *         associated with the web content article, or <code>0</code>
+	 *         otherwise
+	 * @param  articleId the primary key of the web content article
+	 * @param  autoArticleId whether to auto generate the web content article ID
+	 * @param  titleMap the web content article's locales and localized titles
+	 * @param  descriptionMap the web content article's locales and localized
+	 *         descriptions
+	 * @param  friendlyURLMap the web content article's locales and localized
+	 *         friendly URLs
+	 * @param  content the HTML content wrapped in XML. For more information,
+	 *         see the content example in the {@link #updateArticle(long, long,
+	 *         String, double, String, ServiceContext)} description.
+	 * @param  ddmStructureId the primary key of the web content article's DDM
+	 *         structure, if the article is related to a DDM structure, or
+	 *         <code>0</code> otherwise
+	 * @param  ddmTemplateKey the primary key of the web content article's DDM
+	 *         template
+	 * @param  layoutUuid the unique string identifying the web content
+	 *         article's display page
+	 * @param  displayDateMonth the month the web content article is set to
+	 *         display
+	 * @param  displayDateDay the calendar day the web content article is set to
+	 *         display
+	 * @param  displayDateYear the year the web content article is set to
+	 *         display
+	 * @param  displayDateHour the hour the web content article is set to
+	 *         display
+	 * @param  displayDateMinute the minute the web content article is set to
+	 *         display
+	 * @param  expirationDateMonth the month the web content article is set to
+	 *         expire
+	 * @param  expirationDateDay the calendar day the web content article is set
+	 *         to expire
+	 * @param  expirationDateYear the year the web content article is set to
+	 *         expire
+	 * @param  expirationDateHour the hour the web content article is set to
+	 *         expire
+	 * @param  expirationDateMinute the minute the web content article is set to
+	 *         expire
+	 * @param  neverExpire whether the web content article is not set to auto
+	 *         expire
+	 * @param  reviewDateMonth the month the web content article is set for
+	 *         review
+	 * @param  reviewDateDay the calendar day the web content article is set for
+	 *         review
+	 * @param  reviewDateYear the year the web content article is set for review
+	 * @param  reviewDateHour the hour the web content article is set for review
+	 * @param  reviewDateMinute the minute the web content article is set for
+	 *         review
+	 * @param  neverReview whether the web content article is not set for review
+	 * @param  indexable whether the web content article is searchable
+	 * @param  smallImage whether the web content article has a small image
+	 * @param  smallImageSource the web content article's small image source
+	 * @param  smallImageURL the web content article's small image URL
+	 * @param  smallFile the web content article's small image file
+	 * @param  images the web content's images
+	 * @param  articleURL the web content article's accessible URL
+	 * @param  serviceContext the service context to be applied. Can set the
+	 *         UUID, creation date, modification date, expando bridge
+	 *         attributes, guest permissions, group permissions, asset category
+	 *         IDs, asset tag names, asset link entry IDs, asset priority, URL
+	 *         title, and workflow actions for the web content article. Can also
+	 *         set whether to add the default guest and group permissions.
 	 * @return the web content article
 	 * @throws PortalException if a portal exception occurred
 	 */
@@ -249,8 +258,10 @@ public class JournalArticleServiceImpl extends JournalArticleServiceBaseImpl {
 		DDMStructure ddmStructure = _ddmStructureService.getStructure(
 			ddmStructureId);
 
-		_ddmStructureModelResourcePermission.contains(
+		_ddmStructureModelResourcePermission.check(
 			getPermissionChecker(), ddmStructure, ActionKeys.UPDATE);
+
+		_checkClassNameIdAndClassPK(classNameId, classPK, ddmStructureId);
 
 		return journalArticleLocalService.addArticleDefaultValues(
 			getUserId(), groupId, classNameId, classPK, titleMap,
@@ -360,8 +371,15 @@ public class JournalArticleServiceImpl extends JournalArticleServiceBaseImpl {
 		DDMStructure ddmStructure = _ddmStructureService.getStructure(
 			ddmStructureId);
 
-		_ddmStructureModelResourcePermission.contains(
+		_ddmStructureModelResourcePermission.check(
 			getPermissionChecker(), ddmStructure, ActionKeys.UPDATE);
+
+		JournalArticle journalArticle = journalArticleLocalService.getArticle(
+			groupId, articleId);
+
+		_checkClassNameIdAndClassPK(
+			journalArticle.getClassNameId(), journalArticle.getClassPK(),
+			ddmStructureId);
 
 		journalArticleLocalService.deleteArticleDefaultValues(
 			groupId, articleId, ddmStructureId);
@@ -467,10 +485,9 @@ public class JournalArticleServiceImpl extends JournalArticleServiceBaseImpl {
 			long groupId, String externalReferenceCode)
 		throws PortalException {
 
-		JournalArticle article =
-			journalArticleLocalService.
-				fetchLatestArticleByExternalReferenceCode(
-					groupId, externalReferenceCode);
+		JournalArticle article = journalArticlePersistence.fetchByG_ERC_First(
+			groupId, externalReferenceCode,
+			ArticleVersionComparator.getInstance(false));
 
 		if (article != null) {
 			_journalArticleModelResourcePermission.check(
@@ -489,7 +506,7 @@ public class JournalArticleServiceImpl extends JournalArticleServiceBaseImpl {
 	 */
 	@Override
 	public JournalArticle getArticle(long id) throws PortalException {
-		JournalArticle article = journalArticleLocalService.getArticle(id);
+		JournalArticle article = journalArticlePersistence.findByPrimaryKey(id);
 
 		_journalArticleModelResourcePermission.check(
 			getPermissionChecker(), article, ActionKeys.VIEW);
@@ -694,12 +711,21 @@ public class JournalArticleServiceImpl extends JournalArticleServiceBaseImpl {
 		OrderByComparator<JournalArticle> orderByComparator) {
 
 		if (status == WorkflowConstants.STATUS_ANY) {
-			return journalArticlePersistence.filterFindByG_A(
+			return getArticlesByArticleId(
 				groupId, articleId, start, end, orderByComparator);
 		}
 
-		return journalArticlePersistence.filterFindByG_A_ST(
-			groupId, articleId, status, start, end, orderByComparator);
+		if (_getViewerUserId(groupId) == 0) {
+			return journalArticlePersistence.filterFindByG_A_ST(
+				groupId, articleId, status, start, end, orderByComparator);
+		}
+
+		return JournalArticleViewableStatusUtil.getViewableArticles(
+			(viewableStart, viewableEnd) ->
+				journalArticlePersistence.filterFindByG_A_ST(
+					groupId, articleId, status, viewableStart, viewableEnd,
+					orderByComparator),
+			this::_isViewable, start, end);
 	}
 
 	/**
@@ -732,8 +758,17 @@ public class JournalArticleServiceImpl extends JournalArticleServiceBaseImpl {
 		long groupId, String articleId, int start, int end,
 		OrderByComparator<JournalArticle> orderByComparator) {
 
-		return journalArticlePersistence.filterFindByG_A(
-			groupId, articleId, start, end, orderByComparator);
+		if (_getViewerUserId(groupId) == 0) {
+			return journalArticlePersistence.filterFindByG_A(
+				groupId, articleId, start, end, orderByComparator);
+		}
+
+		return JournalArticleViewableStatusUtil.getViewableArticles(
+			(viewableStart, viewableEnd) ->
+				journalArticlePersistence.filterFindByG_A(
+					groupId, articleId, viewableStart, viewableEnd,
+					orderByComparator),
+			this::_isViewable, start, end);
 	}
 
 	/**
@@ -748,7 +783,9 @@ public class JournalArticleServiceImpl extends JournalArticleServiceBaseImpl {
 	public List<JournalArticle> getArticlesByLayoutUuid(
 		long groupId, String layoutUuid) {
 
-		return journalArticlePersistence.filterFindByG_L(groupId, layoutUuid);
+		return JournalArticleViewableStatusUtil.getViewableArticles(
+			journalArticlePersistence.filterFindByG_L(groupId, layoutUuid),
+			_getViewerUserId(groupId));
 	}
 
 	/**
@@ -778,8 +815,11 @@ public class JournalArticleServiceImpl extends JournalArticleServiceBaseImpl {
 	public List<JournalArticle> getArticlesByLayoutUuid(
 		long groupId, String layoutUuid, int start, int end) {
 
-		return journalArticlePersistence.filterFindByG_L(
-			groupId, layoutUuid, start, end);
+		return JournalArticleViewableStatusUtil.getViewableArticles(
+			(viewableStart, viewableEnd) ->
+				journalArticlePersistence.filterFindByG_L(
+					groupId, layoutUuid, viewableStart, viewableEnd),
+			start, end, _getViewerUserId(groupId));
 	}
 
 	/**
@@ -793,7 +833,12 @@ public class JournalArticleServiceImpl extends JournalArticleServiceBaseImpl {
 	 */
 	@Override
 	public int getArticlesByLayoutUuidCount(long groupId, String layoutUuid) {
-		return journalArticlePersistence.filterCountByG_L(groupId, layoutUuid);
+		return JournalArticleViewableStatusUtil.getViewableArticlesCount(
+			() -> journalArticlePersistence.filterCountByG_L(
+				groupId, layoutUuid),
+			() -> journalArticlePersistence.filterFindByG_L(
+				groupId, layoutUuid),
+			_getViewerUserId(groupId));
 	}
 
 	/**
@@ -1077,7 +1122,14 @@ public class JournalArticleServiceImpl extends JournalArticleServiceBaseImpl {
 	 */
 	@Override
 	public int getArticlesCountByArticleId(long groupId, String articleId) {
-		return journalArticlePersistence.filterCountByG_A(groupId, articleId);
+		if (_getViewerUserId(groupId) == 0) {
+			return journalArticlePersistence.filterCountByG_A(
+				groupId, articleId);
+		}
+
+		return ListUtil.count(
+			journalArticlePersistence.filterFindByG_A(groupId, articleId),
+			this::_isViewable);
 	}
 
 	@Override
@@ -1085,12 +1137,18 @@ public class JournalArticleServiceImpl extends JournalArticleServiceBaseImpl {
 		long groupId, String articleId, int status) {
 
 		if (status == WorkflowConstants.STATUS_ANY) {
-			return journalArticlePersistence.filterCountByG_A(
-				groupId, articleId);
+			return getArticlesCountByArticleId(groupId, articleId);
 		}
 
-		return journalArticlePersistence.filterCountByG_A_ST(
-			groupId, articleId, status);
+		if (_getViewerUserId(groupId) == 0) {
+			return journalArticlePersistence.filterCountByG_A_ST(
+				groupId, articleId, status);
+		}
+
+		return ListUtil.count(
+			journalArticlePersistence.filterFindByG_A_ST(
+				groupId, articleId, status),
+			this::_isViewable);
 	}
 
 	/**
@@ -1204,8 +1262,19 @@ public class JournalArticleServiceImpl extends JournalArticleServiceBaseImpl {
 	 */
 	@Override
 	public int getFoldersAndArticlesCount(long groupId, List<Long> folderIds) {
-		return journalArticlePersistence.filterCountByG_F(
-			groupId, ArrayUtil.toArray(folderIds.toArray(new Long[0])));
+		if (ListUtil.isEmpty(folderIds)) {
+			return 0;
+		}
+
+		long[] folderIdsArray = ArrayUtil.toArray(
+			folderIds.toArray(new Long[0]));
+
+		return JournalArticleViewableStatusUtil.getViewableArticlesCount(
+			() -> journalArticlePersistence.filterCountByG_F(
+				groupId, folderIdsArray),
+			() -> journalArticlePersistence.filterFindByG_F(
+				groupId, folderIdsArray),
+			_getViewerUserId(groupId));
 	}
 
 	/**
@@ -1548,9 +1617,9 @@ public class JournalArticleServiceImpl extends JournalArticleServiceBaseImpl {
 			long groupId, String externalReferenceCode)
 		throws PortalException {
 
-		JournalArticle article =
-			journalArticleLocalService.getLatestArticleByExternalReferenceCode(
-				groupId, externalReferenceCode);
+		JournalArticle article = journalArticlePersistence.findByG_ERC_First(
+			groupId, externalReferenceCode,
+			ArticleVersionComparator.getInstance(false));
 
 		_journalArticleModelResourcePermission.check(
 			getPermissionChecker(), article, ActionKeys.VIEW);
@@ -1574,8 +1643,11 @@ public class JournalArticleServiceImpl extends JournalArticleServiceBaseImpl {
 
 	@Override
 	public int getLatestArticlesCount(long groupId, int status) {
+		QueryDefinition<JournalArticle> queryDefinition = new QueryDefinition<>(
+			status);
+
 		return journalArticleFinder.filterCountByG_ST(
-			groupId, status, new QueryDefinition<>(status));
+			groupId, status, queryDefinition);
 	}
 
 	/**
@@ -1586,9 +1658,13 @@ public class JournalArticleServiceImpl extends JournalArticleServiceBaseImpl {
 	 * @return The matching web content articles
 	 */
 	@Override
-	public List<JournalArticle> getLayoutArticles(long groupId) {
-		return journalArticlePersistence.filterFindByG_NotL(
-			groupId, new String[] {null, StringPool.BLANK});
+	public List<JournalArticle> getLayoutArticles(
+		long groupId, long classNameId) {
+
+		return JournalArticleViewableStatusUtil.getViewableArticles(
+			journalArticlePersistence.filterFindByG_C_NotL(
+				groupId, classNameId, new String[] {null, StringPool.BLANK}),
+			_getViewerUserId(groupId));
 	}
 
 	/**
@@ -1614,10 +1690,14 @@ public class JournalArticleServiceImpl extends JournalArticleServiceBaseImpl {
 	 */
 	@Override
 	public List<JournalArticle> getLayoutArticles(
-		long groupId, int start, int end) {
+		long groupId, long classNameId, int start, int end) {
 
-		return journalArticlePersistence.filterFindByG_NotL(
-			groupId, new String[] {null, StringPool.BLANK}, start, end);
+		return JournalArticleViewableStatusUtil.getViewableArticles(
+			(viewableStart, viewableEnd) ->
+				journalArticlePersistence.filterFindByG_C_NotL(
+					groupId, classNameId, new String[] {null, StringPool.BLANK},
+					viewableStart, viewableEnd),
+			start, end, _getViewerUserId(groupId));
 	}
 
 	/**
@@ -1628,9 +1708,13 @@ public class JournalArticleServiceImpl extends JournalArticleServiceBaseImpl {
 	 * @return the number of matching web content articles
 	 */
 	@Override
-	public int getLayoutArticlesCount(long groupId) {
-		return journalArticlePersistence.filterCountByG_NotL(
-			groupId, new String[] {null, StringPool.BLANK});
+	public int getLayoutArticlesCount(long groupId, long classNameId) {
+		return JournalArticleViewableStatusUtil.getViewableArticlesCount(
+			() -> journalArticlePersistence.filterCountByG_C_NotL(
+				groupId, classNameId, new String[] {null, StringPool.BLANK}),
+			() -> journalArticlePersistence.filterFindByG_C_NotL(
+				groupId, classNameId, new String[] {null, StringPool.BLANK}),
+			_getViewerUserId(groupId));
 	}
 
 	/**
@@ -1700,6 +1784,10 @@ public class JournalArticleServiceImpl extends JournalArticleServiceBaseImpl {
 		_journalArticleModelResourcePermission.check(
 			getPermissionChecker(), article, ActionKeys.UPDATE);
 
+		ModelResourcePermissionUtil.check(
+			_journalFolderModelResourcePermission, getPermissionChecker(),
+			article.getGroupId(), newFolderId, ActionKeys.ADD_ARTICLE);
+
 		return journalArticleLocalService.moveArticleFromTrash(
 			getUserId(), groupId, article, newFolderId, serviceContext);
 	}
@@ -1734,6 +1822,10 @@ public class JournalArticleServiceImpl extends JournalArticleServiceBaseImpl {
 
 		_journalArticleModelResourcePermission.check(
 			getPermissionChecker(), article, ActionKeys.UPDATE);
+
+		ModelResourcePermissionUtil.check(
+			_journalFolderModelResourcePermission, getPermissionChecker(),
+			article.getGroupId(), newFolderId, ActionKeys.ADD_ARTICLE);
 
 		return journalArticleLocalService.moveArticleFromTrash(
 			getUserId(), groupId, article, newFolderId, serviceContext);
@@ -1847,6 +1939,21 @@ public class JournalArticleServiceImpl extends JournalArticleServiceBaseImpl {
 	}
 
 	@Override
+	public JournalArticle revertArticle(
+			long groupId, String articleId, double version)
+		throws PortalException {
+
+		JournalArticle article = journalArticlePersistence.findByG_A_V(
+			groupId, articleId, version);
+
+		_journalArticleModelResourcePermission.check(
+			getPermissionChecker(), article, ActionKeys.UPDATE);
+
+		return journalArticleLocalService.revertArticle(
+			getUserId(), groupId, articleId, version);
+	}
+
+	@Override
 	public void subscribe(long groupId, long articleId) throws PortalException {
 		JournalArticle article = getLatestArticle(articleId);
 
@@ -1872,6 +1979,8 @@ public class JournalArticleServiceImpl extends JournalArticleServiceBaseImpl {
 
 		_portletResourcePermission.check(
 			getPermissionChecker(), groupId, ActionKeys.SUBSCRIBE);
+
+		_checkUserId(userId);
 
 		journalArticleLocalService.subscribeStructure(
 			groupId, userId, ddmStructureId);
@@ -1905,6 +2014,8 @@ public class JournalArticleServiceImpl extends JournalArticleServiceBaseImpl {
 
 		_portletResourcePermission.check(
 			getPermissionChecker(), groupId, ActionKeys.SUBSCRIBE);
+
+		_checkUserId(userId);
 
 		journalArticleLocalService.unsubscribeStructure(
 			groupId, userId, ddmStructureId);
@@ -1954,6 +2065,14 @@ public class JournalArticleServiceImpl extends JournalArticleServiceBaseImpl {
 		_journalArticleModelResourcePermission.check(
 			getPermissionChecker(), article, ActionKeys.UPDATE);
 
+		if (folderId != article.getFolderId()) {
+			ModelResourcePermissionUtil.check(
+				_journalFolderModelResourcePermission, getPermissionChecker(),
+				groupId, folderId, ActionKeys.ADD_ARTICLE);
+		}
+
+		_checkUserId(userId);
+
 		return journalArticleLocalService.updateArticle(
 			userId, groupId, folderId, articleId, version, titleMap,
 			descriptionMap, content, layoutUuid, serviceContext);
@@ -1964,77 +2083,77 @@ public class JournalArticleServiceImpl extends JournalArticleServiceBaseImpl {
 	 * scheduling parameters (display date, expiration date, and review date)
 	 * use the current user's timezone.
 	 *
-	 * @param groupId              the primary key of the web content article's group
-	 * @param folderId             the primary key of the web content article folder
-	 * @param articleId            the primary key of the web content article
-	 * @param version              the web content article's version
-	 * @param titleMap             the web content article's locales and localized titles
-	 * @param descriptionMap       the web content article's locales and localized
-	 *                             descriptions
-	 * @param friendlyURLMap       the web content article's locales and localized
-	 *                             friendly URLs
-	 * @param content              the HTML content wrapped in XML. For more information,
-	 *                             see the content example in the {@link #updateArticle(long, long,
-	 *                             String, double, String, ServiceContext)} description.
-	 * @param ddmTemplateKey       the primary key of the web content article's DDM
-	 *                             template
-	 * @param layoutUuid           the unique string identifying the web content
-	 *                             article's display page
-	 * @param displayDateMonth     the month the web content article is set to
-	 *                             display
-	 * @param displayDateDay       the calendar day the web content article is set to
-	 *                             display
-	 * @param displayDateYear      the year the web content article is set to
-	 *                             display
-	 * @param displayDateHour      the hour the web content article is set to
-	 *                             display
-	 * @param displayDateMinute    the minute the web content article is set to
-	 *                             display
-	 * @param expirationDateMonth  the month the web content article is set to
-	 *                             expire
-	 * @param expirationDateDay    the calendar day the web content article is set
-	 *                             to expire
-	 * @param expirationDateYear   the year the web content article is set to
-	 *                             expire
-	 * @param expirationDateHour   the hour the web content article is set to
-	 *                             expire
-	 * @param expirationDateMinute the minute the web content article is set to
-	 *                             expire
-	 * @param neverExpire          whether the web content article is not set to auto
-	 *                             expire
-	 * @param reviewDateMonth      the month the web content article is set for
-	 *                             review
-	 * @param reviewDateDay        the calendar day the web content article is set for
-	 *                             review
-	 * @param reviewDateYear       the year the web content article is set for review
-	 * @param reviewDateHour       the hour the web content article is set for review
-	 * @param reviewDateMinute     the minute the web content article is set for
-	 *                             review
-	 * @param neverReview          whether the web content article is not set for review
-	 * @param indexable            whether the web content is searchable
-	 * @param smallImage           whether to update web content article's a small image.
-	 *                             A file must be passed in as <code>smallImageFile</code> value,
-	 *                             otherwise the current small image is deleted.
-	 * @param smallImageSource     the web content article's small image source
-	 *                             (optionally <code>null</code>)
-	 * @param smallImageURL        the web content article's small image URL
-	 *                             (optionally <code>null</code>)
-	 * @param smallFile            the web content article's new small image file
-	 *                             (optionally <code>null</code>). Must pass in
-	 *                             <code>smallImage</code> value of <code>true</code> to replace the
-	 *                             article's small image file.
-	 * @param images               the web content's images (optionally <code>null</code>)
-	 * @param articleURL           the web content article's accessible URL (optionally
-	 *                             <code>null</code>)
-	 * @param serviceContext       the service context to be applied. Can set the
-	 *                             modification date, expando bridge attributes, asset category IDs,
-	 *                             asset tag names, asset link entry IDs, asset priority, workflow
-	 *                             actions, URL title, and can set whether to add the default
-	 *                             command update for the web content article. With respect to
-	 *                             social activities, by setting the service context's command to
-	 *                             {@link com.liferay.portal.kernel.util.Constants#UPDATE}, the
-	 *                             invocation is considered a web content update activity; otherwise
-	 *                             it is considered a web content add activity.
+	 * @param  groupId the primary key of the web content article's group
+	 * @param  folderId the primary key of the web content article folder
+	 * @param  articleId the primary key of the web content article
+	 * @param  version the web content article's version
+	 * @param  titleMap the web content article's locales and localized titles
+	 * @param  descriptionMap the web content article's locales and localized
+	 *         descriptions
+	 * @param  friendlyURLMap the web content article's locales and localized
+	 *         friendly URLs
+	 * @param  content the HTML content wrapped in XML. For more information,
+	 *         see the content example in the {@link #updateArticle(long, long,
+	 *         String, double, String, ServiceContext)} description.
+	 * @param  ddmTemplateKey the primary key of the web content article's DDM
+	 *         template
+	 * @param  layoutUuid the unique string identifying the web content
+	 *         article's display page
+	 * @param  displayDateMonth the month the web content article is set to
+	 *         display
+	 * @param  displayDateDay the calendar day the web content article is set to
+	 *         display
+	 * @param  displayDateYear the year the web content article is set to
+	 *         display
+	 * @param  displayDateHour the hour the web content article is set to
+	 *         display
+	 * @param  displayDateMinute the minute the web content article is set to
+	 *         display
+	 * @param  expirationDateMonth the month the web content article is set to
+	 *         expire
+	 * @param  expirationDateDay the calendar day the web content article is set
+	 *         to expire
+	 * @param  expirationDateYear the year the web content article is set to
+	 *         expire
+	 * @param  expirationDateHour the hour the web content article is set to
+	 *         expire
+	 * @param  expirationDateMinute the minute the web content article is set to
+	 *         expire
+	 * @param  neverExpire whether the web content article is not set to auto
+	 *         expire
+	 * @param  reviewDateMonth the month the web content article is set for
+	 *         review
+	 * @param  reviewDateDay the calendar day the web content article is set for
+	 *         review
+	 * @param  reviewDateYear the year the web content article is set for review
+	 * @param  reviewDateHour the hour the web content article is set for review
+	 * @param  reviewDateMinute the minute the web content article is set for
+	 *         review
+	 * @param  neverReview whether the web content article is not set for review
+	 * @param  indexable whether the web content is searchable
+	 * @param  smallImage whether to update web content article's a small image.
+	 *         A file must be passed in as <code>smallImageFile</code> value,
+	 *         otherwise the current small image is deleted.
+	 * @param  smallImageSource the web content article's small image source
+	 *         (optionally <code>null</code>)
+	 * @param  smallImageURL the web content article's small image URL
+	 *         (optionally <code>null</code>)
+	 * @param  smallFile the web content article's new small image file
+	 *         (optionally <code>null</code>). Must pass in
+	 *         <code>smallImage</code> value of <code>true</code> to replace the
+	 *         article's small image file.
+	 * @param  images the web content's images (optionally <code>null</code>)
+	 * @param  articleURL the web content article's accessible URL (optionally
+	 *         <code>null</code>)
+	 * @param  serviceContext the service context to be applied. Can set the
+	 *         modification date, expando bridge attributes, asset category IDs,
+	 *         asset tag names, asset link entry IDs, asset priority, workflow
+	 *         actions, URL title, and can set whether to add the default
+	 *         command update for the web content article. With respect to
+	 *         social activities, by setting the service context's command to
+	 *         {@link com.liferay.portal.kernel.util.Constants#UPDATE}, the
+	 *         invocation is considered a web content update activity; otherwise
+	 *         it is considered a web content add activity.
 	 * @return the updated web content article
 	 * @throws PortalException if a portal exception occurred
 	 */
@@ -2061,6 +2180,12 @@ public class JournalArticleServiceImpl extends JournalArticleServiceBaseImpl {
 
 		_journalArticleModelResourcePermission.check(
 			getPermissionChecker(), article, ActionKeys.UPDATE);
+
+		if (folderId != article.getFolderId()) {
+			ModelResourcePermissionUtil.check(
+				_journalFolderModelResourcePermission, getPermissionChecker(),
+				groupId, folderId, ActionKeys.ADD_ARTICLE);
+		}
 
 		return journalArticleLocalService.updateArticle(
 			getUserId(), groupId, folderId, articleId, version, titleMap,
@@ -2125,6 +2250,12 @@ public class JournalArticleServiceImpl extends JournalArticleServiceBaseImpl {
 		_journalArticleModelResourcePermission.check(
 			getPermissionChecker(), article, ActionKeys.UPDATE);
 
+		if (folderId != article.getFolderId()) {
+			ModelResourcePermissionUtil.check(
+				_journalFolderModelResourcePermission, getPermissionChecker(),
+				groupId, folderId, ActionKeys.ADD_ARTICLE);
+		}
+
 		return journalArticleLocalService.updateArticle(
 			getUserId(), groupId, folderId, articleId, version, content,
 			serviceContext);
@@ -2152,8 +2283,12 @@ public class JournalArticleServiceImpl extends JournalArticleServiceBaseImpl {
 		DDMStructure ddmStructure = _ddmStructureService.getStructure(
 			journalArticle.getDDMStructureId());
 
-		_ddmStructureModelResourcePermission.contains(
+		_ddmStructureModelResourcePermission.check(
 			getPermissionChecker(), ddmStructure, ActionKeys.UPDATE);
+
+		_checkClassNameIdAndClassPK(
+			journalArticle.getClassNameId(), journalArticle.getClassPK(),
+			journalArticle.getDDMStructureId());
 
 		return journalArticleLocalService.updateArticleDefaultValues(
 			getUserId(), groupId, articleId, titleMap, descriptionMap, content,
@@ -2228,16 +2363,88 @@ public class JournalArticleServiceImpl extends JournalArticleServiceBaseImpl {
 		JournalArticle article = journalArticlePersistence.findByG_A_V(
 			groupId, articleId, version);
 
-		_journalArticleModelResourcePermission.check(
-			getPermissionChecker(), article, ActionKeys.UPDATE);
+		if (status == WorkflowConstants.STATUS_EXPIRED) {
+			_journalArticleModelResourcePermission.check(
+				getPermissionChecker(), article, ActionKeys.EXPIRE);
+		}
+		else {
+			_journalArticleModelResourcePermission.check(
+				getPermissionChecker(), article, ActionKeys.UPDATE);
+
+			WorkflowHandler<?> workflowHandler =
+				WorkflowHandlerRegistryUtil.getWorkflowHandler(
+					JournalArticle.class.getName());
+
+			WorkflowDefinitionLink workflowDefinitionLink =
+				workflowHandler.getWorkflowDefinitionLink(
+					article.getCompanyId(), article.getGroupId(),
+					article.getId());
+
+			if (workflowDefinitionLink != null) {
+				throw new PrincipalException();
+			}
+		}
 
 		return journalArticleLocalService.updateStatus(
 			getUserId(), article, status, articleURL, serviceContext,
 			new HashMap<String, Serializable>());
 	}
 
-	@Reference
-	private ClassNameLocalService _classNameLocalService;
+	private void _checkClassNameIdAndClassPK(
+			long classNameId, long classPK, long ddmStructureId)
+		throws PortalException {
+
+		if ((classNameId != _portal.getClassNameId(DDMStructure.class)) ||
+			(classPK != ddmStructureId)) {
+
+			throw new PrincipalException.MustHavePermission(
+				getPermissionChecker(), DDMStructure.class.getName(),
+				ddmStructureId, ActionKeys.UPDATE);
+		}
+	}
+
+	private void _checkUserId(long userId) throws PortalException {
+		if (userId != getUserId()) {
+			throw new PrincipalException();
+		}
+	}
+
+	private long _getViewerUserId(long groupId) {
+		try {
+			return JournalArticleViewableStatusUtil.getViewerUserId(
+				groupId, getPermissionChecker());
+		}
+		catch (PrincipalException principalException) {
+			_log.error(principalException);
+		}
+
+		return 0;
+	}
+
+	private boolean _isViewable(JournalArticle journalArticle) {
+		if (!journalArticle.isDraft() && !journalArticle.isScheduled()) {
+			return true;
+		}
+
+		try {
+			PermissionChecker permissionChecker = getPermissionChecker();
+
+			if ((journalArticle.getUserId() == permissionChecker.getUserId()) ||
+				_journalArticleModelResourcePermission.contains(
+					permissionChecker, journalArticle, ActionKeys.UPDATE)) {
+
+				return true;
+			}
+		}
+		catch (PortalException portalException) {
+			_log.error(portalException);
+		}
+
+		return false;
+	}
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		JournalArticleServiceImpl.class);
 
 	@Reference(
 		target = "(model.class.name=com.liferay.dynamic.data.mapping.model.DDMStructure)"
@@ -2262,6 +2469,9 @@ public class JournalArticleServiceImpl extends JournalArticleServiceBaseImpl {
 
 	@Reference
 	private JournalFolderService _journalFolderService;
+
+	@Reference
+	private Portal _portal;
 
 	@Reference(
 		target = "(resource.name=" + JournalConstants.RESOURCE_NAME + ")"

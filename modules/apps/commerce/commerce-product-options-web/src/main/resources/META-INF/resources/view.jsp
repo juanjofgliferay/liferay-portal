@@ -17,7 +17,7 @@ CPOptionDisplayContext cpOptionDisplayContext = (CPOptionDisplayContext)request.
 		creationMenu="<%= cpOptionDisplayContext.getCreationMenu() %>"
 		fdsActionDropdownItems="<%= cpOptionDisplayContext.getOptionFDSActionDropdownItems() %>"
 		id="<%= CommerceOptionFDSNames.OPTIONS %>"
-		itemsPerPage="<%= 10 %>"
+		propsTransformer="{CPOptionFDSPropsTransformer} from commerce-product-options-web"
 		style="fluid"
 	/>
 </div>

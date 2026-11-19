@@ -22,6 +22,7 @@ import com.liferay.portal.kernel.dao.orm.QueryDefinition;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.ResourceConstants;
+import com.liferay.portal.kernel.model.SystemEventConstants;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.search.Indexer;
 import com.liferay.portal.kernel.search.IndexerRegistryUtil;
@@ -30,6 +31,7 @@ import com.liferay.portal.kernel.service.ResourceLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.service.permission.ModelPermissions;
+import com.liferay.portal.kernel.systemevent.SystemEvent;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
@@ -118,10 +120,14 @@ public class KBFolderLocalServiceImpl extends KBFolderLocalServiceBaseImpl {
 
 	@Override
 	public KBFolder deleteKBFolder(KBFolder kbFolder) throws PortalException {
-		return deleteKBFolder(kbFolder, true);
+		return kbFolderLocalService.deleteKBFolder(kbFolder, true);
 	}
 
 	@Override
+	@SystemEvent(
+		action = SystemEventConstants.ACTION_SKIP,
+		type = SystemEventConstants.TYPE_DELETE
+	)
 	public KBFolder deleteKBFolder(
 			KBFolder kbFolder, boolean includeTrashedEntries)
 		throws PortalException {
@@ -134,11 +140,13 @@ public class KBFolderLocalServiceImpl extends KBFolderLocalServiceBaseImpl {
 			kbFolder.getGroupId(), kbFolder.getKbFolderId());
 
 		for (KBFolder childKBFolder : childKBFolders) {
-			if (includeTrashedEntries ||
-				!_trashHelper.isInTrashExplicitly(childKBFolder)) {
+			if (!includeTrashedEntries &&
+				_trashHelper.isInTrashExplicitly(childKBFolder)) {
 
-				deleteKBFolder(childKBFolder.getKbFolderId());
+				continue;
 			}
+
+			deleteKBFolder(childKBFolder.getKbFolderId());
 		}
 
 		_resourceLocalService.deleteResource(
@@ -171,7 +179,8 @@ public class KBFolderLocalServiceImpl extends KBFolderLocalServiceBaseImpl {
 
 		KBFolder kbFolder = kbFolderPersistence.findByPrimaryKey(kbFolderId);
 
-		return deleteKBFolder(kbFolder, includeTrashedEntries);
+		return kbFolderLocalService.deleteKBFolder(
+			kbFolder, includeTrashedEntries);
 	}
 
 	@Override
@@ -238,14 +247,6 @@ public class KBFolderLocalServiceImpl extends KBFolderLocalServiceBaseImpl {
 		return kbFolderPersistence.findByG_P_S(
 			groupId, parentKBFolderId, WorkflowConstants.STATUS_APPROVED, start,
 			end);
-	}
-
-	@Override
-	public List<Object> getKBFoldersAndKBArticles(
-		long groupId, long parentResourcePrimKey) {
-
-		return getKBFoldersAndKBArticles(
-			groupId, parentResourcePrimKey, WorkflowConstants.STATUS_APPROVED);
 	}
 
 	@Override
@@ -388,6 +389,7 @@ public class KBFolderLocalServiceImpl extends KBFolderLocalServiceBaseImpl {
 		return moveKBFolder(kbFolderId, parentKBFolderId);
 	}
 
+	@Override
 	public KBFolder moveKBFolderToTrash(long userId, long kbFolderId)
 		throws PortalException {
 
@@ -418,6 +420,7 @@ public class KBFolderLocalServiceImpl extends KBFolderLocalServiceBaseImpl {
 		return kbFolder;
 	}
 
+	@Override
 	public KBFolder restoreKBFolderFromTrash(long userId, long kbFolderId)
 		throws PortalException {
 
@@ -542,7 +545,8 @@ public class KBFolderLocalServiceImpl extends KBFolderLocalServiceBaseImpl {
 		throws PortalException {
 
 		List<Object> objects = getKBFoldersAndKBArticles(
-			parentKBFolder.getGroupId(), parentKBFolder.getKbFolderId());
+			parentKBFolder.getGroupId(), parentKBFolder.getKbFolderId(),
+			WorkflowConstants.STATUS_ANY);
 
 		for (Object object : objects) {
 			if (object instanceof KBArticle) {

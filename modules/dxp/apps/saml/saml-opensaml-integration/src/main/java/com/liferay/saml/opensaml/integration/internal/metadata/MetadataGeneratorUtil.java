@@ -49,6 +49,35 @@ import org.opensaml.xmlsec.encryption.impl.KeySizeBuilder;
  */
 public class MetadataGeneratorUtil {
 
+	public static EntityDescriptor buildIbEntityDescriptor(
+			String portalURL, String entityId, boolean signAuthnRequests,
+			boolean wantAuthnRequestSigned, boolean signMetadata,
+			Credential credential, Credential encryptionCredential)
+		throws Exception {
+
+		EntityDescriptor idpEntityDescriptor = buildIdpEntityDescriptor(
+			portalURL, entityId, wantAuthnRequestSigned, signMetadata,
+			credential, encryptionCredential);
+
+		List<RoleDescriptor> idpRoleDescriptors =
+			idpEntityDescriptor.getRoleDescriptors();
+
+		EntityDescriptor spEntityDescriptor = buildSpEntityDescriptor(
+			portalURL, entityId, signAuthnRequests, signMetadata,
+			wantAuthnRequestSigned, credential, encryptionCredential);
+
+		List<RoleDescriptor> spRoleDescriptors =
+			spEntityDescriptor.getRoleDescriptors();
+
+		RoleDescriptor roleDescriptor = spRoleDescriptors.get(0);
+
+		roleDescriptor.detach();
+
+		idpRoleDescriptors.addAll(spEntityDescriptor.getRoleDescriptors());
+
+		return idpEntityDescriptor;
+	}
+
 	public static EntityDescriptor buildIdpEntityDescriptor(
 			String portalURL, String entityId, boolean wantAuthnRequestSigned,
 			boolean signMetadata, Credential credential,
@@ -72,7 +101,7 @@ public class MetadataGeneratorUtil {
 			entityDescriptor.getRoleDescriptors();
 
 		RoleDescriptor roleDescriptor = buildIdpSsoDescriptor(
-			portalURL, entityId, wantAuthnRequestSigned, credential,
+			portalURL, wantAuthnRequestSigned, credential,
 			encryptionCredential);
 
 		Extensions extensions = (Extensions)XMLObjectSupport.buildXMLObject(
@@ -94,7 +123,7 @@ public class MetadataGeneratorUtil {
 	}
 
 	public static IDPSSODescriptor buildIdpSsoDescriptor(
-			String portalURL, String entityId, boolean wantAuthnRequestSigned,
+			String portalURL, boolean wantAuthnRequestSigned,
 			Credential credential, Credential encryptionCredential)
 		throws Exception {
 
@@ -172,8 +201,8 @@ public class MetadataGeneratorUtil {
 			entityDescriptor.getRoleDescriptors();
 
 		RoleDescriptor roleDescriptor = buildSpSsoDescriptor(
-			portalURL, entityId, signAuthnRequests, wantAssertionsSigned,
-			credential, encryptionCredential);
+			portalURL, signAuthnRequests, wantAssertionsSigned, credential,
+			encryptionCredential);
 
 		Extensions extensions = (Extensions)XMLObjectSupport.buildXMLObject(
 			Extensions.DEFAULT_ELEMENT_NAME);
@@ -194,7 +223,7 @@ public class MetadataGeneratorUtil {
 	}
 
 	public static SPSSODescriptor buildSpSsoDescriptor(
-			String portalURL, String entityId, boolean signAuthnRequests,
+			String portalURL, boolean signAuthnRequests,
 			boolean wantAssertionsSigned, Credential credential,
 			Credential encryptionCredential)
 		throws Exception {

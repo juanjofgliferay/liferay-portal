@@ -5,6 +5,7 @@
 
 import ClayButton from '@clayui/button';
 import ClayEmptyState from '@clayui/empty-state';
+import ClayIcon from '@clayui/icon';
 import React, {createContext, useContext} from 'react';
 
 import {ERROR_MESSAGE} from '../utils/constants';
@@ -23,7 +24,9 @@ interface IStateRendererProps extends React.HTMLAttributes<HTMLElement> {
 	loadingProps?: any;
 }
 
-const StateRenderer: React.FC<IStateRendererProps> & {
+const StateRenderer: React.FC<
+	{children?: React.ReactNode | undefined} & IStateRendererProps
+> & {
 	Empty: typeof EmptyState;
 	Error: typeof ErrorState;
 	Success: typeof SuccessState;
@@ -39,25 +42,25 @@ const StateRenderer: React.FC<IStateRendererProps> & {
 	);
 };
 
-const EmptyState: React.FC<React.HTMLAttributes<HTMLElement>> = ({
-	children,
-}) => {
+const EmptyState: React.FC<
+	{children?: React.ReactNode | undefined} & React.HTMLAttributes<HTMLElement>
+> = ({children}) => {
 	const {empty, error, loading} = useContext(Context);
 
 	return !error && !loading && empty ? <>{children}</> : null;
 };
 
-const ErrorState: React.FC<React.HTMLAttributes<HTMLElement>> = ({
-	children,
-}) => {
+const ErrorState: React.FC<
+	{children?: React.ReactNode | undefined} & React.HTMLAttributes<HTMLElement>
+> = ({children}) => {
 	const {error, loading} = useContext(Context);
 
 	return !loading && error ? <>{children}</> : null;
 };
 
-const SuccessState: React.FC<React.HTMLAttributes<HTMLElement>> = ({
-	children,
-}) => {
+const SuccessState: React.FC<
+	{children?: React.ReactNode | undefined} & React.HTMLAttributes<HTMLElement>
+> = ({children}) => {
 	const {empty, error, loading} = useContext(Context);
 
 	return !error && !loading && !empty ? <>{children}</> : null;
@@ -96,7 +99,7 @@ export function ErrorStateComponent({
 
 interface IEmptyStateComponentProps extends React.HTMLAttributes<HTMLElement> {
 	description?: string;
-	imgSrc: string;
+	symbol?: string;
 	title?: string;
 }
 
@@ -104,18 +107,22 @@ export function EmptyStateComponent({
 	children,
 	className,
 	description,
-	imgSrc,
+	symbol,
 	title,
 }: IEmptyStateComponentProps) {
 	return (
 		<div className={className}>
 			<ClayEmptyState
 				description={description}
-				imgProps={{
-					alt: title,
-					title,
-				}}
-				imgSrc={imgSrc}
+				image={
+					symbol ? (
+						<ClayIcon
+							className={`c-empty-state-icon c-empty-state-icon-${symbol}`}
+							illustration
+							symbol={symbol}
+						/>
+					) : undefined
+				}
 				title={title}
 			>
 				{children}

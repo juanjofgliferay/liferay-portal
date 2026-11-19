@@ -5,6 +5,10 @@
 
 package com.liferay.commerce.inventory.service.impl;
 
+import com.liferay.account.model.AccountEntry;
+import com.liferay.account.model.AccountEntryTable;
+import com.liferay.account.model.AccountGroup;
+import com.liferay.account.model.AccountGroupTable;
 import com.liferay.commerce.inventory.exception.DuplicateCommerceInventoryWarehouseRelException;
 import com.liferay.commerce.inventory.model.CommerceInventoryWarehouse;
 import com.liferay.commerce.inventory.model.CommerceInventoryWarehouseRel;
@@ -31,7 +35,6 @@ import com.liferay.portal.kernel.search.IndexerRegistryUtil;
 import com.liferay.portal.kernel.service.ClassNameLocalService;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.systemevent.SystemEvent;
-import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.Validator;
 
 import java.util.List;
@@ -150,40 +153,85 @@ public class CommerceInventoryWarehouseRelLocalServiceImpl
 	}
 
 	@Override
-	public CommerceInventoryWarehouseRel fetchCommerceInventoryWarehouseRel(
-		String className, long classPK, long commerceInventoryWarehouseId) {
+	public List<CommerceInventoryWarehouseRel>
+		getAccountEntryCommerceInventoryWarehouseRels(
+			long commerceInventoryWarehouseId, String keywords, int start,
+			int end) {
 
-		return commerceInventoryWarehouseRelPersistence.fetchByC_C_CIWI(
-			_classNameLocalService.getClassNameId(className), classPK,
-			commerceInventoryWarehouseId);
+		return dslQuery(
+			_getGroupByStep(
+				DSLQueryFactoryUtil.selectDistinct(
+					CommerceInventoryWarehouseRelTable.INSTANCE),
+				AccountEntryTable.INSTANCE,
+				AccountEntryTable.INSTANCE.accountEntryId.eq(
+					CommerceInventoryWarehouseRelTable.INSTANCE.classPK),
+				commerceInventoryWarehouseId, AccountEntry.class.getName(),
+				keywords, AccountEntryTable.INSTANCE.name
+			).limit(
+				start, end
+			));
+	}
+
+	@Override
+	public int getAccountEntryCommerceInventoryWarehouseRelsCount(
+		long commerceInventoryWarehouseId, String keywords) {
+
+		return dslQueryCount(
+			_getGroupByStep(
+				DSLQueryFactoryUtil.countDistinct(
+					CommerceInventoryWarehouseRelTable.INSTANCE.
+						commerceInventoryWarehouseRelId),
+				AccountEntryTable.INSTANCE,
+				AccountEntryTable.INSTANCE.accountEntryId.eq(
+					CommerceInventoryWarehouseRelTable.INSTANCE.classPK),
+				commerceInventoryWarehouseId, AccountEntry.class.getName(),
+				keywords, AccountEntryTable.INSTANCE.name));
 	}
 
 	@Override
 	public List<CommerceInventoryWarehouseRel>
-		getCommerceInventoryWarehouseRels(long commerceInventoryWarehouseId) {
+		getAccountGroupCommerceInventoryWarehouseRels(
+			long commerceInventoryWarehouseId, String keywords, int start,
+			int end) {
 
-		return commerceInventoryWarehouseRelPersistence.
-			findByCommerceInventoryWarehouseId(commerceInventoryWarehouseId);
+		return dslQuery(
+			_getGroupByStep(
+				DSLQueryFactoryUtil.selectDistinct(
+					CommerceInventoryWarehouseRelTable.INSTANCE),
+				AccountGroupTable.INSTANCE,
+				AccountGroupTable.INSTANCE.accountGroupId.eq(
+					CommerceInventoryWarehouseRelTable.INSTANCE.classPK),
+				commerceInventoryWarehouseId, AccountGroup.class.getName(),
+				keywords, AccountGroupTable.INSTANCE.name
+			).limit(
+				start, end
+			));
+	}
+
+	@Override
+	public int getAccountGroupCommerceInventoryWarehouseRelsCount(
+		long commerceInventoryWarehouseId, String keywords) {
+
+		return dslQueryCount(
+			_getGroupByStep(
+				DSLQueryFactoryUtil.countDistinct(
+					CommerceInventoryWarehouseRelTable.INSTANCE.
+						commerceInventoryWarehouseRelId),
+				AccountGroupTable.INSTANCE,
+				AccountGroupTable.INSTANCE.accountGroupId.eq(
+					CommerceInventoryWarehouseRelTable.INSTANCE.classPK),
+				commerceInventoryWarehouseId, AccountGroup.class.getName(),
+				keywords, AccountGroupTable.INSTANCE.name));
 	}
 
 	@Override
 	public List<CommerceInventoryWarehouseRel>
 		getCommerceInventoryWarehouseRels(
-			long commerceInventoryWarehouseId, int start, int end,
-			OrderByComparator<CommerceInventoryWarehouseRel>
-				orderByComparator) {
+			String className, long commerceInventoryWarehouseId) {
 
-		return commerceInventoryWarehouseRelPersistence.
-			findByCommerceInventoryWarehouseId(
-				commerceInventoryWarehouseId, start, end, orderByComparator);
-	}
-
-	@Override
-	public int getCommerceInventoryWarehouseRelsCount(
-		long commerceInventoryWarehouseId) {
-
-		return commerceInventoryWarehouseRelPersistence.
-			countByCommerceInventoryWarehouseId(commerceInventoryWarehouseId);
+		return commerceInventoryWarehouseRelPersistence.findByC_C(
+			_classNameLocalService.getClassNameId(className),
+			commerceInventoryWarehouseId);
 	}
 
 	@Override
@@ -249,15 +297,15 @@ public class CommerceInventoryWarehouseRelLocalServiceImpl
 							eq(_classNameLocalService.getClassNameId(className))
 					).and(
 						() -> {
-							if (Validator.isNotNull(keywords)) {
-								return Predicate.withParentheses(
-									_customSQL.getKeywordsPredicate(
-										DSLFunctionFactoryUtil.lower(
-											keywordsPredicateExpression),
-										_customSQL.keywords(keywords, true)));
+							if (Validator.isNull(keywords)) {
+								return null;
 							}
 
-							return null;
+							return Predicate.withParentheses(
+								_customSQL.getKeywordsPredicate(
+									DSLFunctionFactoryUtil.lower(
+										keywordsPredicateExpression),
+									_customSQL.keywords(keywords, true)));
 						}
 					));
 	}

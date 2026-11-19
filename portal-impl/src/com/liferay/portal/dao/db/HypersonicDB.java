@@ -5,11 +5,11 @@
 
 package com.liferay.portal.dao.db;
 
+import com.liferay.petra.io.unsync.UnsyncBufferedReader;
+import com.liferay.petra.io.unsync.UnsyncStringReader;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.db.DBType;
-import com.liferay.portal.kernel.io.unsync.UnsyncBufferedReader;
-import com.liferay.portal.kernel.io.unsync.UnsyncStringReader;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
@@ -43,6 +43,11 @@ public class HypersonicDB extends BaseDB {
 	}
 
 	@Override
+	public String getCharacterSet(Connection connection) {
+		return "UTF-8";
+	}
+
+	@Override
 	public String getDefaultValue(String columnDef) {
 		String defaultValue = super.getDefaultValue(columnDef);
 
@@ -61,6 +66,11 @@ public class HypersonicDB extends BaseDB {
 	@Override
 	public String getRecreateSQL(String databaseName) {
 		return StringPool.BLANK;
+	}
+
+	@Override
+	public boolean isSupportsCharacterSet(Connection connection) {
+		return true;
 	}
 
 	@Override
@@ -130,11 +140,13 @@ public class HypersonicDB extends BaseDB {
 			sb.append("new.");
 			sb.append(sourceColumnNames[i]);
 
-			if (defaultValue != null) {
-				sb.append(", ");
-				sb.append(defaultValue);
-				sb.append(")");
+			if (defaultValue == null) {
+				continue;
 			}
+
+			sb.append(", ");
+			sb.append(defaultValue);
+			sb.append(")");
 		}
 
 		sb.append(")");
@@ -180,11 +192,13 @@ public class HypersonicDB extends BaseDB {
 			sb.append("new.");
 			sb.append(sourceColumnNames[i]);
 
-			if (defaultValue != null) {
-				sb.append(", ");
-				sb.append(defaultValue);
-				sb.append(")");
+			if (defaultValue == null) {
+				continue;
 			}
+
+			sb.append(", ");
+			sb.append(defaultValue);
+			sb.append(")");
 		}
 
 		sb.append(" where ");
@@ -202,6 +216,7 @@ public class HypersonicDB extends BaseDB {
 		runSQL(connection, sb.toString());
 	}
 
+	@Override
 	protected String getCopyTableStructureSQL(
 		String tableName, String newTableName) {
 
@@ -228,16 +243,22 @@ public class HypersonicDB extends BaseDB {
 		return _HYPERSONIC;
 	}
 
+	@Override
 	protected boolean isSupportsDDLRollback() {
-		return _SUPPORTS_DDL_ROLLBACK;
+		return false;
 	}
 
+	@Override
 	protected boolean isSupportsDuplicatedIndexName() {
-		return _SUPPORTS_DUPLICATED_INDEX_NAME;
+		return false;
 	}
 
 	@Override
 	protected String reword(String data) throws IOException {
+		if (Validator.isNull(data)) {
+			return null;
+		}
+
 		try (UnsyncBufferedReader unsyncBufferedReader =
 				new UnsyncBufferedReader(new UnsyncStringReader(data))) {
 
@@ -328,9 +349,5 @@ public class HypersonicDB extends BaseDB {
 		Types.DOUBLE, Types.INTEGER, Types.BIGINT, Types.VARCHAR, Types.VARCHAR,
 		Types.VARCHAR
 	};
-
-	private static final boolean _SUPPORTS_DDL_ROLLBACK = false;
-
-	private static final boolean _SUPPORTS_DUPLICATED_INDEX_NAME = false;
 
 }

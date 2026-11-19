@@ -13,7 +13,7 @@ import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.service.ImageLocalServiceUtil;
 import com.liferay.portal.kernel.util.FileUtil;
-import com.liferay.portal.util.PropsValues;
+import com.liferay.portal.kernel.util.PropsValues;
 
 import java.io.InputStream;
 
@@ -41,22 +41,29 @@ public class ImageImpl extends ImageBaseImpl {
 
 			InputStream inputStream = null;
 
-			if ((dlFileEntry != null) &&
-				(dlFileEntry.getLargeImageId() == imageId)) {
+			try {
+				if ((dlFileEntry != null) &&
+					(dlFileEntry.getLargeImageId() == imageId)) {
 
-				inputStream = DLStoreUtil.getFileAsStream(
-					dlFileEntry.getCompanyId(),
-					dlFileEntry.getDataRepositoryId(), dlFileEntry.getName(),
-					StringPool.BLANK);
+					inputStream = DLStoreUtil.getFileAsStream(
+						dlFileEntry.getCompanyId(),
+						dlFileEntry.getDataRepositoryId(),
+						dlFileEntry.getName(), StringPool.BLANK);
+				}
+				else {
+					inputStream = ImageLocalServiceUtil.getImageInputStream(
+						getCompanyId(), imageId, getType());
+				}
+
+				byte[] bytes = FileUtil.getBytes(inputStream);
+
+				_textObj = bytes;
 			}
-			else {
-				inputStream = ImageLocalServiceUtil.getImageInputStream(
-					getCompanyId(), imageId, getType());
+			finally {
+				if (inputStream != null) {
+					inputStream.close();
+				}
 			}
-
-			byte[] bytes = FileUtil.getBytes(inputStream);
-
-			_textObj = bytes;
 		}
 		catch (Exception exception) {
 			_log.error("Unable to read image " + imageId, exception);

@@ -28,6 +28,11 @@ import org.osgi.service.component.annotations.Reference;
 public class CommerceCatalogPanelApp extends BasePanelApp {
 
 	@Override
+	public String getIcon() {
+		return "catalog";
+	}
+
+	@Override
 	public Portlet getPortlet() {
 		return _portlet;
 	}
@@ -38,7 +43,7 @@ public class CommerceCatalogPanelApp extends BasePanelApp {
 	}
 
 	@Reference(
-		target = "(javax.portlet.name=" + CPPortletKeys.COMMERCE_CATALOGS + ")"
+		target = "(jakarta.portlet.name=" + CPPortletKeys.COMMERCE_CATALOGS + ")"
 	)
 	private Portlet _portlet;
 

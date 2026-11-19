@@ -15,9 +15,9 @@ export default function ({currentLanguageId, namespace}) {
 			localeChangedHandler = Liferay.after(
 				'inputLocalized:localeChanged',
 				(event) => {
-					const selectedLanguageId = event.item.getAttribute(
-						'data-value'
-					);
+					const selectedLanguageId =
+						event.item.getAttribute('data-value') ||
+						event.item.getAttribute('data-languageid');
 
 					switchLanguage({
 						dataEngineReactComponentRef,
@@ -30,24 +30,35 @@ export default function ({currentLanguageId, namespace}) {
 			defaultLocaleChangedHandler = Liferay.after(
 				'inputLocalized:defaultLocaleChanged',
 				(event) => {
-					const selectedLanguageId = event.item.getAttribute(
-						'data-value'
-					);
+					const selectedLanguageId =
+						event.item.getAttribute('data-value');
 
 					const defaultLanguageIdInput = document.getElementById(
 						`${namespace}defaultLanguageId`
 					);
 
 					defaultLanguageIdInput.value = selectedLanguageId;
+
+					Liferay.fire('journal:defaultLocaleChanged', {
+						item: event.item,
+					});
 				}
 			);
 
-			switchLanguage({
-				dataEngineReactComponentRef,
-				languageId: currentLanguageId,
-				namespace,
-				preserveValue: true,
-			});
+			if (
+				!isRenderedInLanguage({
+					dataEngineReactComponentRef,
+					languageId: currentLanguageId,
+					namespace,
+				})
+			) {
+				switchLanguage({
+					dataEngineReactComponentRef,
+					languageId: currentLanguageId,
+					namespace,
+					preserveValue: true,
+				});
+			}
 		}
 	);
 
@@ -62,6 +73,29 @@ export default function ({currentLanguageId, namespace}) {
 			}
 		},
 	};
+}
+
+function isRenderedInLanguage({
+	dataEngineReactComponentRef,
+	languageId,
+	namespace,
+}) {
+	const form = dataEngineReactComponentRef?.current;
+
+	if (!form) {
+		return false;
+	}
+
+	const defaultLanguageIdInput = document.getElementById(
+		`${namespace}defaultLanguageId`
+	);
+
+	return (
+		form.get('defaultLanguageId') === defaultLanguageIdInput.value &&
+		form.get('editingLanguageId') === languageId &&
+		languageId === defaultLanguageIdInput.value &&
+		languageId === Liferay.ThemeDisplay.getDefaultLanguageId()
+	);
 }
 
 function switchLanguage({

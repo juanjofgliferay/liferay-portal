@@ -26,9 +26,9 @@ import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.taglib.security.PermissionsURLTag;
 
-import java.util.List;
+import jakarta.servlet.http.HttpServletRequest;
 
-import javax.servlet.http.HttpServletRequest;
+import java.util.List;
 
 /**
  * @author Víctor Galán
@@ -196,8 +196,8 @@ public class DDMStructureActionDropdownItemsProvider {
 			dropdownItem.setHref(
 				PortletURLBuilder.createRenderURL(
 					_liferayPortletResponse
-				).setMVCPath(
-					"/edit_article.jsp"
+				).setMVCRenderCommandName(
+					"/journal/edit_article"
 				).setRedirect(
 					_themeDisplay.getURLCurrent()
 				).setParameter(

@@ -12,7 +12,7 @@ import React, {ChangeEventHandler, useState} from 'react';
 import {defaultLanguageId} from '../../utils/constants';
 
 interface ObjectDataContainerProps {
-	dbTableName: string;
+	dbTableName: string | undefined;
 	errors: FormError<ObjectDefinition>;
 	handleChange: ChangeEventHandler<HTMLInputElement>;
 	hasUpdateObjectDefinitionPermission: boolean;
@@ -34,9 +34,8 @@ export function ObjectDataContainer({
 	setValues,
 	values,
 }: ObjectDataContainerProps) {
-	const [selectedLocale, setSelectedLocale] = useState<
-		Liferay.Language.Locale
-	>(defaultLanguageId);
+	const [selectedLocale, setSelectedLocale] =
+		useState<Liferay.Language.Locale>(defaultLanguageId);
 
 	const isReadOnly = !values.modifiable && values.system;
 
@@ -66,6 +65,7 @@ export function ObjectDataContainer({
 			<InputLocalized
 				disabled={isReadOnly || noPermissionOrLinked}
 				error={errors.label}
+				id="lfr-objects__object-data-container-label"
 				label={Liferay.Language.get('label')}
 				onBlur={(event) => {
 					event.stopPropagation();
@@ -84,6 +84,7 @@ export function ObjectDataContainer({
 			<InputLocalized
 				disabled={isReadOnly || noPermissionOrLinked}
 				error={errors.pluralLabel}
+				id="lfr-objects__object-data-container-plural-label"
 				label={Liferay.Language.get('plural-label')}
 				onBlur={(event) => {
 					event.stopPropagation();
@@ -99,8 +100,36 @@ export function ObjectDataContainer({
 				translations={values.pluralLabel as LocalizedValue<string>}
 			/>
 
+			{!isReadOnly && (
+				<InputLocalized
+					component="textarea"
+					disabled={noPermissionOrLinked}
+					error={errors.description}
+					helpMessage={Liferay.Language.get(
+						'provide-descriptive-text-used-only-by-ai-agents-and-api-consumers'
+					)}
+					id="lfr-objects__object-data-container-description"
+					label={Liferay.Language.get('description')}
+					onBlur={(event) => {
+						event.stopPropagation();
+
+						if (onSubmit) {
+							onSubmit();
+						}
+					}}
+					onChange={(description) => setValues({description})}
+					onSelectedLocaleChange={setSelectedLocale}
+					placeholder=""
+					selectedLocale={selectedLocale}
+					translations={
+						(values.description ?? {}) as LocalizedValue<string>
+					}
+				/>
+			)}
+
 			<Input
 				disabled
+				id="lfr-objects__object-data-container-table-name"
 				label={Liferay.Language.get('object-definition-table-name')}
 				name="name"
 				value={dbTableName}

@@ -21,7 +21,7 @@ import com.liferay.portal.kernel.service.ServiceContext;
 import java.util.Objects;
 
 /**
- * @author Joao Victor Alves
+ * @author João Victor Alves
  */
 public class DDMFormInstanceRecordStagedModelRepositoryUtil {
 
@@ -37,6 +37,8 @@ public class DDMFormInstanceRecordStagedModelRepositoryUtil {
 		ServiceContext serviceContext = portletDataContext.createServiceContext(
 			ddmFormInstanceRecord);
 
+		serviceContext.setAttribute(
+			"ipAddress", ddmFormInstanceRecord.getIpAddress());
 		serviceContext.setAttribute("validateDDMFormValues", Boolean.FALSE);
 
 		if (portletDataContext.isDataStrategyMirror()) {

@@ -17,7 +17,6 @@ import com.liferay.portal.kernel.util.HashMapDictionary;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.osgi.web.servlet.JSPServletFactory;
-import com.liferay.portal.osgi.web.servlet.JSPTaglibHelper;
 import com.liferay.portal.osgi.web.servlet.context.helper.ServletContextHelperRegistration;
 import com.liferay.portal.osgi.web.servlet.context.helper.definition.FilterDefinition;
 import com.liferay.portal.osgi.web.servlet.context.helper.definition.ListenerDefinition;
@@ -34,12 +33,25 @@ import com.liferay.portal.osgi.web.wab.extender.internal.registration.ListenerSe
 import com.liferay.portal.osgi.web.wab.extender.internal.registration.ServletRegistrationImpl;
 import com.liferay.portal.plugin.PluginPackageUtil;
 
+import jakarta.servlet.Filter;
+import jakarta.servlet.Servlet;
+import jakarta.servlet.ServletContainerInitializer;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletContextAttributeListener;
+import jakarta.servlet.ServletContextListener;
+import jakarta.servlet.ServletRequestAttributeListener;
+import jakarta.servlet.ServletRequestListener;
+import jakarta.servlet.annotation.HandlesTypes;
+import jakarta.servlet.http.HttpSessionAttributeListener;
+import jakarta.servlet.http.HttpSessionListener;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.PrintWriter;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
@@ -47,6 +59,8 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 
 import java.net.URL;
+
+import java.nio.charset.StandardCharsets;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -61,18 +75,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
-
-import javax.servlet.Filter;
-import javax.servlet.Servlet;
-import javax.servlet.ServletContainerInitializer;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletContextAttributeListener;
-import javax.servlet.ServletContextListener;
-import javax.servlet.ServletRequestAttributeListener;
-import javax.servlet.ServletRequestListener;
-import javax.servlet.annotation.HandlesTypes;
-import javax.servlet.http.HttpSessionAttributeListener;
-import javax.servlet.http.HttpSessionListener;
 
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -89,12 +91,10 @@ import org.osgi.service.http.whiteboard.HttpWhiteboardConstants;
 public class WabBundleProcessor {
 
 	public WabBundleProcessor(
-		Bundle bundle, JSPServletFactory jspServletFactory,
-		JSPTaglibHelper jspTaglibHelper) {
+		Bundle bundle, JSPServletFactory jspServletFactory) {
 
 		_bundle = bundle;
 		_jspServletFactory = jspServletFactory;
-		_jspTaglibHelper = jspTaglibHelper;
 
 		BundleWiring bundleWiring = _bundle.adapt(BundleWiring.class);
 
@@ -156,9 +156,7 @@ public class WabBundleProcessor {
 			_initServletContainerInitializers(
 				_bundle, servletContext, allClasses, annotatedClasses);
 
-			if (!allClasses.equals(annotatedClasses)) {
-				_saveScannedAnnotatedClasses(annotatedClasses);
-			}
+			_saveScannedAnnotatedClasses(annotatedClasses);
 
 			ModifiableServletContext modifiableServletContext =
 				(ModifiableServletContext)servletContext;
@@ -635,7 +633,7 @@ public class WabBundleProcessor {
 		throws IOException {
 
 		Enumeration<URL> enumeration = bundle.getResources(
-			"META-INF/services/javax.servlet.ServletContainerInitializer");
+			"META-INF/services/jakarta.servlet.ServletContainerInitializer");
 
 		if (enumeration == null) {
 			return;
@@ -662,11 +660,13 @@ public class WabBundleProcessor {
 
 					fqcn = fqcn.trim();
 
-					if (Validator.isNotNull(fqcn)) {
-						_processServletContainerInitializerClass(
-							fqcn, bundle, servletContext, classes,
-							annotatedClasses);
+					if (Validator.isNull(fqcn)) {
+						continue;
 					}
+
+					_processServletContainerInitializerClass(
+						fqcn, bundle, servletContext, classes,
+						annotatedClasses);
 				}
 			}
 			catch (IOException ioException) {
@@ -781,13 +781,15 @@ public class WabBundleProcessor {
 				Set<Class<?>> annotationHandlesTypesClasses = null;
 
 				for (Class<?> handlesTypesClass : handlesTypesClasses) {
-					if (handlesTypesClass.isAnnotation()) {
-						if (annotationHandlesTypesClasses == null) {
-							annotationHandlesTypesClasses = new HashSet<>();
-						}
-
-						annotationHandlesTypesClasses.add(handlesTypesClass);
+					if (!handlesTypesClass.isAnnotation()) {
+						continue;
 					}
+
+					if (annotationHandlesTypesClasses == null) {
+						annotationHandlesTypesClasses = new HashSet<>();
+					}
+
+					annotationHandlesTypesClasses.add(handlesTypesClass);
 				}
 
 				localAnnotatedClasses = new HashSet<>();
@@ -824,12 +826,16 @@ public class WabBundleProcessor {
 
 		try (OutputStream outputStream = new FileOutputStream(
 				annotatedClassesFile);
-			PrintWriter printWriter = new PrintWriter(outputStream)) {
 
-			printWriter.println("last.modified=" + _bundle.getLastModified());
+			Writer writer = new OutputStreamWriter(
+				outputStream, StandardCharsets.UTF_8)) {
+
+			writer.write(
+				"last.modified=" + _bundle.getLastModified() +
+					StringPool.NEW_LINE);
 
 			if (annotatedClasses.isEmpty()) {
-				printWriter.println("annotated.classes=");
+				writer.write("annotated.classes=\n");
 			}
 			else {
 				StringBundler sb = new StringBundler(
@@ -842,9 +848,9 @@ public class WabBundleProcessor {
 					sb.append(StringPool.COMMA);
 				}
 
-				sb.setIndex(sb.index() - 1);
+				sb.setStringAt(StringPool.NEW_LINE, sb.index() - 1);
 
-				printWriter.println(sb.toString());
+				writer.write(sb.toString());
 			}
 		}
 		catch (IOException ioException) {
@@ -859,7 +865,8 @@ public class WabBundleProcessor {
 
 		List<String> listenerClassNames = new ArrayList<>();
 
-		_jspTaglibHelper.scanTLDs(_bundle, servletContext, listenerClassNames);
+		JSPTaglibHelperUtil.scanTLDs(
+			_bundle, servletContext, listenerClassNames);
 
 		for (String listenerClassName : listenerClassNames) {
 			try {
@@ -901,7 +908,6 @@ public class WabBundleProcessor {
 	private final Set<ServiceRegistration<Filter>> _filterServiceRegistrations =
 		new ConcurrentSkipListSet<>();
 	private final JSPServletFactory _jspServletFactory;
-	private final JSPTaglibHelper _jspTaglibHelper;
 	private final Set<ServiceRegistration<?>> _listenerServiceRegistrations =
 		new ConcurrentSkipListSet<>(
 			new ListenerServiceRegistrationComparator());

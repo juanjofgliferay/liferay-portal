@@ -20,16 +20,19 @@ import com.liferay.document.library.kernel.processor.VideoProcessorUtil;
 import com.liferay.document.library.kernel.service.DLAppLocalServiceUtil;
 import com.liferay.document.library.kernel.service.DLAppServiceUtil;
 import com.liferay.document.library.kernel.util.DLUtil;
-import com.liferay.petra.sql.dsl.DSLQueryFactoryUtil;
+import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.image.ImageToolUtil;
+import com.liferay.portal.kernel.change.tracking.CTCollectionThreadLocal;
+import com.liferay.portal.kernel.exception.NoSuchUserException;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.image.ImageBag;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.login.AuthLoginGroupSettingsUtil;
 import com.liferay.portal.kernel.messaging.DestinationNames;
 import com.liferay.portal.kernel.messaging.Message;
 import com.liferay.portal.kernel.messaging.MessageBus;
@@ -41,7 +44,6 @@ import com.liferay.portal.kernel.model.ImageConstants;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.LayoutSet;
 import com.liferay.portal.kernel.model.Organization;
-import com.liferay.portal.kernel.model.OrganizationTable;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.portlet.PortletProvider;
@@ -69,7 +71,6 @@ import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermi
 import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
 import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
 import com.liferay.portal.kernel.service.ImageLocalServiceUtil;
-import com.liferay.portal.kernel.service.ImageServiceUtil;
 import com.liferay.portal.kernel.service.LayoutLocalServiceUtil;
 import com.liferay.portal.kernel.service.LayoutSetLocalServiceUtil;
 import com.liferay.portal.kernel.service.OrganizationLocalServiceUtil;
@@ -87,9 +88,8 @@ import com.liferay.portal.kernel.template.TemplateManagerUtil;
 import com.liferay.portal.kernel.template.TemplateResource;
 import com.liferay.portal.kernel.template.URLTemplateResource;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
-import com.liferay.portal.kernel.transaction.TransactionConfig;
-import com.liferay.portal.kernel.transaction.TransactionInvokerUtil;
 import com.liferay.portal.kernel.trash.helper.TrashHelper;
+import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.DigesterUtil;
 import com.liferay.portal.kernel.util.FileUtil;
@@ -100,6 +100,8 @@ import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.MimeTypesUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.PropsUtil;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.ReleaseInfo;
 import com.liferay.portal.kernel.util.SetUtil;
 import com.liferay.portal.kernel.util.StringUtil;
@@ -109,11 +111,18 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.Validator_IW;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.webdav.WebDAVUtil;
+import com.liferay.portal.kernel.webserver.WebServerServletTokenUtil;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.model.impl.ImageImpl;
 import com.liferay.portal.util.PortalInstances;
-import com.liferay.portal.util.PropsValues;
 import com.liferay.users.admin.kernel.file.uploads.UserFileUploadsSettings;
+
+import jakarta.servlet.ServletConfig;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 
 import java.awt.image.RenderedImage;
 
@@ -124,20 +133,16 @@ import java.io.InputStream;
 
 import java.net.URL;
 
+import java.nio.charset.StandardCharsets;
+
+import java.security.MessageDigest;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.Callable;
-
-import javax.servlet.ServletConfig;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
 
 /**
  * @author Alexander Chow
@@ -174,7 +179,17 @@ public class WebServerServlet extends HttpServlet {
 				return true;
 			}
 			else if (Validator.isNumber(pathArray[0])) {
-				_checkFileEntry(pathArray);
+				long previewCTCollectionId = ParamUtil.getLong(
+					httpServletRequest, "previewCTCollectionId",
+					CTCollectionThreadLocal.getCTCollectionId());
+
+				try (SafeCloseable safeCloseable =
+						CTCollectionThreadLocal.
+							setCTCollectionIdWithSafeCloseable(
+								previewCTCollectionId)) {
+
+					_checkFileEntry(pathArray);
+				}
 			}
 			else if (_PATH_SEPARATOR_FILE_ENTRY.equals(pathArray[0])) {
 				FileEntry fileEntry = _resolveFileEntry(
@@ -230,8 +245,6 @@ public class WebServerServlet extends HttpServlet {
 					}
 				}
 			}
-
-			sendMessageObjectEntryAttachmentDownload(httpServletRequest, user);
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
@@ -251,44 +264,19 @@ public class WebServerServlet extends HttpServlet {
 	/**
 	 * @see com.liferay.portal.servlet.filters.virtualhost.VirtualHostFilter
 	 */
-	public static void sendMessageObjectEntryAttachmentDownload(
-		HttpServletRequest httpServletRequest, User user) {
-
-		String objectDefinitionExternalReferenceCode = ParamUtil.getString(
-			httpServletRequest, "objectDefinitionExternalReferenceCode");
-
-		if (Validator.isNull(objectDefinitionExternalReferenceCode)) {
-			return;
+	public static boolean isFileEntryPath(String[] pathArray) {
+		if (pathArray.length == 0) {
+			return false;
 		}
 
-		try {
-			MessageBus messageBus = _messageBusSnapshot.get();
+		if (Validator.isNumber(pathArray[0]) ||
+			_PATH_SEPARATOR_FILE_ENTRY.equals(pathArray[0]) ||
+			PATH_PORTLET_FILE_ENTRY.equals(pathArray[0])) {
 
-			Message message = new Message();
-
-			if (user == null) {
-				user = _getUser(httpServletRequest);
-			}
-
-			message.put("companyId", user.getCompanyId());
-
-			message.put(
-				"objectDefinitionExternalReferenceCode",
-				objectDefinitionExternalReferenceCode);
-			message.put(
-				"objectEntryExternalReferenceCode",
-				ParamUtil.getString(
-					httpServletRequest, "objectEntryExternalReferenceCode"));
-			message.put("userId", user.getUserId());
-
-			messageBus.sendMessage(
-				DestinationNames.OBJECT_ENTRY_ATTACHMENT_DOWNLOAD, message);
+			return true;
 		}
-		catch (Exception exception) {
-			if (_log.isDebugEnabled()) {
-				_log.debug(exception);
-			}
-		}
+
+		return false;
 	}
 
 	@Override
@@ -332,8 +320,7 @@ public class WebServerServlet extends HttpServlet {
 			PrincipalThreadLocal.setPassword(
 				PortalUtil.getUserPassword(httpServletRequest));
 
-			PermissionThreadLocal.setPermissionChecker(
-				PermissionCheckerFactoryUtil.create(user));
+			PermissionThreadLocal.getPermissionChecker(user, true);
 
 			_checkResourcePermission(httpServletRequest, httpServletResponse);
 
@@ -361,15 +348,66 @@ public class WebServerServlet extends HttpServlet {
 				}
 			}
 
-			TransactionConfig.Builder builder = new TransactionConfig.Builder();
+			String path = _getPath(httpServletRequest);
 
-			builder.setReadOnly(true);
-			builder.setRollbackForClasses(Exception.class);
+			String[] pathArray = StringUtil.split(
+				_getPath(httpServletRequest), CharPool.SLASH);
 
-			TransactionInvokerUtil.invoke(
-				builder.build(),
-				_createFileServingCallable(
-					httpServletRequest, httpServletResponse, user));
+			if (pathArray.length == 0) {
+				sendGroups(
+					httpServletResponse, user,
+					httpServletRequest.getServletPath() + StringPool.SLASH +
+						path);
+			}
+			else {
+				if (Validator.isNumber(pathArray[0])) {
+					sendFile(
+						httpServletRequest, httpServletResponse, user,
+						pathArray);
+				}
+				else if (_PATH_SEPARATOR_FILE_ENTRY.equals(pathArray[0])) {
+					sendFile(
+						httpServletRequest, httpServletResponse, user,
+						pathArray);
+				}
+				else if (PATH_PORTLET_FILE_ENTRY.equals(pathArray[0])) {
+					sendPortletFileEntry(
+						httpServletRequest, httpServletResponse, path,
+						pathArray);
+				}
+				else {
+					if (PropsValues.WEB_SERVER_SERVLET_CHECK_IMAGE_GALLERY &&
+						isLegacyImageGalleryImageId(
+							httpServletRequest, httpServletResponse)) {
+
+						return;
+					}
+
+					Image image = getImage(httpServletRequest, true);
+
+					if (image != null) {
+						if ((image.getCompanyId() != user.getCompanyId()) &&
+							_processCompanyInactiveRequest(
+								httpServletRequest, httpServletResponse,
+								image.getCompanyId())) {
+
+							return;
+						}
+
+						writeImage(
+							image, httpServletRequest, httpServletResponse);
+					}
+					else {
+						sendDocumentLibrary(
+							httpServletRequest, httpServletResponse, user,
+							StringBundler.concat(
+								PortalUtil.getPathContext(),
+								httpServletRequest.getServletPath(),
+								StringPool.SLASH, path),
+							pathArray);
+					}
+				}
+			}
 		}
 		catch (FileEntryExpiredException | NoSuchFileEntryException |
 			   NoSuchFolderException exception) {
@@ -397,6 +435,13 @@ public class WebServerServlet extends HttpServlet {
 	protected static FileEntry getPortletFileEntry(
 			HttpServletRequest httpServletRequest, String[] pathArray)
 		throws Exception {
+
+		// LPD-105342
+
+		if (pathArray.length < 4) {
+			throw new NoSuchFileEntryException(
+				"Invalid path " + Arrays.toString(pathArray));
+		}
 
 		long groupId = GetterUtil.getLong(pathArray[1]);
 		String uuid = pathArray[3];
@@ -462,13 +507,22 @@ public class WebServerServlet extends HttpServlet {
 
 		String path = GetterUtil.getString(httpServletRequest.getPathInfo());
 
-		if (path.startsWith("/company_logo") ||
-			path.startsWith("/layout_set_logo") || path.startsWith("/logo")) {
+		if (path.startsWith("/account_logo") ||
+			path.startsWith("/organization_logo")) {
+
+			return ImageToolUtil.getDefaultOrganizationLogo();
+		}
+		else if (path.startsWith("/company_logo") ||
+				 path.startsWith("/layout_set_logo") ||
+				 path.startsWith("/logo")) {
 
 			return ImageToolUtil.getDefaultCompanyLogo();
 		}
-		else if (path.startsWith("/organization_logo")) {
-			return ImageToolUtil.getDefaultOrganizationLogo();
+		else if (path.startsWith("/company_group_logo")) {
+			return ImageToolUtil.getDefaultCompanyGroupLogo();
+		}
+		else if (path.startsWith("/liferay_logo")) {
+			return ImageToolUtil.getDefaultLiferayLogo();
 		}
 		else if (path.startsWith("/user_female_portrait")) {
 			return ImageToolUtil.getDefaultUserFemalePortrait();
@@ -492,54 +546,16 @@ public class WebServerServlet extends HttpServlet {
 		long imageId = getImageId(httpServletRequest);
 
 		if (imageId > 0) {
-			image = ImageServiceUtil.getImage(imageId);
+			image = ImageLocalServiceUtil.fetchImage(imageId);
+
+			_checkImagePermission(httpServletRequest, imageId);
 
 			String path = GetterUtil.getString(
 				httpServletRequest.getPathInfo());
 
-			if (path.startsWith("/layout_icon") || path.startsWith("/logo")) {
-				Layout layout = LayoutLocalServiceUtil.fetchLayoutByIconImageId(
-					true, imageId);
-
-				if (layout != null) {
-					PermissionChecker permissionChecker = _getPermissionChecker(
-						httpServletRequest);
-
-					if (!LayoutPermissionUtil.contains(
-							permissionChecker, layout, ActionKeys.VIEW)) {
-
-						throw new PrincipalException.MustHavePermission(
-							permissionChecker, Layout.class.getName(),
-							layout.getPlid(), ActionKeys.VIEW);
-					}
-				}
-			}
-			else if (path.startsWith("/layout_set_logo")) {
-				LayoutSet layoutSet =
-					LayoutSetLocalServiceUtil.fetchLayoutSetByLogoId(
-						true, imageId);
-
-				if (layoutSet != null) {
-					PermissionChecker permissionChecker = _getPermissionChecker(
-						httpServletRequest);
-
-					Group group = layoutSet.getGroup();
-
-					if (!group.isShowSite(
-							permissionChecker, layoutSet.isPrivateLayout()) &&
-						!GroupPermissionUtil.contains(
-							permissionChecker, layoutSet.getGroupId(),
-							ActionKeys.VIEW)) {
-
-						throw new PrincipalException.MustHavePermission(
-							permissionChecker, LayoutSet.class.getName(),
-							layoutSet.getLayoutSetId(), ActionKeys.VIEW);
-					}
-				}
-			}
-			else if (path.startsWith("/user_female_portrait") ||
-					 path.startsWith("/user_male_portrait") ||
-					 path.startsWith("/user_portrait")) {
+			if (path.startsWith("/user_female_portrait") ||
+				path.startsWith("/user_male_portrait") ||
+				path.startsWith("/user_portrait")) {
 
 				image = getUserPortraitImageResized(image, imageId);
 			}
@@ -554,8 +570,10 @@ public class WebServerServlet extends HttpServlet {
 
 				try {
 					FileEntry fileEntry =
-						DLAppServiceUtil.getFileEntryByUuidAndGroupId(
+						DLAppLocalServiceUtil.getFileEntryByUuidAndGroupId(
 							uuid, groupId);
+
+					_checkFileEntry(fileEntry, httpServletRequest);
 
 					image = convertFileEntry(igSmallImage, fileEntry);
 				}
@@ -584,7 +602,7 @@ public class WebServerServlet extends HttpServlet {
 
 		byte[] textObj = image.getTextObj();
 
-		if ((textObj == null) || (textObj.length == 0)) {
+		if (ArrayUtil.isEmpty(textObj)) {
 			throw new NoSuchFileException();
 		}
 
@@ -674,36 +692,46 @@ public class WebServerServlet extends HttpServlet {
 				user = UserLocalServiceUtil.fetchUserByPortraitId(imageId);
 			}
 
-			if ((user != null) &&
-				!imageIdToken.equals(DigesterUtil.digest(user.getUserUuid()))) {
+			if (user != null) {
+				String userUuidDigest = DigesterUtil.digest(user.getUserUuid());
 
-				return 0;
+				if (!MessageDigest.isEqual(
+						imageIdToken.getBytes(StandardCharsets.UTF_8),
+						userUuidDigest.getBytes(StandardCharsets.UTF_8))) {
+
+					return 0;
+				}
 			}
 
 			Organization organization = null;
 
 			List<Organization> organizations =
-				OrganizationLocalServiceUtil.dslQuery(
-					DSLQueryFactoryUtil.select(
-						OrganizationTable.INSTANCE
-					).from(
-						OrganizationTable.INSTANCE
-					).where(
-						OrganizationTable.INSTANCE.logoId.eq(imageId)
-					).limit(
-						0, 1
-					));
+				OrganizationLocalServiceUtil.getOrganizationsByLogoId(imageId);
 
 			if (ListUtil.isNotEmpty(organizations)) {
 				organization = organizations.get(0);
 			}
 
 			if ((organization != null) &&
-				!imageIdToken.equals(
-					DigesterUtil.digest(organization.getUuid()))) {
+				!_isLayoutSetLogo(httpServletRequest, imageId)) {
 
-				return 0;
+				String organizationUuidDigest = DigesterUtil.digest(
+					organization.getUuid());
+
+				if (!MessageDigest.isEqual(
+						imageIdToken.getBytes(StandardCharsets.UTF_8),
+						organizationUuidDigest.getBytes(
+							StandardCharsets.UTF_8))) {
+
+					return 0;
+				}
 			}
+		}
+
+		if ((imageId <= 0) ||
+			!_isImageTokenAccepted(httpServletRequest, imageId)) {
+
+			return 0;
 		}
 
 		return imageId;
@@ -795,12 +823,17 @@ public class WebServerServlet extends HttpServlet {
 			((usersImageMaxWidth > 0) &&
 			 (image.getWidth() > usersImageMaxWidth))) {
 
-			User user = UserLocalServiceUtil.getUserByPortraitId(imageId);
+			User user = UserLocalServiceUtil.fetchUserByPortraitId(imageId);
+
+			if (user == null) {
+				throw new NoSuchUserException(
+					"No user with portrait ID " + imageId);
+			}
 
 			UserLocalServiceUtil.updatePortrait(
 				user.getUserId(), image.getTextObj());
 
-			return ImageLocalServiceUtil.getImage(imageId);
+			return ImageLocalServiceUtil.fetchImage(imageId);
 		}
 
 		return image;
@@ -891,6 +924,10 @@ public class WebServerServlet extends HttpServlet {
 			HttpServletResponse httpServletResponse)
 		throws IOException, ServletException {
 
+		httpServletResponse.setHeader(
+			HttpHeaders.CACHE_CONTROL,
+			HttpHeaders.CACHE_CONTROL_NO_CACHE_VALUE);
+
 		if (!user.isGuestUser()) {
 			PortalUtil.sendError(
 				HttpServletResponse.SC_UNAUTHORIZED, (Exception)throwable,
@@ -925,7 +962,7 @@ public class WebServerServlet extends HttpServlet {
 			String name = pathArray[i];
 
 			try {
-				Folder folder = DLAppServiceUtil.getFolder(
+				Folder folder = DLAppLocalServiceUtil.getFolder(
 					groupId, folderId, URLCodec.decodeURL(name));
 
 				folderId = folder.getFolderId();
@@ -938,8 +975,8 @@ public class WebServerServlet extends HttpServlet {
 				String title = name;
 
 				sendFile(
-					httpServletResponse, user, groupId, folderId,
-					URLCodec.decodeURL(title));
+					httpServletRequest, httpServletResponse, user, groupId,
+					folderId, URLCodec.decodeURL(title));
 
 				return;
 			}
@@ -947,7 +984,8 @@ public class WebServerServlet extends HttpServlet {
 
 		try {
 			sendFile(
-				httpServletResponse, user, groupId, folderId, "index.html");
+				httpServletRequest, httpServletResponse, user, groupId,
+				folderId, "index.html");
 
 			return;
 		}
@@ -958,7 +996,8 @@ public class WebServerServlet extends HttpServlet {
 
 			try {
 				sendFile(
-					httpServletResponse, user, groupId, folderId, "index.htm");
+					httpServletRequest, httpServletResponse, user, groupId,
+					folderId, "index.htm");
 
 				return;
 			}
@@ -1005,6 +1044,37 @@ public class WebServerServlet extends HttpServlet {
 
 	protected void sendFile(
 			HttpServletRequest httpServletRequest,
+			HttpServletResponse httpServletResponse, User user, long groupId,
+			long folderId, String title)
+		throws Exception {
+
+		FileEntry fileEntry = DLAppLocalServiceUtil.getFileEntry(
+			groupId, folderId, title);
+
+		_checkFileEntry(fileEntry, httpServletRequest);
+
+		httpServletResponse.setHeader(
+			HttpHeaders.CACHE_CONTROL,
+			FileEntryHttpHeaderCustomizerUtil.getHttpHeaderValue(
+				fileEntry, HttpHeaders.CACHE_CONTROL,
+				HttpHeaders.CACHE_CONTROL_PRIVATE_VALUE));
+
+		String contentDispositionType = null;
+
+		if (ServletResponseUtil.isBrowserExecutableContentType(
+				fileEntry.getMimeType(), fileEntry.getTitle())) {
+
+			contentDispositionType = HttpHeaders.CONTENT_DISPOSITION_ATTACHMENT;
+		}
+
+		ServletResponseUtil.sendFile(
+			null, httpServletResponse, fileEntry.getTitle(),
+			fileEntry.getContentStream(), fileEntry.getSize(),
+			fileEntry.getMimeType(), contentDispositionType);
+	}
+
+	protected void sendFile(
+			HttpServletRequest httpServletRequest,
 			HttpServletResponse httpServletResponse, User user,
 			String[] pathArray)
 		throws Exception {
@@ -1015,7 +1085,10 @@ public class WebServerServlet extends HttpServlet {
 
 		if (_processCompanyInactiveRequest(
 				httpServletRequest, httpServletResponse,
-				fileEntry.getCompanyId())) {
+				fileEntry.getCompanyId()) ||
+			_processGroupMaintenanceModeRequest(
+				httpServletRequest, httpServletResponse,
+				fileEntry.getGroupId())) {
 
 			return;
 		}
@@ -1207,18 +1280,32 @@ public class WebServerServlet extends HttpServlet {
 
 		String cacheControlValue = HttpHeaders.CACHE_CONTROL_PRIVATE_VALUE;
 
+		boolean browserExecutable =
+			ServletResponseUtil.isBrowserExecutableContentType(
+				contentType, fileName);
+
 		boolean download = ParamUtil.getBoolean(httpServletRequest, "download");
+
+		if (browserExecutable) {
+			download = true;
+		}
 
 		if (download) {
 			cacheControlValue = HttpHeaders.CACHE_CONTROL_NO_CACHE_VALUE;
 		}
 
-		httpServletResponse.addHeader(
+		httpServletResponse.setHeader(
 			HttpHeaders.CACHE_CONTROL,
 			FileEntryHttpHeaderCustomizerUtil.getHttpHeaderValue(
 				fileEntry, HttpHeaders.CACHE_CONTROL, cacheControlValue));
 
-		if (isSupportsRangeHeader(contentType)) {
+		// Everything that could refuse this download has already refused it
+		// and only the transfer is left, so the download is granted here
+
+		_sendObjectEntryAttachmentDownloadMessage(
+			fileEntry, httpServletRequest, user);
+
+		if (!browserExecutable && isSupportsRangeHeader(contentType)) {
 			ServletResponseUtil.sendFileWithRangeHeader(
 				httpServletRequest, httpServletResponse, fileName, inputStream,
 				contentLength, contentType);
@@ -1238,26 +1325,6 @@ public class WebServerServlet extends HttpServlet {
 		}
 	}
 
-	protected void sendFile(
-			HttpServletResponse httpServletResponse, User user, long groupId,
-			long folderId, String title)
-		throws Exception {
-
-		FileEntry fileEntry = DLAppServiceUtil.getFileEntry(
-			groupId, folderId, title);
-
-		httpServletResponse.addHeader(
-			HttpHeaders.CACHE_CONTROL,
-			FileEntryHttpHeaderCustomizerUtil.getHttpHeaderValue(
-				fileEntry, HttpHeaders.CACHE_CONTROL,
-				HttpHeaders.CACHE_CONTROL_PRIVATE_VALUE));
-
-		ServletResponseUtil.sendFile(
-			null, httpServletResponse, fileEntry.getTitle(),
-			fileEntry.getContentStream(), fileEntry.getSize(),
-			fileEntry.getMimeType());
-	}
-
 	protected void sendGroups(
 			HttpServletResponse httpServletResponse, User user, String path)
 		throws Exception {
@@ -1267,16 +1334,17 @@ public class WebServerServlet extends HttpServlet {
 		List<Group> groups = WebDAVUtil.getGroups(user);
 
 		for (Group group : groups) {
-			if (_isDirectoryIndexingEnabled(group)) {
-				String name = HttpComponentsUtil.fixPath(
-					group.getFriendlyURL());
-
-				WebServerEntry webServerEntry = new WebServerEntry(
-					path, name + StringPool.SLASH, null, null,
-					group.getDescription(), 0);
-
-				webServerEntries.add(webServerEntry);
+			if (!_isDirectoryIndexingEnabled(group)) {
+				continue;
 			}
+
+			String name = HttpComponentsUtil.fixPath(group.getFriendlyURL());
+
+			WebServerEntry webServerEntry = new WebServerEntry(
+				path, name + StringPool.SLASH, null, null,
+				group.getDescription(), 0);
+
+			webServerEntries.add(webServerEntry);
 		}
 
 		sendHTML(httpServletResponse, path, webServerEntries);
@@ -1321,7 +1389,10 @@ public class WebServerServlet extends HttpServlet {
 		if ((fileEntry == null) ||
 			_processCompanyInactiveRequest(
 				httpServletRequest, httpServletResponse,
-				fileEntry.getCompanyId())) {
+				fileEntry.getCompanyId()) ||
+			_processGroupMaintenanceModeRequest(
+				httpServletRequest, httpServletResponse,
+				fileEntry.getGroupId())) {
 
 			return;
 		}
@@ -1338,8 +1409,11 @@ public class WebServerServlet extends HttpServlet {
 
 			fileName = trashTitleResolver.getOriginalTitle(fileName);
 		}
+		else if (ParamUtil.getBoolean(httpServletRequest, "useTitle")) {
+			fileName = fileEntry.getTitle();
+		}
 
-		httpServletResponse.addHeader(
+		httpServletResponse.setHeader(
 			HttpHeaders.CACHE_CONTROL,
 			FileEntryHttpHeaderCustomizerUtil.getHttpHeaderValue(
 				fileEntry, HttpHeaders.CACHE_CONTROL,
@@ -1347,18 +1421,21 @@ public class WebServerServlet extends HttpServlet {
 
 		boolean download = ParamUtil.getBoolean(httpServletRequest, "download");
 
-		if (download) {
+		String mimeType = fileEntry.getMimeType();
+
+		if (download || !mimeType.startsWith("image/") ||
+			ServletResponseUtil.isBrowserExecutableContentType(
+				mimeType, fileName)) {
+
 			ServletResponseUtil.sendFile(
 				httpServletRequest, httpServletResponse, fileName,
-				fileEntry.getContentStream(), fileEntry.getSize(),
-				fileEntry.getMimeType(),
+				fileEntry.getContentStream(), fileEntry.getSize(), mimeType,
 				HttpHeaders.CONTENT_DISPOSITION_ATTACHMENT);
 		}
 		else {
 			ServletResponseUtil.sendFile(
 				httpServletRequest, httpServletResponse, fileName,
-				fileEntry.getContentStream(), fileEntry.getSize(),
-				fileEntry.getMimeType());
+				fileEntry.getContentStream(), fileEntry.getSize(), mimeType);
 		}
 	}
 
@@ -1383,13 +1460,28 @@ public class WebServerServlet extends HttpServlet {
 
 		String fileName = ParamUtil.getString(httpServletRequest, "fileName");
 
+		long groupId = ParamUtil.getLong(httpServletRequest, "groupId");
+		String uuid = ParamUtil.getString(httpServletRequest, "uuid");
+
+		String contentDispositionType = null;
+
+		if ((groupId > 0) && Validator.isNotNull(uuid) &&
+			ServletResponseUtil.isBrowserExecutableContentType(
+				contentType, fileName)) {
+
+			contentDispositionType = HttpHeaders.CONTENT_DISPOSITION_ATTACHMENT;
+
+			httpServletResponse.setHeader(
+				HttpHeaders.CONTENT_DISPOSITION, contentDispositionType);
+		}
+
 		byte[] bytes = getImageBytes(httpServletRequest, image);
 
 		try {
 			if (Validator.isNotNull(fileName)) {
 				ServletResponseUtil.sendFile(
 					httpServletRequest, httpServletResponse, fileName, bytes,
-					contentType);
+					contentType, contentDispositionType);
 			}
 			else {
 				ServletResponseUtil.write(httpServletResponse, bytes);
@@ -1435,15 +1527,11 @@ public class WebServerServlet extends HttpServlet {
 			String fileName = HttpComponentsUtil.decodeURL(pathArray[2]);
 
 			try {
-				try {
-					DLAppLocalServiceUtil.getFileEntryByFileName(
+				FileEntry fileEntry =
+					DLAppLocalServiceUtil.fetchFileEntryByFileName(
 						groupId, folderId, fileName);
-				}
-				catch (NoSuchFileEntryException noSuchFileEntryException) {
-					if (_log.isDebugEnabled()) {
-						_log.debug(noSuchFileEntryException);
-					}
 
+				if (fileEntry == null) {
 					DLAppLocalServiceUtil.getFileEntry(
 						groupId, folderId, fileName);
 				}
@@ -1498,6 +1586,10 @@ public class WebServerServlet extends HttpServlet {
 		String path =
 			httpServletRequest.getContextPath() +
 				httpServletRequest.getServletPath();
+
+		if (requestURI.length() <= path.length()) {
+			return StringPool.BLANK;
+		}
 
 		return requestURI.substring(path.length() + 1);
 	}
@@ -1555,10 +1647,19 @@ public class WebServerServlet extends HttpServlet {
 
 		User user = _getUser(httpServletRequest);
 
-		Group group = _getGroup(user.getCompanyId(), pathArray[1]);
+		long previewCTCollectionId = ParamUtil.getLong(
+			httpServletRequest, "previewCTCollectionId",
+			CTCollectionThreadLocal.getCTCollectionId());
 
-		return fileEntryFriendlyURLResolver.resolveFriendlyURL(
-			group.getGroupId(), pathArray[2]);
+		try (SafeCloseable safeCloseable =
+				CTCollectionThreadLocal.setCTCollectionIdWithSafeCloseable(
+					previewCTCollectionId)) {
+
+			Group group = _getGroup(user.getCompanyId(), pathArray[1]);
+
+			return fileEntryFriendlyURLResolver.resolveFriendlyURL(
+				group.getGroupId(), pathArray[2]);
+		}
 	}
 
 	private void _checkCompanyAndGroup(
@@ -1606,9 +1707,23 @@ public class WebServerServlet extends HttpServlet {
 			ModelResourcePermissionRegistryUtil.getModelResourcePermission(
 				FileEntry.class.getName());
 
-		fileEntryModelResourcePermission.check(
-			permissionChecker, fileEntry.getFileEntryId(),
-			_getActionId(httpServletRequest));
+		try {
+			fileEntryModelResourcePermission.check(
+				permissionChecker, fileEntry.getFileEntryId(),
+				_getActionId(httpServletRequest));
+		}
+		catch (PortalException portalException) {
+			User user = permissionChecker.getUser();
+
+			if (user.isGuestUser() &&
+				!AuthLoginGroupSettingsUtil.isPromptEnabled(
+					fileEntry.getGroupId())) {
+
+				throw new NoSuchFileEntryException(portalException);
+			}
+
+			throw portalException;
+		}
 
 		FileVersion fileVersion = fileEntry.getFileVersion();
 
@@ -1633,6 +1748,58 @@ public class WebServerServlet extends HttpServlet {
 			throw new FileEntryExpiredException(
 				"The file entry " + fileEntry.getFileEntryId() +
 					" is expired and the user does not have review permission");
+		}
+	}
+
+	private void _checkImagePermission(
+			HttpServletRequest httpServletRequest, long imageId)
+		throws Exception {
+
+		Layout layout = LayoutLocalServiceUtil.fetchLayoutByIconImageId(
+			true, imageId);
+
+		if (layout == null) {
+			layout = LayoutLocalServiceUtil.fetchLayoutByIconImageId(
+				false, imageId);
+		}
+
+		if (layout != null) {
+			PermissionChecker permissionChecker = _getPermissionChecker(
+				httpServletRequest);
+
+			if (!LayoutPermissionUtil.contains(
+					permissionChecker, layout, ActionKeys.VIEW)) {
+
+				throw new PrincipalException.MustHavePermission(
+					permissionChecker, Layout.class.getName(), layout.getPlid(),
+					ActionKeys.VIEW);
+			}
+		}
+
+		LayoutSet layoutSet = LayoutSetLocalServiceUtil.fetchLayoutSetByLogoId(
+			true, imageId);
+
+		if (layoutSet == null) {
+			layoutSet = LayoutSetLocalServiceUtil.fetchLayoutSetByLogoId(
+				false, imageId);
+		}
+
+		if (layoutSet != null) {
+			PermissionChecker permissionChecker = _getPermissionChecker(
+				httpServletRequest);
+
+			Group group = layoutSet.getGroup();
+
+			if (!group.isShowSite(
+					permissionChecker, layoutSet.isPrivateLayout()) &&
+				!GroupPermissionUtil.contains(
+					permissionChecker, layoutSet.getGroupId(),
+					ActionKeys.VIEW)) {
+
+				throw new PrincipalException.MustHavePermission(
+					permissionChecker, LayoutSet.class.getName(),
+					layoutSet.getLayoutSetId(), ActionKeys.VIEW);
+			}
 		}
 	}
 
@@ -1689,76 +1856,6 @@ public class WebServerServlet extends HttpServlet {
 		}
 	}
 
-	private Callable<Void> _createFileServingCallable(
-		HttpServletRequest httpServletRequest,
-		HttpServletResponse httpServletResponse, User user) {
-
-		return () -> {
-			String path = _getPath(httpServletRequest);
-
-			String[] pathArray = StringUtil.split(
-				_getPath(httpServletRequest), CharPool.SLASH);
-
-			if (pathArray.length == 0) {
-				sendGroups(
-					httpServletResponse, user,
-					httpServletRequest.getServletPath() + StringPool.SLASH +
-						path);
-			}
-			else {
-				if (Validator.isNumber(pathArray[0])) {
-					sendFile(
-						httpServletRequest, httpServletResponse, user,
-						pathArray);
-				}
-				else if (_PATH_SEPARATOR_FILE_ENTRY.equals(pathArray[0])) {
-					sendFile(
-						httpServletRequest, httpServletResponse, user,
-						pathArray);
-				}
-				else if (PATH_PORTLET_FILE_ENTRY.equals(pathArray[0])) {
-					sendPortletFileEntry(
-						httpServletRequest, httpServletResponse, path,
-						pathArray);
-				}
-				else {
-					if (PropsValues.WEB_SERVER_SERVLET_CHECK_IMAGE_GALLERY &&
-						isLegacyImageGalleryImageId(
-							httpServletRequest, httpServletResponse)) {
-
-						return null;
-					}
-
-					Image image = getImage(httpServletRequest, true);
-
-					if (image != null) {
-						if ((image.getCompanyId() != user.getCompanyId()) &&
-							_processCompanyInactiveRequest(
-								httpServletRequest, httpServletResponse,
-								image.getCompanyId())) {
-
-							return null;
-						}
-
-						writeImage(
-							image, httpServletRequest, httpServletResponse);
-					}
-					else {
-						sendDocumentLibrary(
-							httpServletRequest, httpServletResponse, user,
-							StringBundler.concat(
-								PortalUtil.getPathContext(),
-								httpServletRequest.getServletPath(),
-								StringPool.SLASH, path),
-							pathArray);
-					}
-				}
-			}
-
-			return null;
-		};
-	}
-
 	private String _getActionId(HttpServletRequest httpServletRequest) {
 		boolean audioPreview = ParamUtil.getBoolean(
 			httpServletRequest, "audioPreview");
@@ -1809,10 +1906,10 @@ public class WebServerServlet extends HttpServlet {
 		if (pathArray.length == 1) {
 			long fileShortcutId = GetterUtil.getLong(pathArray[0]);
 
-			FileShortcut dlFileShortcut = DLAppServiceUtil.getFileShortcut(
+			FileShortcut dlFileShortcut = DLAppLocalServiceUtil.getFileShortcut(
 				fileShortcutId);
 
-			FileEntry fileEntry = DLAppServiceUtil.getFileEntry(
+			FileEntry fileEntry = DLAppLocalServiceUtil.getFileEntry(
 				dlFileShortcut.getToFileEntryId());
 
 			_checkFileEntry(fileEntry, httpServletRequest);
@@ -1822,8 +1919,9 @@ public class WebServerServlet extends HttpServlet {
 		else if (pathArray.length == 2) {
 			long groupId = GetterUtil.getLong(pathArray[0]);
 
-			FileEntry fileEntry = DLAppServiceUtil.getFileEntryByUuidAndGroupId(
-				pathArray[1], groupId);
+			FileEntry fileEntry =
+				DLAppLocalServiceUtil.getFileEntryByUuidAndGroupId(
+					pathArray[1], groupId);
 
 			_checkFileEntry(fileEntry, httpServletRequest);
 
@@ -1854,39 +1952,30 @@ public class WebServerServlet extends HttpServlet {
 					0, fileName.indexOf(StringPool.QUESTION));
 			}
 
-			try {
-				FileEntry fileEntry = DLAppServiceUtil.getFileEntryByFileName(
+			FileEntry fileEntry =
+				DLAppLocalServiceUtil.fetchFileEntryByFileName(
 					groupId, folderId, fileName);
 
-				_checkFileEntry(fileEntry, httpServletRequest);
-
-				return fileEntry;
-			}
-			catch (NoSuchFileEntryException noSuchFileEntryException) {
-				if (_log.isDebugEnabled()) {
-					_log.debug(noSuchFileEntryException);
-				}
-
-				FileEntry fileEntry = DLAppServiceUtil.getFileEntry(
+			if (fileEntry == null) {
+				fileEntry = DLAppLocalServiceUtil.getFileEntry(
 					groupId, folderId, fileName);
-
-				_checkFileEntry(fileEntry, httpServletRequest);
-
-				return fileEntry;
 			}
-		}
-		else {
-			long groupId = GetterUtil.getLong(pathArray[0]);
-
-			String uuid = pathArray[3];
-
-			FileEntry fileEntry = DLAppServiceUtil.getFileEntryByUuidAndGroupId(
-				uuid, groupId);
 
 			_checkFileEntry(fileEntry, httpServletRequest);
 
 			return fileEntry;
 		}
+
+		long groupId = GetterUtil.getLong(pathArray[0]);
+
+		String uuid = pathArray[3];
+
+		FileEntry fileEntry =
+			DLAppLocalServiceUtil.getFileEntryByUuidAndGroupId(uuid, groupId);
+
+		_checkFileEntry(fileEntry, httpServletRequest);
+
+		return fileEntry;
 	}
 
 	private PermissionChecker _getPermissionChecker(
@@ -1900,7 +1989,8 @@ public class WebServerServlet extends HttpServlet {
 				PortalUtil.getCompanyId(httpServletRequest));
 		}
 
-		return PermissionCheckerFactoryUtil.create(user);
+		return PermissionThreadLocal.getPermissionChecker(
+			user, !user.isGuestUser());
 	}
 
 	private String _getPortletId(
@@ -1931,6 +2021,53 @@ public class WebServerServlet extends HttpServlet {
 			FileEntry.class.getName(), PortletProvider.Action.VIEW);
 	}
 
+	private boolean _isImageTokenAccepted(
+		HttpServletRequest httpServletRequest, long imageId) {
+
+		String token = WebServerServletTokenUtil.getToken(imageId);
+
+		if (Validator.isNotNull(token)) {
+			String imageToken = ParamUtil.getString(httpServletRequest, "t");
+
+			if (MessageDigest.isEqual(
+					imageToken.getBytes(StandardCharsets.UTF_8),
+					token.getBytes(StandardCharsets.UTF_8))) {
+
+				return true;
+			}
+		}
+
+		if (GetterUtil.getBoolean(
+				PropsUtil.get("image.token.check.disabled"))) {
+
+			return true;
+		}
+
+		if (_log.isWarnEnabled()) {
+			_log.warn(
+				StringBundler.concat(
+					"Image ", imageId,
+					" was requested without a valid \"t\" parameter"));
+		}
+
+		return false;
+	}
+
+	private boolean _isLayoutSetLogo(
+		HttpServletRequest httpServletRequest, long imageId) {
+
+		String path = GetterUtil.getString(httpServletRequest.getPathInfo());
+
+		if (path.startsWith("/layout_set_logo") &&
+			(LayoutSetLocalServiceUtil.fetchLayoutSetByLogoId(false, imageId) !=
+				null)) {
+
+			return true;
+		}
+
+		return false;
+	}
+
 	private boolean _processCompanyInactiveRequest(
 			HttpServletRequest httpServletRequest,
 			HttpServletResponse httpServletResponse, long companyId)
@@ -1954,6 +2091,85 @@ public class WebServerServlet extends HttpServlet {
 		}
 
 		return true;
+	}
+
+	private boolean _processGroupMaintenanceModeRequest(
+			HttpServletRequest httpServletRequest,
+			HttpServletResponse httpServletResponse, long groupId)
+		throws Exception {
+
+		Group group = GroupLocalServiceUtil.fetchGroup(groupId);
+
+		if ((group == null) || GroupLocalServiceUtil.isLiveGroupActive(group)) {
+			return false;
+		}
+
+		if (GroupLocalServiceUtil.isMaintenanceMode(group)) {
+			PermissionChecker permissionChecker =
+				PermissionThreadLocal.getPermissionChecker();
+
+			if ((permissionChecker != null) &&
+				permissionChecker.isGroupAdmin(groupId)) {
+
+				return false;
+			}
+
+			PortalUtil.sendError(
+				HttpServletResponse.SC_SERVICE_UNAVAILABLE,
+				new PortalException(
+					"this-site-is-temporarily-unavailable-for-maintenance"),
+				httpServletRequest, httpServletResponse);
+
+			return true;
+		}
+
+		InactiveRequestHandler inactiveRequestHandler =
+			_inactiveRequestHandlerSnapshot.get();
+
+		inactiveRequestHandler.processInactiveRequest(
+			httpServletRequest, httpServletResponse,
+			"this-site-is-inactive-please-contact-the-administrator");
+
+		return true;
+	}
+
+	private void _sendObjectEntryAttachmentDownloadMessage(
+		FileEntry fileEntry, HttpServletRequest httpServletRequest, User user) {
+
+		if (Validator.isNull(
+				ParamUtil.getString(
+					httpServletRequest,
+					"objectDefinitionExternalReferenceCode"))) {
+
+			return;
+		}
+
+		MessageBus messageBus = _messageBusSnapshot.get();
+
+		Message message = new Message();
+
+		message.put("companyId", fileEntry.getCompanyId());
+		message.put("fileEntryId", fileEntry.getFileEntryId());
+		message.put(
+			"groupExternalReferenceCode",
+			ParamUtil.getString(
+				httpServletRequest, "groupExternalReferenceCode"));
+		message.put(
+			"objectDefinitionExternalReferenceCode",
+			ParamUtil.getString(
+				httpServletRequest, "objectDefinitionExternalReferenceCode"));
+		message.put(
+			"objectEntryExternalReferenceCode",
+			ParamUtil.getString(
+				httpServletRequest, "objectEntryExternalReferenceCode"));
+		message.put(
+			"objectFieldExternalReferenceCode",
+			ParamUtil.getString(
+				httpServletRequest, "objectFieldExternalReferenceCode"));
+		message.put("userId", user.getUserId());
+
+		messageBus.sendMessage(
+			DestinationNames.OBJECT_ENTRY_ATTACHMENT_DOWNLOAD, message);
 	}
 
 	private static final String _PATH_SEPARATOR_FILE_ENTRY =

@@ -20,7 +20,7 @@ import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermi
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermissionFactory;
 import com.liferay.portal.kernel.security.permission.resource.PortletResourcePermission;
 import com.liferay.portal.kernel.security.permission.resource.StagedModelPermissionLogic;
-import com.liferay.portal.util.PropsValues;
+import com.liferay.portal.kernel.util.PropsValues;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -29,7 +29,10 @@ import org.osgi.service.component.annotations.Reference;
  * @author Preston Crary
  */
 @Component(
-	property = "model.class.name=com.liferay.bookmarks.model.BookmarksFolder",
+	property = {
+		"model.class.name=com.liferay.bookmarks.model.BookmarksFolder",
+		"permissions.view.dynamic.inheritance.checking=true"
+	},
 	service = ModelResourcePermission.class
 )
 public class BookmarksFolderModelResourcePermissionWrapper

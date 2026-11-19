@@ -50,30 +50,15 @@ public class IndexedFieldsFixture {
 		_searchEngineHelper = searchEngineHelper;
 
 		_uidFactory = null;
-		_documentBuilderFactory = null;
 	}
 
 	public IndexedFieldsFixture(
 		ResourcePermissionLocalService resourcePermissionLocalService,
-		SearchEngineHelper searchEngineHelper,
-		DocumentBuilderFactory documentBuilderFactory) {
-
-		_resourcePermissionLocalService = resourcePermissionLocalService;
-		_searchEngineHelper = searchEngineHelper;
-		_documentBuilderFactory = documentBuilderFactory;
-
-		_uidFactory = null;
-	}
-
-	public IndexedFieldsFixture(
-		ResourcePermissionLocalService resourcePermissionLocalService,
-		SearchEngineHelper searchEngineHelper, UIDFactory uidFactory,
-		DocumentBuilderFactory documentBuilderFactory) {
+		SearchEngineHelper searchEngineHelper, UIDFactory uidFactory) {
 
 		_resourcePermissionLocalService = resourcePermissionLocalService;
 		_searchEngineHelper = searchEngineHelper;
 		_uidFactory = uidFactory;
-		_documentBuilderFactory = documentBuilderFactory;
 	}
 
 	public void populateDate(
@@ -85,11 +70,10 @@ public class IndexedFieldsFixture {
 	}
 
 	public void populateExpirationDateWithForever(Map<String, String> map) {
-		populateDate(Field.EXPIRATION_DATE, new Date(Long.MAX_VALUE), map);
-
-		if (_isSearchEngineElasticsearch()) {
-			map.put(Field.EXPIRATION_DATE, "99950812133000");
-		}
+		populateDate(
+			Field.EXPIRATION_DATE,
+			new Date(com.liferay.portal.kernel.search.Document.MAX_DATE_TIME),
+			map);
 	}
 
 	public void populatePriority(String priority, Map<String, String> map) {
@@ -141,9 +125,9 @@ public class IndexedFieldsFixture {
 	public void populateUID(
 		ClassedModel classedModel, Map<String, String> map) {
 
-		DocumentBuilder documentBuilder = _documentBuilderFactory.builder();
+		DocumentBuilder documentBuilder = DocumentBuilderFactory.builder();
 
-		_uidFactory.setUID(classedModel, documentBuilder);
+		documentBuilder.setString(Field.UID, _uidFactory.getUID(classedModel));
 
 		Document document = documentBuilder.build();
 
@@ -215,7 +199,7 @@ public class IndexedFieldsFixture {
 
 	public Document postProcessDocument(Document document) {
 		if (_isSearchEngineSolr()) {
-			DocumentBuilder documentBuilder = _documentBuilderFactory.builder(
+			DocumentBuilder documentBuilder = DocumentBuilderFactory.builder(
 				document);
 
 			documentBuilder.setString(
@@ -228,7 +212,7 @@ public class IndexedFieldsFixture {
 		}
 
 		if (_isSearchEngineElasticsearch()) {
-			DocumentBuilder documentBuilder = _documentBuilderFactory.builder(
+			DocumentBuilder documentBuilder = DocumentBuilderFactory.builder(
 				document);
 
 			documentBuilder.unsetValue("timestamp");
@@ -270,7 +254,6 @@ public class IndexedFieldsFixture {
 
 	private final Format _dateFormat =
 		FastDateFormatFactoryUtil.getSimpleDateFormat("yyyyMMddHHmmss");
-	private final DocumentBuilderFactory _documentBuilderFactory;
 	private final ResourcePermissionLocalService
 		_resourcePermissionLocalService;
 	private final SearchEngineHelper _searchEngineHelper;

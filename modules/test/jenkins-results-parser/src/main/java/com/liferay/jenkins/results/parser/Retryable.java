@@ -64,12 +64,11 @@ public abstract class Retryable<T> {
 	}
 
 	public void sleep(long duration) {
-		try {
-			Thread.sleep(duration);
-		}
-		catch (InterruptedException interruptedException) {
-			throw new RuntimeException(interruptedException);
-		}
+		JenkinsResultsParserUtil.sleep(duration);
+	}
+
+	protected final void breakLoop() {
+		maxRetries = 0;
 	}
 
 	protected String getRetryMessage(int retryCount) {

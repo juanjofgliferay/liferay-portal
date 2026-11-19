@@ -11,7 +11,7 @@ import com.liferay.petra.function.UnsafeConsumer;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.db.partition.DBPartitionUtil;
+import com.liferay.portal.db.partition.util.DBPartitionUtil;
 import com.liferay.portal.kernel.bean.BeanReference;
 import com.liferay.portal.kernel.exception.ResourceActionsException;
 import com.liferay.portal.kernel.language.LanguageUtil;
@@ -38,7 +38,9 @@ import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.PortletKeys;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.ResourceBundleUtil;
+import com.liferay.portal.kernel.util.SetUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
@@ -47,7 +49,9 @@ import com.liferay.portal.kernel.xml.DocumentException;
 import com.liferay.portal.kernel.xml.DocumentType;
 import com.liferay.portal.kernel.xml.Element;
 import com.liferay.portal.kernel.xml.UnsecureSAXReaderUtil;
-import com.liferay.portal.util.PropsValues;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 
 import java.io.InputStream;
 
@@ -56,7 +60,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
@@ -66,9 +69,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.ResourceBundle;
 import java.util.Set;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author Brian Wing Shun Chan
@@ -148,9 +149,11 @@ public class ResourceActionsImpl implements ResourceActions {
 		List<String> modelNames = new ArrayList<>();
 
 		for (String name : _resourceActionsBags.keySet()) {
-			if (name.indexOf(CharPool.PERIOD) != -1) {
-				modelNames.add(name);
+			if (name.indexOf(CharPool.PERIOD) == -1) {
+				continue;
 			}
+
+			modelNames.add(name);
 		}
 
 		return modelNames;
@@ -206,7 +209,7 @@ public class ResourceActionsImpl implements ResourceActions {
 	@Override
 	public List<String> getModelResourceActions(String name) {
 		ResourceActionsBag modelResourceActionsBag = _getResourceActionsBag(
-			name);
+			name, false);
 
 		return new ArrayList<>(modelResourceActionsBag.getSupportsActions());
 	}
@@ -214,7 +217,7 @@ public class ResourceActionsImpl implements ResourceActions {
 	@Override
 	public List<String> getModelResourceGroupDefaultActions(String name) {
 		ResourceActionsBag modelResourceActionsBag = _getResourceActionsBag(
-			name);
+			name, false);
 
 		return new ArrayList<>(
 			modelResourceActionsBag.getGroupDefaultActions());
@@ -223,7 +226,7 @@ public class ResourceActionsImpl implements ResourceActions {
 	@Override
 	public List<String> getModelResourceGuestDefaultActions(String name) {
 		ResourceActionsBag modelResourceActionsBag = _getResourceActionsBag(
-			name);
+			name, false);
 
 		return new ArrayList<>(
 			modelResourceActionsBag.getGuestDefaultActions());
@@ -232,7 +235,7 @@ public class ResourceActionsImpl implements ResourceActions {
 	@Override
 	public List<String> getModelResourceGuestUnsupportedActions(String name) {
 		ResourceActionsBag modelResourceActionsBag = _getResourceActionsBag(
-			name);
+			name, false);
 
 		return new ArrayList<>(
 			modelResourceActionsBag.getGuestUnsupportedActions());
@@ -246,7 +249,7 @@ public class ResourceActionsImpl implements ResourceActions {
 	@Override
 	public List<String> getModelResourceOwnerDefaultActions(String name) {
 		ResourceActionsBag modelResourceActionsBag = _getResourceActionsBag(
-			name);
+			name, false);
 
 		return new ArrayList<>(
 			modelResourceActionsBag.getOwnerDefaultActions());
@@ -275,9 +278,11 @@ public class ResourceActionsImpl implements ResourceActions {
 		List<String> portletNames = new ArrayList<>();
 
 		for (String name : _resourceActionsBags.keySet()) {
-			if (name.indexOf(CharPool.PERIOD) == -1) {
-				portletNames.add(name);
+			if (name.indexOf(CharPool.PERIOD) != -1) {
+				continue;
 			}
+
+			portletNames.add(name);
 		}
 
 		return portletNames;
@@ -305,7 +310,7 @@ public class ResourceActionsImpl implements ResourceActions {
 		name = PortletIdCodec.decodePortletName(name);
 
 		ResourceActionsBag portletResourceActionsBag = _getResourceActionsBag(
-			name);
+			name, false);
 
 		return new ArrayList<>(
 			portletResourceActionsBag.getGroupDefaultActions());
@@ -316,7 +321,7 @@ public class ResourceActionsImpl implements ResourceActions {
 		name = PortletIdCodec.decodePortletName(name);
 
 		ResourceActionsBag portletResourceActionsBag = _getResourceActionsBag(
-			name);
+			name, false);
 
 		return new ArrayList<>(
 			portletResourceActionsBag.getGuestDefaultActions());
@@ -327,7 +332,7 @@ public class ResourceActionsImpl implements ResourceActions {
 		name = PortletIdCodec.decodePortletName(name);
 
 		ResourceActionsBag portletResourceActionsBag = _getResourceActionsBag(
-			name);
+			name, false);
 
 		return new ArrayList<>(
 			portletResourceActionsBag.getGuestUnsupportedActions());
@@ -338,10 +343,21 @@ public class ResourceActionsImpl implements ResourceActions {
 		name = PortletIdCodec.decodePortletName(name);
 
 		ResourceActionsBag portletResourceActionsBag = _getResourceActionsBag(
-			name);
+			name, false);
 
 		return new ArrayList<>(
 			portletResourceActionsBag.getLayoutManagerActions());
+	}
+
+	@Override
+	public List<String> getPortletResourceOwnerDefaultActions(String name) {
+		name = PortletIdCodec.decodePortletName(name);
+
+		ResourceActionsBag portletResourceActionsBag = _getResourceActionsBag(
+			name, false);
+
+		return new ArrayList<>(
+			portletResourceActionsBag.getOwnerDefaultActions());
 	}
 
 	@Override
@@ -408,11 +424,7 @@ public class ResourceActionsImpl implements ResourceActions {
 
 	@Override
 	public boolean isPortalModelResource(String modelResource) {
-		if (_portalModelResources.contains(modelResource)) {
-			return true;
-		}
-
-		return false;
+		return _portalModelResources.contains(modelResource);
 	}
 
 	@Override
@@ -420,11 +432,7 @@ public class ResourceActionsImpl implements ResourceActions {
 		Collection<String> rootModelResources =
 			_portletRootModelResources.values();
 
-		if (rootModelResources.contains(modelResource)) {
-			return true;
-		}
-
-		return false;
+		return rootModelResources.contains(modelResource);
 	}
 
 	@Override
@@ -587,9 +595,15 @@ public class ResourceActionsImpl implements ResourceActions {
 			return;
 		}
 
-		ResourceActionsBag resourceActionsBag = _getResourceActionsBag(name);
+		ResourceActionsBag resourceActionsBag = _getResourceActionsBag(
+			name, false);
 
-		Set<String> resourceActions = resourceActionsBag.getSupportsActions();
+		Set<String> resourceActions =
+			resourceActionsBag.getOwnerDefaultActions();
+
+		resourceActions.remove(action);
+
+		resourceActions = resourceActionsBag.getSupportsActions();
 
 		resourceActions.remove(action);
 
@@ -598,6 +612,106 @@ public class ResourceActionsImpl implements ResourceActions {
 
 		if (resourceAction != null) {
 			resourceActionLocalService.deleteResourceAction(resourceAction);
+		}
+	}
+
+	@Override
+	public void removeModelResources(Document document) {
+		Element rootElement = document.getRootElement();
+
+		for (Element modelResourceElement :
+				rootElement.elements("model-resource")) {
+
+			String modelName = modelResourceElement.elementTextTrim(
+				"model-name");
+
+			if (Validator.isNull(modelName)) {
+				modelName = _getCompositeModelName(
+					modelResourceElement.element("composite-model-name"));
+			}
+
+			Element portletRefElement = modelResourceElement.element(
+				"portlet-ref");
+
+			for (Element portletNameElement :
+					portletRefElement.elements("portlet-name")) {
+
+				String portletName = portletNameElement.getTextTrim();
+
+				String portletRootModelResourceName =
+					_portletRootModelResources.get(portletName);
+
+				if (Objects.equals(portletRootModelResourceName, modelName)) {
+					_portletRootModelResources.remove(portletName);
+				}
+
+				Set<String> portletResourceNames = _resourceReferences.get(
+					modelName);
+
+				if (portletResourceNames != null) {
+					portletResourceNames.remove(portletName);
+				}
+
+				Set<String> modelResourceNames = _resourceReferences.get(
+					portletName);
+
+				if (modelResourceNames == null) {
+					continue;
+				}
+
+				modelResourceNames.remove(modelName);
+
+				if (!modelResourceNames.isEmpty()) {
+					continue;
+				}
+
+				_resourceReferences.remove(portletName);
+			}
+
+			if (SetUtil.isNotEmpty(_resourceReferences.get(modelName))) {
+				continue;
+			}
+
+			for (ResourceAction resourceAction :
+					resourceActionLocalService.getResourceActions(modelName)) {
+
+				resourceActionLocalService.deleteResourceAction(resourceAction);
+			}
+
+			synchronized (_resourceActionsBags) {
+				_resourceActionsBags.remove(modelName);
+			}
+
+			_resourceReferences.remove(modelName);
+
+			_organizationModelResources.remove(modelName);
+
+			_modelResourceWeights.remove(modelName);
+
+			_portalModelResources.remove(modelName);
+		}
+	}
+
+	@Override
+	public void removePortletResources(Document document) {
+		Element rootElement = document.getRootElement();
+
+		for (Element portletResourceElement :
+				rootElement.elements("portlet-resource")) {
+
+			String portletName = portletResourceElement.elementTextTrim(
+				"portlet-name");
+
+			List<ResourceAction> resourceActions =
+				resourceActionLocalService.getResourceActions(portletName);
+
+			for (ResourceAction resourceAction : resourceActions) {
+				resourceActionLocalService.deleteResourceAction(resourceAction);
+			}
+
+			synchronized (_resourceActionsBags) {
+				_resourceActionsBags.remove(portletName);
+			}
 		}
 	}
 
@@ -642,9 +756,11 @@ public class ResourceActionsImpl implements ResourceActions {
 		while (iterator.hasNext()) {
 			String actionId = iterator.next();
 
-			if (guestUnsupportedActions.contains(actionId)) {
-				iterator.remove();
+			if (!guestUnsupportedActions.contains(actionId)) {
+				continue;
 			}
+
+			iterator.remove();
 		}
 	}
 
@@ -704,9 +820,11 @@ public class ResourceActionsImpl implements ResourceActions {
 
 			sb.append(modelNameElement.getTextTrim());
 
-			if (iterator.hasNext()) {
-				sb.append(_COMPOSITE_MODEL_NAME_SEPARATOR);
+			if (!iterator.hasNext()) {
+				continue;
 			}
+
+			sb.append(_COMPOSITE_MODEL_NAME_SEPARATOR);
 		}
 
 		return sb.toString();
@@ -766,7 +884,7 @@ public class ResourceActionsImpl implements ResourceActions {
 		String name, Portlet portlet) {
 
 		ResourceActionsBag portletResourceActionsBag = _getResourceActionsBag(
-			name);
+			name, true);
 
 		Set<String> portletActions =
 			portletResourceActionsBag.getSupportsActions();
@@ -804,11 +922,17 @@ public class ResourceActionsImpl implements ResourceActions {
 		return new ArrayList<>(portletActions);
 	}
 
-	private ResourceActionsBag _getResourceActionsBag(String name) {
+	private ResourceActionsBag _getResourceActionsBag(
+		String name, boolean create) {
+
 		ResourceActionsBag resourceActionsBag = _resourceActionsBags.get(name);
 
 		if (resourceActionsBag != null) {
 			return resourceActionsBag;
+		}
+
+		if (!create) {
+			return _dummyResourceActionsBag;
 		}
 
 		synchronized (_resourceActionsBags) {
@@ -1028,7 +1152,7 @@ public class ResourceActionsImpl implements ResourceActions {
 
 				Set<String> modelResources =
 					_resourceReferences.computeIfAbsent(
-						portletName, key -> new HashSet<>());
+						portletName, key -> ConcurrentHashMap.newKeySet());
 
 				modelResources.add(modelName);
 
@@ -1036,7 +1160,7 @@ public class ResourceActionsImpl implements ResourceActions {
 
 				Set<String> portletResources =
 					_resourceReferences.computeIfAbsent(
-						modelName, key -> new HashSet<>());
+						modelName, key -> ConcurrentHashMap.newKeySet());
 
 				portletResources.add(portletName);
 
@@ -1045,21 +1169,23 @@ public class ResourceActionsImpl implements ResourceActions {
 				boolean root = GetterUtil.getBoolean(
 					modelResourceElement.elementText("root"));
 
-				if (root) {
-					String existingModelName =
-						_portletRootModelResources.putIfAbsent(
-							portletName, modelName);
+				if (!root) {
+					continue;
+				}
 
-					if (Validator.isNotNull(existingModelName) &&
-						!Objects.equals(existingModelName, modelName)) {
+				String existingModelName =
+					_portletRootModelResources.putIfAbsent(
+						portletName, modelName);
 
-						throw new ResourceActionsException(
-							StringBundler.concat(
-								"Portlet ", portletName,
-								" cannot be assigned to both ",
-								existingModelName, " and ", modelName,
-								" as root model resources. See LPS-135983."));
-					}
+				if (Validator.isNotNull(existingModelName) &&
+					!Objects.equals(existingModelName, modelName)) {
+
+					throw new ResourceActionsException(
+						StringBundler.concat(
+							"Portlet ", portletName,
+							" cannot be assigned to both ", existingModelName,
+							" and ", modelName,
+							" as root model resources. See LPS-135983."));
 				}
 			}
 
@@ -1072,9 +1198,11 @@ public class ResourceActionsImpl implements ResourceActions {
 				modelResourceElement, modelName,
 				Collections.singleton(ActionKeys.PERMISSIONS));
 
-			if (resourceNames != null) {
-				resourceNames.add(modelName);
+			if (resourceNames == null) {
+				continue;
 			}
+
+			resourceNames.add(modelName);
 		}
 	}
 
@@ -1129,9 +1257,11 @@ public class ResourceActionsImpl implements ResourceActions {
 				_readResource(
 					portletResourceElement, portletName, portletActions);
 
-				if (resourceNames != null) {
-					resourceNames.add(portletName);
+				if (resourceNames == null) {
+					continue;
 				}
+
+				resourceNames.add(portletName);
 			}
 		}
 	}
@@ -1141,7 +1271,8 @@ public class ResourceActionsImpl implements ResourceActions {
 			Set<String> defaultResourceActions)
 		throws ResourceActionsException {
 
-		ResourceActionsBag resourceActionsBag = _getResourceActionsBag(name);
+		ResourceActionsBag resourceActionsBag = _getResourceActionsBag(
+			name, true);
 
 		Set<String> resourceActions = resourceActionsBag.getSupportsActions();
 
@@ -1213,13 +1344,19 @@ public class ResourceActionsImpl implements ResourceActions {
 				guestUnsupportedActions, guestDefaultActions);
 		}
 
+		Set<String> ownerDefaultActions =
+			resourceActionsBag.getOwnerDefaultActions();
+
 		Element ownerDefaultsElement = _getPermissionsChildElement(
 			resourceElement, "owner-defaults");
 
 		if (ownerDefaultsElement != null) {
-			_readActionKeys(
-				resourceActionsBag.getOwnerDefaultActions(),
-				ownerDefaultsElement);
+			ownerDefaultActions.clear();
+
+			_readActionKeys(ownerDefaultActions, ownerDefaultsElement);
+		}
+		else {
+			ownerDefaultActions.addAll(resourceActions);
 		}
 
 		Set<String> layoutManagerActions =
@@ -1249,15 +1386,21 @@ public class ResourceActionsImpl implements ResourceActions {
 	private static final Log _log = LogFactoryUtil.getLog(
 		ResourceActionsImpl.class);
 
-	private final Map<String, Double> _modelResourceWeights = new HashMap<>();
-	private final Set<String> _organizationModelResources = new HashSet<>();
-	private final Set<String> _portalModelResources = new HashSet<>();
+	private static final ResourceActionsBag _dummyResourceActionsBag =
+		new ResourceActionsBag();
+
+	private final Map<String, Double> _modelResourceWeights =
+		new ConcurrentHashMap<>();
+	private final Set<String> _organizationModelResources =
+		ConcurrentHashMap.newKeySet();
+	private final Set<String> _portalModelResources =
+		ConcurrentHashMap.newKeySet();
 	private final Map<String, String> _portletRootModelResources =
-		new HashMap<>();
+		new ConcurrentHashMap<>();
 	private final Map<String, ResourceActionsBag> _resourceActionsBags =
-		new HashMap<>();
+		new ConcurrentHashMap<>();
 	private final Map<String, Set<String>> _resourceReferences =
-		new HashMap<>();
+		new ConcurrentHashMap<>();
 
 	private static class ResourceActionsBag {
 
@@ -1285,12 +1428,18 @@ public class ResourceActionsImpl implements ResourceActions {
 			return _supportsActions;
 		}
 
-		private final Set<String> _groupDefaultActions = new HashSet<>();
-		private final Set<String> _guestDefaultActions = new HashSet<>();
-		private final Set<String> _guestUnsupportedActions = new HashSet<>();
-		private final Set<String> _layoutManagerActions = new HashSet<>();
-		private final Set<String> _ownerDefaultActions = new HashSet<>();
-		private final Set<String> _supportsActions = new HashSet<>();
+		private final Set<String> _groupDefaultActions =
+			ConcurrentHashMap.newKeySet();
+		private final Set<String> _guestDefaultActions =
+			ConcurrentHashMap.newKeySet();
+		private final Set<String> _guestUnsupportedActions =
+			ConcurrentHashMap.newKeySet();
+		private final Set<String> _layoutManagerActions =
+			ConcurrentHashMap.newKeySet();
+		private final Set<String> _ownerDefaultActions =
+			ConcurrentHashMap.newKeySet();
+		private final Set<String> _supportsActions =
+			ConcurrentHashMap.newKeySet();
 
 	}
 

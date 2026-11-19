@@ -6,6 +6,7 @@
 package com.liferay.blogs.internal.upgrade.v1_1_0;
 
 import com.liferay.blogs.model.BlogsEntry;
+import com.liferay.friendly.url.constants.FriendlyURLEntryConstants;
 import com.liferay.friendly.url.model.FriendlyURLEntry;
 import com.liferay.friendly.url.service.FriendlyURLEntryLocalService;
 import com.liferay.portal.kernel.model.ModelHintsUtil;
@@ -41,26 +42,29 @@ public class BlogsEntryUpgradeProcess extends UpgradeProcess {
 			ResultSet resultSet = preparedStatement1.executeQuery();
 
 			while (resultSet.next()) {
-				long groupId = resultSet.getLong(1);
-				long classPK = resultSet.getLong(2);
-				String urlTitle = resultSet.getString(3);
+				long groupId = resultSet.getLong("groupId");
+				long classPK = resultSet.getLong("entryId");
+				String urlTitle = resultSet.getString("urlTitle");
 
 				long classNameId = PortalUtil.getClassNameId(
 					BlogsEntry.class.getName());
 
 				FriendlyURLEntry existingFriendlyURLEntry =
 					_friendlyURLEntryLocalService.fetchFriendlyURLEntry(
-						groupId, classNameId, urlTitle);
+						groupId, classNameId,
+						FriendlyURLEntryConstants.
+							FRIENDLY_URL_ENTRY_PARENT_CLASS_PK_DEFAULT,
+						urlTitle);
 
 				if (existingFriendlyURLEntry != null) {
 					urlTitle = _friendlyURLEntryLocalService.getUniqueUrlTitle(
-						groupId, classNameId, classPK, urlTitle, null);
+						groupId, classNameId, classPK, urlTitle);
 				}
 
 				urlTitle = _getUniqueUrlTitle(classPK, groupId, urlTitle);
 
 				_friendlyURLEntryLocalService.addFriendlyURLEntry(
-					groupId, BlogsEntry.class, classPK, urlTitle,
+					groupId, classNameId, classPK, urlTitle,
 					new ServiceContext());
 			}
 		}
@@ -94,7 +98,7 @@ public class BlogsEntryUpgradeProcess extends UpgradeProcess {
 
 		return _friendlyURLEntryLocalService.getUniqueUrlTitle(
 			groupId, _classNameLocalService.getClassNameId(BlogsEntry.class),
-			entryId, urlTitle, null);
+			entryId, urlTitle);
 	}
 
 	private final ClassNameLocalService _classNameLocalService;

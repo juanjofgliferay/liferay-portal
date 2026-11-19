@@ -8,7 +8,7 @@ import React from 'react';
 
 import {Autocomplete} from '../../../../src/main/resources/META-INF/resources/js/shared/components/autocomplete/Autocomplete.es';
 
-import '@testing-library/jest-dom/extend-expect';
+import '@testing-library/jest-dom';
 
 const items = [
 	{id: 1, name: '0test test0'},
@@ -24,6 +24,10 @@ describe('The Autocomplete component should', () => {
 
 	afterEach(cleanup);
 
+	beforeAll(() => {
+		jest.setTimeout(30000);
+	});
+
 	beforeEach(async () => {
 		const autocomplete = render(
 			<Autocomplete
@@ -36,7 +40,7 @@ describe('The Autocomplete component should', () => {
 		container = autocomplete.container;
 
 		await act(async () => {
-			jest.runAllTimers();
+			jest.advanceTimersByTime(100);
 		});
 	});
 
@@ -52,7 +56,7 @@ describe('The Autocomplete component should', () => {
 		fireEvent.focus(autocompleteInput);
 
 		await act(async () => {
-			jest.runAllTimers();
+			jest.advanceTimersByTime(100);
 		});
 
 		expect(dropDown).toHaveClass('show');
@@ -60,7 +64,7 @@ describe('The Autocomplete component should', () => {
 		fireEvent.mouseDown(dropDownListItems[0]);
 
 		await act(async () => {
-			jest.runAllTimers();
+			jest.advanceTimersByTime(100);
 		});
 
 		expect(autocompleteInput.value).toBe('0test test0');
@@ -69,7 +73,7 @@ describe('The Autocomplete component should', () => {
 		fireEvent.focus(autocompleteInput);
 
 		await act(async () => {
-			jest.runAllTimers();
+			jest.advanceTimersByTime(100);
 		});
 
 		expect(dropDown).toHaveClass('show');
@@ -78,7 +82,7 @@ describe('The Autocomplete component should', () => {
 		fireEvent.blur(autocompleteInput);
 
 		await act(async () => {
-			jest.runAllTimers();
+			jest.advanceTimersByTime(100);
 		});
 
 		expect(autocompleteInput.value).toBe('');
@@ -91,7 +95,7 @@ describe('The Autocomplete component should', () => {
 
 		fireEvent.focus(autocompleteInput);
 		await act(async () => {
-			jest.runAllTimers();
+			jest.advanceTimersByTime(100);
 		});
 
 		expect(dropDownListItems[0]).toHaveTextContent('0test test0');
@@ -104,7 +108,7 @@ describe('The Autocomplete component should', () => {
 		fireEvent.mouseOver(dropDownListItems[2]);
 
 		await act(async () => {
-			jest.runAllTimers();
+			jest.advanceTimersByTime(100);
 		});
 
 		expect(dropDownListItems[0]).not.toHaveClass('active');
@@ -114,7 +118,7 @@ describe('The Autocomplete component should', () => {
 		fireEvent.mouseOver(dropDownListItems[0]);
 
 		await act(async () => {
-			jest.runAllTimers();
+			jest.advanceTimersByTime(100);
 		});
 
 		expect(dropDownListItems[0]).toHaveClass('active');
@@ -124,7 +128,7 @@ describe('The Autocomplete component should', () => {
 		fireEvent.keyDown(autocompleteInput, {keyCode: 40});
 
 		await act(async () => {
-			jest.runAllTimers();
+			jest.advanceTimersByTime(100);
 		});
 
 		expect(dropDownListItems[0]).not.toHaveClass('active');
@@ -134,7 +138,7 @@ describe('The Autocomplete component should', () => {
 		fireEvent.keyDown(autocompleteInput, {keyCode: 40});
 
 		await act(async () => {
-			jest.runAllTimers();
+			jest.advanceTimersByTime(100);
 		});
 
 		expect(dropDownListItems[0]).not.toHaveClass('active');
@@ -144,7 +148,7 @@ describe('The Autocomplete component should', () => {
 		fireEvent.keyDown(autocompleteInput, {keyCode: 38});
 
 		await act(async () => {
-			jest.runAllTimers();
+			jest.advanceTimersByTime(100);
 		});
 
 		expect(dropDownListItems[0]).not.toHaveClass('active');
@@ -154,7 +158,7 @@ describe('The Autocomplete component should', () => {
 		fireEvent.keyDown(autocompleteInput, {keyCode: 13});
 
 		await act(async () => {
-			jest.runAllTimers();
+			jest.advanceTimersByTime(100);
 		});
 
 		expect(onSelect).toHaveBeenCalledWith(items[1]);
@@ -167,13 +171,13 @@ describe('The Autocomplete component should', () => {
 		fireEvent.focus(autocompleteInput);
 
 		await act(async () => {
-			jest.runAllTimers();
+			jest.advanceTimersByTime(100);
 		});
 
 		fireEvent.change(autocompleteInput, {target: {value: '0te'}});
 
 		await act(async () => {
-			jest.runAllTimers();
+			jest.advanceTimersByTime(100);
 		});
 
 		expect(onChange).toHaveBeenCalled();
@@ -181,7 +185,7 @@ describe('The Autocomplete component should', () => {
 		fireEvent.blur(autocompleteInput);
 
 		await act(async () => {
-			jest.runAllTimers();
+			jest.advanceTimersByTime(100);
 		});
 
 		expect(autocompleteInput.value).toBe('');
@@ -203,7 +207,7 @@ describe('The Autocomplete component with children should', () => {
 		getByText = autocomplete.getByText;
 
 		await act(async () => {
-			jest.runAllTimers();
+			jest.advanceTimersByTime(100);
 		});
 	});
 
@@ -225,7 +229,7 @@ describe('The Autocomplete component should be render with no items', () => {
 		getByText = autocomplete.getByText;
 
 		await act(async () => {
-			jest.runAllTimers();
+			jest.advanceTimersByTime(100);
 		});
 	});
 

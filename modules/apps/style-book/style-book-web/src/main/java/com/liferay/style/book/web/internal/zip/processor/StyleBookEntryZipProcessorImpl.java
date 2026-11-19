@@ -15,6 +15,8 @@ import com.liferay.portal.kernel.model.GroupConstants;
 import com.liferay.portal.kernel.model.Repository;
 import com.liferay.portal.kernel.portletfilerepository.PortletFileRepositoryUtil;
 import com.liferay.portal.kernel.repository.model.FileEntry;
+import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
+import com.liferay.portal.kernel.security.permission.resource.PortletResourcePermission;
 import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
@@ -24,13 +26,18 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.zip.ZipWriter;
 import com.liferay.portal.kernel.zip.ZipWriterFactory;
+import com.liferay.style.book.constants.StyleBookActionKeys;
+import com.liferay.style.book.constants.StyleBookConstants;
 import com.liferay.style.book.constants.StyleBookPortletKeys;
 import com.liferay.style.book.exception.DuplicateStyleBookEntryKeyException;
+import com.liferay.style.book.exception.StyleBookEntryThemeIdException;
 import com.liferay.style.book.model.StyleBookEntry;
 import com.liferay.style.book.service.StyleBookEntryLocalService;
 import com.liferay.style.book.service.StyleBookEntryService;
 import com.liferay.style.book.zip.processor.StyleBookEntryZipProcessor;
 import com.liferay.style.book.zip.processor.StyleBookEntryZipProcessorImportResultEntry;
+
+import jakarta.portlet.PortletException;
 
 import java.io.File;
 import java.io.InputStream;
@@ -41,8 +48,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
-
-import javax.portlet.PortletException;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -105,12 +110,17 @@ public class StyleBookEntryZipProcessorImpl
 	}
 
 	private StyleBookEntry _addStyleBookEntry(
-			long groupId, String frontendTokensValues, String name,
-			boolean overwrite, String styleBookEntryKey)
+			long groupId, String frontendTokenDefinition,
+			String frontendTokensValues, String name, boolean overwrite,
+			String styleBookEntryKey, String themeId)
 		throws Exception {
 
+		if (Validator.isBlank(themeId)) {
+			throw new StyleBookEntryThemeIdException.MustNotBeNull();
+		}
+
 		StyleBookEntry styleBookEntry =
-			_styleBookEntryEntryLocalService.fetchStyleBookEntry(
+			_styleBookEntryLocalService.fetchStyleBookEntry(
 				groupId, styleBookEntryKey);
 
 		if ((styleBookEntry != null) && !overwrite) {
@@ -119,15 +129,25 @@ public class StyleBookEntryZipProcessorImpl
 
 		try {
 			if (styleBookEntry == null) {
-				styleBookEntry = _styleBookEntryEntryService.addStyleBookEntry(
-					groupId, frontendTokensValues, name, styleBookEntryKey,
+				styleBookEntry = _styleBookEntryService.addStyleBookEntry(
+					null, groupId, false, frontendTokenDefinition,
+					frontendTokensValues, name, styleBookEntryKey, themeId,
 					ServiceContextThreadLocal.getServiceContext());
 			}
 			else {
+				_portletResourcePermission.check(
+					PermissionThreadLocal.getPermissionChecker(), groupId,
+					StyleBookActionKeys.MANAGE_STYLE_BOOK_ENTRIES);
+
 				styleBookEntry =
-					_styleBookEntryEntryService.updateStyleBookEntry(
+					_styleBookEntryLocalService.updateStyleBookEntry(
+						styleBookEntry.getUserId(),
 						styleBookEntry.getStyleBookEntryId(),
-						frontendTokensValues, name);
+						styleBookEntry.isDefaultStyleBookEntry(),
+						frontendTokenDefinition, frontendTokensValues, name,
+						styleBookEntry.getStyleBookEntryKey(),
+						styleBookEntry.getPreviewFileEntryId(),
+						styleBookEntry.getThemeId(), new ServiceContext());
 			}
 
 			_importResultEntries.add(
@@ -141,9 +161,7 @@ public class StyleBookEntryZipProcessorImpl
 		catch (PortalException portalException) {
 			_importResultEntries.add(
 				new StyleBookEntryZipProcessorImportResultEntry(
-					name,
-					StyleBookEntryZipProcessorImportResultEntry.Status.INVALID,
-					portalException.getMessage()));
+					name, portalException.getMessage()));
 		}
 
 		return null;
@@ -199,7 +217,7 @@ public class StyleBookEntryZipProcessorImpl
 				StringUtil.read(
 					zipFile.getInputStream(zipFile.getEntry(fileName))));
 
-			key = _styleBookEntryEntryLocalService.generateStyleBookEntryKey(
+			key = _styleBookEntryLocalService.generateStyleBookEntryKey(
 				groupId, styleBookJSONObject.getString("name"));
 		}
 
@@ -229,7 +247,7 @@ public class StyleBookEntryZipProcessorImpl
 		if (repository == null) {
 			if (groupId == GroupConstants.DEFAULT_PARENT_GROUP_ID) {
 				StyleBookEntry styleBookEntry =
-					_styleBookEntryEntryLocalService.getStyleBookEntry(classPK);
+					_styleBookEntryLocalService.getStyleBookEntry(classPK);
 
 				Company company = _companyLocalService.getCompany(
 					styleBookEntry.getCompanyId());
@@ -299,9 +317,12 @@ public class StyleBookEntryZipProcessorImpl
 
 		String name = styleBookEntryKey;
 
+		String frontendTokenDefinition = StringPool.BLANK;
 		String frontendTokensValues = StringPool.BLANK;
 
 		String styleBookEntryContent = _getContent(zipFile, fileName);
+
+		String themeId = StringPool.BLANK;
 
 		if (Validator.isNotNull(styleBookEntryContent)) {
 			JSONObject styleBookEntryJSONObject = _jsonFactory.createJSONObject(
@@ -309,28 +330,35 @@ public class StyleBookEntryZipProcessorImpl
 
 			defaultStyleBookEntry = styleBookEntryJSONObject.getBoolean(
 				"defaultStyleBookEntry");
+			frontendTokenDefinition = _getStyleBookEntryContent(
+				zipFile, fileName,
+				styleBookEntryJSONObject.getString(
+					"frontendTokenDefinitionPath"));
 			frontendTokensValues = _getStyleBookEntryContent(
 				zipFile, fileName,
 				styleBookEntryJSONObject.getString("frontendTokensValuesPath"));
 			name = styleBookEntryJSONObject.getString("name");
+			themeId = styleBookEntryJSONObject.getString("themeId");
 		}
 
 		StyleBookEntry styleBookEntry = _addStyleBookEntry(
-			groupId, frontendTokensValues, name, overwrite, styleBookEntryKey);
+			groupId, frontendTokenDefinition, frontendTokensValues, name,
+			overwrite, styleBookEntryKey, themeId);
 
 		if (styleBookEntry == null) {
 			return;
 		}
 
 		if (defaultStyleBookEntry) {
-			_styleBookEntryEntryService.updateDefaultStyleBookEntry(
+			_styleBookEntryService.updateDefaultStyleBookEntry(
 				styleBookEntry.getStyleBookEntryId(), true);
 		}
 
 		if (Validator.isNotNull(styleBookEntryContent)) {
 			if (styleBookEntry.getPreviewFileEntryId() > 0) {
-				PortletFileRepositoryUtil.deletePortletFileEntry(
-					styleBookEntry.getPreviewFileEntryId());
+				_styleBookEntryService.updatePreviewFileEntryId(
+					styleBookEntry.getStyleBookEntryId(), 0,
+					new ServiceContext());
 			}
 
 			JSONObject jsonObject = _jsonFactory.createJSONObject(
@@ -339,23 +367,20 @@ public class StyleBookEntryZipProcessorImpl
 			String thumbnailPath = jsonObject.getString("thumbnailPath");
 
 			if (Validator.isNotNull(thumbnailPath)) {
-				_styleBookEntryEntryService.updatePreviewFileEntryId(
+				_styleBookEntryService.updatePreviewFileEntryId(
 					styleBookEntry.getStyleBookEntryId(),
 					_getPreviewFileEntryId(
 						userId, groupId, zipFile,
 						StyleBookEntry.class.getName(),
 						styleBookEntry.getStyleBookEntryId(), fileName,
-						thumbnailPath));
+						thumbnailPath),
+					new ServiceContext());
 			}
 		}
 	}
 
 	private boolean _isStyleBookEntry(String fileName) {
-		if (Objects.equals(_getFileName(fileName), "style-book.json")) {
-			return true;
-		}
-
-		return false;
+		return Objects.equals(_getFileName(fileName), "style-book.json");
 	}
 
 	@Reference
@@ -367,11 +392,16 @@ public class StyleBookEntryZipProcessorImpl
 	@Reference
 	private JSONFactory _jsonFactory;
 
-	@Reference
-	private StyleBookEntryLocalService _styleBookEntryEntryLocalService;
+	@Reference(
+		target = "(resource.name=" + StyleBookConstants.RESOURCE_NAME + ")"
+	)
+	private PortletResourcePermission _portletResourcePermission;
 
 	@Reference
-	private StyleBookEntryService _styleBookEntryEntryService;
+	private StyleBookEntryLocalService _styleBookEntryLocalService;
+
+	@Reference
+	private StyleBookEntryService _styleBookEntryService;
 
 	@Reference
 	private ZipWriterFactory _zipWriterFactory;

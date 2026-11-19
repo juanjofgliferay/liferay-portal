@@ -13,6 +13,7 @@ import com.liferay.portal.kernel.dao.orm.ProjectionFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.orm.RestrictionsFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.Session;
+import com.liferay.portal.kernel.exception.DuplicateRoleExternalReferenceCodeException;
 import com.liferay.portal.kernel.exception.NoSuchRoleException;
 import com.liferay.portal.kernel.model.Role;
 import com.liferay.portal.kernel.service.RoleLocalServiceUtil;
@@ -110,15 +111,13 @@ public class RolePersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		Role newRole = _persistence.create(pk);
-
-		newRole.setMvccVersion(RandomTestUtil.nextLong());
+		Role newRole = addRole();
 
 		newRole.setCtCollectionId(RandomTestUtil.nextLong());
 
 		newRole.setUuid(RandomTestUtil.randomString());
+
+		newRole.setExternalReferenceCode(RandomTestUtil.randomString());
 
 		newRole.setCompanyId(RandomTestUtil.nextLong());
 
@@ -144,7 +143,11 @@ public class RolePersistenceTest {
 
 		newRole.setSubtype(RandomTestUtil.randomString());
 
-		_roles.add(_persistence.update(newRole));
+		newRole.setStatus(RandomTestUtil.nextInt());
+
+		newRole = _persistence.update(newRole);
+
+		_roles.add(newRole);
 
 		Role existingRole = _persistence.findByPrimaryKey(
 			newRole.getPrimaryKey());
@@ -154,6 +157,9 @@ public class RolePersistenceTest {
 		Assert.assertEquals(
 			existingRole.getCtCollectionId(), newRole.getCtCollectionId());
 		Assert.assertEquals(existingRole.getUuid(), newRole.getUuid());
+		Assert.assertEquals(
+			existingRole.getExternalReferenceCode(),
+			newRole.getExternalReferenceCode());
 		Assert.assertEquals(existingRole.getRoleId(), newRole.getRoleId());
 		Assert.assertEquals(
 			existingRole.getCompanyId(), newRole.getCompanyId());
@@ -174,6 +180,26 @@ public class RolePersistenceTest {
 			existingRole.getDescription(), newRole.getDescription());
 		Assert.assertEquals(existingRole.getType(), newRole.getType());
 		Assert.assertEquals(existingRole.getSubtype(), newRole.getSubtype());
+		Assert.assertEquals(existingRole.getStatus(), newRole.getStatus());
+	}
+
+	@Test(expected = DuplicateRoleExternalReferenceCodeException.class)
+	public void testUpdateWithExistingExternalReferenceCode() throws Exception {
+		Role role = addRole();
+
+		Role newRole = addRole();
+
+		newRole.setCompanyId(role.getCompanyId());
+
+		newRole = _persistence.update(newRole);
+
+		Session session = _persistence.getCurrentSession();
+
+		session.evict(newRole);
+
+		newRole.setExternalReferenceCode(role.getExternalReferenceCode());
+
+		_persistence.update(newRole);
 	}
 
 	@Test
@@ -215,15 +241,6 @@ public class RolePersistenceTest {
 		_persistence.countByType(RandomTestUtil.nextInt());
 
 		_persistence.countByType(0);
-	}
-
-	@Test
-	public void testCountBySubtype() throws Exception {
-		_persistence.countBySubtype("");
-
-		_persistence.countBySubtype("null");
-
-		_persistence.countBySubtype((String)null);
 	}
 
 	@Test
@@ -292,6 +309,15 @@ public class RolePersistenceTest {
 	}
 
 	@Test
+	public void testCountByERC_C() throws Exception {
+		_persistence.countByERC_C("", RandomTestUtil.nextLong());
+
+		_persistence.countByERC_C("null", 0L);
+
+		_persistence.countByERC_C((String)null, 0L);
+	}
+
+	@Test
 	public void testFindByPrimaryKeyExisting() throws Exception {
 		Role newRole = addRole();
 
@@ -317,10 +343,10 @@ public class RolePersistenceTest {
 	protected OrderByComparator<Role> getOrderByComparator() {
 		return OrderByComparatorFactoryUtil.create(
 			"Role_", "mvccVersion", true, "ctCollectionId", true, "uuid", true,
-			"roleId", true, "companyId", true, "userId", true, "userName", true,
-			"createDate", true, "modifiedDate", true, "classNameId", true,
-			"classPK", true, "name", true, "title", true, "type", true,
-			"subtype", true);
+			"externalReferenceCode", true, "roleId", true, "companyId", true,
+			"userId", true, "userName", true, "createDate", true,
+			"modifiedDate", true, "classNameId", true, "classPK", true, "name",
+			true, "type", true, "subtype", true, "status", true);
 	}
 
 	@Test
@@ -617,6 +643,17 @@ public class RolePersistenceTest {
 			ReflectionTestUtil.<Integer>invoke(
 				role, "getColumnOriginalValue", new Class<?>[] {String.class},
 				"type_"));
+
+		Assert.assertEquals(
+			role.getExternalReferenceCode(),
+			ReflectionTestUtil.invoke(
+				role, "getColumnOriginalValue", new Class<?>[] {String.class},
+				"externalReferenceCode"));
+		Assert.assertEquals(
+			Long.valueOf(role.getCompanyId()),
+			ReflectionTestUtil.<Long>invoke(
+				role, "getColumnOriginalValue", new Class<?>[] {String.class},
+				"companyId"));
 	}
 
 	protected Role addRole() throws Exception {
@@ -624,11 +661,11 @@ public class RolePersistenceTest {
 
 		Role role = _persistence.create(pk);
 
-		role.setMvccVersion(RandomTestUtil.nextLong());
-
 		role.setCtCollectionId(RandomTestUtil.nextLong());
 
 		role.setUuid(RandomTestUtil.randomString());
+
+		role.setExternalReferenceCode(RandomTestUtil.randomString());
 
 		role.setCompanyId(RandomTestUtil.nextLong());
 
@@ -654,6 +691,8 @@ public class RolePersistenceTest {
 
 		role.setSubtype(RandomTestUtil.randomString());
 
+		role.setStatus(RandomTestUtil.nextInt());
+
 		_roles.add(_persistence.update(role));
 
 		return role;
@@ -664,3 +703,4 @@ public class RolePersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1293982567

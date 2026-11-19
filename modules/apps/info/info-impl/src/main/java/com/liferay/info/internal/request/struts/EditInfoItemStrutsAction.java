@@ -10,20 +10,29 @@ import com.liferay.fragment.contributor.FragmentCollectionContributorRegistry;
 import com.liferay.fragment.model.FragmentEntry;
 import com.liferay.fragment.model.FragmentEntryLink;
 import com.liferay.fragment.service.FragmentEntryLinkLocalService;
-import com.liferay.fragment.service.FragmentEntryLocalService;
 import com.liferay.fragment.util.configuration.FragmentConfigurationField;
 import com.liferay.fragment.util.configuration.FragmentEntryConfigurationParser;
+import com.liferay.info.exception.InfoFormFileUploadException;
 import com.liferay.info.exception.InfoFormInvalidGroupException;
 import com.liferay.info.exception.InfoFormInvalidLayoutModeException;
 import com.liferay.info.exception.InfoFormPrincipalException;
+import com.liferay.info.exception.InfoFormUploadRequestSizeException;
 import com.liferay.info.exception.InfoFormValidationException;
+import com.liferay.info.exception.InfoItemPermissionException;
+import com.liferay.info.exception.NoSuchInfoItemException;
 import com.liferay.info.field.InfoField;
+import com.liferay.info.field.InfoFieldSet;
+import com.liferay.info.field.InfoFieldSetEntry;
 import com.liferay.info.field.InfoFieldValue;
+import com.liferay.info.field.RelatedInfoFieldValue;
 import com.liferay.info.field.type.DateInfoFieldType;
+import com.liferay.info.field.type.DateTimeInfoFieldType;
 import com.liferay.info.field.type.RelationshipInfoFieldType;
+import com.liferay.info.form.InfoForm;
 import com.liferay.info.internal.request.helper.InfoRequestFieldValuesProviderHelper;
 import com.liferay.info.item.ClassPKInfoItemIdentifier;
 import com.liferay.info.item.ERCInfoItemIdentifier;
+import com.liferay.info.item.InfoItemEntry;
 import com.liferay.info.item.InfoItemFieldValues;
 import com.liferay.info.item.InfoItemIdentifier;
 import com.liferay.info.item.InfoItemReference;
@@ -31,7 +40,9 @@ import com.liferay.info.item.InfoItemServiceRegistry;
 import com.liferay.info.item.creator.InfoItemCreator;
 import com.liferay.info.item.provider.InfoItemFieldValuesProvider;
 import com.liferay.info.item.provider.InfoItemObjectProvider;
+import com.liferay.info.item.provider.InfoItemPermissionProvider;
 import com.liferay.info.item.updater.InfoItemFieldValuesUpdater;
+import com.liferay.info.localized.InfoLocalizedValue;
 import com.liferay.info.type.WebURL;
 import com.liferay.layout.constants.LayoutWebKeys;
 import com.liferay.layout.provider.LayoutStructureProvider;
@@ -41,10 +52,10 @@ import com.liferay.layout.util.structure.FragmentStyledLayoutStructureItem;
 import com.liferay.layout.util.structure.LayoutStructure;
 import com.liferay.layout.util.structure.LayoutStructureItem;
 import com.liferay.layout.util.structure.LayoutStructureItemUtil;
+import com.liferay.petra.io.DummyOutputStream;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.captcha.CaptchaException;
 import com.liferay.portal.kernel.exception.InfoFormException;
-import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONException;
 import com.liferay.portal.kernel.json.JSONFactory;
@@ -52,16 +63,17 @@ import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
-import com.liferay.portal.kernel.service.GroupLocalService;
+import com.liferay.portal.kernel.security.permission.ActionKeys;
+import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.servlet.HttpHeaders;
 import com.liferay.portal.kernel.servlet.SessionErrors;
 import com.liferay.portal.kernel.servlet.SessionMessages;
 import com.liferay.portal.kernel.struts.StrutsAction;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.upload.UploadException;
 import com.liferay.portal.kernel.upload.UploadServletRequest;
 import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.GetterUtil;
@@ -72,21 +84,28 @@ import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
+import com.liferay.staging.StagingGroupHelper;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+import java.io.IOException;
+import java.io.InputStream;
 
 import java.text.SimpleDateFormat;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.Modified;
 import org.osgi.service.component.annotations.Reference;
 
 /**
@@ -106,12 +125,40 @@ public class EditInfoItemStrutsAction implements StrutsAction {
 		String formItemId = ParamUtil.getString(
 			httpServletRequest, "formItemId");
 
+		UploadException uploadException =
+			(UploadException)httpServletRequest.getAttribute(
+				WebKeys.UPLOAD_EXCEPTION);
+
+		if (uploadException != null) {
+			InfoFormException infoFormException;
+
+			if (uploadException.isExceededUploadRequestSizeLimit()) {
+				infoFormException = new InfoFormUploadRequestSizeException();
+			}
+			else {
+				infoFormException = new InfoFormFileUploadException();
+			}
+
+			SessionErrors.add(
+				httpServletRequest, formItemId, infoFormException);
+
+			_drainHttpServletRequestBody(httpServletRequest);
+
+			httpServletResponse.sendRedirect(
+				_portal.escapeRedirect(
+					httpServletRequest.getHeader(HttpHeaders.REFERER)));
+
+			return null;
+		}
+
 		Map<String, InfoFieldValue<Object>> infoFieldValues = null;
+		InfoForm infoForm = _infoRequestFieldValuesProviderHelper.getInfoForm(
+			httpServletRequest);
 
 		try {
 			infoFieldValues =
 				_infoRequestFieldValuesProviderHelper.getInfoFieldValues(
-					httpServletRequest);
+					httpServletRequest, infoForm);
 		}
 		catch (InfoFormException infoFormException) {
 			if (_log.isDebugEnabled()) {
@@ -122,7 +169,7 @@ public class EditInfoItemStrutsAction implements StrutsAction {
 				httpServletRequest, formItemId, infoFormException);
 
 			httpServletResponse.sendRedirect(
-				httpServletRequest.getHeader(HttpHeaders.REFERER));
+				_getFallbackRedirect(httpServletRequest));
 
 			return null;
 		}
@@ -154,14 +201,15 @@ public class EditInfoItemStrutsAction implements StrutsAction {
 
 			long groupId = ParamUtil.getLong(httpServletRequest, "groupId");
 
-			Group group = _groupLocalService.fetchGroup(groupId);
-
-			if ((group == null) || !group.isSite()) {
+			if ((groupId == 0) || _stagingGroupHelper.isStagingGroup(groupId)) {
 				throw new InfoFormInvalidGroupException();
 			}
 
+			Map<Long, FragmentEntryLink> fragmentEntryLinks = new HashMap<>();
+
 			FragmentEntryLink captchaFragmentEntryLink =
-				_getCaptchaFragmentEntryLink(formItemId, layoutStructure);
+				_getCaptchaFragmentEntryLink(
+					formItemId, fragmentEntryLinks, layoutStructure);
 
 			if (captchaFragmentEntryLink != null) {
 				try {
@@ -175,11 +223,12 @@ public class EditInfoItemStrutsAction implements StrutsAction {
 			}
 
 			_validateRequiredFields(
-				httpServletRequest, infoFieldValues, layoutStructure);
+				fragmentEntryLinks, httpServletRequest, infoFieldValues,
+				layoutStructure);
 
 			Object infoItem = null;
 
-			String className = _portal.getClassName(
+			String className = _portal.fetchClassName(
 				ParamUtil.getLong(httpServletRequest, "classNameId"));
 
 			InfoItemIdentifier infoItemIdentifier = _getInfoItemIdentifier(
@@ -188,10 +237,6 @@ public class EditInfoItemStrutsAction implements StrutsAction {
 			int status = ParamUtil.getInteger(
 				httpServletRequest, "status",
 				WorkflowConstants.STATUS_APPROVED);
-
-			if (!FeatureFlagManagerUtil.isEnabled("LPS-181663")) {
-				status = WorkflowConstants.STATUS_APPROVED;
-			}
 
 			if (infoItemIdentifier != null) {
 				InfoItemObjectProvider<Object> infoItemObjectProvider =
@@ -207,35 +252,43 @@ public class EditInfoItemStrutsAction implements StrutsAction {
 					throw new InfoFormException();
 				}
 
-				infoItem =
-					infoItemFieldValuesUpdater.updateFromInfoItemFieldValues(
-						infoItemObjectProvider.getInfoItem(infoItemIdentifier),
-						InfoItemFieldValues.builder(
-						).infoFieldValues(
-							new ArrayList<>(infoFieldValues.values())
-						).infoItemReference(
-							new InfoItemReference(className, 0)
-						).build(),
-						status);
+				try {
+					infoItem = infoItemObjectProvider.getInfoItem(
+						infoItemIdentifier);
+
+					_checkUpdateInfoItemPermission(
+						className, httpServletRequest, infoItem);
+
+					infoItem =
+						infoItemFieldValuesUpdater.
+							updateFromInfoItemFieldValues(
+								infoItem,
+								InfoItemFieldValues.builder(
+								).infoFieldValues(
+									new ArrayList<>(infoFieldValues.values())
+								).infoItemReference(
+									new InfoItemReference(className, 0)
+								).build(),
+								status);
+				}
+				catch (NoSuchInfoItemException noSuchInfoItemException) {
+					if (_log.isDebugEnabled()) {
+						_log.debug(noSuchInfoItemException);
+					}
+
+					if (!(infoItemIdentifier instanceof
+							ERCInfoItemIdentifier)) {
+
+						throw noSuchInfoItemException;
+					}
+
+					infoItem = _createFromInfoItemFieldValues(
+						className, groupId, infoFieldValues, status);
+				}
 			}
 			else {
-				InfoItemCreator<Object> infoItemCreator =
-					_infoItemServiceRegistry.getFirstInfoItemService(
-						InfoItemCreator.class, className);
-
-				if (infoItemCreator == null) {
-					throw new InfoFormException();
-				}
-
-				infoItem = infoItemCreator.createFromInfoItemFieldValues(
-					groupId,
-					InfoItemFieldValues.builder(
-					).infoFieldValues(
-						new ArrayList<>(infoFieldValues.values())
-					).infoItemReference(
-						new InfoItemReference(className, 0)
-					).build(),
-					status);
+				infoItem = _createFromInfoItemFieldValues(
+					className, groupId, infoFieldValues, status);
 			}
 
 			String displayPageURL = _getDisplayPageURL(
@@ -311,9 +364,7 @@ public class EditInfoItemStrutsAction implements StrutsAction {
 								getInfoFieldUniqueId())) {
 
 						SessionErrors.add(
-							httpServletRequest,
-							infoFormValidationExceptionCustomValidation.
-								getInfoFieldUniqueId(),
+							httpServletRequest, InfoFormException.class,
 							infoFormValidationExceptionCustomValidation);
 					}
 					else {
@@ -336,8 +387,7 @@ public class EditInfoItemStrutsAction implements StrutsAction {
 					infoFormValidationException.getInfoFieldUniqueId())) {
 
 				SessionErrors.add(
-					httpServletRequest,
-					infoFormValidationException.getInfoFieldUniqueId(),
+					httpServletRequest, InfoFormException.class,
 					infoFormValidationException);
 			}
 		}
@@ -365,7 +415,7 @@ public class EditInfoItemStrutsAction implements StrutsAction {
 		}
 
 		if (!success && (infoFieldValues != null)) {
-			Map<String, String> infoFormParameterMap = new HashMap<>();
+			Map<String, Object> infoFormParameterMap = new HashMap<>();
 
 			for (InfoFieldValue<Object> infoFieldValue :
 					infoFieldValues.values()) {
@@ -373,38 +423,48 @@ public class EditInfoItemStrutsAction implements StrutsAction {
 				InfoField<?> infoField = infoFieldValue.getInfoField();
 
 				infoFormParameterMap.put(
-					infoField.getName(), _getValue(infoFieldValue));
+					infoField.getUniqueId(), _getValue(infoFieldValue));
 
-				if (infoField.getInfoFieldType() ==
+				if (infoField.getInfoFieldType() !=
 						RelationshipInfoFieldType.INSTANCE) {
 
-					UploadServletRequest uploadServletRequest =
-						_portal.getUploadServletRequest(httpServletRequest);
-
-					String labelParameterName = infoField.getName() + "-label";
-
-					String label = ParamUtil.getString(
-						uploadServletRequest, labelParameterName);
-
-					infoFormParameterMap.put(labelParameterName, label);
+					continue;
 				}
+
+				UploadServletRequest uploadServletRequest =
+					_portal.getUploadServletRequest(httpServletRequest);
+
+				String labelParameterName = infoField.getUniqueId() + "-label";
+
+				String label = ParamUtil.getString(
+					uploadServletRequest, labelParameterName);
+
+				infoFormParameterMap.put(labelParameterName, label);
 			}
 
 			SessionMessages.add(
 				httpServletRequest, "infoFormParameterMap" + formItemId,
 				infoFormParameterMap);
+
+			SessionMessages.add(
+				httpServletRequest, "infoItemEntry" + formItemId,
+				_getInfoItemEntry(infoFieldValues, infoForm));
 		}
 
 		if (Validator.isNull(redirect)) {
-			redirect = httpServletRequest.getHeader(HttpHeaders.REFERER);
+			redirect = _getFallbackRedirect(httpServletRequest);
+		}
+		else {
+			redirect = _portal.escapeRedirect(redirect);
 		}
 
 		String notificationText = ParamUtil.getString(
 			httpServletRequest, "notificationText");
 
-		if (Validator.isNotNull(notificationText)) {
+		if (success && Validator.isNotNull(notificationText)) {
 			SessionMessages.add(
-				httpServletRequest, "requestProcessed", notificationText);
+				httpServletRequest, "form_requestProcessedSuccess",
+				notificationText);
 		}
 
 		httpServletResponse.sendRedirect(redirect);
@@ -413,14 +473,182 @@ public class EditInfoItemStrutsAction implements StrutsAction {
 	}
 
 	@Activate
-	@Modified
 	protected void activate() {
 		_infoRequestFieldValuesProviderHelper =
 			new InfoRequestFieldValuesProviderHelper(_infoItemServiceRegistry);
 	}
 
+	private void _addInfoItemEntries(
+		List<InfoFieldSetEntry> infoFieldSetEntries,
+		Map<String, InfoFieldValue<Object>> infoFieldValues,
+		String parentExternalReferenceCode, InfoItemEntry parentInfoItemEntry) {
+
+		for (InfoFieldSetEntry infoFieldSetEntry : infoFieldSetEntries) {
+			if (!(infoFieldSetEntry instanceof InfoFieldSet infoFieldSet)) {
+				continue;
+			}
+
+			if (!infoFieldSet.isRelationship()) {
+				_addInfoItemEntries(
+					infoFieldSet.getInfoFieldSetEntries(), infoFieldValues,
+					parentExternalReferenceCode, parentInfoItemEntry);
+
+				continue;
+			}
+
+			Map<String, InfoItemEntry> infoItemEntriesMap =
+				new LinkedHashMap<>();
+
+			for (InfoFieldSetEntry relationshipInfoFieldSetEntry :
+					infoFieldSet.getInfoFieldSetEntries()) {
+
+				if (!(relationshipInfoFieldSetEntry instanceof
+						InfoField<?> infoField)) {
+
+					continue;
+				}
+
+				InfoFieldValue<Object> infoFieldValue = infoFieldValues.get(
+					infoField.getUniqueId());
+
+				if ((infoFieldValue == null) ||
+					!(infoFieldValue.getValue() instanceof
+						RelatedInfoFieldValue<?> relatedInfoFieldValue)) {
+
+					continue;
+				}
+
+				Map
+					<RelatedInfoFieldValue.RelatedInfoFieldValueIdentifier,
+					 ? extends InfoFieldValue<?>> relatedInfoFieldValues =
+						relatedInfoFieldValue.getRelatedInfoFieldValues();
+
+				for (Map.Entry
+						<RelatedInfoFieldValue.RelatedInfoFieldValueIdentifier,
+						 ? extends InfoFieldValue<?>> entry :
+							relatedInfoFieldValues.entrySet()) {
+
+					RelatedInfoFieldValue.RelatedInfoFieldValueIdentifier key =
+						entry.getKey();
+
+					if ((parentExternalReferenceCode != null) &&
+						!Objects.equals(
+							parentExternalReferenceCode,
+							key.getParentExternalReferenceCode())) {
+
+						continue;
+					}
+
+					InfoItemEntry infoItemEntry =
+						infoItemEntriesMap.computeIfAbsent(
+							key.getExternalReferenceCode(),
+							externalReferenceCode -> new InfoItemEntry(
+								externalReferenceCode,
+								key.getParentExternalReferenceCode()));
+
+					infoItemEntry.putValue(
+						infoField.getUniqueId(), _getValue(entry.getValue()));
+				}
+			}
+
+			for (InfoItemEntry infoItemEntry : infoItemEntriesMap.values()) {
+				parentInfoItemEntry.addInfoItemEntry(
+					infoItemEntry, infoFieldSet.getName());
+
+				_addInfoItemEntries(
+					infoFieldSet.getInfoFieldSetEntries(), infoFieldValues,
+					infoItemEntry.getExternalReferenceCode(), infoItemEntry);
+			}
+		}
+	}
+
+	private void _checkUpdateInfoItemPermission(
+			String className, HttpServletRequest httpServletRequest,
+			Object infoItem)
+		throws InfoItemPermissionException, PrincipalException {
+
+		ThemeDisplay themeDisplay =
+			(ThemeDisplay)httpServletRequest.getAttribute(
+				WebKeys.THEME_DISPLAY);
+
+		PermissionChecker permissionChecker =
+			themeDisplay.getPermissionChecker();
+
+		InfoItemPermissionProvider<Object> infoItemPermissionProvider =
+			_infoItemServiceRegistry.getFirstInfoItemService(
+				InfoItemPermissionProvider.class, className);
+
+		if ((infoItemPermissionProvider == null) ||
+			!infoItemPermissionProvider.hasPermission(
+				permissionChecker, infoItem, ActionKeys.UPDATE)) {
+
+			throw new PrincipalException.MustHavePermission(
+				permissionChecker, className, 0, ActionKeys.UPDATE);
+		}
+	}
+
+	private Object _createFromInfoItemFieldValues(
+			String className, long groupId,
+			Map<String, InfoFieldValue<Object>> infoFieldValues, int status)
+		throws InfoFormException {
+
+		InfoItemCreator<Object> infoItemCreator =
+			_infoItemServiceRegistry.getFirstInfoItemService(
+				InfoItemCreator.class, className);
+
+		if (infoItemCreator == null) {
+			throw new InfoFormException();
+		}
+
+		return infoItemCreator.createFromInfoItemFieldValues(
+			groupId,
+			InfoItemFieldValues.builder(
+			).infoFieldValues(
+				new ArrayList<>(infoFieldValues.values())
+			).infoItemReference(
+				new InfoItemReference(className, 0)
+			).build(),
+			status);
+	}
+
+	private void _drainHttpServletRequestBody(
+		HttpServletRequest httpServletRequest) {
+
+		try (InputStream inputStream = httpServletRequest.getInputStream()) {
+			inputStream.transferTo(new DummyOutputStream());
+		}
+		catch (IOException ioException) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(ioException);
+			}
+		}
+	}
+
+	private FragmentEntryLink _fetchFragmentEntryLink(
+		long fragmentEntryLinkId,
+		Map<Long, FragmentEntryLink> fragmentEntryLinks) {
+
+		FragmentEntryLink fragmentEntryLink = fragmentEntryLinks.get(
+			fragmentEntryLinkId);
+
+		if (fragmentEntryLink != null) {
+			return fragmentEntryLink;
+		}
+
+		fragmentEntryLink =
+			_fragmentEntryLinkLocalService.fetchFragmentEntryLink(
+				fragmentEntryLinkId);
+
+		if (fragmentEntryLink != null) {
+			fragmentEntryLinks.put(fragmentEntryLinkId, fragmentEntryLink);
+		}
+
+		return fragmentEntryLink;
+	}
+
 	private FragmentEntryLink _getCaptchaFragmentEntryLink(
-			String formItemId, LayoutStructure layoutStructure)
+			String formItemId, Map<Long, FragmentEntryLink> fragmentEntryLinks,
+			LayoutStructure layoutStructure)
 		throws InfoFormException {
 
 		for (String itemId :
@@ -447,18 +675,16 @@ public class EditInfoItemStrutsAction implements StrutsAction {
 				continue;
 			}
 
-			FragmentEntryLink fragmentEntryLink =
-				_fragmentEntryLinkLocalService.fetchFragmentEntryLink(
-					fragmentEntryLinkId);
+			FragmentEntryLink fragmentEntryLink = _fetchFragmentEntryLink(
+				fragmentEntryLinkId, fragmentEntryLinks);
 
-			if (!fragmentEntryLink.isTypeInput()) {
+			if ((fragmentEntryLink == null) ||
+				!fragmentEntryLink.isTypeInput()) {
+
 				continue;
 			}
 
-			if (_isCaptchaFragmentEntry(
-					fragmentEntryLink.getFragmentEntryId(),
-					fragmentEntryLink.getRendererKey())) {
-
+			if (_isCaptchaFragmentEntry(fragmentEntryLink)) {
 				return fragmentEntryLink;
 			}
 		}
@@ -470,7 +696,7 @@ public class EditInfoItemStrutsAction implements StrutsAction {
 		String className, String displayPage,
 		HttpServletRequest httpServletRequest, Object infoItem) {
 
-		if (infoItem == null) {
+		if ((infoItem == null) || Validator.isNull(displayPage)) {
 			return StringPool.BLANK;
 		}
 
@@ -514,21 +740,62 @@ public class EditInfoItemStrutsAction implements StrutsAction {
 		return StringPool.BLANK;
 	}
 
+	private String _getFallbackRedirect(HttpServletRequest httpServletRequest) {
+		String redirect = _portal.escapeRedirect(
+			httpServletRequest.getHeader(HttpHeaders.REFERER));
+
+		if (Validator.isNotNull(redirect)) {
+			return redirect;
+		}
+
+		String backURL = ParamUtil.getString(httpServletRequest, "backURL");
+
+		if (Validator.isNull(backURL)) {
+			return redirect;
+		}
+
+		return _portal.escapeRedirect(backURL);
+	}
+
+	private InfoItemEntry _getInfoItemEntry(
+		Map<String, InfoFieldValue<Object>> infoFieldValues,
+		InfoForm infoForm) {
+
+		InfoItemEntry infoItemEntry = new InfoItemEntry(null, null);
+
+		if (infoForm == null) {
+			return infoItemEntry;
+		}
+
+		_addInfoItemEntries(
+			infoForm.getInfoFieldSetEntries(), infoFieldValues, null,
+			infoItemEntry);
+
+		return infoItemEntry;
+	}
+
 	private InfoItemIdentifier _getInfoItemIdentifier(
 		HttpServletRequest httpServletRequest) {
 
 		long classPK = ParamUtil.getLong(httpServletRequest, "classPK");
+
+		if (classPK > 0) {
+			return new ClassPKInfoItemIdentifier(
+				classPK, InfoItemIdentifier.VERSION_EDITABLE);
+		}
+
 		String externalReferenceCode = ParamUtil.getString(
 			httpServletRequest, "externalReferenceCode");
 
-		if (classPK > 0) {
-			return new ClassPKInfoItemIdentifier(classPK);
-		}
-		else if (Validator.isNotNull(externalReferenceCode)) {
-			return new ERCInfoItemIdentifier(externalReferenceCode);
+		if (Validator.isNull(externalReferenceCode)) {
+			return null;
 		}
 
-		return null;
+		return new ERCInfoItemIdentifier(
+			externalReferenceCode,
+			ParamUtil.getString(
+				httpServletRequest, "scopeExternalReferenceCode", null),
+			InfoItemIdentifier.VERSION_EDITABLE);
 	}
 
 	private LayoutStructure _getLayoutStructure(
@@ -547,7 +814,7 @@ public class EditInfoItemStrutsAction implements StrutsAction {
 			ParamUtil.getLong(httpServletRequest, "segmentsExperienceId"));
 	}
 
-	private String _getValue(InfoFieldValue<?> infoFieldValue) {
+	private Object _getValue(InfoFieldValue<?> infoFieldValue) {
 		if (infoFieldValue == null) {
 			return null;
 		}
@@ -558,7 +825,29 @@ public class EditInfoItemStrutsAction implements StrutsAction {
 			SimpleDateFormat simpleDateFormat = new SimpleDateFormat(
 				"yyyy-MM-dd");
 
-			return simpleDateFormat.format(infoFieldValue.getValue());
+			try {
+				return simpleDateFormat.format(infoFieldValue.getValue());
+			}
+			catch (IllegalArgumentException illegalArgumentException) {
+				if (_log.isDebugEnabled()) {
+					_log.debug(illegalArgumentException);
+				}
+
+				return null;
+			}
+		}
+
+		if (infoField.getInfoFieldType() == DateTimeInfoFieldType.INSTANCE) {
+			Object dateTimeValue = infoFieldValue.getValue();
+
+			if (!(dateTimeValue instanceof LocalDateTime)) {
+				return null;
+			}
+
+			DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(
+				"yyyy-MM-dd'T'HH:mm");
+
+			return dateTimeFormatter.format((LocalDateTime)dateTimeValue);
 		}
 
 		Object value = infoFieldValue.getValue();
@@ -567,23 +856,31 @@ public class EditInfoItemStrutsAction implements StrutsAction {
 			return ListUtil.toString((List<?>)value, StringPool.BLANK);
 		}
 
+		if (value instanceof InfoLocalizedValue) {
+			InfoLocalizedValue<?> infoLocalizedValue =
+				(InfoLocalizedValue<?>)value;
+
+			return infoLocalizedValue.getValues();
+		}
+
+		if (value instanceof RelatedInfoFieldValue<?>) {
+			return value;
+		}
+
 		return String.valueOf(value);
 	}
 
 	private boolean _isCaptchaFragmentEntry(
-		long fragmentEntryId, String rendererKey) {
+		FragmentEntryLink fragmentEntryLink) {
 
-		FragmentEntry fragmentEntry = null;
+		FragmentEntry fragmentEntry = fragmentEntryLink.fetchFragmentEntry();
 
-		if (Validator.isNotNull(rendererKey)) {
+		if ((fragmentEntry == null) &&
+			Validator.isNotNull(fragmentEntryLink.getRendererKey())) {
+
 			fragmentEntry =
 				_fragmentCollectionContributorRegistry.getFragmentEntry(
-					rendererKey);
-		}
-
-		if ((fragmentEntry == null) && (fragmentEntryId > 0)) {
-			fragmentEntry = _fragmentEntryLocalService.fetchFragmentEntry(
-				fragmentEntryId);
+					fragmentEntryLink.getRendererKey());
 		}
 
 		if ((fragmentEntry == null) ||
@@ -615,6 +912,7 @@ public class EditInfoItemStrutsAction implements StrutsAction {
 	}
 
 	private void _validateRequiredField(
+			Map<Long, FragmentEntryLink> fragmentEntryLinks,
 			Map<String, InfoFieldValue<Object>> infoFieldValues,
 			LayoutStructureItem layoutStructureItem)
 		throws InfoFormValidationException.RequiredInfoField {
@@ -629,14 +927,14 @@ public class EditInfoItemStrutsAction implements StrutsAction {
 		FragmentStyledLayoutStructureItem fragmentStyledLayoutStructureItem =
 			(FragmentStyledLayoutStructureItem)layoutStructureItem;
 
-		FragmentEntryLink fragmentEntryLink =
-			_fragmentEntryLinkLocalService.fetchFragmentEntryLink(
-				fragmentStyledLayoutStructureItem.getFragmentEntryLinkId());
+		FragmentEntryLink fragmentEntryLink = _fetchFragmentEntryLink(
+			fragmentStyledLayoutStructureItem.getFragmentEntryLinkId(),
+			fragmentEntryLinks);
 
 		if ((fragmentEntryLink == null) ||
 			!GetterUtil.getBoolean(
 				_fragmentEntryConfigurationParser.getFieldValue(
-					fragmentEntryLink.getEditableValues(),
+					fragmentEntryLink.getEditableValuesJSONObject(),
 					new FragmentConfigurationField(
 						"inputRequired", "boolean", "false", false, "checkbox"),
 					LocaleUtil.getMostRelevantLocale()))) {
@@ -646,7 +944,7 @@ public class EditInfoItemStrutsAction implements StrutsAction {
 
 		String inputFieldId = GetterUtil.getString(
 			_fragmentEntryConfigurationParser.getFieldValue(
-				fragmentEntryLink.getEditableValues(),
+				fragmentEntryLink.getEditableValuesJSONObject(),
 				new FragmentConfigurationField(
 					"inputFieldId", "string", "", false, "text"),
 				LocaleUtil.getMostRelevantLocale()));
@@ -660,6 +958,7 @@ public class EditInfoItemStrutsAction implements StrutsAction {
 	}
 
 	private void _validateRequiredFields(
+			Map<Long, FragmentEntryLink> fragmentEntryLinks,
 			HttpServletRequest httpServletRequest,
 			Map<String, InfoFieldValue<Object>> infoFieldValues,
 			LayoutStructure layoutStructure)
@@ -680,7 +979,7 @@ public class EditInfoItemStrutsAction implements StrutsAction {
 					formLayoutStructureItem.getItemId(), layoutStructure)) {
 
 			_validateRequiredField(
-				infoFieldValues,
+				fragmentEntryLinks, infoFieldValues,
 				layoutStructure.getLayoutStructureItem(itemId));
 		}
 	}
@@ -699,12 +998,6 @@ public class EditInfoItemStrutsAction implements StrutsAction {
 	private FragmentEntryLinkLocalService _fragmentEntryLinkLocalService;
 
 	@Reference
-	private FragmentEntryLocalService _fragmentEntryLocalService;
-
-	@Reference
-	private GroupLocalService _groupLocalService;
-
-	@Reference
 	private InfoItemServiceRegistry _infoItemServiceRegistry;
 
 	private volatile InfoRequestFieldValuesProviderHelper
@@ -721,5 +1014,8 @@ public class EditInfoItemStrutsAction implements StrutsAction {
 
 	@Reference
 	private Portal _portal;
+
+	@Reference
+	private StagingGroupHelper _stagingGroupHelper;
 
 }

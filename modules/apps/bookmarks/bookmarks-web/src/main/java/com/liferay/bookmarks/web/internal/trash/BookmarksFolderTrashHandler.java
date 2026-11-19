@@ -23,7 +23,7 @@ import com.liferay.portal.kernel.trash.TrashRenderer;
 import com.liferay.trash.TrashHelper;
 import com.liferay.trash.constants.TrashActionKeys;
 
-import javax.portlet.PortletRequest;
+import jakarta.portlet.PortletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -102,16 +102,16 @@ public class BookmarksFolderTrashHandler extends BaseBookmarksTrashHandler {
 	}
 
 	@Override
-	public TrashedModel getTrashedModel(long classPK) {
-		return _bookmarksFolderLocalService.fetchBookmarksFolder(classPK);
-	}
-
-	@Override
 	public TrashRenderer getTrashRenderer(long classPK) throws PortalException {
 		BookmarksFolder folder = _getBookmarksFolder(classPK);
 
 		return new BookmarksFolderAssetRenderer(
 			folder, _trashHelper, _bookmarksFolderModelResourcePermission);
+	}
+
+	@Override
+	public TrashedModel getTrashedModel(long classPK) {
+		return _bookmarksFolderLocalService.fetchBookmarksFolder(classPK);
 	}
 
 	@Override

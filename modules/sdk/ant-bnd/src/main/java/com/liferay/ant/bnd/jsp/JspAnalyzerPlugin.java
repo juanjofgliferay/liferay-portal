@@ -32,6 +32,7 @@ import java.io.InputStream;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.jar.Manifest;
@@ -77,29 +78,54 @@ public class JspAnalyzerPlugin implements AnalyzerPlugin {
 
 		for (String key : keys) {
 			for (Instruction instruction : instructions.keySet()) {
-				if (instruction.matches(key)) {
-					if (instruction.isNegated()) {
-						break;
-					}
-
-					Resource resource = jar.getResource(key);
-
-					String jsp = IO.collect(
-						resource.openInputStream(), "UTF-8");
-
-					addApiUses(analyzer, jsp);
-					addTaglibRequirements(analyzer, jsp, taglibURIs);
-
-					matches = true;
+				if (!instruction.matches(key)) {
+					continue;
 				}
+
+				if (instruction.isNegated()) {
+					break;
+				}
+
+				Resource resource = jar.getResource(key);
+
+				String jsp = IO.collect(resource.openInputStream(), "UTF-8");
+
+				addApiUses(analyzer, jsp);
+				addTaglibRequirements(analyzer, jsp, taglibURIs);
+
+				matches = true;
 			}
 		}
 
 		if (matches) {
-			addRequiredPackageImports(analyzer, _REQUIRED_PACKAGE_NAMES);
+			String javaeePackage = analyzer.getProperty(
+				"-antbnd.jspanalyzer.fallback-javaee-package", "jakarta");
+
+			if ((javaeePackage != null) &&
+				!(javaeePackage.equals("jakarta") ||
+				  javaeePackage.equals("javax"))) {
+
+				throw new IllegalArgumentException(
+					"Invalid value was provided for the property \"-antbnd." +
+						"jspanalyzer.fallback-javaee-package. Valid values " +
+							"are either \"javax\" or \"jakarta.\"");
+			}
+
+			String[] requiredPackageImports = _REQUIRED_PACKAGE_NAMES_JAKARTA;
+
+			if (_isUseJavaxImports(javaeePackage, taglibURIs)) {
+				requiredPackageImports = _REQUIRED_PACKAGE_NAMES_JAVAX;
+			}
+
+			addRequiredPackageImports(analyzer, requiredPackageImports);
 		}
 
 		return false;
+	}
+
+	@Override
+	public int ordering() {
+		return 1;
 	}
 
 	protected void addApiUses(Analyzer analyzer, String originalContent) {
@@ -147,19 +173,20 @@ public class JspAnalyzerPlugin implements AnalyzerPlugin {
 						index = packageFragment.length();
 					}
 
-					if (index != -1) {
-						Packages packages = analyzer.getReferred();
-
-						String packageName = packageFragment.substring(
-							0, index);
-
-						Descriptors.PackageRef packageRef =
-							analyzer.getPackageRef(packageName);
-
-						packages.put(packageRef, new Attrs());
-
-						addApiUses(analyzer, packageFragment, packageRef);
+					if (index == -1) {
+						continue;
 					}
+
+					Packages packages = analyzer.getReferred();
+
+					String packageName = packageFragment.substring(0, index);
+
+					Descriptors.PackageRef packageRef = analyzer.getPackageRef(
+						packageName);
+
+					packages.put(packageRef, new Attrs());
+
+					addApiUses(analyzer, packageFragment, packageRef);
 				}
 			}
 
@@ -202,9 +229,9 @@ public class JspAnalyzerPlugin implements AnalyzerPlugin {
 		else {
 			String fqnToPath = Descriptors.fqnToPath(content);
 
-			if (resourceMap.containsKey(fqnToPath)) {
-				Resource resource = resourceMap.get(fqnToPath);
+			Resource resource = resourceMap.get(fqnToPath);
 
+			if (resource != null) {
 				addResourceApiUses(analyzer, content, resource);
 			}
 		}
@@ -231,9 +258,11 @@ public class JspAnalyzerPlugin implements AnalyzerPlugin {
 
 					Attrs attrs = packages.get(packageRef);
 
-					if (attrs.isEmpty()) {
-						packages.put(packageRef, entry.getValue());
+					if (!attrs.isEmpty()) {
+						continue;
 					}
+
+					packages.put(packageRef, entry.getValue());
 				}
 			}
 			catch (Exception exception) {
@@ -252,9 +281,11 @@ public class JspAnalyzerPlugin implements AnalyzerPlugin {
 
 			Matcher matcher = _packagePattern.matcher(packageRef.getFQN());
 
-			if (matcher.matches() && !packages.containsKey(packageRef)) {
-				packages.put(packageRef, new Attrs());
+			if (!matcher.matches()) {
+				continue;
 			}
+
+			packages.putIfAbsent(packageRef, new Attrs());
 		}
 	}
 
@@ -303,11 +334,9 @@ public class JspAnalyzerPlugin implements AnalyzerPlugin {
 		Set<String> taglibRequirements = new TreeSet<>();
 
 		for (String uri : getTaglibURIs(content)) {
-			if (taglibURIs.contains(uri)) {
+			if (!taglibURIs.add(uri)) {
 				continue;
 			}
-
-			taglibURIs.add(uri);
 
 			// Check to see if the JAR provides this TLD itself which would
 			// indicate that it already has access to the required classes
@@ -318,14 +347,14 @@ public class JspAnalyzerPlugin implements AnalyzerPlugin {
 				containsTLD(analyzer, analyzer.getJar(), "WEB-INF/tld", uri) ||
 				containsTLDInBundleClassPath(analyzer, "META-INF", uri) ||
 				containsTLDInBundleClassPath(
-					analyzer, "META-INF/resources", uri)) {
+					analyzer, "META-INF/resources", uri) ||
+				(Arrays.binarySearch(_JSTL_CORE_URIS_JAKARTA, uri) >= 0) ||
+				(Arrays.binarySearch(_JSTL_CORE_URIS_JAVAX, uri) >= 0)) {
 
 				continue;
 			}
 
-			if (Arrays.binarySearch(_JSTL_CORE_URIS, uri) < 0) {
-				addTaglibRequirement(taglibRequirements, uri);
-			}
+			addTaglibRequirement(taglibRequirements, uri);
 		}
 
 		if (taglibRequirements.isEmpty()) {
@@ -443,14 +472,14 @@ public class JspAnalyzerPlugin implements AnalyzerPlugin {
 	}
 
 	protected Set<String> getTaglibURIs(String originalContent) {
+		Set<String> taglibURis = new HashSet<String>();
+
 		String noCommentsContent = _removeComments(originalContent);
 
 		String content = noCommentsContent;
 
 		int contentX = -1;
 		int contentY = content.length();
-
-		Set<String> taglibURis = new HashSet<String>();
 
 		while (true) {
 			contentX = content.lastIndexOf("<%@", contentY);
@@ -508,7 +537,11 @@ public class JspAnalyzerPlugin implements AnalyzerPlugin {
 				if ((importX != -1) && (importY != -1)) {
 					String s = content.substring(importX, importY);
 
-					taglibURis.add(s);
+					if (!s.startsWith("urn:jsptagdir") &&
+						!s.startsWith("urn:jsptld")) {
+
+						taglibURis.add(s);
+					}
 				}
 
 				contentY -= 1;
@@ -545,13 +578,50 @@ public class JspAnalyzerPlugin implements AnalyzerPlugin {
 		return false;
 	}
 
+	private boolean _isUseJavaxImports(
+		String javaeePackage, Set<String> taglibURIs) {
+
+		if (taglibURIs.isEmpty()) {
+			return Objects.equals(javaeePackage, "javax");
+		}
+
+		for (String jakartaURI : _JSTL_CORE_URIS_JAKARTA) {
+			if (taglibURIs.contains(jakartaURI)) {
+				return false;
+			}
+		}
+
+		for (String javaxURI : _JSTL_CORE_URIS_JAVAX) {
+			if (taglibURIs.contains(javaxURI)) {
+				return true;
+			}
+		}
+
+		for (String uri : taglibURIs) {
+			if (uri.contains("jakarta")) {
+				return false;
+			}
+
+			if (uri.contains("javax")) {
+				return true;
+			}
+		}
+
+		return Objects.equals(javaeePackage, "javax");
+	}
+
 	private String _removeComments(String content) {
 		Matcher matcher = _commentPattern.matcher(content);
 
 		return matcher.replaceAll("");
 	}
 
-	private static final String[] _JSTL_CORE_URIS = {
+	private static final String[] _JSTL_CORE_URIS_JAKARTA = {
+		"jakarta.tags.core", "jakarta.tags.fmt", "jakarta.tags.functions",
+		"jakarta.tags.sql", "jakarta.tags.xml"
+	};
+
+	private static final String[] _JSTL_CORE_URIS_JAVAX = {
 		"http://java.sun.com/jsp/jstl/core", "http://java.sun.com/jsp/jstl/fmt",
 		"http://java.sun.com/jsp/jstl/functions",
 		"http://java.sun.com/jsp/jstl/sql", "http://java.sun.com/jsp/jstl/xml"
@@ -560,7 +630,11 @@ public class JspAnalyzerPlugin implements AnalyzerPlugin {
 	private static final String _LOAD_EXTERNAL_DTD =
 		"http://apache.org/xml/features/nonvalidating/load-external-dtd";
 
-	private static final String[] _REQUIRED_PACKAGE_NAMES = {
+	private static final String[] _REQUIRED_PACKAGE_NAMES_JAKARTA = {
+		"jakarta.servlet", "jakarta.servlet.http"
+	};
+
+	private static final String[] _REQUIRED_PACKAGE_NAMES_JAVAX = {
 		"javax.servlet", "javax.servlet.http"
 	};
 
@@ -628,21 +702,19 @@ public class JspAnalyzerPlugin implements AnalyzerPlugin {
 			int end = start + length;
 
 			for (int i = start; i < end; i++) {
-				if (Character.isWhitespace(chars[i])) {
-					start++;
-				}
-				else {
+				if (!Character.isWhitespace(chars[i])) {
 					break;
 				}
+
+				start++;
 			}
 
 			for (int i = end - 1; i >= start; i--) {
-				if (Character.isWhitespace(chars[i])) {
-					end--;
-				}
-				else {
+				if (!Character.isWhitespace(chars[i])) {
 					break;
 				}
+
+				end--;
 			}
 
 			return new String(chars, start, end - start);

@@ -3,8 +3,9 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import '@testing-library/jest-dom/extend-expect';
-import {cleanup, fireEvent, render} from '@testing-library/react';
+import '@testing-library/jest-dom';
+import {render, screen} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import React from 'react';
 
 import {toggleShowResolvedComments} from '../../../../../../src/main/resources/META-INF/resources/page_editor/app/actions/index';
@@ -12,13 +13,13 @@ import {StoreAPIContextProvider} from '../../../../../../src/main/resources/META
 import ResolvedCommentsToggle from '../../../../../../src/main/resources/META-INF/resources/page_editor/plugins/comments/components/ResolvedCommentsToggle';
 
 const renderComponent = (state = {}, dispatch) => {
-	const {getByLabelText} = render(
+	render(
 		<StoreAPIContextProvider dispatch={dispatch} getState={() => state}>
 			<ResolvedCommentsToggle />
 		</StoreAPIContextProvider>
 	);
 
-	return getByLabelText('show-resolved-comments');
+	return screen.getByLabelText('show-resolved-comments');
 };
 
 const RESOLVED_COMMENTS_STATE = {
@@ -28,16 +29,12 @@ const RESOLVED_COMMENTS_STATE = {
 };
 
 describe('ResolvedCommentsToggle', () => {
-	afterEach(cleanup);
-
 	it('is unchecked by default', () => {
-		expect(renderComponent().checked).toBe(false);
+		expect(renderComponent()).not.toBeChecked();
 	});
 
-	it('is cheched if showResolvedComments is true', () => {
-		expect(renderComponent({showResolvedComments: true}).checked).toBe(
-			true
-		);
+	it('is checked if showResolvedComments is true', () => {
+		expect(renderComponent({showResolvedComments: true})).toBeChecked();
 	});
 
 	it('is disabled if there are no resolved comments', () => {
@@ -48,11 +45,11 @@ describe('ResolvedCommentsToggle', () => {
 		expect(renderComponent(RESOLVED_COMMENTS_STATE)).not.toBeDisabled();
 	});
 
-	it('dispatches toggleShowResolvedComments on change', () => {
+	it('dispatches toggleShowResolvedComments on change', async () => {
 		const dispatch = jest.fn();
 		const checkbox = renderComponent(RESOLVED_COMMENTS_STATE, dispatch);
 
-		fireEvent.click(checkbox);
+		await userEvent.click(checkbox);
 
 		expect(dispatch).toHaveBeenCalledWith(
 			toggleShowResolvedComments({showResolvedComments: true})

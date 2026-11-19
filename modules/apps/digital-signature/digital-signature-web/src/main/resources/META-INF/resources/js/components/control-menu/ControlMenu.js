@@ -6,7 +6,7 @@
 import ClayIcon from '@clayui/icon';
 import {ReactPortal} from '@liferay/frontend-js-react-web';
 import React, {useEffect, useState} from 'react';
-import {Link as InternalLink} from 'react-router-dom';
+import {Link as InternalLink} from 'react-router';
 
 const ExternalLink = ({children, to, ...props}) => {
 	return (
@@ -37,7 +37,7 @@ export function BackButtonPortal({backURL = '/'}) {
 		<ReactPortal container={container}>
 			<li className="control-menu-nav-item">
 				<Link
-					className="btn-monospaced btn-sm lfr-icon-item"
+					className="btn-monospaced btn-sm control-menu-nav-link lfr-icon-item"
 					tabIndex={1}
 					to={backURL}
 				>

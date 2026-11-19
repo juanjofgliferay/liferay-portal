@@ -24,7 +24,6 @@ import java.util.ResourceBundle;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
-import org.osgi.service.component.annotations.Modified;
 import org.osgi.service.component.annotations.Reference;
 
 /**
@@ -47,7 +46,6 @@ public class EntityFieldConfigurationFieldOptionsProvider
 	}
 
 	@Activate
-	@Modified
 	protected void activate() {
 		List<Option> options = new ArrayList<>();
 
@@ -55,11 +53,13 @@ public class EntityFieldConfigurationFieldOptionsProvider
 			_entityModel.getEntityFieldsMap();
 
 		for (EntityField entityField : entityFieldsMap.values()) {
-			if (Objects.equals(
+			if (!Objects.equals(
 					entityField.getType(), EntityField.Type.STRING)) {
 
-				options.add(_toOption(entityField.getName()));
+				continue;
 			}
+
+			options.add(_toOption(entityField.getName()));
 		}
 
 		Collections.sort(options, Comparator.comparing(Option::getValue));

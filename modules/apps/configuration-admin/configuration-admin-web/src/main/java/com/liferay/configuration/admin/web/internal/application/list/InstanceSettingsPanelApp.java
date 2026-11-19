@@ -5,7 +5,6 @@
 
 package com.liferay.configuration.admin.web.internal.application.list;
 
-import com.liferay.application.list.BasePanelApp;
 import com.liferay.application.list.PanelApp;
 import com.liferay.application.list.constants.PanelCategoryKeys;
 import com.liferay.configuration.admin.constants.ConfigurationAdminPortletKeys;
@@ -19,12 +18,17 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"panel.app.order:Integer=200",
-		"panel.category.key=" + PanelCategoryKeys.CONTROL_PANEL_CONFIGURATION
+		"panel.app.order:Integer=100",
+		"panel.category.key=" + PanelCategoryKeys.CONTROL_PANEL_INSTANCE
 	},
 	service = PanelApp.class
 )
-public class InstanceSettingsPanelApp extends BasePanelApp {
+public class InstanceSettingsPanelApp extends BaseSettingsPanelApp {
+
+	@Override
+	public String getIcon() {
+		return "cog";
+	}
 
 	@Override
 	public Portlet getPortlet() {
@@ -37,7 +41,7 @@ public class InstanceSettingsPanelApp extends BasePanelApp {
 	}
 
 	@Reference(
-		target = "(javax.portlet.name=" + ConfigurationAdminPortletKeys.INSTANCE_SETTINGS + ")"
+		target = "(jakarta.portlet.name=" + ConfigurationAdminPortletKeys.INSTANCE_SETTINGS + ")"
 	)
 	private Portlet _portlet;
 

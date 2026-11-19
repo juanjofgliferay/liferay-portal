@@ -16,12 +16,12 @@ import com.liferay.commerce.product.model.CPInstanceUnitOfMeasure;
 import com.liferay.commerce.product.type.CPType;
 import com.liferay.portal.kernel.exception.PortalException;
 
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.PortletRequest;
+
 import java.io.IOException;
 
 import java.util.List;
-
-import javax.portlet.ActionResponse;
-import javax.portlet.PortletRequest;
 
 /**
  * @author Marco Leo
@@ -67,9 +67,6 @@ public interface ActionHelper {
 			PortletRequest portletRequest)
 		throws PortalException;
 
-	public List<CPDefinition> getCPDefinitions(PortletRequest portletRequest)
-		throws PortalException;
-
 	public CPDefinitionSpecificationOptionValue
 			getCPDefinitionSpecificationOptionValue(
 				PortletRequest portletRequest)
@@ -80,14 +77,17 @@ public interface ActionHelper {
 				PortletRequest portletRequest)
 		throws PortalException;
 
-	public CPInstance getCPInstance(PortletRequest portletRequest)
+	public List<CPDefinition> getCPDefinitions(PortletRequest portletRequest)
 		throws PortalException;
 
-	public List<CPInstance> getCPInstances(PortletRequest portletRequest)
+	public CPInstance getCPInstance(PortletRequest portletRequest)
 		throws PortalException;
 
 	public CPInstanceUnitOfMeasure getCPInstanceUnitOfMeasure(
 			PortletRequest portletRequest)
+		throws PortalException;
+
+	public List<CPInstance> getCPInstances(PortletRequest portletRequest)
 		throws PortalException;
 
 	public CPType getCPType(String name);

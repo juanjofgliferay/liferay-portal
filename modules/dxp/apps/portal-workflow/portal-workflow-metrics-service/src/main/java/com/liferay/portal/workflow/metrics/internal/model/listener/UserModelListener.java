@@ -10,19 +10,21 @@ import com.liferay.portal.kernel.model.BaseModelListener;
 import com.liferay.portal.kernel.model.ModelListener;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.service.UserLocalService;
-import com.liferay.portal.kernel.transaction.TransactionCommitCallbackUtil;
+import com.liferay.portal.kernel.transaction.TransactionCallbackUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.search.capabilities.SearchCapabilities;
 import com.liferay.portal.search.engine.adapter.SearchEngineAdapter;
 import com.liferay.portal.search.engine.adapter.document.UpdateByQueryDocumentRequest;
+import com.liferay.portal.search.index.IndexNameBuilder;
 import com.liferay.portal.search.query.BooleanQuery;
-import com.liferay.portal.search.query.Queries;
+import com.liferay.portal.search.query.QueriesUtil;
 import com.liferay.portal.search.query.TermsQuery;
 import com.liferay.portal.search.script.ScriptBuilder;
 import com.liferay.portal.search.script.ScriptType;
 import com.liferay.portal.search.script.Scripts;
 import com.liferay.portal.workflow.metrics.internal.petra.executor.WorkflowMetricsPortalExecutor;
 import com.liferay.portal.workflow.metrics.internal.search.index.WorkflowMetricsIndex;
+import com.liferay.portal.workflow.metrics.search.index.constants.WorkflowMetricsIndexNameConstants;
 
 import java.util.Objects;
 
@@ -45,7 +47,7 @@ public class UserModelListener extends BaseModelListener<User> {
 
 		User currentUser = _userLocalService.fetchUserById(user.getUserId());
 
-		TransactionCommitCallbackUtil.registerCallback(
+		TransactionCallbackUtil.registerCommitCallback(
 			() -> {
 				if (Objects.equals(
 						currentUser.getFullName(), user.getFullName())) {
@@ -56,9 +58,9 @@ public class UserModelListener extends BaseModelListener<User> {
 				_workflowMetricsPortalExecutor.execute(
 					() -> {
 						BooleanQuery nestedBooleanQuery =
-							_queries.booleanQuery();
+							QueriesUtil.booleanQuery();
 
-						TermsQuery termsQuery = _queries.terms(
+						TermsQuery termsQuery = QueriesUtil.terms(
 							"tasks.assigneeIds");
 
 						termsQuery.addValues(String.valueOf(user.getUserId()));
@@ -66,14 +68,15 @@ public class UserModelListener extends BaseModelListener<User> {
 						nestedBooleanQuery.addMustQueryClauses(termsQuery);
 
 						nestedBooleanQuery.addMustQueryClauses(
-							_queries.term(
+							QueriesUtil.term(
 								"tasks.assigneeType", User.class.getName()));
 
-						ScriptBuilder scriptBuilder = _scripts.builder();
+						ScriptBuilder scriptBuilder =
+							Scripts.INSTANCE.builder();
 
 						searchEngineAdapter.execute(
 							new UpdateByQueryDocumentRequest(
-								_queries.nested("tasks", nestedBooleanQuery),
+								QueriesUtil.nested("tasks", nestedBooleanQuery),
 								scriptBuilder.idOrCode(
 									StringUtil.read(
 										getClass(),
@@ -89,7 +92,10 @@ public class UserModelListener extends BaseModelListener<User> {
 								).scriptType(
 									ScriptType.INLINE
 								).build(),
-								_instanceWorkflowMetricsIndex.getIndexName(
+								WorkflowMetricsIndex.getIndexName(
+									_indexNameBuilder,
+									WorkflowMetricsIndexNameConstants.
+										SUFFIX_INSTANCE,
 									user.getCompanyId())));
 					});
 
@@ -100,14 +106,8 @@ public class UserModelListener extends BaseModelListener<User> {
 	@Reference
 	protected SearchEngineAdapter searchEngineAdapter;
 
-	@Reference(target = "(workflow.metrics.index.entity.name=instance)")
-	private WorkflowMetricsIndex _instanceWorkflowMetricsIndex;
-
 	@Reference
-	private Queries _queries;
-
-	@Reference
-	private Scripts _scripts;
+	private IndexNameBuilder _indexNameBuilder;
 
 	@Reference
 	private SearchCapabilities _searchCapabilities;

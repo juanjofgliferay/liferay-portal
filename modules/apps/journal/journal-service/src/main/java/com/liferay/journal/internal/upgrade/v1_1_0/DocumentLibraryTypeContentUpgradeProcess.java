@@ -42,25 +42,32 @@ public class DocumentLibraryTypeContentUpgradeProcess extends UpgradeProcess {
 		contentDocument = contentDocument.clone();
 
 		XPath xPath = SAXReaderUtil.createXPath(
-			"//dynamic-element[@type='document_library']");
+			"//dynamic-element[@type='document_library' or " +
+				"@type='image_gallery']");
 
 		List<Node> imageNodes = xPath.selectNodes(contentDocument);
 
-		for (Node imageNode : imageNodes) {
-			Element imageEl = (Element)imageNode;
+		if (imageNodes.isEmpty()) {
+			return null;
+		}
 
-			List<Element> dynamicContentEls = imageEl.elements(
+		for (Node imageNode : imageNodes) {
+			Element imageElement = (Element)imageNode;
+
+			List<Element> dynamicContentElements = imageElement.elements(
 				"dynamic-content");
 
-			for (Element dynamicContentEl : dynamicContentEls) {
+			for (Element dynamicContentElement : dynamicContentElements) {
 				String data =
 					_journalArticleImageUpgradeHelper.getDocumentLibraryValue(
-						dynamicContentEl.getText());
+						dynamicContentElement.getText());
 
-				dynamicContentEl.clearContent();
+				dynamicContentElement.clearContent();
 
-				dynamicContentEl.addCDATA(data);
+				dynamicContentElement.addCDATA(data);
 			}
+
+			imageElement.addAttribute("type", "document_library");
 		}
 
 		return contentDocument.formattedString();
@@ -68,19 +75,29 @@ public class DocumentLibraryTypeContentUpgradeProcess extends UpgradeProcess {
 
 	private void _updateContent() throws Exception {
 		try (LoggingTimer loggingTimer = new LoggingTimer();
+
 			PreparedStatement preparedStatement1 = connection.prepareStatement(
 				"select content, id_ from JournalArticle where content like " +
-					"'%type=\"document_library\"%'");
+					"'%type=\"document_library\"%' or content like " +
+						"'%type=\"image_gallery\"%'");
+
 			ResultSet resultSet = preparedStatement1.executeQuery();
+
 			PreparedStatement preparedStatement2 =
 				AutoBatchPreparedStatementUtil.concurrentAutoBatch(
 					connection,
 					"update JournalArticle set content = ? where id_ = ?")) {
 
 			while (resultSet.next()) {
-				preparedStatement2.setString(
-					1, _convertContent(resultSet.getString(1)));
-				preparedStatement2.setLong(2, resultSet.getLong(2));
+				String content = _convertContent(
+					resultSet.getString("content"));
+
+				if (content == null) {
+					continue;
+				}
+
+				preparedStatement2.setString(1, content);
+				preparedStatement2.setLong(2, resultSet.getLong("id_"));
 
 				preparedStatement2.addBatch();
 			}

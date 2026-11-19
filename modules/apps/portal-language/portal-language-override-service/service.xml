@@ -4,7 +4,7 @@
 <service-builder auto-import-default-references="false" auto-namespace-tables="false" mvcc-enabled="true" package-path="com.liferay.portal.language.override" short-no-such-exception-enabled="false">
 	<author>Drew Brokke</author>
 	<namespace>PLO</namespace>
-	<entity local-service="true" name="PLOEntry">
+	<entity external-reference-code="company" local-service="true" name="PLOEntry">
 
 		<!-- PK fields -->
 
@@ -14,6 +14,7 @@
 
 		<column name="companyId" type="long" />
 		<column name="userId" type="long" />
+		<column name="userName" type="String" />
 		<column name="createDate" type="Date" />
 		<column name="modifiedDate" type="Date" />
 
@@ -38,10 +39,6 @@
 			<finder-column name="companyId" />
 			<finder-column name="key" />
 		</finder>
-		<finder name="C_L" return-type="Collection">
-			<finder-column name="companyId" />
-			<finder-column name="languageId" />
-		</finder>
 		<finder name="C_K_L" return-type="PLOEntry" unique="true">
 			<finder-column name="companyId" />
 			<finder-column name="key" />
@@ -49,7 +46,9 @@
 		</finder>
 	</entity>
 	<exceptions>
+		<exception>PLOEntryImport</exception>
 		<exception>PLOEntryKey</exception>
+		<exception>PLOEntryLanguageId</exception>
 		<exception>PLOEntryValue</exception>
 	</exceptions>
 </service-builder>

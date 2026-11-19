@@ -311,11 +311,7 @@ public class StringUtil {
 		if (pos == -1) {
 			String td = text.concat(delimiter);
 
-			if (s.startsWith(td)) {
-				return true;
-			}
-
-			return false;
+			return s.startsWith(td);
 		}
 
 		return true;
@@ -471,11 +467,7 @@ public class StringUtil {
 
 		String temp = s.substring(s.length() - end.length());
 
-		if (equalsIgnoreCase(temp, end)) {
-			return true;
-		}
-
-		return false;
+		return equalsIgnoreCase(temp, end);
 	}
 
 	/**
@@ -606,9 +598,11 @@ public class StringUtil {
 		char[] chars = s.toCharArray();
 
 		for (char c : chars) {
-			if (Validator.isChar(c)) {
-				sb.append(c);
+			if (!Validator.isChar(c)) {
+				continue;
 			}
+
+			sb.append(c);
 		}
 
 		return sb.toString();
@@ -632,9 +626,11 @@ public class StringUtil {
 		char[] chars = s.toCharArray();
 
 		for (char c : chars) {
-			if (Validator.isDigit(c)) {
-				sb.append(c);
+			if (!Validator.isDigit(c)) {
+				continue;
 			}
+
+			sb.append(c);
 		}
 
 		return sb.toString();
@@ -758,12 +754,11 @@ public class StringUtil {
 		char[] chars = s.toCharArray();
 
 		for (char c : chars) {
-			if (Validator.isDigit(c)) {
-				sb.append(c);
-			}
-			else {
+			if (!Validator.isDigit(c)) {
 				return sb.toString();
 			}
+
+			sb.append(c);
 		}
 
 		return sb.toString();
@@ -801,7 +796,7 @@ public class StringUtil {
 				}
 			}
 
-			if ((i != 0) && (i != words.length)) {
+			if ((i != 0) && (i != (words.length - 1))) {
 				String lowerCaseWord = toLowerCase(word);
 
 				if (ArrayUtil.contains(_ARTICLES, lowerCaseWord) ||
@@ -1759,36 +1754,44 @@ public class StringUtil {
 	 * Merges the elements of the collection by returning a string representing
 	 * a comma delimited list of its values.
 	 *
-	 * @param  col the collection of objects
+	 * @param  collection the collection of objects
 	 * @return the merged collection elements, or <code>null</code> if the
 	 *         collection is <code>null</code>
 	 */
-	public static String merge(Collection<?> col) {
-		return merge(col, StringPool.COMMA);
+	public static String merge(Collection<?> collection) {
+		return merge(collection, StringPool.COMMA);
 	}
 
 	/**
 	 * Merges the elements of the collection by returning a string representing
 	 * a delimited list of its values.
 	 *
-	 * @param  col the collection of objects
+	 * @param  collection the collection of objects
 	 * @param  delimiter the string whose last index in the string marks where
 	 *         to begin the substring
 	 * @return the merged collection elements, or <code>null</code> if the
 	 *         collection is <code>null</code>
 	 */
-	public static String merge(Collection<?> col, String delimiter) {
-		if (col == null) {
+	public static String merge(Collection<?> collection, String delimiter) {
+		if (collection == null) {
 			return null;
 		}
 
-		if (col.isEmpty()) {
+		int size = collection.size();
+
+		if (size == 0) {
 			return StringPool.BLANK;
 		}
 
-		StringBundler sb = new StringBundler(2 * col.size());
+		if (size == 1) {
+			Iterator<?> iterator = collection.iterator();
 
-		for (Object object : col) {
+			return String.valueOf(iterator.next());
+		}
+
+		StringBundler sb = new StringBundler(2 * collection.size());
+
+		for (Object object : collection) {
 			String objectString = String.valueOf(object);
 
 			sb.append(objectString.trim());
@@ -2179,9 +2182,11 @@ public class StringUtil {
 	}
 
 	/**
-	 * Returns a randomized string of four lower case, alphabetic characters.
+	 * Returns a randomized string of four lower case, alphabetic characters
+	 * that is never the literal <code>null</code>.
 	 *
 	 * @return a randomized string of four lower case, alphabetic characters
+	 *         that is never the literal <code>null</code>
 	 */
 	public static String randomId() {
 		return randomId(4);
@@ -2189,21 +2194,14 @@ public class StringUtil {
 
 	/**
 	 * Returns a randomized string with the length informed and only alphabetic
-	 * characters.
+	 * characters. A four character result is never the literal
+	 * <code>null</code>.
 	 *
 	 * @return a randomized string with the length informed and only alphabetic
 	 *         characters.
 	 */
 	public static String randomId(int length) {
-		Random random = new Random();
-
-		char[] chars = new char[length];
-
-		for (int i = 0; i < length; i++) {
-			chars[i] = (char)(CharPool.LOWER_CASE_A + random.nextInt(26));
-		}
-
-		return new String(chars);
+		return _randomId(length, new Random());
 	}
 
 	/**
@@ -2306,7 +2304,8 @@ public class StringUtil {
 			InputStream inputStream, Collection<String> lines)
 		throws IOException {
 
-		_splitLines(_read(inputStream), lines);
+		com.liferay.petra.string.StringUtil.forEachLine(
+			_read(inputStream), lines::add);
 	}
 
 	public static String removeChar(String s, char oldSub) {
@@ -2346,7 +2345,7 @@ public class StringUtil {
 			return s;
 		}
 
-		StringBundler sb = new StringBundler(s.length());
+		StringBuilder sb = new StringBuilder(s.length());
 
 		iterate:
 		for (int i = 0; i < s.length(); i++) {
@@ -2823,6 +2822,22 @@ public class StringUtil {
 		StringBundler sb = replaceToStringBundler(s, begin, end, values);
 
 		return sb.toString();
+	}
+
+	public static String replace(String s, String[] oldSubs, Object[] newSubs) {
+		if ((s == null) || (oldSubs == null) || (newSubs == null)) {
+			return null;
+		}
+
+		if (oldSubs.length != newSubs.length) {
+			return s;
+		}
+
+		for (int i = 0; i < oldSubs.length; i++) {
+			s = replace(s, oldSubs[i], String.valueOf(newSubs[i]));
+		}
+
+		return s;
 	}
 
 	/**
@@ -3516,7 +3531,7 @@ public class StringUtil {
 	 * <p>
 	 * <pre>
 	 * <code>
-	 * splitLines("First;Second;Third", ';') returns {"First","Second","Third"}
+	 * split("First;Second;Third", ';') returns {"First","Second","Third"}
 	 * </code>
 	 * </pre></p>
 	 *
@@ -3631,7 +3646,7 @@ public class StringUtil {
 	 * <p>
 	 * <pre>
 	 * <code>
-	 * splitLines("oneandtwoandthreeandfour", "and") returns {"one","two","three","four"}
+	 * split("oneandtwoandthreeandfour", "and") returns {"one","two","three","four"}
 	 * </code>
 	 * </pre></p>
 	 *
@@ -3903,7 +3918,7 @@ public class StringUtil {
 
 		List<String> lines = new ArrayList<>();
 
-		_splitLines(s, lines);
+		com.liferay.petra.string.StringUtil.forEachLine(s, lines::add);
 
 		return lines.toArray(new String[0]);
 	}
@@ -4280,13 +4295,15 @@ public class StringUtil {
 				return s.toLowerCase(locale);
 			}
 
-			if ((c >= 'A') && (c <= 'Z')) {
-				if (sb == null) {
-					sb = new StringBuilder(s);
-				}
-
-				sb.setCharAt(i, (char)(c + 32));
+			if ((c < 'A') || (c > 'Z')) {
+				continue;
 			}
+
+			if (sb == null) {
+				sb = new StringBuilder(s);
+			}
+
+			sb.setCharAt(i, (char)(c + 32));
 		}
 
 		if (sb == null) {
@@ -4338,13 +4355,15 @@ public class StringUtil {
 				return s.toUpperCase(locale);
 			}
 
-			if ((c >= 'a') && (c <= 'z')) {
-				if (sb == null) {
-					sb = new StringBuilder(s);
-				}
-
-				sb.setCharAt(i, (char)(c - 32));
+			if ((c < 'a') || (c > 'z')) {
+				continue;
 			}
+
+			if (sb == null) {
+				sb = new StringBuilder(s);
+			}
+
+			sb.setCharAt(i, (char)(c - 32));
 		}
 
 		if (sb == null) {
@@ -4952,6 +4971,24 @@ public class StringUtil {
 		return Character.isWhitespace(c);
 	}
 
+	private static String _randomId(int length, Random random) {
+		char[] chars = new char[length];
+
+		while (true) {
+			for (int i = 0; i < length; i++) {
+				chars[i] = (char)(CharPool.LOWER_CASE_A + random.nextInt(26));
+			}
+
+			String randomId = new String(chars);
+
+			if ((length == 4) && randomId.equals(StringPool.NULL)) {
+				continue;
+			}
+
+			return randomId;
+		}
+	}
+
 	private static String _read(InputStream inputStream) throws IOException {
 		byte[] buffer = new byte[8192];
 		int offset = 0;
@@ -4966,13 +5003,15 @@ public class StringUtil {
 
 			offset += count;
 
-			if (offset == buffer.length) {
-				byte[] newBuffer = new byte[buffer.length << 1];
-
-				System.arraycopy(buffer, 0, newBuffer, 0, buffer.length);
-
-				buffer = newBuffer;
+			if (offset != buffer.length) {
+				continue;
 			}
+
+			byte[] newBuffer = new byte[buffer.length << 1];
+
+			System.arraycopy(buffer, 0, newBuffer, 0, buffer.length);
+
+			buffer = newBuffer;
 		}
 
 		if (offset == 0) {
@@ -5000,43 +5039,6 @@ public class StringUtil {
 		}
 	}
 
-	private static void _splitLines(String s, Collection<String> lines) {
-		int lastIndex = 0;
-
-		while (true) {
-			int returnIndex = s.indexOf(CharPool.RETURN, lastIndex);
-
-			if (returnIndex == -1) {
-				_split(lines, s, lastIndex, CharPool.NEW_LINE);
-
-				return;
-			}
-
-			int newLineIndex = s.indexOf(CharPool.NEW_LINE, lastIndex);
-
-			if (newLineIndex == -1) {
-				_split(lines, s, lastIndex, CharPool.RETURN);
-
-				return;
-			}
-
-			if (newLineIndex < returnIndex) {
-				lines.add(s.substring(lastIndex, newLineIndex));
-
-				lastIndex = newLineIndex + 1;
-			}
-			else {
-				lines.add(s.substring(lastIndex, returnIndex));
-
-				lastIndex = returnIndex + 1;
-
-				if (lastIndex == newLineIndex) {
-					lastIndex++;
-				}
-			}
-		}
-	}
-
 	private static final String[] _ARTICLES = {"a", "an", "the"};
 
 	private static final String[] _CONJUNCTIONS = {
@@ -5046,20 +5048,8 @@ public class StringUtil {
 	private static final String[] _EMPTY_STRING_ARRAY = new String[0];
 
 	private static final String[] _PREPOSITIONS = {
-		"a", "abaft", "aboard", "about", "above", "absent", "across", "afore",
-		"after", "against", "along", "alongside", "amid", "amidst", "among",
-		"amongst", "an", "apropos", "apud", "around", "as", "aside", "astride",
-		"at", "athwart", "atop", "barring", "before", "behind", "below",
-		"beneath", "beside", "besides", "between", "beyond", "but", "by",
-		"circa", "concerning", "despite", "down", "during", "except",
-		"excluding", "failing", "for", "from", "given", "in", "including",
-		"inside", "into", "lest", "mid", "midst", "modulo", "near", "next",
-		"notwithstanding", "of", "off", "on", "onto", "opposite", "out",
-		"outside", "over", "pace", "past", "per", "plus", "pro", "qua",
-		"regarding", "sans", "since", "through", "throughout", "thru",
-		"thruout", "till", "to", "toward", "towards", "under", "underneath",
-		"unlike", "until", "unto", "up", "upon", "v", "versus", "via", "vice",
-		"vs", "with", "within", "without", "worth"
+		"a", "an", "as", "at", "but", "by", "for", "in", "of", "off", "on",
+		"per", "to", "up", "via", "vs"
 	};
 
 	private static final char[] _RANDOM_STRING_CHAR_TABLE = {

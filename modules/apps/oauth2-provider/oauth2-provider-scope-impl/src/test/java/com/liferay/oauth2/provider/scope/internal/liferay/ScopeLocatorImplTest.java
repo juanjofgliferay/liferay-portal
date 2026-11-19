@@ -6,7 +6,6 @@
 package com.liferay.oauth2.provider.scope.internal.liferay;
 
 import com.liferay.oauth2.provider.scope.internal.configuration.ScopeLocatorConfiguration;
-import com.liferay.oauth2.provider.scope.internal.liferay.ScopeLocatorImpl.ScopeLocatorConfigurationProvider;
 import com.liferay.oauth2.provider.scope.internal.spi.scope.matcher.StrictScopeMatcherFactory;
 import com.liferay.oauth2.provider.scope.liferay.LiferayOAuth2Scope;
 import com.liferay.oauth2.provider.scope.spi.prefix.handler.PrefixHandler;
@@ -19,10 +18,12 @@ import com.liferay.osgi.service.tracker.collections.map.ScopedServiceTrackerMap;
 import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMap;
 import com.liferay.portal.kernel.module.util.SystemBundleUtil;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
-import com.liferay.portal.kernel.util.PropsUtil;
+import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.remote.jaxrs.whiteboard.lifecycle.JAXRSLifecycle;
+import com.liferay.portal.test.log.LogCapture;
+import com.liferay.portal.test.log.LogEntry;
+import com.liferay.portal.test.log.LoggerTestUtil;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
-import com.liferay.portal.util.PropsImpl;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -30,7 +31,10 @@ import java.util.Collections;
 import java.util.Dictionary;
 import java.util.HashSet;
 import java.util.Hashtable;
+import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.hamcrest.CoreMatchers;
 
@@ -62,8 +66,6 @@ public class ScopeLocatorImplTest {
 
 	@BeforeClass
 	public static void setUpClass() {
-		PropsUtil.setProps(new PropsImpl());
-
 		BundleContext bundleContext = SystemBundleUtil.getBundleContext();
 
 		Mockito.when(
@@ -81,12 +83,6 @@ public class ScopeLocatorImplTest {
 				PrefixHandlerFactory.class,
 				Mockito.mock(PrefixHandlerFactory.class), properties);
 
-		_scopeLocatorConfigurationProviderServiceRegistration =
-			bundleContext.registerService(
-				ScopeLocatorConfigurationProvider.class,
-				Mockito.mock(ScopeLocatorConfigurationProvider.class),
-				properties);
-
 		_scopeMapperServiceRegistration = bundleContext.registerService(
 			ScopeMapper.class, Mockito.mock(ScopeMapper.class), properties);
 	}
@@ -95,7 +91,6 @@ public class ScopeLocatorImplTest {
 	public static void tearDownClass() {
 		_frameworkUtilMockedStatic.close();
 		_prefixHandlerFactoryServiceRegistration.unregister();
-		_scopeLocatorConfigurationProviderServiceRegistration.unregister();
 		_scopeMapperServiceRegistration.unregister();
 	}
 
@@ -382,6 +377,13 @@ public class ScopeLocatorImplTest {
 		Assert.assertTrue(matchedScopes.contains("everything"));
 	}
 
+	@Test
+	public void testWaitForScopeAliases() throws Exception {
+		_testWaitForScopeAliasesWithFailingScopeFinder();
+		_testWaitForScopeAliasesWithNotificationDuringLookup();
+		_testWaitForScopeAliasesWithNotificationForAnotherApplication();
+	}
+
 	protected final Set<String> scopedSet2 = new HashSet<>(
 		Arrays.asList("GET", "POST"));
 	protected final Set<String> scopesSet1 = new HashSet<>(
@@ -399,16 +401,201 @@ public class ScopeLocatorImplTest {
 		return scopes;
 	}
 
+	private void _testWaitForScopeAliasesWithFailingScopeFinder()
+		throws Exception {
+
+		AtomicBoolean atomicBoolean = new AtomicBoolean();
+		Set<String> scopes = new HashSet<>();
+
+		Builder builder = new Builder();
+
+		ScopeLocatorImpl scopeLocatorImpl = builder.withScopeFinders(
+			registrator -> registrator.register(
+				_COMPANY_ID, _APPLICATION_NAME,
+				() -> {
+					if (atomicBoolean.get()) {
+						throw new IllegalStateException();
+					}
+
+					return scopes;
+				})
+		).build();
+
+		ServiceTrackerMap<String, ServiceReferenceServiceTuple<?, ScopeFinder>>
+			scopeFinderByNameServiceTrackerMap =
+				ReflectionTestUtil.getFieldValue(
+					scopeLocatorImpl, "_scopeFinderByNameServiceTrackerMap");
+
+		Mockito.when(
+			scopeFinderByNameServiceTrackerMap.containsKey(_APPLICATION_NAME)
+		).thenReturn(
+			true
+		);
+
+		Mockito.when(
+			scopeFinderByNameServiceTrackerMap.keySet()
+		).thenReturn(
+			Collections.singleton(_APPLICATION_NAME)
+		);
+
+		AtomicInteger atomicInteger = new AtomicInteger();
+
+		Assert.assertEquals(
+			Collections.emptySet(),
+			scopeLocatorImpl.waitForScopeAliases(
+				_COMPANY_ID, Collections.singleton("everything"),
+				atomicInteger::incrementAndGet));
+
+		atomicBoolean.set(true);
+
+		try (LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
+				ScopeLocatorImpl.class.getName(), LoggerTestUtil.ERROR)) {
+
+			ReflectionTestUtil.invoke(
+				scopeLocatorImpl, "_notify", new Class<?>[] {String.class},
+				_APPLICATION_NAME);
+
+			List<LogEntry> logEntries = logCapture.getLogEntries();
+
+			Assert.assertEquals(logEntries.toString(), 1, logEntries.size());
+		}
+
+		atomicBoolean.set(false);
+
+		scopes.add("everything");
+
+		ReflectionTestUtil.invoke(
+			scopeLocatorImpl, "_notify", new Class<?>[] {String.class},
+			_APPLICATION_NAME);
+		ReflectionTestUtil.invoke(
+			scopeLocatorImpl, "_notify", new Class<?>[] {String.class},
+			_APPLICATION_NAME);
+
+		Assert.assertEquals(1, atomicInteger.get());
+	}
+
+	private void _testWaitForScopeAliasesWithNotificationDuringLookup()
+		throws Exception {
+
+		Builder builder = new Builder();
+
+		ScopeLocatorImpl scopeLocatorImpl = builder.withScopeFinders(
+			registrator -> registrator.register(
+				_COMPANY_ID, _APPLICATION_NAME, () -> scopesSet1)
+		).build();
+
+		ServiceTrackerMap<String, ServiceReferenceServiceTuple<?, ScopeFinder>>
+			scopeFinderByNameServiceTrackerMap =
+				ReflectionTestUtil.getFieldValue(
+					scopeLocatorImpl, "_scopeFinderByNameServiceTrackerMap");
+
+		Mockito.when(
+			scopeFinderByNameServiceTrackerMap.containsKey(_APPLICATION_NAME)
+		).thenReturn(
+			true
+		);
+
+		AtomicBoolean atomicBoolean = new AtomicBoolean();
+
+		Mockito.when(
+			scopeFinderByNameServiceTrackerMap.keySet()
+		).thenAnswer(
+			invocation -> {
+				if (atomicBoolean.compareAndSet(false, true)) {
+					ReflectionTestUtil.invoke(
+						scopeLocatorImpl, "_notify",
+						new Class<?>[] {String.class}, _APPLICATION_NAME);
+				}
+
+				return Collections.singleton(_APPLICATION_NAME);
+			}
+		);
+
+		AtomicInteger atomicInteger = new AtomicInteger();
+
+		Assert.assertEquals(
+			Collections.singleton("everything"),
+			scopeLocatorImpl.waitForScopeAliases(
+				_COMPANY_ID, Collections.singleton("everything"),
+				atomicInteger::incrementAndGet));
+		Assert.assertEquals(0, atomicInteger.get());
+	}
+
+	private void _testWaitForScopeAliasesWithNotificationForAnotherApplication()
+		throws Exception {
+
+		AtomicInteger findScopesAtomicInteger = new AtomicInteger();
+		Set<String> scopes = new HashSet<>();
+
+		Builder builder = new Builder();
+
+		ScopeLocatorImpl scopeLocatorImpl = builder.withScopeFinders(
+			registrator -> {
+				registrator.register(
+					_COMPANY_ID, _APPLICATION_NAME,
+					() -> {
+						findScopesAtomicInteger.incrementAndGet();
+
+						return scopes;
+					});
+				registrator.register(
+					_COMPANY_ID, _APPLICATION_NAME_2, Collections::emptySet);
+			}
+		).build();
+
+		ServiceTrackerMap<String, ServiceReferenceServiceTuple<?, ScopeFinder>>
+			scopeFinderByNameServiceTrackerMap =
+				ReflectionTestUtil.getFieldValue(
+					scopeLocatorImpl, "_scopeFinderByNameServiceTrackerMap");
+
+		Mockito.when(
+			scopeFinderByNameServiceTrackerMap.containsKey(Mockito.anyString())
+		).thenReturn(
+			true
+		);
+
+		Mockito.when(
+			scopeFinderByNameServiceTrackerMap.keySet()
+		).thenReturn(
+			new HashSet<>(Arrays.asList(_APPLICATION_NAME, _APPLICATION_NAME_2))
+		);
+
+		AtomicInteger atomicInteger = new AtomicInteger();
+
+		Assert.assertEquals(
+			Collections.emptySet(),
+			scopeLocatorImpl.waitForScopeAliases(
+				_COMPANY_ID, Collections.singleton("everything"),
+				atomicInteger::incrementAndGet));
+
+		scopes.add("everything");
+
+		int count = findScopesAtomicInteger.get();
+
+		ReflectionTestUtil.invoke(
+			scopeLocatorImpl, "_notify", new Class<?>[] {String.class},
+			_APPLICATION_NAME_2);
+
+		Assert.assertEquals(count, findScopesAtomicInteger.get());
+		Assert.assertEquals(0, atomicInteger.get());
+
+		ReflectionTestUtil.invoke(
+			scopeLocatorImpl, "_notify", new Class<?>[] {String.class},
+			_APPLICATION_NAME);
+
+		Assert.assertEquals(1, atomicInteger.get());
+	}
+
 	private static final String _APPLICATION_NAME = "com.liferay.test1";
 
-	private static final long _COMPANY_ID = 1;
+	private static final String _APPLICATION_NAME_2 = "com.liferay.test2";
+
+	private static final long _COMPANY_ID = RandomTestUtil.randomLong();
 
 	private static final MockedStatic<FrameworkUtil>
 		_frameworkUtilMockedStatic = Mockito.mockStatic(FrameworkUtil.class);
 	private static ServiceRegistration<PrefixHandlerFactory>
 		_prefixHandlerFactoryServiceRegistration;
-	private static ServiceRegistration<ScopeLocatorConfigurationProvider>
-		_scopeLocatorConfigurationProviderServiceRegistration;
 	private static ServiceRegistration<ScopeMapper>
 		_scopeMapperServiceRegistration;
 
@@ -443,13 +630,6 @@ public class ScopeLocatorImplTest {
 					});
 			}
 
-			if (!_scopeLocatorConfigurationProvidersInitialized) {
-				withScopeLocatorConfigurationProviders(
-					() -> new TestScopeLocatorConfiguration(),
-					registrator -> {
-					});
-			}
-
 			ReflectionTestUtil.setFieldValue(
 				_scopeLocatorImpl, "_jaxrsLifecycle",
 				new JAXRSLifecycle() {
@@ -459,6 +639,9 @@ public class ScopeLocatorImplTest {
 					}
 
 				});
+			ReflectionTestUtil.setFieldValue(
+				_scopeLocatorImpl, "_scopeLocatorConfiguration",
+				new TestScopeLocatorConfiguration());
 
 			return _scopeLocatorImpl;
 		}
@@ -518,24 +701,6 @@ public class ScopeLocatorImplTest {
 				});
 
 			_scopeFindersInitialized = true;
-
-			return this;
-		}
-
-		public Builder withScopeLocatorConfigurationProviders(
-				ScopeLocatorConfigurationProvider
-					defaultScopeLocatorConfigurationProvider,
-				CompanyAndKeyConfigurator<ScopeLocatorConfigurationProvider>
-					configurator)
-			throws IllegalAccessException {
-
-			_scopeLocatorImpl.
-				setScopeLocatorConfigurationProvidersScopedServiceTrackerMap(
-					_prepareScopedServiceTrackerMapMock(
-						defaultScopeLocatorConfigurationProvider,
-						configurator));
-
-			_scopeLocatorConfigurationProvidersInitialized = true;
 
 			return this;
 		}
@@ -613,7 +778,6 @@ public class ScopeLocatorImplTest {
 
 		private boolean _prefixHandlerFactoriesInitialized;
 		private boolean _scopeFindersInitialized;
-		private boolean _scopeLocatorConfigurationProvidersInitialized;
 		private final ScopeLocatorImpl _scopeLocatorImpl =
 			new ScopeLocatorImpl();
 		private boolean _scopeMappersInitialized;

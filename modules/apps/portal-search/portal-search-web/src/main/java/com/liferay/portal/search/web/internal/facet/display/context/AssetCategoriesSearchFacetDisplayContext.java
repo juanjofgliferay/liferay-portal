@@ -9,15 +9,16 @@ import com.liferay.portal.configuration.module.configuration.ConfigurationProvid
 import com.liferay.portal.kernel.module.configuration.ConfigurationException;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.portal.search.configuration.CategoryFacetFieldConfiguration;
 import com.liferay.portal.search.web.internal.category.facet.configuration.CategoryFacetPortletInstanceConfiguration;
+import com.liferay.portal.search.web.internal.util.DisplayContextHelperUtil;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.io.Serializable;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Lino Alves
@@ -29,22 +30,15 @@ public class AssetCategoriesSearchFacetDisplayContext
 			HttpServletRequest httpServletRequest)
 		throws ConfigurationException {
 
-		_httpServletRequest = httpServletRequest;
+		_themeDisplay = (ThemeDisplay)httpServletRequest.getAttribute(
+			WebKeys.THEME_DISPLAY);
 
 		_categoryFacetPortletInstanceConfiguration =
 			ConfigurationProviderUtil.getPortletInstanceConfiguration(
-				CategoryFacetPortletInstanceConfiguration.class,
-				(ThemeDisplay)httpServletRequest.getAttribute(
-					WebKeys.THEME_DISPLAY));
-
-		CategoryFacetFieldConfiguration categoryFacetFieldConfiguration =
-			ConfigurationProviderUtil.getSystemConfiguration(
-				CategoryFacetFieldConfiguration.class);
-
-		_legacyFieldSelected = _isLegacyFieldSelected(
-			categoryFacetFieldConfiguration.categoryFacetField());
+				CategoryFacetPortletInstanceConfiguration.class, _themeDisplay);
 	}
 
+	@Override
 	public List<BucketDisplayContext> getBucketDisplayContexts() {
 		return _bucketDisplayContexts;
 	}
@@ -52,7 +46,14 @@ public class AssetCategoriesSearchFacetDisplayContext
 	public List<BucketDisplayContext> getBucketDisplayContexts(
 		String vocabularyName) {
 
-		return _bucketDisplayContextsMap.get(vocabularyName);
+		List<BucketDisplayContext> bucketDisplayContexts =
+			_bucketDisplayContextsMap.get(vocabularyName);
+
+		if (bucketDisplayContexts == null) {
+			return new ArrayList<>();
+		}
+
+		return bucketDisplayContexts;
 	}
 
 	public CategoryFacetPortletInstanceConfiguration
@@ -61,39 +62,40 @@ public class AssetCategoriesSearchFacetDisplayContext
 		return _categoryFacetPortletInstanceConfiguration;
 	}
 
+	@Override
 	public long getDisplayStyleGroupId() {
-		if (_displayStyleGroupId != 0) {
-			return _displayStyleGroupId;
-		}
-
-		_displayStyleGroupId =
-			_categoryFacetPortletInstanceConfiguration.displayStyleGroupId();
-
-		if (_displayStyleGroupId <= 0) {
-			ThemeDisplay themeDisplay =
-				(ThemeDisplay)_httpServletRequest.getAttribute(
-					WebKeys.THEME_DISPLAY);
-
-			_displayStyleGroupId = themeDisplay.getScopeGroupId();
-		}
-
-		return _displayStyleGroupId;
+		return DisplayContextHelperUtil.getDisplayStyleGroupId(
+			_categoryFacetPortletInstanceConfiguration.
+				displayStyleGroupExternalReferenceCode(),
+			_themeDisplay);
 	}
 
+	public List<String> getGroupVocabularyExternalReferenceCodes() {
+		return _groupVocabularyExternalReferenceCodes;
+	}
+
+	@Override
 	public String getPaginationStartParameterName() {
 		return _paginationStartParameterName;
 	}
 
+	@Override
 	public String getParameterName() {
 		return _parameterName;
 	}
 
+	@Override
 	public String getParameterValue() {
 		return _parameterValue;
 	}
 
+	@Override
 	public List<String> getParameterValues() {
 		return _parameterValues;
+	}
+
+	public List<Long> getVocabularyIds() {
+		return _vocabularyIds;
 	}
 
 	public List<String> getVocabularyNames() {
@@ -104,14 +106,12 @@ public class AssetCategoriesSearchFacetDisplayContext
 		return _cloud;
 	}
 
-	public boolean isLegacyFieldSelected() {
-		return _legacyFieldSelected;
-	}
-
+	@Override
 	public boolean isNothingSelected() {
 		return _nothingSelected;
 	}
 
+	@Override
 	public boolean isRenderNothing() {
 		return _renderNothing;
 	}
@@ -130,6 +130,13 @@ public class AssetCategoriesSearchFacetDisplayContext
 
 	public void setCloud(boolean cloud) {
 		_cloud = cloud;
+	}
+
+	public void setGroupVocabularyExternalReferenceCodes(
+		List<String> groupVocabularyExternalReferenceCodes) {
+
+		_groupVocabularyExternalReferenceCodes =
+			groupVocabularyExternalReferenceCodes;
 	}
 
 	public void setNothingSelected(boolean nothingSelected) {
@@ -158,16 +165,12 @@ public class AssetCategoriesSearchFacetDisplayContext
 		_renderNothing = renderNothing;
 	}
 
-	public void setVocabularyNames(List<String> vocabularyNames) {
-		_vocabularyNames = vocabularyNames;
+	public void setVocabularyIds(List<Long> vocabularyIds) {
+		_vocabularyIds = vocabularyIds;
 	}
 
-	private boolean _isLegacyFieldSelected(String fieldName) {
-		if (fieldName.equals("assetCategoryIds")) {
-			return true;
-		}
-
-		return false;
+	public void setVocabularyNames(List<String> vocabularyNames) {
+		_vocabularyNames = vocabularyNames;
 	}
 
 	private List<BucketDisplayContext> _bucketDisplayContexts;
@@ -175,15 +178,15 @@ public class AssetCategoriesSearchFacetDisplayContext
 	private final CategoryFacetPortletInstanceConfiguration
 		_categoryFacetPortletInstanceConfiguration;
 	private boolean _cloud;
-	private long _displayStyleGroupId;
-	private final HttpServletRequest _httpServletRequest;
-	private final boolean _legacyFieldSelected;
+	private List<String> _groupVocabularyExternalReferenceCodes;
 	private boolean _nothingSelected;
 	private String _paginationStartParameterName;
 	private String _parameterName;
 	private String _parameterValue;
 	private List<String> _parameterValues;
 	private boolean _renderNothing;
+	private final ThemeDisplay _themeDisplay;
+	private List<Long> _vocabularyIds;
 	private List<String> _vocabularyNames;
 
 }

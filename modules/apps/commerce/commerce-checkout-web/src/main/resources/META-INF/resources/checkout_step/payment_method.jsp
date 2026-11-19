@@ -12,10 +12,10 @@ PaymentMethodCheckoutStepDisplayContext paymentMethodCheckoutStepDisplayContext 
 
 List<CommercePaymentMethodGroupRel> commercePaymentMethodGroupRels = paymentMethodCheckoutStepDisplayContext.getCommercePaymentMethodGroupRels();
 
-String commercePaymentMethodKey = BeanParamUtil.getString(paymentMethodCheckoutStepDisplayContext.getCommerceOrder(), request, "commercePaymentMethodKey");
+String commercePaymentMethodKey = BeanParamUtil.getString(paymentMethodCheckoutStepDisplayContext.getCommerceOrder(), request, "commercePaymentMethodKey", CommerceOrder::getCommercePaymentMethodKey);
 %>
 
-<div id="commercePaymentMethodsContainer">
+<div id="commerce-payment-methods-container">
 	<liferay-ui:error exception="<%= CommerceOrderPaymentMethodException.class %>" message="please-select-a-valid-payment-method" />
 
 	<c:choose>
@@ -56,7 +56,7 @@ String commercePaymentMethodKey = BeanParamUtil.getString(paymentMethodCheckoutS
 
 						<c:if test="<%= Validator.isNotNull(thumbnailSrc) %>">
 							<div class="autofit-col">
-								<img alt="<%= HtmlUtil.escapeAttribute(commercePaymentMethodGroupRel.getName(locale)) %>" class="payment-icon" src="<%= HtmlUtil.escapeAttribute(thumbnailSrc) %>" style="height: 45px; width: auto;" />
+								<img alt="<%= HtmlUtil.escapeAttribute(commercePaymentMethodGroupRel.getName(locale)) %>" class="payment-icon" src="<%= HtmlUtil.escapeAttribute(thumbnailSrc) %>" />
 							</div>
 						</c:if>
 					</li>

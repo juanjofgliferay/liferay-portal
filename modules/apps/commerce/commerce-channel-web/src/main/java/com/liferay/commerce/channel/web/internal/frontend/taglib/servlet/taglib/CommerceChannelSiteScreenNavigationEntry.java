@@ -8,7 +8,6 @@ package com.liferay.commerce.channel.web.internal.frontend.taglib.servlet.taglib
 import com.liferay.account.service.AccountEntryService;
 import com.liferay.commerce.channel.web.internal.display.context.SiteCommerceChannelTypeDisplayContext;
 import com.liferay.commerce.currency.service.CommerceCurrencyLocalService;
-import com.liferay.commerce.inventory.method.CommerceInventoryMethodRegistry;
 import com.liferay.commerce.product.channel.CommerceChannelHealthStatusRegistry;
 import com.liferay.commerce.product.channel.CommerceChannelTypeRegistry;
 import com.liferay.commerce.product.constants.CommerceChannelConstants;
@@ -27,11 +26,10 @@ import com.liferay.portal.kernel.service.WorkflowDefinitionLinkLocalService;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.workflow.manager.WorkflowDefinitionManager;
 
-import java.io.IOException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -54,13 +52,8 @@ public class CommerceChannelSiteScreenNavigationEntry
 
 	@Override
 	public boolean isVisible(User user, CommerceChannel commerceChannel) {
-		if (CommerceChannelConstants.CHANNEL_TYPE_SITE.equals(
-				commerceChannel.getType())) {
-
-			return true;
-		}
-
-		return false;
+		return CommerceChannelConstants.CHANNEL_TYPE_SITE.equals(
+			commerceChannel.getType());
 	}
 
 	@Override
@@ -113,9 +106,6 @@ public class CommerceChannelSiteScreenNavigationEntry
 	private CommerceCurrencyLocalService _commerceCurrencyLocalService;
 
 	@Reference
-	private CommerceInventoryMethodRegistry _commerceInventoryMethodRegistry;
-
-	@Reference
 	private ConfigurationProvider _configurationProvider;
 
 	@Reference
@@ -135,11 +125,6 @@ public class CommerceChannelSiteScreenNavigationEntry
 
 	@Reference
 	private Portal _portal;
-
-	@Reference(
-		target = "(osgi.web.symbolicname=com.liferay.commerce.channel.web)"
-	)
-	private ServletContext _servletContext;
 
 	@Reference
 	private WorkflowDefinitionLinkLocalService

@@ -111,11 +111,7 @@ public class KBCommentPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		KBComment newKBComment = _persistence.create(pk);
-
-		newKBComment.setMvccVersion(RandomTestUtil.nextLong());
+		KBComment newKBComment = addKBComment();
 
 		newKBComment.setCtCollectionId(RandomTestUtil.nextLong());
 
@@ -145,7 +141,9 @@ public class KBCommentPersistenceTest {
 
 		newKBComment.setStatus(RandomTestUtil.nextInt());
 
-		_kbComments.add(_persistence.update(newKBComment));
+		newKBComment = _persistence.update(newKBComment);
+
+		_kbComments.add(newKBComment);
 
 		KBComment existingKBComment = _persistence.findByPrimaryKey(
 			newKBComment.getPrimaryKey());
@@ -220,14 +218,6 @@ public class KBCommentPersistenceTest {
 		_persistence.countByGroupId(RandomTestUtil.nextLong());
 
 		_persistence.countByGroupId(0L);
-	}
-
-	@Test
-	public void testCountByG_C() throws Exception {
-		_persistence.countByG_C(
-			RandomTestUtil.nextLong(), RandomTestUtil.nextLong());
-
-		_persistence.countByG_C(0L, 0L);
 	}
 
 	@Test
@@ -581,8 +571,6 @@ public class KBCommentPersistenceTest {
 
 		KBComment kbComment = _persistence.create(pk);
 
-		kbComment.setMvccVersion(RandomTestUtil.nextLong());
-
 		kbComment.setCtCollectionId(RandomTestUtil.nextLong());
 
 		kbComment.setUuid(RandomTestUtil.randomString());
@@ -621,3 +609,4 @@ public class KBCommentPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:446054875

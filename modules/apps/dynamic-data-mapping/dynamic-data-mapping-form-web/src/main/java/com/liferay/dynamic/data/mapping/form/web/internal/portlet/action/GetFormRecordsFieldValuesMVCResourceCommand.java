@@ -6,7 +6,11 @@
 package com.liferay.dynamic.data.mapping.form.web.internal.portlet.action;
 
 import com.liferay.dynamic.data.mapping.constants.DDMPortletKeys;
+import com.liferay.dynamic.data.mapping.model.DDMForm;
+import com.liferay.dynamic.data.mapping.model.DDMFormField;
+import com.liferay.dynamic.data.mapping.model.DDMFormInstance;
 import com.liferay.dynamic.data.mapping.model.DDMFormInstanceRecord;
+import com.liferay.dynamic.data.mapping.service.DDMFormInstanceLocalService;
 import com.liferay.dynamic.data.mapping.service.DDMFormInstanceRecordLocalService;
 import com.liferay.dynamic.data.mapping.util.DDMFormReportDataUtil;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
@@ -17,14 +21,19 @@ import com.liferay.portal.kernel.portlet.bridges.mvc.MVCResourceCommand;
 import com.liferay.portal.kernel.search.BaseModelSearchResult;
 import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.kernel.search.Sort;
+import com.liferay.portal.kernel.security.auth.PrincipalException;
+import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
-import javax.portlet.ResourceRequest;
-import javax.portlet.ResourceResponse;
+import jakarta.portlet.ResourceRequest;
+import jakarta.portlet.ResourceResponse;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
+
+import java.util.Map;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -34,8 +43,8 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + DDMPortletKeys.DYNAMIC_DATA_MAPPING_FORM,
-		"javax.portlet.name=" + DDMPortletKeys.DYNAMIC_DATA_MAPPING_FORM_ADMIN,
+		"jakarta.portlet.name=" + DDMPortletKeys.DYNAMIC_DATA_MAPPING_FORM,
+		"jakarta.portlet.name=" + DDMPortletKeys.DYNAMIC_DATA_MAPPING_FORM_ADMIN,
 		"mvc.command.name=/dynamic_data_mapping_form/get_form_records_field_values"
 	},
 	service = MVCResourceCommand.class
@@ -48,28 +57,53 @@ public class GetFormRecordsFieldValuesMVCResourceCommand
 			ResourceRequest resourceRequest, ResourceResponse resourceResponse)
 		throws Exception {
 
+		HttpServletRequest httpServletRequest = _portal.getHttpServletRequest(
+			resourceRequest);
+
+		ThemeDisplay themeDisplay =
+			(ThemeDisplay)httpServletRequest.getAttribute(
+				WebKeys.THEME_DISPLAY);
+
+		if (!themeDisplay.isSignedIn()) {
+			throw new PrincipalException.MustBeAuthenticated(
+				themeDisplay.getUserId());
+		}
+
 		JSONPortletResponseUtil.writeJSON(
 			resourceRequest, resourceResponse,
-			_getFieldValuesJSONArray(
-				_portal.getHttpServletRequest(resourceRequest)));
+			_getFieldValuesJSONArray(httpServletRequest));
 	}
 
 	private JSONArray _getFieldValuesJSONArray(
 			HttpServletRequest httpServletRequest)
 		throws Exception {
 
-		String fieldName = ParamUtil.getString(httpServletRequest, "fieldName");
+		DDMFormInstance ddmFormInstance =
+			_ddmFormInstanceLocalService.fetchDDMFormInstance(
+				ParamUtil.getLong(httpServletRequest, "formInstanceId"));
+
+		DDMForm ddmForm = ddmFormInstance.getDDMForm();
+
+		Map<String, DDMFormField> ddmFormFieldsMap =
+			ddmForm.getDDMFormFieldsMap(true);
+
+		DDMFormField ddmFormField = ddmFormFieldsMap.get(
+			ParamUtil.getString(httpServletRequest, "fieldName"));
 
 		BaseModelSearchResult<DDMFormInstanceRecord> baseModelSearchResult =
 			_ddmFormInstanceRecordLocalService.searchFormInstanceRecords(
 				ParamUtil.getLong(httpServletRequest, "formInstanceId"),
-				new String[] {fieldName}, WorkflowConstants.STATUS_APPROVED,
-				QueryUtil.ALL_POS, QueryUtil.ALL_POS,
+				new String[] {ddmFormField.getFieldReference()},
+				WorkflowConstants.STATUS_APPROVED, QueryUtil.ALL_POS,
+				QueryUtil.ALL_POS,
 				new Sort(Field.MODIFIED_DATE, Sort.LONG_TYPE, true));
 
 		return DDMFormReportDataUtil.getFieldValuesJSONArray(
-			baseModelSearchResult.getBaseModels(), fieldName);
+			baseModelSearchResult.getBaseModels(), ddmFormField.getName());
 	}
+
+	@Reference
+	private DDMFormInstanceLocalService _ddmFormInstanceLocalService;
 
 	@Reference
 	private DDMFormInstanceRecordLocalService

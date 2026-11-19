@@ -8,11 +8,11 @@ package com.liferay.headless.portal.instances.client.dto.v1_0;
 import com.liferay.headless.portal.instances.client.function.UnsafeSupplier;
 import com.liferay.headless.portal.instances.client.serdes.v1_0.AdminSerDes;
 
+import jakarta.annotation.Generated;
+
 import java.io.Serializable;
 
 import java.util.Objects;
-
-import javax.annotation.Generated;
 
 /**
  * @author Alberto Chaparro
@@ -88,6 +88,69 @@ public class Admin implements Cloneable, Serializable {
 
 	protected String givenName;
 
+	public String getMiddleName() {
+		return middleName;
+	}
+
+	public void setMiddleName(String middleName) {
+		this.middleName = middleName;
+	}
+
+	public void setMiddleName(
+		UnsafeSupplier<String, Exception> middleNameUnsafeSupplier) {
+
+		try {
+			middleName = middleNameUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String middleName;
+
+	public String getPassword() {
+		return password;
+	}
+
+	public void setPassword(String password) {
+		this.password = password;
+	}
+
+	public void setPassword(
+		UnsafeSupplier<String, Exception> passwordUnsafeSupplier) {
+
+		try {
+			password = passwordUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String password;
+
+	public String getScreenName() {
+		return screenName;
+	}
+
+	public void setScreenName(String screenName) {
+		this.screenName = screenName;
+	}
+
+	public void setScreenName(
+		UnsafeSupplier<String, Exception> screenNameUnsafeSupplier) {
+
+		try {
+			screenName = screenNameUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String screenName;
+
 	@Override
 	public Admin clone() throws CloneNotSupportedException {
 		return (Admin)super.clone();
@@ -120,3 +183,4 @@ public class Admin implements Cloneable, Serializable {
 	}
 
 }
+// LIFERAY-REST-BUILDER-HASH:1673056786

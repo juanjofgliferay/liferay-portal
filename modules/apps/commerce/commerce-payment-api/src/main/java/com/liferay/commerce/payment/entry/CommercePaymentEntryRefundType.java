@@ -6,6 +6,7 @@
 package com.liferay.commerce.payment.entry;
 
 import java.util.Locale;
+import java.util.Map;
 
 /**
  * @author Alessio Antonio Rendina
@@ -16,6 +17,10 @@ public interface CommercePaymentEntryRefundType {
 
 	public String getName(Locale locale);
 
+	public Map<Locale, String> getNameMap();
+
 	public int getPriority();
+
+	public boolean isEnabled();
 
 }

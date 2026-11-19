@@ -14,13 +14,13 @@ import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.upload.LiferayServletRequest;
 import com.liferay.portal.upload.test.util.UploadTestUtil;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.io.InputStream;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -134,6 +134,6 @@ public class UploadPortletRequestWhenGettingFileAsStreamTest {
 	private static final byte[] _BYTES =
 		"Enterprise. Open Source. For Life.".getBytes();
 
-	private static String _portletNamespace;
+	private String _portletNamespace;
 
 }

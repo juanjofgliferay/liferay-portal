@@ -25,10 +25,12 @@ import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.PropsValues;
+import com.liferay.portal.kernel.util.TreeMapBuilder;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
-import com.liferay.portal.util.PropsValues;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -133,8 +135,11 @@ public class PortalImplLayoutFriendlyURLTest {
 			RandomTestUtil.randomString() + "." +
 				RandomTestUtil.randomString(3);
 
-		_virtualHostLocalService.updateVirtualHost(
-			_company.getCompanyId(), layoutSet.getLayoutSetId(), hostname);
+		_virtualHostLocalService.updateVirtualHosts(
+			_company.getCompanyId(), layoutSet.getLayoutSetId(),
+			TreeMapBuilder.put(
+				hostname, StringPool.BLANK
+			).build());
 
 		return hostname;
 	}
@@ -150,7 +155,7 @@ public class PortalImplLayoutFriendlyURLTest {
 		themeDisplay.setLayoutSet(_layout.getLayoutSet());
 		themeDisplay.setPortalDomain(virtualHostname);
 		themeDisplay.setServerName(virtualHostname);
-		themeDisplay.setServerPort(8080);
+		themeDisplay.setServerPort(PortalUtil.getPortalServerPort(false));
 		themeDisplay.setSiteGroupId(_group.getGroupId());
 		themeDisplay.setUser(TestPropsValues.getUser());
 

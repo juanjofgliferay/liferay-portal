@@ -12,17 +12,24 @@ import com.liferay.commerce.product.model.CPDefinition;
 import com.liferay.commerce.product.model.CPInstance;
 import com.liferay.commerce.product.service.CPInstanceService;
 import com.liferay.commerce.product.type.virtual.constants.VirtualCPTypeConstants;
+import com.liferay.commerce.product.type.virtual.model.CPDVirtualSettingFileEntry;
 import com.liferay.commerce.product.type.virtual.model.CPDefinitionVirtualSetting;
 import com.liferay.commerce.product.type.virtual.service.CPDefinitionVirtualSettingService;
 import com.liferay.headless.commerce.admin.catalog.dto.v1_0.SkuVirtualSettings;
+import com.liferay.headless.commerce.admin.catalog.dto.v1_0.SkuVirtualSettingsFileEntry;
 import com.liferay.headless.commerce.admin.catalog.dto.v1_0.Status;
 import com.liferay.headless.commerce.core.util.LanguageUtils;
 import com.liferay.journal.model.JournalArticle;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.kernel.language.Language;
+import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.repository.model.FileEntry;
+import com.liferay.portal.kernel.service.GroupLocalService;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.vulcan.dto.converter.DTOConverter;
 import com.liferay.portal.vulcan.dto.converter.DTOConverterContext;
 
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.osgi.service.component.annotations.Component;
@@ -32,7 +39,10 @@ import org.osgi.service.component.annotations.Reference;
  * @author Stefano Motta
  */
 @Component(
-	property = "dto.class.name=com.liferay.headless.commerce.admin.catalog.dto.v1_0.SkuVirtualSettings",
+	property = {
+		"default=true",
+		"dto.class.name=com.liferay.headless.commerce.admin.catalog.dto.v1_0.SkuVirtualSettings"
+	},
 	service = DTOConverter.class
 )
 public class SkuVirtualSettingsDTOConverter
@@ -66,22 +76,13 @@ public class SkuVirtualSettingsDTOConverter
 			return null;
 		}
 
+		List<CPDVirtualSettingFileEntry> cpdVirtualSettingFileEntries =
+			cpDefinitionVirtualSetting.getCPDVirtualSettingFileEntries();
+
 		return new SkuVirtualSettings() {
 			{
-				activationStatus =
-					cpDefinitionVirtualSetting.getActivationStatus();
-				duration = TimeUnit.MILLISECONDS.toDays(
-					cpDefinitionVirtualSetting.getDuration());
-				maxUsages = cpDefinitionVirtualSetting.getMaxUsages();
-				override = cpDefinitionVirtualSetting.isOverride();
-				sampleURL = cpDefinitionVirtualSetting.getSampleURL();
-				termsOfUseContent = LanguageUtils.getLanguageIdMap(
-					cpDefinitionVirtualSetting.getTermsOfUseContentMap());
-				termsOfUseRequired =
-					cpDefinitionVirtualSetting.isTermsOfUseRequired();
-				url = cpDefinitionVirtualSetting.getUrl();
-				useSample = cpDefinitionVirtualSetting.isUseSample();
-
+				setActivationStatus(
+					cpDefinitionVirtualSetting::getActivationStatus);
 				setActivationStatusInfo(
 					() -> {
 						String orderStatusLabel =
@@ -91,16 +92,25 @@ public class SkuVirtualSettingsDTOConverter
 
 						return new Status() {
 							{
-								code =
-									cpDefinitionVirtualSetting.
-										getActivationStatus();
-								label = orderStatusLabel;
-								label_i18n = _language.get(
-									dtoConverterContext.getLocale(),
-									orderStatusLabel);
+								setCode(
+									cpDefinitionVirtualSetting::
+										getActivationStatus);
+								setLabel(() -> orderStatusLabel);
+								setLabel_i18n(
+									() -> _language.get(
+										dtoConverterContext.getLocale(),
+										orderStatusLabel));
 							}
 						};
 					});
+				setDuration(
+					() -> TimeUnit.MILLISECONDS.toDays(
+						cpDefinitionVirtualSetting.getDuration()));
+				setId(
+					cpDefinitionVirtualSetting::
+						getCPDefinitionVirtualSettingId);
+				setMaxUsages(cpDefinitionVirtualSetting::getMaxUsages);
+				setOverride(cpDefinitionVirtualSetting::isOverride);
 				setSampleSrc(
 					() -> {
 						FileEntry fileEntry =
@@ -117,21 +127,69 @@ public class SkuVirtualSettingsDTOConverter
 								AccountConstants.ACCOUNT_ENTRY_ID_ADMIN,
 								fileEntry.getFileEntryId());
 					});
+				setSampleURL(cpDefinitionVirtualSetting::getSampleURL);
+				setSkuVirtualSettingsFileEntries(
+					() -> _toSkuVirtualSettingsFileEntries(
+						cpdVirtualSettingFileEntries, cpInstance));
 				setSrc(
 					() -> {
-						FileEntry fileEntry =
-							cpDefinitionVirtualSetting.getFileEntry();
+						if (cpdVirtualSettingFileEntries.isEmpty()) {
+							return null;
+						}
 
-						if (fileEntry == null) {
+						CPDVirtualSettingFileEntry cpdVirtualSettingFileEntry =
+							cpdVirtualSettingFileEntries.get(0);
+
+						long fileEntryId =
+							cpdVirtualSettingFileEntry.getFileEntryId();
+
+						if (fileEntryId == 0) {
 							return null;
 						}
 
 						return _commerceMediaResolver.
 							getDownloadVirtualProductURL(
 								CPInstance.class.getName(),
-								cpInstance.getCPInstanceId(),
+								cpInstance.getCPDefinitionId(),
 								AccountConstants.ACCOUNT_ENTRY_ID_ADMIN,
-								fileEntry.getFileEntryId());
+								fileEntryId);
+					});
+				setTermsOfUseContent(
+					() -> LanguageUtils.getLanguageIdMap(
+						cpDefinitionVirtualSetting.getTermsOfUseContentMap()));
+				setTermsOfUseJournalArticleExternalReferenceCode(
+					() -> {
+						JournalArticle journalArticle =
+							cpDefinitionVirtualSetting.
+								getTermsOfUseJournalArticle();
+
+						if (journalArticle == null) {
+							return null;
+						}
+
+						return journalArticle.getExternalReferenceCode();
+					});
+				setTermsOfUseJournalArticleGroupExternalReferenceCode(
+					() -> {
+						JournalArticle journalArticle =
+							cpDefinitionVirtualSetting.
+								getTermsOfUseJournalArticle();
+
+						if (journalArticle == null) {
+							return null;
+						}
+
+						Group group = _groupLocalService.getGroup(
+							journalArticle.getGroupId());
+
+						String groupExternalReferenceCode =
+							group.getExternalReferenceCode();
+
+						if (Validator.isNull(groupExternalReferenceCode)) {
+							return null;
+						}
+
+						return groupExternalReferenceCode;
 					});
 				setTermsOfUseJournalArticleId(
 					() -> {
@@ -145,8 +203,77 @@ public class SkuVirtualSettingsDTOConverter
 
 						return journalArticle.getResourcePrimKey();
 					});
+				setTermsOfUseRequired(
+					cpDefinitionVirtualSetting::isTermsOfUseRequired);
+				setUrl(
+					() -> {
+						if (cpdVirtualSettingFileEntries.isEmpty()) {
+							return null;
+						}
+
+						CPDVirtualSettingFileEntry cpdVirtualSettingFileEntry =
+							cpdVirtualSettingFileEntries.get(0);
+
+						if (Validator.isNull(
+								cpdVirtualSettingFileEntry.getUrl())) {
+
+							return null;
+						}
+
+						return cpdVirtualSettingFileEntry.getUrl();
+					});
+				setUseSample(cpDefinitionVirtualSetting::isUseSample);
 			}
 		};
+	}
+
+	private SkuVirtualSettingsFileEntry[] _toSkuVirtualSettingsFileEntries(
+		List<CPDVirtualSettingFileEntry> cpdVirtualSettingFileEntries,
+		CPInstance cpInstance) {
+
+		return TransformUtil.transformToArray(
+			cpdVirtualSettingFileEntries,
+			cpdVirtualSettingFileEntry -> new SkuVirtualSettingsFileEntry() {
+				{
+					setSrc(
+						() -> {
+							long fileEntryId =
+								cpdVirtualSettingFileEntry.getFileEntryId();
+
+							if (fileEntryId == 0) {
+								return null;
+							}
+
+							return _commerceMediaResolver.
+								getDownloadVirtualProductURL(
+									CPInstance.class.getName(),
+									cpInstance.getCPInstanceId(),
+									AccountConstants.ACCOUNT_ENTRY_ID_ADMIN,
+									fileEntryId);
+						});
+					setUrl(
+						() -> {
+							if (Validator.isNull(
+									cpdVirtualSettingFileEntry.getUrl())) {
+
+								return null;
+							}
+
+							return cpdVirtualSettingFileEntry.getUrl();
+						});
+					setVersion(
+						() -> {
+							if (Validator.isNull(
+									cpdVirtualSettingFileEntry.getVersion())) {
+
+								return null;
+							}
+
+							return cpdVirtualSettingFileEntry.getVersion();
+						});
+				}
+			},
+			SkuVirtualSettingsFileEntry.class);
 	}
 
 	@Reference
@@ -158,6 +285,9 @@ public class SkuVirtualSettingsDTOConverter
 
 	@Reference
 	private CPInstanceService _cpInstanceService;
+
+	@Reference
+	private GroupLocalService _groupLocalService;
 
 	@Reference
 	private Language _language;

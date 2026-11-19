@@ -11,18 +11,17 @@ import com.liferay.portal.monitoring.internal.statistics.SummaryStatistics;
 
 import java.util.Set;
 
-import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.Reference;
-
 /**
  * @author Michael C. Han
  * @author Brian Wing Shun Chan
  */
-@Component(
-	enabled = false, property = "name=portalSummaryStatistics",
-	service = SummaryStatistics.class
-)
 public class ServerSummaryStatistics implements SummaryStatistics {
+
+	public ServerSummaryStatistics(
+		ServerStatisticsHelper serverStatisticsHelper) {
+
+		_serverStatisticsHelper = serverStatisticsHelper;
+	}
 
 	@Override
 	public long getAverageTime() {
@@ -104,9 +103,11 @@ public class ServerSummaryStatistics implements SummaryStatistics {
 		for (CompanyStatistics companyStatistics :
 				_serverStatisticsHelper.getCompanyStatisticsSet()) {
 
-			if (companyStatistics.getMaxTime() > maxTime) {
-				maxTime = companyStatistics.getMaxTime();
+			if (companyStatistics.getMaxTime() <= maxTime) {
+				continue;
 			}
+
+			maxTime = companyStatistics.getMaxTime();
 		}
 
 		return maxTime;
@@ -133,9 +134,11 @@ public class ServerSummaryStatistics implements SummaryStatistics {
 		for (CompanyStatistics companyStatistics :
 				_serverStatisticsHelper.getCompanyStatisticsSet()) {
 
-			if (companyStatistics.getMinTime() < minTime) {
-				minTime = companyStatistics.getMinTime();
+			if (companyStatistics.getMinTime() >= minTime) {
+				continue;
 			}
+
+			minTime = companyStatistics.getMinTime();
 		}
 
 		return minTime;
@@ -288,7 +291,6 @@ public class ServerSummaryStatistics implements SummaryStatistics {
 		}
 	}
 
-	@Reference
-	private ServerStatisticsHelper _serverStatisticsHelper;
+	private final ServerStatisticsHelper _serverStatisticsHelper;
 
 }

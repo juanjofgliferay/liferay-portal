@@ -9,6 +9,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.workflow.kaleo.model.KaleoInstance;
 
@@ -61,6 +62,18 @@ public class KaleoInstanceLocalServiceUtil {
 		return getService().addKaleoInstance(
 			kaleoDefinitionId, kaleoDefinitionVersionId, kaleoDefinitionName,
 			kaleoDefinitionVersion, workflowContext, serviceContext);
+	}
+
+	public static KaleoInstance addKaleoInstance(
+			String kaleoDefinitionName, Integer kaleoDefinitionVersion,
+			String transitionName, Map<String, Serializable> workflowContext,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext,
+			boolean waitForCompletion)
+		throws PortalException {
+
+		return getService().addKaleoInstance(
+			kaleoDefinitionName, kaleoDefinitionVersion, transitionName,
+			workflowContext, serviceContext, waitForCompletion);
 	}
 
 	public static KaleoInstance completeKaleoInstance(long kaleoInstanceId)
@@ -464,13 +477,13 @@ public class KaleoInstanceLocalServiceUtil {
 	}
 
 	public static KaleoInstanceLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(KaleoInstanceLocalService service) {
-		_service = service;
-	}
-
-	private static volatile KaleoInstanceLocalService _service;
+	private static final Snapshot<KaleoInstanceLocalService> _serviceSnapshot =
+		new Snapshot<>(
+			KaleoInstanceLocalServiceUtil.class,
+			KaleoInstanceLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1636303169

@@ -8,11 +8,13 @@ package com.liferay.saml.web.internal.portlet.action;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCActionCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
 import com.liferay.portal.kernel.util.ParamUtil;
+import com.liferay.portal.kernel.util.Portal;
 import com.liferay.saml.constants.SamlPortletKeys;
 import com.liferay.saml.persistence.service.SamlSpIdpConnectionLocalService;
+import com.liferay.saml.web.internal.util.SamlPermissionUtil;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -22,7 +24,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + SamlPortletKeys.SAML_ADMIN,
+		"jakarta.portlet.name=" + SamlPortletKeys.SAML_ADMIN,
 		"mvc.command.name=/admin/delete_saml_sp_idp_connection"
 	},
 	service = MVCActionCommand.class
@@ -35,9 +37,20 @@ public class DeleteSamlSpIdpConnectionMVCActionCommand
 			ActionRequest actionRequest, ActionResponse actionResponse)
 		throws Exception {
 
+		long samlSpIdpConnectionId = ParamUtil.getLong(
+			actionRequest, "samlSpIdpConnectionId");
+
+		SamlPermissionUtil.checkPermission(
+			_portal.getCompanyId(actionRequest),
+			_samlSpIdpConnectionLocalService.getSamlSpIdpConnection(
+				samlSpIdpConnectionId));
+
 		_samlSpIdpConnectionLocalService.deleteSamlSpIdpConnection(
-			ParamUtil.getLong(actionRequest, "samlSpIdpConnectionId"));
+			samlSpIdpConnectionId);
 	}
+
+	@Reference
+	private Portal _portal;
 
 	@Reference
 	private SamlSpIdpConnectionLocalService _samlSpIdpConnectionLocalService;

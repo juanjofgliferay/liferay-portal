@@ -14,7 +14,6 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.ColorScheme;
 import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.Group;
-import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.LayoutSet;
 import com.liferay.portal.kernel.model.LayoutSetPrototype;
 import com.liferay.portal.kernel.model.Theme;
@@ -23,7 +22,6 @@ import com.liferay.portal.kernel.model.cache.CacheField;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
 import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
-import com.liferay.portal.kernel.service.LayoutLocalServiceUtil;
 import com.liferay.portal.kernel.service.LayoutSetLocalServiceUtil;
 import com.liferay.portal.kernel.service.LayoutSetPrototypeLocalServiceUtil;
 import com.liferay.portal.kernel.service.ThemeLocalServiceUtil;
@@ -34,18 +32,15 @@ import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.PrefsPropsUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
-import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.URLCodec;
 import com.liferay.portal.kernel.util.UnicodeProperties;
+import com.liferay.portal.kernel.util.UnicodePropertiesBuilder;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.util.PropsValues;
-import com.liferay.sites.kernel.util.Sites;
 
-import java.io.IOException;
-
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.NavigableMap;
 import java.util.TreeMap;
 
 /**
@@ -103,6 +98,9 @@ public class LayoutSetImpl extends LayoutSetBaseImpl {
 				}
 			}
 		}
+
+		companyFallbackVirtualHostnameUpdateEntityCacheBiConsumer.accept(
+			this, _companyFallbackVirtualHostname);
 
 		return _companyFallbackVirtualHostname;
 	}
@@ -226,32 +224,6 @@ public class LayoutSetImpl extends LayoutSetBaseImpl {
 	}
 
 	@Override
-	public List<Layout> getMergeFailFriendlyURLLayouts() {
-		UnicodeProperties settingsUnicodeProperties = getSettingsProperties();
-
-		String uuids = settingsUnicodeProperties.getProperty(
-			Sites.MERGE_FAIL_FRIENDLY_URL_LAYOUTS);
-
-		if (Validator.isNotNull(uuids)) {
-			List<Layout> layouts = new ArrayList<>();
-
-			for (String uuid : StringUtil.split(uuids)) {
-				Layout layout =
-					LayoutLocalServiceUtil.fetchLayoutByUuidAndGroupId(
-						uuid, getGroupId(), isPrivateLayout());
-
-				if (layout != null) {
-					layouts.add(layout);
-				}
-			}
-
-			return layouts;
-		}
-
-		return Collections.emptyList();
-	}
-
-	@Override
 	public int getPageCount() {
 		return LayoutSetLocalServiceUtil.getPageCount(
 			getGroupId(), getPrivateLayout());
@@ -269,14 +241,11 @@ public class LayoutSetImpl extends LayoutSetBaseImpl {
 	@Override
 	public UnicodeProperties getSettingsProperties() {
 		if (_settingsUnicodeProperties == null) {
-			_settingsUnicodeProperties = new UnicodeProperties(true);
-
-			try {
-				_settingsUnicodeProperties.load(super.getSettings());
-			}
-			catch (IOException ioException) {
-				_log.error(ioException);
-			}
+			_settingsUnicodeProperties = UnicodePropertiesBuilder.create(
+				true
+			).load(
+				super.getSettings()
+			).build();
 		}
 
 		return _settingsUnicodeProperties;
@@ -291,7 +260,15 @@ public class LayoutSetImpl extends LayoutSetBaseImpl {
 
 	@Override
 	public Theme getTheme() {
-		return ThemeLocalServiceUtil.getTheme(getCompanyId(), getThemeId());
+		String themeId = getThemeId();
+
+		if ((_theme != null) && themeId.equals(_theme.getThemeId())) {
+			return _theme;
+		}
+
+		_theme = ThemeLocalServiceUtil.getTheme(getCompanyId(), themeId);
+
+		return _theme;
 	}
 
 	@Override
@@ -328,9 +305,9 @@ public class LayoutSetImpl extends LayoutSetBaseImpl {
 	 *         configured, the returned map will be empty.
 	 */
 	@Override
-	public TreeMap<String, String> getVirtualHostnames() {
+	public NavigableMap<String, String> getVirtualHostnames() {
 		if (_virtualHostnames != null) {
-			return new TreeMap<>(_virtualHostnames);
+			return _virtualHostnames;
 		}
 
 		List<VirtualHost> virtualHosts =
@@ -338,7 +315,7 @@ public class LayoutSetImpl extends LayoutSetBaseImpl {
 				getCompanyId(), getLayoutSetId());
 
 		if (ListUtil.isEmpty(virtualHosts)) {
-			_virtualHostnames = new TreeMap<>();
+			_virtualHostnames = Collections.emptyNavigableMap();
 		}
 		else {
 			TreeMap<String, String> virtualHostnames = new TreeMap<>();
@@ -348,10 +325,14 @@ public class LayoutSetImpl extends LayoutSetBaseImpl {
 					virtualHost.getHostname(), virtualHost.getLanguageId());
 			}
 
-			_virtualHostnames = virtualHostnames;
+			_virtualHostnames = Collections.unmodifiableNavigableMap(
+				virtualHostnames);
 		}
 
-		return new TreeMap<>(_virtualHostnames);
+		virtualHostnamesUpdateEntityCacheBiConsumer.accept(
+			this, _virtualHostnames);
+
+		return _virtualHostnames;
 	}
 
 	@Override
@@ -434,25 +415,14 @@ public class LayoutSetImpl extends LayoutSetBaseImpl {
 	 * @see   #getVirtualHostnames()
 	 */
 	@Override
-	public void setVirtualHostnames(TreeMap<String, String> virtualHostnames) {
+	public void setVirtualHostnames(
+		NavigableMap<String, String> virtualHostnames) {
+
 		_virtualHostnames = virtualHostnames;
 	}
 
 	protected Theme getTheme(String device) {
-		boolean controlPanel = false;
-
-		try {
-			Group group = getGroup();
-
-			controlPanel = group.isControlPanel();
-		}
-		catch (Exception exception) {
-			if (_log.isDebugEnabled()) {
-				_log.debug(exception);
-			}
-		}
-
-		if (controlPanel) {
+		if (_isControlPanel()) {
 			String themeId = PrefsPropsUtil.getString(
 				getCompanyId(),
 				PropsKeys.CONTROL_PANEL_LAYOUT_REGULAR_THEME_ID);
@@ -463,15 +433,38 @@ public class LayoutSetImpl extends LayoutSetBaseImpl {
 		return getTheme();
 	}
 
+	private boolean _isControlPanel() {
+		if (_controlPanel != null) {
+			return _controlPanel;
+		}
+
+		try {
+			Group group = getGroup();
+
+			_controlPanel = group.isControlPanel();
+
+			return _controlPanel;
+		}
+		catch (Exception exception) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(exception);
+			}
+		}
+
+		return false;
+	}
+
 	private static final Log _log = LogFactoryUtil.getLog(LayoutSetImpl.class);
 
 	@CacheField(propagateToInterface = true)
 	private String _companyFallbackVirtualHostname;
 
+	private Boolean _controlPanel;
 	private String _faviconURL;
 	private UnicodeProperties _settingsUnicodeProperties;
+	private Theme _theme;
 
 	@CacheField(propagateToInterface = true)
-	private TreeMap<String, String> _virtualHostnames;
+	private NavigableMap<String, String> _virtualHostnames;
 
 }

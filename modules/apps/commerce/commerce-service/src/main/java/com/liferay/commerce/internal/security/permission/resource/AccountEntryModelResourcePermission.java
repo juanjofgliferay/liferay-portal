@@ -7,12 +7,12 @@ package com.liferay.commerce.internal.security.permission.resource;
 
 import com.liferay.account.model.AccountEntry;
 import com.liferay.commerce.constants.CommerceAccountActionKeys;
-import com.liferay.commerce.context.CommerceContextThreadLocal;
-import com.liferay.commerce.context.CommerceGroupThreadLocal;
 import com.liferay.commerce.internal.util.AccountEntryUtil;
 import com.liferay.commerce.product.constants.CommerceChannelAccountEntryRelConstants;
 import com.liferay.commerce.product.model.CommerceChannelAccountEntryRel;
 import com.liferay.commerce.product.service.CommerceChannelAccountEntryRelLocalService;
+import com.liferay.commerce.util.CommerceContextThreadLocal;
+import com.liferay.commerce.util.CommerceGroupThreadLocal;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
@@ -154,7 +154,8 @@ public class AccountEntryModelResourcePermission
 	}
 
 	private static final List<String> _permissions = Arrays.asList(
-		"MANAGE_ADDRESSES", "MANAGE_USERS", "UPDATE", "VIEW",
+		"MANAGE_ADDRESSES", "ADD_USER", "ASSIGN_USERS", "INVITE_USER",
+		"UNASSIGN_USERS", "UPDATE", "UPDATE_USERS", "VIEW",
 		"VIEW_ACCOUNT_GROUPS", "VIEW_ACCOUNT_ROLES", "VIEW_ADDRESSES",
 		"VIEW_USERS");
 

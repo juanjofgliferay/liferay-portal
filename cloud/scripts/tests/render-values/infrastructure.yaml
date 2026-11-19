@@ -1,0 +1,27 @@
+clusterSecretStoreName: liferay-example-secret-store
+endpoints:
+    mydomain:
+        hostname: mydomain.example.com
+        port: 443
+        protocol: HTTPS
+        tls:
+            externalSecretKeys:
+                -   liferay-certificates-liferay-tls-certificate
+environmentId: dev
+gateway:
+    accessControl:
+        allowedCIDRs:
+            -   10.0.0.0/16
+            -   203.0.113.0/24
+        enabled: true
+    className: liferay-gateway-class
+    clientTrafficPolicySpec:
+        enableProxyProtocol: true
+    name: liferay-example-dev-gateway
+license:
+    externalSecretKey: liferay-licenses-liferay-example
+overlayBucket:
+    enabled: true
+projectId: liferay-example
+secretNames:
+    -   abc1234-my-api-key

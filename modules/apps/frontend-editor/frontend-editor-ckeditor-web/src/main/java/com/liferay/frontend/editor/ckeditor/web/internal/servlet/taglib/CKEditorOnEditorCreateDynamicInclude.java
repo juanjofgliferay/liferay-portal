@@ -8,14 +8,14 @@ package com.liferay.frontend.editor.ckeditor.web.internal.servlet.taglib;
 import com.liferay.portal.kernel.frontend.source.map.FrontendSourceMapUtil;
 import com.liferay.portal.kernel.servlet.taglib.DynamicInclude;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
 
 import java.net.URL;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -25,7 +25,10 @@ import org.osgi.service.component.annotations.Component;
 /**
  * @author Chema Balsas
  */
-@Component(service = DynamicInclude.class)
+@Component(
+	property = "dynamic.include.key=com.liferay.frontend.editor.ckeditor.web#ckeditor#onEditorCreate",
+	service = DynamicInclude.class
+)
 public class CKEditorOnEditorCreateDynamicInclude implements DynamicInclude {
 
 	@Override
@@ -57,14 +60,6 @@ public class CKEditorOnEditorCreateDynamicInclude implements DynamicInclude {
 		}
 
 		printWriter.println();
-	}
-
-	@Override
-	public void register(
-		DynamicInclude.DynamicIncludeRegistry dynamicIncludeRegistry) {
-
-		dynamicIncludeRegistry.register(
-			"com.liferay.frontend.editor.ckeditor.web#ckeditor#onEditorCreate");
 	}
 
 	@Activate

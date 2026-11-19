@@ -37,6 +37,7 @@ import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.kernel.workflow.WorkflowThreadLocal;
+import com.liferay.portal.search.test.rule.SearchTestRule;
 import com.liferay.portal.test.randomizerbumpers.BBCodeRandomizerBumper;
 
 import java.util.Locale;
@@ -408,24 +409,6 @@ public abstract class BaseSearchTestCase {
 		assertBaseModelsCount(initialBaseModelsSearchCount + 1, searchContext);
 	}
 
-	protected Hits searchBaseModelsCount(
-			Class<?> clazz, long groupId, SearchContext searchContext)
-		throws Exception {
-
-		Indexer<?> indexer = IndexerRegistryUtil.getIndexer(clazz);
-
-		searchContext.setGroupIds(new long[] {groupId});
-
-		return indexer.search(searchContext);
-	}
-
-	protected Hits searchBaseModelsCount(SearchContext searchContext)
-		throws Exception {
-
-		return searchBaseModelsCount(
-			getBaseModelClass(), group.getGroupId(), searchContext);
-	}
-
 	protected void searchBaseModelWithDelete() throws Exception {
 		searchBaseModelWithDelete(0);
 	}
@@ -515,6 +498,24 @@ public abstract class BaseSearchTestCase {
 		searchContext.setKeywords(updatedKeywords);
 
 		assertBaseModelsCount(initialBaseModelsSearchCount + 1, searchContext);
+	}
+
+	protected Hits searchBaseModelsCount(
+			Class<?> clazz, long groupId, SearchContext searchContext)
+		throws Exception {
+
+		Indexer<?> indexer = IndexerRegistryUtil.getIndexer(clazz);
+
+		searchContext.setGroupIds(new long[] {groupId});
+
+		return indexer.search(searchContext);
+	}
+
+	protected Hits searchBaseModelsCount(SearchContext searchContext)
+		throws Exception {
+
+		return searchBaseModelsCount(
+			getBaseModelClass(), group.getGroupId(), searchContext);
 	}
 
 	protected void searchByDDMStructureField() throws Exception {

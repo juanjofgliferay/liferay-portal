@@ -6,14 +6,11 @@
 package com.liferay.journal.web.internal.portlet.action;
 
 import com.liferay.data.engine.rest.dto.v2_0.DataDefinition;
-import com.liferay.data.engine.rest.dto.v2_0.DataDefinitionField;
-import com.liferay.data.engine.rest.dto.v2_0.DataLayout;
-import com.liferay.data.engine.rest.dto.v2_0.DataLayoutColumn;
-import com.liferay.data.engine.rest.dto.v2_0.DataLayoutPage;
-import com.liferay.data.engine.rest.dto.v2_0.DataLayoutRow;
+import com.liferay.data.engine.rest.resource.exception.DataDefinitionValidationException;
 import com.liferay.data.engine.rest.resource.v2_0.DataDefinitionResource;
-import com.liferay.dynamic.data.mapping.util.DDMFormFieldUtil;
+import com.liferay.dynamic.data.mapping.service.DDMStructureLocalService;
 import com.liferay.journal.constants.JournalPortletKeys;
+import com.liferay.journal.model.JournalArticle;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCActionCommand;
@@ -24,18 +21,17 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.upload.UploadPortletRequest;
 import com.liferay.portal.kernel.util.FileUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
+import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
+import java.util.Locale;
+import java.util.Map;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -45,7 +41,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + JournalPortletKeys.JOURNAL,
+		"jakarta.portlet.name=" + JournalPortletKeys.JOURNAL,
 		"mvc.command.name=/journal/import_data_definition"
 	},
 	service = MVCActionCommand.class
@@ -61,16 +57,31 @@ public class ImportDataDefinitionMVCActionCommand extends BaseMVCActionCommand {
 			ThemeDisplay themeDisplay =
 				(ThemeDisplay)actionRequest.getAttribute(WebKeys.THEME_DISPLAY);
 
+			String name = ParamUtil.getString(actionRequest, "name");
+
+			if (Validator.isNull(name)) {
+				Locale siteDefaultLocale = themeDisplay.getSiteDefaultLocale();
+
+				throw new DataDefinitionValidationException.MustSetValidName(
+					"Name is null for locale " +
+						siteDefaultLocale.getDisplayName());
+			}
+
 			UploadPortletRequest uploadPortletRequest =
 				_portal.getUploadPortletRequest(actionRequest);
 
 			DataDefinition dataDefinition = DataDefinition.toDTO(
 				FileUtil.read(uploadPortletRequest.getFile("jsonFile")));
 
+			Map<String, Object> nameMap = dataDefinition.getName();
+
 			dataDefinition.setName(
-				HashMapBuilder.<String, Object>put(
-					String.valueOf(themeDisplay.getSiteDefaultLocale()),
-					ParamUtil.getString(actionRequest, "name")
+				() -> HashMapBuilder.<String, Object>putAll(
+					nameMap
+				).put(
+					LocaleUtil.toLanguageId(
+						themeDisplay.getSiteDefaultLocale()),
+					name
 				).build());
 
 			DataDefinitionResource.Builder dataDefinitionResourcedBuilder =
@@ -81,7 +92,15 @@ public class ImportDataDefinitionMVCActionCommand extends BaseMVCActionCommand {
 					themeDisplay.getUser()
 				).build();
 
-			_uniquifyDataDefinitionFields(dataDefinition);
+			if (_ddmStructureLocalService.hasStructure(
+					themeDisplay.getScopeGroupId(),
+					_portal.getClassNameId(JournalArticle.class.getName()),
+					dataDefinition.getDataDefinitionKey())) {
+
+				dataDefinition.setDataDefinitionKey(() -> null);
+			}
+
+			dataDefinition.setExternalReferenceCode(() -> null);
 
 			dataDefinitionResource.postSiteDataDefinitionByContentType(
 				themeDisplay.getScopeGroupId(), "journal", dataDefinition);
@@ -103,163 +122,14 @@ public class ImportDataDefinitionMVCActionCommand extends BaseMVCActionCommand {
 		sendRedirect(actionRequest, actionResponse);
 	}
 
-	private String _generateFieldName(String fieldName) {
-		String newFieldName = null;
-
-		int index = fieldName.length() - 8;
-
-		if ((index >= 0) && Validator.isNumber(fieldName.substring(index))) {
-			newFieldName = DDMFormFieldUtil.getDDMFormFieldName(
-				fieldName.substring(0, index));
-		}
-		else {
-			newFieldName = DDMFormFieldUtil.getDDMFormFieldName(fieldName);
-		}
-
-		while (_fieldNames.contains(newFieldName)) {
-			_generateFieldName(fieldName);
-		}
-
-		return newFieldName;
-	}
-
-	private void _populateFieldNameBlacklist(DataDefinition dataDefinition) {
-		for (DataDefinitionField dataDefinitionField :
-				dataDefinition.getDataDefinitionFields()) {
-
-			_fieldNames.add(dataDefinitionField.getName());
-		}
-	}
-
-	private void _populateFieldNameBlacklist(
-		DataDefinitionField dataDefinitionField) {
-
-		for (DataDefinitionField nestedDataDefinitionField :
-				dataDefinitionField.getNestedDataDefinitionFields()) {
-
-			_fieldNames.add(nestedDataDefinitionField.getName());
-		}
-	}
-
-	private void _uniquifyDataDefinitionFields(DataDefinition dataDefinition) {
-		_populateFieldNameBlacklist(dataDefinition);
-
-		for (DataDefinitionField dataDefinitionField :
-				dataDefinition.getDataDefinitionFields()) {
-
-			String oldFieldName = dataDefinitionField.getName();
-
-			String newFieldName = _generateFieldName(oldFieldName);
-
-			if (Objects.equals(
-					dataDefinitionField.getFieldType(), "fieldset")) {
-
-				_uniquifyDataDefinitionFieldset(dataDefinitionField);
-			}
-
-			dataDefinitionField.setName((String)newFieldName);
-
-			_fieldNames.add(newFieldName);
-
-			DataLayout dataLayout = dataDefinition.getDefaultDataLayout();
-
-			_updateDataLayout(dataLayout, newFieldName, oldFieldName);
-		}
-	}
-
-	private void _uniquifyDataDefinitionFieldset(
-		DataDefinitionField dataDefinitionField) {
-
-		_populateFieldNameBlacklist(dataDefinitionField);
-
-		for (DataDefinitionField nestedDataDefinitionField :
-				dataDefinitionField.getNestedDataDefinitionFields()) {
-
-			if (Objects.equals(
-					nestedDataDefinitionField.getFieldType(), "fieldset")) {
-
-				_uniquifyDataDefinitionFieldset(nestedDataDefinitionField);
-			}
-
-			String oldFieldName = nestedDataDefinitionField.getName();
-
-			String newFieldName = _generateFieldName(oldFieldName);
-
-			nestedDataDefinitionField.setName((String)newFieldName);
-
-			_fieldNames.add(newFieldName);
-
-			_updateDataLayoutFieldset(
-				dataDefinitionField, newFieldName, oldFieldName);
-		}
-	}
-
-	private void _updateDataLayout(
-		DataLayout dataLayout, String newFieldName, String oldFieldName) {
-
-		for (DataLayoutPage dataLayoutPage : dataLayout.getDataLayoutPages()) {
-			for (DataLayoutRow dataLayoutRow :
-					dataLayoutPage.getDataLayoutRows()) {
-
-				for (DataLayoutColumn dataLayoutColumn :
-						dataLayoutRow.getDataLayoutColumns()) {
-
-					String[] dataLayoutColumnFieldNames =
-						dataLayoutColumn.getFieldNames();
-
-					for (int i = 0; i < dataLayoutColumnFieldNames.length;
-						 i++) {
-
-						if (dataLayoutColumnFieldNames[i].equals(
-								oldFieldName)) {
-
-							dataLayoutColumnFieldNames[i] = newFieldName;
-
-							return;
-						}
-					}
-				}
-			}
-		}
-	}
-
-	private void _updateDataLayoutFieldset(
-		DataDefinitionField dataDefinitionField, String newFieldName,
-		String oldFieldName) {
-
-		Map<String, Object> customProperties =
-			dataDefinitionField.getCustomProperties();
-
-		Object[] rows = (Object[])customProperties.get("rows");
-
-		for (Object row : rows) {
-			Map<String, Object> rowMap = (Map<String, Object>)row;
-
-			Object[] columns = (Object[])rowMap.get("columns");
-
-			for (Object column : columns) {
-				Map<String, Object> columnMap = (Map<String, Object>)column;
-
-				Object[] fields = (Object[])columnMap.get("fields");
-
-				for (int i = 0; i < fields.length; i++) {
-					if (Objects.equals(fields[i], oldFieldName)) {
-						fields[i] = newFieldName;
-
-						return;
-					}
-				}
-			}
-		}
-	}
-
 	private static final Log _log = LogFactoryUtil.getLog(
 		ImportDataDefinitionMVCActionCommand.class);
 
 	@Reference
 	private DataDefinitionResource.Factory _dataDefinitionResourceFactory;
 
-	private final Set<String> _fieldNames = new HashSet<>();
+	@Reference
+	private DDMStructureLocalService _ddmStructureLocalService;
 
 	@Reference
 	private Portal _portal;

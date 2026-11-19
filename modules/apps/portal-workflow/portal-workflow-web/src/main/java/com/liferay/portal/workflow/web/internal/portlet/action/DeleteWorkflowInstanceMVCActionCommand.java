@@ -9,6 +9,7 @@ import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCActionCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
+import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.service.WorkflowInstanceLinkLocalService;
 import com.liferay.portal.kernel.servlet.SessionErrors;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
@@ -24,15 +25,16 @@ import com.liferay.portal.kernel.workflow.WorkflowInstance;
 import com.liferay.portal.kernel.workflow.WorkflowInstanceManagerUtil;
 import com.liferay.portal.workflow.constants.WorkflowPortletKeys;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.PortletContext;
+import jakarta.portlet.PortletRequestDispatcher;
+import jakarta.portlet.PortletSession;
+
 import java.io.Serializable;
 
 import java.util.Map;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.PortletContext;
-import javax.portlet.PortletRequestDispatcher;
-import javax.portlet.PortletSession;
+import java.util.Objects;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -42,10 +44,10 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + WorkflowPortletKeys.CONTROL_PANEL_WORKFLOW,
-		"javax.portlet.name=" + WorkflowPortletKeys.CONTROL_PANEL_WORKFLOW_INSTANCE,
-		"javax.portlet.name=" + WorkflowPortletKeys.SITE_ADMINISTRATION_WORKFLOW,
-		"javax.portlet.name=" + WorkflowPortletKeys.USER_WORKFLOW,
+		"jakarta.portlet.name=" + WorkflowPortletKeys.CONTROL_PANEL_WORKFLOW,
+		"jakarta.portlet.name=" + WorkflowPortletKeys.CONTROL_PANEL_WORKFLOW_INSTANCE,
+		"jakarta.portlet.name=" + WorkflowPortletKeys.SITE_ADMINISTRATION_WORKFLOW,
+		"jakarta.portlet.name=" + WorkflowPortletKeys.USER_WORKFLOW,
 		"mvc.command.name=/portal_workflow/delete_workflow_instance"
 	},
 	service = MVCActionCommand.class
@@ -114,14 +116,43 @@ public class DeleteWorkflowInstanceMVCActionCommand
 	private WorkflowInstance _getWorkflowInstance(ActionRequest actionRequest)
 		throws PortalException {
 
+		WorkflowInstance workflowInstance = null;
+
 		ThemeDisplay themeDisplay = (ThemeDisplay)actionRequest.getAttribute(
 			WebKeys.THEME_DISPLAY);
 
 		long workflowInstanceId = ParamUtil.getLong(
 			actionRequest, "workflowInstanceId");
 
-		return WorkflowInstanceManagerUtil.getWorkflowInstance(
-			themeDisplay.getCompanyId(), workflowInstanceId);
+		if (Objects.equals(
+				_portal.getPortletId(actionRequest),
+				WorkflowPortletKeys.CONTROL_PANEL_WORKFLOW_INSTANCE)) {
+
+			workflowInstance = WorkflowInstanceManagerUtil.getWorkflowInstance(
+				themeDisplay.getCompanyId(), workflowInstanceId);
+		}
+		else {
+			workflowInstance = WorkflowInstanceManagerUtil.getWorkflowInstance(
+				themeDisplay.getCompanyId(), themeDisplay.getUserId(),
+				workflowInstanceId);
+		}
+
+		if (workflowInstance != null) {
+			Map<String, Serializable> workflowContext =
+				workflowInstance.getWorkflowContext();
+
+			long companyId = GetterUtil.getLong(
+				workflowContext.get(WorkflowConstants.CONTEXT_COMPANY_ID));
+
+			if (companyId == themeDisplay.getCompanyId()) {
+				return workflowInstance;
+			}
+		}
+
+		throw new PrincipalException.MustHavePermission(
+			themeDisplay.getPermissionChecker(),
+			WorkflowInstance.class.getName(), workflowInstanceId,
+			ActionKeys.DELETE);
 	}
 
 	private void _updateEntryStatus(Map<String, Serializable> workflowContext)

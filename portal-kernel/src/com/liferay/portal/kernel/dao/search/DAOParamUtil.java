@@ -11,13 +11,13 @@ import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.portlet.PortletRequest;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.text.DateFormat;
 
 import java.util.Calendar;
-
-import javax.portlet.PortletRequest;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Brian Wing Shun Chan
@@ -34,16 +34,6 @@ public class DAOParamUtil {
 		PortletRequest portletRequest, String param) {
 
 		return GetterUtil.getBoolean(getString(portletRequest, param));
-	}
-
-	public static int getInteger(
-		HttpServletRequest httpServletRequest, String param) {
-
-		return GetterUtil.getInteger(getString(httpServletRequest, param));
-	}
-
-	public static int getInteger(PortletRequest portletRequest, String param) {
-		return GetterUtil.getInteger(getString(portletRequest, param));
 	}
 
 	public static String getISODate(
@@ -116,6 +106,16 @@ public class DAOParamUtil {
 		}
 
 		return null;
+	}
+
+	public static int getInteger(
+		HttpServletRequest httpServletRequest, String param) {
+
+		return GetterUtil.getInteger(getString(httpServletRequest, param));
+	}
+
+	public static int getInteger(PortletRequest portletRequest, String param) {
+		return GetterUtil.getInteger(getString(portletRequest, param));
 	}
 
 	public static long getLong(

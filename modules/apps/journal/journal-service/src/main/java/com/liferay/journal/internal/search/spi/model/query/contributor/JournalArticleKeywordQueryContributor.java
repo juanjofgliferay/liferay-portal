@@ -14,13 +14,12 @@ import com.liferay.portal.kernel.search.BooleanQuery;
 import com.liferay.portal.kernel.search.ExpandoQueryContributor;
 import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.kernel.search.ParseException;
-import com.liferay.portal.kernel.search.QueryConfig;
 import com.liferay.portal.kernel.search.SearchContext;
-import com.liferay.portal.kernel.search.generic.BooleanQueryImpl;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.search.localization.SearchLocalizationHelper;
 import com.liferay.portal.search.query.QueryHelper;
+import com.liferay.portal.search.spi.model.query.contributor.HighlightFieldNamesQueryConfigContributor;
 import com.liferay.portal.search.spi.model.query.contributor.KeywordQueryContributor;
 import com.liferay.portal.search.spi.model.query.contributor.helper.KeywordQueryContributorHelper;
 
@@ -73,12 +72,8 @@ public class JournalArticleKeywordQueryContributor
 			}
 		}
 
-		QueryConfig queryConfig = searchContext.getQueryConfig();
-
-		queryConfig.addHighlightFieldNames(
-			_searchLocalizationHelper.getLocalizedFieldNames(
-				new String[] {Field.CONTENT, Field.DESCRIPTION, Field.TITLE},
-				searchContext));
+		_highlightFieldNamesQueryConfigContributor.
+			contributeHighlightFieldNames(searchContext);
 	}
 
 	private void _addLocalizedFields(
@@ -104,19 +99,7 @@ public class JournalArticleKeywordQueryContributor
 			booleanClauseOccur = BooleanClauseOccur.MUST;
 		}
 
-		try {
-			booleanQuery.add(localizedQuery, booleanClauseOccur);
-		}
-		catch (ParseException parseException) {
-			if (_log.isDebugEnabled()) {
-				_log.debug(
-					StringBundler.concat(
-						"Unable to add localized localized query ",
-						localizedQuery, " with boolean clause occur ",
-						booleanClauseOccur),
-					parseException);
-			}
-		}
+		booleanQuery.add(localizedQuery, booleanClauseOccur);
 	}
 
 	private void _addSearchLocalizedTerm(
@@ -139,7 +122,7 @@ public class JournalArticleKeywordQueryContributor
 		}
 
 		if (Validator.isBlank(searchContext.getKeywords())) {
-			BooleanQuery localizedQuery = new BooleanQueryImpl();
+			BooleanQuery localizedQuery = new BooleanQuery();
 
 			_addLocalizedFields(
 				localizedQuery, fieldName, value, searchContext);
@@ -173,6 +156,12 @@ public class JournalArticleKeywordQueryContributor
 
 	@Reference
 	private ExpandoQueryContributor _expandoQueryContributor;
+
+	@Reference(
+		target = "(indexer.class.name=com.liferay.journal.model.JournalArticle)"
+	)
+	private HighlightFieldNamesQueryConfigContributor
+		_highlightFieldNamesQueryConfigContributor;
 
 	@Reference
 	private QueryHelper _queryHelper;

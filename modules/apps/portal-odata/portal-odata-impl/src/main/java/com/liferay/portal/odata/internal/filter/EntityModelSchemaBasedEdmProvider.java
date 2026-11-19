@@ -79,9 +79,18 @@ public class EntityModelSchemaBasedEdmProvider extends SchemaBasedEdmProvider {
 
 		ComplexEntityField complexEntityField = (ComplexEntityField)entityField;
 
-		CsdlComplexType csdlComplexType = new CsdlComplexType();
+		CsdlComplexType csdlComplexType = _csdlComplexTypes.get(
+			complexEntityField.getTypeKey());
 
-		csdlComplexType.setName(entityField.getName());
+		if (csdlComplexType != null) {
+			return csdlComplexType;
+		}
+
+		csdlComplexType = new CsdlComplexType();
+
+		_csdlComplexTypes.put(complexEntityField.getTypeKey(), csdlComplexType);
+
+		csdlComplexType.setName(complexEntityField.getTypeKey());
 
 		Map<String, EntityField> entityFieldsMap =
 			complexEntityField.getEntityFieldsMap();
@@ -93,24 +102,28 @@ public class EntityModelSchemaBasedEdmProvider extends SchemaBasedEdmProvider {
 			CsdlProperty csdlProperty = _createCsdlProperty(
 				namespace, curEntityField);
 
-			if (csdlProperty != null) {
-				csdlProperties.add(csdlProperty);
-
-				if (Objects.equals(
-						curEntityField.getType(), EntityField.Type.COMPLEX)) {
-
-					ComplexEntityField curComplexEntityField =
-						(ComplexEntityField)curEntityField;
-
-					_handleComplexType(
-						_createCsdlComplexType(
-							depth++, curComplexEntityField, _NAMESPACE,
-							objectValuePairs),
-						depth, objectValuePairs);
-
-					depth--;
-				}
+			if (csdlProperty == null) {
+				continue;
 			}
+
+			csdlProperties.add(csdlProperty);
+
+			if (!Objects.equals(
+					curEntityField.getType(), EntityField.Type.COMPLEX)) {
+
+				continue;
+			}
+
+			ComplexEntityField curComplexEntityField =
+				(ComplexEntityField)curEntityField;
+
+			_handleComplexType(
+				_createCsdlComplexType(
+					depth++, curComplexEntityField, _NAMESPACE,
+					objectValuePairs),
+				depth, objectValuePairs);
+
+			depth--;
 		}
 
 		csdlComplexType.setProperties(csdlProperties);
@@ -128,11 +141,13 @@ public class EntityModelSchemaBasedEdmProvider extends SchemaBasedEdmProvider {
 			CsdlComplexType csdlComplexType = _createCsdlComplexType(
 				1, entityField, namespace, objectValuePairs);
 
-			if (csdlComplexType != null) {
-				objectValuePairs.put(
-					csdlComplexType.getName(),
-					new ObjectValuePair<>(0, csdlComplexType));
+			if (csdlComplexType == null) {
+				continue;
 			}
+
+			objectValuePairs.put(
+				csdlComplexType.getName(),
+				new ObjectValuePair<>(0, csdlComplexType));
 		}
 
 		return TransformUtil.transform(
@@ -216,9 +231,11 @@ public class EntityModelSchemaBasedEdmProvider extends SchemaBasedEdmProvider {
 			CsdlProperty csdlProperty = _createCsdlProperty(
 				namespace, entityField);
 
-			if (csdlProperty != null) {
-				csdlProperties.add(csdlProperty);
+			if (csdlProperty == null) {
+				continue;
 			}
+
+			csdlProperties.add(csdlProperty);
 		}
 
 		return csdlProperties;
@@ -228,11 +245,15 @@ public class EntityModelSchemaBasedEdmProvider extends SchemaBasedEdmProvider {
 		String namespace, EntityField entityField) {
 
 		if (Objects.equals(entityField.getType(), EntityField.Type.COMPLEX)) {
+			ComplexEntityField complexEntityField =
+				(ComplexEntityField)entityField;
+
 			CsdlProperty csdlProperty = new CsdlProperty();
 
-			csdlProperty.setName(entityField.getName());
+			csdlProperty.setName(complexEntityField.getName());
 			csdlProperty.setType(
-				new FullQualifiedName(namespace, entityField.getName()));
+				new FullQualifiedName(
+					namespace, complexEntityField.getTypeKey()));
 
 			return csdlProperty;
 		}
@@ -346,5 +367,8 @@ public class EntityModelSchemaBasedEdmProvider extends SchemaBasedEdmProvider {
 	}
 
 	private static final String _NAMESPACE = "HypermediaRestApis";
+
+	private final HashMap<String, CsdlComplexType> _csdlComplexTypes =
+		new HashMap<>();
 
 }

@@ -21,7 +21,10 @@ import org.osgi.service.component.annotations.Reference;
  * @author Danny Situ
  */
 @Component(
-	property = "dto.class.name=com.liferay.commerce.product.model.CommerceChannelRel",
+	property = {
+		"default=true",
+		"dto.class.name=com.liferay.commerce.product.model.CommerceChannelRel"
+	},
 	service = DTOConverter.class
 )
 public class AccountAddressChannelDTOConverter
@@ -48,15 +51,15 @@ public class AccountAddressChannelDTOConverter
 
 		return new AccountAddressChannel() {
 			{
-				accountAddressChannelId =
-					accountAddressChannelRel.getCommerceChannelRelId();
-				actions = dtoConverterContext.getActions();
-				addressChannelExternalReferenceCode =
-					commerceChannel.getExternalReferenceCode();
-				addressChannelId = commerceChannel.getCommerceChannelId();
-				addressExternalReferenceCode =
-					address.getExternalReferenceCode();
-				addressId = address.getAddressId();
+				setAccountAddressChannelId(
+					accountAddressChannelRel::getCommerceChannelRelId);
+				setActions(dtoConverterContext::getActions);
+				setAddressChannelExternalReferenceCode(
+					commerceChannel::getExternalReferenceCode);
+				setAddressChannelId(commerceChannel::getCommerceChannelId);
+				setAddressExternalReferenceCode(
+					address::getExternalReferenceCode);
+				setAddressId(address::getAddressId);
 			}
 		};
 	}

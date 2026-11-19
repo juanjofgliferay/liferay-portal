@@ -1,0 +1,5 @@
+dependencies {
+	testIntegrationImplementation group: "org.osgi", name: "osgi.core", version: "6.0.0"
+	testIntegrationImplementation project(":apps:portlet-display-template:portlet-display-template-api")
+	testIntegrationImplementation project(":test:arquillian-extension-junit-bridge")
+}

@@ -6,6 +6,7 @@
 package com.liferay.info.item.provider;
 
 import com.liferay.info.item.InfoItemFormVariation;
+import com.liferay.portal.kernel.util.Validator;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -32,11 +33,59 @@ public interface InfoItemFormVariationsProvider<T> {
 		return null;
 	}
 
+	public default InfoItemFormVariation getInfoItemFormVariation(
+		long groupId, String externalReferenceCode, String formVariationKey) {
+
+		if (Validator.isNotNull(formVariationKey)) {
+			InfoItemFormVariation infoItemFormVariation =
+				getInfoItemFormVariation(groupId, formVariationKey);
+
+			if (infoItemFormVariation != null) {
+				return infoItemFormVariation;
+			}
+		}
+
+		if (Validator.isNotNull(externalReferenceCode)) {
+			return getInfoItemFormVariationByExternalReferenceCode(
+				externalReferenceCode, groupId);
+		}
+
+		return null;
+	}
+
+	public default InfoItemFormVariation
+		getInfoItemFormVariationByExternalReferenceCode(
+			String externalReferenceCode, long groupId) {
+
+		for (InfoItemFormVariation infoItemFormVariation :
+				getInfoItemFormVariations(groupId)) {
+
+			if (Objects.equals(
+					externalReferenceCode,
+					infoItemFormVariation.getExternalReferenceCode())) {
+
+				return infoItemFormVariation;
+			}
+		}
+
+		return null;
+	}
+
+	public default String getInfoItemFormVariationClassName() {
+		return null;
+	}
+
 	public Collection<InfoItemFormVariation> getInfoItemFormVariations(
 		long groupId);
 
 	public default Collection<InfoItemFormVariation> getInfoItemFormVariations(
 		long[] groupIds) {
+
+		return Collections.emptyList();
+	}
+
+	public default Collection<InfoItemFormVariation>
+		getInfoItemFormVariationsByCompanyId(long companyId) {
 
 		return Collections.emptyList();
 	}

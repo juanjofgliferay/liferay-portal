@@ -162,19 +162,6 @@ public class PollsToDDMUpgradeProcess extends UpgradeProcess {
 		runSQL("delete from PollsQuestion");
 	}
 
-	protected JSONObject getDataJSONObject(String ddmFormFieldName) {
-		return JSONUtil.put(
-			ddmFormFieldName,
-			JSONUtil.put(
-				"type", DDMFormFieldTypeConstants.RADIO
-			).put(
-				"values", JSONFactoryUtil.createJSONObject()
-			)
-		).put(
-			"totalItems", 0
-		);
-	}
-
 	protected DDMForm getDDMForm(DDMFormField ddmFormField) {
 		DDMForm ddmForm = new DDMForm();
 
@@ -238,6 +225,19 @@ public class PollsToDDMUpgradeProcess extends UpgradeProcess {
 					).build());
 
 		return ddmFormLayoutSerializerSerializeResponse.getContent();
+	}
+
+	protected JSONObject getDataJSONObject(String ddmFormFieldName) {
+		return JSONUtil.put(
+			ddmFormFieldName,
+			JSONUtil.put(
+				"type", DDMFormFieldTypeConstants.RADIO
+			).put(
+				"values", JSONFactoryUtil.createJSONObject()
+			)
+		).put(
+			"totalItems", 0
+		);
 	}
 
 	protected String getSerializedSettingsDDMFormValues() {
@@ -946,6 +946,7 @@ public class PollsToDDMUpgradeProcess extends UpgradeProcess {
 	private void _upgradePollsQuestions() throws Exception {
 		try (PreparedStatement preparedStatement = connection.prepareStatement(
 				"select * from PollsQuestion");
+
 			ResultSet resultSet = preparedStatement.executeQuery()) {
 
 			while (resultSet.next()) {

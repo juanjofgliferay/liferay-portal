@@ -5,7 +5,7 @@
 
 package com.liferay.portal.kernel.settings;
 
-import javax.portlet.PortletPreferences;
+import jakarta.portlet.PortletPreferences;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -49,6 +49,29 @@ public class PortletPreferencesSettingsTest {
 	}
 
 	@Test
+	public void testGetValueWithExistingDefaultSettingsKey() {
+		Assert.assertEquals(
+			_DEFAULT_SETTINGS_SINGLE_VALUE,
+			_portletPreferencesSettings.getValue(
+				_DEFAULT_SETTINGS_SINGLE_KEY, null));
+	}
+
+	@Test
+	public void testGetValueWithExistingPortletPreferencesKey() {
+		Assert.assertEquals(
+			_PORTLET_PREFERENCES_SINGLE_VALUE,
+			_portletPreferencesSettings.getValue(
+				_PORTLET_PREFERENCES_SINGLE_KEY, null));
+	}
+
+	@Test
+	public void testGetValueWithMissingKey() {
+		Assert.assertEquals(
+			"default",
+			_portletPreferencesSettings.getValue("missingKey", "default"));
+	}
+
+	@Test
 	public void testGetValuesWithExistingDefaultSettingsKey() {
 		Assert.assertArrayEquals(
 			_DEFAULT_SETTINGS_MULTIPLE_VALUES,
@@ -71,29 +94,6 @@ public class PortletPreferencesSettingsTest {
 		Assert.assertArrayEquals(
 			defaultValue,
 			_portletPreferencesSettings.getValues("missingKeys", defaultValue));
-	}
-
-	@Test
-	public void testGetValueWithExistingDefaultSettingsKey() {
-		Assert.assertEquals(
-			_DEFAULT_SETTINGS_SINGLE_VALUE,
-			_portletPreferencesSettings.getValue(
-				_DEFAULT_SETTINGS_SINGLE_KEY, null));
-	}
-
-	@Test
-	public void testGetValueWithExistingPortletPreferencesKey() {
-		Assert.assertEquals(
-			_PORTLET_PREFERENCES_SINGLE_VALUE,
-			_portletPreferencesSettings.getValue(
-				_PORTLET_PREFERENCES_SINGLE_KEY, null));
-	}
-
-	@Test
-	public void testGetValueWithMissingKey() {
-		Assert.assertEquals(
-			"default",
-			_portletPreferencesSettings.getValue("missingKey", "default"));
 	}
 
 	@Test

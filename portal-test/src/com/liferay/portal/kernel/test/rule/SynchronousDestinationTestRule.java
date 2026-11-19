@@ -120,6 +120,11 @@ public class SynchronousDestinationTestRule
 		public void enableSync() {
 			_serviceTracker.open();
 
+			MessageListenerRegistry messageListenerRegistry =
+				_serviceTracker.getService();
+
+			messageListenerRegistry.getMessageListeners("");
+
 			Filter audioProcessorFilter = _registerDestinationFilter(
 				DestinationNames.DOCUMENT_LIBRARY_AUDIO_PROCESSOR);
 			Filter asyncFilter = _registerDestinationFilter(
@@ -140,8 +145,6 @@ public class SynchronousDestinationTestRule
 				DestinationNames.COMMERCE_SUBSCRIPTION_STATUS);
 			Filter ddmStructureReindexFilter = _registerDestinationFilter(
 				"liferay/ddm_structure_reindex");
-			Filter deletionProcessorFilter = _registerDestinationFilter(
-				DestinationNames.DOCUMENT_LIBRARY_DELETION);
 			Filter mailFilter = _registerDestinationFilter(
 				DestinationNames.MAIL);
 			Filter pdfProcessorFilter = _registerDestinationFilter(
@@ -162,13 +165,14 @@ public class SynchronousDestinationTestRule
 				backgroundTaskStatusFilter, commerceBasePriceListFilter,
 				commerceOrderFilter, commercePaymentFilter,
 				commerceShipmentFilter, commerceSubscriptionFilter,
-				ddmStructureReindexFilter, deletionProcessorFilter, mailFilter,
-				pdfProcessorFilter, rawMetaDataProcessorFilter,
-				segmentsEntryReindexFilter, subscrpitionSenderFilter,
-				tensorflowModelDownloadFilter, videoProcessorFilter);
+				ddmStructureReindexFilter, mailFilter, pdfProcessorFilter,
+				rawMetaDataProcessorFilter, segmentsEntryReindexFilter,
+				subscrpitionSenderFilter, tensorflowModelDownloadFilter,
+				videoProcessorFilter);
 
 			_bufferedIncrementForceSyncSafeCloseable =
-				BufferedIncrementThreadLocal.setWithSafeCloseable(true);
+				BufferedIncrementThreadLocal.setForceSyncWithSafeCloseable(
+					true);
 
 			replaceDestination(DestinationNames.ASYNC_SERVICE);
 			replaceDestination(DestinationNames.BACKGROUND_TASK);
@@ -180,7 +184,6 @@ public class SynchronousDestinationTestRule
 			replaceDestination(DestinationNames.COMMERCE_SUBSCRIPTION_STATUS);
 			replaceDestination(
 				DestinationNames.DOCUMENT_LIBRARY_AUDIO_PROCESSOR);
-			replaceDestination(DestinationNames.DOCUMENT_LIBRARY_DELETION);
 			replaceDestination(DestinationNames.DOCUMENT_LIBRARY_PDF_PROCESSOR);
 			replaceDestination(
 				DestinationNames.DOCUMENT_LIBRARY_RAW_METADATA_PROCESSOR);
@@ -190,6 +193,7 @@ public class SynchronousDestinationTestRule
 			replaceDestination(DestinationNames.SUBSCRIPTION_SENDER);
 			replaceDestination("liferay/adaptive_media_processor");
 			replaceDestination("liferay/asset_auto_tagger");
+			replaceDestination("liferay/asset_category_asset_entries_reindex");
 			replaceDestination("liferay/ddm_structure_reindex");
 			replaceDestination("liferay/report_request");
 			replaceDestination("liferay/reports_admin");

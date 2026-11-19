@@ -71,12 +71,14 @@ public class CommerceCurrencyCacheModel
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(41);
+		StringBundler sb = new StringBundler(45);
 
 		sb.append("{mvccVersion=");
 		sb.append(mvccVersion);
 		sb.append(", uuid=");
 		sb.append(uuid);
+		sb.append(", externalReferenceCode=");
+		sb.append(externalReferenceCode);
 		sb.append(", commerceCurrencyId=");
 		sb.append(commerceCurrencyId);
 		sb.append(", companyId=");
@@ -113,6 +115,8 @@ public class CommerceCurrencyCacheModel
 		sb.append(active);
 		sb.append(", lastPublishDate=");
 		sb.append(lastPublishDate);
+		sb.append(", status=");
+		sb.append(status);
 		sb.append("}");
 
 		return sb.toString();
@@ -129,6 +133,14 @@ public class CommerceCurrencyCacheModel
 		}
 		else {
 			commerceCurrencyImpl.setUuid(uuid);
+		}
+
+		if (externalReferenceCode == null) {
+			commerceCurrencyImpl.setExternalReferenceCode("");
+		}
+		else {
+			commerceCurrencyImpl.setExternalReferenceCode(
+				externalReferenceCode);
 		}
 
 		commerceCurrencyImpl.setCommerceCurrencyId(commerceCurrencyId);
@@ -207,6 +219,8 @@ public class CommerceCurrencyCacheModel
 			commerceCurrencyImpl.setLastPublishDate(new Date(lastPublishDate));
 		}
 
+		commerceCurrencyImpl.setStatus(status);
+
 		commerceCurrencyImpl.resetOriginalValues();
 
 		return commerceCurrencyImpl;
@@ -218,6 +232,7 @@ public class CommerceCurrencyCacheModel
 
 		mvccVersion = objectInput.readLong();
 		uuid = objectInput.readUTF();
+		externalReferenceCode = objectInput.readUTF();
 
 		commerceCurrencyId = objectInput.readLong();
 
@@ -244,6 +259,8 @@ public class CommerceCurrencyCacheModel
 
 		active = objectInput.readBoolean();
 		lastPublishDate = objectInput.readLong();
+
+		status = objectInput.readInt();
 	}
 
 	@Override
@@ -255,6 +272,13 @@ public class CommerceCurrencyCacheModel
 		}
 		else {
 			objectOutput.writeUTF(uuid);
+		}
+
+		if (externalReferenceCode == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(externalReferenceCode);
 		}
 
 		objectOutput.writeLong(commerceCurrencyId);
@@ -320,10 +344,13 @@ public class CommerceCurrencyCacheModel
 
 		objectOutput.writeBoolean(active);
 		objectOutput.writeLong(lastPublishDate);
+
+		objectOutput.writeInt(status);
 	}
 
 	public long mvccVersion;
 	public String uuid;
+	public String externalReferenceCode;
 	public long commerceCurrencyId;
 	public long companyId;
 	public long userId;
@@ -342,5 +369,7 @@ public class CommerceCurrencyCacheModel
 	public double priority;
 	public boolean active;
 	public long lastPublishDate;
+	public int status;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:614832523

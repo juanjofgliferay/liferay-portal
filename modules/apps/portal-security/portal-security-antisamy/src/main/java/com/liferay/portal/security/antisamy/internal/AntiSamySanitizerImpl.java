@@ -5,6 +5,7 @@
 
 package com.liferay.portal.security.antisamy.internal;
 
+import com.liferay.petra.concurrent.DCLSingleton;
 import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.lang.ThreadContextClassLoaderUtil;
 import com.liferay.petra.string.CharPool;
@@ -22,9 +23,9 @@ import java.io.InputStream;
 import java.net.URL;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.owasp.validator.html.AntiSamy;
 import org.owasp.validator.html.CleanResults;
@@ -39,23 +40,19 @@ public class AntiSamySanitizerImpl implements Sanitizer {
 	public AntiSamySanitizerImpl(
 		String[] blacklist, URL url, String[] whitelist) {
 
-		try (InputStream inputStream = url.openStream()) {
-			_policy = Policy.getInstance(inputStream);
-		}
-		catch (Exception exception) {
-			throw new IllegalStateException(
-				"Unable to initialize policy", exception);
-		}
+		_url = url;
 
 		if (blacklist != null) {
 			for (String blacklistItem : blacklist) {
 				blacklistItem = blacklistItem.trim();
 
-				if (!blacklistItem.isEmpty()) {
-					blacklistItem = _stripTrailingStar(blacklistItem);
-
-					_blacklist.add(blacklistItem);
+				if (blacklistItem.isEmpty()) {
+					continue;
 				}
+
+				blacklistItem = _stripTrailingStar(blacklistItem);
+
+				_blacklist.add(blacklistItem);
 			}
 		}
 
@@ -63,11 +60,13 @@ public class AntiSamySanitizerImpl implements Sanitizer {
 			for (String whitelistItem : whitelist) {
 				whitelistItem = whitelistItem.trim();
 
-				if (!whitelistItem.isEmpty()) {
-					whitelistItem = _stripTrailingStar(whitelistItem);
-
-					_whitelist.add(whitelistItem);
+				if (whitelistItem.isEmpty()) {
+					continue;
 				}
+
+				whitelistItem = _stripTrailingStar(whitelistItem);
+
+				_whitelist.add(whitelistItem);
 			}
 		}
 	}
@@ -114,13 +113,19 @@ public class AntiSamySanitizerImpl implements Sanitizer {
 
 			AntiSamy antiSamy = new AntiSamy();
 
-			if (_isConfigured(className, classPK)) {
-				Policy policy = _policies.get(className);
+			Policy policy = null;
 
+			if (Validator.isNotNull(className)) {
+				policy = _policies.get(className);
+			}
+
+			if (policy != null) {
 				cleanResults = antiSamy.scan(content, policy, AntiSamy.SAX);
 			}
 			else {
-				cleanResults = antiSamy.scan(content, _policy);
+				cleanResults = antiSamy.scan(
+					content,
+					_policyDCLSingleton.getSingleton(this::_getPolicy));
 			}
 
 			if (_log.isWarnEnabled()) {
@@ -138,16 +143,14 @@ public class AntiSamySanitizerImpl implements Sanitizer {
 		}
 	}
 
-	private boolean _isConfigured(String className, long classPK) {
-		String classNameAndClassPK = className + StringPool.POUND + classPK;
-
-		for (String policyClassName : _policies.keySet()) {
-			if (classNameAndClassPK.startsWith(policyClassName)) {
-				return true;
-			}
+	private Policy _getPolicy() {
+		try (InputStream inputStream = _url.openStream()) {
+			return Policy.getInstance(inputStream);
 		}
-
-		return false;
+		catch (Exception exception) {
+			throw new IllegalStateException(
+				"Unable to initialize policy", exception);
+		}
 	}
 
 	private boolean _isWhitelisted(String className, long classPK) {
@@ -190,8 +193,10 @@ public class AntiSamySanitizerImpl implements Sanitizer {
 		AntiSamySanitizerImpl.class);
 
 	private final List<String> _blacklist = new ArrayList<>();
-	private final Map<String, Policy> _policies = new HashMap<>();
-	private final Policy _policy;
+	private final Map<String, Policy> _policies = new ConcurrentHashMap<>();
+	private final DCLSingleton<Policy> _policyDCLSingleton =
+		new DCLSingleton<>();
+	private final URL _url;
 	private final List<String> _whitelist = new ArrayList<>();
 
 }

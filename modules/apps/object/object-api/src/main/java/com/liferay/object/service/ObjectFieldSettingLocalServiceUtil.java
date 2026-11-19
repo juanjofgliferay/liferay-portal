@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -270,6 +271,12 @@ public class ObjectFieldSettingLocalServiceUtil {
 		return getService().getObjectFieldObjectFieldSettings(objectFieldId);
 	}
 
+	public static List<ObjectFieldSetting> getObjectFieldObjectFieldSettings(
+		com.liferay.object.model.ObjectField objectField) {
+
+		return getService().getObjectFieldObjectFieldSettings(objectField);
+	}
+
 	/**
 	 * Returns the object field setting with the primary key.
 	 *
@@ -369,13 +376,13 @@ public class ObjectFieldSettingLocalServiceUtil {
 	}
 
 	public static ObjectFieldSettingLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(ObjectFieldSettingLocalService service) {
-		_service = service;
-	}
-
-	private static volatile ObjectFieldSettingLocalService _service;
+	private static final Snapshot<ObjectFieldSettingLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			ObjectFieldSettingLocalServiceUtil.class,
+			ObjectFieldSettingLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-773108997

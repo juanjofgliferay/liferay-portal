@@ -29,14 +29,13 @@ import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
 import com.liferay.portal.kernel.service.CountryService;
 import com.liferay.portal.kernel.service.RegionService;
-import com.liferay.portal.kernel.settings.GroupServiceSettingsLocator;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 
-import java.util.List;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.RenderRequest;
 
-import javax.portlet.PortletRequest;
-import javax.portlet.RenderRequest;
+import java.util.List;
 
 /**
  * @author Marco Leo
@@ -169,11 +168,10 @@ public class CommerceTaxFixedRateAddressRelsDisplayContext
 
 		CommerceTaxByAddressTypeConfiguration
 			commerceTaxByAddressTypeConfiguration =
-				ConfigurationProviderUtil.getConfiguration(
+				ConfigurationProviderUtil.getGroupConfiguration(
 					CommerceTaxByAddressTypeConfiguration.class,
-					new GroupServiceSettingsLocator(
-						commerceTaxMethod.getGroupId(),
-						CommerceTaxByAddressTypeConfiguration.class.getName()));
+					commerceTaxMethod.getCompanyId(),
+					commerceTaxMethod.getGroupId());
 
 		return commerceTaxByAddressTypeConfiguration.
 			taxAppliedToShippingAddress();

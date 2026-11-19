@@ -14,7 +14,9 @@ import com.liferay.portal.configuration.module.configuration.ConfigurationProvid
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.module.configuration.ConfigurationException;
+import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.transaction.Propagation;
 import com.liferay.portal.kernel.transaction.Transactional;
 
@@ -77,7 +79,7 @@ public class CommerceInventoryEngineImpl implements CommerceInventoryEngine {
 
 	@Override
 	public String getAvailabilityStatus(
-		long companyId, long commerceCatalogGroupId,
+		long companyId, long accountEntryId, long commerceCatalogGroupId,
 		long commerceChannelGroupId, BigDecimal minStockQuantity, String sku,
 		String unitOfMeasureKey) {
 
@@ -89,13 +91,13 @@ public class CommerceInventoryEngineImpl implements CommerceInventoryEngine {
 		}
 
 		return commerceInventoryMethod.getAvailabilityStatus(
-			companyId, commerceChannelGroupId, minStockQuantity, sku,
-			unitOfMeasureKey);
+			companyId, accountEntryId, commerceChannelGroupId, minStockQuantity,
+			sku, unitOfMeasureKey);
 	}
 
 	@Override
 	public BigDecimal getStockQuantity(
-			long companyId, long commerceCatalogGroupId,
+			long companyId, long accountEntryId, long commerceCatalogGroupId,
 			long commerceChannelGroupId, String sku, String unitOfMeasureKey)
 		throws PortalException {
 
@@ -107,7 +109,8 @@ public class CommerceInventoryEngineImpl implements CommerceInventoryEngine {
 		}
 
 		return commerceInventoryMethod.getStockQuantity(
-			companyId, commerceChannelGroupId, sku, unitOfMeasureKey);
+			companyId, accountEntryId, commerceChannelGroupId, sku,
+			unitOfMeasureKey);
 	}
 
 	@Override
@@ -165,11 +168,13 @@ public class CommerceInventoryEngineImpl implements CommerceInventoryEngine {
 		long commerceCatalogGroupId) {
 
 		try {
+			Group group = _groupLocalService.fetchGroup(commerceCatalogGroupId);
+
 			CommerceInventoryGroupConfiguration
 				commerceInventoryGroupConfiguration =
 					_configurationProvider.getGroupConfiguration(
 						CommerceInventoryGroupConfiguration.class,
-						commerceCatalogGroupId);
+						group.getCompanyId(), commerceCatalogGroupId);
 
 			CommerceInventoryMethod commerceInventoryMethod =
 				_commerceInventoryMethodRegistry.getCommerceInventoryMethod(
@@ -199,5 +204,8 @@ public class CommerceInventoryEngineImpl implements CommerceInventoryEngine {
 
 	@Reference
 	private ConfigurationProvider _configurationProvider;
+
+	@Reference
+	private GroupLocalService _groupLocalService;
 
 }

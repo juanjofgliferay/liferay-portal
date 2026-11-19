@@ -60,12 +60,12 @@ public interface CommerceOrderTypeService extends BaseService {
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public CommerceOrderType fetchByExternalReferenceCode(
-			String externalReferenceCode, long companyId)
+	public CommerceOrderType fetchCommerceOrderType(long commerceOrderTypeId)
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public CommerceOrderType fetchCommerceOrderType(long commerceOrderTypeId)
+	public CommerceOrderType fetchCommerceOrderTypeByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
@@ -80,6 +80,11 @@ public interface CommerceOrderTypeService extends BaseService {
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public int getCommerceOrderTypesCount(
 			String className, long classPK, boolean active)
+		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public CommerceOrderType getOrAddEmptyCommerceOrderType(
+			String externalReferenceCode)
 		throws PortalException;
 
 	/**
@@ -105,3 +110,4 @@ public interface CommerceOrderTypeService extends BaseService {
 		throws PortalException;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:724344696

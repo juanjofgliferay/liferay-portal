@@ -116,12 +116,8 @@ public class CommerceVirtualOrderItemPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
 		CommerceVirtualOrderItem newCommerceVirtualOrderItem =
-			_persistence.create(pk);
-
-		newCommerceVirtualOrderItem.setMvccVersion(RandomTestUtil.nextLong());
+			addCommerceVirtualOrderItem();
 
 		newCommerceVirtualOrderItem.setUuid(RandomTestUtil.randomString());
 
@@ -140,16 +136,10 @@ public class CommerceVirtualOrderItemPersistenceTest {
 		newCommerceVirtualOrderItem.setCommerceOrderItemId(
 			RandomTestUtil.nextLong());
 
-		newCommerceVirtualOrderItem.setFileEntryId(RandomTestUtil.nextLong());
-
-		newCommerceVirtualOrderItem.setUrl(RandomTestUtil.randomString());
-
 		newCommerceVirtualOrderItem.setActivationStatus(
 			RandomTestUtil.nextInt());
 
 		newCommerceVirtualOrderItem.setDuration(RandomTestUtil.nextLong());
-
-		newCommerceVirtualOrderItem.setUsages(RandomTestUtil.nextInt());
 
 		newCommerceVirtualOrderItem.setMaxUsages(RandomTestUtil.nextInt());
 
@@ -159,8 +149,10 @@ public class CommerceVirtualOrderItemPersistenceTest {
 
 		newCommerceVirtualOrderItem.setEndDate(RandomTestUtil.nextDate());
 
-		_commerceVirtualOrderItems.add(
-			_persistence.update(newCommerceVirtualOrderItem));
+		newCommerceVirtualOrderItem = _persistence.update(
+			newCommerceVirtualOrderItem);
+
+		_commerceVirtualOrderItems.add(newCommerceVirtualOrderItem);
 
 		CommerceVirtualOrderItem existingCommerceVirtualOrderItem =
 			_persistence.findByPrimaryKey(
@@ -201,20 +193,11 @@ public class CommerceVirtualOrderItemPersistenceTest {
 			existingCommerceVirtualOrderItem.getCommerceOrderItemId(),
 			newCommerceVirtualOrderItem.getCommerceOrderItemId());
 		Assert.assertEquals(
-			existingCommerceVirtualOrderItem.getFileEntryId(),
-			newCommerceVirtualOrderItem.getFileEntryId());
-		Assert.assertEquals(
-			existingCommerceVirtualOrderItem.getUrl(),
-			newCommerceVirtualOrderItem.getUrl());
-		Assert.assertEquals(
 			existingCommerceVirtualOrderItem.getActivationStatus(),
 			newCommerceVirtualOrderItem.getActivationStatus());
 		Assert.assertEquals(
 			existingCommerceVirtualOrderItem.getDuration(),
 			newCommerceVirtualOrderItem.getDuration());
-		Assert.assertEquals(
-			existingCommerceVirtualOrderItem.getUsages(),
-			newCommerceVirtualOrderItem.getUsages());
 		Assert.assertEquals(
 			existingCommerceVirtualOrderItem.getMaxUsages(),
 			newCommerceVirtualOrderItem.getMaxUsages());
@@ -298,10 +281,9 @@ public class CommerceVirtualOrderItemPersistenceTest {
 			"CommerceVirtualOrderItem", "mvccVersion", true, "uuid", true,
 			"commerceVirtualOrderItemId", true, "groupId", true, "companyId",
 			true, "userId", true, "userName", true, "createDate", true,
-			"modifiedDate", true, "commerceOrderItemId", true, "fileEntryId",
-			true, "url", true, "activationStatus", true, "duration", true,
-			"usages", true, "maxUsages", true, "active", true, "startDate",
-			true, "endDate", true);
+			"modifiedDate", true, "commerceOrderItemId", true,
+			"activationStatus", true, "duration", true, "maxUsages", true,
+			"active", true, "startDate", true, "endDate", true);
 	}
 
 	@Test
@@ -625,8 +607,6 @@ public class CommerceVirtualOrderItemPersistenceTest {
 		CommerceVirtualOrderItem commerceVirtualOrderItem = _persistence.create(
 			pk);
 
-		commerceVirtualOrderItem.setMvccVersion(RandomTestUtil.nextLong());
-
 		commerceVirtualOrderItem.setUuid(RandomTestUtil.randomString());
 
 		commerceVirtualOrderItem.setGroupId(RandomTestUtil.nextLong());
@@ -644,15 +624,9 @@ public class CommerceVirtualOrderItemPersistenceTest {
 		commerceVirtualOrderItem.setCommerceOrderItemId(
 			RandomTestUtil.nextLong());
 
-		commerceVirtualOrderItem.setFileEntryId(RandomTestUtil.nextLong());
-
-		commerceVirtualOrderItem.setUrl(RandomTestUtil.randomString());
-
 		commerceVirtualOrderItem.setActivationStatus(RandomTestUtil.nextInt());
 
 		commerceVirtualOrderItem.setDuration(RandomTestUtil.nextLong());
-
-		commerceVirtualOrderItem.setUsages(RandomTestUtil.nextInt());
 
 		commerceVirtualOrderItem.setMaxUsages(RandomTestUtil.nextInt());
 
@@ -674,3 +648,4 @@ public class CommerceVirtualOrderItemPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:803512411

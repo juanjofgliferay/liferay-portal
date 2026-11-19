@@ -21,18 +21,20 @@ import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.portlet.PortletPreferencesFactoryUtil;
+import com.liferay.portal.kernel.test.TestInfo;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.xml.Element;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 
-import java.util.HashMap;
+import jakarta.portlet.PortletPreferences;
 
-import javax.portlet.PortletPreferences;
+import java.util.HashMap;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -198,8 +200,70 @@ public class AssetPublisherExportImportPortletPreferencesProcessorTest {
 			GetterUtil.getLong(importedAssetCategoryId));
 	}
 
+	@Test
+	@TestInfo("LPD-85494")
+	public void testProcessScopeIds1() throws Exception {
+		_portletDataContextExport.setPlid(0);
+
+		_portletPreferences.setValue(
+			"scopeIds", String.valueOf(_group.getGroupId()));
+
+		_portletPreferences.store();
+
+		PortletPreferences exportedPortletPreferences =
+			_exportImportPortletPreferencesProcessor.
+				processExportPortletPreferences(
+					_portletDataContextExport, _portletPreferences);
+
+		Assert.assertNotNull(exportedPortletPreferences);
+	}
+
+	@Test
+	@TestInfo("LPD-85494")
+	public void testProcessScopeIds2() throws Exception {
+		_portletPreferences.setValue(
+			"scopeIds", String.valueOf(_group.getGroupId()));
+
+		_portletPreferences.store();
+
+		Element importDataRootElement =
+			_portletDataContextImport.getImportDataRootElement();
+
+		Assert.assertNull(importDataRootElement.element("group-id-mappings"));
+
+		PortletPreferences importedPortletPreferences =
+			_exportImportPortletPreferencesProcessor.
+				processImportPortletPreferences(
+					_portletDataContextImport, _portletPreferences);
+
+		Assert.assertNotNull(importedPortletPreferences);
+	}
+
+	@Test
+	@TestInfo("LPD-85494")
+	public void testProcessScopeIds3() throws Exception {
+		_portletDataContextImport.setPlid(0);
+
+		_portletPreferences.setValue(
+			"scopeIds", String.valueOf(_group.getGroupId()));
+
+		_portletPreferences.store();
+
+		Element importDataRootElement =
+			_portletDataContextImport.getImportDataRootElement();
+
+		importDataRootElement.addElement("group-id-mappings");
+
+		PortletPreferences importedPortletPreferences =
+			_exportImportPortletPreferencesProcessor.
+				processImportPortletPreferences(
+					_portletDataContextImport, _portletPreferences);
+
+		Assert.assertNotNull(importedPortletPreferences);
+	}
+
 	@Inject(
-		filter = "javax.portlet.name=" + AssetPublisherPortletKeys.ASSET_PUBLISHER
+		filter = "jakarta.portlet.name=" + AssetPublisherPortletKeys.ASSET_PUBLISHER
 	)
 	private ExportImportPortletPreferencesProcessor
 		_exportImportPortletPreferencesProcessor;

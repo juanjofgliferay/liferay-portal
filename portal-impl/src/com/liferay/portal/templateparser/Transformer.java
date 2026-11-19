@@ -5,10 +5,10 @@
 
 package com.liferay.portal.templateparser;
 
+import com.liferay.petra.io.unsync.UnsyncStringWriter;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.configuration.Filter;
-import com.liferay.portal.kernel.io.unsync.UnsyncStringWriter;
 import com.liferay.portal.kernel.mobile.device.Device;
 import com.liferay.portal.kernel.mobile.device.UnknownDevice;
 import com.liferay.portal.kernel.model.Company;
@@ -23,17 +23,17 @@ import com.liferay.portal.kernel.template.URLTemplateResource;
 import com.liferay.portal.kernel.templateparser.TransformException;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.PropsUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.util.PropsUtil;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.net.URL;
 
 import java.util.HashMap;
 import java.util.Map;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * @author Brian Wing Shun Chan
@@ -57,15 +57,18 @@ public class Transformer {
 			String errorTemplateId = getErrorTemplateId(
 				errorTemplatePropertyKey, langType);
 
-			if (Validator.isNotNull(errorTemplateId)) {
-				URL url = classLoader.getResource(errorTemplateId);
-
-				if (url != null) {
-					_errorTemplateResources.put(
-						langType,
-						new URLTemplateResource(errorTemplateId, url));
-				}
+			if (Validator.isNull(errorTemplateId)) {
+				continue;
 			}
+
+			URL url = classLoader.getResource(errorTemplateId);
+
+			if (url == null) {
+				continue;
+			}
+
+			_errorTemplateResources.put(
+				langType, new URLTemplateResource(errorTemplateId, url));
 		}
 	}
 
@@ -216,8 +219,8 @@ public class Transformer {
 			StringPool.SLASH, groupId, StringPool.SLASH, classNameId);
 	}
 
-	protected void prepareTemplate(ThemeDisplay themeDisplay, Template template)
-		throws Exception {
+	protected void prepareTemplate(
+		ThemeDisplay themeDisplay, Template template) {
 
 		if (themeDisplay == null) {
 			return;

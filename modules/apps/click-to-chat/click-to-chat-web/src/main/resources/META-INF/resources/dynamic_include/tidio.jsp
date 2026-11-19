@@ -7,15 +7,15 @@
 
 <%@ include file="/dynamic_include/init.jsp" %>
 
-<script>
+<aui:script position="inline">
 	(function () {
 		function loadTidioScript() {
 			function setTidioUserInfo() {
 				if ('<%= themeDisplay.isSignedIn() %>' === 'true') {
 					document.tidioIdentify = {
 						distinct_id: '<%= user.getUserId() %>',
-						email: '<%= user.getEmailAddress() %>',
-						name: '<%= user.getFirstName() %>',
+						email: '<%= HtmlUtil.escapeJS(user.getEmailAddress()) %>',
+						name: '<%= HtmlUtil.escapeJS(user.getFirstName()) %>',
 					};
 				}
 			}
@@ -26,7 +26,7 @@
 				scriptElement.setAttribute('id', 'tidio-script-chat');
 				scriptElement.setAttribute(
 					'src',
-					'//code.tidio.co/<%= clickToChatChatProviderAccountId %>.js'
+					'//code.tidio.co/<%= HtmlUtil.escapeJS(clickToChatChatProviderAccountId) %>.js'
 				);
 				scriptElement.setAttribute('type', 'text/javascript');
 				scriptElement.onload = function () {
@@ -50,4 +50,4 @@
 			loadTidioScript();
 		}
 	})();
-</script>
+</aui:script>

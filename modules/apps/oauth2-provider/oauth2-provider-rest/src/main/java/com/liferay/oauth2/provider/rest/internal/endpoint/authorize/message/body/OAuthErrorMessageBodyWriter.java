@@ -7,13 +7,13 @@ package com.liferay.oauth2.provider.rest.internal.endpoint.authorize.message.bod
 
 import com.liferay.portal.kernel.util.StringUtil;
 
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.ext.MessageBodyWriter;
+import jakarta.ws.rs.ext.Provider;
+
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
-
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.ext.MessageBodyWriter;
-import javax.ws.rs.ext.Provider;
 
 import org.apache.cxf.rs.security.oauth2.common.OAuthError;
 import org.apache.cxf.rs.security.oauth2.utils.OAuthConstants;
@@ -38,10 +38,10 @@ public class OAuthErrorMessageBodyWriter
 
 	@Override
 	public boolean isWriteable(
-		Class<?> aClass, Type type, Annotation[] annotations,
+		Class<?> clazz, Type type, Annotation[] annotations,
 		MediaType mediaType) {
 
-		if (aClass.isAssignableFrom(OAuthError.class) &&
+		if (clazz.isAssignableFrom(OAuthError.class) &&
 			StringUtil.equalsIgnoreCase(mediaType.getType(), "text") &&
 			StringUtil.equalsIgnoreCase(mediaType.getSubtype(), "html")) {
 

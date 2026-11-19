@@ -15,9 +15,9 @@ String portletResource = ParamUtil.getString(request, "portletResource");
 
 DDLRecordSet recordSet = (DDLRecordSet)request.getAttribute(DDLWebKeys.DYNAMIC_DATA_LISTS_RECORD_SET);
 
-long recordSetId = BeanParamUtil.getLong(recordSet, request, "recordSetId");
+long recordSetId = BeanParamUtil.getLong(recordSet, request, "recordSetId", DDLRecordSet::getRecordSetId);
 
-long groupId = BeanParamUtil.getLong(recordSet, request, "groupId", scopeGroupId);
+long groupId = BeanParamUtil.getLong(recordSet, request, "groupId", DDLRecordSet::getGroupId, scopeGroupId);
 
 Group scopeGroup = GroupLocalServiceUtil.getGroup(scopeGroupId);
 
@@ -111,19 +111,13 @@ if (ddlDisplayContext.isAdminPortlet()) {
 						<aui:select label="workflow" name="workflowDefinition">
 
 							<%
-							WorkflowDefinitionLink workflowDefinitionLink = null;
-
-							try {
-								workflowDefinitionLink = WorkflowDefinitionLinkLocalServiceUtil.getWorkflowDefinitionLink(company.getCompanyId(), themeDisplay.getScopeGroupId(), DDLRecordSet.class.getName(), recordSetId, 0, true);
-							}
-							catch (NoSuchWorkflowDefinitionLinkException nswdle) {
-							}
+							WorkflowDefinitionLink workflowDefinitionLink = WorkflowDefinitionLinkLocalServiceUtil.fetchWorkflowDefinitionLink(company.getCompanyId(), themeDisplay.getScopeGroupId(), DDLRecordSet.class.getName(), recordSetId, 0, true);
 							%>
 
 							<aui:option><liferay-ui:message key="no-workflow" /></aui:option>
 
 							<%
-							List<WorkflowDefinition> workflowDefinitions = WorkflowDefinitionManagerUtil.getActiveWorkflowDefinitions(company.getCompanyId(), QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
+							List<WorkflowDefinition> workflowDefinitions = WorkflowDefinitionManagerUtil.liberalGetActiveWorkflowDefinitions(company.getCompanyId(), QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
 
 							for (WorkflowDefinition workflowDefinition : workflowDefinitions) {
 								boolean selected = false;
@@ -206,7 +200,7 @@ if (ddlDisplayContext.isAdminPortlet()) {
 				"selectEventName", "<portlet:namespace />selectDDMStructure"
 			).build()
 		%>'
-		module="js/EditRecordSetStructureSelector"
+		module="{EditRecordSetStructureSelector} from dynamic-data-lists-web"
 	/>
 
 	function <portlet:namespace />saveRecordSet() {

@@ -13,8 +13,10 @@ import com.liferay.portal.kernel.service.persistence.BasePersistence;
  *
  * @author Alessio Antonio Rendina
  * @see CommerceNotificationQueueEntryLocalService
+ * @deprecated As of Cavanaugh (7.4.x)
  * @generated
  */
+@Deprecated
 public class CommerceNotificationQueueEntryLocalServiceWrapper
 	implements CommerceNotificationQueueEntryLocalService,
 			   ServiceWrapper<CommerceNotificationQueueEntryLocalService> {
@@ -133,8 +135,8 @@ public class CommerceNotificationQueueEntryLocalServiceWrapper
 	}
 
 	@Override
-	public void deleteCommerceNotificationQueueEntries(
-		java.util.Date sentDate) {
+	public void deleteCommerceNotificationQueueEntries(java.util.Date sentDate)
+		throws com.liferay.portal.kernel.exception.PortalException {
 
 		_commerceNotificationQueueEntryLocalService.
 			deleteCommerceNotificationQueueEntries(sentDate);
@@ -364,20 +366,6 @@ public class CommerceNotificationQueueEntryLocalServiceWrapper
 	public java.util.List
 		<com.liferay.commerce.notification.model.CommerceNotificationQueueEntry>
 			getCommerceNotificationQueueEntries(
-				long groupId, int start, int end,
-				com.liferay.portal.kernel.util.OrderByComparator
-					<com.liferay.commerce.notification.model.
-						CommerceNotificationQueueEntry> orderByComparator) {
-
-		return _commerceNotificationQueueEntryLocalService.
-			getCommerceNotificationQueueEntries(
-				groupId, start, end, orderByComparator);
-	}
-
-	@Override
-	public java.util.List
-		<com.liferay.commerce.notification.model.CommerceNotificationQueueEntry>
-			getCommerceNotificationQueueEntries(
 				long groupId, String className, long classPK, boolean sent,
 				int start, int end,
 				com.liferay.portal.kernel.util.OrderByComparator
@@ -399,12 +387,6 @@ public class CommerceNotificationQueueEntryLocalServiceWrapper
 	public int getCommerceNotificationQueueEntriesCount() {
 		return _commerceNotificationQueueEntryLocalService.
 			getCommerceNotificationQueueEntriesCount();
-	}
-
-	@Override
-	public int getCommerceNotificationQueueEntriesCount(long groupId) {
-		return _commerceNotificationQueueEntryLocalService.
-			getCommerceNotificationQueueEntriesCount(groupId);
 	}
 
 	@Override
@@ -548,3 +530,4 @@ public class CommerceNotificationQueueEntryLocalServiceWrapper
 		_commerceNotificationQueueEntryLocalService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:890959480

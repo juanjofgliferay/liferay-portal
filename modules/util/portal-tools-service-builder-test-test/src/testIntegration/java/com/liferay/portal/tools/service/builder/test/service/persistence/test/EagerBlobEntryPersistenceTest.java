@@ -36,7 +36,6 @@ import java.io.Serializable;
 import java.sql.Blob;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -116,9 +115,7 @@ public class EagerBlobEntryPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		EagerBlobEntry newEagerBlobEntry = _persistence.create(pk);
+		EagerBlobEntry newEagerBlobEntry = addEagerBlobEntry();
 
 		newEagerBlobEntry.setUuid(RandomTestUtil.randomString());
 
@@ -132,7 +129,9 @@ public class EagerBlobEntryPersistenceTest {
 
 		newEagerBlobEntry.setBlob(newBlobBlob);
 
-		_eagerBlobEntries.add(_persistence.update(newEagerBlobEntry));
+		newEagerBlobEntry = _persistence.update(newEagerBlobEntry);
+
+		_eagerBlobEntries.add(newEagerBlobEntry);
 
 		Session session = _persistence.openSession();
 
@@ -153,10 +152,8 @@ public class EagerBlobEntryPersistenceTest {
 			newEagerBlobEntry.getGroupId());
 		Blob existingBlob = existingEagerBlobEntry.getBlob();
 
-		Assert.assertTrue(
-			Arrays.equals(
-				existingBlob.getBytes(1, (int)existingBlob.length()),
-				newBlobBytes));
+		Assert.assertArrayEquals(
+			newBlobBytes, existingBlob.getBytes(1, (int)existingBlob.length()));
 	}
 
 	@Test
@@ -511,3 +508,4 @@ public class EagerBlobEntryPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-673466933

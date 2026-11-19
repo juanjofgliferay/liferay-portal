@@ -12,7 +12,7 @@ import com.liferay.portal.kernel.servlet.PortalWebResourceConstants;
 import org.osgi.service.component.annotations.Component;
 
 /**
- * @author Joao Victor Alves
+ * @author João Victor Alves
  */
 @Component(
 	property = {
@@ -40,13 +40,13 @@ public class AlloyEditorRenderer implements EditorRenderer {
 	}
 
 	@Override
-	public String getResourcesJspPath() {
-		return "/resources.jsp";
+	public String getResourceType() {
+		return PortalWebResourceConstants.RESOURCE_TYPE_EDITOR_ALLOYEDITOR;
 	}
 
 	@Override
-	public String getResourceType() {
-		return PortalWebResourceConstants.RESOURCE_TYPE_EDITOR_ALLOYEDITOR;
+	public String getResourcesJspPath() {
+		return "/resources.jsp";
 	}
 
 }

@@ -23,6 +23,7 @@ import com.liferay.dynamic.data.mapping.storage.DDMFormFieldValue;
 import com.liferay.dynamic.data.mapping.storage.DDMFormValues;
 import com.liferay.mail.kernel.model.MailMessage;
 import com.liferay.mail.kernel.service.MailService;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.io.unsync.UnsyncStringWriter;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -51,6 +52,10 @@ import com.liferay.portal.kernel.util.ResourceBundleUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.mail.internet.InternetAddress;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.io.Writer;
 
 import java.net.URL;
@@ -62,10 +67,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.ResourceBundle;
 import java.util.function.Function;
-
-import javax.mail.internet.InternetAddress;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -383,20 +384,13 @@ public class DDMFormEmailNotificationSender {
 			DDMFormInstanceRecord ddmFormInstanceRecord, Locale locale)
 		throws Exception {
 
-		List<Object> pages = new ArrayList<>();
-
 		DDMFormLayout ddmFormLayout = _getDDMFormLayout(ddmFormInstance);
 
-		for (DDMFormLayoutPage ddmFormLayoutPage :
-				ddmFormLayout.getDDMFormLayoutPages()) {
-
-			pages.add(
-				_getPage(
-					ddmFormLayoutPage,
-					getDDMFormFieldValuesMap(ddmFormInstanceRecord), locale));
-		}
-
-		return pages;
+		return TransformUtil.transform(
+			ddmFormLayout.getDDMFormLayoutPages(),
+			ddmFormLayoutPage -> _getPage(
+				ddmFormLayoutPage,
+				getDDMFormFieldValuesMap(ddmFormInstanceRecord), locale));
 	}
 
 	private String _getParagraphText(DDMFormField ddmFormField, Locale locale) {

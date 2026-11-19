@@ -109,11 +109,7 @@ public class BatchPlannerPlanPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		BatchPlannerPlan newBatchPlannerPlan = _persistence.create(pk);
-
-		newBatchPlannerPlan.setMvccVersion(RandomTestUtil.nextLong());
+		BatchPlannerPlan newBatchPlannerPlan = addBatchPlannerPlan();
 
 		newBatchPlannerPlan.setCompanyId(RandomTestUtil.nextLong());
 
@@ -148,7 +144,9 @@ public class BatchPlannerPlanPersistenceTest {
 
 		newBatchPlannerPlan.setStatus(RandomTestUtil.nextInt());
 
-		_batchPlannerPlans.add(_persistence.update(newBatchPlannerPlan));
+		newBatchPlannerPlan = _persistence.update(newBatchPlannerPlan);
+
+		_batchPlannerPlans.add(newBatchPlannerPlan);
 
 		BatchPlannerPlan existingBatchPlannerPlan =
 			_persistence.findByPrimaryKey(newBatchPlannerPlan.getPrimaryKey());
@@ -215,28 +213,11 @@ public class BatchPlannerPlanPersistenceTest {
 	}
 
 	@Test
-	public void testCountByC_U() throws Exception {
-		_persistence.countByC_U(
-			RandomTestUtil.nextLong(), RandomTestUtil.nextLong());
-
-		_persistence.countByC_U(0L, 0L);
-	}
-
-	@Test
 	public void testCountByC_E() throws Exception {
 		_persistence.countByC_E(
 			RandomTestUtil.nextLong(), RandomTestUtil.randomBoolean());
 
 		_persistence.countByC_E(0L, RandomTestUtil.randomBoolean());
-	}
-
-	@Test
-	public void testCountByC_N() throws Exception {
-		_persistence.countByC_N(RandomTestUtil.nextLong(), "");
-
-		_persistence.countByC_N(0L, "null");
-
-		_persistence.countByC_N(0L, (String)null);
 	}
 
 	@Test
@@ -512,8 +493,6 @@ public class BatchPlannerPlanPersistenceTest {
 
 		BatchPlannerPlan batchPlannerPlan = _persistence.create(pk);
 
-		batchPlannerPlan.setMvccVersion(RandomTestUtil.nextLong());
-
 		batchPlannerPlan.setCompanyId(RandomTestUtil.nextLong());
 
 		batchPlannerPlan.setUserId(RandomTestUtil.nextLong());
@@ -557,3 +536,4 @@ public class BatchPlannerPlanPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1724403408

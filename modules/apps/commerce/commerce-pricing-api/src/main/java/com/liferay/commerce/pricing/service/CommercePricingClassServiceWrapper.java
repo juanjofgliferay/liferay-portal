@@ -64,21 +64,23 @@ public class CommercePricingClassServiceWrapper
 	}
 
 	@Override
-	public CommercePricingClass fetchByExternalReferenceCode(
-			String externalReferenceCode, long companyId)
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return _commercePricingClassService.fetchByExternalReferenceCode(
-			externalReferenceCode, companyId);
-	}
-
-	@Override
 	public CommercePricingClass fetchCommercePricingClass(
 			long commercePricingClassId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commercePricingClassService.fetchCommercePricingClass(
 			commercePricingClassId);
+	}
+
+	@Override
+	public CommercePricingClass
+			fetchCommercePricingClassByExternalReferenceCode(
+				String externalReferenceCode, long companyId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _commercePricingClassService.
+			fetchCommercePricingClassByExternalReferenceCode(
+				externalReferenceCode, companyId);
 	}
 
 	@Override
@@ -124,6 +126,15 @@ public class CommercePricingClassServiceWrapper
 
 		return _commercePricingClassService.getCommercePricingClassesCount(
 			cpDefinitionId, title);
+	}
+
+	@Override
+	public CommercePricingClass getOrAddEmptyCommercePricingClass(
+			String externalReferenceCode)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _commercePricingClassService.getOrAddEmptyCommercePricingClass(
+			externalReferenceCode);
 	}
 
 	/**
@@ -193,3 +204,4 @@ public class CommercePricingClassServiceWrapper
 	private CommercePricingClassService _commercePricingClassService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:110208071

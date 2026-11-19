@@ -5,17 +5,17 @@
 
 package com.liferay.headless.delivery.internal.resource.v1_0;
 
-import com.liferay.document.library.util.DLURLHelper;
+import com.liferay.document.library.kernel.exception.NoSuchFileEntryException;
 import com.liferay.headless.delivery.dto.v1_0.WikiPageAttachment;
 import com.liferay.headless.delivery.dto.v1_0.util.ContentValueUtil;
 import com.liferay.headless.delivery.resource.v1_0.WikiPageAttachmentResource;
-import com.liferay.portal.kernel.change.tracking.CTAware;
 import com.liferay.portal.kernel.portletfilerepository.PortletFileRepository;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.repository.model.Folder;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.vulcan.multipart.BinaryFile;
 import com.liferay.portal.vulcan.multipart.MultipartBody;
@@ -24,7 +24,7 @@ import com.liferay.wiki.constants.WikiConstants;
 import com.liferay.wiki.model.WikiPage;
 import com.liferay.wiki.service.WikiPageService;
 
-import javax.ws.rs.BadRequestException;
+import jakarta.ws.rs.BadRequestException;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -37,7 +37,6 @@ import org.osgi.service.component.annotations.ServiceScope;
 	properties = "OSGI-INF/liferay/rest/v1_0/wiki-page-attachment.properties",
 	scope = ServiceScope.PROTOTYPE, service = WikiPageAttachmentResource.class
 )
-@CTAware
 public class WikiPageAttachmentResourceImpl
 	extends BaseWikiPageAttachmentResourceImpl {
 
@@ -52,19 +51,17 @@ public class WikiPageAttachmentResourceImpl
 			_wikiPageService.getLatestPageByExternalReferenceCode(
 				siteId, wikiPageExternalReferenceCode);
 
-		FileEntry fileEntry =
+		_deleteWikiPageAttachment(
 			wikiPage.getAttachmentsFileEntryByExternalReferenceCode(
-				siteId, externalReferenceCode);
-
-		_portletFileRepository.deletePortletFileEntry(
-			fileEntry.getFileEntryId());
+				siteId, externalReferenceCode));
 	}
 
 	@Override
 	public void deleteWikiPageAttachment(Long wikiPageAttachmentId)
 		throws Exception {
 
-		_portletFileRepository.deletePortletFileEntry(wikiPageAttachmentId);
+		_deleteWikiPageAttachment(
+			_portletFileRepository.getPortletFileEntry(wikiPageAttachmentId));
 	}
 
 	@Override
@@ -89,8 +86,15 @@ public class WikiPageAttachmentResourceImpl
 	public WikiPageAttachment getWikiPageAttachment(Long wikiPageAttachmentId)
 		throws Exception {
 
-		return _toWikiPageAttachment(
-			_portletFileRepository.getPortletFileEntry(wikiPageAttachmentId));
+		FileEntry fileEntry = _portletFileRepository.getPortletFileEntry(
+			wikiPageAttachmentId);
+
+		WikiPage wikiPage = _wikiPageService.getPage(
+			_getWikiPageResourcePrimKey(fileEntry));
+
+		_checkAttachmentsFolder(fileEntry, wikiPage);
+
+		return _toWikiPageAttachment(fileEntry);
 	}
 
 	@Override
@@ -151,28 +155,63 @@ public class WikiPageAttachmentResourceImpl
 				binaryFile.getFileName(), binaryFile.getContentType(), true));
 	}
 
+	private void _checkAttachmentsFolder(FileEntry fileEntry, WikiPage wikiPage)
+		throws Exception {
+
+		if (wikiPage.getAttachmentsFolderId() != fileEntry.getFolderId()) {
+			throw new NoSuchFileEntryException(
+				"No file entry exists with file entry ID " +
+					fileEntry.getFileEntryId());
+		}
+	}
+
+	private void _deleteWikiPageAttachment(FileEntry fileEntry)
+		throws Exception {
+
+		WikiPage wikiPage = _wikiPageService.getPage(
+			_getWikiPageResourcePrimKey(fileEntry));
+
+		_checkAttachmentsFolder(fileEntry, wikiPage);
+
+		_wikiPageService.deletePageAttachment(
+			wikiPage.getNodeId(), wikiPage.getTitle(), fileEntry.getTitle());
+	}
+
+	private long _getWikiPageResourcePrimKey(FileEntry fileEntry)
+		throws Exception {
+
+		Folder folder = fileEntry.getFolder();
+
+		if (folder == null) {
+			throw new NoSuchFileEntryException(
+				"No file entry exists with file entry ID " +
+					fileEntry.getFileEntryId());
+		}
+
+		return GetterUtil.getLong(folder.getName());
+	}
+
 	private WikiPageAttachment _toWikiPageAttachment(FileEntry fileEntry)
 		throws Exception {
 
 		return new WikiPageAttachment() {
 			{
-				contentUrl = _portletFileRepository.getPortletFileEntryURL(
-					null, fileEntry, null);
-				contentValue = ContentValueUtil.toContentValue(
-					"contentValue", fileEntry::getContentStream,
-					contextUriInfo);
-				encodingFormat = fileEntry.getMimeType();
-				externalReferenceCode = fileEntry.getExternalReferenceCode();
-				fileExtension = fileEntry.getExtension();
-				id = fileEntry.getFileEntryId();
-				sizeInBytes = fileEntry.getSize();
-				title = fileEntry.getTitle();
+				setContentUrl(
+					() -> _portletFileRepository.getPortletFileEntryURL(
+						null, fileEntry, null));
+				setContentValue(
+					() -> ContentValueUtil.toContentValue(
+						"contentValue", fileEntry::getContentStream,
+						contextUriInfo));
+				setEncodingFormat(fileEntry::getMimeType);
+				setExternalReferenceCode(fileEntry::getExternalReferenceCode);
+				setFileExtension(fileEntry::getExtension);
+				setId(fileEntry::getFileEntryId);
+				setSizeInBytes(fileEntry::getSize);
+				setTitle(fileEntry::getTitle);
 			}
 		};
 	}
-
-	@Reference
-	private DLURLHelper _dlURLHelper;
 
 	@Reference
 	private PortletFileRepository _portletFileRepository;

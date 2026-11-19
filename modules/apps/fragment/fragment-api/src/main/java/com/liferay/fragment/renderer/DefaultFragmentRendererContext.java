@@ -9,10 +9,16 @@ import com.liferay.fragment.constants.FragmentEntryLinkConstants;
 import com.liferay.fragment.model.FragmentEntryLink;
 import com.liferay.info.form.InfoForm;
 import com.liferay.info.item.InfoItemReference;
+import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.util.LocaleUtil;
-import com.liferay.portal.kernel.uuid.PortalUUIDUtil;
+import com.liferay.portal.kernel.util.PortalUtil;
 
+import java.io.Serializable;
+
+import java.util.LinkedHashMap;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -23,7 +29,22 @@ public class DefaultFragmentRendererContext implements FragmentRendererContext {
 	public DefaultFragmentRendererContext(FragmentEntryLink fragmentEntryLink) {
 		_fragmentEntryLink = fragmentEntryLink;
 
-		_fragmentEntryElementId = "fragment-" + PortalUUIDUtil.generate();
+		_fragmentEntryElementId = "fragment-" + PortalUtil.getUniqueElementId();
+	}
+
+	@Override
+	public Serializable getAttribute(String name) {
+		return _attributes.get(name);
+	}
+
+	@Override
+	public Map<String, Serializable> getAttributes() {
+		return _attributes;
+	}
+
+	@Override
+	public Object getContextInfoItem() {
+		return _contextInfoItem;
 	}
 
 	@Override
@@ -57,6 +78,17 @@ public class DefaultFragmentRendererContext implements FragmentRendererContext {
 	}
 
 	@Override
+	public JSONObject getModifiableEditableValuesJSONObject() {
+		if (_modifiableEditableValuesJSONObject == null) {
+			_modifiableEditableValuesJSONObject =
+				JSONFactoryUtil.safeCreateJSONObject(
+					_fragmentEntryLink.getEditableValues());
+		}
+
+		return _modifiableEditableValuesJSONObject;
+	}
+
+	@Override
 	public long getPreviewClassNameId() {
 		return _previewClassNameId;
 	}
@@ -82,21 +114,23 @@ public class DefaultFragmentRendererContext implements FragmentRendererContext {
 	}
 
 	@Override
-	public boolean isEditMode() {
-		if (Objects.equals(getMode(), FragmentEntryLinkConstants.EDIT)) {
-			return true;
-		}
+	public boolean isDisablePortletRender() {
+		return _disablePortletRender;
+	}
 
-		return false;
+	@Override
+	public boolean isEditMode() {
+		return Objects.equals(getMode(), FragmentEntryLinkConstants.EDIT);
 	}
 
 	@Override
 	public boolean isIndexMode() {
-		if (Objects.equals(getMode(), FragmentEntryLinkConstants.INDEX)) {
-			return true;
-		}
+		return Objects.equals(getMode(), FragmentEntryLinkConstants.INDEX);
+	}
 
-		return false;
+	@Override
+	public boolean isPreviewMode() {
+		return Objects.equals(getMode(), FragmentEntryLinkConstants.PREVIEW);
 	}
 
 	@Override
@@ -106,17 +140,29 @@ public class DefaultFragmentRendererContext implements FragmentRendererContext {
 
 	@Override
 	public boolean isViewMode() {
-		if (Objects.equals(getMode(), FragmentEntryLinkConstants.VIEW)) {
-			return true;
-		}
+		return Objects.equals(getMode(), FragmentEntryLinkConstants.VIEW);
+	}
 
-		return false;
+	public void setAttribute(String name, Serializable value) {
+		_attributes.put(name, value);
+	}
+
+	public void setAttributes(Map<String, Serializable> attributes) {
+		_attributes = attributes;
+	}
+
+	public void setContextInfoItem(Object contextInfoItem) {
+		_contextInfoItem = contextInfoItem;
 	}
 
 	public void setContextInfoItemReference(
 		InfoItemReference infoItemReference) {
 
 		_infoItemReference = infoItemReference;
+	}
+
+	public void setDisablePortletRender(boolean disablePortletRender) {
+		_disablePortletRender = disablePortletRender;
 	}
 
 	public void setInfoForm(InfoForm infoForm) {
@@ -155,12 +201,16 @@ public class DefaultFragmentRendererContext implements FragmentRendererContext {
 		_useCachedContent = useCachedContent;
 	}
 
+	private Map<String, Serializable> _attributes = new LinkedHashMap<>();
+	private Object _contextInfoItem;
+	private boolean _disablePortletRender;
 	private final String _fragmentEntryElementId;
 	private final FragmentEntryLink _fragmentEntryLink;
 	private InfoForm _infoForm;
 	private InfoItemReference _infoItemReference;
 	private Locale _locale = LocaleUtil.getMostRelevantLocale();
 	private String _mode = FragmentEntryLinkConstants.VIEW;
+	private JSONObject _modifiableEditableValuesJSONObject;
 	private long _previewClassNameId;
 	private long _previewClassPK;
 	private int _previewType;

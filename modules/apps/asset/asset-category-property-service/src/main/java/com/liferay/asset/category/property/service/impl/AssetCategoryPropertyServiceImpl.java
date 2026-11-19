@@ -7,6 +7,7 @@ package com.liferay.asset.category.property.service.impl;
 
 import com.liferay.asset.category.property.model.AssetCategoryProperty;
 import com.liferay.asset.category.property.service.base.AssetCategoryPropertyServiceBaseImpl;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
@@ -50,7 +51,7 @@ public class AssetCategoryPropertyServiceImpl
 		throws PortalException {
 
 		AssetCategoryProperty assetCategoryProperty =
-			assetCategoryPropertyLocalService.getAssetCategoryProperty(
+			assetCategoryPropertyPersistence.findByPrimaryKey(
 				categoryPropertyId);
 
 		AssetCategoryPermission.check(
@@ -67,7 +68,7 @@ public class AssetCategoryPropertyServiceImpl
 			if (AssetCategoryPermission.contains(
 					getPermissionChecker(), entryId, ActionKeys.VIEW)) {
 
-				return assetCategoryPropertyLocalService.getCategoryProperties(
+				return assetCategoryPropertyPersistence.findByCategoryId(
 					entryId);
 			}
 		}
@@ -98,7 +99,7 @@ public class AssetCategoryPropertyServiceImpl
 		throws PortalException {
 
 		AssetCategoryProperty assetCategoryProperty =
-			assetCategoryPropertyLocalService.getAssetCategoryProperty(
+			assetCategoryPropertyPersistence.findByPrimaryKey(
 				categoryPropertyId);
 
 		AssetCategoryPermission.check(
@@ -120,32 +121,29 @@ public class AssetCategoryPropertyServiceImpl
 	private List<AssetCategoryProperty> _filterAssetCategoryProperties(
 		List<AssetCategoryProperty> assetCategoryProperties) {
 
-		List<AssetCategoryProperty> filteredAssetCategoryProperties =
-			new ArrayList<>(assetCategoryProperties.size());
+		return TransformUtil.transform(
+			assetCategoryProperties,
+			assetCategoryProperty -> {
+				try {
+					if (AssetCategoryPermission.contains(
+							getPermissionChecker(),
+							assetCategoryProperty.getCategoryId(),
+							ActionKeys.VIEW)) {
 
-		for (AssetCategoryProperty assetCategoryProperty :
-				assetCategoryProperties) {
-
-			try {
-				if (AssetCategoryPermission.contains(
-						getPermissionChecker(),
-						assetCategoryProperty.getCategoryId(),
-						ActionKeys.VIEW)) {
-
-					filteredAssetCategoryProperties.add(assetCategoryProperty);
+						return assetCategoryProperty;
+					}
 				}
-			}
-			catch (PortalException portalException) {
+				catch (PortalException portalException) {
 
-				// LPS-52675
+					// LPS-52675
 
-				if (_log.isDebugEnabled()) {
-					_log.debug(portalException);
+					if (_log.isDebugEnabled()) {
+						_log.debug(portalException);
+					}
 				}
-			}
-		}
 
-		return filteredAssetCategoryProperties;
+				return null;
+			});
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(

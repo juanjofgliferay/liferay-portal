@@ -12,13 +12,13 @@ import com.liferay.portal.kernel.servlet.ServletContextPool;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.spring.context.PortalContextLoaderListener;
 
+import jakarta.servlet.DispatcherType;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequestWrapper;
+
 import java.util.HashSet;
 import java.util.Set;
-
-import javax.servlet.DispatcherType;
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletRequestWrapper;
 
 /**
  * @author Dante Wang
@@ -128,19 +128,20 @@ public class AsyncPortletServletRequest extends HttpServletRequestWrapper {
 			}
 
 			for (String urlPattern : _portalServletURLPatterns) {
-				if (urlPattern.endsWith("/*")) {
-					int length = urlPattern.length() - 2;
+				if (!urlPattern.endsWith("/*")) {
+					continue;
+				}
 
-					if ((pathNoQueryString.length() > length) &&
-						pathNoQueryString.regionMatches(
-							0, urlPattern, 0, length) &&
-						(pathNoQueryString.charAt(length) == CharPool.SLASH)) {
+				int length = urlPattern.length() - 2;
 
-						pathInfo = pathNoQueryString.substring(length);
-						servletPath = urlPattern.substring(0, length);
+				if ((pathNoQueryString.length() > length) &&
+					pathNoQueryString.regionMatches(0, urlPattern, 0, length) &&
+					(pathNoQueryString.charAt(length) == CharPool.SLASH)) {
 
-						break;
-					}
+					pathInfo = pathNoQueryString.substring(length);
+					servletPath = urlPattern.substring(0, length);
+
+					break;
 				}
 			}
 

@@ -5,20 +5,28 @@
 
 package com.liferay.portal.kernel.portlet.render;
 
+import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.frontend.hashed.files.HashedFilesRegistryUtil;
+import com.liferay.portal.kernel.frontend.hashed.files.HashedFilesUtil;
 import com.liferay.portal.kernel.model.Portlet;
-import com.liferay.portal.kernel.model.Theme;
+import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
-import com.liferay.portal.kernel.util.StringBundler;
 import com.liferay.portal.kernel.util.WebKeys;
+
+import jakarta.servlet.http.HttpServletRequest;
+
+import java.io.ByteArrayInputStream;
+
+import java.net.URL;
+
+import java.nio.charset.StandardCharsets;
 
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -38,14 +46,16 @@ public class PortletRenderUtilTest {
 
 	@After
 	public void tearDown() {
+		_hashedFilesRegistryUtilMockedStatic.close();
+
 		_htmlUtilMockedStatic.close();
 
 		_portalUtilMockedStatic.close();
 	}
 
 	@Test
-	public void testGetPortletRenderParts() {
-		_setUpMocks(false, "");
+	public void testGetPortletRenderParts() throws Exception {
+		_setUpMocks(StringPool.BLANK, StringPool.BLANK);
 
 		String portletHTML = "<div>Hola</div>";
 
@@ -55,45 +65,57 @@ public class PortletRenderUtilTest {
 
 		_assertEquals(
 			Arrays.asList(
-				"/header-portal.css?t=7",
-				"/o/portlet-web/header-portlet.css?t=7",
+				"/header-portal.(" + _HASH + ").css",
+				"/header-portal.tokenized.(" + _HASH +
+					").css?themeId=classic_WAR_classictheme",
+				"/nocombo-header-portal.(" + _HASH + ").css",
+				"/o/portlet-web/header-portlet.(" + _HASH + ").css",
+				"/o/portlet-web/header-portlet.tokenized.(" + _HASH +
+					").css?themeId=classic_WAR_classictheme",
+				"/o/portlet-web/nocombo-header-portlet.(" + _HASH + ").css",
 				"http://example.com/header-portal.css",
-				"http://example.com/header-portlet.css",
-				"nocombo:/header-portal.css?t=7",
-				"nocombo:/o/portlet-web/header-portlet.css?t=7"),
+				"http://example.com/header-portlet.css"),
 			portletRenderParts.getHeaderCssPaths());
 		_assertEquals(
 			Arrays.asList(
-				"/header-portal.js?t=7", "/o/portlet-web/header-portlet.js?t=7",
+				"/header-portal.(" + _HASH + ").js",
+				"/nocombo-header-portal.(" + _HASH + ").js",
+				"/o/portlet-web/header-portlet.(" + _HASH + ").js",
+				"/o/portlet-web/nocombo-header-portlet.(" + _HASH + ").js",
 				"http://example.com/header-portal.js",
 				"http://example.com/header-portlet.js",
-				"nocombo:/header-portal.js?t=7",
-				"nocombo:/o/portlet-web/header-portlet.js?t=7",
-				"module:/header-portal.js?t=7",
-				"module:/o/portlet-web/header-portlet.js?t=7",
-				"module:http://example.com/header-portal.js",
-				"module:http://example.com/header-portlet.js"),
+				"module:/module-header-portal.(" + _HASH + ").js",
+				"module:/o/portlet-web/module-header-portlet.(" + _HASH +
+					").js",
+				"module:http://example.com/module-header-portal.js",
+				"module:http://example.com/module-header-portlet.js"),
 			portletRenderParts.getHeaderJavaScriptPaths());
 		_assertEquals(
 			Arrays.asList(
-				"/footer-portal.js?t=7", "/o/portlet-web/footer-portlet.js?t=7",
+				"/footer-portal.(" + _HASH + ").js",
+				"/nocombo-footer-portal.(" + _HASH + ").js",
+				"/o/portlet-web/footer-portlet.(" + _HASH + ").js",
+				"/o/portlet-web/nocombo-footer-portlet.(" + _HASH + ").js",
 				"http://example.com/footer-portal.js",
 				"http://example.com/footer-portlet.js",
-				"module:/footer-portal.js?t=7",
-				"module:/o/portlet-web/footer-portlet.js?t=7",
-				"module:http://example.com/footer-portal.js",
-				"module:http://example.com/footer-portlet.js",
-				"nocombo:/footer-portal.js?t=7",
-				"nocombo:/o/portlet-web/footer-portlet.js?t=7"),
+				"module:/module-footer-portal.(" + _HASH + ").js",
+				"module:/o/portlet-web/module-footer-portlet.(" + _HASH +
+					").js",
+				"module:http://example.com/module-footer-portal.js",
+				"module:http://example.com/module-footer-portlet.js"),
 			portletRenderParts.getFooterJavaScriptPaths());
 		_assertEquals(
 			Arrays.asList(
-				"/footer-portal.css?t=7",
-				"/o/portlet-web/footer-portlet.css?t=7",
+				"/footer-portal.(" + _HASH + ").css",
+				"/footer-portal.tokenized.(" + _HASH +
+					").css?themeId=classic_WAR_classictheme",
+				"/nocombo-footer-portal.(" + _HASH + ").css",
+				"/o/portlet-web/footer-portlet.(" + _HASH + ").css",
+				"/o/portlet-web/footer-portlet.tokenized.(" + _HASH +
+					").css?themeId=classic_WAR_classictheme",
+				"/o/portlet-web/nocombo-footer-portlet.(" + _HASH + ").css",
 				"http://example.com/footer-portal.css",
-				"http://example.com/footer-portlet.css",
-				"nocombo:/footer-portal.css?t=7",
-				"nocombo:/o/portlet-web/footer-portlet.css?t=7"),
+				"http://example.com/footer-portlet.css"),
 			portletRenderParts.getFooterCssPaths());
 
 		Assert.assertEquals(portletHTML, portletRenderParts.getPortletHTML());
@@ -101,8 +123,8 @@ public class PortletRenderUtilTest {
 	}
 
 	@Test
-	public void testGetPortletRenderPartsWithContext() {
-		_setUpMocks(false, "/portal");
+	public void testGetPortletRenderPartsWithContext() throws Exception {
+		_setUpMocks("/portal", StringPool.BLANK);
 
 		String portletHTML = "<div>Hola</div>";
 
@@ -112,47 +134,61 @@ public class PortletRenderUtilTest {
 
 		_assertEquals(
 			Arrays.asList(
-				"/portal/header-portal.css?t=7",
-				"/portal/o/portlet-web/header-portlet.css?t=7",
+				"/portal/header-portal.(" + _HASH + ").css",
+				"/portal/header-portal.tokenized.(" + _HASH +
+					").css?themeId=classic_WAR_classictheme",
+				"/portal/nocombo-header-portal.(" + _HASH + ").css",
+				"/portal/o/portlet-web/header-portlet.(" + _HASH + ").css",
+				"/portal/o/portlet-web/header-portlet.tokenized.(" + _HASH +
+					").css?themeId=classic_WAR_classictheme",
+				"/portal/o/portlet-web/nocombo-header-portlet.(" + _HASH +
+					").css",
 				"http://example.com/header-portal.css",
-				"http://example.com/header-portlet.css",
-				"nocombo:/portal/header-portal.css?t=7",
-				"nocombo:/portal/o/portlet-web/header-portlet.css?t=7"),
+				"http://example.com/header-portlet.css"),
 			portletRenderParts.getHeaderCssPaths());
 		_assertEquals(
 			Arrays.asList(
-				"/portal/header-portal.js?t=7",
-				"/portal/o/portlet-web/header-portlet.js?t=7",
+				"/portal/header-portal.(" + _HASH + ").js",
+				"/portal/nocombo-header-portal.(" + _HASH + ").js",
+				"/portal/o/portlet-web/header-portlet.(" + _HASH + ").js",
+				"/portal/o/portlet-web/nocombo-header-portlet.(" + _HASH +
+					").js",
 				"http://example.com/header-portal.js",
 				"http://example.com/header-portlet.js",
-				"module:/portal/header-portal.js?t=7",
-				"module:/portal/o/portlet-web/header-portlet.js?t=7",
-				"module:http://example.com/header-portal.js",
-				"module:http://example.com/header-portlet.js",
-				"nocombo:/portal/header-portal.js?t=7",
-				"nocombo:/portal/o/portlet-web/header-portlet.js?t=7"),
+				"module:/portal/module-header-portal.(" + _HASH + ").js",
+				"module:/portal/o/portlet-web/module-header-portlet.(" + _HASH +
+					").js",
+				"module:http://example.com/module-header-portal.js",
+				"module:http://example.com/module-header-portlet.js"),
 			portletRenderParts.getHeaderJavaScriptPaths());
 		_assertEquals(
 			Arrays.asList(
-				"/portal/footer-portal.css?t=7",
-				"/portal/o/portlet-web/footer-portlet.css?t=7",
+				"/portal/footer-portal.(" + _HASH + ").css",
+				"/portal/footer-portal.tokenized.(" + _HASH +
+					").css?themeId=classic_WAR_classictheme",
+				"/portal/nocombo-footer-portal.(" + _HASH + ").css",
+				"/portal/o/portlet-web/footer-portlet.(" + _HASH + ").css",
+				"/portal/o/portlet-web/footer-portlet.tokenized.(" + _HASH +
+					").css?themeId=classic_WAR_classictheme",
+				"/portal/o/portlet-web/nocombo-footer-portlet.(" + _HASH +
+					").css",
 				"http://example.com/footer-portal.css",
-				"http://example.com/footer-portlet.css",
-				"nocombo:/portal/footer-portal.css?t=7",
-				"nocombo:/portal/o/portlet-web/footer-portlet.css?t=7"),
+				"http://example.com/footer-portlet.css"),
 			portletRenderParts.getFooterCssPaths());
 		_assertEquals(
 			Arrays.asList(
-				"/portal/footer-portal.js?t=7",
-				"/portal/o/portlet-web/footer-portlet.js?t=7",
+				"/portal/footer-portal.(" + _HASH + ").js",
+				"/portal/nocombo-footer-portal.(" + _HASH + ").js",
+				"/portal/o/portlet-web/footer-portlet.(" + _HASH + ").js",
+				"/portal/o/portlet-web/nocombo-footer-portlet.(" + _HASH +
+					").js",
 				"http://example.com/footer-portal.js",
 				"http://example.com/footer-portlet.js",
-				"module:/portal/footer-portal.js?t=7",
-				"module:/portal/o/portlet-web/footer-portlet.js?t=7",
-				"module:http://example.com/footer-portal.js",
-				"module:http://example.com/footer-portlet.js",
-				"nocombo:/portal/footer-portal.js?t=7",
-				"nocombo:/portal/o/portlet-web/footer-portlet.js?t=7"),
+				"module:/portal/module-footer-portal.(" + _HASH + ").js",
+				"module:/portal/o/portlet-web/module-footer-portlet.(" + _HASH +
+					").js",
+				"module:http://example.com/module-footer-portal.js",
+				"module:http://example.com/module-footer-portlet.js"),
 			portletRenderParts.getFooterJavaScriptPaths());
 
 		Assert.assertEquals(portletHTML, portletRenderParts.getPortletHTML());
@@ -160,8 +196,10 @@ public class PortletRenderUtilTest {
 	}
 
 	@Test
-	public void testGetPortletRenderPartsWithContextAndFastLoad() {
-		_setUpMocks(true, "/portal");
+	public void testGetPortletRenderPartsWithContextAndProxy()
+		throws Exception {
+
+		_setUpMocks("/portal", "/proxy");
 
 		String portletHTML = "<div>Hola</div>";
 
@@ -171,55 +209,63 @@ public class PortletRenderUtilTest {
 
 		_assertEquals(
 			Arrays.asList(
+				"/proxy/portal/header-portal.(" + _HASH + ").css",
+				"/proxy/portal/header-portal.tokenized.(" + _HASH +
+					").css?themeId=classic_WAR_classictheme",
+				"/proxy/portal/nocombo-header-portal.(" + _HASH + ").css",
+				"/proxy/portal/o/portlet-web/header-portlet.(" + _HASH +
+					").css",
+				"/proxy/portal/o/portlet-web/header-portlet.tokenized.(" +
+					_HASH + ").css?themeId=classic_WAR_classictheme",
+				"/proxy/portal/o/portlet-web/nocombo-header-portlet.(" + _HASH +
+					").css",
 				"http://example.com/header-portal.css",
-				"http://example.com/header-portlet.css",
-				"nocombo:/portal/header-portal.css",
-				"nocombo:/portal/o/portlet-web/header-portlet.css",
-				StringBundler.concat(
-					"/portal/combo?minifierType=css&themeId=theme_id&",
-					"com.liferay.portlet.1:/portal/o/portlet-web",
-					"/header-portlet.css&/portal/header-portal.css&t=8")),
+				"http://example.com/header-portlet.css"),
 			portletRenderParts.getHeaderCssPaths());
 		_assertEquals(
 			Arrays.asList(
+				"/proxy/portal/header-portal.(" + _HASH + ").js",
+				"/proxy/portal/nocombo-header-portal.(" + _HASH + ").js",
+				"/proxy/portal/o/portlet-web/header-portlet.(" + _HASH + ").js",
+				"/proxy/portal/o/portlet-web/nocombo-header-portlet.(" + _HASH +
+					").js",
 				"http://example.com/header-portal.js",
 				"http://example.com/header-portlet.js",
-				"module:http://example.com/header-portal.js",
-				"module:http://example.com/header-portlet.js",
-				"module:/portal/header-portal.js",
-				"module:/portal/o/portlet-web/header-portlet.js",
-				"nocombo:/portal/header-portal.js",
-				"nocombo:/portal/o/portlet-web/header-portlet.js",
-				StringBundler.concat(
-					"/portal/combo?minifierType=js&themeId=theme_id&",
-					"com.liferay.portlet.1:/portal/o/portlet-web",
-					"/header-portlet.js&/portal/header-portal.js&t=8")),
+				"module:/proxy/portal/module-header-portal.(" + _HASH + ").js",
+				"module:/proxy/portal/o/portlet-web/module-header-portlet.(" +
+					_HASH + ").js",
+				"module:http://example.com/module-header-portal.js",
+				"module:http://example.com/module-header-portlet.js"),
 			portletRenderParts.getHeaderJavaScriptPaths());
 		_assertEquals(
 			Arrays.asList(
+				"/proxy/portal/footer-portal.(" + _HASH + ").css",
+				"/proxy/portal/footer-portal.tokenized.(" + _HASH +
+					").css?themeId=classic_WAR_classictheme",
+				"/proxy/portal/nocombo-footer-portal.(" + _HASH + ").css",
+				"/proxy/portal/o/portlet-web/footer-portlet.(" + _HASH +
+					").css",
+				"/proxy/portal/o/portlet-web/footer-portlet.tokenized.(" +
+					_HASH + ").css?themeId=classic_WAR_classictheme",
+				"/proxy/portal/o/portlet-web/nocombo-footer-portlet.(" + _HASH +
+					").css",
 				"http://example.com/footer-portal.css",
-				"http://example.com/footer-portlet.css",
-				"nocombo:/portal/footer-portal.css",
-				"nocombo:/portal/o/portlet-web/footer-portlet.css",
-				StringBundler.concat(
-					"/portal/combo?minifierType=css&themeId=theme_id&",
-					"com.liferay.portlet.1:/portal/o/portlet-web",
-					"/footer-portlet.css&/portal/footer-portal.css&t=8")),
+				"http://example.com/footer-portlet.css"),
 			portletRenderParts.getFooterCssPaths());
 		_assertEquals(
 			Arrays.asList(
+				"/proxy/portal/footer-portal.(" + _HASH + ").js",
+				"/proxy/portal/nocombo-footer-portal.(" + _HASH + ").js",
+				"/proxy/portal/o/portlet-web/footer-portlet.(" + _HASH + ").js",
+				"/proxy/portal/o/portlet-web/nocombo-footer-portlet.(" + _HASH +
+					").js",
 				"http://example.com/footer-portal.js",
 				"http://example.com/footer-portlet.js",
-				"module:/portal/footer-portal.js",
-				"module:/portal/o/portlet-web/footer-portlet.js",
-				"module:http://example.com/footer-portal.js",
-				"module:http://example.com/footer-portlet.js",
-				"nocombo:/portal/footer-portal.js",
-				"nocombo:/portal/o/portlet-web/footer-portlet.js",
-				StringBundler.concat(
-					"/portal/combo?minifierType=js&themeId=theme_id&",
-					"com.liferay.portlet.1:/portal/o/portlet-web",
-					"/footer-portlet.js&/portal/footer-portal.js&t=8")),
+				"module:/proxy/portal/module-footer-portal.(" + _HASH + ").js",
+				"module:/proxy/portal/o/portlet-web/module-footer-portlet.(" +
+					_HASH + ").js",
+				"module:http://example.com/module-footer-portal.js",
+				"module:http://example.com/module-footer-portlet.js"),
 			portletRenderParts.getFooterJavaScriptPaths());
 
 		Assert.assertEquals(portletHTML, portletRenderParts.getPortletHTML());
@@ -227,8 +273,8 @@ public class PortletRenderUtilTest {
 	}
 
 	@Test
-	public void testGetPortletRenderPartsWithFastLoad() {
-		_setUpMocks(true, "");
+	public void testGetPortletRenderPartsWithProxy() throws Exception {
+		_setUpMocks(StringPool.BLANK, "/proxy");
 
 		String portletHTML = "<div>Hola</div>";
 
@@ -238,55 +284,61 @@ public class PortletRenderUtilTest {
 
 		_assertEquals(
 			Arrays.asList(
+				"/proxy/header-portal.(" + _HASH + ").css",
+				"/proxy/header-portal.tokenized.(" + _HASH +
+					").css?themeId=classic_WAR_classictheme",
+				"/proxy/nocombo-header-portal.(" + _HASH + ").css",
+				"/proxy/o/portlet-web/header-portlet.(" + _HASH + ").css",
+				"/proxy/o/portlet-web/header-portlet.tokenized.(" + _HASH +
+					").css?themeId=classic_WAR_classictheme",
+				"/proxy/o/portlet-web/nocombo-header-portlet.(" + _HASH +
+					").css",
 				"http://example.com/header-portal.css",
-				"http://example.com/header-portlet.css",
-				"nocombo:/header-portal.css",
-				"nocombo:/o/portlet-web/header-portlet.css",
-				StringBundler.concat(
-					"/combo?minifierType=css&themeId=theme_id&",
-					"com.liferay.portlet.1:/o/portlet-web/header-portlet.css&",
-					"/header-portal.css&t=8")),
+				"http://example.com/header-portlet.css"),
 			portletRenderParts.getHeaderCssPaths());
 		_assertEquals(
 			Arrays.asList(
+				"/proxy/header-portal.(" + _HASH + ").js",
+				"/proxy/nocombo-header-portal.(" + _HASH + ").js",
+				"/proxy/o/portlet-web/header-portlet.(" + _HASH + ").js",
+				"/proxy/o/portlet-web/nocombo-header-portlet.(" + _HASH +
+					").js",
 				"http://example.com/header-portal.js",
 				"http://example.com/header-portlet.js",
-				"module:http://example.com/header-portal.js",
-				"module:http://example.com/header-portlet.js",
-				"module:/header-portal.js",
-				"module:/o/portlet-web/header-portlet.js",
-				"nocombo:/header-portal.js",
-				"nocombo:/o/portlet-web/header-portlet.js",
-				StringBundler.concat(
-					"/combo?minifierType=js&themeId=theme_id&",
-					"com.liferay.portlet.1:/o/portlet-web/header-portlet.js&",
-					"/header-portal.js&t=8")),
+				"module:/proxy/module-header-portal.(" + _HASH + ").js",
+				"module:/proxy/o/portlet-web/module-header-portlet.(" + _HASH +
+					").js",
+				"module:http://example.com/module-header-portal.js",
+				"module:http://example.com/module-header-portlet.js"),
 			portletRenderParts.getHeaderJavaScriptPaths());
 		_assertEquals(
 			Arrays.asList(
+				"/proxy/footer-portal.(" + _HASH + ").css",
+				"/proxy/footer-portal.tokenized.(" + _HASH +
+					").css?themeId=classic_WAR_classictheme",
+				"/proxy/nocombo-footer-portal.(" + _HASH + ").css",
+				"/proxy/o/portlet-web/footer-portlet.(" + _HASH + ").css",
+				"/proxy/o/portlet-web/footer-portlet.tokenized.(" + _HASH +
+					").css?themeId=classic_WAR_classictheme",
+				"/proxy/o/portlet-web/nocombo-footer-portlet.(" + _HASH +
+					").css",
 				"http://example.com/footer-portal.css",
-				"http://example.com/footer-portlet.css",
-				"nocombo:/footer-portal.css",
-				"nocombo:/o/portlet-web/footer-portlet.css",
-				StringBundler.concat(
-					"/combo?minifierType=css&themeId=theme_id&",
-					"com.liferay.portlet.1:/o/portlet-web/footer-portlet.css&",
-					"/footer-portal.css&t=8")),
+				"http://example.com/footer-portlet.css"),
 			portletRenderParts.getFooterCssPaths());
 		_assertEquals(
 			Arrays.asList(
+				"/proxy/footer-portal.(" + _HASH + ").js",
+				"/proxy/nocombo-footer-portal.(" + _HASH + ").js",
+				"/proxy/o/portlet-web/footer-portlet.(" + _HASH + ").js",
+				"/proxy/o/portlet-web/nocombo-footer-portlet.(" + _HASH +
+					").js",
 				"http://example.com/footer-portal.js",
 				"http://example.com/footer-portlet.js",
-				"module:http://example.com/footer-portal.js",
-				"module:http://example.com/footer-portlet.js",
-				"module:/footer-portal.js",
-				"module:/o/portlet-web/footer-portlet.js",
-				"nocombo:/footer-portal.js",
-				"nocombo:/o/portlet-web/footer-portlet.js",
-				StringBundler.concat(
-					"/combo?minifierType=js&themeId=theme_id&",
-					"com.liferay.portlet.1:/o/portlet-web/footer-portlet.js&",
-					"/footer-portal.js&t=8")),
+				"module:/proxy/module-footer-portal.(" + _HASH + ").js",
+				"module:/proxy/o/portlet-web/module-footer-portlet.(" + _HASH +
+					").js",
+				"module:http://example.com/module-footer-portal.js",
+				"module:http://example.com/module-footer-portlet.js"),
 			portletRenderParts.getFooterJavaScriptPaths());
 
 		Assert.assertEquals(portletHTML, portletRenderParts.getPortletHTML());
@@ -308,7 +360,42 @@ public class PortletRenderUtilTest {
 			"Nonempty expected set " + expectedSet, expectedSet.isEmpty());
 	}
 
-	private void _setUpMocks(boolean fastLoad, String pathContext) {
+	private void _setUpMocks(String contextPath, String proxyPath)
+		throws Exception {
+
+		// HashedFilesRegistryUtil
+
+		_hashedFilesRegistryUtilMockedStatic.when(
+			() -> HashedFilesRegistryUtil.getHashedFileURI(Mockito.anyString())
+		).thenAnswer(
+			invocationOnMock -> HashedFilesUtil.addHash(
+				invocationOnMock.getArgument(0), _HASH)
+		);
+
+		_hashedFilesRegistryUtilMockedStatic.when(
+			() -> HashedFilesRegistryUtil.getResource(Mockito.anyString())
+		).thenAnswer(
+			(Answer<URL>)invocationOnMock -> {
+				URL url = Mockito.mock(URL.class);
+
+				String content = StringPool.BLANK;
+
+				String fileURI = invocationOnMock.getArgument(0);
+
+				if (fileURI.contains(".tokenized.")) {
+					content = "@theme_image_path@";
+				}
+
+				Mockito.when(
+					url.openStream()
+				).thenReturn(
+					new ByteArrayInputStream(
+						content.getBytes(StandardCharsets.UTF_8))
+				);
+
+				return url;
+			}
+		);
 
 		// HtmlUtil
 
@@ -330,13 +417,13 @@ public class PortletRenderUtilTest {
 		_portalUtilMockedStatic.when(
 			PortalUtil::getPathContext
 		).thenReturn(
-			pathContext
+			proxyPath + contextPath
 		);
 
 		_portalUtilMockedStatic.when(
 			PortalUtil::getPathProxy
 		).thenReturn(
-			""
+			proxyPath
 		);
 
 		_portalUtilMockedStatic.when(
@@ -363,60 +450,12 @@ public class PortletRenderUtilTest {
 		);
 
 		_portalUtilMockedStatic.when(
-			() -> PortalUtil.getStaticResourceURL(
-				Mockito.any(HttpServletRequest.class), Mockito.anyString(),
-				Mockito.anyString(), Mockito.anyLong())
-		).thenAnswer(
-			new Answer<String>() {
-
-				@Override
-				public String answer(InvocationOnMock invocationOnMock) {
-					String uri = invocationOnMock.getArgument(1, String.class);
-					String queryString = invocationOnMock.getArgument(
-						2, String.class);
-					long timestamp = invocationOnMock.getArgument(
-						3, Long.class);
-
-					if (timestamp < 0) {
-						return uri + "?" + queryString;
-					}
-
-					return StringBundler.concat(
-						uri, "?", queryString, "&t=",
-						String.valueOf(timestamp));
-				}
-
-			}
-		);
-
-		_portalUtilMockedStatic.when(
 			() -> PortalUtil.stripURLAnchor(
 				Mockito.anyString(), Mockito.anyString())
 		).thenAnswer(
-			new Answer<String[]>() {
-
-				@Override
-				public String[] answer(InvocationOnMock invocationOnMock) {
-					String url = invocationOnMock.getArgument(0, String.class);
-					String separator = invocationOnMock.getArgument(
-						1, String.class);
-
-					String[] parts = url.split(separator);
-
-					return new String[] {parts[0], ""};
-				}
-
+			(Answer<String[]>)invocationOnMock -> new String[] {
+				invocationOnMock.getArgument(0), StringPool.BLANK
 			}
-		);
-
-		// Theme
-
-		Theme theme = Mockito.mock(Theme.class);
-
-		Mockito.when(
-			theme.getTimestamp()
-		).thenReturn(
-			8L
 		);
 
 		// ThemeDisplay
@@ -430,39 +469,9 @@ public class PortletRenderUtilTest {
 		);
 
 		Mockito.when(
-			themeDisplay.getCDNDynamicResourcesHost()
-		).thenReturn(
-			""
-		);
-
-		Mockito.when(
-			themeDisplay.getPathContext()
-		).thenReturn(
-			pathContext
-		);
-
-		Mockito.when(
-			themeDisplay.getTheme()
-		).thenReturn(
-			theme
-		);
-
-		Mockito.when(
 			themeDisplay.getThemeId()
 		).thenReturn(
-			"theme_id"
-		);
-
-		Mockito.when(
-			themeDisplay.isThemeCssFastLoad()
-		).thenReturn(
-			fastLoad
-		);
-
-		Mockito.when(
-			themeDisplay.isThemeJsFastLoad()
-		).thenReturn(
-			fastLoad
+			"classic_WAR_classictheme"
 		);
 
 		// HttpServletRequest
@@ -486,79 +495,83 @@ public class PortletRenderUtilTest {
 		Mockito.when(
 			_portlet.getContextPath()
 		).thenReturn(
-			pathContext + "/o/portlet-web"
+			contextPath + "/o/portlet-web"
 		);
 
 		Mockito.when(
 			_portlet.getFooterPortalCss()
 		).thenReturn(
 			Arrays.asList(
-				"/footer-portal.css", "nocombo:/footer-portal.css",
-				"http://example.com/footer-portal.css")
+				"/footer-portal.css", "/footer-portal.tokenized.css",
+				"http://example.com/footer-portal.css",
+				"nocombo:/nocombo-footer-portal.css")
 		);
 
 		Mockito.when(
 			_portlet.getFooterPortalJavaScript()
 		).thenReturn(
 			Arrays.asList(
-				"/footer-portal.js", "module:/footer-portal.js",
-				"nocombo:/footer-portal.js",
-				"http://example.com/footer-portal.js",
-				"module:http://example.com/footer-portal.js")
+				"/footer-portal.js", "http://example.com/footer-portal.js",
+				"module:/module-footer-portal.js",
+				"module:http://example.com/module-footer-portal.js",
+				"nocombo:/nocombo-footer-portal.js")
 		);
 
 		Mockito.when(
 			_portlet.getFooterPortletCss()
 		).thenReturn(
 			Arrays.asList(
-				"/footer-portlet.css", "nocombo:/footer-portlet.css",
-				"http://example.com/footer-portlet.css")
+				"/footer-portlet.css", "/footer-portlet.tokenized.css",
+				"http://example.com/footer-portlet.css",
+				"nocombo:/nocombo-footer-portlet.css")
 		);
 
 		Mockito.when(
 			_portlet.getFooterPortletJavaScript()
 		).thenReturn(
 			Arrays.asList(
-				"/footer-portlet.js", "module:/footer-portlet.js",
-				"nocombo:/footer-portlet.js",
-				"http://example.com/footer-portlet.js",
-				"module:http://example.com/footer-portlet.js")
+				"/footer-portlet.js", "http://example.com/footer-portlet.js",
+				"module:/module-footer-portlet.js",
+				"module:http://example.com/module-footer-portlet.js",
+				"nocombo:/nocombo-footer-portlet.js")
 		);
 
 		Mockito.when(
 			_portlet.getHeaderPortalCss()
 		).thenReturn(
 			Arrays.asList(
-				"/header-portal.css", "nocombo:/header-portal.css",
-				"http://example.com/header-portal.css")
+				"/header-portal.css", "/header-portal.tokenized.css",
+				"http://example.com/header-portal.css",
+				"nocombo:/nocombo-header-portal.css")
 		);
 
 		Mockito.when(
 			_portlet.getHeaderPortalJavaScript()
 		).thenReturn(
 			Arrays.asList(
-				"/header-portal.js", "module:/header-portal.js",
-				"nocombo:/header-portal.js",
-				"http://example.com/header-portal.js",
-				"module:http://example.com/header-portal.js")
+				"/header-portal.js", "http://example.com/header-portal.js",
+				"module:/module-header-portal.js",
+				"module:http://example.com/module-header-portal.js",
+				"nocombo:/nocombo-header-portal.js")
 		);
 
 		Mockito.when(
 			_portlet.getHeaderPortletCss()
 		).thenReturn(
 			Arrays.asList(
-				"/header-portlet.css", "nocombo:/header-portlet.css",
-				"http://example.com/header-portlet.css")
+				"/header-portlet.css", "/header-portlet.tokenized.css",
+				"http://example.com/header-portlet.css",
+				"nocombo:/nocombo-header-portlet.css")
 		);
 
 		Mockito.when(
 			_portlet.getHeaderPortletJavaScript()
 		).thenReturn(
 			Arrays.asList(
-				"/header-portlet.js", "module:/header-portlet.js",
-				"nocombo:/header-portlet.js",
-				"http://example.com/header-portlet.js",
-				"module:http://example.com/header-portlet.js")
+				"/header-portlet.js", "http://example.com/header-portlet.js",
+				"module:/module-header-portlet.js",
+				"module:http://example.com/module-header-portlet.js",
+				"nocombo:/nocombo-header-portlet.js")
 		);
 
 		Mockito.when(
@@ -586,6 +599,11 @@ public class PortletRenderUtilTest {
 		);
 	}
 
+	private static final String _HASH = RandomTestUtil.randomString(8);
+
+	private final MockedStatic<HashedFilesRegistryUtil>
+		_hashedFilesRegistryUtilMockedStatic = Mockito.mockStatic(
+			HashedFilesRegistryUtil.class);
 	private final MockedStatic<HtmlUtil> _htmlUtilMockedStatic =
 		Mockito.mockStatic(HtmlUtil.class);
 	private final HttpServletRequest _httpServletRequest =

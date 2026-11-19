@@ -11,12 +11,13 @@ import com.liferay.frontend.editor.embed.EditorEmbedProvider;
 import com.liferay.frontend.editor.embed.constants.EditorEmbedProviderTypeConstants;
 import com.liferay.osgi.service.tracker.collections.list.ServiceTrackerList;
 import com.liferay.osgi.service.tracker.collections.list.ServiceTrackerListFactory;
+import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.StringUtil;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.service.component.annotations.Activate;
@@ -54,7 +55,7 @@ public class EditorEmbedProviderDLVideoExternalShortcutProvider
 
 							return StringUtil.replace(
 								videoEditorEmbedProvider.getTpl(), "{embedId}",
-								matcher.group(1));
+								HtmlUtil.escapeAttribute(matcher.group(1)));
 						}
 
 					};

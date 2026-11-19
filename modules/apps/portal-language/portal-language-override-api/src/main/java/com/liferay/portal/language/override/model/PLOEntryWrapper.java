@@ -34,9 +34,11 @@ public class PLOEntryWrapper
 		Map<String, Object> attributes = new HashMap<String, Object>();
 
 		attributes.put("mvccVersion", getMvccVersion());
+		attributes.put("externalReferenceCode", getExternalReferenceCode());
 		attributes.put("ploEntryId", getPloEntryId());
 		attributes.put("companyId", getCompanyId());
 		attributes.put("userId", getUserId());
+		attributes.put("userName", getUserName());
 		attributes.put("createDate", getCreateDate());
 		attributes.put("modifiedDate", getModifiedDate());
 		attributes.put("key", getKey());
@@ -52,6 +54,13 @@ public class PLOEntryWrapper
 
 		if (mvccVersion != null) {
 			setMvccVersion(mvccVersion);
+		}
+
+		String externalReferenceCode = (String)attributes.get(
+			"externalReferenceCode");
+
+		if (externalReferenceCode != null) {
+			setExternalReferenceCode(externalReferenceCode);
 		}
 
 		Long ploEntryId = (Long)attributes.get("ploEntryId");
@@ -70,6 +79,12 @@ public class PLOEntryWrapper
 
 		if (userId != null) {
 			setUserId(userId);
+		}
+
+		String userName = (String)attributes.get("userName");
+
+		if (userName != null) {
+			setUserName(userName);
 		}
 
 		Date createDate = (Date)attributes.get("createDate");
@@ -126,6 +141,16 @@ public class PLOEntryWrapper
 	@Override
 	public Date getCreateDate() {
 		return model.getCreateDate();
+	}
+
+	/**
+	 * Returns the external reference code of this plo entry.
+	 *
+	 * @return the external reference code of this plo entry
+	 */
+	@Override
+	public String getExternalReferenceCode() {
+		return model.getExternalReferenceCode();
 	}
 
 	/**
@@ -199,6 +224,16 @@ public class PLOEntryWrapper
 	}
 
 	/**
+	 * Returns the user name of this plo entry.
+	 *
+	 * @return the user name of this plo entry
+	 */
+	@Override
+	public String getUserName() {
+		return model.getUserName();
+	}
+
+	/**
 	 * Returns the user uuid of this plo entry.
 	 *
 	 * @return the user uuid of this plo entry
@@ -241,6 +276,16 @@ public class PLOEntryWrapper
 	@Override
 	public void setCreateDate(Date createDate) {
 		model.setCreateDate(createDate);
+	}
+
+	/**
+	 * Sets the external reference code of this plo entry.
+	 *
+	 * @param externalReferenceCode the external reference code of this plo entry
+	 */
+	@Override
+	public void setExternalReferenceCode(String externalReferenceCode) {
+		model.setExternalReferenceCode(externalReferenceCode);
 	}
 
 	/**
@@ -314,6 +359,16 @@ public class PLOEntryWrapper
 	}
 
 	/**
+	 * Sets the user name of this plo entry.
+	 *
+	 * @param userName the user name of this plo entry
+	 */
+	@Override
+	public void setUserName(String userName) {
+		model.setUserName(userName);
+	}
+
+	/**
 	 * Sets the user uuid of this plo entry.
 	 *
 	 * @param userUuid the user uuid of this plo entry
@@ -344,3 +399,4 @@ public class PLOEntryWrapper
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1801824569

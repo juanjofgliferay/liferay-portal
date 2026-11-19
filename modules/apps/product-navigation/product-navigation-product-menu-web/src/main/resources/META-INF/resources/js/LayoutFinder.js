@@ -5,10 +5,11 @@
 
 import ClayIcon from '@clayui/icon';
 import ClayLoadingIndicator from '@clayui/loading-indicator';
+import {openToast} from 'frontend-js-components-web';
 import {
 	fetch,
 	objectToFormData,
-	openToast,
+	setCSPNonce,
 	setSessionValue,
 	sub,
 } from 'frontend-js-web';
@@ -51,7 +52,7 @@ function LayoutFinder({
 						: {
 								layouts: [],
 								totalCount: 0,
-						  };
+							};
 				})
 				.then((response) => {
 					setLoading(false);
@@ -84,7 +85,7 @@ function LayoutFinder({
 	);
 
 	const handleOnClick = useCallback(() => {
-		Liferay.Portlet.destroy(`#p_p_id${namespace}`, true);
+		Liferay.Portlet.destroy(`#p_p_id${namespace}`);
 
 		setSessionValue(
 			'com.liferay.product.navigation.product.menu.web_pagesTreeState',
@@ -104,6 +105,8 @@ function LayoutFinder({
 					);
 
 					sidebar.innerHTML = '';
+
+					productMenuContent = setCSPNonce(productMenuContent);
 
 					const range = document.createRange();
 					range.selectNode(sidebar);

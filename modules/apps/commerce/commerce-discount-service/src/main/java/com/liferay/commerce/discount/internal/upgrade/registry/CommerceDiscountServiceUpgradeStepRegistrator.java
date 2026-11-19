@@ -6,6 +6,7 @@
 package com.liferay.commerce.discount.internal.upgrade.registry;
 
 import com.liferay.commerce.discount.internal.upgrade.v2_0_0.util.CommerceDiscountCommerceAccountGroupRelTable;
+import com.liferay.commerce.discount.internal.upgrade.v2_10_0.CommerceDiscountRuleTypeSettingsUpgradeProcess;
 import com.liferay.commerce.discount.internal.upgrade.v2_2_0.CommerceDiscountRuleNameUpgradeProcess;
 import com.liferay.commerce.discount.internal.upgrade.v2_2_0.util.CommerceDiscountAccountRelTable;
 import com.liferay.commerce.discount.internal.upgrade.v2_6_0.util.CommerceDiscountOrderTypeRelTable;
@@ -54,18 +55,22 @@ public class CommerceDiscountServiceUpgradeStepRegistrator
 				"CommerceDiscount", "externalReferenceCode VARCHAR(75)"));
 
 		registry.register(
-			"2.1.0", "2.2.0",
+			"2.1.0", "2.1.1",
 			new com.liferay.commerce.discount.internal.upgrade.v2_2_0.
-				CommerceDiscountUpgradeProcess(),
-			CommerceDiscountAccountRelTable.create(),
-			new CommerceDiscountRuleNameUpgradeProcess(),
+				CommerceDiscountUpgradeProcess());
+
+		registry.register(
+			"2.1.1", "2.1.2", new CommerceDiscountRuleNameUpgradeProcess());
+
+		registry.register(
+			"2.1.2", "2.2.0", CommerceDiscountAccountRelTable.create(),
 			com.liferay.commerce.discount.internal.upgrade.v2_2_0.util.
 				CommerceDiscountCommerceAccountGroupRelTable.create());
 
 		registry.register(
 			"2.2.0", "2.3.0",
 			UpgradeProcessFactory.alterColumnName(
-				"CommerceDiscount", "level", "levelType VARCHAR(75)"));
+				"CommerceDiscount", "level", "levelType"));
 
 		registry.register(
 			"2.3.0", "2.4.0",
@@ -74,8 +79,11 @@ public class CommerceDiscountServiceUpgradeStepRegistrator
 
 		registry.register(
 			"2.4.0", "2.4.1",
-			new com.liferay.commerce.discount.internal.upgrade.v2_4_1.
-				CommerceDiscountUpgradeProcess());
+			UpgradeProcessFactory.runSQL(
+				"update CommerceDiscount set target = 'product-groups' where " +
+					"target = 'pricing-class'",
+				"update CommerceDiscount set target = 'products' where " +
+					"target = 'product'"));
 
 		registry.register("2.4.1", "2.4.2", new DummyUpgradeStep());
 
@@ -105,10 +113,8 @@ public class CommerceDiscountServiceUpgradeStepRegistrator
 			new BaseExternalReferenceCodeUpgradeProcess() {
 
 				@Override
-				protected String[][] getTableAndPrimaryKeyColumnNames() {
-					return new String[][] {
-						{"CommerceDiscount", "commerceDiscountId"}
-					};
+				protected String[] getTableNames() {
+					return new String[] {"CommerceDiscount"};
 				}
 
 			});
@@ -120,6 +126,21 @@ public class CommerceDiscountServiceUpgradeStepRegistrator
 			UpgradeProcessFactory.addColumns(
 				CommerceDiscountRelModelImpl.TABLE_NAME,
 				"typeSettings TEXT null"));
+
+		registry.register(
+			"2.9.0", "2.10.0",
+			new CommerceDiscountRuleTypeSettingsUpgradeProcess());
+
+		registry.register(
+			"2.10.0", "2.11.0",
+			new BaseExternalReferenceCodeUpgradeProcess() {
+
+				@Override
+				protected String[] getTableNames() {
+					return new String[] {"CommerceDiscountRule"};
+				}
+
+			});
 
 		if (_log.isInfoEnabled()) {
 			_log.info("Commerce discount upgrade step registrator finished");

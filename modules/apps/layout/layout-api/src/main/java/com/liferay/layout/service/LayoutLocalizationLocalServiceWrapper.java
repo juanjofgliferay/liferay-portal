@@ -354,13 +354,6 @@ public class LayoutLocalizationLocalServiceWrapper
 			start, end);
 	}
 
-	@Override
-	public java.util.List<LayoutLocalization> getLayoutLocalizations(
-		long plid) {
-
-		return _layoutLocalizationLocalService.getLayoutLocalizations(plid);
-	}
-
 	/**
 	 * Returns all the layout localizations matching the UUID and company.
 	 *
@@ -496,3 +489,4 @@ public class LayoutLocalizationLocalServiceWrapper
 	private LayoutLocalizationLocalService _layoutLocalizationLocalService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-2099013791

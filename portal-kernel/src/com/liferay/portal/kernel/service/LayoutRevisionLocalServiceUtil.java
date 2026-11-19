@@ -26,8 +26,10 @@ import java.util.List;
  *
  * @author Brian Wing Shun Chan
  * @see LayoutRevisionLocalService
+ * @deprecated As of Cavanaugh (7.4.x), with no direct replacement
  * @generated
  */
+@Deprecated
 public class LayoutRevisionLocalServiceUtil {
 
 	/*
@@ -269,13 +271,6 @@ public class LayoutRevisionLocalServiceUtil {
 		return getService().fetchLayoutRevision(layoutRevisionId);
 	}
 
-	public static LayoutRevision fetchLayoutRevision(
-		long layoutSetBranchId, long layoutBranchId, boolean head, long plid) {
-
-		return getService().fetchLayoutRevision(
-			layoutSetBranchId, layoutBranchId, head, plid);
-	}
-
 	public static com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery
 		getActionableDynamicQuery() {
 
@@ -497,3 +492,4 @@ public class LayoutRevisionLocalServiceUtil {
 	private static volatile LayoutRevisionLocalService _service;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1421977305

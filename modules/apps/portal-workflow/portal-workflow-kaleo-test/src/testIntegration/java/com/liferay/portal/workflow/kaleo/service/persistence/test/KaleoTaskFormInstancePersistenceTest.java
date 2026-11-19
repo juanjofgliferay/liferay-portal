@@ -12,8 +12,6 @@ import com.liferay.portal.kernel.dao.orm.DynamicQueryFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.ProjectionFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.orm.RestrictionsFactoryUtil;
-import com.liferay.portal.kernel.dao.orm.Session;
-import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.transaction.Propagation;
@@ -115,12 +113,8 @@ public class KaleoTaskFormInstancePersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		KaleoTaskFormInstance newKaleoTaskFormInstance = _persistence.create(
-			pk);
-
-		newKaleoTaskFormInstance.setMvccVersion(RandomTestUtil.nextLong());
+		KaleoTaskFormInstance newKaleoTaskFormInstance =
+			addKaleoTaskFormInstance();
 
 		newKaleoTaskFormInstance.setCtCollectionId(RandomTestUtil.nextLong());
 
@@ -163,8 +157,10 @@ public class KaleoTaskFormInstancePersistenceTest {
 
 		newKaleoTaskFormInstance.setMetadata(RandomTestUtil.randomString());
 
-		_kaleoTaskFormInstances.add(
-			_persistence.update(newKaleoTaskFormInstance));
+		newKaleoTaskFormInstance = _persistence.update(
+			newKaleoTaskFormInstance);
+
+		_kaleoTaskFormInstances.add(newKaleoTaskFormInstance);
 
 		KaleoTaskFormInstance existingKaleoTaskFormInstance =
 			_persistence.findByPrimaryKey(
@@ -256,24 +252,10 @@ public class KaleoTaskFormInstancePersistenceTest {
 	}
 
 	@Test
-	public void testCountByKaleoTaskId() throws Exception {
-		_persistence.countByKaleoTaskId(RandomTestUtil.nextLong());
-
-		_persistence.countByKaleoTaskId(0L);
-	}
-
-	@Test
 	public void testCountByKaleoTaskInstanceTokenId() throws Exception {
 		_persistence.countByKaleoTaskInstanceTokenId(RandomTestUtil.nextLong());
 
 		_persistence.countByKaleoTaskInstanceTokenId(0L);
-	}
-
-	@Test
-	public void testCountByKaleoTaskFormId() throws Exception {
-		_persistence.countByKaleoTaskFormId(RandomTestUtil.nextLong());
-
-		_persistence.countByKaleoTaskFormId(0L);
 	}
 
 	@Test
@@ -551,78 +533,12 @@ public class KaleoTaskFormInstancePersistenceTest {
 		Assert.assertEquals(0, result.size());
 	}
 
-	@Test
-	public void testResetOriginalValues() throws Exception {
-		KaleoTaskFormInstance newKaleoTaskFormInstance =
-			addKaleoTaskFormInstance();
-
-		_persistence.clearCache();
-
-		_assertOriginalValues(
-			_persistence.findByPrimaryKey(
-				newKaleoTaskFormInstance.getPrimaryKey()));
-	}
-
-	@Test
-	public void testResetOriginalValuesWithDynamicQueryLoadFromDatabase()
-		throws Exception {
-
-		_testResetOriginalValuesWithDynamicQuery(true);
-	}
-
-	@Test
-	public void testResetOriginalValuesWithDynamicQueryLoadFromSession()
-		throws Exception {
-
-		_testResetOriginalValuesWithDynamicQuery(false);
-	}
-
-	private void _testResetOriginalValuesWithDynamicQuery(boolean clearSession)
-		throws Exception {
-
-		KaleoTaskFormInstance newKaleoTaskFormInstance =
-			addKaleoTaskFormInstance();
-
-		if (clearSession) {
-			Session session = _persistence.openSession();
-
-			session.flush();
-
-			session.clear();
-		}
-
-		DynamicQuery dynamicQuery = DynamicQueryFactoryUtil.forClass(
-			KaleoTaskFormInstance.class, _dynamicQueryClassLoader);
-
-		dynamicQuery.add(
-			RestrictionsFactoryUtil.eq(
-				"kaleoTaskFormInstanceId",
-				newKaleoTaskFormInstance.getKaleoTaskFormInstanceId()));
-
-		List<KaleoTaskFormInstance> result = _persistence.findWithDynamicQuery(
-			dynamicQuery);
-
-		_assertOriginalValues(result.get(0));
-	}
-
-	private void _assertOriginalValues(
-		KaleoTaskFormInstance kaleoTaskFormInstance) {
-
-		Assert.assertEquals(
-			Long.valueOf(kaleoTaskFormInstance.getKaleoTaskFormId()),
-			ReflectionTestUtil.<Long>invoke(
-				kaleoTaskFormInstance, "getColumnOriginalValue",
-				new Class<?>[] {String.class}, "kaleoTaskFormId"));
-	}
-
 	protected KaleoTaskFormInstance addKaleoTaskFormInstance()
 		throws Exception {
 
 		long pk = RandomTestUtil.nextLong();
 
 		KaleoTaskFormInstance kaleoTaskFormInstance = _persistence.create(pk);
-
-		kaleoTaskFormInstance.setMvccVersion(RandomTestUtil.nextLong());
 
 		kaleoTaskFormInstance.setCtCollectionId(RandomTestUtil.nextLong());
 
@@ -675,3 +591,4 @@ public class KaleoTaskFormInstancePersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:107404668

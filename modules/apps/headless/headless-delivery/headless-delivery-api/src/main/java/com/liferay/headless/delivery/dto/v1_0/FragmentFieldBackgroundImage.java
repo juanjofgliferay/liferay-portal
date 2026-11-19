@@ -11,25 +11,27 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import com.liferay.petra.function.UnsafeSupplier;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Javier Gamarra
@@ -39,6 +41,9 @@ import javax.xml.bind.annotation.XmlRootElement;
 @GraphQLName(
 	description = "Represents a fragment field with a background image.",
 	value = "FragmentFieldBackgroundImage"
+)
+@io.swagger.v3.oas.annotations.media.Schema(
+	description = "Represents a fragment field with a background image."
 )
 @JsonFilter("Liferay.Vulcan")
 @XmlRootElement(name = "FragmentFieldBackgroundImage")
@@ -54,9 +59,17 @@ public class FragmentFieldBackgroundImage implements Serializable {
 			FragmentFieldBackgroundImage.class, json);
 	}
 
-	@Schema(description = "The fragment field's background image.")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The fragment field's background image."
+	)
 	@Valid
 	public FragmentImage getBackgroundFragmentImage() {
+		if (_backgroundFragmentImageSupplier != null) {
+			backgroundFragmentImage = _backgroundFragmentImageSupplier.get();
+
+			_backgroundFragmentImageSupplier = null;
+		}
+
 		return backgroundFragmentImage;
 	}
 
@@ -64,6 +77,8 @@ public class FragmentFieldBackgroundImage implements Serializable {
 		FragmentImage backgroundFragmentImage) {
 
 		this.backgroundFragmentImage = backgroundFragmentImage;
+
+		_backgroundFragmentImageSupplier = null;
 	}
 
 	@JsonIgnore
@@ -71,33 +86,45 @@ public class FragmentFieldBackgroundImage implements Serializable {
 		UnsafeSupplier<FragmentImage, Exception>
 			backgroundFragmentImageUnsafeSupplier) {
 
-		try {
-			backgroundFragmentImage =
-				backgroundFragmentImageUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_backgroundFragmentImageSupplier = () -> {
+			try {
+				return backgroundFragmentImageUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The fragment field's background image.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected FragmentImage backgroundFragmentImage;
 
-	@Schema(
+	@JsonIgnore
+	private Supplier<FragmentImage> _backgroundFragmentImageSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
 		deprecated = true,
 		description = "Deprecated as of Athanasius (7.3.x), replaced by backgroundFragmentImage"
 	)
 	@Valid
 	public BackgroundImage getBackgroundImage() {
+		if (_backgroundImageSupplier != null) {
+			backgroundImage = _backgroundImageSupplier.get();
+
+			_backgroundImageSupplier = null;
+		}
+
 		return backgroundImage;
 	}
 
 	public void setBackgroundImage(BackgroundImage backgroundImage) {
 		this.backgroundImage = backgroundImage;
+
+		_backgroundImageSupplier = null;
 	}
 
 	@JsonIgnore
@@ -105,15 +132,17 @@ public class FragmentFieldBackgroundImage implements Serializable {
 		UnsafeSupplier<BackgroundImage, Exception>
 			backgroundImageUnsafeSupplier) {
 
-		try {
-			backgroundImage = backgroundImageUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_backgroundImageSupplier = () -> {
+			try {
+				return backgroundImageUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@Deprecated
@@ -122,6 +151,9 @@ public class FragmentFieldBackgroundImage implements Serializable {
 	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected BackgroundImage backgroundImage;
+
+	@JsonIgnore
+	private Supplier<BackgroundImage> _backgroundImageSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -152,6 +184,8 @@ public class FragmentFieldBackgroundImage implements Serializable {
 
 		sb.append("{");
 
+		FragmentImage backgroundFragmentImage = getBackgroundFragmentImage();
+
 		if (backgroundFragmentImage != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -161,6 +195,8 @@ public class FragmentFieldBackgroundImage implements Serializable {
 
 			sb.append(String.valueOf(backgroundFragmentImage));
 		}
+
+		BackgroundImage backgroundImage = getBackgroundImage();
 
 		if (backgroundImage != null) {
 			if (sb.length() > 1) {
@@ -177,8 +213,8 @@ public class FragmentFieldBackgroundImage implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.delivery.dto.v1_0.FragmentFieldBackgroundImage",
 		name = "x-class-name"
 	)
@@ -224,7 +260,10 @@ public class FragmentFieldBackgroundImage implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -262,6 +301,27 @@ public class FragmentFieldBackgroundImage implements Serializable {
 		return sb.toString();
 	}
 
+	private static String _toJSON(Object value) {
+		if (value instanceof Collection) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONArray((Collection<?>)value));
+		}
+		else if (value instanceof Map) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONObject((Map<?, ?>)value));
+		}
+		else if (value instanceof Object[]) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONArray(
+					Arrays.asList((Object[])value)));
+		}
+		else if (value instanceof String) {
+			return StringBundler.concat("\"", _escape(value), "\"");
+		}
+
+		return String.valueOf(value);
+	}
+
 	private static final String[][] _JSON_ESCAPE_STRINGS = {
 		{"\\", "\"", "\b", "\f", "\n", "\r", "\t"},
 		{"\\\\", "\\\"", "\\b", "\\f", "\\n", "\\r", "\\t"}
@@ -270,3 +330,4 @@ public class FragmentFieldBackgroundImage implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:1820421021

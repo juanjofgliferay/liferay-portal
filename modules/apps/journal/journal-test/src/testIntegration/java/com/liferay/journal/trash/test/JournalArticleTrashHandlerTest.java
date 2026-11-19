@@ -21,6 +21,7 @@ import com.liferay.journal.model.JournalFolder;
 import com.liferay.journal.service.JournalArticleLocalServiceUtil;
 import com.liferay.journal.service.JournalArticleResourceLocalServiceUtil;
 import com.liferay.journal.service.JournalArticleServiceUtil;
+import com.liferay.journal.service.JournalFolderLocalServiceUtil;
 import com.liferay.journal.service.JournalFolderServiceUtil;
 import com.liferay.journal.test.util.JournalTestUtil;
 import com.liferay.petra.string.StringPool;
@@ -32,6 +33,7 @@ import com.liferay.portal.kernel.model.TrashedModel;
 import com.liferay.portal.kernel.model.WorkflowedModel;
 import com.liferay.portal.kernel.portletfilerepository.PortletFileRepositoryUtil;
 import com.liferay.portal.kernel.repository.model.FileEntry;
+import com.liferay.portal.kernel.security.SecureRandomUtil;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
@@ -41,6 +43,7 @@ import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.trash.TrashHandler;
 import com.liferay.portal.kernel.trash.TrashHandlerRegistryUtil;
 import com.liferay.portal.kernel.util.ContentTypes;
+import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.TempFileEntryUtil;
@@ -72,6 +75,7 @@ import com.liferay.trash.test.util.WhenIsVersionableBaseModel;
 import java.io.InputStream;
 
 import java.util.List;
+import java.util.UUID;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -267,6 +271,9 @@ public class JournalArticleTrashHandlerTest
 			"/com/liferay/journal/dependencies/liferay.png");
 
 		FileEntry tempFileEntry = TempFileEntryUtil.addTempFileEntry(
+			String.valueOf(
+				new UUID(
+					SecureRandomUtil.nextLong(), SecureRandomUtil.nextLong())),
 			group.getGroupId(), TestPropsValues.getUserId(),
 			JournalArticle.class.getName(), "liferay.png", inputStream,
 			ContentTypes.IMAGE_PNG);
@@ -417,8 +424,9 @@ public class JournalArticleTrashHandlerTest
 
 		JournalFolder folder = (JournalFolder)parentBaseModel;
 
-		return JournalArticleLocalServiceUtil.getNotInTrashArticlesCount(
-			folder.getGroupId(), folder.getFolderId());
+		return JournalFolderLocalServiceUtil.getFoldersAndArticlesCount(
+			folder.getGroupId(), ListUtil.fromArray(folder.getFolderId()),
+			WorkflowConstants.STATUS_ANY);
 	}
 
 	@Override

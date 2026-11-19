@@ -10,8 +10,10 @@ package com.liferay.portal.kernel.service;
  *
  * @author Brian Wing Shun Chan
  * @see LayoutBranchService
+ * @deprecated As of Cavanaugh (7.4.x), with no direct replacement
  * @generated
  */
+@Deprecated
 public class LayoutBranchServiceWrapper
 	implements LayoutBranchService, ServiceWrapper<LayoutBranchService> {
 
@@ -27,7 +29,7 @@ public class LayoutBranchServiceWrapper
 	public com.liferay.portal.kernel.model.LayoutBranch addLayoutBranch(
 			long layoutRevisionId, java.lang.String name,
 			java.lang.String description, boolean master,
-			ServiceContext serviceContext)
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _layoutBranchService.addLayoutBranch(
@@ -54,7 +56,8 @@ public class LayoutBranchServiceWrapper
 	@Override
 	public com.liferay.portal.kernel.model.LayoutBranch updateLayoutBranch(
 			long layoutBranchId, java.lang.String name,
-			java.lang.String description, ServiceContext serviceContext)
+			java.lang.String description,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _layoutBranchService.updateLayoutBranch(
@@ -74,3 +77,4 @@ public class LayoutBranchServiceWrapper
 	private LayoutBranchService _layoutBranchService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1062426480

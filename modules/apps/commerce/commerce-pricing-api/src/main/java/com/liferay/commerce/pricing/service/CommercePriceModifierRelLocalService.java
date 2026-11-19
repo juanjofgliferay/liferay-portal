@@ -227,15 +227,6 @@ public interface CommercePriceModifierRelLocalService
 	public ActionableDynamicQuery getActionableDynamicQuery();
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<CommercePriceModifierRel>
-		getCategoriesCommercePriceModifierRels(
-			long commercePriceModifierId, String name, int start, int end);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getCategoriesCommercePriceModifierRelsCount(
-		long commercePriceModifierId, String name);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public long[] getClassPKs(long commercePriceModifierId, String className);
 
 	/**
@@ -269,11 +260,6 @@ public interface CommercePriceModifierRelLocalService
 	public List<CommercePriceModifierRel> getCommercePriceModifierRels(
 		long commercePriceModifierId, String className);
 
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<CommercePriceModifierRel> getCommercePriceModifierRels(
-		long commercePriceModifierId, String className, int start, int end,
-		OrderByComparator<CommercePriceModifierRel> orderByComparator);
-
 	/**
 	 * Returns the number of commerce price modifier rels.
 	 *
@@ -283,31 +269,8 @@ public interface CommercePriceModifierRelLocalService
 	public int getCommercePriceModifierRelsCount();
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getCommercePriceModifierRelsCount(
-		long commercePriceModifierId, String className);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<CommercePriceModifierRel> getCommercePriceModifiersRels(
 		String className, long classPK);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<CommercePriceModifierRel>
-		getCommercePricingClassesCommercePriceModifierRels(
-			long commercePriceModifierId, String title, int start, int end);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getCommercePricingClassesCommercePriceModifierRelsCount(
-		long commercePriceModifierId, String title);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<CommercePriceModifierRel>
-		getCPDefinitionsCommercePriceModifierRels(
-			long commercePriceModifierId, String name, String languageId,
-			int start, int end);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getCPDefinitionsCommercePriceModifierRelsCount(
-		long commercePriceModifierId, String name, String languageId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public IndexableActionableDynamicQuery getIndexableActionableDynamicQuery();
@@ -357,3 +320,4 @@ public interface CommercePriceModifierRelLocalService
 		throws E;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1978720499

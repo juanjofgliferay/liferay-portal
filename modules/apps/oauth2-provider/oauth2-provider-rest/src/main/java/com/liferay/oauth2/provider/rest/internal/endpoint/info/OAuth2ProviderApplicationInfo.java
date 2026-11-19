@@ -7,16 +7,32 @@ package com.liferay.oauth2.provider.rest.internal.endpoint.info;
 
 import com.liferay.oauth2.provider.model.OAuth2Application;
 import com.liferay.oauth2.provider.service.OAuth2ApplicationLocalService;
+import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONUtil;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
+import com.liferay.portal.kernel.security.permission.ActionKeys;
+import com.liferay.portal.kernel.security.permission.PermissionCheckerFactory;
+import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
+import com.liferay.portal.kernel.service.UserLocalService;
+import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
+import jakarta.servlet.http.HttpServletRequest;
+
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+
+import java.util.Objects;
+
+import org.apache.cxf.rs.security.oauth2.utils.OAuthConstants;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -38,7 +54,8 @@ public class OAuth2ProviderApplicationInfo {
 	@GET
 	@Produces(MediaType.APPLICATION_JSON)
 	public Response get(
-		@QueryParam("externalReferenceCode") String externalReferenceCode) {
+		@QueryParam("externalReferenceCode") String externalReferenceCode,
+		@Context HttpServletRequest httpServletRequest) {
 
 		OAuth2Application oAuth2Application = null;
 
@@ -50,7 +67,9 @@ public class OAuth2ProviderApplicationInfo {
 						CompanyThreadLocal.getCompanyId());
 		}
 
-		if (oAuth2Application == null) {
+		if ((oAuth2Application == null) ||
+			!_isDiscoverable(httpServletRequest, oAuth2Application)) {
+
 			return Response.status(
 				Response.Status.BAD_REQUEST
 			).type(
@@ -61,11 +80,64 @@ public class OAuth2ProviderApplicationInfo {
 		return Response.ok(
 			JSONUtil.put(
 				"client_id", oAuth2Application.getClientId()
+			).put(
+				"homePageURL", oAuth2Application.getHomePageURL()
 			).toString()
 		).build();
 	}
 
+	private boolean _isDiscoverable(
+		HttpServletRequest httpServletRequest,
+		OAuth2Application oAuth2Application) {
+
+		if (Objects.equals(
+				oAuth2Application.getClientAuthenticationMethod(),
+				OAuthConstants.TOKEN_ENDPOINT_AUTH_NONE)) {
+
+			return true;
+		}
+
+		try {
+			User user = _portal.getUser(httpServletRequest);
+
+			if (user == null) {
+				user = _userLocalService.getGuestUser(
+					CompanyThreadLocal.getCompanyId());
+			}
+
+			return _oAuth2ApplicationModelResourcePermission.contains(
+				_permissionCheckerFactory.create(user), oAuth2Application,
+				ActionKeys.VIEW);
+		}
+		catch (PortalException portalException) {
+			_log.error(
+				"Unable to check the view permission of OAuth 2 application " +
+					oAuth2Application.getOAuth2ApplicationId(),
+				portalException);
+
+			return false;
+		}
+	}
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		OAuth2ProviderApplicationInfo.class);
+
 	@Reference
 	private OAuth2ApplicationLocalService _oAuth2ApplicationLocalService;
+
+	@Reference(
+		target = "(model.class.name=com.liferay.oauth2.provider.model.OAuth2Application)"
+	)
+	private ModelResourcePermission<OAuth2Application>
+		_oAuth2ApplicationModelResourcePermission;
+
+	@Reference
+	private PermissionCheckerFactory _permissionCheckerFactory;
+
+	@Reference
+	private Portal _portal;
+
+	@Reference
+	private UserLocalService _userLocalService;
 
 }

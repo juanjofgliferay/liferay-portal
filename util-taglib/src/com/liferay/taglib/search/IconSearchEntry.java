@@ -5,18 +5,17 @@
 
 package com.liferay.taglib.search;
 
-import com.liferay.portal.kernel.bean.BeanPropertiesUtil;
 import com.liferay.portal.kernel.servlet.DirectRequestDispatcherFactoryUtil;
 import com.liferay.portal.kernel.servlet.PipingServletResponse;
 import com.liferay.portal.kernel.servlet.ServletContextPool;
 import com.liferay.portal.kernel.util.PortalUtil;
 
-import java.io.Writer;
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
-import javax.servlet.RequestDispatcher;
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import java.io.Writer;
 
 /**
  * @author Julio Camarero
@@ -25,15 +24,6 @@ public class IconSearchEntry extends TextSearchEntry {
 
 	public static String getPage() {
 		return _PAGE;
-	}
-
-	@Override
-	public Object clone() {
-		IconSearchEntry iconSearchEntry = new IconSearchEntry();
-
-		BeanPropertiesUtil.copyProperties(this, iconSearchEntry);
-
-		return iconSearchEntry;
 	}
 
 	@Override

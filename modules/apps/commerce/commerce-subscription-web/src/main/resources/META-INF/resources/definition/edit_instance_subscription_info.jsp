@@ -33,16 +33,16 @@ PortletURL productSkusURL = PortletURLBuilder.createRenderURL(
 	"screenNavigationCategoryKey", cpInstanceSubscriptionInfoDisplayContext.getScreenNavigationCategoryKey()
 ).buildPortletURL();
 
-boolean overrideSubscriptionInfo = BeanParamUtil.getBoolean(cpInstance, request, "overrideSubscriptionInfo", false);
-boolean subscriptionEnabled = BeanParamUtil.getBoolean(cpInstance, request, "subscriptionEnabled", false);
-int subscriptionLength = BeanParamUtil.getInteger(cpInstance, request, "subscriptionLength", 1);
-String subscriptionType = BeanParamUtil.getString(cpInstance, request, "subscriptionType", defaultCPSubscriptionType);
-long maxSubscriptionCycles = BeanParamUtil.getLong(cpInstance, request, "maxSubscriptionCycles");
+boolean overrideSubscriptionInfo = BeanParamUtil.getBoolean(cpInstance, request, "overrideSubscriptionInfo", CPInstance::isOverrideSubscriptionInfo, false);
+boolean subscriptionEnabled = BeanParamUtil.getBoolean(cpInstance, request, "subscriptionEnabled", CPInstance::isSubscriptionEnabled, false);
+int subscriptionLength = BeanParamUtil.getInteger(cpInstance, request, "subscriptionLength", CPInstance::getSubscriptionLength, 1);
+String subscriptionType = BeanParamUtil.getString(cpInstance, request, "subscriptionType", CPInstance::getSubscriptionType, defaultCPSubscriptionType);
+long maxSubscriptionCycles = BeanParamUtil.getLong(cpInstance, request, "maxSubscriptionCycles", CPInstance::getMaxSubscriptionCycles);
 
-boolean deliverySubscriptionEnabled = BeanParamUtil.getBoolean(cpInstance, request, "deliverySubscriptionEnabled", false);
-int deliverySubscriptionLength = BeanParamUtil.getInteger(cpInstance, request, "deliverySubscriptionLength", 1);
-String deliverySubscriptionType = BeanParamUtil.getString(cpInstance, request, "deliverySubscriptionType", defaultCPSubscriptionType);
-long deliveryMaxSubscriptionCycles = BeanParamUtil.getLong(cpInstance, request, "deliveryMaxSubscriptionCycles");
+boolean deliverySubscriptionEnabled = BeanParamUtil.getBoolean(cpInstance, request, "deliverySubscriptionEnabled", CPInstance::isDeliverySubscriptionEnabled, false);
+int deliverySubscriptionLength = BeanParamUtil.getInteger(cpInstance, request, "deliverySubscriptionLength", CPInstance::getDeliverySubscriptionLength, 1);
+String deliverySubscriptionType = BeanParamUtil.getString(cpInstance, request, "deliverySubscriptionType", CPInstance::getDeliverySubscriptionType, defaultCPSubscriptionType);
+long deliveryMaxSubscriptionCycles = BeanParamUtil.getLong(cpInstance, request, "deliveryMaxSubscriptionCycles", CPInstance::getDeliveryMaxSubscriptionCycles);
 
 String defaultCPSubscriptionTypeLabel = StringPool.BLANK;
 String defaultDeliveryCPSubscriptionTypeLabel = StringPool.BLANK;
@@ -335,8 +335,7 @@ if (deliveryMaxSubscriptionCycles > 0) {
 			document.querySelector(
 				'#<portlet:namespace />cycleLengthContainer .input-group-text'
 			).innerHTML = subscriptionTypeLabel;
-		},
-		['liferay-portlet-url']
+		}
 	);
 
 	Liferay.provide(
@@ -373,8 +372,7 @@ if (deliveryMaxSubscriptionCycles > 0) {
 			document.querySelector(
 				'#<portlet:namespace />deliveryCycleLengthContainer .input-group-text'
 			).innerHTML = subscriptionTypeLabel;
-		},
-		['liferay-portlet-url']
+		}
 	);
 </aui:script>
 
@@ -382,8 +380,9 @@ if (deliveryMaxSubscriptionCycles > 0) {
 	document
 		.getElementById('<portlet:namespace />neverEnds')
 		.addEventListener('change', (event) => {
-			const formValidator = Liferay.Form.get('<portlet:namespace />fm')
-				.formValidator;
+			const formValidator = Liferay.Form.get(
+				'<portlet:namespace />fm'
+			).formValidator;
 
 			formValidator.validateField(
 				'<portlet:namespace />maxSubscriptionCycles'
@@ -393,8 +392,9 @@ if (deliveryMaxSubscriptionCycles > 0) {
 	document
 		.getElementById('<portlet:namespace />deliveryNeverEnds')
 		.addEventListener('change', (event) => {
-			const formValidator = Liferay.Form.get('<portlet:namespace />fm')
-				.formValidator;
+			const formValidator = Liferay.Form.get(
+				'<portlet:namespace />fm'
+			).formValidator;
 
 			formValidator.validateField(
 				'<portlet:namespace />deliveryMaxSubscriptionCycles'

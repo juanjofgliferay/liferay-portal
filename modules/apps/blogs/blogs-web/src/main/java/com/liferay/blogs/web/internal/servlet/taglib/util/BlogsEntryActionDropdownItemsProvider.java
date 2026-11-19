@@ -40,15 +40,15 @@ import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.taglib.security.PermissionsURLTag;
 import com.liferay.trash.TrashHelper;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.List;
 import java.util.Objects;
 import java.util.ResourceBundle;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Adolfo Pérez
@@ -199,6 +199,7 @@ public class BlogsEntryActionDropdownItemsProvider {
 				).setParameter(
 					"entryId", blogsEntry.getEntryId()
 				).buildString());
+			dropdownItem.setIcon("trash");
 			dropdownItem.setLabel(
 				LanguageUtil.get(_httpServletRequest, "delete"));
 		};
@@ -231,7 +232,7 @@ public class BlogsEntryActionDropdownItemsProvider {
 				"mvcRenderCommandName", "/blogs/edit_entry", "redirect",
 				_getRedirectURL(), "portletResource", portletResource,
 				"entryId", blogsEntry.getEntryId());
-			dropdownItem.setIcon("edit");
+			dropdownItem.setIcon("pencil");
 			dropdownItem.setLabel(LanguageUtil.get(_resourceBundle, "edit"));
 		};
 	}
@@ -254,6 +255,7 @@ public class BlogsEntryActionDropdownItemsProvider {
 				).setParameter(
 					"entryId", blogsEntry.getEntryId()
 				).buildString());
+			dropdownItem.setIcon("trash");
 			dropdownItem.setLabel(
 				LanguageUtil.get(_httpServletRequest, "delete"));
 		};
@@ -266,6 +268,7 @@ public class BlogsEntryActionDropdownItemsProvider {
 			dropdownItem.putData("action", "permissions");
 			dropdownItem.putData(
 				"permissionsURL", _getPermissionsURL(blogsEntry));
+			dropdownItem.setIcon("password-policies");
 			dropdownItem.setLabel(
 				LanguageUtil.get(_httpServletRequest, "permissions"));
 		};
@@ -301,6 +304,7 @@ public class BlogsEntryActionDropdownItemsProvider {
 				).setParameter(
 					"entryId", blogsEntry.getEntryId()
 				).buildString());
+			dropdownItem.setIcon("live");
 			dropdownItem.setLabel(
 				LanguageUtil.get(_httpServletRequest, "publish-to-live"));
 		};

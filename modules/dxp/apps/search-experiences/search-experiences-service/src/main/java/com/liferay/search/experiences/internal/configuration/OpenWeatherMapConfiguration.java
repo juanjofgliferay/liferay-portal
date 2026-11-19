@@ -23,10 +23,10 @@ import com.liferay.portal.configuration.metatype.annotations.ExtendedObjectClass
 )
 public interface OpenWeatherMapConfiguration {
 
-	@Meta.AD(deflt = "false", name = "enabled", required = false)
-	public boolean enabled();
-
-	@Meta.AD(deflt = "", name = "api-key", required = false)
+	@Meta.AD(
+		deflt = "", name = "api-key", required = false,
+		type = Meta.Type.Password
+	)
 	public String apiKey();
 
 	@Meta.AD(
@@ -37,6 +37,9 @@ public interface OpenWeatherMapConfiguration {
 
 	@Meta.AD(deflt = "604800", name = "cache-timeout", required = false)
 	public int cacheTimeout();
+
+	@Meta.AD(deflt = "false", name = "enabled", required = false)
+	public boolean enabled();
 
 	@Meta.AD(
 		deflt = "metric", name = "units",

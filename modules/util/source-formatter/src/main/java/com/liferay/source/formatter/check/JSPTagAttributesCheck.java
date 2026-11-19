@@ -5,11 +5,11 @@
 
 package com.liferay.source.formatter.check;
 
+import com.liferay.petra.io.unsync.UnsyncBufferedReader;
+import com.liferay.petra.io.unsync.UnsyncStringReader;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.io.unsync.UnsyncBufferedReader;
-import com.liferay.portal.kernel.io.unsync.UnsyncStringReader;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
@@ -227,18 +227,20 @@ public class JSPTagAttributesCheck extends BaseTagAttributesCheck {
 					attributeName, "<%= " + attributeValue + " %>");
 			}
 
-			if (dataType.equals("java.lang.String") ||
-				dataType.equals("String")) {
+			if (!dataType.equals("java.lang.String") &&
+				!dataType.equals("String")) {
 
-				attributeValue = StringUtil.replace(
-					attributeValue, new String[] {"=\"false\"", "=\"true\""},
-					new String[] {
-						"=\"<%= Boolean.FALSE.toString() %>\"",
-						"=\"<%= Boolean.TRUE.toString() %>\""
-					});
-
-				tag.putAttribute(attributeName, attributeValue);
+				continue;
 			}
+
+			attributeValue = StringUtil.replace(
+				attributeValue, new String[] {"=\"false\"", "=\"true\""},
+				new String[] {
+					"=\"<%= Boolean.FALSE.toString() %>\"",
+					"=\"<%= Boolean.TRUE.toString() %>\""
+				});
+
+			tag.putAttribute(attributeName, attributeValue);
 		}
 
 		return tag;
@@ -414,8 +416,11 @@ public class JSPTagAttributesCheck extends BaseTagAttributesCheck {
 		throws Exception {
 
 		if (_tagSetMethodsMap != null) {
-			if (_tagSetMethodsMap.containsKey(tagName)) {
-				return _tagSetMethodsMap.get(tagName);
+			Map<String, String> tagSetMethodsMap = _tagSetMethodsMap.get(
+				tagName);
+
+			if (tagSetMethodsMap != null) {
+				return tagSetMethodsMap;
 			}
 
 			return _tagSetMethodsMap.get("liferay-" + tagName);
@@ -527,11 +532,14 @@ public class JSPTagAttributesCheck extends BaseTagAttributesCheck {
 			String tagFileName, String utilTaglibSrcDirName)
 		throws Exception {
 
-		if (_classSetMethodsMap.containsKey(tagFileName)) {
-			return _classSetMethodsMap.get(tagFileName);
+		Map<String, String> setMethodsMap = _classSetMethodsMap.get(
+			tagFileName);
+
+		if (setMethodsMap != null) {
+			return setMethodsMap;
 		}
 
-		Map<String, String> setMethodsMap = new HashMap<>();
+		setMethodsMap = new HashMap<>();
 
 		File tagFile = new File(tagFileName);
 

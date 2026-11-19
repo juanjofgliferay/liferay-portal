@@ -99,6 +99,18 @@ public class DSLFunctionFactoryUtil {
 		return _DSL_FUNCTION_FACTORY.divide(expression, value);
 	}
 
+	public static <N extends Number> Expression<Float> floatDivide(
+		Expression<N> expression1, Expression<N> expression2) {
+
+		return _DSL_FUNCTION_FACTORY.floatDivide(expression1, expression2);
+	}
+
+	public static <N extends Number> Expression<Float> floatDivide(
+		Expression<N> expression, N value) {
+
+		return _DSL_FUNCTION_FACTORY.floatDivide(expression, value);
+	}
+
 	public static Expression<String> lower(Expression<String> expression) {
 		return _DSL_FUNCTION_FACTORY.lower(expression);
 	}
@@ -125,6 +137,20 @@ public class DSLFunctionFactoryUtil {
 		Expression<N> expression, N value) {
 
 		return _DSL_FUNCTION_FACTORY.multiply(expression, value);
+	}
+
+	public static Expression<String> replace(
+		Expression<String> expression1, Expression<String> expression2,
+		Expression<String> expression3) {
+
+		return _DSL_FUNCTION_FACTORY.replace(
+			expression1, expression2, expression3);
+	}
+
+	public static Expression<String> replace(
+		Expression<String> expression, String target, String replacement) {
+
+		return _DSL_FUNCTION_FACTORY.replace(expression, target, replacement);
 	}
 
 	public static <N extends Number> Expression<N> subtract(

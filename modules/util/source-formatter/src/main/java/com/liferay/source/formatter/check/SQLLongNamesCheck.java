@@ -32,15 +32,16 @@ public class SQLLongNamesCheck extends BaseFileCheck {
 		while (matcher.find()) {
 			String columnName = matcher.group(1);
 
-			if (columnName.length() > _MAX_NAME_LENGTH) {
-				addMessage(
-					fileName,
-					StringBundler.concat(
-						"Column name '", columnName, "' should not exceed ",
-						_MAX_NAME_LENGTH, " characters"),
-					startLineNumber +
-						getLineNumber(tableContent, matcher.start()));
+			if (columnName.length() <= _MAX_NAME_LENGTH) {
+				continue;
 			}
+
+			addMessage(
+				fileName,
+				StringBundler.concat(
+					"Column name \"", columnName, "\" should not exceed ",
+					_MAX_NAME_LENGTH, " characters"),
+				startLineNumber + getLineNumber(tableContent, matcher.start()));
 		}
 	}
 
@@ -54,7 +55,7 @@ public class SQLLongNamesCheck extends BaseFileCheck {
 				addMessage(
 					fileName,
 					StringBundler.concat(
-						"Table name '", tableName, "' should not exceed ",
+						"Table name \"", tableName, "\" should not exceed ",
 						_MAX_NAME_LENGTH, " characters"),
 					getLineNumber(content, matcher.start()));
 			}

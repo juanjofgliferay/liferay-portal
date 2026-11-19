@@ -5,32 +5,22 @@
 
 package com.liferay.taglib.search;
 
-import com.liferay.portal.kernel.bean.BeanPropertiesUtil;
 import com.liferay.portal.kernel.servlet.DirectRequestDispatcherFactoryUtil;
 import com.liferay.portal.kernel.servlet.PipingServletResponse;
+
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.Writer;
 
 import java.util.Date;
 
-import javax.servlet.RequestDispatcher;
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 /**
  * @author Eudaldo Alonso
  */
 public class UserSearchEntry extends TextSearchEntry {
-
-	@Override
-	public Object clone() {
-		UserSearchEntry userSearchEntry = new UserSearchEntry();
-
-		BeanPropertiesUtil.copyProperties(this, userSearchEntry);
-
-		return userSearchEntry;
-	}
 
 	public Date getDate() {
 		return _date;

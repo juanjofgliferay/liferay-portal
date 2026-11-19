@@ -5,18 +5,44 @@
 
 package com.liferay.layout.admin.web.internal.util;
 
+import com.liferay.design.library.util.DesignLibraryUtil;
 import com.liferay.layout.page.template.model.LayoutPageTemplateCollection;
 import com.liferay.layout.page.template.model.LayoutPageTemplateEntry;
+import com.liferay.layout.page.template.service.LayoutPageTemplateCollectionLocalServiceUtil;
 import com.liferay.layout.page.template.util.comparator.LayoutPageTemplateCollectionCreateDateComparator;
 import com.liferay.layout.page.template.util.comparator.LayoutPageTemplateCollectionNameComparator;
 import com.liferay.layout.page.template.util.comparator.LayoutPageTemplateEntryCreateDateComparator;
 import com.liferay.layout.page.template.util.comparator.LayoutPageTemplateEntryNameComparator;
+import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 /**
  * @author Jürgen Kappler
  */
 public class LayoutPageTemplatePortletUtil {
+
+	public static long getGroupId(
+			long layoutPageTemplateCollectionId, ThemeDisplay themeDisplay)
+		throws PortalException {
+
+		LayoutPageTemplateCollection layoutPageTemplateCollection =
+			LayoutPageTemplateCollectionLocalServiceUtil.
+				fetchLayoutPageTemplateCollection(
+					layoutPageTemplateCollectionId);
+
+		if ((layoutPageTemplateCollection == null) ||
+			(layoutPageTemplateCollection.getGroupId() ==
+				themeDisplay.getScopeGroupId()) ||
+			!DesignLibraryUtil.isConnectedDesignLibraryGroupId(
+				layoutPageTemplateCollection.getGroupId(),
+				themeDisplay.getScopeGroupId())) {
+
+			return themeDisplay.getScopeGroupId();
+		}
+
+		return layoutPageTemplateCollection.getGroupId();
+	}
 
 	public static OrderByComparator<LayoutPageTemplateCollection>
 		getLayoutPageTemplateCollectionOrderByComparator(
@@ -33,12 +59,13 @@ public class LayoutPageTemplatePortletUtil {
 
 		if (orderByCol.equals("create-date")) {
 			orderByComparator =
-				new LayoutPageTemplateCollectionCreateDateComparator(
+				LayoutPageTemplateCollectionCreateDateComparator.getInstance(
 					orderByAsc);
 		}
 		else if (orderByCol.equals("name")) {
-			orderByComparator = new LayoutPageTemplateCollectionNameComparator(
-				orderByAsc);
+			orderByComparator =
+				LayoutPageTemplateCollectionNameComparator.getInstance(
+					orderByAsc);
 		}
 
 		return orderByComparator;
@@ -57,12 +84,13 @@ public class LayoutPageTemplatePortletUtil {
 		OrderByComparator<LayoutPageTemplateEntry> orderByComparator = null;
 
 		if (orderByCol.equals("create-date")) {
-			orderByComparator = new LayoutPageTemplateEntryCreateDateComparator(
-				orderByAsc);
+			orderByComparator =
+				LayoutPageTemplateEntryCreateDateComparator.getInstance(
+					orderByAsc);
 		}
 		else if (orderByCol.equals("name")) {
-			orderByComparator = new LayoutPageTemplateEntryNameComparator(
-				orderByAsc);
+			orderByComparator =
+				LayoutPageTemplateEntryNameComparator.getInstance(orderByAsc);
 		}
 
 		return orderByComparator;

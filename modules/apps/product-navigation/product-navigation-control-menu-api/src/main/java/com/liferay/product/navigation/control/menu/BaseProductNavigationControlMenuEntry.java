@@ -10,14 +10,14 @@ import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.util.SessionClicks;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 
 import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * @author Julio Camarero
@@ -38,13 +38,8 @@ public abstract class BaseProductNavigationControlMenuEntry
 		ProductNavigationControlMenuEntry productNavigationControlMenuEntry =
 			(ProductNavigationControlMenuEntry)object;
 
-		if (Objects.equals(
-				getKey(), productNavigationControlMenuEntry.getKey())) {
-
-			return true;
-		}
-
-		return false;
+		return Objects.equals(
+			getKey(), productNavigationControlMenuEntry.getKey());
 	}
 
 	@Override
@@ -109,11 +104,7 @@ public abstract class BaseProductNavigationControlMenuEntry
 		String panelState = SessionClicks.get(
 			httpServletRequest, key, "closed");
 
-		if (Objects.equals(panelState, "open")) {
-			return true;
-		}
-
-		return false;
+		return Objects.equals(panelState, "open");
 	}
 
 	@Override
@@ -131,6 +122,13 @@ public abstract class BaseProductNavigationControlMenuEntry
 	@Override
 	public void setPanelState(
 		HttpServletRequest httpServletRequest, String key, String panelState) {
+
+		if (Objects.equals(
+				panelState,
+				SessionClicks.get(httpServletRequest, key, "closed"))) {
+
+			return;
+		}
 
 		SessionClicks.put(httpServletRequest, key, panelState);
 	}

@@ -20,6 +20,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * The arguments resolver class for retrieving value from RecentLayoutBranch.
  *
  * @author Brian Wing Shun Chan
+ * @deprecated As of Cavanaugh (7.4.x), with no direct replacement
  * @generated
  */
 @OSGiBeanProperties(
@@ -53,8 +54,7 @@ public class RecentLayoutBranchModelArgumentsResolver
 		long columnBitmask = recentLayoutBranchModelImpl.getColumnBitmask();
 
 		if (!checkColumn || (columnBitmask == 0)) {
-			return _getValue(
-				recentLayoutBranchModelImpl, columnNames, original);
+			return _getValue(recentLayoutBranchModelImpl, finderPath, original);
 		}
 
 		Long finderPathColumnBitmask = _finderPathColumnBitmasksCache.get(
@@ -73,8 +73,7 @@ public class RecentLayoutBranchModelArgumentsResolver
 		}
 
 		if ((columnBitmask & finderPathColumnBitmask) != 0) {
-			return _getValue(
-				recentLayoutBranchModelImpl, columnNames, original);
+			return _getValue(recentLayoutBranchModelImpl, finderPath, original);
 		}
 
 		return null;
@@ -92,22 +91,26 @@ public class RecentLayoutBranchModelArgumentsResolver
 
 	private static Object[] _getValue(
 		RecentLayoutBranchModelImpl recentLayoutBranchModelImpl,
-		String[] columnNames, boolean original) {
+		FinderPath finderPath, boolean original) {
+
+		String[] columnNames = finderPath.getColumnNames();
 
 		Object[] arguments = new Object[columnNames.length];
 
 		for (int i = 0; i < arguments.length; i++) {
 			String columnName = columnNames[i];
 
+			Object value;
+
 			if (original) {
-				arguments[i] =
-					recentLayoutBranchModelImpl.getColumnOriginalValue(
-						columnName);
-			}
-			else {
-				arguments[i] = recentLayoutBranchModelImpl.getColumnValue(
+				value = recentLayoutBranchModelImpl.getColumnOriginalValue(
 					columnName);
 			}
+			else {
+				value = recentLayoutBranchModelImpl.getColumnValue(columnName);
+			}
+
+			arguments[i] = finderPath.normalizeArgument(i, value);
 		}
 
 		return arguments;
@@ -117,3 +120,4 @@ public class RecentLayoutBranchModelArgumentsResolver
 		new ConcurrentHashMap<>();
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:109414182

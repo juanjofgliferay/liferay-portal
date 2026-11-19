@@ -13,7 +13,6 @@ import com.liferay.object.rest.manager.v1_0.ObjectEntryManagerRegistry;
 import com.liferay.object.service.ObjectFolderLocalService;
 import com.liferay.object.web.internal.display.context.helper.ObjectRequestHelper;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.language.LanguageUtil;
@@ -26,14 +25,14 @@ import com.liferay.portal.kernel.security.permission.resource.PortletResourcePer
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.WindowStateException;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.List;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.PortletException;
-import javax.portlet.PortletURL;
-import javax.portlet.WindowStateException;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Marco Leo
@@ -54,10 +53,6 @@ public class ViewObjectDefinitionsDisplayContext {
 		_objectFolderLocalService = objectFolderLocalService;
 
 		_objectRequestHelper = new ObjectRequestHelper(httpServletRequest);
-	}
-
-	public String getAPIURL() {
-		return "/o/object-admin/v1.0/object-definitions";
 	}
 
 	public CreationMenu getCreationMenu() throws Exception {
@@ -93,19 +88,11 @@ public class ViewObjectDefinitionsDisplayContext {
 	public List<FDSActionDropdownItem> getFDSActionDropdownItems()
 		throws Exception {
 
-		List<FDSActionDropdownItem> fdsActionDropdownItems = ListUtil.fromArray(
+		return ListUtil.fromArray(
 			new FDSActionDropdownItem(
 				getEditObjectDefinitionURL(), "view", "view",
 				LanguageUtil.get(_objectRequestHelper.getRequest(), "view"),
 				"get", null, null),
-			new FDSActionDropdownItem(
-				null, "pages-tree", "bind",
-				LanguageUtil.get(_objectRequestHelper.getRequest(), "bind"),
-				"update", "bind", null),
-			new FDSActionDropdownItem(
-				null, "pages-tree", "unbind",
-				LanguageUtil.get(_objectRequestHelper.getRequest(), "unbind"),
-				"update", "unbind", null),
 			new FDSActionDropdownItem(
 				ResourceURLBuilder.createResourceURL(
 					_objectRequestHelper.getLiferayPortletResponse()
@@ -116,35 +103,52 @@ public class ViewObjectDefinitionsDisplayContext {
 				).buildString(),
 				"export", "export",
 				LanguageUtil.get(
-					_objectRequestHelper.getRequest(), "export-as-json"),
-				"get", null, null));
-
-		int count = _objectFolderLocalService.getObjectFoldersCount(
-			_objectRequestHelper.getCompanyId());
-
-		if ((count > 1) && FeatureFlagManagerUtil.isEnabled("LPS-148856")) {
-			fdsActionDropdownItems.add(
-				new FDSActionDropdownItem(
-					null, "move-folder", "moveObjectDefinition",
-					LanguageUtil.get(_objectRequestHelper.getRequest(), "move"),
-					"update", "update", null));
-		}
-
-		fdsActionDropdownItems.add(
+					_objectRequestHelper.getRequest(),
+					"export-object-definition"),
+				"get", "exportObjectDefinition", null),
+			new FDSActionDropdownItem(
+				ResourceURLBuilder.createResourceURL(
+					_objectRequestHelper.getLiferayPortletResponse()
+				).setParameter(
+					"objectDefinitionId", "{id}"
+				).setResourceID(
+					"/object_definitions/export_bound_object_definitions"
+				).buildString(),
+				"export", "exportBoundObjectDefinitions",
+				LanguageUtil.get(
+					_objectRequestHelper.getRequest(),
+					"export-bound-object-definitions"),
+				"get", "exportBoundObjectDefinitions", null),
 			new FDSActionDropdownItem(
 				getPermissionsURL(ObjectDefinition.class.getName()),
 				"password-policies", "permissions",
 				LanguageUtil.get(
 					_objectRequestHelper.getRequest(), "permissions"),
-				"get", "permissions", "modal-permissions"));
-
-		fdsActionDropdownItems.add(
+				"get", "permissions", "modal-permissions"),
 			new FDSActionDropdownItem(
 				null, "trash", "deleteObjectDefinition",
 				LanguageUtil.get(_objectRequestHelper.getRequest(), "delete"),
 				"delete", "delete", null));
+	}
 
-		return fdsActionDropdownItems;
+	public String getImportObjectDefinitionURL() throws Exception {
+		return PortletURLBuilder.createActionURL(
+			_objectRequestHelper.getLiferayPortletResponse()
+		).setActionName(
+			"/object_definitions/import_object_definition"
+		).setRedirect(
+			_objectRequestHelper.getCurrentURL()
+		).buildString();
+	}
+
+	public String getImportObjectFolderURL() throws Exception {
+		return PortletURLBuilder.createActionURL(
+			_objectRequestHelper.getLiferayPortletResponse()
+		).setActionName(
+			"/object_definitions/import_object_folder"
+		).setRedirect(
+			_objectRequestHelper.getCurrentURL()
+		).buildString();
 	}
 
 	public String getModelBuilderURL() throws Exception {

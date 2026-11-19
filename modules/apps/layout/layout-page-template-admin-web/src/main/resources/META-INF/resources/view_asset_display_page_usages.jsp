@@ -23,10 +23,10 @@ renderResponse.setTitle(layoutPageTemplateEntry.getName());
 
 <clay:management-toolbar
 	managementToolbarDisplayContext="<%= assetDisplayPageUsagesManagementToolbarDisplayContext %>"
-	propsTransformer="js/propsTransformers/AssetDisplayPageUsagesManagementToolbarPropsTransformer"
+	propsTransformer="{AssetDisplayPageUsagesManagementToolbarPropsTransformer} from layout-page-template-admin-web"
 />
 
-<aui:form cssClass="container-fluid container-fluid-max-xl" name="fm">
+<aui:form cssClass="container-fluid container-fluid-max-xxxl" name="fm">
 
 	<%
 	LayoutPageTemplateEntry defaultLayoutPageTemplateEntry = assetDisplayPageUsagesManagementToolbarDisplayContext.getDefaultLayoutPageTemplateEntry();

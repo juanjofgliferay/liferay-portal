@@ -87,6 +87,8 @@ public class CTCommentModelImpl
 
 	public static final String TABLE_SQL_DROP = "drop table CTComment";
 
+	public static final String ENTITY_ALIAS = "ctComment";
+
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY ctComment.ctCommentId DESC";
 
@@ -106,17 +108,11 @@ public class CTCommentModelImpl
 	public static final long CTCOLLECTIONID_COLUMN_BITMASK = 1L;
 
 	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
-	 */
-	@Deprecated
-	public static final long CTENTRYID_COLUMN_BITMASK = 2L;
-
-	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
 	 *		#getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long CTCOMMENTID_COLUMN_BITMASK = 4L;
+	public static final long CTCOMMENTID_COLUMN_BITMASK = 2L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
@@ -429,16 +425,6 @@ public class CTCommentModelImpl
 		}
 
 		_ctEntryId = ctEntryId;
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #getColumnOriginalValue(String)}
-	 */
-	@Deprecated
-	public long getOriginalCtEntryId() {
-		return GetterUtil.getLong(
-			this.<Long>getColumnOriginalValue("ctEntryId"));
 	}
 
 	@Override
@@ -821,3 +807,4 @@ public class CTCommentModelImpl
 	private CTComment _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1946081936

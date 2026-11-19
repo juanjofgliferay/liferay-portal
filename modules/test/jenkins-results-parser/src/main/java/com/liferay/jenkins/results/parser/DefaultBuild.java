@@ -14,8 +14,8 @@ import org.dom4j.Element;
  */
 public class DefaultBuild extends BaseBuild {
 
-	public DefaultBuild(String url) {
-		super(url);
+	public DefaultBuild(String buildURL) {
+		super(buildURL);
 
 		getDuration();
 	}
@@ -32,6 +32,17 @@ public class DefaultBuild extends BaseBuild {
 	@Override
 	public String getBuildName() {
 		return "default";
+	}
+
+	@Override
+	public Job getJob() {
+		TopLevelBuild topLevelBuild = getTopLevelBuild();
+
+		if (topLevelBuild != null) {
+			return topLevelBuild.getJob();
+		}
+
+		return super.getJob();
 	}
 
 	@Override

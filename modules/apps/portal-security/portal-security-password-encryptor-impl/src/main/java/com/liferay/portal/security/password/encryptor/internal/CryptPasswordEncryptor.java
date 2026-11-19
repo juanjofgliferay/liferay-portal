@@ -9,11 +9,12 @@ import com.liferay.portal.kernel.exception.PwdEncryptorException;
 import com.liferay.portal.kernel.security.SecureRandom;
 import com.liferay.portal.kernel.security.pwd.PasswordEncryptor;
 import com.liferay.portal.kernel.util.ArrayUtil;
-import com.liferay.portal.kernel.util.Digester;
+import com.liferay.portal.kernel.util.DigesterUtil;
 import com.liferay.portal.kernel.util.Validator;
 
 import java.io.UnsupportedEncodingException;
 
+import java.util.Arrays;
 import java.util.Random;
 
 import org.osgi.service.component.annotations.Component;
@@ -25,14 +26,14 @@ import org.vps.crypt.Crypt;
  * @author Tomas Polesovsky
  */
 @Component(
-	property = "type=" + PasswordEncryptor.TYPE_UFC_CRYPT,
+	enabled = false, property = "type=" + PasswordEncryptor.TYPE_UFC_CRYPT,
 	service = PasswordEncryptor.class
 )
 public class CryptPasswordEncryptor implements PasswordEncryptor {
 
 	@Override
 	public String encrypt(
-			String algorithm, String plainTextPassword,
+			String algorithm, String plaintextPassword,
 			String encryptedPassword, boolean upgradeHashSecurity)
 		throws PwdEncryptorException {
 
@@ -42,14 +43,23 @@ public class CryptPasswordEncryptor implements PasswordEncryptor {
 
 		byte[] saltBytes = getSalt(encryptedPassword);
 
+		byte[] plaintextPasswordBytes = null;
+
 		try {
-			return Crypt.crypt(
-				saltBytes, plainTextPassword.getBytes(Digester.ENCODING));
+			plaintextPasswordBytes = plaintextPassword.getBytes(
+				DigesterUtil.ENCODING);
+
+			return Crypt.crypt(saltBytes, plaintextPasswordBytes);
 		}
 		catch (UnsupportedEncodingException unsupportedEncodingException) {
-			throw new PwdEncryptorException(
+			throw new PwdEncryptorException.UnsupportedEncoding(
 				unsupportedEncodingException.getMessage(),
 				unsupportedEncodingException);
+		}
+		finally {
+			if (plaintextPasswordBytes != null) {
+				Arrays.fill(plaintextPasswordBytes, (byte)0);
+			}
 		}
 	}
 
@@ -67,16 +77,16 @@ public class CryptPasswordEncryptor implements PasswordEncryptor {
 
 				String salt = _SALT[x].concat(_SALT[y]);
 
-				saltBytes = salt.getBytes(Digester.ENCODING);
+				saltBytes = salt.getBytes(DigesterUtil.ENCODING);
 			}
 			else {
 				String salt = encryptedPassword.substring(0, 2);
 
-				saltBytes = salt.getBytes(Digester.ENCODING);
+				saltBytes = salt.getBytes(DigesterUtil.ENCODING);
 			}
 		}
 		catch (UnsupportedEncodingException unsupportedEncodingException) {
-			throw new PwdEncryptorException(
+			throw new PwdEncryptorException.UnsupportedEncoding(
 				"Unable to extract salt from encrypted password " +
 					unsupportedEncodingException.getMessage(),
 				unsupportedEncodingException);

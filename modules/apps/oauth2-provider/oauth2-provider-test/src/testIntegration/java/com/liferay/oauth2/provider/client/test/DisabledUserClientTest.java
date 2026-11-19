@@ -12,20 +12,20 @@ import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserLocalServiceUtil;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
+import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
-import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 
-import java.util.Arrays;
+import jakarta.ws.rs.client.Invocation;
+import jakarta.ws.rs.client.WebTarget;
+import jakarta.ws.rs.core.Response;
 
-import javax.ws.rs.client.Invocation;
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.Response;
+import java.util.Arrays;
 
 import org.junit.Assert;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -43,13 +43,12 @@ public class DisabledUserClientTest extends BaseClientTestCase {
 	public static final AggregateTestRule aggregateTestRule =
 		new LiferayIntegrationTestRule();
 
-	@Ignore
 	@Test
 	public void test() throws Exception {
 		WebTarget webTarget = getWebTarget("/users");
 
 		Invocation.Builder builder = authorize(
-			webTarget.request(), getToken("oauthTestApplication"));
+			webTarget.request(), getToken(_CLIENT_ID));
 
 		Response response = builder.get();
 
@@ -57,45 +56,48 @@ public class DisabledUserClientTest extends BaseClientTestCase {
 
 		webTarget = getWebTarget("/users");
 
-		builder = authorize(
-			webTarget.request(), getToken("oauthTestApplicationDisabled"));
+		builder = authorize(webTarget.request(), getToken(_CLIENT_ID_DISABLED));
 
 		response = builder.get();
 
 		Assert.assertEquals(403, response.getStatus());
 	}
 
-	public static class DisabledUserTestPreparatorBundleActivator
+	@Override
+	protected BundleActivator getBundleActivator() {
+		return new DisabledUserTestPreparatorBundleActivator();
+	}
+
+	private static final String _CLIENT_ID = RandomTestUtil.randomString();
+
+	private static final String _CLIENT_ID_DISABLED =
+		RandomTestUtil.randomString();
+
+	private class DisabledUserTestPreparatorBundleActivator
 		extends BaseTestPreparatorBundleActivator {
 
 		@Override
 		protected void prepareTest() throws Exception {
-			long defaultCompanyId = PortalUtil.getDefaultCompanyId();
+			long companyId = TestPropsValues.getCompanyId();
 
 			User disabledUser = addUser(
-				CompanyLocalServiceUtil.getCompany(defaultCompanyId));
+				CompanyLocalServiceUtil.getCompany(companyId));
 
 			UserLocalServiceUtil.updateStatus(
 				disabledUser.getUserId(), WorkflowConstants.STATUS_INACTIVE,
 				new ServiceContext());
 
-			User user = UserTestUtil.getAdminUser(defaultCompanyId);
+			User user = UserTestUtil.getAdminUser(companyId);
 
 			registerJaxRsApplication(new TestApplication(), "users", null);
 
 			createOAuth2Application(
-				defaultCompanyId, user, "oauthTestApplication",
-				Arrays.asList("GET"));
+				companyId, user, _CLIENT_ID, Arrays.asList("GET"));
 			createOAuth2Application(
-				defaultCompanyId, disabledUser, "oauthTestApplicationDisabled",
+				companyId, disabledUser, _CLIENT_ID_DISABLED,
 				Arrays.asList("GET"));
 		}
 
-	}
-
-	@Override
-	protected BundleActivator getBundleActivator() {
-		return new DisabledUserTestPreparatorBundleActivator();
 	}
 
 }

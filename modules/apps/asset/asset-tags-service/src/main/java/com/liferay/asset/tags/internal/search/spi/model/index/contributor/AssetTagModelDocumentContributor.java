@@ -6,9 +6,13 @@
 package com.liferay.asset.tags.internal.search.spi.model.index.contributor;
 
 import com.liferay.asset.kernel.model.AssetTag;
+import com.liferay.asset.kernel.model.AssetTagGroupRel;
+import com.liferay.asset.kernel.service.AssetTagGroupRelLocalService;
+import com.liferay.depot.constants.DepotConstants;
 import com.liferay.portal.kernel.search.Document;
 import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.kernel.security.auth.PrincipalThreadLocal;
+import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.search.spi.model.index.contributor.ModelDocumentContributor;
 import com.liferay.subscription.service.SubscriptionLocalService;
 
@@ -31,11 +35,28 @@ public class AssetTagModelDocumentContributor
 		document.addTextSortable(Field.NAME, assetTag.getName());
 		document.addNumberSortable("assetCount", assetTag.getAssetCount());
 		document.addKeyword(
+			"groupIds",
+			_getGroupIds(DepotConstants.TYPE_SPACE, assetTag.getTagId()));
+		document.addKeyword(
+			"projectDepotEntryGroupIds",
+			_getGroupIds(DepotConstants.TYPE_PROJECT, assetTag.getTagId()));
+		document.addKeyword(
 			"subscribed",
 			_subscriptionLocalService.isSubscribed(
 				assetTag.getCompanyId(), PrincipalThreadLocal.getUserId(),
 				AssetTag.class.getName(), assetTag.getTagId()));
 	}
+
+	private long[] _getGroupIds(int depotEntryType, long tagId) {
+		return ListUtil.toLongArray(
+			_assetTagGroupRelLocalService.
+				getAssetTagGroupRelsByTagIdAndDepotEntryType(
+					tagId, depotEntryType),
+			AssetTagGroupRel::getGroupId);
+	}
+
+	@Reference
+	private AssetTagGroupRelLocalService _assetTagGroupRelLocalService;
 
 	@Reference
 	private SubscriptionLocalService _subscriptionLocalService;

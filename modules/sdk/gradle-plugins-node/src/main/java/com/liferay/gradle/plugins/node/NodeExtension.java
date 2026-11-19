@@ -133,11 +133,7 @@ public class NodeExtension {
 				String npmVersion = getNpmVersion();
 
 				if (OSDetector.isWindows() && Validator.isNull(npmVersion)) {
-					String nodeVersion = getNodeVersion();
-
-					if (_npmVersions.containsKey(nodeVersion)) {
-						npmVersion = _npmVersions.get(nodeVersion);
-					}
+					npmVersion = _npmVersions.get(getNodeVersion());
 				}
 
 				if (Validator.isNull(npmVersion)) {
@@ -344,6 +340,6 @@ public class NodeExtension {
 	private Object _scriptFile;
 	private Object _useNpm = true;
 	private Object _yarnUrl;
-	private Object _yarnVersion = "1.13.0";
+	private Object _yarnVersion = "1.22.22";
 
 }

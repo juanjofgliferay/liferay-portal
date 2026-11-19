@@ -5,12 +5,15 @@
 
 package com.liferay.bookmarks.internal.search;
 
+import com.liferay.bookmarks.internal.search.spi.model.result.contributor.BookmarksFolderModelSummaryContributor;
 import com.liferay.bookmarks.model.BookmarksFolder;
+import com.liferay.bookmarks.service.BookmarksFolderLocalService;
 import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.search.spi.model.index.contributor.ModelIndexerWriterContributor;
 import com.liferay.portal.search.spi.model.registrar.ModelSearchConfigurator;
 import com.liferay.portal.search.spi.model.result.contributor.ModelSummaryContributor;
 
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
@@ -46,15 +49,18 @@ public class BookmarksFolderModelSearchConfigurator
 		return _modelSummaryContributor;
 	}
 
-	@Reference(
-		target = "(indexer.class.name=com.liferay.bookmarks.model.BookmarksFolder)"
-	)
+	@Activate
+	protected void activate() {
+		_modelIndexWriterContributor = new ModelIndexerWriterContributor<>(
+			_bookmarksFolderLocalService::getIndexableActionableDynamicQuery);
+	}
+
+	@Reference
+	private BookmarksFolderLocalService _bookmarksFolderLocalService;
+
 	private ModelIndexerWriterContributor<BookmarksFolder>
 		_modelIndexWriterContributor;
-
-	@Reference(
-		target = "(indexer.class.name=com.liferay.bookmarks.model.BookmarksFolder)"
-	)
-	private ModelSummaryContributor _modelSummaryContributor;
+	private final ModelSummaryContributor _modelSummaryContributor =
+		new BookmarksFolderModelSummaryContributor();
 
 }

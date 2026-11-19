@@ -5,6 +5,8 @@
 
 package com.liferay.jenkins.results.parser;
 
+import java.net.URL;
+
 import java.util.List;
 
 /**
@@ -16,10 +18,26 @@ public interface DownstreamBuildReport extends BuildReport {
 
 	public String getBatchName();
 
+	public int getFailCount();
+
+	public String getJobVariant();
+
+	public int getPassCount();
+
+	public int getSkipCount();
+
+	public TestClassReport getTestClassReport(String testClassName);
+
 	public List<TestClassReport> getTestClassReports();
 
 	public List<TestReport> getTestReports();
 
+	public URL getTestrayCaseResultURL();
+
 	public TopLevelBuildReport getTopLevelBuildReport();
+
+	public boolean isBuildCached();
+
+	public boolean isBuildTimedOut();
 
 }

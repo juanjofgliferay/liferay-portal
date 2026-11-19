@@ -6,9 +6,15 @@
 package com.liferay.oauth2.provider.internal.configuration;
 
 import com.liferay.oauth2.provider.model.OAuth2Application;
+import com.liferay.oauth2.provider.scope.liferay.ScopeLocator;
 import com.liferay.oauth2.provider.service.OAuth2ApplicationLocalService;
+import com.liferay.oauth2.provider.service.OAuth2ApplicationScopeAliasesLocalService;
+import com.liferay.osgi.util.configuration.ConfigurationFactoryUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.instance.lifecycle.BasePortalInstanceLifecycleListener;
+import com.liferay.portal.instance.lifecycle.EveryNodeEveryStartup;
+import com.liferay.portal.instance.lifecycle.PortalInstanceLifecycleListener;
 import com.liferay.portal.k8s.agent.PortalK8sConfigMapModifier;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
@@ -17,19 +23,27 @@ import com.liferay.portal.kernel.module.framework.ModuleServiceLifecycle;
 import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.service.UserLocalService;
+import com.liferay.portal.kernel.transaction.Propagation;
+import com.liferay.portal.kernel.transaction.TransactionConfig;
+import com.liferay.portal.kernel.transaction.TransactionInvokerUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.Http;
 import com.liferay.portal.kernel.util.Validator;
 
-import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 
-import javax.ws.rs.core.Application;
-
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.ServiceRegistration;
 import org.osgi.service.component.ComponentConstants;
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
-import org.osgi.service.component.annotations.ReferencePolicyOption;
 
 /**
  * @author Raymond Augé
@@ -37,10 +51,34 @@ import org.osgi.service.component.annotations.ReferencePolicyOption;
  */
 public abstract class BaseConfigurationFactory {
 
+	@Activate
+	protected void activate(
+			BundleContext bundleContext, Map<String, Object> properties)
+		throws Exception {
+
+		Log log = getLog();
+
+		if (log.isDebugEnabled()) {
+			log.debug("Activate " + properties);
+		}
+
+		_bundleContext = bundleContext;
+		_properties = properties;
+
+		_apply();
+	}
+
 	@Deactivate
 	protected void deactivate(Integer reason) throws PortalException {
-		if (reason !=
-				ComponentConstants.DEACTIVATION_REASON_CONFIGURATION_DELETED) {
+		scopeLocator.stopWaitingForScopeAliases(_runnable);
+
+		if (_serviceRegistration != null) {
+			_serviceRegistration.unregister();
+		}
+
+		if ((oAuth2Application == null) ||
+			(reason !=
+				ComponentConstants.DEACTIVATION_REASON_CONFIGURATION_DELETED)) {
 
 			return;
 		}
@@ -51,26 +89,65 @@ public abstract class BaseConfigurationFactory {
 			log.debug("Deactivating " + oAuth2Application);
 		}
 
-		oAuth2ApplicationLocalService.deleteOAuth2Application(
-			oAuth2Application);
+		ConfigurationFactoryUtil.executeAsCompany(
+			companyLocalService,
+			HashMapBuilder.<String, Object>put(
+				"companyId", oAuth2Application.getCompanyId()
+			).build(),
+			companyId -> {
+				oAuth2ApplicationLocalService.deleteOAuth2Application(
+					oAuth2Application);
 
-		if (Validator.isNotNull(_configMapName)) {
-			PortalK8sConfigMapModifier portalK8sConfigMapModifier =
-				_portalK8sConfigMapModifierSnapshot.get();
+				if (Validator.isNull(_configMapName)) {
+					return;
+				}
 
-			portalK8sConfigMapModifier.modifyConfigMap(
-				configMapModel -> {
-					_extensionProperties.forEach(configMapModel.data()::remove);
+				PortalK8sConfigMapModifier portalK8sConfigMapModifier =
+					_portalK8sConfigMapModifierSnapshot.get();
 
-					Map<String, String> labels = configMapModel.labels();
+				portalK8sConfigMapModifier.modifyConfigMap(
+					configMapModel -> {
+						_extensionProperties.forEach(
+							configMapModel.data()::remove);
 
-					labels.put(
-						"dxp.lxc.liferay.com/virtualInstanceId",
-						_virtualInstanceId);
-					labels.put("ext.lxc.liferay.com/projectName", _projectName);
-				},
-				_configMapName);
-		}
+						Map<String, String> labels = configMapModel.labels();
+
+						labels.put(
+							"dxp.lxc.liferay.com/virtualInstanceId",
+							_virtualInstanceId);
+						labels.put(
+							"ext.lxc.liferay.com/projectName", _projectName);
+					},
+					_configMapName);
+			});
+	}
+
+	protected abstract void doActivate(
+			Map<String, Object> properties, long companyId,
+			String externalReferenceCode)
+		throws Exception;
+
+	protected HashMapBuilder.HashMapWrapper<String, String>
+		getExtensionProperties(
+			String externalReferenceCode, OAuth2Application oAuth2Application) {
+
+		return HashMapBuilder.put(
+			externalReferenceCode + ".oauth2.authorization.uri",
+			"/o/oauth2/authorize"
+		).put(
+			externalReferenceCode + ".oauth2.home.page.uri",
+			oAuth2Application.getHomePageURL()
+		).put(
+			externalReferenceCode + ".oauth2.introspection.uri",
+			"/o/oauth2/introspect"
+		).put(
+			externalReferenceCode + ".oauth2.jwks.uri", "/o/oauth2/jwks"
+		).put(
+			externalReferenceCode + ".oauth2.redirect.uris",
+			"/o/oauth2/redirect"
+		).put(
+			externalReferenceCode + ".oauth2.token.uri", "/o/oauth2/token"
+		);
 	}
 
 	protected String getHomePageURL(String homePageURL, String baseURL) {
@@ -93,6 +170,19 @@ public abstract class BaseConfigurationFactory {
 
 	protected String getServiceAddress(Company company) {
 		return Http.HTTPS_WITH_SLASH.concat(company.getVirtualHostname());
+	}
+
+	protected void logOAuth2Application(OAuth2Application oAuth2Application) {
+		Log log = getLog();
+
+		if (log.isDebugEnabled()) {
+			log.debug(
+				StringBundler.concat(
+					"OAuth 2 application with external reference code ",
+					oAuth2Application.getExternalReferenceCode(),
+					" and company ID ", oAuth2Application.getCompanyId(),
+					" has client ID ", oAuth2Application.getClientId()));
+		}
 	}
 
 	protected void modifyConfigMap(
@@ -164,8 +254,32 @@ public abstract class BaseConfigurationFactory {
 			_configMapName);
 	}
 
-	@Reference(policyOption = ReferencePolicyOption.GREEDY)
-	protected Collection<Application> applications;
+	protected void updateScopes(
+			List<String> currentScopeAliasesList,
+			OAuth2Application oAuth2Application, List<String> scopeAliasesList)
+		throws Exception {
+
+		Set<String> scopeAliases = new HashSet<>(scopeAliasesList);
+
+		scopeAliases.removeAll(currentScopeAliasesList);
+
+		Set<String> resolvedScopeAliases = Collections.emptySet();
+
+		if (!scopeAliases.isEmpty()) {
+			resolvedScopeAliases = scopeLocator.waitForScopeAliases(
+				oAuth2Application.getCompanyId(), scopeAliases, _runnable);
+		}
+
+		if (scopeAliasesList.containsAll(currentScopeAliasesList) &&
+			resolvedScopeAliases.isEmpty()) {
+
+			return;
+		}
+
+		oAuth2ApplicationLocalService.updateScopeAliases(
+			oAuth2Application.getUserId(), oAuth2Application.getUserName(),
+			oAuth2Application.getOAuth2ApplicationId(), scopeAliasesList);
+	}
 
 	@Reference
 	protected CompanyLocalService companyLocalService;
@@ -179,16 +293,126 @@ public abstract class BaseConfigurationFactory {
 	protected OAuth2ApplicationLocalService oAuth2ApplicationLocalService;
 
 	@Reference
+	protected OAuth2ApplicationScopeAliasesLocalService
+		oAuth2ApplicationScopeAliasesLocalService;
+
+	@Reference
+	protected ScopeLocator scopeLocator;
+
+	@Reference
 	protected UserLocalService userLocalService;
+
+	private void _apply() {
+		try {
+			ConfigurationFactoryUtil.executeAsCompany(
+				companyLocalService, _properties,
+				companyId -> {
+					String externalReferenceCode =
+						ConfigurationFactoryUtil.getExternalReferenceCode(
+							_properties);
+
+					doActivate(_properties, companyId, externalReferenceCode);
+				});
+		}
+		catch (Exception exception) {
+			String webId = GetterUtil.getString(
+				_properties.get("dxp.lxc.liferay.com.virtualInstanceId"));
+
+			if (Validator.isNotNull(webId) && !webId.equals("default") &&
+				(_getCompanyByWebId(webId) == null)) {
+
+				_registerPortalInstanceLifecycleListener();
+
+				return;
+			}
+
+			Log log = getLog();
+
+			log.error(exception);
+		}
+	}
+
+	private Company _getCompanyByWebId(String webId) {
+		try {
+			return companyLocalService.getCompanyByWebId(webId);
+		}
+		catch (PortalException portalException) {
+			Log log = getLog();
+
+			if (log.isDebugEnabled()) {
+				log.debug(portalException);
+			}
+		}
+
+		return null;
+	}
+
+	private void _registerPortalInstanceLifecycleListener() {
+		if (_serviceRegistration != null) {
+			return;
+		}
+
+		Log log = getLog();
+
+		if (log.isInfoEnabled()) {
+			log.info(
+				"Waiting for virtual instance " +
+					_properties.get("dxp.lxc.liferay.com.virtualInstanceId"));
+		}
+
+		_serviceRegistration = _bundleContext.registerService(
+			PortalInstanceLifecycleListener.class,
+			new VirtualInstancePortalInstanceLifecycleListener(), null);
+	}
 
 	private static final Snapshot<PortalK8sConfigMapModifier>
 		_portalK8sConfigMapModifierSnapshot = new Snapshot<>(
 			BaseConfigurationFactory.class, PortalK8sConfigMapModifier.class,
 			null, true);
 
+	private BundleContext _bundleContext;
 	private volatile String _configMapName;
 	private volatile Map<String, String> _extensionProperties;
 	private volatile String _projectName;
+	private Map<String, Object> _properties;
+
+	private final Runnable _runnable = () -> {
+		try {
+			TransactionInvokerUtil.invoke(
+				TransactionConfig.Factory.create(
+					Propagation.NOT_SUPPORTED,
+					new Class<?>[] {Exception.class}),
+				() -> {
+					_apply();
+
+					return null;
+				});
+		}
+		catch (Throwable throwable) {
+			throw new RuntimeException(throwable);
+		}
+	};
+
+	private volatile ServiceRegistration<PortalInstanceLifecycleListener>
+		_serviceRegistration;
 	private volatile String _virtualInstanceId;
+
+	private class VirtualInstancePortalInstanceLifecycleListener
+		extends BasePortalInstanceLifecycleListener
+		implements EveryNodeEveryStartup {
+
+		@Override
+		public void portalInstanceRegistered(Company company) {
+			if (!Objects.equals(
+					company.getWebId(),
+					_properties.get("dxp.lxc.liferay.com.virtualInstanceId"))) {
+
+				return;
+			}
+
+			_runnable.run();
+		}
+
+	}
 
 }

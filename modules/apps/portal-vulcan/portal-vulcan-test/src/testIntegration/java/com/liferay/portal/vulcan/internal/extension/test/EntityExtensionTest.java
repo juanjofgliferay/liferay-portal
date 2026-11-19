@@ -13,6 +13,7 @@ import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
+import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.test.log.LogCapture;
 import com.liferay.portal.test.log.LoggerTestUtil;
 import com.liferay.portal.test.rule.Inject;
@@ -21,6 +22,15 @@ import com.liferay.portal.vulcan.extension.ExtensionProvider;
 import com.liferay.portal.vulcan.extension.ExtensionProviderRegistry;
 import com.liferay.portal.vulcan.extension.PropertyDefinition;
 import com.liferay.portal.vulcan.internal.test.util.URLConnectionUtil;
+
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.HttpMethod;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.Application;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MediaType;
 
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
@@ -35,15 +45,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import javax.ws.rs.Consumes;
-import javax.ws.rs.HttpMethod;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.Application;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -115,7 +116,10 @@ public class EntityExtensionTest {
 		int usersCount = UserLocalServiceUtil.getUsersCount();
 
 		Assert.assertEquals(
-			200, _getResponseCode("http://localhost:8080/o/test-vulcan/test"));
+			200,
+			_getResponseCode(
+				"http://localhost:" + PortalUtil.getPortalServerPort(false) +
+					"/o/test-vulcan/test"));
 
 		Assert.assertEquals(
 			usersCount + 1, UserLocalServiceUtil.getUsersCount());
@@ -141,7 +145,10 @@ public class EntityExtensionTest {
 
 			Assert.assertEquals(
 				500,
-				_getResponseCode("http://localhost:8080/o/test-vulcan/test"));
+				_getResponseCode(
+					"http://localhost:" +
+						PortalUtil.getPortalServerPort(false) +
+							"/o/test-vulcan/test"));
 		}
 
 		Assert.assertEquals(usersCount, UserLocalServiceUtil.getUsersCount());
@@ -251,11 +258,7 @@ public class EntityExtensionTest {
 
 		@Override
 		public boolean isApplicableExtension(long companyId, String className) {
-			if (className.equals(TestClass.class.getName())) {
-				return true;
-			}
-
-			return false;
+			return className.equals(TestClass.class.getName());
 		}
 
 		@Override

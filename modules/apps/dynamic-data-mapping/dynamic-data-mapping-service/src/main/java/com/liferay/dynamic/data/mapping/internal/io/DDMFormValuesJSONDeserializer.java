@@ -187,16 +187,19 @@ public class DDMFormValuesJSONDeserializer
 	private DDMFormFieldValue _getDDMFormFieldValue(
 		JSONObject jsonObject, Map<String, DDMFormField> ddmFormFieldsMap) {
 
-		DDMFormFieldValue ddmFormFieldValue = new DDMFormFieldValue();
-
-		ddmFormFieldValue.setFieldReference(
-			jsonObject.getString("fieldReference"));
+		DDMFormFieldValue ddmFormFieldValue = null;
 
 		String instanceId = jsonObject.getString("instanceId");
 
 		if (instanceId.matches("[a-zA-Z0-9]*")) {
-			ddmFormFieldValue.setInstanceId(instanceId);
+			ddmFormFieldValue = new DDMFormFieldValue(instanceId);
 		}
+		else {
+			ddmFormFieldValue = new DDMFormFieldValue();
+		}
+
+		ddmFormFieldValue.setFieldReference(
+			jsonObject.getString("fieldReference"));
 
 		ddmFormFieldValue.setName(jsonObject.getString("name"));
 
@@ -229,11 +232,13 @@ public class DDMFormValuesJSONDeserializer
 		while (iterator.hasNext()) {
 			String languageId = iterator.next();
 
-			if (_language.isAvailableLocale(languageId)) {
-				localizedValue.addString(
-					LocaleUtil.fromLanguageId(languageId),
-					jsonObject.getString(languageId));
+			if (!_language.isAvailableLocale(languageId)) {
+				continue;
 			}
+
+			localizedValue.addString(
+				LocaleUtil.fromLanguageId(languageId),
+				jsonObject.getString(languageId));
 		}
 
 		return localizedValue;
@@ -267,6 +272,10 @@ public class DDMFormValuesJSONDeserializer
 	private void _setDDMFormFieldValueValue(
 		JSONObject jsonObject, DDMFormField ddmFormField,
 		DDMFormFieldValue ddmFormFieldValue) {
+
+		if ((ddmFormField != null) && ddmFormField.isTransient()) {
+			return;
+		}
 
 		String valueString = jsonObject.getString("value", null);
 

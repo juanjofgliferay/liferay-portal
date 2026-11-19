@@ -38,8 +38,10 @@ import org.osgi.annotation.versioning.ProviderType;
  *
  * @author Alessio Antonio Rendina
  * @see CommerceNotificationTemplateCommerceAccountGroupRelLocalServiceUtil
+ * @deprecated As of Cavanaugh (7.4.x)
  * @generated
  */
+@Deprecated
 @ProviderType
 @Transactional(
 	isolation = Isolation.PORTAL,
@@ -92,10 +94,6 @@ public interface CommerceNotificationTemplateCommerceAccountGroupRelLocalService
 	 */
 	public PersistedModel createPersistedModel(Serializable primaryKeyObj)
 		throws PortalException;
-
-	public void
-		deleteCNTemplateCommerceAccountGroupRelsBycommerceAccountGroupId(
-			long commerceAccountGroupId);
 
 	public void
 		deleteCNTemplateCommerceAccountGroupRelsByCommerceNotificationTemplateId(
@@ -219,11 +217,6 @@ public interface CommerceNotificationTemplateCommerceAccountGroupRelLocalService
 			long commerceNotificationTemplateCommerceAccountGroupRelId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public CommerceNotificationTemplateCommerceAccountGroupRel
-		fetchCommerceNotificationTemplateCommerceAccountGroupRel(
-			long commerceNotificationTemplateId, long commerceAccountGroupId);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public ActionableDynamicQuery getActionableDynamicQuery();
 
 	/**
@@ -254,14 +247,6 @@ public interface CommerceNotificationTemplateCommerceAccountGroupRelLocalService
 	public List<CommerceNotificationTemplateCommerceAccountGroupRel>
 		getCommerceNotificationTemplateCommerceAccountGroupRels(
 			int start, int end);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<CommerceNotificationTemplateCommerceAccountGroupRel>
-		getCommerceNotificationTemplateCommerceAccountGroupRels(
-			long commerceNotificationTemplateId, int start, int end,
-			OrderByComparator
-				<CommerceNotificationTemplateCommerceAccountGroupRel>
-					orderByComparator);
 
 	/**
 	 * Returns the number of commerce notification template commerce account group rels.
@@ -306,3 +291,4 @@ public interface CommerceNotificationTemplateCommerceAccountGroupRelLocalService
 				commerceNotificationTemplateCommerceAccountGroupRel);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1538694841

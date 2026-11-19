@@ -10,7 +10,6 @@ import com.liferay.account.service.AccountGroupService;
 import com.liferay.commerce.order.rule.model.COREntry;
 import com.liferay.commerce.order.rule.model.COREntryRel;
 import com.liferay.commerce.order.rule.service.COREntryRelService;
-import com.liferay.commerce.order.rule.service.COREntryService;
 import com.liferay.headless.commerce.admin.order.dto.v1_0.OrderRuleAccountGroup;
 import com.liferay.portal.vulcan.dto.converter.DTOConverter;
 import com.liferay.portal.vulcan.dto.converter.DTOConverterContext;
@@ -22,7 +21,10 @@ import org.osgi.service.component.annotations.Reference;
  * @author Marco Leo
  */
 @Component(
-	property = "dto.class.name=com.liferay.commerce.order.rule.model.COREntryRel-AccountGroup",
+	property = {
+		"default=true",
+		"dto.class.name=com.liferay.commerce.order.rule.model.COREntryRel-AccountGroup"
+	},
 	service = DTOConverter.class
 )
 public class OrderRuleAccountGroupDTOConverter
@@ -46,14 +48,14 @@ public class OrderRuleAccountGroupDTOConverter
 
 		return new OrderRuleAccountGroup() {
 			{
-				accountGroupExternalReferenceCode =
-					orderRuleAccountGroup.getExternalReferenceCode();
-				accountGroupId = orderRuleAccountGroup.getAccountGroupId();
-				actions = dtoConverterContext.getActions();
-				orderRuleAccountGroupId = corEntryRel.getCOREntryRelId();
-				orderRuleExternalReferenceCode =
-					corEntry.getExternalReferenceCode();
-				orderRuleId = corEntry.getCOREntryId();
+				setAccountGroupExternalReferenceCode(
+					orderRuleAccountGroup::getExternalReferenceCode);
+				setAccountGroupId(orderRuleAccountGroup::getAccountGroupId);
+				setActions(dtoConverterContext::getActions);
+				setOrderRuleAccountGroupId(corEntryRel::getCOREntryRelId);
+				setOrderRuleExternalReferenceCode(
+					corEntry::getExternalReferenceCode);
+				setOrderRuleId(corEntry::getCOREntryId);
 			}
 		};
 	}
@@ -63,8 +65,5 @@ public class OrderRuleAccountGroupDTOConverter
 
 	@Reference
 	private COREntryRelService _corEntryRelService;
-
-	@Reference
-	private COREntryService _corEntryService;
 
 }

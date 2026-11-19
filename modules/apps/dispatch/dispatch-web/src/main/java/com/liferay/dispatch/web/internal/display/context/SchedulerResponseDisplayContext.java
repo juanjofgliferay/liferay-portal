@@ -9,6 +9,8 @@ import com.liferay.dispatch.constants.DispatchPortletKeys;
 import com.liferay.dispatch.scheduler.SchedulerResponseManager;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
+import com.liferay.portal.kernel.messaging.Message;
+import com.liferay.portal.kernel.model.CompanyConstants;
 import com.liferay.portal.kernel.portlet.SearchOrderByUtil;
 import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.scheduler.SchedulerException;
@@ -18,12 +20,12 @@ import com.liferay.portal.kernel.util.FastDateFormatFactoryUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderRequest;
+
 import java.text.Format;
 
 import java.util.Date;
-
-import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
 
 /**
  * @author Matija Petanjek
@@ -127,8 +129,10 @@ public class SchedulerResponseDisplayContext extends BaseDisplayContext {
 		_searchContainer.setOrderByType(getOrderByType());
 		_searchContainer.setResultsAndTotal(
 			() -> _schedulerResponseManager.getSchedulerResponses(
+				dispatchRequestHelper.getPermissionChecker(),
 				_searchContainer.getStart(), _searchContainer.getEnd()),
-			_schedulerResponseManager.getSchedulerResponsesCount());
+			_schedulerResponseManager.getSchedulerResponsesCount(
+				dispatchRequestHelper.getPermissionChecker()));
 
 		return _searchContainer;
 	}
@@ -143,6 +147,16 @@ public class SchedulerResponseDisplayContext extends BaseDisplayContext {
 		return _schedulerResponseManager.getTriggerState(
 			schedulerResponse.getJobName(), schedulerResponse.getGroupName(),
 			schedulerResponse.getStorageType());
+	}
+
+	public boolean isSystem(SchedulerResponse schedulerResponse) {
+		Message message = schedulerResponse.getMessage();
+
+		if (message.getLong("companyId") == CompanyConstants.SYSTEM) {
+			return true;
+		}
+
+		return false;
 	}
 
 	private final Format _dateTimeFormat;

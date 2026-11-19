@@ -16,7 +16,6 @@ import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.systemevent.SystemEvent;
 import com.liferay.portal.kernel.util.ListUtil;
-import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.util.List;
 
@@ -129,25 +128,6 @@ public class CommercePriceModifierRelLocalServiceImpl
 	}
 
 	@Override
-	public List<CommercePriceModifierRel>
-		getCategoriesCommercePriceModifierRels(
-			long commercePriceModifierId, String name, int start, int end) {
-
-		return commercePriceModifierRelFinder.
-			findCategoriesByCommercePriceModifierId(
-				commercePriceModifierId, name, start, end);
-	}
-
-	@Override
-	public int getCategoriesCommercePriceModifierRelsCount(
-		long commercePriceModifierId, String name) {
-
-		return commercePriceModifierRelFinder.
-			countCategoriesByCommercePriceModifierId(
-				commercePriceModifierId, name);
-	}
-
-	@Override
 	public long[] getClassPKs(long commercePriceModifierId, String className) {
 		return ListUtil.toLongArray(
 			commercePriceModifierRelPersistence.findByCPM_CN(
@@ -166,70 +146,11 @@ public class CommercePriceModifierRelLocalServiceImpl
 	}
 
 	@Override
-	public List<CommercePriceModifierRel> getCommercePriceModifierRels(
-		long commercePriceModifierId, String className, int start, int end,
-		OrderByComparator<CommercePriceModifierRel> orderByComparator) {
-
-		return commercePriceModifierRelPersistence.findByCPM_CN(
-			commercePriceModifierId,
-			_classNameLocalService.getClassNameId(className), start, end,
-			orderByComparator);
-	}
-
-	@Override
-	public int getCommercePriceModifierRelsCount(
-		long commercePriceModifierId, String className) {
-
-		return commercePriceModifierRelPersistence.countByCPM_CN(
-			commercePriceModifierId,
-			_classNameLocalService.getClassNameId(className));
-	}
-
-	@Override
 	public List<CommercePriceModifierRel> getCommercePriceModifiersRels(
 		String className, long classPK) {
 
 		return commercePriceModifierRelPersistence.findByCN_CPK(
 			_classNameLocalService.getClassNameId(className), classPK);
-	}
-
-	@Override
-	public List<CommercePriceModifierRel>
-		getCommercePricingClassesCommercePriceModifierRels(
-			long commercePriceModifierId, String title, int start, int end) {
-
-		return commercePriceModifierRelFinder.
-			findPricingClassesByCommercePriceModifierId(
-				commercePriceModifierId, title, start, end);
-	}
-
-	@Override
-	public int getCommercePricingClassesCommercePriceModifierRelsCount(
-		long commercePriceModifierId, String title) {
-
-		return commercePriceModifierRelFinder.
-			countPricingClassesByCommercePriceModifierId(
-				commercePriceModifierId, title);
-	}
-
-	@Override
-	public List<CommercePriceModifierRel>
-		getCPDefinitionsCommercePriceModifierRels(
-			long commercePriceModifierId, String name, String languageId,
-			int start, int end) {
-
-		return commercePriceModifierRelFinder.
-			findCPDefinitionsByCommercePriceModifierId(
-				commercePriceModifierId, name, languageId, start, end);
-	}
-
-	@Override
-	public int getCPDefinitionsCommercePriceModifierRelsCount(
-		long commercePriceModifierId, String name, String languageId) {
-
-		return commercePriceModifierRelFinder.
-			countCPDefinitionsByCommercePriceModifierId(
-				commercePriceModifierId, languageId, name);
 	}
 
 	@Reference

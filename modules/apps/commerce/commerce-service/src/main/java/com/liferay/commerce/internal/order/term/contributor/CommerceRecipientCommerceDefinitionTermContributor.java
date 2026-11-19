@@ -115,6 +115,10 @@ public class CommerceRecipientCommerceDefinitionTermContributor
 				return String.valueOf(user.getUserId());
 			}
 
+			if (accountEntry.isGuestAccount()) {
+				return accountEntry.getEmailAddress();
+			}
+
 			return String.valueOf(commerceOrder.getUserId());
 		}
 
@@ -156,10 +160,12 @@ public class CommerceRecipientCommerceDefinitionTermContributor
 				accountEntryUserRel.getAccountUserId(),
 				accountEntry.getAccountEntryGroupId());
 
-			if (userRoles.contains(role)) {
-				resultsSB.append(accountEntryUserRel.getAccountUserId());
-				resultsSB.append(",");
+			if (!userRoles.contains(role)) {
+				continue;
 			}
+
+			resultsSB.append(accountEntryUserRel.getAccountUserId());
+			resultsSB.append(",");
 		}
 
 		return resultsSB.toString();

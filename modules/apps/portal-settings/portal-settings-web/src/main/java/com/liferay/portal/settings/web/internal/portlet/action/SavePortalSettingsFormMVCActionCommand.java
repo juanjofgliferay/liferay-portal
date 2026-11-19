@@ -23,14 +23,14 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.settings.portlet.action.PortalSettingsFormContributor;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.ValidatorException;
+
 import java.io.IOException;
 
 import java.util.HashSet;
 import java.util.Set;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.ValidatorException;
 
 /**
  * @author Michael C. Han
@@ -139,9 +139,11 @@ public class SavePortalSettingsFormMVCActionCommand
 
 			String oldValue = settings.getValue(name, null);
 
-			if (!value.equals(oldValue)) {
-				modifiableSettings.setValue(name, value);
+			if (value.equals(oldValue)) {
+				continue;
 			}
+
+			modifiableSettings.setValue(name, value);
 		}
 
 		modifiableSettings.store();

@@ -34,7 +34,6 @@ import java.util.List;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -85,33 +84,6 @@ public class SiteMembershipPolicyMembershipsTest
 	}
 
 	@Test(expected = MembershipPolicyException.class)
-	public void testAssignUsersToForbiddenGroup() throws Exception {
-		long[] forbiddenGroupIds = addForbiddenGroups();
-
-		UserServiceUtil.addGroupUsers(
-			forbiddenGroupIds[0], addUsers(),
-			ServiceContextTestUtil.getServiceContext());
-	}
-
-	@Test
-	public void testAssignUsersToRequiredGroup() throws Exception {
-		long[] requiredGroupIds = addRequiredGroups();
-
-		int initialGroupUsersCount = UserLocalServiceUtil.getGroupUsersCount(
-			requiredGroupIds[0]);
-
-		UserServiceUtil.addGroupUsers(
-			requiredGroupIds[0], addUsers(),
-			ServiceContextTestUtil.getServiceContext());
-
-		Assert.assertEquals(
-			initialGroupUsersCount + 2,
-			UserLocalServiceUtil.getGroupUsersCount(requiredGroupIds[0]));
-
-		Assert.assertTrue(isPropagateMembership());
-	}
-
-	@Test(expected = MembershipPolicyException.class)
 	public void testAssignUserToForbiddenGroups() throws Exception {
 		long[] userIds = addUsers();
 
@@ -141,22 +113,36 @@ public class SiteMembershipPolicyMembershipsTest
 		Assert.assertTrue(isPropagateMembership());
 	}
 
+	@Test(expected = MembershipPolicyException.class)
+	public void testAssignUsersToForbiddenGroup() throws Exception {
+		long[] forbiddenGroupIds = addForbiddenGroups();
+
+		UserServiceUtil.addGroupUsers(
+			forbiddenGroupIds[0], addUsers(),
+			ServiceContextTestUtil.getServiceContext());
+	}
+
 	@Test
-	public void testPropagateWhenAddingUserToRequiredGroups() throws Exception {
-		MembershipPolicyTestUtil.addUser(null, null, addRequiredGroups(), null);
+	public void testAssignUsersToRequiredGroup() throws Exception {
+		long[] requiredGroupIds = addRequiredGroups();
+
+		int initialGroupUsersCount = UserLocalServiceUtil.getGroupUsersCount(
+			requiredGroupIds[0]);
+
+		UserServiceUtil.addGroupUsers(
+			requiredGroupIds[0], addUsers(),
+			ServiceContextTestUtil.getServiceContext());
+
+		Assert.assertEquals(
+			initialGroupUsersCount + 2,
+			UserLocalServiceUtil.getGroupUsersCount(requiredGroupIds[0]));
 
 		Assert.assertTrue(isPropagateMembership());
 	}
 
 	@Test
-	public void testPropagateWhenAssigningUsersToRequiredGroup()
-		throws Exception {
-
-		long[] requiredGroupIds = addRequiredGroups();
-
-		UserServiceUtil.addGroupUsers(
-			requiredGroupIds[0], addUsers(),
-			ServiceContextTestUtil.getServiceContext());
+	public void testPropagateWhenAddingUserToRequiredGroups() throws Exception {
+		MembershipPolicyTestUtil.addUser(null, null, addRequiredGroups(), null);
 
 		Assert.assertTrue(isPropagateMembership());
 	}
@@ -170,6 +156,19 @@ public class SiteMembershipPolicyMembershipsTest
 		MembershipPolicyTestUtil.updateUser(
 			UserLocalServiceUtil.getUser(userIds[0]), null, null,
 			addRequiredGroups(), null, Collections.<UserGroupRole>emptyList());
+
+		Assert.assertTrue(isPropagateMembership());
+	}
+
+	@Test
+	public void testPropagateWhenAssigningUsersToRequiredGroup()
+		throws Exception {
+
+		long[] requiredGroupIds = addRequiredGroups();
+
+		UserServiceUtil.addGroupUsers(
+			requiredGroupIds[0], addUsers(),
+			ServiceContextTestUtil.getServiceContext());
 
 		Assert.assertTrue(isPropagateMembership());
 	}
@@ -208,7 +207,6 @@ public class SiteMembershipPolicyMembershipsTest
 			groups.toString(), userGroupIds.length - 1, groups.size());
 	}
 
-	@Ignore
 	@Test
 	public void testUnassignUserFromRequiredGroups() throws Exception {
 		long[] userIds = addUsers();
@@ -292,7 +290,7 @@ public class SiteMembershipPolicyMembershipsTest
 			HashMapBuilder.put(
 				LocaleUtil.getDefault(), RandomTestUtil.randomString()
 			).build(),
-			group.getDescriptionMap(), group.getType(),
+			group.getDescriptionMap(), group.getType(), null,
 			group.isManualMembership(), group.getMembershipRestriction(),
 			group.getFriendlyURL(), group.isInheritContent(), group.isActive(),
 			ServiceContextTestUtil.getServiceContext());

@@ -20,6 +20,8 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.ProxyUtil;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.io.Serializable;
 
 import java.lang.reflect.InvocationHandler;
@@ -31,12 +33,12 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Function;
 
-import javax.servlet.http.HttpServletRequest;
-
 /**
  * @author Raymond Augé
  * @author Brian Wing Shun Chan
+ * @deprecated As of Cavanaugh (7.4.x), with no direct replacement
  */
+@Deprecated
 public class LayoutStagingHandler implements InvocationHandler, Serializable {
 
 	public LayoutStagingHandler(Layout layout) {

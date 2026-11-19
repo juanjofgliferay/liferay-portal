@@ -17,6 +17,7 @@ import com.liferay.asset.kernel.service.AssetVocabularyService;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.NoSuchModelException;
+import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCActionCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
 import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
@@ -30,11 +31,12 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portlet.asset.util.AssetVocabularySettingsHelper;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+
 import java.util.Locale;
 import java.util.Map;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
+import java.util.Objects;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -44,7 +46,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + AssetCategoriesAdminPortletKeys.ASSET_CATEGORIES_ADMIN,
+		"jakarta.portlet.name=" + AssetCategoriesAdminPortletKeys.ASSET_CATEGORIES_ADMIN,
 		"mvc.command.name=/asset_categories_admin/edit_asset_vocabulary"
 	},
 	service = MVCActionCommand.class
@@ -56,6 +58,8 @@ public class EditAssetVocabularyMVCActionCommand extends BaseMVCActionCommand {
 			ActionRequest actionRequest, ActionResponse actionResponse)
 		throws Exception {
 
+		String externalReferenceCode = ParamUtil.getString(
+			actionRequest, "externalReferenceCode");
 		long vocabularyId = ParamUtil.getLong(actionRequest, "vocabularyId");
 
 		Map<Locale, String> titleMap = _localization.getLocalizationMap(
@@ -77,17 +81,29 @@ public class EditAssetVocabularyMVCActionCommand extends BaseMVCActionCommand {
 				AssetVocabularyConstants.VISIBILITY_TYPE_PUBLIC);
 
 			vocabulary = _assetVocabularyService.addVocabulary(
-				serviceContext.getScopeGroupId(), StringPool.BLANK, titleMap,
-				descriptionMap, _getSettings(actionRequest), visibilityType,
-				serviceContext);
+				externalReferenceCode, serviceContext.getScopeGroupId(),
+				StringPool.BLANK, StringPool.BLANK, titleMap, descriptionMap,
+				_getSettings(actionRequest), visibilityType, serviceContext);
 		}
 		else {
 
 			// Update vocabulary
 
+			vocabulary = _assetVocabularyService.getVocabulary(vocabularyId);
+
+			int visibilityType = vocabulary.getVisibilityType();
+
+			if (visibilityType ==
+					AssetVocabularyConstants.VISIBILITY_TYPE_EMPTY) {
+
+				visibilityType = ParamUtil.getInteger(
+					actionRequest, "visibilityType", visibilityType);
+			}
+
 			vocabulary = _assetVocabularyService.updateVocabulary(
-				vocabularyId, StringPool.BLANK, titleMap, descriptionMap,
-				_getSettings(actionRequest), serviceContext);
+				externalReferenceCode, vocabularyId, StringPool.BLANK, titleMap,
+				descriptionMap, _getSettings(actionRequest), visibilityType,
+				serviceContext);
 		}
 
 		actionRequest.setAttribute(
@@ -115,6 +131,7 @@ public class EditAssetVocabularyMVCActionCommand extends BaseMVCActionCommand {
 
 		long[] classNameIds = new long[indexes.length];
 		long[] classTypePKs = new long[indexes.length];
+		boolean[] depotRequireds = new boolean[indexes.length];
 		boolean[] requireds = new boolean[indexes.length];
 
 		for (int i = 0; i < indexes.length; i++) {
@@ -146,19 +163,55 @@ public class EditAssetVocabularyMVCActionCommand extends BaseMVCActionCommand {
 				}
 			}
 
-			requireds[i] = ParamUtil.getBoolean(
-				actionRequest, "required" + index);
+			Group scopeGroup = themeDisplay.getScopeGroup();
+
+			if (scopeGroup.isDepot()) {
+				String required = ParamUtil.getString(
+					actionRequest, "required" + index);
+
+				if (Objects.equals(required, "depot-required")) {
+					depotRequireds[i] = true;
+					requireds[i] = false;
+				}
+				else if (Objects.equals(required, "required")) {
+					depotRequireds[i] = false;
+					requireds[i] = true;
+				}
+				else {
+					depotRequireds[i] = false;
+					requireds[i] = false;
+				}
+			}
+			else {
+				boolean required = ParamUtil.getBoolean(
+					actionRequest, "required" + index);
+
+				depotRequireds[i] = false;
+				requireds[i] = required;
+			}
 		}
 
-		AssetVocabularySettingsHelper vocabularySettingsHelper =
-			new AssetVocabularySettingsHelper();
+		AssetVocabularySettingsHelper assetVocabularySettingsHelper = null;
 
-		vocabularySettingsHelper.setClassNameIdsAndClassTypePKs(
-			classNameIds, classTypePKs, requireds);
-		vocabularySettingsHelper.setMultiValued(
+		long vocabularyId = ParamUtil.getLong(actionRequest, "vocabularyId");
+
+		AssetVocabulary assetVocabulary =
+			_assetVocabularyService.fetchVocabulary(vocabularyId);
+
+		if (assetVocabulary != null) {
+			assetVocabularySettingsHelper = new AssetVocabularySettingsHelper(
+				assetVocabulary.getSettings());
+		}
+		else {
+			assetVocabularySettingsHelper = new AssetVocabularySettingsHelper();
+		}
+
+		assetVocabularySettingsHelper.setClassNameIdsAndClassTypePKs(
+			classNameIds, classTypePKs, depotRequireds, requireds);
+		assetVocabularySettingsHelper.setMultiValued(
 			ParamUtil.getBoolean(actionRequest, "multiValued"));
 
-		return vocabularySettingsHelper.toString();
+		return assetVocabularySettingsHelper.toString();
 	}
 
 	@Reference

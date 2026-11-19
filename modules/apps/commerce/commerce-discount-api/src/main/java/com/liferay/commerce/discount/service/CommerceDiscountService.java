@@ -136,23 +136,13 @@ public interface CommerceDiscountService extends BaseService {
 	public void deleteCommerceDiscount(long commerceDiscountId)
 		throws PortalException;
 
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
-	 #fetchByExternalReferenceCode(String, long)}
-	 */
-	@Deprecated
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public CommerceDiscount fetchByExternalReferenceCode(
-			long companyId, String externalReferenceCode)
-		throws PortalException;
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public CommerceDiscount fetchByExternalReferenceCode(
-			String externalReferenceCode, long companyId)
-		throws PortalException;
-
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public CommerceDiscount fetchCommerceDiscount(long commerceDiscountId)
+		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public CommerceDiscount fetchCommerceDiscountByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
@@ -185,6 +175,11 @@ public interface CommerceDiscountService extends BaseService {
 	public int getCommerceDiscountsCountByPricingClassId(
 			long commercePricingClassId, String title)
 		throws PrincipalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public CommerceDiscount getOrAddEmptyCommerceDiscount(
+			String externalReferenceCode)
+		throws PortalException;
 
 	/**
 	 * Returns the OSGi service identifier.
@@ -260,3 +255,4 @@ public interface CommerceDiscountService extends BaseService {
 		throws PortalException;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:414150375

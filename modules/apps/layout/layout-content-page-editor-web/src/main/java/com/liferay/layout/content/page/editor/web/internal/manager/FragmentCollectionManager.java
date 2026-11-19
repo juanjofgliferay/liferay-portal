@@ -5,6 +5,9 @@
 
 package com.liferay.layout.content.page.editor.web.internal.manager;
 
+import com.liferay.depot.constants.DepotConstants;
+import com.liferay.depot.model.DepotEntry;
+import com.liferay.depot.service.DepotEntryLocalService;
 import com.liferay.fragment.constants.FragmentConstants;
 import com.liferay.fragment.contributor.FragmentCollectionContributor;
 import com.liferay.fragment.contributor.FragmentCollectionContributorRegistry;
@@ -14,23 +17,37 @@ import com.liferay.fragment.model.FragmentEntry;
 import com.liferay.fragment.renderer.FragmentRenderer;
 import com.liferay.fragment.renderer.FragmentRendererRegistry;
 import com.liferay.fragment.service.FragmentCollectionService;
-import com.liferay.fragment.service.FragmentCompositionService;
-import com.liferay.fragment.service.FragmentEntryService;
+import com.liferay.fragment.service.FragmentCompositionLocalService;
+import com.liferay.fragment.service.FragmentEntryLocalService;
 import com.liferay.fragment.util.comparator.FragmentCollectionContributorNameComparator;
+import com.liferay.info.item.InfoItemClassDetails;
 import com.liferay.info.item.InfoItemServiceRegistry;
+import com.liferay.info.permission.provider.InfoPermissionProvider;
 import com.liferay.layout.content.page.editor.constants.ContentPageEditorPortletKeys;
 import com.liferay.layout.content.page.editor.web.internal.constants.ContentPageEditorConstants;
-import com.liferay.layout.content.page.editor.web.internal.util.ObjectUtil;
+import com.liferay.layout.page.template.info.item.capability.EditPageInfoItemCapability;
 import com.liferay.layout.util.PortalPreferencesUtil;
 import com.liferay.layout.util.structure.DropZoneLayoutStructureItem;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.dao.orm.QueryUtil;
+import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
+import com.liferay.portal.kernel.json.JSONArray;
+import com.liferay.portal.kernel.json.JSONException;
+import com.liferay.portal.kernel.json.JSONFactory;
+import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.language.Language;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.CompanyConstants;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.portlet.PortalPreferences;
 import com.liferay.portal.kernel.portlet.PortletPreferencesFactory;
+import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.ListUtil;
@@ -38,17 +55,19 @@ import com.liferay.portal.kernel.util.SetUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -60,16 +79,16 @@ import org.osgi.service.component.annotations.Reference;
 public class FragmentCollectionManager {
 
 	public List<Map<String, Object>> getFragmentCollectionMapsList(
-		long groupId, HttpServletRequest httpServletRequest,
-		boolean includeEmpty, boolean includeSystem,
-		DropZoneLayoutStructureItem masterDropZoneLayoutStructureItem,
-		ThemeDisplay themeDisplay) {
+			long groupId, HttpServletRequest httpServletRequest,
+			boolean includeEmpty, boolean includeSystem,
+			DropZoneLayoutStructureItem masterDropZoneLayoutStructureItem,
+			ThemeDisplay themeDisplay)
+		throws PortalException {
 
 		List<Map<String, Object>> allFragmentCollectionMapsList =
 			new ArrayList<>();
 
-		boolean hideInputFragments = ObjectUtil.hideInputFragments(
-			themeDisplay.getCompanyId(), _infoItemServiceRegistry,
+		boolean hideInputFragments = _hideInputFragments(
 			themeDisplay.getPermissionChecker());
 
 		PortalPreferences portalPreferences =
@@ -90,10 +109,11 @@ public class FragmentCollectionManager {
 
 		List<FragmentCollection> fragmentCollections =
 			_fragmentCollectionService.getFragmentCollections(
-				new long[] {
-					themeDisplay.getCompanyGroupId(), groupId,
-					CompanyConstants.SYSTEM
-				});
+				getGroupIds(
+					themeDisplay.getCompanyId(),
+					themeDisplay.getCompanyGroupId(), groupId));
+
+		Map<Long, Map<String, Object>> scopeMapsByGroupId = new HashMap<>();
 
 		for (FragmentCollection fragmentCollection : fragmentCollections) {
 			if (!includeSystem &&
@@ -103,21 +123,19 @@ public class FragmentCollectionManager {
 				continue;
 			}
 
-			List<FragmentEntry> fragmentEntries =
-				_fragmentEntryService.getFragmentEntriesByStatus(
-					fragmentCollection.getGroupId(),
-					fragmentCollection.getFragmentCollectionId(),
-					WorkflowConstants.STATUS_APPROVED);
-
 			List<Map<String, Object>> fragmentEntryMapsList =
 				_getFragmentEntryMapsList(
-					hideInputFragments, fragmentEntries,
+					hideInputFragments,
+					_fragmentEntryLocalService.getFragmentEntries(
+						fragmentCollection.getGroupId(),
+						fragmentCollection.getFragmentCollectionId(),
+						WorkflowConstants.STATUS_APPROVED),
 					highlightedFragmentEntryKeys,
 					masterDropZoneLayoutStructureItem, themeDisplay);
 
 			fragmentEntryMapsList.addAll(
 				_getFragmentCompositionMapsList(
-					_fragmentCompositionService.getFragmentCompositions(
+					_fragmentCompositionLocalService.getFragmentCompositions(
 						fragmentCollection.getGroupId(),
 						fragmentCollection.getFragmentCollectionId(),
 						WorkflowConstants.STATUS_APPROVED),
@@ -136,6 +154,12 @@ public class FragmentCollectionManager {
 					"fragmentEntries", fragmentEntryMapsList
 				).put(
 					"name", fragmentCollection.getName()
+				).put(
+					"scope",
+					_getScopeMap(
+						themeDisplay.getCompanyGroupId(),
+						fragmentCollection.getGroupId(),
+						themeDisplay.getLocale(), scopeMapsByGroupId)
 				).build());
 		}
 
@@ -175,13 +199,14 @@ public class FragmentCollectionManager {
 				for (Map<String, Object> fragmentEntryMap :
 						fragmentEntryMapsList) {
 
-					if (GetterUtil.getBoolean(
+					if (!GetterUtil.getBoolean(
 							fragmentEntryMap.get("highlighted"))) {
 
-						highlightedFragmentMaps.put(
-							(String)fragmentEntryMap.get("name"),
-							fragmentEntryMap);
+						continue;
 					}
+
+					highlightedFragmentMaps.put(
+						(String)fragmentEntryMap.get("name"), fragmentEntryMap);
 				}
 			}
 
@@ -201,6 +226,37 @@ public class FragmentCollectionManager {
 		}
 
 		return allFragmentCollectionMapsList;
+	}
+
+	public long[] getGroupIds(long companyId, long companyGroupId, long groupId)
+		throws PortalException {
+
+		long[] groupIds = {companyGroupId, groupId, CompanyConstants.SYSTEM};
+
+		if (!FeatureFlagManagerUtil.isEnabled(companyId, "LPD-57283")) {
+			return groupIds;
+		}
+
+		return ArrayUtil.append(
+			groupIds,
+			TransformUtil.transformToLongArray(
+				_depotEntryLocalService.getGroupConnectedDepotEntries(
+					groupId, DepotConstants.TYPE_DESIGN_LIBRARY,
+					QueryUtil.ALL_POS, QueryUtil.ALL_POS),
+				DepotEntry::getGroupId));
+	}
+
+	public Map<String, List<Map<String, Object>>> getLayoutElementMapsListMap(
+		PermissionChecker permissionChecker) {
+
+		Map<String, List<Map<String, Object>>> layoutElementMapsListMap =
+			new HashMap<>(ContentPageEditorConstants.layoutElementMapsListMap);
+
+		if (_hideInputFragments(permissionChecker)) {
+			layoutElementMapsListMap.remove("INPUTS");
+		}
+
+		return layoutElementMapsListMap;
 	}
 
 	public List<String> getSortedFragmentCollectionKeys(
@@ -267,6 +323,9 @@ public class FragmentCollectionManager {
 
 			fragmentEntryMapsList.add(
 				HashMapBuilder.<String, Object>put(
+					"fieldTypes",
+					_getFieldTypesJSONArray(fragmentRenderer.getTypeOptions())
+				).put(
 					"fragmentEntryKey", fragmentRenderer.getKey()
 				).put(
 					"highlighted",
@@ -286,6 +345,23 @@ public class FragmentCollectionManager {
 		}
 
 		return fragmentCollectionMaps;
+	}
+
+	private JSONArray _getFieldTypesJSONArray(String typeOptions) {
+		try {
+			JSONObject jsonObject = _jsonFactory.createJSONObject(typeOptions);
+
+			JSONArray jsonArray = jsonObject.getJSONArray("fieldTypes");
+
+			if (jsonArray != null) {
+				return jsonArray;
+			}
+		}
+		catch (JSONException jsonException) {
+			_log.error(jsonException);
+		}
+
+		return _jsonFactory.createJSONArray();
 	}
 
 	private Map<String, Map<String, Object>>
@@ -338,19 +414,11 @@ public class FragmentCollectionManager {
 				continue;
 			}
 
-			fragmentEntryMapsList.sort(
-				(fragmentEntryMap1, fragmentEntryMap2) -> {
-					String name1 = String.valueOf(
-						fragmentEntryMap1.get("name"));
-					String name2 = String.valueOf(
-						fragmentEntryMap2.get("name"));
-
-					return name1.compareTo(name2);
-				});
-
 			fragmentCollectionContributorMaps.put(
 				fragmentCollectionContributor.getFragmentCollectionKey(),
 				HashMapBuilder.<String, Object>put(
+					"deprecated", fragmentCollectionContributor.isDeprecated()
+				).put(
 					"fragmentCollectionId",
 					fragmentCollectionContributor.getFragmentCollectionKey()
 				).put(
@@ -371,19 +439,19 @@ public class FragmentCollectionManager {
 		DropZoneLayoutStructureItem masterDropZoneLayoutStructureItem,
 		ThemeDisplay themeDisplay) {
 
-		List<Map<String, Object>> filteredFragmentCompositions =
-			new ArrayList<>();
+		return TransformUtil.transform(
+			fragmentCompositions,
+			fragmentComposition -> {
+				if (!_isAllowedFragmentEntryKey(
+						fragmentComposition.getFragmentCompositionKey(),
+						masterDropZoneLayoutStructureItem)) {
 
-		for (FragmentComposition fragmentComposition : fragmentCompositions) {
-			if (!_isAllowedFragmentEntryKey(
-					fragmentComposition.getFragmentCompositionKey(),
-					masterDropZoneLayoutStructureItem)) {
+					return null;
+				}
 
-				continue;
-			}
-
-			filteredFragmentCompositions.add(
-				HashMapBuilder.<String, Object>put(
+				return HashMapBuilder.<String, Object>put(
+					"fieldTypes", _jsonFactory.createJSONArray()
+				).put(
 					"fragmentEntryKey",
 					fragmentComposition.getFragmentCompositionKey()
 				).put(
@@ -403,10 +471,8 @@ public class FragmentCollectionManager {
 					"name", fragmentComposition.getName()
 				).put(
 					"type", ContentPageEditorConstants.TYPE_COMPOSITION
-				).build());
-		}
-
-		return filteredFragmentCompositions;
+				).build();
+			});
 	}
 
 	private List<Map<String, Object>> _getFragmentEntryMapsList(
@@ -415,23 +481,28 @@ public class FragmentCollectionManager {
 		DropZoneLayoutStructureItem masterDropZoneLayoutStructureItem,
 		ThemeDisplay themeDisplay) {
 
-		List<Map<String, Object>> fragmentEntryMapsList = new ArrayList<>();
+		return TransformUtil.transform(
+			fragmentEntries,
+			fragmentEntry -> {
+				if (!_isAllowedFragmentEntryKey(
+						fragmentEntry.getFragmentEntryKey(),
+						masterDropZoneLayoutStructureItem) ||
+					((fragmentEntry.isTypeInput() ||
+					  Objects.equals(
+						  fragmentEntry.getFragmentEntryKey(),
+						  "INPUTS-stepper") ||
+					  Objects.equals(
+						  fragmentEntry.getFragmentEntryKey(),
+						  "INPUTS-submit-button")) &&
+					 hideInputFragments)) {
 
-		for (FragmentEntry fragmentEntry : fragmentEntries) {
-			if (!_isAllowedFragmentEntryKey(
-					fragmentEntry.getFragmentEntryKey(),
-					masterDropZoneLayoutStructureItem) ||
-				((fragmentEntry.isTypeInput() ||
-				  Objects.equals(
-					  fragmentEntry.getFragmentEntryKey(),
-					  "INPUTS-submit-button")) &&
-				 hideInputFragments)) {
+					return null;
+				}
 
-				continue;
-			}
-
-			fragmentEntryMapsList.add(
-				HashMapBuilder.<String, Object>put(
+				return HashMapBuilder.<String, Object>put(
+					"fieldTypes",
+					_getFieldTypesJSONArray(fragmentEntry.getTypeOptions())
+				).put(
 					"fragmentEntryKey", fragmentEntry.getFragmentEntryKey()
 				).put(
 					"groupId", fragmentEntry.getGroupId()
@@ -451,10 +522,8 @@ public class FragmentCollectionManager {
 				).put(
 					"type",
 					FragmentConstants.getTypeLabel(fragmentEntry.getType())
-				).build());
-		}
-
-		return fragmentEntryMapsList;
+				).build();
+			});
 	}
 
 	private String _getFragmentUniqueKey(
@@ -471,6 +540,40 @@ public class FragmentCollectionManager {
 		}
 
 		return fragmentEntryKey + StringPool.POUND + group.getGroupKey();
+	}
+
+	private Map<String, Object> _getScopeMap(
+			long companyGroupId, long groupId, Locale locale,
+			Map<Long, Map<String, Object>> scopeMaps)
+		throws PortalException {
+
+		if ((groupId > 0) && !scopeMaps.containsKey(groupId)) {
+			Group group = _groupLocalService.getGroup(groupId);
+
+			scopeMaps.put(
+				groupId,
+				HashMapBuilder.<String, Object>put(
+					"id", String.valueOf(groupId)
+				).put(
+					"label", group.getDescriptiveName(locale)
+				).put(
+					"type", _getScopeType(companyGroupId, group)
+				).build());
+		}
+
+		return scopeMaps.get(groupId);
+	}
+
+	private String _getScopeType(long companyGroupId, Group group) {
+		if (group.getGroupId() == companyGroupId) {
+			return "global";
+		}
+
+		if (group.isDepot()) {
+			return "design-library";
+		}
+
+		return "site";
 	}
 
 	private List<Map<String, Object>> _getSortedFragmentCollectionMapsList(
@@ -494,6 +597,24 @@ public class FragmentCollectionManager {
 		sortedFragmentCollectionMapsList.addAll(
 			fragmentCollectionMaps.values());
 
+		for (Map<String, Object> fragmentCollectionMap :
+				sortedFragmentCollectionMapsList) {
+
+			List<Map<String, Object>> fragmentEntries =
+				(List<Map<String, Object>>)fragmentCollectionMap.get(
+					"fragmentEntries");
+
+			fragmentEntries.sort(
+				(fragmentEntryMap1, fragmentEntryMap2) -> {
+					String name1 = String.valueOf(
+						fragmentEntryMap1.get("name"));
+					String name2 = String.valueOf(
+						fragmentEntryMap2.get("name"));
+
+					return name1.compareTo(name2);
+				});
+		}
+
 		return sortedFragmentCollectionMapsList;
 	}
 
@@ -514,9 +635,7 @@ public class FragmentCollectionManager {
 			masterDropZoneLayoutStructureItem, themeDisplay);
 
 		Map<String, List<Map<String, Object>>> layoutElementMapsListMap =
-			ObjectUtil.getLayoutElementMapsListMap(
-				themeDisplay.getCompanyId(), _infoItemServiceRegistry,
-				themeDisplay.getPermissionChecker());
+			getLayoutElementMapsListMap(themeDisplay.getPermissionChecker());
 
 		for (Map.Entry<String, List<Map<String, Object>>> entry :
 				layoutElementMapsListMap.entrySet()) {
@@ -580,6 +699,26 @@ public class FragmentCollectionManager {
 			ListUtil.fromArray(_SORTED_FRAGMENT_COLLECTION_KEYS));
 	}
 
+	private boolean _hideInputFragments(PermissionChecker permissionChecker) {
+		for (InfoItemClassDetails infoItemClassDetails :
+				_infoItemServiceRegistry.getInfoItemClassDetails(
+					EditPageInfoItemCapability.KEY)) {
+
+			InfoPermissionProvider infoPermissionProvider =
+				_infoItemServiceRegistry.getFirstInfoItemService(
+					InfoPermissionProvider.class,
+					infoItemClassDetails.getClassName());
+
+			if ((infoPermissionProvider == null) ||
+				infoPermissionProvider.hasViewPermission(permissionChecker)) {
+
+				return false;
+			}
+		}
+
+		return true;
+	}
+
 	private boolean _isAllowedFragmentEntryKey(
 		String fragmentEntryKey,
 		DropZoneLayoutStructureItem masterDropZoneLayoutStructureItem) {
@@ -617,6 +756,12 @@ public class FragmentCollectionManager {
 		"layout-elements", "BASIC_COMPONENT", "INPUTS", "content-display"
 	};
 
+	private static final Log _log = LogFactoryUtil.getLog(
+		FragmentCollectionManager.class);
+
+	@Reference
+	private DepotEntryLocalService _depotEntryLocalService;
+
 	@Reference
 	private FragmentCollectionContributorRegistry
 		_fragmentCollectionContributorRegistry;
@@ -625,10 +770,10 @@ public class FragmentCollectionManager {
 	private FragmentCollectionService _fragmentCollectionService;
 
 	@Reference
-	private FragmentCompositionService _fragmentCompositionService;
+	private FragmentCompositionLocalService _fragmentCompositionLocalService;
 
 	@Reference
-	private FragmentEntryService _fragmentEntryService;
+	private FragmentEntryLocalService _fragmentEntryLocalService;
 
 	@Reference
 	private FragmentRendererRegistry _fragmentRendererRegistry;
@@ -638,6 +783,9 @@ public class FragmentCollectionManager {
 
 	@Reference
 	private InfoItemServiceRegistry _infoItemServiceRegistry;
+
+	@Reference
+	private JSONFactory _jsonFactory;
 
 	@Reference
 	private Language _language;

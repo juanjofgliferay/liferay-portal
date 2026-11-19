@@ -18,8 +18,10 @@ import java.util.Map;
  *
  * @author Brian Wing Shun Chan
  * @see LayoutRevision
+ * @deprecated As of Cavanaugh (7.4.x), with no direct replacement
  * @generated
  */
+@Deprecated
 public class LayoutRevisionWrapper
 	extends BaseModelWrapper<LayoutRevision>
 	implements LayoutRevision, ModelWrapper<LayoutRevision> {
@@ -718,7 +720,7 @@ public class LayoutRevisionWrapper
 
 	@Override
 	public String getRegularURL(
-			javax.servlet.http.HttpServletRequest httpServletRequest)
+			jakarta.servlet.http.HttpServletRequest httpServletRequest)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return model.getRegularURL(httpServletRequest);
@@ -1780,3 +1782,4 @@ public class LayoutRevisionWrapper
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1190381589

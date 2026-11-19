@@ -49,53 +49,11 @@ public interface DLAppLocalService extends BaseLocalService {
 	 *
 	 * Never modify this interface directly. Add custom service methods to <code>com.liferay.portlet.documentlibrary.service.impl.DLAppLocalServiceImpl</code> and rerun ServiceBuilder to automatically copy the method declarations to this interface. Consume the dl app local service via injection or a <code>org.osgi.util.tracker.ServiceTracker</code>. Use {@link DLAppLocalServiceUtil} if injection and service tracking are not available.
 	 */
-
-	/**
-	 * Adds a file entry and associated metadata based on a {@link File} object.
-	 *
-	 * <p>
-	 * This method takes two file names, the <code>sourceFileName</code> and the
-	 * <code>title</code>. The <code>sourceFileName</code> corresponds to the
-	 * name of the actual file being uploaded. The <code>title</code>
-	 * corresponds to a name the client wishes to assign this file after it has
-	 * been uploaded to the portal. If it is <code>null</code>, the <code>
-	 * sourceFileName</code> will be used.
-	 * </p>
-	 *
-	 * @param userId the primary key of the file entry's creator/owner
-	 * @param repositoryId the primary key of the repository
-	 * @param folderId the primary key of the file entry's parent folder
-	 * @param sourceFileName the original file's name
-	 * @param mimeType the file's MIME type
-	 * @param title the name to be assigned to the file (optionally
-	 <code>null </code>)
-	 * @param description the file's description
-	 * @param changeLog the file's version change log
-	 * @param file the file's data (optionally <code>null</code>)
-	 * @param serviceContext the service context to be applied. Can set the
-	 asset category IDs, asset tag names, and expando bridge
-	 attributes for the file entry. In a Liferay repository, it
-	 may include:  <ul> <li> fileEntryTypeId - ID for a custom
-	 file entry type </li> <li> fieldsMap - mapping for fields
-	 associated with a custom file entry type </li> </ul>
-	 * @return the file entry
-	 * @throws PortalException if a portal exception occurred
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
-	 #addFileEntry(String, long, long, long, String, String,
-	 String, String, String, File, Date, Date, ServiceContext)}
-	 */
-	@Deprecated
-	public FileEntry addFileEntry(
-			long userId, long repositoryId, long folderId,
-			String sourceFileName, String mimeType, String title,
-			String description, String changeLog, File file,
-			ServiceContext serviceContext)
-		throws PortalException;
-
 	public FileEntry addFileEntry(
 			String externalReferenceCode, long userId, long repositoryId,
 			long folderId, String sourceFileName, String mimeType, byte[] bytes,
-			Date expirationDate, Date reviewDate, ServiceContext serviceContext)
+			Date displayDate, Date expirationDate, Date reviewDate,
+			ServiceContext serviceContext)
 		throws PortalException;
 
 	/**
@@ -121,6 +79,8 @@ public interface DLAppLocalService extends BaseLocalService {
 	 * @param description the file's description
 	 * @param changeLog the file's version change log
 	 * @param bytes the file's data (optionally <code>null</code>)
+	 * @param displayDate the file's display date (optionally
+	 <code>null</code>)
 	 * @param expirationDate the file's expiration date (optionally <code>null
 	 </code>)
 	 * @param reviewDate the file's review Date (optionally <code>null</code>)
@@ -137,7 +97,8 @@ public interface DLAppLocalService extends BaseLocalService {
 			String externalReferenceCode, long userId, long repositoryId,
 			long folderId, String sourceFileName, String mimeType, String title,
 			String urlTitle, String description, String changeLog, byte[] bytes,
-			Date expirationDate, Date reviewDate, ServiceContext serviceContext)
+			Date displayDate, Date expirationDate, Date reviewDate,
+			ServiceContext serviceContext)
 		throws PortalException;
 
 	/**
@@ -163,7 +124,10 @@ public interface DLAppLocalService extends BaseLocalService {
 	 * @param description the file's description
 	 * @param changeLog the file's version change log
 	 * @param file the file's data (optionally <code>null</code>)
-	 * @param expirationDate the file's expiration date (optionally <code>null</code>)
+	 * @param displayDate the file's display date (optionally
+	 <code>null</code>)
+	 * @param expirationDate the file's expiration date (optionally
+	 <code>null</code>)
 	 * @param reviewDate the file's review Date (optionally <code>null</code>)
 	 * @param serviceContext the service context to be applied. Can set the
 	 asset category IDs, asset tag names, and expando bridge
@@ -178,7 +142,8 @@ public interface DLAppLocalService extends BaseLocalService {
 			String externalReferenceCode, long userId, long repositoryId,
 			long folderId, String sourceFileName, String mimeType, String title,
 			String urlTitle, String description, String changeLog, File file,
-			Date expirationDate, Date reviewDate, ServiceContext serviceContext)
+			Date displayDate, Date expirationDate, Date reviewDate,
+			ServiceContext serviceContext)
 		throws PortalException;
 
 	/**
@@ -206,6 +171,8 @@ public interface DLAppLocalService extends BaseLocalService {
 	 * @param changeLog the file's version change log
 	 * @param inputStream the file's data (optionally <code>null</code>)
 	 * @param size the file's size (optionally <code>0</code>)
+	 * @param displayDate the file's display date (optionally
+	 <code>null</code>)
 	 * @param expirationDate the file's expiration date (optionally <code>null
 	 </code>)
 	 * @param reviewDate the file's review Date (optionally <code>null</code>)
@@ -222,8 +189,8 @@ public interface DLAppLocalService extends BaseLocalService {
 			String externalReferenceCode, long userId, long repositoryId,
 			long folderId, String sourceFileName, String mimeType, String title,
 			String urlTitle, String description, String changeLog,
-			InputStream inputStream, long size, Date expirationDate,
-			Date reviewDate, ServiceContext serviceContext)
+			InputStream inputStream, long size, Date displayDate,
+			Date expirationDate, Date reviewDate, ServiceContext serviceContext)
 		throws PortalException;
 
 	/**
@@ -241,8 +208,8 @@ public interface DLAppLocalService extends BaseLocalService {
 	 * @throws PortalException if a portal exception occurred
 	 */
 	public FileShortcut addFileShortcut(
-			long userId, long repositoryId, long folderId, long toFileEntryId,
-			ServiceContext serviceContext)
+			String externalReferenceCode, long userId, long repositoryId,
+			long folderId, long toFileEntryId, ServiceContext serviceContext)
 		throws PortalException;
 
 	/**
@@ -265,15 +232,6 @@ public interface DLAppLocalService extends BaseLocalService {
 			long parentFolderId, String name, String description,
 			ServiceContext serviceContext)
 		throws PortalException;
-
-	/**
-	 * Delete all data associated to the given repository. This method is only
-	 * supported by the Liferay repository.
-	 *
-	 * @param repositoryId the primary key of the data's repository
-	 * @throws PortalException if a portal exception occurred
-	 */
-	public void deleteAll(long repositoryId) throws PortalException;
 
 	public void deleteAllRepositories(long groupId) throws PortalException;
 
@@ -305,15 +263,6 @@ public interface DLAppLocalService extends BaseLocalService {
 	public void deleteFileShortcut(long fileShortcutId) throws PortalException;
 
 	/**
-	 * Deletes all file shortcuts associated to the file entry. This method is
-	 * only supported by the Liferay repository.
-	 *
-	 * @param toFileEntryId the primary key of the associated file entry
-	 * @throws PortalException if a portal exception occurred
-	 */
-	public void deleteFileShortcuts(long toFileEntryId) throws PortalException;
-
-	/**
 	 * Deletes the file version. File versions can only be deleted if it is
 	 * approved and there are other approved file versions available.
 	 *
@@ -330,6 +279,13 @@ public interface DLAppLocalService extends BaseLocalService {
 	 */
 	public void deleteFolder(long folderId) throws PortalException;
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public FileEntry fetchFileEntry(long fileEntryId) throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public FileEntry fetchFileEntry(long groupId, long folderId, String title)
+		throws PortalException;
+
 	/**
 	 * Returns the document library file entry with the matching external
 	 * reference code and group.
@@ -343,6 +299,27 @@ public interface DLAppLocalService extends BaseLocalService {
 	public FileEntry fetchFileEntryByExternalReferenceCode(
 			long groupId, String externalReferenceCode)
 		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public FileEntry fetchFileEntryByFileName(
+			long groupId, long folderId, String fileName)
+		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public FileEntry fetchFileEntryByUuidAndGroupId(String uuid, long groupId)
+		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public FileShortcut fetchFileShortcut(long fileShortcutId)
+		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public FileShortcut fetchFileShortcutByExternalReferenceCode(
+			String externalReferenceCode, long groupId)
+		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public Folder fetchFolder(long folderId) throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public Folder fetchFolderByExternalReferenceCode(
@@ -382,7 +359,7 @@ public interface DLAppLocalService extends BaseLocalService {
 	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public FileEntry getFileEntryByExternalReferenceCode(
-			long groupId, String externalReferenceCode)
+			String externalReferenceCode, long groupId)
 		throws PortalException;
 
 	/**
@@ -500,6 +477,9 @@ public interface DLAppLocalService extends BaseLocalService {
 			ServiceContext serviceContext)
 		throws PortalException;
 
+	public void subscribeFileEntry(long userId, long groupId, long fileEntryId)
+		throws PortalException;
+
 	/**
 	 * Subscribe the user to changes in documents of the file entry type. This
 	 * method is only supported by the Liferay repository.
@@ -523,6 +503,10 @@ public interface DLAppLocalService extends BaseLocalService {
 	 * @throws PortalException if a portal exception occurred
 	 */
 	public void subscribeFolder(long userId, long groupId, long folderId)
+		throws PortalException;
+
+	public void unsubscribeFileEntry(
+			long userId, long groupId, long fileEntryId)
 		throws PortalException;
 
 	/**
@@ -595,6 +579,8 @@ public interface DLAppLocalService extends BaseLocalService {
 	 * @param dlVersionNumberIncrease the kind of version number increase to
 	 apply for these changes.
 	 * @param bytes the file's data (optionally <code>null</code>)
+	 * @param displayDate the file's display date (optionally <code>null
+	 </code>)
 	 * @param expirationDate the file's expiration date (optionally <code>null
 	 </code>)
 	 * @param reviewDate the file's review date (optionally <code>null</code>)
@@ -611,8 +597,8 @@ public interface DLAppLocalService extends BaseLocalService {
 			long userId, long fileEntryId, String sourceFileName,
 			String mimeType, String title, String urlTitle, String description,
 			String changeLog, DLVersionNumberIncrease dlVersionNumberIncrease,
-			byte[] bytes, Date expirationDate, Date reviewDate,
-			ServiceContext serviceContext)
+			byte[] bytes, Date displayDate, Date expirationDate,
+			Date reviewDate, ServiceContext serviceContext)
 		throws PortalException;
 
 	/**
@@ -642,6 +628,8 @@ public interface DLAppLocalService extends BaseLocalService {
 	 * @param dlVersionNumberIncrease the kind of version number increase to
 	 apply for these changes.
 	 * @param file the file's data (optionally <code>null</code>)
+	 * @param displayDate the file's display date (optionally <code>null
+	 </code>)
 	 * @param expirationDate the file's expiration date (optionally <code>null
 	 </code>)
 	 * @param reviewDate the file's review date (optionally <code>null</code>)
@@ -658,7 +646,7 @@ public interface DLAppLocalService extends BaseLocalService {
 			long userId, long fileEntryId, String sourceFileName,
 			String mimeType, String title, String urlTitle, String description,
 			String changeLog, DLVersionNumberIncrease dlVersionNumberIncrease,
-			File file, Date expirationDate, Date reviewDate,
+			File file, Date displayDate, Date expirationDate, Date reviewDate,
 			ServiceContext serviceContext)
 		throws PortalException;
 
@@ -690,6 +678,8 @@ public interface DLAppLocalService extends BaseLocalService {
 	 apply for these changes.
 	 * @param inputStream the file's data (optionally <code>null</code>)
 	 * @param size the file's size (optionally <code>0</code>)
+	 * @param displayDate the file's displaydate (optionally <code>null
+	 </code>)
 	 * @param expirationDate the file's expiration date (optionally <code>null
 	 </code>)
 	 * @param reviewDate the file's review date (optionally <code>null</code>)
@@ -706,8 +696,8 @@ public interface DLAppLocalService extends BaseLocalService {
 			long userId, long fileEntryId, String sourceFileName,
 			String mimeType, String title, String urlTitle, String description,
 			String changeLog, DLVersionNumberIncrease dlVersionNumberIncrease,
-			InputStream inputStream, long size, Date expirationDate,
-			Date reviewDate, ServiceContext serviceContext)
+			InputStream inputStream, long size, Date displayDate,
+			Date expirationDate, Date reviewDate, ServiceContext serviceContext)
 		throws PortalException;
 
 	/**
@@ -727,19 +717,6 @@ public interface DLAppLocalService extends BaseLocalService {
 	public FileShortcut updateFileShortcut(
 			long userId, long fileShortcutId, long folderId, long toFileEntryId,
 			ServiceContext serviceContext)
-		throws PortalException;
-
-	/**
-	 * Updates all file shortcuts to the existing file entry to the new file
-	 * entry. This method is only supported by the Liferay repository.
-	 *
-	 * @param oldToFileEntryId the primary key of the old file entry pointed to
-	 * @param newToFileEntryId the primary key of the new file entry to point
-	 to
-	 * @throws PortalException if a portal exception occurred
-	 */
-	public void updateFileShortcuts(
-			long oldToFileEntryId, long newToFileEntryId)
 		throws PortalException;
 
 	/**
@@ -770,3 +747,4 @@ public interface DLAppLocalService extends BaseLocalService {
 		throws PortalException;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:678919492

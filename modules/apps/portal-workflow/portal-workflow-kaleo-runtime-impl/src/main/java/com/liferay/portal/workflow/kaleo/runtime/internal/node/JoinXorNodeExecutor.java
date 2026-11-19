@@ -108,7 +108,7 @@ public class JoinXorNodeExecutor extends BaseNodeExecutor {
 		parentKaleoInstanceToken =
 			_kaleoInstanceTokenLocalService.updateKaleoInstanceToken(
 				parentKaleoInstanceToken.getKaleoInstanceTokenId(),
-				currentKaleoNode.getKaleoNodeId());
+				currentKaleoNode.getKaleoNodeId(), currentKaleoNode.getName());
 
 		KaleoTransition kaleoTransition =
 			currentKaleoNode.getDefaultKaleoTransition();
@@ -229,11 +229,7 @@ public class JoinXorNodeExecutor extends BaseNodeExecutor {
 
 		KaleoNode kaleoNode = kaleoInstanceToken.getCurrentKaleoNode();
 
-		if (kaleoNode.isTerminal()) {
-			return true;
-		}
-
-		return false;
+		return kaleoNode.isTerminal();
 	}
 
 	@Reference

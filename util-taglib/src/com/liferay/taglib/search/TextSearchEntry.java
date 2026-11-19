@@ -6,30 +6,20 @@
 package com.liferay.taglib.search;
 
 import com.liferay.petra.string.StringBundler;
-import com.liferay.portal.kernel.bean.BeanPropertiesUtil;
 import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.Validator;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.Writer;
 
 import java.util.Map;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 /**
  * @author Brian Wing Shun Chan
  */
 public class TextSearchEntry extends SearchEntry {
-
-	@Override
-	public Object clone() {
-		TextSearchEntry textSearchEntry = new TextSearchEntry();
-
-		BeanPropertiesUtil.copyProperties(this, textSearchEntry);
-
-		return textSearchEntry;
-	}
 
 	public Map<String, Object> getData() {
 		return _data;
@@ -105,7 +95,16 @@ public class TextSearchEntry extends SearchEntry {
 			}
 
 			sb.append(">");
-			sb.append(getName(httpServletRequest));
+
+			if (isTruncate()) {
+				sb.append("<span class=\"text-truncate\">");
+				sb.append(getName(httpServletRequest));
+				sb.append("</span>");
+			}
+			else {
+				sb.append(getName(httpServletRequest));
+			}
+
 			sb.append("</a>");
 
 			writer.write(sb.toString());

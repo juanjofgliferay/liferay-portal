@@ -5,11 +5,14 @@
 
 package com.liferay.headless.commerce.admin.pricing.internal.dto.v2_0.converter;
 
+import com.liferay.commerce.currency.model.CommerceCurrency;
+import com.liferay.commerce.currency.service.CommerceCurrencyLocalService;
 import com.liferay.commerce.discount.model.CommerceDiscount;
 import com.liferay.commerce.discount.model.CommerceDiscountRel;
 import com.liferay.commerce.discount.service.CommerceDiscountRelService;
 import com.liferay.commerce.product.model.CPDefinition;
 import com.liferay.commerce.product.model.CPInstance;
+import com.liferay.commerce.product.model.CommerceCatalog;
 import com.liferay.commerce.product.service.CPInstanceService;
 import com.liferay.headless.commerce.admin.pricing.dto.v2_0.DiscountSku;
 import com.liferay.headless.commerce.core.util.LanguageUtils;
@@ -24,7 +27,10 @@ import org.osgi.service.component.annotations.Reference;
  * @author Alessio Antonio Rendina
  */
 @Component(
-	property = "dto.class.name=com.liferay.commerce.discount.model.CommerceDiscountRel-Sku",
+	property = {
+		"default=true",
+		"dto.class.name=com.liferay.commerce.discount.model.CommerceDiscountRel-Sku"
+	},
 	service = DTOConverter.class
 )
 public class DiscountSkuDTOConverter
@@ -53,35 +59,88 @@ public class DiscountSkuDTOConverter
 
 		return new DiscountSku() {
 			{
-				actions = dtoConverterContext.getActions();
-				discountExternalReferenceCode =
-					commerceDiscount.getExternalReferenceCode();
-				discountId = commerceDiscount.getCommerceDiscountId();
-				discountSkuId = commerceDiscountRel.getCommerceDiscountRelId();
-				productId = cpDefinition.getCPDefinitionId();
-				productName = LanguageUtils.getLanguageIdMap(
-					cpDefinition.getNameMap());
-				skuExternalReferenceCode =
-					cpInstance.getExternalReferenceCode();
-				skuId = cpInstance.getCPInstanceId();
-				unitOfMeasureKey = _getUnitOfMeasureKey(
-					commerceDiscountRel.getTypeSettingsUnicodeProperties());
+				setActions(dtoConverterContext::getActions);
+				setCatalogCurrencyCode(
+					() -> {
+						CommerceCatalog commerceCatalog =
+							cpDefinition.getCommerceCatalog();
+
+						if (commerceCatalog == null) {
+							return null;
+						}
+
+						return commerceCatalog.getCommerceCurrencyCode();
+					});
+				setCatalogCurrencyExternalReferenceCode(
+					() -> {
+						CommerceCurrency commerceCurrency =
+							_fetchCommerceCurrency(cpDefinition);
+
+						if (commerceCurrency == null) {
+							return null;
+						}
+
+						return commerceCurrency.getExternalReferenceCode();
+					});
+				setCatalogExternalReferenceCode(
+					() -> {
+						CommerceCatalog commerceCatalog =
+							cpDefinition.getCommerceCatalog();
+
+						if (commerceCatalog == null) {
+							return null;
+						}
+
+						return commerceCatalog.getExternalReferenceCode();
+					});
+				setDiscountExternalReferenceCode(
+					commerceDiscount::getExternalReferenceCode);
+				setDiscountId(commerceDiscount::getCommerceDiscountId);
+				setDiscountSkuId(commerceDiscountRel::getCommerceDiscountRelId);
+				setProductExternalReferenceCode(
+					cpDefinition::getCProductExternalReferenceCode);
+				setProductId(cpDefinition::getCPDefinitionId);
+				setProductName(
+					() -> LanguageUtils.getLanguageIdMap(
+						cpDefinition.getNameMap()));
+				setProductType(cpDefinition::getProductTypeName);
+				setSkuExternalReferenceCode(
+					cpInstance::getExternalReferenceCode);
+				setSkuId(cpInstance::getCPInstanceId);
+				setUnitOfMeasureKey(
+					() -> _getUnitOfMeasureKey(
+						commerceDiscountRel.
+							getTypeSettingsUnicodeProperties()));
 			}
 		};
+	}
+
+	private CommerceCurrency _fetchCommerceCurrency(CPDefinition cpDefinition) {
+		CommerceCatalog commerceCatalog = cpDefinition.getCommerceCatalog();
+
+		if (commerceCatalog == null) {
+			return null;
+		}
+
+		return _commerceCurrencyLocalService.fetchCommerceCurrency(
+			commerceCatalog.getCompanyId(),
+			commerceCatalog.getCommerceCurrencyCode());
 	}
 
 	private String _getUnitOfMeasureKey(
 		UnicodeProperties typeSettingsUnicodeProperties) {
 
-		if ((typeSettingsUnicodeProperties != null) &&
-			typeSettingsUnicodeProperties.containsKey("unitOfMeasureKey")) {
+		if ((typeSettingsUnicodeProperties == null) ||
+			!typeSettingsUnicodeProperties.containsKey("unitOfMeasureKey")) {
 
-			return typeSettingsUnicodeProperties.getProperty(
-				"unitOfMeasureKey");
+			return null;
 		}
 
-		return null;
+		return typeSettingsUnicodeProperties.getProperty("unitOfMeasureKey");
 	}
+
+	@Reference
+	private CommerceCurrencyLocalService _commerceCurrencyLocalService;
 
 	@Reference
 	private CommerceDiscountRelService _commerceDiscountRelService;

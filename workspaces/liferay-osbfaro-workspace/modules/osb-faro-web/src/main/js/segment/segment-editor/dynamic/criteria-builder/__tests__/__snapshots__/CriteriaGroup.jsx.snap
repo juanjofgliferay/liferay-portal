@@ -1,0 +1,53 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`CriteriaGroup should render 1`] = `
+<div>
+  <div
+    class="empty-drop-zone-root"
+  >
+    <div
+      class="empty-drop-zone-target"
+    >
+      <div
+        class="align-items-center canvas-empty-state d-flex justify-content-center rounded-lg canvas-empty-state-idle bg-white"
+      >
+        <div
+          class="c-empty-state c-empty-state-animation"
+        >
+          <div
+            class="c-empty-state-image"
+          >
+            <div
+              class="c-empty-state-aspect-ratio"
+            >
+              <img
+                alt=""
+                class="aspect-ratio-item aspect-ratio-item-fluid"
+                src="empty_state.svg"
+              />
+            </div>
+          </div>
+          <div
+            class="c-empty-state-title text-dark"
+          >
+            <h3
+              class="text-5 font-weight-bold"
+            >
+              No Conditions Yet
+            </h3>
+          </div>
+          <div
+            class="c-empty-state-text"
+          >
+            <span
+              class="text-4 text-secondary"
+            >
+              To create a new segment, drag items from the Conditions Library and drop them here.
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+`;

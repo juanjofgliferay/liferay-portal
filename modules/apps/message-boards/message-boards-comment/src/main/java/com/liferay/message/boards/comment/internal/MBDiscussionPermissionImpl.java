@@ -6,6 +6,14 @@
 package com.liferay.message.boards.comment.internal;
 
 import com.liferay.comment.configuration.CommentGroupServiceConfiguration;
+import com.liferay.depot.constants.DepotConstants;
+import com.liferay.depot.model.DepotEntry;
+import com.liferay.depot.service.DepotEntryLocalService;
+import com.liferay.info.exception.NoSuchInfoItemException;
+import com.liferay.info.item.ClassPKInfoItemIdentifier;
+import com.liferay.info.item.InfoItemIdentifier;
+import com.liferay.info.item.InfoItemServiceRegistry;
+import com.liferay.info.item.provider.InfoItemObjectProvider;
 import com.liferay.message.boards.model.MBMessage;
 import com.liferay.message.boards.service.MBBanLocalService;
 import com.liferay.message.boards.service.MBMessageLocalService;
@@ -14,6 +22,9 @@ import com.liferay.portal.kernel.comment.BaseDiscussionPermission;
 import com.liferay.portal.kernel.comment.Comment;
 import com.liferay.portal.kernel.comment.DiscussionPermission;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.GroupedModel;
 import com.liferay.portal.kernel.module.configuration.ConfigurationException;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
@@ -120,6 +131,45 @@ public class MBDiscussionPermissionImpl extends BaseDiscussionPermission {
 			ActionKeys.VIEW);
 	}
 
+	private int _getDepotEntryType(MBMessage message) {
+		InfoItemObjectProvider<Object> infoItemObjectProvider =
+			_infoItemServiceRegistry.getFirstInfoItemService(
+				InfoItemObjectProvider.class, message.getClassName());
+
+		if (infoItemObjectProvider == null) {
+			return DepotConstants.TYPE_ANY;
+		}
+
+		try {
+			Object infoItem = infoItemObjectProvider.getInfoItem(
+				new ClassPKInfoItemIdentifier(
+					message.getClassPK(), InfoItemIdentifier.VERSION_LATEST));
+
+			if (!(infoItem instanceof GroupedModel)) {
+				return DepotConstants.TYPE_ANY;
+			}
+
+			GroupedModel groupedModel = (GroupedModel)infoItem;
+
+			DepotEntry depotEntry =
+				_depotEntryLocalService.fetchGroupDepotEntry(
+					groupedModel.getGroupId());
+
+			if (depotEntry == null) {
+				return DepotConstants.TYPE_ANY;
+			}
+
+			return depotEntry.getType();
+		}
+		catch (NoSuchInfoItemException noSuchInfoItemException) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(noSuchInfoItemException);
+			}
+
+			return DepotConstants.TYPE_ANY;
+		}
+	}
+
 	private boolean _hasPermission(
 			PermissionChecker permissionChecker, MBMessage message,
 			String actionId)
@@ -135,12 +185,23 @@ public class MBDiscussionPermissionImpl extends BaseDiscussionPermission {
 
 		CommentGroupServiceConfiguration commentGroupServiceConfiguration =
 			_configurationProvider.getGroupConfiguration(
-				CommentGroupServiceConfiguration.class, message.getGroupId());
+				CommentGroupServiceConfiguration.class, message.getCompanyId(),
+				message.getGroupId());
 
-		if (commentGroupServiceConfiguration.alwaysEditableByOwner() &&
+		int depotEntryType = _getDepotEntryType(message);
+
+		if ((commentGroupServiceConfiguration.alwaysEditableByOwner() ||
+			 (depotEntryType == DepotConstants.TYPE_PROJECT) ||
+			 (depotEntryType == DepotConstants.TYPE_SPACE)) &&
 			(permissionChecker.getUserId() == message.getUserId())) {
 
 			return true;
+		}
+
+		if ((depotEntryType == DepotConstants.TYPE_PROJECT) &&
+			actionId.equals(ActionKeys.UPDATE_DISCUSSION)) {
+
+			return false;
 		}
 
 		if (message.isPending()) {
@@ -159,8 +220,17 @@ public class MBDiscussionPermissionImpl extends BaseDiscussionPermission {
 			className, message.getClassPK(), actionId);
 	}
 
+	private static final Log _log = LogFactoryUtil.getLog(
+		MBDiscussionPermissionImpl.class);
+
 	@Reference
 	private ConfigurationProvider _configurationProvider;
+
+	@Reference
+	private DepotEntryLocalService _depotEntryLocalService;
+
+	@Reference
+	private InfoItemServiceRegistry _infoItemServiceRegistry;
 
 	@Reference
 	private MBBanLocalService _mbBanLocalService;

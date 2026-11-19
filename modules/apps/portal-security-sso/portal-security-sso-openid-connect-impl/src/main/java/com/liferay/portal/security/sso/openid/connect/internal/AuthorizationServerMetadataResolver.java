@@ -7,6 +7,9 @@ package com.liferay.portal.security.sso.openid.connect.internal;
 
 import com.liferay.oauth.client.persistence.model.OAuthClientASLocalMetadata;
 import com.liferay.oauth.client.persistence.service.OAuthClientASLocalMetadataLocalService;
+import com.liferay.portal.kernel.cache.PortalCache;
+import com.liferay.portal.kernel.cache.PortalCacheHelperUtil;
+import com.liferay.portal.kernel.cache.PortalCacheManagerNames;
 import com.liferay.portal.security.sso.openid.connect.OpenIdConnectServiceException;
 
 import com.nimbusds.oauth2.sdk.http.HTTPRequest;
@@ -25,16 +28,25 @@ import org.osgi.service.component.annotations.Reference;
 public class AuthorizationServerMetadataResolver {
 
 	public OIDCProviderMetadata resolveOIDCProviderMetadata(
-			String authServerWellKnownURI)
+			String authServerWellKnownURI, long companyId,
+			int metadataCacheInSeconds, long oAuthClientEntryId)
 		throws Exception {
 
 		if (authServerWellKnownURI.endsWith("local")) {
 			OAuthClientASLocalMetadata oAuthClientASLocalMetadata =
 				_oAuthClientASLocalMetadataLocalService.
-					getOAuthClientASLocalMetadata(authServerWellKnownURI);
+					getOAuthClientASLocalMetadata(
+						companyId, authServerWellKnownURI);
 
 			return OIDCProviderMetadata.parse(
 				oAuthClientASLocalMetadata.getMetadataJSON());
+		}
+
+		OIDCProviderMetadata oidcProviderMetadata =
+			_oidcProviderMetadataPortalCache.get(oAuthClientEntryId);
+
+		if (oidcProviderMetadata != null) {
+			return oidcProviderMetadata;
 		}
 
 		HTTPRequest httpRequest = new HTTPRequest(
@@ -47,11 +59,22 @@ public class AuthorizationServerMetadataResolver {
 				httpResponse.getStatusMessage());
 		}
 
-		return OIDCProviderMetadata.parse(httpResponse.getContent());
+		oidcProviderMetadata = OIDCProviderMetadata.parse(
+			httpResponse.getContent());
+
+		_oidcProviderMetadataPortalCache.put(
+			oAuthClientEntryId, oidcProviderMetadata, metadataCacheInSeconds);
+
+		return oidcProviderMetadata;
 	}
 
 	@Reference
 	private OAuthClientASLocalMetadataLocalService
 		_oAuthClientASLocalMetadataLocalService;
+
+	private final PortalCache<Long, OIDCProviderMetadata>
+		_oidcProviderMetadataPortalCache = PortalCacheHelperUtil.getPortalCache(
+			PortalCacheManagerNames.SINGLE_VM,
+			AuthorizationServerMetadataResolver.class.getName());
 
 }

@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -476,25 +477,6 @@ public class CommerceDiscountLocalServiceUtil {
 		return getService().dynamicQueryCount(dynamicQuery, projection);
 	}
 
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
-	 #fetchByExternalReferenceCode(String, long)}
-	 */
-	@Deprecated
-	public static CommerceDiscount fetchByExternalReferenceCode(
-		long companyId, String externalReferenceCode) {
-
-		return getService().fetchByExternalReferenceCode(
-			companyId, externalReferenceCode);
-	}
-
-	public static CommerceDiscount fetchByExternalReferenceCode(
-		String externalReferenceCode, long companyId) {
-
-		return getService().fetchByExternalReferenceCode(
-			externalReferenceCode, companyId);
-	}
-
 	public static CommerceDiscount fetchCommerceDiscount(
 		long commerceDiscountId) {
 
@@ -821,13 +803,6 @@ public class CommerceDiscountLocalServiceUtil {
 		return getService().getCommerceDiscountsCount(companyId, couponCode);
 	}
 
-	public static int getCommerceDiscountsCountByPricingClassId(
-		long commercePricingClassId, String title) {
-
-		return getService().getCommerceDiscountsCountByPricingClassId(
-			commercePricingClassId, title);
-	}
-
 	public static com.liferay.portal.kernel.dao.orm.ExportActionableDynamicQuery
 		getExportActionableDynamicQuery(
 			com.liferay.exportimport.kernel.lar.PortletDataContext
@@ -841,6 +816,14 @@ public class CommerceDiscountLocalServiceUtil {
 			getIndexableActionableDynamicQuery() {
 
 		return getService().getIndexableActionableDynamicQuery();
+	}
+
+	public static CommerceDiscount getOrAddEmptyCommerceDiscount(
+			String externalReferenceCode, long companyId, long userId)
+		throws PortalException {
+
+		return getService().getOrAddEmptyCommerceDiscount(
+			externalReferenceCode, companyId, userId);
 	}
 
 	public static List<CommerceDiscount> getOrderTypeCommerceDiscounts(
@@ -921,13 +904,6 @@ public class CommerceDiscountLocalServiceUtil {
 
 		return getService().incrementCommerceDiscountNumberOfUse(
 			commerceDiscountId);
-	}
-
-	public static List<CommerceDiscount> searchByCommercePricingClassId(
-		long commercePricingClassId, String title, int start, int end) {
-
-		return getService().searchByCommercePricingClassId(
-			commercePricingClassId, title, start, end);
 	}
 
 	public static com.liferay.portal.kernel.search.BaseModelSearchResult
@@ -1182,13 +1158,13 @@ public class CommerceDiscountLocalServiceUtil {
 	}
 
 	public static CommerceDiscountLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(CommerceDiscountLocalService service) {
-		_service = service;
-	}
-
-	private static volatile CommerceDiscountLocalService _service;
+	private static final Snapshot<CommerceDiscountLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			CommerceDiscountLocalServiceUtil.class,
+			CommerceDiscountLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1449901086

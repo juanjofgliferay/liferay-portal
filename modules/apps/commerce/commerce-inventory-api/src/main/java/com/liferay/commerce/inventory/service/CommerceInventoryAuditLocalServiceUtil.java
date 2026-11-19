@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -263,14 +264,6 @@ public class CommerceInventoryAuditLocalServiceUtil {
 		return getService().getCommerceInventoryAudits(start, end);
 	}
 
-	public static List<CommerceInventoryAudit> getCommerceInventoryAudits(
-		long companyId, String sku, String unitOfMeasureKey, int start,
-		int end) {
-
-		return getService().getCommerceInventoryAudits(
-			companyId, sku, unitOfMeasureKey, start, end);
-	}
-
 	/**
 	 * Returns the number of commerce inventory audits.
 	 *
@@ -278,13 +271,6 @@ public class CommerceInventoryAuditLocalServiceUtil {
 	 */
 	public static int getCommerceInventoryAuditsCount() {
 		return getService().getCommerceInventoryAuditsCount();
-	}
-
-	public static int getCommerceInventoryAuditsCount(
-		long companyId, String sku, String unitOfMeasureKey) {
-
-		return getService().getCommerceInventoryAuditsCount(
-			companyId, sku, unitOfMeasureKey);
 	}
 
 	public static
@@ -330,13 +316,13 @@ public class CommerceInventoryAuditLocalServiceUtil {
 	}
 
 	public static CommerceInventoryAuditLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(CommerceInventoryAuditLocalService service) {
-		_service = service;
-	}
-
-	private static volatile CommerceInventoryAuditLocalService _service;
+	private static final Snapshot<CommerceInventoryAuditLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			CommerceInventoryAuditLocalServiceUtil.class,
+			CommerceInventoryAuditLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1126155668

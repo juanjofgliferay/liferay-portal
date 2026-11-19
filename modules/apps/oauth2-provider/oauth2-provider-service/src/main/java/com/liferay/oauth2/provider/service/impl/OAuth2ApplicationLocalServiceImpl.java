@@ -5,16 +5,17 @@
 
 package com.liferay.oauth2.provider.service.impl;
 
-import com.liferay.document.library.kernel.model.DLFileEntry;
 import com.liferay.document.library.kernel.model.DLFolderConstants;
-import com.liferay.document.library.kernel.store.Store;
+import com.liferay.oauth2.provider.constants.ClientProfile;
 import com.liferay.oauth2.provider.constants.GrantType;
+import com.liferay.oauth2.provider.constants.OAuth2ApplicationConstants;
 import com.liferay.oauth2.provider.constants.OAuth2ProviderConstants;
 import com.liferay.oauth2.provider.exception.DuplicateOAuth2ApplicationClientIdException;
 import com.liferay.oauth2.provider.exception.NoSuchOAuth2ApplicationException;
 import com.liferay.oauth2.provider.exception.OAuth2ApplicationClientGrantTypeException;
 import com.liferay.oauth2.provider.exception.OAuth2ApplicationHomePageURLException;
 import com.liferay.oauth2.provider.exception.OAuth2ApplicationHomePageURLSchemeException;
+import com.liferay.oauth2.provider.exception.OAuth2ApplicationJWKSException;
 import com.liferay.oauth2.provider.exception.OAuth2ApplicationNameException;
 import com.liferay.oauth2.provider.exception.OAuth2ApplicationPrivacyPolicyURLException;
 import com.liferay.oauth2.provider.exception.OAuth2ApplicationPrivacyPolicyURLSchemeException;
@@ -29,28 +30,36 @@ import com.liferay.oauth2.provider.redirect.OAuth2RedirectURIInterpolator;
 import com.liferay.oauth2.provider.service.OAuth2ApplicationScopeAliasesLocalService;
 import com.liferay.oauth2.provider.service.OAuth2AuthorizationLocalService;
 import com.liferay.oauth2.provider.service.base.OAuth2ApplicationLocalServiceBaseImpl;
+import com.liferay.oauth2.provider.service.persistence.OAuth2ApplicationScopeAliasesPersistence;
+import com.liferay.oauth2.provider.service.persistence.OAuth2AuthorizationPersistence;
+import com.liferay.oauth2.provider.util.OAuth2JWKValidatorUtil;
 import com.liferay.oauth2.provider.util.OAuth2SecureRandomGenerator;
 import com.liferay.oauth2.provider.util.builder.OAuth2ScopeBuilder;
+import com.liferay.petra.io.unsync.UnsyncByteArrayInputStream;
+import com.liferay.petra.io.unsync.UnsyncByteArrayOutputStream;
+import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.image.ImageToolUtil;
+import com.liferay.portal.kernel.dao.orm.DynamicQuery;
+import com.liferay.portal.kernel.dao.orm.Property;
+import com.liferay.portal.kernel.dao.orm.PropertyFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.ImageTypeException;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.image.ImageBag;
-import com.liferay.portal.kernel.io.unsync.UnsyncByteArrayInputStream;
-import com.liferay.portal.kernel.io.unsync.UnsyncByteArrayOutputStream;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Repository;
 import com.liferay.portal.kernel.model.ResourceConstants;
 import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.model.UserConstants;
 import com.liferay.portal.kernel.portletfilerepository.PortletFileRepository;
-import com.liferay.portal.kernel.repository.RepositoryFactory;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.repository.model.Folder;
 import com.liferay.portal.kernel.search.Indexable;
 import com.liferay.portal.kernel.search.IndexableType;
-import com.liferay.portal.kernel.search.Indexer;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.ResourceLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
@@ -59,9 +68,15 @@ import com.liferay.portal.kernel.util.Http;
 import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.PropsUtil;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.SetUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.security.key.KeyReference;
+import com.liferay.portal.security.key.KeyReferenceUtil;
+import com.liferay.portal.security.key.secret.Secret;
+import com.liferay.portal.security.key.secret.SecretManager;
+import com.liferay.portal.security.key.secret.SecretResolver;
 
 import java.awt.image.RenderedImage;
 
@@ -70,6 +85,7 @@ import java.io.InputStream;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -156,7 +172,6 @@ public class OAuth2ApplicationLocalServiceImpl
 		oAuth2Application.setClientCredentialUserName(user.getScreenName());
 		oAuth2Application.setClientId(clientId);
 		oAuth2Application.setClientProfile(clientProfile);
-		oAuth2Application.setClientSecret(clientSecret);
 		oAuth2Application.setDescription(description);
 		oAuth2Application.setFeaturesList(featuresList);
 		oAuth2Application.setHomePageURL(homePageURL);
@@ -184,6 +199,8 @@ public class OAuth2ApplicationLocalServiceImpl
 			oAuth2Application.getCompanyId(), 0, oAuth2Application.getUserId(),
 			OAuth2Application.class.getName(),
 			oAuth2Application.getOAuth2ApplicationId(), false, false, false);
+
+		_setClientSecret(clientSecret, oAuth2Application);
 
 		return oAuth2ApplicationPersistence.update(oAuth2Application);
 	}
@@ -254,7 +271,6 @@ public class OAuth2ApplicationLocalServiceImpl
 		oAuth2Application.setClientCredentialUserName(user.getScreenName());
 		oAuth2Application.setClientId(clientId);
 		oAuth2Application.setClientProfile(clientProfile);
-		oAuth2Application.setClientSecret(clientSecret);
 		oAuth2Application.setDescription(description);
 		oAuth2Application.setFeaturesList(featuresList);
 		oAuth2Application.setHomePageURL(homePageURL);
@@ -283,9 +299,12 @@ public class OAuth2ApplicationLocalServiceImpl
 			OAuth2Application.class.getName(),
 			oAuth2Application.getOAuth2ApplicationId(), false, false, false);
 
+		_setClientSecret(clientSecret, oAuth2Application);
+
 		return oAuth2ApplicationPersistence.update(oAuth2Application);
 	}
 
+	@Override
 	public OAuth2Application addOrUpdateOAuth2Application(
 			String externalReferenceCode, long userId, String userName,
 			List<GrantType> allowedGrantTypesList,
@@ -344,6 +363,7 @@ public class OAuth2ApplicationLocalServiceImpl
 		return oAuth2ApplicationPersistence.update(oAuth2Application);
 	}
 
+	@Override
 	public OAuth2Application addOrUpdateOAuth2Application(
 			String externalReferenceCode, long userId, String userName,
 			List<GrantType> allowedGrantTypesList,
@@ -397,6 +417,47 @@ public class OAuth2ApplicationLocalServiceImpl
 	}
 
 	@Override
+	public void checkDynamicRegistratorOAuth2Application(long companyId)
+		throws PortalException {
+
+		_deleteClientCredentialsGrants(companyId);
+
+		DynamicQuery dynamicQuery = dynamicQuery();
+
+		Property companyIdProperty = PropertyFactoryUtil.forName("companyId");
+
+		dynamicQuery.add(companyIdProperty.eq(companyId));
+
+		Property nameProperty = PropertyFactoryUtil.forName("name");
+
+		dynamicQuery.add(
+			nameProperty.eq(
+				OAuth2ApplicationConstants.NAME_DYNAMIC_REGISTRATOR));
+
+		List<OAuth2Application> oAuth2Applications = dynamicQuery(dynamicQuery);
+
+		if (!oAuth2Applications.isEmpty()) {
+			_deleteScopeAliases(oAuth2Applications.get(0));
+
+			return;
+		}
+
+		User user = _userLocalService.getUserByScreenName(
+			companyId, UserConstants.SCREEN_NAME_DEFAULT_SERVICE_ACCOUNT);
+
+		addOAuth2Application(
+			companyId, user.getUserId(), user.getScreenName(),
+			Collections.singletonList(GrantType.CLIENT_CREDENTIALS),
+			OAuthConstants.TOKEN_ENDPOINT_AUTH_POST, user.getUserId(),
+			OAuth2SecureRandomGenerator.generateClientId(),
+			ClientProfile.HEADLESS_SERVER.id(),
+			OAuth2SecureRandomGenerator.generateClientSecret(), null, null,
+			null, 0, null, OAuth2ApplicationConstants.NAME_DYNAMIC_REGISTRATOR,
+			null, Collections.emptyList(), false, false, null,
+			new ServiceContext());
+	}
+
+	@Override
 	public OAuth2Application deleteOAuth2Application(long oAuth2ApplicationId)
 		throws PortalException {
 
@@ -417,8 +478,16 @@ public class OAuth2ApplicationLocalServiceImpl
 		_resourceLocalService.deleteResource(
 			oAuth2Application, ResourceConstants.SCOPE_INDIVIDUAL);
 
+		String clientSecret = oAuth2Application.getClientSecret();
+
+		if (KeyReferenceUtil.isKeyReference(clientSecret)) {
+			_secretManager.deleteSecret(
+				oAuth2Application.getCompanyId(),
+				KeyReferenceUtil.toKeyReference(clientSecret));
+		}
+
 		List<OAuth2Authorization> oAuth2Authorizations =
-			_oAuth2AuthorizationLocalService.getOAuth2Authorizations(
+			_oAuth2AuthorizationPersistence.findByOAuth2ApplicationId(
 				oAuth2Application.getOAuth2ApplicationId(), QueryUtil.ALL_POS,
 				QueryUtil.ALL_POS, null);
 
@@ -428,10 +497,9 @@ public class OAuth2ApplicationLocalServiceImpl
 		}
 
 		List<OAuth2ApplicationScopeAliases> oAuth2ApplicationScopeAliaseses =
-			_oAuth2ApplicationScopeAliasesLocalService.
-				getOAuth2ApplicationScopeAliaseses(
-					oAuth2Application.getOAuth2ApplicationId(),
-					QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
+			_oAuth2ApplicationScopeAliasesPersistence.findByOAuth2ApplicationId(
+				oAuth2Application.getOAuth2ApplicationId(), QueryUtil.ALL_POS,
+				QueryUtil.ALL_POS, null);
 
 		for (OAuth2ApplicationScopeAliases oAuth2ApplicationScopeAliases :
 				oAuth2ApplicationScopeAliaseses) {
@@ -484,6 +552,15 @@ public class OAuth2ApplicationLocalServiceImpl
 			companyId, clientProfile);
 	}
 
+	@Override
+	public String getPlaintextClientSecret(OAuth2Application oAuth2Application)
+		throws PortalException {
+
+		return _secretResolver.resolve(
+			oAuth2Application.getCompanyId(),
+			oAuth2Application.getClientSecret());
+	}
+
 	@Indexable(type = IndexableType.REINDEX)
 	@Override
 	public OAuth2Application updateExternalReferenceCode(
@@ -499,13 +576,6 @@ public class OAuth2ApplicationLocalServiceImpl
 	public OAuth2Application updateExternalReferenceCode(
 			OAuth2Application oAuth2Application, String externalReferenceCode)
 		throws PortalException {
-
-		if (Objects.equals(
-				oAuth2Application.getExternalReferenceCode(),
-				externalReferenceCode)) {
-
-			return oAuth2Application;
-		}
 
 		oAuth2Application.setExternalReferenceCode(externalReferenceCode);
 
@@ -644,7 +714,6 @@ public class OAuth2ApplicationLocalServiceImpl
 		oAuth2Application.setClientCredentialUserName(user.getScreenName());
 		oAuth2Application.setClientId(clientId);
 		oAuth2Application.setClientProfile(clientProfile);
-		oAuth2Application.setClientSecret(clientSecret);
 		oAuth2Application.setDescription(description);
 		oAuth2Application.setFeaturesList(featuresList);
 		oAuth2Application.setHomePageURL(homePageURL);
@@ -655,6 +724,8 @@ public class OAuth2ApplicationLocalServiceImpl
 		oAuth2Application.setRedirectURIsList(redirectURIsList);
 		oAuth2Application.setRememberDevice(rememberDevice);
 		oAuth2Application.setTrustedApplication(trustedApplication);
+
+		_setClientSecret(clientSecret, oAuth2Application);
 
 		return oAuth2ApplicationPersistence.update(oAuth2Application);
 	}
@@ -697,6 +768,81 @@ public class OAuth2ApplicationLocalServiceImpl
 		}
 	}
 
+	private void _deleteClientCredentialsGrant(
+		OAuth2Application oAuth2Application) {
+
+		List<GrantType> allowedGrantTypesList =
+			oAuth2Application.getAllowedGrantTypesList();
+
+		if (!allowedGrantTypesList.contains(GrantType.CLIENT_CREDENTIALS)) {
+			return;
+		}
+
+		allowedGrantTypesList.remove(GrantType.CLIENT_CREDENTIALS);
+
+		oAuth2Application.setAllowedGrantTypesList(allowedGrantTypesList);
+
+		oAuth2Application = oAuth2ApplicationPersistence.update(
+			oAuth2Application);
+
+		_oAuth2AuthorizationLocalService.deleteOAuth2Authorizations(
+			oAuth2Application.getClientCredentialUserId(),
+			oAuth2Application.getOAuth2ApplicationId());
+
+		if (_log.isWarnEnabled()) {
+			_log.warn(
+				StringBundler.concat(
+					"The client credentials grant was deleted from the ",
+					"dynamically registered OAuth 2 application with client ",
+					"ID ", oAuth2Application.getClientId()));
+		}
+	}
+
+	private void _deleteClientCredentialsGrants(long companyId) {
+		DynamicQuery dynamicQuery = dynamicQuery();
+
+		Property companyIdProperty = PropertyFactoryUtil.forName("companyId");
+
+		dynamicQuery.add(companyIdProperty.eq(companyId));
+
+		Property userNameProperty = PropertyFactoryUtil.forName("userName");
+
+		dynamicQuery.add(userNameProperty.like("%_dynamic_registered"));
+
+		List<OAuth2Application> oAuth2Applications = dynamicQuery(dynamicQuery);
+
+		for (OAuth2Application oAuth2Application : oAuth2Applications) {
+			String userName = oAuth2Application.getUserName();
+
+			if (!userName.endsWith("_dynamic_registered")) {
+				continue;
+			}
+
+			_deleteClientCredentialsGrant(oAuth2Application);
+		}
+	}
+
+	private void _deleteScopeAliases(OAuth2Application oAuth2Application) {
+		if (oAuth2Application.getOAuth2ApplicationScopeAliasesId() <= 0) {
+			return;
+		}
+
+		oAuth2Application.setOAuth2ApplicationScopeAliasesId(0);
+
+		oAuth2Application = oAuth2ApplicationPersistence.update(
+			oAuth2Application);
+
+		_oAuth2AuthorizationLocalService.deleteOAuth2Authorizations(
+			oAuth2Application.getClientCredentialUserId(),
+			oAuth2Application.getOAuth2ApplicationId());
+
+		if (_log.isWarnEnabled()) {
+			_log.warn(
+				"The scopes were deleted from the OAuth 2 application with " +
+					"client ID " + oAuth2Application.getClientId());
+		}
+	}
+
 	private long _getOAuth2ApplicationScopeAliasesId(
 			long companyId, long userId, String userName,
 			long oAuth2ApplicationId, List<String> scopeAliasesList)
@@ -732,6 +878,28 @@ public class OAuth2ApplicationLocalServiceImpl
 			getOAuth2ApplicationScopeAliasesId();
 	}
 
+	private void _setClientSecret(
+			String clientSecret, OAuth2Application oAuth2Application)
+		throws PortalException {
+
+		if (Validator.isNull(clientSecret) || !PropsValues.FIPS_ENABLED) {
+			oAuth2Application.setClientSecret(clientSecret);
+
+			return;
+		}
+
+		KeyReference keyReference = new KeyReference(
+			String.valueOf(oAuth2Application.getOAuth2ApplicationId()),
+			StringPool.STAR, KeyReference.Type.SECRET);
+
+		oAuth2Application.setClientSecret(
+			KeyReferenceUtil.toKeyReferenceString(keyReference));
+
+		try (Secret secret = new Secret(keyReference, clientSecret)) {
+			_secretManager.putSecret(oAuth2Application.getCompanyId(), secret);
+		}
+	}
+
 	private void _validate(
 			long companyId, List<GrantType> allowedGrantTypesList,
 			String clientAuthenticationMethod, String clientId,
@@ -752,6 +920,12 @@ public class OAuth2ApplicationLocalServiceImpl
 			String clientSecret, String homePageURL, String jwks, String name,
 			String privacyPolicyURL, List<String> redirectURIsList)
 		throws PortalException {
+
+		if (KeyReferenceUtil.isKeyReference(clientSecret)) {
+			throw new PortalException(
+				"Client secret cannot begin with a reserved key reference " +
+					"prefix");
+		}
 
 		if (clientAuthenticationMethod.equals(
 				OAuthConstants.TOKEN_ENDPOINT_AUTH_NONE)) {
@@ -796,6 +970,14 @@ public class OAuth2ApplicationLocalServiceImpl
 
 			if (Validator.isNull(jwks)) {
 				throw new PortalException("Client needs to specify JWKS");
+			}
+
+			try {
+				OAuth2JWKValidatorUtil.validateJWKS(jwks);
+			}
+			catch (SecurityException securityException) {
+				throw new OAuth2ApplicationJWKSException(
+					securityException.getMessage(), securityException);
 			}
 		}
 		else {
@@ -887,18 +1069,23 @@ public class OAuth2ApplicationLocalServiceImpl
 
 			index = domainAndPath.indexOf(StringPool.SLASH);
 
-			if (index > -1) {
-				String path = domainAndPath.substring(index);
+			if (index <= -1) {
+				continue;
+			}
 
-				String normalizedPath = HttpComponentsUtil.normalizePath(path);
+			String path = domainAndPath.substring(index);
 
-				if (!Objects.equals(path, normalizedPath)) {
-					throw new OAuth2ApplicationRedirectURIPathException(
-						redirectURI);
-				}
+			String normalizedPath = HttpComponentsUtil.normalizePath(path);
+
+			if (!Objects.equals(path, normalizedPath)) {
+				throw new OAuth2ApplicationRedirectURIPathException(
+					redirectURI);
 			}
 		}
 	}
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		OAuth2ApplicationLocalServiceImpl.class);
 
 	private static Set<String> _ianaRegisteredUriSchemes = SetUtil.fromArray(
 		"aaa", "aaas", "about", "acap", "acct", "acr", "adiumxtra", "afp",
@@ -954,31 +1141,31 @@ public class OAuth2ApplicationLocalServiceImpl
 	@Reference
 	private GroupLocalService _groupLocalService;
 
-	@Reference(
-		target = "(indexer.class.name=com.liferay.document.library.kernel.model.DLFileEntry)"
-	)
-	private Indexer<DLFileEntry> _indexer;
-
 	@Reference
 	private OAuth2ApplicationScopeAliasesLocalService
 		_oAuth2ApplicationScopeAliasesLocalService;
 
 	@Reference
+	private OAuth2ApplicationScopeAliasesPersistence
+		_oAuth2ApplicationScopeAliasesPersistence;
+
+	@Reference
 	private OAuth2AuthorizationLocalService _oAuth2AuthorizationLocalService;
+
+	@Reference
+	private OAuth2AuthorizationPersistence _oAuth2AuthorizationPersistence;
 
 	@Reference
 	private PortletFileRepository _portletFileRepository;
 
-	@Reference(
-		target = "(class.name=com.liferay.portal.repository.portletrepository.PortletRepository)"
-	)
-	private RepositoryFactory _repositoryFactory;
-
 	@Reference
 	private ResourceLocalService _resourceLocalService;
 
-	@Reference(target = "(default=true)")
-	private Store _store;
+	@Reference
+	private SecretManager _secretManager;
+
+	@Reference
+	private SecretResolver _secretResolver;
 
 	@Reference
 	private UserLocalService _userLocalService;

@@ -13,11 +13,12 @@ import com.liferay.commerce.product.exception.NoSuchCPDefinitionException;
 import com.liferay.commerce.product.model.CPAttachmentFileEntry;
 import com.liferay.commerce.product.model.CPDefinition;
 import com.liferay.commerce.product.model.CommerceCatalog;
-import com.liferay.commerce.product.service.CPDefinitionLocalService;
 import com.liferay.commerce.product.service.CommerceCatalogLocalService;
 import com.liferay.commerce.product.service.base.CPAttachmentFileEntryServiceBaseImpl;
+import com.liferay.commerce.product.service.persistence.CPDefinitionPersistence;
 import com.liferay.document.library.kernel.model.DLFileEntry;
 import com.liferay.document.library.kernel.service.DLFileEntryLocalService;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
@@ -30,7 +31,6 @@ import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portlet.asset.service.permission.AssetCategoryPermission;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -134,39 +134,12 @@ public class CPAttachmentFileEntryServiceImpl
 	}
 
 	@Override
-	public CPAttachmentFileEntry fetchByExternalReferenceCode(
-			String externalReferenceCode, long companyId)
-		throws PortalException {
-
-		CPAttachmentFileEntry cpAttachmentFileEntry =
-			cpAttachmentFileEntryLocalService.fetchByExternalReferenceCode(
-				externalReferenceCode, companyId);
-
-		if (cpAttachmentFileEntry != null) {
-			long cpDefinitionClassNameId = _portal.getClassNameId(
-				CPDefinition.class);
-
-			if (cpDefinitionClassNameId ==
-					cpAttachmentFileEntry.getClassNameId()) {
-
-				_checkCommerceCatalog(
-					cpAttachmentFileEntry.getClassPK(), ActionKeys.VIEW);
-			}
-			else {
-				_checkCPAttachmentFileEntryPermissions(cpAttachmentFileEntry);
-			}
-		}
-
-		return cpAttachmentFileEntry;
-	}
-
-	@Override
 	public CPAttachmentFileEntry fetchCPAttachmentFileEntry(
 			long cpAttachmentFileEntryId)
 		throws PortalException {
 
 		CPAttachmentFileEntry cpAttachmentFileEntry =
-			cpAttachmentFileEntryLocalService.fetchCPAttachmentFileEntry(
+			cpAttachmentFileEntryPersistence.fetchByPrimaryKey(
 				cpAttachmentFileEntryId);
 
 		if (cpAttachmentFileEntry != null) {
@@ -198,6 +171,34 @@ public class CPAttachmentFileEntryServiceImpl
 	}
 
 	@Override
+	public CPAttachmentFileEntry
+			fetchCPAttachmentFileEntryByExternalReferenceCode(
+				String externalReferenceCode, long companyId)
+		throws PortalException {
+
+		CPAttachmentFileEntry cpAttachmentFileEntry =
+			cpAttachmentFileEntryPersistence.fetchByERC_C(
+				externalReferenceCode, companyId);
+
+		if (cpAttachmentFileEntry != null) {
+			long cpDefinitionClassNameId = _portal.getClassNameId(
+				CPDefinition.class);
+
+			if (cpDefinitionClassNameId ==
+					cpAttachmentFileEntry.getClassNameId()) {
+
+				_checkCommerceCatalog(
+					cpAttachmentFileEntry.getClassPK(), ActionKeys.VIEW);
+			}
+			else {
+				_checkCPAttachmentFileEntryPermissions(cpAttachmentFileEntry);
+			}
+		}
+
+		return cpAttachmentFileEntry;
+	}
+
+	@Override
 	public List<CPAttachmentFileEntry> getCPAttachmentFileEntries(
 			long classNameId, long classPK, int type, int status, int start,
 			int end)
@@ -206,31 +207,25 @@ public class CPAttachmentFileEntryServiceImpl
 		_checkCPAttachmentFileEntryPermissions(
 			classNameId, classPK, ActionKeys.VIEW);
 
-		List<CPAttachmentFileEntry> filteredCPAttachmentFileEntries =
-			new ArrayList<>();
-
-		List<CPAttachmentFileEntry> cpAttachmentFileEntries =
+		return TransformUtil.transform(
 			cpAttachmentFileEntryLocalService.getCPAttachmentFileEntries(
-				classNameId, classPK, type, status, start, end);
+				classNameId, classPK, type, status, start, end),
+			cpAttachmentFileEntry -> {
+				DLFileEntry dlFileEntry =
+					_dlFileEntryLocalService.fetchDLFileEntry(
+						cpAttachmentFileEntry.getFileEntryId());
 
-		for (CPAttachmentFileEntry cpAttachmentFileEntry :
-				cpAttachmentFileEntries) {
+				if (((dlFileEntry != null) &&
+					 _dlFileEntryModelResourcePermission.contains(
+						 getPermissionChecker(), dlFileEntry,
+						 ActionKeys.VIEW)) ||
+					cpAttachmentFileEntry.isCDNEnabled()) {
 
-			DLFileEntry dlFileEntry = _dlFileEntryLocalService.fetchDLFileEntry(
-				cpAttachmentFileEntry.getFileEntryId());
+					return cpAttachmentFileEntry;
+				}
 
-			if ((dlFileEntry != null) &&
-				_dlFileEntryModelResourcePermission.contains(
-					getPermissionChecker(), dlFileEntry, ActionKeys.VIEW)) {
-
-				filteredCPAttachmentFileEntries.add(cpAttachmentFileEntry);
-			}
-			else if (cpAttachmentFileEntry.isCDNEnabled()) {
-				filteredCPAttachmentFileEntries.add(cpAttachmentFileEntry);
-			}
-		}
-
-		return filteredCPAttachmentFileEntries;
+				return null;
+			});
 	}
 
 	@Override
@@ -242,32 +237,26 @@ public class CPAttachmentFileEntryServiceImpl
 		_checkCPAttachmentFileEntryPermissions(
 			classNameId, classPK, ActionKeys.VIEW);
 
-		List<CPAttachmentFileEntry> filteredCPAttachmentFileEntries =
-			new ArrayList<>();
-
-		List<CPAttachmentFileEntry> cpAttachmentFileEntries =
+		return TransformUtil.transform(
 			cpAttachmentFileEntryLocalService.getCPAttachmentFileEntries(
 				classNameId, classPK, type, status, start, end,
-				orderByComparator);
+				orderByComparator),
+			cpAttachmentFileEntry -> {
+				DLFileEntry dlFileEntry =
+					_dlFileEntryLocalService.fetchDLFileEntry(
+						cpAttachmentFileEntry.getFileEntryId());
 
-		for (CPAttachmentFileEntry cpAttachmentFileEntry :
-				cpAttachmentFileEntries) {
+				if (((dlFileEntry != null) &&
+					 _dlFileEntryModelResourcePermission.contains(
+						 getPermissionChecker(), dlFileEntry,
+						 ActionKeys.VIEW)) ||
+					cpAttachmentFileEntry.isCDNEnabled()) {
 
-			DLFileEntry dlFileEntry = _dlFileEntryLocalService.fetchDLFileEntry(
-				cpAttachmentFileEntry.getFileEntryId());
+					return cpAttachmentFileEntry;
+				}
 
-			if ((dlFileEntry != null) &&
-				_dlFileEntryModelResourcePermission.contains(
-					getPermissionChecker(), dlFileEntry, ActionKeys.VIEW)) {
-
-				filteredCPAttachmentFileEntries.add(cpAttachmentFileEntry);
-			}
-			else if (cpAttachmentFileEntry.isCDNEnabled()) {
-				filteredCPAttachmentFileEntries.add(cpAttachmentFileEntry);
-			}
-		}
-
-		return filteredCPAttachmentFileEntries;
+				return null;
+			});
 	}
 
 	@Override
@@ -279,31 +268,25 @@ public class CPAttachmentFileEntryServiceImpl
 		_checkCPAttachmentFileEntryPermissions(
 			classNameId, classPK, ActionKeys.VIEW);
 
-		List<CPAttachmentFileEntry> filteredCPAttachmentFileEntries =
-			new ArrayList<>();
-
-		List<CPAttachmentFileEntry> cpAttachmentFileEntries =
+		return TransformUtil.transform(
 			cpAttachmentFileEntryLocalService.getCPAttachmentFileEntries(
-				classNameId, classPK, keywords, type, status, start, end);
+				classNameId, classPK, keywords, type, status, start, end),
+			cpAttachmentFileEntry -> {
+				DLFileEntry dlFileEntry =
+					_dlFileEntryLocalService.fetchDLFileEntry(
+						cpAttachmentFileEntry.getFileEntryId());
 
-		for (CPAttachmentFileEntry cpAttachmentFileEntry :
-				cpAttachmentFileEntries) {
+				if (((dlFileEntry != null) &&
+					 _dlFileEntryModelResourcePermission.contains(
+						 getPermissionChecker(), dlFileEntry,
+						 ActionKeys.VIEW)) ||
+					cpAttachmentFileEntry.isCDNEnabled()) {
 
-			DLFileEntry dlFileEntry = _dlFileEntryLocalService.fetchDLFileEntry(
-				cpAttachmentFileEntry.getFileEntryId());
+					return cpAttachmentFileEntry;
+				}
 
-			if ((dlFileEntry != null) &&
-				_dlFileEntryModelResourcePermission.contains(
-					getPermissionChecker(), dlFileEntry, ActionKeys.VIEW)) {
-
-				filteredCPAttachmentFileEntries.add(cpAttachmentFileEntry);
-			}
-			else if (cpAttachmentFileEntry.isCDNEnabled()) {
-				filteredCPAttachmentFileEntries.add(cpAttachmentFileEntry);
-			}
-		}
-
-		return filteredCPAttachmentFileEntries;
+				return null;
+			});
 	}
 
 	@Override
@@ -338,7 +321,7 @@ public class CPAttachmentFileEntryServiceImpl
 		throws PortalException {
 
 		CPAttachmentFileEntry cpAttachmentFileEntry =
-			cpAttachmentFileEntryLocalService.getCPAttachmentFileEntry(
+			cpAttachmentFileEntryPersistence.findByPrimaryKey(
 				cpAttachmentFileEntryId);
 
 		if (cpAttachmentFileEntry != null) {
@@ -392,28 +375,6 @@ public class CPAttachmentFileEntryServiceImpl
 			priority, type, serviceContext);
 	}
 
-	private void _checkCommerceCatalog(long cpDefinitionId, String actionId)
-		throws PortalException {
-
-		CPDefinition cpDefinition = _cpDefinitionLocalService.fetchCPDefinition(
-			cpDefinitionId);
-
-		if (cpDefinition == null) {
-			throw new NoSuchCPDefinitionException();
-		}
-
-		CommerceCatalog commerceCatalog =
-			_commerceCatalogLocalService.fetchCommerceCatalogByGroupId(
-				cpDefinition.getGroupId());
-
-		if (commerceCatalog == null) {
-			throw new PrincipalException();
-		}
-
-		_commerceCatalogModelResourcePermission.check(
-			getPermissionChecker(), commerceCatalog, actionId);
-	}
-
 	private void _checkCPAttachmentFileEntryPermissions(
 			CPAttachmentFileEntry cpAttachmentFileEntry)
 		throws PortalException {
@@ -430,7 +391,7 @@ public class CPAttachmentFileEntryServiceImpl
 		throws PortalException {
 
 		_checkCPAttachmentFileEntryPermissions(
-			cpAttachmentFileEntryLocalService.getCPAttachmentFileEntry(
+			cpAttachmentFileEntryPersistence.findByPrimaryKey(
 				cpAttachmentFileEntryId));
 	}
 
@@ -459,6 +420,28 @@ public class CPAttachmentFileEntryServiceImpl
 		}
 	}
 
+	private void _checkCommerceCatalog(long cpDefinitionId, String actionId)
+		throws PortalException {
+
+		CPDefinition cpDefinition = _cpDefinitionPersistence.fetchByPrimaryKey(
+			cpDefinitionId);
+
+		if (cpDefinition == null) {
+			throw new NoSuchCPDefinitionException();
+		}
+
+		CommerceCatalog commerceCatalog =
+			_commerceCatalogLocalService.fetchCommerceCatalogByGroupId(
+				cpDefinition.getGroupId());
+
+		if (commerceCatalog == null) {
+			throw new PrincipalException();
+		}
+
+		_commerceCatalogModelResourcePermission.check(
+			getPermissionChecker(), commerceCatalog, actionId);
+	}
+
 	private String _getActionKeyByCPAttachmentFileEntryType(int type) {
 		if (type == CPAttachmentFileEntryConstants.TYPE_OTHER) {
 			return CPActionKeys.MANAGE_COMMERCE_PRODUCT_ATTACHMENTS;
@@ -477,7 +460,7 @@ public class CPAttachmentFileEntryServiceImpl
 		_commerceCatalogModelResourcePermission;
 
 	@Reference
-	private CPDefinitionLocalService _cpDefinitionLocalService;
+	private CPDefinitionPersistence _cpDefinitionPersistence;
 
 	@Reference
 	private DLFileEntryLocalService _dlFileEntryLocalService;

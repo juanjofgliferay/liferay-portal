@@ -8,6 +8,8 @@ package com.liferay.portal.kernel.test.util;
 import com.liferay.petra.function.UnsafeSupplier;
 import com.liferay.portal.kernel.util.Http;
 
+import jakarta.servlet.http.Cookie;
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -16,8 +18,6 @@ import java.net.URL;
 
 import java.util.Collections;
 import java.util.Map;
-
-import javax.servlet.http.Cookie;
 
 /**
  * @author Mikel Lorza
@@ -33,26 +33,6 @@ public class MockHttp implements Http {
 		else {
 			_unsafeSuppliers = Collections.emptyMap();
 		}
-	}
-
-	@Override
-	public Cookie[] getCookies() {
-		return null;
-	}
-
-	@Override
-	public boolean hasProxyConfig() {
-		return false;
-	}
-
-	@Override
-	public boolean isNonProxyHost(String host) {
-		return false;
-	}
-
-	@Override
-	public boolean isProxyHost(String host) {
-		return false;
 	}
 
 	@Override
@@ -110,6 +90,26 @@ public class MockHttp implements Http {
 	@Override
 	public String URLtoString(URL url) throws IOException {
 		return new String(_toBytes(url, null));
+	}
+
+	@Override
+	public Cookie[] getCookies() {
+		return null;
+	}
+
+	@Override
+	public boolean hasProxyConfig() {
+		return false;
+	}
+
+	@Override
+	public boolean isNonProxyHost(String host) {
+		return false;
+	}
+
+	@Override
+	public boolean isProxyHost(String host) {
+		return false;
 	}
 
 	private byte[] _toBytes(String location, Options options)

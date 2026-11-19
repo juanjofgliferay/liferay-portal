@@ -3,23 +3,29 @@
 <project basedir="." default="test" name="build-test-translation" xmlns:antelope="antlib:ise.antelope.tasks" xmlns:if="ant:if" xmlns:unless="ant:unless">
 	<import file="build-test.xml" />
 
-	<target name="copy-translation-file">
-		<if>
-			<equals arg1="${dependencyFile}" arg2="true" />
-			<then>
-				<copy
-					file="modules/apps/translation/translation-test/src/testFunctional/tests/dependencies/${translation.zip.file.name}/${translation.file.name}"
-					tofile="${selenium.output.dir.name}/${translation.file.name}"
-				/>
-			</then>
-			<else>
-				<copy
-					file="${selenium.output.dir.name}/${translation.zip.file.name}/${translation.file.name}"
-					tofile="${selenium.output.dir.name}/${translation.file.name}"
-				/>
-			</else>
-		</if>
-	</target>
+	<macrodef name="fill-empty-translation-target">
+		<attribute name="file" />
+		<attribute name="sourcecdata" />
+		<attribute name="target" />
+		<sequential>
+			<replaceregexp
+				file="@{file}"
+			>
+				<regexp pattern="(\Q@{sourcecdata}\E&lt;/source&gt;\s*&lt;target[^&gt;]*&gt;)&lt;/target&gt;" />
+				<substitution expression="\1@{target}" />
+			</replaceregexp>
+		</sequential>
+	</macrodef>
+
+	<macrodef name="strip-target-tag">
+		<attribute name="property" />
+		<attribute name="value" />
+		<sequential>
+			<antelope:stringutil property="@{property}" string="@{value}">
+				<antelope:replace regex="&lt;/target&gt;" replacement="" />
+			</antelope:stringutil>
+		</sequential>
+	</macrodef>
 
 	<target name="unzip-translation-file">
 		<antelope:stringutil property="fileName" string="${fileName}">
@@ -59,6 +65,7 @@
 				/>
 			</then>
 		</if>
+
 		<if>
 			<equals arg1="${translation.file.rename}" arg2="true" />
 			<then>
@@ -96,8 +103,8 @@
 			<else>
 				<replace
 					file="${selenium.output.dir.name}/${translation.zip.file.name}/${translation.file.name}.${translation.file.type}"
-					token="${translation.title.target.original}"
-					value="${translation.title.target}"
+					token="${translation.content.target.original}"
+					value="${translation.content.target}"
 				/>
 				<replace
 					file="${selenium.output.dir.name}/${translation.zip.file.name}/${translation.file.name}.${translation.file.type}"
@@ -106,8 +113,37 @@
 				/>
 				<replace
 					file="${selenium.output.dir.name}/${translation.zip.file.name}/${translation.file.name}.${translation.file.type}"
-					token="${translation.content.target.original}"
-					value="${translation.content.target}"
+					token="${translation.title.target.original}"
+					value="${translation.title.target}"
+				/>
+
+				<!--
+				The replaces above only match an export whose target already
+				repeats the source text. An export that leaves the target empty
+				needs the translation written into it, anchored on the source
+				text so that each unit keeps its own value. XLIFF 1.2 writes the
+				target with an xml:lang attribute, so the opening tag is matched
+				loosely.
+				-->
+
+				<strip-target-tag property="translation.content.source.cdata" value="${translation.content.target.original}" />
+				<strip-target-tag property="translation.description.source.cdata" value="${translation.description.target.original}" />
+				<strip-target-tag property="translation.title.source.cdata" value="${translation.title.target.original}" />
+
+				<fill-empty-translation-target
+					file="${selenium.output.dir.name}/${translation.zip.file.name}/${translation.file.name}.${translation.file.type}"
+					sourcecdata="${translation.content.source.cdata}"
+					target="${translation.content.target}"
+				/>
+				<fill-empty-translation-target
+					file="${selenium.output.dir.name}/${translation.zip.file.name}/${translation.file.name}.${translation.file.type}"
+					sourcecdata="${translation.description.source.cdata}"
+					target="${translation.description.target}"
+				/>
+				<fill-empty-translation-target
+					file="${selenium.output.dir.name}/${translation.zip.file.name}/${translation.file.name}.${translation.file.type}"
+					sourcecdata="${translation.title.source.cdata}"
+					target="${translation.title.target}"
 				/>
 			</else>
 		</if>
@@ -147,45 +183,6 @@
 					destfile="${selenium.output.dir.name}/${translation.zip.file.name}_translated.zip"
 				/>
 			</then>
-		</if>
-	</target>
-
-	<target name="update-translation-file-id">
-		<var name="translation.file.type" value="xlf" />
-
-		<antelope:stringutil property="translation.file.name" string="${translation.file.name}">
-			<antelope:replace regex="\*" replacement=" " />
-		</antelope:stringutil>
-
-		<antelope:stringutil property="translation.zip.file.name" string="${translation.zip.file.name}">
-			<antelope:replace regex="\*" replacement=" " />
-		</antelope:stringutil>
-
-		<if>
-			<equals arg1="${translation.zip.file.name}" arg2="WCGeneralName" />
-			<then>
-				<var name="translation.zip.file.name" value="Web Content Article Translations-en_US" />
-			</then>
-		</if>
-
-		<if>
-			<equals arg1="${dependencyFile}" arg2="true" />
-			<then>
-				<var name="translation.file.path" value="${selenium.output.dir.name}/${translation.file.name}.${translation.file.type}" />
-				<replace
-					file="${translation.file.path}"
-					token="${translation.entry.type}:"
-					value="${translation.entry.type}:${structuredContentId}"
-				/>
-			</then>
-			<else>
-				<var name="translation.file.path" value="${selenium.output.dir.name}/${translation.zip.file.name}/${translation.file.name}.${translation.file.type}" />
-				<replace
-					file="${translation.file.path}"
-					token="${translation.entry.type}:"
-					value="${translation.entry.type}:1"
-				/>
-			</else>
 		</if>
 	</target>
 </project>

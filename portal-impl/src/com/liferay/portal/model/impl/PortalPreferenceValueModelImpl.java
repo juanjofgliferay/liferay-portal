@@ -81,10 +81,12 @@ public class PortalPreferenceValueModelImpl
 	}
 
 	public static final String TABLE_SQL_CREATE =
-		"create table PortalPreferenceValue (mvccVersion LONG default 0 not null,portalPreferenceValueId LONG not null primary key,companyId LONG,portalPreferencesId LONG,index_ INTEGER,key_ VARCHAR(255) null,largeValue TEXT null,namespace VARCHAR(255) null,smallValue VARCHAR(255) null)";
+		"create table PortalPreferenceValue (mvccVersion LONG default 0 not null,portalPreferenceValueId LONG not null primary key,companyId LONG,portalPreferencesId LONG,index_ INTEGER,key_ VARCHAR(1024) null,largeValue TEXT null,namespace VARCHAR(255) null,smallValue VARCHAR(255) null)";
 
 	public static final String TABLE_SQL_DROP =
 		"drop table PortalPreferenceValue";
+
+	public static final String ENTITY_ALIAS = "portalPreferenceValue";
 
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY portalPreferenceValue.index ASC";
@@ -140,14 +142,8 @@ public class PortalPreferenceValueModelImpl
 	@Deprecated
 	public static final long PORTALPREFERENCESID_COLUMN_BITMASK = 8L;
 
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
-	 */
-	@Deprecated
-	public static final long SMALLVALUE_COLUMN_BITMASK = 16L;
-
 	public static final long LOCK_EXPIRATION_TIME = GetterUtil.getLong(
-		com.liferay.portal.util.PropsUtil.get(
+		com.liferay.portal.kernel.util.PropsUtil.get(
 			"lock.expiration.time.com.liferay.portal.kernel.model.PortalPreferenceValue"));
 
 	public PortalPreferenceValueModelImpl() {
@@ -511,15 +507,6 @@ public class PortalPreferenceValueModelImpl
 		}
 
 		_smallValue = smallValue;
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #getColumnOriginalValue(String)}
-	 */
-	@Deprecated
-	public String getOriginalSmallValue() {
-		return getColumnOriginalValue("smallValue");
 	}
 
 	public long getColumnBitmask() {
@@ -908,3 +895,4 @@ public class PortalPreferenceValueModelImpl
 	private PortalPreferenceValue _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:279881095

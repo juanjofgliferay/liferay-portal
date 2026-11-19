@@ -20,6 +20,7 @@ import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.search.BaseModelSearchResult;
+import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
@@ -161,6 +162,8 @@ public class TextDDMFormFieldTypeReportProcessorTest {
 	public void testProcessDDMFormInstanceReportOnDeleteEvent()
 		throws Exception {
 
+		// Value in the report
+
 		DDMFormFieldValue ddmFormFieldValue = Mockito.mock(
 			DDMFormFieldValue.class);
 
@@ -207,9 +210,11 @@ public class TextDDMFormFieldTypeReportProcessorTest {
 			ddmFormInstanceRecord
 		);
 
+		int maxLength = RandomTestUtil.randomInt(1, _VALUES_MAX_LENGTH);
+
 		List<DDMFormInstanceRecord> ddmFormInstanceRecords = new ArrayList<>();
 
-		for (int i = _VALUES_MAX_LENGTH; i > 0; i--) {
+		for (int i = maxLength; i > 0; i--) {
 			ddmFormInstanceRecords.add(_createFormInstanceRecord("text " + i));
 		}
 
@@ -226,7 +231,14 @@ public class TextDDMFormFieldTypeReportProcessorTest {
 		JSONObject processedFieldJSONObject =
 			_textDDMFormFieldTypeReportProcessor.process(
 				ddmFormFieldValue,
-				JSONUtil.put("type", DDMFormFieldTypeConstants.TEXT),
+				JSONUtil.put(
+					"type", DDMFormFieldTypeConstants.TEXT
+				).put(
+					"values",
+					JSONUtil.putAll(
+						JSONUtil.put(
+							"formInstanceRecordId", formInstanceRecordId))
+				),
 				formInstanceRecordId,
 				DDMFormInstanceReportConstants.EVENT_DELETE_RECORD_VERSION);
 
@@ -239,7 +251,30 @@ public class TextDDMFormFieldTypeReportProcessorTest {
 
 		JSONObject jsonObject = valuesJSONArray.getJSONObject(0);
 
-		Assert.assertEquals("text 5", jsonObject.getString("value"));
+		Assert.assertEquals("text " + maxLength, jsonObject.getString("value"));
+
+		// Value not in the report
+
+		formInstanceRecordId = 2;
+
+		processedFieldJSONObject = _textDDMFormFieldTypeReportProcessor.process(
+			ddmFormFieldValue,
+			JSONUtil.put(
+				"totalEntries", 2
+			).put(
+				"values",
+				JSONUtil.putAll(JSONUtil.put("formInstanceRecordId", 1))
+			),
+			formInstanceRecordId,
+			DDMFormInstanceReportConstants.EVENT_DELETE_RECORD_VERSION);
+
+		Assert.assertEquals(1, processedFieldJSONObject.getInt("totalEntries"));
+
+		Mockito.verify(
+			_ddmFormInstanceRecordLocalService, Mockito.never()
+		).getFormInstanceRecord(
+			formInstanceRecordId
+		);
 	}
 
 	@Test

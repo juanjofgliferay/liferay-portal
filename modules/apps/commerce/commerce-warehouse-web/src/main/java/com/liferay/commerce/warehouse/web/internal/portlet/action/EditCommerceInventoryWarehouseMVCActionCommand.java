@@ -36,12 +36,12 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.StringUtil;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.Callable;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -52,7 +52,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + CPPortletKeys.COMMERCE_INVENTORY_WAREHOUSE,
+		"jakarta.portlet.name=" + CPPortletKeys.COMMERCE_INVENTORY_WAREHOUSE,
 		"mvc.command.name=/commerce_inventory_warehouse/edit_commerce_inventory_warehouse"
 	},
 	service = MVCActionCommand.class
@@ -213,12 +213,14 @@ public class EditCommerceInventoryWarehouseMVCActionCommand
 			commerceInventoryWarehouseId);
 
 		for (long commerceChannelId : commerceChannelIds) {
-			if (commerceChannelId != 0) {
-				_commerceChannelRelService.addCommerceChannelRel(
-					CommerceInventoryWarehouse.class.getName(),
-					commerceInventoryWarehouseId, commerceChannelId,
-					serviceContext);
+			if (commerceChannelId == 0) {
+				continue;
 			}
+
+			_commerceChannelRelService.addCommerceChannelRel(
+				CommerceInventoryWarehouse.class.getName(),
+				commerceInventoryWarehouseId, commerceChannelId,
+				serviceContext);
 		}
 	}
 

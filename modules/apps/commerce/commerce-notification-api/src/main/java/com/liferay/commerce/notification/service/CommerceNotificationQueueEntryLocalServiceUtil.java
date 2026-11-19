@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -26,8 +27,10 @@ import java.util.List;
  *
  * @author Alessio Antonio Rendina
  * @see CommerceNotificationQueueEntryLocalService
+ * @deprecated As of Cavanaugh (7.4.x)
  * @generated
  */
+@Deprecated
 public class CommerceNotificationQueueEntryLocalServiceUtil {
 
 	/*
@@ -118,7 +121,8 @@ public class CommerceNotificationQueueEntryLocalServiceUtil {
 	}
 
 	public static void deleteCommerceNotificationQueueEntries(
-		java.util.Date sentDate) {
+			java.util.Date sentDate)
+		throws PortalException {
 
 		getService().deleteCommerceNotificationQueueEntries(sentDate);
 	}
@@ -301,16 +305,6 @@ public class CommerceNotificationQueueEntryLocalServiceUtil {
 
 	public static List<CommerceNotificationQueueEntry>
 		getCommerceNotificationQueueEntries(
-			long groupId, int start, int end,
-			OrderByComparator<CommerceNotificationQueueEntry>
-				orderByComparator) {
-
-		return getService().getCommerceNotificationQueueEntries(
-			groupId, start, end, orderByComparator);
-	}
-
-	public static List<CommerceNotificationQueueEntry>
-		getCommerceNotificationQueueEntries(
 			long groupId, String className, long classPK, boolean sent,
 			int start, int end,
 			OrderByComparator<CommerceNotificationQueueEntry>
@@ -327,10 +321,6 @@ public class CommerceNotificationQueueEntryLocalServiceUtil {
 	 */
 	public static int getCommerceNotificationQueueEntriesCount() {
 		return getService().getCommerceNotificationQueueEntriesCount();
-	}
-
-	public static int getCommerceNotificationQueueEntriesCount(long groupId) {
-		return getService().getCommerceNotificationQueueEntriesCount(groupId);
 	}
 
 	public static int getCommerceNotificationQueueEntriesCount(
@@ -427,15 +417,13 @@ public class CommerceNotificationQueueEntryLocalServiceUtil {
 	}
 
 	public static CommerceNotificationQueueEntryLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(
-		CommerceNotificationQueueEntryLocalService service) {
-
-		_service = service;
-	}
-
-	private static volatile CommerceNotificationQueueEntryLocalService _service;
+	private static final Snapshot<CommerceNotificationQueueEntryLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			CommerceNotificationQueueEntryLocalServiceUtil.class,
+			CommerceNotificationQueueEntryLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1478914833

@@ -17,7 +17,13 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.servlet.HttpMethods;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
-import com.liferay.portal.util.PropsValues;
+import com.liferay.portal.kernel.util.PropsValues;
+
+import jakarta.servlet.Servlet;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.File;
 import java.io.IOException;
@@ -32,12 +38,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-
-import javax.servlet.Servlet;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -73,12 +73,13 @@ public class JSONServerServlet extends HttpServlet {
 		for (File file : repositoryDir.listFiles()) {
 			String fileName = file.getName();
 
-			if (fileName.endsWith(".json")) {
-				URI uri = file.toURI();
-
-				_load(
-					fileName.substring(0, fileName.length() - 5), uri.toURL());
+			if (!fileName.endsWith(".json")) {
+				continue;
 			}
+
+			URI uri = file.toURI();
+
+			_load(fileName.substring(0, fileName.length() - 5), uri.toURL());
 		}
 	}
 
@@ -260,9 +261,11 @@ public class JSONServerServlet extends HttpServlet {
 			for (Map<String, Object> curModel : models) {
 				Long id = _getId(curModel);
 
-				if ((id != null) && (id > maxId)) {
-					maxId = id;
+				if ((id == null) || (id <= maxId)) {
+					continue;
 				}
+
+				maxId = id;
 			}
 
 			model.put("id", maxId + 1);

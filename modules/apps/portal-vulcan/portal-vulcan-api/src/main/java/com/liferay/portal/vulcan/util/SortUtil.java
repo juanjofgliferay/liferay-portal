@@ -9,6 +9,7 @@ import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.odata.entity.EntityField;
 import com.liferay.portal.odata.entity.EntityModel;
 import com.liferay.portal.odata.sort.SortField;
 import com.liferay.portal.odata.sort.SortParser;
@@ -63,10 +64,29 @@ public class SortUtil {
 			sorts[i] = new Sort(
 				sortField.getSortableFieldName(
 					acceptLanguage.getPreferredLocale()),
+				sortField.getSortableFieldPath(
+					acceptLanguage.getPreferredLocale()),
+				_getSortType(sortField.getEntityFieldType()),
 				!sortField.isAscending());
 		}
 
 		return sorts;
+	}
+
+	private static int _getSortType(EntityField.Type entityFieldType) {
+		if (entityFieldType == EntityField.Type.DOUBLE) {
+			return Sort.DOUBLE_TYPE;
+		}
+
+		if (entityFieldType == EntityField.Type.ID) {
+			return Sort.LONG_TYPE;
+		}
+
+		if (entityFieldType == EntityField.Type.INTEGER) {
+			return Sort.INT_TYPE;
+		}
+
+		return Sort.STRING_TYPE;
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(SortUtil.class);

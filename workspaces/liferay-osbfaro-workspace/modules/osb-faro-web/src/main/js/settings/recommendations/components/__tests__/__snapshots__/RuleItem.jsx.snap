@@ -1,0 +1,27 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`RuleItem should render 1`] = `
+<div>
+  <div
+    class="rule-item-root d-flex align-items-baseline"
+  >
+    <b>
+      Include:
+    </b>
+    <span
+      class="label metadata-tag-root label-lg label-inverse-secondary"
+    >
+      <span
+        class="label-item label-item-expand"
+      >
+        og:url
+      </span>
+    </span>
+    <span
+      class="rule-value"
+    >
+      "https://www.liferay.com"
+    </span>
+  </div>
+</div>
+`;

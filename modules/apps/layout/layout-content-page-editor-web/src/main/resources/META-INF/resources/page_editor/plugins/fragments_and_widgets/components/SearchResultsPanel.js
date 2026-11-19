@@ -4,55 +4,79 @@
  */
 
 import ClayEmptyState from '@clayui/empty-state';
+import ClayIcon from '@clayui/icon';
 import ClayLoadingIndicator from '@clayui/loading-indicator';
 import PropTypes from 'prop-types';
 import React from 'react';
 
+import {useSelector} from '../../../app/contexts/StoreContext';
+import MarketplaceSearchResults from './MarketplaceSearchResults';
 import TabCollection from './TabCollection';
 
-export default function SearchResultsPanel({filteredTabs, loading = false}) {
+export default function SearchResultsPanel({
+	filteredTabs,
+	loading = false,
+	searchValue,
+}) {
+	const permissions = useSelector((state) => state.permissions);
+
 	if (loading) {
 		return <ClayLoadingIndicator className="mt-3" size="sm" />;
 	}
 
-	return filteredTabs.length ? (
-		<div className="overflow-auto px-3">
-			{filteredTabs.map((tab, index) => (
-				<div key={index}>
-					<div className="font-weight-semi-bold page-editor__fragments-widgets__search-results-panel__filter-subtitle py-2">
-						{tab.label}
-					</div>
+	return (
+		<div className="overflow-auto">
+			{filteredTabs.length ? (
+				<div>
+					{filteredTabs.map((tab, index) => (
+						<div key={index}>
+							<div className="font-weight-semi-bold page-editor__fragments-widgets__search-results-panel__filter-subtitle px-3 py-2">
+								{tab.label}
+							</div>
 
-					<ul
-						aria-orientation="vertical"
-						className="list-unstyled panel-group-sm"
-						role="menubar"
-					>
-						{tab.collections.map((collection, index) => (
-							<TabCollection
-								collection={collection}
-								initialOpen
-								isSearchResult
-								key={index}
-							/>
-						))}
-					</ul>
+							<ul
+								aria-orientation="vertical"
+								className="list-unstyled panel-group-sm px-3"
+								role="menubar"
+							>
+								{tab.collections.map((collection, index) => (
+									<TabCollection
+										collection={collection}
+										initialOpen
+										isSearchResult
+										key={index}
+									/>
+								))}
+							</ul>
+						</div>
+					))}
 				</div>
-			))}
-		</div>
-	) : (
-		<ClayEmptyState
-			description={Liferay.Language.get(
-				'try-again-with-a-different-search'
+			) : (
+				<ClayEmptyState
+					description={Liferay.Language.get(
+						'try-again-with-a-different-search'
+					)}
+					image={
+						<ClayIcon
+							className="c-empty-state-icon c-empty-state-icon-search-state"
+							illustration
+							symbol="search-state"
+						/>
+					}
+					small
+					title={Liferay.Language.get('no-results-found')}
+				/>
 			)}
-			imgSrc={`${themeDisplay.getPathThemeImages()}/states/search_state.gif`}
-			small
-			title={Liferay.Language.get('no-results-found')}
-		/>
+
+			{permissions.VIEW_MARKETPLACE ? (
+				<MarketplaceSearchResults searchValue={searchValue} />
+			) : null}
+		</div>
 	);
 }
 
 SearchResultsPanel.proptypes = {
 	filteredTabs: PropTypes.object.isRequired,
 	loading: PropTypes.bool,
+	searchValue: PropTypes.string.isRequired,
 };

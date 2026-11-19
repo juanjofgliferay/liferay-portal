@@ -9,9 +9,7 @@ import com.liferay.analytics.settings.rest.client.dto.v1_0.Field;
 import com.liferay.analytics.settings.rest.client.pagination.Page;
 import com.liferay.analytics.settings.rest.client.pagination.Pagination;
 import com.liferay.analytics.settings.rest.constants.FieldAccountConstants;
-import com.liferay.analytics.settings.rest.constants.FieldOrderConstants;
 import com.liferay.analytics.settings.rest.constants.FieldPeopleConstants;
-import com.liferay.analytics.settings.rest.constants.FieldProductConstants;
 import com.liferay.analytics.settings.rest.manager.AnalyticsSettingsManager;
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.petra.function.transform.TransformUtil;
@@ -92,50 +90,6 @@ public class FieldResourceTest extends BaseFieldResourceTestCase {
 
 	@Override
 	@Test
-	public void testGetFieldsOrdersPage() throws Exception {
-		Page<Field> totalPage = fieldResource.getFieldsOrdersPage(
-			null, null, null);
-
-		int totalCount = GetterUtil.getInteger(totalPage.getTotalCount());
-
-		Assert.assertEquals(
-			FieldOrderConstants.FIELD_ORDER_NAMES.length +
-				FieldOrderConstants.FIELD_ORDER_ITEM_NAMES.length,
-			totalCount);
-	}
-
-	@Ignore
-	@Override
-	@Test
-	public void testGetFieldsOrdersPageWithPagination() throws Exception {
-	}
-
-	@Ignore
-	@Override
-	@Test
-	public void testGetFieldsOrdersPageWithSortDateTime() throws Exception {
-	}
-
-	@Ignore
-	@Override
-	@Test
-	public void testGetFieldsOrdersPageWithSortDouble() throws Exception {
-	}
-
-	@Ignore
-	@Override
-	@Test
-	public void testGetFieldsOrdersPageWithSortInteger() throws Exception {
-	}
-
-	@Ignore
-	@Override
-	@Test
-	public void testGetFieldsOrdersPageWithSortString() throws Exception {
-	}
-
-	@Override
-	@Test
 	public void testGetFieldsPeoplePage() throws Exception {
 		Page<Field> totalPage = fieldResource.getFieldsPeoplePage(
 			null, null, null);
@@ -180,51 +134,6 @@ public class FieldResourceTest extends BaseFieldResourceTestCase {
 
 	@Override
 	@Test
-	public void testGetFieldsProductsPage() throws Exception {
-		Page<Field> totalPage = fieldResource.getFieldsProductsPage(
-			null, null, null);
-
-		int totalCount = GetterUtil.getInteger(totalPage.getTotalCount());
-
-		Assert.assertEquals(
-			FieldProductConstants.FIELD_CATEGORY_NAMES.length +
-				FieldProductConstants.FIELD_PRODUCT_NAMES.length +
-					FieldProductConstants.FIELD_PRODUCT_CHANNEL_NAMES.length,
-			totalCount);
-	}
-
-	@Ignore
-	@Override
-	@Test
-	public void testGetFieldsProductsPageWithPagination() throws Exception {
-	}
-
-	@Ignore
-	@Override
-	@Test
-	public void testGetFieldsProductsPageWithSortDateTime() throws Exception {
-	}
-
-	@Ignore
-	@Override
-	@Test
-	public void testGetFieldsProductsPageWithSortDouble() throws Exception {
-	}
-
-	@Ignore
-	@Override
-	@Test
-	public void testGetFieldsProductsPageWithSortInteger() throws Exception {
-	}
-
-	@Ignore
-	@Override
-	@Test
-	public void testGetFieldsProductsPageWithSortString() throws Exception {
-	}
-
-	@Override
-	@Test
 	public void testPatchFieldAccount() throws Exception {
 		fieldResource.patchFieldAccount(
 			new Field[] {_getField("externalReferenceCode", true, "account")});
@@ -239,9 +148,11 @@ public class FieldResourceTest extends BaseFieldResourceTestCase {
 					int selectedCount = 0;
 
 					for (Field field : fieldsAccountsPage.getItems()) {
-						if (field.getSelected()) {
-							selectedCount += 1;
+						if (!field.getSelected()) {
+							continue;
 						}
+
+						selectedCount += 1;
 					}
 
 					Assert.assertEquals(
@@ -271,9 +182,11 @@ public class FieldResourceTest extends BaseFieldResourceTestCase {
 					int selectedCount = 0;
 
 					for (Field field : fieldsAccountsPage.getItems()) {
-						if (field.getSelected()) {
-							selectedCount += 1;
+						if (!field.getSelected()) {
+							continue;
 						}
+
+						selectedCount += 1;
 					}
 
 					Assert.assertEquals(
@@ -302,53 +215,16 @@ public class FieldResourceTest extends BaseFieldResourceTestCase {
 					int selectedCount = 0;
 
 					for (Field field : fieldsAccountsPage.getItems()) {
-						if (field.getSelected()) {
-							selectedCount += 1;
+						if (!field.getSelected()) {
+							continue;
 						}
+
+						selectedCount += 1;
 					}
 
 					Assert.assertEquals(
 						FieldAccountConstants.FIELD_ACCOUNT_REQUIRED_NAMES.
 							length,
-						selectedCount);
-				}
-				catch (Exception exception) {
-					throw new RuntimeException(exception);
-				}
-
-				return null;
-			});
-	}
-
-	@Override
-	@Test
-	public void testPatchFieldOrder() throws Exception {
-		fieldResource.patchFieldOrder(
-			new Field[] {
-				_getField("externalReferenceCode", true, "order"),
-				_getField("externalReferenceCode", true, "order")
-			});
-
-		IdempotentRetryAssert.retryAssert(
-			5, TimeUnit.SECONDS, 1, TimeUnit.SECONDS,
-			() -> {
-				try {
-					Page<Field> fieldsOrdersPage =
-						fieldResource.getFieldsOrdersPage(
-							null, Pagination.of(1, 100), null);
-
-					int selectedCount = 0;
-
-					for (Field field : fieldsOrdersPage.getItems()) {
-						if (field.getSelected()) {
-							selectedCount += 1;
-						}
-					}
-
-					Assert.assertEquals(
-						FieldOrderConstants.FIELD_ORDER_REQUIRED_NAMES.length +
-							FieldOrderConstants.FIELD_ORDER_ITEM_REQUIRED_NAMES.
-								length,
 						selectedCount);
 				}
 				catch (Exception exception) {
@@ -379,9 +255,11 @@ public class FieldResourceTest extends BaseFieldResourceTestCase {
 					int selectedCount = 0;
 
 					for (Field field : fieldsPeoplePage.getItems()) {
-						if (field.getSelected()) {
-							selectedCount += 1;
+						if (!field.getSelected()) {
+							continue;
 						}
+
+						selectedCount += 1;
 					}
 
 					Assert.assertEquals(
@@ -416,9 +294,11 @@ public class FieldResourceTest extends BaseFieldResourceTestCase {
 					int selectedCount = 0;
 
 					for (Field field : fieldsPeoplePage.getItems()) {
-						if (field.getSelected()) {
-							selectedCount += 1;
+						if (!field.getSelected()) {
+							continue;
 						}
+
+						selectedCount += 1;
 					}
 
 					Assert.assertEquals(
@@ -451,9 +331,11 @@ public class FieldResourceTest extends BaseFieldResourceTestCase {
 					int selectedCount = 0;
 
 					for (Field field : fieldsPeoplePage.getItems()) {
-						if (field.getSelected()) {
-							selectedCount += 1;
+						if (!field.getSelected()) {
+							continue;
 						}
+
+						selectedCount += 1;
 					}
 
 					Assert.assertEquals(
@@ -461,130 +343,6 @@ public class FieldResourceTest extends BaseFieldResourceTestCase {
 							length +
 								FieldPeopleConstants.FIELD_USER_REQUIRED_NAMES.
 									length,
-						selectedCount);
-				}
-				catch (Exception exception) {
-					throw new RuntimeException(exception);
-				}
-
-				return null;
-			});
-	}
-
-	@Override
-	@Test
-	public void testPatchFieldProduct() throws Exception {
-		fieldResource.patchFieldProduct(
-			new Field[] {_getField("externalReferenceCode", true, "product")});
-
-		IdempotentRetryAssert.retryAssert(
-			5, TimeUnit.SECONDS, 1, TimeUnit.SECONDS,
-			() -> {
-				try {
-					Page<Field> fieldsProductsPage =
-						fieldResource.getFieldsProductsPage(
-							null, Pagination.of(1, 100), null);
-
-					int selectedCount = 0;
-
-					for (Field field : fieldsProductsPage.getItems()) {
-						if (field.getSelected()) {
-							selectedCount += 1;
-						}
-					}
-
-					Assert.assertEquals(
-						FieldProductConstants.FIELD_CATEGORY_REQUIRED_NAMES.
-							length +
-								FieldProductConstants.
-									FIELD_PRODUCT_REQUIRED_NAMES.length +
-										FieldProductConstants.
-											FIELD_PRODUCT_CHANNEL_REQUIRED_NAMES.length,
-						selectedCount);
-				}
-				catch (Exception exception) {
-					throw new RuntimeException(exception);
-				}
-
-				return null;
-			});
-
-		fieldResource.patchFieldProduct(
-			ArrayUtil.append(
-				_getFields(
-					FieldProductConstants.FIELD_CATEGORY_NAMES, true,
-					"category"),
-				_getFields(
-					FieldProductConstants.FIELD_PRODUCT_NAMES, true, "product"),
-				_getFields(
-					FieldProductConstants.FIELD_PRODUCT_CHANNEL_NAMES, true,
-					"product-channel")));
-
-		IdempotentRetryAssert.retryAssert(
-			5, TimeUnit.SECONDS, 1, TimeUnit.SECONDS,
-			() -> {
-				try {
-					Page<Field> fieldsProductsPage =
-						fieldResource.getFieldsProductsPage(
-							null, Pagination.of(1, 100), null);
-
-					int selectedCount = 0;
-
-					for (Field field : fieldsProductsPage.getItems()) {
-						if (field.getSelected()) {
-							selectedCount += 1;
-						}
-					}
-
-					Assert.assertEquals(
-						FieldProductConstants.FIELD_CATEGORY_NAMES.length +
-							FieldProductConstants.FIELD_PRODUCT_NAMES.length +
-								FieldProductConstants.
-									FIELD_PRODUCT_CHANNEL_NAMES.length,
-						selectedCount);
-				}
-				catch (Exception exception) {
-					throw new RuntimeException(exception);
-				}
-
-				return null;
-			});
-
-		fieldResource.patchFieldProduct(
-			ArrayUtil.append(
-				_getFields(
-					FieldProductConstants.FIELD_CATEGORY_NAMES, false,
-					"category"),
-				_getFields(
-					FieldProductConstants.FIELD_PRODUCT_NAMES, false,
-					"product"),
-				_getFields(
-					FieldProductConstants.FIELD_PRODUCT_CHANNEL_NAMES, false,
-					"product-channel")));
-
-		IdempotentRetryAssert.retryAssert(
-			5, TimeUnit.SECONDS, 1, TimeUnit.SECONDS,
-			() -> {
-				try {
-					Page<Field> fieldsProductsPage =
-						fieldResource.getFieldsProductsPage(
-							null, Pagination.of(1, 100), null);
-
-					int selectedCount = 0;
-
-					for (Field field : fieldsProductsPage.getItems()) {
-						if (field.getSelected()) {
-							selectedCount += 1;
-						}
-					}
-
-					Assert.assertEquals(
-						FieldProductConstants.FIELD_CATEGORY_REQUIRED_NAMES.
-							length +
-								FieldProductConstants.
-									FIELD_PRODUCT_REQUIRED_NAMES.length +
-										FieldProductConstants.
-											FIELD_PRODUCT_CHANNEL_REQUIRED_NAMES.length,
 						selectedCount);
 				}
 				catch (Exception exception) {

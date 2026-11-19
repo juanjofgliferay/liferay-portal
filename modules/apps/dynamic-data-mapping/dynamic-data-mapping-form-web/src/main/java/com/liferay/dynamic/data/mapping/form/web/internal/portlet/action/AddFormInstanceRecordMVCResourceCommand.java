@@ -10,15 +10,15 @@ import com.liferay.dynamic.data.mapping.exception.FormInstanceExpiredException;
 import com.liferay.dynamic.data.mapping.exception.FormInstanceSubmissionLimitException;
 import com.liferay.dynamic.data.mapping.form.builder.context.DDMFormContextDeserializer;
 import com.liferay.dynamic.data.mapping.form.builder.context.DDMFormContextDeserializerRequest;
-import com.liferay.dynamic.data.mapping.form.web.internal.portlet.action.helper.AddFormInstanceRecordMVCCommandHelper;
+import com.liferay.dynamic.data.mapping.form.web.internal.portlet.action.util.AddFormInstanceRecordMVCCommandUtil;
 import com.liferay.dynamic.data.mapping.model.DDMForm;
 import com.liferay.dynamic.data.mapping.model.DDMFormInstance;
 import com.liferay.dynamic.data.mapping.model.DDMFormInstanceRecord;
 import com.liferay.dynamic.data.mapping.model.DDMFormInstanceRecordVersion;
 import com.liferay.dynamic.data.mapping.model.DDMStructure;
+import com.liferay.dynamic.data.mapping.service.DDMFormInstanceLocalService;
 import com.liferay.dynamic.data.mapping.service.DDMFormInstanceRecordService;
 import com.liferay.dynamic.data.mapping.service.DDMFormInstanceRecordVersionLocalService;
-import com.liferay.dynamic.data.mapping.service.DDMFormInstanceService;
 import com.liferay.dynamic.data.mapping.storage.DDMFormValues;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.Language;
@@ -36,10 +36,10 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
-import java.util.Locale;
+import jakarta.portlet.ResourceRequest;
+import jakarta.portlet.ResourceResponse;
 
-import javax.portlet.ResourceRequest;
-import javax.portlet.ResourceResponse;
+import java.util.Locale;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -50,7 +50,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + DDMPortletKeys.DYNAMIC_DATA_MAPPING_FORM,
+		"jakarta.portlet.name=" + DDMPortletKeys.DYNAMIC_DATA_MAPPING_FORM,
 		"mvc.command.name=/dynamic_data_mapping_form/add_form_instance_record"
 	},
 	service = MVCResourceCommand.class
@@ -102,16 +102,19 @@ public class AddFormInstanceRecordMVCResourceCommand
 		long formInstanceId = ParamUtil.getLong(
 			resourceRequest, "formInstanceId");
 
+		if (formInstanceId == 0) {
+			return;
+		}
+
 		DDMFormInstance ddmFormInstance =
-			_ddmFormInstanceService.getFormInstance(formInstanceId);
+			_ddmFormInstanceLocalService.getFormInstance(formInstanceId);
 
 		try {
-			_addFormInstanceRecordMVCCommandHelper.validateExpirationStatus(
+			AddFormInstanceRecordMVCCommandUtil.validateExpirationStatus(
 				ddmFormInstance, resourceRequest);
-			_addFormInstanceRecordMVCCommandHelper.
-				validateSubmissionLimitStatus(
-					ddmFormInstance, _ddmFormInstanceRecordVersionLocalService,
-					resourceRequest);
+			AddFormInstanceRecordMVCCommandUtil.validateSubmissionLimitStatus(
+				ddmFormInstance, _ddmFormInstanceRecordVersionLocalService,
+				resourceRequest);
 		}
 		catch (FormInstanceExpiredException formInstanceExpiredException) {
 			if (_log.isDebugEnabled()) {
@@ -183,10 +186,6 @@ public class AddFormInstanceRecordMVCResourceCommand
 	private static final Log _log = LogFactoryUtil.getLog(
 		AddFormInstanceRecordMVCResourceCommand.class);
 
-	@Reference
-	private AddFormInstanceRecordMVCCommandHelper
-		_addFormInstanceRecordMVCCommandHelper;
-
 	@Reference(
 		target = "(dynamic.data.mapping.form.builder.context.deserializer.type=formValues)"
 	)
@@ -194,14 +193,14 @@ public class AddFormInstanceRecordMVCResourceCommand
 		_ddmFormBuilderContextToDDMFormValues;
 
 	@Reference
+	private DDMFormInstanceLocalService _ddmFormInstanceLocalService;
+
+	@Reference
 	private DDMFormInstanceRecordService _ddmFormInstanceRecordService;
 
 	@Reference
 	private DDMFormInstanceRecordVersionLocalService
 		_ddmFormInstanceRecordVersionLocalService;
-
-	@Reference
-	private DDMFormInstanceService _ddmFormInstanceService;
 
 	@Reference
 	private Language _language;

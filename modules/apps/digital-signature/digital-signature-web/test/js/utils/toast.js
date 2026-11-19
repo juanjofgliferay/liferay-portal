@@ -4,14 +4,14 @@
  */
 
 import {cleanup} from '@testing-library/react';
-import {openToast} from 'frontend-js-web';
+import {openToast} from 'frontend-js-components-web';
 
 import {
 	errorToast,
 	successToast,
 } from '../../../src/main/resources/META-INF/resources/js/utils/toast';
 
-jest.mock('frontend-js-web', () => {
+jest.mock('frontend-js-components-web', () => {
 	return {
 		openToast: jest.fn(),
 	};
@@ -26,7 +26,7 @@ describe('toast', () => {
 	it('executes success toast with default values', () => {
 		successToast();
 
-		expect(openToast).toBeCalledWith({
+		expect(openToast).toHaveBeenCalledWith({
 			message: Liferay.Language.get(
 				'your-request-completed-successfully'
 			),
@@ -38,7 +38,7 @@ describe('toast', () => {
 	it('executes success toast with values', () => {
 		successToast('message', 'title');
 
-		expect(openToast).toBeCalledWith({
+		expect(openToast).toHaveBeenCalledWith({
 			message: 'message',
 			title: 'title',
 			type: 'success',
@@ -48,7 +48,7 @@ describe('toast', () => {
 	it('executes error toast with default values', () => {
 		errorToast();
 
-		expect(openToast).toBeCalledWith({
+		expect(openToast).toHaveBeenCalledWith({
 			message: Liferay.Language.get('an-unexpected-error-occurred'),
 			title: Liferay.Language.get('error'),
 			type: 'danger',
@@ -58,7 +58,7 @@ describe('toast', () => {
 	it('executes error toast with values', () => {
 		errorToast('message', 'title');
 
-		expect(openToast).toBeCalledWith({
+		expect(openToast).toHaveBeenCalledWith({
 			message: 'message',
 			title: 'title',
 			type: 'danger',

@@ -111,11 +111,18 @@ public class CalendarResourceModelImpl
 
 	public static final String TABLE_SQL_DROP = "drop table CalendarResource";
 
+	public static final String ENTITY_ALIAS = "calendarResource";
+
+	public static final String FILTER_PK_COLUMN_NAME = "calendarResourceId";
+
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY calendarResource.code ASC";
 
 	public static final String ORDER_BY_SQL =
 		" ORDER BY CalendarResource.code_ ASC";
+
+	public static final String ORDER_BY_SQL_INLINE_DISTINCT =
+		" ORDER BY calendarResource.code_ ASC";
 
 	public static final String DATA_SOURCE = "liferayDataSource";
 
@@ -1581,3 +1588,4 @@ public class CalendarResourceModelImpl
 	private CalendarResource _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:811767768

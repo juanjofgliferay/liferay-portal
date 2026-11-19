@@ -31,6 +31,10 @@ public class CPOptionCategoryTable extends BaseTable<CPOptionCategoryTable> {
 			"ctCollectionId", Long.class, Types.BIGINT, Column.FLAG_PRIMARY);
 	public final Column<CPOptionCategoryTable, String> uuid = createColumn(
 		"uuid_", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
+	public final Column<CPOptionCategoryTable, String> externalReferenceCode =
+		createColumn(
+			"externalReferenceCode", String.class, Types.VARCHAR,
+			Column.FLAG_DEFAULT);
 	public final Column<CPOptionCategoryTable, Long> CPOptionCategoryId =
 		createColumn(
 			"CPOptionCategoryId", Long.class, Types.BIGINT,
@@ -59,9 +63,12 @@ public class CPOptionCategoryTable extends BaseTable<CPOptionCategoryTable> {
 		createColumn(
 			"lastPublishDate", Date.class, Types.TIMESTAMP,
 			Column.FLAG_DEFAULT);
+	public final Column<CPOptionCategoryTable, Integer> status = createColumn(
+		"status", Integer.class, Types.INTEGER, Column.FLAG_DEFAULT);
 
 	private CPOptionCategoryTable() {
 		super("CPOptionCategory", CPOptionCategoryTable::new);
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-458429664

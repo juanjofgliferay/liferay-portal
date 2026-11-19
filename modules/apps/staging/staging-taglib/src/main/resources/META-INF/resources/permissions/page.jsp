@@ -14,15 +14,15 @@
 		</span>
 
 		<%
-		ExportImportServiceConfiguration exportImportServiceConfiguration = ConfigurationProviderUtil.getSystemConfiguration(ExportImportServiceConfiguration.class);
+		ExportImportServiceConfiguration exportImportServiceConfiguration = ConfigurationProviderUtil.getCompanyConfiguration(ExportImportServiceConfiguration.class, company.getCompanyId());
 		%>
 
 		<liferay-staging:checkbox
 			checked="<%= MapUtil.getBoolean(parameterMap, PortletDataHandlerKeys.PERMISSIONS, exportImportServiceConfiguration.publishPermissionsByDefault()) %>"
-			description="<%= inputDescription %>"
 			disabled="<%= disableInputs %>"
 			label="<%= inputTitle %>"
 			name="<%= PortletDataHandlerKeys.PERMISSIONS %>"
+			warning="<%= inputWarning %>"
 		/>
 	</clay:sheet-section>
 </div>

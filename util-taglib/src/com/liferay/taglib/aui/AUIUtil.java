@@ -8,16 +8,23 @@ package com.liferay.taglib.aui;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HtmlUtil;
+import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+
+import java.lang.reflect.Method;
+
 import java.util.Map;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
-
-import javax.servlet.http.HttpServletRequest;
+import java.util.function.Function;
+import java.util.function.ToLongFunction;
 
 /**
  * @author Shuyang Zhou
@@ -164,6 +171,48 @@ public class AUIUtil {
 		return null;
 	}
 
+	public static Function<Object, String> getBeanPropertyFunction(
+		String name, String defaultValue) {
+
+		return bean -> {
+			try {
+				Object value = _getBeanProperty(bean, name);
+
+				if (value != null) {
+					return String.valueOf(value);
+				}
+			}
+			catch (Exception exception) {
+				if (_log.isDebugEnabled()) {
+					_log.debug(exception);
+				}
+			}
+
+			return defaultValue;
+		};
+	}
+
+	public static ToLongFunction<Object> getBeanPropertyToLongFunction(
+		String name) {
+
+		return bean -> {
+			try {
+				return GetterUtil.getLong(_getBeanProperty(bean, name));
+			}
+			catch (Exception exception) {
+				Class<?> clazz = bean.getClass();
+
+				_log.error(
+					StringBundler.concat(
+						"Unable to get property ", name, " of ",
+						clazz.getName()),
+					exception);
+			}
+
+			return GetterUtil.DEFAULT_LONG;
+		};
+	}
+
 	public static String getNamespace(HttpServletRequest httpServletRequest) {
 		return GetterUtil.getString(
 			httpServletRequest.getAttribute("aui:form:portletNamespace"));
@@ -206,15 +255,17 @@ public class AUIUtil {
 		for (int i = 0; i < name.length(); i++) {
 			char c = name.charAt(i);
 
-			if ((_VALID_CHARS.length <= c) || !_VALID_CHARS[c]) {
-				if (chars == null) {
-					chars = new char[name.length()];
-
-					name.getChars(0, chars.length, chars, 0);
-				}
-
-				chars[i] = CharPool.DASH;
+			if ((_VALID_CHARS.length > c) && _VALID_CHARS[c]) {
+				continue;
 			}
+
+			if (chars == null) {
+				chars = new char[name.length()];
+
+				name.getChars(0, chars.length, chars, 0);
+			}
+
+			chars[i] = CharPool.DASH;
 		}
 
 		if (chars == null) {
@@ -224,7 +275,20 @@ public class AUIUtil {
 		return new String(chars);
 	}
 
+	private static Object _getBeanProperty(Object bean, String name)
+		throws Exception {
+
+		Class<?> clazz = bean.getClass();
+
+		Method method = clazz.getMethod(
+			"get" + StringUtil.upperCaseFirstLetter(name));
+
+		return method.invoke(bean);
+	}
+
 	private static final boolean[] _VALID_CHARS = new boolean[128];
+
+	private static final Log _log = LogFactoryUtil.getLog(AUIUtil.class);
 
 	static {
 		for (int i = 'a'; i <= 'z'; i++) {

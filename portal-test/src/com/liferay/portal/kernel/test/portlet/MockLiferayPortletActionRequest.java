@@ -10,7 +10,17 @@ import com.liferay.portal.kernel.portlet.LiferayPortletConfig;
 import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.util.JavaConstants;
 import com.liferay.portal.kernel.util.ProxyUtil;
-import com.liferay.portletmvc4spring.test.mock.web.portlet.MockActionRequest;
+import com.liferay.portal.kernel.util.ResourceBundleUtil;
+
+import jakarta.portlet.ActionParameters;
+import jakarta.portlet.PortletConfig;
+import jakarta.portlet.PortletContext;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.PortletResponse;
+import jakarta.portlet.RenderParameters;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.Part;
 
 import java.io.IOException;
 
@@ -18,16 +28,6 @@ import java.util.Collection;
 import java.util.Enumeration;
 import java.util.Map;
 import java.util.Objects;
-
-import javax.portlet.ActionParameters;
-import javax.portlet.PortletConfig;
-import javax.portlet.PortletContext;
-import javax.portlet.PortletException;
-import javax.portlet.PortletResponse;
-import javax.portlet.RenderParameters;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.Part;
 
 import org.springframework.mock.web.MockHttpServletRequest;
 
@@ -48,13 +48,17 @@ public class MockLiferayPortletActionRequest
 		_mockHttpServletRequest = mockHttpServletRequest;
 
 		_mockHttpServletRequest.setAttribute(
-			JavaConstants.JAVAX_PORTLET_CONFIG,
+			JavaConstants.JAKARTA_PORTLET_CONFIG,
 			ProxyUtil.newProxyInstance(
 				LiferayPortletConfig.class.getClassLoader(),
 				new Class<?>[] {LiferayPortletConfig.class},
 				(proxy, method, args) -> {
 					if (Objects.equals(method.getName(), "getPortletId")) {
 						return "testPortlet";
+					}
+
+					if (Objects.equals(method.getName(), "getResourceBundle")) {
+						return ResourceBundleUtil.EMPTY_RESOURCE_BUNDLE;
 					}
 
 					return null;

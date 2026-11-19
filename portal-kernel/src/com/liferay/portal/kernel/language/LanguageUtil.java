@@ -6,18 +6,20 @@
 package com.liferay.portal.kernel.language;
 
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.resource.bundle.ResourceBundleLoader;
+
+import jakarta.portlet.PortletRequest;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.function.Supplier;
-
-import javax.portlet.PortletRequest;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * @author Brian Wing Shun Chan
@@ -194,6 +196,10 @@ public class LanguageUtil {
 		return _language.get(resourceBundle, key, defaultValue);
 	}
 
+	public static Map<String, Locale> getAvailableLocaleMap() {
+		return _language.getAvailableLocaleMap();
+	}
+
 	public static Set<Locale> getAvailableLocales() {
 		return _language.getAvailableLocales();
 	}
@@ -320,6 +326,10 @@ public class LanguageUtil {
 
 	public static boolean isDuplicateLanguageCode(String languageCode) {
 		return _language.isDuplicateLanguageCode(languageCode);
+	}
+
+	public static boolean isInheritLocales(Group group) {
+		return _language.isInheritLocales(group);
 	}
 
 	public static boolean isInheritLocales(long groupId)

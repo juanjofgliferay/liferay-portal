@@ -81,12 +81,14 @@ public interface FragmentEntryLocalService
 	@Indexable(type = IndexableType.REINDEX)
 	public FragmentEntry addFragmentEntry(FragmentEntry fragmentEntry);
 
+	@Indexable(type = IndexableType.REINDEX)
 	public FragmentEntry addFragmentEntry(
-			long userId, long groupId, long fragmentCollectionId,
-			String fragmentEntryKey, String name, String css, String html,
-			String js, boolean cacheable, String configuration, String icon,
-			long previewFileEntryId, int type, String typeOptions, int status,
-			ServiceContext serviceContext)
+			String externalReferenceCode, long userId, long groupId,
+			long fragmentCollectionId, String fragmentEntryKey, String name,
+			String css, String html, String js, boolean cacheable,
+			String configuration, String icon, long previewFileEntryId,
+			boolean marketplace, boolean readOnly, int type, String typeOptions,
+			int status, ServiceContext serviceContext)
 		throws PortalException;
 
 	@Indexable(type = IndexableType.REINDEX)
@@ -95,6 +97,7 @@ public interface FragmentEntryLocalService
 			FragmentEntry publishedFragmentEntry, int version)
 		throws PortalException;
 
+	@Indexable(type = IndexableType.REINDEX)
 	public FragmentEntry copyFragmentEntry(
 			long userId, long groupId, long sourceFragmentEntryId,
 			long fragmentCollectionId, ServiceContext serviceContext)
@@ -156,6 +159,11 @@ public interface FragmentEntryLocalService
 	 */
 	@Indexable(type = IndexableType.DELETE)
 	public FragmentEntry deleteFragmentEntry(long fragmentEntryId)
+		throws PortalException;
+
+	@Indexable(type = IndexableType.DELETE)
+	public FragmentEntry deleteFragmentEntry(
+			String externalReferenceCode, long groupId)
 		throws PortalException;
 
 	/**
@@ -258,6 +266,14 @@ public interface FragmentEntryLocalService
 		long groupId, String fragmentEntryKey);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public FragmentEntry fetchFragmentEntryByExternalReferenceCode(
+		String externalReferenceCode, long groupId);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public FragmentEntry fetchFragmentEntryByExternalReferenceCode(
+		String externalReferenceCode, long groupId, boolean head);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public FragmentEntry fetchFragmentEntryByUuidAndGroupId(
 		String uuid, long groupId);
 
@@ -290,6 +306,24 @@ public interface FragmentEntryLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public ExportActionableDynamicQuery getExportActionableDynamicQuery(
 		PortletDataContext portletDataContext);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<Object> getFragmentCompositionsAndFragmentEntries(
+		long groupId, long fragmentCollectionId, int status, int start, int end,
+		OrderByComparator<?> orderByComparator);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<Object> getFragmentCompositionsAndFragmentEntries(
+		long groupId, long fragmentCollectionId, String name, int status,
+		int start, int end, OrderByComparator<?> orderByComparator);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public int getFragmentCompositionsAndFragmentEntriesCount(
+		long groupId, long fragmentCollectionId, int status);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public int getFragmentCompositionsAndFragmentEntriesCount(
+		long groupId, long fragmentCollectionId, String name, int status);
 
 	/**
 	 * Returns a range of all the fragment entries.
@@ -368,6 +402,16 @@ public interface FragmentEntryLocalService
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public FragmentEntry getFragmentEntryByExternalReferenceCode(
+			String externalReferenceCode, long groupId)
+		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public FragmentEntry getFragmentEntryByExternalReferenceCode(
+			String externalReferenceCode, long groupId, boolean head)
+		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public FragmentEntry getFragmentEntryByUuidAndGroupId(
 			String uuid, long groupId)
 		throws PortalException;
@@ -409,6 +453,7 @@ public interface FragmentEntryLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<FragmentEntryVersion> getVersions(FragmentEntry fragmentEntry);
 
+	@Indexable(type = IndexableType.REINDEX)
 	public FragmentEntry moveFragmentEntry(
 			long fragmentEntryId, long fragmentCollectionId)
 		throws PortalException;
@@ -448,28 +493,25 @@ public interface FragmentEntryLocalService
 	public FragmentEntry updateFragmentEntry(FragmentEntry draftFragmentEntry)
 		throws PortalException;
 
+	@Indexable(type = IndexableType.REINDEX)
 	public FragmentEntry updateFragmentEntry(
 			long fragmentEntryId, boolean cacheable)
 		throws PortalException;
 
+	@Indexable(type = IndexableType.REINDEX)
 	public FragmentEntry updateFragmentEntry(
 			long fragmentEntryId, long previewFileEntryId)
 		throws PortalException;
 
+	@Indexable(type = IndexableType.REINDEX)
 	public FragmentEntry updateFragmentEntry(
 			long userId, long fragmentEntryId, long fragmentCollectionId,
 			String name, String css, String html, String js, boolean cacheable,
 			String configuration, String icon, long previewFileEntryId,
-			int status)
+			boolean readOnly, String typeOptions, int status)
 		throws PortalException;
 
-	public FragmentEntry updateFragmentEntry(
-			long userId, long fragmentEntryId, long fragmentCollectionId,
-			String name, String css, String html, String js, boolean cacheable,
-			String configuration, String icon, long previewFileEntryId,
-			String typeOptions, int status)
-		throws PortalException;
-
+	@Indexable(type = IndexableType.REINDEX)
 	public FragmentEntry updateFragmentEntry(long fragmentEntryId, String name)
 		throws PortalException;
 
@@ -489,3 +531,4 @@ public interface FragmentEntryLocalService
 		throws E;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-91076014

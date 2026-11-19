@@ -8,18 +8,17 @@ package com.liferay.oauth2.provider.jsonws.internal.servlet.filters.authverifier
 import com.liferay.portal.kernel.security.access.control.AccessControlThreadLocal;
 import com.liferay.portal.kernel.security.auth.verifier.AuthVerifierConfiguration;
 import com.liferay.portal.kernel.servlet.HttpHeaders;
-import com.liferay.portal.kernel.util.HashMapDictionary;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.servlet.filters.authverifier.AuthVerifierFilter;
 
+import jakarta.servlet.Filter;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.util.Map;
 import java.util.Properties;
-
-import javax.servlet.Filter;
-import javax.servlet.FilterChain;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceRegistration;
@@ -80,8 +79,7 @@ public class OAuth2WebServerServletAuthVerifierFilter
 		authVerifierConfiguration.setProperties(properties);
 
 		_serviceRegistration = bundleContext.registerService(
-			AuthVerifierConfiguration.class, authVerifierConfiguration,
-			new HashMapDictionary<>());
+			AuthVerifierConfiguration.class, authVerifierConfiguration, null);
 	}
 
 	@Deactivate

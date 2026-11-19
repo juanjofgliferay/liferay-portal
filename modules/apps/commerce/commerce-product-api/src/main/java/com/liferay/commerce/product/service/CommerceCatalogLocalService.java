@@ -224,10 +224,6 @@ public interface CommerceCatalogLocalService
 		DynamicQuery dynamicQuery, Projection projection);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public CommerceCatalog fetchByExternalReferenceCode(
-		String externalReferenceCode, long companyId);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public CommerceCatalog fetchCommerceCatalog(long commerceCatalogId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
@@ -305,6 +301,9 @@ public interface CommerceCatalogLocalService
 	public List<CommerceCatalog> getCommerceCatalogs(int start, int end);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<CommerceCatalog> getCommerceCatalogs(long companyId);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<CommerceCatalog> getCommerceCatalogs(
 		long companyId, boolean system);
 
@@ -326,6 +325,12 @@ public interface CommerceCatalogLocalService
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public IndexableActionableDynamicQuery getIndexableActionableDynamicQuery();
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public CommerceCatalog getOrAddEmptyCommerceCatalog(
+			String externalReferenceCode, long companyId, long userId,
+			String name, String commerceCurrencyCode)
+		throws PortalException;
 
 	/**
 	 * Returns the OSGi service identifier.
@@ -395,3 +400,4 @@ public interface CommerceCatalogLocalService
 		throws E;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1407907613

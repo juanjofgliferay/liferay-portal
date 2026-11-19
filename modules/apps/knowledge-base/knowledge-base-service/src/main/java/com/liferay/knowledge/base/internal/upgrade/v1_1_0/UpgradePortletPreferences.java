@@ -11,10 +11,10 @@ import com.liferay.portal.kernel.upgrade.CamelCaseUpgradePortletPreferences;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.StringUtil;
 
+import jakarta.portlet.PortletPreferences;
+
 import java.util.Collections;
 import java.util.Map;
-
-import javax.portlet.PortletPreferences;
 
 /**
  * @author Peter Shin
@@ -90,9 +90,11 @@ public class UpgradePortletPreferences
 
 			portletPreferences.reset(oldName);
 
-			if (newName != null) {
-				portletPreferences.setValues(newName, entry.getValue());
+			if (newName == null) {
+				continue;
 			}
+
+			portletPreferences.setValues(newName, entry.getValue());
 		}
 
 		Map<String, String> defaultPreferencesMap = _getDefaultPreferencesMap(
@@ -103,10 +105,12 @@ public class UpgradePortletPreferences
 
 			String name = entry.getKey();
 
-			if (portletPreferences.getValues(name, null) == null) {
-				portletPreferences.setValues(
-					name, StringUtil.split(entry.getValue()));
+			if (portletPreferences.getValues(name, null) != null) {
+				continue;
 			}
+
+			portletPreferences.setValues(
+				name, StringUtil.split(entry.getValue()));
 		}
 
 		return PortletPreferencesFactoryUtil.toXML(portletPreferences);

@@ -18,8 +18,10 @@ import com.liferay.portal.kernel.service.UserTrackerLocalServiceUtil;
 import com.liferay.portal.kernel.service.persistence.UserTrackerUtil;
 import com.liferay.portal.kernel.servlet.PortalSessionContext;
 import com.liferay.portal.kernel.util.LinkedHashMapBuilder;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.util.PropsValues;
+
+import jakarta.servlet.http.HttpSession;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -29,8 +31,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-
-import javax.servlet.http.HttpSession;
 
 /**
  * @author Charles May
@@ -130,9 +130,11 @@ public class LiveUsers {
 			_getLiveUsers(companyId), groupId);
 
 		for (long userId : userIds) {
-			if (_getUserTrackers(companyId, userId) != null) {
-				groupUsers.add(userId);
+			if (_getUserTrackers(companyId, userId) == null) {
+				continue;
 			}
+
+			groupUsers.add(userId);
 		}
 	}
 
@@ -415,9 +417,11 @@ public class LiveUsers {
 		while (iterator.hasNext()) {
 			UserTracker curUserTracker = iterator.next();
 
-			if (sessionId.equals(curUserTracker.getSessionId())) {
-				iterator.remove();
+			if (!sessionId.equals(curUserTracker.getSessionId())) {
+				continue;
 			}
+
+			iterator.remove();
 		}
 
 		if (userTrackers.isEmpty()) {

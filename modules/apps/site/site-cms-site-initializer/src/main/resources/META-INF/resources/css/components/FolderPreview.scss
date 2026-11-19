@@ -1,0 +1,9 @@
+@import '_atlas-custom-properties-variables';
+
+.folder-preview {
+	&__icon {
+		color: $secondary-l2;
+		height: 80px;
+		width: 80px;
+	}
+}

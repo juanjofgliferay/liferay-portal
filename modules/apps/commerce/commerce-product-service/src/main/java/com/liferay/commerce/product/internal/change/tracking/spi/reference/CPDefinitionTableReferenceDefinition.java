@@ -8,14 +8,13 @@ package com.liferay.commerce.product.internal.change.tracking.spi.reference;
 import com.liferay.change.tracking.spi.reference.TableReferenceDefinition;
 import com.liferay.change.tracking.spi.reference.builder.ChildTableReferenceInfoBuilder;
 import com.liferay.change.tracking.spi.reference.builder.ParentTableReferenceInfoBuilder;
+import com.liferay.commerce.product.model.CPConfigurationEntryTable;
 import com.liferay.commerce.product.model.CPDefinition;
 import com.liferay.commerce.product.model.CPDefinitionLocalizationTable;
 import com.liferay.commerce.product.model.CPDefinitionTable;
 import com.liferay.commerce.product.model.CPInstanceTable;
 import com.liferay.commerce.product.model.CProductTable;
 import com.liferay.commerce.product.service.persistence.CPDefinitionPersistence;
-import com.liferay.friendly.url.model.FriendlyURLEntryTable;
-import com.liferay.portal.kernel.model.ClassNameTable;
 import com.liferay.portal.kernel.service.persistence.BasePersistence;
 
 import org.osgi.service.component.annotations.Component;
@@ -37,26 +36,7 @@ public class CPDefinitionTableReferenceDefinition
 			CPDefinitionTable.INSTANCE.CPDefinitionId, CPDefinition.class
 		).classNameReference(
 			CPDefinitionTable.INSTANCE.CPDefinitionId,
-			FriendlyURLEntryTable.INSTANCE.classPK, CPDefinition.class
-		).referenceInnerJoin(
-			fromStep -> fromStep.from(
-				FriendlyURLEntryTable.INSTANCE
-			).innerJoinON(
-				CPDefinitionTable.INSTANCE,
-				CPDefinitionTable.INSTANCE.groupId.eq(
-					FriendlyURLEntryTable.INSTANCE.groupId)
-			).innerJoinON(
-				ClassNameTable.INSTANCE,
-				ClassNameTable.INSTANCE.value.eq(
-					CPDefinition.class.getName()
-				).and(
-					FriendlyURLEntryTable.INSTANCE.classNameId.eq(
-						ClassNameTable.INSTANCE.classNameId)
-				)
-			)
-		).singleColumnReference(
-			CPDefinitionTable.INSTANCE.CProductId,
-			CProductTable.INSTANCE.CProductId
+			CPConfigurationEntryTable.INSTANCE.classPK, CPDefinition.class
 		).singleColumnReference(
 			CPDefinitionTable.INSTANCE.CPDefinitionId,
 			CPDefinitionLocalizationTable.INSTANCE.CPDefinitionId
@@ -72,7 +52,11 @@ public class CPDefinitionTableReferenceDefinition
 			parentTableReferenceInfoBuilder) {
 
 		parentTableReferenceInfoBuilder.groupedModel(
-			CPDefinitionTable.INSTANCE);
+			CPDefinitionTable.INSTANCE
+		).singleColumnReference(
+			CPDefinitionTable.INSTANCE.CProductId,
+			CProductTable.INSTANCE.CProductId
+		);
 	}
 
 	@Override

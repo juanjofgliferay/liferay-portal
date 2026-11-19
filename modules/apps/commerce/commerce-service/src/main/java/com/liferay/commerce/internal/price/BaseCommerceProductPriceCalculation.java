@@ -161,9 +161,10 @@ public abstract class BaseCommerceProductPriceCalculation
 			CommerceContext commerceContext)
 		throws PortalException {
 
+		long commerceBillingAddressId = 0;
 		long commerceChannelGroupId =
 			commerceContext.getCommerceChannelGroupId();
-		long commerceBillingAddressId = 0;
+		String commerceCurrencyCode = null;
 		long commerceShippingAddressId = 0;
 
 		CommerceOrder commerceOrder = commerceContext.getCommerceOrder();
@@ -172,6 +173,7 @@ public abstract class BaseCommerceProductPriceCalculation
 			commerceChannelGroupId = commerceOrder.getGroupId();
 			commerceBillingAddressId = commerceOrder.getBillingAddressId();
 			commerceShippingAddressId = commerceOrder.getShippingAddressId();
+			commerceCurrencyCode = commerceOrder.getCommerceCurrencyCode();
 		}
 		else {
 			AccountEntry accountEntry = commerceContext.getAccountEntry();
@@ -210,9 +212,9 @@ public abstract class BaseCommerceProductPriceCalculation
 		}
 
 		return CommercePriceConverterUtil.getConvertedPrice(
-			commerceChannelGroupId, cpInstanceId, commerceBillingAddressId,
-			commerceShippingAddressId, price, includeTax,
-			commerceTaxCalculation);
+			commerceBillingAddressId, commerceChannelGroupId,
+			commerceCurrencyCode, commerceShippingAddressId,
+			commerceTaxCalculation, cpInstanceId, includeTax, price);
 	}
 
 	protected BigDecimal[] getUpdatedPrices(
@@ -493,11 +495,13 @@ public abstract class BaseCommerceProductPriceCalculation
 				cpDefinitionOptionValueRel.getUnitOfMeasureKey(),
 				commerceContext);
 
-			if (BigDecimalUtil.gt(
+			if (!BigDecimalUtil.gt(
 					cpDefinitionOptionMinDynamicPrice, cpInstanceFinalPrice)) {
 
-				cpDefinitionOptionMinDynamicPrice = cpInstanceFinalPrice;
+				continue;
 			}
+
+			cpDefinitionOptionMinDynamicPrice = cpInstanceFinalPrice;
 		}
 
 		return cpDefinitionOptionMinDynamicPrice;
@@ -535,13 +539,15 @@ public abstract class BaseCommerceProductPriceCalculation
 				_getCPDefinitionOptionValueFinalPrice(
 					cpDefinitionOptionValueRel.getPrice(), quantity);
 
-			if (BigDecimalUtil.gt(
+			if (!BigDecimalUtil.gt(
 					cpDefinitionOptionMinStaticPrice,
 					cpDefinitionOptionValueFinalPrice)) {
 
-				cpDefinitionOptionMinStaticPrice =
-					cpDefinitionOptionValueFinalPrice;
+				continue;
 			}
+
+			cpDefinitionOptionMinStaticPrice =
+				cpDefinitionOptionValueFinalPrice;
 		}
 
 		CommerceCurrency commerceCurrency =
@@ -668,13 +674,8 @@ public abstract class BaseCommerceProductPriceCalculation
 	}
 
 	private boolean _isStaticPriceType(String value) {
-		if (Objects.equals(
-				value, CPConstants.PRODUCT_OPTION_PRICE_TYPE_STATIC)) {
-
-			return true;
-		}
-
-		return false;
+		return Objects.equals(
+			value, CPConstants.PRODUCT_OPTION_PRICE_TYPE_STATIC);
 	}
 
 	private BigDecimal[] _toPriceArray(

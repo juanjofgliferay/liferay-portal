@@ -14,15 +14,18 @@ import org.osgi.annotation.versioning.ProviderType;
 @ProviderType
 public interface DDMStructureLinkFinder {
 
-	public int countByKeywords(long classNameId, long classPK, String keywords);
+	public int filterCountByKeywords(
+		long classNameId, long classPK, long[] groupIds, String keywords,
+		String resourceClassName);
 
 	public java.util.List
 		<com.liferay.dynamic.data.mapping.model.DDMStructureLink>
-			findByKeywords(
-				long classNameId, long classPK, String keywords, int start,
-				int end,
+			filterFindByKeywords(
+				long classNameId, long classPK, long[] groupIds,
+				String keywords, String resourceClassName, int start, int end,
 				com.liferay.portal.kernel.util.OrderByComparator
 					<com.liferay.dynamic.data.mapping.model.DDMStructureLink>
 						orderByComparator);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1377390014

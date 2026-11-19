@@ -5,7 +5,13 @@
 
 package com.liferay.layout.internal.exporter;
 
+import com.liferay.exportimport.kernel.lar.ExportImportThreadLocal;
+import com.liferay.exportimport.kernel.lar.PortletDataException;
+import com.liferay.exportimport.portlet.preferences.processor.Capability;
+import com.liferay.exportimport.portlet.preferences.processor.ExportImportPortletPreferencesProcessor;
+import com.liferay.exportimport.portlet.preferences.processor.ExportImportPortletPreferencesProcessorRegistryUtil;
 import com.liferay.layout.exporter.PortletPreferencesPortletConfigurationExporter;
+import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.Portlet;
@@ -14,12 +20,14 @@ import com.liferay.portal.kernel.portlet.PortletPreferencesFactoryUtil;
 import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.service.PortletLocalService;
 import com.liferay.portal.kernel.util.ArrayUtil;
+import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.PortletKeys;
 
-import java.util.HashMap;
-import java.util.Map;
+import jakarta.portlet.PortletPreferences;
 
-import javax.portlet.PortletPreferences;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -41,9 +49,8 @@ public class PortletPreferencesPortletConfigurationExporterImpl
 			return null;
 		}
 
-		String portletName = PortletIdCodec.decodePortletName(portletId);
-
-		Portlet portlet = _portletLocalService.getPortletById(portletName);
+		Portlet portlet = _portletLocalService.getPortletById(
+			PortletIdCodec.decodePortletName(portletId));
 
 		if (portlet == null) {
 			return null;
@@ -51,7 +58,7 @@ public class PortletPreferencesPortletConfigurationExporterImpl
 
 		PortletPreferences portletPreferences =
 			PortletPreferencesFactoryUtil.getLayoutPortletSetup(
-				layout.getPlid(), PortletKeys.PREFS_OWNER_ID_DEFAULT,
+				layout.getCompanyId(), PortletKeys.PREFS_OWNER_ID_DEFAULT,
 				PortletKeys.PREFS_OWNER_TYPE_LAYOUT, plid, portletId,
 				portlet.getDefaultPreferences());
 
@@ -59,7 +66,52 @@ public class PortletPreferencesPortletConfigurationExporterImpl
 			return null;
 		}
 
-		Map<String, Object> portletConfigurationMap = new HashMap<>();
+		_processExportPortletPreferences(
+			layout.getCompanyId(), portletId, portletPreferences);
+
+		return _toPortletConfigurationMap(portletPreferences);
+	}
+
+	private void _processExportPortletPreferences(
+		long companyId, String portletId,
+		PortletPreferences portletPreferences) {
+
+		if (!ExportImportThreadLocal.isStagingInProcess()) {
+			return;
+		}
+
+		ExportImportPortletPreferencesProcessor
+			exportImportPortletPreferencesProcessor =
+				ExportImportPortletPreferencesProcessorRegistryUtil.
+					getExportImportPortletPreferencesProcessor(
+						PortletIdCodec.decodePortletName(portletId));
+
+		if (exportImportPortletPreferencesProcessor == null) {
+			return;
+		}
+
+		try {
+			List<Capability> exportCapabilities =
+				exportImportPortletPreferencesProcessor.getExportCapabilities();
+
+			if (ListUtil.isNotEmpty(exportCapabilities)) {
+				for (Capability exportCapability : exportCapabilities) {
+					exportCapability.process(companyId, portletPreferences);
+				}
+			}
+
+			exportImportPortletPreferencesProcessor.
+				processExportPortletPreferences(companyId, portletPreferences);
+		}
+		catch (PortletDataException portletDataException) {
+			ReflectionUtil.throwException(portletDataException);
+		}
+	}
+
+	private Map<String, Object> _toPortletConfigurationMap(
+		PortletPreferences portletPreferences) {
+
+		Map<String, Object> portletConfigurationMap = new TreeMap<>();
 
 		Map<String, String[]> portletPreferencesMap =
 			portletPreferences.getMap();

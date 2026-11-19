@@ -11,23 +11,25 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import com.liferay.petra.function.UnsafeSupplier;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Alberto Chaparro
@@ -35,6 +37,9 @@ import javax.xml.bind.annotation.XmlRootElement;
  */
 @Generated("")
 @GraphQLName(description = "Administrator information.", value = "Admin")
+@io.swagger.v3.oas.annotations.media.Schema(
+	description = "Administrator information."
+)
 @JsonFilter("Liferay.Vulcan")
 @XmlRootElement(name = "Admin")
 public class Admin implements Serializable {
@@ -47,89 +52,263 @@ public class Admin implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(Admin.class, json);
 	}
 
-	@Schema(description = "Administrator's email address.")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Administrator's email address."
+	)
 	public String getEmailAddress() {
+		if (_emailAddressSupplier != null) {
+			emailAddress = _emailAddressSupplier.get();
+
+			_emailAddressSupplier = null;
+		}
+
 		return emailAddress;
 	}
 
 	public void setEmailAddress(String emailAddress) {
 		this.emailAddress = emailAddress;
+
+		_emailAddressSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setEmailAddress(
 		UnsafeSupplier<String, Exception> emailAddressUnsafeSupplier) {
 
-		try {
-			emailAddress = emailAddressUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_emailAddressSupplier = () -> {
+			try {
+				return emailAddressUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "Administrator's email address.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String emailAddress;
 
-	@Schema(description = "The admin's surname (last name).")
+	@JsonIgnore
+	private Supplier<String> _emailAddressSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The admin's surname (last name)."
+	)
 	public String getFamilyName() {
+		if (_familyNameSupplier != null) {
+			familyName = _familyNameSupplier.get();
+
+			_familyNameSupplier = null;
+		}
+
 		return familyName;
 	}
 
 	public void setFamilyName(String familyName) {
 		this.familyName = familyName;
+
+		_familyNameSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setFamilyName(
 		UnsafeSupplier<String, Exception> familyNameUnsafeSupplier) {
 
-		try {
-			familyName = familyNameUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_familyNameSupplier = () -> {
+			try {
+				return familyNameUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The admin's surname (last name).")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String familyName;
 
-	@Schema(description = "The admin's first name.")
+	@JsonIgnore
+	private Supplier<String> _familyNameSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The admin's first name."
+	)
 	public String getGivenName() {
+		if (_givenNameSupplier != null) {
+			givenName = _givenNameSupplier.get();
+
+			_givenNameSupplier = null;
+		}
+
 		return givenName;
 	}
 
 	public void setGivenName(String givenName) {
 		this.givenName = givenName;
+
+		_givenNameSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setGivenName(
 		UnsafeSupplier<String, Exception> givenNameUnsafeSupplier) {
 
-		try {
-			givenName = givenNameUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_givenNameSupplier = () -> {
+			try {
+				return givenNameUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The admin's first name.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String givenName;
+
+	@JsonIgnore
+	private Supplier<String> _givenNameSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The admin's middle name."
+	)
+	public String getMiddleName() {
+		if (_middleNameSupplier != null) {
+			middleName = _middleNameSupplier.get();
+
+			_middleNameSupplier = null;
+		}
+
+		return middleName;
+	}
+
+	public void setMiddleName(String middleName) {
+		this.middleName = middleName;
+
+		_middleNameSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setMiddleName(
+		UnsafeSupplier<String, Exception> middleNameUnsafeSupplier) {
+
+		_middleNameSupplier = () -> {
+			try {
+				return middleNameUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField(description = "The admin's middle name.")
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected String middleName;
+
+	@JsonIgnore
+	private Supplier<String> _middleNameSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The admin's password.", format = "password"
+	)
+	public String getPassword() {
+		if (_passwordSupplier != null) {
+			password = _passwordSupplier.get();
+
+			_passwordSupplier = null;
+		}
+
+		return password;
+	}
+
+	public void setPassword(String password) {
+		this.password = password;
+
+		_passwordSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setPassword(
+		UnsafeSupplier<String, Exception> passwordUnsafeSupplier) {
+
+		_passwordSupplier = () -> {
+			try {
+				return passwordUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField(description = "The admin's password.")
+	@JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+	protected String password;
+
+	@JsonIgnore
+	private Supplier<String> _passwordSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The admin's screen name."
+	)
+	public String getScreenName() {
+		if (_screenNameSupplier != null) {
+			screenName = _screenNameSupplier.get();
+
+			_screenNameSupplier = null;
+		}
+
+		return screenName;
+	}
+
+	public void setScreenName(String screenName) {
+		this.screenName = screenName;
+
+		_screenNameSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setScreenName(
+		UnsafeSupplier<String, Exception> screenNameUnsafeSupplier) {
+
+		_screenNameSupplier = () -> {
+			try {
+				return screenNameUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField(description = "The admin's screen name.")
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected String screenName;
+
+	@JsonIgnore
+	private Supplier<String> _screenNameSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -158,6 +337,8 @@ public class Admin implements Serializable {
 
 		sb.append("{");
 
+		String emailAddress = getEmailAddress();
+
 		if (emailAddress != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -171,6 +352,8 @@ public class Admin implements Serializable {
 
 			sb.append("\"");
 		}
+
+		String familyName = getFamilyName();
 
 		if (familyName != null) {
 			if (sb.length() > 1) {
@@ -186,6 +369,8 @@ public class Admin implements Serializable {
 			sb.append("\"");
 		}
 
+		String givenName = getGivenName();
+
 		if (givenName != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -200,13 +385,61 @@ public class Admin implements Serializable {
 			sb.append("\"");
 		}
 
+		String middleName = getMiddleName();
+
+		if (middleName != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"middleName\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(middleName));
+
+			sb.append("\"");
+		}
+
+		String password = getPassword();
+
+		if (password != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"password\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(password));
+
+			sb.append("\"");
+		}
+
+		String screenName = getScreenName();
+
+		if (screenName != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"screenName\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(screenName));
+
+			sb.append("\"");
+		}
+
 		sb.append("}");
 
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.portal.instances.dto.v1_0.Admin",
 		name = "x-class-name"
 	)
@@ -252,7 +485,10 @@ public class Admin implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -290,6 +526,27 @@ public class Admin implements Serializable {
 		return sb.toString();
 	}
 
+	private static String _toJSON(Object value) {
+		if (value instanceof Collection) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONArray((Collection<?>)value));
+		}
+		else if (value instanceof Map) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONObject((Map<?, ?>)value));
+		}
+		else if (value instanceof Object[]) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONArray(
+					Arrays.asList((Object[])value)));
+		}
+		else if (value instanceof String) {
+			return StringBundler.concat("\"", _escape(value), "\"");
+		}
+
+		return String.valueOf(value);
+	}
+
 	private static final String[][] _JSON_ESCAPE_STRINGS = {
 		{"\\", "\"", "\b", "\f", "\n", "\r", "\t"},
 		{"\\\\", "\\\"", "\\b", "\\f", "\\n", "\\r", "\\t"}
@@ -298,3 +555,4 @@ public class Admin implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:-1324723081

@@ -1,0 +1,67 @@
+release:
+    name: my-release
+    namespace: crossplane-system
+set:
+    database:
+        engine: postgresql
+suite: RBAC
+templates:
+    -   templates/rbac.yaml
+tests:
+    -   asserts:
+            -   documentIndex: 1
+                equal:
+                    path: subjects[0].namespace
+                    value: custom-system
+        it: Follows the release namespace
+        release:
+            namespace: custom-system
+    -   asserts:
+            -   hasDocuments:
+                    count: 2
+            -   documentIndex: 0
+                isKind:
+                    of: ClusterRole
+            -   documentIndex: 0
+                equal:
+                    path: metadata.annotations["argocd.argoproj.io/sync-wave"]
+                    value: "-100"
+            -   documentIndex: 0
+                equal:
+                    path: metadata.labels["rbac.crossplane.io/aggregate-to-crossplane"]
+                    value: "true"
+            -   documentIndex: 0
+                equal:
+                    path: rules
+                    value:
+                        -   apiGroups: [""]
+                            resources: ["configmaps", "secrets", "serviceaccounts"]
+                            verbs: ["create", "delete", "get", "list", "patch", "update", "watch"]
+                        -   apiGroups: ["argoproj.io"]
+                            resources: ["cronworkflows"]
+                            verbs: ["create", "delete", "get", "list", "patch", "update", "watch"]
+                        -   apiGroups: ["batch"]
+                            resources: ["jobs"]
+                            verbs: ["create", "delete", "get", "list", "patch", "update", "watch"]
+                        -   apiGroups: ["rbac.authorization.k8s.io"]
+                            resources: ["clusterroles"]
+                            verbs: ["bind", "get", "list", "watch"]
+                        -   apiGroups: ["rbac.authorization.k8s.io"]
+                            resources: ["rolebindings"]
+                            verbs: ["create", "delete", "get", "list", "patch", "update", "watch"]
+            -   documentIndex: 1
+                isKind:
+                    of: ClusterRoleBinding
+            -   documentIndex: 1
+                equal:
+                    path: roleRef.name
+                    value: crossplane-provider-kubernetes
+            -   documentIndex: 1
+                equal:
+                    path: subjects[0].name
+                    value: provider-kubernetes
+            -   documentIndex: 1
+                equal:
+                    path: subjects[0].namespace
+                    value: crossplane-system
+        it: Renders the aggregated role and its binding by default

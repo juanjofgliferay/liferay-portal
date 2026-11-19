@@ -27,40 +27,23 @@ import java.util.function.Consumer;
  */
 public class JournalSearcherUtil {
 
-	public static SearchResponse searchJournalArticleAndFolders(
-		Consumer<SearchContext> searchContextConsumer) {
-
-		Searcher searcher = _searcherSnapshot.get();
-		SearchRequestBuilderFactory searchRequestBuilderFactory =
-			_searchRequestBuilderFactorySnapshot.get();
-
-		return searcher.search(
-			searchRequestBuilderFactory.builder(
-			).emptySearchEnabled(
-				true
-			).modelIndexerClasses(
-				JournalArticle.class, JournalFolder.class
-			).withSearchContext(
-				searchContextConsumer
-			).build());
-	}
-
 	public static SearchResponse searchJournalArticles(
 		Consumer<SearchContext> searchContextConsumer) {
 
-		Searcher searcher = _searcherSnapshot.get();
-		SearchRequestBuilderFactory searchRequestBuilderFactory =
-			_searchRequestBuilderFactorySnapshot.get();
+		return _search(searchContextConsumer, JournalArticle.class);
+	}
 
-		return searcher.search(
-			searchRequestBuilderFactory.builder(
-			).emptySearchEnabled(
-				true
-			).modelIndexerClasses(
-				JournalArticle.class
-			).withSearchContext(
-				searchContextConsumer
-			).build());
+	public static SearchResponse searchJournalArticlesAndJournalFolders(
+		Consumer<SearchContext> searchContextConsumer) {
+
+		return _search(
+			searchContextConsumer, JournalArticle.class, JournalFolder.class);
+	}
+
+	public static SearchResponse searchJournalFolders(
+		Consumer<SearchContext> searchContextConsumer) {
+
+		return _search(searchContextConsumer, JournalFolder.class);
 	}
 
 	public static List<Object> transformJournalArticleAndFolders(
@@ -105,16 +88,35 @@ public class JournalSearcherUtil {
 			});
 	}
 
+	private static SearchResponse _search(
+		Consumer<SearchContext> searchContextConsumer,
+		Class<?>... modelIndexerClasses) {
+
+		Searcher searcher = _searcherSnapshot.get();
+		SearchRequestBuilderFactory searchRequestBuilderFactory =
+			_searchRequestBuilderFactorySnapshot.get();
+
+		return searcher.search(
+			searchRequestBuilderFactory.builder(
+			).emptySearchEnabled(
+				true
+			).modelIndexerClasses(
+				modelIndexerClasses
+			).withSearchContext(
+				searchContextConsumer
+			).build());
+	}
+
 	private static final Snapshot<JournalArticleLocalService>
 		_journalArticleLocalServiceSnapshot = new Snapshot<>(
 			JournalSearcherUtil.class, JournalArticleLocalService.class);
 	private static final Snapshot<JournalFolderLocalService>
 		_journalFolderLocalServiceSnapshot = new Snapshot<>(
 			JournalSearcherUtil.class, JournalFolderLocalService.class);
-	private static final Snapshot<Searcher> _searcherSnapshot = new Snapshot<>(
-		JournalSearcherUtil.class, Searcher.class);
 	private static final Snapshot<SearchRequestBuilderFactory>
 		_searchRequestBuilderFactorySnapshot = new Snapshot<>(
 			JournalSearcherUtil.class, SearchRequestBuilderFactory.class);
+	private static final Snapshot<Searcher> _searcherSnapshot = new Snapshot<>(
+		JournalSearcherUtil.class, Searcher.class);
 
 }

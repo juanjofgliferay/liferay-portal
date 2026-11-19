@@ -20,21 +20,21 @@ import com.liferay.portal.kernel.util.URLCodec;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.MimeResponse;
+import jakarta.portlet.MutableRenderParameters;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.PortletMode;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderParameters;
+import jakarta.portlet.WindowState;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-
-import javax.portlet.MimeResponse;
-import javax.portlet.MutableRenderParameters;
-import javax.portlet.PortletException;
-import javax.portlet.PortletMode;
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
-import javax.portlet.RenderParameters;
-import javax.portlet.WindowState;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Brian Wing Shun Chan
@@ -180,7 +180,7 @@ public class PortletURLUtil {
 
 		if (Validator.isNotNull(layoutMode)) {
 			sb.append("&p_l_mode=");
-			sb.append(layoutMode);
+			sb.append(URLCodec.encodeURL(layoutMode));
 		}
 
 		Portlet portlet = (Portlet)httpServletRequest.getAttribute(
@@ -283,7 +283,7 @@ public class PortletURLUtil {
 
 		if (Validator.isNotNull(settingsScope)) {
 			sb.append("&settingsScope=");
-			sb.append(settingsScope);
+			sb.append(URLCodec.encodeURL(settingsScope));
 		}
 
 		if (includeParameters) {
@@ -332,19 +332,20 @@ public class PortletURLUtil {
 					continue;
 				}
 
-				if (!PortalUtil.isReservedParameter(name) &&
-					!name.equals("currentURL") &&
-					!name.equals("settingsScope") &&
-					!isRefreshURLReservedParameter(name, namespace)) {
+				if (PortalUtil.isReservedParameter(name) ||
+					name.equals("currentURL") || name.equals("settingsScope") ||
+					isRefreshURLReservedParameter(name, namespace)) {
 
-					String[] values = entry.getValue();
-
-					if (values == null) {
-						continue;
-					}
-
-					refreshURLParameters.put(name, values);
+					continue;
 				}
+
+				String[] values = entry.getValue();
+
+				if (values == null) {
+					continue;
+				}
+
+				refreshURLParameters.put(name, values);
 			}
 		}
 
@@ -399,9 +400,11 @@ public class PortletURLUtil {
 				}
 			}
 
-			if (addParam) {
-				portletURL.setParameter(param, values);
+			if (!addParam) {
+				continue;
 			}
+
+			portletURL.setParameter(param, values);
 		}
 
 		return portletURL;

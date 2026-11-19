@@ -1,0 +1,401 @@
+components:
+    schemas:
+        AssetPermissionAction:
+            discriminator:
+                mapping:
+                    ResetAssetPermissionAction: "#/components/schemas/ResetAssetPermissionAction"
+                propertyName: type
+            properties:
+                className:
+                    type: string
+                classPK:
+                    format: int64
+                    type: integer
+                type:
+                    enum:
+                        -   ResetAssetPermissionAction
+                    type: string
+        AssetStatistics:
+            properties:
+                approvedCount:
+                    format: int64
+                    readOnly: true
+                    type: integer
+                brokenLinksCount:
+                    format: int64
+                    readOnly: true
+                    type: integer
+                completedWorkflowTasksCount:
+                    format: int64
+                    readOnly: true
+                    type: integer
+                expiredCount:
+                    format: int64
+                    readOnly: true
+                    type: integer
+                expiringSoonCount:
+                    format: int64
+                    readOnly: true
+                    type: integer
+                inDraftCount:
+                    format: int64
+                    readOnly: true
+                    type: integer
+                longStandingDraftsCount:
+                    format: int64
+                    readOnly: true
+                    type: integer
+                missingRequiredFieldsCount:
+                    format: int64
+                    readOnly: true
+                    type: integer
+                overdueWorkflowTasksCount:
+                    format: int64
+                    readOnly: true
+                    type: integer
+                pendingCount:
+                    format: int64
+                    readOnly: true
+                    type: integer
+                reviewDateOverdueCount:
+                    format: int64
+                    readOnly: true
+                    type: integer
+                scheduledCount:
+                    format: int64
+                    readOnly: true
+                    type: integer
+                slaBreachedWorkflowTasksCount:
+                    format: int64
+                    readOnly: true
+                    type: integer
+                totalCount:
+                    format: int64
+                    readOnly: true
+                    type: integer
+                unlinkedCount:
+                    format: int64
+                    readOnly: true
+                    type: integer
+                upcomingReviewCount:
+                    format: int64
+                    readOnly: true
+                    type: integer
+                workflowTasksCount:
+                    format: int64
+                    readOnly: true
+                    type: integer
+        AssetUsage:
+            properties:
+                name:
+                    type: string
+                type:
+                    type: string
+                url:
+                    type: string
+        BrokenLinkAsset:
+            properties:
+                actions:
+                    additionalProperties:
+                        additionalProperties:
+                            type: string
+                        type: object
+                    readOnly: true
+                    type: object
+                brokenLinkTitle:
+                    readOnly: true
+                    type: string
+                brokenLinksCount:
+                    format: int64
+                    readOnly: true
+                    type: integer
+                deletedBrokenLinksCount:
+                    format: int64
+                    readOnly: true
+                    type: integer
+                draftBrokenLinksCount:
+                    format: int64
+                    readOnly: true
+                    type: integer
+                expiredBrokenLinksCount:
+                    format: int64
+                    readOnly: true
+                    type: integer
+                href:
+                    readOnly: true
+                    type: string
+                id:
+                    format: int64
+                    readOnly: true
+                    type: integer
+                inTrashBrokenLinksCount:
+                    format: int64
+                    readOnly: true
+                    type: integer
+                objectDefinitionExternalReferenceCode:
+                    readOnly: true
+                    type: string
+                title:
+                    readOnly: true
+                    type: string
+        MissingRequiredFieldsAsset:
+            properties:
+                actions:
+                    additionalProperties:
+                        additionalProperties:
+                            type: string
+                        type: object
+                    readOnly: true
+                    type: object
+                href:
+                    readOnly: true
+                    type: string
+                id:
+                    format: int64
+                    readOnly: true
+                    type: integer
+                missingRequiredFieldsCount:
+                    format: int64
+                    readOnly: true
+                    type: integer
+                objectDefinitionExternalReferenceCode:
+                    readOnly: true
+                    type: string
+                title:
+                    readOnly: true
+                    type: string
+        ResetAssetPermissionAction:
+            allOf:
+                -   $ref: "#/components/schemas/AssetPermissionAction"
+        UnlinkedAsset:
+            properties:
+                actions:
+                    additionalProperties:
+                        additionalProperties:
+                            type: string
+                        type: object
+                    readOnly: true
+                    type: object
+                href:
+                    readOnly: true
+                    type: string
+                id:
+                    format: int64
+                    readOnly: true
+                    type: integer
+                objectDefinitionExternalReferenceCode:
+                    readOnly: true
+                    type: string
+                title:
+                    readOnly: true
+                    type: string
+info:
+    license:
+        name: Apache 2.0
+        url: http://www.apache.org/licenses/LICENSE-2.0.html
+    title: ""
+    version: v1.0
+openapi: 3.0.1
+paths:
+    "/asset-permission":
+        post:
+            description:
+                Perform an action on the asset's permissions
+            operationId: postAssetPermission
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/AssetPermissionAction"
+                    application/xml:
+                        schema:
+                            $ref: "#/components/schemas/AssetPermissionAction"
+            responses:
+                200:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/AssetPermissionAction"
+                        application/xml:
+                            schema:
+                                $ref: "#/components/schemas/AssetPermissionAction"
+            tags: ["AssetPermissionAction"]
+    "/asset-statistics":
+        get:
+            operationId: getAssetStatistics
+            parameters:
+                -   in: query
+                    name: assetLibraryId
+                    schema:
+                        format: int64
+                        type: integer
+            responses:
+                200:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/AssetStatistics"
+                        application/xml:
+                            schema:
+                                $ref: "#/components/schemas/AssetStatistics"
+            tags: ["AssetStatistics"]
+    "/asset-usages/{assetId}":
+        get:
+            operationId: getAssetUsagesAssetPage
+            parameters:
+                -   in: path
+                    name: assetId
+                    required: true
+                    schema:
+                        format: int64
+                        type: integer
+                -   in: query
+                    name: page
+                    schema:
+                        type: integer
+                -   in: query
+                    name: pageSize
+                    schema:
+                        type: integer
+                -   in: query
+                    name: search
+                    schema:
+                        type: string
+                -   in: query
+                    name: sort
+                    schema:
+                        type: string
+            responses:
+                200:
+                    content:
+                        application/json:
+                            schema:
+                                items:
+                                    $ref: "#/components/schemas/AssetUsage"
+                                type: array
+                        application/xml:
+                            schema:
+                                items:
+                                    $ref: "#/components/schemas/AssetUsage"
+                                type: array
+            tags: ["AssetUsage"]
+    "/broken-link-assets":
+        get:
+            operationId: getBrokenLinkAssetsPage
+            parameters:
+                -   in: query
+                    name: assetLibraryId
+                    schema:
+                        format: int64
+                        type: integer
+                -   in: query
+                    name: page
+                    schema:
+                        type: integer
+                -   in: query
+                    name: pageSize
+                    schema:
+                        type: integer
+                -   in: query
+                    name: search
+                    schema:
+                        type: string
+                -   in: query
+                    name: sort
+                    schema:
+                        type: string
+            responses:
+                200:
+                    content:
+                        application/json:
+                            schema:
+                                items:
+                                    $ref: "#/components/schemas/BrokenLinkAsset"
+                                type: array
+                        application/xml:
+                            schema:
+                                items:
+                                    $ref: "#/components/schemas/BrokenLinkAsset"
+                                type: array
+            tags: ["BrokenLinkAsset"]
+            x-feature-flag: LPD-82226
+    "/missing-required-fields-assets":
+        get:
+            operationId: getMissingRequiredFieldsAssetsPage
+            parameters:
+                -   in: query
+                    name: assetLibraryId
+                    schema:
+                        format: int64
+                        type: integer
+                -   in: query
+                    name: page
+                    schema:
+                        type: integer
+                -   in: query
+                    name: pageSize
+                    schema:
+                        type: integer
+                -   in: query
+                    name: search
+                    schema:
+                        type: string
+                -   in: query
+                    name: sort
+                    schema:
+                        type: string
+            responses:
+                200:
+                    content:
+                        application/json:
+                            schema:
+                                items:
+                                    $ref: "#/components/schemas/MissingRequiredFieldsAsset"
+                                type: array
+                        application/xml:
+                            schema:
+                                items:
+                                    $ref: "#/components/schemas/MissingRequiredFieldsAsset"
+                                type: array
+            tags: ["MissingRequiredFieldsAsset"]
+            x-feature-flag: LPD-82226
+    "/unlinked-assets":
+        get:
+            operationId: getUnlinkedAssetsPage
+            parameters:
+                -   in: query
+                    name: assetLibraryId
+                    schema:
+                        format: int64
+                        type: integer
+                -   in: query
+                    name: page
+                    schema:
+                        type: integer
+                -   in: query
+                    name: pageSize
+                    schema:
+                        type: integer
+                -   in: query
+                    name: search
+                    schema:
+                        type: string
+                -   in: query
+                    name: sort
+                    schema:
+                        type: string
+            responses:
+                200:
+                    content:
+                        application/json:
+                            schema:
+                                items:
+                                    $ref: "#/components/schemas/UnlinkedAsset"
+                                type: array
+                        application/xml:
+                            schema:
+                                items:
+                                    $ref: "#/components/schemas/UnlinkedAsset"
+                                type: array
+            tags: ["UnlinkedAsset"]
+            x-feature-flag: LPD-82226

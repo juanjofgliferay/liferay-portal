@@ -46,16 +46,19 @@ public class DynamicObjectDefinitionTable
 				continue;
 			}
 
-			_createColumn(
-				objectField.getDBColumnName(), objectField.getDBType());
+			for (String dbColumnName : objectField.getDBColumnNames()) {
+				_createColumn(dbColumnName, objectField.getDBType());
+			}
 
-			if (objectField.compareBusinessType(
+			if (!objectField.compareBusinessType(
 					ObjectFieldConstants.BUSINESS_TYPE_AUTO_INCREMENT)) {
 
-				_createColumn(
-					objectField.getSortableDBColumnName(),
-					ObjectFieldConstants.DB_TYPE_LONG);
+				continue;
 			}
+
+			_createColumn(
+				objectField.getSortableDBColumnName(),
+				ObjectFieldConstants.DB_TYPE_LONG);
 		}
 	}
 
@@ -88,18 +91,25 @@ public class DynamicObjectDefinitionTable
 				continue;
 			}
 
-			_append(sb, objectField.getDBColumnName(), objectField.getDBType());
+			for (String dbColumnName : objectField.getDBColumnNames()) {
+				_append(
+					sb, objectField.getBusinessType(), dbColumnName,
+					objectField.getDBType());
+			}
 
-			if (objectField.compareBusinessType(
+			if (!objectField.compareBusinessType(
 					ObjectFieldConstants.BUSINESS_TYPE_AUTO_INCREMENT)) {
 
-				_append(
-					sb, objectField.getSortableDBColumnName(),
-					ObjectFieldConstants.DB_TYPE_LONG);
+				continue;
 			}
+
+			_append(
+				sb, objectField.getBusinessType(),
+				objectField.getSortableDBColumnName(),
+				ObjectFieldConstants.DB_TYPE_LONG);
 		}
 
-		sb.append(")");
+		sb.append(");");
 
 		String sql = sb.toString();
 
@@ -134,11 +144,15 @@ public class DynamicObjectDefinitionTable
 		return super.createColumn(name, javaClass, sqlType, flags);
 	}
 
-	private void _append(StringBundler sb, String dbColumnName, String dbType) {
+	private void _append(
+		StringBundler sb, String businessType, String dbColumnName,
+		String dbType) {
+
 		sb.append(", ");
 		sb.append(dbColumnName);
 		sb.append(" ");
-		sb.append(DynamicObjectDefinitionTableUtil.getDataType(dbType));
+		sb.append(
+			DynamicObjectDefinitionTableUtil.getDataType(businessType, dbType));
 		sb.append(DynamicObjectDefinitionTableUtil.getSQLColumnNull(dbType));
 	}
 

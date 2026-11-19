@@ -1,4 +1,4 @@
-@component-name = "portal-workflow"
+@component-name = "portal-bpm"
 definition {
 
 	property portal.release = "true";
@@ -12,6 +12,14 @@ definition {
 		TestCase.setUpPortalInstance();
 
 		User.firstLoginPG();
+
+		task ("Enable Message Boards") {
+			MessageboardsPortlet.enableMessageBoards();
+		}
+
+		task ("Enable dynamic and manual selection") {
+			AssetPublisherPortlet.enableDynamicAndManualSelection();
+		}
 
 		Navigator.openURL();
 
@@ -59,8 +67,6 @@ definition {
 			PortalInstances.tearDownCP();
 		}
 		else {
-			MessageboardsThread.tearDownCP();
-
 			BlogsEntry.tearDownCP();
 
 			WebContent.tearDownCP();
@@ -121,10 +127,7 @@ definition {
 	test ApprovedWebContentIsDisplayed {
 		var siteName = TestCase.getSiteName(siteName = ${siteName});
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		Workflow.openWorkflowListView();
 
 		Navigator.gotoNavTab(navTab = "Configuration");
 
@@ -141,7 +144,7 @@ definition {
 
 		WorkflowAsset.createNewBasicWebContent(wcTitle = "Web Content Title");
 
-		Button.clickSubmitForWorkflow();
+		WebContent.submitForWorkflowWithPermission();
 
 		Navigator.gotoPage(pageName = "Asset Publisher Page");
 
@@ -330,10 +333,7 @@ definition {
 	test PendingWebContentIsNotDisplayed {
 		var siteName = TestCase.getSiteName(siteName = ${siteName});
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		Workflow.openWorkflowListView();
 
 		Navigator.gotoNavTab(navTab = "Configuration");
 
@@ -350,7 +350,7 @@ definition {
 
 		WorkflowAsset.createNewBasicWebContent(wcTitle = "Web Content Title");
 
-		Button.clickSubmitForWorkflow();
+		WebContent.submitForWorkflowWithPermission();
 
 		ProductMenu.gotoPortlet(
 			category = "Content & Data",
@@ -415,10 +415,7 @@ definition {
 	test RejectedWebContentIsNotDisplayed {
 		var siteName = TestCase.getSiteName(siteName = ${siteName});
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		Workflow.openWorkflowListView();
 
 		Navigator.gotoNavTab(navTab = "Configuration");
 
@@ -435,7 +432,7 @@ definition {
 
 		WorkflowAsset.createNewBasicWebContent(wcTitle = "Web Content Title");
 
-		Button.clickSubmitForWorkflow();
+		WebContent.submitForWorkflowWithPermission();
 
 		UserBar.gotoDropdownItem(dropdownItem = "My Workflow Tasks");
 

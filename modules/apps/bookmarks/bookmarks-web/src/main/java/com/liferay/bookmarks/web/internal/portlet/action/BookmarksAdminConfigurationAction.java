@@ -16,11 +16,11 @@ import com.liferay.portal.kernel.portlet.ConfigurationAction;
 import com.liferay.portal.kernel.servlet.SessionErrors;
 import com.liferay.portal.kernel.util.GetterUtil;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.PortletConfig;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.PortletConfig;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -29,7 +29,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Sergio González
  */
 @Component(
-	property = "javax.portlet.name=" + BookmarksPortletKeys.BOOKMARKS_ADMIN,
+	property = "jakarta.portlet.name=" + BookmarksPortletKeys.BOOKMARKS_ADMIN,
 	service = ConfigurationAction.class
 )
 public class BookmarksAdminConfigurationAction
@@ -37,7 +37,7 @@ public class BookmarksAdminConfigurationAction
 
 	@Override
 	public String getJspPath(HttpServletRequest httpServletRequest) {
-		return "/bookmarks_admin/configuration.jsp";
+		return "/bookmarks_admin/configuration_browse.jsp";
 	}
 
 	@Override
@@ -48,7 +48,7 @@ public class BookmarksAdminConfigurationAction
 
 		validateEmail(actionRequest, "emailMessageAdded");
 		validateEmail(actionRequest, "emailMessageUpdated");
-		validateEmailFrom(actionRequest);
+
 		_validateRootFolder(actionRequest);
 
 		super.processAction(portletConfig, actionRequest, actionResponse);

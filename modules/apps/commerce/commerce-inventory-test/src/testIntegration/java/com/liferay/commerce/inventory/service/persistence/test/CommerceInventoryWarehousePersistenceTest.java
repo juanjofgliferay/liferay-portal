@@ -118,12 +118,8 @@ public class CommerceInventoryWarehousePersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
 		CommerceInventoryWarehouse newCommerceInventoryWarehouse =
-			_persistence.create(pk);
-
-		newCommerceInventoryWarehouse.setMvccVersion(RandomTestUtil.nextLong());
+			addCommerceInventoryWarehouse();
 
 		newCommerceInventoryWarehouse.setUuid(RandomTestUtil.randomString());
 
@@ -171,8 +167,12 @@ public class CommerceInventoryWarehousePersistenceTest {
 
 		newCommerceInventoryWarehouse.setType(RandomTestUtil.randomString());
 
-		_commerceInventoryWarehouses.add(
-			_persistence.update(newCommerceInventoryWarehouse));
+		newCommerceInventoryWarehouse.setStatus(RandomTestUtil.nextInt());
+
+		newCommerceInventoryWarehouse = _persistence.update(
+			newCommerceInventoryWarehouse);
+
+		_commerceInventoryWarehouses.add(newCommerceInventoryWarehouse);
 
 		CommerceInventoryWarehouse existingCommerceInventoryWarehouse =
 			_persistence.findByPrimaryKey(
@@ -249,6 +249,9 @@ public class CommerceInventoryWarehousePersistenceTest {
 		Assert.assertEquals(
 			existingCommerceInventoryWarehouse.getType(),
 			newCommerceInventoryWarehouse.getType());
+		Assert.assertEquals(
+			existingCommerceInventoryWarehouse.getStatus(),
+			newCommerceInventoryWarehouse.getStatus());
 	}
 
 	@Test(
@@ -376,7 +379,7 @@ public class CommerceInventoryWarehousePersistenceTest {
 			"active", true, "street1", true, "street2", true, "street3", true,
 			"city", true, "zip", true, "commerceRegionCode", true,
 			"countryTwoLettersISOCode", true, "latitude", true, "longitude",
-			true, "type", true);
+			true, "type", true, "status", true);
 	}
 
 	@Test
@@ -702,8 +705,6 @@ public class CommerceInventoryWarehousePersistenceTest {
 		CommerceInventoryWarehouse commerceInventoryWarehouse =
 			_persistence.create(pk);
 
-		commerceInventoryWarehouse.setMvccVersion(RandomTestUtil.nextLong());
-
 		commerceInventoryWarehouse.setUuid(RandomTestUtil.randomString());
 
 		commerceInventoryWarehouse.setExternalReferenceCode(
@@ -748,6 +749,8 @@ public class CommerceInventoryWarehousePersistenceTest {
 
 		commerceInventoryWarehouse.setType(RandomTestUtil.randomString());
 
+		commerceInventoryWarehouse.setStatus(RandomTestUtil.nextInt());
+
 		_commerceInventoryWarehouses.add(
 			_persistence.update(commerceInventoryWarehouse));
 
@@ -760,3 +763,4 @@ public class CommerceInventoryWarehousePersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:269754954

@@ -50,14 +50,14 @@ if (Validator.isNotNull(backURL)) {
 				add(
 					navigationItem -> {
 						navigationItem.setActive(!actionRequired);
-						navigationItem.setHref(renderResponse.createRenderURL(), "actionRequired", StringPool.FALSE);
+						navigationItem.setHref(renderResponse.createRenderURL(), "actionRequired", StringPool.FALSE, "backURL", currentURL);
 						navigationItem.setLabel(LanguageUtil.format(httpServletRequest, "notifications-list-x", UserNotificationEventLocalServiceUtil.getDeliveredUserNotificationEventsCount(themeDisplay.getUserId(), UserNotificationDeliveryConstants.TYPE_WEBSITE, true, false)));
 					});
 
 				add(
 					navigationItem -> {
 						navigationItem.setActive(actionRequired);
-						navigationItem.setHref(renderResponse.createRenderURL(), "actionRequired", StringPool.TRUE);
+						navigationItem.setHref(renderResponse.createRenderURL(), "actionRequired", StringPool.TRUE, "backURL", currentURL);
 						navigationItem.setLabel(LanguageUtil.format(httpServletRequest, "requests-list-x", String.valueOf(UserNotificationEventLocalServiceUtil.getArchivedUserNotificationEventsCount(themeDisplay.getUserId(), UserNotificationDeliveryConstants.TYPE_WEBSITE, true, true, false))));
 					});
 			}
@@ -96,7 +96,7 @@ if (Validator.isNotNull(backURL)) {
 	filterLabelItems="<%= notificationsManagementToolbarDisplayContext.getFilterLabelItems() %>"
 	itemsTotal="<%= notificationsSearchContainer.getTotal() %>"
 	orderDropdownItems="<%= notificationsManagementToolbarDisplayContext.getOrderByDropdownItems() %>"
-	propsTransformer="notifications/js/NotificationsManagementToolbarPropsTransformer"
+	propsTransformer="{NotificationsManagementToolbarPropsTransformer} from notifications-web"
 	searchContainerId="<%= searchContainerId %>"
 	selectable="<%= actionRequired ? false : true %>"
 	showCreationMenu="<%= false %>"
@@ -139,6 +139,7 @@ if (Validator.isNotNull(backURL)) {
 				<liferay-ui:search-iterator
 					displayStyle="descriptive"
 					markupView="lexicon"
+					searchResultCssClass="list-group list-group-notification"
 				/>
 			</liferay-ui:search-container>
 		</div>
@@ -163,9 +164,8 @@ if (Validator.isNotNull(backURL)) {
 				})
 				.then((response) => {
 					if (response.success) {
-						var notificationContainer = currentTarget.ancestor(
-							'li.list-group-item'
-						);
+						var notificationContainer =
+							currentTarget.ancestor('li.list-group-item');
 
 						if (notificationContainer) {
 							var markAsReadURL = notificationContainer
@@ -178,6 +178,12 @@ if (Validator.isNotNull(backURL)) {
 
 							notificationContainer.remove();
 						}
+
+						if (currentTarget.siblings()) {
+							currentTarget.siblings().remove();
+						}
+
+						currentTarget.remove();
 					}
 					else {
 						Liferay.Util.openToast({

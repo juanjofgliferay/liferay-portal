@@ -12,7 +12,7 @@ import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
 import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * @author Víctor Galán
@@ -50,6 +50,7 @@ public class FragmentEntriesItemSelectorViewManagementToolbarDisplayContext
 		return "icon";
 	}
 
+	@Override
 	protected String[] getDisplayViews() {
 		return new String[] {"icon"};
 	}

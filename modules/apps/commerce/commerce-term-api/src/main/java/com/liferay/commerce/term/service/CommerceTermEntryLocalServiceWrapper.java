@@ -74,6 +74,18 @@ public class CommerceTermEntryLocalServiceWrapper
 	}
 
 	@Override
+	public com.liferay.commerce.term.model.CTermEntryLocalization
+			addCTermEntryLocalization(
+				com.liferay.commerce.term.model.CommerceTermEntry
+					commerceTermEntry,
+				String languageId, String description, String label)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _commerceTermEntryLocalService.addCTermEntryLocalization(
+			commerceTermEntry, languageId, description, label);
+	}
+
+	@Override
 	public void checkCommerceTermEntries()
 		throws com.liferay.portal.kernel.exception.PortalException {
 
@@ -431,6 +443,16 @@ public class CommerceTermEntryLocalServiceWrapper
 	}
 
 	@Override
+	public int getDeliveryCommerceTermEntriesCount(
+		long companyId, long commerceOrderTypeId,
+		long commerceShippingOptionId) {
+
+		return _commerceTermEntryLocalService.
+			getDeliveryCommerceTermEntriesCount(
+				companyId, commerceOrderTypeId, commerceShippingOptionId);
+	}
+
+	@Override
 	public com.liferay.portal.kernel.dao.orm.ExportActionableDynamicQuery
 		getExportActionableDynamicQuery(
 			com.liferay.exportimport.kernel.lar.PortletDataContext
@@ -468,6 +490,17 @@ public class CommerceTermEntryLocalServiceWrapper
 			companyId, commerceOrderTypeId, commercePaymentMethodGroupRelId);
 	}
 
+	@Override
+	public int getPaymentCommerceTermEntriesCount(
+		long companyId, long commerceOrderTypeId,
+		long commercePaymentMethodGroupRelId) {
+
+		return _commerceTermEntryLocalService.
+			getPaymentCommerceTermEntriesCount(
+				companyId, commerceOrderTypeId,
+				commercePaymentMethodGroupRelId);
+	}
+
 	/**
 	 * @throws PortalException
 	 */
@@ -477,13 +510,6 @@ public class CommerceTermEntryLocalServiceWrapper
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commerceTermEntryLocalService.getPersistedModel(primaryKeyObj);
-	}
-
-	@Override
-	public com.liferay.portal.kernel.search.Hits search(
-		com.liferay.portal.kernel.search.SearchContext searchContext) {
-
-		return _commerceTermEntryLocalService.search(searchContext);
 	}
 
 	@Override
@@ -610,3 +636,4 @@ public class CommerceTermEntryLocalServiceWrapper
 	private CommerceTermEntryLocalService _commerceTermEntryLocalService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:410634098

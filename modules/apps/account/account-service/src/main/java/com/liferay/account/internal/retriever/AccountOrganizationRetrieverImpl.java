@@ -6,7 +6,6 @@
 package com.liferay.account.internal.retriever;
 
 import com.liferay.account.retriever.AccountOrganizationRetriever;
-import com.liferay.account.service.AccountEntryLocalService;
 import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.model.Organization;
@@ -119,16 +118,13 @@ public class AccountOrganizationRetrieverImpl
 	}
 
 	@Reference
-	private AccountEntryLocalService _accountEntryLocalService;
-
-	@Reference
 	private OrganizationLocalService _organizationLocalService;
 
 	@Reference
-	private Searcher _searcher;
+	private SearchRequestBuilderFactory _searchRequestBuilderFactory;
 
 	@Reference
-	private SearchRequestBuilderFactory _searchRequestBuilderFactory;
+	private Searcher _searcher;
 
 	@Reference
 	private SortFieldBuilder _sortFieldBuilder;

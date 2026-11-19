@@ -17,7 +17,7 @@ import com.liferay.portal.kernel.model.WorkflowInstanceLink;
 import com.liferay.portal.kernel.module.util.SystemBundleUtil;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.WorkflowInstanceLinkLocalServiceUtil;
-import com.liferay.portal.kernel.transaction.TransactionCommitCallbackUtil;
+import com.liferay.portal.kernel.transaction.TransactionCallbackUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.LocaleUtil;
@@ -122,7 +122,7 @@ public class WorkflowHandlerRegistryUtil {
 
 		workflowContext = HashMapBuilder.create(
 			workflowContext
-		).put(
+		).<String, Serializable>put(
 			WorkflowConstants.CONTEXT_COMPANY_ID, String.valueOf(companyId)
 		).put(
 			WorkflowConstants.CONTEXT_ENTRY_CLASS_NAME, className
@@ -142,13 +142,15 @@ public class WorkflowHandlerRegistryUtil {
 			WorkflowConstants.CONTEXT_USER_ID, String.valueOf(userId)
 		).build();
 
+		workflowHandler.contributeWorkflowContext(workflowContext);
+
 		T updatedModel = workflowHandler.updateStatus(
 			model, status, workflowContext);
 
 		if (workflowDefinitionLink != null) {
 			Map<String, Serializable> tempWorkflowContext = workflowContext;
 
-			TransactionCommitCallbackUtil.registerCallback(
+			TransactionCallbackUtil.registerCommitCallback(
 				() -> {
 					if (!_hasWorkflowInstanceInProgress(
 							companyId, groupId, className, classPK)) {
@@ -201,13 +203,17 @@ public class WorkflowHandlerRegistryUtil {
 		String className = (String)workflowContext.get(
 			WorkflowConstants.CONTEXT_ENTRY_CLASS_NAME);
 
-		WorkflowHandler<T> workflowHandler = getWorkflowHandler(className);
-
-		if (workflowHandler != null) {
-			return workflowHandler.updateStatus(status, workflowContext);
+		if (className == null) {
+			return null;
 		}
 
-		return null;
+		WorkflowHandler<T> workflowHandler = getWorkflowHandler(className);
+
+		if (workflowHandler == null) {
+			return null;
+		}
+
+		return workflowHandler.updateStatus(status, workflowContext);
 	}
 
 	private static List<WorkflowHandler<?>> _getWorkflowHandlers(
@@ -242,11 +248,7 @@ public class WorkflowHandlerRegistryUtil {
 			WorkflowInstanceManagerUtil.getWorkflowInstance(
 				companyId, workflowInstanceLink.getWorkflowInstanceId());
 
-		if (!workflowInstance.isComplete()) {
-			return true;
-		}
-
-		return false;
+		return !workflowInstance.isComplete();
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(

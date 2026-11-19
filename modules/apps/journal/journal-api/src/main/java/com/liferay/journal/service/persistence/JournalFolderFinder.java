@@ -22,6 +22,11 @@ public interface JournalFolderFinder {
 		long groupId, long folderId, long ddmStructureId,
 		com.liferay.portal.kernel.dao.orm.QueryDefinition<?> queryDefinition);
 
+	public int filterCountF_A_ByG_F_DDMSI_NotS(
+		long groupId, long folderId, long ddmStructureId,
+		int[] excludedStatuses,
+		com.liferay.portal.kernel.dao.orm.QueryDefinition<?> queryDefinition);
+
 	public java.util.List<Object> filterFindF_A_ByG_F_DDMSI(
 		long groupId, long folderId, long ddmStructureId,
 		com.liferay.portal.kernel.dao.orm.QueryDefinition<?> queryDefinition);
@@ -31,11 +36,14 @@ public interface JournalFolderFinder {
 		java.util.Locale locale,
 		com.liferay.portal.kernel.dao.orm.QueryDefinition<?> queryDefinition);
 
+	public java.util.List<Object> filterFindF_A_ByG_F_DDMSI_L_NotS(
+		long groupId, long folderId, long ddmStructureId,
+		java.util.Locale locale, int[] excludedStatuses,
+		com.liferay.portal.kernel.dao.orm.QueryDefinition<?> queryDefinition);
+
 	public java.util.List<Object> findF_A_ByG_F_DDMSI(
 		long groupId, long folderId, long ddmStructureId,
 		com.liferay.portal.kernel.dao.orm.QueryDefinition<?> queryDefinition);
 
-	public java.util.List<com.liferay.journal.model.JournalFolder>
-		findF_ByNoAssets();
-
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1150615527

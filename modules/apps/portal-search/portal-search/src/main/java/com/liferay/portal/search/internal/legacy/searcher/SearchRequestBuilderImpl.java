@@ -386,20 +386,20 @@ public class SearchRequestBuilderImpl implements SearchRequestBuilder {
 	}
 
 	@Override
-	public SearchRequestBuilder modelIndexerClasses(Class<?>... classes) {
+	public SearchRequestBuilder modelIndexerClassNames(String... classNames) {
 		_withSearchRequestImpl(
 			searchRequestImpl -> searchRequestImpl.setModelIndexerClassNames(
-				TransformUtil.transform(
-					classes, Class::getCanonicalName, String.class)));
+				classNames));
 
 		return this;
 	}
 
 	@Override
-	public SearchRequestBuilder modelIndexerClassNames(String... classNames) {
+	public SearchRequestBuilder modelIndexerClasses(Class<?>... classes) {
 		_withSearchRequestImpl(
 			searchRequestImpl -> searchRequestImpl.setModelIndexerClassNames(
-				classNames));
+				TransformUtil.transform(
+					classes, Class::getCanonicalName, String.class)));
 
 		return this;
 	}
@@ -464,6 +464,17 @@ public class SearchRequestBuilderImpl implements SearchRequestBuilder {
 	}
 
 	@Override
+	public SearchRequestBuilder retainFacetSelections(
+		boolean retainFacetSelections) {
+
+		_withSearchRequestImpl(
+			searchRequestImpl -> searchRequestImpl.setRetainFacetSelections(
+				retainFacetSelections));
+
+		return this;
+	}
+
+	@Override
 	public SearchRequestBuilder size(Integer size) {
 		_withSearchRequestImpl(
 			searchRequestImpl -> searchRequestImpl.setSize(size));
@@ -484,6 +495,26 @@ public class SearchRequestBuilderImpl implements SearchRequestBuilder {
 		_withSearchRequestImpl(
 			searchRequestImpl -> searchRequestImpl.setStatsRequests(
 				statsRequests));
+
+		return this;
+	}
+
+	@Override
+	public SearchRequestBuilder storedFields(String... storedFields) {
+		_withSearchRequestImpl(
+			searchRequestImpl -> searchRequestImpl.setStoredFields(
+				storedFields));
+
+		return this;
+	}
+
+	@Override
+	public SearchRequestBuilder trackTotalHitsLimit(
+		Integer trackTotalHitsLimit) {
+
+		_withSearchRequestImpl(
+			searchRequestImpl -> searchRequestImpl.setTrackTotalHitsLimit(
+				trackTotalHitsLimit));
 
 		return this;
 	}

@@ -5,11 +5,12 @@
 
 package com.liferay.oauth2.provider.web.internal.display.context;
 
-import com.liferay.document.library.util.DLURLHelper;
+import com.liferay.document.library.helper.DLURLHelper;
 import com.liferay.oauth2.provider.configuration.OAuth2ProviderConfiguration;
 import com.liferay.oauth2.provider.constants.ClientProfile;
 import com.liferay.oauth2.provider.constants.GrantType;
 import com.liferay.oauth2.provider.model.OAuth2Application;
+import com.liferay.oauth2.provider.service.OAuth2ApplicationLocalServiceUtil;
 import com.liferay.oauth2.provider.service.OAuth2ApplicationScopeAliasesLocalService;
 import com.liferay.oauth2.provider.service.OAuth2ApplicationService;
 import com.liferay.oauth2.provider.service.OAuth2AuthorizationServiceUtil;
@@ -20,15 +21,15 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ResourceBundleUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 
+import jakarta.portlet.PortletPreferences;
+import jakarta.portlet.PortletRequest;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.ResourceBundle;
-
-import javax.portlet.PortletPreferences;
-import javax.portlet.PortletRequest;
 
 /**
  * @author Tomas Polesovsky
@@ -56,6 +57,13 @@ public class OAuth2AdminPortletDisplayContext
 			"content.Language", themeDisplay.getLocale(), getClass());
 	}
 
+	public String getClientSecret(OAuth2Application oAuth2Application)
+		throws PortalException {
+
+		return OAuth2ApplicationLocalServiceUtil.getPlaintextClientSecret(
+			oAuth2Application);
+	}
+
 	public String getExtraPropertiesContent(
 		OAuth2Application oAuth2Application) {
 
@@ -77,10 +85,10 @@ public class OAuth2AdminPortletDisplayContext
 	public List<GrantType> getGrantTypes(
 		PortletPreferences portletPreferences) {
 
+		List<GrantType> grantTypes = new ArrayList<>();
+
 		String[] oAuth2Grants = StringUtil.split(
 			portletPreferences.getValue("oAuth2Grants", StringPool.BLANK));
-
-		List<GrantType> grantTypes = new ArrayList<>();
 
 		for (String oAuth2Grant : oAuth2Grants) {
 			grantTypes.add(GrantType.valueOf(oAuth2Grant));

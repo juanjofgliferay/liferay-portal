@@ -8,6 +8,7 @@ package com.liferay.site.admin.web.internal.portlet.action;
 import com.liferay.configuration.admin.constants.ConfigurationAdminPortletKeys;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.GroupNameException;
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.GroupConstants;
 import com.liferay.portal.kernel.model.MembershipRequest;
@@ -30,12 +31,12 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.liveusers.LiveUsers;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -45,7 +46,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + ConfigurationAdminPortletKeys.SITE_SETTINGS,
+		"jakarta.portlet.name=" + ConfigurationAdminPortletKeys.SITE_SETTINGS,
 		"mvc.command.name=/site_admin/edit_details"
 	},
 	service = MVCActionCommand.class
@@ -98,8 +99,29 @@ public class EditDetailsMVCActionCommand
 			actionRequest, "manualMembership", liveGroup.isManualMembership());
 		boolean inheritContent = ParamUtil.getBoolean(
 			actionRequest, "inheritContent", liveGroup.isInheritContent());
+
 		boolean active = ParamUtil.getBoolean(
 			actionRequest, "active", liveGroup.isActive());
+
+		UnicodeProperties typeSettingsUnicodeProperties =
+			liveGroup.getTypeSettingsProperties();
+
+		if (FeatureFlagManagerUtil.isEnabled(
+				liveGroup.getCompanyId(), "LPD-82960")) {
+
+			boolean maintenanceMode = ParamUtil.getBoolean(
+				actionRequest, "maintenanceMode");
+
+			if (maintenanceMode) {
+				typeSettingsUnicodeProperties.setProperty(
+					GroupConstants.TYPE_SETTINGS_KEY_MAINTENANCE_MODE,
+					Boolean.TRUE.toString());
+			}
+			else {
+				typeSettingsUnicodeProperties.remove(
+					GroupConstants.TYPE_SETTINGS_KEY_MAINTENANCE_MODE);
+			}
+		}
 
 		if (!liveGroup.isGuest() && !liveGroup.isOrganization()) {
 			UnicodeProperties unicodeProperties =
@@ -114,8 +136,9 @@ public class EditDetailsMVCActionCommand
 
 		_groupService.updateGroup(
 			liveGroupId, parentGroupId, nameMap, descriptionMap, type,
-			manualMembership, membershipRestriction, liveGroup.getFriendlyURL(),
-			inheritContent, active, serviceContext);
+			typeSettingsUnicodeProperties.toString(), manualMembership,
+			membershipRestriction, liveGroup.getFriendlyURL(), inheritContent,
+			active, serviceContext);
 
 		if (type == GroupConstants.TYPE_SITE_OPEN) {
 			ThemeDisplay themeDisplay =

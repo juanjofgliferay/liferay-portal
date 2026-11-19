@@ -13,7 +13,6 @@ import com.liferay.change.tracking.model.CTPreferences;
 import com.liferay.change.tracking.service.CTCollectionService;
 import com.liferay.change.tracking.service.CTPreferencesLocalService;
 import com.liferay.change.tracking.web.internal.display.context.DisplayContextUtil;
-import com.liferay.change.tracking.web.internal.security.permission.resource.CTCollectionPermission;
 import com.liferay.change.tracking.web.internal.util.PublicationsPortletURLUtil;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.json.JSONArray;
@@ -24,21 +23,20 @@ import com.liferay.portal.kernel.model.UserTable;
 import com.liferay.portal.kernel.portlet.JSONPortletResponseUtil;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCResourceCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCResourceCommand;
-import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ResourceRequest;
+import jakarta.portlet.ResourceResponse;
+
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ResourceRequest;
-import javax.portlet.ResourceResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -48,7 +46,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + CTPortletKeys.PUBLICATIONS,
+		"jakarta.portlet.name=" + CTPortletKeys.PUBLICATIONS,
 		"mvc.command.name=/change_tracking/get_select_publications"
 	},
 	service = MVCResourceCommand.class
@@ -79,8 +77,10 @@ public class GetSelectPublicationsMVCResourceCommand
 
 		List<CTCollection> ctCollections =
 			_ctCollectionService.getCTCollections(
-				themeDisplay.getCompanyId(),
-				new int[] {WorkflowConstants.STATUS_DRAFT},
+				new int[] {
+					WorkflowConstants.STATUS_DRAFT,
+					WorkflowConstants.STATUS_INCOMPLETE
+				},
 				ParamUtil.getString(resourceRequest, "keywords"),
 				QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
 
@@ -89,18 +89,12 @@ public class GetSelectPublicationsMVCResourceCommand
 
 			Date modifiedDate = ctCollection.getModifiedDate();
 
-			boolean readOnly = !CTCollectionPermission.contains(
-				themeDisplay.getPermissionChecker(), ctCollection,
-				ActionKeys.UPDATE);
-
 			JSONObject entryJSONObject = JSONUtil.put(
 				"description", ctCollection.getDescription()
 			).put(
 				"modifiedDate", modifiedDate.getTime()
 			).put(
 				"name", ctCollection.getName()
-			).put(
-				"readOnly", readOnly
 			).put(
 				"userId", ctCollection.getUserId()
 			).put(
@@ -111,9 +105,7 @@ public class GetSelectPublicationsMVCResourceCommand
 					String.valueOf(ctCollection.getCtCollectionId()))
 			);
 
-			if ((ctCollection.getCtCollectionId() != ctCollectionId) &&
-				!readOnly) {
-
+			if (ctCollection.getCtCollectionId() != ctCollectionId) {
 				entryJSONObject.put(
 					"checkoutURL",
 					PublicationsPortletURLUtil.getHref(

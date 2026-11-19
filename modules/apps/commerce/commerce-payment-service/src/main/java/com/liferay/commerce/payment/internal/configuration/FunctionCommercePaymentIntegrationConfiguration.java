@@ -18,35 +18,33 @@ import com.liferay.portal.configuration.metatype.annotations.ExtendedObjectClass
 )
 @Meta.OCD(
 	factory = true,
-	id = "com.liferay.commerce.payment.internal.configuration.FunctionCommercePaymentIntegrationConfiguration"
+	id = "com.liferay.commerce.payment.internal.configuration.FunctionCommercePaymentIntegrationConfiguration",
+	name = "commerce-payment-integration-configuration-name"
 )
 public interface FunctionCommercePaymentIntegrationConfiguration {
-
-	@Meta.AD(required = false, type = Meta.Type.String)
-	public String authorizePath();
-
-	@Meta.AD(required = false, type = Meta.Type.String)
-	public String cancelPath();
-
-	@Meta.AD(required = false, type = Meta.Type.String)
-	public String capturePath();
 
 	@Meta.AD(name = "key", required = false)
 	public String key();
 
 	@Meta.AD(name = "name", required = false)
-	public String paymentIntegrationName();
+	public String name();
 
-	@Meta.AD(required = false, type = Meta.Type.String)
+	@Meta.AD(
+		name = "oauth2-application-external-reference-code", required = false,
+		type = Meta.Type.String
+	)
 	public String oAuth2ApplicationExternalReferenceCode();
 
-	@Meta.AD(required = false, type = Meta.Type.String)
-	public String refundPath();
-
-	@Meta.AD(required = false, type = Meta.Type.Integer)
+	@Meta.AD(
+		name = "payment-integration-type", required = false,
+		type = Meta.Type.Integer
+	)
 	public int paymentIntegrationType();
 
-	@Meta.AD(required = false, type = Meta.Type.String)
-	public String typeSettings();
+	@Meta.AD(
+		name = "payment-integration-type-settings", required = false,
+		type = Meta.Type.String
+	)
+	public String paymentIntegrationTypeSettings();
 
 }

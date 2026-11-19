@@ -9,7 +9,7 @@ import React from 'react';
 import {AppContext} from '../../../../src/main/resources/META-INF/resources/js/components/AppContext.es';
 import VelocityChart from '../../../../src/main/resources/META-INF/resources/js/components/process-metrics/completion-velocity/VelocityChart.es';
 
-import '@testing-library/jest-dom/extend-expect';
+import '@testing-library/jest-dom';
 
 describe('The velocity chart should', () => {
 	const {ResizeObserver} = window;
@@ -219,15 +219,15 @@ describe('The velocity chart should', () => {
 				},
 			];
 
-			const textHours = getContainer(payload).querySelectorAll(
-				CLASS_CHART_CONTENT
-			)[1].innerHTML;
+			const textHours =
+				getContainer(payload).querySelectorAll(CLASS_CHART_CONTENT)[1]
+					.innerHTML;
 
 			payload[0].payload.key = null;
 
-			const textDefault = getContainer(payload).querySelectorAll(
-				CLASS_CHART_CONTENT
-			)[1].innerHTML;
+			const textDefault =
+				getContainer(payload).querySelectorAll(CLASS_CHART_CONTENT)[1]
+					.innerHTML;
 
 			expect(textHours).toContain('0 Inst / Hours');
 			expect(textDefault).toContain('0 Inst / Hours');

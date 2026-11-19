@@ -7,9 +7,9 @@ package com.liferay.portal.kernel.service.configuration.servlet;
 
 import com.liferay.portal.kernel.service.configuration.ServiceComponentConfiguration;
 
-import java.io.InputStream;
+import jakarta.servlet.ServletContext;
 
-import javax.servlet.ServletContext;
+import java.io.InputStream;
 
 /**
  * @author Miguel Pastor
@@ -42,11 +42,6 @@ public class ServletServiceContextComponentConfiguration
 	}
 
 	@Override
-	public String getServletContextName() {
-		return _servletContext.getServletContextName();
-	}
-
-	@Override
 	public InputStream getSQLIndexesInputStream() {
 		return _servletContext.getResourceAsStream("/WEB-INF/sql/indexes.sql");
 	}
@@ -60,6 +55,11 @@ public class ServletServiceContextComponentConfiguration
 	@Override
 	public InputStream getSQLTablesInputStream() {
 		return _servletContext.getResourceAsStream("/WEB-INF/sql/tables.sql");
+	}
+
+	@Override
+	public String getServletContextName() {
+		return _servletContext.getServletContextName();
 	}
 
 	private final ServletContext _servletContext;

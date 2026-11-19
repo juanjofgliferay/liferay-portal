@@ -1,37 +1,26 @@
-const COLORS = [
-	'#59adf6',
-	'#42d6a4',
-	'#ff6961',
-	'#ffb480',
-	'#f8f38d',
-	'#08cad1',
-	'#9d94ff',
-	'#c780e8'
-];
-
 function createBuildCountLineChart(timelineData, elementID) {
 	let datasets = getDatasets(timelineData, 'buildCounts');
 
 	let lineChart = getLineChart('Build Count', datasets, elementID, 'Builds');
 
-	lineChart.options.title = {
+	lineChart.options.plugins.title = {
 		display: false
 	};
 
-	lineChart.options.tooltips = {
+	lineChart.options.plugins.tooltip = {
 		callbacks: {
-		    label: function(tooltipItem, data) {
-		        let label = data.datasets[tooltipItem.datasetIndex].label || '';
+		    label: function(context) {
+		        let label = context.dataset.label || '';
 
 		        if (label) {
 		            label += ': ';
 		        }
 
-		        label += tooltipItem.yLabel;
+		        label += context.parsed.y;
 
 		        label += ' (';
 
-		        label += Math.round(tooltipItem.yLabel * 10000 / 1800) / 100;
+		        label += Math.round(context.parsed.y * 10000 / (maxWeeklyServerDurationMillis || MAX_WEEKLY_SERVER_DURATION_MILLIS)) / 100;
 
 		        label += '%)'
 
@@ -40,28 +29,29 @@ function createBuildCountLineChart(timelineData, elementID) {
 		},
 		mode: 'index'
 	};
+
+	lineChart.update();
 }
 
 function createDurationLineChart(chartTitle, datasets, elementID) {
 	let lineChart = getLineChart(chartTitle, datasets, elementID, 'Duration (mins)');
 
-	lineChart.options.scales.yAxes[0].ticks = {
-		beginAtZero: true,
+	lineChart.options.scales.y.ticks = {
 		callback: function(value) {
 			return Math.round(value / 60000);
 		}
 	};
 
-	lineChart.options.tooltips = {
+	lineChart.options.plugins.tooltip = {
 		callbacks: {
-			label: function(tooltipItem, data) {
-			    let label = data.datasets[tooltipItem.datasetIndex].label || '';
+			label: function(context) {
+			    let label = context.dataset.label || '';
 
 			    if (label) {
 			        label += ': ';
 			    }
 
-			    label += Math.round(tooltipItem.yLabel / 60000);
+			    label += Math.round(context.parsed.y / 60000);
 
 			    label += ' mins';
 
@@ -70,6 +60,8 @@ function createDurationLineChart(chartTitle, datasets, elementID) {
 		},
 		mode: 'index'
 	};
+
+	lineChart.update();
 }
 
 function createBuildDurationLineChart(timelineData, elementID) {
@@ -82,10 +74,6 @@ function createQueueDurationLineChart(timelineData, elementID) {
 	let datasets = getDatasets(timelineData, 'averageQueueTime');
 
 	createDurationLineChart('Average Queue Duration', datasets, elementID);
-}
-
-function getColor(index) {
-	return COLORS[index % COLORS.length];
 }
 
 function getDataPoints(xDataPoints, yDataPoints) {
@@ -137,45 +125,46 @@ function getLineChart(chartTitle, datasets, elementID, yLabel) {
 					radius: 0
 				}
 			},
-			hover: {
-			    animationDuration: 0
-			},
 			maintainAspectRatio: false,
+			plugins: {
+				title: {
+					display: true,
+					font: {
+						size: 14
+					},
+					text: chartTitle
+				}
+			},
 			responsive: true,
 			scales: {
-				xAxes: [{
-					autoSkipPadding: 50,
-					type: 'time',
+				x: {
 					ticks: {
+						autoSkipPadding: 50,
 						sampleSize: 100
 					},
 					time: {
 					    displayFormats: {
-					        hour: 'ddd MMM DD hA'
+					        hour: 'EEE MMM dd ha'
 					    },
 					    unit: 'hour'
-					}
-				}],
-				yAxes: [{
-					scaleLabel: {
-						display: true,
-						labelString: yLabel
 					},
+					type: 'time'
+				},
+				y: {
+					beginAtZero: true,
 					stacked: true,
-					ticks: {
-						beginAtZero: true
+					title: {
+						display: true,
+						text: yLabel
 					}
-				}]
-			},
-			title: {
-				display: true,
-				fontSize: 14,
-				text: chartTitle
+				}
 			}
 		},
 		type: 'line'
 	});
 }
+
+addDateText(document.getElementById("build-history-data-date"), dataGeneratedDate);
 
 let buttonElements = document.getElementsByClassName('accordion');
 
@@ -210,7 +199,9 @@ if ((typeof timelineData !== 'undefined') && timelineData) {
 }
 
 if ((typeof tableData !== 'undefined') && tableData) {
-	createTable(tableData, 'build-history-table');
+	let tableElement = createTable(tableData, 'build-history-table');
+
+	addTotalColumn(tableElement);
 
 	Sortable.init();
 }

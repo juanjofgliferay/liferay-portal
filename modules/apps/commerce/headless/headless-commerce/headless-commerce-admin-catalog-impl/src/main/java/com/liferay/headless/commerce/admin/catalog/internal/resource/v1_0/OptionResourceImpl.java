@@ -5,17 +5,19 @@
 
 package com.liferay.headless.commerce.admin.catalog.internal.resource.v1_0;
 
+import com.liferay.commerce.product.constants.CPPortletKeys;
 import com.liferay.commerce.product.exception.NoSuchCPOptionException;
 import com.liferay.commerce.product.model.CPOption;
 import com.liferay.commerce.product.service.CPOptionService;
+import com.liferay.exportimport.constants.ExportImportConstants;
+import com.liferay.exportimport.vulcan.batch.engine.ExportImportVulcanBatchEngineTaskItemDelegate;
 import com.liferay.headless.commerce.admin.catalog.dto.v1_0.Option;
 import com.liferay.headless.commerce.admin.catalog.dto.v1_0.OptionValue;
-import com.liferay.headless.commerce.admin.catalog.internal.dto.v1_0.util.CustomFieldsUtil;
 import com.liferay.headless.commerce.admin.catalog.internal.odata.entity.v1_0.OptionEntityModel;
 import com.liferay.headless.commerce.admin.catalog.resource.v1_0.OptionResource;
 import com.liferay.headless.commerce.admin.catalog.resource.v1_0.OptionValueResource;
+import com.liferay.headless.commerce.core.helper.ServiceContextHelper;
 import com.liferay.headless.commerce.core.util.LanguageUtils;
-import com.liferay.headless.commerce.core.util.ServiceContextHelper;
 import com.liferay.portal.kernel.change.tracking.CTAware;
 import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.kernel.search.Sort;
@@ -27,6 +29,7 @@ import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.odata.entity.EntityModel;
+import com.liferay.portal.vulcan.custom.field.CustomFieldsUtil;
 import com.liferay.portal.vulcan.dto.converter.DTOConverter;
 import com.liferay.portal.vulcan.dto.converter.DTOConverterRegistry;
 import com.liferay.portal.vulcan.dto.converter.DefaultDTOConverterContext;
@@ -34,13 +37,15 @@ import com.liferay.portal.vulcan.pagination.Page;
 import com.liferay.portal.vulcan.pagination.Pagination;
 import com.liferay.portal.vulcan.util.SearchUtil;
 
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.Response;
+
 import java.io.Serializable;
 
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.Response;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -51,10 +56,13 @@ import org.osgi.service.component.annotations.ServiceScope;
  */
 @Component(
 	properties = "OSGI-INF/liferay/rest/v1_0/option.properties",
+	property = "export.import.vulcan.batch.engine.task.item.delegate=true",
 	scope = ServiceScope.PROTOTYPE, service = OptionResource.class
 )
 @CTAware
-public class OptionResourceImpl extends BaseOptionResourceImpl {
+public class OptionResourceImpl
+	extends BaseOptionResourceImpl
+	implements ExportImportVulcanBatchEngineTaskItemDelegate<Option> {
 
 	@Override
 	public Response deleteOption(Long id) throws Exception {
@@ -72,8 +80,9 @@ public class OptionResourceImpl extends BaseOptionResourceImpl {
 			String externalReferenceCode)
 		throws Exception {
 
-		CPOption cpOption = _cpOptionService.fetchByExternalReferenceCode(
-			externalReferenceCode, contextCompany.getCompanyId());
+		CPOption cpOption =
+			_cpOptionService.fetchCPOptionByExternalReferenceCode(
+				externalReferenceCode, contextCompany.getCompanyId());
 
 		if (cpOption == null) {
 			throw new NoSuchCPOptionException(
@@ -96,22 +105,103 @@ public class OptionResourceImpl extends BaseOptionResourceImpl {
 	}
 
 	@Override
-	public Option getOption(Long id) throws Exception {
+	public ExportImportDescriptor<CPOption> getExportImportDescriptor() {
+		return new ExportImportDescriptor<>() {
+
+			@Override
+			public String getKey() {
+				return OptionResourceImpl.class.getName();
+			}
+
+			@Override
+			public String getLabelLanguageKey() {
+				return "options";
+			}
+
+			@Override
+			public Class<CPOption> getModelClass() {
+				return CPOption.class;
+			}
+
+			@Override
+			public List<String> getNestedFields() {
+				return List.of("creator", "optionValues");
+			}
+
+			@Override
+			public String getPortletId() {
+				return CPPortletKeys.CP_OPTIONS;
+			}
+
+			@Override
+			public Scope getScope() {
+				return Scope.COMPANY;
+			}
+
+			@Override
+			public String getSectionKey() {
+				return ExportImportConstants.SECTION_KEY_PRODUCT_MANAGEMENT;
+			}
+
+		};
+	}
+
+	@Override
+	public Response patchOption(Long id, Option option) throws Exception {
+		_updateOption(_cpOptionService.getCPOption(id), option);
+
+		Response.ResponseBuilder responseBuilder = Response.ok();
+
+		return responseBuilder.build();
+	}
+
+	@Override
+	public Response patchOptionByExternalReferenceCode(
+			String externalReferenceCode, Option option)
+		throws Exception {
+
+		CPOption cpOption =
+			_cpOptionService.fetchCPOptionByExternalReferenceCode(
+				externalReferenceCode, contextCompany.getCompanyId());
+
+		if (cpOption == null) {
+			throw new NoSuchCPOptionException(
+				"Unable to find option with external reference code " +
+					externalReferenceCode);
+		}
+
+		_updateOption(cpOption, option);
+
+		Response.ResponseBuilder responseBuilder = Response.noContent();
+
+		return responseBuilder.build();
+	}
+
+	@Override
+	protected Option doGetOption(Long id) throws Exception {
 		return _toOption(GetterUtil.getLong(id));
 	}
 
 	@Override
-	public Option getOptionByExternalReferenceCode(String externalReferenceCode)
+	protected Option doGetOptionByExternalReferenceCode(
+			String externalReferenceCode)
 		throws Exception {
 
-		CPOption cpOption = _cpOptionService.fetchByExternalReferenceCode(
-			externalReferenceCode, contextCompany.getCompanyId());
+		CPOption cpOption =
+			_cpOptionService.fetchCPOptionByExternalReferenceCode(
+				externalReferenceCode, contextCompany.getCompanyId());
+
+		if (cpOption == null) {
+			throw new NoSuchCPOptionException(
+				"Unable to find option with external reference code " +
+					externalReferenceCode);
+		}
 
 		return _toOption(cpOption.getCPOptionId());
 	}
 
 	@Override
-	public Page<Option> getOptionsPage(
+	protected Page<Option> doGetOptionsPage(
 			String search, Filter filter, Pagination pagination, Sort[] sorts)
 		throws Exception {
 
@@ -129,41 +219,32 @@ public class OptionResourceImpl extends BaseOptionResourceImpl {
 	}
 
 	@Override
-	public Response patchOption(Long id, Option option) throws Exception {
-		_updateOption(_cpOptionService.getCPOption(id), option);
-
-		Response.ResponseBuilder responseBuilder = Response.ok();
-
-		return responseBuilder.build();
+	protected Option doPostOption(Option option) throws Exception {
+		return _addOrUpdateOption(option.getExternalReferenceCode(), option);
 	}
 
 	@Override
-	public Response patchOptionByExternalReferenceCode(
+	protected Option doPutOptionByExternalReferenceCode(
 			String externalReferenceCode, Option option)
 		throws Exception {
 
-		CPOption cpOption = _cpOptionService.fetchByExternalReferenceCode(
-			externalReferenceCode, contextCompany.getCompanyId());
-
-		if (cpOption == null) {
-			throw new NoSuchCPOptionException(
-				"Unable to find option with external reference code " +
-					externalReferenceCode);
-		}
-
-		_updateOption(cpOption, option);
-
-		Response.ResponseBuilder responseBuilder = Response.noContent();
-
-		return responseBuilder.build();
+		return _addOrUpdateOption(externalReferenceCode, option);
 	}
 
 	@Override
-	public Option postOption(Option option) throws Exception {
-		return _addOrUpdateOption(option);
+	protected Long getPermissionCheckerGroupId(Object id) {
+		return 0L;
 	}
 
-	private Option _addOrUpdateOption(Option option) throws Exception {
+	@Override
+	protected String getPermissionCheckerResourceName(Object id) {
+		return CPOption.class.getName();
+	}
+
+	private Option _addOrUpdateOption(
+			String externalReferenceCode, Option option)
+		throws Exception {
+
 		Option.FieldType fieldType = option.getFieldType();
 
 		ServiceContext serviceContext =
@@ -173,7 +254,7 @@ public class OptionResourceImpl extends BaseOptionResourceImpl {
 			_getExpandoBridgeAttributes(option));
 
 		CPOption cpOption = _cpOptionService.addOrUpdateCPOption(
-			option.getExternalReferenceCode(),
+			externalReferenceCode,
 			LanguageUtils.getLocalizedMap(option.getName()),
 			LanguageUtils.getLocalizedMap(option.getDescription()),
 			fieldType.getValue(), GetterUtil.get(option.getFacetable(), false),
@@ -226,10 +307,17 @@ public class OptionResourceImpl extends BaseOptionResourceImpl {
 	private Map<String, Serializable> _getExpandoBridgeAttributes(
 		Option option) {
 
-		return CustomFieldsUtil.toMap(
-			CPOption.class.getName(), contextCompany.getCompanyId(),
-			option.getCustomFields(),
-			contextAcceptLanguage.getPreferredLocale());
+		Map<String, Serializable> expandoBridgeAttributes =
+			CustomFieldsUtil.toMap(
+				CPOption.class.getName(), contextCompany.getCompanyId(),
+				option.getCustomFields(),
+				contextAcceptLanguage.getPreferredLocale());
+
+		if (expandoBridgeAttributes == null) {
+			expandoBridgeAttributes = new HashMap<>();
+		}
+
+		return expandoBridgeAttributes;
 	}
 
 	private Option _toOption(Long cpOptionId) throws Exception {

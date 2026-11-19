@@ -119,7 +119,7 @@ public class PortalJSONObjectUtil {
 				continue;
 			}
 
-			if (fileName.endsWith("/VerifyProperties.java")) {
+			if (fileName.endsWith("/PreupgradeVerifyProperties.java")) {
 				portalJSONObject.put(
 					"legacyProperties",
 					_getLegacyPropertiesJSONObject(fileName));
@@ -355,9 +355,11 @@ public class PortalJSONObjectUtil {
 			JSONArray elementJSONArray = _addElementValues(
 				new JSONArrayImpl(), content.substring(matcher.end() - 1, x));
 
-			if (elementJSONArray.length() > 0) {
-				xmlDefinitionJSONObject.put(matcher.group(1), elementJSONArray);
+			if (elementJSONArray.length() <= 0) {
+				continue;
 			}
+
+			xmlDefinitionJSONObject.put(matcher.group(1), elementJSONArray);
 		}
 
 		if (xmlDefinitionJSONObject.length() > 0) {

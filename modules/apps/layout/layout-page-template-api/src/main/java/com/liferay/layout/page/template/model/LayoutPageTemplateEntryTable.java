@@ -33,6 +33,10 @@ public class LayoutPageTemplateEntryTable
 			"ctCollectionId", Long.class, Types.BIGINT, Column.FLAG_PRIMARY);
 	public final Column<LayoutPageTemplateEntryTable, String> uuid =
 		createColumn("uuid_", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
+	public final Column<LayoutPageTemplateEntryTable, String>
+		externalReferenceCode = createColumn(
+			"externalReferenceCode", String.class, Types.VARCHAR,
+			Column.FLAG_DEFAULT);
 	public final Column<LayoutPageTemplateEntryTable, Long>
 		layoutPageTemplateEntryId = createColumn(
 			"layoutPageTemplateEntryId", Long.class, Types.BIGINT,
@@ -67,6 +71,9 @@ public class LayoutPageTemplateEntryTable
 	public final Column<LayoutPageTemplateEntryTable, Long> classTypeId =
 		createColumn(
 			"classTypeId", Long.class, Types.BIGINT, Column.FLAG_DEFAULT);
+	public final Column<LayoutPageTemplateEntryTable, String> classTypeKey =
+		createColumn(
+			"classTypeKey", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
 	public final Column<LayoutPageTemplateEntryTable, String> name =
 		createColumn("name", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
 	public final Column<LayoutPageTemplateEntryTable, Integer> type =
@@ -108,3 +115,4 @@ public class LayoutPageTemplateEntryTable
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:986376417

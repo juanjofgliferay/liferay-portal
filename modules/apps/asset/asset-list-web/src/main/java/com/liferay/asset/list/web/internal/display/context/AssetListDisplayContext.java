@@ -21,11 +21,14 @@ import com.liferay.asset.list.util.AssetListPortletUtil;
 import com.liferay.asset.list.web.internal.security.permission.resource.AssetListEntryPermission;
 import com.liferay.asset.list.web.internal.security.permission.resource.AssetListPermission;
 import com.liferay.asset.list.web.internal.servlet.taglib.util.AssetListEntryActionDropdownItemsProvider;
+import com.liferay.asset.list.web.internal.util.AudienceVariationUtil;
 import com.liferay.asset.util.AssetRendererFactoryClassProvider;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItem;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItemListBuilder;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.NavigationItem;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.NavigationItemListBuilder;
+import com.liferay.object.model.ObjectDefinition;
+import com.liferay.object.service.ObjectDefinitionLocalServiceUtil;
 import com.liferay.petra.function.UnsafeConsumer;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.search.EmptyOnClickRowChecker;
@@ -49,19 +52,20 @@ import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.segments.constants.SegmentsEntryConstants;
 import com.liferay.staging.StagingGroupHelper;
 import com.liferay.staging.StagingGroupHelperUtil;
 
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.List;
 import java.util.Objects;
-
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Jürgen Kappler
@@ -127,8 +131,21 @@ public class AssetListDisplayContext {
 
 	public String getAssetEntryTypeLabel(AssetListEntry assetListEntry) {
 		if (Validator.isNotNull(assetListEntry.getAssetEntryType())) {
-			return ResourceActionsUtil.getModelResource(
+			String typeLabel = ResourceActionsUtil.getModelResource(
 				_themeDisplay.getLocale(), assetListEntry.getAssetEntryType());
+
+			ObjectDefinition objectDefinition =
+				ObjectDefinitionLocalServiceUtil.
+					fetchObjectDefinitionByClassName(
+						_themeDisplay.getCompanyId(),
+						assetListEntry.getAssetEntryType());
+
+			if ((objectDefinition != null) && objectDefinition.isCMS()) {
+				typeLabel = StringUtil.appendParentheticalSuffix(
+					typeLabel, "CMS");
+			}
+
+			return typeLabel;
 		}
 
 		return StringPool.BLANK;
@@ -299,6 +316,17 @@ public class AssetListDisplayContext {
 			_themeDisplay.getScopeGroupId(),
 			PortalUtil.getClassNameId(AssetListEntry.class),
 			String.valueOf(assetListEntry.getAssetListEntryId()));
+	}
+
+	public String getAudienceEntryERC() {
+		if (_audienceEntryERC != null) {
+			return _audienceEntryERC;
+		}
+
+		_audienceEntryERC = AudienceVariationUtil.getAudienceEntryERC(
+			_liferayPortletRequest);
+
+		return _audienceEntryERC;
 	}
 
 	public String getClassName(AssetRendererFactory<?> assetRendererFactory) {
@@ -507,6 +535,14 @@ public class AssetListDisplayContext {
 		).setActionName(
 			"/asset_list/add_asset_list_entry"
 		).setParameter(
+			"backURLTitle",
+			() -> {
+				PortletDisplay portletDisplay =
+					_themeDisplay.getPortletDisplay();
+
+				return portletDisplay.getPortletDisplayName();
+			}
+		).setParameter(
 			"type", type
 		).buildString();
 	}
@@ -539,11 +575,7 @@ public class AssetListDisplayContext {
 	}
 
 	private boolean _isSearch() {
-		if (Validator.isNotNull(_getKeywords())) {
-			return true;
-		}
-
-		return false;
+		return Validator.isNotNull(_getKeywords());
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
@@ -556,6 +588,7 @@ public class AssetListDisplayContext {
 	private Integer _assetListEntryType;
 	private final AssetRendererFactoryClassProvider
 		_assetRendererFactoryClassProvider;
+	private String _audienceEntryERC;
 	private String _displayStyle;
 	private final HttpServletRequest _httpServletRequest;
 	private String _keywords;

@@ -24,6 +24,7 @@ create table CTCollection (
 	name VARCHAR(75) null,
 	description VARCHAR(200) null,
 	onDemandUserId LONG,
+	scheduledDate DATE null,
 	shareable BOOLEAN,
 	status INTEGER,
 	statusByUserId LONG,
@@ -38,7 +39,7 @@ create table CTCollectionTemplate (
 	createDate DATE null,
 	modifiedDate DATE null,
 	name VARCHAR(75) null,
-	description VARCHAR(75) null
+	description VARCHAR(200) null
 );
 
 create table CTComment (

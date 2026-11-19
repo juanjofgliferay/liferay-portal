@@ -6,6 +6,8 @@
 package com.liferay.portal.security.ldap.internal.authenticator;
 
 import com.liferay.petra.lang.CentralizedThreadLocal;
+import com.liferay.petra.lang.SafeCloseable;
+import com.liferay.petra.lang.ThreadContextClassLoaderUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PasswordExpiredException;
@@ -16,14 +18,16 @@ import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.security.auth.AuthException;
 import com.liferay.portal.kernel.security.auth.Authenticator;
 import com.liferay.portal.kernel.security.auth.PasswordModificationThreadLocal;
+import com.liferay.portal.kernel.security.fips.FIPSModeValidator;
 import com.liferay.portal.kernel.security.ldap.LDAPSettings;
 import com.liferay.portal.kernel.security.pwd.PasswordEncryptor;
 import com.liferay.portal.kernel.security.pwd.PasswordEncryptorUtil;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.MapUtil;
-import com.liferay.portal.kernel.util.Props;
 import com.liferay.portal.kernel.util.PropsKeys;
+import com.liferay.portal.kernel.util.PropsUtil;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.security.ldap.SafeLdapContext;
@@ -37,9 +41,15 @@ import com.liferay.portal.security.ldap.configuration.SystemLDAPConfiguration;
 import com.liferay.portal.security.ldap.constants.LDAPConstants;
 import com.liferay.portal.security.ldap.exportimport.LDAPUserImporter;
 import com.liferay.portal.security.ldap.exportimport.configuration.LDAPImportConfiguration;
+import com.liferay.portal.security.ldap.internal.ssl.LDAPSSLSocketFactory;
+import com.liferay.portal.security.ldap.internal.util.SafeLdapReferralUtil;
 import com.liferay.portal.security.ldap.util.LDAPUtil;
 import com.liferay.portal.security.ldap.validator.LDAPFilterValidator;
 import com.liferay.portlet.admin.util.OmniadminUtil;
+
+import java.nio.charset.StandardCharsets;
+
+import java.security.MessageDigest;
 
 import java.util.HashMap;
 import java.util.Hashtable;
@@ -131,9 +141,9 @@ public class LDAPAuth implements Authenticator {
 	}
 
 	@Activate
-	protected void activate(Map<String, Object> properties) {
+	protected void activate() {
 		_authPipelineEnableLiferayCheck = GetterUtil.getBoolean(
-			_props.get(PropsKeys.AUTH_PIPELINE_ENABLE_LIFERAY_CHECK));
+			PropsUtil.get(PropsKeys.AUTH_PIPELINE_ENABLE_LIFERAY_CHECK));
 	}
 
 	private LDAPAuthResult _authenticate(
@@ -159,7 +169,8 @@ public class LDAPAuth implements Authenticator {
 			SystemLDAPConfiguration systemLDAPConfiguration =
 				_systemLDAPConfigurationProvider.getConfiguration(companyId);
 
-			env.put(Context.REFERRAL, systemLDAPConfiguration.referral());
+			SafeLdapReferralUtil.setProperties(
+				env, systemLDAPConfiguration.referral());
 
 			env.put(Context.SECURITY_CREDENTIALS, password);
 			env.put(Context.SECURITY_PRINCIPAL, userDN);
@@ -179,7 +190,17 @@ public class LDAPAuth implements Authenticator {
 			InitialLdapContext initialLdapContext = null;
 
 			try {
-				initialLdapContext = new InitialLdapContext(env, null);
+				if (PropsValues.FIPS_ENABLED) {
+					try (SafeCloseable safeCloseable =
+							ThreadContextClassLoaderUtil.swap(
+								LDAPSSLSocketFactory.class.getClassLoader())) {
+
+						initialLdapContext = new InitialLdapContext(env, null);
+					}
+				}
+				else {
+					initialLdapContext = new InitialLdapContext(env, null);
+				}
 
 				// Get LDAP bind results
 
@@ -235,23 +256,35 @@ public class LDAPAuth implements Authenticator {
 			Attribute userPassword = attributes.get("userPassword");
 
 			if (userPassword != null) {
+				String algorithm =
+					ldapAuthConfiguration.passwordEncryptionAlgorithm();
+
+				if (FIPSModeValidator.isNotAllowedAlgorithm(algorithm)) {
+					_log.error(
+						"Algorithm \"" + algorithm +
+							"\" is not allowed in FIPS mode");
+
+					ldapAuthResult.setAuthenticated(false);
+
+					return ldapAuthResult;
+				}
+
 				String encryptedPassword = password;
 				String ldapPassword = new String((byte[])userPassword.get());
 
-				if (Validator.isNotNull(
-						ldapAuthConfiguration.passwordEncryptionAlgorithm()) &&
-					!Objects.equals(
-						ldapAuthConfiguration.passwordEncryptionAlgorithm(),
-						PasswordEncryptor.TYPE_NONE)) {
+				if (Validator.isNotNull(algorithm) &&
+					!Objects.equals(algorithm, PasswordEncryptor.TYPE_NONE)) {
 
 					ldapPassword = _removeEncryptionAlgorithm(ldapPassword);
 
 					encryptedPassword = PasswordEncryptorUtil.encrypt(
-						ldapAuthConfiguration.passwordEncryptionAlgorithm(),
-						password, ldapPassword);
+						algorithm, password, ldapPassword);
 				}
 
-				if (ldapPassword.equals(encryptedPassword)) {
+				if (MessageDigest.isEqual(
+						encryptedPassword.getBytes(StandardCharsets.UTF_8),
+						ldapPassword.getBytes(StandardCharsets.UTF_8))) {
+
 					ldapAuthResult.setAuthenticated(true);
 				}
 				else {
@@ -367,9 +400,12 @@ public class LDAPAuth implements Authenticator {
 			LDAPAuthResult ldapAuthResult = _authenticate(
 				safeLdapContext, companyId, attributes, fullUserDN, password);
 
-			// Get user or create fromUnsafe LDAP
+			LDAPImportConfiguration ldapImportConfiguration =
+				_ldapImportConfigurationProvider.getConfiguration(companyId);
 
-			if (!ldapAuthResult.isAuthenticated()) {
+			if (!ldapAuthResult.isAuthenticated() ||
+				ldapImportConfiguration.importUserPasswordAutogenerated()) {
+
 				password = null;
 			}
 
@@ -491,27 +527,12 @@ public class LDAPAuth implements Authenticator {
 			companyId, preferredLDAPServerId, emailAddress, screenName, userId,
 			password);
 
-		LDAPImportConfiguration ldapImportConfiguration =
-			_ldapImportConfigurationProvider.getConfiguration(companyId);
-
 		if (preferredLDAPServerResult == SUCCESS) {
 			if (_log.isDebugEnabled()) {
 				_log.debug("Found preferred LDAP server");
 			}
 
-			if (ldapImportConfiguration.importUserPasswordEnabled()) {
-				if (_log.isDebugEnabled()) {
-					_log.debug("Import user password enabled");
-				}
-
-				return preferredLDAPServerResult;
-			}
-
-			if (_log.isDebugEnabled()) {
-				_log.debug("Import user password disabled");
-			}
-
-			return Authenticator.SKIP_LIFERAY_CHECK;
+			return _getAuthenticatedResult(companyId, password);
 		}
 
 		List<LDAPServerConfiguration> ldapServerConfigurations =
@@ -535,11 +556,7 @@ public class LDAPAuth implements Authenticator {
 				screenName, userId, password);
 
 			if (result == SUCCESS) {
-				if (ldapImportConfiguration.importUserPasswordEnabled()) {
-					return result;
-				}
-
-				return Authenticator.SKIP_LIFERAY_CHECK;
+				return _getAuthenticatedResult(companyId, password);
 			}
 		}
 
@@ -646,6 +663,36 @@ public class LDAPAuth implements Authenticator {
 
 		if (ldapAuthConfiguration.required()) {
 			return failureCode;
+		}
+
+		return SUCCESS;
+	}
+
+	private int _getAuthenticatedResult(long companyId, String password) {
+		LDAPImportConfiguration ldapImportConfiguration =
+			_ldapImportConfigurationProvider.getConfiguration(companyId);
+
+		if (!ldapImportConfiguration.importUserPasswordEnabled()) {
+			if (_log.isDebugEnabled()) {
+				_log.debug("Import user password is disabled");
+			}
+
+			return Authenticator.SKIP_LIFERAY_CHECK;
+		}
+
+		if (FIPSModeValidator.isNotAllowedPassword(password)) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(
+					"Password must be at least " +
+						FIPSModeValidator.PASSWORDS_MIN_LENGTH +
+							" bytes in FIPS mode");
+			}
+
+			return Authenticator.SKIP_LIFERAY_CHECK;
+		}
+
+		if (_log.isDebugEnabled()) {
+			_log.debug("Import user password is enabled");
 		}
 
 		return SUCCESS;
@@ -791,9 +838,6 @@ public class LDAPAuth implements Authenticator {
 		policyOption = ReferencePolicyOption.GREEDY
 	)
 	private volatile SafePortalLDAP _portalLDAP;
-
-	@Reference
-	private Props _props;
 
 	@Reference(
 		target = "(factoryPid=com.liferay.portal.security.ldap.configuration.SystemLDAPConfiguration)"

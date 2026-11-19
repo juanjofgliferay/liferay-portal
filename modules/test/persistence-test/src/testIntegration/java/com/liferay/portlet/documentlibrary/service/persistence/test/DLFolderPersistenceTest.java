@@ -111,11 +111,7 @@ public class DLFolderPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		DLFolder newDLFolder = _persistence.create(pk);
-
-		newDLFolder.setMvccVersion(RandomTestUtil.nextLong());
+		DLFolder newDLFolder = addDLFolder();
 
 		newDLFolder.setCtCollectionId(RandomTestUtil.nextLong());
 
@@ -165,7 +161,9 @@ public class DLFolderPersistenceTest {
 
 		newDLFolder.setStatusDate(RandomTestUtil.nextDate());
 
-		_dlFolders.add(_persistence.update(newDLFolder));
+		newDLFolder = _persistence.update(newDLFolder);
+
+		_dlFolders.add(newDLFolder);
 
 		DLFolder existingDLFolder = _persistence.findByPrimaryKey(
 			newDLFolder.getPrimaryKey());
@@ -282,13 +280,6 @@ public class DLFolderPersistenceTest {
 	}
 
 	@Test
-	public void testCountByGroupId() throws Exception {
-		_persistence.countByGroupId(RandomTestUtil.nextLong());
-
-		_persistence.countByGroupId(0L);
-	}
-
-	@Test
 	public void testCountByCompanyId() throws Exception {
 		_persistence.countByCompanyId(RandomTestUtil.nextLong());
 
@@ -311,14 +302,6 @@ public class DLFolderPersistenceTest {
 	}
 
 	@Test
-	public void testCountByC_NotS() throws Exception {
-		_persistence.countByC_NotS(
-			RandomTestUtil.nextLong(), RandomTestUtil.nextInt());
-
-		_persistence.countByC_NotS(0L, 0);
-	}
-
-	@Test
 	public void testCountByR_M() throws Exception {
 		_persistence.countByR_M(
 			RandomTestUtil.nextLong(), RandomTestUtil.randomBoolean());
@@ -332,15 +315,6 @@ public class DLFolderPersistenceTest {
 			RandomTestUtil.nextLong(), RandomTestUtil.nextLong());
 
 		_persistence.countByR_P(0L, 0L);
-	}
-
-	@Test
-	public void testCountByP_N() throws Exception {
-		_persistence.countByP_N(RandomTestUtil.nextLong(), "");
-
-		_persistence.countByP_N(0L, "null");
-
-		_persistence.countByP_N(0L, (String)null);
 	}
 
 	@Test
@@ -369,15 +343,6 @@ public class DLFolderPersistenceTest {
 		_persistence.countByG_P_N(0L, 0L, "null");
 
 		_persistence.countByG_P_N(0L, 0L, (String)null);
-	}
-
-	@Test
-	public void testCountByGtF_C_P_NotS() throws Exception {
-		_persistence.countByGtF_C_P_NotS(
-			RandomTestUtil.nextLong(), RandomTestUtil.nextLong(),
-			RandomTestUtil.nextLong(), RandomTestUtil.nextInt());
-
-		_persistence.countByGtF_C_P_NotS(0L, 0L, 0L, 0);
 	}
 
 	@Test
@@ -472,12 +437,6 @@ public class DLFolderPersistenceTest {
 	public void testFindAll() throws Exception {
 		_persistence.findAll(
 			QueryUtil.ALL_POS, QueryUtil.ALL_POS, getOrderByComparator());
-	}
-
-	@Test
-	public void testFilterFindByGroupId() throws Exception {
-		_persistence.filterFindByGroupId(
-			0, QueryUtil.ALL_POS, QueryUtil.ALL_POS, getOrderByComparator());
 	}
 
 	protected OrderByComparator<DLFolder> getOrderByComparator() {
@@ -799,8 +758,6 @@ public class DLFolderPersistenceTest {
 
 		DLFolder dlFolder = _persistence.create(pk);
 
-		dlFolder.setMvccVersion(RandomTestUtil.nextLong());
-
 		dlFolder.setCtCollectionId(RandomTestUtil.nextLong());
 
 		dlFolder.setUuid(RandomTestUtil.randomString());
@@ -859,3 +816,4 @@ public class DLFolderPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-2143462983

@@ -19,10 +19,8 @@ import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.model.PersistedModel;
 import com.liferay.portal.kernel.model.SystemEventConstants;
 import com.liferay.portal.kernel.search.BaseModelSearchResult;
-import com.liferay.portal.kernel.search.Hits;
 import com.liferay.portal.kernel.search.Indexable;
 import com.liferay.portal.kernel.search.IndexableType;
-import com.liferay.portal.kernel.search.SearchContext;
 import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.service.BaseLocalService;
 import com.liferay.portal.kernel.service.PersistedModelLocalService;
@@ -90,6 +88,11 @@ public interface CommerceTermEntryLocalService
 			boolean neverExpire, Map<Locale, String> labelMap, String name,
 			double priority, String type, String typeSettings,
 			ServiceContext serviceContext)
+		throws PortalException;
+
+	public CTermEntryLocalization addCTermEntryLocalization(
+			CommerceTermEntry commerceTermEntry, String languageId,
+			String description, String label)
 		throws PortalException;
 
 	public void checkCommerceTermEntries() throws PortalException;
@@ -319,6 +322,11 @@ public interface CommerceTermEntryLocalService
 		long commerceShippingOptionId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public int getDeliveryCommerceTermEntriesCount(
+		long companyId, long commerceOrderTypeId,
+		long commerceShippingOptionId);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public ExportActionableDynamicQuery getExportActionableDynamicQuery(
 		PortletDataContext portletDataContext);
 
@@ -337,6 +345,11 @@ public interface CommerceTermEntryLocalService
 		long companyId, long commerceOrderTypeId,
 		long commercePaymentMethodGroupRelId);
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public int getPaymentCommerceTermEntriesCount(
+		long companyId, long commerceOrderTypeId,
+		long commercePaymentMethodGroupRelId);
+
 	/**
 	 * @throws PortalException
 	 */
@@ -344,9 +357,6 @@ public interface CommerceTermEntryLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public PersistedModel getPersistedModel(Serializable primaryKeyObj)
 		throws PortalException;
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public Hits search(SearchContext searchContext);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public BaseModelSearchResult<CommerceTermEntry> searchCommerceTermEntries(
@@ -402,3 +412,4 @@ public interface CommerceTermEntryLocalService
 		throws PortalException;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1905377305

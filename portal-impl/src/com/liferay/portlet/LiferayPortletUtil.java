@@ -10,10 +10,10 @@ import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
 import com.liferay.portlet.internal.PortletRequestImpl;
 import com.liferay.portlet.internal.PortletResponseImpl;
 
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
-import javax.portlet.filter.PortletRequestWrapper;
-import javax.portlet.filter.PortletResponseWrapper;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+import jakarta.portlet.filter.PortletRequestWrapper;
+import jakarta.portlet.filter.PortletResponseWrapper;
 
 /**
  * @author Neil Griffin
@@ -28,17 +28,16 @@ public class LiferayPortletUtil {
 		}
 
 		while (!(portletRequest instanceof PortletRequestImpl)) {
-			if (portletRequest instanceof PortletRequestWrapper) {
-				PortletRequestWrapper portletRequestWrapper =
-					(PortletRequestWrapper)portletRequest;
-
-				portletRequest = portletRequestWrapper.getRequest();
-			}
-			else {
+			if (!(portletRequest instanceof PortletRequestWrapper)) {
 				throw new RuntimeException(
 					"Unable to unwrap the portlet request from " +
 						portletRequest.getClass());
 			}
+
+			PortletRequestWrapper portletRequestWrapper =
+				(PortletRequestWrapper)portletRequest;
+
+			portletRequest = portletRequestWrapper.getRequest();
 		}
 
 		return (PortletRequestImpl)portletRequest;
@@ -52,17 +51,16 @@ public class LiferayPortletUtil {
 		}
 
 		while (!(portletResponse instanceof PortletResponseImpl)) {
-			if (portletResponse instanceof PortletResponseWrapper) {
-				PortletResponseWrapper portletResponseWrapper =
-					(PortletResponseWrapper)portletResponse;
-
-				portletResponse = portletResponseWrapper.getResponse();
-			}
-			else {
+			if (!(portletResponse instanceof PortletResponseWrapper)) {
 				throw new RuntimeException(
 					"Unable to unwrap the portlet response from " +
 						portletResponse.getClass());
 			}
+
+			PortletResponseWrapper portletResponseWrapper =
+				(PortletResponseWrapper)portletResponse;
+
+			portletResponse = portletResponseWrapper.getResponse();
 		}
 
 		return (PortletResponseImpl)portletResponse;

@@ -33,7 +33,7 @@ if (portletTitleBasedNavigation) {
 }
 %>
 
-<div <%= portletTitleBasedNavigation ? "class=\"container-fluid container-fluid-max-xl container-form-lg\"" : StringPool.BLANK %>>
+<div <%= portletTitleBasedNavigation ? "class=\"container-fluid container-fluid-max-lg container-form-lg\"" : StringPool.BLANK %>>
 	<c:if test="<%= !portletTitleBasedNavigation %>">
 		<liferay-ui:header
 			backURL="<%= redirect %>"
@@ -99,7 +99,7 @@ if (portletTitleBasedNavigation) {
 								<liferay-util:include page="/document_library/upload_multiple_file_entries_resources.jsp" servletContext="<%= application %>" />
 							</div>
 
-							<span aria-hidden="true" class="loading-animation loading-animation-secondary loading-animation-sm hide" id="<portlet:namespace />loading"></span>
+							<span aria-hidden="true" class="hide loading-animation loading-animation-secondary loading-animation-sm" id="<portlet:namespace />loading"></span>
 						</div>
 
 						<%
@@ -108,9 +108,7 @@ if (portletTitleBasedNavigation) {
 						PortalUtil.addPortletBreadcrumbEntry(request, LanguageUtil.get(request, "add-multiple-file-entries"), currentURL);
 						%>
 
-						<aui:script require="frontend-js-web/index as frontendJsWeb">
-							var {runScriptsInElement} = frontendJsWeb;
-
+						<aui:script sandbox="<%= true %>">
 							Liferay.on('tempFileRemoved', () => {
 								Liferay.Util.openToast({
 									message:
@@ -208,6 +206,12 @@ if (portletTitleBasedNavigation) {
 														item.fileName +
 														')';
 												}
+
+												Liferay.fire('fileEntrySaved', {
+													groupId: Liferay.ThemeDisplay.getScopeGroupId(),
+													fileEntryId: item.fileEntryId,
+													fileName: item.fileName,
+												});
 											}
 											else {
 												cssClass = 'upload-error';
@@ -231,7 +235,9 @@ if (portletTitleBasedNavigation) {
 											.then((response) => {
 												commonFileMetadataContainer.innerHTML = response;
 
-												runScriptsInElement(commonFileMetadataContainer);
+												Liferay.Util.runScriptsInElement(
+													commonFileMetadataContainer
+												);
 											});
 
 										Liferay.fire('filesSaved');
@@ -262,6 +268,7 @@ if (portletTitleBasedNavigation) {
 										});
 
 										commonFileMetadataContainer.classList.remove('hide');
+										loading.classList.add('hide');
 									});
 							}
 

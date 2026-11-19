@@ -24,24 +24,24 @@ interface ITabProps {
 	columns: Array<keyof TRawItem>;
 	description?: string;
 	emptyState: TEmptyState;
-	enableCheckboxs?: boolean;
 	header: TColumn[];
 	initialIds: number[];
 	onItemsChange: (ids: number[]) => void;
 	property: TProperty;
 	requestFn: (params: TTableRequestParams) => Promise<any>;
+	type: string;
 }
 
-const Tab: React.FC<ITabProps> = ({
+const Tab: React.FC<{children?: React.ReactNode | undefined} & ITabProps> = ({
 	columns,
 	description,
 	emptyState,
-	enableCheckboxs = true,
 	header,
 	initialIds,
 	onItemsChange,
 	property,
 	requestFn,
+	type,
 }) => (
 	<>
 		{description && (
@@ -52,7 +52,6 @@ const Tab: React.FC<ITabProps> = ({
 
 		<Table<TRawItem>
 			columns={header}
-			disabled={!enableCheckboxs}
 			emptyState={emptyState}
 			mapperItems={(items) => {
 				return items.map((item) => ({
@@ -64,7 +63,7 @@ const Tab: React.FC<ITabProps> = ({
 
 						return {
 							id: column,
-							value,
+							value: decodeURIComponent(value),
 						};
 					}),
 					disabled: !!(
@@ -75,6 +74,7 @@ const Tab: React.FC<ITabProps> = ({
 			}}
 			onItemsChange={(items) => onItemsChange(getIds(items, initialIds))}
 			requestFn={requestFn}
+			type={type}
 		/>
 	</>
 );

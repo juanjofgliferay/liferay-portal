@@ -6,17 +6,12 @@
 package com.liferay.portal.model.impl;
 
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.log.Log;
-import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.LayoutSet;
 import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
 import com.liferay.portal.kernel.service.LayoutSetLocalServiceUtil;
-import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.UnicodeProperties;
-import com.liferay.sites.kernel.util.Sites;
-
-import java.io.IOException;
+import com.liferay.portal.kernel.util.UnicodePropertiesBuilder;
 
 /**
  * @author Brian Wing Shun Chan
@@ -43,39 +38,14 @@ public class LayoutSetPrototypeImpl extends LayoutSetPrototypeBaseImpl {
 			getGroup().getGroupId(), true);
 	}
 
-	/**
-	 * Returns the number of failed merge attempts for the layout set prototype
-	 * since its last reset or update.
-	 *
-	 * @return the number of failed merge attempts for the layout set prototype
-	 */
-	@Override
-	public int getMergeFailCount() throws PortalException {
-		if (getLayoutSetPrototypeId() == 0) {
-			return 0;
-		}
-
-		LayoutSet layoutSetPrototypeLayoutSet = getLayoutSet();
-
-		UnicodeProperties layoutSetPrototypeSettingsUnicodeProperties =
-			layoutSetPrototypeLayoutSet.getSettingsProperties();
-
-		return GetterUtil.getInteger(
-			layoutSetPrototypeSettingsUnicodeProperties.getProperty(
-				Sites.MERGE_FAIL_COUNT));
-	}
-
 	@Override
 	public UnicodeProperties getSettingsProperties() {
 		if (_settingsUnicodeProperties == null) {
-			_settingsUnicodeProperties = new UnicodeProperties(true);
-
-			try {
-				_settingsUnicodeProperties.load(super.getSettings());
-			}
-			catch (IOException ioException) {
-				_log.error(ioException);
-			}
+			_settingsUnicodeProperties = UnicodePropertiesBuilder.create(
+				true
+			).load(
+				super.getSettings()
+			).build();
 		}
 
 		return _settingsUnicodeProperties;
@@ -108,9 +78,6 @@ public class LayoutSetPrototypeImpl extends LayoutSetPrototypeBaseImpl {
 
 		super.setSettings(settingsUnicodeProperties.toString());
 	}
-
-	private static final Log _log = LogFactoryUtil.getLog(
-		LayoutSetPrototypeImpl.class);
 
 	private UnicodeProperties _settingsUnicodeProperties;
 

@@ -11,13 +11,31 @@ import com.liferay.headless.discovery.internal.configuration.HeadlessDiscoveryCo
 import com.liferay.headless.discovery.internal.dto.Hint;
 import com.liferay.headless.discovery.internal.dto.Resource;
 import com.liferay.headless.discovery.internal.dto.Resources;
+import com.liferay.learn.LearnMessageUtil;
 import com.liferay.petra.function.transform.TransformUtil;
+import com.liferay.petra.io.StreamUtil;
+import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
 import com.liferay.portal.kernel.module.util.BundleUtil;
 import com.liferay.portal.kernel.security.auth.AuthTokenUtil;
 import com.liferay.portal.kernel.util.Portal;
-import com.liferay.portal.kernel.util.StreamUtil;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.vulcan.application.HeadlessApplicationProvider;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.HeaderParam;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.Application;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.StreamingOutput;
+import jakarta.ws.rs.core.UriInfo;
 
 import java.io.InputStream;
 
@@ -31,32 +49,12 @@ import java.util.Scanner;
 import java.util.Set;
 import java.util.TreeMap;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import javax.ws.rs.GET;
-import javax.ws.rs.HeaderParam;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.Application;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.StreamingOutput;
-import javax.ws.rs.core.UriInfo;
-
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Modified;
 import org.osgi.service.component.annotations.Reference;
-import org.osgi.service.jaxrs.runtime.JaxrsServiceRuntime;
-import org.osgi.service.jaxrs.runtime.dto.ApplicationDTO;
-import org.osgi.service.jaxrs.runtime.dto.ResourceDTO;
-import org.osgi.service.jaxrs.runtime.dto.ResourceMethodInfoDTO;
-import org.osgi.service.jaxrs.runtime.dto.RuntimeDTO;
 import org.osgi.service.jaxrs.whiteboard.JaxrsWhiteboardConstants;
 
 /**
@@ -97,6 +95,7 @@ public class HeadlessDiscoveryAPIApplication extends Application {
 			}
 
 			try (InputStream urlInputStream = url.openStream();
+
 				Scanner scanner = new Scanner(urlInputStream, "UTF-8")) {
 
 				scanner.useDelimiter("\\A");
@@ -106,12 +105,23 @@ public class HeadlessDiscoveryAPIApplication extends Application {
 					AuthTokenUtil.getToken(httpServletRequest));
 
 				html = StringUtil.replace(
+					html, "href=\"headless-discovery-web-min.css\"",
+					"href=\"" + _portal.getPathContext() +
+						"/o/api/headless-discovery-web-min.css\"");
+				html = StringUtil.replace(
 					html, "href=\"main.css\"",
 					"href=\"" + _portal.getPathContext() + "/o/api/main.css\"");
 				html = StringUtil.replace(
 					html, "src=\"headless-discovery-web-min.js\"",
 					"src=\"" + _portal.getPathContext() +
 						"/o/api/headless-discovery-web-min.js\"");
+				html = StringUtil.replace(
+					html, "</head>",
+					StringBundler.concat(
+						"<script>window.learnResources = ",
+						LearnMessageUtil.getJSONObject(
+							"headless-discovery-web"),
+						";</script></head>"));
 
 				String finalHtml = html;
 
@@ -122,13 +132,14 @@ public class HeadlessDiscoveryAPIApplication extends Application {
 			}
 		}
 
-		Map<String, List<ResourceMethodInfoDTO>> resourceMethodInfoDTOsMap =
-			_getResourceMethodInfoDTOsMap();
+		Map<String, List<HeadlessApplicationProvider.ResourceMethod>>
+			resourceMethodsMap = _getResourceMethodsMap(
+				_portal.getCompanyId(httpServletRequest));
 
 		Map<String, Resource> resourcesMap = new TreeMap<>();
 
-		for (Map.Entry<String, List<ResourceMethodInfoDTO>> entry :
-				resourceMethodInfoDTOsMap.entrySet()) {
+		for (Map.Entry<String, List<HeadlessApplicationProvider.ResourceMethod>>
+				entry : resourceMethodsMap.entrySet()) {
 
 			resourcesMap.put(entry.getKey(), _getResource(entry.getValue()));
 		}
@@ -184,7 +195,7 @@ public class HeadlessDiscoveryAPIApplication extends Application {
 				}
 			});
 
-		if (parameter.contains("main.css")) {
+		if (parameter.endsWith(".css")) {
 			responseBuilder.type("text/css");
 		}
 		else {
@@ -209,20 +220,22 @@ public class HeadlessDiscoveryAPIApplication extends Application {
 	}
 
 	private Resource _getResource(
-		List<ResourceMethodInfoDTO> resourceMethodInfoDTOS) {
+		List<HeadlessApplicationProvider.ResourceMethod> resourceMethods) {
 
 		Resource resource = new Resource();
 
-		ResourceMethodInfoDTO resourceMethodInfoDTO =
-			resourceMethodInfoDTOS.get(0);
+		HeadlessApplicationProvider.ResourceMethod resourceMethod =
+			resourceMethods.get(0);
 
 		resource.setHint(
 			new Hint(
 				TransformUtil.transformToArray(
-					resourceMethodInfoDTOS, dto -> dto.method, String.class),
-				resourceMethodInfoDTO.producingMimeType));
+					resourceMethods,
+					HeadlessApplicationProvider.ResourceMethod::getMethod,
+					String.class),
+				resourceMethod.getProducingMimeTypes()));
 
-		String resourcePath = resourceMethodInfoDTO.path;
+		String resourcePath = resourceMethod.getPath();
 
 		if (resourcePath.contains("{")) {
 			resource.setHrefTemplate(resourcePath);
@@ -234,42 +247,38 @@ public class HeadlessDiscoveryAPIApplication extends Application {
 		return resource;
 	}
 
-	private Map<String, List<ResourceMethodInfoDTO>>
-		_getResourceMethodInfoDTOsMap() {
+	private Map<String, List<HeadlessApplicationProvider.ResourceMethod>>
+		_getResourceMethodsMap(long companyId) {
 
-		Map<String, List<ResourceMethodInfoDTO>> resourcesMap = new TreeMap<>();
+		Map<String, List<HeadlessApplicationProvider.ResourceMethod>>
+			resourceMethodsMap = new TreeMap<>();
 
 		String absolutePath = String.valueOf(_uriInfo.getAbsolutePath());
 
 		String serverURL = StringUtil.removeSubstring(absolutePath, "/api/");
 
-		RuntimeDTO runtimeDTO = _jaxrsServiceRuntime.getRuntimeDTO();
+		for (HeadlessApplicationProvider.Application application :
+				_headlessApplicationProvider.getApplications(companyId)) {
 
-		for (ApplicationDTO applicationDTO : runtimeDTO.applicationDTOs) {
-			for (ResourceDTO resourceDTO : applicationDTO.resourceDTOs) {
-				for (ResourceMethodInfoDTO resourceMethodInfoDTO :
-						resourceDTO.resourceMethods) {
+			for (HeadlessApplicationProvider.ResourceMethod resourceMethod :
+					application.getResourceMethods()) {
 
-					resourceMethodInfoDTO.path =
-						applicationDTO.base + resourceMethodInfoDTO.path;
+				String path = serverURL + resourceMethod.getPath();
 
-					String path = serverURL + resourceMethodInfoDTO.path;
+				List<HeadlessApplicationProvider.ResourceMethod>
+					resourceMethods = resourceMethodsMap.get(path);
 
-					List<ResourceMethodInfoDTO> resourceMethodInfoDTOS =
-						resourcesMap.get(path);
-
-					if (resourceMethodInfoDTOS == null) {
-						resourceMethodInfoDTOS = new ArrayList<>();
-					}
-
-					resourceMethodInfoDTOS.add(resourceMethodInfoDTO);
-
-					resourcesMap.put(path, resourceMethodInfoDTOS);
+				if (resourceMethods == null) {
+					resourceMethods = new ArrayList<>();
 				}
+
+				resourceMethods.add(resourceMethod);
+
+				resourceMethodsMap.put(path, resourceMethods);
 			}
 		}
 
-		return resourcesMap;
+		return resourceMethodsMap;
 	}
 
 	private URL _getURL(String parameter) {
@@ -284,11 +293,12 @@ public class HeadlessDiscoveryAPIApplication extends Application {
 	}
 
 	private volatile BundleContext _bundleContext;
-	private volatile HeadlessDiscoveryConfiguration
-		_headlessDiscoveryConfiguration;
 
 	@Reference
-	private JaxrsServiceRuntime _jaxrsServiceRuntime;
+	private HeadlessApplicationProvider _headlessApplicationProvider;
+
+	private volatile HeadlessDiscoveryConfiguration
+		_headlessDiscoveryConfiguration;
 
 	@Reference
 	private Portal _portal;

@@ -1,0 +1,71 @@
+/**
+ * SPDX-FileCopyrightText: (c) 2026 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
+ */
+
+import {expect, mergeTests} from '@playwright/test';
+
+import {dataApiHelpersTest} from '../../../../fixtures/dataApiHelpersTest';
+import {featureFlagsTest} from '../../../../fixtures/featureFlagsTest';
+import {loginTest} from '../../../../fixtures/loginTest';
+import {clickAndExpectToBeVisible} from '../../../../utils/clickAndExpectToBeVisible';
+import getRandomString from '../../../../utils/getRandomString';
+import {exportImportPagesTest} from '../../../export-import-web/revamp/fixtures/exportImportPagesTest';
+import {cmsPagesTest} from '../fixtures/cmsPagesTest';
+
+const test = mergeTests(
+	cmsPagesTest,
+	dataApiHelpersTest,
+	exportImportPagesTest,
+	featureFlagsTest({
+		'LPD-57655': {enabled: true},
+	}),
+	loginTest()
+);
+
+test(
+	'System folders L_CONTENTS and L_FILES are excluded from export results in a new CMS Space',
+	{tag: '@LPD-83026'},
+	async ({
+		apiHelpers,
+		exportImportDataSelectionPage,
+		exportImportPage,
+		homePage,
+		page,
+	}) => {
+		const space = await apiHelpers.headlessAssetLibrary.createSpace();
+
+		const userFolderName = `User Folder ${getRandomString()}`;
+
+		await apiHelpers.objectFolder.createObjectEntryFolder({
+			parentObjectEntryFolderExternalReferenceCode: 'L_CONTENTS',
+			scopeKey: space.siteId,
+			title: userFolderName,
+		});
+
+		await homePage.goto();
+
+		await clickAndExpectToBeVisible({
+			autoClick: true,
+			target: page.getByRole('menuitem', {name: 'All Spaces'}),
+			trigger: page.getByRole('menuitem', {exact: true, name: 'Spaces'}),
+		});
+
+		await page.getByRole('link', {exact: true, name: space.name}).click();
+
+		await page.getByRole('button', {name: 'More Actions'}).waitFor();
+
+		await clickAndExpectToBeVisible({
+			autoClick: true,
+			target: page.getByRole('menuitem', {name: 'Export'}),
+			trigger: page.getByRole('button', {name: 'More Actions'}),
+		});
+
+		await exportImportPage.clickNew();
+
+		const exportableItems =
+			await exportImportDataSelectionPage.getExportableItems();
+
+		expect(exportableItems.get('Object Entry Folders')).toBe(1);
+	}
+);

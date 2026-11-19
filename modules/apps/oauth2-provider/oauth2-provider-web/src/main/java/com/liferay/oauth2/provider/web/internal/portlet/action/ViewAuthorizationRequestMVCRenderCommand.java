@@ -5,7 +5,7 @@
 
 package com.liferay.oauth2.provider.web.internal.portlet.action;
 
-import com.liferay.document.library.util.DLURLHelper;
+import com.liferay.document.library.helper.DLURLHelper;
 import com.liferay.oauth2.provider.exception.NoSuchOAuth2ApplicationException;
 import com.liferay.oauth2.provider.model.OAuth2Application;
 import com.liferay.oauth2.provider.model.OAuth2ApplicationScopeAliases;
@@ -36,6 +36,12 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.PortletException;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -45,12 +51,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import javax.portlet.PortletException;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
-
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
@@ -59,9 +59,8 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + OAuth2ProviderPortletKeys.OAUTH2_AUTHORIZE,
-		"mvc.command.name=/",
-		"mvc.command.name=/oauth2_provider/view_authorization_request"
+		"jakarta.portlet.name=" + OAuth2ProviderPortletKeys.OAUTH2_AUTHORIZE,
+		"mvc.command.name=/"
 	},
 	service = MVCRenderCommand.class
 )
@@ -180,11 +179,13 @@ public class ViewAuthorizationRequestMVCRenderCommand
 		while (enumeration.hasMoreElements()) {
 			String name = enumeration.nextElement();
 
-			if (name.startsWith("oauth2_")) {
-				oAuth2Parameters.put(
-					name.substring("oauth2_".length()),
-					ParamUtil.getString(httpServletRequest, name));
+			if (!name.startsWith("oauth2_")) {
+				continue;
 			}
+
+			oAuth2Parameters.put(
+				name.substring("oauth2_".length()),
+				ParamUtil.getString(httpServletRequest, name));
 		}
 
 		return oAuth2Parameters;
@@ -221,9 +222,11 @@ public class ViewAuthorizationRequestMVCRenderCommand
 					oAuth2ScopeGrant.getApplicationName(),
 					oAuth2ScopeGrant.getScope());
 
-			if (liferayOAuth2Scopes.contains(liferayOAuth2Scope)) {
-				assignableScopes.addLiferayOAuth2Scope(liferayOAuth2Scope);
+			if (!liferayOAuth2Scopes.contains(liferayOAuth2Scope)) {
+				continue;
 			}
+
+			assignableScopes.addLiferayOAuth2Scope(liferayOAuth2Scope);
 		}
 	}
 

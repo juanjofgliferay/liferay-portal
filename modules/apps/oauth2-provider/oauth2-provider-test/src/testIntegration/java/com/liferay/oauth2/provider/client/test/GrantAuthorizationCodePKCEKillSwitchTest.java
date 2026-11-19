@@ -10,10 +10,13 @@ import com.liferay.oauth2.provider.constants.GrantType;
 import com.liferay.oauth2.provider.internal.test.TestAnnotatedApplication;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
+import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
 import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 
 import java.util.Collections;
@@ -44,10 +47,11 @@ public class GrantAuthorizationCodePKCEKillSwitchTest
 			"unauthorized_client",
 			parseErrorParameter(
 				getCodeResponse(
-					"test@liferay.com", "test", null,
+					_user.getEmailAddress(), PropsValues.DEFAULT_ADMIN_PASSWORD,
+					null,
 					getCodeFunction(
 						webTarget -> webTarget.queryParam(
-							"client_id", "oauthTestApplicationCodePKCE"
+							"client_id", _CLIENT_ID_CODE_PKCE
 						).queryParam(
 							"code_challenge", "NotChecked"
 						).queryParam(
@@ -55,9 +59,18 @@ public class GrantAuthorizationCodePKCEKillSwitchTest
 						)))));
 	}
 
-	public static class
-		GrantKillClientCredentialsSwitchTestPreparatorBundleActivator
-			extends BaseTestPreparatorBundleActivator {
+	@Override
+	protected BundleActivator getBundleActivator() {
+		return new GrantKillClientCredentialsSwitchTestPreparatorBundleActivator();
+	}
+
+	private static final String _CLIENT_ID_CODE_PKCE =
+		RandomTestUtil.randomString();
+
+	private User _user;
+
+	private class GrantKillClientCredentialsSwitchTestPreparatorBundleActivator
+		extends BaseTestPreparatorBundleActivator {
 
 		@Override
 		protected void prepareTest() throws Exception {
@@ -65,9 +78,9 @@ public class GrantAuthorizationCodePKCEKillSwitchTest
 				MapUtil.singletonDictionary(
 					"oauth2.allow.authorization.code.pkce.grant", false));
 
-			long defaultCompanyId = PortalUtil.getDefaultCompanyId();
+			long companyId = TestPropsValues.getCompanyId();
 
-			User user = UserTestUtil.getAdminUser(defaultCompanyId);
+			_user = UserTestUtil.getAdminUser(companyId);
 
 			registerJaxRsApplication(
 				new TestAnnotatedApplication(), "annotated",
@@ -76,17 +89,14 @@ public class GrantAuthorizationCodePKCEKillSwitchTest
 				).build());
 
 			createOAuth2ApplicationWithNone(
-				defaultCompanyId, user, "oauthTestApplicationCodePKCE",
+				companyId, _user, _CLIENT_ID_CODE_PKCE,
 				Collections.singletonList(GrantType.AUTHORIZATION_CODE_PKCE),
-				Collections.singletonList("http://redirecturi:8080"), false,
-				Collections.singletonList("everything"), false);
+				Collections.singletonList(
+					"http://redirecturi:" +
+						PortalUtil.getPortalServerPort(false)),
+				false, Collections.singletonList("everything"), false);
 		}
 
-	}
-
-	@Override
-	protected BundleActivator getBundleActivator() {
-		return new GrantKillClientCredentialsSwitchTestPreparatorBundleActivator();
 	}
 
 }

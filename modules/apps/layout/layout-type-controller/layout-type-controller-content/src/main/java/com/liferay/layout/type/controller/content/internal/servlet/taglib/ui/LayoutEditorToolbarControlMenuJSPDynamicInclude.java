@@ -21,13 +21,13 @@ import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 
 import java.util.Objects;
-
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -35,7 +35,10 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Chema Balsas
  */
-@Component(service = DynamicInclude.class)
+@Component(
+	property = "dynamic.include.key=com.liferay.product.navigation.taglib#/page.jsp#post",
+	service = DynamicInclude.class
+)
 public class LayoutEditorToolbarControlMenuJSPDynamicInclude
 	extends BaseJSPDynamicInclude {
 
@@ -97,12 +100,6 @@ public class LayoutEditorToolbarControlMenuJSPDynamicInclude
 		}
 
 		return true;
-	}
-
-	@Override
-	public void register(DynamicIncludeRegistry dynamicIncludeRegistry) {
-		dynamicIncludeRegistry.register(
-			"com.liferay.product.navigation.taglib#/page.jsp#post");
 	}
 
 	@Override

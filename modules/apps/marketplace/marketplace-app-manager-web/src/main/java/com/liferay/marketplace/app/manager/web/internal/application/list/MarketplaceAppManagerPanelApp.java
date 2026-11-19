@@ -24,12 +24,17 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"panel.app.order:Integer=200",
+		"panel.app.order:Integer=700",
 		"panel.category.key=" + PanelCategoryKeys.CONTROL_PANEL_SYSTEM
 	},
 	service = PanelApp.class
 )
 public class MarketplaceAppManagerPanelApp extends BasePanelApp {
+
+	@Override
+	public String getIcon() {
+		return "grid";
+	}
 
 	@Override
 	public Portlet getPortlet() {
@@ -56,7 +61,7 @@ public class MarketplaceAppManagerPanelApp extends BasePanelApp {
 	private Portal _portal;
 
 	@Reference(
-		target = "(javax.portlet.name=" + MarketplaceAppManagerPortletKeys.MARKETPLACE_APP_MANAGER + ")"
+		target = "(jakarta.portlet.name=" + MarketplaceAppManagerPortletKeys.MARKETPLACE_APP_MANAGER + ")"
 	)
 	private Portlet _portlet;
 

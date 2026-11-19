@@ -22,9 +22,9 @@ import com.liferay.portal.kernel.repository.model.FileVersion;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.util.MaintenanceUtil;
-import com.liferay.portal.util.PropsValues;
 
 import java.util.Collection;
 import java.util.List;
@@ -71,10 +71,12 @@ public class DocumentLibraryConvertProcess extends BaseConvertProcess {
 		for (String storeType : storeTypes) {
 			Class<?> clazz = _store.getClass();
 
-			if (!storeType.equals(clazz.getName())) {
-				sb.append(storeType);
-				sb.append(StringPool.SEMICOLON);
+			if (storeType.equals(clazz.getName())) {
+				continue;
 			}
+
+			sb.append(storeType);
+			sb.append(StringPool.SEMICOLON);
 		}
 
 		return new String[] {

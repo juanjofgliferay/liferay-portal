@@ -41,14 +41,14 @@ import com.liferay.portal.kernel.util.URLCodec;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.taglib.util.CustomAttributesUtil;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.WindowStateException;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.PortletURL;
-import javax.portlet.WindowStateException;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Alessio Antonio Rendina
@@ -116,7 +116,8 @@ public class CommercePriceListDisplayContext
 
 		return _commerceCurrencyLocalService.getCommerceCurrencies(
 			themeDisplay.getCompanyId(), true, QueryUtil.ALL_POS,
-			QueryUtil.ALL_POS, new CommerceCurrencyPriorityComparator(true));
+			QueryUtil.ALL_POS,
+			CommerceCurrencyPriorityComparator.getInstance(true));
 	}
 
 	public CommercePriceModifier getCommercePriceModifier()
@@ -328,22 +329,6 @@ public class CommercePriceListDisplayContext
 			encodedFilter;
 	}
 
-	public String getPriceModifierCategoriesAPIURL() throws PortalException {
-		return "/o/headless-commerce-admin-pricing/v2.0/price-modifiers/" +
-			getCommercePriceModifierId() +
-				"/price-modifier-categories?nestedFields=category";
-	}
-
-	public List<FDSActionDropdownItem>
-		getPriceModifierCategoryFDSActionDropdownItems() {
-
-		return ListUtil.fromArray(
-			new FDSActionDropdownItem(
-				null, "trash", "remove",
-				LanguageUtil.get(httpServletRequest, "remove"), "delete",
-				"delete", "headless"));
-	}
-
 	public String getPriceModifierCPDefinitionAPIURL() throws PortalException {
 		return "/o/headless-commerce-admin-pricing/v2.0/price-modifiers/" +
 			getCommercePriceModifierId() +
@@ -360,12 +345,20 @@ public class CommercePriceListDisplayContext
 				"delete", "headless"));
 	}
 
-	public String getPriceModifierPricingClassesAPIURL()
-		throws PortalException {
-
+	public String getPriceModifierCategoriesAPIURL() throws PortalException {
 		return "/o/headless-commerce-admin-pricing/v2.0/price-modifiers/" +
 			getCommercePriceModifierId() +
-				"/price-modifier-product-groups?nestedFields=productGroup";
+				"/price-modifier-categories?nestedFields=category";
+	}
+
+	public List<FDSActionDropdownItem>
+		getPriceModifierCategoryFDSActionDropdownItems() {
+
+		return ListUtil.fromArray(
+			new FDSActionDropdownItem(
+				null, "trash", "remove",
+				LanguageUtil.get(httpServletRequest, "remove"), "delete",
+				"delete", "headless"));
 	}
 
 	public List<FDSActionDropdownItem>
@@ -376,6 +369,14 @@ public class CommercePriceListDisplayContext
 				null, "trash", "remove",
 				LanguageUtil.get(httpServletRequest, "remove"), "delete",
 				"delete", "headless"));
+	}
+
+	public String getPriceModifierPricingClassesAPIURL()
+		throws PortalException {
+
+		return "/o/headless-commerce-admin-pricing/v2.0/price-modifiers/" +
+			getCommercePriceModifierId() +
+				"/price-modifier-product-groups?nestedFields=productGroup";
 	}
 
 	public CreationMenu getPriceModifiersCreationMenu() throws Exception {
@@ -396,8 +397,8 @@ public class CommercePriceListDisplayContext
 		return creationMenu;
 	}
 
-	public boolean hasCustomAttributesAvailable(String className, long classPK)
-		throws Exception {
+	public boolean hasCustomAttributesAvailable(
+		String className, long classPK) {
 
 		return CustomAttributesUtil.hasCustomAttributes(
 			commercePricingRequestHelper.getCompanyId(), className, classPK,

@@ -43,6 +43,7 @@ public class XMLCustomSQLStylingCheck extends BaseFileCheck {
 		_checkScalability(fileName, absolutePath, content);
 		_checkUnionStatement(fileName, content);
 
+		content = _fixBooleanValues(content);
 		content = _fixIncorrectAndOr(content);
 		content = _fixLowerCaseKeywords(content);
 		content = _fixMissingCountValue(content);
@@ -79,7 +80,7 @@ public class XMLCustomSQLStylingCheck extends BaseFileCheck {
 
 		while (matcher.find()) {
 			addMessage(
-				fileName, "Incorrect line break after ','",
+				fileName, "Incorrect line break after \",\"",
 				getLineNumber(content, matcher.start()));
 		}
 	}
@@ -92,8 +93,8 @@ public class XMLCustomSQLStylingCheck extends BaseFileCheck {
 		while (matcher.find()) {
 			addMessage(
 				fileName,
-				"There should be a line break after '" +
-					StringUtil.trim(matcher.group(1)),
+				"There should be a line break after \"" +
+					StringUtil.trim(matcher.group(1)) + "\"",
 				getLineNumber(content, matcher.end()));
 		}
 	}
@@ -135,13 +136,15 @@ public class XMLCustomSQLStylingCheck extends BaseFileCheck {
 			String nextLine = getLine(
 				content, getLineNumber(content, matcher.end()));
 
-			if (!nextLine.endsWith(" IN") && !nextLine.endsWith("EXISTS") &&
-				!nextLine.matches(".*\\s+BETWEEN\\s+\\?\\s+AND\\s+\\?.*")) {
+			if (nextLine.endsWith(" IN") || nextLine.endsWith("EXISTS") ||
+				nextLine.matches(".*\\s+BETWEEN\\s+\\?\\s+AND\\s+\\?.*")) {
 
-				addMessage(
-					fileName, "Missing parentheses",
-					getLineNumber(content, matcher.end()));
+				continue;
 			}
+
+			addMessage(
+				fileName, "Missing parentheses",
+				getLineNumber(content, matcher.end()));
 		}
 	}
 
@@ -167,7 +170,8 @@ public class XMLCustomSQLStylingCheck extends BaseFileCheck {
 					content.substring(endLineStartPos, endPos));
 
 				addMessage(
-					fileName, "There should be a line break after '" + s,
+					fileName,
+					"There should be a line break after \"" + s + "\"",
 					endLineNumber);
 
 				continue;
@@ -195,14 +199,16 @@ public class XMLCustomSQLStylingCheck extends BaseFileCheck {
 
 			int startLineTabCount = startPos - startLineStartPos;
 
-			if (endLineTabCount != startLineTabCount) {
-				addMessage(
-					fileName,
-					StringBundler.concat(
-						"Line starts with '", endLineTabCount, "' tabs, but '",
-						startLineTabCount, "' tabs are expected"),
-					endLineNumber);
+			if (endLineTabCount == startLineTabCount) {
+				continue;
 			}
+
+			addMessage(
+				fileName,
+				StringBundler.concat(
+					"Line starts with \"", endLineTabCount, "\" tabs, but \"",
+					startLineTabCount, "\" tabs are expected"),
+				endLineNumber);
 		}
 	}
 
@@ -231,15 +237,16 @@ public class XMLCustomSQLStylingCheck extends BaseFileCheck {
 
 				String entityName = id.substring(y + 1, x);
 
-				if (!isExcludedPath(
+				if (isExcludedPath(
 						_CUSTOM_FINDER_SCALABILITY_EXCLUDES, absolutePath,
 						entityName)) {
 
-					addMessage(
-						fileName,
-						"Avoid using WHERE ... NOT IN: " + id +
-							", see LPS-51315");
+					continue;
 				}
+
+				addMessage(
+					fileName,
+					"Avoid using WHERE ... NOT IN: " + id + ", see LPS-51315");
 			}
 		}
 	}
@@ -268,12 +275,22 @@ public class XMLCustomSQLStylingCheck extends BaseFileCheck {
 
 			String afterUnionChar = matcher.group(4);
 
-			if (afterUnionChar.equals(StringPool.OPEN_PARENTHESIS)) {
-				addMessage(
-					fileName, "Do not use parentheses after UNION",
-					getLineNumber(content, matcher.start(3)));
+			if (!afterUnionChar.equals(StringPool.OPEN_PARENTHESIS)) {
+				continue;
 			}
+
+			addMessage(
+				fileName, "Do not use parentheses after UNION",
+				getLineNumber(content, matcher.start(3)));
 		}
+	}
+
+	private String _fixBooleanValues(String content) {
+		content = content.replaceAll(
+			"(?i)(=\\s*)(false)\\b", "$1[\\$FALSE\\$]");
+		content = content.replaceAll("(?i)(=\\s*)(true)\\b", "$1[\\$TRUE\\$]");
+
+		return content;
 	}
 
 	private String _fixIncorrectAndOr(String content) {
@@ -309,10 +326,12 @@ public class XMLCustomSQLStylingCheck extends BaseFileCheck {
 				int level = getLevel(
 					content.substring(0, matcher.start()), "<![CDATA[", "]]>");
 
-				if (level != 0) {
-					content = StringUtil.replaceFirst(
-						content, matcher.group(1), keyword, matcher.start());
+				if (level == 0) {
+					continue;
 				}
+
+				content = StringUtil.replaceFirst(
+					content, matcher.group(1), keyword, matcher.start());
 			}
 		}
 

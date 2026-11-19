@@ -1,0 +1,15 @@
+.input-list-root {
+	&.disabled {
+		input {
+			border-color: $lightBackground;
+			color: $mainLighten52;
+			cursor: not-allowed;
+		}
+	}
+
+	.form-feedback-group {
+		.form-feedback-indicator {
+			font-size: 16px;
+		}
+	}
+}

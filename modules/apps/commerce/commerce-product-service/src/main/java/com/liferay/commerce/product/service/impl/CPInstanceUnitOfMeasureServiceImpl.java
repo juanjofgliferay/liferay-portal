@@ -8,10 +8,12 @@ package com.liferay.commerce.product.service.impl;
 import com.liferay.commerce.product.model.CPInstance;
 import com.liferay.commerce.product.model.CPInstanceUnitOfMeasure;
 import com.liferay.commerce.product.model.CommerceCatalog;
-import com.liferay.commerce.product.service.CPInstanceLocalService;
 import com.liferay.commerce.product.service.CommerceCatalogLocalService;
 import com.liferay.commerce.product.service.base.CPInstanceUnitOfMeasureServiceBaseImpl;
+import com.liferay.commerce.product.service.persistence.CPInstancePersistence;
+import com.liferay.commerce.product.util.comparator.CPInstanceUnitOfMeasurePriorityComparator;
 import com.liferay.portal.aop.AopService;
+import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
@@ -40,26 +42,29 @@ import org.osgi.service.component.annotations.Reference;
 public class CPInstanceUnitOfMeasureServiceImpl
 	extends CPInstanceUnitOfMeasureServiceBaseImpl {
 
+	@Override
 	public CPInstanceUnitOfMeasure addCPInstanceUnitOfMeasure(
 			long cpInstanceId, boolean active,
 			BigDecimal incrementalOrderQuantity, String key,
-			Map<Locale, String> nameMap, int precision, boolean primary,
-			double priority, BigDecimal rate, String sku)
+			Map<Locale, String> nameMap, int precision,
+			BigDecimal pricingQuantity, boolean primary, double priority,
+			BigDecimal rate, String sku)
 		throws PortalException {
 
 		_checkCommerceCatalog(cpInstanceId, ActionKeys.UPDATE);
 
 		return cpInstanceUnitOfMeasureLocalService.addCPInstanceUnitOfMeasure(
 			getUserId(), cpInstanceId, active, incrementalOrderQuantity, key,
-			nameMap, precision, primary, priority, rate, sku);
+			nameMap, precision, pricingQuantity, primary, priority, rate, sku);
 	}
 
 	@Override
 	public CPInstanceUnitOfMeasure addOrUpdateCPInstanceUnitOfMeasure(
 			long cpInstanceId, boolean active,
 			BigDecimal incrementalOrderQuantity, String key,
-			Map<Locale, String> nameMap, int precision, boolean primary,
-			double priority, BigDecimal rate, String sku)
+			Map<Locale, String> nameMap, int precision,
+			BigDecimal pricingQuantity, boolean primary, double priority,
+			BigDecimal rate, String sku)
 		throws PortalException {
 
 		_checkCommerceCatalog(cpInstanceId, ActionKeys.UPDATE);
@@ -67,15 +72,17 @@ public class CPInstanceUnitOfMeasureServiceImpl
 		return cpInstanceUnitOfMeasureLocalService.
 			addOrUpdateCPInstanceUnitOfMeasure(
 				getUserId(), cpInstanceId, active, incrementalOrderQuantity,
-				key, nameMap, precision, primary, priority, rate, sku);
+				key, nameMap, precision, pricingQuantity, primary, priority,
+				rate, sku);
 	}
 
+	@Override
 	public CPInstanceUnitOfMeasure deleteCPInstanceUnitOfMeasure(
 			long cpInstanceUnitOfMeasureId)
 		throws PortalException {
 
 		CPInstanceUnitOfMeasure cpInstanceUnitOfMeasure =
-			cpInstanceUnitOfMeasureLocalService.getCPInstanceUnitOfMeasure(
+			cpInstanceUnitOfMeasurePersistence.findByPrimaryKey(
 				cpInstanceUnitOfMeasureId);
 
 		_checkCommerceCatalog(
@@ -91,7 +98,7 @@ public class CPInstanceUnitOfMeasureServiceImpl
 		throws PortalException {
 
 		CPInstanceUnitOfMeasure cpInstanceUnitOfMeasure =
-			cpInstanceUnitOfMeasureLocalService.fetchCPInstanceUnitOfMeasure(
+			cpInstanceUnitOfMeasurePersistence.fetchByPrimaryKey(
 				cpInstanceUnitOfMeasureId);
 
 		if (cpInstanceUnitOfMeasure != null) {
@@ -109,8 +116,7 @@ public class CPInstanceUnitOfMeasureServiceImpl
 
 		_checkCommerceCatalog(cpInstanceId, ActionKeys.VIEW);
 
-		return cpInstanceUnitOfMeasureLocalService.fetchCPInstanceUnitOfMeasure(
-			cpInstanceId, key);
+		return cpInstanceUnitOfMeasurePersistence.fetchByC_K(cpInstanceId, key);
 	}
 
 	@Override
@@ -120,8 +126,8 @@ public class CPInstanceUnitOfMeasureServiceImpl
 
 		_checkCommerceCatalog(cpInstanceId, ActionKeys.VIEW);
 
-		return cpInstanceUnitOfMeasureLocalService.
-			fetchPrimaryCPInstanceUnitOfMeasure(cpInstanceId);
+		return cpInstanceUnitOfMeasurePersistence.fetchByC_P_First(
+			cpInstanceId, true, null);
 	}
 
 	@Override
@@ -131,8 +137,9 @@ public class CPInstanceUnitOfMeasureServiceImpl
 
 		_checkCommerceCatalog(cpInstanceId, ActionKeys.VIEW);
 
-		return cpInstanceUnitOfMeasureLocalService.
-			getActiveCPInstanceUnitOfMeasures(cpInstanceId);
+		return cpInstanceUnitOfMeasurePersistence.findByC_A(
+			cpInstanceId, true, QueryUtil.ALL_POS, QueryUtil.ALL_POS,
+			CPInstanceUnitOfMeasurePriorityComparator.getInstance(true));
 	}
 
 	@Override
@@ -141,8 +148,8 @@ public class CPInstanceUnitOfMeasureServiceImpl
 
 		_checkCommerceCatalog(cpInstanceId, ActionKeys.VIEW);
 
-		return cpInstanceUnitOfMeasureLocalService.
-			getActiveCPInstanceUnitOfMeasuresCount(cpInstanceId);
+		return cpInstanceUnitOfMeasurePersistence.countByC_A(
+			cpInstanceId, true);
 	}
 
 	@Override
@@ -151,7 +158,7 @@ public class CPInstanceUnitOfMeasureServiceImpl
 		throws PortalException {
 
 		CPInstanceUnitOfMeasure cpInstanceUnitOfMeasure =
-			cpInstanceUnitOfMeasureLocalService.getCPInstanceUnitOfMeasure(
+			cpInstanceUnitOfMeasurePersistence.findByPrimaryKey(
 				cpInstanceUnitOfMeasureId);
 
 		_checkCommerceCatalog(
@@ -167,8 +174,7 @@ public class CPInstanceUnitOfMeasureServiceImpl
 
 		_checkCommerceCatalog(cpInstanceId, ActionKeys.VIEW);
 
-		return cpInstanceUnitOfMeasureLocalService.getCPInstanceUnitOfMeasure(
-			cpInstanceId, key);
+		return cpInstanceUnitOfMeasurePersistence.findByC_K(cpInstanceId, key);
 	}
 
 	@Override
@@ -179,7 +185,7 @@ public class CPInstanceUnitOfMeasureServiceImpl
 
 		_checkCommerceCatalog(cpInstanceId, ActionKeys.VIEW);
 
-		return cpInstanceUnitOfMeasureLocalService.getCPInstanceUnitOfMeasures(
+		return cpInstanceUnitOfMeasurePersistence.findByCPInstanceId(
 			cpInstanceId, start, end, orderByComparator);
 	}
 
@@ -189,15 +195,17 @@ public class CPInstanceUnitOfMeasureServiceImpl
 
 		_checkCommerceCatalog(cpInstanceId, ActionKeys.VIEW);
 
-		return cpInstanceUnitOfMeasureLocalService.
-			getCPInstanceUnitOfMeasuresCount(cpInstanceId);
+		return cpInstanceUnitOfMeasurePersistence.countByCPInstanceId(
+			cpInstanceId);
 	}
 
+	@Override
 	public CPInstanceUnitOfMeasure updateCPInstanceUnitOfMeasure(
 			long cpInstanceUnitOfMeasureId, long cpInstanceId, boolean active,
 			BigDecimal incrementalOrderQuantity, String key,
-			Map<Locale, String> nameMap, int precision, boolean primary,
-			double priority, BigDecimal rate, String sku)
+			Map<Locale, String> nameMap, int precision,
+			BigDecimal pricingQuantity, boolean primary, double priority,
+			BigDecimal rate, String sku)
 		throws PortalException {
 
 		_checkCommerceCatalog(cpInstanceId, ActionKeys.UPDATE);
@@ -205,14 +213,14 @@ public class CPInstanceUnitOfMeasureServiceImpl
 		return cpInstanceUnitOfMeasureLocalService.
 			updateCPInstanceUnitOfMeasure(
 				cpInstanceUnitOfMeasureId, cpInstanceId, active,
-				incrementalOrderQuantity, key, nameMap, precision, primary,
-				priority, rate, sku);
+				incrementalOrderQuantity, key, nameMap, precision,
+				pricingQuantity, primary, priority, rate, sku);
 	}
 
 	private void _checkCommerceCatalog(long cpInstanceId, String actionId)
 		throws PortalException {
 
-		CPInstance cpInstance = _cpInstanceLocalService.getCPInstance(
+		CPInstance cpInstance = _cpInstancePersistence.findByPrimaryKey(
 			cpInstanceId);
 
 		CommerceCatalog commerceCatalog =
@@ -237,6 +245,6 @@ public class CPInstanceUnitOfMeasureServiceImpl
 		_commerceCatalogModelResourcePermission;
 
 	@Reference
-	private CPInstanceLocalService _cpInstanceLocalService;
+	private CPInstancePersistence _cpInstancePersistence;
 
 }

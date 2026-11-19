@@ -1,0 +1,556 @@
+/**
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
+ */
+
+package com.liferay.journal.internal.site.provider;
+
+import com.liferay.asset.display.page.constants.AssetDisplayPageConstants;
+import com.liferay.asset.display.page.model.AssetDisplayPageEntry;
+import com.liferay.asset.display.page.service.AssetDisplayPageEntryLocalService;
+import com.liferay.depot.group.provider.SiteConnectedGroupGroupProvider;
+import com.liferay.design.library.util.DesignLibraryUtil;
+import com.liferay.dynamic.data.mapping.model.DDMStructure;
+import com.liferay.journal.constants.JournalArticleConstants;
+import com.liferay.journal.internal.util.JournalUtil;
+import com.liferay.journal.model.JournalArticle;
+import com.liferay.journal.model.JournalArticleResource;
+import com.liferay.journal.model.JournalArticleTable;
+import com.liferay.journal.service.JournalArticleLocalService;
+import com.liferay.journal.service.JournalArticleResourceLocalService;
+import com.liferay.journal.service.JournalArticleService;
+import com.liferay.layout.page.template.model.LayoutPageTemplateEntry;
+import com.liferay.layout.page.template.service.LayoutPageTemplateEntryLocalService;
+import com.liferay.layout.page.template.util.LayoutPageTemplateEntryUtil;
+import com.liferay.petra.function.transform.TransformUtil;
+import com.liferay.petra.sql.dsl.DSLQueryFactoryUtil;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
+import com.liferay.portal.kernel.dao.orm.DynamicQuery;
+import com.liferay.portal.kernel.dao.orm.Property;
+import com.liferay.portal.kernel.dao.orm.PropertyFactoryUtil;
+import com.liferay.portal.kernel.dao.orm.RestrictionsFactoryUtil;
+import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.language.Language;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.Layout;
+import com.liferay.portal.kernel.model.LayoutSet;
+import com.liferay.portal.kernel.model.impl.VirtualLayout;
+import com.liferay.portal.kernel.portlet.FriendlyURLResolver;
+import com.liferay.portal.kernel.portlet.FriendlyURLResolverRegistryUtil;
+import com.liferay.portal.kernel.portlet.constants.FriendlyURLResolverConstants;
+import com.liferay.portal.kernel.security.permission.ActionKeys;
+import com.liferay.portal.kernel.security.permission.PermissionChecker;
+import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
+import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
+import com.liferay.portal.kernel.service.GroupLocalService;
+import com.liferay.portal.kernel.service.LayoutLocalService;
+import com.liferay.portal.kernel.service.LayoutSetLocalService;
+import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.ArrayUtil;
+import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.SetUtil;
+import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.kernel.workflow.WorkflowConstants;
+import com.liferay.portal.kernel.xml.Element;
+import com.liferay.site.configuration.manager.SitemapConfigurationManager;
+import com.liferay.site.manager.SitemapManager;
+import com.liferay.site.provider.SitemapURLProvider;
+import com.liferay.site.provider.helper.SitemapURLProviderHelper;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
+
+/**
+ * @author Eduardo García
+ */
+@Component(service = SitemapURLProvider.class)
+public class JournalArticleSitemapURLProvider implements SitemapURLProvider {
+
+	@Override
+	public String getClassName() {
+		return JournalArticle.class.getName();
+	}
+
+	@Override
+	public Date getModifiedDate(long companyId, long groupId)
+		throws PortalException {
+
+		List<Date> modifiedDates = _journalArticleLocalService.dslQuery(
+			DSLQueryFactoryUtil.select(
+				JournalArticleTable.INSTANCE.modifiedDate
+			).from(
+				JournalArticleTable.INSTANCE
+			).where(
+				JournalArticleTable.INSTANCE.groupId.eq(
+					groupId
+				).and(
+					JournalArticleTable.INSTANCE.classNameId.eq(0L)
+				).and(
+					JournalArticleTable.INSTANCE.modifiedDate.isNotNull()
+				)
+			).orderBy(
+				JournalArticleTable.INSTANCE.modifiedDate.descending()
+			).limit(
+				0, 1
+			));
+
+		if (modifiedDates.isEmpty()) {
+			return null;
+		}
+
+		return modifiedDates.get(0);
+	}
+
+	@Override
+	public boolean isInclude(long companyId, long groupId)
+		throws PortalException {
+
+		return _sitemapConfigurationManager.includeWebContentGroupEnabled(
+			companyId, groupId);
+	}
+
+	@Override
+	public void visitLayout(
+			Element element, String layoutUuid, LayoutSet layoutSet,
+			ThemeDisplay themeDisplay)
+		throws PortalException {
+
+		Layout layout = _layoutLocalService.fetchLayoutByUuidAndGroupId(
+			layoutUuid, layoutSet.getGroupId(), layoutSet.isPrivateLayout());
+
+		if ((layout == null) ||
+			(layout.isSystem() && !layout.isTypeAssetDisplay())) {
+
+			return;
+		}
+
+		if (layout.isTypeAssetDisplay()) {
+			_visitArticles(
+				element, _getDisplayPageTemplateArticles(layout), layout,
+				layoutSet, themeDisplay);
+		}
+		else {
+			_visitDisplayPageArticles(
+				element, layoutSet, layoutUuid, themeDisplay);
+		}
+	}
+
+	@Override
+	public void visitLayoutSet(
+			Element element, LayoutSet layoutSet, ThemeDisplay themeDisplay)
+		throws PortalException {
+
+		ActionableDynamicQuery actionableDynamicQuery =
+			_journalArticleLocalService.getActionableDynamicQuery();
+
+		actionableDynamicQuery.setAddCriteriaMethod(
+			dynamicQuery -> dynamicQuery.add(
+				RestrictionsFactoryUtil.eq("classNameId", 0L)));
+		actionableDynamicQuery.setGroupId(layoutSet.getGroupId());
+
+		long[] designLibraryGroupIds =
+			DesignLibraryUtil.getConnectedDesignLibraryGroupIds(
+				layoutSet.getGroupId());
+		String portalURL = _portal.getPortalURL(layoutSet, themeDisplay);
+		Set<String> processedArticleIds = new HashSet<>();
+		Set<Locale> siteAvailableLocales = _language.getAvailableLocales(
+			themeDisplay.getScopeGroupId());
+
+		actionableDynamicQuery.setPerformActionMethod(
+			(JournalArticle journalArticle) -> _visitArticle(
+				designLibraryGroupIds, element, true, journalArticle, null,
+				layoutSet, portalURL, processedArticleIds, siteAvailableLocales,
+				themeDisplay));
+
+		actionableDynamicQuery.performActions();
+	}
+
+	private Layout _fetchVisitedLayout(
+			long[] designLibraryGroupIds, long groupId, long plid)
+		throws PortalException {
+
+		Layout layout = _layoutLocalService.fetchLayout(plid);
+
+		if ((layout == null) || (layout.getGroupId() == groupId) ||
+			!ArrayUtil.contains(designLibraryGroupIds, layout.getGroupId())) {
+
+			return layout;
+		}
+
+		return new VirtualLayout(layout, _groupLocalService.getGroup(groupId));
+	}
+
+	private Set<Locale> _getAvailableLocales(
+		JournalArticle journalArticle, Set<Locale> siteAvailableLocales) {
+
+		Set<Locale> availableLocales = new HashSet<>();
+
+		if (SetUtil.isEmpty(siteAvailableLocales)) {
+			return availableLocales;
+		}
+
+		for (String availableLanguageId :
+				journalArticle.getAvailableLanguageIds()) {
+
+			Locale locale = LocaleUtil.fromLanguageId(availableLanguageId);
+
+			if (!siteAvailableLocales.contains(locale)) {
+				continue;
+			}
+
+			availableLocales.add(locale);
+		}
+
+		return availableLocales;
+	}
+
+	private List<JournalArticle> _getDisplayPageTemplateArticles(Layout layout)
+		throws PortalException {
+
+		List<JournalArticle> journalArticles = new ArrayList<>();
+
+		if (layout == null) {
+			return journalArticles;
+		}
+
+		DynamicQuery assetDisplayPageEntryDynamicQuery =
+			_assetDisplayPageEntryLocalService.dynamicQuery();
+
+		Property classNameIdProperty = PropertyFactoryUtil.forName(
+			"classNameId");
+
+		assetDisplayPageEntryDynamicQuery.add(
+			classNameIdProperty.eq(
+				_portal.getClassNameId(JournalArticle.class.getName())));
+
+		Property layoutPageTemplateEntryIdProperty =
+			PropertyFactoryUtil.forName("layoutPageTemplateEntryId");
+
+		assetDisplayPageEntryDynamicQuery.add(
+			layoutPageTemplateEntryIdProperty.ne(Long.valueOf(0)));
+
+		Property plidProperty = PropertyFactoryUtil.forName("plid");
+
+		assetDisplayPageEntryDynamicQuery.add(
+			plidProperty.eq(layout.getPlid()));
+
+		assetDisplayPageEntryDynamicQuery.setProjection(
+			PropertyFactoryUtil.forName("classPK"));
+
+		List<Long> resourcePrimKeys =
+			_assetDisplayPageEntryLocalService.dynamicQuery(
+				assetDisplayPageEntryDynamicQuery);
+
+		LayoutPageTemplateEntry layoutPageTemplateEntry =
+			_layoutPageTemplateEntryLocalService.
+				fetchLayoutPageTemplateEntryByPlid(layout.getPlid());
+
+		if ((layoutPageTemplateEntry != null) &&
+			layoutPageTemplateEntry.isDefaultTemplate()) {
+
+			resourcePrimKeys = new ArrayList<>(resourcePrimKeys);
+
+			for (long groupId :
+					_siteConnectedGroupGroupProvider.
+						getCurrentAndAncestorSiteAndDepotGroupIds(
+							layout.getGroupId())) {
+
+				if (groupId == layout.getGroupId()) {
+					resourcePrimKeys.addAll(
+						_journalArticleLocalService.
+							getArticlesClassPKsWithDefaultDisplayPage(
+								groupId,
+								LayoutPageTemplateEntryUtil.getClassTypeId(
+									layoutPageTemplateEntry)));
+				}
+				else {
+					resourcePrimKeys.addAll(
+						TransformUtil.transform(
+							_journalArticleResourceLocalService.
+								getArticleResources(groupId),
+							JournalArticleResource::getResourcePrimKey));
+				}
+			}
+		}
+
+		for (Long resourcePrimKey : resourcePrimKeys) {
+			try {
+				JournalArticle journalArticle =
+					_journalArticleService.getLatestArticle(resourcePrimKey);
+
+				if (journalArticle.isIndexable()) {
+					journalArticles.add(journalArticle);
+				}
+			}
+			catch (Exception exception) {
+				if (_log.isDebugEnabled()) {
+					_log.debug(exception);
+				}
+			}
+		}
+
+		return journalArticles;
+	}
+
+	private Layout _getDisplayPageTemplateLayout(
+			DDMStructure ddmStructure, long[] designLibraryGroupIds,
+			long groupId, long journalArticleResourcePrimKey)
+		throws PortalException {
+
+		long classNameId = _portal.getClassNameId(
+			JournalArticle.class.getName());
+
+		AssetDisplayPageEntry assetDisplayPageEntry =
+			_assetDisplayPageEntryLocalService.fetchAssetDisplayPageEntry(
+				groupId, classNameId, journalArticleResourcePrimKey);
+
+		if (assetDisplayPageEntry == null) {
+			LayoutPageTemplateEntry layoutPageTemplateEntry =
+				LayoutPageTemplateEntryUtil.fetchDefaultLayoutPageTemplateEntry(
+					classNameId, ddmStructure.getStructureId(),
+					designLibraryGroupIds, groupId);
+
+			if (layoutPageTemplateEntry == null) {
+				return null;
+			}
+
+			return _fetchVisitedLayout(
+				designLibraryGroupIds, groupId,
+				layoutPageTemplateEntry.getPlid());
+		}
+
+		if (assetDisplayPageEntry.getType() ==
+				AssetDisplayPageConstants.TYPE_NONE) {
+
+			return null;
+		}
+
+		return _fetchVisitedLayout(
+			designLibraryGroupIds, groupId, assetDisplayPageEntry.getPlid());
+	}
+
+	private String _getFriendlyURLSeparator() {
+		FriendlyURLResolver friendlyURLResolver =
+			FriendlyURLResolverRegistryUtil.
+				getFriendlyURLResolverByDefaultURLSeparator(
+					FriendlyURLResolverConstants.URL_SEPARATOR_JOURNAL_ARTICLE);
+
+		if (friendlyURLResolver != null) {
+			return friendlyURLResolver.getURLSeparator();
+		}
+
+		return FriendlyURLResolverConstants.URL_SEPARATOR_JOURNAL_ARTICLE;
+	}
+
+	private void _visitArticle(
+			long[] designLibraryGroupIds, Element element, boolean headCheck,
+			JournalArticle journalArticle, Layout layout, LayoutSet layoutSet,
+			String portalURL, Set<String> processedArticleIds,
+			Set<Locale> siteAvailableLocales, ThemeDisplay themeDisplay)
+		throws PortalException {
+
+		if (processedArticleIds.contains(journalArticle.getArticleId()) ||
+			(journalArticle.getStatus() != WorkflowConstants.STATUS_APPROVED) ||
+			(headCheck && !JournalUtil.isHead(journalArticle))) {
+
+			return;
+		}
+
+		PermissionChecker permissionChecker =
+			PermissionThreadLocal.getPermissionChecker();
+
+		if ((permissionChecker == null) ||
+			!_journalArticleModelResourcePermission.contains(
+				permissionChecker, journalArticle, ActionKeys.VIEW)) {
+
+			return;
+		}
+
+		Layout journalArticleLayout = layout;
+
+		if ((journalArticleLayout == null) &&
+			Validator.isNotNull(journalArticle.getLayoutUuid())) {
+
+			journalArticleLayout =
+				_layoutLocalService.fetchLayoutByUuidAndGroupId(
+					journalArticle.getLayoutUuid(), layoutSet.getGroupId(),
+					layoutSet.isPrivateLayout());
+		}
+		else if (journalArticleLayout == null) {
+			journalArticleLayout = _getDisplayPageTemplateLayout(
+				journalArticle.getDDMStructure(), designLibraryGroupIds,
+				layoutSet.getGroupId(), journalArticle.getResourcePrimKey());
+		}
+
+		if (_sitemapURLProviderHelper.isExcludeLayoutFromSitemap(
+				journalArticleLayout) ||
+			!_layoutModelResourcePermission.contains(
+				permissionChecker, journalArticleLayout, ActionKeys.VIEW)) {
+
+			return;
+		}
+
+		String groupFriendlyURL = _portal.getGroupFriendlyURL(
+			_layoutSetLocalService.getLayoutSet(
+				journalArticle.getGroupId(), false),
+			themeDisplay, false, false);
+
+		StringBundler sb = new StringBundler(4);
+
+		if (!groupFriendlyURL.startsWith(portalURL)) {
+			sb.append(portalURL);
+		}
+
+		sb.append(groupFriendlyURL);
+
+		if (Validator.isNotNull(journalArticle.getLayoutUuid())) {
+			sb.append(JournalArticleConstants.CANONICAL_URL_SEPARATOR);
+		}
+		else {
+			sb.append(_getFriendlyURLSeparator());
+		}
+
+		sb.append(journalArticle.getUrlTitle());
+
+		String canonicalURL = _portal.getCanonicalURL(
+			sb.toString(), themeDisplay, journalArticleLayout);
+
+		Map<Locale, String> alternateURLs = _portal.getAlternateURLs(
+			canonicalURL, themeDisplay, journalArticleLayout,
+			_getAvailableLocales(journalArticle, siteAvailableLocales));
+
+		for (String alternateURL : alternateURLs.values()) {
+			_sitemapManager.addURLElement(
+				element, alternateURL, null, journalArticle.getModifiedDate(),
+				canonicalURL, alternateURLs, journalArticleLayout.getGroupId());
+		}
+
+		processedArticleIds.add(journalArticle.getArticleId());
+	}
+
+	private void _visitArticles(
+			Element element, List<JournalArticle> journalArticles,
+			Layout layout, LayoutSet layoutSet, ThemeDisplay themeDisplay)
+		throws PortalException {
+
+		if (journalArticles.isEmpty()) {
+			return;
+		}
+
+		long[] designLibraryGroupIds =
+			DesignLibraryUtil.getConnectedDesignLibraryGroupIds(
+				layoutSet.getGroupId());
+		String portalURL = _portal.getPortalURL(layoutSet, themeDisplay);
+		Set<String> processedArticleIds = new HashSet<>();
+		Set<Locale> siteAvailableLocales = _language.getAvailableLocales(
+			themeDisplay.getScopeGroupId());
+
+		for (JournalArticle journalArticle : journalArticles) {
+			_visitArticle(
+				designLibraryGroupIds, element, false, journalArticle, layout,
+				layoutSet, portalURL, processedArticleIds, siteAvailableLocales,
+				themeDisplay);
+		}
+	}
+
+	private void _visitDisplayPageArticles(
+			Element element, LayoutSet layoutSet, String layoutUuid,
+			ThemeDisplay themeDisplay)
+		throws PortalException {
+
+		ActionableDynamicQuery actionableDynamicQuery =
+			_journalArticleLocalService.getActionableDynamicQuery();
+
+		actionableDynamicQuery.setAddCriteriaMethod(
+			dynamicQuery -> dynamicQuery.add(
+				RestrictionsFactoryUtil.eq("layoutUuid", layoutUuid)));
+		actionableDynamicQuery.setGroupId(layoutSet.getGroupId());
+
+		long[] designLibraryGroupIds =
+			DesignLibraryUtil.getConnectedDesignLibraryGroupIds(
+				layoutSet.getGroupId());
+		String portalURL = _portal.getPortalURL(layoutSet, themeDisplay);
+		Set<String> processedArticleIds = new HashSet<>();
+		Set<Locale> siteAvailableLocales = _language.getAvailableLocales(
+			themeDisplay.getScopeGroupId());
+
+		actionableDynamicQuery.setPerformActionMethod(
+			(JournalArticle journalArticle) -> _visitArticle(
+				designLibraryGroupIds, element, true, journalArticle, null,
+				layoutSet, portalURL, processedArticleIds, siteAvailableLocales,
+				themeDisplay));
+
+		actionableDynamicQuery.performActions();
+	}
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		JournalArticleSitemapURLProvider.class);
+
+	@Reference
+	private AssetDisplayPageEntryLocalService
+		_assetDisplayPageEntryLocalService;
+
+	@Reference
+	private GroupLocalService _groupLocalService;
+
+	@Reference
+	private JournalArticleLocalService _journalArticleLocalService;
+
+	@Reference(
+		target = "(model.class.name=com.liferay.journal.model.JournalArticle)"
+	)
+	private ModelResourcePermission<JournalArticle>
+		_journalArticleModelResourcePermission;
+
+	@Reference
+	private JournalArticleResourceLocalService
+		_journalArticleResourceLocalService;
+
+	@Reference
+	private JournalArticleService _journalArticleService;
+
+	@Reference
+	private Language _language;
+
+	@Reference
+	private LayoutLocalService _layoutLocalService;
+
+	@Reference(
+		target = "(model.class.name=com.liferay.portal.kernel.model.Layout)"
+	)
+	private ModelResourcePermission<Layout> _layoutModelResourcePermission;
+
+	@Reference
+	private LayoutPageTemplateEntryLocalService
+		_layoutPageTemplateEntryLocalService;
+
+	@Reference
+	private LayoutSetLocalService _layoutSetLocalService;
+
+	@Reference
+	private Portal _portal;
+
+	@Reference
+	private SiteConnectedGroupGroupProvider _siteConnectedGroupGroupProvider;
+
+	@Reference
+	private SitemapConfigurationManager _sitemapConfigurationManager;
+
+	@Reference
+	private SitemapManager _sitemapManager;
+
+	@Reference
+	private SitemapURLProviderHelper _sitemapURLProviderHelper;
+
+}

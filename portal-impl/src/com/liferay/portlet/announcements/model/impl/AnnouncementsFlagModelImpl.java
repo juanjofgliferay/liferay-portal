@@ -88,6 +88,8 @@ public class AnnouncementsFlagModelImpl
 
 	public static final String TABLE_SQL_DROP = "drop table AnnouncementsFlag";
 
+	public static final String ENTITY_ALIAS = "announcementsFlag";
+
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY announcementsFlag.userId ASC, announcementsFlag.createDate ASC";
 
@@ -150,7 +152,7 @@ public class AnnouncementsFlagModelImpl
 	public static final long CREATEDATE_COLUMN_BITMASK = 16L;
 
 	public static final long LOCK_EXPIRATION_TIME = GetterUtil.getLong(
-		com.liferay.portal.util.PropsUtil.get(
+		com.liferay.portal.kernel.util.PropsUtil.get(
 			"lock.expiration.time.com.liferay.announcements.kernel.model.AnnouncementsFlag"));
 
 	public AnnouncementsFlagModelImpl() {
@@ -842,3 +844,4 @@ public class AnnouncementsFlagModelImpl
 	private AnnouncementsFlag _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:318950578

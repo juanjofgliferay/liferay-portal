@@ -81,6 +81,8 @@ public class PasswordPolicyRelModelImpl
 
 	public static final String TABLE_SQL_DROP = "drop table PasswordPolicyRel";
 
+	public static final String ENTITY_ALIAS = "passwordPolicyRel";
+
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY passwordPolicyRel.passwordPolicyRelId ASC";
 
@@ -137,7 +139,7 @@ public class PasswordPolicyRelModelImpl
 	public static final long PASSWORDPOLICYRELID_COLUMN_BITMASK = 8L;
 
 	public static final long LOCK_EXPIRATION_TIME = GetterUtil.getLong(
-		com.liferay.portal.util.PropsUtil.get(
+		com.liferay.portal.kernel.util.PropsUtil.get(
 			"lock.expiration.time.com.liferay.portal.kernel.model.PasswordPolicyRel"));
 
 	public PasswordPolicyRelModelImpl() {
@@ -741,3 +743,4 @@ public class PasswordPolicyRelModelImpl
 	private PasswordPolicyRel _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-384216214

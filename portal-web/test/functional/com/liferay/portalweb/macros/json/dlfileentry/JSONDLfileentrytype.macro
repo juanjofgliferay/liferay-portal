@@ -40,4 +40,44 @@ definition {
 		return ${fileEntryTypeIds};
 	}
 
+	@summary = "Default summary"
+	macro _getFileEntryTypeKey(fileEntryTypeName = null, groupId = null) {
+		Variables.assertDefined(parameterList = "${fileEntryTypeName},${groupId}");
+
+		var portalURL = JSONCompany.getPortalURL();
+		var userLoginInfo = JSONUtil2.formatJSONUser();
+
+		var curl = '''
+			${portalURL}/api/jsonws/dlfileentrytype/get-file-entry-types \
+				-u ${userLoginInfo} \
+				-d groupIds=[${groupId}]
+		''';
+
+		var fileEntryTypeKey = JSONCurlUtil.post(${curl}, "$.[?(@['nameCurrentValue'] == '${fileEntryTypeName}')]['fileEntryTypeKey']");
+
+		if (${fileEntryTypeKey} == "") {
+			echo("The ${fileEntryTypeName} doesn't exist.");
+		}
+
+		return ${fileEntryTypeKey};
+	}
+
+	@summary = "Default summary"
+	macro _getFileEntryTypeKeys(groupId = null) {
+		Variables.assertDefined(parameterList = ${groupId});
+
+		var portalURL = JSONCompany.getPortalURL();
+		var userLoginInfo = JSONUtil2.formatJSONUser();
+
+		var curl = '''
+			${portalURL}/api/jsonws/dlfileentrytype/get-file-entry-types \
+				-u ${userLoginInfo} \
+				-d groupIds=[${groupId}]
+		''';
+
+		var fileEntryTypeKeys = JSONCurlUtil.post(${curl}, "$..fileEntryTypeKey");
+
+		return ${fileEntryTypeKeys};
+	}
+
 }

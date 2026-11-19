@@ -7,11 +7,8 @@ package com.liferay.jenkins.results.parser;
 
 import java.net.URL;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * @author Peter Yoo
@@ -44,21 +41,7 @@ public class URLCompareUtil {
 	}
 
 	private static Map<String, String> _getQueryMap(URL url) {
-		String query = url.getQuery();
-
-		Map<String, String> queryMap = new HashMap<>();
-
-		if (query == null) {
-			return queryMap;
-		}
-
-		Matcher matcher = _queryPattern.matcher(query);
-
-		while (matcher.find()) {
-			queryMap.put(matcher.group("name"), matcher.group("value"));
-		}
-
-		return queryMap;
+		return JenkinsResultsParserUtil.getQueryParameters(url.getQuery());
 	}
 
 	private static String _normalizePath(String path) {
@@ -66,8 +49,5 @@ public class URLCompareUtil {
 
 		return normalizedPath.replaceAll("/*$", "");
 	}
-
-	private static final Pattern _queryPattern = Pattern.compile(
-		"(&|\\A)?(?<name>[^=]+)=(?<value>[^&]+)");
 
 }

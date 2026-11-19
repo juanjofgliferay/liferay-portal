@@ -214,8 +214,7 @@ public interface LayoutSetLocalService
 	public LayoutSet fetchLayoutSet(String virtualHostname);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public LayoutSet fetchLayoutSetByLogoId(boolean privateLayout, long logoId)
-		throws PortalException;
+	public LayoutSet fetchLayoutSetByLogoId(boolean privateLayout, long logoId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public ActionableDynamicQuery getActionableDynamicQuery();
@@ -302,16 +301,12 @@ public interface LayoutSetLocalService
 	@Indexable(type = IndexableType.REINDEX)
 	public LayoutSet updateLayoutSet(LayoutSet layoutSet);
 
-	/**
-	 * Updates the state of the layout set prototype link.
-	 *
-	 * @param groupId the primary key of the group
-	 * @param privateLayout whether the layout set is private to the group
-	 * @param layoutSetPrototypeLinkEnabled whether the layout set prototype is
-	 link enabled
-	 * @param layoutSetPrototypeUuid the uuid of the layout set prototype to
-	 link with
-	 */
+	public void updateLayoutSetPrototypeLinkEnabled(
+			long groupId, boolean mergeLayoutSetPrototype,
+			boolean privateLayout, boolean layoutSetPrototypeLinkEnabled,
+			String layoutSetPrototypeUuid)
+		throws PortalException;
+
 	public void updateLayoutSetPrototypeLinkEnabled(
 			long groupId, boolean privateLayout,
 			boolean layoutSetPrototypeLinkEnabled,
@@ -369,3 +364,4 @@ public interface LayoutSetLocalService
 		throws E;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1798830565

@@ -5,32 +5,43 @@
 
 package com.liferay.headless.commerce.admin.catalog.internal.resource.v1_0;
 
+import com.liferay.commerce.product.constants.CPActionKeys;
 import com.liferay.commerce.product.constants.CPAttachmentFileEntryConstants;
+import com.liferay.commerce.product.constants.CPConstants;
 import com.liferay.commerce.product.exception.NoSuchCPAttachmentFileEntryException;
 import com.liferay.commerce.product.exception.NoSuchCPDefinitionException;
 import com.liferay.commerce.product.model.CPAttachmentFileEntry;
 import com.liferay.commerce.product.model.CPDefinition;
+import com.liferay.commerce.product.model.CommerceCatalog;
 import com.liferay.commerce.product.service.CPAttachmentFileEntryService;
 import com.liferay.commerce.product.service.CPDefinitionOptionRelService;
 import com.liferay.commerce.product.service.CPDefinitionOptionValueRelService;
 import com.liferay.commerce.product.service.CPDefinitionService;
 import com.liferay.commerce.product.service.CPOptionService;
 import com.liferay.document.library.kernel.model.DLFileEntry;
+import com.liferay.document.library.kernel.service.DLAppLocalService;
 import com.liferay.headless.commerce.admin.catalog.dto.v1_0.Attachment;
 import com.liferay.headless.commerce.admin.catalog.dto.v1_0.AttachmentBase64;
 import com.liferay.headless.commerce.admin.catalog.dto.v1_0.AttachmentUrl;
 import com.liferay.headless.commerce.admin.catalog.dto.v1_0.Product;
-import com.liferay.headless.commerce.admin.catalog.internal.dto.v1_0.util.CustomFieldsUtil;
 import com.liferay.headless.commerce.admin.catalog.internal.util.v1_0.AttachmentUtil;
+import com.liferay.headless.commerce.admin.catalog.internal.util.v1_0.ProductUtil;
 import com.liferay.headless.commerce.admin.catalog.resource.v1_0.AttachmentResource;
-import com.liferay.headless.commerce.core.util.ServiceContextHelper;
+import com.liferay.headless.commerce.core.helper.ServiceContextHelper;
 import com.liferay.portal.kernel.change.tracking.CTAware;
 import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.search.filter.Filter;
+import com.liferay.portal.kernel.security.auth.PrincipalException;
+import com.liferay.portal.kernel.security.permission.ActionKeys;
+import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
+import com.liferay.portal.kernel.security.permission.resource.PortletResourcePermission;
 import com.liferay.portal.kernel.service.ClassNameLocalService;
+import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
+import com.liferay.portal.vulcan.custom.field.CustomField;
+import com.liferay.portal.vulcan.custom.field.CustomFieldsUtil;
 import com.liferay.portal.vulcan.dto.converter.DTOConverter;
 import com.liferay.portal.vulcan.dto.converter.DefaultDTOConverterContext;
 import com.liferay.portal.vulcan.fields.NestedField;
@@ -41,8 +52,8 @@ import com.liferay.upload.UniqueFileNameProvider;
 
 import java.io.Serializable;
 
-import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -81,8 +92,9 @@ public class AttachmentResourceImpl extends BaseAttachmentResourceImpl {
 		throws Exception {
 
 		CPAttachmentFileEntry cpAttachmentFileEntry =
-			_cpAttachmentFileEntryService.fetchByExternalReferenceCode(
-				externalReferenceCode, contextCompany.getCompanyId());
+			_cpAttachmentFileEntryService.
+				fetchCPAttachmentFileEntryByExternalReferenceCode(
+					externalReferenceCode, contextCompany.getCompanyId());
 
 		if (cpAttachmentFileEntry == null) {
 			throw new NoSuchCPAttachmentFileEntryException(
@@ -95,6 +107,26 @@ public class AttachmentResourceImpl extends BaseAttachmentResourceImpl {
 	}
 
 	@Override
+	public Attachment getAttachmentByExternalReferenceCode(
+			String externalReferenceCode)
+		throws Exception {
+
+		CPAttachmentFileEntry cpAttachmentFileEntry =
+			_cpAttachmentFileEntryService.
+				fetchCPAttachmentFileEntryByExternalReferenceCode(
+					externalReferenceCode, contextCompany.getCompanyId());
+
+		if (cpAttachmentFileEntry == null) {
+			throw new NoSuchCPAttachmentFileEntryException(
+				"Unable to find attachment with external reference code " +
+					externalReferenceCode);
+		}
+
+		return _toAttachment(
+			cpAttachmentFileEntry.getCPAttachmentFileEntryId());
+	}
+
+	@Override
 	public Page<Attachment> getProductByExternalReferenceCodeAttachmentsPage(
 			String externalReferenceCode, Pagination pagination)
 		throws Exception {
@@ -102,7 +134,8 @@ public class AttachmentResourceImpl extends BaseAttachmentResourceImpl {
 		CPDefinition cpDefinition =
 			_cpDefinitionService.
 				fetchCPDefinitionByCProductExternalReferenceCode(
-					externalReferenceCode, contextCompany.getCompanyId());
+					externalReferenceCode, contextCompany.getCompanyId(),
+					false);
 
 		if (cpDefinition == null) {
 			throw new NoSuchCPDefinitionException(
@@ -123,7 +156,8 @@ public class AttachmentResourceImpl extends BaseAttachmentResourceImpl {
 		CPDefinition cpDefinition =
 			_cpDefinitionService.
 				fetchCPDefinitionByCProductExternalReferenceCode(
-					externalReferenceCode, contextCompany.getCompanyId());
+					externalReferenceCode, contextCompany.getCompanyId(),
+					false);
 
 		if (cpDefinition == null) {
 			throw new NoSuchCPDefinitionException(
@@ -143,7 +177,7 @@ public class AttachmentResourceImpl extends BaseAttachmentResourceImpl {
 		throws Exception {
 
 		CPDefinition cpDefinition =
-			_cpDefinitionService.fetchCPDefinitionByCProductId(id);
+			_cpDefinitionService.fetchCPDefinitionByCProductId(id, false);
 
 		if (cpDefinition == null) {
 			throw new NoSuchCPDefinitionException(
@@ -162,7 +196,7 @@ public class AttachmentResourceImpl extends BaseAttachmentResourceImpl {
 		throws Exception {
 
 		CPDefinition cpDefinition =
-			_cpDefinitionService.fetchCPDefinitionByCProductId(id);
+			_cpDefinitionService.fetchCPDefinitionByCProductId(id, false);
 
 		if (cpDefinition == null) {
 			throw new NoSuchCPDefinitionException(
@@ -175,14 +209,35 @@ public class AttachmentResourceImpl extends BaseAttachmentResourceImpl {
 	}
 
 	@Override
+	public Attachment patchAttachmentByExternalReferenceCode(
+			String externalReferenceCode, Attachment attachment)
+		throws Exception {
+
+		CPAttachmentFileEntry cpAttachmentFileEntry =
+			_cpAttachmentFileEntryService.
+				fetchCPAttachmentFileEntryByExternalReferenceCode(
+					externalReferenceCode, contextCompany.getCompanyId());
+
+		if (cpAttachmentFileEntry == null) {
+			throw new NoSuchCPAttachmentFileEntryException(
+				"Unable to find attachment with external reference code " +
+					externalReferenceCode);
+		}
+
+		return _updateCPAttachmentFileEntry(
+			attachment, cpAttachmentFileEntry,
+			CPAttachmentFileEntryConstants.TYPE_OTHER);
+	}
+
+	@Override
 	public Attachment postProductByExternalReferenceCodeAttachment(
 			String externalReferenceCode, Attachment attachment)
 		throws Exception {
 
 		CPDefinition cpDefinition =
-			_cpDefinitionService.
-				fetchCPDefinitionByCProductExternalReferenceCode(
-					externalReferenceCode, contextCompany.getCompanyId());
+			ProductUtil.fetchCPDefinitionByCProductExternalReferenceCode(
+				externalReferenceCode, contextCompany.getCompanyId(),
+				_cpDefinitionService);
 
 		if (cpDefinition == null) {
 			throw new NoSuchCPDefinitionException(
@@ -199,9 +254,9 @@ public class AttachmentResourceImpl extends BaseAttachmentResourceImpl {
 		throws Exception {
 
 		CPDefinition cpDefinition =
-			_cpDefinitionService.
-				fetchCPDefinitionByCProductExternalReferenceCode(
-					externalReferenceCode, contextCompany.getCompanyId());
+			ProductUtil.fetchCPDefinitionByCProductExternalReferenceCode(
+				externalReferenceCode, contextCompany.getCompanyId(),
+				_cpDefinitionService);
 
 		if (cpDefinition == null) {
 			throw new NoSuchCPDefinitionException(
@@ -218,9 +273,9 @@ public class AttachmentResourceImpl extends BaseAttachmentResourceImpl {
 		throws Exception {
 
 		CPDefinition cpDefinition =
-			_cpDefinitionService.
-				fetchCPDefinitionByCProductExternalReferenceCode(
-					externalReferenceCode, contextCompany.getCompanyId());
+			ProductUtil.fetchCPDefinitionByCProductExternalReferenceCode(
+				externalReferenceCode, contextCompany.getCompanyId(),
+				_cpDefinitionService);
 
 		if (cpDefinition == null) {
 			throw new NoSuchCPDefinitionException(
@@ -237,9 +292,9 @@ public class AttachmentResourceImpl extends BaseAttachmentResourceImpl {
 		throws Exception {
 
 		CPDefinition cpDefinition =
-			_cpDefinitionService.
-				fetchCPDefinitionByCProductExternalReferenceCode(
-					externalReferenceCode, contextCompany.getCompanyId());
+			ProductUtil.fetchCPDefinitionByCProductExternalReferenceCode(
+				externalReferenceCode, contextCompany.getCompanyId(),
+				_cpDefinitionService);
 
 		if (cpDefinition == null) {
 			throw new NoSuchCPDefinitionException(
@@ -256,9 +311,9 @@ public class AttachmentResourceImpl extends BaseAttachmentResourceImpl {
 		throws Exception {
 
 		CPDefinition cpDefinition =
-			_cpDefinitionService.
-				fetchCPDefinitionByCProductExternalReferenceCode(
-					externalReferenceCode, contextCompany.getCompanyId());
+			ProductUtil.fetchCPDefinitionByCProductExternalReferenceCode(
+				externalReferenceCode, contextCompany.getCompanyId(),
+				_cpDefinitionService);
 
 		if (cpDefinition == null) {
 			throw new NoSuchCPDefinitionException(
@@ -275,9 +330,9 @@ public class AttachmentResourceImpl extends BaseAttachmentResourceImpl {
 		throws Exception {
 
 		CPDefinition cpDefinition =
-			_cpDefinitionService.
-				fetchCPDefinitionByCProductExternalReferenceCode(
-					externalReferenceCode, contextCompany.getCompanyId());
+			ProductUtil.fetchCPDefinitionByCProductExternalReferenceCode(
+				externalReferenceCode, contextCompany.getCompanyId(),
+				_cpDefinitionService);
 
 		if (cpDefinition == null) {
 			throw new NoSuchCPDefinitionException(
@@ -292,8 +347,8 @@ public class AttachmentResourceImpl extends BaseAttachmentResourceImpl {
 	public Attachment postProductIdAttachment(Long id, Attachment attachment)
 		throws Exception {
 
-		CPDefinition cpDefinition =
-			_cpDefinitionService.fetchCPDefinitionByCProductId(id);
+		CPDefinition cpDefinition = ProductUtil.fetchCPDefinitionByCProductId(
+			id, _cpDefinitionService);
 
 		if (cpDefinition == null) {
 			throw new NoSuchCPDefinitionException(
@@ -308,8 +363,8 @@ public class AttachmentResourceImpl extends BaseAttachmentResourceImpl {
 			Long id, AttachmentBase64 attachmentBase64)
 		throws Exception {
 
-		CPDefinition cpDefinition =
-			_cpDefinitionService.fetchCPDefinitionByCProductId(id);
+		CPDefinition cpDefinition = ProductUtil.fetchCPDefinitionByCProductId(
+			id, _cpDefinitionService);
 
 		if (cpDefinition == null) {
 			throw new NoSuchCPDefinitionException(
@@ -324,8 +379,8 @@ public class AttachmentResourceImpl extends BaseAttachmentResourceImpl {
 			Long id, AttachmentUrl attachmentUrl)
 		throws Exception {
 
-		CPDefinition cpDefinition =
-			_cpDefinitionService.fetchCPDefinitionByCProductId(id);
+		CPDefinition cpDefinition = ProductUtil.fetchCPDefinitionByCProductId(
+			id, _cpDefinitionService);
 
 		if (cpDefinition == null) {
 			throw new NoSuchCPDefinitionException(
@@ -339,8 +394,8 @@ public class AttachmentResourceImpl extends BaseAttachmentResourceImpl {
 	public Attachment postProductIdImage(Long id, Attachment attachment)
 		throws Exception {
 
-		CPDefinition cpDefinition =
-			_cpDefinitionService.fetchCPDefinitionByCProductId(id);
+		CPDefinition cpDefinition = ProductUtil.fetchCPDefinitionByCProductId(
+			id, _cpDefinitionService);
 
 		if (cpDefinition == null) {
 			throw new NoSuchCPDefinitionException(
@@ -355,8 +410,8 @@ public class AttachmentResourceImpl extends BaseAttachmentResourceImpl {
 			Long id, AttachmentBase64 attachmentBase64)
 		throws Exception {
 
-		CPDefinition cpDefinition =
-			_cpDefinitionService.fetchCPDefinitionByCProductId(id);
+		CPDefinition cpDefinition = ProductUtil.fetchCPDefinitionByCProductId(
+			id, _cpDefinitionService);
 
 		if (cpDefinition == null) {
 			throw new NoSuchCPDefinitionException(
@@ -371,8 +426,8 @@ public class AttachmentResourceImpl extends BaseAttachmentResourceImpl {
 			Long id, AttachmentUrl attachmentUrl)
 		throws Exception {
 
-		CPDefinition cpDefinition =
-			_cpDefinitionService.fetchCPDefinitionByCProductId(id);
+		CPDefinition cpDefinition = ProductUtil.fetchCPDefinitionByCProductId(
+			id, _cpDefinitionService);
 
 		if (cpDefinition == null) {
 			throw new NoSuchCPDefinitionException(
@@ -380,6 +435,37 @@ public class AttachmentResourceImpl extends BaseAttachmentResourceImpl {
 		}
 
 		return _addOrUpdateProductImage(cpDefinition, attachmentUrl);
+	}
+
+	@Override
+	public Attachment putAttachmentByExternalReferenceCode(
+			String externalReferenceCode, Attachment attachment)
+		throws Exception {
+
+		CPAttachmentFileEntry cpAttachmentFileEntry =
+			_cpAttachmentFileEntryService.
+				fetchCPAttachmentFileEntryByExternalReferenceCode(
+					externalReferenceCode, contextCompany.getCompanyId());
+
+		if (cpAttachmentFileEntry == null) {
+			throw new NoSuchCPAttachmentFileEntryException(
+				"Unable to find attachment with external reference code " +
+					externalReferenceCode);
+		}
+
+		ServiceContext serviceContext = _serviceContextHelper.getServiceContext(
+			cpAttachmentFileEntry.getGroupId());
+
+		cpAttachmentFileEntry = AttachmentUtil.updateCPAttachmentFileEntry(
+			cpAttachmentFileEntry, _cpAttachmentFileEntryService,
+			_cpDefinitionOptionRelService, _cpDefinitionOptionValueRelService,
+			_cpOptionService, _dlAppLocalService,
+			_dlFileEntryModelResourcePermission, groupLocalService, attachment,
+			cpAttachmentFileEntry.getClassPK(),
+			CPAttachmentFileEntryConstants.TYPE_OTHER, serviceContext);
+
+		return _toAttachment(
+			cpAttachmentFileEntry.getCPAttachmentFileEntryId());
 	}
 
 	@Override
@@ -395,6 +481,8 @@ public class AttachmentResourceImpl extends BaseAttachmentResourceImpl {
 			CPDefinition cpDefinition, int type, Attachment attachment)
 		throws Exception {
 
+		_checkCPAttachmentFileEntryPermissions(cpDefinition, type);
+
 		ServiceContext serviceContext = _serviceContextHelper.getServiceContext(
 			cpDefinition.getGroupId());
 
@@ -402,23 +490,18 @@ public class AttachmentResourceImpl extends BaseAttachmentResourceImpl {
 			serviceContext.setAssetTagNames(attachment.getTags());
 		}
 
-		Map<String, Serializable> expandoBridgeAttributes =
-			CustomFieldsUtil.toMap(
+		serviceContext.setExpandoBridgeAttributes(
+			_getExpandoBridgeAttributes(
 				CPAttachmentFileEntry.class.getName(),
-				contextCompany.getCompanyId(), attachment.getCustomFields(),
-				contextAcceptLanguage.getPreferredLocale());
-
-		if (expandoBridgeAttributes != null) {
-			serviceContext.setExpandoBridgeAttributes(expandoBridgeAttributes);
-		}
+				attachment.getCustomFields()));
 
 		CPAttachmentFileEntry cpAttachmentFileEntry =
 			AttachmentUtil.addOrUpdateCPAttachmentFileEntry(
 				cpDefinition.getGroupId(), _cpAttachmentFileEntryService,
 				_cpDefinitionOptionRelService,
 				_cpDefinitionOptionValueRelService, _cpOptionService,
-				_dlFileEntryModelResourcePermission, _uniqueFileNameProvider,
-				attachment,
+				_dlAppLocalService, _dlFileEntryModelResourcePermission,
+				_groupLocalService, _uniqueFileNameProvider, attachment,
 				_classNameLocalService.getClassNameId(
 					cpDefinition.getModelClassName()),
 				cpDefinition.getCPDefinitionId(), type, serviceContext);
@@ -439,16 +522,10 @@ public class AttachmentResourceImpl extends BaseAttachmentResourceImpl {
 			serviceContext.setAssetTagNames(attachmentBase64.getTags());
 		}
 
-		Map<String, Serializable> expandoBridgeAttributes =
-			CustomFieldsUtil.toMap(
+		serviceContext.setExpandoBridgeAttributes(
+			_getExpandoBridgeAttributes(
 				CPAttachmentFileEntry.class.getName(),
-				contextCompany.getCompanyId(),
-				attachmentBase64.getCustomFields(),
-				contextAcceptLanguage.getPreferredLocale());
-
-		if (expandoBridgeAttributes != null) {
-			serviceContext.setExpandoBridgeAttributes(expandoBridgeAttributes);
-		}
+				attachmentBase64.getCustomFields()));
 
 		CPAttachmentFileEntry cpAttachmentFileEntry =
 			AttachmentUtil.addOrUpdateCPAttachmentFileEntry(
@@ -467,6 +544,8 @@ public class AttachmentResourceImpl extends BaseAttachmentResourceImpl {
 			CPDefinition cpDefinition, int type, AttachmentUrl attachmentUrl)
 		throws Exception {
 
+		_checkCPAttachmentFileEntryPermissions(cpDefinition, type);
+
 		ServiceContext serviceContext = _serviceContextHelper.getServiceContext(
 			cpDefinition.getGroupId());
 
@@ -474,15 +553,10 @@ public class AttachmentResourceImpl extends BaseAttachmentResourceImpl {
 			serviceContext.setAssetTagNames(attachmentUrl.getTags());
 		}
 
-		Map<String, Serializable> expandoBridgeAttributes =
-			CustomFieldsUtil.toMap(
+		serviceContext.setExpandoBridgeAttributes(
+			_getExpandoBridgeAttributes(
 				CPAttachmentFileEntry.class.getName(),
-				contextCompany.getCompanyId(), attachmentUrl.getCustomFields(),
-				contextAcceptLanguage.getPreferredLocale());
-
-		if (expandoBridgeAttributes != null) {
-			serviceContext.setExpandoBridgeAttributes(expandoBridgeAttributes);
-		}
+				attachmentUrl.getCustomFields()));
 
 		CPAttachmentFileEntry cpAttachmentFileEntry =
 			AttachmentUtil.addOrUpdateCPAttachmentFileEntry(
@@ -551,6 +625,31 @@ public class AttachmentResourceImpl extends BaseAttachmentResourceImpl {
 			attachment);
 	}
 
+	private void _checkCPAttachmentFileEntryPermissions(
+			CPDefinition cpDefinition, int type)
+		throws Exception {
+
+		String actionKey = CPActionKeys.MANAGE_COMMERCE_PRODUCT_IMAGES;
+
+		if (type == CPAttachmentFileEntryConstants.TYPE_OTHER) {
+			actionKey = CPActionKeys.MANAGE_COMMERCE_PRODUCT_ATTACHMENTS;
+		}
+
+		_portletResourcePermission.check(
+			PermissionThreadLocal.getPermissionChecker(),
+			cpDefinition.getGroupId(), actionKey);
+
+		CommerceCatalog commerceCatalog = cpDefinition.getCommerceCatalog();
+
+		if (commerceCatalog == null) {
+			throw new PrincipalException();
+		}
+
+		_commerceCatalogModelResourcePermission.check(
+			PermissionThreadLocal.getPermissionChecker(), commerceCatalog,
+			ActionKeys.UPDATE);
+	}
+
 	private Page<Attachment> _getAttachmentPage(
 			CPDefinition cpDefinition, int type, Pagination pagination)
 		throws Exception {
@@ -563,7 +662,7 @@ public class AttachmentResourceImpl extends BaseAttachmentResourceImpl {
 				WorkflowConstants.STATUS_APPROVED,
 				pagination.getStartPosition(), pagination.getEndPosition());
 
-		int totalItems =
+		int totalCount =
 			_cpAttachmentFileEntryService.getCPAttachmentFileEntriesCount(
 				_classNameLocalService.getClassNameId(
 					cpDefinition.getModelClass()),
@@ -571,7 +670,22 @@ public class AttachmentResourceImpl extends BaseAttachmentResourceImpl {
 				WorkflowConstants.STATUS_APPROVED);
 
 		return Page.of(
-			_toAttachments(cpAttachmentFileEntries), pagination, totalItems);
+			_toAttachments(cpAttachmentFileEntries), pagination, totalCount);
+	}
+
+	private Map<String, Serializable> _getExpandoBridgeAttributes(
+		String className, CustomField[] customFields) {
+
+		Map<String, Serializable> expandoBridgeAttributes =
+			CustomFieldsUtil.toMap(
+				className, contextCompany.getCompanyId(), customFields,
+				contextAcceptLanguage.getPreferredLocale());
+
+		if (expandoBridgeAttributes == null) {
+			expandoBridgeAttributes = new HashMap<>();
+		}
+
+		return expandoBridgeAttributes;
 	}
 
 	private Attachment _toAttachment(Long cpAttachmentFileEntryId)
@@ -587,17 +701,38 @@ public class AttachmentResourceImpl extends BaseAttachmentResourceImpl {
 			List<CPAttachmentFileEntry> cpAttachmentFileEntries)
 		throws Exception {
 
-		List<Attachment> attachments = new ArrayList<>();
+		return transform(
+			cpAttachmentFileEntries,
+			cpAttachmentFileEntry -> _toAttachment(
+				cpAttachmentFileEntry.getCPAttachmentFileEntryId()));
+	}
 
-		for (CPAttachmentFileEntry cpAttachmentFileEntry :
-				cpAttachmentFileEntries) {
+	private Attachment _updateCPAttachmentFileEntry(
+			Attachment attachment, CPAttachmentFileEntry cpAttachmentFileEntry,
+			int type)
+		throws Exception {
 
-			attachments.add(
-				_toAttachment(
-					cpAttachmentFileEntry.getCPAttachmentFileEntryId()));
+		ServiceContext serviceContext = _serviceContextHelper.getServiceContext(
+			cpAttachmentFileEntry.getGroupId());
+
+		if (attachment.getTags() != null) {
+			serviceContext.setAssetTagNames(attachment.getTags());
 		}
 
-		return attachments;
+		serviceContext.setExpandoBridgeAttributes(
+			_getExpandoBridgeAttributes(
+				CPAttachmentFileEntry.class.getName(),
+				attachment.getCustomFields()));
+
+		cpAttachmentFileEntry = AttachmentUtil.updateCPAttachmentFileEntry(
+			cpAttachmentFileEntry, _cpAttachmentFileEntryService,
+			_cpDefinitionOptionRelService, _cpDefinitionOptionValueRelService,
+			_cpOptionService, _dlAppLocalService,
+			_dlFileEntryModelResourcePermission, groupLocalService, attachment,
+			cpAttachmentFileEntry.getClassPK(), type, serviceContext);
+
+		return _toAttachment(
+			cpAttachmentFileEntry.getCPAttachmentFileEntryId());
 	}
 
 	@Reference(
@@ -608,6 +743,12 @@ public class AttachmentResourceImpl extends BaseAttachmentResourceImpl {
 
 	@Reference
 	private ClassNameLocalService _classNameLocalService;
+
+	@Reference(
+		target = "(model.class.name=com.liferay.commerce.product.model.CommerceCatalog)"
+	)
+	private ModelResourcePermission<CommerceCatalog>
+		_commerceCatalogModelResourcePermission;
 
 	@Reference
 	private CPAttachmentFileEntryService _cpAttachmentFileEntryService;
@@ -625,11 +766,22 @@ public class AttachmentResourceImpl extends BaseAttachmentResourceImpl {
 	@Reference
 	private CPOptionService _cpOptionService;
 
+	@Reference
+	private DLAppLocalService _dlAppLocalService;
+
 	@Reference(
 		target = "(model.class.name=com.liferay.document.library.kernel.model.DLFileEntry)"
 	)
 	private ModelResourcePermission<DLFileEntry>
 		_dlFileEntryModelResourcePermission;
+
+	@Reference
+	private GroupLocalService _groupLocalService;
+
+	@Reference(
+		target = "(resource.name=" + CPConstants.RESOURCE_NAME_PRODUCT + ")"
+	)
+	private PortletResourcePermission _portletResourcePermission;
 
 	@Reference
 	private ServiceContextHelper _serviceContextHelper;

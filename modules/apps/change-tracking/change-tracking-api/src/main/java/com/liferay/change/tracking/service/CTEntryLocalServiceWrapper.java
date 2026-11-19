@@ -99,6 +99,14 @@ public class CTEntryLocalServiceWrapper
 		return _ctEntryLocalService.deleteCTEntry(ctEntry);
 	}
 
+	@Override
+	public com.liferay.change.tracking.model.CTEntry deleteCTEntry(
+			com.liferay.change.tracking.model.CTEntry ctEntry, boolean force)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _ctEntryLocalService.deleteCTEntry(ctEntry, force);
+	}
+
 	/**
 	 * Deletes the ct entry with the primary key from the database. Also notifies the appropriate model listeners.
 	 *
@@ -326,6 +334,13 @@ public class CTEntryLocalServiceWrapper
 			ctCollectionId, modelClassNameId);
 	}
 
+	@Override
+	public java.util.List<com.liferay.change.tracking.model.CTEntry>
+		getCTEntries(long[] ctEntryIds) {
+
+		return _ctEntryLocalService.getCTEntries(ctEntryIds);
+	}
+
 	/**
 	 * Returns the number of ct entries.
 	 *
@@ -445,6 +460,22 @@ public class CTEntryLocalServiceWrapper
 			ctCollectionId, modelClassNameId, modelClassPK);
 	}
 
+	@Override
+	public boolean hasUnpublishedCTEntries(
+		long modelClassNameId, long modelClassPK, int changeType) {
+
+		return _ctEntryLocalService.hasUnpublishedCTEntries(
+			modelClassNameId, modelClassPK, changeType);
+	}
+
+	@Override
+	public com.liferay.change.tracking.model.CTEntry updateChangeType(
+			long ctEntryId, int changeType)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _ctEntryLocalService.updateChangeType(ctEntryId, changeType);
+	}
+
 	/**
 	 * Updates the ct entry in the database or adds it if it does not yet exist. Also notifies the appropriate model listeners.
 	 *
@@ -464,10 +495,19 @@ public class CTEntryLocalServiceWrapper
 
 	@Override
 	public com.liferay.change.tracking.model.CTEntry updateModelMvccVersion(
-		long ctEntryId, long modelMvccVersion) {
+			long ctEntryId, long modelMvccVersion)
+		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _ctEntryLocalService.updateModelMvccVersion(
 			ctEntryId, modelMvccVersion);
+	}
+
+	@Override
+	public com.liferay.change.tracking.model.CTEntry updateUserId(
+			long ctEntryId, long userId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _ctEntryLocalService.updateUserId(ctEntryId, userId);
 	}
 
 	@Override
@@ -488,3 +528,4 @@ public class CTEntryLocalServiceWrapper
 	private CTEntryLocalService _ctEntryLocalService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-684761976

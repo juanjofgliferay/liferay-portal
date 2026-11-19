@@ -5,6 +5,7 @@
 
 package com.liferay.object.field.util;
 
+import com.liferay.document.library.helper.DLURLHelper;
 import com.liferay.dynamic.data.mapping.expression.CreateExpressionRequest;
 import com.liferay.dynamic.data.mapping.expression.DDMExpression;
 import com.liferay.dynamic.data.mapping.expression.DDMExpressionException;
@@ -16,18 +17,32 @@ import com.liferay.object.dynamic.data.mapping.expression.ObjectEntryDDMExpressi
 import com.liferay.object.entry.util.ObjectEntryThreadLocal;
 import com.liferay.object.exception.ObjectFieldReadOnlyException;
 import com.liferay.object.field.setting.util.ObjectFieldSettingUtil;
+import com.liferay.object.model.ObjectEntry;
 import com.liferay.object.model.ObjectField;
 import com.liferay.object.model.ObjectFieldSetting;
+import com.liferay.object.service.ObjectEntryLocalServiceUtil;
+import com.liferay.object.service.ObjectEntryService;
 import com.liferay.object.service.ObjectFieldLocalServiceUtil;
-import com.liferay.object.service.ObjectFieldSettingLocalServiceUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.json.JSONArray;
+import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.json.JSONObject;
+import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.security.auth.PrincipalThreadLocal;
+import com.liferay.portal.kernel.security.permission.ActionKeys;
+import com.liferay.portal.kernel.security.permission.PermissionChecker;
+import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
+import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.DateUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.HashMapBuilder;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.SetUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.vulcan.util.LocalizedMapUtil;
@@ -60,8 +75,8 @@ public class ObjectFieldUtil {
 			objectField.getExternalReferenceCode(), objectField.getUserId(),
 			objectField.getListTypeDefinitionId(),
 			objectField.getObjectDefinitionId(), objectField.getBusinessType(),
-			objectField.getDBType(), objectField.isIndexed(),
-			objectField.isIndexedAsKeyword(),
+			objectField.getDBType(), objectField.getDescriptionMap(),
+			objectField.isIndexed(), objectField.isIndexedAsKeyword(),
 			objectField.getIndexedLanguageId(), objectField.getLabelMap(),
 			objectField.isLocalized(), objectField.getName(),
 			objectField.getReadOnly(),
@@ -130,11 +145,11 @@ public class ObjectFieldUtil {
 		objectField.setIndexedLanguageId(indexedLanguageId);
 		objectField.setLabelMap(LocalizedMapUtil.getLocalizedMap(label));
 		objectField.setName(name);
-		objectField.setObjectFieldSettings(objectFieldSettings);
 		objectField.setReadOnly(readOnly);
 		objectField.setReadOnlyConditionExpression(readOnlyConditionExpression);
 		objectField.setRequired(required);
 		objectField.setSystem(system);
+		objectField.setObjectFieldSettings(objectFieldSettings);
 
 		return objectField;
 	}
@@ -174,6 +189,61 @@ public class ObjectFieldUtil {
 			false, false);
 	}
 
+	public static String getAttachmentDownloadURL(
+			DLURLHelper dlURLHelper, FileEntry fileEntry, long groupId,
+			String objectDefinitionExternalReferenceCode,
+			ObjectEntry objectEntry, ObjectEntryService objectEntryService,
+			ObjectField objectField, PermissionChecker permissionChecker,
+			ThemeDisplay themeDisplay)
+		throws PortalException {
+
+		String downloadURL = dlURLHelper.getDownloadURL(
+			fileEntry, fileEntry.getFileVersion(), themeDisplay,
+			StringPool.BLANK);
+
+		String groupExternalReferenceCode = StringPool.BLANK;
+
+		if (groupId > 0) {
+			Group group = GroupLocalServiceUtil.fetchGroup(groupId);
+
+			if (group != null) {
+				groupExternalReferenceCode = group.getExternalReferenceCode();
+			}
+		}
+
+		downloadURL = HttpComponentsUtil.addParameter(
+			downloadURL, "groupExternalReferenceCode",
+			groupExternalReferenceCode);
+
+		downloadURL = HttpComponentsUtil.addParameter(
+			downloadURL, "objectDefinitionExternalReferenceCode",
+			objectDefinitionExternalReferenceCode);
+
+		if (objectEntry == null) {
+			return downloadURL;
+		}
+
+		downloadURL = HttpComponentsUtil.addParameter(
+			downloadURL, "objectEntryExternalReferenceCode",
+			objectEntry.getExternalReferenceCode());
+
+		if (objectField == null) {
+			return downloadURL;
+		}
+
+		if (!fileEntry.containsPermission(
+				permissionChecker, ActionKeys.DOWNLOAD) ||
+			!objectEntryService.hasModelResourcePermission(
+				objectEntry, objectField.getAttachmentDownloadActionKey())) {
+
+			return StringPool.BLANK;
+		}
+
+		return HttpComponentsUtil.addParameter(
+			downloadURL, "objectFieldExternalReferenceCode",
+			objectField.getExternalReferenceCode());
+	}
+
 	public static String getCounterName(ObjectField objectField) {
 		return StringBundler.concat(
 			"object.field.auto.increment#", objectField.getCompanyId(),
@@ -187,14 +257,24 @@ public class ObjectFieldUtil {
 		else if (value.length() == 16) {
 			return "yyyy-MM-dd HH:mm";
 		}
+		else if ((value.length() == 19) && (value.charAt(10) == 'T')) {
+			return "yyyy-MM-dd'T'HH:mm:ss";
+		}
 		else if (value.length() == 20) {
 			return "yyyy-MM-dd'T'HH:mm:ss'Z'";
 		}
 		else if (value.length() == 21) {
 			return "yyyy-MM-dd HH:mm:ss.S";
 		}
-		else if ((value.length() == 23) && (value.charAt(10) == 'T')) {
-			return "yyyy-MM-dd'T'HH:mm:ss.SSS";
+		else if ((value.length() == 22) && (value.charAt(10) != 'T')) {
+			return "yyyy-MM-dd HH:mm:ss.SS";
+		}
+		else if (value.length() == 23) {
+			if (value.charAt(10) == 'T') {
+				return "yyyy-MM-dd'T'HH:mm:ss.SSS";
+			}
+
+			return "yyyy-MM-dd HH:mm:ss.SSS";
 		}
 		else if ((value.length() == 24) && (value.charAt(10) == 'T')) {
 			return "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
@@ -202,15 +282,89 @@ public class ObjectFieldUtil {
 		else if ((value.length() == 27) && (value.charAt(26) == 'M')) {
 			return "dd-MMM-yyyy hh:mm:ss.SSS a";
 		}
-		else if ((value.length() == 28) && (value.charAt(23) == '+')) {
+		else if ((value.length() == 28) &&
+				 ((value.charAt(23) == '+') || (value.charAt(23) == '-'))) {
+
 			return "yyyy-MM-dd'T'HH:mm:ss.SSSZ";
+		}
+		else if (value.length() == 28) {
+			return "EEE MMM dd HH:mm:ss zzz yyyy";
 		}
 
 		return DateUtil.ISO_8601_PATTERN;
 	}
 
+	public static JSONArray getMetadataObjectFieldNamesJSONArray() {
+		return JSONUtil.putAll(_metadataObjectFieldNames.toArray());
+	}
+
 	public static boolean isMetadata(String objectFieldName) {
 		return _metadataObjectFieldNames.contains(objectFieldName);
+	}
+
+	public static boolean isReadOnly(
+			DDMExpressionFactory ddmExpressionFactory, ObjectEntry objectEntry,
+			ObjectField objectField, long userId)
+		throws PortalException {
+
+		if (!Objects.equals(
+				objectField.getReadOnly(),
+				ObjectFieldConstants.READ_ONLY_CONDITIONAL)) {
+
+			return isReadOnly(null, objectField, null);
+		}
+
+		if (objectEntry == null) {
+			return isReadOnly(
+				ddmExpressionFactory, objectField,
+				ObjectFieldSettingUtil.getDefaultValues(
+					ddmExpressionFactory, objectField.getObjectDefinitionId()));
+		}
+
+		return isReadOnly(
+			ddmExpressionFactory, objectField,
+			HashMapBuilder.<String, Object>putAll(
+				ObjectEntryLocalServiceUtil.getSystemValues(objectEntry)
+			).putAll(
+				ObjectEntryLocalServiceUtil.getValues(objectEntry)
+			).put(
+				"currentUserId", userId
+			).build());
+	}
+
+	public static boolean isReadOnly(
+		DDMExpressionFactory ddmExpressionFactory, ObjectField objectField,
+		Map<String, Object> values) {
+
+		if (Objects.equals(
+				objectField.getReadOnly(),
+				ObjectFieldConstants.READ_ONLY_CONDITIONAL)) {
+
+			try {
+				DDMExpression<Boolean> ddmExpression =
+					ddmExpressionFactory.createExpression(
+						CreateExpressionRequest.Builder.newBuilder(
+							objectField.getReadOnlyConditionExpression()
+						).withDDMExpressionFieldAccessor(
+							new ObjectEntryDDMExpressionFieldAccessor(values)
+						).build());
+
+				ddmExpression.setVariables(values);
+
+				return ddmExpression.evaluate();
+			}
+			catch (DDMExpressionException ddmExpressionException) {
+				_log.error(ddmExpressionException);
+			}
+		}
+		else if (Objects.equals(
+					objectField.getReadOnly(),
+					ObjectFieldConstants.READ_ONLY_TRUE)) {
+
+			return true;
+		}
+
+		return false;
 	}
 
 	public static Map<String, ObjectField> toObjectFieldsMap(
@@ -244,14 +398,15 @@ public class ObjectFieldUtil {
 			if (existingValues.get(objectField.getName()) == null) {
 				existingValues.put(
 					objectField.getName(),
-					ObjectFieldSettingUtil.getDefaultValueAsString(
-						null, objectField.getObjectFieldId(),
-						ObjectFieldSettingLocalServiceUtil.getService(), null));
+					ObjectFieldSettingUtil.getDefaultValue(
+						ddmExpressionFactory, objectField, values));
 			}
 
 			if (objectField.isLocalized()) {
 				objectFieldsMap.put(
 					objectField.getI18nObjectFieldName(), objectField);
+
+				objectFieldsMap.remove(objectField.getName());
 			}
 			else if (Objects.equals(
 						objectField.getRelationshipType(),
@@ -272,6 +427,7 @@ public class ObjectFieldUtil {
 			ObjectField objectField = objectFieldsMap.get(entry.getKey());
 
 			if ((objectField == null) || objectField.isMetadata() ||
+				!objectField.hasUpdateValues() ||
 				Objects.equals(
 					objectField.getReadOnly(),
 					ObjectFieldConstants.READ_ONLY_FALSE)) {
@@ -314,11 +470,37 @@ public class ObjectFieldUtil {
 		}
 	}
 
+	private static long _getFileEntryId(Object value) throws PortalException {
+		if (value instanceof Map) {
+			Map<?, ?> map = (Map<?, ?>)value;
+
+			return GetterUtil.getLong(map.get("id"));
+		}
+
+		if (value instanceof Number || value instanceof String) {
+			return GetterUtil.getLong(value);
+		}
+
+		JSONObject jsonObject = JSONFactoryUtil.createJSONObject(
+			JSONFactoryUtil.looseSerialize(value));
+
+		return GetterUtil.getLong(jsonObject.get("id"));
+	}
+
 	private static void _validateNewValue(
 			Object existingValue, ObjectField objectField, Object value)
 		throws PortalException {
 
 		if (Validator.isNull(existingValue) && Validator.isNull(value)) {
+			return;
+		}
+
+		if (Objects.equals(
+				objectField.getBusinessType(),
+				ObjectFieldConstants.BUSINESS_TYPE_ATTACHMENT) &&
+			Objects.equals(
+				_getFileEntryId(value), GetterUtil.getLong(existingValue))) {
+
 			return;
 		}
 
@@ -333,11 +515,29 @@ public class ObjectFieldUtil {
 			Objects.equals(
 				objectField.getDBType(), ObjectFieldConstants.DB_TYPE_LONG)) {
 
-			BigDecimal bigDecimal1 = new BigDecimal(existingValue.toString());
-			BigDecimal bigDecimal2 = new BigDecimal(value.toString());
+			if (Objects.equals(
+					objectField.getBusinessType(),
+					ObjectFieldConstants.BUSINESS_TYPE_RELATIONSHIP) &&
+				Objects.equals(
+					objectField.getRelationshipType(),
+					ObjectRelationshipConstants.TYPE_ONE_TO_MANY)) {
 
-			if (bigDecimal1.compareTo(bigDecimal2) == 0) {
-				return;
+				if (Objects.equals(existingValue, value) ||
+					((existingValue != null) && (value != null) &&
+					 Objects.equals(
+						 existingValue.toString(), value.toString()))) {
+
+					return;
+				}
+			}
+			else {
+				BigDecimal bigDecimal1 = new BigDecimal(
+					existingValue.toString());
+				BigDecimal bigDecimal2 = new BigDecimal(value.toString());
+
+				if (bigDecimal1.compareTo(bigDecimal2) == 0) {
+					return;
+				}
 			}
 		}
 		else if (Objects.equals(
@@ -351,9 +551,19 @@ public class ObjectFieldUtil {
 					 ObjectFieldConstants.DB_TYPE_STRING)) {
 
 			if (Objects.equals(
-					GetterUtil.getString(value),
-					GetterUtil.getString(existingValue))) {
+					objectField.getBusinessType(),
+					ObjectFieldConstants.BUSINESS_TYPE_PICKLIST) &&
+				Objects.equals(
+					JSONFactoryUtil.createJSONObject(
+						JSONFactoryUtil.looseSerializeDeep(value)
+					).get(
+						"key"
+					),
+					existingValue)) {
 
+				return;
+			}
+			else if (Objects.equals(existingValue, value)) {
 				return;
 			}
 		}
@@ -409,7 +619,8 @@ public class ObjectFieldUtil {
 	private static final Set<String> _metadataObjectFieldNames =
 		Collections.unmodifiableSet(
 			SetUtil.fromArray(
-				"createDate", "creator", "externalReferenceCode", "id",
-				"modifiedDate", "status"));
+				"createDate", "creator", "displayDate", "expirationDate",
+				"externalReferenceCode", "id", "modifiedDate", "reviewDate",
+				"status"));
 
 }

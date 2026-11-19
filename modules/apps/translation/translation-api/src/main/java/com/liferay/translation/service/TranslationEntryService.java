@@ -50,7 +50,7 @@ public interface TranslationEntryService extends BaseService {
 		throws PortalException;
 
 	public TranslationEntry addOrUpdateTranslationEntry(
-			long groupId, String languageId,
+			long groupId, String sourceLanguageId, String targetLanguageId,
 			InfoItemReference infoItemReference,
 			InfoItemFieldValues infoItemFieldValues,
 			ServiceContext serviceContext)
@@ -67,3 +67,4 @@ public interface TranslationEntryService extends BaseService {
 	public String getOSGiServiceIdentifier();
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1339992184

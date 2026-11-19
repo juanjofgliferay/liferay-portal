@@ -21,12 +21,12 @@ import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.taglib.security.PermissionsURLTag;
 
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.List;
-
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Eudaldo Alonso
@@ -152,8 +152,8 @@ public class JournalDDMTemplateActionDropdownItemsProvider {
 
 		return dropdownItem -> {
 			dropdownItem.setHref(
-				_renderResponse.createRenderURL(), "mvcPath",
-				"/edit_ddm_template.jsp", "redirect",
+				_renderResponse.createRenderURL(), "mvcRenderCommandName",
+				"/journal/edit_ddm_template", "redirect",
 				_themeDisplay.getURLCurrent(), "ddmTemplateId",
 				_ddmTemplate.getTemplateId());
 			dropdownItem.setIcon("pencil");

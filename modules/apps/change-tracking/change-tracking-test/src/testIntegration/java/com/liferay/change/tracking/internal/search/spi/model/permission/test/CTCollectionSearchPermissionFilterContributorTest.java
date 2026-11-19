@@ -10,6 +10,7 @@ import com.liferay.change.tracking.constants.CTRoleConstants;
 import com.liferay.change.tracking.model.CTCollection;
 import com.liferay.change.tracking.service.CTCollectionLocalService;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.GroupConstants;
 import com.liferay.portal.kernel.model.Role;
@@ -59,13 +60,14 @@ public class CTCollectionSearchPermissionFilterContributorTest {
 			0, RandomTestUtil.randomString(), RandomTestUtil.randomString());
 
 		Group group = _groupLocalService.addGroup(
-			TestPropsValues.getUserId(), GroupConstants.DEFAULT_PARENT_GROUP_ID,
+			StringPool.BLANK, TestPropsValues.getUserId(),
+			GroupConstants.DEFAULT_PARENT_GROUP_ID,
 			CTCollection.class.getName(), ctCollection.getCtCollectionId(),
 			GroupConstants.DEFAULT_LIVE_GROUP_ID,
 			RandomTestUtil.randomLocaleStringMap(), null,
-			GroupConstants.TYPE_SITE_PRIVATE, false,
-			GroupConstants.DEFAULT_MEMBERSHIP_RESTRICTION, null, false, true,
-			null);
+			GroupConstants.TYPE_SITE_PRIVATE, null, false,
+			GroupConstants.DEFAULT_MEMBERSHIP_RESTRICTION, null, false, false,
+			true, null);
 
 		User user = UserTestUtil.addUser();
 
@@ -125,10 +127,10 @@ public class CTCollectionSearchPermissionFilterContributorTest {
 	private RoleLocalService _roleLocalService;
 
 	@Inject
-	private Searcher _searcher;
+	private SearchRequestBuilderFactory _searchRequestBuilderFactory;
 
 	@Inject
-	private SearchRequestBuilderFactory _searchRequestBuilderFactory;
+	private Searcher _searcher;
 
 	@Inject
 	private UIDFactory _uidFactory;

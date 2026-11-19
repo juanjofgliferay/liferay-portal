@@ -3,7 +3,6 @@ dependencies {
 	testIntegrationImplementation project(":apps:blogs:blogs-api")
 	testIntegrationImplementation project(":apps:configuration-admin:configuration-admin-api")
 	testIntegrationImplementation project(":apps:fragment:fragment-api")
-	testIntegrationImplementation project(":apps:frontend-taglib:frontend-taglib-form-navigator")
 	testIntegrationImplementation project(":apps:info:info-api")
 	testIntegrationImplementation project(":apps:item-selector:item-selector-criteria-api")
 	testIntegrationImplementation project(":apps:journal:journal-api")
@@ -14,6 +13,7 @@ dependencies {
 	testIntegrationImplementation project(":apps:portal-configuration:portal-configuration-test-util")
 	testIntegrationImplementation project(":apps:product-navigation:product-navigation-control-menu-api")
 	testIntegrationImplementation project(":apps:segments:segments-api")
+	testIntegrationImplementation project(":apps:segments:segments-test-util")
 	testIntegrationImplementation project(":apps:static:portal-configuration:portal-configuration-metatype-api")
 	testIntegrationImplementation project(":test:arquillian-extension-junit-bridge")
 }

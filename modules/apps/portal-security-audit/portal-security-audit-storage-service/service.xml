@@ -3,7 +3,7 @@
 
 <service-builder auto-import-default-references="false" auto-namespace-tables="true" dependency-injector="ds" package-path="com.liferay.portal.security.audit.storage">
 	<namespace>Audit</namespace>
-	<entity local-service="true" name="AuditEvent" remote-service="true">
+	<entity cache-enabled="false" local-service="true" name="AuditEvent" remote-service="true">
 
 		<!-- PK fields -->
 
@@ -22,16 +22,32 @@
 
 		<!-- Other fields -->
 
-		<column name="eventType" type="String" />
+		<column name="accountEntryId" type="long" />
+		<column name="additionalInfo" type="String" />
 		<column name="className" type="String" />
 		<column name="classPK" type="String" />
-		<column name="message" type="String" />
 		<column name="clientHost" type="String" />
 		<column name="clientIP" type="String" />
+		<column name="contextName" type="String" />
+		<column name="correlationId" type="String" />
+		<column name="eventType" type="String" />
+		<column name="httpMethod" type="String" />
+		<column name="impersonated" type="boolean" />
+		<column name="impersonatedUserEmailAddress" type="String" />
+		<column name="impersonatedUserId" type="long" />
+		<column name="impersonatedUserName" type="String" />
+		<column name="message" type="String" />
+		<column name="objectName" type="String" />
+		<column name="requestId" type="String" />
+		<column name="requestIdGenerated" type="boolean" />
+		<column name="resourceAction" type="String" />
+		<column name="resourceType" type="String" />
+		<column name="roles" type="String" />
 		<column name="serverName" type="String" />
 		<column name="serverPort" type="int" />
 		<column name="sessionID" type="String" />
-		<column name="additionalInfo" type="String" />
+		<column name="userAgent" type="String" />
+		<column name="userEmailAddress" type="String" />
 
 		<!-- Order -->
 
@@ -45,4 +61,34 @@
 			<finder-column name="companyId" />
 		</finder>
 	</entity>
+	<entity local-service="true" name="AuditEventPseudonymField" remote-service="false">
+
+		<!-- PK fields -->
+
+		<column name="auditEventPseudonymFieldId" primary="true" type="long" />
+
+		<!-- Audit fields -->
+
+		<column name="companyId" type="long" />
+		<column name="createDate" type="Date" />
+
+		<!-- Other fields -->
+
+		<column name="contextName" type="String" />
+		<column name="name" type="String" />
+		<column name="value" type="String" />
+		<column name="valueHash" type="String" />
+
+		<!-- Finder methods -->
+
+		<finder name="C_CN_N_VH" return-type="AuditEventPseudonymField" unique="true">
+			<finder-column name="companyId" />
+			<finder-column name="contextName" />
+			<finder-column name="name" />
+			<finder-column name="valueHash" />
+		</finder>
+	</entity>
+	<exceptions>
+		<exception>AuditEventPseudonymFieldValue</exception>
+	</exceptions>
 </service-builder>

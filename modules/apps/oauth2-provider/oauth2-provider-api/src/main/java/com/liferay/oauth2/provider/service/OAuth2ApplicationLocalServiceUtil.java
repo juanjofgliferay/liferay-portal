@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.InputStream;
@@ -146,6 +147,12 @@ public class OAuth2ApplicationLocalServiceUtil {
 			iconFileEntryId, jwks, name, privacyPolicyURL, redirectURIsList,
 			rememberDevice, scopeAliasesList, trustedApplication,
 			serviceContext);
+	}
+
+	public static void checkDynamicRegistratorOAuth2Application(long companyId)
+		throws PortalException {
+
+		getService().checkDynamicRegistratorOAuth2Application(companyId);
 	}
 
 	/**
@@ -464,6 +471,13 @@ public class OAuth2ApplicationLocalServiceUtil {
 		return getService().getPersistedModel(primaryKeyObj);
 	}
 
+	public static String getPlaintextClientSecret(
+			OAuth2Application oAuth2Application)
+		throws PortalException {
+
+		return getService().getPlaintextClientSecret(oAuth2Application);
+	}
+
 	public static OAuth2Application updateExternalReferenceCode(
 			long oAuth2ApplicationId, String externalReferenceCode)
 		throws PortalException {
@@ -534,13 +548,13 @@ public class OAuth2ApplicationLocalServiceUtil {
 	}
 
 	public static OAuth2ApplicationLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(OAuth2ApplicationLocalService service) {
-		_service = service;
-	}
-
-	private static volatile OAuth2ApplicationLocalService _service;
+	private static final Snapshot<OAuth2ApplicationLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			OAuth2ApplicationLocalServiceUtil.class,
+			OAuth2ApplicationLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1502733190

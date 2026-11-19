@@ -1,0 +1,153 @@
+/**
+ * SPDX-FileCopyrightText: (c) 2026 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
+ */
+
+package com.liferay.site.cms.site.initializer.bulk.selection;
+
+import com.liferay.bulk.selection.BulkSelection;
+import com.liferay.bulk.selection.BulkSelectionAction;
+import com.liferay.bulk.selection.constants.BulkSelectionActionStatusConstants;
+import com.liferay.object.model.ObjectEntry;
+import com.liferay.object.service.ObjectDefinitionLocalService;
+import com.liferay.object.service.ObjectEntryLocalService;
+import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.json.JSONArray;
+import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.json.JSONUtil;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.util.GetterUtil;
+
+import java.io.Serializable;
+
+import java.util.Date;
+import java.util.LinkedHashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import org.osgi.service.component.annotations.Reference;
+
+/**
+ * @author Balázs Sáfrány-Kovalik
+ */
+public abstract class BaseObjectBulkSelectionAction
+	implements BulkSelectionAction<Object> {
+
+	@Override
+	public void execute(
+			User user, BulkSelection<Object> bulkSelection,
+			Map<String, Serializable> inputMap)
+		throws Exception {
+
+		long bulkActionTaskId = GetterUtil.getLong(
+			inputMap.get("bulkActionTaskId"));
+
+		ObjectEntry objectEntry = objectEntryLocalService.getObjectEntry(
+			bulkActionTaskId);
+
+		Map<String, Serializable> values = objectEntry.getValues();
+
+		String executionStatus = BulkSelectionActionStatusConstants.COMPLETED;
+		AtomicInteger numberOfFailedItems = new AtomicInteger(0);
+		AtomicInteger numberOfSuccessfulItems = new AtomicInteger(0);
+		Set<String> failureReasons = new LinkedHashSet<>();
+
+		try {
+			values.put(
+				"executionStatus", BulkSelectionActionStatusConstants.STARTED);
+
+			objectEntry = partialUpdateObjectEntry(
+				user.getUserId(), objectEntry, values);
+
+			values = objectEntry.getValues();
+
+			bulkSelection.forEach(
+				object -> {
+					try {
+						doExecute(user, inputMap, object);
+
+						numberOfSuccessfulItems.getAndIncrement();
+					}
+					catch (Exception exception) {
+						if (_log.isWarnEnabled()) {
+							_log.warn(exception);
+						}
+
+						numberOfFailedItems.getAndIncrement();
+
+						failureReasons.add(getTaskResult(exception));
+					}
+				});
+		}
+		catch (PortalException portalException) {
+			if (_log.isWarnEnabled()) {
+				_log.warn(portalException);
+			}
+
+			executionStatus = BulkSelectionActionStatusConstants.FAILED;
+		}
+		finally {
+			values.put("completionDate", new Date());
+			values.put("executionStatus", executionStatus);
+			values.put("numberOfFailedItems", numberOfFailedItems.get());
+			values.put(
+				"numberOfSuccessfulItems", numberOfSuccessfulItems.get());
+			values.put("taskResult", _getTaskResultJSON(failureReasons));
+
+			partialUpdateObjectEntry(user.getUserId(), objectEntry, values);
+		}
+	}
+
+	protected abstract void doExecute(
+			User user, Map<String, Serializable> inputMap, Object object)
+		throws Exception;
+
+	protected String getTaskResult(Exception exception) {
+		Class<?> exceptionClass = exception.getClass();
+
+		return exceptionClass.getSimpleName();
+	}
+
+	protected ObjectEntry partialUpdateObjectEntry(
+			long userId, ObjectEntry objectEntry,
+			Map<String, Serializable> values)
+		throws PortalException {
+
+		return objectEntryLocalService.partialUpdateObjectEntry(
+			userId, objectEntry.getObjectEntryId(),
+			objectEntry.getObjectEntryFolderId(), values, new ServiceContext());
+	}
+
+	@Reference
+	protected ObjectDefinitionLocalService objectDefinitionLocalService;
+
+	@Reference
+	protected ObjectEntryLocalService objectEntryLocalService;
+
+	private String _getTaskResultJSON(Set<String> failureReasons) {
+		if (failureReasons.isEmpty()) {
+			return null;
+		}
+
+		JSONArray taskResultJSONArray = JSONFactoryUtil.createJSONArray();
+
+		for (String reason : failureReasons) {
+			taskResultJSONArray.put(
+				JSONUtil.put(
+					"id", reason
+				).put(
+					"type", "simpleError"
+				));
+		}
+
+		return taskResultJSONArray.toString();
+	}
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		BaseObjectBulkSelectionAction.class);
+
+}

@@ -7,15 +7,25 @@ package com.liferay.captcha.internal.configuration.persistence.listener;
 
 import com.liferay.captcha.configuration.CaptchaConfiguration;
 import com.liferay.captcha.recaptcha.ReCaptchaImpl;
+import com.liferay.captcha.simplecaptcha.SimpleCaptchaImpl;
 import com.liferay.portal.configuration.persistence.listener.ConfigurationModelListener;
 import com.liferay.portal.configuration.persistence.listener.ConfigurationModelListenerException;
 import com.liferay.portal.kernel.captcha.CaptchaConfigurationException;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.util.ArrayUtil;
+import com.liferay.portal.kernel.util.Http;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.LocaleThreadLocal;
 import com.liferay.portal.kernel.util.ResourceBundleUtil;
 import com.liferay.portal.kernel.util.Validator;
 
+import java.net.URI;
+import java.net.URISyntaxException;
+
 import java.util.Dictionary;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.ResourceBundle;
 
 import org.osgi.service.component.annotations.Component;
@@ -34,13 +44,18 @@ public class CaptchaConfigurationModelListener
 	public void onBeforeSave(String pid, Dictionary<String, Object> properties)
 		throws ConfigurationModelListenerException {
 
+		String captchaEngine = (String)properties.get("captchaEngine");
+
+		if (Validator.isNull(captchaEngine)) {
+			return;
+		}
+
 		try {
-			String captchaEngine = (String)properties.get("captchaEngine");
-
-			if (Validator.isNotNull(captchaEngine) &&
-				captchaEngine.equals(ReCaptchaImpl.class.getName())) {
-
-				_validateReCaptchaKeys(properties);
+			if (captchaEngine.equals(ReCaptchaImpl.class.getName())) {
+				_validateReCaptcha(properties);
+			}
+			else if (captchaEngine.equals(SimpleCaptchaImpl.class.getName())) {
+				_validateSimpleCaptcha(properties);
 			}
 		}
 		catch (CaptchaConfigurationException captchaConfigurationException) {
@@ -62,8 +77,37 @@ public class CaptchaConfigurationModelListener
 		return _resourceBundle;
 	}
 
-	private void _validateReCaptchaKeys(Dictionary<String, Object> properties)
+	private boolean _isAllowedURL(String url) {
+		try {
+			URI uri = HttpComponentsUtil.getURI(url);
+
+			if (Objects.equals(uri.getHost(), "www.google.com") &&
+				Objects.equals(uri.getScheme(), Http.HTTPS)) {
+
+				return true;
+			}
+		}
+		catch (URISyntaxException uriSyntaxException) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(uriSyntaxException);
+			}
+		}
+
+		return false;
+	}
+
+	private void _validateReCaptcha(Dictionary<String, Object> properties)
 		throws CaptchaConfigurationException {
+
+		String reCaptchaNoScriptURL = (String)properties.get(
+			"reCaptchaNoScriptURL");
+
+		if (!_isAllowedURL(reCaptchaNoScriptURL)) {
+			throw new CaptchaConfigurationException(
+				ResourceBundleUtil.getString(
+					_getResourceBundle(),
+					"the-recaptcha-no-script-url-is-not-valid"));
+		}
 
 		String reCaptchaPublicKey = (String)properties.get(
 			"reCaptchaPublicKey");
@@ -84,7 +128,89 @@ public class CaptchaConfigurationModelListener
 					_getResourceBundle(),
 					"the-recaptcha-private-key-is-not-valid"));
 		}
+
+		String reCaptchaScriptURL = (String)properties.get(
+			"reCaptchaScriptURL");
+
+		if (!_isAllowedURL(reCaptchaScriptURL)) {
+			throw new CaptchaConfigurationException(
+				ResourceBundleUtil.getString(
+					_getResourceBundle(),
+					"the-recaptcha-script-url-is-not-valid"));
+		}
+
+		String reCaptchaVerifyURL = (String)properties.get(
+			"reCaptchaVerifyURL");
+
+		if (!_isAllowedURL(reCaptchaVerifyURL)) {
+			throw new CaptchaConfigurationException(
+				ResourceBundleUtil.getString(
+					_getResourceBundle(),
+					"the-recaptcha-verify-url-is-not-valid"));
+		}
 	}
+
+	private void _validateSimpleCaptcha(Dictionary<String, Object> properties)
+		throws CaptchaConfigurationException {
+
+		String[] simpleCaptchaBackgroundProducers = (String[])properties.get(
+			"simpleCaptchaBackgroundProducers");
+
+		if (ArrayUtil.isEmpty(simpleCaptchaBackgroundProducers)) {
+			throw new CaptchaConfigurationException(
+				ResourceBundleUtil.getString(
+					_getResourceBundle(),
+					"the-simplecaptcha-background-producers-configuration-" +
+						"cannot-be-empty"));
+		}
+
+		String[] simpleCaptchaGimpyRenderers = (String[])properties.get(
+			"simpleCaptchaGimpyRenderers");
+
+		if (ArrayUtil.isEmpty(simpleCaptchaGimpyRenderers)) {
+			throw new CaptchaConfigurationException(
+				ResourceBundleUtil.getString(
+					_getResourceBundle(),
+					"the-simplecaptcha-gimpy-renderers-configuration-cannot-" +
+						"be-empty"));
+		}
+
+		String[] simpleCaptchaNoiseProducers = (String[])properties.get(
+			"simpleCaptchaNoiseProducers");
+
+		if (ArrayUtil.isEmpty(simpleCaptchaNoiseProducers)) {
+			throw new CaptchaConfigurationException(
+				ResourceBundleUtil.getString(
+					_getResourceBundle(),
+					"the-simplecaptcha-noise-producers-configuration-cannot-" +
+						"be-empty"));
+		}
+
+		String[] simpleCaptchaTextProducers = (String[])properties.get(
+			"simpleCaptchaTextProducers");
+
+		if (ArrayUtil.isEmpty(simpleCaptchaTextProducers)) {
+			throw new CaptchaConfigurationException(
+				ResourceBundleUtil.getString(
+					_getResourceBundle(),
+					"the-simplecaptcha-text-producers-configuration-cannot-" +
+						"be-empty"));
+		}
+
+		String[] simpleCaptchaWordRenderers = (String[])properties.get(
+			"simpleCaptchaWordRenderers");
+
+		if (ArrayUtil.isEmpty(simpleCaptchaWordRenderers)) {
+			throw new CaptchaConfigurationException(
+				ResourceBundleUtil.getString(
+					_getResourceBundle(),
+					"the-simplecaptcha-word-renderers-configuration-cannot-" +
+						"be-empty"));
+		}
+	}
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		CaptchaConfigurationModelListener.class);
 
 	private ResourceBundle _resourceBundle;
 

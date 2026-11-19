@@ -5,11 +5,15 @@
 
 package com.liferay.commerce.product.internal.search;
 
+import com.liferay.commerce.product.internal.search.spi.model.result.contributor.CPTaxCategoryModelSummaryContributor;
 import com.liferay.commerce.product.model.CPTaxCategory;
+import com.liferay.commerce.product.service.CPTaxCategoryLocalService;
 import com.liferay.portal.search.spi.model.index.contributor.ModelIndexerWriterContributor;
+import com.liferay.portal.search.spi.model.index.contributor.helper.IndexerWriterMode;
 import com.liferay.portal.search.spi.model.registrar.ModelSearchConfigurator;
 import com.liferay.portal.search.spi.model.result.contributor.ModelSummaryContributor;
 
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
@@ -42,15 +46,19 @@ public class CPTaxCategoryModelSearchConfigurator
 		return true;
 	}
 
-	@Reference(
-		target = "(indexer.class.name=com.liferay.commerce.product.model.CPTaxCategory)"
-	)
+	@Activate
+	protected void activate() {
+		_modelIndexWriterContributor = new ModelIndexerWriterContributor<>(
+			IndexerWriterMode.UPDATE,
+			_cpTaxCategoryLocalService::getIndexableActionableDynamicQuery);
+	}
+
+	@Reference
+	private CPTaxCategoryLocalService _cpTaxCategoryLocalService;
+
 	private ModelIndexerWriterContributor<CPTaxCategory>
 		_modelIndexWriterContributor;
-
-	@Reference(
-		target = "(indexer.class.name=com.liferay.commerce.product.model.CPTaxCategory)"
-	)
-	private ModelSummaryContributor _modelSummaryContributor;
+	private final ModelSummaryContributor _modelSummaryContributor =
+		new CPTaxCategoryModelSummaryContributor();
 
 }

@@ -9,13 +9,14 @@ import ClayLabel from '@clayui/label';
 import classnames from 'classnames';
 import {useMutation} from 'graphql-hooks';
 import React, {useCallback, useContext, useEffect, useState} from 'react';
-import {withRouter} from 'react-router-dom';
 
 import {AppContext} from '../AppContext.es';
+import {withRouter} from '../hooks/withRouter.es';
 import FlagsContainer from '../pages/questions/components/FlagsContainer';
 import {
 	deleteMessageQuery,
 	markAsAnswerMessageBoardMessageQuery,
+	unMarkAsAnswerMessageBoardMessageQuery,
 } from '../utils/client.es';
 import ArticleBodyRenderer from './ArticleBodyRenderer.es';
 import Comments from './Comments.es';
@@ -33,7 +34,7 @@ export default withRouter(
 		deleteAnswer,
 		display,
 		editable = true,
-		match: {url},
+		location,
 		onSubscription,
 		question,
 		showItems = true,
@@ -46,9 +47,8 @@ export default withRouter(
 		);
 		const [showAsAnswer, setShowAsAnswer] = useState(answer.showAsAnswer);
 		const [showNewComment, setShowNewComment] = useState(false);
-		const [showDeleteAnswerModal, setShowDeleteAnswerModal] = useState(
-			false
-		);
+		const [showDeleteAnswerModal, setShowDeleteAnswerModal] =
+			useState(false);
 
 		const [deleteMessage] = useMutation(deleteMessageQuery);
 
@@ -59,6 +59,14 @@ export default withRouter(
 		const [markAsAnswerMessageBoardMessage] = useMutation(
 			markAsAnswerMessageBoardMessageQuery
 		);
+
+		const [unMarkAsAnswerMessageBoardMessage] = useMutation(
+			unMarkAsAnswerMessageBoardMessageQuery
+		);
+
+		const markAsAnswerFunction = showAsAnswer
+			? unMarkAsAnswerMessageBoardMessage
+			: markAsAnswerMessageBoardMessage;
 
 		useEffect(() => {
 			setShowAsAnswer(answer.showAsAnswer);
@@ -165,7 +173,8 @@ export default withRouter(
 											className={classnames(
 												'font-weight-bold text-secondary',
 												{
-													'font-weight-bold text-secondary d-flex': styledItems,
+													'font-weight-bold text-secondary d-flex':
+														styledItems,
 												}
 											)}
 										>
@@ -181,7 +190,8 @@ export default withRouter(
 														className={classnames(
 															'btn-sm c-mr-2 c-px-2 c-py-1',
 															{
-																'text-2': styledItems,
+																'text-2':
+																	styledItems,
 															}
 														)}
 														onClick={() =>
@@ -205,7 +215,8 @@ export default withRouter(
 														className={classnames(
 															'btn-sm c-mr-2 c-px-2 c-py-1',
 															{
-																'text-2': styledItems,
+																'text-2':
+																	styledItems,
 															}
 														)}
 														displayType="secondary"
@@ -221,7 +232,7 @@ export default withRouter(
 													</ClayButton>
 													<Modal
 														body={Liferay.Language.get(
-															'do-you-want-to-delete–this-answer'
+															'do-you-want-to-delete-this-answer'
 														)}
 														callback={() => {
 															deleteMessage({
@@ -240,9 +251,11 @@ export default withRouter(
 																			}) =>
 																				deleteMessage(
 																					{
-																						variables: {
-																							messageBoardMessageId: id,
-																						},
+																						variables:
+																							{
+																								messageBoardMessageId:
+																									id,
+																							},
 																					}
 																				)
 																		)
@@ -286,29 +299,27 @@ export default withRouter(
 														showAsAnswer
 															? Liferay.Language.get(
 																	'unmark-as-answer'
-															  )
+																)
 															: Liferay.Language.get(
 																	'mark-as-answer'
-															  )
+																)
 													}
 													className={classnames(
 														'btn-sm c-mr-2 c-px-2 c-py-1',
 														{
-															'text-2': styledItems,
+															'text-2':
+																styledItems,
 														}
 													)}
 													data-testid="mark-as-answer-button"
 													displayType="secondary"
 													onClick={() => {
-														markAsAnswerMessageBoardMessage(
-															{
-																variables: {
-																	messageBoardMessageId:
-																		answer.id,
-																	showAsAnswer: !showAsAnswer,
-																},
-															}
-														).then(() => {
+														markAsAnswerFunction({
+															variables: {
+																messageBoardMessageId:
+																	answer.id,
+															},
+														}).then(() => {
 															setShowAsAnswer(
 																!showAsAnswer
 															);
@@ -323,10 +334,10 @@ export default withRouter(
 													{showAsAnswer
 														? Liferay.Language.get(
 																'unmark-as-answer'
-														  )
+															)
 														: Liferay.Language.get(
 																'mark-as-answer'
-														  )}
+															)}
 												</ClayButton>
 											)}
 
@@ -356,7 +367,7 @@ export default withRouter(
 													>
 														<Link
 															className="text-reset"
-															to={`${url}/answers/${answer.friendlyUrlPath}/edit`}
+															to={`${location.pathname}/answers/${answer.friendlyUrlPath}/edit`}
 														>
 															{Liferay.Language.get(
 																'edit'

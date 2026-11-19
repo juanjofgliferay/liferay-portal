@@ -1,0 +1,1354 @@
+/**
+ * SPDX-FileCopyrightText: (c) 2026 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
+ */
+
+import {expect, mergeTests} from '@playwright/test';
+
+import {apiHelpersTest} from '../../../fixtures/apiHelpersTest';
+import {audiencesPagesTest} from '../../../fixtures/audiencesPagesTest';
+import {dataApiHelpersTest} from '../../../fixtures/dataApiHelpersTest';
+import {featureFlagsTest} from '../../../fixtures/featureFlagsTest';
+import {isolatedSiteTest} from '../../../fixtures/isolatedSiteTest';
+import {loginTest} from '../../../fixtures/loginTest';
+import {pageEditorPagesTest} from '../../../fixtures/pageEditorPagesTest';
+import getRandomString from '../../../utils/getRandomString';
+import {performLoginViaApi} from '../../../utils/performLogin';
+import {waitForAlert} from '../../../utils/waitForAlert';
+import {waitForSPAToBeLoaded} from '../../../utils/waitForSPAToBeLoaded';
+import getFragmentDefinition from './utils/getFragmentDefinition';
+import getPageDefinition from './utils/getPageDefinition';
+
+const test = mergeTests(
+	apiHelpersTest,
+	audiencesPagesTest,
+	dataApiHelpersTest,
+	featureFlagsTest({
+		'LPD-85746': {enabled: true},
+		'LPS-178052': {enabled: true},
+	}),
+	isolatedSiteTest,
+	loginTest(),
+	pageEditorPagesTest
+);
+
+test(
+	'Element variations are applied in view mode for a matching audience once the page is published',
+	{tag: '@LPD-93951'},
+	async ({
+		apiHelpers,
+		browser,
+		elementVariationsPage,
+		page,
+		pageEditorPage,
+		site,
+	}) => {
+
+		// Create an audience matching the browser language
+
+		const audienceName = 'Audience ' + getRandomString();
+
+		await apiHelpers.jsonWebServicesAudiencesEntry.addAudiencesEntry({
+			name: audienceName,
+			rules: [{attribute: 'language', operator: 'eq', value: 'en-US'}],
+		});
+
+		// Create a page with a Heading and a Paragraph fragment
+
+		const layout = await apiHelpers.headlessDelivery.createSitePage({
+			pageDefinition: getPageDefinition([
+				getFragmentDefinition({
+					id: getRandomString(),
+					key: 'BASIC_COMPONENT-heading',
+				}),
+				getFragmentDefinition({
+					id: getRandomString(),
+					key: 'BASIC_COMPONENT-paragraph',
+				}),
+			]),
+			siteId: site.id,
+			title: getRandomString(),
+		});
+
+		// Create a variation replacing the heading HTML and another one
+		// hiding the paragraph
+
+		await pageEditorPage.goto(layout, site.friendlyUrlPath);
+
+		await pageEditorPage.goToElementVariations();
+
+		const variationText = 'Variation ' + getRandomString();
+
+		await elementVariationsPage.createElementVariation({
+			audienceName,
+			html: `<span>${variationText}</span>`,
+			name: 'Replace heading',
+			pageElementLabel: 'Heading (element-text)',
+		});
+
+		await elementVariationsPage.createElementVariation({
+			audienceName,
+			hide: true,
+			name: 'Hide paragraph',
+			pageElementLabel: 'Paragraph (element-text)',
+		});
+
+		// The unpublished variations are not applied in view mode
+
+		const paragraphDefaultText =
+			'A paragraph is a self-contained unit of a discourse';
+
+		await page.goto(`/web${site.friendlyUrlPath}${layout.friendlyUrlPath}`);
+
+		await expect(page.getByText('Heading Example')).toBeVisible();
+
+		await expect(page.getByText(paragraphDefaultText)).toBeVisible();
+
+		await expect(page.getByText(variationText)).not.toBeVisible();
+
+		// Publish the page
+
+		await pageEditorPage.goto(layout, site.friendlyUrlPath);
+
+		await pageEditorPage.publishPage();
+
+		// The variations are applied in view mode
+
+		await page.goto(`/web${site.friendlyUrlPath}${layout.friendlyUrlPath}`);
+
+		await expect(page.getByText(variationText)).toBeVisible();
+
+		await expect(page.getByText('Heading Example')).not.toBeVisible();
+
+		await expect(page.getByText(paragraphDefaultText)).not.toBeVisible();
+
+		// The page renders unchanged for a visitor matching no audience
+
+		const nonMatchingContext = await browser.newContext({locale: 'es-ES'});
+
+		const nonMatchingPage = await nonMatchingContext.newPage();
+
+		await performLoginViaApi({page: nonMatchingPage, screenName: 'test'});
+
+		await nonMatchingPage.goto(
+			`/web${site.friendlyUrlPath}${layout.friendlyUrlPath}`
+		);
+
+		await expect(
+			nonMatchingPage.getByText('Heading Example')
+		).toBeVisible();
+
+		await expect(
+			nonMatchingPage.getByText(paragraphDefaultText)
+		).toBeVisible();
+
+		await expect(
+			nonMatchingPage.getByText(variationText)
+		).not.toBeVisible();
+
+		await nonMatchingContext.close();
+	}
+);
+
+test(
+	'Translated HTML and JavaScript fields follow the page language',
+	{tag: '@LPD-93951'},
+	async ({apiHelpers, elementVariationsPage, page, pageEditorPage, site}) => {
+
+		// Create an audience matching every visitor
+
+		const audienceName = 'Audience ' + getRandomString();
+
+		await apiHelpers.jsonWebServicesAudiencesEntry.addAudiencesEntry({
+			name: audienceName,
+		});
+
+		// Create a page with a Heading fragment
+
+		const layout = await apiHelpers.headlessDelivery.createSitePage({
+			pageDefinition: getPageDefinition([
+				getFragmentDefinition({
+					id: getRandomString(),
+					key: 'BASIC_COMPONENT-heading',
+				}),
+			]),
+			siteId: site.id,
+			title: getRandomString(),
+		});
+
+		// Create a variation with translated HTML and JavaScript fields
+
+		await pageEditorPage.goto(layout, site.friendlyUrlPath);
+
+		await pageEditorPage.goToElementVariations();
+
+		const englishHTMLText = 'HTMLEN' + getRandomString();
+		const englishJavaScriptText = 'JSEN' + getRandomString();
+		const spanishHTMLText = 'HTMLES' + getRandomString();
+		const spanishJavaScriptText = 'JSES' + getRandomString();
+
+		await elementVariationsPage.createElementVariation({
+			audienceName,
+			html: `<span>${englishHTMLText}</span>`,
+			javaScript: `element.append(' ${englishJavaScriptText}');`,
+			name: 'Translated heading',
+			pageElementLabel: 'Heading (element-text)',
+			translations: [
+				{
+					html: `<span>${spanishHTMLText}</span>`,
+					javaScript: `element.append(' ${spanishJavaScriptText}');`,
+					languageId: 'es-ES',
+				},
+			],
+		});
+
+		// Publish the page
+
+		await pageEditorPage.goto(layout, site.friendlyUrlPath);
+
+		await pageEditorPage.publishPage();
+
+		// The default page language applies the default language payloads
+
+		await page.goto(`/web${site.friendlyUrlPath}${layout.friendlyUrlPath}`);
+
+		await expect(page.getByText(englishHTMLText)).toBeVisible();
+
+		await expect(page.getByText(englishJavaScriptText)).toBeVisible();
+
+		// The translated page applies the translated payloads
+
+		await page.goto(
+			`/es/web${site.friendlyUrlPath}${layout.friendlyUrlPath}`
+		);
+
+		await expect(page.getByText(spanishHTMLText)).toBeVisible();
+
+		await expect(page.getByText(spanishJavaScriptText)).toBeVisible();
+
+		await expect(page.getByText(englishHTMLText)).not.toBeVisible();
+
+		// Return to the default language before cleaning up
+
+		await page.goto(
+			`/en/web${site.friendlyUrlPath}${layout.friendlyUrlPath}`
+		);
+	}
+);
+
+test(
+	'Applies the highest priority audience variation when a visitor matches several audiences',
+	{tag: '@LPD-95644'},
+	async ({apiHelpers, elementVariationsPage, page, pageEditorPage, site}) => {
+
+		// Create two audiences that both match every visitor. The first created
+		// audience ranks higher in the definition order and therefore takes
+		// precedence.
+
+		const firstAudienceName = 'Audience ' + getRandomString();
+		const secondAudienceName = 'Audience ' + getRandomString();
+
+		await apiHelpers.jsonWebServicesAudiencesEntry.addAudiencesEntry({
+			name: firstAudienceName,
+		});
+
+		await apiHelpers.jsonWebServicesAudiencesEntry.addAudiencesEntry({
+			name: secondAudienceName,
+		});
+
+		// Create a page with a Heading fragment
+
+		const layout = await apiHelpers.headlessDelivery.createSitePage({
+			pageDefinition: getPageDefinition([
+				getFragmentDefinition({
+					id: getRandomString(),
+					key: 'BASIC_COMPONENT-heading',
+				}),
+			]),
+			siteId: site.id,
+			title: getRandomString(),
+		});
+
+		// Bind a variation to each audience on the same heading element
+
+		await pageEditorPage.goto(layout, site.friendlyUrlPath);
+
+		await pageEditorPage.goToElementVariations();
+
+		const firstVariationText = 'First ' + getRandomString();
+		const secondVariationText = 'Second ' + getRandomString();
+
+		await elementVariationsPage.createElementVariation({
+			audienceName: firstAudienceName,
+			html: `<span>${firstVariationText}</span>`,
+			name: 'First audience variation',
+			pageElementLabel: 'Heading (element-text)',
+		});
+
+		await elementVariationsPage.createElementVariation({
+			audienceName: secondAudienceName,
+			html: `<span>${secondVariationText}</span>`,
+			name: 'Second audience variation',
+			pageElementLabel: 'Heading (element-text)',
+		});
+
+		// Publish the page
+
+		await pageEditorPage.goto(layout, site.friendlyUrlPath);
+
+		await pageEditorPage.publishPage();
+
+		// The visitor matches both audiences, so only the higher priority
+		// audience variation is applied
+
+		await page.goto(`/web${site.friendlyUrlPath}${layout.friendlyUrlPath}`);
+
+		await expect(page.getByText(firstVariationText)).toBeVisible();
+
+		await expect(page.getByText(secondVariationText)).not.toBeVisible();
+
+		// Move the later created audience to the top of the priority list
+
+		await pageEditorPage.goto(layout, site.friendlyUrlPath);
+
+		await pageEditorPage.goToElementVariations();
+
+		await elementVariationsPage.prioritizeAudience(secondAudienceName);
+
+		// Publish the page again
+
+		await pageEditorPage.goto(layout, site.friendlyUrlPath);
+
+		await pageEditorPage.publishPage();
+
+		// The manually prioritized audience variation is applied in view mode
+
+		await page.goto(`/web${site.friendlyUrlPath}${layout.friendlyUrlPath}`);
+
+		await expect(page.getByText(secondVariationText)).toBeVisible();
+
+		await expect(page.getByText(firstVariationText)).not.toBeVisible();
+	}
+);
+
+test(
+	'Excludes a disabled variation from the page and applies it again once re-enabled',
+	{tag: '@LPD-95644'},
+	async ({apiHelpers, elementVariationsPage, page, pageEditorPage, site}) => {
+
+		// Create an audience matching every visitor
+
+		const audienceName = 'Audience ' + getRandomString();
+
+		await apiHelpers.jsonWebServicesAudiencesEntry.addAudiencesEntry({
+			name: audienceName,
+		});
+
+		// Create a page with a Heading fragment
+
+		const layout = await apiHelpers.headlessDelivery.createSitePage({
+			pageDefinition: getPageDefinition([
+				getFragmentDefinition({
+					id: getRandomString(),
+					key: 'BASIC_COMPONENT-heading',
+				}),
+			]),
+			siteId: site.id,
+			title: getRandomString(),
+		});
+
+		// Create a variation replacing the heading HTML
+
+		await pageEditorPage.goto(layout, site.friendlyUrlPath);
+
+		await pageEditorPage.goToElementVariations();
+
+		const variationName = 'Toggle heading';
+		const variationText = 'Variation ' + getRandomString();
+
+		await elementVariationsPage.createElementVariation({
+			audienceName,
+			html: `<span>${variationText}</span>`,
+			name: variationName,
+			pageElementLabel: 'Heading (element-text)',
+		});
+
+		// Disable the variation from the actions menu
+
+		await elementVariationsPage.setVariationActive(variationName, false);
+
+		await expect(
+			elementVariationsPage.sidebar.getByText('Disabled', {exact: true})
+		).toBeVisible();
+
+		// Publish the page
+
+		await pageEditorPage.goto(layout, site.friendlyUrlPath);
+
+		await pageEditorPage.publishPage();
+
+		// The disabled variation is excluded from the runtime bundle
+
+		await page.goto(`/web${site.friendlyUrlPath}${layout.friendlyUrlPath}`);
+
+		await expect(page.getByText('Heading Example')).toBeVisible();
+
+		await expect(page.getByText(variationText)).not.toBeVisible();
+
+		// Re-enable the variation from the actions menu
+
+		await pageEditorPage.goto(layout, site.friendlyUrlPath);
+
+		await pageEditorPage.goToElementVariations();
+
+		await elementVariationsPage.setVariationActive(variationName, true);
+
+		await expect(
+			elementVariationsPage.sidebar.getByText('Disabled', {exact: true})
+		).not.toBeVisible();
+
+		// Publish the page again
+
+		await pageEditorPage.goto(layout, site.friendlyUrlPath);
+
+		await pageEditorPage.publishPage();
+
+		// The re-enabled variation is applied in view mode
+
+		await page.goto(`/web${site.friendlyUrlPath}${layout.friendlyUrlPath}`);
+
+		await expect(page.getByText(variationText)).toBeVisible();
+
+		await expect(page.getByText('Heading Example')).not.toBeVisible();
+	}
+);
+
+test(
+	'Edits and deletes a variation and applies each change once the page is published',
+	{tag: '@LPD-93951'},
+	async ({apiHelpers, elementVariationsPage, page, pageEditorPage, site}) => {
+
+		// Create an audience matching every visitor
+
+		const audienceName = 'Audience ' + getRandomString();
+
+		await apiHelpers.jsonWebServicesAudiencesEntry.addAudiencesEntry({
+			name: audienceName,
+		});
+
+		// Create a page with a Heading fragment
+
+		const layout = await apiHelpers.headlessDelivery.createSitePage({
+			pageDefinition: getPageDefinition([
+				getFragmentDefinition({
+					id: getRandomString(),
+					key: 'BASIC_COMPONENT-heading',
+				}),
+			]),
+			siteId: site.id,
+			title: getRandomString(),
+		});
+
+		// Create a variation replacing the heading HTML
+
+		await pageEditorPage.goto(layout, site.friendlyUrlPath);
+
+		await pageEditorPage.goToElementVariations();
+
+		const variationName = 'Editable heading';
+		const originalText = 'Original ' + getRandomString();
+
+		await elementVariationsPage.createElementVariation({
+			audienceName,
+			html: `<span>${originalText}</span>`,
+			name: variationName,
+			pageElementLabel: 'Heading (element-text)',
+		});
+
+		// Edit the variation payload
+
+		const updatedText = 'Updated ' + getRandomString();
+
+		await elementVariationsPage.editElementVariation({
+			html: `<span>${updatedText}</span>`,
+			name: variationName,
+		});
+
+		// Publish the page
+
+		await pageEditorPage.goto(layout, site.friendlyUrlPath);
+
+		await pageEditorPage.publishPage();
+
+		// The updated payload is applied in view mode
+
+		await page.goto(`/web${site.friendlyUrlPath}${layout.friendlyUrlPath}`);
+
+		await expect(page.getByText(updatedText)).toBeVisible();
+
+		await expect(page.getByText(originalText)).not.toBeVisible();
+
+		// Delete the variation from the actions menu
+
+		await pageEditorPage.goto(layout, site.friendlyUrlPath);
+
+		await pageEditorPage.goToElementVariations();
+
+		await elementVariationsPage.deleteElementVariation(variationName);
+
+		await expect(
+			elementVariationsPage.getVariationListItem(variationName)
+		).not.toBeVisible();
+
+		// Publish the page again
+
+		await pageEditorPage.goto(layout, site.friendlyUrlPath);
+
+		await pageEditorPage.publishPage();
+
+		// The page renders the original heading once the deletion is published
+
+		await page.goto(`/web${site.friendlyUrlPath}${layout.friendlyUrlPath}`);
+
+		await expect(page.getByText('Heading Example')).toBeVisible();
+
+		await expect(page.getByText(updatedText)).not.toBeVisible();
+	}
+);
+
+test(
+	'Reflects the selected experience content in the preview and page element picker',
+	{tag: '@LPD-101994'},
+	async ({apiHelpers, elementVariationsPage, pageEditorPage, site}) => {
+
+		// Create an audience so element variations can be built
+
+		const audienceName = 'Audience ' + getRandomString();
+
+		await apiHelpers.jsonWebServicesAudiencesEntry.addAudiencesEntry({
+			name: audienceName,
+		});
+
+		// Create a page with a Paragraph fragment in the default experience
+
+		const layout = await apiHelpers.headlessDelivery.createSitePage({
+			pageDefinition: getPageDefinition([
+				getFragmentDefinition({
+					id: getRandomString(),
+					key: 'BASIC_COMPONENT-paragraph',
+				}),
+			]),
+			siteId: site.id,
+			title: getRandomString(),
+		});
+
+		// Create a second experience and add a Heading only to it
+
+		const experienceName = 'Experience ' + getRandomString();
+
+		await pageEditorPage.goto(layout, site.friendlyUrlPath);
+
+		await pageEditorPage.createExperience(experienceName);
+
+		await pageEditorPage.addFragment('Basic Components', 'Heading');
+
+		// Open element variations from the second experience
+
+		await pageEditorPage.goToElementVariations();
+
+		const paragraphDefaultText =
+			'A paragraph is a self-contained unit of a discourse';
+
+		// The default experience preview excludes the heading, so it is neither
+		// rendered nor offered as a page element
+
+		await elementVariationsPage.selectExperience('Default');
+
+		await expect(
+			elementVariationsPage.preview.getByText(paragraphDefaultText)
+		).toBeVisible();
+
+		await expect(
+			elementVariationsPage.preview.getByText('Heading Example')
+		).not.toBeVisible();
+
+		await elementVariationsPage.startElementVariationDraft();
+
+		await elementVariationsPage.openPageElementPicker();
+
+		await expect(
+			elementVariationsPage.getPageElementOption(
+				'Paragraph (element-text)'
+			)
+		).toBeVisible();
+
+		await expect(
+			elementVariationsPage.getPageElementOption('Heading (element-text)')
+		).not.toBeVisible();
+
+		await elementVariationsPage.cancelElementVariationDraft();
+
+		// The second experience preview renders the heading and offers it as a
+		// page element
+
+		await elementVariationsPage.selectExperience(experienceName);
+
+		await expect(
+			elementVariationsPage.preview.getByText('Heading Example')
+		).toBeVisible();
+
+		await elementVariationsPage.startElementVariationDraft();
+
+		await elementVariationsPage.openPageElementPicker();
+
+		await expect(
+			elementVariationsPage.getPageElementOption('Heading (element-text)')
+		).toBeVisible();
+	}
+);
+
+test(
+	'Loads each page own variations when navigating between pages',
+	{tag: '@LPD-93951'},
+	async ({apiHelpers, elementVariationsPage, page, pageEditorPage, site}) => {
+
+		// Create an audience matching every visitor
+
+		const audienceName = 'Audience ' + getRandomString();
+
+		await apiHelpers.jsonWebServicesAudiencesEntry.addAudiencesEntry({
+			name: audienceName,
+		});
+
+		// Create two pages, each with a Heading fragment
+
+		const firstLayout = await apiHelpers.headlessDelivery.createSitePage({
+			pageDefinition: getPageDefinition([
+				getFragmentDefinition({
+					id: getRandomString(),
+					key: 'BASIC_COMPONENT-heading',
+				}),
+			]),
+			siteId: site.id,
+			title: getRandomString(),
+		});
+
+		const secondLayout = await apiHelpers.headlessDelivery.createSitePage({
+			pageDefinition: getPageDefinition([
+				getFragmentDefinition({
+					id: getRandomString(),
+					key: 'BASIC_COMPONENT-heading',
+				}),
+			]),
+			siteId: site.id,
+			title: getRandomString(),
+		});
+
+		// Replace the heading on the first page and publish
+
+		await pageEditorPage.goto(firstLayout, site.friendlyUrlPath);
+
+		await pageEditorPage.goToElementVariations();
+
+		const firstVariationText = 'First ' + getRandomString();
+
+		await elementVariationsPage.createElementVariation({
+			audienceName,
+			html: `<span>${firstVariationText}</span>`,
+			name: 'First page heading',
+			pageElementLabel: 'Heading (element-text)',
+		});
+
+		await pageEditorPage.goto(firstLayout, site.friendlyUrlPath);
+
+		await pageEditorPage.publishPage();
+
+		// Replace the heading on the second page and publish
+
+		await pageEditorPage.goto(secondLayout, site.friendlyUrlPath);
+
+		await pageEditorPage.goToElementVariations();
+
+		const secondVariationText = 'Second ' + getRandomString();
+
+		await elementVariationsPage.createElementVariation({
+			audienceName,
+			html: `<span>${secondVariationText}</span>`,
+			name: 'Second page heading',
+			pageElementLabel: 'Heading (element-text)',
+		});
+
+		await pageEditorPage.goto(secondLayout, site.friendlyUrlPath);
+
+		await pageEditorPage.publishPage();
+
+		// The first page applies its own variation
+
+		await page.goto(
+			`/web${site.friendlyUrlPath}${firstLayout.friendlyUrlPath}`
+		);
+
+		await expect(page.getByText(firstVariationText)).toBeVisible();
+
+		await expect(page.getByText(secondVariationText)).not.toBeVisible();
+
+		// A client-side navigation to the second page reapplies detection and
+		// loads the second page variation
+
+		await page
+			.locator(`a[href*="${secondLayout.friendlyUrlPath}"]`)
+			.first()
+			.click();
+
+		await waitForSPAToBeLoaded(page);
+
+		await expect(page.getByText(secondVariationText)).toBeVisible();
+
+		await expect(page.getByText(firstVariationText)).not.toBeVisible();
+
+		// Navigating back loads the first page variation again
+
+		await page
+			.locator(`a[href*="${firstLayout.friendlyUrlPath}"]`)
+			.first()
+			.click();
+
+		await waitForSPAToBeLoaded(page);
+
+		await expect(page.getByText(firstVariationText)).toBeVisible();
+
+		await expect(page.getByText(secondVariationText)).not.toBeVisible();
+	}
+);
+
+test(
+	'Does not serve the element variations of a page the guest cannot view',
+	{tag: '@LPD-101907'},
+	async ({
+		apiHelpers,
+		browser,
+		elementVariationsPage,
+		page,
+		pageEditorPage,
+		site,
+	}) => {
+
+		// Create an audience matching every visitor
+
+		const audienceName = 'Audience ' + getRandomString();
+
+		await apiHelpers.jsonWebServicesAudiencesEntry.addAudiencesEntry({
+			name: audienceName,
+		});
+
+		// Create a page with a Heading fragment, replace its heading and
+		// publish
+
+		const layout = await apiHelpers.headlessDelivery.createSitePage({
+			pageDefinition: getPageDefinition([
+				getFragmentDefinition({
+					id: getRandomString(),
+					key: 'BASIC_COMPONENT-heading',
+				}),
+			]),
+			siteId: site.id,
+			title: getRandomString(),
+		});
+
+		await pageEditorPage.goto(layout, site.friendlyUrlPath);
+
+		await pageEditorPage.goToElementVariations();
+
+		await elementVariationsPage.createElementVariation({
+			audienceName,
+			html: `<span>Variation ${getRandomString()}</span>`,
+			name: 'Replace heading',
+			pageElementLabel: 'Heading (element-text)',
+		});
+
+		await pageEditorPage.goto(layout, site.friendlyUrlPath);
+
+		await pageEditorPage.publishPage();
+
+		// Read the element variations URL from the published page
+
+		await page.goto(`/web${site.friendlyUrlPath}${layout.friendlyUrlPath}`);
+
+		const metaContent = await page
+			.locator('meta[name="audiences-variations"]')
+			.getAttribute('content');
+
+		const [plid, segmentsExperienceId, hash] = metaContent.split(':');
+
+		const variationsPath = `/o/audiences/${plid}/${segmentsExperienceId}/variations.(${hash}).js`;
+
+		// The variations of a page the guest can view are served and publicly
+		// cacheable
+
+		const guestContext = await browser.newContext({
+			storageState: {cookies: [], origins: []},
+		});
+
+		const allowedResponse = await guestContext.request.get(variationsPath);
+
+		expect(allowedResponse.status()).toBe(200);
+
+		expect(allowedResponse.headers()['cache-control']).toContain('public');
+
+		// Revoke the guest view permission on the page
+
+		const companyId = String(
+			await page.evaluate(() => Liferay.ThemeDisplay.getCompanyId())
+		);
+
+		const guestRole = await apiHelpers.jsonWebServicesRole.getRole(
+			companyId,
+			'Guest'
+		);
+
+		await apiHelpers.jsonWebServicesResourcePermissionApiHelper.removeResourcePermission(
+			'VIEW',
+			companyId,
+			String(site.id),
+			'com.liferay.portal.kernel.model.Layout',
+			plid,
+			String(guestRole.roleId),
+			'4'
+		);
+
+		// The guest is denied and the response is not cacheable
+
+		const deniedResponse = await guestContext.request.get(variationsPath);
+
+		expect(deniedResponse.status()).toBe(404);
+
+		const deniedCacheControl =
+			deniedResponse.headers()['cache-control'] ?? '';
+
+		expect(deniedCacheControl).not.toContain('max-age');
+
+		expect(deniedCacheControl).not.toContain('public');
+
+		await guestContext.close();
+	}
+);
+
+test(
+	'Warns about the element variations whose audience was deleted',
+	{tag: '@LPD-107094'},
+	async ({
+		apiHelpers,
+		audiencesPage,
+		elementVariationsPage,
+		page,
+		pageEditorPage,
+		site,
+	}) => {
+
+		// Create two audiences
+
+		const deletedAudienceName = 'Audience ' + getRandomString();
+
+		const keptAudienceName = 'Audience ' + getRandomString();
+
+		for (const audienceName of [deletedAudienceName, keptAudienceName]) {
+			await apiHelpers.jsonWebServicesAudiencesEntry.addAudiencesEntry({
+				name: audienceName,
+			});
+		}
+
+		// Create a page with a Heading fragment and a variation for each
+		// audience
+
+		const layout = await apiHelpers.headlessDelivery.createSitePage({
+			pageDefinition: getPageDefinition([
+				getFragmentDefinition({
+					id: getRandomString(),
+					key: 'BASIC_COMPONENT-heading',
+				}),
+			]),
+			siteId: site.id,
+			title: getRandomString(),
+		});
+
+		await pageEditorPage.goto(layout, site.friendlyUrlPath);
+
+		await pageEditorPage.goToElementVariations();
+
+		const orphanedVariationName = 'Variation ' + getRandomString();
+
+		await elementVariationsPage.createElementVariation({
+			audienceName: deletedAudienceName,
+			hide: true,
+			name: orphanedVariationName,
+			pageElementLabel: 'Heading (element-text)',
+		});
+
+		const keptVariationName = 'Variation ' + getRandomString();
+
+		await elementVariationsPage.createElementVariation({
+			audienceName: keptAudienceName,
+			hide: true,
+			name: keptVariationName,
+			pageElementLabel: 'Heading (element-text)',
+		});
+
+		// Every variation has an audience, so there is no warning
+
+		await expect(elementVariationsPage.issuesAlert).not.toBeVisible();
+
+		// Deleting the audience of the first variation warns that a variation
+		// uses it, and cancelling keeps the audience
+
+		await audiencesPage.goto();
+
+		expect(
+			await audiencesPage.deleteAudience(deletedAudienceName, {
+				accept: false,
+			})
+		).toBe(
+			'This audience is used in one element variation. Deleting it will remove it from that variation. Are you sure you want to delete it?'
+		);
+
+		await expect(
+			page.locator('tr', {hasText: deletedAudienceName})
+		).toBeVisible();
+
+		// Delete the audience of the first variation
+
+		await audiencesPage.deleteAudience(deletedAudienceName);
+
+		// The orphaned variation is marked as missing an audience
+
+		await pageEditorPage.goto(layout, site.friendlyUrlPath);
+
+		await pageEditorPage.goToElementVariations();
+
+		await expect(
+			elementVariationsPage
+				.getVariationListItem(orphanedVariationName)
+				.getByText('Missing Audience')
+		).toBeVisible();
+
+		await expect(
+			elementVariationsPage
+				.getVariationListItem(keptVariationName)
+				.getByText('Missing Audience')
+		).not.toBeVisible();
+
+		await expect(elementVariationsPage.issuesAlert).toContainText(
+			'There are missing audiences or page elements for some variations.'
+		);
+
+		// Show the orphaned variations
+
+		await elementVariationsPage.showIssueVariations();
+
+		await expect(
+			elementVariationsPage.getAppliedFilter(
+				'Issue: Missing Audience, Missing Page Element'
+			)
+		).toBeVisible();
+
+		await expect(
+			elementVariationsPage.getVariationListItem(orphanedVariationName)
+		).toBeVisible();
+
+		await expect(
+			elementVariationsPage.getVariationListItem(keptVariationName)
+		).not.toBeVisible();
+
+		await expect(elementVariationsPage.issuesAlert).not.toBeVisible();
+
+		await expect(page.getByText('1 Result Found for:')).toBeVisible();
+	}
+);
+
+test(
+	'Warns before removing a site whose element variations use the audience',
+	{tag: '@LPD-106899'},
+	async ({
+		apiHelpers,
+		audiencesPage,
+		elementVariationsPage,
+		page,
+		pageEditorPage,
+		site,
+	}) => {
+
+		// Create an audience scoped to the site and to a second site
+
+		const otherSite = await apiHelpers.headlessAdminSite.postSite({
+			name: getRandomString(),
+		});
+
+		const audienceName = 'Audience ' + getRandomString();
+
+		await apiHelpers.jsonWebServicesAudiencesEntry.addAudiencesEntry({
+			groupERCs: [
+				site.externalReferenceCode,
+				otherSite.externalReferenceCode,
+			],
+			name: audienceName,
+		});
+
+		// Create a variation that uses the audience and publish the page
+
+		const layout = await apiHelpers.headlessDelivery.createSitePage({
+			pageDefinition: getPageDefinition([
+				getFragmentDefinition({
+					id: getRandomString(),
+					key: 'BASIC_COMPONENT-heading',
+				}),
+			]),
+			siteId: site.id,
+			title: getRandomString(),
+		});
+
+		await pageEditorPage.goto(layout, site.friendlyUrlPath);
+
+		await pageEditorPage.goToElementVariations();
+
+		const variationText = 'Variation ' + getRandomString();
+
+		await elementVariationsPage.createElementVariation({
+			audienceName,
+			html: `<span>${variationText}</span>`,
+			name: 'Replace heading',
+			pageElementLabel: 'Heading (element-text)',
+		});
+
+		await pageEditorPage.goto(layout, site.friendlyUrlPath);
+
+		await pageEditorPage.publishPage();
+
+		const layoutURL = `/web${site.friendlyUrlPath}${layout.friendlyUrlPath}`;
+
+		await page.goto(layoutURL);
+
+		await expect(page.getByText(variationText)).toBeVisible();
+
+		// Making the audience available for all sites keeps the variation
+
+		await audiencesPage.goto();
+
+		await audiencesPage.openAudience(audienceName);
+
+		await audiencesPage.generalSettingsButton.click();
+
+		await audiencesPage.allSitesCheckbox.check();
+
+		await audiencesPage.saveButton.click();
+
+		await waitForAlert(page);
+
+		await page.goto(layoutURL);
+
+		await expect(page.getByText(variationText)).toBeVisible();
+
+		await audiencesPage.goto();
+
+		await audiencesPage.openAudience(audienceName);
+
+		await audiencesPage.generalSettingsButton.click();
+
+		await audiencesPage.addSiteToScope(site.name);
+		await audiencesPage.addSiteToScope(otherSite.name);
+
+		await audiencesPage.saveButton.click();
+
+		await waitForAlert(page);
+
+		// Removing the other site does not warn
+
+		await audiencesPage.goto();
+
+		await audiencesPage.openAudience(audienceName);
+
+		await audiencesPage.generalSettingsButton.click();
+
+		await audiencesPage.removeSiteFromScope(otherSite.name);
+
+		await expect(audiencesPage.removeSiteFromScopeModal).not.toBeVisible();
+
+		await expect(
+			page.getByRole('button', {name: `Remove ${otherSite.name}`})
+		).not.toBeVisible();
+
+		await audiencesPage.addSiteToScope(otherSite.name);
+
+		// Removing the site warns with the site name
+
+		await audiencesPage.removeSiteFromScope(site.name);
+
+		await expect(audiencesPage.removeSiteFromScopeModal).toContainText(
+			`Remove ${site.name} from Scope`
+		);
+		await expect(audiencesPage.removeSiteFromScopeModal).toContainText(
+			`This audience is used in one or more element variations on ${site.name}. Removing the site will stop those variations from being applied.`
+		);
+
+		// Canceling keeps the site in the scope
+
+		await audiencesPage.removeSiteFromScopeModal
+			.getByRole('button', {name: 'Cancel'})
+			.click();
+
+		await expect(audiencesPage.removeSiteFromScopeModal).not.toBeVisible();
+
+		await expect(
+			page.getByRole('button', {name: `Remove ${site.name}`})
+		).toBeVisible();
+
+		// Confirming removes the site from the scope
+
+		await audiencesPage.removeSiteFromScope(site.name);
+
+		await audiencesPage.removeSiteFromScopeModal
+			.getByRole('button', {name: 'Remove from Scope'})
+			.click();
+
+		await expect(
+			page.getByRole('button', {name: `Remove ${site.name}`})
+		).not.toBeVisible();
+
+		await audiencesPage.saveButton.click();
+
+		await waitForAlert(page);
+
+		// Adding the site back does not restore the variation, since saving
+		// removed its relation with the audience
+
+		await audiencesPage.openAudience(audienceName);
+
+		await audiencesPage.generalSettingsButton.click();
+
+		await audiencesPage.addSiteToScope(site.name);
+
+		await audiencesPage.saveButton.click();
+
+		await waitForAlert(page);
+
+		await page.goto(layoutURL);
+
+		await expect(page.getByText('Heading Example')).toBeVisible();
+
+		await expect(page.getByText(variationText)).not.toBeVisible();
+
+		// Removing the site again does not warn
+
+		await audiencesPage.goto();
+
+		await audiencesPage.openAudience(audienceName);
+
+		await audiencesPage.generalSettingsButton.click();
+
+		await audiencesPage.removeSiteFromScope(site.name);
+
+		await expect(audiencesPage.removeSiteFromScopeModal).not.toBeVisible();
+	}
+);
+
+test(
+	'Removes the audience from the element variations of a site taken out of its scope',
+	{tag: '@LPD-106899'},
+	async ({apiHelpers, elementVariationsPage, page, pageEditorPage, site}) => {
+
+		// Create an audience for every site and a second site
+
+		const audienceName = 'Audience ' + getRandomString();
+
+		const audiencesEntry =
+			await apiHelpers.jsonWebServicesAudiencesEntry.addAudiencesEntry({
+				name: audienceName,
+			});
+
+		const otherSite = await apiHelpers.headlessAdminSite.postSite({
+			name: getRandomString(),
+		});
+
+		// Create a page with a Heading and a Paragraph fragment
+
+		const layout = await apiHelpers.headlessDelivery.createSitePage({
+			pageDefinition: getPageDefinition([
+				getFragmentDefinition({
+					id: getRandomString(),
+					key: 'BASIC_COMPONENT-heading',
+				}),
+				getFragmentDefinition({
+					id: getRandomString(),
+					key: 'BASIC_COMPONENT-paragraph',
+				}),
+			]),
+			siteId: site.id,
+			title: getRandomString(),
+		});
+
+		// Create a variation replacing the heading HTML and another one
+		// hiding the paragraph, both for the audience
+
+		await pageEditorPage.goto(layout, site.friendlyUrlPath);
+
+		await pageEditorPage.goToElementVariations();
+
+		const headingVariationName = 'Replace heading';
+		const paragraphVariationName = 'Hide paragraph';
+		const variationText = 'Variation ' + getRandomString();
+
+		await elementVariationsPage.createElementVariation({
+			audienceName,
+			html: `<span>${variationText}</span>`,
+			name: headingVariationName,
+			pageElementLabel: 'Heading (element-text)',
+		});
+
+		await elementVariationsPage.createElementVariation({
+			audienceName,
+			hide: true,
+			name: paragraphVariationName,
+			pageElementLabel: 'Paragraph (element-text)',
+		});
+
+		// Publish the page and check that the variations are applied
+
+		await pageEditorPage.goto(layout, site.friendlyUrlPath);
+
+		await pageEditorPage.publishPage();
+
+		const layoutURL = `/web${site.friendlyUrlPath}${layout.friendlyUrlPath}`;
+		const paragraphDefaultText =
+			'A paragraph is a self-contained unit of a discourse';
+
+		await page.goto(layoutURL);
+
+		await expect(page.getByText(variationText)).toBeVisible();
+
+		await expect(page.getByText(paragraphDefaultText)).not.toBeVisible();
+
+		// Restrict the audience scope to the second site
+
+		await apiHelpers.jsonWebServicesAudiencesEntry.updateAudiencesEntry({
+			audiencesEntry,
+			groupERCs: [otherSite.externalReferenceCode],
+		});
+
+		// The page renders unchanged since the variations lost the audience
+
+		await page.goto(layoutURL);
+
+		await expect(page.getByText('Heading Example')).toBeVisible();
+
+		await expect(page.getByText(paragraphDefaultText)).toBeVisible();
+
+		await expect(page.getByText(variationText)).not.toBeVisible();
+
+		// Both variations are marked as missing an audience in the editor
+
+		await pageEditorPage.goto(layout, site.friendlyUrlPath);
+
+		await pageEditorPage.goToElementVariations();
+
+		await expect(
+			elementVariationsPage
+				.getVariationListItem(headingVariationName)
+				.getByText('Missing Audience')
+		).toBeVisible();
+
+		await expect(
+			elementVariationsPage
+				.getVariationListItem(paragraphVariationName)
+				.getByText('Missing Audience')
+		).toBeVisible();
+
+		await expect(elementVariationsPage.issuesAlert).toContainText(
+			'There are missing audiences or page elements for some variations.'
+		);
+	}
+);
+
+test(
+	'Audiences out of the site scope are not offered for element variations',
+	{tag: '@LPD-107101'},
+	async ({
+		apiHelpers,
+		audiencesPage,
+		elementVariationsPage,
+		page,
+		pageEditorPage,
+		site,
+	}) => {
+
+		// Create an audience for every site and another one scoped to
+		// another site
+
+		const otherSite = await apiHelpers.headlessAdminSite.postSite({
+			name: getRandomString(),
+		});
+
+		await apiHelpers.jsonWebServicesAudiencesEntry.addAudiencesEntry({
+			name: 'Audience ' + getRandomString(),
+		});
+
+		const audienceName = 'Audience ' + getRandomString();
+
+		await apiHelpers.jsonWebServicesAudiencesEntry.addAudiencesEntry({
+			groupERCs: [otherSite.externalReferenceCode],
+			name: audienceName,
+		});
+
+		// The audience is not offered when creating a variation on the site
+
+		const layout = await apiHelpers.headlessDelivery.createSitePage({
+			pageDefinition: getPageDefinition([
+				getFragmentDefinition({
+					id: getRandomString(),
+					key: 'BASIC_COMPONENT-heading',
+				}),
+			]),
+			siteId: site.id,
+			title: getRandomString(),
+		});
+
+		await pageEditorPage.goto(layout, site.friendlyUrlPath);
+
+		await pageEditorPage.goToElementVariations();
+
+		await elementVariationsPage.startElementVariationDraft();
+
+		await elementVariationsPage.selectPageElement('Heading (element-text)');
+
+		await elementVariationsPage.audienceInput.fill(audienceName);
+
+		await expect(
+			page.locator('.dropdown-menu').getByText(audienceName)
+		).not.toBeVisible();
+
+		// Making the audience available for all sites offers it again
+
+		await audiencesPage.goto();
+
+		await audiencesPage.openAudience(audienceName);
+
+		await audiencesPage.generalSettingsButton.click();
+
+		await audiencesPage.allSitesCheckbox.check();
+
+		await audiencesPage.saveButton.click();
+
+		await waitForAlert(page);
+
+		await pageEditorPage.goto(layout, site.friendlyUrlPath);
+
+		await pageEditorPage.goToElementVariations();
+
+		await elementVariationsPage.startElementVariationDraft();
+
+		await elementVariationsPage.selectPageElement('Heading (element-text)');
+
+		await elementVariationsPage.audienceInput.fill(audienceName);
+
+		await expect(
+			page.locator('.dropdown-menu').getByText(audienceName)
+		).toBeVisible();
+	}
+);

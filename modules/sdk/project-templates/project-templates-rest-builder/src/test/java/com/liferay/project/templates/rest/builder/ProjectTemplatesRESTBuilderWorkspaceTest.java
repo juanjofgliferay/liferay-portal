@@ -9,6 +9,7 @@ import com.liferay.maven.executor.MavenExecutor;
 import com.liferay.project.templates.BaseProjectTemplatesTestCase;
 import com.liferay.project.templates.extensions.util.FileUtil;
 import com.liferay.project.templates.extensions.util.Validator;
+import com.liferay.project.templates.extensions.util.VersionUtil;
 import com.liferay.project.templates.util.FileTestUtil;
 
 import java.io.File;
@@ -51,6 +52,8 @@ public class ProjectTemplatesRESTBuilderWorkspaceTest
 			new Object[][] {
 				{"guestbook", "com.liferay.docs.guestbook", "dxp", "7.1.10.7"},
 				{"guestbook", "com.liferay.docs.guestbook", "dxp", "7.2.10.7"},
+				{"guestbook", "com.liferay.docs.guestbook", "dxp", "2024.q1.1"},
+				{"guestbook", "com.liferay.docs.guestbook", "dxp", "2025.q3.1"},
 				{"guestbook", "com.liferay.docs.guestbook", "portal", "7.3.7"},
 				{
 					"guestbook", "com.liferay.docs.guestbook", "portal",
@@ -65,6 +68,14 @@ public class ProjectTemplatesRESTBuilderWorkspaceTest
 					"7.2.10.7"
 				},
 				{
+					"backend-integration", "com.liferay.docs.guestbook", "dxp",
+					"2024.q1.1"
+				},
+				{
+					"backend-integration", "com.liferay.docs.guestbook", "dxp",
+					"2025.q3.1"
+				},
+				{
 					"backend-integration", "com.liferay.docs.guestbook",
 					"portal", "7.3.7"
 				},
@@ -74,6 +85,8 @@ public class ProjectTemplatesRESTBuilderWorkspaceTest
 				},
 				{"sample", "com.test.sample", "dxp", "7.1.10.7"},
 				{"sample", "com.test.sample", "dxp", "7.2.10.7"},
+				{"sample", "com.test.sample", "dxp", "2024.q1.1"},
+				{"sample", "com.test.sample", "dxp", "2025.q3.1"},
 				{"sample", "com.test.sample", "portal", "7.3.7"},
 				{"sample", "com.test.sample", "portal", "7.4.3.56"}
 			});
@@ -204,6 +217,23 @@ public class ProjectTemplatesRESTBuilderWorkspaceTest
 				gradleProjectDir, _name + "-impl/build.gradle",
 				"compileOnly group: \"javax.servlet\", name: " +
 					"\"javax.servlet-api\"");
+		}
+		else if (VersionUtil.isLiferayQuarterlyVersion(_liferayVersion)) {
+			testContains(
+				gradleProjectDir, _name + "-api/build.gradle",
+				DEPENDENCY_RELEASE_DXP_API);
+			testContains(
+				gradleProjectDir, _name + "-impl/build.gradle",
+				DEPENDENCY_RELEASE_DXP_API);
+
+			if (VersionUtil.isJakartaCompatibleVersion(_liferayVersion)) {
+				testContains(
+					gradleProjectDir, _name + "-client/build.gradle",
+					"group: \"jakarta.annotation\", name: " +
+						"\"jakarta.annotation-api\", version: \"2.1.1\"",
+					"group: \"jakarta.xml.bind\", name: " +
+						"\"jakarta.xml.bind-api\", version: \"4.0.2\"");
+			}
 		}
 		else {
 			testContains(

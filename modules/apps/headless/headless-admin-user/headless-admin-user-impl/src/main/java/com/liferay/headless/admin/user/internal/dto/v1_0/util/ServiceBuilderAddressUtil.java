@@ -25,7 +25,8 @@ public class ServiceBuilderAddressUtil {
 		String city = postalAddress.getAddressLocality();
 		String zip = postalAddress.getPostalCode();
 		long countryId = ServiceBuilderCountryUtil.toServiceBuilderCountryId(
-			companyId, postalAddress.getAddressCountry());
+			postalAddress.getAddressCountryExternalReferenceCode(), companyId,
+			postalAddress.getAddressCountry());
 
 		if (Validator.isNull(street1) && Validator.isNull(street2) &&
 			Validator.isNull(street3) && Validator.isNull(city) &&
@@ -37,19 +38,24 @@ public class ServiceBuilderAddressUtil {
 		Address address = AddressLocalServiceUtil.createAddress(
 			GetterUtil.getLong(postalAddress.getId()));
 
+		address.setExternalReferenceCode(
+			postalAddress.getExternalReferenceCode());
 		address.setCountryId(countryId);
 		address.setListTypeId(
 			ServiceBuilderListTypeUtil.toServiceBuilderListTypeId(
 				companyId, "other", postalAddress.getAddressType(), type));
 		address.setRegionId(
 			ServiceBuilderRegionUtil.getServiceBuilderRegionId(
-				postalAddress.getAddressRegion(), countryId));
+				postalAddress.getAddressRegionExternalReferenceCode(),
+				companyId, postalAddress.getAddressRegion(), countryId));
 		address.setCity(city);
 		address.setMailing(true);
+		address.setName(postalAddress.getName());
 		address.setPrimary(GetterUtil.getBoolean(postalAddress.getPrimary()));
 		address.setStreet1(street1);
 		address.setStreet2(street2);
 		address.setStreet3(street3);
+		address.setSubtype(postalAddress.getAddressSubtype());
 		address.setZip(zip);
 
 		return address;

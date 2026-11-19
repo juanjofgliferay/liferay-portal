@@ -3,33 +3,22 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {openModal, sub} from 'frontend-js-web';
+import {openConfirmModal} from '@liferay/layout-js-components-web';
+import {sub} from 'frontend-js-web';
 
 export default function openDeleteLayoutModal({
 	message,
 	multiple = false,
 	onDelete,
 }) {
-	openModal({
-		bodyHTML: message,
-		buttons: [
-			{
-				autoFocus: true,
-				displayType: 'secondary',
-				label: Liferay.Language.get('cancel'),
-				type: 'cancel',
-			},
-			{
-				displayType: 'danger',
-				label: Liferay.Language.get('delete'),
-				onClick: ({processClose}) => {
-					processClose();
-
-					onDelete();
-				},
-			},
-		],
+	openConfirmModal({
+		blocking: true,
+		buttonLabel: Liferay.Language.get('delete'),
+		onConfirm: async () => {
+			await onDelete();
+		},
 		status: 'danger',
+		text: message,
 		title: sub(
 			Liferay.Language.get('delete-x'),
 			multiple

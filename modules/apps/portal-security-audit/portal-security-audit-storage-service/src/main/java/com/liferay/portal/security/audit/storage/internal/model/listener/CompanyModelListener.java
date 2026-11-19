@@ -12,9 +12,11 @@ import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.BaseModelListener;
 import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.ModelListener;
-import com.liferay.portal.kernel.transaction.TransactionCommitCallbackUtil;
+import com.liferay.portal.kernel.transaction.TransactionCallbackUtil;
 import com.liferay.portal.security.audit.storage.model.AuditEvent;
+import com.liferay.portal.security.audit.storage.model.AuditEventPseudonymField;
 import com.liferay.portal.security.audit.storage.service.AuditEventLocalService;
+import com.liferay.portal.security.audit.storage.service.AuditEventPseudonymFieldLocalService;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -27,12 +29,32 @@ public class CompanyModelListener extends BaseModelListener<Company> {
 
 	@Override
 	public void onAfterRemove(Company company) throws ModelListenerException {
-		TransactionCommitCallbackUtil.registerCallback(
+		TransactionCallbackUtil.registerCommitCallback(
 			() -> {
+				_deleteAuditEventPseudonymFields(company);
 				_deleteAuditEvents(company);
 
 				return null;
 			});
+	}
+
+	private void _deleteAuditEventPseudonymFields(Company company)
+		throws PortalException {
+
+		ActionableDynamicQuery actionableDynamicQuery =
+			_auditEventPseudonymFieldLocalService.getActionableDynamicQuery();
+
+		actionableDynamicQuery.setAddCriteriaMethod(
+			dynamicQuery -> dynamicQuery.add(
+				RestrictionsFactoryUtil.eq(
+					"companyId", company.getCompanyId())));
+		actionableDynamicQuery.setPerformActionMethod(
+			auditEventPseudonymField ->
+				_auditEventPseudonymFieldLocalService.
+					deleteAuditEventPseudonymField(
+						(AuditEventPseudonymField)auditEventPseudonymField));
+
+		actionableDynamicQuery.performActions();
 	}
 
 	private void _deleteAuditEvents(Company company) throws PortalException {
@@ -52,5 +74,9 @@ public class CompanyModelListener extends BaseModelListener<Company> {
 
 	@Reference
 	private AuditEventLocalService _auditEventLocalService;
+
+	@Reference
+	private AuditEventPseudonymFieldLocalService
+		_auditEventPseudonymFieldLocalService;
 
 }

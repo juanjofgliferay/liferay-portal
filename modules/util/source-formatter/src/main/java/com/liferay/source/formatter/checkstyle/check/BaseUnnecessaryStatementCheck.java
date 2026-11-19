@@ -8,6 +8,7 @@ package com.liferay.source.formatter.checkstyle.check;
 import com.puppycrawl.tools.checkstyle.api.DetailAST;
 import com.puppycrawl.tools.checkstyle.api.FullIdent;
 import com.puppycrawl.tools.checkstyle.api.TokenTypes;
+import com.puppycrawl.tools.checkstyle.utils.TokenUtil;
 
 import java.util.List;
 
@@ -174,21 +175,21 @@ public abstract class BaseUnnecessaryStatementCheck extends BaseCheck {
 			return;
 		}
 
-		List<DetailAST> methodCallDetailASTList = getMethodCalls(
+		List<DetailAST> methodCallDetailASTs = getMethodCalls(
 			assignDetailAST, "toString");
 
-		if (methodCallDetailASTList.size() != 1) {
+		if (methodCallDetailASTs.size() != 1) {
 			return;
 		}
 
-		DetailAST methodCallDetailAST = methodCallDetailASTList.get(0);
+		DetailAST methodCallDetailAST = methodCallDetailASTs.get(0);
 
 		DetailAST parentDetailAST = methodCallDetailAST.getParent();
 
 		parentDetailAST = parentDetailAST.getParent();
 
-		if ((parentDetailAST.getType() != TokenTypes.ASSIGN) &&
-			(parentDetailAST.getType() != TokenTypes.EXPR)) {
+		if (!TokenUtil.isOfType(
+				parentDetailAST, TokenTypes.ASSIGN, TokenTypes.EXPR)) {
 
 			return;
 		}
@@ -204,9 +205,14 @@ public abstract class BaseUnnecessaryStatementCheck extends BaseCheck {
 
 		String methodName = getMethodName(methodCallDetailAST);
 
-		if (!methodName.equals("toString") ||
-			(getParameterDetailAST(methodCallDetailAST) != null)) {
+		if (!methodName.equals("toString")) {
+			return;
+		}
 
+		List<DetailAST> parameterExprDetailASTs = getParameterExprDetailASTs(
+			methodCallDetailAST);
+
+		if (!parameterExprDetailASTs.isEmpty()) {
 			return;
 		}
 
@@ -224,10 +230,10 @@ public abstract class BaseUnnecessaryStatementCheck extends BaseCheck {
 			return;
 		}
 
-		List<DetailAST> variableCallerDetailASTList =
-			getVariableCallerDetailASTList(parentDetailAST, variableName);
+		List<DetailAST> variableCallerDetailASTs = getVariableCallerDetailASTs(
+			parentDetailAST, variableName);
 
-		if (variableCallerDetailASTList.size() != 1) {
+		if (variableCallerDetailASTs.size() != 1) {
 			return;
 		}
 

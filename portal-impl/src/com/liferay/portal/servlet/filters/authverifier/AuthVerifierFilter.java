@@ -19,12 +19,18 @@ import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
+import com.liferay.portal.kernel.util.PropsUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.security.auth.AuthVerifierPipeline;
 import com.liferay.portal.servlet.AuthVerifierServletRequest;
 import com.liferay.portal.servlet.filters.BasePortalFilter;
-import com.liferay.portal.util.PropsUtil;
+
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.FilterConfig;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.util.ArrayList;
 import java.util.Enumeration;
@@ -34,12 +40,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
-
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * <p>
@@ -78,36 +78,29 @@ public class AuthVerifierFilter extends BasePortalFilter {
 			}
 		}
 
-		if (_initParametersMap.containsKey("guest.allowed")) {
-			_guestAllowed = GetterUtil.getBoolean(
-				_initParametersMap.get("guest.allowed"), true);
+		Object guestAllowed = _initParametersMap.remove("guest.allowed");
 
-			_initParametersMap.remove("guest.allowed");
+		if (guestAllowed != null) {
+			_guestAllowed = GetterUtil.getBoolean(guestAllowed, true);
 		}
 
-		if (_initParametersMap.containsKey("hosts.allowed")) {
-			String hostsAllowedString = (String)_initParametersMap.get(
-				"hosts.allowed");
+		if (_initParametersMap.remove("hosts.allowed") instanceof
+				String hostsAllowedString) {
 
 			String[] hostsAllowed = StringUtil.split(hostsAllowedString);
 
 			for (String hostAllowed : hostsAllowed) {
 				_hostsAllowed.add(hostAllowed);
 			}
-
-			_initParametersMap.remove("hosts.allowed");
 		}
 
-		if (_initParametersMap.containsKey("https.required")) {
-			_httpsRequired = GetterUtil.getBoolean(
-				_initParametersMap.get("https.required"));
+		Object httpsRequired = _initParametersMap.remove("https.required");
 
-			_initParametersMap.remove("https.required");
+		if (httpsRequired != null) {
+			_httpsRequired = GetterUtil.getBoolean(httpsRequired);
 		}
 
-		if (_initParametersMap.containsKey("use_permission_checker")) {
-			_initParametersMap.remove("use_permission_checker");
-
+		if (_initParametersMap.remove("use_permission_checker") != null) {
 			if (_log.isWarnEnabled()) {
 				_log.warn("use_permission_checker is deprecated");
 			}

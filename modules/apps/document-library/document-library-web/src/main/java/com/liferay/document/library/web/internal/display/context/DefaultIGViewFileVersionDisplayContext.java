@@ -6,8 +6,8 @@
 package com.liferay.document.library.web.internal.display.context;
 
 import com.liferay.document.library.display.context.IGViewFileVersionDisplayContext;
+import com.liferay.document.library.helper.DLURLHelper;
 import com.liferay.document.library.kernel.versioning.VersioningStrategy;
-import com.liferay.document.library.util.DLURLHelper;
 import com.liferay.document.library.web.internal.display.context.helper.DLPortletInstanceSettingsHelper;
 import com.liferay.document.library.web.internal.display.context.helper.IGRequestHelper;
 import com.liferay.document.library.web.internal.display.context.logic.UIItemsBuilder;
@@ -18,10 +18,10 @@ import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.repository.model.FileShortcut;
 import com.liferay.portal.kernel.repository.model.FileVersion;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.List;
 import java.util.UUID;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Adolfo Pérez

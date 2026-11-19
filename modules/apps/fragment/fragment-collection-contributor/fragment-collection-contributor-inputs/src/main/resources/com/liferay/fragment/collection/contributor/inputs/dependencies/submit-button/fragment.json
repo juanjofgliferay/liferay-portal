@@ -2,6 +2,12 @@
 	"cacheable": false,
 	"fragmentEntryKey": "submit-button",
 	"icon": "button",
-	"name": "submit-button",
-	"type": "component"
+	"name": "form-button",
+	"thumbnail": "form_button.svg",
+	"type": "input",
+	"typeOptions": {
+		"fieldTypes": [
+			"formButton"
+		]
+	}
 }

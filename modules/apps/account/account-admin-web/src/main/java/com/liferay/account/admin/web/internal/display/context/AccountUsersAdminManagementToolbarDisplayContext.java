@@ -39,13 +39,13 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Albert Lee
@@ -207,7 +207,7 @@ public class AccountUsersAdminManagementToolbarDisplayContext
 		).setNavigation(
 			(String)null
 		).setParameter(
-			"accountEntriesNavigation", "all"
+			"accountEntriesNavigation", "any-account"
 		).setParameter(
 			"accountEntryIds", StringPool.BLANK
 		).buildString();
@@ -249,26 +249,22 @@ public class AccountUsersAdminManagementToolbarDisplayContext
 
 	@Override
 	public List<DropdownItem> getFilterDropdownItems() {
-		List<DropdownItem> filterAccountEntriesDropdownItems =
-			_getFilterByAccountEntriesDropdownItems();
-
-		DropdownItemList filterDropdownItems = DropdownItemListBuilder.addGroup(
-			() -> filterAccountEntriesDropdownItems != null,
+		return DropdownItemListBuilder.addGroup(
 			dropdownGroupItem -> {
 				dropdownGroupItem.setDropdownItems(
-					filterAccountEntriesDropdownItems);
+					_getFilterByAccountEntriesDropdownItems());
 				dropdownGroupItem.setLabel(
-					_getFilterByAccountEntriesDropdownItemsLabel());
+					LanguageUtil.get(
+						httpServletRequest, "filter-by-account-memberships"));
+			}
+		).addGroup(
+			dropdownGroupItem -> {
+				dropdownGroupItem.setDropdownItems(
+					super.getFilterDropdownItems());
+				dropdownGroupItem.setLabel(
+					super.getFilterNavigationDropdownItemsLabel());
 			}
 		).build();
-
-		filterDropdownItems.addAll(super.getFilterDropdownItems());
-
-		if (filterDropdownItems.isEmpty()) {
-			return null;
-		}
-
-		return filterDropdownItems;
 	}
 
 	@Override
@@ -466,11 +462,6 @@ public class AccountUsersAdminManagementToolbarDisplayContext
 						httpServletRequest, "no-assigned-account"));
 			}
 		).build();
-	}
-
-	private String _getFilterByAccountEntriesDropdownItemsLabel() {
-		return LanguageUtil.get(
-			httpServletRequest, "filter-by-account-memberships");
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(

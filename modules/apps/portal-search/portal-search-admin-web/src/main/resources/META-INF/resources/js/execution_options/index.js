@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import ClayBadge from '@clayui/badge';
 import ClayButton from '@clayui/button';
 import ClayDropDown from '@clayui/drop-down';
 import {ClayRadio, ClayRadioGroup} from '@clayui/form';
@@ -27,6 +26,7 @@ function ExecutionOptions({
 	concurrentModeSupported,
 	executionMode,
 	executionScope,
+	omniadmin,
 	onExecutionModeChange,
 	onExecutionScopeChange,
 	onSelectedCompanyIdsChange,
@@ -34,10 +34,8 @@ function ExecutionOptions({
 	selectedCompanyIds = [],
 	virtualInstances = [],
 }) {
-	const [
-		executionModeDropdownActive,
-		setExecutionModeDropdownActive,
-	] = useState(false);
+	const [executionModeDropdownActive, setExecutionModeDropdownActive] =
+		useState(false);
 
 	const alignElementRef = useRef();
 
@@ -102,53 +100,35 @@ function ExecutionOptions({
 									EXECUTION_MODES.FULL,
 									EXECUTION_MODES.CONCURRENT,
 									EXECUTION_MODES.SYNC,
-								].map(
-									({
-										description,
-										label,
-										showBetaBadge,
-										symbol,
-										value,
-									}) => {
-										return (
-											<ClayDropDown.Item
-												className="c-pb-2 c-pt-2"
-												key={value}
-												onClick={() =>
-													_handleExecutionModeChange(
-														value
-													)
-												}
-											>
-												<div className="d-flex">
-													<div className="c-mr-2">
-														<ClayIcon
-															symbol={symbol}
-														/>
+								].map(({description, label, symbol, value}) => {
+									return (
+										<ClayDropDown.Item
+											className="c-pb-2 c-pt-2"
+											key={value}
+											onClick={() =>
+												_handleExecutionModeChange(
+													value
+												)
+											}
+										>
+											<div className="d-flex">
+												<div className="c-mr-2">
+													<ClayIcon symbol={symbol} />
+												</div>
+
+												<div className="autofit-col-expand c-ml-2">
+													<div className="list-group-title">
+														{label}
 													</div>
 
-													<div className="autofit-col-expand c-ml-2">
-														<div className="list-group-title">
-															{label}
-
-															{showBetaBadge && (
-																<ClayBadge
-																	className="c-ml-1"
-																	displayType="beta"
-																	label="beta"
-																/>
-															)}
-														</div>
-
-														<div className="list-group-subtext">
-															{description}
-														</div>
+													<div className="list-group-subtext">
+														{description}
 													</div>
 												</div>
-											</ClayDropDown.Item>
-										);
-									}
-								)}
+											</div>
+										</ClayDropDown.Item>
+									);
+								})}
 							</ClayDropDown.ItemList>
 						</ClayDropDown.Menu>
 
@@ -163,60 +143,64 @@ function ExecutionOptions({
 				</div>
 			)}
 
-			<div className="sheet-section">
-				<div
-					className="sheet-subtitle text-secondary"
-					style={{textTransform: 'none'}}
-				>
-					<span>{Liferay.Language.get('reindex-scope')}</span>
+			{omniadmin && (
+				<div className="sheet-section">
+					<div
+						className="sheet-subtitle text-secondary"
+						style={{textTransform: 'none'}}
+					>
+						<span>{Liferay.Language.get('reindex-scope')}</span>
 
-					<ClayTooltipProvider>
-						<ClaySticker
-							data-tooltip-align="bottom-left"
-							displayType="secondary"
-							size="sm"
-							title={Liferay.Language.get('execution-scope-help')}
-						>
-							<ClayIcon symbol="question-circle-full" />
-						</ClaySticker>
-					</ClayTooltipProvider>
+						<ClayTooltipProvider>
+							<ClaySticker
+								data-tooltip-align="bottom-left"
+								displayType="secondary"
+								size="sm"
+								title={Liferay.Language.get(
+									'execution-scope-help'
+								)}
+							>
+								<ClayIcon symbol="question-circle-full" />
+							</ClaySticker>
+						</ClayTooltipProvider>
+					</div>
+
+					<ClayRadioGroup
+						className="c-pb-2"
+						name={`${portletNamespace}scope`}
+						onChange={onExecutionScopeChange}
+						value={executionScope}
+					>
+						<ClayRadio
+							label={Liferay.Language.get('all-instances')}
+							value={SCOPES.ALL}
+						/>
+
+						<ClayRadio
+							label={Liferay.Language.get('selected-instances')}
+							value={SCOPES.SELECTED}
+						/>
+					</ClayRadioGroup>
+
+					{executionScope === SCOPES.SELECTED && (
+						<InstanceSelector
+							onSelectedChange={onSelectedCompanyIdsChange}
+							selected={selectedCompanyIds}
+							virtualInstances={virtualInstances}
+						/>
+					)}
+
+					<input
+						name={`${portletNamespace}companyIds`}
+						type="hidden"
+						value={
+							executionScope === SCOPES.ALL
+								? virtualInstances.map(({id}) => id)?.toString()
+								: selectedCompanyIds.toString()
+						}
+					/>
 				</div>
-
-				<ClayRadioGroup
-					className="c-pb-2"
-					name={`${portletNamespace}scope`}
-					onChange={onExecutionScopeChange}
-					value={executionScope}
-				>
-					<ClayRadio
-						label={Liferay.Language.get('all-instances')}
-						value={SCOPES.ALL}
-					/>
-
-					<ClayRadio
-						label={Liferay.Language.get('selected-instances')}
-						value={SCOPES.SELECTED}
-					/>
-				</ClayRadioGroup>
-
-				{executionScope === SCOPES.SELECTED && (
-					<InstanceSelector
-						onSelectedChange={onSelectedCompanyIdsChange}
-						selected={selectedCompanyIds}
-						virtualInstances={virtualInstances}
-					/>
-				)}
-
-				<input
-					name={`${portletNamespace}companyIds`}
-					type="hidden"
-					value={
-						executionScope === SCOPES.ALL
-							? virtualInstances.map(({id}) => id)?.toString()
-							: selectedCompanyIds.toString()
-					}
-				/>
-			</div>
+			)}
 		</div>
 	);
 }

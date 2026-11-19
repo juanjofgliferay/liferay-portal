@@ -111,11 +111,7 @@ public class CPDisplayLayoutPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		CPDisplayLayout newCPDisplayLayout = _persistence.create(pk);
-
-		newCPDisplayLayout.setMvccVersion(RandomTestUtil.nextLong());
+		CPDisplayLayout newCPDisplayLayout = addCPDisplayLayout();
 
 		newCPDisplayLayout.setCtCollectionId(RandomTestUtil.nextLong());
 
@@ -142,7 +138,9 @@ public class CPDisplayLayoutPersistenceTest {
 
 		newCPDisplayLayout.setLayoutUuid(RandomTestUtil.randomString());
 
-		_cpDisplayLayouts.add(_persistence.update(newCPDisplayLayout));
+		newCPDisplayLayout = _persistence.update(newCPDisplayLayout);
+
+		_cpDisplayLayouts.add(newCPDisplayLayout);
 
 		CPDisplayLayout existingCPDisplayLayout = _persistence.findByPrimaryKey(
 			newCPDisplayLayout.getPrimaryKey());
@@ -218,21 +216,6 @@ public class CPDisplayLayoutPersistenceTest {
 	}
 
 	@Test
-	public void testCountByGroupId() throws Exception {
-		_persistence.countByGroupId(RandomTestUtil.nextLong());
-
-		_persistence.countByGroupId(0L);
-	}
-
-	@Test
-	public void testCountByG_C() throws Exception {
-		_persistence.countByG_C(
-			RandomTestUtil.nextLong(), RandomTestUtil.nextLong());
-
-		_persistence.countByG_C(0L, 0L);
-	}
-
-	@Test
 	public void testCountByG_LPTEU() throws Exception {
 		_persistence.countByG_LPTEU(RandomTestUtil.nextLong(), "");
 
@@ -256,22 +239,6 @@ public class CPDisplayLayoutPersistenceTest {
 			RandomTestUtil.nextLong(), RandomTestUtil.nextLong());
 
 		_persistence.countByC_C(0L, 0L);
-	}
-
-	@Test
-	public void testCountByC_C_LPTEU() throws Exception {
-		_persistence.countByC_C_LPTEU(
-			RandomTestUtil.nextLong(), RandomTestUtil.nextLong());
-
-		_persistence.countByC_C_LPTEU(0L, 0L);
-	}
-
-	@Test
-	public void testCountByC_C_L() throws Exception {
-		_persistence.countByC_C_L(
-			RandomTestUtil.nextLong(), RandomTestUtil.nextLong());
-
-		_persistence.countByC_C_L(0L, 0L);
 	}
 
 	@Test
@@ -615,8 +582,6 @@ public class CPDisplayLayoutPersistenceTest {
 
 		CPDisplayLayout cpDisplayLayout = _persistence.create(pk);
 
-		cpDisplayLayout.setMvccVersion(RandomTestUtil.nextLong());
-
 		cpDisplayLayout.setCtCollectionId(RandomTestUtil.nextLong());
 
 		cpDisplayLayout.setUuid(RandomTestUtil.randomString());
@@ -653,3 +618,4 @@ public class CPDisplayLayoutPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:79643218

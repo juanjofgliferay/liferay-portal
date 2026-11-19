@@ -10,7 +10,7 @@ import com.liferay.fragment.constants.FragmentExportImportConstants;
 import com.liferay.fragment.model.FragmentCollection;
 import com.liferay.fragment.model.FragmentComposition;
 import com.liferay.fragment.service.FragmentCompositionLocalService;
-import com.liferay.fragment.util.FragmentTestUtil;
+import com.liferay.fragment.test.util.FragmentTestUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
@@ -66,7 +66,7 @@ public class FragmentCompositionExportImportTest {
 	public void testFragmentCompositionExportFormat() throws Exception {
 		FragmentComposition fragmentComposition =
 			_fragmentCompositionLocalService.addFragmentComposition(
-				TestPropsValues.getUserId(), _group.getGroupId(),
+				null, TestPropsValues.getUserId(), _group.getGroupId(),
 				_fragmentCollection.getFragmentCollectionId(),
 				StringUtil.randomId(), StringUtil.randomId(),
 				StringUtil.randomId(), StringPool.BLANK, 0,
@@ -77,30 +77,32 @@ public class FragmentCompositionExportImportTest {
 
 		fragmentComposition.populateZipWriter(zipWriter, "test");
 
-		ZipReader zipReader = _zipReaderFactory.getZipReader(
-			zipWriter.getFile());
+		try (ZipReader zipReader = _zipReaderFactory.getZipReader(
+				zipWriter.getFile())) {
 
-		for (String entry : zipReader.getEntries()) {
-			if (!StringUtil.endsWith(
-					entry,
-					FragmentExportImportConstants.
-						FILE_NAME_FRAGMENT_COMPOSITION)) {
+			for (String entry : zipReader.getEntries()) {
+				if (!StringUtil.endsWith(
+						entry,
+						FragmentExportImportConstants.
+							FILE_NAME_FRAGMENT_COMPOSITION)) {
 
-				continue;
+					continue;
+				}
+
+				JSONObject jsonObject = JSONFactoryUtil.createJSONObject(
+					zipReader.getEntryAsString(entry));
+
+				Assert.assertNotNull(jsonObject);
+				Assert.assertEquals(
+					jsonObject.getString("name"),
+					fragmentComposition.getName());
+				Assert.assertEquals(
+					jsonObject.getString("description"),
+					fragmentComposition.getDescription());
+				Assert.assertEquals(
+					"fragment-composition-definition.json",
+					jsonObject.getString("fragmentCompositionDefinitionPath"));
 			}
-
-			JSONObject jsonObject = JSONFactoryUtil.createJSONObject(
-				zipReader.getEntryAsString(entry));
-
-			Assert.assertNotNull(jsonObject);
-			Assert.assertEquals(
-				jsonObject.getString("name"), fragmentComposition.getName());
-			Assert.assertEquals(
-				jsonObject.getString("description"),
-				fragmentComposition.getDescription());
-			Assert.assertEquals(
-				"fragment-composition-definition.json",
-				jsonObject.getString("fragmentCompositionDefinitionPath"));
 		}
 
 		FileUtil.delete(zipWriter.getFile());

@@ -4,13 +4,11 @@
  */
 
 import {
-	fetch,
-	objectToFormData,
 	openConfirmModal,
 	openModal,
 	openToast,
-	runScriptsInElement,
-} from 'frontend-js-web';
+} from 'frontend-js-components-web';
+import {fetch, objectToFormData, runScriptsInElement} from 'frontend-js-web';
 
 const MAP_CMD_REVISION = {
 	redo: 'redo_layout_revision',
@@ -91,7 +89,7 @@ const ACTIONS = {
 			onClose: () => {
 				window.location.reload();
 			},
-			title: Liferay.Language.get('history'),
+			title: Liferay.Language.get('history[record]'),
 			url: viewHistoryURL,
 		});
 	},

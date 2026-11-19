@@ -9,7 +9,9 @@ import com.liferay.dynamic.data.mapping.form.field.type.constants.DDMFormFieldTy
 import com.liferay.dynamic.data.mapping.model.DDMForm;
 import com.liferay.dynamic.data.mapping.model.DDMFormField;
 import com.liferay.dynamic.data.mapping.model.DDMFormFieldOptions;
+import com.liferay.dynamic.data.mapping.model.DDMFormRule;
 import com.liferay.dynamic.data.mapping.model.LocalizedValue;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
@@ -27,11 +29,22 @@ public class DDMFormTestUtil {
 	public static void addDDMFormFields(
 		DDMForm ddmForm, DDMFormField... ddmFormFieldsArray) {
 
-		List<DDMFormField> ddmFormFields = ddmForm.getDDMFormFields();
-
 		for (DDMFormField ddmFormField : ddmFormFieldsArray) {
-			ddmFormFields.add(ddmFormField);
+			ddmForm.addDDMFormField(ddmFormField);
 		}
+	}
+
+	public static void addDDMFormRule(
+		List<String> actions, String condition, DDMForm ddmForm) {
+
+		ddmForm.addDDMFormRule(
+			new DDMFormRule() {
+				{
+					setActions(actions);
+					setCondition(condition);
+					setEnabled(true);
+				}
+			});
 	}
 
 	public static DDMFormField addDocumentLibraryDDMFormField(
@@ -59,10 +72,10 @@ public class DDMFormTestUtil {
 		List<DDMFormField> nestedDDMFormFields =
 			ddmFormField.getNestedDDMFormFields();
 
-		for (String fieldName : fieldNames) {
-			nestedDDMFormFields.add(
-				createLocalizableTextDDMFormField(fieldName));
-		}
+		nestedDDMFormFields.addAll(
+			TransformUtil.transformToList(
+				fieldNames,
+				fieldName -> createLocalizableTextDDMFormField(fieldName)));
 	}
 
 	public static void addTextDDMFormFields(
@@ -73,6 +86,12 @@ public class DDMFormTestUtil {
 		for (String fieldName : fieldNames) {
 			DDMFormField ddmFormField = createLocalizableTextDDMFormField(
 				fieldName);
+
+			for (Locale locale : ddmForm.getAvailableLocales()) {
+				LocalizedValue localizedValue = ddmFormField.getLabel();
+
+				localizedValue.addString(locale, fieldName);
+			}
 
 			ddmFormField.setDDMForm(ddmForm);
 
@@ -114,6 +133,16 @@ public class DDMFormTestUtil {
 		String name, String label, String type, String dataType,
 		boolean localizable, boolean repeatable, boolean required) {
 
+		return createDDMFormField(
+			name, label, type, dataType, localizable, repeatable, required,
+			LocaleUtil.US);
+	}
+
+	public static DDMFormField createDDMFormField(
+		String name, String label, String type, String dataType,
+		boolean localizable, boolean repeatable, boolean required,
+		Locale... locales) {
+
 		DDMFormField ddmFormField = new DDMFormField(name, type);
 
 		ddmFormField.setDataType(dataType);
@@ -124,7 +153,9 @@ public class DDMFormTestUtil {
 
 		LocalizedValue localizedValue = ddmFormField.getLabel();
 
-		localizedValue.addString(LocaleUtil.US, label);
+		for (Locale locale : locales) {
+			localizedValue.addString(locale, label);
+		}
 
 		return ddmFormField;
 	}
@@ -222,6 +253,13 @@ public class DDMFormTestUtil {
 
 	public static DDMFormField createLocalizableTextDDMFormField(String name) {
 		return createTextDDMFormField(name, true, false, false);
+	}
+
+	public static DDMFormField createLocalizedTextDDMFormField(
+		String name, boolean repeatable, boolean required, Locale... locales) {
+
+		return createDDMFormField(
+			name, name, "text", "string", true, repeatable, required, locales);
 	}
 
 	public static DDMFormField createNumericDDMFormField(

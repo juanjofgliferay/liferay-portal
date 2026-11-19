@@ -399,16 +399,17 @@ public class BuildPluginDescriptorTask extends DefaultTask {
 
 			XMLUtil.appendElement(document, dependencyElement, "scope", scope);
 
-			if (!forcedExclusions.isEmpty()) {
-				Element exclusionsElement = document.createElement(
-					"exclusions");
+			if (forcedExclusions.isEmpty()) {
+				continue;
+			}
 
-				dependencyElement.appendChild(exclusionsElement);
+			Element exclusionsElement = document.createElement("exclusions");
 
-				for (String dependencyNotation : forcedExclusions) {
-					_appendDependencyExclusionElement(
-						document, exclusionsElement, dependencyNotation);
-				}
+			dependencyElement.appendChild(exclusionsElement);
+
+			for (String dependencyNotation : forcedExclusions) {
+				_appendDependencyExclusionElement(
+					document, exclusionsElement, dependencyNotation);
 			}
 		}
 	}
@@ -901,7 +902,7 @@ public class BuildPluginDescriptorTask extends DefaultTask {
 	private FileCollection _mavenEmbedderClasspath;
 	private Object _mavenEmbedderMainClassName =
 		"org.apache.maven.cli.MavenCli";
-	private Object _mavenPluginPluginVersion = "3.5.2";
+	private Object _mavenPluginPluginVersion = "3.6.4";
 	private Object _mavenSettingsFile;
 	private Object _outputDir;
 	private Object _pomArtifactId;

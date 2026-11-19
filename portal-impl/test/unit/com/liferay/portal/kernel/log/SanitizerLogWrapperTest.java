@@ -8,7 +8,6 @@ package com.liferay.portal.kernel.log;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
-import com.liferay.portal.log.Log4jLogFactoryImpl;
 import com.liferay.portal.test.log.LogCapture;
 import com.liferay.portal.test.log.LogEntry;
 import com.liferay.portal.test.log.LoggerTestUtil;
@@ -38,8 +37,6 @@ public class SanitizerLogWrapperTest {
 
 	@BeforeClass
 	public static void setUpClass() {
-		LogFactoryUtil.setLogFactory(new Log4jLogFactoryImpl());
-
 		char[] chars = new char[128];
 
 		for (int i = 0; i < chars.length; i++) {
@@ -266,12 +263,11 @@ public class SanitizerLogWrapperTest {
 		}
 	}
 
-	private static Log _log;
-
 	private static String _message;
 	private static char[] _messageChars;
 	private static Properties _systemProperties;
 
+	private Log _log;
 	private LogCapture _logCapture;
 
 }

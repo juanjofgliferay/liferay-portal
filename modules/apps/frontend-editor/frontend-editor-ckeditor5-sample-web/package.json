@@ -1,0 +1,20 @@
+{
+	"dependencies": {
+		"@ckeditor/ckeditor5-basic-styles": "49.0.0",
+		"@ckeditor/ckeditor5-bookmark": "49.0.0",
+		"@ckeditor/ckeditor5-core": "49.0.0",
+		"@ckeditor/ckeditor5-ui": "49.0.0",
+		"@clayui/button": "^3.167.0",
+		"frontend-editor-ckeditor-web": "*",
+		"react": "18.2.0"
+	},
+	"main": "js/index.ts",
+	"name": "@liferay/frontend-editor-ckeditor5-sample-web",
+	"private": true,
+	"scripts": {
+		"build": "node-scripts build",
+		"checkFormat": "node-scripts format --check",
+		"format": "node-scripts format"
+	},
+	"version": "1.0.0"
+}

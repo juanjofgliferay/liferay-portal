@@ -47,11 +47,13 @@ public class AdvancedFileSystemStore extends FileSystemStore {
 		for (int i = 0; i < versions.length; i++) {
 			int x = versions[i].lastIndexOf(CharPool.UNDERLINE);
 
-			if (x > -1) {
-				int y = versions[i].lastIndexOf(CharPool.PERIOD);
-
-				versions[i] = versions[i].substring(x + 1, y);
+			if (x <= -1) {
+				continue;
 			}
+
+			int y = versions[i].lastIndexOf(CharPool.PERIOD);
+
+			versions[i] = versions[i].substring(x + 1, y);
 		}
 
 		return versions;
@@ -133,25 +135,6 @@ public class AdvancedFileSystemStore extends FileSystemStore {
 	}
 
 	@Override
-	protected void getFileNames(
-		List<String> fileNames, String dirName, String path) {
-
-		super.getFileNames(fileNames, dirName, path);
-
-		ListIterator<String> iterator = fileNames.listIterator();
-
-		while (iterator.hasNext()) {
-			String shortFileName = iterator.next();
-
-			if (path.endsWith(_HOOK_EXTENSION)) {
-				shortFileName = FileUtil.stripExtension(shortFileName);
-			}
-
-			iterator.set(unbuildPath(shortFileName));
-		}
-	}
-
-	@Override
 	protected File getFileNameVersionFile(
 		long companyId, long repositoryId, String fileName, String version) {
 
@@ -197,6 +180,25 @@ public class AdvancedFileSystemStore extends FileSystemStore {
 	}
 
 	@Override
+	protected void getFileNames(
+		List<String> fileNames, String dirName, String path) {
+
+		super.getFileNames(fileNames, dirName, path);
+
+		ListIterator<String> iterator = fileNames.listIterator();
+
+		while (iterator.hasNext()) {
+			String shortFileName = iterator.next();
+
+			if (path.endsWith(_HOOK_EXTENSION)) {
+				shortFileName = FileUtil.stripExtension(shortFileName);
+			}
+
+			iterator.set(unbuildPath(shortFileName));
+		}
+	}
+
+	@Override
 	protected String getHeadVersionLabel(
 		long companyId, long repositoryId, String fileName) {
 
@@ -221,9 +223,11 @@ public class AdvancedFileSystemStore extends FileSystemStore {
 
 			String versionLabel = versionLabelFragment;
 
-			if (DLUtil.compareVersions(versionLabel, headVersionLabel) > 0) {
-				headVersionLabel = versionLabel;
+			if (DLUtil.compareVersions(versionLabel, headVersionLabel) <= 0) {
+				continue;
 			}
+
+			headVersionLabel = versionLabel;
 		}
 
 		return headVersionLabel;

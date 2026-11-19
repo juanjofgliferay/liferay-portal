@@ -1,10 +1,11 @@
-@component-name = "portal-wcm"
+@component-name = "portal-content-management"
 definition {
 
 	property ci.retries.disabled = "true";
+	property custom.properties = "feature.flag.LPD-57655=false";
 	property portal.release = "true";
 	property portal.upstream = "true";
-	property testray.main.component.name = "Web Content Administration";
+	property testray.main.component.name = "Web Content";
 
 	static var randomSiteName = StringUtil.randomString(8);
 
@@ -81,7 +82,7 @@ definition {
 				webContentUpload = "Document_1.doc",
 				webContentWebContent = "WC 1");
 
-			PortletEntry.publish();
+			WebContent.publishWithPermissions();
 
 			WebContent.viewTitle(webContentTitle = "WC WebContent Title 1");
 		}
@@ -130,7 +131,7 @@ definition {
 				webContentUpload = "Document_3.doc",
 				webContentWebContent = "WC 1");
 
-			PortletEntry.publish();
+			WebContent.publishWithPermissions();
 
 			WebContent.viewTitle(webContentTitle = "WC WebContent Title 2");
 		}
@@ -151,114 +152,6 @@ definition {
 			WebContent.viewTitle(
 				onLive = "true",
 				webContentTitle = "WC WebContent Title 2");
-		}
-	}
-
-	@description = "This is a use case for LPS-121695. Assert imported DDMStructures in Global Staging are not published in Global Live."
-	@priority = 4
-	test ImportedDDMStructuresInGlobalStagingNotPublishedInLive {
-		task ("Access Global Site") {
-			WebContentNavigator.openWebContentAdmin(siteURLKey = "global");
-		}
-
-		task ("Add a web content structure") {
-			NavItem.gotoStructures();
-
-			WebContentStructures.addCP(
-				structureDescription = "WC Structure Description",
-				structureName = "WC Structure Name");
-
-			DataEngine.addField(
-				fieldFieldLabel = "Text",
-				fieldName = "Text");
-
-			WebContentStructures.saveCP(structureName = "WC Structure Name");
-		}
-
-		task ("Add a web content template") {
-			NavItem.gotoTemplates();
-
-			WebContentTemplates.addCP(
-				structureName = "WC Structure Name",
-				templateDescription = "WC Template Description",
-				templateFieldNames = "Text",
-				templateName = "WC Template Name");
-		}
-
-		task ("Export DDMStructures") {
-			WebContentNavigator.openWebContentAdmin(siteURLKey = "global");
-
-			LAR.exportPortlet(larFileName = "WebContent_portlet.lar");
-		}
-
-		task ("Add Portal Instance") {
-			HeadlessPortalInstanceAPI.addPortalInstance(
-				domain = "liferay.com",
-				portalInstanceId = "www.able.com",
-				virtualHost = "www.able.com");
-		}
-
-		task ("Activate local staging in the created portal instance global site") {
-			User.firstLoginPG(
-				password = "test",
-				userEmailAddress = "test@liferay.com",
-				virtualHostsURL = "http://www.able.com:8080");
-
-			WebContentNavigator.openWebContentAdmin(
-				baseURL = "http://www.able.com:8080",
-				siteURLKey = "global");
-
-			ProductMenu.gotoPortlet(
-				category = "Publishing",
-				portlet = "Staging");
-
-			Staging.activateStagingCP(siteName = "Global");
-		}
-
-		task ("Import DDMStructures") {
-			WebContentNavigator.openWebContentAdmin(
-				baseURL = "http://www.able.com:8080",
-				siteURLKey = "global-staging");
-
-			LAR.importPortlet(larFileName = "WebContent_portlet.lar");
-		}
-
-		task ("Assert DDMStructures has been imported in Global staging") {
-			WebContentNavigator.openWebContentAdmin(
-				baseURL = "http://www.able.com:8080",
-				siteURLKey = "global-staging");
-
-			NavItem.gotoStructures();
-
-			WebContentStructures.viewCP(
-				structureDescription = "WC Structure Description",
-				structureName = "WC Structure Name");
-
-			NavItem.gotoTemplates();
-
-			LexiconEntry.changeDisplayStyle(displayStyle = "table");
-
-			WebContentTemplates.viewTableEntryCP(
-				templateDescription = "WC Template Description",
-				templateName = "WC Template Name");
-		}
-
-		task ("Assert DDMStructures has not been imported in Global Live") {
-			WebContentNavigator.openWebContentAdmin(
-				baseURL = "http://www.able.com:8080",
-				siteURLKey = "global");
-
-			NavItem.gotoStructures();
-
-			AssertElementNotPresent(
-				key_ddlDataDefinitionName = "WC Structure Name",
-				locator1 = "DDMSelectStructure#DDM_STRUCTURE_TABLE_NAME");
-
-			NavItem.gotoTemplates();
-
-			AssertElementNotPresent(
-				key_tableEntry = "WC Template Name",
-				locator1 = "LexiconTable#TABLE_ENTRY");
 		}
 	}
 
@@ -315,7 +208,7 @@ definition {
 				webContentUpload = "Document_1.doc",
 				webContentWebContent = "WC 1");
 
-			PortletEntry.publish();
+			WebContent.publishWithPermissions();
 		}
 
 		task ("Publish Web Content to live") {
@@ -361,7 +254,7 @@ definition {
 				dmFolderName = "Provided by Liferay",
 				imageFileName = "earth.png");
 
-			PortletEntry.publish();
+			WebContent.publishWithPermissions();
 		}
 
 		task ("When the user publishes the web content to the live site") {
@@ -389,7 +282,7 @@ definition {
 				dmFolderName = "Provided by Liferay",
 				imageFileName = "moon.png");
 
-			PortletEntry.publish();
+			WebContent.publishExistingWCArticleWithPermissions();
 		}
 
 		task ("Then the user could publish changes to the live site") {
@@ -412,6 +305,10 @@ definition {
 	test PublishWebContentWithFeeds {
 		property test.liferay.virtual.instance = "false";
 		property test.run.type = "single";
+
+		task ("Enable dynamic and manual selection") {
+			AssetPublisherPortlet.enableDynamicAndManualSelection();
+		}
 
 		task ("Given a site designer has web content feeds") {
 			Staging.openStagingAdmin(siteURLKey = ${randomSiteURLKey});
@@ -495,7 +392,7 @@ definition {
 				entryExternalURL = ${entryExternalURL},
 				fieldLabel = "Content");
 
-			PortletEntry.publish();
+			WebContent.publishWithPermissions();
 		}
 
 		task ("When the site designer displays web contents on Web Content Display") {
@@ -568,7 +465,7 @@ definition {
 				webContentImage = "Document Title",
 				webContentTitle = "My Image");
 
-			PortletEntry.publish();
+			WebContent.publishWithPermissions();
 
 			JSONLayout.addPublicLayout(
 				groupName = ${randomSiteName},
@@ -612,121 +509,6 @@ definition {
 			AssertElementPresent(
 				key_content = "[@data-analytics-asset-title='My Image']",
 				locator1 = "WCD#WEB_CONTENT_CONTENT_ANY");
-		}
-	}
-
-	@description = "This is a use case for LPS-75802."
-	@priority = 5
-	test PublishWebContentWithImportedStructureDefaultValues {
-		property portal.acceptance = "true";
-
-		task ("Create a basic web content") {
-			JSONWebcontent.addWebContent(
-				content = "WC Content",
-				groupName = ${randomSiteName},
-				title = "WC 1");
-		}
-
-		task ("Create structure") {
-			WebContentNavigator.openWebContentAdmin(siteURLKey = ${randomSiteURLKey});
-
-			NavItem.gotoStructures();
-
-			WebContentStructures.importStructure(
-				structureName = "WC Structure Name",
-				uploadFileName = "Structure_All_Fields.json");
-		}
-
-		task ("Set default values for the structure") {
-			WebContentStructures.editStructureDefaultValuesCP(structureName = "WC Structure Name");
-
-			WebContent.addWithStructureCP(
-				column = 1,
-				dmNavTab = "User Personal Folder",
-				navTab = "Web Content Images",
-				row = 1,
-				webContentColor = "FF0D0D",
-				webContentDate = "10/10/2020",
-				webContentGrid = "true",
-				webContentImage = "Document_3.png",
-				webContentLinkToPage = "Staging Test Page",
-				webContentMultipleSelection = "Option 1",
-				webContentNumeric = 9,
-				webContentRichText = "This is a Rich Text field",
-				webContentSelectFromList = "Option 2",
-				webContentSingleSelection = "Option 3",
-				webContentText = "(Enter Text Here)",
-				webContentTitle = "Web Content Title",
-				webContentUpload = "Document_1.doc",
-				webContentWebContent = "WC 1");
-
-			PortletEntry.save();
-		}
-
-		task ("Create and Publish Web Content") {
-			WebContentNavigator.openWebContentAdmin(siteURLKey = ${randomSiteURLKey});
-
-			WebContentNavigator.gotoAddWithStructureCP(structureName = "WC Structure Name");
-
-			WebContent.addWithStructureCP(
-				structureName = "WC Structure Name",
-				webContentText = "Web Content Text",
-				webContentTitle = "Web Content Title");
-
-			PortletEntry.publish();
-
-			WebContent.viewTitle(webContentTitle = "Web Content Title");
-		}
-
-		task ("Export web content") {
-			WebContentNavigator.openWebContentAdmin(siteURLKey = ${randomSiteURLKey});
-
-			LAR.exportPortlet(larFileName = "WebContent_portlet.lar");
-		}
-
-		task ("Create another site") {
-			HeadlessSite.addSite(siteName = "${randomSiteName} B");
-		}
-
-		task ("Enable Staging in created site") {
-			Staging.openStagingAdmin(siteURLKey = "${randomSiteURLKey}-b");
-
-			Staging.activateStagingCP(siteName = "${randomSiteName} B");
-		}
-
-		task ("Import web content") {
-			WebContentNavigator.openWebContentAdmin(siteURLKey = "${randomSiteURLKey}-b-staging");
-
-			LAR.importPortlet(larFileName = "WebContent_portlet.lar");
-		}
-
-		task ("Assert web content has been imported in staging") {
-			WebContentNavigator.openWebContentAdmin(siteURLKey = "${randomSiteURLKey}-b-staging");
-
-			WebContent.viewWithStructureCP(
-				webContentText = "Web Content Text",
-				webContentTitle = "Web Content Title");
-		}
-
-		task ("Publish the site to live") {
-			Staging.openStagingAdmin(siteURLKey = "${randomSiteURLKey}-b-staging");
-
-			Staging.publishCustomPublication();
-		}
-
-		task ("Assert no error") {
-			AssertConsoleTextNotPresent(value1 = "ConstraintViolationException");
-
-			AssertConsoleTextNotPresent(value1 = "SystemException");
-		}
-
-		task ("Assert web content has been published") {
-			WebContentNavigator.openWebContentAdmin(siteURLKey = "${randomSiteURLKey}-b");
-
-			AssertTextEquals.assertPartialText(
-				key_webContentTitle = "Web Content Title",
-				locator1 = "WC#ENTRY_LIST_TITLE_ON_LIVE",
-				value1 = "Web Content Title");
 		}
 	}
 
@@ -787,6 +569,10 @@ definition {
 				webContentTitle = "WC WebContent Title");
 		}
 
+		task ("Enable the Staging Page Variations deprecation feature flag") {
+			Staging.enablePageVariationsFeatureFlag();
+		}
+
 		task ("Activate Staging with page versioning") {
 			Staging.openStagingAdmin(siteURLKey = ${randomSiteURLKey});
 
@@ -823,7 +609,7 @@ definition {
 					webContentContent = "WC WebContent Content",
 					webContentTitle = ${webContentTitle});
 
-				PortletEntry.publish();
+				WebContent.publishWithPermissions();
 
 				WebContentNavigator.openWebContentAdmin(siteURLKey = ${randomSiteURLKey});
 

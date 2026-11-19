@@ -59,22 +59,23 @@ public class CommerceOrderTypeServiceWrapper
 	}
 
 	@Override
-	public com.liferay.commerce.model.CommerceOrderType
-			fetchByExternalReferenceCode(
-				String externalReferenceCode, long companyId)
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return _commerceOrderTypeService.fetchByExternalReferenceCode(
-			externalReferenceCode, companyId);
-	}
-
-	@Override
 	public com.liferay.commerce.model.CommerceOrderType fetchCommerceOrderType(
 			long commerceOrderTypeId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commerceOrderTypeService.fetchCommerceOrderType(
 			commerceOrderTypeId);
+	}
+
+	@Override
+	public com.liferay.commerce.model.CommerceOrderType
+			fetchCommerceOrderTypeByExternalReferenceCode(
+				String externalReferenceCode, long companyId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _commerceOrderTypeService.
+			fetchCommerceOrderTypeByExternalReferenceCode(
+				externalReferenceCode, companyId);
 	}
 
 	@Override
@@ -104,6 +105,15 @@ public class CommerceOrderTypeServiceWrapper
 
 		return _commerceOrderTypeService.getCommerceOrderTypesCount(
 			className, classPK, active);
+	}
+
+	@Override
+	public com.liferay.commerce.model.CommerceOrderType
+			getOrAddEmptyCommerceOrderType(String externalReferenceCode)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _commerceOrderTypeService.getOrAddEmptyCommerceOrderType(
+			externalReferenceCode);
 	}
 
 	/**
@@ -164,3 +174,4 @@ public class CommerceOrderTypeServiceWrapper
 	private CommerceOrderTypeService _commerceOrderTypeService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-811820988

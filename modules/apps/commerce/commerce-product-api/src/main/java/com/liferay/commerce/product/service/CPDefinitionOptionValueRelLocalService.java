@@ -95,16 +95,17 @@ public interface CPDefinitionOptionValueRelLocalService
 
 	@Indexable(type = IndexableType.REINDEX)
 	public CPDefinitionOptionValueRel addCPDefinitionOptionValueRel(
-			long cpDefinitionOptionRelId, long cpInstanceId, String key,
-			Map<Locale, String> nameMap, boolean preselected,
-			BigDecimal deltaPrice, double priority, BigDecimal quantity,
-			String unitOfMeasureKey, ServiceContext serviceContext)
+			String externalReferenceCode, long cpDefinitionOptionRelId,
+			long cpInstanceId, String key, Map<Locale, String> nameMap,
+			boolean preselected, BigDecimal deltaPrice, double priority,
+			BigDecimal quantity, String unitOfMeasureKey,
+			ServiceContext serviceContext)
 		throws PortalException;
 
 	@Indexable(type = IndexableType.REINDEX)
 	public CPDefinitionOptionValueRel addCPDefinitionOptionValueRel(
-			long cpDefinitionOptionRelId, String key,
-			Map<Locale, String> nameMap, double priority,
+			String externalReferenceCode, long cpDefinitionOptionRelId,
+			String key, Map<Locale, String> nameMap, double priority,
 			ServiceContext serviceContext)
 		throws PortalException;
 
@@ -251,6 +252,11 @@ public interface CPDefinitionOptionValueRelLocalService
 	public CPDefinitionOptionValueRel fetchCPDefinitionOptionValueRel(
 		long cpDefinitionOptionRelId, String key);
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public CPDefinitionOptionValueRel
+		fetchCPDefinitionOptionValueRelByExternalReferenceCode(
+			String externalReferenceCode, long companyId);
+
 	/**
 	 * Returns the cp definition option value rel matching the UUID and group.
 	 *
@@ -275,6 +281,11 @@ public interface CPDefinitionOptionValueRelLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public ActionableDynamicQuery getActionableDynamicQuery();
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<CPDefinitionOptionValueRel>
+		getApprovedCPInstanceCPDefinitionOptionValueRels(
+			long cpDefinitionOptionRelId);
+
 	/**
 	 * Returns the cp definition option value rel with the primary key.
 	 *
@@ -285,6 +296,12 @@ public interface CPDefinitionOptionValueRelLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public CPDefinitionOptionValueRel getCPDefinitionOptionValueRel(
 			long CPDefinitionOptionValueRelId)
+		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public CPDefinitionOptionValueRel
+			getCPDefinitionOptionValueRelByExternalReferenceCode(
+				String externalReferenceCode, long companyId)
 		throws PortalException;
 
 	/**
@@ -390,6 +407,12 @@ public interface CPDefinitionOptionValueRelLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public IndexableActionableDynamicQuery getIndexableActionableDynamicQuery();
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public CPDefinitionOptionValueRel getOrAddEmptyCPDefinitionOptionValueRel(
+			String externalReferenceCode, long companyId, long userId,
+			long cpDefinitionOptionRelId, String key)
+		throws PortalException;
+
 	/**
 	 * Returns the OSGi service identifier.
 	 *
@@ -466,6 +489,10 @@ public interface CPDefinitionOptionValueRelLocalService
 		updateCPDefinitionOptionValueRelPreselected(
 			long cpDefinitionOptionValueRelId, boolean preselected);
 
+	public CPDefinitionOptionValueRel updateExternalReferenceCode(
+			long cpDefinitionOptionValueRelId, String externalReferenceCode)
+		throws PortalException;
+
 	@Override
 	@Transactional(enabled = false)
 	public CTPersistence<CPDefinitionOptionValueRel> getCTPersistence();
@@ -482,3 +509,4 @@ public interface CPDefinitionOptionValueRelLocalService
 		throws E;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1378980399

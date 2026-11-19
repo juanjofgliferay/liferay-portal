@@ -1,4 +1,4 @@
-@component-name = "portal-workflow-ee"
+@component-name = "portal-bpm"
 definition {
 
 	property portal.release = "true";
@@ -11,10 +11,9 @@ definition {
 
 		User.firstLoginPG();
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		KaleoFormsAdmin.enableKaleoFormsConfiguration(toggleValue = "Disabled");
+
+		Workflow.openWorkflowListView();
 
 		Workflow.addNewDefinition(workflowDefinitionTitle = '''<script>alert(123);</script>''');
 
@@ -49,6 +48,8 @@ definition {
 			PagesAdmin.tearDownCP();
 
 			Workflow.tearDownWorkflowDefinitions();
+
+			KaleoFormsAdmin.enableKaleoFormsConfiguration(toggleValue = "Enabled");
 		}
 	}
 

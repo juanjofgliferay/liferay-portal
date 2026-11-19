@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -79,6 +80,15 @@ public class CPDefinitionOptionRelLocalServiceUtil {
 
 	public static CPDefinitionOptionRel addCPDefinitionOptionRel(
 			long cpDefinitionId, long cpOptionId,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
+		throws PortalException {
+
+		return getService().addCPDefinitionOptionRel(
+			cpDefinitionId, cpOptionId, serviceContext);
+	}
+
+	public static CPDefinitionOptionRel addCPDefinitionOptionRel(
+			String externalReferenceCode, long cpDefinitionId, long cpOptionId,
 			Map<java.util.Locale, String> nameMap,
 			Map<java.util.Locale, String> descriptionMap,
 			String commerceOptionTypeKey, double priority, boolean facetable,
@@ -88,13 +98,14 @@ public class CPDefinitionOptionRelLocalServiceUtil {
 		throws PortalException {
 
 		return getService().addCPDefinitionOptionRel(
-			cpDefinitionId, cpOptionId, nameMap, descriptionMap,
-			commerceOptionTypeKey, priority, facetable, required,
-			skuContributor, importOptionValue, priceType, serviceContext);
+			externalReferenceCode, cpDefinitionId, cpOptionId, nameMap,
+			descriptionMap, commerceOptionTypeKey, priority, facetable,
+			required, skuContributor, importOptionValue, priceType,
+			serviceContext);
 	}
 
 	public static CPDefinitionOptionRel addCPDefinitionOptionRel(
-			long cpDefinitionId, long cpOptionId,
+			String externalReferenceCode, long cpDefinitionId, long cpOptionId,
 			Map<java.util.Locale, String> nameMap,
 			Map<java.util.Locale, String> descriptionMap,
 			String commerceOptionTypeKey, String infoItemServiceKey,
@@ -105,19 +116,10 @@ public class CPDefinitionOptionRelLocalServiceUtil {
 		throws PortalException {
 
 		return getService().addCPDefinitionOptionRel(
-			cpDefinitionId, cpOptionId, nameMap, descriptionMap,
-			commerceOptionTypeKey, infoItemServiceKey, priority,
+			externalReferenceCode, cpDefinitionId, cpOptionId, nameMap,
+			descriptionMap, commerceOptionTypeKey, infoItemServiceKey, priority,
 			definedExternally, facetable, required, skuContributor,
 			importOptionValue, priceType, typeSettings, serviceContext);
-	}
-
-	public static CPDefinitionOptionRel addCPDefinitionOptionRel(
-			long cpDefinitionId, long cpOptionId,
-			com.liferay.portal.kernel.service.ServiceContext serviceContext)
-		throws PortalException {
-
-		return getService().addCPDefinitionOptionRel(
-			cpDefinitionId, cpOptionId, serviceContext);
 	}
 
 	/**
@@ -294,6 +296,14 @@ public class CPDefinitionOptionRelLocalServiceUtil {
 			cpDefinitionId, cpOptionId);
 	}
 
+	public static CPDefinitionOptionRel
+		fetchCPDefinitionOptionRelByExternalReferenceCode(
+			String externalReferenceCode, long companyId) {
+
+		return getService().fetchCPDefinitionOptionRelByExternalReferenceCode(
+			externalReferenceCode, companyId);
+	}
+
 	public static CPDefinitionOptionRel fetchCPDefinitionOptionRelByKey(
 		long cpDefinitionId, String key) {
 
@@ -333,6 +343,15 @@ public class CPDefinitionOptionRelLocalServiceUtil {
 		throws PortalException {
 
 		return getService().getCPDefinitionOptionRel(CPDefinitionOptionRelId);
+	}
+
+	public static CPDefinitionOptionRel
+			getCPDefinitionOptionRelByExternalReferenceCode(
+				String externalReferenceCode, long companyId)
+		throws PortalException {
+
+		return getService().getCPDefinitionOptionRelByExternalReferenceCode(
+			externalReferenceCode, companyId);
 	}
 
 	/**
@@ -491,6 +510,12 @@ public class CPDefinitionOptionRelLocalServiceUtil {
 			cpDefinitionId, skuContributor);
 	}
 
+	public static List<CPDefinitionOptionRel> getCPOptionCPDefinitionOptionRels(
+		long cpOptionId) {
+
+		return getService().getCPOptionCPDefinitionOptionRels(cpOptionId);
+	}
+
 	public static com.liferay.portal.kernel.dao.orm.ExportActionableDynamicQuery
 		getExportActionableDynamicQuery(
 			com.liferay.exportimport.kernel.lar.PortletDataContext
@@ -504,6 +529,17 @@ public class CPDefinitionOptionRelLocalServiceUtil {
 			getIndexableActionableDynamicQuery() {
 
 		return getService().getIndexableActionableDynamicQuery();
+	}
+
+	public static CPDefinitionOptionRel getOrAddEmptyCPDefinitionOptionRel(
+			String externalReferenceCode, long companyId, long userId,
+			long cpDefinitionId, long cpOptionId, String commerceOptionTypeKey,
+			boolean skuContributor)
+		throws PortalException {
+
+		return getService().getOrAddEmptyCPDefinitionOptionRel(
+			externalReferenceCode, companyId, userId, cpDefinitionId,
+			cpOptionId, commerceOptionTypeKey, skuContributor);
 	}
 
 	/**
@@ -620,14 +656,22 @@ public class CPDefinitionOptionRelLocalServiceUtil {
 			typeSettings, serviceContext);
 	}
 
+	public static CPDefinitionOptionRel updateExternalReferenceCode(
+			long cpDefinitionOptionRelId, String externalReferenceCode)
+		throws PortalException {
+
+		return getService().updateExternalReferenceCode(
+			cpDefinitionOptionRelId, externalReferenceCode);
+	}
+
 	public static CPDefinitionOptionRelLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(CPDefinitionOptionRelLocalService service) {
-		_service = service;
-	}
-
-	private static volatile CPDefinitionOptionRelLocalService _service;
+	private static final Snapshot<CPDefinitionOptionRelLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			CPDefinitionOptionRelLocalServiceUtil.class,
+			CPDefinitionOptionRelLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:166467599

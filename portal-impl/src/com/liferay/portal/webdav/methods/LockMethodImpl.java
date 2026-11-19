@@ -26,10 +26,10 @@ import com.liferay.portal.kernel.xml.Document;
 import com.liferay.portal.kernel.xml.Element;
 import com.liferay.portal.kernel.xml.SAXReaderUtil;
 
-import java.util.List;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import java.util.List;
 
 /**
  * @author Alexander Chow
@@ -86,9 +86,11 @@ public class LockMethodImpl implements Method {
 				for (Element element : lockscopeElement.elements()) {
 					String name = GetterUtil.getString(element.getName());
 
-					if (name.equals("exclusive")) {
-						exclusive = true;
+					if (!name.equals("exclusive")) {
+						continue;
 					}
+
+					exclusive = true;
 				}
 
 				if (!exclusive) {

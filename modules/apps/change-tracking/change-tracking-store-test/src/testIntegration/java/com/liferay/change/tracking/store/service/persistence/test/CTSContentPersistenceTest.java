@@ -36,7 +36,6 @@ import java.io.Serializable;
 import java.sql.Blob;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -116,11 +115,7 @@ public class CTSContentPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		CTSContent newCTSContent = _persistence.create(pk);
-
-		newCTSContent.setMvccVersion(RandomTestUtil.nextLong());
+		CTSContent newCTSContent = addCTSContent();
 
 		newCTSContent.setCtCollectionId(RandomTestUtil.nextLong());
 
@@ -144,7 +139,9 @@ public class CTSContentPersistenceTest {
 
 		newCTSContent.setStoreType(RandomTestUtil.randomString());
 
-		_ctsContents.add(_persistence.update(newCTSContent));
+		newCTSContent = _persistence.update(newCTSContent);
+
+		_ctsContents.add(newCTSContent);
 
 		CTSContent existingCTSContent = _persistence.findByPrimaryKey(
 			newCTSContent.getPrimaryKey());
@@ -169,14 +166,21 @@ public class CTSContentPersistenceTest {
 			existingCTSContent.getVersion(), newCTSContent.getVersion());
 		Blob existingData = existingCTSContent.getData();
 
-		Assert.assertTrue(
-			Arrays.equals(
-				existingData.getBytes(1, (int)existingData.length()),
-				newDataBytes));
+		Assert.assertArrayEquals(
+			newDataBytes, existingData.getBytes(1, (int)existingData.length()));
 		Assert.assertEquals(
 			existingCTSContent.getSize(), newCTSContent.getSize());
 		Assert.assertEquals(
 			existingCTSContent.getStoreType(), newCTSContent.getStoreType());
+	}
+
+	@Test
+	public void testCountByR_P() throws Exception {
+		_persistence.countByR_P(RandomTestUtil.nextLong(), "");
+
+		_persistence.countByR_P(0L, "null");
+
+		_persistence.countByR_P(0L, (String)null);
 	}
 
 	@Test
@@ -542,8 +546,6 @@ public class CTSContentPersistenceTest {
 
 		CTSContent ctsContent = _persistence.create(pk);
 
-		ctsContent.setMvccVersion(RandomTestUtil.nextLong());
-
 		ctsContent.setCtCollectionId(RandomTestUtil.nextLong());
 
 		ctsContent.setCompanyId(RandomTestUtil.nextLong());
@@ -576,3 +578,4 @@ public class CTSContentPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:826348001

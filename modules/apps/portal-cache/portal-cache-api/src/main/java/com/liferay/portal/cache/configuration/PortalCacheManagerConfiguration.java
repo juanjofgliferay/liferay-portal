@@ -6,9 +6,7 @@
 package com.liferay.portal.cache.configuration;
 
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -18,17 +16,8 @@ import java.util.concurrent.ConcurrentHashMap;
 public class PortalCacheManagerConfiguration {
 
 	public PortalCacheManagerConfiguration(
-		Set<Properties> portalCacheManagerListenerPropertiesSet,
 		PortalCacheConfiguration defaultPortalCacheConfiguration,
 		Set<PortalCacheConfiguration> portalCacheConfigurations) {
-
-		if (portalCacheManagerListenerPropertiesSet == null) {
-			_portalCacheManagerListenerPropertiesSet = Collections.emptySet();
-		}
-		else {
-			_portalCacheManagerListenerPropertiesSet = new HashSet<>(
-				portalCacheManagerListenerPropertiesSet);
-		}
 
 		_defaultPortalCacheConfiguration = defaultPortalCacheConfiguration;
 
@@ -43,27 +32,17 @@ public class PortalCacheManagerConfiguration {
 		}
 	}
 
+	public PortalCacheConfiguration getDefaultPortalCacheConfiguration() {
+		return _defaultPortalCacheConfiguration;
+	}
+
 	public PortalCacheConfiguration getPortalCacheConfiguration(
 		String portalCacheName) {
 
-		PortalCacheConfiguration portalCacheConfiguration =
-			_portalCacheConfigurations.get(portalCacheName);
-
-		if (portalCacheConfiguration == null) {
-			portalCacheConfiguration =
-				_defaultPortalCacheConfiguration.newPortalCacheConfiguration(
-					portalCacheName);
-
-			_portalCacheConfigurations.put(
-				portalCacheName, portalCacheConfiguration);
-		}
-
-		return portalCacheConfiguration;
-	}
-
-	public Set<Properties> getPortalCacheManagerListenerPropertiesSet() {
-		return Collections.unmodifiableSet(
-			_portalCacheManagerListenerPropertiesSet);
+		return _portalCacheConfigurations.computeIfAbsent(
+			portalCacheName,
+			key -> _defaultPortalCacheConfiguration.newPortalCacheConfiguration(
+				key));
 	}
 
 	public Set<String> getPortalCacheNames() {
@@ -78,9 +57,14 @@ public class PortalCacheManagerConfiguration {
 			portalCacheName, portalCacheConfiguration);
 	}
 
-	private final PortalCacheConfiguration _defaultPortalCacheConfiguration;
+	public void setDefaultPortalCacheConfiguration(
+		PortalCacheConfiguration defaultPortalCacheConfiguration) {
+
+		_defaultPortalCacheConfiguration = defaultPortalCacheConfiguration;
+	}
+
+	private PortalCacheConfiguration _defaultPortalCacheConfiguration;
 	private final Map<String, PortalCacheConfiguration>
 		_portalCacheConfigurations = new ConcurrentHashMap<>();
-	private final Set<Properties> _portalCacheManagerListenerPropertiesSet;
 
 }

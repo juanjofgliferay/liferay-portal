@@ -23,4 +23,57 @@ public class DepotRolesConstants {
 
 	public static final String ASSET_LIBRARY_OWNER = "Asset Library Owner";
 
+	public static final String[] DEPOT_ROLE_NAMES = {
+		ASSET_LIBRARY_ADMINISTRATOR, ASSET_LIBRARY_CONNECTED_SITE_MEMBER,
+		ASSET_LIBRARY_CONTENT_REVIEWER, ASSET_LIBRARY_MEMBER,
+		ASSET_LIBRARY_OWNER
+	};
+
+	public static final String DESIGN_LIBRARY_ADMINISTRATOR =
+		"Design Library Administrator";
+
+	public static final String DESIGN_LIBRARY_CONTENT_REVIEWER =
+		"Design Library Content Reviewer";
+
+	public static final String DESIGN_LIBRARY_MEMBER = "Design Library Member";
+
+	public static final String DESIGN_LIBRARY_OWNER = "Design Library Owner";
+
+	public static final String[] DESIGN_LIBRARY_ROLE_NAMES = {
+		DESIGN_LIBRARY_ADMINISTRATOR, DESIGN_LIBRARY_CONTENT_REVIEWER,
+		DESIGN_LIBRARY_MEMBER, DESIGN_LIBRARY_OWNER
+	};
+
+	public static final String PROJECT_CONTRIBUTOR = "Project Contributor";
+
+	public static final String PROJECT_MANAGER = "Project Manager";
+
+	public static final String PROJECT_MEMBER = "Project Member";
+
+	public static final String[] PROJECT_ROLE_NAMES = {
+		PROJECT_CONTRIBUTOR, PROJECT_MANAGER, PROJECT_MEMBER
+	};
+
+	public static final String SUBTYPE_DESIGN_LIBRARY = "design-library";
+
+	public static final String SUBTYPE_PROJECT = "project";
+
+	public static final String SUBTYPE_SPACE = "space";
+
+	public static String getSubtype(int depotType) {
+		if (depotType == DepotConstants.TYPE_DESIGN_LIBRARY) {
+			return SUBTYPE_DESIGN_LIBRARY;
+		}
+
+		if (depotType == DepotConstants.TYPE_PROJECT) {
+			return SUBTYPE_PROJECT;
+		}
+
+		if (depotType == DepotConstants.TYPE_SPACE) {
+			return SUBTYPE_SPACE;
+		}
+
+		return null;
+	}
+
 }

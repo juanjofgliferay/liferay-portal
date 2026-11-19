@@ -8,13 +8,14 @@ package com.liferay.headless.commerce.admin.catalog.client.serdes.v1_0;
 import com.liferay.headless.commerce.admin.catalog.client.dto.v1_0.ProductGroupProduct;
 import com.liferay.headless.commerce.admin.catalog.client.json.BaseJSONParser;
 
+import jakarta.annotation.Generated;
+
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
-
-import javax.annotation.Generated;
 
 /**
  * @author Zoltán Takács
@@ -45,6 +46,54 @@ public class ProductGroupProductSerDes {
 		StringBuilder sb = new StringBuilder();
 
 		sb.append("{");
+
+		if (productGroupProduct.getCatalogCurrencyCode() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"catalogCurrencyCode\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(productGroupProduct.getCatalogCurrencyCode()));
+
+			sb.append("\"");
+		}
+
+		if (productGroupProduct.getCatalogCurrencyExternalReferenceCode() !=
+				null) {
+
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"catalogCurrencyExternalReferenceCode\": ");
+
+			sb.append("\"");
+
+			sb.append(
+				_escape(
+					productGroupProduct.
+						getCatalogCurrencyExternalReferenceCode()));
+
+			sb.append("\"");
+		}
+
+		if (productGroupProduct.getCatalogExternalReferenceCode() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"catalogExternalReferenceCode\": ");
+
+			sb.append("\"");
+
+			sb.append(
+				_escape(productGroupProduct.getCatalogExternalReferenceCode()));
+
+			sb.append("\"");
+		}
 
 		if (productGroupProduct.getId() != null) {
 			if (sb.length() > 1) {
@@ -124,6 +173,20 @@ public class ProductGroupProductSerDes {
 			sb.append("\"");
 		}
 
+		if (productGroupProduct.getProductType() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"productType\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(productGroupProduct.getProductType()));
+
+			sb.append("\"");
+		}
+
 		if (productGroupProduct.getSku() != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -158,6 +221,38 @@ public class ProductGroupProductSerDes {
 		}
 
 		Map<String, String> map = new TreeMap<>();
+
+		if (productGroupProduct.getCatalogCurrencyCode() == null) {
+			map.put("catalogCurrencyCode", null);
+		}
+		else {
+			map.put(
+				"catalogCurrencyCode",
+				String.valueOf(productGroupProduct.getCatalogCurrencyCode()));
+		}
+
+		if (productGroupProduct.getCatalogCurrencyExternalReferenceCode() ==
+				null) {
+
+			map.put("catalogCurrencyExternalReferenceCode", null);
+		}
+		else {
+			map.put(
+				"catalogCurrencyExternalReferenceCode",
+				String.valueOf(
+					productGroupProduct.
+						getCatalogCurrencyExternalReferenceCode()));
+		}
+
+		if (productGroupProduct.getCatalogExternalReferenceCode() == null) {
+			map.put("catalogExternalReferenceCode", null);
+		}
+		else {
+			map.put(
+				"catalogExternalReferenceCode",
+				String.valueOf(
+					productGroupProduct.getCatalogExternalReferenceCode()));
+		}
 
 		if (productGroupProduct.getId() == null) {
 			map.put("id", null);
@@ -216,6 +311,15 @@ public class ProductGroupProductSerDes {
 				String.valueOf(productGroupProduct.getProductName()));
 		}
 
+		if (productGroupProduct.getProductType() == null) {
+			map.put("productType", null);
+		}
+		else {
+			map.put(
+				"productType",
+				String.valueOf(productGroupProduct.getProductType()));
+		}
+
 		if (productGroupProduct.getSku() == null) {
 			map.put("sku", null);
 		}
@@ -240,11 +344,83 @@ public class ProductGroupProductSerDes {
 		}
 
 		@Override
+		protected boolean parseMaps(String jsonParserFieldName) {
+			if (Objects.equals(jsonParserFieldName, "catalogCurrencyCode")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName,
+						"catalogCurrencyExternalReferenceCode")) {
+
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "catalogExternalReferenceCode")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "id")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "productExternalReferenceCode")) {
+
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName,
+						"productGroupExternalReferenceCode")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "productGroupId")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "productId")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "productName")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "productType")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "sku")) {
+				return false;
+			}
+
+			return false;
+		}
+
+		@Override
 		protected void setField(
 			ProductGroupProduct productGroupProduct, String jsonParserFieldName,
 			Object jsonParserFieldValue) {
 
-			if (Objects.equals(jsonParserFieldName, "id")) {
+			if (Objects.equals(jsonParserFieldName, "catalogCurrencyCode")) {
+				if (jsonParserFieldValue != null) {
+					productGroupProduct.setCatalogCurrencyCode(
+						(String)jsonParserFieldValue);
+				}
+			}
+			else if (Objects.equals(
+						jsonParserFieldName,
+						"catalogCurrencyExternalReferenceCode")) {
+
+				if (jsonParserFieldValue != null) {
+					productGroupProduct.setCatalogCurrencyExternalReferenceCode(
+						(String)jsonParserFieldValue);
+				}
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "catalogExternalReferenceCode")) {
+
+				if (jsonParserFieldValue != null) {
+					productGroupProduct.setCatalogExternalReferenceCode(
+						(String)jsonParserFieldValue);
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "id")) {
 				if (jsonParserFieldValue != null) {
 					productGroupProduct.setId(
 						Long.valueOf((String)jsonParserFieldValue));
@@ -285,6 +461,12 @@ public class ProductGroupProductSerDes {
 						(String)jsonParserFieldValue);
 				}
 			}
+			else if (Objects.equals(jsonParserFieldName, "productType")) {
+				if (jsonParserFieldValue != null) {
+					productGroupProduct.setProductType(
+						(String)jsonParserFieldValue);
+				}
+			}
 			else if (Objects.equals(jsonParserFieldName, "sku")) {
 				if (jsonParserFieldValue != null) {
 					productGroupProduct.setSku((String)jsonParserFieldValue);
@@ -322,36 +504,7 @@ public class ProductGroupProductSerDes {
 
 			Object value = entry.getValue();
 
-			Class<?> valueClass = value.getClass();
-
-			if (value instanceof Map) {
-				sb.append(_toJSON((Map)value));
-			}
-			else if (valueClass.isArray()) {
-				Object[] values = (Object[])value;
-
-				sb.append("[");
-
-				for (int i = 0; i < values.length; i++) {
-					sb.append("\"");
-					sb.append(_escape(values[i]));
-					sb.append("\"");
-
-					if ((i + 1) < values.length) {
-						sb.append(", ");
-					}
-				}
-
-				sb.append("]");
-			}
-			else if (value instanceof String) {
-				sb.append("\"");
-				sb.append(_escape(entry.getValue()));
-				sb.append("\"");
-			}
-			else {
-				sb.append(String.valueOf(entry.getValue()));
-			}
+			sb.append(_toJSON(value));
 
 			if (iterator.hasNext()) {
 				sb.append(", ");
@@ -363,4 +516,47 @@ public class ProductGroupProductSerDes {
 		return sb.toString();
 	}
 
+	private static String _toJSON(Object value) {
+		if (value == null) {
+			return "null";
+		}
+
+		if (value instanceof Collection) {
+			Collection<?> collection = (Collection<?>)value;
+
+			return _toJSON(collection.toArray());
+		}
+
+		if (value instanceof Map) {
+			return _toJSON((Map)value);
+		}
+
+		Class<?> clazz = value.getClass();
+
+		if (clazz.isArray()) {
+			StringBuilder sb = new StringBuilder("[");
+
+			Object[] values = (Object[])value;
+
+			for (int i = 0; i < values.length; i++) {
+				sb.append(_toJSON(values[i]));
+
+				if ((i + 1) < values.length) {
+					sb.append(", ");
+				}
+			}
+
+			sb.append("]");
+
+			return sb.toString();
+		}
+
+		if (value instanceof String) {
+			return "\"" + _escape(value) + "\"";
+		}
+
+		return String.valueOf(value);
+	}
+
 }
+// LIFERAY-REST-BUILDER-HASH:-53926918

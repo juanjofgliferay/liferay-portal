@@ -42,18 +42,10 @@ public class PasswordTrackerLocalServiceImpl
 			String newEncPwd = PasswordEncryptorUtil.encrypt(
 				newClearTextPwd, user.getPassword());
 
-			if (currentPwd.equals(newEncPwd)) {
-				return true;
-			}
-
-			return false;
+			return currentPwd.equals(newEncPwd);
 		}
 
-		if (currentPwd.equals(newClearTextPwd)) {
-			return true;
-		}
-
-		return false;
+		return currentPwd.equals(newClearTextPwd);
 	}
 
 	@Override
@@ -61,7 +53,7 @@ public class PasswordTrackerLocalServiceImpl
 		throws PortalException {
 
 		PasswordPolicy passwordPolicy =
-			_passwordPolicyLocalService.getPasswordPolicyByUserId(userId);
+			_passwordPolicyLocalService.fetchPasswordPolicyByUserId(userId);
 
 		if ((passwordPolicy == null) || !passwordPolicy.isHistory()) {
 			return true;
@@ -99,7 +91,7 @@ public class PasswordTrackerLocalServiceImpl
 		throws PortalException {
 
 		PasswordPolicy passwordPolicy =
-			_passwordPolicyLocalService.getPasswordPolicyByUserId(userId);
+			_passwordPolicyLocalService.fetchPasswordPolicyByUserId(userId);
 
 		if ((passwordPolicy != null) && passwordPolicy.isHistory()) {
 			long passwordTrackerId = counterLocalService.increment();

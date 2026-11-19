@@ -6,6 +6,7 @@
 package com.liferay.commerce.product.service.persistence.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.commerce.product.exception.DuplicateCPDefinitionSpecificationOptionValueExternalReferenceCodeException;
 import com.liferay.commerce.product.exception.NoSuchCPDefinitionSpecificationOptionValueException;
 import com.liferay.commerce.product.model.CPDefinitionSpecificationOptionValue;
 import com.liferay.commerce.product.service.CPDefinitionSpecificationOptionValueLocalServiceUtil;
@@ -120,18 +121,17 @@ public class CPDefinitionSpecificationOptionValuePersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
 		CPDefinitionSpecificationOptionValue
-			newCPDefinitionSpecificationOptionValue = _persistence.create(pk);
-
-		newCPDefinitionSpecificationOptionValue.setMvccVersion(
-			RandomTestUtil.nextLong());
+			newCPDefinitionSpecificationOptionValue =
+				addCPDefinitionSpecificationOptionValue();
 
 		newCPDefinitionSpecificationOptionValue.setCtCollectionId(
 			RandomTestUtil.nextLong());
 
 		newCPDefinitionSpecificationOptionValue.setUuid(
+			RandomTestUtil.randomString());
+
+		newCPDefinitionSpecificationOptionValue.setExternalReferenceCode(
 			RandomTestUtil.randomString());
 
 		newCPDefinitionSpecificationOptionValue.setGroupId(
@@ -161,17 +161,26 @@ public class CPDefinitionSpecificationOptionValuePersistenceTest {
 		newCPDefinitionSpecificationOptionValue.setCPOptionCategoryId(
 			RandomTestUtil.nextLong());
 
-		newCPDefinitionSpecificationOptionValue.setValue(
+		newCPDefinitionSpecificationOptionValue.setKey(
 			RandomTestUtil.randomString());
 
 		newCPDefinitionSpecificationOptionValue.setPriority(
 			RandomTestUtil.nextDouble());
 
+		newCPDefinitionSpecificationOptionValue.setValue(
+			RandomTestUtil.randomString());
+
+		newCPDefinitionSpecificationOptionValue.setVisible(
+			RandomTestUtil.randomBoolean());
+
 		newCPDefinitionSpecificationOptionValue.setLastPublishDate(
 			RandomTestUtil.nextDate());
 
+		newCPDefinitionSpecificationOptionValue = _persistence.update(
+			newCPDefinitionSpecificationOptionValue);
+
 		_cpDefinitionSpecificationOptionValues.add(
-			_persistence.update(newCPDefinitionSpecificationOptionValue));
+			newCPDefinitionSpecificationOptionValue);
 
 		CPDefinitionSpecificationOptionValue
 			existingCPDefinitionSpecificationOptionValue =
@@ -187,6 +196,10 @@ public class CPDefinitionSpecificationOptionValuePersistenceTest {
 		Assert.assertEquals(
 			existingCPDefinitionSpecificationOptionValue.getUuid(),
 			newCPDefinitionSpecificationOptionValue.getUuid());
+		Assert.assertEquals(
+			existingCPDefinitionSpecificationOptionValue.
+				getExternalReferenceCode(),
+			newCPDefinitionSpecificationOptionValue.getExternalReferenceCode());
 		Assert.assertEquals(
 			existingCPDefinitionSpecificationOptionValue.
 				getCPDefinitionSpecificationOptionValueId(),
@@ -227,17 +240,51 @@ public class CPDefinitionSpecificationOptionValuePersistenceTest {
 				getCPOptionCategoryId(),
 			newCPDefinitionSpecificationOptionValue.getCPOptionCategoryId());
 		Assert.assertEquals(
-			existingCPDefinitionSpecificationOptionValue.getValue(),
-			newCPDefinitionSpecificationOptionValue.getValue());
+			existingCPDefinitionSpecificationOptionValue.getKey(),
+			newCPDefinitionSpecificationOptionValue.getKey());
 		AssertUtils.assertEquals(
 			existingCPDefinitionSpecificationOptionValue.getPriority(),
 			newCPDefinitionSpecificationOptionValue.getPriority());
+		Assert.assertEquals(
+			existingCPDefinitionSpecificationOptionValue.getValue(),
+			newCPDefinitionSpecificationOptionValue.getValue());
+		Assert.assertEquals(
+			existingCPDefinitionSpecificationOptionValue.isVisible(),
+			newCPDefinitionSpecificationOptionValue.isVisible());
 		Assert.assertEquals(
 			Time.getShortTimestamp(
 				existingCPDefinitionSpecificationOptionValue.
 					getLastPublishDate()),
 			Time.getShortTimestamp(
 				newCPDefinitionSpecificationOptionValue.getLastPublishDate()));
+	}
+
+	@Test(
+		expected = DuplicateCPDefinitionSpecificationOptionValueExternalReferenceCodeException.class
+	)
+	public void testUpdateWithExistingExternalReferenceCode() throws Exception {
+		CPDefinitionSpecificationOptionValue
+			cpDefinitionSpecificationOptionValue =
+				addCPDefinitionSpecificationOptionValue();
+
+		CPDefinitionSpecificationOptionValue
+			newCPDefinitionSpecificationOptionValue =
+				addCPDefinitionSpecificationOptionValue();
+
+		newCPDefinitionSpecificationOptionValue.setCompanyId(
+			cpDefinitionSpecificationOptionValue.getCompanyId());
+
+		newCPDefinitionSpecificationOptionValue = _persistence.update(
+			newCPDefinitionSpecificationOptionValue);
+
+		Session session = _persistence.getCurrentSession();
+
+		session.evict(newCPDefinitionSpecificationOptionValue);
+
+		newCPDefinitionSpecificationOptionValue.setExternalReferenceCode(
+			cpDefinitionSpecificationOptionValue.getExternalReferenceCode());
+
+		_persistence.update(newCPDefinitionSpecificationOptionValue);
 	}
 
 	@Test
@@ -265,13 +312,6 @@ public class CPDefinitionSpecificationOptionValuePersistenceTest {
 		_persistence.countByUuid_C("null", 0L);
 
 		_persistence.countByUuid_C((String)null, 0L);
-	}
-
-	@Test
-	public void testCountByGroupId() throws Exception {
-		_persistence.countByGroupId(RandomTestUtil.nextLong());
-
-		_persistence.countByGroupId(0L);
 	}
 
 	@Test
@@ -320,6 +360,24 @@ public class CPDefinitionSpecificationOptionValuePersistenceTest {
 	}
 
 	@Test
+	public void testCountByC_K() throws Exception {
+		_persistence.countByC_K(RandomTestUtil.nextLong(), "");
+
+		_persistence.countByC_K(0L, "null");
+
+		_persistence.countByC_K(0L, (String)null);
+	}
+
+	@Test
+	public void testCountByERC_C() throws Exception {
+		_persistence.countByERC_C("", RandomTestUtil.nextLong());
+
+		_persistence.countByERC_C("null", 0L);
+
+		_persistence.countByERC_C((String)null, 0L);
+	}
+
+	@Test
 	public void testFindByPrimaryKeyExisting() throws Exception {
 		CPDefinitionSpecificationOptionValue
 			newCPDefinitionSpecificationOptionValue =
@@ -353,12 +411,13 @@ public class CPDefinitionSpecificationOptionValuePersistenceTest {
 
 		return OrderByComparatorFactoryUtil.create(
 			"CPDSpecificationOptionValue", "mvccVersion", true,
-			"ctCollectionId", true, "uuid", true,
+			"ctCollectionId", true, "uuid", true, "externalReferenceCode", true,
 			"CPDefinitionSpecificationOptionValueId", true, "groupId", true,
 			"companyId", true, "userId", true, "userName", true, "createDate",
 			true, "modifiedDate", true, "CPDefinitionId", true,
-			"CPSpecificationOptionId", true, "CPOptionCategoryId", true,
-			"value", true, "priority", true, "lastPublishDate", true);
+			"CPSpecificationOptionId", true, "CPOptionCategoryId", true, "key",
+			true, "priority", true, "value", true, "visible", true,
+			"lastPublishDate", true);
 	}
 
 	@Test
@@ -717,6 +776,29 @@ public class CPDefinitionSpecificationOptionValuePersistenceTest {
 			ReflectionTestUtil.<Long>invoke(
 				cpDefinitionSpecificationOptionValue, "getColumnOriginalValue",
 				new Class<?>[] {String.class}, "CPDefinitionId"));
+
+		Assert.assertEquals(
+			Long.valueOf(
+				cpDefinitionSpecificationOptionValue.getCPDefinitionId()),
+			ReflectionTestUtil.<Long>invoke(
+				cpDefinitionSpecificationOptionValue, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "CPDefinitionId"));
+		Assert.assertEquals(
+			cpDefinitionSpecificationOptionValue.getKey(),
+			ReflectionTestUtil.invoke(
+				cpDefinitionSpecificationOptionValue, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "key_"));
+
+		Assert.assertEquals(
+			cpDefinitionSpecificationOptionValue.getExternalReferenceCode(),
+			ReflectionTestUtil.invoke(
+				cpDefinitionSpecificationOptionValue, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "externalReferenceCode"));
+		Assert.assertEquals(
+			Long.valueOf(cpDefinitionSpecificationOptionValue.getCompanyId()),
+			ReflectionTestUtil.<Long>invoke(
+				cpDefinitionSpecificationOptionValue, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "companyId"));
 	}
 
 	protected CPDefinitionSpecificationOptionValue
@@ -728,13 +810,13 @@ public class CPDefinitionSpecificationOptionValuePersistenceTest {
 		CPDefinitionSpecificationOptionValue
 			cpDefinitionSpecificationOptionValue = _persistence.create(pk);
 
-		cpDefinitionSpecificationOptionValue.setMvccVersion(
-			RandomTestUtil.nextLong());
-
 		cpDefinitionSpecificationOptionValue.setCtCollectionId(
 			RandomTestUtil.nextLong());
 
 		cpDefinitionSpecificationOptionValue.setUuid(
+			RandomTestUtil.randomString());
+
+		cpDefinitionSpecificationOptionValue.setExternalReferenceCode(
 			RandomTestUtil.randomString());
 
 		cpDefinitionSpecificationOptionValue.setGroupId(
@@ -764,11 +846,17 @@ public class CPDefinitionSpecificationOptionValuePersistenceTest {
 		cpDefinitionSpecificationOptionValue.setCPOptionCategoryId(
 			RandomTestUtil.nextLong());
 
-		cpDefinitionSpecificationOptionValue.setValue(
+		cpDefinitionSpecificationOptionValue.setKey(
 			RandomTestUtil.randomString());
 
 		cpDefinitionSpecificationOptionValue.setPriority(
 			RandomTestUtil.nextDouble());
+
+		cpDefinitionSpecificationOptionValue.setValue(
+			RandomTestUtil.randomString());
+
+		cpDefinitionSpecificationOptionValue.setVisible(
+			RandomTestUtil.randomBoolean());
 
 		cpDefinitionSpecificationOptionValue.setLastPublishDate(
 			RandomTestUtil.nextDate());
@@ -786,3 +874,4 @@ public class CPDefinitionSpecificationOptionValuePersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1057344231

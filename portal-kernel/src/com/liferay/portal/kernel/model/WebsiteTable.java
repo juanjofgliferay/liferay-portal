@@ -27,6 +27,10 @@ public class WebsiteTable extends BaseTable<WebsiteTable> {
 		"mvccVersion", Long.class, Types.BIGINT, Column.FLAG_NULLITY);
 	public final Column<WebsiteTable, String> uuid = createColumn(
 		"uuid_", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
+	public final Column<WebsiteTable, String> externalReferenceCode =
+		createColumn(
+			"externalReferenceCode", String.class, Types.VARCHAR,
+			Column.FLAG_DEFAULT);
 	public final Column<WebsiteTable, Long> websiteId = createColumn(
 		"websiteId", Long.class, Types.BIGINT, Column.FLAG_PRIMARY);
 	public final Column<WebsiteTable, Long> companyId = createColumn(
@@ -57,3 +61,4 @@ public class WebsiteTable extends BaseTable<WebsiteTable> {
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-262934237

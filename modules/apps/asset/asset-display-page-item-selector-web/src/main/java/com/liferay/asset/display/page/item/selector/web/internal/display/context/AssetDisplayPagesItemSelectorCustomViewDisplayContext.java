@@ -5,8 +5,9 @@
 
 package com.liferay.asset.display.page.item.selector.web.internal.display.context;
 
-import com.liferay.asset.display.page.item.selector.criterion.AssetDisplayPageSelectorCriterion;
+import com.liferay.asset.display.page.item.selector.AssetDisplayPageItemSelectorCriterion;
 import com.liferay.item.selector.criteria.AssetEntryItemSelectorReturnType;
+import com.liferay.item.selector.taglib.GroupSelectorBreadcrumbUtil;
 import com.liferay.layout.page.template.constants.LayoutPageTemplateConstants;
 import com.liferay.layout.page.template.constants.LayoutPageTemplateEntryTypeConstants;
 import com.liferay.layout.page.template.model.LayoutPageTemplateCollection;
@@ -17,27 +18,33 @@ import com.liferay.layout.page.template.util.comparator.LayoutPageTemplateCollec
 import com.liferay.layout.page.template.util.comparator.LayoutPageTemplateCollectionLayoutPageTemplateEntryNameComparator;
 import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
+import com.liferay.portal.kernel.exception.SystemException;
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.portlet.PortletURLUtil;
 import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.servlet.taglib.ui.BreadcrumbEntry;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.JavaConstants;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.ParamUtil;
+import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.site.navigation.taglib.servlet.taglib.util.BreadcrumbEntryBuilder;
 import com.liferay.site.navigation.taglib.servlet.taglib.util.BreadcrumbEntryListBuilder;
 
+import jakarta.portlet.PortletException;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.Collections;
 import java.util.List;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Yurena Cabrera
@@ -46,16 +53,20 @@ public class AssetDisplayPagesItemSelectorCustomViewDisplayContext {
 
 	public AssetDisplayPagesItemSelectorCustomViewDisplayContext(
 		HttpServletRequest httpServletRequest, String itemSelectedEventName,
-		AssetDisplayPageSelectorCriterion assetDisplayPageSelectorCriterion,
+		AssetDisplayPageItemSelectorCriterion
+			assetDisplayPageItemSelectorCriterion,
 		PortletURL portletURL) {
 
 		_httpServletRequest = httpServletRequest;
 		_itemSelectedEventName = itemSelectedEventName;
-		_assetDisplayPageSelectorCriterion = assetDisplayPageSelectorCriterion;
+		_assetDisplayPageItemSelectorCriterion =
+			assetDisplayPageItemSelectorCriterion;
 		_portletURL = portletURL;
 
 		_portletRequest = (PortletRequest)httpServletRequest.getAttribute(
-			JavaConstants.JAVAX_PORTLET_REQUEST);
+			JavaConstants.JAKARTA_PORTLET_REQUEST);
+		_portletResponse = (PortletResponse)httpServletRequest.getAttribute(
+			JavaConstants.JAKARTA_PORTLET_RESPONSE);
 		_themeDisplay = (ThemeDisplay)httpServletRequest.getAttribute(
 			WebKeys.THEME_DISPLAY);
 	}
@@ -67,9 +78,11 @@ public class AssetDisplayPagesItemSelectorCustomViewDisplayContext {
 
 		SearchContainer<Object> assetDisplayPageSearchContainer =
 			new SearchContainer<>(
-				_portletRequest, _portletURL, null,
+				_portletRequest, _clonePortletURL(), null,
 				"there-are-no-display-page-templates");
 
+		assetDisplayPageSearchContainer.setId(
+			"displayPages" + getLayoutPageTemplateCollectionId());
 		assetDisplayPageSearchContainer.setOrderByCol(_getOrderByCol());
 		assetDisplayPageSearchContainer.setOrderByComparator(
 			_getLayoutPageTemplateEntryOrderByComparator(
@@ -79,9 +92,9 @@ public class AssetDisplayPagesItemSelectorCustomViewDisplayContext {
 			() ->
 				LayoutPageTemplateEntryServiceUtil.
 					getLayoutPageCollectionsAndLayoutPageTemplateEntries(
-						_getGroupId(), _getLayoutPageTemplateCollectionId(),
-						_assetDisplayPageSelectorCriterion.getClassNameId(),
-						_assetDisplayPageSelectorCriterion.getClassTypeId(),
+						_getGroupId(), getLayoutPageTemplateCollectionId(),
+						_assetDisplayPageItemSelectorCriterion.getClassNameId(),
+						_assetDisplayPageItemSelectorCriterion.getClassTypeId(),
 						_getKeywords(),
 						LayoutPageTemplateEntryTypeConstants.DISPLAY_PAGE,
 						WorkflowConstants.STATUS_APPROVED,
@@ -90,9 +103,9 @@ public class AssetDisplayPagesItemSelectorCustomViewDisplayContext {
 						assetDisplayPageSearchContainer.getOrderByComparator()),
 			LayoutPageTemplateEntryServiceUtil.
 				getLayoutPageCollectionsAndLayoutPageTemplateEntriesCount(
-					_getGroupId(), _getLayoutPageTemplateCollectionId(),
-					_assetDisplayPageSelectorCriterion.getClassNameId(),
-					_assetDisplayPageSelectorCriterion.getClassTypeId(),
+					_getGroupId(), getLayoutPageTemplateCollectionId(),
+					_assetDisplayPageItemSelectorCriterion.getClassNameId(),
+					_assetDisplayPageItemSelectorCriterion.getClassTypeId(),
 					_getKeywords(),
 					LayoutPageTemplateEntryTypeConstants.DISPLAY_PAGE,
 					WorkflowConstants.STATUS_APPROVED));
@@ -102,23 +115,26 @@ public class AssetDisplayPagesItemSelectorCustomViewDisplayContext {
 		return _assetDisplayPageSearchContainer;
 	}
 
-	public String getItemSelectedEventName() {
-		return _itemSelectedEventName;
-	}
-
-	public List<BreadcrumbEntry> getLayoutPageTemplateBreadcrumbEntries() {
+	public List<BreadcrumbEntry> getBreadcrumbEntries() {
 		LayoutPageTemplateCollection layoutPageTemplateCollection =
 			LayoutPageTemplateCollectionLocalServiceUtil.
 				fetchLayoutPageTemplateCollection(
-					_getLayoutPageTemplateCollectionId());
+					getLayoutPageTemplateCollectionId());
 
-		return BreadcrumbEntryListBuilder.add(
+		return BreadcrumbEntryListBuilder.addAll(
+			() -> FeatureFlagManagerUtil.isEnabled(
+				_themeDisplay.getCompanyId(), "LPD-57283"),
+			() -> GroupSelectorBreadcrumbUtil.getBreadcrumbEntries(
+				_themeDisplay.getScopeGroup(), _httpServletRequest,
+				PortalUtil.getLiferayPortletResponse(_portletResponse),
+				_portletURL)
+		).add(
 			breadcrumbEntry -> {
 				breadcrumbEntry.setTitle(
 					LanguageUtil.get(_httpServletRequest, "home"));
 				breadcrumbEntry.setURL(
 					PortletURLBuilder.create(
-						_portletURL
+						_clonePortletURL()
 					).setParameter(
 						"layoutPageTemplateCollectionId",
 						LayoutPageTemplateConstants.
@@ -141,7 +157,7 @@ public class AssetDisplayPagesItemSelectorCustomViewDisplayContext {
 							curLayoutPageTemplateCollection.getName()
 						).setURL(
 							PortletURLBuilder.create(
-								_portletURL
+								_clonePortletURL()
 							).setParameter(
 								"layoutPageTemplateCollectionId",
 								curLayoutPageTemplateCollection.
@@ -150,6 +166,23 @@ public class AssetDisplayPagesItemSelectorCustomViewDisplayContext {
 						).build());
 			}
 		).build();
+	}
+
+	public String getItemSelectedEventName() {
+		return _itemSelectedEventName;
+	}
+
+	public long getLayoutPageTemplateCollectionId() {
+		if (_layoutPageTemplateCollectionId != null) {
+			return _layoutPageTemplateCollectionId;
+		}
+
+		_layoutPageTemplateCollectionId = ParamUtil.getLong(
+			_httpServletRequest, "layoutPageTemplateCollectionId",
+			LayoutPageTemplateConstants.
+				PARENT_LAYOUT_PAGE_TEMPLATE_COLLECTION_ID_DEFAULT);
+
+		return _layoutPageTemplateCollectionId;
 	}
 
 	public String getOrderByType() {
@@ -178,11 +211,22 @@ public class AssetDisplayPagesItemSelectorCustomViewDisplayContext {
 	}
 
 	public PortletURL getPortletURL() {
-		return _portletURL;
+		return _clonePortletURL();
 	}
 
 	public String getReturnType() {
 		return AssetEntryItemSelectorReturnType.class.getName();
+	}
+
+	private PortletURL _clonePortletURL() {
+		try {
+			return PortletURLUtil.clone(
+				_portletURL,
+				PortalUtil.getLiferayPortletResponse(_portletResponse));
+		}
+		catch (PortletException portletException) {
+			throw new SystemException(portletException);
+		}
 	}
 
 	private long _getGroupId() {
@@ -206,19 +250,6 @@ public class AssetDisplayPagesItemSelectorCustomViewDisplayContext {
 		return _keywords;
 	}
 
-	private long _getLayoutPageTemplateCollectionId() {
-		if (_layoutPageTemplateCollectionId != null) {
-			return _layoutPageTemplateCollectionId;
-		}
-
-		_layoutPageTemplateCollectionId = ParamUtil.getLong(
-			_httpServletRequest, "layoutPageTemplateCollectionId",
-			LayoutPageTemplateConstants.
-				PARENT_LAYOUT_PAGE_TEMPLATE_COLLECTION_ID_DEFAULT);
-
-		return _layoutPageTemplateCollectionId;
-	}
-
 	private OrderByComparator<Object>
 		_getLayoutPageTemplateEntryOrderByComparator(
 			String orderByCol, String orderByType) {
@@ -233,13 +264,13 @@ public class AssetDisplayPagesItemSelectorCustomViewDisplayContext {
 
 		if (orderByCol.equals("create-date")) {
 			orderByComparator =
-				new LayoutPageTemplateCollectionLayoutPageTemplateEntryCreateDateComparator(
-					orderByAsc);
+				LayoutPageTemplateCollectionLayoutPageTemplateEntryCreateDateComparator.
+					getInstance(orderByAsc);
 		}
 		else if (orderByCol.equals("name")) {
 			orderByComparator =
-				new LayoutPageTemplateCollectionLayoutPageTemplateEntryNameComparator(
-					orderByAsc);
+				LayoutPageTemplateCollectionLayoutPageTemplateEntryNameComparator.
+					getInstance(orderByAsc);
 		}
 
 		return orderByComparator;
@@ -256,9 +287,9 @@ public class AssetDisplayPagesItemSelectorCustomViewDisplayContext {
 		return _orderByCol;
 	}
 
+	private final AssetDisplayPageItemSelectorCriterion
+		_assetDisplayPageItemSelectorCriterion;
 	private SearchContainer<?> _assetDisplayPageSearchContainer;
-	private final AssetDisplayPageSelectorCriterion
-		_assetDisplayPageSelectorCriterion;
 	private Long _groupId;
 	private final HttpServletRequest _httpServletRequest;
 	private final String _itemSelectedEventName;
@@ -267,6 +298,7 @@ public class AssetDisplayPagesItemSelectorCustomViewDisplayContext {
 	private String _orderByCol;
 	private String _orderByType;
 	private final PortletRequest _portletRequest;
+	private final PortletResponse _portletResponse;
 	private final PortletURL _portletURL;
 	private final ThemeDisplay _themeDisplay;
 

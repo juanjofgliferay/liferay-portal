@@ -21,10 +21,14 @@
 	if (status > 0) {
 		response.setStatus(status);
 	}
+
+	Exception statusException = statusDisplayContext.getException();
+
+	Class<?> statusExceptionClass = (statusException == null) ? null : statusException.getClass();
 	%>
 
 	<c:choose>
-		<c:when test="<%= SessionErrors.contains(request, PrincipalException.getNestedClasses()) %>">
+		<c:when test="<%= statusException instanceof PrincipalException %>">
 			<clay:alert
 				displayType="danger"
 				message="forbidden"
@@ -35,8 +39,12 @@
 			<br /><br />
 
 			<code class="lfr-url-error"><%= statusDisplayContext.getEscapedURL(themeDisplay) %></code>
+
+			<hr class="separator" />
+
+			<a href="javascript:history.go(-1);">&laquo; <liferay-ui:message key="back" /></a>
 		</c:when>
-		<c:when test="<%= SessionErrors.contains(request, PortalException.class.getName()) || SessionErrors.contains(request, SystemException.class.getName()) %>">
+		<c:when test="<%= (statusExceptionClass == PortalException.class) || (statusExceptionClass == SystemException.class) %>">
 			<clay:alert
 				displayType="danger"
 				message="internal-server-error"
@@ -47,8 +55,12 @@
 			<br /><br />
 
 			<code class="lfr-url-error"><%= statusDisplayContext.getEscapedURL(themeDisplay) %></code>
+
+			<hr class="separator" />
+
+			<a href="javascript:history.go(-1);">&laquo; <liferay-ui:message key="back" /></a>
 		</c:when>
-		<c:when test="<%= SessionErrors.contains(request, TransformException.class.getName()) %>">
+		<c:when test="<%= statusExceptionClass == TransformException.class %>">
 			<clay:alert
 				displayType="danger"
 				message="internal-server-error"
@@ -63,12 +75,16 @@
 			<br /><br />
 
 			<%
-			TransformException te = (TransformException)SessionErrors.get(request, TransformException.class.getName());
+			TransformException te = (TransformException)statusException;
 			%>
 
 			<div>
 				<%= StringUtil.replace(HtmlUtil.escape(te.getMessage()), '\n', "<br />\n") %>
 			</div>
+
+			<hr class="separator" />
+
+			<a href="javascript:history.go(-1);">&laquo; <liferay-ui:message key="back" /></a>
 		</c:when>
 		<c:when test="<%= statusDisplayContext.isNoSuchResourceException() %>">
 			<liferay-layout:render-layout-utility-page-entry
@@ -104,7 +120,7 @@
 				<code class="lfr-url-error"><%= statusDisplayContext.getEscapedURL(themeDisplay) %></code>
 
 				<%
-				statusDisplayContext.logSessionErrors();
+				statusDisplayContext.logException();
 				%>
 
 			</liferay-layout:render-layout-utility-page-entry>
@@ -122,13 +138,12 @@
 			<code class="lfr-url-error"><%= statusDisplayContext.getEscapedURL(themeDisplay) %></code>
 
 			<%
-			statusDisplayContext.logSessionErrors();
+			statusDisplayContext.logException();
 			%>
 
+			<hr class="separator" />
+
+			<a href="javascript:history.go(-1);">&laquo; <liferay-ui:message key="back" /></a>
 		</c:otherwise>
 	</c:choose>
-
-	<hr class="separator" />
-
-	<a href="javascript:history.go(-1);">&laquo; <liferay-ui:message key="back" /></a>
 </liferay-layout:render-layout-utility-page-entry>

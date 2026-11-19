@@ -59,9 +59,6 @@ public class SearchRequestImpl {
 		SearchContainer<Document> searchContainer = _buildSearchContainer(
 			searchSettingsImpl);
 
-		searchContext.setEnd(searchContainer.getEnd());
-		searchContext.setStart(searchContainer.getStart());
-
 		SearchResponse searchResponse = _searcher.search(
 			searchRequestBuilder.build());
 
@@ -128,9 +125,9 @@ public class SearchRequestImpl {
 
 	private final SearchContainerBuilder _searchContainerBuilder;
 	private final SearchContextBuilder _searchContextBuilder;
-	private final Searcher _searcher;
 	private final SearchRequestBuilderFactory _searchRequestBuilderFactory;
 	private final Set<SearchSettingsContributor> _searchSettingsContributors =
 		new HashSet<>();
+	private final Searcher _searcher;
 
 }

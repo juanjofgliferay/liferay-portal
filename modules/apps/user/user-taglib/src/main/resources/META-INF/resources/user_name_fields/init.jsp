@@ -5,11 +5,12 @@
  */
 --%>
 
-<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<%@ taglib uri="jakarta.tags.core" prefix="c" %>
 
 <%@ taglib uri="http://java.sun.com/portlet_2_0" prefix="portlet" %>
 
 <%@ taglib uri="http://liferay.com/tld/aui" prefix="aui" %><%@
+taglib uri="http://liferay.com/tld/frontend" prefix="liferay-frontend" %><%@
 taglib uri="http://liferay.com/tld/theme" prefix="liferay-theme" %><%@
 taglib uri="http://liferay.com/tld/ui" prefix="liferay-ui" %>
 
@@ -18,6 +19,7 @@ page import="com.liferay.petra.string.StringUtil" %><%@
 page import="com.liferay.portal.kernel.bean.BeanParamUtil" %><%@
 page import="com.liferay.portal.kernel.exception.ContactNameException" %><%@
 page import="com.liferay.portal.kernel.language.LanguageUtil" %><%@
+page import="com.liferay.portal.kernel.language.constants.LanguageConstants" %><%@
 page import="com.liferay.portal.kernel.model.Contact" %><%@
 page import="com.liferay.portal.kernel.model.ListType" %><%@
 page import="com.liferay.portal.kernel.model.User" %><%@
@@ -26,14 +28,19 @@ page import="com.liferay.portal.kernel.security.auth.FullNameDefinitionFactory" 
 page import="com.liferay.portal.kernel.security.auth.FullNameField" %><%@
 page import="com.liferay.portal.kernel.service.ListTypeServiceUtil" %><%@
 page import="com.liferay.portal.kernel.util.CamelCaseUtil" %><%@
-page import="com.liferay.portal.kernel.util.HtmlUtil" %><%@
+page import="com.liferay.portal.kernel.util.HashMapBuilder" %><%@
 page import="com.liferay.portal.kernel.util.LocaleUtil" %><%@
 page import="com.liferay.portal.kernel.util.Validator" %><%@
 page import="com.liferay.portlet.usersadmin.util.UsersAdminUtil" %>
 
-<%@ page import="java.util.Locale" %>
+<%@ page import="java.util.Locale" %><%@
+page import="java.util.function.ToLongFunction" %>
+
+<liferay-frontend:defineObjects />
 
 <liferay-theme:defineObjects />
+
+<portlet:defineObjects />
 
 <%
 Object bean = request.getAttribute("liferay-user:user-name-fields:bean");

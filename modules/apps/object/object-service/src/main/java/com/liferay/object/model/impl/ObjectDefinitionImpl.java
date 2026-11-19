@@ -6,18 +6,31 @@
 package com.liferay.object.model.impl;
 
 import com.liferay.object.constants.ObjectDefinitionConstants;
+import com.liferay.object.constants.ObjectDefinitionSettingConstants;
+import com.liferay.object.constants.ObjectFolderConstants;
+import com.liferay.object.definition.setting.util.ObjectDefinitionSettingUtil;
+import com.liferay.object.definition.tree.util.ObjectDefinitionTreeUtil;
 import com.liferay.object.definition.util.ObjectDefinitionUtil;
 import com.liferay.object.model.ObjectDefinition;
+import com.liferay.object.model.ObjectDefinitionSetting;
 import com.liferay.object.model.ObjectFolder;
+import com.liferay.object.model.bag.ObjectFieldBag;
 import com.liferay.object.service.ObjectDefinitionLocalServiceUtil;
+import com.liferay.object.service.ObjectDefinitionSettingLocalServiceUtil;
+import com.liferay.object.service.ObjectFieldLocalServiceUtil;
 import com.liferay.object.service.ObjectFolderLocalServiceUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
+import com.liferay.portal.kernel.util.ArrayUtil;
+import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.LocalizationUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.TextFormatter;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
+import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 
 /**
@@ -34,6 +47,23 @@ public class ObjectDefinitionImpl extends ObjectDefinitionBaseImpl {
 		}
 
 		return shortName;
+	}
+
+	@Override
+	public String getDefaultLanguageId() {
+		String xml = getLabel();
+
+		if (xml == null) {
+			return "";
+		}
+
+		return LocalizationUtil.getDefaultLanguageId(
+			xml, LocaleUtil.getDefault());
+	}
+
+	@Override
+	public Locale getDefaultLocale() {
+		return LocaleUtil.fromLanguageId(getDefaultLanguageId());
 	}
 
 	@Override
@@ -68,23 +98,7 @@ public class ObjectDefinitionImpl extends ObjectDefinitionBaseImpl {
 
 	@Override
 	public String getLocalizationDBTableName() {
-		if (!isEnableLocalization()) {
-			return null;
-		}
-
 		return getDBTableName() + "_l";
-	}
-
-	@Override
-	public String getObjectFolderExternalReferenceCode() {
-		ObjectFolder objectFolder =
-			ObjectFolderLocalServiceUtil.fetchObjectFolder(getObjectFolderId());
-
-		if (objectFolder == null) {
-			return null;
-		}
-
-		return objectFolder.getExternalReferenceCode();
 	}
 
 	@Override
@@ -94,17 +108,72 @@ public class ObjectDefinitionImpl extends ObjectDefinitionBaseImpl {
 
 	@Override
 	public String getOSGiJaxRsName(String className) {
-		return getName() + className;
+		return StringUtil.toLowerCase(getName()) + className;
+	}
+
+	@Override
+	public List<ObjectDefinitionSetting> getObjectDefinitionSettings() {
+		if (_objectDefinitionSettings == null) {
+			_objectDefinitionSettings =
+				ObjectDefinitionSettingLocalServiceUtil.
+					getObjectDefinitionSettings(getObjectDefinitionId());
+		}
+
+		return _objectDefinitionSettings;
+	}
+
+	@Override
+	public ObjectFieldBag getObjectFieldBag() {
+		if (_objectFieldBag == null) {
+			setObjectFieldBag(
+				new ObjectFieldBag(
+					isModifiableAndSystem(),
+					ObjectFieldLocalServiceUtil.getObjectFields(
+						getObjectDefinitionId())));
+		}
+
+		return _objectFieldBag;
+	}
+
+	@Override
+	public ObjectFolder getObjectFolder() {
+		if (_objectFolder == null) {
+			_objectFolder = ObjectFolderLocalServiceUtil.fetchObjectFolder(
+				getObjectFolderId());
+		}
+
+		return _objectFolder;
+	}
+
+	@Override
+	public String getObjectFolderExternalReferenceCode() {
+		ObjectFolder objectFolder = getObjectFolder();
+
+		if (objectFolder == null) {
+			return null;
+		}
+
+		return objectFolder.getExternalReferenceCode();
 	}
 
 	@Override
 	public String getPortletId() {
+		return ObjectDefinitionUtil.getPortletId(getClassName());
+	}
+
+	@Override
+	public String getRESTContextPath() {
 		if (isUnmodifiableSystemObject()) {
 			throw new UnsupportedOperationException();
 		}
 
-		return "com_liferay_object_web_internal_object_definitions_portlet_" +
-			"ObjectDefinitionsPortlet_" + getObjectDefinitionId();
+		if (isModifiableAndSystem()) {
+			return ObjectDefinitionUtil.
+				getModifiableSystemObjectDefinitionRESTContextPath(getName());
+		}
+
+		return "/c/" +
+			TextFormatter.formatPlural(StringUtil.toLowerCase(getShortName()));
 	}
 
 	@Override
@@ -117,37 +186,59 @@ public class ObjectDefinitionImpl extends ObjectDefinitionBaseImpl {
 	}
 
 	@Override
-	public String getRESTContextPath() {
-		if (isUnmodifiableSystemObject()) {
-			throw new UnsupportedOperationException();
-		}
+	public String getRootObjectDefinitionExternalReferenceCode() {
+		long rootObjectDefinitionId = getRootObjectDefinitionId();
 
-		if (isModifiable() && isSystem()) {
-			return ObjectDefinitionUtil.
-				getModifiableSystemObjectDefinitionRESTContextPath(getName());
-		}
-
-		String shortName = TextFormatter.formatPlural(
-			StringUtil.toLowerCase(getShortName()));
-
-		if (!isRootDescendantNode()) {
-			return "/c/" + shortName;
+		if (rootObjectDefinitionId == 0) {
+			return null;
 		}
 
 		ObjectDefinition rootObjectDefinition =
 			ObjectDefinitionLocalServiceUtil.fetchObjectDefinition(
-				getRootObjectDefinitionId());
+				rootObjectDefinitionId);
 
-		return StringBundler.concat(
-			"/c/",
-			TextFormatter.formatPlural(
-				StringUtil.toLowerCase(rootObjectDefinition.getShortName())),
-			StringPool.SLASH, shortName);
+		if (rootObjectDefinition == null) {
+			return null;
+		}
+
+		return rootObjectDefinition.getExternalReferenceCode();
+	}
+
+	@Override
+	public long getRootObjectDefinitionId() {
+		long[] rootObjectDefinitionIds = getRootObjectDefinitionIds();
+
+		if (ArrayUtil.isEmpty(rootObjectDefinitionIds)) {
+			return 0L;
+		}
+
+		return rootObjectDefinitionIds[0];
+	}
+
+	@Override
+	public long[] getRootObjectDefinitionIds() {
+		return ObjectDefinitionTreeUtil.getRootObjectDefinitionIds(
+			getObjectDefinitionId(),
+			ObjectDefinitionSettingLocalServiceUtil.getService());
 	}
 
 	@Override
 	public String getShortName() {
 		return getShortName(getName());
+	}
+
+	@Override
+	public boolean isAllowStandaloneObjectEntry() {
+		if (!isRootDescendantNode()) {
+			return true;
+		}
+
+		return GetterUtil.getBoolean(
+			ObjectDefinitionSettingUtil.getValue(
+				ObjectDefinitionSettingConstants.
+					NAME_ALLOW_STANDALONE_OBJECT_ENTRY,
+				getObjectDefinitionSettings()),
+			true);
 	}
 
 	@Override
@@ -159,11 +250,33 @@ public class ObjectDefinitionImpl extends ObjectDefinitionBaseImpl {
 		return false;
 	}
 
+	public boolean isCMP() {
+		return Objects.equals(
+			getObjectFolderExternalReferenceCode(),
+			ObjectFolderConstants.
+				EXTERNAL_REFERENCE_CODE_PROJECT_MANAGEMENT_DEFINITIONS);
+	}
+
 	@Override
-	public boolean isDefaultStorageType() {
+	public boolean isCMS() {
+		ObjectFolder objectFolder =
+			ObjectFolderLocalServiceUtil.fetchObjectFolder(getObjectFolderId());
+
+		if ((objectFolder == null) ||
+			(objectFolder.getCompanyId() != getCompanyId())) {
+
+			return false;
+		}
+
+		String externalReferenceCode = objectFolder.getExternalReferenceCode();
+
 		if (Objects.equals(
-				getStorageType(),
-				ObjectDefinitionConstants.STORAGE_TYPE_DEFAULT)) {
+				externalReferenceCode,
+				ObjectFolderConstants.
+					EXTERNAL_REFERENCE_CODE_CONTENT_STRUCTURES) ||
+			Objects.equals(
+				externalReferenceCode,
+				ObjectFolderConstants.EXTERNAL_REFERENCE_CODE_FILE_TYPES)) {
 
 			return true;
 		}
@@ -171,6 +284,13 @@ public class ObjectDefinitionImpl extends ObjectDefinitionBaseImpl {
 		return false;
 	}
 
+	@Override
+	public boolean isDefaultStorageType() {
+		return Objects.equals(
+			getStorageType(), ObjectDefinitionConstants.STORAGE_TYPE_DEFAULT);
+	}
+
+	@Override
 	public boolean isLinkedToObjectFolder(long objectFolderId) {
 		if (getObjectFolderId() == objectFolderId) {
 			return false;
@@ -180,8 +300,8 @@ public class ObjectDefinitionImpl extends ObjectDefinitionBaseImpl {
 	}
 
 	@Override
-	public boolean isNodeCandidate() {
-		if (!isApproved() && !isUnmodifiableSystemObject()) {
+	public boolean isModifiableAndSystem() {
+		if (isModifiable() && isSystem()) {
 			return true;
 		}
 
@@ -190,11 +310,13 @@ public class ObjectDefinitionImpl extends ObjectDefinitionBaseImpl {
 
 	@Override
 	public boolean isRootDescendantNode() {
-		if (!FeatureFlagManagerUtil.isEnabled("LPS-187142")) {
+		if (isRootNode()) {
 			return false;
 		}
 
-		if ((getRootObjectDefinitionId() > 0) && !isRootNode()) {
+		long[] rootObjectDefinitionIds = getRootObjectDefinitionIds();
+
+		if (rootObjectDefinitionIds.length > 0) {
 			return true;
 		}
 
@@ -202,16 +324,15 @@ public class ObjectDefinitionImpl extends ObjectDefinitionBaseImpl {
 	}
 
 	@Override
+	public boolean isRootDescendantNode(long rootObjectDefinitionId) {
+		return ArrayUtil.contains(
+			getRootObjectDefinitionIds(), rootObjectDefinitionId);
+	}
+
+	@Override
 	public boolean isRootNode() {
-		if (!FeatureFlagManagerUtil.isEnabled("LPS-187142")) {
-			return false;
-		}
-
-		if (getObjectDefinitionId() == getRootObjectDefinitionId()) {
-			return true;
-		}
-
-		return false;
+		return ArrayUtil.contains(
+			getRootObjectDefinitionIds(), getObjectDefinitionId());
 	}
 
 	@Override
@@ -222,5 +343,38 @@ public class ObjectDefinitionImpl extends ObjectDefinitionBaseImpl {
 
 		return false;
 	}
+
+	@Override
+	public boolean isVisible() {
+		if (!isModifiableAndSystem()) {
+			return true;
+		}
+
+		return GetterUtil.getBoolean(
+			ObjectDefinitionSettingUtil.getValue(
+				ObjectDefinitionSettingConstants.NAME_VISIBLE,
+				getObjectDefinitionSettings()));
+	}
+
+	@Override
+	public void setObjectDefinitionSettings(
+		List<ObjectDefinitionSetting> objectDefinitionSettings) {
+
+		_objectDefinitionSettings = objectDefinitionSettings;
+	}
+
+	@Override
+	public void setObjectFieldBag(ObjectFieldBag objectFieldBag) {
+		_objectFieldBag = objectFieldBag;
+	}
+
+	@Override
+	public void setObjectFolder(ObjectFolder objectFolder) {
+		_objectFolder = objectFolder;
+	}
+
+	private List<ObjectDefinitionSetting> _objectDefinitionSettings;
+	private transient ObjectFieldBag _objectFieldBag;
+	private ObjectFolder _objectFolder;
 
 }

@@ -12,20 +12,19 @@ import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserLocalService;
-import com.liferay.portal.kernel.util.OrderByComparator;
-
-import java.util.List;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Alessio Antonio Rendina
+ * @deprecated As of Cavanaugh (7.4.x)
  */
 @Component(
 	property = "model.class.name=com.liferay.commerce.notification.model.CommerceNotificationTemplateCommerceAccountGroupRel",
 	service = AopService.class
 )
+@Deprecated
 public class CommerceNotificationTemplateCommerceAccountGroupRelLocalServiceImpl
 	extends CommerceNotificationTemplateCommerceAccountGroupRelLocalServiceBaseImpl {
 
@@ -66,43 +65,12 @@ public class CommerceNotificationTemplateCommerceAccountGroupRelLocalServiceImpl
 
 	@Override
 	public void
-		deleteCNTemplateCommerceAccountGroupRelsBycommerceAccountGroupId(
-			long commerceAccountGroupId) {
-
-		commerceNotificationTemplateCommerceAccountGroupRelPersistence.
-			removeByCommerceAccountGroupId(commerceAccountGroupId);
-	}
-
-	@Override
-	public void
 		deleteCNTemplateCommerceAccountGroupRelsByCommerceNotificationTemplateId(
 			long commerceNotificationTemplateId) {
 
 		commerceNotificationTemplateCommerceAccountGroupRelPersistence.
 			removeByCommerceNotificationTemplateId(
 				commerceNotificationTemplateId);
-	}
-
-	@Override
-	public CommerceNotificationTemplateCommerceAccountGroupRel
-		fetchCommerceNotificationTemplateCommerceAccountGroupRel(
-			long commerceNotificationTemplateId, long commerceAccountGroupId) {
-
-		return commerceNotificationTemplateCommerceAccountGroupRelPersistence.
-			fetchByC_C(commerceNotificationTemplateId, commerceAccountGroupId);
-	}
-
-	@Override
-	public List<CommerceNotificationTemplateCommerceAccountGroupRel>
-		getCommerceNotificationTemplateCommerceAccountGroupRels(
-			long commerceNotificationTemplateId, int start, int end,
-			OrderByComparator
-				<CommerceNotificationTemplateCommerceAccountGroupRel>
-					orderByComparator) {
-
-		return commerceNotificationTemplateCommerceAccountGroupRelPersistence.
-			findByCommerceNotificationTemplateId(
-				commerceNotificationTemplateId, start, end, orderByComparator);
 	}
 
 	@Reference

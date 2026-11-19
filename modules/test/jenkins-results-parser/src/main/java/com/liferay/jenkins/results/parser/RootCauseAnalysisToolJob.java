@@ -20,12 +20,8 @@ public class RootCauseAnalysisToolJob
 	extends BaseJob implements PortalTestClassJob {
 
 	@Override
-	public Set<String> getDistTypes() {
+	public Set<String> getAppServerTypes() {
 		return Collections.emptySet();
-	}
-
-	public GitWorkingDirectory getJenkinsGitWorkingDirectory() {
-		return _jenkinsGitWorkingDirectory;
 	}
 
 	@Override
@@ -39,6 +35,10 @@ public class RootCauseAnalysisToolJob
 		jsonObject.put("upstream_branch_name", _upstreamBranchName);
 
 		return jsonObject;
+	}
+
+	public GitWorkingDirectory getJenkinsGitWorkingDirectory() {
+		return _jenkinsGitWorkingDirectory;
 	}
 
 	@Override

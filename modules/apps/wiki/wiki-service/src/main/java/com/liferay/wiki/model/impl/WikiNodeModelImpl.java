@@ -107,9 +107,16 @@ public class WikiNodeModelImpl
 
 	public static final String TABLE_SQL_DROP = "drop table WikiNode";
 
+	public static final String ENTITY_ALIAS = "wikiNode";
+
+	public static final String FILTER_PK_COLUMN_NAME = "nodeId";
+
 	public static final String ORDER_BY_JPQL = " ORDER BY wikiNode.name ASC";
 
 	public static final String ORDER_BY_SQL = " ORDER BY WikiNode.name ASC";
+
+	public static final String ORDER_BY_SQL_INLINE_DISTINCT =
+		" ORDER BY wikiNode.name ASC";
 
 	public static final String DATA_SOURCE = "liferayDataSource";
 
@@ -1400,3 +1407,4 @@ public class WikiNodeModelImpl
 	private WikiNode _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:870467333

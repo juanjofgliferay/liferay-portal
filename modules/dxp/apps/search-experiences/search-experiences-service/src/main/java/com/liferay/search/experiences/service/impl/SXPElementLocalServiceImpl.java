@@ -21,6 +21,7 @@ import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.search.experiences.exception.SXPElementTitleException;
+import com.liferay.search.experiences.internal.util.RangeQueryUpgradeUtil;
 import com.liferay.search.experiences.model.SXPElement;
 import com.liferay.search.experiences.service.base.SXPElementLocalServiceBaseImpl;
 import com.liferay.search.experiences.validator.SXPElementValidator;
@@ -74,7 +75,8 @@ public class SXPElementLocalServiceImpl extends SXPElementLocalServiceBaseImpl {
 		sxpElement.setUserName(user.getFullName());
 
 		sxpElement.setDescriptionMap(descriptionMap);
-		sxpElement.setElementDefinitionJSON(elementDefinitionJSON);
+		sxpElement.setElementDefinitionJSON(
+			RangeQueryUpgradeUtil.upgradeRangeQueries(elementDefinitionJSON));
 		sxpElement.setFallbackDescription(fallbackDescription);
 		sxpElement.setFallbackTitle(fallbackTitle);
 		sxpElement.setHidden(false);
@@ -138,23 +140,6 @@ public class SXPElementLocalServiceImpl extends SXPElementLocalServiceBaseImpl {
 
 	@Indexable(type = IndexableType.REINDEX)
 	@Override
-	public SXPElement updateStatus(long userId, long sxpElementId, int status)
-		throws PortalException {
-
-		SXPElement sxpElement = sxpElementPersistence.findByPrimaryKey(
-			sxpElementId);
-
-		if (sxpElement.getStatus() == status) {
-			return sxpElement;
-		}
-
-		sxpElement.setStatus(status);
-
-		return sxpElementPersistence.update(sxpElement);
-	}
-
-	@Indexable(type = IndexableType.REINDEX)
-	@Override
 	public SXPElement updateSXPElement(
 			String externalReferenceCode, long userId, long sxpElementId,
 			Map<Locale, String> descriptionMap, String elementDefinitionJSON,
@@ -168,7 +153,8 @@ public class SXPElementLocalServiceImpl extends SXPElementLocalServiceBaseImpl {
 
 		sxpElement.setExternalReferenceCode(externalReferenceCode);
 		sxpElement.setDescriptionMap(descriptionMap);
-		sxpElement.setElementDefinitionJSON(elementDefinitionJSON);
+		sxpElement.setElementDefinitionJSON(
+			RangeQueryUpgradeUtil.upgradeRangeQueries(elementDefinitionJSON));
 		sxpElement.setHidden(hidden);
 		sxpElement.setSchemaVersion(schemaVersion);
 		sxpElement.setTitleMap(titleMap);
@@ -178,6 +164,23 @@ public class SXPElementLocalServiceImpl extends SXPElementLocalServiceBaseImpl {
 				GetterUtil.getFloat(sxpElement.getVersion(), 0.9F) + 0.1));
 
 		return updateSXPElement(sxpElement);
+	}
+
+	@Indexable(type = IndexableType.REINDEX)
+	@Override
+	public SXPElement updateStatus(long userId, long sxpElementId, int status)
+		throws PortalException {
+
+		SXPElement sxpElement = sxpElementPersistence.findByPrimaryKey(
+			sxpElementId);
+
+		if (sxpElement.getStatus() == status) {
+			return sxpElement;
+		}
+
+		sxpElement.setStatus(status);
+
+		return sxpElementPersistence.update(sxpElement);
 	}
 
 	private void _validate(

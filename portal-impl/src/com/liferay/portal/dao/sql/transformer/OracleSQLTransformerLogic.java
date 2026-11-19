@@ -5,7 +5,6 @@
 
 package com.liferay.portal.dao.sql.transformer;
 
-import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.internal.dao.sql.transformer.SQLFunctionTransformer;
 import com.liferay.portal.kernel.dao.db.DB;
@@ -21,14 +20,16 @@ import java.util.regex.Matcher;
 public class OracleSQLTransformerLogic extends BaseSQLTransformerLogic {
 
 	public OracleSQLTransformerLogic(DB db) {
-		super(db);
+		_db = db;
 
 		Function[] functions = {
+			getAggregationFunction(), getBitwiseOrFunction(),
 			getBooleanFunction(), getCastClobTextFunction(),
-			getCastLongFunction(), getCastTextFunction(), getConcatFunction(),
+			getCastDecimalFunction(), getCastLongFunction(),
+			getCastTextFunction(), getConcatFunction(),
 			getDropTableIfExistsTextFunction(), getIntegerDivisionFunction(),
 			getNullDateFunction(), _getEscapeFunction(),
-			_getNotEqualsBlankStringFunction()
+			getTruncateTableFunction(), _getNotEqualsBlankStringFunction()
 		};
 
 		if (!db.isSupportsStringCaseSensitiveQuery()) {
@@ -39,12 +40,23 @@ public class OracleSQLTransformerLogic extends BaseSQLTransformerLogic {
 	}
 
 	@Override
+	protected Function<String, String> getBooleanFunction() {
+		return (String sql) -> StringUtil.replace(
+			sql, new String[] {"[$FALSE$]", "[$TRUE$]"},
+			new String[] {_db.getTemplateFalse(), _db.getTemplateTrue()});
+	}
+
+	@Override
 	protected Function<String, String> getConcatFunction() {
 		SQLFunctionTransformer sqlFunctionTransformer =
 			new SQLFunctionTransformer(
 				"CONCAT(", StringPool.BLANK, " || ", StringPool.BLANK);
 
 		return sqlFunctionTransformer::transform;
+	}
+
+	protected String replaceBitwiseOr(Matcher matcher) {
+		return matcher.replaceAll("($1 + $2 - BITAND($1, $2))");
 	}
 
 	@Override
@@ -59,12 +71,10 @@ public class OracleSQLTransformerLogic extends BaseSQLTransformerLogic {
 
 	@Override
 	protected String replaceDropTableIfExistsText(Matcher matcher) {
-		String dropTableIfExists = StringBundler.concat(
-			"BEGIN\n", "EXECUTE IMMEDIATE 'DROP TABLE $1';\n", "EXCEPTION\n",
-			"WHEN OTHERS THEN\n", "IF SQLCODE != -942 THEN\n", "RAISE;\n",
-			"END IF;\n", "END;\n", "/");
-
-		return matcher.replaceAll(dropTableIfExists);
+		return matcher.replaceAll(
+			"BEGIN\nEXECUTE IMMEDIATE 'DROP TABLE $1';\nEXCEPTION\nWHEN " +
+				"OTHERS THEN\nIF SQLCODE != -942 THEN\nRAISE;\nEND IF;\nEND;" +
+					"\n/");
 	}
 
 	@Override
@@ -81,5 +91,7 @@ public class OracleSQLTransformerLogic extends BaseSQLTransformerLogic {
 		return (String sql) -> StringUtil.replace(
 			sql, " != ''", " IS NOT NULL");
 	}
+
+	private final DB _db;
 
 }

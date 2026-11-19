@@ -20,7 +20,9 @@ import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.messaging.Message;
 import com.liferay.portal.kernel.messaging.MessageBus;
+import com.liferay.portal.kernel.model.CompanyConstants;
 import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.security.key.secret.SecretResolver;
 import com.liferay.push.notifications.constants.PushNotificationsConstants;
 import com.liferay.push.notifications.constants.PushNotificationsDestinationNames;
 import com.liferay.push.notifications.exception.PushNotificationsException;
@@ -88,10 +90,11 @@ public class ApplePushNotificationsSender implements PushNotificationsSender {
 					properties);
 
 		String appId = applePushNotificationsSenderConfiguration.appId();
+		String certificatePassword = _secretResolver.resolve(
+			CompanyConstants.SYSTEM,
+			applePushNotificationsSenderConfiguration.certificatePassword());
 		String certificatePath =
 			applePushNotificationsSenderConfiguration.certificatePath();
-		String certificatePassword =
-			applePushNotificationsSenderConfiguration.certificatePassword();
 
 		if (Validator.isNull(appId) || Validator.isNull(certificatePath) ||
 			Validator.isNull(certificatePassword)) {
@@ -155,20 +158,22 @@ public class ApplePushNotificationsSender implements PushNotificationsSender {
 		while (iterator.hasNext()) {
 			String key = iterator.next();
 
-			if (!key.equals(PushNotificationsConstants.KEY_BADGE) &&
-				!key.equals(PushNotificationsConstants.KEY_BODY) &&
-				!key.equals(PushNotificationsConstants.KEY_BODY_LOCALIZED) &&
-				!key.equals(
-					PushNotificationsConstants.KEY_BODY_LOCALIZED_ARGUMENTS) &&
-				!key.equals(PushNotificationsConstants.KEY_SOUND) &&
-				!key.equals(PushNotificationsConstants.KEY_SILENT) &&
-				!key.equals(PushNotificationsConstants.KEY_TITLE) &&
-				!key.equals(PushNotificationsConstants.KEY_TITLE_LOCALIZED) &&
-				!key.equals(
+			if (key.equals(PushNotificationsConstants.KEY_BADGE) ||
+				key.equals(PushNotificationsConstants.KEY_BODY) ||
+				key.equals(PushNotificationsConstants.KEY_BODY_LOCALIZED) ||
+				key.equals(
+					PushNotificationsConstants.KEY_BODY_LOCALIZED_ARGUMENTS) ||
+				key.equals(PushNotificationsConstants.KEY_SOUND) ||
+				key.equals(PushNotificationsConstants.KEY_SILENT) ||
+				key.equals(PushNotificationsConstants.KEY_TITLE) ||
+				key.equals(PushNotificationsConstants.KEY_TITLE_LOCALIZED) ||
+				key.equals(
 					PushNotificationsConstants.KEY_TITLE_LOCALIZED_ARGUMENTS)) {
 
-				newPayloadJSONObject.put(key, payloadJSONObject.get(key));
+				continue;
 			}
+
+			newPayloadJSONObject.put(key, payloadJSONObject.get(key));
 		}
 
 		simpleApnsPayloadBuilder.addCustomProperty(
@@ -341,6 +346,9 @@ public class ApplePushNotificationsSender implements PushNotificationsSender {
 
 	@Reference
 	private MessageBus _messageBus;
+
+	@Reference
+	private SecretResolver _secretResolver;
 
 	private volatile String _topic;
 

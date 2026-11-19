@@ -33,10 +33,17 @@ function sourceTagTemplate({media, srcset}) {
 
 					event.cancel();
 
-					const onSelectedImageChangeFn = instance._onSelectedImageChange.bind(
-						instance,
-						editor
-					);
+					const imageSelectorCallback =
+						typeof event.data.commandData === 'function'
+							? event.data.commandData
+							: null;
+
+					const onSelectedImageChangeFn =
+						instance._onSelectedImageChange.bind(
+							instance,
+							editor,
+							imageSelectorCallback
+						);
 
 					editor.execCommand(
 						'imageselector',
@@ -119,13 +126,30 @@ function sourceTagTemplate({media, srcset}) {
 			return pictureEl;
 		},
 
-		_onSelectedImageChange(editor, imageSrc, selectedItem) {
+		_onSelectedImageChange(
+			editor,
+			imageSelectorCallback,
+			imageSrc,
+			selectedItem
+		) {
 			const instance = this;
-
-			let element;
 
 			const fileEntryAttributeName =
 				editor.config.adaptiveMediaFileEntryAttributeName;
+
+			if (imageSelectorCallback) {
+				imageSelectorCallback(imageSrc);
+
+				instance._setFileEntryId(
+					editor,
+					fileEntryAttributeName,
+					selectedItem
+				);
+
+				return;
+			}
+
+			let element;
 
 			if (
 				selectedItem.returnType === STR_ADAPTIVE_MEDIA_URL_RETURN_TYPE
@@ -153,10 +177,6 @@ function sourceTagTemplate({media, srcset}) {
 				editor.insertElement(element);
 			}
 
-			element = new CKEDITOR.dom.element('br');
-			editor.insertElement(element);
-			editor.getSelection();
-
 			editor.fire('editorInteraction', {
 				nativeEvent: {},
 				selectionData: {
@@ -164,6 +184,34 @@ function sourceTagTemplate({media, srcset}) {
 					region: element.getClientRect(),
 				},
 			});
+		},
+
+		_setFileEntryId(editor, fileEntryAttributeName, selectedItem) {
+			const selectedElement = editor.getSelection().getSelectedElement();
+
+			if (!selectedElement) {
+				return;
+			}
+
+			const imgElement = selectedElement.is('img')
+				? selectedElement.$
+				: selectedElement.findOne('img')?.$;
+
+			if (!imgElement) {
+				return;
+			}
+
+			try {
+				const itemValue = JSON.parse(selectedItem.value);
+
+				imgElement.onload = function () {
+					imgElement.setAttribute(
+						fileEntryAttributeName,
+						itemValue.fileEntryId
+					);
+				};
+			}
+			catch (error) {}
 		},
 
 		init(editor) {

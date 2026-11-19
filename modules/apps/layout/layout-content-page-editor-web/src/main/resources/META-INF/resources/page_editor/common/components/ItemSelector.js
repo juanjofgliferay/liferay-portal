@@ -3,23 +3,27 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {ClayButtonWithIcon} from '@clayui/button';
+import ClayButton, {ClayButtonWithIcon} from '@clayui/button';
 import {ClayDropDownWithItems} from '@clayui/drop-down';
 import ClayForm, {ClayInput} from '@clayui/form';
 import classNames from 'classnames';
 import {useId} from 'frontend-js-components-web';
 import {sub} from 'frontend-js-web';
 import PropTypes from 'prop-types';
-import React, {useCallback} from 'react';
+import React, {useCallback, useMemo} from 'react';
 
 import {config} from '../../app/config/index';
-import {useSelectorCallback} from '../../app/contexts/StoreContext';
-import {selectPageContentDropdownItems} from '../../app/selectors/selectPageContentDropdownItems';
 import findPageContent from '../../app/utils/findPageContent';
 import getEditableId from '../../app/utils/getEditableId';
+import {getPageContentDropdownItems} from '../../app/utils/getPageContentDropdownItems';
+import {ITEM_SELECTOR_VARIANTS} from '../../app/utils/itemSelectorVariants';
+import usePageContents from '../../app/utils/usePageContents';
 import {openItemSelector} from '../openItemSelector';
+import MappedFieldLabel from './MappedFieldLabel';
 
 const DEFAULT_BEFORE_ITEM_SELECT = () => {};
+
+const DEFAULT_IS_ALLOWED_MAPPED_ITEM = () => true;
 
 const DEFAULT_OPTIONS_MENU_ITEMS = [];
 
@@ -29,6 +33,7 @@ export default function ItemSelector({
 	className,
 	eventName,
 	helpText,
+	isAllowedMappedItem = DEFAULT_IS_ALLOWED_MAPPED_ITEM,
 	itemSelectorURL,
 	label,
 	modalProps,
@@ -38,8 +43,10 @@ export default function ItemSelector({
 	quickMappedInfoItems = DEFAULT_QUICK_MAPPED_INFO_ITEMS,
 	selectedItem,
 	showEditControls = true,
+	showMappedFeedback = false,
 	showMappedItems = true,
 	transformValueCallback,
+	variant = ITEM_SELECTOR_VARIANTS.input,
 }) {
 	const helpTextId = useId();
 	const itemSelectorInputId = useId();
@@ -62,6 +69,7 @@ export default function ItemSelector({
 			eventName: eventName || `${config.portletNamespace}selectInfoItem`,
 			itemSelectorURL: itemSelectorURL || config.infoItemSelectorURL,
 			modalProps,
+			selectedItem,
 			transformValueCallback,
 		});
 	}, [
@@ -70,121 +78,117 @@ export default function ItemSelector({
 		modalProps,
 		onItemSelect,
 		onBeforeItemSelect,
+		selectedItem,
 		transformValueCallback,
 	]);
 
-	const mappedItemsMenu = useSelectorCallback(
-		(state) => {
-			let transformedMappedItems = [];
+	const pageContents = usePageContents();
 
-			if (!showMappedItems) {
-				return transformedMappedItems;
-			}
+	const mappedItemsMenu = useMemo(() => {
+		let transformedMappedItems = [];
 
-			const transformMappedItem = (item) => ({
-				'data-item-id': getEditableId(item),
-				'label': item.title,
-				'onClick': () => onItemSelect(item),
-			});
-
-			if (quickMappedInfoItems.length) {
-				transformedMappedItems = quickMappedInfoItems.map(
-					transformMappedItem
-				);
-			}
-			else if (state.pageContents?.length > 0) {
-				transformedMappedItems = state.pageContents.map(
-					transformMappedItem
-				);
-			}
-
-			if (transformedMappedItems.length) {
-				transformedMappedItems = [
-					{
-						items: transformedMappedItems,
-						label: Liferay.Language.get('recent'),
-						type: 'group',
-					},
-				];
-
-				transformedMappedItems.push(
-					{
-						type: 'divider',
-					},
-					{
-						label: `${sub(
-							Liferay.Language.get('select-x'),
-							label
-						)}...`,
-						onClick: () => openModal(),
-					}
-				);
-			}
-
+		if (!showMappedItems) {
 			return transformedMappedItems;
-		},
-		[onItemSelect, openModal, quickMappedInfoItems, showMappedItems],
-		(a, b) =>
-			a.length === b.length &&
-			a.every(
-				(item, index) =>
-					item['data-item-id'] === b[index]['data-item-id']
-			)
-	);
+		}
 
-	const optionsMenu = useSelectorCallback(
-		(state) => {
-			const menuItems = [];
+		const transformMappedItem = (item) => ({
+			'data-item-id': getEditableId(item),
+			'label': item.title,
+			'onClick': () => onItemSelect(item),
+		});
 
-			if (selectedItem?.classPK || selectedItem?.externalReferenceCode) {
-				const contentMenuItems = selectPageContentDropdownItems(
-					selectedItem,
-					label
-				)(state)?.filter(
-					(item) => item.label !== Liferay.Language.get('edit-image')
-				);
+		if (quickMappedInfoItems.length) {
+			transformedMappedItems = quickMappedInfoItems
+				.filter(isAllowedMappedItem)
+				.map(transformMappedItem);
+		}
+		else if (pageContents.length) {
+			transformedMappedItems = pageContents
+				.filter(
+					(pageContent) =>
+						pageContent.type !== Liferay.Language.get('collection')
+				)
+				.filter(isAllowedMappedItem)
+				.map(transformMappedItem);
+		}
 
-				if (contentMenuItems?.length) {
-					menuItems.push(...contentMenuItems, {type: 'divider'});
+		if (transformedMappedItems.length) {
+			transformedMappedItems = [
+				{
+					items: transformedMappedItems,
+					label: Liferay.Language.get('recent[items]'),
+					type: 'group',
+				},
+			];
+
+			transformedMappedItems.push(
+				{
+					type: 'divider',
+				},
+				{
+					label: `${sub(Liferay.Language.get('select-x'), label)}...`,
+					onClick: () => openModal(),
 				}
-			}
+			);
+		}
 
-			if (optionsMenuItems.length) {
-				menuItems.push(...optionsMenuItems, {type: 'divider'});
-			}
+		return transformedMappedItems;
+	}, [
+		isAllowedMappedItem,
+		label,
+		onItemSelect,
+		openModal,
+		pageContents,
+		quickMappedInfoItems,
+		showMappedItems,
+	]);
 
-			menuItems.push({
-				label: sub(Liferay.Language.get('remove-x'), label),
-				onClick: () => onItemSelect({}),
-				symbolLeft:
-					label === Liferay.Language.get('collection')
-						? 'trash'
-						: null,
-			});
+	const optionsMenu = useMemo(() => {
+		const menuItems = [];
 
-			return menuItems;
-		},
-		[label, onItemSelect, optionsMenuItems, selectedItem]
-	);
+		if (selectedItem?.classPK || selectedItem?.externalReferenceCode) {
+			const pageContent = findPageContent(pageContents, selectedItem);
 
-	const selectedItemTitle = useSelectorCallback(
-		(state) => {
-			if (!selectedItem) {
-				return '';
-			}
-
-			const content = findPageContent(
-				[
-					...(quickMappedInfoItems || []),
-					...(state.pageContents || []),
-				],
-				selectedItem
+			const contentMenuItems = getPageContentDropdownItems(
+				pageContent,
+				label
+			)?.filter(
+				(item) => item.label !== Liferay.Language.get('edit-image')
 			);
 
-			return content?.title || selectedItem.title || '';
-		},
-		[quickMappedInfoItems, selectedItem]
-	);
+			if (contentMenuItems?.length) {
+				menuItems.push(...contentMenuItems, {type: 'divider'});
+			}
+		}
+
+		if (optionsMenuItems.length) {
+			menuItems.push(...optionsMenuItems, {type: 'divider'});
+		}
+
+		menuItems.push({
+			label: sub(Liferay.Language.get('remove-x'), label),
+			onClick: () => onItemSelect({}),
+			symbolLeft:
+				label === Liferay.Language.get('collection') ? 'trash' : null,
+		});
+
+		return menuItems;
+	}, [label, onItemSelect, optionsMenuItems, pageContents, selectedItem]);
+
+	const selectedItemTitle = useMemo(() => {
+		if (!selectedItem) {
+			return '';
+		}
+
+		const content = findPageContent(
+			[...(quickMappedInfoItems || []), ...(pageContents || [])],
+			selectedItem
+		);
+
+		return content?.title || selectedItem.title || '';
+	}, [quickMappedInfoItems, pageContents, selectedItem]);
+
+	const isMapped = showMappedFeedback && Boolean(selectedItemTitle);
 
 	const selectContentButtonIcon = selectedItem?.title ? 'change' : 'plus';
 
@@ -195,8 +199,20 @@ export default function ItemSelector({
 		label
 	);
 
+	if (variant === ITEM_SELECTOR_VARIANTS.button) {
+		return (
+			<ClayButton displayType="secondary" onClick={openModal} size="sm">
+				{label}
+			</ClayButton>
+		);
+	}
+
 	return (
-		<ClayForm.Group className={className}>
+		<ClayForm.Group
+			className={classNames(className, {
+				'page-editor__mapped-field': isMapped,
+			})}
+		>
 			<label htmlFor={itemSelectorInputId}>{label}</label>
 
 			<ClayInput.Group small>
@@ -204,7 +220,8 @@ export default function ItemSelector({
 					<ClayInput
 						aria-describedby={helpText ? helpTextId : null}
 						className={classNames({
-							'page-editor__item-selector__content-input': showEditControls,
+							'page-editor__item-selector__content-input':
+								showEditControls,
 						})}
 						id={itemSelectorInputId}
 						placeholder={sub(
@@ -281,6 +298,8 @@ export default function ItemSelector({
 				)}
 			</ClayInput.Group>
 
+			{isMapped ? <MappedFieldLabel className="mb-0 mt-1" /> : null}
+
 			{helpText ? (
 				<div className="mt-1 text-secondary" id={helpTextId}>
 					{helpText}
@@ -294,6 +313,7 @@ ItemSelector.propTypes = {
 	className: PropTypes.string,
 	eventName: PropTypes.string,
 	helpText: PropTypes.string,
+	isAllowedMappedItem: PropTypes.func,
 	itemSelectorURL: PropTypes.string,
 	label: PropTypes.string.isRequired,
 	modalProps: PropTypes.object,
@@ -316,6 +336,7 @@ ItemSelector.propTypes = {
 	),
 	selectedItem: PropTypes.shape({title: PropTypes.string}),
 	showEditControls: PropTypes.bool,
+	showMappedFeedback: PropTypes.bool,
 	showMappedItems: PropTypes.bool,
 	transformValueCallback: PropTypes.func.isRequired,
 };

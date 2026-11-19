@@ -18,6 +18,7 @@ import com.liferay.document.library.kernel.model.DLFileEntryConstants;
 import com.liferay.document.library.kernel.model.DLFolderConstants;
 import com.liferay.document.library.kernel.model.DLVersionNumberIncrease;
 import com.liferay.document.library.kernel.service.DLAppServiceUtil;
+import com.liferay.exportimport.kernel.lar.ExportImportThreadLocal;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
@@ -74,7 +75,7 @@ public class AssetAutoTaggerTest extends BaseAssetAutoTaggerTestCase {
 			RandomTestUtil.randomString(), ContentTypes.TEXT_PLAIN,
 			RandomTestUtil.randomString(), StringUtil.randomString(),
 			StringUtil.randomString(), StringUtil.randomString(), new byte[0],
-			null, null, serviceContext);
+			null, null, null, serviceContext);
 
 		serviceContext.setWorkflowAction(WorkflowConstants.ACTION_PUBLISH);
 
@@ -84,8 +85,8 @@ public class AssetAutoTaggerTest extends BaseAssetAutoTaggerTestCase {
 			StringUtil.randomString(), fileEntry.getDescription(),
 			RandomTestUtil.randomString(), DLVersionNumberIncrease.MAJOR,
 			fileEntry.getContentStream(), fileEntry.getSize(),
-			fileEntry.getExpirationDate(), fileEntry.getReviewDate(),
-			serviceContext);
+			fileEntry.getDisplayDate(), fileEntry.getExpirationDate(),
+			fileEntry.getReviewDate(), serviceContext);
 
 		AssetEntry assetEntry = AssetEntryLocalServiceUtil.getEntry(
 			DLFileEntryConstants.getClassName(), fileEntry.getFileEntryId());
@@ -162,6 +163,50 @@ public class AssetAutoTaggerTest extends BaseAssetAutoTaggerTestCase {
 	}
 
 	@Test
+	public void testDoesNotAutoTagANewAssetWhenImportIsInProcess()
+		throws Exception {
+
+		boolean portletImportInProcess =
+			ExportImportThreadLocal.isPortletImportInProcess();
+
+		ExportImportThreadLocal.setPortletImportInProcess(true);
+
+		try {
+			AssetEntry assetEntry = addFileEntryAssetEntry(
+				ServiceContextTestUtil.getServiceContext(
+					group.getGroupId(), 0));
+
+			assertDoesNotContainAssetTagName(assetEntry, ASSET_TAG_NAME_AUTO);
+		}
+		finally {
+			ExportImportThreadLocal.setPortletImportInProcess(
+				portletImportInProcess);
+		}
+	}
+
+	@Test
+	public void testDoesNotAutoTagANewAssetWhenStagingIsInProcess()
+		throws Exception {
+
+		boolean portletStagingInProcess =
+			ExportImportThreadLocal.isPortletStagingInProcess();
+
+		ExportImportThreadLocal.setPortletStagingInProcess(true);
+
+		try {
+			AssetEntry assetEntry = addFileEntryAssetEntry(
+				ServiceContextTestUtil.getServiceContext(
+					group.getGroupId(), 0));
+
+			assertDoesNotContainAssetTagName(assetEntry, ASSET_TAG_NAME_AUTO);
+		}
+		finally {
+			ExportImportThreadLocal.setPortletStagingInProcess(
+				portletStagingInProcess);
+		}
+	}
+
+	@Test
 	public void testDoesNotAutoTagAssetOnUpdateIfDisabled() throws Exception {
 		ServiceContext serviceContext =
 			ServiceContextTestUtil.getServiceContext(group.getGroupId(), 0);
@@ -193,6 +238,34 @@ public class AssetAutoTaggerTest extends BaseAssetAutoTaggerTestCase {
 			group.getGroupId(), ASSET_TAG_NAME_AUTO);
 
 		Assert.assertEquals(0, assetTag.getAssetCount());
+	}
+
+	@Test
+	public void testRemovesAutoTagOnUpdate() throws Exception {
+		ServiceContext serviceContext =
+			ServiceContextTestUtil.getServiceContext(group.getGroupId(), 0);
+
+		FileEntry fileEntry = addFileEntry(serviceContext);
+
+		assertContainsAssetTagName(
+			AssetEntryLocalServiceUtil.getEntry(
+				DLFileEntryConstants.getClassName(),
+				fileEntry.getFileEntryId()),
+			ASSET_TAG_NAME_AUTO);
+
+		serviceContext.setAssetTagNames(new String[0]);
+
+		AssetEntry assetEntry = updateFileEntryAssetEntry(
+			fileEntry, serviceContext);
+
+		assertDoesNotContainAssetTagName(assetEntry, ASSET_TAG_NAME_AUTO);
+
+		AssetTag assetTag = _assetTagLocalService.getTag(
+			group.getGroupId(), ASSET_TAG_NAME_AUTO);
+
+		Assert.assertNull(
+			_assetAutoTaggerEntryLocalService.fetchAssetAutoTaggerEntry(
+				assetEntry.getEntryId(), assetTag.getTagId()));
 	}
 
 	@Test

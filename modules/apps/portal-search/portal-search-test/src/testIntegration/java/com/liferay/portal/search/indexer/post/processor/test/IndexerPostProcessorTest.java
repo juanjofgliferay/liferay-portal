@@ -24,8 +24,8 @@ import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.SearchContextTestUtil;
 import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
+import com.liferay.portal.search.test.rule.SearchTestRule;
 import com.liferay.portal.search.test.util.DocumentsAssert;
-import com.liferay.portal.search.test.util.SearchTestRule;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
@@ -194,11 +194,10 @@ public class IndexerPostProcessorTest {
 	private final IndexerPostProcessor _indexerPostProcessor =
 		createIndexerPostProcessor();
 	private ServiceRegistration<?> _serviceRegistration;
+	private final UserSearchFixture _userSearchFixture =
+		new UserSearchFixture();
 
 	@DeleteAfterTestRun
 	private List<User> _users;
-
-	private final UserSearchFixture _userSearchFixture =
-		new UserSearchFixture();
 
 }

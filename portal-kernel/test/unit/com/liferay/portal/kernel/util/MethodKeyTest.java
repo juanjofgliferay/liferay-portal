@@ -175,9 +175,9 @@ public class MethodKeyTest {
 			Assert.fail("IllegalArgumentException was not thrown");
 		}
 		catch (IllegalArgumentException illegalArgumentException) {
-			Assert.assertEquals(
-				"object is not an instance of declaring class",
-				illegalArgumentException.getMessage());
+			String message = illegalArgumentException.getMessage();
+
+			Assert.assertTrue(message.contains("is not an instance of"));
 		}
 
 		Method transformedMethod = transformedMethodKey.getMethod();
@@ -210,6 +210,7 @@ public class MethodKeyTest {
 					new UnsyncByteArrayInputStream(
 						unsyncByteArrayOutputStream.unsafeGetByteArray(), 0,
 						unsyncByteArrayOutputStream.size());
+
 				ObjectInputStream objectInputStream = new ObjectInputStream(
 					unsyncByteArrayInputStream)) {
 

@@ -57,10 +57,8 @@ import java.util.function.Function;
  *
  * @author Brian Wing Shun Chan
  * @see DDMContentImpl
- * @deprecated
  * @generated
  */
-@Deprecated
 public class DDMContentModelImpl
 	extends BaseModelImpl<DDMContent> implements DDMContentModel {
 
@@ -104,6 +102,8 @@ public class DDMContentModelImpl
 		"create table DDMContent (mvccVersion LONG default 0 not null,ctCollectionId LONG default 0 not null,uuid_ VARCHAR(75) null,contentId LONG not null,groupId LONG,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,name STRING null,description STRING null,data_ TEXT null,primary key (contentId, ctCollectionId))";
 
 	public static final String TABLE_SQL_DROP = "drop table DDMContent";
+
+	public static final String ENTITY_ALIAS = "ddmContent";
 
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY ddmContent.contentId ASC";
@@ -1165,3 +1165,4 @@ public class DDMContentModelImpl
 	private DDMContent _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1143266172

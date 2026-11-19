@@ -13,7 +13,7 @@ import com.liferay.portal.kernel.test.util.HTTPTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.util.Http;
 import com.liferay.portal.kernel.util.StringUtil;
-import com.liferay.portal.test.rule.FeatureFlags;
+import com.liferay.portal.test.rule.FeatureFlag;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -24,7 +24,7 @@ import org.skyscreamer.jsonassert.JSONCompareMode;
 /**
  * @author Sergio Jiménez del Coso
  */
-@FeatureFlags("LPS-178642")
+@FeatureFlag("LPS-178642")
 public class APIApplicationRelevantObjectEntryModelListenerTest
 	extends BaseTestCase {
 
@@ -93,14 +93,20 @@ public class APIApplicationRelevantObjectEntryModelListenerTest
 
 		JSONObject jsonObject = HTTPTestUtil.invokeToJSONObject(
 			JSONUtil.put(
-				"applicationStatus", "unpublished"
-			).put(
-				"baseURL", StringUtil.toLowerCase(RandomTestUtil.randomString())
+				"baseURL",
+				StringUtil.toLowerCase(RandomTestUtil.randomString()) + "-1234"
 			).put(
 				"title", RandomTestUtil.randomString()
 			).toString(),
 			"headless-builder/applications", Http.Method.POST);
 
+		Assert.assertEquals(
+			"unpublished",
+			jsonObject.getJSONObject(
+				"applicationStatus"
+			).getString(
+				"key"
+			));
 		Assert.assertEquals(
 			0,
 			jsonObject.getJSONObject(
@@ -108,6 +114,28 @@ public class APIApplicationRelevantObjectEntryModelListenerTest
 			).get(
 				"code"
 			));
+
+		JSONAssert.assertEquals(
+			JSONUtil.put(
+				"status", "BAD_REQUEST"
+			).put(
+				"title",
+				"Object field name \"applicationStatus\" is not mapped to a " +
+					"valid list type entry"
+			).toString(),
+			HTTPTestUtil.invokeToJSONObject(
+				JSONUtil.put(
+					"applicationStatus", RandomTestUtil.randomString()
+				).put(
+					"baseURL",
+					StringUtil.toLowerCase(RandomTestUtil.randomString())
+				).put(
+					"title", RandomTestUtil.randomString()
+				).toString(),
+				"headless-builder/applications/" + jsonObject.getLong("id"),
+				Http.Method.PUT
+			).toString(),
+			JSONCompareMode.STRICT);
 	}
 
 }

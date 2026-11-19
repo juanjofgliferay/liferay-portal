@@ -18,8 +18,10 @@ import com.liferay.commerce.notification.service.CommerceNotificationTemplateLoc
  * @author Alessio Antonio Rendina
  * @see CommerceNotificationTemplateImpl
  * @see CommerceNotificationTemplate
+ * @deprecated
  * @generated
  */
+@Deprecated
 public abstract class CommerceNotificationTemplateBaseImpl
 	extends CommerceNotificationTemplateModelImpl
 	implements CommerceNotificationTemplate {
@@ -42,3 +44,4 @@ public abstract class CommerceNotificationTemplateBaseImpl
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1861416823

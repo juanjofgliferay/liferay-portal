@@ -245,8 +245,8 @@ public class LayoutSetLocalServiceWrapper
 	}
 
 	@Override
-	public LayoutSet fetchLayoutSetByLogoId(boolean privateLayout, long logoId)
-		throws com.liferay.portal.kernel.exception.PortalException {
+	public LayoutSet fetchLayoutSetByLogoId(
+		boolean privateLayout, long logoId) {
 
 		return _layoutSetLocalService.fetchLayoutSetByLogoId(
 			privateLayout, logoId);
@@ -378,16 +378,18 @@ public class LayoutSetLocalServiceWrapper
 		return _layoutSetLocalService.updateLayoutSet(layoutSet);
 	}
 
-	/**
-	 * Updates the state of the layout set prototype link.
-	 *
-	 * @param groupId the primary key of the group
-	 * @param privateLayout whether the layout set is private to the group
-	 * @param layoutSetPrototypeLinkEnabled whether the layout set prototype is
-	 link enabled
-	 * @param layoutSetPrototypeUuid the uuid of the layout set prototype to
-	 link with
-	 */
+	@Override
+	public void updateLayoutSetPrototypeLinkEnabled(
+			long groupId, boolean mergeLayoutSetPrototype,
+			boolean privateLayout, boolean layoutSetPrototypeLinkEnabled,
+			String layoutSetPrototypeUuid)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		_layoutSetLocalService.updateLayoutSetPrototypeLinkEnabled(
+			groupId, mergeLayoutSetPrototype, privateLayout,
+			layoutSetPrototypeLinkEnabled, layoutSetPrototypeUuid);
+	}
+
 	@Override
 	public void updateLayoutSetPrototypeLinkEnabled(
 			long groupId, boolean privateLayout,
@@ -514,3 +516,4 @@ public class LayoutSetLocalServiceWrapper
 	private LayoutSetLocalService _layoutSetLocalService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-146223509

@@ -13,8 +13,8 @@ import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.CompanyConstants;
 import com.liferay.portal.kernel.util.FileUtil;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.URLUtil;
 import com.liferay.portal.kernel.zip.ZipFileUtil;
-import com.liferay.portal.util.JarUtil;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -86,6 +86,10 @@ public class TensorFlowDownloadHelper {
 			StringPool.BLANK);
 	}
 
+	public boolean isDownloadFailed() {
+		return _downloadFailed;
+	}
+
 	public boolean isDownloaded() throws PortalException {
 		if (_store.hasFile(
 				_COMPANY_ID, CompanyConstants.SYSTEM, _getModelFileName(),
@@ -100,16 +104,12 @@ public class TensorFlowDownloadHelper {
 		return false;
 	}
 
-	public boolean isDownloadFailed() {
-		return _downloadFailed;
-	}
-
 	private void _downloadFile(String fileName, String url, String sha1)
 		throws Exception {
 
 		File tempFile = FileUtil.createTempFile();
 
-		JarUtil.downloadAndInstallJar(new URL(url), tempFile.toPath(), sha1);
+		URLUtil.download(new URL(url), tempFile.toPath(), sha1);
 
 		try (InputStream inputStream = new FileInputStream(tempFile)) {
 			_store.addFile(

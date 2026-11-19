@@ -18,6 +18,25 @@ PortletURL portletURL = ddmFormViewFormInstanceRecordsDisplayContext.getPortletU
 	<portlet:param name="redirect" value="<%= currentURL %>" />
 </portlet:actionURL>
 
+<%
+BulkSelectionRunner bulkSelectionRunner = BulkSelectionRunnerUtil.getBulkSelectionRunner();
+%>
+
+<div>
+	<react:component
+		module="{BulkStatus} from dynamic-data-mapping-form-web"
+		props='<%=
+			HashMapBuilder.<String, Object>put(
+				"bulkInProgress", bulkSelectionRunner.isBusy(user)
+			).put(
+				"deletionStarted", SessionMessages.contains(renderRequest, "deleteFormInstanceRecordsInBackground")
+			).put(
+				"pathModule", PortalUtil.getPathModule()
+			).build()
+		%>'
+	/>
+</div>
+
 <clay:management-toolbar
 	actionDropdownItems="<%= ddmFormViewFormInstanceRecordsDisplayContext.getActionItemsDropdownItems() %>"
 	additionalProps='<%=
@@ -27,9 +46,9 @@ PortletURL portletURL = ddmFormViewFormInstanceRecordsDisplayContext.getPortletU
 	%>'
 	clearResultsURL="<%= ddmFormViewFormInstanceRecordsDisplayContext.getClearResultsURL() %>"
 	disabled="<%= ddmFormViewFormInstanceRecordsDisplayContext.isDisabledManagementBar() %>"
-	filterDropdownItems="<%= ddmFormViewFormInstanceRecordsDisplayContext.getFilterItemsDropdownItems() %>"
 	itemsTotal="<%= ddmFormViewFormInstanceRecordsDisplayContext.getTotalItems() %>"
-	propsTransformer="admin/js/DDMFormViewFormInstanceRecordsManagementToolbarPropsTransformer"
+	orderDropdownItems="<%= ddmFormViewFormInstanceRecordsDisplayContext.getOrderItemsDropdownItems() %>"
+	propsTransformer="{DDMFormViewFormInstanceRecordsManagementToolbarPropsTransformer} from dynamic-data-mapping-form-web"
 	searchActionURL="<%= ddmFormViewFormInstanceRecordsDisplayContext.getSearchActionURL() %>"
 	searchContainerId="<%= ddmFormViewFormInstanceRecordsDisplayContext.getSearchContainerId() %>"
 	searchFormName="fm"
@@ -37,7 +56,11 @@ PortletURL portletURL = ddmFormViewFormInstanceRecordsDisplayContext.getPortletU
 	sortingURL="<%= ddmFormViewFormInstanceRecordsDisplayContext.getSortingURL() %>"
 />
 
-<c:if test="<%= DDMFormInstanceExpirationStatusUtil.isFormExpired(ddmFormViewFormInstanceRecordsDisplayContext.getDDMFormInstance(), timeZone) %>">
+<%
+DDMFormInstance ddmFormInstance = ddmFormViewFormInstanceRecordsDisplayContext.getDDMFormInstance();
+%>
+
+<c:if test="<%= DDMFormInstanceExpirationStatusUtil.isFormExpired(ddmFormInstance, timeZone) %>">
 	<clay:stripe
 		dismissible="<%= true %>"
 		displayType="warning"
@@ -55,6 +78,8 @@ PortletURL portletURL = ddmFormViewFormInstanceRecordsDisplayContext.getPortletU
 >
 	<aui:form action="<%= portletURL %>" method="post" name="searchContainerForm">
 		<aui:input name="deleteFormInstanceRecordIds" type="hidden" />
+		<aui:input name="formInstanceId" type="hidden" value="<%= ddmFormInstance.getFormInstanceId() %>" />
+		<aui:input name="selectAll" type="hidden" />
 
 		<liferay-ui:search-container
 			id="<%= ddmFormViewFormInstanceRecordsDisplayContext.getSearchContainerId() %>"

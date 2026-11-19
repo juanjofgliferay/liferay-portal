@@ -1,0 +1,148 @@
+{
+	"configuration": {
+		"className": "com.liferay.object.admin.rest.dto.v1_0.ObjectDefinition",
+		"multiCompany": true,
+		"parameters": {
+			"containsHeaders": "true",
+			"createStrategy": "UPSERT",
+			"featureFlag": "LPD-63311",
+			"importStrategy": "ON_ERROR_FAIL",
+			"updateStrategy": "UPDATE"
+		},
+		"taskItemDelegateName": "DEFAULT"
+	},
+	"items": [
+		{
+			"active": true,
+			"className": "com.liferay.object.model.ObjectDefinition#E4J5",
+			"externalReferenceCode": "L_MCP_SERVER_PROMPT",
+			"label": {
+				"en_US": "MCP Server Prompt"
+			},
+			"name": "MCPServerPrompt",
+			"objectFields": [
+				{
+					"DBType": "String",
+					"businessType": "Text",
+					"defaultValue": "null",
+					"indexed": true,
+					"indexedAsKeyword": false,
+					"indexedLanguageId": "en_US",
+					"label": {
+						"en_US": "Description"
+					},
+					"name": "description",
+					"required": true,
+					"state": false,
+					"system": true,
+					"type": "String"
+				},
+				{
+					"DBType": "String",
+					"businessType": "Text",
+					"defaultValue": "null",
+					"indexed": true,
+					"indexedAsKeyword": false,
+					"indexedLanguageId": "en_US",
+					"label": {
+						"en_US": "Identifier"
+					},
+					"name": "identifier",
+					"objectFieldSettings": [
+						{
+							"name": "uniqueValues",
+							"value": true
+						}
+					],
+					"required": true,
+					"state": false,
+					"system": true,
+					"type": "String"
+				},
+				{
+					"DBType": "String",
+					"businessType": "Text",
+					"defaultValue": "null",
+					"indexed": true,
+					"indexedAsKeyword": false,
+					"indexedLanguageId": "en_US",
+					"label": {
+						"en_US": "Name"
+					},
+					"name": "name",
+					"objectFieldSettings": [
+						{
+							"name": "uniqueValues",
+							"value": true
+						}
+					],
+					"required": true,
+					"state": false,
+					"system": true,
+					"type": "String"
+				},
+				{
+					"DBType": "Clob",
+					"businessType": "LongText",
+					"defaultValue": "null",
+					"indexed": true,
+					"indexedAsKeyword": false,
+					"indexedLanguageId": "en_US",
+					"label": {
+						"en_US": "Prompt"
+					},
+					"name": "prompt",
+					"required": true,
+					"state": false,
+					"system": true,
+					"type": "String"
+				},
+				{
+					"DBType": "String",
+					"businessType": "Picklist",
+					"defaultValue": "inactive",
+					"indexed": true,
+					"indexedAsKeyword": false,
+					"label": {
+						"en_US": "Status"
+					},
+					"listTypeDefinitionExternalReferenceCode": "L_MCP_STATUS",
+					"name": "promptStatus",
+					"required": true,
+					"state": false,
+					"system": true,
+					"type": "String"
+				}
+			],
+			"objectValidationRules": [
+				{
+					"active": true,
+					"engine": "ddm",
+					"engineLabel": "Expression Builder",
+					"errorLabel": {
+						"en_US": "Please enter a valid identifier (lowercase letters and numbers separated by single hyphens)."
+					},
+					"externalReferenceCode": "L_MCP_SERVER_PROMPT_VALID_IDENTIFIER",
+					"name": {
+						"en_US": "Valid Identifier"
+					},
+					"objectDefinitionExternalReferenceCode": "L_MCP_SERVER_PROMPT",
+					"script": "match(identifier, '^[a-z0-9]+(-[a-z0-9]+)*$')",
+					"system": true
+				}
+			],
+			"panelCategoryKey": "",
+			"pluralLabel": {
+				"en_US": "MCP Server Prompts"
+			},
+			"scope": "company",
+			"status": {
+				"code": 0,
+				"label": "approved",
+				"label_i18n": "Approved"
+			},
+			"system": true,
+			"titleObjectFieldName": "name"
+		}
+	]
+}

@@ -14,10 +14,10 @@ String redirect = ParamUtil.getString(request, "redirect");
 
 WorkflowDefinition workflowDefinition = (WorkflowDefinition)request.getAttribute(WebKeys.WORKFLOW_DEFINITION);
 
-String name = BeanParamUtil.getString(workflowDefinition, request, "name");
-int version = BeanParamUtil.getInteger(workflowDefinition, request, "version");
-String content = BeanParamUtil.getString(workflowDefinition, request, "content");
-boolean active = BeanParamUtil.getBoolean(workflowDefinition, request, "active");
+String name = BeanParamUtil.getString(workflowDefinition, request, "name", WorkflowDefinition::getName);
+int version = BeanParamUtil.getInteger(workflowDefinition, request, "version", WorkflowDefinition::getVersion);
+String content = BeanParamUtil.getString(workflowDefinition, request, "contentAsXML", WorkflowDefinition::getContentAsXML);
+boolean active = BeanParamUtil.getBoolean(workflowDefinition, request, "active", WorkflowDefinition::isActive);
 
 String duplicateTitle = workflowDefinitionDisplayContext.getDuplicateTitle(workflowDefinition);
 
@@ -123,11 +123,11 @@ renderResponse.setTitle((workflowDefinition == null) ? LanguageUtil.get(request,
 						<clay:content-col
 							expand="<%= true %>"
 						>
-							<h4 class="component-title">
+							<div class="component-title">
 								<span class="text-truncate-inline">
 									<span class="text-truncate"><%= HtmlUtil.escape(workflowDefinition.getTitle(LanguageUtil.getLanguageId(request))) %></span>
 								</span>
-							</h4>
+							</div>
 						</clay:content-col>
 					</clay:content-row>
 				</div>
@@ -139,7 +139,7 @@ renderResponse.setTitle((workflowDefinition == null) ? LanguageUtil.get(request,
 						refresh="<%= false %>"
 					>
 						<liferay-ui:section>
-							<div style="margin-top: 1.5rem;">
+							<div class="mt-4">
 
 								<%
 								String creatorUserName = workflowDefinitionDisplayContext.getCreatorUserName(workflowDefinition);

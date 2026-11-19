@@ -9,24 +9,25 @@ import ClayForm from '@clayui/form';
 import ClayModal, {ClayModalProvider, useModal} from '@clayui/modal';
 import {
 	API,
-	BetaButton,
 	FormError,
 	Input,
-	REQUIRED_MSG,
 	SingleSelect,
+	constantsUtils,
+	objectDefinitionUtils,
 	openToast,
 	useForm,
 } from '@liferay/object-js-components-web';
+import {LearnMessage, LearnResourcesContext} from 'frontend-js-components-web';
 import {sub} from 'frontend-js-web';
 import React, {useState} from 'react';
 
 import {defaultLanguageId} from '../../utils/constants';
 
 import './ModalAddObjectDefinition.scss';
-import {normalizeName} from './objectDefinitionUtil';
 
 interface ModalAddObjectDefinitionProps {
 	handleOnClose: () => void;
+	learnResourceContext: any;
 	objectDefinitionsStorageTypes: LabelValueObject[];
 	objectFolderExternalReferenceCode?: string;
 	onAfterSubmit?: (value: ObjectDefinition) => void;
@@ -42,6 +43,7 @@ type TInitialValues = {
 
 export function ModalAddObjectDefinition({
 	handleOnClose,
+	learnResourceContext,
 	objectDefinitionsStorageTypes,
 	objectFolderExternalReferenceCode,
 	onAfterSubmit,
@@ -51,6 +53,8 @@ export function ModalAddObjectDefinition({
 	const {observer, onClose} = useModal({
 		onClose: () => handleOnClose(),
 	});
+
+	const [showProxyWarning, setShowProxyWarning] = useState<boolean>(false);
 
 	const objectDefinitionStorageTypesSortedByLabel = [
 		...objectDefinitionsStorageTypes,
@@ -86,7 +90,7 @@ export function ModalAddObjectDefinition({
 			label: {
 				[defaultLanguageId]: label,
 			},
-			name: name || normalizeName(label),
+			name: name || objectDefinitionUtils.normalizeName(label),
 			objectFields: [],
 			pluralLabel: {
 				[defaultLanguageId]: pluralLabel,
@@ -94,11 +98,9 @@ export function ModalAddObjectDefinition({
 			scope: 'company',
 		};
 
-		if (
-			Liferay.FeatureFlags['LPS-148856'] &&
-			objectFolderExternalReferenceCode
-		) {
-			objectDefinition.objectFolderExternalReferenceCode = objectFolderExternalReferenceCode;
+		if (objectFolderExternalReferenceCode) {
+			objectDefinition.objectFolderExternalReferenceCode =
+				objectFolderExternalReferenceCode;
 		}
 
 		if (Liferay.FeatureFlags['LPS-135430']) {
@@ -132,13 +134,13 @@ export function ModalAddObjectDefinition({
 		const errors: FormError<TInitialValues> = {};
 
 		if (!values.label) {
-			errors.label = REQUIRED_MSG;
+			errors.label = constantsUtils.REQUIRED_MSG;
 		}
 		if (!(values.name ?? values.label)) {
-			errors.name = REQUIRED_MSG;
+			errors.name = constantsUtils.REQUIRED_MSG;
 		}
 		if (!values.pluralLabel) {
-			errors.pluralLabel = REQUIRED_MSG;
+			errors.pluralLabel = constantsUtils.REQUIRED_MSG;
 		}
 
 		return errors;
@@ -154,7 +156,9 @@ export function ModalAddObjectDefinition({
 		<ClayModalProvider>
 			<ClayModal center observer={observer}>
 				<ClayForm onSubmit={handleSubmit}>
-					<ClayModal.Header>
+					<ClayModal.Header
+						closeButtonAriaLabel={Liferay.Language.get('close')}
+					>
 						{Liferay.Language.get('new-custom-object')}
 					</ClayModal.Header>
 
@@ -190,32 +194,65 @@ export function ModalAddObjectDefinition({
 							name="name"
 							onChange={handleChange}
 							required
-							value={values.name ?? normalizeName(values.label)}
+							value={
+								values.name ??
+								objectDefinitionUtils.normalizeName(
+									values.label
+								)
+							}
 						/>
 
 						{Liferay.FeatureFlags['LPS-135430'] && (
-							<div className="lfr__object-web-modal-add-object-definition-storage-type">
-								<SingleSelect<LabelValueObject>
-									items={
-										objectDefinitionStorageTypesSortedByLabel
-									}
-									label={Liferay.Language.get('storage-type')}
-									onSelectionChange={(value) => {
-										setValues({
-											...values,
-											storageType: value as string,
-										});
-									}}
-									selectedKey={values.storageType}
-									tooltip={Liferay.Language.get(
-										'object-definition-storage-type-tooltip'
-									)}
-								/>
+							<>
+								<div className="lfr__object-web-modal-add-object-definition-storage-type">
+									<SingleSelect<LabelValueObject>
+										items={
+											objectDefinitionStorageTypesSortedByLabel
+										}
+										label={Liferay.Language.get(
+											'storage-type'
+										)}
+										onSelectionChange={(value) => {
+											setValues({
+												...values,
+												storageType: value as string,
+											});
 
-								<div className="lfr__object-web-modal-add-object-definition-storage-type-beta">
-									<BetaButton />
+											if (value !== 'default') {
+												setShowProxyWarning(true);
+											}
+										}}
+										selectedKey={values.storageType}
+										tooltip={Liferay.Language.get(
+											'object-definition-storage-type-tooltip'
+										)}
+									/>
 								</div>
-							</div>
+
+								{showProxyWarning && (
+									<ClayAlert
+										displayType="info"
+										onClose={() =>
+											setShowProxyWarning(false)
+										}
+										title={`${Liferay.Language.get('info')}:`}
+									>
+										{Liferay.Language.get(
+											'proxy-objects-have-some-known-limitations'
+										)}
+										&nbsp;
+										<LearnResourcesContext.Provider
+											value={learnResourceContext}
+										>
+											<LearnMessage
+												className="alert-link"
+												resource="object-web"
+												resourceKey="managing-data-from-external-systems"
+											/>
+										</LearnResourcesContext.Provider>
+									</ClayAlert>
+								)}
+							</>
 						)}
 					</ClayModal.Body>
 

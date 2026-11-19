@@ -82,6 +82,7 @@ describe('FriendlyURLHistory', () => {
 			return {
 				getSelectedLanguageId: () => 'en_US',
 				updateInput: () => jest.fn(),
+				updateInputLanguage: () => jest.fn(),
 			};
 		});
 	});
@@ -94,11 +95,11 @@ describe('FriendlyURLHistory', () => {
 		expect(historyButton.className).toContain('btn-url-history');
 	});
 
-	it('renders a restore icon inside the button', () => {
+	it('renders a time icon inside the button', () => {
 		renderComponent(defaultProps);
 
 		expect(historyButton.querySelector('svg').classList).toContain(
-			'lexicon-icon-restore'
+			'lexicon-icon-time'
 		);
 	});
 
@@ -122,7 +123,7 @@ describe('FriendlyURLHistory', () => {
 		});
 
 		it('renders a modal when user clicks on history button', async () => {
-			const title = await result.findByText('history');
+			const title = await result.findByText('history[record]');
 
 			expect(title).toBeTruthy();
 		});

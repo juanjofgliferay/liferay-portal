@@ -21,8 +21,8 @@ import com.liferay.portal.search.model.uid.UIDFactory;
 import com.liferay.portal.search.searcher.SearchRequestBuilderFactory;
 import com.liferay.portal.search.searcher.SearchResponse;
 import com.liferay.portal.search.searcher.Searcher;
+import com.liferay.portal.search.test.rule.SearchTestRule;
 import com.liferay.portal.search.test.util.FieldValuesAssert;
-import com.liferay.portal.search.test.util.SearchTestRule;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
@@ -71,7 +71,7 @@ public class UserGroupIndexerReindexTest {
 	}
 
 	@Test
-	public void testReindexing() throws Exception {
+	public void testReindex() throws Exception {
 		UserGroup userGroup = _userGroupFixture.createUserGroup();
 
 		String searchTerm = userGroup.getName();
@@ -104,22 +104,22 @@ public class UserGroupIndexerReindexTest {
 			).build());
 	}
 
+	@Inject
+	protected IndexWriterHelper indexWriterHelper;
+
 	@Inject(
 		filter = "indexer.class.name=com.liferay.portal.kernel.model.UserGroup"
 	)
 	protected Indexer<UserGroup> indexer;
 
 	@Inject
-	protected IndexWriterHelper indexWriterHelper;
-
-	@Inject
 	protected SearchEngineHelper searchEngineHelper;
 
 	@Inject
-	protected Searcher searcher;
+	protected SearchRequestBuilderFactory searchRequestBuilderFactory;
 
 	@Inject
-	protected SearchRequestBuilderFactory searchRequestBuilderFactory;
+	protected Searcher searcher;
 
 	@Inject
 	protected UIDFactory uidFactory;
@@ -144,7 +144,7 @@ public class UserGroupIndexerReindexTest {
 	}
 
 	private void _reindexAllIndexerModels() throws Exception {
-		indexer.reindex(new String[] {String.valueOf(_group.getCompanyId())});
+		indexer.reindexCompany(_group.getCompanyId());
 	}
 
 	private Group _group;

@@ -1,0 +1,125 @@
+.index-root {
+	min-height: 100vh;
+
+	.children-wrapper {
+		display: flex;
+		flex-direction: column;
+		flex-grow: 1;
+		min-height: 10rem;
+		position: relative;
+	}
+
+	.header-container,
+	.page-container {
+		margin: 0 auto;
+		max-width: $maxPageWidth + ($pagePadding * 2);
+		min-width: $minPageWidthContent;
+		padding: 0 $pagePadding;
+		position: relative;
+		width: 100%;
+
+		&.disabled:before {
+			align-items: center;
+			background-color: unquote('hsl(from #{$white} h s l / 0.75)');
+			bottom: 0;
+			content: '';
+			display: flex;
+			justify-content: center;
+			left: 0;
+			position: absolute;
+			right: 0;
+			top: 0;
+			z-index: 10;
+		}
+	}
+
+	.header-root {
+		background-color: $white;
+		border-bottom: 1px solid $mainLighten74;
+		padding-top: 16px;
+
+		.header-actions {
+			bottom: 0;
+			height: 40px;
+			margin: auto;
+			padding: 0 48px;
+			position: absolute;
+			right: 0;
+			top: 0;
+		}
+
+		.header-section {
+			margin-bottom: 28px;
+			white-space: nowrap;
+
+			&:first-child {
+				overflow: auto;
+				padding-right: 40px;
+			}
+		}
+
+		.title-section {
+			.page-actions-toolbar {
+				background-color: transparent;
+				border: 0;
+				min-height: 0;
+				padding: 0;
+			}
+
+			.subtitle,
+			.subtitle a {
+				color: $secondary;
+				line-height: 28px;
+			}
+
+			.title {
+				font-size: 2rem;
+				font-weight: $fontWeightBold;
+				line-height: 40px;
+				margin: 0 16px 0 0;
+			}
+		}
+	}
+
+	.sub-header-root {
+		background: $white;
+		border-bottom: 1px solid $mainLighten74;
+		padding: 16px 0;
+	}
+
+	.fluid-body-root .card-root {
+		width: 100%;
+	}
+
+	&.c-slideout-push-end {
+		padding-right: var(--base-page-sidebar-width);
+	}
+
+	&.c-slideout-push-start {
+		padding-left: var(--base-page-sidebar-width);
+	}
+
+	&.base-page-sidebar-overlay {
+		padding-left: 0;
+		padding-right: 0;
+	}
+
+	.base-page-sidebar-backdrop {
+		z-index: calc(#{$cadmin-zindex-c-slideout} - 1);
+	}
+
+	.sidebar.base-page-sidebar {
+		border-left: 1px solid $cadmin-secondary-l2;
+		box-shadow: none;
+
+		.pagination-bar {
+			.pagination {
+				margin-top: $cadmin-pagination-margin-top-mobile;
+			}
+
+			.pagination-results {
+				margin-left: auto;
+			}
+		}
+	}
+}

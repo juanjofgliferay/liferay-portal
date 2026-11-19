@@ -19,11 +19,13 @@ import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.messaging.Destination;
 import com.liferay.portal.kernel.messaging.Message;
+import com.liferay.portal.kernel.messaging.MessageBus;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCActionCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
+import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
+import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.servlet.ServletResponseUtil;
 import com.liferay.portal.kernel.servlet.SessionErrors;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
@@ -31,20 +33,19 @@ import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
-import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.kernel.util.UnicodePropertiesBuilder;
 import com.liferay.portal.kernel.util.WebKeys;
+
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 
 import java.util.Calendar;
 import java.util.Objects;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-
-import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -54,7 +55,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + DispatchPortletKeys.DISPATCH,
+		"jakarta.portlet.name=" + DispatchPortletKeys.DISPATCH,
 		"mvc.command.name=/dispatch/edit_dispatch_trigger"
 	},
 	service = MVCActionCommand.class
@@ -105,9 +106,16 @@ public class EditDispatchTriggerMVCActionCommand extends BaseMVCActionCommand {
 		ThemeDisplay themeDisplay = (ThemeDisplay)actionRequest.getAttribute(
 			WebKeys.THEME_DISPLAY);
 
-		DispatchTriggerPermission.contains(
-			themeDisplay.getPermissionChecker(), dispatchTriggerId,
-			ActionKeys.UPDATE);
+		PermissionChecker permissionChecker =
+			themeDisplay.getPermissionChecker();
+
+		if (!DispatchTriggerPermission.contains(
+				permissionChecker, dispatchTriggerId, ActionKeys.UPDATE)) {
+
+			throw new PrincipalException.MustHavePermission(
+				permissionChecker, DispatchTrigger.class.getName(),
+				dispatchTriggerId, ActionKeys.UPDATE);
+		}
 	}
 
 	private void _deleteDispatchTrigger(ActionRequest actionRequest)
@@ -122,8 +130,8 @@ public class EditDispatchTriggerMVCActionCommand extends BaseMVCActionCommand {
 			deleteDispatchTriggerIds = new long[] {dispatchTriggerId};
 		}
 		else {
-			deleteDispatchTriggerIds = StringUtil.split(
-				ParamUtil.getString(actionRequest, "rowIds"), 0L);
+			deleteDispatchTriggerIds = ParamUtil.getLongValues(
+				actionRequest, "rowIds");
 		}
 
 		for (long deleteDispatchTriggerId : deleteDispatchTriggerIds) {
@@ -237,15 +245,21 @@ public class EditDispatchTriggerMVCActionCommand extends BaseMVCActionCommand {
 			startDateYear, startDateHour, startDateMinute, timeZoneId);
 	}
 
-	private void _sendMessage(long dispatchTriggerId) {
+	private void _sendMessage(long dispatchTriggerId) throws PortalException {
 		Message message = new Message();
+
+		DispatchTrigger dispatchTrigger =
+			_dispatchTriggerLocalService.getDispatchTrigger(dispatchTriggerId);
+
+		message.put("companyId", dispatchTrigger.getCompanyId());
 
 		message.setPayload(
 			JSONUtil.put(
 				"dispatchTriggerId", dispatchTriggerId
 			).toString());
 
-		_destination.send(message);
+		_messageBus.sendMessage(
+			DispatchConstants.EXECUTOR_DESTINATION_NAME, message);
 	}
 
 	private DispatchTrigger _updateDispatchTrigger(ActionRequest actionRequest)
@@ -298,11 +312,6 @@ public class EditDispatchTriggerMVCActionCommand extends BaseMVCActionCommand {
 	private static final Log _log = LogFactoryUtil.getLog(
 		EditDispatchTriggerMVCActionCommand.class);
 
-	@Reference(
-		target = "(destination.name=" + DispatchConstants.EXECUTOR_DESTINATION_NAME + ")"
-	)
-	private Destination _destination;
-
 	@Reference
 	private DispatchTaskExecutorRegistry _dispatchTaskExecutorRegistry;
 
@@ -314,6 +323,9 @@ public class EditDispatchTriggerMVCActionCommand extends BaseMVCActionCommand {
 
 	@Reference
 	private JSONFactory _jsonFactory;
+
+	@Reference
+	private MessageBus _messageBus;
 
 	@Reference
 	private Portal _portal;

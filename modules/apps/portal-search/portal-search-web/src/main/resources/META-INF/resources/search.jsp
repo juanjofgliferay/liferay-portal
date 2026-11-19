@@ -57,7 +57,7 @@ String format = ParamUtil.getString(request, SearchPortletParameterNames.FORMAT)
 <%
 String pageSubtitle = LanguageUtil.get(request, "search-results");
 
-String pageKeywords = LanguageUtil.get(request, "search");
+String pageKeywords = LanguageUtil.get(request, "search[noun]");
 
 if (Validator.isNotNull(searchDisplayContext.getKeywords())) {
 	pageKeywords = searchDisplayContext.getKeywords();
@@ -71,7 +71,7 @@ PortalUtil.setPageSubtitle(pageSubtitle, request);
 PortalUtil.setPageKeywords(pageKeywords, request);
 %>
 
-<script>
+<aui:script>
 	var keywordsInput = document.getElementById('<portlet:namespace />keywords');
 
 	if (keywordsInput) {
@@ -112,4 +112,4 @@ PortalUtil.setPageKeywords(pageKeywords, request);
 			}
 		}
 	}
-</script>
+</aui:script>

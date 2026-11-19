@@ -5,12 +5,15 @@
 
 package com.liferay.segments.model.impl;
 
+import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.ScopeUtil;
 import com.liferay.portal.kernel.util.UnicodeProperties;
+import com.liferay.portal.kernel.util.UnicodePropertiesBuilder;
 import com.liferay.segments.constants.SegmentsEntryConstants;
 import com.liferay.segments.model.SegmentsEntry;
 import com.liferay.segments.model.SegmentsExperience;
@@ -18,8 +21,6 @@ import com.liferay.segments.model.SegmentsExperimentRel;
 import com.liferay.segments.service.SegmentsEntryLocalServiceUtil;
 import com.liferay.segments.service.SegmentsExperienceLocalServiceUtil;
 import com.liferay.segments.service.SegmentsExperimentRelLocalServiceUtil;
-
-import java.io.IOException;
 
 import java.util.List;
 import java.util.Locale;
@@ -73,15 +74,44 @@ public class SegmentsExperimentImpl extends SegmentsExperimentBaseImpl {
 			SegmentsExperienceLocalServiceUtil.getSegmentsExperience(
 				getSegmentsExperienceId());
 
-		if (segmentsExperience.getSegmentsEntryId() ==
-				SegmentsEntryConstants.ID_DEFAULT) {
-
+		if (segmentsExperience.hasDefaultSegmentsEntry()) {
 			return SegmentsEntryConstants.getDefaultSegmentsEntryName(locale);
 		}
 
+		Long groupId = ScopeUtil.getItemGroupId(
+			segmentsExperience.getCompanyId(),
+			segmentsExperience.getSegmentsEntryScopeERC(),
+			segmentsExperience.getGroupId());
+
+		if (groupId == null) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(
+					StringBundler.concat(
+						"Unable to resolve group ID for segments experience ",
+						segmentsExperience.getSegmentsExperienceId(),
+						" with segments entry scope external reference code ",
+						segmentsExperience.getSegmentsEntryScopeERC()));
+			}
+
+			return StringPool.BLANK;
+		}
+
 		SegmentsEntry segmentsEntry =
-			SegmentsEntryLocalServiceUtil.getSegmentsEntry(
-				segmentsExperience.getSegmentsEntryId());
+			SegmentsEntryLocalServiceUtil.
+				fetchSegmentsEntryByExternalReferenceCode(
+					segmentsExperience.getSegmentsEntryERC(), groupId);
+
+		if (segmentsEntry == null) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(
+					StringBundler.concat(
+						"Unable to get segments entry with external reference ",
+						"code ", segmentsExperience.getSegmentsEntryERC(),
+						" and group ID ", groupId));
+			}
+
+			return StringPool.BLANK;
+		}
 
 		return segmentsEntry.getName(locale);
 	}
@@ -106,16 +136,22 @@ public class SegmentsExperimentImpl extends SegmentsExperimentBaseImpl {
 	}
 
 	@Override
+	public String getType() {
+		UnicodeProperties typeSettingsUnicodeProperties =
+			getTypeSettingsProperties();
+
+		return GetterUtil.getString(
+			typeSettingsUnicodeProperties.getProperty("type"));
+	}
+
+	@Override
 	public UnicodeProperties getTypeSettingsProperties() {
 		if (_typeSettingsUnicodeProperties == null) {
-			_typeSettingsUnicodeProperties = new UnicodeProperties(true);
-
-			try {
-				_typeSettingsUnicodeProperties.load(super.getTypeSettings());
-			}
-			catch (IOException ioException) {
-				_log.error(ioException);
-			}
+			_typeSettingsUnicodeProperties = UnicodePropertiesBuilder.create(
+				true
+			).load(
+				super.getTypeSettings()
+			).build();
 		}
 
 		return _typeSettingsUnicodeProperties;

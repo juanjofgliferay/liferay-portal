@@ -132,7 +132,8 @@ public interface CommercePriceListDiscountRelLocalService
 			long commercePriceListDiscountRelId)
 		throws PortalException;
 
-	public void deleteCommercePriceListDiscountRels(long commercePriceListId);
+	public void deleteCommercePriceListDiscountRels(long commercePriceListId)
+		throws PortalException;
 
 	/**
 	 * @throws PortalException
@@ -217,10 +218,6 @@ public interface CommercePriceListDiscountRelLocalService
 	public CommercePriceListDiscountRel fetchCommercePriceListDiscountRel(
 		long commercePriceListDiscountRelId);
 
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public CommercePriceListDiscountRel fetchCommercePriceListDiscountRel(
-		long commerceDiscountId, long commercePriceListId);
-
 	/**
 	 * Returns the commerce price list discount rel with the matching UUID and company.
 	 *
@@ -281,11 +278,6 @@ public interface CommercePriceListDiscountRelLocalService
 	public List<CommercePriceListDiscountRel> getCommercePriceListDiscountRels(
 		long commercePriceListId);
 
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<CommercePriceListDiscountRel> getCommercePriceListDiscountRels(
-		long commercePriceListId, int start, int end,
-		OrderByComparator<CommercePriceListDiscountRel> orderByComparator);
-
 	/**
 	 * Returns the number of commerce price list discount rels.
 	 *
@@ -293,9 +285,6 @@ public interface CommercePriceListDiscountRelLocalService
 	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public int getCommercePriceListDiscountRelsCount();
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getCommercePriceListDiscountRelsCount(long commercePriceListId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public ExportActionableDynamicQuery getExportActionableDynamicQuery(
@@ -349,3 +338,4 @@ public interface CommercePriceListDiscountRelLocalService
 		throws E;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1320010593

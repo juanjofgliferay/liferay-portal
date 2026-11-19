@@ -105,17 +105,9 @@ public class DLAppHelperLocalServiceUtil {
 	}
 
 	public static List<com.liferay.document.library.kernel.model.DLFileShortcut>
-		getFileShortcuts(
-			long groupId, long folderId, boolean active, int status) {
+		getGroupFileShortcuts(long groupId) {
 
-		return getService().getFileShortcuts(groupId, folderId, active, status);
-	}
-
-	public static int getFileShortcutsCount(
-		long groupId, long folderId, boolean active, int status) {
-
-		return getService().getFileShortcutsCount(
-			groupId, folderId, active, status);
+		return getService().getGroupFileShortcuts(groupId);
 	}
 
 	public static List<com.liferay.portal.kernel.repository.model.FileEntry>
@@ -370,3 +362,4 @@ public class DLAppHelperLocalServiceUtil {
 	private static volatile DLAppHelperLocalService _service;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-964732356

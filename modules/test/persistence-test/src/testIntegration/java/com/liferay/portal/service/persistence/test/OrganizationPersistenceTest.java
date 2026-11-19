@@ -111,11 +111,7 @@ public class OrganizationPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		Organization newOrganization = _persistence.create(pk);
-
-		newOrganization.setMvccVersion(RandomTestUtil.nextLong());
+		Organization newOrganization = addOrganization();
 
 		newOrganization.setCtCollectionId(RandomTestUtil.nextLong());
 
@@ -153,7 +149,11 @@ public class OrganizationPersistenceTest {
 
 		newOrganization.setLogoId(RandomTestUtil.nextLong());
 
-		_organizations.add(_persistence.update(newOrganization));
+		newOrganization.setStatus(RandomTestUtil.nextInt());
+
+		newOrganization = _persistence.update(newOrganization);
+
+		_organizations.add(newOrganization);
 
 		Organization existingOrganization = _persistence.findByPrimaryKey(
 			newOrganization.getPrimaryKey());
@@ -209,6 +209,8 @@ public class OrganizationPersistenceTest {
 			existingOrganization.getComments(), newOrganization.getComments());
 		Assert.assertEquals(
 			existingOrganization.getLogoId(), newOrganization.getLogoId());
+		Assert.assertEquals(
+			existingOrganization.getStatus(), newOrganization.getStatus());
 	}
 
 	@Test(expected = DuplicateOrganizationExternalReferenceCodeException.class)
@@ -257,10 +259,10 @@ public class OrganizationPersistenceTest {
 	}
 
 	@Test
-	public void testCountByCompanyIdLocations() throws Exception {
-		_persistence.countByCompanyIdLocations(RandomTestUtil.nextLong());
+	public void testCountByLogoId() throws Exception {
+		_persistence.countByLogoId(RandomTestUtil.nextLong());
 
-		_persistence.countByCompanyIdLocations(0L);
+		_persistence.countByLogoId(0L);
 	}
 
 	@Test
@@ -357,7 +359,7 @@ public class OrganizationPersistenceTest {
 			true, "modifiedDate", true, "parentOrganizationId", true,
 			"treePath", true, "name", true, "type", true, "recursable", true,
 			"regionId", true, "countryId", true, "statusListTypeId", true,
-			"comments", true, "logoId", true);
+			"comments", true, "logoId", true, "status", true);
 	}
 
 	@Test
@@ -652,8 +654,6 @@ public class OrganizationPersistenceTest {
 
 		Organization organization = _persistence.create(pk);
 
-		organization.setMvccVersion(RandomTestUtil.nextLong());
-
 		organization.setCtCollectionId(RandomTestUtil.nextLong());
 
 		organization.setUuid(RandomTestUtil.randomString());
@@ -690,6 +690,8 @@ public class OrganizationPersistenceTest {
 
 		organization.setLogoId(RandomTestUtil.nextLong());
 
+		organization.setStatus(RandomTestUtil.nextInt());
+
 		_organizations.add(_persistence.update(organization));
 
 		return organization;
@@ -700,3 +702,4 @@ public class OrganizationPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:788049740

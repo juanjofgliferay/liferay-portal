@@ -18,7 +18,6 @@ import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import java.io.File;
 
 import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -51,24 +50,18 @@ public abstract class BaseTestCase {
 		BundleContext bundleContext = testBundle.getBundleContext();
 
 		for (Bundle bundle : bundleContext.getBundles()) {
-			if (Objects.equals(
+			if (!Objects.equals(
 					bundle.getSymbolicName(),
 					"com.liferay.headless.builder.impl")) {
 
-				File processedFile = bundle.getDataFile(
-					".com.liferay.headless.builder.internal.batch.headless." +
-						"builder.batch.engine.data.json.0.processed");
-
-				if ((processedFile != null) && processedFile.exists()) {
-					processedFile.delete();
-				}
-
-				CompletableFuture<Void> completableFuture =
-					_batchEngineUnitProcessor.processBatchEngineUnits(
-						_batchEngineUnitReader.getBatchEngineUnits(bundle));
-
-				completableFuture.join();
+				continue;
 			}
+
+			_deleteFile(bundle, "00.list.type.definition");
+			_deleteFile(bundle, "01.object.definition");
+
+			_batchEngineUnitProcessor.processBatchEngineUnits(
+				_batchEngineUnitReader.getBatchEngineUnits(bundle));
 		}
 	}
 
@@ -82,6 +75,16 @@ public abstract class BaseTestCase {
 		Assert.assertNotEquals(
 			jsonObject.getString("title"), "BAD_REQUEST",
 			jsonObject.getString("status"));
+	}
+
+	private void _deleteFile(Bundle bundle, String processedFileName) {
+		File processedFile = bundle.getDataFile(
+			".com.liferay.headless.builder.internal.batch." +
+				processedFileName + ".batch.engine.data.json.0.processed");
+
+		if ((processedFile != null) && processedFile.exists()) {
+			processedFile.delete();
+		}
 	}
 
 	@Inject

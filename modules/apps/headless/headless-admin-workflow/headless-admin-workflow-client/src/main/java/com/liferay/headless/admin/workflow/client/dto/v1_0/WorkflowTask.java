@@ -8,13 +8,13 @@ package com.liferay.headless.admin.workflow.client.dto.v1_0;
 import com.liferay.headless.admin.workflow.client.function.UnsafeSupplier;
 import com.liferay.headless.admin.workflow.client.serdes.v1_0.WorkflowTaskSerDes;
 
+import jakarta.annotation.Generated;
+
 import java.io.Serializable;
 
 import java.util.Date;
 import java.util.Map;
 import java.util.Objects;
-
-import javax.annotation.Generated;
 
 /**
  * @author Javier Gamarra
@@ -48,6 +48,27 @@ public class WorkflowTask implements Cloneable, Serializable {
 	}
 
 	protected Map<String, Map<String, String>> actions;
+
+	public Boolean getAssignedToMe() {
+		return assignedToMe;
+	}
+
+	public void setAssignedToMe(Boolean assignedToMe) {
+		this.assignedToMe = assignedToMe;
+	}
+
+	public void setAssignedToMe(
+		UnsafeSupplier<Boolean, Exception> assignedToMeUnsafeSupplier) {
+
+		try {
+			assignedToMe = assignedToMeUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected Boolean assignedToMe;
 
 	public Creator getAssigneePerson() {
 		return assigneePerson;
@@ -111,6 +132,27 @@ public class WorkflowTask implements Cloneable, Serializable {
 	}
 
 	protected Boolean completed;
+
+	public Creator getCreator() {
+		return creator;
+	}
+
+	public void setCreator(Creator creator) {
+		this.creator = creator;
+	}
+
+	public void setCreator(
+		UnsafeSupplier<Creator, Exception> creatorUnsafeSupplier) {
+
+		try {
+			creator = creatorUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected Creator creator;
 
 	public Date getDateCompletion() {
 		return dateCompletion;
@@ -320,6 +362,29 @@ public class WorkflowTask implements Cloneable, Serializable {
 
 	protected String workflowDefinitionName;
 
+	public String getWorkflowDefinitionTitle() {
+		return workflowDefinitionTitle;
+	}
+
+	public void setWorkflowDefinitionTitle(String workflowDefinitionTitle) {
+		this.workflowDefinitionTitle = workflowDefinitionTitle;
+	}
+
+	public void setWorkflowDefinitionTitle(
+		UnsafeSupplier<String, Exception>
+			workflowDefinitionTitleUnsafeSupplier) {
+
+		try {
+			workflowDefinitionTitle =
+				workflowDefinitionTitleUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String workflowDefinitionTitle;
+
 	public String getWorkflowDefinitionVersion() {
 		return workflowDefinitionVersion;
 	}
@@ -364,6 +429,27 @@ public class WorkflowTask implements Cloneable, Serializable {
 
 	protected Long workflowInstanceId;
 
+	public WorkflowLog[] getWorkflowLogs() {
+		return workflowLogs;
+	}
+
+	public void setWorkflowLogs(WorkflowLog[] workflowLogs) {
+		this.workflowLogs = workflowLogs;
+	}
+
+	public void setWorkflowLogs(
+		UnsafeSupplier<WorkflowLog[], Exception> workflowLogsUnsafeSupplier) {
+
+		try {
+			workflowLogs = workflowLogsUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected WorkflowLog[] workflowLogs;
+
 	@Override
 	public WorkflowTask clone() throws CloneNotSupportedException {
 		return (WorkflowTask)super.clone();
@@ -396,3 +482,4 @@ public class WorkflowTask implements Cloneable, Serializable {
 	}
 
 }
+// LIFERAY-REST-BUILDER-HASH:-727829056

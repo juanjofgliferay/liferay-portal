@@ -7,6 +7,8 @@
 
 <%@ include file="/admin/init.jsp" %>
 
+<%@ include file="/admin/deprecated_warning.jspf" %>
+
 <%
 String redirect = ParamUtil.getString(request, "redirect");
 
@@ -14,7 +16,7 @@ long kaleoProcessId = ParamUtil.getLong(request, "kaleoProcessId");
 
 KaleoProcess kaleoProcess = KaleoProcessServiceUtil.getKaleoProcess(kaleoProcessId);
 
-long groupId = BeanParamUtil.getLong(kaleoProcess, request, "groupId", scopeGroupId);
+long groupId = BeanParamUtil.getLong(kaleoProcess, request, "groupId", KaleoProcess::getGroupId, scopeGroupId);
 
 long workflowTaskId = ParamUtil.getLong(request, "workflowTaskId");
 

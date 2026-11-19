@@ -14,6 +14,7 @@ import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.LayoutSet;
 import com.liferay.portal.kernel.model.LayoutSetBranch;
+import com.liferay.portal.kernel.model.Release;
 import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.service.ImageLocalService;
 import com.liferay.portal.kernel.service.LayoutLocalService;
@@ -36,25 +37,43 @@ public class ImageServiceUpgradeStepRegistrator
 		registry.registerInitialization();
 
 		registry.register(
-			"0.0.1", "1.0.0",
+			"0.0.1", "0.0.2",
 			new ImageCompanyIdUpgradeProcess<>(
 				_companyLocalService::getActionableDynamicQuery,
-				Company::getCompanyId, Company::getLogoId),
+				Company::getCompanyId, Company::getLogoId));
+
+		registry.register(
+			"0.0.2", "0.0.3",
 			new ImageCompanyIdUpgradeProcess<>(
 				_ddmTemplateLocalService::getActionableDynamicQuery,
-				DDMTemplate::getCompanyId, DDMTemplate::getSmallImageId),
+				DDMTemplate::getCompanyId, DDMTemplate::getSmallImageId));
+
+		registry.register(
+			"0.0.3", "0.0.4",
 			new ImageCompanyIdUpgradeProcess<>(
 				_layoutLocalService::getActionableDynamicQuery,
-				Layout::getCompanyId, Layout::getIconImageId),
+				Layout::getCompanyId, Layout::getIconImageId));
+
+		registry.register(
+			"0.0.4", "0.0.5",
 			new ImageCompanyIdUpgradeProcess<>(
 				_layoutSetLocalService::getActionableDynamicQuery,
-				LayoutSet::getCompanyId, LayoutSet::getLogoId),
+				LayoutSet::getCompanyId, LayoutSet::getLogoId));
+
+		registry.register(
+			"0.0.5", "0.0.6",
 			new ImageCompanyIdUpgradeProcess<>(
 				_layoutSetBranchLocalService::getActionableDynamicQuery,
-				LayoutSetBranch::getCompanyId, LayoutSetBranch::getLogoId),
+				LayoutSetBranch::getCompanyId, LayoutSetBranch::getLogoId));
+
+		registry.register(
+			"0.0.6", "0.0.7",
 			new ImageCompanyIdUpgradeProcess<>(
 				_layoutSetBranchLocalService::getActionableDynamicQuery,
-				LayoutSetBranch::getCompanyId, LayoutSetBranch::getLiveLogoId),
+				LayoutSetBranch::getCompanyId, LayoutSetBranch::getLiveLogoId));
+
+		registry.register(
+			"0.0.7", "1.0.0",
 			new ImageStorageUpgradeProcess(_imageLocalService, _store));
 	}
 
@@ -75,6 +94,11 @@ public class ImageServiceUpgradeStepRegistrator
 
 	@Reference
 	private LayoutSetLocalService _layoutSetLocalService;
+
+	@Reference(
+		target = "(&(release.bundle.symbolic.name=com.liferay.journal.service)(release.schema.version>=1.1.0))"
+	)
+	private Release _release;
 
 	@Reference(target = "(default=true)")
 	private Store _store;

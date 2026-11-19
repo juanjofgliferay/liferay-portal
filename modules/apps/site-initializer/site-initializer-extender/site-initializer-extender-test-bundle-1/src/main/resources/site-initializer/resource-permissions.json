@@ -1,6 +1,17 @@
 [
 	{
 		"actionIds": [
+			"DELETE",
+			"UPDATE",
+			"VIEW"
+		],
+		"primKey": "0",
+		"resourceName": "[$OBJECT_DEFINITION_CLASS_NAME:TestObjectDefinition3$]",
+		"roleName": "Test Role 2",
+		"scope": 1
+	},
+	{
+		"actionIds": [
 			"VIEW_PRICE"
 		],
 		"primKey": "0",
@@ -19,19 +30,17 @@
 	},
 	{
 		"actionIds": [
-			"DELETE",
-			"UPDATE",
-			"VIEW"
+			"VIEW_PRICE"
 		],
 		"primKey": "0",
-		"resourceName": "com.liferay.object.model.ObjectDefinition#[$OBJECT_DEFINITION_ID:TestObjectDefinition3$]",
-		"roleName": "Test Role 2",
-		"scope": 1
+		"resourceName": "com.liferay.commerce.product",
+		"roleName": "Test Role 3",
+		"scope": "1"
 	},
 	{
 		"actionIds": [
-			"VIEW",
-			"UPDATE"
+			"UPDATE",
+			"VIEW"
 		],
 		"primKey": "[$LAYOUT_PAGE_TEMPLATE_ENTRY_ID:Test Display Page Template$]",
 		"resourceName": "com.liferay.layout.page.template.model.LayoutPageTemplateEntry",

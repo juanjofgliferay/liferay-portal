@@ -21,7 +21,7 @@ import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
-import com.liferay.portal.search.test.util.SearchTestRule;
+import com.liferay.portal.search.test.rule.SearchTestRule;
 import com.liferay.portal.test.log.LogCapture;
 import com.liferay.portal.test.log.LogEntry;
 import com.liferay.portal.test.log.LoggerTestUtil;
@@ -68,8 +68,7 @@ public class MBCategoryIndexerTest {
 				TestPropsValues.getCompanyId(), TestPropsValues.getUserId(),
 				GroupConstants.DEFAULT_PARENT_GROUP_ID);
 
-			_indexer.reindex(
-				new String[] {String.valueOf(TestPropsValues.getCompanyId())});
+			_indexer.reindexCompany(TestPropsValues.getCompanyId());
 
 			List<LogEntry> logEntries = logCapture.getLogEntries();
 
@@ -87,13 +86,12 @@ public class MBCategoryIndexerTest {
 				GroupConstants.DEFAULT_PARENT_GROUP_ID);
 
 			MBCategory mbCategory = MBCategoryLocalServiceUtil.addCategory(
-				TestPropsValues.getUserId(), 0, RandomTestUtil.randomString(),
-				RandomTestUtil.randomString(),
+				null, TestPropsValues.getUserId(), 0,
+				RandomTestUtil.randomString(), RandomTestUtil.randomString(),
 				ServiceContextTestUtil.getServiceContext(
 					_group.getGroupId(), TestPropsValues.getUserId()));
 
-			_indexer.reindex(
-				new String[] {String.valueOf(TestPropsValues.getCompanyId())});
+			_indexer.reindexCompany(TestPropsValues.getCompanyId());
 
 			List<LogEntry> logEntries = logCapture.getLogEntries();
 

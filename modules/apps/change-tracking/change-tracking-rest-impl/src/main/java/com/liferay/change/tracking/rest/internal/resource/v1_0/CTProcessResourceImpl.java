@@ -14,6 +14,7 @@ import com.liferay.change.tracking.rest.resource.v1_0.CTProcessResource;
 import com.liferay.change.tracking.service.CTCollectionLocalService;
 import com.liferay.change.tracking.service.CTCollectionService;
 import com.liferay.change.tracking.service.CTProcessLocalService;
+import com.liferay.change.tracking.service.CTProcessService;
 import com.liferay.change.tracking.service.CTSchemaVersionLocalService;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.background.task.model.BackgroundTask;
@@ -25,7 +26,9 @@ import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.search.filter.Filter;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
+import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
 import com.liferay.portal.kernel.security.permission.resource.PortletResourcePermission;
+import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.Validator;
@@ -36,12 +39,14 @@ import com.liferay.portal.vulcan.pagination.Page;
 import com.liferay.portal.vulcan.pagination.Pagination;
 import com.liferay.portal.vulcan.util.SearchUtil;
 
-import java.util.Collections;
+import jakarta.ws.rs.core.MultivaluedMap;
 
-import javax.ws.rs.core.MultivaluedMap;
+import java.util.Collections;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.component.annotations.ReferencePolicy;
+import org.osgi.service.component.annotations.ReferencePolicyOption;
 import org.osgi.service.component.annotations.ServiceScope;
 
 /**
@@ -54,15 +59,26 @@ import org.osgi.service.component.annotations.ServiceScope;
 public class CTProcessResourceImpl extends BaseCTProcessResourceImpl {
 
 	@Override
+	public void deleteCTProcess(Long ctProcessId) throws Exception {
+		_ctProcessService.deleteCTProcess(ctProcessId);
+	}
+
+	@Override
 	public CTProcess getCTProcess(Long ctProcessId) throws Exception {
 		return _toCTProcess(ctProcessId);
 	}
 
 	@Override
 	public Page<CTProcess> getCTProcessesPage(
-			Integer[] statuses, String search, Filter filter,
+			String search, Integer[] statuses, Filter filter,
 			Pagination pagination, Sort[] sorts)
 		throws Exception {
+
+		if (ArrayUtil.isEmpty(sorts)) {
+			sorts = new Sort[] {
+				new Sort(Field.getSortableFieldName(Field.CREATE_DATE), true)
+			};
+		}
 
 		return SearchUtil.search(
 			Collections.emptyMap(),
@@ -94,13 +110,13 @@ public class CTProcessResourceImpl extends BaseCTProcessResourceImpl {
 			Long ctProcessId, String description, String name)
 		throws Exception {
 
-		com.liferay.change.tracking.model.CTProcess ctProcess =
+		com.liferay.change.tracking.model.CTProcess serviceBuilderCTProcess =
 			_ctProcessLocalService.getCTProcess(ctProcessId);
 
 		if (Validator.isNull(name)) {
 			CTCollection ctCollection =
 				_ctCollectionLocalService.getCTCollection(
-					ctProcess.getCtCollectionId());
+					serviceBuilderCTProcess.getCtCollectionId());
 
 			name = StringBundler.concat(
 				_language.get(
@@ -109,24 +125,29 @@ public class CTProcessResourceImpl extends BaseCTProcessResourceImpl {
 		}
 
 		_ctCollectionService.undoCTCollection(
-			ctProcess.getCtCollectionId(), contextUser.getUserId(), name,
-			description);
+			serviceBuilderCTProcess.getCtCollectionId(),
+			contextUser.getUserId(), name, description);
 	}
 
 	private DefaultDTOConverterContext _getDTOConverterContext(
-			com.liferay.change.tracking.model.CTProcess ctProcess)
+			com.liferay.change.tracking.model.CTProcess serviceBuilderCTProcess)
 		throws Exception {
 
 		BackgroundTask backgroundTask =
 			_backgroundTaskLocalService.getBackgroundTask(
-				ctProcess.getBackgroundTaskId());
+				serviceBuilderCTProcess.getBackgroundTaskId());
 
 		CTCollection ctCollection = _ctCollectionLocalService.getCTCollection(
-			ctProcess.getCtCollectionId());
+			serviceBuilderCTProcess.getCtCollectionId());
 
 		return new DefaultDTOConverterContext(
 			contextAcceptLanguage.isAcceptAllLanguages(),
 			HashMapBuilder.put(
+				"delete",
+				() -> addAction(
+					ActionKeys.DELETE, serviceBuilderCTProcess.getCtProcessId(),
+					"deleteCTProcess", _ctProcessModelResourcePermission)
+			).put(
 				"get",
 				() -> {
 					if (backgroundTask.getStatus() !=
@@ -136,9 +157,9 @@ public class CTProcessResourceImpl extends BaseCTProcessResourceImpl {
 					}
 
 					return addAction(
-						ActionKeys.VIEW, "getCTProcess",
-						CTCollection.class.getName(),
-						ctProcess.getCtCollectionId());
+						ActionKeys.VIEW,
+						serviceBuilderCTProcess.getCtCollectionId(),
+						"getCTProcess", _ctCollectionModelResourcePermission);
 				}
 			).put(
 				"revert",
@@ -156,22 +177,24 @@ public class CTProcessResourceImpl extends BaseCTProcessResourceImpl {
 					}
 
 					return addAction(
-						ActionKeys.VIEW, "postCTProcessRevert",
-						CTCollection.class.getName(),
-						ctCollection.getCtCollectionId());
+						ActionKeys.VIEW, ctCollection.getCtCollectionId(),
+						"postCTProcessRevert",
+						_ctCollectionModelResourcePermission);
 				}
 			).build(),
-			null, contextHttpServletRequest, ctProcess.getCtCollectionId(),
+			null, contextHttpServletRequest,
+			serviceBuilderCTProcess.getCtCollectionId(),
 			contextAcceptLanguage.getPreferredLocale(), contextUriInfo,
 			contextUser);
 	}
 
 	private CTProcess _toCTProcess(Long ctProcessId) throws Exception {
-		com.liferay.change.tracking.model.CTProcess ctProcess =
+		com.liferay.change.tracking.model.CTProcess serviceBuilderCTProcess =
 			_ctProcessLocalService.getCTProcess(ctProcessId);
 
 		return _ctProcessDTOConverter.toDTO(
-			_getDTOConverterContext(ctProcess), ctProcess);
+			_getDTOConverterContext(serviceBuilderCTProcess),
+			serviceBuilderCTProcess);
 	}
 
 	private static final EntityModel _entityModel = new CTProcessEntityModel();
@@ -181,6 +204,14 @@ public class CTProcessResourceImpl extends BaseCTProcessResourceImpl {
 
 	@Reference
 	private CTCollectionLocalService _ctCollectionLocalService;
+
+	@Reference(
+		policy = ReferencePolicy.DYNAMIC,
+		policyOption = ReferencePolicyOption.GREEDY,
+		target = "(model.class.name=com.liferay.change.tracking.model.CTCollection)"
+	)
+	private volatile ModelResourcePermission<CTCollection>
+		_ctCollectionModelResourcePermission;
 
 	@Reference
 	private CTCollectionService _ctCollectionService;
@@ -193,6 +224,18 @@ public class CTProcessResourceImpl extends BaseCTProcessResourceImpl {
 
 	@Reference
 	private CTProcessLocalService _ctProcessLocalService;
+
+	@Reference(
+		policy = ReferencePolicy.DYNAMIC,
+		policyOption = ReferencePolicyOption.GREEDY,
+		target = "(model.class.name=com.liferay.change.tracking.model.CTProcess)"
+	)
+	private volatile ModelResourcePermission
+		<com.liferay.change.tracking.model.CTProcess>
+			_ctProcessModelResourcePermission;
+
+	@Reference
+	private CTProcessService _ctProcessService;
 
 	@Reference
 	private CTSchemaVersionLocalService _ctSchemaVersionLocalService;

@@ -1,8 +1,10 @@
 @component-name = "portal-search"
 definition {
 
+	property browser.chrome.version = "139.0";
+	property portal.acceptance = "true";
 	property portal.release = "true";
-	property portal.suite.search.engine = "elasticsearch7";
+	property portal.suite.search.engine = "elasticsearch8,opensearch2";
 	property portal.upstream = "true";
 	property testray.main.component.name = "Web Search";
 
@@ -62,6 +64,8 @@ definition {
 
 	@priority = 4
 	test CanConfigureSearchContributorSize {
+		property test.run.type = "single";
+
 		JSONWebcontent.addWebContent(
 			content = "WC WebContent Content",
 			description = "WC WebContent Description",
@@ -180,6 +184,8 @@ definition {
 
 	@priority = 4
 	test CanViewSearchBarSuggestionsResultDetails {
+		property test.run.type = "single";
+
 		JSONWebcontent.addWebContent(
 			content = "WC WebContent Content",
 			description = "WC WebContent Description",
@@ -227,6 +233,8 @@ definition {
 	@description = "This is a use case for LPS-166050. When using a Blueprint to drive Search Bar suggestions, I can configure a character threshold that applies to this group"
 	@priority = 3
 	test ConfigureBlueprintContributorCharacterThresholds {
+		property test.run.type = "single";
+
 		task ("Add Web Content and Blueprint") {
 			JSONWebcontent.addWebContent(
 				content = "WC WebContent Content",
@@ -314,13 +322,13 @@ definition {
 		task ("Configure Analytics Cloud") {
 			ACUtils.launchAC();
 
-			ACSettings.takeTokenFromAnalyticsCloud();
+			ACUtils.takeTokenFromAnalyticsCloud();
 
 			TestCase.setUpPortalInstance();
 
 			ACUtils.launchDXP();
 
-			var propertyName = ACDXPSettings.connectDXPtoAnalyticsCloud(siteName = "Guest");
+			var propertyName = ACUtils.connectDXPtoAnalyticsCloud(siteName = "Guest");
 		}
 
 		task ("Add Web Content Articles to search") {
@@ -411,13 +419,13 @@ definition {
 		task ("Configure Analytics Cloud") {
 			ACUtils.launchAC();
 
-			ACSettings.takeTokenFromAnalyticsCloud();
+			ACUtils.takeTokenFromAnalyticsCloud();
 
 			TestCase.setUpPortalInstance();
 
 			ACUtils.launchDXP();
 
-			var propertyName = ACDXPSettings.connectDXPtoAnalyticsCloud(siteName = "Guest");
+			var propertyName = ACUtils.connectDXPtoAnalyticsCloud(siteName = "Guest");
 		}
 
 		task ("Create Apple Pie and Apple Strudel Web Contents and translate Apple Strudel") {
@@ -748,8 +756,6 @@ definition {
 
 		Blueprints.createBlueprint(title = "Test Blueprint");
 
-		Navigator.gotoNavNested(navNested = "Query Settings");
-
 		Check.checkNotVisible(
 			locator1 = "Radio#ANY",
 			radioLabel = "Selected Types");
@@ -853,8 +859,7 @@ definition {
 	@description = "This is a use case for LPS-162509."
 	@priority = 4
 	test ViewSuggestionsLocalizedDisplayGroupName {
-		ApplicationsMenu.gotoPortlet(
-			category = "Configuration",
+		ApplicationsMenu.gotoRootPortlet(
 			panel = "Control Panel",
 			portlet = "Language Override");
 

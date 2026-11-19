@@ -28,11 +28,11 @@ import com.liferay.saved.content.constants.MySavedContentPortletKeys;
 import com.liferay.saved.content.model.SavedContentEntry;
 import com.liferay.saved.content.service.SavedContentEntryServiceUtil;
 
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
-import javax.portlet.RenderResponse;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderResponse;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * @author Alicia García
@@ -50,7 +50,7 @@ public class MySavedContentDisplayContext {
 			liferayPortletRequest);
 
 		_renderResponse = (RenderResponse)_httpServletRequest.getAttribute(
-			JavaConstants.JAVAX_PORTLET_RESPONSE);
+			JavaConstants.JAKARTA_PORTLET_RESPONSE);
 		_themeDisplay = (ThemeDisplay)_httpServletRequest.getAttribute(
 			WebKeys.THEME_DISPLAY);
 	}
@@ -172,8 +172,6 @@ public class MySavedContentDisplayContext {
 
 		_portletURL = PortletURLBuilder.createRenderURL(
 			_renderResponse
-		).setMVCRenderCommandName(
-			"/saved_content/view_my_saved_content"
 		).setRedirect(
 			ParamUtil.getString(_httpServletRequest, "redirect")
 		).buildPortletURL();

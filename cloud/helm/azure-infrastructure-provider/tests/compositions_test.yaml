@@ -1,0 +1,65 @@
+release:
+    name: my-release
+    namespace: crossplane-system
+set:
+    database:
+        engine: postgresql
+suite: Compositions
+templates:
+    -   templates/compositions.yaml
+tests:
+    -   asserts:
+            -   equal:
+                    path: spec.compositeTypeRef.apiVersion
+                    value: liferay.com/v1alpha1
+            -   equal:
+                    path: spec.pipeline[0].functionRef.name
+                    value: function-environment-configs
+            -   equal:
+                    path: spec.pipeline[1].functionRef.name
+                    value: function-go-templating
+            -   equal:
+                    path: spec.pipeline[2].functionRef.name
+                    value: function-tag-manager
+            -   equal:
+                    path: spec.pipeline[3].functionRef.name
+                    value: function-auto-ready
+            -   hasDocuments:
+                    count: 2
+            -   isKind:
+                    of: Composition
+            -   documentIndex: 0
+                equal:
+                    path: metadata.labels["liferay.com/interface"]
+                    value: liferay-infrastructure
+            -   documentIndex: 0
+                equal:
+                    path: metadata.name
+                    value: liferay-infrastructure
+            -   documentIndex: 0
+                equal:
+                    path: spec.compositeTypeRef.kind
+                    value: LiferayInfrastructure
+            -   documentIndex: 1
+                equal:
+                    path: metadata.labels["liferay.com/interface"]
+                    value: liferay-overlay
+            -   documentIndex: 1
+                equal:
+                    path: metadata.name
+                    value: liferay-overlay
+            -   documentIndex: 1
+                equal:
+                    path: spec.compositeTypeRef.kind
+                    value: LiferayOverlay
+        it: Implements the shared Liferay APIs through the packaged function pipeline
+    -   asserts:
+            -   documentIndex: 0
+                equal:
+                    path: spec.pipeline[2].input.addTags[0].fromFieldPath
+                    value: defaultTags
+            -   documentIndex: 1
+                equal:
+                    path: spec.pipeline[2].input.addTags[0].fromFieldPath
+                    value: defaultTags
+        it: Lets the derived tags win over the common tags

@@ -6,17 +6,19 @@
 package com.liferay.portal.service.impl;
 
 import com.liferay.mail.kernel.model.MailMessage;
-import com.liferay.mail.kernel.service.MailService;
+import com.liferay.mail.kernel.service.MailServiceUtil;
 import com.liferay.mail.kernel.template.MailTemplate;
 import com.liferay.mail.kernel.template.MailTemplateContext;
 import com.liferay.mail.kernel.template.MailTemplateContextBuilder;
 import com.liferay.mail.kernel.template.MailTemplateFactoryUtil;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.bean.BeanReference;
 import com.liferay.portal.kernel.exception.MembershipRequestCommentsException;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.lock.LockManagerUtil;
 import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.GroupConstants;
@@ -30,25 +32,28 @@ import com.liferay.portal.kernel.model.UserGroupRole;
 import com.liferay.portal.kernel.model.role.RoleConstants;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.ResourceActionsUtil;
-import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.ResourceLocalService;
 import com.liferay.portal.kernel.service.RoleLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
-import com.liferay.portal.kernel.service.UserGroupRoleLocalService;
 import com.liferay.portal.kernel.service.UserLocalService;
+import com.liferay.portal.kernel.service.persistence.CompanyPersistence;
+import com.liferay.portal.kernel.service.persistence.RolePersistence;
+import com.liferay.portal.kernel.service.persistence.UserGroupRolePersistence;
 import com.liferay.portal.kernel.service.persistence.UserPersistence;
 import com.liferay.portal.kernel.util.EscapableLocalizableFunction;
 import com.liferay.portal.kernel.util.EscapableObject;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
-import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.PrefsPropsUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.kernel.uuid.PortalUUIDUtil;
 import com.liferay.portal.security.membershippolicy.SiteMembershipPolicyUtil;
 import com.liferay.portal.service.base.MembershipRequestLocalServiceBaseImpl;
 import com.liferay.portal.util.ResourcePermissionUtil;
+
+import jakarta.mail.internet.InternetAddress;
 
 import java.io.IOException;
 
@@ -57,8 +62,6 @@ import java.util.Date;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-
-import javax.mail.internet.InternetAddress;
 
 /**
  * @author Jorge Ferrer
@@ -72,31 +75,52 @@ public class MembershipRequestLocalServiceImpl
 			ServiceContext serviceContext)
 		throws PortalException {
 
-		validateSiteMembershipPolicy(userId, groupId);
+		String key = userId + StringPool.UNDERLINE + groupId;
 
-		User user = _userPersistence.findByPrimaryKey(userId);
+		boolean locked = LockManagerUtil.isLocked(
+			MembershipRequest.class.getName(), key);
 
-		validate(comments);
+		if (locked) {
+			throw new PortalException(
+				StringBundler.concat(
+					"Pending membership request already exists for group ",
+					groupId, " and user ", userId));
+		}
 
-		long membershipRequestId = counterLocalService.increment();
+		try {
+			LockManagerUtil.lock(
+				MembershipRequest.class.getName(), key,
+				PortalUUIDUtil.generate());
 
-		MembershipRequest membershipRequest =
-			membershipRequestPersistence.create(membershipRequestId);
+			validateSiteMembershipPolicy(userId, groupId);
 
-		membershipRequest.setGroupId(groupId);
-		membershipRequest.setCompanyId(user.getCompanyId());
-		membershipRequest.setUserId(userId);
-		membershipRequest.setCreateDate(new Date());
-		membershipRequest.setComments(comments);
-		membershipRequest.setStatusId(
-			MembershipRequestConstants.STATUS_PENDING);
+			User user = _userPersistence.findByPrimaryKey(userId);
 
-		membershipRequest = membershipRequestPersistence.update(
-			membershipRequest);
+			validate(comments);
 
-		notifyGroupAdministrators(membershipRequest, serviceContext);
+			long membershipRequestId = counterLocalService.increment();
 
-		return membershipRequest;
+			MembershipRequest membershipRequest =
+				membershipRequestPersistence.create(membershipRequestId);
+
+			membershipRequest.setGroupId(groupId);
+			membershipRequest.setCompanyId(user.getCompanyId());
+			membershipRequest.setUserId(userId);
+			membershipRequest.setCreateDate(new Date());
+			membershipRequest.setComments(comments);
+			membershipRequest.setStatusId(
+				MembershipRequestConstants.STATUS_PENDING);
+
+			membershipRequest = membershipRequestPersistence.update(
+				membershipRequest);
+
+			notifyGroupAdministrators(membershipRequest, serviceContext);
+
+			return membershipRequest;
+		}
+		finally {
+			LockManagerUtil.unlock(MembershipRequest.class.getName(), key);
+		}
 	}
 
 	@Override
@@ -144,11 +168,7 @@ public class MembershipRequestLocalServiceImpl
 		List<MembershipRequest> membershipRequests = getMembershipRequests(
 			userId, groupId, statusId);
 
-		if (membershipRequests.isEmpty()) {
-			return false;
-		}
-
-		return true;
+		return !membershipRequests.isEmpty();
 	}
 
 	@Override
@@ -259,11 +279,11 @@ public class MembershipRequestLocalServiceImpl
 				roleName.equals(RoleConstants.ORGANIZATION_ADMINISTRATOR) ||
 				roleName.equals(RoleConstants.ORGANIZATION_OWNER)) {
 
-				Role curRole = _roleLocalService.getRole(
+				Role curRole = _rolePersistence.findByC_N(
 					group.getCompanyId(), roleName);
 
 				List<UserGroupRole> userGroupRoles =
-					_userGroupRoleLocalService.getUserGroupRolesByGroupAndRole(
+					_userGroupRolePersistence.findByG_R(
 						groupId, curRole.getRoleId());
 
 				for (UserGroupRole userGroupRole : userGroupRoles) {
@@ -281,19 +301,20 @@ public class MembershipRequestLocalServiceImpl
 				currentIndividualActions, currentGroupActions,
 				currentGroupTemplateActions, currentCompanyActions);
 
-			if (currentIndividualActions.contains(ActionKeys.ASSIGN_MEMBERS) ||
-				currentGroupActions.contains(ActionKeys.ASSIGN_MEMBERS) ||
-				currentGroupTemplateActions.contains(
-					ActionKeys.ASSIGN_MEMBERS) ||
-				currentCompanyActions.contains(ActionKeys.ASSIGN_MEMBERS)) {
+			if (!currentIndividualActions.contains(ActionKeys.ASSIGN_MEMBERS) &&
+				!currentGroupActions.contains(ActionKeys.ASSIGN_MEMBERS) &&
+				!currentGroupTemplateActions.contains(
+					ActionKeys.ASSIGN_MEMBERS) &&
+				!currentCompanyActions.contains(ActionKeys.ASSIGN_MEMBERS)) {
 
-				List<UserGroupRole> currentUserGroupRoles =
-					_userGroupRoleLocalService.getUserGroupRolesByGroupAndRole(
-						groupId, role.getRoleId());
+				continue;
+			}
 
-				for (UserGroupRole userGroupRole : currentUserGroupRoles) {
-					userIds.add(userGroupRole.getUserId());
-				}
+			List<UserGroupRole> currentUserGroupRoles =
+				_userGroupRolePersistence.findByG_R(groupId, role.getRoleId());
+
+			for (UserGroupRole userGroupRole : currentUserGroupRoles) {
+				userIds.add(userGroupRole.getUserId());
 			}
 		}
 
@@ -343,7 +364,8 @@ public class MembershipRequestLocalServiceImpl
 			statusKey = "pending";
 		}
 
-		Company company = _companyLocalService.getCompany(user.getCompanyId());
+		Company company = _companyPersistence.findByPrimaryKey(
+			user.getCompanyId());
 
 		MailTemplateContextBuilder mailTemplateContextBuilder =
 			MailTemplateFactoryUtil.createMailTemplateContextBuilder();
@@ -440,9 +462,6 @@ public class MembershipRequestLocalServiceImpl
 		}
 	}
 
-	@BeanReference(type = MailService.class)
-	protected MailService mailService;
-
 	private void _sendNotificationEmail(
 			String fromAddress, String fromName, String toAddress, User toUser,
 			String subject, String body, MembershipRequest membershipRequest,
@@ -465,23 +484,23 @@ public class MembershipRequestLocalServiceImpl
 					toUser.getLocale(), mailTemplateContext),
 				true);
 
-			Company company = _companyLocalService.getCompany(
+			Company company = _companyPersistence.findByPrimaryKey(
 				toUser.getCompanyId());
 
 			mailMessage.setMessageId(
-				PortalUtil.getMailId(
+				MailServiceUtil.getMailId(
 					company.getMx(), "membership_request",
 					membershipRequest.getMembershipRequestId()));
 
-			mailService.sendEmail(mailMessage);
+			MailServiceUtil.sendEmail(mailMessage);
 		}
 		catch (IOException ioException) {
 			throw new SystemException(ioException);
 		}
 	}
 
-	@BeanReference(type = CompanyLocalService.class)
-	private CompanyLocalService _companyLocalService;
+	@BeanReference(type = CompanyPersistence.class)
+	private CompanyPersistence _companyPersistence;
 
 	@BeanReference(type = GroupLocalService.class)
 	private GroupLocalService _groupLocalService;
@@ -492,8 +511,11 @@ public class MembershipRequestLocalServiceImpl
 	@BeanReference(type = RoleLocalService.class)
 	private RoleLocalService _roleLocalService;
 
-	@BeanReference(type = UserGroupRoleLocalService.class)
-	private UserGroupRoleLocalService _userGroupRoleLocalService;
+	@BeanReference(type = RolePersistence.class)
+	private RolePersistence _rolePersistence;
+
+	@BeanReference(type = UserGroupRolePersistence.class)
+	private UserGroupRolePersistence _userGroupRolePersistence;
 
 	@BeanReference(type = UserLocalService.class)
 	private UserLocalService _userLocalService;

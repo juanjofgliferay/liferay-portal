@@ -27,7 +27,7 @@
 </tr>
 <tr>
 	<td>RELATED_ASSETS_SELECT</td>
-	<td>//div[@class= 'dropdown']//button[contains(@type, 'button') and contains(., 'Select')]</td>
+	<td>//button[contains(@class,'btn-secondary') and @aria-label='Select Items']</td>
 	<td></td>
 </tr>
 <tr>
@@ -86,7 +86,7 @@
 
 <tr>
 	<td>MESSAGE_BOARDS_THREAD_TITLE</td>
-	<td>//h4[@title='${key_assetTitle}']</td>
+	<td>//div[@title='${key_assetTitle}']</td>
 	<td></td>
 </tr>
 <tr>

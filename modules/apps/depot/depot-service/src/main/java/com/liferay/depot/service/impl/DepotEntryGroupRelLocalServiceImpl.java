@@ -5,11 +5,15 @@
 
 package com.liferay.depot.service.impl;
 
+import com.liferay.depot.constants.DepotConstants;
+import com.liferay.depot.exception.DepotEntryGroupRelToGroupException;
 import com.liferay.depot.model.DepotEntry;
 import com.liferay.depot.model.DepotEntryGroupRel;
 import com.liferay.depot.service.base.DepotEntryGroupRelLocalServiceBaseImpl;
+import com.liferay.depot.service.persistence.DepotEntryPersistence;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.model.SystemEventConstants;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
@@ -18,6 +22,7 @@ import com.liferay.portal.kernel.systemevent.SystemEvent;
 import java.util.List;
 
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Brian Wing Shun Chan
@@ -31,8 +36,9 @@ public class DepotEntryGroupRelLocalServiceImpl
 
 	@Override
 	public DepotEntryGroupRel addDepotEntryGroupRel(
-		boolean ddmStructuresAvailable, long depotEntryId, long toGroupId,
-		boolean searchable) {
+			boolean ddmStructuresAvailable, long depotEntryId, long toGroupId,
+			boolean searchable)
+		throws PortalException {
 
 		DepotEntryGroupRel depotEntryGroupRel =
 			depotEntryGroupRelPersistence.fetchByD_TGI(depotEntryId, toGroupId);
@@ -40,6 +46,11 @@ public class DepotEntryGroupRelLocalServiceImpl
 		if (depotEntryGroupRel != null) {
 			return depotEntryGroupRel;
 		}
+
+		DepotEntry depotEntry = _depotEntryPersistence.findByPrimaryKey(
+			depotEntryId);
+
+		_validateToGroup(depotEntry, toGroupId);
 
 		depotEntryGroupRel = depotEntryGroupRelPersistence.create(
 			counterLocalService.increment());
@@ -49,6 +60,7 @@ public class DepotEntryGroupRelLocalServiceImpl
 		depotEntryGroupRel.setDepotEntryId(depotEntryId);
 		depotEntryGroupRel.setSearchable(searchable);
 		depotEntryGroupRel.setToGroupId(toGroupId);
+		depotEntryGroupRel.setType(depotEntry.getType());
 
 		ServiceContext serviceContext =
 			ServiceContextThreadLocal.getServiceContext();
@@ -62,14 +74,16 @@ public class DepotEntryGroupRelLocalServiceImpl
 
 	@Override
 	public DepotEntryGroupRel addDepotEntryGroupRel(
-		long depotEntryId, long toGroupId) {
+			long depotEntryId, long toGroupId)
+		throws PortalException {
 
 		return addDepotEntryGroupRel(depotEntryId, toGroupId, true);
 	}
 
 	@Override
 	public DepotEntryGroupRel addDepotEntryGroupRel(
-		long depotEntryId, long toGroupId, boolean searchable) {
+			long depotEntryId, long toGroupId, boolean searchable)
+		throws PortalException {
 
 		return addDepotEntryGroupRel(
 			false, depotEntryId, toGroupId, searchable);
@@ -78,9 +92,19 @@ public class DepotEntryGroupRelLocalServiceImpl
 	@Override
 	@SystemEvent(type = SystemEventConstants.TYPE_DELETE)
 	public DepotEntryGroupRel deleteDepotEntryGroupRel(
-		DepotEntryGroupRel depotEntryGroupRel) {
+			DepotEntryGroupRel depotEntryGroupRel)
+		throws PortalException {
 
 		return super.deleteDepotEntryGroupRel(depotEntryGroupRel);
+	}
+
+	@Override
+	public DepotEntryGroupRel deleteDepotEntryGroupRel(
+			long depotEntryGroupRelId)
+		throws PortalException {
+
+		return depotEntryGroupRelLocalService.deleteDepotEntryGroupRel(
+			getDepotEntryGroupRel(depotEntryGroupRelId));
 	}
 
 	@Override
@@ -106,10 +130,14 @@ public class DepotEntryGroupRelLocalServiceImpl
 
 	@Override
 	public List<DepotEntryGroupRel> getDepotEntryGroupRels(
-		long groupId, int start, int end) {
+		long groupId, int type, int start, int end) {
 
-		return depotEntryGroupRelPersistence.findByToGroupId(
-			groupId, start, end);
+		if (type == DepotConstants.TYPE_ANY) {
+			return depotEntryGroupRelPersistence.findByToGroupId(groupId);
+		}
+
+		return depotEntryGroupRelPersistence.findByTGI_T(
+			groupId, type, start, end);
 	}
 
 	@Override
@@ -119,8 +147,12 @@ public class DepotEntryGroupRelLocalServiceImpl
 	}
 
 	@Override
-	public int getDepotEntryGroupRelsCount(long groupId) {
-		return depotEntryGroupRelPersistence.countByToGroupId(groupId);
+	public int getDepotEntryGroupRelsCount(long groupId, int type) {
+		if (type == DepotConstants.TYPE_ANY) {
+			return depotEntryGroupRelPersistence.countByToGroupId(groupId);
+		}
+
+		return depotEntryGroupRelPersistence.countByTGI_T(groupId, type);
 	}
 
 	@Override
@@ -161,5 +193,36 @@ public class DepotEntryGroupRelLocalServiceImpl
 
 		return depotEntryGroupRelPersistence.update(depotEntryGroupRel);
 	}
+
+	private void _validateToGroup(DepotEntry depotEntry, long toGroupId)
+		throws PortalException {
+
+		if (!FeatureFlagManagerUtil.isEnabled(
+				depotEntry.getCompanyId(), "LPD-57283")) {
+
+			return;
+		}
+
+		DepotEntry toGroupDepotEntry = _depotEntryPersistence.fetchByGroupId(
+			toGroupId);
+
+		if (toGroupDepotEntry == null) {
+			return;
+		}
+
+		if (((depotEntry.getType() == DepotConstants.TYPE_ASSET_LIBRARY) ||
+			 (depotEntry.getType() == DepotConstants.TYPE_SPACE)) &&
+			(toGroupDepotEntry.getType() ==
+				DepotConstants.TYPE_DESIGN_LIBRARY)) {
+
+			return;
+		}
+
+		throw new DepotEntryGroupRelToGroupException.MustAcceptDepotEntryType(
+			depotEntry.getType(), toGroupId);
+	}
+
+	@Reference
+	private DepotEntryPersistence _depotEntryPersistence;
 
 }

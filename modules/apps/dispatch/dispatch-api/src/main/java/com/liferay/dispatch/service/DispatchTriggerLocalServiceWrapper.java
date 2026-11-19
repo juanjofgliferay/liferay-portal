@@ -317,6 +317,17 @@ public class DispatchTriggerLocalServiceWrapper
 		return _dispatchTriggerLocalService.getActionableDynamicQuery();
 	}
 
+	@Override
+	public java.util.List<com.liferay.dispatch.model.DispatchTrigger>
+		getActiveDispatchTriggers(
+			java.util.List
+				<com.liferay.dispatch.executor.DispatchTaskClusterMode>
+					dispatchTaskClusterModes) {
+
+		return _dispatchTriggerLocalService.getActiveDispatchTriggers(
+			dispatchTaskClusterModes);
+	}
+
 	/**
 	 * Returns the dispatch trigger with the primary key.
 	 *
@@ -359,17 +370,6 @@ public class DispatchTriggerLocalServiceWrapper
 
 		return _dispatchTriggerLocalService.
 			getDispatchTriggerByUuidAndCompanyId(uuid, companyId);
-	}
-
-	@Override
-	public java.util.List<com.liferay.dispatch.model.DispatchTrigger>
-		getDispatchTriggers(
-			boolean active,
-			com.liferay.dispatch.executor.DispatchTaskClusterMode
-				dispatchTaskClusterMode) {
-
-		return _dispatchTriggerLocalService.getDispatchTriggers(
-			active, dispatchTaskClusterMode);
 	}
 
 	/**
@@ -459,29 +459,6 @@ public class DispatchTriggerLocalServiceWrapper
 		return _dispatchTriggerLocalService.getPersistedModel(primaryKeyObj);
 	}
 
-	@Override
-	public java.util.Date getPreviousFireDate(long dispatchTriggerId)
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return _dispatchTriggerLocalService.getPreviousFireDate(
-			dispatchTriggerId);
-	}
-
-	@Override
-	public java.util.List<com.liferay.dispatch.model.DispatchTrigger>
-		getUserDispatchTriggers(
-			long companyId, long userId, int start, int end) {
-
-		return _dispatchTriggerLocalService.getUserDispatchTriggers(
-			companyId, userId, start, end);
-	}
-
-	@Override
-	public int getUserDispatchTriggersCount(long companyId, long userId) {
-		return _dispatchTriggerLocalService.getUserDispatchTriggersCount(
-			companyId, userId);
-	}
-
 	/**
 	 * Updates the dispatch trigger in the database or adds it if it does not yet exist. Also notifies the appropriate model listeners.
 	 *
@@ -550,3 +527,4 @@ public class DispatchTriggerLocalServiceWrapper
 	private DispatchTriggerLocalService _dispatchTriggerLocalService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1429302899

@@ -24,36 +24,13 @@ public class IndexMetadataFactoryUtil {
 			throw new NullPointerException("Column names are missing");
 		}
 
-		StringBundler sb = new StringBundler(4 + (columnNames.length * 2));
-
-		sb.append(tableName);
-		sb.append(StringPool.SPACE);
-		sb.append(StringPool.OPEN_PARENTHESIS);
-
-		for (String columnName : columnNames) {
-			sb.append(columnName);
-			sb.append(StringPool.COMMA_AND_SPACE);
-		}
-
-		sb.setIndex(sb.index() - 1);
-
-		sb.append(StringPool.CLOSE_PARENTHESIS);
-		sb.append(StringPool.SEMICOLON);
-
-		String specification = sb.toString();
-
-		String specificationHash = StringUtil.toHexString(
-			specification.hashCode());
-
-		specificationHash = StringUtil.toUpperCase(specificationHash);
-
 		return new IndexMetadata(
-			_INDEX_NAME_PREFIX.concat(specificationHash), tableName, unique,
+			createIndexName(tableName, columnNames), tableName, unique,
 			columnNames);
 	}
 
 	public static IndexMetadata createIndexMetadata(String createSQL) {
-		boolean unique = createSQL.contains("unique");
+		boolean unique = createSQL.contains("create unique index ");
 
 		int start = createSQL.indexOf("IX_");
 
@@ -63,6 +40,11 @@ public class IndexMetadataFactoryUtil {
 		}
 
 		int end = createSQL.indexOf(CharPool.SPACE, start + 3);
+
+		if (end < 0) {
+			throw new IllegalArgumentException(
+				"Unable to find index name end " + createSQL);
+		}
 
 		String indexName = createSQL.substring(start, end);
 
@@ -104,6 +86,35 @@ public class IndexMetadataFactoryUtil {
 			createSQL.substring(start, end), StringPool.COMMA_AND_SPACE);
 
 		return new IndexMetadata(indexName, tableName, unique, columnNames);
+	}
+
+	public static String createIndexName(
+		String tableName, String... columnNames) {
+
+		StringBundler sb = new StringBundler(4 + (columnNames.length * 2));
+
+		sb.append(tableName);
+		sb.append(StringPool.SPACE);
+		sb.append(StringPool.OPEN_PARENTHESIS);
+
+		for (String columnName : columnNames) {
+			sb.append(columnName);
+			sb.append(StringPool.COMMA_AND_SPACE);
+		}
+
+		sb.setIndex(sb.index() - 1);
+
+		sb.append(StringPool.CLOSE_PARENTHESIS);
+		sb.append(StringPool.SEMICOLON);
+
+		String specification = sb.toString();
+
+		String specificationHash = StringUtil.toHexString(
+			specification.hashCode());
+
+		specificationHash = StringUtil.toUpperCase(specificationHash);
+
+		return _INDEX_NAME_PREFIX.concat(specificationHash);
 	}
 
 	private static final String _INDEX_NAME_PREFIX = "IX_";

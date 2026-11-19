@@ -1,0 +1,85 @@
+backup:
+    restore:
+        sanitizationScripts: {}
+clusterSecretStoreName: ""
+cmk: {}
+commonTags: {}
+database: {}
+databaseAppPassword:
+    enabled: true
+enabled: true
+endpoints: {}
+environmentId: ""
+gateway:
+    accessControl:
+        allowedCIDRs: []
+        enabled: false
+    annotations: {}
+    className: ""
+    clientTrafficPolicySpec: {}
+    name: ""
+license:
+    externalSecretKey: ""
+    externalSecretProperty: license.xml
+    targetSecretName: ""
+overlayAccess: {}
+overlayBucket:
+    commonTags: {}
+    enabled: false
+    forceDestroy: false
+    orphanOnDelete: false
+persistence:
+    storageClassName: ""
+projectId: ""
+search:
+    elasticsearch:
+        config: {}
+        env:
+            ES_JAVA_OPTS: -Xms4g -Xmx4g
+        exporter:
+            enabled: false
+            image:
+                pullPolicy: IfNotPresent
+                repository: quay.io/prometheuscommunity/elasticsearch-exporter
+                tag: v1.10.0
+            livenessProbe:
+                failureThreshold: 3
+                initialDelaySeconds: 10
+                periodSeconds: 30
+                tcpSocket:
+                    port: metrics
+                timeoutSeconds: 5
+            readinessProbe:
+                failureThreshold: 3
+                httpGet:
+                    path: /healthz
+                    port: metrics
+                initialDelaySeconds: 5
+                periodSeconds: 10
+                timeoutSeconds: 5
+            resources:
+                limits:
+                    cpu: 300m
+                    memory: 384Mi
+                requests:
+                    cpu: 50m
+                    memory: 128Mi
+        extraInitContainers: []
+        extraVolumeMounts: []
+        extraVolumes: []
+        nodeCount: 1
+        resources:
+            limits:
+                cpu: 1000m
+                memory: 8Gi
+            requests:
+                cpu: 500m
+                memory: 4Gi
+        version: 8.19.11
+        volumeSize: 10Gi
+    engine: ""
+    opensearch: {}
+    supportedEngines:
+        -   elasticsearch
+secretNames: []
+storage: {}

@@ -11,6 +11,7 @@ import com.liferay.petra.string.StringPool;
 import com.liferay.portal.events.EventsProcessorUtil;
 import com.liferay.portal.kernel.dao.jdbc.DataSourceFactoryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.instance.PortalInstancePool;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
@@ -25,14 +26,18 @@ import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PropertiesParamUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
+import com.liferay.portal.kernel.util.PropsUtil;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.SystemProperties;
 import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.util.PortalInstances;
-import com.liferay.portal.util.PropsUtil;
-import com.liferay.portal.util.PropsValues;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 
 import java.io.IOException;
 
@@ -45,10 +50,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
 
 import javax.sql.DataSource;
 
@@ -72,7 +73,7 @@ public class SetupWizardUtil {
 	public static String getDefaultTimeZoneId() {
 		try {
 			Company company = CompanyLocalServiceUtil.getCompanyById(
-				PortalInstances.getDefaultCompanyId());
+				PortalInstancePool.getDefaultCompanyId());
 
 			User guestUser = company.getGuestUser();
 
@@ -143,7 +144,7 @@ public class SetupWizardUtil {
 			httpServletRequest, "companyTimeZoneId", getDefaultTimeZoneId());
 
 		CompanyLocalServiceUtil.updateDisplay(
-			PortalInstances.getDefaultCompanyId(), languageId, timeZoneId);
+			PortalInstancePool.getDefaultCompanyId(), languageId, timeZoneId);
 
 		_updateLanguage(
 			httpServletRequest, httpServletResponse, languageId, locale);
@@ -202,9 +203,11 @@ public class SetupWizardUtil {
 		UnicodeProperties unicodeProperties) {
 
 		for (Map.Entry<String, String> entry : unicodeProperties.entrySet()) {
-			if (Validator.isNull(entry.getValue())) {
-				unicodeProperties.setProperty(entry.getKey(), _NULL_HOLDER);
+			if (Validator.isNotNull(entry.getValue())) {
+				continue;
 			}
+
+			unicodeProperties.setProperty(entry.getKey(), _NULL_HOLDER);
 		}
 
 		return StringUtil.removeSubstring(
@@ -235,9 +238,8 @@ public class SetupWizardUtil {
 	}
 
 	private static void _processDatabaseProperties(
-			HttpServletRequest httpServletRequest,
-			UnicodeProperties unicodeProperties, boolean databaseConfigured)
-		throws Exception {
+		HttpServletRequest httpServletRequest,
+		UnicodeProperties unicodeProperties, boolean databaseConfigured) {
 
 		boolean defaultDatabase = ParamUtil.getBoolean(
 			httpServletRequest, "defaultDatabase", true);
@@ -251,9 +253,8 @@ public class SetupWizardUtil {
 	}
 
 	private static void _processOtherProperties(
-			HttpServletRequest httpServletRequest,
-			UnicodeProperties unicodeProperties)
-		throws Exception {
+		HttpServletRequest httpServletRequest,
+		UnicodeProperties unicodeProperties) {
 
 		_processProperty(
 			httpServletRequest, unicodeProperties, "adminFirstName",
@@ -269,10 +270,9 @@ public class SetupWizardUtil {
 	}
 
 	private static void _processProperty(
-			HttpServletRequest httpServletRequest,
-			UnicodeProperties unicodeProperties, String parameterName,
-			String propertyKey, String defaultValue)
-		throws Exception {
+		HttpServletRequest httpServletRequest,
+		UnicodeProperties unicodeProperties, String parameterName,
+		String propertyKey, String defaultValue) {
 
 		String value = ParamUtil.getString(
 			httpServletRequest, parameterName, defaultValue);
@@ -340,21 +340,14 @@ public class SetupWizardUtil {
 
 		boolean passwordReset = false;
 
-		try {
-			PasswordPolicy passwordPolicy =
-				PasswordPolicyLocalServiceUtil.getDefaultPasswordPolicy(
-					company.getCompanyId());
+		PasswordPolicy passwordPolicy =
+			PasswordPolicyLocalServiceUtil.fetchDefaultPasswordPolicy(
+				company.getCompanyId());
 
-			if ((passwordPolicy != null) && passwordPolicy.isChangeable() &&
-				passwordPolicy.isChangeRequired()) {
+		if ((passwordPolicy != null) && passwordPolicy.isChangeable() &&
+			passwordPolicy.isChangeRequired()) {
 
-				passwordReset = true;
-			}
-		}
-		catch (PortalException portalException) {
-			if (_log.isWarnEnabled()) {
-				_log.warn(portalException);
-			}
+			passwordReset = true;
 		}
 
 		User user = SetupWizardSampleDataUtil.updateAdminUser(
@@ -369,8 +362,6 @@ public class SetupWizardUtil {
 		int index = emailAddress.indexOf(CharPool.AT);
 
 		String companyDefaultWebId = emailAddress.substring(index + 1);
-
-		PropsUtil.set(PropsKeys.COMPANY_DEFAULT_WEB_ID, companyDefaultWebId);
 
 		unicodeProperties.put(
 			PropsKeys.COMPANY_DEFAULT_WEB_ID, companyDefaultWebId);
@@ -406,7 +397,7 @@ public class SetupWizardUtil {
 		throws Exception {
 
 		Company company = CompanyLocalServiceUtil.getCompanyById(
-			PortalInstances.getDefaultCompanyId());
+			PortalInstancePool.getDefaultCompanyId());
 
 		String languageId = ParamUtil.getString(
 			httpServletRequest, "companyLocale", getDefaultLanguageId());
@@ -465,6 +456,8 @@ public class SetupWizardUtil {
 		company.setMx(companyDefaultWebId);
 
 		company = CompanyLocalServiceUtil.updateCompany(company);
+
+		PropsUtil.set(PropsKeys.COMPANY_DEFAULT_WEB_ID, companyDefaultWebId);
 
 		PortalInstances.initCompany(company);
 

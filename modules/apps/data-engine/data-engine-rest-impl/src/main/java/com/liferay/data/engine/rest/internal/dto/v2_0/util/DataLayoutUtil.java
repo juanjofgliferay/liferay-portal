@@ -72,57 +72,6 @@ public class DataLayoutUtil {
 		return ddmFormLayoutSerializerSerializeResponse.getContent();
 	}
 
-	public static DataLayout toDataLayout(
-			DDMFormFieldTypeServicesRegistry ddmFormFieldTypeServicesRegistry,
-			DDMFormLayout ddmFormLayout,
-			SPIDDMFormRuleConverter spiDDMFormRuleConverter)
-		throws Exception {
-
-		return new DataLayout() {
-			{
-				dataLayoutFields = _toDataLayoutFields(
-					ddmFormLayout.getDDMFormFields(),
-					ddmFormFieldTypeServicesRegistry);
-				dataLayoutPages = _toDataLayoutPages(
-					ddmFormLayout.getDDMFormLayoutPages());
-				dataRules = _toDataRules(
-					ddmFormLayout.getDDMFormRules(), spiDDMFormRuleConverter);
-				paginationMode = ddmFormLayout.getPaginationMode();
-			}
-		};
-	}
-
-	public static DataLayout toDataLayout(
-			DDMFormFieldTypeServicesRegistry ddmFormFieldTypeServicesRegistry,
-			DDMStructureLayout ddmStructureLayout,
-			SPIDDMFormRuleConverter spiDDMFormRuleConverter)
-		throws Exception {
-
-		if (ddmStructureLayout == null) {
-			return null;
-		}
-
-		DataLayout dataLayout = toDataLayout(
-			ddmFormFieldTypeServicesRegistry,
-			ddmStructureLayout.getDDMFormLayout(), spiDDMFormRuleConverter);
-
-		dataLayout.setDateCreated(ddmStructureLayout.getCreateDate());
-		dataLayout.setDataDefinitionId(ddmStructureLayout.getDDMStructureId());
-		dataLayout.setDataLayoutKey(ddmStructureLayout.getStructureLayoutKey());
-		dataLayout.setDateModified(ddmStructureLayout.getModifiedDate());
-		dataLayout.setDescription(
-			LocalizedValueUtil.toStringObjectMap(
-				ddmStructureLayout.getDescriptionMap()));
-		dataLayout.setId(ddmStructureLayout.getStructureLayoutId());
-		dataLayout.setName(
-			LocalizedValueUtil.toStringObjectMap(
-				ddmStructureLayout.getNameMap()));
-		dataLayout.setSiteId(ddmStructureLayout.getGroupId());
-		dataLayout.setUserId(ddmStructureLayout.getUserId());
-
-		return dataLayout;
-	}
-
 	public static DDMFormLayout toDDMFormLayout(
 			DataLayout dataLayout, DDMForm ddmForm,
 			DDMFormFieldTypeServicesRegistry ddmFormFieldTypeServicesRegistry,
@@ -150,6 +99,61 @@ public class DataLayoutUtil {
 		return ddmFormLayout;
 	}
 
+	public static DataLayout toDataLayout(
+			DDMFormFieldTypeServicesRegistry ddmFormFieldTypeServicesRegistry,
+			DDMFormLayout ddmFormLayout,
+			SPIDDMFormRuleConverter spiDDMFormRuleConverter)
+		throws Exception {
+
+		return new DataLayout() {
+			{
+				setDataLayoutFields(
+					() -> _toDataLayoutFields(
+						ddmFormLayout.getDDMFormFields(),
+						ddmFormFieldTypeServicesRegistry));
+				setDataLayoutPages(
+					() -> _toDataLayoutPages(
+						ddmFormLayout.getDDMFormLayoutPages()));
+				setDataRules(
+					() -> _toDataRules(
+						ddmFormLayout.getDDMFormRules(),
+						spiDDMFormRuleConverter));
+				setPaginationMode(ddmFormLayout::getPaginationMode);
+			}
+		};
+	}
+
+	public static DataLayout toDataLayout(
+			DDMFormFieldTypeServicesRegistry ddmFormFieldTypeServicesRegistry,
+			DDMStructureLayout ddmStructureLayout,
+			SPIDDMFormRuleConverter spiDDMFormRuleConverter)
+		throws Exception {
+
+		if (ddmStructureLayout == null) {
+			return null;
+		}
+
+		DataLayout dataLayout = toDataLayout(
+			ddmFormFieldTypeServicesRegistry,
+			ddmStructureLayout.getDDMFormLayout(), spiDDMFormRuleConverter);
+
+		dataLayout.setDateCreated(ddmStructureLayout::getCreateDate);
+		dataLayout.setDataDefinitionId(ddmStructureLayout::getDDMStructureId);
+		dataLayout.setDataLayoutKey(ddmStructureLayout::getStructureLayoutKey);
+		dataLayout.setDateModified(ddmStructureLayout::getModifiedDate);
+		dataLayout.setDescription(
+			() -> LocalizedValueUtil.toStringObjectMap(
+				ddmStructureLayout.getDescriptionMap()));
+		dataLayout.setId(ddmStructureLayout::getStructureLayoutId);
+		dataLayout.setName(
+			() -> LocalizedValueUtil.toStringObjectMap(
+				ddmStructureLayout.getNameMap()));
+		dataLayout.setSiteId(ddmStructureLayout::getGroupId);
+		dataLayout.setUserId(ddmStructureLayout::getUserId);
+
+		return dataLayout;
+	}
+
 	private static JSONObject _serializeRule(DataRule dataRule)
 		throws JSONException {
 
@@ -167,163 +171,6 @@ public class DataLayoutUtil {
 			"name",
 			JSONFactoryUtil.createJSONObject(gson.toJson(dataRule.getName()))
 		);
-	}
-
-	private static DataLayoutColumn _toDataLayoutColumn(
-		DDMFormLayoutColumn ddmFormLayoutColumn) {
-
-		return new DataLayoutColumn() {
-			{
-				columnSize = ddmFormLayoutColumn.getSize();
-				fieldNames = ArrayUtil.toStringArray(
-					ddmFormLayoutColumn.getDDMFormFieldNames());
-			}
-		};
-	}
-
-	private static DataLayoutColumn[] _toDataLayoutColumns(
-		List<DDMFormLayoutColumn> ddmFormLayoutColumns) {
-
-		if (ListUtil.isEmpty(ddmFormLayoutColumns)) {
-			return new DataLayoutColumn[0];
-		}
-
-		return TransformUtil.transformToArray(
-			ddmFormLayoutColumns,
-			ddmFormLayoutColumn -> _toDataLayoutColumn(ddmFormLayoutColumn),
-			DataLayoutColumn.class);
-	}
-
-	private static Map<String, Object> _toDataLayoutFields(
-		List<DDMFormField> ddmFormFields,
-		DDMFormFieldTypeServicesRegistry ddmFormFieldTypeServicesRegistry) {
-
-		Map<String, Object> dataLayoutFields = new HashMap<>();
-
-		ddmFormFields.forEach(
-			ddmFormField -> {
-				Map<String, Object> properties = new HashMap<>();
-
-				Map<String, DDMFormField> settingsDDMFormFieldsMap =
-					SettingsDDMFormFieldsUtil.getSettingsDDMFormFields(
-						ddmFormFieldTypeServicesRegistry,
-						ddmFormField.getType());
-
-				List<DDMFormField> visualPropertiesDDMFormFields =
-					ListUtil.filter(
-						new ArrayList<>(settingsDDMFormFieldsMap.values()),
-						DDMFormField::isVisualProperty);
-
-				visualPropertiesDDMFormFields.forEach(
-					visualProperty -> {
-						if (visualProperty.isLocalizable()) {
-							properties.put(
-								visualProperty.getName(),
-								LocalizedValueUtil.toLocalizedValuesMap(
-									(LocalizedValue)ddmFormField.getProperty(
-										visualProperty.getName())));
-						}
-						else {
-							properties.put(
-								visualProperty.getName(),
-								ddmFormField.getProperty(
-									visualProperty.getName()));
-						}
-					});
-
-				dataLayoutFields.put(ddmFormField.getName(), properties);
-			});
-
-		return dataLayoutFields;
-	}
-
-	private static DataLayoutPage _toDataLayoutPage(
-		DDMFormLayoutPage ddmFormLayoutPage) {
-
-		return new DataLayoutPage() {
-			{
-				dataLayoutRows = _toDataLayoutRows(
-					ddmFormLayoutPage.getDDMFormLayoutRows());
-				description = LocalizedValueUtil.toLocalizedValuesMap(
-					ddmFormLayoutPage.getDescription());
-				title = LocalizedValueUtil.toLocalizedValuesMap(
-					ddmFormLayoutPage.getTitle());
-			}
-		};
-	}
-
-	private static DataLayoutPage[] _toDataLayoutPages(
-		List<DDMFormLayoutPage> ddmFormLayoutPages) {
-
-		if (ListUtil.isEmpty(ddmFormLayoutPages)) {
-			return new DataLayoutPage[0];
-		}
-
-		return TransformUtil.transformToArray(
-			ddmFormLayoutPages,
-			ddmFormLayoutPage -> _toDataLayoutPage(ddmFormLayoutPage),
-			DataLayoutPage.class);
-	}
-
-	private static DataLayoutRow _toDataLayoutRow(
-		DDMFormLayoutRow ddmFormLayoutRow) {
-
-		return new DataLayoutRow() {
-			{
-				dataLayoutColumns = _toDataLayoutColumns(
-					ddmFormLayoutRow.getDDMFormLayoutColumns());
-			}
-		};
-	}
-
-	private static DataLayoutRow[] _toDataLayoutRows(
-		List<DDMFormLayoutRow> ddmFormLayoutRows) {
-
-		return TransformUtil.transformToArray(
-			ddmFormLayoutRows,
-			ddmFormLayoutRow -> _toDataLayoutRow(ddmFormLayoutRow),
-			DataLayoutRow.class);
-	}
-
-	private static DataRule[] _toDataRules(
-		List<DDMFormRule> ddmFormRules,
-		SPIDDMFormRuleConverter spiDDMFormRuleConverter) {
-
-		DataRule[] dataRules = new DataRule[0];
-
-		for (SPIDDMFormRule spiDDMFormRule :
-				spiDDMFormRuleConverter.convert(ddmFormRules)) {
-
-			DataRule dataRule = new DataRule();
-
-			Gson gson = new Gson();
-
-			dataRule.setActions(
-				TransformUtil.transformToArray(
-					spiDDMFormRule.getSPIDDMFormRuleActions(),
-					spiDDMFormRuleAction -> gson.fromJson(
-						JSONFactoryUtil.looseSerializeDeep(
-							spiDDMFormRuleAction),
-						Map.class),
-					Map.class));
-			dataRule.setConditions(
-				TransformUtil.transformToArray(
-					spiDDMFormRule.getSPIDDMFormRuleConditions(),
-					spiDDMFormRuleCondition -> gson.fromJson(
-						JSONFactoryUtil.looseSerializeDeep(
-							spiDDMFormRuleCondition),
-						Map.class),
-					Map.class));
-
-			dataRule.setLogicalOperator(spiDDMFormRule.getLogicalOperator());
-			dataRule.setName(
-				LocalizedValueUtil.toLocalizedValuesMap(
-					spiDDMFormRule.getName()));
-
-			dataRules = ArrayUtil.append(dataRules, dataRule);
-		}
-
-		return dataRules;
 	}
 
 	private static List<DDMFormField> _toDDMFormFields(
@@ -453,6 +300,168 @@ public class DataLayoutUtil {
 		return TransformUtil.transformToList(
 			dataLayoutRows,
 			dataLayoutRow -> _toDDMFormLayoutRow(dataLayoutRow));
+	}
+
+	private static DataLayoutColumn _toDataLayoutColumn(
+		DDMFormLayoutColumn ddmFormLayoutColumn) {
+
+		return new DataLayoutColumn() {
+			{
+				setColumnSize(ddmFormLayoutColumn::getSize);
+				setFieldNames(
+					() -> ArrayUtil.toStringArray(
+						ddmFormLayoutColumn.getDDMFormFieldNames()));
+			}
+		};
+	}
+
+	private static DataLayoutColumn[] _toDataLayoutColumns(
+		List<DDMFormLayoutColumn> ddmFormLayoutColumns) {
+
+		if (ListUtil.isEmpty(ddmFormLayoutColumns)) {
+			return new DataLayoutColumn[0];
+		}
+
+		return TransformUtil.transformToArray(
+			ddmFormLayoutColumns,
+			ddmFormLayoutColumn -> _toDataLayoutColumn(ddmFormLayoutColumn),
+			DataLayoutColumn.class);
+	}
+
+	private static Map<String, Object> _toDataLayoutFields(
+		List<DDMFormField> ddmFormFields,
+		DDMFormFieldTypeServicesRegistry ddmFormFieldTypeServicesRegistry) {
+
+		Map<String, Object> dataLayoutFields = new HashMap<>();
+
+		ddmFormFields.forEach(
+			ddmFormField -> {
+				Map<String, Object> properties = new HashMap<>();
+
+				Map<String, DDMFormField> settingsDDMFormFieldsMap =
+					SettingsDDMFormFieldsUtil.getSettingsDDMFormFields(
+						ddmFormFieldTypeServicesRegistry,
+						ddmFormField.getType());
+
+				List<DDMFormField> visualPropertiesDDMFormFields =
+					ListUtil.filter(
+						new ArrayList<>(settingsDDMFormFieldsMap.values()),
+						DDMFormField::isVisualProperty);
+
+				visualPropertiesDDMFormFields.forEach(
+					visualProperty -> {
+						if (visualProperty.isLocalizable()) {
+							properties.put(
+								visualProperty.getName(),
+								LocalizedValueUtil.toLocalizedValuesMap(
+									(LocalizedValue)ddmFormField.getProperty(
+										visualProperty.getName())));
+						}
+						else {
+							properties.put(
+								visualProperty.getName(),
+								ddmFormField.getProperty(
+									visualProperty.getName()));
+						}
+					});
+
+				dataLayoutFields.put(ddmFormField.getName(), properties);
+			});
+
+		return dataLayoutFields;
+	}
+
+	private static DataLayoutPage _toDataLayoutPage(
+		DDMFormLayoutPage ddmFormLayoutPage) {
+
+		return new DataLayoutPage() {
+			{
+				setDataLayoutRows(
+					() -> _toDataLayoutRows(
+						ddmFormLayoutPage.getDDMFormLayoutRows()));
+				setDescription(
+					() -> LocalizedValueUtil.toLocalizedValuesMap(
+						ddmFormLayoutPage.getDescription()));
+				setTitle(
+					() -> LocalizedValueUtil.toLocalizedValuesMap(
+						ddmFormLayoutPage.getTitle()));
+			}
+		};
+	}
+
+	private static DataLayoutPage[] _toDataLayoutPages(
+		List<DDMFormLayoutPage> ddmFormLayoutPages) {
+
+		if (ListUtil.isEmpty(ddmFormLayoutPages)) {
+			return new DataLayoutPage[0];
+		}
+
+		return TransformUtil.transformToArray(
+			ddmFormLayoutPages,
+			ddmFormLayoutPage -> _toDataLayoutPage(ddmFormLayoutPage),
+			DataLayoutPage.class);
+	}
+
+	private static DataLayoutRow _toDataLayoutRow(
+		DDMFormLayoutRow ddmFormLayoutRow) {
+
+		return new DataLayoutRow() {
+			{
+				setDataLayoutColumns(
+					() -> _toDataLayoutColumns(
+						ddmFormLayoutRow.getDDMFormLayoutColumns()));
+			}
+		};
+	}
+
+	private static DataLayoutRow[] _toDataLayoutRows(
+		List<DDMFormLayoutRow> ddmFormLayoutRows) {
+
+		return TransformUtil.transformToArray(
+			ddmFormLayoutRows,
+			ddmFormLayoutRow -> _toDataLayoutRow(ddmFormLayoutRow),
+			DataLayoutRow.class);
+	}
+
+	private static DataRule[] _toDataRules(
+		List<DDMFormRule> ddmFormRules,
+		SPIDDMFormRuleConverter spiDDMFormRuleConverter) {
+
+		DataRule[] dataRules = new DataRule[0];
+
+		for (SPIDDMFormRule spiDDMFormRule :
+				spiDDMFormRuleConverter.convert(ddmFormRules)) {
+
+			DataRule dataRule = new DataRule();
+
+			Gson gson = new Gson();
+
+			dataRule.setActions(
+				() -> TransformUtil.transformToArray(
+					spiDDMFormRule.getSPIDDMFormRuleActions(),
+					spiDDMFormRuleAction -> gson.fromJson(
+						JSONFactoryUtil.looseSerializeDeep(
+							spiDDMFormRuleAction),
+						Map.class),
+					Map.class));
+			dataRule.setConditions(
+				() -> TransformUtil.transformToArray(
+					spiDDMFormRule.getSPIDDMFormRuleConditions(),
+					spiDDMFormRuleCondition -> gson.fromJson(
+						JSONFactoryUtil.looseSerializeDeep(
+							spiDDMFormRuleCondition),
+						Map.class),
+					Map.class));
+
+			dataRule.setLogicalOperator(spiDDMFormRule::getLogicalOperator);
+			dataRule.setName(
+				() -> LocalizedValueUtil.toLocalizedValuesMap(
+					spiDDMFormRule.getName()));
+
+			dataRules = ArrayUtil.append(dataRules, dataRule);
+		}
+
+		return dataRules;
 	}
 
 }

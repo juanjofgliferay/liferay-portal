@@ -7,10 +7,16 @@ package com.liferay.portal.security.pwd;
 
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.UserPasswordException;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.PasswordPolicy;
-import com.liferay.portal.kernel.security.ldap.LDAPSettingsUtil;
+import com.liferay.portal.kernel.module.service.Snapshot;
+import com.liferay.portal.kernel.security.fips.FIPSModeValidator;
 import com.liferay.portal.kernel.security.pwd.Toolkit;
-import com.liferay.portal.kernel.util.ServiceProxyFactory;
+
+import java.nio.charset.StandardCharsets;
+
+import java.security.MessageDigest;
 
 /**
  * @author Brian Wing Shun Chan
@@ -18,34 +24,50 @@ import com.liferay.portal.kernel.util.ServiceProxyFactory;
 public class PwdToolkitUtil {
 
 	public static String generate(PasswordPolicy passwordPolicy) {
-		return _toolkit.generate(passwordPolicy);
-	}
+		Toolkit toolkit = _toolkitSnapshot.get();
 
-	public static Toolkit getToolkit() {
-		return _toolkit;
+		return toolkit.generate(passwordPolicy);
 	}
 
 	public static void validate(
-			long companyId, long userId, String password1, String password2,
+			long userId, String password1, String password2,
 			PasswordPolicy passwordPolicy)
 		throws PortalException {
 
-		if (!password1.equals(password2)) {
+		if (!MessageDigest.isEqual(
+				password1.getBytes(StandardCharsets.UTF_8),
+				password2.getBytes(StandardCharsets.UTF_8))) {
+
 			throw new UserPasswordException.MustMatch(userId);
 		}
 
-		if (!LDAPSettingsUtil.isPasswordPolicyEnabled(companyId) &&
+		try {
+			FIPSModeValidator.validatePassword(password1);
+		}
+		catch (SecurityException securityException) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(securityException);
+			}
+
+			throw new UserPasswordException.MustBeLonger(
+				userId, FIPSModeValidator.PASSWORDS_MIN_LENGTH);
+		}
+
+		if ((passwordPolicy != null) &&
 			PwdToolkitUtilThreadLocal.isValidate()) {
 
-			_toolkit.validate(userId, password1, password2, passwordPolicy);
+			Toolkit toolkit = _toolkitSnapshot.get();
+
+			toolkit.validate(userId, password1, password2, passwordPolicy);
 		}
 	}
 
 	private PwdToolkitUtil() {
 	}
 
-	private static volatile Toolkit _toolkit =
-		ServiceProxyFactory.newServiceTrackedInstance(
-			Toolkit.class, PwdToolkitUtil.class, "_toolkit", false, true);
+	private static final Log _log = LogFactoryUtil.getLog(PwdToolkitUtil.class);
+
+	private static final Snapshot<Toolkit> _toolkitSnapshot = new Snapshot<>(
+		PwdToolkitUtil.class, Toolkit.class, null, true);
 
 }

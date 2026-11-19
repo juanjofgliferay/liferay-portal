@@ -17,17 +17,15 @@ import com.liferay.layout.util.structure.RowStyledLayoutStructureItem;
 import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
-import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ParamUtil;
-import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import java.util.Objects;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
+import java.util.Objects;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -37,7 +35,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + ContentPageEditorPortletKeys.CONTENT_PAGE_EDITOR_PORTLET,
+		"jakarta.portlet.name=" + ContentPageEditorPortletKeys.CONTENT_PAGE_EDITOR_PORTLET,
 		"mvc.command.name=/layout_content_page_editor/add_item"
 	},
 	service = MVCActionCommand.class
@@ -64,6 +62,12 @@ public class AddItemMVCActionCommand
 
 		collectionStyledLayoutStructureItem.setViewportConfiguration(
 			ViewportSize.MOBILE_LANDSCAPE.getViewportSizeId(),
+			JSONUtil.put("numberOfColumns", 1));
+		collectionStyledLayoutStructureItem.setViewportConfiguration(
+			ViewportSize.PORTRAIT_MOBILE.getViewportSizeId(),
+			JSONUtil.put("numberOfColumns", 1));
+		collectionStyledLayoutStructureItem.setViewportConfiguration(
+			ViewportSize.TABLET.getViewportSizeId(),
 			JSONUtil.put("numberOfColumns", 1));
 
 		return collectionStyledLayoutStructureItem;
@@ -167,11 +171,5 @@ public class AddItemMVCActionCommand
 
 	@Reference
 	private JSONFactory _jsonFactory;
-
-	@Reference
-	private Language _language;
-
-	@Reference
-	private Portal _portal;
 
 }

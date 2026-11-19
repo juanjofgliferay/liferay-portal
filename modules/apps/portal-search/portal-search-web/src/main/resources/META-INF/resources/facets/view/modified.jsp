@@ -116,7 +116,7 @@ int index = 0;
 								<liferay-ui:message key="<%= label %>" />
 
 								<%
-								TermCollector termCollector = facetCollector.getTermCollector(label);
+								TermCollector termCollector = facetCollector.getTermCollector(range);
 								%>
 
 								<c:if test="<%= termCollector != null %>">
@@ -198,7 +198,7 @@ int index = 0;
 							id='<%= randomNamespace + "customRangeTo" %>'
 							md="6"
 						>
-							<aui:field-wrapper label="to">
+							<aui:field-wrapper label="to[date-time]">
 								<liferay-ui:input-date
 									dayParam='<%= HtmlUtil.escapeJS(facet.getFieldId()) + "dayTo" %>'
 									dayValue="<%= toCalendar.get(Calendar.DATE) %>"
@@ -299,9 +299,8 @@ int index = 0;
 			var data = {};
 
 			data['<%= HtmlUtil.escapeJS(facet.getFieldId()) %>'] = range;
-			data[
-				'<%= HtmlUtil.escapeJS(facet.getFieldId()) %>selection'
-			] = selection;
+			data['<%= HtmlUtil.escapeJS(facet.getFieldId()) %>selection'] =
+				selection;
 
 			Liferay.Util.postForm(form, {data: data});
 		}

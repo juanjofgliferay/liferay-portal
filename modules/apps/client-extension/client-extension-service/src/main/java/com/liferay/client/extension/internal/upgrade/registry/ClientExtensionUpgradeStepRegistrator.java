@@ -7,6 +7,7 @@ package com.liferay.client.extension.internal.upgrade.registry;
 
 import com.liferay.client.extension.internal.upgrade.v3_0_0.ClassNamesUpgradeProcess;
 import com.liferay.client.extension.internal.upgrade.v3_1_0.util.ClientExtensionEntryRelTable;
+import com.liferay.client.extension.internal.upgrade.v3_5_2.CETConfigurationUpgradeProcess;
 import com.liferay.portal.kernel.service.ReleaseLocalService;
 import com.liferay.portal.kernel.upgrade.BaseExternalReferenceCodeUpgradeProcess;
 import com.liferay.portal.kernel.upgrade.CTModelUpgradeProcess;
@@ -67,13 +68,18 @@ public class ClientExtensionUpgradeStepRegistrator
 			new com.liferay.client.extension.internal.upgrade.v2_5_0.
 				RemoteAppEntryUpgradeProcess());
 
+		registry.register("2.5.0", "2.5.1", new ClassNamesUpgradeProcess());
+
 		registry.register(
-			"2.5.0", "3.0.0", new ClassNamesUpgradeProcess(),
+			"2.5.1", "3.0.0",
 			new com.liferay.client.extension.internal.upgrade.v3_0_0.
 				ClientExtensionEntryUpgradeProcess());
 
 		registry.register(
-			"3.0.0", "3.1.0", ClientExtensionEntryRelTable.create(),
+			"3.0.0", "3.0.1", ClientExtensionEntryRelTable.create());
+
+		registry.register(
+			"3.0.1", "3.1.0",
 			new com.liferay.client.extension.internal.upgrade.v3_1_0.
 				ClientExtensionEntryUpgradeProcess());
 
@@ -87,10 +93,8 @@ public class ClientExtensionUpgradeStepRegistrator
 			new BaseExternalReferenceCodeUpgradeProcess() {
 
 				@Override
-				protected String[][] getTableAndPrimaryKeyColumnNames() {
-					return new String[][] {
-						{"ClientExtensionEntry", "clientExtensionEntryId"}
-					};
+				protected String[] getTableNames() {
+					return new String[] {"ClientExtensionEntry"};
 				}
 
 			});
@@ -107,6 +111,9 @@ public class ClientExtensionUpgradeStepRegistrator
 				"lastPublishDate DATE null"));
 
 		registry.register("3.5.0", "3.5.1", new DummyUpgradeProcess());
+
+		registry.register(
+			"3.5.1", "3.5.2", new CETConfigurationUpgradeProcess());
 	}
 
 	@Reference

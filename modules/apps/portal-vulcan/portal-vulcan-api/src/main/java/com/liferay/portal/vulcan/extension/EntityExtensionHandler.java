@@ -8,6 +8,8 @@ package com.liferay.portal.vulcan.extension;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.vulcan.extension.validation.PropertyValidator;
 
+import jakarta.validation.ValidationException;
+
 import java.io.Serializable;
 
 import java.util.ArrayList;
@@ -17,8 +19,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import javax.validation.ValidationException;
 
 /**
  * @author Javier de Arcos
@@ -43,9 +43,11 @@ public class EntityExtensionHandler {
 				extensionProvider.getExtendedProperties(
 					companyId, userId, _className, entity);
 
-			if (extensionProviderExtendedProperties != null) {
-				extendedProperties.putAll(extensionProviderExtendedProperties);
+			if (extensionProviderExtendedProperties == null) {
+				continue;
 			}
+
+			extendedProperties.putAll(extensionProviderExtendedProperties);
 		}
 
 		return extendedProperties;
@@ -63,9 +65,11 @@ public class EntityExtensionHandler {
 					extensionProvider.getExtendedPropertyDefinitions(
 						companyId, className);
 
-			if (extensionProviderExtendedProperties != null) {
-				propertyDefinitions.putAll(extensionProviderExtendedProperties);
+			if (extensionProviderExtendedProperties == null) {
+				continue;
 			}
+
+			propertyDefinitions.putAll(extensionProviderExtendedProperties);
 		}
 
 		return propertyDefinitions;
@@ -78,10 +82,12 @@ public class EntityExtensionHandler {
 			Collection<String> extensionProviderFilteredPropertyNames =
 				extensionProvider.getFilteredPropertyNames(companyId, entity);
 
-			if (extensionProviderFilteredPropertyNames != null) {
-				filteredPropertyNames.addAll(
-					extensionProviderFilteredPropertyNames);
+			if (extensionProviderFilteredPropertyNames == null) {
+				continue;
 			}
+
+			filteredPropertyNames.addAll(
+				extensionProviderFilteredPropertyNames);
 		}
 
 		return filteredPropertyNames;
@@ -90,6 +96,15 @@ public class EntityExtensionHandler {
 	public void setExtendedProperties(
 			long companyId, long userId, Object entity,
 			Map<String, Serializable> extendedProperties)
+		throws Exception {
+
+		setExtendedProperties(
+			companyId, userId, entity, extendedProperties, false);
+	}
+
+	public void setExtendedProperties(
+			long companyId, long userId, Object entity,
+			Map<String, Serializable> extendedProperties, boolean partialUpdate)
 		throws Exception {
 
 		for (ExtensionProvider extensionProvider : _extensionProviders) {
@@ -107,15 +122,17 @@ public class EntityExtensionHandler {
 			for (Map.Entry<String, Serializable> entry :
 					extendedProperties.entrySet()) {
 
-				if (extendedPropertyDefinitions.containsKey(entry.getKey())) {
-					extensionProviderExtendedProperties.put(
-						entry.getKey(), entry.getValue());
+				if (!extendedPropertyDefinitions.containsKey(entry.getKey())) {
+					continue;
 				}
+
+				extensionProviderExtendedProperties.put(
+					entry.getKey(), entry.getValue());
 			}
 
 			extensionProvider.setExtendedProperties(
 				companyId, userId, _className, entity,
-				extensionProviderExtendedProperties);
+				extensionProviderExtendedProperties, partialUpdate);
 		}
 	}
 
@@ -132,10 +149,11 @@ public class EntityExtensionHandler {
 					extensionProvider.getExtendedPropertyDefinitions(
 						companyId, _className);
 
-			if (extensionProviderPropertyDefinitions != null) {
-				propertyDefinitions.putAll(
-					extensionProviderPropertyDefinitions);
+			if (extensionProviderPropertyDefinitions == null) {
+				continue;
 			}
+
+			propertyDefinitions.putAll(extensionProviderPropertyDefinitions);
 		}
 
 		List<String> unknownPropertyNames = new ArrayList<>();
@@ -178,10 +196,12 @@ public class EntityExtensionHandler {
 		for (PropertyDefinition propertyDefinition :
 				propertyDefinitions.values()) {
 
-			if (propertyDefinition.isRequired()) {
-				missingRequiredPropertyNames.add(
-					propertyDefinition.getPropertyName());
+			if (!propertyDefinition.isRequired()) {
+				continue;
 			}
+
+			missingRequiredPropertyNames.add(
+				propertyDefinition.getPropertyName());
 		}
 
 		if (ListUtil.isNotEmpty(missingRequiredPropertyNames)) {

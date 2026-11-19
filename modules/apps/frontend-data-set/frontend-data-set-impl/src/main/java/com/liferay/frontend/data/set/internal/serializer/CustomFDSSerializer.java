@@ -1,0 +1,1795 @@
+/**
+ * SPDX-FileCopyrightText: (c) 2025 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
+ */
+
+package com.liferay.frontend.data.set.internal.serializer;
+
+import com.liferay.client.extension.type.CET;
+import com.liferay.client.extension.type.FDSCellRendererCET;
+import com.liferay.client.extension.type.FDSFilterCET;
+import com.liferay.client.extension.type.FDSVisualizationModeCET;
+import com.liferay.client.extension.type.manager.CETManager;
+import com.liferay.frontend.data.set.FDSEntryItemImportPolicy;
+import com.liferay.frontend.data.set.action.util.FDSActionUtil;
+import com.liferay.frontend.data.set.constants.FDSEntityFieldTypes;
+import com.liferay.frontend.data.set.filter.FDSFilter;
+import com.liferay.frontend.data.set.filter.FDSFilterRegistry;
+import com.liferay.frontend.data.set.internal.url.FDSAPIURLBuilder;
+import com.liferay.frontend.data.set.model.FDSActionDropdownItem;
+import com.liferay.frontend.data.set.model.FDSSortItem;
+import com.liferay.frontend.data.set.model.FDSSortItemBuilder;
+import com.liferay.frontend.data.set.serializer.FDSSerializer;
+import com.liferay.frontend.taglib.clay.servlet.taglib.util.CreationMenu;
+import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItem;
+import com.liferay.list.type.model.ListTypeDefinition;
+import com.liferay.list.type.model.ListTypeEntry;
+import com.liferay.list.type.service.ListTypeDefinitionLocalService;
+import com.liferay.list.type.service.ListTypeEntryLocalService;
+import com.liferay.object.entry.util.ObjectEntryThreadLocal;
+import com.liferay.object.model.ObjectDefinition;
+import com.liferay.object.rest.dto.v1_0.ObjectEntry;
+import com.liferay.object.rest.manager.v1_0.DefaultObjectEntryManager;
+import com.liferay.object.rest.manager.v1_0.DefaultObjectEntryManagerProvider;
+import com.liferay.object.rest.manager.v1_0.ObjectEntryManagerRegistry;
+import com.liferay.object.service.ObjectDefinitionLocalService;
+import com.liferay.object.service.ObjectRelationshipLocalService;
+import com.liferay.petra.function.transform.TransformUtil;
+import com.liferay.petra.string.CharPool;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.dao.orm.QueryUtil;
+import com.liferay.portal.kernel.json.JSONArray;
+import com.liferay.portal.kernel.json.JSONFactory;
+import com.liferay.portal.kernel.json.JSONObject;
+import com.liferay.portal.kernel.json.JSONUtil;
+import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.ArrayUtil;
+import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.ListUtil;
+import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.MapUtil;
+import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.PropsValues;
+import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.portal.vulcan.dto.converter.DTOConverterContext;
+import com.liferay.portal.vulcan.dto.converter.DefaultDTOConverterContext;
+import com.liferay.portal.vulcan.pagination.Page;
+import com.liferay.portal.vulcan.pagination.Pagination;
+
+import jakarta.servlet.http.HttpServletRequest;
+
+import java.time.Instant;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.function.Predicate;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
+
+/**
+ * @author Daniel Sanz
+ */
+@Component(
+	property = "frontend.data.set.serializer.type=" + FDSSerializer.TYPE_CUSTOM,
+	service = FDSSerializer.class
+)
+public class CustomFDSSerializer
+	extends BaseFDSSerializer implements FDSSerializer {
+
+	@Override
+	public boolean isAvailable(
+		String fdsName, HttpServletRequest httpServletRequest) {
+
+		ObjectEntry objectEntry = _getObjectEntry(
+			fdsName, _getObjectDefinition(httpServletRequest));
+
+		if (objectEntry == null) {
+			return false;
+		}
+
+		Map<String, Object> properties = objectEntry.getProperties();
+
+		if (properties.isEmpty()) {
+			return false;
+		}
+
+		return _isActive(objectEntry);
+	}
+
+	@Override
+	public String serializeAPIURL(
+		String fdsName, HttpServletRequest httpServletRequest,
+		boolean interpolate, JSONObject tokenResolutionsJSONObject) {
+
+		Map<String, Object> properties = getDataSetObjectEntryProperties(
+			fdsName, httpServletRequest);
+
+		FDSAPIURLBuilder fdsAPIURLBuilder = createFDSAPIURLBuilder(
+			httpServletRequest,
+			String.valueOf(properties.get("restApplication")),
+			String.valueOf(properties.get("restEndpoint")),
+			String.valueOf(properties.get("restSchema"))
+		).setTokenResolutions(
+			tokenResolutionsJSONObject
+		);
+
+		List<ObjectEntry> objectEntries = getRelatedObjectEntries(
+			fdsName, httpServletRequest, (Predicate)null,
+			"dataSetToDataSetCardsSections", "dataSetToDataSetListSections",
+			"dataSetToDataSetTableSections");
+
+		if (objectEntries == null) {
+			return fdsAPIURLBuilder.build(interpolate);
+		}
+
+		String nestedFields = StringPool.BLANK;
+		int nestedFieldsDepth = 1;
+
+		for (ObjectEntry objectEntry : objectEntries) {
+			Map<String, Object> objectEntryProperties =
+				objectEntry.getProperties();
+
+			String[] fieldNames = StringUtil.split(
+				StringUtil.replace(
+					String.valueOf(objectEntryProperties.get("fieldName")),
+					"[]", StringPool.PERIOD),
+				CharPool.PERIOD);
+
+			if (fieldNames.length <= 1) {
+				continue;
+			}
+
+			for (int i = 0; i < (fieldNames.length - 1); i++) {
+				nestedFields = StringUtil.add(nestedFields, fieldNames[i]);
+			}
+
+			if (fieldNames.length <= nestedFieldsDepth) {
+				continue;
+			}
+
+			nestedFieldsDepth = fieldNames.length - 1;
+		}
+
+		if (nestedFields.equals(StringPool.BLANK)) {
+			return fdsAPIURLBuilder.build(interpolate);
+		}
+
+		fdsAPIURLBuilder.addParameter(
+			"nestedFields",
+			StringUtil.replaceLast(
+				nestedFields, CharPool.COMMA, StringPool.BLANK));
+
+		if (nestedFieldsDepth > 1) {
+			fdsAPIURLBuilder.addParameter(
+				"nestedFieldsDepth", String.valueOf(nestedFieldsDepth));
+		}
+
+		return fdsAPIURLBuilder.build(interpolate);
+	}
+
+	@Override
+	public String serializeAdditionalAPIURLParameters(
+		String fdsName, HttpServletRequest httpServletRequest,
+		boolean interpolate, JSONObject tokenResolutionsJSONObject) {
+
+		Map<String, Object> properties = getDataSetObjectEntryProperties(
+			fdsName, httpServletRequest);
+
+		String additionalAPIURLParameters = String.valueOf(
+			properties.get("additionalAPIURLParameters"));
+
+		String systemAdditionalAPIURLParameters =
+			_systemFDSSerializer.serializeAdditionalAPIURLParameters(
+				fdsName, httpServletRequest, interpolate,
+				tokenResolutionsJSONObject);
+
+		if (Validator.isNotNull(systemAdditionalAPIURLParameters)) {
+			if (Validator.isNotNull(additionalAPIURLParameters)) {
+				additionalAPIURLParameters =
+					systemAdditionalAPIURLParameters + StringPool.AMPERSAND +
+						additionalAPIURLParameters;
+			}
+			else {
+				additionalAPIURLParameters = systemAdditionalAPIURLParameters;
+			}
+		}
+
+		return createFDSAPIURLBuilder(
+			httpServletRequest,
+			String.valueOf(properties.get("restApplication")),
+			String.valueOf(properties.get("restEndpoint")),
+			String.valueOf(properties.get("restSchema"))
+		).addQueryString(
+			additionalAPIURLParameters
+		).setTokenResolutions(
+			tokenResolutionsJSONObject
+		).buildQueryString(
+			interpolate
+		);
+	}
+
+	@Override
+	public List<FDSActionDropdownItem> serializeBulkActions(
+		String fdsName, HttpServletRequest httpServletRequest) {
+
+		return _systemFDSSerializer.serializeBulkActions(
+			fdsName, httpServletRequest);
+	}
+
+	@Override
+	public CreationMenu serializeCreationMenu(
+		String fdsName, HttpServletRequest httpServletRequest) {
+
+		CreationMenu creationMenu = new CreationMenu();
+
+		CreationMenu systemCreationMenu =
+			_systemFDSSerializer.serializeCreationMenu(
+				fdsName, httpServletRequest);
+
+		List<DropdownItem> systemDropdownItems =
+			(List<DropdownItem>)systemCreationMenu.get("primaryItems");
+
+		List<DropdownItem> customDropdownItems = TransformUtil.transform(
+			getSortedRelatedObjectEntries(
+				fdsName, httpServletRequest,
+				(ObjectEntry objectEntry) ->
+					Objects.equals(_getType(objectEntry), "creation") &&
+					_isActive(objectEntry),
+				"creationActionsOrder", "dataSetToDataSetActions"),
+			objectEntry -> {
+				Map<String, Object> properties = objectEntry.getProperties();
+
+				FDSActionDropdownItem fdsActionDropdownItem =
+					new FDSActionDropdownItem(
+						String.valueOf(properties.get("url")),
+						String.valueOf(properties.get("icon")),
+						FDSActionUtil.getFDSCreationActionId(
+							objectEntry.getExternalReferenceCode()),
+						String.valueOf(properties.get("label")), null,
+						String.valueOf(properties.get("permissionKey")),
+						String.valueOf(properties.get("target")));
+
+				fdsActionDropdownItem.putData(
+					"disableHeader",
+					(boolean)Validator.isNull(properties.get("title")));
+				fdsActionDropdownItem.putData(
+					"size", properties.get("modalSize"));
+				fdsActionDropdownItem.putData("title", properties.get("title"));
+
+				return fdsActionDropdownItem;
+			});
+
+		for (DropdownItem customDropdownItem : customDropdownItems) {
+			if (Objects.equals(
+					customDropdownItem.get("target"),
+					FDSEntryItemImportPolicy.GROUP_PROXY.toString())) {
+
+				for (DropdownItem systemDropdownItem : systemDropdownItems) {
+					creationMenu.addPrimaryDropdownItem(systemDropdownItem);
+				}
+			}
+			else if (Objects.equals(
+						customDropdownItem.get("target"),
+						FDSEntryItemImportPolicy.ITEM_PROXY.toString())) {
+
+				for (DropdownItem systemDropdownItem : systemDropdownItems) {
+					if (systemDropdownItem.hasSameDataId(customDropdownItem)) {
+						creationMenu.addPrimaryDropdownItem(systemDropdownItem);
+
+						break;
+					}
+				}
+			}
+			else {
+				creationMenu.addPrimaryDropdownItem(customDropdownItem);
+			}
+		}
+
+		return creationMenu;
+	}
+
+	@Override
+	public JSONArray serializeFilters(
+		List<FDSFilter> fdsFilters, String fdsName,
+		HttpServletRequest httpServletRequest) {
+
+		return serializeFilters(fdsName, httpServletRequest, null);
+	}
+
+	@Override
+	public JSONArray serializeFilters(
+		String fdsName, HttpServletRequest httpServletRequest,
+		Map<String, JSONObject> tokenResolutionsJSONObjects) {
+
+		try {
+			return _serializeFilters(
+				fdsName, httpServletRequest, tokenResolutionsJSONObjects);
+		}
+		catch (Exception exception) {
+			_log.error("Unable to serialize filters", exception);
+
+			return _jsonFactory.createJSONArray();
+		}
+	}
+
+	@Override
+	public JSONArray serializeGroupedFilters(
+		String fdsName, HttpServletRequest httpServletRequest) {
+
+		// TODO LPD-70111
+
+		return _systemFDSSerializer.serializeGroupedFilters(
+			fdsName, httpServletRequest);
+	}
+
+	@Override
+	public boolean serializeHideManagementBarInEmptyState(
+		String fdsName, HttpServletRequest httpServletRequest) {
+
+		Map<String, Object> properties = getDataSetObjectEntryProperties(
+			fdsName, httpServletRequest);
+
+		return GetterUtil.getBoolean(
+			properties.get("hideManagementBarInEmptyState"));
+	}
+
+	@Override
+	public List<FDSActionDropdownItem> serializeItemsActions(
+		String fdsName, HttpServletRequest httpServletRequest) {
+
+		List<FDSActionDropdownItem> fdsActionDropdownItems = new ArrayList<>();
+
+		List<FDSActionDropdownItem> systemFDSActionDropdownItems =
+			_systemFDSSerializer.serializeItemsActions(
+				fdsName, httpServletRequest);
+
+		List<FDSActionDropdownItem> customFDSActionDropdownItems =
+			TransformUtil.transform(
+				getSortedRelatedObjectEntries(
+					fdsName, httpServletRequest,
+					(ObjectEntry objectEntry) ->
+						Objects.equals(_getType(objectEntry), "item") &&
+						_isActive(objectEntry),
+					"itemActionsOrder", "dataSetToDataSetActions"),
+				objectEntry -> {
+					Map<String, Object> properties =
+						objectEntry.getProperties();
+
+					FDSActionDropdownItem fdsActionDropdownItem =
+						new FDSActionDropdownItem(
+							String.valueOf(
+								properties.get("confirmationMessage")),
+							String.valueOf(properties.get("url")),
+							String.valueOf(properties.get("icon")),
+							FDSActionUtil.getFDSItemActionId(
+								objectEntry.getExternalReferenceCode()),
+							String.valueOf(properties.get("label")),
+							String.valueOf(properties.get("method")),
+							String.valueOf(properties.get("permissionKey")),
+							String.valueOf(properties.get("target")));
+
+					fdsActionDropdownItem.putData(
+						"disableHeader",
+						(boolean)Validator.isNull(properties.get("title")));
+					fdsActionDropdownItem.putData(
+						"errorMessage", properties.get("errorMessage"));
+					fdsActionDropdownItem.putData(
+						"requestBody", properties.get("requestBody"));
+					fdsActionDropdownItem.putData(
+						"size", properties.get("modalSize"));
+					fdsActionDropdownItem.putData(
+						"status", properties.get("confirmationMessageType"));
+					fdsActionDropdownItem.putData(
+						"successMessage", properties.get("successMessage"));
+					fdsActionDropdownItem.putData(
+						"title", properties.get("title"));
+
+					return fdsActionDropdownItem;
+				});
+
+		for (FDSActionDropdownItem customFDSActionDropdownItem :
+				customFDSActionDropdownItems) {
+
+			if (Objects.equals(
+					customFDSActionDropdownItem.get("target"),
+					FDSEntryItemImportPolicy.GROUP_PROXY.toString())) {
+
+				fdsActionDropdownItems.addAll(systemFDSActionDropdownItems);
+			}
+			else if (Objects.equals(
+						customFDSActionDropdownItem.get("target"),
+						FDSEntryItemImportPolicy.ITEM_PROXY.toString())) {
+
+				for (FDSActionDropdownItem systemFDSActionDropdownItem :
+						systemFDSActionDropdownItems) {
+
+					if (systemFDSActionDropdownItem.hasSameDataId(
+							customFDSActionDropdownItem)) {
+
+						fdsActionDropdownItems.add(systemFDSActionDropdownItem);
+
+						break;
+					}
+				}
+			}
+			else {
+				fdsActionDropdownItems.add(customFDSActionDropdownItem);
+			}
+		}
+
+		return fdsActionDropdownItems;
+	}
+
+	@Override
+	public JSONObject serializePagination(
+		String fdsName, HttpServletRequest httpServletRequest) {
+
+		Map<String, Object> properties = getDataSetObjectEntryProperties(
+			fdsName, httpServletRequest);
+
+		return JSONUtil.put(
+			"deltas",
+			() -> {
+				String[] listOfItemsPerPage = StringUtil.split(
+					String.valueOf(properties.get("listOfItemsPerPage")),
+					StringPool.COMMA);
+
+				if (ArrayUtil.isNotEmpty(listOfItemsPerPage)) {
+					return JSONUtil.toJSONArray(
+						listOfItemsPerPage,
+						(String itemsPerPage) -> {
+							if (GetterUtil.getInteger(itemsPerPage) < 1) {
+								return null;
+							}
+
+							return JSONUtil.put(
+								"label", GetterUtil.getInteger(itemsPerPage));
+						});
+				}
+
+				return JSONUtil.toJSONArray(
+					ListUtil.fromArray(
+						PropsValues.SEARCH_CONTAINER_PAGE_DELTA_VALUES),
+					itemsPerPage -> JSONUtil.put("label", itemsPerPage));
+			}
+		).put(
+			"initialDelta",
+			() -> {
+				Integer defaultItemsPerPage = GetterUtil.getInteger(
+					String.valueOf(properties.get("defaultItemsPerPage")));
+
+				if (defaultItemsPerPage > 1) {
+					return defaultItemsPerPage;
+				}
+
+				return PropsValues.SEARCH_CONTAINER_PAGE_DEFAULT_DELTA;
+			}
+		);
+	}
+
+	@Override
+	public String serializePropsTransformer(
+		String fdsName, HttpServletRequest httpServletRequest) {
+
+		Map<String, Object> properties = getDataSetObjectEntryProperties(
+			fdsName, httpServletRequest);
+
+		return String.valueOf(properties.get("propsTransformer"));
+	}
+
+	@Override
+	public boolean serializeSearchAsYouType(
+		String fdsName, HttpServletRequest httpServletRequest) {
+
+		Map<String, Object> properties = getDataSetObjectEntryProperties(
+			fdsName, httpServletRequest);
+
+		return GetterUtil.getBoolean(properties.get("searchAsYouType"));
+	}
+
+	@Override
+	public boolean serializeSearchSuggestionsEnabled(
+		String fdsName, HttpServletRequest httpServletRequest) {
+
+		Map<String, Object> properties = getDataSetObjectEntryProperties(
+			fdsName, httpServletRequest);
+
+		return GetterUtil.getBoolean(
+			properties.get("searchSuggestionsEnabled"));
+	}
+
+	@Override
+	public Map<String, String> serializeSelectionFilterAPIURLs(
+		String fdsName, HttpServletRequest httpServletRequest,
+		boolean interpolate,
+		Map<String, JSONObject> tokenResolutionsJSONObjects) {
+
+		Map<String, String> selectionFilterAPIURLs = new HashMap<>();
+
+		for (ObjectEntry objectEntry :
+				getRelatedObjectEntries(
+					fdsName, httpServletRequest,
+					(ObjectEntry relatedObjectEntry) -> _isActive(
+						relatedObjectEntry),
+					"dataSetToDataSetSelectionFilters")) {
+
+			String sourceType = MapUtil.getString(
+				objectEntry.getProperties(), "sourceType");
+
+			String apiURL = null;
+
+			if (Objects.equals(sourceType, "API_REST_APPLICATION")) {
+				apiURL = _getSelectionFilterAPIURL(
+					httpServletRequest, interpolate, objectEntry,
+					tokenResolutionsJSONObjects);
+			}
+			else if (Objects.equals(
+						sourceType,
+						FDSEntryItemImportPolicy.ITEM_PROXY.toString())) {
+
+				apiURL = _getProxySelectionFilterAPIURL(
+					httpServletRequest, interpolate, objectEntry,
+					tokenResolutionsJSONObjects);
+			}
+
+			if (Validator.isNull(apiURL)) {
+				continue;
+			}
+
+			selectionFilterAPIURLs.put(
+				objectEntry.getExternalReferenceCode(), apiURL);
+		}
+
+		return selectionFilterAPIURLs;
+	}
+
+	@Override
+	public boolean serializeShowSearch(
+		String fdsName, HttpServletRequest httpServletRequest) {
+
+		Map<String, Object> properties = getDataSetObjectEntryProperties(
+			fdsName, httpServletRequest);
+
+		return GetterUtil.getBoolean(properties.get("showSearch"), true);
+	}
+
+	@Override
+	public JSONArray serializeSnapshots(
+		String fdsName, HttpServletRequest httpServletRequest) {
+
+		return serializeSnapshots(
+			fdsName, httpServletRequest, _objectDefinitionLocalService,
+			_objectEntryManagerRegistry);
+	}
+
+	@Override
+	public boolean serializeSnapshotsEnabled(
+		String fdsName, HttpServletRequest httpServletRequest) {
+
+		Map<String, Object> properties = getDataSetObjectEntryProperties(
+			fdsName, httpServletRequest);
+
+		return GetterUtil.getBoolean(properties.get("snapshotsEnabled"));
+	}
+
+	@Override
+	public List<FDSSortItem> serializeSorts(
+		String fdsName, HttpServletRequest httpServletRequest) {
+
+		List<FDSSortItem> fdsSortItems = new ArrayList<>();
+
+		List<FDSSortItem> systemFDSSortItems =
+			_systemFDSSerializer.serializeSorts(fdsName, httpServletRequest);
+
+		List<FDSSortItem> customFDSSortItems = TransformUtil.transform(
+			getSortedRelatedObjectEntries(
+				fdsName, httpServletRequest,
+				(ObjectEntry objectEntry) -> _isActive(objectEntry),
+				"sortsOrder", "dataSetToDataSetSorts"),
+			objectEntry -> {
+				Map<String, Object> properties = objectEntry.getProperties();
+
+				String label = (String)properties.get("label");
+
+				if (Validator.isNull(label)) {
+					Map<String, String> labelI18n =
+						(Map<String, String>)properties.get("label_i18n");
+
+					label = labelI18n.get(
+						LocaleUtil.toLanguageId(LocaleUtil.getSiteDefault()));
+				}
+
+				return FDSSortItemBuilder.setActive(
+					Boolean.valueOf(String.valueOf(properties.get("default")))
+				).setDirection(
+					String.valueOf(properties.get("orderType"))
+				).setKey(
+					String.valueOf(properties.get("fieldName"))
+				).setLabel(
+					label
+				).build();
+			});
+
+		for (FDSSortItem customFDSSortItem : customFDSSortItems) {
+			if (Objects.equals(
+					customFDSSortItem.get("direction"),
+					FDSEntryItemImportPolicy.GROUP_PROXY.toString())) {
+
+				fdsSortItems.addAll(
+					_systemFDSSerializer.serializeSorts(
+						fdsName, httpServletRequest));
+			}
+			else if (Objects.equals(
+						customFDSSortItem.get("direction"),
+						FDSEntryItemImportPolicy.ITEM_PROXY.toString())) {
+
+				for (FDSSortItem systemFDSSortItem : systemFDSSortItems) {
+					if (Objects.equals(
+							systemFDSSortItem.get("key"),
+							customFDSSortItem.get("key"))) {
+
+						fdsSortItems.add(systemFDSSortItem);
+
+						break;
+					}
+				}
+			}
+			else {
+				fdsSortItems.add(customFDSSortItem);
+			}
+		}
+
+		return fdsSortItems;
+	}
+
+	@Override
+	public JSONObject serializeUserConfiguration(
+		String fdsName, HttpServletRequest httpServletRequest) {
+
+		return serializeUserConfiguration(
+			fdsName, httpServletRequest, _objectDefinitionLocalService);
+	}
+
+	@Override
+	public JSONArray serializeViews(
+		String fdsName, HttpServletRequest httpServletRequest) {
+
+		JSONArray defaultViewsJSONArray = _jsonFactory.createJSONArray();
+
+		Map<String, Object> dataSetObjectEntryProperties =
+			getDataSetObjectEntryProperties(fdsName, httpServletRequest);
+
+		String defaultVisualizationMode = String.valueOf(
+			dataSetObjectEntryProperties.get("defaultVisualizationMode"));
+
+		JSONArray tableViewSchemaFieldsJSONArray = null;
+
+		JSONArray systemViewsJSONArray = _systemFDSSerializer.serializeViews(
+			fdsName, httpServletRequest);
+
+		for (int i = 0; i < systemViewsJSONArray.length(); i++) {
+			JSONObject systemViewJSONObject =
+				systemViewsJSONArray.getJSONObject(i);
+
+			String contentRenderer = systemViewJSONObject.getString(
+				"contentRenderer");
+
+			if (Validator.isNull(contentRenderer) ||
+				!contentRenderer.contains("table")) {
+
+				continue;
+			}
+
+			JSONObject tableViewSchemaJSONObject =
+				systemViewJSONObject.getJSONObject("schema");
+
+			if (tableViewSchemaJSONObject != null) {
+				tableViewSchemaFieldsJSONArray =
+					tableViewSchemaJSONObject.getJSONArray("fields");
+
+				break;
+			}
+		}
+
+		Map<String, JSONObject> schemaFields = new HashMap<>();
+
+		if (tableViewSchemaFieldsJSONArray != null) {
+			for (int i = 0; i < tableViewSchemaFieldsJSONArray.length(); i++) {
+				JSONObject schemaFieldJSONObject =
+					tableViewSchemaFieldsJSONArray.getJSONObject(i);
+
+				Object object = schemaFieldJSONObject.get("fieldName");
+
+				String fieldName = StringPool.BLANK;
+
+				if (object instanceof String) {
+					fieldName = (String)object;
+				}
+				else {
+					StringBundler sb = new StringBundler();
+
+					String[] fieldNameItems = (String[])object;
+
+					for (int j = 0; j < fieldNameItems.length; j++) {
+						sb.append(fieldNameItems[j]);
+
+						if ((j + 1) >= fieldNameItems.length) {
+							continue;
+						}
+
+						sb.append('.');
+					}
+
+					fieldName = sb.toString();
+				}
+
+				schemaFields.put(fieldName, schemaFieldJSONObject);
+			}
+		}
+
+		defaultViewsJSONArray.put(
+			() -> {
+				List<ObjectEntry> objectEntries = getRelatedObjectEntries(
+					fdsName, httpServletRequest, (Predicate)null,
+					"dataSetToDataSetCardsSections");
+
+				if (objectEntries.isEmpty()) {
+					return null;
+				}
+
+				return JSONUtil.put(
+					"contentRenderer", "cards"
+				).put(
+					"default", defaultVisualizationMode.equals("cards")
+				).put(
+					"label", LanguageUtil.get(httpServletRequest, "cards")
+				).put(
+					"name", "cards"
+				).put(
+					"schema", _serializeViewSchema(objectEntries)
+				).put(
+					"thumbnail", "cards2"
+				);
+			}
+		).put(
+			() -> {
+				List<ObjectEntry> objectEntries = getRelatedObjectEntries(
+					fdsName, httpServletRequest, (Predicate)null,
+					"dataSetToDataSetListSections");
+
+				if (objectEntries.isEmpty()) {
+					return null;
+				}
+
+				return JSONUtil.put(
+					"contentRenderer", "list"
+				).put(
+					"default", defaultVisualizationMode.equals("list")
+				).put(
+					"label", LanguageUtil.get(httpServletRequest, "list[noun]")
+				).put(
+					"name", "list"
+				).put(
+					"schema", _serializeViewSchema(objectEntries)
+				).put(
+					"thumbnail", "list"
+				);
+			}
+		).put(
+			() -> {
+				List<ObjectEntry> objectEntries = getSortedRelatedObjectEntries(
+					fdsName, httpServletRequest, (Predicate)null,
+					"tableSectionsOrder", "dataSetToDataSetTableSections");
+
+				if (objectEntries.isEmpty()) {
+					return null;
+				}
+
+				JSONArray fieldsJSONArray = JSONUtil.toJSONArray(
+					objectEntries,
+					(ObjectEntry objectEntry) -> {
+						Map<String, Object> properties =
+							objectEntry.getProperties();
+
+						String fieldName = (String)properties.get("fieldName");
+
+						JSONObject schemaFieldJSONObject = schemaFields.get(
+							fieldName);
+
+						if (schemaFieldJSONObject == null) {
+							schemaFieldJSONObject =
+								_jsonFactory.createJSONObject();
+						}
+
+						schemaFieldJSONObject.put(
+							"contentRenderer",
+							String.valueOf(properties.get("renderer"))
+						).put(
+							"fieldName", fieldName
+						).put(
+							"label",
+							MapUtil.getWithFallbackKey(
+								properties, "label", "fieldName")
+						).put(
+							"sortable", (boolean)properties.get("sortable")
+						);
+
+						String rendererType = String.valueOf(
+							properties.get("rendererType"));
+
+						if (!Objects.equals(rendererType, "clientExtension")) {
+							return schemaFieldJSONObject;
+						}
+
+						String externalReferenceCode = String.valueOf(
+							properties.get("renderer"));
+
+						FDSCellRendererCET fdsCellRendererCET =
+							(FDSCellRendererCET)cetManager.getCET(
+								PortalUtil.getCompanyId(httpServletRequest),
+								externalReferenceCode);
+
+						if (fdsCellRendererCET == null) {
+							boolean clientExtension =
+								schemaFieldJSONObject.getBoolean(
+									"contentRendererClientExtension");
+
+							if (!clientExtension) {
+								return schemaFieldJSONObject;
+							}
+
+							if (_log.isWarnEnabled()) {
+								_log.warn(
+									"No frontend data set cell renderer " +
+										"client extension type found for " +
+											externalReferenceCode);
+							}
+
+							return schemaFieldJSONObject.put(
+								"contentRenderer", "default"
+							).put(
+								"contentRendererClientExtension", false
+							);
+						}
+
+						return schemaFieldJSONObject.put(
+							"contentRendererClientExtension", true
+						).put(
+							"contentRendererModuleURL",
+							"default from " + fdsCellRendererCET.getURL()
+						);
+					});
+
+				return JSONUtil.put(
+					"contentRenderer", "table"
+				).put(
+					"default", defaultVisualizationMode.equals("table")
+				).put(
+					"label", LanguageUtil.get(httpServletRequest, "table")
+				).put(
+					"name", "table"
+				).put(
+					"schema", JSONUtil.put("fields", fieldsJSONArray)
+				).put(
+					"thumbnail", "table"
+				);
+			}
+		);
+
+		return _getEnabledViewsJSONArray(
+			defaultViewsJSONArray, defaultVisualizationMode, httpServletRequest,
+			MapUtil.getString(
+				dataSetObjectEntryProperties, "visualizationModes"));
+	}
+
+	protected Map<String, Object> getDataSetObjectEntryProperties(
+		String externalReferenceCode, HttpServletRequest httpServletRequest) {
+
+		ObjectEntry objectEntry = _getObjectEntry(
+			externalReferenceCode, _getObjectDefinition(httpServletRequest));
+
+		if (objectEntry != null) {
+			return objectEntry.getProperties();
+		}
+
+		return Collections.emptyMap();
+	}
+
+	protected List<ObjectEntry> getRelatedObjectEntries(
+		String externalReferenceCode, HttpServletRequest httpServletRequest,
+		Predicate<ObjectEntry> predicate, String... relationshipNames) {
+
+		List<ObjectEntry> objectEntries = new ArrayList<>();
+
+		ObjectDefinition objectDefinition = _getObjectDefinition(
+			httpServletRequest);
+
+		ObjectEntry objectEntry = _getObjectEntry(
+			externalReferenceCode, objectDefinition);
+
+		for (String relationshipName : relationshipNames) {
+			objectEntries.addAll(
+				_getRelatedObjectEntries(
+					objectDefinition, objectEntry, predicate,
+					relationshipName));
+		}
+
+		return objectEntries;
+	}
+
+	protected List<ObjectEntry> getSortedRelatedObjectEntries(
+		String externalReferenceCode, HttpServletRequest httpServletRequest,
+		Predicate<ObjectEntry> predicate, String propertyKey,
+		String... relationshipNames) {
+
+		List<ObjectEntry> objectEntries = getRelatedObjectEntries(
+			externalReferenceCode, httpServletRequest, predicate,
+			relationshipNames);
+
+		ObjectEntry objectEntry = _getObjectEntry(
+			externalReferenceCode, _getObjectDefinition(httpServletRequest));
+
+		List<String> externalReferenceCodes = ListUtil.fromString(
+			MapUtil.getString(objectEntry.getProperties(), propertyKey),
+			StringPool.COMMA);
+
+		objectEntries.sort(new ObjectEntryComparator(externalReferenceCodes));
+
+		return objectEntries;
+	}
+
+	@Reference
+	protected CETManager cetManager;
+
+	@Reference
+	protected FDSFilterRegistry fdsFilterRegistry;
+
+	private JSONObject _getDateOrDateTimeJSONObject(
+		boolean dateTime, Object object) {
+
+		if (object == null) {
+			return null;
+		}
+
+		Calendar calendar = Calendar.getInstance();
+
+		calendar.setTime(Date.from(Instant.parse(String.valueOf(object))));
+
+		JSONObject jsonObject = JSONUtil.put(
+			"day", calendar.get(Calendar.DATE)
+		).put(
+			"month", calendar.get(Calendar.MONTH) + 1
+		).put(
+			"year", calendar.get(Calendar.YEAR)
+		);
+
+		if (dateTime) {
+			jsonObject.put(
+				"hour", calendar.get(Calendar.HOUR_OF_DAY)
+			).put(
+				"minute", calendar.get(Calendar.MINUTE)
+			).put(
+				"second", calendar.get(Calendar.SECOND)
+			);
+		}
+
+		return jsonObject;
+	}
+
+	private JSONArray _getEnabledViewsJSONArray(
+		JSONArray defaultViewsJSONArray, String defaultVisualizationMode,
+		HttpServletRequest httpServletRequest, String visualizationModesJSON) {
+
+		JSONArray jsonArray = _jsonFactory.createJSONArray();
+
+		Map<String, JSONObject> defaultViewJSONObjects = new HashMap<>();
+
+		for (int i = 0; i < defaultViewsJSONArray.length(); i++) {
+			JSONObject defaultViewJSONObject =
+				defaultViewsJSONArray.getJSONObject(i);
+
+			defaultViewJSONObjects.put(
+				defaultViewJSONObject.getString("name"), defaultViewJSONObject);
+		}
+
+		boolean defaultVisualizationModeEnabled = false;
+
+		for (JSONObject visualizationModeJSONObject :
+				_getEnabledVisualizationModeJSONObjects(
+					visualizationModesJSON)) {
+
+			String name = visualizationModeJSONObject.getString("name");
+
+			if (_defaultVisualizationModeNames.contains(name)) {
+				defaultVisualizationModeEnabled = true;
+
+				jsonArray.put(() -> defaultViewJSONObjects.get(name));
+			}
+			else {
+				jsonArray.put(
+					() -> _serializeClientExtensionView(
+						defaultVisualizationMode, httpServletRequest,
+						visualizationModeJSONObject));
+			}
+		}
+
+		// At least one visualization mode must stay available, even when the
+		// persisted ones leave none enabled or deployed. Do not bring back
+		// disabled default modes when an enabled one simply has no fields
+
+		if ((jsonArray.length() == 0) && !defaultVisualizationModeEnabled) {
+			for (String name : _defaultVisualizationModeNames) {
+				jsonArray.put(() -> defaultViewJSONObjects.get(name));
+			}
+		}
+
+		return jsonArray;
+	}
+
+	private List<JSONObject> _getEnabledVisualizationModeJSONObjects(
+		String visualizationModesJSON) {
+
+		List<JSONObject> enabledVisualizationModeJSONObjects =
+			new ArrayList<>();
+
+		List<String> visualizationModeNames = new ArrayList<>();
+
+		if (Validator.isNotNull(visualizationModesJSON)) {
+			try {
+				JSONArray jsonArray = _jsonFactory.createJSONArray(
+					visualizationModesJSON);
+
+				for (int i = 0; i < jsonArray.length(); i++) {
+					JSONObject jsonObject = jsonArray.getJSONObject(i);
+
+					String name = jsonObject.getString("name");
+
+					if (Validator.isNull(name)) {
+						continue;
+					}
+
+					visualizationModeNames.add(name);
+
+					if (!jsonObject.getBoolean("enabled")) {
+						continue;
+					}
+
+					enabledVisualizationModeJSONObjects.add(jsonObject);
+				}
+			}
+			catch (Exception exception) {
+				if (_log.isWarnEnabled()) {
+					_log.warn(
+						"Unable to parse visualization modes " +
+							visualizationModesJSON,
+						exception);
+				}
+			}
+		}
+
+		// Default visualization modes are enabled unless stated otherwise
+
+		for (String name : _defaultVisualizationModeNames) {
+			if (visualizationModeNames.contains(name)) {
+				continue;
+			}
+
+			enabledVisualizationModeJSONObjects.add(JSONUtil.put("name", name));
+		}
+
+		return enabledVisualizationModeJSONObjects;
+	}
+
+	private String _getFieldName(ObjectEntry objectEntry) {
+		Map<String, Object> properties = objectEntry.getProperties();
+
+		String fieldName = String.valueOf(properties.get("fieldName"));
+
+		return fieldName.replaceAll("(\\[\\]|\\.)", StringPool.FORWARD_SLASH);
+	}
+
+	private Object _getListTypeEntryKey(
+		String entityFieldType, ListTypeEntry listTypeEntry) {
+
+		String key = listTypeEntry.getKey();
+
+		if (Objects.equals(entityFieldType, FDSEntityFieldTypes.INTEGER)) {
+			try {
+				return Integer.valueOf(key);
+			}
+			catch (NumberFormatException numberFormatException) {
+				if (_log.isWarnEnabled()) {
+					_log.warn(
+						"Invalid list type entry key: " + key,
+						numberFormatException);
+				}
+			}
+		}
+
+		return key;
+	}
+
+	private ObjectDefinition _getObjectDefinition(
+		HttpServletRequest httpServletRequest) {
+
+		return _objectDefinitionLocalService.
+			fetchObjectDefinitionByExternalReferenceCode(
+				"L_DATA_SET", PortalUtil.getCompanyId(httpServletRequest));
+	}
+
+	private ObjectEntry _getObjectEntry(
+		String externalReferenceCode, ObjectDefinition objectDefinition) {
+
+		ObjectEntry objectEntry = null;
+
+		DTOConverterContext dtoConverterContext =
+			new DefaultDTOConverterContext(
+				false, null, null, null, null,
+				LocaleUtil.getMostRelevantLocale(), null, null);
+		DefaultObjectEntryManager defaultObjectEntryManager =
+			DefaultObjectEntryManagerProvider.provide(
+				_objectEntryManagerRegistry.getObjectEntryManager(
+					objectDefinition.getCompanyId(),
+					objectDefinition.getStorageType()));
+
+		ObjectEntryThreadLocal.setSkipObjectEntryResourcePermission(true);
+
+		try {
+			objectEntry = defaultObjectEntryManager.getObjectEntry(
+				objectDefinition.getCompanyId(), dtoConverterContext,
+				externalReferenceCode, objectDefinition, null);
+		}
+		catch (Exception exception) {
+			if (_log.isWarnEnabled()) {
+				_log.warn(
+					"Unable to get data set object entry with external " +
+						"reference code " + externalReferenceCode,
+					exception);
+			}
+		}
+		finally {
+			ObjectEntryThreadLocal.setSkipObjectEntryResourcePermission(false);
+		}
+
+		return objectEntry;
+	}
+
+	private String _getProxySelectionFilterAPIURL(
+		HttpServletRequest httpServletRequest, boolean interpolate,
+		ObjectEntry objectEntry,
+		Map<String, JSONObject> tokenResolutionsJSONObjects) {
+
+		String fieldName = _getFieldName(objectEntry);
+
+		Map<String, String> selectionFilterAPIURLs =
+			_systemFDSSerializer.serializeSelectionFilterAPIURLs(
+				MapUtil.getString(
+					objectEntry.getProperties(),
+					"r_dataSetToDataSetSelectionFilters_l_dataSetERC"),
+				httpServletRequest, interpolate,
+				_getProxyTokenResolutionsJSONObjects(
+					fieldName, objectEntry, tokenResolutionsJSONObjects));
+
+		return selectionFilterAPIURLs.get(fieldName);
+	}
+
+	private Map<String, JSONObject> _getProxyTokenResolutionsJSONObjects(
+		String fieldName, ObjectEntry objectEntry,
+		Map<String, JSONObject> tokenResolutionsJSONObjects) {
+
+		if (tokenResolutionsJSONObjects == null) {
+			return null;
+		}
+
+		JSONObject tokenResolutionsJSONObject = tokenResolutionsJSONObjects.get(
+			objectEntry.getExternalReferenceCode());
+
+		if (tokenResolutionsJSONObject == null) {
+			return null;
+		}
+
+		return Collections.singletonMap(fieldName, tokenResolutionsJSONObject);
+	}
+
+	private Collection<ObjectEntry> _getRelatedObjectEntries(
+		ObjectDefinition objectDefinition, ObjectEntry objectEntry,
+		Predicate<ObjectEntry> predicate, String relationshipName) {
+
+		Collection<ObjectEntry> objectEntries = null;
+
+		DefaultObjectEntryManager defaultObjectEntryManager =
+			DefaultObjectEntryManagerProvider.provide(
+				_objectEntryManagerRegistry.getObjectEntryManager(
+					objectDefinition.getCompanyId(),
+					objectDefinition.getStorageType()));
+
+		ObjectEntryThreadLocal.setSkipObjectEntryResourcePermission(true);
+
+		try {
+			Page<ObjectEntry> relatedObjectEntriesPage =
+				defaultObjectEntryManager.getRelatedObjectEntries(
+					new DefaultDTOConverterContext(
+						false, null, null, null, null,
+						LocaleUtil.getMostRelevantLocale(), null, null),
+					objectEntry.getId(),
+					_objectRelationshipLocalService.getObjectRelationship(
+						objectDefinition.getObjectDefinitionId(),
+						relationshipName),
+					Pagination.of(QueryUtil.ALL_POS, QueryUtil.ALL_POS));
+
+			objectEntries = relatedObjectEntriesPage.getItems();
+
+			if (predicate != null) {
+				objectEntries.removeIf(
+					predicateObjectEntry -> !predicate.test(
+						predicateObjectEntry));
+			}
+		}
+		catch (Exception exception) {
+			if (_log.isWarnEnabled()) {
+				_log.warn(
+					"Unable to get related object entries for " +
+						relationshipName,
+					exception);
+			}
+		}
+		finally {
+			ObjectEntryThreadLocal.setSkipObjectEntryResourcePermission(false);
+		}
+
+		return objectEntries;
+	}
+
+	private String _getSelectionFilterAPIURL(
+		HttpServletRequest httpServletRequest, boolean interpolate,
+		ObjectEntry objectEntry,
+		Map<String, JSONObject> tokenResolutionsJSONObjects) {
+
+		Map<String, Object> properties = objectEntry.getProperties();
+
+		String restApplication = MapUtil.getString(
+			properties, "restApplication");
+		String restEndpoint = MapUtil.getString(properties, "restEndpoint");
+
+		if (Validator.isNull(restApplication) ||
+			Validator.isNull(restEndpoint)) {
+
+			return null;
+		}
+
+		JSONObject tokenResolutionsJSONObject = null;
+
+		if (tokenResolutionsJSONObjects != null) {
+			tokenResolutionsJSONObject = tokenResolutionsJSONObjects.get(
+				objectEntry.getExternalReferenceCode());
+		}
+
+		return createFDSAPIURLBuilder(
+			httpServletRequest, restApplication, restEndpoint,
+			MapUtil.getString(properties, "restSchema")
+		).setTokenResolutions(
+			tokenResolutionsJSONObject
+		).build(
+			interpolate
+		);
+	}
+
+	private String _getType(ObjectEntry objectEntry) {
+		Map<String, Object> properties = objectEntry.getProperties();
+
+		return GetterUtil.getString(properties.get("type"));
+	}
+
+	private Boolean _isActive(ObjectEntry objectEntry) {
+		Map<String, Object> properties = objectEntry.getProperties();
+
+		return (boolean)properties.get("active");
+	}
+
+	private boolean _isCollection(String fieldName, String sourceType) {
+		if (fieldName.contains(StringPool.OPEN_BRACKET) &&
+			Objects.equals(sourceType, "OBJECT_PICKLIST")) {
+
+			return true;
+		}
+
+		return false;
+	}
+
+	private JSONObject _serializeClientExtensionView(
+		String defaultVisualizationMode, HttpServletRequest httpServletRequest,
+		JSONObject visualizationModeJSONObject) {
+
+		String externalReferenceCode = visualizationModeJSONObject.getString(
+			"name");
+
+		CET cet = cetManager.getCET(
+			PortalUtil.getCompanyId(httpServletRequest), externalReferenceCode);
+
+		if (!(cet instanceof FDSVisualizationModeCET)) {
+			if (_log.isWarnEnabled()) {
+				_log.warn(
+					"No frontend data set visualization mode client " +
+						"extension was found for " + externalReferenceCode);
+			}
+
+			return null;
+		}
+
+		FDSVisualizationModeCET fdsVisualizationModeCET =
+			(FDSVisualizationModeCET)cet;
+
+		return JSONUtil.put(
+			"configuration",
+			visualizationModeJSONObject.getJSONObject("configuration")
+		).put(
+			"contentRenderer", "clientExtension"
+		).put(
+			"contentRendererClientExtension", true
+		).put(
+			"contentRendererModuleURL",
+			"default from " + fdsVisualizationModeCET.getURL()
+		).put(
+			"default", defaultVisualizationMode.equals(externalReferenceCode)
+		).put(
+			"label",
+			fdsVisualizationModeCET.getName(
+				PortalUtil.getLocale(httpServletRequest))
+		).put(
+			"name", externalReferenceCode
+		).put(
+			"thumbnail",
+			GetterUtil.getString(fdsVisualizationModeCET.getIcon(), "view")
+		);
+	}
+
+	private JSONObject _serializeFilter(
+			HttpServletRequest httpServletRequest, ObjectEntry objectEntry,
+			Map<String, JSONObject> tokenResolutionsJSONObjects)
+		throws Exception {
+
+		Map<String, Object> properties = objectEntry.getProperties();
+
+		String fieldName = _getFieldName(objectEntry);
+
+		String clientExtensionEntryERC = MapUtil.getString(
+			properties, "clientExtensionEntryERC");
+
+		if (Validator.isNotNull(clientExtensionEntryERC)) {
+			return _serializeFilterClientExtension(
+				clientExtensionEntryERC, fieldName, httpServletRequest,
+				properties);
+		}
+
+		String type = MapUtil.getString(properties, "type");
+
+		if (Objects.equals(type, "date") || Objects.equals(type, "date-time") ||
+			Objects.equals(type, "date_time")) {
+
+			return _serializeFilterDateOrDateTime(fieldName, properties, type);
+		}
+
+		String sourceType = MapUtil.getString(properties, "sourceType");
+
+		if (Validator.isNotNull(sourceType)) {
+			return _serializeFilterSelection(
+				fieldName, httpServletRequest, objectEntry, sourceType,
+				tokenResolutionsJSONObjects);
+		}
+
+		return null;
+	}
+
+	private JSONObject _serializeFilterClientExtension(
+		String clientExtensionEntryERC, String fieldName,
+		HttpServletRequest httpServletRequest, Map<String, Object> properties) {
+
+		ThemeDisplay themeDisplay =
+			(ThemeDisplay)httpServletRequest.getAttribute(
+				WebKeys.THEME_DISPLAY);
+
+		FDSFilterCET fdsFilterCET = (FDSFilterCET)cetManager.getCET(
+			themeDisplay.getCompanyId(), clientExtensionEntryERC);
+
+		if (fdsFilterCET == null) {
+			_log.error(
+				"No frontend data set filter client extension exists with " +
+					"the external reference code " + clientExtensionEntryERC);
+
+			return null;
+		}
+
+		return JSONUtil.put(
+			"clientExtensionFilterURL", fdsFilterCET.getURL()
+		).put(
+			"entityFieldType",
+			() -> {
+				String entityFieldType = String.valueOf(
+					properties.get("entityFieldType"));
+
+				if (Validator.isNotNull(entityFieldType)) {
+					return entityFieldType;
+				}
+
+				return FDSEntityFieldTypes.STRING;
+			}
+		).put(
+			"id", fieldName
+		).put(
+			"label",
+			MapUtil.getWithFallbackKey(properties, "label", "fieldName")
+		).put(
+			"type", "clientExtension"
+		);
+	}
+
+	private JSONObject _serializeFilterDateOrDateTime(
+			String fieldName, Map<String, Object> properties, String type)
+		throws Exception {
+
+		boolean dateTime = !Objects.equals(type, FDSEntityFieldTypes.DATE);
+
+		JSONObject fromJSONObject = _getDateOrDateTimeJSONObject(
+			dateTime, properties.get("from"));
+		JSONObject toJSONObject = _getDateOrDateTimeJSONObject(
+			dateTime, properties.get("to"));
+
+		boolean active = (fromJSONObject != null) || (toJSONObject != null);
+
+		return JSONUtil.put(
+			"active", active
+		).put(
+			"entityFieldType",
+			dateTime ? FDSEntityFieldTypes.DATE_TIME : FDSEntityFieldTypes.DATE
+		).put(
+			"id", fieldName
+		).put(
+			"label",
+			MapUtil.getWithFallbackKey(properties, "label", "fieldName")
+		).put(
+			"preloadedData",
+			() -> {
+				if (!active) {
+					return null;
+				}
+
+				return JSONUtil.put(
+					"from", fromJSONObject
+				).put(
+					"to", toJSONObject
+				);
+			}
+		).put(
+			"type", dateTime ? "dateTimeRange" : "dateRange"
+		);
+	}
+
+	private JSONObject _serializeFilterSelection(
+			String fieldName, HttpServletRequest httpServletRequest,
+			ObjectEntry objectEntry, String sourceType,
+			Map<String, JSONObject> tokenResolutionsJSONObjects)
+		throws Exception {
+
+		Map<String, Object> properties = objectEntry.getProperties();
+
+		if (Objects.equals(
+				sourceType, FDSEntryItemImportPolicy.ITEM_PROXY.toString())) {
+
+			JSONArray jsonArray = _systemFDSSerializer.serializeFilters(
+				MapUtil.getString(
+					properties,
+					"r_dataSetToDataSetSelectionFilters_l_dataSetERC"),
+				httpServletRequest,
+				_getProxyTokenResolutionsJSONObjects(
+					fieldName, objectEntry, tokenResolutionsJSONObjects));
+
+			for (int i = 0; i < jsonArray.length(); i++) {
+				JSONObject jsonObject = jsonArray.getJSONObject(i);
+
+				if (Objects.equals(fieldName, jsonObject.getString("id"))) {
+					return jsonObject;
+				}
+			}
+		}
+
+		String entityFieldType = String.valueOf(
+			properties.get("entityFieldType"));
+
+		JSONObject jsonObject = JSONUtil.put(
+			"autocompleteEnabled", true
+		).put(
+			"entityFieldType",
+			() -> {
+				if (Validator.isNotNull(entityFieldType)) {
+					return entityFieldType;
+				}
+
+				if (_isCollection(
+						String.valueOf(properties.get("fieldName")),
+						sourceType)) {
+
+					return FDSEntityFieldTypes.COLLECTION;
+				}
+
+				return FDSEntityFieldTypes.STRING;
+			}
+		).put(
+			"id",
+			() -> {
+				if (!Objects.equals(sourceType, "OBJECT_PICKLIST") ||
+					Validator.isNotNull(entityFieldType)) {
+
+					return fieldName;
+				}
+
+				int index = fieldName.lastIndexOf(StringPool.FORWARD_SLASH);
+
+				if (index <= 0) {
+					return fieldName;
+				}
+
+				return fieldName.substring(0, index);
+			}
+		).put(
+			"label",
+			MapUtil.getWithFallbackKey(properties, "label", "fieldName")
+		).put(
+			"multiple", properties.get("multiple")
+		).put(
+			"type", "selection"
+		);
+
+		String source = MapUtil.getString(properties, "source");
+
+		if (Objects.equals(sourceType, "API_REST_APPLICATION")) {
+			String apiURL = _getSelectionFilterAPIURL(
+				httpServletRequest, true, objectEntry,
+				tokenResolutionsJSONObjects);
+
+			if (Validator.isNull(apiURL)) {
+				apiURL = source;
+			}
+
+			Matcher matcher = _pattern.matcher(apiURL);
+
+			if (matcher.find()) {
+				if (_log.isDebugEnabled()) {
+					_log.debug(
+						StringBundler.concat(
+							"Omitting selection filter ",
+							objectEntry.getExternalReferenceCode(),
+							" because its API URL has unresolved tokens: ",
+							apiURL));
+				}
+
+				return null;
+			}
+
+			return jsonObject.put(
+				"apiURL", apiURL
+			).put(
+				"itemKey", properties.get("itemKey")
+			).put(
+				"itemLabel", properties.get("itemLabel")
+			).put(
+				"preloadedData",
+				() -> {
+					JSONArray selectedItemsJSONArray =
+						_jsonFactory.createJSONArray(
+							MapUtil.getString(properties, "preselectedValues"));
+
+					if (JSONUtil.isEmpty(selectedItemsJSONArray)) {
+						return null;
+					}
+
+					return JSONUtil.put(
+						"exclude",
+						() -> Boolean.FALSE.equals(
+							(Boolean)properties.get("include"))
+					).put(
+						"selectedItems", selectedItemsJSONArray
+					);
+				}
+			);
+		}
+
+		if (!Objects.equals(sourceType, "OBJECT_PICKLIST")) {
+			return null;
+		}
+
+		ListTypeDefinition listTypeDefinition =
+			_listTypeDefinitionLocalService.
+				getListTypeDefinitionByExternalReferenceCode(
+					source, PortalUtil.getCompanyId(httpServletRequest));
+
+		List<ListTypeEntry> listTypeEntries =
+			_listTypeEntryLocalService.getListTypeEntries(
+				listTypeDefinition.getListTypeDefinitionId());
+
+		return jsonObject.put(
+			"items",
+			JSONUtil.toJSONArray(
+				listTypeEntries,
+				listTypeEntry -> JSONUtil.put(
+					"key", listTypeEntry.getKey()
+				).put(
+					"label",
+					listTypeEntry.getName(
+						PortalUtil.getLocale(httpServletRequest))
+				).put(
+					"value",
+					() -> _getListTypeEntryKey(entityFieldType, listTypeEntry)
+				))
+		).put(
+			"preloadedData",
+			() -> {
+				JSONArray selectedItemsJSONArray =
+					_jsonFactory.createJSONArray();
+
+				JSONArray preselectedValuesJSONArray =
+					_jsonFactory.createJSONArray(
+						MapUtil.getString(properties, "preselectedValues"));
+
+				for (int i = 0; i < preselectedValuesJSONArray.length(); i++) {
+					JSONObject preselectedValueJSONObject =
+						preselectedValuesJSONArray.getJSONObject(i);
+
+					for (ListTypeEntry listTypeEntry : listTypeEntries) {
+						if (!Objects.equals(
+								listTypeEntry.getExternalReferenceCode(),
+								preselectedValueJSONObject.getString(
+									"value"))) {
+
+							continue;
+						}
+
+						selectedItemsJSONArray.put(
+							JSONUtil.put(
+								"label",
+								listTypeEntry.getName(
+									PortalUtil.getLocale(httpServletRequest))
+							).put(
+								"value",
+								() -> _getListTypeEntryKey(
+									entityFieldType, listTypeEntry)
+							));
+					}
+				}
+
+				if (JSONUtil.isEmpty(selectedItemsJSONArray)) {
+					return null;
+				}
+
+				return JSONUtil.put(
+					"exclude",
+					() -> Boolean.FALSE.equals(
+						(Boolean)properties.get("include"))
+				).put(
+					"selectedItems", selectedItemsJSONArray
+				);
+			}
+		);
+	}
+
+	private JSONArray _serializeFilters(
+			String fdsName, HttpServletRequest httpServletRequest,
+			Map<String, JSONObject> tokenResolutionsJSONObjects)
+		throws Exception {
+
+		return JSONUtil.toJSONArray(
+			getSortedRelatedObjectEntries(
+				fdsName, httpServletRequest,
+				(ObjectEntry objectEntry) -> _isActive(objectEntry),
+				"filtersOrder", "dataSetToDataSetClientExtensionFilters",
+				"dataSetToDataSetDateFilters",
+				"dataSetToDataSetSelectionFilters"),
+			(ObjectEntry objectEntry) -> _serializeFilter(
+				httpServletRequest, objectEntry, tokenResolutionsJSONObjects));
+	}
+
+	private JSONObject _serializeViewSchema(
+			Collection<ObjectEntry> objectEntries)
+		throws Exception {
+
+		JSONObject jsonObject = _jsonFactory.createJSONObject();
+
+		for (ObjectEntry objectEntry : objectEntries) {
+			Map<String, Object> properties = objectEntry.getProperties();
+
+			jsonObject.put(
+				String.valueOf(properties.get("name")),
+				String.valueOf(properties.get("fieldName")));
+		}
+
+		return jsonObject;
+	}
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		CustomFDSSerializer.class);
+
+	private static final List<String> _defaultVisualizationModeNames =
+		Arrays.asList("cards", "list", "table");
+	private static final Pattern _pattern = Pattern.compile("\\{(.*?)\\}");
+
+	@Reference
+	private JSONFactory _jsonFactory;
+
+	@Reference
+	private ListTypeDefinitionLocalService _listTypeDefinitionLocalService;
+
+	@Reference
+	private ListTypeEntryLocalService _listTypeEntryLocalService;
+
+	@Reference
+	private ObjectDefinitionLocalService _objectDefinitionLocalService;
+
+	@Reference
+	private ObjectEntryManagerRegistry _objectEntryManagerRegistry;
+
+	@Reference
+	private ObjectRelationshipLocalService _objectRelationshipLocalService;
+
+	@Reference(
+		target = "(frontend.data.set.serializer.type=" + FDSSerializer.TYPE_SYSTEM + ")"
+	)
+	private FDSSerializer _systemFDSSerializer;
+
+	private static class ObjectEntryComparator
+		implements Comparator<ObjectEntry> {
+
+		public ObjectEntryComparator(List<String> externalReferenceCodes) {
+			_externalReferenceCodes = externalReferenceCodes;
+		}
+
+		@Override
+		public int compare(ObjectEntry objectEntry1, ObjectEntry objectEntry2) {
+			String externalReferenceCode1 =
+				objectEntry1.getExternalReferenceCode();
+			String externalReferenceCode2 =
+				objectEntry2.getExternalReferenceCode();
+
+			int index1 = _externalReferenceCodes.indexOf(
+				externalReferenceCode1);
+			int index2 = _externalReferenceCodes.indexOf(
+				externalReferenceCode2);
+
+			if ((index1 == -1) && (index2 == -1)) {
+				Date date = objectEntry1.getDateCreated();
+
+				return date.compareTo(objectEntry2.getDateCreated());
+			}
+
+			if (index1 == -1) {
+				return 1;
+			}
+
+			if (index2 == -1) {
+				return -1;
+			}
+
+			return Integer.compare(index1, index2);
+		}
+
+		private final List<String> _externalReferenceCodes;
+
+	}
+
+}

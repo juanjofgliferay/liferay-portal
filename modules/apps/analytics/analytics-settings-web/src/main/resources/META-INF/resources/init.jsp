@@ -5,7 +5,7 @@
  */
 --%>
 
-<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<%@ taglib uri="jakarta.tags.core" prefix="c" %>
 
 <%@ taglib uri="http://java.sun.com/portlet_2_0" prefix="portlet" %>
 
@@ -33,7 +33,7 @@ page import="com.liferay.analytics.settings.web.internal.display.context.Organiz
 page import="com.liferay.analytics.settings.web.internal.display.context.UserGroupDisplayContext" %><%@
 page import="com.liferay.analytics.settings.web.internal.display.context.UserGroupManagementToolbarDisplayContext" %><%@
 page import="com.liferay.analytics.settings.web.internal.search.ChannelSearch" %><%@
-page import="com.liferay.analytics.settings.web.internal.user.AnalyticsUsersManager" %><%@
+page import="com.liferay.analytics.settings.web.internal.util.AnalyticsUsersUtil" %><%@
 page import="com.liferay.portal.kernel.language.LanguageUtil" %><%@
 page import="com.liferay.portal.kernel.model.Group" %><%@
 page import="com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder" %><%@
@@ -50,10 +50,10 @@ page import="com.liferay.portal.kernel.util.StringUtil" %><%@
 page import="com.liferay.portal.kernel.util.Validator" %><%@
 page import="com.liferay.site.navigation.taglib.servlet.taglib.util.BreadcrumbEntriesUtil" %>
 
+<%@ page import="jakarta.portlet.PortletURL" %>
+
 <%@ page import="java.util.List" %><%@
 page import="java.util.Set" %>
-
-<%@ page import="javax.portlet.PortletURL" %>
 
 <liferay-frontend:defineObjects />
 
@@ -62,5 +62,5 @@ page import="java.util.Set" %>
 <portlet:defineObjects />
 
 <liferay-util:html-top>
-	<link href="<%= PortalUtil.getStaticResourceURL(request, PortalUtil.getPathProxy() + application.getContextPath() + "/css/main.css") %>" rel="stylesheet" type="text/css" />
+	<aui:link hashedFile="<%= true %>" href="analytics-settings-web/css/main.css" rel="stylesheet" type="text/css" />
 </liferay-util:html-top>

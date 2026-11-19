@@ -5,7 +5,6 @@
 
 package com.liferay.content.dashboard.journal.internal.item.action.provider;
 
-import com.liferay.asset.display.page.portlet.AssetDisplayPageFriendlyURLProvider;
 import com.liferay.content.dashboard.item.action.ContentDashboardItemAction;
 import com.liferay.content.dashboard.item.action.provider.ContentDashboardItemActionProvider;
 import com.liferay.content.dashboard.journal.internal.item.action.ViewJournalArticleContentDashboardItemAction;
@@ -17,7 +16,7 @@ import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -62,25 +61,17 @@ public class ViewJournalArticleContentDashboardItemActionProvider
 		ContentDashboardItemAction contentDashboardItemAction =
 			_getContentDashboardItemAction(httpServletRequest, journalArticle);
 
-		if (Validator.isNull(contentDashboardItemAction.getURL())) {
-			return false;
-		}
-
-		return true;
+		return Validator.isNotNull(contentDashboardItemAction.getURL());
 	}
 
 	private ContentDashboardItemAction _getContentDashboardItemAction(
 		HttpServletRequest httpServletRequest, JournalArticle journalArticle) {
 
 		return new ViewJournalArticleContentDashboardItemAction(
-			_assetDisplayPageFriendlyURLProvider, httpServletRequest,
-			journalArticle, _language, _layoutDisplayPageProviderRegistry,
-			_layoutLocalService, _layoutSEOLinkManager, _portal);
+			httpServletRequest, journalArticle, _language,
+			_layoutDisplayPageProviderRegistry, _layoutLocalService,
+			_layoutSEOLinkManager, _portal);
 	}
-
-	@Reference
-	private AssetDisplayPageFriendlyURLProvider
-		_assetDisplayPageFriendlyURLProvider;
 
 	@Reference
 	private Language _language;

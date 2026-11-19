@@ -80,14 +80,16 @@
 
 					</div>
 
-					<aui:script use="liferay-auto-fields">
-						new Liferay.AutoFields({
+					<aui:script type="module">
+						import {autoFields} from '<%= FrontendESMUtil.buildURL(themeDisplay, "frontend-js-web", "auto_fields") %>';
+
+						autoFields({
 							contentBox: '#<portlet:namespace />subscriptions',
 							fieldIndexes: '<portlet:namespace />subscriptionIndexes',
 							namespace: '<portlet:namespace />',
 							sortable: true,
 							sortableHandle: '.field-row',
-						}).render();
+						});
 					</aui:script>
 				</clay:tabs-panel>
 
@@ -96,7 +98,7 @@
 						<liferay-template:template-selector
 							className="<%= RSSFeed.class.getName() %>"
 							displayStyle="<%= rssPortletInstanceConfiguration.displayStyle() %>"
-							displayStyleGroupId="<%= rssDisplayContext.getDisplayStyleGroupId() %>"
+							displayStyleGroupKey="<%= rssDisplayContext.getDisplayStyleGroupKey() %>"
 							label="display-template"
 							refreshURL="<%= configurationRenderURL.toString() %>"
 							showEmptyOption="<%= true %>"

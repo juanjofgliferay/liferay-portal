@@ -20,11 +20,11 @@ import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portlet.asset.service.permission.AssetVocabularyPermission;
 import com.liferay.taglib.security.PermissionsURLTag;
 
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.List;
-
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Víctor Galán
@@ -98,7 +98,9 @@ public class AssetVocabularyActionDropdownItemsProvider {
 			dropdownGroupItem -> {
 				dropdownGroupItem.setDropdownItems(
 					DropdownItemListBuilder.add(
-						() -> _hasPermission(vocabulary, ActionKeys.DELETE),
+						() ->
+							!_isSystemVocabulary(vocabulary) &&
+							_hasPermission(vocabulary, ActionKeys.DELETE),
 						dropdownItem -> {
 							dropdownItem.putData("action", "deleteVocabulary");
 							dropdownItem.putData(
@@ -151,6 +153,14 @@ public class AssetVocabularyActionDropdownItemsProvider {
 
 		return AssetVocabularyPermission.contains(
 			_themeDisplay.getPermissionChecker(), vocabulary, actionId);
+	}
+
+	private boolean _isSystemVocabulary(AssetVocabulary vocabulary) {
+		if (vocabulary == null) {
+			return false;
+		}
+
+		return vocabulary.isSystem();
 	}
 
 	private final HttpServletRequest _httpServletRequest;

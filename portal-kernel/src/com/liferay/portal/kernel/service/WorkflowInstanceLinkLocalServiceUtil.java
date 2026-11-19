@@ -137,6 +137,13 @@ public class WorkflowInstanceLinkLocalServiceUtil {
 		return getService().deleteWorkflowInstanceLink(workflowInstanceLink);
 	}
 
+	public static void deleteWorkflowInstanceLinkByWorkflowInstanceId(
+		long workflowInstanceId) {
+
+		getService().deleteWorkflowInstanceLinkByWorkflowInstanceId(
+			workflowInstanceId);
+	}
+
 	public static void deleteWorkflowInstanceLinks(
 			long companyId, long groupId, String className, long classPK)
 		throws PortalException {
@@ -327,6 +334,12 @@ public class WorkflowInstanceLinkLocalServiceUtil {
 			companyId, groupId, className, classPK);
 	}
 
+	public static List<WorkflowInstanceLink> getWorkflowInstanceLinks(
+		long companyId, String className) {
+
+		return getService().getWorkflowInstanceLinks(companyId, className);
+	}
+
 	/**
 	 * Returns the number of workflow instance links.
 	 *
@@ -406,3 +419,4 @@ public class WorkflowInstanceLinkLocalServiceUtil {
 	private static volatile WorkflowInstanceLinkLocalService _service;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1698515198

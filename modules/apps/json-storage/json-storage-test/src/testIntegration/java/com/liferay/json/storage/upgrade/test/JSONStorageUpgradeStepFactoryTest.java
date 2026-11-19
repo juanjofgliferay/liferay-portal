@@ -54,12 +54,12 @@ public class JSONStorageUpgradeStepFactoryTest {
 				"create table JSONStorageUpgrade (jsonStorageUpgradeId LONG ",
 				"not null, ctCollectionId LONG not null, companyId LONG, ",
 				"jsonString VARCHAR(75), primary key (jsonStorageUpgradeId, ",
-				"ctCollectionId));"));
+				"ctCollectionId))"));
 
 		db.runSQL(
 			StringBundler.concat(
 				"insert into JSONStorageUpgrade values (", _CLASS_PK, ", 0, ",
-				TestPropsValues.getCompanyId(), ", '", _JSON_STRING, "');"));
+				TestPropsValues.getCompanyId(), ", '", _JSON_STRING, "')"));
 
 		_className = _classNameLocalService.getClassName(
 			JSONStorageUpgradeStepFactoryTest.class.getName());
@@ -103,16 +103,16 @@ public class JSONStorageUpgradeStepFactoryTest {
 	private static final String _JSON_STRING =
 		"{\"array\": [1, 2], \"object\": {\"key\": \"value\"}}";
 
-	@Inject
-	private static ClassNameLocalService _classNameLocalService;
-
-	@Inject
-	private static JSONStorageEntryLocalService _jsonStorageEntryLocalService;
-
-	@Inject
-	private static JSONStorageUpgradeStepFactory _jsonStorageUpgradeStepFactory;
-
 	@DeleteAfterTestRun
 	private ClassName _className;
+
+	@Inject
+	private ClassNameLocalService _classNameLocalService;
+
+	@Inject
+	private JSONStorageEntryLocalService _jsonStorageEntryLocalService;
+
+	@Inject
+	private JSONStorageUpgradeStepFactory _jsonStorageUpgradeStepFactory;
 
 }

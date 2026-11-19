@@ -8,13 +8,13 @@ package com.liferay.object.admin.rest.client.dto.v1_0;
 import com.liferay.object.admin.rest.client.function.UnsafeSupplier;
 import com.liferay.object.admin.rest.client.serdes.v1_0.ObjectActionSerDes;
 
+import jakarta.annotation.Generated;
+
 import java.io.Serializable;
 
 import java.util.Date;
 import java.util.Map;
 import java.util.Objects;
-
-import javax.annotation.Generated;
 
 /**
  * @author Javier Gamarra
@@ -133,16 +133,17 @@ public class ObjectAction implements Cloneable, Serializable {
 
 	protected Date dateModified;
 
-	public String getDescription() {
+	public Map<String, String> getDescription() {
 		return description;
 	}
 
-	public void setDescription(String description) {
+	public void setDescription(Map<String, String> description) {
 		this.description = description;
 	}
 
 	public void setDescription(
-		UnsafeSupplier<String, Exception> descriptionUnsafeSupplier) {
+		UnsafeSupplier<Map<String, String>, Exception>
+			descriptionUnsafeSupplier) {
 
 		try {
 			description = descriptionUnsafeSupplier.get();
@@ -152,7 +153,7 @@ public class ObjectAction implements Cloneable, Serializable {
 		}
 	}
 
-	protected String description;
+	protected Map<String, String> description;
 
 	public Map<String, String> getErrorMessage() {
 		return errorMessage;
@@ -396,3 +397,4 @@ public class ObjectAction implements Cloneable, Serializable {
 	}
 
 }
+// LIFERAY-REST-BUILDER-HASH:-1558858057

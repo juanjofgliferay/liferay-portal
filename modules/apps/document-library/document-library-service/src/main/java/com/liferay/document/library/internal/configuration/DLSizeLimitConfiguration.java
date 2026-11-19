@@ -13,7 +13,7 @@ import com.liferay.portal.configuration.metatype.annotations.ExtendedObjectClass
  * @author Adolfo Pérez
  */
 @ExtendedObjectClassDefinition(
-	category = "documents-and-media", generateUI = false,
+	category = "documents-and-media",
 	scope = ExtendedObjectClassDefinition.Scope.GROUP
 )
 @Meta.OCD(
@@ -28,10 +28,16 @@ public interface DLSizeLimitConfiguration {
 	)
 	public long fileMaxSize();
 
-	@Meta.AD(deflt = "", name = "mime-type-size-limit-name", required = false)
-	public String[] mimeTypeSizeLimit();
-
 	@Meta.AD(deflt = "52428800", name = "max-size-to-copy", required = false)
 	public long maxSizeToCopy();
+
+	@Meta.AD(
+		deflt = "0", description = "max-size-to-download-help",
+		name = "max-size-to-download", required = false
+	)
+	public long maxSizeToDownload();
+
+	@Meta.AD(deflt = "", name = "mime-type-size-limit-name", required = false)
+	public String[] mimeTypeSizeLimit();
 
 }

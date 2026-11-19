@@ -11,25 +11,27 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import com.liferay.petra.function.UnsafeSupplier;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Brian Wing Shun Chan
@@ -49,14 +51,22 @@ public class Hit implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(Hit.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public Map<String, DocumentField> getDocumentFields() {
+		if (_documentFieldsSupplier != null) {
+			documentFields = _documentFieldsSupplier.get();
+
+			_documentFieldsSupplier = null;
+		}
+
 		return documentFields;
 	}
 
 	public void setDocumentFields(Map<String, DocumentField> documentFields) {
 		this.documentFields = documentFields;
+
+		_documentFieldsSupplier = null;
 	}
 
 	@JsonIgnore
@@ -64,129 +74,186 @@ public class Hit implements Serializable {
 		UnsafeSupplier<Map<String, DocumentField>, Exception>
 			documentFieldsUnsafeSupplier) {
 
-		try {
-			documentFields = documentFieldsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_documentFieldsSupplier = () -> {
+			try {
+				return documentFieldsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Map<String, DocumentField> documentFields;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Map<String, DocumentField>> _documentFieldsSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getExplanation() {
+		if (_explanationSupplier != null) {
+			explanation = _explanationSupplier.get();
+
+			_explanationSupplier = null;
+		}
+
 		return explanation;
 	}
 
 	public void setExplanation(String explanation) {
 		this.explanation = explanation;
+
+		_explanationSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setExplanation(
 		UnsafeSupplier<String, Exception> explanationUnsafeSupplier) {
 
-		try {
-			explanation = explanationUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_explanationSupplier = () -> {
+			try {
+				return explanationUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String explanation;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _explanationSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getId() {
+		if (_idSupplier != null) {
+			id = _idSupplier.get();
+
+			_idSupplier = null;
+		}
+
 		return id;
 	}
 
 	public void setId(String id) {
 		this.id = id;
+
+		_idSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setId(UnsafeSupplier<String, Exception> idUnsafeSupplier) {
-		try {
-			id = idUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_idSupplier = () -> {
+			try {
+				return idUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String id;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _idSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public Float getScore() {
+		if (_scoreSupplier != null) {
+			score = _scoreSupplier.get();
+
+			_scoreSupplier = null;
+		}
+
 		return score;
 	}
 
 	public void setScore(Float score) {
 		this.score = score;
+
+		_scoreSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setScore(UnsafeSupplier<Float, Exception> scoreUnsafeSupplier) {
-		try {
-			score = scoreUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_scoreSupplier = () -> {
+			try {
+				return scoreUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Float score;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Float> _scoreSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Long getVersion() {
+		if (_versionSupplier != null) {
+			version = _versionSupplier.get();
+
+			_versionSupplier = null;
+		}
+
 		return version;
 	}
 
 	public void setVersion(Long version) {
 		this.version = version;
+
+		_versionSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setVersion(
 		UnsafeSupplier<Long, Exception> versionUnsafeSupplier) {
 
-		try {
-			version = versionUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_versionSupplier = () -> {
+			try {
+				return versionUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long version;
+
+	@JsonIgnore
+	private Supplier<Long> _versionSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -215,6 +282,8 @@ public class Hit implements Serializable {
 
 		sb.append("{");
 
+		Map<String, DocumentField> documentFields = getDocumentFields();
+
 		if (documentFields != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -224,6 +293,8 @@ public class Hit implements Serializable {
 
 			sb.append(_toJSON(documentFields));
 		}
+
+		String explanation = getExplanation();
 
 		if (explanation != null) {
 			if (sb.length() > 1) {
@@ -239,6 +310,8 @@ public class Hit implements Serializable {
 			sb.append("\"");
 		}
 
+		String id = getId();
+
 		if (id != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -253,6 +326,8 @@ public class Hit implements Serializable {
 			sb.append("\"");
 		}
 
+		Float score = getScore();
+
 		if (score != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -262,6 +337,8 @@ public class Hit implements Serializable {
 
 			sb.append(score);
 		}
+
+		Long version = getVersion();
 
 		if (version != null) {
 			if (sb.length() > 1) {
@@ -278,8 +355,8 @@ public class Hit implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.search.experiences.rest.dto.v1_0.Hit",
 		name = "x-class-name"
 	)
@@ -325,7 +402,10 @@ public class Hit implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -363,6 +443,27 @@ public class Hit implements Serializable {
 		return sb.toString();
 	}
 
+	private static String _toJSON(Object value) {
+		if (value instanceof Collection) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONArray((Collection<?>)value));
+		}
+		else if (value instanceof Map) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONObject((Map<?, ?>)value));
+		}
+		else if (value instanceof Object[]) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONArray(
+					Arrays.asList((Object[])value)));
+		}
+		else if (value instanceof String) {
+			return StringBundler.concat("\"", _escape(value), "\"");
+		}
+
+		return String.valueOf(value);
+	}
+
 	private static final String[][] _JSON_ESCAPE_STRINGS = {
 		{"\\", "\"", "\b", "\f", "\n", "\r", "\t"},
 		{"\\\\", "\\\"", "\\b", "\\f", "\\n", "\\r", "\\t"}
@@ -371,3 +472,4 @@ public class Hit implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:57755247

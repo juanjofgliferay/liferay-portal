@@ -5,22 +5,27 @@
 
 package com.liferay.portal.cache.internal.dao.orm;
 
+import com.liferay.petra.lang.CentralizedThreadLocal;
+import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.cache.key.HashCodeHexStringCacheKeyGenerator;
 import com.liferay.portal.kernel.cache.MultiVMPool;
 import com.liferay.portal.kernel.cache.PortalCache;
 import com.liferay.portal.kernel.cache.key.CacheKeyGenerator;
 import com.liferay.portal.kernel.cache.key.CacheKeyGeneratorUtil;
+import com.liferay.portal.kernel.cache.transactional.TransactionalPortalCacheUtil;
 import com.liferay.portal.kernel.dao.orm.FinderCache;
 import com.liferay.portal.kernel.dao.orm.FinderPath;
+import com.liferay.portal.kernel.exception.NoSuchModelException;
 import com.liferay.portal.kernel.model.impl.BaseModelImpl;
 import com.liferay.portal.kernel.service.persistence.impl.BasePersistenceImpl;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
-import com.liferay.portal.kernel.test.util.PropsTestUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.PropsKeys;
+import com.liferay.portal.kernel.util.PropsUtil;
 import com.liferay.portal.kernel.util.ProxyFactory;
 import com.liferay.portal.kernel.util.ProxyUtil;
+import com.liferay.portal.servlet.filters.threadlocal.ThreadLocalFilterThreadLocal;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import java.io.Serializable;
@@ -32,6 +37,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -54,16 +60,6 @@ public class FinderCacheImplTest {
 
 	@BeforeClass
 	public static void setUpClass() {
-		_properties = HashMapBuilder.<String, Object>put(
-			PropsKeys.VALUE_OBJECT_ENTITY_CACHE_ENABLED, "true"
-		).put(
-			PropsKeys.VALUE_OBJECT_FINDER_CACHE_ENABLED, "true"
-		).put(
-			PropsKeys.VALUE_OBJECT_FINDER_CACHE_LIST_THRESHOLD, "-1"
-		).put(
-			PropsKeys.VALUE_OBJECT_MVCC_ENTITY_CACHE_ENABLED, "true"
-		).build();
-
 		_serializedMultiVMPool = (MultiVMPool)ProxyUtil.newProxyInstance(
 			_classLoader, new Class<?>[] {MultiVMPool.class},
 			new MultiVMPoolInvocationHandler(_classLoader, true));
@@ -80,8 +76,13 @@ public class FinderCacheImplTest {
 	@Before
 	public void setUp() {
 		_finderPath = new FinderPath(
-			FinderCacheImplTest.class.getName(), "test", new String[0],
-			new String[0], true);
+			FinderCacheImplTest.class.getName() + ".List1", "test",
+			new String[0], new String[0], true);
+	}
+
+	@After
+	public void tearDown() {
+		CentralizedThreadLocal.clearShortLivedCentralizedThreadLocals();
 	}
 
 	@Test
@@ -125,8 +126,8 @@ public class FinderCacheImplTest {
 	@Test
 	public void testPutNonbaseModelList() {
 		FinderPath finderPath = new FinderPath(
-			FinderCacheImplTest.class.getName(), "test-nonbase-model",
-			new String[0], new String[0], false);
+			FinderCacheImplTest.class.getName() + ".List1",
+			"test-nonbase-model", new String[0], new String[0], false);
 
 		FinderCache finderCache = _activateFinderCache(
 			_notSerializedMultiVMPool);
@@ -149,6 +150,105 @@ public class FinderCacheImplTest {
 	}
 
 	@Test
+	public void testPutResultAfterWriterCommit() {
+		FinderCacheImpl finderCacheImpl = _activateFinderCache(
+			_notSerializedMultiVMPool);
+
+		TestBaseModel testBaseModel1 = new TestBaseModel("a");
+
+		List<TestBaseModel> testBaseModels = Collections.singletonList(
+			testBaseModel1);
+
+		try (SafeCloseable safeCloseable =
+				ThreadLocalFilterThreadLocal.setFilterInvokedWithSafeCloseable(
+					true)) {
+
+			finderCacheImpl.putResult(_finderPath, _KEY1, testBaseModels);
+
+			Assert.assertNull(
+				finderCacheImpl.getResult(
+					_finderPath, _KEY1,
+					new TestBasePersistence(Collections.emptyMap())));
+
+			PortalCache<Serializable, Serializable> portalCache =
+				ReflectionTestUtil.invoke(
+					finderCacheImpl, "_getPortalCache",
+					new Class<?>[] {String.class}, _finderPath.getCacheName());
+
+			TransactionalPortalCacheUtil.begin();
+
+			TransactionalPortalCacheUtil.removeAll(portalCache, false);
+
+			TransactionalPortalCacheUtil.commit(false);
+
+			TestBaseModel testBaseModel2 = new TestBaseModel("b");
+
+			finderCacheImpl.putResult(
+				_finderPath, _KEY1, Collections.singletonList(testBaseModel2));
+
+			TestBasePersistence testBasePersistence = new TestBasePersistence(
+				Collections.<Serializable, TestBaseModel>singletonMap(
+					"b", testBaseModel2));
+
+			Assert.assertNull(
+				finderCacheImpl.getResult(
+					_finderPath, _KEY1, testBasePersistence));
+
+			finderCacheImpl.clearLocalCache();
+
+			Assert.assertNull(
+				finderCacheImpl.getResult(
+					_finderPath, _KEY1, testBasePersistence));
+		}
+	}
+
+	@Test
+	public void testPutResultAfterWriterCommitWithStaleLocalCache() {
+		FinderCacheImpl finderCacheImpl = _activateFinderCache(
+			_notSerializedMultiVMPool);
+
+		TestBasePersistence testBasePersistence = new TestBasePersistence(
+			Collections.<Serializable, TestBaseModel>singletonMap(
+				"a", new TestBaseModel("a")));
+
+		try (SafeCloseable safeCloseable =
+				ThreadLocalFilterThreadLocal.setFilterInvokedWithSafeCloseable(
+					true)) {
+
+			Assert.assertNull(
+				finderCacheImpl.getResult(
+					_finderPath, _KEY1, testBasePersistence));
+
+			TransactionalPortalCacheUtil.begin();
+
+			finderCacheImpl.putResult(
+				_finderPath, _KEY1,
+				Collections.singletonList(new TestBaseModel("a")));
+
+			TransactionalPortalCacheUtil.commit(true);
+
+			PortalCache<Serializable, Serializable> portalCache =
+				ReflectionTestUtil.invoke(
+					finderCacheImpl, "_getPortalCache",
+					new Class<?>[] {String.class}, _finderPath.getCacheName());
+
+			TransactionalPortalCacheUtil.begin();
+
+			TransactionalPortalCacheUtil.removeAll(portalCache, false);
+
+			TransactionalPortalCacheUtil.commit(false);
+
+			finderCacheImpl.putResult(
+				_finderPath, _KEY1,
+				Collections.singletonList(new TestBaseModel("b")));
+
+			Assert.assertNull(
+				finderCacheImpl.getResult(
+					_finderPath, _KEY1, testBasePersistence));
+		}
+	}
+
+	@Test
 	public void testTestKeysCollide() {
 		Assert.assertEquals(
 			_cacheKeyGenerator.getCacheKey(_KEY1),
@@ -157,8 +257,7 @@ public class FinderCacheImplTest {
 
 	@Test
 	public void testThreshold() {
-		_properties.put(
-			PropsKeys.VALUE_OBJECT_FINDER_CACHE_LIST_THRESHOLD, "2");
+		PropsUtil.set(PropsKeys.VALUE_OBJECT_FINDER_CACHE_LIST_THRESHOLD, "2");
 
 		FinderCache finderCache = _activateFinderCache(
 			_notSerializedMultiVMPool);
@@ -194,8 +293,6 @@ public class FinderCacheImplTest {
 
 		ReflectionTestUtil.setFieldValue(
 			finderCacheImpl, "_multiVMPool", multiVMPool);
-		ReflectionTestUtil.setFieldValue(
-			finderCacheImpl, "_props", PropsTestUtil.setProps(_properties));
 
 		finderCacheImpl.activate(
 			(BundleContext)ProxyUtil.newProxyInstance(
@@ -239,7 +336,6 @@ public class FinderCacheImplTest {
 	private static final ClassLoader _classLoader =
 		FinderCacheImplTest.class.getClassLoader();
 	private static MultiVMPool _notSerializedMultiVMPool;
-	private static Map<String, Object> _properties;
 	private static MultiVMPool _serializedMultiVMPool;
 
 	private FinderPath _finderPath;
@@ -300,7 +396,7 @@ public class FinderCacheImplTest {
 	}
 
 	private static class TestBasePersistence
-		extends BasePersistenceImpl<TestBaseModel> {
+		extends BasePersistenceImpl<TestBaseModel, NoSuchModelException> {
 
 		@Override
 		public TestBaseModel fetchByPrimaryKey(Serializable serializable) {

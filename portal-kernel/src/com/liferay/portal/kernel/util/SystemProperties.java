@@ -5,12 +5,11 @@
 
 package com.liferay.portal.kernel.util;
 
+import com.liferay.petra.io.unsync.UnsyncBufferedReader;
+import com.liferay.petra.io.unsync.UnsyncStringReader;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.io.unsync.UnsyncBufferedReader;
-import com.liferay.portal.kernel.io.unsync.UnsyncStringReader;
-import com.liferay.portal.kernel.model.CompanyConstants;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -80,13 +79,15 @@ public class SystemProperties {
 		for (Map.Entry<String, String> entry : _properties.entrySet()) {
 			String key = entry.getKey();
 
-			if (key.startsWith(prefix)) {
-				if (removePrefix) {
-					key = key.substring(prefix.length());
-				}
-
-				properties.put(key, _resolveReference(entry.getValue()));
+			if (!key.startsWith(prefix)) {
+				continue;
 			}
+
+			if (removePrefix) {
+				key = key.substring(prefix.length());
+			}
+
+			properties.put(key, _resolveReference(entry.getValue()));
 		}
 
 		return properties;
@@ -118,9 +119,11 @@ public class SystemProperties {
 
 				_load(url, properties);
 
-				if (urls != null) {
-					urls.add(url);
+				if (urls == null) {
+					continue;
 				}
+
+				urls.add(url);
 			}
 		}
 		catch (IOException ioException) {
@@ -138,9 +141,11 @@ public class SystemProperties {
 
 				_load(url, properties);
 
-				if (urls != null) {
-					urls.add(url);
+				if (urls == null) {
+					continue;
 				}
+
+				urls.add(url);
 			}
 		}
 		catch (IOException ioException) {
@@ -162,11 +167,13 @@ public class SystemProperties {
 			for (Map.Entry<Object, Object> entry : properties.entrySet()) {
 				String key = String.valueOf(entry.getKey());
 
-				if (systemPropertiesSetOverride ||
-					Validator.isNull(System.getProperty(key))) {
+				if (!systemPropertiesSetOverride &&
+					Validator.isNotNull(System.getProperty(key))) {
 
-					System.setProperty(key, String.valueOf(entry.getValue()));
+					continue;
 				}
+
+				System.setProperty(key, String.valueOf(entry.getValue()));
 			}
 
 			if (!systemPropertiesSetOverride) {
@@ -177,9 +184,11 @@ public class SystemProperties {
 
 					String key = String.valueOf(entry.getKey());
 
-					if (Validator.isNotNull(properties.get(key))) {
-						properties.put(key, entry.getValue());
+					if (Validator.isNull(properties.get(key))) {
+						continue;
 					}
+
+					properties.put(key, entry.getValue());
 				}
 			}
 		}
@@ -190,8 +199,7 @@ public class SystemProperties {
 		PropertiesUtil.fromProperties(properties, _properties);
 
 		EnvPropertiesUtil.loadEnvOverrides(
-			SYSTEM_ENV_OVERRIDE_PREFIX, CompanyConstants.SYSTEM,
-			SystemProperties::set);
+			SystemProperties::set, SYSTEM_ENV_OVERRIDE_PREFIX);
 
 		if (urls != null) {
 			for (URL url : urls) {
@@ -210,8 +218,10 @@ public class SystemProperties {
 		throws IOException {
 
 		try (InputStream inputStream = url.openStream();
+
 			InputStreamReader inputStreamReader = new InputStreamReader(
 				inputStream);
+
 			UnsyncBufferedReader unsyncBufferedReader =
 				new UnsyncBufferedReader(inputStreamReader)) {
 

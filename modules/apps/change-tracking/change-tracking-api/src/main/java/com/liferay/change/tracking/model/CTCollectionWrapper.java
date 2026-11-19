@@ -47,6 +47,7 @@ public class CTCollectionWrapper
 		attributes.put("name", getName());
 		attributes.put("description", getDescription());
 		attributes.put("onDemandUserId", getOnDemandUserId());
+		attributes.put("scheduledDate", getScheduledDate());
 		attributes.put("shareable", isShareable());
 		attributes.put("status", getStatus());
 		attributes.put("statusByUserId", getStatusByUserId());
@@ -134,6 +135,12 @@ public class CTCollectionWrapper
 
 		if (onDemandUserId != null) {
 			setOnDemandUserId(onDemandUserId);
+		}
+
+		Date scheduledDate = (Date)attributes.get("scheduledDate");
+
+		if (scheduledDate != null) {
+			setScheduledDate(scheduledDate);
 		}
 
 		Boolean shareable = (Boolean)attributes.get("shareable");
@@ -287,6 +294,16 @@ public class CTCollectionWrapper
 	}
 
 	/**
+	 * Returns the scheduled date of this ct collection.
+	 *
+	 * @return the scheduled date of this ct collection
+	 */
+	@Override
+	public Date getScheduledDate() {
+		return model.getScheduledDate();
+	}
+
+	/**
 	 * Returns the schema version ID of this ct collection.
 	 *
 	 * @return the schema version ID of this ct collection
@@ -294,6 +311,16 @@ public class CTCollectionWrapper
 	@Override
 	public long getSchemaVersionId() {
 		return model.getSchemaVersionId();
+	}
+
+	@Override
+	public int getScore() {
+		return model.getScore();
+	}
+
+	@Override
+	public String getScoreSizeClassification() {
+		return model.getScoreSizeClassification();
 	}
 
 	/**
@@ -382,8 +409,23 @@ public class CTCollectionWrapper
 	}
 
 	@Override
+	public boolean isEmpty() {
+		return model.isEmpty();
+	}
+
+	@Override
+	public boolean isInProgress() {
+		return model.isInProgress();
+	}
+
+	@Override
 	public boolean isProduction() {
 		return model.isProduction();
+	}
+
+	@Override
+	public boolean isReadOnly() {
+		return model.isReadOnly();
 	}
 
 	/**
@@ -522,6 +564,16 @@ public class CTCollectionWrapper
 	}
 
 	/**
+	 * Sets the scheduled date of this ct collection.
+	 *
+	 * @param scheduledDate the scheduled date of this ct collection
+	 */
+	@Override
+	public void setScheduledDate(Date scheduledDate) {
+		model.setScheduledDate(scheduledDate);
+	}
+
+	/**
 	 * Sets the schema version ID of this ct collection.
 	 *
 	 * @param schemaVersionId the schema version ID of this ct collection
@@ -627,3 +679,4 @@ public class CTCollectionWrapper
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-233953900

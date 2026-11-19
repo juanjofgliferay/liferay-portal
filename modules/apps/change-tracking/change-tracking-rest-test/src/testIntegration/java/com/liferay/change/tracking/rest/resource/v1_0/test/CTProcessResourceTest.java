@@ -7,23 +7,120 @@ package com.liferay.change.tracking.rest.resource.v1_0.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.change.tracking.model.CTCollection;
+import com.liferay.change.tracking.model.CTPreferences;
 import com.liferay.change.tracking.rest.client.dto.v1_0.CTProcess;
+import com.liferay.change.tracking.rest.client.pagination.Page;
+import com.liferay.change.tracking.rest.client.pagination.Pagination;
 import com.liferay.change.tracking.service.CTCollectionLocalService;
+import com.liferay.change.tracking.service.CTPreferencesLocalService;
 import com.liferay.change.tracking.service.CTProcessLocalService;
-import com.liferay.portal.kernel.test.rule.DataGuard;
+import com.liferay.dynamic.data.mapping.test.util.DDMStructureTestUtil;
+import com.liferay.journal.model.JournalArticle;
+import com.liferay.petra.function.transform.TransformUtil;
+import com.liferay.petra.lang.SafeCloseable;
+import com.liferay.portal.kernel.change.tracking.CTCollectionThreadLocal;
+import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.test.rule.Inject;
 
+import java.util.List;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Test;
 import org.junit.runner.RunWith;
 
 /**
  * @author Pei-Jung Lan
  */
-@DataGuard(scope = DataGuard.Scope.METHOD)
 @RunWith(Arquillian.class)
 public class CTProcessResourceTest extends BaseCTProcessResourceTestCase {
+
+	@Before
+	@Override
+	public void setUp() throws Exception {
+		super.setUp();
+
+		_ctCollectionIds = TransformUtil.transform(
+			_ctCollectionLocalService.getCTCollections(
+				QueryUtil.ALL_POS, QueryUtil.ALL_POS),
+			CTCollection::getCtCollectionId);
+		_ctProcessIds = TransformUtil.transform(
+			_ctProcessLocalService.getCTProcesses(
+				QueryUtil.ALL_POS, QueryUtil.ALL_POS),
+			com.liferay.change.tracking.model.CTProcess::getCtProcessId);
+	}
+
+	@After
+	@Override
+	public void tearDown() throws Exception {
+		CTPreferences ctPreferences =
+			_ctPreferencesLocalService.fetchCTPreferences(
+				TestPropsValues.getCompanyId(), TestPropsValues.getUserId());
+
+		if (ctPreferences != null) {
+			_ctPreferencesLocalService.deleteCTPreferences(ctPreferences);
+		}
+
+		for (com.liferay.change.tracking.model.CTProcess ctProcess :
+				_ctProcessLocalService.getCTProcesses(
+					QueryUtil.ALL_POS, QueryUtil.ALL_POS)) {
+
+			if (_ctProcessIds.contains(ctProcess.getCtProcessId())) {
+				continue;
+			}
+
+			_ctProcessLocalService.deleteCTProcess(ctProcess);
+		}
+
+		for (CTCollection ctCollection :
+				_ctCollectionLocalService.getCTCollections(
+					QueryUtil.ALL_POS, QueryUtil.ALL_POS)) {
+
+			if (_ctCollectionIds.contains(ctCollection.getCtCollectionId())) {
+				continue;
+			}
+
+			_ctCollectionLocalService.deleteCTCollection(ctCollection);
+		}
+
+		super.tearDown();
+	}
+
+	@Ignore
+	@Override
+	@Test
+	public void testBatchEngineDeleteImportTask() throws Exception {
+		super.testBatchEngineDeleteImportTask();
+	}
+
+	@Ignore
+	@Override
+	@Test
+	public void testDeleteCTProcessBatch() throws Exception {
+		super.testDeleteCTProcessBatch();
+	}
+
+	@Override
+	@Test
+	public void testGetCTProcessesPage() throws Exception {
+		super.testGetCTProcessesPage();
+
+		_addCTProcess();
+		_addCTProcess();
+
+		Page<CTProcess> descPage = ctProcessResource.getCTProcessesPage(
+			null, null, null, Pagination.of(1, 10), "datePublished:desc");
+		Page<CTProcess> page = ctProcessResource.getCTProcessesPage(
+			null, null, null, Pagination.of(1, 10), null);
+
+		assertEquals(
+			(List<CTProcess>)descPage.getItems(),
+			(List<CTProcess>)page.getItems());
+	}
 
 	@Override
 	protected String[] getAdditionalAssertFieldNames() {
@@ -33,6 +130,11 @@ public class CTProcessResourceTest extends BaseCTProcessResourceTestCase {
 	@Override
 	protected String[] getIgnoredEntityFieldNames() {
 		return new String[] {"description", "ownerName", "status"};
+	}
+
+	@Override
+	protected CTProcess testDeleteCTProcess_addCTProcess() throws Exception {
+		return _addCTProcess();
 	}
 
 	@Override
@@ -94,6 +196,14 @@ public class CTProcessResourceTest extends BaseCTProcessResourceTestCase {
 			null, TestPropsValues.getCompanyId(), TestPropsValues.getUserId(),
 			0, name, description);
 
+		try (SafeCloseable safeCloseable =
+				CTCollectionThreadLocal.setCTCollectionIdWithSafeCloseable(
+					ctCollection.getCtCollectionId())) {
+
+			DDMStructureTestUtil.addStructure(
+				TestPropsValues.getGroupId(), JournalArticle.class.getName());
+		}
+
 		com.liferay.change.tracking.model.CTProcess serviceBuilderCTProcess =
 			_ctProcessLocalService.addCTProcess(
 				TestPropsValues.getUserId(), ctCollection.getCtCollectionId());
@@ -102,8 +212,15 @@ public class CTProcessResourceTest extends BaseCTProcessResourceTestCase {
 			serviceBuilderCTProcess.getCtProcessId());
 	}
 
+	private List<Long> _ctCollectionIds;
+
 	@Inject
 	private CTCollectionLocalService _ctCollectionLocalService;
+
+	@Inject
+	private CTPreferencesLocalService _ctPreferencesLocalService;
+
+	private List<Long> _ctProcessIds;
 
 	@Inject
 	private CTProcessLocalService _ctProcessLocalService;

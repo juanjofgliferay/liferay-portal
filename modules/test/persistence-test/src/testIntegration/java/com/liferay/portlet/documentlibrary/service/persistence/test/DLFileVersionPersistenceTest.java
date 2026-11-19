@@ -110,11 +110,7 @@ public class DLFileVersionPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		DLFileVersion newDLFileVersion = _persistence.create(pk);
-
-		newDLFileVersion.setMvccVersion(RandomTestUtil.nextLong());
+		DLFileVersion newDLFileVersion = addDLFileVersion();
 
 		newDLFileVersion.setCtCollectionId(RandomTestUtil.nextLong());
 
@@ -164,6 +160,8 @@ public class DLFileVersionPersistenceTest {
 
 		newDLFileVersion.setStoreUUID(RandomTestUtil.randomString());
 
+		newDLFileVersion.setDisplayDate(RandomTestUtil.nextDate());
+
 		newDLFileVersion.setExpirationDate(RandomTestUtil.nextDate());
 
 		newDLFileVersion.setReviewDate(RandomTestUtil.nextDate());
@@ -178,7 +176,9 @@ public class DLFileVersionPersistenceTest {
 
 		newDLFileVersion.setStatusDate(RandomTestUtil.nextDate());
 
-		_dlFileVersions.add(_persistence.update(newDLFileVersion));
+		newDLFileVersion = _persistence.update(newDLFileVersion);
+
+		_dlFileVersions.add(newDLFileVersion);
 
 		DLFileVersion existingDLFileVersion = _persistence.findByPrimaryKey(
 			newDLFileVersion.getPrimaryKey());
@@ -256,6 +256,9 @@ public class DLFileVersionPersistenceTest {
 			existingDLFileVersion.getStoreUUID(),
 			newDLFileVersion.getStoreUUID());
 		Assert.assertEquals(
+			Time.getShortTimestamp(existingDLFileVersion.getDisplayDate()),
+			Time.getShortTimestamp(newDLFileVersion.getDisplayDate()));
+		Assert.assertEquals(
 			Time.getShortTimestamp(existingDLFileVersion.getExpirationDate()),
 			Time.getShortTimestamp(newDLFileVersion.getExpirationDate()));
 		Assert.assertEquals(
@@ -305,26 +308,10 @@ public class DLFileVersionPersistenceTest {
 	}
 
 	@Test
-	public void testCountByCompanyId() throws Exception {
-		_persistence.countByCompanyId(RandomTestUtil.nextLong());
-
-		_persistence.countByCompanyId(0L);
-	}
-
-	@Test
 	public void testCountByFileEntryId() throws Exception {
 		_persistence.countByFileEntryId(RandomTestUtil.nextLong());
 
 		_persistence.countByFileEntryId(0L);
-	}
-
-	@Test
-	public void testCountByMimeType() throws Exception {
-		_persistence.countByMimeType("");
-
-		_persistence.countByMimeType("null");
-
-		_persistence.countByMimeType((String)null);
 	}
 
 	@Test
@@ -334,14 +321,6 @@ public class DLFileVersionPersistenceTest {
 		_persistence.countByC_SU(0L, "null");
 
 		_persistence.countByC_SU(0L, (String)null);
-	}
-
-	@Test
-	public void testCountByC_NotS() throws Exception {
-		_persistence.countByC_NotS(
-			RandomTestUtil.nextLong(), RandomTestUtil.nextInt());
-
-		_persistence.countByC_NotS(0L, 0);
 	}
 
 	@Test
@@ -362,12 +341,34 @@ public class DLFileVersionPersistenceTest {
 	}
 
 	@Test
+	public void testCountByF_SArrayable() throws Exception {
+		_persistence.countByF_S(
+			RandomTestUtil.nextLong(), new int[] {RandomTestUtil.nextInt(), 0});
+	}
+
+	@Test
 	public void testCountByG_F_S() throws Exception {
 		_persistence.countByG_F_S(
 			RandomTestUtil.nextLong(), RandomTestUtil.nextLong(),
 			RandomTestUtil.nextInt());
 
 		_persistence.countByG_F_S(0L, 0L, 0);
+	}
+
+	@Test
+	public void testCountByC_E_S() throws Exception {
+		_persistence.countByC_E_S(
+			RandomTestUtil.nextLong(), RandomTestUtil.nextDate(),
+			RandomTestUtil.nextInt());
+
+		_persistence.countByC_E_S(0L, RandomTestUtil.nextDate(), 0);
+	}
+
+	@Test
+	public void testCountByC_E_SArrayable() throws Exception {
+		_persistence.countByC_E_S(
+			RandomTestUtil.nextLong(), RandomTestUtil.nextDate(),
+			new int[] {RandomTestUtil.nextInt(), 0});
 	}
 
 	@Test
@@ -412,10 +413,10 @@ public class DLFileVersionPersistenceTest {
 			"fileEntryId", true, "treePath", true, "fileName", true,
 			"extension", true, "mimeType", true, "title", true, "description",
 			true, "changeLog", true, "fileEntryTypeId", true, "version", true,
-			"size", true, "checksum", true, "storeUUID", true, "expirationDate",
-			true, "reviewDate", true, "lastPublishDate", true, "status", true,
-			"statusByUserId", true, "statusByUserName", true, "statusDate",
-			true);
+			"size", true, "checksum", true, "storeUUID", true, "displayDate",
+			true, "expirationDate", true, "reviewDate", true, "lastPublishDate",
+			true, "status", true, "statusByUserId", true, "statusByUserName",
+			true, "statusDate", true);
 	}
 
 	@Test
@@ -710,8 +711,6 @@ public class DLFileVersionPersistenceTest {
 
 		DLFileVersion dlFileVersion = _persistence.create(pk);
 
-		dlFileVersion.setMvccVersion(RandomTestUtil.nextLong());
-
 		dlFileVersion.setCtCollectionId(RandomTestUtil.nextLong());
 
 		dlFileVersion.setUuid(RandomTestUtil.randomString());
@@ -760,6 +759,8 @@ public class DLFileVersionPersistenceTest {
 
 		dlFileVersion.setStoreUUID(RandomTestUtil.randomString());
 
+		dlFileVersion.setDisplayDate(RandomTestUtil.nextDate());
+
 		dlFileVersion.setExpirationDate(RandomTestUtil.nextDate());
 
 		dlFileVersion.setReviewDate(RandomTestUtil.nextDate());
@@ -785,3 +786,4 @@ public class DLFileVersionPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:430909051

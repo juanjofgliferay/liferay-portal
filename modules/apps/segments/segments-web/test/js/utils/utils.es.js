@@ -37,34 +37,8 @@ describe('utils', () => {
 
 	describe('getSupportedOperatorsFromType', () => {
 		it('returns an array of supported operators', () => {
-			const operators = [
-				{
-					label: Liferay.Language.get('equals'),
-					name: 'eq',
-				},
-				{
-					label: Liferay.Language.get('greater-than-or-equals'),
-					name: 'ge',
-				},
-				{
-					label: Liferay.Language.get('greater-than'),
-					name: 'gt',
-				},
-				{
-					label: Liferay.Language.get('not-equals'),
-					name: 'not-eq',
-				},
-			];
-
-			const propertyTypes = {
-				boolean: ['eq', 'not-eq'],
-			};
-
-			const supportedOperators = Utils.getSupportedOperatorsFromType(
-				operators,
-				propertyTypes,
-				'boolean'
-			);
+			const supportedOperators =
+				Utils.getSupportedOperatorsFromType('boolean');
 
 			expect(supportedOperators).toEqual([
 				{
@@ -102,6 +76,20 @@ describe('utils', () => {
 				'b',
 				'c',
 			]);
+		});
+	});
+
+	describe('jsDatetoYYYYMMDD', () => {
+		it('formats a Date object as a yyyy-MM-dd string', () => {
+			expect(
+				Utils.jsDatetoYYYYMMDD(new Date('2026-01-05T12:00:00.000Z'))
+			).toEqual('2026-01-05');
+		});
+
+		it('formats a date string as a yyyy-MM-dd string', () => {
+			expect(Utils.jsDatetoYYYYMMDD('2026-01-05T12:00:00.000Z')).toEqual(
+				'2026-01-05'
+			);
 		});
 	});
 

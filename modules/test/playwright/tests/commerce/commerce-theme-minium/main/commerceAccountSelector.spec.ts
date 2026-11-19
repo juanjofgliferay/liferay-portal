@@ -1,0 +1,694 @@
+/**
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
+ */
+
+import {devices, expect, mergeTests} from '@playwright/test';
+
+import {apiHelpersTest} from '../../../../fixtures/apiHelpersTest';
+import {commercePagesTest} from '../../../../fixtures/commercePagesTest';
+import {dataApiHelpersTest} from '../../../../fixtures/dataApiHelpersTest';
+import {featureFlagsTest} from '../../../../fixtures/featureFlagsTest';
+import {isolatedSiteTest} from '../../../../fixtures/isolatedSiteTest';
+import {loginTest} from '../../../../fixtures/loginTest';
+import {usersAndOrganizationsPagesTest} from '../../../../fixtures/usersAndOrganizationsPagesTest';
+import {clickAndExpectToBeHidden} from '../../../../utils/clickAndExpectToBeHidden';
+import {clickAndExpectToBeVisible} from '../../../../utils/clickAndExpectToBeVisible';
+import getRandomString from '../../../../utils/getRandomString';
+import {
+	performLoginViaApi,
+	performLogout,
+} from '../../../../utils/performLogin';
+import {waitForAlert} from '../../../../utils/waitForAlert';
+import getFragmentDefinition from '../../../layout-content-page-editor-web/main/utils/getFragmentDefinition';
+import getPageDefinition from '../../../layout-content-page-editor-web/main/utils/getPageDefinition';
+import getWidgetDefinition from '../../../layout-content-page-editor-web/main/utils/getWidgetDefinition';
+import {miniumSetUp} from '../../utils/commerce';
+
+export const test = mergeTests(
+	apiHelpersTest,
+	commercePagesTest,
+	dataApiHelpersTest,
+	featureFlagsTest({
+		'LPS-178052': {enabled: true},
+	}),
+	isolatedSiteTest,
+	loginTest(),
+	usersAndOrganizationsPagesTest
+);
+
+test(
+	'Account Selector in Minium theme working as expected',
+	{
+		tag: [
+			'@COMMERCE-5957',
+			'@COMMERCE-6215',
+			'@COMMERCE-12909',
+			'@LPD-48266',
+			'@LPD-56172',
+			'@LPD-108861',
+		],
+	},
+	async ({
+		apiHelpers,
+		commerceAdminChannelDetailsPage,
+		commerceAdminChannelsPage,
+		commerceLayoutsPage,
+		commerceThemeMiniumCatalogPage,
+		page,
+		pendingOrdersPage,
+		site,
+	}) => {
+		let account;
+		let channel;
+		let layout;
+		let order1;
+		let order2Id;
+
+		await test.step('Create a Site and a channel', async () => {
+			await apiHelpers.headlessDelivery.createSitePage({
+				pageDefinition: getPageDefinition([
+					getFragmentDefinition({
+						id: getRandomString(),
+						key: 'COMMERCE_ACCOUNT_FRAGMENTS-account-selector',
+					}),
+				]),
+				siteId: site.id,
+				title: getRandomString(),
+			});
+
+			layout = await apiHelpers.headlessDelivery.createSitePage({
+				pageDefinition: getPageDefinition([
+					getWidgetDefinition({
+						id: getRandomString(),
+						widgetName:
+							'com_liferay_commerce_order_content_web_internal_portlet_CommerceOpenOrderContentPortlet',
+					}),
+				]),
+				siteId: site.id,
+				title: getRandomString(),
+			});
+
+			channel = await apiHelpers.headlessCommerceAdminChannel.postChannel(
+				{
+					siteGroupId: site.id,
+				}
+			);
+
+			await commerceAdminChannelsPage.changeCommerceChannelSiteType(
+				channel.name,
+				'B2B'
+			);
+		});
+
+		await test.step('Create an Account and a buyer', async () => {
+			account = await apiHelpers.headlessAdminUser.postAccount({
+				name: getRandomString(),
+				type: 'business',
+			});
+
+			const user =
+				await apiHelpers.headlessAdminUser.getUserAccountByEmailAddress(
+					'demo.unprivileged@liferay.com'
+				);
+
+			const rolesResponse =
+				await apiHelpers.headlessAdminUser.getAccountRoles(account.id);
+
+			const accountRoleBuyer = rolesResponse?.items?.filter((role) => {
+				return role.name === 'Buyer';
+			});
+
+			await apiHelpers.headlessAdminUser.assignAccountRoles(
+				account.externalReferenceCode,
+				accountRoleBuyer[0].id,
+				user.emailAddress
+			);
+
+			const siteRole =
+				await apiHelpers.headlessAdminUser.getRoleByName('Site Member');
+
+			await apiHelpers.headlessAdminUser.assignUserToSite(
+				siteRole.id,
+				site.id,
+				user.id
+			);
+			await apiHelpers.headlessAdminUser.assignUserToAccountByEmailAddress(
+				account.id,
+				[user.emailAddress]
+			);
+		});
+
+		await test.step('Create an order via API and login as a Buyer', async () => {
+			order1 = await apiHelpers.headlessCommerceAdminOrder.postOrder({
+				accountId: account.id,
+				channelId: channel.id,
+				name: 'order1',
+				orderStatus: '2',
+			});
+
+			await page.waitForTimeout(2000);
+
+			await performLogout(page);
+			await performLoginViaApi({
+				page,
+				screenName: 'demo.unprivileged',
+			});
+		});
+
+		await test.step('Go to Site and check that the account selector has the order selected', async () => {
+			await page.goto(`/web/${site.name}`);
+
+			await page.waitForLoadState();
+
+			await expect(
+				commerceThemeMiniumCatalogPage.accountSelectorButton.locator(
+					'.order-id'
+				)
+			).toHaveText(order1.id.toString());
+		});
+		try {
+			await test.step('Go to pending orders and add an empty order, then assert that the new order is selected in the account selector', async () => {
+				await page.goto(`/web/${site.name}/${layout.friendlyUrlPath}`);
+
+				await commerceLayoutsPage.addOrderButton.click();
+
+				await page.waitForLoadState('networkidle');
+
+				await page.goto(`/web/${site.name}`);
+
+				await expect(
+					commerceThemeMiniumCatalogPage.accountSelectorButton.locator(
+						'.order-id'
+					)
+				).not.toHaveText(order1.id.toString());
+
+				order2Id =
+					await commerceThemeMiniumCatalogPage.accountSelectorButton
+						.locator('.order-id')
+						.textContent();
+			});
+
+			await test.step('Create an order from the create new order button and verify that the new order is selected', async () => {
+				await commerceThemeMiniumCatalogPage.accountSelectorButton.click();
+				await commerceThemeMiniumCatalogPage.createNewOrderButton.click();
+
+				await page.waitForLoadState('networkidle');
+
+				await page.goto(`/web/${site.name}`, {
+					waitUntil: 'networkidle',
+				});
+
+				await expect(
+					commerceThemeMiniumCatalogPage.accountSelectorButton.locator(
+						'.order-id'
+					)
+				).not.toHaveText(order2Id);
+			});
+
+			await test.step('Search for an order in the account selector and select it as active', async () => {
+				await commerceThemeMiniumCatalogPage.accountSelectorButton.click();
+
+				await commerceThemeMiniumCatalogPage.accountSelectorSearchOrderInput.fill(
+					order2Id
+				);
+
+				await expect(
+					commerceThemeMiniumCatalogPage.accountSelectorOrdersList.locator(
+						'.table-list-title'
+					)
+				).toHaveCount(1);
+
+				await commerceThemeMiniumCatalogPage.accountSelectorOrdersList
+					.getByText(order2Id, {exact: true})
+					.click();
+
+				await expect(pendingOrdersPage.checkoutButton).toBeVisible();
+
+				await page.goto(`/web/${site.name}`, {
+					waitUntil: 'networkidle',
+				});
+
+				await expect(
+					commerceThemeMiniumCatalogPage.accountSelectorButton.locator(
+						'.order-id'
+					)
+				).toHaveText(order2Id);
+			});
+
+			await test.step('Login as Admin and go to channel and change the max open order account', async () => {
+				await performLogout(page);
+				await performLoginViaApi({page, screenName: 'test'});
+
+				await commerceAdminChannelsPage.goto();
+				await (
+					await commerceAdminChannelsPage.channelsTableRowLink(
+						channel.name
+					)
+				).click();
+
+				await commerceAdminChannelDetailsPage.maxOpenOrderAccountInput.fill(
+					'3'
+				);
+				await commerceAdminChannelDetailsPage.saveButton.click();
+
+				await waitForAlert(page);
+			});
+
+			await test.step('Go to Minium site and assert that the create new order button is disabled', async () => {
+				await page.goto(`/web/${site.name}`);
+
+				await page.waitForLoadState();
+
+				await commerceThemeMiniumCatalogPage.accountSelectorButton.click();
+
+				await expect(
+					commerceThemeMiniumCatalogPage.createNewOrderButton
+				).toBeDisabled();
+			});
+
+			await test.step('Switch to another account and assert that the pending order details page redirects to the pending orders list', async () => {
+				await commerceThemeMiniumCatalogPage.accountSelectorSearchOrderInput.fill(
+					order2Id
+				);
+				await commerceThemeMiniumCatalogPage.accountSelectorOrdersList
+					.getByText(order2Id, {exact: true})
+					.click();
+
+				await expect(pendingOrdersPage.checkoutButton).toBeVisible();
+
+				const orderDetailsURL = page.url();
+
+				const secondAccount =
+					await apiHelpers.headlessAdminUser.postAccount({
+						name: getRandomString(),
+						type: 'business',
+					});
+
+				await page.goto(`/web/${site.name}`);
+
+				await commerceThemeMiniumCatalogPage.openAccountSelectorDropdown();
+				await commerceThemeMiniumCatalogPage.accountSelectorSearchAccountInput.fill(
+					secondAccount.name
+				);
+				await commerceThemeMiniumCatalogPage
+					.accountSelectorAccount(secondAccount.name)
+					.click();
+
+				await expect(
+					commerceThemeMiniumCatalogPage.accountSelectorSelectedAccount
+				).toHaveText(secondAccount.name);
+
+				await page.goto(orderDetailsURL);
+
+				await expect(page).toHaveURL(
+					/p_p_id=com_liferay_commerce_order_content_web_internal_portlet_CommerceOpenOrderContentPortlet/
+				);
+				await expect(commerceLayoutsPage.addOrderButton).toBeVisible();
+			});
+		}
+		finally {
+			const orders =
+				await apiHelpers.headlessCommerceAdminOrder.getOrdersPage();
+
+			if (orders && orders.items) {
+				for (const order of orders.items) {
+					apiHelpers.data.push({id: order.id, type: 'order'});
+				}
+			}
+		}
+	}
+);
+
+test(
+	'Cancelling the in-flow account creation does not create the account',
+	{tag: ['@COMMERCE-9022', '@LPD-104785']},
+	async ({
+		apiHelpers,
+		commerceAdminChannelsPage,
+		commerceThemeMiniumCatalogPage,
+		page,
+		site,
+	}) => {
+		const accountName = getRandomString();
+
+		let layout;
+
+		await test.step('Create a Site with an account selector and a B2B channel', async () => {
+			layout = await apiHelpers.headlessDelivery.createSitePage({
+				pageDefinition: getPageDefinition([
+					getFragmentDefinition({
+						id: getRandomString(),
+						key: 'COMMERCE_ACCOUNT_FRAGMENTS-account-selector',
+					}),
+				]),
+				siteId: site.id,
+				title: getRandomString(),
+			});
+
+			const channel =
+				await apiHelpers.headlessCommerceAdminChannel.postChannel({
+					siteGroupId: site.id,
+				});
+
+			await commerceAdminChannelsPage.changeCommerceChannelSiteType(
+				channel.name,
+				'B2B'
+			);
+		});
+
+		await test.step('Go to Site and open the create account modal', async () => {
+			await page.goto(`/web/${site.name}/${layout.friendlyUrlPath}`, {
+				waitUntil: 'networkidle',
+			});
+
+			await commerceThemeMiniumCatalogPage.openAccountSelectorDropdown();
+
+			await clickAndExpectToBeVisible({
+				target: commerceThemeMiniumCatalogPage.createNewAccountModal,
+				trigger: commerceThemeMiniumCatalogPage.createNewAccountButton,
+			});
+		});
+
+		await test.step('Type an account name and cancel', async () => {
+			await commerceThemeMiniumCatalogPage.createNewAccountModalNameInput.fill(
+				accountName
+			);
+
+			await expect(
+				commerceThemeMiniumCatalogPage.createNewAccountModalNameInput
+			).toHaveValue(accountName);
+
+			await clickAndExpectToBeHidden({
+				target: commerceThemeMiniumCatalogPage.createNewAccountModal,
+				trigger:
+					commerceThemeMiniumCatalogPage.createNewAccountModalCancelButton,
+			});
+		});
+
+		await test.step('Check that the account was not created', async () => {
+			await commerceThemeMiniumCatalogPage.openAccountSelectorDropdown();
+
+			await commerceThemeMiniumCatalogPage.accountSelectorSearchAccountInput.fill(
+				accountName
+			);
+
+			await expect(
+				commerceThemeMiniumCatalogPage.accountSelectorNoAccountsMessage
+			).toBeVisible();
+
+			expect(
+				await apiHelpers.headlessAdminUser.getAccountByName(accountName)
+			).toBeUndefined();
+		});
+	}
+);
+
+test(
+	'Correct current order is fetched when creating an order with an impersonated user and then impersonating a second user',
+	{
+		tag: [
+			'@COMMERCE-10841',
+			'@LPD-59082',
+			'@LPD-77244',
+			'@LPD-108861',
+			'@LPP-59365',
+		],
+	},
+	async ({
+		apiHelpers,
+		commerceThemeMiniumCatalogPage,
+		page,
+		usersAndOrganizationsPage,
+	}) => {
+		const {site} = await miniumSetUp(apiHelpers);
+
+		const companyId = await page.evaluate(() => {
+			return Liferay.ThemeDisplay.getCompanyId();
+		});
+
+		const role = await apiHelpers.headlessAdminUser.postRole({
+			name: 'Buyer ' + getRandomString(),
+			rolePermissions: [
+				{
+					actionIds: ['MANAGE_ADDRESSES', 'VIEW_ADDRESSES'],
+					primaryKey: '0',
+					resourceName: 'com.liferay.account.model.AccountEntry',
+					scope: 3,
+				},
+				{
+					actionIds: ['VIEW'],
+					primaryKey: companyId,
+					resourceName:
+						'com.liferay.commerce.model.CommerceOrderType',
+					scope: 1,
+				},
+				{
+					actionIds: [
+						'ADD_COMMERCE_ORDER',
+						'CHECKOUT_OPEN_COMMERCE_ORDERS',
+						'MANAGE_COMMERCE_ORDER_DELIVERY_TERMS',
+						'MANAGE_COMMERCE_ORDER_PAYMENT_METHODS',
+						'MANAGE_COMMERCE_ORDER_PAYMENT_TERMS',
+						'MANAGE_COMMERCE_ORDER_SHIPPING_OPTIONS',
+						'VIEW_BILLING_ADDRESS',
+						'VIEW_COMMERCE_ORDERS',
+						'VIEW_OPEN_COMMERCE_ORDERS',
+					],
+					primaryKey: '0',
+					resourceName: 'com.liferay.commerce.order',
+					scope: 3,
+				},
+			],
+		});
+
+		const user1 = await apiHelpers.headlessAdminUser.postUserAccount();
+		const user2 = await apiHelpers.headlessAdminUser.postUserAccount();
+
+		await apiHelpers.headlessAdminUser.assignUserToRole(
+			role.externalReferenceCode,
+			user1.id
+		);
+
+		await apiHelpers.headlessAdminUser.assignUserToRole(
+			role.externalReferenceCode,
+			user2.id
+		);
+
+		const siteMemberRole =
+			await apiHelpers.headlessAdminUser.getRoleByName('Site Member');
+
+		await apiHelpers.headlessAdminUser.assignUserToSite(
+			siteMemberRole.id,
+			site.id,
+			user1.id
+		);
+
+		await apiHelpers.headlessAdminUser.assignUserToSite(
+			siteMemberRole.id,
+			site.id,
+			user2.id
+		);
+
+		const account1 = await apiHelpers.headlessAdminUser.postAccount({
+			name: getRandomString(),
+			type: 'business',
+		});
+
+		const account2 = await apiHelpers.headlessAdminUser.postAccount({
+			name: getRandomString(),
+			type: 'business',
+		});
+
+		await apiHelpers.headlessAdminUser.assignUserToAccountByEmailAddress(
+			account1.id,
+			[user1.emailAddress]
+		);
+
+		await apiHelpers.headlessAdminUser.assignUserToAccountByEmailAddress(
+			account2.id,
+			[user2.emailAddress]
+		);
+
+		const getDoAsUserId = async (screenName: string) => {
+			await usersAndOrganizationsPage.goto();
+
+			await usersAndOrganizationsPage.usersSearchBar.fill(screenName);
+
+			await usersAndOrganizationsPage.usersSearchBar.press('Enter');
+
+			const impersonateLink = page.locator('a[href*="doAsUserId"]');
+
+			await expect(impersonateLink).toHaveCount(1);
+
+			const impersonateURL = new URL(
+				await impersonateLink.getAttribute('href'),
+				page.url()
+			);
+
+			return impersonateURL.searchParams.get('doAsUserId');
+		};
+
+		const doAsUserId1 = await getDoAsUserId(user1.alternateName);
+		const doAsUserId2 = await getDoAsUserId(user2.alternateName);
+
+		let order1Id;
+
+		await test.step('The first user starts with its own account selected and no order', async () => {
+			await page.goto(`/web/${site.name}?doAsUserId=${doAsUserId1}`, {
+				waitUntil: 'networkidle',
+			});
+
+			await expect(commerceThemeMiniumCatalogPage.userNavName).toHaveText(
+				user1.name
+			);
+			await expect(
+				commerceThemeMiniumCatalogPage.accountSelectorNoOrderSelectedMessage
+			).toBeVisible();
+
+			await commerceThemeMiniumCatalogPage.firstCardItemAddToCartButton.click();
+
+			await expect(
+				commerceThemeMiniumCatalogPage.accountSelectorOrderId
+			).toBeVisible();
+
+			order1Id =
+				await commerceThemeMiniumCatalogPage.accountSelectorOrderId.innerText();
+
+			apiHelpers.data.push({id: Number(order1Id), type: 'order'});
+
+			await page.reload();
+
+			await expect(
+				commerceThemeMiniumCatalogPage.accountSelectorOrderId
+			).toHaveText(order1Id);
+		});
+
+		await test.step('The second user must not inherit the order of the first one', async () => {
+			await page.goto(`/web/${site.name}?doAsUserId=${doAsUserId2}`, {
+				waitUntil: 'networkidle',
+			});
+
+			await expect(commerceThemeMiniumCatalogPage.userNavName).toHaveText(
+				user2.name
+			);
+			await expect(
+				commerceThemeMiniumCatalogPage.accountSelectorNoOrderSelectedMessage
+			).toBeVisible();
+
+			await commerceThemeMiniumCatalogPage.firstCardItemAddToCartButton.click();
+
+			await expect(
+				commerceThemeMiniumCatalogPage.accountSelectorOrderId
+			).toBeVisible();
+
+			const order2Id =
+				await commerceThemeMiniumCatalogPage.accountSelectorOrderId.innerText();
+
+			apiHelpers.data.push({id: Number(order2Id), type: 'order'});
+
+			expect(order2Id).not.toBe(order1Id);
+
+			await page.reload();
+
+			await expect(
+				commerceThemeMiniumCatalogPage.accountSelectorOrderId
+			).toHaveText(order2Id);
+		});
+	}
+);
+
+test(
+	'Account Selector loads the next page of accounts only on scroll in mobile view',
+	{tag: ['@LPD-109813']},
+	async ({
+		apiHelpers,
+		commerceAdminChannelsPage,
+		commerceThemeMiniumCatalogPage,
+		page,
+		site,
+	}) => {
+		let channel;
+		let layout;
+
+		await test.step('Create a Site with an account selector and a B2B channel', async () => {
+			layout = await apiHelpers.headlessDelivery.createSitePage({
+				pageDefinition: getPageDefinition([
+					getFragmentDefinition({
+						id: getRandomString(),
+						key: 'COMMERCE_ACCOUNT_FRAGMENTS-account-selector',
+					}),
+				]),
+				siteId: site.id,
+				title: getRandomString(),
+			});
+
+			channel = await apiHelpers.headlessCommerceAdminChannel.postChannel(
+				{
+					siteGroupId: site.id,
+				}
+			);
+
+			await commerceAdminChannelsPage.changeCommerceChannelSiteType(
+				channel.name,
+				'B2B'
+			);
+		});
+
+		await test.step('Create enough accounts for three pages', async () => {
+			for (let i = 0; i < 21; i++) {
+				await apiHelpers.headlessAdminUser.postAccount({
+					name: getRandomString(),
+					type: 'business',
+				});
+			}
+		});
+
+		const accountsPageNumbers: string[] = [];
+
+		page.on('request', (request) => {
+			const url = new URL(request.url());
+
+			if (
+				url.pathname.endsWith(`/channels/${channel.id}/accounts`) &&
+				url.searchParams.has('page')
+			) {
+				accountsPageNumbers.push(url.searchParams.get('page'));
+			}
+		});
+
+		await test.step('Open the account selector in mobile view and check that only the first page is loaded', async () => {
+			await page.setViewportSize(devices['Pixel 5'].viewport);
+
+			await page.goto(`/web/${site.name}${layout.friendlyUrlPath}`, {
+				waitUntil: 'networkidle',
+			});
+
+			await commerceThemeMiniumCatalogPage.openAccountSelectorDropdown();
+
+			await expect(
+				commerceThemeMiniumCatalogPage.accountSelectorAccounts
+			).toHaveCount(10);
+
+			await page.waitForTimeout(1000);
+
+			await expect(
+				commerceThemeMiniumCatalogPage.accountSelectorAccounts
+			).toHaveCount(10);
+			expect(accountsPageNumbers).toEqual(['1']);
+		});
+
+		await test.step('Scroll to the bottom of the accounts list and check that the second page is loaded', async () => {
+			await commerceThemeMiniumCatalogPage.accountSelectorAccountsScroller.evaluate(
+				(element) => {
+					element.scrollTop = element.scrollHeight;
+				}
+			);
+
+			await expect(
+				commerceThemeMiniumCatalogPage.accountSelectorAccounts
+			).toHaveCount(20);
+			expect(accountsPageNumbers).toEqual(['1', '2']);
+		});
+	}
+);

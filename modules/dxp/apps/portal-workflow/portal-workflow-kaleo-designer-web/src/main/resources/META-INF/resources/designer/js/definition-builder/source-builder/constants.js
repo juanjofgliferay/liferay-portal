@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
+import {isAIHubInstance} from '../util/isAIHubInstance';
+
 const BUFFER_ATTR = [null, '="', null, '" '];
 const BUFFER_CLOSE_NODE = ['</', null, '>'];
 const BUFFER_OPEN_NODE = ['<', null, null, '>'];
@@ -18,7 +20,13 @@ const COL_TYPES_ASSIGNMENT = [
 	'user',
 	'userId',
 ];
+const isFeatureFlagActive = Liferay.FeatureFlags['LPD-62272'] === true;
+
 const COL_TYPES_FIELD = [
+	...(isFeatureFlagActive ? ['ai-hub-agent'] : []),
+	...(isFeatureFlagActive && isAIHubInstance()
+		? ['ai-decision', 'http-request', 'llm', 'service']
+		: []),
 	'condition',
 	'fork',
 	'join',
@@ -26,7 +34,9 @@ const COL_TYPES_FIELD = [
 	'state',
 	'task',
 ];
+
 const DEFAULT_LANGUAGE = 'groovy';
+const DEFAULT_ROLE_TYPE = 'regular';
 const STR_BLANK = '';
 const STR_CDATA_CLOSE = ']]>';
 const STR_CDATA_OPEN = '<![CDATA[';
@@ -51,6 +61,7 @@ export {
 	COL_TYPES_ASSIGNMENT,
 	COL_TYPES_FIELD,
 	DEFAULT_LANGUAGE,
+	DEFAULT_ROLE_TYPE,
 	STR_BLANK,
 	STR_CDATA_CLOSE,
 	STR_CDATA_OPEN,

@@ -84,6 +84,8 @@ public class OAuth2ApplicationScopeAliasesModelImpl
 	public static final String TABLE_SQL_DROP =
 		"drop table OAuth2ApplicationScopeAliases";
 
+	public static final String ENTITY_ALIAS = "oAuth2ApplicationScopeAliases";
+
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY oAuth2ApplicationScopeAliases.oAuth2ApplicationScopeAliasesId ASC";
 
@@ -100,13 +102,7 @@ public class OAuth2ApplicationScopeAliasesModelImpl
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long COMPANYID_COLUMN_BITMASK = 1L;
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
-	 */
-	@Deprecated
-	public static final long OAUTH2APPLICATIONID_COLUMN_BITMASK = 2L;
+	public static final long OAUTH2APPLICATIONID_COLUMN_BITMASK = 1L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
@@ -114,7 +110,7 @@ public class OAuth2ApplicationScopeAliasesModelImpl
 	 */
 	@Deprecated
 	public static final long OAUTH2APPLICATIONSCOPEALIASESID_COLUMN_BITMASK =
-		4L;
+		2L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
@@ -325,16 +321,6 @@ public class OAuth2ApplicationScopeAliasesModelImpl
 		}
 
 		_companyId = companyId;
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #getColumnOriginalValue(String)}
-	 */
-	@Deprecated
-	public long getOriginalCompanyId() {
-		return GetterUtil.getLong(
-			this.<Long>getColumnOriginalValue("companyId"));
 	}
 
 	@Override
@@ -773,3 +759,4 @@ public class OAuth2ApplicationScopeAliasesModelImpl
 	private OAuth2ApplicationScopeAliases _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1179598463

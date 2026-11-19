@@ -4,6 +4,7 @@
  */
 
 import {ClayInput} from '@clayui/form';
+import React, {ReactNode} from 'react';
 
 import {FieldBase} from '../FieldBase';
 
@@ -12,12 +13,14 @@ import './Input.scss';
 interface InputProps
 	extends React.InputHTMLAttributes<HTMLInputElement | HTMLTextAreaElement> {
 	component?: 'input' | 'textarea';
-	description?: string;
+	description?: ReactNode | string;
+	errorMessage?: string;
 	helpMessage?: string;
 	hideFeedback?: boolean;
 	label?: string;
 	localized?: boolean;
 	localizedTooltipText?: string;
+	prependGroupItemSymbol?: string;
 	required?: boolean;
 	tooltip?: string;
 	tooltipText?: string;
@@ -25,44 +28,79 @@ interface InputProps
 	value?: string;
 }
 
-export function Input({
-	className,
-	component = 'input',
-	helpMessage,
-	hideFeedback,
-	label,
-	localized = false,
-	localizedTooltipText,
-	onChange,
-	placeholder,
-	required,
-	tooltip,
-	tooltipText,
-	type,
-	value,
-	...otherProps
-}: InputProps) {
-	return (
-		<FieldBase
-			className={className}
-			helpMessage={helpMessage}
-			hideFeedback={hideFeedback}
-			label={label}
-			localized={localized}
-			localizedTooltipText={localizedTooltipText}
-			required={required}
-			tooltip={tooltip}
-			tooltipText={tooltipText}
-		>
-			<ClayInput
-				className="custom-input"
-				component={component}
-				onChange={onChange}
-				placeholder={placeholder}
-				type={type}
-				value={value}
-				{...otherProps}
-			/>
-		</FieldBase>
-	);
-}
+export const Input = React.forwardRef<HTMLInputElement, InputProps>(
+	(
+		{
+			className,
+			component = 'input',
+			description,
+			errorMessage,
+			helpMessage,
+			hideFeedback,
+			label,
+			localized = false,
+			localizedTooltipText,
+			onChange,
+			placeholder,
+			prependGroupItemSymbol,
+			required,
+			tooltip,
+			tooltipText,
+			type,
+			value,
+			...otherProps
+		},
+		forwardRef
+	) => {
+		return (
+			<FieldBase
+				className={className}
+				description={description}
+				errorMessage={errorMessage}
+				helpMessage={helpMessage}
+				hideFeedback={hideFeedback}
+				label={label}
+				localized={localized}
+				localizedTooltipText={localizedTooltipText}
+				required={required}
+				tooltip={tooltip}
+				tooltipText={tooltipText}
+			>
+				{prependGroupItemSymbol ? (
+					<ClayInput.Group>
+						<ClayInput.GroupItem prepend shrink>
+							<ClayInput.GroupText>
+								{prependGroupItemSymbol}
+							</ClayInput.GroupText>
+						</ClayInput.GroupItem>
+
+						<ClayInput.GroupItem prepend>
+							<ClayInput
+								className="custom-input"
+								component={component}
+								onChange={onChange}
+								placeholder={placeholder}
+								ref={forwardRef}
+								type={type}
+								value={value}
+								{...otherProps}
+							/>
+						</ClayInput.GroupItem>
+					</ClayInput.Group>
+				) : (
+					<ClayInput
+						aria-label={label}
+						className="custom-input"
+						component={component}
+						onChange={onChange}
+						placeholder={placeholder}
+						ref={forwardRef}
+						type={type}
+						value={value}
+						{...otherProps}
+					/>
+				)}
+			</FieldBase>
+		);
+	}
+);

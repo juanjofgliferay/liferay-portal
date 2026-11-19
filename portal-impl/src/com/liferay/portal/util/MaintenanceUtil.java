@@ -13,9 +13,9 @@ import com.liferay.portal.kernel.servlet.PortalSessionContext;
 import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.Time;
 
-import java.util.Collection;
+import jakarta.servlet.http.HttpSession;
 
-import javax.servlet.http.HttpSession;
+import java.util.Collection;
 
 /**
  * @author Alexander Chow
@@ -75,14 +75,16 @@ public class MaintenanceUtil {
 		Collection<HttpSession> httpSessions = PortalSessionContext.values();
 
 		for (HttpSession httpSession : httpSessions) {
-			if (!sessionId.equals(httpSession.getId())) {
-				try {
-					httpSession.invalidate();
-				}
-				catch (IllegalStateException illegalStateException) {
-					if (_log.isDebugEnabled()) {
-						_log.debug(illegalStateException);
-					}
+			if (sessionId.equals(httpSession.getId())) {
+				continue;
+			}
+
+			try {
+				httpSession.invalidate();
+			}
+			catch (IllegalStateException illegalStateException) {
+				if (_log.isDebugEnabled()) {
+					_log.debug(illegalStateException);
 				}
 			}
 		}

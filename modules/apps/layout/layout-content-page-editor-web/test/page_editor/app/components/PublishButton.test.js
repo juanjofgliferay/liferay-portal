@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import '@testing-library/jest-dom/extend-expect';
+import '@testing-library/jest-dom';
 import {act, fireEvent, render, screen} from '@testing-library/react';
 import React from 'react';
 
@@ -51,13 +51,15 @@ describe('PublishButton', () => {
 	});
 
 	it('renders PublishButton component', () => {
-		useCheckFormsValidity.mockImplementation(() => () =>
-			Promise.resolve(true)
+		useCheckFormsValidity.mockImplementation(
+			() => () => Promise.resolve(true)
 		);
 
 		renderComponent();
 
-		expect(screen.getByLabelText('publish')).toBeInTheDocument();
+		expect(
+			screen.getByRole('button', {name: 'publish'})
+		).toBeInTheDocument();
 	});
 
 	it('calls onPublish when the button is clicked', async () => {
@@ -65,7 +67,7 @@ describe('PublishButton', () => {
 
 		renderComponent({onPublish});
 
-		const button = screen.getByLabelText('publish');
+		const button = screen.getByRole('button', {name: 'publish'});
 
 		await fireEvent.click(button);
 
@@ -80,7 +82,7 @@ describe('PublishButton', () => {
 			onPublish,
 		});
 
-		const button = screen.getByLabelText('publish');
+		const button = screen.getByRole('button', {name: 'publish'});
 
 		fireEvent.click(button);
 
@@ -89,15 +91,15 @@ describe('PublishButton', () => {
 	});
 
 	it('does not call onPublish when some form is invalid', async () => {
-		useCheckFormsValidity.mockImplementation(() => () =>
-			Promise.resolve(false)
+		useCheckFormsValidity.mockImplementation(
+			() => () => Promise.resolve(false)
 		);
 
 		const onPublish = jest.fn(() => {});
 
 		renderComponent({onPublish});
 
-		const button = screen.getByLabelText('publish');
+		const button = screen.getByRole('button', {name: 'publish'});
 
 		await act(async () => {
 			fireEvent.click(button);

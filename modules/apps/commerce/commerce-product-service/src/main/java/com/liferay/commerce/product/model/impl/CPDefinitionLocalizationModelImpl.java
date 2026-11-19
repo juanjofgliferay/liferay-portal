@@ -61,10 +61,10 @@ public class CPDefinitionLocalizationModelImpl
 		{"mvccVersion", Types.BIGINT}, {"ctCollectionId", Types.BIGINT},
 		{"cpDefinitionLocalizationId", Types.BIGINT},
 		{"companyId", Types.BIGINT}, {"CPDefinitionId", Types.BIGINT},
-		{"languageId", Types.VARCHAR}, {"name", Types.VARCHAR},
-		{"shortDescription", Types.VARCHAR}, {"description", Types.CLOB},
-		{"metaTitle", Types.VARCHAR}, {"metaDescription", Types.VARCHAR},
-		{"metaKeywords", Types.VARCHAR}
+		{"languageId", Types.VARCHAR}, {"CProductId", Types.BIGINT},
+		{"description", Types.CLOB}, {"metaDescription", Types.VARCHAR},
+		{"metaKeywords", Types.VARCHAR}, {"metaTitle", Types.VARCHAR},
+		{"name", Types.VARCHAR}, {"shortDescription", Types.VARCHAR}
 	};
 
 	public static final Map<String, Integer> TABLE_COLUMNS_MAP =
@@ -77,19 +77,22 @@ public class CPDefinitionLocalizationModelImpl
 		TABLE_COLUMNS_MAP.put("companyId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("CPDefinitionId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("languageId", Types.VARCHAR);
-		TABLE_COLUMNS_MAP.put("name", Types.VARCHAR);
-		TABLE_COLUMNS_MAP.put("shortDescription", Types.VARCHAR);
+		TABLE_COLUMNS_MAP.put("CProductId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("description", Types.CLOB);
-		TABLE_COLUMNS_MAP.put("metaTitle", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("metaDescription", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("metaKeywords", Types.VARCHAR);
+		TABLE_COLUMNS_MAP.put("metaTitle", Types.VARCHAR);
+		TABLE_COLUMNS_MAP.put("name", Types.VARCHAR);
+		TABLE_COLUMNS_MAP.put("shortDescription", Types.VARCHAR);
 	}
 
 	public static final String TABLE_SQL_CREATE =
-		"create table CPDefinitionLocalization (mvccVersion LONG default 0 not null,ctCollectionId LONG default 0 not null,cpDefinitionLocalizationId LONG not null,companyId LONG,CPDefinitionId LONG,languageId VARCHAR(75) null,name STRING null,shortDescription STRING null,description TEXT null,metaTitle VARCHAR(255) null,metaDescription VARCHAR(255) null,metaKeywords VARCHAR(255) null,primary key (cpDefinitionLocalizationId, ctCollectionId))";
+		"create table CPDefinitionLocalization (mvccVersion LONG default 0 not null,ctCollectionId LONG default 0 not null,cpDefinitionLocalizationId LONG not null,companyId LONG,CPDefinitionId LONG,languageId VARCHAR(75) null,CProductId LONG,description TEXT null,metaDescription VARCHAR(255) null,metaKeywords VARCHAR(255) null,metaTitle VARCHAR(255) null,name STRING null,shortDescription STRING null,primary key (cpDefinitionLocalizationId, ctCollectionId))";
 
 	public static final String TABLE_SQL_DROP =
 		"drop table CPDefinitionLocalization";
+
+	public static final String ENTITY_ALIAS = "cpDefinitionLocalization";
 
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY cpDefinitionLocalization.cpDefinitionLocalizationId ASC";
@@ -248,19 +251,21 @@ public class CPDefinitionLocalizationModelImpl
 			attributeGetterFunctions.put(
 				"languageId", CPDefinitionLocalization::getLanguageId);
 			attributeGetterFunctions.put(
-				"name", CPDefinitionLocalization::getName);
-			attributeGetterFunctions.put(
-				"shortDescription",
-				CPDefinitionLocalization::getShortDescription);
+				"CProductId", CPDefinitionLocalization::getCProductId);
 			attributeGetterFunctions.put(
 				"description", CPDefinitionLocalization::getDescription);
-			attributeGetterFunctions.put(
-				"metaTitle", CPDefinitionLocalization::getMetaTitle);
 			attributeGetterFunctions.put(
 				"metaDescription",
 				CPDefinitionLocalization::getMetaDescription);
 			attributeGetterFunctions.put(
 				"metaKeywords", CPDefinitionLocalization::getMetaKeywords);
+			attributeGetterFunctions.put(
+				"metaTitle", CPDefinitionLocalization::getMetaTitle);
+			attributeGetterFunctions.put(
+				"name", CPDefinitionLocalization::getName);
+			attributeGetterFunctions.put(
+				"shortDescription",
+				CPDefinitionLocalization::getShortDescription);
 
 			_attributeGetterFunctions = Collections.unmodifiableMap(
 				attributeGetterFunctions);
@@ -305,21 +310,13 @@ public class CPDefinitionLocalizationModelImpl
 				(BiConsumer<CPDefinitionLocalization, String>)
 					CPDefinitionLocalization::setLanguageId);
 			attributeSetterBiConsumers.put(
-				"name",
-				(BiConsumer<CPDefinitionLocalization, String>)
-					CPDefinitionLocalization::setName);
-			attributeSetterBiConsumers.put(
-				"shortDescription",
-				(BiConsumer<CPDefinitionLocalization, String>)
-					CPDefinitionLocalization::setShortDescription);
+				"CProductId",
+				(BiConsumer<CPDefinitionLocalization, Long>)
+					CPDefinitionLocalization::setCProductId);
 			attributeSetterBiConsumers.put(
 				"description",
 				(BiConsumer<CPDefinitionLocalization, String>)
 					CPDefinitionLocalization::setDescription);
-			attributeSetterBiConsumers.put(
-				"metaTitle",
-				(BiConsumer<CPDefinitionLocalization, String>)
-					CPDefinitionLocalization::setMetaTitle);
 			attributeSetterBiConsumers.put(
 				"metaDescription",
 				(BiConsumer<CPDefinitionLocalization, String>)
@@ -328,6 +325,18 @@ public class CPDefinitionLocalizationModelImpl
 				"metaKeywords",
 				(BiConsumer<CPDefinitionLocalization, String>)
 					CPDefinitionLocalization::setMetaKeywords);
+			attributeSetterBiConsumers.put(
+				"metaTitle",
+				(BiConsumer<CPDefinitionLocalization, String>)
+					CPDefinitionLocalization::setMetaTitle);
+			attributeSetterBiConsumers.put(
+				"name",
+				(BiConsumer<CPDefinitionLocalization, String>)
+					CPDefinitionLocalization::setName);
+			attributeSetterBiConsumers.put(
+				"shortDescription",
+				(BiConsumer<CPDefinitionLocalization, String>)
+					CPDefinitionLocalization::setShortDescription);
 
 			_attributeSetterBiConsumers = Collections.unmodifiableMap(
 				(Map)attributeSetterBiConsumers);
@@ -444,41 +453,17 @@ public class CPDefinitionLocalizationModelImpl
 	}
 
 	@Override
-	public String getName() {
-		if (_name == null) {
-			return "";
-		}
-		else {
-			return _name;
-		}
+	public long getCProductId() {
+		return _CProductId;
 	}
 
 	@Override
-	public void setName(String name) {
+	public void setCProductId(long CProductId) {
 		if (_columnOriginalValues == Collections.EMPTY_MAP) {
 			_setColumnOriginalValues();
 		}
 
-		_name = name;
-	}
-
-	@Override
-	public String getShortDescription() {
-		if (_shortDescription == null) {
-			return "";
-		}
-		else {
-			return _shortDescription;
-		}
-	}
-
-	@Override
-	public void setShortDescription(String shortDescription) {
-		if (_columnOriginalValues == Collections.EMPTY_MAP) {
-			_setColumnOriginalValues();
-		}
-
-		_shortDescription = shortDescription;
+		_CProductId = CProductId;
 	}
 
 	@Override
@@ -498,25 +483,6 @@ public class CPDefinitionLocalizationModelImpl
 		}
 
 		_description = description;
-	}
-
-	@Override
-	public String getMetaTitle() {
-		if (_metaTitle == null) {
-			return "";
-		}
-		else {
-			return _metaTitle;
-		}
-	}
-
-	@Override
-	public void setMetaTitle(String metaTitle) {
-		if (_columnOriginalValues == Collections.EMPTY_MAP) {
-			_setColumnOriginalValues();
-		}
-
-		_metaTitle = metaTitle;
 	}
 
 	@Override
@@ -555,6 +521,63 @@ public class CPDefinitionLocalizationModelImpl
 		}
 
 		_metaKeywords = metaKeywords;
+	}
+
+	@Override
+	public String getMetaTitle() {
+		if (_metaTitle == null) {
+			return "";
+		}
+		else {
+			return _metaTitle;
+		}
+	}
+
+	@Override
+	public void setMetaTitle(String metaTitle) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_metaTitle = metaTitle;
+	}
+
+	@Override
+	public String getName() {
+		if (_name == null) {
+			return "";
+		}
+		else {
+			return _name;
+		}
+	}
+
+	@Override
+	public void setName(String name) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_name = name;
+	}
+
+	@Override
+	public String getShortDescription() {
+		if (_shortDescription == null) {
+			return "";
+		}
+		else {
+			return _shortDescription;
+		}
+	}
+
+	@Override
+	public void setShortDescription(String shortDescription) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_shortDescription = shortDescription;
 	}
 
 	public long getColumnBitmask() {
@@ -622,12 +645,13 @@ public class CPDefinitionLocalizationModelImpl
 		cpDefinitionLocalizationImpl.setCompanyId(getCompanyId());
 		cpDefinitionLocalizationImpl.setCPDefinitionId(getCPDefinitionId());
 		cpDefinitionLocalizationImpl.setLanguageId(getLanguageId());
-		cpDefinitionLocalizationImpl.setName(getName());
-		cpDefinitionLocalizationImpl.setShortDescription(getShortDescription());
+		cpDefinitionLocalizationImpl.setCProductId(getCProductId());
 		cpDefinitionLocalizationImpl.setDescription(getDescription());
-		cpDefinitionLocalizationImpl.setMetaTitle(getMetaTitle());
 		cpDefinitionLocalizationImpl.setMetaDescription(getMetaDescription());
 		cpDefinitionLocalizationImpl.setMetaKeywords(getMetaKeywords());
+		cpDefinitionLocalizationImpl.setMetaTitle(getMetaTitle());
+		cpDefinitionLocalizationImpl.setName(getName());
+		cpDefinitionLocalizationImpl.setShortDescription(getShortDescription());
 
 		cpDefinitionLocalizationImpl.resetOriginalValues();
 
@@ -651,18 +675,20 @@ public class CPDefinitionLocalizationModelImpl
 			this.<Long>getColumnOriginalValue("CPDefinitionId"));
 		cpDefinitionLocalizationImpl.setLanguageId(
 			this.<String>getColumnOriginalValue("languageId"));
-		cpDefinitionLocalizationImpl.setName(
-			this.<String>getColumnOriginalValue("name"));
-		cpDefinitionLocalizationImpl.setShortDescription(
-			this.<String>getColumnOriginalValue("shortDescription"));
+		cpDefinitionLocalizationImpl.setCProductId(
+			this.<Long>getColumnOriginalValue("CProductId"));
 		cpDefinitionLocalizationImpl.setDescription(
 			this.<String>getColumnOriginalValue("description"));
-		cpDefinitionLocalizationImpl.setMetaTitle(
-			this.<String>getColumnOriginalValue("metaTitle"));
 		cpDefinitionLocalizationImpl.setMetaDescription(
 			this.<String>getColumnOriginalValue("metaDescription"));
 		cpDefinitionLocalizationImpl.setMetaKeywords(
 			this.<String>getColumnOriginalValue("metaKeywords"));
+		cpDefinitionLocalizationImpl.setMetaTitle(
+			this.<String>getColumnOriginalValue("metaTitle"));
+		cpDefinitionLocalizationImpl.setName(
+			this.<String>getColumnOriginalValue("name"));
+		cpDefinitionLocalizationImpl.setShortDescription(
+			this.<String>getColumnOriginalValue("shortDescription"));
 
 		return cpDefinitionLocalizationImpl;
 	}
@@ -759,23 +785,7 @@ public class CPDefinitionLocalizationModelImpl
 			cpDefinitionLocalizationCacheModel.languageId = null;
 		}
 
-		cpDefinitionLocalizationCacheModel.name = getName();
-
-		String name = cpDefinitionLocalizationCacheModel.name;
-
-		if ((name != null) && (name.length() == 0)) {
-			cpDefinitionLocalizationCacheModel.name = null;
-		}
-
-		cpDefinitionLocalizationCacheModel.shortDescription =
-			getShortDescription();
-
-		String shortDescription =
-			cpDefinitionLocalizationCacheModel.shortDescription;
-
-		if ((shortDescription != null) && (shortDescription.length() == 0)) {
-			cpDefinitionLocalizationCacheModel.shortDescription = null;
-		}
+		cpDefinitionLocalizationCacheModel.CProductId = getCProductId();
 
 		cpDefinitionLocalizationCacheModel.description = getDescription();
 
@@ -783,14 +793,6 @@ public class CPDefinitionLocalizationModelImpl
 
 		if ((description != null) && (description.length() == 0)) {
 			cpDefinitionLocalizationCacheModel.description = null;
-		}
-
-		cpDefinitionLocalizationCacheModel.metaTitle = getMetaTitle();
-
-		String metaTitle = cpDefinitionLocalizationCacheModel.metaTitle;
-
-		if ((metaTitle != null) && (metaTitle.length() == 0)) {
-			cpDefinitionLocalizationCacheModel.metaTitle = null;
 		}
 
 		cpDefinitionLocalizationCacheModel.metaDescription =
@@ -809,6 +811,32 @@ public class CPDefinitionLocalizationModelImpl
 
 		if ((metaKeywords != null) && (metaKeywords.length() == 0)) {
 			cpDefinitionLocalizationCacheModel.metaKeywords = null;
+		}
+
+		cpDefinitionLocalizationCacheModel.metaTitle = getMetaTitle();
+
+		String metaTitle = cpDefinitionLocalizationCacheModel.metaTitle;
+
+		if ((metaTitle != null) && (metaTitle.length() == 0)) {
+			cpDefinitionLocalizationCacheModel.metaTitle = null;
+		}
+
+		cpDefinitionLocalizationCacheModel.name = getName();
+
+		String name = cpDefinitionLocalizationCacheModel.name;
+
+		if ((name != null) && (name.length() == 0)) {
+			cpDefinitionLocalizationCacheModel.name = null;
+		}
+
+		cpDefinitionLocalizationCacheModel.shortDescription =
+			getShortDescription();
+
+		String shortDescription =
+			cpDefinitionLocalizationCacheModel.shortDescription;
+
+		if ((shortDescription != null) && (shortDescription.length() == 0)) {
+			cpDefinitionLocalizationCacheModel.shortDescription = null;
 		}
 
 		return cpDefinitionLocalizationCacheModel;
@@ -880,12 +908,13 @@ public class CPDefinitionLocalizationModelImpl
 	private long _companyId;
 	private long _CPDefinitionId;
 	private String _languageId;
-	private String _name;
-	private String _shortDescription;
+	private long _CProductId;
 	private String _description;
-	private String _metaTitle;
 	private String _metaDescription;
 	private String _metaKeywords;
+	private String _metaTitle;
+	private String _name;
+	private String _shortDescription;
 
 	public <T> T getColumnValue(String columnName) {
 		Function<CPDefinitionLocalization, Object> function =
@@ -922,12 +951,13 @@ public class CPDefinitionLocalizationModelImpl
 		_columnOriginalValues.put("companyId", _companyId);
 		_columnOriginalValues.put("CPDefinitionId", _CPDefinitionId);
 		_columnOriginalValues.put("languageId", _languageId);
-		_columnOriginalValues.put("name", _name);
-		_columnOriginalValues.put("shortDescription", _shortDescription);
+		_columnOriginalValues.put("CProductId", _CProductId);
 		_columnOriginalValues.put("description", _description);
-		_columnOriginalValues.put("metaTitle", _metaTitle);
 		_columnOriginalValues.put("metaDescription", _metaDescription);
 		_columnOriginalValues.put("metaKeywords", _metaKeywords);
+		_columnOriginalValues.put("metaTitle", _metaTitle);
+		_columnOriginalValues.put("name", _name);
+		_columnOriginalValues.put("shortDescription", _shortDescription);
 	}
 
 	private transient Map<String, Object> _columnOriginalValues;
@@ -953,17 +983,19 @@ public class CPDefinitionLocalizationModelImpl
 
 		columnBitmasks.put("languageId", 32L);
 
-		columnBitmasks.put("name", 64L);
+		columnBitmasks.put("CProductId", 64L);
 
-		columnBitmasks.put("shortDescription", 128L);
+		columnBitmasks.put("description", 128L);
 
-		columnBitmasks.put("description", 256L);
+		columnBitmasks.put("metaDescription", 256L);
 
-		columnBitmasks.put("metaTitle", 512L);
+		columnBitmasks.put("metaKeywords", 512L);
 
-		columnBitmasks.put("metaDescription", 1024L);
+		columnBitmasks.put("metaTitle", 1024L);
 
-		columnBitmasks.put("metaKeywords", 2048L);
+		columnBitmasks.put("name", 2048L);
+
+		columnBitmasks.put("shortDescription", 4096L);
 
 		_columnBitmasks = Collections.unmodifiableMap(columnBitmasks);
 	}
@@ -972,3 +1004,4 @@ public class CPDefinitionLocalizationModelImpl
 	private CPDefinitionLocalization _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1353583813

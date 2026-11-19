@@ -9,7 +9,7 @@
 
 <%
 String contents = (String)request.getAttribute(CKEditorConstants.ATTRIBUTE_NAMESPACE + ":contents");
-Map<String, Object> editorData = (Map<String, Object>)request.getAttribute(CKEditorConstants.ATTRIBUTE_NAMESPACE + ":data");
+Map<String, Object> data = (Map<String, Object>)request.getAttribute(CKEditorConstants.ATTRIBUTE_NAMESPACE + ":data");
 String name = namespace + GetterUtil.getString((String)request.getAttribute(CKEditorConstants.ATTRIBUTE_NAMESPACE + ":name"));
 
 String onChangeMethod = (String)request.getAttribute(CKEditorConstants.ATTRIBUTE_NAMESPACE + ":onChangeMethod");
@@ -21,10 +21,10 @@ if (Validator.isNotNull(onChangeMethod)) {
 
 <div>
 	<react:component
-		module="editor/BalloonEditor"
+		module="{BalloonEditor} from frontend-editor-ckeditor-web"
 		props='<%=
 			HashMapBuilder.<String, Object>put(
-				"config", (editorData == null) ? null : (JSONObject)editorData.get("editorConfig")
+				"config", (data == null) ? null : (JSONObject)data.get("editorConfig")
 			).put(
 				"contents", contents
 			).put(

@@ -52,6 +52,9 @@ public class WorkflowConstants {
 
 	public static final String CONTEXT_USER_URL = "userURL";
 
+	public static final String CONTEXT_WAIT_FOR_COMPLETION =
+		"waitForCompletion";
+
 	public static final long DEFAULT_GROUP_ID = 0;
 
 	public static final String LABEL_ANY = "any";
@@ -61,6 +64,8 @@ public class WorkflowConstants {
 	public static final String LABEL_DENIED = "denied";
 
 	public static final String LABEL_DRAFT = "draft";
+
+	public static final String LABEL_EMPTY = "empty";
 
 	public static final String LABEL_EXPIRED = "expired";
 
@@ -85,6 +90,8 @@ public class WorkflowConstants {
 	public static final int STATUS_DENIED = 4;
 
 	public static final int STATUS_DRAFT = 2;
+
+	public static final int STATUS_EMPTY = 9;
 
 	public static final int STATUS_EXPIRED = 3;
 
@@ -114,6 +121,9 @@ public class WorkflowConstants {
 		}
 		else if (label.equals(LABEL_DRAFT)) {
 			return STATUS_DRAFT;
+		}
+		else if (label.equals(LABEL_EMPTY)) {
+			return STATUS_EMPTY;
 		}
 		else if (label.equals(LABEL_EXPIRED)) {
 			return STATUS_EXPIRED;
@@ -150,6 +160,9 @@ public class WorkflowConstants {
 		else if (status == STATUS_DRAFT) {
 			return LABEL_DRAFT;
 		}
+		else if (status == STATUS_EMPTY) {
+			return LABEL_EMPTY;
+		}
 		else if (status == STATUS_EXPIRED) {
 			return LABEL_EXPIRED;
 		}
@@ -185,6 +198,9 @@ public class WorkflowConstants {
 		else if (status == STATUS_DRAFT) {
 			return LABEL_DRAFT;
 		}
+		else if (status == STATUS_EMPTY) {
+			return LABEL_EMPTY;
+		}
 		else if (status == STATUS_EXPIRED) {
 			return LABEL_EXPIRED;
 		}
@@ -216,6 +232,9 @@ public class WorkflowConstants {
 		}
 		else if (status == WorkflowConstants.STATUS_DRAFT) {
 			return "secondary";
+		}
+		else if (status == WorkflowConstants.STATUS_EMPTY) {
+			return "warning";
 		}
 		else if (status == WorkflowConstants.STATUS_EXPIRED) {
 			return "danger";

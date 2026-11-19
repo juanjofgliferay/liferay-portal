@@ -7,10 +7,10 @@ package com.liferay.taglib.ui;
 
 import com.liferay.taglib.util.IncludeTag;
 
-import java.util.List;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.jsp.JspException;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.jsp.JspException;
+import java.util.List;
 
 /**
  * @author Brian Wing Shun Chan
@@ -19,7 +19,7 @@ public class InputCheckBoxTag extends IncludeTag {
 
 	@Override
 	public int doEndTag() throws JspException {
-		updateFormCheckboxNames();
+		_updateFormCheckboxNames();
 
 		return super.doEndTag();
 	}
@@ -126,7 +126,7 @@ public class InputCheckBoxTag extends IncludeTag {
 			"liferay-ui:input-checkbox:param", _param);
 	}
 
-	protected void updateFormCheckboxNames() {
+	private void _updateFormCheckboxNames() {
 		HttpServletRequest httpServletRequest = getRequest();
 
 		List<String> checkboxNames =

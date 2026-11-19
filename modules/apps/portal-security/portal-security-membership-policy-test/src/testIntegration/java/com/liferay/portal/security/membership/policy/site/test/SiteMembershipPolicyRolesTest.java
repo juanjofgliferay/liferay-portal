@@ -62,14 +62,6 @@ public class SiteMembershipPolicyRolesTest
 	}
 
 	@Test(expected = MembershipPolicyException.class)
-	public void testAssignUsersToForbiddenRole() throws Exception {
-		long[] forbiddenRoleIds = addForbiddenRoles();
-
-		UserGroupRoleServiceUtil.addUserGroupRoles(
-			addUsers(), group.getGroupId(), forbiddenRoleIds[0]);
-	}
-
-	@Test(expected = MembershipPolicyException.class)
 	public void testAssignUserToForbiddenRole() throws Exception {
 		List<UserGroupRole> userGroupRoles = new ArrayList<>();
 
@@ -98,6 +90,14 @@ public class SiteMembershipPolicyRolesTest
 			userIds[0], group.getGroupId(), addForbiddenRoles());
 	}
 
+	@Test(expected = MembershipPolicyException.class)
+	public void testAssignUsersToForbiddenRole() throws Exception {
+		long[] forbiddenRoleIds = addForbiddenRoles();
+
+		UserGroupRoleServiceUtil.addUserGroupRoles(
+			addUsers(), group.getGroupId(), forbiddenRoleIds[0]);
+	}
+
 	@Test
 	public void testPropagateWhenAssigningRolesToUser() throws Exception {
 		List<UserGroupRole> userGroupRoles = new ArrayList<>();
@@ -122,21 +122,21 @@ public class SiteMembershipPolicyRolesTest
 	}
 
 	@Test
-	public void testPropagateWhenAssigningUsersToRole() throws Exception {
-		long[] standardRoleIds = addStandardRoles();
-
-		UserGroupRoleServiceUtil.addUserGroupRoles(
-			addUsers(), group.getGroupId(), standardRoleIds[0]);
-
-		Assert.assertTrue(isPropagateRoles());
-	}
-
-	@Test
 	public void testPropagateWhenAssigningUserToRoles() throws Exception {
 		long[] userIds = addUsers();
 
 		UserGroupRoleServiceUtil.addUserGroupRoles(
 			userIds[0], group.getGroupId(), addStandardRoles());
+
+		Assert.assertTrue(isPropagateRoles());
+	}
+
+	@Test
+	public void testPropagateWhenAssigningUsersToRole() throws Exception {
+		long[] standardRoleIds = addStandardRoles();
+
+		UserGroupRoleServiceUtil.addUserGroupRoles(
+			addUsers(), group.getGroupId(), standardRoleIds[0]);
 
 		Assert.assertTrue(isPropagateRoles());
 	}
@@ -230,7 +230,8 @@ public class SiteMembershipPolicyRolesTest
 		Role role = MembershipPolicyTestUtil.addRole(RoleConstants.TYPE_SITE);
 
 		RoleServiceUtil.updateRole(
-			role.getRoleId(), RandomTestUtil.randomString(), role.getTitleMap(),
+			role.getExternalReferenceCode(), role.getRoleId(),
+			RandomTestUtil.randomString(), role.getTitleMap(),
 			role.getDescriptionMap(), role.getSubtype(), new ServiceContext());
 
 		Assert.assertTrue(isVerify());

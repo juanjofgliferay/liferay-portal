@@ -297,12 +297,6 @@ public class NullConvertibleEntryLocalServiceWrapper
 			start, end);
 	}
 
-	@Override
-	public int getNullConvertibleEntries(String name) {
-		return _nullConvertibleEntryLocalService.getNullConvertibleEntries(
-			name);
-	}
-
 	/**
 	 * Returns the number of null convertible entries.
 	 *
@@ -394,3 +388,4 @@ public class NullConvertibleEntryLocalServiceWrapper
 	private NullConvertibleEntryLocalService _nullConvertibleEntryLocalService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-476305437

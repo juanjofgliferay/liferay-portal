@@ -109,11 +109,7 @@ public class CTCommentPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		CTComment newCTComment = _persistence.create(pk);
-
-		newCTComment.setMvccVersion(RandomTestUtil.nextLong());
+		CTComment newCTComment = addCTComment();
 
 		newCTComment.setCompanyId(RandomTestUtil.nextLong());
 
@@ -129,7 +125,9 @@ public class CTCommentPersistenceTest {
 
 		newCTComment.setValue(RandomTestUtil.randomString());
 
-		_ctComments.add(_persistence.update(newCTComment));
+		newCTComment = _persistence.update(newCTComment);
+
+		_ctComments.add(newCTComment);
 
 		CTComment existingCTComment = _persistence.findByPrimaryKey(
 			newCTComment.getPrimaryKey());
@@ -162,13 +160,6 @@ public class CTCommentPersistenceTest {
 		_persistence.countByCtCollectionId(RandomTestUtil.nextLong());
 
 		_persistence.countByCtCollectionId(0L);
-	}
-
-	@Test
-	public void testCountByCtEntryId() throws Exception {
-		_persistence.countByCtEntryId(RandomTestUtil.nextLong());
-
-		_persistence.countByCtEntryId(0L);
 	}
 
 	@Test
@@ -415,8 +406,6 @@ public class CTCommentPersistenceTest {
 
 		CTComment ctComment = _persistence.create(pk);
 
-		ctComment.setMvccVersion(RandomTestUtil.nextLong());
-
 		ctComment.setCompanyId(RandomTestUtil.nextLong());
 
 		ctComment.setUserId(RandomTestUtil.nextLong());
@@ -441,3 +430,4 @@ public class CTCommentPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1468200970

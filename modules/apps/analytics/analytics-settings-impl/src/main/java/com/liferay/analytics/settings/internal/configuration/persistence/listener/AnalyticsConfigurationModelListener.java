@@ -32,16 +32,13 @@ public class AnalyticsConfigurationModelListener
 		AnalyticsConfiguration analyticsConfiguration =
 			_analyticsConfigurationRegistry.getAnalyticsConfiguration(pid);
 
-		String[] commerceSyncEnabledAnalyticsChannelIds =
-			analyticsConfiguration.commerceSyncEnabledAnalyticsChannelIds();
-
-		if (commerceSyncEnabledAnalyticsChannelIds == null) {
-			commerceSyncEnabledAnalyticsChannelIds = new String[0];
-		}
-
 		properties.put(
-			"previousCommerceSyncEnabledAnalyticsChannelIds",
-			commerceSyncEnabledAnalyticsChannelIds);
+			"previousContentRecommenderMostPopularItemsEnabled",
+			analyticsConfiguration.contentRecommenderMostPopularItemsEnabled());
+		properties.put(
+			"previousContentRecommenderUserPersonalizationEnabled",
+			analyticsConfiguration.
+				contentRecommenderUserPersonalizationEnabled());
 
 		properties.put(
 			"previousSyncAllAccounts",
@@ -54,7 +51,7 @@ public class AnalyticsConfigurationModelListener
 		String[] syncedAccountFieldNames =
 			analyticsConfiguration.syncedAccountFieldNames();
 
-		if (!ArrayUtil.isEmpty(syncedAccountFieldNames)) {
+		if (ArrayUtil.isNotEmpty(syncedAccountFieldNames)) {
 			properties.put(
 				"previousSyncedAccountFieldNames", syncedAccountFieldNames);
 		}
@@ -62,57 +59,51 @@ public class AnalyticsConfigurationModelListener
 		String[] syncedAccountGroupIds =
 			analyticsConfiguration.syncedAccountGroupIds();
 
-		if (!ArrayUtil.isEmpty(syncedAccountGroupIds)) {
+		if (!analyticsConfiguration.syncAllAccounts() &&
+			ArrayUtil.isNotEmpty(syncedAccountGroupIds)) {
+
 			properties.put(
 				"previousSyncedAccountGroupIds", syncedAccountGroupIds);
 		}
-
-		String[] syncedCommerceChannelIds =
-			analyticsConfiguration.syncedCommerceChannelIds();
-
-		if (syncedCommerceChannelIds == null) {
-			syncedCommerceChannelIds = new String[0];
+		else if (analyticsConfiguration.syncAllAccounts()) {
+			properties.put("previousSyncedAccountGroupIds", new String[0]);
 		}
-
-		properties.put(
-			"previousSyncedCommerceChannelIds", syncedCommerceChannelIds);
 
 		String[] syncedContactFieldNames =
 			analyticsConfiguration.syncedContactFieldNames();
 
-		if (!ArrayUtil.isEmpty(syncedContactFieldNames)) {
+		if (ArrayUtil.isNotEmpty(syncedContactFieldNames)) {
 			properties.put(
 				"previousSyncedContactFieldNames", syncedContactFieldNames);
 		}
 
-		String[] syncedOrderFieldNames =
-			analyticsConfiguration.syncedOrderFieldNames();
+		String[] syncedGroupIds = analyticsConfiguration.syncedGroupIds();
 
-		if (!ArrayUtil.isEmpty(syncedOrderFieldNames)) {
-			properties.put(
-				"previousSyncedOrderFieldNames", syncedOrderFieldNames);
+		if (syncedGroupIds == null) {
+			syncedGroupIds = new String[0];
 		}
+
+		properties.put("previousSyncedGroupIds", syncedGroupIds);
 
 		String[] syncedOrganizationIds =
 			analyticsConfiguration.syncedOrganizationIds();
 
-		if (!ArrayUtil.isEmpty(syncedOrderFieldNames)) {
+		if (!analyticsConfiguration.syncAllContacts()) {
+			if (syncedOrganizationIds == null) {
+				syncedOrganizationIds = new String[0];
+			}
+
 			properties.put(
 				"previousSyncedOrganizationIds", syncedOrganizationIds);
 		}
-
-		String[] syncedProductFieldNames =
-			analyticsConfiguration.syncedProductFieldNames();
-
-		if (!ArrayUtil.isEmpty(syncedProductFieldNames)) {
-			properties.put(
-				"previousSyncedProductFieldNames", syncedProductFieldNames);
+		else if (analyticsConfiguration.syncAllContacts()) {
+			properties.put("previousSyncedOrganizationIds", new String[0]);
 		}
 
 		String[] syncedUserFieldNames =
 			analyticsConfiguration.syncedUserFieldNames();
 
-		if (!ArrayUtil.isEmpty(syncedUserFieldNames)) {
+		if (ArrayUtil.isNotEmpty(syncedUserFieldNames)) {
 			properties.put(
 				"previousSyncedUserFieldNames", syncedUserFieldNames);
 		}
@@ -120,8 +111,15 @@ public class AnalyticsConfigurationModelListener
 		String[] syncedUserGroupIds =
 			analyticsConfiguration.syncedUserGroupIds();
 
-		if (!ArrayUtil.isEmpty(syncedProductFieldNames)) {
+		if (!analyticsConfiguration.syncAllContacts()) {
+			if (syncedUserGroupIds == null) {
+				syncedUserGroupIds = new String[0];
+			}
+
 			properties.put("previousSyncedUserGroupIds", syncedUserGroupIds);
+		}
+		else if (analyticsConfiguration.syncAllContacts()) {
+			properties.put("previousSyncedUserGroupIds", new String[0]);
 		}
 
 		String token = analyticsConfiguration.token();

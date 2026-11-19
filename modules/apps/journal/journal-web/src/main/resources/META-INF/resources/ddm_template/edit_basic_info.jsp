@@ -8,7 +8,7 @@
 <%@ include file="/init.jsp" %>
 
 <%
-JournalEditDDMTemplateDisplayContext journalEditDDMTemplateDisplayContext = new JournalEditDDMTemplateDisplayContext(request, renderResponse);
+JournalEditDDMTemplateDisplayContext journalEditDDMTemplateDisplayContext = (JournalEditDDMTemplateDisplayContext)request.getAttribute(JournalEditDDMTemplateDisplayContext.class.getName());
 
 DDMTemplate ddmTemplate = journalEditDDMTemplateDisplayContext.getDDMTemplate();
 
@@ -22,7 +22,7 @@ DDMStructure ddmStructure = journalEditDDMTemplateDisplayContext.getDDMStructure
 		<liferay-ui:message key="structure" />
 	</label>
 
-	<span class="icon-help lfr-portal-tooltip" tabindex="0" title="<%= LanguageUtil.get(request, "journal-template-cacheable-help") %>">
+	<span class="icon-help lfr-portal-tooltip" tabindex="0" title="<%= LanguageUtil.get(request, "structure-help") %>">
 		<clay:icon
 			symbol="question-circle-full"
 		/>
@@ -30,7 +30,7 @@ DDMStructure ddmStructure = journalEditDDMTemplateDisplayContext.getDDMStructure
 
 	<div class="input-group">
 		<div class="input-group-item">
-			<input placeholder="<%= LanguageUtil.format(locale, "no-x-selected", "structure") %>" id="<%= liferayPortletResponse.getNamespace() %>ddmStructure" name="structure" readonly value="<%= (ddmStructure != null) ? ddmStructure.getName(locale) : StringPool.BLANK %>" class="form-control lfr-input-resource" />
+			<input placeholder="<%= LanguageUtil.format(locale, "no-x-selected", "structure") %>" id="<%= liferayPortletResponse.getNamespace() %>ddmStructure" name="structure" readonly value="<%= (ddmStructure != null) ? HtmlUtil.escape(ddmStructure.getName(locale)) : StringPool.BLANK %>" class="form-control lfr-input-resource" />
 		</div>
 
 		<c:if test="<%= (ddmTemplate == null) || (ddmTemplate.getClassPK() == 0) %>">

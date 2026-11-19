@@ -9,6 +9,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.workflow.kaleo.model.KaleoTimerInstanceToken;
 
@@ -168,14 +169,6 @@ public class KaleoTimerInstanceTokenLocalServiceUtil {
 			kaleoTimerInstanceTokenId);
 	}
 
-	public static void deleteKaleoTimerInstanceToken(
-			long kaleoInstanceTokenId, long kaleoTimerId)
-		throws PortalException {
-
-		getService().deleteKaleoTimerInstanceToken(
-			kaleoInstanceTokenId, kaleoTimerId);
-	}
-
 	public static void deleteKaleoTimerInstanceTokens(long kaleoInstanceId) {
 		getService().deleteKaleoTimerInstanceTokens(kaleoInstanceId);
 	}
@@ -310,14 +303,6 @@ public class KaleoTimerInstanceTokenLocalServiceUtil {
 			kaleoTimerInstanceTokenId);
 	}
 
-	public static KaleoTimerInstanceToken getKaleoTimerInstanceToken(
-			long kaleoInstanceTokenId, long kaleoTimerId)
-		throws PortalException {
-
-		return getService().getKaleoTimerInstanceToken(
-			kaleoInstanceTokenId, kaleoTimerId);
-	}
-
 	/**
 	 * Returns a range of all the kaleo timer instance tokens.
 	 *
@@ -396,13 +381,13 @@ public class KaleoTimerInstanceTokenLocalServiceUtil {
 	}
 
 	public static KaleoTimerInstanceTokenLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(KaleoTimerInstanceTokenLocalService service) {
-		_service = service;
-	}
-
-	private static volatile KaleoTimerInstanceTokenLocalService _service;
+	private static final Snapshot<KaleoTimerInstanceTokenLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			KaleoTimerInstanceTokenLocalServiceUtil.class,
+			KaleoTimerInstanceTokenLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1351281486

@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -35,6 +36,14 @@ public class NotificationRecipientSettingLocalServiceUtil {
 	 *
 	 * Never modify this class directly. Add custom service methods to <code>com.liferay.notification.service.impl.NotificationRecipientSettingLocalServiceImpl</code> and rerun ServiceBuilder to regenerate this class.
 	 */
+	public static NotificationRecipientSetting addNotificationRecipientSetting(
+			long userId, long notificationRecipientId, String name,
+			Object value)
+		throws PortalException {
+
+		return getService().addNotificationRecipientSetting(
+			userId, notificationRecipientId, name, value);
+	}
 
 	/**
 	 * Adds the notification recipient setting to the database. Also notifies the appropriate model listeners.
@@ -65,6 +74,17 @@ public class NotificationRecipientSettingLocalServiceUtil {
 
 		return getService().createNotificationRecipientSetting(
 			notificationRecipientSettingId);
+	}
+
+	public static List<NotificationRecipientSetting>
+		createNotificationRecipientSettings(
+			long notificationRecipientId,
+			com.liferay.notification.model.NotificationTemplate
+				notificationTemplate,
+			Object[] recipients, com.liferay.portal.kernel.model.User user) {
+
+		return getService().createNotificationRecipientSettings(
+			notificationRecipientId, notificationTemplate, recipients, user);
 	}
 
 	/**
@@ -344,6 +364,14 @@ public class NotificationRecipientSettingLocalServiceUtil {
 		return getService().getPersistedModel(primaryKeyObj);
 	}
 
+	public static NotificationRecipientSetting
+		updateNotificationRecipientSetting(
+			long notificationRecipientId, String name, Object value) {
+
+		return getService().updateNotificationRecipientSetting(
+			notificationRecipientId, name, value);
+	}
+
 	/**
 	 * Updates the notification recipient setting in the database or adds it if it does not yet exist. Also notifies the appropriate model listeners.
 	 *
@@ -363,15 +391,13 @@ public class NotificationRecipientSettingLocalServiceUtil {
 	}
 
 	public static NotificationRecipientSettingLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(
-		NotificationRecipientSettingLocalService service) {
-
-		_service = service;
-	}
-
-	private static volatile NotificationRecipientSettingLocalService _service;
+	private static final Snapshot<NotificationRecipientSettingLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			NotificationRecipientSettingLocalServiceUtil.class,
+			NotificationRecipientSettingLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-220257020

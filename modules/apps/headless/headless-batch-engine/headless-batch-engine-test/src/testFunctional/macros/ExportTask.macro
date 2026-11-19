@@ -12,6 +12,24 @@ definition {
 	}
 
 	@summary = "Default summary"
+	macro createExportTask(className = null, contentType = null) {
+		Variables.assertDefined(parameterList = "${className},${contentType}");
+
+		var portalURL = JSONCompany.getPortalURL();
+		var userPassword = PropsUtil.get("default.admin.password");
+
+		var curl = '''
+			${portalURL}/o/headless-batch-engine/v1.0/export-task/${className}/${contentType}?flatten=true \
+				-u test@liferay.com:${userPassword} \
+				-H Content-Type: application/json
+		''';
+
+		var curl = JSONCurlUtil.post(${curl});
+
+		return ${curl};
+	}
+
+	@summary = "Default summary"
 	macro getExportTaskById(exportTaskId = null) {
 		Variables.assertDefined(parameterList = ${exportTaskId});
 
@@ -19,9 +37,11 @@ definition {
 		var siteId = JSONGroupAPI._getGroupIdByNameNoSelenium(
 			groupName = "Guest",
 			site = "true");
+		var userPassword = PropsUtil.get("default.admin.password");
+
 		var curl = '''
 			${portalURL}/o/headless-batch-engine/v1.0/export-task/${exportTaskId} \
-				-u test@liferay.com:test \
+				-u test@liferay.com:${userPassword} \
 				-H Content-Type: application/json
 		''';
 

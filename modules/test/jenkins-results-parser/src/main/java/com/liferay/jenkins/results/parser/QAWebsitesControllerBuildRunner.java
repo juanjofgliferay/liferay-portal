@@ -12,6 +12,8 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.http.client.utils.URIBuilder;
+
 import org.json.JSONObject;
 
 /**
@@ -77,6 +79,10 @@ public class QAWebsitesControllerBuildRunner
 	protected String getJobInvocationURL() {
 		BuildData buildData = getBuildData();
 
+		String jobName = buildData.getJobName();
+
+		jobName = jobName.replaceAll("-controller\\(.*\\)", "");
+
 		String invocationMasterHostname = buildData.getBuildParameter(
 			"INVOCATION_MASTER_HOSTNAME");
 
@@ -85,38 +91,17 @@ public class QAWebsitesControllerBuildRunner
 
 			String mostAvailableMasterURL =
 				JenkinsResultsParserUtil.getMostAvailableMasterURL(
-					"http://" + cohortName + ".liferay.com", 1);
+					"http://" + cohortName + ".liferay.com", null, 1, jobName);
 
 			invocationMasterHostname = mostAvailableMasterURL.replaceAll(
 				"https?://([^\\.]+)(.liferay.com.*)?", "\1");
 		}
 
-		String jobName = buildData.getJobName();
-
 		return JenkinsResultsParserUtil.combine(
-			"http://", invocationMasterHostname, "/job/",
-			jobName.replaceAll("-controller\\(.*\\)", ""));
+			"http://", invocationMasterHostname, "/job/", jobName);
 	}
 
 	protected void invokeBuild() {
-		StringBuilder sb = new StringBuilder();
-
-		String jobInvocationURL = getJobInvocationURL();
-
-		sb.append(jobInvocationURL);
-
-		sb.append("/buildWithParameters?");
-		sb.append("token=");
-
-		try {
-			sb.append(
-				JenkinsResultsParserUtil.getBuildProperty(
-					"jenkins.authentication.token"));
-		}
-		catch (IOException ioException) {
-			throw new RuntimeException(ioException);
-		}
-
 		BuildData buildData = getBuildData();
 
 		Map<String, String> invocationParameters = new HashMap<>();
@@ -129,6 +114,7 @@ public class QAWebsitesControllerBuildRunner
 		invocationParameters.put(
 			"JENKINS_GITHUB_BRANCH_USERNAME",
 			_getGitHubBranchUsername("JENKINS_GITHUB_URL"));
+		invocationParameters.put("PARENT_BUILD_URL", buildData.getBuildURL());
 		invocationParameters.put(
 			"TEST_QA_WEBSITES_BRANCH_NAME",
 			_getGitHubBranchName("QA_WEBSITES_GITHUB_URL"));
@@ -153,45 +139,28 @@ public class QAWebsitesControllerBuildRunner
 
 		invocationParameters.putAll(buildData.getBuildParameters());
 
-		for (Map.Entry<String, String> invocationParameter :
-				invocationParameters.entrySet()) {
+		String jobInvocationURL = getJobInvocationURL();
 
-			String invocationParameterValue = invocationParameter.getValue();
+		long queueId = JenkinsResultsParserUtil.invokeJenkinsBuild(
+			jobInvocationURL, invocationParameters);
 
-			if (JenkinsResultsParserUtil.isNullOrEmpty(
-					invocationParameterValue)) {
-
-				continue;
-			}
-
-			sb.append("&");
-			sb.append(invocationParameter.getKey());
-			sb.append("=");
-			sb.append(invocationParameterValue);
+		if (queueId == 0) {
+			throw new RuntimeException("Unable to invoke " + jobInvocationURL);
 		}
 
-		try {
-			System.out.println(sb.toString());
+		StringBuilder sb = new StringBuilder();
 
-			JenkinsResultsParserUtil.toString(sb.toString());
+		sb.append("<a href=\"");
+		sb.append(JenkinsResultsParserUtil.getRemoteURL(jobInvocationURL));
+		sb.append("\"><strong>IN QUEUE</strong></a>");
 
-			sb = new StringBuilder();
+		buildData.setBuildDescription(sb.toString());
 
-			sb.append("<a href=\"");
-			sb.append(JenkinsResultsParserUtil.getRemoteURL(jobInvocationURL));
-			sb.append("\"><strong>IN QUEUE</strong></a>");
-
-			buildData.setBuildDescription(sb.toString());
-
-			updateBuildDescription();
-		}
-		catch (IOException ioException) {
-			throw new RuntimeException(ioException);
-		}
+		updateBuildDescription();
 	}
 
 	private boolean _allowConcurrentBuilds() {
-		String allowConcurrentBuildsString = System.getenv(
+		String allowConcurrentBuildsString = Environment.get(
 			"ALLOW_CONCURRENT_BUILDS");
 
 		if (allowConcurrentBuildsString == null) {
@@ -201,11 +170,7 @@ public class QAWebsitesControllerBuildRunner
 		allowConcurrentBuildsString = allowConcurrentBuildsString.toLowerCase();
 		allowConcurrentBuildsString = allowConcurrentBuildsString.trim();
 
-		if (!allowConcurrentBuildsString.equals("true")) {
-			return false;
-		}
-
-		return true;
+		return allowConcurrentBuildsString.equals("true");
 	}
 
 	private boolean _expirePreviousBuild() {
@@ -355,9 +320,14 @@ public class QAWebsitesControllerBuildRunner
 			String buildURL = buildURLMatcher.group("buildURL");
 
 			try {
-				JSONObject jsonObject = JenkinsResultsParserUtil.toJSONObject(
+				URIBuilder uriBuilder = JenkinsResultsParserUtil.newURIBuilder(
 					JenkinsResultsParserUtil.getLocalURL(
-						buildURL + "/api/json?tree=result"));
+						buildURL + "/api/json"));
+
+				uriBuilder.addParameter("tree", "result");
+
+				JSONObject jsonObject = JenkinsResultsParserUtil.toJSONObject(
+					uriBuilder.toString());
 
 				Object result = jsonObject.get("result");
 

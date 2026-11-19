@@ -8,7 +8,9 @@ package com.liferay.dynamic.data.mapping.form.web.internal.exportimport.portlet.
 import com.liferay.dynamic.data.mapping.constants.DDMConstants;
 import com.liferay.dynamic.data.mapping.constants.DDMPortletKeys;
 import com.liferay.dynamic.data.mapping.model.DDMFormInstance;
+import com.liferay.dynamic.data.mapping.model.DDMStructure;
 import com.liferay.dynamic.data.mapping.service.DDMFormInstanceLocalService;
+import com.liferay.dynamic.data.mapping.service.DDMStructureLocalService;
 import com.liferay.exportimport.kernel.lar.ExportImportThreadLocal;
 import com.liferay.exportimport.kernel.lar.PortletDataContext;
 import com.liferay.exportimport.kernel.lar.PortletDataException;
@@ -17,6 +19,7 @@ import com.liferay.exportimport.kernel.lar.StagedModelDataHandlerUtil;
 import com.liferay.exportimport.kernel.staging.MergeLayoutPrototypesThreadLocal;
 import com.liferay.exportimport.portlet.preferences.processor.Capability;
 import com.liferay.exportimport.portlet.preferences.processor.ExportImportPortletPreferencesProcessor;
+import com.liferay.exportimport.portlet.preferences.processor.ExportImportPortletPreferencesProcessorHelper;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
@@ -26,11 +29,10 @@ import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.MapUtil;
 
+import jakarta.portlet.PortletPreferences;
+
 import java.util.List;
 import java.util.Map;
-
-import javax.portlet.PortletPreferences;
-import javax.portlet.ReadOnlyException;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -39,7 +41,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Marcellus Tavares
  */
 @Component(
-	property = "javax.portlet.name=" + DDMPortletKeys.DYNAMIC_DATA_MAPPING_FORM,
+	property = "jakarta.portlet.name=" + DDMPortletKeys.DYNAMIC_DATA_MAPPING_FORM,
 	service = ExportImportPortletPreferencesProcessor.class
 )
 public class DDMFormExportImportPortletPreferencesProcessor
@@ -58,6 +60,16 @@ public class DDMFormExportImportPortletPreferencesProcessor
 	@Override
 	public boolean isPublishDisplayedContent() {
 		return false;
+	}
+
+	@Override
+	public void processExportPortletPreferences(
+			long companyId, PortletPreferences portletPreferences)
+		throws PortletDataException {
+
+		_exportImportPortletPreferencesProcessorHelper.
+			updateGroupExportPortletPreferencesExternalReferenceCode(
+				companyId, "groupExternalReferenceCode", portletPreferences);
 	}
 
 	@Override
@@ -147,7 +159,20 @@ public class DDMFormExportImportPortletPreferencesProcessor
 				portletDataContext, portletId, ddmFormInstance);
 		}
 
+		processExportPortletPreferences(
+			portletDataContext.getCompanyId(), portletPreferences);
+
 		return portletPreferences;
+	}
+
+	@Override
+	public void processImportPortletPreferences(
+			long companyId, PortletPreferences portletPreferences)
+		throws PortletDataException {
+
+		_exportImportPortletPreferencesProcessorHelper.
+			updateGroupImportPortletPreferencesExternalReferenceCode(
+				companyId, "groupExternalReferenceCode", portletPreferences);
 	}
 
 	@Override
@@ -165,6 +190,11 @@ public class DDMFormExportImportPortletPreferencesProcessor
 				"Unable to export portlet permissions", portalException);
 		}
 
+		_exportImportPortletPreferencesProcessorHelper.
+			updateGroupImportPortletPreferencesExternalReferenceCode(
+				portletDataContext, "groupExternalReferenceCode",
+				portletPreferences);
+
 		Map<Long, Long> formInstanceIds =
 			(Map<Long, Long>)portletDataContext.getNewPrimaryKeysMap(
 				DDMFormInstance.class);
@@ -174,6 +204,13 @@ public class DDMFormExportImportPortletPreferencesProcessor
 
 		long formInstanceId = MapUtil.getLong(
 			formInstanceIds, importedFormInstanceId, importedFormInstanceId);
+
+		DDMFormInstance ddmFormInstance =
+			_ddmFormInstanceLocalService.fetchDDMFormInstance(formInstanceId);
+
+		if (ddmFormInstance == null) {
+			return portletPreferences;
+		}
 
 		Map<Long, Long> groupIds =
 			(Map<Long, Long>)portletDataContext.getNewPrimaryKeysMap(
@@ -185,15 +222,31 @@ public class DDMFormExportImportPortletPreferencesProcessor
 		long groupId = MapUtil.getLong(
 			groupIds, importedGroupId, importedGroupId);
 
+		Group group = _groupLocalService.fetchGroup(groupId);
+
+		if (group == null) {
+			return portletPreferences;
+		}
+
 		try {
+			DDMStructure ddmStructure =
+				_ddmStructureLocalService.getDDMStructure(
+					ddmFormInstance.getStructureId());
+
+			portletPreferences.setValue(
+				"ddmStructureExternalReferenceCode",
+				ddmStructure.getExternalReferenceCode());
+
 			portletPreferences.setValue(
 				"formInstanceId", String.valueOf(formInstanceId));
+			portletPreferences.setValue(
+				"groupExternalReferenceCode", group.getExternalReferenceCode());
 			portletPreferences.setValue("groupId", String.valueOf(groupId));
 		}
-		catch (ReadOnlyException readOnlyException) {
+		catch (Exception exception) {
 			throw new PortletDataException(
 				"Unable to update portlet preferences during import",
-				readOnlyException);
+				exception);
 		}
 
 		return portletPreferences;
@@ -207,6 +260,13 @@ public class DDMFormExportImportPortletPreferencesProcessor
 
 	@Reference
 	private DDMFormInstanceLocalService _ddmFormInstanceLocalService;
+
+	@Reference
+	private DDMStructureLocalService _ddmStructureLocalService;
+
+	@Reference
+	private ExportImportPortletPreferencesProcessorHelper
+		_exportImportPortletPreferencesProcessorHelper;
 
 	@Reference
 	private GroupLocalService _groupLocalService;

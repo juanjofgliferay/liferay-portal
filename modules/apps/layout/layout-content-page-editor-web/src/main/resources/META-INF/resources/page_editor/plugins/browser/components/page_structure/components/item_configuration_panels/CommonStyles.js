@@ -15,12 +15,14 @@ import {
 	useSelector,
 	useSelectorRef,
 } from '../../../../../../app/contexts/StoreContext';
+import selectCanHideFragments from '../../../../../../app/selectors/selectCanHideFragments';
 import updateItemStyle from '../../../../../../app/utils/updateItemStyle';
 import {FieldSet, fieldIsDisabled} from './FieldSet';
 
 export function CommonStyles({
 	className,
 	commonStylesValues,
+	embedInCollapsableSection = true,
 	role = COMMON_STYLES_ROLES.styles,
 	item,
 }) {
@@ -44,7 +46,7 @@ export function CommonStyles({
 	const handleValueSelect = (name, value) => {
 		updateItemStyle({
 			dispatch,
-			itemId: item.itemId,
+			itemIds: [item.itemId],
 			selectedViewportSize,
 			styleName: name,
 			styleValue: value,
@@ -75,6 +77,7 @@ export function CommonStyles({
 			>
 				{spacingFieldSets.length ? (
 					<FieldSet
+						embedInCollapsableSection={embedInCollapsableSection}
 						fields={[
 							{
 								displaySize: '',
@@ -99,6 +102,9 @@ export function CommonStyles({
 					return (
 						<FieldSet
 							description={fieldSet.description}
+							embedInCollapsableSection={
+								embedInCollapsableSection
+							}
 							fields={fieldSet.styles}
 							fragmentEntryLinks={fragmentEntryLinksRef.current}
 							item={item}
@@ -143,6 +149,17 @@ function filterCommonStyles({item, permissions, role, styles}) {
 			});
 	}
 
+	if (item.type === LAYOUT_DATA_ITEM_TYPES.formStepContainer) {
+		nextStyles = nextStyles.map((fieldSet) => {
+			return {
+				...fieldSet,
+				styles: fieldSet.styles.filter(
+					(field) => field.name !== 'display'
+				),
+			};
+		});
+	}
+
 	// Filter styles based on permissions
 	// For UPDATE_LAYOUT_LIMTED and UPDATE_LAYOUT_BASIC we show the frame
 	// styles only in grid and container fragments.
@@ -171,6 +188,17 @@ function filterCommonStyles({item, permissions, role, styles}) {
 				...fieldSet,
 				styles: fieldSet.styles.filter((style) =>
 					isSpacingStyle(style)
+				),
+			};
+		});
+	}
+
+	if (!selectCanHideFragments({permissions})) {
+		nextStyles = nextStyles.map((fieldSet) => {
+			return {
+				...fieldSet,
+				styles: fieldSet.styles.filter(
+					(style) => style.type !== 'hideFragment'
 				),
 			};
 		});

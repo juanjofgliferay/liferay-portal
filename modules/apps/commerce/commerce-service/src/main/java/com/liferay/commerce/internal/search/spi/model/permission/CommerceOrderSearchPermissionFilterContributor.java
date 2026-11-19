@@ -23,7 +23,7 @@ import com.liferay.portal.kernel.search.filter.BooleanFilter;
 import com.liferay.portal.kernel.search.filter.TermsFilter;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.service.UserGroupRoleLocalService;
-import com.liferay.portal.search.spi.model.permission.SearchPermissionFilterContributor;
+import com.liferay.portal.search.spi.model.permission.contributor.SearchPermissionFilterContributor;
 
 import java.util.List;
 
@@ -50,9 +50,11 @@ public class CommerceOrderSearchPermissionFilterContributor
 			TermsFilter groupsTermsFilter = new TermsFilter(Field.GROUP_ID);
 
 			for (long groupId : groupIds) {
-				if (_hasRoleAccountSupplier(permissionChecker, groupId)) {
-					groupsTermsFilter.addValue(String.valueOf(groupId));
+				if (!_hasRoleAccountSupplier(permissionChecker, groupId)) {
+					continue;
 				}
+
+				groupsTermsFilter.addValue(String.valueOf(groupId));
 			}
 
 			if (!groupsTermsFilter.isEmpty()) {

@@ -14,7 +14,9 @@ import com.liferay.message.boards.service.MBCategoryService;
 import com.liferay.message.boards.service.MBMessageLocalService;
 import com.liferay.message.boards.service.base.MBThreadServiceBaseImpl;
 import com.liferay.message.boards.service.persistence.MBMessageFinder;
+import com.liferay.message.boards.service.persistence.MBMessagePersistence;
 import com.liferay.message.boards.service.persistence.impl.constants.MBPersistenceConstants;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.configuration.Configuration;
@@ -32,7 +34,6 @@ import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -115,15 +116,9 @@ public class MBThreadServiceImpl extends MBThreadServiceBaseImpl {
 				start, end);
 		}
 
-		List<MBThread> threads = new ArrayList<>(threadIds.size());
-
-		for (long threadId : threadIds) {
-			MBThread thread = mbThreadPersistence.findByPrimaryKey(threadId);
-
-			threads.add(thread);
-		}
-
-		return threads;
+		return TransformUtil.transform(
+			threadIds,
+			threadId -> mbThreadPersistence.findByPrimaryKey(threadId));
 	}
 
 	@Override
@@ -180,15 +175,9 @@ public class MBThreadServiceImpl extends MBThreadServiceBaseImpl {
 			}
 		}
 
-		List<MBThread> threads = new ArrayList<>(threadIds.size());
-
-		for (long threadId : threadIds) {
-			MBThread thread = mbThreadPersistence.findByPrimaryKey(threadId);
-
-			threads.add(thread);
-		}
-
-		return threads;
+		return TransformUtil.transform(
+			threadIds,
+			threadId -> mbThreadPersistence.findByPrimaryKey(threadId));
 	}
 
 	@Override
@@ -383,7 +372,7 @@ public class MBThreadServiceImpl extends MBThreadServiceBaseImpl {
 					MBThread.class.getName(), " and class PK ", threadId));
 		}
 
-		MBThread thread = mbThreadLocalService.getThread(threadId);
+		MBThread thread = mbThreadPersistence.findByPrimaryKey(threadId);
 
 		ModelResourcePermissionUtil.check(
 			_categoryModelResourcePermission, getPermissionChecker(),
@@ -402,7 +391,7 @@ public class MBThreadServiceImpl extends MBThreadServiceBaseImpl {
 	public MBThread moveThreadFromTrash(long categoryId, long threadId)
 		throws PortalException {
 
-		MBThread thread = mbThreadLocalService.getThread(threadId);
+		MBThread thread = mbThreadPersistence.findByPrimaryKey(threadId);
 
 		ModelResourcePermissionUtil.check(
 			_categoryModelResourcePermission, getPermissionChecker(),
@@ -474,7 +463,7 @@ public class MBThreadServiceImpl extends MBThreadServiceBaseImpl {
 
 		PermissionChecker permissionChecker = getPermissionChecker();
 
-		MBMessage message = _mbMessageLocalService.getMessage(messageId);
+		MBMessage message = _mbMessagePersistence.findByPrimaryKey(messageId);
 
 		ModelResourcePermissionUtil.check(
 			_categoryModelResourcePermission, getPermissionChecker(),
@@ -490,7 +479,7 @@ public class MBThreadServiceImpl extends MBThreadServiceBaseImpl {
 
 	@Override
 	public void unlockThread(long threadId) throws PortalException {
-		MBThread thread = mbThreadLocalService.getThread(threadId);
+		MBThread thread = mbThreadPersistence.findByPrimaryKey(threadId);
 
 		ModelResourcePermissionUtil.check(
 			_categoryModelResourcePermission, getPermissionChecker(),
@@ -584,6 +573,9 @@ public class MBThreadServiceImpl extends MBThreadServiceBaseImpl {
 
 	@Reference
 	private MBMessageLocalService _mbMessageLocalService;
+
+	@Reference
+	private MBMessagePersistence _mbMessagePersistence;
 
 	private long _mbThreadLockExpirationTime;
 

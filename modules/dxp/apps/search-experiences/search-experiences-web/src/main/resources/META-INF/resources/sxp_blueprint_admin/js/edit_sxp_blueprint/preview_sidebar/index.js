@@ -12,6 +12,7 @@ import ClayLoadingIndicator from '@clayui/loading-indicator';
 import {ClayPaginationWithBasicItems} from '@clayui/pagination';
 import ClayPaginationBar from '@clayui/pagination-bar';
 import {ClayTooltipProvider} from '@clayui/tooltip';
+import {useIsMounted} from '@liferay/frontend-js-react-web';
 import getCN from 'classnames';
 import {ManagementToolbar} from 'frontend-js-components-web';
 import PropTypes from 'prop-types';
@@ -49,14 +50,20 @@ function PreviewSidebar({
 	const [showCancel, setShowCancel] = useState(false);
 	const [value, setValue] = useState('');
 
+	const isMounted = useIsMounted();
+
 	const _handleAttributesSubmit = (attributes) => {
 		setAttributes(attributes);
 	};
 
 	const _handleFetch = () => {
 		setShowCancel(false);
+		setTimeout(() => {
+			if (isMounted()) {
+				setShowCancel(true);
+			}
+		}, 10000);
 		onFetchResults(value, activeDelta, activePage, attributes);
-		setTimeout(() => setShowCancel(true), 10000);
 	};
 
 	useDidUpdateEffect(() => {
@@ -154,7 +161,7 @@ function PreviewSidebar({
 						disabled={loading}
 						displayType="secondary"
 						onClick={_handleFetch}
-						small
+						size="sm"
 					>
 						{Liferay.Language.get('refresh')}
 					</ClayButton>
@@ -175,7 +182,7 @@ function PreviewSidebar({
 							className="raw-request"
 							disabled={loading}
 							displayType="secondary"
-							small
+							size="sm"
 						>
 							{Liferay.Language.get('view-raw-request')}
 						</ClayButton>
@@ -197,7 +204,7 @@ function PreviewSidebar({
 							className="raw-response"
 							disabled={loading}
 							displayType="secondary"
-							small
+							size="sm"
 						>
 							{Liferay.Language.get('view-raw-response')}
 						</ClayButton>
@@ -212,16 +219,16 @@ function PreviewSidebar({
 			className={getCN('preview-sidebar', 'sidebar', 'sidebar-light', {
 				open: visible,
 			})}
-			data-testid={TEST_IDS.PREVIEW_SIDEBAR}
+			data-qa-id={TEST_IDS.PREVIEW_SIDEBAR}
 		>
 			<div className="sidebar-header">
-				<h4 className="component-title">
+				<div className="component-title">
 					<span className="text-truncate-inline">
 						<span className="text-truncate">
 							{Liferay.Language.get('preview')}
 						</span>
 					</span>
-				</h4>
+				</div>
 
 				<span>
 					<PreviewAttributesModal
@@ -241,7 +248,7 @@ function PreviewSidebar({
 								borderless
 								displayType="secondary"
 								monospaced
-								small
+								size="sm"
 								title={Liferay.Language.get(
 									'search-context-attributes'
 								)}
@@ -257,7 +264,7 @@ function PreviewSidebar({
 						displayType="secondary"
 						monospaced
 						onClick={onClose}
-						small
+						size="sm"
 					>
 						<ClayIcon symbol="times" />
 					</ClayButton>
@@ -294,7 +301,7 @@ function PreviewSidebar({
 						</div>
 					) : (
 						!errors.length && (
-							<div className="search-message">
+							<div className="search-message text-secondary">
 								{Liferay.Language.get(
 									'perform-a-search-to-preview-your-blueprints-search-results'
 								)}
@@ -306,7 +313,7 @@ function PreviewSidebar({
 						<ClayLoadingIndicator />
 
 						{showCancel && (
-							<div className="search-message">
+							<div className="search-message text-secondary">
 								{Liferay.Language.get(
 									'it-looks-like-this-is-taking-longer-than-expected'
 								)}
@@ -315,7 +322,7 @@ function PreviewSidebar({
 									className="cancel"
 									displayType="secondary"
 									onClick={onFetchCancel}
-									small
+									size="sm"
 								>
 									{Liferay.Language.get('cancel')}
 								</ClayButton>

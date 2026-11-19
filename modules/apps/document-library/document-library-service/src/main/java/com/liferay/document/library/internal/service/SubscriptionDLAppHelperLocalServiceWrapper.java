@@ -5,9 +5,7 @@
 
 package com.liferay.document.library.internal.service;
 
-import com.liferay.asset.display.page.constants.AssetDisplayPageConstants;
-import com.liferay.asset.display.page.portlet.AssetDisplayPageFriendlyURLProvider;
-import com.liferay.asset.display.page.service.AssetDisplayPageEntryLocalService;
+import com.liferay.asset.display.page.portlet.AssetDisplayPageEntryFormProcessor;
 import com.liferay.document.library.internal.util.DLSubscriptionSender;
 import com.liferay.document.library.kernel.model.DLFileEntry;
 import com.liferay.document.library.kernel.model.DLFileEntryConstants;
@@ -19,8 +17,6 @@ import com.liferay.document.library.kernel.service.DLAppHelperLocalServiceWrappe
 import com.liferay.document.library.kernel.service.DLAppLocalService;
 import com.liferay.document.library.kernel.service.DLFileEntryTypeLocalService;
 import com.liferay.document.library.kernel.util.DLAppHelperThreadLocal;
-import com.liferay.info.item.ClassPKInfoItemIdentifier;
-import com.liferay.info.item.InfoItemReference;
 import com.liferay.portal.json.jabsorb.serializer.LiferayJSONDeserializationWhitelist;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.Language;
@@ -33,11 +29,10 @@ import com.liferay.portal.kernel.repository.model.Folder;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceWrapper;
 import com.liferay.portal.kernel.settings.LocalizedValuesMap;
-import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.EscapableLocalizableFunction;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.Localization;
-import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.SubscriptionSender;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
@@ -105,6 +100,12 @@ public class SubscriptionDLAppHelperLocalServiceWrapper
 			userId, fileEntry, latestFileVersion, oldStatus, newStatus,
 			serviceContext, workflowContext);
 
+		// Asset display page
+
+		_assetDisplayPageEntryFormProcessor.process(
+			FileEntry.class.getName(), fileEntry.getFileEntryId(),
+			serviceContext);
+
 		if ((newStatus == WorkflowConstants.STATUS_APPROVED) &&
 			(oldStatus != WorkflowConstants.STATUS_IN_TRASH) &&
 			!fileEntry.isInTrash()) {
@@ -132,18 +133,6 @@ public class SubscriptionDLAppHelperLocalServiceWrapper
 		catch (IOException ioException) {
 			throw new RuntimeException(ioException);
 		}
-	}
-
-	private boolean _hasAssetDisplayPage(ServiceContext serviceContext) {
-		int displayPageType = ParamUtil.getInteger(
-			serviceContext, "displayPageType",
-			AssetDisplayPageConstants.TYPE_DEFAULT);
-
-		if (displayPageType == AssetDisplayPageConstants.TYPE_NONE) {
-			return false;
-		}
-
-		return true;
 	}
 
 	private boolean _isEnabled(FileEntry fileEntry) {
@@ -176,20 +165,11 @@ public class SubscriptionDLAppHelperLocalServiceWrapper
 			return;
 		}
 
-		ThemeDisplay themeDisplay = serviceContext.getThemeDisplay();
+		String friendlyURL = GetterUtil.getString(
+			serviceContext.getAttribute("friendlyURL"));
 
-		if ((themeDisplay != null) && _hasAssetDisplayPage(serviceContext)) {
-			String friendlyURL =
-				_assetDisplayPageFriendlyURLProvider.getFriendlyURL(
-					new InfoItemReference(
-						FileEntry.class.getName(),
-						new ClassPKInfoItemIdentifier(
-							fileVersion.getFileEntryId())),
-					themeDisplay);
-
-			if (Validator.isNotNull(friendlyURL)) {
-				entryURL = friendlyURL;
-			}
+		if (Validator.isNotNull(friendlyURL)) {
+			entryURL = friendlyURL;
 		}
 
 		if (Validator.isNull(entryURL)) {
@@ -259,7 +239,6 @@ public class SubscriptionDLAppHelperLocalServiceWrapper
 
 		subscriptionSender.setClassPK(fileVersion.getFileEntryId());
 		subscriptionSender.setClassName(DLFileEntryConstants.getClassName());
-		subscriptionSender.setCompanyId(fileVersion.getCompanyId());
 
 		if (folder != null) {
 			subscriptionSender.setContextAttribute(
@@ -344,12 +323,8 @@ public class SubscriptionDLAppHelperLocalServiceWrapper
 	}
 
 	@Reference
-	private AssetDisplayPageEntryLocalService
-		_assetDisplayPageEntryLocalService;
-
-	@Reference
-	private AssetDisplayPageFriendlyURLProvider
-		_assetDisplayPageFriendlyURLProvider;
+	private AssetDisplayPageEntryFormProcessor
+		_assetDisplayPageEntryFormProcessor;
 
 	private Closeable _closeable;
 

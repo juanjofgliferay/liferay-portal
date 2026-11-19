@@ -44,11 +44,6 @@ public class CommerceDiscountCommerceAccountGroupRelFinderImpl
 			".findByCommerceDiscountId";
 
 	@Override
-	public int countByCommerceDiscountId(long commerceDiscountId, String name) {
-		return countByCommerceDiscountId(commerceDiscountId, name, false);
-	}
-
-	@Override
 	public int countByCommerceDiscountId(
 		long commerceDiscountId, String name, boolean inlineSQLHelper) {
 
@@ -63,8 +58,7 @@ public class CommerceDiscountCommerceAccountGroupRelFinderImpl
 			if (inlineSQLHelper) {
 				sql = InlineSQLHelperUtil.replacePermissionCheck(
 					sql, CommerceDiscount.class.getName(),
-					"CommerceDiscount.commerceDiscountId", null, null,
-					new long[] {0}, null);
+					"CommerceDiscount.commerceDiscountId");
 			}
 
 			String[] keywords = _customSQL.keywords(name, true);
@@ -117,15 +111,6 @@ public class CommerceDiscountCommerceAccountGroupRelFinderImpl
 	@Override
 	public List<CommerceDiscountCommerceAccountGroupRel>
 		findByCommerceDiscountId(
-			long commerceDiscountId, String name, int start, int end) {
-
-		return findByCommerceDiscountId(
-			commerceDiscountId, name, start, end, false);
-	}
-
-	@Override
-	public List<CommerceDiscountCommerceAccountGroupRel>
-		findByCommerceDiscountId(
 			long commerceDiscountId, String name, int start, int end,
 			boolean inlineSQLHelper) {
 
@@ -142,8 +127,7 @@ public class CommerceDiscountCommerceAccountGroupRelFinderImpl
 			if (inlineSQLHelper) {
 				sql = InlineSQLHelperUtil.replacePermissionCheck(
 					sql, CommerceDiscount.class.getName(),
-					"CommerceDiscount.commerceDiscountId", null, null,
-					new long[] {0}, null);
+					"CommerceDiscount.commerceDiscountId");
 			}
 
 			if (Validator.isNotNull(name)) {

@@ -18,10 +18,10 @@ import com.liferay.portal.kernel.model.LayoutSetPrototype;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.service.permission.LayoutSetPrototypePermissionUtil;
 
-import java.util.List;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
 
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
+import java.util.List;
 
 /**
  * @author Eudaldo Alonso
@@ -99,6 +99,11 @@ public class LayoutSetPrototypeVerticalCard extends BaseVerticalCard {
 	@Override
 	public String getTitle() {
 		return _layoutSetPrototype.getName(themeDisplay.getLocale());
+	}
+
+	@Override
+	public boolean isTranslated() {
+		return false;
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(

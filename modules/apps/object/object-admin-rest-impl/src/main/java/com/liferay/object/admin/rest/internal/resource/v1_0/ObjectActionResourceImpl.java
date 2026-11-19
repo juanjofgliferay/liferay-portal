@@ -25,7 +25,7 @@ import com.liferay.portal.vulcan.pagination.Pagination;
 import com.liferay.portal.vulcan.util.LocalizedMapUtil;
 import com.liferay.portal.vulcan.util.SearchUtil;
 
-import javax.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.MultivaluedMap;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -155,10 +155,11 @@ public class ObjectActionResourceImpl extends BaseObjectActionResourceImpl {
 			_objectActionService.addObjectAction(
 				objectAction.getExternalReferenceCode(), objectDefinitionId,
 				objectAction.getActive(), objectAction.getConditionExpression(),
-				objectAction.getDescription(),
-				LocalizedMapUtil.getLocalizedMap(
+				LocalizedMapUtil.populateLocalizedMap(
+					objectAction.getDescription()),
+				LocalizedMapUtil.populateLocalizedMap(
 					objectAction.getErrorMessage()),
-				LocalizedMapUtil.getLocalizedMap(objectAction.getLabel()),
+				LocalizedMapUtil.populateLocalizedMap(objectAction.getLabel()),
 				objectAction.getName(),
 				objectAction.getObjectActionExecutorKey(),
 				objectAction.getObjectActionTriggerKey(),
@@ -176,10 +177,11 @@ public class ObjectActionResourceImpl extends BaseObjectActionResourceImpl {
 			_objectActionService.updateObjectAction(
 				objectAction.getExternalReferenceCode(), objectActionId,
 				objectAction.getActive(), objectAction.getConditionExpression(),
-				objectAction.getDescription(),
-				LocalizedMapUtil.getLocalizedMap(
+				LocalizedMapUtil.populateLocalizedMap(
+					objectAction.getDescription()),
+				LocalizedMapUtil.populateLocalizedMap(
 					objectAction.getErrorMessage()),
-				LocalizedMapUtil.getLocalizedMap(objectAction.getLabel()),
+				LocalizedMapUtil.populateLocalizedMap(objectAction.getLabel()),
 				objectAction.getName(),
 				objectAction.getObjectActionExecutorKey(),
 				objectAction.getObjectActionTriggerKey(),

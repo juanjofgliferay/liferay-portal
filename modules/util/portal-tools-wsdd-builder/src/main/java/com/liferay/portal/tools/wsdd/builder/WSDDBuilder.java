@@ -5,9 +5,9 @@
 
 package com.liferay.portal.tools.wsdd.builder;
 
+import com.liferay.petra.io.unsync.UnsyncStringReader;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.io.unsync.UnsyncStringReader;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.tools.ArgumentsUtil;
@@ -108,14 +108,16 @@ public class WSDDBuilder {
 			boolean remoteService = GetterUtil.getBoolean(
 				entityElement.attributeValue("remote-service"), true);
 
-			if (remoteService) {
-				_createServiceWSDD(entityName);
-
-				WSDDMerger.merge(
-					StringBundler.concat(
-						_outputPath, "/", entityName, "Service_deploy.wsdd"),
-					_serverConfigFileName);
+			if (!remoteService) {
+				continue;
 			}
+
+			_createServiceWSDD(entityName);
+
+			WSDDMerger.merge(
+				StringBundler.concat(
+					_outputPath, "/", entityName, "Service_deploy.wsdd"),
+				_serverConfigFileName);
 		}
 	}
 

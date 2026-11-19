@@ -8,12 +8,12 @@ package com.liferay.analytics.settings.rest.client.dto.v1_0;
 import com.liferay.analytics.settings.rest.client.function.UnsafeSupplier;
 import com.liferay.analytics.settings.rest.client.serdes.v1_0.ChannelSerDes;
 
+import jakarta.annotation.Generated;
+
 import java.io.Serializable;
 
 import java.util.Date;
 import java.util.Objects;
-
-import javax.annotation.Generated;
 
 /**
  * @author Riccardo Ferrari
@@ -46,27 +46,6 @@ public class Channel implements Cloneable, Serializable {
 	}
 
 	protected String channelId;
-
-	public Boolean getCommerceSyncEnabled() {
-		return commerceSyncEnabled;
-	}
-
-	public void setCommerceSyncEnabled(Boolean commerceSyncEnabled) {
-		this.commerceSyncEnabled = commerceSyncEnabled;
-	}
-
-	public void setCommerceSyncEnabled(
-		UnsafeSupplier<Boolean, Exception> commerceSyncEnabledUnsafeSupplier) {
-
-		try {
-			commerceSyncEnabled = commerceSyncEnabledUnsafeSupplier.get();
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
-	}
-
-	protected Boolean commerceSyncEnabled;
 
 	public Date getCreateDate() {
 		return createDate;
@@ -161,3 +140,4 @@ public class Channel implements Cloneable, Serializable {
 	}
 
 }
+// LIFERAY-REST-BUILDER-HASH:763376401

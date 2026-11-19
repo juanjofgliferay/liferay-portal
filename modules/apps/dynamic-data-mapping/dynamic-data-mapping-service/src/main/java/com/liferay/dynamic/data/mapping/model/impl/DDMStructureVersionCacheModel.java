@@ -7,6 +7,7 @@ package com.liferay.dynamic.data.mapping.model.impl;
 
 import com.liferay.dynamic.data.mapping.model.DDMStructureVersion;
 import com.liferay.petra.lang.HashUtil;
+import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.model.CacheModel;
 import com.liferay.portal.kernel.model.MVCCModel;
@@ -15,6 +16,9 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
 
 import java.util.Date;
 
@@ -201,7 +205,12 @@ public class DDMStructureVersionCacheModel
 
 		ddmStructureVersionImpl.resetOriginalValues();
 
-		ddmStructureVersionImpl.setDDMForm(_ddmForm);
+		try {
+			_ddmFormMethodHandle.invokeExact(ddmStructureVersionImpl, ddmForm);
+		}
+		catch (Throwable throwable) {
+			ReflectionUtil.throwException(throwable);
+		}
 
 		return ddmStructureVersionImpl;
 	}
@@ -228,7 +237,7 @@ public class DDMStructureVersionCacheModel
 		version = objectInput.readUTF();
 
 		parentStructureId = objectInput.readLong();
-		name = objectInput.readUTF();
+		name = (String)objectInput.readObject();
 		description = (String)objectInput.readObject();
 		definition = (String)objectInput.readObject();
 		storageType = objectInput.readUTF();
@@ -241,7 +250,7 @@ public class DDMStructureVersionCacheModel
 		statusByUserName = objectInput.readUTF();
 		statusDate = objectInput.readLong();
 
-		_ddmForm =
+		ddmForm =
 			(com.liferay.dynamic.data.mapping.model.DDMForm)
 				objectInput.readObject();
 	}
@@ -281,10 +290,10 @@ public class DDMStructureVersionCacheModel
 		objectOutput.writeLong(parentStructureId);
 
 		if (name == null) {
-			objectOutput.writeUTF("");
+			objectOutput.writeObject("");
 		}
 		else {
-			objectOutput.writeUTF(name);
+			objectOutput.writeObject(name);
 		}
 
 		if (description == null) {
@@ -323,7 +332,7 @@ public class DDMStructureVersionCacheModel
 
 		objectOutput.writeLong(statusDate);
 
-		objectOutput.writeObject(_ddmForm);
+		objectOutput.writeObject(ddmForm);
 	}
 
 	public long mvccVersion;
@@ -346,6 +355,22 @@ public class DDMStructureVersionCacheModel
 	public long statusByUserId;
 	public String statusByUserName;
 	public long statusDate;
-	public com.liferay.dynamic.data.mapping.model.DDMForm _ddmForm;
+	public volatile com.liferay.dynamic.data.mapping.model.DDMForm ddmForm;
+
+	private static final MethodHandle _ddmFormMethodHandle;
+
+	static {
+		MethodHandles.Lookup lookup = ReflectionUtil.getImplLookup();
+
+		try {
+			_ddmFormMethodHandle = lookup.findSetter(
+				DDMStructureVersionImpl.class, "_ddmForm",
+				com.liferay.dynamic.data.mapping.model.DDMForm.class);
+		}
+		catch (ReflectiveOperationException reflectiveOperationException) {
+			throw new ExceptionInInitializerError(reflectiveOperationException);
+		}
+	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1898723536

@@ -11,12 +11,12 @@ import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
 import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 
+import jakarta.portlet.ActionRequest;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.List;
 import java.util.Locale;
-
-import javax.portlet.ActionRequest;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Lourdes Fernández Besada
@@ -27,12 +27,12 @@ public interface LayoutLockManager {
 
 	public void getLock(Layout layout, long userId) throws PortalException;
 
-	public List<LockedLayout> getLockedLayouts(
-		long companyId, long groupId, Locale locale);
-
 	public String getLockedLayoutURL(ActionRequest actionRequest);
 
 	public String getLockedLayoutURL(HttpServletRequest httpServletRequest);
+
+	public List<LockedLayout> getLockedLayouts(
+		long companyId, long groupId, Locale locale);
 
 	public String getUnlockDraftLayoutURL(
 			LiferayPortletResponse liferayPortletResponse,

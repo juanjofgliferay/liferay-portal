@@ -10,6 +10,7 @@ import com.liferay.commerce.price.list.model.CommercePriceList;
 import com.liferay.commerce.price.list.model.CommerceTierPriceEntry;
 import com.liferay.commerce.price.list.service.CommercePriceEntryLocalService;
 import com.liferay.commerce.price.list.service.base.CommerceTierPriceEntryServiceBaseImpl;
+import com.liferay.commerce.price.list.service.persistence.CommercePriceEntryPersistence;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.search.BaseModelSearchResult;
@@ -60,7 +61,7 @@ public class CommerceTierPriceEntryServiceImpl
 		throws PortalException {
 
 		CommercePriceEntry commercePriceEntry =
-			_commercePriceEntryLocalService.getCommercePriceEntry(
+			_commercePriceEntryPersistence.findByPrimaryKey(
 				commercePriceEntryId);
 
 		if (commercePriceEntry != null) {
@@ -89,7 +90,7 @@ public class CommerceTierPriceEntryServiceImpl
 		throws PortalException {
 
 		CommercePriceEntry commercePriceEntry =
-			_commercePriceEntryLocalService.getCommercePriceEntry(
+			_commercePriceEntryPersistence.findByPrimaryKey(
 				commercePriceEntryId);
 
 		_commercePriceListModelResourcePermission.check(
@@ -115,17 +116,14 @@ public class CommerceTierPriceEntryServiceImpl
 		throws PortalException {
 
 		CommercePriceEntry commercePriceEntry =
-			_commercePriceEntryLocalService.fetchCommercePriceEntry(
+			_commercePriceEntryPersistence.fetchByPrimaryKey(
 				commercePriceEntryId);
 
 		if ((commercePriceEntry == null) &&
 			Validator.isNotNull(priceEntryExternalReferenceCode)) {
 
-			commercePriceEntry =
-				_commercePriceEntryLocalService.
-					fetchCommercePriceEntryByExternalReferenceCode(
-						priceEntryExternalReferenceCode,
-						serviceContext.getCompanyId());
+			commercePriceEntry = _commercePriceEntryPersistence.fetchByERC_C(
+				priceEntryExternalReferenceCode, serviceContext.getCompanyId());
 		}
 
 		if (commercePriceEntry != null) {
@@ -157,17 +155,14 @@ public class CommerceTierPriceEntryServiceImpl
 		throws PortalException {
 
 		CommercePriceEntry commercePriceEntry =
-			_commercePriceEntryLocalService.fetchCommercePriceEntry(
+			_commercePriceEntryPersistence.fetchByPrimaryKey(
 				commercePriceEntryId);
 
 		if ((commercePriceEntry == null) &&
 			Validator.isNotNull(priceEntryExternalReferenceCode)) {
 
-			commercePriceEntry =
-				_commercePriceEntryLocalService.
-					fetchCommercePriceEntryByExternalReferenceCode(
-						priceEntryExternalReferenceCode,
-						serviceContext.getCompanyId());
+			commercePriceEntry = _commercePriceEntryPersistence.fetchByERC_C(
+				priceEntryExternalReferenceCode, serviceContext.getCompanyId());
 		}
 
 		if (commercePriceEntry != null) {
@@ -193,7 +188,7 @@ public class CommerceTierPriceEntryServiceImpl
 		throws PortalException {
 
 		CommerceTierPriceEntry commerceTierPriceEntry =
-			commerceTierPriceEntryLocalService.getCommerceTierPriceEntry(
+			commerceTierPriceEntryPersistence.findByPrimaryKey(
 				commerceTierPriceEntryId);
 
 		CommercePriceEntry commercePriceEntry =
@@ -208,13 +203,13 @@ public class CommerceTierPriceEntryServiceImpl
 	}
 
 	@Override
-	public CommerceTierPriceEntry fetchByExternalReferenceCode(
-			String externalReferenceCode, long companyId)
+	public CommerceTierPriceEntry fetchCommerceTierPriceEntry(
+			long commerceTierPriceEntryId)
 		throws PortalException {
 
 		CommerceTierPriceEntry commerceTierPriceEntry =
-			commerceTierPriceEntryLocalService.fetchByExternalReferenceCode(
-				externalReferenceCode, companyId);
+			commerceTierPriceEntryPersistence.fetchByPrimaryKey(
+				commerceTierPriceEntryId);
 
 		if (commerceTierPriceEntry != null) {
 			CommercePriceEntry commercePriceEntry =
@@ -228,26 +223,15 @@ public class CommerceTierPriceEntryServiceImpl
 		return commerceTierPriceEntry;
 	}
 
-	/**
-	 * @deprecated As of Athanasius (7.3.x)
-	 */
-	@Deprecated
 	@Override
-	public List<CommerceTierPriceEntry> fetchCommerceTierPriceEntries(
-			long companyId, int start, int end)
-		throws PortalException {
-
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public CommerceTierPriceEntry fetchCommerceTierPriceEntry(
-			long commerceTierPriceEntryId)
+	public CommerceTierPriceEntry
+			fetchCommerceTierPriceEntryByExternalReferenceCode(
+				String externalReferenceCode, long companyId)
 		throws PortalException {
 
 		CommerceTierPriceEntry commerceTierPriceEntry =
-			commerceTierPriceEntryLocalService.fetchCommerceTierPriceEntry(
-				commerceTierPriceEntryId);
+			commerceTierPriceEntryPersistence.fetchByERC_C(
+				externalReferenceCode, companyId);
 
 		if (commerceTierPriceEntry != null) {
 			CommercePriceEntry commercePriceEntry =
@@ -267,14 +251,14 @@ public class CommerceTierPriceEntryServiceImpl
 		throws PortalException {
 
 		CommercePriceEntry commercePriceEntry =
-			_commercePriceEntryLocalService.getCommercePriceEntry(
+			_commercePriceEntryPersistence.findByPrimaryKey(
 				commercePriceEntryId);
 
 		_commercePriceListModelResourcePermission.check(
 			getPermissionChecker(), commercePriceEntry.getCommercePriceListId(),
 			ActionKeys.VIEW);
 
-		return commerceTierPriceEntryLocalService.getCommerceTierPriceEntries(
+		return commerceTierPriceEntryPersistence.findByCommercePriceEntryId(
 			commercePriceEntryId, start, end);
 	}
 
@@ -285,14 +269,14 @@ public class CommerceTierPriceEntryServiceImpl
 		throws PortalException {
 
 		CommercePriceEntry commercePriceEntry =
-			_commercePriceEntryLocalService.getCommercePriceEntry(
+			_commercePriceEntryPersistence.findByPrimaryKey(
 				commercePriceEntryId);
 
 		_commercePriceListModelResourcePermission.check(
 			getPermissionChecker(), commercePriceEntry.getCommercePriceListId(),
 			ActionKeys.VIEW);
 
-		return commerceTierPriceEntryLocalService.getCommerceTierPriceEntries(
+		return commerceTierPriceEntryPersistence.findByCommercePriceEntryId(
 			commercePriceEntryId, start, end, orderByComparator);
 	}
 
@@ -301,15 +285,15 @@ public class CommerceTierPriceEntryServiceImpl
 		throws PortalException {
 
 		CommercePriceEntry commercePriceEntry =
-			_commercePriceEntryLocalService.getCommercePriceEntry(
+			_commercePriceEntryPersistence.findByPrimaryKey(
 				commercePriceEntryId);
 
 		_commercePriceListModelResourcePermission.check(
 			getPermissionChecker(), commercePriceEntry.getCommercePriceListId(),
 			ActionKeys.VIEW);
 
-		return commerceTierPriceEntryLocalService.
-			getCommerceTierPriceEntriesCount(commercePriceEntryId);
+		return commerceTierPriceEntryPersistence.countByCommercePriceEntryId(
+			commercePriceEntryId);
 	}
 
 	/**
@@ -329,7 +313,7 @@ public class CommerceTierPriceEntryServiceImpl
 		throws PortalException {
 
 		CommerceTierPriceEntry commerceTierPriceEntry =
-			commerceTierPriceEntryLocalService.getCommerceTierPriceEntry(
+			commerceTierPriceEntryPersistence.findByPrimaryKey(
 				commerceTierPriceEntryId);
 
 		CommercePriceEntry commercePriceEntry =
@@ -350,7 +334,7 @@ public class CommerceTierPriceEntryServiceImpl
 		throws PortalException {
 
 		CommercePriceEntry commercePriceEntry =
-			_commercePriceEntryLocalService.fetchCommercePriceEntry(
+			_commercePriceEntryPersistence.fetchByPrimaryKey(
 				commercePriceEntryId);
 
 		if (commercePriceEntry != null) {
@@ -370,7 +354,7 @@ public class CommerceTierPriceEntryServiceImpl
 		throws PortalException {
 
 		CommercePriceEntry commercePriceEntry =
-			_commercePriceEntryLocalService.getCommercePriceEntry(
+			_commercePriceEntryPersistence.findByPrimaryKey(
 				commercePriceEntryId);
 
 		if (commercePriceEntry != null) {
@@ -391,7 +375,7 @@ public class CommerceTierPriceEntryServiceImpl
 		throws PortalException {
 
 		CommerceTierPriceEntry commerceTierPriceEntry =
-			commerceTierPriceEntryLocalService.getCommerceTierPriceEntry(
+			commerceTierPriceEntryPersistence.findByPrimaryKey(
 				commerceTierPriceEntryId);
 
 		CommercePriceEntry commercePriceEntry =
@@ -421,7 +405,7 @@ public class CommerceTierPriceEntryServiceImpl
 		throws PortalException {
 
 		CommerceTierPriceEntry commerceTierPriceEntry =
-			commerceTierPriceEntryLocalService.getCommerceTierPriceEntry(
+			commerceTierPriceEntryPersistence.findByPrimaryKey(
 				commerceTierPriceEntryId);
 
 		CommercePriceEntry commercePriceEntry =
@@ -459,6 +443,9 @@ public class CommerceTierPriceEntryServiceImpl
 
 	@Reference
 	private CommercePriceEntryLocalService _commercePriceEntryLocalService;
+
+	@Reference
+	private CommercePriceEntryPersistence _commercePriceEntryPersistence;
 
 	@Reference(
 		target = "(model.class.name=com.liferay.commerce.price.list.model.CommercePriceList)"

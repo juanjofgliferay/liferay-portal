@@ -145,21 +145,6 @@ public interface FriendlyURLEntryLocalizationModel
 	public void setLanguageId(String languageId);
 
 	/**
-	 * Returns the url title of this friendly url entry localization.
-	 *
-	 * @return the url title of this friendly url entry localization
-	 */
-	@AutoEscape
-	public String getUrlTitle();
-
-	/**
-	 * Sets the url title of this friendly url entry localization.
-	 *
-	 * @param urlTitle the url title of this friendly url entry localization
-	 */
-	public void setUrlTitle(String urlTitle);
-
-	/**
 	 * Returns the group ID of this friendly url entry localization.
 	 *
 	 * @return the group ID of this friendly url entry localization
@@ -200,6 +185,20 @@ public interface FriendlyURLEntryLocalizationModel
 	public void setClassNameId(long classNameId);
 
 	/**
+	 * Returns the parent class pk of this friendly url entry localization.
+	 *
+	 * @return the parent class pk of this friendly url entry localization
+	 */
+	public long getParentClassPK();
+
+	/**
+	 * Sets the parent class pk of this friendly url entry localization.
+	 *
+	 * @param parentClassPK the parent class pk of this friendly url entry localization
+	 */
+	public void setParentClassPK(long parentClassPK);
+
+	/**
 	 * Returns the class pk of this friendly url entry localization.
 	 *
 	 * @return the class pk of this friendly url entry localization
@@ -215,6 +214,21 @@ public interface FriendlyURLEntryLocalizationModel
 	@Override
 	public void setClassPK(long classPK);
 
+	/**
+	 * Returns the url title of this friendly url entry localization.
+	 *
+	 * @return the url title of this friendly url entry localization
+	 */
+	@AutoEscape
+	public String getUrlTitle();
+
+	/**
+	 * Sets the url title of this friendly url entry localization.
+	 *
+	 * @param urlTitle the url title of this friendly url entry localization
+	 */
+	public void setUrlTitle(String urlTitle);
+
 	@Override
 	public FriendlyURLEntryLocalization cloneWithOriginalValues();
 
@@ -223,3 +237,4 @@ public interface FriendlyURLEntryLocalizationModel
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:62463685

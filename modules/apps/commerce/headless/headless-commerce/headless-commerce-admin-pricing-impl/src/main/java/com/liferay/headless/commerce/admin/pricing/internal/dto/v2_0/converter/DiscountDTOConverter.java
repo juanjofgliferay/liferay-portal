@@ -14,16 +14,19 @@ import com.liferay.commerce.discount.service.CommerceDiscountService;
 import com.liferay.commerce.percentage.PercentageFormatter;
 import com.liferay.expando.kernel.model.ExpandoBridge;
 import com.liferay.headless.commerce.admin.pricing.dto.v2_0.Discount;
+import com.liferay.headless.commerce.admin.pricing.internal.dto.v2_0.util.CreatorUtil;
 import com.liferay.portal.kernel.language.Language;
+import com.liferay.portal.kernel.service.UserLocalService;
+import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.language.LanguageResources;
 import com.liferay.portal.vulcan.dto.converter.DTOConverter;
 import com.liferay.portal.vulcan.dto.converter.DTOConverterContext;
+import com.liferay.portal.vulcan.fields.NestedFieldsSupplier;
 
 import java.math.BigDecimal;
 
 import java.util.Locale;
 import java.util.Objects;
-import java.util.ResourceBundle;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -32,7 +35,10 @@ import org.osgi.service.component.annotations.Reference;
  * @author Riccardo Alberti
  */
 @Component(
-	property = "dto.class.name=com.liferay.commerce.discount.model.CommerceDiscount",
+	property = {
+		"default=true",
+		"dto.class.name=com.liferay.commerce.discount.model.CommerceDiscount"
+	},
 	service = DTOConverter.class
 )
 public class DiscountDTOConverter
@@ -51,44 +57,58 @@ public class DiscountDTOConverter
 			_commerceDiscountService.getCommerceDiscount(
 				(Long)dtoConverterContext.getId());
 
-		ExpandoBridge expandoBridge = commerceDiscount.getExpandoBridge();
-
-		Locale locale = dtoConverterContext.getLocale();
-
-		ResourceBundle resourceBundle = LanguageResources.getResourceBundle(
-			locale);
-
 		return new Discount() {
 			{
-				actions = dtoConverterContext.getActions();
-				active = commerceDiscount.isActive();
-				amountFormatted = _getAmountFormatted(commerceDiscount, locale);
-				couponCode = commerceDiscount.getCouponCode();
-				customFields = expandoBridge.getAttributes();
-				displayDate = commerceDiscount.getDisplayDate();
-				expirationDate = commerceDiscount.getExpirationDate();
-				externalReferenceCode =
-					commerceDiscount.getExternalReferenceCode();
-				id = commerceDiscount.getCommerceDiscountId();
-				level = commerceDiscount.getLevel();
-				limitationTimes = commerceDiscount.getLimitationTimes();
-				limitationTimesPerAccount =
-					commerceDiscount.getLimitationTimesPerAccount();
-				limitationType = commerceDiscount.getLimitationType();
-				maximumDiscountAmount =
-					commerceDiscount.getMaximumDiscountAmount();
-				modifiedDate = commerceDiscount.getModifiedDate();
-				numberOfUse = commerceDiscount.getNumberOfUse();
-				percentageLevel1 = commerceDiscount.getLevel1();
-				percentageLevel2 = commerceDiscount.getLevel2();
-				percentageLevel3 = commerceDiscount.getLevel3();
-				percentageLevel4 = commerceDiscount.getLevel4();
-				rulesConjunction = commerceDiscount.isRulesConjunction();
-				target = _language.get(
-					resourceBundle, commerceDiscount.getTarget());
-				title = commerceDiscount.getTitle();
-				useCouponCode = commerceDiscount.isUseCouponCode();
-				usePercentage = commerceDiscount.isUsePercentage();
+				setActions(dtoConverterContext::getActions);
+				setActive(commerceDiscount::isActive);
+				setAmountFormatted(
+					() -> _getAmountFormatted(
+						commerceDiscount, dtoConverterContext.getLocale()));
+				setCouponCode(commerceDiscount::getCouponCode);
+				setCreator(
+					() -> NestedFieldsSupplier.supply(
+						"creator",
+						fieldName -> CreatorUtil.toCreator(
+							_portal,
+							_userLocalService.fetchUser(
+								commerceDiscount.getUserId()))));
+				setCustomFields(
+					() -> {
+						ExpandoBridge expandoBridge =
+							commerceDiscount.getExpandoBridge();
+
+						return expandoBridge.getAttributes();
+					});
+				setDateCreated(commerceDiscount::getCreateDate);
+				setDateModified(commerceDiscount::getModifiedDate);
+				setDisplayDate(commerceDiscount::getDisplayDate);
+				setExpirationDate(commerceDiscount::getExpirationDate);
+				setExternalReferenceCode(
+					commerceDiscount::getExternalReferenceCode);
+				setId(commerceDiscount::getCommerceDiscountId);
+				setLevel(commerceDiscount::getLevel);
+				setLimitationTimes(commerceDiscount::getLimitationTimes);
+				setLimitationTimesPerAccount(
+					commerceDiscount::getLimitationTimesPerAccount);
+				setLimitationType(commerceDiscount::getLimitationType);
+				setMaximumDiscountAmount(
+					commerceDiscount::getMaximumDiscountAmount);
+				setModifiedDate(commerceDiscount::getModifiedDate);
+				setNumberOfUse(commerceDiscount::getNumberOfUse);
+				setPercentageLevel1(commerceDiscount::getLevel1);
+				setPercentageLevel2(commerceDiscount::getLevel2);
+				setPercentageLevel3(commerceDiscount::getLevel3);
+				setPercentageLevel4(commerceDiscount::getLevel4);
+				setRulesConjunction(commerceDiscount::isRulesConjunction);
+				setTarget(
+					() -> _language.get(
+						LanguageResources.getResourceBundle(
+							dtoConverterContext.getLocale()),
+						commerceDiscount.getTarget()));
+				setTargetKey(commerceDiscount::getTarget);
+				setTitle(commerceDiscount::getTitle);
+				setUseCouponCode(commerceDiscount::isUseCouponCode);
+				setUsePercentage(commerceDiscount::isUsePercentage);
 			}
 		};
 	}
@@ -145,7 +165,8 @@ public class DiscountDTOConverter
 				commerceCurrency.getMinFractionDigits(), amount);
 		}
 
-		return _commercePriceFormatter.format(commerceCurrency, amount, locale);
+		return _commercePriceFormatter.format(
+			commerceCurrency, true, locale, amount);
 	}
 
 	@Reference
@@ -162,5 +183,11 @@ public class DiscountDTOConverter
 
 	@Reference
 	private PercentageFormatter _percentageFormatter;
+
+	@Reference
+	private Portal _portal;
+
+	@Reference
+	private UserLocalService _userLocalService;
 
 }

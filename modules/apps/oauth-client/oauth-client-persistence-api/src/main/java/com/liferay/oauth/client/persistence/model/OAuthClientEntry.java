@@ -51,4 +51,7 @@ public interface OAuthClientEntry
 
 			};
 
+	public int getMetadataCacheInSeconds();
+
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1774205506

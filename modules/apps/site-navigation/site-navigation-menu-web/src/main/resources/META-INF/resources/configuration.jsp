@@ -34,7 +34,8 @@ SiteNavigationMenuConfigurationDisplayContext siteNavigationMenuConfigurationDis
 					cssClass="c-p-3"
 					label="navigation-menu"
 				>
-					<aui:input id="siteNavigationMenuId" name="preferences--siteNavigationMenuId--" type="hidden" value="<%= siteNavigationMenuDisplayContext.getSiteNavigationMenuId() %>" />
+					<aui:input id="siteNavigationMenuExternalReferenceCode" name="preferences--siteNavigationMenuExternalReferenceCode--" type="hidden" value="<%= siteNavigationMenuDisplayContext.getSiteNavigationMenuExternalReferenceCode() %>" />
+					<aui:input id="siteNavigationMenuGroupExternalReferenceCode" name="preferences--siteNavigationMenuGroupExternalReferenceCode--" type="hidden" value="<%= siteNavigationMenuDisplayContext.getSiteNavigationMenuGroupExternalReferenceCode() %>" />
 					<aui:input id="siteNavigationMenuType" name="preferences--siteNavigationMenuType--" type="hidden" value="<%= siteNavigationMenuDisplayContext.getSiteNavigationMenuType() %>" />
 
 					<aui:input checked="<%= !siteNavigationMenuDisplayContext.isSiteNavigationMenuSelected() %>" cssClass="select-navigation" label="select-navigation" name="selectNavigation" type="radio" value="0" />
@@ -123,20 +124,33 @@ SiteNavigationMenuConfigurationDisplayContext siteNavigationMenuConfigurationDis
 							<clay:col
 								md="10"
 							>
-								<div class="c-mb-3 <%= rootMenuItemType.equals("select") ? StringPool.BLANK : "hide" %>" id="<portlet:namespace />rootMenuItemIdPanel">
-									<aui:input id="rootMenuItemId" ignoreRequestValue="<%= true %>" name="preferences--rootMenuItemId--" type="hidden" value="<%= siteNavigationMenuDisplayContext.getRootMenuItemId() %>" />
+								<div class="c-mb-3 <%= rootMenuItemType.equals("select") ? StringPool.BLANK : "hide" %>" id="<portlet:namespace />rootMenuItemExternalReferenceCodePanel">
+									<aui:input id="rootMenuItemExternalReferenceCode" ignoreRequestValue="<%= true %>" name="preferences--rootMenuItemExternalReferenceCode--" type="hidden" value="<%= siteNavigationMenuDisplayContext.getRootMenuItemExternalReferenceCode() %>" />
 
 									<%
 									String rootMenuItemName = siteNavigationMenuDisplayContext.getSiteNavigationMenuName();
 
-									SiteNavigationMenuItem siteNavigationMenuItem = SiteNavigationMenuItemLocalServiceUtil.fetchSiteNavigationMenuItem(GetterUtil.getLong(siteNavigationMenuDisplayContext.getRootMenuItemId()));
+									if (siteNavigationMenuDisplayContext.isSiteNavigationMenuSelected()) {
+										SiteNavigationMenuItem siteNavigationMenuItem = SiteNavigationMenuItemLocalServiceUtil.fetchSiteNavigationMenuItem(GetterUtil.getLong(siteNavigationMenuDisplayContext.getRootMenuItemId()));
 
-									if (siteNavigationMenuItem != null) {
-										SiteNavigationMenuItemTypeRegistry siteNavigationMenuItemTypeRegistry = (SiteNavigationMenuItemTypeRegistry)request.getAttribute(SiteNavigationMenuWebKeys.SITE_NAVIGATION_MENU_ITEM_TYPE_REGISTRY);
+										if (siteNavigationMenuItem != null) {
+											SiteNavigationMenuItemTypeRegistry siteNavigationMenuItemTypeRegistry = (SiteNavigationMenuItemTypeRegistry)request.getAttribute(SiteNavigationMenuWebKeys.SITE_NAVIGATION_MENU_ITEM_TYPE_REGISTRY);
 
-										SiteNavigationMenuItemType siteNavigationMenuItemType = siteNavigationMenuItemTypeRegistry.getSiteNavigationMenuItemType(siteNavigationMenuItem.getType());
+											SiteNavigationMenuItemType siteNavigationMenuItemType = siteNavigationMenuItemTypeRegistry.getSiteNavigationMenuItemType(siteNavigationMenuItem.getType());
 
-										rootMenuItemName = siteNavigationMenuItemType.getTitle(siteNavigationMenuItem, locale);
+											rootMenuItemName = siteNavigationMenuItemType.getTitle(siteNavigationMenuItem, locale);
+										}
+									}
+									else {
+										Layout rootLayout = LayoutLocalServiceUtil.fetchLayoutByUuidAndGroupId(siteNavigationMenuDisplayContext.getRootMenuItemId(), themeDisplay.getScopeGroupId(), false);
+
+										if (rootLayout == null) {
+											rootLayout = LayoutLocalServiceUtil.fetchLayoutByUuidAndGroupId(siteNavigationMenuDisplayContext.getRootMenuItemId(), themeDisplay.getScopeGroupId(), true);
+										}
+
+										if (rootLayout != null) {
+											rootMenuItemName = rootLayout.getName(locale);
+										}
 									}
 									%>
 
@@ -237,5 +251,5 @@ SiteNavigationMenuConfigurationDisplayContext siteNavigationMenuConfigurationDis
 			"siteNavigationMenuItemSelectorURL", siteNavigationMenuDisplayContext.getSiteNavigationMenuItemSelectorURL()
 		).build()
 	%>'
-	module="js/NavigationMenuConfiguration"
+	module="{NavigationMenuConfiguration} from site-navigation-menu-web"
 />

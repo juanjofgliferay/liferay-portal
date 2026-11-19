@@ -112,11 +112,7 @@ public class WikiPagePersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		WikiPage newWikiPage = _persistence.create(pk);
-
-		newWikiPage.setMvccVersion(RandomTestUtil.nextLong());
+		WikiPage newWikiPage = addWikiPage();
 
 		newWikiPage.setCtCollectionId(RandomTestUtil.nextLong());
 
@@ -168,7 +164,9 @@ public class WikiPagePersistenceTest {
 
 		newWikiPage.setStatusDate(RandomTestUtil.nextDate());
 
-		_wikiPages.add(_persistence.update(newWikiPage));
+		newWikiPage = _persistence.update(newWikiPage);
+
+		_wikiPages.add(newWikiPage);
 
 		WikiPage existingWikiPage = _persistence.findByPrimaryKey(
 			newWikiPage.getPrimaryKey());
@@ -272,26 +270,10 @@ public class WikiPagePersistenceTest {
 	}
 
 	@Test
-	public void testCountByCompanyId() throws Exception {
-		_persistence.countByCompanyId(RandomTestUtil.nextLong());
-
-		_persistence.countByCompanyId(0L);
-	}
-
-	@Test
 	public void testCountByNodeId() throws Exception {
 		_persistence.countByNodeId(RandomTestUtil.nextLong());
 
 		_persistence.countByNodeId(0L);
-	}
-
-	@Test
-	public void testCountByFormat() throws Exception {
-		_persistence.countByFormat("");
-
-		_persistence.countByFormat("null");
-
-		_persistence.countByFormat((String)null);
 	}
 
 	@Test
@@ -355,14 +337,6 @@ public class WikiPagePersistenceTest {
 	}
 
 	@Test
-	public void testCountByN_S() throws Exception {
-		_persistence.countByN_S(
-			RandomTestUtil.nextLong(), RandomTestUtil.nextInt());
-
-		_persistence.countByN_S(0L, 0);
-	}
-
-	@Test
 	public void testCountByR_N_V() throws Exception {
 		_persistence.countByR_N_V(
 			RandomTestUtil.nextLong(), RandomTestUtil.nextLong(),
@@ -415,15 +389,6 @@ public class WikiPagePersistenceTest {
 			RandomTestUtil.nextInt());
 
 		_persistence.countByG_N_S(0L, 0L, 0);
-	}
-
-	@Test
-	public void testCountByU_N_S() throws Exception {
-		_persistence.countByU_N_S(
-			RandomTestUtil.nextLong(), RandomTestUtil.nextLong(),
-			RandomTestUtil.nextInt());
-
-		_persistence.countByU_N_S(0L, 0L, 0);
 	}
 
 	@Test
@@ -542,19 +507,6 @@ public class WikiPagePersistenceTest {
 	}
 
 	@Test
-	public void testCountByN_H_P_NotS() throws Exception {
-		_persistence.countByN_H_P_NotS(
-			RandomTestUtil.nextLong(), RandomTestUtil.randomBoolean(), "",
-			RandomTestUtil.nextInt());
-
-		_persistence.countByN_H_P_NotS(
-			0L, RandomTestUtil.randomBoolean(), "null", 0);
-
-		_persistence.countByN_H_P_NotS(
-			0L, RandomTestUtil.randomBoolean(), (String)null, 0);
-	}
-
-	@Test
 	public void testCountByN_H_R_S() throws Exception {
 		_persistence.countByN_H_R_S(
 			RandomTestUtil.nextLong(), RandomTestUtil.randomBoolean(), "",
@@ -564,19 +516,6 @@ public class WikiPagePersistenceTest {
 			0L, RandomTestUtil.randomBoolean(), "null", 0);
 
 		_persistence.countByN_H_R_S(
-			0L, RandomTestUtil.randomBoolean(), (String)null, 0);
-	}
-
-	@Test
-	public void testCountByN_H_R_NotS() throws Exception {
-		_persistence.countByN_H_R_NotS(
-			RandomTestUtil.nextLong(), RandomTestUtil.randomBoolean(), "",
-			RandomTestUtil.nextInt());
-
-		_persistence.countByN_H_R_NotS(
-			0L, RandomTestUtil.randomBoolean(), "null", 0);
-
-		_persistence.countByN_H_R_NotS(
 			0L, RandomTestUtil.randomBoolean(), (String)null, 0);
 	}
 
@@ -945,8 +884,6 @@ public class WikiPagePersistenceTest {
 
 		WikiPage wikiPage = _persistence.create(pk);
 
-		wikiPage.setMvccVersion(RandomTestUtil.nextLong());
-
 		wikiPage.setCtCollectionId(RandomTestUtil.nextLong());
 
 		wikiPage.setUuid(RandomTestUtil.randomString());
@@ -1007,3 +944,4 @@ public class WikiPagePersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-471114253

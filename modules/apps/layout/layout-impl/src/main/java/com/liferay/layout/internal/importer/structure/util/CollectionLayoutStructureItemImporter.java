@@ -13,6 +13,7 @@ import com.liferay.headless.delivery.dto.v1_0.PageElement;
 import com.liferay.info.collection.provider.InfoCollectionProvider;
 import com.liferay.info.collection.provider.RelatedInfoItemCollectionProvider;
 import com.liferay.info.collection.provider.SingleFormVariationInfoCollectionProvider;
+import com.liferay.info.item.InfoItemServiceRegistry;
 import com.liferay.info.list.provider.item.selector.criterion.InfoListProviderItemSelectorReturnType;
 import com.liferay.item.selector.criteria.InfoListItemSelectorReturnType;
 import com.liferay.layout.converter.AlignConverter;
@@ -32,6 +33,7 @@ import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.MapUtil;
+import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.uuid.PortalUUIDUtil;
 
@@ -40,16 +42,18 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.Reference;
-
 /**
  * @author Jürgen Kappler
  */
-@Component(service = LayoutStructureItemImporter.class)
 public class CollectionLayoutStructureItemImporter
 	extends BaseLayoutStructureItemImporter
 	implements LayoutStructureItemImporter {
+
+	public CollectionLayoutStructureItemImporter(
+		AssetListEntryLocalService assetListEntryLocalService) {
+
+		_assetListEntryLocalService = assetListEntryLocalService;
+	}
 
 	@Override
 	public LayoutStructureItem addLayoutStructureItem(
@@ -82,15 +86,16 @@ public class CollectionLayoutStructureItemImporter
 
 		if (collectionConfig != null) {
 			collectionStyledLayoutStructureItem.setCollectionJSONObject(
-				_getCollectionConfigAsJSONObject(collectionConfig));
+				_getCollectionConfigAsJSONObject(
+					collectionConfig, layoutStructureItemImporterContext));
 		}
 
-		if (definitionMap.containsKey("collectionViewports")) {
-			List<Map<String, Object>> collectionViewports =
-				(List<Map<String, Object>>)definitionMap.get(
-					"collectionViewports");
+		if (definitionMap.get("collectionViewports") instanceof
+				List<?> collectionViewports) {
 
-			for (Map<String, Object> collectionViewport : collectionViewports) {
+			for (Map<String, Object> collectionViewport :
+					(List<Map<String, Object>>)collectionViewports) {
+
 				_processCollectionViewportDefinition(
 					collectionStyledLayoutStructureItem,
 					(Map<String, Object>)collectionViewport.get(
@@ -156,12 +161,12 @@ public class CollectionLayoutStructureItemImporter
 		collectionStyledLayoutStructureItem.setTemplateKey(
 			(String)definitionMap.get("templateKey"));
 
-		if (definitionMap.containsKey("fragmentViewports")) {
-			List<Map<String, Object>> fragmentViewports =
-				(List<Map<String, Object>>)definitionMap.get(
-					"fragmentViewports");
+		if (definitionMap.get("fragmentViewports") instanceof
+				List<?> fragmentViewports) {
 
-			for (Map<String, Object> fragmentViewport : fragmentViewports) {
+			for (Map<String, Object> fragmentViewport :
+					(List<Map<String, Object>>)fragmentViewports) {
+
 				JSONObject jsonObject = JSONUtil.put(
 					(String)fragmentViewport.get("id"),
 					toFragmentViewportStylesJSONObject(fragmentViewport));
@@ -200,9 +205,10 @@ public class CollectionLayoutStructureItemImporter
 			}
 		}
 
-		if (definitionMap.containsKey("name")) {
-			collectionStyledLayoutStructureItem.setName(
-				GetterUtil.getString(definitionMap.get("name")));
+		String name = GetterUtil.getString(definitionMap.get("name"), null);
+
+		if (name != null) {
+			collectionStyledLayoutStructureItem.setName(name);
 		}
 
 		return collectionStyledLayoutStructureItem;
@@ -214,7 +220,8 @@ public class CollectionLayoutStructureItemImporter
 	}
 
 	private JSONObject _getCollectionConfigAsJSONObject(
-		Map<String, Object> collectionConfig) {
+		Map<String, Object> collectionConfig,
+		LayoutStructureItemImporterContext layoutStructureItemImporterContext) {
 
 		String type = (String)collectionConfig.get("collectionType");
 
@@ -239,7 +246,8 @@ public class CollectionLayoutStructureItemImporter
 					CollectionConfig.CollectionType.COLLECTION_PROVIDER.
 						getValue())) {
 
-			return _getCollectionProviderJSONObject(collectionReference);
+			return _getCollectionProviderJSONObject(
+				collectionReference, layoutStructureItemImporterContext);
 		}
 
 		return null;
@@ -276,7 +284,8 @@ public class CollectionLayoutStructureItemImporter
 		}
 
 		return JSONUtil.put(
-			"classNameId", portal.getClassNameId(AssetListEntry.class.getName())
+			"classNameId",
+			PortalUtil.getClassNameId(AssetListEntry.class.getName())
 		).put(
 			"classPK", String.valueOf(classPK)
 		).put(
@@ -291,7 +300,11 @@ public class CollectionLayoutStructureItemImporter
 	}
 
 	private JSONObject _getCollectionProviderJSONObject(
-		Map<String, Object> collectionReference) {
+		Map<String, Object> collectionReference,
+		LayoutStructureItemImporterContext layoutStructureItemImporterContext) {
+
+		InfoItemServiceRegistry infoItemServiceRegistry =
+			layoutStructureItemImporterContext.getInfoItemServiceRegistry();
 
 		String className = (String)collectionReference.get("className");
 
@@ -334,15 +347,16 @@ public class CollectionLayoutStructureItemImporter
 			{
 				setDisplayMessage(
 					() -> {
-						if (emptyCollectionConfig.containsKey(
-								"displayMessage")) {
+						Map.Entry<String, Object> displayMessageEntry =
+							MapUtil.getEntry(
+								emptyCollectionConfig, "displayMessage");
 
-							return GetterUtil.getBoolean(
-								emptyCollectionConfig.get("displayMessage"),
-								true);
+						if (displayMessageEntry == null) {
+							return null;
 						}
 
-						return null;
+						return GetterUtil.getBoolean(
+							displayMessageEntry.getValue(), true);
 					});
 				setMessage(
 					() -> (Map<String, String>)emptyCollectionConfig.get(
@@ -354,19 +368,18 @@ public class CollectionLayoutStructureItemImporter
 	private String _getItemSubtype(
 		InfoCollectionProvider<?> infoCollectionProvider) {
 
-		if (infoCollectionProvider instanceof
-				SingleFormVariationInfoCollectionProvider) {
+		if (!(infoCollectionProvider instanceof
+				SingleFormVariationInfoCollectionProvider)) {
 
-			SingleFormVariationInfoCollectionProvider<?>
-				singleFormVariationInfoCollectionProvider =
-					(SingleFormVariationInfoCollectionProvider<?>)
-						infoCollectionProvider;
-
-			return singleFormVariationInfoCollectionProvider.
-				getFormVariationKey();
+			return null;
 		}
 
-		return null;
+		SingleFormVariationInfoCollectionProvider<?>
+			singleFormVariationInfoCollectionProvider =
+				(SingleFormVariationInfoCollectionProvider<?>)
+					infoCollectionProvider;
+
+		return singleFormVariationInfoCollectionProvider.getFormVariationKey();
 	}
 
 	private void _processCollectionViewportDefinition(
@@ -379,15 +392,16 @@ public class CollectionLayoutStructureItemImporter
 			JSONUtil.put(
 				"numberOfColumns",
 				() -> {
-					if (collectionViewportDefinitionMap.containsKey(
-							"numberOfColumns")) {
+					Map.Entry<String, Object> numberOfColumnsEntry =
+						MapUtil.getEntry(
+							collectionViewportDefinitionMap, "numberOfColumns");
 
-						return GetterUtil.getInteger(
-							collectionViewportDefinitionMap.get(
-								"numberOfColumns"));
+					if (numberOfColumnsEntry == null) {
+						return null;
 					}
 
-					return null;
+					return GetterUtil.getInteger(
+						numberOfColumnsEntry.getValue());
 				}));
 	}
 
@@ -447,7 +461,6 @@ public class CollectionLayoutStructureItemImporter
 	private static final Log _log = LogFactoryUtil.getLog(
 		CollectionLayoutStructureItemImporter.class);
 
-	@Reference
-	private AssetListEntryLocalService _assetListEntryLocalService;
+	private final AssetListEntryLocalService _assetListEntryLocalService;
 
 }

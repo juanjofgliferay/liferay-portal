@@ -6,11 +6,11 @@
 package com.liferay.portal.search.test.util.sort;
 
 import com.liferay.portal.kernel.search.BooleanClauseOccur;
+import com.liferay.portal.kernel.search.BooleanQuery;
 import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.kernel.search.Query;
 import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.search.SortFactory;
-import com.liferay.portal.kernel.search.generic.BooleanQueryImpl;
 import com.liferay.portal.search.internal.SortFactoryImpl;
 import com.liferay.portal.search.test.util.DocumentsAssert;
 import com.liferay.portal.search.test.util.indexing.BaseIndexingTestCase;
@@ -113,20 +113,20 @@ public abstract class BaseSortTestCase extends BaseIndexingTestCase {
 			expected);
 	}
 
-	protected Query getScoredQuery(String fieldName, String fieldValue) {
-		BooleanQueryImpl booleanQueryImpl = new BooleanQueryImpl();
-
-		booleanQueryImpl.addExactTerm(fieldName, fieldValue);
-
-		booleanQueryImpl.add(getDefaultQuery(), BooleanClauseOccur.SHOULD);
-
-		return booleanQueryImpl;
-	}
-
 	protected abstract String getScoreParameter();
 
 	protected Sort[] getScoreSortArray(int type, boolean reverse) {
 		return new Sort[] {new Sort(getScoreParameter(), type, reverse)};
+	}
+
+	protected Query getScoredQuery(String fieldName, String fieldValue) {
+		BooleanQuery booleanQuery = new BooleanQuery();
+
+		booleanQuery.addExactTerm(fieldName, fieldValue);
+
+		booleanQuery.add(getDefaultQuery(), BooleanClauseOccur.SHOULD);
+
+		return booleanQuery;
 	}
 
 	protected void testDoubleField(String fieldName) throws Exception {

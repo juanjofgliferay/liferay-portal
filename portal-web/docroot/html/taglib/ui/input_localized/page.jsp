@@ -29,6 +29,7 @@ Map<String, Map<String, String>> languagesTranslationsAriaLabelsMap = new HashMa
 					cssClass='<%= "language-value " + cssClass %>'
 					editorName="<%= editorName %>"
 					name="<%= inputEditorName %>"
+					onBlurMethod='<%= randomNamespace + "onBlurMethod" %>'
 					onChangeMethod='<%= randomNamespace + "onChangeEditor" %>'
 					onInitMethod='<%= randomNamespace + "onInitEditor" %>'
 					placeholder="<%= placeholder %>"
@@ -36,21 +37,57 @@ Map<String, Map<String, String>> languagesTranslationsAriaLabelsMap = new HashMa
 				/>
 
 				<aui:script>
-					function <%= namespace + randomNamespace %>onChangeEditor() {
-						var inputLocalized = Liferay.component('<%= namespace + HtmlUtil.escapeJS(fieldName) %>');
+					var edited = false;
 
-						var editor = window['<%= namespace + HtmlUtil.escapeJS(inputEditorName) %>'];
+					function <%= namespace + randomNamespace %>onBlurMethod() {
+						if (edited && Liferay.FeatureFlags['LPD-11228']) {
+							Liferay.fire('journal:unlock');
+							edited = false;
+
+							var inputLocalized = Liferay.component(
+								'<%= namespace + HtmlUtil.escapeJS(fieldName) %>'
+							);
+
+							var label = document.querySelector(
+								"label[for='" +
+									inputLocalized.get('namespace') +
+									inputLocalized.get('id') +
+									"']"
+							).textContent;
+
+							Liferay.fire('journal:storeState', {
+								fieldName: Liferay.Language.get('edit') + ' ' + label,
+							});
+						}
+					}
+
+					function <%= namespace + randomNamespace %>onChangeEditor() {
+						if (
+							Liferay.FeatureFlags['LPD-11228'] &&
+							document.activeElement.title === 'editor'
+						) {
+							Liferay.fire('journal:lock');
+							edited = true;
+						}
+
+						var inputLocalized = Liferay.component(
+							'<%= namespace + HtmlUtil.escapeJS(fieldName) %>'
+						);
+
+						var editor =
+							window['<%= namespace + HtmlUtil.escapeJS(inputEditorName) %>'];
 
 						inputLocalized.updateInputLanguage(editor.getHTML());
 					}
 
 					function <%= namespace + randomNamespace %>onInitEditor() {
-						Liferay.componentReady('<%= namespace + HtmlUtil.escapeJS(fieldName) %>')
-							.then(inputLocalized => {
-								var editor = window['<%= namespace + HtmlUtil.escapeJS(inputEditorName) %>'];
-								inputLocalized.updateInputPlaceholder(editor);
-							}
-						);
+						Liferay.componentReady(
+							'<%= namespace + HtmlUtil.escapeJS(fieldName) %>'
+						).then((inputLocalized) => {
+							var editor =
+								window['<%= namespace + HtmlUtil.escapeJS(inputEditorName) %>'];
+							inputLocalized.updateInputPlaceholder(editor);
+						});
 					}
 				</aui:script>
 			</c:when>
@@ -66,7 +103,9 @@ Map<String, Map<String, String>> languagesTranslationsAriaLabelsMap = new HashMa
 
 				<c:if test="<%= autoSize %>">
 					<aui:script use="aui-autosize-deprecated">
-						A.one('#<%= namespace + id + HtmlUtil.getAUICompatibleId(fieldSuffix) %>').plug(A.Plugin.Autosize);
+						A.one('#<%= namespace + id + HtmlUtil.getAUICompatibleId(fieldSuffix) %>').plug(
+							A.Plugin.Autosize
+						);
 					</aui:script>
 				</c:if>
 			</c:when>
@@ -116,7 +155,7 @@ Map<String, Map<String, String>> languagesTranslationsAriaLabelsMap = new HashMa
 			}
 		%>
 
-			<aui:input dir="<%= curLanguageDir %>" disabled="<%= disabled %>" id="<%= HtmlUtil.escapeAttribute(id + StringPool.UNDERLINE + curLanguageId) %>" name="<%= HtmlUtil.escapeAttribute(fieldNamePrefix + name + StringPool.UNDERLINE + curLanguageId + fieldNameSuffix) %>" type="hidden" value="<%= languageValue %>" />
+			<aui:input data-field-name="<%= HtmlUtil.escapeAttribute(id + fieldSuffix) %>" data-languageid="<%= curLanguageId %>" dir="<%= curLanguageDir %>" disabled="<%= disabled %>" id="<%= HtmlUtil.escapeAttribute(id + StringPool.UNDERLINE + curLanguageId) %>" name="<%= HtmlUtil.escapeAttribute(fieldNamePrefix + name + StringPool.UNDERLINE + curLanguageId + fieldNameSuffix) %>" type="hidden" value="<%= languageValue %>" />
 
 		<%
 		}
@@ -128,7 +167,7 @@ Map<String, Map<String, String>> languagesTranslationsAriaLabelsMap = new HashMa
 		}
 		%>
 
-		<div class="input-group-item input-group-item-shrink input-localized-content">
+		<div class="input-group-item input-group-item-shrink input-localized-content <%= languagesDropdownVisible ? "" : "hide" %>">
 
 			<%
 			String normalizedSelectedLanguageId = StringUtil.replace(selectedLanguageId, '_', '-');
@@ -271,12 +310,10 @@ Map<String, Map<String, String>> languagesTranslationsAriaLabelsMap = new HashMa
 
 <c:if test="<%= Validator.isNotNull(maxLength) %>">
 	<aui:script use="aui-char-counter">
-		new A.CharCounter(
-			{
-				input: '#<%= namespace + id + HtmlUtil.getAUICompatibleId(fieldSuffix) %>:not(textarea)',
-				maxLength: <%= maxLength %>
-			}
-		);
+		new A.CharCounter({
+			input: '#<%= namespace + id + HtmlUtil.getAUICompatibleId(fieldSuffix) %>:not(textarea)',
+			maxLength: <%= maxLength %>,
+		});
 	</aui:script>
 </c:if>
 
@@ -294,6 +331,9 @@ Map<String, Map<String, String>> languagesTranslationsAriaLabelsMap = new HashMa
 		%>
 
 		<aui:script use="<%= modules %>">
+			const inputLocalizedId =
+				'<%= namespace + id + HtmlUtil.getAUICompatibleId(fieldSuffix) %>';
+
 			var defaultLanguageId = '<%= defaultLanguageId %>';
 
 			var available = {};
@@ -304,7 +344,8 @@ Map<String, Map<String, String>> languagesTranslationsAriaLabelsMap = new HashMa
 			for (Locale availableLocale : availableLocales) {
 			%>
 
-				available['<%= LocaleUtil.toLanguageId(availableLocale) %>'] = '<%= HtmlUtil.escapeJS(availableLocale.getDisplayName(locale)) %>';
+				available['<%= LocaleUtil.toLanguageId(availableLocale) %>'] =
+					'<%= HtmlUtil.escapeJS(availableLocale.getDisplayName(locale)) %>';
 
 			<%
 			}
@@ -318,14 +359,16 @@ Map<String, Map<String, String>> languagesTranslationsAriaLabelsMap = new HashMa
 			for (Locale errorLocale : errorLocales) {
 			%>
 
-				errors['<%= LocaleUtil.toLanguageId(errorLocale) %>'] = '<%= errorLocale.getDisplayName(locale) %>';
+				errors['<%= LocaleUtil.toLanguageId(errorLocale) %>'] =
+					'<%= errorLocale.getDisplayName(locale) %>';
 
 			<%
 			}
 			%>
 
 			var errorLanguageIds = A.Array.dedupe(A.Object.keys(errors));
-			var placeholder = '#<%= namespace + id + HtmlUtil.getAUICompatibleId(fieldSuffix) %>';
+			var placeholder =
+				'#<%= namespace + id + HtmlUtil.getAUICompatibleId(fieldSuffix) %>';
 
 			<c:if test='<%= type.equals("editor") %>'>
 				placeholder = placeholder + 'Editor';
@@ -340,7 +383,9 @@ Map<String, Map<String, String>> languagesTranslationsAriaLabelsMap = new HashMa
 				defaultLanguageId: defaultLanguageId,
 
 				<c:if test='<%= type.equals("editor") %>'>
-					editor: window['<%= namespace + HtmlUtil.escapeJS(fieldName) + "Editor" %>'],
+					editor: window[
+						'<%= namespace + HtmlUtil.escapeJS(fieldName) + "Editor" %>'
+					],
 				</c:if>
 
 				fieldPrefix: '<%= fieldPrefix %>',
@@ -351,7 +396,8 @@ Map<String, Map<String, String>> languagesTranslationsAriaLabelsMap = new HashMa
 				inputBox: '#<%= namespace + id %>BoundingBox',
 				items: availableLanguageIds,
 				itemsError: errorLanguageIds,
-				languagesTranslationsAriaLabels: <%= JSONFactoryUtil.looseSerializeDeep(languagesTranslationsAriaLabelsMap) %>,
+				languagesTranslationsAriaLabels:
+					<%= JSONFactoryUtil.looseSerializeDeep(languagesTranslationsAriaLabelsMap) %>,
 				lazy: <%= !type.equals("editor") %>,
 				name: '<%= HtmlUtil.escapeJS(name) %>',
 				namespace: '<%= namespace %>',
@@ -360,57 +406,116 @@ Map<String, Map<String, String>> languagesTranslationsAriaLabelsMap = new HashMa
 				translatedLanguages: '<%= StringUtil.merge(languageIds) %>',
 			};
 
+			const PATH_CONTEXT = Liferay.ThemeDisplay.getPathContext();
+
+			function <%= namespace + randomNamespace + id %>waitFor(isEditor) {
+				return new Promise((resolve) => {
+					const elementNameCallback = isEditor
+						? () => {
+								const editor =
+									window[
+										'<%= namespace + HtmlUtil.escapeJS(inputEditorName) %>'
+									];
+
+								const nativeEditor = editor?.getNativeEditor();
+
+								return nativeEditor?.element?.getId();
+							}
+						: () => inputLocalizedId;
+
+					const startTime = window.performance.now();
+
+					const check = () => {
+						if (window.performance.now() - startTime >= 200) {
+							resolve(null);
+
+							return;
+						}
+
+						const element = A.one('#' + elementNameCallback());
+
+						if (element) {
+							resolve(element);
+
+							return;
+						}
+
+						window.requestAnimationFrame(check);
+					};
+
+					window.requestAnimationFrame(check);
+				});
+			}
+
 			<c:choose>
 				<c:when test="<%= Validator.isNotNull(activeLanguageIds) && !activeLanguageIds.isEmpty() %>">
-					Liferay.Loader.require(
-					[
-						A.config.groups.components.mainModule,
-						A.config.groups.react.mainModule,
-						A.config.groups.state.mainModule,
-					],
-					(frontendJsComponentsWebModule, frontendJsReactWebModule, frontendJsStateWebModule) => {
 
-						Liferay.InputLocalized.register(
-							'<%= namespace + id + HtmlUtil.getAUICompatibleId(fieldSuffix) %>',
-							{
-								activeLanguageIds: <%= JSONFactoryUtil.createJSONArray(activeLanguageIds) %>,
-								frontendJsComponentsWebModule,
-								frontendJsReactWebModule,
-								frontendJsStateWebModule,
-								...inputLocalizedProps
-							}
-						);
-					});
+					Promise.all([
+						import(PATH_CONTEXT + '/o/frontend-js-components-web/__liferay__/index.js'),
+						import(PATH_CONTEXT + '/o/frontend-js-react-web/__liferay__/index.js'),
+						import(PATH_CONTEXT + '/o/frontend-js-state-web/__liferay__/index.js'),
+					]).then(
+						([
+							frontendJsComponentsWebModule,
+							frontendJsReactWebModule,
+							frontendJsStateWebModule,
+						]) => {
+
+							// Wrapping in a timeout to deal with React's async rendering
+
+							setTimeout(() => {
+								<%= namespace + randomNamespace + id %>waitFor(
+									<%= type.equals("editor") %>
+								).then(() => {
+									Liferay.InputLocalized.register(inputLocalizedId, {
+										activeLanguageIds:
+											<%= JSONFactoryUtil.createJSONArray(activeLanguageIds) %>,
+										frontendJsComponentsWebModule,
+										frontendJsReactWebModule,
+										frontendJsStateWebModule,
+										...inputLocalizedProps,
+									});
+								});
+							});
+						}
+					);
 				</c:when>
 				<c:otherwise>
-					Liferay.Loader.require(
-					[
-						A.config.groups.components.mainModule,
-						A.config.groups.state.mainModule,
-					],
-					(frontendJsComponentsWebModule, frontendJsStateWebModule) => {
+					Promise.all([
+						import(PATH_CONTEXT + '/o/frontend-js-components-web/__liferay__/index.js'),
+						import(PATH_CONTEXT + '/o/frontend-js-state-web/__liferay__/index.js'),
+					]).then(([frontendJsComponentsWebModule, frontendJsStateWebModule]) => {
 
-						Liferay.InputLocalized.register(
-							'<%= namespace + id + HtmlUtil.getAUICompatibleId(fieldSuffix) %>',
-							{
-								frontendJsComponentsWebModule,
-								frontendJsStateWebModule,
-								...inputLocalizedProps
-							}
-						);
+						// Wrapping in a timeout to deal with React's async rendering
+
+						setTimeout(() => {
+							<%= namespace + randomNamespace + id %>waitFor(
+								<%= type.equals("editor") %>
+							).then(() => {
+								Liferay.InputLocalized.register(inputLocalizedId, {
+									frontendJsComponentsWebModule,
+									frontendJsStateWebModule,
+									...inputLocalizedProps,
+								});
+							});
+						});
 					});
 				</c:otherwise>
 			</c:choose>
 
 			<c:if test="<%= autoFocus %>">
-				Liferay.Util.focusFormField('#<%= namespace + HtmlUtil.escapeJS(id + HtmlUtil.getAUICompatibleId(fieldSuffix)) %>');
+				Liferay.Util.focusFormField(
+					'#<%= namespace + HtmlUtil.escapeJS(id + HtmlUtil.getAUICompatibleId(fieldSuffix)) %>'
+				);
 			</c:if>
 		</aui:script>
 	</c:when>
 	<c:otherwise>
 		<c:if test="<%= autoFocus %>">
 			<aui:script>
-				Liferay.Util.focusFormField('#<%= namespace + HtmlUtil.escapeJS(id + HtmlUtil.getAUICompatibleId(fieldSuffix)) %>');
+				Liferay.Util.focusFormField(
+					'#<%= namespace + HtmlUtil.escapeJS(id + HtmlUtil.getAUICompatibleId(fieldSuffix)) %>'
+				);
 			</aui:script>
 		</c:if>
 	</c:otherwise>

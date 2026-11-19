@@ -7,9 +7,10 @@
 
 <%@ include file="/dynamic_include/init.jsp" %>
 
-<script type="text/javascript">
+<aui:script position="inline" type="text/javascript">
 	window.$crisp = [];
-	window.CRISP_WEBSITE_ID = '<%= clickToChatChatProviderAccountId %>';
+	window.CRISP_WEBSITE_ID =
+		'<%= HtmlUtil.escapeJS(clickToChatChatProviderAccountId) %>';
 
 	(function () {
 		function loadCrispScript() {
@@ -18,12 +19,12 @@
 					$crisp.push([
 						'set',
 						'user:email',
-						'<%= user.getEmailAddress() %>',
+						'<%= HtmlUtil.escapeJS(user.getEmailAddress()) %>',
 					]);
 					$crisp.push([
 						'set',
 						'user:nickname',
-						'<%= user.getScreenName() %>',
+						'<%= HtmlUtil.escapeJS(user.getScreenName()) %>',
 					]);
 				}
 			}
@@ -56,4 +57,4 @@
 			loadCrispScript();
 		}
 	})();
-</script>
+</aui:script>

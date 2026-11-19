@@ -73,6 +73,10 @@ public interface WorkflowTaskManager {
 	public List<String> getNextTransitionNames(long userId, long workflowTaskId)
 		throws WorkflowException;
 
+	public List<WorkflowTransition> getNextWorkflowTransitions(
+			long workflowTaskId)
+		throws WorkflowException;
+
 	public default List<User> getNotifiableUsers(long workflowTaskId)
 		throws WorkflowException {
 
@@ -142,12 +146,21 @@ public interface WorkflowTaskManager {
 			OrderByComparator<WorkflowTask> orderByComparator)
 		throws WorkflowException;
 
-	public List<WorkflowTransition> getWorkflowTaskWorkflowTransitions(
-			long workflowTaskId)
-		throws WorkflowException;
-
 	public boolean hasAssignableUsers(long workflowTaskId)
 		throws WorkflowException;
+
+	public default boolean isNotifiableUser(long userId, long workflowTaskId)
+		throws PortalException {
+
+		throw new UnsupportedOperationException();
+	}
+
+	public default List<WorkflowTransition> liberalGetNextWorkflowTransitions(
+			long workflowTaskId)
+		throws WorkflowException {
+
+		throw new UnsupportedOperationException();
+	}
 
 	public default List<WorkflowTask> search(
 			long companyId, long userId, String assetTitle, String[] taskNames,

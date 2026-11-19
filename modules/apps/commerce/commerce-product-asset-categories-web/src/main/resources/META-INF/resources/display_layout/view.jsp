@@ -69,7 +69,7 @@ if (selLayout != null) {
 			"portletNamespace", liferayPortletResponse.getNamespace()
 		).build()
 	%>'
-	module="js/EditAssetCategoryCPDisplayLayout"
+	module="{EditAssetCategoryCPDisplayLayout} from commerce-product-asset-categories-web"
 />
 
 <commerce-ui:panel
@@ -85,6 +85,5 @@ if (selLayout != null) {
 		creationMenu="<%= categoryCPDisplayLayoutDisplayContext.getCreationMenu() %>"
 		dataProviderKey="<%= CommerceProductAssetCategoriesFDSNames.CATEGORY_DISPLAY_PAGES %>"
 		id="<%= CommerceProductAssetCategoriesFDSNames.CATEGORY_DISPLAY_PAGES %>"
-		itemsPerPage="<%= 10 %>"
 	/>
 </commerce-ui:panel>

@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -271,28 +272,18 @@ public class CommerceShippingMethodLocalServiceUtil {
 		return getService().fetchCommerceShippingMethod(groupId, engineKey);
 	}
 
+	public static CommerceShippingMethod
+		fetchCommerceShippingMethodByExternalReferenceCode(
+			String externalReferenceCode, long companyId) {
+
+		return getService().fetchCommerceShippingMethodByExternalReferenceCode(
+			externalReferenceCode, companyId);
+	}
+
 	public static com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery
 		getActionableDynamicQuery() {
 
 		return getService().getActionableDynamicQuery();
-	}
-
-	public static List<com.liferay.commerce.model.CommerceAddressRestriction>
-		getCommerceAddressRestrictions(
-			long commerceShippingMethodId, int start, int end,
-			OrderByComparator
-				<com.liferay.commerce.model.CommerceAddressRestriction>
-					orderByComparator) {
-
-		return getService().getCommerceAddressRestrictions(
-			commerceShippingMethodId, start, end, orderByComparator);
-	}
-
-	public static int getCommerceAddressRestrictionsCount(
-		long commerceShippingMethodId) {
-
-		return getService().getCommerceAddressRestrictionsCount(
-			commerceShippingMethodId);
 	}
 
 	/**
@@ -307,6 +298,15 @@ public class CommerceShippingMethodLocalServiceUtil {
 		throws PortalException {
 
 		return getService().getCommerceShippingMethod(commerceShippingMethodId);
+	}
+
+	public static CommerceShippingMethod
+			getCommerceShippingMethodByExternalReferenceCode(
+				String externalReferenceCode, long companyId)
+		throws PortalException {
+
+		return getService().getCommerceShippingMethodByExternalReferenceCode(
+			externalReferenceCode, companyId);
 	}
 
 	/**
@@ -356,10 +356,6 @@ public class CommerceShippingMethodLocalServiceUtil {
 	 */
 	public static int getCommerceShippingMethodsCount() {
 		return getService().getCommerceShippingMethodsCount();
-	}
-
-	public static int getCommerceShippingMethodsCount(long groupId) {
-		return getService().getCommerceShippingMethodsCount(groupId);
 	}
 
 	public static int getCommerceShippingMethodsCount(
@@ -430,13 +426,13 @@ public class CommerceShippingMethodLocalServiceUtil {
 	}
 
 	public static CommerceShippingMethodLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(CommerceShippingMethodLocalService service) {
-		_service = service;
-	}
-
-	private static volatile CommerceShippingMethodLocalService _service;
+	private static final Snapshot<CommerceShippingMethodLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			CommerceShippingMethodLocalServiceUtil.class,
+			CommerceShippingMethodLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:2030541338

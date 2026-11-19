@@ -5,6 +5,7 @@
 
 package com.liferay.staging.portlet.data.handler.internal;
 
+import com.liferay.exportimport.constants.ExportImportConstants;
 import com.liferay.exportimport.kernel.lar.DefaultConfigurationPortletDataHandler;
 import com.liferay.exportimport.kernel.lar.PortletDataHandler;
 
@@ -14,9 +15,15 @@ import org.osgi.service.component.annotations.Component;
  * @author Raymond Augé
  */
 @Component(
-	property = {"javax.portlet.name=ALL", "service.ranking:Integer=-1"},
+	property = {"jakarta.portlet.name=ALL", "service.ranking:Integer=-1"},
 	service = PortletDataHandler.class
 )
 public class DefaultPortletDataHandler
 	extends DefaultConfigurationPortletDataHandler {
+
+	@Override
+	public String getSectionKey() {
+		return ExportImportConstants.SECTION_KEY_OTHER;
+	}
+
 }

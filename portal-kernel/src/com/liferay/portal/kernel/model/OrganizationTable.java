@@ -68,9 +68,12 @@ public class OrganizationTable extends BaseTable<OrganizationTable> {
 		"comments", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
 	public final Column<OrganizationTable, Long> logoId = createColumn(
 		"logoId", Long.class, Types.BIGINT, Column.FLAG_DEFAULT);
+	public final Column<OrganizationTable, Integer> status = createColumn(
+		"status", Integer.class, Types.INTEGER, Column.FLAG_DEFAULT);
 
 	private OrganizationTable() {
 		super("Organization_", OrganizationTable::new);
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:786277632

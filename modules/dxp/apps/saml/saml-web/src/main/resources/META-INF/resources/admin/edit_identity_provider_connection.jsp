@@ -48,12 +48,10 @@ else {
 	<liferay-ui:error exception="<%= SamlSpIdpConnectionSamlIdpEntityIdException.class %>" message="please-enter-a-valid-identity-provider-entity-id" />
 
 	<liferay-ui:error exception="<%= UserAttributeMappingException.class %>">
-		<liferay-ui:message arguments="<%= attributeMappingDisplayContext.getMessageArguments((UserAttributeMappingException)errorException) %>" key="<%= attributeMappingDisplayContext.getMessageKey((UserAttributeMappingException)errorException) %>" translateArguments="<%= false %>" />
+		<liferay-ui:message arguments="<%= attributeMappingDisplayContext.getMessageArguments((UserAttributeMappingException)errorException) %>" key="x-colon-y" translateArguments="<%= false %>" />
 	</liferay-ui:error>
 
-	<liferay-ui:error exception="<%= UserIdentifierExpressionException.class %>">
-		<liferay-ui:message key="<%= attributeMappingDisplayContext.getMessageKey((UserIdentifierExpressionException)errorException) %>" translateArguments="<%= false %>" />
-	</liferay-ui:error>
+	<liferay-ui:error exception="<%= UserIdentifierExpressionException.class %>" message="no-attribute-mapping-selected-for-user-matching" />
 
 	<aui:model-context bean="<%= samlSpIdpConnection %>" model="<%= SamlSpIdpConnection.class %>" />
 
@@ -66,7 +64,7 @@ else {
 
 		<aui:input name="enabled" />
 
-		<aui:input helpMessage="saml-sp-clock-skew-description" label="saml-sp-clock-skew" name="clockSkew" value="<%= String.valueOf(clockSkew) %>" />
+		<aui:input helpMessage="saml-sp-clock-skew-description" label="clock-skew" name="clockSkew" value="<%= String.valueOf(clockSkew) %>" />
 
 		<aui:input helpMessage="force-authn-help" name="forceAuthn" />
 

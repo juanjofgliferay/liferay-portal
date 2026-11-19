@@ -12,6 +12,8 @@ import com.liferay.fragment.processor.FragmentEntryProcessorRegistry;
 import com.liferay.fragment.service.FragmentEntryLinkLocalService;
 import com.liferay.headless.delivery.dto.v1_0.WidgetInstance;
 import com.liferay.headless.delivery.dto.v1_0.WidgetPermission;
+import com.liferay.layout.exporter.PortletPermissionsExporter;
+import com.liferay.layout.exporter.PortletPreferencesPortletConfigurationExporter;
 import com.liferay.layout.importer.PortletPreferencesPortletConfigurationImporter;
 import com.liferay.layout.test.util.LayoutTestUtil;
 import com.liferay.petra.string.StringPool;
@@ -20,8 +22,10 @@ import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.ResourceAction;
 import com.liferay.portal.kernel.model.Role;
+import com.liferay.portal.kernel.module.util.BundleUtil;
 import com.liferay.portal.kernel.portlet.PortletIdCodec;
-import com.liferay.portal.kernel.service.LayoutLocalService;
+import com.liferay.portal.kernel.service.LayoutService;
+import com.liferay.portal.kernel.service.PortletLocalService;
 import com.liferay.portal.kernel.service.ResourceActionLocalService;
 import com.liferay.portal.kernel.service.ResourcePermissionService;
 import com.liferay.portal.kernel.service.RoleLocalService;
@@ -43,14 +47,16 @@ import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
 import com.liferay.segments.service.SegmentsExperienceLocalService;
 
+import jakarta.portlet.GenericPortlet;
+import jakarta.portlet.Portlet;
+
+import java.lang.reflect.Constructor;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
-
-import javax.portlet.GenericPortlet;
-import javax.portlet.Portlet;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -83,6 +89,14 @@ public class WidgetInstanceDefinitionDTOConverterTest {
 		Bundle bundle = FrameworkUtil.getBundle(getClass());
 
 		_bundleContext = bundle.getBundleContext();
+
+		String symbolicName = "com.liferay.headless.delivery.impl";
+
+		_bundle = BundleUtil.getBundle(bundle.getBundleContext(), symbolicName);
+
+		Assert.assertNotNull(
+			"Unable to find bundle with symbolic name: " + symbolicName,
+			_bundle);
 
 		_group = GroupTestUtil.addGroup();
 
@@ -117,7 +131,7 @@ public class WidgetInstanceDefinitionDTOConverterTest {
 
 		JSONObject editableValueJSONObject =
 			_fragmentEntryProcessorRegistry.getDefaultEditableValuesJSONObject(
-				StringPool.BLANK, StringPool.BLANK);
+				StringPool.BLANK, null);
 
 		editableValueJSONObject.put(
 			"instanceId", instanceId
@@ -129,8 +143,8 @@ public class WidgetInstanceDefinitionDTOConverterTest {
 
 		FragmentEntryLink fragmentEntryLink =
 			_fragmentEntryLinkLocalService.addFragmentEntryLink(
-				_serviceContext.getUserId(), _serviceContext.getScopeGroupId(),
-				0, 0,
+				null, _serviceContext.getUserId(),
+				_serviceContext.getScopeGroupId(), null, null, null,
 				_segmentsExperienceLocalService.
 					fetchDefaultSegmentsExperienceId(layout.getPlid()),
 				layout.getPlid(), StringPool.BLANK, StringPool.BLANK,
@@ -179,13 +193,9 @@ public class WidgetInstanceDefinitionDTOConverterTest {
 			resourcePrimKey, roleIdsToActionIds);
 
 		WidgetInstance widgetInstance = ReflectionTestUtil.invoke(
-			_getService(), "getWidgetInstance",
+			_getWidgetInstanceMapper(), "getWidgetInstance",
 			new Class<?>[] {FragmentEntryLink.class, String.class},
 			fragmentEntryLink, testPortletId);
-
-		_layoutLocalService.deleteLayout(layout.getPlid());
-		_resourceActionLocalService.deleteResourceAction(
-			resourceAction.getResourceActionId());
 
 		Assert.assertNotNull(widgetInstance);
 
@@ -215,13 +225,25 @@ public class WidgetInstanceDefinitionDTOConverterTest {
 		Assert.assertEquals(Arrays.toString(actionKeys), 1, actionKeys.length);
 
 		Assert.assertEquals("VIEW", actionKeys[0]);
+
+		_layoutService.deleteLayout(layout.getPlid(), _serviceContext);
+		_resourceActionLocalService.deleteResourceAction(
+			resourceAction.getResourceActionId());
 	}
 
-	private Object _getService() {
-		return _bundleContext.getService(
-			_bundleContext.getServiceReference(
-				"com.liferay.headless.delivery.internal.dto.v1_0.mapper." +
-					"WidgetInstanceMapper"));
+	private Object _getWidgetInstanceMapper() throws Exception {
+		Class<?> clazz = _bundle.loadClass(
+			"com.liferay.headless.delivery.internal.dto.v1_0.mapper." +
+				"WidgetInstanceMapper");
+
+		Constructor<?> constructor = clazz.getDeclaredConstructor(
+			LayoutService.class, PortletLocalService.class,
+			PortletPermissionsExporter.class,
+			PortletPreferencesPortletConfigurationExporter.class);
+
+		return constructor.newInstance(
+			_layoutService, _portletLocalService, _portletPermissionsExporter,
+			_portletPreferencesPortletConfigurationExporter);
 	}
 
 	private void _registerTestPortlet(String portletId) throws Exception {
@@ -231,10 +253,11 @@ public class WidgetInstanceDefinitionDTOConverterTest {
 				HashMapDictionaryBuilder.put(
 					"com.liferay.portlet.instanceable", "true"
 				).put(
-					"javax.portlet.name", portletId
+					"jakarta.portlet.name", portletId
 				).build()));
 	}
 
+	private Bundle _bundle;
 	private BundleContext _bundleContext;
 
 	@Inject
@@ -247,7 +270,17 @@ public class WidgetInstanceDefinitionDTOConverterTest {
 	private Group _group;
 
 	@Inject
-	private LayoutLocalService _layoutLocalService;
+	private LayoutService _layoutService;
+
+	@Inject
+	private PortletLocalService _portletLocalService;
+
+	@Inject
+	private PortletPermissionsExporter _portletPermissionsExporter;
+
+	@Inject
+	private PortletPreferencesPortletConfigurationExporter
+		_portletPreferencesPortletConfigurationExporter;
 
 	@Inject
 	private PortletPreferencesPortletConfigurationImporter

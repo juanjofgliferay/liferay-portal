@@ -9,8 +9,11 @@ import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.osgi.util.ServiceTrackerFactory;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
+import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.URLUtil;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
+
+import jakarta.ws.rs.core.Application;
 
 import java.net.URL;
 
@@ -21,8 +24,6 @@ import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
-import javax.ws.rs.core.Application;
 
 import org.apache.cxf.Bus;
 import org.apache.cxf.endpoint.Server;
@@ -108,9 +109,10 @@ public class JaxRsComponentRegistrationTest {
 				ServiceTrackerFactory.open(
 					_bundleContext,
 					StringBundler.concat(
-						"(&(objectClass=", Bus.class.getName(), ")(",
+						"(&(",
 						HttpWhiteboardConstants.HTTP_WHITEBOARD_CONTEXT_PATH,
-						"=/rest-test))"));
+						"=/rest-test)(objectClass=", Bus.class.getName(),
+						"))"));
 
 			Bus bus = serviceTracker.waitForService(10000L);
 
@@ -153,14 +155,18 @@ public class JaxRsComponentRegistrationTest {
 
 	@Test
 	public void testIsRegistered() throws Exception {
-		URL url = new URL("http://localhost:8080/o/rest-test/testApp/sayHello");
+		URL url = new URL(
+			"http://localhost:" + PortalUtil.getPortalServerPort(false) +
+				"/o/rest-test/testApp/sayHello");
 
 		Assert.assertEquals("Hello.", URLUtil.toString(url));
 	}
 
 	@Test(expected = Exception.class)
 	public void testServiceListIsUnavailable() throws Exception {
-		URL url = new URL("http://localhost:8080/o/rest-test/services");
+		URL url = new URL(
+			"http://localhost:" + PortalUtil.getPortalServerPort(false) +
+				"/o/rest-test/services");
 
 		URLUtil.toString(url);
 	}

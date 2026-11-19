@@ -1,7 +1,7 @@
-@component-name = "core-infrastructure"
+@component-name = "portal-core-infra"
 definition {
 
-	property portal.release = "true";
+	property portal.release = "false";
 	property portal.upstream = "true";
 	property testray.main.component.name = "Deployment";
 
@@ -52,18 +52,17 @@ definition {
 		WaitForConsoleTextPresent(value1 = "The portal instance needs to be restarted to complete the installation");
 
 		User.firstLoginUI(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			specificURL = "http://localhost:8080",
 			userEmailAddress = "test@liferay.com");
 
-		ApplicationsMenuHelper.openApplicationsMenu();
+		ApplicationsMenu.openApplicationsMenu();
 
 		ApplicationsMenu.gotoPanel(panel = "Control Panel");
 
 		AssertElementNotPresent(
-			key_category = "System",
 			key_portlet = "Gogo Shell",
-			locator1 = "ApplicationsMenu#PORTLET");
+			locator1 = "ApplicationsMenu#ROOT_PORTLET");
 
 		Portlet.shutdownServer();
 
@@ -71,14 +70,13 @@ definition {
 
 		Navigator.openSpecificURL(url = "http://localhost:8080");
 
-		ApplicationsMenuHelper.openApplicationsMenu();
+		ApplicationsMenu.openApplicationsMenu();
 
 		ApplicationsMenu.gotoPanel(panel = "Control Panel");
 
 		AssertElementPresent(
-			key_category = "System",
 			key_portlet = "Gogo Shell",
-			locator1 = "ApplicationsMenu#PORTLET");
+			locator1 = "ApplicationsMenu#ROOT_PORTLET");
 	}
 
 }

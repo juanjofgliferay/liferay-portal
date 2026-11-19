@@ -1,45 +1,6 @@
 definition {
 
 	@summary = "Default summary"
-	macro addBlogsEntryLoginUserPG(entryInvalidContent = null, viewableBySelection = null, siteName = null, vocabularyName = null, entryAddRelatedAsset = null, tagName = null, userLoginEmailAddress = null, pageName = null, categoryName = null, assetType = null, entryAddCategory = null, viewableBy = null, entryAddTag = null, siteURLTemp = null, entryValidTitleLength = null, entryInvalidTitleLength = null, assetTitle = null, entryInvalidTitle = null, userLoginFullName = null, entryTitle = null, entryContent = null, entryAddPermissions = null) {
-		User.logoutAndLoginPG(
-			userLoginEmailAddress = "test@liferay.com",
-			userLoginFullName = "Test Test");
-
-		if (${siteURLTemp} == "true") {
-			Navigator.gotoSitePage(
-				pageName = ${pageName},
-				siteName = ${siteName});
-		}
-		else {
-			Navigator.gotoPage(pageName = ${pageName});
-		}
-
-		Blogs.addEntry(
-			assetTitle = ${assetTitle},
-			assetType = ${assetType},
-			categoryName = ${categoryName},
-			entryAddCategory = ${entryAddCategory},
-			entryAddPermissions = ${entryAddPermissions},
-			entryAddRelatedAsset = ${entryAddRelatedAsset},
-			entryAddTag = ${entryAddTag},
-			entryContent = ${entryContent},
-			entryInvalidContent = ${entryInvalidContent},
-			entryInvalidTitle = ${entryInvalidTitle},
-			entryInvalidTitleLength = ${entryInvalidTitleLength},
-			entryTitle = ${entryTitle},
-			entryValidTitleLength = ${entryValidTitleLength},
-			tagName = ${tagName},
-			viewableBy = ${viewableBy},
-			viewableBySelection = ${viewableBySelection},
-			vocabularyName = ${vocabularyName});
-
-		User.logoutAndLoginPG(
-			userLoginEmailAddress = ${userLoginEmailAddress},
-			userLoginFullName = ${userLoginFullName});
-	}
-
-	@summary = "Default summary"
 	macro addDraft(entrySubtitle = null, siteURLKey = null, entryTitle = null, entryContent = null, layoutName = null) {
 		if (isSet(siteURLKey)) {
 			BlogsNavigator.openToAddEntry(
@@ -122,7 +83,7 @@ definition {
 			entrySubtitle = ${entrySubtitle},
 			entryTitle = ${entryTitle});
 
-		Panel.expandPanel(panel = "Categorization");
+		Blogs.expandPanel(panel = "Categorization");
 
 		AssetCategorization.addCategory(
 			categoryName = ${categoryName},
@@ -166,7 +127,7 @@ definition {
 			entrySubtitle = ${entrySubtitle},
 			entryTitle = ${entryTitle});
 
-		Panel.expandPanel(panel = "Configuration");
+		Blogs.expandPanel(panel = "Friendly URL");
 
 		BlogsEntry.addCustomURL(customURL = ${customURL});
 
@@ -197,7 +158,7 @@ definition {
 			entrySubtitle = ${entrySubtitle},
 			entryTitle = ${entryTitle});
 
-		Panel.expandPanel(panel = "Permissions");
+		Blogs.expandPanel(panel = "Permissions");
 
 		BlogsEntry.entryAddPermissions(viewableBy = ${viewableBy});
 
@@ -213,7 +174,7 @@ definition {
 			entrySubtitle = ${entrySubtitle},
 			entryTitle = ${entryTitle});
 
-		Panel.expandPanel(panel = "Categorization");
+		Blogs.expandPanel(panel = "Categorization");
 
 		AssetCategorization.addTag(tagName = ${tagName});
 
@@ -231,7 +192,7 @@ definition {
 			entrySubtitle = ${entrySubtitle},
 			entryTitle = ${entryTitle});
 
-		Panel.expandPanel(panel = "Categorization");
+		Blogs.expandPanel(panel = "Categorization");
 
 		for (var tagName : list ${tagNameList}) {
 			AssetCategorization.addTag(tagName = ${tagName});
@@ -260,6 +221,8 @@ definition {
 				navTab = ${navTab});
 		}
 		else {
+			WaitForVisible(locator1 = "ItemSelector#ITEM_SELECTOR_IFRAME");
+
 			ItemSelector.uploadFile(
 				invalidFileValidation = ${invalidFileValidation},
 				navTab = ${navTab},
@@ -389,7 +352,7 @@ definition {
 			entrySubtitle = ${entrySubtitle},
 			entryTitle = ${entryTitle});
 
-		Panel.expandPanel(panel = "Configuration");
+		Blogs.expandPanel(panel = "Configuration");
 
 		BlogsEntry.addCustomAbstract(entryAbstractDescription = ${entryAbstractDescription});
 
@@ -404,7 +367,7 @@ definition {
 			entryContent = ${entryContent},
 			entryTitle = ${entryTitle});
 
-		Panel.expandPanel(panel = "Configuration");
+		Blogs.expandPanel(panel = "Configuration");
 
 		BlogsEntry.addCustomAbstract(entryAbstractDescription = ${entryAbstractDescription});
 
@@ -420,7 +383,7 @@ definition {
 			entrySubtitle = ${entrySubtitle},
 			entryTitle = ${entryTitle});
 
-		Panel.expandPanel(panel = "Configuration");
+		Blogs.expandPanel(panel = "Configuration");
 
 		AssertChecked(
 			locator1 = "Radio#FIRST_400_ABSTRACT",
@@ -601,7 +564,7 @@ definition {
 		}
 
 		if (${sendEmailEntryUpdated} == "true") {
-			Panel.expandPanel(panel = "Configuration");
+			Blogs.expandPanel(panel = "Configuration");
 
 			Check.checkToggleSwitch(
 				key_toggleSwitchLabel = "Send Email Entry Updated",
@@ -647,6 +610,23 @@ definition {
 		}
 
 		IFrame.saveConfiguration();
+	}
+
+	@summary = "Default summary"
+	macro expandPanel(panel = null) {
+		var key_panel = ${panel};
+
+		AssertVisible(
+			key_panel = ${panel},
+			locator1 = "Panel#PANEL");
+
+		if ((IsElementPresent(locator1 = "Panel#PANEL_COLLAPSED")) && (IsVisible(locator1 = "Panel#PANEL_COLLAPSED"))) {
+			AssertClick(
+				locator1 = "Panel#PANEL_COLLAPSED",
+				value1 = ${panel});
+		}
+
+		AssertElementPresent(locator1 = "Panel#PANEL_EXPANDED");
 	}
 
 	@summary = "Default summary"
@@ -707,6 +687,10 @@ definition {
 
 	@summary = "Default summary"
 	macro tearDownConfigurationScopePG(pageName = null) {
+		task ("Enable Scope Configuration") {
+			Portlet.enableScopeConfiguration();
+		}
+
 		Navigator.gotoPage(pageName = ${pageName});
 
 		BlogsNavigator.gotoConfigurationSetupPG();

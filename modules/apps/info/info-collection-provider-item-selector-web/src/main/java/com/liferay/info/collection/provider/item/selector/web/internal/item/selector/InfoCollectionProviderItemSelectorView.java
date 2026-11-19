@@ -7,7 +7,7 @@ package com.liferay.info.collection.provider.item.selector.web.internal.item.sel
 
 import com.liferay.asset.kernel.model.AssetEntry;
 import com.liferay.info.collection.provider.InfoCollectionProvider;
-import com.liferay.info.collection.provider.item.selector.criterion.InfoCollectionProviderItemSelectorCriterion;
+import com.liferay.info.collection.provider.item.selector.InfoCollectionProviderItemSelectorCriterion;
 import com.liferay.info.item.InfoItemServiceRegistry;
 import com.liferay.info.list.provider.item.selector.criterion.InfoListProviderItemSelectorReturnType;
 import com.liferay.item.selector.ItemSelectorReturnType;
@@ -18,20 +18,21 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.io.IOException;
 
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
-
-import javax.portlet.PortletURL;
-
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
+import java.util.Map;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -74,6 +75,8 @@ public class InfoCollectionProviderItemSelectorView
 		HttpServletRequest httpServletRequest =
 			(HttpServletRequest)servletRequest;
 
+		Map<InfoCollectionProvider<?>, String> labels = new HashMap<>();
+
 		_itemSelectorViewDescriptorRenderer.renderHTML(
 			servletRequest, servletResponse,
 			infoCollectionProviderItemSelectorCriterion, portletURL,
@@ -82,14 +85,15 @@ public class InfoCollectionProviderItemSelectorView
 				httpServletRequest, portletURL,
 				_getInfoCollectionProviders(
 					httpServletRequest,
-					infoCollectionProviderItemSelectorCriterion),
-				_infoItemServiceRegistry));
+					infoCollectionProviderItemSelectorCriterion, labels),
+				_infoItemServiceRegistry, labels));
 	}
 
 	private List<InfoCollectionProvider<?>> _getInfoCollectionProviders(
 		HttpServletRequest httpServletRequest,
 		InfoCollectionProviderItemSelectorCriterion
-			infoCollectionProviderItemSelectorCriterion) {
+			infoCollectionProviderItemSelectorCriterion,
+		Map<InfoCollectionProvider<?>, String> labels) {
 
 		ThemeDisplay themeDisplay =
 			(ThemeDisplay)httpServletRequest.getAttribute(
@@ -99,18 +103,13 @@ public class InfoCollectionProviderItemSelectorView
 				InfoCollectionProviderItemSelectorCriterion.Type.
 					SUPPORTED_INFO_FRAMEWORK_COLLECTIONS) {
 
-			return Collections.unmodifiableList(
-				ListUtil.sort(
-					ListUtil.filter(
-						_infoItemServiceRegistry.getAllInfoItemServices(
-							(Class<InfoCollectionProvider<?>>)
-								(Class<?>)InfoCollectionProvider.class),
-						InfoCollectionProvider::isAvailable),
-					Comparator.comparing(
-						infoCollectionProvider ->
-							infoCollectionProvider.getLabel(
-								themeDisplay.getLocale()),
-						String.CASE_INSENSITIVE_ORDER)));
+			return _sortByLabel(
+				ListUtil.filter(
+					_infoItemServiceRegistry.getAllInfoItemServices(
+						(Class<InfoCollectionProvider<?>>)
+							(Class<?>)InfoCollectionProvider.class),
+					InfoCollectionProvider::isAvailable),
+				labels, themeDisplay.getLocale());
 		}
 
 		String itemType =
@@ -123,18 +122,33 @@ public class InfoCollectionProviderItemSelectorView
 			itemType = AssetEntry.class.getName();
 		}
 
+		return _sortByLabel(
+			ListUtil.filter(
+				_infoItemServiceRegistry.getAllInfoItemServices(
+					(Class<InfoCollectionProvider<?>>)
+						(Class<?>)InfoCollectionProvider.class,
+					itemType),
+				InfoCollectionProvider::isAvailable),
+			labels, themeDisplay.getLocale());
+	}
+
+	private List<InfoCollectionProvider<?>> _sortByLabel(
+		List<InfoCollectionProvider<?>> infoCollectionProviders,
+		Map<InfoCollectionProvider<?>, String> labels, Locale locale) {
+
+		for (InfoCollectionProvider<?> infoCollectionProvider :
+				infoCollectionProviders) {
+
+			labels.put(
+				infoCollectionProvider,
+				infoCollectionProvider.getLabel(locale));
+		}
+
 		return Collections.unmodifiableList(
 			ListUtil.sort(
-				ListUtil.filter(
-					_infoItemServiceRegistry.getAllInfoItemServices(
-						(Class<InfoCollectionProvider<?>>)
-							(Class<?>)InfoCollectionProvider.class,
-						itemType),
-					InfoCollectionProvider::isAvailable),
+				infoCollectionProviders,
 				Comparator.comparing(
-					infoCollectionProvider -> infoCollectionProvider.getLabel(
-						themeDisplay.getLocale()),
-					String.CASE_INSENSITIVE_ORDER)));
+					labels::get, String.CASE_INSENSITIVE_ORDER)));
 	}
 
 	private static final List<ItemSelectorReturnType>
@@ -151,10 +165,5 @@ public class InfoCollectionProviderItemSelectorView
 
 	@Reference
 	private Language _language;
-
-	@Reference(
-		target = "(osgi.web.symbolicname=com.liferay.info.collection.provider.item.selector.web)"
-	)
-	private ServletContext _servletContext;
 
 }

@@ -17,6 +17,7 @@ import com.liferay.layout.display.page.LayoutDisplayPageProviderRegistry;
 import com.liferay.layout.page.template.info.item.capability.DisplayPageInfoItemCapability;
 import com.liferay.osgi.util.ServiceTrackerFactory;
 import com.liferay.petra.reflect.GenericUtil;
+import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
 import com.liferay.portal.kernel.util.Portal;
@@ -25,13 +26,14 @@ import com.liferay.site.navigation.menu.item.display.page.internal.type.DisplayP
 import com.liferay.site.navigation.menu.item.display.page.internal.type.DisplayPageTypeSiteNavigationMenuItemType;
 import com.liferay.site.navigation.type.SiteNavigationMenuItemType;
 
+import jakarta.servlet.ServletContext;
+
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import javax.servlet.ServletContext;
-
 import org.osgi.framework.BundleContext;
+import org.osgi.framework.Constants;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.ServiceRegistration;
 import org.osgi.service.component.annotations.Activate;
@@ -78,6 +80,9 @@ public class DisplayPageSiteNavigationMenuItemTypeProviderTracker {
 		target = "(info.item.capability.key=" + DisplayPageInfoItemCapability.KEY + ")"
 	)
 	private InfoItemCapability _displayPageInfoItemCapability;
+
+	@Reference
+	private GroupLocalService _groupLocalService;
 
 	@Reference
 	private InfoItemServiceRegistry _infoItemServiceRegistry;
@@ -171,10 +176,11 @@ public class DisplayPageSiteNavigationMenuItemTypeProviderTracker {
 								_layoutDisplayPageInfoItemFieldValuesProviderRegistry,
 								_layoutDisplayPageMultiSelectionProviderRegistry,
 								_layoutDisplayPageProviderRegistry),
+							_groupLocalService, _infoItemServiceRegistry,
 							_itemSelector, _jspRenderer, _portal,
 							_servletContext),
 						HashMapDictionaryBuilder.<String, Object>put(
-							"service.ranking:Integer", "300"
+							Constants.SERVICE_RANKING, 300
 						).put(
 							"site.navigation.menu.item.type", className
 						).build()));

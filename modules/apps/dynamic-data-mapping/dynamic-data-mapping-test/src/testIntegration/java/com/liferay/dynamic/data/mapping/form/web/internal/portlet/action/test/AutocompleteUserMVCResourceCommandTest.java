@@ -28,12 +28,12 @@ import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 
+import jakarta.portlet.PortletException;
+
 import java.io.ByteArrayOutputStream;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.portlet.PortletException;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -196,9 +196,6 @@ public class AutocompleteUserMVCResourceCommandTest {
 	}
 
 	@Inject
-	private static UserLocalService _userLocalService;
-
-	@Inject
 	private CompanyLocalService _companyLocalService;
 
 	@Inject(filter = "mvc.command.name=/admin/autocomplete_user")
@@ -206,6 +203,9 @@ public class AutocompleteUserMVCResourceCommandTest {
 
 	@Inject
 	private Portal _portal;
+
+	@Inject
+	private UserLocalService _userLocalService;
 
 	@DeleteAfterTestRun
 	private List<User> _users = new ArrayList<>();

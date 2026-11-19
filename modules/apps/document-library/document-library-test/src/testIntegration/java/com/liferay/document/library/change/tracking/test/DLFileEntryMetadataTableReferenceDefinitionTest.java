@@ -83,11 +83,11 @@ public class DLFileEntryMetadataTableReferenceDefinitionTest
 			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
 			StringPool.BLANK, StringPool.BLANK,
 			DLFileEntryTypeConstants.FILE_ENTRY_TYPE_ID_BASIC_DOCUMENT, null,
-			null, inputStream, bytes.length, null, null,
+			null, inputStream, bytes.length, null, null, null,
 			ServiceContextTestUtil.getServiceContext(group.getGroupId()));
 
 		_ddmStructure = _ddmStructureLocalService.addStructure(
-			group.getCreatorUserId(), group.getGroupId(),
+			null, group.getCreatorUserId(), group.getGroupId(),
 			DDMStructureConstants.DEFAULT_PARENT_STRUCTURE_ID,
 			PortalUtil.getClassNameId(DLFileEntryMetadata.class),
 			StringPool.BLANK,
@@ -99,7 +99,7 @@ public class DLFileEntryMetadataTableReferenceDefinitionTest
 			ServiceContextTestUtil.getServiceContext(group.getGroupId()));
 
 		_dlFileEntryType = _dlFileEntryTypeLocalService.addFileEntryType(
-			group.getCreatorUserId(), group.getGroupId(),
+			null, group.getCreatorUserId(), group.getGroupId(),
 			_ddmStructure.getStructureId(),
 			DLFileEntryMetadataTableReferenceDefinitionTest.class.
 				getSimpleName(),
@@ -118,7 +118,7 @@ public class DLFileEntryMetadataTableReferenceDefinitionTest
 		DLFileVersion dlFileVersion = _dlFileEntry.getFileVersion();
 
 		_dlFileEntryMetadataLocalService.updateFileEntryMetadata(
-			_dlFileEntryType.getFileEntryTypeId(),
+			null, _dlFileEntryType.getFileEntryTypeId(),
 			_dlFileEntry.getFileEntryId(), dlFileVersion.getFileVersionId(),
 			_createDDMFormValuesMap(),
 			ServiceContextTestUtil.getServiceContext(group.getGroupId()));
@@ -156,7 +156,6 @@ public class DLFileEntryMetadataTableReferenceDefinitionTest
 		ddmFormFieldValue.setName(
 			DLFileEntryMetadataTableReferenceDefinitionTest.class.
 				getSimpleName());
-		ddmFormFieldValue.setInstanceId(RandomTestUtil.randomString());
 		ddmFormFieldValue.setValue(
 			new UnlocalizedValue(RandomTestUtil.randomString()));
 
@@ -167,21 +166,22 @@ public class DLFileEntryMetadataTableReferenceDefinitionTest
 		).build();
 	}
 
-	@Inject
-	private static DDMStructureLocalService _ddmStructureLocalService;
-
-	@Inject
-	private static DLFileEntryLocalService _dlFileEntryLocalService;
-
-	@Inject
-	private static DLFileEntryMetadataLocalService
-		_dlFileEntryMetadataLocalService;
-
-	@Inject
-	private static DLFileEntryTypeLocalService _dlFileEntryTypeLocalService;
-
 	private DDMStructure _ddmStructure;
+
+	@Inject
+	private DDMStructureLocalService _ddmStructureLocalService;
+
 	private DLFileEntry _dlFileEntry;
+
+	@Inject
+	private DLFileEntryLocalService _dlFileEntryLocalService;
+
+	@Inject
+	private DLFileEntryMetadataLocalService _dlFileEntryMetadataLocalService;
+
 	private DLFileEntryType _dlFileEntryType;
+
+	@Inject
+	private DLFileEntryTypeLocalService _dlFileEntryTypeLocalService;
 
 }

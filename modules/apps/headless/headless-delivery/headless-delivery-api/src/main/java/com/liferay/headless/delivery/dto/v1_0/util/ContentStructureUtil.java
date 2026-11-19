@@ -22,6 +22,7 @@ import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.vulcan.util.GroupUtil;
 import com.liferay.portal.vulcan.util.LocalizedMapUtil;
 
@@ -47,28 +48,33 @@ public class ContentStructureUtil {
 
 		return new ContentStructure() {
 			{
-				assetLibraryKey = GroupUtil.getAssetLibraryKey(group);
-				availableLanguages = LocaleUtil.toW3cLanguageIds(
-					ddmStructure.getAvailableLanguageIds());
-				contentStructureFields = TransformUtil.transformToArray(
-					ddmStructure.getRootFieldNames(),
-					fieldName -> _toContentStructureField(
-						acceptAllLanguages,
-						ddmStructure.getDDMFormField(fieldName), locale),
-					ContentStructureField.class);
-				creator = CreatorUtil.toCreator(
-					null, portal,
-					userLocalService.fetchUser(ddmStructure.getUserId()));
-				dateCreated = ddmStructure.getCreateDate();
-				dateModified = ddmStructure.getModifiedDate();
-				description = ddmStructure.getDescription(locale);
-				description_i18n = LocalizedMapUtil.getI18nMap(
-					acceptAllLanguages, ddmStructure.getDescriptionMap());
-				id = ddmStructure.getStructureId();
-				name = ddmStructure.getName(locale);
-				name_i18n = LocalizedMapUtil.getI18nMap(
-					acceptAllLanguages, ddmStructure.getDescriptionMap());
-				siteId = GroupUtil.getSiteId(group);
+				setAssetLibraryKey(() -> GroupUtil.getAssetLibraryKey(group));
+				setAvailableLanguages(
+					() -> LocaleUtil.toW3cLanguageIds(
+						ddmStructure.getAvailableLanguageIds()));
+				setContentStructureFields(
+					() -> TransformUtil.transformToArray(
+						ddmStructure.getRootFieldNames(),
+						fieldName -> _toContentStructureField(
+							acceptAllLanguages,
+							ddmStructure.getDDMFormField(fieldName), locale),
+						ContentStructureField.class));
+				setCreator(
+					() -> CreatorUtil.toCreator(
+						null, portal,
+						userLocalService.fetchUser(ddmStructure.getUserId())));
+				setDateCreated(ddmStructure::getCreateDate);
+				setDateModified(ddmStructure::getModifiedDate);
+				setDescription(() -> ddmStructure.getDescription(locale));
+				setDescription_i18n(
+					() -> LocalizedMapUtil.getI18nMap(
+						acceptAllLanguages, ddmStructure.getDescriptionMap()));
+				setId(ddmStructure::getStructureId);
+				setName(() -> ddmStructure.getName(locale));
+				setName_i18n(
+					() -> LocalizedMapUtil.getI18nMap(
+						acceptAllLanguages, ddmStructure.getDescriptionMap()));
+				setSiteId(() -> GroupUtil.getSiteId(group));
 			}
 		};
 	}
@@ -126,57 +132,82 @@ public class ContentStructureUtil {
 
 		return new ContentStructureField() {
 			{
-				dataType = toDataType(ddmFormField);
-				inputControl = toInputControl(ddmFormField);
-				label = _toString(labelLocalizedValue, locale);
-				label_i18n = LocalizedMapUtil.getI18nMap(
-					acceptAllLanguage, labelLocalizedValue.getValues());
-				localizable = ddmFormField.isLocalizable();
-				multiple = ddmFormField.isMultiple();
-				name = ddmFormField.getFieldReference();
-				nestedContentStructureFields = TransformUtil.transformToArray(
-					ddmFormField.getNestedDDMFormFields(),
-					ddmFormField -> _toContentStructureField(
-						acceptAllLanguage, ddmFormField, locale),
-					ContentStructureField.class);
-				predefinedValue = _toString(predefinedLocalizedValue, locale);
-				predefinedValue_i18n = LocalizedMapUtil.getI18nMap(
-					acceptAllLanguage, predefinedLocalizedValue.getValues());
-				repeatable = ddmFormField.isRepeatable();
-				required = ddmFormField.isRequired();
-				showLabel = ddmFormField.isShowLabel();
-
+				setDataType(() -> toDataType(ddmFormField));
+				setFieldReference(ddmFormField::getFieldReference);
+				setInputControl(() -> toInputControl(ddmFormField));
+				setLabel(() -> _toString(labelLocalizedValue, locale));
+				setLabel_i18n(
+					() -> LocalizedMapUtil.getI18nMap(
+						acceptAllLanguage, labelLocalizedValue.getValues()));
+				setLocalizable(ddmFormField::isLocalizable);
+				setMultiple(ddmFormField::isMultiple);
+				setName(ddmFormField::getName);
+				setNestedContentStructureFields(
+					() -> TransformUtil.transformToArray(
+						ddmFormField.getNestedDDMFormFields(),
+						ddmFormField -> _toContentStructureField(
+							acceptAllLanguage, ddmFormField, locale),
+						ContentStructureField.class));
 				setOptions(
-					() -> {
-						DDMFormFieldOptions ddmFormFieldOptions =
-							ddmFormField.getDDMFormFieldOptions();
+					() -> _toOptions(acceptAllLanguage, ddmFormField, locale));
+				setPredefinedValue(
+					() -> _toString(predefinedLocalizedValue, locale));
+				setPredefinedValue_i18n(
+					() -> LocalizedMapUtil.getI18nMap(
+						acceptAllLanguage,
+						predefinedLocalizedValue.getValues()));
+				setRepeatable(ddmFormField::isRepeatable);
+				setRequired(ddmFormField::isRequired);
+				setShowLabel(ddmFormField::isShowLabel);
+			}
+		};
+	}
 
-						if (ddmFormFieldOptions == null) {
-							return new Option[0];
+	private static Option _toOption(
+		boolean acceptAllLanguage, DDMFormFieldOptions ddmFormFieldOptions,
+		Map.Entry<String, LocalizedValue> entry, Locale locale) {
+
+		LocalizedValue localizedValue = entry.getValue();
+
+		return new Option() {
+			{
+				setLabel(() -> _toString(localizedValue, locale));
+				setLabel_i18n(
+					() -> LocalizedMapUtil.getI18nMap(
+						acceptAllLanguage, localizedValue.getValues()));
+				setValue(
+					() -> {
+						String optionReference =
+							ddmFormFieldOptions.getOptionReference(
+								entry.getKey());
+
+						if (Validator.isNotNull(optionReference)) {
+							return optionReference;
 						}
 
-						Map<String, LocalizedValue> map =
-							ddmFormFieldOptions.getOptions();
-
-						return TransformUtil.transformToArray(
-							map.entrySet(),
-							entry -> new Option() {
-								{
-									LocalizedValue localizedValue =
-										entry.getValue();
-
-									label = _toString(localizedValue, locale);
-									label_i18n = LocalizedMapUtil.getI18nMap(
-										acceptAllLanguage,
-										localizedValue.getValues());
-
-									value = entry.getKey();
-								}
-							},
-							Option.class);
+						return entry.getKey();
 					});
 			}
 		};
+	}
+
+	private static Option[] _toOptions(
+		boolean acceptAllLanguage, DDMFormField ddmFormField, Locale locale) {
+
+		DDMFormFieldOptions ddmFormFieldOptions =
+			ddmFormField.getDDMFormFieldOptions();
+
+		if (ddmFormFieldOptions == null) {
+			return new Option[0];
+		}
+
+		Map<String, LocalizedValue> map = ddmFormFieldOptions.getOptions();
+
+		return TransformUtil.transformToArray(
+			map.entrySet(),
+			entry -> _toOption(
+				acceptAllLanguage, ddmFormFieldOptions, entry, locale),
+			Option.class);
 	}
 
 	private static String _toString(

@@ -26,6 +26,7 @@ import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.FastDateFormatFactoryUtil;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
@@ -46,6 +47,7 @@ import java.io.IOException;
 import java.text.Format;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
@@ -243,7 +245,7 @@ public class CalendarBookingServiceImpl extends CalendarBookingServiceBaseImpl {
 			getPermissionChecker(), calendarId,
 			CalendarActionKeys.MANAGE_BOOKINGS);
 
-		return calendarBookingLocalService.getCalendarBooking(
+		return calendarBookingPersistence.findByC_P(
 			calendarId, parentCalendarBookingId);
 	}
 
@@ -263,6 +265,10 @@ public class CalendarBookingServiceImpl extends CalendarBookingServiceBaseImpl {
 	public List<CalendarBooking> getCalendarBookings(
 			long calendarId, int[] statuses)
 		throws PortalException {
+
+		if (ArrayUtil.isEmpty(statuses)) {
+			return Collections.emptyList();
+		}
 
 		return _filterCalendarBookings(
 			calendarBookingLocalService.getCalendarBookings(
@@ -325,7 +331,7 @@ public class CalendarBookingServiceImpl extends CalendarBookingServiceBaseImpl {
 		throws PortalException {
 
 		List<CalendarBooking> calendarBookings =
-			calendarBookingLocalService.getChildCalendarBookings(
+			calendarBookingPersistence.findByParentCalendarBookingId(
 				parentCalendarBookingId);
 
 		return _filterCalendarBookings(calendarBookings);
@@ -357,7 +363,7 @@ public class CalendarBookingServiceImpl extends CalendarBookingServiceBaseImpl {
 		throws PortalException {
 
 		List<CalendarBooking> calendarBookings =
-			calendarBookingLocalService.getChildCalendarBookings(
+			calendarBookingPersistence.findByP_S(
 				parentCalendarBookingId, status);
 
 		return _filterCalendarBookings(calendarBookings);
@@ -892,19 +898,21 @@ public class CalendarBookingServiceImpl extends CalendarBookingServiceBaseImpl {
 				continue;
 			}
 
-			if (!_calendarModelResourcePermission.contains(
+			if (_calendarModelResourcePermission.contains(
 					getPermissionChecker(), calendarBooking.getCalendarId(),
 					CalendarActionKeys.VIEW_BOOKING_DETAILS)) {
 
-				if (!_calendarModelResourcePermission.contains(
-						getPermissionChecker(), calendarBooking.getCalendarId(),
-						actionId)) {
+				continue;
+			}
 
-					iterator.remove();
-				}
-				else {
-					_filterCalendarBooking(calendarBooking);
-				}
+			if (!_calendarModelResourcePermission.contains(
+					getPermissionChecker(), calendarBooking.getCalendarId(),
+					actionId)) {
+
+				iterator.remove();
+			}
+			else {
+				_filterCalendarBooking(calendarBooking);
 			}
 		}
 

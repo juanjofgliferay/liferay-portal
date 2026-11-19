@@ -10,16 +10,17 @@ import com.liferay.headless.commerce.admin.pricing.client.dto.v1_0.PriceList;
 import com.liferay.headless.commerce.admin.pricing.client.dto.v1_0.PriceListAccountGroup;
 import com.liferay.headless.commerce.admin.pricing.client.json.BaseJSONParser;
 
+import jakarta.annotation.Generated;
+
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
-
-import javax.annotation.Generated;
 
 /**
  * @author Zoltán Takács
@@ -62,6 +63,49 @@ public class PriceListSerDes {
 			sb.append(priceList.getActive());
 		}
 
+		if (priceList.getCatalogCurrencyCode() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"catalogCurrencyCode\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(priceList.getCatalogCurrencyCode()));
+
+			sb.append("\"");
+		}
+
+		if (priceList.getCatalogCurrencyExternalReferenceCode() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"catalogCurrencyExternalReferenceCode\": ");
+
+			sb.append("\"");
+
+			sb.append(
+				_escape(priceList.getCatalogCurrencyExternalReferenceCode()));
+
+			sb.append("\"");
+		}
+
+		if (priceList.getCatalogExternalReferenceCode() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"catalogExternalReferenceCode\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(priceList.getCatalogExternalReferenceCode()));
+
+			sb.append("\"");
+		}
+
 		if (priceList.getCatalogId() != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -82,6 +126,20 @@ public class PriceListSerDes {
 			sb.append("\"");
 
 			sb.append(_escape(priceList.getCurrencyCode()));
+
+			sb.append("\"");
+		}
+
+		if (priceList.getCurrencyExternalReferenceCode() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"currencyExternalReferenceCode\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(priceList.getCurrencyExternalReferenceCode()));
 
 			sb.append("\"");
 		}
@@ -255,6 +313,34 @@ public class PriceListSerDes {
 			map.put("active", String.valueOf(priceList.getActive()));
 		}
 
+		if (priceList.getCatalogCurrencyCode() == null) {
+			map.put("catalogCurrencyCode", null);
+		}
+		else {
+			map.put(
+				"catalogCurrencyCode",
+				String.valueOf(priceList.getCatalogCurrencyCode()));
+		}
+
+		if (priceList.getCatalogCurrencyExternalReferenceCode() == null) {
+			map.put("catalogCurrencyExternalReferenceCode", null);
+		}
+		else {
+			map.put(
+				"catalogCurrencyExternalReferenceCode",
+				String.valueOf(
+					priceList.getCatalogCurrencyExternalReferenceCode()));
+		}
+
+		if (priceList.getCatalogExternalReferenceCode() == null) {
+			map.put("catalogExternalReferenceCode", null);
+		}
+		else {
+			map.put(
+				"catalogExternalReferenceCode",
+				String.valueOf(priceList.getCatalogExternalReferenceCode()));
+		}
+
 		if (priceList.getCatalogId() == null) {
 			map.put("catalogId", null);
 		}
@@ -268,6 +354,15 @@ public class PriceListSerDes {
 		else {
 			map.put(
 				"currencyCode", String.valueOf(priceList.getCurrencyCode()));
+		}
+
+		if (priceList.getCurrencyExternalReferenceCode() == null) {
+			map.put("currencyExternalReferenceCode", null);
+		}
+		else {
+			map.put(
+				"currencyExternalReferenceCode",
+				String.valueOf(priceList.getCurrencyExternalReferenceCode()));
 		}
 
 		if (priceList.getCustomFields() == null) {
@@ -366,6 +461,76 @@ public class PriceListSerDes {
 		}
 
 		@Override
+		protected boolean parseMaps(String jsonParserFieldName) {
+			if (Objects.equals(jsonParserFieldName, "active")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "catalogCurrencyCode")) {
+
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName,
+						"catalogCurrencyExternalReferenceCode")) {
+
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "catalogExternalReferenceCode")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "catalogId")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "currencyCode")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "currencyExternalReferenceCode")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "customFields")) {
+				return true;
+			}
+			else if (Objects.equals(jsonParserFieldName, "displayDate")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "expirationDate")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "externalReferenceCode")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "id")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "name")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "neverExpire")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "priceEntries")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "priceListAccountGroups")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "priority")) {
+				return false;
+			}
+
+			return false;
+		}
+
+		@Override
 		protected void setField(
 			PriceList priceList, String jsonParserFieldName,
 			Object jsonParserFieldValue) {
@@ -373,6 +538,31 @@ public class PriceListSerDes {
 			if (Objects.equals(jsonParserFieldName, "active")) {
 				if (jsonParserFieldValue != null) {
 					priceList.setActive((Boolean)jsonParserFieldValue);
+				}
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "catalogCurrencyCode")) {
+
+				if (jsonParserFieldValue != null) {
+					priceList.setCatalogCurrencyCode(
+						(String)jsonParserFieldValue);
+				}
+			}
+			else if (Objects.equals(
+						jsonParserFieldName,
+						"catalogCurrencyExternalReferenceCode")) {
+
+				if (jsonParserFieldValue != null) {
+					priceList.setCatalogCurrencyExternalReferenceCode(
+						(String)jsonParserFieldValue);
+				}
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "catalogExternalReferenceCode")) {
+
+				if (jsonParserFieldValue != null) {
+					priceList.setCatalogExternalReferenceCode(
+						(String)jsonParserFieldValue);
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "catalogId")) {
@@ -386,11 +576,18 @@ public class PriceListSerDes {
 					priceList.setCurrencyCode((String)jsonParserFieldValue);
 				}
 			}
+			else if (Objects.equals(
+						jsonParserFieldName, "currencyExternalReferenceCode")) {
+
+				if (jsonParserFieldValue != null) {
+					priceList.setCurrencyExternalReferenceCode(
+						(String)jsonParserFieldValue);
+				}
+			}
 			else if (Objects.equals(jsonParserFieldName, "customFields")) {
 				if (jsonParserFieldValue != null) {
 					priceList.setCustomFields(
-						(Map)PriceListSerDes.toMap(
-							(String)jsonParserFieldValue));
+						(Map<String, ?>)jsonParserFieldValue);
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "displayDate")) {
@@ -504,36 +701,7 @@ public class PriceListSerDes {
 
 			Object value = entry.getValue();
 
-			Class<?> valueClass = value.getClass();
-
-			if (value instanceof Map) {
-				sb.append(_toJSON((Map)value));
-			}
-			else if (valueClass.isArray()) {
-				Object[] values = (Object[])value;
-
-				sb.append("[");
-
-				for (int i = 0; i < values.length; i++) {
-					sb.append("\"");
-					sb.append(_escape(values[i]));
-					sb.append("\"");
-
-					if ((i + 1) < values.length) {
-						sb.append(", ");
-					}
-				}
-
-				sb.append("]");
-			}
-			else if (value instanceof String) {
-				sb.append("\"");
-				sb.append(_escape(entry.getValue()));
-				sb.append("\"");
-			}
-			else {
-				sb.append(String.valueOf(entry.getValue()));
-			}
+			sb.append(_toJSON(value));
 
 			if (iterator.hasNext()) {
 				sb.append(", ");
@@ -545,4 +713,47 @@ public class PriceListSerDes {
 		return sb.toString();
 	}
 
+	private static String _toJSON(Object value) {
+		if (value == null) {
+			return "null";
+		}
+
+		if (value instanceof Collection) {
+			Collection<?> collection = (Collection<?>)value;
+
+			return _toJSON(collection.toArray());
+		}
+
+		if (value instanceof Map) {
+			return _toJSON((Map)value);
+		}
+
+		Class<?> clazz = value.getClass();
+
+		if (clazz.isArray()) {
+			StringBuilder sb = new StringBuilder("[");
+
+			Object[] values = (Object[])value;
+
+			for (int i = 0; i < values.length; i++) {
+				sb.append(_toJSON(values[i]));
+
+				if ((i + 1) < values.length) {
+					sb.append(", ");
+				}
+			}
+
+			sb.append("]");
+
+			return sb.toString();
+		}
+
+		if (value instanceof String) {
+			return "\"" + _escape(value) + "\"";
+		}
+
+		return String.valueOf(value);
+	}
+
 }
+// LIFERAY-REST-BUILDER-HASH:-51490026

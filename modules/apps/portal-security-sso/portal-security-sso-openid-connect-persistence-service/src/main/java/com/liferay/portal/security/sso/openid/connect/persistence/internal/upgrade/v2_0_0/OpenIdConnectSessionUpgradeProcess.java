@@ -12,7 +12,9 @@ import com.liferay.portal.kernel.upgrade.UpgradeProcess;
 import com.liferay.portal.kernel.upgrade.UpgradeProcessFactory;
 import com.liferay.portal.kernel.upgrade.UpgradeStep;
 import com.liferay.portal.kernel.util.Base64;
+import com.liferay.portal.kernel.util.DigesterUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.Validator;
 
 import java.net.URI;
@@ -43,6 +45,7 @@ public class OpenIdConnectSessionUpgradeProcess extends UpgradeProcess {
 		try (PreparedStatement preparedStatement = connection.prepareStatement(
 				"select openIdConnectSessionId, configurationPid from " +
 					"OpenIdConnectSession");
+
 			ResultSet resultSet = preparedStatement.executeQuery()) {
 
 			while (resultSet.next()) {
@@ -88,16 +91,17 @@ public class OpenIdConnectSessionUpgradeProcess extends UpgradeProcess {
 	}
 
 	private String _generateLocalWellKnownURI(
-			String issuer, String tokenEndPoint)
+			String issuer, String tokenEndpoint)
 		throws Exception {
 
 		URI issuerURI = URI.create(issuer);
-		MessageDigest messageDigest = MessageDigest.getInstance("MD5");
+		MessageDigest messageDigest = MessageDigest.getInstance(
+			PropsValues.FIPS_ENABLED ? DigesterUtil.SHA_256 : DigesterUtil.MD5);
 
 		return StringBundler.concat(
 			issuerURI.getScheme(), "://", issuerURI.getAuthority(),
 			"/.well-known/openid-configuration", issuerURI.getPath(), '/',
-			Base64.encodeToURL(messageDigest.digest(tokenEndPoint.getBytes())),
+			Base64.encodeToURL(messageDigest.digest(tokenEndpoint.getBytes())),
 			"/local");
 	}
 
@@ -110,11 +114,11 @@ public class OpenIdConnectSessionUpgradeProcess extends UpgradeProcess {
 
 		Dictionary<String, ?> properties = configuration.getProperties();
 
-		String discoveryEndPoint = GetterUtil.getString(
+		String discoveryEndpoint = GetterUtil.getString(
 			properties.get("discoveryEndPoint"));
 
-		if (Validator.isNull(discoveryEndPoint)) {
-			discoveryEndPoint = _generateLocalWellKnownURI(
+		if (Validator.isNull(discoveryEndpoint)) {
+			discoveryEndpoint = _generateLocalWellKnownURI(
 				GetterUtil.getString(properties.get("issuerURL")),
 				GetterUtil.getString(properties.get("tokenEndPoint")));
 		}
@@ -126,7 +130,7 @@ public class OpenIdConnectSessionUpgradeProcess extends UpgradeProcess {
 				"update OpenIdConnectSession set authServerWellKnownURI = ?, " +
 					"clientId = ? WHERE openIdConnectSessionId = ?")) {
 
-			preparedStatement.setString(1, discoveryEndPoint);
+			preparedStatement.setString(1, discoveryEndpoint);
 			preparedStatement.setString(2, openIdConnectClientId);
 			preparedStatement.setLong(3, openIdConnectSessionId);
 

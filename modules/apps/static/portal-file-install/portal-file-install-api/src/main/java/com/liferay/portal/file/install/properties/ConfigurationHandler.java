@@ -33,6 +33,7 @@ public class ConfigurationHandler {
 	public static Object read(String value) throws IOException {
 		try (UnsyncStringReader unsyncStringReader = new UnsyncStringReader(
 				value);
+
 			PushbackReader pushbackReader = new PushbackReader(
 				unsyncStringReader, 1)) {
 
@@ -108,12 +109,11 @@ public class ConfigurationHandler {
 		for (int i = 0; i < buffer.length; i++) {
 			int c = _read(pushbackReader);
 
-			if (c >= 0) {
-				buffer[i] = (char)c;
-			}
-			else {
+			if (c < 0) {
 				return i;
 			}
+
+			buffer[i] = (char)c;
 		}
 
 		return buffer.length;

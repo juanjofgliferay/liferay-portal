@@ -42,15 +42,15 @@ import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.search.filter.ComplexQueryPart;
 import com.liferay.portal.search.filter.ComplexQueryPartBuilderFactory;
 import com.liferay.portal.search.query.MatchQuery;
-import com.liferay.portal.search.query.Queries;
+import com.liferay.portal.search.query.QueriesUtil;
 import com.liferay.portal.search.query.Query;
 import com.liferay.portal.search.searcher.SearchRequestBuilder;
 import com.liferay.portal.search.searcher.SearchRequestBuilderFactory;
 import com.liferay.portal.search.searcher.SearchResponse;
 import com.liferay.portal.search.searcher.Searcher;
 import com.liferay.portal.search.sort.Sorts;
+import com.liferay.portal.search.test.rule.SearchTestRule;
 import com.liferay.portal.search.test.util.DocumentsAssert;
-import com.liferay.portal.search.test.util.SearchTestRule;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.users.admin.test.util.search.GroupBlueprint;
@@ -118,7 +118,7 @@ public class IndexerClausesComplexQueryPartTest {
 				"gamma"
 			);
 
-		_query = _queries.match(_TITLE_EN_US, "omega");
+		_query = QueriesUtil.match(_TITLE_EN_US, "omega");
 
 		assertSearch("[Gamma Article]");
 		assertSearch("[Gamma Article]", should());
@@ -154,7 +154,7 @@ public class IndexerClausesComplexQueryPartTest {
 				"gamma"
 			);
 
-		_query = _queries.match(_TITLE_EN_US, "omega");
+		_query = QueriesUtil.match(_TITLE_EN_US, "omega");
 
 		assertSearch("[Gamma Blog]");
 		assertSearch("[Gamma Blog]", should());
@@ -188,7 +188,7 @@ public class IndexerClausesComplexQueryPartTest {
 				"gamma"
 			);
 
-		_query = _queries.match(_TITLE_EN_US, "omega");
+		_query = QueriesUtil.match(_TITLE_EN_US, "omega");
 
 		assertSearch("[Gamma Article, Gamma Blog]");
 		assertSearch("[Gamma Article, Gamma Blog]", should());
@@ -321,12 +321,6 @@ public class IndexerClausesComplexQueryPartTest {
 		return withPartAdditive("should", _query);
 	}
 
-	protected Consumer<SearchRequestBuilder> withoutIndexerClauses() {
-		return searchRequestBuilder -> searchRequestBuilder.withSearchContext(
-			searchContext -> searchContext.setAttribute(
-				"search.full.query.suppress.indexer.provided.clauses", true));
-	}
-
 	protected Consumer<SearchRequestBuilder> withPart(
 		String occur, Query query) {
 
@@ -353,6 +347,12 @@ public class IndexerClausesComplexQueryPartTest {
 			).build());
 	}
 
+	protected Consumer<SearchRequestBuilder> withoutIndexerClauses() {
+		return searchRequestBuilder -> searchRequestBuilder.withSearchContext(
+			searchContext -> searchContext.setAttribute(
+				"search.full.query.suppress.indexer.provided.clauses", true));
+	}
+
 	@Inject
 	protected static DDMStructureLocalService ddmStructureLocalService;
 
@@ -377,10 +377,10 @@ public class IndexerClausesComplexQueryPartTest {
 	protected MBMessageLocalService mbMessageLocalService;
 
 	@Inject
-	protected Searcher searcher;
+	protected SearchRequestBuilderFactory searchRequestBuilderFactory;
 
 	@Inject
-	protected SearchRequestBuilderFactory searchRequestBuilderFactory;
+	protected Searcher searcher;
 
 	private ServiceContext _createServiceContext() throws Exception {
 		return ServiceContextTestUtil.getServiceContext(
@@ -414,13 +414,10 @@ public class IndexerClausesComplexQueryPartTest {
 	@DeleteAfterTestRun
 	private List<Group> _groups;
 
-	@DeleteAfterTestRun
-	private List<JournalArticle> _journalArticles;
-
 	private JournalArticleSearchFixture _journalArticleSearchFixture;
 
-	@Inject
-	private Queries _queries;
+	@DeleteAfterTestRun
+	private List<JournalArticle> _journalArticles;
 
 	private MatchQuery _query;
 

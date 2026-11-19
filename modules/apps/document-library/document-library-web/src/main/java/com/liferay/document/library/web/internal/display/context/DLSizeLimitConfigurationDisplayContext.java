@@ -15,13 +15,12 @@ import com.liferay.portal.kernel.portlet.RequestBackedPortletURLFactory;
 import com.liferay.portal.kernel.portlet.RequestBackedPortletURLFactoryUtil;
 import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.util.HashMapBuilder;
-import com.liferay.portal.kernel.util.PortalUtil;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Adolfo Pérez
@@ -39,20 +38,6 @@ public class DLSizeLimitConfigurationDisplayContext {
 		_liferayPortletResponse = liferayPortletResponse;
 		_scope = scope;
 		_scopePK = scopePK;
-	}
-
-	public String getEditDLSizeLimitConfigurationURL() {
-		return PortletURLBuilder.createActionURL(
-			_liferayPortletResponse
-		).setActionName(
-			"/instance_settings/edit_size_limits"
-		).setRedirect(
-			PortalUtil.getCurrentURL(_httpServletRequest)
-		).setParameter(
-			"scope", _scope
-		).setParameter(
-			"scopePK", _scopePK
-		).buildString();
 	}
 
 	public long getFileMaxSize() {
@@ -141,6 +126,29 @@ public class DLSizeLimitConfigurationDisplayContext {
 					ExtendedObjectClassDefinition.Scope.SYSTEM.getValue())) {
 
 			return _dlSizeLimitConfigurationProvider.getSystemMaxSizeToCopy();
+		}
+
+		throw new IllegalArgumentException("Unsupported scope: " + _scope);
+	}
+
+	public long getMaxSizeToDownload() {
+		if (_scope.equals(
+				ExtendedObjectClassDefinition.Scope.COMPANY.getValue())) {
+
+			return _dlSizeLimitConfigurationProvider.
+				getCompanyMaxSizeToDownload(_scopePK);
+		}
+		else if (_scope.equals(
+					ExtendedObjectClassDefinition.Scope.GROUP.getValue())) {
+
+			return _dlSizeLimitConfigurationProvider.getGroupMaxSizeToDownload(
+				_scopePK);
+		}
+		else if (_scope.equals(
+					ExtendedObjectClassDefinition.Scope.SYSTEM.getValue())) {
+
+			return _dlSizeLimitConfigurationProvider.
+				getSystemMaxSizeToDownload();
 		}
 
 		throw new IllegalArgumentException("Unsupported scope: " + _scope);

@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -51,49 +52,6 @@ public class DLOpenerFileEntryReferenceLocalServiceUtil {
 
 		return getService().addDLOpenerFileEntryReference(
 			dlOpenerFileEntryReference);
-	}
-
-	/**
-	 * @deprecated As of Mueller (7.2.x), replaced by {@link
-	 #addDLOpenerFileEntryReference(long, String, String,
-	 FileEntry, int)}
-	 */
-	@Deprecated
-	public static DLOpenerFileEntryReference addDLOpenerFileEntryReference(
-			long userId, String referenceKey,
-			com.liferay.portal.kernel.repository.model.FileEntry fileEntry,
-			int type)
-		throws PortalException {
-
-		return getService().addDLOpenerFileEntryReference(
-			userId, referenceKey, fileEntry, type);
-	}
-
-	public static DLOpenerFileEntryReference addDLOpenerFileEntryReference(
-			long userId, String referenceKey, String referenceType,
-			com.liferay.portal.kernel.repository.model.FileEntry fileEntry,
-			int type)
-		throws PortalException {
-
-		return getService().addDLOpenerFileEntryReference(
-			userId, referenceKey, referenceType, fileEntry, type);
-	}
-
-	/**
-	 * @deprecated As of Mueller (7.2.x), replaced by {@link
-	 #addPlaceholderDLOpenerFileEntryReference(long, String,
-	 FileEntry, int)}
-	 */
-	@Deprecated
-	public static DLOpenerFileEntryReference
-			addPlaceholderDLOpenerFileEntryReference(
-				long userId,
-				com.liferay.portal.kernel.repository.model.FileEntry fileEntry,
-				int type)
-		throws PortalException {
-
-		return getService().addPlaceholderDLOpenerFileEntryReference(
-			userId, fileEntry, type);
 	}
 
 	public static DLOpenerFileEntryReference
@@ -417,19 +375,6 @@ public class DLOpenerFileEntryReferenceLocalServiceUtil {
 			dlOpenerFileEntryReference);
 	}
 
-	/**
-	 * @deprecated As of Mueller (7.2.x), replaced by {@link
-	 #updateDLOpenerFileEntryReference(String, String, FileEntry)}
-	 */
-	@Deprecated
-	public static DLOpenerFileEntryReference updateDLOpenerFileEntryReference(
-		String referenceKey,
-		com.liferay.portal.kernel.repository.model.FileEntry fileEntry) {
-
-		return getService().updateDLOpenerFileEntryReference(
-			referenceKey, fileEntry);
-	}
-
 	public static DLOpenerFileEntryReference updateDLOpenerFileEntryReference(
 		String referenceKey, String referenceType,
 		com.liferay.portal.kernel.repository.model.FileEntry fileEntry) {
@@ -439,15 +384,13 @@ public class DLOpenerFileEntryReferenceLocalServiceUtil {
 	}
 
 	public static DLOpenerFileEntryReferenceLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(
-		DLOpenerFileEntryReferenceLocalService service) {
-
-		_service = service;
-	}
-
-	private static volatile DLOpenerFileEntryReferenceLocalService _service;
+	private static final Snapshot<DLOpenerFileEntryReferenceLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			DLOpenerFileEntryReferenceLocalServiceUtil.class,
+			DLOpenerFileEntryReferenceLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-2116853186

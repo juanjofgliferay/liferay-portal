@@ -307,7 +307,7 @@
 </tr>
 <tr>
 	<td>METRICS_DASHBOARD_TAB</td>
-	<td>//li[contains(@class,'nav-item')]//a[contains(@href, 'dashboard')]</td>
+	<td>//li[contains(@class,'nav-item')]//a[contains(@href,'#/metrics/') and contains(@href,'/dashboard')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -533,6 +533,11 @@
 <tr>
 	<td>SEARCH_FIELD_MAPPINGS_METRICS_INDEXES</td>
 	<td>//a[contains(text(),'${key_index}')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>SEARCH_FIELD_MAPPINGS_METRICS_ACTIONS</td>
+	<td>//div[@class='header-actions']//a[contains(text(),'${key_index}')]</td>
 	<td></td>
 </tr>
 <tr>

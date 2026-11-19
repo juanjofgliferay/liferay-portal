@@ -100,6 +100,8 @@ public class SocialRequestModelImpl
 
 	public static final String TABLE_SQL_DROP = "drop table SocialRequest";
 
+	public static final String ENTITY_ALIAS = "socialRequest";
+
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY socialRequest.requestId DESC";
 
@@ -192,7 +194,7 @@ public class SocialRequestModelImpl
 	public static final long REQUESTID_COLUMN_BITMASK = 512L;
 
 	public static final long LOCK_EXPIRATION_TIME = GetterUtil.getLong(
-		com.liferay.portal.util.PropsUtil.get(
+		com.liferay.portal.kernel.util.PropsUtil.get(
 			"lock.expiration.time.com.liferay.social.kernel.model.SocialRequest"));
 
 	public SocialRequestModelImpl() {
@@ -1179,3 +1181,4 @@ public class SocialRequestModelImpl
 	private SocialRequest _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1946852287

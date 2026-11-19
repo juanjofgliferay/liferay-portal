@@ -5,8 +5,13 @@
 
 package com.liferay.fragment.service.impl;
 
+import com.liferay.depot.model.DepotEntry;
+import com.liferay.depot.model.DepotEntryGroupRel;
+import com.liferay.depot.service.DepotEntryGroupRelLocalService;
+import com.liferay.depot.service.DepotEntryLocalService;
 import com.liferay.document.library.kernel.service.DLAppLocalService;
 import com.liferay.exportimport.kernel.lar.ExportImportThreadLocal;
+import com.liferay.fragment.configuration.FragmentEntryVersionConfiguration;
 import com.liferay.fragment.configuration.FragmentServiceConfiguration;
 import com.liferay.fragment.constants.FragmentPortletKeys;
 import com.liferay.fragment.exception.DuplicateFragmentEntryKeyException;
@@ -14,48 +19,73 @@ import com.liferay.fragment.exception.FragmentEntryNameException;
 import com.liferay.fragment.exception.NoSuchEntryException;
 import com.liferay.fragment.exception.RequiredFragmentEntryException;
 import com.liferay.fragment.model.FragmentCollection;
+import com.liferay.fragment.model.FragmentCompositionTable;
 import com.liferay.fragment.model.FragmentEntry;
 import com.liferay.fragment.model.FragmentEntryLink;
+import com.liferay.fragment.model.FragmentEntryTable;
+import com.liferay.fragment.model.FragmentEntryVersion;
 import com.liferay.fragment.processor.FragmentEntryProcessorRegistry;
 import com.liferay.fragment.service.FragmentEntryLinkLocalService;
 import com.liferay.fragment.service.base.FragmentEntryLocalServiceBaseImpl;
 import com.liferay.fragment.service.persistence.FragmentCollectionPersistence;
-import com.liferay.fragment.service.persistence.FragmentEntryLinkPersistence;
+import com.liferay.fragment.service.persistence.FragmentCompositionPersistence;
 import com.liferay.fragment.validator.FragmentEntryValidator;
+import com.liferay.petra.function.transform.TransformUtil;
+import com.liferay.petra.sql.dsl.Column;
+import com.liferay.petra.sql.dsl.DSLFunctionFactoryUtil;
+import com.liferay.petra.sql.dsl.DSLQueryFactoryUtil;
+import com.liferay.petra.sql.dsl.Table;
+import com.liferay.petra.sql.dsl.base.BaseTable;
+import com.liferay.petra.sql.dsl.expression.Predicate;
+import com.liferay.petra.sql.dsl.query.DSLQuery;
+import com.liferay.petra.sql.dsl.query.GroupByStep;
+import com.liferay.petra.sql.dsl.spi.expression.Scalar;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.dao.orm.custom.sql.CustomSQL;
 import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
-import com.liferay.portal.kernel.dao.orm.Property;
-import com.liferay.portal.kernel.dao.orm.PropertyFactoryUtil;
+import com.liferay.portal.kernel.dao.orm.Conjunction;
+import com.liferay.portal.kernel.dao.orm.Disjunction;
+import com.liferay.portal.kernel.dao.orm.RestrictionsFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.WildcardMode;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.language.Language;
+import com.liferay.portal.kernel.json.JSONFactory;
+import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.ModelHintsUtil;
 import com.liferay.portal.kernel.model.Repository;
 import com.liferay.portal.kernel.model.ResourceConstants;
 import com.liferay.portal.kernel.model.SystemEventConstants;
 import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.portletfilerepository.PortletFileRepository;
 import com.liferay.portal.kernel.portletfilerepository.PortletFileRepositoryUtil;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.repository.model.Folder;
+import com.liferay.portal.kernel.search.Indexable;
+import com.liferay.portal.kernel.search.IndexableType;
+import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.ResourceLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.systemevent.SystemEvent;
+import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.GroupThreadLocal;
 import com.liferay.portal.kernel.util.HashMapBuilder;
-import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.TempFileEntryUtil;
+import com.liferay.portal.kernel.util.UniqueUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
+import java.sql.Types;
+
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -77,13 +107,15 @@ import org.osgi.service.component.annotations.Reference;
 public class FragmentEntryLocalServiceImpl
 	extends FragmentEntryLocalServiceBaseImpl {
 
+	@Indexable(type = IndexableType.REINDEX)
 	@Override
 	public FragmentEntry addFragmentEntry(
-			long userId, long groupId, long fragmentCollectionId,
-			String fragmentEntryKey, String name, String css, String html,
-			String js, boolean cacheable, String configuration, String icon,
-			long previewFileEntryId, int type, String typeOptions, int status,
-			ServiceContext serviceContext)
+			String externalReferenceCode, long userId, long groupId,
+			long fragmentCollectionId, String fragmentEntryKey, String name,
+			String css, String html, String js, boolean cacheable,
+			String configuration, String icon, long previewFileEntryId,
+			boolean marketplace, boolean readOnly, int type, String typeOptions,
+			int status, ServiceContext serviceContext)
 		throws PortalException {
 
 		// Fragment entry
@@ -109,14 +141,20 @@ public class FragmentEntryLocalServiceImpl
 		_validateFragmentEntryKey(groupId, fragmentEntryKey);
 
 		if (WorkflowConstants.STATUS_APPROVED == status) {
-			_fragmentEntryValidator.validateConfiguration(configuration);
+			JSONObject configurationJSONObject =
+				_jsonFactory.safeCreateJSONObject(configuration, true);
+
+			_fragmentEntryValidator.validateConfiguration(
+				configurationJSONObject);
+
 			_fragmentEntryValidator.validateTypeOptions(type, typeOptions);
-			_validateContent(html, configuration);
+			_validateContent(html, configurationJSONObject);
 		}
 
 		FragmentEntry draftFragmentEntry = create();
 
 		draftFragmentEntry.setUuid(serviceContext.getUuid());
+		draftFragmentEntry.setExternalReferenceCode(externalReferenceCode);
 		draftFragmentEntry.setGroupId(groupId);
 		draftFragmentEntry.setCompanyId(companyId);
 		draftFragmentEntry.setUserId(user.getUserId());
@@ -135,6 +173,8 @@ public class FragmentEntryLocalServiceImpl
 		draftFragmentEntry.setConfiguration(configuration);
 		draftFragmentEntry.setIcon(icon);
 		draftFragmentEntry.setPreviewFileEntryId(previewFileEntryId);
+		draftFragmentEntry.setMarketplace(marketplace);
+		draftFragmentEntry.setReadOnly(readOnly);
 		draftFragmentEntry.setType(type);
 		draftFragmentEntry.setTypeOptions(typeOptions);
 		draftFragmentEntry.setStatus(WorkflowConstants.STATUS_DRAFT);
@@ -152,6 +192,7 @@ public class FragmentEntryLocalServiceImpl
 		return updatedDraftFragmentEntry;
 	}
 
+	@Indexable(type = IndexableType.REINDEX)
 	@Override
 	public FragmentEntry copyFragmentEntry(
 			long userId, long groupId, long sourceFragmentEntryId,
@@ -181,7 +222,22 @@ public class FragmentEntryLocalServiceImpl
 				publishedFragmentEntry.fetchDraftFragmentEntry();
 		}
 
-		String name = _getUniqueCopyName(sourceFragmentEntry);
+		String name = UniqueUtil.getUniqueValue(
+			"copy",
+			uniqueValue -> {
+				FragmentEntry existingFragmentEntry =
+					fragmentEntryPersistence.fetchByG_FCI_LikeN_First(
+						sourceFragmentEntry.getGroupId(),
+						sourceFragmentEntry.getFragmentCollectionId(),
+						uniqueValue, null);
+
+				if (existingFragmentEntry == null) {
+					return true;
+				}
+
+				return false;
+			},
+			sourceFragmentEntry.getName());
 
 		FragmentEntry copyPublishedFragmentEntry = null;
 
@@ -190,13 +246,14 @@ public class FragmentEntryLocalServiceImpl
 
 		if (publishedFragmentEntry != null) {
 			copyPublishedFragmentEntry = addFragmentEntry(
-				userId, groupId, fragmentCollectionId, null, name,
+				null, userId, groupId, fragmentCollectionId, null, name,
 				publishedFragmentEntry.getCss(),
 				publishedFragmentEntry.getHtml(),
 				publishedFragmentEntry.getJs(),
 				publishedFragmentEntry.isCacheable(),
 				publishedFragmentEntry.getConfiguration(),
-				publishedFragmentEntry.getIcon(), 0,
+				publishedFragmentEntry.getIcon(), 0, false,
+				publishedFragmentEntry.isReadOnly(),
 				publishedFragmentEntry.getType(),
 				publishedFragmentEntry.getTypeOptions(),
 				WorkflowConstants.STATUS_APPROVED, serviceContext);
@@ -216,11 +273,12 @@ public class FragmentEntryLocalServiceImpl
 			(copyPublishedFragmentEntry == null)) {
 
 			targetDraftFragmentEntry = addFragmentEntry(
-				userId, groupId, fragmentCollectionId, null, name,
+				null, userId, groupId, fragmentCollectionId, null, name,
 				draftFragmentEntry.getCss(), draftFragmentEntry.getHtml(),
 				draftFragmentEntry.getJs(), draftFragmentEntry.isCacheable(),
 				draftFragmentEntry.getConfiguration(),
-				draftFragmentEntry.getIcon(), 0, draftFragmentEntry.getType(),
+				draftFragmentEntry.getIcon(), 0, false,
+				draftFragmentEntry.isReadOnly(), draftFragmentEntry.getType(),
 				draftFragmentEntry.getTypeOptions(),
 				WorkflowConstants.STATUS_DRAFT, serviceContext);
 
@@ -268,15 +326,15 @@ public class FragmentEntryLocalServiceImpl
 		return draftFragmentEntry;
 	}
 
+	@Indexable(type = IndexableType.DELETE)
 	@Override
 	@SystemEvent(type = SystemEventConstants.TYPE_DELETE)
 	public FragmentEntry deleteFragmentEntry(FragmentEntry fragmentEntry)
 		throws PortalException {
 
-		long fragmentEntryLinkCount = _fragmentEntryLinkPersistence.countByF_D(
-			fragmentEntry.getFragmentEntryId(), false);
+		if (!GroupThreadLocal.isDeleteInProcess() &&
+			(fragmentEntry.getUsageCount() > 0)) {
 
-		if (fragmentEntryLinkCount > 0) {
 			throw new RequiredFragmentEntryException();
 		}
 
@@ -285,9 +343,8 @@ public class FragmentEntryLocalServiceImpl
 			ResourceConstants.SCOPE_INDIVIDUAL,
 			fragmentEntry.getFragmentEntryId());
 
-		_fragmentEntryLinkLocalService.
-			deleteFragmentEntryLinksByFragmentEntryId(
-				fragmentEntry.getFragmentEntryId(), true);
+		_fragmentEntryLinkLocalService.deleteFragmentEntryLinksByFragmentEntry(
+			fragmentEntry, true);
 
 		if (fragmentEntry.getPreviewFileEntryId() > 0) {
 			boolean deletePreviewFileEntry = true;
@@ -320,6 +377,7 @@ public class FragmentEntryLocalServiceImpl
 		return delete(fragmentEntry);
 	}
 
+	@Indexable(type = IndexableType.DELETE)
 	@Override
 	public FragmentEntry deleteFragmentEntry(long fragmentEntryId)
 		throws PortalException {
@@ -328,18 +386,40 @@ public class FragmentEntryLocalServiceImpl
 			getFragmentEntry(fragmentEntryId));
 	}
 
+	@Indexable(type = IndexableType.DELETE)
 	@Override
-	public FragmentEntry fetchFragmentEntry(long fragmentEntryId) {
-		return fragmentEntryPersistence.fetchByPrimaryKey(fragmentEntryId);
+	public FragmentEntry deleteFragmentEntry(
+			String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		FragmentEntry fragmentEntry =
+			fragmentEntryPersistence.fetchByERC_G_Head(
+				externalReferenceCode, groupId, true);
+
+		if (fragmentEntry == null) {
+			fragmentEntry = fragmentEntryPersistence.findByERC_G_Head(
+				externalReferenceCode, groupId, false);
+		}
+
+		return fragmentEntryLocalService.deleteFragmentEntry(fragmentEntry);
 	}
 
 	@Override
 	public FragmentEntry fetchFragmentEntry(
 		long groupId, String fragmentEntryKey) {
 
+		fragmentEntryKey = _getFragmentEntryKey(fragmentEntryKey);
+
+		int fragmentEntryKeyMaxLength = ModelHintsUtil.getMaxLength(
+			FragmentEntry.class.getName(), "fragmentEntryKey");
+
+		if (fragmentEntryKey.length() > fragmentEntryKeyMaxLength) {
+			return null;
+		}
+
 		FragmentEntry fragmentEntry =
 			fragmentEntryPersistence.fetchByG_FEK_First(
-				groupId, _getFragmentEntryKey(fragmentEntryKey), null);
+				groupId, fragmentEntryKey, null);
 
 		if (fragmentEntry == null) {
 			return null;
@@ -389,6 +469,114 @@ public class FragmentEntryLocalServiceImpl
 
 			curFragmentEntryKey = fragmentEntryKey + CharPool.DASH + count++;
 		}
+	}
+
+	@Override
+	public List<Object> getFragmentCompositionsAndFragmentEntries(
+		long groupId, long fragmentCollectionId, int status, int start, int end,
+		OrderByComparator<?> orderByComparator) {
+
+		return getFragmentCompositionsAndFragmentEntries(
+			groupId, fragmentCollectionId, StringPool.BLANK, status, start, end,
+			orderByComparator);
+	}
+
+	@Override
+	public List<Object> getFragmentCompositionsAndFragmentEntries(
+		long groupId, long fragmentCollectionId, String name, int status,
+		int start, int end, OrderByComparator<?> orderByComparator) {
+
+		List<Object> fragmentCompositionsAndFragmentEntries = new ArrayList<>();
+
+		Table<?> fragmentCompositionsAndFragmentEntriesTable =
+			_getFragmentCompositionGroupByStep(
+				groupId, fragmentCollectionId, name, status
+			).unionAll(
+				_getFragmentEntryGroupByStep(
+					groupId, fragmentCollectionId, name, status)
+			).as(
+				"TEMP_TABLE",
+				FragmentCompositionsAndFragmentEntriesTable.INSTANCE
+			);
+
+		DSLQuery dslQuery = DSLQueryFactoryUtil.select(
+			fragmentCompositionsAndFragmentEntriesTable
+		).from(
+			fragmentCompositionsAndFragmentEntriesTable
+		).orderBy(
+			fragmentCompositionsAndFragmentEntriesTable, orderByComparator
+		).limit(
+			start, end
+		);
+
+		for (Object[] array :
+				fragmentEntryPersistence.<List<Object[]>>dslQuery(dslQuery)) {
+
+			long fragmentCompositionId = GetterUtil.getLong(array[0]);
+
+			if (fragmentCompositionId > 0) {
+				fragmentCompositionsAndFragmentEntries.add(
+					_fragmentCompositionPersistence.fetchByPrimaryKey(
+						fragmentCompositionId));
+
+				continue;
+			}
+
+			fragmentCompositionsAndFragmentEntries.add(
+				fragmentEntryPersistence.fetchByPrimaryKey(
+					GetterUtil.getLong(array[1])));
+		}
+
+		return fragmentCompositionsAndFragmentEntries;
+	}
+
+	@Override
+	public int getFragmentCompositionsAndFragmentEntriesCount(
+		long groupId, long fragmentCollectionId, int status) {
+
+		return getFragmentCompositionsAndFragmentEntriesCount(
+			groupId, fragmentCollectionId, null, status);
+	}
+
+	@Override
+	public int getFragmentCompositionsAndFragmentEntriesCount(
+		long groupId, long fragmentCollectionId, String name, int status) {
+
+		Table<?> fragmentCompositionsAndFragmentEntriesTable =
+			DSLQueryFactoryUtil.countDistinct(
+				FragmentCompositionTable.INSTANCE.fragmentCompositionId
+			).from(
+				FragmentCompositionTable.INSTANCE
+			).where(
+				_getFragmentCompositionWherePredicate(
+					groupId, fragmentCollectionId, name, status)
+			).unionAll(
+				DSLQueryFactoryUtil.countDistinct(
+					FragmentEntryTable.INSTANCE.fragmentEntryId
+				).from(
+					FragmentEntryTable.INSTANCE
+				).where(
+					_getFragmentEntryWherePredicate(
+						groupId, fragmentCollectionId, name, status)
+				)
+			).as(
+				"TEMP_TABLE"
+			);
+
+		DSLQuery dslQuery = DSLQueryFactoryUtil.select(
+		).from(
+			fragmentCompositionsAndFragmentEntriesTable
+		);
+
+		int count = 0;
+
+		for (Object countValue :
+				fragmentEntryPersistence.<List<Object>>dslQuery(dslQuery)) {
+
+			count += GetterUtil.getInteger(countValue);
+		}
+
+		return count;
 	}
 
 	@Override
@@ -538,6 +726,7 @@ public class FragmentEntryLocalServiceImpl
 		}
 	}
 
+	@Indexable(type = IndexableType.REINDEX)
 	@Override
 	public FragmentEntry moveFragmentEntry(
 			long fragmentEntryId, long fragmentCollectionId)
@@ -561,6 +750,7 @@ public class FragmentEntryLocalServiceImpl
 		return fragmentEntryPersistence.update(fragmentEntry);
 	}
 
+	@Indexable(type = IndexableType.REINDEX)
 	@Override
 	public FragmentEntry publishDraft(FragmentEntry draftFragmentEntry)
 		throws PortalException {
@@ -569,44 +759,16 @@ public class FragmentEntryLocalServiceImpl
 			draftFragmentEntry.getHeadId());
 
 		if (publishedFragmentEntry != null) {
-			draftFragmentEntry.setName(publishedFragmentEntry.getName());
 			draftFragmentEntry.setCacheable(
 				publishedFragmentEntry.isCacheable());
 			draftFragmentEntry.setPreviewFileEntryId(
 				publishedFragmentEntry.getPreviewFileEntryId());
 		}
-		else {
-			_validate(draftFragmentEntry.getName());
-		}
 
-		_fragmentEntryValidator.validateConfiguration(
-			draftFragmentEntry.getConfiguration());
-		_fragmentEntryValidator.validateTypeOptions(
-			draftFragmentEntry.getType(), draftFragmentEntry.getTypeOptions());
-		_validateContent(
-			draftFragmentEntry.getHtml(),
-			draftFragmentEntry.getConfiguration());
-
-		draftFragmentEntry.setStatus(WorkflowConstants.STATUS_APPROVED);
-
-		FragmentEntry updatedPublishedFragmentEntry = super.publishDraft(
-			draftFragmentEntry);
-
-		FragmentServiceConfiguration fragmentServiceConfiguration =
-			_configurationProvider.getCompanyConfiguration(
-				FragmentServiceConfiguration.class,
-				draftFragmentEntry.getCompanyId());
-
-		if (fragmentServiceConfiguration.propagateChanges() &&
-			!ExportImportThreadLocal.isStagingInProcess()) {
-
-			_propagateChanges(
-				updatedPublishedFragmentEntry.getFragmentEntryId());
-		}
-
-		return updatedPublishedFragmentEntry;
+		return _publishDraft(draftFragmentEntry);
 	}
 
+	@Indexable(type = IndexableType.REINDEX)
 	@Override
 	public FragmentEntry updateFragmentEntry(FragmentEntry fragmentEntry)
 		throws PortalException {
@@ -635,6 +797,7 @@ public class FragmentEntryLocalServiceImpl
 		return publishDraft(updatedDraftFragmentEntry);
 	}
 
+	@Indexable(type = IndexableType.REINDEX)
 	@Override
 	public FragmentEntry updateFragmentEntry(
 			long fragmentEntryId, boolean cacheable)
@@ -648,6 +811,7 @@ public class FragmentEntryLocalServiceImpl
 		return fragmentEntryPersistence.update(fragmentEntry);
 	}
 
+	@Indexable(type = IndexableType.REINDEX)
 	@Override
 	public FragmentEntry updateFragmentEntry(
 			long fragmentEntryId, long previewFileEntryId)
@@ -656,34 +820,27 @@ public class FragmentEntryLocalServiceImpl
 		FragmentEntry fragmentEntry = fragmentEntryPersistence.findByPrimaryKey(
 			fragmentEntryId);
 
+		long previousPreviewFileEntryId = fragmentEntry.getPreviewFileEntryId();
+
 		fragmentEntry.setPreviewFileEntryId(previewFileEntryId);
 
-		return fragmentEntryPersistence.update(fragmentEntry);
+		fragmentEntry = fragmentEntryPersistence.update(fragmentEntry);
+
+		if ((previewFileEntryId == 0) && (previousPreviewFileEntryId > 0)) {
+			_portletFileRepository.deletePortletFileEntry(
+				previousPreviewFileEntryId);
+		}
+
+		return fragmentEntry;
 	}
 
+	@Indexable(type = IndexableType.REINDEX)
 	@Override
 	public FragmentEntry updateFragmentEntry(
 			long userId, long fragmentEntryId, long fragmentCollectionId,
 			String name, String css, String html, String js, boolean cacheable,
 			String configuration, String icon, long previewFileEntryId,
-			int status)
-		throws PortalException {
-
-		FragmentEntry fragmentEntry = fragmentEntryPersistence.findByPrimaryKey(
-			fragmentEntryId);
-
-		return fragmentEntryLocalService.updateFragmentEntry(
-			userId, fragmentEntryId, fragmentCollectionId, name, css, html, js,
-			cacheable, configuration, icon, previewFileEntryId,
-			fragmentEntry.getTypeOptions(), status);
-	}
-
-	@Override
-	public FragmentEntry updateFragmentEntry(
-			long userId, long fragmentEntryId, long fragmentCollectionId,
-			String name, String css, String html, String js, boolean cacheable,
-			String configuration, String icon, long previewFileEntryId,
-			String typeOptions, int status)
+			boolean readOnly, String typeOptions, int status)
 		throws PortalException {
 
 		FragmentEntry fragmentEntry = fragmentEntryPersistence.findByPrimaryKey(
@@ -692,11 +849,16 @@ public class FragmentEntryLocalServiceImpl
 		_validate(name);
 
 		if (WorkflowConstants.STATUS_APPROVED == status) {
-			_fragmentEntryValidator.validateConfiguration(configuration);
+			JSONObject configurationJSONObject =
+				_jsonFactory.safeCreateJSONObject(configuration, true);
+
+			_fragmentEntryValidator.validateConfiguration(
+				configurationJSONObject);
+
 			_fragmentEntryValidator.validateTypeOptions(
 				fragmentEntry.getType(), typeOptions);
 
-			_validateContent(html, configuration);
+			_validateContent(html, configurationJSONObject);
 		}
 
 		User user = _userLocalService.getUser(userId);
@@ -711,6 +873,7 @@ public class FragmentEntryLocalServiceImpl
 		fragmentEntry.setConfiguration(configuration);
 		fragmentEntry.setIcon(icon);
 		fragmentEntry.setPreviewFileEntryId(previewFileEntryId);
+		fragmentEntry.setReadOnly(readOnly);
 		fragmentEntry.setTypeOptions(typeOptions);
 		fragmentEntry.setStatus(status);
 		fragmentEntry.setStatusByUserId(userId);
@@ -719,26 +882,18 @@ public class FragmentEntryLocalServiceImpl
 
 		fragmentEntry = getDraft(fragmentEntry);
 
+		if (!Objects.equals(name, fragmentEntry.getName())) {
+			fragmentEntry.setName(name);
+		}
+
 		if (status != WorkflowConstants.STATUS_APPROVED) {
 			return fragmentEntry;
 		}
 
-		fragmentEntry = publishDraft(fragmentEntry);
-
-		FragmentServiceConfiguration fragmentServiceConfiguration =
-			_configurationProvider.getCompanyConfiguration(
-				FragmentServiceConfiguration.class,
-				fragmentEntry.getCompanyId());
-
-		if (fragmentServiceConfiguration.propagateChanges() &&
-			!ExportImportThreadLocal.isStagingInProcess()) {
-
-			_propagateChanges(fragmentEntryId);
-		}
-
-		return fragmentEntry;
+		return _publishDraft(fragmentEntry);
 	}
 
+	@Indexable(type = IndexableType.REINDEX)
 	@Override
 	public FragmentEntry updateFragmentEntry(long fragmentEntryId, String name)
 		throws PortalException {
@@ -789,18 +944,19 @@ public class FragmentEntryLocalServiceImpl
 				PortletFileRepositoryUtil.fetchPortletFileEntry(
 					fragmentEntry.getGroupId(), folderId, fileName);
 
-			if (existingFileEntry == null) {
-				FileEntry fileEntry = entry.getValue();
-
-				PortletFileRepositoryUtil.addPortletFileEntry(
-					null, serviceContext.getScopeGroupId(),
-					serviceContext.getUserId(),
-					FragmentCollection.class.getName(),
-					targetFragmentCollection.getFragmentCollectionId(),
-					FragmentPortletKeys.FRAGMENT, folderId,
-					fileEntry.getContentStream(), fileName,
-					fileEntry.getMimeType(), false);
+			if (existingFileEntry != null) {
+				continue;
 			}
+
+			FileEntry fileEntry = entry.getValue();
+
+			PortletFileRepositoryUtil.addPortletFileEntry(
+				null, serviceContext.getScopeGroupId(),
+				serviceContext.getUserId(), FragmentCollection.class.getName(),
+				targetFragmentCollection.getFragmentCollectionId(),
+				FragmentPortletKeys.FRAGMENT, folderId,
+				fileEntry.getContentStream(), fileName, fileEntry.getMimeType(),
+				false);
 		}
 	}
 
@@ -880,6 +1036,46 @@ public class FragmentEntryLocalServiceImpl
 		}
 	}
 
+	private void _deleteExcessFragmentEntryVersions(FragmentEntry fragmentEntry)
+		throws PortalException {
+
+		FragmentEntryVersionConfiguration fragmentEntryVersionConfiguration =
+			_configurationProvider.getCompanyConfiguration(
+				FragmentEntryVersionConfiguration.class,
+				fragmentEntry.getCompanyId());
+
+		int maximumVersionsPerEntry =
+			fragmentEntryVersionConfiguration.maximumVersionsPerEntry();
+
+		if (maximumVersionsPerEntry <= 0) {
+			return;
+		}
+
+		int count = fragmentEntryVersionPersistence.countByFragmentEntryId(
+			fragmentEntry.getFragmentEntryId());
+
+		if (count <= maximumVersionsPerEntry) {
+			return;
+		}
+
+		List<FragmentEntryVersion> fragmentEntryVersions = getVersions(
+			fragmentEntry);
+
+		for (int i = maximumVersionsPerEntry; i < fragmentEntryVersions.size();
+			 i++) {
+
+			deleteVersion(fragmentEntryVersions.get(i));
+		}
+	}
+
+	private DepotEntry _fetchGroupDepotEntry(Group group) {
+		if (!group.isDepot()) {
+			return null;
+		}
+
+		return _depotEntryLocalService.fetchGroupDepotEntry(group.getGroupId());
+	}
+
 	private Map<String, FileEntry> _getFileEntries(
 		long fragmentCollectionId, FragmentEntry fragmentEntry) {
 
@@ -895,12 +1091,87 @@ public class FragmentEntryLocalServiceImpl
 			FileEntry fileEntry = fragmentCollection.getResource(
 				matcher.group(1));
 
-			if (fileEntry != null) {
-				fileEntries.put(matcher.group(1), fileEntry);
+			if (fileEntry == null) {
+				continue;
 			}
+
+			fileEntries.put(matcher.group(1), fileEntry);
 		}
 
 		return fileEntries;
+	}
+
+	private GroupByStep _getFragmentCompositionGroupByStep(
+		long groupId, long fragmentCollectionId, String name, int status) {
+
+		return DSLQueryFactoryUtil.selectDistinct(
+			FragmentCompositionTable.INSTANCE.fragmentCompositionId,
+			new Scalar<>(
+				0L
+			).as(
+				"fragmentEntryId"
+			),
+			FragmentCompositionTable.INSTANCE.createDate,
+			FragmentCompositionTable.INSTANCE.modifiedDate,
+			FragmentCompositionTable.INSTANCE.name
+		).from(
+			FragmentCompositionTable.INSTANCE
+		).where(
+			_getFragmentCompositionWherePredicate(
+				groupId, fragmentCollectionId, name, status)
+		);
+	}
+
+	private Predicate _getFragmentCompositionWherePredicate(
+		long groupId, long fragmentCollectionId, String name, int status) {
+
+		return FragmentCompositionTable.INSTANCE.groupId.eq(
+			groupId
+		).and(
+			FragmentCompositionTable.INSTANCE.fragmentCollectionId.eq(
+				fragmentCollectionId)
+		).and(
+			() -> {
+				if (Validator.isNull(name)) {
+					return null;
+				}
+
+				return DSLFunctionFactoryUtil.lower(
+					FragmentCompositionTable.INSTANCE.name
+				).like(
+					_customSQL.keywords(name, true, WildcardMode.SURROUND)[0]
+				);
+			}
+		).and(
+			() -> {
+				if (status != WorkflowConstants.STATUS_ANY) {
+					return FragmentCompositionTable.INSTANCE.status.eq(status);
+				}
+
+				return null;
+			}
+		);
+	}
+
+	private GroupByStep _getFragmentEntryGroupByStep(
+		long groupId, long fragmentCollectionId, String name, int status) {
+
+		return DSLQueryFactoryUtil.selectDistinct(
+			new Scalar<>(
+				0L
+			).as(
+				"fragmentCompositionId"
+			),
+			FragmentEntryTable.INSTANCE.fragmentEntryId,
+			FragmentEntryTable.INSTANCE.createDate,
+			FragmentEntryTable.INSTANCE.modifiedDate,
+			FragmentEntryTable.INSTANCE.name
+		).from(
+			FragmentEntryTable.INSTANCE
+		).where(
+			_getFragmentEntryWherePredicate(
+				groupId, fragmentCollectionId, name, status)
+		);
 	}
 
 	private String _getFragmentEntryKey(String fragmentEntryKey) {
@@ -913,13 +1184,53 @@ public class FragmentEntryLocalServiceImpl
 		return StringPool.BLANK;
 	}
 
+	private Predicate _getFragmentEntryWherePredicate(
+		long groupId, long fragmentCollectionId, String name, int status) {
+
+		return FragmentEntryTable.INSTANCE.groupId.eq(
+			groupId
+		).and(
+			FragmentEntryTable.INSTANCE.fragmentCollectionId.eq(
+				fragmentCollectionId)
+		).and(
+			FragmentEntryTable.INSTANCE.head.eq(
+				true
+			).or(
+				FragmentEntryTable.INSTANCE.headId.eq(
+					FragmentEntryTable.INSTANCE.fragmentEntryId)
+			).withParentheses()
+		).and(
+			() -> {
+				if (Validator.isNull(name)) {
+					return null;
+				}
+
+				return DSLFunctionFactoryUtil.lower(
+					FragmentEntryTable.INSTANCE.name
+				).like(
+					_customSQL.keywords(name, true, WildcardMode.SURROUND)[0]
+				);
+			}
+		).and(
+			() -> {
+				if (status != WorkflowConstants.STATUS_ANY) {
+					return FragmentEntryTable.INSTANCE.status.eq(status);
+				}
+
+				return null;
+			}
+		);
+	}
+
 	private long _getOrCreateFolderId(
 			Map<String, Long> folderIdMap, String folderPath, long repositoryId,
 			long userId)
 		throws Exception {
 
-		if (folderIdMap.containsKey(folderPath)) {
-			return folderIdMap.get(folderPath);
+		Long folderId = folderIdMap.get(folderPath);
+
+		if (folderId != null) {
+			return folderId;
 		}
 
 		String folderName = folderPath;
@@ -963,48 +1274,112 @@ public class FragmentEntryLocalServiceImpl
 		return repository;
 	}
 
-	private String _getUniqueCopyName(FragmentEntry fragmentEntry) {
-		String copy = _language.get(LocaleUtil.getSiteDefault(), "copy");
-
-		String name = StringUtil.appendParentheticalSuffix(
-			fragmentEntry.getName(), copy);
-
-		for (int i = 1;; i++) {
-			FragmentEntry existingFragmentEntry =
-				fragmentEntryPersistence.fetchByG_FCI_LikeN_First(
-					fragmentEntry.getGroupId(),
-					fragmentEntry.getFragmentCollectionId(), name, null);
-
-			if (existingFragmentEntry == null) {
-				break;
-			}
-
-			name = StringUtil.appendParentheticalSuffix(
-				fragmentEntry.getName(), copy + StringPool.SPACE + i);
-		}
-
-		return name;
-	}
-
-	private void _propagateChanges(long fragmentEntryId)
+	private void _propagateChanges(FragmentEntry fragmentEntry)
 		throws PortalException {
+
+		Group group = _groupLocalService.getGroup(fragmentEntry.getGroupId());
 
 		ActionableDynamicQuery actionableDynamicQuery =
 			_fragmentEntryLinkLocalService.getActionableDynamicQuery();
 
 		actionableDynamicQuery.setAddCriteriaMethod(
 			dynamicQuery -> {
-				Property fragmentEntryIdProperty = PropertyFactoryUtil.forName(
-					"fragmentEntryId");
+				Conjunction conjunction = RestrictionsFactoryUtil.conjunction();
 
-				dynamicQuery.add(fragmentEntryIdProperty.eq(fragmentEntryId));
+				DepotEntry depotEntry = _fetchGroupDepotEntry(group);
+
+				if (depotEntry != null) {
+					List<Long> groupIds = TransformUtil.transform(
+						_depotEntryGroupRelLocalService.getDepotEntryGroupRels(
+							depotEntry),
+						DepotEntryGroupRel::getToGroupId);
+
+					groupIds.add(group.getGroupId());
+
+					conjunction.add(
+						RestrictionsFactoryUtil.in("groupId", groupIds));
+				}
+
+				conjunction.add(
+					RestrictionsFactoryUtil.eq(
+						"fragmentEntryERC",
+						fragmentEntry.getExternalReferenceCode()));
+
+				Disjunction disjunction = RestrictionsFactoryUtil.disjunction();
+
+				disjunction.add(
+					RestrictionsFactoryUtil.eq(
+						"fragmentEntryScopeERC",
+						group.getExternalReferenceCode()));
+
+				Conjunction innerConjunction =
+					RestrictionsFactoryUtil.conjunction();
+
+				innerConjunction.add(
+					RestrictionsFactoryUtil.eq(
+						"groupId", fragmentEntry.getGroupId()));
+
+				innerConjunction.add(
+					RestrictionsFactoryUtil.isNull("fragmentEntryScopeERC"));
+
+				disjunction.add(innerConjunction);
+
+				conjunction.add(disjunction);
+
+				dynamicQuery.add(conjunction);
 			});
+
 		actionableDynamicQuery.setPerformActionMethod(
 			(FragmentEntryLink fragmentEntryLink) ->
 				_fragmentEntryLinkLocalService.updateLatestChanges(
 					fragmentEntryLink.getFragmentEntryLinkId()));
 
 		actionableDynamicQuery.performActions();
+	}
+
+	private FragmentEntry _publishDraft(FragmentEntry draftFragmentEntry)
+		throws PortalException {
+
+		FragmentEntry publishedFragmentEntry = fetchFragmentEntry(
+			draftFragmentEntry.getHeadId());
+
+		if ((publishedFragmentEntry == null) ||
+			!Objects.equals(
+				publishedFragmentEntry.getName(),
+				draftFragmentEntry.getName())) {
+
+			_validate(draftFragmentEntry.getName());
+		}
+
+		JSONObject configurationJSONObject = _jsonFactory.safeCreateJSONObject(
+			draftFragmentEntry.getConfiguration(), true);
+
+		_fragmentEntryValidator.validateConfiguration(configurationJSONObject);
+
+		_fragmentEntryValidator.validateTypeOptions(
+			draftFragmentEntry.getType(), draftFragmentEntry.getTypeOptions());
+		_validateContent(draftFragmentEntry.getHtml(), configurationJSONObject);
+
+		draftFragmentEntry.setStatus(WorkflowConstants.STATUS_APPROVED);
+
+		FragmentEntry updatedPublishedFragmentEntry = super.publishDraft(
+			draftFragmentEntry);
+
+		_deleteExcessFragmentEntryVersions(updatedPublishedFragmentEntry);
+
+		FragmentServiceConfiguration fragmentServiceConfiguration =
+			_configurationProvider.getCompanyConfiguration(
+				FragmentServiceConfiguration.class,
+				draftFragmentEntry.getCompanyId());
+
+		if (fragmentServiceConfiguration.propagateChanges() &&
+			!ExportImportThreadLocal.isLayoutImportInProcess() &&
+			!ExportImportThreadLocal.isStagingInProcess()) {
+
+			_propagateChanges(updatedPublishedFragmentEntry);
+		}
+
+		return updatedPublishedFragmentEntry;
 	}
 
 	private void _validate(String name) throws PortalException {
@@ -1028,11 +1403,12 @@ public class FragmentEntryLocalServiceImpl
 		}
 	}
 
-	private void _validateContent(String html, String configuration)
+	private void _validateContent(
+			String html, JSONObject configurationJSONObject)
 		throws PortalException {
 
 		_fragmentEntryProcessorRegistry.validateFragmentEntryHTML(
-			html, configuration);
+			html, configurationJSONObject);
 	}
 
 	private void _validateFragmentEntryKey(
@@ -1045,7 +1421,7 @@ public class FragmentEntryLocalServiceImpl
 			groupId, fragmentEntryKey);
 
 		if (fragmentEntry != null) {
-			throw new DuplicateFragmentEntryKeyException();
+			throw new DuplicateFragmentEntryKeyException(fragmentEntryKey);
 		}
 	}
 
@@ -1062,16 +1438,22 @@ public class FragmentEntryLocalServiceImpl
 	private CustomSQL _customSQL;
 
 	@Reference
+	private DepotEntryGroupRelLocalService _depotEntryGroupRelLocalService;
+
+	@Reference
+	private DepotEntryLocalService _depotEntryLocalService;
+
+	@Reference
 	private DLAppLocalService _dlAppLocalService;
 
 	@Reference
 	private FragmentCollectionPersistence _fragmentCollectionPersistence;
 
 	@Reference
-	private FragmentEntryLinkLocalService _fragmentEntryLinkLocalService;
+	private FragmentCompositionPersistence _fragmentCompositionPersistence;
 
 	@Reference
-	private FragmentEntryLinkPersistence _fragmentEntryLinkPersistence;
+	private FragmentEntryLinkLocalService _fragmentEntryLinkLocalService;
 
 	@Reference
 	private FragmentEntryProcessorRegistry _fragmentEntryProcessorRegistry;
@@ -1080,12 +1462,39 @@ public class FragmentEntryLocalServiceImpl
 	private FragmentEntryValidator _fragmentEntryValidator;
 
 	@Reference
-	private Language _language;
+	private GroupLocalService _groupLocalService;
+
+	@Reference
+	private JSONFactory _jsonFactory;
+
+	@Reference
+	private PortletFileRepository _portletFileRepository;
 
 	@Reference
 	private ResourceLocalService _resourceLocalService;
 
 	@Reference
 	private UserLocalService _userLocalService;
+
+	private static class FragmentCompositionsAndFragmentEntriesTable
+		extends BaseTable<FragmentCompositionsAndFragmentEntriesTable> {
+
+		public static final FragmentCompositionsAndFragmentEntriesTable
+			INSTANCE = new FragmentCompositionsAndFragmentEntriesTable();
+
+		public final Column<FragmentCompositionsAndFragmentEntriesTable, Date>
+			modifiedDateColumn = createColumn(
+				"modifiedDate", Date.class, Types.TIMESTAMP,
+				Column.FLAG_DEFAULT);
+		public final Column<FragmentCompositionsAndFragmentEntriesTable, String>
+			nameColumn = createColumn(
+				"name", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
+
+		private FragmentCompositionsAndFragmentEntriesTable() {
+			super(
+				"TEMP_TABLE", FragmentCompositionsAndFragmentEntriesTable::new);
+		}
+
+	}
 
 }

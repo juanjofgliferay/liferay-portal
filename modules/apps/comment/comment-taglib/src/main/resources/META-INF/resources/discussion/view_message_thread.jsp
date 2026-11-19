@@ -91,7 +91,7 @@ Format dateTimeFormat = FastDateFormatFactoryUtil.getDateTime(locale, timeZone);
 										/>
 
 										<react:component
-											module="discussion/js/components/ReplyPopover"
+											module="{ReplyPopover} from comment-taglib"
 											props='<%=
 												HashMapBuilder.<String, Object>put(
 													"ariaLabel", LanguageUtil.format(request, "in-reply-to-x", parentDiscussionComment.getUserName(), false)
@@ -186,7 +186,7 @@ Format dateTimeFormat = FastDateFormatFactoryUtil.getDateTime(locale, timeZone);
 					</div>
 
 					<c:if test="<%= commentTreeDisplayContext.isEditControlsVisible() %>">
-						<div class="lfr-discussion-form lfr-discussion-form-edit" id="<%= namespace %>editForm<%= index %>" style="display: none;">
+						<div class="hide lfr-discussion-form lfr-discussion-form-edit" id="<%= namespace %>editForm<%= index %>">
 							<div class="editor-wrapper"></div>
 
 							<aui:button-row>
@@ -210,9 +210,11 @@ Format dateTimeFormat = FastDateFormatFactoryUtil.getDateTime(locale, timeZone);
 							<c:if test="<%= !discussion.isMaxCommentsLimitExceeded() %>">
 								<c:choose>
 									<c:when test="<%= commentTreeDisplayContext.isReplyButtonVisible() %>">
-										<button class="btn btn-outline-borderless btn-outline-secondary btn-sm" onclick="<%= randomNamespace %>showPostReplyEditor(<%= index %>);" type="button">
-											<liferay-ui:message key="reply" />
-										</button>
+										<liferay-ui:csp>
+											<button class="btn btn-outline-borderless btn-outline-secondary btn-sm" onclick="<%= randomNamespace %>showPostReplyEditor(<%= index %>);" type="button">
+												<liferay-ui:message key="reply" />
+											</button>
+										</liferay-ui:csp>
 									</c:when>
 									<c:otherwise>
 										<a class="btn btn-outline-borderless btn-outline-secondary btn-sm" href="<%= themeDisplay.getURLSignIn() %>">
@@ -239,7 +241,7 @@ Format dateTimeFormat = FastDateFormatFactoryUtil.getDateTime(locale, timeZone);
 			</div>
 		</div>
 
-		<div class="lfr-discussion lfr-discussion-form-reply" id="<%= namespace %>postReplyForm<%= index %>" style="display: none;">
+		<div class="hide lfr-discussion lfr-discussion-form-reply" id="<%= namespace %>postReplyForm<%= index %>">
 			<div class="lfr-discussion-reply-container">
 				<clay:content-row
 					noGutters="true"
@@ -297,6 +299,6 @@ Format dateTimeFormat = FastDateFormatFactoryUtil.getDateTime(locale, timeZone);
 				"portletNamespace", namespace
 			).build()
 		%>'
-		module="discussion/js/ViewMessageThread"
+		module="{ViewMessageThread} from comment-taglib"
 	/>
 </c:if>

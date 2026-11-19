@@ -1,6 +1,7 @@
 @component-name = "portal-commerce"
 definition {
 
+	property browser.chrome.version = "139.0";
 	property custom.properties = "company.security.strangers.verify=false${line.separator}jsonws.web.service.paths.excludes=";
 	property portal.release = "true";
 	property portal.upstream = "true";
@@ -83,7 +84,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 		}
@@ -103,7 +104,7 @@ definition {
 				orderId = ${orderId},
 				parameter = "nestedFields",
 				parameterValue = "orderItems",
-				password = "test");
+				password = PropsUtil.get("default.admin.password"));
 		}
 
 		task ("And the virtualItemURLs field is empty") {
@@ -132,7 +133,7 @@ definition {
 				orderId = ${orderId},
 				parameter = "nestedFields",
 				parameterValue = "orderItems",
-				password = "test");
+				password = PropsUtil.get("default.admin.password"));
 		}
 
 		task ("And the GET order item API is called") {
@@ -140,7 +141,7 @@ definition {
 				email = "buyer@liferay.com",
 				jsonPath = "$..virtualItemURLs[:1]",
 				orderId = ${orderId},
-				password = "test");
+				password = PropsUtil.get("default.admin.password"));
 		}
 
 		task ("Then the URL into the response is the same for both the API calls") {
@@ -262,7 +263,7 @@ definition {
 				orderId = ${orderId},
 				parameter = "nestedFields",
 				parameterValue = "orderItems",
-				password = "test");
+				password = PropsUtil.get("default.admin.password"));
 		}
 
 		task ("Then the buyer can't receive the URL") {
@@ -275,17 +276,15 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 
 			var virtualItemURLs = CommerceJSONOrdersAPI.getOrderField(
-				email = "test@liferay.com",
 				jsonPath = "$..virtualItemURLs[:1]",
 				orderId = ${orderId},
 				parameter = "nestedFields",
-				parameterValue = "orderItems",
-				password = "test");
+				parameterValue = "orderItems");
 		}
 
 		task ("Then the buyer will not be able to download the resource") {
@@ -354,7 +353,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 		}
@@ -384,16 +383,11 @@ definition {
 		task ("And the admin logs in again") {
 			User.logoutPG();
 
-			CommerceLogin.miniumLogin(
-				password = "test",
-				urlAppend = "web/minium",
-				userEmailAddress = "test@liferay.com");
+			CommerceLogin.miniumLogin(urlAppend = "web/minium");
 		}
 
 		task ("And the admin changes the order status to 'completed'") {
-			CommerceNavigator.gotoPortlet(
-				category = "Order Management",
-				portlet = "Orders");
+			CommerceOrders.openOrdersAdmin();
 
 			CommerceNavigator.gotoOrderEntryViaAdmin(status = "Pending");
 
@@ -414,7 +408,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 		}
@@ -477,7 +471,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 		}
@@ -579,7 +573,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 		}
@@ -605,10 +599,7 @@ definition {
 		task ("And the admin logs in again") {
 			User.logoutPG();
 
-			CommerceLogin.miniumLogin(
-				password = "test",
-				urlAppend = "web/minium",
-				userEmailAddress = "test@liferay.com");
+			CommerceLogin.miniumLogin(urlAppend = "web/minium");
 		}
 
 		task ("And the admin changes the order status to 'completed'") {
@@ -625,7 +616,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 		}
@@ -688,7 +679,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 		}
@@ -718,16 +709,11 @@ definition {
 		task ("And the admin logs in again") {
 			User.logoutPG();
 
-			CommerceLogin.miniumLogin(
-				password = "test",
-				urlAppend = "web/minium",
-				userEmailAddress = "test@liferay.com");
+			CommerceLogin.miniumLogin(urlAppend = "web/minium");
 		}
 
 		task ("And the admin changes the order status to 'completed'") {
-			CommerceNavigator.gotoPortlet(
-				category = "Order Management",
-				portlet = "Orders");
+			CommerceOrders.openOrdersAdmin();
 
 			CommerceNavigator.gotoOrderEntryViaAdmin(status = "Pending");
 
@@ -748,7 +734,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 		}
@@ -801,9 +787,19 @@ definition {
 
 			CommerceNavigator.gotoEntry(entryName = "VIRTUALSKU");
 
-			CommerceSKUs.editSkuPricing(
-				basePrice = "55.00",
-				promoPrice = "50.00");
+			SelectFrame.selectFrameNoLoading(locator1 = "CommerceEntry#IFRAME_SIDE_PANEL");
+
+			CommerceEntry.gotoMenuTab(menuTab = "Price");
+
+			CommerceNavigator.gotoEntry(entryName = "Minium Base Price List");
+
+			CommerceSKUs.editSkuPricing(basePrice = "55.00");
+
+			SelectFrame.selectFrameNoLoading(locator1 = "CommerceEntry#IFRAME_SIDE_PANEL");
+
+			CommerceNavigator.gotoEntry(entryName = "Minium Base Promotion");
+
+			CommerceSKUs.editSkuPricing(promoPrice = "50.00");
 
 			CommerceEntry.gotoMenuTab(menuTab = "Media");
 
@@ -865,7 +861,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 
@@ -885,7 +881,7 @@ definition {
 				productListPriceInactive = "55.00",
 				productMPN = "MPN1",
 				productName = "Virtual Product",
-				productNetPrice = "160.00",
+				productNetPrice = "40.00",
 				productSalePriceInactive = "50.00",
 				productShortDescription = "Short Description",
 				productSKU = "VIRTUALSKU",

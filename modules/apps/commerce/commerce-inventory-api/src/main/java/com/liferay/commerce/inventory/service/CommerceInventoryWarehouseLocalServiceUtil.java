@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -241,14 +242,6 @@ public class CommerceInventoryWarehouseLocalServiceUtil {
 				externalReferenceCode, companyId);
 	}
 
-	public static CommerceInventoryWarehouse
-		fetchCommerceInventoryWarehouseByReferenceCode(
-			String externalReferenceCode, long companyId) {
-
-		return getService().fetchCommerceInventoryWarehouseByReferenceCode(
-			externalReferenceCode, companyId);
-	}
-
 	/**
 	 * Returns the commerce inventory warehouse with the matching UUID and company.
 	 *
@@ -347,26 +340,6 @@ public class CommerceInventoryWarehouseLocalServiceUtil {
 
 	public static List<CommerceInventoryWarehouse>
 		getCommerceInventoryWarehouses(
-			long companyId, boolean active, int start, int end,
-			OrderByComparator<CommerceInventoryWarehouse> orderByComparator) {
-
-		return getService().getCommerceInventoryWarehouses(
-			companyId, active, start, end, orderByComparator);
-	}
-
-	public static List<CommerceInventoryWarehouse>
-		getCommerceInventoryWarehouses(
-			long companyId, boolean active, String commerceCountryCode,
-			int start, int end,
-			OrderByComparator<CommerceInventoryWarehouse> orderByComparator) {
-
-		return getService().getCommerceInventoryWarehouses(
-			companyId, active, commerceCountryCode, start, end,
-			orderByComparator);
-	}
-
-	public static List<CommerceInventoryWarehouse>
-		getCommerceInventoryWarehouses(
 			long companyId, int start, int end,
 			OrderByComparator<CommerceInventoryWarehouse> orderByComparator) {
 
@@ -376,16 +349,18 @@ public class CommerceInventoryWarehouseLocalServiceUtil {
 
 	public static List<CommerceInventoryWarehouse>
 		getCommerceInventoryWarehouses(
-			long companyId, long groupId, boolean active) {
+			long companyId, long accountEntryId, long groupId, boolean active) {
 
 		return getService().getCommerceInventoryWarehouses(
-			companyId, groupId, active);
+			companyId, accountEntryId, groupId, active);
 	}
 
 	public static List<CommerceInventoryWarehouse>
-		getCommerceInventoryWarehouses(long groupId, String sku) {
+		getCommerceInventoryWarehouses(
+			long accountEntryId, long groupId, String sku) {
 
-		return getService().getCommerceInventoryWarehouses(groupId, sku);
+		return getService().getCommerceInventoryWarehouses(
+			accountEntryId, groupId, sku);
 	}
 
 	/**
@@ -395,17 +370,6 @@ public class CommerceInventoryWarehouseLocalServiceUtil {
 	 */
 	public static int getCommerceInventoryWarehousesCount() {
 		return getService().getCommerceInventoryWarehousesCount();
-	}
-
-	public static int getCommerceInventoryWarehousesCount(long companyId) {
-		return getService().getCommerceInventoryWarehousesCount(companyId);
-	}
-
-	public static int getCommerceInventoryWarehousesCount(
-		long companyId, boolean active) {
-
-		return getService().getCommerceInventoryWarehousesCount(
-			companyId, active);
 	}
 
 	public static int getCommerceInventoryWarehousesCount(
@@ -519,15 +483,13 @@ public class CommerceInventoryWarehouseLocalServiceUtil {
 	}
 
 	public static CommerceInventoryWarehouseLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(
-		CommerceInventoryWarehouseLocalService service) {
-
-		_service = service;
-	}
-
-	private static volatile CommerceInventoryWarehouseLocalService _service;
+	private static final Snapshot<CommerceInventoryWarehouseLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			CommerceInventoryWarehouseLocalServiceUtil.class,
+			CommerceInventoryWarehouseLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-711762952

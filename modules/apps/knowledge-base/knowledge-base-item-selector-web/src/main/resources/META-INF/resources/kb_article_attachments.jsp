@@ -57,8 +57,11 @@ if (kbAttachmentItemSelectorViewDisplayContext.isSearch()) {
 	}
 }
 else {
-	portletFileEntries.addAll(PortletFileRepositoryUtil.getPortletFileEntries(scopeGroupId, folderId, WorkflowConstants.STATUS_APPROVED, start, end, kbAttachmentItemSelectorViewDisplayContext.getOrderByComparator()));
 	portletFileEntriesCount = PortletFileRepositoryUtil.getPortletFileEntriesCount(scopeGroupId, folderId, WorkflowConstants.STATUS_APPROVED);
+
+	startAndEnd = SearchPaginationUtil.calculateStartAndEnd(start, end, portletFileEntriesCount);
+
+	portletFileEntries.addAll(PortletFileRepositoryUtil.getPortletFileEntries(scopeGroupId, folderId, WorkflowConstants.STATUS_APPROVED, startAndEnd[0], startAndEnd[1], kbAttachmentItemSelectorViewDisplayContext.getOrderByComparator()));
 }
 %>
 
@@ -66,7 +69,7 @@ else {
 	emptyResultsMessage='<%= LanguageUtil.get(resourceBundle, "there-are-no-attachments") %>'
 	itemSelectedEventName="<%= kbAttachmentItemSelectorViewDisplayContext.getItemSelectedEventName() %>"
 	itemSelectorReturnTypeResolver="<%= kbAttachmentItemSelectorViewDisplayContext.getItemSelectorReturnTypeResolver() %>"
-	portletURL="<%= kbAttachmentItemSelectorViewDisplayContext.getPortletURL(request, liferayPortletResponse) %>"
+	portletURL="<%= kbAttachmentItemSelectorViewDisplayContext.getPortletURL(liferayPortletResponse) %>"
 	repositoryEntries="<%= portletFileEntries %>"
 	repositoryEntriesCount="<%= portletFileEntriesCount %>"
 	showDragAndDropZone="<%= false %>"

@@ -54,13 +54,13 @@ public class BatchEngineExportTaskLocalServiceWrapper
 		addBatchEngineExportTask(
 			String externalReferenceCode, long companyId, long userId,
 			String callbackURL, String className, String contentType,
-			String executeStatus, java.util.List<String> fieldNamesList,
+			String executeStatus, java.util.List<String> fieldNames,
 			java.util.Map<String, java.io.Serializable> parameters,
 			String taskItemDelegateName) {
 
 		return _batchEngineExportTaskLocalService.addBatchEngineExportTask(
 			externalReferenceCode, companyId, userId, callbackURL, className,
-			contentType, executeStatus, fieldNamesList, parameters,
+			contentType, executeStatus, fieldNames, parameters,
 			taskItemDelegateName);
 	}
 
@@ -76,6 +76,22 @@ public class BatchEngineExportTaskLocalServiceWrapper
 
 		return _batchEngineExportTaskLocalService.createBatchEngineExportTask(
 			batchEngineExportTaskId);
+	}
+
+	@Override
+	public com.liferay.batch.engine.model.BatchEngineExportTask
+		createBatchEngineExportTask(
+			long batchEngineExportTaskId, String externalReferenceCode,
+			long companyId, long userId, String callbackURL, String className,
+			String contentType, String executeStatus,
+			java.util.List<String> fieldNames,
+			java.util.Map<String, java.io.Serializable> parameters,
+			String taskItemDelegateName) {
+
+		return _batchEngineExportTaskLocalService.createBatchEngineExportTask(
+			batchEngineExportTaskId, externalReferenceCode, companyId, userId,
+			callbackURL, className, contentType, executeStatus, fieldNames,
+			parameters, taskItemDelegateName);
 	}
 
 	/**
@@ -353,26 +369,6 @@ public class BatchEngineExportTaskLocalServiceWrapper
 
 	@Override
 	public java.util.List<com.liferay.batch.engine.model.BatchEngineExportTask>
-		getBatchEngineExportTasks(long companyId, int start, int end) {
-
-		return _batchEngineExportTaskLocalService.getBatchEngineExportTasks(
-			companyId, start, end);
-	}
-
-	@Override
-	public java.util.List<com.liferay.batch.engine.model.BatchEngineExportTask>
-		getBatchEngineExportTasks(
-			long companyId, int start, int end,
-			com.liferay.portal.kernel.util.OrderByComparator
-				<com.liferay.batch.engine.model.BatchEngineExportTask>
-					orderByComparator) {
-
-		return _batchEngineExportTaskLocalService.getBatchEngineExportTasks(
-			companyId, start, end, orderByComparator);
-	}
-
-	@Override
-	public java.util.List<com.liferay.batch.engine.model.BatchEngineExportTask>
 		getBatchEngineExportTasks(String executeStatus) {
 
 		return _batchEngineExportTaskLocalService.getBatchEngineExportTasks(
@@ -388,12 +384,6 @@ public class BatchEngineExportTaskLocalServiceWrapper
 	public int getBatchEngineExportTasksCount() {
 		return _batchEngineExportTaskLocalService.
 			getBatchEngineExportTasksCount();
-	}
-
-	@Override
-	public int getBatchEngineExportTasksCount(long companyId) {
-		return _batchEngineExportTaskLocalService.
-			getBatchEngineExportTasksCount(companyId);
 	}
 
 	@Override
@@ -493,3 +483,4 @@ public class BatchEngineExportTaskLocalServiceWrapper
 		_batchEngineExportTaskLocalService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:106880559

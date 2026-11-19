@@ -8,10 +8,10 @@ package com.liferay.portal.internal.increment;
 import com.liferay.petra.lang.CentralizedThreadLocal;
 import com.liferay.portal.kernel.cache.thread.local.Lifecycle;
 import com.liferay.portal.kernel.cache.thread.local.ThreadLocalCacheManager;
+import com.liferay.portal.kernel.change.tracking.CTCollectionThreadLocal;
 import com.liferay.portal.kernel.increment.Increment;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 
 import java.io.Serializable;
 
@@ -35,15 +35,11 @@ public class BufferedIncrementRunnable implements Runnable {
 		if (bufferedIncrementConfiguration.isStandbyEnabled()) {
 			_queueLengthTracker.incrementAndGet();
 		}
-
-		_companyId = CompanyThreadLocal.getCompanyId();
 	}
 
 	@Override
 	@SuppressWarnings("rawtypes")
 	public void run() {
-		CompanyThreadLocal.setCompanyId(_companyId);
-
 		while (true) {
 			BufferedIncreasableEntry bufferedIncreasableEntry =
 				(BufferedIncreasableEntry)_batchablePipe.take();
@@ -62,30 +58,34 @@ public class BufferedIncrementRunnable implements Runnable {
 					throwable);
 			}
 
-			if (_bufferedIncrementConfiguration.isStandbyEnabled()) {
-				int queueLength = _queueLengthTracker.decrementAndGet();
+			if (!_bufferedIncrementConfiguration.isStandbyEnabled() ||
+				!CTCollectionThreadLocal.isProductionMode()) {
 
-				long standbyTime =
-					_bufferedIncrementConfiguration.calculateStandbyTime(
-						queueLength);
+				continue;
+			}
 
-				try {
-					Thread.sleep(standbyTime);
+			int queueLength = _queueLengthTracker.decrementAndGet();
+
+			long standbyTime =
+				_bufferedIncrementConfiguration.calculateStandbyTime(
+					queueLength);
+
+			try {
+				Thread.sleep(standbyTime);
+			}
+			catch (InterruptedException interruptedException) {
+				if (_log.isDebugEnabled()) {
+					_log.debug(interruptedException);
 				}
-				catch (InterruptedException interruptedException) {
-					if (_log.isDebugEnabled()) {
-						_log.debug(interruptedException);
-					}
 
-					break;
-				}
+				break;
 			}
 		}
 
 		if (_dispatchThread != Thread.currentThread()) {
 			ThreadLocalCacheManager.clearAll(Lifecycle.REQUEST);
 
-			CentralizedThreadLocal.clearShortLivedThreadLocals();
+			CentralizedThreadLocal.clearShortLivedCentralizedThreadLocals();
 		}
 	}
 
@@ -95,7 +95,6 @@ public class BufferedIncrementRunnable implements Runnable {
 	private final BatchablePipe<Serializable, Increment<?>> _batchablePipe;
 	private final BufferedIncrementConfiguration
 		_bufferedIncrementConfiguration;
-	private final long _companyId;
 	private final Thread _dispatchThread;
 	private final AtomicInteger _queueLengthTracker;
 

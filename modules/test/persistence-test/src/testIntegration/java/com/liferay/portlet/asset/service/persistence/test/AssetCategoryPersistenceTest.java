@@ -19,14 +19,18 @@ import com.liferay.portal.kernel.dao.orm.ProjectionFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.orm.RestrictionsFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.Session;
+import com.liferay.portal.kernel.security.permission.InlineSQLHelperUtil;
+import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.transaction.Propagation;
 import com.liferay.portal.kernel.util.IntegerWrapper;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.OrderByComparatorFactoryUtil;
 import com.liferay.portal.kernel.util.Time;
+import com.liferay.portal.security.permission.SimplePermissionChecker;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PersistenceTestRule;
 import com.liferay.portal.test.rule.TransactionalTestRule;
@@ -111,11 +115,7 @@ public class AssetCategoryPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		AssetCategory newAssetCategory = _persistence.create(pk);
-
-		newAssetCategory.setMvccVersion(RandomTestUtil.nextLong());
+		AssetCategory newAssetCategory = addAssetCategory();
 
 		newAssetCategory.setCtCollectionId(RandomTestUtil.nextLong());
 
@@ -148,9 +148,15 @@ public class AssetCategoryPersistenceTest {
 
 		newAssetCategory.setVocabularyId(RandomTestUtil.nextLong());
 
+		newAssetCategory.setSystem(RandomTestUtil.randomBoolean());
+
 		newAssetCategory.setLastPublishDate(RandomTestUtil.nextDate());
 
-		_assetCategories.add(_persistence.update(newAssetCategory));
+		newAssetCategory.setStatus(RandomTestUtil.nextInt());
+
+		newAssetCategory = _persistence.update(newAssetCategory);
+
+		_assetCategories.add(newAssetCategory);
 
 		AssetCategory existingAssetCategory = _persistence.findByPrimaryKey(
 			newAssetCategory.getPrimaryKey());
@@ -202,8 +208,12 @@ public class AssetCategoryPersistenceTest {
 			existingAssetCategory.getVocabularyId(),
 			newAssetCategory.getVocabularyId());
 		Assert.assertEquals(
+			existingAssetCategory.isSystem(), newAssetCategory.isSystem());
+		Assert.assertEquals(
 			Time.getShortTimestamp(existingAssetCategory.getLastPublishDate()),
 			Time.getShortTimestamp(newAssetCategory.getLastPublishDate()));
+		Assert.assertEquals(
+			existingAssetCategory.getStatus(), newAssetCategory.getStatus());
 	}
 
 	@Test(expected = DuplicateAssetCategoryExternalReferenceCodeException.class)
@@ -261,6 +271,13 @@ public class AssetCategoryPersistenceTest {
 	}
 
 	@Test
+	public void testCountByCompanyId() throws Exception {
+		_persistence.countByCompanyId(RandomTestUtil.nextLong());
+
+		_persistence.countByCompanyId(0L);
+	}
+
+	@Test
 	public void testCountByParentCategoryId() throws Exception {
 		_persistence.countByParentCategoryId(RandomTestUtil.nextLong());
 
@@ -298,29 +315,11 @@ public class AssetCategoryPersistenceTest {
 	}
 
 	@Test
-	public void testCountByP_N() throws Exception {
-		_persistence.countByP_N(RandomTestUtil.nextLong(), "");
-
-		_persistence.countByP_N(0L, "null");
-
-		_persistence.countByP_N(0L, (String)null);
-	}
-
-	@Test
 	public void testCountByP_V() throws Exception {
 		_persistence.countByP_V(
 			RandomTestUtil.nextLong(), RandomTestUtil.nextLong());
 
 		_persistence.countByP_V(0L, 0L);
-	}
-
-	@Test
-	public void testCountByN_V() throws Exception {
-		_persistence.countByN_V("", RandomTestUtil.nextLong());
-
-		_persistence.countByN_V("null", 0L);
-
-		_persistence.countByN_V((String)null, 0L);
 	}
 
 	@Test
@@ -404,6 +403,24 @@ public class AssetCategoryPersistenceTest {
 
 	@Test
 	public void testFilterFindByGroupId() throws Exception {
+		PermissionThreadLocal.setPermissionChecker(
+			new SimplePermissionChecker() {
+				{
+					init(TestPropsValues.getUser());
+				}
+
+				@Override
+				public boolean isCompanyAdmin(long companyId) {
+					return false;
+				}
+
+			});
+
+		Assert.assertTrue(InlineSQLHelperUtil.isEnabled(0));
+
+		_persistence.filterFindByGroupId(
+			0, QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
+
 		_persistence.filterFindByGroupId(
 			0, QueryUtil.ALL_POS, QueryUtil.ALL_POS, getOrderByComparator());
 	}
@@ -415,7 +432,7 @@ public class AssetCategoryPersistenceTest {
 			"groupId", true, "companyId", true, "userId", true, "userName",
 			true, "createDate", true, "modifiedDate", true, "parentCategoryId",
 			true, "treePath", true, "name", true, "vocabularyId", true,
-			"lastPublishDate", true);
+			"system", true, "lastPublishDate", true, "status", true);
 	}
 
 	@Test
@@ -726,8 +743,6 @@ public class AssetCategoryPersistenceTest {
 
 		AssetCategory assetCategory = _persistence.create(pk);
 
-		assetCategory.setMvccVersion(RandomTestUtil.nextLong());
-
 		assetCategory.setCtCollectionId(RandomTestUtil.nextLong());
 
 		assetCategory.setUuid(RandomTestUtil.randomString());
@@ -758,7 +773,11 @@ public class AssetCategoryPersistenceTest {
 
 		assetCategory.setVocabularyId(RandomTestUtil.nextLong());
 
+		assetCategory.setSystem(RandomTestUtil.randomBoolean());
+
 		assetCategory.setLastPublishDate(RandomTestUtil.nextDate());
+
+		assetCategory.setStatus(RandomTestUtil.nextInt());
 
 		_assetCategories.add(_persistence.update(assetCategory));
 
@@ -771,3 +790,4 @@ public class AssetCategoryPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:203920897

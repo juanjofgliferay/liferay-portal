@@ -3,7 +3,10 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import MarkerBase from '@liferay/map-common/js/MarkerBase';
+import {MarkerBase} from '@liferay/map-common';
+import L from 'leaflet';
+
+import 'leaflet/dist/leaflet.css';
 
 /**
  * OpenStreetMapMarker
@@ -18,7 +21,7 @@ export default class OpenStreetMapMarker extends MarkerBase {
 	_getNativeMarker(location, map) {
 		if (!this._nativeMarker) {
 			this._nativeMarker = L.marker(location, {
-				draggable: true,
+				draggable: this.draggable,
 			}).addTo(map);
 
 			this._nativeMarker.on(
@@ -63,6 +66,23 @@ export default class OpenStreetMapMarker extends MarkerBase {
 		return {
 			location: nativeEvent.target.getLatLng(),
 		};
+	}
+
+	/**
+	 * @inheritDoc
+	 * @review
+	 */
+	setDraggable(draggable) {
+		super.setDraggable(draggable);
+
+		if (this._nativeMarker) {
+			if (draggable) {
+				this._nativeMarker.dragging.enable();
+			}
+			else {
+				this._nativeMarker.dragging.disable();
+			}
+		}
 	}
 
 	/**

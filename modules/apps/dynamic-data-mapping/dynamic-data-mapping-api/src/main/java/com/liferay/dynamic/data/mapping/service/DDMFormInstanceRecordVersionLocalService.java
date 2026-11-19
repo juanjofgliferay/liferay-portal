@@ -267,9 +267,6 @@ public interface DDMFormInstanceRecordVersionLocalService
 		long userId, long formInstanceId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getFormInstanceRecordVersionsCount(long ddmFormInstanceRecordId);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public IndexableActionableDynamicQuery getIndexableActionableDynamicQuery();
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
@@ -327,3 +324,4 @@ public interface DDMFormInstanceRecordVersionLocalService
 		throws E;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-2062341941

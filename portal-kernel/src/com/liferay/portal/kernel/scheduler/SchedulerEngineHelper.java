@@ -21,9 +21,6 @@ public interface SchedulerEngineHelper {
 			String language, String script)
 		throws SchedulerException;
 
-	public void auditSchedulerJobs(Message message, TriggerState triggerState)
-		throws SchedulerException;
-
 	public void delete(String groupName, StorageType storageType)
 		throws SchedulerException;
 
@@ -31,13 +28,13 @@ public interface SchedulerEngineHelper {
 			String jobName, String groupName, StorageType storageType)
 		throws SchedulerException;
 
-	public Date getEndTime(SchedulerResponse schedulerResponse);
+	public Date getEndDate(SchedulerResponse schedulerResponse);
 
 	public TriggerState getJobState(SchedulerResponse schedulerResponse);
 
-	public Date getNextFireTime(SchedulerResponse schedulerResponse);
+	public Date getNextFireDate(SchedulerResponse schedulerResponse);
 
-	public Date getPreviousFireTime(SchedulerResponse schedulerResponse);
+	public Date getPreviousFireDate(SchedulerResponse schedulerResponse);
 
 	public SchedulerResponse getScheduledJob(
 			String jobName, String groupName, StorageType storageType)
@@ -52,7 +49,7 @@ public interface SchedulerEngineHelper {
 			String groupName, StorageType storageType)
 		throws SchedulerException;
 
-	public Date getStartTime(SchedulerResponse schedulerResponse);
+	public Date getStartDate(SchedulerResponse schedulerResponse);
 
 	public void pause(String jobName, String groupName, StorageType storageType)
 		throws SchedulerException;

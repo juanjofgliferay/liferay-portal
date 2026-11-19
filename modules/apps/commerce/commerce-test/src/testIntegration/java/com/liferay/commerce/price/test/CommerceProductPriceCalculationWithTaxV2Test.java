@@ -11,6 +11,7 @@ import com.liferay.commerce.account.test.util.CommerceAccountTestUtil;
 import com.liferay.commerce.context.CommerceContext;
 import com.liferay.commerce.currency.model.CommerceCurrency;
 import com.liferay.commerce.currency.model.CommerceMoney;
+import com.liferay.commerce.currency.service.CommerceCurrencyLocalServiceUtil;
 import com.liferay.commerce.currency.test.util.CommerceCurrencyTestUtil;
 import com.liferay.commerce.price.CommerceProductPrice;
 import com.liferay.commerce.price.CommerceProductPriceCalculation;
@@ -34,6 +35,7 @@ import com.liferay.commerce.test.util.CommerceTaxTestUtil;
 import com.liferay.commerce.test.util.CommerceTestUtil;
 import com.liferay.commerce.test.util.context.TestCommerceContext;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.service.ServiceContext;
@@ -51,6 +53,8 @@ import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+
+import java.util.List;
 
 import org.frutilla.FrutillaRule;
 
@@ -85,8 +89,14 @@ public class CommerceProductPriceCalculationWithTaxV2Test {
 		_accountEntry = CommerceAccountTestUtil.getPersonAccountEntry(
 			_user.getUserId());
 
-		_commerceCurrency = CommerceCurrencyTestUtil.addCommerceCurrency(
-			_group.getCompanyId());
+		_commerceCurrency =
+			CommerceCurrencyLocalServiceUtil.fetchPrimaryCommerceCurrency(
+				_group.getCompanyId());
+
+		if (_commerceCurrency == null) {
+			_commerceCurrency = CommerceCurrencyTestUtil.addCommerceCurrency(
+				_group.getCompanyId());
+		}
 
 		_serviceContext = ServiceContextTestUtil.getServiceContext(
 			_group.getCompanyId(), _group.getGroupId(), _user.getUserId());
@@ -94,14 +104,24 @@ public class CommerceProductPriceCalculationWithTaxV2Test {
 		_commerceChannel = CommerceTestUtil.addCommerceChannel(
 			_group.getGroupId(), _commerceCurrency.getCode());
 
-		_commerceTaxMethod = CommerceTaxTestUtil.addCommerceByAddressTaxMethod(
+		_commerceTaxMethod = CommerceTaxTestUtil.addByAddressCommerceTaxMethod(
 			_user.getUserId(), _commerceChannel.getGroupId(), true);
 	}
 
 	@After
 	public void tearDown() throws Exception {
-		_commercePriceListLocalService.deleteCommercePriceLists(
-			_group.getCompanyId());
+		List<CommercePriceList> commercePriceLists =
+			_commercePriceListLocalService.getCommercePriceLists(
+				QueryUtil.ALL_POS, QueryUtil.ALL_POS);
+
+		for (CommercePriceList commercePriceList : commercePriceLists) {
+			if (commercePriceList.getCompanyId() != _group.getCompanyId()) {
+				continue;
+			}
+
+			_commercePriceListLocalService.forceDeleteCommercePriceList(
+				commercePriceList);
+		}
 	}
 
 	@Test
@@ -115,7 +135,7 @@ public class CommerceProductPriceCalculationWithTaxV2Test {
 			_user.getUserId(), _commerceChannel.getGroupId(), cpTaxCategoryId,
 			_commerceTaxMethod.getCommerceTaxMethodId(), rate);
 
-		CommerceCatalog catalog =
+		CommerceCatalog commerceCatalog =
 			_commerceCatalogLocalService.addCommerceCatalog(
 				null, RandomTestUtil.randomString(),
 				_commerceCurrency.getCode(), LocaleUtil.US.getDisplayLanguage(),
@@ -123,7 +143,7 @@ public class CommerceProductPriceCalculationWithTaxV2Test {
 
 		CommercePriceList commercePriceList =
 			CommercePriceListTestUtil.addCommercePriceList(
-				catalog.getGroupId(), 0.0);
+				commerceCatalog.getGroupId(), 0.0);
 
 		commercePriceList.setNetPrice(false);
 
@@ -133,7 +153,7 @@ public class CommerceProductPriceCalculationWithTaxV2Test {
 
 		CPInstance cpInstance =
 			CPTestUtil.addCPInstanceWithRandomSkuFromCatalog(
-				catalog.getGroupId());
+				commerceCatalog.getGroupId());
 
 		CPDefinition cpDefinition = cpInstance.getCPDefinition();
 
@@ -186,7 +206,7 @@ public class CommerceProductPriceCalculationWithTaxV2Test {
 			_user.getGroupId());
 
 		CommerceTaxMethod commerceTaxMethod =
-			CommerceTaxTestUtil.addCommerceByAddressTaxMethod(
+			CommerceTaxTestUtil.addByAddressCommerceTaxMethod(
 				_user.getUserId(), commerceTaxIncludedChannel.getGroupId(),
 				true);
 
@@ -196,7 +216,7 @@ public class CommerceProductPriceCalculationWithTaxV2Test {
 			_user.getUserId(), commerceTaxIncludedChannel.getGroupId(),
 			cpTaxCategoryId, commerceTaxMethod.getCommerceTaxMethodId(), rate);
 
-		CommerceCatalog catalog =
+		CommerceCatalog commerceCatalog =
 			_commerceCatalogLocalService.addCommerceCatalog(
 				null, RandomTestUtil.randomString(),
 				_commerceCurrency.getCode(), LocaleUtil.US.getDisplayLanguage(),
@@ -204,7 +224,7 @@ public class CommerceProductPriceCalculationWithTaxV2Test {
 
 		CommercePriceList commercePriceList =
 			CommercePriceListTestUtil.addCommercePriceList(
-				catalog.getGroupId(), 0.0);
+				commerceCatalog.getGroupId(), 0.0);
 
 		commercePriceList.setNetPrice(true);
 
@@ -214,7 +234,7 @@ public class CommerceProductPriceCalculationWithTaxV2Test {
 
 		CPInstance cpInstance =
 			CPTestUtil.addCPInstanceWithRandomSkuFromCatalog(
-				catalog.getGroupId());
+				commerceCatalog.getGroupId());
 
 		CPDefinition cpDefinition = cpInstance.getCPDefinition();
 
@@ -353,8 +373,6 @@ public class CommerceProductPriceCalculationWithTaxV2Test {
 		return commerceProductPriceRequest;
 	}
 
-	private static User _user;
-
 	@DeleteAfterTestRun
 	private AccountEntry _accountEntry;
 
@@ -380,5 +398,6 @@ public class CommerceProductPriceCalculationWithTaxV2Test {
 
 	private Group _group;
 	private ServiceContext _serviceContext;
+	private User _user;
 
 }

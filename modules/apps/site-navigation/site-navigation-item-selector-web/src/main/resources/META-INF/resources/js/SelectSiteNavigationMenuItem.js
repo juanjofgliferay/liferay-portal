@@ -46,7 +46,8 @@ const SelectSiteNavigationMenuItem = ({itemSelectorSaveEvent, nodes}) => {
 
 		getOpener().Liferay.fire(itemSelectorSaveEvent, {
 			data: {
-				selectSiteNavigationMenuItemId: item.id,
+				selectSiteNavigationMenuItemExternalReferenceCode:
+					item.externalReferenceCode,
 				selectSiteNavigationMenuItemName: item.name,
 			},
 		});
@@ -73,7 +74,7 @@ const SelectSiteNavigationMenuItem = ({itemSelectorSaveEvent, nodes}) => {
 	};
 
 	return (
-		<ClayLayout.ContainerFluid className="p-4">
+		<ClayLayout.ContainerFluid className="p-4" size={false}>
 			<ClayForm.Group>
 				<ClayInput.Group>
 					<ClayInput.GroupItem prepend>
@@ -142,7 +143,13 @@ const SelectSiteNavigationMenuItem = ({itemSelectorSaveEvent, nodes}) => {
 					description={Liferay.Language.get(
 						'try-again-with-a-different-search'
 					)}
-					imgSrc={`${themeDisplay.getPathThemeImages()}/states/search_state.gif`}
+					image={
+						<ClayIcon
+							className="c-empty-state-icon c-empty-state-icon-search-state"
+							illustration
+							symbol="search-state"
+						/>
+					}
 					small
 					title={Liferay.Language.get('no-results-found')}
 				/>

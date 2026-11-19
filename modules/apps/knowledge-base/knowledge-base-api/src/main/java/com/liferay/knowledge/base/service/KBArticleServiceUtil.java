@@ -7,6 +7,7 @@ package com.liferay.knowledge.base.service;
 
 import com.liferay.knowledge.base.model.KBArticle;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.InputStream;
@@ -84,6 +85,12 @@ public class KBArticleServiceUtil {
 		return getService().deleteKBArticle(resourcePrimKey);
 	}
 
+	public static void deleteKBArticleAttachment(long fileEntryId)
+		throws PortalException {
+
+		getService().deleteKBArticleAttachment(fileEntryId);
+	}
+
 	public static void deleteKBArticles(long groupId, long[] resourcePrimKeys)
 		throws PortalException {
 
@@ -152,6 +159,13 @@ public class KBArticleServiceUtil {
 			groupId, kbFolderId, urlTitle, status);
 	}
 
+	public static com.liferay.portal.kernel.lock.Lock forceLockKBArticle(
+			long groupId, long resourcePrimKey)
+		throws PortalException {
+
+		return getService().forceLockKBArticle(groupId, resourcePrimKey);
+	}
+
 	public static List<KBArticle> getAllDescendantKBArticles(
 			long groupId, long resourcePrimKey, int status,
 			OrderByComparator<KBArticle> orderByComparator)
@@ -196,6 +210,13 @@ public class KBArticleServiceUtil {
 
 		return getService().getKBArticleAndAllDescendantKBArticles(
 			resourcePrimKey, status, orderByComparator);
+	}
+
+	public static com.liferay.portal.kernel.repository.model.FileEntry
+			getKBArticleAttachment(long fileEntryId)
+		throws PortalException {
+
+		return getService().getKBArticleAttachment(fileEntryId);
 	}
 
 	public static String getKBArticleRSS(
@@ -340,6 +361,13 @@ public class KBArticleServiceUtil {
 		return getService().getTempAttachmentNames(groupId, tempFolderName);
 	}
 
+	public static com.liferay.portal.kernel.lock.Lock lockKBArticle(
+			long resourcePrimKey)
+		throws PortalException {
+
+		return getService().lockKBArticle(resourcePrimKey);
+	}
+
 	public static void moveKBArticle(
 			long resourcePrimKey, long parentResourceClassNameId,
 			long parentResourcePrimKey, double priority)
@@ -377,6 +405,12 @@ public class KBArticleServiceUtil {
 		getService().subscribeKBArticle(groupId, resourcePrimKey);
 	}
 
+	public static void unlockKBArticle(long resourcePrimKey)
+		throws PortalException {
+
+		getService().unlockKBArticle(resourcePrimKey);
+	}
+
 	public static void unsubscribeGroupKBArticles(
 			long groupId, String portletId)
 		throws PortalException {
@@ -388,6 +422,21 @@ public class KBArticleServiceUtil {
 		throws PortalException {
 
 		getService().unsubscribeKBArticle(resourcePrimKey);
+	}
+
+	public static KBArticle updateAndUnlockKBArticle(
+			long resourcePrimKey, String title, String content,
+			String description, String[] sections, String sourceURL,
+			java.util.Date displayDate, java.util.Date expirationDate,
+			java.util.Date reviewDate, String[] selectedFileNames,
+			long[] removeFileEntryIds,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
+		throws PortalException {
+
+		return getService().updateAndUnlockKBArticle(
+			resourcePrimKey, title, content, description, sections, sourceURL,
+			displayDate, expirationDate, reviewDate, selectedFileNames,
+			removeFileEntryIds, serviceContext);
 	}
 
 	public static KBArticle updateKBArticle(
@@ -414,13 +463,11 @@ public class KBArticleServiceUtil {
 	}
 
 	public static KBArticleService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(KBArticleService service) {
-		_service = service;
-	}
-
-	private static volatile KBArticleService _service;
+	private static final Snapshot<KBArticleService> _serviceSnapshot =
+		new Snapshot<>(KBArticleServiceUtil.class, KBArticleService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-656320330

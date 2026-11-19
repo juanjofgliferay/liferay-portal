@@ -9,15 +9,12 @@ import com.liferay.portal.search.document.Document;
 import com.liferay.portal.search.engine.adapter.ccr.CrossClusterRequest;
 import com.liferay.portal.search.script.Script;
 
-import java.util.function.Consumer;
-
 /**
  * @author Michael C. Han
  */
 public class UpdateDocumentRequest
 	extends CrossClusterRequest
-	implements BulkableDocumentRequest<UpdateDocumentRequest>,
-			   DocumentRequest<UpdateDocumentResponse> {
+	implements BulkableDocumentRequest<UpdateDocumentResponse> {
 
 	/**
 	 * @deprecated As of Mueller (7.2.x), replaced by
@@ -56,11 +53,6 @@ public class UpdateDocumentRequest
 	}
 
 	@Override
-	public void accept(Consumer<UpdateDocumentRequest> consumer) {
-		consumer.accept(this);
-	}
-
-	@Override
 	public UpdateDocumentResponse accept(
 		DocumentRequestExecutor documentRequestExecutor) {
 
@@ -87,6 +79,10 @@ public class UpdateDocumentRequest
 		return _script;
 	}
 
+	/**
+	 * @deprecated As of Cavanaugh (7.4.x), with no direct replacement
+	 */
+	@Deprecated
 	public String getType() {
 		return _type;
 	}
@@ -119,6 +115,10 @@ public class UpdateDocumentRequest
 		_scriptedUpsert = scriptedUpsert;
 	}
 
+	/**
+	 * @deprecated As of Cavanaugh (7.4.x), with no direct replacement
+	 */
+	@Deprecated
 	public void setType(String type) {
 		_type = type;
 	}

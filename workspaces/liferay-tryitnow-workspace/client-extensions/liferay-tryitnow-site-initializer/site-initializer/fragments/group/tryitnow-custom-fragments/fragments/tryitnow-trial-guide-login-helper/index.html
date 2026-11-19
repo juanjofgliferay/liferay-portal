@@ -67,15 +67,15 @@
 									<div id="txtEmail-${configuration.person}">
 										<lfr-editable id="email" type="text">
 											[#if (configuration.person) == 'carl']
-												customer.carl@liferay.com
+												m2h8.customer.carl@liferay.com
 											[/#if]
 
 											[#if (configuration.person) == 'sam']
-												support.sam@liferay.com
+												m2h8.support.sam@liferay.com
 											[/#if]
 
 											[#if (configuration.person) == 'adam']
-												admin.adam@liferay.com
+												m2h8.admin.adam@liferay.com
 											[/#if]
 										</lfr-editable>
 									</div>
@@ -93,15 +93,13 @@
 							<td class="label">
 								<p>Password</p>
 							</td>
-							<td class="value" onclick="copyToClipboard(this,'txtPassword-${configuration.person}')">
+							<td class="value">
 								<div class="d-flex justify-content-between">
 									<div id="txtPassword-${configuration.person}">
 										<lfr-editable id="password" type="text">
-											test
+											[Your chosen password]
 										</lfr-editable>
 									</div>
-
-									<img src="[resources:copy.svg]" />
 								</div>
 							</td>
 						</tr>

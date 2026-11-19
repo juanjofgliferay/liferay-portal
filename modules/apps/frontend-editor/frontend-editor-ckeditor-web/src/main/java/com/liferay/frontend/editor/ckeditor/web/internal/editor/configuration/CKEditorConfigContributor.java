@@ -52,7 +52,8 @@ public class CKEditorConfigContributor extends BaseCKEditorConfigContributor {
 
 		String extraPlugins =
 			"addimages,autogrow,autolink,colordialog,filebrowser," +
-				"itemselector,lfrpopup,media,stylescombo,videoembed";
+				"itemselector,lfrpopup,media,stylescombo,tableselection," +
+					"videoembed";
 
 		boolean inlineEdit = GetterUtil.getBoolean(
 			(String)inputEditorTaglibAttributes.get(
@@ -62,11 +63,10 @@ public class CKEditorConfigContributor extends BaseCKEditorConfigContributor {
 			extraPlugins += ",ajaxsave,restore";
 		}
 
-		if (_isShowAICreator(inputEditorTaglibAttributes)) {
-			extraPlugins += ",aicreator";
-		}
-
 		jsonObject.put(
+			"applicationTitle",
+			_language.get(themeDisplay.getLocale(), "rich-text-editor")
+		).put(
 			"extraPlugins", extraPlugins
 		).put(
 			"filebrowserWindowFeatures",
@@ -182,14 +182,6 @@ public class CKEditorConfigContributor extends BaseCKEditorConfigContributor {
 
 				return null;
 			}
-		).put(
-			() -> {
-				if (_isShowAICreator(inputEditorTaglibAttributes)) {
-					return toJSONArray("['AICreator']");
-				}
-
-				return null;
-			}
 		);
 	}
 
@@ -213,14 +205,6 @@ public class CKEditorConfigContributor extends BaseCKEditorConfigContributor {
 
 				return null;
 			}
-		).put(
-			() -> {
-				if (_isShowAICreator(inputEditorTaglibAttributes)) {
-					return toJSONArray("['AICreator']");
-				}
-
-				return null;
-			}
 		);
 	}
 
@@ -240,23 +224,7 @@ public class CKEditorConfigContributor extends BaseCKEditorConfigContributor {
 
 				return null;
 			}
-		).put(
-			() -> {
-				if (_isShowAICreator(inputEditorTaglibAttributes)) {
-					return toJSONArray("['AICreator']");
-				}
-
-				return null;
-			}
 		);
-	}
-
-	private boolean _isShowAICreator(
-		Map<String, Object> inputEditorTaglibAttributes) {
-
-		return GetterUtil.getBoolean(
-			inputEditorTaglibAttributes.get(
-				CKEditorConstants.ATTRIBUTE_NAMESPACE + ":showAICreator"));
 	}
 
 	@Reference

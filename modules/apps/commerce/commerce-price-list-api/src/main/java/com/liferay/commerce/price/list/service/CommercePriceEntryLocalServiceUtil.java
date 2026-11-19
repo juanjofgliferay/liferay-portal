@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -300,13 +301,6 @@ public class CommercePriceEntryLocalServiceUtil {
 		return getService().dynamicQueryCount(dynamicQuery, projection);
 	}
 
-	public static CommercePriceEntry fetchByExternalReferenceCode(
-		String externalReferenceCode, long companyId) {
-
-		return getService().fetchByExternalReferenceCode(
-			externalReferenceCode, companyId);
-	}
-
 	public static CommercePriceEntry fetchCommercePriceEntry(
 		long commercePriceEntryId) {
 
@@ -405,13 +399,6 @@ public class CommercePriceEntryLocalServiceUtil {
 			cpInstanceUuid, quantity, unitOfMeasureKey);
 	}
 
-	public static List<CommercePriceEntry> getCommercePriceEntriesByCompanyId(
-		long companyId, int start, int end) {
-
-		return getService().getCommercePriceEntriesByCompanyId(
-			companyId, start, end);
-	}
-
 	/**
 	 * Returns the number of commerce price entries.
 	 *
@@ -423,10 +410,6 @@ public class CommercePriceEntryLocalServiceUtil {
 
 	public static int getCommercePriceEntriesCount(long commercePriceListId) {
 		return getService().getCommercePriceEntriesCount(commercePriceListId);
-	}
-
-	public static int getCommercePriceEntriesCountByCompanyId(long companyId) {
-		return getService().getCommercePriceEntriesCountByCompanyId(companyId);
 	}
 
 	/**
@@ -488,6 +471,14 @@ public class CommercePriceEntryLocalServiceUtil {
 
 		return getService().getInstanceBaseCommercePriceEntry(
 			cpInstanceUuid, priceListType, unitOfMeasureKey);
+	}
+
+	public static List<CommercePriceEntry> getInstanceCommercePriceEntries(
+		String cpInstanceUuid, int start, int end,
+		OrderByComparator<CommercePriceEntry> orderByComparator) {
+
+		return getService().getInstanceCommercePriceEntries(
+			cpInstanceUuid, start, end, orderByComparator);
 	}
 
 	public static int getInstanceCommercePriceEntriesCount(
@@ -598,11 +589,11 @@ public class CommercePriceEntryLocalServiceUtil {
 	}
 
 	public static CommercePriceEntry updateExternalReferenceCode(
-			String externalReferenceCode, CommercePriceEntry commercePriceEntry)
+			CommercePriceEntry commercePriceEntry, String externalReferenceCode)
 		throws PortalException {
 
 		return getService().updateExternalReferenceCode(
-			externalReferenceCode, commercePriceEntry);
+			commercePriceEntry, externalReferenceCode);
 	}
 
 	public static CommercePriceEntry updatePricingInfo(
@@ -629,13 +620,13 @@ public class CommercePriceEntryLocalServiceUtil {
 	}
 
 	public static CommercePriceEntryLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(CommercePriceEntryLocalService service) {
-		_service = service;
-	}
-
-	private static volatile CommercePriceEntryLocalService _service;
+	private static final Snapshot<CommercePriceEntryLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			CommercePriceEntryLocalServiceUtil.class,
+			CommercePriceEntryLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1797748234

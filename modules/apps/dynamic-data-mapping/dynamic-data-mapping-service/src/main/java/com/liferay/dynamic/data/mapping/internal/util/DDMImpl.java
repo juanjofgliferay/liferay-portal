@@ -5,8 +5,8 @@
 
 package com.liferay.dynamic.data.mapping.internal.util;
 
+import com.liferay.document.library.helper.DLURLHelper;
 import com.liferay.document.library.kernel.service.DLAppLocalService;
-import com.liferay.document.library.util.DLURLHelper;
 import com.liferay.dynamic.data.mapping.form.field.type.constants.DDMFormFieldTypeConstants;
 import com.liferay.dynamic.data.mapping.io.DDMFormDeserializer;
 import com.liferay.dynamic.data.mapping.io.DDMFormDeserializerDeserializeRequest;
@@ -55,6 +55,7 @@ import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Image;
+import com.liferay.portal.kernel.model.MVCCModel;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.service.ImageLocalService;
 import com.liferay.portal.kernel.service.LayoutLocalService;
@@ -77,6 +78,10 @@ import com.liferay.portal.kernel.util.TimeZoneUtil;
 import com.liferay.portal.kernel.util.UnicodeFormatter;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.portlet.PortletRequest;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.io.Serializable;
 
 import java.text.DateFormat;
@@ -91,10 +96,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.portlet.PortletRequest;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -380,6 +381,8 @@ public class DDMImpl implements DDM {
 			ServiceContext serviceContext)
 		throws PortalException {
 
+		Fields fields = new Fields();
+
 		DDMStructure ddmStructure = _getDDMStructure(
 			ddmStructureId, ddmTemplateId);
 
@@ -397,8 +400,6 @@ public class DDMImpl implements DDM {
 
 			translating = false;
 		}
-
-		Fields fields = new Fields();
 
 		for (String fieldName : fieldNames) {
 			boolean localizable = GetterUtil.getBoolean(
@@ -500,7 +501,7 @@ public class DDMImpl implements DDM {
 		OrderByComparator<DDMStructure> orderByComparator = null;
 
 		if (orderByCol.equals("id")) {
-			orderByComparator = new StructureIdComparator(orderByAsc);
+			orderByComparator = StructureIdComparator.getInstance(orderByAsc);
 		}
 		else if (orderByCol.equals("modified-date")) {
 			orderByComparator = new StructureModifiedDateComparator(orderByAsc);
@@ -522,7 +523,7 @@ public class DDMImpl implements DDM {
 		OrderByComparator<DDMTemplate> orderByComparator = null;
 
 		if (orderByCol.equals("id")) {
-			orderByComparator = new TemplateIdComparator(orderByAsc);
+			orderByComparator = TemplateIdComparator.getInstance(orderByAsc);
 		}
 		else if (orderByCol.equals("modified-date")) {
 			orderByComparator = new TemplateModifiedDateComparator(orderByAsc);
@@ -873,9 +874,11 @@ public class DDMImpl implements DDM {
 			String prefix = StringUtil.extractFirst(
 				fieldsDisplayValue, INSTANCE_SEPARATOR);
 
-			if (prefix.equals(fieldName)) {
-				count++;
+			if (!prefix.equals(fieldName)) {
+				continue;
 			}
+
+			count++;
 		}
 
 		return count;
@@ -892,10 +895,7 @@ public class DDMImpl implements DDM {
 			ddmTemplateId);
 
 		if (ddmTemplate != null) {
-
-			// Clone ddmStructure to make sure changes are never persisted
-
-			ddmStructure = (DDMStructure)ddmStructure.clone();
+			ddmStructure = MVCCModel.scratchClone(ddmStructure);
 
 			ddmStructure.setDefinition(ddmTemplate.getScript());
 		}
@@ -940,13 +940,15 @@ public class DDMImpl implements DDM {
 		String prefix = fieldName.concat(INSTANCE_SEPARATOR);
 
 		for (String fieldsDisplayValue : fieldsDisplayValues) {
-			if (fieldsDisplayValue.startsWith(prefix)) {
-				index--;
+			if (!fieldsDisplayValue.startsWith(prefix)) {
+				continue;
+			}
 
-				if (index < 0) {
-					return StringUtil.extractLast(
-						fieldsDisplayValue, DDMImpl.INSTANCE_SEPARATOR);
-				}
+			index--;
+
+			if (index < 0) {
+				return StringUtil.extractLast(
+					fieldsDisplayValue, DDMImpl.INSTANCE_SEPARATOR);
 			}
 		}
 
@@ -957,14 +959,14 @@ public class DDMImpl implements DDM {
 		String fieldNamespace, String fieldName,
 		ServiceContext serviceContext) {
 
+		List<String> fieldNames = new ArrayList<>();
+
 		String[] fieldsDisplayValues = StringUtil.split(
 			(String)serviceContext.getAttribute(
 				fieldNamespace + FIELDS_DISPLAY_NAME));
 
 		List<String> privateFieldNames = ListUtil.fromArray(
 			FIELDS_DISPLAY_NAME);
-
-		List<String> fieldNames = new ArrayList<>();
 
 		if ((fieldsDisplayValues.length == 0) ||
 			privateFieldNames.contains(fieldName)) {
@@ -976,9 +978,11 @@ public class DDMImpl implements DDM {
 				String fieldNameValue = StringUtil.extractFirst(
 					namespacedFieldName, INSTANCE_SEPARATOR);
 
-				if (fieldNameValue.equals(fieldName)) {
-					fieldNames.add(fieldNamespace + namespacedFieldName);
+				if (!fieldNameValue.equals(fieldName)) {
+					continue;
 				}
+
+				fieldNames.add(fieldNamespace + namespacedFieldName);
 			}
 		}
 
@@ -997,16 +1001,18 @@ public class DDMImpl implements DDM {
 		String prefix = fieldName.concat(INSTANCE_SEPARATOR);
 
 		for (String fieldsDisplayValue : fieldsDisplayValues) {
-			if (fieldsDisplayValue.startsWith(prefix)) {
-				String fieldIstanceId = StringUtil.extractLast(
-					fieldsDisplayValue, DDMImpl.INSTANCE_SEPARATOR);
-
-				if (fieldIstanceId.equals(instanceId)) {
-					return offset;
-				}
-
-				offset++;
+			if (!fieldsDisplayValue.startsWith(prefix)) {
+				continue;
 			}
+
+			String fieldIstanceId = StringUtil.extractLast(
+				fieldsDisplayValue, DDMImpl.INSTANCE_SEPARATOR);
+
+			if (fieldIstanceId.equals(instanceId)) {
+				return offset;
+			}
+
+			offset++;
 		}
 
 		return -1;

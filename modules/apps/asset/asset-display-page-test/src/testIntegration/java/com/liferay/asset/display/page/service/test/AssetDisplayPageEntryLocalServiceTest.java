@@ -32,7 +32,6 @@ import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.TransactionalTestRule;
 
 import java.util.Date;
-import java.util.List;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -84,8 +83,8 @@ public class AssetDisplayPageEntryLocalServiceTest {
 
 		LayoutPageTemplateEntry layoutPageTemplateEntry =
 			_layoutPageTemplateEntryLocalService.addLayoutPageTemplateEntry(
-				TestPropsValues.getUserId(), _group.getGroupId(), 0, 0, 0,
-				RandomTestUtil.randomString(),
+				null, TestPropsValues.getUserId(), _group.getGroupId(), 0, null,
+				0, null, RandomTestUtil.randomString(),
 				LayoutPageTemplateEntryTypeConstants.DISPLAY_PAGE, 0, true, 0,
 				0, 0, WorkflowConstants.STATUS_APPROVED, new ServiceContext());
 
@@ -191,36 +190,6 @@ public class AssetDisplayPageEntryLocalServiceTest {
 	}
 
 	@Test
-	public void testGetAssetDisplayPageEntriesByLayoutPageTemplateEntryId()
-		throws PortalException {
-
-		long layoutPageTemplateEntryId = RandomTestUtil.randomLong();
-
-		List<AssetDisplayPageEntry> originalAssetDisplayPageEntries =
-			_assetDisplayPageEntryLocalService.
-				getAssetDisplayPageEntriesByLayoutPageTemplateEntryId(
-					layoutPageTemplateEntryId);
-
-		AssetDisplayPageEntryTestUtil.addDefaultAssetDisplayPageEntry(
-			_group.getGroupId(), _classNameId, RandomTestUtil.randomLong(),
-			layoutPageTemplateEntryId);
-
-		AssetDisplayPageEntryTestUtil.addDefaultAssetDisplayPageEntry(
-			_group.getGroupId(), _classNameId, RandomTestUtil.randomLong(),
-			layoutPageTemplateEntryId);
-
-		List<AssetDisplayPageEntry> actualAssetDisplayPageEntries =
-			_assetDisplayPageEntryLocalService.
-				getAssetDisplayPageEntriesByLayoutPageTemplateEntryId(
-					layoutPageTemplateEntryId);
-
-		Assert.assertEquals(
-			actualAssetDisplayPageEntries.toString(),
-			originalAssetDisplayPageEntries.size() + 2,
-			actualAssetDisplayPageEntries.size());
-	}
-
-	@Test
 	public void testGetAssetDisplayPageEntriesCountByLayoutPageTemplateEntryId()
 		throws PortalException {
 
@@ -286,8 +255,8 @@ public class AssetDisplayPageEntryLocalServiceTest {
 
 		LayoutPageTemplateEntry layoutPageTemplateEntry =
 			_layoutPageTemplateEntryLocalService.addLayoutPageTemplateEntry(
-				TestPropsValues.getUserId(), _group.getGroupId(), 0, 0, 0,
-				RandomTestUtil.randomString(),
+				null, TestPropsValues.getUserId(), _group.getGroupId(), 0, null,
+				0, null, RandomTestUtil.randomString(),
 				LayoutPageTemplateEntryTypeConstants.DISPLAY_PAGE, 0, true, 0,
 				0, 0, WorkflowConstants.STATUS_APPROVED, new ServiceContext());
 

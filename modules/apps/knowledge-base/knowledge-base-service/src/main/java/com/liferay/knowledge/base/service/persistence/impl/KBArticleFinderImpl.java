@@ -192,9 +192,11 @@ public class KBArticleFinderImpl
 		for (int i = 0; i < status.length; i++) {
 			sb.append(status[i]);
 
-			if (i != (status.length - 1)) {
-				sb.append(", ");
+			if (i == (status.length - 1)) {
+				continue;
 			}
+
+			sb.append(", ");
 		}
 
 		return StringUtil.replace(sql, "[$WORKFLOW_STATUS$]", sb.toString());
@@ -203,9 +205,9 @@ public class KBArticleFinderImpl
 	private Predicate _getKeywordsPredicate(
 		Expression<String> expression, String[] keywords) {
 
-		expression = DSLFunctionFactoryUtil.lower(expression);
-
 		Predicate keywordsPredicate = null;
+
+		expression = DSLFunctionFactoryUtil.lower(expression);
 
 		for (String keyword : keywords) {
 			if (keyword == null) {

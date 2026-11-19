@@ -149,7 +149,7 @@ int yearlyType = ParamUtil.getInteger(request, "yearlyType");
 					<aui:option label="last" selected="<%= yearlyPos == -1 %>" value="-1" />
 				</aui:select>
 
-				<aui:select cssClass="input-container" inlineField="<%= true %>" inlineLabel="right" label="of" name="yearlyDay1">
+				<aui:select cssClass="input-container" inlineField="<%= true %>" inlineLabel="right" label="of[date-time]" name="yearlyDay1">
 					<aui:option label="<%= days[0] %>" selected="<%= yearlyDay1 == Calendar.SUNDAY %>" value="<%= Calendar.SUNDAY %>" />
 					<aui:option label="<%= days[1] %>" selected="<%= yearlyDay1 == Calendar.MONDAY %>" value="<%= Calendar.MONDAY %>" />
 					<aui:option label="<%= days[2] %>" selected="<%= yearlyDay1 == Calendar.TUESDAY %>" value="<%= Calendar.TUESDAY %>" />
@@ -179,9 +179,7 @@ int yearlyType = ParamUtil.getInteger(request, "yearlyType");
 	</div>
 </aui:fieldset>
 
-<aui:script require="frontend-js-web/index as frontendJsWeb">
-	var {delegate} = frontendJsWeb;
-
+<aui:script sandbox="<%= true %>">
 	var tables = document.querySelectorAll(
 		'#<portlet:namespace />recurrenceTypeDailyTable, #<portlet:namespace />recurrenceTypeMonthlyTable, #<portlet:namespace />recurrenceTypeNeverTable, #<portlet:namespace />recurrenceTypeWeeklyTable, #<portlet:namespace />recurrenceTypeYearlyTable'
 	);
@@ -191,7 +189,7 @@ int yearlyType = ParamUtil.getInteger(request, "yearlyType");
 	);
 
 	if (eventsContainer) {
-		delegate(eventsContainer, 'change', '.field', (event) => {
+		Liferay.Util.delegate(eventsContainer, 'change', '.field', (event) => {
 			var tableId = event.delegateTarget.id + 'Table';
 
 			Array.prototype.forEach.call(tables, (table) => {

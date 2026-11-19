@@ -187,31 +187,19 @@ public class AppLocalServiceImpl extends AppLocalServiceBaseImpl {
 		List<App> apps = appPersistence.findAll();
 
 		for (App app : apps) {
-			if (app.isInstalled()) {
-				installedApps.add(app);
+			if (!app.isInstalled()) {
+				continue;
 			}
+
+			installedApps.add(app);
 		}
 
-		installedApps = ListUtil.sort(installedApps, new AppTitleComparator());
+		installedApps = ListUtil.sort(
+			installedApps, AppTitleComparator.getInstance(true));
 
 		_installedApps = installedApps;
 
 		return _installedApps;
-	}
-
-	@Override
-	public List<App> getInstalledApps(String category) {
-		List<App> apps = appPersistence.findByCategory(category);
-
-		List<App> installedApps = new ArrayList<>(apps.size());
-
-		for (App app : apps) {
-			if (app.isInstalled()) {
-				installedApps.add(app);
-			}
-		}
-
-		return installedApps;
 	}
 
 	@Override
@@ -304,10 +292,12 @@ public class AppLocalServiceImpl extends AppLocalServiceBaseImpl {
 		for (Module module : modules) {
 			_moduleLocalService.deleteModule(module.getModuleId());
 
-			if (module.isBundle()) {
-				BundleManagerUtil.uninstallBundle(
-					module.getBundleSymbolicName(), module.getBundleVersion());
+			if (!module.isBundle()) {
+				continue;
 			}
+
+			BundleManagerUtil.uninstallBundle(
+				module.getBundleSymbolicName(), module.getBundleVersion());
 		}
 	}
 
@@ -420,22 +410,24 @@ public class AppLocalServiceImpl extends AppLocalServiceBaseImpl {
 
 				ZipEntry subsystemZipEntry = enumeration.nextElement();
 
-				if (StringUtil.endsWith(subsystemZipEntry.getName(), ".lpkg")) {
-					File file = null;
+				if (!StringUtil.endsWith(
+						subsystemZipEntry.getName(), ".lpkg")) {
 
-					try (InputStream subsystemInputStream =
-							zipFile.getInputStream(subsystemZipEntry)) {
-
-						file = FileUtil.createTempFile(subsystemInputStream);
-
-						return _getMarketplaceProperties(file);
-					}
-					finally {
-						FileUtil.delete(file);
-					}
+					return null;
 				}
 
-				return null;
+				File file = null;
+
+				try (InputStream subsystemInputStream = zipFile.getInputStream(
+						subsystemZipEntry)) {
+
+					file = FileUtil.createTempFile(subsystemInputStream);
+
+					return _getMarketplaceProperties(file);
+				}
+				finally {
+					FileUtil.delete(file);
+				}
 			}
 
 			try (InputStream inputStream = zipFile.getInputStream(zipEntry)) {

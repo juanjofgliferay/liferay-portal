@@ -18,14 +18,18 @@ import com.liferay.portal.kernel.dao.orm.ProjectionFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.orm.RestrictionsFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.Session;
+import com.liferay.portal.kernel.security.permission.InlineSQLHelperUtil;
+import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.transaction.Propagation;
 import com.liferay.portal.kernel.util.IntegerWrapper;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.OrderByComparatorFactoryUtil;
 import com.liferay.portal.kernel.util.Time;
+import com.liferay.portal.security.permission.SimplePermissionChecker;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PersistenceTestRule;
 import com.liferay.portal.test.rule.TransactionalTestRule;
@@ -116,12 +120,8 @@ public class DDMDataProviderInstancePersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
 		DDMDataProviderInstance newDDMDataProviderInstance =
-			_persistence.create(pk);
-
-		newDDMDataProviderInstance.setMvccVersion(RandomTestUtil.nextLong());
+			addDDMDataProviderInstance();
 
 		newDDMDataProviderInstance.setCtCollectionId(RandomTestUtil.nextLong());
 
@@ -151,8 +151,10 @@ public class DDMDataProviderInstancePersistenceTest {
 		newDDMDataProviderInstance.setLastPublishDate(
 			RandomTestUtil.nextDate());
 
-		_ddmDataProviderInstances.add(
-			_persistence.update(newDDMDataProviderInstance));
+		newDDMDataProviderInstance = _persistence.update(
+			newDDMDataProviderInstance);
+
+		_ddmDataProviderInstances.add(newDDMDataProviderInstance);
 
 		DDMDataProviderInstance existingDDMDataProviderInstance =
 			_persistence.findByPrimaryKey(
@@ -284,6 +286,24 @@ public class DDMDataProviderInstancePersistenceTest {
 
 	@Test
 	public void testFilterFindByGroupId() throws Exception {
+		PermissionThreadLocal.setPermissionChecker(
+			new SimplePermissionChecker() {
+				{
+					init(TestPropsValues.getUser());
+				}
+
+				@Override
+				public boolean isCompanyAdmin(long companyId) {
+					return false;
+				}
+
+			});
+
+		Assert.assertTrue(InlineSQLHelperUtil.isEnabled(0));
+
+		_persistence.filterFindByGroupId(
+			0, QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
+
 		_persistence.filterFindByGroupId(
 			0, QueryUtil.ALL_POS, QueryUtil.ALL_POS, getOrderByComparator());
 	}
@@ -612,8 +632,6 @@ public class DDMDataProviderInstancePersistenceTest {
 		DDMDataProviderInstance ddmDataProviderInstance = _persistence.create(
 			pk);
 
-		ddmDataProviderInstance.setMvccVersion(RandomTestUtil.nextLong());
-
 		ddmDataProviderInstance.setCtCollectionId(RandomTestUtil.nextLong());
 
 		ddmDataProviderInstance.setUuid(RandomTestUtil.randomString());
@@ -652,3 +670,4 @@ public class DDMDataProviderInstancePersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-672955112

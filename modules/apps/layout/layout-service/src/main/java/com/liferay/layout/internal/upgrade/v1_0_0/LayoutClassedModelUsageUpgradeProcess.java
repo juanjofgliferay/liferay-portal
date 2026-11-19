@@ -41,10 +41,13 @@ public class LayoutClassedModelUsageUpgradeProcess extends UpgradeProcess {
 
 	private void _upgradeLayoutClassedModelUsage() throws Exception {
 		try (LoggingTimer loggingTimer = new LoggingTimer();
+
 			Statement statement = connection.createStatement();
+
 			ResultSet resultSet = statement.executeQuery(
 				"select groupId, assetEntryId, containerKey, containerType, " +
 					"plid, type_ from AssetEntryUsage");
+
 			PreparedStatement preparedStatement =
 				AutoBatchPreparedStatementUtil.concurrentAutoBatch(
 					connection,
@@ -98,7 +101,7 @@ public class LayoutClassedModelUsageUpgradeProcess extends UpgradeProcess {
 			LayoutClassedModelUsageUpgradeProcess.class.getResourceAsStream(
 				"dependencies/update.sql"));
 
-		runSQLTemplateString(template, false);
+		runSQLTemplate(template, false);
 	}
 
 	private final AssetEntryLocalService _assetEntryLocalService;

@@ -10,8 +10,8 @@ import com.liferay.account.model.AccountEntry;
 import com.liferay.account.service.AccountEntryLocalService;
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.commerce.account.test.util.CommerceAccountTestUtil;
+import com.liferay.commerce.helper.CommerceAccountHelper;
 import com.liferay.commerce.product.constants.CommerceChannelConstants;
-import com.liferay.commerce.util.CommerceAccountHelper;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -509,19 +509,16 @@ public class CommerceAccountLocalServiceTest {
 
 		CommerceAccountTestUtil.addAccountEntryOrganizationRels(
 			accountEntry2.getAccountEntryId(),
-			new long[] {italyOrganization.getOrganizationId()}, serviceContext);
+			new long[] {italyOrganization.getOrganizationId()});
 		CommerceAccountTestUtil.addAccountEntryOrganizationRels(
 			accountEntry3.getAccountEntryId(),
-			new long[] {chicagoOrganization.getOrganizationId()},
-			serviceContext);
+			new long[] {chicagoOrganization.getOrganizationId()});
 		CommerceAccountTestUtil.addAccountEntryOrganizationRels(
 			accountEntry4.getAccountEntryId(),
-			new long[] {losAngelesOrganization.getOrganizationId()},
-			serviceContext);
+			new long[] {losAngelesOrganization.getOrganizationId()});
 		CommerceAccountTestUtil.addAccountEntryOrganizationRels(
 			accountEntry5.getAccountEntryId(),
-			new long[] {losAngelesOrganization.getOrganizationId()},
-			serviceContext);
+			new long[] {losAngelesOrganization.getOrganizationId()});
 
 		List<AccountEntry> userAccountEntries1 =
 			_accountEntryLocalService.getUserAccountEntries(
@@ -747,7 +744,7 @@ public class CommerceAccountLocalServiceTest {
 		return externalReferenceCodes;
 	}
 
-	private ServiceContext _getServiceContext() {
+	private ServiceContext _getServiceContext() throws Exception {
 		return ServiceContextTestUtil.getServiceContext(
 			_user.getCompanyId(), _user.getGroupId(), _user.getUserId());
 	}

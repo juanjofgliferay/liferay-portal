@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -230,6 +231,13 @@ public class CSDiagramEntryLocalServiceUtil {
 		return getService().fetchCSDiagramEntry(cpDefinitionId, sequence);
 	}
 
+	public static CSDiagramEntry fetchCSDiagramEntryByExternalReferenceCode(
+		String externalReferenceCode, long companyId) {
+
+		return getService().fetchCSDiagramEntryByExternalReferenceCode(
+			externalReferenceCode, companyId);
+	}
+
 	public static com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery
 		getActionableDynamicQuery() {
 
@@ -267,12 +275,6 @@ public class CSDiagramEntryLocalServiceUtil {
 		return getService().getCSDiagramEntries(start, end);
 	}
 
-	public static List<CSDiagramEntry> getCSDiagramEntries(
-		long cpDefinitionId, int start, int end) {
-
-		return getService().getCSDiagramEntries(cpDefinitionId, start, end);
-	}
-
 	/**
 	 * Returns the number of cs diagram entries.
 	 *
@@ -280,10 +282,6 @@ public class CSDiagramEntryLocalServiceUtil {
 	 */
 	public static int getCSDiagramEntriesCount() {
 		return getService().getCSDiagramEntriesCount();
-	}
-
-	public static int getCSDiagramEntriesCount(long cpDefinitionId) {
-		return getService().getCSDiagramEntriesCount(cpDefinitionId);
 	}
 
 	/**
@@ -304,6 +302,14 @@ public class CSDiagramEntryLocalServiceUtil {
 		throws PortalException {
 
 		return getService().getCSDiagramEntry(cpDefinitionId, sequence);
+	}
+
+	public static CSDiagramEntry getCSDiagramEntryByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws PortalException {
+
+		return getService().getCSDiagramEntryByExternalReferenceCode(
+			externalReferenceCode, companyId);
 	}
 
 	public static
@@ -359,13 +365,13 @@ public class CSDiagramEntryLocalServiceUtil {
 	}
 
 	public static CSDiagramEntryLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(CSDiagramEntryLocalService service) {
-		_service = service;
-	}
-
-	private static volatile CSDiagramEntryLocalService _service;
+	private static final Snapshot<CSDiagramEntryLocalService> _serviceSnapshot =
+		new Snapshot<>(
+			CSDiagramEntryLocalServiceUtil.class,
+			CSDiagramEntryLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1228276316

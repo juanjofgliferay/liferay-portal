@@ -14,6 +14,8 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.URLUtil;
 
+import jakarta.servlet.ServletContext;
+
 import java.io.IOException;
 
 import java.net.MalformedURLException;
@@ -27,8 +29,6 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
-
-import javax.servlet.ServletContext;
 
 /**
  * @author Brian Wing Shun Chan
@@ -192,9 +192,11 @@ public class ServletContextUtil {
 
 						String jarEntryName = jarEntry.getName();
 
-						if (jarEntryName.endsWith(_EXT_CLASS)) {
-							classNames.add(_getClassName(null, jarEntryName));
+						if (!jarEntryName.endsWith(_EXT_CLASS)) {
+							continue;
 						}
+
+						classNames.add(_getClassName(null, jarEntryName));
 					}
 				}
 			}

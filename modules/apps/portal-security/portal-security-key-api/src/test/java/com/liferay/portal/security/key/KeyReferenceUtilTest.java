@@ -1,0 +1,182 @@
+/**
+ * SPDX-FileCopyrightText: (c) 2026 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
+ */
+
+package com.liferay.portal.security.key;
+
+import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.test.rule.LiferayUnitTestRule;
+
+import org.junit.Assert;
+import org.junit.ClassRule;
+import org.junit.Rule;
+import org.junit.Test;
+
+/**
+ * @author Christopher Kian
+ * @author Pedro Victor Silvestre
+ */
+public class KeyReferenceUtilTest {
+
+	@ClassRule
+	@Rule
+	public static final LiferayUnitTestRule liferayUnitTestRule =
+		LiferayUnitTestRule.INSTANCE;
+
+	@Test
+	public void testIsKeyReference() {
+		Assert.assertFalse(KeyReferenceUtil.isKeyReference(null));
+		Assert.assertFalse(
+			KeyReferenceUtil.isKeyReference(RandomTestUtil.randomString()));
+		Assert.assertTrue(
+			KeyReferenceUtil.isKeyReference("${keyRef:provider:identifier}"));
+		Assert.assertTrue(
+			KeyReferenceUtil.isKeyReference(
+				"${secretRef:provider:identifier}"));
+	}
+
+	@Test
+	public void testParseKeyReference() {
+		Assert.assertNotNull(
+			KeyReferenceUtil.parseKeyReference(
+				"${keyRef:provider:identifier}"));
+		Assert.assertNotNull(
+			KeyReferenceUtil.parseKeyReference(
+				"${secretRef:provider:identifier}"));
+		Assert.assertNull(KeyReferenceUtil.parseKeyReference(StringPool.BLANK));
+		Assert.assertNull(
+			KeyReferenceUtil.parseKeyReference(
+				"${SecretRef:provider:identifier}"));
+		Assert.assertNull(KeyReferenceUtil.parseKeyReference("${secretRef:"));
+		Assert.assertNull(
+			KeyReferenceUtil.parseKeyReference("${secretRef::identifier}"));
+		Assert.assertNull(
+			KeyReferenceUtil.parseKeyReference("${secretRef:provider:   }"));
+		Assert.assertNull(
+			KeyReferenceUtil.parseKeyReference(
+				"${secretRef:provider:identifier"));
+		Assert.assertNull(
+			KeyReferenceUtil.parseKeyReference(
+				"${secretRef:provider:identifier}trailing"));
+		Assert.assertNull(
+			KeyReferenceUtil.parseKeyReference("${secretRef:provider:null}"));
+		Assert.assertNull(
+			KeyReferenceUtil.parseKeyReference("${secretRef:provider:}"));
+		Assert.assertNull(
+			KeyReferenceUtil.parseKeyReference("${secretRef:provider}"));
+		Assert.assertNull(
+			KeyReferenceUtil.parseKeyReference(
+				"${secretRef:pro}vider:identifier}"));
+		Assert.assertNull(KeyReferenceUtil.parseKeyReference("${secretRef:}"));
+		Assert.assertNull(KeyReferenceUtil.parseKeyReference("${secretRef}"));
+		Assert.assertNull(KeyReferenceUtil.parseKeyReference("${}"));
+		Assert.assertNull(KeyReferenceUtil.parseKeyReference("abc"));
+		Assert.assertNull(KeyReferenceUtil.parseKeyReference(null));
+	}
+
+	@Test
+	public void testToKeyReference() {
+		_assertKeyReference(
+			"arn:aws:kms:us-east-1:123:key/abc",
+			"${secretRef:aws-kms:arn:aws:kms:us-east-1:123:key/abc}", "aws-kms",
+			KeyReference.Type.SECRET);
+		_assertKeyReference(
+			"identifier", "${keyRef:provider:identifier}", "provider",
+			KeyReference.Type.CRYPTO);
+		_assertKeyReference(
+			"identifier", "${secretRef:*:identifier}", "*",
+			KeyReference.Type.SECRET);
+		_assertKeyReference(
+			"identifier", "${secretRef:provider:identifier}", "provider",
+			KeyReference.Type.SECRET);
+		_assertKeyReference(
+			"identi}fier", "${secretRef:provider:identi}fier}", "provider",
+			KeyReference.Type.SECRET);
+
+		for (KeyReference.Type type : KeyReference.Type.values()) {
+			KeyReference keyReference = new KeyReference(
+				RandomTestUtil.randomString(), RandomTestUtil.randomString(),
+				type);
+
+			Assert.assertEquals(
+				keyReference,
+				KeyReferenceUtil.toKeyReference(
+					KeyReferenceUtil.toKeyReferenceString(keyReference)));
+		}
+	}
+
+	@Test
+	public void testToKeyReferenceWithInvalidKeyReference() {
+		Assert.assertThrows(
+			IllegalArgumentException.class,
+			() -> KeyReferenceUtil.toKeyReference(StringPool.BLANK));
+		Assert.assertThrows(
+			IllegalArgumentException.class,
+			() -> KeyReferenceUtil.toKeyReference(
+				"${SecretRef:provider:identifier}"));
+		Assert.assertThrows(
+			IllegalArgumentException.class,
+			() -> KeyReferenceUtil.toKeyReference("${secretRef:"));
+		Assert.assertThrows(
+			IllegalArgumentException.class,
+			() -> KeyReferenceUtil.toKeyReference("${secretRef::identifier}"));
+		Assert.assertThrows(
+			IllegalArgumentException.class,
+			() -> KeyReferenceUtil.toKeyReference("${secretRef:provider:   }"));
+		Assert.assertThrows(
+			IllegalArgumentException.class,
+			() -> KeyReferenceUtil.toKeyReference(
+				"${secretRef:provider:identifier"));
+		Assert.assertThrows(
+			IllegalArgumentException.class,
+			() -> KeyReferenceUtil.toKeyReference(
+				"${secretRef:provider:identifier}trailing"));
+		Assert.assertThrows(
+			IllegalArgumentException.class,
+			() -> KeyReferenceUtil.toKeyReference(
+				"${secretRef:provider:null}"));
+		Assert.assertThrows(
+			IllegalArgumentException.class,
+			() -> KeyReferenceUtil.toKeyReference("${secretRef:provider:}"));
+		Assert.assertThrows(
+			IllegalArgumentException.class,
+			() -> KeyReferenceUtil.toKeyReference("${secretRef:provider}"));
+		Assert.assertThrows(
+			IllegalArgumentException.class,
+			() -> KeyReferenceUtil.toKeyReference(
+				"${secretRef:pro}vider:identifier}"));
+		Assert.assertThrows(
+			IllegalArgumentException.class,
+			() -> KeyReferenceUtil.toKeyReference("${secretRef:}"));
+		Assert.assertThrows(
+			IllegalArgumentException.class,
+			() -> KeyReferenceUtil.toKeyReference("${secretRef}"));
+		Assert.assertThrows(
+			IllegalArgumentException.class,
+			() -> KeyReferenceUtil.toKeyReference("${}"));
+		Assert.assertThrows(
+			IllegalArgumentException.class,
+			() -> KeyReferenceUtil.toKeyReference("abc"));
+		Assert.assertThrows(
+			IllegalArgumentException.class,
+			() -> KeyReferenceUtil.toKeyReference(null));
+	}
+
+	private void _assertKeyReference(
+		String identifier, String keyReferenceString, String providerId,
+		KeyReference.Type type) {
+
+		KeyReference keyReference = KeyReferenceUtil.parseKeyReference(
+			keyReferenceString);
+
+		Assert.assertEquals(identifier, keyReference.getIdentifier());
+		Assert.assertEquals(
+			keyReferenceString,
+			KeyReferenceUtil.toKeyReferenceString(keyReference));
+		Assert.assertEquals(providerId, keyReference.getProviderId());
+		Assert.assertEquals(type, keyReference.getType());
+	}
+
+}

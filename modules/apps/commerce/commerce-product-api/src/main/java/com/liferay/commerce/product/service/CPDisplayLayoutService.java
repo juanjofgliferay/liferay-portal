@@ -56,6 +56,10 @@ public interface CPDisplayLayoutService extends BaseService {
 	public CPDisplayLayout fetchCPDisplayLayout(long cpDisplayLayoutId)
 		throws PortalException;
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public CPDisplayLayout getCPDisplayLayout(long cpDisplayLayoutId)
+		throws PortalException;
+
 	/**
 	 * Returns the OSGi service identifier.
 	 *
@@ -75,3 +79,4 @@ public interface CPDisplayLayoutService extends BaseService {
 		throws PortalException;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:293365369

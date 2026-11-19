@@ -114,11 +114,7 @@ public class DDMStructureVersionPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		DDMStructureVersion newDDMStructureVersion = _persistence.create(pk);
-
-		newDDMStructureVersion.setMvccVersion(RandomTestUtil.nextLong());
+		DDMStructureVersion newDDMStructureVersion = addDDMStructureVersion();
 
 		newDDMStructureVersion.setCtCollectionId(RandomTestUtil.nextLong());
 
@@ -157,7 +153,9 @@ public class DDMStructureVersionPersistenceTest {
 
 		newDDMStructureVersion.setStatusDate(RandomTestUtil.nextDate());
 
-		_ddmStructureVersions.add(_persistence.update(newDDMStructureVersion));
+		newDDMStructureVersion = _persistence.update(newDDMStructureVersion);
+
+		_ddmStructureVersions.add(newDDMStructureVersion);
 
 		DDMStructureVersion existingDDMStructureVersion =
 			_persistence.findByPrimaryKey(
@@ -242,14 +240,6 @@ public class DDMStructureVersionPersistenceTest {
 	}
 
 	@Test
-	public void testCountByS_S() throws Exception {
-		_persistence.countByS_S(
-			RandomTestUtil.nextLong(), RandomTestUtil.nextInt());
-
-		_persistence.countByS_S(0L, 0);
-	}
-
-	@Test
 	public void testFindByPrimaryKeyExisting() throws Exception {
 		DDMStructureVersion newDDMStructureVersion = addDDMStructureVersion();
 
@@ -279,9 +269,9 @@ public class DDMStructureVersionPersistenceTest {
 			"DDMStructureVersion", "mvccVersion", true, "ctCollectionId", true,
 			"structureVersionId", true, "groupId", true, "companyId", true,
 			"userId", true, "userName", true, "createDate", true, "structureId",
-			true, "version", true, "parentStructureId", true, "name", true,
-			"storageType", true, "type", true, "status", true, "statusByUserId",
-			true, "statusByUserName", true, "statusDate", true);
+			true, "version", true, "parentStructureId", true, "storageType",
+			true, "type", true, "status", true, "statusByUserId", true,
+			"statusByUserName", true, "statusDate", true);
 	}
 
 	@Test
@@ -579,8 +569,6 @@ public class DDMStructureVersionPersistenceTest {
 
 		DDMStructureVersion ddmStructureVersion = _persistence.create(pk);
 
-		ddmStructureVersion.setMvccVersion(RandomTestUtil.nextLong());
-
 		ddmStructureVersion.setCtCollectionId(RandomTestUtil.nextLong());
 
 		ddmStructureVersion.setGroupId(RandomTestUtil.nextLong());
@@ -628,3 +616,4 @@ public class DDMStructureVersionPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1409394290

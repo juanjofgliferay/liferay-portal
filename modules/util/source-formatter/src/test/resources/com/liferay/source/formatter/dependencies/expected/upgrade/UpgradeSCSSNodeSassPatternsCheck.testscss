@@ -1,6 +1,13 @@
 @use "sass:math";
-$line-height-h1:                  math.div(50, 44);
 $control-panel-spacing-mobile:    ( math.div($spacer, 1.25) );
+
+$line-height-h1: math.div(50, 44);
+$line-height-h2: math.div(5, 4);
+$line-height-h3: math.div(5.4, 45);
+$line-height-h4: math.div(58, 4.4);
+$line-height-h5: math.div(5.8, 4.4);
+
+$multiplier: math.div(nth($value, 1), $spacer);
 
 @each {
 	#{'.bg-' + $color} {
@@ -10,12 +17,25 @@ $control-panel-spacing-mobile:    ( math.div($spacer, 1.25) );
 @mixin make($list: "#{'.col-xs-' + $i}, #{'.col-sm-' + $i}") {
 }
 
+(#{$prop}: var(#{'--btn-' + $key + '-' + $prefix + $prop}))
+
+(#{$prop}: var(#{'--btn-' + $key + '-' + $prefix + '--btn-'}))
+
+.another-element {
+	background-color: rgba(255 0 0 / 0.75);
+}
+
 #{'.col-' + $class + '-push-' + $index} {
 }
 
 #{'.col-' + $class + '-push-0'} {
 }
 
-(#{$prop}: var(#{'--btn-' + $key + '-' + $prefix + $prop}))
+.my-div {
+	background-color: hsl(0, 100%, 50% / 0.5);
+	color: hsla(240 100% 50% / 0.5);
+}
 
-(#{$prop}: var(#{'--btn-' + $key + '-' + $prefix + '--btn-'}))
+.test-class {
+	color: rgb(0 0 0 / 40%);
+}

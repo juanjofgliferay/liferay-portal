@@ -2,7 +2,12 @@
 
 <#include init />
 
-<html class="${root_css_class}" dir="<@liferay.language key="lang.dir" />" lang="${w3c_language_id}">
+<#assign
+	colorScheme = sessionClicks.get(request, "com_liferay_application_list_taglib_SideNavigationColorScheme", "light")
+	prefersContrast = (sessionClicks.get(request, "ACCESSIBILITY_SETTING_HIGH_CONTRAST", "false") == "true")?then("more", "")
+/>
+
+<html class="${root_css_class}" data-color-scheme="${colorScheme}" data-prefers-contrast="${prefersContrast}" dir="<@liferay.language key="lang.dir" />" lang="${w3c_language_id}">
 
 <head>
 	<title>${html_title}</title>
@@ -68,7 +73,7 @@
 			</header>
 		</#if>
 
-		<section class="${portal_content_css_class} flex-fill" id="content">
+		<div class="${portal_content_css_class} flex-fill" id="content">
 			<#if selectable>
 				<@liferay_util["include"] page=content_include />
 			<#else>
@@ -80,10 +85,10 @@
 					<@liferay_util["include"] page=content_include />
 				</@>
 			</#if>
-		</section>
+		</div>
 
 		<#if show_footer>
-			<footer id="footer" role="contentinfo">
+			<footer id="footer">
 				<div class="container">
 					<div class="row">
 						<div class="col-md-12 text-center text-md-left">

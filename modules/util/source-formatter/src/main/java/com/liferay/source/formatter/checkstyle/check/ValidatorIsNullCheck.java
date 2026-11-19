@@ -11,6 +11,7 @@ import com.liferay.portal.kernel.util.Validator;
 
 import com.puppycrawl.tools.checkstyle.api.DetailAST;
 import com.puppycrawl.tools.checkstyle.api.TokenTypes;
+import com.puppycrawl.tools.checkstyle.utils.TokenUtil;
 
 import java.util.List;
 
@@ -26,10 +27,10 @@ public class ValidatorIsNullCheck extends BaseCheck {
 
 	@Override
 	protected void doVisitToken(DetailAST detailAST) {
-		List<DetailAST> methodCallDetailASTList = getMethodCalls(
+		List<DetailAST> methodCallDetailASTs = getMethodCalls(
 			detailAST, "Validator", new String[] {"isNotNull", "isNull"});
 
-		for (DetailAST methodCallDetailAST : methodCallDetailASTList) {
+		for (DetailAST methodCallDetailAST : methodCallDetailASTs) {
 			DetailAST elistDetailAST = methodCallDetailAST.findFirstToken(
 				TokenTypes.ELIST);
 
@@ -61,9 +62,9 @@ public class ValidatorIsNullCheck extends BaseCheck {
 
 			childDetailAST = typeDetailAST.getFirstChild();
 
-			if ((childDetailAST != null) &&
-				((childDetailAST.getType() == TokenTypes.LITERAL_INT) ||
-				 (childDetailAST.getType() == TokenTypes.LITERAL_LONG))) {
+			if (TokenUtil.isOfType(
+					childDetailAST, TokenTypes.LITERAL_INT,
+					TokenTypes.LITERAL_LONG)) {
 
 				log(
 					methodCallDetailAST, _MSG_INVALID_METHOD_NAME,
@@ -76,13 +77,15 @@ public class ValidatorIsNullCheck extends BaseCheck {
 
 			String typeName = getTypeName(typeDetailAST, true);
 
-			if (Validator.isNotNull(typeName) &&
-				!ArrayUtil.contains(_RESERVED_TYPE_NAMES, typeName)) {
+			if (Validator.isNull(typeName) ||
+				ArrayUtil.contains(_RESERVED_TYPE_NAMES, typeName)) {
 
-				log(
-					methodCallDetailAST, _MSG_RESERVED_METHOD,
-					"Validator." + getMethodName(methodCallDetailAST));
+				continue;
 			}
+
+			log(
+				methodCallDetailAST, _MSG_RESERVED_METHOD,
+				"Validator." + getMethodName(methodCallDetailAST));
 		}
 	}
 

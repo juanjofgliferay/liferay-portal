@@ -11,23 +11,25 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import com.liferay.petra.function.UnsafeSupplier;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Javier Gamarra
@@ -37,6 +39,9 @@ import javax.xml.bind.annotation.XmlRootElement;
 @GraphQLName(
 	description = "The widget instance's permissions.",
 	value = "WidgetPermission"
+)
+@io.swagger.v3.oas.annotations.media.Schema(
+	description = "The widget instance's permissions."
 )
 @JsonFilter("Liferay.Vulcan")
 @XmlRootElement(name = "WidgetPermission")
@@ -50,30 +55,40 @@ public class WidgetPermission implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(WidgetPermission.class, json);
 	}
 
-	@Schema(
+	@io.swagger.v3.oas.annotations.media.Schema(
 		description = "The keys of the actions the role has permission for."
 	)
 	public String[] getActionKeys() {
+		if (_actionKeysSupplier != null) {
+			actionKeys = _actionKeysSupplier.get();
+
+			_actionKeysSupplier = null;
+		}
+
 		return actionKeys;
 	}
 
 	public void setActionKeys(String[] actionKeys) {
 		this.actionKeys = actionKeys;
+
+		_actionKeysSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setActionKeys(
 		UnsafeSupplier<String[], Exception> actionKeysUnsafeSupplier) {
 
-		try {
-			actionKeys = actionKeysUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_actionKeysSupplier = () -> {
+			try {
+				return actionKeysUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -82,33 +97,49 @@ public class WidgetPermission implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String[] actionKeys;
 
-	@Schema(description = "The role's key.")
+	@JsonIgnore
+	private Supplier<String[]> _actionKeysSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(description = "The role's key.")
 	public String getRoleKey() {
+		if (_roleKeySupplier != null) {
+			roleKey = _roleKeySupplier.get();
+
+			_roleKeySupplier = null;
+		}
+
 		return roleKey;
 	}
 
 	public void setRoleKey(String roleKey) {
 		this.roleKey = roleKey;
+
+		_roleKeySupplier = null;
 	}
 
 	@JsonIgnore
 	public void setRoleKey(
 		UnsafeSupplier<String, Exception> roleKeyUnsafeSupplier) {
 
-		try {
-			roleKey = roleKeyUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_roleKeySupplier = () -> {
+			try {
+				return roleKeyUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The role's key.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String roleKey;
+
+	@JsonIgnore
+	private Supplier<String> _roleKeySupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -137,6 +168,8 @@ public class WidgetPermission implements Serializable {
 
 		sb.append("{");
 
+		String[] actionKeys = getActionKeys();
+
 		if (actionKeys != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -161,6 +194,8 @@ public class WidgetPermission implements Serializable {
 			sb.append("]");
 		}
 
+		String roleKey = getRoleKey();
+
 		if (roleKey != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -180,8 +215,8 @@ public class WidgetPermission implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.delivery.dto.v1_0.WidgetPermission",
 		name = "x-class-name"
 	)
@@ -227,7 +262,10 @@ public class WidgetPermission implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -265,6 +303,27 @@ public class WidgetPermission implements Serializable {
 		return sb.toString();
 	}
 
+	private static String _toJSON(Object value) {
+		if (value instanceof Collection) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONArray((Collection<?>)value));
+		}
+		else if (value instanceof Map) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONObject((Map<?, ?>)value));
+		}
+		else if (value instanceof Object[]) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONArray(
+					Arrays.asList((Object[])value)));
+		}
+		else if (value instanceof String) {
+			return StringBundler.concat("\"", _escape(value), "\"");
+		}
+
+		return String.valueOf(value);
+	}
+
 	private static final String[][] _JSON_ESCAPE_STRINGS = {
 		{"\\", "\"", "\b", "\f", "\n", "\r", "\t"},
 		{"\\\\", "\\\"", "\\b", "\\f", "\\n", "\\r", "\\t"}
@@ -273,3 +332,4 @@ public class WidgetPermission implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:-1932468612

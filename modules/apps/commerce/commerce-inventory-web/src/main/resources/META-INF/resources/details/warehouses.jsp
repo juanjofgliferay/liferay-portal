@@ -26,8 +26,6 @@ CommerceInventoryDisplayContext commerceInventoryDisplayContext = (CommerceInven
 		creationMenu="<%= commerceInventoryDisplayContext.getWarehousesCreationMenu() %>"
 		dataProviderKey="<%= CommerceInventoryFDSNames.INVENTORY_WAREHOUSES %>"
 		id="<%= CommerceInventoryFDSNames.INVENTORY_WAREHOUSES %>"
-		itemsPerPage="<%= 10 %>"
 		selectedItemsKey="commerceInventoryWarehouseItemId"
-		showSearch="<%= false %>"
 	/>
 </commerce-ui:panel>

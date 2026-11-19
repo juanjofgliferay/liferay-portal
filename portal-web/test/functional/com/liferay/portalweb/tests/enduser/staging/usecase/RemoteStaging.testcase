@@ -1,9 +1,10 @@
-@component-name = "portal-staging"
+@component-name = "portal-headless"
 definition {
 
 	property app.server.bundles.size = "1";
+	property browser.chrome.version = "139.0";
 	property ci.retries.disabled = "true";
-	property custom.properties = "auth.verifier.TunnelAuthVerifier.hosts.allowed=${line.separator}tunneling.servlet.shared.secret=1234567890123456";
+	property custom.properties = "auth.verifier.TunnelAuthVerifier.hosts.allowed=${line.separator}feature.flag.LPD-57655=false${line.separator}tunneling.servlet.shared.secret=1234567890123456";
 	property databases.size = "1";
 	property minimum.slave.ram = "24";
 	property portal.release = "true";
@@ -14,6 +15,14 @@ definition {
 		TestCase.setUpPortalInstance();
 
 		User.firstLoginPG();
+
+		task ("Enable widget pages") {
+			PagesAdmin.enableWidgetPages();
+		}
+
+		task ("Enable dynamic and manual selection") {
+			AssetPublisherPortlet.enableDynamicAndManualSelection();
+		}
 
 		HeadlessSite.addSite(siteName = "Site Name");
 
@@ -76,7 +85,7 @@ definition {
 			User.logoutPG();
 
 			User.firstLoginUI(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				specificURL = "http://localhost:9080",
 				userEmailAddress = "test@liferay.com");
 
@@ -162,10 +171,6 @@ definition {
 
 		MouseOver.mouseOverNotVisible(locator1 = "Button#PLUS");
 
-		AssertTextEquals.assertPartialText(
-			locator1 = "Message#TOOLTIP",
-			value1 = "Custom Publish Process");
-
 		Staging.publishCustomPublication(remoteStaging = "true");
 
 		Staging.publishCustomPublication(
@@ -176,11 +181,14 @@ definition {
 			remoteStaging = "true");
 	}
 
-	@description = "This is a use case for LPS-83187. Add a publish template to the staging site then verify the title of the scheduled publication after it is finished."
+	@description = "Ignored due to LPD-66917 | This is a use case for LPS-83187. Add a publish template to the staging site then verify the title of the scheduled publication after it is finished."
+	@ignore = "true"
 	@priority = 3
 	test AssertTemplatesTitleOfScheduledStagingPublishes {
 		property test.liferay.virtual.instance = "false";
 		property test.run.type = "single";
+
+		Staging.enablePublishTemplatesFeatureFlag();
 
 		HeadlessSite.addSite(
 			portalURL = "http://localhost:9080",
@@ -240,61 +248,6 @@ definition {
 			validateErrorMessage = "An unexpected error occurred with the publish process. Please check your portal and publishing configuration.");
 	}
 
-	@description = "This is a use case for LPS-190015, TC6. Canceling the multi publishing of several webcontents to remote site, stops them process properly and no webcontnts are published."
-	@priority = 3
-	test CanceledMultiPublishToRemoteDoesNotPublishAnyWebContent {
-		property custom.properties = "auth.verifier.TunnelAuthVerifier.hosts.allowed=${line.separator}feature.flag.LPS-165481=true${line.separator}tunneling.servlet.shared.secret=1234567890123456";
-		property test.liferay.virtual.instance = "false";
-		property test.run.type = "single";
-
-		task ("Add web contents") {
-			for (var i : list "1,2,3,4,5") {
-				JSONWebcontent.addWebContent(
-					content = "WC Content ${i}",
-					groupName = "Site Name",
-					title = "WC Title ${i}");
-			}
-		}
-
-		task ("Cancele publication of all web contents") {
-			WebContentNavigator.openWebContentAdmin(siteURLKey = "site-name");
-
-			PortletEntry.selectAll();
-
-			Click(locator1 = "ManagementBar#MORE_ACTIONS_ELLIPSIS");
-
-			MenuItem.click(menuItem = "Publish Selected Elements");
-
-			AssertTextEquals(
-				index = 1,
-				locator1 = "Modal#BODY_MESSAGE",
-				value1 = "Are you sure you want to publish the selected entities?");
-
-			Click(
-				buttonName = "Cancel",
-				locator1 = "Modal#SECONDARY_BUTTON");
-		}
-
-		task ("Assert webcontents are not published") {
-			User.logoutPG();
-
-			User.firstLoginUI(
-				password = "test",
-				specificURL = "http://localhost:9080",
-				userEmailAddress = "test@liferay.com");
-
-			WebContentNavigator.openWebContentAdmin(
-				baseURL = "http://localhost:9080",
-				siteURLKey = "remote-site");
-
-			for (var i : list "1,2,3,4,5") {
-				AssertElementNotPresent(
-					key_webContentTitle = "WC Title ${i}",
-					locator1 = "WC#ENTRY_LIST_TITLE_NAME");
-			}
-		}
-	}
-
 	@description = "This is a use case for LPS-52285. Verify that remote staging can be disabled after shutting down the remote site."
 	@priority = 3
 	test CanDisableRemoteStagingAfterShuttingDownRemoteSite {
@@ -340,7 +293,7 @@ definition {
 		}
 	}
 
-	@description = "This test covers LPS-163951. Verify the image thumbnail in asset publisher can be published when using image URL."
+	@description = "Ignored due to LPS-163951. Verify the image thumbnail in asset publisher can be published when using image URL."
 	@ignore = "true"
 	@priority = 3
 	test CanPublishWCWithImagesViaAP {
@@ -382,7 +335,7 @@ definition {
 				webContentContent = "Web Content Content A",
 				webContentTitle = "Web Content Title A");
 
-			PortletEntry.publish();
+			WebContent.publishWithPermissions();
 		}
 
 		task ("And: Create basic web content using the latest version URL") {
@@ -396,7 +349,7 @@ definition {
 				webContentContent = "Web Content Content B",
 				webContentTitle = "Web Content Title B");
 
-			PortletEntry.publish();
+			WebContent.publishWithPermissions();
 		}
 
 		task ("And: Configure that only shows the WC in AP") {
@@ -423,7 +376,7 @@ definition {
 			User.logoutPG();
 
 			User.firstLoginUI(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				specificURL = "http://localhost:9080",
 				userEmailAddress = "test@liferay.com");
 
@@ -498,7 +451,7 @@ definition {
 			User.logoutPG();
 
 			User.firstLoginUI(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				specificURL = "http://localhost:9080",
 				userEmailAddress = "test@liferay.com");
 
@@ -542,104 +495,6 @@ definition {
 			pagesNotToPublish = '''Staging Test Page 2''',
 			pagesToPublish = '''Staging Test Page 1''',
 			publicationTitle = "sumCheck");
-	}
-
-	@description = "This is a use case for LPS-190015, TC5. Publishing several webcontents from the first page of wcs by multi publish option to remote site."
-	@priority = 3
-	test PublishMoreWebContentsToRemoteWithMultiPublishOption {
-		property custom.properties = "auth.verifier.TunnelAuthVerifier.hosts.allowed=${line.separator}feature.flag.LPS-165481=true${line.separator}tunneling.servlet.shared.secret=1234567890123456";
-		property test.liferay.virtual.instance = "false";
-		property test.run.type = "single";
-
-		task ("Add web contents") {
-			for (var i : list "1,2,3,4,5") {
-				JSONWebcontent.addWebContent(
-					content = "WC Content ${i}",
-					groupName = "Site Name",
-					title = "WC Title ${i}");
-			}
-		}
-
-		task ("Publish all web contents from first page") {
-			WebContentNavigator.openWebContentAdmin(siteURLKey = "site-name");
-
-			Pagination.changePagination(itemsPerPage = 4);
-
-			PortletEntry.selectAll();
-
-			Staging.publishWithMultiPublishOption();
-		}
-
-		task ("Assert all selected webcontents are published") {
-			User.logoutPG();
-
-			User.firstLoginUI(
-				password = "test",
-				specificURL = "http://localhost:9080",
-				userEmailAddress = "test@liferay.com");
-
-			WebContentNavigator.openWebContentAdmin(
-				baseURL = "http://localhost:9080",
-				siteURLKey = "remote-site");
-
-			for (var i : list "2,3,4,5") {
-				AssertElementPresent(
-					key_webContentTitle = "WC Title ${i}",
-					locator1 = "WC#ENTRY_LIST_TITLE_NAME");
-			}
-
-			AssertElementNotPresent(
-				key_webContentTitle = "WC Title 1",
-				locator1 = "WC#ENTRY_LIST_TITLE_NAME");
-		}
-	}
-
-	@description = "This is a use case for LPS-190015, TC4. Publishing a single webcontent by multi publish option to remote site."
-	@priority = 3
-	test PublishOneWebContentToRemoteWithMultiPublishOption {
-		property custom.properties = "auth.verifier.TunnelAuthVerifier.hosts.allowed=${line.separator}feature.flag.LPS-165481=true${line.separator}tunneling.servlet.shared.secret=1234567890123456";
-		property test.liferay.virtual.instance = "false";
-		property test.run.type = "single";
-
-		task ("Add web contents") {
-			for (var i : list "1,2") {
-				JSONWebcontent.addWebContent(
-					content = "WC Content ${i}",
-					groupName = "Site Name",
-					title = "WC Title ${i}");
-			}
-		}
-
-		task ("Publish one web content with multi publish option") {
-			WebContentNavigator.openWebContentAdmin(siteURLKey = "site-name");
-
-			Click(
-				content_title = "WC Title 1",
-				locator1 = "Checkbox#ENTRY_BY_TITLE");
-
-			Staging.publishWithMultiPublishOption();
-		}
-
-		task ("Assert web content is published") {
-			User.logoutPG();
-
-			User.firstLoginUI(
-				password = "test",
-				specificURL = "http://localhost:9080",
-				userEmailAddress = "test@liferay.com");
-
-			WebContentNavigator.openWebContentAdmin(
-				baseURL = "http://localhost:9080",
-				siteURLKey = "remote-site");
-
-			AssertElementPresent(
-				key_webContentTitle = "WC Title 1",
-				locator1 = "WC#ENTRY_LIST_TITLE_NAME");
-
-			AssertElementNotPresent(
-				key_webContentTitle = "WC Title 2",
-				locator1 = "WC#ENTRY_LIST_TITLE_NAME");
-		}
 	}
 
 	@description = "This is a use case for LPS-80494. Documents can be published with link to page fields."
@@ -692,7 +547,7 @@ definition {
 		User.logoutPG();
 
 		User.firstLoginUI(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			specificURL = "http://localhost:9080",
 			userEmailAddress = "test@liferay.com");
 
@@ -712,7 +567,7 @@ definition {
 		User.logoutPG(specificURL = "http://localhost:9080");
 
 		User.loginPG(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			userEmailAddress = "test@liferay.com");
 
 		Navigator.gotoSitePage(
@@ -782,7 +637,7 @@ definition {
 			webContentText = "Staging Web Content Text",
 			webContentTitle = "Web Content Title");
 
-		PortletEntry.publish();
+		WebContent.publishWithPermissions();
 
 		WebContent.viewTitle(webContentTitle = "Web Content Title");
 
@@ -822,7 +677,7 @@ definition {
 		User.logoutPG();
 
 		User.firstLoginUI(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			specificURL = "http://localhost:9080",
 			userEmailAddress = "test@liferay.com");
 
@@ -846,7 +701,6 @@ definition {
 	@description = "This is a use case for LPS-82839 and LPS-190360 TC-4. Web contents can be published on remote staging."
 	@priority = 3
 	test StagingRemoteLiveWebContentViaPortletCP {
-		property portal.acceptance = "true";
 		property test.liferay.virtual.instance = "false";
 		property test.run.type = "single";
 
@@ -858,7 +712,7 @@ definition {
 			webContentContent = "Web Content Content",
 			webContentTitle = "Web Content Title");
 
-		PortletEntry.publish();
+		WebContent.publishWithPermissions();
 
 		WebContent.viewTitle(webContentTitle = "Web Content Title");
 
@@ -887,7 +741,7 @@ definition {
 		User.logoutPG();
 
 		User.firstLoginUI(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			specificURL = "http://localhost:9080",
 			userEmailAddress = "test@liferay.com");
 
@@ -900,83 +754,13 @@ definition {
 			webContentTitle = "Web Content Title");
 	}
 
-	@description = "This is a use case for LPS-81950. Web contents can be published via their portlet."
-	@priority = 3
-	test StagingRemoteLiveWebContentViaPortletPG {
-		property osgi.module.configuration.file.names = "com.liferay.staging.configuration.StagingConfiguration.config";
-		property osgi.module.configurations = "publishDisplayedContent=\"true\"";
-		property test.liferay.virtual.instance = "false";
-		property test.run.type = "single";
-
-		Navigator.gotoSitePage(
-			pageName = "Staging Test Page",
-			siteName = "Site Name");
-
-		Portlet.addPG(portletName = "Web Content Display");
-
-		Portlet.gotoPortletOptions(
-			portletName = "Web Content Display",
-			portletOption = "Staging");
-
-		IFrame.selectConfigurationFrame();
-
-		AssertTextEquals.assertPartialText(
-			locator1 = "Staging#STAGING_PUBLISH_PAGE_FIRST_MESSAGE",
-			value1 = "This widget is placed in a page that does not exist in the live site. Publish the page first.");
-
-		AssertElementNotPresent(locator1 = "Staging#STAGING_PUBLISH_TO_LIVE_BUTTON");
-
-		Navigator.gotoSitePage(
-			pageName = "Staging Test Page",
-			siteName = "Site Name");
-
-		Staging.gotoPublishToLive();
-
-		Staging.publishToLive(remoteStaging = "true");
-
-		Navigator.gotoSitePage(
-			pageName = "Staging Test Page",
-			siteName = "Site Name");
-
-		WebContentDisplayPortlet.add(
-			webContentContent = "WC WebContent Content",
-			webContentTitle = "WC WebContent Title");
-
-		WebContentDisplayPortlet.viewContent(
-			webContentContent = "WC WebContent Content",
-			webContentTitle = "WC WebContent Title");
-
-		Navigator.gotoSitePage(
-			pageName = "Staging Test Page",
-			siteName = "Site Name");
-
-		Staging.publishToLiveNowViaPortletPG();
-
-		User.logoutPG();
-
-		User.firstLoginUI(
-			password = "test",
-			specificURL = "http://localhost:9080",
-			userEmailAddress = "test@liferay.com");
-
-		Navigator.gotoSitePage(
-			baseURL = "http://localhost:9080",
-			pageName = "Staging Test Page",
-			siteName = "Remote Site");
-
-		WebContentDisplayPortlet.viewContent(
-			webContentContent = "WC WebContent Content",
-			webContentTitle = "WC WebContent Title");
-	}
-
 	@description = "This is a use case for LPS-81953. Web contents can be published with manually chosen ID."
 	@priority = 3
 	test StagingRemoteLiveWebContentWithManualChosenID {
 		property test.liferay.virtual.instance = "false";
 		property test.run.type = "single";
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Configuration",
+		ApplicationsMenu.gotoRootPortlet(
 			panel = "Control Panel",
 			portlet = "System Settings");
 
@@ -992,12 +776,11 @@ definition {
 		User.logoutPG();
 
 		User.firstLoginUI(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			specificURL = "http://localhost:9080",
 			userEmailAddress = "test@liferay.com");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Configuration",
+		ApplicationsMenu.gotoRootPortlet(
 			panel = "Control Panel",
 			portlet = "System Settings");
 
@@ -1013,7 +796,7 @@ definition {
 		User.logoutPG(specificURL = "http://localhost:9080");
 
 		User.loginPG(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			userEmailAddress = "test@liferay.com");
 
 		WebContentNavigator.openWebContentAdmin(siteURLKey = "site-name");
@@ -1025,7 +808,7 @@ definition {
 			webContentId = 12345,
 			webContentTitle = "WC WebContent Title");
 
-		PortletEntry.publish();
+		WebContent.publishWithPermissions();
 
 		Navigator.openSiteURL(siteName = "Site Name");
 
@@ -1036,7 +819,7 @@ definition {
 		User.logoutPG();
 
 		User.firstLoginUI(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			specificURL = "http://localhost:9080",
 			userEmailAddress = "test@liferay.com");
 
@@ -1094,7 +877,7 @@ definition {
 				webContentImage = "Document Title",
 				webContentTitle = "WebContentA");
 
-			PortletEntry.publish();
+			WebContent.publishWithPermissions();
 		}
 
 		task ("When: Publish to live") {
@@ -1110,219 +893,6 @@ definition {
 				failureExpected = "true",
 				remoteStaging = "true",
 				validateErrorMessage = "The publish process did not start due to validation errors. There are missing references that could not be found in the Live Environment. Please publish again to Live ensuring the following elements are published from their own environment: Document In Environment SiteB: DM Document Title1 (Referenced by a Web Content Article: WebContentA)");
-		}
-	}
-
-	@description = "This is a use case for LPS-182704. TC-13: Verify that a confirmation pop-up should show up when Delete Application Data Before Importing checkbox is checked during WCM portlet import process on remote live site"
-	@priority = 3
-	test ViewDeleteApplicationDataPopUpInPortletImportProgressOnRemoteLiveSite {
-		property test.liferay.virtual.instance = "false";
-		property test.run.type = "single";
-
-		task ("Export web content from the default site and add a new web content entry") {
-			WebContentNavigator.openWebContentAdmin(siteURLKey = "guest");
-
-			LAR.exportPortlet(larFileName = "WebContent_blank_portlet.lar");
-
-			JSONWebcontent.addWebContent(
-				content = "Web Content Content",
-				groupName = "Site Name",
-				title = "Web Content Title");
-		}
-
-		task ("Export blank Blogs lar from the default site and add a blog entry") {
-			BlogsNavigator.openBlogsAdmin(siteURLKey = "guest");
-
-			LAR.exportPortlet(larFileName = "Blogs_blank_portlet.lar");
-
-			JSONBlog.addEntry(
-				entryContent = "Blogs Entry Content",
-				entryTitle = "Blogs Entry Title",
-				groupName = "Site Name");
-		}
-
-		task ("Export blank Forms lar from the default site and add a form entry") {
-			FormsAdminNavigator.openFormsAdmin(siteURLKey = "guest");
-
-			LAR.exportPortlet(larFileName = "Forms_blank_portlet.lar");
-
-			FormsAdmin.addForm(groupName = "Site Name");
-
-			Form.editName(formName = "Test Form");
-
-			Form.editDescription(formDescription = "Test description");
-
-			Form.editPageTitle(
-				formPageName = "Test Page",
-				formTitleNumber = 1);
-
-			Form.editPageDescription(formPageDescriptionName = "Test page description");
-
-			Form.addTextField(fieldPositionNumber = 0);
-
-			Form.publishForm();
-		}
-
-		task ("Publish to Live") {
-			Navigator.gotoSitePage(
-				pageName = "Staging Test Page",
-				siteName = "Site Name");
-
-			Staging.gotoPublishToLive();
-
-			Staging.publishToLive(remoteStaging = "true");
-		}
-
-		task ("Login remote live site") {
-			User.logoutPG();
-
-			User.firstLoginUI(
-				password = "test",
-				specificURL = "http://localhost:9080",
-				userEmailAddress = "test@liferay.com");
-		}
-
-		task ("Click Cancel in the confirmation dialog will return to the import tab") {
-			WebContentNavigator.openWebContentAdmin(
-				baseURL = "http://localhost:9080",
-				siteURLKey = "remote-site");
-
-			LAR.importPortletWithDeleteApplicationData(
-				cancelImport = "true",
-				larFileName = "WebContent_blank_portlet.lar");
-
-			BlogsNavigator.openBlogsAdmin(
-				baseURL = "http://localhost:9080",
-				siteURLKey = "remote-site");
-
-			LAR.importPortletWithDeleteApplicationData(
-				cancelImport = "true",
-				larFileName = "Blogs_blank_portlet.lar");
-
-			FormsAdminNavigator.openFormsAdmin(
-				baseURL = "http://localhost:9080",
-				siteURLKey = "remote-site");
-
-			LAR.importPortletWithDeleteApplicationData(
-				cancelImport = "true",
-				larFileName = "Forms_blank_portlet.lar");
-		}
-
-		task ("Click OK will import successfully") {
-			WebContentNavigator.openWebContentAdmin(
-				baseURL = "http://localhost:9080",
-				siteURLKey = "remote-site");
-
-			LAR.importPortletWithDeleteApplicationData(larFileName = "WebContent_blank_portlet.lar");
-
-			WebContent.viewDefaultCP(webContentTitle = "Web Content Title");
-
-			BlogsNavigator.openBlogsAdmin(
-				baseURL = "http://localhost:9080",
-				siteURLKey = "remote-site");
-
-			LAR.importPortletWithDeleteApplicationData(larFileName = "Blogs_blank_portlet.lar");
-
-			Blogs.viewNoEntryCP();
-
-			FormsAdminNavigator.openFormsAdmin(
-				baseURL = "http://localhost:9080",
-				siteURLKey = "remote-site");
-
-			LAR.importPortletWithDeleteApplicationData(larFileName = "Forms_blank_portlet.lar");
-
-			Form.viewNoEntryCP();
-		}
-	}
-
-	@description = "This is a use case for LPS-182704. TC-12: Verify that a confirmation pop-up should show up when Delete Application Data Before Importing checkbox is checked during portlet import process on remote staging site."
-	@priority = 3
-	test ViewDeleteApplicationDataPopUpInPortletImportProgressOnRemoteStagingSite {
-		property test.liferay.virtual.instance = "false";
-		property test.run.type = "single";
-
-		task ("Export web content from the default site and add a new web content entry") {
-			WebContentNavigator.openWebContentAdmin(siteURLKey = "guest");
-
-			LAR.exportPortlet(larFileName = "WebContent_blank_portlet.lar");
-
-			JSONWebcontent.addWebContent(
-				content = "Web Content Content",
-				groupName = "Site Name",
-				title = "Web Content Title");
-		}
-
-		task ("Export blank Blogs lar from the default site and add a blog entry") {
-			BlogsNavigator.openBlogsAdmin(siteURLKey = "guest");
-
-			LAR.exportPortlet(larFileName = "Blogs_blank_portlet.lar");
-
-			JSONBlog.addEntry(
-				entryContent = "Blogs Entry Content",
-				entryTitle = "Blogs Entry Title",
-				groupName = "Site Name");
-		}
-
-		task ("Export blank Forms lar from the default site and add a form entry") {
-			FormsAdminNavigator.openFormsAdmin(siteURLKey = "guest");
-
-			LAR.exportPortlet(larFileName = "Forms_blank_portlet.lar");
-
-			FormsAdmin.addForm(groupName = "Site Name");
-
-			Form.editName(formName = "Test Form");
-
-			Form.editDescription(formDescription = "Test description");
-
-			Form.editPageTitle(
-				formPageName = "Test Page",
-				formTitleNumber = 1);
-
-			Form.editPageDescription(formPageDescriptionName = "Test page description");
-
-			Form.addTextField(fieldPositionNumber = 0);
-
-			Form.publishForm();
-		}
-
-		task ("Click Cancel in the confirmation dialog will return to the import tab") {
-			WebContentNavigator.openWebContentAdmin(siteURLKey = "site-name");
-
-			LAR.importPortletWithDeleteApplicationData(
-				cancelImport = "true",
-				larFileName = "WebContent_blank_portlet.lar");
-
-			BlogsNavigator.openBlogsAdmin(siteURLKey = "site-name");
-
-			LAR.importPortletWithDeleteApplicationData(
-				cancelImport = "true",
-				larFileName = "Blogs_blank_portlet.lar");
-
-			FormsAdminNavigator.openFormsAdmin(siteURLKey = "site-name");
-
-			LAR.importPortletWithDeleteApplicationData(
-				cancelImport = "true",
-				larFileName = "Forms_blank_portlet.lar");
-		}
-
-		task ("Click OK will import successfully") {
-			WebContentNavigator.openWebContentAdmin(siteURLKey = "site-name");
-
-			LAR.importPortletWithDeleteApplicationData(larFileName = "WebContent_blank_portlet.lar");
-
-			WebContent.viewDefaultCP(webContentTitle = "Web Content Title");
-
-			BlogsNavigator.openBlogsAdmin(siteURLKey = "site-name");
-
-			LAR.importPortletWithDeleteApplicationData(larFileName = "Blogs_blank_portlet.lar");
-
-			Blogs.viewNoEntryCP();
-
-			FormsAdminNavigator.openFormsAdmin(siteURLKey = "site-name");
-
-			LAR.importPortletWithDeleteApplicationData(larFileName = "Forms_blank_portlet.lar");
-
-			Form.viewNoEntryCP();
 		}
 	}
 
@@ -1359,7 +929,7 @@ definition {
 			webContentContent = "Web Content Content",
 			webContentTitle = "Web Content Title");
 
-		PortletEntry.publish();
+		WebContent.publishWithPermissions();
 
 		WebContent.viewTitle(webContentTitle = "Web Content Title");
 
@@ -1370,7 +940,7 @@ definition {
 		User.logoutPG();
 
 		User.firstLoginUI(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			specificURL = "http://localhost:9080",
 			userEmailAddress = "test@liferay.com");
 

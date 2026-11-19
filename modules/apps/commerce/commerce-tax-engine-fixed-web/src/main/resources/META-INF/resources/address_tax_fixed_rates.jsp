@@ -42,7 +42,6 @@ CommerceTaxFixedRateAddressRelsDisplayContext commerceTaxFixedRateAddressRelsDis
 			creationMenu="<%= commerceTaxFixedRateAddressRelsDisplayContext.getCreationMenu() %>"
 			dataProviderKey="<%= CommerceTaxRateSettingFDSNames.TAX_RATE_SETTING %>"
 			id="<%= commerceTaxFixedRateAddressRelsDisplayContext.getFDSName() %>"
-			itemsPerPage="<%= 10 %>"
 			selectedItemsKey="taxRateSettingId"
 		/>
 	</commerce-ui:panel>
@@ -53,5 +52,5 @@ CommerceTaxFixedRateAddressRelsDisplayContext commerceTaxFixedRateAddressRelsDis
 </aui:form>
 
 <liferay-frontend:component
-	module="js/addressTaxFixedRates"
+	module="{addressTaxFixedRates} from commerce-tax-engine-fixed-web"
 />

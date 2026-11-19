@@ -1,6 +1,7 @@
-@component-name = "portal-lima"
+@component-name = "portal-content-management"
 definition {
 
+	property browser.chrome.version = "139.0";
 	property portal.acceptance = "true";
 	property portal.release = "true";
 	property portal.upstream = "true";
@@ -55,38 +56,11 @@ definition {
 		}
 	}
 
-	@description = "This test covers LPS-106613. It ensures that the custom abstract field cannot be reset to empty after typing in the content field."
-	@priority = 3
-	@refactordone
-	test AbstractDescriptionPersistsWhenTypingInContentField {
-		property test.liferay.virtual.instance = "false";
-		property test.run.type = "single";
-
-		BlogsNavigator.openToAddEntry(
-			layoutName = "Blogs Page",
-			siteURLKey = "guest");
-
-		BlogsEntry.addTitle(entryTitle = "Blogs Entry Title");
-
-		Panel.expandPanel(panel = "Configuration");
-
-		BlogsEntry.addCustomAbstract(entryAbstractDescription = "Blogs Entry Abstract Description");
-
-		Click.clickAt(
-			key_editor = "content",
-			locator1 = "AlloyEditor#EDITOR");
-
-		BlogsEntry.addContent(entryContent = "Blogs Entry Content");
-
-		AssertTextEquals(
-			locator1 = "TextInput#DESCRIPTION",
-			value1 = "Blogs Entry Abstract Description");
-	}
-
 	@description = "This checks that users can add a comment to a blog entry through the page comment widget when a blog entry is displayed through a DPT."
 	@priority = 3
 	test CanAddCommentToBlogEntryWhenEntryIsDisplayedWithDPT {
 		property custom.properties = "virtual.hosts.default.site.name=Guest";
+		property portal.acceptance = "false";
 
 		var portalURL = PropsUtil.get("portal.url");
 
@@ -146,8 +120,6 @@ definition {
 	@priority = 4
 	@refactordone
 	test CanDeleteComment {
-		property testray.component.names = "Comment";
-
 		JSONBlog.addEntry(
 			entryContent = "Blogs Entry Content",
 			entryTitle = "Blogs Entry Title");
@@ -171,6 +143,7 @@ definition {
 	@priority = 3
 	@refactordone
 	test CanDisplayViewCountForEntry {
+		property portal.acceptance = "false";
 		property test.liferay.virtual.instance = "false";
 		property test.run.type = "single";
 
@@ -195,72 +168,10 @@ definition {
 			pageName = "Blogs Page");
 	}
 
-	@description = "This checks that a comment can be edited in a blog entry."
-	@priority = 5
-	@refactorneeded
-	test CanEditComment {
-		property testray.component.names = "Comment";
-
-		JSONBlog.addEntry(
-			entryContent = "Blogs Entry Content",
-			entryTitle = "Blogs Entry Title");
-
-		BlogsNavigator.openToBlogEntry(
-			entryTitle = "Blogs Entry Title",
-			layoutName = "Blogs Page",
-			siteURLKey = "guest");
-
-		Comments.addPG(entryComment = "Blogs Entry Comment");
-
-		BlogsNavigator.openToBlogEntry(
-			entryTitle = "Blogs Entry Title",
-			layoutName = "Blogs Page",
-			siteURLKey = "guest");
-
-		Comments.edit(
-			entryComment = "Blogs Entry Comment",
-			entryCommentEdit = "Blogs Entry Comment Edit");
-
-		Comments.viewPG(
-			commentCount = 1,
-			entryComment = "Blogs Entry Comment Edit",
-			userFullName = "Test Test (You)");
-	}
-
-	@description = "This checks that the title and content fields of a blog entry can be edited."
-	@e2etest
-	@priority = 5
-	@refactordone
-	test CanEditEntry {
-		JSONBlog.addEntry(
-			entryContent = "Blogs Entry Content",
-			entryTitle = "Blogs Entry Title");
-
-		Navigator.gotoPage(pageName = "Blogs Page");
-
-		Blogs.editEntryPG(
-			entryContent = "Blogs Entry Content",
-			entryContentEdit = "Blogs Entry Content Edit",
-			entryTitle = "Blogs Entry Title",
-			entryTitleEdit = "Blogs Entry Title Edit");
-
-		Navigator.gotoPage(pageName = "Blogs Page");
-
-		BlogsNavigator.gotoEntryPG(
-			entryContent = "Blogs Entry Content Edit",
-			entryTitle = "Blogs Entry Title Edit");
-
-		BlogsEntry.viewEntryPG(
-			entryContent = "Blogs Entry Content Edit",
-			entryTitle = "Blogs Entry Title Edit");
-	}
-
-	@description = "This checks that multiple comments can be edited in a blog entry."
+	@description = "This checks that multiple comments can be edited in a blog entry and display with the editing user as the author."
 	@priority = 4
 	@refactordone
-	test CanEditMultipleComments {
-		property testray.component.names = "Comment";
-
+	test CanEditComments {
 		JSONBlog.addEntry(
 			entryContent = "Blogs Entry Content",
 			entryTitle = "Blogs Entry Title");
@@ -296,12 +207,49 @@ definition {
 		Comments.edit(
 			entryComment = "2nd Blog Comment",
 			entryCommentEdit = "2nd Blog Comment Edit");
+
+		Comments.viewPG(
+			commentCount = 2,
+			entryComment = "2nd Blog Comment Edit",
+			userFullName = "Test Test (You)");
+	}
+
+	@description = "This checks that the title and content fields of a blog entry can be edited."
+	@e2etest
+	@priority = 5
+	@refactordone
+	test CanEditEntry {
+		JSONBlog.addEntry(
+			entryContent = "Blogs Entry Content",
+			entryTitle = "Blogs Entry Title");
+
+		Navigator.gotoPage(pageName = "Blogs Page");
+
+		Blogs.editEntryPG(
+			entryContent = "Blogs Entry Content",
+			entryContentEdit = "Blogs Entry Content Edit",
+			entryTitle = "Blogs Entry Title",
+			entryTitleEdit = "Blogs Entry Title Edit");
+
+		Navigator.gotoPage(pageName = "Blogs Page");
+
+		BlogsNavigator.gotoEntryPG(
+			entryContent = "Blogs Entry Content Edit",
+			entryTitle = "Blogs Entry Title Edit");
+
+		BlogsEntry.viewEntryPG(
+			entryContent = "Blogs Entry Content Edit",
+			entryTitle = "Blogs Entry Title Edit");
 	}
 
 	@description = "This checks that Blogs added and scoped to a page will not be seen in other pages."
 	@priority = 4
 	@refactordone
 	test CannotViewBlogEntryScopedToAnotherPage {
+		task ("Enable Scope Configuration") {
+			Portlet.enableScopeConfiguration();
+		}
+
 		task ("Set up a blog widget on another page scoped to that page") {
 			JSONLayout.addPublicLayout(
 				groupName = "Guest",
@@ -382,9 +330,9 @@ definition {
 			entrySubtitle = "Blogs Entry Subtitle",
 			entryTitle = "Blogs Entry Title");
 
-		Panel.expandPanel(panel = "Configuration");
+		Blogs.expandPanel(panel = "Friendly URL");
 
-		AssertChecked(locator1 = "Radio#AUTOMATIC_URL");
+		AssertChecked(locator1 = "Radio#DEFAULT_URL");
 
 		ScrollWebElementIntoView(locator1 = "Button#PUBLISH");
 
@@ -394,7 +342,7 @@ definition {
 			locator1 = "TextInput#BLOGS_ENTRY_URL",
 			value1 = "custom-url");
 
-		Check(locator1 = "Radio#AUTOMATIC_URL");
+		Check(locator1 = "Radio#DEFAULT_URL");
 
 		AssertTextEquals(
 			locator1 = "TextInput#BLOGS_ENTRY_URL",
@@ -409,10 +357,10 @@ definition {
 			value1 = "custom-url");
 	}
 
-	@description = "This checks that exact content search returns an entry when it includes the entire phrase being queried."
+	@description = "This checks that exact search returns an entry when the query includes the entire content phrase or title phrase, and returns nothing otherwise."
 	@priority = 4
 	@refactordone
-	test CanSearchForExactStringInContent {
+	test CanSearchForExactString {
 		JSONLayout.addPublicLayout(
 			groupName = "Guest",
 			layoutName = "Search Page");
@@ -421,75 +369,64 @@ definition {
 			entryContent = "Blogs Entry Content",
 			entryTitle = "Entry Title");
 
-		Navigator.gotoPage(pageName = "Search Page");
-
-		SearchPage.searchEmbedded(searchTerm = "\"Blogs\"");
-
-		SearchResults.viewSearchResults(
-			searchAssetTitle = "Entry Title",
-			searchAssetType = "Blogs Entry",
-			searchTerm = "\"Blogs\"");
-
-		SearchPage.searchEmbedded(searchTerm = "\"Blogs Entry Content\"");
-
-		SearchResults.viewSearchResults(
-			searchAssetTitle = "Entry Title",
-			searchAssetType = "Blogs Entry",
-			searchTerm = "\"Blogs Entry Content\"");
-
-		SearchPage.searchEmbedded(searchTerm = "\"Blogs1\"");
-
-		SearchResults.viewNoSearchResults(searchTerm = "\"Blogs1\"");
-
-		SearchPage.searchEmbedded(searchTerm = "\"Blogs1 Entry1 Content1\"");
-
-		SearchResults.viewNoSearchResults(searchTerm = "\"Blogs1 Entry1 Content1\"");
-	}
-
-	@description = "This checks that exact title search returns an entry when it includes the entire phrase being queried."
-	@priority = 4
-	@refactordone
-	test CanSearchForExactStringInTitle {
-		JSONLayout.addPublicLayout(
-			groupName = "Guest",
-			layoutName = "Search Page");
-
 		JSONBlog.addEntry(
 			entryContent = "Entry Content",
 			entryTitle = "Blogs Entry Title");
 
 		Navigator.gotoPage(pageName = "Search Page");
 
-		SearchPage.searchEmbedded(searchTerm = "\"Blogs\"");
+		task ("Search for an exact content phrase") {
+			SearchPage.searchEmbedded(searchTerm = "\"Blogs\"");
 
-		SearchResults.viewSearchResults(
-			searchAssetTitle = "Blogs Entry Title",
-			searchAssetType = "Blogs Entry",
-			searchTerm = "\"Blogs\"");
+			SearchResults.viewSearchResults(
+				searchAssetTitle = "Entry Title",
+				searchAssetType = "Blogs Entry",
+				searchTerm = "\"Blogs\"");
 
-		SearchPage.searchEmbedded(searchTerm = "\"Blogs Entry Title\"");
+			SearchPage.searchEmbedded(searchTerm = "\"Blogs Entry Content\"");
 
-		SearchResults.viewSearchResults(
-			searchAssetTitle = "Blogs Entry Title",
-			searchAssetType = "Blogs Entry",
-			searchTerm = "\"Blogs Entry Title\"");
+			SearchResults.viewSearchResults(
+				searchAssetTitle = "Entry Title",
+				searchAssetType = "Blogs Entry",
+				searchTerm = "\"Blogs Entry Content\"");
 
-		SearchPage.searchEmbedded(searchTerm = "\"Blogs1\"");
+			SearchPage.searchEmbedded(searchTerm = "\"Blogs1\"");
 
-		SearchResults.viewNoSearchResults(searchTerm = "\"Blogs1\"");
+			SearchResults.viewNoSearchResults(searchTerm = "\"Blogs1\"");
 
-		SearchPage.searchEmbedded(searchTerm = "\"Blogs Entry Title1\"");
+			SearchPage.searchEmbedded(searchTerm = "\"Blogs1 Entry1 Content1\"");
 
-		SearchResults.viewNoSearchResults(searchTerm = "\"Blogs Entry Title1\"");
+			SearchResults.viewNoSearchResults(searchTerm = "\"Blogs1 Entry1 Content1\"");
+		}
+
+		task ("Search for an exact title phrase") {
+			SearchPage.searchEmbedded(searchTerm = "\"Blogs\"");
+
+			SearchResults.viewSearchResults(
+				searchAssetTitle = "Blogs Entry Title",
+				searchAssetType = "Blogs Entry",
+				searchTerm = "\"Blogs\"");
+
+			SearchPage.searchEmbedded(searchTerm = "\"Blogs Entry Title\"");
+
+			SearchResults.viewSearchResults(
+				searchAssetTitle = "Blogs Entry Title",
+				searchAssetType = "Blogs Entry",
+				searchTerm = "\"Blogs Entry Title\"");
+
+			SearchPage.searchEmbedded(searchTerm = "\"Blogs Entry Title1\"");
+
+			SearchResults.viewNoSearchResults(searchTerm = "\"Blogs Entry Title1\"");
+		}
 	}
 
 	@description = "This checks that a blog comment can be subscribed to."
 	@priority = 3
 	@refactordone
 	test CanSubscribeToComment {
+		property portal.acceptance = "false";
 		property test.liferay.virtual.instance = "false";
 		property test.run.type = "single";
-		property testray.component.names = "Comment";
 
 		JSONBlog.addEntry(
 			entryContent = "Blogs Entry Content",
@@ -503,61 +440,6 @@ definition {
 		Comments.subscribePG();
 
 		Comments.viewSubscribedPG();
-	}
-
-	@description = "This is a usecase for LPS-82025"
-	@priority = 5
-	@refactorneeded
-	test CanUpdateFriendlyURL {
-		var portalURL = PropsUtil.get("portal.url");
-
-		BlogsNavigator.openToAddEntry(
-			layoutName = "Blogs Page",
-			siteURLKey = "guest");
-
-		BlogsEntry.addEntryContent(
-			entryContent = "Blogs Entry Content",
-			entryTitle = "Blogs Entry Title");
-
-		Panel.expandPanel(panel = "Configuration");
-
-		ScrollWebElementIntoView(locator1 = "Button#PUBLISH");
-
-		Check(locator1 = "Radio#CUSTOM_URL");
-
-		Type(
-			locator1 = "TextInput#BLOGS_ENTRY_URL",
-			value1 = "custom-url-1");
-
-		PortletEntry.publish();
-
-		BlogsNavigator.openToEditEntryInSite(
-			entryTitle = "Blogs Entry Title",
-			friendlyURL = "custom url 1",
-			groupName = "Guest",
-			siteURLKey = "guest");
-
-		Panel.expandPanel(panel = "Configuration");
-
-		ScrollWebElementIntoView(locator1 = "Button#PUBLISH");
-
-		Type(
-			locator1 = "TextInput#BLOGS_ENTRY_URL",
-			value1 = "custom-url-2");
-
-		PortletEntry.publish();
-
-		Navigator.openSpecificURL(url = "${portalURL}/web/guest/blogs-page/-/blogs/custom-url-1");
-
-		BlogsEntry.viewEntryPG(
-			entryContent = "Blogs Entry Content",
-			entryTitle = "Blogs Entry Title");
-
-		Navigator.openSpecificURL(url = "${portalURL}/web/guest/blogs-page/-/blogs/custom-url-2");
-
-		BlogsEntry.viewEntryPG(
-			entryContent = "Blogs Entry Content",
-			entryTitle = "Blogs Entry Title");
 	}
 
 	@description = "This checks that the default abstract (appends to 400 characters) can display properly in the UI."
@@ -596,7 +478,9 @@ definition {
 		property test.liferay.virtual.instance = "false";
 		property test.run.type = "single";
 
-		var siteName = TestCase.getSiteName(siteName = ${siteName});
+		task ("Enable Scope Configuration") {
+			Portlet.enableScopeConfiguration();
+		}
 
 		JSONLayout.addPublicLayout(
 			groupName = "Guest",
@@ -661,7 +545,7 @@ definition {
 
 		BlogsNavigator.gotoConfigurationScopePG();
 
-		BlogsConfiguration.viewScopeSelection(scopeSelection = ${siteName});
+		BlogsConfiguration.viewScopeSelection(scopeSelection = "Liferay DXP Site");
 
 		Navigator.gotoPage(pageName = "Blogs Page");
 
@@ -684,6 +568,10 @@ definition {
 	test CanViewEntryUsingDisplayPageTemplate {
 		property test.liferay.virtual.instance = "false";
 		property test.run.type = "single";
+
+		task ("Enable dynamic and manual selection") {
+			AssetPublisherPortlet.enableDynamicAndManualSelection();
+		}
 
 		// To avoid interference from other tests about the NPE assertion，skip run it on virtal instance, see LPS-185660.
 
@@ -823,46 +711,102 @@ definition {
 			locator1 = "Icon#ANY");
 	}
 
-	@description = "This is a usecase for LPS-66970. It checks that both the old and new blog URLs lead to the current entry."
+	@description = "This is a usecase for LPS-66970 and LPS-82025. It checks that both the old and new blog URLs lead to the current entry, whether the URL is renamed from the default or from a custom URL."
 	@priority = 4
 	@refactordone
 	test ViewBlogEntryViaEditedCustomURL {
-		JSONBlog.addEntry(
-			entryContent = "Blogs Entry Content",
-			entryTitle = "Blogs Entry Title");
+		var portalURL = PropsUtil.get("portal.url");
 
-		Navigator.openSpecificURL(url = "/web/guest/blogs-page/-/blogs/blogs-entry-title");
+		task ("Rename an entry's default URL to a custom URL") {
+			JSONBlog.addEntry(
+				entryContent = "Blogs Entry Content",
+				entryTitle = "Blogs Entry Title");
 
-		BlogsEntry.viewEntryPG(
-			entryContent = "Blogs Entry Content",
-			entryTitle = "Blogs Entry Title");
+			Navigator.openSpecificURL(url = "/web/guest/blogs-page/-/blogs/blogs-entry-title");
 
-		BlogsNavigator.openToEditEntryInSite(
-			entryTitle = "Blogs Entry Title",
-			groupName = "Guest",
-			siteURLKey = "guest");
+			BlogsEntry.viewEntryPG(
+				entryContent = "Blogs Entry Content",
+				entryTitle = "Blogs Entry Title");
 
-		Panel.expandPanel(panel = "Configuration");
+			BlogsNavigator.openToEditEntryInSite(
+				entryTitle = "Blogs Entry Title",
+				groupName = "Guest",
+				siteURLKey = "guest");
 
-		BlogsEntry.addCustomURL(customURL = "this-should-redirect-to-the-previous-entry");
+			Blogs.expandPanel(panel = "Friendly URL");
 
-		SelectFrameTop();
+			BlogsEntry.addCustomURL(customURL = "this-should-redirect-to-the-previous-entry");
 
-		PortletEntry.publish();
+			SelectFrameTop();
 
-		User.logoutPG();
+			PortletEntry.publish();
+		}
 
-		Navigator.openSpecificURL(url = "/web/guest/blogs-page/-/blogs/this-should-redirect-to-the-previous-entry");
+		task ("Rename a custom URL to another custom URL and view that both resolve") {
+			BlogsNavigator.openToAddEntry(
+				layoutName = "Blogs Page",
+				siteURLKey = "guest");
 
-		BlogsEntry.viewEntryPG(
-			entryContent = "Blogs Entry Content",
-			entryTitle = "Blogs Entry Title");
+			BlogsEntry.addEntryContent(
+				entryContent = "Blogs Entry2 Content",
+				entryTitle = "Blogs Entry2 Title");
 
-		Navigator.openSpecificURL(url = "/web/guest/blogs-page/-/blogs/blogs-entry-title");
+			Blogs.expandPanel(panel = "Friendly URL");
 
-		BlogsEntry.viewEntryPG(
-			entryContent = "Blogs Entry Content",
-			entryTitle = "Blogs Entry Title");
+			ScrollWebElementIntoView(locator1 = "Button#PUBLISH");
+
+			Check(locator1 = "Radio#CUSTOM_URL");
+
+			Type(
+				locator1 = "TextInput#BLOGS_ENTRY_URL",
+				value1 = "custom-url-1");
+
+			PortletEntry.publish();
+
+			BlogsNavigator.openToEditEntryInSite(
+				entryTitle = "Blogs Entry2 Title",
+				friendlyURL = "custom url 1",
+				groupName = "Guest",
+				siteURLKey = "guest");
+
+			Blogs.expandPanel(panel = "Configuration");
+
+			ScrollWebElementIntoView(locator1 = "Button#PUBLISH");
+
+			Type(
+				locator1 = "TextInput#BLOGS_ENTRY_URL",
+				value1 = "custom-url-2");
+
+			PortletEntry.publish();
+
+			Navigator.openSpecificURL(url = "${portalURL}/web/guest/blogs-page/-/blogs/custom-url-1");
+
+			BlogsEntry.viewEntryPG(
+				entryContent = "Blogs Entry2 Content",
+				entryTitle = "Blogs Entry2 Title");
+
+			Navigator.openSpecificURL(url = "${portalURL}/web/guest/blogs-page/-/blogs/custom-url-2");
+
+			BlogsEntry.viewEntryPG(
+				entryContent = "Blogs Entry2 Content",
+				entryTitle = "Blogs Entry2 Title");
+		}
+
+		task ("View that both the old and new URLs resolve as guest") {
+			User.logoutPG();
+
+			Navigator.openSpecificURL(url = "/web/guest/blogs-page/-/blogs/this-should-redirect-to-the-previous-entry");
+
+			BlogsEntry.viewEntryPG(
+				entryContent = "Blogs Entry Content",
+				entryTitle = "Blogs Entry Title");
+
+			Navigator.openSpecificURL(url = "/web/guest/blogs-page/-/blogs/blogs-entry-title");
+
+			BlogsEntry.viewEntryPG(
+				entryContent = "Blogs Entry Content",
+				entryTitle = "Blogs Entry Title");
+		}
 	}
 
 	@description = "View the related assets in Blogs."
@@ -886,7 +830,7 @@ definition {
 
 			RelatedAssets.selectAsset(
 				assetTitle = "Blogs Entry1 Title",
-				assetType = "Blogs Entry");
+				scopeAssetType = "Blogs Entry");
 
 			PortletEntry.publish();
 		}
@@ -954,6 +898,8 @@ definition {
 	@description = "This test checks that the javascript in the user name will not be executed when viewing an entry on page."
 	@priority = 3
 	test XSSIsNotExecutedWhenViewingUsernameInBlog {
+		property portal.acceptance = "false";
+
 		Navigator.openURL();
 
 		UserBar.gotoDropdownItem(dropdownItem = "Account Settings");

@@ -7,6 +7,7 @@ package com.liferay.address.service.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
+import com.liferay.portal.kernel.exception.DuplicateRegionException;
 import com.liferay.portal.kernel.model.Address;
 import com.liferay.portal.kernel.model.Country;
 import com.liferay.portal.kernel.model.Organization;
@@ -28,6 +29,7 @@ import com.liferay.portal.kernel.util.LinkedHashMapBuilder;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.OrderByComparatorFactoryUtil;
+import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 
@@ -71,6 +73,17 @@ public class RegionLocalServiceTest {
 		Assert.assertNotNull(
 			_regionLocalService.getRegionLocalization(
 				region.getRegionId(), languageId));
+
+		try {
+			_addRegion(
+				true, region.getCountryId(), RandomTestUtil.randomString(),
+				region.getRegionCode());
+
+			Assert.fail();
+		}
+		catch (DuplicateRegionException duplicateRegionException) {
+			Assert.assertNotNull(duplicateRegionException);
+		}
 	}
 
 	@Test
@@ -87,11 +100,11 @@ public class RegionLocalServiceTest {
 
 		Address address = _addressLocalService.addAddress(
 			null, user.getUserId(), null, user.getContactId(),
-			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
-			RandomTestUtil.randomString(), null, null,
-			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
-			region.getRegionId(), region.getCountryId(),
-			RandomTestUtil.randomLong(), false, false, "1234567890",
+			region.getCountryId(), RandomTestUtil.randomLong(),
+			region.getRegionId(), RandomTestUtil.randomString(),
+			RandomTestUtil.randomString(), false, RandomTestUtil.randomString(),
+			false, RandomTestUtil.randomString(), null, null, null,
+			RandomTestUtil.randomString(), "1234567890",
 			ServiceContextTestUtil.getServiceContext());
 
 		Assert.assertEquals(region.getCountryId(), address.getCountryId());
@@ -250,12 +263,36 @@ public class RegionLocalServiceTest {
 		String regionCode = RandomTestUtil.randomString();
 
 		region = _regionLocalService.updateRegion(
-			region.getRegionId(), active, name, position, regionCode);
+			region.getExternalReferenceCode(), region.getRegionId(), active,
+			name, position, regionCode);
 
 		Assert.assertEquals(active, region.isActive());
 		Assert.assertEquals(name, region.getName());
 		Assert.assertEquals(position, region.getPosition(), 0);
 		Assert.assertEquals(regionCode, region.getRegionCode());
+	}
+
+	@Test
+	public void testUpdateRegionWhenStatusIsEmpty() throws Exception {
+		Country country = _addCountry();
+
+		Region region = _addRegion(country.getCountryId());
+
+		region.setStatus(WorkflowConstants.STATUS_EMPTY);
+
+		region = _regionLocalService.updateRegion(region);
+
+		String name = RandomTestUtil.randomString();
+		String regionCode = RandomTestUtil.randomString();
+
+		region = _regionLocalService.updateRegion(
+			region.getExternalReferenceCode(), region.getRegionId(), true, name,
+			0D, regionCode);
+
+		Assert.assertEquals(name, region.getName());
+		Assert.assertEquals(regionCode, region.getRegionCode());
+		Assert.assertEquals(
+			WorkflowConstants.STATUS_APPROVED, region.getStatus());
 	}
 
 	private Country _addCountry() throws Exception {
@@ -264,7 +301,7 @@ public class RegionLocalServiceTest {
 
 	private Country _addCountry(String a2, String a3) throws Exception {
 		return _countryLocalService.addCountry(
-			a2, a3, true, RandomTestUtil.randomBoolean(),
+			null, a2, a3, true, RandomTestUtil.randomBoolean(),
 			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
 			RandomTestUtil.randomString(), RandomTestUtil.randomDouble(),
 			RandomTestUtil.randomBoolean(), RandomTestUtil.randomBoolean(),
@@ -284,8 +321,8 @@ public class RegionLocalServiceTest {
 		throws Exception {
 
 		return _regionLocalService.addRegion(
-			countryId, active, name, RandomTestUtil.randomDouble(), regionCode,
-			ServiceContextTestUtil.getServiceContext());
+			null, countryId, active, name, RandomTestUtil.randomDouble(),
+			regionCode, ServiceContextTestUtil.getServiceContext());
 	}
 
 	private Region _addRegion(long countryId) throws Exception {
@@ -345,15 +382,15 @@ public class RegionLocalServiceTest {
 	}
 
 	@Inject
-	private static AddressLocalService _addressLocalService;
+	private AddressLocalService _addressLocalService;
 
 	@Inject
-	private static CountryLocalService _countryLocalService;
+	private CountryLocalService _countryLocalService;
 
 	@Inject
-	private static OrganizationLocalService _organizationLocalService;
+	private OrganizationLocalService _organizationLocalService;
 
 	@Inject
-	private static RegionLocalService _regionLocalService;
+	private RegionLocalService _regionLocalService;
 
 }

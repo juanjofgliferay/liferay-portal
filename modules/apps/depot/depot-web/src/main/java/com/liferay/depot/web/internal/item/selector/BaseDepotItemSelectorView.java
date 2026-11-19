@@ -1,0 +1,265 @@
+/**
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
+ */
+
+package com.liferay.depot.web.internal.item.selector;
+
+import com.liferay.depot.service.DepotEntryService;
+import com.liferay.depot.web.internal.application.list.DepotPanelAppController;
+import com.liferay.depot.web.internal.util.DepotEntryAdminSearchUtil;
+import com.liferay.item.selector.ItemSelectorReturnType;
+import com.liferay.item.selector.ItemSelectorView;
+import com.liferay.item.selector.criteria.GroupItemSelectorReturnType;
+import com.liferay.item.selector.criteria.URLItemSelectorReturnType;
+import com.liferay.item.selector.criteria.UUIDItemSelectorReturnType;
+import com.liferay.item.selector.criteria.group.criterion.GroupItemSelectorCriterion;
+import com.liferay.petra.function.transform.TransformUtil;
+import com.liferay.petra.reflect.ReflectionUtil;
+import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.language.Language;
+import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.module.service.Snapshot;
+import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.JavaConstants;
+import com.liferay.portal.kernel.util.ListUtil;
+import com.liferay.portal.kernel.util.ParamUtil;
+import com.liferay.portal.kernel.util.ResourceBundleUtil;
+import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.site.item.selector.display.context.SitesItemSelectorViewDisplayContext;
+import com.liferay.site.item.selector.renderer.SiteItemSelectorViewRenderer;
+import com.liferay.site.search.GroupSearch;
+import com.liferay.staging.StagingGroupHelper;
+
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+
+import java.io.IOException;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.Locale;
+import java.util.ResourceBundle;
+
+import org.osgi.service.component.annotations.Reference;
+
+/**
+ * @author Alejandro Tardín
+ */
+public abstract class BaseDepotItemSelectorView
+	<T extends GroupItemSelectorCriterion>
+		implements ItemSelectorView<T> {
+
+	@Override
+	public List<ItemSelectorReturnType> getSupportedItemSelectorReturnTypes() {
+		return _supportedItemSelectorReturnTypes;
+	}
+
+	@Override
+	public String getTitle(Locale locale) {
+		ResourceBundle resourceBundle = ResourceBundleUtil.getBundle(
+			locale, getClass());
+
+		return ResourceBundleUtil.getString(
+			resourceBundle, getTitleLanguageKey());
+	}
+
+	@Override
+	public boolean isVisible(
+		T groupItemSelectorCriterion, ThemeDisplay themeDisplay) {
+
+		if (_siteItemSelectorViewRendererSnapshot.get() == null) {
+			return false;
+		}
+
+		if (groupItemSelectorCriterion == null) {
+			return true;
+		}
+
+		String portletId = groupItemSelectorCriterion.getPortletId();
+
+		if (Validator.isNull(portletId)) {
+			return true;
+		}
+
+		return depotPanelAppController.isShow(portletId);
+	}
+
+	@Override
+	public void renderHTML(
+			ServletRequest servletRequest, ServletResponse servletResponse,
+			T groupItemSelectorCriterion, PortletURL portletURL,
+			String itemSelectedEventName, boolean search)
+		throws IOException, ServletException {
+
+		SitesItemSelectorViewDisplayContext
+			depotSitesItemSelectorViewDisplayContext =
+				new DepotSitesItemSelectorViewDisplayContext(
+					(HttpServletRequest)servletRequest, itemSelectedEventName,
+					portletURL, groupItemSelectorCriterion);
+
+		SiteItemSelectorViewRenderer siteItemSelectorViewRenderer =
+			_siteItemSelectorViewRendererSnapshot.get();
+
+		siteItemSelectorViewRenderer.renderHTML(
+			depotSitesItemSelectorViewDisplayContext);
+	}
+
+	protected abstract void customizeGroupItemSelectorCriterion(
+		GroupItemSelectorCriterion groupItemSelectorCriterion);
+
+	protected abstract String getTitleLanguageKey();
+
+	@Reference
+	protected DepotEntryService depotEntryService;
+
+	@Reference
+	protected DepotPanelAppController depotPanelAppController;
+
+	@Reference
+	protected Language language;
+
+	@Reference
+	protected StagingGroupHelper stagingGroupHelper;
+
+	private static final Snapshot<SiteItemSelectorViewRenderer>
+		_siteItemSelectorViewRendererSnapshot = new Snapshot<>(
+			BaseDepotItemSelectorView.class, SiteItemSelectorViewRenderer.class,
+			null, true);
+	private static final List<ItemSelectorReturnType>
+		_supportedItemSelectorReturnTypes = Collections.unmodifiableList(
+			ListUtil.fromArray(
+				new GroupItemSelectorReturnType(),
+				new URLItemSelectorReturnType(),
+				new UUIDItemSelectorReturnType()));
+
+	private class DepotSitesItemSelectorViewDisplayContext
+		implements SitesItemSelectorViewDisplayContext {
+
+		public DepotSitesItemSelectorViewDisplayContext(
+			HttpServletRequest httpServletRequest, String itemSelectedEventName,
+			PortletURL portletURL,
+			GroupItemSelectorCriterion groupItemSelectorCriterion) {
+
+			_httpServletRequest = httpServletRequest;
+			_itemSelectedEventName = itemSelectedEventName;
+			_portletURL = portletURL;
+			_groupItemSelectorCriterion = groupItemSelectorCriterion;
+		}
+
+		@Override
+		public String getDisplayStyle() {
+			return ParamUtil.getString(
+				_httpServletRequest, "displayStyle", "icon");
+		}
+
+		@Override
+		public GroupItemSelectorCriterion getGroupItemSelectorCriterion() {
+			return _groupItemSelectorCriterion;
+		}
+
+		@Override
+		public String getGroupName(Group group) throws PortalException {
+			ThemeDisplay themeDisplay =
+				(ThemeDisplay)_httpServletRequest.getAttribute(
+					WebKeys.THEME_DISPLAY);
+
+			return group.getDescriptiveName(themeDisplay.getLocale());
+		}
+
+		@Override
+		public GroupSearch getGroupSearch() {
+			try {
+				customizeGroupItemSelectorCriterion(
+					_groupItemSelectorCriterion);
+
+				GroupSearch groupSearch =
+					DepotEntryAdminSearchUtil.getGroupSearch(
+						depotEntryService, _groupItemSelectorCriterion,
+						language, getPortletRequest(), getPortletResponse(),
+						getPortletURL());
+				ThemeDisplay themeDisplay =
+					(ThemeDisplay)_httpServletRequest.getAttribute(
+						WebKeys.THEME_DISPLAY);
+
+				if (!stagingGroupHelper.isLocalStagingGroup(
+						themeDisplay.getScopeGroup())) {
+
+					return groupSearch;
+				}
+
+				groupSearch.setResultsAndTotal(
+					() -> TransformUtil.transform(
+						groupSearch.getResults(), this::_getLocalStagingGroup),
+					groupSearch.getTotal());
+
+				return groupSearch;
+			}
+			catch (PortalException portalException) {
+				return ReflectionUtil.throwException(portalException);
+			}
+		}
+
+		@Override
+		public String getItemSelectedEventName() {
+			return _itemSelectedEventName;
+		}
+
+		@Override
+		public PortletRequest getPortletRequest() {
+			return (PortletRequest)_httpServletRequest.getAttribute(
+				JavaConstants.JAKARTA_PORTLET_REQUEST);
+		}
+
+		@Override
+		public PortletResponse getPortletResponse() {
+			return (PortletResponse)_httpServletRequest.getAttribute(
+				JavaConstants.JAKARTA_PORTLET_RESPONSE);
+		}
+
+		@Override
+		public PortletURL getPortletURL() {
+			return _portletURL;
+		}
+
+		@Override
+		public boolean isShowChildSitesLink() {
+			return false;
+		}
+
+		@Override
+		public boolean isShowSearch() {
+			return true;
+		}
+
+		@Override
+		public boolean isShowSortFilter() {
+			return true;
+		}
+
+		private Group _getLocalStagingGroup(Group group) {
+			Group localStagingGroup = stagingGroupHelper.fetchLocalStagingGroup(
+				group);
+
+			if (localStagingGroup == null) {
+				return group;
+			}
+
+			return localStagingGroup;
+		}
+
+		private final GroupItemSelectorCriterion _groupItemSelectorCriterion;
+		private final HttpServletRequest _httpServletRequest;
+		private final String _itemSelectedEventName;
+		private final PortletURL _portletURL;
+
+	}
+
+}

@@ -19,15 +19,19 @@ import com.liferay.portal.kernel.dao.orm.ProjectionFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.orm.RestrictionsFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.Session;
+import com.liferay.portal.kernel.security.permission.InlineSQLHelperUtil;
+import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.test.AssertUtils;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.transaction.Propagation;
 import com.liferay.portal.kernel.util.IntegerWrapper;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.OrderByComparatorFactoryUtil;
 import com.liferay.portal.kernel.util.Time;
+import com.liferay.portal.security.permission.SimplePermissionChecker;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PersistenceTestRule;
 import com.liferay.portal.test.rule.TransactionalTestRule;
@@ -113,11 +117,7 @@ public class MBMessagePersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		MBMessage newMBMessage = _persistence.create(pk);
-
-		newMBMessage.setMvccVersion(RandomTestUtil.nextLong());
+		MBMessage newMBMessage = addMBMessage();
 
 		newMBMessage.setCtCollectionId(RandomTestUtil.nextLong());
 
@@ -177,7 +177,9 @@ public class MBMessagePersistenceTest {
 
 		newMBMessage.setStatusDate(RandomTestUtil.nextDate());
 
-		_mbMessages.add(_persistence.update(newMBMessage));
+		newMBMessage = _persistence.update(newMBMessage);
+
+		_mbMessages.add(newMBMessage);
 
 		MBMessage existingMBMessage = _persistence.findByPrimaryKey(
 			newMBMessage.getPrimaryKey());
@@ -388,21 +390,6 @@ public class MBMessagePersistenceTest {
 	}
 
 	@Test
-	public void testCountByU_C() throws Exception {
-		_persistence.countByU_C(
-			RandomTestUtil.nextLong(), RandomTestUtil.nextLong());
-
-		_persistence.countByU_C(0L, 0L);
-	}
-
-	@Test
-	public void testCountByU_CArrayable() throws Exception {
-		_persistence.countByU_C(
-			RandomTestUtil.nextLong(),
-			new long[] {RandomTestUtil.nextLong(), 0L});
-	}
-
-	@Test
 	public void testCountByC_C() throws Exception {
 		_persistence.countByC_C(
 			RandomTestUtil.nextLong(), RandomTestUtil.nextLong());
@@ -419,14 +406,6 @@ public class MBMessagePersistenceTest {
 	}
 
 	@Test
-	public void testCountByT_A() throws Exception {
-		_persistence.countByT_A(
-			RandomTestUtil.nextLong(), RandomTestUtil.randomBoolean());
-
-		_persistence.countByT_A(0L, RandomTestUtil.randomBoolean());
-	}
-
-	@Test
 	public void testCountByT_S() throws Exception {
 		_persistence.countByT_S(
 			RandomTestUtil.nextLong(), RandomTestUtil.nextInt());
@@ -440,14 +419,6 @@ public class MBMessagePersistenceTest {
 			RandomTestUtil.nextLong(), RandomTestUtil.nextInt());
 
 		_persistence.countByT_NotS(0L, 0);
-	}
-
-	@Test
-	public void testCountByTR_S() throws Exception {
-		_persistence.countByTR_S(
-			RandomTestUtil.nextLong(), RandomTestUtil.nextInt());
-
-		_persistence.countByTR_S(0L, 0);
 	}
 
 	@Test
@@ -486,32 +457,6 @@ public class MBMessagePersistenceTest {
 	}
 
 	@Test
-	public void testCountByU_C_C() throws Exception {
-		_persistence.countByU_C_C(
-			RandomTestUtil.nextLong(), RandomTestUtil.nextLong(),
-			RandomTestUtil.nextLong());
-
-		_persistence.countByU_C_C(0L, 0L, 0L);
-	}
-
-	@Test
-	public void testCountByU_C_S() throws Exception {
-		_persistence.countByU_C_S(
-			RandomTestUtil.nextLong(), RandomTestUtil.nextLong(),
-			RandomTestUtil.nextInt());
-
-		_persistence.countByU_C_S(0L, 0L, 0);
-	}
-
-	@Test
-	public void testCountByU_C_SArrayable() throws Exception {
-		_persistence.countByU_C_S(
-			RandomTestUtil.nextLong(),
-			new long[] {RandomTestUtil.nextLong(), 0L},
-			RandomTestUtil.nextInt());
-	}
-
-	@Test
 	public void testCountByC_C_S() throws Exception {
 		_persistence.countByC_C_S(
 			RandomTestUtil.nextLong(), RandomTestUtil.nextLong(),
@@ -536,15 +481,6 @@ public class MBMessagePersistenceTest {
 			RandomTestUtil.nextLong(), RandomTestUtil.nextInt());
 
 		_persistence.countByG_C_T_S(0L, 0L, 0L, 0);
-	}
-
-	@Test
-	public void testCountByU_C_C_S() throws Exception {
-		_persistence.countByU_C_C_S(
-			RandomTestUtil.nextLong(), RandomTestUtil.nextLong(),
-			RandomTestUtil.nextLong(), RandomTestUtil.nextInt());
-
-		_persistence.countByU_C_C_S(0L, 0L, 0L, 0);
 	}
 
 	@Test
@@ -581,6 +517,24 @@ public class MBMessagePersistenceTest {
 
 	@Test
 	public void testFilterFindByGroupId() throws Exception {
+		PermissionThreadLocal.setPermissionChecker(
+			new SimplePermissionChecker() {
+				{
+					init(TestPropsValues.getUser());
+				}
+
+				@Override
+				public boolean isCompanyAdmin(long companyId) {
+					return false;
+				}
+
+			});
+
+		Assert.assertTrue(InlineSQLHelperUtil.isEnabled(0));
+
+		_persistence.filterFindByGroupId(
+			0, QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
+
 		_persistence.filterFindByGroupId(
 			0, QueryUtil.ALL_POS, QueryUtil.ALL_POS, getOrderByComparator());
 	}
@@ -895,8 +849,6 @@ public class MBMessagePersistenceTest {
 
 		MBMessage mbMessage = _persistence.create(pk);
 
-		mbMessage.setMvccVersion(RandomTestUtil.nextLong());
-
 		mbMessage.setCtCollectionId(RandomTestUtil.nextLong());
 
 		mbMessage.setUuid(RandomTestUtil.randomString());
@@ -965,3 +917,4 @@ public class MBMessagePersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1411069289

@@ -11,32 +11,40 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import com.liferay.petra.function.UnsafeSupplier;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.constraints.DecimalMin;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.constraints.DecimalMin;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Zoltán Takács
  * @generated
  */
 @Generated("")
-@GraphQLName("Sku")
+@GraphQLName(
+	description = "Read-only projection of a SKU (SKU) referenced by a discount sku binding or a price entry. Carries the SKU ID, sku key, optional unit-of-measure key, and price-bearing identifiers.",
+	value = "Sku"
+)
+@io.swagger.v3.oas.annotations.media.Schema(
+	description = "Read-only projection of a SKU (SKU) referenced by a discount sku binding or a price entry. Carries the SKU ID, sku key, optional unit-of-measure key, and price-bearing identifiers."
+)
 @JsonFilter("Liferay.Vulcan")
 @XmlRootElement(name = "Sku")
 public class Sku implements Serializable {
@@ -49,97 +57,162 @@ public class Sku implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(Sku.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Base regular price of the SKU when no per-customer price list applies.",
+		example = "10.1"
+	)
 	public Double getBasePrice() {
+		if (_basePriceSupplier != null) {
+			basePrice = _basePriceSupplier.get();
+
+			_basePriceSupplier = null;
+		}
+
 		return basePrice;
 	}
 
 	public void setBasePrice(Double basePrice) {
 		this.basePrice = basePrice;
+
+		_basePriceSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setBasePrice(
 		UnsafeSupplier<Double, Exception> basePriceUnsafeSupplier) {
 
-		try {
-			basePrice = basePriceUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_basePriceSupplier = () -> {
+			try {
+				return basePriceUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Base regular price of the SKU when no per-customer price list applies."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Double basePrice;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Double> _basePriceSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Pre-formatted display string of the base price, in the SKU's resolved currency. Read-only.",
+		example = "$10.00"
+	)
 	public String getBasePriceFormatted() {
+		if (_basePriceFormattedSupplier != null) {
+			basePriceFormatted = _basePriceFormattedSupplier.get();
+
+			_basePriceFormattedSupplier = null;
+		}
+
 		return basePriceFormatted;
 	}
 
 	public void setBasePriceFormatted(String basePriceFormatted) {
 		this.basePriceFormatted = basePriceFormatted;
+
+		_basePriceFormattedSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setBasePriceFormatted(
 		UnsafeSupplier<String, Exception> basePriceFormattedUnsafeSupplier) {
 
-		try {
-			basePriceFormatted = basePriceFormattedUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_basePriceFormattedSupplier = () -> {
+			try {
+				return basePriceFormattedUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Pre-formatted display string of the base price, in the SKU's resolved currency. Read-only."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String basePriceFormatted;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _basePriceFormattedSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Base promo price of the SKU when no per-customer price list applies.",
+		example = "10.1"
+	)
 	public Double getBasePromoPrice() {
+		if (_basePromoPriceSupplier != null) {
+			basePromoPrice = _basePromoPriceSupplier.get();
+
+			_basePromoPriceSupplier = null;
+		}
+
 		return basePromoPrice;
 	}
 
 	public void setBasePromoPrice(Double basePromoPrice) {
 		this.basePromoPrice = basePromoPrice;
+
+		_basePromoPriceSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setBasePromoPrice(
 		UnsafeSupplier<Double, Exception> basePromoPriceUnsafeSupplier) {
 
-		try {
-			basePromoPrice = basePromoPriceUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_basePromoPriceSupplier = () -> {
+			try {
+				return basePromoPriceUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Base promo price of the SKU when no per-customer price list applies."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Double basePromoPrice;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Double> _basePromoPriceSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Pre-formatted display string of the base promo price, in the SKU's resolved currency. Read-only.",
+		example = "$10.00"
+	)
 	public String getBasePromoPriceFormatted() {
+		if (_basePromoPriceFormattedSupplier != null) {
+			basePromoPriceFormatted = _basePromoPriceFormattedSupplier.get();
+
+			_basePromoPriceFormattedSupplier = null;
+		}
+
 		return basePromoPriceFormatted;
 	}
 
 	public void setBasePromoPriceFormatted(String basePromoPriceFormatted) {
 		this.basePromoPriceFormatted = basePromoPriceFormatted;
+
+		_basePromoPriceFormattedSupplier = null;
 	}
 
 	@JsonIgnore
@@ -147,74 +220,113 @@ public class Sku implements Serializable {
 		UnsafeSupplier<String, Exception>
 			basePromoPriceFormattedUnsafeSupplier) {
 
-		try {
-			basePromoPriceFormatted =
-				basePromoPriceFormattedUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_basePromoPriceFormattedSupplier = () -> {
+			try {
+				return basePromoPriceFormattedUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Pre-formatted display string of the base promo price, in the SKU's resolved currency. Read-only."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String basePromoPriceFormatted;
 
+	@JsonIgnore
+	private Supplier<String> _basePromoPriceFormattedSupplier;
+
 	@DecimalMin("0")
-	@Schema(example = "30130")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Internal numeric identifier of the sku. Server-assigned and stable.",
+		example = "30130"
+	)
 	public Long getId() {
+		if (_idSupplier != null) {
+			id = _idSupplier.get();
+
+			_idSupplier = null;
+		}
+
 		return id;
 	}
 
 	public void setId(Long id) {
 		this.id = id;
+
+		_idSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setId(UnsafeSupplier<Long, Exception> idUnsafeSupplier) {
-		try {
-			id = idUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_idSupplier = () -> {
+			try {
+				return idUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Internal numeric identifier of the sku. Server-assigned and stable."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Long id;
 
-	@Schema(example = "simple")
+	@JsonIgnore
+	private Supplier<Long> _idSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Display name of the sku.", example = "simple"
+	)
 	public String getName() {
+		if (_nameSupplier != null) {
+			name = _nameSupplier.get();
+
+			_nameSupplier = null;
+		}
+
 		return name;
 	}
 
 	public void setName(String name) {
 		this.name = name;
+
+		_nameSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setName(UnsafeSupplier<String, Exception> nameUnsafeSupplier) {
-		try {
-			name = nameUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_nameSupplier = () -> {
+			try {
+				return nameUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(description = "Display name of the sku.")
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected String name;
+
+	@JsonIgnore
+	private Supplier<String> _nameSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -243,6 +355,8 @@ public class Sku implements Serializable {
 
 		sb.append("{");
 
+		Double basePrice = getBasePrice();
+
 		if (basePrice != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -252,6 +366,8 @@ public class Sku implements Serializable {
 
 			sb.append(basePrice);
 		}
+
+		String basePriceFormatted = getBasePriceFormatted();
 
 		if (basePriceFormatted != null) {
 			if (sb.length() > 1) {
@@ -267,6 +383,8 @@ public class Sku implements Serializable {
 			sb.append("\"");
 		}
 
+		Double basePromoPrice = getBasePromoPrice();
+
 		if (basePromoPrice != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -276,6 +394,8 @@ public class Sku implements Serializable {
 
 			sb.append(basePromoPrice);
 		}
+
+		String basePromoPriceFormatted = getBasePromoPriceFormatted();
 
 		if (basePromoPriceFormatted != null) {
 			if (sb.length() > 1) {
@@ -291,6 +411,8 @@ public class Sku implements Serializable {
 			sb.append("\"");
 		}
 
+		Long id = getId();
+
 		if (id != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -300,6 +422,8 @@ public class Sku implements Serializable {
 
 			sb.append(id);
 		}
+
+		String name = getName();
 
 		if (name != null) {
 			if (sb.length() > 1) {
@@ -320,8 +444,8 @@ public class Sku implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.commerce.admin.pricing.dto.v2_0.Sku",
 		name = "x-class-name"
 	)
@@ -367,7 +491,10 @@ public class Sku implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -405,6 +532,27 @@ public class Sku implements Serializable {
 		return sb.toString();
 	}
 
+	private static String _toJSON(Object value) {
+		if (value instanceof Collection) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONArray((Collection<?>)value));
+		}
+		else if (value instanceof Map) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONObject((Map<?, ?>)value));
+		}
+		else if (value instanceof Object[]) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONArray(
+					Arrays.asList((Object[])value)));
+		}
+		else if (value instanceof String) {
+			return StringBundler.concat("\"", _escape(value), "\"");
+		}
+
+		return String.valueOf(value);
+	}
+
 	private static final String[][] _JSON_ESCAPE_STRINGS = {
 		{"\\", "\"", "\b", "\f", "\n", "\r", "\t"},
 		{"\\\\", "\\\"", "\\b", "\\f", "\\n", "\\r", "\\t"}
@@ -413,3 +561,4 @@ public class Sku implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:-1760742491

@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -212,20 +213,6 @@ public class CalendarBookingLocalServiceUtil {
 		return getService().deletePersistedModel(persistedModel);
 	}
 
-	public static CalendarBooking deleteRecurringCalendarBooking(
-			CalendarBooking calendarBooking)
-		throws PortalException {
-
-		return getService().deleteRecurringCalendarBooking(calendarBooking);
-	}
-
-	public static CalendarBooking deleteRecurringCalendarBooking(
-			long calendarBookingId)
-		throws PortalException {
-
-		return getService().deleteRecurringCalendarBooking(calendarBookingId);
-	}
-
 	public static <T> T dslQuery(DSLQuery dslQuery) {
 		return getService().dslQuery(dslQuery);
 	}
@@ -334,6 +321,13 @@ public class CalendarBookingLocalServiceUtil {
 		return getService().fetchCalendarBooking(uuid, groupId);
 	}
 
+	public static CalendarBooking fetchCalendarBookingByExternalReferenceCode(
+		String externalReferenceCode, long groupId) {
+
+		return getService().fetchCalendarBookingByExternalReferenceCode(
+			externalReferenceCode, groupId);
+	}
+
 	/**
 	 * Returns the calendar booking matching the UUID and group.
 	 *
@@ -372,6 +366,14 @@ public class CalendarBookingLocalServiceUtil {
 
 		return getService().getCalendarBooking(
 			calendarId, parentCalendarBookingId);
+	}
+
+	public static CalendarBooking getCalendarBookingByExternalReferenceCode(
+			String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		return getService().getCalendarBookingByExternalReferenceCode(
+			externalReferenceCode, groupId);
 	}
 
 	/**
@@ -414,20 +416,10 @@ public class CalendarBookingLocalServiceUtil {
 		return getService().getCalendarBookings(start, end);
 	}
 
-	public static List<CalendarBooking> getCalendarBookings(long calendarId) {
-		return getService().getCalendarBookings(calendarId);
-	}
-
 	public static List<CalendarBooking> getCalendarBookings(
 		long calendarId, int[] statuses) {
 
 		return getService().getCalendarBookings(calendarId, statuses);
-	}
-
-	public static List<CalendarBooking> getCalendarBookings(
-		long calendarId, long startTime, long endTime) {
-
-		return getService().getCalendarBookings(calendarId, startTime, endTime);
 	}
 
 	public static List<CalendarBooking> getCalendarBookings(
@@ -491,13 +483,6 @@ public class CalendarBookingLocalServiceUtil {
 		return getService().getChildCalendarBookings(calendarBookingId);
 	}
 
-	public static List<CalendarBooking> getChildCalendarBookings(
-		long parentCalendarBookingId, int status) {
-
-		return getService().getChildCalendarBookings(
-			parentCalendarBookingId, status);
-	}
-
 	public static long[] getChildCalendarIds(
 			long calendarBookingId, long calendarId)
 		throws PortalException {
@@ -548,13 +533,6 @@ public class CalendarBookingLocalServiceUtil {
 		CalendarBooking calendarBooking) {
 
 		return getService().getRecurringCalendarBookings(calendarBooking);
-	}
-
-	public static List<CalendarBooking> getRecurringCalendarBookings(
-		CalendarBooking calendarBooking, long startTime) {
-
-		return getService().getRecurringCalendarBookings(
-			calendarBooking, startTime);
 	}
 
 	public static boolean hasExclusiveCalendarBooking(
@@ -634,28 +612,6 @@ public class CalendarBookingLocalServiceUtil {
 			parentCalendarBookingId, title, description, location, startTime,
 			endTime, recurring, statuses, andOperator, start, end,
 			orderByComparator);
-	}
-
-	public static int searchCount(
-		long companyId, long[] groupIds, long[] calendarIds,
-		long[] calendarResourceIds, long parentCalendarBookingId,
-		String keywords, long startTime, long endTime, int[] statuses) {
-
-		return getService().searchCount(
-			companyId, groupIds, calendarIds, calendarResourceIds,
-			parentCalendarBookingId, keywords, startTime, endTime, statuses);
-	}
-
-	public static int searchCount(
-		long companyId, long[] groupIds, long[] calendarIds,
-		long[] calendarResourceIds, long parentCalendarBookingId, String title,
-		String description, String location, long startTime, long endTime,
-		int[] statuses, boolean andOperator) {
-
-		return getService().searchCount(
-			companyId, groupIds, calendarIds, calendarResourceIds,
-			parentCalendarBookingId, title, description, location, startTime,
-			endTime, statuses, andOperator);
 	}
 
 	public static void updateAsset(
@@ -816,13 +772,13 @@ public class CalendarBookingLocalServiceUtil {
 	}
 
 	public static CalendarBookingLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(CalendarBookingLocalService service) {
-		_service = service;
-	}
-
-	private static volatile CalendarBookingLocalService _service;
+	private static final Snapshot<CalendarBookingLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			CalendarBookingLocalServiceUtil.class,
+			CalendarBookingLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:174252544

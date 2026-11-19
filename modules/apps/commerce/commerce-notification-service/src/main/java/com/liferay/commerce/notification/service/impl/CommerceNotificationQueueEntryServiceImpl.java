@@ -21,6 +21,7 @@ import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Alessio Antonio Rendina
+ * @deprecated As of Cavanaugh (7.4.x)
  */
 @Component(
 	property = {
@@ -29,6 +30,7 @@ import org.osgi.service.component.annotations.Reference;
 	},
 	service = AopService.class
 )
+@Deprecated
 public class CommerceNotificationQueueEntryServiceImpl
 	extends CommerceNotificationQueueEntryServiceBaseImpl {
 
@@ -38,9 +40,8 @@ public class CommerceNotificationQueueEntryServiceImpl
 		throws PortalException {
 
 		CommerceNotificationQueueEntry commerceNotificationQueueEntry =
-			commerceNotificationQueueEntryLocalService.
-				getCommerceNotificationQueueEntry(
-					commerceNotificationQueueEntryId);
+			commerceNotificationQueueEntryPersistence.findByPrimaryKey(
+				commerceNotificationQueueEntryId);
 
 		_portletResourcePermission.check(
 			getPermissionChecker(), commerceNotificationQueueEntry.getGroupId(),
@@ -64,9 +65,8 @@ public class CommerceNotificationQueueEntryServiceImpl
 			CommerceNotificationActionKeys.
 				VIEW_COMMERCE_NOTIFICATION_QUEUE_ENTRIES);
 
-		return commerceNotificationQueueEntryLocalService.
-			getCommerceNotificationQueueEntries(
-				groupId, start, end, orderByComparator);
+		return commerceNotificationQueueEntryPersistence.findByGroupId(
+			groupId, start, end, orderByComparator);
 	}
 
 	@Override
@@ -78,8 +78,8 @@ public class CommerceNotificationQueueEntryServiceImpl
 			CommerceNotificationActionKeys.
 				VIEW_COMMERCE_NOTIFICATION_QUEUE_ENTRIES);
 
-		return commerceNotificationQueueEntryLocalService.
-			getCommerceNotificationQueueEntriesCount(groupId);
+		return commerceNotificationQueueEntryPersistence.countByGroupId(
+			groupId);
 	}
 
 	@Override
@@ -88,9 +88,8 @@ public class CommerceNotificationQueueEntryServiceImpl
 		throws PortalException {
 
 		CommerceNotificationQueueEntry commerceNotificationQueueEntry =
-			commerceNotificationQueueEntryLocalService.
-				getCommerceNotificationQueueEntry(
-					commerceNotificationQueueEntryId);
+			commerceNotificationQueueEntryPersistence.findByPrimaryKey(
+				commerceNotificationQueueEntryId);
 
 		_portletResourcePermission.check(
 			getPermissionChecker(), commerceNotificationQueueEntry.getGroupId(),

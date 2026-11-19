@@ -26,6 +26,7 @@ import com.liferay.portal.kernel.security.ldap.LDAPSettings;
 import com.liferay.portal.kernel.service.ClassNameLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserLocalService;
+import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.ResourceBundleUtil;
@@ -235,9 +236,11 @@ public class ExpandoUserFieldExpressionHandler
 				_expandoColumnLocalService.getDefaultTableColumns(
 					CompanyThreadLocal.getCompanyId(), User.class.getName())) {
 
-			if (types.contains(column.getType())) {
-				validExpressions.add(column.getName());
+			if (!types.contains(column.getType())) {
+				continue;
 			}
+
+			validExpressions.add(column.getName());
 		}
 
 		return Collections.unmodifiableList(validExpressions);
@@ -270,7 +273,7 @@ public class ExpandoUserFieldExpressionHandler
 	}
 
 	private static <V> V _head(V[] values) {
-		if ((values == null) || (values.length == 0)) {
+		if (ArrayUtil.isEmpty(values)) {
 			return null;
 		}
 
@@ -283,7 +286,7 @@ public class ExpandoUserFieldExpressionHandler
 		ExpandoValue expandoValue = null;
 
 		if (!user.isNew()) {
-			expandoValue = _expandoValueLocalService.getValue(
+			expandoValue = _expandoValueLocalService.fetchValue(
 				user.getCompanyId(), User.class.getName(),
 				ExpandoTableConstants.DEFAULT_TABLE_NAME,
 				validUserFieldExpression, user.getUserId());
@@ -309,8 +312,8 @@ public class ExpandoUserFieldExpressionHandler
 			expandoValue = _expandoValueLocalService.createExpandoValue(0);
 
 			expandoValue.setCompanyId(user.getCompanyId());
-			expandoValue.setClassName(User.class.getName());
 			expandoValue.setColumnId(column.getColumnId());
+			expandoValue.setClassName(User.class.getName());
 			expandoValue.setClassPK(user.getUserId());
 		}
 

@@ -10,15 +10,23 @@ import com.liferay.frontend.token.definition.FrontendTokenCategory;
 import com.liferay.frontend.token.definition.FrontendTokenDefinition;
 import com.liferay.frontend.token.definition.FrontendTokenMapping;
 import com.liferay.frontend.token.definition.FrontendTokenSet;
+import com.liferay.frontend.token.definition.constants.FrontendTokenDefinitionConstants;
 import com.liferay.frontend.token.definition.internal.json.JSONLocalizer;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.resource.bundle.ResourceBundleLoader;
+import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.LocalizationUtil;
+import com.liferay.portal.kernel.util.Validator;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
 
 /**
  * @author Iván Zaera
@@ -27,11 +35,14 @@ public class FrontendTokenDefinitionImpl implements FrontendTokenDefinition {
 
 	public FrontendTokenDefinitionImpl(
 		JSONObject jsonObject, JSONFactory jsonFactory,
-		ResourceBundleLoader resourceBundleLoader, String themeId) {
+		ResourceBundleLoader resourceBundleLoader, String themeId,
+		String themeName, String themeType) {
 
 		_jsonFactory = jsonFactory;
 		_resourceBundleLoader = resourceBundleLoader;
 		_themeId = themeId;
+		_themeName = themeName;
+		_themeType = themeType;
 
 		_jsonLocalizer = createJSONLocalizer(jsonObject);
 
@@ -39,6 +50,8 @@ public class FrontendTokenDefinitionImpl implements FrontendTokenDefinition {
 			"frontendTokenCategories");
 
 		if (frontendTokenCategoriesJSONArray == null) {
+			_cssVariables = Collections.emptyMap();
+
 			return;
 		}
 
@@ -57,6 +70,13 @@ public class FrontendTokenDefinitionImpl implements FrontendTokenDefinition {
 			_frontendTokenSets.addAll(
 				frontendTokenCategory.getFrontendTokenSets());
 		}
+
+		_cssVariables = _getCSSVariables();
+	}
+
+	@Override
+	public Map<String, String> getCSSVariables() {
+		return _cssVariables;
 	}
 
 	@Override
@@ -70,13 +90,13 @@ public class FrontendTokenDefinitionImpl implements FrontendTokenDefinition {
 	}
 
 	@Override
-	public Collection<FrontendToken> getFrontendTokens() {
-		return _frontendTokens;
+	public Collection<FrontendTokenSet> getFrontendTokenSets() {
+		return _frontendTokenSets;
 	}
 
 	@Override
-	public Collection<FrontendTokenSet> getFrontendTokenSets() {
-		return _frontendTokenSets;
+	public Collection<FrontendToken> getFrontendTokens() {
+		return _frontendTokens;
 	}
 
 	@Override
@@ -84,8 +104,32 @@ public class FrontendTokenDefinitionImpl implements FrontendTokenDefinition {
 		return _jsonLocalizer.getJSONObject(locale);
 	}
 
+	@Override
+	public int getPriority() {
+		if (Objects.equals(
+				_themeType,
+				FrontendTokenDefinitionConstants.THEME_TYPE_GLOBAL)) {
+
+			return FrontendTokenDefinitionConstants.PRIORITY_GLOBAL;
+		}
+
+		return FrontendTokenDefinitionConstants.PRIORITY_THEME;
+	}
+
+	@Override
 	public String getThemeId() {
 		return _themeId;
+	}
+
+	@Override
+	public String getThemeName(Locale locale) {
+		return LocalizationUtil.getLocalization(
+			_themeName, LocaleUtil.toLanguageId(locale));
+	}
+
+	@Override
+	public String getThemeType() {
+		return _themeType;
 	}
 
 	protected JSONLocalizer createJSONLocalizer(JSONObject jsonObject) {
@@ -94,16 +138,52 @@ public class FrontendTokenDefinitionImpl implements FrontendTokenDefinition {
 			_resourceBundleLoader, _themeId);
 	}
 
+	private Map<String, String> _getCSSVariables() {
+		Map<String, String> cssVariables = new HashMap<>();
+
+		for (FrontendToken frontendToken : _frontendTokens) {
+			if (frontendToken.<Object>getDefaultValue() == null) {
+				continue;
+			}
+
+			String defaultValue = String.valueOf(
+				frontendToken.<Object>getDefaultValue());
+
+			if (Validator.isNull(defaultValue)) {
+				continue;
+			}
+
+			Collection<FrontendTokenMapping> frontendTokenMappings =
+				frontendToken.getFrontendTokenMappings(
+					FrontendTokenMapping.TYPE_CSS_VARIABLE);
+
+			if (frontendTokenMappings == null) {
+				continue;
+			}
+
+			for (FrontendTokenMapping frontendTokenMapping :
+					frontendTokenMappings) {
+
+				cssVariables.put(frontendTokenMapping.getValue(), defaultValue);
+			}
+		}
+
+		return Collections.unmodifiableMap(cssVariables);
+	}
+
+	private final Map<String, String> _cssVariables;
 	private final Collection<FrontendTokenCategory> _frontendTokenCategories =
 		new ArrayList<>();
 	private final Collection<FrontendTokenMapping> _frontendTokenMappings =
 		new ArrayList<>();
-	private final Collection<FrontendToken> _frontendTokens = new ArrayList<>();
 	private final Collection<FrontendTokenSet> _frontendTokenSets =
 		new ArrayList<>();
+	private final Collection<FrontendToken> _frontendTokens = new ArrayList<>();
 	private final JSONFactory _jsonFactory;
 	private final JSONLocalizer _jsonLocalizer;
 	private final ResourceBundleLoader _resourceBundleLoader;
 	private final String _themeId;
+	private final String _themeName;
+	private final String _themeType;
 
 }

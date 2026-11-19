@@ -3,11 +3,11 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import '@testing-library/jest-dom/extend-expect';
+import '@testing-library/jest-dom';
 import {cleanup, render} from '@testing-library/react';
 import React from 'react';
 
-import WorkflowStatus from '../../src/main/resources/META-INF/resources/workflow_status/js/WorkflowStatus';
+import {WorkflowStatus} from '../../src/main/resources/META-INF/resources/js/index';
 
 describe('The WorkflowStatus should', () => {
 	const INITIAL_PROPS = {
@@ -42,14 +42,7 @@ describe('The WorkflowStatus should', () => {
 	});
 
 	it('render without a status label', () => {
-		render(
-			<WorkflowStatus
-				{...{
-					...INITIAL_PROPS,
-					showStatusLabel: false,
-				}}
-			/>
-		);
+		render(<WorkflowStatus {...INITIAL_PROPS} showStatusLabel={false} />);
 
 		const hasStatus = document.querySelector('workflow-label');
 

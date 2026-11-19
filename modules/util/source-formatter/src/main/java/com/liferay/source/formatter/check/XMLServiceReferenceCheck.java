@@ -42,7 +42,7 @@ public class XMLServiceReferenceCheck extends BaseFileCheck {
 		if (!fileName.endsWith("/service.xml") ||
 			absolutePath.contains("/gradleTest/") ||
 			absolutePath.contains("/samples/") ||
-			absolutePath.contains("-test-service")) {
+			absolutePath.contains("-test-")) {
 
 			return content;
 		}
@@ -86,9 +86,9 @@ public class XMLServiceReferenceCheck extends BaseFileCheck {
 					addMessage(
 						fileName,
 						StringBundler.concat(
-							"Avoid using reference '", referenceEntityName,
-							"' for Entity '", entityName,
-							"', use private variables in *ServiceImpl ",
+							"Avoid using reference \"", referenceEntityName,
+							"\" for Entity \"", entityName,
+							"\", use private variables in *ServiceImpl ",
 							"instead"));
 				}
 				else if (!_isRequiredReference(
@@ -98,8 +98,8 @@ public class XMLServiceReferenceCheck extends BaseFileCheck {
 					addMessage(
 						fileName,
 						StringBundler.concat(
-							"Reference '", referenceEntityName,
-							"' not needed for Entity '", entityName, "'"));
+							"Reference \"", referenceEntityName,
+							"\" not needed for Entity \"", entityName, "\""));
 				}
 			}
 		}

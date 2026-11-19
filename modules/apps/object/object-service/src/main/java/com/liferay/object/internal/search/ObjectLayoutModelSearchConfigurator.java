@@ -6,10 +6,12 @@
 package com.liferay.object.internal.search;
 
 import com.liferay.object.model.ObjectLayout;
+import com.liferay.object.service.ObjectLayoutLocalService;
 import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.search.spi.model.index.contributor.ModelIndexerWriterContributor;
 import com.liferay.portal.search.spi.model.registrar.ModelSearchConfigurator;
 
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
@@ -45,10 +47,16 @@ public class ObjectLayoutModelSearchConfigurator
 		return _modelIndexWriterContributor;
 	}
 
-	@Reference(
-		target = "(indexer.class.name=com.liferay.object.model.ObjectLayout)"
-	)
+	@Activate
+	protected void activate() {
+		_modelIndexWriterContributor = new ModelIndexerWriterContributor<>(
+			_objectLayoutLocalService::getIndexableActionableDynamicQuery);
+	}
+
 	private ModelIndexerWriterContributor<ObjectLayout>
 		_modelIndexWriterContributor;
+
+	@Reference
+	private ObjectLayoutLocalService _objectLayoutLocalService;
 
 }

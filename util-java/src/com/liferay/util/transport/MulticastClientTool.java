@@ -70,7 +70,7 @@ public class MulticastClientTool {
 		}
 	}
 
-	private Map<String, Object> _getArgsMap(String[] args) throws Exception {
+	private Map<String, Object> _getArgsMap(String[] args) {
 		Map<String, Object> argsMap = new HashMap<>();
 
 		for (int i = 0; i < args.length; i++) {
@@ -97,13 +97,8 @@ public class MulticastClientTool {
 			}
 		}
 
-		if (!argsMap.containsKey("gzip")) {
-			argsMap.put("gzip", Boolean.FALSE);
-		}
-
-		if (!argsMap.containsKey("short")) {
-			argsMap.put("short", Boolean.FALSE);
-		}
+		argsMap.putIfAbsent("gzip", Boolean.FALSE);
+		argsMap.putIfAbsent("short", Boolean.FALSE);
 
 		return argsMap;
 	}

@@ -17,6 +17,7 @@ import com.liferay.saml.persistence.model.SamlIdpSpSession;
 import com.liferay.saml.persistence.model.SamlPeerBinding;
 import com.liferay.saml.persistence.service.SamlPeerBindingLocalService;
 import com.liferay.saml.persistence.service.base.SamlIdpSpSessionLocalServiceBaseImpl;
+import com.liferay.saml.persistence.service.persistence.SamlPeerBindingPersistence;
 
 import java.util.Date;
 import java.util.List;
@@ -57,13 +58,13 @@ public class SamlIdpSpSessionLocalServiceImpl
 
 		SamlPeerBinding samlPeerBinding =
 			_samlPeerBindingLocalService.fetchSamlPeerBinding(
-				user.getCompanyId(), false, nameIdFormat, null, nameIdValue,
-				samlSpEntityId);
+				user.getCompanyId(), samlSpEntityId, false, nameIdFormat, null,
+				nameIdValue);
 
 		if (samlPeerBinding == null) {
 			samlPeerBinding = _samlPeerBindingLocalService.addSamlPeerBinding(
-				user.getUserId(), nameIdFormat, null, null, null, nameIdValue,
-				samlSpEntityId);
+				user.getUserId(), samlSpEntityId, nameIdFormat, null, null,
+				null, nameIdValue);
 		}
 
 		long samlIdpSpSessionId = counterLocalService.increment(
@@ -131,10 +132,11 @@ public class SamlIdpSpSessionLocalServiceImpl
 
 		for (SamlIdpSpSession samlIdpSsoSession : samlIdpSsoSessions) {
 			SamlPeerBinding samlPeerBinding =
-				_samlPeerBindingLocalService.fetchSamlPeerBinding(
+				_samlPeerBindingPersistence.fetchByPrimaryKey(
 					samlIdpSsoSession.getSamlPeerBindingId());
 
-			if (Objects.equals(
+			if ((samlPeerBinding != null) &&
+				Objects.equals(
 					samlSpEntityId, samlPeerBinding.getSamlPeerEntityId())) {
 
 				return samlIdpSsoSession;
@@ -146,6 +148,9 @@ public class SamlIdpSpSessionLocalServiceImpl
 
 	@Reference
 	private SamlPeerBindingLocalService _samlPeerBindingLocalService;
+
+	@Reference
+	private SamlPeerBindingPersistence _samlPeerBindingPersistence;
 
 	@Reference
 	private UserLocalService _userLocalService;

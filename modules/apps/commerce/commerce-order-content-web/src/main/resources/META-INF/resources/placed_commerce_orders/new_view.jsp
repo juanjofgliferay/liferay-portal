@@ -16,24 +16,10 @@ CommerceOrder commerceOrder = commerceOrderContentDisplayContext.getCommerceOrde
 	<portlet:param name="commerceOrderId" value="<%= String.valueOf(commerceOrderContentDisplayContext.getCommerceOrderId()) %>" />
 </liferay-portlet:renderURL>
 
-<commerce-ui:modal
-	id="payment-terms-modal"
-	refreshPageOnClose="<%= true %>"
-	size="xl"
-	url="<%= editPaymentTermsURL %>"
-/>
-
 <liferay-portlet:renderURL var="editDeliveryTermsURL" windowState="<%= LiferayWindowState.POP_UP.toString() %>">
 	<portlet:param name="mvcRenderCommandName" value="/commerce_order_content/view_commerce_order_delivery_terms" />
 	<portlet:param name="commerceOrderId" value="<%= String.valueOf(commerceOrderContentDisplayContext.getCommerceOrderId()) %>" />
 </liferay-portlet:renderURL>
-
-<commerce-ui:modal
-	id="delivery-terms-modal"
-	refreshPageOnClose="<%= true %>"
-	size="xl"
-	url="<%= editDeliveryTermsURL %>"
-/>
 
 <div class="row">
 	<div class="col-12">
@@ -44,9 +30,9 @@ CommerceOrder commerceOrder = commerceOrderContentDisplayContext.getCommerceOrde
 			dropdownItems="<%= commerceOrderContentDisplayContext.getDropdownItems() %>"
 			externalReferenceCode="<%= commerceOrder.getExternalReferenceCode() %>"
 			model="<%= CommerceOrder.class %>"
-			thumbnailUrl="<%= commerceOrderContentDisplayContext.getCommerceAccountThumbnailURL() %>"
+			thumbnailURL="<%= commerceOrderContentDisplayContext.getCommerceAccountThumbnailURL() %>"
 			title="<%= String.valueOf(commerceOrder.getCommerceOrderId()) %>"
-			transitionPortletURL="<%= commerceOrderContentDisplayContext.getTransitionOrderPortletURL() %>"
+			transitionPortletURL="<%= commerceOrderContentDisplayContext.getTransitionOrderPortletURL(commerceOrder) %>"
 		/>
 	</div>
 
@@ -68,6 +54,17 @@ CommerceOrder commerceOrder = commerceOrderContentDisplayContext.getCommerceOrde
 				<div class="col-xl-4">
 
 					<%
+					String commerceOrderName = commerceOrder.getName();
+					%>
+
+					<commerce-ui:info-box
+						elementClasses="py-3"
+						title='<%= LanguageUtil.get(request, "name") %>'
+					>
+						<%= HtmlUtil.escape(commerceOrderName) %>
+					</commerce-ui:info-box>
+
+					<%
 					AccountEntry accountEntry = commerceOrder.getAccountEntry();
 					%>
 
@@ -82,7 +79,7 @@ CommerceOrder commerceOrder = commerceOrderContentDisplayContext.getCommerceOrde
 								</span>
 							</c:when>
 							<c:otherwise>
-								<p class="mb-0"><%= accountEntry.getName() %></p>
+								<p class="mb-0"><%= HtmlUtil.escape(accountEntry.getName()) %></p>
 								<p class="mb-0">#<%= accountEntry.getAccountEntryId() %></p>
 							</c:otherwise>
 						</c:choose>
@@ -119,23 +116,23 @@ CommerceOrder commerceOrder = commerceOrderContentDisplayContext.getCommerceOrde
 							title='<%= LanguageUtil.get(request, "billing-address") %>'
 						>
 							<p class="mb-0">
-								<%= billingCommerceAddress.getStreet1() %>
+								<%= HtmlUtil.escape(billingCommerceAddress.getStreet1()) %>
 							</p>
 
 							<c:if test="<%= !Validator.isBlank(billingCommerceAddress.getStreet2()) %>">
 								<p class="mb-0">
-									<%= billingCommerceAddress.getStreet2() %>
+									<%= HtmlUtil.escape(billingCommerceAddress.getStreet2()) %>
 								</p>
 							</c:if>
 
-							<c:if test="<%= !Validator.isBlank(billingCommerceAddress.getStreet2()) %>">
+							<c:if test="<%= !Validator.isBlank(billingCommerceAddress.getStreet3()) %>">
 								<p class="mb-0">
-									<%= billingCommerceAddress.getStreet3() %>
+									<%= HtmlUtil.escape(billingCommerceAddress.getStreet3()) %>
 								</p>
 							</c:if>
 
 							<p class="mb-0">
-								<%= commerceOrderContentDisplayContext.getDescriptiveAddress(billingCommerceAddress) %>
+								<%= HtmlUtil.escape(commerceOrderContentDisplayContext.getDescriptiveAddress(billingCommerceAddress)) %>
 							</p>
 						</commerce-ui:info-box>
 					</c:if>
@@ -150,31 +147,43 @@ CommerceOrder commerceOrder = commerceOrderContentDisplayContext.getCommerceOrde
 							title='<%= LanguageUtil.get(request, "shipping-address") %>'
 						>
 							<p class="mb-0">
-								<%= shippingCommerceAddress.getStreet1() %>
+								<%= HtmlUtil.escape(shippingCommerceAddress.getStreet1()) %>
 							</p>
 
 							<c:if test="<%= !Validator.isBlank(shippingCommerceAddress.getStreet2()) %>">
 								<p class="mb-0">
-									<%= shippingCommerceAddress.getStreet2() %>
+									<%= HtmlUtil.escape(shippingCommerceAddress.getStreet2()) %>
 								</p>
 							</c:if>
 
 							<c:if test="<%= !Validator.isBlank(shippingCommerceAddress.getStreet3()) %>">
 								<p class="mb-0">
-									<%= shippingCommerceAddress.getStreet3() %>
+									<%= HtmlUtil.escape(shippingCommerceAddress.getStreet3()) %>
 								</p>
 							</c:if>
 
 							<p class="mb-0">
-								<%= commerceOrderContentDisplayContext.getDescriptiveAddress(shippingCommerceAddress) %>
+								<%= HtmlUtil.escape(commerceOrderContentDisplayContext.getDescriptiveAddress(shippingCommerceAddress)) %>
 							</p>
 						</commerce-ui:info-box>
 					</c:if>
 
 					<commerce-ui:info-box
+						actionContext='<%=
+							HashMapBuilder.<String, Object>put(
+								"containerCssClasses", "modal-height-md"
+							).put(
+								"namespace", liferayPortletResponse.getNamespace()
+							).put(
+								"refreshOnClose", true
+							).put(
+								"size", "md"
+							).put(
+								"title", (commerceOrder.getPaymentCommerceTermEntryId() == 0) ? LanguageUtil.get(request, "payment-terms") : LanguageUtil.get(request, "edit-payment-terms")
+							).build()
+						%>'
 						actionLabel='<%= (commerceOrderContentDisplayContext.hasManageCommerceOrderPaymentTermsPermission() && (commerceOrder.getPaymentCommerceTermEntryId() > 0)) ? LanguageUtil.get(request, "view") : null %>'
-						actionTargetId="payment-terms-modal"
-						actionUrl="<%= (commerceOrderContentDisplayContext.hasManageCommerceOrderPaymentTermsPermission() && (commerceOrder.getPaymentCommerceTermEntryId() > 0)) ? editPaymentTermsURL : null %>"
+						actionURL="<%= (commerceOrderContentDisplayContext.hasManageCommerceOrderPaymentTermsPermission() && (commerceOrder.getPaymentCommerceTermEntryId() > 0)) ? editPaymentTermsURL : null %>"
 						elementClasses="py-3"
 						title='<%= LanguageUtil.get(request, "payment-terms") %>'
 					>
@@ -186,9 +195,21 @@ CommerceOrder commerceOrder = commerceOrderContentDisplayContext.getCommerceOrde
 					</commerce-ui:info-box>
 
 					<commerce-ui:info-box
+						actionContext='<%=
+							HashMapBuilder.<String, Object>put(
+								"containerCssClasses", "modal-height-md"
+							).put(
+								"namespace", liferayPortletResponse.getNamespace()
+							).put(
+								"refreshOnClose", true
+							).put(
+								"size", "md"
+							).put(
+								"title", (commerceOrder.getDeliveryCommerceTermEntryId() == 0) ? LanguageUtil.get(request, "delivery-terms") : LanguageUtil.get(request, "edit-delivery-terms")
+							).build()
+						%>'
 						actionLabel='<%= (commerceOrderContentDisplayContext.hasManageCommerceOrderDeliveryTermsPermission() && (commerceOrder.getDeliveryCommerceTermEntryId() > 0)) ? LanguageUtil.get(request, "view") : null %>'
-						actionTargetId="delivery-terms-modal"
-						actionUrl="<%= (commerceOrderContentDisplayContext.hasManageCommerceOrderDeliveryTermsPermission() && (commerceOrder.getDeliveryCommerceTermEntryId() > 0)) ? editDeliveryTermsURL : null %>"
+						actionURL="<%= (commerceOrderContentDisplayContext.hasManageCommerceOrderDeliveryTermsPermission() && (commerceOrder.getDeliveryCommerceTermEntryId() > 0)) ? editDeliveryTermsURL : null %>"
 						elementClasses="py-3"
 						title='<%= LanguageUtil.get(request, "delivery-terms") %>'
 					>
@@ -240,7 +261,7 @@ CommerceOrder commerceOrder = commerceOrderContentDisplayContext.getCommerceOrde
 
 					<commerce-ui:info-box
 						actionLabel='<%= (commerceOrderNotes.size() > 0) ? LanguageUtil.get(request, "view") : null %>'
-						actionUrl="<%= (commerceOrderNotes.size() > 0) ? viewCommerceOrderNotesURL : null %>"
+						actionURL="<%= (commerceOrderNotes.size() > 0) ? viewCommerceOrderNotesURL : null %>"
 						elementClasses="py-3"
 						title='<%= LanguageUtil.get(request, "notes") %>'
 					/>
@@ -262,7 +283,6 @@ CommerceOrder commerceOrder = commerceOrderContentDisplayContext.getCommerceOrde
 				%>'
 				dataProviderKey="<%= CommerceOrderFDSNames.PLACED_ORDER_ITEMS %>"
 				id="<%= CommerceOrderFDSNames.PLACED_ORDER_ITEMS %>"
-				itemsPerPage="<%= 10 %>"
 				nestedItemsKey="orderItemId"
 				nestedItemsReferenceKey="orderItems"
 			/>
@@ -275,14 +295,22 @@ CommerceOrder commerceOrder = commerceOrderContentDisplayContext.getCommerceOrde
 		>
 			<div id="summary-root"></div>
 
-			<aui:script require="commerce-frontend-js/components/summary/entry as summary">
-				summary.default('summary', 'summary-root', {
-					apiUrl:
-						'/o/headless-commerce-admin-order/v1.0/orders/<%= commerceOrderContentDisplayContext.getCommerceOrderId() %>',
-					dataSetDisplayId: '<%= CommerceOrderFDSNames.PLACED_ORDER_ITEMS %>',
-					portletId: '<%= portletDisplay.getRootPortletId() %>',
-				});
-			</aui:script>
+			<liferay-frontend:component
+				context='<%=
+					HashMapBuilder.<String, Object>put(
+						"commerceOrderId", commerceOrderContentDisplayContext.getCommerceOrderId()
+					).put(
+						"placedOrderItems", CommerceOrderFDSNames.PLACED_ORDER_ITEMS
+					).put(
+						"portletId", portletDisplay.getRootPortletId()
+					).build()
+				%>'
+				module="{newView} from commerce-order-content-web"
+			/>
 		</commerce-ui:panel>
 	</div>
 </div>
+
+<liferay-frontend:component
+	module="{view} from commerce-order-content-web"
+/>

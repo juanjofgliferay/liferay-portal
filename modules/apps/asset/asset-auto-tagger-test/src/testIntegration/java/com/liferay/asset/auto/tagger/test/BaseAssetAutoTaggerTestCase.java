@@ -84,7 +84,7 @@ public abstract class BaseAssetAutoTaggerTestCase {
 			RandomTestUtil.randomString(), ContentTypes.TEXT_PLAIN,
 			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
 			StringUtil.randomString(), StringUtil.randomString(), new byte[0],
-			null, null, serviceContext);
+			null, null, null, serviceContext);
 	}
 
 	protected AssetEntry addFileEntryAssetEntry(ServiceContext serviceContext)
@@ -96,7 +96,7 @@ public abstract class BaseAssetAutoTaggerTestCase {
 			RandomTestUtil.randomString(), ContentTypes.TEXT_PLAIN,
 			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
 			StringUtil.randomString(), StringUtil.randomString(), new byte[0],
-			null, null, serviceContext);
+			null, null, null, serviceContext);
 
 		return AssetEntryLocalServiceUtil.getEntry(
 			DLFileEntryConstants.getClassName(), fileEntry.getFileEntryId());
@@ -140,9 +140,9 @@ public abstract class BaseAssetAutoTaggerTestCase {
 	}
 
 	protected void assertHasNoTags(AssetEntry assetEntry) {
-		List<AssetTag> tags = assetEntry.getTags();
+		List<AssetTag> assetTag = assetEntry.getTags();
 
-		Assert.assertEquals(tags.toString(), 0, tags.size());
+		Assert.assertEquals(assetTag.toString(), 0, assetTag.size());
 	}
 
 	protected AssetEntry updateFileEntryAssetEntry(
@@ -153,7 +153,7 @@ public abstract class BaseAssetAutoTaggerTestCase {
 			fileEntry.getFileEntryId(), fileEntry.getFileName(), null,
 			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
 			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
-			DLVersionNumberIncrease.AUTOMATIC, new byte[0], null, null,
+			DLVersionNumberIncrease.AUTOMATIC, new byte[0], null, null, null,
 			serviceContext);
 
 		return AssetEntryLocalServiceUtil.getEntry(

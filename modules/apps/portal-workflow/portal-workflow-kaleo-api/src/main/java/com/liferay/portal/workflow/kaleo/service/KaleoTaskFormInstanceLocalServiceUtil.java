@@ -9,6 +9,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.workflow.kaleo.model.KaleoTaskFormInstance;
 
@@ -62,13 +63,6 @@ public class KaleoTaskFormInstanceLocalServiceUtil {
 		return getService().addKaleoTaskFormInstance(
 			groupId, kaleoTaskFormId, formValues, kaleoTaskInstanceToken,
 			serviceContext);
-	}
-
-	public static int countKaleoTaskFormInstanceByKaleoTaskId(
-		long kaleoTaskId) {
-
-		return getService().countKaleoTaskFormInstanceByKaleoTaskId(
-			kaleoTaskId);
 	}
 
 	/**
@@ -254,13 +248,6 @@ public class KaleoTaskFormInstanceLocalServiceUtil {
 		return getService().fetchKaleoTaskFormInstance(kaleoTaskFormInstanceId);
 	}
 
-	public static KaleoTaskFormInstance fetchKaleoTaskFormKaleoTaskFormInstance(
-		long kaleoTaskFormId) {
-
-		return getService().fetchKaleoTaskFormKaleoTaskFormInstance(
-			kaleoTaskFormId);
-	}
-
 	public static com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery
 		getActionableDynamicQuery() {
 
@@ -314,20 +301,6 @@ public class KaleoTaskFormInstanceLocalServiceUtil {
 		return getService().getKaleoTaskFormInstancesCount();
 	}
 
-	public static KaleoTaskFormInstance getKaleoTaskFormKaleoTaskFormInstance(
-			long kaleoTaskFormId)
-		throws PortalException {
-
-		return getService().getKaleoTaskFormKaleoTaskFormInstance(
-			kaleoTaskFormId);
-	}
-
-	public static List<KaleoTaskFormInstance>
-		getKaleoTaskKaleoTaskFormInstances(long kaleoTaskId) {
-
-		return getService().getKaleoTaskKaleoTaskFormInstances(kaleoTaskId);
-	}
-
 	/**
 	 * Returns the OSGi service identifier.
 	 *
@@ -363,13 +336,13 @@ public class KaleoTaskFormInstanceLocalServiceUtil {
 	}
 
 	public static KaleoTaskFormInstanceLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(KaleoTaskFormInstanceLocalService service) {
-		_service = service;
-	}
-
-	private static volatile KaleoTaskFormInstanceLocalService _service;
+	private static final Snapshot<KaleoTaskFormInstanceLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			KaleoTaskFormInstanceLocalServiceUtil.class,
+			KaleoTaskFormInstanceLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1395864923

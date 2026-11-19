@@ -10,27 +10,24 @@ import com.liferay.oauth2.provider.scope.ScopeChecker;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 
+import jakarta.ws.rs.HttpMethod;
+
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 
-import java.util.Map;
 import java.util.function.Function;
 
-import javax.ws.rs.HttpMethod;
-
 import org.osgi.framework.BundleContext;
-import org.osgi.service.component.annotations.Activate;
-import org.osgi.service.component.annotations.Component;
 
 /**
  * @author Carlos Correa
  * @author Stian Sigvartsen
  */
-@Component(
-	property = "oauth2.scope.checker.type=http.method",
-	service = ScopeLogic.class
-)
 public class HttpMethodScopeLogic implements ScopeLogic {
+
+	public HttpMethodScopeLogic(BundleContext bundleContext) {
+		_bundleContext = bundleContext;
+	}
 
 	@Override
 	public boolean check(
@@ -43,13 +40,6 @@ public class HttpMethodScopeLogic implements ScopeLogic {
 			_getHttpMethod(resourceMethod));
 	}
 
-	@Activate
-	protected void activate(
-		BundleContext bundleContext, Map<String, Object> properties) {
-
-		_bundleContext = bundleContext;
-	}
-
 	private String _getHttpMethod(Method method) {
 		while (method != null) {
 			for (Annotation annotation : method.getAnnotations()) {
@@ -59,10 +49,12 @@ public class HttpMethodScopeLogic implements ScopeLogic {
 				HttpMethod[] annotationsByType =
 					annotationType.getAnnotationsByType(HttpMethod.class);
 
-				if (annotationsByType != null) {
-					for (HttpMethod httpMethod : annotationsByType) {
-						return httpMethod.value();
-					}
+				if (annotationsByType == null) {
+					continue;
+				}
+
+				for (HttpMethod httpMethod : annotationsByType) {
+					return httpMethod.value();
 				}
 			}
 
@@ -97,6 +89,6 @@ public class HttpMethodScopeLogic implements ScopeLogic {
 	private static final Log _log = LogFactoryUtil.getLog(
 		HttpMethodScopeLogic.class);
 
-	private BundleContext _bundleContext;
+	private final BundleContext _bundleContext;
 
 }

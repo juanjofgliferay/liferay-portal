@@ -11,23 +11,25 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import com.liferay.petra.function.UnsafeSupplier;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Javier Gamarra
@@ -35,6 +37,9 @@ import javax.xml.bind.annotation.XmlRootElement;
  */
 @Generated("")
 @GraphQLName(description = "The blog post's cover image.", value = "Image")
+@io.swagger.v3.oas.annotations.media.Schema(
+	description = "The blog post's cover image."
+)
 @JsonFilter("Liferay.Vulcan")
 @XmlRootElement(name = "Image")
 public class Image implements Serializable {
@@ -47,86 +52,126 @@ public class Image implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(Image.class, json);
 	}
 
-	@Schema(description = "The text describing the image.")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The text describing the image."
+	)
 	public String getCaption() {
+		if (_captionSupplier != null) {
+			caption = _captionSupplier.get();
+
+			_captionSupplier = null;
+		}
+
 		return caption;
 	}
 
 	public void setCaption(String caption) {
 		this.caption = caption;
+
+		_captionSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setCaption(
 		UnsafeSupplier<String, Exception> captionUnsafeSupplier) {
 
-		try {
-			caption = captionUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_captionSupplier = () -> {
+			try {
+				return captionUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The text describing the image.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String caption;
 
-	@Schema(description = "The image's relative URL.")
+	@JsonIgnore
+	private Supplier<String> _captionSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The image's relative URL."
+	)
 	public String getContentUrl() {
+		if (_contentUrlSupplier != null) {
+			contentUrl = _contentUrlSupplier.get();
+
+			_contentUrlSupplier = null;
+		}
+
 		return contentUrl;
 	}
 
 	public void setContentUrl(String contentUrl) {
 		this.contentUrl = contentUrl;
+
+		_contentUrlSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setContentUrl(
 		UnsafeSupplier<String, Exception> contentUrlUnsafeSupplier) {
 
-		try {
-			contentUrl = contentUrlUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_contentUrlSupplier = () -> {
+			try {
+				return contentUrlUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The image's relative URL.")
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected String contentUrl;
 
-	@Schema(
+	@JsonIgnore
+	private Supplier<String> _contentUrlSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
 		description = "optional field with the content of the image in Base64, can be embedded with nestedFields"
 	)
 	public String getContentValue() {
+		if (_contentValueSupplier != null) {
+			contentValue = _contentValueSupplier.get();
+
+			_contentValueSupplier = null;
+		}
+
 		return contentValue;
 	}
 
 	public void setContentValue(String contentValue) {
 		this.contentValue = contentValue;
+
+		_contentValueSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setContentValue(
 		UnsafeSupplier<String, Exception> contentValueUnsafeSupplier) {
 
-		try {
-			contentValue = contentValueUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_contentValueSupplier = () -> {
+			try {
+				return contentValueUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -135,30 +180,43 @@ public class Image implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected String contentValue;
 
-	@Schema(
+	@JsonIgnore
+	private Supplier<String> _contentValueSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
 		description = "The image's ID. This can be used to retrieve more information in the `Document` API."
 	)
 	public Long getImageId() {
+		if (_imageIdSupplier != null) {
+			imageId = _imageIdSupplier.get();
+
+			_imageIdSupplier = null;
+		}
+
 		return imageId;
 	}
 
 	public void setImageId(Long imageId) {
 		this.imageId = imageId;
+
+		_imageIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setImageId(
 		UnsafeSupplier<Long, Exception> imageIdUnsafeSupplier) {
 
-		try {
-			imageId = imageIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_imageIdSupplier = () -> {
+			try {
+				return imageIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -166,6 +224,9 @@ public class Image implements Serializable {
 	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long imageId;
+
+	@JsonIgnore
+	private Supplier<Long> _imageIdSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -194,6 +255,8 @@ public class Image implements Serializable {
 
 		sb.append("{");
 
+		String caption = getCaption();
+
 		if (caption != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -207,6 +270,8 @@ public class Image implements Serializable {
 
 			sb.append("\"");
 		}
+
+		String contentUrl = getContentUrl();
 
 		if (contentUrl != null) {
 			if (sb.length() > 1) {
@@ -222,6 +287,8 @@ public class Image implements Serializable {
 			sb.append("\"");
 		}
 
+		String contentValue = getContentValue();
+
 		if (contentValue != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -235,6 +302,8 @@ public class Image implements Serializable {
 
 			sb.append("\"");
 		}
+
+		Long imageId = getImageId();
 
 		if (imageId != null) {
 			if (sb.length() > 1) {
@@ -251,8 +320,8 @@ public class Image implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.delivery.dto.v1_0.Image",
 		name = "x-class-name"
 	)
@@ -298,7 +367,10 @@ public class Image implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -336,6 +408,27 @@ public class Image implements Serializable {
 		return sb.toString();
 	}
 
+	private static String _toJSON(Object value) {
+		if (value instanceof Collection) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONArray((Collection<?>)value));
+		}
+		else if (value instanceof Map) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONObject((Map<?, ?>)value));
+		}
+		else if (value instanceof Object[]) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONArray(
+					Arrays.asList((Object[])value)));
+		}
+		else if (value instanceof String) {
+			return StringBundler.concat("\"", _escape(value), "\"");
+		}
+
+		return String.valueOf(value);
+	}
+
 	private static final String[][] _JSON_ESCAPE_STRINGS = {
 		{"\\", "\"", "\b", "\f", "\n", "\r", "\t"},
 		{"\\\\", "\\\"", "\\b", "\\f", "\\n", "\\r", "\\t"}
@@ -344,3 +437,4 @@ public class Image implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:203857608

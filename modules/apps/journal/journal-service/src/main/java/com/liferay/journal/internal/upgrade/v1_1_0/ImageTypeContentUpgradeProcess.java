@@ -102,7 +102,7 @@ public class ImageTypeContentUpgradeProcess extends UpgradeProcess {
 					long userId = (Long)values[3];
 
 					try {
-						Image image = _imageLocalService.getImage(
+						Image image = _imageLocalService.fetchImage(
 							articleImageId);
 
 						if (image == null) {
@@ -129,7 +129,7 @@ public class ImageTypeContentUpgradeProcess extends UpgradeProcess {
 						throw exception;
 					}
 				},
-				"Unable to copy journal article images to the file repository");
+				null);
 		}
 	}
 

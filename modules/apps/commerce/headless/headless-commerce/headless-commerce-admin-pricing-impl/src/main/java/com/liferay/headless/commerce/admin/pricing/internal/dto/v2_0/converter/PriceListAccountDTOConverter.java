@@ -20,7 +20,10 @@ import org.osgi.service.component.annotations.Reference;
  * @author Alessio Antonio Rendina
  */
 @Component(
-	property = "dto.class.name=com.liferay.commerce.price.list.model.CommercePriceListAccountRel",
+	property = {
+		"default=true",
+		"dto.class.name=com.liferay.commerce.price.list.model.CommercePriceListAccountRel"
+	},
 	service = DTOConverter.class
 )
 public class PriceListAccountDTOConverter
@@ -46,17 +49,20 @@ public class PriceListAccountDTOConverter
 
 		return new PriceListAccount() {
 			{
-				accountExternalReferenceCode =
-					accountEntry.getExternalReferenceCode();
-				accountId = accountEntry.getAccountEntryId();
-				actions = dtoConverterContext.getActions();
-				order = commercePriceListAccountRel.getOrder();
-				priceListAccountId =
-					commercePriceListAccountRel.
-						getCommercePriceListAccountRelId();
-				priceListExternalReferenceCode =
-					commercePriceList.getExternalReferenceCode();
-				priceListId = commercePriceList.getCommercePriceListId();
+				setAccountExternalReferenceCode(
+					accountEntry::getExternalReferenceCode);
+				setAccountId(accountEntry::getAccountEntryId);
+				setAccountType(
+					() -> PriceListAccount.AccountType.create(
+						accountEntry.getType()));
+				setActions(dtoConverterContext::getActions);
+				setOrder(commercePriceListAccountRel::getOrder);
+				setPriceListAccountId(
+					commercePriceListAccountRel::
+						getCommercePriceListAccountRelId);
+				setPriceListExternalReferenceCode(
+					commercePriceList::getExternalReferenceCode);
+				setPriceListId(commercePriceList::getCommercePriceListId);
 			}
 		};
 	}

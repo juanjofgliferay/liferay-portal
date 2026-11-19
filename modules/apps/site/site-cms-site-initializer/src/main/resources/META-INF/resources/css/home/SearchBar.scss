@@ -1,0 +1,10 @@
+.home-section {
+	.search-bar {
+		& + .search-button {
+			bottom: 0;
+			font-size: var(--text-paragraph-lg-font-size);
+			position: absolute;
+			right: 18px;
+		}
+	}
+}

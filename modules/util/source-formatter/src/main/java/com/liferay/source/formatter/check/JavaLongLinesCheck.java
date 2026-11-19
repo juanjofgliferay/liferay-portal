@@ -5,9 +5,9 @@
 
 package com.liferay.source.formatter.check;
 
+import com.liferay.petra.io.unsync.UnsyncBufferedReader;
+import com.liferay.petra.io.unsync.UnsyncStringReader;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.io.unsync.UnsyncBufferedReader;
-import com.liferay.portal.kernel.io.unsync.UnsyncStringReader;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.tools.ToolsUtil;
 
@@ -42,7 +42,9 @@ public class JavaLongLinesCheck extends BaseFileCheck {
 			while ((line = unsyncBufferedReader.readLine()) != null) {
 				lineNumber++;
 
-				if (line.matches("\\s*\\*.*") ||
+				if (isExcludedPath(
+						_LINE_LENGTH_EXCLUDES, absolutePath, lineNumber) ||
+					line.matches("\\s*\\*.*") ||
 					(getLineLength(line) <= getMaxLineLength())) {
 
 					continue;
@@ -50,14 +52,20 @@ public class JavaLongLinesCheck extends BaseFileCheck {
 
 				String trimmedLine = StringUtil.trimLeading(line);
 
-				if (!isExcludedPath(
-						_LINE_LENGTH_EXCLUDES, absolutePath, lineNumber) &&
-					!_isAnnotationParameter(content, trimmedLine) &&
-					(trimmedLine.startsWith("//") ||
-					 line.contains(StringPool.QUOTE))) {
+				if (_isAnnotationParameter(content, trimmedLine) ||
+					isInsideTextBlock(
+						content, getLineStartPos(content, lineNumber))) {
 
-					addMessage(fileName, "> " + getMaxLineLength(), lineNumber);
+					continue;
 				}
+
+				if (!line.contains(StringPool.QUOTE) &&
+					!trimmedLine.startsWith("//")) {
+
+					continue;
+				}
+
+				addMessage(fileName, "> " + getMaxLineLength(), lineNumber);
 			}
 		}
 

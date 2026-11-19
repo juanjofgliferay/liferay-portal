@@ -38,12 +38,13 @@ import com.liferay.search.experiences.rest.dto.v1_0.SXPBlueprint;
 import com.liferay.search.experiences.rest.dto.v1_0.SearchHits;
 import com.liferay.search.experiences.rest.dto.v1_0.SearchResponse;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -405,7 +406,7 @@ public class SearchResponseResourceImplTest {
 
 		Assert.assertEquals(
 			"{field1st={\"values\": [\"Lone Value\"]}, field2nd={\"values\": " +
-				"[\"4\", \"8\", \"15\", \"16\", \"23\", \"42\"]}}",
+				"[4, 8, 15, 16, 23, 42]}}",
 			String.valueOf(hit.getDocumentFields()));
 		Assert.assertEquals(
 			portalSearchHit.getExplanation(), hit.getExplanation());
@@ -482,9 +483,11 @@ public class SearchResponseResourceImplTest {
 		Map<String, String> map = new HashMap<>();
 
 		for (Map.Entry<String, String> entry : actualMap.entrySet()) {
-			if (expectedMap.containsKey(entry.getKey())) {
-				map.put(entry.getKey(), entry.getValue());
+			if (!expectedMap.containsKey(entry.getKey())) {
+				continue;
 			}
+
+			map.put(entry.getKey(), entry.getValue());
 		}
 
 		AssertUtils.assertEquals(
@@ -618,7 +621,7 @@ public class SearchResponseResourceImplTest {
 	}
 
 	private Field _getField(String name, Object... object) {
-		return new Field() {
+		return new Field(null, Collections.emptyList()) {
 
 			public String getName() {
 				return name;
@@ -635,10 +638,10 @@ public class SearchResponseResourceImplTest {
 		};
 	}
 
-	private final Searcher _searcher = Mockito.mock(Searcher.class);
 	private final SearchRequestBuilderFactory _searchRequestBuilderFactory =
 		Mockito.mock(SearchRequestBuilderFactory.class);
 	private SearchResponseResourceImpl _searchResponseResourceImpl;
+	private final Searcher _searcher = Mockito.mock(Searcher.class);
 	private final SXPBlueprintSearchRequestEnhancer
 		_sxpBlueprintSearchRequestEnhancer = Mockito.mock(
 			SXPBlueprintSearchRequestEnhancer.class);

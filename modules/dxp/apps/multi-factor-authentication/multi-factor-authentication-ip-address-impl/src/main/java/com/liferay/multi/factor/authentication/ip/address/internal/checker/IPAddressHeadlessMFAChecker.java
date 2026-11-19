@@ -12,21 +12,24 @@ import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
 import com.liferay.portal.kernel.audit.AuditException;
 import com.liferay.portal.kernel.audit.AuditMessage;
 import com.liferay.portal.kernel.audit.AuditRouterUtil;
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
+import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.CompanyConstants;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.security.access.control.AccessControlUtil;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.util.HashMapDictionary;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceRegistration;
@@ -138,31 +141,46 @@ public class IPAddressHeadlessMFAChecker implements HeadlessMFAChecker {
 		public AuditMessage buildNonexistentUserVerificationFailureAuditMessage(
 			long companyId, long userId, String mfaCheckerClassName) {
 
-			return new AuditMessage(
+			AuditMessage auditMessage = new AuditMessage(
+				companyId, userId, "Nonexistent", "verify_failure",
+				JSONUtil.put("reason", "Nonexistent User"), mfaCheckerClassName,
+				String.valueOf(userId),
 				MFAIPAddressEventTypes.MFA_IP_ADDRESS_VERIFICATION_FAILURE,
-				companyId, userId, "Nonexistent", mfaCheckerClassName,
-				String.valueOf(userId), null,
-				JSONUtil.put("reason", "Nonexistent User"));
+				null, "mfa");
+
+			_setVerificationResult(auditMessage, "verification_failure");
+
+			return auditMessage;
 		}
 
 		public AuditMessage buildVerificationFailureAuditMessage(
 			User user, String mfaCheckerClassName, String reason) {
 
-			return new AuditMessage(
-				MFAIPAddressEventTypes.MFA_IP_ADDRESS_VERIFICATION_FAILURE,
+			AuditMessage auditMessage = new AuditMessage(
 				user.getCompanyId(), user.getUserId(), user.getFullName(),
-				mfaCheckerClassName, String.valueOf(user.getPrimaryKey()), null,
-				JSONUtil.put("reason", reason));
+				"verify_failure", JSONUtil.put("reason", reason),
+				mfaCheckerClassName, String.valueOf(user.getPrimaryKey()),
+				MFAIPAddressEventTypes.MFA_IP_ADDRESS_VERIFICATION_FAILURE,
+				null, "mfa");
+
+			_setVerificationResult(auditMessage, "verification_failure");
+
+			return auditMessage;
 		}
 
 		public AuditMessage buildVerificationSuccessAuditMessage(
 			User user, String mfaCheckerClassName) {
 
-			return new AuditMessage(
-				MFAIPAddressEventTypes.MFA_IP_ADDRESS_VERIFICATION_SUCCESS,
+			AuditMessage auditMessage = new AuditMessage(
 				user.getCompanyId(), user.getUserId(), user.getFullName(),
-				mfaCheckerClassName, String.valueOf(user.getPrimaryKey()), null,
-				null);
+				"verify", null, mfaCheckerClassName,
+				String.valueOf(user.getPrimaryKey()),
+				MFAIPAddressEventTypes.MFA_IP_ADDRESS_VERIFICATION_SUCCESS,
+				null, "mfa");
+
+			_setVerificationResult(auditMessage, "verification_success");
+
+			return auditMessage;
 		}
 
 		public void routeAuditMessage(AuditMessage auditMessage) {
@@ -179,6 +197,27 @@ public class IPAddressHeadlessMFAChecker implements HeadlessMFAChecker {
 					_log.debug(exception);
 				}
 			}
+		}
+
+		private void _setVerificationResult(
+			AuditMessage auditMessage, String outcome) {
+
+			long companyId = auditMessage.getCompanyId();
+
+			if ((companyId == CompanyConstants.SYSTEM) ||
+				!FeatureFlagManagerUtil.isEnabled(companyId, "LPD-6417")) {
+
+				return;
+			}
+
+			JSONObject additionalInfoJSONObject =
+				auditMessage.getAdditionalInfo();
+
+			additionalInfoJSONObject.put(
+				"factor", "ip_address"
+			).put(
+				"outcome", outcome
+			);
 		}
 
 		private final Log _log = LogFactoryUtil.getLog(

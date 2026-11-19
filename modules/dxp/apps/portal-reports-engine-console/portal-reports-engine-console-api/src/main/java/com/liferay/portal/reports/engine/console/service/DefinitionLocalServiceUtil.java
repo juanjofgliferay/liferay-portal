@@ -9,6 +9,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.reports.engine.console.model.Definition;
 
@@ -294,16 +295,6 @@ public class DefinitionLocalServiceUtil {
 		return getService().getDefinitions(start, end);
 	}
 
-	public static List<Definition> getDefinitions(
-		long groupId, String definitionName, String description,
-		String sourceId, String reportName, boolean andSearch, int start,
-		int end, OrderByComparator<Definition> orderByComparator) {
-
-		return getService().getDefinitions(
-			groupId, definitionName, description, sourceId, reportName,
-			andSearch, start, end, orderByComparator);
-	}
-
 	/**
 	 * Returns all the definitions matching the UUID and company.
 	 *
@@ -342,15 +333,6 @@ public class DefinitionLocalServiceUtil {
 	 */
 	public static int getDefinitionsCount() {
 		return getService().getDefinitionsCount();
-	}
-
-	public static int getDefinitionsCount(
-		long groupId, String definitionName, String description,
-		String sourceId, String reportName, boolean andSearch) {
-
-		return getService().getDefinitionsCount(
-			groupId, definitionName, description, sourceId, reportName,
-			andSearch);
 	}
 
 	public static com.liferay.portal.kernel.dao.orm.ExportActionableDynamicQuery
@@ -422,13 +404,12 @@ public class DefinitionLocalServiceUtil {
 	}
 
 	public static DefinitionLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(DefinitionLocalService service) {
-		_service = service;
-	}
-
-	private static volatile DefinitionLocalService _service;
+	private static final Snapshot<DefinitionLocalService> _serviceSnapshot =
+		new Snapshot<>(
+			DefinitionLocalServiceUtil.class, DefinitionLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1216053419

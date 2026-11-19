@@ -372,6 +372,9 @@ public interface AssetVocabularyLocalService
 	public List<AssetVocabulary> getCompanyVocabularies(long companyId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public int getCompanyVocabulariesCount(long companyId);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public ExportActionableDynamicQuery getExportActionableDynamicQuery(
 		PortletDataContext portletDataContext);
 
@@ -407,14 +410,16 @@ public interface AssetVocabularyLocalService
 		long[] groupIds, int[] visibilityTypes);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getGroupVocabulariesCount(long[] groupIds);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public AssetVocabulary getGroupVocabulary(long groupId, String name)
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public IndexableActionableDynamicQuery getIndexableActionableDynamicQuery();
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public AssetVocabulary getOrAddEmptyVocabulary(
+			String externalReferenceCode, long userId, long groupId)
+		throws PortalException;
 
 	/**
 	 * Returns the OSGi service identifier.
@@ -464,22 +469,23 @@ public interface AssetVocabularyLocalService
 		AssetVocabulary assetVocabulary);
 
 	public AssetVocabulary updateVocabulary(
-			long vocabularyId, Map<Locale, String> titleMap,
-			Map<Locale, String> descriptionMap, String settings)
+			String externalReferenceCode, long vocabularyId,
+			Map<Locale, String> titleMap, Map<Locale, String> descriptionMap,
+			String settings)
 		throws PortalException;
 
 	@Indexable(type = IndexableType.REINDEX)
 	public AssetVocabulary updateVocabulary(
-			long vocabularyId, Map<Locale, String> titleMap,
-			Map<Locale, String> descriptionMap, String settings,
-			int visibilityType)
+			String externalReferenceCode, long vocabularyId,
+			Map<Locale, String> titleMap, Map<Locale, String> descriptionMap,
+			String settings, int visibilityType)
 		throws PortalException;
 
 	@Indexable(type = IndexableType.REINDEX)
 	public AssetVocabulary updateVocabulary(
-			long vocabularyId, String title, Map<Locale, String> titleMap,
-			Map<Locale, String> descriptionMap, String settings,
-			ServiceContext serviceContext)
+			String externalReferenceCode, long vocabularyId, String title,
+			Map<Locale, String> titleMap, Map<Locale, String> descriptionMap,
+			String settings, int visibilityType, ServiceContext serviceContext)
 		throws PortalException;
 
 	@Override
@@ -498,3 +504,4 @@ public interface AssetVocabularyLocalService
 		throws E;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1751553718

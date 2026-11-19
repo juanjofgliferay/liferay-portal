@@ -34,7 +34,7 @@ import com.liferay.rss.model.SyndLink;
 import com.liferay.rss.model.SyndModelFactory;
 import com.liferay.rss.util.RSSUtil;
 import com.liferay.subscription.service.SubscriptionLocalService;
-import com.liferay.wiki.configuration.WikiGroupServiceOverriddenConfiguration;
+import com.liferay.wiki.configuration.WikiGroupServiceConfiguration;
 import com.liferay.wiki.constants.WikiConstants;
 import com.liferay.wiki.constants.WikiPageConstants;
 import com.liferay.wiki.constants.WikiPortletKeys;
@@ -45,6 +45,7 @@ import com.liferay.wiki.model.WikiPage;
 import com.liferay.wiki.service.base.WikiPageServiceBaseImpl;
 import com.liferay.wiki.service.persistence.WikiNodePersistence;
 import com.liferay.wiki.util.comparator.PageCreateDateComparator;
+import com.liferay.wiki.util.comparator.PageVersionComparator;
 
 import java.io.File;
 import java.io.InputStream;
@@ -121,6 +122,9 @@ public class WikiPageServiceImpl extends WikiPageServiceBaseImpl {
 			String format, boolean head, String parentTitle,
 			String redirectTitle, ServiceContext serviceContext)
 		throws PortalException {
+
+		_wikiNodeModelResourcePermission.check(
+			getPermissionChecker(), nodeId, ActionKeys.ADD_PAGE);
 
 		return wikiPageLocalService.addPage(
 			externalReferenceCode, getUserId(), nodeId, title, version, content,
@@ -324,7 +328,7 @@ public class WikiPageServiceImpl extends WikiPageServiceBaseImpl {
 	 * reference code
 	 *
 	 * @param  groupId the primary key of the group
-	 * @param  externalReferenceCode the wiki page external reference code
+	 * @param  externalReferenceCode the wiki page's external reference code
 	 * @return the latest matching wiki page, or <code>null</code> if no
 	 *         matching wiki page could be found
 	 */
@@ -333,9 +337,9 @@ public class WikiPageServiceImpl extends WikiPageServiceBaseImpl {
 			long groupId, String externalReferenceCode)
 		throws PortalException {
 
-		WikiPage page =
-			wikiPageLocalService.fetchLatestPageByExternalReferenceCode(
-				groupId, externalReferenceCode);
+		WikiPage page = wikiPagePersistence.fetchByG_ERC_First(
+			groupId, externalReferenceCode,
+			PageVersionComparator.getInstance(false));
 
 		if (page != null) {
 			_wikiPageModelResourcePermission.check(
@@ -389,7 +393,7 @@ public class WikiPageServiceImpl extends WikiPageServiceBaseImpl {
 	 * reference code
 	 *
 	 * @param  groupId the primary key of the group
-	 * @param  externalReferenceCode the wiki page external reference code
+	 * @param  externalReferenceCode the wiki page's external reference code
 	 * @return the latest matching wiki page
 	 * @throws PortalException if a portal exception occurred
 	 */
@@ -398,9 +402,9 @@ public class WikiPageServiceImpl extends WikiPageServiceBaseImpl {
 			long groupId, String externalReferenceCode)
 		throws PortalException {
 
-		WikiPage wikiPage =
-			wikiPageLocalService.getLatestPageByExternalReferenceCode(
-				groupId, externalReferenceCode);
+		WikiPage wikiPage = wikiPagePersistence.findByG_ERC_First(
+			groupId, externalReferenceCode,
+			PageVersionComparator.getInstance(false));
 
 		_wikiPageModelResourcePermission.check(
 			getPermissionChecker(), wikiPage, ActionKeys.VIEW);
@@ -429,11 +433,13 @@ public class WikiPageServiceImpl extends WikiPageServiceBaseImpl {
 					break;
 				}
 
-				if (_wikiPageModelResourcePermission.contains(
+				if (!_wikiPageModelResourcePermission.contains(
 						getPermissionChecker(), page, ActionKeys.VIEW)) {
 
-					pages.add(page);
+					continue;
 				}
+
+				pages.add(page);
 			}
 		}
 
@@ -532,7 +538,7 @@ public class WikiPageServiceImpl extends WikiPageServiceBaseImpl {
 
 	@Override
 	public WikiPage getPageByPageId(long pageId) throws PortalException {
-		WikiPage page = wikiPageLocalService.getPageByPageId(pageId);
+		WikiPage page = wikiPagePersistence.findByPrimaryKey(pageId);
 
 		_wikiPageModelResourcePermission.check(
 			getPermissionChecker(), page, ActionKeys.VIEW);
@@ -591,12 +597,12 @@ public class WikiPageServiceImpl extends WikiPageServiceBaseImpl {
 		if (userId > 0) {
 			return wikiPagePersistence.filterFindByG_U_N_S(
 				groupId, userId, nodeId, status, start, end,
-				new PageCreateDateComparator(false));
+				PageCreateDateComparator.getInstance(false));
 		}
 
 		return wikiPagePersistence.filterFindByG_N_S(
 			groupId, nodeId, status, start, end,
-			new PageCreateDateComparator(false));
+			PageCreateDateComparator.getInstance(false));
 	}
 
 	@Override
@@ -648,7 +654,8 @@ public class WikiPageServiceImpl extends WikiPageServiceBaseImpl {
 			String attachmentURLPrefix, Locale locale)
 		throws PortalException {
 
-		WikiPage page = wikiPageLocalService.fetchPage(nodeId, title);
+		WikiPage page = wikiPagePersistence.fetchByN_T_H_First(
+			nodeId, title, true, null);
 
 		if (page == null) {
 			_wikiNodeModelResourcePermission.check(
@@ -660,7 +667,7 @@ public class WikiPageServiceImpl extends WikiPageServiceBaseImpl {
 		}
 
 		List<WikiPage> pages = wikiPageLocalService.getPages(
-			nodeId, title, 0, max, new PageCreateDateComparator(true));
+			nodeId, title, 0, max, PageCreateDateComparator.getInstance(true));
 
 		return _exportToRSS(
 			title, title, type, version, displayStyle, feedURL, entryURL,
@@ -762,7 +769,8 @@ public class WikiPageServiceImpl extends WikiPageServiceBaseImpl {
 
 		_wikiPageModelResourcePermission.check(
 			getPermissionChecker(),
-			wikiPageLocalService.fetchPage(nodeId, title), ActionKeys.UPDATE);
+			wikiPagePersistence.fetchByN_T_H_First(nodeId, title, true, null),
+			ActionKeys.UPDATE);
 
 		_wikiNodeModelResourcePermission.check(
 			getPermissionChecker(), nodeId, ActionKeys.ADD_PAGE);
@@ -845,7 +853,8 @@ public class WikiPageServiceImpl extends WikiPageServiceBaseImpl {
 			ServiceContext serviceContext)
 		throws PortalException {
 
-		WikiPage page = wikiPageLocalService.fetchPage(nodeId, title);
+		WikiPage page = wikiPagePersistence.fetchByN_T_H_First(
+			nodeId, title, true, null);
 
 		if (page == null) {
 			_wikiNodeModelResourcePermission.check(
@@ -939,18 +948,17 @@ public class WikiPageServiceImpl extends WikiPageServiceBaseImpl {
 				String value = null;
 
 				if (displayStyle.equals(RSSUtil.DISPLAY_STYLE_ABSTRACT)) {
-					WikiGroupServiceOverriddenConfiguration
-						wikiGroupServiceOverriddenConfiguration =
+					WikiGroupServiceConfiguration
+						wikiGroupServiceConfiguration =
 							_configurationProvider.getConfiguration(
-								WikiGroupServiceOverriddenConfiguration.class,
+								WikiGroupServiceConfiguration.class,
 								new GroupServiceSettingsLocator(
 									page.getGroupId(),
 									WikiConstants.SERVICE_NAME));
 
 					value = StringUtil.shorten(
 						_htmlParser.extractText(page.getContent()),
-						wikiGroupServiceOverriddenConfiguration.
-							rssAbstractLength(),
+						wikiGroupServiceConfiguration.rssAbstractLength(),
 						StringPool.BLANK);
 				}
 				else if (displayStyle.equals(RSSUtil.DISPLAY_STYLE_TITLE)) {

@@ -11,36 +11,42 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import com.liferay.petra.function.UnsafeSupplier;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMin;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-import javax.validation.constraints.DecimalMin;
-import javax.validation.constraints.NotNull;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Zoltán Takács
  * @generated
  */
 @Generated("")
-@GraphQLName("DiscountCategory")
+@GraphQLName(
+	description = "AssetCategory binding that restricts a discount to products tagged with a specific category. Backed by discount link with the AssetCategory class name.",
+	value = "DiscountCategory"
+)
+@io.swagger.v3.oas.annotations.media.Schema(
+	description = "AssetCategory binding that restricts a discount to products tagged with a specific category. Backed by discount link with the AssetCategory class name."
+)
 @JsonFilter("Liferay.Vulcan")
-@Schema(requiredProperties = {"categoryId"})
 @XmlRootElement(name = "DiscountCategory")
 public class DiscountCategory implements Serializable {
 
@@ -52,14 +58,24 @@ public class DiscountCategory implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(DiscountCategory.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Map of HATEOAS actions available to the current user, keyed by action name. Each value carries the href template and HTTP method, computed dynamically from user permissions. Read-only."
+	)
 	@Valid
 	public Map<String, Map<String, String>> getActions() {
+		if (_actionsSupplier != null) {
+			actions = _actionsSupplier.get();
+
+			_actionsSupplier = null;
+		}
+
 		return actions;
 	}
 
 	public void setActions(Map<String, Map<String, String>> actions) {
 		this.actions = actions;
+
+		_actionsSupplier = null;
 	}
 
 	@JsonIgnore
@@ -67,52 +83,82 @@ public class DiscountCategory implements Serializable {
 		UnsafeSupplier<Map<String, Map<String, String>>, Exception>
 			actionsUnsafeSupplier) {
 
-		try {
-			actions = actionsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_actionsSupplier = () -> {
+			try {
+				return actionsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Map of HATEOAS actions available to the current user, keyed by action name. Each value carries the href template and HTTP method, computed dynamically from user permissions. Read-only."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Map<String, Map<String, String>> actions;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Map<String, Map<String, String>>> _actionsSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public Category getCategory() {
+		if (_categorySupplier != null) {
+			category = _categorySupplier.get();
+
+			_categorySupplier = null;
+		}
+
 		return category;
 	}
 
 	public void setCategory(Category category) {
 		this.category = category;
+
+		_categorySupplier = null;
 	}
 
 	@JsonIgnore
 	public void setCategory(
 		UnsafeSupplier<Category, Exception> categoryUnsafeSupplier) {
 
-		try {
-			category = categoryUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_categorySupplier = () -> {
+			try {
+				return categoryUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Category category;
 
-	@Schema(example = "PAB-34098-789-N")
+	@JsonIgnore
+	private Supplier<Category> _categorySupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "External reference code of the bound category; alternative to `categoryId` for lookup.",
+		example = "PAB-34098-789-N"
+	)
 	public String getCategoryExternalReferenceCode() {
+		if (_categoryExternalReferenceCodeSupplier != null) {
+			categoryExternalReferenceCode =
+				_categoryExternalReferenceCodeSupplier.get();
+
+			_categoryExternalReferenceCodeSupplier = null;
+		}
+
 		return categoryExternalReferenceCode;
 	}
 
@@ -120,6 +166,8 @@ public class DiscountCategory implements Serializable {
 		String categoryExternalReferenceCode) {
 
 		this.categoryExternalReferenceCode = categoryExternalReferenceCode;
+
+		_categoryExternalReferenceCodeSupplier = null;
 	}
 
 	@JsonIgnore
@@ -127,83 +175,134 @@ public class DiscountCategory implements Serializable {
 		UnsafeSupplier<String, Exception>
 			categoryExternalReferenceCodeUnsafeSupplier) {
 
-		try {
-			categoryExternalReferenceCode =
-				categoryExternalReferenceCodeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_categoryExternalReferenceCodeSupplier = () -> {
+			try {
+				return categoryExternalReferenceCodeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "External reference code of the bound category; alternative to `categoryId` for lookup."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String categoryExternalReferenceCode;
 
+	@JsonIgnore
+	private Supplier<String> _categoryExternalReferenceCodeSupplier;
+
 	@DecimalMin("0")
-	@Schema(example = "30130")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Reference to the category entity (FK identifier).",
+		example = "30130"
+	)
 	public Long getCategoryId() {
+		if (_categoryIdSupplier != null) {
+			categoryId = _categoryIdSupplier.get();
+
+			_categoryIdSupplier = null;
+		}
+
 		return categoryId;
 	}
 
 	public void setCategoryId(Long categoryId) {
 		this.categoryId = categoryId;
+
+		_categoryIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setCategoryId(
 		UnsafeSupplier<Long, Exception> categoryIdUnsafeSupplier) {
 
-		try {
-			categoryId = categoryIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_categoryIdSupplier = () -> {
+			try {
+				return categoryIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Reference to the category entity (FK identifier)."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
-	@NotNull
 	protected Long categoryId;
 
+	@JsonIgnore
+	private Supplier<Long> _categoryIdSupplier;
+
 	@DecimalMin("0")
-	@Schema(example = "30643")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Reference to the discountCategory entity (FK identifier).",
+		example = "30643"
+	)
 	public Long getDiscountCategoryId() {
+		if (_discountCategoryIdSupplier != null) {
+			discountCategoryId = _discountCategoryIdSupplier.get();
+
+			_discountCategoryIdSupplier = null;
+		}
+
 		return discountCategoryId;
 	}
 
 	public void setDiscountCategoryId(Long discountCategoryId) {
 		this.discountCategoryId = discountCategoryId;
+
+		_discountCategoryIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setDiscountCategoryId(
 		UnsafeSupplier<Long, Exception> discountCategoryIdUnsafeSupplier) {
 
-		try {
-			discountCategoryId = discountCategoryIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_discountCategoryIdSupplier = () -> {
+			try {
+				return discountCategoryIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Reference to the discountCategory entity (FK identifier)."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Long discountCategoryId;
 
-	@Schema(example = "DAB-34098-789-N")
+	@JsonIgnore
+	private Supplier<Long> _discountCategoryIdSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "External reference code of the bound discount; alternative to `discountId` for lookup.",
+		example = "DAB-34098-789-N"
+	)
 	public String getDiscountExternalReferenceCode() {
+		if (_discountExternalReferenceCodeSupplier != null) {
+			discountExternalReferenceCode =
+				_discountExternalReferenceCodeSupplier.get();
+
+			_discountExternalReferenceCodeSupplier = null;
+		}
+
 		return discountExternalReferenceCode;
 	}
 
@@ -211,6 +310,8 @@ public class DiscountCategory implements Serializable {
 		String discountExternalReferenceCode) {
 
 		this.discountExternalReferenceCode = discountExternalReferenceCode;
+
+		_discountExternalReferenceCodeSupplier = null;
 	}
 
 	@JsonIgnore
@@ -218,50 +319,124 @@ public class DiscountCategory implements Serializable {
 		UnsafeSupplier<String, Exception>
 			discountExternalReferenceCodeUnsafeSupplier) {
 
-		try {
-			discountExternalReferenceCode =
-				discountExternalReferenceCodeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_discountExternalReferenceCodeSupplier = () -> {
+			try {
+				return discountExternalReferenceCodeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "External reference code of the bound discount; alternative to `discountId` for lookup."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String discountExternalReferenceCode;
 
+	@JsonIgnore
+	private Supplier<String> _discountExternalReferenceCodeSupplier;
+
 	@DecimalMin("0")
-	@Schema(example = "30324")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Reference to the discount entity (FK identifier).",
+		example = "30324"
+	)
 	public Long getDiscountId() {
+		if (_discountIdSupplier != null) {
+			discountId = _discountIdSupplier.get();
+
+			_discountIdSupplier = null;
+		}
+
 		return discountId;
 	}
 
 	public void setDiscountId(Long discountId) {
 		this.discountId = discountId;
+
+		_discountIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setDiscountId(
 		UnsafeSupplier<Long, Exception> discountIdUnsafeSupplier) {
 
-		try {
-			discountId = discountIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_discountIdSupplier = () -> {
+			try {
+				return discountIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Reference to the discount entity (FK identifier)."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Long discountId;
+
+	@JsonIgnore
+	private Supplier<Long> _discountIdSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "External reference code of the vocabulary that owns the category; on read the value mirrors the vocabulary's external reference code, and on write it is used only during an import to create the missing category inside the counterpart of that vocabulary.",
+		example = "AB-34098-789-N"
+	)
+	public String getVocabularyExternalReferenceCode() {
+		if (_vocabularyExternalReferenceCodeSupplier != null) {
+			vocabularyExternalReferenceCode =
+				_vocabularyExternalReferenceCodeSupplier.get();
+
+			_vocabularyExternalReferenceCodeSupplier = null;
+		}
+
+		return vocabularyExternalReferenceCode;
+	}
+
+	public void setVocabularyExternalReferenceCode(
+		String vocabularyExternalReferenceCode) {
+
+		this.vocabularyExternalReferenceCode = vocabularyExternalReferenceCode;
+
+		_vocabularyExternalReferenceCodeSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setVocabularyExternalReferenceCode(
+		UnsafeSupplier<String, Exception>
+			vocabularyExternalReferenceCodeUnsafeSupplier) {
+
+		_vocabularyExternalReferenceCodeSupplier = () -> {
+			try {
+				return vocabularyExternalReferenceCodeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField(
+		description = "External reference code of the vocabulary that owns the category; on read the value mirrors the vocabulary's external reference code, and on write it is used only during an import to create the missing category inside the counterpart of that vocabulary."
+	)
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected String vocabularyExternalReferenceCode;
+
+	@JsonIgnore
+	private Supplier<String> _vocabularyExternalReferenceCodeSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -290,6 +465,8 @@ public class DiscountCategory implements Serializable {
 
 		sb.append("{");
 
+		Map<String, Map<String, String>> actions = getActions();
+
 		if (actions != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -300,6 +477,8 @@ public class DiscountCategory implements Serializable {
 			sb.append(_toJSON(actions));
 		}
 
+		Category category = getCategory();
+
 		if (category != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -309,6 +488,9 @@ public class DiscountCategory implements Serializable {
 
 			sb.append(String.valueOf(category));
 		}
+
+		String categoryExternalReferenceCode =
+			getCategoryExternalReferenceCode();
 
 		if (categoryExternalReferenceCode != null) {
 			if (sb.length() > 1) {
@@ -324,6 +506,8 @@ public class DiscountCategory implements Serializable {
 			sb.append("\"");
 		}
 
+		Long categoryId = getCategoryId();
+
 		if (categoryId != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -334,6 +518,8 @@ public class DiscountCategory implements Serializable {
 			sb.append(categoryId);
 		}
 
+		Long discountCategoryId = getDiscountCategoryId();
+
 		if (discountCategoryId != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -343,6 +529,9 @@ public class DiscountCategory implements Serializable {
 
 			sb.append(discountCategoryId);
 		}
+
+		String discountExternalReferenceCode =
+			getDiscountExternalReferenceCode();
 
 		if (discountExternalReferenceCode != null) {
 			if (sb.length() > 1) {
@@ -358,6 +547,8 @@ public class DiscountCategory implements Serializable {
 			sb.append("\"");
 		}
 
+		Long discountId = getDiscountId();
+
 		if (discountId != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -368,13 +559,30 @@ public class DiscountCategory implements Serializable {
 			sb.append(discountId);
 		}
 
+		String vocabularyExternalReferenceCode =
+			getVocabularyExternalReferenceCode();
+
+		if (vocabularyExternalReferenceCode != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"vocabularyExternalReferenceCode\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(vocabularyExternalReferenceCode));
+
+			sb.append("\"");
+		}
+
 		sb.append("}");
 
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.commerce.admin.pricing.dto.v2_0.DiscountCategory",
 		name = "x-class-name"
 	)
@@ -420,7 +628,10 @@ public class DiscountCategory implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -458,6 +669,27 @@ public class DiscountCategory implements Serializable {
 		return sb.toString();
 	}
 
+	private static String _toJSON(Object value) {
+		if (value instanceof Collection) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONArray((Collection<?>)value));
+		}
+		else if (value instanceof Map) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONObject((Map<?, ?>)value));
+		}
+		else if (value instanceof Object[]) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONArray(
+					Arrays.asList((Object[])value)));
+		}
+		else if (value instanceof String) {
+			return StringBundler.concat("\"", _escape(value), "\"");
+		}
+
+		return String.valueOf(value);
+	}
+
 	private static final String[][] _JSON_ESCAPE_STRINGS = {
 		{"\\", "\"", "\b", "\f", "\n", "\r", "\t"},
 		{"\\\\", "\\\"", "\\b", "\\f", "\\n", "\\r", "\\t"}
@@ -466,3 +698,4 @@ public class DiscountCategory implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:862446630

@@ -7,6 +7,7 @@ package com.liferay.analytics.layout.page.template.web.internal.servlet.taglib.t
 
 import com.liferay.analytics.layout.page.template.web.internal.MockObject;
 import com.liferay.analytics.layout.page.template.web.internal.layout.display.page.MockObjectLayoutDisplayPageObjectProvider;
+import com.liferay.analytics.test.util.AnalyticsCompanyConfigurationTemporarySwapper;
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.blogs.model.BlogsEntry;
 import com.liferay.blogs.service.BlogsEntryLocalService;
@@ -36,8 +37,6 @@ import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.FileUtil;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
-
-import java.io.IOException;
 
 import java.util.Collections;
 
@@ -86,15 +85,15 @@ public class AnalyticsRenderFragmentLayoutPreDynamicIncludeTest {
 		MockHttpServletResponse mockHttpServletResponse =
 			new MockHttpServletResponse();
 
-		_dynamicInclude.include(
-			mockHttpServletRequest, mockHttpServletResponse,
-			RandomTestUtil.randomString());
+		_include(mockHttpServletRequest, mockHttpServletResponse);
 
 		Assert.assertEquals(
 			StringBundler.concat(
 				"<div data-analytics-asset-id=\"", blogsEntry.getEntryId(),
 				"\" data-analytics-asset-title=\"", blogsEntry.getTitle(),
-				"\" data-analytics-asset-type=\"blog\">"),
+				"\" data-analytics-asset-type=\"blog\" ",
+				"data-analytics-external-reference-code=\"",
+				blogsEntry.getExternalReferenceCode(), "\">"),
 			mockHttpServletResponse.getContentAsString());
 	}
 
@@ -110,7 +109,7 @@ public class AnalyticsRenderFragmentLayoutPreDynamicIncludeTest {
 			FileUtil.getBytes(
 				AnalyticsRenderFragmentLayoutPreDynamicIncludeTest.class,
 				"dependencies/image.jpg"),
-			null, null, new ServiceContext());
+			null, null, null, new ServiceContext());
 
 		mockHttpServletRequest.setAttribute(
 			LayoutDisplayPageWebKeys.LAYOUT_DISPLAY_PAGE_OBJECT_PROVIDER,
@@ -123,18 +122,17 @@ public class AnalyticsRenderFragmentLayoutPreDynamicIncludeTest {
 		MockHttpServletResponse mockHttpServletResponse =
 			new MockHttpServletResponse();
 
-		_dynamicInclude.include(
-			mockHttpServletRequest, mockHttpServletResponse,
-			RandomTestUtil.randomString());
+		_include(mockHttpServletRequest, mockHttpServletResponse);
 
 		Assert.assertEquals(
 			StringBundler.concat(
-				"<div data-analytics-asset-action=\"preview",
-				"\" data-analytics-asset-id=\"", fileEntry.getFileEntryId(),
+				"<div data-analytics-asset-action=\"preview\" ",
+				"data-analytics-asset-id=\"", fileEntry.getFileEntryId(),
 				"\" data-analytics-asset-title=\"", fileEntry.getTitle(),
-				"\" data-analytics-asset-type=\"file",
-				"\" data-analytics-asset-version=\"", fileEntry.getVersion(),
-				"\">"),
+				"\" data-analytics-asset-type=\"document\" ",
+				"data-analytics-asset-version=\"", fileEntry.getVersion(),
+				"\" data-analytics-external-reference-code=\"",
+				fileEntry.getExternalReferenceCode(), "\">"),
 			mockHttpServletResponse.getContentAsString());
 	}
 
@@ -159,39 +157,23 @@ public class AnalyticsRenderFragmentLayoutPreDynamicIncludeTest {
 		MockHttpServletResponse mockHttpServletResponse =
 			new MockHttpServletResponse();
 
-		_dynamicInclude.include(
-			mockHttpServletRequest, mockHttpServletResponse,
-			RandomTestUtil.randomString());
+		_include(mockHttpServletRequest, mockHttpServletResponse);
 
 		Assert.assertEquals(
 			StringBundler.concat(
 				"<div data-analytics-asset-id=\"",
 				journalArticle.getResourcePrimKey(),
 				"\" data-analytics-asset-title=\"", journalArticle.getTitle(),
-				"\" data-analytics-asset-type=\"web-content\">"),
+				"\" data-analytics-asset-type=\"web-content\" ",
+				"data-analytics-external-reference-code=\"",
+				journalArticle.getExternalReferenceCode(),
+				"\" data-analytics-web-content-resource-pk=\"",
+				journalArticle.getResourcePrimKey(), "\">"),
 			mockHttpServletResponse.getContentAsString());
 	}
 
 	@Test
-	public void testIncludeWithoutLayoutDisplayPageObjectProvider()
-		throws IOException {
-
-		MockHttpServletRequest mockHttpServletRequest =
-			new MockHttpServletRequest();
-
-		MockHttpServletResponse mockHttpServletResponse =
-			new MockHttpServletResponse();
-
-		_dynamicInclude.include(
-			mockHttpServletRequest, mockHttpServletResponse,
-			RandomTestUtil.randomString());
-
-		Assert.assertEquals(
-			StringPool.BLANK, mockHttpServletResponse.getContentAsString());
-	}
-
-	@Test
-	public void testIncludeWithUnregisteredClass() throws IOException {
+	public void testIncludeWithUnregisteredClass() throws Exception {
 		ClassName className = _classNameLocalService.addClassName(
 			MockObject.class.getName());
 
@@ -206,12 +188,42 @@ public class AnalyticsRenderFragmentLayoutPreDynamicIncludeTest {
 		MockHttpServletResponse mockHttpServletResponse =
 			new MockHttpServletResponse();
 
-		_dynamicInclude.include(
-			mockHttpServletRequest, mockHttpServletResponse,
-			RandomTestUtil.randomString());
+		_include(mockHttpServletRequest, mockHttpServletResponse);
 
 		Assert.assertEquals(
 			StringPool.BLANK, mockHttpServletResponse.getContentAsString());
+	}
+
+	@Test
+	public void testIncludeWithoutLayoutDisplayPageObjectProvider()
+		throws Exception {
+
+		MockHttpServletRequest mockHttpServletRequest =
+			new MockHttpServletRequest();
+
+		MockHttpServletResponse mockHttpServletResponse =
+			new MockHttpServletResponse();
+
+		_include(mockHttpServletRequest, mockHttpServletResponse);
+
+		Assert.assertEquals(
+			StringPool.BLANK, mockHttpServletResponse.getContentAsString());
+	}
+
+	private void _include(
+			MockHttpServletRequest mockHttpServletRequest,
+			MockHttpServletResponse mockHttpServletResponse)
+		throws Exception {
+
+		try (AnalyticsCompanyConfigurationTemporarySwapper
+				analyticsCompanyConfigurationTemporarySwapper =
+					new AnalyticsCompanyConfigurationTemporarySwapper(
+						TestPropsValues.getCompanyId())) {
+
+			_dynamicInclude.include(
+				mockHttpServletRequest, mockHttpServletResponse,
+				RandomTestUtil.randomString());
+		}
 	}
 
 	@Inject

@@ -26,11 +26,11 @@ import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+
 import java.util.Locale;
 import java.util.Map;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -40,15 +40,14 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + DDMPortletKeys.DYNAMIC_DATA_MAPPING_DATA_PROVIDER,
+		"jakarta.portlet.name=" + DDMPortletKeys.DYNAMIC_DATA_MAPPING_DATA_PROVIDER,
 		"mvc.command.name=/dynamic_data_mapping_data_provider/add_data_provider"
 	},
 	service = MVCActionCommand.class
 )
 public class AddDataProviderMVCActionCommand extends BaseMVCActionCommand {
 
-	public DDMFormValues getDDMFormValues(
-			ActionRequest actionRequest, ActionResponse actionResponse)
+	public DDMFormValues getDDMFormValues(ActionRequest actionRequest)
 		throws PortalException {
 
 		String type = ParamUtil.getString(actionRequest, "type");
@@ -75,8 +74,7 @@ public class AddDataProviderMVCActionCommand extends BaseMVCActionCommand {
 
 		String name = ParamUtil.getString(actionRequest, "name");
 		String description = ParamUtil.getString(actionRequest, "description");
-		DDMFormValues ddmFormValues = getDDMFormValues(
-			actionRequest, actionResponse);
+		DDMFormValues ddmFormValues = getDDMFormValues(actionRequest);
 		String type = ParamUtil.getString(actionRequest, "type");
 
 		ServiceContext serviceContext = ServiceContextFactory.getInstance(

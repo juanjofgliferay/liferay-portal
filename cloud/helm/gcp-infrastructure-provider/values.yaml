@@ -1,0 +1,17 @@
+deploymentContext:
+    deploymentName: ""
+    projectId: ""
+    projectNumber: ""
+    region: ""
+    vpcName: ""
+liferay-subchart-backup-cleanup:
+    enabled: true
+liferay-subchart-backup-controller:
+    enabled: true
+    serviceAccountName: backup-controller
+liferay-subchart-backup-create:
+    enabled: true
+liferay-subchart-backup-restore:
+    enabled: true
+providers:
+    enabled: true

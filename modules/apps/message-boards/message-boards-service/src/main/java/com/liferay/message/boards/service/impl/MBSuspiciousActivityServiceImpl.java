@@ -5,14 +5,22 @@
 
 package com.liferay.message.boards.service.impl;
 
+import com.liferay.message.boards.constants.MBConstants;
+import com.liferay.message.boards.model.MBMessage;
 import com.liferay.message.boards.model.MBSuspiciousActivity;
+import com.liferay.message.boards.model.MBThread;
 import com.liferay.message.boards.service.base.MBSuspiciousActivityServiceBaseImpl;
+import com.liferay.message.boards.service.persistence.MBMessagePersistence;
+import com.liferay.message.boards.service.persistence.MBThreadPersistence;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.security.permission.ActionKeys;
+import com.liferay.portal.kernel.security.permission.resource.PortletResourcePermission;
 
 import java.util.List;
 
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Brian Wing Shun Chan
@@ -51,7 +59,13 @@ public class MBSuspiciousActivityServiceImpl
 			long suspiciousActivityId)
 		throws PortalException {
 
-		// TODO Add permission checks for remote methods
+		MBSuspiciousActivity mbSuspiciousActivity =
+			mbSuspiciousActivityPersistence.findByPrimaryKey(
+				suspiciousActivityId);
+
+		_portletResourcePermission.check(
+			getPermissionChecker(), mbSuspiciousActivity.getGroupId(),
+			ActionKeys.BAN_USER);
 
 		return mbSuspiciousActivityLocalService.deleteSuspiciousActivity(
 			suspiciousActivityId);
@@ -59,34 +73,69 @@ public class MBSuspiciousActivityServiceImpl
 
 	@Override
 	public List<MBSuspiciousActivity> getMessageSuspiciousActivities(
-		long messageId) {
+			long messageId)
+		throws PortalException {
 
-		return mbSuspiciousActivityLocalService.getMessageSuspiciousActivities(
-			messageId);
+		MBMessage mbMessage = _mbMessagePersistence.findByPrimaryKey(messageId);
+
+		_portletResourcePermission.check(
+			getPermissionChecker(), mbMessage.getGroupId(),
+			ActionKeys.BAN_USER);
+
+		return mbSuspiciousActivityPersistence.findByMessageId(messageId);
 	}
 
 	@Override
 	public MBSuspiciousActivity getSuspiciousActivity(long suspiciousActivityId)
 		throws PortalException {
 
-		return mbSuspiciousActivityLocalService.getSuspiciousActivity(
-			suspiciousActivityId);
+		MBSuspiciousActivity mbSuspiciousActivity =
+			mbSuspiciousActivityPersistence.findByPrimaryKey(
+				suspiciousActivityId);
+
+		_portletResourcePermission.check(
+			getPermissionChecker(), mbSuspiciousActivity.getGroupId(),
+			ActionKeys.BAN_USER);
+
+		return mbSuspiciousActivity;
 	}
 
 	@Override
 	public List<MBSuspiciousActivity> getThreadSuspiciousActivities(
-		long threadId) {
+			long threadId)
+		throws PortalException {
 
-		return mbSuspiciousActivityLocalService.getThreadSuspiciousActivities(
-			threadId);
+		MBThread mbThread = _mbThreadPersistence.findByPrimaryKey(threadId);
+
+		_portletResourcePermission.check(
+			getPermissionChecker(), mbThread.getGroupId(), ActionKeys.BAN_USER);
+
+		return mbSuspiciousActivityPersistence.findByThreadId(threadId);
 	}
 
 	@Override
 	public MBSuspiciousActivity updateValidated(long suspiciousActivityId)
 		throws PortalException {
 
+		MBSuspiciousActivity mbSuspiciousActivity =
+			mbSuspiciousActivityPersistence.findByPrimaryKey(
+				suspiciousActivityId);
+
+		_portletResourcePermission.check(
+			getPermissionChecker(), mbSuspiciousActivity.getGroupId(),
+			ActionKeys.BAN_USER);
+
 		return mbSuspiciousActivityLocalService.updateValidated(
 			suspiciousActivityId);
 	}
+
+	@Reference
+	private MBMessagePersistence _mbMessagePersistence;
+
+	@Reference
+	private MBThreadPersistence _mbThreadPersistence;
+
+	@Reference(target = "(resource.name=" + MBConstants.RESOURCE_NAME + ")")
+	private PortletResourcePermission _portletResourcePermission;
 
 }

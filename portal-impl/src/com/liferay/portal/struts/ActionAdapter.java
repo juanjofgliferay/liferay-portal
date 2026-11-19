@@ -10,15 +10,16 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.struts.model.ActionForward;
 import com.liferay.portal.struts.model.ActionMapping;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 /**
  * @author Mika Koivisto
  */
 public class ActionAdapter implements Action {
 
-	public ActionAdapter(StrutsAction strutsAction) {
+	public ActionAdapter(boolean layoutRequired, StrutsAction strutsAction) {
+		_layoutRequired = layoutRequired;
 		_strutsAction = strutsAction;
 	}
 
@@ -44,6 +45,11 @@ public class ActionAdapter implements Action {
 		return actionForward;
 	}
 
+	public boolean isLayoutRequired() {
+		return _layoutRequired;
+	}
+
+	private final boolean _layoutRequired;
 	private final StrutsAction _strutsAction;
 
 }

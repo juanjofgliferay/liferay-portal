@@ -5,18 +5,17 @@
 
 package com.liferay.translation.translator.aws.internal.translator;
 
-import com.liferay.petra.string.CharPool;
-import com.liferay.petra.string.StringUtil;
 import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.module.configuration.ConfigurationException;
 import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.security.key.secret.SecretResolver;
+import com.liferay.translation.translator.BaseTranslator;
 import com.liferay.translation.translator.Translator;
 import com.liferay.translation.translator.TranslatorPacket;
 import com.liferay.translation.translator.aws.internal.configuration.AWSTranslatorConfiguration;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.osgi.service.component.annotations.Component;
@@ -36,7 +35,7 @@ import software.amazon.awssdk.services.translate.model.TranslateTextResponse;
 	configurationPid = "com.liferay.translation.translator.aws.internal.configuration.AWSTranslatorConfiguration",
 	service = Translator.class
 )
-public class AWSTranslator implements Translator {
+public class AWSTranslator extends BaseTranslator {
 
 	@Override
 	public boolean isEnabled(long companyId) throws ConfigurationException {
@@ -65,16 +64,18 @@ public class AWSTranslator implements Translator {
 			StaticCredentialsProvider.create(
 				AwsBasicCredentials.create(
 					awsTranslatorConfiguration.accessKey(),
-					awsTranslatorConfiguration.secretKey()))
+					_secretResolver.resolve(
+						translatorPacket.getCompanyId(),
+						awsTranslatorConfiguration.secretKey())))
 		).region(
 			Region.of(awsTranslatorConfiguration.region())
 		).build();
 
 		Map<String, String> translatedFieldsMap = new HashMap<>();
 
-		String sourceLanguageCode = _getLanguageCode(
+		String sourceLanguageCode = getLanguageCode(
 			translatorPacket.getSourceLanguageId());
-		String targetLanguageCode = _getLanguageCode(
+		String targetLanguageCode = getLanguageCode(
 			translatorPacket.getTargetLanguageId());
 
 		Map<String, String> fieldsMap = translatorPacket.getFieldsMap();
@@ -116,12 +117,6 @@ public class AWSTranslator implements Translator {
 		};
 	}
 
-	private String _getLanguageCode(String languageId) {
-		List<String> list = StringUtil.split(languageId, CharPool.UNDERLINE);
-
-		return list.get(0);
-	}
-
 	private String _translate(
 		TranslateClient translateClient, String text, String sourceLanguageCode,
 		String targetLanguageCode) {
@@ -145,5 +140,8 @@ public class AWSTranslator implements Translator {
 
 	@Reference
 	private ConfigurationProvider _configurationProvider;
+
+	@Reference
+	private SecretResolver _secretResolver;
 
 }

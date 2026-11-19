@@ -5,18 +5,21 @@
 
 package com.liferay.headless.commerce.admin.pricing.internal.resource.v2_0;
 
+import com.liferay.commerce.currency.service.CommerceCurrencyService;
 import com.liferay.commerce.discount.exception.NoSuchDiscountException;
 import com.liferay.commerce.discount.model.CommerceDiscount;
 import com.liferay.commerce.discount.model.CommerceDiscountRel;
 import com.liferay.commerce.discount.service.CommerceDiscountRelService;
 import com.liferay.commerce.discount.service.CommerceDiscountService;
 import com.liferay.commerce.product.model.CPDefinition;
+import com.liferay.commerce.product.service.CPDefinitionService;
 import com.liferay.commerce.product.service.CProductLocalService;
+import com.liferay.commerce.product.service.CommerceCatalogService;
 import com.liferay.headless.commerce.admin.pricing.dto.v2_0.Discount;
 import com.liferay.headless.commerce.admin.pricing.dto.v2_0.DiscountProduct;
 import com.liferay.headless.commerce.admin.pricing.internal.util.v2_0.DiscountProductUtil;
 import com.liferay.headless.commerce.admin.pricing.resource.v2_0.DiscountProductResource;
-import com.liferay.headless.commerce.core.util.ServiceContextHelper;
+import com.liferay.headless.commerce.core.helper.ServiceContextHelper;
 import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.search.filter.Filter;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
@@ -29,7 +32,6 @@ import com.liferay.portal.vulcan.fields.NestedField;
 import com.liferay.portal.vulcan.pagination.Page;
 import com.liferay.portal.vulcan.pagination.Pagination;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -61,8 +63,9 @@ public class DiscountProductResourceImpl
 		throws Exception {
 
 		CommerceDiscount commerceDiscount =
-			_commerceDiscountService.fetchByExternalReferenceCode(
-				externalReferenceCode, contextCompany.getCompanyId());
+			_commerceDiscountService.
+				fetchCommerceDiscountByExternalReferenceCode(
+					externalReferenceCode, contextCompany.getCompanyId());
 
 		if (commerceDiscount == null) {
 			throw new NoSuchDiscountException(
@@ -76,13 +79,13 @@ public class DiscountProductResourceImpl
 				CPDefinition.class.getName(), pagination.getStartPosition(),
 				pagination.getEndPosition(), null);
 
-		int totalItems =
+		int totalCount =
 			_commerceDiscountRelService.getCommerceDiscountRelsCount(
 				commerceDiscount.getCommerceDiscountId(),
 				CPDefinition.class.getName());
 
 		return Page.of(
-			_toDiscountProducts(commerceDiscountRels), pagination, totalItems);
+			_toDiscountProducts(commerceDiscountRels), pagination, totalCount);
 	}
 
 	@NestedField(parentClass = Discount.class, value = "discountProducts")
@@ -101,13 +104,13 @@ public class DiscountProductResourceImpl
 				id, search, languageId, pagination.getStartPosition(),
 				pagination.getEndPosition());
 
-		int totalItems =
+		int totalCount =
 			_commerceDiscountRelService.
 				getCPDefinitionsByCommerceDiscountIdCount(
 					id, search, languageId);
 
 		return Page.of(
-			_toDiscountProducts(commerceDiscountRels), pagination, totalItems);
+			_toDiscountProducts(commerceDiscountRels), pagination, totalCount);
 	}
 
 	@Override
@@ -116,8 +119,9 @@ public class DiscountProductResourceImpl
 		throws Exception {
 
 		CommerceDiscount commerceDiscount =
-			_commerceDiscountService.fetchByExternalReferenceCode(
-				externalReferenceCode, contextCompany.getCompanyId());
+			_commerceDiscountService.
+				fetchCommerceDiscountByExternalReferenceCode(
+					externalReferenceCode, contextCompany.getCompanyId());
 
 		if (commerceDiscount == null) {
 			throw new NoSuchDiscountException(
@@ -127,8 +131,10 @@ public class DiscountProductResourceImpl
 
 		CommerceDiscountRel commerceDiscountRel =
 			DiscountProductUtil.addCommerceDiscountRel(
-				_cProductLocalService, _commerceDiscountRelService,
-				discountProduct, commerceDiscount, _serviceContextHelper);
+				_cProductLocalService, _commerceCatalogService,
+				_commerceCurrencyService, _commerceDiscountRelService,
+				_cpDefinitionService, discountProduct, commerceDiscount,
+				_serviceContextHelper);
 
 		return _toDiscountProduct(
 			commerceDiscountRel.getCommerceDiscountRelId());
@@ -141,8 +147,9 @@ public class DiscountProductResourceImpl
 
 		CommerceDiscountRel commerceDiscountRel =
 			DiscountProductUtil.addCommerceDiscountRel(
-				_cProductLocalService, _commerceDiscountRelService,
-				discountProduct,
+				_cProductLocalService, _commerceCatalogService,
+				_commerceCurrencyService, _commerceDiscountRelService,
+				_cpDefinitionService, discountProduct,
 				_commerceDiscountService.getCommerceDiscount(id),
 				_serviceContextHelper);
 
@@ -183,16 +190,20 @@ public class DiscountProductResourceImpl
 			List<CommerceDiscountRel> commerceDiscountRels)
 		throws Exception {
 
-		List<DiscountProduct> discountProducts = new ArrayList<>();
-
-		for (CommerceDiscountRel commerceDiscountRel : commerceDiscountRels) {
-			discountProducts.add(
-				_toDiscountProduct(
-					commerceDiscountRel.getCommerceDiscountRelId()));
-		}
-
-		return discountProducts;
+		return transform(
+			commerceDiscountRels,
+			commerceDiscountRel -> _toDiscountProduct(
+				commerceDiscountRel.getCommerceDiscountRelId()));
 	}
+
+	@Reference
+	private CProductLocalService _cProductLocalService;
+
+	@Reference
+	private CommerceCatalogService _commerceCatalogService;
+
+	@Reference
+	private CommerceCurrencyService _commerceCurrencyService;
 
 	@Reference(
 		target = "(model.class.name=com.liferay.commerce.discount.model.CommerceDiscountRel)"
@@ -207,7 +218,7 @@ public class DiscountProductResourceImpl
 	private CommerceDiscountService _commerceDiscountService;
 
 	@Reference
-	private CProductLocalService _cProductLocalService;
+	private CPDefinitionService _cpDefinitionService;
 
 	@Reference(
 		target = "(component.name=com.liferay.headless.commerce.admin.pricing.internal.dto.v2_0.converter.DiscountProductDTOConverter)"

@@ -17,12 +17,13 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.site.display.context.GroupDisplayContextHelper;
 
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderRequest;
+
+import jakarta.servlet.http.HttpServletRequest;
+
+import java.util.List;
 import java.util.Objects;
-
-import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Stefan Tanasie
@@ -86,13 +87,13 @@ public class LayoutThemeItemSelectorDisplayContext {
 			orderByAsc = true;
 		}
 
+		List<Theme> themes = ThemeLocalServiceUtil.getPageThemes(
+			themeDisplay.getCompanyId(),
+			groupDisplayContextHelper.getLiveGroupId(),
+			themeDisplay.getUserId());
+
 		themesSearchContainer.setResultsAndTotal(
-			ListUtil.sort(
-				ThemeLocalServiceUtil.getPageThemes(
-					themeDisplay.getCompanyId(),
-					groupDisplayContextHelper.getLiveGroupId(),
-					themeDisplay.getUserId()),
-				new ThemeNameComparator(orderByAsc)));
+			ListUtil.sort(themes, new ThemeNameComparator(orderByAsc)));
 
 		_themesSearchContainer = themesSearchContainer;
 

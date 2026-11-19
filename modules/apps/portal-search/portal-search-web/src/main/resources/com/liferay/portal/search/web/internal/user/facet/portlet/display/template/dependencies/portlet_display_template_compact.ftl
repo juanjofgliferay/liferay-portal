@@ -20,6 +20,10 @@
 				onClick="Liferay.Search.FacetUtil.clearSelections(event);"
 			>
 				<strong>${languageUtil.get(locale, "clear")}</strong>
+
+				<span class="sr-only">
+					${languageUtil.format(locale, 'x-filter', 'user-facet-portlet-instance-configuration-name')}
+				</span>
 			</@clay.button>
 		</#if>
 
@@ -29,7 +33,7 @@
 					<li class="facet-value">
 						<@clay.button
 							cssClass="btn-unstyled facet-term ${(entry.isSelected())?then('facet-term-selected', 'facet-term-unselected')} term-name"
-							data\-term\-id="${entry.getBucketText()}"
+							data\-term\-id="${entry.getFilterValue()}"
 							disabled="true"
 							displayType="link"
 							onClick="Liferay.Search.FacetUtil.changeSelection(event);"

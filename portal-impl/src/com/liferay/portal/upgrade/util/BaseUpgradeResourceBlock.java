@@ -108,7 +108,7 @@ public abstract class BaseUpgradeResourceBlock extends UpgradeProcess {
 							"resourceBlockId = ?")) {
 
 				while (resultSet.next()) {
-					long resourceBlockId = resultSet.getLong(1);
+					long resourceBlockId = resultSet.getLong("resourceBlockId");
 
 					deletePreparedStatement.setLong(1, resourceBlockId);
 
@@ -138,13 +138,14 @@ public abstract class BaseUpgradeResourceBlock extends UpgradeProcess {
 							"select ResourceTypePermission.companyId, ",
 							"ResourceTypePermission.roleId, ",
 							"ResourceTypePermission.actionIds from ",
-							"ResourceTypePermission inner join Role_ on ",
-							"Role_.roleId = ResourceTypePermission.roleId ",
-							"where ResourceTypePermission.groupId = 0 and ",
-							"Role_.type_ = ", RoleConstants.TYPE_REGULAR,
-							" and ResourceTypePermission.name = ?")))) {
+							"ResourceTypePermission inner join Role_ on Role_.",
+							"roleId = ResourceTypePermission.roleId where ",
+							"ResourceTypePermission.groupId = 0 and Role_.",
+							"type_ = ? and ResourceTypePermission.name = ",
+							"?")))) {
 
-			selectPreparedStatement.setString(1, className);
+			selectPreparedStatement.setInt(1, RoleConstants.TYPE_REGULAR);
+			selectPreparedStatement.setString(2, className);
 
 			try (ResultSet resultSet = selectPreparedStatement.executeQuery();
 				PreparedStatement insertPreparedStatement =
@@ -211,13 +212,14 @@ public abstract class BaseUpgradeResourceBlock extends UpgradeProcess {
 							"select ResourceTypePermission.companyId, ",
 							"ResourceTypePermission.roleId, ",
 							"ResourceTypePermission.actionIds from ",
-							"ResourceTypePermission inner join Role_ on ",
-							"Role_.roleId = ResourceTypePermission.roleId ",
-							"where ResourceTypePermission.groupId = 0 and ",
-							"Role_.type_ != ", RoleConstants.TYPE_REGULAR,
-							" and ResourceTypePermission.name = ?")))) {
+							"ResourceTypePermission inner join Role_ on Role_.",
+							"roleId = ResourceTypePermission.roleId where ",
+							"ResourceTypePermission.groupId = 0 and Role_.",
+							"type_ != ? and ResourceTypePermission.name = ",
+							"?")))) {
 
-			selectPreparedStatement.setString(1, className);
+			selectPreparedStatement.setInt(1, RoleConstants.TYPE_REGULAR);
+			selectPreparedStatement.setString(2, className);
 
 			try (ResultSet resultSet = selectPreparedStatement.executeQuery();
 				PreparedStatement insertPreparedStatement =

@@ -7,7 +7,6 @@ package com.liferay.wiki.web.internal.portlet.toolbar.item;
 
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
-import com.liferay.portal.kernel.bean.BeanParamUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
@@ -24,10 +23,11 @@ import com.liferay.portal.kernel.servlet.taglib.ui.URLMenuItem;
 import com.liferay.portal.kernel.settings.GroupServiceSettingsLocator;
 import com.liferay.portal.kernel.theme.PortletDisplay;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.wiki.configuration.WikiGroupServiceOverriddenConfiguration;
+import com.liferay.wiki.configuration.WikiGroupServiceConfiguration;
 import com.liferay.wiki.constants.WikiConstants;
 import com.liferay.wiki.constants.WikiPortletKeys;
 import com.liferay.wiki.constants.WikiWebKeys;
@@ -35,11 +35,11 @@ import com.liferay.wiki.exception.NoSuchNodeException;
 import com.liferay.wiki.model.WikiNode;
 import com.liferay.wiki.service.WikiNodeService;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -49,7 +49,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + WikiPortletKeys.WIKI,
+		"jakarta.portlet.name=" + WikiPortletKeys.WIKI,
 		"mvc.render.command.name=/wiki/view_pages"
 	},
 	service = PortletToolbarContributor.class
@@ -135,16 +135,14 @@ public class WikiPortletToolbarContributor
 		String initialNodeName = StringPool.BLANK;
 
 		try {
-			WikiGroupServiceOverriddenConfiguration
-				wikiGroupServiceOverriddenConfiguration =
-					_configurationProvider.getConfiguration(
-						WikiGroupServiceOverriddenConfiguration.class,
-						new GroupServiceSettingsLocator(
-							themeDisplay.getScopeGroupId(),
-							WikiConstants.SERVICE_NAME));
+			WikiGroupServiceConfiguration wikiGroupServiceConfiguration =
+				_configurationProvider.getConfiguration(
+					WikiGroupServiceConfiguration.class,
+					new GroupServiceSettingsLocator(
+						themeDisplay.getScopeGroupId(),
+						WikiConstants.SERVICE_NAME));
 
-			initialNodeName =
-				wikiGroupServiceOverriddenConfiguration.initialNodeName();
+			initialNodeName = wikiGroupServiceConfiguration.initialNodeName();
 		}
 		catch (ConfigurationException configurationException) {
 			_log.error(
@@ -153,8 +151,8 @@ public class WikiPortletToolbarContributor
 				configurationException);
 		}
 
-		String name = BeanParamUtil.getString(
-			node, portletRequest, "name", initialNodeName);
+		String name = ParamUtil.getString(
+			portletRequest, "name", initialNodeName);
 
 		if (Validator.isNotNull(name)) {
 			try {

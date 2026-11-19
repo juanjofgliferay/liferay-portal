@@ -11,23 +11,25 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import com.liferay.petra.function.UnsafeSupplier;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Javier Gamarra
@@ -37,6 +39,9 @@ import javax.xml.bind.annotation.XmlRootElement;
 @GraphQLName(
 	description = "Represents a phone number. This follows the [telephone](https://schema.org/telephone) specification.",
 	value = "Phone"
+)
+@io.swagger.v3.oas.annotations.media.Schema(
+	description = "Represents a phone number. This follows the [telephone](https://schema.org/telephone) specification."
 )
 @JsonFilter("Liferay.Vulcan")
 @XmlRootElement(name = "Phone")
@@ -50,140 +55,253 @@ public class Phone implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(Phone.class, json);
 	}
 
-	@Schema(description = "The phone number's extension.")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The phone number's extension."
+	)
 	public String getExtension() {
+		if (_extensionSupplier != null) {
+			extension = _extensionSupplier.get();
+
+			_extensionSupplier = null;
+		}
+
 		return extension;
 	}
 
 	public void setExtension(String extension) {
 		this.extension = extension;
+
+		_extensionSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setExtension(
 		UnsafeSupplier<String, Exception> extensionUnsafeSupplier) {
 
-		try {
-			extension = extensionUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_extensionSupplier = () -> {
+			try {
+				return extensionUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The phone number's extension.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String extension;
 
-	@Schema(description = "The phone number's ID.")
+	@JsonIgnore
+	private Supplier<String> _extensionSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The phone number's external reference code."
+	)
+	public String getExternalReferenceCode() {
+		if (_externalReferenceCodeSupplier != null) {
+			externalReferenceCode = _externalReferenceCodeSupplier.get();
+
+			_externalReferenceCodeSupplier = null;
+		}
+
+		return externalReferenceCode;
+	}
+
+	public void setExternalReferenceCode(String externalReferenceCode) {
+		this.externalReferenceCode = externalReferenceCode;
+
+		_externalReferenceCodeSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setExternalReferenceCode(
+		UnsafeSupplier<String, Exception> externalReferenceCodeUnsafeSupplier) {
+
+		_externalReferenceCodeSupplier = () -> {
+			try {
+				return externalReferenceCodeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField(description = "The phone number's external reference code.")
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected String externalReferenceCode;
+
+	@JsonIgnore
+	private Supplier<String> _externalReferenceCodeSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The phone number's ID."
+	)
 	public Long getId() {
+		if (_idSupplier != null) {
+			id = _idSupplier.get();
+
+			_idSupplier = null;
+		}
+
 		return id;
 	}
 
 	public void setId(Long id) {
 		this.id = id;
+
+		_idSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setId(UnsafeSupplier<Long, Exception> idUnsafeSupplier) {
-		try {
-			id = idUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_idSupplier = () -> {
+			try {
+				return idUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The phone number's ID.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long id;
 
-	@Schema(description = "The phone number without its extension.")
+	@JsonIgnore
+	private Supplier<Long> _idSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The phone number without its extension."
+	)
 	public String getPhoneNumber() {
+		if (_phoneNumberSupplier != null) {
+			phoneNumber = _phoneNumberSupplier.get();
+
+			_phoneNumberSupplier = null;
+		}
+
 		return phoneNumber;
 	}
 
 	public void setPhoneNumber(String phoneNumber) {
 		this.phoneNumber = phoneNumber;
+
+		_phoneNumberSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setPhoneNumber(
 		UnsafeSupplier<String, Exception> phoneNumberUnsafeSupplier) {
 
-		try {
-			phoneNumber = phoneNumberUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_phoneNumberSupplier = () -> {
+			try {
+				return phoneNumberUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The phone number without its extension.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String phoneNumber;
 
-	@Schema(description = "The phone number's type.")
+	@JsonIgnore
+	private Supplier<String> _phoneNumberSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The phone number's type."
+	)
 	public String getPhoneType() {
+		if (_phoneTypeSupplier != null) {
+			phoneType = _phoneTypeSupplier.get();
+
+			_phoneTypeSupplier = null;
+		}
+
 		return phoneType;
 	}
 
 	public void setPhoneType(String phoneType) {
 		this.phoneType = phoneType;
+
+		_phoneTypeSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setPhoneType(
 		UnsafeSupplier<String, Exception> phoneTypeUnsafeSupplier) {
 
-		try {
-			phoneType = phoneTypeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_phoneTypeSupplier = () -> {
+			try {
+				return phoneTypeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The phone number's type.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String phoneType;
 
-	@Schema(
+	@JsonIgnore
+	private Supplier<String> _phoneTypeSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
 		description = "A flag that identifies whether this is the main phone number of the user/organization."
 	)
 	public Boolean getPrimary() {
+		if (_primarySupplier != null) {
+			primary = _primarySupplier.get();
+
+			_primarySupplier = null;
+		}
+
 		return primary;
 	}
 
 	public void setPrimary(Boolean primary) {
 		this.primary = primary;
+
+		_primarySupplier = null;
 	}
 
 	@JsonIgnore
 	public void setPrimary(
 		UnsafeSupplier<Boolean, Exception> primaryUnsafeSupplier) {
 
-		try {
-			primary = primaryUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_primarySupplier = () -> {
+			try {
+				return primaryUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -191,6 +309,9 @@ public class Phone implements Serializable {
 	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Boolean primary;
+
+	@JsonIgnore
+	private Supplier<Boolean> _primarySupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -219,6 +340,8 @@ public class Phone implements Serializable {
 
 		sb.append("{");
 
+		String extension = getExtension();
+
 		if (extension != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -233,6 +356,24 @@ public class Phone implements Serializable {
 			sb.append("\"");
 		}
 
+		String externalReferenceCode = getExternalReferenceCode();
+
+		if (externalReferenceCode != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"externalReferenceCode\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(externalReferenceCode));
+
+			sb.append("\"");
+		}
+
+		Long id = getId();
+
 		if (id != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -242,6 +383,8 @@ public class Phone implements Serializable {
 
 			sb.append(id);
 		}
+
+		String phoneNumber = getPhoneNumber();
 
 		if (phoneNumber != null) {
 			if (sb.length() > 1) {
@@ -257,6 +400,8 @@ public class Phone implements Serializable {
 			sb.append("\"");
 		}
 
+		String phoneType = getPhoneType();
+
 		if (phoneType != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -270,6 +415,8 @@ public class Phone implements Serializable {
 
 			sb.append("\"");
 		}
+
+		Boolean primary = getPrimary();
 
 		if (primary != null) {
 			if (sb.length() > 1) {
@@ -286,8 +433,8 @@ public class Phone implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.admin.user.dto.v1_0.Phone",
 		name = "x-class-name"
 	)
@@ -333,7 +480,10 @@ public class Phone implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -371,6 +521,27 @@ public class Phone implements Serializable {
 		return sb.toString();
 	}
 
+	private static String _toJSON(Object value) {
+		if (value instanceof Collection) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONArray((Collection<?>)value));
+		}
+		else if (value instanceof Map) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONObject((Map<?, ?>)value));
+		}
+		else if (value instanceof Object[]) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONArray(
+					Arrays.asList((Object[])value)));
+		}
+		else if (value instanceof String) {
+			return StringBundler.concat("\"", _escape(value), "\"");
+		}
+
+		return String.valueOf(value);
+	}
+
 	private static final String[][] _JSON_ESCAPE_STRINGS = {
 		{"\\", "\"", "\b", "\f", "\n", "\r", "\t"},
 		{"\\\\", "\\\"", "\\b", "\\f", "\\n", "\\r", "\\t"}
@@ -379,3 +550,4 @@ public class Phone implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:1959253017

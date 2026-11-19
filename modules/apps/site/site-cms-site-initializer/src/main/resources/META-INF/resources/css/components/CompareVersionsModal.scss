@@ -1,0 +1,142 @@
+@import '_atlas-custom-properties-variables';
+
+@mixin cms-compare-versions-formatted-mark {
+	background-color: $primary-l3;
+	border: 1px dotted $primary;
+	text-decoration: underline;
+}
+
+@mixin cms-compare-versions-mark($background-color, $border-color) {
+	background-color: $background-color;
+	border: 1px dotted $border-color;
+}
+
+.cms-compare-versions {
+	&-additions,
+	&-removals {
+		.cms-compare-versions-diff {
+			background-color: map-get($input-readonly, background-color);
+			border-color: map-get($input-readonly, border-color);
+			height: auto;
+
+			&[aria-multiline='true'] {
+				min-height: calc(
+					5em * #{$input-line-height} + 2 * #{$input-padding-y} + 2 *
+						#{$input-border-width}
+				);
+			}
+
+			&:focus {
+				border-color: map-get(
+					map-get($input-readonly, focus),
+					border-color
+				);
+
+				&:not(:focus-visible) {
+					box-shadow: none;
+				}
+			}
+
+			img {
+				max-width: 100%;
+			}
+
+			.diff-html-added,
+			.diff-html-changed {
+				-webkit-box-decoration-break: clone;
+				box-decoration-break: clone;
+				padding: 1px 2px;
+			}
+
+			.diff-html-changed {
+				@include cms-compare-versions-formatted-mark;
+			}
+		}
+
+		.diff-html-removed {
+			display: none;
+		}
+
+		[data-field-name]:has(.cms-compare-versions-diff) .ck-editor,
+		[data-field-name]:has(.cms-compare-versions-diff) .date-picker,
+		[data-field-name]:has(.cms-compare-versions-diff)
+			.form-control:not(.cms-compare-versions-diff),
+		[data-field-name]:has(.cms-compare-versions-diff) .localized-text {
+			display: none;
+		}
+
+		[data-field-name]:has(.cms-compare-versions-diff) .custom-control {
+			padding-left: 0;
+
+			.custom-control-input,
+			.custom-control-label::after,
+			.custom-control-label::before {
+				display: none;
+			}
+		}
+	}
+
+	&-additions {
+		.cms-compare-versions-diff .diff-html-added {
+			@include cms-compare-versions-mark($success-l2, $success);
+		}
+	}
+
+	&-content {
+		.input-group-item-focusable:focus-within:has(
+				.form-control[readonly]:focus
+			) {
+			background-color: transparent;
+			box-shadow: none;
+
+			.input-group-inset-item {
+				background-color: transparent;
+			}
+		}
+	}
+
+	&-key-added {
+		@include cms-compare-versions-mark($success-l2, $success);
+	}
+
+	&-key-deleted {
+		@include cms-compare-versions-mark($danger-l2, $danger);
+
+		text-decoration: line-through;
+	}
+
+	&-key-format-changes {
+		@include cms-compare-versions-formatted-mark;
+	}
+
+	&-pane {
+		flex: 1;
+		min-height: 0;
+		min-width: 0;
+
+		&-content {
+			min-height: 0;
+		}
+
+		& + & {
+			border-top: 1px solid $gray-300;
+
+			@include media-breakpoint-up(md) {
+				border-left: 1px solid $gray-300;
+				border-top: 0;
+			}
+		}
+	}
+
+	&-panes {
+		min-height: 0;
+	}
+
+	&-removals {
+		.cms-compare-versions-diff .diff-html-added {
+			@include cms-compare-versions-mark($danger-l2, $danger);
+
+			text-decoration: line-through;
+		}
+	}
+}

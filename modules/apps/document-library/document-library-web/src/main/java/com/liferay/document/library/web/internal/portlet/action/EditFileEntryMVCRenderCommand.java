@@ -17,9 +17,9 @@ import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
 import com.liferay.portal.kernel.util.Portal;
 
-import javax.portlet.PortletException;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -29,9 +29,9 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + DLPortletKeys.DOCUMENT_LIBRARY,
-		"javax.portlet.name=" + DLPortletKeys.DOCUMENT_LIBRARY_ADMIN,
-		"javax.portlet.name=" + DLPortletKeys.MEDIA_GALLERY_DISPLAY,
+		"jakarta.portlet.name=" + DLPortletKeys.DOCUMENT_LIBRARY,
+		"jakarta.portlet.name=" + DLPortletKeys.DOCUMENT_LIBRARY_ADMIN,
+		"jakarta.portlet.name=" + DLPortletKeys.MEDIA_GALLERY_DISPLAY,
 		"mvc.command.name=/document_library/edit_file_entry"
 	},
 	service = MVCRenderCommand.class
@@ -50,8 +50,7 @@ public class EditFileEntryMVCRenderCommand
 		renderRequest.setAttribute(
 			DLAdminDisplayContext.class.getName(),
 			_dlAdminDisplayContextProvider.getDLAdminDisplayContext(
-				_portal.getHttpServletRequest(renderRequest),
-				_portal.getHttpServletResponse(renderResponse)));
+				_portal.getHttpServletRequest(renderRequest)));
 
 		return super.render(renderRequest, renderResponse);
 	}
@@ -68,6 +67,11 @@ public class EditFileEntryMVCRenderCommand
 	@Override
 	protected String getPath() {
 		return "/document_library/edit_file_entry.jsp";
+	}
+
+	@Override
+	protected boolean isFileEntryRequired() {
+		return false;
 	}
 
 	@Reference

@@ -11,12 +11,14 @@
 
 <div class="digital-signature">
 	<react:component
-		module="js/pages/DigitalSignature"
+		module="{DigitalSignature} from digital-signature-web"
 		props='<%=
 			HashMapBuilder.<String, Object>put(
 				"allowedFileExtensions", StringUtil.merge(DigitalSignatureConstants.ALLOWED_FILE_EXTENSIONS)
 			).put(
 				"baseResourceURL", String.valueOf(baseResourceURL)
+			).put(
+				"embeddedViewEnabled", GetterUtil.getBoolean(request.getAttribute(DigitalSignatureWebKeys.DIGITAL_SIGNATURE_EMBEDDED_VIEW_ENABLED))
 			).build()
 		%>'
 	/>

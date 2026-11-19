@@ -5,15 +5,18 @@
 
 package com.liferay.portal.kernel.security;
 
-import com.liferay.portal.kernel.io.BigEndianCodec;
+import com.liferay.petra.concurrent.DefaultNoticeableFuture;
+import com.liferay.petra.io.BigEndianCodec;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.SystemProperties;
 
 import java.security.SecureRandom;
 
 import java.util.Random;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * @author Shuyang Zhou
@@ -31,81 +34,163 @@ public class SecureRandomUtil {
 	}
 
 	public static byte nextByte() {
-		int index = _index.getAndIncrement();
+		while (true) {
+			Buffer buffer = _readBufferAtomicReference.get();
 
-		if (index < _BUFFER_SIZE) {
-			return _BYTES[index];
+			int index = buffer.getAndAdd(1);
+
+			if (index < _BUFFER_SIZE) {
+				return buffer._bytes[index];
+			}
+
+			_swap(buffer);
 		}
-
-		return (byte)_reload(index);
 	}
 
 	public static double nextDouble() {
-		int index = _index.getAndAdd(8);
+		while (true) {
+			Buffer buffer = _readBufferAtomicReference.get();
 
-		if ((index + 7) < _BUFFER_SIZE) {
-			return BigEndianCodec.getDouble(_BYTES, index);
+			int index = buffer.getAndAdd(8);
+
+			if ((index + 7) < _BUFFER_SIZE) {
+				return BigEndianCodec.getDouble(buffer._bytes, index);
+			}
+
+			_swap(buffer);
 		}
-
-		return Double.longBitsToDouble(_reload(index));
 	}
 
 	public static float nextFloat() {
-		int index = _index.getAndAdd(4);
+		while (true) {
+			Buffer buffer = _readBufferAtomicReference.get();
 
-		if ((index + 3) < _BUFFER_SIZE) {
-			return BigEndianCodec.getFloat(_BYTES, index);
+			int index = buffer.getAndAdd(4);
+
+			if ((index + 3) < _BUFFER_SIZE) {
+				return BigEndianCodec.getFloat(buffer._bytes, index);
+			}
+
+			_swap(buffer);
 		}
-
-		return Float.intBitsToFloat((int)_reload(index));
 	}
 
 	public static int nextInt() {
-		int index = _index.getAndAdd(4);
+		while (true) {
+			Buffer buffer = _readBufferAtomicReference.get();
 
-		if ((index + 3) < _BUFFER_SIZE) {
-			return BigEndianCodec.getInt(_BYTES, index);
+			int index = buffer.getAndAdd(4);
+
+			if ((index + 3) < _BUFFER_SIZE) {
+				return BigEndianCodec.getInt(buffer._bytes, index);
+			}
+
+			_swap(buffer);
 		}
-
-		return (int)_reload(index);
 	}
 
 	public static long nextLong() {
-		int index = _index.getAndAdd(8);
+		while (true) {
+			Buffer buffer = _readBufferAtomicReference.get();
 
-		if ((index + 7) < _BUFFER_SIZE) {
-			return BigEndianCodec.getLong(_BYTES, index);
+			int index = buffer.getAndAdd(8);
+
+			if ((index + 7) < _BUFFER_SIZE) {
+				return BigEndianCodec.getLong(buffer._bytes, index);
+			}
+
+			_swap(buffer);
 		}
-
-		return _reload(index);
 	}
 
-	private static long _reload(int index) {
-		if (_reloadingFlag.compareAndSet(false, true)) {
-			_random.nextBytes(_BYTES);
+	private static Buffer _get(Future<Buffer> future) {
+		boolean interrupted = false;
 
-			_gapRandom.setSeed(_random.nextLong());
+		try {
+			while (true) {
+				try {
+					return future.get();
+				}
+				catch (ExecutionException executionException) {
+					return null;
+				}
+				catch (InterruptedException interruptedException) {
+					interrupted = true;
+				}
+			}
+		}
+		finally {
+			if (interrupted) {
+				Thread currentThread = Thread.currentThread();
 
-			_index.set(0);
+				currentThread.interrupt();
+			}
+		}
+	}
 
-			_reloadingFlag.set(false);
+	private static void _swap(Buffer buffer) {
+		Buffer nextBuffer = _get(buffer._nextBufferFuture);
+
+		if (nextBuffer == null) {
+			nextBuffer = new Buffer();
 		}
 
-		return _gapRandom.nextLong() ^
-			   BigEndianCodec.getLong(
-				   _BYTES, Math.abs(index % (_BUFFER_SIZE - 7)));
+		if (_readBufferAtomicReference.compareAndSet(buffer, nextBuffer)) {
+			buffer._nextReadBufferFuture.set(nextBuffer);
+		}
 	}
 
 	private static final int _BUFFER_SIZE;
 
-	private static final byte[] _BYTES;
-
 	private static final int _MIN_BUFFER_SIZE = 1024;
 
-	private static final Random _gapRandom = new Random();
-	private static final AtomicInteger _index = new AtomicInteger();
 	private static final Random _random = new SecureRandom();
-	private static final AtomicBoolean _reloadingFlag = new AtomicBoolean();
+	private static final AtomicReference<Buffer> _readBufferAtomicReference;
+
+	private static class Buffer {
+
+		public int getAndAdd(int delta) {
+			return _index.getAndAdd(delta);
+		}
+
+		private Buffer() {
+			_random.nextBytes(_bytes);
+		}
+
+		private final byte[] _bytes = new byte[_BUFFER_SIZE];
+		private final AtomicInteger _index = new AtomicInteger();
+		private final DefaultNoticeableFuture<Buffer> _nextBufferFuture =
+			new DefaultNoticeableFuture<>();
+		private final DefaultNoticeableFuture<Buffer> _nextReadBufferFuture =
+			new DefaultNoticeableFuture<>();
+
+	}
+
+	private static class PrefetchThread extends Thread {
+
+		@Override
+		public void run() {
+			while (true) {
+				try {
+					_writeBuffer._nextBufferFuture.set(new Buffer());
+				}
+				catch (Throwable throwable) {
+					_writeBuffer._nextBufferFuture.setException(throwable);
+				}
+
+				_writeBuffer = _get(_writeBuffer._nextReadBufferFuture);
+			}
+		}
+
+		private PrefetchThread(Buffer writeBuffer) {
+			super("SecureRandomUtil Prefetch Thread");
+
+			_writeBuffer = writeBuffer;
+		}
+
+		private Buffer _writeBuffer;
+
+	}
 
 	static {
 		int bufferSize = GetterUtil.getInteger(
@@ -118,11 +203,16 @@ public class SecureRandomUtil {
 
 		_BUFFER_SIZE = bufferSize;
 
-		_BYTES = new byte[_BUFFER_SIZE];
+		Buffer buffer = new Buffer();
 
-		_random.nextBytes(_BYTES);
+		_readBufferAtomicReference = new AtomicReference<>(buffer);
 
-		_gapRandom.setSeed(_random.nextLong());
+		Thread thread = new PrefetchThread(buffer);
+
+		thread.setContextClassLoader(null);
+		thread.setDaemon(true);
+
+		thread.start();
 	}
 
 }

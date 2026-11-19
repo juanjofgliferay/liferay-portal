@@ -35,6 +35,7 @@ import com.liferay.portal.kernel.util.OrderByComparator;
 import java.io.Serializable;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import org.osgi.annotation.versioning.ProviderType;
@@ -80,7 +81,8 @@ public interface FriendlyURLEntryLocalService
 		FriendlyURLEntry friendlyURLEntry);
 
 	public FriendlyURLEntry addFriendlyURLEntry(
-			long groupId, Class<?> clazz, long classPK, String urlTitle,
+			long groupId, long classNameId, long parentClassPK, long classPK,
+			String defaultLanguageId, Map<String, String> urlTitleMap,
 			ServiceContext serviceContext)
 		throws PortalException;
 
@@ -100,6 +102,11 @@ public interface FriendlyURLEntryLocalService
 			ServiceContext serviceContext)
 		throws PortalException;
 
+	public FriendlyURLEntryLocalization addFriendlyURLEntryLocalization(
+			FriendlyURLEntry friendlyURLEntry, String languageId,
+			String urlTitle)
+		throws PortalException;
+
 	/**
 	 * Creates a new friendly url entry with the primary key. Does not add the friendly url entry to the database.
 	 *
@@ -114,6 +121,9 @@ public interface FriendlyURLEntryLocalService
 	 */
 	public PersistedModel createPersistedModel(Serializable primaryKeyObj)
 		throws PortalException;
+
+	public void deleteCompanyFriendlyURLEntries(
+		long companyId, long classNameId);
 
 	/**
 	 * Deletes the friendly url entry from the database. Also notifies the appropriate model listeners.
@@ -145,10 +155,11 @@ public interface FriendlyURLEntryLocalService
 		throws PortalException;
 
 	public void deleteFriendlyURLEntry(
-		long groupId, Class<?> clazz, long classPK);
-
-	public void deleteFriendlyURLEntry(
 		long groupId, long classNameId, long classPK);
+
+	public void deleteFriendlyURLLocalizationEntry(
+			FriendlyURLEntryLocalization friendlyURLEntryLocalization)
+		throws PortalException;
 
 	public void deleteFriendlyURLLocalizationEntry(
 			long friendlyURLEntryId, String languageId)
@@ -240,7 +251,7 @@ public interface FriendlyURLEntryLocalService
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public FriendlyURLEntry fetchFriendlyURLEntry(
-		long groupId, Class<?> clazz, String urlTitle);
+		long groupId, long classNameId, long parentClassPK, String urlTitle);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public FriendlyURLEntry fetchFriendlyURLEntry(
@@ -259,11 +270,12 @@ public interface FriendlyURLEntryLocalService
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public FriendlyURLEntryLocalization fetchFriendlyURLEntryLocalization(
-		long groupId, long classNameId, String urlTitle);
+		long groupId, long classNameId, long parentClassPK, String urlTitle);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public FriendlyURLEntryLocalization fetchFriendlyURLEntryLocalization(
-		long groupId, long classNameId, String languageId, String urlTitle);
+		long groupId, long classNameId, long parentClassPK, String languageId,
+		String urlTitle);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public FriendlyURLEntryLocalization fetchFriendlyURLEntryLocalization(
@@ -386,11 +398,6 @@ public interface FriendlyURLEntryLocalService
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public FriendlyURLEntry getMainFriendlyURLEntry(
-			Class<?> clazz, long classPK)
-		throws PortalException;
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public FriendlyURLEntry getMainFriendlyURLEntry(
 			long classNameId, long classPK)
 		throws PortalException;
 
@@ -411,8 +418,20 @@ public interface FriendlyURLEntryLocalService
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public String getUniqueUrlTitle(
-		long groupId, long classNameId, long classPK, String urlTitle,
-		String languageId);
+		long groupId, long classNameId, long parentClassPK, long classPK,
+		String urlTitle);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public String getUniqueUrlTitle(
+		long groupId, long classNameId, long classPK, String urlTitle);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public Map<String, String> getUniqueUrlTitleMap(
+		long groupId, long classNameId, long parentClassPK, long classPK,
+		Map<Locale, String> titleMap);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public boolean hasMainFriendlyURLEntry(long classNameId, long classPK);
 
 	public void setMainFriendlyURLEntry(FriendlyURLEntry friendlyURLEntry);
 
@@ -431,8 +450,20 @@ public interface FriendlyURLEntryLocalService
 		FriendlyURLEntry friendlyURLEntry);
 
 	public FriendlyURLEntry updateFriendlyURLEntry(
+			long friendlyURLEntryId, long classNameId, long parentClassPK,
+			long classPK, String defaultLanguageId,
+			Map<String, String> urlTitleMap, ServiceContext serviceContext)
+		throws PortalException;
+
+	public FriendlyURLEntry updateFriendlyURLEntry(
 			long friendlyURLEntryId, long classNameId, long classPK,
 			String defaultLanguageId, Map<String, String> urlTitleMap)
+		throws PortalException;
+
+	public FriendlyURLEntry updateFriendlyURLEntry(
+			long friendlyURLEntryId, long classNameId, long classPK,
+			String defaultLanguageId, Map<String, String> urlTitleMap,
+			ServiceContext serviceContext)
 		throws PortalException;
 
 	public FriendlyURLEntryLocalization updateFriendlyURLEntryLocalization(
@@ -451,6 +482,21 @@ public interface FriendlyURLEntryLocalService
 
 	public FriendlyURLEntryLocalization updateFriendlyURLLocalization(
 			long friendlyURLLocalizationId, String urlTitle)
+		throws PortalException;
+
+	public void validate(
+			long groupId, long classNameId, long parentClassPK, long classPK,
+			Map<String, String> urlTitleMap)
+		throws PortalException;
+
+	public void validate(
+			long groupId, long classNameId, long parentClassPK, long classPK,
+			String urlTitle)
+		throws PortalException;
+
+	public void validate(
+			long groupId, long classNameId, long parentClassPK, long classPK,
+			String languageId, String urlTitle)
 		throws PortalException;
 
 	public void validate(
@@ -486,3 +532,4 @@ public interface FriendlyURLEntryLocalService
 		throws E;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-945327983

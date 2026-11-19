@@ -22,6 +22,7 @@ import com.liferay.message.boards.model.MBThread;
 import com.liferay.message.boards.service.MBDiscussionLocalService;
 import com.liferay.message.boards.service.MBMessageLocalService;
 import com.liferay.message.boards.service.MBThreadLocalService;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
@@ -81,6 +82,14 @@ public class MBMessageStagedModelDataHandler
 	}
 
 	@Override
+	public MBMessage fetchStagedModelByExternalReferenceCodeAndGroupId(
+		String externalReferenceCode, long groupId) {
+
+		return _mbMessageLocalService.fetchMBMessageByExternalReferenceCode(
+			externalReferenceCode, groupId);
+	}
+
+	@Override
 	public MBMessage fetchStagedModelByUuidAndGroupId(
 		String uuid, long groupId) {
 
@@ -129,6 +138,13 @@ public class MBMessageStagedModelDataHandler
 	protected void doExportStagedModel(
 			PortletDataContext portletDataContext, MBMessage message)
 		throws Exception {
+
+		if (message.isAnonymous()) {
+			message.setUserId(0);
+			message.setUserName(StringPool.BLANK);
+			message.setStatusByUserId(0);
+			message.setStatusByUserName(StringPool.BLANK);
+		}
 
 		if (message.isDiscussion()) {
 			MBDiscussion discussion = _mbDiscussionLocalService.getDiscussion(
@@ -285,8 +301,8 @@ public class MBMessageStagedModelDataHandler
 			MBMessage importedMessage = null;
 
 			if (portletDataContext.isDataStrategyMirror()) {
-				MBMessage existingMessage = fetchStagedModelByUuidAndGroupId(
-					message.getUuid(), portletDataContext.getScopeGroupId());
+				MBMessage existingMessage = fetchExistingStagedModel(
+					message, portletDataContext.getScopeGroupId());
 
 				if (existingMessage == null) {
 					serviceContext.setUuid(message.getUuid());
@@ -337,6 +353,12 @@ public class MBMessageStagedModelDataHandler
 							message.getSubject(), message.getBody(),
 							inputStreamOVPs, message.getPriority(),
 							message.isAllowPingbacks(), serviceContext);
+
+						importedMessage.setUuid(message.getUuid());
+
+						importedMessage =
+							_mbMessageLocalService.updateMBMessage(
+								importedMessage);
 					}
 				}
 			}

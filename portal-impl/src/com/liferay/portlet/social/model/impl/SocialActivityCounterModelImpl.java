@@ -97,6 +97,8 @@ public class SocialActivityCounterModelImpl
 	public static final String TABLE_SQL_DROP =
 		"drop table SocialActivityCounter";
 
+	public static final String ENTITY_ALIAS = "socialActivityCounter";
+
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY socialActivityCounter.activityCounterId ASC";
 
@@ -177,7 +179,7 @@ public class SocialActivityCounterModelImpl
 	public static final long ACTIVITYCOUNTERID_COLUMN_BITMASK = 128L;
 
 	public static final long LOCK_EXPIRATION_TIME = GetterUtil.getLong(
-		com.liferay.portal.util.PropsUtil.get(
+		com.liferay.portal.kernel.util.PropsUtil.get(
 			"lock.expiration.time.com.liferay.social.kernel.model.SocialActivityCounter"));
 
 	public SocialActivityCounterModelImpl() {
@@ -1113,3 +1115,4 @@ public class SocialActivityCounterModelImpl
 	private SocialActivityCounter _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1050351150

@@ -1,0 +1,77 @@
+/**
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
+ */
+
+import {Locator, Page} from '@playwright/test';
+
+import {clickAndExpectToBeVisible} from '../../../../utils/clickAndExpectToBeVisible';
+
+export class NotificationsPage {
+	readonly page: Page;
+	readonly backButton: Locator;
+	readonly deleteButton: Locator;
+	readonly notificationNoLongerAppliesMessage: Locator;
+	readonly requestsTab: Locator;
+	readonly selectAllItemsCheckbox: Locator;
+	readonly sharingNotificationMessage: (
+		userName: string,
+		documentTitle: string
+	) => Locator;
+	readonly workflowReviewMessage: (
+		asset: string,
+		userName?: string
+	) => Locator;
+
+	constructor(page: Page) {
+		this.page = page;
+
+		this.backButton = this.page.getByRole('link', {
+			name: 'Return to Full Page',
+		});
+		this.deleteButton = page.getByRole('button', {name: 'Delete'});
+		this.notificationNoLongerAppliesMessage = this.page.getByText(
+			'Notification no longer applies.'
+		);
+		this.requestsTab = this.page.getByRole('link', {
+			name: 'Requests List (0)',
+		});
+		this.selectAllItemsCheckbox = page.getByLabel(
+			'Select All Items on the Page'
+		);
+		this.sharingNotificationMessage = (
+			userName: string,
+			documentTitle: string
+		) => {
+			return page.getByText(
+				`${userName} has shared ${documentTitle} with you for viewing.`
+			);
+		};
+		this.workflowReviewMessage = (
+			asset: string,
+			userName: string = 'Test Test'
+		) => {
+			return page.getByText(
+				`${userName} sent you a ${asset} for review in the workflow.`
+			);
+		};
+	}
+
+	async goto(userName: string = 'Test Test') {
+		const notificationsMenuItem = this.page
+			.locator('.dropdown-menu.show')
+			.getByRole('menuitem', {name: 'Notifications'});
+
+		await clickAndExpectToBeVisible({
+			target: notificationsMenuItem,
+			trigger: this.page.getByLabel(`${userName} User Profile`),
+		});
+
+		await notificationsMenuItem.click();
+
+		await this.page.waitForURL(
+			/com_liferay_notifications_web_portlet_NotificationsPortlet/,
+			{waitUntil: 'commit'}
+		);
+	}
+}

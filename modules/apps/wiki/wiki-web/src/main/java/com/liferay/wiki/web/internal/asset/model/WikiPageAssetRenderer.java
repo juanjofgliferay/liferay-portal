@@ -31,7 +31,7 @@ import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.trash.TrashHelper;
-import com.liferay.wiki.configuration.WikiGroupServiceOverriddenConfiguration;
+import com.liferay.wiki.configuration.WikiGroupServiceConfiguration;
 import com.liferay.wiki.constants.WikiConstants;
 import com.liferay.wiki.constants.WikiPageConstants;
 import com.liferay.wiki.constants.WikiPortletKeys;
@@ -42,15 +42,15 @@ import com.liferay.wiki.model.WikiPage;
 import com.liferay.wiki.service.WikiPageLocalServiceUtil;
 import com.liferay.wiki.web.internal.security.permission.resource.WikiPagePermission;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.WindowState;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.util.Locale;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
-import javax.portlet.PortletURL;
-import javax.portlet.WindowState;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * @author Julio Camarero
@@ -99,11 +99,11 @@ public class WikiPageAssetRenderer
 
 	@Override
 	public String getDiscussionPath() {
-		if (_wikiGroupServiceOverriddenConfiguration == null) {
+		if (_wikiGroupServiceConfiguration == null) {
 			try {
-				_wikiGroupServiceOverriddenConfiguration =
+				_wikiGroupServiceConfiguration =
 					ConfigurationProviderUtil.getConfiguration(
-						WikiGroupServiceOverriddenConfiguration.class,
+						WikiGroupServiceConfiguration.class,
 						new GroupServiceSettingsLocator(
 							_page.getGroupId(), WikiConstants.SERVICE_NAME));
 			}
@@ -114,7 +114,7 @@ public class WikiPageAssetRenderer
 			}
 		}
 
-		if (_wikiGroupServiceOverriddenConfiguration.pageCommentsEnabled()) {
+		if (_wikiGroupServiceConfiguration.pageCommentsEnabled()) {
 			return "edit_page_discussion";
 		}
 
@@ -421,7 +421,6 @@ public class WikiPageAssetRenderer
 	private final WikiPage _page;
 	private final TrashHelper _trashHelper;
 	private final WikiEngineRenderer _wikiEngineRenderer;
-	private WikiGroupServiceOverriddenConfiguration
-		_wikiGroupServiceOverriddenConfiguration;
+	private WikiGroupServiceConfiguration _wikiGroupServiceConfiguration;
 
 }

@@ -62,6 +62,7 @@ public class CommerceAccountUpgradeProcess extends UpgradeProcess {
 
 		try (Statement s = connection.createStatement(
 				ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
+
 			ResultSet resultSet = s.executeQuery(
 				"select organizationId from Organization_ where type_ = " +
 					"'account'")) {
@@ -125,9 +126,10 @@ public class CommerceAccountUpgradeProcess extends UpgradeProcess {
 
 		AccountEntry accountEntry =
 			AccountEntryLocalServiceUtil.addAccountEntry(
-				organization.getUserId(), parentCommerceAccountId,
-				organization.getName(), null, null, email, null,
-				StringPool.BLANK, AccountConstants.ACCOUNT_ENTRY_TYPE_BUSINESS,
+				StringPool.BLANK, organization.getUserId(),
+				parentCommerceAccountId, organization.getName(), null, null,
+				email, null, StringPool.BLANK,
+				AccountConstants.ACCOUNT_ENTRY_TYPE_BUSINESS,
 				WorkflowConstants.STATUS_APPROVED, serviceContext);
 
 		if (organization.getExternalReferenceCode() != null) {
@@ -190,6 +192,7 @@ public class CommerceAccountUpgradeProcess extends UpgradeProcess {
 				"where organizationId = " + parentOrganizationId;
 
 		try (Statement s = connection.createStatement();
+
 			ResultSet resultSet = s.executeQuery(sql)) {
 
 			if (resultSet.next()) {

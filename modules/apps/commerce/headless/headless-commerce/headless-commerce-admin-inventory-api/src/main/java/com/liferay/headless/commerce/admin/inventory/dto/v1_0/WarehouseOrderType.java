@@ -11,36 +11,44 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import com.liferay.petra.function.UnsafeSupplier;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.NotNull;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-import javax.validation.constraints.DecimalMin;
-import javax.validation.constraints.NotNull;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Alessio Antonio Rendina
  * @generated
  */
 @Generated("")
-@GraphQLName("WarehouseOrderType")
+@GraphQLName(
+	description = "Binding that scopes a warehouse to a specific order type, restricting which order kinds the warehouse can source inventory for. Created by POSTing under a warehouse and deleted through its own top-level resource path. Adding or removing the binding reindexes the parent warehouse.",
+	value = "WarehouseOrderType"
+)
+@io.swagger.v3.oas.annotations.media.Schema(
+	description = "Binding that scopes a warehouse to a specific order type, restricting which order kinds the warehouse can source inventory for. Created by POSTing under a warehouse and deleted through its own top-level resource path. Adding or removing the binding reindexes the parent warehouse.",
+	requiredProperties = {"orderTypeId", "warehouseId"}
+)
 @JsonFilter("Liferay.Vulcan")
-@Schema(requiredProperties = {"orderTypeId", "warehouseId"})
 @XmlRootElement(name = "WarehouseOrderType")
 public class WarehouseOrderType implements Serializable {
 
@@ -52,14 +60,24 @@ public class WarehouseOrderType implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(WarehouseOrderType.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Map of HATEOAS actions available to the current user, keyed by action name. Each value carries the href template and HTTP method, computed dynamically from user permissions. Read-only."
+	)
 	@Valid
 	public Map<String, Map<String, String>> getActions() {
+		if (_actionsSupplier != null) {
+			actions = _actionsSupplier.get();
+
+			_actionsSupplier = null;
+		}
+
 		return actions;
 	}
 
 	public void setActions(Map<String, Map<String, String>> actions) {
 		this.actions = actions;
+
+		_actionsSupplier = null;
 	}
 
 	@JsonIgnore
@@ -67,52 +85,82 @@ public class WarehouseOrderType implements Serializable {
 		UnsafeSupplier<Map<String, Map<String, String>>, Exception>
 			actionsUnsafeSupplier) {
 
-		try {
-			actions = actionsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_actionsSupplier = () -> {
+			try {
+				return actionsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Map of HATEOAS actions available to the current user, keyed by action name. Each value carries the href template and HTTP method, computed dynamically from user permissions. Read-only."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Map<String, Map<String, String>> actions;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Map<String, Map<String, String>>> _actionsSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public OrderType getOrderType() {
+		if (_orderTypeSupplier != null) {
+			orderType = _orderTypeSupplier.get();
+
+			_orderTypeSupplier = null;
+		}
+
 		return orderType;
 	}
 
 	public void setOrderType(OrderType orderType) {
 		this.orderType = orderType;
+
+		_orderTypeSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setOrderType(
 		UnsafeSupplier<OrderType, Exception> orderTypeUnsafeSupplier) {
 
-		try {
-			orderType = orderTypeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_orderTypeSupplier = () -> {
+			try {
+				return orderTypeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected OrderType orderType;
 
-	@Schema(example = "DAB-34098-789-N")
+	@JsonIgnore
+	private Supplier<OrderType> _orderTypeSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Idempotency key of the bound order type. Either orderTypeId or orderTypeExternalReferenceCode must resolve to an existing order type on create.",
+		example = "DAB-34098-789-N"
+	)
 	public String getOrderTypeExternalReferenceCode() {
+		if (_orderTypeExternalReferenceCodeSupplier != null) {
+			orderTypeExternalReferenceCode =
+				_orderTypeExternalReferenceCodeSupplier.get();
+
+			_orderTypeExternalReferenceCodeSupplier = null;
+		}
+
 		return orderTypeExternalReferenceCode;
 	}
 
@@ -120,6 +168,8 @@ public class WarehouseOrderType implements Serializable {
 		String orderTypeExternalReferenceCode) {
 
 		this.orderTypeExternalReferenceCode = orderTypeExternalReferenceCode;
+
+		_orderTypeExternalReferenceCodeSupplier = null;
 	}
 
 	@JsonIgnore
@@ -127,83 +177,135 @@ public class WarehouseOrderType implements Serializable {
 		UnsafeSupplier<String, Exception>
 			orderTypeExternalReferenceCodeUnsafeSupplier) {
 
-		try {
-			orderTypeExternalReferenceCode =
-				orderTypeExternalReferenceCodeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_orderTypeExternalReferenceCodeSupplier = () -> {
+			try {
+				return orderTypeExternalReferenceCodeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Idempotency key of the bound order type. Either orderTypeId or orderTypeExternalReferenceCode must resolve to an existing order type on create."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String orderTypeExternalReferenceCode;
 
+	@JsonIgnore
+	private Supplier<String> _orderTypeExternalReferenceCodeSupplier;
+
 	@DecimalMin("0")
-	@Schema(example = "30324")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Reference to the bound order type (FK identifier). Either orderTypeId or orderTypeExternalReferenceCode must resolve to an existing order type on create.",
+		example = "30130"
+	)
 	public Long getOrderTypeId() {
+		if (_orderTypeIdSupplier != null) {
+			orderTypeId = _orderTypeIdSupplier.get();
+
+			_orderTypeIdSupplier = null;
+		}
+
 		return orderTypeId;
 	}
 
 	public void setOrderTypeId(Long orderTypeId) {
 		this.orderTypeId = orderTypeId;
+
+		_orderTypeIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setOrderTypeId(
 		UnsafeSupplier<Long, Exception> orderTypeIdUnsafeSupplier) {
 
-		try {
-			orderTypeId = orderTypeIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_orderTypeIdSupplier = () -> {
+			try {
+				return orderTypeIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Reference to the bound order type (FK identifier). Either orderTypeId or orderTypeExternalReferenceCode must resolve to an existing order type on create."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	@NotNull
 	protected Long orderTypeId;
 
+	@JsonIgnore
+	private Supplier<Long> _orderTypeIdSupplier;
+
 	@DecimalMin("0")
-	@Schema(example = "1")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Reserved ordering hint for the binding. The runtime does not currently persist or read this field -- the underlying binding row has no priority column -- so the value round-trips on the request body but has no effect.",
+		example = "1"
+	)
 	public Integer getPriority() {
+		if (_prioritySupplier != null) {
+			priority = _prioritySupplier.get();
+
+			_prioritySupplier = null;
+		}
+
 		return priority;
 	}
 
 	public void setPriority(Integer priority) {
 		this.priority = priority;
+
+		_prioritySupplier = null;
 	}
 
 	@JsonIgnore
 	public void setPriority(
 		UnsafeSupplier<Integer, Exception> priorityUnsafeSupplier) {
 
-		try {
-			priority = priorityUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_prioritySupplier = () -> {
+			try {
+				return priorityUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Reserved ordering hint for the binding. The runtime does not currently persist or read this field -- the underlying binding row has no priority column -- so the value round-trips on the request body but has no effect."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Integer priority;
 
-	@Schema(example = "PAB-34098-789-N")
+	@JsonIgnore
+	private Supplier<Integer> _prioritySupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Idempotency key of the warehouse side of the binding.",
+		example = "PAB-34098-789-N"
+	)
 	public String getWarehouseExternalReferenceCode() {
+		if (_warehouseExternalReferenceCodeSupplier != null) {
+			warehouseExternalReferenceCode =
+				_warehouseExternalReferenceCodeSupplier.get();
+
+			_warehouseExternalReferenceCodeSupplier = null;
+		}
+
 		return warehouseExternalReferenceCode;
 	}
 
@@ -211,6 +313,8 @@ public class WarehouseOrderType implements Serializable {
 		String warehouseExternalReferenceCode) {
 
 		this.warehouseExternalReferenceCode = warehouseExternalReferenceCode;
+
+		_warehouseExternalReferenceCodeSupplier = null;
 	}
 
 	@JsonIgnore
@@ -218,80 +322,122 @@ public class WarehouseOrderType implements Serializable {
 		UnsafeSupplier<String, Exception>
 			warehouseExternalReferenceCodeUnsafeSupplier) {
 
-		try {
-			warehouseExternalReferenceCode =
-				warehouseExternalReferenceCodeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_warehouseExternalReferenceCodeSupplier = () -> {
+			try {
+				return warehouseExternalReferenceCodeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Idempotency key of the warehouse side of the binding."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String warehouseExternalReferenceCode;
 
+	@JsonIgnore
+	private Supplier<String> _warehouseExternalReferenceCodeSupplier;
+
 	@DecimalMin("0")
-	@Schema(example = "30130")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Reference to the warehouse side of the binding (FK identifier).",
+		example = "30130"
+	)
 	public Long getWarehouseId() {
+		if (_warehouseIdSupplier != null) {
+			warehouseId = _warehouseIdSupplier.get();
+
+			_warehouseIdSupplier = null;
+		}
+
 		return warehouseId;
 	}
 
 	public void setWarehouseId(Long warehouseId) {
 		this.warehouseId = warehouseId;
+
+		_warehouseIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setWarehouseId(
 		UnsafeSupplier<Long, Exception> warehouseIdUnsafeSupplier) {
 
-		try {
-			warehouseId = warehouseIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_warehouseIdSupplier = () -> {
+			try {
+				return warehouseIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Reference to the warehouse side of the binding (FK identifier)."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	@NotNull
 	protected Long warehouseId;
 
+	@JsonIgnore
+	private Supplier<Long> _warehouseIdSupplier;
+
 	@DecimalMin("0")
-	@Schema(example = "30643")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Internal numeric identifier of the binding; read-only and assigned by the service on create.",
+		example = "30643"
+	)
 	public Long getWarehouseOrderTypeId() {
+		if (_warehouseOrderTypeIdSupplier != null) {
+			warehouseOrderTypeId = _warehouseOrderTypeIdSupplier.get();
+
+			_warehouseOrderTypeIdSupplier = null;
+		}
+
 		return warehouseOrderTypeId;
 	}
 
 	public void setWarehouseOrderTypeId(Long warehouseOrderTypeId) {
 		this.warehouseOrderTypeId = warehouseOrderTypeId;
+
+		_warehouseOrderTypeIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setWarehouseOrderTypeId(
 		UnsafeSupplier<Long, Exception> warehouseOrderTypeIdUnsafeSupplier) {
 
-		try {
-			warehouseOrderTypeId = warehouseOrderTypeIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_warehouseOrderTypeIdSupplier = () -> {
+			try {
+				return warehouseOrderTypeIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Internal numeric identifier of the binding; read-only and assigned by the service on create."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Long warehouseOrderTypeId;
+
+	@JsonIgnore
+	private Supplier<Long> _warehouseOrderTypeIdSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -320,6 +466,8 @@ public class WarehouseOrderType implements Serializable {
 
 		sb.append("{");
 
+		Map<String, Map<String, String>> actions = getActions();
+
 		if (actions != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -330,6 +478,8 @@ public class WarehouseOrderType implements Serializable {
 			sb.append(_toJSON(actions));
 		}
 
+		OrderType orderType = getOrderType();
+
 		if (orderType != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -339,6 +489,9 @@ public class WarehouseOrderType implements Serializable {
 
 			sb.append(String.valueOf(orderType));
 		}
+
+		String orderTypeExternalReferenceCode =
+			getOrderTypeExternalReferenceCode();
 
 		if (orderTypeExternalReferenceCode != null) {
 			if (sb.length() > 1) {
@@ -354,6 +507,8 @@ public class WarehouseOrderType implements Serializable {
 			sb.append("\"");
 		}
 
+		Long orderTypeId = getOrderTypeId();
+
 		if (orderTypeId != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -364,6 +519,8 @@ public class WarehouseOrderType implements Serializable {
 			sb.append(orderTypeId);
 		}
 
+		Integer priority = getPriority();
+
 		if (priority != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -373,6 +530,9 @@ public class WarehouseOrderType implements Serializable {
 
 			sb.append(priority);
 		}
+
+		String warehouseExternalReferenceCode =
+			getWarehouseExternalReferenceCode();
 
 		if (warehouseExternalReferenceCode != null) {
 			if (sb.length() > 1) {
@@ -388,6 +548,8 @@ public class WarehouseOrderType implements Serializable {
 			sb.append("\"");
 		}
 
+		Long warehouseId = getWarehouseId();
+
 		if (warehouseId != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -397,6 +559,8 @@ public class WarehouseOrderType implements Serializable {
 
 			sb.append(warehouseId);
 		}
+
+		Long warehouseOrderTypeId = getWarehouseOrderTypeId();
 
 		if (warehouseOrderTypeId != null) {
 			if (sb.length() > 1) {
@@ -413,8 +577,8 @@ public class WarehouseOrderType implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.commerce.admin.inventory.dto.v1_0.WarehouseOrderType",
 		name = "x-class-name"
 	)
@@ -460,7 +624,10 @@ public class WarehouseOrderType implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -498,6 +665,27 @@ public class WarehouseOrderType implements Serializable {
 		return sb.toString();
 	}
 
+	private static String _toJSON(Object value) {
+		if (value instanceof Collection) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONArray((Collection<?>)value));
+		}
+		else if (value instanceof Map) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONObject((Map<?, ?>)value));
+		}
+		else if (value instanceof Object[]) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONArray(
+					Arrays.asList((Object[])value)));
+		}
+		else if (value instanceof String) {
+			return StringBundler.concat("\"", _escape(value), "\"");
+		}
+
+		return String.valueOf(value);
+	}
+
 	private static final String[][] _JSON_ESCAPE_STRINGS = {
 		{"\\", "\"", "\b", "\f", "\n", "\r", "\t"},
 		{"\\\\", "\\\"", "\\b", "\\f", "\\n", "\\r", "\\t"}
@@ -506,3 +694,4 @@ public class WarehouseOrderType implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:694986038

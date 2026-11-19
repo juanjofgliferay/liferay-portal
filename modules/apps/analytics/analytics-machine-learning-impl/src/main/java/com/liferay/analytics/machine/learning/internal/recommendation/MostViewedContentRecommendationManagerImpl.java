@@ -7,8 +7,9 @@ package com.liferay.analytics.machine.learning.internal.recommendation;
 
 import com.liferay.analytics.machine.learning.content.MostViewedContentRecommendation;
 import com.liferay.analytics.machine.learning.content.MostViewedContentRecommendationManager;
+import com.liferay.analytics.machine.learning.internal.recommendation.constants.RecommendationIndexNames;
 import com.liferay.analytics.machine.learning.internal.recommendation.search.RecommendationField;
-import com.liferay.analytics.machine.learning.internal.search.api.RecommendationIndexer;
+import com.liferay.analytics.machine.learning.internal.recommendation.search.RecommendationIndexer;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.search.BooleanClauseOccur;
 import com.liferay.portal.kernel.search.BooleanQuery;
@@ -20,14 +21,15 @@ import com.liferay.portal.kernel.search.SortFactoryUtil;
 import com.liferay.portal.kernel.search.TermQuery;
 import com.liferay.portal.kernel.search.filter.BooleanFilter;
 import com.liferay.portal.kernel.search.filter.TermFilter;
-import com.liferay.portal.kernel.search.generic.BooleanQueryImpl;
-import com.liferay.portal.kernel.search.generic.TermQueryImpl;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.search.capabilities.SearchCapabilities;
 import com.liferay.portal.search.engine.adapter.search.SearchSearchRequest;
+import com.liferay.portal.search.index.IndexNameBuilder;
 
 import java.util.Collections;
 import java.util.List;
 
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
@@ -75,6 +77,13 @@ public class MostViewedContentRecommendationManagerImpl
 			_getSearchSearchRequest(assetCategoryIds, companyId));
 	}
 
+	@Activate
+	protected void activate() {
+		_recommendationIndexer = new RecommendationIndexer(
+			RecommendationIndexNames.MOST_VIEWED_CONTENT_RECOMMENDATION,
+			_indexNameBuilder, _searchCapabilities, searchEngineAdapter);
+	}
+
 	@Override
 	protected Document toDocument(
 		MostViewedContentRecommendation mostViewedContentRecommendation) {
@@ -84,10 +93,17 @@ public class MostViewedContentRecommendationManagerImpl
 		document.addNumber(
 			Field.ASSET_CATEGORY_IDS,
 			mostViewedContentRecommendation.getAssetCategoryIds());
-		document.addDate(
-			Field.CREATE_DATE, mostViewedContentRecommendation.getCreateDate());
 		document.addNumber(
 			Field.COMPANY_ID, mostViewedContentRecommendation.getCompanyId());
+		document.addDate(
+			Field.CREATE_DATE, mostViewedContentRecommendation.getCreateDate());
+		document.addKeyword(
+			Field.UID,
+			String.valueOf(
+				getHash(
+					mostViewedContentRecommendation.getCompanyId(),
+					mostViewedContentRecommendation.
+						getRecommendedEntryClassPK())));
 		document.addText(
 			RecommendationField.JOB_ID,
 			mostViewedContentRecommendation.getJobId());
@@ -97,13 +113,6 @@ public class MostViewedContentRecommendationManagerImpl
 		document.addNumber(
 			RecommendationField.SCORE,
 			mostViewedContentRecommendation.getScore());
-		document.addKeyword(
-			Field.UID,
-			String.valueOf(
-				getHash(
-					mostViewedContentRecommendation.getCompanyId(),
-					mostViewedContentRecommendation.
-						getRecommendedEntryClassPK())));
 
 		return document;
 	}
@@ -140,7 +149,7 @@ public class MostViewedContentRecommendationManagerImpl
 		searchSearchRequest.setIndexNames(
 			new String[] {_recommendationIndexer.getIndexName(companyId)});
 
-		BooleanQuery booleanQuery = new BooleanQueryImpl();
+		BooleanQuery booleanQuery = new BooleanQuery();
 
 		booleanQuery.setPreBooleanFilter(
 			new BooleanFilter() {
@@ -154,7 +163,7 @@ public class MostViewedContentRecommendationManagerImpl
 
 		if (assetCategoryIds != null) {
 			for (long assetCategoryId : assetCategoryIds) {
-				TermQuery categoryIdTermQuery = new TermQueryImpl(
+				TermQuery categoryIdTermQuery = new TermQuery(
 					Field.ASSET_CATEGORY_IDS, String.valueOf(assetCategoryId));
 
 				booleanQuery.add(categoryIdTermQuery, BooleanClauseOccur.MUST);
@@ -173,9 +182,12 @@ public class MostViewedContentRecommendationManagerImpl
 		return searchSearchRequest;
 	}
 
-	@Reference(
-		target = "(component.name=com.liferay.analytics.machine.learning.internal.recommendation.search.MostViewedContentRecommendationIndexer)"
-	)
+	@Reference
+	private IndexNameBuilder _indexNameBuilder;
+
 	private RecommendationIndexer _recommendationIndexer;
+
+	@Reference
+	private SearchCapabilities _searchCapabilities;
 
 }

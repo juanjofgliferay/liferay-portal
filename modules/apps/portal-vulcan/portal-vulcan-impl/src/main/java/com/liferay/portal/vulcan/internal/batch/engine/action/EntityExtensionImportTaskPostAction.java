@@ -5,12 +5,15 @@
 
 package com.liferay.portal.vulcan.internal.batch.engine.action;
 
+import com.liferay.batch.engine.BatchEngineTaskItemDelegate;
 import com.liferay.batch.engine.action.ImportTaskPostAction;
+import com.liferay.batch.engine.context.ImportTaskContext;
 import com.liferay.batch.engine.model.BatchEngineImportTask;
 import com.liferay.portal.vulcan.extension.EntityExtensionHandler;
 import com.liferay.portal.vulcan.extension.EntityExtensionThreadLocal;
 import com.liferay.portal.vulcan.extension.ExtensionProviderRegistry;
 import com.liferay.portal.vulcan.extension.util.ExtensionUtil;
+import com.liferay.portal.vulcan.internal.batch.engine.util.BatchEngineImportTaskUtil;
 
 import java.io.Serializable;
 
@@ -28,7 +31,9 @@ public class EntityExtensionImportTaskPostAction
 
 	@Override
 	public void run(
-			BatchEngineImportTask batchEngineImportTask, Object item,
+			BatchEngineImportTask batchEngineImportTask,
+			BatchEngineTaskItemDelegate<?> batchEngineTaskItemDelegate,
+			ImportTaskContext importTaskContext, Object item,
 			Object persistedItem)
 		throws Exception {
 
@@ -53,7 +58,9 @@ public class EntityExtensionImportTaskPostAction
 			entityExtensionHandler.setExtendedProperties(
 				batchEngineImportTask.getCompanyId(),
 				batchEngineImportTask.getUserId(), persistedItem,
-				extendedProperties);
+				extendedProperties,
+				BatchEngineImportTaskUtil.isPartialUpdate(
+					batchEngineImportTask));
 		}
 		finally {
 			EntityExtensionThreadLocal.clearExtendedProperties();

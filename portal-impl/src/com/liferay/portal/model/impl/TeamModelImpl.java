@@ -96,9 +96,16 @@ public class TeamModelImpl extends BaseModelImpl<Team> implements TeamModel {
 
 	public static final String TABLE_SQL_DROP = "drop table Team";
 
+	public static final String ENTITY_ALIAS = "team";
+
+	public static final String FILTER_PK_COLUMN_NAME = "teamId";
+
 	public static final String ORDER_BY_JPQL = " ORDER BY team.name ASC";
 
 	public static final String ORDER_BY_SQL = " ORDER BY Team.name ASC";
+
+	public static final String ORDER_BY_SQL_INLINE_DISTINCT =
+		" ORDER BY team.name ASC";
 
 	public static final String DATA_SOURCE = "liferayDataSource";
 
@@ -182,7 +189,7 @@ public class TeamModelImpl extends BaseModelImpl<Team> implements TeamModel {
 	public static final boolean FINDER_CACHE_ENABLED_USERGROUPS_TEAMS = true;
 
 	public static final long LOCK_EXPIRATION_TIME = GetterUtil.getLong(
-		com.liferay.portal.util.PropsUtil.get(
+		com.liferay.portal.kernel.util.PropsUtil.get(
 			"lock.expiration.time.com.liferay.portal.kernel.model.Team"));
 
 	public TeamModelImpl() {
@@ -1037,3 +1044,4 @@ public class TeamModelImpl extends BaseModelImpl<Team> implements TeamModel {
 	private Team _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1450455555

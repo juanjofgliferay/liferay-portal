@@ -56,19 +56,13 @@ public interface DDLRecordSet extends DDLRecordSetModel, PersistedModel {
 			long formDDMTemplateId)
 		throws com.liferay.portal.kernel.exception.PortalException;
 
-	public java.util.List<DDLRecord> getRecords();
-
 	public DDLRecordSetVersion getRecordSetVersion()
 		throws com.liferay.portal.kernel.exception.PortalException;
 
 	public DDLRecordSetVersion getRecordSetVersion(String version)
 		throws com.liferay.portal.kernel.exception.PortalException;
 
-	public com.liferay.dynamic.data.mapping.storage.DDMFormValues
-			getSettingsDDMFormValues()
-		throws com.liferay.portal.kernel.exception.PortalException;
-
-	public DDLRecordSetSettings getSettingsModel()
-		throws com.liferay.portal.kernel.exception.PortalException;
+	public java.util.List<DDLRecord> getRecords();
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:318822795

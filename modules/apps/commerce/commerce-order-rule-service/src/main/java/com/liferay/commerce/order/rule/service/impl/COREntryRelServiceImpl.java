@@ -12,6 +12,7 @@ import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
+import com.liferay.portal.kernel.service.ClassNameLocalService;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.util.List;
@@ -46,7 +47,7 @@ public class COREntryRelServiceImpl extends COREntryRelServiceBaseImpl {
 
 	@Override
 	public void deleteCOREntryRel(long corEntryRelId) throws PortalException {
-		COREntryRel corEntryRel = corEntryRelLocalService.getCOREntryRel(
+		COREntryRel corEntryRel = corEntryRelPersistence.findByPrimaryKey(
 			corEntryRelId);
 
 		_corEntryModelResourcePermission.check(
@@ -84,8 +85,9 @@ public class COREntryRelServiceImpl extends COREntryRelServiceBaseImpl {
 		_corEntryModelResourcePermission.check(
 			getPermissionChecker(), corEntryId, ActionKeys.VIEW);
 
-		return corEntryRelLocalService.fetchCOREntryRel(
-			className, classPK, corEntryId);
+		return corEntryRelPersistence.fetchByC_C_C(
+			_classNameLocalService.getClassNameId(className), classPK,
+			corEntryId);
 	}
 
 	@Override
@@ -137,6 +139,51 @@ public class COREntryRelServiceImpl extends COREntryRelServiceBaseImpl {
 	}
 
 	@Override
+	public COREntryRel getCOREntryRel(long corEntryRelId)
+		throws PortalException {
+
+		COREntryRel corEntryRel = corEntryRelPersistence.findByPrimaryKey(
+			corEntryRelId);
+
+		_corEntryModelResourcePermission.check(
+			getPermissionChecker(), corEntryRel.getCOREntryId(),
+			ActionKeys.VIEW);
+
+		return corEntryRel;
+	}
+
+	@Override
+	public List<COREntryRel> getCOREntryRels(long corEntryId)
+		throws PortalException {
+
+		_corEntryModelResourcePermission.check(
+			getPermissionChecker(), corEntryId, ActionKeys.VIEW);
+
+		return corEntryRelPersistence.findByCOREntryId(corEntryId);
+	}
+
+	@Override
+	public List<COREntryRel> getCOREntryRels(
+			long corEntryId, int start, int end,
+			OrderByComparator<COREntryRel> orderByComparator)
+		throws PortalException {
+
+		_corEntryModelResourcePermission.check(
+			getPermissionChecker(), corEntryId, ActionKeys.VIEW);
+
+		return corEntryRelPersistence.findByCOREntryId(
+			corEntryId, start, end, orderByComparator);
+	}
+
+	@Override
+	public int getCOREntryRelsCount(long corEntryId) throws PortalException {
+		_corEntryModelResourcePermission.check(
+			getPermissionChecker(), corEntryId, ActionKeys.VIEW);
+
+		return corEntryRelPersistence.countByCOREntryId(corEntryId);
+	}
+
+	@Override
 	public List<COREntryRel> getCommerceChannelCOREntryRels(
 			long corEntryId, String keywords, int start, int end)
 		throws PortalException {
@@ -184,50 +231,8 @@ public class COREntryRelServiceImpl extends COREntryRelServiceBaseImpl {
 			corEntryId, keywords);
 	}
 
-	@Override
-	public COREntryRel getCOREntryRel(long corEntryRelId)
-		throws PortalException {
-
-		COREntryRel corEntryRel = corEntryRelLocalService.getCOREntryRel(
-			corEntryRelId);
-
-		_corEntryModelResourcePermission.check(
-			getPermissionChecker(), corEntryRel.getCOREntryId(),
-			ActionKeys.VIEW);
-
-		return corEntryRel;
-	}
-
-	@Override
-	public List<COREntryRel> getCOREntryRels(long corEntryId)
-		throws PortalException {
-
-		_corEntryModelResourcePermission.check(
-			getPermissionChecker(), corEntryId, ActionKeys.VIEW);
-
-		return corEntryRelLocalService.getCOREntryRels(corEntryId);
-	}
-
-	@Override
-	public List<COREntryRel> getCOREntryRels(
-			long corEntryId, int start, int end,
-			OrderByComparator<COREntryRel> orderByComparator)
-		throws PortalException {
-
-		_corEntryModelResourcePermission.check(
-			getPermissionChecker(), corEntryId, ActionKeys.VIEW);
-
-		return corEntryRelLocalService.getCOREntryRels(
-			corEntryId, start, end, orderByComparator);
-	}
-
-	@Override
-	public int getCOREntryRelsCount(long corEntryId) throws PortalException {
-		_corEntryModelResourcePermission.check(
-			getPermissionChecker(), corEntryId, ActionKeys.VIEW);
-
-		return corEntryRelLocalService.getCOREntryRelsCount(corEntryId);
-	}
+	@Reference
+	private ClassNameLocalService _classNameLocalService;
 
 	@Reference(
 		target = "(model.class.name=com.liferay.commerce.order.rule.model.COREntry)"

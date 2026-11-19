@@ -7,9 +7,9 @@ package com.liferay.dynamic.data.mapping.form.field.type.internal.select;
 
 import com.liferay.dynamic.data.mapping.form.field.type.DDMFormFieldValueAccessor;
 import com.liferay.dynamic.data.mapping.form.field.type.constants.DDMFormFieldTypeConstants;
-import com.liferay.dynamic.data.mapping.form.field.type.internal.util.DDMFormFieldValueUtil;
 import com.liferay.dynamic.data.mapping.model.DDMFormField;
 import com.liferay.dynamic.data.mapping.storage.DDMFormFieldValue;
+import com.liferay.dynamic.data.mapping.util.DDMFormFieldValueUtil;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
@@ -125,9 +125,11 @@ public class SelectDDMFormFieldValueAccessor
 			for (int i = 0; i < jsonArray.length(); i++) {
 				sb.append(jsonArray.get(i));
 
-				if (i < (jsonArray.length() - 1)) {
-					sb.append(CharPool.COMMA);
+				if (i >= (jsonArray.length() - 1)) {
+					continue;
 				}
+
+				sb.append(CharPool.COMMA);
 			}
 
 			return sb.toString();

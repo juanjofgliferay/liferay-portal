@@ -5,16 +5,29 @@
 
 package com.liferay.layout.content.page.editor.web.internal.util;
 
+import com.liferay.exportimport.kernel.staging.StagingUtil;
 import com.liferay.frontend.token.definition.FrontendTokenDefinition;
 import com.liferay.frontend.token.definition.FrontendTokenMapping;
-import com.liferay.petra.string.StringPool;
+import com.liferay.frontend.token.definition.util.FrontendTokenDefinitionUtil;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
+import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.model.Layout;
+import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
+import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.HashMapBuilder;
+import com.liferay.portal.kernel.util.Validator;
+import com.liferay.style.book.constants.StyleBookConstants;
 import com.liferay.style.book.model.StyleBookEntry;
+import com.liferay.style.book.util.DefaultStyleBookEntryUtil;
+import com.liferay.style.book.util.FrontendTokensValuesUtil;
+import com.liferay.style.book.util.StyleBookEntryProviderUtil;
 
+import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
@@ -39,11 +52,17 @@ public class StyleBookEntryUtil {
 			_getFrontendTokenValuesJSONObject(styleBookEntry);
 
 		JSONObject frontendTokenDefinitionJSONObject =
-			frontendTokenDefinition.getJSONObject(locale);
+			_getFrontendTokenDefinitionJSONObject(
+				frontendTokenDefinition, locale, styleBookEntry);
 
 		JSONArray frontendTokenCategoriesJSONArray =
 			frontendTokenDefinitionJSONObject.getJSONArray(
 				"frontendTokenCategories");
+
+		Map<String, String> defaultFrontendTokenValues =
+			_getDefaultFrontendTokenValues(
+				frontendTokenCategoriesJSONArray,
+				frontendTokenDefinition.getThemeId());
 
 		for (int i = 0; i < frontendTokenCategoriesJSONArray.length(); i++) {
 			JSONObject frontendTokenCategoryJSONObject =
@@ -67,15 +86,98 @@ public class StyleBookEntryUtil {
 					frontendTokensValues.put(
 						frontendTokenJSONObject.getString("name"),
 						_getProcessedFrontendTokenValue(
+							defaultFrontendTokenValues,
 							frontendTokenCategoryJSONObject.getString("label"),
 							frontendTokenJSONObject,
 							frontendTokenSetJSONObject.getString("label"),
-							frontendTokenValuesJSONObject));
+							frontendTokenValuesJSONObject,
+							frontendTokenDefinition.getThemeId()));
 				}
 			}
 		}
 
 		return frontendTokensValues;
+	}
+
+	public static List<Map<String, Object>> getStyleBookEntryMaps(
+			FrontendTokenDefinition frontendTokenDefinition,
+			boolean includeFrontendTokensValues, Layout layout,
+			ThemeDisplay themeDisplay)
+		throws Exception {
+
+		long groupId = StagingUtil.getLiveGroupId(layout.getGroupId());
+		Map<Long, Group> scopeGroups = new HashMap<>();
+
+		return TransformUtil.transform(
+			StyleBookEntryProviderUtil.getStyleBookEntries(
+				layout.getCompanyId(), groupId,
+				frontendTokenDefinition.getThemeId()),
+			styleBookEntry -> _getStyleBookEntryMap(
+				frontendTokenDefinition, groupId, includeFrontendTokensValues,
+				scopeGroups, styleBookEntry, themeDisplay));
+	}
+
+	private static Map<String, String> _getDefaultFrontendTokenValues(
+		JSONArray frontendTokenCategoriesJSONArray, String themeId) {
+
+		Map<String, String> defaultFrontendTokenValues = new HashMap<>();
+
+		for (int i = 0; i < frontendTokenCategoriesJSONArray.length(); i++) {
+			JSONObject frontendTokenCategoryJSONObject =
+				frontendTokenCategoriesJSONArray.getJSONObject(i);
+
+			JSONArray frontendTokenSetsJSONArray =
+				frontendTokenCategoryJSONObject.getJSONArray(
+					"frontendTokenSets");
+
+			for (int j = 0; j < frontendTokenSetsJSONArray.length(); j++) {
+				JSONObject frontendTokenSetJSONObject =
+					frontendTokenSetsJSONArray.getJSONObject(j);
+
+				JSONArray frontendTokensJSONArray =
+					frontendTokenSetJSONObject.getJSONArray("frontendTokens");
+
+				for (int k = 0; k < frontendTokensJSONArray.length(); k++) {
+					JSONObject frontendTokenJSONObject =
+						frontendTokensJSONArray.getJSONObject(k);
+
+					defaultFrontendTokenValues.put(
+						FrontendTokensValuesUtil.getFrontendTokensValuesKey(
+							themeId, frontendTokenJSONObject.getString("name")),
+						frontendTokenJSONObject.getString("defaultValue"));
+				}
+			}
+		}
+
+		return defaultFrontendTokenValues;
+	}
+
+	private static JSONObject _getFrontendTokenDefinitionJSONObject(
+			FrontendTokenDefinition frontendTokenDefinition, Locale locale,
+			StyleBookEntry styleBookEntry)
+		throws Exception {
+
+		JSONObject frontendTokenDefinitionJSONObject =
+			frontendTokenDefinition.getJSONObject(locale);
+
+		if (!DefaultStyleBookEntryUtil.isStyleBookEntryApplicable(
+				frontendTokenDefinition, styleBookEntry)) {
+
+			return frontendTokenDefinitionJSONObject;
+		}
+
+		JSONObject overrideFrontendTokenDefinitionJSONObject =
+			FrontendTokenDefinitionUtil.parseFrontendTokenDefinitionJSONObject(
+				styleBookEntry.getFrontendTokenDefinition());
+
+		if (overrideFrontendTokenDefinitionJSONObject == null) {
+			return frontendTokenDefinitionJSONObject;
+		}
+
+		return FrontendTokenDefinitionUtil.
+			mergeFrontendTokenDefinitionJSONObject(
+				frontendTokenDefinitionJSONObject,
+				overrideFrontendTokenDefinitionJSONObject);
 	}
 
 	private static JSONObject _getFrontendTokenValuesJSONObject(
@@ -91,21 +193,27 @@ public class StyleBookEntryUtil {
 	}
 
 	private static Map<String, Object> _getProcessedFrontendTokenValue(
+		Map<String, String> defaultFrontendTokenValues,
 		String frontendTokenCategoryLabel, JSONObject frontendTokenJSONObject,
-		String frontendTokenSetLabel,
-		JSONObject frontendTokenValuesJSONObject) {
+		String frontendTokenSetLabel, JSONObject frontendTokenValuesJSONObject,
+		String themeId) {
 
 		String name = frontendTokenJSONObject.getString("name");
 
-		JSONObject valueJSONObject =
-			frontendTokenValuesJSONObject.getJSONObject(name);
+		String key = FrontendTokensValuesUtil.getFrontendTokensValuesKey(
+			StyleBookConstants.FRONTEND_TOKEN_DEFINITION_ID_CUSTOM, name);
 
-		String value = StringPool.BLANK;
+		if ((frontendTokenValuesJSONObject.getJSONObject(key) == null) &&
+			Validator.isNotNull(themeId)) {
 
-		if (valueJSONObject != null) {
-			value = valueJSONObject.getString("value");
+			key = FrontendTokensValuesUtil.getFrontendTokensValuesKey(
+				themeId, name);
 		}
-		else {
+
+		String value = FrontendTokensValuesUtil.getFrontendTokenValue(
+			defaultFrontendTokenValues, frontendTokenValuesJSONObject, key);
+
+		if (value == null) {
 			value = frontendTokenJSONObject.getString("defaultValue");
 		}
 
@@ -141,6 +249,63 @@ public class StyleBookEntryUtil {
 			"tokenSetLabel", frontendTokenSetLabel
 		).put(
 			"value", value
+		).build();
+	}
+
+	private static Group _getScopeGroup(
+		long groupId, Map<Long, Group> scopeGroups,
+		StyleBookEntry styleBookEntry) {
+
+		if (styleBookEntry.getGroupId() == groupId) {
+			return null;
+		}
+
+		return scopeGroups.computeIfAbsent(
+			styleBookEntry.getGroupId(), GroupLocalServiceUtil::fetchGroup);
+	}
+
+	private static Map<String, Object> _getStyleBookEntryMap(
+		FrontendTokenDefinition frontendTokenDefinition, long groupId,
+		boolean includeFrontendTokensValues, Map<Long, Group> scopeGroups,
+		StyleBookEntry styleBookEntry, ThemeDisplay themeDisplay) {
+
+		Group scopeGroup = _getScopeGroup(groupId, scopeGroups, styleBookEntry);
+
+		return HashMapBuilder.<String, Object>put(
+			"imagePreviewURL", styleBookEntry.getImagePreviewURL(themeDisplay)
+		).put(
+			"name", styleBookEntry.getName()
+		).put(
+			"styleBookEntryERC", styleBookEntry.getExternalReferenceCode()
+		).put(
+			"styleBookEntryScopeERC",
+			() -> {
+				if (scopeGroup == null) {
+					return null;
+				}
+
+				return scopeGroup.getExternalReferenceCode();
+			}
+		).put(
+			"subtitle",
+			() -> {
+				if (scopeGroup == null) {
+					return null;
+				}
+
+				return scopeGroup.getDescriptiveName(themeDisplay.getLocale());
+			}
+		).put(
+			"tokenValues",
+			() -> {
+				if (!includeFrontendTokensValues) {
+					return null;
+				}
+
+				return getFrontendTokensValues(
+					frontendTokenDefinition, themeDisplay.getLocale(),
+					styleBookEntry);
+			}
 		).build();
 	}
 

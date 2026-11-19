@@ -128,6 +128,8 @@ public class KaleoLogModelImpl
 
 	public static final String TABLE_SQL_DROP = "drop table KaleoLog";
 
+	public static final String ENTITY_ALIAS = "kaleoLog";
+
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY kaleoLog.kaleoLogId ASC";
 
@@ -180,20 +182,14 @@ public class KaleoLogModelImpl
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long KALEOTASKINSTANCETOKENID_COLUMN_BITMASK = 64L;
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
-	 */
-	@Deprecated
-	public static final long TYPE_COLUMN_BITMASK = 128L;
+	public static final long TYPE_COLUMN_BITMASK = 64L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
 	 *		#getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long KALEOLOGID_COLUMN_BITMASK = 256L;
+	public static final long KALEOLOGID_COLUMN_BITMASK = 128L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
@@ -799,16 +795,6 @@ public class KaleoLogModelImpl
 		}
 
 		_kaleoTaskInstanceTokenId = kaleoTaskInstanceTokenId;
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #getColumnOriginalValue(String)}
-	 */
-	@Deprecated
-	public long getOriginalKaleoTaskInstanceTokenId() {
-		return GetterUtil.getLong(
-			this.<Long>getColumnOriginalValue("kaleoTaskInstanceTokenId"));
 	}
 
 	@Override
@@ -1793,3 +1779,4 @@ public class KaleoLogModelImpl
 	private KaleoLog _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-722188907

@@ -104,8 +104,7 @@ definition {
 
 	@summary = "Default summary"
 	macro addPrefixHandlerInSystemSettings(excludedScopesName = null, symbolicName = null, separator = null, serviceProperties = null, osgiJaxrsName = null) {
-		ApplicationsMenu.gotoPortlet(
-			category = "Configuration",
+		ApplicationsMenu.gotoRootPortlet(
 			panel = "Control Panel",
 			portlet = "System Settings");
 
@@ -227,7 +226,7 @@ definition {
 
 		Click(locator1 = "OAuth2#OAUTH2_TESTER_BTN_AUTHORIZE");
 
-		if (IsElementPresent(locator1 = "Button#SIGN_IN")) {
+		if (IsElementPresent(buttonId = "LoginPortlet", locator1 = "Button#BUTTON_ID")) {
 			Type(
 				locator1 = "TextInput#EMAIL_ADDRESS",
 				value1 = "test@liferay.com");
@@ -236,7 +235,7 @@ definition {
 				locator1 = "TextInput#PASSWORD",
 				value1 = "test");
 
-			Click(locator1 = "Button#SIGN_IN");
+			User._clickSignInButton();
 		}
 
 		if (isSet(rememberDevice)) {
@@ -401,6 +400,12 @@ definition {
 			}
 
 			for (var resourcePanel : list ${resourcePanels}) {
+				if (IsElementPresent(key_panel = ${resourcePanel}, locator1 = "OAuth2#ADMIN_RESOURCE_PANEL_COLLAPSED")) {
+					ScrollWebElementIntoView(
+						key_panel = ${resourcePanel},
+						locator1 = "OAuth2#ADMIN_RESOURCE_PANEL_COLLAPSED");
+				}
+
 				if (IsElementPresent(key_panel = ${resourcePanel}, locator1 = "OAuth2#ADMIN_RESOURCE_PANEL_COLLAPSED")) {
 					OAuth2.expandResourcePanel(resourcePanel = ${resourcePanel});
 				}

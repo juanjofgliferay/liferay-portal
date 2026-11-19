@@ -20,6 +20,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * The arguments resolver class for retrieving value from LayoutSetBranch.
  *
  * @author Brian Wing Shun Chan
+ * @deprecated As of Cavanaugh (7.4.x), with no direct replacement
  * @generated
  */
 @OSGiBeanProperties(
@@ -53,7 +54,7 @@ public class LayoutSetBranchModelArgumentsResolver
 		long columnBitmask = layoutSetBranchModelImpl.getColumnBitmask();
 
 		if (!checkColumn || (columnBitmask == 0)) {
-			return _getValue(layoutSetBranchModelImpl, columnNames, original);
+			return _getValue(layoutSetBranchModelImpl, finderPath, original);
 		}
 
 		Long finderPathColumnBitmask = _finderPathColumnBitmasksCache.get(
@@ -80,7 +81,7 @@ public class LayoutSetBranchModelArgumentsResolver
 		}
 
 		if ((columnBitmask & finderPathColumnBitmask) != 0) {
-			return _getValue(layoutSetBranchModelImpl, columnNames, original);
+			return _getValue(layoutSetBranchModelImpl, finderPath, original);
 		}
 
 		return null;
@@ -97,22 +98,27 @@ public class LayoutSetBranchModelArgumentsResolver
 	}
 
 	private static Object[] _getValue(
-		LayoutSetBranchModelImpl layoutSetBranchModelImpl, String[] columnNames,
-		boolean original) {
+		LayoutSetBranchModelImpl layoutSetBranchModelImpl,
+		FinderPath finderPath, boolean original) {
+
+		String[] columnNames = finderPath.getColumnNames();
 
 		Object[] arguments = new Object[columnNames.length];
 
 		for (int i = 0; i < arguments.length; i++) {
 			String columnName = columnNames[i];
 
+			Object value;
+
 			if (original) {
-				arguments[i] = layoutSetBranchModelImpl.getColumnOriginalValue(
+				value = layoutSetBranchModelImpl.getColumnOriginalValue(
 					columnName);
 			}
 			else {
-				arguments[i] = layoutSetBranchModelImpl.getColumnValue(
-					columnName);
+				value = layoutSetBranchModelImpl.getColumnValue(columnName);
 			}
+
+			arguments[i] = finderPath.normalizeArgument(i, value);
 		}
 
 		return arguments;
@@ -133,3 +139,4 @@ public class LayoutSetBranchModelArgumentsResolver
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:623172645

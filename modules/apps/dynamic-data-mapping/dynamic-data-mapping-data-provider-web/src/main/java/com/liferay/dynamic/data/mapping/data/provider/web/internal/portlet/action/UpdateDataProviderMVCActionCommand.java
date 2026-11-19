@@ -25,14 +25,14 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -42,7 +42,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + DDMPortletKeys.DYNAMIC_DATA_MAPPING_DATA_PROVIDER,
+		"jakarta.portlet.name=" + DDMPortletKeys.DYNAMIC_DATA_MAPPING_DATA_PROVIDER,
 		"mvc.command.name=/dynamic_data_mapping_data_provider/update_data_provider"
 	},
 	service = MVCActionCommand.class
@@ -61,8 +61,7 @@ public class UpdateDataProviderMVCActionCommand
 		long dataProviderInstanceId = ParamUtil.getLong(
 			actionRequest, "dataProviderInstanceId");
 
-		DDMFormValues ddmFormValues = getDDMFormValues(
-			actionRequest, actionResponse);
+		DDMFormValues ddmFormValues = getDDMFormValues(actionRequest);
 
 		_restorePasswordDDMFormFieldValues(
 			dataProviderInstanceId, ddmFormValues);
@@ -160,13 +159,15 @@ public class UpdateDataProviderMVCActionCommand
 		Value storedValue = storedDDMFormFieldValue.getValue();
 
 		for (Locale availableLocale : value.getAvailableLocales()) {
-			if (Objects.equals(
+			if (!Objects.equals(
 					value.getString(availableLocale),
 					Portal.TEMP_OBFUSCATION_VALUE)) {
 
-				value.addString(
-					availableLocale, storedValue.getString(availableLocale));
+				continue;
 			}
+
+			value.addString(
+				availableLocale, storedValue.getString(availableLocale));
 		}
 	}
 

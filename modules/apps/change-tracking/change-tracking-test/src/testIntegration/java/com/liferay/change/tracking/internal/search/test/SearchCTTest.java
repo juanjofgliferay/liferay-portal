@@ -17,6 +17,7 @@ import com.liferay.layout.test.util.LayoutTestUtil;
 import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.change.tracking.CTCollectionThreadLocal;
+import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.LayoutConstants;
@@ -37,8 +38,8 @@ import com.liferay.portal.search.searcher.SearchRequestBuilder;
 import com.liferay.portal.search.searcher.SearchRequestBuilderFactory;
 import com.liferay.portal.search.searcher.SearchResponse;
 import com.liferay.portal.search.searcher.Searcher;
+import com.liferay.portal.search.test.rule.SearchTestRule;
 import com.liferay.portal.search.test.util.DocumentsAssert;
-import com.liferay.portal.search.test.util.SearchTestRule;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
@@ -419,6 +420,8 @@ public class SearchCTTest {
 							"ALL");
 					}
 
+					searchContext.setEnd(QueryUtil.ALL_POS);
+					searchContext.setStart(QueryUtil.ALL_POS);
 					searchContext.setUserId(_group.getCreatorUserId());
 				}
 			);
@@ -482,43 +485,43 @@ public class SearchCTTest {
 
 	private static final Class<?>[] _USER_GROUP_CLASS = {UserGroup.class};
 
-	@Inject
-	private static CTCollectionLocalService _ctCollectionLocalService;
-
-	@Inject
-	private static CTProcessLocalService _ctProcessLocalService;
-
-	@Inject
-	private static JournalArticleLocalService _journalArticleLocalService;
-
-	@Inject
-	private static LayoutLocalService _layoutLocalService;
-
-	@Inject
-	private static Searcher _searcher;
-
-	@Inject
-	private static SearchRequestBuilderFactory _searchRequestBuilderFactory;
-
-	@Inject
-	private static UIDFactory _uidFactory;
-
-	@Inject
-	private static UserGroupLocalService _userGroupLocalService;
-
 	@DeleteAfterTestRun
 	private CTCollection _ctCollection1;
 
 	@DeleteAfterTestRun
 	private CTCollection _ctCollection2;
 
+	@Inject
+	private CTCollectionLocalService _ctCollectionLocalService;
+
+	@Inject
+	private CTProcessLocalService _ctProcessLocalService;
+
 	@DeleteAfterTestRun
 	private Group _group;
+
+	@Inject
+	private JournalArticleLocalService _journalArticleLocalService;
+
+	@Inject
+	private LayoutLocalService _layoutLocalService;
 
 	@DeleteAfterTestRun
 	private UserGroup _productionUserGroup;
 
+	@Inject
+	private SearchRequestBuilderFactory _searchRequestBuilderFactory;
+
+	@Inject
+	private Searcher _searcher;
+
+	@Inject
+	private UIDFactory _uidFactory;
+
 	@DeleteAfterTestRun
 	private CTCollection _undoCTCollection;
+
+	@Inject
+	private UserGroupLocalService _userGroupLocalService;
 
 }

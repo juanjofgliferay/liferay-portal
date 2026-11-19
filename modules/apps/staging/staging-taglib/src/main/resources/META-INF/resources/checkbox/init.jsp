@@ -9,6 +9,7 @@
 
 <%
 boolean checked = GetterUtil.getBoolean(request.getAttribute("liferay-staging:checkbox:checked"));
+Map<String, Object> data = (Map<String, Object>)GetterUtil.getObject(request.getAttribute("liferay-staging:checkbox:data"), Collections.emptyMap());
 long deletions = GetterUtil.getLong(request.getAttribute("liferay-staging:checkbox:deletions"));
 String descriptionKey = GetterUtil.getString(request.getAttribute("liferay-staging:checkbox:description"));
 boolean disabled = GetterUtil.getBoolean(request.getAttribute("liferay-staging:checkbox:disabled"));
@@ -19,6 +20,7 @@ String labelKey = GetterUtil.getString(request.getAttribute("liferay-staging:che
 String name = GetterUtil.getString(request.getAttribute("liferay-staging:checkbox:name"));
 String popoverTextKey = GetterUtil.getString(request.getAttribute("liferay-staging:checkbox:popover"));
 String suggestionKey = GetterUtil.getString(request.getAttribute("liferay-staging:checkbox:suggestion"));
+String tag = GetterUtil.getString(request.getAttribute("liferay-staging:checkbox:tag"));
 String warningKey = GetterUtil.getString(request.getAttribute("liferay-staging:checkbox:warning"));
 
 if (Validator.isNull(id)) {

@@ -14,6 +14,8 @@ import com.liferay.commerce.model.CPDAvailabilityEstimate;
 import com.liferay.commerce.model.CPDefinitionInventory;
 import com.liferay.commerce.model.CommerceAvailabilityEstimate;
 import com.liferay.commerce.product.constants.CPWebKeys;
+import com.liferay.commerce.product.model.CPConfigurationEntry;
+import com.liferay.commerce.product.model.CPDefinition;
 import com.liferay.commerce.product.model.CPMeasurementUnit;
 import com.liferay.commerce.product.model.CPTaxCategory;
 import com.liferay.commerce.product.portlet.action.ActionHelper;
@@ -40,11 +42,11 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.RenderRequest;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.List;
-
-import javax.portlet.RenderRequest;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Alessio Antonio Rendina
@@ -87,37 +89,6 @@ public class CPDefinitionConfigurationDisplayContext
 		_cpDefinitionInventoryService = cpDefinitionInventoryService;
 		_cpMeasurementUnitLocalService = cpMeasurementUnitLocalService;
 		_cpTaxCategoryLocalService = cpTaxCategoryLocalService;
-	}
-
-	public List<CommerceAvailabilityEstimate> getCommerceAvailabilityEstimates()
-		throws PortalException {
-
-		return _commerceAvailabilityEstimateLocalService.
-			getCommerceAvailabilityEstimates(
-				cpRequestHelper.getCompanyId(), QueryUtil.ALL_POS,
-				QueryUtil.ALL_POS,
-				new CommerceAvailabilityEstimatePriorityComparator(true));
-	}
-
-	public String getCommerceCurrencyCode() {
-		ThemeDisplay themeDisplay =
-			(ThemeDisplay)httpServletRequest.getAttribute(
-				WebKeys.THEME_DISPLAY);
-
-		CommerceCurrency commerceCurrency =
-			_commerceCurrencyLocalService.fetchPrimaryCommerceCurrency(
-				themeDisplay.getCompanyId());
-
-		if (commerceCurrency == null) {
-			return StringPool.BLANK;
-		}
-
-		return commerceCurrency.getCode();
-	}
-
-	public List<CommerceLowStockActivity> getCommerceLowStockActivities() {
-		return _commerceLowStockActivityRegistry.
-			getCommerceLowStockActivities();
 	}
 
 	public CPDAvailabilityEstimate getCPDAvailabilityEstimate()
@@ -169,9 +140,56 @@ public class CPDefinitionConfigurationDisplayContext
 			themeDisplay.getCompanyId());
 	}
 
+	public List<CommerceAvailabilityEstimate> getCommerceAvailabilityEstimates()
+		throws PortalException {
+
+		return _commerceAvailabilityEstimateLocalService.
+			getCommerceAvailabilityEstimates(
+				cpRequestHelper.getCompanyId(), QueryUtil.ALL_POS,
+				QueryUtil.ALL_POS,
+				CommerceAvailabilityEstimatePriorityComparator.getInstance(
+					true));
+	}
+
+	public String getCommerceCurrencyCode() {
+		ThemeDisplay themeDisplay =
+			(ThemeDisplay)httpServletRequest.getAttribute(
+				WebKeys.THEME_DISPLAY);
+
+		CommerceCurrency commerceCurrency =
+			_commerceCurrencyLocalService.fetchPrimaryCommerceCurrency(
+				themeDisplay.getCompanyId());
+
+		if (commerceCurrency == null) {
+			return StringPool.BLANK;
+		}
+
+		return commerceCurrency.getCode();
+	}
+
+	public List<CommerceLowStockActivity> getCommerceLowStockActivities() {
+		return _commerceLowStockActivityRegistry.
+			getCommerceLowStockActivities();
+	}
+
 	@Override
 	public String getScreenNavigationCategoryKey() {
 		return CPDefinitionScreenNavigationConstants.CATEGORY_KEY_CONFIGURATION;
+	}
+
+	public boolean isPurchasable() throws PortalException {
+		CPDefinition cpDefinition = getCPDefinition();
+
+		CPConfigurationEntry cpConfigurationEntry =
+			cpDefinition.fetchMasterCPConfigurationEntry();
+
+		if (cpConfigurationEntry == null) {
+			return true;
+		}
+
+		return ParamUtil.getBoolean(
+			httpServletRequest, "purchasable",
+			cpConfigurationEntry.isPurchasable());
 	}
 
 	private CPDefinitionInventory _getCPDefinitionInventory()
@@ -209,13 +227,13 @@ public class CPDefinitionConfigurationDisplayContext
 	private final CommerceCurrencyLocalService _commerceCurrencyLocalService;
 	private final CommerceLowStockActivityRegistry
 		_commerceLowStockActivityRegistry;
-	private final CPDAvailabilityEstimateService
-		_cpdAvailabilityEstimateService;
 	private CPDefinitionInventory _cpDefinitionInventory;
 	private final CPDefinitionInventoryEngineRegistry
 		_cpDefinitionInventoryEngineRegistry;
 	private final CPDefinitionInventoryService _cpDefinitionInventoryService;
 	private final CPMeasurementUnitLocalService _cpMeasurementUnitLocalService;
 	private final CPTaxCategoryLocalService _cpTaxCategoryLocalService;
+	private final CPDAvailabilityEstimateService
+		_cpdAvailabilityEstimateService;
 
 }

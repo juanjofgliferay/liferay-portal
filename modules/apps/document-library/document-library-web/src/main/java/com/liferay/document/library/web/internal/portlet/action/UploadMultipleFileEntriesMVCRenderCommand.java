@@ -6,21 +6,25 @@
 package com.liferay.document.library.web.internal.portlet.action;
 
 import com.liferay.document.library.constants.DLPortletKeys;
+import com.liferay.document.library.web.internal.display.context.DLAdminDisplayContext;
+import com.liferay.document.library.web.internal.display.context.DLAdminDisplayContextProvider;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCRenderCommand;
+import com.liferay.portal.kernel.util.Portal;
 
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
 
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Roberto Díaz
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + DLPortletKeys.DOCUMENT_LIBRARY,
-		"javax.portlet.name=" + DLPortletKeys.DOCUMENT_LIBRARY_ADMIN,
-		"javax.portlet.name=" + DLPortletKeys.MEDIA_GALLERY_DISPLAY,
+		"jakarta.portlet.name=" + DLPortletKeys.DOCUMENT_LIBRARY,
+		"jakarta.portlet.name=" + DLPortletKeys.DOCUMENT_LIBRARY_ADMIN,
+		"jakarta.portlet.name=" + DLPortletKeys.MEDIA_GALLERY_DISPLAY,
 		"mvc.command.name=/document_library/upload_multiple_file_entries"
 	},
 	service = MVCRenderCommand.class
@@ -32,7 +36,18 @@ public class UploadMultipleFileEntriesMVCRenderCommand
 	public String render(
 		RenderRequest renderRequest, RenderResponse renderResponse) {
 
+		renderRequest.setAttribute(
+			DLAdminDisplayContext.class.getName(),
+			_dlAdminDisplayContextProvider.getDLAdminDisplayContext(
+				_portal.getHttpServletRequest(renderRequest)));
+
 		return "/document_library/upload_multiple_file_entries.jsp";
 	}
+
+	@Reference
+	private DLAdminDisplayContextProvider _dlAdminDisplayContextProvider;
+
+	@Reference
+	private Portal _portal;
 
 }

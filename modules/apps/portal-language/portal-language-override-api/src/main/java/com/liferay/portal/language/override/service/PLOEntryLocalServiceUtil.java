@@ -9,6 +9,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.language.override.model.PLOEntry;
 
@@ -37,12 +38,12 @@ public class PLOEntryLocalServiceUtil {
 	 * Never modify this class directly. Add custom service methods to <code>com.liferay.portal.language.override.service.impl.PLOEntryLocalServiceImpl</code> and rerun ServiceBuilder to regenerate this class.
 	 */
 	public static PLOEntry addOrUpdatePLOEntry(
-			long companyId, long userId, String key, String languageId,
-			String value)
+			String externalReferenceCode, long companyId, long userId,
+			String key, String languageId, String value)
 		throws PortalException {
 
 		return getService().addOrUpdatePLOEntry(
-			companyId, userId, key, languageId, value);
+			externalReferenceCode, companyId, userId, key, languageId, value);
 	}
 
 	/**
@@ -128,6 +129,14 @@ public class PLOEntryLocalServiceUtil {
 	 */
 	public static PLOEntry deletePLOEntry(PLOEntry ploEntry) {
 		return getService().deletePLOEntry(ploEntry);
+	}
+
+	public static PLOEntry deletePLOEntryByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws PortalException {
+
+		return getService().deletePLOEntryByExternalReferenceCode(
+			externalReferenceCode, companyId);
 	}
 
 	public static <T> T dslQuery(DSLQuery dslQuery) {
@@ -225,6 +234,13 @@ public class PLOEntryLocalServiceUtil {
 		return getService().fetchPLOEntry(companyId, key, languageId);
 	}
 
+	public static PLOEntry fetchPLOEntryByExternalReferenceCode(
+		String externalReferenceCode, long companyId) {
+
+		return getService().fetchPLOEntryByExternalReferenceCode(
+			externalReferenceCode, companyId);
+	}
+
 	public static com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery
 		getActionableDynamicQuery() {
 
@@ -276,9 +292,19 @@ public class PLOEntryLocalServiceUtil {
 	}
 
 	public static List<PLOEntry> getPLOEntries(
-		long companyId, String languageId) {
+		long companyId, int start, int end,
+		OrderByComparator<PLOEntry> orderByComparator) {
 
-		return getService().getPLOEntries(companyId, languageId);
+		return getService().getPLOEntries(
+			companyId, start, end, orderByComparator);
+	}
+
+	public static List<PLOEntry> getPLOEntries(
+		long companyId, String keywords, int start, int end,
+		OrderByComparator<PLOEntry> orderByComparator) {
+
+		return getService().getPLOEntries(
+			companyId, keywords, start, end, orderByComparator);
 	}
 
 	/**
@@ -294,6 +320,10 @@ public class PLOEntryLocalServiceUtil {
 		return getService().getPLOEntriesCount(companyId);
 	}
 
+	public static int getPLOEntriesCount(long companyId, String keywords) {
+		return getService().getPLOEntriesCount(companyId, keywords);
+	}
+
 	/**
 	 * Returns the plo entry with the primary key.
 	 *
@@ -303,6 +333,23 @@ public class PLOEntryLocalServiceUtil {
 	 */
 	public static PLOEntry getPLOEntry(long ploEntryId) throws PortalException {
 		return getService().getPLOEntry(ploEntryId);
+	}
+
+	public static PLOEntry getPLOEntryByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws PortalException {
+
+		return getService().getPLOEntryByExternalReferenceCode(
+			externalReferenceCode, companyId);
+	}
+
+	public static void importPLOEntries(
+			long companyId, long userId, String languageId,
+			java.util.Properties properties)
+		throws PortalException {
+
+		getService().importPLOEntries(
+			companyId, userId, languageId, properties);
 	}
 
 	public static void setPLOEntries(
@@ -328,13 +375,12 @@ public class PLOEntryLocalServiceUtil {
 	}
 
 	public static PLOEntryLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(PLOEntryLocalService service) {
-		_service = service;
-	}
-
-	private static volatile PLOEntryLocalService _service;
+	private static final Snapshot<PLOEntryLocalService> _serviceSnapshot =
+		new Snapshot<>(
+			PLOEntryLocalServiceUtil.class, PLOEntryLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-230616620

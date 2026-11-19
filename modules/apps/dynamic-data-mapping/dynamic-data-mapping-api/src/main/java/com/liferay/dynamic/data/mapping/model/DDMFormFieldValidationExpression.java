@@ -10,12 +10,14 @@ import com.liferay.dynamic.data.mapping.storage.DDMFormValues;
 import com.liferay.petra.lang.HashUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 
+import java.io.Serializable;
+
 import java.util.Objects;
 
 /**
  * @author Leonardo Barros
  */
-public class DDMFormFieldValidationExpression {
+public class DDMFormFieldValidationExpression implements Serializable {
 
 	public DDMFormFieldValidationExpression() {
 	}
@@ -40,11 +42,7 @@ public class DDMFormFieldValidationExpression {
 		DDMFormFieldValidationExpression ddmFormFieldValidationExpression =
 			(DDMFormFieldValidationExpression)object;
 
-		if (Objects.equals(_name, ddmFormFieldValidationExpression._name)) {
-			return true;
-		}
-
-		return false;
+		return Objects.equals(_name, ddmFormFieldValidationExpression._name);
 	}
 
 	public String getExpression(

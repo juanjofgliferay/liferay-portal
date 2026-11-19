@@ -9,6 +9,7 @@ import com.liferay.portal.kernel.util.ArrayUtil;
 
 import com.puppycrawl.tools.checkstyle.api.DetailAST;
 import com.puppycrawl.tools.checkstyle.api.TokenTypes;
+import com.puppycrawl.tools.checkstyle.utils.TokenUtil;
 
 /**
  * @author Hugo Huijser
@@ -92,6 +93,28 @@ public class OperatorOperandCheck extends BaseCheck {
 			return;
 		}
 
+		DetailAST firstChildDetailAST = detailAST.getFirstChild();
+
+		while (true) {
+			if (!TokenUtil.isOfType(
+					firstChildDetailAST, TokenTypes.DOT,
+					TokenTypes.METHOD_CALL)) {
+
+				break;
+			}
+
+			firstChildDetailAST = firstChildDetailAST.getFirstChild();
+		}
+
+		DetailAST parentDetailAST = firstChildDetailAST.getParent();
+
+		if (parentDetailAST.getType() == TokenTypes.DOT) {
+			detailAST = parentDetailAST.getParent();
+		}
+		else {
+			detailAST = parentDetailAST;
+		}
+
 		if (isAtLineEnd(detailAST, getLine(detailAST.getLineNo() - 1))) {
 			log(
 				detailAST, _MSG_IMPROVE_READABILITY, side,
@@ -100,7 +123,7 @@ public class OperatorOperandCheck extends BaseCheck {
 			return;
 		}
 
-		DetailAST firstChildDetailAST = detailAST.getFirstChild();
+		firstChildDetailAST = detailAST.getFirstChild();
 
 		if ((firstChildDetailAST.getType() == TokenTypes.DOT) &&
 			isAtLineEnd(
@@ -121,15 +144,16 @@ public class OperatorOperandCheck extends BaseCheck {
 				return false;
 			}
 
-			if ((parentDetailAST.getType() == TokenTypes.CLASS_DEF) ||
-				(parentDetailAST.getType() == TokenTypes.ENUM_DEF) ||
-				(parentDetailAST.getType() == TokenTypes.INTERFACE_DEF)) {
+			if (TokenUtil.isOfType(
+					parentDetailAST, TokenTypes.CLASS_DEF, TokenTypes.ENUM_DEF,
+					TokenTypes.INTERFACE_DEF)) {
 
 				return true;
 			}
 
-			if ((parentDetailAST.getType() == TokenTypes.CTOR_DEF) ||
-				(parentDetailAST.getType() == TokenTypes.METHOD_DEF)) {
+			if (TokenUtil.isOfType(
+					parentDetailAST, TokenTypes.CTOR_DEF,
+					TokenTypes.METHOD_DEF)) {
 
 				return false;
 			}

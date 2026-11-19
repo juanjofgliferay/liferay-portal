@@ -15,8 +15,10 @@ import org.osgi.annotation.versioning.ProviderType;
  *
  * @author Alessio Antonio Rendina
  * @see CommerceAddressModel
+ * @deprecated As of Cavanaugh (7.4.x)
  * @generated
  */
+@Deprecated
 @ImplementationClassName("com.liferay.commerce.model.impl.CommerceAddressImpl")
 @ProviderType
 public interface CommerceAddress extends CommerceAddressModel {
@@ -56,8 +58,11 @@ public interface CommerceAddress extends CommerceAddressModel {
 	public com.liferay.portal.kernel.model.Region getRegion()
 		throws com.liferay.portal.kernel.exception.PortalException;
 
+	public String getSubtype(java.util.Locale locale);
+
 	public boolean isGeolocated();
 
 	public boolean isSameAddress(CommerceAddress commerceAddress);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1275177839

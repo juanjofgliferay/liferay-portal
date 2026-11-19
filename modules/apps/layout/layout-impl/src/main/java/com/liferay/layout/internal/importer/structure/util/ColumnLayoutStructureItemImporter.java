@@ -12,17 +12,15 @@ import com.liferay.layout.util.structure.LayoutStructure;
 import com.liferay.layout.util.structure.LayoutStructureItem;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.MapUtil;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.osgi.service.component.annotations.Component;
-
 /**
  * @author Jürgen Kappler
  */
-@Component(service = LayoutStructureItemImporter.class)
 public class ColumnLayoutStructureItemImporter
 	extends BaseLayoutStructureItemImporter
 	implements LayoutStructureItemImporter {
@@ -51,11 +49,12 @@ public class ColumnLayoutStructureItemImporter
 
 		columnLayoutStructureItem.setSize((Integer)definitionMap.get("size"));
 
-		if (definitionMap.containsKey("columnViewports")) {
-			List<Map<String, Object>> columnViewports =
-				(List<Map<String, Object>>)definitionMap.get("columnViewports");
+		if (definitionMap.get("columnViewports") instanceof
+				List<?> columnViewports) {
 
-			for (Map<String, Object> columnViewport : columnViewports) {
+			for (Map<String, Object> columnViewport :
+					(List<Map<String, Object>>)columnViewports) {
+
 				_processColumnViewportDefinition(
 					columnLayoutStructureItem,
 					(Map<String, Object>)columnViewport.get(
@@ -63,16 +62,20 @@ public class ColumnLayoutStructureItemImporter
 					(String)columnViewport.get("id"));
 			}
 		}
-		else if (definitionMap.containsKey("columnViewportConfig")) {
-			Map<String, Object> columnViewportConfigurations =
-				(Map<String, Object>)definitionMap.get("columnViewportConfig");
+		else {
+			if (definitionMap.get("columnViewportConfig") instanceof
+					Map<?, ?> columnViewportConfigurations) {
 
-			for (Map.Entry<String, Object> entry :
-					columnViewportConfigurations.entrySet()) {
+				Map<String, Object> columnViewportConfigurationsMap =
+					(Map<String, Object>)columnViewportConfigurations;
 
-				_processColumnViewportDefinition(
-					columnLayoutStructureItem,
-					(Map<String, Object>)entry.getValue(), entry.getKey());
+				for (Map.Entry<String, Object> entry :
+						columnViewportConfigurationsMap.entrySet()) {
+
+					_processColumnViewportDefinition(
+						columnLayoutStructureItem,
+						(Map<String, Object>)entry.getValue(), entry.getKey());
+				}
 			}
 		}
 
@@ -94,12 +97,14 @@ public class ColumnLayoutStructureItemImporter
 			JSONUtil.put(
 				"size",
 				() -> {
-					if (columnViewportDefinitionMap.containsKey("size")) {
-						return GetterUtil.getInteger(
-							columnViewportDefinitionMap.get("size"));
+					Map.Entry<String, Object> sizeEntry = MapUtil.getEntry(
+						columnViewportDefinitionMap, "size");
+
+					if (sizeEntry == null) {
+						return null;
 					}
 
-					return null;
+					return GetterUtil.getInteger(sizeEntry.getValue());
 				}));
 	}
 

@@ -111,11 +111,7 @@ public class BookmarksEntryPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		BookmarksEntry newBookmarksEntry = _persistence.create(pk);
-
-		newBookmarksEntry.setMvccVersion(RandomTestUtil.nextLong());
+		BookmarksEntry newBookmarksEntry = addBookmarksEntry();
 
 		newBookmarksEntry.setCtCollectionId(RandomTestUtil.nextLong());
 
@@ -155,7 +151,9 @@ public class BookmarksEntryPersistenceTest {
 
 		newBookmarksEntry.setStatusDate(RandomTestUtil.nextDate());
 
-		_bookmarksEntries.add(_persistence.update(newBookmarksEntry));
+		newBookmarksEntry = _persistence.update(newBookmarksEntry);
+
+		_bookmarksEntries.add(newBookmarksEntry);
 
 		BookmarksEntry existingBookmarksEntry = _persistence.findByPrimaryKey(
 			newBookmarksEntry.getPrimaryKey());
@@ -248,13 +246,6 @@ public class BookmarksEntryPersistenceTest {
 	}
 
 	@Test
-	public void testCountByCompanyId() throws Exception {
-		_persistence.countByCompanyId(RandomTestUtil.nextLong());
-
-		_persistence.countByCompanyId(0L);
-	}
-
-	@Test
 	public void testCountByG_F() throws Exception {
 		_persistence.countByG_F(
 			RandomTestUtil.nextLong(), RandomTestUtil.nextLong());
@@ -270,36 +261,11 @@ public class BookmarksEntryPersistenceTest {
 	}
 
 	@Test
-	public void testCountByG_S() throws Exception {
-		_persistence.countByG_S(
-			RandomTestUtil.nextLong(), RandomTestUtil.nextInt());
-
-		_persistence.countByG_S(0L, 0);
-	}
-
-	@Test
 	public void testCountByG_NotS() throws Exception {
 		_persistence.countByG_NotS(
 			RandomTestUtil.nextLong(), RandomTestUtil.nextInt());
 
 		_persistence.countByG_NotS(0L, 0);
-	}
-
-	@Test
-	public void testCountByC_NotS() throws Exception {
-		_persistence.countByC_NotS(
-			RandomTestUtil.nextLong(), RandomTestUtil.nextInt());
-
-		_persistence.countByC_NotS(0L, 0);
-	}
-
-	@Test
-	public void testCountByG_U_S() throws Exception {
-		_persistence.countByG_U_S(
-			RandomTestUtil.nextLong(), RandomTestUtil.nextLong(),
-			RandomTestUtil.nextInt());
-
-		_persistence.countByG_U_S(0L, 0L, 0);
 	}
 
 	@Test
@@ -674,8 +640,6 @@ public class BookmarksEntryPersistenceTest {
 
 		BookmarksEntry bookmarksEntry = _persistence.create(pk);
 
-		bookmarksEntry.setMvccVersion(RandomTestUtil.nextLong());
-
 		bookmarksEntry.setCtCollectionId(RandomTestUtil.nextLong());
 
 		bookmarksEntry.setUuid(RandomTestUtil.randomString());
@@ -725,3 +689,4 @@ public class BookmarksEntryPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:387362515

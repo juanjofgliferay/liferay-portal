@@ -200,16 +200,14 @@ public class GetFileSetTask extends Task {
 		List<String> classNames, Set<String> invalidClassNames) {
 
 		for (String className : classNames) {
-			if (className.endsWith("Test")) {
-				invalidClassNames.add(className);
+			if (!className.endsWith("Test")) {
+				continue;
 			}
+
+			invalidClassNames.add(className);
 		}
 
-		if (!invalidClassNames.isEmpty()) {
-			return false;
-		}
-
-		return true;
+		return invalidClassNames.isEmpty();
 	}
 
 	private boolean _isClass(String className, String fileName) {

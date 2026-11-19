@@ -28,10 +28,6 @@ public class RankingEntryDisplayContext {
 		return _hiddenResultsCount;
 	}
 
-	public boolean getInactive() {
-		return _inactive;
-	}
-
 	public String getIndex() {
 		return _index;
 	}
@@ -52,6 +48,14 @@ public class RankingEntryDisplayContext {
 		return _sxpBlueprintExternalReferenceCode;
 	}
 
+	public String getSXPBlueprintTitle() {
+		return _sxpBlueprintTitle;
+	}
+
+	public String getStatus() {
+		return _status;
+	}
+
 	public String getUid() {
 		return _uid;
 	}
@@ -68,10 +72,6 @@ public class RankingEntryDisplayContext {
 
 	public void setHiddenResultsCount(String hiddenResultsCount) {
 		_hiddenResultsCount = hiddenResultsCount;
-	}
-
-	public void setInactive(boolean inactive) {
-		_inactive = inactive;
 	}
 
 	public void setIndex(String index) {
@@ -92,6 +92,14 @@ public class RankingEntryDisplayContext {
 		_sxpBlueprintExternalReferenceCode = sxpBlueprintExternalReferenceCode;
 	}
 
+	public void setSXPBlueprintTitle(String sxpBlueprintTitle) {
+		_sxpBlueprintTitle = sxpBlueprintTitle;
+	}
+
+	public void setStatus(String status) {
+		_status = status;
+	}
+
 	public void setUid(String uid) {
 		_uid = uid;
 	}
@@ -99,11 +107,12 @@ public class RankingEntryDisplayContext {
 	private String _aliases;
 	private String _groupExternalReferenceCode;
 	private String _hiddenResultsCount;
-	private boolean _inactive;
 	private String _index;
 	private String _keywords;
 	private String _pinnedResultsCount;
+	private String _status;
 	private String _sxpBlueprintExternalReferenceCode;
+	private String _sxpBlueprintTitle;
 	private String _uid;
 
 }

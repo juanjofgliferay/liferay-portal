@@ -68,7 +68,6 @@ public class DynamicDataMappingUpgradeProcessTest extends BaseDDMTestCase {
 		setUpJSONFactoryUtil();
 		setUpLanguageUtil();
 		setUpLocalizationUtil();
-		setUpPropsUtil();
 		setUpSAXReaderUtil();
 		_setUpSecureXMLFactoryProviderUtil();
 
@@ -83,26 +82,25 @@ public class DynamicDataMappingUpgradeProcessTest extends BaseDDMTestCase {
 					(proxy, method, args) -> {
 						String methodName = method.getName();
 
-						if (methodName.equals("getCompositeModelName")) {
-							if (ArrayUtil.isEmpty(args)) {
-								return StringPool.BLANK;
-							}
-
-							Arrays.sort(args);
-
-							StringBundler sb = new StringBundler(
-								args.length * 2);
-
-							for (Object className : args) {
-								sb.append(className);
-							}
-
-							sb.setIndex(sb.index() - 1);
-
-							return sb.toString();
+						if (!methodName.equals("getCompositeModelName")) {
+							return null;
 						}
 
-						return null;
+						if (ArrayUtil.isEmpty(args)) {
+							return StringPool.BLANK;
+						}
+
+						Arrays.sort(args);
+
+						StringBundler sb = new StringBundler(args.length * 2);
+
+						for (Object className : args) {
+							sb.append(className);
+						}
+
+						sb.setIndex(sb.index() - 1);
+
+						return sb.toString();
 					}),
 				null, null, null, null);
 	}
@@ -556,35 +554,6 @@ public class DynamicDataMappingUpgradeProcessTest extends BaseDDMTestCase {
 	}
 
 	@Test
-	public void testToXMLWithoutLocalizedData() throws Exception {
-		String fieldsDisplay = "Text_INSTANCE_hcxo";
-
-		String xml = _dynamicDataMappingUpgradeProcess.toXML(
-			HashMapBuilder.put(
-				"_fieldsDisplay",
-				_createLocalizationXML(new String[] {fieldsDisplay})
-			).put(
-				"Text", _createLocalizationXML(new String[] {"Joe Bloggs"})
-			).build());
-
-		Document document = SAXReaderUtil.read(xml);
-
-		Map<String, Map<String, List<String>>> dataMap = _toDataMap(document);
-
-		Map<String, List<String>> actualTextData = dataMap.get("Text");
-
-		_assertEquals(
-			ListUtil.fromArray("Joe Bloggs"), actualTextData.get("en_US"));
-
-		Map<String, List<String>> actualFieldsDisplayData = dataMap.get(
-			"_fieldsDisplay");
-
-		_assertEquals(
-			ListUtil.fromArray(fieldsDisplay),
-			actualFieldsDisplayData.get("en_US"));
-	}
-
-	@Test
 	public void testToXMLWithRepeatableAndLocalizedData() throws Exception {
 		String fieldsDisplay =
 			"Text_INSTANCE_hcxo,Text_INSTANCE_vfqd,Text_INSTANCE_ycey";
@@ -610,6 +579,35 @@ public class DynamicDataMappingUpgradeProcessTest extends BaseDDMTestCase {
 
 		_assertEquals(
 			ListUtil.fromArray("D", "E", "F"), actualTextData.get("pt_BR"));
+
+		Map<String, List<String>> actualFieldsDisplayData = dataMap.get(
+			"_fieldsDisplay");
+
+		_assertEquals(
+			ListUtil.fromArray(fieldsDisplay),
+			actualFieldsDisplayData.get("en_US"));
+	}
+
+	@Test
+	public void testToXMLWithoutLocalizedData() throws Exception {
+		String fieldsDisplay = "Text_INSTANCE_hcxo";
+
+		String xml = _dynamicDataMappingUpgradeProcess.toXML(
+			HashMapBuilder.put(
+				"_fieldsDisplay",
+				_createLocalizationXML(new String[] {fieldsDisplay})
+			).put(
+				"Text", _createLocalizationXML(new String[] {"Joe Bloggs"})
+			).build());
+
+		Document document = SAXReaderUtil.read(xml);
+
+		Map<String, Map<String, List<String>>> dataMap = _toDataMap(document);
+
+		Map<String, List<String>> actualTextData = dataMap.get("Text");
+
+		_assertEquals(
+			ListUtil.fromArray("Joe Bloggs"), actualTextData.get("en_US"));
 
 		Map<String, List<String>> actualFieldsDisplayData = dataMap.get(
 			"_fieldsDisplay");

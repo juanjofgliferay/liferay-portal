@@ -47,8 +47,10 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 /**
+ * @deprecated As of Cavanaugh (7.4.x), with no direct replacement
  * @generated
  */
+@Deprecated
 @RunWith(Arquillian.class)
 public class RecentLayoutRevisionPersistenceTest {
 
@@ -112,11 +114,8 @@ public class RecentLayoutRevisionPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		RecentLayoutRevision newRecentLayoutRevision = _persistence.create(pk);
-
-		newRecentLayoutRevision.setMvccVersion(RandomTestUtil.nextLong());
+		RecentLayoutRevision newRecentLayoutRevision =
+			addRecentLayoutRevision();
 
 		newRecentLayoutRevision.setGroupId(RandomTestUtil.nextLong());
 
@@ -130,8 +129,9 @@ public class RecentLayoutRevisionPersistenceTest {
 
 		newRecentLayoutRevision.setPlid(RandomTestUtil.nextLong());
 
-		_recentLayoutRevisions.add(
-			_persistence.update(newRecentLayoutRevision));
+		newRecentLayoutRevision = _persistence.update(newRecentLayoutRevision);
+
+		_recentLayoutRevisions.add(newRecentLayoutRevision);
 
 		RecentLayoutRevision existingRecentLayoutRevision =
 			_persistence.findByPrimaryKey(
@@ -161,13 +161,6 @@ public class RecentLayoutRevisionPersistenceTest {
 		Assert.assertEquals(
 			existingRecentLayoutRevision.getPlid(),
 			newRecentLayoutRevision.getPlid());
-	}
-
-	@Test
-	public void testCountByGroupId() throws Exception {
-		_persistence.countByGroupId(RandomTestUtil.nextLong());
-
-		_persistence.countByGroupId(0L);
 	}
 
 	@Test
@@ -540,8 +533,6 @@ public class RecentLayoutRevisionPersistenceTest {
 
 		RecentLayoutRevision recentLayoutRevision = _persistence.create(pk);
 
-		recentLayoutRevision.setMvccVersion(RandomTestUtil.nextLong());
-
 		recentLayoutRevision.setGroupId(RandomTestUtil.nextLong());
 
 		recentLayoutRevision.setCompanyId(RandomTestUtil.nextLong());
@@ -565,3 +556,4 @@ public class RecentLayoutRevisionPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1697610979

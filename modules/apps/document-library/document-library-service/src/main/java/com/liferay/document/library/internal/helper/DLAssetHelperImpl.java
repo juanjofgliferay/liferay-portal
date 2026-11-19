@@ -5,8 +5,8 @@
 
 package com.liferay.document.library.internal.helper;
 
+import com.liferay.document.library.helper.DLAssetHelper;
 import com.liferay.document.library.kernel.model.DLFileEntryConstants;
-import com.liferay.document.library.util.DLAssetHelper;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.repository.model.FileVersion;
 import com.liferay.portal.kernel.util.Validator;
@@ -31,7 +31,8 @@ public class DLAssetHelperImpl implements DLAssetHelper {
 
 		String version = fileVersion.getVersion();
 
-		if (fileVersion.isApproved() || Validator.isNull(version) ||
+		if (fileVersion.isApproved() || fileVersion.isExpired() ||
+			Validator.isNull(version) ||
 			version.equals(DLFileEntryConstants.VERSION_DEFAULT) ||
 			fileEntry.isInTrash()) {
 

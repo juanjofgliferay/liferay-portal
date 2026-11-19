@@ -222,10 +222,6 @@ public interface CommercePriceListAccountRelLocalService
 	public CommercePriceListAccountRel fetchCommercePriceListAccountRel(
 		long commercePriceListAccountRelId);
 
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public CommercePriceListAccountRel fetchCommercePriceListAccountRel(
-		long commerceAccountId, long commercePriceListId);
-
 	/**
 	 * Returns the commerce price list account rel with the matching UUID and company.
 	 *
@@ -304,13 +300,6 @@ public interface CommercePriceListAccountRelLocalService
 	public int getCommercePriceListAccountRelsCount();
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getCommercePriceListAccountRelsCount(long commercePriceListId);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getCommercePriceListAccountRelsCount(
-		long commercePriceListId, String name);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public ExportActionableDynamicQuery getExportActionableDynamicQuery(
 		PortletDataContext portletDataContext);
 
@@ -362,3 +351,4 @@ public interface CommercePriceListAccountRelLocalService
 		throws E;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-2087497085

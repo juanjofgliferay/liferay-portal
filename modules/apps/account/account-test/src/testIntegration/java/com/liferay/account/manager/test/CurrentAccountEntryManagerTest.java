@@ -9,6 +9,7 @@ import com.liferay.account.constants.AccountConstants;
 import com.liferay.account.exception.AccountEntryTypeException;
 import com.liferay.account.manager.CurrentAccountEntryManager;
 import com.liferay.account.model.AccountEntry;
+import com.liferay.account.role.AccountRolePermissionThreadLocal;
 import com.liferay.account.service.AccountEntryLocalService;
 import com.liferay.account.service.AccountEntryOrganizationRelLocalService;
 import com.liferay.account.service.AccountEntryUserRelLocalService;
@@ -16,11 +17,14 @@ import com.liferay.account.service.test.util.AccountEntryArgs;
 import com.liferay.account.service.test.util.AccountEntryTestUtil;
 import com.liferay.account.settings.AccountEntryGroupSettings;
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.portal.configuration.test.util.ConfigurationTestUtil;
+import com.liferay.portal.kernel.model.CompanyConstants;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Organization;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.model.UserConstants;
+import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.service.OrganizationLocalService;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.OrganizationTestUtil;
@@ -35,6 +39,7 @@ import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 
 import java.util.List;
 
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -58,6 +63,11 @@ public class CurrentAccountEntryManagerTest {
 	public void setUp() throws Exception {
 		_group = GroupTestUtil.addGroup();
 		_user = UserTestUtil.addUser();
+	}
+
+	@After
+	public void tearDown() {
+		AccountRolePermissionThreadLocal.setAccountEntryIdWithSafeCloseable(0L);
 	}
 
 	@Test
@@ -145,6 +155,17 @@ public class CurrentAccountEntryManagerTest {
 				TestPropsValues.getCompanyId()),
 			_currentAccountEntryManager.getCurrentAccountEntry(
 				_group.getGroupId(), UserConstants.USER_ID_DEFAULT));
+
+		try (SafeCloseable safeCloseable =
+				CompanyThreadLocal.setCompanyIdWithSafeCloseable(
+					CompanyConstants.SYSTEM)) {
+
+			Assert.assertEquals(
+				_accountEntryLocalService.getGuestAccountEntry(
+					TestPropsValues.getCompanyId()),
+				_currentAccountEntryManager.getCurrentAccountEntry(
+					_group.getGroupId(), UserConstants.USER_ID_DEFAULT));
+		}
 	}
 
 	@Test
@@ -255,6 +276,8 @@ public class CurrentAccountEntryManagerTest {
 
 		ConfigurationTestUtil.saveConfiguration(
 			RandomTestUtil.randomString(), null);
+
+		AccountRolePermissionThreadLocal.setAccountEntryIdWithSafeCloseable(0L);
 	}
 
 	@Inject

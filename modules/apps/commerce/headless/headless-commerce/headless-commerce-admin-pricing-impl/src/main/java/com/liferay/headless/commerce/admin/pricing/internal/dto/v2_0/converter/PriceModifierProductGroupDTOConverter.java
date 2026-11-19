@@ -21,7 +21,10 @@ import org.osgi.service.component.annotations.Reference;
  * @author Alessio Antonio Rendina
  */
 @Component(
-	property = "dto.class.name=com.liferay.commerce.pricing.model.CommercePriceModifierRel-ProductGroup",
+	property = {
+		"default=true",
+		"dto.class.name=com.liferay.commerce.pricing.model.CommercePriceModifierRel-ProductGroup"
+	},
 	service = DTOConverter.class
 )
 public class PriceModifierProductGroupDTOConverter
@@ -51,17 +54,17 @@ public class PriceModifierProductGroupDTOConverter
 
 		return new PriceModifierProductGroup() {
 			{
-				actions = dtoConverterContext.getActions();
-				priceModifierExternalReferenceCode =
-					commercePriceModifier.getExternalReferenceCode();
-				priceModifierId =
-					commercePriceModifier.getCommercePriceModifierId();
-				priceModifierProductGroupId =
-					commercePriceModifierRel.getCommercePriceModifierRelId();
-				productGroupExternalReferenceCode =
-					commercePricingClass.getExternalReferenceCode();
-				productGroupId =
-					commercePricingClass.getCommercePricingClassId();
+				setActions(dtoConverterContext::getActions);
+				setPriceModifierExternalReferenceCode(
+					commercePriceModifier::getExternalReferenceCode);
+				setPriceModifierId(
+					commercePriceModifier::getCommercePriceModifierId);
+				setPriceModifierProductGroupId(
+					commercePriceModifierRel::getCommercePriceModifierRelId);
+				setProductGroupExternalReferenceCode(
+					commercePricingClass::getExternalReferenceCode);
+				setProductGroupId(
+					commercePricingClass::getCommercePricingClassId);
 			}
 		};
 	}

@@ -6,14 +6,28 @@
 package com.liferay.headless.delivery.resource.v1_0.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.document.library.kernel.model.DLFolderConstants;
+import com.liferay.document.library.kernel.service.DLAppLocalServiceUtil;
 import com.liferay.headless.delivery.client.dto.v1_0.WikiPageAttachment;
 import com.liferay.headless.delivery.client.http.HttpInvoker;
+import com.liferay.headless.delivery.client.resource.v1_0.WikiPageAttachmentResource;
+import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.repository.model.FileEntry;
+import com.liferay.portal.kernel.repository.model.Folder;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserLocalServiceUtil;
 import com.liferay.portal.kernel.test.constants.TestDataConstants;
+import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.TestPropsValues;
+import com.liferay.portal.kernel.test.util.UserTestUtil;
+import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.FileUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
+import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.PropsValues;
+import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.test.log.LogCapture;
 import com.liferay.portal.test.log.LoggerTestUtil;
 import com.liferay.wiki.model.WikiNode;
@@ -23,10 +37,13 @@ import com.liferay.wiki.service.WikiPageLocalServiceUtil;
 
 import java.io.File;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -42,22 +59,29 @@ public class WikiPageAttachmentResourceTest
 	public void setUp() throws Exception {
 		super.setUp();
 
-		ServiceContext serviceContext = new ServiceContext();
+		ServiceContext wikiNodeServiceContext = new ServiceContext();
 
-		serviceContext.setAddGuestPermissions(true);
-		serviceContext.setCommand("update");
-		serviceContext.setScopeGroupId(testGroup.getGroupId());
+		wikiNodeServiceContext.setAddGroupPermissions(true);
+		wikiNodeServiceContext.setAddGuestPermissions(true);
+		wikiNodeServiceContext.setCommand("update");
+		wikiNodeServiceContext.setScopeGroupId(testGroup.getGroupId());
 
 		WikiNode wikiNode = WikiNodeLocalServiceUtil.addNode(
 			UserLocalServiceUtil.getGuestUserId(testGroup.getCompanyId()),
 			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
-			serviceContext);
+			wikiNodeServiceContext);
+
+		ServiceContext wikiPageServiceContext = new ServiceContext();
+
+		wikiPageServiceContext.setAddGuestPermissions(true);
+		wikiPageServiceContext.setCommand("update");
+		wikiPageServiceContext.setScopeGroupId(testGroup.getGroupId());
 
 		_wikiPage = WikiPageLocalServiceUtil.addPage(
 			UserLocalServiceUtil.getGuestUserId(testGroup.getCompanyId()),
 			wikiNode.getNodeId(), RandomTestUtil.randomString(),
 			RandomTestUtil.randomString(), RandomTestUtil.randomString(), false,
-			serviceContext);
+			wikiPageServiceContext);
 	}
 
 	@Override
@@ -105,6 +129,104 @@ public class WikiPageAttachmentResourceTest
 					testDeleteSiteWikiPageByExternalReferenceCodeWikiPageExternalReferenceCodeWikiPageAttachmentByExternalReferenceCode_getSiteId(),
 					previousWikiPage.getExternalReferenceCode(),
 					newWikiPageAttachment.getExternalReferenceCode()));
+
+		// Wiki page attachment without delete permission
+
+		WikiPage siteWikiPage = _addWikiPage();
+
+		WikiPageAttachment siteWikiPageAttachment = _addWikiPageAttachment(
+			siteWikiPage);
+
+		WikiPageAttachmentResource siteMemberWikiPageAttachmentResource =
+			_getSiteMemberWikiPageAttachmentResource();
+
+		assertHttpResponseStatusCode(
+			403,
+			siteMemberWikiPageAttachmentResource.
+				deleteSiteWikiPageByExternalReferenceCodeWikiPageExternalReferenceCodeWikiPageAttachmentByExternalReferenceCodeHttpResponse(
+					siteWikiPage.getGroupId(),
+					siteWikiPage.getExternalReferenceCode(),
+					siteWikiPageAttachment.getExternalReferenceCode()));
+
+		assertHttpResponseStatusCode(
+			200,
+			wikiPageAttachmentResource.getWikiPageAttachmentHttpResponse(
+				siteWikiPageAttachment.getId()));
+
+		// Wiki page attachment on a wiki page with no head version
+
+		WikiPage draftWikiPage = _addWikiPage();
+
+		WikiPageAttachment draftWikiPageAttachment = _addWikiPageAttachment(
+			draftWikiPage);
+
+		WikiPageLocalServiceUtil.updateStatus(
+			TestPropsValues.getUserId(), draftWikiPage.getResourcePrimKey(),
+			WorkflowConstants.STATUS_DRAFT, new ServiceContext());
+
+		assertHttpResponseStatusCode(
+			404,
+			wikiPageAttachmentResource.
+				deleteSiteWikiPageByExternalReferenceCodeWikiPageExternalReferenceCodeWikiPageAttachmentByExternalReferenceCodeHttpResponse(
+					draftWikiPage.getGroupId(),
+					draftWikiPage.getExternalReferenceCode(),
+					draftWikiPageAttachment.getExternalReferenceCode()));
+
+		Assert.assertNotNull(
+			DLAppLocalServiceUtil.fetchFileEntry(
+				draftWikiPageAttachment.getId()));
+	}
+
+	@Override
+	@Test
+	public void testDeleteWikiPageAttachment() throws Exception {
+		super.testDeleteWikiPageAttachment();
+
+		// Wiki page attachment without permission
+
+		WikiPageAttachment wikiPageAttachment =
+			_addRestrictedWikiPageAttachment();
+
+		WikiPageAttachmentResource
+			userWithoutPermissionsWikiPageAttachmentResource =
+				_getUserWithoutPermissionsWikiPageAttachmentResource();
+
+		assertHttpResponseStatusCode(
+			403,
+			userWithoutPermissionsWikiPageAttachmentResource.
+				deleteWikiPageAttachmentHttpResponse(
+					wikiPageAttachment.getId()));
+
+		// Wiki page attachment with update permission but without delete
+		// permission
+
+		WikiPageAttachment siteWikiPageAttachment = _addWikiPageAttachment();
+
+		WikiPageAttachmentResource siteMemberWikiPageAttachmentResource =
+			_getSiteMemberWikiPageAttachmentResource();
+
+		assertHttpResponseStatusCode(
+			403,
+			siteMemberWikiPageAttachmentResource.
+				deleteWikiPageAttachmentHttpResponse(
+					siteWikiPageAttachment.getId()));
+
+		assertHttpResponseStatusCode(
+			200,
+			wikiPageAttachmentResource.getWikiPageAttachmentHttpResponse(
+				siteWikiPageAttachment.getId()));
+
+		// File entry that is not a wiki page attachment
+
+		FileEntry fileEntry = _addFileEntry();
+
+		assertHttpResponseStatusCode(
+			404,
+			wikiPageAttachmentResource.deleteWikiPageAttachmentHttpResponse(
+				fileEntry.getFileEntryId()));
+
+		Assert.assertNotNull(
+			DLAppLocalServiceUtil.fetchFileEntry(fileEntry.getFileEntryId()));
 	}
 
 	@Override
@@ -146,6 +268,64 @@ public class WikiPageAttachmentResourceTest
 	}
 
 	@Override
+	@Test
+	public void testGetWikiPageAttachment() throws Exception {
+		super.testGetWikiPageAttachment();
+
+		// Wiki page attachment without permission
+
+		WikiPageAttachment wikiPageAttachment =
+			_addRestrictedWikiPageAttachment();
+
+		WikiPageAttachmentResource
+			userWithoutPermissionsWikiPageAttachmentResource =
+				_getUserWithoutPermissionsWikiPageAttachmentResource();
+
+		assertHttpResponseStatusCode(
+			404,
+			userWithoutPermissionsWikiPageAttachmentResource.
+				getWikiPageAttachmentHttpResponse(wikiPageAttachment.getId()));
+
+		// Restricted wiki page attachment as a site member
+
+		WikiPageAttachmentResource siteMemberWikiPageAttachmentResource =
+			_getSiteMemberWikiPageAttachmentResource();
+
+		assertHttpResponseStatusCode(
+			404,
+			siteMemberWikiPageAttachmentResource.
+				getWikiPageAttachmentHttpResponse(wikiPageAttachment.getId()));
+
+		// Wiki page attachment with view permission
+
+		WikiPageAttachment siteWikiPageAttachment = _addWikiPageAttachment();
+
+		assertHttpResponseStatusCode(
+			200,
+			siteMemberWikiPageAttachmentResource.
+				getWikiPageAttachmentHttpResponse(
+					siteWikiPageAttachment.getId()));
+
+		// File entry that is not a wiki page attachment
+
+		_assertNoSuchWikiPageAttachment(_addFileEntry());
+
+		// File entry in a folder named after a wiki page
+
+		_assertNoSuchWikiPageAttachment(
+			_addFileEntry(String.valueOf(_wikiPage.getResourcePrimKey())));
+	}
+
+	@Ignore
+	@Override
+	@Test
+	public void testGraphQLGetWikiPageWikiPageAttachmentsPage()
+		throws Exception {
+
+		super.testGraphQLGetWikiPageWikiPageAttachmentsPage();
+	}
+
+	@Override
 	protected void assertValid(
 			WikiPageAttachment wikiPageAttachment,
 			Map<String, File> multipartFiles)
@@ -154,7 +334,8 @@ public class WikiPageAttachmentResourceTest
 		Assert.assertEquals(
 			new String(FileUtil.getBytes(multipartFiles.get("file"))),
 			_read(
-				"http://localhost:8080" + wikiPageAttachment.getContentUrl()));
+				"http://localhost:" + PortalUtil.getPortalServerPort(false) +
+					wikiPageAttachment.getContentUrl()));
 	}
 
 	@Override
@@ -264,6 +445,14 @@ public class WikiPageAttachmentResourceTest
 	}
 
 	@Override
+	protected String
+			testGraphQLDeleteSiteWikiPageByExternalReferenceCodeWikiPageExternalReferenceCodeWikiPageAttachmentByExternalReferenceCode_getWikiPageExternalReferenceCode()
+		throws Exception {
+
+		return _wikiPage.getExternalReferenceCode();
+	}
+
+	@Override
 	protected WikiPageAttachment
 			testGraphQLGetSiteWikiPageByExternalReferenceCodeWikiPageExternalReferenceCodeWikiPageAttachmentByExternalReferenceCode_addWikiPageAttachment()
 		throws Exception {
@@ -289,10 +478,140 @@ public class WikiPageAttachmentResourceTest
 
 	@Override
 	protected WikiPageAttachment
+			testGraphQLSiteWikiPageAttachment_addWikiPageAttachment()
+		throws Exception {
+
+		return wikiPageAttachmentResource.postWikiPageWikiPageAttachment(
+			_wikiPage.getResourcePrimKey(), randomWikiPageAttachment(),
+			getMultipartFiles());
+	}
+
+	@Override
+	protected WikiPageAttachment
 			testGraphQLWikiPageAttachment_addWikiPageAttachment()
 		throws Exception {
 
 		return testDeleteWikiPageAttachment_addWikiPageAttachment();
+	}
+
+	private FileEntry _addFileEntry() throws Exception {
+		return _addFileEntry(RandomTestUtil.randomString());
+	}
+
+	private FileEntry _addFileEntry(String folderName) throws Exception {
+		ServiceContext serviceContext = new ServiceContext();
+
+		serviceContext.setAddGroupPermissions(true);
+		serviceContext.setScopeGroupId(testGroup.getGroupId());
+
+		Folder folder = DLAppLocalServiceUtil.addFolder(
+			null, TestPropsValues.getUserId(), testGroup.getGroupId(),
+			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID, folderName,
+			RandomTestUtil.randomString(), serviceContext);
+
+		return DLAppLocalServiceUtil.addFileEntry(
+			null, TestPropsValues.getUserId(), testGroup.getGroupId(),
+			folder.getFolderId(), RandomTestUtil.randomString() + ".txt",
+			ContentTypes.TEXT_PLAIN, RandomTestUtil.randomString(), null, null,
+			null, TestDataConstants.TEST_BYTE_ARRAY, null, null, null,
+			serviceContext);
+	}
+
+	private WikiPageAttachment _addRestrictedWikiPageAttachment()
+		throws Exception {
+
+		ServiceContext serviceContext = new ServiceContext();
+
+		serviceContext.setAddGroupPermissions(false);
+		serviceContext.setAddGuestPermissions(false);
+		serviceContext.setCommand("update");
+		serviceContext.setScopeGroupId(testGroup.getGroupId());
+
+		return _addWikiPageAttachment(_addWikiPage(serviceContext));
+	}
+
+	private WikiPage _addWikiPage() throws Exception {
+		ServiceContext serviceContext = new ServiceContext();
+
+		serviceContext.setAddGroupPermissions(true);
+		serviceContext.setAddGuestPermissions(false);
+		serviceContext.setCommand("update");
+		serviceContext.setScopeGroupId(testGroup.getGroupId());
+
+		return _addWikiPage(serviceContext);
+	}
+
+	private WikiPage _addWikiPage(ServiceContext serviceContext)
+		throws Exception {
+
+		return WikiPageLocalServiceUtil.addPage(
+			TestPropsValues.getUserId(), _wikiPage.getNodeId(),
+			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
+			RandomTestUtil.randomString(), false, serviceContext);
+	}
+
+	private WikiPageAttachment _addWikiPageAttachment() throws Exception {
+		return _addWikiPageAttachment(_addWikiPage());
+	}
+
+	private WikiPageAttachment _addWikiPageAttachment(WikiPage wikiPage)
+		throws Exception {
+
+		return wikiPageAttachmentResource.postWikiPageWikiPageAttachment(
+			wikiPage.getResourcePrimKey(), randomWikiPageAttachment(),
+			getMultipartFiles());
+	}
+
+	private void _assertNoSuchWikiPageAttachment(FileEntry fileEntry)
+		throws Exception {
+
+		assertHttpResponseStatusCode(
+			404,
+			wikiPageAttachmentResource.getWikiPageAttachmentHttpResponse(
+				fileEntry.getFileEntryId()));
+	}
+
+	private WikiPageAttachmentResource
+			_getSiteMemberWikiPageAttachmentResource()
+		throws Exception {
+
+		String password = RandomTestUtil.randomString();
+
+		User user = UserTestUtil.addUser(testCompany, password);
+
+		_users.add(user);
+
+		UserLocalServiceUtil.addGroupUsers(
+			testGroup.getGroupId(), new long[] {user.getUserId()});
+
+		return _getWikiPageAttachmentResource(user, password);
+	}
+
+	private WikiPageAttachmentResource
+			_getUserWithoutPermissionsWikiPageAttachmentResource()
+		throws Exception {
+
+		String password = RandomTestUtil.randomString();
+
+		User user = UserTestUtil.addUser(testCompany, password);
+
+		_users.add(user);
+
+		return _getWikiPageAttachmentResource(user, password);
+	}
+
+	private WikiPageAttachmentResource _getWikiPageAttachmentResource(
+		User user, String password) {
+
+		return WikiPageAttachmentResource.builder(
+		).authentication(
+			user.getEmailAddress(), password
+		).endpoint(
+			testCompany.getVirtualHostname(),
+			PortalUtil.getPortalServerPort(false), "http"
+		).locale(
+			LocaleUtil.getDefault()
+		).build();
 	}
 
 	private String _read(String url) throws Exception {
@@ -300,7 +619,8 @@ public class WikiPageAttachmentResourceTest
 
 		httpInvoker.httpMethod(HttpInvoker.HttpMethod.GET);
 		httpInvoker.path(url);
-		httpInvoker.userNameAndPassword("test@liferay.com:test");
+		httpInvoker.userNameAndPassword(
+			"test@liferay.com:" + PropsValues.DEFAULT_ADMIN_PASSWORD);
 
 		HttpInvoker.HttpResponse httpResponse = httpInvoker.invoke();
 
@@ -308,6 +628,10 @@ public class WikiPageAttachmentResourceTest
 	}
 
 	private String _tempFileName;
+
+	@DeleteAfterTestRun
+	private final List<User> _users = new ArrayList<>();
+
 	private WikiPage _wikiPage;
 
 }

@@ -22,10 +22,17 @@ import com.liferay.adaptive.media.image.url.AMImageURLFactory;
 import com.liferay.adaptive.media.processor.AMProcessor;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.module.util.SystemBundleUtil;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.repository.model.FileVersion;
+import com.liferay.portal.kernel.security.auth.PrincipalException;
+import com.liferay.portal.kernel.security.permission.PermissionChecker;
+import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
+import com.liferay.portal.kernel.security.permission.resource.PortletResourcePermission;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
+import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
+import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import java.net.URI;
@@ -37,6 +44,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -44,6 +52,9 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.mockito.Mockito;
+
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.ServiceRegistration;
 
 /**
  * @author Alejandro Tardín
@@ -84,8 +95,19 @@ public class MediaQueryProviderImplTest {
 			_mediaQueryProviderImpl, "_amImageURLFactory", _amImageURLFactory);
 	}
 
+	@After
+	public void tearDown() {
+		if (_serviceRegistration != null) {
+			_serviceRegistration.unregister();
+
+			_serviceRegistration = null;
+		}
+	}
+
 	@Test
 	public void testCreatesAMediaQuery() throws Exception {
+		_configureFileEntryPermission(true);
+
 		_addConfigs(
 			_createAMImageConfigurationEntry("uuid", 800, 1989, "adaptiveURL"));
 
@@ -107,6 +129,8 @@ public class MediaQueryProviderImplTest {
 
 	@Test
 	public void testCreatesSeveralMediaQueries() throws Exception {
+		_configureFileEntryPermission(true);
+
 		_addConfigs(
 			_createAMImageConfigurationEntry(
 				"uuid1", 800, 1986, "adaptiveURL1"),
@@ -142,6 +166,8 @@ public class MediaQueryProviderImplTest {
 
 	@Test
 	public void testCreatesSeveralMediaQueriesSortedByWidth() throws Exception {
+		_configureFileEntryPermission(true);
+
 		_addConfigs(
 			_createAMImageConfigurationEntry(
 				"uuid2", 800, 1989, "adaptiveURL2"),
@@ -177,6 +203,8 @@ public class MediaQueryProviderImplTest {
 
 	@Test
 	public void testFiltersOutAdaptiveMediasWithNoWidth() throws Exception {
+		_configureFileEntryPermission(true);
+
 		int auto = 0;
 
 		_addConfigs(
@@ -198,6 +226,8 @@ public class MediaQueryProviderImplTest {
 
 	@Test
 	public void testHDMediaQueriesApplies() throws Exception {
+		_configureFileEntryPermission(true);
+
 		_addConfigs(
 			_createAMImageConfigurationEntry(
 				"uuid1", 450, 800, "http://small.adaptive.com"),
@@ -251,6 +281,8 @@ public class MediaQueryProviderImplTest {
 	public void testHDMediaQueryAppliesWhenHeightHas1PXLessThanExpected()
 		throws Exception {
 
+		_configureFileEntryPermission(true);
+
 		_addConfigs(
 			_createAMImageConfigurationEntry(
 				"uuid1", 450, 800, "http://small.adaptive.com"),
@@ -291,6 +323,8 @@ public class MediaQueryProviderImplTest {
 	public void testHDMediaQueryAppliesWhenHeightHas1PXMoreThanExpected()
 		throws Exception {
 
+		_configureFileEntryPermission(true);
+
 		_addConfigs(
 			_createAMImageConfigurationEntry(
 				"uuid1", 450, 800, "http://small.adaptive.com"),
@@ -330,6 +364,8 @@ public class MediaQueryProviderImplTest {
 	@Test
 	public void testHDMediaQueryAppliesWhenWidthHas1PXLessThanExpected()
 		throws Exception {
+
+		_configureFileEntryPermission(true);
 
 		_addConfigs(
 			_createAMImageConfigurationEntry(
@@ -376,6 +412,8 @@ public class MediaQueryProviderImplTest {
 	public void testHDMediaQueryAppliesWhenWidthHas1PXMoreThanExpected()
 		throws Exception {
 
+		_configureFileEntryPermission(true);
+
 		_addConfigs(
 			_createAMImageConfigurationEntry(
 				"uuid", 450, 800, "http://small.adaptive.com"),
@@ -416,6 +454,8 @@ public class MediaQueryProviderImplTest {
 	public void testHDMediaQueryNotAppliesWhenHeightHas2PXLessThanExpected()
 		throws Exception {
 
+		_configureFileEntryPermission(true);
+
 		_addConfigs(
 			_createAMImageConfigurationEntry(
 				"uuid", 450, 800, "http://small.adaptive.com"),
@@ -453,6 +493,8 @@ public class MediaQueryProviderImplTest {
 	@Test
 	public void testHDMediaQueryNotAppliesWhenHeightHas2PXMoreThanExpected()
 		throws Exception {
+
+		_configureFileEntryPermission(true);
 
 		_addConfigs(
 			_createAMImageConfigurationEntry(
@@ -492,6 +534,8 @@ public class MediaQueryProviderImplTest {
 	public void testHDMediaQueryNotAppliesWhenWidthHas2PXLessThanExpected()
 		throws Exception {
 
+		_configureFileEntryPermission(true);
+
 		_addConfigs(
 			_createAMImageConfigurationEntry(
 				"uuid", 450, 800, "http://small.adaptive.com"),
@@ -529,6 +573,8 @@ public class MediaQueryProviderImplTest {
 	@Test
 	public void testHDMediaQueryNotAppliesWhenWidthHas2PXMoreThanExpected()
 		throws Exception {
+
+		_configureFileEntryPermission(true);
 
 		_addConfigs(
 			_createAMImageConfigurationEntry(
@@ -568,7 +614,27 @@ public class MediaQueryProviderImplTest {
 	public void testReturnsNoMediaQueriesIfThereAreNoConfigs()
 		throws Exception {
 
+		_configureFileEntryPermission(true);
+
 		_addConfigs();
+
+		List<MediaQuery> mediaQueries = _mediaQueryProviderImpl.getMediaQueries(
+			_fileEntry);
+
+		Assert.assertEquals(mediaQueries.toString(), 0, mediaQueries.size());
+	}
+
+	@Test
+	public void testReturnsNoMediaQueriesIfThereAreNoDownloadPermission()
+		throws Exception {
+
+		_configureFileEntryPermission(false);
+
+		_addConfigs(
+			_createAMImageConfigurationEntry(
+				"uuid", 450, 800, "http://small.adaptive.com"),
+			_createAMImageConfigurationEntry(
+				"uuid", 900, 1601, "http://small.hd.adaptive.com"));
 
 		List<MediaQuery> mediaQueries = _mediaQueryProviderImpl.getMediaQueries(
 			_fileEntry);
@@ -579,6 +645,8 @@ public class MediaQueryProviderImplTest {
 	@Test
 	public void testUsesTheValuesFromConfigIfNoAdaptiveMediasArePresent()
 		throws Exception {
+
+		_configureFileEntryPermission(true);
 
 		int auto = 0;
 
@@ -601,6 +669,8 @@ public class MediaQueryProviderImplTest {
 	@Test
 	public void testUsesTheValuesFromTheAdaptiveMediasIfPresent()
 		throws Exception {
+
+		_configureFileEntryPermission(true);
 
 		int auto = 0;
 
@@ -628,6 +698,67 @@ public class MediaQueryProviderImplTest {
 		_assertMediaQuery(mediaQueries.get(1), "wautoURL", 169, 506);
 		_assertMediaQuery(mediaQueries.get(2), "hautoURL", 506, 600);
 		_assertMediaQuery(mediaQueries.get(3), "normalURL", 600, 750);
+	}
+
+	public class MockModelResourcePermission
+		implements ModelResourcePermission<FileEntry> {
+
+		public MockModelResourcePermission(boolean downloadPermission) {
+			_downloadPermission = downloadPermission;
+		}
+
+		@Override
+		public void check(
+				PermissionChecker permissionChecker, FileEntry fileEntry,
+				String actionId)
+			throws PortalException {
+
+			if (!_downloadPermission) {
+				throw new PrincipalException.MustHavePermission(0L, actionId);
+			}
+		}
+
+		@Override
+		public void check(
+				PermissionChecker permissionChecker, long primaryKey,
+				String actionId)
+			throws PortalException {
+
+			if (!_downloadPermission) {
+				throw new PrincipalException.MustHavePermission(0L, actionId);
+			}
+		}
+
+		@Override
+		public boolean contains(
+				PermissionChecker permissionChecker, FileEntry fileEntry,
+				String actionId)
+			throws PortalException {
+
+			return false;
+		}
+
+		@Override
+		public boolean contains(
+				PermissionChecker permissionChecker, long primaryKey,
+				String actionId)
+			throws PortalException {
+
+			return false;
+		}
+
+		@Override
+		public String getModelName() {
+			return null;
+		}
+
+		@Override
+		public PortletResourcePermission getPortletResourcePermission() {
+			return null;
+		}
+
+		private final boolean _downloadPermission;
+
 	}
 
 	private void _addAdaptiveMedias(
@@ -718,30 +849,15 @@ public class MediaQueryProviderImplTest {
 		_assertCondition(conditions.get(1), "min-width", minWidth + "px");
 	}
 
-	private AdaptiveMedia<AMProcessor<FileVersion>> _createAdaptiveMedia(
-			String amImageConfigurationEntryUuid, int height, int width,
-			String url)
-		throws Exception {
+	private void _configureFileEntryPermission(boolean downloadPermission) {
+		BundleContext bundleContext = SystemBundleUtil.getBundleContext();
 
-		Map<String, String> properties = HashMapBuilder.put(
-			AMImageAttribute.AM_IMAGE_ATTRIBUTE_HEIGHT.getName(),
-			String.valueOf(height)
-		).put(
-			AMImageAttribute.AM_IMAGE_ATTRIBUTE_WIDTH.getName(),
-			String.valueOf(width)
-		).put(
-			() -> {
-				AMAttribute<?, ?> amAttribute =
-					AMAttribute.getConfigurationUuidAMAttribute();
-
-				return amAttribute.getName();
-			},
-			amImageConfigurationEntryUuid
-		).build();
-
-		return new AMImage(
-			() -> null, AMImageAttributeMapping.fromProperties(properties),
-			URI.create(url));
+		_serviceRegistration = bundleContext.registerService(
+			ModelResourcePermission.class,
+			new MockModelResourcePermission(downloadPermission),
+			MapUtil.singletonDictionary(
+				"model.class.name",
+				"com.liferay.portal.kernel.repository.model.FileEntry"));
 	}
 
 	private AMImageConfigurationEntry _createAMImageConfigurationEntry(
@@ -792,7 +908,33 @@ public class MediaQueryProviderImplTest {
 		return amImageConfigurationEntry;
 	}
 
-	private static final long _COMPANY_ID = 1L;
+	private AdaptiveMedia<AMProcessor<FileVersion>> _createAdaptiveMedia(
+			String amImageConfigurationEntryUuid, int height, int width,
+			String url)
+		throws Exception {
+
+		Map<String, String> properties = HashMapBuilder.put(
+			AMImageAttribute.AM_IMAGE_ATTRIBUTE_HEIGHT.getName(),
+			String.valueOf(height)
+		).put(
+			AMImageAttribute.AM_IMAGE_ATTRIBUTE_WIDTH.getName(),
+			String.valueOf(width)
+		).put(
+			() -> {
+				AMAttribute<?, ?> amAttribute =
+					AMAttribute.getConfigurationUuidAMAttribute();
+
+				return amAttribute.getName();
+			},
+			amImageConfigurationEntryUuid
+		).build();
+
+		return new AMImage(
+			() -> null, AMImageAttributeMapping.fromProperties(properties),
+			URI.create(url));
+	}
+
+	private static final long _COMPANY_ID = RandomTestUtil.randomLong();
 
 	private final AMImageConfigurationHelper _amImageConfigurationHelper =
 		Mockito.mock(AMImageConfigurationHelper.class);
@@ -804,5 +946,6 @@ public class MediaQueryProviderImplTest {
 	private final FileVersion _fileVersion = Mockito.mock(FileVersion.class);
 	private final MediaQueryProviderImpl _mediaQueryProviderImpl =
 		new MediaQueryProviderImpl();
+	private ServiceRegistration<?> _serviceRegistration;
 
 }

@@ -6,24 +6,27 @@
 package com.liferay.commerce.address.content.web.internal.display.context;
 
 import com.liferay.account.model.AccountEntry;
-import com.liferay.commerce.address.content.web.internal.portlet.action.helper.ActionHelper;
+import com.liferay.commerce.address.content.web.internal.portlet.action.ActionUtil;
 import com.liferay.commerce.address.content.web.internal.portlet.configuration.CommerceAddressContentPortletInstanceConfiguration;
 import com.liferay.commerce.constants.CommerceWebKeys;
 import com.liferay.commerce.context.CommerceContext;
+import com.liferay.commerce.helper.CommerceAccountHelper;
 import com.liferay.commerce.model.CommerceAddress;
 import com.liferay.commerce.product.display.context.helper.CPRequestHelper;
 import com.liferay.commerce.service.CommerceAddressService;
-import com.liferay.commerce.util.CommerceAccountHelper;
 import com.liferay.commerce.util.CommerceUtil;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.configuration.module.configuration.ConfigurationProviderUtil;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.Country;
+import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Region;
 import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
 import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.service.CountryService;
+import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.RegionService;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.Constants;
@@ -31,11 +34,11 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.List;
-
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Alessio Antonio Rendina
@@ -43,17 +46,16 @@ import javax.servlet.http.HttpServletRequest;
 public class CommerceAddressDisplayContext {
 
 	public CommerceAddressDisplayContext(
-			ActionHelper actionHelper,
 			CommerceAccountHelper commerceAccountHelper,
 			CommerceAddressService commerceAddressService,
-			CountryService countryService,
+			CountryService countryService, GroupLocalService groupLocalService,
 			HttpServletRequest httpServletRequest, RegionService regionService)
 		throws PortalException {
 
-		_actionHelper = actionHelper;
 		_commerceAccountHelper = commerceAccountHelper;
 		_commerceAddressService = commerceAddressService;
 		_countryService = countryService;
+		_groupLocalService = groupLocalService;
 		_httpServletRequest = httpServletRequest;
 		_regionService = regionService;
 
@@ -95,8 +97,8 @@ public class CommerceAddressDisplayContext {
 			return _commerceAddress;
 		}
 
-		_commerceAddress = _actionHelper.getCommerceAddress(
-			_cpRequestHelper.getRenderRequest());
+		_commerceAddress = ActionUtil.getCommerceAddress(
+			_commerceAddressService, _cpRequestHelper.getRenderRequest());
 
 		return _commerceAddress;
 	}
@@ -158,23 +160,61 @@ public class CommerceAddressDisplayContext {
 	}
 
 	public long getDisplayStyleGroupId() {
-		if (_displayStyleGroupId > 0) {
+		if (_displayStyleGroupId != null) {
 			return _displayStyleGroupId;
 		}
 
-		_displayStyleGroupId =
+		String displayStyleGroupExternalReferenceCode =
 			_commerceAddressContentPortletInstanceConfiguration.
-				displayStyleGroupId();
+				displayStyleGroupExternalReferenceCode();
 
-		if (_displayStyleGroupId <= 0) {
-			ThemeDisplay themeDisplay =
-				(ThemeDisplay)_httpServletRequest.getAttribute(
-					WebKeys.THEME_DISPLAY);
+		ThemeDisplay themeDisplay = _cpRequestHelper.getThemeDisplay();
 
+		Group group = themeDisplay.getScopeGroup();
+
+		if (Validator.isNotNull(displayStyleGroupExternalReferenceCode)) {
+			group = _groupLocalService.fetchGroupByExternalReferenceCode(
+				displayStyleGroupExternalReferenceCode,
+				themeDisplay.getCompanyId());
+		}
+
+		if (group != null) {
+			_displayStyleGroupId = group.getGroupId();
+		}
+		else {
 			_displayStyleGroupId = themeDisplay.getScopeGroupId();
 		}
 
 		return _displayStyleGroupId;
+	}
+
+	public String getDisplayStyleGroupKey() {
+		if (Validator.isNotNull(_displayStyleGroupKey)) {
+			return _displayStyleGroupKey;
+		}
+
+		String displayStyleGroupExternalReferenceCode =
+			_commerceAddressContentPortletInstanceConfiguration.
+				displayStyleGroupExternalReferenceCode();
+
+		ThemeDisplay themeDisplay = _cpRequestHelper.getThemeDisplay();
+
+		Group group = themeDisplay.getScopeGroup();
+
+		if (Validator.isNotNull(displayStyleGroupExternalReferenceCode)) {
+			group = _groupLocalService.fetchGroupByExternalReferenceCode(
+				displayStyleGroupExternalReferenceCode,
+				themeDisplay.getCompanyId());
+		}
+
+		if (group != null) {
+			_displayStyleGroupKey = group.getGroupKey();
+		}
+		else {
+			_displayStyleGroupKey = StringPool.BLANK;
+		}
+
+		return _displayStyleGroupKey;
 	}
 
 	public String getEditCommerceAddressURL(long commerceAddressId) {
@@ -270,6 +310,10 @@ public class CommerceAddressDisplayContext {
 			(CommerceContext)_httpServletRequest.getAttribute(
 				CommerceWebKeys.COMMERCE_CONTEXT);
 
+		if (commerceContext == null) {
+			return false;
+		}
+
 		long commerceChannelId = commerceContext.getCommerceChannelId();
 
 		if (commerceChannelId > 0) {
@@ -279,7 +323,6 @@ public class CommerceAddressDisplayContext {
 		return false;
 	}
 
-	private final ActionHelper _actionHelper;
 	private final CommerceAccountHelper _commerceAccountHelper;
 	private CommerceAddress _commerceAddress;
 	private final CommerceAddressContentPortletInstanceConfiguration
@@ -287,7 +330,9 @@ public class CommerceAddressDisplayContext {
 	private final CommerceAddressService _commerceAddressService;
 	private final CountryService _countryService;
 	private final CPRequestHelper _cpRequestHelper;
-	private long _displayStyleGroupId;
+	private Long _displayStyleGroupId;
+	private String _displayStyleGroupKey;
+	private final GroupLocalService _groupLocalService;
 	private final HttpServletRequest _httpServletRequest;
 	private final LiferayPortletRequest _liferayPortletRequest;
 	private final LiferayPortletResponse _liferayPortletResponse;

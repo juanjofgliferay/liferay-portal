@@ -9,8 +9,11 @@ import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.DateUtil;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.vulcan.extension.PropertyDefinition;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
+
+import jakarta.validation.ValidationException;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -19,8 +22,6 @@ import java.time.format.DateTimeParseException;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
-
-import javax.validation.ValidationException;
 
 /**
  * @author Carlos Correa
@@ -40,17 +41,24 @@ public class DefaultPropertyValidator implements PropertyValidator {
 
 		if (propertyType == PropertyDefinition.PropertyType.DATE_TIME) {
 			if (propertyValue instanceof String) {
-				try {
-					LocalDateTime.parse(
-						(String)propertyValue,
-						DateTimeFormatter.ofPattern(
-							_getDateTimePattern((String)propertyValue)));
+				String value = (String)propertyValue;
 
+				if (Validator.isNull(value)) {
 					valid = true;
 				}
-				catch (DateTimeParseException dateTimeParseException) {
-					if (_log.isDebugEnabled()) {
-						_log.debug(dateTimeParseException);
+				else {
+					try {
+						LocalDateTime.parse(
+							value,
+							DateTimeFormatter.ofPattern(
+								_getDateTimePattern(value)));
+
+						valid = true;
+					}
+					catch (DateTimeParseException dateTimeParseException) {
+						if (_log.isDebugEnabled()) {
+							_log.debug(dateTimeParseException);
+						}
 					}
 				}
 			}
@@ -58,9 +66,7 @@ public class DefaultPropertyValidator implements PropertyValidator {
 		else if (propertyType ==
 					PropertyDefinition.PropertyType.MULTIPLE_ELEMENT) {
 
-			Class<?> propertyValueClass = propertyValue.getClass();
-
-			if ((classes != null) && propertyValueClass.isArray()) {
+			if ((classes != null) && (propertyValue instanceof Object[])) {
 				valid = true;
 
 				for (Object object : (Object[])propertyValue) {
@@ -136,7 +142,15 @@ public class DefaultPropertyValidator implements PropertyValidator {
 	}
 
 	private boolean _isReadable(Set<Class<?>> classes, Object object) {
+		if ((object instanceof String) && classes.contains(String.class)) {
+			return true;
+		}
+
 		for (Class<?> clazz : classes) {
+			if (clazz == String.class) {
+				continue;
+			}
+
 			if (ObjectMapperUtil.readValue(clazz, object) != null) {
 				return true;
 			}

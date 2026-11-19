@@ -15,11 +15,11 @@ import com.liferay.portal.kernel.portlet.RequestBackedPortletURLFactory;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.GetterUtil;
 
+import jakarta.portlet.PortletURL;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
-import javax.portlet.PortletURL;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -58,6 +58,8 @@ public class ImageEditorConfigContributor extends BaseEditorConfigContributor {
 				"filebrowserImageBrowseLinkUrl", itemSelectorURL.toString()
 			).put(
 				"filebrowserImageBrowseUrl", itemSelectorURL.toString()
+			).put(
+				"itemSelectorRememberSelectionFolder", true
 			);
 		}
 	}

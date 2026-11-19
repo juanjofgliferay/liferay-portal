@@ -9,15 +9,14 @@ import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.exportimport.kernel.xstream.XStreamConverter;
 import com.liferay.exportimport.kernel.xstream.XStreamConverterRegistryUtil;
 import com.liferay.osgi.service.tracker.collections.list.ServiceTrackerList;
-import com.liferay.portal.kernel.format.PhoneNumberFormat;
-import com.liferay.portal.kernel.format.PhoneNumberFormatUtil;
 import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.sanitizer.Sanitizer;
 import com.liferay.portal.kernel.sanitizer.SanitizerUtil;
 import com.liferay.portal.kernel.security.auth.AuthToken;
 import com.liferay.portal.kernel.security.auth.AuthTokenUtil;
+import com.liferay.portal.kernel.security.auth.FullNameGenerator;
+import com.liferay.portal.kernel.security.auth.FullNameGeneratorFactory;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
-import com.liferay.portal.kernel.util.HashMapDictionary;
 import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.ProxyFactory;
 
@@ -62,8 +61,7 @@ public class IntegrationPointTest {
 			XStreamConverter.class);
 
 		_serviceRegistration = _bundleContext.registerService(
-			XStreamConverter.class, xStreamConverter,
-			new HashMapDictionary<>());
+			XStreamConverter.class, xStreamConverter, null);
 
 		Set<XStreamConverter> xStreamConverters =
 			XStreamConverterRegistryUtil.getXStreamConverters();
@@ -75,15 +73,15 @@ public class IntegrationPointTest {
 
 	@Test
 	public void testServiceTrackerIntegrationPoint() {
-		PhoneNumberFormat phoneNumberFormat = ProxyFactory.newDummyInstance(
-			PhoneNumberFormat.class);
+		FullNameGenerator fullNameGenerator = ProxyFactory.newDummyInstance(
+			FullNameGenerator.class);
 
 		_serviceRegistration = _bundleContext.registerService(
-			PhoneNumberFormat.class, phoneNumberFormat,
+			FullNameGenerator.class, fullNameGenerator,
 			MapUtil.singletonDictionary("service.ranking", Integer.MAX_VALUE));
 
 		Assert.assertSame(
-			phoneNumberFormat, PhoneNumberFormatUtil.getPhoneNumberFormat());
+			fullNameGenerator, FullNameGeneratorFactory.getInstance());
 	}
 
 	@Test
@@ -91,7 +89,7 @@ public class IntegrationPointTest {
 		Sanitizer sanitizer = ProxyFactory.newDummyInstance(Sanitizer.class);
 
 		_serviceRegistration = _bundleContext.registerService(
-			Sanitizer.class, sanitizer, new HashMapDictionary<>());
+			Sanitizer.class, sanitizer, null);
 
 		List<Sanitizer> sanitizers = new ArrayList<>();
 

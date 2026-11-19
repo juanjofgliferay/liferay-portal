@@ -7,6 +7,9 @@ package com.liferay.headless.admin.user.internal.resource.v1_0;
 
 import com.liferay.headless.admin.user.dto.v1_0.Subscription;
 import com.liferay.headless.admin.user.resource.v1_0.SubscriptionResource;
+import com.liferay.portal.kernel.security.permission.ActionKeys;
+import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
+import com.liferay.portal.kernel.service.permission.UserPermissionUtil;
 import com.liferay.portal.vulcan.dto.converter.DTOConverter;
 import com.liferay.portal.vulcan.dto.converter.DTOConverterRegistry;
 import com.liferay.portal.vulcan.pagination.Page;
@@ -30,15 +33,15 @@ public class SubscriptionResourceImpl extends BaseSubscriptionResourceImpl {
 	public void deleteMyUserAccountSubscription(Long subscriptionId)
 		throws Exception {
 
-		_subscriptionLocalService.deleteSubscription(subscriptionId);
+		_subscriptionLocalService.deleteSubscription(
+			_getSubscription(subscriptionId));
 	}
 
 	@Override
 	public Subscription getMyUserAccountSubscription(Long subscriptionId)
 		throws Exception {
 
-		return _toSubscription(
-			_subscriptionLocalService.getSubscription(subscriptionId));
+		return _toSubscription(_getSubscription(subscriptionId));
 	}
 
 	@Override
@@ -78,18 +81,26 @@ public class SubscriptionResourceImpl extends BaseSubscriptionResourceImpl {
 		return contentType;
 	}
 
+	private com.liferay.subscription.model.Subscription _getSubscription(
+			Long subscriptionId)
+		throws Exception {
+
+		com.liferay.subscription.model.Subscription serviceBuilderSubscription =
+			_subscriptionLocalService.getSubscription(subscriptionId);
+
+		UserPermissionUtil.check(
+			PermissionThreadLocal.getPermissionChecker(),
+			serviceBuilderSubscription.getUserId(), ActionKeys.UPDATE);
+
+		return serviceBuilderSubscription;
+	}
+
 	private Subscription _toSubscription(
 		com.liferay.subscription.model.Subscription subscription) {
 
 		return new Subscription() {
 			{
-				contentId = subscription.getClassPK();
-				dateCreated = subscription.getCreateDate();
-				dateModified = subscription.getModifiedDate();
-				frequency = subscription.getFrequency();
-				id = subscription.getSubscriptionId();
-				siteId = subscription.getGroupId();
-
+				setContentId(subscription::getClassPK);
 				setContentType(
 					() -> {
 						DTOConverter<?, ?> dtoConverter =
@@ -102,6 +113,11 @@ public class SubscriptionResourceImpl extends BaseSubscriptionResourceImpl {
 
 						return dtoConverter.getContentType();
 					});
+				setDateCreated(subscription::getCreateDate);
+				setDateModified(subscription::getModifiedDate);
+				setFrequency(subscription::getFrequency);
+				setId(subscription::getSubscriptionId);
+				setSiteId(subscription::getGroupId);
 			}
 		};
 	}

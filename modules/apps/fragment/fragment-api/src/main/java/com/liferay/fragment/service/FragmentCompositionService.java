@@ -47,14 +47,18 @@ public interface FragmentCompositionService extends BaseService {
 	 * Never modify this interface directly. Add custom service methods to <code>com.liferay.fragment.service.impl.FragmentCompositionServiceImpl</code> and rerun ServiceBuilder to automatically copy the method declarations to this interface. Consume the fragment composition remote service via injection or a <code>org.osgi.util.tracker.ServiceTracker</code>. Use {@link FragmentCompositionServiceUtil} if injection and service tracking are not available.
 	 */
 	public FragmentComposition addFragmentComposition(
-			long groupId, long fragmentCollectionId,
-			String fragmentCompositionKey, String name, String description,
-			String data, long previewFileEntryId, int status,
-			ServiceContext serviceContext)
+			String externalReferenceCode, long groupId,
+			long fragmentCollectionId, String fragmentCompositionKey,
+			String name, String description, String data,
+			long previewFileEntryId, int status, ServiceContext serviceContext)
 		throws PortalException;
 
 	public FragmentComposition deleteFragmentComposition(
 			long fragmentCompositionId)
+		throws PortalException;
+
+	public FragmentComposition deleteFragmentComposition(
+			String externalReferenceCode, long groupId)
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
@@ -66,29 +70,40 @@ public interface FragmentCompositionService extends BaseService {
 		long groupId, String fragmentCompositionKey);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<FragmentComposition> getFragmentCompositions(
-		long fragmentCollectionId);
+	public FragmentComposition getFragmentCompositionByExternalReferenceCode(
+			String externalReferenceCode, long groupId)
+		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<FragmentComposition> getFragmentCompositions(
-		long fragmentCollectionId, int start, int end);
+			long fragmentCollectionId)
+		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<FragmentComposition> getFragmentCompositions(
-		long groupId, long fragmentCollectionId, int status);
+			long fragmentCollectionId, int start, int end)
+		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<FragmentComposition> getFragmentCompositions(
-		long groupId, long fragmentCollectionId, int start, int end,
-		OrderByComparator<FragmentComposition> orderByComparator);
+			long groupId, long fragmentCollectionId, int status)
+		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<FragmentComposition> getFragmentCompositions(
-		long groupId, long fragmentCollectionId, String name, int start,
-		int end, OrderByComparator<FragmentComposition> orderByComparator);
+			long groupId, long fragmentCollectionId, int start, int end,
+			OrderByComparator<FragmentComposition> orderByComparator)
+		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getFragmentCompositionsCount(long fragmentCollectionId);
+	public List<FragmentComposition> getFragmentCompositions(
+			long groupId, long fragmentCollectionId, String name, int start,
+			int end, OrderByComparator<FragmentComposition> orderByComparator)
+		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public int getFragmentCompositionsCount(long fragmentCollectionId)
+		throws PortalException;
 
 	/**
 	 * Returns the OSGi service identifier.
@@ -121,3 +136,4 @@ public interface FragmentCompositionService extends BaseService {
 		throws PortalException;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1975666850

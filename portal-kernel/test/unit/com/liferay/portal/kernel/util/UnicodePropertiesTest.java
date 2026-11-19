@@ -5,7 +5,6 @@
 
 package com.liferay.portal.kernel.util;
 
-import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
@@ -13,11 +12,8 @@ import com.liferay.portal.test.log.LogCapture;
 import com.liferay.portal.test.log.LogEntry;
 import com.liferay.portal.test.log.LoggerTestUtil;
 
-import java.io.IOException;
-
 import java.util.List;
 import java.util.function.BiConsumer;
-import java.util.logging.Level;
 
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -90,26 +86,10 @@ public class UnicodePropertiesTest {
 	@Test
 	public void testLoad() {
 		_testLoad(
-			(props, unicodeProperties) -> {
-				try {
-					unicodeProperties.load(props);
-				}
-				catch (IOException ioException) {
-					ReflectionUtil.throwException(ioException);
-				}
-			},
-			false);
+			(props, unicodeProperties) -> unicodeProperties.load(props), false);
 
 		_testLoad(
-			(props, unicodeProperties) -> {
-				try {
-					unicodeProperties.load(props);
-				}
-				catch (IOException ioException) {
-					ReflectionUtil.throwException(ioException);
-				}
-			},
-			true);
+			(props, unicodeProperties) -> unicodeProperties.load(props), true);
 	}
 
 	@Test
@@ -272,8 +252,8 @@ public class UnicodePropertiesTest {
 	private void _testPutLine(boolean safe) {
 		UnicodeProperties unicodeProperties = new UnicodeProperties(safe);
 
-		try (LogCapture logCapture = LoggerTestUtil.configureJDKLogger(
-				UnicodeProperties.class.getName(), Level.ALL)) {
+		try (LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
+				UnicodeProperties.class.getName(), LoggerTestUtil.ALL)) {
 
 			unicodeProperties.put(_TEST_KEY_1);
 

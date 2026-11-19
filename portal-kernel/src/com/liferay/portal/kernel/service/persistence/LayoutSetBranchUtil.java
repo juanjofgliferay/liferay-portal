@@ -25,8 +25,10 @@ import java.util.Set;
  *
  * @author Brian Wing Shun Chan
  * @see LayoutSetBranchPersistence
+ * @deprecated As of Cavanaugh (7.4.x), with no direct replacement
  * @generated
  */
+@Deprecated
 public class LayoutSetBranchUtil {
 
 	/*
@@ -34,6 +36,20 @@ public class LayoutSetBranchUtil {
 	 *
 	 * Never modify this class directly. Modify <code>service.xml</code> and rerun ServiceBuilder to regenerate this class.
 	 */
+
+	/**
+	 * @see BasePersistence#cacheResult(List)
+	 */
+	public static void cacheResult(List<LayoutSetBranch> layoutSetBranchs) {
+		getPersistence().cacheResult(layoutSetBranchs);
+	}
+
+	/**
+	 * @see BasePersistence#cacheResult(com.liferay.portal.kernel.model.BaseModel)
+	 */
+	public static void cacheResult(LayoutSetBranch layoutSetBranch) {
+		getPersistence().cacheResult(layoutSetBranch);
+	}
 
 	/**
 	 * @see BasePersistence#clearCache()
@@ -111,311 +127,10 @@ public class LayoutSetBranchUtil {
 	}
 
 	/**
-	 * Returns all the layout set branches where groupId = &#63;.
-	 *
-	 * @param groupId the group ID
-	 * @return the matching layout set branches
-	 */
-	public static List<LayoutSetBranch> findByGroupId(long groupId) {
-		return getPersistence().findByGroupId(groupId);
-	}
-
-	/**
-	 * Returns a range of all the layout set branches where groupId = &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>LayoutSetBranchModelImpl</code>.
-	 * </p>
-	 *
-	 * @param groupId the group ID
-	 * @param start the lower bound of the range of layout set branches
-	 * @param end the upper bound of the range of layout set branches (not inclusive)
-	 * @return the range of matching layout set branches
-	 */
-	public static List<LayoutSetBranch> findByGroupId(
-		long groupId, int start, int end) {
-
-		return getPersistence().findByGroupId(groupId, start, end);
-	}
-
-	/**
-	 * Returns an ordered range of all the layout set branches where groupId = &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>LayoutSetBranchModelImpl</code>.
-	 * </p>
-	 *
-	 * @param groupId the group ID
-	 * @param start the lower bound of the range of layout set branches
-	 * @param end the upper bound of the range of layout set branches (not inclusive)
-	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
-	 * @return the ordered range of matching layout set branches
-	 */
-	public static List<LayoutSetBranch> findByGroupId(
-		long groupId, int start, int end,
-		OrderByComparator<LayoutSetBranch> orderByComparator) {
-
-		return getPersistence().findByGroupId(
-			groupId, start, end, orderByComparator);
-	}
-
-	/**
-	 * Returns an ordered range of all the layout set branches where groupId = &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>LayoutSetBranchModelImpl</code>.
-	 * </p>
-	 *
-	 * @param groupId the group ID
-	 * @param start the lower bound of the range of layout set branches
-	 * @param end the upper bound of the range of layout set branches (not inclusive)
-	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
-	 * @param useFinderCache whether to use the finder cache
-	 * @return the ordered range of matching layout set branches
-	 */
-	public static List<LayoutSetBranch> findByGroupId(
-		long groupId, int start, int end,
-		OrderByComparator<LayoutSetBranch> orderByComparator,
-		boolean useFinderCache) {
-
-		return getPersistence().findByGroupId(
-			groupId, start, end, orderByComparator, useFinderCache);
-	}
-
-	/**
-	 * Returns the first layout set branch in the ordered set where groupId = &#63;.
-	 *
-	 * @param groupId the group ID
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the first matching layout set branch
-	 * @throws NoSuchLayoutSetBranchException if a matching layout set branch could not be found
-	 */
-	public static LayoutSetBranch findByGroupId_First(
-			long groupId, OrderByComparator<LayoutSetBranch> orderByComparator)
-		throws com.liferay.portal.kernel.exception.
-			NoSuchLayoutSetBranchException {
-
-		return getPersistence().findByGroupId_First(groupId, orderByComparator);
-	}
-
-	/**
-	 * Returns the first layout set branch in the ordered set where groupId = &#63;.
-	 *
-	 * @param groupId the group ID
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the first matching layout set branch, or <code>null</code> if a matching layout set branch could not be found
-	 */
-	public static LayoutSetBranch fetchByGroupId_First(
-		long groupId, OrderByComparator<LayoutSetBranch> orderByComparator) {
-
-		return getPersistence().fetchByGroupId_First(
-			groupId, orderByComparator);
-	}
-
-	/**
-	 * Returns the last layout set branch in the ordered set where groupId = &#63;.
-	 *
-	 * @param groupId the group ID
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the last matching layout set branch
-	 * @throws NoSuchLayoutSetBranchException if a matching layout set branch could not be found
-	 */
-	public static LayoutSetBranch findByGroupId_Last(
-			long groupId, OrderByComparator<LayoutSetBranch> orderByComparator)
-		throws com.liferay.portal.kernel.exception.
-			NoSuchLayoutSetBranchException {
-
-		return getPersistence().findByGroupId_Last(groupId, orderByComparator);
-	}
-
-	/**
-	 * Returns the last layout set branch in the ordered set where groupId = &#63;.
-	 *
-	 * @param groupId the group ID
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the last matching layout set branch, or <code>null</code> if a matching layout set branch could not be found
-	 */
-	public static LayoutSetBranch fetchByGroupId_Last(
-		long groupId, OrderByComparator<LayoutSetBranch> orderByComparator) {
-
-		return getPersistence().fetchByGroupId_Last(groupId, orderByComparator);
-	}
-
-	/**
-	 * Returns the layout set branches before and after the current layout set branch in the ordered set where groupId = &#63;.
-	 *
-	 * @param layoutSetBranchId the primary key of the current layout set branch
-	 * @param groupId the group ID
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the previous, current, and next layout set branch
-	 * @throws NoSuchLayoutSetBranchException if a layout set branch with the primary key could not be found
-	 */
-	public static LayoutSetBranch[] findByGroupId_PrevAndNext(
-			long layoutSetBranchId, long groupId,
-			OrderByComparator<LayoutSetBranch> orderByComparator)
-		throws com.liferay.portal.kernel.exception.
-			NoSuchLayoutSetBranchException {
-
-		return getPersistence().findByGroupId_PrevAndNext(
-			layoutSetBranchId, groupId, orderByComparator);
-	}
-
-	/**
-	 * Returns all the layout set branches that the user has permission to view where groupId = &#63;.
-	 *
-	 * @param groupId the group ID
-	 * @return the matching layout set branches that the user has permission to view
-	 */
-	public static List<LayoutSetBranch> filterFindByGroupId(long groupId) {
-		return getPersistence().filterFindByGroupId(groupId);
-	}
-
-	/**
-	 * Returns a range of all the layout set branches that the user has permission to view where groupId = &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>LayoutSetBranchModelImpl</code>.
-	 * </p>
-	 *
-	 * @param groupId the group ID
-	 * @param start the lower bound of the range of layout set branches
-	 * @param end the upper bound of the range of layout set branches (not inclusive)
-	 * @return the range of matching layout set branches that the user has permission to view
-	 */
-	public static List<LayoutSetBranch> filterFindByGroupId(
-		long groupId, int start, int end) {
-
-		return getPersistence().filterFindByGroupId(groupId, start, end);
-	}
-
-	/**
-	 * Returns an ordered range of all the layout set branches that the user has permissions to view where groupId = &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>LayoutSetBranchModelImpl</code>.
-	 * </p>
-	 *
-	 * @param groupId the group ID
-	 * @param start the lower bound of the range of layout set branches
-	 * @param end the upper bound of the range of layout set branches (not inclusive)
-	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
-	 * @return the ordered range of matching layout set branches that the user has permission to view
-	 */
-	public static List<LayoutSetBranch> filterFindByGroupId(
-		long groupId, int start, int end,
-		OrderByComparator<LayoutSetBranch> orderByComparator) {
-
-		return getPersistence().filterFindByGroupId(
-			groupId, start, end, orderByComparator);
-	}
-
-	/**
-	 * Returns the layout set branches before and after the current layout set branch in the ordered set of layout set branches that the user has permission to view where groupId = &#63;.
-	 *
-	 * @param layoutSetBranchId the primary key of the current layout set branch
-	 * @param groupId the group ID
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the previous, current, and next layout set branch
-	 * @throws NoSuchLayoutSetBranchException if a layout set branch with the primary key could not be found
-	 */
-	public static LayoutSetBranch[] filterFindByGroupId_PrevAndNext(
-			long layoutSetBranchId, long groupId,
-			OrderByComparator<LayoutSetBranch> orderByComparator)
-		throws com.liferay.portal.kernel.exception.
-			NoSuchLayoutSetBranchException {
-
-		return getPersistence().filterFindByGroupId_PrevAndNext(
-			layoutSetBranchId, groupId, orderByComparator);
-	}
-
-	/**
-	 * Removes all the layout set branches where groupId = &#63; from the database.
-	 *
-	 * @param groupId the group ID
-	 */
-	public static void removeByGroupId(long groupId) {
-		getPersistence().removeByGroupId(groupId);
-	}
-
-	/**
-	 * Returns the number of layout set branches where groupId = &#63;.
-	 *
-	 * @param groupId the group ID
-	 * @return the number of matching layout set branches
-	 */
-	public static int countByGroupId(long groupId) {
-		return getPersistence().countByGroupId(groupId);
-	}
-
-	/**
-	 * Returns the number of layout set branches that the user has permission to view where groupId = &#63;.
-	 *
-	 * @param groupId the group ID
-	 * @return the number of matching layout set branches that the user has permission to view
-	 */
-	public static int filterCountByGroupId(long groupId) {
-		return getPersistence().filterCountByGroupId(groupId);
-	}
-
-	/**
-	 * Returns all the layout set branches where groupId = &#63; and privateLayout = &#63;.
-	 *
-	 * @param groupId the group ID
-	 * @param privateLayout the private layout
-	 * @return the matching layout set branches
-	 */
-	public static List<LayoutSetBranch> findByG_P(
-		long groupId, boolean privateLayout) {
-
-		return getPersistence().findByG_P(groupId, privateLayout);
-	}
-
-	/**
-	 * Returns a range of all the layout set branches where groupId = &#63; and privateLayout = &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>LayoutSetBranchModelImpl</code>.
-	 * </p>
-	 *
-	 * @param groupId the group ID
-	 * @param privateLayout the private layout
-	 * @param start the lower bound of the range of layout set branches
-	 * @param end the upper bound of the range of layout set branches (not inclusive)
-	 * @return the range of matching layout set branches
-	 */
-	public static List<LayoutSetBranch> findByG_P(
-		long groupId, boolean privateLayout, int start, int end) {
-
-		return getPersistence().findByG_P(groupId, privateLayout, start, end);
-	}
-
-	/**
 	 * Returns an ordered range of all the layout set branches where groupId = &#63; and privateLayout = &#63;.
 	 *
 	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>LayoutSetBranchModelImpl</code>.
-	 * </p>
-	 *
-	 * @param groupId the group ID
-	 * @param privateLayout the private layout
-	 * @param start the lower bound of the range of layout set branches
-	 * @param end the upper bound of the range of layout set branches (not inclusive)
-	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
-	 * @return the ordered range of matching layout set branches
-	 */
-	public static List<LayoutSetBranch> findByG_P(
-		long groupId, boolean privateLayout, int start, int end,
-		OrderByComparator<LayoutSetBranch> orderByComparator) {
-
-		return getPersistence().findByG_P(
-			groupId, privateLayout, start, end, orderByComparator);
-	}
-
-	/**
-	 * Returns an ordered range of all the layout set branches where groupId = &#63; and privateLayout = &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>LayoutSetBranchModelImpl</code>.
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>com.liferay.portal.model.impl.LayoutSetBranchModelImpl</code>.
 	 * </p>
 	 *
 	 * @param groupId the group ID
@@ -472,98 +187,10 @@ public class LayoutSetBranchUtil {
 	}
 
 	/**
-	 * Returns the last layout set branch in the ordered set where groupId = &#63; and privateLayout = &#63;.
-	 *
-	 * @param groupId the group ID
-	 * @param privateLayout the private layout
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the last matching layout set branch
-	 * @throws NoSuchLayoutSetBranchException if a matching layout set branch could not be found
-	 */
-	public static LayoutSetBranch findByG_P_Last(
-			long groupId, boolean privateLayout,
-			OrderByComparator<LayoutSetBranch> orderByComparator)
-		throws com.liferay.portal.kernel.exception.
-			NoSuchLayoutSetBranchException {
-
-		return getPersistence().findByG_P_Last(
-			groupId, privateLayout, orderByComparator);
-	}
-
-	/**
-	 * Returns the last layout set branch in the ordered set where groupId = &#63; and privateLayout = &#63;.
-	 *
-	 * @param groupId the group ID
-	 * @param privateLayout the private layout
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the last matching layout set branch, or <code>null</code> if a matching layout set branch could not be found
-	 */
-	public static LayoutSetBranch fetchByG_P_Last(
-		long groupId, boolean privateLayout,
-		OrderByComparator<LayoutSetBranch> orderByComparator) {
-
-		return getPersistence().fetchByG_P_Last(
-			groupId, privateLayout, orderByComparator);
-	}
-
-	/**
-	 * Returns the layout set branches before and after the current layout set branch in the ordered set where groupId = &#63; and privateLayout = &#63;.
-	 *
-	 * @param layoutSetBranchId the primary key of the current layout set branch
-	 * @param groupId the group ID
-	 * @param privateLayout the private layout
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the previous, current, and next layout set branch
-	 * @throws NoSuchLayoutSetBranchException if a layout set branch with the primary key could not be found
-	 */
-	public static LayoutSetBranch[] findByG_P_PrevAndNext(
-			long layoutSetBranchId, long groupId, boolean privateLayout,
-			OrderByComparator<LayoutSetBranch> orderByComparator)
-		throws com.liferay.portal.kernel.exception.
-			NoSuchLayoutSetBranchException {
-
-		return getPersistence().findByG_P_PrevAndNext(
-			layoutSetBranchId, groupId, privateLayout, orderByComparator);
-	}
-
-	/**
-	 * Returns all the layout set branches that the user has permission to view where groupId = &#63; and privateLayout = &#63;.
-	 *
-	 * @param groupId the group ID
-	 * @param privateLayout the private layout
-	 * @return the matching layout set branches that the user has permission to view
-	 */
-	public static List<LayoutSetBranch> filterFindByG_P(
-		long groupId, boolean privateLayout) {
-
-		return getPersistence().filterFindByG_P(groupId, privateLayout);
-	}
-
-	/**
-	 * Returns a range of all the layout set branches that the user has permission to view where groupId = &#63; and privateLayout = &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>LayoutSetBranchModelImpl</code>.
-	 * </p>
-	 *
-	 * @param groupId the group ID
-	 * @param privateLayout the private layout
-	 * @param start the lower bound of the range of layout set branches
-	 * @param end the upper bound of the range of layout set branches (not inclusive)
-	 * @return the range of matching layout set branches that the user has permission to view
-	 */
-	public static List<LayoutSetBranch> filterFindByG_P(
-		long groupId, boolean privateLayout, int start, int end) {
-
-		return getPersistence().filterFindByG_P(
-			groupId, privateLayout, start, end);
-	}
-
-	/**
 	 * Returns an ordered range of all the layout set branches that the user has permissions to view where groupId = &#63; and privateLayout = &#63;.
 	 *
 	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>LayoutSetBranchModelImpl</code>.
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>com.liferay.portal.model.impl.LayoutSetBranchModelImpl</code>.
 	 * </p>
 	 *
 	 * @param groupId the group ID
@@ -579,26 +206,6 @@ public class LayoutSetBranchUtil {
 
 		return getPersistence().filterFindByG_P(
 			groupId, privateLayout, start, end, orderByComparator);
-	}
-
-	/**
-	 * Returns the layout set branches before and after the current layout set branch in the ordered set of layout set branches that the user has permission to view where groupId = &#63; and privateLayout = &#63;.
-	 *
-	 * @param layoutSetBranchId the primary key of the current layout set branch
-	 * @param groupId the group ID
-	 * @param privateLayout the private layout
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the previous, current, and next layout set branch
-	 * @throws NoSuchLayoutSetBranchException if a layout set branch with the primary key could not be found
-	 */
-	public static LayoutSetBranch[] filterFindByG_P_PrevAndNext(
-			long layoutSetBranchId, long groupId, boolean privateLayout,
-			OrderByComparator<LayoutSetBranch> orderByComparator)
-		throws com.liferay.portal.kernel.exception.
-			NoSuchLayoutSetBranchException {
-
-		return getPersistence().filterFindByG_P_PrevAndNext(
-			layoutSetBranchId, groupId, privateLayout, orderByComparator);
 	}
 
 	/**
@@ -651,20 +258,6 @@ public class LayoutSetBranchUtil {
 	}
 
 	/**
-	 * Returns the layout set branch where groupId = &#63; and privateLayout = &#63; and name = &#63; or returns <code>null</code> if it could not be found. Uses the finder cache.
-	 *
-	 * @param groupId the group ID
-	 * @param privateLayout the private layout
-	 * @param name the name
-	 * @return the matching layout set branch, or <code>null</code> if a matching layout set branch could not be found
-	 */
-	public static LayoutSetBranch fetchByG_P_N(
-		long groupId, boolean privateLayout, String name) {
-
-		return getPersistence().fetchByG_P_N(groupId, privateLayout, name);
-	}
-
-	/**
 	 * Returns the layout set branch where groupId = &#63; and privateLayout = &#63; and name = &#63; or returns <code>null</code> if it could not be found, optionally using the finder cache.
 	 *
 	 * @param groupId the group ID
@@ -712,69 +305,10 @@ public class LayoutSetBranchUtil {
 	}
 
 	/**
-	 * Returns all the layout set branches where groupId = &#63; and privateLayout = &#63; and master = &#63;.
-	 *
-	 * @param groupId the group ID
-	 * @param privateLayout the private layout
-	 * @param master the master
-	 * @return the matching layout set branches
-	 */
-	public static List<LayoutSetBranch> findByG_P_M(
-		long groupId, boolean privateLayout, boolean master) {
-
-		return getPersistence().findByG_P_M(groupId, privateLayout, master);
-	}
-
-	/**
-	 * Returns a range of all the layout set branches where groupId = &#63; and privateLayout = &#63; and master = &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>LayoutSetBranchModelImpl</code>.
-	 * </p>
-	 *
-	 * @param groupId the group ID
-	 * @param privateLayout the private layout
-	 * @param master the master
-	 * @param start the lower bound of the range of layout set branches
-	 * @param end the upper bound of the range of layout set branches (not inclusive)
-	 * @return the range of matching layout set branches
-	 */
-	public static List<LayoutSetBranch> findByG_P_M(
-		long groupId, boolean privateLayout, boolean master, int start,
-		int end) {
-
-		return getPersistence().findByG_P_M(
-			groupId, privateLayout, master, start, end);
-	}
-
-	/**
 	 * Returns an ordered range of all the layout set branches where groupId = &#63; and privateLayout = &#63; and master = &#63;.
 	 *
 	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>LayoutSetBranchModelImpl</code>.
-	 * </p>
-	 *
-	 * @param groupId the group ID
-	 * @param privateLayout the private layout
-	 * @param master the master
-	 * @param start the lower bound of the range of layout set branches
-	 * @param end the upper bound of the range of layout set branches (not inclusive)
-	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
-	 * @return the ordered range of matching layout set branches
-	 */
-	public static List<LayoutSetBranch> findByG_P_M(
-		long groupId, boolean privateLayout, boolean master, int start, int end,
-		OrderByComparator<LayoutSetBranch> orderByComparator) {
-
-		return getPersistence().findByG_P_M(
-			groupId, privateLayout, master, start, end, orderByComparator);
-	}
-
-	/**
-	 * Returns an ordered range of all the layout set branches where groupId = &#63; and privateLayout = &#63; and master = &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>LayoutSetBranchModelImpl</code>.
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>com.liferay.portal.model.impl.LayoutSetBranchModelImpl</code>.
 	 * </p>
 	 *
 	 * @param groupId the group ID
@@ -834,107 +368,10 @@ public class LayoutSetBranchUtil {
 	}
 
 	/**
-	 * Returns the last layout set branch in the ordered set where groupId = &#63; and privateLayout = &#63; and master = &#63;.
-	 *
-	 * @param groupId the group ID
-	 * @param privateLayout the private layout
-	 * @param master the master
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the last matching layout set branch
-	 * @throws NoSuchLayoutSetBranchException if a matching layout set branch could not be found
-	 */
-	public static LayoutSetBranch findByG_P_M_Last(
-			long groupId, boolean privateLayout, boolean master,
-			OrderByComparator<LayoutSetBranch> orderByComparator)
-		throws com.liferay.portal.kernel.exception.
-			NoSuchLayoutSetBranchException {
-
-		return getPersistence().findByG_P_M_Last(
-			groupId, privateLayout, master, orderByComparator);
-	}
-
-	/**
-	 * Returns the last layout set branch in the ordered set where groupId = &#63; and privateLayout = &#63; and master = &#63;.
-	 *
-	 * @param groupId the group ID
-	 * @param privateLayout the private layout
-	 * @param master the master
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the last matching layout set branch, or <code>null</code> if a matching layout set branch could not be found
-	 */
-	public static LayoutSetBranch fetchByG_P_M_Last(
-		long groupId, boolean privateLayout, boolean master,
-		OrderByComparator<LayoutSetBranch> orderByComparator) {
-
-		return getPersistence().fetchByG_P_M_Last(
-			groupId, privateLayout, master, orderByComparator);
-	}
-
-	/**
-	 * Returns the layout set branches before and after the current layout set branch in the ordered set where groupId = &#63; and privateLayout = &#63; and master = &#63;.
-	 *
-	 * @param layoutSetBranchId the primary key of the current layout set branch
-	 * @param groupId the group ID
-	 * @param privateLayout the private layout
-	 * @param master the master
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the previous, current, and next layout set branch
-	 * @throws NoSuchLayoutSetBranchException if a layout set branch with the primary key could not be found
-	 */
-	public static LayoutSetBranch[] findByG_P_M_PrevAndNext(
-			long layoutSetBranchId, long groupId, boolean privateLayout,
-			boolean master,
-			OrderByComparator<LayoutSetBranch> orderByComparator)
-		throws com.liferay.portal.kernel.exception.
-			NoSuchLayoutSetBranchException {
-
-		return getPersistence().findByG_P_M_PrevAndNext(
-			layoutSetBranchId, groupId, privateLayout, master,
-			orderByComparator);
-	}
-
-	/**
-	 * Returns all the layout set branches that the user has permission to view where groupId = &#63; and privateLayout = &#63; and master = &#63;.
-	 *
-	 * @param groupId the group ID
-	 * @param privateLayout the private layout
-	 * @param master the master
-	 * @return the matching layout set branches that the user has permission to view
-	 */
-	public static List<LayoutSetBranch> filterFindByG_P_M(
-		long groupId, boolean privateLayout, boolean master) {
-
-		return getPersistence().filterFindByG_P_M(
-			groupId, privateLayout, master);
-	}
-
-	/**
-	 * Returns a range of all the layout set branches that the user has permission to view where groupId = &#63; and privateLayout = &#63; and master = &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>LayoutSetBranchModelImpl</code>.
-	 * </p>
-	 *
-	 * @param groupId the group ID
-	 * @param privateLayout the private layout
-	 * @param master the master
-	 * @param start the lower bound of the range of layout set branches
-	 * @param end the upper bound of the range of layout set branches (not inclusive)
-	 * @return the range of matching layout set branches that the user has permission to view
-	 */
-	public static List<LayoutSetBranch> filterFindByG_P_M(
-		long groupId, boolean privateLayout, boolean master, int start,
-		int end) {
-
-		return getPersistence().filterFindByG_P_M(
-			groupId, privateLayout, master, start, end);
-	}
-
-	/**
 	 * Returns an ordered range of all the layout set branches that the user has permissions to view where groupId = &#63; and privateLayout = &#63; and master = &#63;.
 	 *
 	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>LayoutSetBranchModelImpl</code>.
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>com.liferay.portal.model.impl.LayoutSetBranchModelImpl</code>.
 	 * </p>
 	 *
 	 * @param groupId the group ID
@@ -951,29 +388,6 @@ public class LayoutSetBranchUtil {
 
 		return getPersistence().filterFindByG_P_M(
 			groupId, privateLayout, master, start, end, orderByComparator);
-	}
-
-	/**
-	 * Returns the layout set branches before and after the current layout set branch in the ordered set of layout set branches that the user has permission to view where groupId = &#63; and privateLayout = &#63; and master = &#63;.
-	 *
-	 * @param layoutSetBranchId the primary key of the current layout set branch
-	 * @param groupId the group ID
-	 * @param privateLayout the private layout
-	 * @param master the master
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the previous, current, and next layout set branch
-	 * @throws NoSuchLayoutSetBranchException if a layout set branch with the primary key could not be found
-	 */
-	public static LayoutSetBranch[] filterFindByG_P_M_PrevAndNext(
-			long layoutSetBranchId, long groupId, boolean privateLayout,
-			boolean master,
-			OrderByComparator<LayoutSetBranch> orderByComparator)
-		throws com.liferay.portal.kernel.exception.
-			NoSuchLayoutSetBranchException {
-
-		return getPersistence().filterFindByG_P_M_PrevAndNext(
-			layoutSetBranchId, groupId, privateLayout, master,
-			orderByComparator);
 	}
 
 	/**
@@ -1016,24 +430,6 @@ public class LayoutSetBranchUtil {
 
 		return getPersistence().filterCountByG_P_M(
 			groupId, privateLayout, master);
-	}
-
-	/**
-	 * Caches the layout set branch in the entity cache if it is enabled.
-	 *
-	 * @param layoutSetBranch the layout set branch
-	 */
-	public static void cacheResult(LayoutSetBranch layoutSetBranch) {
-		getPersistence().cacheResult(layoutSetBranch);
-	}
-
-	/**
-	 * Caches the layout set branches in the entity cache if it is enabled.
-	 *
-	 * @param layoutSetBranchs the layout set branches
-	 */
-	public static void cacheResult(List<LayoutSetBranch> layoutSetBranchs) {
-		getPersistence().cacheResult(layoutSetBranchs);
 	}
 
 	/**
@@ -1089,84 +485,200 @@ public class LayoutSetBranchUtil {
 	}
 
 	/**
-	 * Returns all the layout set branches.
+	 * Returns the layout set branch where groupId = &#63; and privateLayout = &#63; and name = &#63; or returns <code>null</code> if it could not be found. Uses the finder cache.
 	 *
-	 * @return the layout set branches
+	 * @param groupId the group ID
+	 * @param privateLayout the private layout
+	 * @param name the name
+	 * @return the matching layout set branch, or <code>null</code> if a matching layout set branch could not be found
 	 */
-	public static List<LayoutSetBranch> findAll() {
-		return getPersistence().findAll();
+	public static LayoutSetBranch fetchByG_P_N(
+		long groupId, boolean privateLayout, String name) {
+
+		return getPersistence().fetchByG_P_N(groupId, privateLayout, name);
 	}
 
 	/**
-	 * Returns a range of all the layout set branches.
+	 * Returns all the layout set branches where groupId = &#63; and privateLayout = &#63;.
+	 *
+	 * @param groupId the group ID
+	 * @param privateLayout the private layout
+	 * @return the matching layout set branches
+	 */
+	public static List<LayoutSetBranch> findByG_P(
+		long groupId, boolean privateLayout) {
+
+		return getPersistence().findByG_P(groupId, privateLayout);
+	}
+
+	/**
+	 * Returns a range of all the layout set branches where groupId = &#63; and privateLayout = &#63;.
 	 *
 	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>LayoutSetBranchModelImpl</code>.
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>com.liferay.portal.model.impl.LayoutSetBranchModelImpl</code>.
 	 * </p>
 	 *
+	 * @param groupId the group ID
+	 * @param privateLayout the private layout
 	 * @param start the lower bound of the range of layout set branches
 	 * @param end the upper bound of the range of layout set branches (not inclusive)
-	 * @return the range of layout set branches
+	 * @return the range of matching layout set branches
 	 */
-	public static List<LayoutSetBranch> findAll(int start, int end) {
-		return getPersistence().findAll(start, end);
+	public static List<LayoutSetBranch> findByG_P(
+		long groupId, boolean privateLayout, int start, int end) {
+
+		return getPersistence().findByG_P(groupId, privateLayout, start, end);
 	}
 
 	/**
-	 * Returns an ordered range of all the layout set branches.
+	 * Returns an ordered range of all the layout set branches where groupId = &#63; and privateLayout = &#63;.
 	 *
 	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>LayoutSetBranchModelImpl</code>.
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>com.liferay.portal.model.impl.LayoutSetBranchModelImpl</code>.
 	 * </p>
 	 *
+	 * @param groupId the group ID
+	 * @param privateLayout the private layout
 	 * @param start the lower bound of the range of layout set branches
 	 * @param end the upper bound of the range of layout set branches (not inclusive)
 	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
-	 * @return the ordered range of layout set branches
+	 * @return the ordered range of matching layout set branches
 	 */
-	public static List<LayoutSetBranch> findAll(
-		int start, int end,
+	public static List<LayoutSetBranch> findByG_P(
+		long groupId, boolean privateLayout, int start, int end,
 		OrderByComparator<LayoutSetBranch> orderByComparator) {
 
-		return getPersistence().findAll(start, end, orderByComparator);
+		return getPersistence().findByG_P(
+			groupId, privateLayout, start, end, orderByComparator);
 	}
 
 	/**
-	 * Returns an ordered range of all the layout set branches.
+	 * Returns all the layout set branches that the user has permission to view where groupId = &#63; and privateLayout = &#63;.
+	 *
+	 * @param groupId the group ID
+	 * @param privateLayout the private layout
+	 * @return the matching layout set branches that the user has permission to view
+	 */
+	public static List<LayoutSetBranch> filterFindByG_P(
+		long groupId, boolean privateLayout) {
+
+		return getPersistence().filterFindByG_P(groupId, privateLayout);
+	}
+
+	/**
+	 * Returns a range of all the layout set branches that the user has permission to view where groupId = &#63; and privateLayout = &#63;.
 	 *
 	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>LayoutSetBranchModelImpl</code>.
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>com.liferay.portal.model.impl.LayoutSetBranchModelImpl</code>.
 	 * </p>
 	 *
+	 * @param groupId the group ID
+	 * @param privateLayout the private layout
+	 * @param start the lower bound of the range of layout set branches
+	 * @param end the upper bound of the range of layout set branches (not inclusive)
+	 * @return the range of matching layout set branches that the user has permission to view
+	 */
+	public static List<LayoutSetBranch> filterFindByG_P(
+		long groupId, boolean privateLayout, int start, int end) {
+
+		return getPersistence().filterFindByG_P(
+			groupId, privateLayout, start, end);
+	}
+
+	/**
+	 * Returns all the layout set branches where groupId = &#63; and privateLayout = &#63; and master = &#63;.
+	 *
+	 * @param groupId the group ID
+	 * @param privateLayout the private layout
+	 * @param master the master
+	 * @return the matching layout set branches
+	 */
+	public static List<LayoutSetBranch> findByG_P_M(
+		long groupId, boolean privateLayout, boolean master) {
+
+		return getPersistence().findByG_P_M(groupId, privateLayout, master);
+	}
+
+	/**
+	 * Returns a range of all the layout set branches where groupId = &#63; and privateLayout = &#63; and master = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>com.liferay.portal.model.impl.LayoutSetBranchModelImpl</code>.
+	 * </p>
+	 *
+	 * @param groupId the group ID
+	 * @param privateLayout the private layout
+	 * @param master the master
+	 * @param start the lower bound of the range of layout set branches
+	 * @param end the upper bound of the range of layout set branches (not inclusive)
+	 * @return the range of matching layout set branches
+	 */
+	public static List<LayoutSetBranch> findByG_P_M(
+		long groupId, boolean privateLayout, boolean master, int start,
+		int end) {
+
+		return getPersistence().findByG_P_M(
+			groupId, privateLayout, master, start, end);
+	}
+
+	/**
+	 * Returns an ordered range of all the layout set branches where groupId = &#63; and privateLayout = &#63; and master = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>com.liferay.portal.model.impl.LayoutSetBranchModelImpl</code>.
+	 * </p>
+	 *
+	 * @param groupId the group ID
+	 * @param privateLayout the private layout
+	 * @param master the master
 	 * @param start the lower bound of the range of layout set branches
 	 * @param end the upper bound of the range of layout set branches (not inclusive)
 	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
-	 * @param useFinderCache whether to use the finder cache
-	 * @return the ordered range of layout set branches
+	 * @return the ordered range of matching layout set branches
 	 */
-	public static List<LayoutSetBranch> findAll(
-		int start, int end,
-		OrderByComparator<LayoutSetBranch> orderByComparator,
-		boolean useFinderCache) {
+	public static List<LayoutSetBranch> findByG_P_M(
+		long groupId, boolean privateLayout, boolean master, int start, int end,
+		OrderByComparator<LayoutSetBranch> orderByComparator) {
 
-		return getPersistence().findAll(
-			start, end, orderByComparator, useFinderCache);
+		return getPersistence().findByG_P_M(
+			groupId, privateLayout, master, start, end, orderByComparator);
 	}
 
 	/**
-	 * Removes all the layout set branches from the database.
-	 */
-	public static void removeAll() {
-		getPersistence().removeAll();
-	}
-
-	/**
-	 * Returns the number of layout set branches.
+	 * Returns all the layout set branches that the user has permission to view where groupId = &#63; and privateLayout = &#63; and master = &#63;.
 	 *
-	 * @return the number of layout set branches
+	 * @param groupId the group ID
+	 * @param privateLayout the private layout
+	 * @param master the master
+	 * @return the matching layout set branches that the user has permission to view
 	 */
-	public static int countAll() {
-		return getPersistence().countAll();
+	public static List<LayoutSetBranch> filterFindByG_P_M(
+		long groupId, boolean privateLayout, boolean master) {
+
+		return getPersistence().filterFindByG_P_M(
+			groupId, privateLayout, master);
+	}
+
+	/**
+	 * Returns a range of all the layout set branches that the user has permission to view where groupId = &#63; and privateLayout = &#63; and master = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>com.liferay.portal.model.impl.LayoutSetBranchModelImpl</code>.
+	 * </p>
+	 *
+	 * @param groupId the group ID
+	 * @param privateLayout the private layout
+	 * @param master the master
+	 * @param start the lower bound of the range of layout set branches
+	 * @param end the upper bound of the range of layout set branches (not inclusive)
+	 * @return the range of matching layout set branches that the user has permission to view
+	 */
+	public static List<LayoutSetBranch> filterFindByG_P_M(
+		long groupId, boolean privateLayout, boolean master, int start,
+		int end) {
+
+		return getPersistence().filterFindByG_P_M(
+			groupId, privateLayout, master, start, end);
 	}
 
 	public static LayoutSetBranchPersistence getPersistence() {
@@ -1180,3 +692,4 @@ public class LayoutSetBranchUtil {
 	private static volatile LayoutSetBranchPersistence _persistence;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1525651318

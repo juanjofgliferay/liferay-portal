@@ -10,7 +10,6 @@ import com.liferay.commerce.product.model.CPDefinitionOptionRel;
 import com.liferay.commerce.product.model.CPDefinitionOptionValueRel;
 import com.liferay.commerce.product.service.CPDefinitionOptionRelLocalService;
 import com.liferay.portal.kernel.dao.orm.IndexableActionableDynamicQuery;
-import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.search.BaseIndexer;
@@ -26,13 +25,13 @@ import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.Localization;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -171,14 +170,16 @@ public class CPDefinitionOptionRelIndexer
 			document.addText(
 				_localization.getLocalizedName(Field.NAME, languageId), name);
 
-			if (languageId.equals(cpDefinitionOptionRelDefaultLanguageId)) {
-				document.addText(
-					CPField.DEFINITION_OPTION_VALUE_REL_NAME,
-					cpDefinitionOptionValueRelNames);
-				document.addText(Field.DESCRIPTION, description);
-				document.addText(Field.NAME, name);
-				document.addText("defaultLanguageId", languageId);
+			if (!languageId.equals(cpDefinitionOptionRelDefaultLanguageId)) {
+				continue;
 			}
+
+			document.addText(
+				CPField.DEFINITION_OPTION_VALUE_REL_NAME,
+				cpDefinitionOptionValueRelNames);
+			document.addText(Field.DESCRIPTION, description);
+			document.addText(Field.NAME, name);
+			document.addText("defaultLanguageId", languageId);
 		}
 
 		if (_log.isDebugEnabled()) {
@@ -220,37 +221,11 @@ public class CPDefinitionOptionRelIndexer
 	}
 
 	@Override
-	protected void doReindex(String[] ids) throws Exception {
-		long companyId = GetterUtil.getLong(ids[0]);
+	protected IndexableActionableDynamicQuery
+		getIndexableActionableDynamicQuery() {
 
-		_reindexCPDefinitionOptionRels(companyId);
-	}
-
-	private void _reindexCPDefinitionOptionRels(long companyId)
-		throws Exception {
-
-		IndexableActionableDynamicQuery indexableActionableDynamicQuery =
-			_cpDefinitionOptionRelLocalService.
-				getIndexableActionableDynamicQuery();
-
-		indexableActionableDynamicQuery.setCompanyId(companyId);
-		indexableActionableDynamicQuery.setPerformActionMethod(
-			(CPDefinitionOptionRel cpDefinitionOptionRel) -> {
-				try {
-					indexableActionableDynamicQuery.addDocuments(
-						getDocument(cpDefinitionOptionRel));
-				}
-				catch (PortalException portalException) {
-					if (_log.isWarnEnabled()) {
-						_log.warn(
-							"Unable to index commerce product definition " +
-								"option relationship " + cpDefinitionOptionRel,
-							portalException);
-					}
-				}
-			});
-
-		indexableActionableDynamicQuery.performActions();
+		return _cpDefinitionOptionRelLocalService.
+			getIndexableActionableDynamicQuery();
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(

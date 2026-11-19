@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -246,12 +247,6 @@ public class CommerceDiscountRelLocalServiceUtil {
 		return getService().fetchCommerceDiscountRel(commerceDiscountRelId);
 	}
 
-	public static CommerceDiscountRel fetchCommerceDiscountRel(
-		String className, long classPK) {
-
-		return getService().fetchCommerceDiscountRel(className, classPK);
-	}
-
 	public static com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery
 		getActionableDynamicQuery() {
 
@@ -337,6 +332,13 @@ public class CommerceDiscountRelLocalServiceUtil {
 			commerceDiscountId, className, start, end, orderByComparator);
 	}
 
+	public static List<CommerceDiscountRel> getCommerceDiscountRels(
+		long commerceDiscountId, String className, long classPK) {
+
+		return getService().getCommerceDiscountRels(
+			commerceDiscountId, className, classPK);
+	}
+
 	/**
 	 * Returns the number of commerce discount rels.
 	 *
@@ -344,13 +346,6 @@ public class CommerceDiscountRelLocalServiceUtil {
 	 */
 	public static int getCommerceDiscountRelsCount() {
 		return getService().getCommerceDiscountRelsCount();
-	}
-
-	public static int getCommerceDiscountRelsCount(
-		long commerceDiscountId, String className) {
-
-		return getService().getCommerceDiscountRelsCount(
-			commerceDiscountId, className);
 	}
 
 	public static List<CommerceDiscountRel>
@@ -439,14 +434,24 @@ public class CommerceDiscountRelLocalServiceUtil {
 		return getService().updateCommerceDiscountRel(commerceDiscountRel);
 	}
 
+	public static CommerceDiscountRel updateTypeSettings(
+			long commerceDiscountRelId,
+			com.liferay.portal.kernel.util.UnicodeProperties
+				typeSettingsUnicodeProperties)
+		throws PortalException {
+
+		return getService().updateTypeSettings(
+			commerceDiscountRelId, typeSettingsUnicodeProperties);
+	}
+
 	public static CommerceDiscountRelLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(CommerceDiscountRelLocalService service) {
-		_service = service;
-	}
-
-	private static volatile CommerceDiscountRelLocalService _service;
+	private static final Snapshot<CommerceDiscountRelLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			CommerceDiscountRelLocalServiceUtil.class,
+			CommerceDiscountRelLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-439583391

@@ -80,11 +80,16 @@ public interface CountryLocalService
 	@Indexable(type = IndexableType.REINDEX)
 	public Country addCountry(Country country);
 
+	@Indexable(type = IndexableType.REINDEX)
 	public Country addCountry(
-			String a2, String a3, boolean active, boolean billingAllowed,
-			String idd, String name, String number, double position,
-			boolean shippingAllowed, boolean subjectToVAT, boolean zipRequired,
-			ServiceContext serviceContext)
+			String externalReferenceCode, String a2, String a3, boolean active,
+			boolean billingAllowed, String idd, String name, String number,
+			double position, boolean shippingAllowed, boolean subjectToVAT,
+			boolean zipRequired, ServiceContext serviceContext)
+		throws PortalException;
+
+	public CountryLocalization addCountryLocalization(
+			Country country, String languageId, String title)
 		throws PortalException;
 
 	/**
@@ -222,6 +227,10 @@ public interface CountryLocalService
 	public Country fetchCountryByA3(long companyId, String a3);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public Country fetchCountryByExternalReferenceCode(
+		String externalReferenceCode, long companyId);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public Country fetchCountryByName(long companyId, String name);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
@@ -251,20 +260,7 @@ public interface CountryLocalService
 	public List<Country> getCompanyCountries(long companyId, boolean active);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<Country> getCompanyCountries(
-		long companyId, boolean active, int start, int end,
-		OrderByComparator<Country> orderByComparator);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<Country> getCompanyCountries(
-		long companyId, int start, int end,
-		OrderByComparator<Country> orderByComparator);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public int getCompanyCountriesCount(long companyId);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getCompanyCountriesCount(long companyId, boolean active);
 
 	/**
 	 * Returns a range of all the countries.
@@ -303,7 +299,8 @@ public interface CountryLocalService
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public Country getCountryByA3(long companyId, String a3)
+	public Country getCountryByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
@@ -362,6 +359,7 @@ public interface CountryLocalService
 			OrderByComparator<Country> orderByComparator)
 		throws PortalException;
 
+	@Indexable(type = IndexableType.REINDEX)
 	public Country updateActive(long countryId, boolean active)
 		throws PortalException;
 
@@ -378,10 +376,12 @@ public interface CountryLocalService
 	@Indexable(type = IndexableType.REINDEX)
 	public Country updateCountry(Country country);
 
+	@Indexable(type = IndexableType.REINDEX)
 	public Country updateCountry(
-			long countryId, String a2, String a3, boolean active,
-			boolean billingAllowed, String idd, String name, String number,
-			double position, boolean shippingAllowed, boolean subjectToVAT)
+			String externalReferenceCode, long countryId, String a2, String a3,
+			boolean active, boolean billingAllowed, String idd, String name,
+			String number, double position, boolean shippingAllowed,
+			boolean subjectToVAT)
 		throws PortalException;
 
 	public CountryLocalization updateCountryLocalization(
@@ -392,6 +392,7 @@ public interface CountryLocalService
 			Country country, Map<String, String> titleMap)
 		throws PortalException;
 
+	@Indexable(type = IndexableType.REINDEX)
 	public Country updateGroupFilterEnabled(
 			long countryId, boolean groupFilterEnabled)
 		throws PortalException;
@@ -411,3 +412,4 @@ public interface CountryLocalService
 		throws E;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1470156077

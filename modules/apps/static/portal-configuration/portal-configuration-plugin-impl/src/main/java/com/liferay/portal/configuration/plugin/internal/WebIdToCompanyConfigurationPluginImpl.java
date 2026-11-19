@@ -10,8 +10,8 @@ import com.liferay.portal.kernel.dao.db.DB;
 import com.liferay.portal.kernel.dao.db.DBManagerUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.util.PropsValues;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -68,6 +68,7 @@ public class WebIdToCompanyConfigurationPluginImpl
 				dataSourceServiceReference);
 
 			try (Connection connection = dataSource.getConnection();
+
 				PreparedStatement preparedStatement =
 					connection.prepareStatement(
 						_db.buildSQL(
@@ -77,7 +78,7 @@ public class WebIdToCompanyConfigurationPluginImpl
 
 				try (ResultSet resultSet = preparedStatement.executeQuery()) {
 					if (resultSet.next()) {
-						long companyId = resultSet.getLong(1);
+						long companyId = resultSet.getLong("companyId");
 
 						properties.put("companyId", companyId);
 

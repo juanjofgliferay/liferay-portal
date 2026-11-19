@@ -7,6 +7,7 @@ package com.liferay.fragment.service;
 
 import com.liferay.fragment.model.FragmentComposition;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.util.List;
@@ -31,15 +32,17 @@ public class FragmentCompositionServiceUtil {
 	 * Never modify this class directly. Add custom service methods to <code>com.liferay.fragment.service.impl.FragmentCompositionServiceImpl</code> and rerun ServiceBuilder to regenerate this class.
 	 */
 	public static FragmentComposition addFragmentComposition(
-			long groupId, long fragmentCollectionId,
-			String fragmentCompositionKey, String name, String description,
-			String data, long previewFileEntryId, int status,
+			String externalReferenceCode, long groupId,
+			long fragmentCollectionId, String fragmentCompositionKey,
+			String name, String description, String data,
+			long previewFileEntryId, int status,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().addFragmentComposition(
-			groupId, fragmentCollectionId, fragmentCompositionKey, name,
-			description, data, previewFileEntryId, status, serviceContext);
+			externalReferenceCode, groupId, fragmentCollectionId,
+			fragmentCompositionKey, name, description, data, previewFileEntryId,
+			status, serviceContext);
 	}
 
 	public static FragmentComposition deleteFragmentComposition(
@@ -47,6 +50,14 @@ public class FragmentCompositionServiceUtil {
 		throws PortalException {
 
 		return getService().deleteFragmentComposition(fragmentCompositionId);
+	}
+
+	public static FragmentComposition deleteFragmentComposition(
+			String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		return getService().deleteFragmentComposition(
+			externalReferenceCode, groupId);
 	}
 
 	public static FragmentComposition fetchFragmentComposition(
@@ -62,43 +73,59 @@ public class FragmentCompositionServiceUtil {
 			groupId, fragmentCompositionKey);
 	}
 
+	public static FragmentComposition
+			getFragmentCompositionByExternalReferenceCode(
+				String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		return getService().getFragmentCompositionByExternalReferenceCode(
+			externalReferenceCode, groupId);
+	}
+
 	public static List<FragmentComposition> getFragmentCompositions(
-		long fragmentCollectionId) {
+			long fragmentCollectionId)
+		throws PortalException {
 
 		return getService().getFragmentCompositions(fragmentCollectionId);
 	}
 
 	public static List<FragmentComposition> getFragmentCompositions(
-		long fragmentCollectionId, int start, int end) {
+			long fragmentCollectionId, int start, int end)
+		throws PortalException {
 
 		return getService().getFragmentCompositions(
 			fragmentCollectionId, start, end);
 	}
 
 	public static List<FragmentComposition> getFragmentCompositions(
-		long groupId, long fragmentCollectionId, int status) {
+			long groupId, long fragmentCollectionId, int status)
+		throws PortalException {
 
 		return getService().getFragmentCompositions(
 			groupId, fragmentCollectionId, status);
 	}
 
 	public static List<FragmentComposition> getFragmentCompositions(
-		long groupId, long fragmentCollectionId, int start, int end,
-		OrderByComparator<FragmentComposition> orderByComparator) {
+			long groupId, long fragmentCollectionId, int start, int end,
+			OrderByComparator<FragmentComposition> orderByComparator)
+		throws PortalException {
 
 		return getService().getFragmentCompositions(
 			groupId, fragmentCollectionId, start, end, orderByComparator);
 	}
 
 	public static List<FragmentComposition> getFragmentCompositions(
-		long groupId, long fragmentCollectionId, String name, int start,
-		int end, OrderByComparator<FragmentComposition> orderByComparator) {
+			long groupId, long fragmentCollectionId, String name, int start,
+			int end, OrderByComparator<FragmentComposition> orderByComparator)
+		throws PortalException {
 
 		return getService().getFragmentCompositions(
 			groupId, fragmentCollectionId, name, start, end, orderByComparator);
 	}
 
-	public static int getFragmentCompositionsCount(long fragmentCollectionId) {
+	public static int getFragmentCompositionsCount(long fragmentCollectionId)
+		throws PortalException {
+
 		return getService().getFragmentCompositionsCount(fragmentCollectionId);
 	}
 
@@ -157,13 +184,13 @@ public class FragmentCompositionServiceUtil {
 	}
 
 	public static FragmentCompositionService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(FragmentCompositionService service) {
-		_service = service;
-	}
-
-	private static volatile FragmentCompositionService _service;
+	private static final Snapshot<FragmentCompositionService> _serviceSnapshot =
+		new Snapshot<>(
+			FragmentCompositionServiceUtil.class,
+			FragmentCompositionService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:720490518

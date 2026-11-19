@@ -7,6 +7,7 @@ package com.liferay.portal.workflow.kaleo.runtime.internal.assignment;
 
 import com.liferay.osgi.service.tracker.collections.list.ServiceTrackerList;
 import com.liferay.osgi.service.tracker.collections.list.ServiceTrackerListFactory;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Organization;
@@ -104,13 +105,8 @@ public class GroupAwareRoleKaleoTaskAssignmentSelector
 			Role role, List<Long> groupIds)
 		throws PortalException {
 
-		List<KaleoTaskAssignment> kaleoTaskAssignments = new ArrayList<>();
-
-		for (Long groupId : groupIds) {
-			kaleoTaskAssignments.add(_createKaleoTaskAssignment(role, groupId));
-		}
-
-		return kaleoTaskAssignments;
+		return TransformUtil.transform(
+			groupIds, groupId -> _createKaleoTaskAssignment(role, groupId));
 	}
 
 	private KaleoTaskAssignment _createKaleoTaskAssignment(
@@ -132,9 +128,11 @@ public class GroupAwareRoleKaleoTaskAssignmentSelector
 		List<Long> groupIds = new ArrayList<>();
 
 		for (Group ancestorGroup : group.getAncestors()) {
-			if (_isValidAssignment(group, role)) {
-				groupIds.add(ancestorGroup.getGroupId());
+			if (!_isValidAssignment(group, role)) {
+				continue;
 			}
+
+			groupIds.add(ancestorGroup.getGroupId());
 		}
 
 		return groupIds;
@@ -149,9 +147,11 @@ public class GroupAwareRoleKaleoTaskAssignmentSelector
 			group.getOrganizationId());
 
 		for (Organization ancestorOrganization : organization.getAncestors()) {
-			if (_isValidAssignment(group, role)) {
-				groupIds.add(ancestorOrganization.getGroupId());
+			if (!_isValidAssignment(group, role)) {
+				continue;
 			}
+
+			groupIds.add(ancestorOrganization.getGroupId());
 		}
 
 		return groupIds;

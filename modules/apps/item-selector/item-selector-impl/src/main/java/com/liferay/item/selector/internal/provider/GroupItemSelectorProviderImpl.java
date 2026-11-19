@@ -7,12 +7,14 @@ package com.liferay.item.selector.internal.provider;
 
 import com.liferay.item.selector.provider.GroupItemSelectorProvider;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Organization;
+import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.security.auth.GuestOrUserUtil;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
@@ -29,7 +31,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 
-import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
@@ -55,23 +56,34 @@ public class GroupItemSelectorProviderImpl
 	}
 
 	@Override
+	public String getGroupType() {
+		return "site";
+	}
+
+	@Override
 	public List<Group> getGroups(
 		long companyId, long groupId, String keywords, int start, int end) {
 
 		LinkedHashMap<String, Object> groupParams =
 			LinkedHashMapBuilder.<String, Object>put(
+				"actionId", ActionKeys.VIEW
+			).put(
+				"active", Boolean.TRUE
+			).put(
 				"site", Boolean.TRUE
 			).build();
 
 		try {
+			long[] classNameIds = _getClassNameIds();
+
 			List<Group> groups = _groupLocalService.search(
-				companyId, _classNameIds, keywords, groupParams, start, end,
+				companyId, classNameIds, keywords, groupParams, start, end,
 				null);
 
 			return ListUtil.filter(
 				groups,
 				(startIndex, endIndex) -> _groupLocalService.search(
-					companyId, _classNameIds, keywords, groupParams, startIndex,
+					companyId, classNameIds, keywords, groupParams, startIndex,
 					endIndex, null),
 				() -> getGroupsCount(companyId, groupId, keywords),
 				group -> _hasViewPermission(group), start, end);
@@ -86,17 +98,14 @@ public class GroupItemSelectorProviderImpl
 	@Override
 	public int getGroupsCount(long companyId, long groupId, String keywords) {
 		return _groupService.searchCount(
-			companyId, _classNameIds, keywords,
+			companyId, _getClassNameIds(), keywords,
 			LinkedHashMapBuilder.<String, Object>put(
 				"actionId", ActionKeys.VIEW
 			).put(
+				"active", Boolean.TRUE
+			).put(
 				"site", Boolean.TRUE
 			).build());
-	}
-
-	@Override
-	public String getGroupType() {
-		return "site";
 	}
 
 	@Override
@@ -106,12 +115,22 @@ public class GroupItemSelectorProviderImpl
 
 	@Override
 	public String getLabel(Locale locale) {
+		if (FeatureFlagManagerUtil.isEnabled(
+				CompanyThreadLocal.getNonsystemCompanyId(), "LPD-81022")) {
+
+			return _language.get(locale, "sites");
+		}
+
 		return _language.get(locale, "site");
 	}
 
-	@Activate
-	protected void activate() {
-		_classNameIds = new long[] {
+	@Override
+	public boolean isGroupType(Group group) {
+		return !group.isDepot();
+	}
+
+	private long[] _getClassNameIds() {
+		return new long[] {
 			_classNameLocalService.getClassNameId(Company.class),
 			_classNameLocalService.getClassNameId(Group.class),
 			_classNameLocalService.getClassNameId(Organization.class)
@@ -142,8 +161,6 @@ public class GroupItemSelectorProviderImpl
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		GroupItemSelectorProviderImpl.class);
-
-	private long[] _classNameIds;
 
 	@Reference
 	private ClassNameLocalService _classNameLocalService;

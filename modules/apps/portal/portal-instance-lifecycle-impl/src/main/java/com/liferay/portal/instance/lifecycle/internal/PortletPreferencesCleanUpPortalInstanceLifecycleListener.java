@@ -9,6 +9,7 @@ import com.liferay.portal.instance.lifecycle.BasePortalInstanceLifecycleListener
 import com.liferay.portal.instance.lifecycle.PortalInstanceLifecycleListener;
 import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.service.PortletPreferencesLocalService;
+import com.liferay.portal.kernel.util.PropsValues;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -23,6 +24,10 @@ public class PortletPreferencesCleanUpPortalInstanceLifecycleListener
 	@Override
 	public void portalInstancePreunregistered(Company company)
 		throws Exception {
+
+		if (PropsValues.DATABASE_PARTITION_ENABLED) {
+			return;
+		}
 
 		_portletPreferencesLocalService.deletePortletPreferencesByOwnerId(
 			company.getCompanyId());

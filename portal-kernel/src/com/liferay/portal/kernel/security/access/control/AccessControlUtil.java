@@ -15,11 +15,11 @@ import com.liferay.portal.kernel.security.auth.AuthException;
 import com.liferay.portal.kernel.security.auth.verifier.AuthVerifierResult;
 import com.liferay.portal.kernel.util.PortalUtil;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.util.Map;
 import java.util.Set;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * @author Tomas Polesovsky
@@ -61,6 +61,15 @@ public class AccessControlUtil {
 
 		String remoteAddr = httpServletRequest.getRemoteAddr();
 
+		Set<String> computerAddresses = PortalUtil.getComputerAddresses();
+
+		if ((computerAddresses.contains(remoteAddr) &&
+			 hostsAllowed.contains(_SERVER_IP)) ||
+			hostsAllowed.contains(remoteAddr)) {
+
+			return true;
+		}
+
 		for (String hostAllowed : hostsAllowed) {
 			AllowedIPAddressesValidator allowedIPAddressesValidator =
 				AllowedIPAddressesValidatorFactory.create(hostAllowed);
@@ -68,14 +77,6 @@ public class AccessControlUtil {
 			if (allowedIPAddressesValidator.isAllowedIPAddress(remoteAddr)) {
 				return true;
 			}
-		}
-
-		Set<String> computerAddresses = PortalUtil.getComputerAddresses();
-
-		if (computerAddresses.contains(remoteAddr) &&
-			hostsAllowed.contains(_SERVER_IP)) {
-
-			return true;
 		}
 
 		return false;

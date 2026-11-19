@@ -22,22 +22,25 @@ public class OAuth2ApplicationFeatureUpgradeProcess extends UpgradeProcess {
 	@Override
 	protected void doUpgrade() throws Exception {
 		try (LoggingTimer loggingTimer = new LoggingTimer();
+
 			PreparedStatement preparedStatement = connection.prepareStatement(
 				"select oAuth2ApplicationId, features from OAuth2Application " +
 					"where features IS NOT NULL");
+
 			ResultSet resultSet = preparedStatement.executeQuery()) {
 
 			while (resultSet.next()) {
 				String[] features = StringUtil.split(
 					resultSet.getString("features"));
 
-				if (ArrayUtil.contains(features, "token_introspection")) {
-					long oAuth2ApplicationId = resultSet.getLong(
-						"oAuth2ApplicationId");
-
-					_updateTokenIntrospectionFeature(
-						oAuth2ApplicationId, features);
+				if (!ArrayUtil.contains(features, "token_introspection")) {
+					continue;
 				}
+
+				long oAuth2ApplicationId = resultSet.getLong(
+					"oAuth2ApplicationId");
+
+				_updateTokenIntrospectionFeature(oAuth2ApplicationId, features);
 			}
 		}
 	}
@@ -51,9 +54,11 @@ public class OAuth2ApplicationFeatureUpgradeProcess extends UpgradeProcess {
 					"oAuth2ApplicationId = ?")) {
 
 			for (int i = 0; i < features.length; i++) {
-				if (features[i].equals("token_introspection")) {
-					features[i] = "token.introspection";
+				if (!features[i].equals("token_introspection")) {
+					continue;
 				}
+
+				features[i] = "token.introspection";
 			}
 
 			preparedStatement.setString(1, StringUtil.merge(features));

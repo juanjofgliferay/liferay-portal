@@ -14,10 +14,12 @@ import com.liferay.portal.kernel.security.pwd.PasswordEncryptorUtil;
 import com.liferay.portal.kernel.util.Base64;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
+import com.liferay.portal.kernel.util.PropsUtil;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.util.PropsUtil;
 
 import java.io.UnsupportedEncodingException;
+
+import java.nio.charset.StandardCharsets;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -32,10 +34,36 @@ public class PwdAuthenticator {
 			String currentEncryptedPassword)
 		throws PwdEncryptorException {
 
-		String encryptedPassword = PasswordEncryptorUtil.encrypt(
-			clearTextPassword, currentEncryptedPassword);
+		String encryptedPassword = null;
 
-		if (currentEncryptedPassword.equals(encryptedPassword)) {
+		try {
+			encryptedPassword = PasswordEncryptorUtil.encrypt(
+				clearTextPassword, currentEncryptedPassword);
+		}
+		catch (PwdEncryptorException.UnavailableAlgorithm
+					pwdEncryptorException1) {
+
+			if (_log.isDebugEnabled()) {
+				_log.debug("Unable to verify password", pwdEncryptorException1);
+			}
+
+			try {
+				PasswordEncryptorUtil.encrypt(
+					clearTextPassword, _PRETENDED_CURRENT_ENCRYPTED_PASSWORD);
+			}
+			catch (PwdEncryptorException pwdEncryptorException2) {
+				if (_log.isDebugEnabled()) {
+					_log.debug(pwdEncryptorException2);
+				}
+			}
+
+			return false;
+		}
+
+		if (MessageDigest.isEqual(
+				encryptedPassword.getBytes(StandardCharsets.UTF_8),
+				currentEncryptedPassword.getBytes(StandardCharsets.UTF_8))) {
+
 			return true;
 		}
 		else if (GetterUtil.getBoolean(
@@ -62,11 +90,9 @@ public class PwdAuthenticator {
 				encryptedPassword = Base64.encode(
 					digester.digest(shardKey.getBytes(StringPool.UTF8)));
 
-				if (clearTextPassword.equals(encryptedPassword)) {
-					return true;
-				}
-
-				return false;
+				return MessageDigest.isEqual(
+					clearTextPassword.getBytes(StandardCharsets.UTF_8),
+					encryptedPassword.getBytes(StandardCharsets.UTF_8));
 			}
 			catch (NoSuchAlgorithmException noSuchAlgorithmException) {
 				throw new SystemException(noSuchAlgorithmException);
@@ -85,7 +111,8 @@ public class PwdAuthenticator {
 			_PRETENDED_CURRENT_ENCRYPTED_PASSWORD);
 	}
 
-	private static final String _PRETENDED_CLEAR_TEXT_PASSWORD = "password";
+	private static final String _PRETENDED_CLEAR_TEXT_PASSWORD =
+		"clearTextPassword";
 
 	private static final String _PRETENDED_CURRENT_ENCRYPTED_PASSWORD;
 

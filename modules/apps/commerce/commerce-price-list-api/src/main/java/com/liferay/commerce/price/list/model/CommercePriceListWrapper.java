@@ -47,16 +47,16 @@ public class CommercePriceListWrapper
 		attributes.put("userName", getUserName());
 		attributes.put("createDate", getCreateDate());
 		attributes.put("modifiedDate", getModifiedDate());
-		attributes.put("commerceCurrencyId", getCommerceCurrencyId());
 		attributes.put(
 			"parentCommercePriceListId", getParentCommercePriceListId());
 		attributes.put("catalogBasePriceList", isCatalogBasePriceList());
-		attributes.put("netPrice", isNetPrice());
-		attributes.put("type", getType());
-		attributes.put("name", getName());
-		attributes.put("priority", getPriority());
+		attributes.put("commerceCurrencyCode", getCommerceCurrencyCode());
 		attributes.put("displayDate", getDisplayDate());
 		attributes.put("expirationDate", getExpirationDate());
+		attributes.put("name", getName());
+		attributes.put("netPrice", isNetPrice());
+		attributes.put("priority", getPriority());
+		attributes.put("type", getType());
 		attributes.put("lastPublishDate", getLastPublishDate());
 		attributes.put("status", getStatus());
 		attributes.put("statusByUserId", getStatusByUserId());
@@ -135,12 +135,6 @@ public class CommercePriceListWrapper
 			setModifiedDate(modifiedDate);
 		}
 
-		Long commerceCurrencyId = (Long)attributes.get("commerceCurrencyId");
-
-		if (commerceCurrencyId != null) {
-			setCommerceCurrencyId(commerceCurrencyId);
-		}
-
 		Long parentCommercePriceListId = (Long)attributes.get(
 			"parentCommercePriceListId");
 
@@ -155,28 +149,11 @@ public class CommercePriceListWrapper
 			setCatalogBasePriceList(catalogBasePriceList);
 		}
 
-		Boolean netPrice = (Boolean)attributes.get("netPrice");
+		String commerceCurrencyCode = (String)attributes.get(
+			"commerceCurrencyCode");
 
-		if (netPrice != null) {
-			setNetPrice(netPrice);
-		}
-
-		String type = (String)attributes.get("type");
-
-		if (type != null) {
-			setType(type);
-		}
-
-		String name = (String)attributes.get("name");
-
-		if (name != null) {
-			setName(name);
-		}
-
-		Double priority = (Double)attributes.get("priority");
-
-		if (priority != null) {
-			setPriority(priority);
+		if (commerceCurrencyCode != null) {
+			setCommerceCurrencyCode(commerceCurrencyCode);
 		}
 
 		Date displayDate = (Date)attributes.get("displayDate");
@@ -189,6 +166,30 @@ public class CommercePriceListWrapper
 
 		if (expirationDate != null) {
 			setExpirationDate(expirationDate);
+		}
+
+		String name = (String)attributes.get("name");
+
+		if (name != null) {
+			setName(name);
+		}
+
+		Boolean netPrice = (Boolean)attributes.get("netPrice");
+
+		if (netPrice != null) {
+			setNetPrice(netPrice);
+		}
+
+		Double priority = (Double)attributes.get("priority");
+
+		if (priority != null) {
+			setPriority(priority);
+		}
+
+		String type = (String)attributes.get("type");
+
+		if (type != null) {
+			setType(type);
 		}
 
 		Date lastPublishDate = (Date)attributes.get("lastPublishDate");
@@ -251,13 +252,13 @@ public class CommercePriceListWrapper
 	}
 
 	/**
-	 * Returns the commerce currency ID of this commerce price list.
+	 * Returns the commerce currency code of this commerce price list.
 	 *
-	 * @return the commerce currency ID of this commerce price list
+	 * @return the commerce currency code of this commerce price list
 	 */
 	@Override
-	public long getCommerceCurrencyId() {
-		return model.getCommerceCurrencyId();
+	public String getCommerceCurrencyCode() {
+		return model.getCommerceCurrencyCode();
 	}
 
 	/**
@@ -636,13 +637,13 @@ public class CommercePriceListWrapper
 	}
 
 	/**
-	 * Sets the commerce currency ID of this commerce price list.
+	 * Sets the commerce currency code of this commerce price list.
 	 *
-	 * @param commerceCurrencyId the commerce currency ID of this commerce price list
+	 * @param commerceCurrencyCode the commerce currency code of this commerce price list
 	 */
 	@Override
-	public void setCommerceCurrencyId(long commerceCurrencyId) {
-		model.setCommerceCurrencyId(commerceCurrencyId);
+	public void setCommerceCurrencyCode(String commerceCurrencyCode) {
+		model.setCommerceCurrencyCode(commerceCurrencyCode);
 	}
 
 	/**
@@ -937,3 +938,4 @@ public class CommercePriceListWrapper
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:455229946

@@ -15,11 +15,10 @@ import com.liferay.portal.workflow.kaleo.model.KaleoTaskForm;
 import com.liferay.portal.workflow.kaleo.model.KaleoTaskFormInstance;
 import com.liferay.portal.workflow.kaleo.model.KaleoTaskInstanceToken;
 import com.liferay.portal.workflow.kaleo.runtime.form.FormValueProcessor;
-import com.liferay.portal.workflow.kaleo.service.KaleoTaskFormLocalService;
 import com.liferay.portal.workflow.kaleo.service.base.KaleoTaskFormInstanceLocalServiceBaseImpl;
+import com.liferay.portal.workflow.kaleo.service.persistence.KaleoTaskFormPersistence;
 
 import java.util.Date;
-import java.util.List;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -69,7 +68,7 @@ public class KaleoTaskFormInstanceLocalServiceImpl
 		kaleoTaskFormInstance.setKaleoTaskFormId(kaleoTaskFormId);
 
 		KaleoTaskForm kaleoTaskForm =
-			_kaleoTaskFormLocalService.getKaleoTaskForm(kaleoTaskFormId);
+			_kaleoTaskFormPersistence.findByPrimaryKey(kaleoTaskFormId);
 
 		if (Validator.isNotNull(kaleoTaskForm.getFormDefinition())) {
 			kaleoTaskFormInstance.setFormValues(formValues);
@@ -81,11 +80,6 @@ public class KaleoTaskFormInstanceLocalServiceImpl
 		}
 
 		return kaleoTaskFormInstancePersistence.update(kaleoTaskFormInstance);
-	}
-
-	@Override
-	public int countKaleoTaskFormInstanceByKaleoTaskId(long kaleoTaskId) {
-		return kaleoTaskFormInstancePersistence.countByKaleoTaskId(kaleoTaskId);
 	}
 
 	@Override
@@ -117,35 +111,11 @@ public class KaleoTaskFormInstanceLocalServiceImpl
 			kaleoTaskInstanceTokenId);
 	}
 
-	@Override
-	public KaleoTaskFormInstance fetchKaleoTaskFormKaleoTaskFormInstance(
-		long kaleoTaskFormId) {
-
-		return kaleoTaskFormInstancePersistence.fetchByKaleoTaskFormId(
-			kaleoTaskFormId);
-	}
-
-	@Override
-	public KaleoTaskFormInstance getKaleoTaskFormKaleoTaskFormInstance(
-			long kaleoTaskFormId)
-		throws PortalException {
-
-		return kaleoTaskFormInstancePersistence.findByKaleoTaskFormId(
-			kaleoTaskFormId);
-	}
-
-	@Override
-	public List<KaleoTaskFormInstance> getKaleoTaskKaleoTaskFormInstances(
-		long kaleoTaskId) {
-
-		return kaleoTaskFormInstancePersistence.findByKaleoTaskId(kaleoTaskId);
-	}
-
 	@Reference
 	private FormValueProcessor _formValueProcessor;
 
 	@Reference
-	private KaleoTaskFormLocalService _kaleoTaskFormLocalService;
+	private KaleoTaskFormPersistence _kaleoTaskFormPersistence;
 
 	@Reference
 	private UserLocalService _userLocalService;

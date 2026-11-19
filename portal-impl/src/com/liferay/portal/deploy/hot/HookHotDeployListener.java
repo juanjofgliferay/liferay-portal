@@ -79,10 +79,11 @@ import com.liferay.portal.kernel.util.InstanceFactory;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.PropertiesUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
+import com.liferay.portal.kernel.util.PropsUtil;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.ProxyUtil;
 import com.liferay.portal.kernel.util.SetUtil;
 import com.liferay.portal.kernel.util.StringUtil;
-import com.liferay.portal.kernel.util.SystemProperties;
 import com.liferay.portal.kernel.util.Tuple;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.xml.Document;
@@ -91,12 +92,12 @@ import com.liferay.portal.kernel.xml.UnsecureSAXReaderUtil;
 import com.liferay.portal.language.LiferayResourceBundle;
 import com.liferay.portal.security.auth.AuthVerifierPipeline;
 import com.liferay.portal.security.auth.InterruptedPortletRequestWhitelistUtil;
-import com.liferay.portal.servlet.filters.cache.CacheUtil;
 import com.liferay.portal.servlet.taglib.ui.DeprecatedFormNavigatorEntry;
 import com.liferay.portal.spring.aop.AopInvocationHandler;
 import com.liferay.portal.util.JavaScriptBundleUtil;
-import com.liferay.portal.util.PropsUtil;
-import com.liferay.portal.util.PropsValues;
+
+import jakarta.servlet.Filter;
+import jakarta.servlet.ServletContext;
 
 import java.io.InputStream;
 
@@ -120,9 +121,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
-import javax.servlet.Filter;
-import javax.servlet.ServletContext;
-
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceRegistration;
 
@@ -141,31 +139,25 @@ public class HookHotDeployListener
 
 	public static final String[] SUPPORTED_PROPERTIES = {
 		"admin.default.group.names", "admin.default.role.names",
-		"admin.default.user.group.names",
-		"asset.publisher.asset.entry.query.processors",
-		"asset.publisher.display.styles", "auth.forward.by.last.path",
+		"admin.default.user.group.names", "auth.forward.by.last.path",
 		"auth.public.paths", "auth.verifier.pipeline", "auto.deploy.listeners",
 		"application.startup.events", "auth.failure", "auth.max.failures",
 		"auth.token.ignore.actions", "auth.token.ignore.origins",
 		"auth.token.ignore.portlets", "auth.token.impl", "auth.pipeline.post",
-		"auth.pipeline.pre", "auto.login.hooks",
-		"captcha.check.portal.create_account", "company.default.locale",
+		"auth.pipeline.pre", "auto.login.hooks", "company.default.locale",
 		"company.default.time.zone", "company.settings.form.authentication",
 		"company.settings.form.configuration",
 		"company.settings.form.identification",
 		"company.settings.form.miscellaneous", "company.settings.form.social",
-		"control.panel.entry.class.default", "default.landing.page.path",
-		"default.regular.color.scheme.id", "default.regular.theme.id",
-		"dl.file.entry.drafts.enabled", "dl.store.antivirus.enabled",
-		"dl.store.antivirus.impl", "dl.store.impl",
+		"default.landing.page.path", "default.regular.color.scheme.id",
+		"default.regular.theme.id", "dl.file.entry.drafts.enabled",
+		"dl.store.antivirus.enabled", "dl.store.impl",
 		"field.enable.com.liferay.portal.kernel.model.Contact.birthday",
 		"field.enable.com.liferay.portal.kernel.model.Contact.male",
 		"field.enable.com.liferay.portal.kernel.model.Organization.status",
-		"hot.deploy.listeners", "javascript.fast.load",
-		"journal.article.form.add", "journal.article.form.translate",
-		"journal.article.form.update", "layout.form.add", "layout.form.update",
-		"layout.set.form.update", "layout.static.portlets.all",
-		"layout.template.cache.enabled", "layout.types",
+		"hot.deploy.listeners", "javascript.fast.load", "layout.form.add",
+		"layout.form.update", "layout.set.form.update",
+		"layout.static.portlets.all", "layout.template.cache.enabled",
 		"layout.user.private.layouts.auto.create",
 		"layout.user.private.layouts.enabled",
 		"layout.user.private.layouts.power.user.required",
@@ -199,11 +191,11 @@ public class HookHotDeployListener
 		"sites.form.update.advanced", "sites.form.update.main",
 		"sites.form.update.miscellaneous", "sites.form.update.seo",
 		"social.activity.sets.bundling.enabled", "social.activity.sets.enabled",
-		"social.activity.sets.selector", "social.bookmark.*",
-		"terms.of.use.required", "theme.css.fast.load",
-		"theme.images.fast.load", "theme.jsp.override.enabled",
-		"theme.loader.new.theme.id.on.import", "theme.portlet.decorate.default",
-		"theme.portlet.sharing.default", "theme.shortcut.icon", "time.zones",
+		"social.activity.sets.selector", "terms.of.use.required",
+		"theme.css.fast.load", "theme.images.fast.load",
+		"theme.jsp.override.enabled", "theme.loader.new.theme.id.on.import",
+		"theme.portlet.decorate.default", "theme.portlet.sharing.default",
+		"theme.shortcut.icon", "time.zones",
 		"user.notification.event.confirmation.enabled",
 		"users.email.address.generator", "users.email.address.validator",
 		"users.email.address.required", "users.form.add.identification",
@@ -212,10 +204,9 @@ public class HookHotDeployListener
 		"users.form.my.account.miscellaneous",
 		"users.form.update.identification", "users.form.update.main",
 		"users.form.update.miscellaneous", "users.full.name.generator",
-		"users.full.name.validator", "users.image.check.token",
-		"users.image.max.height", "users.image.max.width",
-		"users.screen.name.always.autogenerate", "users.screen.name.generator",
-		"users.screen.name.validator", "value.object.listener.*"
+		"users.full.name.validator", "users.screen.name.always.autogenerate",
+		"users.screen.name.generator", "users.screen.name.validator",
+		"value.object.listener.*"
 	};
 
 	public HookHotDeployListener() {
@@ -321,10 +312,11 @@ public class HookHotDeployListener
 	}
 
 	protected void destroyPortalProperties(
-			String servletContextName, Properties portalProperties)
-		throws Exception {
+		String servletContextName, Properties portalProperties) {
 
-		PropsUtil.removeProperties(portalProperties);
+		for (String name : portalProperties.stringPropertyNames()) {
+			PropsUtil.set(name, null);
+		}
 
 		if (_log.isDebugEnabled() && portalProperties.containsKey(LOCALES)) {
 			_log.debug(
@@ -398,23 +390,9 @@ public class HookHotDeployListener
 		initLanguageProperties(
 			servletContextName, portletClassLoader, rootElement);
 
-		try {
-			initCustomJspDir(
-				servletContext, servletContextName, portletClassLoader,
-				hotDeployEvent.getPluginPackage(), rootElement);
-		}
-		catch (DuplicateCustomJspException duplicateCustomJspException) {
-			if (_log.isWarnEnabled()) {
-				_log.warn(
-					servletContextName + " will be undeployed",
-					duplicateCustomJspException);
-			}
-
-			HotDeployUtil.fireUndeployEvent(
-				new HotDeployEvent(servletContext, portletClassLoader));
-
-			return;
-		}
+		initCustomJspDir(
+			servletContext, servletContextName, portletClassLoader,
+			hotDeployEvent.getPluginPackage(), rootElement);
 
 		initIndexerPostProcessors(
 			servletContextName, portletClassLoader, rootElement);
@@ -570,38 +548,6 @@ public class HookHotDeployListener
 		return serviceRegistrations;
 	}
 
-	protected void initAuthenticators(
-			String servletContextName, ClassLoader portletClassLoader,
-			Properties portalProperties)
-		throws Exception {
-
-		initAuthenticators(
-			servletContextName, portletClassLoader, portalProperties,
-			AUTH_PIPELINE_PRE);
-		initAuthenticators(
-			servletContextName, portletClassLoader, portalProperties,
-			AUTH_PIPELINE_POST);
-	}
-
-	protected void initAuthenticators(
-			String servletContextName, ClassLoader portletClassLoader,
-			Properties portalProperties, String key)
-		throws Exception {
-
-		String[] authenticatorClassNames = StringUtil.split(
-			portalProperties.getProperty(key));
-
-		for (String authenticatorClassName : authenticatorClassNames) {
-			Authenticator authenticator = (Authenticator)newInstance(
-				portletClassLoader, Authenticator.class,
-				authenticatorClassName);
-
-			registerService(
-				servletContextName, authenticatorClassName, Authenticator.class,
-				authenticator, "key", key);
-		}
-	}
-
 	protected void initAuthFailures(
 			String servletContextName, ClassLoader portletClassLoader,
 			Properties portalProperties)
@@ -634,8 +580,7 @@ public class HookHotDeployListener
 	}
 
 	protected void initAuthPublicPaths(
-			String servletContextName, Properties portalProperties)
-		throws Exception {
+		String servletContextName, Properties portalProperties) {
 
 		String[] authPublicPaths = StringUtil.split(
 			portalProperties.getProperty(AUTH_PUBLIC_PATHS));
@@ -668,6 +613,38 @@ public class HookHotDeployListener
 			registerService(
 				servletContextName, authVerifierClassName, AuthVerifier.class,
 				authVerifier, properties);
+		}
+	}
+
+	protected void initAuthenticators(
+			String servletContextName, ClassLoader portletClassLoader,
+			Properties portalProperties)
+		throws Exception {
+
+		initAuthenticators(
+			servletContextName, portletClassLoader, portalProperties,
+			AUTH_PIPELINE_PRE);
+		initAuthenticators(
+			servletContextName, portletClassLoader, portalProperties,
+			AUTH_PIPELINE_POST);
+	}
+
+	protected void initAuthenticators(
+			String servletContextName, ClassLoader portletClassLoader,
+			Properties portalProperties, String key)
+		throws Exception {
+
+		String[] authenticatorClassNames = StringUtil.split(
+			portalProperties.getProperty(key));
+
+		for (String authenticatorClassName : authenticatorClassNames) {
+			Authenticator authenticator = (Authenticator)newInstance(
+				portletClassLoader, Authenticator.class,
+				authenticatorClassName);
+
+			registerService(
+				servletContextName, authenticatorClassName, Authenticator.class,
+				authenticator, "key", key);
 		}
 	}
 
@@ -716,10 +693,9 @@ public class HookHotDeployListener
 	}
 
 	protected void initCustomJspDir(
-			ServletContext servletContext, String servletContextName,
-			ClassLoader portletClassLoader, PluginPackage pluginPackage,
-			Element rootElement)
-		throws Exception {
+		ServletContext servletContext, String servletContextName,
+		ClassLoader portletClassLoader, PluginPackage pluginPackage,
+		Element rootElement) {
 
 		String customJspDir = rootElement.elementText("custom-jsp-dir");
 
@@ -814,8 +790,7 @@ public class HookHotDeployListener
 	}
 
 	protected void initFormNavigatorEntries(
-			String servletContextName, Properties portalProperties)
-		throws Exception {
+		String servletContextName, Properties portalProperties) {
 
 		initFormNavigatorEntry(
 			servletContextName, portalProperties,
@@ -1210,14 +1185,8 @@ public class HookHotDeployListener
 			Properties portalProperties, Properties unfilteredPortalProperties)
 		throws Exception {
 
-		if (GetterUtil.getBoolean(
-				SystemProperties.get("company-id-properties"))) {
-
-			CompanyLocalServiceUtil.forEachCompany(
-				company -> PropsUtil.addProperties(company, portalProperties));
-		}
-		else {
-			PropsUtil.addProperties(portalProperties);
+		for (String name : portalProperties.stringPropertyNames()) {
+			PropsUtil.set(name, portalProperties.getProperty(name));
 		}
 
 		if (_log.isDebugEnabled() && portalProperties.containsKey(LOCALES)) {
@@ -1700,7 +1669,7 @@ public class HookHotDeployListener
 				String paramName = initParamElement.elementText("param-name");
 				String paramValue = initParamElement.elementText("param-value");
 
-				properties.put("init.param." + paramName, paramValue);
+				properties.put("init-param." + paramName, paramValue);
 			}
 
 			Tuple filterTuple = filterTuples.get(servletFilterName);
@@ -1764,8 +1733,7 @@ public class HookHotDeployListener
 	}
 
 	protected void initTokensWhitelists(
-			String servletContextName, Properties portalProperties)
-		throws Exception {
+		String servletContextName, Properties portalProperties) {
 
 		for (String tokenWhitelistName : _TOKEN_WHITELIST_NAMES) {
 			String propertyValue = portalProperties.getProperty(
@@ -1787,9 +1755,8 @@ public class HookHotDeployListener
 	}
 
 	protected void resetPortalProperties(
-			String servletContextName, Properties portalProperties,
-			boolean initPhase)
-		throws Exception {
+		String servletContextName, Properties portalProperties,
+		boolean initPhase) {
 
 		for (String key : _PROPS_VALUES_BOOLEAN) {
 			String fieldName = StringUtil.replace(
@@ -1928,8 +1895,6 @@ public class HookHotDeployListener
 				resetPortletInvocationWhitelistActions();
 		}
 
-		CacheUtil.clearCache();
-
 		JavaScriptBundleUtil.clearCache();
 	}
 
@@ -2007,7 +1972,9 @@ public class HookHotDeployListener
 
 			properties.setProperty(key, valueString);
 
-			PropsUtil.addProperties(properties);
+			for (String name : properties.stringPropertyNames()) {
+				PropsUtil.set(name, properties.getProperty(name));
+			}
 		}
 
 		if (!_propsKeysEvents.contains(key)) {
@@ -2055,8 +2022,8 @@ public class HookHotDeployListener
 	};
 
 	private static final String[] _PROPS_VALUES_BOOLEAN = {
-		"auth.forward.by.last.path", "captcha.check.portal.create_account",
-		"dl.file.entry.drafts.enabled", "dl.store.antivirus.enabled",
+		"auth.forward.by.last.path", "dl.file.entry.drafts.enabled",
+		"dl.store.antivirus.enabled",
 		"field.enable.com.liferay.portal.kernel.model.Contact.birthday",
 		"field.enable.com.liferay.portal.kernel.model.Contact.male",
 		"field.enable.com.liferay.portal.kernel.model.Organization.status",
@@ -2079,12 +2046,11 @@ public class HookHotDeployListener
 		"theme.jsp.override.enabled", "theme.loader.new.theme.id.on.import",
 		"theme.portlet.decorate.default", "theme.portlet.sharing.default",
 		"user.notification.event.confirmation.enabled",
-		"users.email.address.required", "users.image.check.token",
-		"users.screen.name.always.autogenerate"
+		"users.email.address.required", "users.screen.name.always.autogenerate"
 	};
 
 	private static final String[] _PROPS_VALUES_INTEGER = {
-		"session.max.allowed", "users.image.max.height", "users.image.max.width"
+		"session.max.allowed"
 	};
 
 	private static final String[] _PROPS_VALUES_LONG = {};
@@ -2098,11 +2064,10 @@ public class HookHotDeployListener
 		"company.settings.form.configuration",
 		"company.settings.form.identification",
 		"company.settings.form.miscellaneous", "company.settings.form.social",
-		"journal.article.form.add", "journal.article.form.translate",
-		"journal.article.form.update", "layout.form.add", "layout.form.update",
-		"layout.set.form.update", "layout.static.portlets.all",
-		"login.events.post", "login.events.pre", "login.form.navigation.post",
-		"login.form.navigation.pre", "logout.events.pre", "logout.events.post",
+		"layout.form.add", "layout.form.update", "layout.set.form.update",
+		"layout.static.portlets.all", "login.events.post", "login.events.pre",
+		"login.form.navigation.post", "login.form.navigation.pre",
+		"logout.events.pre", "logout.events.post",
 		"organizations.form.add.identification", "organizations.form.add.main",
 		"organizations.form.add.miscellaneous",
 		"portlet.add.default.resource.check.whitelist",
@@ -2123,8 +2088,16 @@ public class HookHotDeployListener
 	};
 
 	private static final String[] _PROPS_VALUES_OBSOLETE = {
+		"asset.publisher.asset.entry.query.processors",
+		"asset.publisher.display.styles", "captcha.check.portal.create_account",
+		"control.panel.entry.class.default", "dl.store.antivirus.impl",
+		"journal.article.form.add", "journal.article.form.translate",
+		"journal.article.form.update", "layout.types",
 		"layout.user.private.layouts.modifiable",
-		"layout.user.public.layouts.modifiable"
+		"layout.user.public.layouts.modifiable",
+		"social.bookmark.display.styles", "social.bookmark.types",
+		"users.image.check.token", "users.image.max.height",
+		"users.image.max.width"
 	};
 
 	private static final String[] _PROPS_VALUES_OVERRIDE_STRING_ARRAY = {
@@ -2246,11 +2219,7 @@ public class HookHotDeployListener
 		}
 
 		public boolean isOverridden() {
-			if (Validator.isNotNull(_servletContextName)) {
-				return true;
-			}
-
-			return false;
+			return Validator.isNotNull(_servletContextName);
 		}
 
 		@Override

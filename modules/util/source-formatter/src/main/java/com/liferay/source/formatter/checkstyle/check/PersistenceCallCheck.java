@@ -42,9 +42,7 @@ public class PersistenceCallCheck extends BaseCheck {
 
 	@Override
 	protected void doVisitToken(DetailAST detailAST) {
-		DetailAST parentDetailAST = detailAST.getParent();
-
-		if (parentDetailAST != null) {
+		if (!isDirectChildOfCompilationUnit(detailAST)) {
 			return;
 		}
 
@@ -82,10 +80,10 @@ public class PersistenceCallCheck extends BaseCheck {
 		variablesMap.putAll(
 			_getVariablesMap(_getExtendedJavaClass(absolutePath, content)));
 
-		List<DetailAST> methodCallDetailASTList = getAllChildTokens(
+		List<DetailAST> methodCallDetailASTs = getAllChildTokens(
 			detailAST, true, TokenTypes.METHOD_CALL);
 
-		for (DetailAST methodCallDetailAST : methodCallDetailASTList) {
+		for (DetailAST methodCallDetailAST : methodCallDetailASTs) {
 			_checkMethodCall(
 				methodCallDetailAST, javaClass.getImportNames(), variablesMap,
 				javaClass.getPackageName());
@@ -107,9 +105,11 @@ public class PersistenceCallCheck extends BaseCheck {
 				return;
 			}
 
-			if (!packageName.startsWith(importName.substring(0, pos))) {
-				log(lineNo, _MSG_ILLEGAL_PERSISTENCE_CALL, importName);
+			if (packageName.startsWith(importName.substring(0, pos))) {
+				continue;
 			}
+
+			log(lineNo, _MSG_ILLEGAL_PERSISTENCE_CALL, importName);
 		}
 	}
 

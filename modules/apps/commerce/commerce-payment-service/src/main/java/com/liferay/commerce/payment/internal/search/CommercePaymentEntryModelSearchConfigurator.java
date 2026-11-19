@@ -5,11 +5,15 @@
 
 package com.liferay.commerce.payment.internal.search;
 
+import com.liferay.commerce.payment.internal.search.spi.model.result.contributor.CommercePaymentEntryModelSummaryContributor;
 import com.liferay.commerce.payment.model.CommercePaymentEntry;
+import com.liferay.commerce.payment.service.CommercePaymentEntryLocalService;
 import com.liferay.portal.search.spi.model.index.contributor.ModelIndexerWriterContributor;
+import com.liferay.portal.search.spi.model.index.contributor.helper.IndexerWriterMode;
 import com.liferay.portal.search.spi.model.registrar.ModelSearchConfigurator;
 import com.liferay.portal.search.spi.model.result.contributor.ModelSummaryContributor;
 
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
@@ -42,15 +46,21 @@ public class CommercePaymentEntryModelSearchConfigurator
 		return true;
 	}
 
-	@Reference(
-		target = "(indexer.class.name=com.liferay.commerce.payment.model.CommercePaymentEntry)"
-	)
+	@Activate
+	protected void activate() {
+		_modelIndexWriterContributor = new ModelIndexerWriterContributor<>(
+			IndexerWriterMode.UPDATE,
+			_commercePaymentEntryLocalService::
+				getIndexableActionableDynamicQuery);
+		_modelSummaryContributor =
+			new CommercePaymentEntryModelSummaryContributor();
+	}
+
+	@Reference
+	private CommercePaymentEntryLocalService _commercePaymentEntryLocalService;
+
 	private ModelIndexerWriterContributor<CommercePaymentEntry>
 		_modelIndexWriterContributor;
-
-	@Reference(
-		target = "(indexer.class.name=com.liferay.commerce.payment.model.CommercePaymentEntry)"
-	)
 	private ModelSummaryContributor _modelSummaryContributor;
 
 }

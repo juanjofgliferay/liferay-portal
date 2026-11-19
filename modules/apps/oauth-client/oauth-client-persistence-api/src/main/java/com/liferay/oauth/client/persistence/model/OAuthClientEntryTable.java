@@ -27,6 +27,12 @@ public class OAuthClientEntryTable extends BaseTable<OAuthClientEntryTable> {
 
 	public final Column<OAuthClientEntryTable, Long> mvccVersion = createColumn(
 		"mvccVersion", Long.class, Types.BIGINT, Column.FLAG_NULLITY);
+	public final Column<OAuthClientEntryTable, String> uuid = createColumn(
+		"uuid_", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
+	public final Column<OAuthClientEntryTable, String> externalReferenceCode =
+		createColumn(
+			"externalReferenceCode", String.class, Types.VARCHAR,
+			Column.FLAG_DEFAULT);
 	public final Column<OAuthClientEntryTable, Long> oAuthClientEntryId =
 		createColumn(
 			"oAuthClientEntryId", Long.class, Types.BIGINT,
@@ -52,11 +58,24 @@ public class OAuthClientEntryTable extends BaseTable<OAuthClientEntryTable> {
 			Column.FLAG_DEFAULT);
 	public final Column<OAuthClientEntryTable, String> clientId = createColumn(
 		"clientId", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
+	public final Column<OAuthClientEntryTable, Clob> customClaimsJSON =
+		createColumn(
+			"customClaimsJSON", Clob.class, Types.CLOB, Column.FLAG_DEFAULT);
 	public final Column<OAuthClientEntryTable, Clob> infoJSON = createColumn(
 		"infoJSON", Clob.class, Types.CLOB, Column.FLAG_DEFAULT);
+	public final Column<OAuthClientEntryTable, String> matcherField =
+		createColumn(
+			"matcherField", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
+	public final Column<OAuthClientEntryTable, Long> metadataCacheTime =
+		createColumn(
+			"metadataCacheTime", Long.class, Types.BIGINT, Column.FLAG_DEFAULT);
 	public final Column<OAuthClientEntryTable, String> oidcUserInfoMapperJSON =
 		createColumn(
 			"oidcUserInfoMapperJSON", String.class, Types.VARCHAR,
+			Column.FLAG_DEFAULT);
+	public final Column<OAuthClientEntryTable, Integer> tokenConnectionTimeout =
+		createColumn(
+			"tokenConnectionTimeout", Integer.class, Types.INTEGER,
 			Column.FLAG_DEFAULT);
 	public final Column<OAuthClientEntryTable, String>
 		tokenRequestParametersJSON = createColumn(
@@ -68,3 +87,4 @@ public class OAuthClientEntryTable extends BaseTable<OAuthClientEntryTable> {
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-972702295

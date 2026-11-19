@@ -1,0 +1,144 @@
+definition {
+
+	@summary = "Default summary"
+	macro _getSitePageExternalReferenceCode(layoutName = null, siteName = null) {
+		Variables.assertDefined(parameterList = "${layoutName},${siteName}");
+
+		var groupId = JSONLayoutSetter.setGroupId(groupName = ${siteName});
+
+		var sitePageExternalReferenceCode = JSONSitenavigationAPI._getLayoutExternalReferenceCodeByName(
+			groupId = ${groupId},
+			layoutName = ${layoutName},
+			privateLayout = "false");
+
+		return ${sitePageExternalReferenceCode};
+	}
+
+	@summary = "Default summary"
+	macro _waitForProcess(processId = null, processType = null) {
+		Variables.assertDefined(parameterList = "${processId},${processType}");
+
+		var statusCode = HeadlessExportImportAPI._getProcessStatusCode(
+			processId = ${processId},
+			processType = ${processType});
+
+		while (((${statusCode} == 0) || (${statusCode} == 1) || (${statusCode} == 4)) && (maxIterations = "180")) {
+
+			// Export and import processes run as background tasks, so their status has to be polled. See LPD-105794.
+
+			Pause(value1 = 1000);
+
+			var statusCode = HeadlessExportImportAPI._getProcessStatusCode(
+				processId = ${processId},
+				processType = ${processType});
+		}
+
+		if (${statusCode} != 3) {
+			fail("FAIL. The ${processType} process ended with status code ${statusCode}.");
+		}
+	}
+
+	@summary = "Default summary"
+	macro exportPortlet(larFileName = null, layoutName = null, portletId = null, siteName = null) {
+		Variables.assertDefined(parameterList = "${larFileName},${portletId},${siteName}");
+
+		var siteExternalReferenceCode = HeadlessSiteAPI._getSiteExternalReferenceCode(siteName = ${siteName});
+		var sitePageExternalReferenceCode = "";
+
+		if (isSet(layoutName)) {
+			var sitePageExternalReferenceCode = HeadlessExportImport._getSitePageExternalReferenceCode(
+				layoutName = ${layoutName},
+				siteName = ${siteName});
+		}
+
+		var exportPreview = HeadlessExportImportAPI._getExportPreview(
+			portletId = ${portletId},
+			siteExternalReferenceCode = ${siteExternalReferenceCode},
+			sitePageExternalReferenceCode = ${sitePageExternalReferenceCode});
+
+		var portletDataHandlers = JSONUtil.getWithJSONPath(${exportPreview}, "$.portletDataHandlers", "false");
+
+		var exportProcessId = HeadlessExportImportAPI._postExportProcess(
+			exportProcessName = ${larFileName},
+			portletDataHandlers = ${portletDataHandlers},
+			portletId = ${portletId},
+			siteExternalReferenceCode = ${siteExternalReferenceCode},
+			sitePageExternalReferenceCode = ${sitePageExternalReferenceCode});
+
+		HeadlessExportImport._waitForProcess(
+			processId = ${exportProcessId},
+			processType = "export");
+
+		var downloadsDir = PropsUtil.get("output.dir.name");
+
+		HeadlessExportImportAPI._getExportProcessContent(
+			exportProcessId = ${exportProcessId},
+			filePath = "${downloadsDir}/${larFileName}");
+	}
+
+	@summary = "Default summary"
+	macro importPortlet(dataStrategy = null, larFileName = null, layoutName = null, portletId = null, siteName = null, uploadFrom = null) {
+		Variables.assertDefined(parameterList = "${larFileName},${portletId},${siteName}");
+
+		var downloadsDir = PropsUtil.get("output.dir.name");
+
+		var filePath = "${downloadsDir}/${larFileName}";
+
+		if (${uploadFrom} == "dependencies") {
+			var dependencyFilePath = TestCase.getDependenciesDirPath(fileName = ${larFileName});
+
+			ArchiveUtil.archive(${dependencyFilePath}, ${filePath});
+		}
+
+		if (!(isSet(dataStrategy))) {
+			var dataStrategy = "MIRROR";
+		}
+
+		var siteExternalReferenceCode = HeadlessSiteAPI._getSiteExternalReferenceCode(siteName = ${siteName});
+		var sitePageExternalReferenceCode = "";
+
+		if (isSet(layoutName)) {
+			var sitePageExternalReferenceCode = HeadlessExportImport._getSitePageExternalReferenceCode(
+				layoutName = ${layoutName},
+				siteName = ${siteName});
+		}
+
+		var importPreview = HeadlessExportImportAPI._postImportPreview(
+			filePath = ${filePath},
+			portletId = ${portletId},
+			siteExternalReferenceCode = ${siteExternalReferenceCode},
+			sitePageExternalReferenceCode = ${sitePageExternalReferenceCode});
+
+		var portletDataHandlers = JSONUtil.getWithJSONPath(${importPreview}, "$.portletDataHandlers", "false");
+
+		var importProcessId = HeadlessExportImportAPI._postImportProcess(
+			dataStrategy = ${dataStrategy},
+			importProcessName = ${larFileName},
+			portletDataHandlers = ${portletDataHandlers},
+			portletId = ${portletId},
+			siteExternalReferenceCode = ${siteExternalReferenceCode},
+			sitePageExternalReferenceCode = ${sitePageExternalReferenceCode});
+
+		HeadlessExportImport._waitForProcess(
+			processId = ${importProcessId},
+			processType = "import");
+	}
+
+	@summary = "Default summary"
+	macro relaunchExportProcess(exportProcessName = null, siteName = null) {
+		Variables.assertDefined(parameterList = "${exportProcessName},${siteName}");
+
+		var siteExternalReferenceCode = HeadlessSiteAPI._getSiteExternalReferenceCode(siteName = ${siteName});
+
+		var exportProcessId = HeadlessExportImportAPI._getExportProcessId(
+			exportProcessName = ${exportProcessName},
+			siteExternalReferenceCode = ${siteExternalReferenceCode});
+
+		var relaunchedExportProcessId = HeadlessExportImportAPI._postExportProcessRelaunch(exportProcessId = ${exportProcessId});
+
+		HeadlessExportImport._waitForProcess(
+			processId = ${relaunchedExportProcessId},
+			processType = "export");
+	}
+
+}

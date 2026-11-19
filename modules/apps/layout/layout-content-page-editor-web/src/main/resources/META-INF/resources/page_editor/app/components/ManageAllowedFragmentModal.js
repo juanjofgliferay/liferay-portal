@@ -15,9 +15,8 @@ import AllowedFragmentSelectorTree from './AllowedFragmentSelectorTree';
 const ManageAllowedFragmentModal = ({item, observer, onClose}) => {
 	const dispatch = useDispatch();
 
-	const [allowNewFragmentEntries, setAllowNewFragmentEntries] = useState(
-		true
-	);
+	const [allowNewFragmentEntries, setAllowNewFragmentEntries] =
+		useState(true);
 	const [selectedFragments, setSelectedFragments] = useState(new Set([]));
 	const [loading, setLoading] = useState();
 
@@ -30,7 +29,7 @@ const ManageAllowedFragmentModal = ({item, observer, onClose}) => {
 					allowNewFragmentEntries,
 					fragmentEntryKeys: [...selectedFragments],
 				},
-				itemId: item.itemId,
+				itemIds: [item.itemId],
 			})
 		).then(() => {
 			setLoading(false);
@@ -53,7 +52,9 @@ const ManageAllowedFragmentModal = ({item, observer, onClose}) => {
 			observer={observer}
 			size="md"
 		>
-			<ClayModal.Header>
+			<ClayModal.Header
+				closeButtonAriaLabel={Liferay.Language.get('close')}
+			>
 				{Liferay.Language.get('allowed-fragments')}
 			</ClayModal.Header>
 

@@ -5,12 +5,13 @@
 
 package com.liferay.bulk.rest.client.resource.v1_0;
 
-import com.liferay.bulk.rest.client.dto.v1_0.DocumentBulkSelection;
 import com.liferay.bulk.rest.client.dto.v1_0.TaxonomyVocabulary;
 import com.liferay.bulk.rest.client.http.HttpInvoker;
 import com.liferay.bulk.rest.client.pagination.Page;
 import com.liferay.bulk.rest.client.problem.Problem;
 import com.liferay.bulk.rest.client.serdes.v1_0.TaxonomyVocabularySerDes;
+
+import jakarta.annotation.Generated;
 
 import java.net.URL;
 
@@ -20,8 +21,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import javax.annotation.Generated;
 
 /**
  * @author Alejandro Tardín
@@ -35,12 +34,18 @@ public interface TaxonomyVocabularyResource {
 	}
 
 	public Page<TaxonomyVocabulary> postSiteTaxonomyVocabulariesCommonPage(
-			Long siteId, DocumentBulkSelection documentBulkSelection)
+			Long siteId, String blueprintExternalReferenceCode,
+			Boolean emptySearch, String entryClassNames, String scope,
+			String search, String filterString, String sortString,
+			Object object)
 		throws Exception;
 
 	public HttpInvoker.HttpResponse
 			postSiteTaxonomyVocabulariesCommonPageHttpResponse(
-				Long siteId, DocumentBulkSelection documentBulkSelection)
+				Long siteId, String blueprintExternalReferenceCode,
+				Boolean emptySearch, String entryClassNames, String scope,
+				String search, String filterString, String sortString,
+				Object object)
 		throws Exception;
 
 	public static class Builder {
@@ -141,8 +146,8 @@ public interface TaxonomyVocabularyResource {
 		private Map<String, String> _headers = new LinkedHashMap<>();
 		private String _host = "localhost";
 		private Locale _locale;
-		private String _login = "";
-		private String _password = "";
+		private String _login;
+		private String _password;
 		private Map<String, String> _parameters = new LinkedHashMap<>();
 		private int _port = 8080;
 		private String _scheme = "http";
@@ -153,12 +158,17 @@ public interface TaxonomyVocabularyResource {
 		implements TaxonomyVocabularyResource {
 
 		public Page<TaxonomyVocabulary> postSiteTaxonomyVocabulariesCommonPage(
-				Long siteId, DocumentBulkSelection documentBulkSelection)
+				Long siteId, String blueprintExternalReferenceCode,
+				Boolean emptySearch, String entryClassNames, String scope,
+				String search, String filterString, String sortString,
+				Object object)
 			throws Exception {
 
 			HttpInvoker.HttpResponse httpResponse =
 				postSiteTaxonomyVocabulariesCommonPageHttpResponse(
-					siteId, documentBulkSelection);
+					siteId, blueprintExternalReferenceCode, emptySearch,
+					entryClassNames, scope, search, filterString, sortString,
+					object);
 
 			String content = httpResponse.getContent();
 
@@ -221,13 +231,15 @@ public interface TaxonomyVocabularyResource {
 
 		public HttpInvoker.HttpResponse
 				postSiteTaxonomyVocabulariesCommonPageHttpResponse(
-					Long siteId, DocumentBulkSelection documentBulkSelection)
+					Long siteId, String blueprintExternalReferenceCode,
+					Boolean emptySearch, String entryClassNames, String scope,
+					String search, String filterString, String sortString,
+					Object object)
 			throws Exception {
 
 			HttpInvoker httpInvoker = HttpInvoker.newHttpInvoker();
 
-			httpInvoker.body(
-				documentBulkSelection.toString(), "application/json");
+			httpInvoker.body(object.toString(), "application/json");
 
 			if (_builder._locale != null) {
 				httpInvoker.header(
@@ -248,6 +260,38 @@ public interface TaxonomyVocabularyResource {
 
 			httpInvoker.httpMethod(HttpInvoker.HttpMethod.POST);
 
+			if (blueprintExternalReferenceCode != null) {
+				httpInvoker.parameter(
+					"blueprintExternalReferenceCode",
+					String.valueOf(blueprintExternalReferenceCode));
+			}
+
+			if (emptySearch != null) {
+				httpInvoker.parameter(
+					"emptySearch", String.valueOf(emptySearch));
+			}
+
+			if (entryClassNames != null) {
+				httpInvoker.parameter(
+					"entryClassNames", String.valueOf(entryClassNames));
+			}
+
+			if (scope != null) {
+				httpInvoker.parameter("scope", String.valueOf(scope));
+			}
+
+			if (search != null) {
+				httpInvoker.parameter("search", String.valueOf(search));
+			}
+
+			if (filterString != null) {
+				httpInvoker.parameter("filter", filterString);
+			}
+
+			if (sortString != null) {
+				httpInvoker.parameter("sort", sortString);
+			}
+
 			httpInvoker.path(
 				_builder._scheme + "://" + _builder._host + ":" +
 					_builder._port + _builder._contextPath +
@@ -255,8 +299,10 @@ public interface TaxonomyVocabularyResource {
 
 			httpInvoker.path("siteId", siteId);
 
-			httpInvoker.userNameAndPassword(
-				_builder._login + ":" + _builder._password);
+			if ((_builder._login != null) && (_builder._password != null)) {
+				httpInvoker.userNameAndPassword(
+					_builder._login + ":" + _builder._password);
+			}
 
 			return httpInvoker.invoke();
 		}
@@ -273,3 +319,4 @@ public interface TaxonomyVocabularyResource {
 	}
 
 }
+// LIFERAY-REST-BUILDER-HASH:-639201123

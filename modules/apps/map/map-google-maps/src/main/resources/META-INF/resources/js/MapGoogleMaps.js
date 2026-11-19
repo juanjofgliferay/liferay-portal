@@ -3,13 +3,20 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import MapBase from '@liferay/map-common/js/MapBase';
+import {MapBase} from '@liferay/map-common';
 
 import GoogleMapsDialog from './GoogleMapsDialog';
 import GoogleMapsGeoJSON from './GoogleMapsGeoJSON';
 import GoogleMapsGeocoder from './GoogleMapsGeocoder';
 import GoogleMapsMarker from './GoogleMapsMarker';
 import GoogleMapsSearch from './GoogleMapsSearch';
+
+/**
+ * Zoom level applied when a selected Place result lacks a recommended viewport.
+ * @see https://developers.google.com/maps/documentation/javascript/examples/place-autocomplete-map
+ * @type {number}
+ */
+const FALLBACK_ZOOM = 17;
 
 /**
  * MapGoogleMaps
@@ -50,7 +57,7 @@ class MapGoogleMaps extends MapBase {
 			Object.assign(mapConfig, controlsConfig)
 		);
 
-		if (this.data && this.data.features) {
+		if (this.data?.features?.length) {
 			const bounds = new google.maps.LatLngBounds();
 
 			this.data.features.forEach((feature) =>
@@ -66,6 +73,26 @@ class MapGoogleMaps extends MapBase {
 		}
 
 		return map;
+	}
+
+	/**
+	 * @inheritDoc
+	 * @review
+	 */
+	_handleSearchButtonClicked({position}) {
+		super._handleSearchButtonClicked({position});
+
+		if (!this._map) {
+			return;
+		}
+
+		if (position.viewport) {
+			this._map.fitBounds(position.viewport);
+		}
+		else {
+			this._map.setCenter(position.location);
+			this._map.setZoom(FALLBACK_ZOOM);
+		}
 	}
 
 	/**

@@ -56,7 +56,7 @@ export default function RatingsStackedStars({
 					{!!totalEntries &&
 						` (${totalEntries} ${
 							totalEntries === 1
-								? Liferay.Language.get('vote')
+								? Liferay.Language.get('vote[noun]')
 								: Liferay.Language.get('votes')
 						})`}
 				</span>
@@ -75,10 +75,10 @@ export default function RatingsStackedStars({
 								index === 0
 									? Liferay.Language.get(
 											'rate-this-x-star-out-of-x'
-									  )
+										)
 									: Liferay.Language.get(
 											'rate-this-x-stars-out-of-x'
-									  );
+										);
 							const full = label <= score;
 
 							return (

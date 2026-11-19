@@ -7,6 +7,7 @@ package com.liferay.object.service;
 
 import com.liferay.exportimport.kernel.lar.PortletDataContext;
 import com.liferay.object.model.ObjectAction;
+import com.liferay.object.model.ObjectDefinition;
 import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
@@ -20,7 +21,10 @@ import com.liferay.portal.kernel.model.SystemEventConstants;
 import com.liferay.portal.kernel.search.Indexable;
 import com.liferay.portal.kernel.search.IndexableType;
 import com.liferay.portal.kernel.service.BaseLocalService;
+import com.liferay.portal.kernel.service.ExceptionRetryAcceptor;
 import com.liferay.portal.kernel.service.PersistedModelLocalService;
+import com.liferay.portal.kernel.spring.aop.Property;
+import com.liferay.portal.kernel.spring.aop.Retry;
 import com.liferay.portal.kernel.systemevent.SystemEvent;
 import com.liferay.portal.kernel.transaction.Isolation;
 import com.liferay.portal.kernel.transaction.Propagation;
@@ -76,7 +80,8 @@ public interface ObjectActionLocalService
 	@Indexable(type = IndexableType.REINDEX)
 	public ObjectAction addObjectAction(
 			String externalReferenceCode, long userId, long objectDefinitionId,
-			boolean active, String conditionExpression, String description,
+			boolean active, String conditionExpression,
+			Map<Locale, String> descriptionMap,
 			Map<Locale, String> errorMessageMap, Map<Locale, String> labelMap,
 			String name, String objectActionExecutorKey,
 			String objectActionTriggerKey,
@@ -87,10 +92,15 @@ public interface ObjectActionLocalService
 	public ObjectAction addOrUpdateObjectAction(
 			String externalReferenceCode, long objectActionId, long userId,
 			long objectDefinitionId, boolean active, String conditionExpression,
-			String description, Map<Locale, String> errorMessageMap,
-			Map<Locale, String> labelMap, String name,
-			String objectActionExecutorKey, String objectActionTriggerKey,
+			Map<Locale, String> descriptionMap,
+			Map<Locale, String> errorMessageMap, Map<Locale, String> labelMap,
+			String name, String objectActionExecutorKey,
+			String objectActionTriggerKey,
 			UnicodeProperties parametersUnicodeProperties, boolean system)
+		throws PortalException;
+
+	public void addOrUpdateSubscriptionObjectActions(
+			ObjectDefinition objectDefinition)
 		throws PortalException;
 
 	/**
@@ -225,6 +235,9 @@ public interface ObjectActionLocalService
 	public ObjectAction fetchObjectAction(long objectActionId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public ObjectAction fetchObjectAction(long objectDefinitionId, String name);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public ObjectAction fetchObjectAction(
 		String externalReferenceCode, long objectDefinitionId);
 
@@ -278,6 +291,10 @@ public interface ObjectActionLocalService
 			String uuid, long companyId)
 		throws PortalException;
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<ObjectAction> getObjectActions(
+		boolean active, String objectActionExecutorKey);
+
 	/**
 	 * Returns a range of all the object actions.
 	 *
@@ -307,6 +324,10 @@ public interface ObjectActionLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public int getObjectActionsCount();
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public Map<Long, List<ObjectAction>> getObjectActionsMap(
+		long companyId, boolean active, String objectActionTriggerKey);
+
 	/**
 	 * Returns the OSGi service identifier.
 	 *
@@ -320,6 +341,10 @@ public interface ObjectActionLocalService
 	@Override
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public PersistedModel getPersistedModel(Serializable primaryKeyObj)
+		throws PortalException;
+
+	@Indexable(type = IndexableType.REINDEX)
+	public ObjectAction updateActive(ObjectAction objectAction, boolean active)
 		throws PortalException;
 
 	/**
@@ -338,7 +363,7 @@ public interface ObjectActionLocalService
 	@Indexable(type = IndexableType.REINDEX)
 	public ObjectAction updateObjectAction(
 			String externalReferenceCode, long objectActionId, boolean active,
-			String conditionExpression, String description,
+			String conditionExpression, Map<Locale, String> descriptionMap,
 			Map<Locale, String> errorMessageMap, Map<Locale, String> labelMap,
 			String name, String objectActionExecutorKey,
 			String objectActionTriggerKey,
@@ -346,7 +371,17 @@ public interface ObjectActionLocalService
 		throws PortalException;
 
 	@Indexable(type = IndexableType.REINDEX)
+	@Retry(
+		acceptor = ExceptionRetryAcceptor.class,
+		properties = {
+			@Property(
+				name = ExceptionRetryAcceptor.EXCEPTION_NAME,
+				value = "org.hibernate.StaleStateException"
+			)
+		}
+	)
 	public ObjectAction updateStatus(long objectActionId, int status)
 		throws PortalException;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-524907175

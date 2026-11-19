@@ -18,25 +18,25 @@ public class ObjectFieldSettingImpl extends ObjectFieldSettingBaseImpl {
 
 	@Override
 	public boolean compareName(String name) {
-		if (Objects.equals(getName(), name)) {
-			return true;
-		}
-
-		return false;
+		return Objects.equals(getName(), name);
 	}
 
+	@Override
 	public List<ObjectFilter> getObjectFilters() {
 		return _objectFilters;
 	}
 
+	@Override
 	public ObjectStateFlow getObjectStateFlow() {
 		return _objectStateFlow;
 	}
 
+	@Override
 	public void setObjectFilters(List<ObjectFilter> objectFilters) {
 		_objectFilters = objectFilters;
 	}
 
+	@Override
 	public void setObjectStateFlow(ObjectStateFlow objectStateFlow) {
 		_objectStateFlow = objectStateFlow;
 	}

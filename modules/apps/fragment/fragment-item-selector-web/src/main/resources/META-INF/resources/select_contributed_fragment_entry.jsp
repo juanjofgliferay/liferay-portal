@@ -15,7 +15,9 @@ DefaultFragmentEntriesDisplayContext defaultFragmentEntriesDisplayContext = new 
 	managementToolbarDisplayContext="<%= new ContributedFragmentEntriesItemSelectorViewManagementToolbarDisplayContext(request, liferayPortletRequest, liferayPortletResponse, defaultFragmentEntriesDisplayContext.getFragmentsSearchContainer()) %>"
 />
 
-<clay:container-fluid>
+<clay:container-fluid
+	size="xxxl"
+>
 	<liferay-site-navigation:breadcrumb
 		breadcrumbEntries="<%= defaultFragmentEntriesDisplayContext.getBreadcrumbEntries() %>"
 	/>
@@ -31,7 +33,7 @@ DefaultFragmentEntriesDisplayContext defaultFragmentEntriesDisplayContext = new 
 				<clay:vertical-card
 					data-fragmententrykey="<%= fragmentEntry.getFragmentEntryKey() %>"
 					data-fragmententryname="<%= fragmentEntry.getName() %>"
-					verticalCard="<%= new FragmentEntryVerticalCard(fragmentEntry) %>"
+					verticalCard="<%= new FragmentEntryVerticalCard(fragmentEntry, themeDisplay) %>"
 				/>
 			</liferay-ui:search-container-column-text>
 		</liferay-ui:search-container-row>

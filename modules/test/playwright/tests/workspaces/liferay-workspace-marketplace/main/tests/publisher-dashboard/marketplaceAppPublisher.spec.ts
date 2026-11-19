@@ -1,0 +1,125 @@
+/**
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
+ */
+
+import {expect, mergeTests} from '@playwright/test';
+
+import {featureFlagsTest} from '../../../../../../fixtures/featureFlagsTest';
+import {getRandomInt} from '../../../../../../utils/getRandomInt';
+import {marketplaceHelper} from '../../fixtures/marketplaceHelper';
+import {marketplacePagesTest} from '../../fixtures/marketplacePages';
+import {marketplaceSiteFixture} from '../../fixtures/marketplaceSite';
+import {PublishProductPayload} from '../../types';
+import {products} from '../../utils/constants';
+
+export const test = mergeTests(
+	featureFlagsTest({
+		'LPD-48862': {enabled: true},
+	}),
+	marketplaceSiteFixture,
+	marketplacePagesTest,
+	marketplaceHelper
+);
+
+test.describe('Can Publish Marketplace Apps', () => {
+	let _account;
+	let _catalog;
+	let _productId;
+	const accountName = `Supplier Account${getRandomInt()}`;
+
+	test.beforeEach(
+		async ({marketplace, marketplaceHelper, publisherSolutionPage}) => {
+			const {account, catalog} =
+				await marketplaceHelper.createAccountUserCatalog({
+					accountName,
+					accountType: 'supplier',
+				});
+
+			_account = account;
+
+			_catalog = catalog;
+
+			await publisherSolutionPage.goto(
+				`web${marketplace.friendlyUrlPath}/publisher-dashboard#/solutions`
+			);
+		}
+	);
+
+	test.afterEach(async ({apiHelpers}) => {
+		await apiHelpers.headlessAdminUser.deleteAccount(_account.id);
+
+		await apiHelpers.headlessCommerceAdminCatalog.deleteProduct(_productId);
+
+		await apiHelpers.headlessCommerceAdminCatalog.deleteCatalog(
+			_catalog.id
+		);
+	});
+
+	for (const key of Object.keys(products)) {
+		const product = products[key as keyof typeof products];
+
+		test(`can publish "${product.name}"`, async ({
+			apiHelpers,
+			marketplace,
+			marketplaceHelper,
+			page,
+			publisherAppPage,
+			publisherDashboardPage,
+		}) => {
+			publisherAppPage.setPublishProduct(
+				product as unknown as PublishProductPayload
+			);
+
+			// Go to Publisher Dashboard
+
+			await publisherDashboardPage.goto(marketplace.friendlyUrlPath);
+
+			await marketplaceHelper.selectAccount(accountName);
+
+			await publisherDashboardPage.gotoNewAppPage();
+
+			// Publish the app
+
+			await publisherAppPage.checkHeader({
+				accountName,
+				appName: 'New App',
+			});
+			await publisherAppPage.continue();
+			await publisherAppPage.fillProfile();
+			await publisherAppPage.fillBuild();
+			await publisherAppPage.fillStoreFront();
+			await publisherAppPage.fillVersion();
+			await publisherAppPage.fillPricing();
+			await publisherAppPage.fillSupport();
+			await publisherAppPage.reviewAndSubmit();
+
+			const createdProduct =
+				await apiHelpers.headlessCommerceAdminCatalog.getProducts(
+					new URLSearchParams({
+						filter: `name eq '${product.name}'`,
+					})
+				);
+
+			const productId = createdProduct.items[0].productId;
+
+			_productId = productId;
+
+			await page.waitForResponse(
+				(response) =>
+					response.request().method() === 'POST' &&
+					response.url().includes('/o/c/publisherassetattachments')
+			);
+
+			const response = await apiHelpers.get(
+				`/o/c/publisherassetses?sort=dateCreated:desc&pageSize=1`
+			);
+
+			const hasVersion =
+				response.items[0]?.version === `${product.dxpVersions[0]}`;
+			expect(hasVersion).toBeTruthy();
+
+			await expect(page.getByText(product.name)).toBeTruthy();
+		});
+	}
+});

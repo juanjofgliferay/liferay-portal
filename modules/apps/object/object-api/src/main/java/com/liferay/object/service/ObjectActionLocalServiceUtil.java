@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -53,7 +54,8 @@ public class ObjectActionLocalServiceUtil {
 
 	public static ObjectAction addObjectAction(
 			String externalReferenceCode, long userId, long objectDefinitionId,
-			boolean active, String conditionExpression, String description,
+			boolean active, String conditionExpression,
+			Map<java.util.Locale, String> descriptionMap,
 			Map<java.util.Locale, String> errorMessageMap,
 			Map<java.util.Locale, String> labelMap, String name,
 			String objectActionExecutorKey, String objectActionTriggerKey,
@@ -64,15 +66,16 @@ public class ObjectActionLocalServiceUtil {
 
 		return getService().addObjectAction(
 			externalReferenceCode, userId, objectDefinitionId, active,
-			conditionExpression, description, errorMessageMap, labelMap, name,
-			objectActionExecutorKey, objectActionTriggerKey,
+			conditionExpression, descriptionMap, errorMessageMap, labelMap,
+			name, objectActionExecutorKey, objectActionTriggerKey,
 			parametersUnicodeProperties, system);
 	}
 
 	public static ObjectAction addOrUpdateObjectAction(
 			String externalReferenceCode, long objectActionId, long userId,
 			long objectDefinitionId, boolean active, String conditionExpression,
-			String description, Map<java.util.Locale, String> errorMessageMap,
+			Map<java.util.Locale, String> descriptionMap,
+			Map<java.util.Locale, String> errorMessageMap,
 			Map<java.util.Locale, String> labelMap, String name,
 			String objectActionExecutorKey, String objectActionTriggerKey,
 			com.liferay.portal.kernel.util.UnicodeProperties
@@ -82,9 +85,16 @@ public class ObjectActionLocalServiceUtil {
 
 		return getService().addOrUpdateObjectAction(
 			externalReferenceCode, objectActionId, userId, objectDefinitionId,
-			active, conditionExpression, description, errorMessageMap, labelMap,
-			name, objectActionExecutorKey, objectActionTriggerKey,
+			active, conditionExpression, descriptionMap, errorMessageMap,
+			labelMap, name, objectActionExecutorKey, objectActionTriggerKey,
 			parametersUnicodeProperties, system);
+	}
+
+	public static void addOrUpdateSubscriptionObjectActions(
+			com.liferay.object.model.ObjectDefinition objectDefinition)
+		throws PortalException {
+
+		getService().addOrUpdateSubscriptionObjectActions(objectDefinition);
 	}
 
 	/**
@@ -247,6 +257,12 @@ public class ObjectActionLocalServiceUtil {
 	}
 
 	public static ObjectAction fetchObjectAction(
+		long objectDefinitionId, String name) {
+
+		return getService().fetchObjectAction(objectDefinitionId, name);
+	}
+
+	public static ObjectAction fetchObjectAction(
 		String externalReferenceCode, long objectDefinitionId) {
 
 		return getService().fetchObjectAction(
@@ -324,6 +340,12 @@ public class ObjectActionLocalServiceUtil {
 		return getService().getObjectActionByUuidAndCompanyId(uuid, companyId);
 	}
 
+	public static List<ObjectAction> getObjectActions(
+		boolean active, String objectActionExecutorKey) {
+
+		return getService().getObjectActions(active, objectActionExecutorKey);
+	}
+
 	/**
 	 * Returns a range of all the object actions.
 	 *
@@ -359,6 +381,13 @@ public class ObjectActionLocalServiceUtil {
 		return getService().getObjectActionsCount();
 	}
 
+	public static Map<Long, List<ObjectAction>> getObjectActionsMap(
+		long companyId, boolean active, String objectActionTriggerKey) {
+
+		return getService().getObjectActionsMap(
+			companyId, active, objectActionTriggerKey);
+	}
+
 	/**
 	 * Returns the OSGi service identifier.
 	 *
@@ -377,6 +406,13 @@ public class ObjectActionLocalServiceUtil {
 		return getService().getPersistedModel(primaryKeyObj);
 	}
 
+	public static ObjectAction updateActive(
+			ObjectAction objectAction, boolean active)
+		throws PortalException {
+
+		return getService().updateActive(objectAction, active);
+	}
+
 	/**
 	 * Updates the object action in the database or adds it if it does not yet exist. Also notifies the appropriate model listeners.
 	 *
@@ -393,7 +429,8 @@ public class ObjectActionLocalServiceUtil {
 
 	public static ObjectAction updateObjectAction(
 			String externalReferenceCode, long objectActionId, boolean active,
-			String conditionExpression, String description,
+			String conditionExpression,
+			Map<java.util.Locale, String> descriptionMap,
 			Map<java.util.Locale, String> errorMessageMap,
 			Map<java.util.Locale, String> labelMap, String name,
 			String objectActionExecutorKey, String objectActionTriggerKey,
@@ -403,7 +440,7 @@ public class ObjectActionLocalServiceUtil {
 
 		return getService().updateObjectAction(
 			externalReferenceCode, objectActionId, active, conditionExpression,
-			description, errorMessageMap, labelMap, name,
+			descriptionMap, errorMessageMap, labelMap, name,
 			objectActionExecutorKey, objectActionTriggerKey,
 			parametersUnicodeProperties);
 	}
@@ -415,13 +452,12 @@ public class ObjectActionLocalServiceUtil {
 	}
 
 	public static ObjectActionLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(ObjectActionLocalService service) {
-		_service = service;
-	}
-
-	private static volatile ObjectActionLocalService _service;
+	private static final Snapshot<ObjectActionLocalService> _serviceSnapshot =
+		new Snapshot<>(
+			ObjectActionLocalServiceUtil.class, ObjectActionLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:370351074

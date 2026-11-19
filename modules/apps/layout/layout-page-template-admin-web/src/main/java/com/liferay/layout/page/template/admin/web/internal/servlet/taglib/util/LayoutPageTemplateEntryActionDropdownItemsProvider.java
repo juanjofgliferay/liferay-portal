@@ -17,8 +17,9 @@ import com.liferay.layout.page.template.admin.constants.LayoutPageTemplateAdminP
 import com.liferay.layout.page.template.admin.web.internal.configuration.LayoutPageTemplateAdminWebConfiguration;
 import com.liferay.layout.page.template.admin.web.internal.constants.LayoutPageTemplateAdminWebKeys;
 import com.liferay.layout.page.template.admin.web.internal.security.permission.resource.LayoutPageTemplateEntryPermission;
+import com.liferay.layout.page.template.admin.web.internal.util.LayoutPageTemplatePortletUtil;
 import com.liferay.layout.page.template.constants.LayoutPageTemplateEntryTypeConstants;
-import com.liferay.layout.page.template.item.selector.criterion.LayoutPageTemplateCollectionItemSelectorCriterion;
+import com.liferay.layout.page.template.item.selector.LayoutPageTemplateCollectionItemSelectorCriterion;
 import com.liferay.layout.page.template.model.LayoutPageTemplateEntry;
 import com.liferay.petra.function.UnsafeConsumer;
 import com.liferay.petra.string.StringPool;
@@ -26,6 +27,7 @@ import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.LayoutPrototype;
+import com.liferay.portal.kernel.portlet.LiferayPortletURL;
 import com.liferay.portal.kernel.portlet.LiferayWindowState;
 import com.liferay.portal.kernel.portlet.PortletURLFactoryUtil;
 import com.liferay.portal.kernel.portlet.RequestBackedPortletURLFactoryUtil;
@@ -48,15 +50,15 @@ import com.liferay.staging.StagingGroupHelper;
 import com.liferay.staging.StagingGroupHelperUtil;
 import com.liferay.taglib.security.PermissionsURLTag;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.List;
 import java.util.Objects;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Eudaldo Alonso
@@ -193,15 +195,17 @@ public class LayoutPageTemplateEntryActionDropdownItemsProvider {
 			PortletRequest.RENDER_PHASE);
 
 		return dropdownItem -> {
+			PortletDisplay portletDisplay = _themeDisplay.getPortletDisplay();
+
 			dropdownItem.setHref(
 				editPageURL, "mvcRenderCommandName",
 				"/layout_admin/edit_layout", "redirect",
 				_themeDisplay.getURLCurrent(), "backURL",
 				_themeDisplay.getURLCurrent(), "backURLTitle",
-				LanguageUtil.get(_httpServletRequest, "page-templates"),
-				"portletResource",
+				portletDisplay.getPortletDisplayName(), "portletResource",
 				LayoutPageTemplateAdminPortletKeys.LAYOUT_PAGE_TEMPLATES,
 				"selPlid", _layoutPageTemplateEntry.getPlid());
+
 			dropdownItem.setIcon("cog");
 			dropdownItem.setLabel(
 				LanguageUtil.get(_httpServletRequest, "configure"));
@@ -218,6 +222,14 @@ public class LayoutPageTemplateEntryActionDropdownItemsProvider {
 				"/edit_layout_prototype.jsp"
 			).setRedirect(
 				_themeDisplay.getURLCurrent()
+			).setParameter(
+				"backURLTitle",
+				() -> {
+					PortletDisplay portletDisplay =
+						_themeDisplay.getPortletDisplay();
+
+					return portletDisplay.getPortletDisplayName();
+				}
 			).setParameter(
 				"layoutPrototypeId",
 				_layoutPageTemplateEntry.getLayoutPrototypeId()
@@ -347,7 +359,9 @@ public class LayoutPageTemplateEntryActionDropdownItemsProvider {
 			dropdownItem.setHref(
 				HttpComponentsUtil.addParameters(
 					PortalUtil.getLayoutFullURL(_draftLayout, _themeDisplay),
-					"p_l_back_url", _themeDisplay.getURLCurrent(),
+					"p_l_back_url",
+					LayoutPageTemplatePortletUtil.getBackURL(
+						_renderResponse, _themeDisplay),
 					"p_l_back_url_title", portletDisplay.getTitle(), "p_l_mode",
 					Constants.EDIT));
 			dropdownItem.setIcon("pencil");
@@ -360,9 +374,8 @@ public class LayoutPageTemplateEntryActionDropdownItemsProvider {
 		_getExportLayoutPageTemplateEntryActionUnsafeConsumer() {
 
 		return dropdownItem -> {
-			dropdownItem.setDisabled(_layoutPageTemplateEntry.isDraft());
-			dropdownItem.setHref(
-				ResourceURLBuilder.createResourceURL(
+			LiferayPortletURL exportLayoutPageTemplateEntryURL =
+				(LiferayPortletURL)ResourceURLBuilder.createResourceURL(
 					_renderResponse
 				).setParameter(
 					"layoutPageTemplateCollectionId",
@@ -373,7 +386,13 @@ public class LayoutPageTemplateEntryActionDropdownItemsProvider {
 				).setResourceID(
 					"/layout_page_template_admin" +
 						"/export_layout_page_template_entries"
-				).buildString());
+				).buildResourceURL();
+
+			exportLayoutPageTemplateEntryURL.setCopyCurrentRenderParameters(
+				false);
+
+			dropdownItem.setDisabled(_layoutPageTemplateEntry.isDraft());
+			dropdownItem.setHref(exportLayoutPageTemplateEntryURL.toString());
 			dropdownItem.setIcon("upload");
 			dropdownItem.setLabel(
 				LanguageUtil.get(_httpServletRequest, "export"));
@@ -417,7 +436,7 @@ public class LayoutPageTemplateEntryActionDropdownItemsProvider {
 
 		RenderResponse renderResponse =
 			(RenderResponse)_httpServletRequest.getAttribute(
-				JavaConstants.JAVAX_PORTLET_RESPONSE);
+				JavaConstants.JAKARTA_PORTLET_RESPONSE);
 
 		LayoutPageTemplateCollectionItemSelectorCriterion
 			layoutPageTemplateCollectionItemSelectorCriterion =
@@ -606,11 +625,7 @@ public class LayoutPageTemplateEntryActionDropdownItemsProvider {
 		StagingGroupHelper stagingGroupHelper =
 			StagingGroupHelperUtil.getStagingGroupHelper();
 
-		if (stagingGroupHelper.isLiveGroup(group)) {
-			return true;
-		}
-
-		return false;
+		return stagingGroupHelper.isLiveGroup(group);
 	}
 
 	private boolean _isShowDiscardDraftAction() {
@@ -618,11 +633,7 @@ public class LayoutPageTemplateEntryActionDropdownItemsProvider {
 			return false;
 		}
 
-		if (_draftLayout.isDraft()) {
-			return true;
-		}
-
-		return false;
+		return _draftLayout.isDraft();
 	}
 
 	private final Layout _draftLayout;

@@ -97,9 +97,11 @@ public class CPInstanceModelPreFilterContributor
 			String fieldValue = GetterUtil.getString(
 				searchContext.getAttribute(fieldName));
 
-			if (Validator.isNotNull(fieldValue)) {
-				booleanFilter.addRequiredTerm(fieldName, fieldValue);
+			if (Validator.isNull(fieldValue)) {
+				continue;
 			}
+
+			booleanFilter.addRequiredTerm(fieldName, fieldValue);
 		}
 	}
 
@@ -117,10 +119,10 @@ public class CPInstanceModelPreFilterContributor
 	private void _filterByPurchasable(
 		BooleanFilter booleanFilter, SearchContext searchContext) {
 
-		boolean published = GetterUtil.getBoolean(
+		boolean purchasable = GetterUtil.getBoolean(
 			searchContext.getAttribute(CPField.PURCHASABLE));
 
-		if (published) {
+		if (purchasable) {
 			booleanFilter.addRequiredTerm(CPField.PURCHASABLE, true);
 		}
 	}

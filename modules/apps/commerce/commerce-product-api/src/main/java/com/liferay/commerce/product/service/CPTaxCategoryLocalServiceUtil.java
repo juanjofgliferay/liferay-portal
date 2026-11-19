@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -349,6 +350,14 @@ public class CPTaxCategoryLocalServiceUtil {
 		return getService().getIndexableActionableDynamicQuery();
 	}
 
+	public static CPTaxCategory getOrAddEmptyCPTaxCategory(
+			String externalReferenceCode, long companyId, long userId)
+		throws PortalException {
+
+		return getService().getOrAddEmptyCPTaxCategory(
+			externalReferenceCode, companyId, userId);
+	}
+
 	/**
 	 * Returns the OSGi service identifier.
 	 *
@@ -404,13 +413,13 @@ public class CPTaxCategoryLocalServiceUtil {
 	}
 
 	public static CPTaxCategoryLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(CPTaxCategoryLocalService service) {
-		_service = service;
-	}
-
-	private static volatile CPTaxCategoryLocalService _service;
+	private static final Snapshot<CPTaxCategoryLocalService> _serviceSnapshot =
+		new Snapshot<>(
+			CPTaxCategoryLocalServiceUtil.class,
+			CPTaxCategoryLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-709608358

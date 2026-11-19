@@ -28,7 +28,13 @@ public interface FileVersion extends RepositoryModel<FileVersion> {
 	@Override
 	public Date getCreateDate();
 
+	public default long getCtCollectionId() {
+		return 0;
+	}
+
 	public String getDescription();
+
+	public Date getDisplayDate();
 
 	@Override
 	public ExpandoBridge getExpandoBridge();
@@ -95,5 +101,7 @@ public interface FileVersion extends RepositoryModel<FileVersion> {
 	public boolean isExpired();
 
 	public boolean isPending();
+
+	public boolean isScheduled();
 
 }

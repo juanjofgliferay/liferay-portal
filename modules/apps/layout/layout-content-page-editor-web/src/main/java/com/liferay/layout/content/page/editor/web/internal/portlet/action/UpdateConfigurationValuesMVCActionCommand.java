@@ -6,7 +6,6 @@
 package com.liferay.layout.content.page.editor.web.internal.portlet.action;
 
 import com.liferay.fragment.constants.FragmentEntryLinkConstants;
-import com.liferay.fragment.entry.processor.constants.FragmentEntryProcessorConstants;
 import com.liferay.fragment.listener.FragmentEntryLinkListener;
 import com.liferay.fragment.listener.FragmentEntryLinkListenerRegistry;
 import com.liferay.fragment.model.FragmentEntryLink;
@@ -14,25 +13,31 @@ import com.liferay.fragment.processor.DefaultFragmentEntryProcessorContext;
 import com.liferay.fragment.processor.FragmentEntryProcessorContext;
 import com.liferay.fragment.processor.FragmentEntryProcessorRegistry;
 import com.liferay.fragment.service.FragmentEntryLinkService;
+import com.liferay.fragment.util.configuration.FragmentConfigurationField;
+import com.liferay.fragment.util.configuration.FragmentEntryConfigurationParser;
 import com.liferay.layout.content.page.editor.constants.ContentPageEditorPortletKeys;
-import com.liferay.layout.content.page.editor.web.internal.manager.ContentManager;
 import com.liferay.layout.content.page.editor.web.internal.manager.FragmentEntryLinkManager;
 import com.liferay.layout.content.page.editor.web.internal.util.layout.structure.LayoutStructureUtil;
 import com.liferay.layout.util.structure.LayoutStructure;
 import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
-import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import java.util.Iterator;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.Locale;
+import java.util.Set;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -42,7 +47,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + ContentPageEditorPortletKeys.CONTENT_PAGE_EDITOR_PORTLET,
+		"jakarta.portlet.name=" + ContentPageEditorPortletKeys.CONTENT_PAGE_EDITOR_PORTLET,
 		"mvc.command.name=/layout_content_page_editor/update_configuration_values"
 	},
 	service = MVCActionCommand.class
@@ -58,16 +63,14 @@ public class UpdateConfigurationValuesMVCActionCommand
 		return _processUpdateConfigurationValues(actionRequest, actionResponse);
 	}
 
-	private JSONObject _mergeEditableValuesJSONObject(
-			JSONObject defaultEditableValuesJSONObject, String editableValues)
-		throws Exception {
+	private void _addDefaultEditableValues(
+		JSONObject defaultEditableValuesJSONObject,
+		JSONObject editableValuesJSONObject) {
 
-		JSONObject editableValuesJSONObject = _jsonFactory.createJSONObject(
-			editableValues);
+		Set<String> fragmentEntryProcessorKeys =
+			editableValuesJSONObject.keySet();
 
-		for (String fragmentEntryProcessorKey :
-				_FRAGMENT_ENTRY_PROCESSOR_KEYS) {
-
+		for (String fragmentEntryProcessorKey : fragmentEntryProcessorKeys) {
 			JSONObject editableFragmentEntryProcessorJSONObject =
 				editableValuesJSONObject.getJSONObject(
 					fragmentEntryProcessorKey);
@@ -77,30 +80,98 @@ public class UpdateConfigurationValuesMVCActionCommand
 					fragmentEntryProcessorKey);
 
 			if (defaultEditableFragmentEntryProcessorJSONObject == null) {
+				defaultEditableValuesJSONObject.put(
+					fragmentEntryProcessorKey,
+					editableFragmentEntryProcessorJSONObject);
+
 				continue;
 			}
 
-			if (editableFragmentEntryProcessorJSONObject != null) {
-				Iterator<String> iterator =
-					defaultEditableFragmentEntryProcessorJSONObject.keys();
+			Set<String> editableIds =
+				editableFragmentEntryProcessorJSONObject.keySet();
 
-				while (iterator.hasNext()) {
-					String key = iterator.next();
+			for (String editableId : editableIds) {
+				if (defaultEditableFragmentEntryProcessorJSONObject.has(
+						editableId)) {
 
-					if (editableFragmentEntryProcessorJSONObject.has(key)) {
-						defaultEditableFragmentEntryProcessorJSONObject.put(
-							key,
-							editableFragmentEntryProcessorJSONObject.get(key));
-					}
+					continue;
 				}
-			}
 
-			editableValuesJSONObject.put(
-				fragmentEntryProcessorKey,
-				defaultEditableFragmentEntryProcessorJSONObject);
+				defaultEditableFragmentEntryProcessorJSONObject.put(
+					editableId,
+					editableFragmentEntryProcessorJSONObject.get(editableId));
+			}
+		}
+	}
+
+	private JSONObject _getDefaultEditableValuesJSONObject(
+			ActionRequest actionRequest, ActionResponse actionResponse,
+			FragmentEntryLink fragmentEntryLink, ThemeDisplay themeDisplay)
+		throws Exception {
+
+		JSONObject defaultEditableValuesJSONObject =
+			_jsonFactory.createJSONObject();
+
+		JSONObject configurationJSONObject =
+			fragmentEntryLink.getConfigurationJSONObject();
+
+		for (Locale locale :
+				_getLocales(configurationJSONObject, themeDisplay)) {
+
+			FragmentEntryProcessorContext fragmentEntryProcessorContext =
+				new DefaultFragmentEntryProcessorContext(
+					fragmentEntryLink.getCompanyId(),
+					_portal.getHttpServletRequest(actionRequest),
+					_portal.getHttpServletResponse(actionResponse), locale,
+					FragmentEntryLinkConstants.EDIT,
+					fragmentEntryLink.getGroupId());
+
+			_addDefaultEditableValues(
+				defaultEditableValuesJSONObject,
+				_fragmentEntryProcessorRegistry.
+					getDefaultEditableValuesJSONObject(
+						_fragmentEntryProcessorRegistry.
+							processFragmentEntryLinkHTML(
+								fragmentEntryLink,
+								fragmentEntryProcessorContext),
+						configurationJSONObject));
 		}
 
-		return editableValuesJSONObject;
+		return defaultEditableValuesJSONObject;
+	}
+
+	private Collection<Locale> _getLocales(
+			JSONObject configurationJSONObject, ThemeDisplay themeDisplay)
+		throws Exception {
+
+		Locale locale = _portal.getSiteDefaultLocale(
+			themeDisplay.getSiteGroupId());
+
+		if (!ListUtil.exists(
+				_fragmentEntryConfigurationParser.
+					getFragmentConfigurationFields(configurationJSONObject),
+				FragmentConfigurationField::isLocalizable)) {
+
+			return Collections.singletonList(locale);
+		}
+
+		Collection<Locale> locales = new LinkedHashSet<>();
+
+		locales.add(locale);
+
+		locales.addAll(
+			_language.getAvailableLocales(themeDisplay.getSiteGroupId()));
+
+		return locales;
+	}
+
+	private JSONObject _mergeEditableValuesJSONObject(
+			JSONObject defaultEditableValuesJSONObject, String editableValues)
+		throws Exception {
+
+		return _fragmentEntryLinkManager.mergeEditableValuesJSONObject(
+			defaultEditableValuesJSONObject,
+			_jsonFactory.createJSONObject(editableValues));
 	}
 
 	private JSONObject _processUpdateConfigurationValues(
@@ -120,20 +191,9 @@ public class UpdateConfigurationValuesMVCActionCommand
 			_fragmentEntryLinkService.updateFragmentEntryLink(
 				fragmentEntryLinkId, editableValues);
 
-		FragmentEntryProcessorContext fragmentEntryProcessorContext =
-			new DefaultFragmentEntryProcessorContext(
-				_portal.getHttpServletRequest(actionRequest),
-				_portal.getHttpServletResponse(actionResponse),
-				FragmentEntryLinkConstants.EDIT,
-				LocaleUtil.getMostRelevantLocale());
-
-		String processedHTML =
-			_fragmentEntryProcessorRegistry.processFragmentEntryLinkHTML(
-				fragmentEntryLink, fragmentEntryProcessorContext);
-
 		JSONObject newEditableValuesJSONObject = _mergeEditableValuesJSONObject(
-			_fragmentEntryProcessorRegistry.getDefaultEditableValuesJSONObject(
-				processedHTML, fragmentEntryLink.getConfiguration()),
+			_getDefaultEditableValuesJSONObject(
+				actionRequest, actionResponse, fragmentEntryLink, themeDisplay),
 			editableValues);
 
 		fragmentEntryLink = _fragmentEntryLinkService.updateFragmentEntryLink(
@@ -159,24 +219,11 @@ public class UpdateConfigurationValuesMVCActionCommand
 				_portal.getHttpServletResponse(actionResponse), layoutStructure)
 		).put(
 			"layoutData", layoutStructure.toJSONObject()
-		).put(
-			"pageContents",
-			_contentManager.getPageContentsJSONArray(
-				_portal.getHttpServletRequest(actionRequest),
-				_portal.getHttpServletResponse(actionResponse),
-				themeDisplay.getPlid(),
-				ParamUtil.getLong(actionRequest, "segmentsExperienceId"))
 		);
 	}
 
-	private static final String[] _FRAGMENT_ENTRY_PROCESSOR_KEYS = {
-		FragmentEntryProcessorConstants.
-			KEY_BACKGROUND_IMAGE_FRAGMENT_ENTRY_PROCESSOR,
-		FragmentEntryProcessorConstants.KEY_EDITABLE_FRAGMENT_ENTRY_PROCESSOR
-	};
-
 	@Reference
-	private ContentManager _contentManager;
+	private FragmentEntryConfigurationParser _fragmentEntryConfigurationParser;
 
 	@Reference
 	private FragmentEntryLinkListenerRegistry
@@ -193,6 +240,9 @@ public class UpdateConfigurationValuesMVCActionCommand
 
 	@Reference
 	private JSONFactory _jsonFactory;
+
+	@Reference
+	private Language _language;
 
 	@Reference
 	private Portal _portal;

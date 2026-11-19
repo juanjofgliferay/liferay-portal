@@ -1,0 +1,201 @@
+import * as API from 'shared/api';
+import * as data from 'test/data';
+import mockStore from 'test/mock-store';
+import React from 'react';
+import View from '../View';
+import {
+	cleanup,
+	fireEvent,
+	render,
+	screen
+} from '@testing-library/react';
+import {Provider} from 'react-redux';
+import {MemoryRouter} from 'react-router';
+import {User} from 'shared/util/records';
+import {waitForLoadingToBeRemoved} from 'test/helpers';
+
+jest.unmock('react-dom');
+
+jest.mock('react-router-dom', () => ({
+	...jest.requireActual('react-router-dom'),
+	useParams: () => ({
+		groupId: '23'
+	})
+}));
+
+const defaultProps = {
+	currentUser: new User(data.mockUser()),
+	groupId: '23'
+};
+
+const DefaultComponent = props => {
+	API.preferences.fetchEmailReport = jest.fn(() => Promise.resolve());
+
+	return (
+		<Provider store={mockStore()}>
+			<MemoryRouter>
+				<View {...defaultProps} {...props} />
+			</MemoryRouter>
+		</Provider>
+	);
+};
+
+describe('View Channel', () => {
+	afterEach(() => {
+		cleanup();
+
+		jest.clearAllMocks();
+	});
+
+	it('should render', async () => {
+		const {container} = render(<DefaultComponent />);
+
+		await waitForLoadingToBeRemoved(container);
+
+		expect(container).toMatchSnapshot();
+	});
+
+	it('should render w/ Select Users view', async () => {
+		API.channels.fetch.mockReturnValueOnce(
+			Promise.resolve(data.mockChannel(1, 1))
+		);
+
+		const {container} = render(<DefaultComponent />);
+
+		await waitForLoadingToBeRemoved(container);
+
+		expect(screen.getByLabelText('Select Users').checked).toBeTrue();
+		expect(container.querySelector('.table-root')).toBeTruthy();
+	});
+
+	it('should not edit or delete property when the user is not an admin', () => {
+		API.user.fetchCurrentUser.mockReturnValueOnce(
+			Promise.resolve(data.mockMemberUser())
+		);
+
+		const {queryByLabelText, queryByText} = render(<DefaultComponent />);
+
+		expect(queryByText('Delete')).toBeNull();
+		expect(queryByLabelText('Edit')).toBeNull();
+	});
+
+	it('should check if DELETE and CLEAR DATA buttons are displayed', async () => {
+		API.user.fetchCurrentUser.mockReturnValueOnce(
+			Promise.resolve(data.mockUser())
+		);
+
+		const {container, queryByText} = render(<DefaultComponent />);
+
+		await waitForLoadingToBeRemoved(container);
+
+		expect(queryByText('Delete')).toBeInTheDocument();
+		expect(queryByText('Clear Data')).toBeInTheDocument();
+	});
+
+	it('should check error modal message and hyperlink on deleting property that has SITES synced', async () => {
+		API.user.fetchCurrentUser.mockReturnValueOnce(
+			Promise.resolve(data.mockUser())
+		);
+
+		API.channels.fetch.mockReturnValueOnce(
+			Promise.resolve(
+				data.mockChannel(1, 1, {
+					groupsCount: 5
+				})
+			)
+		);
+
+		const {container} = render(<DefaultComponent />);
+
+		await waitForLoadingToBeRemoved(container);
+
+		expect(
+			screen.getByText('There are 5 sites synced to this property.')
+		).toBeInTheDocument();
+
+		const deleteBtn = screen.getByTestId('delete');
+
+		fireEvent.click(deleteBtn);
+
+		expect(await screen.findByRole('dialog')).toBeInTheDocument();
+
+		expect(
+			await screen.findByText('Unable to Delete Property')
+		).toBeInTheDocument();
+
+		const modalText = screen.getByText((content, node) => {
+			const hasText = node =>
+				node.textContent ===
+				'Ensure no sites are assigned to it before deleting a property. To disconnect them from a property, navigate to Instance Settings > Analytics Cloud > Properties and select the properties with synchronizations that you wish to undo. Access our documentation to learn more.(Opens a new window)';
+			const nodeHasText = hasText(node);
+			const childrenDontHaveText = Array.from(node.children).every(
+				child => !hasText(child)
+			);
+
+			return nodeHasText && childrenDontHaveText;
+		});
+
+		expect(modalText).toBeTruthy();
+
+		expect(
+			screen.getByText('Access our documentation to learn more.')
+		).toBeInTheDocument();
+
+		expect(
+			screen.getByText('Access our documentation to learn more.')
+		).toHaveAttribute(
+			'href',
+			'https://learn.liferay.com/w/dxp/personalization/analytics-cloud/workspace-settings/managing-properties#adding-and-removing-users-to-a-property'
+		);
+	});
+
+	it('should check error modal message and hyperlink on deleting property that has SITES NOT synced', async () => {
+		API.user.fetchCurrentUser.mockReturnValueOnce(
+			Promise.resolve(data.mockUser())
+		);
+
+		API.channels.fetch.mockReturnValueOnce(
+			Promise.resolve(
+				data.mockChannel(1, 1, {
+					groupsCount: 0
+				})
+			)
+		);
+
+		const {container} = render(<DefaultComponent />);
+
+		await waitForLoadingToBeRemoved(container);
+
+		expect(
+			screen.getByText('There are 0 sites synced to this property.')
+		).toBeInTheDocument();
+
+		const deleteBtn = screen.getByTestId('delete');
+
+		fireEvent.click(deleteBtn);
+
+		expect(await screen.findByRole('dialog')).toBeInTheDocument();
+
+		expect(
+			await screen.findByText('Delete Channel 1?')
+		).toBeInTheDocument();
+
+		expect(
+			screen.getByText(
+				'To delete Channel 1, copy the sentence below to confirm your intention to delete property.'
+			)
+		).toBeInTheDocument();
+	});
+
+	it('should render a warning modal when the user toggles from All User to Select User property permissions', async () => {
+		const {container} = render(<DefaultComponent />);
+
+		await waitForLoadingToBeRemoved(container);
+
+		expect(screen.queryByText('Permissions Change')).toBeNull();
+
+		fireEvent.click(screen.getByLabelText('Select Users'));
+
+		expect(await screen.findByText('Permissions Change')).toBeTruthy();
+	});
+});

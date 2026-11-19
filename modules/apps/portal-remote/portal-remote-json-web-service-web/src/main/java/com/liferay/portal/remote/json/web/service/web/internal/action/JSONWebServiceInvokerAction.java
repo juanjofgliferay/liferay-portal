@@ -11,12 +11,14 @@ import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONSerializable;
 import com.liferay.portal.kernel.json.JSONSerializer;
-import com.liferay.portal.kernel.jsonwebservice.JSONWebServiceAction;
-import com.liferay.portal.kernel.jsonwebservice.JSONWebServiceActionsManagerUtil;
 import com.liferay.portal.kernel.util.CamelCaseUtil;
 import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.remote.json.web.service.JSONWebServiceAction;
+import com.liferay.portal.remote.json.web.service.JSONWebServiceActionsManager;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.io.IOException;
 
@@ -31,12 +33,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import javax.servlet.http.HttpServletRequest;
-
 import jodd.bean.BeanUtil;
 
 import jodd.json.BeanSerializer;
-import jodd.json.JsonContext;
 import jodd.json.JsonSerializer;
 
 /**
@@ -45,7 +44,11 @@ import jodd.json.JsonSerializer;
  */
 public class JSONWebServiceInvokerAction implements JSONWebServiceAction {
 
-	public JSONWebServiceInvokerAction(HttpServletRequest httpServletRequest) {
+	public JSONWebServiceInvokerAction(
+		JSONWebServiceActionsManager jsonWebServiceActionsManager,
+		HttpServletRequest httpServletRequest) {
+
+		_jsonWebServiceActionsManager = jsonWebServiceActionsManager;
 		_httpServletRequest = httpServletRequest;
 
 		String command = httpServletRequest.getParameter(Constants.CMD);
@@ -162,6 +165,36 @@ public class JSONWebServiceInvokerAction implements JSONWebServiceAction {
 
 	}
 
+	private static Map<String, Object> _toJSONMap(Object object) {
+		if (object == null) {
+			return new LinkedHashMap<>();
+		}
+
+		if (object instanceof Map) {
+			return (Map<String, Object>)object;
+		}
+
+		Map<String, Object> map = new LinkedHashMap<>();
+
+		BeanSerializer beanSerializer = new BeanSerializer(
+			_jsonSerializer.createJsonContext(null), object) {
+
+			@Override
+			protected void onSerializableProperty(
+				String propertyName,
+				@SuppressWarnings("rawtypes") Class propertyClass,
+				Object value) {
+
+				map.put(propertyName, value);
+			}
+
+		};
+
+		beanSerializer.serialize();
+
+		return map;
+	}
+
 	private void _addInclude(Statement statement, String name) {
 		if (_includes == null) {
 			_includes = new ArrayList<>();
@@ -196,11 +229,10 @@ public class JSONWebServiceInvokerAction implements JSONWebServiceAction {
 
 		result = _populateFlags(statement, result);
 
+		Map<String, Object> map = _convertObjectToMap(result, null, statement);
+
 		String name = variableStatement.getName();
-
 		Object variableResult = _executeStatement(variableStatement);
-
-		Map<String, Object> map = _convertObjectToMap(statement, result, null);
 
 		if (!variableStatement.isInner()) {
 			map.put(name.substring(1), variableResult);
@@ -228,7 +260,7 @@ public class JSONWebServiceInvokerAction implements JSONWebServiceAction {
 
 			for (Object innerListElement : innerList) {
 				Map<String, Object> newInnerListElement = _convertObjectToMap(
-					statement, innerListElement, innerObjectName);
+					innerListElement, innerObjectName, statement);
 
 				newInnerListElement.put(innerPropertyName, variableResult);
 
@@ -239,7 +271,7 @@ public class JSONWebServiceInvokerAction implements JSONWebServiceAction {
 		}
 		else {
 			Map<String, Object> innerMap = _convertObjectToMap(
-				statement, innerObject, innerObjectName);
+				innerObject, innerObjectName, statement);
 
 			innerMap.put(innerPropertyName, variableResult);
 
@@ -318,45 +350,28 @@ public class JSONWebServiceInvokerAction implements JSONWebServiceAction {
 	}
 
 	private Map<String, Object> _convertObjectToMap(
-		final Statement statement, Object object, final String prefix) {
+		Object object, String prefix, Statement statement) {
 
 		if (object instanceof Map) {
 			return (Map<String, Object>)object;
 		}
 
-		JsonContext jsonContext = _jsonSerializer.createJsonContext(null);
-		final Map<String, Object> map = new LinkedHashMap<>();
+		Map<String, Object> map = _toJSONMap(object);
 
-		BeanSerializer beanSerializer = new BeanSerializer(
-			jsonContext, object) {
-
-			@Override
-			protected void onSerializableProperty(
-				String propertyName,
-				@SuppressWarnings("rawtypes") Class propertyClass,
-				Object value) {
-
-				map.put(propertyName, value);
-
-				String include = propertyName;
-
-				if (prefix != null) {
-					include = prefix + "." + include;
-				}
-
-				_addInclude(statement, include);
+		for (String name : map.keySet()) {
+			if (prefix != null) {
+				name = prefix + StringPool.PERIOD + name;
 			}
 
-		};
-
-		beanSerializer.serialize();
+			_addInclude(statement, name);
+		}
 
 		return map;
 	}
 
 	private Object _executeStatement(Statement statement) throws Exception {
 		JSONWebServiceAction jsonWebServiceAction =
-			JSONWebServiceActionsManagerUtil.getJSONWebServiceAction(
+			_jsonWebServiceActionsManager.getJSONWebServiceAction(
 				_httpServletRequest, statement.getMethod(), null,
 				statement.getParameterMap());
 
@@ -440,7 +455,7 @@ public class JSONWebServiceInvokerAction implements JSONWebServiceAction {
 			return result;
 		}
 
-		Map<String, Object> map = _convertObjectToMap(statement, result, null);
+		Map<String, Object> map = _convertObjectToMap(result, null, statement);
 
 		Map<String, Object> whitelistMap = new HashMap<>();
 
@@ -615,7 +630,7 @@ public class JSONWebServiceInvokerAction implements JSONWebServiceAction {
 					Map<String, Object> parameterMap =
 						statement.getParameterMap();
 
-					Object propertyValue = BeanUtil.declared.getProperty(
+					Object propertyValue = _resolveJSONProperty(
 						object, value.substring(name.length()));
 
 					parameterMap.put(flag.getKey(), propertyValue);
@@ -624,7 +639,7 @@ public class JSONWebServiceInvokerAction implements JSONWebServiceAction {
 					Map<String, Object> parameterMap =
 						statement.getParameterMap();
 
-					Object propertyValue = BeanUtil.declared.getProperty(
+					Object propertyValue = _resolveJSONProperty(
 						statement._pushTarget,
 						value.substring(pushedName.length()));
 
@@ -634,11 +649,29 @@ public class JSONWebServiceInvokerAction implements JSONWebServiceAction {
 		}
 	}
 
+	private Object _resolveJSONProperty(Object object, String propertyName) {
+		if (object == null) {
+			return null;
+		}
+
+		int index = propertyName.indexOf(CharPool.PERIOD);
+		Map<String, Object> map = _toJSONMap(object);
+
+		if (index == -1) {
+			return map.get(propertyName);
+		}
+
+		return _resolveJSONProperty(
+			map.get(propertyName.substring(0, index)),
+			propertyName.substring(index + 1));
+	}
+
 	private static final JsonSerializer _jsonSerializer = new JsonSerializer();
 
 	private final String _command;
 	private final HttpServletRequest _httpServletRequest;
 	private List<String> _includes;
+	private final JSONWebServiceActionsManager _jsonWebServiceActionsManager;
 	private final List<Statement> _statements = new ArrayList<>();
 
 	private static class Statement {
@@ -730,7 +763,14 @@ public class JSONWebServiceInvokerAction implements JSONWebServiceAction {
 
 			String beanName = variableName.substring(0, index);
 
-			result = BeanUtil.declared.getProperty(result, beanName);
+			Map<String, Object> map = _toJSONMap(result);
+
+			if (map.containsKey(beanName)) {
+				result = BeanUtil.declared.getProperty(result, beanName);
+			}
+			else {
+				result = null;
+			}
 
 			statement.setName(
 				statement.getName() + StringPool.PERIOD + beanName);

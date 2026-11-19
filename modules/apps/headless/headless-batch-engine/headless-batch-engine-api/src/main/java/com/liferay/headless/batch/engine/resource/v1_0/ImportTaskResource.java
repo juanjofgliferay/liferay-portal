@@ -6,8 +6,6 @@
 package com.liferay.headless.batch.engine.resource.v1_0;
 
 import com.liferay.headless.batch.engine.dto.v1_0.ImportTask;
-import com.liferay.portal.kernel.search.Sort;
-import com.liferay.portal.kernel.search.filter.Filter;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.ResourceActionLocalService;
 import com.liferay.portal.kernel.service.ResourcePermissionLocalService;
@@ -18,18 +16,18 @@ import com.liferay.portal.odata.sort.SortParserProvider;
 import com.liferay.portal.vulcan.accept.language.AcceptLanguage;
 import com.liferay.portal.vulcan.multipart.MultipartBody;
 
+import jakarta.annotation.Generated;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriInfo;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-
-import javax.annotation.Generated;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
 
 import org.osgi.annotation.versioning.ProviderType;
 
@@ -45,6 +43,33 @@ import org.osgi.annotation.versioning.ProviderType;
 @ProviderType
 public interface ImportTaskResource {
 
+	public ImportTask deleteImportTask(
+			String className, String callbackURL, String externalReferenceCode,
+			String importStrategy, String taskItemDelegateName,
+			MultipartBody multipartBody)
+		throws Exception;
+
+	/**
+	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link #deleteImportTaskObject(String, String, String, String, String, Object)}
+	 */
+	@Deprecated
+	public default ImportTask deleteImportTask(
+			String className, String callbackURL, String externalReferenceCode,
+			String importStrategy, String taskItemDelegateName, Object object)
+		throws Exception {
+
+		return deleteImportTaskObject(
+			className, callbackURL, externalReferenceCode, importStrategy,
+			taskItemDelegateName, object);
+	}
+
+	public ImportTask deleteImportTaskObject(
+			String className, String callbackURL, String externalReferenceCode,
+			String importStrategy, String taskItemDelegateName, Object object)
+		throws Exception;
+
+	public ImportTask getImportTask(Long importTaskId) throws Exception;
+
 	public ImportTask getImportTaskByExternalReferenceCode(
 			String externalReferenceCode)
 		throws Exception;
@@ -57,34 +82,43 @@ public interface ImportTaskResource {
 			String externalReferenceCode)
 		throws Exception;
 
-	public ImportTask deleteImportTask(
-			String className, String callbackURL, String externalReferenceCode,
-			String importStrategy, String taskItemDelegateName, Object object)
-		throws Exception;
+	public Response getImportTaskContent(Long importTaskId) throws Exception;
 
-	public ImportTask deleteImportTask(
-			String className, String callbackURL, String externalReferenceCode,
-			String importStrategy, String taskItemDelegateName,
-			MultipartBody multipartBody)
+	public Response getImportTaskFailedItemReport(Long importTaskId)
 		throws Exception;
 
 	public ImportTask postImportTask(
-			String className, String callbackURL, String createStrategy,
-			String externalReferenceCode, String fieldNameMapping,
-			String importStrategy, String taskItemDelegateName, Object object)
+			String className, String batchExternalReferenceCode,
+			String batchRestrictFields, String callbackURL,
+			String createStrategy, String externalReferenceCode,
+			String fieldNameMapping, String importStrategy,
+			String taskItemDelegateName, MultipartBody multipartBody)
 		throws Exception;
 
-	public ImportTask postImportTask(
-			String className, String callbackURL, String createStrategy,
-			String externalReferenceCode, String fieldNameMapping,
-			String importStrategy, String taskItemDelegateName,
-			MultipartBody multipartBody)
-		throws Exception;
+	/**
+	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link #postImportTaskObject(String, String, String, String, String, String, String, String, String, Object)}
+	 */
+	@Deprecated
+	public default ImportTask postImportTask(
+			String className, String batchExternalReferenceCode,
+			String batchRestrictFields, String callbackURL,
+			String createStrategy, String externalReferenceCode,
+			String fieldNameMapping, String importStrategy,
+			String taskItemDelegateName, Object object)
+		throws Exception {
 
-	public ImportTask putImportTask(
-			String className, String callbackURL, String externalReferenceCode,
-			String importStrategy, String taskItemDelegateName,
-			String updateStrategy, Object object)
+		return postImportTaskObject(
+			className, batchExternalReferenceCode, batchRestrictFields,
+			callbackURL, createStrategy, externalReferenceCode,
+			fieldNameMapping, importStrategy, taskItemDelegateName, object);
+	}
+
+	public ImportTask postImportTaskObject(
+			String className, String batchExternalReferenceCode,
+			String batchRestrictFields, String callbackURL,
+			String createStrategy, String externalReferenceCode,
+			String fieldNameMapping, String importStrategy,
+			String taskItemDelegateName, Object object)
 		throws Exception;
 
 	public ImportTask putImportTask(
@@ -93,11 +127,25 @@ public interface ImportTaskResource {
 			String updateStrategy, MultipartBody multipartBody)
 		throws Exception;
 
-	public ImportTask getImportTask(Long importTaskId) throws Exception;
+	/**
+	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link #putImportTaskObject(String, String, String, String, String, String, Object)}
+	 */
+	@Deprecated
+	public default ImportTask putImportTask(
+			String className, String callbackURL, String externalReferenceCode,
+			String importStrategy, String taskItemDelegateName,
+			String updateStrategy, Object object)
+		throws Exception {
 
-	public Response getImportTaskContent(Long importTaskId) throws Exception;
+		return putImportTaskObject(
+			className, callbackURL, externalReferenceCode, importStrategy,
+			taskItemDelegateName, updateStrategy, object);
+	}
 
-	public Response getImportTaskFailedItemReport(Long importTaskId)
+	public ImportTask putImportTaskObject(
+			String className, String callbackURL, String externalReferenceCode,
+			String importStrategy, String taskItemDelegateName,
+			String updateStrategy, Object object)
 		throws Exception;
 
 	public default void setContextAcceptLanguage(
@@ -122,7 +170,8 @@ public interface ImportTaskResource {
 		com.liferay.portal.kernel.model.User contextUser);
 
 	public void setExpressionConvert(
-		ExpressionConvert<Filter> expressionConvert);
+		ExpressionConvert<com.liferay.portal.kernel.search.filter.Filter>
+			expressionConvert);
 
 	public void setFilterParserProvider(
 		FilterParserProvider filterParserProvider);
@@ -139,19 +188,23 @@ public interface ImportTaskResource {
 
 	public void setSortParserProvider(SortParserProvider sortParserProvider);
 
-	public default Filter toFilter(String filterString) {
+	public default com.liferay.portal.kernel.search.filter.Filter toFilter(
+		String filterString) {
+
 		return toFilter(
 			filterString, Collections.<String, List<String>>emptyMap());
 	}
 
-	public default Filter toFilter(
+	public default com.liferay.portal.kernel.search.filter.Filter toFilter(
 		String filterString, Map<String, List<String>> multivaluedMap) {
 
 		return null;
 	}
 
-	public default Sort[] toSorts(String sortsString) {
-		return new Sort[0];
+	public default com.liferay.portal.kernel.search.Sort[] toSorts(
+		String sortsString) {
+
+		return new com.liferay.portal.kernel.search.Sort[0];
 	}
 
 	@ProviderType
@@ -183,3 +236,4 @@ public interface ImportTaskResource {
 	}
 
 }
+// LIFERAY-REST-BUILDER-HASH:-1204532753

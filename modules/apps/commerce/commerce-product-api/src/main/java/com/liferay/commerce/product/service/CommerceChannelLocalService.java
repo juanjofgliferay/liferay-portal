@@ -225,10 +225,6 @@ public interface CommerceChannelLocalService
 		DynamicQuery dynamicQuery, Projection projection);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public CommerceChannel fetchByExternalReferenceCode(
-		String externalReferenceCode, long companyId);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public CommerceChannel fetchCommerceChannel(long commerceChannelId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
@@ -236,8 +232,7 @@ public interface CommerceChannelLocalService
 		String externalReferenceCode, long companyId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public CommerceChannel fetchCommerceChannelByGroupClassPK(long groupId)
-		throws PortalException;
+	public CommerceChannel fetchCommerceChannelByGroupClassPK(long groupId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public CommerceChannel fetchCommerceChannelBySiteGroupId(long siteGroupId);
@@ -344,11 +339,21 @@ public interface CommerceChannelLocalService
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<CommerceChannel> getEligibleCommerceChannels(
+			long accountEntryId, String name, int start, int end)
+		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public ExportActionableDynamicQuery getExportActionableDynamicQuery(
 		PortletDataContext portletDataContext);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public IndexableActionableDynamicQuery getIndexableActionableDynamicQuery();
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public CommerceChannel getOrAddEmptyCommerceChannel(
+			String externalReferenceCode, long companyId, long userId)
+		throws PortalException;
 
 	/**
 	 * Returns the OSGi service identifier.
@@ -421,3 +426,4 @@ public interface CommerceChannelLocalService
 		throws E;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:100986067

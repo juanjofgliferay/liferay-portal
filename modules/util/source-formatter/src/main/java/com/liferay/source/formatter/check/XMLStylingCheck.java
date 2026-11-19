@@ -19,27 +19,41 @@ public class XMLStylingCheck extends BaseFileCheck {
 	protected String doProcess(
 		String fileName, String absolutePath, String content) {
 
-		Matcher matcher = _xmlDeclarationPattern.matcher(content);
+		content = content.replaceAll(">\t", ">\n\t");
 
-		if (matcher.find()) {
-			String oldXmlDeclaration = matcher.group();
+		return _fixRedundantEncodingAttribute(content);
+	}
 
-			String xmlDeclaration = StringUtil.replace(
-				oldXmlDeclaration, " = ", "=");
-
-			xmlDeclaration = xmlDeclaration.replaceAll(
-				" encoding=\"[^\"]*\"", "");
-
-			if (!oldXmlDeclaration.equals(xmlDeclaration)) {
-				return StringUtil.replaceFirst(
-					content, oldXmlDeclaration, xmlDeclaration);
-			}
+	private String _fixRedundantEncodingAttribute(String content) {
+		if (!content.startsWith("<?xml ")) {
+			return content;
 		}
 
-		return content;
+		Matcher matcher = _xmlDeclarationPattern.matcher(content);
+
+		if (!matcher.find()) {
+			return content;
+		}
+
+		String attributes = matcher.group(1);
+
+		String newAttributes = attributes.replaceAll(" +=", "=");
+
+		newAttributes = newAttributes.replaceAll("= +", "=");
+
+		newAttributes = newAttributes.replaceFirst(
+			"(?i)\\s+encoding=\"UTF-8\"", "");
+
+		newAttributes = newAttributes.trim();
+
+		if (attributes.equals(newAttributes)) {
+			return content;
+		}
+
+		return StringUtil.replaceFirst(content, attributes, newAttributes);
 	}
 
 	private static final Pattern _xmlDeclarationPattern = Pattern.compile(
-		"(\\A)<\\?xml .+?(?=\\Z|\n)");
+		"\\A<\\?xml (.+?)\\?>");
 
 }

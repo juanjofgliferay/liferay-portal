@@ -6,14 +6,16 @@
 package com.liferay.saml.opensaml.integration.internal.helper;
 
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.util.HttpComponentsUtil;
-import com.liferay.portal.kernel.util.Validator;
 import com.liferay.saml.helper.SamlHttpRequestHelper;
-import com.liferay.saml.opensaml.integration.internal.metadata.MetadataManager;
+import com.liferay.saml.opensaml.integration.internal.metadata.MetadataManagerUtil;
 import com.liferay.saml.opensaml.integration.internal.util.OpenSamlUtil;
 import com.liferay.saml.runtime.SamlException;
+import com.liferay.saml.runtime.configuration.SamlProviderConfigurationHelper;
+import com.liferay.saml.runtime.metadata.LocalEntityManager;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
+
+import org.opensaml.security.credential.CredentialResolver;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -31,7 +33,9 @@ public class SamlHttpRequestHelperImpl implements SamlHttpRequestHelper {
 
 		try {
 			return OpenSamlUtil.marshall(
-				_metadataManager.getEntityDescriptor(httpServletRequest));
+				MetadataManagerUtil.getEntityDescriptor(
+					httpServletRequest, _samlProviderConfigurationHelper,
+					_credentialResolver, _localEntityManager));
 		}
 		catch (Exception exception) {
 			throw new SamlException(exception);
@@ -40,20 +44,30 @@ public class SamlHttpRequestHelperImpl implements SamlHttpRequestHelper {
 
 	@Override
 	public String getRequestPath(HttpServletRequest httpServletRequest) {
-		String requestURI = httpServletRequest.getRequestURI();
+		String requestPath = httpServletRequest.getServletPath();
 
-		String contextPath = httpServletRequest.getContextPath();
+		String pathInfo = httpServletRequest.getPathInfo();
 
-		if (Validator.isNotNull(contextPath) &&
-			!contextPath.equals(StringPool.SLASH)) {
-
-			requestURI = requestURI.substring(contextPath.length());
+		if (pathInfo != null) {
+			requestPath += pathInfo;
 		}
 
-		return HttpComponentsUtil.removePathParameters(requestURI);
+		if ((requestPath.length() > 1) &&
+			requestPath.endsWith(StringPool.SLASH)) {
+
+			requestPath = requestPath.substring(0, requestPath.length() - 1);
+		}
+
+		return requestPath;
 	}
 
 	@Reference
-	private MetadataManager _metadataManager;
+	private CredentialResolver _credentialResolver;
+
+	@Reference
+	private LocalEntityManager _localEntityManager;
+
+	@Reference
+	private SamlProviderConfigurationHelper _samlProviderConfigurationHelper;
 
 }

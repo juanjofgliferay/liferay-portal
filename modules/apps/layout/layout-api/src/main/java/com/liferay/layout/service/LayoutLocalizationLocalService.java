@@ -277,9 +277,6 @@ public interface LayoutLocalizationLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<LayoutLocalization> getLayoutLocalizations(int start, int end);
 
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<LayoutLocalization> getLayoutLocalizations(long plid);
-
 	/**
 	 * Returns all the layout localizations matching the UUID and company.
 	 *
@@ -363,3 +360,4 @@ public interface LayoutLocalizationLocalService
 		throws E;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1344437624

@@ -10,10 +10,10 @@ import com.liferay.petra.string.StringUtil;
 import com.liferay.portal.kernel.dao.search.ResultRowSplitter;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Drew Brokke
@@ -72,9 +72,11 @@ public class ViewUADEntitiesDisplay {
 		List<UADEntity<?>> entities = _searchContainer.getResults();
 
 		for (UADEntity<?> entity : entities) {
-			if (entity.isUserOwned()) {
-				userOwnedPKs.add(String.valueOf(entity.getPrimaryKey()));
+			if (!entity.isUserOwned()) {
+				continue;
 			}
+
+			userOwnedPKs.add(String.valueOf(entity.getPrimaryKey()));
 		}
 
 		return StringUtil.merge(

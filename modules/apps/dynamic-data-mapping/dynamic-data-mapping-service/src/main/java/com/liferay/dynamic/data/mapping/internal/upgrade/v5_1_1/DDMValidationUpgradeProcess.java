@@ -33,22 +33,22 @@ public class DDMValidationUpgradeProcess extends UpgradeProcess {
 	protected void doUpgrade() throws Exception {
 		try (PreparedStatement selectPreparedStatement1 =
 				connection.prepareStatement(
-					"select structureId, definition from DDMStructure where " +
-						"classNameId = ? ");
+					"select ctCollectionId, structureId, definition from " +
+						"DDMStructure where classNameId = ? ");
 			PreparedStatement selectPreparedStatement2 =
 				connection.prepareStatement(
-					"select structureVersionId, definition from " +
-						"DDMStructureVersion where structureId = ?");
+					"select ctCollectionId, structureVersionId, definition " +
+						"from DDMStructureVersion where structureId = ?");
 			PreparedStatement updatePreparedStatement1 =
 				AutoBatchPreparedStatementUtil.concurrentAutoBatch(
 					connection,
 					"update DDMStructure set definition = ? where " +
-						"structureId = ?");
+						"ctCollectionId = ? and structureId = ?");
 			PreparedStatement updatePreparedStatement2 =
 				AutoBatchPreparedStatementUtil.concurrentAutoBatch(
 					connection,
 					"update DDMStructureVersion set definition = ? where " +
-						"structureVersionId = ?")) {
+						"ctCollectionId = ? and structureVersionId = ?")) {
 
 			_upgradeDDMStructure(
 				selectPreparedStatement1, selectPreparedStatement2,
@@ -57,6 +57,73 @@ public class DDMValidationUpgradeProcess extends UpgradeProcess {
 			updatePreparedStatement1.executeBatch();
 
 			updatePreparedStatement2.executeBatch();
+		}
+	}
+
+	private void _upgradeDDMStructure(
+			PreparedStatement selectPreparedStatement1,
+			PreparedStatement selectPreparedStatement2,
+			PreparedStatement updatePreparedStatement1,
+			PreparedStatement updatePreparedStatement2)
+		throws Exception {
+
+		selectPreparedStatement1.setLong(
+			1,
+			PortalUtil.getClassNameId(
+				"com.liferay.dynamic.data.mapping.model.DDMFormInstance"));
+
+		try (ResultSet resultSet = selectPreparedStatement1.executeQuery()) {
+			while (resultSet.next()) {
+				JSONObject definitionJSONObject = _jsonFactory.createJSONObject(
+					resultSet.getString("definition"));
+
+				if (!_upgradeDefinition(definitionJSONObject)) {
+					continue;
+				}
+
+				updatePreparedStatement1.setString(
+					1, definitionJSONObject.toString());
+				updatePreparedStatement1.setLong(
+					2, resultSet.getLong("ctCollectionId"));
+
+				long structureId = resultSet.getLong("structureId");
+
+				updatePreparedStatement1.setLong(3, structureId);
+
+				updatePreparedStatement1.addBatch();
+
+				_upgradeDDMStructureVersion(
+					selectPreparedStatement2, structureId,
+					updatePreparedStatement2);
+			}
+		}
+	}
+
+	private void _upgradeDDMStructureVersion(
+			PreparedStatement selectPreparedStatement, long structureId,
+			PreparedStatement updatePreparedStatement)
+		throws Exception {
+
+		selectPreparedStatement.setLong(1, structureId);
+
+		try (ResultSet resultSet = selectPreparedStatement.executeQuery()) {
+			while (resultSet.next()) {
+				JSONObject definitionJSONObject = _jsonFactory.createJSONObject(
+					resultSet.getString("definition"));
+
+				if (!_upgradeDefinition(definitionJSONObject)) {
+					continue;
+				}
+
+				updatePreparedStatement.setString(
+					1, definitionJSONObject.toString());
+				updatePreparedStatement.setLong(
+					2, resultSet.getLong("ctCollectionId"));
+				updatePreparedStatement.setLong(
+					3, resultSet.getLong("structureVersionId"));
+
+				updatePreparedStatement.addBatch();
+			}
 		}
 	}
 
@@ -96,65 +163,6 @@ public class DDMValidationUpgradeProcess extends UpgradeProcess {
 		}
 
 		return upgraded;
-	}
-
-	private void _upgradeDDMStructure(
-			PreparedStatement selectPreparedStatement1,
-			PreparedStatement selectPreparedStatement2,
-			PreparedStatement updatePreparedStatement1,
-			PreparedStatement updatePreparedStatement2)
-		throws Exception {
-
-		selectPreparedStatement1.setLong(
-			1,
-			PortalUtil.getClassNameId(
-				"com.liferay.dynamic.data.mapping.model.DDMFormInstance"));
-
-		try (ResultSet resultSet = selectPreparedStatement1.executeQuery()) {
-			while (resultSet.next()) {
-				JSONObject definitionJSONObject = _jsonFactory.createJSONObject(
-					resultSet.getString("definition"));
-
-				if (_upgradeDefinition(definitionJSONObject)) {
-					updatePreparedStatement1.setString(
-						1, definitionJSONObject.toString());
-
-					long structureId = resultSet.getLong("structureId");
-
-					updatePreparedStatement1.setLong(2, structureId);
-
-					updatePreparedStatement1.addBatch();
-
-					_upgradeDDMStructureVersion(
-						selectPreparedStatement2, structureId,
-						updatePreparedStatement2);
-				}
-			}
-		}
-	}
-
-	private void _upgradeDDMStructureVersion(
-			PreparedStatement selectPreparedStatement, long structureId,
-			PreparedStatement updatePreparedStatement)
-		throws Exception {
-
-		selectPreparedStatement.setLong(1, structureId);
-
-		try (ResultSet resultSet = selectPreparedStatement.executeQuery()) {
-			while (resultSet.next()) {
-				JSONObject definitionJSONObject = _jsonFactory.createJSONObject(
-					resultSet.getString("definition"));
-
-				if (_upgradeDefinition(definitionJSONObject)) {
-					updatePreparedStatement.setString(
-						1, definitionJSONObject.toString());
-					updatePreparedStatement.setLong(
-						2, resultSet.getLong("structureVersionId"));
-
-					updatePreparedStatement.addBatch();
-				}
-			}
-		}
 	}
 
 	private boolean _upgradeDefinition(JSONObject definitionJSONObject) {

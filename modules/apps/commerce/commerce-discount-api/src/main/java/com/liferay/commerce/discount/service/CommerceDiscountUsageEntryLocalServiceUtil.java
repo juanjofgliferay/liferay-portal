@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -121,13 +122,6 @@ public class CommerceDiscountUsageEntryLocalServiceUtil {
 
 		return getService().deleteCommerceDiscountUsageEntry(
 			commerceDiscountUsageEntryId);
-	}
-
-	public static void deleteCommerceUsageEntry(
-		long commerceAccountId, long commerceOrderId, long commerceDiscountId) {
-
-		getService().deleteCommerceUsageEntry(
-			commerceAccountId, commerceOrderId, commerceDiscountId);
 	}
 
 	public static void deleteCommerceUsageEntryByDiscountId(
@@ -277,25 +271,11 @@ public class CommerceDiscountUsageEntryLocalServiceUtil {
 			commerceDiscountId);
 	}
 
-	public static int getCommerceDiscountUsageEntriesCount(
-		long commerceAccountId, long commerceOrderId, long commerceDiscountId) {
-
-		return getService().getCommerceDiscountUsageEntriesCount(
-			commerceAccountId, commerceOrderId, commerceDiscountId);
-	}
-
 	public static int getCommerceDiscountUsageEntriesCountByAccountId(
 		long commerceAccountId, long commerceDiscountId) {
 
 		return getService().getCommerceDiscountUsageEntriesCountByAccountId(
 			commerceAccountId, commerceDiscountId);
-	}
-
-	public static int getCommerceDiscountUsageEntriesCountByOrderId(
-		long commerceOrderId, long commerceDiscountId) {
-
-		return getService().getCommerceDiscountUsageEntriesCountByOrderId(
-			commerceOrderId, commerceDiscountId);
 	}
 
 	/**
@@ -364,15 +344,13 @@ public class CommerceDiscountUsageEntryLocalServiceUtil {
 	}
 
 	public static CommerceDiscountUsageEntryLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(
-		CommerceDiscountUsageEntryLocalService service) {
-
-		_service = service;
-	}
-
-	private static volatile CommerceDiscountUsageEntryLocalService _service;
+	private static final Snapshot<CommerceDiscountUsageEntryLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			CommerceDiscountUsageEntryLocalServiceUtil.class,
+			CommerceDiscountUsageEntryLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-2012147123

@@ -5,8 +5,9 @@
 
 import {
 	retrieveAccountRoles,
-	retrieveRoleById,
+	retrieveRole,
 	retrieveRoles,
+	retrieveUser,
 	retrieveUsersBy,
 } from '../../util/fetchUtil';
 import {getAssignmentType} from '../components/sidebar/sections/assignments/utils';
@@ -14,7 +15,7 @@ import {getAssignmentType} from '../components/sidebar/sections/assignments/util
 const verifySectionsData = (
 	initialElements,
 	sectionsData,
-	setBlockingErrors,
+	setBlockingError,
 	setElements,
 	taskNode
 ) => {
@@ -35,41 +36,32 @@ const verifySectionsData = (
 		if (taskNode.data.assignments.emailAddress) {
 			delete taskNode.data.assignments.emailAddress;
 
-			setBlockingErrors((prev) => {
-				return {
-					...prev,
-					errorMessage: Liferay.Language.get(
-						'please-enter-a-valid-email-address'
-					),
-					errorType: 'assignment',
-				};
-			});
+			setBlockingError(() => ({
+				errorMessage: Liferay.Language.get(
+					'please-enter-a-valid-email-address'
+				),
+				errorType: 'assignment',
+			}));
 		}
 		else if (taskNode.data.assignments.screenName) {
 			delete taskNode.data.assignments.screenName;
 
-			setBlockingErrors((prev) => {
-				return {
-					...prev,
-					errorMessage: Liferay.Language.get(
-						'please-enter-a-valid-screen-name'
-					),
-					errorType: 'assignment',
-				};
-			});
+			setBlockingError(() => ({
+				errorMessage: Liferay.Language.get(
+					'please-enter-a-valid-screen-name'
+				),
+				errorType: 'assignment',
+			}));
 		}
 		else if (taskNode.data.assignments.userId) {
 			delete taskNode.data.assignments.userId;
 
-			setBlockingErrors((prev) => {
-				return {
-					...prev,
-					errorMessage: Liferay.Language.get(
-						'please-enter-a-valid-user-id'
-					),
-					errorType: 'assignment',
-				};
-			});
+			setBlockingError(() => ({
+				errorMessage: Liferay.Language.get(
+					'please-enter-a-valid-user-id'
+				),
+				errorType: 'assignment',
+			}));
 		}
 	}
 };
@@ -78,7 +70,7 @@ const populateAssignmentsData = (
 	accountEntryId,
 	initialElements,
 	setElements,
-	setBlockingErrors
+	setBlockingError
 ) => {
 	const taskNodes = initialElements.filter((item) => item.type === 'task');
 
@@ -88,7 +80,10 @@ const populateAssignmentsData = (
 		const assignmentType = getAssignmentType(taskNode.data.assignments);
 
 		if (assignmentType === 'roleId') {
-			retrieveRoleById(taskNode.data.assignments.roleId)
+			retrieveRole(
+				taskNode.data.assignments.roleExternalReferenceCode,
+				taskNode.data.assignments.roleId
+			)
 				.then((response) => response.json())
 				.then((response) => {
 					taskNode.data.assignments.sectionsData = {
@@ -115,11 +110,9 @@ const populateAssignmentsData = (
 					([roles, accountRoles]) => {
 						const items = roles.items.concat(accountRoles.items);
 
-						taskNode.data.assignments.roleKey.forEach((key) => {
+						taskNode.data.assignments.roleName.forEach((name) => {
 							const role = items.find(
-								(item) =>
-									item.externalReferenceCode === key ||
-									item.displayName === key
+								(item) => item.name === name
 							);
 
 							if (!taskNode.data.assignments.roleName) {
@@ -140,6 +133,37 @@ const populateAssignmentsData = (
 				)
 			);
 		}
+		else if (
+			assignmentType === 'user' &&
+			taskNode.data.assignments.userId
+		) {
+			Promise.all(
+				taskNode.data.assignments.userId.map((userId, index) =>
+					retrieveUser(
+						taskNode.data.assignments.userExternalReferenceCode?.[
+							index
+						],
+						userId
+					).then((response) => response.json())
+				)
+			).then((users) =>
+				verifySectionsData(
+					initialElements,
+					users
+						.filter((user) => user.id)
+						.map((user, index) => ({
+							emailAddress: user.emailAddress,
+							identifier: `${Date.now()}-${index}`,
+							name: user.name,
+							screenName: user.alternateName,
+							userId: user.id,
+						})),
+					setBlockingError,
+					setElements,
+					taskNode
+				)
+			);
+		}
 		else if (assignmentType === 'user') {
 			const sectionsData = [];
 
@@ -152,11 +176,6 @@ const populateAssignmentsData = (
 
 			if (filterTypeRetrieveUsersBy === 'screenName') {
 				filterTypeRetrieveUsersBy = 'alternateName';
-			}
-			else if (filterTypeRetrieveUsersBy === 'userId') {
-				filterTypeRetrieveUsersBy = filterTypeRetrieveUsersBy
-					.toLocaleLowerCase()
-					.replace('user', '');
 			}
 
 			retrieveUsersBy(filterTypeRetrieveUsersBy, keywordRetrieveUsersBy)
@@ -176,7 +195,7 @@ const populateAssignmentsData = (
 					verifySectionsData(
 						initialElements,
 						sectionsData,
-						setBlockingErrors,
+						setBlockingError,
 						setElements,
 						taskNode
 					)

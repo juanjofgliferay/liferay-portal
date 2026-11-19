@@ -1,0 +1,2083 @@
+components:
+    schemas:
+        ApprovedFragmentVersion:
+            allOf:
+                -   $ref: "#/components/schemas/FragmentVersion"
+                -   properties:
+                        configuration:
+                            $ref: "#/components/schemas/Configuration"
+                            description:
+                                The fragment version's configuration, which defines the field sets a page creator can use to customize the fragment. Reading a fragment whose stored configuration does not match the configuration schema fails.
+            description:
+                An approved (published) version of a fragment. Its configuration must match the configuration schema.
+            type: object
+        BasicFragment:
+            allOf:
+                -   $ref: "#/components/schemas/Fragment"
+            description:
+                A basic fragment entry.
+            type: object
+        CategoryFragmentConfigurationFieldDefaultValue:
+            description:
+                The default value of a `categoryTreeNodeSelector` fragment configuration field. It mirrors the shape of the corresponding fragment configuration field value of the headless admin site API.
+            properties:
+                value:
+                    $ref: ../../headless-admin-site/headless-admin-site-impl/rest-openapi.yaml#ItemExternalReference
+                    description:
+                        A reference to the selected category or vocabulary. The `className` distinguishes a category from a vocabulary.
+            type: object
+        CategoryTreeNodeSelectorField:
+            allOf:
+                -   $ref: "#/components/schemas/Field"
+                -   properties:
+                        defaultValue:
+                            $ref: "#/components/schemas/CategoryFragmentConfigurationFieldDefaultValue"
+                            description:
+                                The field's default value.
+                        typeOptions:
+                            $ref: "#/components/schemas/TypeOptions"
+                            description:
+                                The field's type-specific options.
+            description:
+                A `categoryTreeNodeSelector` field of a fragment configuration's field set.
+            type: object
+        CheckboxField:
+            allOf:
+                -   $ref: "#/components/schemas/Field"
+                -   properties:
+                        defaultValue:
+                            $ref: "#/components/schemas/CheckboxFragmentConfigurationFieldDefaultValue"
+                            description:
+                                The field's default value.
+                        typeOptions:
+                            $ref: "#/components/schemas/CheckboxTypeOptions"
+                            description:
+                                The field's type-specific options.
+            description:
+                A `checkbox` field of a fragment configuration's field set.
+            type: object
+        CheckboxFragmentConfigurationFieldDefaultValue:
+            description:
+                The default value of a `checkbox` fragment configuration field. It mirrors the shape of the corresponding fragment configuration field value of the headless admin site API.
+            properties:
+                value:
+                    description:
+                        A flag that indicates whether the field is checked by default. The stored strings `true` and `false` are returned as booleans.
+                    type: boolean
+            type: object
+        CheckboxTypeOptions:
+            allOf:
+                -   $ref: "#/components/schemas/TypeOptions"
+                -   properties:
+                        displayType:
+                            description:
+                                How the field is displayed in the page editor.
+                            enum: [checkbox, toggle]
+                            type: string
+            description:
+                The type-specific options of a `checkbox` fragment configuration field.
+            type: object
+        CollectionFragmentConfigurationFieldDefaultValue:
+            description:
+                The default value of a `collectionSelector` fragment configuration field. It mirrors the shape of the corresponding fragment configuration field value of the headless admin site API.
+            properties:
+                value:
+                    $ref: ../../headless-admin-site/headless-admin-site-impl/rest-openapi.yaml#CollectionReference
+                    description:
+                        A reference to the selected collection (`Collection`), collection provider (`CollectionProvider`, including related items collection providers), or repeatable fields collection provider (`RepeatableFieldsCollectionProvider`).
+            type: object
+        CollectionSelectorField:
+            allOf:
+                -   $ref: "#/components/schemas/Field"
+                -   properties:
+                        defaultValue:
+                            $ref: "#/components/schemas/CollectionFragmentConfigurationFieldDefaultValue"
+                            description:
+                                The field's default value.
+                        typeOptions:
+                            $ref: "#/components/schemas/CollectionSelectorTypeOptions"
+                            description:
+                                The field's type-specific options.
+            description:
+                A `collectionSelector` field of a fragment configuration's field set.
+            type: object
+        CollectionSelectorTypeOptions:
+            allOf:
+                -   $ref: "#/components/schemas/TypeOptions"
+                -   properties:
+                        itemSubtype:
+                            description:
+                                The subtype of the items the selectable collections contain.
+                            type: string
+                        itemType:
+                            description:
+                                The type of the items the selectable collections contain.
+                            type: string
+                        numberOfItems:
+                            description:
+                                The number of collection items made available to the fragment.
+                            minimum: 1
+                            type: integer
+            description:
+                The type-specific options of a `collectionSelector` fragment configuration field.
+            type: object
+        ColorPaletteField:
+            allOf:
+                -   $ref: "#/components/schemas/Field"
+                -   properties:
+                        defaultValue:
+                            $ref: "#/components/schemas/ColorPaletteFragmentConfigurationFieldDefaultValue"
+                            description:
+                                The field's default value.
+                        typeOptions:
+                            $ref: "#/components/schemas/TypeOptions"
+                            description:
+                                The field's type-specific options.
+            description:
+                A `colorPalette` field of a fragment configuration's field set.
+            type: object
+        ColorPaletteFragmentConfigurationFieldDefaultValue:
+            description:
+                The default value of a `colorPalette` fragment configuration field. It mirrors the shape of the corresponding fragment configuration field value of the headless admin site API.
+            properties:
+                value:
+                    $ref: ../../headless-admin-site/headless-admin-site-impl/rest-openapi.yaml#ColorPaletteValue
+                    description:
+                        The selected color: either a `color` from the style book's color palette, or a `cssClass` and `rgbValue` pair.
+            type: object
+        ColorPickerField:
+            allOf:
+                -   $ref: "#/components/schemas/Field"
+                -   properties:
+                        defaultValue:
+                            $ref: "#/components/schemas/ColorPickerFragmentConfigurationFieldDefaultValue"
+                            description:
+                                The field's default value.
+                        typeOptions:
+                            $ref: "#/components/schemas/TypeOptions"
+                            description:
+                                The field's type-specific options.
+            description:
+                A `colorPicker` field of a fragment configuration's field set.
+            type: object
+        ColorPickerFragmentConfigurationFieldDefaultValue:
+            description:
+                The default value of a `colorPicker` fragment configuration field. It mirrors the shape of the corresponding fragment configuration field value of the headless admin site API.
+            properties:
+                value:
+                    description:
+                        The name of a color token from the style book, or an RGB hex color such as `#FFFFFF` when the style book has no color tokens.
+                    type: string
+            type: object
+        Configuration:
+            description:
+                A fragment's configuration, which defines the field sets a page creator can use to customize the fragment.
+            properties:
+                fieldSets:
+                    description:
+                        The configuration's field sets.
+                    items:
+                        $ref: "#/components/schemas/FieldSet"
+                    type: array
+            required:
+                -   fieldSets
+            type: object
+        Dependency:
+            description:
+                A visibility condition on another fragment configuration field's value. The dependent field is shown only when the condition is met.
+            properties:
+                type:
+                    description:
+                        The comparison operator applied to the other field's value.
+                    enum: [equal, not-equal]
+                    type: string
+                value:
+                    description:
+                        The value the other field's value is compared with.
+                    type: string
+            required:
+                -   type
+                -   value
+            type: object
+        DraftFragmentVersion:
+            allOf:
+                -   $ref: "#/components/schemas/FragmentVersion"
+                -   properties:
+                        configuration:
+                            description:
+                                The fragment version's raw configuration JSON. A draft's configuration is not validated, so any value is preserved as it is stored.
+                            type: string
+            description:
+                A draft version of a fragment. Its configuration is not validated against the configuration schema.
+            type: object
+        Field:
+            description:
+                A customizable field of a fragment configuration's field set.
+            discriminator:
+                mapping:
+                    categoryTreeNodeSelector: "#/components/schemas/CategoryTreeNodeSelectorField"
+                    checkbox: "#/components/schemas/CheckboxField"
+                    collectionSelector: "#/components/schemas/CollectionSelectorField"
+                    colorPalette: "#/components/schemas/ColorPaletteField"
+                    colorPicker: "#/components/schemas/ColorPickerField"
+                    itemSelector: "#/components/schemas/ItemSelectorField"
+                    length: "#/components/schemas/LengthField"
+                    navigationMenuSelector: "#/components/schemas/NavigationMenuSelectorField"
+                    select: "#/components/schemas/SelectField"
+                    targetCollectionDisplay: "#/components/schemas/TargetCollectionDisplayField"
+                    text: "#/components/schemas/TextField"
+                    url: "#/components/schemas/URLField"
+                    videoSelector: "#/components/schemas/VideoSelectorField"
+                propertyName: type
+            properties:
+                dataType:
+                    description:
+                        The data type the field's value is converted to when it is rendered.
+                    enum: [array, double, int, object, string]
+                    type: string
+                description:
+                    description:
+                        The field's description.
+                    type: string
+                label:
+                    description:
+                        The field's label.
+                    type: string
+                localizable:
+                    description:
+                        A flag that indicates whether the field's value can be localized.
+                    type: boolean
+                name:
+                    description:
+                        The field's name. It can only contain alphanumeric characters.
+                    minLength: 1
+                    pattern: ^[A-Za-z0-9]+$
+                    type: string
+                type:
+                    description:
+                        The field's type.
+                    enum: [categoryTreeNodeSelector, checkbox, collectionSelector, colorPalette, colorPicker, itemSelector, length, navigationMenuSelector, select, targetCollectionDisplay, text, url, videoSelector]
+                    type: string
+            required:
+                -   name
+                -   type
+            type: object
+        FieldSet:
+            description:
+                A group of related fields in a fragment's configuration.
+            properties:
+                collapsed:
+                    description:
+                        Whether the field set is collapsed by default in the page editor's configuration panel.
+                    type: boolean
+                configurationRole:
+                    description:
+                        The role of the field set in the page editor's configuration panel.
+                    enum: [advanced, style]
+                    type: string
+                customComponentModule:
+                    description:
+                        The JavaScript module loaded to render the field set with a custom component.
+                    type: string
+                fields:
+                    description:
+                        The field set's fields.
+                    items:
+                        $ref: "#/components/schemas/Field"
+                    type: array
+                label:
+                    description:
+                        The field set's label.
+                    type: string
+            required:
+                -   fields
+            type: object
+        FieldType:
+            description:
+                A form fragment's input field type.
+            enum: [Boolean, CAPTCHA, Date, DateTime, Email, File, FormButton, FriendlyURL, HTML, LocalizationSelect, LongText, Multiselect, Number, PhoneNumber, Relationship, Select, Stepper, Text]
+            type: string
+        FileURLReference:
+            description:
+                A reference to a file's binary content. On read, `url` is populated from the underlying file entry, while `fileBase64` is populated only when requested via `nestedFields=fileURLReference.fileBase64`; during a staging export, `url` is a `lar://` URL pointing at bytes embedded in the LAR archive. On write, the content is decoded from `fileBase64`, or downloaded from `url` when `fileBase64` is absent.
+            properties:
+                fileBase64:
+                    description:
+                        The Base64 encoded file content. On read, returned only when requested via `nestedFields=fileURLReference.fileBase64`.
+                    type: string
+                url:
+                    description:
+                        A URL the file can be fetched from. On read, the canonical URL of the stored file. On write, used to download bytes (supports `http://`, `https://` and `lar://`) when `fileBase64` is absent.
+                    type: string
+            type: object
+        FormFragment:
+            allOf:
+                -   $ref: "#/components/schemas/Fragment"
+                -   properties:
+                        fieldTypes:
+                            description:
+                                The input field types the form fragment supports.
+                            items:
+                                $ref: "#/components/schemas/FieldType"
+                            type: array
+            description:
+                A form fragment entry.
+            type: object
+        Fragment:
+            description:
+                A fragment entry.
+            discriminator:
+                mapping:
+                    BasicFragment: "#/components/schemas/BasicFragment"
+                    FormFragment: "#/components/schemas/FormFragment"
+                propertyName: type
+            properties:
+                cacheable:
+                    description:
+                        A flag that indicates whether the fragment output is cacheable.
+                    type: boolean
+                creator:
+                    $ref: ../../headless-admin-user/headless-admin-user-impl/rest-openapi.yaml#Creator
+                    description:
+                        The fragment's creator.
+                    readOnly: true
+                dateCreated:
+                    description:
+                        The fragment's creation date.
+                    format: date-time
+                    type: string
+                dateModified:
+                    description:
+                        The last time the fragment changed.
+                    format: date-time
+                    type: string
+                externalReferenceCode:
+                    description:
+                        The fragment's external reference code.
+                    type: string
+                fragmentSet:
+                    $ref: "#/components/schemas/FragmentSet"
+                    description:
+                        The fragment's fragment set. On read, returned only when `nestedFields=fragmentSet` is requested. On write, used only during LAR import, where it is created if it does not exist.
+                fragmentSetExternalReferenceCode:
+                    description:
+                        The external reference code of the fragment's fragment set, used to reference an existing fragment set. Takes precedence over `fragmentSet` when both are set.
+                    type: string
+                fragmentVersions:
+                    description:
+                        The fragment's versions. A fragment can have up to 2 versions, one draft and one published (approved).
+                    items:
+                        $ref: "#/components/schemas/FragmentVersion"
+                    type: array
+                icon:
+                    description:
+                        The fragment's icon identifier.
+                    type: string
+                key:
+                    description:
+                        The fragment's unique key within the group.
+                    type: string
+                marketplace:
+                    description:
+                        A flag that indicates whether the fragment is from the marketplace.
+                    type: boolean
+                name:
+                    description:
+                        The fragment's name.
+                    type: string
+                readOnly:
+                    description:
+                        A flag that indicates whether the fragment is read-only.
+                    type: boolean
+                thumbnailURLReference:
+                    $ref: ../../headless-admin-site/headless-admin-site-impl/rest-openapi.yaml#ThumbnailURLReference
+                    description:
+                        The fragment's thumbnail. On read, returned only when `nestedFields=thumbnailURLReference` is requested. On POST or PUT, omitting `thumbnailURLReference` clears any previously bound preview.
+                type:
+                    description:
+                        The fragment's type.
+                    enum: [BasicFragment, FormFragment]
+                    type: string
+            type: object
+        FragmentSet:
+            description:
+                A fragment set (also known as fragment collection).
+            properties:
+                actions:
+                    additionalProperties:
+                        additionalProperties:
+                            description:
+                                The action's properties.
+                            type: string
+                        description:
+                            The action's name.
+                        type: object
+                    description:
+                        Block of actions allowed by the user making the request.
+                    readOnly: true
+                    type: object
+                creator:
+                    $ref: ../../headless-admin-user/headless-admin-user-impl/rest-openapi.yaml#Creator
+                    description:
+                        The fragment set's creator.
+                    readOnly: true
+                dateCreated:
+                    description:
+                        The fragment set's creation date.
+                    format: date-time
+                    type: string
+                dateModified:
+                    description:
+                        The last time the fragment set changed.
+                    format: date-time
+                    type: string
+                description:
+                    description:
+                        The fragment set's description.
+                    type: string
+                externalReferenceCode:
+                    description:
+                        The fragment set's external reference code.
+                    type: string
+                key:
+                    description:
+                        The fragment set's key.
+                    type: string
+                marketplace:
+                    description:
+                        A flag that indicates whether the fragment set is from the marketplace.
+                    type: boolean
+                name:
+                    description:
+                        The fragment set's name.
+                    type: string
+            type: object
+        FragmentVersion:
+            description:
+                A version of a fragment (draft or published).
+            discriminator:
+                mapping:
+                    Approved: "#/components/schemas/ApprovedFragmentVersion"
+                    Draft: "#/components/schemas/DraftFragmentVersion"
+                propertyName: status
+            properties:
+                css:
+                    description:
+                        The fragment version's CSS code.
+                    type: string
+                html:
+                    description:
+                        The fragment version's HTML code.
+                    type: string
+                js:
+                    description:
+                        The fragment version's JavaScript code.
+                    type: string
+                status:
+                    description:
+                        The fragment version's status (Approved or Draft).
+                    enum: [Approved, Draft]
+                    type: string
+            type: object
+        ItemFragmentConfigurationFieldDefaultValue:
+            description:
+                The default value of an `itemSelector` fragment configuration field. It mirrors the shape of the corresponding fragment configuration field value of the headless admin site API.
+            properties:
+                value:
+                    $ref: ../../headless-admin-site/headless-admin-site-impl/rest-openapi.yaml#ItemValue
+                    description:
+                        A reference to the selected item. The item is referenced by external reference code, which survives promoting the fragment across environments. The value's `templateReference` is not stored: a fragment configuration cannot carry the template that renders the item.
+            type: object
+        ItemSelectorField:
+            allOf:
+                -   $ref: "#/components/schemas/Field"
+                -   properties:
+                        defaultValue:
+                            $ref: "#/components/schemas/ItemFragmentConfigurationFieldDefaultValue"
+                            description:
+                                The field's default value.
+                        typeOptions:
+                            $ref: "#/components/schemas/ItemSelectorTypeOptions"
+                            description:
+                                The field's type-specific options.
+            description:
+                An `itemSelector` field of a fragment configuration's field set.
+            type: object
+        ItemSelectorTypeOptions:
+            allOf:
+                -   $ref: "#/components/schemas/TypeOptions"
+                -   properties:
+                        className:
+                            description:
+                                The class name of the items that can be selected.
+                            type: string
+                        enableSelectTemplate:
+                            description:
+                                A flag that indicates whether a template can be selected for the item.
+                            type: boolean
+                        itemSubtype:
+                            description:
+                                The subtype of the items that can be selected.
+                            type: string
+                        itemType:
+                            description:
+                                The type of the items that can be selected.
+                            type: string
+                        mimeTypes:
+                            description:
+                                The MIME types of the files that can be selected.
+                            items:
+                                type: string
+                            type: array
+            description:
+                The type-specific options of an `itemSelector` fragment configuration field.
+            type: object
+        LengthField:
+            allOf:
+                -   $ref: "#/components/schemas/Field"
+                -   properties:
+                        defaultValue:
+                            $ref: "#/components/schemas/LengthFragmentConfigurationFieldDefaultValue"
+                            description:
+                                The field's default value.
+                        typeOptions:
+                            $ref: "#/components/schemas/TypeOptions"
+                            description:
+                                The field's type-specific options.
+            description:
+                A `length` field of a fragment configuration's field set.
+            type: object
+        LengthFragmentConfigurationFieldDefaultValue:
+            description:
+                The default value of a `length` fragment configuration field. It mirrors the shape of the corresponding fragment configuration field value of the headless admin site API.
+            properties:
+                value:
+                    description:
+                        A CSS length value, such as `12px` or `50%`, or any CSS expression the page editor's length input accepts as a custom unit, such as `auto`.
+                    type: string
+            type: object
+        NavigationMenuFragmentConfigurationFieldDefaultValue:
+            description:
+                The default value of a `navigationMenuSelector` fragment configuration field. It mirrors the shape of the corresponding fragment configuration field value of the headless admin site API.
+            properties:
+                value:
+                    $ref: ../../headless-admin-site/headless-admin-site-impl/rest-openapi.yaml#NavigationMenuValue
+                    description:
+                        Either a contextual menu (`ContextualMenu`), a site navigation menu referenced by external reference code (`SiteMenu`), or the site's page hierarchy (`SitePages`).
+            type: object
+        NavigationMenuSelectorField:
+            allOf:
+                -   $ref: "#/components/schemas/Field"
+                -   properties:
+                        defaultValue:
+                            $ref: "#/components/schemas/NavigationMenuFragmentConfigurationFieldDefaultValue"
+                            description:
+                                The field's default value.
+                        typeOptions:
+                            $ref: "#/components/schemas/TypeOptions"
+                            description:
+                                The field's type-specific options.
+            description:
+                A `navigationMenuSelector` field of a fragment configuration's field set.
+            type: object
+        NumberValidation:
+            allOf:
+                -   $ref: "#/components/schemas/Validation"
+                -   properties:
+                        max:
+                            description:
+                                The maximum value allowed.
+                            format: int64
+                            type: integer
+                        min:
+                            description:
+                                The minimum value allowed.
+                            format: int64
+                            type: integer
+            description:
+                A `number` validation of a `text` fragment configuration field's value.
+            type: object
+        PatternValidation:
+            allOf:
+                -   $ref: "#/components/schemas/Validation"
+                -   properties:
+                        regexp:
+                            description:
+                                The regular expression the field's value must match.
+                            type: string
+            description:
+                A `pattern` validation of a `text` fragment configuration field's value.
+            required:
+                -   regexp
+            type: object
+        ResourceFile:
+            description:
+                A resource file of a fragment set.
+            properties:
+                creator:
+                    $ref: ../../headless-admin-user/headless-admin-user-impl/rest-openapi.yaml#Creator
+                    description:
+                        The resource file's creator.
+                    readOnly: true
+                dateCreated:
+                    description:
+                        The resource file's creation date.
+                    format: date-time
+                    type: string
+                dateModified:
+                    description:
+                        The last time the resource file changed.
+                    format: date-time
+                    type: string
+                externalReferenceCode:
+                    description:
+                        The resource file's external reference code.
+                    type: string
+                fileURLReference:
+                    $ref: "#/components/schemas/FileURLReference"
+                    description:
+                        The resource file's binary content.
+                fragmentSet:
+                    $ref: "#/components/schemas/FragmentSet"
+                    description:
+                        The resource file's fragment set. On read, returned only when `nestedFields=fragmentSet` is requested. On write, used only during LAR import, where it is created if it does not exist.
+                fragmentSetExternalReferenceCode:
+                    description:
+                        The external reference code of the resource file's fragment set, used to reference an existing fragment set. Takes precedence over `fragmentSet` when both are set.
+                    type: string
+                name:
+                    description:
+                        The resource file's name.
+                    type: string
+                resourceFolder:
+                    $ref: "#/components/schemas/ResourceFolder"
+                    description:
+                        The resource file's resource folder. On read, returned only when `nestedFields=resourceFolder` is requested. On write, used only during LAR import, where it is created if it does not exist.
+                resourceFolderExternalReferenceCode:
+                    description:
+                        The external reference code of the resource file's resource folder, used to reference an existing resource folder. Takes precedence over `resourceFolder` when both are set.
+                    type: string
+            type: object
+        ResourceFolder:
+            description:
+                A folder that organizes a fragment set's resources (such as files and other folders).
+            properties:
+                creator:
+                    $ref: ../../headless-admin-user/headless-admin-user-impl/rest-openapi.yaml#Creator
+                    description:
+                        The resource folder's creator.
+                    readOnly: true
+                dateCreated:
+                    description:
+                        The resource folder's creation date.
+                    format: date-time
+                    type: string
+                dateModified:
+                    description:
+                        The last time the resource folder changed.
+                    format: date-time
+                    type: string
+                externalReferenceCode:
+                    description:
+                        The resource folder's external reference code.
+                    type: string
+                fragmentSet:
+                    $ref: "#/components/schemas/FragmentSet"
+                    description:
+                        The resource folder's fragment set. On read, returned only when `nestedFields=fragmentSet` is requested. On write, used only during LAR import, where it is created if it does not exist.
+                fragmentSetExternalReferenceCode:
+                    description:
+                        The external reference code of the resource folder's fragment set, used to reference an existing fragment set. Takes precedence over `fragmentSet` when both are set.
+                    type: string
+                name:
+                    description:
+                        The resource folder's name.
+                    type: string
+                parentResourceFolder:
+                    $ref: "#/components/schemas/ResourceFolder"
+                    description:
+                        The resource folder's parent resource folder. On read, returned only when `nestedFields=parentResourceFolder` is requested. On write, used only during LAR import, where it is created if it does not exist.
+                parentResourceFolderExternalReferenceCode:
+                    description:
+                        The external reference code of the resource folder's parent resource folder, used to reference an existing parent. Takes precedence over `parentResourceFolder` when both are set.
+                    type: string
+            type: object
+        SelectField:
+            allOf:
+                -   $ref: "#/components/schemas/Field"
+                -   properties:
+                        defaultValue:
+                            $ref: "#/components/schemas/SelectFragmentConfigurationFieldDefaultValue"
+                            description:
+                                The field's default value.
+                        typeOptions:
+                            $ref: "#/components/schemas/SelectTypeOptions"
+                            description:
+                                The field's type-specific options.
+            description:
+                A `select` field of a fragment configuration's field set.
+            type: object
+        SelectFragmentConfigurationFieldDefaultValue:
+            description:
+                The default value of a `select` fragment configuration field. It mirrors the shape of the corresponding fragment configuration field value of the headless admin site API.
+            properties:
+                value:
+                    description:
+                        The `value` of one of the field's `validValues`.
+                    type: string
+            type: object
+        SelectTypeOptions:
+            allOf:
+                -   $ref: "#/components/schemas/TypeOptions"
+                -   properties:
+                        validValues:
+                            description:
+                                The values the field can take.
+                            items:
+                                $ref: "#/components/schemas/ValidValue"
+                            minItems: 1
+                            type: array
+            description:
+                The type-specific options of a `select` fragment configuration field.
+            type: object
+        TargetCollectionDisplayField:
+            allOf:
+                -   $ref: "#/components/schemas/Field"
+                -   properties:
+                        defaultValue:
+                            $ref: "#/components/schemas/TargetCollectionDisplayFragmentConfigurationFieldDefaultValue"
+                            description:
+                                The field's default value.
+                        typeOptions:
+                            $ref: "#/components/schemas/TargetCollectionDisplayTypeOptions"
+                            description:
+                                The field's type-specific options.
+            description:
+                A `targetCollectionDisplay` field of a fragment configuration's field set.
+            type: object
+        TargetCollectionDisplayFragmentConfigurationFieldDefaultValue:
+            description:
+                The default value of a `targetCollectionDisplay` fragment configuration field. It mirrors the shape of the corresponding fragment configuration field value of the headless admin site API.
+            properties:
+                value:
+                    description:
+                        The page element external reference codes of the collection displays the field targets.
+                    items:
+                        type: string
+                    type: array
+            type: object
+        TargetCollectionDisplayTypeOptions:
+            allOf:
+                -   $ref: "#/components/schemas/TypeOptions"
+                -   properties:
+                        enableCompatibleCollections:
+                            description:
+                                Whether the page editor, once some collection displays are selected in this field, only lets you add collection displays that share at least one supported filter with all of the selected ones. Only the page editor's selector applies it, so the default value is not checked against it.
+                            type: boolean
+            description:
+                The type-specific options of a `targetCollectionDisplay` fragment configuration field.
+            type: object
+        TextField:
+            allOf:
+                -   $ref: "#/components/schemas/Field"
+                -   properties:
+                        defaultValue:
+                            $ref: "#/components/schemas/TextFragmentConfigurationFieldDefaultValue"
+                            description:
+                                The field's default value.
+                        typeOptions:
+                            $ref: "#/components/schemas/TextTypeOptions"
+                            description:
+                                The field's type-specific options.
+            description:
+                A `text` field of a fragment configuration's field set.
+            type: object
+        TextFragmentConfigurationFieldDefaultValue:
+            description:
+                The default value of a `text` fragment configuration field. It mirrors the shape of the corresponding fragment configuration field value of the headless admin site API.
+            properties:
+                value:
+                    description:
+                        The field's default text. When the field is localizable, it is a language key that is translated when the fragment is rendered.
+                    type: string
+            type: object
+        TextTypeOptions:
+            allOf:
+                -   $ref: "#/components/schemas/TypeOptions"
+                -   properties:
+                        placeholder:
+                            description:
+                                The placeholder shown when the field is empty.
+                            type: string
+                        validation:
+                            $ref: "#/components/schemas/Validation"
+                            description:
+                                The validation applied to the field's value.
+            description:
+                The type-specific options of a `text` fragment configuration field.
+            type: object
+        TextValidation:
+            allOf:
+                -   $ref: "#/components/schemas/Validation"
+                -   properties:
+                        maxLength:
+                            description:
+                                The maximum length allowed.
+                            format: int64
+                            type: integer
+                        minLength:
+                            description:
+                                The minimum length allowed.
+                            format: int64
+                            type: integer
+            description:
+                An `email`, `text`, or `url` validation of a `text` fragment configuration field's value.
+            type: object
+        TypeOptions:
+            description:
+                The type-specific options of a fragment configuration field.
+            properties:
+                dependency:
+                    additionalProperties:
+                        $ref: "#/components/schemas/Dependency"
+                    description:
+                        The field's visibility conditions, keyed by the name of the field each condition applies to.
+                    type: object
+            type: object
+        URLField:
+            allOf:
+                -   $ref: "#/components/schemas/Field"
+                -   properties:
+                        defaultValue:
+                            $ref: "#/components/schemas/URLFragmentConfigurationFieldDefaultValue"
+                            description:
+                                The field's default value.
+                        typeOptions:
+                            $ref: "#/components/schemas/TypeOptions"
+                            description:
+                                The field's type-specific options.
+            description:
+                A `url` field of a fragment configuration's field set.
+            type: object
+        URLFragmentConfigurationFieldDefaultValue:
+            description:
+                The default value of a `url` fragment configuration field. It mirrors the shape of the corresponding fragment configuration field value of the headless admin site API.
+            properties:
+                value:
+                    $ref: ../../headless-admin-site/headless-admin-site-impl/rest-openapi.yaml#URLValue
+                    description:
+                        Either a manual link (`Href`) or a site page referenced by external reference code (`SitePage`).
+            type: object
+        ValidValue:
+            description:
+                A value a `select` fragment configuration field can take.
+            properties:
+                label:
+                    description:
+                        The label shown for the value.
+                    type: string
+                value:
+                    description:
+                        The value.
+                    type: string
+            required:
+                -   value
+            type: object
+        Validation:
+            description:
+                The validation applied to a `text` fragment configuration field's value.
+            discriminator:
+                mapping:
+                    email: "#/components/schemas/TextValidation"
+                    number: "#/components/schemas/NumberValidation"
+                    pattern: "#/components/schemas/PatternValidation"
+                    text: "#/components/schemas/TextValidation"
+                    url: "#/components/schemas/TextValidation"
+                propertyName: type
+            properties:
+                errorMessage:
+                    description:
+                        The message shown when the field's value is not valid.
+                    type: string
+                required:
+                    description:
+                        A flag that indicates whether the field's value is mandatory.
+                    type: boolean
+                type:
+                    description:
+                        The validation's type.
+                    enum: [email, number, pattern, text, url]
+                    type: string
+            required:
+                -   type
+            type: object
+        VideoFragmentConfigurationFieldDefaultValue:
+            description:
+                The default value of a `videoSelector` fragment configuration field. It mirrors the shape of the corresponding fragment configuration field value of the headless admin site API.
+            properties:
+                value:
+                    $ref: ../../headless-admin-site/headless-admin-site-impl/rest-openapi.yaml#VideoValue
+                    description:
+                        The selected video's embeddable HTML and title.
+            type: object
+        VideoSelectorField:
+            allOf:
+                -   $ref: "#/components/schemas/Field"
+                -   properties:
+                        defaultValue:
+                            $ref: "#/components/schemas/VideoFragmentConfigurationFieldDefaultValue"
+                            description:
+                                The field's default value.
+                        typeOptions:
+                            $ref: "#/components/schemas/TypeOptions"
+                            description:
+                                The field's type-specific options.
+            description:
+                A `videoSelector` field of a fragment configuration's field set.
+            type: object
+info:
+    description:
+        "A Java client JAR is available for use with the group ID 'com.liferay', artifact ID 'com.liferay.headless.admin.fragment.client', and version '1.0.7'."
+    license:
+        name: Apache 2.0
+        url: http://www.apache.org/licenses/LICENSE-2.0.html
+    title: Liferay Headless Admin Fragment API
+    version: v1.0
+openapi: 3.0.1
+paths:
+    "/design-libraries/{designLibraryExternalReferenceCode}/fragment-sets":
+        get:
+            description:
+                Retrieves the fragment sets of the design library.
+            operationId: getDesignLibraryFragmentSetsPage
+            parameters:
+                -   in: path
+                    name: designLibraryExternalReferenceCode
+                    required: true
+                    schema:
+                        type: string
+                -   in: query
+                    name: fields
+                    schema:
+                        type: string
+                -   in: query
+                    name: filter
+                    schema:
+                        type: string
+                -   in: query
+                    name: page
+                    schema:
+                        type: integer
+                -   in: query
+                    name: pageSize
+                    schema:
+                        type: integer
+                -   in: query
+                    name: restrictFields
+                    schema:
+                        type: string
+            responses:
+                200:
+                    content:
+                        application/json:
+                            schema:
+                                items:
+                                    $ref: "#/components/schemas/FragmentSet"
+                                type: array
+                        application/xml:
+                            schema:
+                                items:
+                                    $ref: "#/components/schemas/FragmentSet"
+                                type: array
+            tags: ["FragmentSet"]
+            x-feature-flag: LPD-57283
+    "/design-libraries/{designLibraryExternalReferenceCode}/fragment-sets/{fragmentSetExternalReferenceCode}":
+        delete:
+            description:
+                Deletes a specific fragment set of a design library.
+            operationId: deleteDesignLibraryFragmentSet
+            parameters:
+                -   in: path
+                    name: designLibraryExternalReferenceCode
+                    required: true
+                    schema:
+                        type: string
+                -   in: path
+                    name: fragmentSetExternalReferenceCode
+                    required: true
+                    schema:
+                        type: string
+            responses:
+                204:
+                    content:
+                        application/json: {}
+                        application/xml: {}
+            tags: ["FragmentSet"]
+            x-feature-flag: LPD-57283
+        get:
+            description:
+                Retrieves a specific fragment set of a design library.
+            operationId: getDesignLibraryFragmentSet
+            parameters:
+                -   in: path
+                    name: designLibraryExternalReferenceCode
+                    required: true
+                    schema:
+                        type: string
+                -   in: path
+                    name: fragmentSetExternalReferenceCode
+                    required: true
+                    schema:
+                        type: string
+                -   in: query
+                    name: fields
+                    schema:
+                        type: string
+                -   in: query
+                    name: restrictFields
+                    schema:
+                        type: string
+            responses:
+                200:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/FragmentSet"
+                        application/xml:
+                            schema:
+                                $ref: "#/components/schemas/FragmentSet"
+            tags: ["FragmentSet"]
+            x-feature-flag: LPD-57283
+    "/sites/{siteExternalReferenceCode}/fragment-sets":
+        get:
+            description:
+                Retrieves the fragment sets of the site.
+            operationId: getSiteFragmentSetsPage
+            parameters:
+                -   in: path
+                    name: siteExternalReferenceCode
+                    required: true
+                    schema:
+                        type: string
+                -   in: query
+                    name: fields
+                    schema:
+                        type: string
+                -   in: query
+                    name: filter
+                    schema:
+                        type: string
+                -   in: query
+                    name: page
+                    schema:
+                        type: integer
+                -   in: query
+                    name: pageSize
+                    schema:
+                        type: integer
+                -   in: query
+                    name: restrictFields
+                    schema:
+                        type: string
+            responses:
+                200:
+                    content:
+                        application/json:
+                            schema:
+                                items:
+                                    $ref: "#/components/schemas/FragmentSet"
+                                type: array
+                        application/xml:
+                            schema:
+                                items:
+                                    $ref: "#/components/schemas/FragmentSet"
+                                type: array
+            tags: ["FragmentSet"]
+            x-feature-flag: LPD-39244
+        post:
+            description:
+                Adds a new fragment set.
+            operationId: postSiteFragmentSet
+            parameters:
+                -   in: path
+                    name: siteExternalReferenceCode
+                    required: true
+                    schema:
+                        type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/FragmentSet"
+                    application/xml:
+                        schema:
+                            $ref: "#/components/schemas/FragmentSet"
+            responses:
+                200:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/FragmentSet"
+                        application/xml:
+                            schema:
+                                $ref: "#/components/schemas/FragmentSet"
+            tags: ["FragmentSet"]
+            x-feature-flag: LPD-39244
+    "/sites/{siteExternalReferenceCode}/fragment-sets/{fragmentSetExternalReferenceCode}":
+        delete:
+            description:
+                Deletes a specific fragment set of a site.
+            operationId: deleteSiteFragmentSet
+            parameters:
+                -   in: path
+                    name: siteExternalReferenceCode
+                    required: true
+                    schema:
+                        type: string
+                -   in: path
+                    name: fragmentSetExternalReferenceCode
+                    required: true
+                    schema:
+                        type: string
+            responses:
+                204:
+                    content:
+                        application/json: {}
+                        application/xml: {}
+            tags: ["FragmentSet"]
+            x-feature-flag: LPD-39244
+        get:
+            description:
+                Retrieves a specific fragment set of a site.
+            operationId: getSiteFragmentSet
+            parameters:
+                -   in: path
+                    name: siteExternalReferenceCode
+                    required: true
+                    schema:
+                        type: string
+                -   in: path
+                    name: fragmentSetExternalReferenceCode
+                    required: true
+                    schema:
+                        type: string
+                -   in: query
+                    name: fields
+                    schema:
+                        type: string
+                -   in: query
+                    name: restrictFields
+                    schema:
+                        type: string
+            responses:
+                200:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/FragmentSet"
+                        application/xml:
+                            schema:
+                                $ref: "#/components/schemas/FragmentSet"
+            tags: ["FragmentSet"]
+            x-feature-flag: LPD-39244
+        put:
+            description:
+                Updates the fragment set with the given external reference code, or creates it if it does not exist. On update, `dateModified`, `description`, and `name` are honored; any values sent for `dateCreated`, `externalReferenceCode`, `key`, and `marketplace` are ignored.
+            operationId: putSiteFragmentSet
+            parameters:
+                -   in: path
+                    name: siteExternalReferenceCode
+                    required: true
+                    schema:
+                        type: string
+                -   in: path
+                    name: fragmentSetExternalReferenceCode
+                    required: true
+                    schema:
+                        type: string
+                -   in: query
+                    name: fields
+                    schema:
+                        type: string
+                -   in: query
+                    name: restrictFields
+                    schema:
+                        type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/FragmentSet"
+                    application/xml:
+                        schema:
+                            $ref: "#/components/schemas/FragmentSet"
+            responses:
+                200:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/FragmentSet"
+                        application/xml:
+                            schema:
+                                $ref: "#/components/schemas/FragmentSet"
+            tags: ["FragmentSet"]
+            x-feature-flag: LPD-39244
+    "/sites/{siteExternalReferenceCode}/fragment-sets/{fragmentSetExternalReferenceCode}/fragments":
+        get:
+            description:
+                Retrieves the fragments of a fragment set.
+            operationId: getSiteFragmentSetFragmentsPage
+            parameters:
+                -   in: path
+                    name: siteExternalReferenceCode
+                    required: true
+                    schema:
+                        type: string
+                -   in: path
+                    name: fragmentSetExternalReferenceCode
+                    required: true
+                    schema:
+                        type: string
+                -   in: query
+                    name: fields
+                    schema:
+                        type: string
+                -   in: query
+                    name: page
+                    schema:
+                        type: integer
+                -   in: query
+                    name: pageSize
+                    schema:
+                        type: integer
+                -   in: query
+                    name: restrictFields
+                    schema:
+                        type: string
+            responses:
+                200:
+                    content:
+                        application/json:
+                            schema:
+                                items:
+                                    $ref: "#/components/schemas/Fragment"
+                                type: array
+                        application/xml:
+                            schema:
+                                items:
+                                    $ref: "#/components/schemas/Fragment"
+                                type: array
+            tags: ["Fragment"]
+            x-feature-flag: LPD-39244
+        post:
+            description:
+                Adds a new fragment to a fragment set.
+            operationId: postSiteFragmentSetFragment
+            parameters:
+                -   in: path
+                    name: siteExternalReferenceCode
+                    required: true
+                    schema:
+                        type: string
+                -   in: path
+                    name: fragmentSetExternalReferenceCode
+                    required: true
+                    schema:
+                        type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/Fragment"
+                    application/xml:
+                        schema:
+                            $ref: "#/components/schemas/Fragment"
+            responses:
+                200:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/Fragment"
+                        application/xml:
+                            schema:
+                                $ref: "#/components/schemas/Fragment"
+            tags: ["Fragment"]
+            x-feature-flag: LPD-39244
+    "/sites/{siteExternalReferenceCode}/fragment-sets/{fragmentSetExternalReferenceCode}/resource-files":
+        get:
+            description:
+                Retrieves the direct child resource files of a fragment set.
+            operationId: getSiteFragmentSetResourceFilesPage
+            parameters:
+                -   in: path
+                    name: siteExternalReferenceCode
+                    required: true
+                    schema:
+                        type: string
+                -   in: path
+                    name: fragmentSetExternalReferenceCode
+                    required: true
+                    schema:
+                        type: string
+                -   in: query
+                    name: fields
+                    schema:
+                        type: string
+                -   in: query
+                    name: page
+                    schema:
+                        type: integer
+                -   in: query
+                    name: pageSize
+                    schema:
+                        type: integer
+                -   in: query
+                    name: restrictFields
+                    schema:
+                        type: string
+            responses:
+                200:
+                    content:
+                        application/json:
+                            schema:
+                                items:
+                                    $ref: "#/components/schemas/ResourceFile"
+                                type: array
+                        application/xml:
+                            schema:
+                                items:
+                                    $ref: "#/components/schemas/ResourceFile"
+                                type: array
+            tags: ["ResourceFile"]
+            x-feature-flag: LPD-39244
+        post:
+            description:
+                Adds a new resource file to a fragment set.
+            operationId: postSiteFragmentSetResourceFile
+            parameters:
+                -   in: path
+                    name: siteExternalReferenceCode
+                    required: true
+                    schema:
+                        type: string
+                -   in: path
+                    name: fragmentSetExternalReferenceCode
+                    required: true
+                    schema:
+                        type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/ResourceFile"
+                    application/xml:
+                        schema:
+                            $ref: "#/components/schemas/ResourceFile"
+            responses:
+                200:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ResourceFile"
+                        application/xml:
+                            schema:
+                                $ref: "#/components/schemas/ResourceFile"
+            tags: ["ResourceFile"]
+            x-feature-flag: LPD-39244
+    "/sites/{siteExternalReferenceCode}/fragment-sets/{fragmentSetExternalReferenceCode}/resource-folders":
+        get:
+            description:
+                Retrieves the direct child resource folders of a fragment set.
+            operationId: getSiteFragmentSetResourceFoldersPage
+            parameters:
+                -   in: path
+                    name: siteExternalReferenceCode
+                    required: true
+                    schema:
+                        type: string
+                -   in: path
+                    name: fragmentSetExternalReferenceCode
+                    required: true
+                    schema:
+                        type: string
+                -   in: query
+                    name: fields
+                    schema:
+                        type: string
+                -   in: query
+                    name: page
+                    schema:
+                        type: integer
+                -   in: query
+                    name: pageSize
+                    schema:
+                        type: integer
+                -   in: query
+                    name: restrictFields
+                    schema:
+                        type: string
+            responses:
+                200:
+                    content:
+                        application/json:
+                            schema:
+                                items:
+                                    $ref: "#/components/schemas/ResourceFolder"
+                                type: array
+                        application/xml:
+                            schema:
+                                items:
+                                    $ref: "#/components/schemas/ResourceFolder"
+                                type: array
+            tags: ["ResourceFolder"]
+            x-feature-flag: LPD-39244
+        post:
+            description:
+                Adds a new resource folder to a fragment set.
+            operationId: postSiteFragmentSetResourceFolder
+            parameters:
+                -   in: path
+                    name: siteExternalReferenceCode
+                    required: true
+                    schema:
+                        type: string
+                -   in: path
+                    name: fragmentSetExternalReferenceCode
+                    required: true
+                    schema:
+                        type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/ResourceFolder"
+                    application/xml:
+                        schema:
+                            $ref: "#/components/schemas/ResourceFolder"
+            responses:
+                200:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ResourceFolder"
+                        application/xml:
+                            schema:
+                                $ref: "#/components/schemas/ResourceFolder"
+            tags: ["ResourceFolder"]
+            x-feature-flag: LPD-39244
+    "/sites/{siteExternalReferenceCode}/fragments":
+        get:
+            description:
+                Retrieves the fragments of a site.
+            operationId: getSiteFragmentsPage
+            parameters:
+                -   in: path
+                    name: siteExternalReferenceCode
+                    required: true
+                    schema:
+                        type: string
+                -   in: query
+                    name: fields
+                    schema:
+                        type: string
+                -   in: query
+                    name: filter
+                    schema:
+                        type: string
+                -   in: query
+                    name: page
+                    schema:
+                        type: integer
+                -   in: query
+                    name: pageSize
+                    schema:
+                        type: integer
+                -   in: query
+                    name: restrictFields
+                    schema:
+                        type: string
+            responses:
+                200:
+                    content:
+                        application/json:
+                            schema:
+                                items:
+                                    $ref: "#/components/schemas/Fragment"
+                                type: array
+                        application/xml:
+                            schema:
+                                items:
+                                    $ref: "#/components/schemas/Fragment"
+                                type: array
+            tags: ["Fragment"]
+            x-feature-flag: LPD-39244
+        post:
+            description:
+                Adds a new fragment to a site.
+            operationId: postSiteFragment
+            parameters:
+                -   in: path
+                    name: siteExternalReferenceCode
+                    required: true
+                    schema:
+                        type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/Fragment"
+                    application/xml:
+                        schema:
+                            $ref: "#/components/schemas/Fragment"
+            responses:
+                200:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/Fragment"
+                        application/xml:
+                            schema:
+                                $ref: "#/components/schemas/Fragment"
+            tags: ["Fragment"]
+            x-feature-flag: LPD-39244
+    "/sites/{siteExternalReferenceCode}/fragments/{fragmentExternalReferenceCode}":
+        delete:
+            description:
+                Deletes a specific fragment of a site.
+            operationId: deleteSiteFragment
+            parameters:
+                -   in: path
+                    name: siteExternalReferenceCode
+                    required: true
+                    schema:
+                        type: string
+                -   in: path
+                    name: fragmentExternalReferenceCode
+                    required: true
+                    schema:
+                        type: string
+            responses:
+                204:
+                    content:
+                        application/json: {}
+                        application/xml: {}
+            tags: ["Fragment"]
+            x-feature-flag: LPD-39244
+        get:
+            description:
+                Retrieves a specific fragment of a site.
+            operationId: getSiteFragment
+            parameters:
+                -   in: path
+                    name: siteExternalReferenceCode
+                    required: true
+                    schema:
+                        type: string
+                -   in: path
+                    name: fragmentExternalReferenceCode
+                    required: true
+                    schema:
+                        type: string
+                -   in: query
+                    name: fields
+                    schema:
+                        type: string
+                -   in: query
+                    name: restrictFields
+                    schema:
+                        type: string
+            responses:
+                200:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/Fragment"
+                        application/xml:
+                            schema:
+                                $ref: "#/components/schemas/Fragment"
+            tags: ["Fragment"]
+            x-feature-flag: LPD-39244
+        put:
+            description:
+                Updates the fragment with the given external reference code, or creates it if it does not exist.
+            operationId: putSiteFragment
+            parameters:
+                -   in: path
+                    name: siteExternalReferenceCode
+                    required: true
+                    schema:
+                        type: string
+                -   in: path
+                    name: fragmentExternalReferenceCode
+                    required: true
+                    schema:
+                        type: string
+                -   in: query
+                    name: fields
+                    schema:
+                        type: string
+                -   in: query
+                    name: restrictFields
+                    schema:
+                        type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/Fragment"
+                    application/xml:
+                        schema:
+                            $ref: "#/components/schemas/Fragment"
+            responses:
+                200:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/Fragment"
+                        application/xml:
+                            schema:
+                                $ref: "#/components/schemas/Fragment"
+            tags: ["Fragment"]
+            x-feature-flag: LPD-39244
+    "/sites/{siteExternalReferenceCode}/resource-files":
+        get:
+            description:
+                Retrieves the resource files of the site.
+            operationId: getSiteResourceFilesPage
+            parameters:
+                -   in: path
+                    name: siteExternalReferenceCode
+                    required: true
+                    schema:
+                        type: string
+                -   in: query
+                    name: fields
+                    schema:
+                        type: string
+                -   in: query
+                    name: filter
+                    schema:
+                        type: string
+                -   in: query
+                    name: page
+                    schema:
+                        type: integer
+                -   in: query
+                    name: pageSize
+                    schema:
+                        type: integer
+                -   in: query
+                    name: restrictFields
+                    schema:
+                        type: string
+            responses:
+                200:
+                    content:
+                        application/json:
+                            schema:
+                                items:
+                                    $ref: "#/components/schemas/ResourceFile"
+                                type: array
+                        application/xml:
+                            schema:
+                                items:
+                                    $ref: "#/components/schemas/ResourceFile"
+                                type: array
+            tags: ["ResourceFile"]
+            x-feature-flag: LPD-39244
+        post:
+            description:
+                Adds a new resource file to the site.
+            operationId: postSiteResourceFile
+            parameters:
+                -   in: path
+                    name: siteExternalReferenceCode
+                    required: true
+                    schema:
+                        type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/ResourceFile"
+                    application/xml:
+                        schema:
+                            $ref: "#/components/schemas/ResourceFile"
+            responses:
+                200:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ResourceFile"
+                        application/xml:
+                            schema:
+                                $ref: "#/components/schemas/ResourceFile"
+            tags: ["ResourceFile"]
+            x-feature-flag: LPD-39244
+    "/sites/{siteExternalReferenceCode}/resource-files/{resourceFileExternalReferenceCode}":
+        delete:
+            description:
+                Deletes a specific resource file of a site.
+            operationId: deleteSiteResourceFile
+            parameters:
+                -   in: path
+                    name: siteExternalReferenceCode
+                    required: true
+                    schema:
+                        type: string
+                -   in: path
+                    name: resourceFileExternalReferenceCode
+                    required: true
+                    schema:
+                        type: string
+            responses:
+                204:
+                    content:
+                        application/json: {}
+                        application/xml: {}
+            tags: ["ResourceFile"]
+            x-feature-flag: LPD-39244
+        get:
+            description:
+                Retrieves a specific resource file of a site.
+            operationId: getSiteResourceFile
+            parameters:
+                -   in: path
+                    name: siteExternalReferenceCode
+                    required: true
+                    schema:
+                        type: string
+                -   in: path
+                    name: resourceFileExternalReferenceCode
+                    required: true
+                    schema:
+                        type: string
+                -   in: query
+                    name: fields
+                    schema:
+                        type: string
+                -   in: query
+                    name: restrictFields
+                    schema:
+                        type: string
+            responses:
+                200:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ResourceFile"
+                        application/xml:
+                            schema:
+                                $ref: "#/components/schemas/ResourceFile"
+            tags: ["ResourceFile"]
+            x-feature-flag: LPD-39244
+        put:
+            description:
+                Updates the resource file with the given external reference code, or creates it if it does not exist. On update, `fileURLReference` and `name` are required, `dateModified` is honored, and any values sent for `dateCreated`, `externalReferenceCode`, `fragmentSet`, `fragmentSetExternalReferenceCode`, `resourceFolder`, and `resourceFolderExternalReferenceCode` are ignored.
+            operationId: putSiteResourceFile
+            parameters:
+                -   in: path
+                    name: siteExternalReferenceCode
+                    required: true
+                    schema:
+                        type: string
+                -   in: path
+                    name: resourceFileExternalReferenceCode
+                    required: true
+                    schema:
+                        type: string
+                -   in: query
+                    name: fields
+                    schema:
+                        type: string
+                -   in: query
+                    name: restrictFields
+                    schema:
+                        type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/ResourceFile"
+                    application/xml:
+                        schema:
+                            $ref: "#/components/schemas/ResourceFile"
+            responses:
+                200:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ResourceFile"
+                        application/xml:
+                            schema:
+                                $ref: "#/components/schemas/ResourceFile"
+            tags: ["ResourceFile"]
+            x-feature-flag: LPD-39244
+    "/sites/{siteExternalReferenceCode}/resource-folders":
+        get:
+            description:
+                Retrieves the resource folders of the site.
+            operationId: getSiteResourceFoldersPage
+            parameters:
+                -   in: path
+                    name: siteExternalReferenceCode
+                    required: true
+                    schema:
+                        type: string
+                -   in: query
+                    name: fields
+                    schema:
+                        type: string
+                -   in: query
+                    name: filter
+                    schema:
+                        type: string
+                -   in: query
+                    name: page
+                    schema:
+                        type: integer
+                -   in: query
+                    name: pageSize
+                    schema:
+                        type: integer
+                -   in: query
+                    name: restrictFields
+                    schema:
+                        type: string
+            responses:
+                200:
+                    content:
+                        application/json:
+                            schema:
+                                items:
+                                    $ref: "#/components/schemas/ResourceFolder"
+                                type: array
+                        application/xml:
+                            schema:
+                                items:
+                                    $ref: "#/components/schemas/ResourceFolder"
+                                type: array
+            tags: ["ResourceFolder"]
+            x-feature-flag: LPD-39244
+        post:
+            description:
+                Adds a new resource folder to the site.
+            operationId: postSiteResourceFolder
+            parameters:
+                -   in: path
+                    name: siteExternalReferenceCode
+                    required: true
+                    schema:
+                        type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/ResourceFolder"
+                    application/xml:
+                        schema:
+                            $ref: "#/components/schemas/ResourceFolder"
+            responses:
+                200:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ResourceFolder"
+                        application/xml:
+                            schema:
+                                $ref: "#/components/schemas/ResourceFolder"
+            tags: ["ResourceFolder"]
+            x-feature-flag: LPD-39244
+    "/sites/{siteExternalReferenceCode}/resource-folders/{resourceFolderExternalReferenceCode}":
+        delete:
+            description:
+                Deletes a specific resource folder of a site.
+            operationId: deleteSiteResourceFolder
+            parameters:
+                -   in: path
+                    name: siteExternalReferenceCode
+                    required: true
+                    schema:
+                        type: string
+                -   in: path
+                    name: resourceFolderExternalReferenceCode
+                    required: true
+                    schema:
+                        type: string
+            responses:
+                204:
+                    content:
+                        application/json: {}
+                        application/xml: {}
+            tags: ["ResourceFolder"]
+            x-feature-flag: LPD-39244
+        get:
+            description:
+                Retrieves a specific resource folder of a site.
+            operationId: getSiteResourceFolder
+            parameters:
+                -   in: path
+                    name: siteExternalReferenceCode
+                    required: true
+                    schema:
+                        type: string
+                -   in: path
+                    name: resourceFolderExternalReferenceCode
+                    required: true
+                    schema:
+                        type: string
+                -   in: query
+                    name: fields
+                    schema:
+                        type: string
+                -   in: query
+                    name: restrictFields
+                    schema:
+                        type: string
+            responses:
+                200:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ResourceFolder"
+                        application/xml:
+                            schema:
+                                $ref: "#/components/schemas/ResourceFolder"
+            tags: ["ResourceFolder"]
+            x-feature-flag: LPD-39244
+        put:
+            description:
+                Updates the resource folder with the given external reference code, or creates it if it does not exist. On update, `dateModified` and `name` are honored; any values sent for `dateCreated`, `externalReferenceCode`, `fragmentSet`, `fragmentSetExternalReferenceCode`, `parentResourceFolder`, and `parentResourceFolderExternalReferenceCode` are ignored.
+            operationId: putSiteResourceFolder
+            parameters:
+                -   in: path
+                    name: siteExternalReferenceCode
+                    required: true
+                    schema:
+                        type: string
+                -   in: path
+                    name: resourceFolderExternalReferenceCode
+                    required: true
+                    schema:
+                        type: string
+                -   in: query
+                    name: fields
+                    schema:
+                        type: string
+                -   in: query
+                    name: restrictFields
+                    schema:
+                        type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/ResourceFolder"
+                    application/xml:
+                        schema:
+                            $ref: "#/components/schemas/ResourceFolder"
+            responses:
+                200:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ResourceFolder"
+                        application/xml:
+                            schema:
+                                $ref: "#/components/schemas/ResourceFolder"
+            tags: ["ResourceFolder"]
+            x-feature-flag: LPD-39244
+    "/sites/{siteExternalReferenceCode}/resource-folders/{resourceFolderExternalReferenceCode}/resource-files":
+        get:
+            description:
+                Retrieves the direct child resource files of the resource folder with the given external reference code.
+            operationId: getSiteResourceFolderResourceFilesPage
+            parameters:
+                -   in: path
+                    name: siteExternalReferenceCode
+                    required: true
+                    schema:
+                        type: string
+                -   in: path
+                    name: resourceFolderExternalReferenceCode
+                    required: true
+                    schema:
+                        type: string
+                -   in: query
+                    name: fields
+                    schema:
+                        type: string
+                -   in: query
+                    name: page
+                    schema:
+                        type: integer
+                -   in: query
+                    name: pageSize
+                    schema:
+                        type: integer
+                -   in: query
+                    name: restrictFields
+                    schema:
+                        type: string
+            responses:
+                200:
+                    content:
+                        application/json:
+                            schema:
+                                items:
+                                    $ref: "#/components/schemas/ResourceFile"
+                                type: array
+                        application/xml:
+                            schema:
+                                items:
+                                    $ref: "#/components/schemas/ResourceFile"
+                                type: array
+            tags: ["ResourceFile"]
+            x-feature-flag: LPD-39244
+    "/sites/{siteExternalReferenceCode}/resource-folders/{resourceFolderExternalReferenceCode}/resource-folders":
+        get:
+            description:
+                Retrieves the direct child resource folders of the resource folder with the given external reference code.
+            operationId: getSiteResourceFolderResourceFoldersPage
+            parameters:
+                -   in: path
+                    name: siteExternalReferenceCode
+                    required: true
+                    schema:
+                        type: string
+                -   in: path
+                    name: resourceFolderExternalReferenceCode
+                    required: true
+                    schema:
+                        type: string
+                -   in: query
+                    name: fields
+                    schema:
+                        type: string
+                -   in: query
+                    name: page
+                    schema:
+                        type: integer
+                -   in: query
+                    name: pageSize
+                    schema:
+                        type: integer
+                -   in: query
+                    name: restrictFields
+                    schema:
+                        type: string
+            responses:
+                200:
+                    content:
+                        application/json:
+                            schema:
+                                items:
+                                    $ref: "#/components/schemas/ResourceFolder"
+                                type: array
+                        application/xml:
+                            schema:
+                                items:
+                                    $ref: "#/components/schemas/ResourceFolder"
+                                type: array
+            tags: ["ResourceFolder"]
+            x-feature-flag: LPD-39244

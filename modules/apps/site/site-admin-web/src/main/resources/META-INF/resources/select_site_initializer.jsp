@@ -19,6 +19,7 @@ renderResponse.setTitle(LanguageUtil.get(request, "select-template"));
 
 <clay:container-fluid
 	cssClass="container-view"
+	fullWidth="<%= true %>"
 >
 	<clay:row>
 		<clay:col
@@ -35,7 +36,7 @@ renderResponse.setTitle(LanguageUtil.get(request, "select-template"));
 			<clay:sheet
 				size="full"
 			>
-				<h2 class="sheet-title"><%= selectSiteInitializerDisplayContext.getTitle() %></h2>
+				<h2 class="sheet-title"><%= HtmlUtil.escape(selectSiteInitializerDisplayContext.getTitle()) %></h2>
 
 				<div class="sheet-text">
 					<liferay-ui:message key="select-the-template-to-create-your-site" />
@@ -52,7 +53,7 @@ renderResponse.setTitle(LanguageUtil.get(request, "select-template"));
 						>
 							<liferay-ui:search-container-column-text>
 								<clay:vertical-card
-									propsTransformer="js/SelectSiteInitializerVerticalCardPropsTransformer"
+									propsTransformer="{SelectSiteInitializerVerticalCardPropsTransformer} from site-admin-web"
 									verticalCard="<%= new SelectSiteInitializerVerticalCard(siteInitializerItem, renderRequest, renderResponse) %>"
 								/>
 							</liferay-ui:search-container-column-text>

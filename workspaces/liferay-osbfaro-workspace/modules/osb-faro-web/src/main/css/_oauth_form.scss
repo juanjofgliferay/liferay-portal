@@ -1,0 +1,12 @@
+.oauth-form-root {
+	.input-root[disabled] {
+		background-color: $lightBackground;
+		border-color: $lightBackground;
+		color: $mainLighten52;
+		cursor: not-allowed;
+	}
+
+	.submit {
+		margin-right: 12px;
+	}
+}

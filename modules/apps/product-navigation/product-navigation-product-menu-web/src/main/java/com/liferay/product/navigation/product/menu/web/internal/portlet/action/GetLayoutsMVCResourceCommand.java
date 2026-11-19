@@ -19,15 +19,15 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.SessionClicks;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.portal.util.PropsValues;
 import com.liferay.product.navigation.product.menu.constants.ProductNavigationProductMenuPortletKeys;
 
-import javax.portlet.ResourceRequest;
-import javax.portlet.ResourceResponse;
+import jakarta.portlet.ResourceRequest;
+import jakarta.portlet.ResourceResponse;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -37,7 +37,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + ProductNavigationProductMenuPortletKeys.PRODUCT_NAVIGATION_PRODUCT_MENU,
+		"jakarta.portlet.name=" + ProductNavigationProductMenuPortletKeys.PRODUCT_NAVIGATION_PRODUCT_MENU,
 		"mvc.command.name=/product_navigation_product_menu/get_layouts"
 	},
 	service = MVCResourceCommand.class
@@ -68,6 +68,13 @@ public class GetLayoutsMVCResourceCommand extends BaseMVCResourceCommand {
 			JSONUtil.put(
 				"hasMoreElements",
 				() -> {
+					int pageSize = GetterUtil.getInteger(
+						PropsValues.LAYOUT_MANAGE_PAGES_INITIAL_CHILDREN);
+
+					if (pageSize <= 0) {
+						return false;
+					}
+
 					int childLayoutsCount = _layoutService.getLayoutsCount(
 						themeDisplay.getScopeGroupId(), privateLayout,
 						parentLayoutId);
@@ -76,9 +83,6 @@ public class GetLayoutsMVCResourceCommand extends BaseMVCResourceCommand {
 						httpServletRequest, "start");
 
 					start = Math.max(0, start);
-
-					int pageSize = GetterUtil.getInteger(
-						PropsValues.LAYOUT_MANAGE_PAGES_INITIAL_CHILDREN);
 
 					int end = ParamUtil.getInteger(
 						httpServletRequest, "end", start + pageSize);

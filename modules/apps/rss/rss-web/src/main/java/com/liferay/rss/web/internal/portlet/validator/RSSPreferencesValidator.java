@@ -5,15 +5,16 @@
 
 package com.liferay.rss.web.internal.portlet.validator;
 
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.rss.constants.RSSPortletKeys;
 
+import jakarta.portlet.PortletPreferences;
+import jakarta.portlet.PreferencesValidator;
+import jakarta.portlet.ValidatorException;
+
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.portlet.PortletPreferences;
-import javax.portlet.PreferencesValidator;
-import javax.portlet.ValidatorException;
 
 import org.osgi.service.component.annotations.Component;
 
@@ -21,7 +22,7 @@ import org.osgi.service.component.annotations.Component;
  * @author Brian Wing Shun Chan
  */
 @Component(
-	property = "javax.portlet.name=" + RSSPortletKeys.RSS,
+	property = "jakarta.portlet.name=" + RSSPortletKeys.RSS,
 	service = PreferencesValidator.class
 )
 public class RSSPreferencesValidator implements PreferencesValidator {
@@ -35,9 +36,13 @@ public class RSSPreferencesValidator implements PreferencesValidator {
 		String[] urls = portletPreferences.getValues("urls", new String[0]);
 
 		for (String url : urls) {
-			if (!Validator.isUrl(url)) {
-				badURLs.add(url);
+			if (HttpComponentsUtil.hasHTTPProtocol(url) &&
+				Validator.isUrl(url)) {
+
+				continue;
 			}
+
+			badURLs.add(url);
 		}
 
 		if (!badURLs.isEmpty()) {

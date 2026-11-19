@@ -5,7 +5,6 @@
 
 package com.liferay.wiki.web.internal.display.context;
 
-import com.liferay.asset.kernel.model.AssetEntry;
 import com.liferay.asset.kernel.service.AssetEntryServiceUtil;
 import com.liferay.asset.kernel.service.persistence.AssetEntryQuery;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItem;
@@ -41,7 +40,6 @@ import com.liferay.subscription.service.SubscriptionLocalServiceUtil;
 import com.liferay.taglib.security.PermissionsURLTag;
 import com.liferay.trash.TrashHelper;
 import com.liferay.wiki.configuration.WikiGroupServiceConfiguration;
-import com.liferay.wiki.configuration.WikiGroupServiceOverriddenConfiguration;
 import com.liferay.wiki.constants.WikiWebKeys;
 import com.liferay.wiki.model.WikiNode;
 import com.liferay.wiki.model.WikiPage;
@@ -57,11 +55,10 @@ import com.liferay.wiki.web.internal.security.permission.resource.WikiPagePermis
 import com.liferay.wiki.web.internal.util.WikiPortletUtil;
 import com.liferay.wiki.web.internal.util.WikiWebComponentProvider;
 
-import java.util.ArrayList;
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.List;
 import java.util.Objects;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Iván Zaera
@@ -487,23 +484,17 @@ public class WikiListPagesDisplayContext {
 					assetEntryQuery.setEnd(searchContainer.getEnd());
 					assetEntryQuery.setStart(searchContainer.getStart());
 
-					List<AssetEntry> assetEntries =
-						AssetEntryServiceUtil.getEntries(assetEntryQuery);
+					return TransformUtil.transform(
+						AssetEntryServiceUtil.getEntries(assetEntryQuery),
+						assetEntry -> {
+							WikiPageResource pageResource =
+								WikiPageResourceLocalServiceUtil.
+									getPageResource(assetEntry.getClassPK());
 
-					List<WikiPage> results = new ArrayList<>();
-
-					for (AssetEntry assetEntry : assetEntries) {
-						WikiPageResource pageResource =
-							WikiPageResourceLocalServiceUtil.getPageResource(
-								assetEntry.getClassPK());
-
-						WikiPage assetPage = WikiPageLocalServiceUtil.getPage(
-							pageResource.getNodeId(), pageResource.getTitle());
-
-						results.add(assetPage);
-					}
-
-					return results;
+							return WikiPageLocalServiceUtil.getPage(
+								pageResource.getNodeId(),
+								pageResource.getTitle());
+						});
 				},
 				AssetEntryServiceUtil.getEntriesCount(assetEntryQuery));
 		}
@@ -572,7 +563,8 @@ public class WikiListPagesDisplayContext {
 				searchContainer.setResultsAndTotal(
 					() -> WikiPageLocalServiceUtil.getPages(
 						page.getNodeId(), page.getTitle(), QueryUtil.ALL_POS,
-						QueryUtil.ALL_POS, new PageVersionComparator()),
+						QueryUtil.ALL_POS,
+						PageVersionComparator.getInstance(false)),
 					WikiPageLocalServiceUtil.getPagesCount(
 						page.getNodeId(), page.getTitle()));
 			}
@@ -617,16 +609,14 @@ public class WikiListPagesDisplayContext {
 			return false;
 		}
 
-		WikiGroupServiceOverriddenConfiguration
-			wikiGroupServiceOverriddenConfiguration =
-				_wikiRequestHelper.getWikiGroupServiceOverriddenConfiguration();
+		WikiGroupServiceConfiguration wikiGroupServiceConfiguration =
+			_wikiRequestHelper.getWikiGroupServiceConfiguration();
 
 		if (!WikiPagePermission.contains(
 				_wikiRequestHelper.getPermissionChecker(), wikiPage,
 				ActionKeys.SUBSCRIBE) ||
-			(!wikiGroupServiceOverriddenConfiguration.emailPageAddedEnabled() &&
-			 !wikiGroupServiceOverriddenConfiguration.
-				 emailPageUpdatedEnabled())) {
+			(!wikiGroupServiceConfiguration.emailPageAddedEnabled() &&
+			 !wikiGroupServiceConfiguration.emailPageUpdatedEnabled())) {
 
 			return false;
 		}
@@ -679,14 +669,9 @@ public class WikiListPagesDisplayContext {
 	private Boolean _isSubscribed(WikiPage wikiPage) {
 		User user = _wikiRequestHelper.getUser();
 
-		if (SubscriptionLocalServiceUtil.isSubscribed(
-				user.getCompanyId(), user.getUserId(), WikiPage.class.getName(),
-				wikiPage.getResourcePrimKey())) {
-
-			return true;
-		}
-
-		return false;
+		return SubscriptionLocalServiceUtil.isSubscribed(
+			user.getCompanyId(), user.getUserId(), WikiPage.class.getName(),
+			wikiPage.getResourcePrimKey());
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(

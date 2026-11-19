@@ -10,9 +10,15 @@
 <div class="form-group">
 	<div class="custom-checkbox custom-control">
 		<label>
-			<aui:input checked="<%= checked %>" cssClass="custom-control-input" data-qa-id="<%= name %>" disabled="<%= disabled %>" id="<%= id %>" ignoreRequestValue="<%= true %>" label="" name="<%= name %>" type="checkbox" wrappedField="<%= true %>" />
+			<aui:input checked="<%= checked %>" cssClass="custom-control-input" data="<%= data %>" data-qa-id="<%= name %>" disabled="<%= disabled %>" id="<%= id %>" ignoreRequestValue="<%= true %>" label="" name="<%= name %>" type="checkbox" wrappedField="<%= true %>" />
 
 			<%@ include file="/checkbox/extended_label.jspf" %>
 		</label>
 	</div>
+
+	<c:if test="<%= Validator.isNotNull(description) %>">
+		<div class="selected-labels">
+			<%= HtmlUtil.escape(description) %>
+		</div>
+	</c:if>
 </div>

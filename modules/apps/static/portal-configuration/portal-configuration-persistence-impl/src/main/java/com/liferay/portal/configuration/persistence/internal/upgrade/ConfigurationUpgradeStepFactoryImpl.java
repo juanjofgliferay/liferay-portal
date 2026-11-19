@@ -7,14 +7,15 @@ package com.liferay.portal.configuration.persistence.internal.upgrade;
 
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.configuration.persistence.ReloadablePersistenceManager;
 import com.liferay.portal.configuration.persistence.upgrade.ConfigurationUpgradeStepFactory;
 import com.liferay.portal.file.install.constants.FileInstallConstants;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.upgrade.UpgradeException;
 import com.liferay.portal.kernel.upgrade.UpgradeStep;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.StringUtil;
-import com.liferay.portal.util.PropsValues;
 
 import java.io.File;
 import java.io.IOException;
@@ -24,26 +25,24 @@ import java.nio.file.Files;
 import java.util.Dictionary;
 import java.util.Enumeration;
 
-import org.apache.felix.cm.PersistenceManager;
+import org.osgi.service.cm.Configuration;
+import org.osgi.service.cm.ConfigurationAdmin;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Preston Crary
  */
+@Component(service = ConfigurationUpgradeStepFactory.class)
 public class ConfigurationUpgradeStepFactoryImpl
 	implements ConfigurationUpgradeStepFactory {
-
-	public ConfigurationUpgradeStepFactoryImpl(
-		PersistenceManager persistenceManager) {
-
-		_persistenceManager = persistenceManager;
-	}
 
 	@Override
 	public UpgradeStep createUpgradeStep(String oldPid, String newPid) {
 		return () -> {
 			try {
 				Enumeration<Dictionary<String, String>> enumeration =
-					_persistenceManager.getDictionaries();
+					_reloadablePersistenceManager.getDictionaries();
 
 				while (enumeration.hasMoreElements()) {
 					Dictionary<String, String> dictionary =
@@ -75,9 +74,16 @@ public class ConfigurationUpgradeStepFactoryImpl
 							StringUtil.replace(fileName, oldPid, newPid));
 					}
 
-					_persistenceManager.store(newServicePid, dictionary);
+					_reloadablePersistenceManager.store(
+						newServicePid, dictionary);
 
-					_persistenceManager.delete(oldServicePid);
+					_reloadablePersistenceManager.delete(oldServicePid);
+
+					Configuration configuration =
+						_configurationAdmin.getConfiguration(
+							newServicePid, StringPool.QUESTION);
+
+					configuration.update(dictionary);
 				}
 
 				File configResourcesDir = new File(
@@ -86,28 +92,29 @@ public class ConfigurationUpgradeStepFactoryImpl
 				for (File file : configResourcesDir.listFiles()) {
 					String fileName = file.getName();
 
-					if (fileName.equals(oldPid.concat(".cfg")) ||
-						fileName.equals(oldPid.concat(".config")) ||
-						fileName.startsWith(oldPid.concat(StringPool.DASH))) {
+					if (!fileName.equals(oldPid.concat(".cfg")) &&
+						!fileName.equals(oldPid.concat(".config")) &&
+						!fileName.startsWith(oldPid.concat(StringPool.DASH))) {
 
-						File newFile = new File(
-							StringUtil.replace(file.getPath(), oldPid, newPid));
+						continue;
+					}
 
-						if (newFile.exists()) {
-							if (_log.isWarnEnabled()) {
-								_log.warn(
-									StringBundler.concat(
-										"Unable to rename ",
-										file.getAbsolutePath(), " to ",
-										newFile.getAbsolutePath(),
-										" because the file already exists"));
-							}
+					File newFile = new File(
+						StringUtil.replace(file.getPath(), oldPid, newPid));
 
-							continue;
+					if (newFile.exists()) {
+						if (_log.isWarnEnabled()) {
+							_log.warn(
+								StringBundler.concat(
+									"Unable to rename ", file.getAbsolutePath(),
+									" to ", newFile.getAbsolutePath(),
+									" because the file already exists"));
 						}
 
-						Files.move(file.toPath(), newFile.toPath());
+						continue;
 					}
+
+					Files.move(file.toPath(), newFile.toPath());
 				}
 			}
 			catch (IOException ioException) {
@@ -119,6 +126,10 @@ public class ConfigurationUpgradeStepFactoryImpl
 	private static final Log _log = LogFactoryUtil.getLog(
 		ConfigurationUpgradeStepFactoryImpl.class);
 
-	private final PersistenceManager _persistenceManager;
+	@Reference
+	private ConfigurationAdmin _configurationAdmin;
+
+	@Reference
+	private ReloadablePersistenceManager _reloadablePersistenceManager;
 
 }

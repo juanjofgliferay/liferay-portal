@@ -1,0 +1,126 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Event Analysis Editor render 1`] = `
+<div>
+  <div
+    class="card card-root canvas-root event-analysis-editor-root"
+  >
+    <div
+      class="card-header align-items-lg-center align-items-start c-gap-3 canvas-header d-flex flex-column flex-lg-row flex-wrap justify-content-between mb-5 pb-0"
+    >
+      <div
+        class="card-title"
+      >
+        <h2
+          class="text-5 font-weight-semi-bold"
+        >
+          Analysis Insights
+        </h2>
+      </div>
+      <div
+        class="align-items-center c-gap-3 canvas-actions d-flex flex-wrap"
+      >
+        <div
+          class="type-selector btn-group"
+          role="group"
+        >
+          <button
+            aria-pressed="true"
+            class="active btn btn-sm btn-secondary"
+            type="button"
+          >
+            Total
+          </button>
+          <button
+            aria-pressed="false"
+            class="btn btn-sm btn-secondary"
+            type="button"
+          >
+            Unique
+          </button>
+          <button
+            aria-pressed="false"
+            class="btn btn-sm btn-secondary"
+            type="button"
+          >
+            Average
+          </button>
+        </div>
+        <span
+          class="align-self-stretch border-left"
+        />
+        <div
+          class="align-items-center c-gap-3 d-flex event-analysis-editor-period flex-wrap"
+        >
+          <div
+            class="custom-control custom-checkbox compare-to-previous-checkbox flex-shrink-0 mb-0 mt-2 custom-control-outside"
+          >
+            <label>
+              <input
+                class="custom-control-input"
+                type="checkbox"
+              />
+              <span
+                class="custom-control-label"
+              >
+                <span
+                  class="custom-control-label-text"
+                >
+                  Compare to Previous
+                </span>
+              </span>
+            </label>
+          </div>
+          <span
+            aria-hidden="true"
+            class="loading-root loading-animation"
+          />
+        </div>
+      </div>
+    </div>
+    <div
+      class="card-body canvas-body"
+    >
+      <div
+        class="align-items-center canvas-empty-state d-flex justify-content-center rounded-lg canvas-empty-state-idle bg-white"
+      >
+        <div
+          class="c-empty-state c-empty-state-animation"
+        >
+          <div
+            class="c-empty-state-image"
+          >
+            <div
+              class="c-empty-state-aspect-ratio"
+            >
+              <img
+                alt=""
+                class="aspect-ratio-item aspect-ratio-item-fluid"
+                src="empty_state.svg"
+              />
+            </div>
+          </div>
+          <div
+            class="c-empty-state-title text-dark"
+          >
+            <h3
+              class="text-5 font-weight-bold"
+            >
+              No Conditions Yet
+            </h3>
+          </div>
+          <div
+            class="c-empty-state-text"
+          >
+            <span
+              class="text-4 text-secondary"
+            >
+              To create a new analysis, select an event, then add filters and breakdowns for more detail.
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+`;

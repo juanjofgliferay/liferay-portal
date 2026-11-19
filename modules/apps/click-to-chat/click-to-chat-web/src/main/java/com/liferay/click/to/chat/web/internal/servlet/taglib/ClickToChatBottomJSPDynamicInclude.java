@@ -5,26 +5,32 @@
 
 package com.liferay.click.to.chat.web.internal.servlet.taglib;
 
+import com.liferay.ai.hub.cell.configuration.AIHubCellConfiguration;
 import com.liferay.click.to.chat.web.internal.configuration.ClickToChatConfiguration;
 import com.liferay.click.to.chat.web.internal.configuration.ClickToChatConfigurationUtil;
 import com.liferay.click.to.chat.web.internal.constants.ClickToChatConstants;
 import com.liferay.click.to.chat.web.internal.constants.ClickToChatWebKeys;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
+import com.liferay.portal.kernel.module.configuration.ConfigurationException;
 import com.liferay.portal.kernel.portlet.LiferayWindowState;
 import com.liferay.portal.kernel.servlet.taglib.BaseJSPDynamicInclude;
 import com.liferay.portal.kernel.servlet.taglib.DynamicInclude;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.portal.security.key.secret.SecretResolver;
+
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import java.util.Objects;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -32,7 +38,10 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author José Abelenda
  */
-@Component(service = DynamicInclude.class)
+@Component(
+	property = "dynamic.include.key=/html/common/themes/bottom.jsp#post",
+	service = DynamicInclude.class
+)
 public class ClickToChatBottomJSPDynamicInclude extends BaseJSPDynamicInclude {
 
 	@Override
@@ -94,13 +103,46 @@ public class ClickToChatBottomJSPDynamicInclude extends BaseJSPDynamicInclude {
 		}
 
 		if (themeDisplay.isSignedIn() &&
-			(clickToChatConfiguration.chatProviderId() ==
+			Objects.equals(
+				clickToChatConfiguration.chatProviderId(),
 				ClickToChatConstants.CHAT_PROVIDER_ID_ZENDESK_WEB_WIDGET) &&
 			(Validator.isNull(clickToChatConfiguration.chatProviderKeyId()) ||
 			 Validator.isNull(
 				 clickToChatConfiguration.chatProviderSecretKey()))) {
 
 			return;
+		}
+
+		if (Objects.equals(
+				clickToChatConfiguration.chatProviderId(),
+				ClickToChatConstants.CHAT_PROVIDER_ID_AIHUB)) {
+
+			try {
+				AIHubCellConfiguration aiHubCellConfiguration =
+					_configurationProvider.getCompanyConfiguration(
+						AIHubCellConfiguration.class,
+						themeDisplay.getCompanyId());
+
+				String serviceURL = aiHubCellConfiguration.serviceURL();
+
+				if (Validator.isNull(serviceURL)) {
+					return;
+				}
+
+				if (serviceURL.endsWith("/")) {
+					serviceURL = serviceURL.substring(
+						0, serviceURL.length() - 1);
+				}
+
+				httpServletRequest.setAttribute(
+					ClickToChatWebKeys.CLICK_TO_CHAT_AIHUB_SERVICE_URL,
+					serviceURL);
+			}
+			catch (ConfigurationException configurationException) {
+				_log.error(configurationException);
+
+				return;
+			}
 		}
 
 		httpServletRequest.setAttribute(
@@ -114,14 +156,11 @@ public class ClickToChatBottomJSPDynamicInclude extends BaseJSPDynamicInclude {
 			clickToChatConfiguration.chatProviderKeyId());
 		httpServletRequest.setAttribute(
 			ClickToChatWebKeys.CLICK_TO_CHAT_CHAT_PROVIDER_SECRET_KEY,
-			clickToChatConfiguration.chatProviderSecretKey());
+			_secretResolver.resolve(
+				themeDisplay.getCompanyId(),
+				clickToChatConfiguration.chatProviderSecretKey()));
 
 		super.include(httpServletRequest, httpServletResponse, key);
-	}
-
-	@Override
-	public void register(DynamicIncludeRegistry dynamicIncludeRegistry) {
-		dynamicIncludeRegistry.register("/html/common/themes/bottom.jsp#post");
 	}
 
 	@Override
@@ -136,6 +175,12 @@ public class ClickToChatBottomJSPDynamicInclude extends BaseJSPDynamicInclude {
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		ClickToChatBottomJSPDynamicInclude.class);
+
+	@Reference
+	private ConfigurationProvider _configurationProvider;
+
+	@Reference
+	private SecretResolver _secretResolver;
 
 	@Reference(target = "(osgi.web.symbolicname=com.liferay.click.to.chat.web)")
 	private ServletContext _servletContext;

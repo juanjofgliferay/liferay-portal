@@ -50,9 +50,7 @@ portletDisplay.setShowBackIcon(true);
 portletDisplay.setURLBack(redirect);
 %>
 
-<clay:container-fluid
-	cssClass="container-form-lg edit-publication-container"
->
+<div class="container-form-lg edit-publication-container">
 	<liferay-portlet:actionURL name="<%= actionName %>" var="actionURL">
 		<liferay-portlet:param name="mvcRenderCommandName" value="/change_tracking/view_publications" />
 		<liferay-portlet:param name="redirect" value="<%= redirect %>" />
@@ -61,7 +59,7 @@ portletDisplay.setURLBack(redirect);
 	<liferay-portlet:resourceURL id="/change_tracking/invite_users" var="inviteUsersURL" />
 
 	<react:component
-		module="publications/js/views/ChangeTrackingCollectionEditView"
+		module="{ChangeTrackingCollectionEditView} from change-tracking-web"
 		props='<%=
 			HashMapBuilder.<String, Object>put(
 				"actionUrl", actionURL
@@ -98,4 +96,4 @@ portletDisplay.setURLBack(redirect);
 			).build()
 		%>'
 	/>
-</clay:container-fluid>
+</div>

@@ -45,7 +45,7 @@ List<DepotEntryGroupRel> depotEntryGroupRels = depotAdminSitesDisplayContext.get
 						displayType="secondary"
 						id='<%= liferayPortletResponse.getNamespace() + "addConnectedSiteButton" %>'
 						label="add"
-						propsTransformer="js/AddConnectedSitesButtonPropsTransformer"
+						propsTransformer="{AddConnectedSitesButtonPropsTransformer} from depot-web"
 						small="<%= true %>"
 						title="connect-to-a-site"
 					/>
@@ -53,6 +53,10 @@ List<DepotEntryGroupRel> depotEntryGroupRels = depotAdminSitesDisplayContext.get
 			</clay:content-col>
 		</c:if>
 	</clay:content-row>
+
+	<liferay-ui:error exception="<%= DepotEntryGroupRelToGroupException.MustAcceptDepotEntryType.class %>">
+		<liferay-ui:message key="this-connection-is-not-allowed" />
+	</liferay-ui:error>
 
 	<liferay-ui:error exception="<%= DepotEntryGroupRelToGroupException.MustBeLocallyStaged.class %>">
 		<liferay-ui:message key="a-locally-staged-asset-library-cannot-be-connected-to-a-remotely-staged-site" />
@@ -129,7 +133,7 @@ List<DepotEntryGroupRel> depotEntryGroupRels = depotAdminSitesDisplayContext.get
 						dropdownItems="<%= depotAdminSitesDisplayContext.getConnectedSiteDropdownItems(depotEntryGroupRel) %>"
 						icon="ellipsis-v"
 						monospaced="<%= true %>"
-						propsTransformer="js/ConnectedSiteDropdownPropsTransformer"
+						propsTransformer="{ConnectedSiteDropdownPropsTransformer} from depot-web"
 						small="<%= true %>"
 					/>
 				</liferay-ui:search-container-column-text>

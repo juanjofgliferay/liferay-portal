@@ -14,11 +14,11 @@ import com.liferay.commerce.constants.CommerceOrderConstants;
 import com.liferay.commerce.currency.model.CommerceCurrency;
 import com.liferay.commerce.currency.test.util.CommerceCurrencyTestUtil;
 import com.liferay.commerce.model.CommerceOrder;
+import com.liferay.commerce.notification.CommerceNotificationSender;
 import com.liferay.commerce.notification.model.CommerceNotificationQueueEntry;
 import com.liferay.commerce.notification.model.CommerceNotificationTemplate;
 import com.liferay.commerce.notification.service.CommerceNotificationQueueEntryLocalService;
 import com.liferay.commerce.notification.test.util.CommerceNotificationTestUtil;
-import com.liferay.commerce.notification.util.CommerceNotificationHelper;
 import com.liferay.commerce.product.constants.CommerceChannelConstants;
 import com.liferay.commerce.product.model.CommerceChannel;
 import com.liferay.commerce.product.service.CommerceChannelLocalService;
@@ -42,6 +42,7 @@ import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
+import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
@@ -119,15 +120,14 @@ public class CommerceNotificationTest {
 			_accountEntry.getAccountEntryId(),
 			_commerceCurrency.getCommerceCurrencyId());
 
-		_commerceNotificationHelper.sendNotifications(
+		_commerceNotificationSender.sendNotifications(
 			_group.getGroupId(), _user.getUserId(),
 			CommerceOrderConstants.ORDER_NOTIFICATION_PLACED, _commerceOrder);
 
 		List<CommerceNotificationQueueEntry> commerceNotificationQueueEntries =
-			_commerceNotificationQueueEntryLocalService.
-				getCommerceNotificationQueueEntries(
-					_group.getGroupId(), QueryUtil.ALL_POS, QueryUtil.ALL_POS,
-					null);
+			CommerceNotificationTestUtil.getCommerceNotificationQueueEntries(
+				_group.getGroupId(), QueryUtil.ALL_POS, QueryUtil.ALL_POS,
+				null);
 
 		Assert.assertEquals(
 			commerceNotificationQueueEntries.toString(), 1,
@@ -157,14 +157,196 @@ public class CommerceNotificationTest {
 			_user.getUserId(), _commerceChannel.getGroupId(),
 			_commerceCurrency.getCommerceCurrencyId());
 
-		_commerceNotificationHelper.sendNotifications(
+		_commerceNotificationSender.sendNotifications(
 			_group.getGroupId(), _user.getUserId(),
 			CommerceOrderConstants.ORDER_NOTIFICATION_PLACED, _commerceOrder);
 
 		Assert.assertEquals(
 			1,
-			_commerceNotificationQueueEntryLocalService.
+			CommerceNotificationTestUtil.
 				getCommerceNotificationQueueEntriesCount(_group.getGroupId()));
+	}
+
+	@Test
+	public void testOrderCreatorBccField() throws Exception {
+		_commerceNotificationTemplate =
+			CommerceNotificationTestUtil.addNotificationTemplate(
+				"[%ORDER_CREATOR%]", StringPool.BLANK, "[%ORDER_CREATOR%]",
+				CommerceOrderConstants.ORDER_NOTIFICATION_PLACED,
+				_serviceContext);
+
+		_commerceOrder = CommerceTestUtil.addB2CCommerceOrder(
+			_user.getUserId(), _commerceChannel.getGroupId(),
+			_commerceCurrency.getCommerceCurrencyId());
+
+		_commerceNotificationSender.sendNotifications(
+			_group.getGroupId(), _user.getUserId(),
+			CommerceOrderConstants.ORDER_NOTIFICATION_PLACED, _commerceOrder);
+
+		List<CommerceNotificationQueueEntry> commerceNotificationQueueEntries =
+			CommerceNotificationTestUtil.getCommerceNotificationQueueEntries(
+				_group.getGroupId(), QueryUtil.ALL_POS, QueryUtil.ALL_POS,
+				null);
+
+		Assert.assertEquals(
+			commerceNotificationQueueEntries.toString(), 1,
+			commerceNotificationQueueEntries.size());
+
+		CommerceNotificationQueueEntry commerceNotificationQueueEntry =
+			commerceNotificationQueueEntries.get(0);
+
+		User user = _userLocalService.getUser(_commerceOrder.getUserId());
+
+		Assert.assertEquals(
+			commerceNotificationQueueEntry.getCc(), StringPool.BLANK);
+		Assert.assertEquals(
+			commerceNotificationQueueEntry.getBcc(), user.getEmailAddress());
+	}
+
+	@Test
+	public void testOrderCreatorCcField() throws Exception {
+		_commerceNotificationTemplate =
+			CommerceNotificationTestUtil.addNotificationTemplate(
+				"[%ORDER_CREATOR%]", "[%ORDER_CREATOR%]", StringPool.BLANK,
+				CommerceOrderConstants.ORDER_NOTIFICATION_PLACED,
+				_serviceContext);
+
+		_commerceOrder = CommerceTestUtil.addB2CCommerceOrder(
+			_user.getUserId(), _commerceChannel.getGroupId(),
+			_commerceCurrency.getCommerceCurrencyId());
+
+		_commerceNotificationSender.sendNotifications(
+			_group.getGroupId(), _user.getUserId(),
+			CommerceOrderConstants.ORDER_NOTIFICATION_PLACED, _commerceOrder);
+
+		List<CommerceNotificationQueueEntry> commerceNotificationQueueEntries =
+			CommerceNotificationTestUtil.getCommerceNotificationQueueEntries(
+				_group.getGroupId(), QueryUtil.ALL_POS, QueryUtil.ALL_POS,
+				null);
+
+		Assert.assertEquals(
+			commerceNotificationQueueEntries.toString(), 1,
+			commerceNotificationQueueEntries.size());
+
+		CommerceNotificationQueueEntry commerceNotificationQueueEntry =
+			commerceNotificationQueueEntries.get(0);
+
+		User user = _userLocalService.getUser(_commerceOrder.getUserId());
+
+		Assert.assertEquals(
+			commerceNotificationQueueEntry.getCc(), user.getEmailAddress());
+
+		Assert.assertEquals(
+			commerceNotificationQueueEntry.getBcc(), StringPool.BLANK);
+	}
+
+	@Test
+	public void testOrderCreatorCcFieldAndBccField() throws Exception {
+		_commerceNotificationTemplate =
+			CommerceNotificationTestUtil.addNotificationTemplate(
+				"[%ORDER_CREATOR%]", "[%ORDER_CREATOR%]", "[%ORDER_CREATOR%]",
+				CommerceOrderConstants.ORDER_NOTIFICATION_PLACED,
+				_serviceContext);
+
+		_commerceOrder = CommerceTestUtil.addB2CCommerceOrder(
+			_user.getUserId(), _commerceChannel.getGroupId(),
+			_commerceCurrency.getCommerceCurrencyId());
+
+		_commerceNotificationSender.sendNotifications(
+			_group.getGroupId(), _user.getUserId(),
+			CommerceOrderConstants.ORDER_NOTIFICATION_PLACED, _commerceOrder);
+
+		List<CommerceNotificationQueueEntry> commerceNotificationQueueEntries =
+			CommerceNotificationTestUtil.getCommerceNotificationQueueEntries(
+				_group.getGroupId(), QueryUtil.ALL_POS, QueryUtil.ALL_POS,
+				null);
+
+		Assert.assertEquals(
+			commerceNotificationQueueEntries.toString(), 1,
+			commerceNotificationQueueEntries.size());
+
+		CommerceNotificationQueueEntry commerceNotificationQueueEntry =
+			commerceNotificationQueueEntries.get(0);
+
+		User user = _userLocalService.getUser(_commerceOrder.getUserId());
+
+		Assert.assertEquals(
+			commerceNotificationQueueEntry.getCc(), user.getEmailAddress());
+		Assert.assertEquals(
+			commerceNotificationQueueEntry.getBcc(), user.getEmailAddress());
+	}
+
+	@Test
+	public void testOrderCreatorCcFieldAndBccFieldWithFixedValues()
+		throws Exception {
+
+		String fixedValue = "automatic1@liferay.com,automatic2@liferay.com";
+
+		_commerceNotificationTemplate =
+			CommerceNotificationTestUtil.addNotificationTemplate(
+				"[%ORDER_CREATOR%]", fixedValue, fixedValue,
+				CommerceOrderConstants.ORDER_NOTIFICATION_PLACED,
+				_serviceContext);
+
+		_commerceOrder = CommerceTestUtil.addB2CCommerceOrder(
+			_user.getUserId(), _commerceChannel.getGroupId(),
+			_commerceCurrency.getCommerceCurrencyId());
+
+		_commerceNotificationSender.sendNotifications(
+			_group.getGroupId(), _user.getUserId(),
+			CommerceOrderConstants.ORDER_NOTIFICATION_PLACED, _commerceOrder);
+
+		List<CommerceNotificationQueueEntry> commerceNotificationQueueEntries =
+			CommerceNotificationTestUtil.getCommerceNotificationQueueEntries(
+				_group.getGroupId(), QueryUtil.ALL_POS, QueryUtil.ALL_POS,
+				null);
+
+		Assert.assertEquals(
+			commerceNotificationQueueEntries.toString(), 1,
+			commerceNotificationQueueEntries.size());
+
+		CommerceNotificationQueueEntry commerceNotificationQueueEntry =
+			commerceNotificationQueueEntries.get(0);
+
+		Assert.assertEquals(commerceNotificationQueueEntry.getCc(), fixedValue);
+		Assert.assertEquals(
+			commerceNotificationQueueEntry.getBcc(), fixedValue);
+	}
+
+	@Test
+	public void testOrderCreatorCcFieldAndBccFieldWithInvalidValues()
+		throws Exception {
+
+		_commerceNotificationTemplate =
+			CommerceNotificationTestUtil.addNotificationTemplate(
+				"[%ORDER_CREATOR%]", "test", "test",
+				CommerceOrderConstants.ORDER_NOTIFICATION_PLACED,
+				_serviceContext);
+
+		_commerceOrder = CommerceTestUtil.addB2CCommerceOrder(
+			_user.getUserId(), _commerceChannel.getGroupId(),
+			_commerceCurrency.getCommerceCurrencyId());
+
+		_commerceNotificationSender.sendNotifications(
+			_group.getGroupId(), _user.getUserId(),
+			CommerceOrderConstants.ORDER_NOTIFICATION_PLACED, _commerceOrder);
+
+		List<CommerceNotificationQueueEntry> commerceNotificationQueueEntries =
+			CommerceNotificationTestUtil.getCommerceNotificationQueueEntries(
+				_group.getGroupId(), QueryUtil.ALL_POS, QueryUtil.ALL_POS,
+				null);
+
+		Assert.assertEquals(
+			commerceNotificationQueueEntries.toString(), 1,
+			commerceNotificationQueueEntries.size());
+
+		CommerceNotificationQueueEntry commerceNotificationQueueEntry =
+			commerceNotificationQueueEntries.get(0);
+
+		Assert.assertEquals(
+			commerceNotificationQueueEntry.getCc(), StringPool.BLANK);
+		Assert.assertEquals(
+			commerceNotificationQueueEntry.getBcc(), StringPool.BLANK);
 	}
 
 	@Test
@@ -179,15 +361,14 @@ public class CommerceNotificationTest {
 			_user.getUserId(), _commerceChannel.getGroupId(),
 			_commerceCurrency.getCommerceCurrencyId());
 
-		_commerceNotificationHelper.sendNotifications(
+		_commerceNotificationSender.sendNotifications(
 			_group.getGroupId(), _user.getUserId(),
 			CommerceOrderConstants.ORDER_NOTIFICATION_PLACED, _commerceOrder);
 
 		List<CommerceNotificationQueueEntry> commerceNotificationQueueEntries =
-			_commerceNotificationQueueEntryLocalService.
-				getCommerceNotificationQueueEntries(
-					_group.getGroupId(), QueryUtil.ALL_POS, QueryUtil.ALL_POS,
-					null);
+			CommerceNotificationTestUtil.getCommerceNotificationQueueEntries(
+				_group.getGroupId(), QueryUtil.ALL_POS, QueryUtil.ALL_POS,
+				null);
 
 		Assert.assertEquals(
 			commerceNotificationQueueEntries.toString(), 1,
@@ -200,6 +381,66 @@ public class CommerceNotificationTest {
 
 		Assert.assertEquals(
 			commerceNotificationQueueEntry.getTo(), user.getEmailAddress());
+	}
+
+	@Test
+	public void testOrderCreatorWithMixedValues() throws Exception {
+		String mixedValue = "automatic1@liferay.com,111,[%ORDER_CREATOR%]";
+
+		_commerceNotificationTemplate =
+			CommerceNotificationTestUtil.addNotificationTemplate(
+				mixedValue, mixedValue, mixedValue,
+				CommerceOrderConstants.ORDER_NOTIFICATION_PLACED,
+				_serviceContext);
+
+		_commerceOrder = CommerceTestUtil.addB2CCommerceOrder(
+			_user.getUserId(), _commerceChannel.getGroupId(),
+			_commerceCurrency.getCommerceCurrencyId());
+
+		_commerceNotificationSender.sendNotifications(
+			_group.getGroupId(), _user.getUserId(),
+			CommerceOrderConstants.ORDER_NOTIFICATION_PLACED, _commerceOrder);
+
+		List<CommerceNotificationQueueEntry> commerceNotificationQueueEntries =
+			CommerceNotificationTestUtil.getCommerceNotificationQueueEntries(
+				_group.getGroupId(), QueryUtil.ALL_POS, QueryUtil.ALL_POS,
+				null);
+
+		Assert.assertEquals(
+			commerceNotificationQueueEntries.toString(), 2,
+			commerceNotificationQueueEntries.size());
+
+		User user = _userLocalService.getUser(_commerceOrder.getUserId());
+
+		for (CommerceNotificationQueueEntry commerceNotificationQueueEntry :
+				commerceNotificationQueueEntries) {
+
+			Assert.assertTrue(
+				StringUtil.equalsIgnoreCase(
+					commerceNotificationQueueEntry.getTo(),
+					user.getEmailAddress()) ||
+				StringUtil.equalsIgnoreCase(
+					commerceNotificationQueueEntry.getTo(),
+					"automatic1@liferay.com"));
+			Assert.assertTrue(
+				StringUtil.contains(
+					commerceNotificationQueueEntry.getCc(),
+					user.getEmailAddress()) &&
+				StringUtil.contains(
+					commerceNotificationQueueEntry.getCc(),
+					"automatic1@liferay.com") &&
+				!StringUtil.contains(
+					commerceNotificationQueueEntry.getCc(), "111"));
+			Assert.assertTrue(
+				StringUtil.contains(
+					commerceNotificationQueueEntry.getBcc(),
+					user.getEmailAddress()) &&
+				StringUtil.contains(
+					commerceNotificationQueueEntry.getBcc(),
+					"automatic1@liferay.com") &&
+				!StringUtil.contains(
+					commerceNotificationQueueEntry.getBcc(), "111"));
+		}
 	}
 
 	@Test
@@ -219,15 +460,14 @@ public class CommerceNotificationTest {
 			_accountEntry.getAccountEntryId(),
 			_commerceCurrency.getCommerceCurrencyId());
 
-		_commerceNotificationHelper.sendNotifications(
+		_commerceNotificationSender.sendNotifications(
 			_group.getGroupId(), _user.getUserId(),
 			CommerceOrderConstants.ORDER_NOTIFICATION_PLACED, _commerceOrder);
 
 		List<CommerceNotificationQueueEntry> commerceNotificationQueueEntries =
-			_commerceNotificationQueueEntryLocalService.
-				getCommerceNotificationQueueEntries(
-					_group.getGroupId(), QueryUtil.ALL_POS, QueryUtil.ALL_POS,
-					null);
+			CommerceNotificationTestUtil.getCommerceNotificationQueueEntries(
+				_group.getGroupId(), QueryUtil.ALL_POS, QueryUtil.ALL_POS,
+				null);
 
 		Assert.assertEquals(
 			commerceNotificationQueueEntries.toString(), 1,
@@ -253,13 +493,13 @@ public class CommerceNotificationTest {
 			_user.getUserId(), _commerceChannel.getGroupId(),
 			_commerceCurrency.getCommerceCurrencyId());
 
-		_commerceNotificationHelper.sendNotifications(
+		_commerceNotificationSender.sendNotifications(
 			_group.getGroupId(), _user.getUserId(),
 			CommerceOrderConstants.ORDER_NOTIFICATION_PLACED, _commerceOrder);
 
 		Assert.assertEquals(
 			1,
-			_commerceNotificationQueueEntryLocalService.
+			CommerceNotificationTestUtil.
 				getCommerceNotificationQueueEntriesCount(_group.getGroupId()));
 	}
 
@@ -281,13 +521,13 @@ public class CommerceNotificationTest {
 			_user.getUserId(), _commerceChannel.getGroupId(),
 			_commerceCurrency.getCommerceCurrencyId());
 
-		_commerceNotificationHelper.sendNotifications(
+		_commerceNotificationSender.sendNotifications(
 			_group.getGroupId(), _user.getUserId(),
 			CommerceOrderConstants.ORDER_NOTIFICATION_PLACED, _commerceOrder);
 
 		Assert.assertEquals(
 			1,
-			_commerceNotificationQueueEntryLocalService.
+			CommerceNotificationTestUtil.
 				getCommerceNotificationQueueEntriesCount(_group.getGroupId()));
 	}
 
@@ -310,7 +550,8 @@ public class CommerceNotificationTest {
 
 		if (_accountAdminRole == null) {
 			_accountAdminRole = _roleLocalService.addRole(
-				_serviceContext.getUserId(), null, 0,
+				RandomTestUtil.randomString(), _serviceContext.getUserId(),
+				null, 0,
 				AccountRoleConstants.REQUIRED_ROLE_NAME_ACCOUNT_ADMINISTRATOR,
 				Collections.singletonMap(
 					_serviceContext.getLocale(),
@@ -343,7 +584,8 @@ public class CommerceNotificationTest {
 
 		if (_orderManagerRole == null) {
 			_orderManagerRole = _roleLocalService.addRole(
-				_serviceContext.getUserId(), null, 0, "Order Manager",
+				RandomTestUtil.randomString(), _serviceContext.getUserId(),
+				null, 0, "Order Manager",
 				Collections.singletonMap(
 					_serviceContext.getLocale(), "Order Manager"),
 				Collections.emptyMap(), RoleConstants.TYPE_SITE,
@@ -363,8 +605,8 @@ public class CommerceNotificationTest {
 
 	private String _setUpUserGroup() throws Exception {
 		UserGroup userGroup = _userGroupLocalService.addUserGroup(
-			_user.getUserId(), _group.getCompanyId(), "Test User Group",
-			RandomTestUtil.randomString(), _serviceContext);
+			StringPool.BLANK, _user.getUserId(), _group.getCompanyId(),
+			"Test User Group", RandomTestUtil.randomString(), _serviceContext);
 
 		long[] userIds = new long[1];
 
@@ -375,8 +617,6 @@ public class CommerceNotificationTest {
 
 		return userGroup.getName();
 	}
-
-	private static User _user;
 
 	@DeleteAfterTestRun
 	private User _accountAdmin;
@@ -394,11 +634,11 @@ public class CommerceNotificationTest {
 	private CommerceCurrency _commerceCurrency;
 
 	@Inject
-	private CommerceNotificationHelper _commerceNotificationHelper;
-
-	@Inject
 	private CommerceNotificationQueueEntryLocalService
 		_commerceNotificationQueueEntryLocalService;
+
+	@Inject
+	private CommerceNotificationSender _commerceNotificationSender;
 
 	@DeleteAfterTestRun
 	private CommerceNotificationTemplate _commerceNotificationTemplate;
@@ -416,6 +656,7 @@ public class CommerceNotificationTest {
 	private RoleLocalService _roleLocalService;
 
 	private ServiceContext _serviceContext;
+	private User _user;
 
 	@Inject
 	private UserGroupLocalService _userGroupLocalService;

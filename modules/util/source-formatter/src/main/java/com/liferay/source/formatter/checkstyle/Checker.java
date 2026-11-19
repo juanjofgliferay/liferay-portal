@@ -29,7 +29,8 @@ import com.puppycrawl.tools.checkstyle.api.DetailAST;
 import com.puppycrawl.tools.checkstyle.api.FileContents;
 import com.puppycrawl.tools.checkstyle.api.FileText;
 import com.puppycrawl.tools.checkstyle.api.FilterSet;
-import com.puppycrawl.tools.checkstyle.api.LocalizedMessage;
+import com.puppycrawl.tools.checkstyle.api.Violation;
+import com.puppycrawl.tools.checkstyle.utils.CommonUtil;
 import com.puppycrawl.tools.checkstyle.utils.TokenUtil;
 
 import java.io.File;
@@ -81,9 +82,7 @@ public class Checker extends com.puppycrawl.tools.checkstyle.Checker {
 	}
 
 	@Override
-	public void fireErrors(
-		String fileName, SortedSet<LocalizedMessage> errors) {
-
+	public void fireErrors(String fileName, SortedSet<Violation> errors) {
 		super.fireErrors(_normalizeFileName(fileName), errors);
 	}
 
@@ -139,13 +138,20 @@ public class Checker extends com.puppycrawl.tools.checkstyle.Checker {
 			Object checkModule = _moduleFactory.createModule(
 				checkConfiguration.getName());
 
-			if (checkModule instanceof AbstractCheck) {
-				AbstractCheck check = (AbstractCheck)checkModule;
-
-				check.configure(checkConfiguration);
-
-				checks.add(check);
+			if (!(checkModule instanceof AbstractCheck)) {
+				continue;
 			}
+
+			AbstractCheck check = (AbstractCheck)checkModule;
+
+			// Checkstyle 10 leaves the tab width at 0 until TreeWalker passes
+			// its own down, and TreeWalker is bypassed here
+
+			check.setTabWidth(CommonUtil.DEFAULT_TAB_WIDTH);
+
+			check.configure(checkConfiguration);
+
+			checks.add(check);
 		}
 
 		return checks;
@@ -180,7 +186,7 @@ public class Checker extends com.puppycrawl.tools.checkstyle.Checker {
 			filePath.toString(), CharPool.BACK_SLASH, CharPool.SLASH);
 	}
 
-	private SortedSet<LocalizedMessage> _processContent(
+	private SortedSet<Violation> _processContent(
 			String fileName, String content, List<AbstractCheck> checks)
 		throws IOException {
 
@@ -220,14 +226,14 @@ public class Checker extends com.puppycrawl.tools.checkstyle.Checker {
 		}
 	}
 
-	private SortedSet<LocalizedMessage> _walk(
+	private SortedSet<Violation> _walk(
 		DetailAST rootDetailAST, FileContents fileContents,
 		List<AbstractCheck> checks) {
 
-		SortedSet<LocalizedMessage> messages = new TreeSet<>();
+		SortedSet<Violation> messages = new TreeSet<>();
 
 		for (AbstractCheck check : checks) {
-			check.clearMessages();
+			check.clearViolations();
 			check.setFileContents(fileContents);
 
 			check.beginTree(rootDetailAST);
@@ -237,18 +243,22 @@ public class Checker extends com.puppycrawl.tools.checkstyle.Checker {
 
 		while (detailAST != null) {
 			for (AbstractCheck check : checks) {
-				if (_isRegisteredCheck(check, detailAST.getType())) {
-					check.visitToken(detailAST);
+				if (!_isRegisteredCheck(check, detailAST.getType())) {
+					continue;
 				}
+
+				check.visitToken(detailAST);
 			}
 
 			DetailAST firstChildDetailAST = detailAST.getFirstChild();
 
 			while ((detailAST != null) && (firstChildDetailAST == null)) {
 				for (AbstractCheck check : checks) {
-					if (_isRegisteredCheck(check, detailAST.getType())) {
-						check.leaveToken(detailAST);
+					if (!_isRegisteredCheck(check, detailAST.getType())) {
+						continue;
 					}
+
+					check.leaveToken(detailAST);
 				}
 
 				firstChildDetailAST = detailAST.getNextSibling();
@@ -262,7 +272,7 @@ public class Checker extends com.puppycrawl.tools.checkstyle.Checker {
 		for (AbstractCheck check : checks) {
 			check.finishTree(rootDetailAST);
 
-			messages.addAll(check.getMessages());
+			messages.addAll(check.getViolations());
 		}
 
 		return messages;

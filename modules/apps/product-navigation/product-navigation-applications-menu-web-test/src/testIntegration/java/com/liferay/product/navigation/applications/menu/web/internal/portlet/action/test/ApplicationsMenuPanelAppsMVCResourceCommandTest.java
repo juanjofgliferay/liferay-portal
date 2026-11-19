@@ -10,6 +10,7 @@ import com.liferay.layout.test.util.LayoutTestUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONObject;
+import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.User;
@@ -24,6 +25,7 @@ import com.liferay.portal.kernel.servlet.PortletServlet;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.portlet.MockLiferayResourceRequest;
 import com.liferay.portal.kernel.test.portlet.MockLiferayResourceResponse;
+import com.liferay.portal.kernel.test.portlet.MockPortletRequest;
 import com.liferay.portal.kernel.test.randomizerbumpers.NumericStringRandomizerBumper;
 import com.liferay.portal.kernel.test.randomizerbumpers.UniqueStringRandomizerBumper;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
@@ -36,6 +38,7 @@ import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.JavaConstants;
+import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.SessionClicks;
 import com.liferay.portal.kernel.util.StringUtil;
@@ -43,18 +46,15 @@ import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
-import com.liferay.portletmvc4spring.test.mock.web.portlet.MockPortletRequest;
-import com.liferay.product.navigation.applications.menu.web.internal.portlet.action.test.constants.ApplicationsMenuTestPortletKeys;
-import com.liferay.site.util.RecentGroupManager;
+import com.liferay.site.manager.RecentGroupManager;
+
+import jakarta.portlet.ResourceRequest;
+import jakarta.portlet.ResourceResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
-
-import javax.portlet.ResourceRequest;
-import javax.portlet.ResourceResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -95,7 +95,7 @@ public class ApplicationsMenuPanelAppsMVCResourceCommandTest {
 		_mockPortletRequest.setAttribute(WebKeys.THEME_DISPLAY, _themeDisplay);
 
 		_mockHttpServletRequest.setAttribute(
-			JavaConstants.JAVAX_PORTLET_REQUEST, _mockPortletRequest);
+			JavaConstants.JAKARTA_PORTLET_REQUEST, _mockPortletRequest);
 
 		_mockHttpServletRequest.setAttribute(
 			WebKeys.THEME_DISPLAY, _themeDisplay);
@@ -112,208 +112,76 @@ public class ApplicationsMenuPanelAppsMVCResourceCommandTest {
 	}
 
 	@Test
-	public void testNoSites() {
-		JSONObject jsonObject = ReflectionTestUtil.invoke(
-			_mvcResourceCommand, "_getSitesJSONObject",
-			new Class<?>[] {
-				HttpServletRequest.class, ResourceRequest.class,
-				ResourceResponse.class, ThemeDisplay.class
-			},
-			_mockHttpServletRequest, _mockPortletRequest,
-			new MockLiferayResourceResponse(), _themeDisplay);
-
-		Assert.assertFalse(jsonObject.has("mySites"));
-		Assert.assertFalse(jsonObject.has("recentSites"));
-		Assert.assertFalse(jsonObject.has("viewAllURL"));
-	}
-
-	@Test
-	public void testOnlyMyRecentSitesLessThan8() throws Exception {
-		_addRecentGroups(7);
-
-		JSONObject jsonObject = ReflectionTestUtil.invoke(
-			_mvcResourceCommand, "_getSitesJSONObject",
-			new Class<?>[] {
-				HttpServletRequest.class, ResourceRequest.class,
-				ResourceResponse.class, ThemeDisplay.class
-			},
-			_mockHttpServletRequest, _mockPortletRequest,
-			new MockLiferayResourceResponse(), _themeDisplay);
-
-		Assert.assertFalse(jsonObject.has("mySites"));
-		Assert.assertTrue(jsonObject.has("recentSites"));
-		Assert.assertFalse(jsonObject.has("viewAllURL"));
-	}
-
-	@Test
-	public void testOnlyMyRecentSitesMax8() throws Exception {
-		_addRecentGroups(8);
-
-		JSONObject jsonObject = ReflectionTestUtil.invoke(
-			_mvcResourceCommand, "_getSitesJSONObject",
-			new Class<?>[] {
-				HttpServletRequest.class, ResourceRequest.class,
-				ResourceResponse.class, ThemeDisplay.class
-			},
-			_mockHttpServletRequest, _mockPortletRequest,
-			new MockLiferayResourceResponse(), _themeDisplay);
-
-		Assert.assertFalse(jsonObject.has("mySites"));
-		Assert.assertTrue(jsonObject.has("recentSites"));
-		Assert.assertFalse(jsonObject.has("viewAllURL"));
-	}
-
-	@Test
-	public void testOnlyMyRecentSitesMoreThan8() throws Exception {
-		_addRecentGroups(10);
-
-		JSONObject jsonObject = ReflectionTestUtil.invoke(
-			_mvcResourceCommand, "_getSitesJSONObject",
-			new Class<?>[] {
-				HttpServletRequest.class, ResourceRequest.class,
-				ResourceResponse.class, ThemeDisplay.class
-			},
-			_mockHttpServletRequest, _mockPortletRequest,
-			new MockLiferayResourceResponse(), _themeDisplay);
-
-		Assert.assertFalse(jsonObject.has("mySites"));
-		Assert.assertTrue(jsonObject.has("recentSites"));
-		Assert.assertTrue(jsonObject.has("viewAllURL"));
-	}
-
-	@Test
-	public void testOnlyMySitesLessThan8() throws Exception {
-		_addMySiteGroups(7);
-
-		JSONObject jsonObject = ReflectionTestUtil.invoke(
-			_mvcResourceCommand, "_getSitesJSONObject",
-			new Class<?>[] {
-				HttpServletRequest.class, ResourceRequest.class,
-				ResourceResponse.class, ThemeDisplay.class
-			},
-			_mockHttpServletRequest, _mockPortletRequest,
-			new MockLiferayResourceResponse(), _themeDisplay);
-
-		Assert.assertFalse(jsonObject.has("viewAllURL"));
-		Assert.assertFalse(jsonObject.has("recentSites"));
-		Assert.assertTrue(jsonObject.has("mySites"));
-	}
-
-	@Test
-	public void testOnlyMySitesMax8() throws Exception {
-		_addMySiteGroups(8);
-
-		JSONObject jsonObject = ReflectionTestUtil.invoke(
-			_mvcResourceCommand, "_getSitesJSONObject",
-			new Class<?>[] {
-				HttpServletRequest.class, ResourceRequest.class,
-				ResourceResponse.class, ThemeDisplay.class
-			},
-			_mockHttpServletRequest, _mockPortletRequest,
-			new MockLiferayResourceResponse(), _themeDisplay);
-
-		Assert.assertFalse(jsonObject.has("viewAllURL"));
-		Assert.assertFalse(jsonObject.has("recentSites"));
-		Assert.assertTrue(jsonObject.has("mySites"));
-	}
-
-	@Test
-	public void testOnlyMySitesMoreThan8() throws Exception {
-		_addMySiteGroups(10);
-
-		JSONObject jsonObject = ReflectionTestUtil.invoke(
-			_mvcResourceCommand, "_getSitesJSONObject",
-			new Class<?>[] {
-				HttpServletRequest.class, ResourceRequest.class,
-				ResourceResponse.class, ThemeDisplay.class
-			},
-			_mockHttpServletRequest, _mockPortletRequest,
-			new MockLiferayResourceResponse(), _themeDisplay);
-
-		Assert.assertTrue(jsonObject.has("viewAllURL"));
-		Assert.assertFalse(jsonObject.has("recentSites"));
-		Assert.assertTrue(jsonObject.has("mySites"));
-	}
-
-	@Test
-	public void testPanelCategories() {
+	public void testGetPanelCategoriesJSONArray() {
 		JSONArray panelCategoriesJSONArray = ReflectionTestUtil.invoke(
 			_mvcResourceCommand, "_getPanelCategoriesJSONArray",
-			new Class<?>[] {HttpServletRequest.class, ThemeDisplay.class},
-			_mockHttpServletRequest, _themeDisplay);
+			new Class<?>[] {
+				HttpServletRequest.class, ResourceRequest.class,
+				ThemeDisplay.class
+			},
+			_mockHttpServletRequest, _mockPortletRequest, _themeDisplay);
 
-		Assert.assertTrue(
-			_containsPortletId(
-				panelCategoriesJSONArray,
-				ApplicationsMenuTestPortletKeys.
-					APPLICATIONS_MENU_TEST_PORTLET));
+		Assert.assertNotNull(panelCategoriesJSONArray);
+		Assert.assertTrue(panelCategoriesJSONArray.length() > 0);
+
+		for (int i = 0; i < panelCategoriesJSONArray.length(); i++) {
+			JSONObject panelCategoryJSONObject =
+				panelCategoriesJSONArray.getJSONObject(i);
+
+			Assert.assertTrue(panelCategoryJSONObject.has("active"));
+			Assert.assertTrue(panelCategoryJSONObject.has("homeURL"));
+			Assert.assertTrue(panelCategoryJSONObject.has("key"));
+			Assert.assertTrue(panelCategoryJSONObject.has("label"));
+		}
 	}
 
 	@Test
-	public void testRecentSitesAndMySitesLessThan7() throws Exception {
-		_addMySiteGroups(3);
+	public void testGetSitesJSONObject() {
+		JSONObject jsonObject = _getSitesJSONObject();
+
+		Assert.assertFalse(jsonObject.has("mySites"));
+		Assert.assertFalse(jsonObject.has("recentSites"));
+		Assert.assertFalse(jsonObject.has("viewAllURL"));
+	}
+
+	@Test
+	public void testGetSitesJSONObjectWithMySites() throws Exception {
+		_addMySiteGroups(1);
+
+		_testGetSitesJSONObjectWithMySitesAnd1Site();
+
+		_addMySiteGroups(2);
+
+		_testGetSitesJSONObjectWithMySitesAndMaxSites();
+
+		_addMySiteGroups(1);
+
+		_testGetSitesJSONObjectWithMySitesAndMaxPlus1Sites();
+	}
+
+	@Test
+	public void testGetSitesJSONObjectWithMySitesAndRecentSites()
+		throws Exception {
+
+		_addMySiteGroups(2);
+		_addRecentGroups(1);
+
+		_testGetSitesJSONObjectWithMySitesAndRecentSitesAndMaxSites();
+
+		_addRecentGroups(1);
+
+		_testGetSitesJSONObjectWithMySitesAndRecentSitesAndMaxPlus1Sites();
+	}
+
+	@Test
+	public void testGetSitesJSONObjectWithRecentSites() throws Exception {
 		_addRecentGroups(3);
 
-		JSONObject jsonObject = ReflectionTestUtil.invoke(
-			_mvcResourceCommand, "_getSitesJSONObject",
-			new Class<?>[] {
-				HttpServletRequest.class, ResourceRequest.class,
-				ResourceResponse.class, ThemeDisplay.class
-			},
-			_mockHttpServletRequest, _mockPortletRequest,
-			new MockLiferayResourceResponse(), _themeDisplay);
+		_testGetSitesJSONObjectWithRecentSitesAndMaxSites();
 
-		Assert.assertFalse(jsonObject.has("viewAllURL"));
-		Assert.assertTrue(jsonObject.has("recentSites"));
-		Assert.assertTrue(jsonObject.has("mySites"));
-	}
+		_addRecentGroups(1);
 
-	@Test
-	public void testRecentSitesAndMySitesMax7() throws Exception {
-		_addMySiteGroups(3);
-		_addRecentGroups(4);
-
-		JSONObject jsonObject = ReflectionTestUtil.invoke(
-			_mvcResourceCommand, "_getSitesJSONObject",
-			new Class<?>[] {
-				HttpServletRequest.class, ResourceRequest.class,
-				ResourceResponse.class, ThemeDisplay.class
-			},
-			_mockHttpServletRequest, _mockPortletRequest,
-			new MockLiferayResourceResponse(), _themeDisplay);
-
-		Assert.assertFalse(jsonObject.has("viewAllURL"));
-		Assert.assertTrue(jsonObject.has("recentSites"));
-		Assert.assertTrue(jsonObject.has("mySites"));
-	}
-
-	@Test
-	public void testRecentSitesAndMySitesMoreThan7() throws Exception {
-		_addMySiteGroups(4);
-		_addRecentGroups(4);
-
-		JSONObject jsonObject = ReflectionTestUtil.invoke(
-			_mvcResourceCommand, "_getSitesJSONObject",
-			new Class<?>[] {
-				HttpServletRequest.class, ResourceRequest.class,
-				ResourceResponse.class, ThemeDisplay.class
-			},
-			_mockHttpServletRequest, _mockPortletRequest,
-			new MockLiferayResourceResponse(), _themeDisplay);
-
-		Assert.assertTrue(jsonObject.has("viewAllURL"));
-
-		Assert.assertTrue(jsonObject.has("recentSites"));
-
-		JSONArray recentSitesJSONArray = jsonObject.getJSONArray("recentSites");
-
-		Assert.assertEquals(4, recentSitesJSONArray.length());
-
-		Assert.assertTrue(jsonObject.has("mySites"));
-
-		JSONArray mySitesSitesJSONArray = jsonObject.getJSONArray("mySites");
-
-		Assert.assertEquals(3, mySitesSitesJSONArray.length());
+		_testGetSitesJSONObjectWithRecentSitesAndMaxPlus1Sites();
 	}
 
 	private void _addMySiteGroups(int max) throws Exception {
@@ -330,8 +198,6 @@ public class ApplicationsMenuPanelAppsMVCResourceCommandTest {
 	}
 
 	private void _addRecentGroups(int max) throws Exception {
-		List<Long> groupIds = new ArrayList<>();
-
 		for (int i = 0; i < max; i++) {
 			Group group = GroupTestUtil.addGroup();
 
@@ -339,14 +205,16 @@ public class ApplicationsMenuPanelAppsMVCResourceCommandTest {
 
 			_groups.add(group);
 
-			groupIds.add(group.getGroupId());
+			_recentGroups.add(group);
 
 			_userLocalService.setGroupUsers(
 				group.getGroupId(), new long[] {_user.getUserId()});
 		}
 
 		_setRecentGroupsValue(
-			_mockHttpServletRequest, StringUtil.merge(groupIds));
+			_mockHttpServletRequest,
+			StringUtil.merge(
+				ListUtil.toList(_recentGroups, Group::getGroupId)));
 	}
 
 	private User _addUser() throws Exception {
@@ -360,37 +228,23 @@ public class ApplicationsMenuPanelAppsMVCResourceCommandTest {
 			ServiceContextTestUtil.getServiceContext());
 	}
 
-	private boolean _containsPortletId(
-		JSONArray panelCategoriesJSONArray, String portletId) {
+	private void _assertGroupKeys(
+		List<Group> expectedGroups, JSONArray jsonArray) {
 
-		for (int i = 0; i < panelCategoriesJSONArray.length(); i++) {
-			JSONObject childCategoryJSONObject =
-				panelCategoriesJSONArray.getJSONObject(i);
+		Assert.assertEquals(
+			ListUtil.toList(expectedGroups, Group::getGroupKey),
+			JSONUtil.toStringList(jsonArray, "key"));
+	}
 
-			JSONArray childCategoriesJSONArray =
-				childCategoryJSONObject.getJSONArray("childCategories");
-
-			for (int j = 0; j < childCategoriesJSONArray.length(); j++) {
-				JSONObject panelAppsJSONObject =
-					childCategoriesJSONArray.getJSONObject(j);
-
-				JSONArray panelAppsJSONArray = panelAppsJSONObject.getJSONArray(
-					"panelApps");
-
-				for (int k = 0; k < panelAppsJSONArray.length(); k++) {
-					JSONObject panelAppJSONObject =
-						panelAppsJSONArray.getJSONObject(k);
-
-					if (Objects.equals(
-							panelAppJSONObject.get("portletId"), portletId)) {
-
-						return true;
-					}
-				}
-			}
-		}
-
-		return false;
+	private JSONObject _getSitesJSONObject() {
+		return ReflectionTestUtil.invoke(
+			_mvcResourceCommand, "_getSitesJSONObject",
+			new Class<?>[] {
+				HttpServletRequest.class, ResourceRequest.class,
+				ResourceResponse.class, ThemeDisplay.class
+			},
+			_mockHttpServletRequest, _mockPortletRequest,
+			new MockLiferayResourceResponse(), _themeDisplay);
 	}
 
 	private ThemeDisplay _getThemeDisplay() throws Exception {
@@ -406,6 +260,7 @@ public class ApplicationsMenuPanelAppsMVCResourceCommandTest {
 		themeDisplay.setPermissionChecker(
 			PermissionCheckerFactoryUtil.create(TestPropsValues.getUser()));
 		themeDisplay.setScopeGroupId(_group.getGroupId());
+		themeDisplay.setSignedIn(true);
 		themeDisplay.setSiteGroupId(_group.getGroupId());
 		themeDisplay.setUser(TestPropsValues.getUser());
 
@@ -415,7 +270,8 @@ public class ApplicationsMenuPanelAppsMVCResourceCommandTest {
 	private void _setRecentGroupsValue(
 		HttpServletRequest httpServletRequest, String value) {
 
-		SessionClicks.put(httpServletRequest, _KEY_RECENT_GROUPS, value);
+		SessionClicks.put(
+			httpServletRequest.getSession(), _KEY_RECENT_GROUPS, value);
 	}
 
 	private void _setUser() throws Exception {
@@ -436,8 +292,84 @@ public class ApplicationsMenuPanelAppsMVCResourceCommandTest {
 		_setRecentGroupsValue(_mockHttpServletRequest, StringPool.BLANK);
 	}
 
+	private void _testGetSitesJSONObjectWithMySitesAnd1Site() {
+		JSONObject jsonObject = _getSitesJSONObject();
+
+		Assert.assertFalse(jsonObject.has("mySites"));
+		Assert.assertFalse(jsonObject.has("recentSites"));
+		Assert.assertFalse(jsonObject.has("viewAllURL"));
+	}
+
+	private void _testGetSitesJSONObjectWithMySitesAndMaxPlus1Sites() {
+		JSONObject jsonObject = _getSitesJSONObject();
+
+		JSONArray mySitesJSONArray = jsonObject.getJSONArray("mySites");
+
+		Assert.assertEquals(_MAX_SITES, mySitesJSONArray.length());
+
+		Assert.assertFalse(jsonObject.has("recentSites"));
+		Assert.assertTrue(jsonObject.has("viewAllURL"));
+	}
+
+	private void _testGetSitesJSONObjectWithMySitesAndMaxSites() {
+		JSONObject jsonObject = _getSitesJSONObject();
+
+		JSONArray mySitesJSONArray = jsonObject.getJSONArray("mySites");
+
+		Assert.assertEquals(_MAX_SITES, mySitesJSONArray.length());
+
+		Assert.assertFalse(jsonObject.has("recentSites"));
+		Assert.assertFalse(jsonObject.has("viewAllURL"));
+	}
+
+	private void _testGetSitesJSONObjectWithMySitesAndRecentSitesAndMaxPlus1Sites() {
+		JSONObject jsonObject = _getSitesJSONObject();
+
+		JSONArray mySitesJSONArray = jsonObject.getJSONArray("mySites");
+
+		Assert.assertEquals(1, mySitesJSONArray.length());
+
+		Assert.assertTrue(jsonObject.has("viewAllURL"));
+
+		_assertGroupKeys(_recentGroups, jsonObject.getJSONArray("recentSites"));
+	}
+
+	private void _testGetSitesJSONObjectWithMySitesAndRecentSitesAndMaxSites() {
+		JSONObject jsonObject = _getSitesJSONObject();
+
+		JSONArray mySitesJSONArray = jsonObject.getJSONArray("mySites");
+
+		Assert.assertEquals(2, mySitesJSONArray.length());
+
+		Assert.assertFalse(jsonObject.has("viewAllURL"));
+
+		_assertGroupKeys(_recentGroups, jsonObject.getJSONArray("recentSites"));
+	}
+
+	private void _testGetSitesJSONObjectWithRecentSitesAndMaxPlus1Sites() {
+		JSONObject jsonObject = _getSitesJSONObject();
+
+		Assert.assertFalse(jsonObject.has("mySites"));
+		Assert.assertTrue(jsonObject.has("viewAllURL"));
+
+		_assertGroupKeys(
+			_recentGroups.subList(0, _MAX_SITES),
+			jsonObject.getJSONArray("recentSites"));
+	}
+
+	private void _testGetSitesJSONObjectWithRecentSitesAndMaxSites() {
+		JSONObject jsonObject = _getSitesJSONObject();
+
+		Assert.assertFalse(jsonObject.has("mySites"));
+		Assert.assertFalse(jsonObject.has("viewAllURL"));
+
+		_assertGroupKeys(_recentGroups, jsonObject.getJSONArray("recentSites"));
+	}
+
 	private static final String _KEY_RECENT_GROUPS =
 		"com.liferay.site.util_recentGroups";
+
+	private static final int _MAX_SITES = 3;
 
 	@Inject
 	private CompanyLocalService _companyLocalService;
@@ -460,6 +392,7 @@ public class ApplicationsMenuPanelAppsMVCResourceCommandTest {
 	@Inject
 	private RecentGroupManager _recentGroupManager;
 
+	private final List<Group> _recentGroups = new ArrayList<>();
 	private ThemeDisplay _themeDisplay;
 	private User _user;
 

@@ -11,27 +11,29 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import com.liferay.petra.function.UnsafeSupplier;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Olivér Kecskeméty
@@ -41,6 +43,9 @@ import javax.xml.bind.annotation.XmlRootElement;
 @GraphQLName(
 	description = "A complex attribute containing resource metadata.",
 	value = "Meta"
+)
+@io.swagger.v3.oas.annotations.media.Schema(
+	description = "A complex attribute containing resource metadata."
 )
 @JsonFilter("Liferay.Vulcan")
 @XmlRootElement(name = "Meta")
@@ -54,30 +59,40 @@ public class Meta implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(Meta.class, json);
 	}
 
-	@Schema(
+	@io.swagger.v3.oas.annotations.media.Schema(
 		description = "The \"DateTime\" that the resource was added to the service provider."
 	)
 	public Date getCreated() {
+		if (_createdSupplier != null) {
+			created = _createdSupplier.get();
+
+			_createdSupplier = null;
+		}
+
 		return created;
 	}
 
 	public void setCreated(Date created) {
 		this.created = created;
+
+		_createdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setCreated(
 		UnsafeSupplier<Date, Exception> createdUnsafeSupplier) {
 
-		try {
-			created = createdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_createdSupplier = () -> {
+			try {
+				return createdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -86,30 +101,43 @@ public class Meta implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Date created;
 
-	@Schema(
+	@JsonIgnore
+	private Supplier<Date> _createdSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
 		description = "The most recent DateTime that the details of this resource were updated at the service provider."
 	)
 	public Date getLastModified() {
+		if (_lastModifiedSupplier != null) {
+			lastModified = _lastModifiedSupplier.get();
+
+			_lastModifiedSupplier = null;
+		}
+
 		return lastModified;
 	}
 
 	public void setLastModified(Date lastModified) {
 		this.lastModified = lastModified;
+
+		_lastModifiedSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setLastModified(
 		UnsafeSupplier<Date, Exception> lastModifiedUnsafeSupplier) {
 
-		try {
-			lastModified = lastModifiedUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_lastModifiedSupplier = () -> {
+			try {
+				return lastModifiedUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -118,56 +146,86 @@ public class Meta implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Date lastModified;
 
-	@Schema(description = "The URI of the resource being returned.")
+	@JsonIgnore
+	private Supplier<Date> _lastModifiedSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The URI of the resource being returned."
+	)
 	public String getLocation() {
+		if (_locationSupplier != null) {
+			location = _locationSupplier.get();
+
+			_locationSupplier = null;
+		}
+
 		return location;
 	}
 
 	public void setLocation(String location) {
 		this.location = location;
+
+		_locationSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setLocation(
 		UnsafeSupplier<String, Exception> locationUnsafeSupplier) {
 
-		try {
-			location = locationUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_locationSupplier = () -> {
+			try {
+				return locationUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The URI of the resource being returned.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String location;
 
-	@Schema(description = "The name of the resource type of the resource.")
+	@JsonIgnore
+	private Supplier<String> _locationSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The name of the resource type of the resource."
+	)
 	public String getResourceType() {
+		if (_resourceTypeSupplier != null) {
+			resourceType = _resourceTypeSupplier.get();
+
+			_resourceTypeSupplier = null;
+		}
+
 		return resourceType;
 	}
 
 	public void setResourceType(String resourceType) {
 		this.resourceType = resourceType;
+
+		_resourceTypeSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setResourceType(
 		UnsafeSupplier<String, Exception> resourceTypeUnsafeSupplier) {
 
-		try {
-			resourceType = resourceTypeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_resourceTypeSupplier = () -> {
+			try {
+				return resourceTypeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -176,33 +234,51 @@ public class Meta implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String resourceType;
 
-	@Schema(description = "The version of the resource being returned.")
+	@JsonIgnore
+	private Supplier<String> _resourceTypeSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The version of the resource being returned."
+	)
 	public String getVersion() {
+		if (_versionSupplier != null) {
+			version = _versionSupplier.get();
+
+			_versionSupplier = null;
+		}
+
 		return version;
 	}
 
 	public void setVersion(String version) {
 		this.version = version;
+
+		_versionSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setVersion(
 		UnsafeSupplier<String, Exception> versionUnsafeSupplier) {
 
-		try {
-			version = versionUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_versionSupplier = () -> {
+			try {
+				return versionUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The version of the resource being returned.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String version;
+
+	@JsonIgnore
+	private Supplier<String> _versionSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -234,6 +310,8 @@ public class Meta implements Serializable {
 		DateFormat liferayToJSONDateFormat = new SimpleDateFormat(
 			"yyyy-MM-dd'T'HH:mm:ss'Z'");
 
+		Date created = getCreated();
+
 		if (created != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -247,6 +325,8 @@ public class Meta implements Serializable {
 
 			sb.append("\"");
 		}
+
+		Date lastModified = getLastModified();
 
 		if (lastModified != null) {
 			if (sb.length() > 1) {
@@ -262,6 +342,8 @@ public class Meta implements Serializable {
 			sb.append("\"");
 		}
 
+		String location = getLocation();
+
 		if (location != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -276,6 +358,8 @@ public class Meta implements Serializable {
 			sb.append("\"");
 		}
 
+		String resourceType = getResourceType();
+
 		if (resourceType != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -289,6 +373,8 @@ public class Meta implements Serializable {
 
 			sb.append("\"");
 		}
+
+		String version = getVersion();
 
 		if (version != null) {
 			if (sb.length() > 1) {
@@ -309,8 +395,8 @@ public class Meta implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.scim.rest.dto.v1_0.Meta",
 		name = "x-class-name"
 	)
@@ -356,7 +442,10 @@ public class Meta implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -394,6 +483,27 @@ public class Meta implements Serializable {
 		return sb.toString();
 	}
 
+	private static String _toJSON(Object value) {
+		if (value instanceof Collection) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONArray((Collection<?>)value));
+		}
+		else if (value instanceof Map) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONObject((Map<?, ?>)value));
+		}
+		else if (value instanceof Object[]) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONArray(
+					Arrays.asList((Object[])value)));
+		}
+		else if (value instanceof String) {
+			return StringBundler.concat("\"", _escape(value), "\"");
+		}
+
+		return String.valueOf(value);
+	}
+
 	private static final String[][] _JSON_ESCAPE_STRINGS = {
 		{"\\", "\"", "\b", "\f", "\n", "\r", "\t"},
 		{"\\\\", "\\\"", "\\b", "\\f", "\\n", "\\r", "\\t"}
@@ -402,3 +512,4 @@ public class Meta implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:-32779832

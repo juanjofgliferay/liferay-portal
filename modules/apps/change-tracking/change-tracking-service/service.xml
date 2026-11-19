@@ -59,6 +59,7 @@
 		<column name="name" type="String" />
 		<column name="description" type="String" />
 		<column name="onDemandUserId" type="long" />
+		<column name="scheduledDate" type="Date" />
 		<column name="shareable" type="boolean" />
 		<column name="status" type="int" />
 		<column name="statusByUserId" type="long" />
@@ -75,11 +76,17 @@
 		<finder name="CompanyId" return-type="Collection">
 			<finder-column name="companyId" />
 		</finder>
-		<finder name="SchemaVersionId" return-type="Collection">
+		<finder name="C_SVI" return-type="Collection">
+			<finder-column name="companyId" />
 			<finder-column name="schemaVersionId" />
 		</finder>
 		<finder name="C_S" return-type="Collection">
 			<finder-column name="companyId" />
+			<finder-column arrayable-operator="OR" name="status" />
+		</finder>
+		<finder name="C_U_S" return-type="Collection">
+			<finder-column name="companyId" />
+			<finder-column name="userId" />
 			<finder-column arrayable-operator="OR" name="status" />
 		</finder>
 	</entity>
@@ -143,9 +150,6 @@
 		<finder name="CtCollectionId" return-type="Collection">
 			<finder-column name="ctCollectionId" />
 		</finder>
-		<finder name="CtEntryId" return-type="Collection">
-			<finder-column name="ctEntryId" />
-		</finder>
 	</entity>
 	<entity external-reference-code="true" local-service="true" name="CTEntry" remote-service="false" trash-enabled="false" uuid="true">
 
@@ -170,6 +174,9 @@
 
 		<!-- Finder methods -->
 
+		<finder name="UserId" return-type="Collection">
+			<finder-column name="userId" />
+		</finder>
 		<finder name="CtCollectionId" return-type="Collection">
 			<finder-column name="ctCollectionId" />
 		</finder>

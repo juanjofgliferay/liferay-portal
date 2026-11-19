@@ -11,7 +11,7 @@ import com.liferay.account.model.AccountEntry;
 import com.liferay.account.model.AccountEntryUserRel;
 import com.liferay.account.service.AccountEntryService;
 import com.liferay.account.service.AccountEntryUserRelService;
-import com.liferay.document.library.kernel.service.DLAppLocalService;
+import com.liferay.document.library.kernel.service.DLAppService;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.UserEmailAddressException;
 import com.liferay.portal.kernel.exception.UserScreenNameException;
@@ -34,10 +34,10 @@ import com.liferay.portal.kernel.util.PrefsParamUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import java.util.Objects;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
+import java.util.Objects;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -47,9 +47,9 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + AccountPortletKeys.ACCOUNT_ENTRIES_ADMIN,
-		"javax.portlet.name=" + AccountPortletKeys.ACCOUNT_ENTRIES_MANAGEMENT,
-		"javax.portlet.name=" + AccountPortletKeys.ACCOUNT_USERS_ADMIN,
+		"jakarta.portlet.name=" + AccountPortletKeys.ACCOUNT_ENTRIES_ADMIN,
+		"jakarta.portlet.name=" + AccountPortletKeys.ACCOUNT_ENTRIES_MANAGEMENT,
+		"jakarta.portlet.name=" + AccountPortletKeys.ACCOUNT_USERS_ADMIN,
 		"mvc.command.name=/account_admin/add_account_user"
 	},
 	service = MVCActionCommand.class
@@ -120,8 +120,7 @@ public class AddAccountUserMVCActionCommand
 			long fileEntryId = ParamUtil.getLong(actionRequest, "fileEntryId");
 
 			if (fileEntryId > 0) {
-				FileEntry fileEntry = _dlAppLocalService.getFileEntry(
-					fileEntryId);
+				FileEntry fileEntry = _dlAppService.getFileEntry(fileEntryId);
 
 				portraitBytes = _file.getBytes(fileEntry.getContentStream());
 			}
@@ -185,7 +184,7 @@ public class AddAccountUserMVCActionCommand
 	private AccountEntryUserRelService _accountEntryUserRelService;
 
 	@Reference
-	private DLAppLocalService _dlAppLocalService;
+	private DLAppService _dlAppService;
 
 	@Reference
 	private File _file;

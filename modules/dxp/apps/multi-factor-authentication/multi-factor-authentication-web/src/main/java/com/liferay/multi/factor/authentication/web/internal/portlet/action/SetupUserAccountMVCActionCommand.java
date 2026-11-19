@@ -26,8 +26,8 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.users.admin.constants.UsersAdminPortletKeys;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.service.component.annotations.Activate;
@@ -41,8 +41,8 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + UsersAdminPortletKeys.MY_ACCOUNT,
-		"javax.portlet.name=" + UsersAdminPortletKeys.USERS_ADMIN,
+		"jakarta.portlet.name=" + UsersAdminPortletKeys.MY_ACCOUNT,
+		"jakarta.portlet.name=" + UsersAdminPortletKeys.USERS_ADMIN,
 		"mvc.command.name=/my_account/setup_user_account"
 	},
 	service = MVCActionCommand.class
@@ -51,15 +51,14 @@ public class SetupUserAccountMVCActionCommand extends BaseMVCActionCommand {
 
 	@Activate
 	protected void activate(BundleContext bundleContext) {
-		_mfaCheckerServiceTrackerMap =
-			ServiceTrackerMapFactory.openSingleValueMap(
-				bundleContext, SetupMFAChecker.class, "(service.id=*)",
-				new PropertyServiceReferenceMapper<>("service.id"));
+		_serviceTrackerMap = ServiceTrackerMapFactory.openSingleValueMap(
+			bundleContext, SetupMFAChecker.class, "(service.id=*)",
+			new PropertyServiceReferenceMapper<>("service.id"));
 	}
 
 	@Deactivate
 	protected void deactivate() {
-		_mfaCheckerServiceTrackerMap.close();
+		_serviceTrackerMap.close();
 	}
 
 	@Override
@@ -70,8 +69,8 @@ public class SetupUserAccountMVCActionCommand extends BaseMVCActionCommand {
 		long setupMFACheckerServiceId = ParamUtil.getLong(
 			actionRequest, "setupMFACheckerServiceId");
 
-		SetupMFAChecker setupMFAChecker =
-			_mfaCheckerServiceTrackerMap.getService(setupMFACheckerServiceId);
+		SetupMFAChecker setupMFAChecker = _serviceTrackerMap.getService(
+			setupMFACheckerServiceId);
 
 		if (setupMFAChecker == null) {
 			_log.error(
@@ -121,11 +120,10 @@ public class SetupUserAccountMVCActionCommand extends BaseMVCActionCommand {
 	private static final Log _log = LogFactoryUtil.getLog(
 		SetupUserAccountMVCActionCommand.class);
 
-	private ServiceTrackerMap<Long, SetupMFAChecker>
-		_mfaCheckerServiceTrackerMap;
-
 	@Reference
 	private Portal _portal;
+
+	private ServiceTrackerMap<Long, SetupMFAChecker> _serviceTrackerMap;
 
 	@Reference(
 		target = "(model.class.name=com.liferay.portal.kernel.model.User)"

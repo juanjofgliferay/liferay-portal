@@ -8,7 +8,7 @@ import React from 'react';
 import {EDITABLE_FRAGMENT_ENTRY_PROCESSOR} from '../../../../../../../../../src/main/resources/META-INF/resources/page_editor/app/config/constants/editableFragmentEntryProcessor';
 import {FREEMARKER_FRAGMENT_ENTRY_PROCESSOR} from '../../../../../../../../../src/main/resources/META-INF/resources/page_editor/app/config/constants/freemarkerFragmentEntryProcessor';
 
-import '@testing-library/jest-dom/extend-expect';
+import '@testing-library/jest-dom';
 import {fireEvent, render, screen} from '@testing-library/react';
 
 import {VIEWPORT_SIZES} from '../../../../../../../../../src/main/resources/META-INF/resources/page_editor/app/config/constants/viewportSizes';
@@ -24,7 +24,6 @@ jest.mock(
 jest.mock(
 	'../../../../../../../../../src/main/resources/META-INF/resources/page_editor/app/services/FragmentService',
 	() => ({
-		renderFragmentEntryLinkContent: jest.fn(() => Promise.resolve({})),
 		updateConfigurationValues: jest.fn(() => Promise.resolve({})),
 	})
 );
@@ -142,7 +141,6 @@ const renderGeneralPanel = ({
 describe('FragmentGeneralPanel', () => {
 	afterEach(() => {
 		FragmentService.updateConfigurationValues.mockClear();
-		FragmentService.renderFragmentEntryLinkContent.mockClear();
 	});
 
 	it('does not prefix values with segments if we do not have experiences', async () => {
@@ -156,7 +154,7 @@ describe('FragmentGeneralPanel', () => {
 			target: {value: 'h2'},
 		});
 
-		expect(FragmentService.updateConfigurationValues).toBeCalledWith(
+		expect(FragmentService.updateConfigurationValues).toHaveBeenCalledWith(
 			expect.objectContaining({
 				editableValues: {
 					[EDITABLE_FRAGMENT_ENTRY_PROCESSOR]: {},
@@ -193,7 +191,7 @@ describe('FragmentGeneralPanel', () => {
 			target: {value: 'h2'},
 		});
 
-		expect(FragmentService.updateConfigurationValues).toBeCalledWith(
+		expect(FragmentService.updateConfigurationValues).toHaveBeenCalledWith(
 			expect.objectContaining({
 				editableValues: {
 					[EDITABLE_FRAGMENT_ENTRY_PROCESSOR]: {},
@@ -217,7 +215,7 @@ describe('FragmentGeneralPanel', () => {
 			target: {value: 'h2'},
 		});
 
-		expect(FragmentService.updateConfigurationValues).toBeCalledWith(
+		expect(FragmentService.updateConfigurationValues).toHaveBeenCalledWith(
 			expect.objectContaining({
 				editableValues: {
 					[EDITABLE_FRAGMENT_ENTRY_PROCESSOR]: {},
@@ -290,7 +288,7 @@ describe('FragmentGeneralPanel', () => {
 			target: {value: 'h2'},
 		});
 
-		expect(FragmentService.updateConfigurationValues).toBeCalledWith(
+		expect(FragmentService.updateConfigurationValues).toHaveBeenCalledWith(
 			expect.objectContaining({
 				editableValues: {
 					[EDITABLE_FRAGMENT_ENTRY_PROCESSOR]: {},

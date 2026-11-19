@@ -1,0 +1,111 @@
+{
+	"configuration": {
+		"className": "com.liferay.headless.admin.list.type.dto.v1_0.ListTypeDefinition",
+		"multiCompany": true,
+		"parameters": {
+			"containsHeaders": "true",
+			"createStrategy": "UPSERT",
+			"featureFlag": "LPS-178642",
+			"importStrategy": "ON_ERROR_FAIL",
+			"updateStrategy": "UPDATE"
+		},
+		"taskItemDelegateName": "DEFAULT"
+	},
+	"items": [
+		{
+			"externalReferenceCode": "L_API_APPLICATION_STATUSES",
+			"listTypeEntries": [
+				{
+					"externalReferenceCode": "PUBLISHED",
+					"key": "published",
+					"name": "published",
+					"system": true
+				},
+				{
+					"externalReferenceCode": "UNPUBLISHED",
+					"key": "unpublished",
+					"name": "unpublished",
+					"system": true
+				}
+			],
+			"name": "Application Status",
+			"system": true
+		},
+		{
+			"externalReferenceCode": "L_API_ENDPOINT_HTTP_METHODS",
+			"listTypeEntries": [
+				{
+					"externalReferenceCode": "GET",
+					"key": "get",
+					"name": "get",
+					"system": true
+				},
+				{
+					"externalReferenceCode": "POST",
+					"key": "post",
+					"name": "post",
+					"system": true
+				}
+			],
+			"name": "HTTP Method",
+			"system": true
+		},
+		{
+			"externalReferenceCode": "L_API_ENDPOINT_RETRIEVE_TYPES",
+			"listTypeEntries": [
+				{
+					"externalReferenceCode": "COLLECTION",
+					"key": "collection",
+					"name": "collection",
+					"system": true
+				},
+				{
+					"externalReferenceCode": "SINGLE_ELEMENT",
+					"key": "singleElement",
+					"name": "singleElement",
+					"system": true
+				}
+			],
+			"name": "Retrieve Type",
+			"system": true
+		},
+		{
+			"externalReferenceCode": "L_API_ENDPOINT_SCOPES",
+			"listTypeEntries": [
+				{
+					"externalReferenceCode": "COMPANY",
+					"key": "company",
+					"name": "company",
+					"system": true
+				},
+				{
+					"externalReferenceCode": "SITE",
+					"key": "site",
+					"name": "site",
+					"system": true
+				}
+			],
+			"name": "Scope",
+			"system": true
+		},
+		{
+			"externalReferenceCode": "L_API_PROPERTY_TYPES",
+			"listTypeEntries": [
+				{
+					"externalReferenceCode": "FIELD",
+					"key": "field",
+					"name": "Field",
+					"system": true
+				},
+				{
+					"externalReferenceCode": "RECORD",
+					"key": "record",
+					"name": "Record",
+					"system": true
+				}
+			],
+			"name": "API Property Types",
+			"system": true
+		}
+	]
+}

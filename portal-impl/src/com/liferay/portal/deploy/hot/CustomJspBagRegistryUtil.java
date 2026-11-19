@@ -21,6 +21,8 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.spring.context.PortalContextLoaderListener;
 
+import jakarta.servlet.ServletContext;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -34,8 +36,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-
-import javax.servlet.ServletContext;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
@@ -139,7 +139,7 @@ public class CustomJspBagRegistryUtil {
 			String portalJsp = getPortalJsp(customJsp, customJspDir);
 
 			if (customJspGlobal) {
-				File portalJspFile = new File(_portalWebDir + portalJsp);
+				File portalJspFile = new File(_portalWebDir, portalJsp);
 
 				File portalJspBackupFile = getPortalJspBackupFile(
 					portalJspFile);
@@ -154,7 +154,7 @@ public class CustomJspBagRegistryUtil {
 			}
 
 			FileUtil.write(
-				_portalWebDir + portalJsp,
+				new File(_portalWebDir, portalJsp),
 				getCustomJspInputStream(
 					customJspBag.getURLContainer(), customJsp));
 		}
@@ -199,9 +199,11 @@ public class CustomJspBagRegistryUtil {
 				String currentPortalJsp = getPortalJsp(
 					currentCustomJsp, currentCustomJspBag.getCustomJspDir());
 
-				if (customJsps.contains(currentPortalJsp)) {
-					conflictingCustomJsps.put(currentPortalJsp, contextName);
+				if (!customJsps.contains(currentPortalJsp)) {
+					continue;
 				}
+
+				conflictingCustomJsps.put(currentPortalJsp, contextName);
 			}
 		}
 
@@ -289,9 +291,11 @@ public class CustomJspBagRegistryUtil {
 
 					sb.append(customJsp);
 
-					if ((i + 1) < customJsps.size()) {
-						sb.append(StringPool.NEW_LINE);
+					if ((i + 1) >= customJsps.size()) {
+						continue;
 					}
+
+					sb.append(StringPool.NEW_LINE);
 				}
 
 				Log log = SanitizerLogWrapper.allowCRLF(_log);

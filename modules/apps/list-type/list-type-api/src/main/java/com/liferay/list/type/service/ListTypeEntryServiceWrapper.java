@@ -30,11 +30,11 @@ public class ListTypeEntryServiceWrapper
 	@Override
 	public com.liferay.list.type.model.ListTypeEntry addListTypeEntry(
 			String externalReferenceCode, long listTypeDefinitionId, String key,
-			java.util.Map<java.util.Locale, String> nameMap)
+			java.util.Map<java.util.Locale, String> nameMap, boolean system)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _listTypeEntryService.addListTypeEntry(
-			externalReferenceCode, listTypeDefinitionId, key, nameMap);
+			externalReferenceCode, listTypeDefinitionId, key, nameMap, system);
 	}
 
 	@Override
@@ -43,6 +43,15 @@ public class ListTypeEntryServiceWrapper
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _listTypeEntryService.deleteListTypeEntry(listTypeEntryId);
+	}
+
+	@Override
+	public com.liferay.list.type.model.ListTypeEntry fetchListTypeEntry(
+			long listTypeDefinitionId, String key)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _listTypeEntryService.fetchListTypeEntry(
+			listTypeDefinitionId, key);
 	}
 
 	@Override
@@ -81,6 +90,15 @@ public class ListTypeEntryServiceWrapper
 			externalReferenceCode, companyId, listTypeDefinitionId);
 	}
 
+	@Override
+	public com.liferay.list.type.model.ListTypeEntry getOrAddEmptyListTypeEntry(
+			long userId, long listTypeDefinitionId, String key)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _listTypeEntryService.getOrAddEmptyListTypeEntry(
+			userId, listTypeDefinitionId, key);
+	}
+
 	/**
 	 * Returns the OSGi service identifier.
 	 *
@@ -114,3 +132,4 @@ public class ListTypeEntryServiceWrapper
 	private ListTypeEntryService _listTypeEntryService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1708671482

@@ -41,11 +41,6 @@ public class CommercePricingClassFinderImpl
 		CommercePricingClassFinder.class.getName() + ".findByCPDefinitionId";
 
 	@Override
-	public int countByCPDefinitionId(long cpDefinitionId, String title) {
-		return countByCPDefinitionId(cpDefinitionId, title, false);
-	}
-
-	@Override
 	public int countByCPDefinitionId(
 		long cpDefinitionId, String title, boolean inlineSQLHelper) {
 
@@ -59,8 +54,7 @@ public class CommercePricingClassFinderImpl
 			if (inlineSQLHelper) {
 				sql = _inlineSQLHelper.replacePermissionCheck(
 					sql, CommercePricingClass.class.getName(),
-					"CommercePricingClass.commercePricingClassId", null, null,
-					new long[] {0}, null);
+					"CommercePricingClass.commercePricingClassId");
 			}
 
 			String[] keywords = _customSQL.keywords(title, true);
@@ -112,13 +106,6 @@ public class CommercePricingClassFinderImpl
 
 	@Override
 	public List<CommercePricingClass> findByCPDefinitionId(
-		long cpDefinitionId, String title, int start, int end) {
-
-		return findByCPDefinitionId(cpDefinitionId, title, start, end, false);
-	}
-
-	@Override
-	public List<CommercePricingClass> findByCPDefinitionId(
 		long cpDefinitionId, String title, int start, int end,
 		boolean inlineSQLHelper) {
 
@@ -134,8 +121,7 @@ public class CommercePricingClassFinderImpl
 			if (inlineSQLHelper) {
 				sql = _inlineSQLHelper.replacePermissionCheck(
 					sql, CommercePricingClass.class.getName(),
-					"CommercePricingClass.commercePricingClassId", null, null,
-					new long[] {0}, null);
+					"CommercePricingClass.commercePricingClassId");
 			}
 
 			if (Validator.isNotNull(title)) {

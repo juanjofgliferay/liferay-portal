@@ -46,6 +46,11 @@ public class AccountRoleConstants {
 
 	public static final String ROLE_NAME_ACCOUNT_SUPPLIER = "Account Supplier";
 
+	public static final String ROLE_NAME_ORDER_ADMINISTRATOR =
+		"Order Administrator";
+
+	public static final String ROLE_NAME_RETURNS_MANAGER = "Returns Manager";
+
 	public static final String ROLE_NAME_SUPPLIER = "Supplier";
 
 	public static final Map<String, Map<Locale, String>> roleDescriptionsMap =
@@ -69,11 +74,8 @@ public class AccountRoleConstants {
 		).build();
 
 	public static boolean isImpliedRole(Role role) {
-		if (Objects.equals(REQUIRED_ROLE_NAME_ACCOUNT_MEMBER, role.getName())) {
-			return true;
-		}
-
-		return false;
+		return Objects.equals(
+			REQUIRED_ROLE_NAME_ACCOUNT_MEMBER, role.getName());
 	}
 
 	public static boolean isRequiredRole(Role role) {
@@ -85,14 +87,9 @@ public class AccountRoleConstants {
 			AccountRoleLocalServiceUtil.fetchAccountRoleByRoleId(
 				role.getRoleId());
 
-		if (Objects.equals(
-				accountRole.getAccountEntryId(),
-				AccountConstants.ACCOUNT_ENTRY_ID_DEFAULT)) {
-
-			return true;
-		}
-
-		return false;
+		return Objects.equals(
+			accountRole.getAccountEntryId(),
+			AccountConstants.ACCOUNT_ENTRY_ID_DEFAULT);
 	}
 
 }

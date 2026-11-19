@@ -19,7 +19,10 @@ import org.osgi.service.component.annotations.Reference;
  * @author Crescenzo Rega
  */
 @Component(
-	property = "dto.class.name=com.liferay.headless.commerce.admin.inventory.dto.v1_0.ReplenishmentItem",
+	property = {
+		"default=true",
+		"dto.class.name=com.liferay.headless.commerce.admin.inventory.dto.v1_0.ReplenishmentItem"
+	},
 	service = DTOConverter.class
 )
 public class ReplenishmentItemDTOConverter
@@ -42,25 +45,34 @@ public class ReplenishmentItemDTOConverter
 
 		return new ReplenishmentItem() {
 			{
-				availabilityDate =
-					commerceInventoryReplenishmentItem.getAvailabilityDate();
-				externalReferenceCode =
-					commerceInventoryReplenishmentItem.
-						getExternalReferenceCode();
-				id =
-					commerceInventoryReplenishmentItem.
-						getCommerceInventoryReplenishmentItemId();
-				quantity = _commerceQuantityFormatter.format(
-					commerceInventoryReplenishmentItem.getCompanyId(),
-					commerceInventoryReplenishmentItem.getQuantity(),
-					commerceInventoryReplenishmentItem.getSku(),
-					commerceInventoryReplenishmentItem.getUnitOfMeasureKey());
-				sku = commerceInventoryReplenishmentItem.getSku();
-				unitOfMeasureKey =
-					commerceInventoryReplenishmentItem.getUnitOfMeasureKey();
-				warehouseId =
-					commerceInventoryReplenishmentItem.
-						getCommerceInventoryWarehouseId();
+				setAvailabilityDate(
+					() ->
+						commerceInventoryReplenishmentItem.
+							getAvailabilityDate());
+				setExternalReferenceCode(
+					() ->
+						commerceInventoryReplenishmentItem.
+							getExternalReferenceCode());
+				setId(
+					() ->
+						commerceInventoryReplenishmentItem.
+							getCommerceInventoryReplenishmentItemId());
+				setQuantity(
+					() -> _commerceQuantityFormatter.format(
+						commerceInventoryReplenishmentItem.getCompanyId(),
+						commerceInventoryReplenishmentItem.getQuantity(),
+						commerceInventoryReplenishmentItem.getSku(),
+						commerceInventoryReplenishmentItem.
+							getUnitOfMeasureKey()));
+				setSku(commerceInventoryReplenishmentItem::getSku);
+				setUnitOfMeasureKey(
+					() ->
+						commerceInventoryReplenishmentItem.
+							getUnitOfMeasureKey());
+				setWarehouseId(
+					() ->
+						commerceInventoryReplenishmentItem.
+							getCommerceInventoryWarehouseId());
 			}
 		};
 	}

@@ -152,6 +152,7 @@ public class ProjectTemplates {
 
 					try (InputStream inputStream = jarFile.getInputStream(
 							jarEntry);
+
 						JarInputStream jarInputStream = new JarInputStream(
 							inputStream)) {
 
@@ -175,22 +176,25 @@ public class ProjectTemplates {
 			String templateName = ProjectTemplatesUtil.getTemplateName(
 				projectTemplateJarName);
 
-			if (!templateName.startsWith(WorkspaceUtil.WORKSPACE)) {
-				try (InputStream inputStream =
-						ProjectTemplates.class.getResourceAsStream(
-							projectTemplateJarName);
-					JarInputStream jarInputStream = new JarInputStream(
-						inputStream)) {
+			if (templateName.startsWith(WorkspaceUtil.WORKSPACE)) {
+				continue;
+			}
 
-					Manifest manifest = jarInputStream.getManifest();
+			try (InputStream inputStream =
+					ProjectTemplates.class.getResourceAsStream(
+						projectTemplateJarName);
 
-					Attributes attributes = manifest.getMainAttributes();
+				JarInputStream jarInputStream = new JarInputStream(
+					inputStream)) {
 
-					String bundleDescription = attributes.getValue(
-						"Bundle-Description");
+				Manifest manifest = jarInputStream.getManifest();
 
-					templates.put(templateName, bundleDescription);
-				}
+				Attributes attributes = manifest.getMainAttributes();
+
+				String bundleDescription = attributes.getValue(
+					"Bundle-Description");
+
+				templates.put(templateName, bundleDescription);
 			}
 		}
 
@@ -467,11 +471,13 @@ public class ProjectTemplates {
 
 			lineLength += template.length();
 
-			if (iterator.hasNext()) {
-				System.out.print(", ");
-
-				lineLength += 2;
+			if (!iterator.hasNext()) {
+				continue;
 			}
+
+			System.out.print(", ");
+
+			lineLength += 2;
 		}
 
 		System.out.println();
@@ -542,7 +548,6 @@ public class ProjectTemplates {
 		}
 		else if ((template.equals("freemarker-portlet") ||
 				  template.equals("mvc-portlet") ||
-				  template.equals("npm-angular-portlet") ||
 				  template.equals("npm-react-portlet") ||
 				  template.equals("npm-vuejs-portlet") ||
 				  template.equals("spring-mvc-portlet") ||

@@ -57,17 +57,17 @@ import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 import com.liferay.portal.util.FastDateFormatFactoryImpl;
 
+import jakarta.portlet.PortletPreferences;
+import jakarta.portlet.PortletRequest;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.ResourceBundle;
-
-import javax.portlet.PortletPreferences;
-import javax.portlet.PortletRequest;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -585,6 +585,61 @@ public class DDMFormPagesTemplateContextFactoryTest {
 	}
 
 	@Test
+	public void testRequiredFieldsWithRequiredFieldsWarning() throws Exception {
+
+		// Dynamic data mapping form
+
+		DDMForm ddmForm = DDMFormTestUtil.createDDMForm();
+
+		ddmForm.addDDMFormField(
+			DDMFormTestUtil.createDDMFormField(
+				"Field1", "Field1", "text", "string", false, false, true));
+
+		ddmForm.addDDMFormField(
+			DDMFormTestUtil.createDDMFormField(
+				"Field2", "Field2", "text", "string", false, false, false));
+
+		ddmForm.addDDMFormField(
+			DDMFormTestUtil.createDDMFormField(
+				"Field3", "Field3", "text", "string", false, false, false));
+
+		// Template context
+
+		DDMFormPagesTemplateContextFactory ddmFormPagesTemplateContextFactory =
+			_createDDMFormPagesTemplateContextFactory(
+				ddmForm,
+				DDMFormLayoutTestUtil.createDDMFormLayout(
+					DDMFormLayoutTestUtil.createDDMFormLayoutPage(
+						"Page 1 Description", "Page 1",
+						DDMFormLayoutTestUtil.createDDMFormLayoutColumns(
+							"Field1", "Field2")),
+					DDMFormLayoutTestUtil.createDDMFormLayoutPage(
+						"Page 2 Description", "Page 2",
+						new String[] {"Field3"})),
+				null, false, true, false);
+
+		List<Object> pagesTemplateContext =
+			ddmFormPagesTemplateContextFactory.create();
+
+		Assert.assertEquals(
+			pagesTemplateContext.toString(), 2, pagesTemplateContext.size());
+
+		Map<String, Object> page1TemplateContext =
+			(Map<String, Object>)pagesTemplateContext.get(0);
+
+		Assert.assertTrue(
+			MapUtil.getBoolean(
+				page1TemplateContext, "showRequiredFieldsWarning"));
+
+		Map<String, Object> page2TemplateContext =
+			(Map<String, Object>)pagesTemplateContext.get(1);
+
+		Assert.assertFalse(
+			MapUtil.getBoolean(
+				page2TemplateContext, "showRequiredFieldsWarning"));
+	}
+
+	@Test
 	public void testRequiredFieldsWithoutRequiredFieldsWarning()
 		throws Exception {
 
@@ -629,61 +684,6 @@ public class DDMFormPagesTemplateContextFactoryTest {
 			(Map<String, Object>)pagesTemplateContext.get(0);
 
 		Assert.assertFalse(
-			MapUtil.getBoolean(
-				page1TemplateContext, "showRequiredFieldsWarning"));
-
-		Map<String, Object> page2TemplateContext =
-			(Map<String, Object>)pagesTemplateContext.get(1);
-
-		Assert.assertFalse(
-			MapUtil.getBoolean(
-				page2TemplateContext, "showRequiredFieldsWarning"));
-	}
-
-	@Test
-	public void testRequiredFieldsWithRequiredFieldsWarning() throws Exception {
-
-		// Dynamic data mapping form
-
-		DDMForm ddmForm = DDMFormTestUtil.createDDMForm();
-
-		ddmForm.addDDMFormField(
-			DDMFormTestUtil.createDDMFormField(
-				"Field1", "Field1", "text", "string", false, false, true));
-
-		ddmForm.addDDMFormField(
-			DDMFormTestUtil.createDDMFormField(
-				"Field2", "Field2", "text", "string", false, false, false));
-
-		ddmForm.addDDMFormField(
-			DDMFormTestUtil.createDDMFormField(
-				"Field3", "Field3", "text", "string", false, false, false));
-
-		// Template context
-
-		DDMFormPagesTemplateContextFactory ddmFormPagesTemplateContextFactory =
-			_createDDMFormPagesTemplateContextFactory(
-				ddmForm,
-				DDMFormLayoutTestUtil.createDDMFormLayout(
-					DDMFormLayoutTestUtil.createDDMFormLayoutPage(
-						"Page 1 Description", "Page 1",
-						DDMFormLayoutTestUtil.createDDMFormLayoutColumns(
-							"Field1", "Field2")),
-					DDMFormLayoutTestUtil.createDDMFormLayoutPage(
-						"Page 2 Description", "Page 2",
-						new String[] {"Field3"})),
-				null, false, true, false);
-
-		List<Object> pagesTemplateContext =
-			ddmFormPagesTemplateContextFactory.create();
-
-		Assert.assertEquals(
-			pagesTemplateContext.toString(), 2, pagesTemplateContext.size());
-
-		Map<String, Object> page1TemplateContext =
-			(Map<String, Object>)pagesTemplateContext.get(0);
-
-		Assert.assertTrue(
 			MapUtil.getBoolean(
 				page1TemplateContext, "showRequiredFieldsWarning"));
 
@@ -1039,13 +1039,14 @@ public class DDMFormPagesTemplateContextFactoryTest {
 	}
 
 	private DDMFormEvaluator _getDDMFormEvaluator() {
+		DDMFormEvaluator ddmFormEvaluator = new DDMFormEvaluatorImpl();
+
 		DDMExpressionFactoryImpl ddmExpressionFactoryImpl =
 			new DDMExpressionFactoryImpl();
 
-		DDMFormEvaluator ddmFormEvaluator = new DDMFormEvaluatorImpl();
-
 		ReflectionTestUtil.setFieldValue(
 			ddmFormEvaluator, "ddmExpressionFactory", ddmExpressionFactoryImpl);
+
 		ReflectionTestUtil.setFieldValue(
 			ddmFormEvaluator, "ddmFormFieldTypeServicesRegistry",
 			_ddmFormFieldTypeServicesRegistry);

@@ -112,11 +112,7 @@ public class LayoutLocalizationPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		LayoutLocalization newLayoutLocalization = _persistence.create(pk);
-
-		newLayoutLocalization.setMvccVersion(RandomTestUtil.nextLong());
+		LayoutLocalization newLayoutLocalization = addLayoutLocalization();
 
 		newLayoutLocalization.setCtCollectionId(RandomTestUtil.nextLong());
 
@@ -138,7 +134,9 @@ public class LayoutLocalizationPersistenceTest {
 
 		newLayoutLocalization.setLastPublishDate(RandomTestUtil.nextDate());
 
-		_layoutLocalizations.add(_persistence.update(newLayoutLocalization));
+		newLayoutLocalization = _persistence.update(newLayoutLocalization);
+
+		_layoutLocalizations.add(newLayoutLocalization);
 
 		LayoutLocalization existingLayoutLocalization =
 			_persistence.findByPrimaryKey(
@@ -209,13 +207,6 @@ public class LayoutLocalizationPersistenceTest {
 		_persistence.countByUuid_C("null", 0L);
 
 		_persistence.countByUuid_C((String)null, 0L);
-	}
-
-	@Test
-	public void testCountByPlid() throws Exception {
-		_persistence.countByPlid(RandomTestUtil.nextLong());
-
-		_persistence.countByPlid(0L);
 	}
 
 	@Test
@@ -589,8 +580,6 @@ public class LayoutLocalizationPersistenceTest {
 
 		LayoutLocalization layoutLocalization = _persistence.create(pk);
 
-		layoutLocalization.setMvccVersion(RandomTestUtil.nextLong());
-
 		layoutLocalization.setCtCollectionId(RandomTestUtil.nextLong());
 
 		layoutLocalization.setUuid(RandomTestUtil.randomString());
@@ -622,3 +611,4 @@ public class LayoutLocalizationPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:432383476

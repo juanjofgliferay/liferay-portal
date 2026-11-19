@@ -5,10 +5,10 @@
 
 package com.liferay.search.experiences.rest.client.aggregation;
 
+import jakarta.annotation.Generated;
+
 import java.util.HashMap;
 import java.util.Map;
-
-import javax.annotation.Generated;
 
 /**
  * @author Brian Wing Shun Chan
@@ -28,3 +28,4 @@ public class Aggregation {
 	private Map<String, String> _aggregationTerms = new HashMap<>();
 
 }
+// LIFERAY-REST-BUILDER-HASH:-390521704

@@ -51,7 +51,10 @@ public interface FriendlyURLEntry
 
 			};
 
+	public String getCategorizedUrlTitle(String languageId);
+
 	public boolean isMain()
 		throws com.liferay.portal.kernel.exception.PortalException;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1145010647

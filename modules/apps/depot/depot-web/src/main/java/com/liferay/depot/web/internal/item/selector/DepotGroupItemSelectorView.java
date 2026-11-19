@@ -5,26 +5,41 @@
 
 package com.liferay.depot.web.internal.item.selector;
 
-import com.liferay.depot.web.internal.item.selector.criteria.depot.group.criterion.DepotGroupItemSelectorCriterion;
-import com.liferay.depot.web.internal.util.DepotAdminGroupSearchProvider;
+import com.liferay.depot.item.selector.DepotGroupItemSelectorCriterion;
+import com.liferay.depot.service.DepotEntryService;
+import com.liferay.depot.web.internal.util.DepotEntryAdminSearchUtil;
 import com.liferay.item.selector.ItemSelectorReturnType;
 import com.liferay.item.selector.ItemSelectorView;
 import com.liferay.item.selector.ItemSelectorViewDescriptor;
 import com.liferay.item.selector.ItemSelectorViewDescriptorRenderer;
 import com.liferay.item.selector.criteria.GroupItemSelectorReturnType;
+import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.change.tracking.CTCollectionThreadLocal;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.util.JavaConstants;
+import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.ResourceBundleUtil;
+import com.liferay.users.admin.constants.UsersAdminPortletKeys;
+
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.io.IOException;
 
@@ -33,14 +48,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.ResourceBundle;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
-
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -98,11 +105,14 @@ public class DepotGroupItemSelectorView
 			new GroupItemSelectorReturnType());
 
 	@Reference
-	private DepotAdminGroupSearchProvider _depotAdminGroupSearchProvider;
+	private DepotEntryService _depotEntryService;
 
 	@Reference
 	private ItemSelectorViewDescriptorRenderer<DepotGroupItemSelectorCriterion>
 		_itemSelectorViewDescriptorRenderer;
+
+	@Reference
+	private Language _language;
 
 	@Reference
 	private Portal _portal;
@@ -234,11 +244,36 @@ public class DepotGroupItemSelectorView
 			try {
 				PortletRequest portletRequest =
 					(PortletRequest)_httpServletRequest.getAttribute(
-						JavaConstants.JAVAX_PORTLET_REQUEST);
+						JavaConstants.JAKARTA_PORTLET_REQUEST);
 
-				return _depotAdminGroupSearchProvider.getGroupSearch(
-					_depotGroupItemSelectorCriterion, portletRequest,
-					_portletURL);
+				PortletResponse portletResponse =
+					(PortletResponse)_httpServletRequest.getAttribute(
+						JavaConstants.JAKARTA_PORTLET_RESPONSE);
+
+				long ctCollectionId =
+					CTCollectionThreadLocal.getCTCollectionId();
+
+				String itemSelectedEventName = ParamUtil.getString(
+					portletRequest, "itemSelectedEventName");
+
+				if (itemSelectedEventName.startsWith(
+						_portal.getPortletNamespace(
+							UsersAdminPortletKeys.USERS_ADMIN))) {
+
+					ctCollectionId =
+						CTCollectionThreadLocal.CT_COLLECTION_ID_PRODUCTION;
+				}
+
+				try (SafeCloseable safeCloseable =
+						CTCollectionThreadLocal.
+							setCTCollectionIdWithSafeCloseable(
+								ctCollectionId)) {
+
+					return DepotEntryAdminSearchUtil.getGroupSearch(
+						_depotEntryService, _depotGroupItemSelectorCriterion,
+						_language, portletRequest, portletResponse,
+						_portletURL);
+				}
 			}
 			catch (PortalException portalException) {
 				return ReflectionUtil.throwException(portalException);

@@ -14,12 +14,14 @@ import com.liferay.layout.page.template.model.LayoutPageTemplateEntry;
 import com.liferay.layout.page.template.service.LayoutPageTemplateEntryLocalServiceUtil;
 import com.liferay.petra.sql.dsl.DSLQueryFactoryUtil;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.PortletPreferenceValueTable;
 import com.liferay.portal.kernel.model.PortletPreferences;
 import com.liferay.portal.kernel.model.PortletPreferencesTable;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.service.PortletPreferenceValueLocalServiceUtil;
 import com.liferay.portal.kernel.service.PortletPreferencesLocalServiceUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
@@ -28,12 +30,13 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portlet.display.template.PortletDisplayTemplate;
 
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.List;
-
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Eudaldo Alonso
@@ -74,6 +77,10 @@ public class WidgetTemplatesTemplateViewUsagesDisplayContext {
 	}
 
 	public String getDDMTemplateUsageName(Layout layout) {
+		if (layout == null) {
+			return StringPool.DASH;
+		}
+
 		String ddmTemplateUsageName = layout.getName(_themeDisplay.getLocale());
 
 		LayoutPageTemplateEntry layoutPageTemplateEntry =
@@ -93,6 +100,10 @@ public class WidgetTemplatesTemplateViewUsagesDisplayContext {
 	}
 
 	public String getDDMTemplateUsageType(Layout layout) {
+		if (layout == null) {
+			return "embedded";
+		}
+
 		LayoutPageTemplateEntry layoutPageTemplateEntry =
 			_fetchLayoutPageTemplateEntry(layout);
 
@@ -158,8 +169,7 @@ public class WidgetTemplatesTemplateViewUsagesDisplayContext {
 
 		SearchContainer<PortletPreferences>
 			widgetTemplatesUsagesSearchContainer = new SearchContainer<>(
-				_renderRequest, _renderResponse.createRenderURL(), null,
-				"there-are-no-usages");
+				_renderRequest, _getPortletURL(), null, "there-are-no-usages");
 
 		DDMTemplate ddmTemplate = getDDMTemplate();
 
@@ -190,6 +200,18 @@ public class WidgetTemplatesTemplateViewUsagesDisplayContext {
 
 		return LayoutPageTemplateEntryLocalServiceUtil.
 			fetchLayoutPageTemplateEntryByPlid(layoutPageTemplateEntryPlid);
+	}
+
+	private PortletURL _getPortletURL() {
+		return PortletURLBuilder.createRenderURL(
+			_renderResponse
+		).setMVCRenderCommandName(
+			"/template/view_widget_templates_usages"
+		).setRedirect(
+			_themeDisplay.getURLCurrent()
+		).setParameter(
+			"ddmTemplateId", _ddmTemplate.getTemplateId()
+		).buildPortletURL();
 	}
 
 	private List<PortletPreferences> _getWidgetTemplatesUsages(

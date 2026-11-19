@@ -85,7 +85,7 @@ public class DLFileEntryFinderTest {
 			ServiceContextTestUtil.getServiceContext(_group.getGroupId());
 
 		_repository = RepositoryLocalServiceUtil.addRepository(
-			TestPropsValues.getUserId(), _group.getGroupId(), classNameId,
+			null, TestPropsValues.getUserId(), _group.getGroupId(), classNameId,
 			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID, "Repository A",
 			StringPool.BLANK, "Test Portlet", new UnicodeProperties(), true,
 			serviceContext);
@@ -142,77 +142,6 @@ public class DLFileEntryFinderTest {
 	}
 
 	@Test
-	public void testCountByExtraSettings() throws Exception {
-		Assert.assertEquals(
-			4, DLFileEntryLocalServiceUtil.getExtraSettingsFileEntriesCount());
-	}
-
-	@Test
-	public void testCountByG_U_F_M_StatusAny() throws Exception {
-		QueryDefinition<DLFileEntry> queryDefinition = new QueryDefinition<>();
-
-		queryDefinition.setStatus(WorkflowConstants.STATUS_ANY);
-
-		Assert.assertEquals(3, doCountBy_G_U_F_M(0, null, queryDefinition));
-	}
-
-	@Test
-	public void testCountByG_U_F_M_StatusAnyByMimeType() throws Exception {
-		QueryDefinition<DLFileEntry> queryDefinition = new QueryDefinition<>();
-
-		queryDefinition.setStatus(WorkflowConstants.STATUS_ANY);
-
-		Assert.assertEquals(
-			2, doCountBy_G_U_F_M(0, ContentTypes.TEXT_PLAIN, queryDefinition));
-	}
-
-	@Test
-	public void testCountByG_U_F_M_StatusAnyByUserId() throws Exception {
-		QueryDefinition<DLFileEntry> queryDefinition = new QueryDefinition<>();
-
-		queryDefinition.setStatus(WorkflowConstants.STATUS_ANY);
-
-		Assert.assertEquals(
-			2,
-			doCountBy_G_U_F_M(
-				_defaultRepositoryFolder.getUserId(), null, queryDefinition));
-	}
-
-	@Test
-	public void testCountByG_U_F_M_StatusAnyByUserIdAndMimeType()
-		throws Exception {
-
-		QueryDefinition<DLFileEntry> queryDefinition = new QueryDefinition<>();
-
-		queryDefinition.setStatus(WorkflowConstants.STATUS_ANY);
-
-		Assert.assertEquals(
-			1,
-			doCountBy_G_U_F_M(
-				_defaultRepositoryFolder.getUserId(), ContentTypes.TEXT_PLAIN,
-				queryDefinition));
-	}
-
-	@Test
-	public void testCountByG_U_F_M_StatusApproved() throws Exception {
-		QueryDefinition<DLFileEntry> queryDefinition = new QueryDefinition<>();
-
-		queryDefinition.setStatus(WorkflowConstants.STATUS_APPROVED);
-
-		Assert.assertEquals(2, doCountBy_G_U_F_M(0, null, queryDefinition));
-	}
-
-	@Test
-	public void testCountByG_U_F_M_StatusApprovedByMimeType() throws Exception {
-		QueryDefinition<DLFileEntry> queryDefinition = new QueryDefinition<>();
-
-		queryDefinition.setStatus(WorkflowConstants.STATUS_APPROVED);
-
-		Assert.assertEquals(
-			1, doCountBy_G_U_F_M(0, ContentTypes.TEXT_PLAIN, queryDefinition));
-	}
-
-	@Test
 	public void testCountByG_U_F_M_StatusApprovedByMimeType_BothRepositories()
 		throws Exception {
 
@@ -266,79 +195,6 @@ public class DLFileEntryFinderTest {
 			1,
 			doCountBy_G_U_R_F_M_NewRepository(
 				0, ContentTypes.TEXT_PLAIN, queryDefinition));
-	}
-
-	@Test
-	public void testCountByG_U_F_M_StatusApprovedByUserId() throws Exception {
-		QueryDefinition<DLFileEntry> queryDefinition = new QueryDefinition<>();
-
-		queryDefinition.setStatus(WorkflowConstants.STATUS_APPROVED);
-
-		Assert.assertEquals(
-			1,
-			doCountBy_G_U_F_M(
-				_defaultRepositoryFolder.getUserId(), null, queryDefinition));
-	}
-
-	@Test
-	public void testCountByG_U_F_M_StatusApprovedByUserIdAndMimeType()
-		throws Exception {
-
-		QueryDefinition<DLFileEntry> queryDefinition = new QueryDefinition<>();
-
-		queryDefinition.setStatus(WorkflowConstants.STATUS_APPROVED);
-
-		Assert.assertEquals(
-			0,
-			doCountBy_G_U_F_M(
-				_defaultRepositoryFolder.getUserId(), ContentTypes.TEXT_PLAIN,
-				queryDefinition));
-	}
-
-	@Test
-	public void testCountByG_U_F_M_StatusInTrash() throws Exception {
-		QueryDefinition<DLFileEntry> queryDefinition = new QueryDefinition<>();
-
-		queryDefinition.setStatus(WorkflowConstants.STATUS_IN_TRASH, true);
-
-		Assert.assertEquals(2, doCountBy_G_U_F_M(0, null, queryDefinition));
-	}
-
-	@Test
-	public void testCountByG_U_F_M_StatusInTrashByMimeType() throws Exception {
-		QueryDefinition<DLFileEntry> queryDefinition = new QueryDefinition<>();
-
-		queryDefinition.setStatus(WorkflowConstants.STATUS_IN_TRASH, true);
-
-		Assert.assertEquals(
-			1, doCountBy_G_U_F_M(0, ContentTypes.TEXT_PLAIN, queryDefinition));
-	}
-
-	@Test
-	public void testCountByG_U_F_M_StatusInTrashByUserId() throws Exception {
-		QueryDefinition<DLFileEntry> queryDefinition = new QueryDefinition<>();
-
-		queryDefinition.setStatus(WorkflowConstants.STATUS_IN_TRASH, true);
-
-		Assert.assertEquals(
-			1,
-			doCountBy_G_U_F_M(
-				_defaultRepositoryFolder.getUserId(), null, queryDefinition));
-	}
-
-	@Test
-	public void testCountByG_U_F_M_StatusInTrashByUserIdAndMimeType()
-		throws Exception {
-
-		QueryDefinition<DLFileEntry> queryDefinition = new QueryDefinition<>();
-
-		queryDefinition.setStatus(WorkflowConstants.STATUS_IN_TRASH, true);
-
-		Assert.assertEquals(
-			0,
-			doCountBy_G_U_F_M(
-				_defaultRepositoryFolder.getUserId(), ContentTypes.TEXT_PLAIN,
-				queryDefinition));
 	}
 
 	@Test
@@ -1274,25 +1130,7 @@ public class DLFileEntryFinderTest {
 		return DLAppLocalServiceUtil.addFileEntry(
 			null, userId, repositoryId, folderId, fileName, contentType,
 			fileName.concat(titleSuffix), StringPool.BLANK, StringPool.BLANK,
-			StringPool.BLANK, (byte[])null, null, null, serviceContext);
-	}
-
-	protected int doCountBy_G_U_F_M(
-			long userId, String mimeType,
-			QueryDefinition<DLFileEntry> queryDefinition)
-		throws Exception {
-
-		List<Long> folderIds = ListUtil.fromArray(
-			_defaultRepositoryFolder.getFolderId());
-
-		String[] mimeTypes = null;
-
-		if (mimeType != null) {
-			mimeTypes = new String[] {mimeType};
-		}
-
-		return DLFileEntryLocalServiceUtil.getFileEntriesCount(
-			_group.getGroupId(), userId, folderIds, mimeTypes, queryDefinition);
+			StringPool.BLANK, (byte[])null, null, null, null, serviceContext);
 	}
 
 	protected int doCountBy_G_U_R_F_M(
@@ -1508,8 +1346,9 @@ public class DLFileEntryFinderTest {
 			fileEntry.getFileEntryId(), "FE3.txt", ContentTypes.TEXT_PLAIN,
 			"FE3.txt".concat(titleSuffix), StringPool.BLANK, StringPool.BLANK,
 			StringPool.BLANK, DLVersionNumberIncrease.MINOR,
-			TestDataConstants.TEST_BYTE_ARRAY, fileEntry.getExpirationDate(),
-			fileEntry.getReviewDate(), serviceContext);
+			TestDataConstants.TEST_BYTE_ARRAY, fileEntry.getDisplayDate(),
+			fileEntry.getExpirationDate(), fileEntry.getReviewDate(),
+			serviceContext);
 
 		dlFileEntry = DLFileEntryLocalServiceUtil.getFileEntry(
 			fileEntry.getFileEntryId());

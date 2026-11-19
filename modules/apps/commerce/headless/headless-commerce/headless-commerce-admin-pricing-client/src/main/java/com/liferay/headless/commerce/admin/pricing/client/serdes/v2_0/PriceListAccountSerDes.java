@@ -8,13 +8,14 @@ package com.liferay.headless.commerce.admin.pricing.client.serdes.v2_0;
 import com.liferay.headless.commerce.admin.pricing.client.dto.v2_0.PriceListAccount;
 import com.liferay.headless.commerce.admin.pricing.client.json.BaseJSONParser;
 
+import jakarta.annotation.Generated;
+
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
-
-import javax.annotation.Generated;
 
 /**
  * @author Zoltán Takács
@@ -79,6 +80,18 @@ public class PriceListAccountSerDes {
 			sb.append("\"accountId\": ");
 
 			sb.append(priceListAccount.getAccountId());
+		}
+
+		if (priceListAccount.getAccountType() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"accountType\": ");
+
+			sb.append("\"");
+			sb.append(priceListAccount.getAccountType());
+			sb.append("\"");
 		}
 
 		if (priceListAccount.getActions() != null) {
@@ -180,6 +193,15 @@ public class PriceListAccountSerDes {
 				"accountId", String.valueOf(priceListAccount.getAccountId()));
 		}
 
+		if (priceListAccount.getAccountType() == null) {
+			map.put("accountType", null);
+		}
+		else {
+			map.put(
+				"accountType",
+				String.valueOf(priceListAccount.getAccountType()));
+		}
+
 		if (priceListAccount.getActions() == null) {
 			map.put("actions", null);
 		}
@@ -239,6 +261,46 @@ public class PriceListAccountSerDes {
 		}
 
 		@Override
+		protected boolean parseMaps(String jsonParserFieldName) {
+			if (Objects.equals(jsonParserFieldName, "account")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "accountExternalReferenceCode")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "accountId")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "accountType")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "actions")) {
+				return true;
+			}
+			else if (Objects.equals(jsonParserFieldName, "order")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "priceListAccountId")) {
+
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName,
+						"priceListExternalReferenceCode")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "priceListId")) {
+				return false;
+			}
+
+			return false;
+		}
+
+		@Override
 		protected void setField(
 			PriceListAccount priceListAccount, String jsonParserFieldName,
 			Object jsonParserFieldValue) {
@@ -263,11 +325,17 @@ public class PriceListAccountSerDes {
 						Long.valueOf((String)jsonParserFieldValue));
 				}
 			}
+			else if (Objects.equals(jsonParserFieldName, "accountType")) {
+				if (jsonParserFieldValue != null) {
+					priceListAccount.setAccountType(
+						PriceListAccount.AccountType.create(
+							(String)jsonParserFieldValue));
+				}
+			}
 			else if (Objects.equals(jsonParserFieldName, "actions")) {
 				if (jsonParserFieldValue != null) {
 					priceListAccount.setActions(
-						(Map)PriceListAccountSerDes.toMap(
-							(String)jsonParserFieldValue));
+						(Map<String, Map<String, String>>)jsonParserFieldValue);
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "order")) {
@@ -331,36 +399,7 @@ public class PriceListAccountSerDes {
 
 			Object value = entry.getValue();
 
-			Class<?> valueClass = value.getClass();
-
-			if (value instanceof Map) {
-				sb.append(_toJSON((Map)value));
-			}
-			else if (valueClass.isArray()) {
-				Object[] values = (Object[])value;
-
-				sb.append("[");
-
-				for (int i = 0; i < values.length; i++) {
-					sb.append("\"");
-					sb.append(_escape(values[i]));
-					sb.append("\"");
-
-					if ((i + 1) < values.length) {
-						sb.append(", ");
-					}
-				}
-
-				sb.append("]");
-			}
-			else if (value instanceof String) {
-				sb.append("\"");
-				sb.append(_escape(entry.getValue()));
-				sb.append("\"");
-			}
-			else {
-				sb.append(String.valueOf(entry.getValue()));
-			}
+			sb.append(_toJSON(value));
 
 			if (iterator.hasNext()) {
 				sb.append(", ");
@@ -372,4 +411,47 @@ public class PriceListAccountSerDes {
 		return sb.toString();
 	}
 
+	private static String _toJSON(Object value) {
+		if (value == null) {
+			return "null";
+		}
+
+		if (value instanceof Collection) {
+			Collection<?> collection = (Collection<?>)value;
+
+			return _toJSON(collection.toArray());
+		}
+
+		if (value instanceof Map) {
+			return _toJSON((Map)value);
+		}
+
+		Class<?> clazz = value.getClass();
+
+		if (clazz.isArray()) {
+			StringBuilder sb = new StringBuilder("[");
+
+			Object[] values = (Object[])value;
+
+			for (int i = 0; i < values.length; i++) {
+				sb.append(_toJSON(values[i]));
+
+				if ((i + 1) < values.length) {
+					sb.append(", ");
+				}
+			}
+
+			sb.append("]");
+
+			return sb.toString();
+		}
+
+		if (value instanceof String) {
+			return "\"" + _escape(value) + "\"";
+		}
+
+		return String.valueOf(value);
+	}
+
 }
+// LIFERAY-REST-BUILDER-HASH:909356499

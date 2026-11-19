@@ -8,6 +8,8 @@ package com.liferay.portal.spring.transaction;
 import com.liferay.portal.kernel.transaction.Isolation;
 import com.liferay.portal.kernel.transaction.Propagation;
 
+import java.util.Collection;
+
 import org.springframework.transaction.interceptor.TransactionAttribute;
 
 /**
@@ -28,17 +30,26 @@ public class TransactionAttributeAdapter
 
 		_transactionAttribute = transactionAttribute;
 		_strictReadOnly = strictReadOnly;
+
+		_isolation = Isolation.getIsolation(
+			transactionAttribute.getIsolationLevel());
+		_propagation = Propagation.getPropagation(
+			transactionAttribute.getPropagationBehavior());
 	}
 
 	@Override
 	public Isolation getIsolation() {
-		return Isolation.getIsolation(
-			_transactionAttribute.getIsolationLevel());
+		return _isolation;
 	}
 
 	@Override
 	public int getIsolationLevel() {
 		return _transactionAttribute.getIsolationLevel();
+	}
+
+	@Override
+	public Collection<String> getLabels() {
+		return _transactionAttribute.getLabels();
 	}
 
 	@Override
@@ -48,8 +59,7 @@ public class TransactionAttributeAdapter
 
 	@Override
 	public Propagation getPropagation() {
-		return Propagation.getPropagation(
-			_transactionAttribute.getPropagationBehavior());
+		return _propagation;
 	}
 
 	@Override
@@ -82,6 +92,8 @@ public class TransactionAttributeAdapter
 		return _transactionAttribute.rollbackOn(throwable);
 	}
 
+	private final Isolation _isolation;
+	private final Propagation _propagation;
 	private final boolean _strictReadOnly;
 	private final TransactionAttribute _transactionAttribute;
 

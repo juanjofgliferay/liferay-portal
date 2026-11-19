@@ -27,46 +27,10 @@ public interface VelocityEngineConfiguration {
 	public boolean directiveIfToStringNullCheck();
 
 	@Meta.AD(
-		deflt = "60000", name = "resource-modification-check-interval",
-		required = false
-	)
-	public int resourceModificationCheckInterval();
-
-	@Meta.AD(
 		deflt = "true", name = "include-navigation-items-in-the-context",
 		required = false
 	)
 	public boolean includeNavItemsInTheContext();
-
-	@Meta.AD(
-		deflt = "com.liferay.portal.json.jabsorb.serializer.LiferayJSONDeserializationWhitelist|java.lang.Class|java.lang.ClassLoader|java.lang.Compiler|java.lang.Package|java.lang.Process|java.lang.Runtime|java.lang.RuntimePermission|java.lang.SecurityManager|java.lang.System|java.lang.Thread|java.lang.ThreadGroup|java.lang.ThreadLocal",
-		name = "restricted-classes", required = false
-	)
-	public String[] restrictedClasses();
-
-	@Meta.AD(
-		deflt = "com.liferay.portal.model.impl.CompanyImpl#getKey",
-		name = "restricted-methods", required = false
-	)
-	public String[] restrictedMethods();
-
-	@Meta.AD(
-		deflt = "com.liferay.portal.spring.context|com.ibm|io.undertow|java.lang.reflect|org.apache|org.glassfish|org.jboss|org.springframework|org.wildfly|weblogic",
-		name = "restricted-packages", required = false
-	)
-	public String[] restrictedPackages();
-
-	@Meta.AD(
-		deflt = "httpUtilUnsafe|serviceLocator|staticFieldGetter",
-		name = "restricted-variables", required = false
-	)
-	public String[] restrictedVariables();
-
-	@Meta.AD(
-		deflt = "VM_global_library.vm|VM_liferay.vm",
-		name = "velocity-macro-library", required = false
-	)
-	public String[] velocimacroLibrary();
 
 	@Meta.AD(
 		deflt = "org.apache.velocity.runtime.log.SimpleLog4JLogSystem",
@@ -79,5 +43,32 @@ public interface VelocityEngineConfiguration {
 		required = false
 	)
 	public String loggerCategory();
+
+	@Meta.AD(
+		deflt = "java.lang.Class|java.lang.ClassLoader|java.lang.Package|java.lang.Process|java.lang.Runtime|java.lang.RuntimePermission|java.lang.SecurityManager|java.lang.System|java.lang.Thread|java.lang.ThreadGroup|java.lang.ThreadLocal",
+		name = "restricted-classes", required = false
+	)
+	public String[] restrictedClasses();
+
+	@Meta.AD(deflt = "", name = "restricted-methods", required = false)
+	public String[] restrictedMethods();
+
+	@Meta.AD(
+		deflt = "com.liferay.portal.spring.context|com.ibm|io.undertow|java.lang.reflect|org.apache|org.glassfish|org.jboss|org.springframework|org.wildfly|weblogic",
+		name = "restricted-packages", required = false
+	)
+	public String[] restrictedPackages();
+
+	@Meta.AD(
+		deflt = "httpUtil|httpUtilUnsafe|portletConfig|propsUtil|serviceLocator|staticFieldGetter",
+		name = "restricted-variables", required = false
+	)
+	public String[] restrictedVariables();
+
+	@Meta.AD(
+		deflt = "VM_global_library.vm|VM_liferay.vm",
+		name = "velocity-macro-library", required = false
+	)
+	public String[] velocimacroLibrary();
 
 }

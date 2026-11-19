@@ -1,0 +1,248 @@
+/**
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
+ */
+
+package com.liferay.asset.tags.service.test;
+
+import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.asset.kernel.model.AssetTag;
+import com.liferay.asset.kernel.service.AssetTagLocalServiceUtil;
+import com.liferay.asset.kernel.service.AssetTagServiceUtil;
+import com.liferay.portal.kernel.dao.orm.QueryUtil;
+import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.security.auth.PrincipalException;
+import com.liferay.portal.kernel.security.permission.ActionKeys;
+import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.UserLocalServiceUtil;
+import com.liferay.portal.kernel.test.AssertUtils;
+import com.liferay.portal.kernel.test.TestInfo;
+import com.liferay.portal.kernel.test.rule.AggregateTestRule;
+import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
+import com.liferay.portal.kernel.test.util.GroupTestUtil;
+import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
+import com.liferay.portal.kernel.test.util.TestPropsValues;
+import com.liferay.portal.kernel.test.util.UserTestUtil;
+import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
+import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
+import com.liferay.subscription.service.SubscriptionLocalServiceUtil;
+
+import java.util.List;
+
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+/**
+ * @author Máté Thurzó
+ */
+@RunWith(Arquillian.class)
+public class AssetTagServiceTest {
+
+	@ClassRule
+	@Rule
+	public static final AggregateTestRule aggregateTestRule =
+		new AggregateTestRule(
+			new LiferayIntegrationTestRule(),
+			PermissionCheckerMethodTestRule.INSTANCE);
+
+	@Before
+	public void setUp() throws Exception {
+		_group = GroupTestUtil.addGroup();
+	}
+
+	@Test
+	public void testDeleteGroupTags() throws Exception {
+		ServiceContext serviceContext =
+			ServiceContextTestUtil.getServiceContext(_group.getGroupId());
+
+		List<AssetTag> assetTags = AssetTagLocalServiceUtil.getGroupTags(
+			_group.getGroupId());
+
+		int initialTagsCount = assetTags.size();
+
+		AssetTagLocalServiceUtil.addTag(
+			null, TestPropsValues.getUserId(), _group.getGroupId(),
+			RandomTestUtil.randomString(), serviceContext);
+		AssetTagLocalServiceUtil.addTag(
+			null, TestPropsValues.getUserId(), _group.getGroupId(),
+			RandomTestUtil.randomString(), serviceContext);
+
+		assetTags = AssetTagLocalServiceUtil.getGroupTags(_group.getGroupId());
+
+		Assert.assertEquals(
+			assetTags.toString(), initialTagsCount + 2, assetTags.size());
+
+		AssetTagLocalServiceUtil.deleteGroupTags(_group.getGroupId());
+
+		assetTags = AssetTagLocalServiceUtil.getGroupTags(_group.getGroupId());
+
+		Assert.assertEquals(
+			assetTags.toString(), initialTagsCount, assetTags.size());
+	}
+
+	@Test
+	public void testGetGroupsTagsWithNoGroupIds() throws Exception {
+		_addTag(_group);
+
+		List<AssetTag> assetTags = AssetTagServiceUtil.getGroupsTags(
+			new long[0]);
+
+		Assert.assertTrue(assetTags.toString(), assetTags.isEmpty());
+	}
+
+	@Test
+	public void testGetTagsCountWithNoGroupIds() throws Exception {
+		AssetTag assetTag = _addTag(_group);
+
+		Assert.assertEquals(
+			0, AssetTagServiceUtil.getTagsCount(new long[0], null));
+		Assert.assertEquals(
+			0,
+			AssetTagServiceUtil.getTagsCount(new long[0], assetTag.getName()));
+	}
+
+	@Test
+	public void testGetTagsWithNoGroupIds() throws Exception {
+		AssetTag assetTag = _addTag(_group);
+
+		List<AssetTag> assetTags = AssetTagServiceUtil.getTags(
+			new long[0], null, QueryUtil.ALL_POS, QueryUtil.ALL_POS);
+
+		Assert.assertTrue(assetTags.toString(), assetTags.isEmpty());
+
+		assetTags = AssetTagServiceUtil.getTags(
+			new long[0], assetTag.getName(), QueryUtil.ALL_POS,
+			QueryUtil.ALL_POS);
+
+		Assert.assertTrue(assetTags.toString(), assetTags.isEmpty());
+	}
+
+	@Test
+	@TestInfo("LPD-110148")
+	public void testMergeTags() throws Exception {
+		AssetTag fromAssetTag = _addTag(_group);
+		AssetTag toAssetTag = _addTag(_group);
+
+		User user = UserTestUtil.addGroupAdminUser(_group);
+
+		UserTestUtil.setUser(user);
+
+		AssetTagServiceUtil.mergeTags(
+			fromAssetTag.getTagId(), toAssetTag.getTagId());
+
+		Assert.assertNull(
+			AssetTagLocalServiceUtil.fetchAssetTag(fromAssetTag.getTagId()));
+
+		UserLocalServiceUtil.deleteUser(user);
+	}
+
+	@Test
+	@TestInfo("LPD-110148")
+	public void testMergeTagsWithoutManageTagPermission() throws Exception {
+		AssetTag fromAssetTag = _addTag(_group);
+
+		Group group = GroupTestUtil.addGroup();
+
+		AssetTag toAssetTag = _addTag(group);
+
+		User user = UserTestUtil.addGroupAdminUser(_group);
+
+		UserTestUtil.setUser(user);
+
+		PrincipalException.MustHavePermission mustHavePermission =
+			Assert.assertThrows(
+				PrincipalException.MustHavePermission.class,
+				() -> AssetTagServiceUtil.mergeTags(
+					fromAssetTag.getTagId(), toAssetTag.getTagId()));
+
+		Assert.assertEquals(
+			"com.liferay.asset.tags", mustHavePermission.resourceName);
+		Assert.assertEquals(group.getGroupId(), mustHavePermission.resourceId);
+		Assert.assertArrayEquals(
+			new String[] {ActionKeys.MANAGE_TAG}, mustHavePermission.actionId);
+
+		Assert.assertNotNull(
+			AssetTagLocalServiceUtil.fetchAssetTag(fromAssetTag.getTagId()));
+
+		GroupTestUtil.deleteGroup(group);
+		UserLocalServiceUtil.deleteUser(user);
+	}
+
+	@Test
+	@TestInfo("LPD-110165")
+	public void testSubscribeTag() throws Exception {
+		User adminUser = UserTestUtil.addGroupAdminUser(_group);
+		AssetTag assetTag = _addTag(_group);
+		User user = UserTestUtil.addUser();
+
+		UserTestUtil.setUser(adminUser);
+
+		AssertUtils.assertFailure(
+			PrincipalException.class, null,
+			() -> AssetTagServiceUtil.subscribeTag(
+				user.getUserId(), _group.getGroupId(), assetTag.getTagId()));
+
+		Assert.assertFalse(
+			SubscriptionLocalServiceUtil.isSubscribed(
+				_group.getCompanyId(), user.getUserId(),
+				AssetTag.class.getName(), assetTag.getTagId()));
+
+		AssetTagServiceUtil.subscribeTag(
+			adminUser.getUserId(), _group.getGroupId(), assetTag.getTagId());
+
+		Assert.assertTrue(
+			SubscriptionLocalServiceUtil.isSubscribed(
+				_group.getCompanyId(), adminUser.getUserId(),
+				AssetTag.class.getName(), assetTag.getTagId()));
+	}
+
+	@Test
+	@TestInfo("LPD-110165")
+	public void testUnsubscribeTag() throws Exception {
+		User adminUser = UserTestUtil.addGroupAdminUser(_group);
+		AssetTag assetTag = _addTag(_group);
+		User user = UserTestUtil.addUser();
+
+		AssetTagLocalServiceUtil.subscribeTag(
+			adminUser.getUserId(), _group.getGroupId(), assetTag.getTagId());
+		AssetTagLocalServiceUtil.subscribeTag(
+			user.getUserId(), _group.getGroupId(), assetTag.getTagId());
+
+		UserTestUtil.setUser(adminUser);
+
+		AssertUtils.assertFailure(
+			PrincipalException.class, null,
+			() -> AssetTagServiceUtil.unsubscribeTag(
+				user.getUserId(), assetTag.getTagId()));
+
+		Assert.assertTrue(
+			SubscriptionLocalServiceUtil.isSubscribed(
+				_group.getCompanyId(), user.getUserId(),
+				AssetTag.class.getName(), assetTag.getTagId()));
+
+		AssetTagServiceUtil.unsubscribeTag(
+			adminUser.getUserId(), assetTag.getTagId());
+
+		Assert.assertFalse(
+			SubscriptionLocalServiceUtil.isSubscribed(
+				_group.getCompanyId(), adminUser.getUserId(),
+				AssetTag.class.getName(), assetTag.getTagId()));
+	}
+
+	private AssetTag _addTag(Group group) throws Exception {
+		return AssetTagLocalServiceUtil.addTag(
+			null, TestPropsValues.getUserId(), group.getGroupId(),
+			RandomTestUtil.randomString(),
+			ServiceContextTestUtil.getServiceContext(group.getGroupId()));
+	}
+
+	@DeleteAfterTestRun
+	private Group _group;
+
+}

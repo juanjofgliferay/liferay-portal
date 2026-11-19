@@ -36,6 +36,59 @@
 	<td></td>
 </tr>
 
+<!--INLINE_MODAL-->
+
+<tr>
+	<td>INLINE_MODAL</td>
+	<td>//div[contains(@class,'modal-content')][.//button[contains(@class,'selector-button')]]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>INLINE_MODAL_CANCEL_BUTTON</td>
+	<td>//div[contains(@class,'modal-footer')]//button[contains(@class,'btn-cancel')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>INLINE_MODAL_FILTER_BUTTON</td>
+	<td>//div[contains(@class,'modal-content')]//button[contains(@class,'filters-dropdown-button')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>INLINE_MODAL_FILTER_ITEM</td>
+	<td>//div[contains(@class,'filter-dropdown-menu')]//span[contains(@class,'custom-control-label-text') and normalize-space()='${key_filterItem}']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>INLINE_MODAL_FILTER_ITEMS</td>
+	<td>//div[contains(@class,'filter-dropdown-menu')]//span[contains(@class,'custom-control-label-text')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>INLINE_MODAL_FILTER_OPTION</td>
+	<td>//div[contains(@class,'filter-dropdown-menu')]//button[contains(@class,'dropdown-item') and normalize-space()='${key_filterOption}']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>INLINE_MODAL_SELECT_ALL_CHECKBOX</td>
+	<td>//div[contains(@class,'modal-content')]//div[contains(@class,'management-bar')]//div[contains(@class,'custom-checkbox')]/label</td>
+	<td></td>
+</tr>
+<tr>
+	<td>INLINE_MODAL_ROW_CHECKBOX</td>
+	<td>//div[contains(@class,'modal-content')]//tr[.//td[contains(normalize-space(),'${key_itemTitle}')]]//td[contains(@class,'cell-select-item')]//label</td>
+	<td></td>
+</tr>
+<tr>
+	<td>INLINE_MODAL_SELECT_BUTTON</td>
+	<td>//div[contains(@class,'modal-footer')]//button[contains(@class,'selector-button')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+
 <!--LOCATION_INFO-->
 
 <tr>
@@ -139,7 +192,7 @@
 </tr>
 <tr>
 	<td>VIEWER_INFO</td>
-	<td>//button[*[name()='svg'][contains(@class,'lexicon-icon-info-panel-open')]]</td>
+	<td>//button[*[name()='svg'][contains(@class,'lexicon-icon-info-circle-open')]]</td>
 	<td></td>
 </tr>
 <tr>

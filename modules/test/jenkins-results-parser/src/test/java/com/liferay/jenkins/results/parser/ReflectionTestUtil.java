@@ -1,0 +1,151 @@
+/**
+ * SPDX-FileCopyrightText: (c) 2026 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
+ */
+
+package com.liferay.jenkins.results.parser;
+
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+
+/**
+ * @author Shuyang Zhou
+ */
+public class ReflectionTestUtil {
+
+	public static Field getField(Class<?> clazz, String fieldName) {
+		while (clazz != null) {
+			try {
+				Field field = clazz.getDeclaredField(fieldName);
+
+				field.setAccessible(true);
+
+				return field;
+			}
+			catch (NoSuchFieldException noSuchFieldException) {
+				clazz = clazz.getSuperclass();
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		}
+
+		throw new RuntimeException(
+			new NoSuchFieldException("No field with name " + fieldName));
+	}
+
+	public static <T> T getFieldValue(Class<?> clazz, String fieldName) {
+		Field field = getField(clazz, fieldName);
+
+		try {
+			return (T)field.get(null);
+		}
+		catch (Exception exception) {
+			throw new RuntimeException(exception);
+		}
+	}
+
+	public static <T> T getFieldValue(Object instance, String fieldName) {
+		Field field = getField(instance.getClass(), fieldName);
+
+		try {
+			return (T)field.get(instance);
+		}
+		catch (Exception exception) {
+			throw new RuntimeException(exception);
+		}
+	}
+
+	public static Method getMethod(
+		Class<?> clazz, String methodName, Class<?>... parameterTypes) {
+
+		while (clazz != null) {
+			try {
+				Method method = clazz.getDeclaredMethod(
+					methodName, parameterTypes);
+
+				method.setAccessible(true);
+
+				return method;
+			}
+			catch (NoSuchMethodException noSuchMethodException) {
+				clazz = clazz.getSuperclass();
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		}
+
+		throw new RuntimeException(
+			new NoSuchMethodException("No method with name " + methodName));
+	}
+
+	public static <T> T invoke(
+			Class<?> clazz, String methodName, Class<?>[] parameterTypes,
+			Object... parameters)
+		throws Exception {
+
+		Method method = getMethod(clazz, methodName, parameterTypes);
+
+		if (!Modifier.isStatic(method.getModifiers())) {
+			throw new RuntimeException("Method is not static " + methodName);
+		}
+
+		try {
+			return (T)method.invoke(null, parameters);
+		}
+		catch (InvocationTargetException invocationTargetException) {
+			Throwable throwable = invocationTargetException.getCause();
+
+			if (throwable instanceof Exception) {
+				throw (Exception)throwable;
+			}
+
+			throw new RuntimeException(throwable);
+		}
+	}
+
+	public static <T> T invoke(
+		Object instance, String methodName, Class<?>[] parameterTypes,
+		Object... parameters) {
+
+		Method method = getMethod(
+			instance.getClass(), methodName, parameterTypes);
+
+		try {
+			return (T)method.invoke(instance, parameters);
+		}
+		catch (Exception exception) {
+			throw new RuntimeException(exception);
+		}
+	}
+
+	public static void setFieldValue(
+		Class<?> clazz, String fieldName, Object value) {
+
+		Field field = getField(clazz, fieldName);
+
+		try {
+			field.set(null, value);
+		}
+		catch (Exception exception) {
+			throw new RuntimeException(exception);
+		}
+	}
+
+	public static void setFieldValue(
+		Object instance, String fieldName, Object value) {
+
+		Field field = getField(instance.getClass(), fieldName);
+
+		try {
+			field.set(instance, value);
+		}
+		catch (Exception exception) {
+			throw new RuntimeException(exception);
+		}
+	}
+
+}

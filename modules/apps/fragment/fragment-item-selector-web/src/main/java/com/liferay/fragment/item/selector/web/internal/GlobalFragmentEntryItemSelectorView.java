@@ -5,34 +5,16 @@
 
 package com.liferay.fragment.item.selector.web.internal;
 
-import com.liferay.fragment.item.selector.FragmentEntryItemSelectorReturnType;
-import com.liferay.fragment.item.selector.criterion.FragmentEntryItemSelectorCriterion;
-import com.liferay.fragment.item.selector.web.internal.display.context.FragmentEntriesDisplayContext;
-import com.liferay.item.selector.ItemSelectorReturnType;
+import com.liferay.fragment.item.selector.FragmentEntryItemSelectorCriterion;
 import com.liferay.item.selector.ItemSelectorView;
 import com.liferay.portal.kernel.language.Language;
-import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
-import com.liferay.portal.kernel.util.JavaConstants;
 import com.liferay.portal.kernel.util.Portal;
-import com.liferay.portal.kernel.util.WebKeys;
 
-import java.io.IOException;
+import jakarta.servlet.ServletContext;
 
-import java.util.Collections;
-import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
-
-import javax.servlet.RequestDispatcher;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -45,19 +27,7 @@ import org.osgi.service.component.annotations.Reference;
 	service = ItemSelectorView.class
 )
 public class GlobalFragmentEntryItemSelectorView
-	implements ItemSelectorView<FragmentEntryItemSelectorCriterion> {
-
-	@Override
-	public Class<? extends FragmentEntryItemSelectorCriterion>
-		getItemSelectorCriterionClass() {
-
-		return FragmentEntryItemSelectorCriterion.class;
-	}
-
-	@Override
-	public List<ItemSelectorReturnType> getSupportedItemSelectorReturnTypes() {
-		return _supportedItemSelectorReturnTypes;
-	}
+	extends BaseFragmentEntryItemSelectorView {
 
 	@Override
 	public String getTitle(Locale locale) {
@@ -69,51 +39,24 @@ public class GlobalFragmentEntryItemSelectorView
 		FragmentEntryItemSelectorCriterion itemSelectorCriterion,
 		ThemeDisplay themeDisplay) {
 
-		if (Objects.equals(
-				themeDisplay.getScopeGroupId(),
-				themeDisplay.getCompanyGroupId())) {
-
-			return false;
-		}
-
-		return true;
+		return !Objects.equals(
+			themeDisplay.getScopeGroupId(), themeDisplay.getCompanyGroupId());
 	}
 
 	@Override
-	public void renderHTML(
-			ServletRequest servletRequest, ServletResponse servletResponse,
-			FragmentEntryItemSelectorCriterion
-				fragmentEntryItemSelectorCriterion,
-			PortletURL portletURL, String itemSelectedEventName, boolean search)
-		throws IOException, ServletException {
-
-		RequestDispatcher requestDispatcher =
-			_servletContext.getRequestDispatcher(
-				"/select_fragment_collection.jsp");
-
-		ThemeDisplay themeDisplay = (ThemeDisplay)servletRequest.getAttribute(
-			WebKeys.THEME_DISPLAY);
-
-		servletRequest.setAttribute(
-			FragmentEntriesDisplayContext.class.getName(),
-			new FragmentEntriesDisplayContext(
-				(HttpServletRequest)servletRequest,
-				fragmentEntryItemSelectorCriterion,
-				_groupLocalService.fetchGroup(themeDisplay.getCompanyGroupId()),
-				_portal.getLiferayPortletRequest(
-					(PortletRequest)servletRequest.getAttribute(
-						JavaConstants.JAVAX_PORTLET_REQUEST)),
-				portletURL));
-
-		requestDispatcher.include(servletRequest, servletResponse);
+	protected long[] getGroupIds(ThemeDisplay themeDisplay) {
+		return new long[] {themeDisplay.getCompanyGroupId()};
 	}
 
-	private static final List<ItemSelectorReturnType>
-		_supportedItemSelectorReturnTypes = Collections.singletonList(
-			new FragmentEntryItemSelectorReturnType());
+	@Override
+	protected Portal getPortal() {
+		return _portal;
+	}
 
-	@Reference
-	private GroupLocalService _groupLocalService;
+	@Override
+	protected ServletContext getServletContext() {
+		return _servletContext;
+	}
 
 	@Reference
 	private Language _language;

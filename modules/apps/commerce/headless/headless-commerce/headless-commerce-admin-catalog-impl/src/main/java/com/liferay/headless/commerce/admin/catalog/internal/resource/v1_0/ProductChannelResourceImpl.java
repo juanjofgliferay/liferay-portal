@@ -50,7 +50,8 @@ public class ProductChannelResourceImpl extends BaseProductChannelResourceImpl {
 		CPDefinition cpDefinition =
 			_cpDefinitionService.
 				fetchCPDefinitionByCProductExternalReferenceCode(
-					externalReferenceCode, contextCompany.getCompanyId());
+					externalReferenceCode, contextCompany.getCompanyId(),
+					false);
 
 		if (cpDefinition == null) {
 			return Page.of(Collections.emptyList());
@@ -73,7 +74,7 @@ public class ProductChannelResourceImpl extends BaseProductChannelResourceImpl {
 		throws Exception {
 
 		CPDefinition cpDefinition =
-			_cpDefinitionService.fetchCPDefinitionByCProductId(id);
+			_cpDefinitionService.fetchCPDefinitionByCProductId(id, false);
 
 		if (cpDefinition == null) {
 			return Page.of(Collections.emptyList());
@@ -107,13 +108,13 @@ public class ProductChannelResourceImpl extends BaseProductChannelResourceImpl {
 
 		return new ProductChannel() {
 			{
-				channelId = commerceChannel.getCommerceChannelId();
-				currencyCode = commerceChannel.getCommerceCurrencyCode();
-				externalReferenceCode =
-					commerceChannel.getExternalReferenceCode();
-				id = commerceChannelRel.getCommerceChannelRelId();
-				name = commerceChannel.getName();
-				type = commerceChannel.getType();
+				setChannelId(commerceChannel::getCommerceChannelId);
+				setCurrencyCode(commerceChannel::getCommerceCurrencyCode);
+				setExternalReferenceCode(
+					commerceChannel::getExternalReferenceCode);
+				setId(commerceChannelRel::getCommerceChannelRelId);
+				setName(commerceChannel::getName);
+				setType(commerceChannel::getType);
 			}
 		};
 	}

@@ -11,25 +11,27 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import com.liferay.petra.function.UnsafeSupplier;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Alberto Chaparro
@@ -49,57 +51,84 @@ public class PortalInstance implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(PortalInstance.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "whether the portal instance is active. PATCH ignores it; use the activate and deactivate endpoints to change it."
+	)
 	public Boolean getActive() {
+		if (_activeSupplier != null) {
+			active = _activeSupplier.get();
+
+			_activeSupplier = null;
+		}
+
 		return active;
 	}
 
 	public void setActive(Boolean active) {
 		this.active = active;
+
+		_activeSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setActive(
 		UnsafeSupplier<Boolean, Exception> activeUnsafeSupplier) {
 
-		try {
-			active = activeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_activeSupplier = () -> {
+			try {
+				return activeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
-	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
+	@GraphQLField(
+		description = "whether the portal instance is active. PATCH ignores it; use the activate and deactivate endpoints to change it."
+	)
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Boolean active;
 
-	@Schema(
+	@JsonIgnore
+	private Supplier<Boolean> _activeSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
 		description = "The portal instance's administrator. This field is optional and is only used in the portal instance creation."
 	)
 	@Valid
 	public Admin getAdmin() {
+		if (_adminSupplier != null) {
+			admin = _adminSupplier.get();
+
+			_adminSupplier = null;
+		}
+
 		return admin;
 	}
 
 	public void setAdmin(Admin admin) {
 		this.admin = admin;
+
+		_adminSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setAdmin(UnsafeSupplier<Admin, Exception> adminUnsafeSupplier) {
-		try {
-			admin = adminUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_adminSupplier = () -> {
+			try {
+				return adminUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -108,86 +137,174 @@ public class PortalInstance implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
 	protected Admin admin;
 
-	@Schema(description = "internal unique key.")
+	@JsonIgnore
+	private Supplier<Admin> _adminSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "internal unique key."
+	)
 	public Long getCompanyId() {
+		if (_companyIdSupplier != null) {
+			companyId = _companyIdSupplier.get();
+
+			_companyIdSupplier = null;
+		}
+
 		return companyId;
 	}
 
 	public void setCompanyId(Long companyId) {
 		this.companyId = companyId;
+
+		_companyIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setCompanyId(
 		UnsafeSupplier<Long, Exception> companyIdUnsafeSupplier) {
 
-		try {
-			companyId = companyIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_companyIdSupplier = () -> {
+			try {
+				return companyIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "internal unique key.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long companyId;
 
-	@Schema(description = "domain used for email authentication.")
+	@JsonIgnore
+	private Supplier<Long> _companyIdSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "domain used for email authentication."
+	)
 	public String getDomain() {
+		if (_domainSupplier != null) {
+			domain = _domainSupplier.get();
+
+			_domainSupplier = null;
+		}
+
 		return domain;
 	}
 
 	public void setDomain(String domain) {
 		this.domain = domain;
+
+		_domainSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setDomain(
 		UnsafeSupplier<String, Exception> domainUnsafeSupplier) {
 
-		try {
-			domain = domainUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_domainSupplier = () -> {
+			try {
+				return domainUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "domain used for email authentication.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String domain;
 
-	@Schema(
+	@JsonIgnore
+	private Supplier<String> _domainSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "maximum number of users, or 0 for unlimited. PATCH ignores it."
+	)
+	public Integer getMaxUsers() {
+		if (_maxUsersSupplier != null) {
+			maxUsers = _maxUsersSupplier.get();
+
+			_maxUsersSupplier = null;
+		}
+
+		return maxUsers;
+	}
+
+	public void setMaxUsers(Integer maxUsers) {
+		this.maxUsers = maxUsers;
+
+		_maxUsersSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setMaxUsers(
+		UnsafeSupplier<Integer, Exception> maxUsersUnsafeSupplier) {
+
+		_maxUsersSupplier = () -> {
+			try {
+				return maxUsersUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField(
+		description = "maximum number of users, or 0 for unlimited. PATCH ignores it."
+	)
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected Integer maxUsers;
+
+	@JsonIgnore
+	private Supplier<Integer> _maxUsersSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
 		description = "public unique key (corresponds to company's webId field)"
 	)
 	public String getPortalInstanceId() {
+		if (_portalInstanceIdSupplier != null) {
+			portalInstanceId = _portalInstanceIdSupplier.get();
+
+			_portalInstanceIdSupplier = null;
+		}
+
 		return portalInstanceId;
 	}
 
 	public void setPortalInstanceId(String portalInstanceId) {
 		this.portalInstanceId = portalInstanceId;
+
+		_portalInstanceIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setPortalInstanceId(
 		UnsafeSupplier<String, Exception> portalInstanceIdUnsafeSupplier) {
 
-		try {
-			portalInstanceId = portalInstanceIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_portalInstanceIdSupplier = () -> {
+			try {
+				return portalInstanceIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -196,61 +313,90 @@ public class PortalInstance implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String portalInstanceId;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _portalInstanceIdSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getSiteInitializerKey() {
+		if (_siteInitializerKeySupplier != null) {
+			siteInitializerKey = _siteInitializerKeySupplier.get();
+
+			_siteInitializerKeySupplier = null;
+		}
+
 		return siteInitializerKey;
 	}
 
 	public void setSiteInitializerKey(String siteInitializerKey) {
 		this.siteInitializerKey = siteInitializerKey;
+
+		_siteInitializerKeySupplier = null;
 	}
 
 	@JsonIgnore
 	public void setSiteInitializerKey(
 		UnsafeSupplier<String, Exception> siteInitializerKeyUnsafeSupplier) {
 
-		try {
-			siteInitializerKey = siteInitializerKeyUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_siteInitializerKeySupplier = () -> {
+			try {
+				return siteInitializerKeyUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
 	protected String siteInitializerKey;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _siteInitializerKeySupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getVirtualHost() {
+		if (_virtualHostSupplier != null) {
+			virtualHost = _virtualHostSupplier.get();
+
+			_virtualHostSupplier = null;
+		}
+
 		return virtualHost;
 	}
 
 	public void setVirtualHost(String virtualHost) {
 		this.virtualHost = virtualHost;
+
+		_virtualHostSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setVirtualHost(
 		UnsafeSupplier<String, Exception> virtualHostUnsafeSupplier) {
 
-		try {
-			virtualHost = virtualHostUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_virtualHostSupplier = () -> {
+			try {
+				return virtualHostUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String virtualHost;
+
+	@JsonIgnore
+	private Supplier<String> _virtualHostSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -279,6 +425,8 @@ public class PortalInstance implements Serializable {
 
 		sb.append("{");
 
+		Boolean active = getActive();
+
 		if (active != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -288,6 +436,8 @@ public class PortalInstance implements Serializable {
 
 			sb.append(active);
 		}
+
+		Admin admin = getAdmin();
 
 		if (admin != null) {
 			if (sb.length() > 1) {
@@ -299,6 +449,8 @@ public class PortalInstance implements Serializable {
 			sb.append(String.valueOf(admin));
 		}
 
+		Long companyId = getCompanyId();
+
 		if (companyId != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -308,6 +460,8 @@ public class PortalInstance implements Serializable {
 
 			sb.append(companyId);
 		}
+
+		String domain = getDomain();
 
 		if (domain != null) {
 			if (sb.length() > 1) {
@@ -323,6 +477,20 @@ public class PortalInstance implements Serializable {
 			sb.append("\"");
 		}
 
+		Integer maxUsers = getMaxUsers();
+
+		if (maxUsers != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"maxUsers\": ");
+
+			sb.append(maxUsers);
+		}
+
+		String portalInstanceId = getPortalInstanceId();
+
 		if (portalInstanceId != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -337,6 +505,8 @@ public class PortalInstance implements Serializable {
 			sb.append("\"");
 		}
 
+		String siteInitializerKey = getSiteInitializerKey();
+
 		if (siteInitializerKey != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -350,6 +520,8 @@ public class PortalInstance implements Serializable {
 
 			sb.append("\"");
 		}
+
+		String virtualHost = getVirtualHost();
 
 		if (virtualHost != null) {
 			if (sb.length() > 1) {
@@ -370,8 +542,8 @@ public class PortalInstance implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.portal.instances.dto.v1_0.PortalInstance",
 		name = "x-class-name"
 	)
@@ -417,7 +589,10 @@ public class PortalInstance implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -455,6 +630,27 @@ public class PortalInstance implements Serializable {
 		return sb.toString();
 	}
 
+	private static String _toJSON(Object value) {
+		if (value instanceof Collection) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONArray((Collection<?>)value));
+		}
+		else if (value instanceof Map) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONObject((Map<?, ?>)value));
+		}
+		else if (value instanceof Object[]) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONArray(
+					Arrays.asList((Object[])value)));
+		}
+		else if (value instanceof String) {
+			return StringBundler.concat("\"", _escape(value), "\"");
+		}
+
+		return String.valueOf(value);
+	}
+
 	private static final String[][] _JSON_ESCAPE_STRINGS = {
 		{"\\", "\"", "\b", "\f", "\n", "\r", "\t"},
 		{"\\\\", "\\\"", "\\b", "\\f", "\\n", "\\r", "\\t"}
@@ -463,3 +659,4 @@ public class PortalInstance implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:1034277859

@@ -96,9 +96,11 @@ public class BaseUpgradePortletIdTest extends BasePortletIdUpgradeProcess {
 					portletResourceAction);
 			}
 
-			if (!portlet.isUndeployedPortlet()) {
-				_portletLocalService.deployPortlet(portlet);
+			if (portlet.isUndeployedPortlet()) {
+				continue;
 			}
+
+			_portletLocalService.deployPortlet(portlet);
 		}
 
 		_portlets.clear();
@@ -214,7 +216,7 @@ public class BaseUpgradePortletIdTest extends BasePortletIdUpgradeProcess {
 			_portletLocalService.destroyPortlet(portlet);
 		}
 
-		_layoutLocalService.updateLayout(
+		_layoutLocalService.updateTypeSettings(
 			layout.getGroupId(), layout.isPrivateLayout(), layout.getLayoutId(),
 			layout.getTypeSettings());
 

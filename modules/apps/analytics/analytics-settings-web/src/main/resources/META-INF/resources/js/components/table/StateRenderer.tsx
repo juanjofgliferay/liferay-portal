@@ -5,7 +5,7 @@
 
 import React from 'react';
 
-import {EMPTY_STATE_GIF, NOT_FOUND_GIF} from '../../utils/constants';
+import {EMPTY_STATE_SYMBOL, NOT_FOUND_SYMBOL} from '../../utils/constants';
 import StateRenderer, {
 	EmptyStateComponent,
 	ErrorStateComponent,
@@ -27,7 +27,9 @@ interface ITableStateRendererProps extends React.HTMLAttributes<HTMLElement> {
 	refetch: () => void;
 }
 
-const TableStateRenderer: React.FC<ITableStateRendererProps> = ({
+const TableStateRenderer: React.FC<
+	{children?: React.ReactNode | undefined} & ITableStateRendererProps
+> = ({
 	children,
 	empty,
 	emptyState: {contentRenderer, description = '', noResultsTitle, title},
@@ -52,7 +54,7 @@ const TableStateRenderer: React.FC<ITableStateRendererProps> = ({
 					<EmptyStateComponent
 						className="empty-state-border"
 						description={description}
-						imgSrc={EMPTY_STATE_GIF}
+						symbol={EMPTY_STATE_SYMBOL}
 						title={title}
 					>
 						{contentRenderer && contentRenderer()}
@@ -65,7 +67,7 @@ const TableStateRenderer: React.FC<ITableStateRendererProps> = ({
 					<EmptyStateComponent
 						className="empty-state-border"
 						description=""
-						imgSrc={NOT_FOUND_GIF}
+						symbol={NOT_FOUND_SYMBOL}
 						title={noResultsTitle}
 					/>
 				</StateRenderer.Empty>

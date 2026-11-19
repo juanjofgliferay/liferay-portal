@@ -32,7 +32,6 @@ import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.TrashedModel;
 import com.liferay.portal.kernel.portlet.JSONPortletResponseUtil;
-import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCActionCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
@@ -61,17 +60,16 @@ import com.liferay.wiki.constants.WikiPortletKeys;
 import com.liferay.wiki.exception.NoSuchNodeException;
 import com.liferay.wiki.exception.NoSuchPageException;
 import com.liferay.wiki.service.WikiPageService;
-import com.liferay.wiki.web.internal.helper.WikiAttachmentsHelper;
+
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 import java.io.InputStream;
 
 import java.util.Map;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-
-import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -85,9 +83,9 @@ import org.osgi.service.component.annotations.Reference;
 @Component(
 	configurationPid = "com.liferay.document.library.configuration.DLConfiguration",
 	property = {
-		"javax.portlet.name=" + WikiPortletKeys.WIKI,
-		"javax.portlet.name=" + WikiPortletKeys.WIKI_ADMIN,
-		"javax.portlet.name=" + WikiPortletKeys.WIKI_DISPLAY,
+		"jakarta.portlet.name=" + WikiPortletKeys.WIKI,
+		"jakarta.portlet.name=" + WikiPortletKeys.WIKI_ADMIN,
+		"jakarta.portlet.name=" + WikiPortletKeys.WIKI_DISPLAY,
 		"mvc.command.name=/wiki/edit_page_attachment"
 	},
 	service = MVCActionCommand.class
@@ -140,13 +138,13 @@ public class EditPageAttachmentMVCActionCommand extends BaseMVCActionCommand {
 				_deleteTempAttachment(actionRequest, actionResponse);
 			}
 			else if (cmd.equals(Constants.EMPTY_TRASH)) {
-				_wikiAttachmentsHelper.emptyTrash(actionRequest);
+				emptyTrash(actionRequest);
 			}
 			else if (cmd.equals(Constants.MOVE_TO_TRASH)) {
 				_deleteAttachment(actionRequest, true);
 			}
 			else if (cmd.equals(Constants.RESTORE)) {
-				_wikiAttachmentsHelper.restoreEntries(actionRequest);
+				restoreEntries(actionRequest);
 
 				String redirect = ParamUtil.getString(
 					actionRequest, "redirect");
@@ -182,7 +180,7 @@ public class EditPageAttachmentMVCActionCommand extends BaseMVCActionCommand {
 			ActionRequest actionRequest, boolean moveToTrash)
 		throws Exception {
 
-		TrashedModel trashedModel = _wikiAttachmentsHelper.deleteAttachment(
+		TrashedModel trashedModel = deleteAttachment(
 			actionRequest, moveToTrash);
 
 		if (moveToTrash && (trashedModel != null)) {
@@ -200,13 +198,10 @@ public class EditPageAttachmentMVCActionCommand extends BaseMVCActionCommand {
 			ActionRequest actionRequest, ActionResponse actionResponse)
 		throws Exception {
 
-		UploadPortletRequest uploadPortletRequest =
-			_portal.getUploadPortletRequest(actionRequest);
-
 		ThemeDisplay themeDisplay = (ThemeDisplay)actionRequest.getAttribute(
 			WebKeys.THEME_DISPLAY);
 
-		long nodeId = ParamUtil.getLong(uploadPortletRequest, "nodeId");
+		long nodeId = ParamUtil.getLong(actionRequest, "nodeId");
 		String fileName = ParamUtil.getString(actionRequest, "fileName");
 
 		JSONObject jsonObject = _jsonFactory.createJSONObject();
@@ -425,9 +420,6 @@ public class EditPageAttachmentMVCActionCommand extends BaseMVCActionCommand {
 
 	@Reference(target = "(upload.response.handler=multiple)")
 	private UploadResponseHandler _uploadResponseHandler;
-
-	@Reference
-	private WikiAttachmentsHelper _wikiAttachmentsHelper;
 
 	@Reference
 	private WikiPageService _wikiPageService;

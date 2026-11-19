@@ -6,6 +6,7 @@
 package com.liferay.portal.model.impl;
 
 import com.liferay.petra.lang.HashUtil;
+import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.model.CacheModel;
 import com.liferay.portal.kernel.model.Company;
@@ -15,6 +16,9 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
 
 import java.util.Date;
 
@@ -67,7 +71,7 @@ public class CompanyCacheModel
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(47);
+		StringBundler sb = new StringBundler(21);
 
 		sb.append("{mvccVersion=");
 		sb.append(mvccVersion);
@@ -85,36 +89,10 @@ public class CompanyCacheModel
 		sb.append(webId);
 		sb.append(", mx=");
 		sb.append(mx);
-		sb.append(", homeURL=");
-		sb.append(homeURL);
-		sb.append(", logoId=");
-		sb.append(logoId);
 		sb.append(", maxUsers=");
 		sb.append(maxUsers);
 		sb.append(", active=");
 		sb.append(active);
-		sb.append(", name=");
-		sb.append(name);
-		sb.append(", legalName=");
-		sb.append(legalName);
-		sb.append(", legalId=");
-		sb.append(legalId);
-		sb.append(", legalType=");
-		sb.append(legalType);
-		sb.append(", sicCode=");
-		sb.append(sicCode);
-		sb.append(", tickerSymbol=");
-		sb.append(tickerSymbol);
-		sb.append(", industry=");
-		sb.append(industry);
-		sb.append(", type=");
-		sb.append(type);
-		sb.append(", size=");
-		sb.append(size);
-		sb.append(", indexNameCurrent=");
-		sb.append(indexNameCurrent);
-		sb.append(", indexNameNext=");
-		sb.append(indexNameNext);
 		sb.append("}");
 
 		return sb.toString();
@@ -163,99 +141,20 @@ public class CompanyCacheModel
 			companyImpl.setMx(mx);
 		}
 
-		if (homeURL == null) {
-			companyImpl.setHomeURL("");
-		}
-		else {
-			companyImpl.setHomeURL(homeURL);
-		}
-
-		companyImpl.setLogoId(logoId);
 		companyImpl.setMaxUsers(maxUsers);
 		companyImpl.setActive(active);
 
-		if (name == null) {
-			companyImpl.setName("");
-		}
-		else {
-			companyImpl.setName(name);
-		}
-
-		if (legalName == null) {
-			companyImpl.setLegalName("");
-		}
-		else {
-			companyImpl.setLegalName(legalName);
-		}
-
-		if (legalId == null) {
-			companyImpl.setLegalId("");
-		}
-		else {
-			companyImpl.setLegalId(legalId);
-		}
-
-		if (legalType == null) {
-			companyImpl.setLegalType("");
-		}
-		else {
-			companyImpl.setLegalType(legalType);
-		}
-
-		if (sicCode == null) {
-			companyImpl.setSicCode("");
-		}
-		else {
-			companyImpl.setSicCode(sicCode);
-		}
-
-		if (tickerSymbol == null) {
-			companyImpl.setTickerSymbol("");
-		}
-		else {
-			companyImpl.setTickerSymbol(tickerSymbol);
-		}
-
-		if (industry == null) {
-			companyImpl.setIndustry("");
-		}
-		else {
-			companyImpl.setIndustry(industry);
-		}
-
-		if (type == null) {
-			companyImpl.setType("");
-		}
-		else {
-			companyImpl.setType(type);
-		}
-
-		if (size == null) {
-			companyImpl.setSize("");
-		}
-		else {
-			companyImpl.setSize(size);
-		}
-
-		if (indexNameCurrent == null) {
-			companyImpl.setIndexNameCurrent("");
-		}
-		else {
-			companyImpl.setIndexNameCurrent(indexNameCurrent);
-		}
-
-		if (indexNameNext == null) {
-			companyImpl.setIndexNameNext("");
-		}
-		else {
-			companyImpl.setIndexNameNext(indexNameNext);
-		}
-
 		companyImpl.resetOriginalValues();
 
-		companyImpl.setCompanySecurityBag(_companySecurityBag);
+		try {
+			_groupIdMethodHandle.invokeExact(companyImpl, groupId);
 
-		companyImpl.setVirtualHostname(_virtualHostname);
+			_virtualHostnameMethodHandle.invokeExact(
+				companyImpl, virtualHostname);
+		}
+		catch (Throwable throwable) {
+			ReflectionUtil.throwException(throwable);
+		}
 
 		return companyImpl;
 	}
@@ -274,28 +173,14 @@ public class CompanyCacheModel
 		modifiedDate = objectInput.readLong();
 		webId = objectInput.readUTF();
 		mx = objectInput.readUTF();
-		homeURL = objectInput.readUTF();
-
-		logoId = objectInput.readLong();
 
 		maxUsers = objectInput.readInt();
 
 		active = objectInput.readBoolean();
-		name = objectInput.readUTF();
-		legalName = objectInput.readUTF();
-		legalId = objectInput.readUTF();
-		legalType = objectInput.readUTF();
-		sicCode = objectInput.readUTF();
-		tickerSymbol = objectInput.readUTF();
-		industry = objectInput.readUTF();
-		type = objectInput.readUTF();
-		size = objectInput.readUTF();
-		indexNameCurrent = objectInput.readUTF();
-		indexNameNext = objectInput.readUTF();
 
-		_companySecurityBag =
-			(CompanyImpl.CompanySecurityBag)objectInput.readObject();
-		_virtualHostname = (String)objectInput.readObject();
+		groupId = (long)objectInput.readObject();
+
+		virtualHostname = (String)objectInput.readObject();
 	}
 
 	@Override
@@ -330,98 +215,13 @@ public class CompanyCacheModel
 			objectOutput.writeUTF(mx);
 		}
 
-		if (homeURL == null) {
-			objectOutput.writeUTF("");
-		}
-		else {
-			objectOutput.writeUTF(homeURL);
-		}
-
-		objectOutput.writeLong(logoId);
-
 		objectOutput.writeInt(maxUsers);
 
 		objectOutput.writeBoolean(active);
 
-		if (name == null) {
-			objectOutput.writeUTF("");
-		}
-		else {
-			objectOutput.writeUTF(name);
-		}
+		objectOutput.writeObject(groupId);
 
-		if (legalName == null) {
-			objectOutput.writeUTF("");
-		}
-		else {
-			objectOutput.writeUTF(legalName);
-		}
-
-		if (legalId == null) {
-			objectOutput.writeUTF("");
-		}
-		else {
-			objectOutput.writeUTF(legalId);
-		}
-
-		if (legalType == null) {
-			objectOutput.writeUTF("");
-		}
-		else {
-			objectOutput.writeUTF(legalType);
-		}
-
-		if (sicCode == null) {
-			objectOutput.writeUTF("");
-		}
-		else {
-			objectOutput.writeUTF(sicCode);
-		}
-
-		if (tickerSymbol == null) {
-			objectOutput.writeUTF("");
-		}
-		else {
-			objectOutput.writeUTF(tickerSymbol);
-		}
-
-		if (industry == null) {
-			objectOutput.writeUTF("");
-		}
-		else {
-			objectOutput.writeUTF(industry);
-		}
-
-		if (type == null) {
-			objectOutput.writeUTF("");
-		}
-		else {
-			objectOutput.writeUTF(type);
-		}
-
-		if (size == null) {
-			objectOutput.writeUTF("");
-		}
-		else {
-			objectOutput.writeUTF(size);
-		}
-
-		if (indexNameCurrent == null) {
-			objectOutput.writeUTF("");
-		}
-		else {
-			objectOutput.writeUTF(indexNameCurrent);
-		}
-
-		if (indexNameNext == null) {
-			objectOutput.writeUTF("");
-		}
-		else {
-			objectOutput.writeUTF(indexNameNext);
-		}
-
-		objectOutput.writeObject(_companySecurityBag);
-		objectOutput.writeObject(_virtualHostname);
+		objectOutput.writeObject(virtualHostname);
 	}
 
 	public long mvccVersion;
@@ -432,22 +232,28 @@ public class CompanyCacheModel
 	public long modifiedDate;
 	public String webId;
 	public String mx;
-	public String homeURL;
-	public long logoId;
 	public int maxUsers;
 	public boolean active;
-	public String name;
-	public String legalName;
-	public String legalId;
-	public String legalType;
-	public String sicCode;
-	public String tickerSymbol;
-	public String industry;
-	public String type;
-	public String size;
-	public String indexNameCurrent;
-	public String indexNameNext;
-	public CompanyImpl.CompanySecurityBag _companySecurityBag;
-	public String _virtualHostname;
+	public volatile long groupId;
+	public volatile String virtualHostname;
+
+	private static final MethodHandle _groupIdMethodHandle;
+	private static final MethodHandle _virtualHostnameMethodHandle;
+
+	static {
+		MethodHandles.Lookup lookup = ReflectionUtil.getImplLookup();
+
+		try {
+			_groupIdMethodHandle = lookup.findSetter(
+				CompanyImpl.class, "_groupId", long.class);
+
+			_virtualHostnameMethodHandle = lookup.findSetter(
+				CompanyImpl.class, "_virtualHostname", String.class);
+		}
+		catch (ReflectiveOperationException reflectiveOperationException) {
+			throw new ExceptionInInitializerError(reflectiveOperationException);
+		}
+	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1881999922

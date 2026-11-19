@@ -12,10 +12,12 @@ ContentDashboardFileExtensionItemSelectorViewDisplayContext contentDashboardFile
 %>
 
 <section class="h-100">
-	<span aria-hidden="true" class="loading-animation mt-0 tree-filter-loader" style="top: 50%; transform: translateY(-50%);"></span>
+	<liferay-ui:csp>
+		<span aria-hidden="true" class="loading-animation mt-0 tree-filter-loader" style="top: 50%; transform: translateY(-50%);"></span>
+	</liferay-ui:csp>
 
 	<react:component
-		module="js/components/SelectFileExtensionWrapper"
+		module="{SelectFileExtensionWrapper} from content-dashboard-document-library-impl"
 		props="<%= contentDashboardFileExtensionItemSelectorViewDisplayContext.getData() %>"
 	/>
 </section>

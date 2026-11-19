@@ -12,11 +12,12 @@ import com.liferay.commerce.order.web.internal.constants.CommerceOrderFDSNames;
 import com.liferay.commerce.order.web.internal.model.Address;
 import com.liferay.commerce.product.model.CommerceChannel;
 import com.liferay.commerce.product.service.CommerceChannelLocalService;
-import com.liferay.commerce.service.CommerceAddressService;
+import com.liferay.commerce.service.CommerceAddressLocalService;
 import com.liferay.commerce.service.CommerceOrderService;
 import com.liferay.frontend.data.set.provider.FDSDataProvider;
 import com.liferay.frontend.data.set.provider.search.FDSKeywords;
 import com.liferay.frontend.data.set.provider.search.FDSPagination;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -24,10 +25,9 @@ import com.liferay.portal.kernel.model.Region;
 import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.util.ParamUtil;
 
-import java.util.ArrayList;
-import java.util.List;
+import jakarta.servlet.http.HttpServletRequest;
 
-import javax.servlet.http.HttpServletRequest;
+import java.util.List;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -48,8 +48,6 @@ public class CommerceBillingAddressFDSDataProvider
 			HttpServletRequest httpServletRequest, Sort sort)
 		throws PortalException {
 
-		List<Address> addresses = new ArrayList<>();
-
 		long commerceOrderId = ParamUtil.getLong(
 			httpServletRequest, "commerceOrderId");
 
@@ -60,23 +58,17 @@ public class CommerceBillingAddressFDSDataProvider
 			_commerceChannelLocalService.getCommerceChannelByOrderGroupId(
 				commerceOrder.getGroupId());
 
-		List<CommerceAddress> commerceAddresses =
-			_commerceAddressService.getBillingCommerceAddresses(
+		return TransformUtil.transform(
+			_commerceAddressLocalService.getBillingCommerceAddresses(
 				commerceOrder.getCompanyId(), AccountEntry.class.getName(),
 				commerceOrder.getCommerceAccountId(),
 				commerceChannel.getCommerceChannelId(),
 				fdsKeywords.getKeywords(), fdsPagination.getStartPosition(),
-				fdsPagination.getEndPosition(), sort);
-
-		for (CommerceAddress commerceAddress : commerceAddresses) {
-			addresses.add(
-				new Address(
-					commerceAddress.getCommerceAddressId(),
-					commerceAddress.getName(),
-					_getDescriptiveCommerceAddress(commerceAddress)));
-		}
-
-		return addresses;
+				fdsPagination.getEndPosition(), sort),
+			commerceAddress -> new Address(
+				commerceAddress.getCommerceAddressId(),
+				commerceAddress.getName(),
+				_getDescriptiveCommerceAddress(commerceAddress)));
 	}
 
 	@Override
@@ -94,7 +86,7 @@ public class CommerceBillingAddressFDSDataProvider
 			_commerceChannelLocalService.getCommerceChannelByOrderGroupId(
 				commerceOrder.getGroupId());
 
-		return _commerceAddressService.getBillingCommerceAddressesCount(
+		return _commerceAddressLocalService.getBillingCommerceAddressesCount(
 			commerceOrder.getCompanyId(), AccountEntry.class.getName(),
 			commerceOrder.getCommerceAccountId(),
 			commerceChannel.getCommerceChannelId(), fdsKeywords.getKeywords());
@@ -128,7 +120,7 @@ public class CommerceBillingAddressFDSDataProvider
 	}
 
 	@Reference
-	private CommerceAddressService _commerceAddressService;
+	private CommerceAddressLocalService _commerceAddressLocalService;
 
 	@Reference
 	private CommerceChannelLocalService _commerceChannelLocalService;

@@ -5,35 +5,29 @@
 
 package com.liferay.object.internal.action.executor;
 
-import com.liferay.list.type.model.ListTypeEntry;
-import com.liferay.list.type.service.ListTypeEntryLocalService;
+import com.liferay.dynamic.data.mapping.expression.DDMExpressionFactory;
 import com.liferay.notification.context.NotificationContextBuilder;
 import com.liferay.notification.model.NotificationTemplate;
 import com.liferay.notification.service.NotificationTemplateLocalService;
 import com.liferay.notification.type.NotificationType;
 import com.liferay.notification.type.NotificationTypeServiceTracker;
+import com.liferay.object.action.executor.BaseObjectActionExecutor;
 import com.liferay.object.action.executor.ObjectActionExecutor;
 import com.liferay.object.constants.ObjectActionExecutorConstants;
-import com.liferay.object.constants.ObjectFieldConstants;
 import com.liferay.object.internal.action.util.ObjectEntryVariablesUtil;
+import com.liferay.object.internal.notification.term.evaluator.util.ObjectDefinitionNotificationTermEvaluatorUtil;
 import com.liferay.object.model.ObjectDefinition;
 import com.liferay.object.model.ObjectField;
 import com.liferay.object.service.ObjectDefinitionLocalService;
 import com.liferay.object.service.ObjectFieldLocalService;
 import com.liferay.object.system.SystemObjectDefinitionManagerRegistry;
-import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.vulcan.dto.converter.DTOConverterRegistry;
 
-import java.sql.Timestamp;
-
-import java.text.SimpleDateFormat;
-
-import java.util.Date;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -43,10 +37,10 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(service = ObjectActionExecutor.class)
 public class NotificationTemplateObjectActionExecutorImpl
-	implements ObjectActionExecutor {
+	extends BaseObjectActionExecutor {
 
 	@Override
-	public void execute(
+	public void doExecute(
 			long companyId, long objectActionId,
 			UnicodeProperties parametersUnicodeProperties,
 			JSONObject payloadJSONObject, long userId)
@@ -61,22 +55,44 @@ public class NotificationTemplateObjectActionExecutorImpl
 			_notificationTypeServiceTracker.getNotificationType(
 				notificationTemplate.getType());
 
-		ObjectDefinition objectDefinition =
+		ObjectDefinition sourceObjectDefinition =
 			_objectDefinitionLocalService.fetchObjectDefinition(
 				payloadJSONObject.getLong("objectDefinitionId"));
 
 		Map<String, Object> termValues = _getTermValues(
-			objectDefinition,
+			payloadJSONObject.getString("preferredLanguageId"),
+			sourceObjectDefinition,
 			ObjectEntryVariablesUtil.getVariables(
-				_dtoConverterRegistry, objectDefinition, payloadJSONObject,
-				_systemObjectDefinitionManagerRegistry));
+				_dtoConverterRegistry, sourceObjectDefinition,
+				payloadJSONObject, _systemObjectDefinitionManagerRegistry));
+
+		ObjectDefinition targetObjectDefinition =
+			_objectDefinitionLocalService.
+				fetchObjectDefinitionByExternalReferenceCode(
+					GetterUtil.getString(
+						parametersUnicodeProperties.get(
+							"objectDefinitionExternalReferenceCode")),
+					sourceObjectDefinition.getCompanyId());
+
+		Map<String, Object> targetValues = new HashMap<>();
+
+		if (targetObjectDefinition != null) {
+			targetValues = ObjectEntryVariablesUtil.getValues(
+				_ddmExpressionFactory, targetObjectDefinition,
+				parametersUnicodeProperties,
+				ObjectEntryVariablesUtil.getVariables(
+					_dtoConverterRegistry, targetObjectDefinition,
+					payloadJSONObject, _systemObjectDefinitionManagerRegistry));
+		}
 
 		notificationType.sendNotification(
 			new NotificationContextBuilder(
 			).className(
-				objectDefinition.getClassName()
+				sourceObjectDefinition.getClassName()
 			).classPK(
 				GetterUtil.getLong(termValues.get("id"))
+			).companyId(
+				sourceObjectDefinition.getCompanyId()
 			).externalReferenceCode(
 				GetterUtil.getString(termValues.get("externalReferenceCode"))
 			).groupId(
@@ -87,9 +103,16 @@ public class NotificationTemplateObjectActionExecutorImpl
 				termValues
 			).userId(
 				userId
+			).parentClassPK(
+				GetterUtil.getLong(targetValues.get("parentClassPK"))
 			).portletId(
-				objectDefinition.isUnmodifiableSystemObject() ?
-					StringPool.BLANK : objectDefinition.getPortletId()
+				sourceObjectDefinition.getPortletId()
+			).preferredLanguageId(
+				payloadJSONObject.getString("preferredLanguageId")
+			).usePreferredLanguageForGuests(
+				GetterUtil.getBoolean(
+					parametersUnicodeProperties.get(
+						"usePreferredLanguageForGuests"))
 			).build());
 	}
 
@@ -99,10 +122,14 @@ public class NotificationTemplateObjectActionExecutorImpl
 	}
 
 	private Map<String, Object> _getTermValues(
-		ObjectDefinition objectDefinition, Map<String, Object> variables) {
+		String languageId, ObjectDefinition objectDefinition,
+		Map<String, Object> variables) {
 
 		Map<String, Object> termValues = (Map<String, Object>)variables.get(
 			"baseModel");
+
+		termValues.put(
+			"objectDefinitionId", objectDefinition.getObjectDefinitionId());
 
 		for (ObjectField objectField :
 				_objectFieldLocalService.getObjectFields(
@@ -112,47 +139,21 @@ public class NotificationTemplateObjectActionExecutorImpl
 				continue;
 			}
 
-			if (Objects.equals(
-					objectField.getBusinessType(),
-					ObjectFieldConstants.BUSINESS_TYPE_DATE) &&
-				!Objects.equals(objectField.getName(), "createDate") &&
-				!Objects.equals(objectField.getName(), "modifiedDate")) {
-
-				SimpleDateFormat simpleDateFormat = new SimpleDateFormat(
-					"yyyy-MM-dd");
-
-				Timestamp timestamp = (Timestamp)termValues.get(
-					objectField.getName());
-
-				termValues.put(
-					objectField.getName(),
-					simpleDateFormat.format(new Date(timestamp.getTime())));
-			}
-			else if (Objects.equals(
-						objectField.getBusinessType(),
-						ObjectFieldConstants.BUSINESS_TYPE_PICKLIST)) {
-
-				ListTypeEntry listTypeEntry =
-					_listTypeEntryLocalService.fetchListTypeEntry(
-						objectField.getListTypeDefinitionId(),
-						(String)termValues.get(objectField.getName()));
-
-				if (listTypeEntry != null) {
-					termValues.put(
-						objectField.getName(),
-						listTypeEntry.getNameCurrentValue());
-				}
-			}
+			termValues.put(
+				objectField.getName(),
+				ObjectDefinitionNotificationTermEvaluatorUtil.getTermValue(
+					languageId, objectField,
+					termValues.get(objectField.getName())));
 		}
 
 		return termValues;
 	}
 
 	@Reference
-	private DTOConverterRegistry _dtoConverterRegistry;
+	private DDMExpressionFactory _ddmExpressionFactory;
 
 	@Reference
-	private ListTypeEntryLocalService _listTypeEntryLocalService;
+	private DTOConverterRegistry _dtoConverterRegistry;
 
 	@Reference
 	private NotificationTemplateLocalService _notificationTemplateLocalService;

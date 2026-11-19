@@ -112,11 +112,7 @@ public class CTCollectionPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		CTCollection newCTCollection = _persistence.create(pk);
-
-		newCTCollection.setMvccVersion(RandomTestUtil.nextLong());
+		CTCollection newCTCollection = addCTCollection();
 
 		newCTCollection.setUuid(RandomTestUtil.randomString());
 
@@ -140,6 +136,8 @@ public class CTCollectionPersistenceTest {
 
 		newCTCollection.setOnDemandUserId(RandomTestUtil.nextLong());
 
+		newCTCollection.setScheduledDate(RandomTestUtil.nextDate());
+
 		newCTCollection.setShareable(RandomTestUtil.randomBoolean());
 
 		newCTCollection.setStatus(RandomTestUtil.nextInt());
@@ -148,7 +146,9 @@ public class CTCollectionPersistenceTest {
 
 		newCTCollection.setStatusDate(RandomTestUtil.nextDate());
 
-		_ctCollections.add(_persistence.update(newCTCollection));
+		newCTCollection = _persistence.update(newCTCollection);
+
+		_ctCollections.add(newCTCollection);
 
 		CTCollection existingCTCollection = _persistence.findByPrimaryKey(
 			newCTCollection.getPrimaryKey());
@@ -189,6 +189,9 @@ public class CTCollectionPersistenceTest {
 		Assert.assertEquals(
 			existingCTCollection.getOnDemandUserId(),
 			newCTCollection.getOnDemandUserId());
+		Assert.assertEquals(
+			Time.getShortTimestamp(existingCTCollection.getScheduledDate()),
+			Time.getShortTimestamp(newCTCollection.getScheduledDate()));
 		Assert.assertEquals(
 			existingCTCollection.isShareable(), newCTCollection.isShareable());
 		Assert.assertEquals(
@@ -247,10 +250,11 @@ public class CTCollectionPersistenceTest {
 	}
 
 	@Test
-	public void testCountBySchemaVersionId() throws Exception {
-		_persistence.countBySchemaVersionId(RandomTestUtil.nextLong());
+	public void testCountByC_SVI() throws Exception {
+		_persistence.countByC_SVI(
+			RandomTestUtil.nextLong(), RandomTestUtil.nextLong());
 
-		_persistence.countBySchemaVersionId(0L);
+		_persistence.countByC_SVI(0L, 0L);
 	}
 
 	@Test
@@ -265,6 +269,22 @@ public class CTCollectionPersistenceTest {
 	public void testCountByC_SArrayable() throws Exception {
 		_persistence.countByC_S(
 			RandomTestUtil.nextLong(), new int[] {RandomTestUtil.nextInt(), 0});
+	}
+
+	@Test
+	public void testCountByC_U_S() throws Exception {
+		_persistence.countByC_U_S(
+			RandomTestUtil.nextLong(), RandomTestUtil.nextLong(),
+			RandomTestUtil.nextInt());
+
+		_persistence.countByC_U_S(0L, 0L, 0);
+	}
+
+	@Test
+	public void testCountByC_U_SArrayable() throws Exception {
+		_persistence.countByC_U_S(
+			RandomTestUtil.nextLong(), RandomTestUtil.nextLong(),
+			new int[] {RandomTestUtil.nextInt(), 0});
 	}
 
 	@Test
@@ -305,8 +325,9 @@ public class CTCollectionPersistenceTest {
 			"externalReferenceCode", true, "ctCollectionId", true, "companyId",
 			true, "userId", true, "createDate", true, "modifiedDate", true,
 			"ctRemoteId", true, "schemaVersionId", true, "name", true,
-			"description", true, "onDemandUserId", true, "shareable", true,
-			"status", true, "statusByUserId", true, "statusDate", true);
+			"description", true, "onDemandUserId", true, "scheduledDate", true,
+			"shareable", true, "status", true, "statusByUserId", true,
+			"statusDate", true);
 	}
 
 	@Test
@@ -590,8 +611,6 @@ public class CTCollectionPersistenceTest {
 
 		CTCollection ctCollection = _persistence.create(pk);
 
-		ctCollection.setMvccVersion(RandomTestUtil.nextLong());
-
 		ctCollection.setUuid(RandomTestUtil.randomString());
 
 		ctCollection.setExternalReferenceCode(RandomTestUtil.randomString());
@@ -614,6 +633,8 @@ public class CTCollectionPersistenceTest {
 
 		ctCollection.setOnDemandUserId(RandomTestUtil.nextLong());
 
+		ctCollection.setScheduledDate(RandomTestUtil.nextDate());
+
 		ctCollection.setShareable(RandomTestUtil.randomBoolean());
 
 		ctCollection.setStatus(RandomTestUtil.nextInt());
@@ -632,3 +653,4 @@ public class CTCollectionPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-444906988

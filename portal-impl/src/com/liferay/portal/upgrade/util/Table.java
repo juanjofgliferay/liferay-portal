@@ -5,6 +5,8 @@
 
 package com.liferay.portal.upgrade.util;
 
+import com.liferay.petra.io.unsync.UnsyncBufferedReader;
+import com.liferay.petra.io.unsync.UnsyncBufferedWriter;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.dao.jdbc.postgresql.PostgreSQLJDBCUtil;
@@ -12,8 +14,6 @@ import com.liferay.portal.kernel.dao.db.DBManagerUtil;
 import com.liferay.portal.kernel.dao.db.DBType;
 import com.liferay.portal.kernel.dao.jdbc.AutoBatchPreparedStatementUtil;
 import com.liferay.portal.kernel.dao.jdbc.DataAccess;
-import com.liferay.portal.kernel.io.unsync.UnsyncBufferedReader;
-import com.liferay.portal.kernel.io.unsync.UnsyncBufferedWriter;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.upgrade.StagnantRowException;
@@ -158,8 +158,10 @@ public class Table {
 
 		try (UnsyncBufferedWriter unsyncBufferedWriter =
 				new UnsyncBufferedWriter(new FileWriter(tempFileName));
+
 			PreparedStatement preparedStatement = getSelectPreparedStatement(
 				connection);
+
 			ResultSet resultSet = preparedStatement.executeQuery()) {
 
 			while (resultSet.next()) {
@@ -210,11 +212,11 @@ public class Table {
 		return _columns;
 	}
 
-	public String getCreateSQL() throws Exception {
+	public String getCreateSQL() {
 		return _createSQL;
 	}
 
-	public String getDeleteSQL() throws Exception {
+	public String getDeleteSQL() {
 		return "DELETE FROM " + _tableName;
 	}
 
@@ -238,7 +240,7 @@ public class Table {
 		return sb.toString();
 	}
 
-	public String getInsertSQL() throws Exception {
+	public String getInsertSQL() {
 		String sql = "INSERT INTO " + getInsertTableName() + " (";
 
 		for (int i = 0; i < _order.length; i++) {
@@ -268,7 +270,7 @@ public class Table {
 		return sql;
 	}
 
-	public String getInsertTableName() throws Exception {
+	public String getInsertTableName() {
 		String createSQL = getCreateSQL();
 
 		if (Validator.isNotNull(createSQL)) {
@@ -300,7 +302,7 @@ public class Table {
 		return connection.prepareStatement(getSelectSQL());
 	}
 
-	public String getSelectSQL() throws Exception {
+	public String getSelectSQL() {
 		if (_selectSQL == null) {
 			/*String sql = "select ";
 
@@ -388,6 +390,7 @@ public class Table {
 				}
 				else {
 					try (Reader reader = clob.getCharacterStream();
+
 						UnsyncBufferedReader unsyncBufferedReader =
 							new UnsyncBufferedReader(reader)) {
 
@@ -656,7 +659,7 @@ public class Table {
 		_createSQL = createSQL;
 	}
 
-	public void setSelectSQL(String selectSQL) throws Exception {
+	public void setSelectSQL(String selectSQL) {
 		_selectSQL = selectSQL;
 	}
 
@@ -668,6 +671,7 @@ public class Table {
 			columnName, " = ?");
 
 		try (Connection connection = DataAccess.getConnection();
+
 			PreparedStatement preparedStatement = connection.prepareStatement(
 				sql)) {
 

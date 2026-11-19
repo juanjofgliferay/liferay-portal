@@ -5,7 +5,7 @@
  */
 --%>
 
-<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<%@ taglib uri="jakarta.tags.core" prefix="c" %>
 
 <%@ taglib uri="http://java.sun.com/portlet_2_0" prefix="portlet" %>
 
@@ -25,6 +25,7 @@ page import="com.liferay.fragment.item.selector.web.internal.display.context.Fra
 page import="com.liferay.fragment.item.selector.web.internal.frontend.taglib.clay.servlet.FragmentCollectionContributorHorizontalCard" %><%@
 page import="com.liferay.fragment.item.selector.web.internal.frontend.taglib.clay.servlet.FragmentCollectionHorizontalCard" %><%@
 page import="com.liferay.fragment.item.selector.web.internal.frontend.taglib.clay.servlet.FragmentEntryVerticalCard" %><%@
+page import="com.liferay.fragment.item.selector.web.internal.frontend.taglib.clay.servlet.GroupHorizontalCard" %><%@
 page import="com.liferay.portal.kernel.util.Validator" %>
 
 <liferay-frontend:defineObjects />

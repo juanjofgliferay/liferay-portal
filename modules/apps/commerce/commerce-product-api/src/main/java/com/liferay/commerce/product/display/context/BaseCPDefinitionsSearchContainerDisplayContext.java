@@ -10,16 +10,15 @@ import com.liferay.portal.kernel.dao.search.EmptyOnClickRowChecker;
 import com.liferay.portal.kernel.dao.search.RowChecker;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.portlet.PortalPreferences;
 import com.liferay.portal.kernel.portlet.SearchDisplayStyleUtil;
 import com.liferay.portal.kernel.portlet.SearchOrderByUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
-import javax.portlet.PortletURL;
+import jakarta.portlet.PortletURL;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * @author Alessio Antonio Rendina
@@ -42,8 +41,7 @@ public abstract class BaseCPDefinitionsSearchContainerDisplayContext<T>
 
 	public String getDisplayStyle() {
 		if (_displayStyle == null) {
-			_displayStyle = getDisplayStyle(
-				httpServletRequest, portalPreferences);
+			_displayStyle = getDisplayStyle(httpServletRequest);
 		}
 
 		return _displayStyle;
@@ -161,11 +159,7 @@ public abstract class BaseCPDefinitionsSearchContainerDisplayContext<T>
 	}
 
 	public boolean isShowInfoPanel() {
-		if (isSearch()) {
-			return false;
-		}
-
-		return true;
+		return !isSearch();
 	}
 
 	public void setDefaultOrderByCol(String defaultOrderByCol) {
@@ -176,10 +170,7 @@ public abstract class BaseCPDefinitionsSearchContainerDisplayContext<T>
 		_defaultOrderByType = defaultOrderByType;
 	}
 
-	protected String getDisplayStyle(
-		HttpServletRequest httpServletRequest,
-		PortalPreferences portalPreferences) {
-
+	protected String getDisplayStyle(HttpServletRequest httpServletRequest) {
 		return SearchDisplayStyleUtil.getDisplayStyle(
 			httpServletRequest, _portalPreferenceNamespace, "list", true);
 	}

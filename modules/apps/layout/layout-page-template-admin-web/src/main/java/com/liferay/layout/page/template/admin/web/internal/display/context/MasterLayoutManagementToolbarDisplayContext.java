@@ -20,19 +20,19 @@ import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
+import com.liferay.portal.kernel.portlet.LiferayPortletURL;
 import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
+import com.liferay.portal.kernel.portlet.url.builder.ResourceURLBuilder;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.portlet.ResourceURL;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Eudaldo Alonso
@@ -175,15 +175,10 @@ public class MasterLayoutManagementToolbarDisplayContext
 
 	@Override
 	public Boolean isShowCreationMenu() {
-		if (LayoutPageTemplatePermission.contains(
-				_themeDisplay.getPermissionChecker(),
-				_themeDisplay.getScopeGroupId(),
-				LayoutPageTemplateActionKeys.ADD_LAYOUT_PAGE_TEMPLATE_ENTRY)) {
-
-			return true;
-		}
-
-		return false;
+		return LayoutPageTemplatePermission.contains(
+			_themeDisplay.getPermissionChecker(),
+			_themeDisplay.getScopeGroupId(),
+			LayoutPageTemplateActionKeys.ADD_LAYOUT_PAGE_TEMPLATE_ENTRY);
 	}
 
 	@Override
@@ -192,11 +187,14 @@ public class MasterLayoutManagementToolbarDisplayContext
 	}
 
 	private String _getExportMasterLayoutURL() {
-		ResourceURL exportMasterLayoutURL =
-			liferayPortletResponse.createResourceURL();
+		LiferayPortletURL exportMasterLayoutURL =
+			(LiferayPortletURL)ResourceURLBuilder.createResourceURL(
+				liferayPortletResponse
+			).setResourceID(
+				"/layout_page_template_admin/export_master_layouts"
+			).buildResourceURL();
 
-		exportMasterLayoutURL.setResourceID(
-			"/layout_page_template_admin/export_master_layouts");
+		exportMasterLayoutURL.setCopyCurrentRenderParameters(false);
 
 		return exportMasterLayoutURL.toString();
 	}

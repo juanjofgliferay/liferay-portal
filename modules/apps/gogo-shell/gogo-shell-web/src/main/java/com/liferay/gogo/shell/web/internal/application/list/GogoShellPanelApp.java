@@ -19,12 +19,17 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"panel.app.order:Integer=300",
+		"panel.app.order:Integer=800",
 		"panel.category.key=" + PanelCategoryKeys.CONTROL_PANEL_SYSTEM
 	},
 	service = PanelApp.class
 )
 public class GogoShellPanelApp extends BasePanelApp {
+
+	@Override
+	public String getIcon() {
+		return "code";
+	}
 
 	@Override
 	public Portlet getPortlet() {
@@ -37,7 +42,7 @@ public class GogoShellPanelApp extends BasePanelApp {
 	}
 
 	@Reference(
-		target = "(javax.portlet.name=" + GogoShellPortletKeys.GOGO_SHELL + ")"
+		target = "(jakarta.portlet.name=" + GogoShellPortletKeys.GOGO_SHELL + ")"
 	)
 	private Portlet _portlet;
 

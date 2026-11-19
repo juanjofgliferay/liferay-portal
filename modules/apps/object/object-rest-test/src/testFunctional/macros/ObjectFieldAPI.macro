@@ -3,6 +3,7 @@ definition {
 	@summary = "Default summary"
 	macro _curlObjectField(objectDefinitionId = null, objectFieldId = null) {
 		var portalURL = JSONCompany.getPortalURL();
+		var userPassword = PropsUtil.get("default.admin.password");
 
 		if (isSet(objectDefinitionId)) {
 			var api = "object-definitions/${objectDefinitionId}/object-fields";
@@ -15,7 +16,7 @@ definition {
 			${portalURL}/o/object-admin/v1.0/${api} \
 				-H accept: application/json \
 				-H Content-Type: application/json \
-				-u test@liferay.com:test \
+				-u test@liferay.com:${userPassword} \
 		''';
 
 		return ${curl};
@@ -32,29 +33,25 @@ definition {
 		}
 
 		var body = '''
-			-d {
-				"DBType": "${dbType}",
-				"indexed": true,
-				"indexedAsKeyword": false,
-				"label":{"en_US":"${label}"},
-				"listTypeDefinitionId": 0,
-				"name": "${name}",
-				"required": false
-			}
+			"DBType": "${dbType}",
+			"indexed": true,
+			"indexedAsKeyword": false,
+			"label":{"en_US":"${label}"},
+			"listTypeDefinitionId": 0,
+			"name": "${name}",
+			"required": false
 		''';
 
-		var curl = StringUtil.add(${curl}, ${body}, " ");
+		if (${dbType} == "DateTime") {
+			var parameter = '''"objectFieldSettings": [{"name": "timeStorage","value": "convertToUTC"}]''';
+			var body = StringUtil.add("${body},", "\"objectFieldSettings\": [{\"name\": \"timeStorage\",\"value\": \"convertToUTC\"}]", "");
+		}
+
+		var curl = StringUtil.add(${curl}, "-d {${body}}", " ");
 
 		var response = JSONCurlUtil.post(${curl});
 
 		return ${response};
-	}
-
-	@summary = "Default summary"
-	macro deleteObjectField(staticObjectFieldId = null) {
-		var curl = ObjectFieldAPI._curlObjectField(objectFieldId = ${staticObjectFieldId});
-
-		JSONCurlUtil.delete(${curl});
 	}
 
 	@summary = "Default summary"
@@ -98,26 +95,15 @@ definition {
 	}
 
 	@summary = "Default summary"
-	macro setUpGlobalObjectFieldId(objectDefinitionId = null, name = null, dbType = null) {
-		var objectFieldId = ObjectFieldAPI.getIdOfCreatedObjectField(
-			dbType = ${dbType},
-			name = ${name},
-			objectDefinitionId = ${objectDefinitionId});
-
-		static var staticObjectFieldId = ${objectFieldId};
-
-		return ${staticObjectFieldId};
-	}
-
-	@summary = "Default summary"
 	macro updateFieldOfEntryById(fieldLabel = null, requiredFieldLabel = null, requiredFieldValue = null, fieldValue2 = null, fieldValue = null, en_US_plural_label = null, entryId = null) {
 		Variables.assertDefined(parameterList = "${en_US_plural_label},${entryId},${fieldLabel},${fieldValue},${requiredFieldLabel},${requiredFieldValue}");
 
 		var portalURL = JSONCompany.getPortalURL();
+		var userPassword = PropsUtil.get("default.admin.password");
 
 		var curl = '''
 			${portalURL}/o/c/${en_US_plural_label}/${entryId} \
-				-u test@liferay.com:test \
+				-u test@liferay.com:${userPassword} \
 				-H Content-Type: application/json \
 				-d {
 					"${requiredFieldLabel}": "${requiredFieldValue}",

@@ -36,7 +36,7 @@ if (Validator.isNotNull(portletConfigurationPermissionsDisplayContext.getModelRe
 			selectable="<%= false %>"
 		/>
 
-		<aui:form action="<%= portletConfigurationPermissionsDisplayContext.getUpdateRolePermissionsURL() %>" cssClass="container-fluid container-fluid-max-xl" method="post" name="fm">
+		<aui:form action="<%= portletConfigurationPermissionsDisplayContext.getUpdateRolePermissionsURL() %>" cssClass="container-fluid container-fluid-max-xxxl" method="post" name="fm">
 			<liferay-ui:search-container
 				searchContainer="<%= roleSearchContainer %>"
 			>
@@ -133,7 +133,7 @@ if (Validator.isNotNull(portletConfigurationPermissionsDisplayContext.getModelRe
 								type = ResourceActionsUtil.getModelResource(locale, resourceName);
 							}
 
-							dataMessage = HtmlUtil.escapeAttribute(LanguageUtil.format(request, preselectedMsg, new Object[] {role.getTitle(locale), _getActionLabel(request, resourceName, action), type, HtmlUtil.escape(portletConfigurationPermissionsDisplayContext.getGroupDescriptiveName())}, false));
+							dataMessage = LanguageUtil.format(request, preselectedMsg, new Object[] {role.getTitle(locale), _getActionLabel(request, resourceName, action), type, portletConfigurationPermissionsDisplayContext.getGroupDescriptiveName()}, false);
 
 							disabled = true;
 						}
@@ -177,16 +177,18 @@ if (Validator.isNotNull(portletConfigurationPermissionsDisplayContext.getModelRe
 											id="<%= inputId %>"
 											name="<%= inputName %>"
 											type="checkbox"
-											title="<%= dataMessage %>"
+											title="<%= HtmlUtil.escapeAttribute(dataMessage) %>"
 										/><span class="custom-control-label"></span
 									>
 									</label>
 								</div>
 
 								<react:component
-									module="js/PermissionsCheckbox"
+									module="{PermissionsCheckbox} from portlet-configuration-web"
 									props='<%=
 										HashMapBuilder.<String, Object>put(
+											"actionId", _getActionLabel(request, resourceName, action)
+										).put(
 											"checked", checked
 										).put(
 											"disabled", disabled
@@ -196,6 +198,8 @@ if (Validator.isNotNull(portletConfigurationPermissionsDisplayContext.getModelRe
 											"indeterminate", indeterminate
 										).put(
 											"name", inputName
+										).put(
+											"roleName", role.getName()
 										).put(
 											"title", dataMessage
 										).build()

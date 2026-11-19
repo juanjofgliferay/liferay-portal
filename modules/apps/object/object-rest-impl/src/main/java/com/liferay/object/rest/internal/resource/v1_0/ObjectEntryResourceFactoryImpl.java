@@ -8,6 +8,8 @@ package com.liferay.object.rest.internal.resource.v1_0;
 import com.liferay.object.model.ObjectDefinition;
 import com.liferay.object.rest.internal.security.permission.LiberalPermissionChecker;
 import com.liferay.object.rest.resource.v1_0.ObjectEntryResource;
+import com.liferay.object.service.ObjectDefinitionLocalService;
+import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.search.filter.Filter;
 import com.liferay.portal.kernel.security.auth.PrincipalThreadLocal;
@@ -28,6 +30,11 @@ import com.liferay.portal.odata.filter.FilterParserProvider;
 import com.liferay.portal.odata.sort.SortParserProvider;
 import com.liferay.portal.vulcan.accept.language.AcceptLanguage;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+import jakarta.ws.rs.core.UriInfo;
+
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
@@ -36,13 +43,9 @@ import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Supplier;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import javax.ws.rs.core.UriInfo;
 
 /**
  * @author Alejandro Tardín
@@ -55,7 +58,9 @@ public class ObjectEntryResourceFactoryImpl
 		PermissionCheckerFactory defaultPermissionCheckerFactory,
 		ExpressionConvert<Filter> expressionConvert,
 		FilterParserProvider filterParserProvider,
-		GroupLocalService groupLocalService, ObjectDefinition objectDefinition,
+		GroupLocalService groupLocalService,
+		Map<Long, Long> objectDefinitionIds,
+		ObjectDefinitionLocalService objectDefinitionLocalService,
 		Supplier<ObjectEntryResourceImpl> objectEntryResourceImplSupplier,
 		ResourceActionLocalService resourceActionLocalService,
 		ResourcePermissionLocalService resourcePermissionLocalService,
@@ -68,7 +73,8 @@ public class ObjectEntryResourceFactoryImpl
 		_expressionConvert = expressionConvert;
 		_filterParserProvider = filterParserProvider;
 		_groupLocalService = groupLocalService;
-		_objectDefinition = objectDefinition;
+		_objectDefinitionIds = objectDefinitionIds;
+		_objectDefinitionLocalService = objectDefinitionLocalService;
 		_objectEntryResourceImplSupplier = objectEntryResourceImplSupplier;
 		_resourceActionLocalService = resourceActionLocalService;
 		_resourcePermissionLocalService = resourcePermissionLocalService;
@@ -182,6 +188,17 @@ public class ObjectEntryResourceFactoryImpl
 		}
 	}
 
+	private ObjectDefinition _fetchObjectDefinition(long companyId) {
+		Long objectDefinitionId = _objectDefinitionIds.get(companyId);
+
+		if (objectDefinitionId == null) {
+			return null;
+		}
+
+		return _objectDefinitionLocalService.fetchObjectDefinition(
+			objectDefinitionId);
+	}
+
 	private Object _invoke(
 			Method method, Object[] arguments, boolean checkPermissions,
 			HttpServletRequest httpServletRequest,
@@ -210,8 +227,11 @@ public class ObjectEntryResourceFactoryImpl
 
 		objectEntryResourceImpl.setContextAcceptLanguage(
 			new AcceptLanguageImpl(httpServletRequest, preferredLocale, user));
-		objectEntryResourceImpl.setContextCompany(
-			_companyLocalService.getCompany(user.getCompanyId()));
+
+		Company company = _companyLocalService.getCompany(user.getCompanyId());
+
+		objectEntryResourceImpl.setContextCompany(company);
+
 		objectEntryResourceImpl.setContextHttpServletRequest(
 			httpServletRequest);
 		objectEntryResourceImpl.setContextHttpServletResponse(
@@ -220,7 +240,8 @@ public class ObjectEntryResourceFactoryImpl
 		objectEntryResourceImpl.setExpressionConvert(_expressionConvert);
 		objectEntryResourceImpl.setFilterParserProvider(_filterParserProvider);
 		objectEntryResourceImpl.setGroupLocalService(_groupLocalService);
-		objectEntryResourceImpl.setObjectDefinition(_objectDefinition);
+		objectEntryResourceImpl.setObjectDefinition(
+			_fetchObjectDefinition(company.getCompanyId()));
 		objectEntryResourceImpl.setResourceActionLocalService(
 			_resourceActionLocalService);
 		objectEntryResourceImpl.setResourcePermissionLocalService(
@@ -249,7 +270,8 @@ public class ObjectEntryResourceFactoryImpl
 	private final ExpressionConvert<Filter> _expressionConvert;
 	private final FilterParserProvider _filterParserProvider;
 	private final GroupLocalService _groupLocalService;
-	private final ObjectDefinition _objectDefinition;
+	private final Map<Long, Long> _objectDefinitionIds;
+	private final ObjectDefinitionLocalService _objectDefinitionLocalService;
 	private final Supplier<ObjectEntryResourceImpl>
 		_objectEntryResourceImplSupplier;
 	private final ResourceActionLocalService _resourceActionLocalService;

@@ -1,0 +1,297 @@
+/**
+ * SPDX-FileCopyrightText: (c) 2026 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
+ */
+
+package com.liferay.headless.pim.internal.resource.v1_0;
+
+import com.liferay.headless.pim.dto.v1_0.LinkReference;
+import com.liferay.headless.pim.dto.v1_0.Status;
+import com.liferay.headless.pim.resource.v1_0.LinkReferenceResource;
+import com.liferay.object.model.ObjectDefinition;
+import com.liferay.object.model.ObjectEntry;
+import com.liferay.object.service.ObjectDefinitionLocalService;
+import com.liferay.object.service.ObjectEntryLocalService;
+import com.liferay.object.service.ObjectEntryService;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.exception.NoSuchGroupException;
+import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.security.permission.ActionKeys;
+import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
+import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
+import com.liferay.portal.kernel.util.HashMapBuilder;
+import com.liferay.portal.kernel.util.ListUtil;
+import com.liferay.portal.kernel.util.MapUtil;
+import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.URLCodec;
+import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.kernel.workflow.WorkflowConstants;
+import com.liferay.portal.vulcan.pagination.Page;
+import com.liferay.portal.vulcan.pagination.Pagination;
+import com.liferay.portal.vulcan.util.GroupUtil;
+import com.liferay.site.pim.site.initializer.engine.PIMLinkEngine;
+import com.liferay.site.pim.site.initializer.link.PIMLinkRelatedEntry;
+import com.liferay.site.pim.site.initializer.link.PIMLinkType;
+import com.liferay.site.pim.site.initializer.link.PIMLinkTypeRegistry;
+
+import jakarta.ws.rs.core.MultivaluedMap;
+
+import java.io.Serializable;
+
+import java.util.List;
+import java.util.Map;
+
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.component.annotations.ServiceScope;
+
+/**
+ * @author Stefano Motta
+ */
+@Component(
+	properties = "OSGI-INF/liferay/rest/v1_0/link-reference.properties",
+	scope = ServiceScope.PROTOTYPE, service = LinkReferenceResource.class
+)
+public class LinkReferenceResourceImpl extends BaseLinkReferenceResourceImpl {
+
+	@Override
+	public Page<LinkReference> getScopeScopeKeyLinksPage(
+			String scopeKey, String className, String externalReferenceCode,
+			String search, Pagination pagination)
+		throws Exception {
+
+		List<PIMLinkRelatedEntry> pimLinkRelatedEntries =
+			_pimLinkEngine.getPIMLinkRelatedEntries(
+				_getFilterString(),
+				_getObjectEntry(
+					className, externalReferenceCode, _getGroupId(scopeKey)));
+
+		if (Validator.isNotNull(search)) {
+			pimLinkRelatedEntries = transform(
+				pimLinkRelatedEntries,
+				pimLinkRelatedEntry -> {
+					Map<String, Serializable> values =
+						_objectEntryLocalService.getValues(
+							pimLinkRelatedEntry.getObjectEntry());
+
+					String sku = StringUtil.toLowerCase(
+						MapUtil.getString(values, "sku"));
+					String title = StringUtil.toLowerCase(
+						MapUtil.getString(values, "title"));
+
+					if (sku.contains(StringUtil.toLowerCase(search)) ||
+						title.contains(StringUtil.toLowerCase(search))) {
+
+						return pimLinkRelatedEntry;
+					}
+
+					return null;
+				});
+		}
+
+		return Page.of(
+			transform(
+				ListUtil.subList(
+					pimLinkRelatedEntries, pagination.getStartPosition(),
+					pagination.getEndPosition()),
+				this::_toLinkReference),
+			pagination, pimLinkRelatedEntries.size());
+	}
+
+	private Map<String, Map<String, String>> _getActions(
+		PIMLinkRelatedEntry pimLinkRelatedEntry) {
+
+		ObjectEntry objectEntry = pimLinkRelatedEntry.getObjectEntry();
+
+		String path = StringBundler.concat(
+			"/o/headless-pim/v1.0/scopes/", objectEntry.getGroupId(), "/links");
+		String queryString = StringBundler.concat(
+			"?className=", URLCodec.encodeURL(objectEntry.getModelClassName()),
+			"&externalReferenceCode=",
+			URLCodec.encodeURL(objectEntry.getExternalReferenceCode()));
+
+		String type = URLCodec.encodeURL(pimLinkRelatedEntry.getType());
+
+		return HashMapBuilder.<String, Map<String, String>>put(
+			"delete",
+			() -> {
+				if (!_hasPermission(objectEntry, ActionKeys.UPDATE)) {
+					return null;
+				}
+
+				return HashMapBuilder.put(
+					"href",
+					StringBundler.concat(path, queryString, "&type=", type)
+				).put(
+					"method", "DELETE"
+				).build();
+			}
+		).put(
+			"get",
+			() -> {
+				if (!_hasPermission(objectEntry, ActionKeys.VIEW)) {
+					return null;
+				}
+
+				return HashMapBuilder.put(
+					"href", path + queryString
+				).put(
+					"method", "GET"
+				).build();
+			}
+		).put(
+			"setPrimary",
+			() -> {
+				if (pimLinkRelatedEntry.isPrimary() ||
+					!_hasPermission(objectEntry, ActionKeys.UPDATE)) {
+
+					return null;
+				}
+
+				return HashMapBuilder.put(
+					"href",
+					StringBundler.concat(
+						path, "/primary", queryString, "&type=", type)
+				).put(
+					"method", "PUT"
+				).build();
+			}
+		).put(
+			"update",
+			() -> {
+				if (objectEntry.isInTrash() ||
+					!_hasPermission(objectEntry, ActionKeys.UPDATE)) {
+
+					return null;
+				}
+
+				return HashMapBuilder.put(
+					"href",
+					() -> {
+						ObjectDefinition objectDefinition =
+							objectEntry.getObjectDefinition();
+
+						return StringBundler.concat(
+							"/o", objectDefinition.getRESTContextPath(),
+							"/scopes/", objectEntry.getGroupId(),
+							"/by-external-reference-code/",
+							URLCodec.encodeURL(
+								objectEntry.getExternalReferenceCode()));
+					}
+				).put(
+					"method", "PATCH"
+				).build();
+			}
+		).build();
+	}
+
+	private String _getFilterString() {
+		if (contextUriInfo == null) {
+			return null;
+		}
+
+		MultivaluedMap<String, String> queryParameters =
+			contextUriInfo.getQueryParameters();
+
+		return queryParameters.getFirst("filter");
+	}
+
+	private long _getGroupId(String scopeKey) throws Exception {
+		Long groupId = GroupUtil.getGroupId(
+			contextCompany.getCompanyId(), scopeKey, groupLocalService);
+
+		if (groupId == null) {
+			throw new NoSuchGroupException();
+		}
+
+		return groupId;
+	}
+
+	private ObjectEntry _getObjectEntry(
+			String className, String externalReferenceCode, long groupId)
+		throws Exception {
+
+		ObjectDefinition objectDefinition =
+			_objectDefinitionLocalService.getObjectDefinitionByClassName(
+				contextCompany.getCompanyId(), className);
+
+		return _objectEntryLocalService.getObjectEntry(
+			externalReferenceCode, groupId,
+			objectDefinition.getObjectDefinitionId());
+	}
+
+	private String _getTypeLabel(String linkType) {
+		PIMLinkType pimLinkType = _pimLinkTypeRegistry.getPIMLinkType(linkType);
+
+		if (pimLinkType == null) {
+			return linkType;
+		}
+
+		return pimLinkType.getLabel(contextAcceptLanguage.getPreferredLocale());
+	}
+
+	private boolean _hasPermission(ObjectEntry objectEntry, String actionId)
+		throws Exception {
+
+		ModelResourcePermission<ObjectEntry> modelResourcePermission =
+			_objectEntryService.getModelResourcePermission(
+				objectEntry.getObjectDefinitionId());
+
+		return modelResourcePermission.contains(
+			PermissionThreadLocal.getPermissionChecker(),
+			objectEntry.getObjectEntryId(), actionId);
+	}
+
+	private LinkReference _toLinkReference(
+			PIMLinkRelatedEntry pimLinkRelatedEntry)
+		throws Exception {
+
+		ObjectEntry objectEntry = pimLinkRelatedEntry.getObjectEntry();
+
+		Map<String, Serializable> values = _objectEntryLocalService.getValues(
+			objectEntry);
+
+		return new LinkReference() {
+			{
+				setActions(() -> _getActions(pimLinkRelatedEntry));
+				setClassName(objectEntry::getModelClassName);
+				setExternalReferenceCode(objectEntry::getExternalReferenceCode);
+				setId(objectEntry::getObjectEntryId);
+				setPrimary(pimLinkRelatedEntry::isPrimary);
+				setSku(() -> MapUtil.getString(values, "sku"));
+				setStatus(
+					() -> new Status() {
+						{
+							setCode(objectEntry::getStatus);
+							setLabel(
+								() -> WorkflowConstants.getStatusLabel(
+									objectEntry.getStatus()));
+							setLabel_i18n(
+								() -> LanguageUtil.get(
+									contextAcceptLanguage.getPreferredLocale(),
+									WorkflowConstants.getStatusLabel(
+										objectEntry.getStatus())));
+						}
+					});
+				setTitle(() -> MapUtil.getString(values, "title"));
+				setType(() -> _getTypeLabel(pimLinkRelatedEntry.getType()));
+			}
+		};
+	}
+
+	@Reference
+	private ObjectDefinitionLocalService _objectDefinitionLocalService;
+
+	@Reference
+	private ObjectEntryLocalService _objectEntryLocalService;
+
+	@Reference
+	private ObjectEntryService _objectEntryService;
+
+	@Reference
+	private PIMLinkEngine _pimLinkEngine;
+
+	@Reference
+	private PIMLinkTypeRegistry _pimLinkTypeRegistry;
+
+}

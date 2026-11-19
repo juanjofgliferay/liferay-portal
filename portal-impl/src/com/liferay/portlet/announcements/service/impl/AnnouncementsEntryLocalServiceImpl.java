@@ -16,7 +16,7 @@ import com.liferay.announcements.kernel.service.AnnouncementsFlagLocalService;
 import com.liferay.announcements.kernel.service.persistence.AnnouncementsDeliveryPersistence;
 import com.liferay.announcements.kernel.service.persistence.AnnouncementsFlagPersistence;
 import com.liferay.mail.kernel.model.MailMessage;
-import com.liferay.mail.kernel.service.MailService;
+import com.liferay.mail.kernel.service.MailServiceUtil;
 import com.liferay.mail.kernel.template.MailTemplate;
 import com.liferay.mail.kernel.template.MailTemplateContext;
 import com.liferay.mail.kernel.template.MailTemplateContextBuilder;
@@ -40,7 +40,6 @@ import com.liferay.portal.kernel.model.SystemEventConstants;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.model.UserGroup;
 import com.liferay.portal.kernel.model.role.RoleConstants;
-import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.ResourceLocalService;
 import com.liferay.portal.kernel.service.UserLocalService;
@@ -57,14 +56,14 @@ import com.liferay.portal.kernel.util.LinkedHashMapBuilder;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
-import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.PrefsPropsUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
-import com.liferay.portal.kernel.util.Time;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
-import com.liferay.portal.util.PropsValues;
 import com.liferay.portlet.announcements.service.base.AnnouncementsEntryLocalServiceBaseImpl;
+
+import jakarta.mail.internet.InternetAddress;
 
 import java.io.IOException;
 
@@ -75,8 +74,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-
-import javax.mail.internet.InternetAddress;
 
 /**
  * @author Brian Wing Shun Chan
@@ -131,16 +128,6 @@ public class AnnouncementsEntryLocalServiceImpl
 	}
 
 	@Override
-	public void checkEntries() throws PortalException {
-		Date date = new Date();
-
-		Date previousCheckDate = new Date(
-			date.getTime() - _ANNOUNCEMENTS_ENTRY_CHECK_INTERVAL);
-
-		checkEntries(previousCheckDate, date);
-	}
-
-	@Override
 	public void checkEntries(Date startDate, Date endDate)
 		throws PortalException {
 
@@ -171,19 +158,6 @@ public class AnnouncementsEntryLocalServiceImpl
 
 		List<AnnouncementsEntry> entries =
 			announcementsEntryPersistence.findByC_C(classNameId, classPK);
-
-		for (AnnouncementsEntry entry : entries) {
-			deleteEntry(entry);
-		}
-	}
-
-	@Override
-	public void deleteEntries(long companyId, long classNameId, long classPK)
-		throws PortalException {
-
-		List<AnnouncementsEntry> entries =
-			announcementsEntryPersistence.findByC_C_C(
-				companyId, classNameId, classPK);
 
 		for (AnnouncementsEntry entry : entries) {
 			deleteEntry(entry);
@@ -236,7 +210,7 @@ public class AnnouncementsEntryLocalServiceImpl
 		int expirationDateMinute, boolean alert, int flagValue, int start,
 		int end) {
 
-		User user = _userLocalService.fetchUser(userId);
+		User user = _userPersistence.fetchByPrimaryKey(userId);
 
 		if (user == null) {
 			return Collections.emptyList();
@@ -255,31 +229,19 @@ public class AnnouncementsEntryLocalServiceImpl
 		long companyId, long classNameId, long classPK, boolean alert,
 		int start, int end) {
 
-		return announcementsEntryPersistence.findByC_C_C_A(
-			companyId, classNameId, classPK, alert, start, end);
+		return getEntries(
+			companyId, classNameId, classPK, alert, start, end, null);
 	}
 
 	@Override
 	public List<AnnouncementsEntry> getEntries(
-		long userId, long classNameId, long[] classPKs, int displayDateMonth,
-		int displayDateDay, int displayDateYear, int displayDateHour,
-		int displayDateMinute, int expirationDateMonth, int expirationDateDay,
-		int expirationDateYear, int expirationDateHour,
-		int expirationDateMinute, boolean alert, int flagValue, int start,
-		int end) {
+		long companyId, long classNameId, long classPK, boolean alert,
+		int start, int end,
+		OrderByComparator<AnnouncementsEntry> orderByComparator) {
 
-		User user = _userLocalService.fetchUser(userId);
-
-		if (user == null) {
-			return Collections.emptyList();
-		}
-
-		return announcementsEntryFinder.findByScope(
-			user.getCompanyId(), userId, classNameId, classPKs,
-			displayDateMonth, displayDateDay, displayDateYear, displayDateHour,
-			displayDateMinute, expirationDateMonth, expirationDateDay,
-			expirationDateYear, expirationDateHour, expirationDateMinute, alert,
-			flagValue, start, end);
+		return announcementsEntryPersistence.findByC_C_C_A(
+			companyId, classNameId, classPK, alert, start, end,
+			orderByComparator);
 	}
 
 	@Override
@@ -299,7 +261,7 @@ public class AnnouncementsEntryLocalServiceImpl
 		int expirationDateYear, int expirationDateHour,
 		int expirationDateMinute, boolean alert, int flagValue) {
 
-		User user = _userLocalService.fetchUser(userId);
+		User user = _userPersistence.fetchByPrimaryKey(userId);
 
 		if (user == null) {
 			return 0;
@@ -321,52 +283,8 @@ public class AnnouncementsEntryLocalServiceImpl
 	}
 
 	@Override
-	public int getEntriesCount(
-		long userId, long classNameId, long[] classPKs, boolean alert,
-		int flagValue) {
-
-		return getEntriesCount(
-			userId, classNameId, classPKs, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, alert,
-			flagValue);
-	}
-
-	@Override
-	public int getEntriesCount(
-		long userId, long classNameId, long[] classPKs, int displayDateMonth,
-		int displayDateDay, int displayDateYear, int displayDateHour,
-		int displayDateMinute, int expirationDateMonth, int expirationDateDay,
-		int expirationDateYear, int expirationDateHour,
-		int expirationDateMinute, boolean alert, int flagValue) {
-
-		User user = _userLocalService.fetchUser(userId);
-
-		if (user == null) {
-			return 0;
-		}
-
-		return announcementsEntryFinder.countByScope(
-			user.getCompanyId(), userId, classNameId, classPKs,
-			displayDateMonth, displayDateDay, displayDateYear, displayDateHour,
-			displayDateMinute, expirationDateMonth, expirationDateDay,
-			expirationDateYear, expirationDateHour, expirationDateMinute, alert,
-			flagValue);
-	}
-
-	@Override
 	public AnnouncementsEntry getEntry(long entryId) throws PortalException {
 		return announcementsEntryPersistence.findByPrimaryKey(entryId);
-	}
-
-	@Override
-	public List<AnnouncementsEntry> getUserEntries(
-		long userId, int start, int end) {
-
-		return announcementsEntryPersistence.findByUserId(userId, start, end);
-	}
-
-	@Override
-	public int getUserEntriesCount(long userId) {
-		return announcementsEntryPersistence.countByUserId(userId);
 	}
 
 	@Override
@@ -542,12 +460,13 @@ public class AnnouncementsEntryLocalServiceImpl
 					user.getEmailAddress(), user.getFullName());
 			}
 
-			if (announcementsDelivery.isSms()) {
-				Contact contact = user.getContact();
-
-				notifyUsersFullNames.put(
-					contact.getSmsSn(), user.getFullName());
+			if (!announcementsDelivery.isSms()) {
+				continue;
 			}
+
+			Contact contact = user.getContact();
+
+			notifyUsersFullNames.put(contact.getSmsSn(), user.getFullName());
 		}
 
 		if (notifyUsersFullNames.isEmpty()) {
@@ -590,7 +509,8 @@ public class AnnouncementsEntryLocalServiceImpl
 				ioException);
 		}
 
-		Company company = _companyLocalService.getCompany(entry.getCompanyId());
+		Company company = _companyPersistence.findByPrimaryKey(
+			entry.getCompanyId());
 
 		_sendNotificationEmail(
 			fromAddress, fromName, toAddress, toName, subject, body, company,
@@ -638,9 +558,6 @@ public class AnnouncementsEntryLocalServiceImpl
 				"Expiration date " + expirationDate + " is in the past");
 		}
 	}
-
-	@BeanReference(type = MailService.class)
-	protected MailService mailService;
 
 	private void _sendNotificationEmail(
 			String fromAddress, String fromName, String toAddress,
@@ -715,19 +632,16 @@ public class AnnouncementsEntryLocalServiceImpl
 				bodyTemplate.renderAsString(locale, mailTemplateContext), true);
 
 			mailMessage.setMessageId(
-				PortalUtil.getMailId(
+				MailServiceUtil.getMailId(
 					company.getMx(), "announcements_entry",
 					entry.getEntryId()));
 
-			mailService.sendEmail(mailMessage);
+			MailServiceUtil.sendEmail(mailMessage);
 		}
 		catch (IOException ioException) {
 			throw new SystemException(ioException);
 		}
 	}
-
-	private static final long _ANNOUNCEMENTS_ENTRY_CHECK_INTERVAL =
-		PropsValues.ANNOUNCEMENTS_ENTRY_CHECK_INTERVAL * Time.MINUTE;
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		AnnouncementsEntryLocalServiceImpl.class);
@@ -744,9 +658,6 @@ public class AnnouncementsEntryLocalServiceImpl
 
 	@BeanReference(type = AnnouncementsFlagPersistence.class)
 	private AnnouncementsFlagPersistence _announcementsFlagPersistence;
-
-	@BeanReference(type = CompanyLocalService.class)
-	private CompanyLocalService _companyLocalService;
 
 	@BeanReference(type = CompanyPersistence.class)
 	private CompanyPersistence _companyPersistence;

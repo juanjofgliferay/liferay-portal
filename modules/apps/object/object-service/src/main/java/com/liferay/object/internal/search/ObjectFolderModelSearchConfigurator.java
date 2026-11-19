@@ -6,10 +6,12 @@
 package com.liferay.object.internal.search;
 
 import com.liferay.object.model.ObjectFolder;
+import com.liferay.object.service.ObjectFolderLocalService;
 import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.search.spi.model.index.contributor.ModelIndexerWriterContributor;
 import com.liferay.portal.search.spi.model.registrar.ModelSearchConfigurator;
 
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
@@ -40,10 +42,16 @@ public class ObjectFolderModelSearchConfigurator
 		return _modelIndexWriterContributor;
 	}
 
-	@Reference(
-		target = "(indexer.class.name=com.liferay.object.model.ObjectFolder)"
-	)
+	@Activate
+	protected void activate() {
+		_modelIndexWriterContributor = new ModelIndexerWriterContributor<>(
+			_objectFolderLocalService::getIndexableActionableDynamicQuery);
+	}
+
 	private ModelIndexerWriterContributor<ObjectFolder>
 		_modelIndexWriterContributor;
+
+	@Reference
+	private ObjectFolderLocalService _objectFolderLocalService;
 
 }

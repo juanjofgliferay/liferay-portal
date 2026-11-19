@@ -7,26 +7,36 @@ package com.liferay.item.selector.taglib.internal.display.context;
 
 import com.liferay.item.selector.ItemSelector;
 import com.liferay.item.selector.ItemSelectorCriterion;
+import com.liferay.item.selector.criteria.info.item.criterion.InfoItemItemSelectorCriterion;
 import com.liferay.item.selector.provider.GroupItemSelectorProvider;
 import com.liferay.item.selector.taglib.internal.servlet.item.selector.ItemSelectorUtil;
 import com.liferay.item.selector.taglib.internal.util.EntryURLUtil;
 import com.liferay.item.selector.taglib.internal.util.GroupItemSelectorProviderRegistryUtil;
+import com.liferay.journal.model.JournalArticle;
 import com.liferay.petra.string.StringPool;
+import com.liferay.petra.string.StringUtil;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
+import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.RequestBackedPortletURLFactoryUtil;
 import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
+import com.liferay.portal.kernel.servlet.taglib.ui.BreadcrumbEntry;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.site.navigation.taglib.servlet.taglib.util.BreadcrumbEntryListBuilder;
 import com.liferay.site.search.GroupSearch;
 
-import java.util.List;
-import java.util.Set;
+import jakarta.portlet.PortletURL;
 
-import javax.portlet.PortletURL;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 
 /**
  * @author Cristina González
@@ -39,10 +49,33 @@ public class GroupSelectorDisplayContext {
 		_liferayPortletRequest = liferayPortletRequest;
 	}
 
-	public String getGroupItemSelectorIcon() {
+	public List<BreadcrumbEntry> getBreadcrumbEntries() {
+		String groupItemSelectorLabel = getGroupItemSelectorLabel(
+			getGroupType());
+
+		return BreadcrumbEntryListBuilder.add(
+			breadcrumbEntry -> {
+				breadcrumbEntry.setTitle(
+					LanguageUtil.get(
+						_liferayPortletRequest.getLocale(),
+						"sites-and-libraries"));
+				breadcrumbEntry.setURL(
+					String.valueOf(getGroupItemSelectorURL(StringPool.BLANK)));
+			}
+		).add(
+			() -> Validator.isNotNull(groupItemSelectorLabel),
+			breadcrumbEntry -> {
+				breadcrumbEntry.setTitle(groupItemSelectorLabel);
+				breadcrumbEntry.setURL(
+					String.valueOf(getGroupItemSelectorURL(getGroupType())));
+			}
+		).build();
+	}
+
+	public String getGroupItemSelectorIcon(String groupType) {
 		GroupItemSelectorProvider groupItemSelectorProvider =
 			GroupItemSelectorProviderRegistryUtil.getGroupItemSelectorProvider(
-				_getGroupType());
+				groupType);
 
 		if (groupItemSelectorProvider == null) {
 			return "folder";
@@ -90,14 +123,58 @@ public class GroupSelectorDisplayContext {
 		).buildPortletURL();
 	}
 
+	public String getGroupType() {
+		if (_groupType != null) {
+			return _groupType;
+		}
+
+		_groupType = ParamUtil.getString(_liferayPortletRequest, "groupType");
+
+		return _groupType;
+	}
+
 	public Set<String> getGroupTypes() {
-		return GroupItemSelectorProviderRegistryUtil.
-			getGroupItemSelectorProviderTypes();
+		if (_groupTypes != null) {
+			return _groupTypes;
+		}
+
+		_groupTypes =
+			GroupItemSelectorProviderRegistryUtil.
+				getGroupItemSelectorProviderTypes();
+
+		for (String criterion :
+				ParamUtil.getStringValues(_liferayPortletRequest, "criteria")) {
+
+			List<String> parts = StringUtil.split(criterion);
+
+			if (parts.contains("file") || parts.contains("folder") ||
+				parts.contains("image") ||
+				(parts.contains("infoitem") &&
+				 _isLegacyAssetItemSelectorCriterion())) {
+
+				_groupTypes.remove("space-depot");
+
+				break;
+			}
+		}
+
+		return _groupTypes;
+	}
+
+	public SearchContainer<String> getGroupTypesSearchContainer() {
+		SearchContainer<String> searchContainer = new SearchContainer<>(
+			_liferayPortletRequest, getGroupItemSelectorURL(StringPool.BLANK),
+			null, null);
+
+		searchContainer.setResultsAndTotal(
+			ListUtil.fromCollection(getGroupTypes()));
+
+		return searchContainer;
 	}
 
 	public SearchContainer<Group> getSearchContainer() {
 		SearchContainer<Group> searchContainer = new GroupSearch(
-			_liferayPortletRequest, _getIteratorURL());
+			_liferayPortletRequest, getGroupItemSelectorURL(getGroupType()));
 
 		searchContainer.setEmptyResultsMessage(_getEmptyResultsMessage());
 		searchContainer.setResultsAndTotal(
@@ -117,14 +194,35 @@ public class GroupSelectorDisplayContext {
 		return PortletURLBuilder.create(
 			portletURL
 		).setParameter(
-			"groupType", _getGroupType()
+			"groupType", getGroupType()
 		).setParameter(
 			"scopeGroupType", _isScopeGroupType()
 		).buildString();
 	}
 
 	public boolean isGroupTypeActive(String groupType) {
-		if (groupType.equals(_getGroupType())) {
+		return groupType.equals(getGroupType());
+	}
+
+	public boolean isGroupTypeNavigationEnabled() {
+		if (_groupTypeNavigationEnabled != null) {
+			return _groupTypeNavigationEnabled;
+		}
+
+		ThemeDisplay themeDisplay =
+			(ThemeDisplay)_liferayPortletRequest.getAttribute(
+				WebKeys.THEME_DISPLAY);
+
+		_groupTypeNavigationEnabled = FeatureFlagManagerUtil.isEnabled(
+			themeDisplay.getCompanyId(), "LPD-81022");
+
+		return _groupTypeNavigationEnabled;
+	}
+
+	public boolean isShowGroupTypes() {
+		if (isGroupTypeNavigationEnabled() &&
+			Validator.isNull(getGroupType())) {
+
 			return true;
 		}
 
@@ -141,7 +239,7 @@ public class GroupSelectorDisplayContext {
 	private String _getEmptyResultsMessage() {
 		GroupItemSelectorProvider groupItemSelectorProvider =
 			GroupItemSelectorProviderRegistryUtil.getGroupItemSelectorProvider(
-				_getGroupType());
+				getGroupType());
 
 		if (groupItemSelectorProvider == null) {
 			return GroupSearch.EMPTY_RESULTS_MESSAGE;
@@ -162,46 +260,33 @@ public class GroupSelectorDisplayContext {
 		return emptyResultsMessage;
 	}
 
-	private String _getGroupType() {
-		if (_groupType != null) {
-			return _groupType;
-		}
-
-		_groupType = ParamUtil.getString(_liferayPortletRequest, "groupType");
-
-		return _groupType;
-	}
-
 	private ItemSelector _getItemSelector() {
 		return ItemSelectorUtil.getItemSelector();
 	}
 
-	private PortletURL _getItemSelectorURL() {
+	private List<ItemSelectorCriterion> _getItemSelectorCriteria() {
+		if (_itemSelectorCriteria != null) {
+			return _itemSelectorCriteria;
+		}
+
 		ItemSelector itemSelector = _getItemSelector();
 
+		_itemSelectorCriteria = itemSelector.getItemSelectorCriteria(
+			_liferayPortletRequest.getParameterMap());
+
+		return _itemSelectorCriteria;
+	}
+
+	private PortletURL _getItemSelectorURL() {
+		ItemSelector itemSelector = _getItemSelector();
 		List<ItemSelectorCriterion> itemSelectorCriteria =
-			itemSelector.getItemSelectorCriteria(
-				_liferayPortletRequest.getParameterMap());
+			_getItemSelectorCriteria();
 
 		return itemSelector.getItemSelectorURL(
 			RequestBackedPortletURLFactoryUtil.create(_liferayPortletRequest),
 			ParamUtil.getString(
 				_liferayPortletRequest, "itemSelectedEventName"),
 			itemSelectorCriteria.toArray(new ItemSelectorCriterion[0]));
-	}
-
-	private PortletURL _getIteratorURL() {
-		return PortletURLBuilder.create(
-			_getItemSelectorURL()
-		).setParameter(
-			"groupType", _getGroupType()
-		).setParameter(
-			"scopeGroupType", _isScopeGroupType()
-		).setParameter(
-			"selectedTab", _getSelectedTab()
-		).setParameter(
-			"showGroupSelector", true
-		).buildPortletURL();
 	}
 
 	private String _getSelectedTab() {
@@ -212,7 +297,47 @@ public class GroupSelectorDisplayContext {
 		_selectedTab = ParamUtil.getString(
 			_liferayPortletRequest, "selectedTab");
 
+		if (Validator.isNull(_selectedTab)) {
+			_selectedTab = GetterUtil.getString(
+				_liferayPortletRequest.getAttribute(
+					"liferay-item-selector:group-selector:selectedTab"));
+		}
+
 		return _selectedTab;
+	}
+
+	private boolean _isLegacyAssetItemSelectorCriterion() {
+		for (ItemSelectorCriterion itemSelectorCriterion :
+				_getItemSelectorCriteria()) {
+
+			if (!(itemSelectorCriterion instanceof
+					InfoItemItemSelectorCriterion)) {
+
+				continue;
+			}
+
+			InfoItemItemSelectorCriterion infoItemItemSelectorCriterion =
+				(InfoItemItemSelectorCriterion)itemSelectorCriterion;
+
+			if (Objects.equals(
+					infoItemItemSelectorCriterion.getItemType(),
+					JournalArticle.class.getName())) {
+
+				return true;
+			}
+		}
+
+		String selectedTab = _getSelectedTab();
+
+		if (Validator.isNotNull(selectedTab) &&
+			!selectedTab.startsWith(
+				_CLASS_NAME_OBJECT_ENTRY_ITEM_SELECTOR_VIEW +
+					StringPool.UNDERLINE)) {
+
+			return true;
+		}
+
+		return false;
 	}
 
 	private boolean _isScopeGroupType() {
@@ -226,7 +351,14 @@ public class GroupSelectorDisplayContext {
 		return _scopeGroupType;
 	}
 
+	private static final String _CLASS_NAME_OBJECT_ENTRY_ITEM_SELECTOR_VIEW =
+		"com.liferay.object.web.internal.item.selector." +
+			"ObjectEntryItemSelectorView";
+
 	private String _groupType;
+	private Boolean _groupTypeNavigationEnabled;
+	private Set<String> _groupTypes;
+	private List<ItemSelectorCriterion> _itemSelectorCriteria;
 	private final LiferayPortletRequest _liferayPortletRequest;
 	private Boolean _scopeGroupType;
 	private String _selectedTab;

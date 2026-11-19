@@ -10,15 +10,21 @@ import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.search.Document;
+import com.liferay.portal.kernel.search.Hits;
+import com.liferay.portal.kernel.search.Indexer;
+import com.liferay.portal.kernel.search.IndexerRegistryUtil;
 import com.liferay.portal.kernel.settings.LocalizedValuesMap;
+import com.liferay.portal.kernel.test.TestInfo;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.rule.SynchronousDestinationTestRule;
+import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.LocaleThreadLocal;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.search.test.util.FieldValuesAssert;
-import com.liferay.portal.search.test.util.IndexerFixture;
+import com.liferay.portal.search.test.util.HitsAssert;
+import com.liferay.portal.search.test.util.SearchContextTestUtil;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
 import com.liferay.users.admin.test.util.search.UserSearchFixture;
@@ -55,8 +61,6 @@ public class LayoutMultiLanguageSearchTest {
 
 		setUpLayoutFixture();
 
-		setUpLayoutIndexerFixture();
-
 		defaultLocale = LocaleThreadLocal.getDefaultLocale();
 	}
 
@@ -81,8 +85,11 @@ public class LayoutMultiLanguageSearchTest {
 	}
 
 	@Test
+	@TestInfo("LPD-94755")
 	public void testJapaneseTitle() throws Exception {
 		_testLocaleKeywords(LocaleUtil.JAPAN, _JAPANESE_KEYWORD, _TITLE);
+
+		_testJapaneseTitleWhitespaceSeparatedWord();
 	}
 
 	@Test
@@ -91,19 +98,32 @@ public class LayoutMultiLanguageSearchTest {
 
 		_addLayoutMultiLanguage();
 
-		Document document = layoutIndexerFixture.searchOnlyOne(
-			_ENGLISH_KEYWORD, LocaleUtil.US);
+		Indexer<Layout> indexer = IndexerRegistryUtil.getIndexer(Layout.class);
+
+		Hits hits = indexer.search(
+			SearchContextTestUtil.getSearchContext(
+				TestPropsValues.getUserId(), new long[] {_group.getGroupId()},
+				_ENGLISH_KEYWORD, LocaleUtil.US));
+
+		Document document = HitsAssert.assertOnlyOne(_ENGLISH_KEYWORD, hits);
 
 		Assert.assertEquals(
 			_ENGLISH_KEYWORD, document.get("localized_title_en_US"));
 	}
 
 	protected void assertFieldValues(
-		String prefix, Locale locale, Map<String, String> titleStrings,
-		String searchTerm) {
+			String prefix, Locale locale, Map<String, String> titleStrings,
+			String searchTerm)
+		throws Exception {
 
-		Document document = layoutIndexerFixture.searchOnlyOne(
-			searchTerm, locale);
+		Indexer<Layout> indexer = IndexerRegistryUtil.getIndexer(Layout.class);
+
+		Hits hits = indexer.search(
+			SearchContextTestUtil.getSearchContext(
+				TestPropsValues.getUserId(), new long[] {_group.getGroupId()},
+				searchTerm, locale));
+
+		Document document = HitsAssert.assertOnlyOne(searchTerm, hits);
 
 		FieldValuesAssert.assertFieldValues(
 			titleStrings, prefix, document, searchTerm);
@@ -121,10 +141,6 @@ public class LayoutMultiLanguageSearchTest {
 		_layouts = layoutFixture.getLayouts();
 	}
 
-	protected void setUpLayoutIndexerFixture() {
-		layoutIndexerFixture = new IndexerFixture<>(Layout.class);
-	}
-
 	protected void setUpUserSearchFixture() throws Exception {
 		userSearchFixture = new UserSearchFixture();
 
@@ -139,7 +155,6 @@ public class LayoutMultiLanguageSearchTest {
 
 	protected Locale defaultLocale;
 	protected LayoutFixture layoutFixture;
-	protected IndexerFixture<Layout> layoutIndexerFixture;
 	protected UserSearchFixture userSearchFixture;
 
 	private void _addLayoutMultiLanguage() throws Exception {
@@ -173,6 +188,24 @@ public class LayoutMultiLanguageSearchTest {
 		).put(
 			prefix + "_ja_JP", _JAPANESE_KEYWORD
 		).build();
+	}
+
+	private void _testJapaneseTitleWhitespaceSeparatedWord() throws Exception {
+		setTestLocale(LocaleUtil.JAPAN);
+
+		layoutFixture.createLayout("公式");
+		layoutFixture.createLayout("公　式");
+
+		Indexer<Layout> indexer = IndexerRegistryUtil.getIndexer(Layout.class);
+
+		Hits hits = indexer.search(
+			SearchContextTestUtil.getSearchContext(
+				TestPropsValues.getUserId(), new long[] {_group.getGroupId()},
+				"公式", LocaleUtil.JAPAN));
+
+		Document document = HitsAssert.assertOnlyOne("公式", hits);
+
+		Assert.assertEquals("公式", document.get("title_ja_JP"));
 	}
 
 	private void _testLocaleKeywords(

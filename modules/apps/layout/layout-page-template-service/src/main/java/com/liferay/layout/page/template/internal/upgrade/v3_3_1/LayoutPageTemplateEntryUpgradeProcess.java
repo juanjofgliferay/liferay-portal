@@ -5,7 +5,7 @@
 
 package com.liferay.layout.page.template.internal.upgrade.v3_3_1;
 
-import com.liferay.layout.page.template.internal.validator.LayoutPageTemplateEntryValidator;
+import com.liferay.layout.validator.LayoutValidator;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
@@ -51,7 +51,7 @@ public class LayoutPageTemplateEntryUpgradeProcess extends UpgradeProcess {
 		for (int i = 0; i < value.length(); i++) {
 			char c = value.charAt(i);
 
-			if (LayoutPageTemplateEntryValidator.isBlacklistedChar(c)) {
+			if (LayoutValidator.isBlacklistedChar(c)) {
 				sb.append(CharPool.DASH);
 			}
 			else {
@@ -95,6 +95,7 @@ public class LayoutPageTemplateEntryUpgradeProcess extends UpgradeProcess {
 			"layoutPageTemplateEntryKey");
 
 		try (Statement s = connection.createStatement();
+
 			ResultSet resultSet = s.executeQuery(
 				"select distinct layoutPageTemplateEntryKey, name from " +
 					"LayoutPageTemplateEntry")) {
@@ -142,10 +143,12 @@ public class LayoutPageTemplateEntryUpgradeProcess extends UpgradeProcess {
 		_loadDistinctKeysAndNames();
 
 		try (Statement s = connection.createStatement();
+
 			ResultSet resultSet = s.executeQuery(
 				"select layoutPageTemplateEntryId, " +
 					"layoutPageTemplateEntryKey, layoutPrototypeId, name " +
 						"from LayoutPageTemplateEntry");
+
 			PreparedStatement preparedStatement =
 				AutoBatchPreparedStatementUtil.autoBatch(
 					connection,
@@ -156,7 +159,7 @@ public class LayoutPageTemplateEntryUpgradeProcess extends UpgradeProcess {
 			while (resultSet.next()) {
 				String name = resultSet.getString("name");
 
-				if (LayoutPageTemplateEntryValidator.isValidName(name)) {
+				if (!LayoutValidator.hasBlacklistedChar(name)) {
 					continue;
 				}
 

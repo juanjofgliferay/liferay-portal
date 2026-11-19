@@ -29,12 +29,23 @@ public abstract class BaseFailureMessageGenerator
 	implements FailureMessageGenerator {
 
 	@Override
+	public String getMessage(Build build) {
+		return getMessage(build.getConsoleText());
+	}
+
+	@Override
 	public Element getMessageElement(Build build) {
 		return getMessageElement(build.getConsoleText());
 	}
 
 	@Override
 	public Element getMessageElement(String consoleText) {
+		String errorMessage = getMessage(consoleText);
+
+		if (errorMessage != null) {
+			return Dom4JUtil.toCodeSnippetElement(errorMessage);
+		}
+
 		return null;
 	}
 
@@ -114,9 +125,26 @@ public abstract class BaseFailureMessageGenerator
 	protected String getConsoleTextSnippet(
 		String consoleText, boolean truncateTop, int start, int end) {
 
-		return "<pre><code>" +
-			_getConsoleTextSnippet(consoleText, truncateTop, start, end) +
-				"</code></pre>";
+		return _getConsoleTextSnippet(consoleText, truncateTop, start, end);
+	}
+
+	protected String getConsoleTextSnippetByEnd(
+		String consoleText, boolean truncateTop, int end) {
+
+		if (end == -1) {
+			end = consoleText.length();
+		}
+
+		int start = getSnippetStart(consoleText, end);
+
+		return getConsoleTextSnippet(consoleText, truncateTop, start, end);
+	}
+
+	protected String getConsoleTextSnippetByStart(
+		String consoleText, int start) {
+
+		return _getConsoleTextSnippet(
+			consoleText, false, start, consoleText.length() - 1);
 	}
 
 	protected Element getConsoleTextSnippetElement(
@@ -247,14 +275,18 @@ public abstract class BaseFailureMessageGenerator
 			if (truncateTop) {
 				start = end - CHARS_CONSOLE_TEXT_SNIPPET_SIZE_MAX;
 
-				start = consoleText.indexOf("\n", start);
+				int newlineStart = consoleText.indexOf("\n", start);
+
+				if ((newlineStart != -1) && (newlineStart < end)) {
+					start = newlineStart;
+				}
 			}
 			else {
 				end = start + CHARS_CONSOLE_TEXT_SNIPPET_SIZE_MAX;
 
 				int newlineEnd = consoleText.lastIndexOf("\n", end);
 
-				if (newlineEnd != -1) {
+				if (newlineEnd > start) {
 					end = newlineEnd;
 				}
 			}

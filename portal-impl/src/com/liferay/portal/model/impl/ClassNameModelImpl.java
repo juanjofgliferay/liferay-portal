@@ -79,6 +79,8 @@ public class ClassNameModelImpl
 
 	public static final String TABLE_SQL_DROP = "drop table ClassName_";
 
+	public static final String ENTITY_ALIAS = "className";
+
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY className.classNameId ASC";
 
@@ -123,7 +125,7 @@ public class ClassNameModelImpl
 	public static final long CLASSNAMEID_COLUMN_BITMASK = 2L;
 
 	public static final long LOCK_EXPIRATION_TIME = GetterUtil.getLong(
-		com.liferay.portal.util.PropsUtil.get(
+		com.liferay.portal.kernel.util.PropsUtil.get(
 			"lock.expiration.time.com.liferay.portal.kernel.model.ClassName"));
 
 	public ClassNameModelImpl() {
@@ -617,3 +619,4 @@ public class ClassNameModelImpl
 	private ClassName _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-2045395823

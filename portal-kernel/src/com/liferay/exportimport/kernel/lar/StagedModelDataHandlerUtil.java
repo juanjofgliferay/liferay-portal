@@ -5,12 +5,16 @@
 
 package com.liferay.exportimport.kernel.lar;
 
+import com.liferay.exportimport.kernel.exception.handler.ImportStagedModelExceptionHandler;
+import com.liferay.osgi.service.tracker.collections.list.ServiceTrackerList;
+import com.liferay.osgi.service.tracker.collections.list.ServiceTrackerListFactory;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Portlet;
 import com.liferay.portal.kernel.model.StagedModel;
+import com.liferay.portal.kernel.module.util.SystemBundleUtil;
 import com.liferay.portal.kernel.security.xml.SecureXMLFactoryProviderUtil;
 import com.liferay.portal.kernel.service.PortletLocalServiceUtil;
 import com.liferay.portal.kernel.spring.orm.LastSessionRecorderHelperUtil;
@@ -195,6 +199,18 @@ public class StagedModelDataHandlerUtil {
 			portletDataContext, stagedModel);
 	}
 
+	public static <T extends StagedModel> void handleException(
+		PortletDataContext portletDataContext,
+		PortletDataException portletDataException, T stagedModel) {
+
+		for (ImportStagedModelExceptionHandler
+				importStagedModelExceptionHandler : _serviceTrackerList) {
+
+			importStagedModelExceptionHandler.handle(
+				portletDataContext, portletDataException, stagedModel);
+		}
+	}
+
 	/**
 	 * Imports the staged model that is referenced by a portlet. To import a
 	 * staged model referenced by another staged model, use {@link
@@ -377,8 +393,16 @@ public class StagedModelDataHandlerUtil {
 			return;
 		}
 
-		stagedModelDataHandler.importStagedModel(
-			portletDataContext, stagedModel);
+		try {
+			stagedModelDataHandler.importStagedModel(
+				portletDataContext, stagedModel);
+		}
+		catch (PortletDataException portletDataException) {
+			handleException(
+				portletDataContext, portletDataException, stagedModel);
+
+			throw portletDataException;
+		}
 
 		LastSessionRecorderHelperUtil.syncLastSessionState();
 	}
@@ -478,30 +502,32 @@ public class StagedModelDataHandlerUtil {
 			while (iterator.hasNext()) {
 				String entry = iterator.next();
 
-				if (entry.endsWith(".xml") &&
-					_containsStagedModel(
+				if (!entry.endsWith(".xml") ||
+					!_containsStagedModel(
 						portletDataContext, entry, stagedModel)) {
 
-					try {
-						Document document = SAXReaderUtil.read(
-							portletDataContext.getZipEntryAsString(entry));
+					continue;
+				}
 
-						portletDataContext.setImportDataRootElement(
-							document.getRootElement());
+				try {
+					Document document = SAXReaderUtil.read(
+						portletDataContext.getZipEntryAsString(entry));
 
-						String path = ExportImportPathUtil.getModelPath(
-							stagedModel);
+					portletDataContext.setImportDataRootElement(
+						document.getRootElement());
 
-						portletDataContext.removePrimaryKey(path);
+					String path = ExportImportPathUtil.getModelPath(
+						stagedModel);
 
-						importStagedModel(portletDataContext, referenceElement);
+					portletDataContext.removePrimaryKey(path);
 
-						return;
-					}
-					catch (Exception exception) {
-						if (_log.isDebugEnabled()) {
-							_log.debug(exception);
-						}
+					importStagedModel(portletDataContext, referenceElement);
+
+					return;
+				}
+				catch (Exception exception) {
+					if (_log.isDebugEnabled()) {
+						_log.debug(exception);
 					}
 				}
 			}
@@ -539,12 +565,14 @@ public class StagedModelDataHandlerUtil {
 			while (xmlStreamReader.hasNext()) {
 				int event = xmlStreamReader.next();
 
-				if (event == XMLStreamConstants.START_ELEMENT) {
-					QName qName = xmlStreamReader.getName();
+				if (event != XMLStreamConstants.START_ELEMENT) {
+					continue;
+				}
 
-					if (Objects.equals(qName.getLocalPart(), simpleName)) {
-						return true;
-					}
+				QName qName = xmlStreamReader.getName();
+
+				if (Objects.equals(qName.getLocalPart(), simpleName)) {
+					return true;
 				}
 			}
 		}
@@ -620,5 +648,10 @@ public class StagedModelDataHandlerUtil {
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		StagedModelDataHandlerUtil.class);
+
+	private static final ServiceTrackerList<ImportStagedModelExceptionHandler>
+		_serviceTrackerList = ServiceTrackerListFactory.open(
+			SystemBundleUtil.getBundleContext(),
+			ImportStagedModelExceptionHandler.class);
 
 }

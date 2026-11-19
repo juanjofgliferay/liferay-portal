@@ -251,10 +251,6 @@ public interface CommerceSubscriptionEntryLocalService
 		getActiveCommerceSubscriptionEntries();
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<CommerceSubscriptionEntry> getActiveCommerceSubscriptionEntries(
-		long commerceAccountId);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<CommerceSubscriptionEntry>
 		getCommerceDeliverySubscriptionEntriesToRenew();
 
@@ -329,10 +325,6 @@ public interface CommerceSubscriptionEntryLocalService
 	@Deprecated
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public int getCommerceSubscriptionEntriesCount(long companyId, long userId);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getCommerceSubscriptionEntriesCount(
-		long companyId, long groupId, long userId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<CommerceSubscriptionEntry>
@@ -481,3 +473,4 @@ public interface CommerceSubscriptionEntryLocalService
 		throws PortalException;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:137422657

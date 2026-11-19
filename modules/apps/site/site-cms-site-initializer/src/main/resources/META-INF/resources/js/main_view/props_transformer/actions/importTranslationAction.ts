@@ -1,0 +1,25 @@
+/**
+ * SPDX-FileCopyrightText: (c) 2025 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
+ */
+
+import {openCMSModal} from '../../../common/utils/openCMSModal';
+import ImportTranslationModalContent from '../../modal/ImportTranslationModalContent';
+
+export default function importTranslationAction(
+	data: ItemData,
+	actionLink: string,
+	loadData?: () => void
+) {
+	openCMSModal({
+		contentComponent: ({closeModal}: {closeModal: () => void}) =>
+			ImportTranslationModalContent({
+				actionLink,
+				itemName: data.embedded.title,
+				loadData,
+				onModalClose: closeModal,
+				translationsAPIURL: `${data.actions.get.href}/translations`,
+			}),
+		size: 'md',
+	});
+}

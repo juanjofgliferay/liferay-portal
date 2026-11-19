@@ -1,0 +1,44 @@
+{{- if .Values.enabled -}}
+{{- $database := deepCopy (.Values.database | default dict) -}}
+{{- with $database.version -}}
+{{- $_ := set $database "version" (toString .) -}}
+{{- end -}}
+{{- $searchEngine := include "search.engine" . -}}
+apiVersion: liferay.com/v1alpha1
+kind: LiferayInfrastructure
+metadata:
+    annotations:
+        argocd.argoproj.io/sync-options: ServerSideApply=true
+        argocd.argoproj.io/sync-wave: "-20"
+    name: {{ .Release.Name }}
+    namespace: {{ .Release.Namespace }}
+spec:
+    backup:
+        {{- pick .Values.backup "dayOfWeek" "enabled" "frequency" "retentionDays" "timeOfDay" "timeZone" "vaultTags" | toYaml | nindent 8 }}
+    cmk:
+        {{- .Values.cmk | toYaml | nindent 8 }}
+    {{- with .Values.commonTags }}
+    commonTags:
+        {{- . | toYaml | nindent 8 }}
+    {{- end }}
+    database:
+        {{- $database | toYaml | nindent 8 }}
+    environmentId: {{ .Values.environmentId | quote }}
+    {{- if hasKey .Values "forceDestroy" }}
+    forceDestroy: {{ .Values.forceDestroy }}
+    {{- end }}
+    {{- if hasKey .Values "orphanOnDelete" }}
+    orphanOnDelete: {{ .Values.orphanOnDelete }}
+    {{- end }}
+    overlayAccess:
+        {{- .Values.overlayAccess | toYaml | nindent 8 }}
+    projectId: {{ .Values.projectId | quote }}
+    search:
+        engine: {{ $searchEngine }}
+        {{- if and (eq $searchEngine "opensearch") .Values.search.opensearch }}
+        opensearch:
+            {{- .Values.search.opensearch | toYaml | nindent 12 }}
+        {{- end }}
+    storage:
+        {{- .Values.storage | toYaml | nindent 8 }}
+{{- end -}}

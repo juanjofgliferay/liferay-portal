@@ -25,7 +25,6 @@ import com.liferay.commerce.product.constants.CPPortletKeys;
 import com.liferay.commerce.product.display.context.helper.CPRequestHelper;
 import com.liferay.commerce.product.model.CommerceCatalog;
 import com.liferay.commerce.product.service.CommerceCatalogService;
-import com.liferay.document.library.kernel.service.DLAppService;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.CreationMenu;
 import com.liferay.item.selector.ItemSelector;
 import com.liferay.item.selector.ItemSelectorReturnType;
@@ -37,18 +36,18 @@ import com.liferay.portal.configuration.module.configuration.ConfigurationProvid
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.module.configuration.ConfigurationException;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
 import com.liferay.portal.kernel.portlet.LiferayWindowState;
 import com.liferay.portal.kernel.portlet.RequestBackedPortletURLFactory;
 import com.liferay.portal.kernel.portlet.RequestBackedPortletURLFactoryUtil;
 import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
-import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.search.BaseModelSearchResult;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
 import com.liferay.portal.kernel.security.permission.resource.PortletResourcePermission;
-import com.liferay.portal.kernel.settings.SystemSettingsLocator;
+import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
 import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.LinkedHashMapBuilder;
 import com.liferay.portal.kernel.util.ParamUtil;
@@ -57,17 +56,17 @@ import com.liferay.portal.kernel.util.URLCodec;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderResponse;
+import jakarta.portlet.RenderURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
-import javax.portlet.RenderResponse;
-import javax.portlet.RenderURL;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Alec Sloan
@@ -86,8 +85,8 @@ public class CommerceCatalogDisplayContext {
 		CommerceCurrencyLocalService commerceCurrencyLocalService,
 		CommerceInventoryMethodRegistry commerceInventoryMethodRegistry,
 		CommercePriceListService commercePriceListService,
-		ConfigurationProvider configurationProvider, DLAppService dlAppService,
-		ItemSelector itemSelector, Portal portal) {
+		ConfigurationProvider configurationProvider, ItemSelector itemSelector,
+		Portal portal) {
 
 		_accountEntryService = accountEntryService;
 		_attachmentsConfiguration = attachmentsConfiguration;
@@ -99,7 +98,6 @@ public class CommerceCatalogDisplayContext {
 		_commerceInventoryMethodRegistry = commerceInventoryMethodRegistry;
 		_commercePriceListService = commercePriceListService;
 		_configurationProvider = configurationProvider;
-		_dlAppService = dlAppService;
 		_itemSelector = itemSelector;
 		_portal = portal;
 
@@ -229,24 +227,14 @@ public class CommerceCatalogDisplayContext {
 				).build(),
 				0, 2, "name", false);
 
-		if (baseModelSearchResult.getLength() == 1) {
-			List<AccountEntry> accountEntries =
-				baseModelSearchResult.getBaseModels();
-
-			return accountEntries.get(0);
-		}
-
-		return null;
-	}
-
-	public FileEntry getDefaultFileEntry() throws PortalException {
-		long fileEntryId = getDefaultFileEntryId();
-
-		if (fileEntryId == 0) {
+		if (baseModelSearchResult.getLength() != 1) {
 			return null;
 		}
 
-		return _dlAppService.getFileEntry(fileEntryId);
+		List<AccountEntry> accountEntries =
+			baseModelSearchResult.getBaseModels();
+
+		return accountEntries.get(0);
 	}
 
 	public long getDefaultFileEntryId() throws PortalException {
@@ -416,11 +404,13 @@ public class CommerceCatalogDisplayContext {
 			long commerceCatalogGroupId, String key)
 		throws ConfigurationException {
 
+		Group group = GroupLocalServiceUtil.fetchGroup(commerceCatalogGroupId);
+
 		CommerceInventoryGroupConfiguration
 			commerceInventoryGroupConfiguration =
 				_configurationProvider.getGroupConfiguration(
 					CommerceInventoryGroupConfiguration.class,
-					commerceCatalogGroupId);
+					group.getCompanyId(), commerceCatalogGroupId);
 
 		return key.equals(
 			commerceInventoryGroupConfiguration.inventoryMethodKey());
@@ -428,10 +418,8 @@ public class CommerceCatalogDisplayContext {
 
 	public boolean showBasePriceListInputs() throws PortalException {
 		CommercePricingConfiguration commercePricingConfiguration =
-			_configurationProvider.getConfiguration(
-				CommercePricingConfiguration.class,
-				new SystemSettingsLocator(
-					CommercePricingConstants.SERVICE_NAME));
+			_configurationProvider.getSystemConfiguration(
+				CommercePricingConfiguration.class);
 
 		return Objects.equals(
 			commercePricingConfiguration.commercePricingCalculationKey(),
@@ -461,7 +449,6 @@ public class CommerceCatalogDisplayContext {
 		_commerceInventoryMethodRegistry;
 	private final CommercePriceListService _commercePriceListService;
 	private final ConfigurationProvider _configurationProvider;
-	private final DLAppService _dlAppService;
 	private final ItemSelector _itemSelector;
 	private final Portal _portal;
 

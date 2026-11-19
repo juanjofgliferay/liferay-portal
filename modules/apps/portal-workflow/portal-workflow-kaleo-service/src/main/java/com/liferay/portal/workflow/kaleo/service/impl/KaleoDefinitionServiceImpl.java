@@ -1,0 +1,255 @@
+/**
+ * SPDX-FileCopyrightText: (c) 2024 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
+ */
+
+package com.liferay.portal.workflow.kaleo.service.impl;
+
+import com.liferay.account.service.AccountEntryUserRelLocalService;
+import com.liferay.portal.aop.AopService;
+import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.security.auth.PrincipalException;
+import com.liferay.portal.kernel.security.permission.ActionKeys;
+import com.liferay.portal.kernel.security.permission.PermissionChecker;
+import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
+import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
+import com.liferay.portal.kernel.security.permission.resource.PortletResourcePermission;
+import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.util.OrderByComparator;
+import com.liferay.portal.kernel.workflow.WorkflowConstants;
+import com.liferay.portal.workflow.constants.WorkflowDefinitionConstants;
+import com.liferay.portal.workflow.kaleo.internal.util.KaleoDefinitionScopeUtil;
+import com.liferay.portal.workflow.kaleo.model.KaleoDefinition;
+import com.liferay.portal.workflow.kaleo.service.KaleoDefinitionLocalService;
+import com.liferay.portal.workflow.kaleo.service.base.KaleoDefinitionServiceBaseImpl;
+
+import java.util.List;
+import java.util.Objects;
+
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
+
+/**
+ * @author Nathaly Gomes
+ */
+@Component(
+	property = {
+		"json.web.service.context.name=kaleo",
+		"json.web.service.context.path=KaleoDefinition"
+	},
+	service = AopService.class
+)
+public class KaleoDefinitionServiceImpl extends KaleoDefinitionServiceBaseImpl {
+
+	@Override
+	public KaleoDefinition activateKaleoDefinition(
+			String name, int version, ServiceContext serviceContext)
+		throws PortalException {
+
+		KaleoDefinition kaleoDefinition =
+			kaleoDefinitionPersistence.findByC_N_V(
+				serviceContext.getCompanyId(), name, version);
+
+		_checkPermissions(
+			ActionKeys.ADD_DEFINITION, kaleoDefinition.getCompanyId(),
+			_getGroupId(
+				kaleoDefinition.getGroupId(), kaleoDefinition.getScope()));
+
+		return _kaleoDefinitionLocalService.activateKaleoDefinition(
+			name, version, serviceContext);
+	}
+
+	@Override
+	public KaleoDefinition addKaleoDefinition(
+			String externalReferenceCode, String name, String title,
+			String description, String content, String scope, boolean system,
+			int version, ServiceContext serviceContext)
+		throws PortalException {
+
+		_checkPermissions(
+			ActionKeys.ADD_DEFINITION, serviceContext.getCompanyId(),
+			_getGroupId(serviceContext.getScopeGroupId(), scope));
+
+		return _kaleoDefinitionLocalService.addKaleoDefinition(
+			externalReferenceCode, name, title, description, content, scope,
+			system, version, serviceContext);
+	}
+
+	@Override
+	public KaleoDefinition deactivateKaleoDefinition(
+			String name, int version, ServiceContext serviceContext)
+		throws PortalException {
+
+		KaleoDefinition kaleoDefinition =
+			kaleoDefinitionPersistence.findByC_N_V(
+				serviceContext.getCompanyId(), name, version);
+
+		_checkPermissions(
+			ActionKeys.ADD_DEFINITION, kaleoDefinition.getCompanyId(),
+			_getGroupId(
+				kaleoDefinition.getGroupId(), kaleoDefinition.getScope()));
+
+		return _kaleoDefinitionLocalService.deactivateKaleoDefinition(
+			name, version, serviceContext);
+	}
+
+	@Override
+	public KaleoDefinition deleteKaleoDefinition(
+			String name, ServiceContext serviceContext)
+		throws PortalException {
+
+		KaleoDefinition kaleoDefinition = kaleoDefinitionPersistence.findByC_N(
+			serviceContext.getCompanyId(), name);
+
+		_checkPermissions(
+			ActionKeys.DELETE, kaleoDefinition.getCompanyId(),
+			_getGroupId(
+				kaleoDefinition.getGroupId(), kaleoDefinition.getScope()));
+
+		return _kaleoDefinitionLocalService.deleteKaleoDefinition(
+			kaleoDefinition);
+	}
+
+	@Override
+	public KaleoDefinition getKaleoDefinition(long kaleoDefinitionId)
+		throws PortalException {
+
+		KaleoDefinition kaleoDefinition =
+			kaleoDefinitionPersistence.findByPrimaryKey(kaleoDefinitionId);
+
+		_kaleoDefinitionModelResourcePermission.check(
+			getPermissionChecker(), kaleoDefinition, ActionKeys.VIEW);
+
+		return kaleoDefinition;
+	}
+
+	@Override
+	public KaleoDefinition getKaleoDefinition(
+			String externalReferenceCode, long companyId)
+		throws PortalException {
+
+		KaleoDefinition kaleoDefinition =
+			kaleoDefinitionPersistence.findByERC_C(
+				externalReferenceCode, companyId);
+
+		_kaleoDefinitionModelResourcePermission.check(
+			getPermissionChecker(), kaleoDefinition, ActionKeys.VIEW);
+
+		return kaleoDefinition;
+	}
+
+	@Override
+	public KaleoDefinition getKaleoDefinition(
+			String name, ServiceContext serviceContext)
+		throws PortalException {
+
+		KaleoDefinition kaleoDefinition = kaleoDefinitionPersistence.findByC_N(
+			serviceContext.getCompanyId(), name);
+
+		_kaleoDefinitionModelResourcePermission.check(
+			getPermissionChecker(), kaleoDefinition, ActionKeys.VIEW);
+
+		return kaleoDefinition;
+	}
+
+	@Override
+	public List<KaleoDefinition> getScopeKaleoDefinitions(
+			String scope, boolean active, int start, int end,
+			OrderByComparator<KaleoDefinition> orderByComparator,
+			ServiceContext serviceContext)
+		throws PortalException {
+
+		_kaleoDefinitionModelResourcePermission.check(
+			getPermissionChecker(), null, ActionKeys.VIEW);
+
+		return kaleoDefinitionPersistence.findByG_C_S_A(
+			KaleoDefinitionScopeUtil.getGroupId(
+				scope, serviceContext, _accountEntryUserRelLocalService),
+			serviceContext.getCompanyId(), scope, active, start, end,
+			orderByComparator);
+	}
+
+	@Override
+	public List<KaleoDefinition> getScopeKaleoDefinitions(
+			String scope, int start, int end,
+			OrderByComparator<KaleoDefinition> orderByComparator,
+			ServiceContext serviceContext)
+		throws PortalException {
+
+		_kaleoDefinitionModelResourcePermission.check(
+			getPermissionChecker(), null, ActionKeys.VIEW);
+
+		return kaleoDefinitionPersistence.findByG_C_S(
+			KaleoDefinitionScopeUtil.getGroupId(
+				scope, serviceContext, _accountEntryUserRelLocalService),
+			serviceContext.getCompanyId(), scope, start, end,
+			orderByComparator);
+	}
+
+	@Override
+	public KaleoDefinition updateKaleoDefinition(
+			String externalReferenceCode, long kaleoDefinitionId, String title,
+			String description, String content, boolean system,
+			ServiceContext serviceContext)
+		throws PortalException {
+
+		KaleoDefinition kaleoDefinition =
+			kaleoDefinitionPersistence.findByPrimaryKey(kaleoDefinitionId);
+
+		_checkPermissions(
+			ActionKeys.ADD_DEFINITION, kaleoDefinition.getCompanyId(),
+			_getGroupId(
+				kaleoDefinition.getGroupId(), kaleoDefinition.getScope()));
+
+		return _kaleoDefinitionLocalService.updatedKaleoDefinition(
+			externalReferenceCode, kaleoDefinitionId, title, description,
+			content, system, serviceContext);
+	}
+
+	private void _checkPermissions(
+			String actionId, long companyId, long groupId)
+		throws PrincipalException {
+
+		PermissionChecker permissionChecker =
+			PermissionThreadLocal.getPermissionChecker();
+
+		if (permissionChecker == null) {
+			return;
+		}
+
+		if (!permissionChecker.isOmniadmin() &&
+			(permissionChecker.getCompanyId() != companyId)) {
+
+			throw new PrincipalException(
+				"User is not an omniadmin and does not belong to the company");
+		}
+
+		_portletResourcePermission.check(permissionChecker, groupId, actionId);
+	}
+
+	private long _getGroupId(long groupId, String scope) {
+		if (Objects.equals(scope, WorkflowDefinitionConstants.SCOPE_AI)) {
+			return groupId;
+		}
+
+		return WorkflowConstants.DEFAULT_GROUP_ID;
+	}
+
+	@Reference
+	private AccountEntryUserRelLocalService _accountEntryUserRelLocalService;
+
+	@Reference
+	private KaleoDefinitionLocalService _kaleoDefinitionLocalService;
+
+	@Reference(
+		target = "(model.class.name=com.liferay.portal.workflow.kaleo.model.KaleoDefinition)"
+	)
+	private ModelResourcePermission<KaleoDefinition>
+		_kaleoDefinitionModelResourcePermission;
+
+	@Reference(
+		target = "(resource.name=" + WorkflowConstants.RESOURCE_NAME + ")"
+	)
+	private PortletResourcePermission _portletResourcePermission;
+
+}

@@ -13,8 +13,8 @@ import com.liferay.document.library.kernel.model.DLFileEntry;
 import com.liferay.document.library.kernel.model.DLFileVersion;
 import com.liferay.document.library.kernel.model.DLFolder;
 import com.liferay.document.library.test.util.DLTestUtil;
+import com.liferay.portal.kernel.exception.NoSuchRepositoryException;
 import com.liferay.portal.kernel.model.Group;
-import com.liferay.portal.kernel.repository.RepositoryException;
 import com.liferay.portal.kernel.repository.RepositoryProviderUtil;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
@@ -97,6 +97,47 @@ public class RepositoryProviderTest {
 		RepositoryProviderUtil.getLocalRepository(dlFolder.getRepositoryId());
 	}
 
+	@Test
+	public void testCreateLocalRepositoryFromExistingRepositoryIdWithoutPermissions()
+		throws Exception {
+
+		DLFolder dlFolder = DLTestUtil.addDLFolder(_group.getGroupId());
+
+		PermissionChecker originalPermissionChecker =
+			PermissionThreadLocal.getPermissionChecker();
+
+		try {
+			PermissionChecker permissionChecker =
+				new SimplePermissionChecker() {
+
+					@Override
+					public boolean hasOwnerPermission(
+						long companyId, String name, String primKey,
+						long ownerId, String actionId) {
+
+						return false;
+					}
+
+					@Override
+					protected boolean hasPermission(String actionId) {
+						return false;
+					}
+
+				};
+
+			permissionChecker.init(originalPermissionChecker.getUser());
+
+			PermissionThreadLocal.setPermissionChecker(permissionChecker);
+
+			RepositoryProviderUtil.getLocalRepository(
+				dlFolder.getRepositoryId());
+		}
+		finally {
+			PermissionThreadLocal.setPermissionChecker(
+				originalPermissionChecker);
+		}
+	}
+
 	@Test(expected = NoSuchFileEntryException.class)
 	public void testCreateLocalRepositoryFromNonexistentFileEntryId()
 		throws Exception {
@@ -124,7 +165,7 @@ public class RepositoryProviderTest {
 		RepositoryProviderUtil.getFolderLocalRepository(folderId);
 	}
 
-	@Test(expected = RepositoryException.class)
+	@Test(expected = NoSuchRepositoryException.class)
 	public void testCreateLocalRepositoryFromNonexistentRepositoryId()
 		throws Exception {
 
@@ -240,7 +281,7 @@ public class RepositoryProviderTest {
 		RepositoryProviderUtil.getFolderRepository(folderId);
 	}
 
-	@Test(expected = RepositoryException.class)
+	@Test(expected = NoSuchRepositoryException.class)
 	public void testCreateRepositoryFromNonexistentRepositoryId()
 		throws Exception {
 

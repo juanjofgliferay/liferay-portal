@@ -18,12 +18,22 @@ public interface TestClassReport {
 
 	public long getDuration();
 
+	public String getModuleAppPath();
+
 	public long getOverheadDuration();
 
 	public String getStatus();
 
 	public String getTestClassName();
 
+	public TestReport getTestReport(String testName);
+
 	public List<TestReport> getTestReports();
+
+	public String getTestTaskName();
+
+	public boolean isFailing();
+
+	public boolean isSkipped();
 
 }

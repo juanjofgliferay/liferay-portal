@@ -6,6 +6,11 @@
 package com.liferay.scim.configuration.web.internal.portlet.action;
 
 import com.liferay.configuration.admin.constants.ConfigurationAdminPortletKeys;
+import com.liferay.expando.kernel.model.ExpandoColumn;
+import com.liferay.expando.kernel.model.ExpandoValue;
+import com.liferay.expando.kernel.service.ExpandoColumnLocalService;
+import com.liferay.expando.kernel.service.ExpandoRowLocalService;
+import com.liferay.expando.kernel.service.ExpandoValueLocalService;
 import com.liferay.oauth.client.LocalOAuthClient;
 import com.liferay.oauth2.provider.model.OAuth2Application;
 import com.liferay.oauth2.provider.model.OAuth2Authorization;
@@ -14,32 +19,45 @@ import com.liferay.oauth2.provider.service.OAuth2AuthorizationLocalService;
 import com.liferay.oauth2.provider.service.OAuth2AuthorizationService;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
+import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
+import com.liferay.portal.kernel.dao.orm.Property;
+import com.liferay.portal.kernel.dao.orm.PropertyFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
+import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.model.UserGroup;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCActionCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
+import com.liferay.portal.kernel.search.Indexer;
+import com.liferay.portal.kernel.search.IndexerRegistryUtil;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
+import com.liferay.portal.kernel.service.UserGroupLocalService;
+import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.servlet.SessionErrors;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.DateUtil;
 import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
 import com.liferay.portal.kernel.util.ParamUtil;
+import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.Time;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.scim.configuration.web.internal.constants.ScimWebKeys;
 import com.liferay.scim.rest.util.ScimClientUtil;
+import com.liferay.scim.rest.util.ScimThreadLocal;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.PortletSession;
+
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.Dictionary;
 import java.util.List;
 import java.util.Objects;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
 
 import org.osgi.service.cm.Configuration;
 import org.osgi.service.cm.ConfigurationAdmin;
@@ -51,7 +69,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + ConfigurationAdminPortletKeys.INSTANCE_SETTINGS,
+		"jakarta.portlet.name=" + ConfigurationAdminPortletKeys.INSTANCE_SETTINGS,
 		"mvc.command.name=/scim_configuration/save_scim_configuration"
 	},
 	service = MVCActionCommand.class
@@ -90,7 +108,8 @@ public class SaveScimConfigurationMVCActionCommand
 
 			JSONObject jsonObject = _jsonFactory.createJSONObject(
 				_localOAuthClient.requestTokens(
-					oAuth2Application, oAuth2Application.getUserId()));
+					oAuth2Application,
+					oAuth2Application.getClientCredentialUserId()));
 
 			String accessToken = jsonObject.getString("access_token");
 
@@ -99,12 +118,15 @@ public class SaveScimConfigurationMVCActionCommand
 					oAuth2Application.getOAuth2ApplicationId(),
 					QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
 
+			OAuth2Authorization generatedOAuth2Authorization =
+				_oAuth2AuthorizationLocalService.
+					fetchOAuth2AuthorizationByAccessTokenContent(accessToken);
+
 			for (OAuth2Authorization oAuth2Authorization :
 					oAuth2Authorizations) {
 
 				if (Objects.equals(
-						accessToken,
-						oAuth2Authorization.getAccessTokenContent())) {
+						oAuth2Authorization, generatedOAuth2Authorization)) {
 
 					continue;
 				}
@@ -118,25 +140,47 @@ public class SaveScimConfigurationMVCActionCommand
 				Date refreshTokenExpirationDate =
 					oAuth2Authorization.getRefreshTokenExpirationDate();
 
-				if ((daysBetween > 10) ||
-					(refreshTokenExpirationDate != null)) {
+				if ((daysBetween <= 10) &&
+					(refreshTokenExpirationDate == null)) {
 
-					oAuth2Authorization.setAccessTokenExpirationDate(
-						new Date(
-							Math.min(
-								accessTokenExpirationDate.getTime(),
-								System.currentTimeMillis() + (Time.DAY * 10))));
-					oAuth2Authorization.setRefreshTokenContent(null);
-					oAuth2Authorization.setRefreshTokenCreateDate(null);
-					oAuth2Authorization.setRefreshTokenExpirationDate(null);
-
-					_oAuth2AuthorizationLocalService.updateOAuth2Authorization(
-						oAuth2Authorization);
+					continue;
 				}
+
+				oAuth2Authorization.setAccessTokenExpirationDate(
+					new Date(
+						Math.min(
+							accessTokenExpirationDate.getTime(),
+							System.currentTimeMillis() + (Time.DAY * 10))));
+				oAuth2Authorization.setRefreshTokenContent(null);
+				oAuth2Authorization.setRefreshTokenCreateDate(null);
+				oAuth2Authorization.setRefreshTokenExpirationDate(null);
+
+				_oAuth2AuthorizationLocalService.updateOAuth2Authorization(
+					oAuth2Authorization);
+			}
+
+			if (PropsValues.FIPS_ENABLED) {
+				PortletSession portletSession =
+					actionRequest.getPortletSession();
+
+				portletSession.setAttribute(
+					ScimWebKeys.SCIM_OAUTH2_ACCESS_TOKEN, accessToken);
 			}
 
 			actionRequest.setAttribute(
 				ScimWebKeys.SCIM_OAUTH2_ACCESS_TOKEN, accessToken);
+		}
+		else if (Objects.equals(cmd, "reset")) {
+			boolean resetInProcess = ScimThreadLocal.isResetInProcess();
+
+			try {
+				ScimThreadLocal.setResetInProcess(true);
+
+				_reset(scimClientId, themeDisplay);
+			}
+			finally {
+				ScimThreadLocal.setResetInProcess(resetInProcess);
+			}
 		}
 		else if (Objects.equals(cmd, "revoke")) {
 			OAuth2Application oAuth2Application =
@@ -168,6 +212,7 @@ public class SaveScimConfigurationMVCActionCommand
 					"oAuth2ApplicationName",
 					ParamUtil.getString(
 						actionRequest, "oAuth2ApplicationName"));
+				properties.put("userId", themeDisplay.getUserId());
 
 				configuration.update(properties);
 			}
@@ -188,8 +233,100 @@ public class SaveScimConfigurationMVCActionCommand
 						"oAuth2ApplicationName",
 						ParamUtil.getString(
 							actionRequest, "oAuth2ApplicationName")
+					).put(
+						"userId", themeDisplay.getUserId()
 					).build());
 			}
+		}
+	}
+
+	private void _reset(String scimClientId, ThemeDisplay themeDisplay)
+		throws Exception {
+
+		OAuth2Application oAuth2Application =
+			_oAuth2ApplicationLocalService.getOAuth2Application(
+				themeDisplay.getCompanyId(), scimClientId);
+
+		_oAuth2AuthorizationService.revokeAllOAuth2Authorizations(
+			oAuth2Application.getOAuth2ApplicationId());
+
+		_oAuth2ApplicationLocalService.deleteOAuth2Application(
+			oAuth2Application);
+
+		Indexer<UserGroup> userGroupIndexer =
+			IndexerRegistryUtil.nullSafeGetIndexer(UserGroup.class);
+		Indexer<User> userIndexer = IndexerRegistryUtil.nullSafeGetIndexer(
+			User.class);
+
+		ActionableDynamicQuery actionableDynamicQuery =
+			_expandoValueLocalService.getActionableDynamicQuery();
+
+		actionableDynamicQuery.setAddCriteriaMethod(
+			dynamicQuery -> {
+				List<Long> columnIds = new ArrayList<>();
+
+				ExpandoColumn expandoColumn =
+					_expandoColumnLocalService.getColumn(
+						themeDisplay.getCompanyId(), User.class.getName(),
+						"CUSTOM_FIELDS", "scimClientId");
+
+				if (expandoColumn != null) {
+					columnIds.add(expandoColumn.getColumnId());
+				}
+
+				expandoColumn = _expandoColumnLocalService.getColumn(
+					themeDisplay.getCompanyId(), UserGroup.class.getName(),
+					"CUSTOM_FIELDS", "scimClientId");
+
+				if (expandoColumn != null) {
+					columnIds.add(expandoColumn.getColumnId());
+				}
+
+				if (!columnIds.isEmpty()) {
+					Property columnProperty = PropertyFactoryUtil.forName(
+						"columnId");
+
+					dynamicQuery.add(columnProperty.in(columnIds));
+				}
+
+				Property dataProperty = PropertyFactoryUtil.forName("data");
+
+				dynamicQuery.add(dataProperty.eq(scimClientId));
+			});
+		actionableDynamicQuery.setPerformActionMethod(
+			(ExpandoValue expandoValue) -> {
+				_expandoRowLocalService.deleteRow(
+					expandoValue.getTableId(), expandoValue.getClassPK());
+
+				String className = _portal.getClassName(
+					expandoValue.getClassNameId());
+
+				if (className.equals(User.class.getName())) {
+					userIndexer.reindex(
+						_userLocalService.getUser(expandoValue.getClassPK()));
+				}
+				else {
+					userGroupIndexer.reindex(
+						_userGroupLocalService.getUserGroup(
+							expandoValue.getClassPK()));
+				}
+			});
+
+		actionableDynamicQuery.performActions();
+
+		Configuration[] configurations = _configurationAdmin.listConfigurations(
+			StringBundler.concat(
+				"(&(", ConfigurationAdmin.SERVICE_FACTORYPID,
+				"=com.liferay.scim.rest.internal.configuration.",
+				"ScimClientOAuth2ApplicationConfiguration)(companyId=",
+				oAuth2Application.getCompanyId(), "))"));
+
+		if (configurations == null) {
+			return;
+		}
+
+		for (Configuration configuration : configurations) {
+			configuration.delete();
 		}
 	}
 
@@ -197,7 +334,13 @@ public class SaveScimConfigurationMVCActionCommand
 	private ConfigurationAdmin _configurationAdmin;
 
 	@Reference
-	private ConfigurationProvider _configurationProvider;
+	private ExpandoColumnLocalService _expandoColumnLocalService;
+
+	@Reference
+	private ExpandoRowLocalService _expandoRowLocalService;
+
+	@Reference
+	private ExpandoValueLocalService _expandoValueLocalService;
 
 	@Reference
 	private JSONFactory _jsonFactory;
@@ -213,5 +356,14 @@ public class SaveScimConfigurationMVCActionCommand
 
 	@Reference
 	private OAuth2AuthorizationService _oAuth2AuthorizationService;
+
+	@Reference
+	private Portal _portal;
+
+	@Reference
+	private UserGroupLocalService _userGroupLocalService;
+
+	@Reference
+	private UserLocalService _userLocalService;
 
 }

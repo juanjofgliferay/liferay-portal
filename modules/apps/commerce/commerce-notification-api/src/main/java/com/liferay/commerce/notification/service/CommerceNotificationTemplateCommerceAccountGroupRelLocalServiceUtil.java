@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -26,8 +27,10 @@ import java.util.List;
  *
  * @author Alessio Antonio Rendina
  * @see CommerceNotificationTemplateCommerceAccountGroupRelLocalService
+ * @deprecated As of Cavanaugh (7.4.x)
  * @generated
  */
+@Deprecated
 public class
 	CommerceNotificationTemplateCommerceAccountGroupRelLocalServiceUtil {
 
@@ -93,15 +96,6 @@ public class
 		throws PortalException {
 
 		return getService().createPersistedModel(primaryKeyObj);
-	}
-
-	public static void
-		deleteCNTemplateCommerceAccountGroupRelsBycommerceAccountGroupId(
-			long commerceAccountGroupId) {
-
-		getService().
-			deleteCNTemplateCommerceAccountGroupRelsBycommerceAccountGroupId(
-				commerceAccountGroupId);
 	}
 
 	public static void
@@ -258,15 +252,6 @@ public class
 				commerceNotificationTemplateCommerceAccountGroupRelId);
 	}
 
-	public static CommerceNotificationTemplateCommerceAccountGroupRel
-		fetchCommerceNotificationTemplateCommerceAccountGroupRel(
-			long commerceNotificationTemplateId, long commerceAccountGroupId) {
-
-		return getService().
-			fetchCommerceNotificationTemplateCommerceAccountGroupRel(
-				commerceNotificationTemplateId, commerceAccountGroupId);
-	}
-
 	public static com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery
 		getActionableDynamicQuery() {
 
@@ -307,18 +292,6 @@ public class
 
 		return getService().
 			getCommerceNotificationTemplateCommerceAccountGroupRels(start, end);
-	}
-
-	public static List<CommerceNotificationTemplateCommerceAccountGroupRel>
-		getCommerceNotificationTemplateCommerceAccountGroupRels(
-			long commerceNotificationTemplateId, int start, int end,
-			OrderByComparator
-				<CommerceNotificationTemplateCommerceAccountGroupRel>
-					orderByComparator) {
-
-		return getService().
-			getCommerceNotificationTemplateCommerceAccountGroupRels(
-				commerceNotificationTemplateId, start, end, orderByComparator);
 	}
 
 	/**
@@ -382,18 +355,15 @@ public class
 		CommerceNotificationTemplateCommerceAccountGroupRelLocalService
 			getService() {
 
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(
-		CommerceNotificationTemplateCommerceAccountGroupRelLocalService
-			service) {
-
-		_service = service;
-	}
-
-	private static volatile
-		CommerceNotificationTemplateCommerceAccountGroupRelLocalService
-			_service;
+	private static final Snapshot
+		<CommerceNotificationTemplateCommerceAccountGroupRelLocalService>
+			_serviceSnapshot = new Snapshot<>(
+				CommerceNotificationTemplateCommerceAccountGroupRelLocalServiceUtil.class,
+				CommerceNotificationTemplateCommerceAccountGroupRelLocalService.
+					class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1198733372

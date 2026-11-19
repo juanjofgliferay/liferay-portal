@@ -6,6 +6,7 @@
 package com.liferay.portal.dao.sql.transformer;
 
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.dao.orm.common.SQLTransformer;
 import com.liferay.portal.kernel.dao.db.DBType;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
@@ -31,10 +32,8 @@ public class OracleSQLTransformerLogicTest
 
 	@Override
 	public String getDropTableIfExistsTextTransformedSQL() {
-		return StringBundler.concat(
-			"BEGIN\n", "EXECUTE IMMEDIATE 'DROP TABLE Foo';\n", "EXCEPTION\n",
-			"WHEN OTHERS THEN\n", "IF SQLCODE != -942 THEN\n", "RAISE;\n",
-			"END IF;\n", "END;\n", "/");
+		return "BEGIN\nEXECUTE IMMEDIATE 'DROP TABLE Foo';\nEXCEPTION\nWHEN " +
+			"OTHERS THEN\nIF SQLCODE != -942 THEN\nRAISE;\nEND IF;\nEND;\n/";
 	}
 
 	@Override
@@ -42,21 +41,14 @@ public class OracleSQLTransformerLogicTest
 	public void testReplaceBitwiseCheckWithExtraWhitespace() {
 		Assert.assertEquals(
 			getBitwiseCheckTransformedSQL(),
-			sqlTransformer.transform(getBitwiseCheckOriginalSQL()));
-	}
-
-	@Test
-	public void testReplaceCastText() {
-		Assert.assertEquals(
-			"select CAST(foo AS VARCHAR(4000)) from Foo",
-			sqlTransformer.transform(getCastTextOriginalSQL()));
+			SQLTransformer.transform(getBitwiseCheckOriginalSQL()));
 	}
 
 	@Test
 	public void testReplaceEscape() {
 		Assert.assertEquals(
 			"select foo from Foo where foo LIKE ? ESCAPE '\\'",
-			sqlTransformer.transform("select foo from Foo where foo LIKE ?"));
+			SQLTransformer.transform("select foo from Foo where foo LIKE ?"));
 	}
 
 	@Override
@@ -64,14 +56,19 @@ public class OracleSQLTransformerLogicTest
 	public void testReplaceModWithExtraWhitespace() {
 		Assert.assertEquals(
 			getModTransformedSQL(),
-			sqlTransformer.transform(getModOriginalSQL()));
+			SQLTransformer.transform(getModOriginalSQL()));
 	}
 
 	@Test
 	public void testReplaceNotEqualsBlankString() {
 		Assert.assertEquals(
 			"select * from Foo where foo IS NOT NULL",
-			sqlTransformer.transform("select * from Foo where foo != ''"));
+			SQLTransformer.transform("select * from Foo where foo != ''"));
+	}
+
+	@Override
+	protected String getBitwiseOrTransformedSQL() {
+		return "select (foo + bar - BITAND(foo, bar)) from Foo";
 	}
 
 	@Override
@@ -81,7 +78,18 @@ public class OracleSQLTransformerLogicTest
 
 	@Override
 	protected String getCastClobTextTransformedSQL() {
-		return "select DBMS_LOB.SUBSTR(foo, 4000, 1) from Foo";
+		return StringBundler.concat(
+			"select DBMS_LOB.SUBSTR(foo || (DBMS_LOB.SUBSTR(foo, 4000, 1) || ",
+			"(bar || foo)), 4000, 1), DBMS_LOB.SUBSTR(foo || (bar || foo), ",
+			"4000, 1) from Foo");
+	}
+
+	@Override
+	protected String getCastTextTransformedSQL() {
+		return StringBundler.concat(
+			"select CAST(foo || (CAST(foo AS VARCHAR(4000)) || (bar || foo)) ",
+			"AS VARCHAR(4000)), CAST(foo || (bar || foo) AS VARCHAR(4000)) ",
+			"from Foo");
 	}
 
 	@Override

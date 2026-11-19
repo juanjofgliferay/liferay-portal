@@ -51,6 +51,11 @@ public interface CommerceChannelRelService extends BaseService {
 			ServiceContext serviceContext)
 		throws PortalException;
 
+	public List<CommerceChannelRel> addCommerceChannelRels(
+			String className, long[] classPKs, long commerceChannelId,
+			ServiceContext serviceContext)
+		throws PortalException;
+
 	public void deleteCommerceChannelRel(long commerceChannelRelId)
 		throws PortalException;
 
@@ -90,6 +95,26 @@ public interface CommerceChannelRelService extends BaseService {
 			String className, long classPK, String name)
 		throws PortalException;
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<CommerceChannelRel> getCommerceCurrencyCommerceChannelRels(
+			long commerceChannelId, String name, int start, int end)
+		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public int getCommerceCurrencyCommerceChannelRelsCount(
+			long commerceChannelId, String name)
+		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<CommerceChannelRel> getCountryCommerceChannelRels(
+			long commerceChannelId, String name, int start, int end)
+		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public int getCountryCommerceChannelRelsCount(
+			long commerceChannelId, String name)
+		throws PortalException;
+
 	/**
 	 * Returns the OSGi service identifier.
 	 *
@@ -98,3 +123,4 @@ public interface CommerceChannelRelService extends BaseService {
 	public String getOSGiServiceIdentifier();
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1003914633

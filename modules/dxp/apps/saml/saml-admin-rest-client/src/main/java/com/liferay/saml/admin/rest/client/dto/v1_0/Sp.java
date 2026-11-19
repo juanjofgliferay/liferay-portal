@@ -8,11 +8,11 @@ package com.liferay.saml.admin.rest.client.dto.v1_0;
 import com.liferay.saml.admin.rest.client.function.UnsafeSupplier;
 import com.liferay.saml.admin.rest.client.serdes.v1_0.SpSerDes;
 
+import jakarta.annotation.Generated;
+
 import java.io.Serializable;
 
 import java.util.Objects;
-
-import javax.annotation.Generated;
 
 /**
  * @author Stian Sigvartsen
@@ -196,3 +196,4 @@ public class Sp implements Cloneable, Serializable {
 	}
 
 }
+// LIFERAY-REST-BUILDER-HASH:-1759865152

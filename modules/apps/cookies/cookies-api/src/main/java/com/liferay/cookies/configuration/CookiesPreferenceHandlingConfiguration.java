@@ -13,7 +13,7 @@ import com.liferay.portal.configuration.metatype.annotations.ExtendedObjectClass
  * @author Olivér Kecskeméty
  */
 @ExtendedObjectClassDefinition(
-	category = "cookies", scope = ExtendedObjectClassDefinition.Scope.GROUP
+	category = "privacy", scope = ExtendedObjectClassDefinition.Scope.GROUP
 )
 @Meta.OCD(
 	id = "com.liferay.cookies.configuration.CookiesPreferenceHandlingConfiguration",
@@ -23,15 +23,79 @@ import com.liferay.portal.configuration.metatype.annotations.ExtendedObjectClass
 public interface CookiesPreferenceHandlingConfiguration {
 
 	@Meta.AD(
+		deflt = "false", description = "cookie-active-help", name = "active",
+		required = false
+	)
+	public boolean active();
+
+	@Meta.AD(
+		deflt = "12", description = "cookie-consent-renewal-period-help",
+		max = "365", min = "1", name = "cookie-consent-renewal-period",
+		required = false
+	)
+	public int consentRenewalPeriod();
+
+	@Meta.AD(
+		deflt = "months", name = "cookie-consent-renewal-period-time-unit",
+		optionLabels = {"days", "weeks", "months"},
+		optionValues = {"days", "weeks", "months"}, required = false
+	)
+	public String consentRenewalPeriodTimeUnit();
+
+	@Meta.AD(
+		deflt = "0", name = "custom-floating-icon-image-id", required = false
+	)
+	public long customFloatingIconImageId();
+
+	@Meta.AD(
+		deflt = "12", description = "cookie-dissent-renewal-period-help",
+		max = "365", min = "0", name = "cookie-dissent-renewal-period",
+		required = false
+	)
+	public int dissentRenewalPeriod();
+
+	@Meta.AD(
+		deflt = "months", name = "cookie-dissent-renewal-period-time-unit",
+		optionLabels = {"days", "weeks", "months"},
+		optionValues = {"days", "weeks", "months"}, required = false
+	)
+	public String dissentRenewalPeriodTimeUnit();
+
+	@Meta.AD(
 		deflt = "false", description = "cookie-enabled-help", name = "enabled",
 		required = false
 	)
 	public boolean enabled();
 
 	@Meta.AD(
-		deflt = "true", description = "cookie-explicit-consent-mode-help",
+		deflt = "true",
+		description = "cookie-explicit-consent-mode-help-deprecated",
 		name = "cookie-explicit-consent-mode", required = false
 	)
 	public boolean explicitConsentMode();
+
+	@Meta.AD(deflt = "cookie", name = "icon", required = false)
+	public String floatingIcon();
+
+	@Meta.AD(
+		deflt = "true", description = "floating-icon-enabled-help",
+		name = "floating-icon-enabled", required = false
+	)
+	public boolean floatingIconEnabled();
+
+	@Meta.AD(
+		deflt = "false", description = "global-privacy-control-enabled-help",
+		name = "global-privacy-control-enabled", required = false
+	)
+	public boolean globalPrivacyControlEnabled();
+
+	@Meta.AD(deflt = "0", name = "modified-date", required = false)
+	public long modifiedDate();
+
+	@Meta.AD(
+		deflt = "false", description = "cookie-store-consent-help",
+		name = "cookie-store-consent", required = false
+	)
+	public boolean storeConsent();
 
 }

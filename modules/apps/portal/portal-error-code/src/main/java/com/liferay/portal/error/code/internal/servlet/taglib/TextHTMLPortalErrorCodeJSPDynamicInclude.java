@@ -11,13 +11,13 @@ import com.liferay.portal.kernel.servlet.taglib.BaseJSPDynamicInclude;
 import com.liferay.portal.kernel.servlet.taglib.DynamicInclude;
 import com.liferay.portal.kernel.util.MapUtil;
 
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 
 import java.util.Map;
-
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -26,7 +26,12 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Carlos Sierra Andrés
  */
-@Component(property = "mime.type=text/html", service = DynamicInclude.class)
+@Component(
+	property = {
+		"dynamic.include.key=/errors/code.jsp#text/html", "mime.type=text/html"
+	},
+	service = DynamicInclude.class
+)
 public class TextHTMLPortalErrorCodeJSPDynamicInclude
 	extends BaseJSPDynamicInclude {
 
@@ -46,11 +51,6 @@ public class TextHTMLPortalErrorCodeJSPDynamicInclude
 		super.include(httpServletRequest, httpServletResponse, key);
 	}
 
-	@Override
-	public void register(DynamicIncludeRegistry dynamicIncludeRegistry) {
-		dynamicIncludeRegistry.register(_key);
-	}
-
 	@Activate
 	protected void activate(Map<String, Object> properties) {
 		String mimeType = MapUtil.getString(properties, "mime.type", null);
@@ -60,7 +60,6 @@ public class TextHTMLPortalErrorCodeJSPDynamicInclude
 		}
 
 		_contentType = mimeType.concat(_CHARSET);
-		_key = "/errors/code.jsp#".concat(mimeType);
 	}
 
 	@Override
@@ -79,7 +78,6 @@ public class TextHTMLPortalErrorCodeJSPDynamicInclude
 		TextHTMLPortalErrorCodeJSPDynamicInclude.class);
 
 	private String _contentType;
-	private String _key;
 
 	@Reference(target = "(osgi.web.symbolicname=com.liferay.portal.error.code)")
 	private ServletContext _servletContext;

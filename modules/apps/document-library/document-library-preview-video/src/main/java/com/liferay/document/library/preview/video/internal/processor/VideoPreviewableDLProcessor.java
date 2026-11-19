@@ -7,6 +7,7 @@ package com.liferay.document.library.preview.video.internal.processor;
 
 import com.liferay.document.library.kernel.background.task.DLBackgroundTaskExecutorNames;
 import com.liferay.document.library.kernel.exception.NoSuchFileEntryException;
+import com.liferay.document.library.kernel.exception.NoSuchFileException;
 import com.liferay.document.library.kernel.model.DLProcessorConstants;
 import com.liferay.document.library.kernel.processor.DLProcessor;
 import com.liferay.document.library.kernel.processor.VideoProcessor;
@@ -17,6 +18,7 @@ import com.liferay.exportimport.kernel.lar.PortletDataContext;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.image.ImageToolUtil;
 import com.liferay.portal.kernel.backgroundtask.BackgroundTaskManager;
+import com.liferay.portal.kernel.backgroundtask.constants.BackgroundTaskConstants;
 import com.liferay.portal.kernel.backgroundtask.constants.BackgroundTaskContextMapConstants;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
@@ -24,20 +26,20 @@ import com.liferay.portal.kernel.image.ImageBag;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.messaging.DestinationNames;
-import com.liferay.portal.kernel.model.CompanyConstants;
 import com.liferay.portal.kernel.model.UserConstants;
 import com.liferay.portal.kernel.repository.event.FileVersionPreviewEventListener;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.repository.model.FileVersion;
 import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.FileUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.PropsKeys;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.SetUtil;
 import com.liferay.portal.kernel.uuid.PortalUUIDUtil;
 import com.liferay.portal.kernel.xml.Element;
-import com.liferay.portal.util.PropsValues;
 
 import java.awt.image.RenderedImage;
 
@@ -78,15 +80,13 @@ public class VideoPreviewableDLProcessor
 						PortalUUIDUtil.generate());
 
 					_backgroundTaskManager.addBackgroundTask(
-						UserConstants.USER_ID_DEFAULT, CompanyConstants.SYSTEM,
-						jobName,
+						UserConstants.USER_ID_DEFAULT,
+						BackgroundTaskConstants.GROUP_ID_DEFAULT, jobName,
 						DLBackgroundTaskExecutorNames.
 							VIDEO_PREVIEW_BACKGROUND_TASK_EXECUTOR,
 						HashMapBuilder.<String, Serializable>put(
 							BackgroundTaskContextMapConstants.DELETE_ON_SUCCESS,
 							true
-						).put(
-							"companyId", companyId
 						).build(),
 						new ServiceContext());
 				}
@@ -110,12 +110,16 @@ public class VideoPreviewableDLProcessor
 	public InputStream getPreviewAsStream(FileVersion fileVersion, String type)
 		throws Exception {
 
+		_validatePreviewType(type);
+
 		return doGetPreviewAsStream(fileVersion, type);
 	}
 
 	@Override
 	public long getPreviewFileSize(FileVersion fileVersion, String type)
 		throws Exception {
+
+		_validatePreviewType(type);
 
 		return doGetPreviewFileSize(fileVersion, type);
 	}
@@ -217,9 +221,9 @@ public class VideoPreviewableDLProcessor
 				StringBundler.concat(
 					"Liferay is incorrectly configured to generate video ",
 					"previews using video containers other than MP4 or OGV. ",
-					"Please change the property ",
+					"Please change the property \"",
 					PropsKeys.DL_FILE_ENTRY_PREVIEW_VIDEO_CONTAINERS,
-					" in portal-ext.properties."));
+					"\" in portal.properties."));
 		}
 
 		FileUtil.mkdirs(PREVIEW_TMP_PATH);
@@ -269,11 +273,13 @@ public class VideoPreviewableDLProcessor
 			}
 
 			for (String previewType : _PREVIEW_TYPES) {
-				if (previewType.equals("mp4") || previewType.equals("ogv")) {
-					exportPreview(
-						portletDataContext, fileEntry, fileEntryElement,
-						"video", previewType);
+				if (!previewType.equals("mp4") && !previewType.equals("ogv")) {
+					continue;
 				}
+
+				exportPreview(
+					portletDataContext, fileEntry, fileEntryElement, "video",
+					previewType);
 			}
 		}
 	}
@@ -308,11 +314,13 @@ public class VideoPreviewableDLProcessor
 		}
 
 		for (String previewType : _PREVIEW_TYPES) {
-			if (previewType.equals("mp4") || previewType.equals("ogv")) {
-				importPreview(
-					portletDataContext, fileEntry, importedFileEntry,
-					fileEntryElement, "video", previewType);
+			if (!previewType.equals("mp4") && !previewType.equals("ogv")) {
+				continue;
 			}
+
+			importPreview(
+				portletDataContext, fileEntry, importedFileEntry,
+				fileEntryElement, "video", previewType);
 		}
 	}
 
@@ -322,7 +330,7 @@ public class VideoPreviewableDLProcessor
 
 		if (!hasThumbnail(fileVersion, THUMBNAIL_INDEX_DEFAULT)) {
 			addFileToStore(
-				fileVersion.getCompanyId(), THUMBNAIL_PATH,
+				fileVersion.getCompanyId(),
 				getThumbnailFilePath(fileVersion, THUMBNAIL_INDEX_DEFAULT),
 				file);
 		}
@@ -431,7 +439,7 @@ public class VideoPreviewableDLProcessor
 		}
 
 		addFileToStore(
-			fileVersion.getCompanyId(), PREVIEW_PATH,
+			fileVersion.getCompanyId(),
 			getPreviewFilePath(fileVersion, containerType), destinationFile);
 
 		if (_log.isInfoEnabled()) {
@@ -581,6 +589,12 @@ public class VideoPreviewableDLProcessor
 		sendGenerationMessage(
 			DestinationNames.DOCUMENT_LIBRARY_VIDEO_PROCESSOR,
 			sourceFileVersion, destinationFileVersion);
+	}
+
+	private void _validatePreviewType(String type) throws Exception {
+		if (!ArrayUtil.contains(_PREVIEW_TYPES, type)) {
+			throw new NoSuchFileException("Invalid preview type " + type);
+		}
 	}
 
 	private static final String[] _PREVIEW_TYPES =

@@ -9,9 +9,13 @@ import com.liferay.friendly.url.configuration.FriendlyURLRedirectionConfiguratio
 import com.liferay.friendly.url.internal.upgrade.v2_0_0.util.FriendlyURLEntryTable;
 import com.liferay.friendly.url.internal.upgrade.v3_0_0.UpgradeCompanyId;
 import com.liferay.portal.configuration.persistence.upgrade.ConfigurationUpgradeStepFactory;
+import com.liferay.portal.kernel.security.permission.ResourceActions;
+import com.liferay.portal.kernel.service.ClassNameLocalService;
 import com.liferay.portal.kernel.upgrade.BaseSQLServerDatetimeUpgradeProcess;
 import com.liferay.portal.kernel.upgrade.CTModelUpgradeProcess;
 import com.liferay.portal.kernel.upgrade.DummyUpgradeStep;
+import com.liferay.portal.kernel.upgrade.UpgradeProcessFactory;
+import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.upgrade.registry.UpgradeStepRegistrator;
 
 import org.osgi.service.component.annotations.Component;
@@ -57,9 +61,37 @@ public class FriendlyURLServiceUpgradeStepRegistrator
 					"FriendlyURLRedirectionConfiguration.scoped",
 				FriendlyURLRedirectionConfiguration.class.getName() +
 					".scoped"));
+
+		registry.register(
+			"3.4.0", "3.4.1",
+			new com.liferay.friendly.url.internal.upgrade.v3_4_1.
+				LayoutFriendlyURLEntryUpgradeProcess(
+					_classNameLocalService, _portal, _resourceActions));
+
+		registry.register(
+			"3.4.1", "3.5.0",
+			UpgradeProcessFactory.addColumns(
+				"FriendlyURLEntry", "parentClassPK LONG"),
+			UpgradeProcessFactory.addColumns(
+				"FriendlyURLEntryLocalization", "parentClassPK LONG"),
+			UpgradeProcessFactory.runSQL(
+				"update FriendlyURLEntry set parentClassPK = 0 where " +
+					"parentClassPK is null"),
+			UpgradeProcessFactory.runSQL(
+				"update FriendlyURLEntryLocalization set parentClassPK = 0 " +
+					"where parentClassPK is null"));
 	}
 
 	@Reference
+	private ClassNameLocalService _classNameLocalService;
+
+	@Reference
 	private ConfigurationUpgradeStepFactory _configurationUpgradeStepFactory;
+
+	@Reference
+	private Portal _portal;
+
+	@Reference
+	private ResourceActions _resourceActions;
 
 }

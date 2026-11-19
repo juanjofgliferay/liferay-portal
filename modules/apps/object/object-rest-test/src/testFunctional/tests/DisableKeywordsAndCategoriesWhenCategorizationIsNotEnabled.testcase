@@ -1,9 +1,9 @@
 @component-name = "portal-headless"
 definition {
 
+	property browser.chrome.version = "139.0";
 	property portal.release = "true";
 	property portal.upstream = "true";
-	property testray.component.names = "Object";
 	property testray.main.component.name = "Object Entries REST APIs";
 
 	setUp {
@@ -21,7 +21,7 @@ definition {
 
 		TaxonomyVocabularyAPI.deleteTaxonomyVocabularyByErc(
 			externalReferenceCode = "erc",
-			groupName = "Guest");
+			groupName = "Global");
 
 		if (${testLiferayVirtualInstance} == "true") {
 			PortalInstances.tearDownCP();
@@ -30,8 +30,6 @@ definition {
 
 	@priority = 3
 	test CanGetParametersOfKeywordsAndCategoriesInEndpoint {
-		property portal.acceptance = "true";
-
 		task ("when I navigate to c/university endpoint postUniversity") {
 			APIExplorer.navigateToOpenAPI(
 				api = "c",
@@ -63,7 +61,7 @@ definition {
 		task ("And Given taxonomyVocabulary with name 'vocabulary' created") {
 			var responseFromVocabulary = TaxonomyVocabularyAPI.createTaxonomyVocabulary(
 				externalReferenceCode = "erc",
-				groupName = "Guest",
+				groupName = "Global",
 				name = "Vocabulary");
 		}
 
@@ -118,7 +116,7 @@ definition {
 		task ("And Given taxonomyVocabulary with name 'vocabulary' created") {
 			var responseFromVocabulary = TaxonomyVocabularyAPI.createTaxonomyVocabulary(
 				externalReferenceCode = "erc",
-				groupName = "Guest",
+				groupName = "Global",
 				name = "Vocabulary");
 		}
 
@@ -168,8 +166,6 @@ definition {
 
 	@priority = 3
 	test CannotGetKeywordsAndCategoriesWhenCategorizationNotEnabled {
-		property portal.acceptance = "true";
-
 		task ("when I navigate to c/university endpoint postUniversity") {
 			ObjectDefinitionAPI.updateObjectDefinitionById(
 				objectDefinitionId = ${staticUniversityObjectId},
@@ -201,8 +197,6 @@ definition {
 
 	@priority = 3
 	test CannotSeeTaxonomyCategoryBriefInSchemaWhenCategorizationNotEnabled {
-		property portal.acceptance = "true";
-
 		task ("when I navigate to c/university endpoint postUniversity") {
 			ObjectDefinitionAPI.updateObjectDefinitionById(
 				objectDefinitionId = ${staticUniversityObjectId},

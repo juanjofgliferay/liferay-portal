@@ -9,6 +9,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.segments.model.SegmentsEntry;
 
@@ -52,27 +53,16 @@ public class SegmentsEntryLocalServiceUtil {
 	}
 
 	public static SegmentsEntry addSegmentsEntry(
-			String segmentsEntryKey, Map<java.util.Locale, String> nameMap,
+			String externalReferenceCode, String segmentsEntryKey,
+			Map<java.util.Locale, String> nameMap,
 			Map<java.util.Locale, String> descriptionMap, boolean active,
-			String criteria, String type,
+			String criteria, String source, int type,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().addSegmentsEntry(
-			segmentsEntryKey, nameMap, descriptionMap, active, criteria, type,
-			serviceContext);
-	}
-
-	public static SegmentsEntry addSegmentsEntry(
-			String segmentsEntryKey, Map<java.util.Locale, String> nameMap,
-			Map<java.util.Locale, String> descriptionMap, boolean active,
-			String criteria, String source, String type,
-			com.liferay.portal.kernel.service.ServiceContext serviceContext)
-		throws PortalException {
-
-		return getService().addSegmentsEntry(
-			segmentsEntryKey, nameMap, descriptionMap, active, criteria, source,
-			type, serviceContext);
+			externalReferenceCode, segmentsEntryKey, nameMap, descriptionMap,
+			active, criteria, source, type, serviceContext);
 	}
 
 	public static void addSegmentsEntryClassPKs(
@@ -257,11 +247,16 @@ public class SegmentsEntryLocalServiceUtil {
 	}
 
 	public static SegmentsEntry fetchSegmentsEntry(
-		long groupId, String segmentsEntryKey,
-		boolean includeAncestorSegmentsEntries) {
+		long groupId, String segmentsEntryKey) {
 
-		return getService().fetchSegmentsEntry(
-			groupId, segmentsEntryKey, includeAncestorSegmentsEntries);
+		return getService().fetchSegmentsEntry(groupId, segmentsEntryKey);
+	}
+
+	public static SegmentsEntry fetchSegmentsEntryByExternalReferenceCode(
+		String externalReferenceCode, long groupId) {
+
+		return getService().fetchSegmentsEntryByExternalReferenceCode(
+			externalReferenceCode, groupId);
 	}
 
 	/**
@@ -332,36 +327,47 @@ public class SegmentsEntryLocalServiceUtil {
 	}
 
 	public static List<SegmentsEntry> getSegmentsEntries(
-		long groupId, boolean includeAncestorSegmentsEntries, int start,
-		int end, OrderByComparator<SegmentsEntry> orderByComparator) {
-
-		return getService().getSegmentsEntries(
-			groupId, includeAncestorSegmentsEntries, start, end,
-			orderByComparator);
-	}
-
-	public static List<SegmentsEntry> getSegmentsEntries(
-		long groupId, boolean active, String type, int start, int end,
+		long groupId, int start, int end,
 		OrderByComparator<SegmentsEntry> orderByComparator) {
 
 		return getService().getSegmentsEntries(
-			groupId, active, type, start, end, orderByComparator);
+			groupId, start, end, orderByComparator);
 	}
 
 	public static List<SegmentsEntry> getSegmentsEntries(
-		long groupId, boolean active, String source, String type, int start,
-		int end, OrderByComparator<SegmentsEntry> orderByComparator) {
+		long groupId, String[] sources, int[] types, int start, int end,
+		OrderByComparator<SegmentsEntry> orderByComparator) {
 
 		return getService().getSegmentsEntries(
-			groupId, active, source, type, start, end, orderByComparator);
+			groupId, sources, types, start, end, orderByComparator);
+	}
+
+	public static List<SegmentsEntry> getSegmentsEntries(
+		long[] groupIds, boolean active, String[] sources) {
+
+		return getService().getSegmentsEntries(groupIds, active, sources);
+	}
+
+	public static List<SegmentsEntry> getSegmentsEntries(
+		long[] segmentsEntryIds, int start, int end) {
+
+		return getService().getSegmentsEntries(segmentsEntryIds, start, end);
 	}
 
 	public static List<SegmentsEntry> getSegmentsEntriesBySource(
-		String source, int start, int end,
+		long companyId, String source, int[] types, int start, int end,
 		OrderByComparator<SegmentsEntry> orderByComparator) {
 
 		return getService().getSegmentsEntriesBySource(
-			source, start, end, orderByComparator);
+			companyId, source, types, start, end, orderByComparator);
+	}
+
+	public static List<SegmentsEntry> getSegmentsEntriesBySource(
+		String source, int[] types, int start, int end,
+		OrderByComparator<SegmentsEntry> orderByComparator) {
+
+		return getService().getSegmentsEntriesBySource(
+			source, types, start, end, orderByComparator);
 	}
 
 	/**
@@ -405,11 +411,14 @@ public class SegmentsEntryLocalServiceUtil {
 		return getService().getSegmentsEntriesCount();
 	}
 
-	public static int getSegmentsEntriesCount(
-		long groupId, boolean includeAncestorSegmentsEntries) {
+	public static int getSegmentsEntriesCount(long groupId) {
+		return getService().getSegmentsEntriesCount(groupId);
+	}
 
-		return getService().getSegmentsEntriesCount(
-			groupId, includeAncestorSegmentsEntries);
+	public static int getSegmentsEntriesCount(
+		long groupId, String[] sources, int[] types) {
+
+		return getService().getSegmentsEntriesCount(groupId, sources, types);
 	}
 
 	/**
@@ -423,6 +432,14 @@ public class SegmentsEntryLocalServiceUtil {
 		throws PortalException {
 
 		return getService().getSegmentsEntry(segmentsEntryId);
+	}
+
+	public static SegmentsEntry getSegmentsEntryByExternalReferenceCode(
+			String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		return getService().getSegmentsEntryByExternalReferenceCode(
+			externalReferenceCode, groupId);
 	}
 
 	/**
@@ -443,25 +460,12 @@ public class SegmentsEntryLocalServiceUtil {
 	public static com.liferay.portal.kernel.search.BaseModelSearchResult
 		<SegmentsEntry> searchSegmentsEntries(
 				long companyId, long groupId, String keywords,
-				boolean includeAncestorSegmentsEntries,
 				java.util.LinkedHashMap<String, Object> params, int start,
 				int end, com.liferay.portal.kernel.search.Sort sort)
 			throws PortalException {
 
 		return getService().searchSegmentsEntries(
-			companyId, groupId, keywords, includeAncestorSegmentsEntries,
-			params, start, end, sort);
-	}
-
-	public static com.liferay.portal.kernel.search.BaseModelSearchResult
-		<SegmentsEntry> searchSegmentsEntries(
-				long companyId, String keywords,
-				java.util.LinkedHashMap<String, Object> params, int start,
-				int end, com.liferay.portal.kernel.search.Sort sort)
-			throws PortalException {
-
-		return getService().searchSegmentsEntries(
-			companyId, keywords, params, start, end, sort);
+			companyId, groupId, keywords, params, start, end, sort);
 	}
 
 	public static com.liferay.portal.kernel.search.BaseModelSearchResult
@@ -470,19 +474,6 @@ public class SegmentsEntryLocalServiceUtil {
 			throws PortalException {
 
 		return getService().searchSegmentsEntries(searchContext);
-	}
-
-	public static SegmentsEntry updateSegmentsEntry(
-			long segmentsEntryId, String segmentsEntryKey,
-			Map<java.util.Locale, String> nameMap,
-			Map<java.util.Locale, String> descriptionMap, boolean active,
-			String criteria,
-			com.liferay.portal.kernel.service.ServiceContext serviceContext)
-		throws PortalException {
-
-		return getService().updateSegmentsEntry(
-			segmentsEntryId, segmentsEntryKey, nameMap, descriptionMap, active,
-			criteria, serviceContext);
 	}
 
 	/**
@@ -501,14 +492,27 @@ public class SegmentsEntryLocalServiceUtil {
 		return getService().updateSegmentsEntry(segmentsEntry);
 	}
 
+	public static SegmentsEntry updateSegmentsEntry(
+			String externalReferenceCode, long segmentsEntryId,
+			String segmentsEntryKey, Map<java.util.Locale, String> nameMap,
+			Map<java.util.Locale, String> descriptionMap, boolean active,
+			String criteria, int type,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
+		throws PortalException {
+
+		return getService().updateSegmentsEntry(
+			externalReferenceCode, segmentsEntryId, segmentsEntryKey, nameMap,
+			descriptionMap, active, criteria, type, serviceContext);
+	}
+
 	public static SegmentsEntryLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(SegmentsEntryLocalService service) {
-		_service = service;
-	}
-
-	private static volatile SegmentsEntryLocalService _service;
+	private static final Snapshot<SegmentsEntryLocalService> _serviceSnapshot =
+		new Snapshot<>(
+			SegmentsEntryLocalServiceUtil.class,
+			SegmentsEntryLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:558184410

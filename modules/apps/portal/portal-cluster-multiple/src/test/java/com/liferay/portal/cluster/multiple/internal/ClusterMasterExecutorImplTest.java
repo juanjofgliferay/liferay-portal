@@ -6,6 +6,7 @@
 package com.liferay.portal.cluster.multiple.internal;
 
 import com.liferay.osgi.service.tracker.collections.list.ServiceTrackerListFactory;
+import com.liferay.petra.concurrent.NoticeableFuture;
 import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.cluster.multiple.configuration.ClusterExecutorConfiguration;
@@ -17,21 +18,18 @@ import com.liferay.portal.kernel.cluster.ClusterMasterTokenTransitionListener;
 import com.liferay.portal.kernel.cluster.ClusterNode;
 import com.liferay.portal.kernel.cluster.ClusterRequest;
 import com.liferay.portal.kernel.cluster.FutureClusterResponses;
-import com.liferay.portal.kernel.concurrent.NoticeableFuture;
 import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.module.util.SystemBundleUtil;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.CodeCoverageAssertor;
 import com.liferay.portal.kernel.test.rule.NewEnv;
-import com.liferay.portal.kernel.test.util.PropsTestUtil;
 import com.liferay.portal.kernel.util.MethodHandler;
 import com.liferay.portal.kernel.util.MethodKey;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.test.log.LogCapture;
 import com.liferay.portal.test.log.LogEntry;
 import com.liferay.portal.test.log.LoggerTestUtil;
-import com.liferay.portal.test.rule.AdviseWith;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import java.io.Closeable;
@@ -49,11 +47,6 @@ import java.util.concurrent.Exchanger;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.logging.Level;
-
-import org.aspectj.lang.ProceedingJoinPoint;
-import org.aspectj.lang.annotation.Around;
-import org.aspectj.lang.annotation.Aspect;
 
 import org.junit.Assert;
 import org.junit.ClassRule;
@@ -84,8 +77,7 @@ public class ClusterMasterExecutorImplTest extends BaseClusterTestCase {
 		MockClusterExecutor mockClusterExecutor = _getMockClusterExecutor(true);
 
 		ReflectionTestUtil.setFieldValue(
-			clusterMasterExecutorImpl, "_clusterExecutorImpl",
-			mockClusterExecutor);
+			clusterMasterExecutorImpl, "_clusterExecutor", mockClusterExecutor);
 
 		try (Closeable closeable = _activate(clusterMasterExecutorImpl)) {
 			mockClusterExecutor.addClusterNode(
@@ -145,7 +137,7 @@ public class ClusterMasterExecutorImplTest extends BaseClusterTestCase {
 			new ClusterMasterExecutorImpl();
 
 		ReflectionTestUtil.setFieldValue(
-			clusterMasterExecutorImpl, "_clusterExecutorImpl",
+			clusterMasterExecutorImpl, "_clusterExecutor",
 			_getMockClusterExecutor(true));
 
 		try (Closeable closeable = _activate(clusterMasterExecutorImpl)) {
@@ -199,8 +191,7 @@ public class ClusterMasterExecutorImplTest extends BaseClusterTestCase {
 		MockClusterExecutor mockClusterExecutor = _getMockClusterExecutor(true);
 
 		ReflectionTestUtil.setFieldValue(
-			clusterMasterExecutorImpl, "_clusterExecutorImpl",
-			mockClusterExecutor);
+			clusterMasterExecutorImpl, "_clusterExecutor", mockClusterExecutor);
 
 		List<ClusterEventListener> clusterEventListeners = null;
 
@@ -223,7 +214,7 @@ public class ClusterMasterExecutorImplTest extends BaseClusterTestCase {
 		clusterMasterExecutorImpl = new ClusterMasterExecutorImpl();
 
 		ReflectionTestUtil.setFieldValue(
-			clusterMasterExecutorImpl, "_clusterExecutorImpl",
+			clusterMasterExecutorImpl, "_clusterExecutor",
 			_getMockClusterExecutor(false));
 
 		clusterMasterExecutorImpl.activate(_bundleContext);
@@ -240,7 +231,7 @@ public class ClusterMasterExecutorImplTest extends BaseClusterTestCase {
 			new ClusterMasterExecutorImpl();
 
 		ReflectionTestUtil.setFieldValue(
-			clusterMasterExecutorImpl, "_clusterExecutorImpl",
+			clusterMasterExecutorImpl, "_clusterExecutor",
 			_getMockClusterExecutor(false));
 
 		clusterMasterExecutorImpl.activate(_bundleContext);
@@ -252,8 +243,9 @@ public class ClusterMasterExecutorImplTest extends BaseClusterTestCase {
 		MethodHandler methodHandler = new MethodHandler(
 			_TEST_METHOD, timeString);
 
-		try (LogCapture logCapture = LoggerTestUtil.configureJDKLogger(
-				ClusterMasterExecutorImpl.class.getName(), Level.WARNING)) {
+		try (LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
+				ClusterMasterExecutorImpl.class.getName(),
+				LoggerTestUtil.WARN)) {
 
 			NoticeableFuture<String> noticeableFuture =
 				clusterMasterExecutorImpl.executeOnMaster(methodHandler);
@@ -274,8 +266,9 @@ public class ClusterMasterExecutorImplTest extends BaseClusterTestCase {
 
 		// Test 2, execute without exception when log is disabled
 
-		try (LogCapture logCapture = LoggerTestUtil.configureJDKLogger(
-				ClusterMasterExecutorImpl.class.getName(), Level.OFF)) {
+		try (LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
+				ClusterMasterExecutorImpl.class.getName(),
+				LoggerTestUtil.OFF)) {
 
 			NoticeableFuture<String> noticeableFuture =
 				clusterMasterExecutorImpl.executeOnMaster(methodHandler);
@@ -289,8 +282,9 @@ public class ClusterMasterExecutorImplTest extends BaseClusterTestCase {
 
 		// Test 3, execute with exception
 
-		try (LogCapture logCapture = LoggerTestUtil.configureJDKLogger(
-				ClusterMasterExecutorImpl.class.getName(), Level.WARNING)) {
+		try (LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
+				ClusterMasterExecutorImpl.class.getName(),
+				LoggerTestUtil.WARN)) {
 
 			try {
 				clusterMasterExecutorImpl.executeOnMaster(null);
@@ -329,8 +323,7 @@ public class ClusterMasterExecutorImplTest extends BaseClusterTestCase {
 		MockClusterExecutor mockClusterExecutor = _getMockClusterExecutor(true);
 
 		ReflectionTestUtil.setFieldValue(
-			clusterMasterExecutorImpl, "_clusterExecutorImpl",
-			mockClusterExecutor);
+			clusterMasterExecutorImpl, "_clusterExecutor", mockClusterExecutor);
 
 		try (Closeable closeable = _activate(clusterMasterExecutorImpl)) {
 			Assert.assertTrue(clusterMasterExecutorImpl.isEnabled());
@@ -370,8 +363,7 @@ public class ClusterMasterExecutorImplTest extends BaseClusterTestCase {
 		MockClusterExecutor mockClusterExecutor = _getMockClusterExecutor(true);
 
 		ReflectionTestUtil.setFieldValue(
-			clusterMasterExecutorImpl, "_clusterExecutorImpl",
-			mockClusterExecutor);
+			clusterMasterExecutorImpl, "_clusterExecutor", mockClusterExecutor);
 
 		try (Closeable closeable = _activate(clusterMasterExecutorImpl)) {
 			Assert.assertEquals(
@@ -418,8 +410,6 @@ public class ClusterMasterExecutorImplTest extends BaseClusterTestCase {
 		}
 	}
 
-	@AdviseWith(adviceClasses = ClusterExecutorAdvice.class)
-	@NewEnv(type = NewEnv.Type.CLASSLOADER)
 	@Test
 	public void testGetMasterClusterNodeIdRetry() throws Exception {
 
@@ -431,22 +421,21 @@ public class ClusterMasterExecutorImplTest extends BaseClusterTestCase {
 		MockClusterExecutor mockClusterExecutor = _getMockClusterExecutor(true);
 
 		ReflectionTestUtil.setFieldValue(
-			clusterMasterExecutorImpl, "_clusterExecutorImpl",
-			mockClusterExecutor);
+			clusterMasterExecutorImpl, "_clusterExecutor", mockClusterExecutor);
 
 		try (Closeable closeable = _activate(clusterMasterExecutorImpl)) {
 			mockClusterExecutor.setCoordinatorAddress(_TEST_ADDRESS);
 
-			ClusterExecutorAdvice.block();
+			mockClusterExecutor.block();
 
 			Thread thread = new Thread() {
 
 				@Override
 				public void run() {
 					try (LogCapture logCapture =
-							LoggerTestUtil.configureJDKLogger(
+							LoggerTestUtil.configureLog4JLogger(
 								ClusterMasterExecutorImpl.class.getName(),
-								Level.INFO)) {
+								LoggerTestUtil.INFO)) {
 
 						Assert.assertEquals(
 							_TEST_CLUSTER_NODE_ID,
@@ -473,24 +462,23 @@ public class ClusterMasterExecutorImplTest extends BaseClusterTestCase {
 
 			thread.start();
 
-			ClusterExecutorAdvice.waitUntilBlock(1);
+			mockClusterExecutor.waitUntilBlock(1);
 
-			ClusterExecutorAdvice.unblock(1);
+			mockClusterExecutor.unblock(1);
 
-			Assert.assertNull(ClusterExecutorAdvice.waitClusterNodeId());
+			Assert.assertNull(mockClusterExecutor.waitClusterNodeId());
 
-			ClusterExecutorAdvice.waitUntilBlock(1);
+			mockClusterExecutor.waitUntilBlock(1);
 
 			ClusterNode clusterNode = new ClusterNode(
 				_TEST_CLUSTER_NODE_ID, InetAddress.getLocalHost());
 
 			mockClusterExecutor.addClusterNode(_TEST_ADDRESS, clusterNode);
 
-			ClusterExecutorAdvice.unblock(1);
+			mockClusterExecutor.unblock(1);
 
 			Assert.assertSame(
-				_TEST_CLUSTER_NODE_ID,
-				ClusterExecutorAdvice.waitClusterNodeId());
+				_TEST_CLUSTER_NODE_ID, mockClusterExecutor.waitClusterNodeId());
 
 			thread.join();
 
@@ -498,16 +486,16 @@ public class ClusterMasterExecutorImplTest extends BaseClusterTestCase {
 
 			mockClusterExecutor.removeClusterNode(_TEST_ADDRESS);
 
-			ClusterExecutorAdvice.block();
+			mockClusterExecutor.block();
 
 			thread = new Thread() {
 
 				@Override
 				public void run() {
 					try (LogCapture logCapture =
-							LoggerTestUtil.configureJDKLogger(
+							LoggerTestUtil.configureLog4JLogger(
 								ClusterMasterExecutorImpl.class.getName(),
-								Level.OFF)) {
+								LoggerTestUtil.OFF)) {
 
 						Assert.assertEquals(
 							_TEST_CLUSTER_NODE_ID,
@@ -525,21 +513,20 @@ public class ClusterMasterExecutorImplTest extends BaseClusterTestCase {
 
 			thread.start();
 
-			ClusterExecutorAdvice.waitUntilBlock(1);
+			mockClusterExecutor.waitUntilBlock(1);
 
-			ClusterExecutorAdvice.unblock(1);
+			mockClusterExecutor.unblock(1);
 
-			Assert.assertNull(ClusterExecutorAdvice.waitClusterNodeId());
+			Assert.assertNull(mockClusterExecutor.waitClusterNodeId());
 
-			ClusterExecutorAdvice.waitUntilBlock(1);
+			mockClusterExecutor.waitUntilBlock(1);
 
 			mockClusterExecutor.addClusterNode(_TEST_ADDRESS, clusterNode);
 
-			ClusterExecutorAdvice.unblock(1);
+			mockClusterExecutor.unblock(1);
 
 			Assert.assertSame(
-				_TEST_CLUSTER_NODE_ID,
-				ClusterExecutorAdvice.waitClusterNodeId());
+				_TEST_CLUSTER_NODE_ID, mockClusterExecutor.waitClusterNodeId());
 
 			thread.join();
 		}
@@ -554,7 +541,7 @@ public class ClusterMasterExecutorImplTest extends BaseClusterTestCase {
 			new ClusterMasterExecutorImpl();
 
 		ReflectionTestUtil.setFieldValue(
-			clusterMasterExecutorImpl, "_clusterExecutorImpl",
+			clusterMasterExecutorImpl, "_clusterExecutor",
 			_getMockClusterExecutor(false));
 
 		clusterMasterExecutorImpl.activate(_bundleContext);
@@ -567,7 +554,7 @@ public class ClusterMasterExecutorImplTest extends BaseClusterTestCase {
 		clusterMasterExecutorImpl = new ClusterMasterExecutorImpl();
 
 		ReflectionTestUtil.setFieldValue(
-			clusterMasterExecutorImpl, "_clusterExecutorImpl",
+			clusterMasterExecutorImpl, "_clusterExecutor",
 			_getMockClusterExecutor(true));
 
 		try (Closeable closeable = _activate(clusterMasterExecutorImpl)) {
@@ -589,8 +576,7 @@ public class ClusterMasterExecutorImplTest extends BaseClusterTestCase {
 		clusterMasterExecutorImpl = new ClusterMasterExecutorImpl();
 
 		ReflectionTestUtil.setFieldValue(
-			clusterMasterExecutorImpl, "_clusterExecutorImpl",
-			mockClusterExecutor);
+			clusterMasterExecutorImpl, "_clusterExecutor", mockClusterExecutor);
 
 		try (Closeable closeable = _activate(clusterMasterExecutorImpl)) {
 			Assert.assertTrue(clusterMasterExecutorImpl.isEnabled());
@@ -605,13 +591,13 @@ public class ClusterMasterExecutorImplTest extends BaseClusterTestCase {
 			new ClusterMasterExecutorImpl();
 
 		ReflectionTestUtil.setFieldValue(
-			clusterMasterExecutorImpl, "_clusterExecutorImpl",
+			clusterMasterExecutorImpl, "_clusterExecutor",
 			_getMockClusterExecutor(false));
 
 		clusterMasterExecutorImpl.activate(_bundleContext);
 
 		ReflectionTestUtil.setFieldValue(
-			clusterMasterExecutorImpl, "_clusterExecutorImpl",
+			clusterMasterExecutorImpl, "_clusterExecutor",
 			_getMockClusterExecutor(true));
 
 		clusterMasterExecutorImpl.activate(_bundleContext);
@@ -662,61 +648,6 @@ public class ClusterMasterExecutorImplTest extends BaseClusterTestCase {
 				isMasterTokenReleasedNotified());
 	}
 
-	@Aspect
-	public static class ClusterExecutorAdvice {
-
-		public static void block() {
-			_semaphore = new Semaphore(0);
-		}
-
-		public static void unblock(int permits) {
-			_semaphore.release(permits);
-		}
-
-		public static String waitClusterNodeId() throws Exception {
-			try {
-				return _clusterNodeIdExchanger.exchange(
-					null, 1000, TimeUnit.MILLISECONDS);
-			}
-			catch (TimeoutException timeoutException) {
-				return "null";
-			}
-		}
-
-		public static void waitUntilBlock(int threadCount) {
-			Semaphore semaphore = _semaphore;
-
-			if (semaphore != null) {
-				while (semaphore.getQueueLength() < threadCount);
-			}
-		}
-
-		@Around(
-			"execution(protected * com.liferay.portal.cluster.multiple." +
-				"internal.ClusterExecutorImpl.getClusterNodeId(..))"
-		)
-		public Object getClusterNodeId(ProceedingJoinPoint proceedingJoinPoint)
-			throws Throwable {
-
-			Semaphore semaphore = _semaphore;
-
-			if (semaphore != null) {
-				semaphore.acquire();
-			}
-
-			Object result = proceedingJoinPoint.proceed();
-
-			_clusterNodeIdExchanger.exchange((String)result);
-
-			return result;
-		}
-
-		private static final Exchanger<String> _clusterNodeIdExchanger =
-			new Exchanger<>();
-		private static volatile Semaphore _semaphore;
-
-	}
-
 	private Closeable _activate(
 		ClusterMasterExecutorImpl clusterMasterExecutorImpl) {
 
@@ -735,9 +666,6 @@ public class ClusterMasterExecutorImplTest extends BaseClusterTestCase {
 		ReflectionTestUtil.setFieldValue(
 			mockClusterExecutor, "_portalExecutorManager",
 			new MockPortalExecutorManager());
-		ReflectionTestUtil.setFieldValue(
-			mockClusterExecutor, "_props",
-			PropsTestUtil.setProps(Collections.emptyMap()));
 		ReflectionTestUtil.setFieldValue(
 			mockClusterExecutor, "_serviceTrackerList",
 			ServiceTrackerListFactory.open(
@@ -803,6 +731,10 @@ public class ClusterMasterExecutorImplTest extends BaseClusterTestCase {
 			}
 
 			_clusterNodes.put(address, clusterNode);
+		}
+
+		public void block() {
+			_semaphore = new Semaphore(0);
 		}
 
 		@Override
@@ -889,24 +821,66 @@ public class ClusterMasterExecutorImplTest extends BaseClusterTestCase {
 			field.set(clusterReceiver, address);
 		}
 
+		public void unblock(int permits) {
+			_semaphore.release(permits);
+		}
+
+		public String waitClusterNodeId() throws Exception {
+			try {
+				return _clusterNodeIdExchanger.exchange(
+					null, 1000, TimeUnit.MILLISECONDS);
+			}
+			catch (TimeoutException timeoutException) {
+				return "null";
+			}
+		}
+
+		public void waitUntilBlock(int threadCount) {
+			Semaphore semaphore = _semaphore;
+
+			if (semaphore != null) {
+				while (semaphore.getQueueLength() < threadCount);
+			}
+		}
+
 		@Override
 		protected String getClusterNodeId(Address address) {
-			ClusterNode clusterNode = _clusterNodes.get(address);
+			Semaphore semaphore = _semaphore;
 
-			if (clusterNode == null) {
-				return null;
+			try {
+				if (semaphore != null) {
+					semaphore.acquire();
+				}
+
+				String clusterNodeId = null;
+
+				ClusterNode clusterNode = _clusterNodes.get(address);
+
+				if (clusterNode != null) {
+					clusterNodeId = clusterNode.getClusterNodeId();
+				}
+
+				if (semaphore != null) {
+					_clusterNodeIdExchanger.exchange(clusterNodeId);
+				}
+
+				return clusterNodeId;
 			}
-
-			return clusterNode.getClusterNodeId();
+			catch (Exception exception) {
+				throw new IllegalStateException(exception);
+			}
 		}
 
 		private MockClusterExecutor(boolean enabled) {
 			_enabled = enabled;
 		}
 
+		private final Exchanger<String> _clusterNodeIdExchanger =
+			new Exchanger<>();
 		private final Map<Address, ClusterNode> _clusterNodes =
 			new ConcurrentHashMap<>();
 		private final boolean _enabled;
+		private volatile Semaphore _semaphore;
 
 	}
 

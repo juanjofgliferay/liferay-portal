@@ -4,20 +4,24 @@
  */
 
 import ClayForm, {ClayRadio, ClayRadioGroup} from '@clayui/form';
+import ClayLabel from '@clayui/label';
 import {useIsMounted} from '@liferay/frontend-js-react-web';
-import {useLiferayState} from '@liferay/frontend-js-state-web';
-import React, {useEffect, useState} from 'react';
+import {useLiferayState} from '@liferay/frontend-js-state-web/react';
+import React, {useCallback, useEffect, useState} from 'react';
 
 import ServiceProvider from '../../ServiceProvider/index';
 import skuOptionsAtom from '../../utilities/atoms/skuOptionsAtom';
-import {CP_INSTANCE_CHANGED} from '../../utilities/eventsDefinitions';
+import {
+	CP_INSTANCE_CHANGED,
+	CP_OPTION_CHANGED,
+} from '../../utilities/eventsDefinitions';
 import Asterisk from './Asterisk';
 import {
+	INITIAL_SKU_OPTIONS_ATOM_STATE,
 	getInitialProductOptionValue,
 	getName,
 	getProductOptionName,
 	getSkuOptionsErrors,
-	initialSkuOptionsAtomState,
 	isRequired,
 } from './utils';
 
@@ -37,11 +41,11 @@ const ProductOptionRadio = ({
 }) => {
 	const isMounted = useIsMounted();
 	const optionIsRequired = isRequired(forceRequired, isAdmin, productOption);
+	const [selectedSkuId, setSelectedSkuId] = useState(sku?.id);
 	const skuOptionsKey = isFromMiniCart ? 'miniCartSkuOptions' : 'skuOptions';
 
-	const [skuOptionsAtomState, setSkuOptionsAtomState] = useLiferayState(
-		skuOptionsAtom
-	);
+	const [skuOptionsAtomState, setSkuOptionsAtomState] =
+		useLiferayState(skuOptionsAtom);
 
 	const [productOptionValues, setProductOptionValues] = useState(
 		productOption.productOptionValues
@@ -50,7 +54,7 @@ const ProductOptionRadio = ({
 	const currentJSONObject = json
 		? JSON.parse(json).filter(
 				(jsonObject) => jsonObject.key === productOption.key
-		  )[0]
+			)[0]
 		: null;
 
 	const initialProductOptionValue =
@@ -60,7 +64,7 @@ const ProductOptionRadio = ({
 					currentJSONObject,
 					isFromMiniCart,
 					productOption,
-			  });
+				});
 
 	const defaultProductOptionValue = initialProductOptionValue
 		? initialProductOptionValue
@@ -94,16 +98,21 @@ const ProductOptionRadio = ({
 							],
 							value: [defaultProductOptionValue?.key],
 						},
-				  ],
+					],
 		});
+
+		if (defaultProductOptionValue) {
+			handleChange(selectedProductOption, json);
+		}
 
 		return () =>
 			isFromMiniCart
 				? setSkuOptionsAtomState({
 						...skuOptionsAtomState,
 						miniCartSkuOptions: [],
-				  })
-				: setSkuOptionsAtomState(initialSkuOptionsAtomState);
+					})
+				: setSkuOptionsAtomState(INITIAL_SKU_OPTIONS_ATOM_STATE);
+
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 
@@ -118,24 +127,19 @@ const ProductOptionRadio = ({
 			currentProductOptionValue?.key
 	);
 
-	const [
-		selectedProductOptionValue,
-		setSelectedProductOptionValue,
-	] = useState({
-		productOptionValueId: currentProductOptionValue?.id,
-		skuId: sku?.id,
-	});
+	const [selectedProductOptionValue, setSelectedProductOptionValue] =
+		useState({
+			productOptionValueId: currentProductOptionValue?.id,
+			skuId: selectedSkuId,
+		});
 
-	const [
-		selectedProductOptionValueKey,
-		setSelectedProductOptionValueKey,
-	] = useState(currentProductOptionValue?.key);
+	const [selectedProductOptionValueKey, setSelectedProductOptionValueKey] =
+		useState(currentProductOptionValue?.key);
 
-	const DeliveryCatalogAPIServiceProvider = ServiceProvider.DeliveryCatalogAPI(
-		'v1'
-	);
+	const DeliveryCatalogAPIServiceProvider =
+		ServiceProvider.DeliveryCatalogAPI('v1');
 
-	const handleChange = (value) => {
+	const handleChange = (value, json = '') => {
 		if (skuOptionsAtomState.updating) {
 			return;
 		}
@@ -159,7 +163,9 @@ const ProductOptionRadio = ({
 			(productOptionValue) => productOptionValue.key === valueArray[1]
 		);
 
-		let currentSkuOptions = skuOptionsAtomState[skuOptionsKey].slice();
+		let currentSkuOptions = json
+			? JSON.parse(json)
+			: skuOptionsAtomState[skuOptionsKey].slice();
 
 		const currentSkuOption = currentSkuOptions.filter(
 			(skuOption) => skuOption.skuOptionKey === productOption.key
@@ -203,20 +209,15 @@ const ProductOptionRadio = ({
 			];
 		}
 
-		if (!productOption.skuContributor && !currentProductOptionValue.skuId) {
-			setSkuOptionsAtomState({
-				...skuOptionsAtomState,
-				[skuOptionsKey]: currentSkuOptions,
-				updating: false,
-			});
-
-			return;
-		}
+		let currentSkuId = selectedSkuId;
 
 		DeliveryCatalogAPIServiceProvider.postChannelProductSkuBySkuOption(
 			channelId,
 			productId,
 			accountId,
+			Liferay.CommerceContext
+				? Liferay.CommerceContext.currency.currencyCode
+				: '',
 			minQuantity,
 			null,
 			currentSkuOptions
@@ -240,7 +241,6 @@ const ProductOptionRadio = ({
 
 					currentSkuOptions[curIndex] = {
 						...currentCPInstanceSkuOption,
-						cpInstanceId: currentProductOptionValue.skuId,
 						key: productOption.key,
 					};
 				}
@@ -252,6 +252,10 @@ const ProductOptionRadio = ({
 
 				cpInstance.skuOptions = currentSkuOptions;
 				cpInstance.skuId = parseInt(cpInstance.id, 10);
+
+				currentSkuId = cpInstance.skuId;
+
+				setSelectedSkuId(cpInstance.skuId);
 
 				const dispatchedPayload = {
 					cpInstance,
@@ -270,32 +274,53 @@ const ProductOptionRadio = ({
 						[skuOptionsKey]: currentSkuOptions,
 						updating: false,
 					});
+
+					setTimeout(() =>
+						Liferay.fire(`${namespace}${CP_OPTION_CHANGED}`, {
+							skuId: currentSkuId,
+							skuOptions: currentSkuOptions,
+						})
+					);
 				}
 			});
 	};
 
-	useEffect(() => {
-		if (
-			!selectedProductOptionValue.productOptionValueId ||
-			!selectedProductOptionValue.skuId
-		) {
-			return;
-		}
+	const updateProductOptionValuesHandler = useCallback(
+		({skuId, skuOptions}) => {
+			DeliveryCatalogAPIServiceProvider.postChannelProductProductOptionProductOptionValues(
+				channelId,
+				productId,
+				productOption.id,
+				accountId,
+				Liferay.CommerceContext
+					? Liferay.CommerceContext.currency.currencyCode
+					: '',
+				selectedProductOptionValue?.productOptionValueId,
+				skuId,
+				1,
+				-1,
+				skuOptions
+			).then((responseProductOptionValues) => {
+				setProductOptionValues(responseProductOptionValues.items);
+			});
+		},
 
-		DeliveryCatalogAPIServiceProvider.getChannelProductProductOptionProductOptionValues(
-			channelId,
-			productId,
-			productOption.id,
-			accountId,
-			selectedProductOptionValue.productOptionValueId,
-			selectedProductOptionValue.skuId,
-			1,
-			-1
-		).then((responseProductOptionValues) => {
-			setProductOptionValues(responseProductOptionValues.items);
-		});
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [selectedProductOptionValue]);
+		[selectedProductOptionValue]
+	);
+
+	useEffect(() => {
+		Liferay.on(
+			`${namespace}${CP_OPTION_CHANGED}`,
+			updateProductOptionValuesHandler
+		);
+
+		return () =>
+			Liferay.detach(
+				`${namespace}${CP_OPTION_CHANGED}`,
+				updateProductOptionValuesHandler
+			);
+	}, [namespace, updateProductOptionValuesHandler]);
 
 	return (
 		<ClayForm.Group>
@@ -316,13 +341,45 @@ const ProductOptionRadio = ({
 				{productOptionValues.map(
 					({
 						id,
+						infoMessage,
 						key,
 						name,
 						relativePriceFormatted,
+						selectable,
 						skuId,
 						visible,
 					}) => {
-						if (isAdmin || visible) {
+						if (
+							!isAdmin &&
+							visible &&
+							Liferay.CommerceContext.showUnselectableOptions
+						) {
+							return (
+								<ClayRadio
+									disabled={!selectable}
+									id={id}
+									key={key}
+									label={getName(
+										key,
+										name,
+										selectedProductOptionValueKey,
+										skuId,
+										relativePriceFormatted
+									)}
+									value={id + '[$SEPARATOR$]' + key}
+								>
+									{infoMessage && (
+										<ClayLabel
+											className="ml-1"
+											displayType="warning"
+										>
+											{infoMessage}
+										</ClayLabel>
+									)}
+								</ClayRadio>
+							);
+						}
+						else if (isAdmin || (selectable && visible)) {
 							return (
 								<ClayRadio
 									id={id}

@@ -8,6 +8,7 @@ package com.liferay.document.library.kernel.model;
 import com.liferay.petra.sql.dsl.Column;
 import com.liferay.petra.sql.dsl.base.BaseTable;
 
+import java.sql.Clob;
 import java.sql.Types;
 
 import java.util.Date;
@@ -31,6 +32,10 @@ public class DLFileEntryTypeTable extends BaseTable<DLFileEntryTypeTable> {
 			"ctCollectionId", Long.class, Types.BIGINT, Column.FLAG_PRIMARY);
 	public final Column<DLFileEntryTypeTable, String> uuid = createColumn(
 		"uuid_", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
+	public final Column<DLFileEntryTypeTable, String> externalReferenceCode =
+		createColumn(
+			"externalReferenceCode", String.class, Types.VARCHAR,
+			Column.FLAG_DEFAULT);
 	public final Column<DLFileEntryTypeTable, Long> fileEntryTypeId =
 		createColumn(
 			"fileEntryTypeId", Long.class, Types.BIGINT, Column.FLAG_PRIMARY);
@@ -53,8 +58,8 @@ public class DLFileEntryTypeTable extends BaseTable<DLFileEntryTypeTable> {
 		createColumn(
 			"fileEntryTypeKey", String.class, Types.VARCHAR,
 			Column.FLAG_DEFAULT);
-	public final Column<DLFileEntryTypeTable, String> name = createColumn(
-		"name", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
+	public final Column<DLFileEntryTypeTable, Clob> name = createColumn(
+		"name", Clob.class, Types.CLOB, Column.FLAG_DEFAULT);
 	public final Column<DLFileEntryTypeTable, String> description =
 		createColumn(
 			"description", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
@@ -70,3 +75,4 @@ public class DLFileEntryTypeTable extends BaseTable<DLFileEntryTypeTable> {
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:2094216908

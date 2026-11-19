@@ -8,12 +8,13 @@ package com.liferay.headless.commerce.admin.catalog.client.dto.v1_0;
 import com.liferay.headless.commerce.admin.catalog.client.function.UnsafeSupplier;
 import com.liferay.headless.commerce.admin.catalog.client.serdes.v1_0.CatalogSerDes;
 
+import jakarta.annotation.Generated;
+
 import java.io.Serializable;
 
+import java.util.Date;
 import java.util.Map;
 import java.util.Objects;
-
-import javax.annotation.Generated;
 
 /**
  * @author Zoltán Takács
@@ -25,6 +26,31 @@ public class Catalog implements Cloneable, Serializable {
 	public static Catalog toDTO(String json) {
 		return CatalogSerDes.toDTO(json);
 	}
+
+	public String getAccountExternalReferenceCode() {
+		return accountExternalReferenceCode;
+	}
+
+	public void setAccountExternalReferenceCode(
+		String accountExternalReferenceCode) {
+
+		this.accountExternalReferenceCode = accountExternalReferenceCode;
+	}
+
+	public void setAccountExternalReferenceCode(
+		UnsafeSupplier<String, Exception>
+			accountExternalReferenceCodeUnsafeSupplier) {
+
+		try {
+			accountExternalReferenceCode =
+				accountExternalReferenceCodeUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String accountExternalReferenceCode;
 
 	public Long getAccountId() {
 		return accountId;
@@ -46,6 +72,35 @@ public class Catalog implements Cloneable, Serializable {
 	}
 
 	protected Long accountId;
+
+	public AccountType getAccountType() {
+		return accountType;
+	}
+
+	public String getAccountTypeAsString() {
+		if (accountType == null) {
+			return null;
+		}
+
+		return accountType.toString();
+	}
+
+	public void setAccountType(AccountType accountType) {
+		this.accountType = accountType;
+	}
+
+	public void setAccountType(
+		UnsafeSupplier<AccountType, Exception> accountTypeUnsafeSupplier) {
+
+		try {
+			accountType = accountTypeUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected AccountType accountType;
 
 	public Map<String, Map<String, String>> getActions() {
 		return actions;
@@ -69,6 +124,27 @@ public class Catalog implements Cloneable, Serializable {
 
 	protected Map<String, Map<String, String>> actions;
 
+	public Creator getCreator() {
+		return creator;
+	}
+
+	public void setCreator(Creator creator) {
+		this.creator = creator;
+	}
+
+	public void setCreator(
+		UnsafeSupplier<Creator, Exception> creatorUnsafeSupplier) {
+
+		try {
+			creator = creatorUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected Creator creator;
+
 	public String getCurrencyCode() {
 		return currencyCode;
 	}
@@ -89,6 +165,94 @@ public class Catalog implements Cloneable, Serializable {
 	}
 
 	protected String currencyCode;
+
+	public String getCurrencyExternalReferenceCode() {
+		return currencyExternalReferenceCode;
+	}
+
+	public void setCurrencyExternalReferenceCode(
+		String currencyExternalReferenceCode) {
+
+		this.currencyExternalReferenceCode = currencyExternalReferenceCode;
+	}
+
+	public void setCurrencyExternalReferenceCode(
+		UnsafeSupplier<String, Exception>
+			currencyExternalReferenceCodeUnsafeSupplier) {
+
+		try {
+			currencyExternalReferenceCode =
+				currencyExternalReferenceCodeUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String currencyExternalReferenceCode;
+
+	public Long getCurrencyId() {
+		return currencyId;
+	}
+
+	public void setCurrencyId(Long currencyId) {
+		this.currencyId = currencyId;
+	}
+
+	public void setCurrencyId(
+		UnsafeSupplier<Long, Exception> currencyIdUnsafeSupplier) {
+
+		try {
+			currencyId = currencyIdUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected Long currencyId;
+
+	public Date getDateCreated() {
+		return dateCreated;
+	}
+
+	public void setDateCreated(Date dateCreated) {
+		this.dateCreated = dateCreated;
+	}
+
+	public void setDateCreated(
+		UnsafeSupplier<Date, Exception> dateCreatedUnsafeSupplier) {
+
+		try {
+			dateCreated = dateCreatedUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected Date dateCreated;
+
+	public Date getDateModified() {
+		return dateModified;
+	}
+
+	public void setDateModified(Date dateModified) {
+		this.dateModified = dateModified;
+	}
+
+	public void setDateModified(
+		UnsafeSupplier<Date, Exception> dateModifiedUnsafeSupplier) {
+
+		try {
+			dateModified = dateModifiedUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected Date dateModified;
 
 	public String getDefaultLanguageId() {
 		return defaultLanguageId;
@@ -170,6 +334,38 @@ public class Catalog implements Cloneable, Serializable {
 
 	protected String name;
 
+	public
+		com.liferay.headless.commerce.admin.catalog.client.permission.
+			Permission[] getPermissions() {
+
+		return permissions;
+	}
+
+	public void setPermissions(
+		com.liferay.headless.commerce.admin.catalog.client.permission.
+			Permission[] permissions) {
+
+		this.permissions = permissions;
+	}
+
+	public void setPermissions(
+		UnsafeSupplier
+			<com.liferay.headless.commerce.admin.catalog.client.permission.
+				Permission[],
+			 Exception> permissionsUnsafeSupplier) {
+
+		try {
+			permissions = permissionsUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected
+		com.liferay.headless.commerce.admin.catalog.client.permission.
+			Permission[] permissions;
+
 	public Boolean getSystem() {
 		return system;
 	}
@@ -222,4 +418,39 @@ public class Catalog implements Cloneable, Serializable {
 		return CatalogSerDes.toJSON(this);
 	}
 
+	public static enum AccountType {
+
+		BUSINESS("business"), GUEST("guest"), PERSON("person"),
+		SUPPLIER("supplier");
+
+		public static AccountType create(String value) {
+			for (AccountType accountType : values()) {
+				if (Objects.equals(accountType.getValue(), value) ||
+					Objects.equals(accountType.name(), value)) {
+
+					return accountType;
+				}
+			}
+
+			return null;
+		}
+
+		public String getValue() {
+			return _value;
+		}
+
+		@Override
+		public String toString() {
+			return _value;
+		}
+
+		private AccountType(String value) {
+			_value = value;
+		}
+
+		private final String _value;
+
+	}
+
 }
+// LIFERAY-REST-BUILDER-HASH:275393180

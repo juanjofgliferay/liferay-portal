@@ -105,7 +105,7 @@ function ErrorListItem({error, onFocusSXPElement}) {
 			className={getCN('error-list-item', {
 				collapsible: _isCollapsible(),
 			})}
-			data-testid={TEST_IDS.ERROR_LIST_ITEM}
+			data-qa-id={TEST_IDS.ERROR_LIST_ITEM}
 			displayType={SEVERITY_DISPLAY_TYPE[error.severity] || 'danger'}
 		>
 			<span className="message" onClick={_handleCollapse}>
@@ -120,7 +120,11 @@ function ErrorListItem({error, onFocusSXPElement}) {
 
 			{!!error.sxpElementId && (
 				<div className="scroll-button">
-					<ClayButton alert onClick={_handleFocusSXPElement} small>
+					<ClayButton
+						alert
+						onClick={_handleFocusSXPElement}
+						size="sm"
+					>
 						{Liferay.Language.get('view-element')}
 					</ClayButton>
 				</div>
@@ -140,7 +144,7 @@ function ErrorListItem({error, onFocusSXPElement}) {
 					)}
 					displayType="unstyled"
 					onClick={_handleCollapse}
-					small
+					size="sm"
 					symbol={collapse ? 'angle-right' : 'angle-down'}
 				/>
 			)}

@@ -6,8 +6,7 @@
 package com.liferay.site.internal.model.listener.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
-import com.liferay.petra.string.StringBundler;
-import com.liferay.portal.configuration.metatype.annotations.ExtendedObjectClassDefinition;
+import com.liferay.configuration.admin.util.ConfigurationFilterStringUtil;
 import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Role;
@@ -17,6 +16,7 @@ import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
+import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.util.GetterUtil;
@@ -59,7 +59,8 @@ public class RoleModelListenerTest {
 		_group = GroupTestUtil.addGroup();
 
 		_configurationProvider.saveGroupConfiguration(
-			MenuAccessConfiguration.class, _group.getGroupId(),
+			MenuAccessConfiguration.class, _group.getCompanyId(),
+			_group.getGroupId(),
 			HashMapDictionaryBuilder.<String, Object>put(
 				"accessToControlMenuRoleIds", new String[0]
 			).put(
@@ -73,64 +74,64 @@ public class RoleModelListenerTest {
 	@Test
 	public void testAddOtherRoleTypes() throws Exception {
 		_roleLocalService.addRole(
-			TestPropsValues.getUserId(), null, 0, StringUtil.randomString(),
-			null, null, RoleConstants.TYPE_ACCOUNT, null, _serviceContext);
+			RandomTestUtil.randomString(), TestPropsValues.getUserId(), null, 0,
+			StringUtil.randomString(), null, null, RoleConstants.TYPE_ACCOUNT,
+			null, _serviceContext);
 		_roleLocalService.addRole(
-			TestPropsValues.getUserId(), null, 0, StringUtil.randomString(),
-			null, null, RoleConstants.TYPE_DEPOT, null, _serviceContext);
+			RandomTestUtil.randomString(), TestPropsValues.getUserId(), null, 0,
+			StringUtil.randomString(), null, null, RoleConstants.TYPE_DEPOT,
+			null, _serviceContext);
 		_roleLocalService.addRole(
-			TestPropsValues.getUserId(), null, 0, StringUtil.randomString(),
-			null, null, RoleConstants.TYPE_PROVIDER, null, _serviceContext);
+			RandomTestUtil.randomString(), TestPropsValues.getUserId(), null, 0,
+			StringUtil.randomString(), null, null, RoleConstants.TYPE_PROVIDER,
+			null, _serviceContext);
 		_roleLocalService.addRole(
-			TestPropsValues.getUserId(), null, 0, StringUtil.randomString(),
-			null, null, RoleConstants.TYPE_ORGANIZATION, null, _serviceContext);
+			RandomTestUtil.randomString(), TestPropsValues.getUserId(), null, 0,
+			StringUtil.randomString(), null, null,
+			RoleConstants.TYPE_ORGANIZATION, null, _serviceContext);
 		_roleLocalService.addRole(
-			TestPropsValues.getUserId(), null, 0, StringUtil.randomString(),
-			null, null, RoleConstants.TYPE_PUBLICATIONS, null, _serviceContext);
+			RandomTestUtil.randomString(), TestPropsValues.getUserId(), null, 0,
+			StringUtil.randomString(), null, null,
+			RoleConstants.TYPE_PUBLICATIONS, null, _serviceContext);
 
 		_assertConfiguration(new String[0]);
 	}
 
 	@Test
 	public void testAddRole() throws Exception {
-		Role role = _roleLocalService.addRole(
-			TestPropsValues.getUserId(), null, 0, StringUtil.randomString(),
-			null, null, RoleConstants.TYPE_SITE, null, _serviceContext);
+		_roleLocalService.addRole(
+			RandomTestUtil.randomString(), TestPropsValues.getUserId(), null, 0,
+			StringUtil.randomString(), null, null, RoleConstants.TYPE_SITE,
+			null, _serviceContext);
 
-		_assertConfiguration(new String[] {String.valueOf(role.getRoleId())});
+		_assertConfiguration(new String[0]);
 	}
 
 	@Test
 	public void testDeleteRole() throws Exception {
-		Role role1 = _roleLocalService.addRole(
-			TestPropsValues.getUserId(), null, 0, StringUtil.randomString(),
-			null, null, RoleConstants.TYPE_REGULAR, null, _serviceContext);
-		Role role2 = _roleLocalService.addRole(
-			TestPropsValues.getUserId(), null, 0, StringUtil.randomString(),
-			null, null, RoleConstants.TYPE_SITE, null, _serviceContext);
+		Role role = _roleLocalService.addRole(
+			RandomTestUtil.randomString(), TestPropsValues.getUserId(), null, 0,
+			StringUtil.randomString(), null, null, RoleConstants.TYPE_REGULAR,
+			null, _serviceContext);
 
-		_assertConfiguration(
-			new String[] {
-				String.valueOf(role1.getRoleId()),
-				String.valueOf(role2.getRoleId())
-			});
+		_menuAccessConfigurationManager.updateMenuAccessConfiguration(
+			_group.getGroupId(),
+			new String[] {String.valueOf(role.getRoleId())}, true);
 
-		_roleLocalService.deleteRole(role1);
+		_assertConfiguration(new String[] {String.valueOf(role.getRoleId())});
 
-		_assertConfiguration(new String[] {String.valueOf(role2.getRoleId())});
+		_roleLocalService.deleteRole(role);
+
+		_assertConfiguration(new String[0]);
 	}
 
 	private void _assertConfiguration(String[] expectedRolesCanSeeControlMenu)
 		throws Exception {
 
-		String filterString = StringBundler.concat(
-			"(&(service.factoryPid=", MenuAccessConfiguration.class.getName(),
-			".scoped)(",
-			ExtendedObjectClassDefinition.Scope.GROUP.getPropertyKey(), "=",
-			_group.getGroupId(), "))");
-
 		Configuration[] configurations = _configurationAdmin.listConfigurations(
-			filterString);
+			ConfigurationFilterStringUtil.getGroupScopedFilterString(
+				_group.getCompanyId(), _group.getGroupId(),
+				MenuAccessConfiguration.class.getName(), null));
 
 		Assert.assertNotNull(configurations);
 		Assert.assertEquals(

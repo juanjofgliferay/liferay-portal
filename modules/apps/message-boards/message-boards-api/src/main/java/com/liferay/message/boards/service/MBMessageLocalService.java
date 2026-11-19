@@ -580,6 +580,13 @@ public interface MBMessageLocalService
 	public List<MBMessage> getMessages(
 		String className, long classPK, int status);
 
+	@Indexable(type = IndexableType.REINDEX)
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public MBMessage getOrAddEmptyDiscussionMessage(
+			String externalReferenceCode, long userId, long groupId,
+			String className, long classPK)
+		throws PortalException;
+
 	/**
 	 * Returns the OSGi service identifier.
 	 *
@@ -594,9 +601,6 @@ public interface MBMessageLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public PersistedModel getPersistedModel(Serializable primaryKeyObj)
 		throws PortalException;
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getPositionInThread(long messageId) throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<MBMessage> getRootDiscussionMessages(
@@ -638,41 +642,7 @@ public interface MBMessageLocalService
 		Comparator<MBMessage> comparator);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getThreadMessagesCount(long threadId, boolean answer);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public int getThreadMessagesCount(long threadId, int status);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<MBMessage> getThreadRepliesMessages(
-		long threadId, int status, int start, int end);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<MBMessage> getUserDiscussionMessages(
-		long userId, long classNameId, long classPK, int status, int start,
-		int end, OrderByComparator<MBMessage> orderByComparator);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<MBMessage> getUserDiscussionMessages(
-		long userId, long[] classNameIds, int status, int start, int end,
-		OrderByComparator<MBMessage> orderByComparator);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<MBMessage> getUserDiscussionMessages(
-		long userId, String className, long classPK, int status, int start,
-		int end, OrderByComparator<MBMessage> orderByComparator);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getUserDiscussionMessagesCount(
-		long userId, long classNameId, long classPK, int status);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getUserDiscussionMessagesCount(
-		long userId, long[] classNameIds, int status);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getUserDiscussionMessagesCount(
-		long userId, String className, long classPK, int status);
 
 	public long moveMessageAttachmentToTrash(
 			long userId, long messageId, String fileName)
@@ -756,3 +726,4 @@ public interface MBMessageLocalService
 		throws E;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1874684514

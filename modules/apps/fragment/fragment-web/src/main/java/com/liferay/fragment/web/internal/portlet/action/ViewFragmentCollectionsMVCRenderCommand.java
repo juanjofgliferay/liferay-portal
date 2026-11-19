@@ -6,19 +6,23 @@
 package com.liferay.fragment.web.internal.portlet.action;
 
 import com.liferay.fragment.constants.FragmentPortletKeys;
+import com.liferay.fragment.service.FragmentCollectionLocalService;
+import com.liferay.fragment.web.internal.display.context.FragmentCollectionsDisplayContext;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCRenderCommand;
+import com.liferay.portal.kernel.util.Portal;
 
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
 
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Eudaldo Alonso
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + FragmentPortletKeys.FRAGMENT,
+		"jakarta.portlet.name=" + FragmentPortletKeys.FRAGMENT,
 		"mvc.command.name=/fragment/view_fragment_collections"
 	},
 	service = MVCRenderCommand.class
@@ -30,7 +34,20 @@ public class ViewFragmentCollectionsMVCRenderCommand
 	public String render(
 		RenderRequest renderRequest, RenderResponse renderResponse) {
 
+		renderRequest.setAttribute(
+			FragmentCollectionsDisplayContext.class.getName(),
+			new FragmentCollectionsDisplayContext(
+				false, _fragmentCollectionLocalService,
+				_portal.getHttpServletRequest(renderRequest), renderRequest,
+				renderResponse));
+
 		return "/view_fragment_collections.jsp";
 	}
+
+	@Reference
+	private FragmentCollectionLocalService _fragmentCollectionLocalService;
+
+	@Reference
+	private Portal _portal;
 
 }

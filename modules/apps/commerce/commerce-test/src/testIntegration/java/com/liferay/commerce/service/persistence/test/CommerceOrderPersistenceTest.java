@@ -19,14 +19,18 @@ import com.liferay.portal.kernel.dao.orm.ProjectionFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.orm.RestrictionsFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.Session;
+import com.liferay.portal.kernel.security.permission.InlineSQLHelperUtil;
+import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.transaction.Propagation;
 import com.liferay.portal.kernel.util.IntegerWrapper;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.OrderByComparatorFactoryUtil;
 import com.liferay.portal.kernel.util.Time;
+import com.liferay.portal.security.permission.SimplePermissionChecker;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PersistenceTestRule;
 import com.liferay.portal.test.rule.TransactionalTestRule;
@@ -114,11 +118,7 @@ public class CommerceOrderPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		CommerceOrder newCommerceOrder = _persistence.create(pk);
-
-		newCommerceOrder.setMvccVersion(RandomTestUtil.nextLong());
+		CommerceOrder newCommerceOrder = addCommerceOrder();
 
 		newCommerceOrder.setUuid(RandomTestUtil.randomString());
 
@@ -141,7 +141,7 @@ public class CommerceOrderPersistenceTest {
 
 		newCommerceOrder.setCommerceAccountId(RandomTestUtil.nextLong());
 
-		newCommerceOrder.setCommerceCurrencyId(RandomTestUtil.nextLong());
+		newCommerceOrder.setCommerceCurrencyCode(RandomTestUtil.randomString());
 
 		newCommerceOrder.setCommerceOrderTypeId(RandomTestUtil.nextLong());
 
@@ -171,6 +171,8 @@ public class CommerceOrderPersistenceTest {
 		newCommerceOrder.setLastPriceUpdateDate(RandomTestUtil.nextDate());
 
 		newCommerceOrder.setManuallyAdjusted(RandomTestUtil.randomBoolean());
+
+		newCommerceOrder.setName(RandomTestUtil.randomString());
 
 		newCommerceOrder.setOrderDate(RandomTestUtil.nextDate());
 
@@ -314,7 +316,9 @@ public class CommerceOrderPersistenceTest {
 
 		newCommerceOrder.setStatusDate(RandomTestUtil.nextDate());
 
-		_commerceOrders.add(_persistence.update(newCommerceOrder));
+		newCommerceOrder = _persistence.update(newCommerceOrder);
+
+		_commerceOrders.add(newCommerceOrder);
 
 		CommerceOrder existingCommerceOrder = _persistence.findByPrimaryKey(
 			newCommerceOrder.getPrimaryKey());
@@ -353,8 +357,8 @@ public class CommerceOrderPersistenceTest {
 			existingCommerceOrder.getCommerceAccountId(),
 			newCommerceOrder.getCommerceAccountId());
 		Assert.assertEquals(
-			existingCommerceOrder.getCommerceCurrencyId(),
-			newCommerceOrder.getCommerceCurrencyId());
+			existingCommerceOrder.getCommerceCurrencyCode(),
+			newCommerceOrder.getCommerceCurrencyCode());
 		Assert.assertEquals(
 			existingCommerceOrder.getCommerceOrderTypeId(),
 			newCommerceOrder.getCommerceOrderTypeId());
@@ -392,6 +396,8 @@ public class CommerceOrderPersistenceTest {
 		Assert.assertEquals(
 			existingCommerceOrder.isManuallyAdjusted(),
 			newCommerceOrder.isManuallyAdjusted());
+		Assert.assertEquals(
+			existingCommerceOrder.getName(), newCommerceOrder.getName());
 		Assert.assertEquals(
 			Time.getShortTimestamp(existingCommerceOrder.getOrderDate()),
 			Time.getShortTimestamp(newCommerceOrder.getOrderDate()));
@@ -661,15 +667,6 @@ public class CommerceOrderPersistenceTest {
 	}
 
 	@Test
-	public void testCountByG_CP() throws Exception {
-		_persistence.countByG_CP(RandomTestUtil.nextLong(), "");
-
-		_persistence.countByG_CP(0L, "null");
-
-		_persistence.countByG_CP(0L, (String)null);
-	}
-
-	@Test
 	public void testCountByG_U_O() throws Exception {
 		_persistence.countByG_U_O(
 			RandomTestUtil.nextLong(), RandomTestUtil.nextLong(),
@@ -685,15 +682,6 @@ public class CommerceOrderPersistenceTest {
 			RandomTestUtil.nextInt());
 
 		_persistence.countByG_C_O(0L, 0L, 0);
-	}
-
-	@Test
-	public void testCountByU_LtC_O() throws Exception {
-		_persistence.countByU_LtC_O(
-			RandomTestUtil.nextLong(), RandomTestUtil.nextDate(),
-			RandomTestUtil.nextInt());
-
-		_persistence.countByU_LtC_O(0L, RandomTestUtil.nextDate(), 0);
 	}
 
 	@Test
@@ -739,6 +727,24 @@ public class CommerceOrderPersistenceTest {
 
 	@Test
 	public void testFilterFindByGroupId() throws Exception {
+		PermissionThreadLocal.setPermissionChecker(
+			new SimplePermissionChecker() {
+				{
+					init(TestPropsValues.getUser());
+				}
+
+				@Override
+				public boolean isCompanyAdmin(long companyId) {
+					return false;
+				}
+
+			});
+
+		Assert.assertTrue(InlineSQLHelperUtil.isEnabled(0));
+
+		_persistence.filterFindByGroupId(
+			0, QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
+
 		_persistence.filterFindByGroupId(
 			0, QueryUtil.ALL_POS, QueryUtil.ALL_POS, getOrderByComparator());
 	}
@@ -749,17 +755,17 @@ public class CommerceOrderPersistenceTest {
 			"externalReferenceCode", true, "commerceOrderId", true, "groupId",
 			true, "companyId", true, "userId", true, "userName", true,
 			"createDate", true, "modifiedDate", true, "billingAddressId", true,
-			"commerceAccountId", true, "commerceCurrencyId", true,
+			"commerceAccountId", true, "commerceCurrencyCode", true,
 			"commerceOrderTypeId", true, "commerceShippingMethodId", true,
 			"deliveryCommerceTermEntryId", true, "paymentCommerceTermEntryId",
 			true, "shippingAddressId", true, "advanceStatus", true,
 			"commercePaymentMethodKey", true, "couponCode", true,
 			"deliveryCommerceTermEntryName", true, "lastPriceUpdateDate", true,
-			"manuallyAdjusted", true, "orderDate", true, "orderStatus", true,
-			"paymentCommerceTermEntryName", true, "paymentStatus", true,
-			"printedNote", true, "purchaseOrderNumber", true,
-			"requestedDeliveryDate", true, "shippable", true, "shippingAmount",
-			true, "shippingDiscountAmount", true,
+			"manuallyAdjusted", true, "name", true, "orderDate", true,
+			"orderStatus", true, "paymentCommerceTermEntryName", true,
+			"paymentStatus", true, "printedNote", true, "purchaseOrderNumber",
+			true, "requestedDeliveryDate", true, "shippable", true,
+			"shippingAmount", true, "shippingDiscountAmount", true,
 			"shippingDiscountPercentageLevel1", true,
 			"shippingDiscountPercentageLevel2", true,
 			"shippingDiscountPercentageLevel3", true,
@@ -1085,8 +1091,6 @@ public class CommerceOrderPersistenceTest {
 
 		CommerceOrder commerceOrder = _persistence.create(pk);
 
-		commerceOrder.setMvccVersion(RandomTestUtil.nextLong());
-
 		commerceOrder.setUuid(RandomTestUtil.randomString());
 
 		commerceOrder.setExternalReferenceCode(RandomTestUtil.randomString());
@@ -1107,7 +1111,7 @@ public class CommerceOrderPersistenceTest {
 
 		commerceOrder.setCommerceAccountId(RandomTestUtil.nextLong());
 
-		commerceOrder.setCommerceCurrencyId(RandomTestUtil.nextLong());
+		commerceOrder.setCommerceCurrencyCode(RandomTestUtil.randomString());
 
 		commerceOrder.setCommerceOrderTypeId(RandomTestUtil.nextLong());
 
@@ -1135,6 +1139,8 @@ public class CommerceOrderPersistenceTest {
 		commerceOrder.setLastPriceUpdateDate(RandomTestUtil.nextDate());
 
 		commerceOrder.setManuallyAdjusted(RandomTestUtil.randomBoolean());
+
+		commerceOrder.setName(RandomTestUtil.randomString());
 
 		commerceOrder.setOrderDate(RandomTestUtil.nextDate());
 
@@ -1287,3 +1293,4 @@ public class CommerceOrderPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-274051066

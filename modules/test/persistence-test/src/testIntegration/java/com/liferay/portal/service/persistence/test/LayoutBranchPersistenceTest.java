@@ -47,8 +47,10 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 /**
+ * @deprecated As of Cavanaugh (7.4.x), with no direct replacement
  * @generated
  */
+@Deprecated
 @RunWith(Arquillian.class)
 public class LayoutBranchPersistenceTest {
 
@@ -109,11 +111,7 @@ public class LayoutBranchPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		LayoutBranch newLayoutBranch = _persistence.create(pk);
-
-		newLayoutBranch.setMvccVersion(RandomTestUtil.nextLong());
+		LayoutBranch newLayoutBranch = addLayoutBranch();
 
 		newLayoutBranch.setGroupId(RandomTestUtil.nextLong());
 
@@ -133,7 +131,9 @@ public class LayoutBranchPersistenceTest {
 
 		newLayoutBranch.setMaster(RandomTestUtil.randomBoolean());
 
-		_layoutBranchs.add(_persistence.update(newLayoutBranch));
+		newLayoutBranch = _persistence.update(newLayoutBranch);
+
+		_layoutBranchs.add(newLayoutBranch);
 
 		LayoutBranch existingLayoutBranch = _persistence.findByPrimaryKey(
 			newLayoutBranch.getPrimaryKey());
@@ -179,14 +179,6 @@ public class LayoutBranchPersistenceTest {
 		_persistence.countByPlid(RandomTestUtil.nextLong());
 
 		_persistence.countByPlid(0L);
-	}
-
-	@Test
-	public void testCountByL_P() throws Exception {
-		_persistence.countByL_P(
-			RandomTestUtil.nextLong(), RandomTestUtil.nextLong());
-
-		_persistence.countByL_P(0L, 0L);
 	}
 
 	@Test
@@ -525,8 +517,6 @@ public class LayoutBranchPersistenceTest {
 
 		LayoutBranch layoutBranch = _persistence.create(pk);
 
-		layoutBranch.setMvccVersion(RandomTestUtil.nextLong());
-
 		layoutBranch.setGroupId(RandomTestUtil.nextLong());
 
 		layoutBranch.setCompanyId(RandomTestUtil.nextLong());
@@ -555,3 +545,4 @@ public class LayoutBranchPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1095065435

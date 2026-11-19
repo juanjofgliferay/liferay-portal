@@ -111,11 +111,7 @@ public class TranslationEntryPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		TranslationEntry newTranslationEntry = _persistence.create(pk);
-
-		newTranslationEntry.setMvccVersion(RandomTestUtil.nextLong());
+		TranslationEntry newTranslationEntry = addTranslationEntry();
 
 		newTranslationEntry.setCtCollectionId(RandomTestUtil.nextLong());
 
@@ -151,7 +147,9 @@ public class TranslationEntryPersistenceTest {
 
 		newTranslationEntry.setStatusDate(RandomTestUtil.nextDate());
 
-		_translationEntries.add(_persistence.update(newTranslationEntry));
+		newTranslationEntry = _persistence.update(newTranslationEntry);
+
+		_translationEntries.add(newTranslationEntry);
 
 		TranslationEntry existingTranslationEntry =
 			_persistence.findByPrimaryKey(newTranslationEntry.getPrimaryKey());
@@ -239,14 +237,6 @@ public class TranslationEntryPersistenceTest {
 		_persistence.countByUuid_C("null", 0L);
 
 		_persistence.countByUuid_C((String)null, 0L);
-	}
-
-	@Test
-	public void testCountByC_C() throws Exception {
-		_persistence.countByC_C(
-			RandomTestUtil.nextLong(), RandomTestUtil.nextLong());
-
-		_persistence.countByC_C(0L, 0L);
 	}
 
 	@Test
@@ -595,8 +585,6 @@ public class TranslationEntryPersistenceTest {
 
 		TranslationEntry translationEntry = _persistence.create(pk);
 
-		translationEntry.setMvccVersion(RandomTestUtil.nextLong());
-
 		translationEntry.setCtCollectionId(RandomTestUtil.nextLong());
 
 		translationEntry.setUuid(RandomTestUtil.randomString());
@@ -642,3 +630,4 @@ public class TranslationEntryPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1079119388

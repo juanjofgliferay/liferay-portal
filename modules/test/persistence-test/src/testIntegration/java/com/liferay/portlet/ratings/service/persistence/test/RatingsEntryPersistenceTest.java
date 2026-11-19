@@ -111,11 +111,7 @@ public class RatingsEntryPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		RatingsEntry newRatingsEntry = _persistence.create(pk);
-
-		newRatingsEntry.setMvccVersion(RandomTestUtil.nextLong());
+		RatingsEntry newRatingsEntry = addRatingsEntry();
 
 		newRatingsEntry.setCtCollectionId(RandomTestUtil.nextLong());
 
@@ -137,7 +133,9 @@ public class RatingsEntryPersistenceTest {
 
 		newRatingsEntry.setScore(RandomTestUtil.nextDouble());
 
-		_ratingsEntries.add(_persistence.update(newRatingsEntry));
+		newRatingsEntry = _persistence.update(newRatingsEntry);
+
+		_ratingsEntries.add(newRatingsEntry);
 
 		RatingsEntry existingRatingsEntry = _persistence.findByPrimaryKey(
 			newRatingsEntry.getPrimaryKey());
@@ -214,15 +212,6 @@ public class RatingsEntryPersistenceTest {
 		_persistence.countByU_C_C(
 			RandomTestUtil.nextLong(), RandomTestUtil.nextLong(),
 			new long[] {RandomTestUtil.nextLong(), 0L});
-	}
-
-	@Test
-	public void testCountByC_C_S() throws Exception {
-		_persistence.countByC_C_S(
-			RandomTestUtil.nextLong(), RandomTestUtil.nextLong(),
-			RandomTestUtil.nextDouble());
-
-		_persistence.countByC_C_S(0L, 0L, 0D);
 	}
 
 	@Test
@@ -538,8 +527,6 @@ public class RatingsEntryPersistenceTest {
 
 		RatingsEntry ratingsEntry = _persistence.create(pk);
 
-		ratingsEntry.setMvccVersion(RandomTestUtil.nextLong());
-
 		ratingsEntry.setCtCollectionId(RandomTestUtil.nextLong());
 
 		ratingsEntry.setUuid(RandomTestUtil.randomString());
@@ -570,3 +557,4 @@ public class RatingsEntryPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1091043658

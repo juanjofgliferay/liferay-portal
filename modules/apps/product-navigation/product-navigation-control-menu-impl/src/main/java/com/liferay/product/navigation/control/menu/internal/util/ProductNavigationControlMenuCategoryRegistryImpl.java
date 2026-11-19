@@ -18,11 +18,11 @@ import com.liferay.product.navigation.control.menu.ProductNavigationControlMenuE
 import com.liferay.product.navigation.control.menu.util.ProductNavigationControlMenuCategoryRegistry;
 import com.liferay.product.navigation.control.menu.util.ProductNavigationControlMenuEntryRegistry;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.service.component.annotations.Activate;
@@ -44,8 +44,8 @@ public class ProductNavigationControlMenuCategoryRegistryImpl
 
 		List<ProductNavigationControlMenuCategory>
 			productNavigationControlMenuCategories =
-				_productNavigationControlMenuCategoryServiceTrackerMap.
-					getService(productNavigationControlMenuCategoryKey);
+				_serviceTrackerMap.getService(
+					productNavigationControlMenuCategoryKey);
 
 		if (productNavigationControlMenuCategories == null) {
 			return Collections.emptyList();
@@ -86,11 +86,7 @@ public class ProductNavigationControlMenuCategoryRegistryImpl
 									productNavigationControlMenuCategory,
 									httpServletRequest);
 
-					if (productNavigationControlMenuEntries.isEmpty()) {
-						return false;
-					}
-
-					return true;
+					return !productNavigationControlMenuEntries.isEmpty();
 				}
 				catch (PortalException portalException) {
 					_log.error(portalException);
@@ -102,30 +98,28 @@ public class ProductNavigationControlMenuCategoryRegistryImpl
 
 	@Activate
 	protected void activate(BundleContext bundleContext) {
-		_productNavigationControlMenuCategoryServiceTrackerMap =
-			ServiceTrackerMapFactory.openMultiValueMap(
-				bundleContext, ProductNavigationControlMenuCategory.class, null,
-				new PropertyServiceReferenceMapper<>(
-					"product.navigation.control.menu.category.key"),
-				Collections.reverseOrder(
-					new PropertyServiceReferenceComparator<>(
-						"product.navigation.control.menu.category.order")));
+		_serviceTrackerMap = ServiceTrackerMapFactory.openMultiValueMap(
+			bundleContext, ProductNavigationControlMenuCategory.class, null,
+			new PropertyServiceReferenceMapper<>(
+				"product.navigation.control.menu.category.key"),
+			Collections.reverseOrder(
+				new PropertyServiceReferenceComparator<>(
+					"product.navigation.control.menu.category.order")));
 	}
 
 	@Deactivate
 	protected void deactivate() {
-		_productNavigationControlMenuCategoryServiceTrackerMap.close();
+		_serviceTrackerMap.close();
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		ProductNavigationControlMenuCategoryRegistryImpl.class);
 
-	private ServiceTrackerMap
-		<String, List<ProductNavigationControlMenuCategory>>
-			_productNavigationControlMenuCategoryServiceTrackerMap;
-
 	@Reference
 	private ProductNavigationControlMenuEntryRegistry
 		_productNavigationControlMenuEntryRegistry;
+
+	private ServiceTrackerMap
+		<String, List<ProductNavigationControlMenuCategory>> _serviceTrackerMap;
 
 }

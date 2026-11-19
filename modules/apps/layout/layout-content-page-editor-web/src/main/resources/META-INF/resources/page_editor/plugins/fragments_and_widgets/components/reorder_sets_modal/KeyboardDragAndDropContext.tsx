@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
+import {ScreenReaderAnnouncer} from '@liferay/layout-js-components-web';
 import {sub} from 'frontend-js-web';
 import React, {
 	Dispatch,
@@ -19,7 +20,6 @@ import React, {
 	useState,
 } from 'react';
 
-import ScreenReaderAnnouncer from '../../../../common/components/ScreenReaderAnnouncer';
 import {
 	DRAG_OVER_POSITIONS,
 	DRAG_OVER_POSITIONS_LABELS,
@@ -57,10 +57,8 @@ export function KeyboardDragAndDropContextProvider({
 	children,
 	itemList,
 }: PropsWithChildren<{itemList: Item[]}>) {
-	const [
-		dragOverPosition,
-		setDragOverPosition,
-	] = useState<DragOverPosition | null>(null);
+	const [dragOverPosition, setDragOverPosition] =
+		useState<DragOverPosition | null>(null);
 	const itemElementMap: Context['itemElementMap'] = useMemo(
 		() => new Map(),
 		[]
@@ -78,7 +76,7 @@ export function KeyboardDragAndDropContextProvider({
 
 	const screenReaderAnnouncerRef = useRef<any>();
 
-	const sendMessage = useCallback((message) => {
+	const sendMessage = useCallback((message: any) => {
 		const ref = screenReaderAnnouncerRef;
 
 		if (ref.current) {

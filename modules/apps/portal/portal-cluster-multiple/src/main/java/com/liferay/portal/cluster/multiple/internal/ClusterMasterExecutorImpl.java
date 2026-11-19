@@ -5,28 +5,29 @@
 
 package com.liferay.portal.cluster.multiple.internal;
 
+import com.liferay.petra.concurrent.DefaultNoticeableFuture;
+import com.liferay.petra.concurrent.NoticeableFuture;
+import com.liferay.petra.concurrent.NoticeableFutureConverter;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.cluster.Address;
 import com.liferay.portal.kernel.cluster.ClusterEvent;
 import com.liferay.portal.kernel.cluster.ClusterEventListener;
 import com.liferay.portal.kernel.cluster.ClusterEventType;
+import com.liferay.portal.kernel.cluster.ClusterExecutor;
 import com.liferay.portal.kernel.cluster.ClusterMasterExecutor;
 import com.liferay.portal.kernel.cluster.ClusterMasterTokenTransitionListener;
 import com.liferay.portal.kernel.cluster.ClusterNode;
 import com.liferay.portal.kernel.cluster.ClusterNodeResponse;
 import com.liferay.portal.kernel.cluster.ClusterNodeResponses;
 import com.liferay.portal.kernel.cluster.ClusterRequest;
-import com.liferay.portal.kernel.concurrent.DefaultNoticeableFuture;
-import com.liferay.portal.kernel.concurrent.NoticeableFuture;
-import com.liferay.portal.kernel.concurrent.NoticeableFutureConverter;
 import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.MethodHandler;
 import com.liferay.portal.kernel.util.Validator;
 
-import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceRegistration;
@@ -81,7 +82,7 @@ public class ClusterMasterExecutorImpl implements ClusterMasterExecutor {
 
 		try {
 			return new NoticeableFutureConverter<T, ClusterNodeResponses>(
-				_clusterExecutorImpl.execute(clusterRequest)) {
+				_clusterExecutor.execute(clusterRequest)) {
 
 				@Override
 				protected T convert(ClusterNodeResponses clusterNodeResponses)
@@ -128,7 +129,7 @@ public class ClusterMasterExecutorImpl implements ClusterMasterExecutor {
 
 	@Activate
 	protected synchronized void activate(BundleContext bundleContext) {
-		if (!_clusterExecutorImpl.isEnabled()) {
+		if (!_clusterExecutor.isEnabled()) {
 			return;
 		}
 
@@ -136,8 +137,7 @@ public class ClusterMasterExecutorImpl implements ClusterMasterExecutor {
 			ClusterEventListener.class,
 			new ClusterMasterTokenClusterEventListener(), null);
 
-		ClusterNode localClusterNode =
-			_clusterExecutorImpl.getLocalClusterNode();
+		ClusterNode localClusterNode = _clusterExecutor.getLocalClusterNode();
 
 		_localClusterNodeId = localClusterNode.getClusterNodeId();
 
@@ -159,12 +159,15 @@ public class ClusterMasterExecutorImpl implements ClusterMasterExecutor {
 	}
 
 	protected String getMasterClusterNodeId(boolean notify) {
-		boolean master = false;
 		String masterClusterNodeId = null;
+
+		ClusterExecutorImpl clusterExecutorImpl =
+			(ClusterExecutorImpl)_clusterExecutor;
+		boolean master = false;
 
 		while (true) {
 			ClusterChannel clusterChannel =
-				_clusterExecutorImpl.getClusterChannel();
+				clusterExecutorImpl.getClusterChannel();
 
 			ClusterReceiver clusterReceiver =
 				clusterChannel.getClusterReceiver();
@@ -179,7 +182,7 @@ public class ClusterMasterExecutorImpl implements ClusterMasterExecutor {
 				masterClusterNodeId = _localClusterNodeId;
 			}
 			else {
-				masterClusterNodeId = _clusterExecutorImpl.getClusterNodeId(
+				masterClusterNodeId = clusterExecutorImpl.getClusterNodeId(
 					coordinatorAddress);
 			}
 
@@ -239,10 +242,10 @@ public class ClusterMasterExecutorImpl implements ClusterMasterExecutor {
 	private static volatile boolean _master;
 
 	@Reference
-	private ClusterExecutorImpl _clusterExecutorImpl;
+	private ClusterExecutor _clusterExecutor;
 
 	private final Set<ClusterMasterTokenTransitionListener>
-		_clusterMasterTokenTransitionListeners = new HashSet<>();
+		_clusterMasterTokenTransitionListeners = new CopyOnWriteArraySet<>();
 	private boolean _enabled;
 	private volatile String _localClusterNodeId;
 	private ServiceRegistration<ClusterEventListener> _serviceRegistration;

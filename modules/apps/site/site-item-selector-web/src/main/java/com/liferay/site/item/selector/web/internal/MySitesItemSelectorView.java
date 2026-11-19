@@ -16,23 +16,22 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.ResourceBundleUtil;
-import com.liferay.site.item.selector.criterion.SiteItemSelectorCriterion;
+import com.liferay.site.item.selector.SiteItemSelectorCriterion;
 import com.liferay.site.item.selector.web.internal.renderer.MyGroupItemSelectorViewRenderer;
-import com.liferay.site.util.GroupSearchProvider;
-import com.liferay.site.util.GroupURLProvider;
+import com.liferay.site.provider.GroupURLProvider;
+
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
 
 import java.io.IOException;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
-
-import javax.portlet.PortletURL;
-
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
 
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -74,11 +73,7 @@ public class MySitesItemSelectorView
 		SiteItemSelectorCriterion siteItemSelectorCriterion,
 		ThemeDisplay themeDisplay) {
 
-		if (siteItemSelectorCriterion.isIncludeMySites()) {
-			return true;
-		}
-
-		return false;
+		return siteItemSelectorCriterion.isIncludeMySites();
 	}
 
 	@Override
@@ -90,13 +85,13 @@ public class MySitesItemSelectorView
 
 		_myGroupItemSelectorViewRenderer.renderHTML(
 			servletRequest, servletResponse, siteItemSelectorCriterion,
-			portletURL, itemSelectedEventName, search);
+			portletURL, itemSelectedEventName);
 	}
 
 	@Activate
 	protected void activate() {
 		_myGroupItemSelectorViewRenderer = new MyGroupItemSelectorViewRenderer(
-			_groupSearchProvider, _groupURLProvider, _servletContext);
+			_groupURLProvider, _servletContext);
 	}
 
 	@Deactivate
@@ -110,9 +105,6 @@ public class MySitesItemSelectorView
 				new GroupItemSelectorReturnType(),
 				new URLItemSelectorReturnType(),
 				new UUIDItemSelectorReturnType()));
-
-	@Reference
-	private GroupSearchProvider _groupSearchProvider;
 
 	@Reference
 	private GroupURLProvider _groupURLProvider;

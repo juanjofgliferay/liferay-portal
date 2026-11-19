@@ -7,6 +7,8 @@ package com.liferay.headless.commerce.admin.pricing.internal.resource.v2_0;
 
 import com.liferay.asset.kernel.model.AssetCategory;
 import com.liferay.asset.kernel.service.AssetCategoryLocalService;
+import com.liferay.asset.kernel.service.AssetCategoryService;
+import com.liferay.asset.kernel.service.AssetVocabularyService;
 import com.liferay.commerce.discount.exception.NoSuchDiscountException;
 import com.liferay.commerce.discount.model.CommerceDiscount;
 import com.liferay.commerce.discount.model.CommerceDiscountRel;
@@ -16,7 +18,7 @@ import com.liferay.headless.commerce.admin.pricing.dto.v2_0.Discount;
 import com.liferay.headless.commerce.admin.pricing.dto.v2_0.DiscountCategory;
 import com.liferay.headless.commerce.admin.pricing.internal.util.v2_0.DiscountCategoryUtil;
 import com.liferay.headless.commerce.admin.pricing.resource.v2_0.DiscountCategoryResource;
-import com.liferay.headless.commerce.core.util.ServiceContextHelper;
+import com.liferay.headless.commerce.core.helper.ServiceContextHelper;
 import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.search.filter.Filter;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
@@ -28,7 +30,6 @@ import com.liferay.portal.vulcan.fields.NestedField;
 import com.liferay.portal.vulcan.pagination.Page;
 import com.liferay.portal.vulcan.pagination.Pagination;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -59,8 +60,9 @@ public class DiscountCategoryResourceImpl
 		throws Exception {
 
 		CommerceDiscount commerceDiscount =
-			_commerceDiscountService.fetchByExternalReferenceCode(
-				externalReferenceCode, contextCompany.getCompanyId());
+			_commerceDiscountService.
+				fetchCommerceDiscountByExternalReferenceCode(
+					externalReferenceCode, contextCompany.getCompanyId());
 
 		if (commerceDiscount == null) {
 			throw new NoSuchDiscountException(
@@ -74,14 +76,14 @@ public class DiscountCategoryResourceImpl
 				AssetCategory.class.getName(), pagination.getStartPosition(),
 				pagination.getEndPosition(), null);
 
-		int totalItems =
+		int totalCount =
 			_commerceDiscountRelService.getCommerceDiscountRelsCount(
 				commerceDiscount.getCommerceDiscountId(),
 				AssetCategory.class.getName());
 
 		return Page.of(
 			_toDiscountCategories(commerceDiscountRels), pagination,
-			totalItems);
+			totalCount);
 	}
 
 	@NestedField(parentClass = Discount.class, value = "discountCategories")
@@ -96,13 +98,13 @@ public class DiscountCategoryResourceImpl
 				id, search, pagination.getStartPosition(),
 				pagination.getEndPosition());
 
-		int totalItems =
+		int totalCount =
 			_commerceDiscountRelService.getCategoriesByCommerceDiscountIdCount(
 				id, search);
 
 		return Page.of(
 			_toDiscountCategories(commerceDiscountRels), pagination,
-			totalItems);
+			totalCount);
 	}
 
 	@Override
@@ -111,8 +113,9 @@ public class DiscountCategoryResourceImpl
 		throws Exception {
 
 		CommerceDiscount commerceDiscount =
-			_commerceDiscountService.fetchByExternalReferenceCode(
-				externalReferenceCode, contextCompany.getCompanyId());
+			_commerceDiscountService.
+				fetchCommerceDiscountByExternalReferenceCode(
+					externalReferenceCode, contextCompany.getCompanyId());
 
 		if (commerceDiscount == null) {
 			throw new NoSuchDiscountException(
@@ -122,9 +125,10 @@ public class DiscountCategoryResourceImpl
 
 		CommerceDiscountRel commerceDiscountRel =
 			DiscountCategoryUtil.addCommerceDiscountRel(
-				contextCompany.getGroupId(), _assetCategoryLocalService,
-				_commerceDiscountRelService, discountCategory, commerceDiscount,
-				_serviceContextHelper);
+				_assetCategoryLocalService, _assetCategoryService,
+				_assetVocabularyService, commerceDiscount,
+				_commerceDiscountRelService, discountCategory,
+				contextCompany.getGroupId(), _serviceContextHelper);
 
 		return _toDiscountCategory(
 			commerceDiscountRel.getCommerceDiscountRelId());
@@ -137,10 +141,11 @@ public class DiscountCategoryResourceImpl
 
 		CommerceDiscountRel commerceDiscountRel =
 			DiscountCategoryUtil.addCommerceDiscountRel(
-				contextCompany.getGroupId(), _assetCategoryLocalService,
-				_commerceDiscountRelService, discountCategory,
+				_assetCategoryLocalService, _assetCategoryService,
+				_assetVocabularyService,
 				_commerceDiscountService.getCommerceDiscount(id),
-				_serviceContextHelper);
+				_commerceDiscountRelService, discountCategory,
+				contextCompany.getGroupId(), _serviceContextHelper);
 
 		return _toDiscountCategory(
 			commerceDiscountRel.getCommerceDiscountRelId());
@@ -163,15 +168,10 @@ public class DiscountCategoryResourceImpl
 			List<CommerceDiscountRel> commerceDiscountRels)
 		throws Exception {
 
-		List<DiscountCategory> discountCategories = new ArrayList<>();
-
-		for (CommerceDiscountRel commerceDiscountRel : commerceDiscountRels) {
-			discountCategories.add(
-				_toDiscountCategory(
-					commerceDiscountRel.getCommerceDiscountRelId()));
-		}
-
-		return discountCategories;
+		return transform(
+			commerceDiscountRels,
+			commerceDiscountRel -> _toDiscountCategory(
+				commerceDiscountRel.getCommerceDiscountRelId()));
 	}
 
 	private DiscountCategory _toDiscountCategory(Long commerceDiscountRelId)
@@ -192,6 +192,12 @@ public class DiscountCategoryResourceImpl
 
 	@Reference
 	private AssetCategoryLocalService _assetCategoryLocalService;
+
+	@Reference
+	private AssetCategoryService _assetCategoryService;
+
+	@Reference
+	private AssetVocabularyService _assetVocabularyService;
 
 	@Reference(
 		target = "(model.class.name=com.liferay.commerce.discount.model.CommerceDiscountRel)"

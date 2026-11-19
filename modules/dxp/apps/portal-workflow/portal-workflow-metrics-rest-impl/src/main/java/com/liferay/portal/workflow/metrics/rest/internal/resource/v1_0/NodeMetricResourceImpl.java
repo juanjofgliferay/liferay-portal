@@ -22,12 +22,12 @@ import com.liferay.portal.search.aggregation.bucket.TermsAggregation;
 import com.liferay.portal.search.aggregation.bucket.TermsAggregationResult;
 import com.liferay.portal.search.aggregation.metrics.AvgAggregationResult;
 import com.liferay.portal.search.aggregation.metrics.ValueCountAggregationResult;
-import com.liferay.portal.search.engine.adapter.search.SearchRequestExecutor;
+import com.liferay.portal.search.engine.adapter.SearchEngineAdapter;
 import com.liferay.portal.search.engine.adapter.search.SearchSearchRequest;
 import com.liferay.portal.search.engine.adapter.search.SearchSearchResponse;
 import com.liferay.portal.search.index.IndexNameBuilder;
 import com.liferay.portal.search.query.BooleanQuery;
-import com.liferay.portal.search.query.Queries;
+import com.liferay.portal.search.query.QueriesUtil;
 import com.liferay.portal.search.query.TermsQuery;
 import com.liferay.portal.search.script.Scripts;
 import com.liferay.portal.search.sort.FieldSort;
@@ -43,6 +43,8 @@ import com.liferay.portal.workflow.metrics.rest.resource.v1_0.NodeMetricResource
 import com.liferay.portal.workflow.metrics.search.index.constants.WorkflowMetricsIndexNameConstants;
 import com.liferay.portal.workflow.metrics.sla.processor.WorkflowMetricsSLAStatus;
 
+import jakarta.ws.rs.core.MultivaluedMap;
+
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -51,8 +53,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import javax.ws.rs.core.MultivaluedMap;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -113,14 +113,14 @@ public class NodeMetricResourceImpl extends BaseNodeMetricResourceImpl {
 		boolean completed, Date dateEnd, Date dateStart, long processId,
 		Set<String> taskNames) {
 
-		BooleanQuery filterBooleanQuery = _queries.booleanQuery();
+		BooleanQuery filterBooleanQuery = QueriesUtil.booleanQuery();
 
-		BooleanQuery booleanQuery = _queries.booleanQuery();
+		BooleanQuery booleanQuery = QueriesUtil.booleanQuery();
 
-		BooleanQuery slaTaskResultsBooleanQuery = _queries.booleanQuery();
+		BooleanQuery slaTaskResultsBooleanQuery = QueriesUtil.booleanQuery();
 
 		slaTaskResultsBooleanQuery.addFilterQueryClauses(
-			_queries.term(
+			QueriesUtil.term(
 				"_index",
 				_indexNameBuilder.getIndexName(contextCompany.getCompanyId()) +
 					WorkflowMetricsIndexNameConstants.SUFFIX_SLA_TASK_RESULT));
@@ -128,10 +128,10 @@ public class NodeMetricResourceImpl extends BaseNodeMetricResourceImpl {
 			_createSLATaskResultsBooleanQuery(
 				completed, dateEnd, dateStart, processId, taskNames));
 
-		BooleanQuery tasksBooleanQuery = _queries.booleanQuery();
+		BooleanQuery tasksBooleanQuery = QueriesUtil.booleanQuery();
 
 		tasksBooleanQuery.addFilterQueryClauses(
-			_queries.term(
+			QueriesUtil.term(
 				"_index",
 				_indexNameBuilder.getIndexName(contextCompany.getCompanyId()) +
 					WorkflowMetricsIndexNameConstants.SUFFIX_TASK));
@@ -147,55 +147,59 @@ public class NodeMetricResourceImpl extends BaseNodeMetricResourceImpl {
 	private BooleanQuery _createBooleanQuery(
 		boolean completed, long processId) {
 
-		BooleanQuery booleanQuery = _queries.booleanQuery();
+		BooleanQuery booleanQuery = QueriesUtil.booleanQuery();
 
-		booleanQuery.addMustNotQueryClauses(_queries.term("taskId", 0));
+		booleanQuery.addMustNotQueryClauses(QueriesUtil.term("taskId", 0));
 
 		return booleanQuery.addMustQueryClauses(
-			_queries.term("completed", completed),
-			_queries.term("deleted", Boolean.FALSE),
-			_queries.term("processId", processId));
+			QueriesUtil.term("completed", completed),
+			QueriesUtil.term("deleted", Boolean.FALSE),
+			QueriesUtil.term("processId", processId));
 	}
 
 	private BooleanQuery _createBooleanQuery(long processId, String version) {
-		BooleanQuery booleanQuery = _queries.booleanQuery();
+		BooleanQuery booleanQuery = QueriesUtil.booleanQuery();
 
 		return booleanQuery.addMustQueryClauses(
-			_queries.term("deleted", Boolean.FALSE),
-			_queries.term("processId", processId),
-			_queries.term("version", version));
+			QueriesUtil.term("deleted", Boolean.FALSE),
+			QueriesUtil.term("processId", processId),
+			QueriesUtil.term("version", version));
 	}
 
 	private BooleanQuery _createCompletionDateBooleanQuery(
 		Date dateEnd, Date dateStart) {
 
-		BooleanQuery shouldBooleanQuery = _queries.booleanQuery();
+		BooleanQuery shouldBooleanQuery = QueriesUtil.booleanQuery();
 
-		BooleanQuery mustBooleanQuery = _queries.booleanQuery();
+		BooleanQuery mustBooleanQuery = QueriesUtil.booleanQuery();
 
 		return shouldBooleanQuery.addShouldQueryClauses(
 			mustBooleanQuery.addMustQueryClauses(
-				_queries.rangeTerm(
+				QueriesUtil.rangeTerm(
 					"completionDate", true, true,
 					_resourceHelper.getDate(dateStart),
 					_resourceHelper.getDate(dateEnd)),
-				_queries.term("instanceCompleted", true)),
-			_queries.term("slaDefinitionId", 0));
+				QueriesUtil.term("instanceCompleted", true)),
+			QueriesUtil.term("slaDefinitionId", 0));
 	}
 
 	private NodeMetric _createNodeMetric(String nodeName) {
 		return new NodeMetric() {
 			{
-				node = new Node() {
-					{
-						label = _language.get(
-							ResourceBundleUtil.getModuleAndPortalResourceBundle(
-								contextAcceptLanguage.getPreferredLocale(),
-								NodeMetricResourceImpl.class),
-							nodeName);
-						name = nodeName;
-					}
-				};
+				setNode(
+					() -> new Node() {
+						{
+							setLabel(
+								() -> _language.get(
+									ResourceBundleUtil.
+										getModuleAndPortalResourceBundle(
+											contextAcceptLanguage.
+												getPreferredLocale(),
+											NodeMetricResourceImpl.class),
+									nodeName));
+							setName(() -> nodeName);
+						}
+					});
 			}
 		};
 	}
@@ -204,24 +208,24 @@ public class NodeMetricResourceImpl extends BaseNodeMetricResourceImpl {
 		String key, String latestProcessVersion, long processId,
 		String processVersion, Set<String> taskNames) {
 
-		BooleanQuery filterBooleanQuery = _queries.booleanQuery();
+		BooleanQuery filterBooleanQuery = QueriesUtil.booleanQuery();
 
 		if (Validator.isNotNull(key)) {
 			filterBooleanQuery.addMustQueryClauses(
-				_queries.wildcard(
+				QueriesUtil.wildcard(
 					Field.getSortableFieldName("name"),
 					"*" + StringUtil.toLowerCase(key) + "*"));
 		}
 
-		TermsQuery termsQuery = _queries.terms("name");
+		TermsQuery termsQuery = QueriesUtil.terms("name");
 
 		termsQuery.addValues(taskNames.toArray(new Object[0]));
 
 		if (processVersion != null) {
 			filterBooleanQuery.addMustQueryClauses(
-				termsQuery, _queries.term("deleted", false),
-				_queries.term("processId", processId),
-				_queries.term("version", processVersion));
+				termsQuery, QueriesUtil.term("deleted", false),
+				QueriesUtil.term("processId", processId),
+				QueriesUtil.term("version", processVersion));
 		}
 		else {
 			filterBooleanQuery.addShouldQueryClauses(
@@ -229,20 +233,20 @@ public class NodeMetricResourceImpl extends BaseNodeMetricResourceImpl {
 				_createBooleanQuery(processId, latestProcessVersion));
 		}
 
-		BooleanQuery booleanQuery = _queries.booleanQuery();
+		BooleanQuery booleanQuery = QueriesUtil.booleanQuery();
 
 		booleanQuery.addFilterQueryClauses(filterBooleanQuery);
 
 		return booleanQuery.addMustQueryClauses(
-			_queries.term("companyId", contextCompany.getCompanyId()),
-			_queries.term("type", "TASK"));
+			QueriesUtil.term("companyId", contextCompany.getCompanyId()),
+			QueriesUtil.term("type", "TASK"));
 	}
 
 	private BooleanQuery _createSLATaskResultsBooleanQuery(
 		boolean completed, Date dateEnd, Date dateStart, long processId,
 		Set<String> taskNames) {
 
-		BooleanQuery booleanQuery = _queries.booleanQuery();
+		BooleanQuery booleanQuery = QueriesUtil.booleanQuery();
 
 		if (completed) {
 			if ((dateEnd != null) && (dateStart != null)) {
@@ -252,41 +256,41 @@ public class NodeMetricResourceImpl extends BaseNodeMetricResourceImpl {
 		}
 		else {
 			booleanQuery.addMustNotQueryClauses(
-				_queries.exists("completionDate"),
-				_queries.term(
+				QueriesUtil.exists("completionDate"),
+				QueriesUtil.term(
 					"status", WorkflowMetricsSLAStatus.COMPLETED.name()));
 			booleanQuery.addMustQueryClauses(
-				_queries.term("instanceCompleted", Boolean.FALSE));
+				QueriesUtil.term("instanceCompleted", Boolean.FALSE));
 		}
 
-		TermsQuery termsQuery = _queries.terms("taskName");
+		TermsQuery termsQuery = QueriesUtil.terms("taskName");
 
 		termsQuery.addValues(taskNames.toArray(new Object[0]));
 
 		return booleanQuery.addMustQueryClauses(
-			_queries.term("companyId", contextCompany.getCompanyId()),
-			_queries.term("deleted", Boolean.FALSE),
-			_queries.term("processId", processId), termsQuery);
+			QueriesUtil.term("companyId", contextCompany.getCompanyId()),
+			QueriesUtil.term("deleted", Boolean.FALSE),
+			QueriesUtil.term("processId", processId), termsQuery);
 	}
 
 	private BooleanQuery _createTasksBooleanQuery(
 		boolean completed, Date dateEnd, Date dateStart, long processId,
 		Set<String> taskNames) {
 
-		BooleanQuery booleanQuery = _queries.booleanQuery();
+		BooleanQuery booleanQuery = QueriesUtil.booleanQuery();
 
-		booleanQuery.addMustNotQueryClauses(_queries.term("taskId", "0"));
+		booleanQuery.addMustNotQueryClauses(QueriesUtil.term("taskId", "0"));
 
 		if (completed && (dateEnd != null) && (dateStart != null)) {
 			booleanQuery.addMustQueryClauses(
-				_queries.rangeTerm(
+				QueriesUtil.rangeTerm(
 					"completionDate", true, true,
 					_resourceHelper.getDate(dateStart),
 					_resourceHelper.getDate(dateEnd)));
 		}
 
 		if (!taskNames.isEmpty()) {
-			TermsQuery termsQuery = _queries.terms("name");
+			TermsQuery termsQuery = QueriesUtil.terms("name");
 
 			termsQuery.addValues(taskNames.toArray(new Object[0]));
 
@@ -294,38 +298,38 @@ public class NodeMetricResourceImpl extends BaseNodeMetricResourceImpl {
 		}
 
 		return booleanQuery.addMustQueryClauses(
-			_queries.term("active", true),
-			_queries.term("companyId", contextCompany.getCompanyId()),
-			_queries.term("completed", completed),
-			_queries.term("deleted", Boolean.FALSE),
-			_queries.term("instanceCompleted", completed),
-			_queries.term("processId", processId));
+			QueriesUtil.term("active", true),
+			QueriesUtil.term("companyId", contextCompany.getCompanyId()),
+			QueriesUtil.term("completed", completed),
+			QueriesUtil.term("deleted", Boolean.FALSE),
+			QueriesUtil.term("instanceCompleted", completed),
+			QueriesUtil.term("processId", processId));
 	}
 
 	private BooleanQuery _createTasksBooleanQuery(
 		boolean completed, String key, String latestProcessVersion,
 		long processId, String processVersion) {
 
-		BooleanQuery filterBooleanQuery = _queries.booleanQuery();
+		BooleanQuery filterBooleanQuery = QueriesUtil.booleanQuery();
 
 		if (Validator.isNotNull(key)) {
 			filterBooleanQuery.addMustQueryClauses(
-				_queries.wildcard(
+				QueriesUtil.wildcard(
 					Field.getSortableFieldName("name"),
 					"*" + StringUtil.toLowerCase(key) + "*"));
 		}
 
-		BooleanQuery booleanQuery = _queries.booleanQuery();
+		BooleanQuery booleanQuery = QueriesUtil.booleanQuery();
 
 		if (processVersion != null) {
-			booleanQuery.addMustNotQueryClauses(_queries.term("taskId", 0));
+			booleanQuery.addMustNotQueryClauses(QueriesUtil.term("taskId", 0));
 
 			booleanQuery.addMustQueryClauses(
-				_queries.term("instanceCompleted", completed));
+				QueriesUtil.term("instanceCompleted", completed));
 
 			filterBooleanQuery.addMustQueryClauses(
-				_queries.term("processId", processId),
-				_queries.term("version", processVersion));
+				QueriesUtil.term("processId", processId),
+				QueriesUtil.term("version", processVersion));
 		}
 		else {
 			filterBooleanQuery.addShouldQueryClauses(
@@ -336,9 +340,19 @@ public class NodeMetricResourceImpl extends BaseNodeMetricResourceImpl {
 		booleanQuery.addFilterQueryClauses(filterBooleanQuery);
 
 		return booleanQuery.addMustQueryClauses(
-			_queries.term("active", Boolean.TRUE),
-			_queries.term("companyId", contextCompany.getCompanyId()),
-			_queries.term("deleted", Boolean.FALSE));
+			QueriesUtil.term("active", Boolean.TRUE),
+			QueriesUtil.term("companyId", contextCompany.getCompanyId()),
+			QueriesUtil.term("deleted", Boolean.FALSE));
+	}
+
+	private double _getAvgAggregationResultValue(
+		AvgAggregationResult avgAggregationResult) {
+
+		if (Double.isInfinite(avgAggregationResult.getValue())) {
+			return 0D;
+		}
+
+		return avgAggregationResult.getValue();
 	}
 
 	private Collection<NodeMetric> _getNodeMetrics(
@@ -352,7 +366,7 @@ public class NodeMetricResourceImpl extends BaseNodeMetricResourceImpl {
 			"taskName", null);
 
 		termsAggregation.setScript(
-			_scripts.script(
+			Scripts.INSTANCE.script(
 				"doc.containsKey('name') ? doc.name.value : " +
 					"doc.taskName.value"));
 
@@ -414,7 +428,7 @@ public class NodeMetricResourceImpl extends BaseNodeMetricResourceImpl {
 				nodeMetrics.keySet()));
 
 		SearchSearchResponse searchSearchResponse =
-			_searchRequestExecutor.executeSearchRequest(searchSearchRequest);
+			_searchEngineAdapter.execute(searchSearchRequest);
 
 		Map<String, AggregationResult> aggregationResultsMap =
 			searchSearchResponse.getAggregationResultsMap();
@@ -460,7 +474,7 @@ public class NodeMetricResourceImpl extends BaseNodeMetricResourceImpl {
 				taskNames));
 
 		SearchSearchResponse searchSearchResponse =
-			_searchRequestExecutor.executeSearchRequest(searchSearchRequest);
+			_searchEngineAdapter.execute(searchSearchRequest);
 
 		Map<String, AggregationResult> aggregationResultsMap =
 			searchSearchResponse.getAggregationResultsMap();
@@ -498,6 +512,16 @@ public class NodeMetricResourceImpl extends BaseNodeMetricResourceImpl {
 		return nodeMetricsMap;
 	}
 
+	private Sort _getSort(String fieldName, boolean reverse, Sort[] sorts) {
+		Sort sort = new Sort(fieldName, reverse);
+
+		if (sorts != null) {
+			sort = sorts[0];
+		}
+
+		return sort;
+	}
+
 	private Map<String, Bucket> _getTaskBuckets(
 		boolean completed, String key, String latestProcessVersion,
 		long processId, String processVersion) {
@@ -522,7 +546,7 @@ public class NodeMetricResourceImpl extends BaseNodeMetricResourceImpl {
 				processVersion));
 
 		SearchSearchResponse searchSearchResponse =
-			_searchRequestExecutor.executeSearchRequest(searchSearchRequest);
+			_searchEngineAdapter.execute(searchSearchRequest);
 
 		Map<String, AggregationResult> aggregationResultsMap =
 			searchSearchResponse.getAggregationResultsMap();
@@ -598,7 +622,7 @@ public class NodeMetricResourceImpl extends BaseNodeMetricResourceImpl {
 		}
 
 		nodeMetric.setBreachedInstanceCount(
-			_resourceHelper.getBreachedInstanceCount(bucket));
+			() -> _resourceHelper.getBreachedInstanceCount(bucket));
 	}
 
 	private void _setBreachedInstancePercentage(
@@ -609,7 +633,7 @@ public class NodeMetricResourceImpl extends BaseNodeMetricResourceImpl {
 		}
 
 		nodeMetric.setBreachedInstancePercentage(
-			_resourceHelper.getBreachedInstancePercentage(bucket));
+			() -> _resourceHelper.getBreachedInstancePercentage(bucket));
 	}
 
 	private void _setDurationAvg(Bucket bucket, NodeMetric nodeMetric) {
@@ -626,13 +650,9 @@ public class NodeMetricResourceImpl extends BaseNodeMetricResourceImpl {
 				filterAggregationResult.getChildAggregationResult(
 					"durationAvg");
 
-		double value = avgAggregationResult.getValue();
-
-		if (Double.isInfinite(value)) {
-			value = 0D;
-		}
-
-		nodeMetric.setDurationAvg(GetterUtil.getLong(value));
+		nodeMetric.setDurationAvg(
+			() -> GetterUtil.getLong(
+				_getAvgAggregationResultValue(avgAggregationResult)));
 	}
 
 	private void _setInstanceCount(Bucket bucket, NodeMetric nodeMetric) {
@@ -650,7 +670,7 @@ public class NodeMetricResourceImpl extends BaseNodeMetricResourceImpl {
 					"instanceCount");
 
 		nodeMetric.setInstanceCount(
-			GetterUtil.getLong(valueCountAggregationResult.getValue()));
+			() -> GetterUtil.getLong(valueCountAggregationResult.getValue()));
 	}
 
 	private void _setOnTimeInstanceCount(Bucket bucket, NodeMetric nodeMetric) {
@@ -659,7 +679,7 @@ public class NodeMetricResourceImpl extends BaseNodeMetricResourceImpl {
 		}
 
 		nodeMetric.setOnTimeInstanceCount(
-			_resourceHelper.getOnTimeInstanceCount(bucket));
+			() -> _resourceHelper.getOnTimeInstanceCount(bucket));
 	}
 
 	private void _setOverdueInstanceCount(
@@ -670,15 +690,11 @@ public class NodeMetricResourceImpl extends BaseNodeMetricResourceImpl {
 		}
 
 		nodeMetric.setOverdueInstanceCount(
-			_resourceHelper.getOverdueInstanceCount(bucket));
+			() -> _resourceHelper.getOverdueInstanceCount(bucket));
 	}
 
 	private FieldSort _toFieldSort(Sort[] sorts) {
-		Sort sort = new Sort("instanceCount", false);
-
-		if (sorts != null) {
-			sort = sorts[0];
-		}
+		Sort sort = _getSort("instanceCount", false, sorts);
 
 		String fieldName = sort.getFieldName();
 
@@ -716,16 +732,10 @@ public class NodeMetricResourceImpl extends BaseNodeMetricResourceImpl {
 	private Language _language;
 
 	@Reference
-	private Queries _queries;
-
-	@Reference
 	private ResourceHelper _resourceHelper;
 
 	@Reference
-	private Scripts _scripts;
-
-	@Reference
-	private SearchRequestExecutor _searchRequestExecutor;
+	private SearchEngineAdapter _searchEngineAdapter;
 
 	@Reference
 	private Sorts _sorts;

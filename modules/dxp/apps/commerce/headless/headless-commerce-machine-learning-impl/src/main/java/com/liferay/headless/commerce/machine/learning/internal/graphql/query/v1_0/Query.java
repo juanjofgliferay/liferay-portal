@@ -13,9 +13,9 @@ import com.liferay.headless.commerce.machine.learning.resource.v1_0.AccountForec
 import com.liferay.headless.commerce.machine.learning.resource.v1_0.SkuForecastResource;
 import com.liferay.petra.function.UnsafeConsumer;
 import com.liferay.petra.function.UnsafeFunction;
-import com.liferay.portal.kernel.search.Sort;
-import com.liferay.portal.kernel.search.filter.Filter;
 import com.liferay.portal.kernel.service.GroupLocalService;
+import com.liferay.portal.kernel.service.ResourceActionLocalService;
+import com.liferay.portal.kernel.service.ResourcePermissionLocalService;
 import com.liferay.portal.kernel.service.RoleLocalService;
 import com.liferay.portal.vulcan.accept.language.AcceptLanguage;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
@@ -23,16 +23,16 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.pagination.Page;
 import com.liferay.portal.vulcan.pagination.Pagination;
 
+import jakarta.annotation.Generated;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+import jakarta.ws.rs.core.UriInfo;
+
 import java.util.Date;
 import java.util.Map;
 import java.util.function.BiFunction;
-
-import javax.annotation.Generated;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import javax.ws.rs.core.UriInfo;
 
 import org.osgi.service.component.ComponentServiceObjects;
 
@@ -73,7 +73,9 @@ public class Query {
 	 *
 	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {accountCategoryForecastsByMonthlyRevenue(accountIds: ___, categoryIds: ___, forecastLength: ___, forecastStartDate: ___, historyLength: ___, page: ___, pageSize: ___){items {__}, page, pageSize, totalCount}}"}' -u 'test@liferay.com:test'
 	 */
-	@GraphQLField(description = "Get the forecast points")
+	@GraphQLField(
+		description = "Returns a page of monthly revenue forecast points broken down by AccountEntry and AssetCategory. Calls AssetCategoryCommerceMLForecastManager.getMonthlyRevenueAssetCategoryCommerceMLForecasts in AccountCategoryForecastResourceImpl. Validation -- None (defaults to 3 forecast months and 8 history months from CommerceMLForecastConstants when omitted; forecastStartDate defaults to the current server date; account identifiers the caller cannot view are silently dropped through CommerceAccountPermissionHelper, and an empty intersection returns an empty page). List query support -- None (no filter, search, or sort exposed). Side effects -- None (read-only)."
+	)
 	public AccountCategoryForecastPage accountCategoryForecastsByMonthlyRevenue(
 			@GraphQLName("accountIds") Long[] accountIds,
 			@GraphQLName("categoryIds") Long[] categoryIds,
@@ -100,7 +102,9 @@ public class Query {
 	 *
 	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {accountForecastsByMonthlyRevenue(accountIds: ___, forecastLength: ___, forecastStartDate: ___, historyLength: ___, page: ___, pageSize: ___){items {__}, page, pageSize, totalCount}}"}' -u 'test@liferay.com:test'
 	 */
-	@GraphQLField(description = "Get the forecast points")
+	@GraphQLField(
+		description = "Returns a page of monthly revenue forecast points broken down by AccountEntry. Calls CommerceAccountCommerceMLForecastManager.getMonthlyRevenueCommerceAccountCommerceMLForecasts in AccountForecastResourceImpl. Validation -- None (defaults to 3 forecast months and 8 history months from CommerceMLForecastConstants when omitted; forecastStartDate defaults to the current server date; account identifiers the caller cannot view are silently dropped through CommerceAccountPermissionHelper, and an empty intersection returns an empty page). List query support -- None (no filter, search, or sort exposed). Side effects -- None (read-only)."
+	)
 	public AccountForecastPage accountForecastsByMonthlyRevenue(
 			@GraphQLName("accountIds") Long[] accountIds,
 			@GraphQLName("forecastLength") Integer forecastLength,
@@ -124,7 +128,9 @@ public class Query {
 	 *
 	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {skuForecastsByMonthlyRevenue(forecastLength: ___, forecastStartDate: ___, historyLength: ___, page: ___, pageSize: ___, skus: ___){items {__}, page, pageSize, totalCount}}"}' -u 'test@liferay.com:test'
 	 */
-	@GraphQLField(description = "Get the forecast points")
+	@GraphQLField(
+		description = "Returns a page of monthly demand forecast points broken down by SKU. Calls SkuCommerceMLForecastManager.getMonthlyQuantitySkuCommerceMLForecasts in SkuForecastResourceImpl. Validation -- None (defaults to 3 forecast months and 8 history months from CommerceMLForecastConstants when omitted; forecastStartDate defaults to the current server date; the optional skus filter restricts the result to the supplied SKU strings, otherwise every trained SKU is returned). List query support -- None (no filter, search, or sort exposed). Side effects -- None (read-only). Naming caveat -- the operationId is published as getSkuForecastsByMonthlyRevenuePage for backward client compatibility but the response carries demand quantity, not revenue; consult the path (/by-monthlyDemand) and the SkuForecast.unit field (`quantity`) to confirm the response dimension."
+	)
 	public SkuForecastPage skuForecastsByMonthlyRevenue(
 			@GraphQLName("forecastLength") Integer forecastLength,
 			@GraphQLName("forecastStartDate") Date forecastStartDate,
@@ -276,6 +282,10 @@ public class Query {
 		accountCategoryForecastResource.setContextUser(_user);
 		accountCategoryForecastResource.setGroupLocalService(
 			_groupLocalService);
+		accountCategoryForecastResource.setResourceActionLocalService(
+			_resourceActionLocalService);
+		accountCategoryForecastResource.setResourcePermissionLocalService(
+			_resourcePermissionLocalService);
 		accountCategoryForecastResource.setRoleLocalService(_roleLocalService);
 	}
 
@@ -292,6 +302,10 @@ public class Query {
 		accountForecastResource.setContextUriInfo(_uriInfo);
 		accountForecastResource.setContextUser(_user);
 		accountForecastResource.setGroupLocalService(_groupLocalService);
+		accountForecastResource.setResourceActionLocalService(
+			_resourceActionLocalService);
+		accountForecastResource.setResourcePermissionLocalService(
+			_resourcePermissionLocalService);
 		accountForecastResource.setRoleLocalService(_roleLocalService);
 	}
 
@@ -306,6 +320,10 @@ public class Query {
 		skuForecastResource.setContextUriInfo(_uriInfo);
 		skuForecastResource.setContextUser(_user);
 		skuForecastResource.setGroupLocalService(_groupLocalService);
+		skuForecastResource.setResourceActionLocalService(
+			_resourceActionLocalService);
+		skuForecastResource.setResourcePermissionLocalService(
+			_resourcePermissionLocalService);
 		skuForecastResource.setRoleLocalService(_roleLocalService);
 	}
 
@@ -318,13 +336,19 @@ public class Query {
 
 	private AcceptLanguage _acceptLanguage;
 	private com.liferay.portal.kernel.model.Company _company;
-	private BiFunction<Object, String, Filter> _filterBiFunction;
+	private BiFunction
+		<Object, String, com.liferay.portal.kernel.search.filter.Filter>
+			_filterBiFunction;
 	private GroupLocalService _groupLocalService;
 	private HttpServletRequest _httpServletRequest;
 	private HttpServletResponse _httpServletResponse;
+	private ResourceActionLocalService _resourceActionLocalService;
+	private ResourcePermissionLocalService _resourcePermissionLocalService;
 	private RoleLocalService _roleLocalService;
-	private BiFunction<Object, String, Sort[]> _sortsBiFunction;
+	private BiFunction<Object, String, com.liferay.portal.kernel.search.Sort[]>
+		_sortsBiFunction;
 	private UriInfo _uriInfo;
 	private com.liferay.portal.kernel.model.User _user;
 
 }
+// LIFERAY-REST-BUILDER-HASH:1385610172

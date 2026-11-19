@@ -1,0 +1,133 @@
+{
+	"configuration": {
+		"className": "com.liferay.object.admin.rest.dto.v1_0.ObjectDefinition",
+		"multiCompany": true,
+		"parameters": {
+			"containsHeaders": "true",
+			"createStrategy": "UPSERT",
+			"importStrategy": "ON_ERROR_FAIL",
+			"updateStrategy": "UPDATE"
+		},
+		"taskItemDelegateName": "DEFAULT"
+	},
+	"items": [
+		{
+			"accountEntryRestricted": true,
+			"accountEntryRestrictedObjectFieldName": "r_accountToAccountValidatorResults_accountEntryId",
+			"active": true,
+			"className": "com.liferay.object.model.ObjectDefinition#X9U6",
+			"enableCategorization": true,
+			"enableIndexSearch": true,
+			"externalReferenceCode": "L_ACCOUNT_VALIDATOR_RESULT",
+			"label": {
+				"en_US": "Account Validator Result"
+			},
+			"name": "AccountValidatorResult",
+			"objectDefinitionSettings": [
+				{
+					"name": "visible",
+					"value": "true"
+				}
+			],
+			"objectFields": [
+				{
+					"DBType": "String",
+					"businessType": "Text",
+					"externalReferenceCode": "CLASS_NAME",
+					"indexed": true,
+					"indexedLanguageId": "en_US",
+					"label": {
+						"en_US": "Class Name"
+					},
+					"name": "className",
+					"system": true
+				},
+				{
+					"DBType": "String",
+					"businessType": "Text",
+					"externalReferenceCode": "CLASS_PK",
+					"indexed": true,
+					"indexedLanguageId": "en_US",
+					"label": {
+						"en_US": "Class PK"
+					},
+					"name": "classPK",
+					"system": true
+				},
+				{
+					"DBType": "Clob",
+					"businessType": "LongText",
+					"externalReferenceCode": "DATA",
+					"indexedLanguageId": "en_US",
+					"label": {
+						"en_US": "Data"
+					},
+					"name": "data",
+					"system": true
+				},
+				{
+					"DBType": "String",
+					"businessType": "Text",
+					"externalReferenceCode": "RESULT_MESSAGE",
+					"indexed": true,
+					"indexedLanguageId": "en_US",
+					"label": {
+						"en_US": "Result Message"
+					},
+					"name": "resultMessage",
+					"system": true
+				},
+				{
+					"DBType": "String",
+					"businessType": "Text",
+					"externalReferenceCode": "RESULT_STATUS",
+					"indexed": true,
+					"indexedLanguageId": "en_US",
+					"label": {
+						"en_US": "Result Status"
+					},
+					"name": "resultStatus",
+					"system": true
+				},
+				{
+					"DBType": "Long",
+					"businessType": "Relationship",
+					"externalReferenceCode": "ACCOUNT_TO_ACCOUNT_VALIDATOR_RESULTS",
+					"indexed": true,
+					"label": {
+						"en_US": "Account to Account Validator Results"
+					},
+					"localized": false,
+					"name": "r_accountToAccountValidatorResults_accountEntryId",
+					"objectDefinitionExternalReferenceCode1": "L_ACCOUNT",
+					"objectFieldSettings": [
+						{
+							"name": "objectDefinition1ShortName",
+							"value": "AccountEntry"
+						},
+						{
+							"name": "objectRelationshipERCObjectFieldName",
+							"value": "r_accountToAccountValidatorResults_accountEntryERC"
+						}
+					],
+					"objectRelationshipExternalReferenceCode": "L_ACCOUNT_TO_L_ACCOUNT_VALIDATOR_RESULTS",
+					"relationshipType": "oneToMany",
+					"required": true,
+					"system": false,
+					"type": "Long"
+				}
+			],
+			"objectFolderExternalReferenceCode": "default",
+			"panelCategoryKey": "",
+			"pluralLabel": {
+				"en_US": "Account Validator Results"
+			},
+			"scope": "company",
+			"status": {
+				"code": 0
+			},
+			"system": true,
+			"titleObjectFieldName": "id"
+		}
+	]
+}

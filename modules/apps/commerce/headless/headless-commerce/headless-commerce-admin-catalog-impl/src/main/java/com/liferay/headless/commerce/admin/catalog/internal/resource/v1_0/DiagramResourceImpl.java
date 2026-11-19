@@ -17,12 +17,14 @@ import com.liferay.commerce.shop.by.diagram.service.CSDiagramSettingService;
 import com.liferay.headless.commerce.admin.catalog.dto.v1_0.Diagram;
 import com.liferay.headless.commerce.admin.catalog.dto.v1_0.Product;
 import com.liferay.headless.commerce.admin.catalog.internal.util.v1_0.DiagramUtil;
+import com.liferay.headless.commerce.admin.catalog.internal.util.v1_0.ProductUtil;
 import com.liferay.headless.commerce.admin.catalog.resource.v1_0.DiagramResource;
-import com.liferay.headless.commerce.core.util.ServiceContextHelper;
+import com.liferay.headless.commerce.core.helper.ServiceContextHelper;
 import com.liferay.portal.kernel.change.tracking.CTAware;
 import com.liferay.portal.vulcan.dto.converter.DTOConverter;
 import com.liferay.portal.vulcan.dto.converter.DefaultDTOConverterContext;
 import com.liferay.portal.vulcan.fields.NestedField;
+import com.liferay.portal.vulcan.fields.NestedFieldId;
 import com.liferay.upload.UniqueFileNameProvider;
 
 import org.osgi.service.component.annotations.Component;
@@ -48,7 +50,8 @@ public class DiagramResourceImpl extends BaseDiagramResourceImpl {
 		CPDefinition cpDefinition =
 			_cpDefinitionService.
 				fetchCPDefinitionByCProductExternalReferenceCode(
-					externalReferenceCode, contextCompany.getCompanyId());
+					externalReferenceCode, contextCompany.getCompanyId(),
+					false);
 
 		if (cpDefinition == null) {
 			throw new NoSuchCPDefinitionException(
@@ -65,9 +68,13 @@ public class DiagramResourceImpl extends BaseDiagramResourceImpl {
 
 	@NestedField(parentClass = Product.class, value = "diagram")
 	@Override
-	public Diagram getProductIdDiagram(Long productId) throws Exception {
+	public Diagram getProductIdDiagram(
+			@NestedFieldId(value = "productId") Long productId)
+		throws Exception {
+
 		CPDefinition cpDefinition =
-			_cpDefinitionService.fetchCPDefinitionByCProductId(productId);
+			_cpDefinitionService.fetchCPDefinitionByCProductId(
+				productId, false);
 
 		if (cpDefinition == null) {
 			throw new NoSuchCPDefinitionException(
@@ -75,8 +82,12 @@ public class DiagramResourceImpl extends BaseDiagramResourceImpl {
 		}
 
 		CSDiagramSetting csDiagramSetting =
-			_csDiagramSettingService.getCSDiagramSettingByCPDefinitionId(
+			_csDiagramSettingService.fetchCSDiagramSettingByCPDefinitionId(
 				cpDefinition.getCPDefinitionId());
+
+		if (csDiagramSetting == null) {
+			return null;
+		}
 
 		return _toDiagram(csDiagramSetting.getCSDiagramSettingId());
 	}
@@ -89,6 +100,9 @@ public class DiagramResourceImpl extends BaseDiagramResourceImpl {
 			_csDiagramSettingService.getCSDiagramSetting(diagramId);
 
 		CPDefinition cpDefinition = csDiagramSetting.getCPDefinition();
+
+		cpDefinition = ProductUtil.fetchCPDefinitionByCProductId(
+			cpDefinition.getCProductId(), _cpDefinitionService);
 
 		DiagramUtil.updateCSDiagramSetting(
 			contextCompany.getCompanyId(), _cpAttachmentFileEntryService,
@@ -107,9 +121,9 @@ public class DiagramResourceImpl extends BaseDiagramResourceImpl {
 		throws Exception {
 
 		CPDefinition cpDefinition =
-			_cpDefinitionService.
-				fetchCPDefinitionByCProductExternalReferenceCode(
-					externalReferenceCode, contextCompany.getCompanyId());
+			ProductUtil.fetchCPDefinitionByCProductExternalReferenceCode(
+				externalReferenceCode, contextCompany.getCompanyId(),
+				_cpDefinitionService);
 
 		if (cpDefinition == null) {
 			throw new NoSuchCPDefinitionException(
@@ -132,8 +146,8 @@ public class DiagramResourceImpl extends BaseDiagramResourceImpl {
 	public Diagram postProductIdDiagram(Long productId, Diagram diagram)
 		throws Exception {
 
-		CPDefinition cpDefinition =
-			_cpDefinitionService.fetchCPDefinitionByCProductId(productId);
+		CPDefinition cpDefinition = ProductUtil.fetchCPDefinitionByCProductId(
+			productId, _cpDefinitionService);
 
 		if (cpDefinition == null) {
 			throw new NoSuchCPDefinitionException(

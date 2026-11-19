@@ -117,11 +117,7 @@ public class CommercePriceEntryPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		CommercePriceEntry newCommercePriceEntry = _persistence.create(pk);
-
-		newCommercePriceEntry.setMvccVersion(RandomTestUtil.nextLong());
+		CommercePriceEntry newCommercePriceEntry = addCommercePriceEntry();
 
 		newCommercePriceEntry.setCtCollectionId(RandomTestUtil.nextLong());
 
@@ -175,6 +171,9 @@ public class CommercePriceEntryPersistenceTest {
 		newCommercePriceEntry.setPriceOnApplication(
 			RandomTestUtil.randomBoolean());
 
+		newCommercePriceEntry.setPricingQuantity(
+			new BigDecimal(RandomTestUtil.nextDouble()));
+
 		newCommercePriceEntry.setPromoPrice(
 			new BigDecimal(RandomTestUtil.nextDouble()));
 
@@ -195,7 +194,9 @@ public class CommercePriceEntryPersistenceTest {
 
 		newCommercePriceEntry.setStatusDate(RandomTestUtil.nextDate());
 
-		_commercePriceEntries.add(_persistence.update(newCommercePriceEntry));
+		newCommercePriceEntry = _persistence.update(newCommercePriceEntry);
+
+		_commercePriceEntries.add(newCommercePriceEntry);
 
 		CommercePriceEntry existingCommercePriceEntry =
 			_persistence.findByPrimaryKey(
@@ -276,6 +277,9 @@ public class CommercePriceEntryPersistenceTest {
 			existingCommercePriceEntry.isPriceOnApplication(),
 			newCommercePriceEntry.isPriceOnApplication());
 		Assert.assertEquals(
+			existingCommercePriceEntry.getPricingQuantity(),
+			newCommercePriceEntry.getPricingQuantity());
+		Assert.assertEquals(
 			existingCommercePriceEntry.getPromoPrice(),
 			newCommercePriceEntry.getPromoPrice());
 		Assert.assertEquals(
@@ -340,13 +344,6 @@ public class CommercePriceEntryPersistenceTest {
 		_persistence.countByUuid_C("null", 0L);
 
 		_persistence.countByUuid_C((String)null, 0L);
-	}
-
-	@Test
-	public void testCountByCompanyId() throws Exception {
-		_persistence.countByCompanyId(RandomTestUtil.nextLong());
-
-		_persistence.countByCompanyId(0L);
 	}
 
 	@Test
@@ -452,10 +449,10 @@ public class CommercePriceEntryPersistenceTest {
 			true, "discountDiscovery", true, "discountLevel1", true,
 			"discountLevel2", true, "discountLevel3", true, "discountLevel4",
 			true, "displayDate", true, "expirationDate", true, "hasTierPrice",
-			true, "price", true, "priceOnApplication", true, "promoPrice", true,
-			"quantity", true, "unitOfMeasureKey", true, "lastPublishDate", true,
-			"status", true, "statusByUserId", true, "statusByUserName", true,
-			"statusDate", true);
+			true, "price", true, "priceOnApplication", true, "pricingQuantity",
+			true, "promoPrice", true, "quantity", true, "unitOfMeasureKey",
+			true, "lastPublishDate", true, "status", true, "statusByUserId",
+			true, "statusByUserName", true, "statusDate", true);
 	}
 
 	@Test
@@ -751,8 +748,6 @@ public class CommercePriceEntryPersistenceTest {
 
 		CommercePriceEntry commercePriceEntry = _persistence.create(pk);
 
-		commercePriceEntry.setMvccVersion(RandomTestUtil.nextLong());
-
 		commercePriceEntry.setCtCollectionId(RandomTestUtil.nextLong());
 
 		commercePriceEntry.setUuid(RandomTestUtil.randomString());
@@ -804,6 +799,9 @@ public class CommercePriceEntryPersistenceTest {
 		commercePriceEntry.setPriceOnApplication(
 			RandomTestUtil.randomBoolean());
 
+		commercePriceEntry.setPricingQuantity(
+			new BigDecimal(RandomTestUtil.nextDouble()));
+
 		commercePriceEntry.setPromoPrice(
 			new BigDecimal(RandomTestUtil.nextDouble()));
 
@@ -833,3 +831,4 @@ public class CommercePriceEntryPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1204262015

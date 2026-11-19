@@ -144,15 +144,13 @@ public class PropertiesDocBuilder {
 				sb.append(trimmedLine.trim());
 			}
 
-			if (trimmedLine.length() < 3) {
-				if (sb.index() == 0) {
-					continue;
-				}
-
-				comments.add(sb.toString());
-
-				sb = new StringBundler();
+			if ((trimmedLine.length() >= 3) || (sb.index() == 0)) {
+				continue;
 			}
+
+			comments.add(sb.toString());
+
+			sb = new StringBundler();
 		}
 
 		return comments;
@@ -357,11 +355,8 @@ public class PropertiesDocBuilder {
 				}
 				else {
 					System.out.println(
-						StringBundler.concat(
-							"Properties section should consist of 3 or more ",
-							"lines:", StringPool.NEW_LINE, "##",
-							StringPool.NEW_LINE, "## Comments",
-							StringPool.NEW_LINE, "##"));
+						"Properties section should consist of 3 or more " +
+							"lines:\n##\n## Comments\n##");
 
 					return null;
 				}

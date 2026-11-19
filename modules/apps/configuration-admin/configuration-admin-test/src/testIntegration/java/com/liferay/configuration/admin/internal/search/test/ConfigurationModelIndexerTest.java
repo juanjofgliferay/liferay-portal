@@ -23,7 +23,7 @@ import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.LocaleUtil;
-import com.liferay.portal.search.test.util.SearchTestRule;
+import com.liferay.portal.search.test.rule.SearchTestRule;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 
@@ -189,13 +189,13 @@ public class ConfigurationModelIndexerTest {
 	private Constructor<?> _configurationModelConstructor;
 	private final List<Document> _documents = new ArrayList<>();
 
+	@Inject
+	private IndexWriterHelper _indexWriterHelper;
+
 	@Inject(
 		filter = "component.name=com.liferay.configuration.admin.web.internal.search.ConfigurationModelIndexer"
 	)
 	private Indexer<Object> _indexer;
-
-	@Inject
-	private IndexWriterHelper _indexWriterHelper;
 
 	private class SimpleExtendedAttributeDefinition
 		implements ExtendedAttributeDefinition {
@@ -308,13 +308,13 @@ public class ConfigurationModelIndexerTest {
 		}
 
 		@Override
-		public InputStream getIcon(int size) throws IOException {
-			return null;
+		public String getID() {
+			return _PID;
 		}
 
 		@Override
-		public String getID() {
-			return _PID;
+		public InputStream getIcon(int size) throws IOException {
+			return null;
 		}
 
 		@Override

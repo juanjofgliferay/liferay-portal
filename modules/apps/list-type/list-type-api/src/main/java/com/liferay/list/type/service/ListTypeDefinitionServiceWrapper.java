@@ -33,11 +33,13 @@ public class ListTypeDefinitionServiceWrapper
 			String externalReferenceCode,
 			java.util.Map<java.util.Locale, String> nameMap, boolean system,
 			java.util.List<com.liferay.list.type.model.ListTypeEntry>
-				listTypeEntries)
+				listTypeEntries,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _listTypeDefinitionService.addListTypeDefinition(
-			externalReferenceCode, nameMap, system, listTypeEntries);
+			externalReferenceCode, nameMap, system, listTypeEntries,
+			serviceContext);
 	}
 
 	@Override
@@ -93,14 +95,27 @@ public class ListTypeDefinitionServiceWrapper
 
 	@Override
 	public java.util.List<com.liferay.list.type.model.ListTypeDefinition>
-		getListTypeDefinitions(int start, int end) {
+			getListTypeDefinitions(int start, int end)
+		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _listTypeDefinitionService.getListTypeDefinitions(start, end);
 	}
 
 	@Override
-	public int getListTypeDefinitionsCount() {
+	public int getListTypeDefinitionsCount()
+		throws com.liferay.portal.kernel.exception.PortalException {
+
 		return _listTypeDefinitionService.getListTypeDefinitionsCount();
+	}
+
+	@Override
+	public com.liferay.list.type.model.ListTypeDefinition
+			getOrAddEmptyListTypeDefinition(
+				String externalReferenceCode, boolean system)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _listTypeDefinitionService.getOrAddEmptyListTypeDefinition(
+			externalReferenceCode, system);
 	}
 
 	/**
@@ -119,12 +134,13 @@ public class ListTypeDefinitionServiceWrapper
 				String externalReferenceCode, long listTypeDefinitionId,
 				java.util.Map<java.util.Locale, String> nameMap,
 				java.util.List<com.liferay.list.type.model.ListTypeEntry>
-					listTypeEntries)
+					listTypeEntries,
+				com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _listTypeDefinitionService.updateListTypeDefinition(
 			externalReferenceCode, listTypeDefinitionId, nameMap,
-			listTypeEntries);
+			listTypeEntries, serviceContext);
 	}
 
 	@Override
@@ -142,3 +158,4 @@ public class ListTypeDefinitionServiceWrapper
 	private ListTypeDefinitionService _listTypeDefinitionService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1573538147

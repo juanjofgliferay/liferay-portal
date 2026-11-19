@@ -6,10 +6,12 @@
 package com.liferay.exportimport.internal.controller;
 
 import com.liferay.asset.link.model.adapter.StagedAssetLink;
+import com.liferay.depot.service.DepotEntryLocalService;
 import com.liferay.exportimport.constants.ExportImportConstants;
 import com.liferay.exportimport.controller.PortletExportController;
-import com.liferay.exportimport.internal.lar.DeletionSystemEventExporter;
+import com.liferay.exportimport.internal.lar.GroupExporter;
 import com.liferay.exportimport.internal.lar.PermissionExporter;
+import com.liferay.exportimport.internal.util.ManifestXMLFilePathUtil;
 import com.liferay.exportimport.kernel.controller.ExportController;
 import com.liferay.exportimport.kernel.controller.ExportImportController;
 import com.liferay.exportimport.kernel.lar.ExportImportDateUtil;
@@ -23,6 +25,7 @@ import com.liferay.exportimport.kernel.lar.StagedModelType;
 import com.liferay.exportimport.kernel.lifecycle.ExportImportLifecycleManager;
 import com.liferay.exportimport.kernel.lifecycle.constants.ExportImportLifecycleConstants;
 import com.liferay.exportimport.kernel.model.ExportImportConfiguration;
+import com.liferay.exportimport.lar.DeletionSystemEventExporter;
 import com.liferay.portal.background.task.model.BackgroundTask;
 import com.liferay.portal.background.task.service.BackgroundTaskLocalService;
 import com.liferay.portal.kernel.backgroundtask.BackgroundTaskThreadLocal;
@@ -35,6 +38,7 @@ import com.liferay.portal.kernel.model.LayoutPrototype;
 import com.liferay.portal.kernel.model.LayoutSet;
 import com.liferay.portal.kernel.model.LayoutSetPrototype;
 import com.liferay.portal.kernel.service.GroupLocalService;
+import com.liferay.portal.kernel.service.GroupService;
 import com.liferay.portal.kernel.service.LayoutPrototypeLocalService;
 import com.liferay.portal.kernel.service.LayoutSetLocalService;
 import com.liferay.portal.kernel.service.LayoutSetPrototypeLocalService;
@@ -233,6 +237,22 @@ public class LayoutExportController implements ExportController {
 		headerElement.addAttribute(
 			"company-group-id",
 			String.valueOf(portletDataContext.getCompanyGroupId()));
+
+		Group companyGroup = _groupLocalService.fetchCompanyGroup(
+			portletDataContext.getCompanyId());
+
+		if (companyGroup != null) {
+			headerElement.addAttribute(
+				"company-group-external-reference-code",
+				companyGroup.getExternalReferenceCode());
+		}
+
+		Group group = _groupLocalService.fetchGroup(
+			portletDataContext.getGroupId());
+
+		headerElement.addAttribute(
+			"group-friendly-url", group.getFriendlyURL());
+
 		headerElement.addAttribute(
 			"group-id", String.valueOf(portletDataContext.getGroupId()));
 		headerElement.addAttribute(
@@ -241,9 +261,6 @@ public class LayoutExportController implements ExportController {
 		headerElement.addAttribute(
 			"private-layout",
 			String.valueOf(portletDataContext.isPrivateLayout()));
-
-		Group group = _groupLocalService.fetchGroup(
-			portletDataContext.getGroupId());
 
 		String type = "layout-set";
 
@@ -274,6 +291,12 @@ public class LayoutExportController implements ExportController {
 
 		rootElement.addElement("site-portlets");
 		rootElement.addElement("site-services");
+
+		GroupExporter groupExporter = new GroupExporter(
+			_depotEntryLocalService, _exportImportHelper, _groupService,
+			_portletDataContextFactory);
+
+		groupExporter.addGroupsElement(portletDataContext, rootElement);
 
 		// Export the group
 
@@ -337,7 +360,11 @@ public class LayoutExportController implements ExportController {
 		}
 
 		portletDataContext.addZipEntry(
-			"/manifest.xml", document.formattedString());
+			ManifestXMLFilePathUtil.getExportManifestXmlFilePath(
+				portletDataContext),
+			document.formattedString());
+
+		groupExporter.exportGroups(portletDataContext, this::doExport);
 
 		ZipWriter zipWriter = portletDataContext.getZipWriter();
 
@@ -408,8 +435,11 @@ public class LayoutExportController implements ExportController {
 	@Reference
 	private BackgroundTaskLocalService _backgroundTaskLocalService;
 
-	private final DeletionSystemEventExporter _deletionSystemEventExporter =
-		DeletionSystemEventExporter.getInstance();
+	@Reference
+	private DeletionSystemEventExporter _deletionSystemEventExporter;
+
+	@Reference
+	private DepotEntryLocalService _depotEntryLocalService;
 
 	@Reference
 	private ExportImportHelper _exportImportHelper;
@@ -419,6 +449,9 @@ public class LayoutExportController implements ExportController {
 
 	@Reference
 	private GroupLocalService _groupLocalService;
+
+	@Reference
+	private GroupService _groupService;
 
 	@Reference
 	private Language _language;

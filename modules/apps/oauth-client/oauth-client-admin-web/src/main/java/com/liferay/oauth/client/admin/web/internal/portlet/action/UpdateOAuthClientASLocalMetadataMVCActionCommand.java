@@ -5,31 +5,35 @@
 
 package com.liferay.oauth.client.admin.web.internal.portlet.action;
 
-import com.liferay.oauth.client.admin.web.internal.constants.OAuthClientAdminPortletKeys;
+import com.liferay.oauth.client.constants.OAuthClientAdminPortletKeys;
 import com.liferay.oauth.client.persistence.model.OAuthClientASLocalMetadata;
 import com.liferay.oauth.client.persistence.service.OAuthClientASLocalMetadataService;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
 import com.liferay.portal.kernel.servlet.SessionErrors;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ParamUtil;
+import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Arthur Chan
+ * @author Alvaro Saugar
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + OAuthClientAdminPortletKeys.OAUTH_CLIENT_ADMIN,
+		"jakarta.portlet.name=" + OAuthClientAdminPortletKeys.OAUTH_CLIENT_ADMIN,
 		"mvc.command.name=/oauth_client_admin/update_oauth_client_as_local_metadata"
 	},
 	service = MVCActionCommand.class
@@ -42,31 +46,88 @@ public class UpdateOAuthClientASLocalMetadataMVCActionCommand
 		ActionRequest actionRequest, ActionResponse actionResponse) {
 
 		try {
-			String localWellKnownURI = ParamUtil.getString(
-				actionRequest, "localWellKnownURI");
-			String metadataJSON = ParamUtil.getString(
-				actionRequest, "metadataJSON");
+			ThemeDisplay themeDisplay =
+				(ThemeDisplay)actionRequest.getAttribute(WebKeys.THEME_DISPLAY);
 
-			if (Validator.isNull(localWellKnownURI)) {
-				ThemeDisplay themeDisplay =
-					(ThemeDisplay)actionRequest.getAttribute(
-						WebKeys.THEME_DISPLAY);
+			if (!FeatureFlagManagerUtil.isEnabled(
+					themeDisplay.getCompanyId(), "LPD-63415")) {
 
+				String localWellKnownURI = ParamUtil.getString(
+					actionRequest, "localWellKnownURI");
+				String metadataJSON = ParamUtil.getString(
+					actionRequest, "metadataJSON");
+
+				if (Validator.isNull(localWellKnownURI)) {
+					_oAuthClientASLocalMetadataService.
+						addOAuthClientASLocalMetadata(
+							metadataJSON, "openid-configuration");
+				}
+				else {
+					OAuthClientASLocalMetadata oAuthClientASLocalMetadata =
+						_oAuthClientASLocalMetadataService.
+							getOAuthClientASLocalMetadataByLocalWellKnownURI(
+								themeDisplay.getCompanyId(), localWellKnownURI);
+
+					_oAuthClientASLocalMetadataService.
+						updateOAuthClientASLocalMetadata(
+							oAuthClientASLocalMetadata.
+								getOAuthClientASLocalMetadataId(),
+							metadataJSON, "openid-configuration");
+				}
+
+				return true;
+			}
+
+			long oAuthClientASLocalMetadataId = ParamUtil.getLong(
+				actionRequest, "oAuthClientASLocalMetadataId");
+
+			String authorizationEndpoint = ParamUtil.getString(
+				actionRequest, "authorizationEndpoint");
+			String issuer = ParamUtil.getString(actionRequest, "issuer");
+			String jwksURI = ParamUtil.getString(actionRequest, "jwksURI");
+			boolean localWellKnownEnabled = ParamUtil.getBoolean(
+				actionRequest, "localWellKnownEnabled");
+			String registrationEndpoint = ParamUtil.getString(
+				actionRequest, "registrationEndpoint");
+			String supportedGrantTypes = ParamUtil.getString(
+				actionRequest, "supportedGrantTypes");
+			String supportedScopes = ParamUtil.getString(
+				actionRequest, "supportedScopes");
+			String supportedSubjectTypes = ParamUtil.getString(
+				actionRequest, "supportedSubjectTypes");
+			String tokenEndpoint = ParamUtil.getString(
+				actionRequest, "tokenEndpoint");
+			String userInfoEndpoint = ParamUtil.getString(
+				actionRequest, "userInfoEndpoint");
+
+			OAuthClientASLocalMetadata oAuthClientASLocalMetadata =
+				_oAuthClientASLocalMetadataService.
+					fetchOAuthClientASLocalMetadata(
+						oAuthClientASLocalMetadataId);
+
+			if (oAuthClientASLocalMetadata == null) {
 				_oAuthClientASLocalMetadataService.
 					addOAuthClientASLocalMetadata(
-						themeDisplay.getUserId(), metadataJSON,
-						"openid-configuration");
+						null, authorizationEndpoint, issuer, jwksURI,
+						localWellKnownEnabled, registrationEndpoint,
+						StringUtil.split(supportedGrantTypes, StringPool.COMMA),
+						StringUtil.split(supportedScopes, StringPool.COMMA),
+						StringUtil.split(
+							supportedSubjectTypes, StringPool.COMMA),
+						tokenEndpoint, userInfoEndpoint);
 			}
 			else {
-				OAuthClientASLocalMetadata oAuthClientASLocalMetadata =
-					_oAuthClientASLocalMetadataService.
-						getOAuthClientASLocalMetadata(localWellKnownURI);
-
 				_oAuthClientASLocalMetadataService.
 					updateOAuthClientASLocalMetadata(
 						oAuthClientASLocalMetadata.
 							getOAuthClientASLocalMetadataId(),
-						metadataJSON, "openid-configuration");
+						authorizationEndpoint, issuer, jwksURI,
+						localWellKnownEnabled, registrationEndpoint,
+						StringUtil.split(supportedGrantTypes, StringPool.COMMA),
+						StringUtil.split(supportedScopes, StringPool.COMMA),
+						StringUtil.split(
+							supportedSubjectTypes, StringPool.COMMA),
+						tokenEndpoint, userInfoEndpoint);
 			}
 
 			return true;

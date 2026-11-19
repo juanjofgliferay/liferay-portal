@@ -35,12 +35,12 @@ import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.site.memberships.web.internal.util.GroupUtil;
 import com.liferay.user.groups.admin.item.selector.UserGroupSiteMembershipItemSelectorCriterion;
 
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.List;
 import java.util.Objects;
-
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Eudaldo Alonso
@@ -334,6 +334,25 @@ public class UserGroupsManagementToolbarDisplayContext
 		return new String[] {"name", "description"};
 	}
 
+	private String _getSelectUserGroupURL() {
+		ItemSelector itemSelector =
+			(ItemSelector)httpServletRequest.getAttribute(
+				ItemSelector.class.getName());
+
+		UserGroupSiteMembershipItemSelectorCriterion
+			userGroupSiteMembershipItemSelectorCriterion =
+				new UserGroupSiteMembershipItemSelectorCriterion();
+
+		userGroupSiteMembershipItemSelectorCriterion.
+			setDesiredItemSelectorReturnTypes(new UUIDItemSelectorReturnType());
+
+		return String.valueOf(
+			itemSelector.getItemSelectorURL(
+				RequestBackedPortletURLFactoryUtil.create(httpServletRequest),
+				liferayPortletResponse.getNamespace() + "selectUserGroup",
+				userGroupSiteMembershipItemSelectorCriterion));
+	}
+
 	private String _getSelectorURL(String mvcPath) throws Exception {
 		PortletURL selectURL = PortletURLBuilder.createRenderURL(
 			liferayPortletResponse
@@ -357,25 +376,6 @@ public class UserGroupsManagementToolbarDisplayContext
 		selectURL.setWindowState(LiferayWindowState.POP_UP);
 
 		return selectURL.toString();
-	}
-
-	private String _getSelectUserGroupURL() {
-		ItemSelector itemSelector =
-			(ItemSelector)httpServletRequest.getAttribute(
-				ItemSelector.class.getName());
-
-		UserGroupSiteMembershipItemSelectorCriterion
-			userGroupSiteMembershipItemSelectorCriterion =
-				new UserGroupSiteMembershipItemSelectorCriterion();
-
-		userGroupSiteMembershipItemSelectorCriterion.
-			setDesiredItemSelectorReturnTypes(new UUIDItemSelectorReturnType());
-
-		return String.valueOf(
-			itemSelector.getItemSelectorURL(
-				RequestBackedPortletURLFactoryUtil.create(httpServletRequest),
-				liferayPortletResponse.getNamespace() + "selectUserGroup",
-				userGroupSiteMembershipItemSelectorCriterion));
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(

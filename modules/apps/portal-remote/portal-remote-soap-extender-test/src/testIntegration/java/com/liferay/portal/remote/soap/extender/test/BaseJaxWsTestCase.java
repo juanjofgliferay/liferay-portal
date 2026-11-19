@@ -5,10 +5,15 @@
 
 package com.liferay.portal.remote.soap.extender.test;
 
+import com.liferay.petra.lang.SafeCloseable;
+import com.liferay.petra.lang.ThreadContextClassLoaderUtil;
+import com.liferay.portal.kernel.util.PortalClassLoaderUtil;
+
+import jakarta.xml.ws.Service;
+
 import java.net.URL;
 
 import javax.xml.namespace.QName;
-import javax.xml.ws.Service;
 
 import org.junit.After;
 import org.junit.Before;
@@ -48,11 +53,15 @@ public abstract class BaseJaxWsTestCase {
 			"http://test.extender.soap.remote.portal.liferay.com/",
 			"GreeterImplService");
 
-		Service service = Service.create(url, qName);
+		try (SafeCloseable safeCloseable = ThreadContextClassLoaderUtil.swap(
+				PortalClassLoaderUtil.getClassLoader())) {
 
-		Greeter greeter = service.getPort(Greeter.class);
+			Service service = Service.create(url, qName);
 
-		return greeter.greet();
+			Greeter greeter = service.getPort(Greeter.class);
+
+			return greeter.greet();
+		}
 	}
 
 	private BundleActivator _bundleActivator;

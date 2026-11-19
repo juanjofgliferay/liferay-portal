@@ -745,7 +745,10 @@ describe('PortletHub', () => {
 					hubB = values[1];
 					onStateChange.mockClear();
 					complete = false;
-					returnType = returnedRenderState = returnedRenderData = undefined;
+					returnType =
+						returnedRenderState =
+						returnedRenderData =
+							undefined;
 				}
 			);
 		});
@@ -1169,7 +1172,7 @@ describe('PortletHub', () => {
 				const count = hubA.dispatchClientEvent(type, payload);
 
 				expect(count).toEqual(1);
-				expect(listener).toBeCalledWith(type, payload);
+				expect(listener).toHaveBeenCalledWith(type, payload);
 
 				hubA.removeEventListener(handle);
 			});

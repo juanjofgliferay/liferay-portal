@@ -159,8 +159,9 @@ public class CommerceDiscountCommerceAccountGroupRelLocalServiceWrapper
 	@Deprecated
 	@Override
 	public void
-		deleteCommerceDiscountCommerceAccountGroupRelsBycommerceAccountGroupId(
-			long commerceAccountGroupId) {
+			deleteCommerceDiscountCommerceAccountGroupRelsBycommerceAccountGroupId(
+				long commerceAccountGroupId)
+		throws com.liferay.portal.kernel.exception.PortalException {
 
 		_commerceDiscountCommerceAccountGroupRelLocalService.
 			deleteCommerceDiscountCommerceAccountGroupRelsBycommerceAccountGroupId(
@@ -311,18 +312,6 @@ public class CommerceDiscountCommerceAccountGroupRelLocalServiceWrapper
 	}
 
 	@Override
-	public
-		com.liferay.commerce.discount.model.
-			CommerceDiscountCommerceAccountGroupRel
-				fetchCommerceDiscountCommerceAccountGroupRel(
-					long commerceDiscountId, long commerceAccountGroupId) {
-
-		return _commerceDiscountCommerceAccountGroupRelLocalService.
-			fetchCommerceDiscountCommerceAccountGroupRel(
-				commerceDiscountId, commerceAccountGroupId);
-	}
-
-	@Override
 	public com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery
 		getActionableDynamicQuery() {
 
@@ -388,18 +377,6 @@ public class CommerceDiscountCommerceAccountGroupRelLocalServiceWrapper
 				commerceDiscountId, start, end, orderByComparator);
 	}
 
-	@Override
-	public java.util.List
-		<com.liferay.commerce.discount.model.
-			CommerceDiscountCommerceAccountGroupRel>
-				getCommerceDiscountCommerceAccountGroupRels(
-					long commerceDiscountId, String name, int start, int end) {
-
-		return _commerceDiscountCommerceAccountGroupRelLocalService.
-			getCommerceDiscountCommerceAccountGroupRels(
-				commerceDiscountId, name, start, end);
-	}
-
 	/**
 	 * Returns the number of commerce discount commerce account group rels.
 	 *
@@ -409,24 +386,6 @@ public class CommerceDiscountCommerceAccountGroupRelLocalServiceWrapper
 	public int getCommerceDiscountCommerceAccountGroupRelsCount() {
 		return _commerceDiscountCommerceAccountGroupRelLocalService.
 			getCommerceDiscountCommerceAccountGroupRelsCount();
-	}
-
-	@Override
-	public int getCommerceDiscountCommerceAccountGroupRelsCount(
-		long commerceDiscountId) {
-
-		return _commerceDiscountCommerceAccountGroupRelLocalService.
-			getCommerceDiscountCommerceAccountGroupRelsCount(
-				commerceDiscountId);
-	}
-
-	@Override
-	public int getCommerceDiscountCommerceAccountGroupRelsCount(
-		long commerceDiscountId, String name) {
-
-		return _commerceDiscountCommerceAccountGroupRelLocalService.
-			getCommerceDiscountCommerceAccountGroupRelsCount(
-				commerceDiscountId, name);
 	}
 
 	@Override
@@ -510,3 +469,4 @@ public class CommerceDiscountCommerceAccountGroupRelLocalServiceWrapper
 		_commerceDiscountCommerceAccountGroupRelLocalService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1901815422

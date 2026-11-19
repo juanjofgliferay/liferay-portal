@@ -20,14 +20,13 @@ import com.liferay.portal.kernel.service.PortletLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
-import com.liferay.portal.kernel.test.util.PropsTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
-import com.liferay.portal.kernel.util.HashMapBuilder;
+import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.Http;
 import com.liferay.portal.kernel.util.HttpUtil;
+import com.liferay.portal.kernel.util.InetAddressUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.PortalUtil;
-import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.xmlrpc.XmlRpcConstants;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 import com.liferay.portal.xmlrpc.Fault;
@@ -42,8 +41,10 @@ import java.util.Locale;
 import java.util.Map;
 
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -64,6 +65,17 @@ public class PingbackMethodImplTest {
 	public static final LiferayUnitTestRule liferayUnitTestRule =
 		LiferayUnitTestRule.INSTANCE;
 
+	@BeforeClass
+	public static void setUpClass() {
+		_inetAddressUtilMockedStatic = Mockito.mockStatic(
+			InetAddressUtil.class);
+	}
+
+	@AfterClass
+	public static void tearDownClass() {
+		_inetAddressUtilMockedStatic.close();
+	}
+
 	@Before
 	public void setUp() throws Exception {
 		_setUpBlogsEntryLocalService();
@@ -74,9 +86,17 @@ public class PingbackMethodImplTest {
 		_setUpPortalUtil();
 		_setUpPortletIdLookup();
 		_setUpPortletLocalService();
-		_setUpPropsTestUtil();
 		_setUpUserLocalService();
 		_setUpXmlRpcUtil();
+
+		_inetAddressUtilMockedStatic.when(
+			() -> InetAddressUtil.isLocalInetAddress(
+				Mockito.argThat(
+					inetAddress -> ArrayUtil.contains(
+						_localAddresses, inetAddress)))
+		).thenReturn(
+			true
+		);
 	}
 
 	@After
@@ -233,6 +253,39 @@ public class PingbackMethodImplTest {
 	}
 
 	@Test
+	public void testExecuteWithFTPSourceURI() throws Exception {
+		URI sourceURI = new URI(_SOURCE_URI);
+
+		PingbackMethodImpl pingbackMethodImpl = _getPingbackMethodImpl();
+
+		pingbackMethodImpl.setArguments(
+			new Object[] {
+				"ftp://" + sourceURI.getHost(), "http://" + _TARGET_URI
+			});
+
+		pingbackMethodImpl.execute(_COMPANY_ID);
+
+		_verifyFault(PingbackMethodImpl.ACCESS_DENIED, "Access Denied");
+
+		Mockito.verifyNoInteractions(_http);
+	}
+
+	@Test
+	public void testExecuteWithSourceFetchedOnce() throws Exception {
+		execute();
+
+		_verifySuccess();
+
+		Mockito.verify(
+			_http
+		).URLtoString(
+			_getOptions(_SOURCE_URI)
+		);
+
+		Mockito.verifyNoMoreInteractions(_http);
+	}
+
+	@Test
 	public void testExecuteWithSuccess() throws Exception {
 		execute();
 
@@ -321,7 +374,7 @@ public class PingbackMethodImplTest {
 	@Test
 	public void testGetExcerptWhenReferrerIsUnavailable() throws Exception {
 		Mockito.when(
-			_http.URLtoString(_SOURCE_URI)
+			_http.URLtoString(_getOptions(_SOURCE_URI))
 		).thenThrow(
 			IOException.class
 		);
@@ -341,7 +394,7 @@ public class PingbackMethodImplTest {
 			String sourceURL = "http://" + inetAddress.getHostAddress();
 
 			Mockito.when(
-				_http.URLtoString(sourceURL)
+				_http.URLtoString(_getOptions(sourceURL))
 			).thenReturn(
 				StringBundler.concat(
 					"<body><a href='http://", _TARGET_URI, "'>", _EXCERPT_BODY,
@@ -406,6 +459,13 @@ public class PingbackMethodImplTest {
 		).getEntry(
 			entryId
 		);
+	}
+
+	private Http.Options _getOptions(String location) {
+		return Mockito.argThat(
+			options ->
+				(options != null) && !options.isFollowRedirects() &&
+				location.equals(options.getLocation()));
 	}
 
 	private PingbackMethodImpl _getPingbackMethodImpl() {
@@ -599,16 +659,6 @@ public class PingbackMethodImplTest {
 		);
 	}
 
-	private void _setUpPropsTestUtil() {
-		PropsTestUtil.setProps(
-			HashMapBuilder.<String, Object>put(
-				PropsKeys.DNS_SECURITY_ADDRESS_TIMEOUT_SECONDS,
-				String.valueOf(2)
-			).put(
-				PropsKeys.DNS_SECURITY_THREAD_LIMIT, String.valueOf(10)
-			).build());
-	}
-
 	private void _setUpUserLocalService() throws Exception {
 		Mockito.when(
 			_userLocalService.getGuestUserId(Mockito.anyLong())
@@ -676,7 +726,7 @@ public class PingbackMethodImplTest {
 
 	private void _whenHttpURLToString(String returnValue) throws Exception {
 		Mockito.when(
-			_http.URLtoString(_SOURCE_URI)
+			_http.URLtoString(_getOptions(_SOURCE_URI))
 		).thenReturn(
 			returnValue
 		);
@@ -720,7 +770,7 @@ public class PingbackMethodImplTest {
 
 	private static final BundleContext _bundleContext =
 		SystemBundleUtil.getBundleContext();
-	private static MockedStatic<XmlRpcUtil> _xmlRpcUtilMockedStatic;
+	private static MockedStatic<InetAddressUtil> _inetAddressUtilMockedStatic;
 
 	private final BlogsEntry _blogsEntry = Mockito.mock(BlogsEntry.class);
 	private final BlogsEntryLocalService _blogsEntryLocalService = Mockito.mock(
@@ -744,5 +794,6 @@ public class PingbackMethodImplTest {
 	private ServiceRegistration<Http> _serviceRegistration;
 	private final UserLocalService _userLocalService = Mockito.mock(
 		UserLocalService.class);
+	private MockedStatic<XmlRpcUtil> _xmlRpcUtilMockedStatic;
 
 }

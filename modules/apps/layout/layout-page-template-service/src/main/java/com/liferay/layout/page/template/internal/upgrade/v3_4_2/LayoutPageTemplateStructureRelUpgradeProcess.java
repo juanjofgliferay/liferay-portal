@@ -85,9 +85,10 @@ public class LayoutPageTemplateStructureRelUpgradeProcess
 		String borderRadius = fragmentConfigValuesJSONObject.getString(
 			"borderRadius");
 
-		if (_borderRadiuses.containsKey(borderRadius)) {
-			stylesJSONObject.put(
-				"borderRadius", _borderRadiuses.get(borderRadius));
+		String borderRadiusValue = _borderRadiuses.get(borderRadius);
+
+		if (borderRadiusValue != null) {
+			stylesJSONObject.put("borderRadius", borderRadiusValue);
 		}
 	}
 
@@ -129,8 +130,10 @@ public class LayoutPageTemplateStructureRelUpgradeProcess
 		String shadowCssClass = fragmentConfigValuesJSONObject.getString(
 			"boxShadow");
 
-		if (_shadows.containsKey(shadowCssClass)) {
-			stylesJSONObject.put("shadow", _shadows.get(shadowCssClass));
+		String shadow = _shadows.get(shadowCssClass);
+
+		if (shadow != null) {
+			stylesJSONObject.put("shadow", shadow);
 		}
 	}
 
@@ -204,65 +207,63 @@ public class LayoutPageTemplateStructureRelUpgradeProcess
 				}
 			}
 
-			if (layoutStructureItem instanceof
-					FragmentStyledLayoutStructureItem) {
+			if (!(layoutStructureItem instanceof
+					FragmentStyledLayoutStructureItem)) {
 
-				FragmentStyledLayoutStructureItem
-					fragmentStyledLayoutStructureItem =
-						(FragmentStyledLayoutStructureItem)layoutStructureItem;
-
-				JSONObject itemConfigJSONObject =
-					fragmentStyledLayoutStructureItem.getItemConfigJSONObject();
-
-				JSONObject stylesJSONObject =
-					itemConfigJSONObject.getJSONObject("styles");
-
-				if (stylesJSONObject == null) {
-					stylesJSONObject = JSONFactoryUtil.createJSONObject();
-
-					itemConfigJSONObject.put("styles", stylesJSONObject);
-				}
-
-				FragmentEntryLink fragmentEntryLink =
-					FragmentEntryLinkLocalServiceUtil.fetchFragmentEntryLink(
-						fragmentStyledLayoutStructureItem.
-							getFragmentEntryLinkId());
-
-				if (fragmentEntryLink == null) {
-					continue;
-				}
-
-				JSONObject editableValuesJSONObject =
-					JSONFactoryUtil.createJSONObject(
-						fragmentEntryLink.getEditableValues());
-
-				JSONObject fragmentConfigValuesJSONObject =
-					editableValuesJSONObject.getJSONObject(
-						FragmentEntryProcessorConstants.
-							KEY_FREEMARKER_FRAGMENT_ENTRY_PROCESSOR);
-
-				if (fragmentConfigValuesJSONObject == null) {
-					continue;
-				}
-
-				_replaceBottomSpacing(
-					_fragmentEntryConfigurationParser.
-						getConfigurationDefaultValuesJSONObject(
-							fragmentEntryLink.getConfiguration()),
-					fragmentConfigValuesJSONObject, stylesJSONObject);
-
-				if (_isEmpty(fragmentConfigValuesJSONObject)) {
-					continue;
-				}
-
-				_replaceAlign(fragmentConfigValuesJSONObject, stylesJSONObject);
-				_replaceBorderRadius(
-					fragmentConfigValuesJSONObject, stylesJSONObject);
-				_replaceShadow(
-					fragmentConfigValuesJSONObject, stylesJSONObject);
-				_replaceTextColor(
-					fragmentConfigValuesJSONObject, stylesJSONObject);
+				continue;
 			}
+
+			FragmentStyledLayoutStructureItem
+				fragmentStyledLayoutStructureItem =
+					(FragmentStyledLayoutStructureItem)layoutStructureItem;
+
+			JSONObject itemConfigJSONObject =
+				fragmentStyledLayoutStructureItem.getItemConfigJSONObject();
+
+			JSONObject stylesJSONObject = itemConfigJSONObject.getJSONObject(
+				"styles");
+
+			if (stylesJSONObject == null) {
+				stylesJSONObject = JSONFactoryUtil.createJSONObject();
+
+				itemConfigJSONObject.put("styles", stylesJSONObject);
+			}
+
+			FragmentEntryLink fragmentEntryLink =
+				FragmentEntryLinkLocalServiceUtil.fetchFragmentEntryLink(
+					fragmentStyledLayoutStructureItem.getFragmentEntryLinkId());
+
+			if (fragmentEntryLink == null) {
+				continue;
+			}
+
+			JSONObject editableValuesJSONObject =
+				fragmentEntryLink.getEditableValuesJSONObject();
+
+			JSONObject fragmentConfigValuesJSONObject =
+				editableValuesJSONObject.getJSONObject(
+					FragmentEntryProcessorConstants.
+						KEY_FREEMARKER_FRAGMENT_ENTRY_PROCESSOR);
+
+			if (fragmentConfigValuesJSONObject == null) {
+				continue;
+			}
+
+			_replaceBottomSpacing(
+				_fragmentEntryConfigurationParser.
+					getConfigurationDefaultValuesJSONObject(
+						fragmentEntryLink.getConfigurationJSONObject()),
+				fragmentConfigValuesJSONObject, stylesJSONObject);
+
+			if (_isEmpty(fragmentConfigValuesJSONObject)) {
+				continue;
+			}
+
+			_replaceAlign(fragmentConfigValuesJSONObject, stylesJSONObject);
+			_replaceBorderRadius(
+				fragmentConfigValuesJSONObject, stylesJSONObject);
+			_replaceShadow(fragmentConfigValuesJSONObject, stylesJSONObject);
+			_replaceTextColor(fragmentConfigValuesJSONObject, stylesJSONObject);
 		}
 
 		JSONObject jsonObject = layoutStructure.toJSONObject();
@@ -272,16 +273,21 @@ public class LayoutPageTemplateStructureRelUpgradeProcess
 
 	private void _upgradeLayoutPageTemplateStructureRel() throws Exception {
 		try (Statement s = connection.createStatement();
+
 			ResultSet resultSet = s.executeQuery(
-				"select lPageTemplateStructureRelId, segmentsExperienceId, " +
-					"data_ from LayoutPageTemplateStructureRel");
+				"select ctCollectionId, lPageTemplateStructureRelId, " +
+					"segmentsExperienceId, data_ from " +
+						"LayoutPageTemplateStructureRel");
+
 			PreparedStatement preparedStatement =
 				AutoBatchPreparedStatementUtil.autoBatch(
 					connection,
 					"update LayoutPageTemplateStructureRel set data_ = ? " +
-						"where lPageTemplateStructureRelId = ?")) {
+						"where ctCollectionId = ? and " +
+							"lPageTemplateStructureRelId = ?")) {
 
 			while (resultSet.next()) {
+				long ctCollectionId = resultSet.getLong("ctCollectionId");
 				long layoutPageTemplateStructureRelId = resultSet.getLong(
 					"lPageTemplateStructureRelId");
 
@@ -289,7 +295,8 @@ public class LayoutPageTemplateStructureRelUpgradeProcess
 
 				preparedStatement.setString(1, _upgradeLayoutData(data));
 
-				preparedStatement.setLong(2, layoutPageTemplateStructureRelId);
+				preparedStatement.setLong(2, ctCollectionId);
+				preparedStatement.setLong(3, layoutPageTemplateStructureRelId);
 
 				preparedStatement.addBatch();
 			}

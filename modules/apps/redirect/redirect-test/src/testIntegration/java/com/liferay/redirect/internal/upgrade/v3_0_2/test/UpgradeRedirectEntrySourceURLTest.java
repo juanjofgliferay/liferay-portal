@@ -199,6 +199,7 @@ public class UpgradeRedirectEntrySourceURLTest {
 		throws Exception {
 
 		try (Connection connection = DataAccess.getConnection();
+
 			PreparedStatement preparedStatement = connection.prepareStatement(
 				StringBundler.concat(
 					"insert into RedirectEntry (uuid_, redirectEntryId,",
@@ -241,10 +242,12 @@ public class UpgradeRedirectEntrySourceURLTest {
 					for (UpgradeStep upgradeStep : upgradeSteps) {
 						Class<?> clazz = upgradeStep.getClass();
 
-						if (Objects.equals(clazz.getName(), _CLASS_NAME)) {
-							_redirectEntrySourceURLUpgradeProcess =
-								(UpgradeProcess)upgradeStep;
+						if (!Objects.equals(clazz.getName(), _CLASS_NAME)) {
+							continue;
 						}
+
+						_redirectEntrySourceURLUpgradeProcess =
+							(UpgradeProcess)upgradeStep;
 					}
 				}
 

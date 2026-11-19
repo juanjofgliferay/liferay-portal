@@ -16,15 +16,15 @@ String portletResourceNamespace = ParamUtil.getString(request, "portletResourceN
 
 DDMTemplate template = (DDMTemplate)request.getAttribute(DDMWebKeys.DYNAMIC_DATA_MAPPING_TEMPLATE);
 
-long templateId = BeanParamUtil.getLong(template, request, "templateId");
+long templateId = BeanParamUtil.getLong(template, request, "templateId", DDMTemplate::getTemplateId);
 
-long groupId = BeanParamUtil.getLong(template, request, "groupId", PortalUtil.getScopeGroupId(request, refererPortletName));
-long classNameId = BeanParamUtil.getLong(template, request, "classNameId");
-long classPK = BeanParamUtil.getLong(template, request, "classPK");
-long resourceClassNameId = BeanParamUtil.getLong(template, request, "resourceClassNameId");
+long groupId = BeanParamUtil.getLong(template, request, "groupId", DDMTemplate::getGroupId, PortalUtil.getScopeGroupId(request, refererPortletName));
+long classNameId = BeanParamUtil.getLong(template, request, "classNameId", DDMTemplate::getClassNameId);
+long classPK = BeanParamUtil.getLong(template, request, "classPK", DDMTemplate::getClassPK);
+long resourceClassNameId = BeanParamUtil.getLong(template, request, "resourceClassNameId", DDMTemplate::getResourceClassNameId);
 
-boolean cacheable = BeanParamUtil.getBoolean(template, request, "cacheable", true);
-boolean smallImage = BeanParamUtil.getBoolean(template, request, "smallImage");
+boolean cacheable = BeanParamUtil.getBoolean(template, request, "cacheable", DDMTemplate::isCacheable, true);
+boolean smallImage = BeanParamUtil.getBoolean(template, request, "smallImage", DDMTemplate::isSmallImage);
 
 DDMStructure structure = (DDMStructure)request.getAttribute(DDMWebKeys.DYNAMIC_DATA_MAPPING_STRUCTURE);
 
@@ -32,10 +32,10 @@ if ((structure == null) && (template != null)) {
 	structure = ddmDisplayContext.fetchStructure(template);
 }
 
-String type = BeanParamUtil.getString(template, request, "type", DDMTemplateConstants.TEMPLATE_TYPE_FORM);
-String mode = BeanParamUtil.getString(template, request, "mode", DDMTemplateConstants.TEMPLATE_MODE_CREATE);
-String language = BeanParamUtil.getString(template, request, "language", ddmDisplay.getDefaultTemplateLanguage());
-String script = BeanParamUtil.getString(template, request, "script");
+String type = BeanParamUtil.getString(template, request, "type", DDMTemplate::getType, DDMTemplateConstants.TEMPLATE_TYPE_FORM);
+String mode = BeanParamUtil.getString(template, request, "mode", DDMTemplate::getMode, DDMTemplateConstants.TEMPLATE_MODE_CREATE);
+String language = BeanParamUtil.getString(template, request, "language", DDMTemplate::getLanguage, ddmDisplay.getDefaultTemplateLanguage());
+String script = BeanParamUtil.getString(template, request, "script", DDMTemplate::getScript);
 
 if (Validator.isNull(script) && type.equals(DDMTemplateConstants.TEMPLATE_TYPE_DISPLAY)) {
 	TemplateHandler templateHandler = TemplateHandlerRegistryUtil.getTemplateHandler(classNameId);
@@ -65,7 +65,6 @@ if (Validator.isNotNull(structureAvailableFields)) {
 }
 
 boolean showBackURL = ParamUtil.getBoolean(request, "showBackURL", true);
-boolean showHeader = ParamUtil.getBoolean(request, "showHeader", true);
 %>
 
 <portlet:actionURL name="/dynamic_data_mapping/add_template" var="addTemplateURL">
@@ -115,7 +114,7 @@ boolean showHeader = ParamUtil.getBoolean(request, "showHeader", true);
 				<liferay-ui:message arguments="<%= LanguageUtil.formatStorageSize(imageMaxSize, locale) %>" key="please-enter-a-small-image-with-a-valid-file-size-no-larger-than-x" translateArguments="<%= false %>" />
 			</liferay-ui:error>
 
-			<c:if test="<%= showHeader %>">
+			<c:if test='<%= ParamUtil.getBoolean(request, "showHeader", true) %>'>
 
 				<%
 				String title = StringPool.BLANK;
@@ -197,9 +196,20 @@ boolean showHeader = ParamUtil.getBoolean(request, "showHeader", true);
 
 						<aui:input name="name" />
 
-						<clay:panel-group>
-							<clay:panel
-								displayTitle='<%= LanguageUtil.get(request, "details") %>'
+						<liferay-ui:panel-container
+							cssClass="lfr-structure-entry-details-container"
+							extended="<%= false %>"
+							id="templateDetailsPanelContainer"
+							persistState="<%= true %>"
+						>
+							<liferay-ui:panel
+								collapsible="<%= true %>"
+								defaultState="closed"
+								extended="<%= false %>"
+								id="templateDetailsSectionPanel"
+								markupView="lexicon"
+								persistState="<%= true %>"
+								title="details"
 							>
 								<c:if test="<%= type.equals(DDMTemplateConstants.TEMPLATE_TYPE_DISPLAY) %>">
 									<aui:select changesContext="<%= true %>" helpMessage='<%= (template == null) ? StringPool.BLANK : "changing-the-language-does-not-automatically-translate-the-existing-template-script" %>' label="language" name="language">
@@ -292,8 +302,8 @@ boolean showHeader = ParamUtil.getBoolean(request, "showHeader", true);
 										</div>
 									</c:otherwise>
 								</c:choose>
-							</clay:panel>
-						</clay:panel-group>
+							</liferay-ui:panel>
+						</liferay-ui:panel-container>
 
 						<c:choose>
 							<c:when test="<%= type.equals(DDMTemplateConstants.TEMPLATE_TYPE_FORM) %>">
@@ -341,8 +351,7 @@ boolean showHeader = ParamUtil.getBoolean(request, "showHeader", true);
 				content:
 					'#<portlet:namespace />smallImageContainer .lfr-ddm-small-image-content',
 				expanded: <%= smallImage %>,
-				header:
-					'#<portlet:namespace />smallImageContainer .lfr-ddm-small-image-header',
+				header: '#<portlet:namespace />smallImageContainer .lfr-ddm-small-image-header',
 				on: {
 					animatingChange: function (event) {
 						var instance = this;

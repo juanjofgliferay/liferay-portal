@@ -72,13 +72,8 @@ public class AssignableScopes {
 	}
 
 	public boolean contains(AssignableScopes assignableScopes) {
-		if (!_liferayOAuth2Scopes.containsAll(
-				assignableScopes.getLiferayOAuth2Scopes())) {
-
-			return false;
-		}
-
-		return true;
+		return _liferayOAuth2Scopes.containsAll(
+			assignableScopes.getLiferayOAuth2Scopes());
 	}
 
 	@Override
@@ -93,14 +88,8 @@ public class AssignableScopes {
 
 		AssignableScopes assignableScopes = (AssignableScopes)object;
 
-		if (Objects.equals(
-				_liferayOAuth2Scopes,
-				assignableScopes.getLiferayOAuth2Scopes())) {
-
-			return true;
-		}
-
-		return false;
+		return Objects.equals(
+			_liferayOAuth2Scopes, assignableScopes.getLiferayOAuth2Scopes());
 	}
 
 	public AssignableScopes getApplicationAssignableScopes(
@@ -109,11 +98,13 @@ public class AssignableScopes {
 		Set<LiferayOAuth2Scope> liferayOAuth2Scopes = new HashSet<>();
 
 		for (LiferayOAuth2Scope liferayOAuth2Scope : _liferayOAuth2Scopes) {
-			if (Objects.equals(
+			if (!Objects.equals(
 					applicationName, liferayOAuth2Scope.getApplicationName())) {
 
-				liferayOAuth2Scopes.add(liferayOAuth2Scope);
+				continue;
 			}
+
+			liferayOAuth2Scopes.add(liferayOAuth2Scope);
 		}
 
 		return new AssignableScopes(
@@ -149,12 +140,14 @@ public class AssignableScopes {
 		Set<String> scopeDescriptions = new HashSet<>();
 
 		for (LiferayOAuth2Scope liferayOAuth2Scope : _liferayOAuth2Scopes) {
-			if (Objects.equals(
+			if (!Objects.equals(
 					applicationName, liferayOAuth2Scope.getApplicationName())) {
 
-				scopeDescriptions.add(
-					getScopeDescription(companyId, liferayOAuth2Scope));
+				continue;
 			}
+
+			scopeDescriptions.add(
+				getScopeDescription(companyId, liferayOAuth2Scope));
 		}
 
 		return scopeDescriptions;

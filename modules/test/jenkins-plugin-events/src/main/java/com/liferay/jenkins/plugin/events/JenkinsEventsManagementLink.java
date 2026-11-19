@@ -11,9 +11,9 @@ import hudson.model.ManagementLink;
 
 import hudson.security.Permission;
 
-import java.io.IOException;
+import jakarta.servlet.ServletException;
 
-import javax.servlet.ServletException;
+import java.io.IOException;
 
 import jenkins.model.Jenkins;
 
@@ -55,9 +55,11 @@ public class JenkinsEventsManagementLink extends ManagementLink {
 		for (JenkinsEventsDescriptor.EventType eventType :
 				JenkinsEventsDescriptor.EventType.values()) {
 
-			if (jsonObject.optBoolean(eventType.toString())) {
-				jenkinsEventsDescriptor.addEventType(eventType);
+			if (!jsonObject.optBoolean(eventType.toString())) {
+				continue;
 			}
+
+			jenkinsEventsDescriptor.addEventType(eventType);
 		}
 
 		jenkinsEventsDescriptor.save();

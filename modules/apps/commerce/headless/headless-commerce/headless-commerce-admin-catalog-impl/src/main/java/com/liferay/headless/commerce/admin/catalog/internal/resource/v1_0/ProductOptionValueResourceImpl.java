@@ -15,13 +15,14 @@ import com.liferay.headless.commerce.admin.catalog.dto.v1_0.ProductOption;
 import com.liferay.headless.commerce.admin.catalog.dto.v1_0.ProductOptionValue;
 import com.liferay.headless.commerce.admin.catalog.internal.util.v1_0.ProductOptionValueUtil;
 import com.liferay.headless.commerce.admin.catalog.resource.v1_0.ProductOptionValueResource;
+import com.liferay.headless.commerce.core.helper.ServiceContextHelper;
 import com.liferay.headless.commerce.core.util.LanguageUtils;
-import com.liferay.headless.commerce.core.util.ServiceContextHelper;
 import com.liferay.portal.kernel.change.tracking.CTAware;
 import com.liferay.portal.kernel.search.BaseModelSearchResult;
 import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.util.BigDecimalUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.vulcan.dto.converter.DTOConverter;
 import com.liferay.portal.vulcan.dto.converter.DefaultDTOConverterContext;
 import com.liferay.portal.vulcan.fields.NestedField;
@@ -49,6 +50,23 @@ public class ProductOptionValueResourceImpl
 	@Override
 	public void deleteProductOptionValue(Long id) throws Exception {
 		_cpDefinitionOptionValueRelService.deleteCPDefinitionOptionValueRel(id);
+	}
+
+	@Override
+	public Page<ProductOptionValue>
+			getProductOptionByExternalReferenceCodeProductOptionValuesPage(
+				String externalReferenceCode, String search,
+				Pagination pagination, Sort[] sorts)
+		throws Exception {
+
+		CPDefinitionOptionRel cpDefinitionOptionRel =
+			_cpDefinitionOptionRelService.
+				getCPDefinitionOptionRelByExternalReferenceCode(
+					externalReferenceCode, contextCompany.getCompanyId());
+
+		return getProductOptionIdProductOptionValuesPage(
+			cpDefinitionOptionRel.getCPDefinitionOptionRelId(), search,
+			pagination, sorts);
 	}
 
 	@NestedField(
@@ -104,9 +122,21 @@ public class ProductOptionValueResourceImpl
 
 		long cpInstanceId = 0;
 
-		CPInstance cpInstance = _cpInstanceService.fetchCProductInstance(
-			cpDefinitionOptionValueRel.getCProductId(),
-			cpDefinitionOptionValueRel.getCPInstanceUuid());
+		CPInstance cpInstance =
+			_cpInstanceService.fetchCPInstanceByExternalReferenceCode(
+				productOptionValue.getSkuExternalReferenceCode(),
+				contextCompany.getCompanyId());
+
+		if (cpInstance == null) {
+			cpInstance = _cpInstanceService.fetchCPInstance(
+				GetterUtil.getLong(productOptionValue.getSkuId()));
+		}
+
+		if (cpInstance == null) {
+			_cpInstanceService.fetchCProductInstance(
+				cpDefinitionOptionValueRel.getCProductId(),
+				cpDefinitionOptionValueRel.getCPInstanceUuid());
+		}
 
 		if (cpInstance != null) {
 			cpInstanceId = cpInstance.getCPInstanceId();
@@ -119,9 +149,17 @@ public class ProductOptionValueResourceImpl
 				cpDefinitionOptionValueRel.getNameMap());
 		}
 
+		String externalReferenceCode =
+			productOptionValue.getExternalReferenceCode();
+
+		if (Validator.isNotNull(externalReferenceCode)) {
+			_cpDefinitionOptionValueRelService.updateExternalReferenceCode(
+				id, externalReferenceCode);
+		}
+
 		return _toProductOptionValue(
 			_cpDefinitionOptionValueRelService.updateCPDefinitionOptionValueRel(
-				id, GetterUtil.get(productOptionValue.getSkuId(), cpInstanceId),
+				id, cpInstanceId,
 				GetterUtil.get(
 					productOptionValue.getKey(),
 					cpDefinitionOptionValueRel.getKey()),
@@ -146,6 +184,23 @@ public class ProductOptionValueResourceImpl
 	}
 
 	@Override
+	public ProductOptionValue
+			postProductOptionByExternalReferenceCodeProductOptionValue(
+				String externalReferenceCode,
+				ProductOptionValue productOptionValue)
+		throws Exception {
+
+		CPDefinitionOptionRel cpDefinitionOptionRel =
+			_cpDefinitionOptionRelService.
+				getCPDefinitionOptionRelByExternalReferenceCode(
+					externalReferenceCode, contextCompany.getCompanyId());
+
+		return _addOrUpdateProductOptionValue(
+			cpDefinitionOptionRel.getCPDefinitionOptionRelId(),
+			productOptionValue);
+	}
+
+	@Override
 	public ProductOptionValue postProductOptionIdProductOptionValue(
 			Long id, ProductOptionValue productOptionValue)
 		throws Exception {
@@ -163,7 +218,8 @@ public class ProductOptionValueResourceImpl
 
 		return _toProductOptionValue(
 			ProductOptionValueUtil.addOrUpdateCPDefinitionOptionValueRel(
-				_cpDefinitionOptionValueRelService, productOptionValue,
+				_cpDefinitionOptionValueRelService, _cpInstanceService,
+				productOptionValue,
 				cpDefinitionOptionRel.getCPDefinitionOptionRelId(),
 				_serviceContextHelper.getServiceContext(
 					cpDefinitionOptionRel.getGroupId())));

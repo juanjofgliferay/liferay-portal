@@ -9,23 +9,23 @@ import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.oauth2.provider.internal.test.TestAnnotatedApplication;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
+import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
-import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.test.log.LogCapture;
 import com.liferay.portal.test.log.LoggerTestUtil;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.client.Invocation;
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.MultivaluedHashMap;
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.client.Entity;
+import jakarta.ws.rs.client.Invocation;
+import jakarta.ws.rs.client.WebTarget;
+import jakarta.ws.rs.core.MultivaluedHashMap;
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.Response;
 
 import org.junit.Assert;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -43,7 +43,6 @@ public class TokenExpeditionTest extends BaseClientTestCase {
 	public static final AggregateTestRule aggregateTestRule =
 		new LiferayIntegrationTestRule();
 
-	@Ignore
 	@Test
 	public void test() throws Exception {
 		WebTarget tokenWebTarget = getTokenWebTarget();
@@ -85,7 +84,7 @@ public class TokenExpeditionTest extends BaseClientTestCase {
 
 			formData = new MultivaluedHashMap<>();
 
-			formData.add("client_id", "oauthTestApplication");
+			formData.add("client_id", _CLIENT_ID);
 			formData.add("client_secret", "");
 			formData.add("grant_type", "client_credentials");
 
@@ -95,7 +94,7 @@ public class TokenExpeditionTest extends BaseClientTestCase {
 
 			formData = new MultivaluedHashMap<>();
 
-			formData.add("client_id", "oauthTestApplication");
+			formData.add("client_id", _CLIENT_ID);
 			formData.add("client_secret", "wrong");
 			formData.add("grant_type", "client_credentials");
 
@@ -107,7 +106,7 @@ public class TokenExpeditionTest extends BaseClientTestCase {
 			formData = new MultivaluedHashMap<>();
 
 			formData.add("client_id", "wrong");
-			formData.add("client_secret", "oauthTestApplicationSecret");
+			formData.add("client_secret", CLIENT_SECRET);
 			formData.add("grant_type", "client_credentials");
 
 			errorString = parseError(
@@ -118,8 +117,8 @@ public class TokenExpeditionTest extends BaseClientTestCase {
 
 		formData = new MultivaluedHashMap<>();
 
-		formData.add("client_id", "oauthTestApplication");
-		formData.add("client_secret", "oauthTestApplicationSecret");
+		formData.add("client_id", _CLIENT_ID);
+		formData.add("client_secret", CLIENT_SECRET);
 		formData.add("grant_type", "client_credentials");
 
 		WebTarget webTarget = getWebTarget("/annotated");
@@ -155,14 +154,21 @@ public class TokenExpeditionTest extends BaseClientTestCase {
 		}
 	}
 
-	public static class TokenExpeditionTestPreparatorBundleActivator
+	@Override
+	protected BundleActivator getBundleActivator() {
+		return new TokenExpeditionTestPreparatorBundleActivator();
+	}
+
+	private static final String _CLIENT_ID = RandomTestUtil.randomString();
+
+	private class TokenExpeditionTestPreparatorBundleActivator
 		extends BaseTestPreparatorBundleActivator {
 
 		@Override
 		protected void prepareTest() throws Exception {
-			long defaultCompanyId = PortalUtil.getDefaultCompanyId();
+			long companyId = TestPropsValues.getCompanyId();
 
-			User user = UserTestUtil.getAdminUser(defaultCompanyId);
+			User user = UserTestUtil.getAdminUser(companyId);
 
 			registerJaxRsApplication(
 				new TestAnnotatedApplication(), "annotated",
@@ -172,15 +178,9 @@ public class TokenExpeditionTest extends BaseClientTestCase {
 					"oauth2.scope.checker.type", "annotations"
 				).build());
 
-			createOAuth2Application(
-				defaultCompanyId, user, "oauthTestApplication");
+			createOAuth2Application(companyId, user, _CLIENT_ID);
 		}
 
-	}
-
-	@Override
-	protected BundleActivator getBundleActivator() {
-		return new TokenExpeditionTestPreparatorBundleActivator();
 	}
 
 }

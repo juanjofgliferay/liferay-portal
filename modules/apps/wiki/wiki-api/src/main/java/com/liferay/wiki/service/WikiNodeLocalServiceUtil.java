@@ -9,6 +9,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.wiki.model.WikiNode;
 
@@ -305,26 +306,6 @@ public class WikiNodeLocalServiceUtil {
 		return getService().getActionableDynamicQuery();
 	}
 
-	public static List<WikiNode> getCompanyNodes(
-		long companyId, int start, int end) {
-
-		return getService().getCompanyNodes(companyId, start, end);
-	}
-
-	public static List<WikiNode> getCompanyNodes(
-		long companyId, int status, int start, int end) {
-
-		return getService().getCompanyNodes(companyId, status, start, end);
-	}
-
-	public static int getCompanyNodesCount(long companyId) {
-		return getService().getCompanyNodesCount(companyId);
-	}
-
-	public static int getCompanyNodesCount(long companyId, int status) {
-		return getService().getCompanyNodesCount(companyId, status);
-	}
-
 	public static com.liferay.portal.kernel.dao.orm.ExportActionableDynamicQuery
 		getExportActionableDynamicQuery(
 			com.liferay.exportimport.kernel.lar.PortletDataContext
@@ -558,13 +539,12 @@ public class WikiNodeLocalServiceUtil {
 	}
 
 	public static WikiNodeLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(WikiNodeLocalService service) {
-		_service = service;
-	}
-
-	private static volatile WikiNodeLocalService _service;
+	private static final Snapshot<WikiNodeLocalService> _serviceSnapshot =
+		new Snapshot<>(
+			WikiNodeLocalServiceUtil.class, WikiNodeLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:844953198

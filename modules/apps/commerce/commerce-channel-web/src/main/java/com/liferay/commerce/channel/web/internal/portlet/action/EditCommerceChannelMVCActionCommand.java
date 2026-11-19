@@ -43,20 +43,20 @@ import com.liferay.portal.kernel.settings.ModifiableSettings;
 import com.liferay.portal.kernel.settings.Settings;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.Constants;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ObjectValuePair;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.PropertiesParamUtil;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.upload.UploadHandler;
+
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -67,7 +67,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + CPPortletKeys.COMMERCE_CHANNELS,
+		"jakarta.portlet.name=" + CPPortletKeys.COMMERCE_CHANNELS,
 		"mvc.command.name=/commerce_channels/edit_commerce_channel"
 	},
 	service = MVCActionCommand.class
@@ -216,6 +216,29 @@ public class EditCommerceChannelMVCActionCommand
 		modifiableSettings.store();
 	}
 
+	private void _updateAccountEntryValidationSettings(
+			ActionRequest actionRequest, CommerceChannel commerceChannel)
+		throws Exception {
+
+		Settings settings = FallbackKeysSettingsUtil.getSettings(
+			new GroupServiceSettingsLocator(
+				commerceChannel.getGroupId(),
+				CommerceConstants.
+					SERVICE_NAME_COMMERCE_ACCOUNT_ENTRY_VALIDATION));
+
+		ModifiableSettings modifiableSettings =
+			settings.getModifiableSettings();
+
+		Map<String, String> parameterMap = PropertiesParamUtil.getProperties(
+			actionRequest, "accountEntryValidationSettings--");
+
+		for (Map.Entry<String, String> entry : parameterMap.entrySet()) {
+			modifiableSettings.setValue(entry.getKey(), entry.getValue());
+		}
+
+		modifiableSettings.store();
+	}
+
 	private CommerceChannel _updateCommerceChannel(ActionRequest actionRequest)
 		throws Exception {
 
@@ -226,6 +249,7 @@ public class EditCommerceChannelMVCActionCommand
 			_commerceChannelService.getCommerceChannel(commerceChannelId);
 
 		_updateAccountCartMaxAllowed(actionRequest, commerceChannel);
+		_updateAccountEntryValidationSettings(actionRequest, commerceChannel);
 		_updatePurchaseOrderNumber(actionRequest, commerceChannel);
 		_updateRequestedDeliveryDateFormat(actionRequest, commerceChannel);
 		_updateShippingTaxCategory(actionRequest, commerceChannel);
@@ -263,6 +287,13 @@ public class EditCommerceChannelMVCActionCommand
 
 		for (Map.Entry<String, String> entry : parameterMap.entrySet()) {
 			modifiableSettings.setValue(entry.getKey(), entry.getValue());
+		}
+
+		if (!GetterUtil.getBoolean(
+				parameterMap.get("guestBrowsingEnabled"), true)) {
+
+			modifiableSettings.setValue(
+				"guestCheckoutEnabled", Boolean.FALSE.toString());
 		}
 
 		modifiableSettings.store();
@@ -397,7 +428,7 @@ public class EditCommerceChannelMVCActionCommand
 		if (!Objects.equals(newFileEntry.getExtension(), "jrxml")) {
 			_dlAppLocalService.deleteFileEntry(newFileEntry.getFileEntryId());
 
-			throw new FileExtensionException();
+			throw new FileExtensionException.InvalidExtension();
 		}
 
 		if (!_commerceReportExporter.isValidJRXMLTemplate(
@@ -426,7 +457,8 @@ public class EditCommerceChannelMVCActionCommand
 					newFileEntry.getFileName(), newFileEntry.getMimeType(),
 					formattedFileName, StringPool.BLANK, StringPool.BLANK,
 					StringPool.BLANK, newFileEntry.getContentStream(),
-					newFileEntry.getSize(), null, null, new ServiceContext());
+					newFileEntry.getSize(), null, null, null,
+					new ServiceContext());
 			}
 			finally {
 				_dlAppLocalService.deleteFileEntry(fileEntryId);
@@ -439,7 +471,7 @@ public class EditCommerceChannelMVCActionCommand
 				existingFileEntry.getTitle(), StringPool.BLANK,
 				existingFileEntry.getDescription(), StringPool.BLANK,
 				DLVersionNumberIncrease.NONE, newFileEntry.getContentStream(),
-				newFileEntry.getSize(), null, null, new ServiceContext());
+				newFileEntry.getSize(), null, null, null, new ServiceContext());
 		}
 	}
 
@@ -463,9 +495,6 @@ public class EditCommerceChannelMVCActionCommand
 
 	@Reference
 	private Portal _portal;
-
-	@Reference
-	private UploadHandler _uploadHandler;
 
 	@Reference
 	private WorkflowDefinitionLinkLocalService

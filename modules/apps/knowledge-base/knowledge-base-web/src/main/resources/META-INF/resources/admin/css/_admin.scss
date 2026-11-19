@@ -1,7 +1,9 @@
+@import 'atlas-custom-properties/_variables';
+
 @import 'atlas-variables';
 
-$productMenuWidth: 320px;
 $productMenuTransitionDuration: 0.5s;
+$productMenuWidth: 320px;
 $toolbarDesktopHeight: 4rem;
 $toolbarHeight: 6.875rem;
 $toolbarZIndex: 971;
@@ -67,6 +69,10 @@ $toolbarZIndex: 971;
 		.sidebar {
 			border-right: 1px solid $secondary-l3;
 			box-shadow: none;
+
+			.sidebar-body {
+				height: 90%;
+			}
 
 			.sidebar-header .component-title {
 				font-size: 1rem;
@@ -169,7 +175,8 @@ $toolbarZIndex: 971;
 			left: 0;
 			min-height: 3.5rem;
 			position: fixed;
-			transition: left ease $productMenuTransitionDuration,
+			transition:
+				left ease $productMenuTransitionDuration,
 				width ease $productMenuTransitionDuration;
 			width: 100%;
 			z-index: $toolbarZIndex;
@@ -195,7 +202,7 @@ $toolbarZIndex: 971;
 					}
 
 					> .tbar-item:first-child {
-						border-top: solid thin #e7e7ed;
+						border-top: solid thin $gray-300;
 						order: 1;
 						width: 100%;
 					}

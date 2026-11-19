@@ -24,7 +24,6 @@ import com.liferay.portal.kernel.service.ResourceLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.systemevent.SystemEvent;
-import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.Validator;
 
 import java.util.List;
@@ -36,11 +35,13 @@ import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Alessio Antonio Rendina
+ * @deprecated As of Cavanaugh (7.4.x)
  */
 @Component(
 	property = "model.class.name=com.liferay.commerce.notification.model.CommerceNotificationTemplate",
 	service = AopService.class
 )
+@Deprecated
 public class CommerceNotificationTemplateLocalServiceImpl
 	extends CommerceNotificationTemplateLocalServiceBaseImpl {
 
@@ -92,25 +93,6 @@ public class CommerceNotificationTemplateLocalServiceImpl
 			commerceNotificationTemplate, serviceContext);
 
 		return commerceNotificationTemplate;
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x)
-	 */
-	@Deprecated
-	@Override
-	public CommerceNotificationTemplate addCommerceNotificationTemplate(
-			String name, String description, String from,
-			Map<Locale, String> fromNameMap, String to, String cc, String bcc,
-			String type, boolean enabled, Map<Locale, String> subjectMap,
-			Map<Locale, String> bodyMap, ServiceContext serviceContext)
-		throws PortalException {
-
-		return commerceNotificationTemplateLocalService.
-			addCommerceNotificationTemplate(
-				serviceContext.getUserId(), serviceContext.getScopeGroupId(),
-				name, description, from, fromNameMap, to, cc, bcc, type,
-				enabled, subjectMap, bodyMap, serviceContext);
 	}
 
 	@Override
@@ -185,41 +167,10 @@ public class CommerceNotificationTemplateLocalServiceImpl
 
 	@Override
 	public List<CommerceNotificationTemplate> getCommerceNotificationTemplates(
-		long groupId, boolean enabled, int start, int end,
-		OrderByComparator<CommerceNotificationTemplate> orderByComparator) {
-
-		return commerceNotificationTemplatePersistence.findByG_E(
-			groupId, enabled, start, end, orderByComparator);
-	}
-
-	@Override
-	public List<CommerceNotificationTemplate> getCommerceNotificationTemplates(
-		long groupId, int start, int end,
-		OrderByComparator<CommerceNotificationTemplate> orderByComparator) {
-
-		return commerceNotificationTemplatePersistence.findByGroupId(
-			groupId, start, end, orderByComparator);
-	}
-
-	@Override
-	public List<CommerceNotificationTemplate> getCommerceNotificationTemplates(
 		long groupId, String type, boolean enabled) {
 
 		return commerceNotificationTemplatePersistence.findByG_T_E(
 			groupId, type, enabled);
-	}
-
-	@Override
-	public int getCommerceNotificationTemplatesCount(long groupId) {
-		return commerceNotificationTemplatePersistence.countByGroupId(groupId);
-	}
-
-	@Override
-	public int getCommerceNotificationTemplatesCount(
-		long groupId, boolean enabled) {
-
-		return commerceNotificationTemplatePersistence.countByG_E(
-			groupId, enabled);
 	}
 
 	@Override

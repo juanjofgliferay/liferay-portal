@@ -10,8 +10,6 @@ import com.liferay.asset.kernel.model.AssetVocabulary;
 import com.liferay.asset.kernel.model.AssetVocabularyConstants;
 import com.liferay.content.dashboard.web.internal.model.AssetCategoryMetric;
 import com.liferay.content.dashboard.web.internal.model.AssetVocabularyMetric;
-import com.liferay.content.dashboard.web.internal.search.request.ContentDashboardSearchContextBuilder;
-import com.liferay.content.dashboard.web.internal.searcher.ContentDashboardSearchRequestBuilderFactory;
 import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.kernel.util.ArrayUtil;
@@ -26,7 +24,7 @@ import com.liferay.portal.search.aggregation.bucket.Order;
 import com.liferay.portal.search.aggregation.bucket.TermsAggregation;
 import com.liferay.portal.search.aggregation.bucket.TermsAggregationResult;
 import com.liferay.portal.search.query.BooleanQuery;
-import com.liferay.portal.search.query.Queries;
+import com.liferay.portal.search.query.QueriesUtil;
 import com.liferay.portal.search.query.TermsQuery;
 import com.liferay.portal.search.searcher.SearchRequestBuilder;
 import com.liferay.portal.search.searcher.SearchResponse;
@@ -48,23 +46,14 @@ import java.util.Set;
 public class ContentDashboardDataProvider {
 
 	public ContentDashboardDataProvider(
-		Aggregations aggregations,
-		ContentDashboardSearchContextBuilder
-			contentDashboardSearchContextBuilder,
-		ContentDashboardSearchRequestBuilderFactory
-			contentDashboardSearchRequestBuilderFactory,
-		Locale locale, Queries queries, ResourceBundle resourceBundle,
-		Searcher searcher) {
+		Aggregations aggregations, Locale locale, ResourceBundle resourceBundle,
+		SearchRequestBuilder searchRequestBuilder, Searcher searcher) {
 
 		_aggregations = aggregations;
 		_locale = locale;
-		_queries = queries;
 		_resourceBundle = resourceBundle;
+		_searchRequestBuilder = searchRequestBuilder;
 		_searcher = searcher;
-
-		_searchRequestBuilder =
-			contentDashboardSearchRequestBuilderFactory.builder(
-				contentDashboardSearchContextBuilder.build());
 	}
 
 	public AssetVocabularyMetric getAssetVocabularyMetric(
@@ -279,9 +268,9 @@ public class ContentDashboardDataProvider {
 		Set<String> mustNotAssetCategoryIds, String mustNotAssetVocabularyField,
 		Set<String> shouldAssetCategoryIds, String shouldAssetVocabularyField) {
 
-		BooleanQuery booleanQuery = _queries.booleanQuery();
+		BooleanQuery booleanQuery = QueriesUtil.booleanQuery();
 
-		TermsQuery mustNotTermsQuery = _queries.terms(
+		TermsQuery mustNotTermsQuery = QueriesUtil.terms(
 			mustNotAssetVocabularyField);
 
 		mustNotTermsQuery.addValues(
@@ -289,7 +278,7 @@ public class ContentDashboardDataProvider {
 
 		booleanQuery.addMustNotQueryClauses(mustNotTermsQuery);
 
-		TermsQuery shouldTermsQuery = _queries.terms(
+		TermsQuery shouldTermsQuery = QueriesUtil.terms(
 			shouldAssetVocabularyField);
 
 		shouldTermsQuery.addValues(
@@ -432,10 +421,9 @@ public class ContentDashboardDataProvider {
 
 	private final Aggregations _aggregations;
 	private final Locale _locale;
-	private final Queries _queries;
 	private final ResourceBundle _resourceBundle;
-	private final Searcher _searcher;
 	private final SearchRequestBuilder _searchRequestBuilder;
+	private final Searcher _searcher;
 
 	private static class IncludeExcludeClauseImpl
 		implements IncludeExcludeClause {
@@ -455,18 +443,13 @@ public class ContentDashboardDataProvider {
 		}
 
 		@Override
-		public String[] getExcludedValues() {
-			return _excludedValues;
-		}
-
-		@Override
 		public String getExcludeRegex() {
 			return _excludeRegex;
 		}
 
 		@Override
-		public String[] getIncludedValues() {
-			return _includedValues;
+		public String[] getExcludedValues() {
+			return _excludedValues;
 		}
 
 		@Override
@@ -474,10 +457,15 @@ public class ContentDashboardDataProvider {
 			return _includeRegex;
 		}
 
-		private String[] _excludedValues;
+		@Override
+		public String[] getIncludedValues() {
+			return _includedValues;
+		}
+
 		private String _excludeRegex;
-		private String[] _includedValues;
+		private String[] _excludedValues;
 		private String _includeRegex;
+		private String[] _includedValues;
 
 	}
 

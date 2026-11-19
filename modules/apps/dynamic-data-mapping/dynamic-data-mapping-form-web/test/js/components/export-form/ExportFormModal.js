@@ -7,9 +7,9 @@ import {fireEvent, render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
 
-import ExportFormModal from '../../../../src/main/resources/META-INF/resources/admin/js/components/export-form/ExportFormModal';
+import ExportFormModal from '../../../../src/main/resources/META-INF/resources/js/components/export-form/ExportFormModal';
 
-import '@testing-library/jest-dom/extend-expect';
+import '@testing-library/jest-dom';
 
 describe('ExportFormModal', () => {
 	let fileExtensions;

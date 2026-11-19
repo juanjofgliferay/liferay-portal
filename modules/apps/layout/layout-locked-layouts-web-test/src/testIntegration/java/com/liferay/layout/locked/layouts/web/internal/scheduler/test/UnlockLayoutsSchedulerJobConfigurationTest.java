@@ -16,6 +16,7 @@ import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.scheduler.SchedulerJobConfiguration;
 import com.liferay.portal.kernel.service.LayoutLocalService;
+import com.liferay.portal.kernel.test.portlet.MockActionRequest;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
@@ -27,11 +28,9 @@ import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.lock.model.Lock;
 import com.liferay.portal.lock.service.LockLocalService;
-import com.liferay.portal.test.rule.FeatureFlags;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
-import com.liferay.portletmvc4spring.test.mock.web.portlet.MockActionRequest;
 
 import java.util.Date;
 
@@ -48,7 +47,6 @@ import org.osgi.service.cm.ConfigurationAdmin;
 /**
  * @author Jürgen Kappler
  */
-@FeatureFlags("LPS-180328")
 @RunWith(Arquillian.class)
 public class UnlockLayoutsSchedulerJobConfigurationTest {
 
@@ -149,6 +147,8 @@ public class UnlockLayoutsSchedulerJobConfigurationTest {
 						allowAutomaticUnlockingProcessGroupConfiguration
 					).put(
 						"autosaveMinutes", autosaveMinutesGroupConfiguration
+					).put(
+						"companyId", _group.getCompanyId()
 					).put(
 						"groupId", _group.getGroupId()
 					).build())) {

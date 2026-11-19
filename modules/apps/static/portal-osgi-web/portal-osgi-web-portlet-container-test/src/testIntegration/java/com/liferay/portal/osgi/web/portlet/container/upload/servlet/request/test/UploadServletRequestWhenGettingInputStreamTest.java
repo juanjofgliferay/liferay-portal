@@ -18,11 +18,11 @@ import com.liferay.portal.upload.LiferayInputStream;
 import com.liferay.portal.upload.LiferayServletRequest;
 import com.liferay.portal.upload.test.util.UploadTestUtil;
 
+import jakarta.servlet.ServletInputStream;
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.HashMap;
 import java.util.List;
-
-import javax.servlet.ServletInputStream;
-import javax.servlet.http.HttpServletRequest;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -93,7 +93,7 @@ public class UploadServletRequestWhenGettingInputStreamTest {
 	private static final byte[] _BYTES =
 		"Enterprise. Open Source. For Life.".getBytes();
 
-	private static String _fileNameParameter;
+	private String _fileNameParameter;
 
 	@Inject
 	private Portal _portal;

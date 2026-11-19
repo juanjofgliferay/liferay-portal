@@ -10,21 +10,24 @@ import {ClayInput, ClaySelect} from '@clayui/form';
 import ClayIcon from '@clayui/icon';
 import ClayLoadingIndicator from '@clayui/loading-indicator';
 import getCN from 'classnames';
-import {addParams, fetch, navigate} from 'frontend-js-web';
+import {addParams, fetch, navigate, sub} from 'frontend-js-web';
 import React, {useCallback, useRef, useState} from 'react';
 
+import {FacetUtil} from '../FacetUtil';
 import useDebounceCallback from '../hooks/useDebounceCallback';
 import cleanSuggestionsContributorConfiguration from '../utils/clean_suggestions_contributor_configuration';
 
 export default function SearchBar({
 	destinationFriendlyURL,
 	emptySearchEnabled,
+	initialKeywords = '',
+	inputPlaceholder = '',
 	isDXP = true,
 	isSearchExperiencesSupported = true,
-	keywords = '',
 	keywordsParameterName = 'q',
 	letUserChooseScope = false,
 	paginationStartParameterName,
+	retainFacetSelections,
 	scopeParameterName,
 	scopeParameterStringCurrentSite,
 	scopeParameterStringEverything,
@@ -41,7 +44,7 @@ export default function SearchBar({
 
 	const [active, setActive] = useState(false);
 	const [autocompleteSearchValue, setAutocompleteSearchValue] = useState('');
-	const [inputValue, setInputValue] = useState(keywords);
+	const [inputValue, setInputValue] = useState(initialKeywords);
 	const [loading, setLoading] = useState(false);
 	const [scope, setScope] = useState(
 		selectedEverythingSearchScope
@@ -62,15 +65,16 @@ export default function SearchBar({
 	 */
 
 	const _getLowestSuggestionsDisplayThreshold = useCallback(() => {
-		const characterThresholdArray = cleanSuggestionsContributorConfiguration(
-			suggestionsContributorConfiguration,
-			isDXP,
-			isSearchExperiencesSupported
-		).map((config) =>
-			config.attributes?.characterThreshold
-				? parseInt(config.attributes.characterThreshold, 10)
-				: parseInt(suggestionsDisplayThreshold, 10)
-		);
+		const characterThresholdArray =
+			cleanSuggestionsContributorConfiguration(
+				suggestionsContributorConfiguration,
+				isDXP,
+				isSearchExperiencesSupported
+			).map((config) =>
+				config.attributes?.characterThreshold
+					? parseInt(config.attributes.characterThreshold, 10)
+					: parseInt(suggestionsDisplayThreshold, 10)
+			);
 
 		return Math.min(...characterThresholdArray);
 	}, [
@@ -120,7 +124,8 @@ export default function SearchBar({
 				body: _getSuggestionsContributorConfiguration(),
 				headers: new Headers({
 					'Accept': 'application/json',
-					'Accept-Language': Liferay.ThemeDisplay.getBCP47LanguageId(),
+					'Accept-Language':
+						Liferay.ThemeDisplay.getBCP47LanguageId(),
 					'Content-Type': 'application/json',
 				}),
 				method: 'POST',
@@ -171,7 +176,22 @@ export default function SearchBar({
 		event.stopPropagation();
 
 		if (!!inputValue.trim().length || emptySearchEnabled) {
-			const queryString = _updateQueryString(document.location.search);
+			const keywords = inputValue.trim();
+			let queryString = _updateQueryString(window.location.search);
+
+			/*
+			 * Refer to LPD-19994 for acceptance criteria regarding
+			 * retaining facet selections across searches. Default behavior
+			 * is to clear all facet selections after searching a new
+			 * keyword.
+			 */
+
+			if (
+				(initialKeywords !== keywords || keywords === '') &&
+				!retainFacetSelections
+			) {
+				queryString = FacetUtil.removeAllFacetParameters(queryString);
+			}
 
 			navigate(searchURL + queryString);
 		}
@@ -218,7 +238,7 @@ export default function SearchBar({
 					onChange={_handleValueChange}
 					onFocus={_handleFocus}
 					onKeyDown={_handleKeyDown}
-					placeholder={Liferay.Language.get('search-...')}
+					placeholder={inputPlaceholder}
 					title={Liferay.Language.get('search')}
 					type="text"
 					value={inputValue}
@@ -256,7 +276,7 @@ export default function SearchBar({
 							onChange={_handleValueChange}
 							onFocus={_handleFocus}
 							onKeyDown={_handleKeyDown}
-							placeholder={Liferay.Language.get('search-...')}
+							placeholder={inputPlaceholder}
 							type="text"
 							value={inputValue}
 						/>
@@ -337,6 +357,27 @@ export default function SearchBar({
 
 	return (
 		<ClayAutocomplete className="search-bar-suggestions">
+			<span className="sr-only" role="status">
+				{loading
+					? Liferay.Language.get('loading')
+					: active
+						? suggestionsResponseItems.length
+							? sub(Liferay.Language.get('showing-x-x'), [
+									suggestionsResponseItems.reduce(
+										(accumulator, currentValue) =>
+											accumulator +
+											(currentValue?.suggestions
+												?.length || 0),
+										0
+									),
+									Liferay.Language.get('suggestions'),
+								])
+							: sub(Liferay.Language.get('no-x-were-found'), [
+									Liferay.Language.get('suggestions'),
+								])
+						: ''}
+			</span>
+
 			<ClayInput.Group ref={alignElementRef}>
 				{letUserChooseScope
 					? _renderSearchBarWithScope()

@@ -18,6 +18,7 @@ import com.liferay.portal.kernel.util.ClassUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.PropsUtil;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 
@@ -29,14 +30,14 @@ import com.liferay.portal.kernel.util.Validator;
  */
 public class PasswordEncryptorUtil {
 
-	public static String encrypt(String plainTextPassword)
+	public static String encrypt(String plaintextPassword)
 		throws PwdEncryptorException {
 
-		return encrypt(plainTextPassword, null);
+		return encrypt(plaintextPassword, null);
 	}
 
 	public static String encrypt(
-			String plainTextPassword, String encryptedPassword)
+			String plaintextPassword, String encryptedPassword)
 		throws PwdEncryptorException {
 
 		long startTime = 0;
@@ -47,7 +48,7 @@ public class PasswordEncryptorUtil {
 
 		try {
 			return encrypt(
-				_PASSWORDS_ENCRYPTION_ALGORITHM, plainTextPassword,
+				_PASSWORDS_ENCRYPTION_ALGORITHM, plaintextPassword,
 				encryptedPassword);
 		}
 		finally {
@@ -60,7 +61,7 @@ public class PasswordEncryptorUtil {
 	}
 
 	public static String encrypt(
-			String plainTextPassword, String encryptedPassword,
+			String plaintextPassword, String encryptedPassword,
 			boolean upgradeHashSecurity)
 		throws PwdEncryptorException {
 
@@ -69,24 +70,42 @@ public class PasswordEncryptorUtil {
 		}
 
 		return _encrypt(
-			null, plainTextPassword, encryptedPassword, upgradeHashSecurity);
+			null, plaintextPassword, encryptedPassword, upgradeHashSecurity);
 	}
 
 	public static String encrypt(
-			String algorithm, String plainTextPassword,
+			String algorithm, String plaintextPassword,
 			String encryptedPassword)
 		throws PwdEncryptorException {
 
-		return _encrypt(algorithm, plainTextPassword, encryptedPassword, false);
+		return _encrypt(algorithm, plaintextPassword, encryptedPassword, false);
+	}
+
+	public static String getEncryptedPasswordAlgorithmSettings(
+			String encryptedPassword)
+		throws PwdEncryptorException {
+
+		String encryptedPasswordAlgorithm = _getEncryptedPasswordAlgorithm(
+			encryptedPassword);
+
+		if (Validator.isNull(encryptedPasswordAlgorithm)) {
+			return null;
+		}
+
+		PasswordEncryptor passwordEncryptor = _getPasswordEncryptor(
+			encryptedPasswordAlgorithm);
+
+		return passwordEncryptor.getEncryptedPasswordAlgorithmSettings(
+			encryptedPassword);
 	}
 
 	private static String _encrypt(
-			String algorithm, String plainTextPassword,
+			String algorithm, String plaintextPassword,
 			String encryptedPassword, boolean upgradeHashSecurity)
 		throws PwdEncryptorException {
 
-		if (Validator.isNull(plainTextPassword)) {
-			throw new PwdEncryptorException(
+		if (Validator.isNull(plaintextPassword)) {
+			throw new PwdEncryptorException.PwdMustNotBeNull(
 				"Unable to _encrypt blank password");
 		}
 
@@ -126,10 +145,10 @@ public class PasswordEncryptorUtil {
 			}
 		}
 
-		PasswordEncryptor passwordEncryptor = _select(algorithm);
+		PasswordEncryptor passwordEncryptor = _getPasswordEncryptor(algorithm);
 
 		String newEncryptedPassword = passwordEncryptor.encrypt(
-			algorithm, plainTextPassword, encryptedPassword, false);
+			algorithm, plaintextPassword, encryptedPassword, false);
 
 		if (!prependAlgorithm) {
 			if (_log.isDebugEnabled()) {
@@ -162,7 +181,8 @@ public class PasswordEncryptorUtil {
 	}
 
 	private static String _getEncryptedPasswordAlgorithm(
-		String encryptedPassword) {
+			String encryptedPassword)
+		throws PwdEncryptorException {
 
 		String legacyAlgorithm = GetterUtil.getString(
 			PropsUtil.get(PropsKeys.PASSWORDS_ENCRYPTION_ALGORITHM_LEGACY));
@@ -193,7 +213,14 @@ public class PasswordEncryptorUtil {
 				return legacyAlgorithm;
 			}
 
-			return _PASSWORDS_ENCRYPTION_ALGORITHM;
+			if (_log.isWarnEnabled()) {
+				_log.warn(
+					"Property \"" +
+						PropsKeys.PASSWORDS_ENCRYPTION_ALGORITHM_LEGACY +
+							"\" is not set");
+			}
+
+			throw new PwdEncryptorException.MustSetLegacyAlgorithmProperty();
 		}
 		else if (Validator.isNotNull(encryptedPassword) &&
 				 (encryptedPassword.charAt(0) == CharPool.OPEN_CURLY_BRACE)) {
@@ -215,7 +242,9 @@ public class PasswordEncryptorUtil {
 		return null;
 	}
 
-	private static PasswordEncryptor _select(String algorithm) {
+	private static PasswordEncryptor _getPasswordEncryptor(String algorithm)
+		throws PwdEncryptorException {
+
 		if (Validator.isNull(algorithm)) {
 			throw new IllegalArgumentException("Invalid algorithm");
 		}
@@ -236,6 +265,16 @@ public class PasswordEncryptorUtil {
 		}
 		else {
 			passwordEncryptor = _serviceTrackerMap.getService(algorithm);
+		}
+
+		if (PropsValues.FIPS_ENABLED &&
+			(algorithm.startsWith(PasswordEncryptor.TYPE_BCRYPT) ||
+			 algorithm.startsWith(PasswordEncryptor.TYPE_UFC_CRYPT))) {
+
+			throw new PwdEncryptorException.UnavailableAlgorithm(
+				StringBundler.concat(
+					"Algorithm \"", algorithm,
+					"\" is not available in FIPS mode"));
 		}
 
 		if (passwordEncryptor == null) {

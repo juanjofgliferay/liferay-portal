@@ -29,6 +29,7 @@ import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.security.auth.GuestOrUserUtil;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.util.ArrayUtil;
@@ -71,6 +72,17 @@ public class JournalArticleInfoItemFieldValuesUpdater
 			InfoItemFieldValues infoItemFieldValues)
 		throws Exception {
 
+		JournalArticle latestArticle =
+			_journalArticleLocalService.getLatestArticle(
+				journalArticle.getGroupId(), journalArticle.getArticleId(),
+				WorkflowConstants.STATUS_ANY);
+
+		User user = _userLocalService.fetchUser(latestArticle.getUserId());
+
+		if (user == null) {
+			user = _userLocalService.getUser(GuestOrUserUtil.getUserId());
+		}
+
 		Map<Locale, String> importedLocaleTitleMap = new HashMap<>();
 		Map<Locale, String> importedLocaleDescriptionMap = new HashMap<>();
 		Map<Locale, Map<String, List<String>>> importedLocaleContentMap =
@@ -84,55 +96,51 @@ public class JournalArticleInfoItemFieldValuesUpdater
 			InfoLocalizedValue<Object> infoLocalizedValue =
 				_getInfoLocalizedValue(infoFieldValue);
 
-			if (infoLocalizedValue != null) {
-				InfoField infoField = infoFieldValue.getInfoField();
+			if (infoLocalizedValue == null) {
+				continue;
+			}
 
-				for (Locale locale : infoLocalizedValue.getAvailableLocales()) {
-					if ((infoFieldValue.getValue(locale) != null) &&
-						(infoFieldValue.getValue(locale) instanceof String)) {
+			InfoField infoField = infoFieldValue.getInfoField();
 
-						translatedLocales.add(locale);
+			for (Locale locale : infoLocalizedValue.getAvailableLocales()) {
+				if ((infoFieldValue.getValue(locale) == null) ||
+					!(infoFieldValue.getValue(locale) instanceof String)) {
 
-						String fieldName = infoField.getName();
-						String fieldUniqueId = infoField.getUniqueId();
+					continue;
+				}
 
-						String valueString = String.valueOf(
-							infoFieldValue.getValue(locale));
+				translatedLocales.add(locale);
 
-						if (Objects.equals(fieldName, "description") &&
-							fieldUniqueId.startsWith(
-								JournalArticle.class.getSimpleName() +
-									StringPool.UNDERLINE)) {
+				String fieldName = infoField.getName();
+				String fieldUniqueId = infoField.getUniqueId();
 
-							importedLocaleDescriptionMap.put(
-								locale, valueString);
-						}
-						else if (Objects.equals(fieldName, "title") &&
-								 fieldUniqueId.startsWith(
-									 JournalArticle.class.getSimpleName() +
-										 StringPool.UNDERLINE)) {
+				String valueString = String.valueOf(
+					infoFieldValue.getValue(locale));
 
-							importedLocaleTitleMap.put(locale, valueString);
-						}
-						else {
-							List<String> values =
-								fieldNameContentMap.computeIfAbsent(
-									fieldName, name -> new ArrayList<>());
+				if (Objects.equals(fieldName, "description") &&
+					fieldUniqueId.startsWith(
+						JournalArticle.class.getSimpleName() +
+							StringPool.UNDERLINE)) {
 
-							values.add(valueString);
+					importedLocaleDescriptionMap.put(locale, valueString);
+				}
+				else if (Objects.equals(fieldName, "title") &&
+						 fieldUniqueId.startsWith(
+							 JournalArticle.class.getSimpleName() +
+								 StringPool.UNDERLINE)) {
 
-							importedLocaleContentMap.put(
-								locale, fieldNameContentMap);
-						}
-					}
+					importedLocaleTitleMap.put(locale, valueString);
+				}
+				else {
+					List<String> values = fieldNameContentMap.computeIfAbsent(
+						fieldName, name -> new ArrayList<>());
+
+					values.add(valueString);
+
+					importedLocaleContentMap.put(locale, fieldNameContentMap);
 				}
 			}
 		}
-
-		JournalArticle latestArticle =
-			_journalArticleLocalService.getLatestArticle(
-				journalArticle.getGroupId(), journalArticle.getArticleId(),
-				WorkflowConstants.STATUS_ANY);
 
 		Map<Locale, String> titleMap = latestArticle.getTitleMap();
 		Map<Locale, String> descriptionMap = latestArticle.getDescriptionMap();
@@ -159,8 +167,6 @@ public class JournalArticleInfoItemFieldValuesUpdater
 				fields, ddmStructure, importedLocaleContentMap, targetLocale);
 		}
 
-		User user = _userLocalService.getUser(latestArticle.getUserId());
-
 		int[] displayDateArray = _getDateArray(
 			user, latestArticle.getDisplayDate());
 		int[] expirationDateArray = _getDateArray(
@@ -171,7 +177,7 @@ public class JournalArticleInfoItemFieldValuesUpdater
 		ServiceContext serviceContext = _getServiceContext(latestArticle);
 
 		return _journalArticleLocalService.updateArticle(
-			latestArticle.getUserId(), latestArticle.getGroupId(),
+			user.getUserId(), latestArticle.getGroupId(),
 			latestArticle.getFolderId(), latestArticle.getArticleId(),
 			latestArticle.getVersion(), titleMap, descriptionMap,
 			latestArticle.getFriendlyURLMap(),

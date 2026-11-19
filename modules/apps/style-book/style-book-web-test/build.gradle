@@ -1,6 +1,13 @@
 dependencies {
-	testIntegrationImplementation group: "javax.portlet", name: "portlet-api", version: "3.0.1"
+	testIntegrationImplementation group: "com.liferay.jakarta.portlet", name: "com.liferay.jakarta.portlet-api", version: "4.0.0"
+	testIntegrationImplementation group: "org.skyscreamer", name: "jsonassert", version: "1.2.3"
+	testIntegrationImplementation project(":apps:depot:depot-api")
+	testIntegrationImplementation project(":apps:fragment:fragment-api")
+	testIntegrationImplementation project(":apps:frontend-token:frontend-token-definition-api")
 	testIntegrationImplementation project(":apps:layout:layout-test-util")
+	testIntegrationImplementation project(":apps:portal:portal-props-test-util")
+	testIntegrationImplementation project(":apps:portal:portal-upload-test-util")
 	testIntegrationImplementation project(":apps:style-book:style-book-api")
+	testIntegrationImplementation project(":apps:style-book:style-book-test-util")
 	testIntegrationImplementation project(":test:arquillian-extension-junit-bridge")
 }

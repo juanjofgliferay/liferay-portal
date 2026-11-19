@@ -6,6 +6,8 @@
 package com.liferay.user.groups.admin.web.internal.portlet;
 
 import com.liferay.item.selector.ItemSelector;
+import com.liferay.petra.lang.SafeCloseable;
+import com.liferay.portal.kernel.change.tracking.CTCollectionThreadLocal;
 import com.liferay.portal.kernel.exception.DuplicateUserGroupException;
 import com.liferay.portal.kernel.exception.NoSuchUserGroupException;
 import com.liferay.portal.kernel.exception.RequiredUserGroupException;
@@ -24,14 +26,14 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.sites.kernel.util.Sites;
 import com.liferay.user.groups.admin.constants.UserGroupsAdminPortletKeys;
 
-import java.io.IOException;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.Portlet;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.Portlet;
-import javax.portlet.PortletException;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
+import java.io.IOException;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -50,14 +52,14 @@ import org.osgi.service.component.annotations.Reference;
 		"com.liferay.portlet.private-session-attributes=false",
 		"com.liferay.portlet.render-weight=50",
 		"com.liferay.portlet.use-default-template=true",
-		"javax.portlet.display-name=User Groups Admin",
-		"javax.portlet.expiration-cache=0",
-		"javax.portlet.init-param.template-path=/META-INF/resources/",
-		"javax.portlet.init-param.view-template=/view.jsp",
-		"javax.portlet.name=" + UserGroupsAdminPortletKeys.USER_GROUPS_ADMIN,
-		"javax.portlet.resource-bundle=content.Language",
-		"javax.portlet.security-role-ref=administrator",
-		"javax.portlet.version=3.0"
+		"jakarta.portlet.display-name=User Groups Admin",
+		"jakarta.portlet.expiration-cache=0",
+		"jakarta.portlet.init-param.template-path=/META-INF/resources/",
+		"jakarta.portlet.init-param.view-template=/view.jsp",
+		"jakarta.portlet.name=" + UserGroupsAdminPortletKeys.USER_GROUPS_ADMIN,
+		"jakarta.portlet.resource-bundle=content.Language",
+		"jakarta.portlet.security-role-ref=administrator",
+		"jakarta.portlet.version=4.0"
 	},
 	service = Portlet.class
 )
@@ -94,14 +96,18 @@ public class UserGroupsAdminPortlet extends MVCPortlet {
 			// Add user group
 
 			userGroup = _userGroupService.addUserGroup(
+				ParamUtil.getString(actionRequest, "externalReferenceCode"),
 				name, description, serviceContext);
 		}
 		else {
 
 			// Update user group
 
+			userGroup = _userGroupService.getUserGroup(userGroupId);
+
 			userGroup = _userGroupService.updateUserGroup(
-				userGroupId, name, description, serviceContext);
+				userGroup.getExternalReferenceCode(), userGroupId, name,
+				description, serviceContext);
 		}
 
 		// Layout set prototypes
@@ -120,7 +126,7 @@ public class UserGroupsAdminPortlet extends MVCPortlet {
 				actionRequest, "privateLayoutSetPrototypeLinkEnabled");
 
 			_sites.updateLayoutSetPrototypesLinks(
-				userGroup.getGroup(), publicLayoutSetPrototypeId,
+				userGroup.getGroup(), false, publicLayoutSetPrototypeId,
 				privateLayoutSetPrototypeId,
 				publicLayoutSetPrototypeLinkEnabled,
 				privateLayoutSetPrototypeLinkEnabled);
@@ -150,6 +156,18 @@ public class UserGroupsAdminPortlet extends MVCPortlet {
 		renderRequest.setAttribute(ItemSelector.class.getName(), _itemSelector);
 
 		super.render(renderRequest, renderResponse);
+	}
+
+	@Override
+	protected boolean callActionMethod(
+			ActionRequest actionRequest, ActionResponse actionResponse)
+		throws PortletException {
+
+		try (SafeCloseable safeCloseable =
+				CTCollectionThreadLocal.setProductionModeWithSafeCloseable()) {
+
+			return super.callActionMethod(actionRequest, actionResponse);
+		}
 	}
 
 	@Override

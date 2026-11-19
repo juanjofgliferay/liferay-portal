@@ -18,11 +18,11 @@ import com.liferay.portal.kernel.test.rule.DataGuard;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.SubscriptionSender;
 import com.liferay.portal.kernel.util.TreeMapBuilder;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
-import com.liferay.portal.util.PropsValues;
 import com.liferay.subscription.model.Subscription;
 import com.liferay.subscription.service.SubscriptionLocalService;
 
@@ -76,7 +76,6 @@ public class SubscriptionSenderTest {
 
 		SubscriptionSender subscriptionSender = new SubscriptionSender();
 
-		subscriptionSender.setCompanyId(TestPropsValues.getCompanyId());
 		subscriptionSender.setEntryURL(
 			_portalURL +
 				PropsValues.LAYOUT_FRIENDLY_URL_PRIVATE_GROUP_SERVLET_MAPPING);
@@ -105,7 +104,6 @@ public class SubscriptionSenderTest {
 
 		SubscriptionSender subscriptionSender = new SubscriptionSender();
 
-		subscriptionSender.setCompanyId(TestPropsValues.getCompanyId());
 		subscriptionSender.setGroupId(_group.getGroupId());
 		subscriptionSender.setMailId("test-mail-id");
 
@@ -141,7 +139,6 @@ public class SubscriptionSenderTest {
 
 		SubscriptionSender subscriptionSender = new SubscriptionSender();
 
-		subscriptionSender.setCompanyId(TestPropsValues.getCompanyId());
 		subscriptionSender.setEntryURL(
 			_portalURL +
 				PropsValues.LAYOUT_FRIENDLY_URL_PRIVATE_GROUP_SERVLET_MAPPING);
@@ -170,7 +167,6 @@ public class SubscriptionSenderTest {
 
 		SubscriptionSender subscriptionSender = new SubscriptionSender();
 
-		subscriptionSender.setCompanyId(TestPropsValues.getCompanyId());
 		subscriptionSender.setGroupId(_group.getGroupId());
 		subscriptionSender.setMailId("test-mail-id");
 
@@ -188,8 +184,6 @@ public class SubscriptionSenderTest {
 
 		SubscriptionSender subscriptionSender = new SubscriptionSender();
 
-		subscriptionSender.setCompanyId(TestPropsValues.getCompanyId());
-
 		Assert.assertFalse(subscriptionSender.hasSubscribers());
 	}
 
@@ -203,7 +197,6 @@ public class SubscriptionSenderTest {
 
 		SubscriptionSender subscriptionSender = new SubscriptionSender();
 
-		subscriptionSender.setCompanyId(TestPropsValues.getCompanyId());
 		subscriptionSender.addPersistedSubscribers(
 			Group.class.getName(), _group.getGroupId(), false);
 
@@ -216,7 +209,6 @@ public class SubscriptionSenderTest {
 	public void testPortalURLIsReturned() throws Exception {
 		SubscriptionSender subscriptionSender = new SubscriptionSender();
 
-		subscriptionSender.setCompanyId(TestPropsValues.getCompanyId());
 		subscriptionSender.setMailId("test-mail-id");
 
 		subscriptionSender.initialize();
@@ -231,7 +223,6 @@ public class SubscriptionSenderTest {
 	public void testPortalURLParamsAreRemoved() throws Exception {
 		SubscriptionSender subscriptionSender = new SubscriptionSender();
 
-		subscriptionSender.setCompanyId(TestPropsValues.getCompanyId());
 		subscriptionSender.setEntryURL(_portalURL + "/test/page?with&params");
 		subscriptionSender.setGroupId(_group.getGroupId());
 		subscriptionSender.setMailId("test-mail-id");
@@ -248,7 +239,6 @@ public class SubscriptionSenderTest {
 	public void testVirtualURLIsReturned() throws Exception {
 		SubscriptionSender subscriptionSender = new SubscriptionSender();
 
-		subscriptionSender.setCompanyId(TestPropsValues.getCompanyId());
 		subscriptionSender.setEntryURL(_virtualURL);
 		subscriptionSender.setMailId("test-mail-id");
 

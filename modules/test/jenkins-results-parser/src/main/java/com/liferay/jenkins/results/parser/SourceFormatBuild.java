@@ -8,15 +8,24 @@ package com.liferay.jenkins.results.parser;
 import com.liferay.jenkins.results.parser.failure.message.generator.FailureMessageGenerator;
 import com.liferay.jenkins.results.parser.failure.message.generator.FormatFailureMessageGenerator;
 import com.liferay.jenkins.results.parser.failure.message.generator.GenericFailureMessageGenerator;
+import com.liferay.jenkins.results.parser.failure.message.generator.NodeSourceFormatFailureMessageGenerator;
 import com.liferay.jenkins.results.parser.failure.message.generator.PoshiValidationFailureMessageGenerator;
 import com.liferay.jenkins.results.parser.failure.message.generator.RebaseFailureMessageGenerator;
+import com.liferay.jenkins.results.parser.failure.message.generator.RelevantRuleValidationFailureMessageGenerator;
 import com.liferay.jenkins.results.parser.failure.message.generator.SourceFormatFailureMessageGenerator;
 
+import java.io.File;
+import java.io.IOException;
+
 import java.util.Objects;
+import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.dom4j.Element;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 /**
  * @author Cesar Polanco
@@ -26,17 +35,12 @@ public class SourceFormatBuild
 	implements PortalBranchInformationBuild, PullRequestBuild, WorkspaceBuild {
 
 	public boolean bypassCITestRelevant() {
-		Workspace workspace = getWorkspace();
+		PortalWorkspaceGitRepository portalWorkspaceGitRepository =
+			_getPortalWorkspaceGitRepository();
 
-		WorkspaceGitRepository workspaceGitRepository =
-			workspace.getPrimaryWorkspaceGitRepository();
-
-		if (!(workspaceGitRepository instanceof PortalWorkspaceGitRepository)) {
+		if (portalWorkspaceGitRepository == null) {
 			return false;
 		}
-
-		PortalWorkspaceGitRepository portalWorkspaceGitRepository =
-			(PortalWorkspaceGitRepository)workspaceGitRepository;
 
 		return portalWorkspaceGitRepository.bypassCITestRelevant();
 	}
@@ -126,7 +130,7 @@ public class SourceFormatBuild
 
 	@Override
 	public String getTestSuiteName() {
-		return _NAME_TEST_SUITE;
+		return "sf";
 	}
 
 	@Override
@@ -152,7 +156,7 @@ public class SourceFormatBuild
 		Dom4JUtil.addToElement(
 			detailsElement, String.valueOf(successCount), " out of ",
 			String.valueOf(getDownstreamBuildCountByResult(null) + 1),
-			"jobs PASSED");
+			" jobs PASSED");
 
 		if (Objects.equals(result, "SUCCESS")) {
 			Dom4JUtil.addToElement(
@@ -171,7 +175,8 @@ public class SourceFormatBuild
 		}
 
 		return Dom4JUtil.getNewElement(
-			"html", null, getResultElement(), detailsElement);
+			"html", null, getResultElement(),
+			getSourceFormatterVersionElement(), detailsElement);
 	}
 
 	@Override
@@ -185,38 +190,37 @@ public class SourceFormatBuild
 		WorkspaceGitRepository workspaceGitRepository =
 			workspace.getPrimaryWorkspaceGitRepository();
 
-		workspaceGitRepository.setGitHubURL(pullRequest.getHtmlURL());
-
 		String senderBranchSHA = getParameterValue("GITHUB_SENDER_BRANCH_SHA");
+
+		workspaceGitRepository.setBaseBranchUsername(
+			_getBaseBranchUsername(pullRequest, senderBranchSHA));
+
+		workspaceGitRepository.setGitHubURL(pullRequest.getHtmlURL());
 
 		if (JenkinsResultsParserUtil.isSHA(senderBranchSHA)) {
 			workspaceGitRepository.setSenderBranchSHA(senderBranchSHA);
 		}
 
-		String upstreamBranchSHA = getParameterValue(
-			"GITHUB_UPSTREAM_BRANCH_SHA");
-
-		if (JenkinsResultsParserUtil.isSHA(upstreamBranchSHA)) {
-			workspaceGitRepository.setBaseBranchSHA(upstreamBranchSHA);
-		}
-
 		return workspace;
 	}
 
-	protected SourceFormatBuild(String url) {
-		this(url, null);
+	protected SourceFormatBuild(String buildURL) {
+		this(buildURL, null);
 	}
 
-	protected SourceFormatBuild(String url, TopLevelBuild topLevelBuild) {
-		super(url, topLevelBuild);
+	protected SourceFormatBuild(String buildURL, TopLevelBuild topLevelBuild) {
+		super(buildURL, topLevelBuild);
 	}
 
 	@Override
 	protected FailureMessageGenerator[] getFailureMessageGenerators() {
 		return new FailureMessageGenerator[] {
+			new NodeSourceFormatFailureMessageGenerator(),
+			//
 			new FormatFailureMessageGenerator(),
 			new PoshiValidationFailureMessageGenerator(),
 			new RebaseFailureMessageGenerator(),
+			new RelevantRuleValidationFailureMessageGenerator(),
 			new SourceFormatFailureMessageGenerator(),
 			//
 			new GenericFailureMessageGenerator()
@@ -248,12 +252,272 @@ public class SourceFormatBuild
 			Dom4JUtil.getNewAnchorElement(senderCommitURL, senderSHA));
 	}
 
-	private static final String _NAME_TEST_SUITE = "sf";
+	protected Element getSourceFormatterVersionElement() {
+		Element sourceFormatterVersionElement = Dom4JUtil.getNewElement("p");
+
+		PortalWorkspaceGitRepository portalWorkspaceGitRepository =
+			_getPortalWorkspaceGitRepository();
+
+		if (portalWorkspaceGitRepository == null) {
+			return sourceFormatterVersionElement;
+		}
+
+		if (_isSourceFormatterBuilt()) {
+			return Dom4JUtil.getNewElement(
+				"span", sourceFormatterVersionElement, "Ran ",
+				_SOURCE_FORMATTER_PACKAGE_NAME, " built at ",
+				portalWorkspaceGitRepository.getSenderBranchSHA(), ".");
+		}
+
+		String sourceFormatterVersion = _getSourceFormatterVersion();
+
+		if (sourceFormatterVersion == null) {
+			return sourceFormatterVersionElement;
+		}
+
+		Dom4JUtil.getNewElement(
+			"span", sourceFormatterVersionElement, "Ran ",
+			_SOURCE_FORMATTER_PACKAGE_NAME, " at released version ",
+			Dom4JUtil.getNewAnchorElement(
+				JenkinsResultsParserUtil.combine(
+					"https://repository.liferay.com/nexus/content/",
+					"repositories/liferay-public-releases/com/liferay/",
+					_SOURCE_FORMATTER_PACKAGE_NAME, "/",
+					sourceFormatterVersion),
+				sourceFormatterVersion),
+			".");
+
+		if (_isLatestSourceFormatterReleased()) {
+			return sourceFormatterVersionElement;
+		}
+
+		Dom4JUtil.getNewElement("br", sourceFormatterVersionElement);
+
+		Dom4JUtil.getNewElement(
+			"em", sourceFormatterVersionElement, "*The ",
+			Dom4JUtil.getNewAnchorElement(
+				JenkinsResultsParserUtil.combine(
+					"https://github.com/", _GITHUB_USER_NAME, "/",
+					_GITHUB_REPOSITORY_NAME, "/commits/", _GITHUB_BRANCH_NAME,
+					"/", _SOURCE_FORMATTER_PATH),
+				"latest version"),
+			" has not been released.");
+
+		return sourceFormatterVersionElement;
+	}
+
+	private int _getAheadBy(
+		PullRequest pullRequest, String senderBranchSHA, String username) {
+
+		try {
+			JSONObject compareJSONObject =
+				JenkinsResultsParserUtil.toJSONObject(
+					JenkinsResultsParserUtil.getGitHubAPIURL(
+						pullRequest.getGitRepositoryName(),
+						pullRequest.getOwnerUsername(),
+						JenkinsResultsParserUtil.combine(
+							"compare/", username, ":",
+							pullRequest.getUpstreamRemoteGitBranchName(), "...",
+							senderBranchSHA)));
+
+			return compareJSONObject.getInt("ahead_by");
+		}
+		catch (IOException | JSONException exception) {
+			System.out.println(
+				JenkinsResultsParserUtil.combine(
+					"Unable to compare ", senderBranchSHA, " with ", username,
+					": ", exception.getMessage()));
+
+			return -1;
+		}
+	}
+
+	private String _getBaseBranchUsername(
+		PullRequest pullRequest, String senderBranchSHA) {
+
+		String ownerUsername = pullRequest.getOwnerUsername();
+		String upstreamUsername = JenkinsResultsParserUtil.getUpstreamUserName(
+			pullRequest.getGitRepositoryName(),
+			pullRequest.getUpstreamRemoteGitBranchName());
+
+		if (ownerUsername.equals(upstreamUsername)) {
+			return ownerUsername;
+		}
+
+		BuildDatabase buildDatabase = BuildDatabaseUtil.getBuildDatabase();
+
+		if (buildDatabase.hasProperties(_BASE_BRANCH_PROPERTIES_KEY)) {
+			Properties properties = buildDatabase.getProperties(
+				_BASE_BRANCH_PROPERTIES_KEY);
+
+			return properties.getProperty("base.branch.username");
+		}
+
+		if (!JenkinsResultsParserUtil.isSHA(senderBranchSHA)) {
+			senderBranchSHA = pullRequest.getSenderSHA();
+		}
+
+		int ownerAheadBy = _getAheadBy(
+			pullRequest, senderBranchSHA, ownerUsername);
+		int upstreamAheadBy = _getAheadBy(
+			pullRequest, senderBranchSHA, upstreamUsername);
+
+		System.out.println(
+			JenkinsResultsParserUtil.combine(
+				senderBranchSHA, " is ", String.valueOf(ownerAheadBy),
+				" commits ahead of ", ownerUsername, " and ",
+				String.valueOf(upstreamAheadBy), " commits ahead of ",
+				upstreamUsername));
+
+		String baseBranchUsername = ownerUsername;
+
+		if ((ownerAheadBy < 0) || (upstreamAheadBy < 0) ||
+			(ownerAheadBy >= upstreamAheadBy)) {
+
+			baseBranchUsername = upstreamUsername;
+		}
+
+		System.out.println(
+			JenkinsResultsParserUtil.combine(
+				"Using ", baseBranchUsername, " as the source format base"));
+
+		Properties properties = new Properties();
+
+		properties.setProperty("base.branch.username", baseBranchUsername);
+
+		buildDatabase.putProperties(_BASE_BRANCH_PROPERTIES_KEY, properties);
+
+		return baseBranchUsername;
+	}
+
+	private PortalWorkspaceGitRepository _getPortalWorkspaceGitRepository() {
+		Workspace workspace = getWorkspace();
+
+		WorkspaceGitRepository workspaceGitRepository =
+			workspace.getPrimaryWorkspaceGitRepository();
+
+		if (!(workspaceGitRepository instanceof PortalWorkspaceGitRepository)) {
+			return null;
+		}
+
+		return (PortalWorkspaceGitRepository)workspaceGitRepository;
+	}
+
+	private String _getSourceFormatterVersion() {
+		String sourceFormatterVersion =
+			_getSourceFormatterVersionFromConsoleText();
+
+		if (sourceFormatterVersion != null) {
+			return sourceFormatterVersion;
+		}
+
+		return _getSourceFormatterVersionFromIvyXML();
+	}
+
+	private String _getSourceFormatterVersionFromConsoleText() {
+		try {
+			String sourceFormatterVersion = null;
+
+			String consoleText = getConsoleText();
+
+			for (String line : consoleText.split("\\s*\\n\\s*")) {
+				Matcher matcher = _sourceFormatterVersionPattern.matcher(line);
+
+				if (!matcher.find()) {
+					continue;
+				}
+
+				sourceFormatterVersion = matcher.group("version");
+			}
+
+			return sourceFormatterVersion;
+		}
+		catch (Exception exception) {
+			return null;
+		}
+	}
+
+	private String _getSourceFormatterVersionFromIvyXML() {
+		PortalWorkspaceGitRepository portalWorkspaceGitRepository =
+			_getPortalWorkspaceGitRepository();
+
+		if (portalWorkspaceGitRepository == null) {
+			return null;
+		}
+
+		return SourceFormatterReleaseUtil.getIvyVersion(
+			portalWorkspaceGitRepository.getDirectory());
+	}
+
+	private boolean _isLatestSourceFormatterReleased() {
+		PortalWorkspaceGitRepository portalWorkspaceGitRepository =
+			_getPortalWorkspaceGitRepository();
+
+		if (portalWorkspaceGitRepository == null) {
+			return false;
+		}
+
+		return SourceFormatterReleaseUtil.isReleasedSourceMatch(
+			portalWorkspaceGitRepository.getGitWorkingDirectory(), "HEAD");
+	}
+
+	private boolean _isSourceFormatterBuilt() {
+		PortalWorkspaceGitRepository portalWorkspaceGitRepository =
+			_getPortalWorkspaceGitRepository();
+
+		if (portalWorkspaceGitRepository == null) {
+			return false;
+		}
+
+		Matcher matcher = _upstreamBranchNamePattern.matcher(
+			portalWorkspaceGitRepository.getUpstreamBranchName());
+
+		if (matcher.matches()) {
+			return true;
+		}
+
+		GitWorkingDirectory gitWorkingDirectory =
+			portalWorkspaceGitRepository.getGitWorkingDirectory();
+
+		for (File modifiedFile : gitWorkingDirectory.getModifiedFilesList()) {
+			String modifiedFilePath = JenkinsResultsParserUtil.getCanonicalPath(
+				modifiedFile);
+
+			if (modifiedFilePath.contains(_SOURCE_FORMATTER_PATH) ||
+				modifiedFilePath.contains("source-formatter.properties")) {
+
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	private static final String _BASE_BRANCH_PROPERTIES_KEY =
+		"source.format.base.branch.properties";
+
+	private static final String _GITHUB_BRANCH_NAME = "master";
+
+	private static final String _GITHUB_REPOSITORY_NAME = "liferay-portal";
+
+	private static final String _GITHUB_USER_NAME = "liferay";
+
+	private static final String _SOURCE_FORMATTER_PACKAGE_NAME =
+		"com.liferay.source.formatter";
+
+	private static final String _SOURCE_FORMATTER_PATH =
+		"modules/util/source-formatter";
 
 	private static final Pattern _gitHubUpstreamBranchShaPattern =
 		Pattern.compile(
 			"\\[beanshell\\] GITHUB_UPSTREAM_BRANCH_SHA=" +
 				"(?<sha>[0-9a-f]{7,40})");
+	private static final Pattern _sourceFormatterVersionPattern =
+		Pattern.compile(
+			"Running com\\.liferay\\.source\\.formatter\\.jar " +
+				"(?<version>\\S+?)\\.$");
+	private static final Pattern _upstreamBranchNamePattern = Pattern.compile(
+		"release-((\\d{4})\\.q([1-4])|(7\\.[0-4]\\.[0-9]?[0-9]\\.\\d+))");
 
 	private String _baseGitRepositorySHA;
 	private PullRequest _pullRequest;

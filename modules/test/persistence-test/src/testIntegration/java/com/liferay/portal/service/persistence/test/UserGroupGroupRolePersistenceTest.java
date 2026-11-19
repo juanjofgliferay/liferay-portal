@@ -110,11 +110,7 @@ public class UserGroupGroupRolePersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		UserGroupGroupRole newUserGroupGroupRole = _persistence.create(pk);
-
-		newUserGroupGroupRole.setMvccVersion(RandomTestUtil.nextLong());
+		UserGroupGroupRole newUserGroupGroupRole = addUserGroupGroupRole();
 
 		newUserGroupGroupRole.setCtCollectionId(RandomTestUtil.nextLong());
 
@@ -126,7 +122,9 @@ public class UserGroupGroupRolePersistenceTest {
 
 		newUserGroupGroupRole.setRoleId(RandomTestUtil.nextLong());
 
-		_userGroupGroupRoles.add(_persistence.update(newUserGroupGroupRole));
+		newUserGroupGroupRole = _persistence.update(newUserGroupGroupRole);
+
+		_userGroupGroupRoles.add(newUserGroupGroupRole);
 
 		UserGroupGroupRole existingUserGroupGroupRole =
 			_persistence.findByPrimaryKey(
@@ -530,8 +528,6 @@ public class UserGroupGroupRolePersistenceTest {
 
 		UserGroupGroupRole userGroupGroupRole = _persistence.create(pk);
 
-		userGroupGroupRole.setMvccVersion(RandomTestUtil.nextLong());
-
 		userGroupGroupRole.setCtCollectionId(RandomTestUtil.nextLong());
 
 		userGroupGroupRole.setCompanyId(RandomTestUtil.nextLong());
@@ -553,3 +549,4 @@ public class UserGroupGroupRolePersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:761954985

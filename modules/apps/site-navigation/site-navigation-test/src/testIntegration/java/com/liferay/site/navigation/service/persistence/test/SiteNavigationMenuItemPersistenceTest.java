@@ -115,12 +115,8 @@ public class SiteNavigationMenuItemPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		SiteNavigationMenuItem newSiteNavigationMenuItem = _persistence.create(
-			pk);
-
-		newSiteNavigationMenuItem.setMvccVersion(RandomTestUtil.nextLong());
+		SiteNavigationMenuItem newSiteNavigationMenuItem =
+			addSiteNavigationMenuItem();
 
 		newSiteNavigationMenuItem.setCtCollectionId(RandomTestUtil.nextLong());
 
@@ -158,8 +154,10 @@ public class SiteNavigationMenuItemPersistenceTest {
 
 		newSiteNavigationMenuItem.setLastPublishDate(RandomTestUtil.nextDate());
 
-		_siteNavigationMenuItems.add(
-			_persistence.update(newSiteNavigationMenuItem));
+		newSiteNavigationMenuItem = _persistence.update(
+			newSiteNavigationMenuItem);
+
+		_siteNavigationMenuItems.add(newSiteNavigationMenuItem);
 
 		SiteNavigationMenuItem existingSiteNavigationMenuItem =
 			_persistence.findByPrimaryKey(
@@ -280,13 +278,6 @@ public class SiteNavigationMenuItemPersistenceTest {
 	}
 
 	@Test
-	public void testCountByCompanyId() throws Exception {
-		_persistence.countByCompanyId(RandomTestUtil.nextLong());
-
-		_persistence.countByCompanyId(0L);
-	}
-
-	@Test
 	public void testCountBySiteNavigationMenuId() throws Exception {
 		_persistence.countBySiteNavigationMenuId(RandomTestUtil.nextLong());
 
@@ -294,11 +285,12 @@ public class SiteNavigationMenuItemPersistenceTest {
 	}
 
 	@Test
-	public void testCountByParentSiteNavigationMenuItemId() throws Exception {
-		_persistence.countByParentSiteNavigationMenuItemId(
-			RandomTestUtil.nextLong());
+	public void testCountByType() throws Exception {
+		_persistence.countByType("");
 
-		_persistence.countByParentSiteNavigationMenuItemId(0L);
+		_persistence.countByType("null");
+
+		_persistence.countByType((String)null);
 	}
 
 	@Test
@@ -307,15 +299,6 @@ public class SiteNavigationMenuItemPersistenceTest {
 			RandomTestUtil.nextLong(), RandomTestUtil.nextLong());
 
 		_persistence.countByS_P(0L, 0L);
-	}
-
-	@Test
-	public void testCountByS_LikeN() throws Exception {
-		_persistence.countByS_LikeN(RandomTestUtil.nextLong(), "");
-
-		_persistence.countByS_LikeN(0L, "null");
-
-		_persistence.countByS_LikeN(0L, (String)null);
 	}
 
 	@Test
@@ -687,8 +670,6 @@ public class SiteNavigationMenuItemPersistenceTest {
 
 		SiteNavigationMenuItem siteNavigationMenuItem = _persistence.create(pk);
 
-		siteNavigationMenuItem.setMvccVersion(RandomTestUtil.nextLong());
-
 		siteNavigationMenuItem.setCtCollectionId(RandomTestUtil.nextLong());
 
 		siteNavigationMenuItem.setUuid(RandomTestUtil.randomString());
@@ -736,3 +717,4 @@ public class SiteNavigationMenuItemPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-977184345

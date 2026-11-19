@@ -8,33 +8,34 @@ package com.liferay.layout.set.prototype.web.internal.servlet.taglib.util;
 import com.liferay.application.list.constants.ApplicationListWebKeys;
 import com.liferay.application.list.constants.PanelCategoryKeys;
 import com.liferay.application.list.display.context.logic.PanelCategoryHelper;
+import com.liferay.change.tracking.configuration.helper.CTSettingsConfigurationHelper;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItem;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItemList;
 import com.liferay.petra.function.UnsafeConsumer;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.LayoutSetPrototype;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.portlet.LiferayWindowState;
 import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.service.permission.LayoutSetPrototypePermissionUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
-import com.liferay.portal.kernel.util.GetterUtil;
-import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.taglib.security.PermissionsURLTag;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.List;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Eudaldo Alonso
@@ -72,29 +73,27 @@ public class LayoutSetPrototypeActionDropdownItemsProvider {
 							dropdownItem -> {
 								dropdownItem.setHref(
 									siteAdministrationURL.toString());
+								dropdownItem.setIcon("cog");
 								dropdownItem.setLabel(
 									LanguageUtil.get(
 										_httpServletRequest, "manage"));
 							});
 					}
 
-					if (_layoutSetPrototype.isActive() && !group.isGuest()) {
-						add(_getDeactivateActionUnsafeConsumer());
+					if (_layoutSetPrototype.isActive()) {
+						if (!group.isGuest()) {
+							add(_getDeactivateActionUnsafeConsumer());
+						}
+
+						if (FeatureFlagManagerUtil.isEnabled(
+								_themeDisplay.getCompanyId(), "LPD-82107")) {
+
+							add(
+								_getExecuteLayoutSetPrototypeSyncUnsafeConsumer());
+						}
 					}
 					else if (!_layoutSetPrototype.isActive()) {
 						add(_getActivateActionUnsafeConsumer());
-					}
-
-					boolean readyForPropagation = GetterUtil.getBoolean(
-						_layoutSetPrototype.getSettingsProperty(
-							"readyForPropagation"),
-						true);
-
-					if (readyForPropagation && !group.isGuest()) {
-						add(_getDisablePropagationActionUnsafeConsumer());
-					}
-					else if (!readyForPropagation) {
-						add(_getReadyForPropagationActionUnsafeConsumer());
 					}
 				}
 
@@ -136,6 +135,7 @@ public class LayoutSetPrototypeActionDropdownItemsProvider {
 					"layoutSetPrototypeId",
 					_layoutSetPrototype.getLayoutSetPrototypeId()
 				).buildString());
+			dropdownItem.setIcon("logout");
 			dropdownItem.setLabel(
 				LanguageUtil.get(_httpServletRequest, "activate"));
 		};
@@ -160,6 +160,7 @@ public class LayoutSetPrototypeActionDropdownItemsProvider {
 					"layoutSetPrototypeId",
 					_layoutSetPrototype.getLayoutSetPrototypeId()
 				).buildString());
+			dropdownItem.setIcon("pause");
 			dropdownItem.setLabel(
 				LanguageUtil.get(_httpServletRequest, "deactivate"));
 		};
@@ -189,26 +190,40 @@ public class LayoutSetPrototypeActionDropdownItemsProvider {
 	}
 
 	private UnsafeConsumer<DropdownItem, Exception>
-		_getDisablePropagationActionUnsafeConsumer() {
+		_getExecuteLayoutSetPrototypeSyncUnsafeConsumer() {
 
 		return dropdownItem -> {
-			dropdownItem.putData("action", "disablePropagation");
+			dropdownItem.putData("action", "executeLayoutSetPrototypeSync");
 			dropdownItem.putData(
-				"disablePropagationURL",
+				"executeLayoutSetPrototypeSyncURL",
 				PortletURLBuilder.createActionURL(
 					_renderResponse
 				).setActionName(
-					"updateLayoutSetPrototypeAction"
+					"executeLayoutSetPrototypeSync"
 				).setRedirect(
 					_themeDisplay.getURLCurrent()
 				).setParameter(
 					"layoutSetPrototypeId",
 					_layoutSetPrototype.getLayoutSetPrototypeId()
-				).setParameter(
-					"readyForPropagation", false
 				).buildString());
+
+			if (!FeatureFlagManagerUtil.isEnabled(
+					_themeDisplay.getCompanyId(), "LPD-104837")) {
+
+				CTSettingsConfigurationHelper ctSettingsConfigurationHelper =
+					_ctSettingsConfigurationHelperSnapshot.get();
+
+				dropdownItem.putData(
+					"publicationsEnabled",
+					String.valueOf(
+						ctSettingsConfigurationHelper.isEnabled(
+							_themeDisplay.getCompanyId())));
+			}
+
+			dropdownItem.setIcon("reload");
 			dropdownItem.setLabel(
-				LanguageUtil.get(_httpServletRequest, "disable-propagation"));
+				LanguageUtil.get(
+					_httpServletRequest, "execute-site-template-sync"));
 		};
 	}
 
@@ -218,9 +233,8 @@ public class LayoutSetPrototypeActionDropdownItemsProvider {
 
 		String permissionsURL = PermissionsURLTag.doTag(
 			StringPool.BLANK, LayoutSetPrototype.class.getName(),
-			HtmlUtil.escape(
-				_layoutSetPrototype.getName(_themeDisplay.getLocale())),
-			null, String.valueOf(_layoutSetPrototype.getLayoutSetPrototypeId()),
+			_layoutSetPrototype.getName(_themeDisplay.getLocale()), null,
+			String.valueOf(_layoutSetPrototype.getLayoutSetPrototypeId()),
 			LiferayWindowState.POP_UP.toString(), null, _httpServletRequest);
 
 		return dropdownItem -> {
@@ -229,30 +243,6 @@ public class LayoutSetPrototypeActionDropdownItemsProvider {
 			dropdownItem.setIcon("password-policies");
 			dropdownItem.setLabel(
 				LanguageUtil.get(_httpServletRequest, "permissions"));
-		};
-	}
-
-	private UnsafeConsumer<DropdownItem, Exception>
-		_getReadyForPropagationActionUnsafeConsumer() {
-
-		return dropdownItem -> {
-			dropdownItem.putData("action", "readyForPropagation");
-			dropdownItem.putData(
-				"readyForPropagationURL",
-				PortletURLBuilder.createActionURL(
-					_renderResponse
-				).setActionName(
-					"updateLayoutSetPrototypeAction"
-				).setRedirect(
-					_themeDisplay.getURLCurrent()
-				).setParameter(
-					"layoutSetPrototypeId",
-					_layoutSetPrototype.getLayoutSetPrototypeId()
-				).setParameter(
-					"readyForPropagation", true
-				).buildString());
-			dropdownItem.setLabel(
-				LanguageUtil.get(_httpServletRequest, "ready-for-propagation"));
 		};
 	}
 
@@ -265,18 +255,23 @@ public class LayoutSetPrototypeActionDropdownItemsProvider {
 			PanelCategoryKeys.SITE_ADMINISTRATION,
 			_themeDisplay.getPermissionChecker(), group);
 
-		if (Validator.isNotNull(portletId)) {
-			return PortletURLBuilder.create(
-				PortalUtil.getControlPanelPortletURL(
-					_httpServletRequest, group, portletId, 0, 0,
-					PortletRequest.RENDER_PHASE)
-			).setRedirect(
-				_themeDisplay.getURLCurrent()
-			).buildPortletURL();
+		if (Validator.isNull(portletId)) {
+			return null;
 		}
 
-		return null;
+		return PortletURLBuilder.create(
+			PortalUtil.getControlPanelPortletURL(
+				_httpServletRequest, group, portletId, 0, 0,
+				PortletRequest.RENDER_PHASE)
+		).setRedirect(
+			_themeDisplay.getURLCurrent()
+		).buildPortletURL();
 	}
+
+	private static final Snapshot<CTSettingsConfigurationHelper>
+		_ctSettingsConfigurationHelperSnapshot = new Snapshot<>(
+			LayoutSetPrototypeActionDropdownItemsProvider.class,
+			CTSettingsConfigurationHelper.class);
 
 	private final HttpServletRequest _httpServletRequest;
 	private final LayoutSetPrototype _layoutSetPrototype;

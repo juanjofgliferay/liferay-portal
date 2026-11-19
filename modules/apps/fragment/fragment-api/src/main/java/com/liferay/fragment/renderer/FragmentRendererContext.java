@@ -8,8 +8,12 @@ package com.liferay.fragment.renderer;
 import com.liferay.fragment.model.FragmentEntryLink;
 import com.liferay.info.form.InfoForm;
 import com.liferay.info.item.InfoItemReference;
+import com.liferay.portal.kernel.json.JSONObject;
+
+import java.io.Serializable;
 
 import java.util.Locale;
+import java.util.Map;
 
 import org.osgi.annotation.versioning.ProviderType;
 
@@ -18,6 +22,12 @@ import org.osgi.annotation.versioning.ProviderType;
  */
 @ProviderType
 public interface FragmentRendererContext {
+
+	public Serializable getAttribute(String name);
+
+	public Map<String, Serializable> getAttributes();
+
+	public Object getContextInfoItem();
 
 	public InfoItemReference getContextInfoItemReference();
 
@@ -31,6 +41,8 @@ public interface FragmentRendererContext {
 
 	public String getMode();
 
+	public JSONObject getModifiableEditableValuesJSONObject();
+
 	public long getPreviewClassNameId();
 
 	public long getPreviewClassPK();
@@ -41,9 +53,13 @@ public interface FragmentRendererContext {
 
 	public long[] getSegmentsEntryIds();
 
+	public boolean isDisablePortletRender();
+
 	public boolean isEditMode();
 
 	public boolean isIndexMode();
+
+	public boolean isPreviewMode();
 
 	public boolean isUseCachedContent();
 

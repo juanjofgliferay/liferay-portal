@@ -7,10 +7,8 @@ package com.liferay.frontend.taglib.clay.servlet.taglib.display.context;
 
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItem;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItemList;
-import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItemListBuilder;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.ViewTypeItem;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.ViewTypeItemList;
-import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
@@ -22,15 +20,15 @@ import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.portlet.PortletException;
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-
-import javax.portlet.PortletException;
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Drew Brokke
@@ -69,35 +67,7 @@ public class BaseManagementToolbarDisplayContext
 
 	@Override
 	public List<DropdownItem> getFilterDropdownItems() {
-		if (FeatureFlagManagerUtil.isEnabled("LPS-144527")) {
-			return getFilterNavigationDropdownItems();
-		}
-
-		List<DropdownItem> filterNavigationDropdownItems =
-			getFilterNavigationDropdownItems();
-		List<DropdownItem> orderByDropdownItems = getOrderByDropdownItems();
-
-		DropdownItemList filterDropdownItems = DropdownItemListBuilder.addGroup(
-			() -> filterNavigationDropdownItems != null,
-			dropdownGroupItem -> {
-				dropdownGroupItem.setDropdownItems(
-					filterNavigationDropdownItems);
-				dropdownGroupItem.setLabel(
-					getFilterNavigationDropdownItemsLabel());
-			}
-		).addGroup(
-			() -> orderByDropdownItems != null,
-			dropdownGroupItem -> {
-				dropdownGroupItem.setDropdownItems(orderByDropdownItems);
-				dropdownGroupItem.setLabel(getOrderByDropdownItemsLabel());
-			}
-		).build();
-
-		if (filterDropdownItems.isEmpty()) {
-			return null;
-		}
-
-		return filterDropdownItems;
+		return getFilterNavigationDropdownItems();
 	}
 
 	@Override
@@ -160,7 +130,7 @@ public class BaseManagementToolbarDisplayContext
 	}
 
 	protected Map<String, String> getDefaultEntriesMap(String[] entryKeys) {
-		if ((entryKeys == null) || (entryKeys.length == 0)) {
+		if (ArrayUtil.isEmpty(entryKeys)) {
 			return null;
 		}
 
@@ -218,7 +188,7 @@ public class BaseManagementToolbarDisplayContext
 	}
 
 	protected String getFilterNavigationDropdownItemsLabel() {
-		return LanguageUtil.get(httpServletRequest, "filter-by-navigation");
+		return LanguageUtil.get(httpServletRequest, "filter-by");
 	}
 
 	protected String getNavigation() {

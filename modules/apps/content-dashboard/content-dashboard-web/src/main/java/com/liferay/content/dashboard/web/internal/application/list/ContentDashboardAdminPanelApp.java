@@ -20,11 +20,16 @@ import org.osgi.service.component.annotations.Reference;
 @Component(
 	property = {
 		"panel.app.order:Integer=200",
-		"panel.category.key=" + PanelCategoryKeys.APPLICATIONS_MENU_APPLICATIONS_CONTENT
+		"panel.category.key=" + PanelCategoryKeys.APPLICATIONS_MENU_APPLICATIONS_IN_MAINTENANCE
 	},
 	service = PanelApp.class
 )
 public class ContentDashboardAdminPanelApp extends BasePanelApp {
+
+	@Override
+	public String getIcon() {
+		return "display-content";
+	}
 
 	@Override
 	public Portlet getPortlet() {
@@ -37,7 +42,7 @@ public class ContentDashboardAdminPanelApp extends BasePanelApp {
 	}
 
 	@Reference(
-		target = "(javax.portlet.name=" + ContentDashboardPortletKeys.CONTENT_DASHBOARD_ADMIN + ")"
+		target = "(jakarta.portlet.name=" + ContentDashboardPortletKeys.CONTENT_DASHBOARD_ADMIN + ")"
 	)
 	private Portlet _portlet;
 

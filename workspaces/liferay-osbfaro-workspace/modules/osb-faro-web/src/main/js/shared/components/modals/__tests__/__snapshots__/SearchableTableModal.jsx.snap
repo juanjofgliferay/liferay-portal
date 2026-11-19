@@ -1,0 +1,180 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`SearchableTableModal should render 1`] = `
+<body
+  class="dxp modal-open"
+>
+  <div
+    aria-hidden="true"
+    data-suppressed="true"
+  />
+  <div>
+    <div
+      aria-hidden="true"
+      class="modal-backdrop fade show"
+      data-suppressed="true"
+    />
+    <div
+      class="fade modal d-block show"
+    >
+      <div
+        class="modal-dialog modal-lg"
+      >
+        <div
+          aria-labelledby="clay-modal-label-1"
+          aria-modal="true"
+          class="modal-content"
+          role="dialog"
+          tabindex="-1"
+        >
+          <div
+            class="modal-header"
+          >
+            <h1
+              class="modal-title"
+              id="clay-modal-label-1"
+              tabindex="-1"
+            >
+              Select Items
+            </h1>
+            <button
+              aria-label="Close"
+              class="close btn btn-unstyled"
+              type="button"
+            >
+              <svg
+                class="lexicon-icon lexicon-icon-times"
+                role="presentation"
+              >
+                <use
+                  href="#times"
+                />
+              </svg>
+            </button>
+          </div>
+          <div
+            class="modal-body p-0"
+          >
+            <div
+              class="text-secondary"
+            />
+            <div
+              class="search-toolbar-root"
+            >
+              <nav
+                class="navbar navbar-root management-bar management-bar-light navbar-expand"
+              >
+                <div
+                  class="container-fluid"
+                >
+                  <ul
+                    class="nav-root front-nav mr-auto navbar-nav"
+                    role="tablist"
+                  >
+                    <li
+                      class="nav-item"
+                      role="presentation"
+                    >
+                      <div
+                        class="custom-control custom-checkbox"
+                      >
+                        <label>
+                          <input
+                            class="custom-control-input"
+                            data-testid="select-all-checkbox"
+                            disabled=""
+                            type="checkbox"
+                            value="false"
+                          />
+                          <span
+                            class="custom-control-label"
+                          />
+                        </label>
+                      </div>
+                    </li>
+                  </ul>
+                  <div
+                    class="navbar-form navbar-form-autofit mx-2"
+                  >
+                    <div
+                      class="input-group search"
+                    >
+                      <div
+                        class="input-group-item"
+                      >
+                        <input
+                          class="input-root form-control input-group-inset input-group-inset-after"
+                          placeholder="Search"
+                          type="text"
+                          value=""
+                        />
+                        <div
+                          class="input-group-inset-item input-group-inset-item-after"
+                        >
+                          <button
+                            aria-label="Search"
+                            class="button-root btn btn-unstyled"
+                            type="button"
+                          >
+                            <svg
+                              class="lexicon-icon lexicon-icon-search icon-root"
+                              role="presentation"
+                            >
+                              <use
+                                href="#search"
+                              />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </nav>
+            </div>
+            <div
+              class="no-results-root flex-grow-1"
+            >
+              <div
+                class="no-results-content"
+              >
+                <div
+                  class="h4 mb-3 no-results-title"
+                >
+                  No items were found.
+                </div>
+              </div>
+            </div>
+          </div>
+          <div
+            class="modal-footer"
+          >
+            <div
+              class="modal-item-last"
+            >
+              <div
+                class="btn-group-spaced"
+                role="group"
+              >
+                <button
+                  class="button-root btn btn-secondary"
+                  type="button"
+                >
+                  Cancel
+                </button>
+                <button
+                  class="button-root btn btn-primary"
+                  disabled=""
+                  type="button"
+                >
+                  Submit
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+`;

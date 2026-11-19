@@ -18,6 +18,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.http.client.utils.URIBuilder;
 
 /**
  * @author Kenji Heigel
@@ -196,22 +197,24 @@ public class PoshiReleasePortalTopLevelBuildRunner
 
 			RemoteGitBranch remoteGitBranch = entry.getValue();
 
-			if (remoteGitBranch != null) {
-				GitWorkingDirectory gitWorkingDirectory = entry.getKey();
-
-				String upstreamBranchName =
-					gitWorkingDirectory.getUpstreamBranchName();
-
-				if (upstreamBranchName.equals("master")) {
-					continue;
-				}
-
-				System.out.println(
-					"Deleting remote git branch: " +
-						gitWorkingDirectory.getGitDirectory());
-
-				gitWorkingDirectory.deleteRemoteGitBranch(remoteGitBranch);
+			if (remoteGitBranch == null) {
+				continue;
 			}
+
+			GitWorkingDirectory gitWorkingDirectory = entry.getKey();
+
+			String upstreamBranchName =
+				gitWorkingDirectory.getUpstreamBranchName();
+
+			if (upstreamBranchName.equals("master")) {
+				continue;
+			}
+
+			System.out.println(
+				"Deleting remote git branch: " +
+					gitWorkingDirectory.getGitDirectory());
+
+			gitWorkingDirectory.deleteRemoteGitBranch(remoteGitBranch);
 		}
 	}
 
@@ -238,27 +241,14 @@ public class PoshiReleasePortalTopLevelBuildRunner
 	private String _getBuildInvocationURL(
 		String jobName, Map.Entry<GitWorkingDirectory, PullRequest> entry) {
 
-		StringBuilder sb = new StringBuilder();
-
 		BuildData buildData = getBuildData();
 
-		String cohortName = buildData.getCohortName();
-
-		sb.append(
-			JenkinsResultsParserUtil.getMostAvailableMasterURL(
-				"http://" + cohortName + ".liferay.com", 1));
-
-		sb.append("/job/");
-
-		sb.append(jobName);
-
-		sb.append("/buildWithParameters?token=");
+		URIBuilder uriBuilder = JenkinsResultsParserUtil.newURIBuilder(
+			JenkinsResultsParserUtil.combine(
+				getBaseInvocationURL(buildData.getCohortName(), jobName),
+				"/job/", jobName, "/buildWithParameters"));
 
 		try {
-			sb.append(
-				JenkinsResultsParserUtil.getBuildProperty(
-					"jenkins.authentication.token"));
-
 			Map<String, String> invocationParameters = new HashMap<>();
 
 			invocationParameters.put(
@@ -269,6 +259,8 @@ public class PoshiReleasePortalTopLevelBuildRunner
 				_getGitHubBranchUsername("JENKINS_GITHUB_URL"));
 			invocationParameters.put(
 				"JENKINS_TOP_LEVEL_BUILD_URL", buildData.getBuildURL());
+			invocationParameters.put(
+				"PARENT_BUILD_URL", buildData.getBuildURL());
 
 			PullRequest pullRequest = entry.getValue();
 
@@ -325,17 +317,15 @@ public class PoshiReleasePortalTopLevelBuildRunner
 					continue;
 				}
 
-				sb.append("&");
-				sb.append(invocationParameter.getKey());
-				sb.append("=");
-				sb.append(invocationParameterValue);
+				uriBuilder.addParameter(
+					invocationParameter.getKey(), invocationParameterValue);
 			}
 		}
 		catch (IOException ioException) {
 			throw new RuntimeException(ioException);
 		}
 
-		return sb.toString();
+		return uriBuilder.toString();
 	}
 
 	private File _getBuildTestGradleFile(
@@ -358,9 +348,33 @@ public class PoshiReleasePortalTopLevelBuildRunner
 	private String _getDistPortalBundlesBuildSHA(String upstreamBranchName)
 		throws IOException {
 
-		String distPortalBundlesBuildURL =
-			JenkinsResultsParserUtil.getDistPortalBundlesBuildURL(
-				upstreamBranchName);
+		String distPortalBundlesBuildURL = null;
+
+		try {
+			distPortalBundlesBuildURL =
+				JenkinsResultsParserUtil.getDistPortalBundlesBuildURL(
+					upstreamBranchName);
+		}
+		catch (Exception exception) {
+			System.out.println("WARNING: Unable to get a dist portal bundle");
+		}
+
+		if (!JenkinsResultsParserUtil.isURL(distPortalBundlesBuildURL)) {
+			StringBuilder sb = new StringBuilder();
+
+			sb.append("https://github.com/liferay/liferay-portal");
+
+			if (!upstreamBranchName.equals("master")) {
+				sb.append("-ee");
+			}
+
+			sb.append("/tree/");
+			sb.append(upstreamBranchName);
+
+			RemoteGitRef remoteGitRef = GitUtil.getRemoteGitRef(sb.toString());
+
+			return remoteGitRef.getSHA();
+		}
 
 		String distPortalBundlesBuildSHA = JenkinsResultsParserUtil.toString(
 			distPortalBundlesBuildURL + "/git-hash");
@@ -503,18 +517,20 @@ public class PoshiReleasePortalTopLevelBuildRunner
 		for (WorkspaceGitRepository workspaceGitRepository :
 				workspace.getWorkspaceGitRepositories()) {
 
-			if (workspaceGitRepository instanceof
-					PortalWorkspaceGitRepository ||
-				workspaceGitRepository instanceof
-					QAWebsitesWorkspaceGitRepository) {
+			if (!(workspaceGitRepository instanceof
+					PortalWorkspaceGitRepository) &&
+				!(workspaceGitRepository instanceof
+					QAWebsitesWorkspaceGitRepository)) {
 
-				GitWorkingDirectory gitWorkingDirectory =
-					workspaceGitRepository.getGitWorkingDirectory();
-
-				_pullRequests.put(
-					gitWorkingDirectory,
-					_createPortalPullRequest(gitWorkingDirectory));
+				continue;
 			}
+
+			GitWorkingDirectory gitWorkingDirectory =
+				workspaceGitRepository.getGitWorkingDirectory();
+
+			_pullRequests.put(
+				gitWorkingDirectory,
+				_createPortalPullRequest(gitWorkingDirectory));
 		}
 	}
 

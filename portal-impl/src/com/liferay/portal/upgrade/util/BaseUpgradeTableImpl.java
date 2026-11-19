@@ -27,11 +27,11 @@ public abstract class BaseUpgradeTableImpl extends Table {
 		super(tableName);
 	}
 
-	public String[] getIndexesSQL() throws Exception {
+	public String[] getIndexesSQL() {
 		return _indexesSQL;
 	}
 
-	public boolean isAllowUniqueIndexes() throws Exception {
+	public boolean isAllowUniqueIndexes() {
 		return _allowUniqueIndexes;
 	}
 
@@ -39,9 +39,7 @@ public abstract class BaseUpgradeTableImpl extends Table {
 		return _deleteTempFile;
 	}
 
-	public void setAllowUniqueIndexes(boolean allowUniqueIndexes)
-		throws Exception {
-
+	public void setAllowUniqueIndexes(boolean allowUniqueIndexes) {
 		_allowUniqueIndexes = allowUniqueIndexes;
 	}
 
@@ -59,7 +57,7 @@ public abstract class BaseUpgradeTableImpl extends Table {
 		_deleteTempFile = deleteTempFile;
 	}
 
-	public void setIndexesSQL(String[] indexesSQL) throws Exception {
+	public void setIndexesSQL(String[] indexesSQL) {
 		_indexesSQL = indexesSQL;
 	}
 
@@ -110,7 +108,7 @@ public abstract class BaseUpgradeTableImpl extends Table {
 				}
 
 				try {
-					db.runSQLTemplateString(targetConnection, indexSQL, false);
+					db.runSQLTemplate(targetConnection, indexSQL, false);
 				}
 				catch (Exception exception) {
 					if (_log.isWarnEnabled()) {

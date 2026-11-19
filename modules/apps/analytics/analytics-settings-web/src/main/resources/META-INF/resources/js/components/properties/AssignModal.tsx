@@ -5,111 +5,46 @@
 
 import ClayButton from '@clayui/button';
 import ClayModal from '@clayui/modal';
-import ClayTabs from '@clayui/tabs';
 import {sub} from 'frontend-js-web';
 import React, {useState} from 'react';
 
 import {updateProperty} from '../../utils/api';
 import Loading from '../Loading';
-import ChannelTab from './ChannelTab';
 import {TProperty} from './Properties';
 import SitesTab from './SitesTab';
 
 interface IAssignModalProps {
 	observer: any;
 	onCancel: () => void;
-	onSubmit: ({
-		commerceChannelIds,
-		siteIds,
-	}: {
-		commerceChannelIds: number[];
-		siteIds: number[];
-	}) => void;
+	onSubmit: ({siteIds}: {siteIds: number[]}) => void;
 	property: TProperty;
 }
 
-export enum ETabs {
-	Channel = 0,
-	Sites = 1,
-}
-
-const AssignModal: React.FC<IAssignModalProps> = ({
-	observer,
-	onCancel,
-	onSubmit,
-	property,
-}) => {
+const AssignModal: React.FC<
+	{children?: React.ReactNode | undefined} & IAssignModalProps
+> = ({observer, onCancel, onSubmit, property}) => {
 	const {
 		name,
-		dataSources: [
-			{
-				commerceChannelIds: initialCommerceChannelIds,
-				siteIds: initialSiteIds,
-			},
-		],
+		dataSources: [{siteIds: initialSiteIds}],
 	} = property;
 
-	const [activeTabKeyValue, setActiveTabKeyValue] = useState<ETabs>(
-		ETabs.Channel
-	);
 	const [submitting, setSubmitting] = useState(false);
-	const [commerceChannelIds, setCommerceChannelIds] = useState<number[]>(
-		initialCommerceChannelIds
-	);
 	const [siteIds, setSiteIds] = useState<number[]>(initialSiteIds);
 
 	return (
 		<ClayModal center observer={observer} size="lg">
-			<ClayModal.Header>
+			<ClayModal.Header
+				closeButtonAriaLabel={Liferay.Language.get('close')}
+			>
 				{sub(Liferay.Language.get('assign-to-x'), name)}
 			</ClayModal.Header>
 
 			<ClayModal.Body>
-				<ClayTabs displayType="underline" modern>
-					<ClayTabs.Item
-						active={activeTabKeyValue === ETabs.Channel}
-						innerProps={{
-							'aria-controls': 'tabpanel-1',
-						}}
-						onClick={() => setActiveTabKeyValue(ETabs.Channel)}
-					>
-						{Liferay.Language.get('channel')}
-					</ClayTabs.Item>
-
-					<ClayTabs.Item
-						active={activeTabKeyValue === ETabs.Sites}
-						innerProps={{
-							'aria-controls': 'tabpanel-2',
-						}}
-						onClick={() => setActiveTabKeyValue(ETabs.Sites)}
-					>
-						{Liferay.Language.get('sites')}
-					</ClayTabs.Item>
-				</ClayTabs>
-
-				<ClayTabs.Content activeIndex={activeTabKeyValue} fade>
-					<ClayTabs.TabPane
-						aria-labelledby="tab-1"
-						data-testid={ETabs.Channel}
-					>
-						<ChannelTab
-							initialIds={commerceChannelIds}
-							onChannelsChange={setCommerceChannelIds}
-							property={property}
-						/>
-					</ClayTabs.TabPane>
-
-					<ClayTabs.TabPane
-						aria-labelledby="tab-2"
-						data-testid={ETabs.Sites}
-					>
-						<SitesTab
-							initialIds={siteIds}
-							onSitesChange={setSiteIds}
-							property={property}
-						/>
-					</ClayTabs.TabPane>
-				</ClayTabs.Content>
+				<SitesTab
+					initialIds={siteIds}
+					onSitesChange={setSiteIds}
+					property={property}
+				/>
 			</ClayModal.Body>
 
 			<ClayModal.Footer
@@ -126,23 +61,17 @@ const AssignModal: React.FC<IAssignModalProps> = ({
 							disabled={submitting}
 							displayType="primary"
 							onClick={async () => {
-								const {
-									channelId,
-									commerceSyncEnabled,
-									dataSources,
-								} = property;
+								const {channelId, dataSources} = property;
 
 								const {ok} = await updateProperty({
 									channelId,
-									commerceChannelIds,
-									commerceSyncEnabled,
 									dataSourceId: dataSources[0]?.dataSourceId,
 									siteIds,
 								});
 
 								setSubmitting(false);
 
-								ok && onSubmit({commerceChannelIds, siteIds});
+								ok && onSubmit({siteIds});
 							}}
 						>
 							{submitting && <Loading inline />}
@@ -159,20 +88,13 @@ const AssignModal: React.FC<IAssignModalProps> = ({
 interface IAssignModalWrapperProps {
 	observer: any;
 	onCancel: () => void;
-	onSubmit: ({
-		commerceChannelIds,
-		siteIds,
-	}: {
-		commerceChannelIds: number[];
-		siteIds: number[];
-	}) => void;
+	onSubmit: ({siteIds}: {siteIds: number[]}) => void;
 	property: TProperty | null;
 }
 
-const AssignModalWrapper: React.FC<IAssignModalWrapperProps> = ({
-	property,
-	...otherProps
-}) => {
+const AssignModalWrapper: React.FC<
+	{children?: React.ReactNode | undefined} & IAssignModalWrapperProps
+> = ({property, ...otherProps}) => {
 	if (!property) {
 		return null;
 	}

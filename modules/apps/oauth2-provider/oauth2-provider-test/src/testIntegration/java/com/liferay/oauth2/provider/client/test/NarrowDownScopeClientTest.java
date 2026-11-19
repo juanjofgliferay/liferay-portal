@@ -11,20 +11,22 @@ import com.liferay.oauth2.provider.internal.test.TestApplication;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
+import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
-import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
+
+import jakarta.ws.rs.client.Entity;
+import jakarta.ws.rs.client.Invocation;
+import jakarta.ws.rs.client.WebTarget;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.function.Function;
-
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.client.Invocation;
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
 
 import org.junit.Assert;
 import org.junit.ClassRule;
@@ -50,22 +52,23 @@ public class NarrowDownScopeClientTest extends BaseClientTestCase {
 		Assert.assertEquals(
 			"GET",
 			getToken(
-				"oauthTestApplication", null,
+				_CLIENT_ID, null,
 				getAuthorizationCodeBiFunction(
-					"test@liferay.com", "test", null, "GET"),
+					_user.getEmailAddress(), PropsValues.DEFAULT_ADMIN_PASSWORD,
+					null, "GET"),
 				this::parseScopeString));
 
 		Assert.assertEquals(
 			"GET",
 			getToken(
-				"oauthTestApplication", null,
-				getClientCredentialsResponseBiFunction("GET"),
+				_CLIENT_ID, null, getClientCredentialsResponseBiFunction("GET"),
 				this::parseScopeString));
 
 		Response response = getToken(
-			"oauthTestApplication", null,
+			_CLIENT_ID, null,
 			getResourceOwnerPasswordBiFunction(
-				"test@liferay.com", "test", "GET"),
+				_user.getEmailAddress(), PropsValues.DEFAULT_ADMIN_PASSWORD,
+				"GET"),
 			Function.identity());
 
 		JSONObject jsonObject = parseJSONObject(response);
@@ -83,8 +86,9 @@ public class NarrowDownScopeClientTest extends BaseClientTestCase {
 		Assert.assertEquals(403, postResponse.getStatus());
 
 		String scopeString = getToken(
-			"oauthTestApplication", null,
-			getResourceOwnerPasswordBiFunction("test@liferay.com", "test"),
+			_CLIENT_ID, null,
+			getResourceOwnerPasswordBiFunction(
+				_user.getEmailAddress(), PropsValues.DEFAULT_ADMIN_PASSWORD),
 			this::parseScopeString);
 
 		Assert.assertEquals(
@@ -94,20 +98,30 @@ public class NarrowDownScopeClientTest extends BaseClientTestCase {
 		Assert.assertEquals(
 			"invalid_grant",
 			getToken(
-				"oauthTestApplication", null,
+				_CLIENT_ID, null,
 				getResourceOwnerPasswordBiFunction(
-					"test@liferay.com", "test", "GET POST PUT"),
+					_user.getEmailAddress(), PropsValues.DEFAULT_ADMIN_PASSWORD,
+					"GET POST PUT"),
 				this::parseError));
 	}
 
-	public static class NarrowDownScopeTestPreparatorBundleActivator
+	@Override
+	protected BundleActivator getBundleActivator() {
+		return new NarrowDownScopeTestPreparatorBundleActivator();
+	}
+
+	private static final String _CLIENT_ID = RandomTestUtil.randomString();
+
+	private User _user;
+
+	private class NarrowDownScopeTestPreparatorBundleActivator
 		extends BaseTestPreparatorBundleActivator {
 
 		@Override
 		protected void prepareTest() throws Exception {
-			long defaultCompanyId = PortalUtil.getDefaultCompanyId();
+			long companyId = TestPropsValues.getCompanyId();
 
-			User user = UserTestUtil.getAdminUser(defaultCompanyId);
+			_user = UserTestUtil.getAdminUser(companyId);
 
 			registerJaxRsApplication(
 				new TestApplication(), "methods",
@@ -116,18 +130,13 @@ public class NarrowDownScopeClientTest extends BaseClientTestCase {
 				).build());
 
 			createOAuth2Application(
-				defaultCompanyId, user, "oauthTestApplication",
+				companyId, _user, _CLIENT_ID,
 				Arrays.asList(
 					GrantType.AUTHORIZATION_CODE, GrantType.CLIENT_CREDENTIALS,
 					GrantType.RESOURCE_OWNER_PASSWORD),
 				Arrays.asList("GET", "POST"));
 		}
 
-	}
-
-	@Override
-	protected BundleActivator getBundleActivator() {
-		return new NarrowDownScopeTestPreparatorBundleActivator();
 	}
 
 }

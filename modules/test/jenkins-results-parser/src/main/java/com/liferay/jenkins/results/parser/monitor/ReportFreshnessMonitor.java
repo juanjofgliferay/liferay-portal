@@ -1,0 +1,116 @@
+/**
+ * SPDX-FileCopyrightText: (c) 2026 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
+ */
+
+package com.liferay.jenkins.results.parser.monitor;
+
+import com.liferay.jenkins.results.parser.JenkinsResultsParserUtil;
+
+import java.util.Date;
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+/**
+ * @author Brittney Nguyen
+ */
+public class ReportFreshnessMonitor extends BaseMonitor {
+
+	public ReportFreshnessMonitor(MonitorConfig monitorConfig) {
+		super(monitorConfig);
+
+		Map<String, String> parameters = monitorConfig.getParameters();
+
+		_cadenceSeconds = getLongValue("parameter", 0, "cadence", parameters);
+
+		if (_cadenceSeconds <= 0) {
+			throw new IllegalArgumentException(
+				getInvalidValueMessage(
+					"parameter", "cadence", parameters.get("cadence")));
+		}
+
+		_reportDataURL = getRequiredURLParameter("url", parameters, "file:///");
+		_reportName = getRequiredParameter("report.name", parameters);
+		_overdueGraceSeconds = getOverdueGraceSeconds(
+			_cadenceSeconds, monitorConfig.getThresholds());
+	}
+
+	@Override
+	public MonitorResult execute() {
+		String reportData = null;
+
+		long currentTimeMillis =
+			JenkinsResultsParserUtil.getCurrentTimeMillis();
+
+		try {
+			reportData = JenkinsResultsParserUtil.toString(
+				_reportDataURL, false, 0, 0, getAttemptTimeoutMillis(0));
+		}
+		catch (Exception exception) {
+			return new MonitorResult(
+				_getReadFailureMessage(exception), null,
+				MonitorResult.Status.CRITICAL, currentTimeMillis);
+		}
+
+		long generatedTimestamp = JenkinsResultsParserUtil.getGeneratedTime(
+			reportData);
+
+		if (generatedTimestamp <= 0) {
+			return new MonitorResult(
+				JenkinsResultsParserUtil.combine(
+					"Unable to determine the generated date for report ",
+					_reportName, " from ", _reportDataURL),
+				null, MonitorResult.Status.CRITICAL, currentTimeMillis);
+		}
+
+		if (generatedTimestamp > currentTimeMillis) {
+			return new MonitorResult(
+				JenkinsResultsParserUtil.combine(
+					"Report ", _reportName, " was generated at ",
+					JenkinsResultsParserUtil.toDateString(
+						new Date(generatedTimestamp)),
+					", which is in the future"),
+				null, MonitorResult.Status.CRITICAL, currentTimeMillis);
+		}
+
+		long outputAgeSeconds = (currentTimeMillis - generatedTimestamp) / 1000;
+
+		Map<String, String> metrics = new LinkedHashMap<>();
+
+		metrics.put("generated.timestamp", String.valueOf(generatedTimestamp));
+		metrics.put("output.age.seconds", String.valueOf(outputAgeSeconds));
+
+		if (outputAgeSeconds > (_cadenceSeconds + _overdueGraceSeconds)) {
+			return new MonitorResult(
+				_getStaleMessage(outputAgeSeconds), metrics,
+				MonitorResult.Status.WARN, currentTimeMillis);
+		}
+
+		return new MonitorResult(
+			JenkinsResultsParserUtil.combine("Report ", _reportName, " is OK"),
+			metrics, MonitorResult.Status.OK, currentTimeMillis);
+	}
+
+	private String _getReadFailureMessage(Exception exception) {
+		return JenkinsResultsParserUtil.combine(
+			"Unable to read ", _reportDataURL, ": ",
+			JenkinsResultsParserUtil.getMessage(exception));
+	}
+
+	private String _getStaleMessage(long outputAgeSeconds) {
+		return JenkinsResultsParserUtil.combine(
+			"Report ", _reportName, " output was generated ",
+			JenkinsResultsParserUtil.toDurationString(outputAgeSeconds * 1000),
+			" ago, exceeding its cadence of ",
+			JenkinsResultsParserUtil.toDurationString(_cadenceSeconds * 1000),
+			" plus a grace period of ",
+			JenkinsResultsParserUtil.toDurationString(
+				_overdueGraceSeconds * 1000));
+	}
+
+	private final long _cadenceSeconds;
+	private final long _overdueGraceSeconds;
+	private final String _reportDataURL;
+	private final String _reportName;
+
+}

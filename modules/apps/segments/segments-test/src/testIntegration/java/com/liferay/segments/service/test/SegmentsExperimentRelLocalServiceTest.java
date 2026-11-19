@@ -6,6 +6,10 @@
 package com.liferay.segments.service.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.layout.page.template.model.LayoutPageTemplateStructure;
+import com.liferay.layout.page.template.service.LayoutPageTemplateStructureLocalService;
+import com.liferay.layout.page.template.service.LayoutPageTemplateStructureRelLocalService;
+import com.liferay.layout.test.util.ContentLayoutTestUtil;
 import com.liferay.layout.test.util.LayoutTestUtil;
 import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.kernel.model.Group;
@@ -135,6 +139,32 @@ public class SegmentsExperimentRelLocalServiceTest {
 				segmentsExperience.getSegmentsExperienceId()));
 	}
 
+	@Test(expected = LockedSegmentsExperimentException.class)
+	public void testDeleteSegmentsExperimentRelWithLockedExperiment()
+		throws Exception {
+
+		SegmentsExperiment segmentsExperiment = _addSegmentsExperiment();
+
+		_segmentsExperimentLocalService.updateSegmentsExperimentStatus(
+			segmentsExperiment.getSegmentsExperimentId(),
+			SegmentsExperimentConstants.STATUS_RUNNING);
+
+		SegmentsExperience segmentsExperience = _addSegmentsExperience();
+
+		SegmentsExperimentRel segmentsExperimentRel =
+			_segmentsExperimentRelLocalService.addSegmentsExperimentRel(
+				segmentsExperiment.getSegmentsExperimentId(),
+				segmentsExperience.getSegmentsExperienceId(),
+				ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
+
+		_segmentsExperimentRelLocalService.deleteSegmentsExperimentRel(
+			segmentsExperimentRel);
+
+		Assert.assertNull(
+			_segmentsExperienceLocalService.fetchSegmentsExperience(
+				segmentsExperience.getSegmentsExperienceId()));
+	}
+
 	@Test
 	public void testDeleteSegmentsExperimentRels() throws Exception {
 		SegmentsExperiment segmentsExperiment = _addSegmentsExperiment();
@@ -161,32 +191,6 @@ public class SegmentsExperimentRelLocalServiceTest {
 				segmentsExperiment.getSegmentsExperimentId());
 
 		Assert.assertTrue(segmentsExperimentRels.isEmpty());
-	}
-
-	@Test(expected = LockedSegmentsExperimentException.class)
-	public void testDeleteSegmentsExperimentRelWithLockedExperiment()
-		throws Exception {
-
-		SegmentsExperiment segmentsExperiment = _addSegmentsExperiment();
-
-		_segmentsExperimentLocalService.updateSegmentsExperimentStatus(
-			segmentsExperiment.getSegmentsExperimentId(),
-			SegmentsExperimentConstants.STATUS_RUNNING);
-
-		SegmentsExperience segmentsExperience = _addSegmentsExperience();
-
-		SegmentsExperimentRel segmentsExperimentRel =
-			_segmentsExperimentRelLocalService.addSegmentsExperimentRel(
-				segmentsExperiment.getSegmentsExperimentId(),
-				segmentsExperience.getSegmentsExperienceId(),
-				ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
-
-		_segmentsExperimentRelLocalService.deleteSegmentsExperimentRel(
-			segmentsExperimentRel);
-
-		Assert.assertNull(
-			_segmentsExperienceLocalService.fetchSegmentsExperience(
-				segmentsExperience.getSegmentsExperienceId()));
 	}
 
 	@Test
@@ -235,7 +239,7 @@ public class SegmentsExperimentRelLocalServiceTest {
 		SegmentsExperimentRel segmentsExperimentRel =
 			_segmentsExperimentRelLocalService.getSegmentsExperimentRel(
 				segmentsExperiment.getSegmentsExperimentId(),
-				segmentsExperiment.getSegmentsExperienceId());
+				segmentsExperiment.getSegmentsExperienceKey());
 
 		_segmentsExperimentRelLocalService.updateSegmentsExperimentRel(
 			segmentsExperimentRel.getSegmentsExperimentRelId(),
@@ -280,7 +284,7 @@ public class SegmentsExperimentRelLocalServiceTest {
 		SegmentsExperimentRel segmentsExperimentRel =
 			_segmentsExperimentRelLocalService.getSegmentsExperimentRel(
 				segmentsExperiment.getSegmentsExperimentId(),
-				segmentsExperiment.getSegmentsExperienceId());
+				segmentsExperiment.getSegmentsExperienceKey());
 
 		_segmentsExperimentRelLocalService.updateSegmentsExperimentRel(
 			segmentsExperimentRel.getSegmentsExperimentRelId(),
@@ -291,8 +295,31 @@ public class SegmentsExperimentRelLocalServiceTest {
 	private SegmentsExperience _addSegmentsExperience() throws Exception {
 		Layout layout = LayoutTestUtil.addTypeContentLayout(_group);
 
-		return SegmentsTestUtil.addSegmentsExperience(
-			_group.getGroupId(), layout.getPlid());
+		Layout draftLayout = layout.fetchDraftLayout();
+
+		SegmentsExperience segmentsExperience =
+			SegmentsTestUtil.addSegmentsExperience(
+				_group.getGroupId(), draftLayout.getPlid());
+
+		LayoutPageTemplateStructure layoutPageTemplateStructure =
+			_layoutPageTemplateStructureLocalService.
+				fetchLayoutPageTemplateStructure(
+					_group.getGroupId(), draftLayout.getPlid());
+
+		_layoutPageTemplateStructureRelLocalService.
+			addLayoutPageTemplateStructureRel(
+				TestPropsValues.getUserId(), _group.getGroupId(),
+				layoutPageTemplateStructure.getLayoutPageTemplateStructureId(),
+				segmentsExperience.getSegmentsExperienceId(),
+				layoutPageTemplateStructure.getDefaultSegmentsExperienceData(),
+				ServiceContextTestUtil.getServiceContext(
+					_group.getGroupId(), TestPropsValues.getUserId()));
+
+		ContentLayoutTestUtil.publishLayout(draftLayout, layout);
+
+		return _segmentsExperienceLocalService.fetchSegmentsExperience(
+			_group.getGroupId(), segmentsExperience.getSegmentsExperienceKey(),
+			layout.getPlid());
 	}
 
 	private SegmentsExperiment _addSegmentsExperiment() throws Exception {
@@ -315,6 +342,14 @@ public class SegmentsExperimentRelLocalServiceTest {
 
 	@DeleteAfterTestRun
 	private Group _group;
+
+	@Inject
+	private LayoutPageTemplateStructureLocalService
+		_layoutPageTemplateStructureLocalService;
+
+	@Inject
+	private LayoutPageTemplateStructureRelLocalService
+		_layoutPageTemplateStructureRelLocalService;
 
 	@Inject
 	private SegmentsExperienceLocalService _segmentsExperienceLocalService;

@@ -20,6 +20,7 @@ import java.util.concurrent.Callable;
 import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.ModuleVersionSelector;
+import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.bundling.AbstractArchiveTask;
 
 /**
@@ -82,15 +83,24 @@ public class LiferayExtension {
 
 			@SuppressWarnings("unused")
 			public String doCall(AbstractArchiveTask abstractArchiveTask) {
-				String fileName = abstractArchiveTask.getBaseName();
+				Property<String> property =
+					abstractArchiveTask.getArchiveBaseName();
 
-				String appendix = abstractArchiveTask.getAppendix();
+				String fileName = property.get();
 
-				if (Validator.isNotNull(appendix)) {
-					fileName += "-" + appendix;
+				property = abstractArchiveTask.getArchiveAppendix();
+
+				if (property != null) {
+					String archiveAppendix = property.getOrNull();
+
+					if (Validator.isNotNull(archiveAppendix)) {
+						fileName += "-" + archiveAppendix;
+					}
 				}
 
-				fileName += "." + abstractArchiveTask.getExtension();
+				property = abstractArchiveTask.getArchiveExtension();
+
+				fileName += "." + property.get();
 
 				return fileName;
 			}
@@ -163,10 +173,6 @@ public class LiferayExtension {
 		return appServer.getPortalDir();
 	}
 
-	public NamedDomainObjectContainer<AppServer> getAppServers() {
-		return _appServers;
-	}
-
 	public File getAppServerShieldedContainerLibPortalDir() {
 		AppServer appServer = getAppServer();
 
@@ -175,6 +181,10 @@ public class LiferayExtension {
 
 	public String getAppServerType() {
 		return GradleUtil.toString(_appServerType);
+	}
+
+	public NamedDomainObjectContainer<AppServer> getAppServers() {
+		return _appServers;
 	}
 
 	public String getDefaultVersion(
@@ -266,8 +276,8 @@ public class LiferayExtension {
 	}
 
 	private Object _appServerParentDir;
-	private final NamedDomainObjectContainer<AppServer> _appServers;
 	private Object _appServerType;
+	private final NamedDomainObjectContainer<AppServer> _appServers;
 	private final Map<String, Object> _defaultVersions = new HashMap<>();
 	private Object _deployDir;
 	private Closure<String> _deployedFileNameClosure;

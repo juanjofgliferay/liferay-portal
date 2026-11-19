@@ -113,11 +113,7 @@ public class DDMStructureLayoutPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		DDMStructureLayout newDDMStructureLayout = _persistence.create(pk);
-
-		newDDMStructureLayout.setMvccVersion(RandomTestUtil.nextLong());
+		DDMStructureLayout newDDMStructureLayout = addDDMStructureLayout();
 
 		newDDMStructureLayout.setCtCollectionId(RandomTestUtil.nextLong());
 
@@ -148,7 +144,9 @@ public class DDMStructureLayoutPersistenceTest {
 
 		newDDMStructureLayout.setDefinition(RandomTestUtil.randomString());
 
-		_ddmStructureLayouts.add(_persistence.update(newDDMStructureLayout));
+		newDDMStructureLayout = _persistence.update(newDDMStructureLayout);
+
+		_ddmStructureLayouts.add(newDDMStructureLayout);
 
 		DDMStructureLayout existingDDMStructureLayout =
 			_persistence.findByPrimaryKey(
@@ -240,27 +238,10 @@ public class DDMStructureLayoutPersistenceTest {
 	}
 
 	@Test
-	public void testCountByStructureLayoutKey() throws Exception {
-		_persistence.countByStructureLayoutKey("");
-
-		_persistence.countByStructureLayoutKey("null");
-
-		_persistence.countByStructureLayoutKey((String)null);
-	}
-
-	@Test
 	public void testCountByStructureVersionId() throws Exception {
 		_persistence.countByStructureVersionId(RandomTestUtil.nextLong());
 
 		_persistence.countByStructureVersionId(0L);
-	}
-
-	@Test
-	public void testCountByG_C() throws Exception {
-		_persistence.countByG_C(
-			RandomTestUtil.nextLong(), RandomTestUtil.nextLong());
-
-		_persistence.countByG_C(0L, 0L);
 	}
 
 	@Test
@@ -627,8 +608,6 @@ public class DDMStructureLayoutPersistenceTest {
 
 		DDMStructureLayout ddmStructureLayout = _persistence.create(pk);
 
-		ddmStructureLayout.setMvccVersion(RandomTestUtil.nextLong());
-
 		ddmStructureLayout.setCtCollectionId(RandomTestUtil.nextLong());
 
 		ddmStructureLayout.setUuid(RandomTestUtil.randomString());
@@ -668,3 +647,4 @@ public class DDMStructureLayoutPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:2141118031

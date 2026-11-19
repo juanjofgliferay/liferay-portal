@@ -17,10 +17,11 @@ Date requestedDeliveryDate = commerceOrder.getRequestedDeliveryDate();
 
 <portlet:actionURL name="/commerce_order/edit_commerce_order" var="editCommerceOrderRequesedDeliveryDateActionURL" />
 
-<commerce-ui:modal-content>
+<div class="container-fluid container-fluid-max-xl p-4">
 	<aui:form action="<%= editCommerceOrderRequesedDeliveryDateActionURL %>" method="post" name="fm">
 		<aui:input name="<%= Constants.CMD %>" type="hidden" value="requestedDeliveryDate" />
 		<aui:input name="redirect" type="hidden" value="<%= currentURL %>" />
+		<aui:input name="requestProcessed" type="hidden" value='<%= SessionMessages.contains(renderRequest, "requestProcessed") %>' />
 		<aui:input name="commerceOrderId" type="hidden" value="<%= commerceOrder.getCommerceOrderId() %>" />
 
 		<liferay-ui:error exception="<%= CommerceOrderRequestedDeliveryDateException.class %>" message="please-enter-a-valid-requested-delivery-date" />
@@ -28,34 +29,19 @@ Date requestedDeliveryDate = commerceOrder.getRequestedDeliveryDate();
 		<aui:model-context bean="<%= commerceOrder %>" model="<%= CommerceOrder.class %>" />
 
 		<%
-		int requestedDeliveryDay = 0;
-		int requestedDeliveryMonth = -1;
-		int requestedDeliveryYear = 0;
+		String requestedDeliveryDateString = null;
 
 		if (requestedDeliveryDate != null) {
+			Format format = FastDateFormatFactoryUtil.getSimpleDateFormat("yyyy-MM-dd", locale);
+
 			Calendar calendar = CalendarFactoryUtil.getCalendar(requestedDeliveryDate.getTime());
 
-			requestedDeliveryDay = calendar.get(Calendar.DAY_OF_MONTH);
-			requestedDeliveryMonth = calendar.get(Calendar.MONTH);
-			requestedDeliveryYear = calendar.get(Calendar.YEAR);
+			requestedDeliveryDateString = format.format(calendar.getTime());
 		}
 		%>
 
 		<div class="form-group input-date-wrapper">
-			<label for="requestedDeliveryDate"><liferay-ui:message key="requested-delivery-date" /></label>
-
-			<liferay-ui:input-date
-				dayParam="requestedDeliveryDateDay"
-				dayValue="<%= requestedDeliveryDay %>"
-				disabled="<%= false %>"
-				monthParam="requestedDeliveryDateMonth"
-				monthValue="<%= requestedDeliveryMonth %>"
-				name="requestedDeliveryDate"
-				nullable="<%= true %>"
-				showDisableCheckbox="<%= false %>"
-				yearParam="requestedDeliveryDateYear"
-				yearValue="<%= requestedDeliveryYear %>"
-			/>
+			<aui:input name="requestedDeliveryDate" type="date" value="<%= requestedDeliveryDateString %>" />
 		</div>
 	</aui:form>
-</commerce-ui:modal-content>
+</div>

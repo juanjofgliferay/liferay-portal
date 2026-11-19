@@ -7,6 +7,7 @@ package com.liferay.object.model.impl;
 
 import com.liferay.object.model.ObjectEntry;
 import com.liferay.petra.lang.HashUtil;
+import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.model.CacheModel;
 import com.liferay.portal.kernel.model.MVCCModel;
@@ -16,7 +17,11 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+
 import java.util.Date;
+import java.util.Map;
 
 /**
  * The cache model class for representing ObjectEntry in entity cache.
@@ -68,7 +73,7 @@ public class ObjectEntryCacheModel
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(35);
+		StringBundler sb = new StringBundler(51);
 
 		sb.append("{mvccVersion=");
 		sb.append(mvccVersion);
@@ -90,10 +95,26 @@ public class ObjectEntryCacheModel
 		sb.append(createDate);
 		sb.append(", modifiedDate=");
 		sb.append(modifiedDate);
+		sb.append(", headObjectEntryId=");
+		sb.append(headObjectEntryId);
 		sb.append(", objectDefinitionId=");
 		sb.append(objectDefinitionId);
+		sb.append(", objectEntryFolderId=");
+		sb.append(objectEntryFolderId);
 		sb.append(", rootObjectEntryId=");
 		sb.append(rootObjectEntryId);
+		sb.append(", defaultLanguageId=");
+		sb.append(defaultLanguageId);
+		sb.append(", displayDate=");
+		sb.append(displayDate);
+		sb.append(", expirationDate=");
+		sb.append(expirationDate);
+		sb.append(", reviewDate=");
+		sb.append(reviewDate);
+		sb.append(", treePath=");
+		sb.append(treePath);
+		sb.append(", version=");
+		sb.append(version);
 		sb.append(", lastPublishDate=");
 		sb.append(lastPublishDate);
 		sb.append(", status=");
@@ -155,8 +176,47 @@ public class ObjectEntryCacheModel
 			objectEntryImpl.setModifiedDate(new Date(modifiedDate));
 		}
 
+		objectEntryImpl.setHeadObjectEntryId(headObjectEntryId);
 		objectEntryImpl.setObjectDefinitionId(objectDefinitionId);
+		objectEntryImpl.setObjectEntryFolderId(objectEntryFolderId);
 		objectEntryImpl.setRootObjectEntryId(rootObjectEntryId);
+
+		if (defaultLanguageId == null) {
+			objectEntryImpl.setDefaultLanguageId("");
+		}
+		else {
+			objectEntryImpl.setDefaultLanguageId(defaultLanguageId);
+		}
+
+		if (displayDate == Long.MIN_VALUE) {
+			objectEntryImpl.setDisplayDate(null);
+		}
+		else {
+			objectEntryImpl.setDisplayDate(new Date(displayDate));
+		}
+
+		if (expirationDate == Long.MIN_VALUE) {
+			objectEntryImpl.setExpirationDate(null);
+		}
+		else {
+			objectEntryImpl.setExpirationDate(new Date(expirationDate));
+		}
+
+		if (reviewDate == Long.MIN_VALUE) {
+			objectEntryImpl.setReviewDate(null);
+		}
+		else {
+			objectEntryImpl.setReviewDate(new Date(reviewDate));
+		}
+
+		if (treePath == null) {
+			objectEntryImpl.setTreePath("");
+		}
+		else {
+			objectEntryImpl.setTreePath(treePath);
+		}
+
+		objectEntryImpl.setVersion(version);
 
 		if (lastPublishDate == Long.MIN_VALUE) {
 			objectEntryImpl.setLastPublishDate(null);
@@ -184,11 +244,21 @@ public class ObjectEntryCacheModel
 
 		objectEntryImpl.resetOriginalValues();
 
+		try {
+			_dynamicObjectDefinitionTableValuesMethodHandle.invokeExact(
+				objectEntryImpl, dynamicObjectDefinitionTableValues);
+		}
+		catch (Throwable throwable) {
+			ReflectionUtil.throwException(throwable);
+		}
+
 		return objectEntryImpl;
 	}
 
 	@Override
-	public void readExternal(ObjectInput objectInput) throws IOException {
+	public void readExternal(ObjectInput objectInput)
+		throws ClassNotFoundException, IOException {
+
 		mvccVersion = objectInput.readLong();
 		uuid = objectInput.readUTF();
 		externalReferenceCode = objectInput.readUTF();
@@ -204,9 +274,20 @@ public class ObjectEntryCacheModel
 		createDate = objectInput.readLong();
 		modifiedDate = objectInput.readLong();
 
+		headObjectEntryId = objectInput.readLong();
+
 		objectDefinitionId = objectInput.readLong();
 
+		objectEntryFolderId = objectInput.readLong();
+
 		rootObjectEntryId = objectInput.readLong();
+		defaultLanguageId = objectInput.readUTF();
+		displayDate = objectInput.readLong();
+		expirationDate = objectInput.readLong();
+		reviewDate = objectInput.readLong();
+		treePath = objectInput.readUTF();
+
+		version = objectInput.readInt();
 		lastPublishDate = objectInput.readLong();
 
 		status = objectInput.readInt();
@@ -214,6 +295,8 @@ public class ObjectEntryCacheModel
 		statusByUserId = objectInput.readLong();
 		statusByUserName = objectInput.readUTF();
 		statusDate = objectInput.readLong();
+
+		dynamicObjectDefinitionTableValues = (Map)objectInput.readObject();
 	}
 
 	@Override
@@ -252,9 +335,33 @@ public class ObjectEntryCacheModel
 		objectOutput.writeLong(createDate);
 		objectOutput.writeLong(modifiedDate);
 
+		objectOutput.writeLong(headObjectEntryId);
+
 		objectOutput.writeLong(objectDefinitionId);
 
+		objectOutput.writeLong(objectEntryFolderId);
+
 		objectOutput.writeLong(rootObjectEntryId);
+
+		if (defaultLanguageId == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(defaultLanguageId);
+		}
+
+		objectOutput.writeLong(displayDate);
+		objectOutput.writeLong(expirationDate);
+		objectOutput.writeLong(reviewDate);
+
+		if (treePath == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(treePath);
+		}
+
+		objectOutput.writeInt(version);
 		objectOutput.writeLong(lastPublishDate);
 
 		objectOutput.writeInt(status);
@@ -269,6 +376,8 @@ public class ObjectEntryCacheModel
 		}
 
 		objectOutput.writeLong(statusDate);
+
+		objectOutput.writeObject(dynamicObjectDefinitionTableValues);
 	}
 
 	public long mvccVersion;
@@ -281,12 +390,38 @@ public class ObjectEntryCacheModel
 	public String userName;
 	public long createDate;
 	public long modifiedDate;
+	public long headObjectEntryId;
 	public long objectDefinitionId;
+	public long objectEntryFolderId;
 	public long rootObjectEntryId;
+	public String defaultLanguageId;
+	public long displayDate;
+	public long expirationDate;
+	public long reviewDate;
+	public String treePath;
+	public int version;
 	public long lastPublishDate;
 	public int status;
 	public long statusByUserId;
 	public String statusByUserName;
 	public long statusDate;
+	public volatile Map dynamicObjectDefinitionTableValues;
+
+	private static final MethodHandle
+		_dynamicObjectDefinitionTableValuesMethodHandle;
+
+	static {
+		MethodHandles.Lookup lookup = ReflectionUtil.getImplLookup();
+
+		try {
+			_dynamicObjectDefinitionTableValuesMethodHandle = lookup.findSetter(
+				ObjectEntryImpl.class, "_dynamicObjectDefinitionTableValues",
+				Map.class);
+		}
+		catch (ReflectiveOperationException reflectiveOperationException) {
+			throw new ExceptionInInitializerError(reflectiveOperationException);
+		}
+	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:216255637

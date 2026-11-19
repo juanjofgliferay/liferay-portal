@@ -5,7 +5,6 @@
 
 import {updateFieldValidationProperty} from '../core/utils/fields';
 import {generateInstanceId, getDefaultFieldName} from './fieldSupport';
-import {normalizeFieldName} from './fields.es';
 import {PagesVisitor} from './visitors.es';
 
 export function getSettingsContextProperty(
@@ -25,13 +24,26 @@ export function getSettingsContextProperty(
 	return propertyValue;
 }
 
-export function setFieldReferenceErrorMessage(
+export function setFieldErrorMessage(
 	settingsContext,
 	propertyName,
 	displayErrors = true,
 	shouldUpdateValue = false
 ) {
 	const visitor = new PagesVisitor(settingsContext.pages);
+
+	const getErrorMessage = () => {
+		if (!displayErrors) {
+			return '';
+		}
+		if (propertyName === 'fieldReference') {
+			return Liferay.Language.get('this-reference-is-already-being-used');
+		}
+
+		return Liferay.Language.get(
+			'this-name-is-already-in-use-try-another-one'
+		);
+	};
 
 	return {
 		...settingsContext,
@@ -40,9 +52,7 @@ export function setFieldReferenceErrorMessage(
 				field = {
 					...field,
 					displayErrors,
-					errorMessage: Liferay.Language.get(
-						'this-reference-is-already-being-used'
-					),
+					errorMessage: getErrorMessage(),
 					shouldUpdateValue,
 					valid: !displayErrors,
 				};
@@ -122,21 +132,19 @@ export function updateFieldName(
 	editingLanguageId,
 	fieldNameGenerator,
 	focusedField,
-	value
+	value,
+	isInvalidValue = false
 ) {
 	const {fieldName} = focusedField;
-	const normalizedFieldName = normalizeFieldName(value);
 
-	let newFieldName;
-
-	if (normalizedFieldName !== '') {
-		newFieldName = fieldNameGenerator(value, fieldName);
-	}
-	else {
-		newFieldName = fieldNameGenerator(getDefaultFieldName(), fieldName);
+	if (value === '') {
+		value = fieldNameGenerator(
+			getDefaultFieldName(false, {name: focusedField.type}),
+			fieldName
+		);
 	}
 
-	if (newFieldName) {
+	if (value) {
 		let {settingsContext} = focusedField;
 
 		settingsContext = {
@@ -145,20 +153,28 @@ export function updateFieldName(
 				settingsContext.pages,
 				fieldName,
 				'fieldName',
-				newFieldName
+				value
 			),
 		};
 
+		const settingsContextWithErrors = setFieldErrorMessage(
+			settingsContext,
+			'name',
+			isInvalidValue,
+			false
+		);
+
 		focusedField = {
 			...focusedField,
-			fieldName: newFieldName,
-			name: newFieldName,
+			displayErrors: isInvalidValue,
+			fieldName: value,
+			name: value,
 			settingsContext: updateSettingsContextProperty(
 				defaultLanguageId,
 				editingLanguageId,
-				settingsContext,
+				settingsContextWithErrors,
 				'name',
-				newFieldName
+				value
 			),
 		};
 	}
@@ -175,7 +191,7 @@ export function updateFieldReference(
 
 	focusedField = {
 		...focusedField,
-		settingsContext: setFieldReferenceErrorMessage(
+		settingsContext: setFieldErrorMessage(
 			settingsContext,
 			'fieldReference',
 			invalid,
@@ -381,7 +397,8 @@ export function updateField(
 				editingLanguageId,
 				fieldNameGenerator,
 				field,
-				propertyValue
+				propertyValue,
+				field.displayErrors
 			),
 		};
 	}

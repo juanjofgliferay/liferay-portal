@@ -30,6 +30,10 @@ public class LayoutTable extends BaseTable<LayoutTable> {
 		"ctCollectionId", Long.class, Types.BIGINT, Column.FLAG_PRIMARY);
 	public final Column<LayoutTable, String> uuid = createColumn(
 		"uuid_", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
+	public final Column<LayoutTable, String> externalReferenceCode =
+		createColumn(
+			"externalReferenceCode", String.class, Types.VARCHAR,
+			Column.FLAG_DEFAULT);
 	public final Column<LayoutTable, Long> plid = createColumn(
 		"plid", Long.class, Types.BIGINT, Column.FLAG_PRIMARY);
 	public final Column<LayoutTable, Long> groupId = createColumn(
@@ -56,8 +60,10 @@ public class LayoutTable extends BaseTable<LayoutTable> {
 		"classNameId", Long.class, Types.BIGINT, Column.FLAG_DEFAULT);
 	public final Column<LayoutTable, Long> classPK = createColumn(
 		"classPK", Long.class, Types.BIGINT, Column.FLAG_DEFAULT);
-	public final Column<LayoutTable, String> name = createColumn(
-		"name", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
+	public final Column<LayoutTable, Long> launchSetId = createColumn(
+		"launchSetId", Long.class, Types.BIGINT, Column.FLAG_DEFAULT);
+	public final Column<LayoutTable, Clob> name = createColumn(
+		"name", Clob.class, Types.CLOB, Column.FLAG_DEFAULT);
 	public final Column<LayoutTable, Clob> title = createColumn(
 		"title", Clob.class, Types.CLOB, Column.FLAG_DEFAULT);
 	public final Column<LayoutTable, Clob> description = createColumn(
@@ -82,26 +88,42 @@ public class LayoutTable extends BaseTable<LayoutTable> {
 		"themeId", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
 	public final Column<LayoutTable, String> colorSchemeId = createColumn(
 		"colorSchemeId", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
-	public final Column<LayoutTable, Long> styleBookEntryId = createColumn(
-		"styleBookEntryId", Long.class, Types.BIGINT, Column.FLAG_DEFAULT);
+	public final Column<LayoutTable, String> styleBookEntryERC = createColumn(
+		"styleBookEntryERC", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
+	public final Column<LayoutTable, String> styleBookEntryScopeERC =
+		createColumn(
+			"styleBookEntryScopeERC", String.class, Types.VARCHAR,
+			Column.FLAG_DEFAULT);
 	public final Column<LayoutTable, Clob> css = createColumn(
 		"css", Clob.class, Types.CLOB, Column.FLAG_DEFAULT);
 	public final Column<LayoutTable, Integer> priority = createColumn(
 		"priority", Integer.class, Types.INTEGER, Column.FLAG_DEFAULT);
-	public final Column<LayoutTable, Long> faviconFileEntryId = createColumn(
-		"faviconFileEntryId", Long.class, Types.BIGINT, Column.FLAG_DEFAULT);
-	public final Column<LayoutTable, Long> masterLayoutPlid = createColumn(
-		"masterLayoutPlid", Long.class, Types.BIGINT, Column.FLAG_DEFAULT);
-	public final Column<LayoutTable, String> layoutPrototypeUuid = createColumn(
-		"layoutPrototypeUuid", String.class, Types.VARCHAR,
+	public final Column<LayoutTable, String> faviconFileEntryERC = createColumn(
+		"faviconFileEntryERC", String.class, Types.VARCHAR,
 		Column.FLAG_DEFAULT);
-	public final Column<LayoutTable, Boolean> layoutPrototypeLinkEnabled =
+	public final Column<LayoutTable, String> faviconFileEntryScopeERC =
 		createColumn(
-			"layoutPrototypeLinkEnabled", Boolean.class, Types.BOOLEAN,
+			"faviconFileEntryScopeERC", String.class, Types.VARCHAR,
 			Column.FLAG_DEFAULT);
-	public final Column<LayoutTable, String> sourcePrototypeLayoutUuid =
+	public final Column<LayoutTable, String> masterLayoutPageTemplateEntryERC =
 		createColumn(
-			"sourcePrototypeLayoutUuid", String.class, Types.VARCHAR,
+			"masterLPTEERC", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
+	public final Column<LayoutTable, String>
+		masterLayoutPageTemplateEntryScopeERC = createColumn(
+			"masterLPTESERC", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
+	public final Column<LayoutTable, String> portletLayoutPageTemplateEntryERC =
+		createColumn(
+			"portletLPTEERC", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
+	public final Column<LayoutTable, String>
+		portletLayoutPageTemplateEntryScopeERC = createColumn(
+			"portletLPTESERC", String.class, Types.VARCHAR,
+			Column.FLAG_DEFAULT);
+	public final Column<LayoutTable, Boolean>
+		portletLayoutPageTemplateEntryLinkEnabled = createColumn(
+			"portletLPTELE", Boolean.class, Types.BOOLEAN, Column.FLAG_DEFAULT);
+	public final Column<LayoutTable, String> layoutSetPrototypeLayoutERC =
+		createColumn(
+			"layoutSetPrototypeLayoutERC", String.class, Types.VARCHAR,
 			Column.FLAG_DEFAULT);
 	public final Column<LayoutTable, Date> publishDate = createColumn(
 		"publishDate", Date.class, Types.TIMESTAMP, Column.FLAG_DEFAULT);
@@ -121,3 +143,4 @@ public class LayoutTable extends BaseTable<LayoutTable> {
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1308244162

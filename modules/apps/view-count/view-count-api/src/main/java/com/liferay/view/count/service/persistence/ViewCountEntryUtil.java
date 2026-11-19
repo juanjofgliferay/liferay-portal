@@ -36,6 +36,20 @@ public class ViewCountEntryUtil {
 	 */
 
 	/**
+	 * @see com.liferay.portal.kernel.service.persistence.BasePersistence#cacheResult(List)
+	 */
+	public static void cacheResult(List<ViewCountEntry> viewCountEntries) {
+		getPersistence().cacheResult(viewCountEntries);
+	}
+
+	/**
+	 * @see com.liferay.portal.kernel.service.persistence.BasePersistence#cacheResult(com.liferay.portal.kernel.model.BaseModel)
+	 */
+	public static void cacheResult(ViewCountEntry viewCountEntry) {
+		getPersistence().cacheResult(viewCountEntry);
+	}
+
+	/**
 	 * @see com.liferay.portal.kernel.service.persistence.BasePersistence#clearCache()
 	 */
 	public static void clearCache() {
@@ -111,21 +125,83 @@ public class ViewCountEntryUtil {
 	}
 
 	/**
-	 * Caches the view count entry in the entity cache if it is enabled.
+	 * Returns an ordered range of all the view count entries where companyId = &#63; and classNameId = &#63;.
 	 *
-	 * @param viewCountEntry the view count entry
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>com.liferay.view.count.model.impl.ViewCountEntryModelImpl</code>.
+	 * </p>
+	 *
+	 * @param companyId the company ID
+	 * @param classNameId the class name ID
+	 * @param start the lower bound of the range of view count entries
+	 * @param end the upper bound of the range of view count entries (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the ordered range of matching view count entries
 	 */
-	public static void cacheResult(ViewCountEntry viewCountEntry) {
-		getPersistence().cacheResult(viewCountEntry);
+	public static List<ViewCountEntry> findByC_CN(
+		long companyId, long classNameId, int start, int end,
+		OrderByComparator<ViewCountEntry> orderByComparator,
+		boolean useFinderCache) {
+
+		return getPersistence().findByC_CN(
+			companyId, classNameId, start, end, orderByComparator,
+			useFinderCache);
 	}
 
 	/**
-	 * Caches the view count entries in the entity cache if it is enabled.
+	 * Returns the first view count entry in the ordered set where companyId = &#63; and classNameId = &#63;.
 	 *
-	 * @param viewCountEntries the view count entries
+	 * @param companyId the company ID
+	 * @param classNameId the class name ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching view count entry
+	 * @throws NoSuchEntryException if a matching view count entry could not be found
 	 */
-	public static void cacheResult(List<ViewCountEntry> viewCountEntries) {
-		getPersistence().cacheResult(viewCountEntries);
+	public static ViewCountEntry findByC_CN_First(
+			long companyId, long classNameId,
+			OrderByComparator<ViewCountEntry> orderByComparator)
+		throws com.liferay.view.count.exception.NoSuchEntryException {
+
+		return getPersistence().findByC_CN_First(
+			companyId, classNameId, orderByComparator);
+	}
+
+	/**
+	 * Returns the first view count entry in the ordered set where companyId = &#63; and classNameId = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param classNameId the class name ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching view count entry, or <code>null</code> if a matching view count entry could not be found
+	 */
+	public static ViewCountEntry fetchByC_CN_First(
+		long companyId, long classNameId,
+		OrderByComparator<ViewCountEntry> orderByComparator) {
+
+		return getPersistence().fetchByC_CN_First(
+			companyId, classNameId, orderByComparator);
+	}
+
+	/**
+	 * Removes all the view count entries where companyId = &#63; and classNameId = &#63; from the database.
+	 *
+	 * @param companyId the company ID
+	 * @param classNameId the class name ID
+	 */
+	public static void removeByC_CN(long companyId, long classNameId) {
+		getPersistence().removeByC_CN(companyId, classNameId);
+	}
+
+	/**
+	 * Returns the number of view count entries where companyId = &#63; and classNameId = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param classNameId the class name ID
+	 * @return the number of matching view count entries
+	 */
+	public static int countByC_CN(long companyId, long classNameId) {
+		return getPersistence().countByC_CN(companyId, classNameId);
 	}
 
 	/**
@@ -181,88 +257,62 @@ public class ViewCountEntryUtil {
 		return getPersistence().fetchByPrimaryKey(viewCountEntryPK);
 	}
 
-	/**
-	 * Returns all the view count entries.
-	 *
-	 * @return the view count entries
-	 */
-	public static List<ViewCountEntry> findAll() {
-		return getPersistence().findAll();
-	}
-
-	/**
-	 * Returns a range of all the view count entries.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>ViewCountEntryModelImpl</code>.
-	 * </p>
-	 *
-	 * @param start the lower bound of the range of view count entries
-	 * @param end the upper bound of the range of view count entries (not inclusive)
-	 * @return the range of view count entries
-	 */
-	public static List<ViewCountEntry> findAll(int start, int end) {
-		return getPersistence().findAll(start, end);
-	}
-
-	/**
-	 * Returns an ordered range of all the view count entries.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>ViewCountEntryModelImpl</code>.
-	 * </p>
-	 *
-	 * @param start the lower bound of the range of view count entries
-	 * @param end the upper bound of the range of view count entries (not inclusive)
-	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
-	 * @return the ordered range of view count entries
-	 */
-	public static List<ViewCountEntry> findAll(
-		int start, int end,
-		OrderByComparator<ViewCountEntry> orderByComparator) {
-
-		return getPersistence().findAll(start, end, orderByComparator);
-	}
-
-	/**
-	 * Returns an ordered range of all the view count entries.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>ViewCountEntryModelImpl</code>.
-	 * </p>
-	 *
-	 * @param start the lower bound of the range of view count entries
-	 * @param end the upper bound of the range of view count entries (not inclusive)
-	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
-	 * @param useFinderCache whether to use the finder cache
-	 * @return the ordered range of view count entries
-	 */
-	public static List<ViewCountEntry> findAll(
-		int start, int end, OrderByComparator<ViewCountEntry> orderByComparator,
-		boolean useFinderCache) {
-
-		return getPersistence().findAll(
-			start, end, orderByComparator, useFinderCache);
-	}
-
-	/**
-	 * Removes all the view count entries from the database.
-	 */
-	public static void removeAll() {
-		getPersistence().removeAll();
-	}
-
-	/**
-	 * Returns the number of view count entries.
-	 *
-	 * @return the number of view count entries
-	 */
-	public static int countAll() {
-		return getPersistence().countAll();
-	}
-
 	public static Set<String> getCompoundPKColumnNames() {
 		return getPersistence().getCompoundPKColumnNames();
+	}
+
+	/**
+	 * Returns all the view count entries where companyId = &#63; and classNameId = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param classNameId the class name ID
+	 * @return the matching view count entries
+	 */
+	public static List<ViewCountEntry> findByC_CN(
+		long companyId, long classNameId) {
+
+		return getPersistence().findByC_CN(companyId, classNameId);
+	}
+
+	/**
+	 * Returns a range of all the view count entries where companyId = &#63; and classNameId = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>com.liferay.view.count.model.impl.ViewCountEntryModelImpl</code>.
+	 * </p>
+	 *
+	 * @param companyId the company ID
+	 * @param classNameId the class name ID
+	 * @param start the lower bound of the range of view count entries
+	 * @param end the upper bound of the range of view count entries (not inclusive)
+	 * @return the range of matching view count entries
+	 */
+	public static List<ViewCountEntry> findByC_CN(
+		long companyId, long classNameId, int start, int end) {
+
+		return getPersistence().findByC_CN(companyId, classNameId, start, end);
+	}
+
+	/**
+	 * Returns an ordered range of all the view count entries where companyId = &#63; and classNameId = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>com.liferay.view.count.model.impl.ViewCountEntryModelImpl</code>.
+	 * </p>
+	 *
+	 * @param companyId the company ID
+	 * @param classNameId the class name ID
+	 * @param start the lower bound of the range of view count entries
+	 * @param end the upper bound of the range of view count entries (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching view count entries
+	 */
+	public static List<ViewCountEntry> findByC_CN(
+		long companyId, long classNameId, int start, int end,
+		OrderByComparator<ViewCountEntry> orderByComparator) {
+
+		return getPersistence().findByC_CN(
+			companyId, classNameId, start, end, orderByComparator);
 	}
 
 	public static ViewCountEntryPersistence getPersistence() {
@@ -276,3 +326,4 @@ public class ViewCountEntryUtil {
 	private static volatile ViewCountEntryPersistence _persistence;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:751578641

@@ -67,7 +67,7 @@ public class BNDBundleCheck extends BaseFileCheck {
 
 				addMessage(
 					fileName,
-					"The 'Liferay-Releng-Restart-Required' can only be set " +
+					"The \"Liferay-Releng-Restart-Required\" can only be set " +
 						"to false if a POSHI tests exists");
 
 				return content;
@@ -84,9 +84,11 @@ public class BNDBundleCheck extends BaseFileCheck {
 			content, "Liferay-Releng-Supported", "${liferay.releng.supported}");
 
 		for (String instruction : _REQUIRED_INSTRUCTIONS) {
-			if (!content.contains(instruction + ":")) {
-				content = StringBundler.concat(content, "\n", instruction, ":");
+			if (content.contains(instruction + ":")) {
+				continue;
 			}
+
+			content = StringBundler.concat(content, "\n", instruction, ":");
 		}
 
 		return content;

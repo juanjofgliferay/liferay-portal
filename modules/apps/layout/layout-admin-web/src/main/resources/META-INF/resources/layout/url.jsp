@@ -16,7 +16,7 @@ LayoutType selLayoutType = selLayout.getLayoutType();
 
 String friendlyURLBase = StringPool.BLANK;
 
-if (!group.isLayoutPrototype() && selLayoutType.isURLFriendliable() && !layoutsAdminDisplayContext.isDraft() && (!selLayout.isSystem() || selLayout.isTypeAssetDisplay())) {
+if (!group.isLayoutPrototype() && selLayoutType.isURLFriendliable() && !layoutsAdminDisplayContext.isDraft() && (!selLayout.isSystem() || selLayout.isTypeAssetDisplay() || selLayout.isTypeUtility())) {
 	friendlyURLBase = layoutsAdminDisplayContext.getFriendlyURLBase();
 }
 %>
@@ -31,7 +31,7 @@ if (!group.isLayoutPrototype() && selLayoutType.isURLFriendliable() && !layoutsA
 <liferay-friendly-url:input
 	className="<%= Layout.class.getName() %>"
 	classPK="<%= selLayout.getPlid() %>"
-	helpMessage='<%= selLayout.isTypeAssetDisplay() ? LanguageUtil.get(request, "this-friendly-url-is-used-only-when-the-display-page-template-is-not-marked-as-default-or-is-specifically-selected") : StringPool.BLANK %>'
+	helpMessage='<%= selLayout.isTypeAssetDisplay() ? LanguageUtil.get(request, "this-friendly-url-will-only-be-used-when-specifically-mapping-this-display-page-template-from-the-page-editor") : StringPool.BLANK %>'
 	inputAddon="<%= friendlyURLBase %>"
 	name="friendlyURL"
 />
@@ -71,7 +71,7 @@ if (!group.isLayoutPrototype() && selLayoutType.isURLFriendliable() && !layoutsA
 			<aui:option label="new-tab" selected='<%= Objects.equals(targetType, "useNewTab") %>' value="useNewTab" />
 		</aui:select>
 
-		<aui:input cssClass="propagatable-field" disabled="<%= selLayout.isLayoutPrototypeLinkActive() %>" id="target" label="target" name="TypeSettingsProperties--target--" size="15" type="text" value='<%= GetterUtil.getString(layoutTypeSettingsUnicodeProperties.getProperty("target")) %>' wrapperCssClass='<%= Objects.equals(targetType, "useNewTab") ? "hide" : "w-50" %>' />
+		<aui:input cssClass="propagatable-field" disabled="<%= selLayout.isLayoutPrototypeLinkActive() %>" id="target" label="target[frame]" name="TypeSettingsProperties--target--" size="15" type="text" value='<%= GetterUtil.getString(layoutTypeSettingsUnicodeProperties.getProperty("target")) %>' wrapperCssClass='<%= Objects.equals(targetType, "useNewTab") ? "hide" : "w-50" %>' />
 	</div>
 
 	<liferay-frontend:component
@@ -83,6 +83,6 @@ if (!group.isLayoutPrototype() && selLayoutType.isURLFriendliable() && !layoutsA
 				"namespace", liferayPortletResponse.getNamespace()
 			).build()
 		%>'
-		module="js/Advanced"
+		module="{Advanced} from layout-admin-web"
 	/>
 </c:if>

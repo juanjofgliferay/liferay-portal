@@ -120,27 +120,29 @@ public class XMLServiceFinderNameCheck extends BaseFileCheck {
 		if (finderColumns.size() == 1) {
 			Map<String, String> finderColumn = finderColumns.get(0);
 
-			if (!finderColumn.containsKey("name")) {
+			String name = finderColumn.get("name");
+
+			if (name == null) {
 				return;
 			}
 
 			String expectedFinderName = _checkCaps(
-				TextFormatter.format(
-					finderColumn.get("name"), TextFormatter.G));
+				TextFormatter.format(name, TextFormatter.G));
 
-			if (finderColumn.containsKey("comparator")) {
+			String comparator = finderColumn.get("comparator");
+
+			if (comparator != null) {
 				expectedFinderName =
-					_comparatorNamesMap.get(finderColumn.get("comparator")) +
-						expectedFinderName;
+					_comparatorNamesMap.get(comparator) + expectedFinderName;
 			}
 
 			if (!finderName.startsWith(expectedFinderName)) {
 				addMessage(
 					fileName,
 					StringBundler.concat(
-						"Finder name '", entityName, "#", finderName,
-						"' should starts with the combination of comparator ",
-						"prefix and finder colume name"));
+						"Finder name \"", entityName, "#", finderName,
+						"\" should starts with the combination of comparator ",
+						"prefix and finder column name"));
 			}
 
 			return;
@@ -153,20 +155,21 @@ public class XMLServiceFinderNameCheck extends BaseFileCheck {
 
 		outerLoop:
 		for (Map<String, String> finderColumn : finderColumns) {
-			if (!finderColumn.containsKey("name")) {
+			String finderColumnName = finderColumn.get("name");
+
+			if (finderColumnName == null) {
 				continue;
 			}
-
-			String finderColumnName = finderColumn.get("name");
 
 			finderColumnName = StringUtil.upperCase(
 				finderColumnName.substring(0, 1));
 
 			String expectedFinderName = StringPool.BLANK;
 
-			if (finderColumn.containsKey("comparator")) {
-				expectedFinderName += _comparatorNamesMap.get(
-					finderColumn.get("comparator"));
+			String comparator = finderColumn.get("comparator");
+
+			if (comparator != null) {
+				expectedFinderName += _comparatorNamesMap.get(comparator);
 			}
 
 			expectedFinderName = expectedFinderName + finderColumnName;
@@ -182,10 +185,10 @@ public class XMLServiceFinderNameCheck extends BaseFileCheck {
 			addMessage(
 				fileName,
 				StringBundler.concat(
-					"Finder name '", entityName, "#", finderName,
-					"' should be combined by finder colume names(",
-					"at least the first character) following by each ",
-					"comparator prefix with delimiter '_'"));
+					"Finder name \"", entityName, "#", finderName,
+					"\" should be combined by finder column names(at least ",
+					"the first character) following by each comparator prefix ",
+					"with delimiter \"_\""));
 		}
 	}
 

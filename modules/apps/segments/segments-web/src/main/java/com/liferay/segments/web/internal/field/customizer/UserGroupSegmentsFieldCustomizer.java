@@ -24,10 +24,10 @@ import com.liferay.segments.field.Field;
 import com.liferay.segments.field.customizer.SegmentsFieldCustomizer;
 import com.liferay.user.groups.admin.item.selector.UserGroupItemSelectorCriterion;
 
+import jakarta.portlet.PortletRequest;
+
 import java.util.List;
 import java.util.Locale;
-
-import javax.portlet.PortletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -49,13 +49,13 @@ public class UserGroupSegmentsFieldCustomizer
 	public static final String KEY = "userGroup";
 
 	@Override
-	public ClassedModel getClassedModel(String fieldValue) {
-		return _getUserGroup(fieldValue);
+	public String getClassName() {
+		return UserGroup.class.getName();
 	}
 
 	@Override
-	public String getClassName() {
-		return UserGroup.class.getName();
+	public ClassedModel getClassedModel(String fieldValue) {
+		return _getUserGroup(fieldValue);
 	}
 
 	@Override

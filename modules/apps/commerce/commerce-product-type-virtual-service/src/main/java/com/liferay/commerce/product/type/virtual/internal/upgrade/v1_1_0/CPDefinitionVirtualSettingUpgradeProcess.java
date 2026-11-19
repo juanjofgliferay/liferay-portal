@@ -34,7 +34,7 @@ public class CPDefinitionVirtualSettingUpgradeProcess extends UpgradeProcess {
 			template = StringUtil.replace(
 				template, "(?)", "\'" + classNameId + "\'");
 
-			runSQLTemplateString(template, false);
+			runSQLTemplate(template, false);
 		}
 	}
 
@@ -45,7 +45,7 @@ public class CPDefinitionVirtualSettingUpgradeProcess extends UpgradeProcess {
 				"CPDefinitionVirtualSetting", "classNameId LONG",
 				"override BOOLEAN"),
 			UpgradeProcessFactory.alterColumnName(
-				"CPDefinitionVirtualSetting", "CPDefinitionId", "classPK LONG")
+				"CPDefinitionVirtualSetting", "CPDefinitionId", "classPK")
 		};
 	}
 

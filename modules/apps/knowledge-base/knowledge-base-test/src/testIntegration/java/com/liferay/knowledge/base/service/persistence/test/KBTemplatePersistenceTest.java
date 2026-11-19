@@ -18,14 +18,18 @@ import com.liferay.portal.kernel.dao.orm.ProjectionFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.orm.RestrictionsFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.Session;
+import com.liferay.portal.kernel.security.permission.InlineSQLHelperUtil;
+import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.transaction.Propagation;
 import com.liferay.portal.kernel.util.IntegerWrapper;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.OrderByComparatorFactoryUtil;
 import com.liferay.portal.kernel.util.Time;
+import com.liferay.portal.security.permission.SimplePermissionChecker;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PersistenceTestRule;
 import com.liferay.portal.test.rule.TransactionalTestRule;
@@ -111,11 +115,7 @@ public class KBTemplatePersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		KBTemplate newKBTemplate = _persistence.create(pk);
-
-		newKBTemplate.setMvccVersion(RandomTestUtil.nextLong());
+		KBTemplate newKBTemplate = addKBTemplate();
 
 		newKBTemplate.setCtCollectionId(RandomTestUtil.nextLong());
 
@@ -139,7 +139,9 @@ public class KBTemplatePersistenceTest {
 
 		newKBTemplate.setLastPublishDate(RandomTestUtil.nextDate());
 
-		_kbTemplates.add(_persistence.update(newKBTemplate));
+		newKBTemplate = _persistence.update(newKBTemplate);
+
+		_kbTemplates.add(newKBTemplate);
 
 		KBTemplate existingKBTemplate = _persistence.findByPrimaryKey(
 			newKBTemplate.getPrimaryKey());
@@ -237,6 +239,24 @@ public class KBTemplatePersistenceTest {
 
 	@Test
 	public void testFilterFindByGroupId() throws Exception {
+		PermissionThreadLocal.setPermissionChecker(
+			new SimplePermissionChecker() {
+				{
+					init(TestPropsValues.getUser());
+				}
+
+				@Override
+				public boolean isCompanyAdmin(long companyId) {
+					return false;
+				}
+
+			});
+
+		Assert.assertTrue(InlineSQLHelperUtil.isEnabled(0));
+
+		_persistence.filterFindByGroupId(
+			0, QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
+
 		_persistence.filterFindByGroupId(
 			0, QueryUtil.ALL_POS, QueryUtil.ALL_POS, getOrderByComparator());
 	}
@@ -526,8 +546,6 @@ public class KBTemplatePersistenceTest {
 
 		KBTemplate kbTemplate = _persistence.create(pk);
 
-		kbTemplate.setMvccVersion(RandomTestUtil.nextLong());
-
 		kbTemplate.setCtCollectionId(RandomTestUtil.nextLong());
 
 		kbTemplate.setUuid(RandomTestUtil.randomString());
@@ -560,3 +578,4 @@ public class KBTemplatePersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1834932960

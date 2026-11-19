@@ -9,6 +9,7 @@ import com.liferay.journal.model.JournalArticle;
 import com.liferay.journal.model.JournalFolder;
 import com.liferay.journal.service.JournalArticleLocalServiceUtil;
 import com.liferay.journal.service.JournalFolderLocalServiceUtil;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.ContainerModel;
 import com.liferay.portal.kernel.model.TrashedModel;
@@ -46,16 +47,10 @@ public abstract class BaseJournalTrashHandler extends BaseTrashHandler {
 			long classPK, long parentContainerModelId, int start, int end)
 		throws PortalException {
 
-		List<JournalFolder> folders = JournalFolderLocalServiceUtil.getFolders(
-			getGroupId(classPK), parentContainerModelId, start, end);
-
-		List<ContainerModel> containerModels = new ArrayList<>(folders.size());
-
-		for (JournalFolder curFolder : folders) {
-			containerModels.add(curFolder);
-		}
-
-		return containerModels;
+		return TransformUtil.transform(
+			JournalFolderLocalServiceUtil.getFolders(
+				getGroupId(classPK), parentContainerModelId, start, end),
+			folder -> folder);
 	}
 
 	@Override
@@ -136,42 +131,32 @@ public abstract class BaseJournalTrashHandler extends BaseTrashHandler {
 	}
 
 	@Override
-	public int getTrashModelsCount(long classPK) throws PortalException {
-		JournalFolder folder = JournalFolderLocalServiceUtil.getFolder(classPK);
-
-		return JournalFolderLocalServiceUtil.getFoldersAndArticlesCount(
-			folder.getGroupId(), classPK, WorkflowConstants.STATUS_IN_TRASH);
-	}
-
-	@Override
 	public List<TrashedModel> getTrashModelTrashedModels(
 			long classPK, int start, int end,
 			OrderByComparator<?> orderByComparator)
 		throws PortalException {
 
-		List<TrashedModel> trashedModels = new ArrayList<>();
-
 		JournalFolder folder = JournalFolderLocalServiceUtil.getFolder(classPK);
 
-		List<Object> foldersAndArticles =
+		return TransformUtil.transform(
 			JournalFolderLocalServiceUtil.getFoldersAndArticles(
 				folder.getGroupId(), classPK, WorkflowConstants.STATUS_IN_TRASH,
-				start, end, orderByComparator);
+				start, end, orderByComparator),
+			folderOrArticle -> {
+				if (folderOrArticle instanceof JournalFolder) {
+					return (JournalFolder)folderOrArticle;
+				}
 
-		for (Object folderOrArticle : foldersAndArticles) {
-			if (folderOrArticle instanceof JournalFolder) {
-				JournalFolder curFolder = (JournalFolder)folderOrArticle;
+				return (JournalArticle)folderOrArticle;
+			});
+	}
 
-				trashedModels.add(curFolder);
-			}
-			else {
-				JournalArticle article = (JournalArticle)folderOrArticle;
+	@Override
+	public int getTrashModelsCount(long classPK) throws PortalException {
+		JournalFolder folder = JournalFolderLocalServiceUtil.getFolder(classPK);
 
-				trashedModels.add(article);
-			}
-		}
-
-		return trashedModels;
+		return JournalFolderLocalServiceUtil.getFoldersAndArticlesCount(
+			folder.getGroupId(), classPK, WorkflowConstants.STATUS_IN_TRASH);
 	}
 
 	protected abstract long getGroupId(long classPK) throws PortalException;

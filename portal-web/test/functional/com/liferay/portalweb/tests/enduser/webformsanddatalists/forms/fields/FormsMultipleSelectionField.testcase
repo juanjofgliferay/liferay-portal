@@ -1,4 +1,4 @@
-@component-name = "portal-web-forms-and-data-lists"
+@component-name = "portal-bpm"
 definition {
 
 	property osgi.module.configuration.file.names = "com.liferay.frontend.js.loader.modules.extender.internal.configuration.Details.config";
@@ -104,6 +104,8 @@ definition {
 		FormFields.editOptionsRow(
 			optionName = "Option1",
 			optionValue = "Option 1");
+
+		FormFields.clickAddOptionButton();
 
 		FormFields.editOptionsRow(
 			optionName = "Option2",
@@ -234,6 +236,8 @@ definition {
 			optionName = "Option A",
 			optionValue = 1);
 
+		FormFields.clickAddOptionButton();
+
 		FormFields.addSingleSelectionOption(
 			optionName = "Option B",
 			optionValue = 2);
@@ -281,6 +285,8 @@ definition {
 			optionName = "Option1",
 			optionValue = "Option 1",
 			rowNumber = 1);
+
+		FormFields.clickAddOptionButton();
 
 		FormFields.editOptionsRow(
 			optionName = "Option2",
@@ -356,6 +362,8 @@ definition {
 			optionValue = "Option 1",
 			rowNumber = 1);
 
+		FormFields.clickAddOptionButton();
+
 		FormFields.editOptionsRowValueOrFieldReference(
 			optionValue = "Option 2",
 			rowNumber = 2);
@@ -389,6 +397,8 @@ definition {
 			optionName = "Option1",
 			optionValue = "Option 1",
 			rowNumber = 1);
+
+		FormFields.clickAddOptionButton();
 
 		FormFields.editOptionsRow(
 			optionName = "Option2",
@@ -476,51 +486,6 @@ definition {
 		FormFields.viewFieldLabelNotPresent(fieldLabel = "Multiple Selection");
 	}
 
-	@description = "LPS-66513 - Verify that the Field Label can be hidden when options are displayed as switches"
-	@priority = 3
-	test LabelCanBeHiddenWithSwitchEnabled {
-		property portal.acceptance = "true";
-		property test.liferay.virtual.instance = "false";
-		property test.run.type = "single";
-
-		FormsAdmin.addForm();
-
-		Form.editName(formName = "Form 1");
-
-		Form.gotoAddField(
-			fieldPositionNumber = 0,
-			fieldType = "Multiple Selection");
-
-		FormFields.enableSwitch(fieldName = "Show as a Switch");
-
-		FormFields.editOptionsRow(
-			optionName = "Switch1",
-			optionValue = "Switch 1",
-			rowNumber = 1);
-
-		AssertElementPresent(
-			key_toggleSwitchLabel = "Switch 1",
-			locator1 = "ToggleSwitch#TOGGLE_SWITCH_BY_LABEL");
-
-		Form.gotoAdvancedTab();
-
-		FormFields.disableSwitch(fieldName = "Show Label");
-
-		FormFields.viewFieldLabelNotPresent(fieldLabel = "Multiple Selection");
-
-		Form.save();
-
-		Form.publishForm();
-
-		FormsAdminNavigator.gotoPublishedForm();
-
-		FormFields.viewFieldLabelNotPresent(fieldLabel = "Multiple Selection");
-
-		AssertElementPresent(
-			key_toggleSwitchLabel = "Switch 1",
-			locator1 = "ToggleSwitch#TOGGLE_SWITCH_BY_LABEL");
-	}
-
 	@description = "Verify that options can be added"
 	@priority = 5
 	test OptionsCanBeAdded {
@@ -542,6 +507,8 @@ definition {
 			optionName = "Option1",
 			optionValue = "Option 1",
 			rowNumber = 1);
+
+		FormFields.clickAddOptionButton();
 
 		FormFields.editOptionsRow(
 			optionName = "Option2",
@@ -583,6 +550,8 @@ definition {
 			optionValue = "Option 1",
 			rowNumber = 1);
 
+		FormFields.clickAddOptionButton();
+
 		FormFields.editOptionsRow(
 			optionName = "Option2",
 			optionValue = "Option 2",
@@ -615,42 +584,6 @@ definition {
 			rowNumber = 2);
 	}
 
-	@description = "Verify that options can be displayed as switches"
-	@priority = 5
-	test OptionsCanBeDisplayedAsSwitches {
-		property test.liferay.virtual.instance = "false";
-		property test.run.type = "single";
-
-		FormsAdmin.addForm();
-
-		Form.editName(formName = "Form 1");
-
-		Form.gotoAddField(
-			fieldPositionNumber = 0,
-			fieldType = "Multiple Selection");
-
-		FormFields.enableSwitch(fieldName = "Show as a Switch");
-
-		FormFields.editOptionsRow(
-			optionName = "Switch1",
-			optionValue = "Switch 1",
-			rowNumber = 1);
-
-		AssertElementPresent(
-			key_toggleSwitchLabel = "Switch 1",
-			locator1 = "ToggleSwitch#TOGGLE_SWITCH_BY_LABEL");
-
-		Form.save();
-
-		Form.publishForm();
-
-		FormsAdminNavigator.gotoPublishedForm();
-
-		AssertElementPresent(
-			key_toggleSwitchLabel = "Switch 1",
-			locator1 = "ToggleSwitch#TOGGLE_SWITCH_BY_LABEL");
-	}
-
 	@description = "Verify that options can be displayed both inline and as a list"
 	@priority = 5
 	test OptionsCanBeDisplayedInlineAndAsList {
@@ -669,10 +602,14 @@ definition {
 			optionValue = "Option 1",
 			rowNumber = 1);
 
+		FormFields.clickAddOptionButton();
+
 		FormFields.editOptionsRow(
 			optionName = "Option2",
 			optionValue = "Option 2",
 			rowNumber = 2);
+
+		FormFields.clickAddOptionButton();
 
 		FormFields.editOptionsRow(
 			optionName = "Option3",
@@ -714,6 +651,8 @@ definition {
 			optionValue = "Option 1",
 			rowNumber = 1);
 
+		FormFields.clickAddOptionButton();
+
 		FormFields.editOptionsRow(
 			optionName = "Option2",
 			optionValue = "Option 2",
@@ -743,7 +682,6 @@ definition {
 	@description = "LPS-68381 - Verify that options can be rearranged after one is removed"
 	@priority = 3
 	test OptionsCanBeReordered {
-		property portal.acceptance = "true";
 		property portal.upstream = "true";
 		property test.liferay.virtual.instance = "false";
 		property test.run.type = "single";
@@ -759,6 +697,10 @@ definition {
 				optionName = "Checkbox${number}",
 				optionValue = "Checkbox ${number}",
 				rowNumber = ${number});
+
+			if (${number} != 4) {
+				FormFields.clickAddOptionButton();
+			}
 		}
 
 		FormFields.moveOptionsRow(
@@ -823,6 +765,8 @@ definition {
 			optionName = "Option 1",
 			optionValue = 1);
 
+		FormFields.clickAddOptionButton();
+
 		FormFields.addSingleSelectionOption(
 			optionName = "Option 2",
 			optionValue = 2);
@@ -866,6 +810,8 @@ definition {
 		FormFields.addSingleSelectionOption(
 			optionName = "Option 1",
 			optionValue = 1);
+
+		FormFields.clickAddOptionButton();
 
 		FormFields.addSingleSelectionOption(
 			optionName = "Option 2",

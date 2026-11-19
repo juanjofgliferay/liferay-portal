@@ -69,6 +69,15 @@ public class ObjectRelationshipUtil {
 		throw new ObjectRelationshipReverseException();
 	}
 
+	public static String getObjectRelationshipFieldName(
+		ObjectDefinition objectDefinition, String objectRelationshipName) {
+
+		return StringBundler.concat(
+			ObjectRelationshipConstants.OBJECT_RELATIONSHIP_FIELD_NAME_PREFIX,
+			objectRelationshipName, StringPool.UNDERLINE,
+			objectDefinition.getPKObjectFieldName());
+	}
+
 	public static Set<String> getObjectRelationshipTypes(
 		ObjectDefinition objectDefinition,
 		SystemObjectDefinitionManagerRegistry
@@ -118,6 +127,29 @@ public class ObjectRelationshipUtil {
 		).build();
 	}
 
+	public static String getRESTContextPath(
+		ObjectDefinition objectDefinition,
+		SystemObjectDefinitionManagerRegistry
+			systemObjectDefinitionManagerRegistry) {
+
+		if (!objectDefinition.isUnmodifiableSystemObject()) {
+			return objectDefinition.getRESTContextPath();
+		}
+
+		SystemObjectDefinitionManager systemObjectDefinitionManager =
+			systemObjectDefinitionManagerRegistry.
+				getSystemObjectDefinitionManager(objectDefinition.getName());
+
+		if (systemObjectDefinitionManager == null) {
+			return StringPool.BLANK;
+		}
+
+		JaxRsApplicationDescriptor jaxRsApplicationDescriptor =
+			systemObjectDefinitionManager.getJaxRsApplicationDescriptor();
+
+		return jaxRsApplicationDescriptor.getRESTContextPath();
+	}
+
 	public static ObjectDefinition getRelatedObjectDefinition(
 		ObjectDefinition objectDefinition,
 		ObjectRelationship objectRelationship) {
@@ -154,29 +186,6 @@ public class ObjectRelationshipUtil {
 		return relatedObjectDefinitions;
 	}
 
-	public static String getRESTContextPath(
-		ObjectDefinition objectDefinition,
-		SystemObjectDefinitionManagerRegistry
-			systemObjectDefinitionManagerRegistry) {
-
-		if (!objectDefinition.isUnmodifiableSystemObject()) {
-			return objectDefinition.getRESTContextPath();
-		}
-
-		SystemObjectDefinitionManager systemObjectDefinitionManager =
-			systemObjectDefinitionManagerRegistry.
-				getSystemObjectDefinitionManager(objectDefinition.getName());
-
-		if (systemObjectDefinitionManager == null) {
-			return StringPool.BLANK;
-		}
-
-		JaxRsApplicationDescriptor jaxRsApplicationDescriptor =
-			systemObjectDefinitionManager.getJaxRsApplicationDescriptor();
-
-		return jaxRsApplicationDescriptor.getRESTContextPath();
-	}
-
 	public static boolean isParameterRequired(
 		ObjectDefinition objectDefinition,
 		SystemObjectDefinitionManagerRegistry
@@ -185,11 +194,7 @@ public class ObjectRelationshipUtil {
 		String restContextPath = getRESTContextPath(
 			objectDefinition, systemObjectDefinitionManagerRegistry);
 
-		if (restContextPath.matches(".*/\\{\\w+}/.*")) {
-			return true;
-		}
-
-		return false;
+		return restContextPath.matches(".*/\\{\\w+}/.*");
 	}
 
 	private static final Set<String> _defaultObjectRelationshipTypes =

@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import '@testing-library/jest-dom/extend-expect';
-import {act, cleanup, fireEvent, render, wait} from '@testing-library/react';
+import '@testing-library/jest-dom';
+import {act, fireEvent, render, waitFor} from '@testing-library/react';
 import React from 'react';
 
 import Header from '../../../src/main/resources/META-INF/resources/components/mini_cart/Header';
@@ -17,14 +17,16 @@ import {DEFAULT_LABELS} from '../../../src/main/resources/META-INF/resources/com
 
 describe('MiniCart Header', () => {
 	const BASE_CONTEXT_MOCK = {
-		cartState: {},
+		cartState: {
+			summary: {itemsCount: 0},
+		},
 		closeCart: jest.fn(),
 		labels: DEFAULT_LABELS,
 		toggleable: true,
 	};
 
 	afterEach(() => {
-		cleanup();
+		jest.resetAllMocks();
 	});
 
 	describe('by default', () => {
@@ -49,7 +51,7 @@ describe('MiniCart Header', () => {
 				fireEvent.click(closeButton);
 			});
 
-			await wait(() => {
+			await waitFor(() => {
 				expect(BASE_CONTEXT_MOCK.closeCart).toHaveBeenCalled();
 				expect(headerWrapper).toMatchSnapshot();
 			});
@@ -58,13 +60,14 @@ describe('MiniCart Header', () => {
 
 	describe('by data flow', () => {
 		it(`if there are no cart items, the header title shows the label "${ORDER_IS_EMPTY}"`, async () => {
-			const {getByText} = render(
+			const {getByText, queryByText} = render(
 				<MiniCartContext.Provider
 					value={{
 						...BASE_CONTEXT_MOCK,
 						...{
 							cartState: {
 								cartItems: [],
+								summary: {itemsCount: 0},
 							},
 						},
 					}}
@@ -77,20 +80,20 @@ describe('MiniCart Header', () => {
 				getByText(DEFAULT_LABELS[ORDER_IS_EMPTY])
 			).toBeInTheDocument();
 
-			try {
-				expect(getByText(DEFAULT_LABELS[YOUR_ORDER])).toThrow();
-			}
-			catch (_ignore) {}
+			expect(
+				queryByText(DEFAULT_LABELS[YOUR_ORDER])
+			).not.toBeInTheDocument();
 		});
 
 		it(`if there are cart items, the header title shows the label "${YOUR_ORDER}"`, async () => {
-			const {getByText} = render(
+			const {getByText, queryByText} = render(
 				<MiniCartContext.Provider
 					value={{
 						...BASE_CONTEXT_MOCK,
 						...{
 							cartState: {
 								cartItems: [{id: 1}],
+								summary: {itemsCount: 1},
 							},
 						},
 					}}
@@ -101,10 +104,9 @@ describe('MiniCart Header', () => {
 
 			expect(getByText(DEFAULT_LABELS[YOUR_ORDER])).toBeInTheDocument();
 
-			try {
-				expect(getByText(DEFAULT_LABELS[ORDER_IS_EMPTY])).toThrow();
-			}
-			catch (_ignore) {}
+			expect(
+				queryByText(DEFAULT_LABELS[ORDER_IS_EMPTY])
+			).not.toBeInTheDocument();
 		});
 
 		it('if MiniCart is not toggleable, will not render the close button', () => {

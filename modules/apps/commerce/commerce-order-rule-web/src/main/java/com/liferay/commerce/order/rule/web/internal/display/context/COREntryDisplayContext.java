@@ -40,16 +40,16 @@ import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.kernel.util.UnicodePropertiesBuilder;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.math.BigDecimal;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Alessio Antonio Rendina
@@ -103,24 +103,6 @@ public class COREntryDisplayContext {
 				COREntryConstants.TYPE_MINIMUM_ORDER_AMOUNT_FIELD_APPLY_TO));
 	}
 
-	public List<CommerceCurrency> getCommerceCurrencies()
-		throws PortalException {
-
-		return _commerceCurrencyService.getCommerceCurrencies(
-			corEntryRequestHelper.getCompanyId(), true, QueryUtil.ALL_POS,
-			QueryUtil.ALL_POS, null);
-	}
-
-	public String getCommerceCurrencyCode() throws PortalException {
-		CommerceCurrency commerceCurrency = _getCommerceCurrency();
-
-		if (commerceCurrency == null) {
-			return StringPool.BLANK;
-		}
-
-		return commerceCurrency.getCode();
-	}
-
 	public COREntry getCOREntry() throws PortalException {
 		long corEntryId = ParamUtil.getLong(
 			corEntryRequestHelper.getRequest(), "corEntryId");
@@ -129,7 +111,7 @@ public class COREntryDisplayContext {
 			return null;
 		}
 
-		return _corEntryService.fetchCOREntry(corEntryId);
+		return _corEntryService.getCOREntry(corEntryId);
 	}
 
 	public List<FDSActionDropdownItem> getCOREntryFDSActionDropdownItems()
@@ -181,7 +163,7 @@ public class COREntryDisplayContext {
 		return _corEntryTypeRegistry.getCOREntryTypes();
 	}
 
-	public String getCProductIds() throws Exception {
+	public String getCProductExternalReferenceCodes() throws Exception {
 		COREntry corEntry = getCOREntry();
 
 		if (corEntry == null) {
@@ -194,7 +176,26 @@ public class COREntryDisplayContext {
 			).build();
 
 		return typeSettingsUnicodeProperties.getProperty(
-			COREntryConstants.TYPE_PRODUCTS_LIMIT_FIELD_PRODUCT_IDS);
+			COREntryConstants.
+				TYPE_PRODUCTS_LIMIT_FIELD_PRODUCT_EXTERNAL_REFERENCE_CODES);
+	}
+
+	public List<CommerceCurrency> getCommerceCurrencies()
+		throws PortalException {
+
+		return _commerceCurrencyService.getCommerceCurrencies(
+			corEntryRequestHelper.getCompanyId(), true, QueryUtil.ALL_POS,
+			QueryUtil.ALL_POS, null);
+	}
+
+	public String getCommerceCurrencyCode() throws PortalException {
+		CommerceCurrency commerceCurrency = _getCommerceCurrency();
+
+		if (commerceCurrency == null) {
+			return StringPool.BLANK;
+		}
+
+		return commerceCurrency.getCode();
 	}
 
 	public CreationMenu getCreationMenu() throws Exception {

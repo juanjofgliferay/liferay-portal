@@ -13,7 +13,6 @@ import com.liferay.frontend.taglib.clay.servlet.taglib.util.LabelItem;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.LabelItemListBuilder;
 import com.liferay.petra.function.UnsafeConsumer;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
-import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
@@ -26,10 +25,10 @@ import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.redirect.model.RedirectNotFoundEntry;
 import com.liferay.redirect.service.RedirectNotFoundEntryLocalService;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.List;
 import java.util.Map;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Alejandro Tardín
@@ -112,7 +111,6 @@ public class RedirectNotFoundEntriesManagementToolbarDisplayContext
 	public List<DropdownItem> getFilterDropdownItems() {
 		List<DropdownItem> filterNavigationDropdownItems =
 			getFilterNavigationDropdownItems();
-		List<DropdownItem> orderByDropdownItems = getOrderByDropdownItems();
 
 		DropdownItemList filterDropdownItems = DropdownItemListBuilder.addGroup(
 			() -> filterNavigationDropdownItems != null,
@@ -128,14 +126,6 @@ public class RedirectNotFoundEntriesManagementToolbarDisplayContext
 					_getFilterDateDropdownItems());
 				dropdownGroupItem.setLabel(
 					LanguageUtil.get(httpServletRequest, "filter-by-date"));
-			}
-		).addGroup(
-			() ->
-				(orderByDropdownItems != null) &&
-				!FeatureFlagManagerUtil.isEnabled("LPS-144527"),
-			dropdownGroupItem -> {
-				dropdownGroupItem.setDropdownItems(orderByDropdownItems);
-				dropdownGroupItem.setLabel(getOrderByDropdownItemsLabel());
 			}
 		).build();
 
@@ -239,18 +229,6 @@ public class RedirectNotFoundEntriesManagementToolbarDisplayContext
 		return ParamUtil.getInteger(httpServletRequest, "filterDate");
 	}
 
-	private List<DropdownItem> _getFilterDateDropdownItems() {
-		return DropdownItemListBuilder.add(
-			_getFilterDateDropdownItemUnsafeConsumer(0)
-		).add(
-			_getFilterDateDropdownItemUnsafeConsumer(1)
-		).add(
-			_getFilterDateDropdownItemUnsafeConsumer(7)
-		).add(
-			_getFilterDateDropdownItemUnsafeConsumer(30)
-		).build();
-	}
-
 	private UnsafeConsumer<DropdownItem, Exception>
 		_getFilterDateDropdownItemUnsafeConsumer(int days) {
 
@@ -264,6 +242,18 @@ public class RedirectNotFoundEntriesManagementToolbarDisplayContext
 				).buildPortletURL());
 			dropdownItem.setLabel(_getFilterDateLabel(days));
 		};
+	}
+
+	private List<DropdownItem> _getFilterDateDropdownItems() {
+		return DropdownItemListBuilder.add(
+			_getFilterDateDropdownItemUnsafeConsumer(0)
+		).add(
+			_getFilterDateDropdownItemUnsafeConsumer(1)
+		).add(
+			_getFilterDateDropdownItemUnsafeConsumer(7)
+		).add(
+			_getFilterDateDropdownItemUnsafeConsumer(30)
+		).build();
 	}
 
 	private String _getFilterDateLabel(int days) {

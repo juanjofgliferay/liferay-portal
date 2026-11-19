@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -244,13 +245,6 @@ public class CommerceDiscountAccountRelLocalServiceUtil {
 			commerceDiscountAccountRelId);
 	}
 
-	public static CommerceDiscountAccountRel fetchCommerceDiscountAccountRel(
-		long commerceAccountId, long commerceDiscountId) {
-
-		return getService().fetchCommerceDiscountAccountRel(
-			commerceAccountId, commerceDiscountId);
-	}
-
 	/**
 	 * Returns the commerce discount account rel with the matching UUID and company.
 	 *
@@ -330,14 +324,6 @@ public class CommerceDiscountAccountRelLocalServiceUtil {
 			commerceDiscountId, start, end, orderByComparator);
 	}
 
-	public static List<CommerceDiscountAccountRel>
-		getCommerceDiscountAccountRels(
-			long commerceDiscountId, String name, int start, int end) {
-
-		return getService().getCommerceDiscountAccountRels(
-			commerceDiscountId, name, start, end);
-	}
-
 	/**
 	 * Returns the number of commerce discount account rels.
 	 *
@@ -345,20 +331,6 @@ public class CommerceDiscountAccountRelLocalServiceUtil {
 	 */
 	public static int getCommerceDiscountAccountRelsCount() {
 		return getService().getCommerceDiscountAccountRelsCount();
-	}
-
-	public static int getCommerceDiscountAccountRelsCount(
-		long commerceDiscountId) {
-
-		return getService().getCommerceDiscountAccountRelsCount(
-			commerceDiscountId);
-	}
-
-	public static int getCommerceDiscountAccountRelsCount(
-		long commerceDiscountId, String name) {
-
-		return getService().getCommerceDiscountAccountRelsCount(
-			commerceDiscountId, name);
 	}
 
 	public static com.liferay.portal.kernel.dao.orm.ExportActionableDynamicQuery
@@ -412,15 +384,13 @@ public class CommerceDiscountAccountRelLocalServiceUtil {
 	}
 
 	public static CommerceDiscountAccountRelLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(
-		CommerceDiscountAccountRelLocalService service) {
-
-		_service = service;
-	}
-
-	private static volatile CommerceDiscountAccountRelLocalService _service;
+	private static final Snapshot<CommerceDiscountAccountRelLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			CommerceDiscountAccountRelLocalServiceUtil.class,
+			CommerceDiscountAccountRelLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-2071525454

@@ -15,9 +15,9 @@ public class PullRequestPluginsTopLevelBuild
 	extends PluginsTopLevelBuild implements PullRequestBuild {
 
 	public PullRequestPluginsTopLevelBuild(
-		String url, TopLevelBuild topLevelBuild) {
+		String buildURL, TopLevelBuild topLevelBuild) {
 
-		super(url, topLevelBuild);
+		super(buildURL, topLevelBuild);
 
 		StringBuilder sb = new StringBuilder();
 
@@ -106,18 +106,18 @@ public class PullRequestPluginsTopLevelBuild
 		WorkspaceGitRepository workspaceGitRepository =
 			workspace.getPrimaryWorkspaceGitRepository();
 
+		String upstreamBranchSHA = _getUpstreamBranchSHA();
+
+		if (JenkinsResultsParserUtil.isSHA(upstreamBranchSHA)) {
+			workspaceGitRepository.setBaseBranchSHA(upstreamBranchSHA);
+		}
+
 		workspaceGitRepository.setGitHubURL(pullRequest.getHtmlURL());
 
 		String senderBranchSHA = _getSenderBranchSHA();
 
 		if (JenkinsResultsParserUtil.isSHA(senderBranchSHA)) {
 			workspaceGitRepository.setSenderBranchSHA(senderBranchSHA);
-		}
-
-		String upstreamBranchSHA = _getUpstreamBranchSHA();
-
-		if (JenkinsResultsParserUtil.isSHA(upstreamBranchSHA)) {
-			workspaceGitRepository.setBaseBranchSHA(upstreamBranchSHA);
 		}
 
 		return workspace;

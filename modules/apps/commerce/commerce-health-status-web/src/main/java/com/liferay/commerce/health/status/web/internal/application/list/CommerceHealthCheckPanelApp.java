@@ -19,12 +19,17 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"panel.app.order:Integer=400",
+		"panel.app.order:Integer=450",
 		"panel.category.key=" + CommercePanelCategoryKeys.COMMERCE_SETTINGS
 	},
 	service = PanelApp.class
 )
 public class CommerceHealthCheckPanelApp extends BasePanelApp {
+
+	@Override
+	public String getIcon() {
+		return "heart";
+	}
 
 	@Override
 	public Portlet getPortlet() {
@@ -37,7 +42,7 @@ public class CommerceHealthCheckPanelApp extends BasePanelApp {
 	}
 
 	@Reference(
-		target = "(javax.portlet.name=" + CommercePortletKeys.COMMERCE_HEALTH_CHECK + ")"
+		target = "(jakarta.portlet.name=" + CommercePortletKeys.COMMERCE_HEALTH_CHECK + ")"
 	)
 	private Portlet _portlet;
 

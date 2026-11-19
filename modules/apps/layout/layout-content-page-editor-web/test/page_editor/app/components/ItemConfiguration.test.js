@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import '@testing-library/jest-dom/extend-expect';
+import '@testing-library/jest-dom';
 import {fireEvent, render, screen} from '@testing-library/react';
 import React from 'react';
 
@@ -89,7 +89,7 @@ describe('ItemConfiguration', () => {
 
 		fireEvent.click(backButton);
 
-		expect(selectItem).toBeCalledWith('fragmentItemId1');
+		expect(selectItem).toHaveBeenCalledWith('fragmentItemId1');
 	});
 
 	it('does not show back button when active item is not an editable', async () => {

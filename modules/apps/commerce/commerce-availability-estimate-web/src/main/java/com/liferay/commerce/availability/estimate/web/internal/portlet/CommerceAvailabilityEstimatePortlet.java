@@ -6,19 +6,19 @@
 package com.liferay.commerce.availability.estimate.web.internal.portlet;
 
 import com.liferay.commerce.availability.estimate.web.internal.display.context.CommerceAvailabilityEstimateDisplayContext;
-import com.liferay.commerce.constants.CommerceConstants;
 import com.liferay.commerce.constants.CommercePortletKeys;
+import com.liferay.commerce.model.CommerceAvailabilityEstimate;
 import com.liferay.commerce.service.CommerceAvailabilityEstimateService;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCPortlet;
-import com.liferay.portal.kernel.security.permission.resource.PortletResourcePermission;
+import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import java.io.IOException;
+import jakarta.portlet.Portlet;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
 
-import javax.portlet.Portlet;
-import javax.portlet.PortletException;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
+import java.io.IOException;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -38,13 +38,13 @@ import org.osgi.service.component.annotations.Reference;
 		"com.liferay.portlet.private-session-attributes=false",
 		"com.liferay.portlet.render-weight=50",
 		"com.liferay.portlet.scopeable=true",
-		"javax.portlet.display-name=Availability Estimates",
-		"javax.portlet.expiration-cache=0",
-		"javax.portlet.init-param.view-template=/view.jsp",
-		"javax.portlet.name=" + CommercePortletKeys.COMMERCE_AVAILABILITY_ESTIMATE,
-		"javax.portlet.resource-bundle=content.Language",
-		"javax.portlet.security-role-ref=power-user,user",
-		"javax.portlet.version=3.0"
+		"jakarta.portlet.display-name=Availability Estimates",
+		"jakarta.portlet.expiration-cache=0",
+		"jakarta.portlet.init-param.view-template=/view.jsp",
+		"jakarta.portlet.name=" + CommercePortletKeys.COMMERCE_AVAILABILITY_ESTIMATE,
+		"jakarta.portlet.resource-bundle=content.Language",
+		"jakarta.portlet.security-role-ref=power-user,user",
+		"jakarta.portlet.version=4.0"
 	},
 	service = Portlet.class
 )
@@ -58,8 +58,9 @@ public class CommerceAvailabilityEstimatePortlet extends MVCPortlet {
 		CommerceAvailabilityEstimateDisplayContext
 			commerceAvailabilityEstimateDisplayContext =
 				new CommerceAvailabilityEstimateDisplayContext(
-					_commerceAvailabilityEstimateService,
-					_portletResourcePermission, renderRequest, renderResponse);
+					_commerceAvailabilityEstimateModelResourcePermission,
+					_commerceAvailabilityEstimateService, renderRequest,
+					renderResponse);
 
 		renderRequest.setAttribute(
 			WebKeys.PORTLET_DISPLAY_CONTEXT,
@@ -68,13 +69,14 @@ public class CommerceAvailabilityEstimatePortlet extends MVCPortlet {
 		super.render(renderRequest, renderResponse);
 	}
 
+	@Reference(
+		target = "(model.class.name=com.liferay.commerce.model.CommerceAvailabilityEstimate)"
+	)
+	private ModelResourcePermission<CommerceAvailabilityEstimate>
+		_commerceAvailabilityEstimateModelResourcePermission;
+
 	@Reference
 	private CommerceAvailabilityEstimateService
 		_commerceAvailabilityEstimateService;
-
-	@Reference(
-		target = "(resource.name=" + CommerceConstants.RESOURCE_NAME_COMMERCE_AVAILABILITY + ")"
-	)
-	private PortletResourcePermission _portletResourcePermission;
 
 }

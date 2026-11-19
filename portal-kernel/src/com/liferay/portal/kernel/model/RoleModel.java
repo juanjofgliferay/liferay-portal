@@ -28,8 +28,9 @@ import org.osgi.annotation.versioning.ProviderType;
  */
 @ProviderType
 public interface RoleModel
-	extends AttachedModel, BaseModel<Role>, CTModel<Role>, LocalizedModel,
-			MVCCModel, ShardedModel, StagedAuditedModel {
+	extends AttachedModel, BaseModel<Role>, CTModel<Role>,
+			ExternalReferenceCodeModel, LocalizedModel, MVCCModel, ShardedModel,
+			StagedAuditedModel {
 
 	/*
 	 * NOTE FOR DEVELOPERS:
@@ -101,6 +102,23 @@ public interface RoleModel
 	 */
 	@Override
 	public void setUuid(String uuid);
+
+	/**
+	 * Returns the external reference code of this role.
+	 *
+	 * @return the external reference code of this role
+	 */
+	@AutoEscape
+	@Override
+	public String getExternalReferenceCode();
+
+	/**
+	 * Sets the external reference code of this role.
+	 *
+	 * @param externalReferenceCode the external reference code of this role
+	 */
+	@Override
+	public void setExternalReferenceCode(String externalReferenceCode);
 
 	/**
 	 * Returns the role ID of this role.
@@ -499,6 +517,20 @@ public interface RoleModel
 	 */
 	public void setSubtype(String subtype);
 
+	/**
+	 * Returns the status of this role.
+	 *
+	 * @return the status of this role
+	 */
+	public int getStatus();
+
+	/**
+	 * Sets the status of this role.
+	 *
+	 * @param status the status of this role
+	 */
+	public void setStatus(int status);
+
 	@Override
 	public String[] getAvailableLanguageIds();
 
@@ -520,3 +552,4 @@ public interface RoleModel
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-2108540271

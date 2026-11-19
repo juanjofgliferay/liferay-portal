@@ -1,0 +1,50 @@
+/**
+ * SPDX-FileCopyrightText: (c) 2025 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
+ */
+
+import {Site} from '../types/Site';
+import ApiHelper from './ApiHelper';
+
+export type ConnectedSiteRequestBody = {
+	searchable?: boolean;
+};
+
+async function connectSiteToSpace(
+	externalReferenceCode: string,
+	siteExternalReferenceCode: string,
+	body: ConnectedSiteRequestBody = {searchable: true}
+) {
+	return await ApiHelper.put<Site>(
+		`/o/headless-asset-library/v1.0/asset-libraries/${externalReferenceCode}/connected-sites/${siteExternalReferenceCode}`,
+		body
+	);
+}
+
+async function disconnectSiteFromSpace(
+	externalReferenceCode: string,
+	siteExternalReferenceCode: string
+) {
+	return await ApiHelper.delete(
+		`/o/headless-asset-library/v1.0/asset-libraries/${externalReferenceCode}/connected-sites/${siteExternalReferenceCode}`
+	);
+}
+
+async function getConnectedSitesFromSpace(externalReferenceCode: string) {
+	return await ApiHelper.get<{items: Site[]}>(
+		`/o/headless-asset-library/v1.0/asset-libraries/${externalReferenceCode}/connected-sites`
+	);
+}
+
+async function getAllSites() {
+	return await ApiHelper.get<{items: Site[]}>(
+		`/o/headless-admin-site/v1.0/sites?active=true`
+	);
+}
+
+export default {
+	connectSiteToSpace,
+	disconnectSiteFromSpace,
+	getAllSites,
+	getConnectedSitesFromSpace,
+};

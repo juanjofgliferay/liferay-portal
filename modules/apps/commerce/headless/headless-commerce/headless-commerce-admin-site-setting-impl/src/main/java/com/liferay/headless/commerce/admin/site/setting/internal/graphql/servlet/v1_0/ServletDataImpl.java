@@ -18,10 +18,10 @@ import com.liferay.headless.commerce.admin.site.setting.resource.v1_0.WarehouseR
 import com.liferay.portal.kernel.util.ObjectValuePair;
 import com.liferay.portal.vulcan.graphql.servlet.ServletData;
 
+import jakarta.annotation.Generated;
+
 import java.util.HashMap;
 import java.util.Map;
-
-import javax.annotation.Generated;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.service.component.ComponentServiceObjects;
@@ -104,6 +104,21 @@ public class ServletDataImpl implements ServletData {
 							AvailabilityEstimateResourceImpl.class,
 							"deleteAvailabilityEstimateBatch"));
 					put(
+						"mutation#deleteAvailabilityEstimateByExternalReferenceCode",
+						new ObjectValuePair<>(
+							AvailabilityEstimateResourceImpl.class,
+							"deleteAvailabilityEstimateByExternalReferenceCode"));
+					put(
+						"mutation#patchAvailabilityEstimateByExternalReferenceCode",
+						new ObjectValuePair<>(
+							AvailabilityEstimateResourceImpl.class,
+							"patchAvailabilityEstimateByExternalReferenceCode"));
+					put(
+						"mutation#createCommerceAdminSiteSettingGroupAvailabilityEstimate",
+						new ObjectValuePair<>(
+							AvailabilityEstimateResourceImpl.class,
+							"postCommerceAdminSiteSettingGroupAvailabilityEstimate"));
+					put(
 						"mutation#updateAvailabilityEstimate",
 						new ObjectValuePair<>(
 							AvailabilityEstimateResourceImpl.class,
@@ -114,45 +129,10 @@ public class ServletDataImpl implements ServletData {
 							AvailabilityEstimateResourceImpl.class,
 							"putAvailabilityEstimateBatch"));
 					put(
-						"mutation#createCommerceAdminSiteSettingGroupAvailabilityEstimate",
+						"mutation#updateAvailabilityEstimateByExternalReferenceCode",
 						new ObjectValuePair<>(
 							AvailabilityEstimateResourceImpl.class,
-							"postCommerceAdminSiteSettingGroupAvailabilityEstimate"));
-					put(
-						"mutation#createMeasurementUnitsPageExportBatch",
-						new ObjectValuePair<>(
-							MeasurementUnitResourceImpl.class,
-							"postMeasurementUnitsPageExportBatch"));
-					put(
-						"mutation#createMeasurementUnit",
-						new ObjectValuePair<>(
-							MeasurementUnitResourceImpl.class,
-							"postMeasurementUnit"));
-					put(
-						"mutation#createMeasurementUnitBatch",
-						new ObjectValuePair<>(
-							MeasurementUnitResourceImpl.class,
-							"postMeasurementUnitBatch"));
-					put(
-						"mutation#deleteMeasurementUnitByExternalReferenceCode",
-						new ObjectValuePair<>(
-							MeasurementUnitResourceImpl.class,
-							"deleteMeasurementUnitByExternalReferenceCode"));
-					put(
-						"mutation#patchMeasurementUnitByExternalReferenceCode",
-						new ObjectValuePair<>(
-							MeasurementUnitResourceImpl.class,
-							"patchMeasurementUnitByExternalReferenceCode"));
-					put(
-						"mutation#deleteMeasurementUnitByKey",
-						new ObjectValuePair<>(
-							MeasurementUnitResourceImpl.class,
-							"deleteMeasurementUnitByKey"));
-					put(
-						"mutation#patchMeasurementUnitByKey",
-						new ObjectValuePair<>(
-							MeasurementUnitResourceImpl.class,
-							"patchMeasurementUnitByKey"));
+							"putAvailabilityEstimateByExternalReferenceCode"));
 					put(
 						"mutation#deleteMeasurementUnit",
 						new ObjectValuePair<>(
@@ -164,15 +144,50 @@ public class ServletDataImpl implements ServletData {
 							MeasurementUnitResourceImpl.class,
 							"deleteMeasurementUnitBatch"));
 					put(
+						"mutation#deleteMeasurementUnitByExternalReferenceCode",
+						new ObjectValuePair<>(
+							MeasurementUnitResourceImpl.class,
+							"deleteMeasurementUnitByExternalReferenceCode"));
+					put(
+						"mutation#deleteMeasurementUnitByKey",
+						new ObjectValuePair<>(
+							MeasurementUnitResourceImpl.class,
+							"deleteMeasurementUnitByKey"));
+					put(
 						"mutation#patchMeasurementUnit",
 						new ObjectValuePair<>(
 							MeasurementUnitResourceImpl.class,
 							"patchMeasurementUnit"));
 					put(
-						"mutation#createCommerceAdminSiteSettingGroupTaxCategory",
+						"mutation#patchMeasurementUnitByExternalReferenceCode",
 						new ObjectValuePair<>(
-							TaxCategoryResourceImpl.class,
-							"postCommerceAdminSiteSettingGroupTaxCategory"));
+							MeasurementUnitResourceImpl.class,
+							"patchMeasurementUnitByExternalReferenceCode"));
+					put(
+						"mutation#patchMeasurementUnitByKey",
+						new ObjectValuePair<>(
+							MeasurementUnitResourceImpl.class,
+							"patchMeasurementUnitByKey"));
+					put(
+						"mutation#createMeasurementUnit",
+						new ObjectValuePair<>(
+							MeasurementUnitResourceImpl.class,
+							"postMeasurementUnit"));
+					put(
+						"mutation#createMeasurementUnitBatch",
+						new ObjectValuePair<>(
+							MeasurementUnitResourceImpl.class,
+							"postMeasurementUnitBatch"));
+					put(
+						"mutation#createMeasurementUnitsPageExportBatch",
+						new ObjectValuePair<>(
+							MeasurementUnitResourceImpl.class,
+							"postMeasurementUnitsPageExportBatch"));
+					put(
+						"mutation#updateMeasurementUnitByExternalReferenceCode",
+						new ObjectValuePair<>(
+							MeasurementUnitResourceImpl.class,
+							"putMeasurementUnitByExternalReferenceCode"));
 					put(
 						"mutation#deleteTaxCategory",
 						new ObjectValuePair<>(
@@ -184,6 +199,11 @@ public class ServletDataImpl implements ServletData {
 							TaxCategoryResourceImpl.class,
 							"deleteTaxCategoryBatch"));
 					put(
+						"mutation#createCommerceAdminSiteSettingGroupTaxCategory",
+						new ObjectValuePair<>(
+							TaxCategoryResourceImpl.class,
+							"postCommerceAdminSiteSettingGroupTaxCategory"));
+					put(
 						"mutation#updateTaxCategory",
 						new ObjectValuePair<>(
 							TaxCategoryResourceImpl.class, "putTaxCategory"));
@@ -193,11 +213,6 @@ public class ServletDataImpl implements ServletData {
 							TaxCategoryResourceImpl.class,
 							"putTaxCategoryBatch"));
 					put(
-						"mutation#createCommerceAdminSiteSettingGroupWarehouse",
-						new ObjectValuePair<>(
-							WarehouseResourceImpl.class,
-							"postCommerceAdminSiteSettingGroupWarehouse"));
-					put(
 						"mutation#deleteWarehouse",
 						new ObjectValuePair<>(
 							WarehouseResourceImpl.class, "deleteWarehouse"));
@@ -206,6 +221,11 @@ public class ServletDataImpl implements ServletData {
 						new ObjectValuePair<>(
 							WarehouseResourceImpl.class,
 							"deleteWarehouseBatch"));
+					put(
+						"mutation#createCommerceAdminSiteSettingGroupWarehouse",
+						new ObjectValuePair<>(
+							WarehouseResourceImpl.class,
+							"postCommerceAdminSiteSettingGroupWarehouse"));
 					put(
 						"mutation#updateWarehouse",
 						new ObjectValuePair<>(
@@ -221,15 +241,20 @@ public class ServletDataImpl implements ServletData {
 							AvailabilityEstimateResourceImpl.class,
 							"getAvailabilityEstimate"));
 					put(
+						"query#availabilityEstimateByExternalReferenceCode",
+						new ObjectValuePair<>(
+							AvailabilityEstimateResourceImpl.class,
+							"getAvailabilityEstimateByExternalReferenceCode"));
+					put(
 						"query#commerceAdminSettingGroupAvailabilityEstimate",
 						new ObjectValuePair<>(
 							AvailabilityEstimateResourceImpl.class,
 							"getCommerceAdminSiteSettingGroupAvailabilityEstimatePage"));
 					put(
-						"query#measurementUnits",
+						"query#measurementUnit",
 						new ObjectValuePair<>(
 							MeasurementUnitResourceImpl.class,
-							"getMeasurementUnitsPage"));
+							"getMeasurementUnit"));
 					put(
 						"query#measurementUnitByExternalReferenceCode",
 						new ObjectValuePair<>(
@@ -246,10 +271,10 @@ public class ServletDataImpl implements ServletData {
 							MeasurementUnitResourceImpl.class,
 							"getMeasurementUnitsByType"));
 					put(
-						"query#measurementUnit",
+						"query#measurementUnits",
 						new ObjectValuePair<>(
 							MeasurementUnitResourceImpl.class,
-							"getMeasurementUnit"));
+							"getMeasurementUnitsPage"));
 					put(
 						"query#commerceAdminSettingGroupTaxCategory",
 						new ObjectValuePair<>(
@@ -268,6 +293,17 @@ public class ServletDataImpl implements ServletData {
 						"query#warehouse",
 						new ObjectValuePair<>(
 							WarehouseResourceImpl.class, "getWarehouse"));
+
+					put(
+						"query#MeasurementUnit.availabilityEstimateByExternalReferenceCode",
+						new ObjectValuePair<>(
+							AvailabilityEstimateResourceImpl.class,
+							"getAvailabilityEstimateByExternalReferenceCode"));
+					put(
+						"query#AvailabilityEstimate.measurementUnitByExternalReferenceCode",
+						new ObjectValuePair<>(
+							MeasurementUnitResourceImpl.class,
+							"getMeasurementUnitByExternalReferenceCode"));
 				}
 			};
 
@@ -288,3 +324,4 @@ public class ServletDataImpl implements ServletData {
 		_warehouseResourceComponentServiceObjects;
 
 }
+// LIFERAY-REST-BUILDER-HASH:107165368

@@ -21,9 +21,9 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import javax.portlet.PortletRequest;
+import jakarta.portlet.PortletRequest;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * @author Brian Wing Shun Chan
@@ -73,32 +73,6 @@ public class ActionUtil {
 		getEmailAddress(PortalUtil.getHttpServletRequest(portletRequest));
 	}
 
-	public static Organization getOrganization(
-			HttpServletRequest httpServletRequest)
-		throws Exception {
-
-		long organizationId = ParamUtil.getLong(
-			httpServletRequest, "organizationId");
-
-		Organization organization = null;
-
-		if (organizationId > 0) {
-			organization = OrganizationServiceUtil.getOrganization(
-				organizationId);
-		}
-
-		httpServletRequest.setAttribute(WebKeys.ORGANIZATION, organization);
-
-		return organization;
-	}
-
-	public static Organization getOrganization(PortletRequest portletRequest)
-		throws Exception {
-
-		return getOrganization(
-			PortalUtil.getHttpServletRequest(portletRequest));
-	}
-
 	public static void getOrgLabor(HttpServletRequest httpServletRequest)
 		throws Exception {
 
@@ -117,6 +91,32 @@ public class ActionUtil {
 		throws Exception {
 
 		getOrgLabor(PortalUtil.getHttpServletRequest(portletRequest));
+	}
+
+	public static Organization getOrganization(
+			HttpServletRequest httpServletRequest)
+		throws Exception {
+
+		Organization organization = null;
+
+		long organizationId = ParamUtil.getLong(
+			httpServletRequest, "organizationId");
+
+		if (organizationId > 0) {
+			organization = OrganizationServiceUtil.getOrganization(
+				organizationId);
+		}
+
+		httpServletRequest.setAttribute(WebKeys.ORGANIZATION, organization);
+
+		return organization;
+	}
+
+	public static Organization getOrganization(PortletRequest portletRequest)
+		throws Exception {
+
+		return getOrganization(
+			PortalUtil.getHttpServletRequest(portletRequest));
 	}
 
 	public static void getPhone(HttpServletRequest httpServletRequest)

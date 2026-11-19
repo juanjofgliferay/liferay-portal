@@ -4,12 +4,14 @@
  */
 
 import {isNullOrUndefined} from '@liferay/layout-js-components-web';
-import {debounce, openSelectionModal} from 'frontend-js-web';
+import {openSelectionModal} from 'frontend-js-components-web';
+import {debounce, loadEditorClientExtensions} from 'frontend-js-web';
 
 import {SPACE_KEY_CODE} from '../config/constants/keyboardCodes';
 import {config} from '../config/index';
 
 const ENTER_KEYCODE = 13;
+const ESCAPE_KEYCODE = 27;
 const SHIFT_ENTER_KEYCODE = (window.CKEDITOR?.SHIFT ?? 0) + ENTER_KEYCODE;
 
 const defaultGetEditorWrapper = (element) => {
@@ -50,35 +52,30 @@ export default function getAlloyEditorProcessor(
 	let _element;
 	let _callbacks = {};
 
-	return {
-		createEditor: (
-			element,
-			changeCallback,
-			destroyCallback,
-			clickPosition
-		) => {
-			_callbacks.changeCallback = changeCallback;
-			_callbacks.destroyCallback = destroyCallback;
+	const create = (
+		element,
+		changeCallback,
+		destroyCallback,
+		clickPosition
+	) => {
+		_callbacks.changeCallback = changeCallback;
+		_callbacks.destroyCallback = destroyCallback;
 
-			if (_editor) {
-				return;
-			}
+		const {editorConfig} =
+			config.defaultEditorConfigurations[editorConfigurationName];
 
-			const {editorConfig} = config.defaultEditorConfigurations[
-				editorConfigurationName
-			];
+		_element = element;
 
-			_element = element;
+		const editorName = `${config.portletNamespace}FragmentEntryLinkEditable_${element.id}`;
 
-			const editorName = `${config.portletNamespace}FragmentEntryLinkEditable_${element.id}`;
+		const editorWrapper = getEditorWrapper(element);
 
-			const editorWrapper = getEditorWrapper(element);
+		editorWrapper.setAttribute('id', editorName);
+		editorWrapper.setAttribute('name', editorName);
 
-			editorWrapper.setAttribute('id', editorName);
-			editorWrapper.setAttribute('name', editorName);
+		element.addEventListener('keyup', keyupHandler);
 
-			element.addEventListener('keyup', keyupHandler);
-
+		const initEditor = (editorConfig) => {
 			_editor = AlloyEditor.editable(editorWrapper, {
 				...editorConfig,
 
@@ -95,20 +92,23 @@ export default function getAlloyEditorProcessor(
 					});
 				},
 
-				documentBrowseLinkUrl: editorConfig.documentBrowseLinkUrl.replace(
-					'_EDITOR_NAME_',
-					editorName
-				),
+				documentBrowseLinkUrl:
+					editorConfig.documentBrowseLinkUrl.replace(
+						'_EDITOR_NAME_',
+						editorName
+					),
 
-				filebrowserImageBrowseLinkUrl: editorConfig.filebrowserImageBrowseLinkUrl.replace(
-					'_EDITOR_NAME_',
-					editorName
-				),
+				filebrowserImageBrowseLinkUrl:
+					editorConfig.filebrowserImageBrowseLinkUrl.replace(
+						'_EDITOR_NAME_',
+						editorName
+					),
 
-				filebrowserImageBrowseUrl: editorConfig.filebrowserImageBrowseUrl.replace(
-					'_EDITOR_NAME_',
-					editorName
-				),
+				filebrowserImageBrowseUrl:
+					editorConfig.filebrowserImageBrowseUrl.replace(
+						'_EDITOR_NAME_',
+						editorName
+					),
 
 				title: '',
 			});
@@ -152,17 +152,26 @@ export default function getAlloyEditorProcessor(
 			_eventHandlers = [
 				{
 					removeListener: () =>
-						document.removeEventListener('click', onClickOutside),
+						document.removeEventListener(
+							'click',
+							onClickOutside,
+							true
+						),
 				},
 				nativeEditor.on('key', (event) => {
 					if (
 						(event.data.keyCode === ENTER_KEYCODE ||
 							event.data.keyCode === SHIFT_ENTER_KEYCODE) &&
 						_element &&
-						(_element.getAttribute('type') === 'text' ||
+						(_element.getAttribute('type') === 'link' ||
+							_element.getAttribute('type') === 'text' ||
+							_element.dataset.lfrEditableType === 'link' ||
 							_element.dataset.lfrEditableType === 'text')
 					) {
 						event.cancel();
+					}
+					else if (event.data.keyCode === ESCAPE_KEYCODE) {
+						onBlurEditor();
 					}
 				}),
 				nativeEditor.on('blur', () => {
@@ -174,11 +183,23 @@ export default function getAlloyEditorProcessor(
 						// Ignoring the blur event, because we don't want to destroy the editor
 						// when opening a selector (image or link).
 
-						document.addEventListener('click', onClickOutside);
+						document.addEventListener(
+							'click',
+							onClickOutside,
+							true
+						);
 					}
 				}),
 
-				nativeEditor.on('instanceReady', () => {
+				nativeEditor.on('instanceReady', (event) => {
+					event.editor.dataProcessor.htmlFilter.addRules({
+						elements: {
+							img(element) {
+								element.attributes.alt = '';
+							},
+						},
+					});
+
 					nativeEditor.focus();
 
 					if (clickPosition) {
@@ -198,31 +219,81 @@ export default function getAlloyEditorProcessor(
 					}, 100)
 				),
 			];
+		};
+
+		const editorTransformerURLs = editorConfig.editorTransformerURLs;
+
+		if (editorTransformerURLs) {
+			const loadingIndicator = document.createElement('span');
+
+			loadingIndicator.classList.add('loading-animation');
+			loadingIndicator.setAttribute('aria-hidden', true);
+
+			_element.appendChild(loadingIndicator);
+
+			loadEditorClientExtensions({
+				config: editorConfig,
+				onLoad: ({transformedConfig}) => {
+					if (loadingIndicator) {
+						loadingIndicator.remove();
+					}
+
+					initEditor(transformedConfig);
+				},
+			});
+		}
+		else {
+			initEditor(editorConfig);
+		}
+	};
+
+	const destroy = async (element, editableConfig, saveChanges) => {
+		if (_editor) {
+			const lastValue = _editor.get('nativeEditor').getData();
+
+			if (saveChanges) {
+				await _callbacks.changeCallback(lastValue);
+			}
+
+			_editor.destroy();
+
+			_eventHandlers.forEach((handler) => {
+				handler.removeListener();
+			});
+
+			render(_element, lastValue, editableConfig);
+
+			_editor = null;
+			_eventHandlers = null;
+			_element = null;
+			_callbacks = {};
+		}
+
+		if (element) {
+			element.removeEventListener('keyup', keyupHandler);
+		}
+	};
+
+	return {
+		createEditor: async (
+			element,
+			changeCallback,
+			destroyCallback,
+			clickPosition
+		) => {
+			if (_editor && _element === element) {
+				return;
+			}
+
+			if (_editor) {
+				await destroy(_element);
+			}
+
+			create(element, changeCallback, destroyCallback, clickPosition);
 		},
 
-		/**
-		 */
-		destroyEditor: (element, editableConfig) => {
-			if (_editor) {
-				const lastValue = _editor.get('nativeEditor').getData();
-
-				_editor.destroy();
-
-				_eventHandlers.forEach((handler) => {
-					handler.removeListener();
-				});
-
-				render(_element, lastValue, editableConfig);
-
-				_editor = null;
-				_eventHandlers = null;
-				_element = null;
-				_callbacks = {};
-			}
-
-			if (element) {
-				element.removeEventListener('keyup', keyupHandler);
-			}
+		destroyEditor: async (element, editableConfig, saveChanges) => {
+			await destroy(element, editableConfig, saveChanges);
 		},
 
 		/**

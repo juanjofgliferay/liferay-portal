@@ -5,31 +5,26 @@
 
 package com.liferay.portlet.ratings.service.persistence.impl;
 
-import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.change.tracking.CTColumnResolutionType;
 import com.liferay.portal.kernel.dao.orm.EntityCache;
 import com.liferay.portal.kernel.dao.orm.EntityCacheUtil;
 import com.liferay.portal.kernel.dao.orm.FinderCache;
 import com.liferay.portal.kernel.dao.orm.FinderCacheUtil;
 import com.liferay.portal.kernel.dao.orm.FinderPath;
-import com.liferay.portal.kernel.dao.orm.Query;
-import com.liferay.portal.kernel.dao.orm.QueryPos;
-import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.orm.Session;
-import com.liferay.portal.kernel.log.Log;
-import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
+import com.liferay.portal.kernel.service.persistence.change.tracking.helper.CTPersistenceHelper;
 import com.liferay.portal.kernel.service.persistence.change.tracking.helper.CTPersistenceHelperUtil;
+import com.liferay.portal.kernel.service.persistence.impl.ArrayableFinderColumn;
 import com.liferay.portal.kernel.service.persistence.impl.BasePersistenceImpl;
+import com.liferay.portal.kernel.service.persistence.impl.CollectionPersistenceFinder;
+import com.liferay.portal.kernel.service.persistence.impl.FinderColumn;
+import com.liferay.portal.kernel.service.persistence.impl.UniquePersistenceFinder;
 import com.liferay.portal.kernel.util.ArrayUtil;
-import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
-import com.liferay.portal.kernel.util.PropsKeys;
-import com.liferay.portal.kernel.util.PropsUtil;
 import com.liferay.portal.kernel.util.ProxyUtil;
-import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portlet.ratings.model.impl.RatingsStatsImpl;
 import com.liferay.portlet.ratings.model.impl.RatingsStatsModelImpl;
 import com.liferay.ratings.kernel.exception.NoSuchStatsException;
@@ -46,9 +41,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.EnumMap;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -64,7 +57,7 @@ import java.util.Set;
  * @generated
  */
 public class RatingsStatsPersistenceImpl
-	extends BasePersistenceImpl<RatingsStats>
+	extends BasePersistenceImpl<RatingsStats, NoSuchStatsException>
 	implements RatingsStatsPersistence {
 
 	/*
@@ -81,80 +74,16 @@ public class RatingsStatsPersistenceImpl
 	public static final String FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION =
 		FINDER_CLASS_NAME_ENTITY + ".List2";
 
-	private FinderPath _finderPathWithPaginationFindAll;
-	private FinderPath _finderPathWithoutPaginationFindAll;
-	private FinderPath _finderPathCountAll;
-	private FinderPath _finderPathWithPaginationFindByC_C;
-	private FinderPath _finderPathWithoutPaginationFindByC_C;
-	private FinderPath _finderPathFetchByC_C;
-	private FinderPath _finderPathCountByC_C;
-	private FinderPath _finderPathWithPaginationCountByC_C;
-
-	/**
-	 * Returns all the ratings statses where classNameId = &#63; and classPK = any &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>RatingsStatsModelImpl</code>.
-	 * </p>
-	 *
-	 * @param classNameId the class name ID
-	 * @param classPKs the class pks
-	 * @return the matching ratings statses
-	 */
-	@Override
-	public List<RatingsStats> findByC_C(long classNameId, long[] classPKs) {
-		return findByC_C(
-			classNameId, classPKs, QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
-	}
-
-	/**
-	 * Returns a range of all the ratings statses where classNameId = &#63; and classPK = any &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>RatingsStatsModelImpl</code>.
-	 * </p>
-	 *
-	 * @param classNameId the class name ID
-	 * @param classPKs the class pks
-	 * @param start the lower bound of the range of ratings statses
-	 * @param end the upper bound of the range of ratings statses (not inclusive)
-	 * @return the range of matching ratings statses
-	 */
-	@Override
-	public List<RatingsStats> findByC_C(
-		long classNameId, long[] classPKs, int start, int end) {
-
-		return findByC_C(classNameId, classPKs, start, end, null);
-	}
-
-	/**
-	 * Returns an ordered range of all the ratings statses where classNameId = &#63; and classPK = any &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>RatingsStatsModelImpl</code>.
-	 * </p>
-	 *
-	 * @param classNameId the class name ID
-	 * @param classPKs the class pks
-	 * @param start the lower bound of the range of ratings statses
-	 * @param end the upper bound of the range of ratings statses (not inclusive)
-	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
-	 * @return the ordered range of matching ratings statses
-	 */
-	@Override
-	public List<RatingsStats> findByC_C(
-		long classNameId, long[] classPKs, int start, int end,
-		OrderByComparator<RatingsStats> orderByComparator) {
-
-		return findByC_C(
-			classNameId, classPKs, start, end, orderByComparator, true);
-	}
+	private CollectionPersistenceFinder<RatingsStats, NoSuchStatsException>
+		_collectionPersistenceFinderByC_C;
+	private UniquePersistenceFinder<RatingsStats, NoSuchStatsException>
+		_uniquePersistenceFinderByC_C;
 
 	/**
 	 * Returns an ordered range of all the ratings statses where classNameId = &#63; and classPK = &#63;, optionally using the finder cache.
 	 *
 	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>RatingsStatsModelImpl</code>.
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>RatingsStatsModelImpl</code>.
 	 * </p>
 	 *
 	 * @param classNameId the class name ID
@@ -171,167 +100,10 @@ public class RatingsStatsPersistenceImpl
 		OrderByComparator<RatingsStats> orderByComparator,
 		boolean useFinderCache) {
 
-		if (classPKs == null) {
-			classPKs = new long[0];
-		}
-		else if (classPKs.length > 1) {
-			classPKs = ArrayUtil.sortedUnique(classPKs);
-		}
-
-		if (classPKs.length == 1) {
-			RatingsStats ratingsStats = fetchByC_C(classNameId, classPKs[0]);
-
-			if (ratingsStats == null) {
-				return Collections.emptyList();
-			}
-			else {
-				return Collections.singletonList(ratingsStats);
-			}
-		}
-
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			RatingsStats.class);
-
-		Object[] finderArgs = null;
-
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
-
-			if (useFinderCache && productionMode) {
-				finderArgs = new Object[] {
-					classNameId, StringUtil.merge(classPKs)
-				};
-			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderArgs = new Object[] {
-				classNameId, StringUtil.merge(classPKs), start, end,
-				orderByComparator
-			};
-		}
-
-		List<RatingsStats> list = null;
-
-		if (useFinderCache && productionMode) {
-			list = (List<RatingsStats>)FinderCacheUtil.getResult(
-				_finderPathWithPaginationFindByC_C, finderArgs, this);
-
-			if ((list != null) && !list.isEmpty()) {
-				for (RatingsStats ratingsStats : list) {
-					if ((classNameId != ratingsStats.getClassNameId()) ||
-						!ArrayUtil.contains(
-							classPKs, ratingsStats.getClassPK())) {
-
-						list = null;
-
-						break;
-					}
-				}
-			}
-		}
-
-		if (list == null) {
-			try {
-				if ((start == QueryUtil.ALL_POS) &&
-					(end == QueryUtil.ALL_POS) &&
-					(databaseInMaxParameters > 0) &&
-					(classPKs.length > databaseInMaxParameters)) {
-
-					list = new ArrayList<RatingsStats>();
-
-					long[][] classPKsPages = (long[][])ArrayUtil.split(
-						classPKs, databaseInMaxParameters);
-
-					for (long[] classPKsPage : classPKsPages) {
-						list.addAll(
-							_findByC_C(
-								classNameId, classPKsPage, start, end,
-								orderByComparator));
-					}
-
-					Collections.sort(list, orderByComparator);
-
-					list = Collections.unmodifiableList(list);
-				}
-				else {
-					list = _findByC_C(
-						classNameId, classPKs, start, end, orderByComparator);
-				}
-
-				cacheResult(list);
-
-				if (useFinderCache && productionMode) {
-					FinderCacheUtil.putResult(
-						_finderPathWithPaginationFindByC_C, finderArgs, list);
-				}
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-		}
-
-		return list;
-	}
-
-	private List<RatingsStats> _findByC_C(
-		long classNameId, long[] classPKs, int start, int end,
-		OrderByComparator<RatingsStats> orderByComparator) {
-
-		List<RatingsStats> list = null;
-
-		StringBundler sb = new StringBundler();
-
-		sb.append(_SQL_SELECT_RATINGSSTATS_WHERE);
-
-		sb.append(_FINDER_COLUMN_C_C_CLASSNAMEID_2);
-
-		if (classPKs.length > 0) {
-			sb.append("(");
-
-			sb.append(_FINDER_COLUMN_C_C_CLASSPK_7);
-
-			sb.append(StringUtil.merge(classPKs));
-
-			sb.append(")");
-
-			sb.append(")");
-		}
-
-		sb.setStringAt(
-			removeConjunction(sb.stringAt(sb.index() - 1)), sb.index() - 1);
-
-		if (orderByComparator != null) {
-			appendOrderByComparator(
-				sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-		}
-		else {
-			sb.append(RatingsStatsModelImpl.ORDER_BY_JPQL);
-		}
-
-		String sql = sb.toString();
-
-		Session session = null;
-
-		try {
-			session = openSession();
-
-			Query query = session.createQuery(sql);
-
-			QueryPos queryPos = QueryPos.getInstance(query);
-
-			queryPos.add(classNameId);
-
-			list = (List<RatingsStats>)QueryUtil.list(
-				query, getDialect(), start, end);
-		}
-		catch (Exception exception) {
-			throw processException(exception);
-		}
-		finally {
-			closeSession(session);
-		}
-
-		return list;
+		return _collectionPersistenceFinderByC_C.find(
+			FinderCacheUtil.getFinderCache(),
+			new Object[] {classNameId, ArrayUtil.sortedUnique(classPKs)}, start,
+			end, orderByComparator, useFinderCache);
 	}
 
 	/**
@@ -346,41 +118,9 @@ public class RatingsStatsPersistenceImpl
 	public RatingsStats findByC_C(long classNameId, long classPK)
 		throws NoSuchStatsException {
 
-		RatingsStats ratingsStats = fetchByC_C(classNameId, classPK);
-
-		if (ratingsStats == null) {
-			StringBundler sb = new StringBundler(6);
-
-			sb.append(_NO_SUCH_ENTITY_WITH_KEY);
-
-			sb.append("classNameId=");
-			sb.append(classNameId);
-
-			sb.append(", classPK=");
-			sb.append(classPK);
-
-			sb.append("}");
-
-			if (_log.isDebugEnabled()) {
-				_log.debug(sb.toString());
-			}
-
-			throw new NoSuchStatsException(sb.toString());
-		}
-
-		return ratingsStats;
-	}
-
-	/**
-	 * Returns the ratings stats where classNameId = &#63; and classPK = &#63; or returns <code>null</code> if it could not be found. Uses the finder cache.
-	 *
-	 * @param classNameId the class name ID
-	 * @param classPK the class pk
-	 * @return the matching ratings stats, or <code>null</code> if a matching ratings stats could not be found
-	 */
-	@Override
-	public RatingsStats fetchByC_C(long classNameId, long classPK) {
-		return fetchByC_C(classNameId, classPK, true);
+		return _uniquePersistenceFinderByC_C.find(
+			FinderCacheUtil.getFinderCache(),
+			new Object[] {classNameId, classPK});
 	}
 
 	/**
@@ -395,94 +135,9 @@ public class RatingsStatsPersistenceImpl
 	public RatingsStats fetchByC_C(
 		long classNameId, long classPK, boolean useFinderCache) {
 
-		Object[] finderArgs = null;
-
-		if (useFinderCache) {
-			finderArgs = new Object[] {classNameId, classPK};
-		}
-
-		Object result = null;
-
-		if (useFinderCache) {
-			result = FinderCacheUtil.getResult(
-				_finderPathFetchByC_C, finderArgs, this);
-		}
-
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			RatingsStats.class);
-
-		if (result instanceof RatingsStats) {
-			RatingsStats ratingsStats = (RatingsStats)result;
-
-			if ((classNameId != ratingsStats.getClassNameId()) ||
-				(classPK != ratingsStats.getClassPK())) {
-
-				result = null;
-			}
-			else if (!CTPersistenceHelperUtil.isProductionMode(
-						RatingsStats.class, ratingsStats.getPrimaryKey())) {
-
-				result = null;
-			}
-		}
-		else if (!productionMode && (result instanceof List<?>)) {
-			result = null;
-		}
-
-		if (result == null) {
-			StringBundler sb = new StringBundler(4);
-
-			sb.append(_SQL_SELECT_RATINGSSTATS_WHERE);
-
-			sb.append(_FINDER_COLUMN_C_C_CLASSNAMEID_2);
-
-			sb.append(_FINDER_COLUMN_C_C_CLASSPK_2);
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(classNameId);
-
-				queryPos.add(classPK);
-
-				List<RatingsStats> list = query.list();
-
-				if (list.isEmpty()) {
-					if (useFinderCache && productionMode) {
-						FinderCacheUtil.putResult(
-							_finderPathFetchByC_C, finderArgs, list);
-					}
-				}
-				else {
-					RatingsStats ratingsStats = list.get(0);
-
-					result = ratingsStats;
-
-					cacheResult(ratingsStats);
-				}
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
-
-		if (result instanceof List<?>) {
-			return null;
-		}
-		else {
-			return (RatingsStats)result;
-		}
+		return _uniquePersistenceFinderByC_C.fetch(
+			FinderCacheUtil.getFinderCache(),
+			new Object[] {classNameId, classPK}, useFinderCache);
 	}
 
 	/**
@@ -510,62 +165,9 @@ public class RatingsStatsPersistenceImpl
 	 */
 	@Override
 	public int countByC_C(long classNameId, long classPK) {
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			RatingsStats.class);
-
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
-
-		Long count = null;
-
-		if (productionMode) {
-			finderPath = _finderPathCountByC_C;
-
-			finderArgs = new Object[] {classNameId, classPK};
-
-			count = (Long)FinderCacheUtil.getResult(
-				finderPath, finderArgs, this);
-		}
-
-		if (count == null) {
-			StringBundler sb = new StringBundler(3);
-
-			sb.append(_SQL_COUNT_RATINGSSTATS_WHERE);
-
-			sb.append(_FINDER_COLUMN_C_C_CLASSNAMEID_2);
-
-			sb.append(_FINDER_COLUMN_C_C_CLASSPK_2);
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(classNameId);
-
-				queryPos.add(classPK);
-
-				count = (Long)query.uniqueResult();
-
-				if (productionMode) {
-					FinderCacheUtil.putResult(finderPath, finderArgs, count);
-				}
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
-
-		return count.intValue();
+		return _collectionPersistenceFinderByC_C.count(
+			FinderCacheUtil.getFinderCache(),
+			new Object[] {classNameId, new long[] {classPK}});
 	}
 
 	/**
@@ -577,116 +179,10 @@ public class RatingsStatsPersistenceImpl
 	 */
 	@Override
 	public int countByC_C(long classNameId, long[] classPKs) {
-		if (classPKs == null) {
-			classPKs = new long[0];
-		}
-		else if (classPKs.length > 1) {
-			classPKs = ArrayUtil.sortedUnique(classPKs);
-		}
-
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			RatingsStats.class);
-
-		Object[] finderArgs = null;
-
-		Long count = null;
-
-		if (productionMode) {
-			finderArgs = new Object[] {classNameId, StringUtil.merge(classPKs)};
-
-			count = (Long)FinderCacheUtil.getResult(
-				_finderPathWithPaginationCountByC_C, finderArgs, this);
-		}
-
-		if (count == null) {
-			try {
-				if ((databaseInMaxParameters > 0) &&
-					(classPKs.length > databaseInMaxParameters)) {
-
-					count = Long.valueOf(0);
-
-					long[][] classPKsPages = (long[][])ArrayUtil.split(
-						classPKs, databaseInMaxParameters);
-
-					for (long[] classPKsPage : classPKsPages) {
-						count += Long.valueOf(
-							_countByC_C(classNameId, classPKsPage));
-					}
-				}
-				else {
-					count = Long.valueOf(_countByC_C(classNameId, classPKs));
-				}
-
-				if (productionMode) {
-					FinderCacheUtil.putResult(
-						_finderPathWithPaginationCountByC_C, finderArgs, count);
-				}
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-		}
-
-		return count.intValue();
+		return _collectionPersistenceFinderByC_C.count(
+			FinderCacheUtil.getFinderCache(),
+			new Object[] {classNameId, ArrayUtil.sortedUnique(classPKs)});
 	}
-
-	private int _countByC_C(long classNameId, long[] classPKs) {
-		Long count = null;
-
-		StringBundler sb = new StringBundler();
-
-		sb.append(_SQL_COUNT_RATINGSSTATS_WHERE);
-
-		sb.append(_FINDER_COLUMN_C_C_CLASSNAMEID_2);
-
-		if (classPKs.length > 0) {
-			sb.append("(");
-
-			sb.append(_FINDER_COLUMN_C_C_CLASSPK_7);
-
-			sb.append(StringUtil.merge(classPKs));
-
-			sb.append(")");
-
-			sb.append(")");
-		}
-
-		sb.setStringAt(
-			removeConjunction(sb.stringAt(sb.index() - 1)), sb.index() - 1);
-
-		String sql = sb.toString();
-
-		Session session = null;
-
-		try {
-			session = openSession();
-
-			Query query = session.createQuery(sql);
-
-			QueryPos queryPos = QueryPos.getInstance(query);
-
-			queryPos.add(classNameId);
-
-			count = (Long)query.uniqueResult();
-		}
-		catch (Exception exception) {
-			throw processException(exception);
-		}
-		finally {
-			closeSession(session);
-		}
-
-		return count.intValue();
-	}
-
-	private static final String _FINDER_COLUMN_C_C_CLASSNAMEID_2 =
-		"ratingsStats.classNameId = ? AND ";
-
-	private static final String _FINDER_COLUMN_C_C_CLASSPK_2 =
-		"ratingsStats.classPK = ?";
-
-	private static final String _FINDER_COLUMN_C_C_CLASSPK_7 =
-		"ratingsStats.classPK IN (";
 
 	public RatingsStatsPersistenceImpl() {
 		setModelClass(RatingsStats.class);
@@ -695,113 +191,6 @@ public class RatingsStatsPersistenceImpl
 		setModelPKClass(long.class);
 
 		setTable(RatingsStatsTable.INSTANCE);
-	}
-
-	/**
-	 * Caches the ratings stats in the entity cache if it is enabled.
-	 *
-	 * @param ratingsStats the ratings stats
-	 */
-	@Override
-	public void cacheResult(RatingsStats ratingsStats) {
-		if (ratingsStats.getCtCollectionId() != 0) {
-			return;
-		}
-
-		EntityCacheUtil.putResult(
-			RatingsStatsImpl.class, ratingsStats.getPrimaryKey(), ratingsStats);
-
-		FinderCacheUtil.putResult(
-			_finderPathFetchByC_C,
-			new Object[] {
-				ratingsStats.getClassNameId(), ratingsStats.getClassPK()
-			},
-			ratingsStats);
-	}
-
-	private int _valueObjectFinderCacheListThreshold;
-
-	/**
-	 * Caches the ratings statses in the entity cache if it is enabled.
-	 *
-	 * @param ratingsStatses the ratings statses
-	 */
-	@Override
-	public void cacheResult(List<RatingsStats> ratingsStatses) {
-		if ((_valueObjectFinderCacheListThreshold == 0) ||
-			((_valueObjectFinderCacheListThreshold > 0) &&
-			 (ratingsStatses.size() > _valueObjectFinderCacheListThreshold))) {
-
-			return;
-		}
-
-		for (RatingsStats ratingsStats : ratingsStatses) {
-			if (ratingsStats.getCtCollectionId() != 0) {
-				continue;
-			}
-
-			if (EntityCacheUtil.getResult(
-					RatingsStatsImpl.class, ratingsStats.getPrimaryKey()) ==
-						null) {
-
-				cacheResult(ratingsStats);
-			}
-		}
-	}
-
-	/**
-	 * Clears the cache for all ratings statses.
-	 *
-	 * <p>
-	 * The <code>EntityCache</code> and <code>FinderCache</code> are both cleared by this method.
-	 * </p>
-	 */
-	@Override
-	public void clearCache() {
-		EntityCacheUtil.clearCache(RatingsStatsImpl.class);
-
-		FinderCacheUtil.clearCache(RatingsStatsImpl.class);
-	}
-
-	/**
-	 * Clears the cache for the ratings stats.
-	 *
-	 * <p>
-	 * The <code>EntityCache</code> and <code>FinderCache</code> are both cleared by this method.
-	 * </p>
-	 */
-	@Override
-	public void clearCache(RatingsStats ratingsStats) {
-		EntityCacheUtil.removeResult(RatingsStatsImpl.class, ratingsStats);
-	}
-
-	@Override
-	public void clearCache(List<RatingsStats> ratingsStatses) {
-		for (RatingsStats ratingsStats : ratingsStatses) {
-			EntityCacheUtil.removeResult(RatingsStatsImpl.class, ratingsStats);
-		}
-	}
-
-	@Override
-	public void clearCache(Set<Serializable> primaryKeys) {
-		FinderCacheUtil.clearCache(RatingsStatsImpl.class);
-
-		for (Serializable primaryKey : primaryKeys) {
-			EntityCacheUtil.removeResult(RatingsStatsImpl.class, primaryKey);
-		}
-	}
-
-	protected void cacheUniqueFindersCache(
-		RatingsStatsModelImpl ratingsStatsModelImpl) {
-
-		Object[] args = new Object[] {
-			ratingsStatsModelImpl.getClassNameId(),
-			ratingsStatsModelImpl.getClassPK()
-		};
-
-		FinderCacheUtil.putResult(_finderPathCountByC_C, args, Long.valueOf(1));
-		FinderCacheUtil.putResult(
-			_finderPathFetchByC_C, args, ratingsStatsModelImpl);
 	}
 
 	/**
@@ -832,47 +221,6 @@ public class RatingsStatsPersistenceImpl
 	@Override
 	public RatingsStats remove(long statsId) throws NoSuchStatsException {
 		return remove((Serializable)statsId);
-	}
-
-	/**
-	 * Removes the ratings stats with the primary key from the database. Also notifies the appropriate model listeners.
-	 *
-	 * @param primaryKey the primary key of the ratings stats
-	 * @return the ratings stats that was removed
-	 * @throws NoSuchStatsException if a ratings stats with the primary key could not be found
-	 */
-	@Override
-	public RatingsStats remove(Serializable primaryKey)
-		throws NoSuchStatsException {
-
-		Session session = null;
-
-		try {
-			session = openSession();
-
-			RatingsStats ratingsStats = (RatingsStats)session.get(
-				RatingsStatsImpl.class, primaryKey);
-
-			if (ratingsStats == null) {
-				if (_log.isDebugEnabled()) {
-					_log.debug(_NO_SUCH_ENTITY_WITH_PRIMARY_KEY + primaryKey);
-				}
-
-				throw new NoSuchStatsException(
-					_NO_SUCH_ENTITY_WITH_PRIMARY_KEY + primaryKey);
-			}
-
-			return remove(ratingsStats);
-		}
-		catch (NoSuchStatsException noSuchEntityException) {
-			throw noSuchEntityException;
-		}
-		catch (Exception exception) {
-			throw processException(exception);
-		}
-		finally {
-			closeSession(session);
-		}
 	}
 
 	@Override
@@ -980,51 +328,13 @@ public class RatingsStatsPersistenceImpl
 			closeSession(session);
 		}
 
-		if (ratingsStats.getCtCollectionId() != 0) {
-			if (isNew) {
-				ratingsStats.setNew(false);
-			}
-
-			ratingsStats.resetOriginalValues();
-
-			return ratingsStats;
-		}
-
-		EntityCacheUtil.putResult(
-			RatingsStatsImpl.class, ratingsStatsModelImpl, false, true);
-
-		cacheUniqueFindersCache(ratingsStatsModelImpl);
+		cacheUniqueFindersResult(ratingsStats, false);
 
 		if (isNew) {
 			ratingsStats.setNew(false);
 		}
 
 		ratingsStats.resetOriginalValues();
-
-		return ratingsStats;
-	}
-
-	/**
-	 * Returns the ratings stats with the primary key or throws a <code>com.liferay.portal.kernel.exception.NoSuchModelException</code> if it could not be found.
-	 *
-	 * @param primaryKey the primary key of the ratings stats
-	 * @return the ratings stats
-	 * @throws NoSuchStatsException if a ratings stats with the primary key could not be found
-	 */
-	@Override
-	public RatingsStats findByPrimaryKey(Serializable primaryKey)
-		throws NoSuchStatsException {
-
-		RatingsStats ratingsStats = fetchByPrimaryKey(primaryKey);
-
-		if (ratingsStats == null) {
-			if (_log.isDebugEnabled()) {
-				_log.debug(_NO_SUCH_ENTITY_WITH_PRIMARY_KEY + primaryKey);
-			}
-
-			throw new NoSuchStatsException(
-				_NO_SUCH_ENTITY_WITH_PRIMARY_KEY + primaryKey);
-		}
 
 		return ratingsStats;
 	}
@@ -1043,42 +353,9 @@ public class RatingsStatsPersistenceImpl
 		return findByPrimaryKey((Serializable)statsId);
 	}
 
-	/**
-	 * Returns the ratings stats with the primary key or returns <code>null</code> if it could not be found.
-	 *
-	 * @param primaryKey the primary key of the ratings stats
-	 * @return the ratings stats, or <code>null</code> if a ratings stats with the primary key could not be found
-	 */
 	@Override
-	public RatingsStats fetchByPrimaryKey(Serializable primaryKey) {
-		if (CTPersistenceHelperUtil.isProductionMode(
-				RatingsStats.class, primaryKey)) {
-
-			return super.fetchByPrimaryKey(primaryKey);
-		}
-
-		RatingsStats ratingsStats = null;
-
-		Session session = null;
-
-		try {
-			session = openSession();
-
-			ratingsStats = (RatingsStats)session.get(
-				RatingsStatsImpl.class, primaryKey);
-
-			if (ratingsStats != null) {
-				cacheResult(ratingsStats);
-			}
-		}
-		catch (Exception exception) {
-			throw processException(exception);
-		}
-		finally {
-			closeSession(session);
-		}
-
-		return ratingsStats;
+	protected CTPersistenceHelper getCTPersistenceHelper() {
+		return CTPersistenceHelperUtil.getCTPersistenceHelper();
 	}
 
 	/**
@@ -1090,288 +367,6 @@ public class RatingsStatsPersistenceImpl
 	@Override
 	public RatingsStats fetchByPrimaryKey(long statsId) {
 		return fetchByPrimaryKey((Serializable)statsId);
-	}
-
-	@Override
-	public Map<Serializable, RatingsStats> fetchByPrimaryKeys(
-		Set<Serializable> primaryKeys) {
-
-		if (CTPersistenceHelperUtil.isProductionMode(RatingsStats.class)) {
-			return super.fetchByPrimaryKeys(primaryKeys);
-		}
-
-		if (primaryKeys.isEmpty()) {
-			return Collections.emptyMap();
-		}
-
-		Map<Serializable, RatingsStats> map =
-			new HashMap<Serializable, RatingsStats>();
-
-		if (primaryKeys.size() == 1) {
-			Iterator<Serializable> iterator = primaryKeys.iterator();
-
-			Serializable primaryKey = iterator.next();
-
-			RatingsStats ratingsStats = fetchByPrimaryKey(primaryKey);
-
-			if (ratingsStats != null) {
-				map.put(primaryKey, ratingsStats);
-			}
-
-			return map;
-		}
-
-		if ((databaseInMaxParameters > 0) &&
-			(primaryKeys.size() > databaseInMaxParameters)) {
-
-			Iterator<Serializable> iterator = primaryKeys.iterator();
-
-			while (iterator.hasNext()) {
-				Set<Serializable> page = new HashSet<>();
-
-				for (int i = 0;
-					 (i < databaseInMaxParameters) && iterator.hasNext(); i++) {
-
-					page.add(iterator.next());
-				}
-
-				map.putAll(fetchByPrimaryKeys(page));
-			}
-
-			return map;
-		}
-
-		StringBundler sb = new StringBundler((primaryKeys.size() * 2) + 1);
-
-		sb.append(getSelectSQL());
-		sb.append(" WHERE ");
-		sb.append(getPKDBName());
-		sb.append(" IN (");
-
-		for (Serializable primaryKey : primaryKeys) {
-			sb.append((long)primaryKey);
-
-			sb.append(",");
-		}
-
-		sb.setIndex(sb.index() - 1);
-
-		sb.append(")");
-
-		String sql = sb.toString();
-
-		Session session = null;
-
-		try {
-			session = openSession();
-
-			Query query = session.createQuery(sql);
-
-			for (RatingsStats ratingsStats : (List<RatingsStats>)query.list()) {
-				map.put(ratingsStats.getPrimaryKeyObj(), ratingsStats);
-
-				cacheResult(ratingsStats);
-			}
-		}
-		catch (Exception exception) {
-			throw processException(exception);
-		}
-		finally {
-			closeSession(session);
-		}
-
-		return map;
-	}
-
-	/**
-	 * Returns all the ratings statses.
-	 *
-	 * @return the ratings statses
-	 */
-	@Override
-	public List<RatingsStats> findAll() {
-		return findAll(QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
-	}
-
-	/**
-	 * Returns a range of all the ratings statses.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>RatingsStatsModelImpl</code>.
-	 * </p>
-	 *
-	 * @param start the lower bound of the range of ratings statses
-	 * @param end the upper bound of the range of ratings statses (not inclusive)
-	 * @return the range of ratings statses
-	 */
-	@Override
-	public List<RatingsStats> findAll(int start, int end) {
-		return findAll(start, end, null);
-	}
-
-	/**
-	 * Returns an ordered range of all the ratings statses.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>RatingsStatsModelImpl</code>.
-	 * </p>
-	 *
-	 * @param start the lower bound of the range of ratings statses
-	 * @param end the upper bound of the range of ratings statses (not inclusive)
-	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
-	 * @return the ordered range of ratings statses
-	 */
-	@Override
-	public List<RatingsStats> findAll(
-		int start, int end, OrderByComparator<RatingsStats> orderByComparator) {
-
-		return findAll(start, end, orderByComparator, true);
-	}
-
-	/**
-	 * Returns an ordered range of all the ratings statses.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>RatingsStatsModelImpl</code>.
-	 * </p>
-	 *
-	 * @param start the lower bound of the range of ratings statses
-	 * @param end the upper bound of the range of ratings statses (not inclusive)
-	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
-	 * @param useFinderCache whether to use the finder cache
-	 * @return the ordered range of ratings statses
-	 */
-	@Override
-	public List<RatingsStats> findAll(
-		int start, int end, OrderByComparator<RatingsStats> orderByComparator,
-		boolean useFinderCache) {
-
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			RatingsStats.class);
-
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
-
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
-
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindAll;
-				finderArgs = FINDER_ARGS_EMPTY;
-			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindAll;
-			finderArgs = new Object[] {start, end, orderByComparator};
-		}
-
-		List<RatingsStats> list = null;
-
-		if (useFinderCache && productionMode) {
-			list = (List<RatingsStats>)FinderCacheUtil.getResult(
-				finderPath, finderArgs, this);
-		}
-
-		if (list == null) {
-			StringBundler sb = null;
-			String sql = null;
-
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					2 + (orderByComparator.getOrderByFields().length * 2));
-
-				sb.append(_SQL_SELECT_RATINGSSTATS);
-
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-
-				sql = sb.toString();
-			}
-			else {
-				sql = _SQL_SELECT_RATINGSSTATS;
-
-				sql = sql.concat(RatingsStatsModelImpl.ORDER_BY_JPQL);
-			}
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				list = (List<RatingsStats>)QueryUtil.list(
-					query, getDialect(), start, end);
-
-				cacheResult(list);
-
-				if (useFinderCache && productionMode) {
-					FinderCacheUtil.putResult(finderPath, finderArgs, list);
-				}
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
-
-		return list;
-	}
-
-	/**
-	 * Removes all the ratings statses from the database.
-	 *
-	 */
-	@Override
-	public void removeAll() {
-		for (RatingsStats ratingsStats : findAll()) {
-			remove(ratingsStats);
-		}
-	}
-
-	/**
-	 * Returns the number of ratings statses.
-	 *
-	 * @return the number of ratings statses
-	 */
-	@Override
-	public int countAll() {
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			RatingsStats.class);
-
-		Long count = null;
-
-		if (productionMode) {
-			count = (Long)FinderCacheUtil.getResult(
-				_finderPathCountAll, FINDER_ARGS_EMPTY, this);
-		}
-
-		if (count == null) {
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(_SQL_COUNT_RATINGSSTATS);
-
-				count = (Long)query.uniqueResult();
-
-				if (productionMode) {
-					FinderCacheUtil.putResult(
-						_finderPathCountAll, FINDER_ARGS_EMPTY, count);
-				}
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
-
-		return count.intValue();
 	}
 
 	@Override
@@ -1428,6 +423,7 @@ public class RatingsStatsPersistenceImpl
 	static {
 		Set<String> ctControlColumnNames = new HashSet<String>();
 		Set<String> ctIgnoreColumnNames = new HashSet<String>();
+		Set<String> ctMergeColumnNames = new HashSet<String>();
 		Set<String> ctStrictColumnNames = new HashSet<String>();
 
 		ctControlColumnNames.add("mvccVersion");
@@ -1437,14 +433,15 @@ public class RatingsStatsPersistenceImpl
 		ctIgnoreColumnNames.add("modifiedDate");
 		ctStrictColumnNames.add("classNameId");
 		ctStrictColumnNames.add("classPK");
-		ctStrictColumnNames.add("totalEntries");
-		ctStrictColumnNames.add("totalScore");
-		ctStrictColumnNames.add("averageScore");
+		ctMergeColumnNames.add("totalEntries");
+		ctMergeColumnNames.add("totalScore");
+		ctMergeColumnNames.add("averageScore");
 
 		_ctColumnNamesMap.put(
 			CTColumnResolutionType.CONTROL, ctControlColumnNames);
 		_ctColumnNamesMap.put(
 			CTColumnResolutionType.IGNORE, ctIgnoreColumnNames);
+		_ctColumnNamesMap.put(CTColumnResolutionType.MERGE, ctMergeColumnNames);
 		_ctColumnNamesMap.put(
 			CTColumnResolutionType.PK, Collections.singleton("statsId"));
 		_ctColumnNamesMap.put(
@@ -1457,49 +454,45 @@ public class RatingsStatsPersistenceImpl
 	 * Initializes the ratings stats persistence.
 	 */
 	public void afterPropertiesSet() {
-		_valueObjectFinderCacheListThreshold = GetterUtil.getInteger(
-			PropsUtil.get(PropsKeys.VALUE_OBJECT_FINDER_CACHE_LIST_THRESHOLD));
+		_uniquePersistenceFinderByC_C = new UniquePersistenceFinder<>(
+			this,
+			createUniqueFinderPath(
+				FINDER_CLASS_NAME_ENTITY, "fetchByC_C",
+				new String[] {Long.class.getName(), Long.class.getName()},
+				new String[] {"classNameId", "classPK"}, 0, 0, false,
+				RatingsStats::getClassNameId, RatingsStats::getClassPK),
+			_SQL_SELECT_RATINGSSTATS_WHERE, "",
+			new FinderColumn<>(
+				"ratingsStats.", "classNameId", FinderColumn.Type.LONG, "=",
+				true, true, RatingsStats::getClassNameId),
+			new FinderColumn<>(
+				"ratingsStats.", "classPK", FinderColumn.Type.LONG, "=", true,
+				true, RatingsStats::getClassPK));
 
-		_finderPathWithPaginationFindAll = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "findAll", new String[0],
-			new String[0], true);
-
-		_finderPathWithoutPaginationFindAll = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "findAll", new String[0],
-			new String[0], true);
-
-		_finderPathCountAll = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countAll",
-			new String[0], new String[0], false);
-
-		_finderPathWithPaginationFindByC_C = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "findByC_C",
-			new String[] {
-				Long.class.getName(), Long.class.getName(),
-				Integer.class.getName(), Integer.class.getName(),
-				OrderByComparator.class.getName()
-			},
-			new String[] {"classNameId", "classPK"}, true);
-
-		_finderPathWithoutPaginationFindByC_C = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "findByC_C",
-			new String[] {Long.class.getName(), Long.class.getName()},
-			new String[] {"classNameId", "classPK"}, true);
-
-		_finderPathFetchByC_C = new FinderPath(
-			FINDER_CLASS_NAME_ENTITY, "fetchByC_C",
-			new String[] {Long.class.getName(), Long.class.getName()},
-			new String[] {"classNameId", "classPK"}, true);
-
-		_finderPathCountByC_C = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByC_C",
-			new String[] {Long.class.getName(), Long.class.getName()},
-			new String[] {"classNameId", "classPK"}, false);
-
-		_finderPathWithPaginationCountByC_C = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "countByC_C",
-			new String[] {Long.class.getName(), Long.class.getName()},
-			new String[] {"classNameId", "classPK"}, false);
+		_collectionPersistenceFinderByC_C = new CollectionPersistenceFinder<>(
+			this,
+			new FinderPath(
+				FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "findByC_C",
+				new String[] {
+					Long.class.getName(), Long.class.getName(),
+					Integer.class.getName(), Integer.class.getName(),
+					OrderByComparator.class.getName()
+				},
+				new String[] {"classNameId", "classPK"}, true),
+			null,
+			new FinderPath(
+				FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "countByC_C",
+				new String[] {Long.class.getName(), Long.class.getName()},
+				new String[] {"classNameId", "classPK"}, false),
+			_SQL_SELECT_RATINGSSTATS_WHERE, _SQL_COUNT_RATINGSSTATS_WHERE,
+			RatingsStatsModelImpl.ORDER_BY_JPQL, _ENTITY_ALIAS_PREFIX, "", "",
+			_uniquePersistenceFinderByC_C,
+			new FinderColumn<>(
+				"ratingsStats.", "classNameId", FinderColumn.Type.LONG, "=",
+				true, true, RatingsStats::getClassNameId),
+			new ArrayableFinderColumn<>(
+				"ratingsStats.", "classPK", FinderColumn.Type.LONG, "=", false,
+				true, true, RatingsStats::getClassPK));
 
 		RatingsStatsUtil.setPersistence(this);
 	}
@@ -1510,28 +503,17 @@ public class RatingsStatsPersistenceImpl
 		EntityCacheUtil.removeCache(RatingsStatsImpl.class.getName());
 	}
 
+	private static final String _ENTITY_ALIAS_PREFIX =
+		RatingsStatsModelImpl.ENTITY_ALIAS + ".";
+
 	private static final String _SQL_SELECT_RATINGSSTATS =
 		"SELECT ratingsStats FROM RatingsStats ratingsStats";
 
 	private static final String _SQL_SELECT_RATINGSSTATS_WHERE =
 		"SELECT ratingsStats FROM RatingsStats ratingsStats WHERE ";
 
-	private static final String _SQL_COUNT_RATINGSSTATS =
-		"SELECT COUNT(ratingsStats) FROM RatingsStats ratingsStats";
-
 	private static final String _SQL_COUNT_RATINGSSTATS_WHERE =
 		"SELECT COUNT(ratingsStats) FROM RatingsStats ratingsStats WHERE ";
-
-	private static final String _ORDER_BY_ENTITY_ALIAS = "ratingsStats.";
-
-	private static final String _NO_SUCH_ENTITY_WITH_PRIMARY_KEY =
-		"No RatingsStats exists with the primary key ";
-
-	private static final String _NO_SUCH_ENTITY_WITH_KEY =
-		"No RatingsStats exists with the key {";
-
-	private static final Log _log = LogFactoryUtil.getLog(
-		RatingsStatsPersistenceImpl.class);
 
 	@Override
 	protected FinderCache getFinderCache() {
@@ -1539,3 +521,4 @@ public class RatingsStatsPersistenceImpl
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-512591371

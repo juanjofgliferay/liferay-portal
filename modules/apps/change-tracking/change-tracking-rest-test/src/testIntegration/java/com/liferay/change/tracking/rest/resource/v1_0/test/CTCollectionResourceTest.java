@@ -11,31 +11,168 @@ import com.liferay.change.tracking.model.CTPreferences;
 import com.liferay.change.tracking.rest.client.dto.v1_0.CTCollection;
 import com.liferay.change.tracking.rest.client.dto.v1_0.Status;
 import com.liferay.change.tracking.rest.client.http.HttpInvoker;
+import com.liferay.change.tracking.rest.client.pagination.Page;
+import com.liferay.change.tracking.rest.client.pagination.Pagination;
+import com.liferay.change.tracking.rest.client.resource.v1_0.CTCollectionResource;
+import com.liferay.change.tracking.scheduler.PublishScheduler;
 import com.liferay.change.tracking.service.CTCollectionLocalService;
 import com.liferay.change.tracking.service.CTPreferencesLocalService;
+import com.liferay.change.tracking.service.persistence.CTCollectionPersistence;
+import com.liferay.dynamic.data.mapping.test.util.DDMStructureTestUtil;
+import com.liferay.journal.model.JournalArticle;
+import com.liferay.petra.function.transform.TransformUtil;
+import com.liferay.petra.lang.SafeCloseable;
+import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.change.tracking.CTCollectionThreadLocal;
+import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
-import com.liferay.portal.kernel.test.rule.DataGuard;
+import com.liferay.portal.kernel.model.ResourceConstants;
+import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.service.ClassNameLocalService;
+import com.liferay.portal.kernel.service.LayoutLocalService;
+import com.liferay.portal.kernel.service.ResourceLocalService;
+import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
+import com.liferay.portal.kernel.test.util.UserTestUtil;
+import com.liferay.portal.kernel.transaction.Propagation;
+import com.liferay.portal.kernel.transaction.TransactionConfig;
+import com.liferay.portal.kernel.transaction.TransactionInvokerUtil;
+import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.Time;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.test.rule.Inject;
+import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
+import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
+
+import jakarta.ws.rs.core.Response;
 
 import java.util.Date;
+import java.util.List;
+import java.util.Map;
 
-import javax.ws.rs.core.Response;
-
+import org.junit.After;
 import org.junit.Assert;
+import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 /**
  * @author David Truong
  */
-@DataGuard(scope = DataGuard.Scope.METHOD)
 @RunWith(Arquillian.class)
 public class CTCollectionResourceTest extends BaseCTCollectionResourceTestCase {
+
+	@ClassRule
+	@Rule
+	public static final AggregateTestRule aggregateTestRule =
+		new AggregateTestRule(
+			new LiferayIntegrationTestRule(),
+			PermissionCheckerMethodTestRule.INSTANCE);
+
+	@Before
+	@Override
+	public void setUp() throws Exception {
+		super.setUp();
+
+		_ctCollectionIds = TransformUtil.transform(
+			_ctCollectionLocalService.getCTCollections(
+				QueryUtil.ALL_POS, QueryUtil.ALL_POS),
+			com.liferay.change.tracking.model.CTCollection::getCtCollectionId);
+
+		String password = RandomTestUtil.randomString();
+
+		User user = UserTestUtil.addUser(testCompany, password);
+
+		_userCTCollectionResource = CTCollectionResource.builder(
+		).authentication(
+			user.getEmailAddress(), password
+		).endpoint(
+			testCompany.getVirtualHostname(),
+			PortalUtil.getPortalServerPort(false), "http"
+		).locale(
+			LocaleUtil.getDefault()
+		).build();
+	}
+
+	@After
+	@Override
+	public void tearDown() throws Exception {
+		CTPreferences ctPreferences =
+			_ctPreferencesLocalService.fetchCTPreferences(
+				TestPropsValues.getCompanyId(), TestPropsValues.getUserId());
+
+		if (ctPreferences != null) {
+			_ctPreferencesLocalService.deleteCTPreferences(ctPreferences);
+		}
+
+		for (com.liferay.change.tracking.model.CTCollection ctCollection :
+				_ctCollectionLocalService.getCTCollections(
+					QueryUtil.ALL_POS, QueryUtil.ALL_POS)) {
+
+			if (_ctCollectionIds.contains(ctCollection.getCtCollectionId())) {
+				continue;
+			}
+
+			_ctCollectionLocalService.deleteCTCollection(ctCollection);
+		}
+
+		super.tearDown();
+	}
+
+	@Ignore
+	@Override
+	@Test
+	public void testBatchEngineDeleteImportTask() throws Exception {
+		super.testBatchEngineDeleteImportTask();
+	}
+
+	@Ignore
+	@Override
+	@Test
+	public void testDeleteCTCollectionBatch() throws Exception {
+		super.testDeleteCTCollectionBatch();
+	}
+
+	@Override
+	@Test
+	public void testGetCTCollection() throws Exception {
+		super.testGetCTCollection();
+
+		CTCollection ctCollection = ctCollectionResource.postCTCollection(
+			randomCTCollection());
+
+		_assertCTCollectionActions(
+			ctCollection, WorkflowConstants.STATUS_EXPIRED);
+		_assertCTCollectionActions(
+			ctCollection, WorkflowConstants.STATUS_INCOMPLETE);
+
+		assertHttpResponseStatusCode(
+			Response.Status.NOT_FOUND.getStatusCode(),
+			_userCTCollectionResource.getCTCollectionHttpResponse(
+				ctCollection.getId()));
+	}
+
+	@Override
+	@Test
+	public void testGetCTCollectionByExternalReferenceCode() throws Exception {
+		super.testGetCTCollectionByExternalReferenceCode();
+
+		CTCollection ctCollection = ctCollectionResource.postCTCollection(
+			randomCTCollection());
+
+		assertHttpResponseStatusCode(
+			Response.Status.NOT_FOUND.getStatusCode(),
+			_userCTCollectionResource.
+				getCTCollectionByExternalReferenceCodeHttpResponse(
+					ctCollection.getExternalReferenceCode()));
+	}
 
 	@Override
 	@Test
@@ -65,6 +202,12 @@ public class CTCollectionResourceTest extends BaseCTCollectionResourceTestCase {
 			ctCollectionResource.
 				getCTCollectionByExternalReferenceCodeShareLink(
 					ctCollection.getExternalReferenceCode()));
+
+		assertHttpResponseStatusCode(
+			Response.Status.NOT_FOUND.getStatusCode(),
+			_userCTCollectionResource.
+				getCTCollectionByExternalReferenceCodeShareLinkHttpResponse(
+					ctCollection.getExternalReferenceCode()));
 	}
 
 	@Override
@@ -91,6 +234,31 @@ public class CTCollectionResourceTest extends BaseCTCollectionResourceTestCase {
 			StringPool.BLANK,
 			ctCollectionResource.getCTCollectionShareLink(
 				ctCollection.getId()));
+
+		assertHttpResponseStatusCode(
+			Response.Status.NOT_FOUND.getStatusCode(),
+			_userCTCollectionResource.getCTCollectionShareLinkHttpResponse(
+				ctCollection.getId()));
+	}
+
+	@Override
+	@Test
+	public void testGetCTCollectionsPage() throws Exception {
+		super.testGetCTCollectionsPage();
+
+		_postCTCollection(randomCTCollection());
+		_postCTCollection(randomCTCollection());
+
+		Page<CTCollection> descPage = ctCollectionResource.getCTCollectionsPage(
+			null, null, null, Pagination.of(1, 10), "dateModified:desc");
+		Page<CTCollection> page = ctCollectionResource.getCTCollectionsPage(
+			null, null, null, Pagination.of(1, 10), null);
+
+		assertEquals(
+			(List<CTCollection>)descPage.getItems(),
+			(List<CTCollection>)page.getItems());
+
+		_testGetCTCollectionsPageWithStaleIndexDocument();
 	}
 
 	@Override
@@ -100,6 +268,14 @@ public class CTCollectionResourceTest extends BaseCTCollectionResourceTestCase {
 
 		CTCollection ctCollection =
 			testPostCTCollectionByExternalReferenceCodePublish_addCTCollection();
+
+		try (SafeCloseable safeCloseable =
+				CTCollectionThreadLocal.setCTCollectionIdWithSafeCloseable(
+					ctCollection.getId())) {
+
+			DDMStructureTestUtil.addStructure(
+				TestPropsValues.getGroupId(), JournalArticle.class.getName());
+		}
 
 		assertHttpResponseStatusCode(
 			Response.Status.NO_CONTENT.getStatusCode(),
@@ -184,6 +360,14 @@ public class CTCollectionResourceTest extends BaseCTCollectionResourceTestCase {
 		CTCollection ctCollection =
 			testPostCTCollectionPublish_addCTCollection();
 
+		try (SafeCloseable safeCloseable =
+				CTCollectionThreadLocal.setCTCollectionIdWithSafeCloseable(
+					ctCollection.getId())) {
+
+			DDMStructureTestUtil.addStructure(
+				TestPropsValues.getGroupId(), JournalArticle.class.getName());
+		}
+
 		assertHttpResponseStatusCode(
 			Response.Status.NO_CONTENT.getStatusCode(),
 			ctCollectionResource.postCTCollectionPublishHttpResponse(
@@ -230,6 +414,8 @@ public class CTCollectionResourceTest extends BaseCTCollectionResourceTestCase {
 
 		Assert.assertEquals(
 			WorkflowConstants.STATUS_SCHEDULED, (int)status.getCode());
+
+		_testPostCTCollectionSchedulePublishReschedule();
 	}
 
 	@Override
@@ -279,32 +465,7 @@ public class CTCollectionResourceTest extends BaseCTCollectionResourceTestCase {
 			CTCollection ctCollection)
 		throws Exception {
 
-		CTCollection postCTCollection = ctCollectionResource.postCTCollection(
-			ctCollection);
-
-		com.liferay.change.tracking.model.CTCollection
-			serviceBuilderCTCollection =
-				_ctCollectionLocalService.getCTCollection(
-					postCTCollection.getId());
-
-		serviceBuilderCTCollection.setCreateDate(ctCollection.getDateCreated());
-		serviceBuilderCTCollection.setModifiedDate(
-			ctCollection.getDateModified());
-		serviceBuilderCTCollection.setShareable(true);
-
-		serviceBuilderCTCollection =
-			_ctCollectionLocalService.updateCTCollection(
-				serviceBuilderCTCollection);
-
-		return ctCollectionResource.getCTCollection(
-			serviceBuilderCTCollection.getCtCollectionId());
-	}
-
-	@Override
-	protected CTCollection testGraphQLCTCollection_addCTCollection()
-		throws Exception {
-
-		return ctCollectionResource.postCTCollection(randomCTCollection());
+		return _postCTCollection(ctCollection);
 	}
 
 	@Override
@@ -374,6 +535,44 @@ public class CTCollectionResourceTest extends BaseCTCollectionResourceTestCase {
 		return ctCollectionResource.postCTCollection(randomCTCollection());
 	}
 
+	private void _assertCTCollectionActions(
+			CTCollection ctCollection, int status)
+		throws Exception {
+
+		com.liferay.change.tracking.model.CTCollection
+			serviceBuilderCTCollection =
+				_ctCollectionLocalService.getCTCollection(ctCollection.getId());
+
+		serviceBuilderCTCollection.setStatus(status);
+
+		_ctCollectionLocalService.updateCTCollection(
+			serviceBuilderCTCollection);
+
+		ctCollection = ctCollectionResource.getCTCollection(
+			ctCollection.getId());
+
+		Map<String, Map<String, String>> actions = ctCollection.getActions();
+
+		if (status == WorkflowConstants.STATUS_EXPIRED) {
+			Assert.assertEquals(actions.toString(), 3, actions.size());
+
+			Assert.assertTrue(actions.containsKey("delete"));
+			Assert.assertTrue(actions.containsKey("get"));
+			Assert.assertTrue(actions.containsKey("reactivate"));
+		}
+		else if (status == WorkflowConstants.STATUS_INCOMPLETE) {
+			Assert.assertEquals(actions.toString(), 7, actions.size());
+
+			Assert.assertTrue(actions.containsKey("checkout"));
+			Assert.assertTrue(actions.containsKey("delete"));
+			Assert.assertTrue(actions.containsKey("get"));
+			Assert.assertTrue(actions.containsKey("permissions"));
+			Assert.assertTrue(actions.containsKey("publish"));
+			Assert.assertTrue(actions.containsKey("schedule"));
+			Assert.assertTrue(actions.containsKey("update"));
+		}
+	}
+
 	private void _assertHttpResponseProblem(
 			Class<?> exceptionClass, HttpInvoker.HttpResponse httpResponse)
 		throws Exception {
@@ -391,13 +590,132 @@ public class CTCollectionResourceTest extends BaseCTCollectionResourceTestCase {
 		}
 	}
 
+	private CTCollection _postCTCollection(CTCollection ctCollection)
+		throws Exception {
+
+		CTCollection postCTCollection = ctCollectionResource.postCTCollection(
+			ctCollection);
+
+		com.liferay.change.tracking.model.CTCollection
+			serviceBuilderCTCollection =
+				_ctCollectionLocalService.getCTCollection(
+					postCTCollection.getId());
+
+		serviceBuilderCTCollection.setCreateDate(ctCollection.getDateCreated());
+		serviceBuilderCTCollection.setModifiedDate(
+			ctCollection.getDateModified());
+
+		serviceBuilderCTCollection =
+			_ctCollectionLocalService.updateCTCollection(
+				serviceBuilderCTCollection);
+
+		return ctCollectionResource.getCTCollection(
+			serviceBuilderCTCollection.getCtCollectionId());
+	}
+
+	private void _testGetCTCollectionsPageWithStaleIndexDocument()
+		throws Exception {
+
+		CTCollection ctCollection1 = _postCTCollection(randomCTCollection());
+		CTCollection ctCollection2 = _postCTCollection(randomCTCollection());
+
+		com.liferay.change.tracking.model.CTCollection
+			serviceBuilderCTCollection1 =
+				_ctCollectionLocalService.getCTCollection(
+					ctCollection1.getId());
+
+		TransactionConfig transactionConfig = TransactionConfig.Factory.create(
+			Propagation.REQUIRED, new Class<?>[] {Exception.class});
+
+		try {
+			TransactionInvokerUtil.invoke(
+				transactionConfig,
+				() -> _ctCollectionPersistence.remove(
+					serviceBuilderCTCollection1));
+		}
+		catch (Throwable throwable) {
+			ReflectionUtil.throwException(throwable);
+		}
+
+		_resourceLocalService.deleteResource(
+			serviceBuilderCTCollection1.getCompanyId(),
+			com.liferay.change.tracking.model.CTCollection.class.getName(),
+			ResourceConstants.SCOPE_INDIVIDUAL,
+			serviceBuilderCTCollection1.getCtCollectionId());
+
+		Page<CTCollection> page = ctCollectionResource.getCTCollectionsPage(
+			null, null, null, Pagination.of(1, 10), null);
+
+		List<CTCollection> ctCollections = (List<CTCollection>)page.getItems();
+
+		assertContains(ctCollection2, ctCollections);
+
+		for (CTCollection ctCollection : ctCollections) {
+			Assert.assertNotEquals(ctCollection1.getId(), ctCollection.getId());
+		}
+	}
+
+	private void _testPostCTCollectionSchedulePublishReschedule()
+		throws Exception {
+
+		CTCollection ctCollection =
+			testPostCTCollectionSchedulePublish_addCTCollection();
+
+		try {
+			long time =
+				(System.currentTimeMillis() / Time.SECOND) * Time.SECOND;
+
+			ctCollectionResource.postCTCollectionSchedulePublish(
+				ctCollection.getId(), new Date(time + Time.DAY));
+
+			Date publishDate = new Date(time + (2 * Time.DAY));
+
+			ctCollectionResource.postCTCollectionSchedulePublish(
+				ctCollection.getId(), publishDate);
+
+			ctCollection = ctCollectionResource.getCTCollection(
+				ctCollection.getId());
+
+			Status status = ctCollection.getStatus();
+
+			Assert.assertEquals(
+				WorkflowConstants.STATUS_SCHEDULED, (int)status.getCode());
+
+			Assert.assertEquals(publishDate, ctCollection.getDateScheduled());
+		}
+		finally {
+			_publishScheduler.unschedulePublish(ctCollection.getId());
+
+			ctCollectionResource.deleteCTCollection(ctCollection.getId());
+		}
+	}
+
+	@Inject
+	private ClassNameLocalService _classNameLocalService;
+
+	private List<Long> _ctCollectionIds;
+
 	@Inject
 	private CTCollectionLocalService _ctCollectionLocalService;
+
+	@Inject
+	private CTCollectionPersistence _ctCollectionPersistence;
 
 	@Inject
 	private CTPreferencesLocalService _ctPreferencesLocalService;
 
 	@Inject
 	private JSONFactory _jsonFactory;
+
+	@Inject
+	private LayoutLocalService _layoutLocalService;
+
+	@Inject
+	private PublishScheduler _publishScheduler;
+
+	@Inject
+	private ResourceLocalService _resourceLocalService;
+
+	private CTCollectionResource _userCTCollectionResource;
 
 }

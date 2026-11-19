@@ -24,7 +24,7 @@ public class JSPIllegalSyntaxCheck extends BaseFileCheck {
 		if (!fileName.endsWith("test.jsp")) {
 			_checkIllegalSyntax(
 				fileName, content, "System.out.print",
-				"Do not call 'System.out.print'");
+				"Do not call \"System.out.print\"");
 		}
 
 		return content;
@@ -42,9 +42,11 @@ public class JSPIllegalSyntaxCheck extends BaseFileCheck {
 				return;
 			}
 
-			if (!ToolsUtil.isInsideQuotes(content, x)) {
-				addMessage(fileName, message, getLineNumber(content, x));
+			if (ToolsUtil.isInsideQuotes(content, x)) {
+				continue;
 			}
+
+			addMessage(fileName, message, getLineNumber(content, x));
 		}
 	}
 

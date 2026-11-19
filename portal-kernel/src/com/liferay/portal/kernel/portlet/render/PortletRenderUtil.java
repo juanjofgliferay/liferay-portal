@@ -5,13 +5,19 @@
 
 package com.liferay.portal.kernel.portlet.render;
 
-import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.io.StreamUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.content.security.policy.ContentSecurityPolicyNonceProviderUtil;
-import com.liferay.portal.kernel.frontend.esm.FrontendESMUtil;
+import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.frontend.hashed.files.HashedFilesRegistryUtil;
+import com.liferay.portal.kernel.frontend.hashed.files.HashedFilesUtil;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.LayoutTypePortlet;
 import com.liferay.portal.kernel.model.Portlet;
-import com.liferay.portal.kernel.model.Theme;
+import com.liferay.portal.kernel.security.permission.PermissionChecker;
+import com.liferay.portal.kernel.service.permission.PortletPermissionUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.HtmlUtil;
@@ -24,9 +30,15 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.PortletMode;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.io.Writer;
+
+import java.net.URL;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -36,10 +48,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Predicate;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author Iván Zaera Avellón
@@ -49,6 +58,13 @@ public class PortletRenderUtil {
 	public static PortletRenderParts getPortletRenderParts(
 		HttpServletRequest httpServletRequest, String portletHTML,
 		Portlet portlet) {
+
+		if (!_hasAccessPermission(httpServletRequest, portlet)) {
+			return new PortletRenderParts(
+				Collections.emptyList(), Collections.emptyList(),
+				Collections.emptyList(), Collections.emptyList(), portletHTML,
+				!portlet.isAjaxable());
+		}
 
 		boolean portletOnLayout = false;
 
@@ -79,8 +95,9 @@ public class PortletRenderUtil {
 	}
 
 	public static void writeFooterCSSPaths(
-		HttpServletRequest httpServletRequest, Collection<Portlet> portlets,
-		Writer writer) {
+			HttpServletRequest httpServletRequest, Collection<Portlet> portlets,
+			Writer writer)
+		throws IOException {
 
 		Collection<String> urls = _getURLs(
 			httpServletRequest,
@@ -88,13 +105,14 @@ public class PortletRenderUtil {
 			URLType.CSS);
 
 		for (String url : urls) {
-			_writeCSSPath(new PrintWriter(writer, true), url, null);
+			_writeCSSPath(writer, url, null);
 		}
 	}
 
 	public static void writeFooterJavaScriptPaths(
-		HttpServletRequest httpServletRequest, Collection<Portlet> portlets,
-		Writer writer) {
+			HttpServletRequest httpServletRequest, Collection<Portlet> portlets,
+			Writer writer)
+		throws IOException {
 
 		Collection<String> urls = _getURLs(
 			httpServletRequest,
@@ -102,7 +120,7 @@ public class PortletRenderUtil {
 			URLType.JAVASCRIPT);
 
 		for (String url : urls) {
-			_writeJavaScriptPath(new PrintWriter(writer, true), url, null);
+			_writeJavaScriptPath(writer, url, null);
 		}
 	}
 
@@ -117,8 +135,9 @@ public class PortletRenderUtil {
 	}
 
 	public static void writeHeaderCSSPaths(
-		HttpServletRequest httpServletRequest, Collection<Portlet> portlets,
-		Writer writer) {
+			HttpServletRequest httpServletRequest, Collection<Portlet> portlets,
+			Writer writer)
+		throws IOException {
 
 		Collection<String> urls = _getURLs(
 			httpServletRequest,
@@ -127,7 +146,7 @@ public class PortletRenderUtil {
 
 		for (String url : urls) {
 			_writeCSSPath(
-				new PrintWriter(writer, true), url,
+				writer, url,
 				HashMapBuilder.put(
 					"data-senna-track", "temporary"
 				).put(
@@ -139,8 +158,9 @@ public class PortletRenderUtil {
 	}
 
 	public static void writeHeaderJavaScriptPaths(
-		HttpServletRequest httpServletRequest, Collection<Portlet> portlets,
-		Writer writer) {
+			HttpServletRequest httpServletRequest, Collection<Portlet> portlets,
+			Writer writer)
+		throws IOException {
 
 		Collection<String> urls = _getURLs(
 			httpServletRequest,
@@ -149,7 +169,7 @@ public class PortletRenderUtil {
 
 		for (String url : urls) {
 			_writeJavaScriptPath(
-				new PrintWriter(writer, true), url,
+				writer, url,
 				Collections.singletonMap("data-senna-track", "temporary"));
 		}
 	}
@@ -189,110 +209,6 @@ public class PortletRenderUtil {
 		return allPortlets;
 	}
 
-	private static Collection<String> _getComboServletURLs(
-		Collection<PortletResourceAccessor> portletResourceAccessors,
-		Collection<Portlet> portlets, Predicate<String> predicate,
-		long timestamp, String urlPrefix, Set<String> visitedURLs) {
-
-		if (predicate == null) {
-			predicate = s -> true;
-		}
-
-		List<String> urls = new ArrayList<>();
-
-		StringBundler comboServletSB = new StringBundler();
-
-		for (Portlet portlet : portlets) {
-			for (PortletResourceAccessor portletResourceAccessor :
-					portletResourceAccessors) {
-
-				String contextPath = null;
-
-				if (portletResourceAccessor.isPortalResource()) {
-					contextPath = PortalUtil.getPathContext();
-				}
-				else {
-					contextPath =
-						PortalUtil.getPathProxy() + portlet.getContextPath();
-				}
-
-				Collection<String> portletResources =
-					portletResourceAccessor.get(portlet);
-
-				for (String portletResource : portletResources) {
-					if (!predicate.test(portletResource)) {
-						continue;
-					}
-
-					String prefix = null;
-
-					for (String specialPrefix : _specialPrefixes) {
-						if (portletResource.startsWith(specialPrefix)) {
-							portletResource = portletResource.substring(
-								specialPrefix.length());
-
-							prefix = specialPrefix;
-
-							break;
-						}
-					}
-
-					boolean absolute = HttpComponentsUtil.hasProtocol(
-						portletResource);
-
-					if (!absolute) {
-						portletResource = contextPath + portletResource;
-					}
-
-					if (Validator.isNotNull(prefix)) {
-						portletResource = prefix + portletResource;
-					}
-
-					if (visitedURLs.contains(portletResource)) {
-						continue;
-					}
-
-					visitedURLs.add(portletResource);
-
-					if (absolute || Validator.isNotNull(prefix)) {
-						urls.add(portletResource);
-					}
-					else {
-						comboServletSB.append(StringPool.AMPERSAND);
-
-						if (!portletResourceAccessor.isPortalResource()) {
-							comboServletSB.append(portlet.getPortletId());
-							comboServletSB.append(StringPool.COLON);
-						}
-
-						comboServletSB.append(
-							HtmlUtil.escapeURL(portletResource));
-
-						timestamp = Math.max(timestamp, portlet.getTimestamp());
-					}
-				}
-			}
-		}
-
-		if (comboServletSB.length() > 0) {
-			String url = urlPrefix + comboServletSB;
-
-			url = HttpComponentsUtil.addParameter(url, "t", timestamp);
-
-			urls.add(url);
-		}
-
-		return urls;
-	}
-
-	private static String _getMinifierType(URLType urlType) {
-		if (urlType == URLType.CSS) {
-			return "css";
-		}
-
-		return "js";
-	}
-
 	private static PortletRenderParts _getPortletRenderParts(
 		HttpServletRequest httpServletRequest, String portletHTML,
 		Portlet portlet, boolean portletOnLayout) {
@@ -306,19 +222,19 @@ public class PortletRenderUtil {
 			footerCssPaths = _getURLs(
 				httpServletRequest,
 				Arrays.asList(_FOOTER_PORTLET_CSS, _FOOTER_PORTAL_CSS),
-				Arrays.asList(portlet), URLType.CSS);
+				List.of(portlet), URLType.CSS);
 			footerJavaScriptPaths = _getURLs(
 				httpServletRequest,
 				Arrays.asList(_FOOTER_PORTLET_JS, _FOOTER_PORTAL_JS),
-				Arrays.asList(portlet), URLType.JAVASCRIPT);
+				List.of(portlet), URLType.JAVASCRIPT);
 			headerCssPaths = _getURLs(
 				httpServletRequest,
 				Arrays.asList(_HEADER_PORTLET_CSS, _HEADER_PORTAL_CSS),
-				Arrays.asList(portlet), URLType.CSS);
+				List.of(portlet), URLType.CSS);
 			headerJavaScriptPaths = _getURLs(
 				httpServletRequest,
 				Arrays.asList(_HEADER_PORTLET_JS, _HEADER_PORTAL_JS),
-				Arrays.asList(portlet), URLType.JAVASCRIPT);
+				List.of(portlet), URLType.JAVASCRIPT);
 		}
 
 		return new PortletRenderParts(
@@ -336,10 +252,51 @@ public class PortletRenderUtil {
 		return rootPortlet.getPortletId();
 	}
 
-	private static Collection<String> _getStaticURLs(
+	private static String _getStaticCSSResourceURL(
+		HttpServletRequest httpServletRequest, String originalURL,
+		ThemeDisplay themeDisplay) {
+
+		String url = null;
+
+		String proxyPath = PortalUtil.getPathProxy();
+
+		String unhashedFileURI = originalURL.substring(proxyPath.length());
+
+		String hashedFileURI = HashedFilesRegistryUtil.getHashedFileURI(
+			unhashedFileURI);
+
+		if (hashedFileURI == null) {
+			url = originalURL;
+
+			if (PortalUtil.isRightToLeft(httpServletRequest)) {
+				int i = url.lastIndexOf(StringPool.PERIOD);
+
+				if (i != -1) {
+					url = url.substring(0, i) + "_rtl" + url.substring(i);
+				}
+			}
+		}
+		else {
+			url = proxyPath + hashedFileURI;
+
+			if (PortalUtil.isRightToLeft(httpServletRequest)) {
+				url = HashedFilesUtil.addNameSuffix(url, "_rtl");
+			}
+		}
+
+		if (_isTokenized(unhashedFileURI)) {
+			url = HttpComponentsUtil.addParameter(
+				url, "themeId", themeDisplay.getThemeId());
+		}
+
+		return url;
+	}
+
+	private static List<String> _getStaticURLs(
 		HttpServletRequest httpServletRequest,
 		Collection<PortletResourceAccessor> portletResourceAccessors,
-		Collection<Portlet> portlets, Set<String> visitedURLs) {
+		Collection<Portlet> portlets, URLType urlType,
+		Set<String> visitedURLs) {
 
 		List<String> urls = new ArrayList<>();
 
@@ -348,8 +305,6 @@ public class PortletRenderUtil {
 				WebKeys.THEME_DISPLAY);
 
 		for (Portlet portlet : portlets) {
-			Portlet rootPortlet = portlet.getRootPortlet();
-
 			for (PortletResourceAccessor portletResourceAccessor :
 					portletResourceAccessors) {
 
@@ -381,9 +336,26 @@ public class PortletRenderUtil {
 					}
 
 					if (!HttpComponentsUtil.hasProtocol(portletResource)) {
-						portletResource = PortalUtil.getStaticResourceURL(
-							httpServletRequest, contextPath + portletResource,
-							rootPortlet.getTimestamp());
+						if (urlType == URLType.CSS) {
+							portletResource = _getStaticCSSResourceURL(
+								httpServletRequest,
+								contextPath + portletResource, themeDisplay);
+						}
+						else if (urlType == URLType.JAVASCRIPT) {
+							portletResource = contextPath + portletResource;
+
+							String hashedFileURI =
+								HashedFilesRegistryUtil.getHashedFileURI(
+									portletResource);
+
+							if (hashedFileURI != null) {
+								portletResource = hashedFileURI;
+							}
+						}
+						else {
+							throw new UnsupportedOperationException(
+								"Unsupported URL type " + urlType);
+						}
 					}
 
 					if (!portletResource.contains(Http.PROTOCOL_DELIMITER)) {
@@ -415,26 +387,6 @@ public class PortletRenderUtil {
 		Collection<PortletResourceAccessor> portletResourceAccessors,
 		Collection<Portlet> portlets, URLType urlType) {
 
-		boolean fastLoad;
-		Predicate<String> predicate = null;
-
-		ThemeDisplay themeDisplay =
-			(ThemeDisplay)httpServletRequest.getAttribute(
-				WebKeys.THEME_DISPLAY);
-
-		if (urlType == URLType.CSS) {
-			fastLoad = themeDisplay.isThemeCssFastLoad();
-		}
-		else if (urlType == URLType.JAVASCRIPT) {
-			fastLoad = themeDisplay.isThemeJsFastLoad();
-
-			predicate = resource -> !themeDisplay.isIncludedJs(resource);
-		}
-		else {
-			throw new UnsupportedOperationException(
-				"Unsupported URL type " + urlType);
-		}
-
 		Set<String> visitedURLs = (Set<String>)httpServletRequest.getAttribute(
 			WebKeys.PORTLET_RESOURCE_STATIC_URLS);
 
@@ -445,96 +397,152 @@ public class PortletRenderUtil {
 				WebKeys.PORTLET_RESOURCE_STATIC_URLS, visitedURLs);
 		}
 
-		if (fastLoad) {
-			Theme theme = themeDisplay.getTheme();
+		List<String> urls;
 
-			return _getComboServletURLs(
-				portletResourceAccessors, portlets, predicate,
-				theme.getTimestamp(),
-				PortalUtil.getStaticResourceURL(
-					httpServletRequest,
-					themeDisplay.getCDNDynamicResourcesHost() +
-						themeDisplay.getPathContext() + "/combo",
-					StringBundler.concat(
-						"minifierType=", _getMinifierType(urlType), "&themeId=",
-						themeDisplay.getThemeId()),
-					-1),
+		if ((urlType == URLType.CSS) || (urlType == URLType.JAVASCRIPT)) {
+			urls = _getStaticURLs(
+				httpServletRequest, portletResourceAccessors, portlets, urlType,
 				visitedURLs);
 		}
+		else {
+			throw new UnsupportedOperationException(
+				"Unsupported URL type " + urlType);
+		}
 
-		return _getStaticURLs(
-			httpServletRequest, portletResourceAccessors, portlets,
-			visitedURLs);
+		for (int i = 0; i < urls.size(); i++) {
+			String url = urls.get(i);
+
+			if (!url.startsWith("nocombo:")) {
+				continue;
+			}
+
+			urls.set(i, url.substring(8));
+		}
+
+		return urls;
+	}
+
+	private static boolean _hasAccessPermission(
+		HttpServletRequest httpServletRequest, Portlet portlet) {
+
+		ThemeDisplay themeDisplay =
+			(ThemeDisplay)httpServletRequest.getAttribute(
+				WebKeys.THEME_DISPLAY);
+
+		if (themeDisplay == null) {
+			return true;
+		}
+
+		PermissionChecker permissionChecker =
+			themeDisplay.getPermissionChecker();
+		Layout layout = themeDisplay.getLayout();
+
+		if ((permissionChecker == null) || (layout == null)) {
+			return true;
+		}
+
+		try {
+			return PortletPermissionUtil.hasAccessPermission(
+				permissionChecker, themeDisplay.getScopeGroupId(), layout,
+				portlet, PortletMode.VIEW);
+		}
+		catch (PortalException portalException) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(portalException);
+			}
+
+			return false;
+		}
+	}
+
+	private static boolean _isTokenized(String resourceURI) {
+		if (!_tokenized.containsKey(resourceURI)) {
+			URL resourceURL = HashedFilesRegistryUtil.getResource(resourceURI);
+
+			String content = null;
+
+			try {
+				content = StreamUtil.toString(resourceURL.openStream());
+			}
+			catch (Exception exception) {
+				if (_log.isDebugEnabled()) {
+					_log.debug(
+						"Assuming " + resourceURI +
+							" has no tokens because it could not be read",
+						exception);
+				}
+
+				_tokenized.putIfAbsent(resourceURI, false);
+
+				return false;
+			}
+
+			_tokenized.putIfAbsent(
+				resourceURI,
+				content.contains("@base_url@") ||
+				content.contains("@portal_ctx@") ||
+				content.contains("@theme_image_path@"));
+		}
+
+		return _tokenized.get(resourceURI);
 	}
 
 	private static void _writeCSSPath(
-		PrintWriter printWriter, String cssPath,
-		Map<String, String> attributes) {
+			Writer writer, String cssPath, Map<String, String> attributes)
+		throws IOException {
 
-		for (String specialProtocol : _specialPrefixes) {
-			if (cssPath.startsWith(specialProtocol)) {
-				cssPath = cssPath.substring(specialProtocol.length());
-
-				break;
-			}
-		}
-
-		printWriter.print("<link href=\"");
-		printWriter.print(HtmlUtil.escape(cssPath));
-		printWriter.println("\" rel=\"stylesheet\" type=\"text/css\"");
+		writer.write("<link href=\"");
+		writer.write(HtmlUtil.escape(cssPath));
+		writer.write(StringPool.QUOTE);
+		writer.write(
+			ContentSecurityPolicyNonceProviderUtil.getNonceAttribute(null));
+		writer.write(" rel=\"stylesheet\" type=\"text/css\"\n");
 
 		if (attributes != null) {
 			for (Map.Entry<String, String> entry : attributes.entrySet()) {
-				printWriter.print(StringPool.SPACE);
-				printWriter.print(entry.getKey());
-				printWriter.print("=\"");
-				printWriter.print(HtmlUtil.escapeAttribute(entry.getValue()));
-				printWriter.print(StringPool.QUOTE);
+				writer.write(StringPool.SPACE);
+				writer.write(entry.getKey());
+				writer.write("=\"");
+				writer.write(HtmlUtil.escapeAttribute(entry.getValue()));
+				writer.write(StringPool.QUOTE);
 			}
 		}
 
-		printWriter.println(" />");
+		writer.write(" />\n");
 	}
 
 	private static void _writeJavaScriptPath(
-		PrintWriter printWriter, String javaScriptPath,
-		Map<String, String> attributes) {
+			Writer writer, String javaScriptPath,
+			Map<String, String> attributes)
+		throws IOException {
 
 		String type = "text/javascript";
 
 		if (javaScriptPath.startsWith("module:")) {
-			type = FrontendESMUtil.getScriptType();
+			javaScriptPath = javaScriptPath.substring(7);
+			type = "module";
 		}
 
-		for (String specialProtocol : _specialPrefixes) {
-			if (javaScriptPath.startsWith(specialProtocol)) {
-				javaScriptPath = javaScriptPath.substring(
-					specialProtocol.length());
-
-				break;
-			}
-		}
-
-		printWriter.print("<script");
-		printWriter.print(
+		writer.write("<script");
+		writer.write(
 			ContentSecurityPolicyNonceProviderUtil.getNonceAttribute(null));
-		printWriter.print(" src=\"");
-		printWriter.print(HtmlUtil.escapeAttribute(javaScriptPath));
-		printWriter.print("\" type=\"");
-		printWriter.print(type);
-		printWriter.print(StringPool.QUOTE);
+		writer.write(" src=\"");
+		writer.write(HtmlUtil.escapeAttribute(javaScriptPath));
+		writer.write("\" type=\"");
+		writer.write(type);
+		writer.write(StringPool.QUOTE);
 
 		if (attributes != null) {
 			for (Map.Entry<String, String> entry : attributes.entrySet()) {
-				printWriter.print(StringPool.SPACE);
-				printWriter.print(entry.getKey());
-				printWriter.print("=\"");
-				printWriter.print(HtmlUtil.escapeAttribute(entry.getValue()));
-				printWriter.print(StringPool.QUOTE);
+				writer.write(StringPool.SPACE);
+				writer.write(entry.getKey());
+				writer.write("=\"");
+				writer.write(HtmlUtil.escapeAttribute(entry.getValue()));
+				writer.write(StringPool.QUOTE);
 			}
 		}
 
-		printWriter.println("></script>");
+		writer.write("></script>\n");
 	}
 
 	private static void _writePaths(
@@ -548,14 +556,14 @@ public class PortletRenderUtil {
 			return;
 		}
 
-		PrintWriter printWriter = httpServletResponse.getWriter();
+		Writer writer = httpServletResponse.getWriter();
 
 		for (String cssPath : cssPaths) {
-			_writeCSSPath(printWriter, cssPath, null);
+			_writeCSSPath(writer, cssPath, null);
 		}
 
 		for (String javaScriptPath : javaScriptPaths) {
-			_writeJavaScriptPath(printWriter, javaScriptPath, null);
+			_writeJavaScriptPath(writer, javaScriptPath, null);
 		}
 	}
 
@@ -639,8 +647,13 @@ public class PortletRenderUtil {
 
 		};
 
+	private static final Log _log = LogFactoryUtil.getLog(
+		PortletRenderUtil.class);
+
 	private static final Set<String> _specialPrefixes = SetUtil.fromArray(
 		"module:", "nocombo:");
+	private static final Map<String, Boolean> _tokenized =
+		new ConcurrentHashMap<>();
 
 	private enum URLType {
 

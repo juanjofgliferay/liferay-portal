@@ -74,9 +74,8 @@ public class CommerceDiscountOrderTypeRelServiceImpl
 		_commerceDiscountModelResourcePermission.check(
 			getPermissionChecker(), commerceDiscountId, ActionKeys.VIEW);
 
-		return commerceDiscountOrderTypeRelLocalService.
-			fetchCommerceDiscountOrderTypeRel(
-				commerceDiscountId, commerceOrderTypeId);
+		return commerceDiscountOrderTypeRelPersistence.fetchByCDI_COTI(
+			commerceDiscountId, commerceOrderTypeId);
 	}
 
 	@Override
@@ -120,6 +119,24 @@ public class CommerceDiscountOrderTypeRelServiceImpl
 
 		return commerceDiscountOrderTypeRelLocalService.
 			getCommerceDiscountOrderTypeRelsCount(commerceDiscountId, name);
+	}
+
+	@Override
+	public CommerceDiscountOrderTypeRel updatePriority(
+			long commerceDiscountOrderTypeRelId, int priority)
+		throws PortalException {
+
+		CommerceDiscountOrderTypeRel commerceDiscountOrderTypeRel =
+			commerceDiscountOrderTypeRelLocalService.
+				getCommerceDiscountOrderTypeRel(commerceDiscountOrderTypeRelId);
+
+		_commerceDiscountModelResourcePermission.check(
+			getPermissionChecker(),
+			commerceDiscountOrderTypeRel.getCommerceDiscountId(),
+			ActionKeys.UPDATE);
+
+		return commerceDiscountOrderTypeRelLocalService.updatePriority(
+			commerceDiscountOrderTypeRelId, priority);
 	}
 
 	@Reference(

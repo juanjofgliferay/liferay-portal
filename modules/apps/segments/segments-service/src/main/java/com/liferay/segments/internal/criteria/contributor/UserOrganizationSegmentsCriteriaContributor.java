@@ -14,18 +14,21 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Organization;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.odata.entity.EntityModel;
 import com.liferay.segments.criteria.Criteria;
 import com.liferay.segments.criteria.contributor.SegmentsCriteriaContributor;
 import com.liferay.segments.criteria.mapper.SegmentsCriteriaJSONObjectMapper;
 import com.liferay.segments.field.Field;
-import com.liferay.segments.internal.odata.entity.EntityModelFieldMapper;
+import com.liferay.segments.internal.odata.entity.EntityModelFieldMapperUtil;
 import com.liferay.segments.internal.odata.entity.OrganizationEntityModel;
 import com.liferay.segments.odata.retriever.ODataRetriever;
 
-import java.util.List;
+import jakarta.portlet.PortletRequest;
 
-import javax.portlet.PortletRequest;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -37,7 +40,7 @@ import org.osgi.service.component.annotations.Reference;
 	property = {
 		"segments.criteria.contributor.key=" + UserOrganizationSegmentsCriteriaContributor.KEY,
 		"segments.criteria.contributor.model.class.name=com.liferay.portal.kernel.model.User",
-		"segments.criteria.contributor.priority:Integer=60"
+		"segments.criteria.contributor.priority:Integer=20"
 	},
 	service = SegmentsCriteriaContributor.class
 )
@@ -56,6 +59,18 @@ public class UserOrganizationSegmentsCriteriaContributor
 		String newFilterString = null;
 
 		try {
+			Matcher matcher = _pattern.matcher(filterString);
+
+			while (matcher.find()) {
+				String date = matcher.group("date");
+
+				filterString = StringUtil.replace(
+					filterString, matcher.group(),
+					StringBundler.concat(
+						"dateModified ge ", date, "T00:00:00.000Z and ",
+						"dateModified le ", date, "T23:59:59.999Z"));
+			}
+
 			List<Organization> organizations = _oDataRetriever.getResults(
 				CompanyThreadLocal.getCompanyId(), filterString,
 				LocaleUtil.getDefault(), QueryUtil.ALL_POS, QueryUtil.ALL_POS);
@@ -110,7 +125,8 @@ public class UserOrganizationSegmentsCriteriaContributor
 
 	@Override
 	public List<Field> getFields(PortletRequest portletRequest) {
-		return _entityModelFieldMapper.getFields(_entityModel, portletRequest);
+		return EntityModelFieldMapperUtil.getFields(
+			_entityModel, portletRequest);
 	}
 
 	@Override
@@ -126,13 +142,13 @@ public class UserOrganizationSegmentsCriteriaContributor
 	private static final Log _log = LogFactoryUtil.getLog(
 		UserOrganizationSegmentsCriteriaContributor.class);
 
+	private static final Pattern _pattern = Pattern.compile(
+		"dateModified eq (?<date>\\d{4}-\\d{2}-\\d{2})T.*Z");
+
 	@Reference(
 		target = "(entity.model.name=" + OrganizationEntityModel.NAME + ")"
 	)
 	private EntityModel _entityModel;
-
-	@Reference
-	private EntityModelFieldMapper _entityModelFieldMapper;
 
 	@Reference(
 		target = "(model.class.name=com.liferay.portal.kernel.model.Organization)"

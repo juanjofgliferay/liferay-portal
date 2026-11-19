@@ -8,7 +8,6 @@ package com.liferay.trash.service.impl;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
-import com.liferay.portal.kernel.dao.orm.DefaultActionableDynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.log.Log;
@@ -36,11 +35,10 @@ import com.liferay.portal.kernel.trash.TrashHandlerRegistryUtil;
 import com.liferay.portal.kernel.trash.TrashRenderer;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ObjectValuePair;
-import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.PrefsPropsUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.UnicodeProperties;
-import com.liferay.portal.util.PropsValues;
 import com.liferay.trash.model.TrashEntry;
 import com.liferay.trash.model.TrashVersion;
 import com.liferay.trash.model.impl.TrashEntryImpl;
@@ -94,7 +92,7 @@ public class TrashEntryLocalServiceImpl extends TrashEntryLocalServiceBaseImpl {
 
 		long classNameId = _classNameLocalService.getClassNameId(className);
 
-		TrashEntry trashEntry = trashEntryPersistence.fetchByC_C(
+		TrashEntry trashEntry = trashEntryPersistence.fetchByCN_CPK(
 			classNameId, classPK);
 
 		if (trashEntry != null) {
@@ -161,37 +159,18 @@ public class TrashEntryLocalServiceImpl extends TrashEntryLocalServiceBaseImpl {
 
 		actionableDynamicQuery.setPerformActionMethod(
 			(TrashEntry trashEntry) -> {
-				Group group = _groupLocalService.fetchGroup(
-					trashEntry.getGroupId());
-
-				if (group == null) {
-					return;
+				try {
+					_checkEntry(trashEntry);
 				}
-
-				Date createDate = trashEntry.getCreateDate();
-
-				Date date = _getMaxAge(group);
-
-				if (createDate.before(date) || !_isTrashEnabled(group)) {
-					TrashHandler trashHandler =
-						TrashHandlerRegistryUtil.getTrashHandler(
-							trashEntry.getClassName());
-
-					if (trashHandler != null) {
-						try {
-							trashHandler.deleteTrashEntry(
-								trashEntry.getClassPK());
-						}
-						catch (Exception exception) {
-							if (_log.isDebugEnabled()) {
-								_log.debug(exception);
-							}
-						}
+				catch (Exception exception) {
+					if (_log.isWarnEnabled()) {
+						_log.warn(
+							"Unable to check trash entry " +
+								trashEntry.getEntryId(),
+							exception);
 					}
 				}
 			});
-		actionableDynamicQuery.setTransactionConfig(
-			DefaultActionableDynamicQuery.REQUIRES_NEW_TRANSACTION_CONFIG);
 
 		actionableDynamicQuery.performActions();
 	}
@@ -208,19 +187,22 @@ public class TrashEntryLocalServiceImpl extends TrashEntryLocalServiceBaseImpl {
 		for (TrashEntry entry : entries) {
 			deleteEntry(entry);
 
-			if (deleteTrashedModels) {
-				TrashHandler trashHandler =
-					TrashHandlerRegistryUtil.getTrashHandler(
-						entry.getClassName());
+			if (!deleteTrashedModels) {
+				continue;
+			}
 
-				if (trashHandler != null) {
-					try {
-						trashHandler.deleteTrashEntry(entry.getClassPK());
-					}
-					catch (Exception exception) {
-						_log.error(exception);
-					}
-				}
+			TrashHandler trashHandler =
+				TrashHandlerRegistryUtil.getTrashHandler(entry.getClassName());
+
+			if (trashHandler == null) {
+				continue;
+			}
+
+			try {
+				trashHandler.deleteTrashEntry(entry.getClassPK());
+			}
+			catch (Exception exception) {
+				_log.error(exception);
 			}
 		}
 	}
@@ -247,7 +229,7 @@ public class TrashEntryLocalServiceImpl extends TrashEntryLocalServiceBaseImpl {
 	 */
 	@Override
 	public TrashEntry deleteEntry(String className, long classPK) {
-		TrashEntry entry = trashEntryPersistence.fetchByC_C(
+		TrashEntry entry = trashEntryPersistence.fetchByCN_CPK(
 			_classNameLocalService.getClassNameId(className), classPK);
 
 		return deleteEntry(entry);
@@ -266,6 +248,16 @@ public class TrashEntryLocalServiceImpl extends TrashEntryLocalServiceBaseImpl {
 		}
 
 		return trashEntry;
+	}
+
+	@Override
+	public void deleteTrashEntries(long companyId, String className) {
+		List<TrashEntry> trashEntries = trashEntryPersistence.findByC_CN(
+			companyId, _classNameLocalService.getClassNameId(className));
+
+		for (TrashEntry trashEntry : trashEntries) {
+			deleteEntry(trashEntry);
+		}
 	}
 
 	/**
@@ -288,7 +280,7 @@ public class TrashEntryLocalServiceImpl extends TrashEntryLocalServiceBaseImpl {
 	 */
 	@Override
 	public TrashEntry fetchEntry(String className, long classPK) {
-		return trashEntryPersistence.fetchByC_C(
+		return trashEntryPersistence.fetchByCN_CPK(
 			_classNameLocalService.getClassNameId(className), classPK);
 	}
 
@@ -303,44 +295,9 @@ public class TrashEntryLocalServiceImpl extends TrashEntryLocalServiceBaseImpl {
 		return trashEntryPersistence.findByGroupId(groupId);
 	}
 
-	/**
-	 * Returns a range of all the trash entries matching the group ID.
-	 *
-	 * @param  groupId the primary key of the group
-	 * @param  start the lower bound of the range of trash entries to return
-	 * @param  end the upper bound of the range of trash entries to return (not
-	 *         inclusive)
-	 * @return the range of matching trash entries
-	 */
-	@Override
-	public List<TrashEntry> getEntries(long groupId, int start, int end) {
-		return trashEntryPersistence.findByGroupId(groupId, start, end);
-	}
-
-	/**
-	 * Returns a range of all the trash entries matching the group ID.
-	 *
-	 * @param  groupId the primary key of the group
-	 * @param  start the lower bound of the range of trash entries to return
-	 * @param  end the upper bound of the range of trash entries to return (not
-	 *         inclusive)
-	 * @param  orderByComparator the comparator to order the trash entries
-	 *         (optionally <code>null</code>)
-	 * @return the range of matching trash entries ordered by comparator
-	 *         <code>orderByComparator</code>
-	 */
-	@Override
-	public List<TrashEntry> getEntries(
-		long groupId, int start, int end,
-		OrderByComparator<TrashEntry> orderByComparator) {
-
-		return trashEntryPersistence.findByGroupId(
-			groupId, start, end, orderByComparator);
-	}
-
 	@Override
 	public List<TrashEntry> getEntries(long groupId, String className) {
-		return trashEntryPersistence.findByG_C(
+		return trashEntryPersistence.findByG_CN(
 			groupId, _classNameLocalService.getClassNameId(className));
 	}
 
@@ -377,27 +334,8 @@ public class TrashEntryLocalServiceImpl extends TrashEntryLocalServiceBaseImpl {
 	public TrashEntry getEntry(String className, long classPK)
 		throws PortalException {
 
-		return trashEntryPersistence.findByC_C(
+		return trashEntryPersistence.findByCN_CPK(
 			_classNameLocalService.getClassNameId(className), classPK);
-	}
-
-	@Override
-	public Hits search(
-		long companyId, long groupId, long userId, String keywords, int start,
-		int end, Sort sort) {
-
-		try {
-			Indexer<TrashEntry> indexer = _indexerRegistry.nullSafeGetIndexer(
-				TrashEntry.class);
-
-			SearchContext searchContext = _buildSearchContext(
-				companyId, groupId, userId, keywords, start, end, sort);
-
-			return indexer.search(searchContext);
-		}
-		catch (Exception exception) {
-			throw new SystemException(exception);
-		}
 	}
 
 	@Override
@@ -447,6 +385,28 @@ public class TrashEntryLocalServiceImpl extends TrashEntryLocalServiceBaseImpl {
 		queryConfig.setScoreEnabled(false);
 
 		return searchContext;
+	}
+
+	private void _checkEntry(TrashEntry trashEntry) throws Exception {
+		Group group = _groupLocalService.fetchGroup(trashEntry.getGroupId());
+
+		if (group == null) {
+			return;
+		}
+
+		Date createDate = trashEntry.getCreateDate();
+
+		Date date = _getMaxAge(group);
+
+		if (createDate.before(date) || !_isTrashEnabled(group)) {
+			TrashHandler trashHandler =
+				TrashHandlerRegistryUtil.getTrashHandler(
+					trashEntry.getClassName());
+
+			if (trashHandler != null) {
+				trashHandler.deleteTrashEntry(trashEntry.getClassPK());
+			}
+		}
 	}
 
 	private List<TrashEntry> _getEntries(Hits hits) {
@@ -514,7 +474,7 @@ public class TrashEntryLocalServiceImpl extends TrashEntryLocalServiceBaseImpl {
 		return entries;
 	}
 
-	private Date _getMaxAge(Group group) throws PortalException {
+	private Date _getMaxAge(Group group) throws Exception {
 		Calendar calendar = Calendar.getInstance();
 
 		calendar.setTime(new Date());

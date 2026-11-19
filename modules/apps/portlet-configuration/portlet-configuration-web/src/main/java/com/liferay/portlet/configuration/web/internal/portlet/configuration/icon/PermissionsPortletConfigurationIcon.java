@@ -12,7 +12,9 @@ import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
+import com.liferay.portal.kernel.model.Portlet;
 import com.liferay.portal.kernel.model.impl.VirtualLayout;
+import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.LiferayWindowState;
 import com.liferay.portal.kernel.portlet.PortletProvider;
 import com.liferay.portal.kernel.portlet.PortletProviderUtil;
@@ -20,19 +22,21 @@ import com.liferay.portal.kernel.portlet.configuration.icon.BasePortletConfigura
 import com.liferay.portal.kernel.portlet.configuration.icon.PortletConfigurationIcon;
 import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
+import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.service.permission.PortletPermissionUtil;
 import com.liferay.portal.kernel.theme.PortletDisplay;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
+import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.PropsUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portlet.configuration.kernel.util.PortletConfigurationApplicationType;
 
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -99,7 +103,12 @@ public class PermissionsPortletConfigurationIcon
 
 	@Override
 	public double getWeight() {
-		return 13.0;
+		return 12.0;
+	}
+
+	@Override
+	public boolean hasSeparator() {
+		return true;
 	}
 
 	@Override
@@ -125,11 +134,11 @@ public class PermissionsPortletConfigurationIcon
 
 		if (_STAGING_LIVE_GROUP_LOCKING_ENABLED || !group.hasStagingGroup()) {
 			try {
-				if (PortletPermissionUtil.contains(
-						themeDisplay.getPermissionChecker(), layout, portletId,
-						ActionKeys.PERMISSIONS) &&
+				if (_hasPermission(
+						layout, themeDisplay.getPermissionChecker(), portletId,
+						portletRequest) &&
 					!layout.isEmbeddedPersonalApplication() &&
-					!layout.isLayoutPrototypeLinkActive() &&
+					!layout.isPortletLayoutPageTemplateEntryLinkActive() &&
 					!layout.isTypeControlPanel()) {
 
 					return true;
@@ -153,6 +162,25 @@ public class PermissionsPortletConfigurationIcon
 		return true;
 	}
 
+	private boolean _hasPermission(
+			Layout layout, PermissionChecker permissionChecker,
+			String portletId, PortletRequest portletRequest)
+		throws PortalException {
+
+		LiferayPortletRequest liferayPortletRequest =
+			_portal.getLiferayPortletRequest(portletRequest);
+
+		Portlet portlet = liferayPortletRequest.getPortlet();
+
+		if (portletId.equals(portlet.getPortletId())) {
+			return PortletPermissionUtil.contains(
+				permissionChecker, layout, portlet, ActionKeys.PERMISSIONS);
+		}
+
+		return PortletPermissionUtil.contains(
+			permissionChecker, layout, portletId, ActionKeys.PERMISSIONS);
+	}
+
 	private static final boolean _STAGING_LIVE_GROUP_LOCKING_ENABLED =
 		GetterUtil.getBoolean(
 			PropsUtil.get(PropsKeys.STAGING_LIVE_GROUP_LOCKING_ENABLED));
@@ -162,5 +190,8 @@ public class PermissionsPortletConfigurationIcon
 
 	@Reference
 	private Language _language;
+
+	@Reference
+	private Portal _portal;
 
 }

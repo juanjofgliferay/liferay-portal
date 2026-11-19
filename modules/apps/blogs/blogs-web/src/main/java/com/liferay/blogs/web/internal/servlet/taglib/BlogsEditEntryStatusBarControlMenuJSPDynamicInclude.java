@@ -13,13 +13,13 @@ import com.liferay.portal.kernel.util.JavaConstants;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 
+import jakarta.portlet.PortletRequest;
+
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
-
-import javax.portlet.PortletRequest;
-
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -27,7 +27,10 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Jorge González
  */
-@Component(service = DynamicInclude.class)
+@Component(
+	property = "dynamic.include.key=com.liferay.product.navigation.taglib#/page.jsp#post",
+	service = DynamicInclude.class
+)
 public class BlogsEditEntryStatusBarControlMenuJSPDynamicInclude
 	extends BaseJSPDynamicInclude {
 
@@ -44,7 +47,7 @@ public class BlogsEditEntryStatusBarControlMenuJSPDynamicInclude
 
 		PortletRequest portletRequest =
 			(PortletRequest)httpServletRequest.getAttribute(
-				JavaConstants.JAVAX_PORTLET_REQUEST);
+				JavaConstants.JAKARTA_PORTLET_REQUEST);
 
 		if (portletRequest == null) {
 			return;
@@ -58,12 +61,6 @@ public class BlogsEditEntryStatusBarControlMenuJSPDynamicInclude
 		}
 
 		super.include(httpServletRequest, httpServletResponse, key);
-	}
-
-	@Override
-	public void register(DynamicIncludeRegistry dynamicIncludeRegistry) {
-		dynamicIncludeRegistry.register(
-			"com.liferay.product.navigation.taglib#/page.jsp#post");
 	}
 
 	@Override

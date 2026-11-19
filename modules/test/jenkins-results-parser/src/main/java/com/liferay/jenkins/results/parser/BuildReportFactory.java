@@ -7,12 +7,10 @@ package com.liferay.jenkins.results.parser;
 
 import com.liferay.jenkins.results.parser.testray.TestrayBuild;
 
-import java.io.File;
-
 import java.net.URL;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.json.JSONObject;
 
@@ -20,6 +18,35 @@ import org.json.JSONObject;
  * @author Michael Hashimoto
  */
 public class BuildReportFactory {
+
+	public static ControllerBuildReport newControllerBuildReport(
+		Build controllerBuild, TopLevelBuildReport topLevelBuildReport) {
+
+		return new DefaultControllerBuildReport(
+			controllerBuild, topLevelBuildReport);
+	}
+
+	public static ControllerBuildReport newControllerBuildReport(
+		JSONObject buildReportJSONObject,
+		TopLevelBuildReport topLevelBuildReport) {
+
+		if (!buildReportJSONObject.has("buildURL")) {
+			return null;
+		}
+
+		return new DefaultControllerBuildReport(
+			buildReportJSONObject, topLevelBuildReport);
+	}
+
+	public static DownstreamBuildReport newDownstreamBuildReport(
+		DownstreamBuild downstreamBuild) {
+
+		if (downstreamBuild instanceof ModulesJUnitDownstreamBuild) {
+			return new ModulesJUnitDownstreamBuildReport(downstreamBuild);
+		}
+
+		return new DefaultDownstreamBuildReport(downstreamBuild);
+	}
 
 	public static DownstreamBuildReport newDownstreamBuildReport(
 		String batchName, JSONObject buildReportJSONObject,
@@ -29,18 +56,27 @@ public class BuildReportFactory {
 			return null;
 		}
 
+		if (batchName.startsWith("modules-integration") ||
+			batchName.startsWith("modules-unit") ||
+			batchName.startsWith("workspaces-integration") ||
+			batchName.startsWith("workspaces-unit")) {
+
+			return new ModulesJUnitDownstreamBuildReport(
+				batchName, buildReportJSONObject, topLevelBuildReport);
+		}
+
 		return new DefaultDownstreamBuildReport(
 			batchName, buildReportJSONObject, topLevelBuildReport);
 	}
 
 	public static TopLevelBuildReport newTopLevelBuildReport(
-		File jenkinsConsoleFile) {
+		JSONObject buildReportJSONObject) {
 
-		if ((jenkinsConsoleFile == null) || !jenkinsConsoleFile.exists()) {
+		if (buildReportJSONObject == null) {
 			return null;
 		}
 
-		return new FileTopLevelBuildReport(jenkinsConsoleFile);
+		return new JSONObjectTopLevelBuildReport(buildReportJSONObject);
 	}
 
 	public static TopLevelBuildReport newTopLevelBuildReport(
@@ -49,13 +85,9 @@ public class BuildReportFactory {
 		String buildURLString = JenkinsResultsParserUtil.getRemoteURL(
 			buildJSONObject.getString("url"));
 
-		if (!_topLevelBuildReports.containsKey(buildURLString)) {
-			_topLevelBuildReports.put(
-				buildURLString,
-				new URLTopLevelBuildReport(buildJSONObject, jobReport));
-		}
-
-		return _topLevelBuildReports.get(buildURLString);
+		return _topLevelBuildReports.computeIfAbsent(
+			buildURLString,
+			key -> new URLTopLevelBuildReport(buildJSONObject, jobReport));
 	}
 
 	public static TopLevelBuildReport newTopLevelBuildReport(
@@ -67,42 +99,29 @@ public class BuildReportFactory {
 			return null;
 		}
 
-		String buildURLString = String.valueOf(topLevelBuildURL);
+		String buildURLString = JenkinsResultsParserUtil.getRemoteURL(
+			String.valueOf(topLevelBuildURL));
 
-		if (!_topLevelBuildReports.containsKey(buildURLString)) {
-			_topLevelBuildReports.put(
-				buildURLString, new TestrayTopLevelBuildReport(testrayBuild));
-		}
-
-		return _topLevelBuildReports.get(buildURLString);
+		return _topLevelBuildReports.computeIfAbsent(
+			buildURLString,
+			key -> new TestrayTopLevelBuildReport(testrayBuild));
 	}
 
 	public static TopLevelBuildReport newTopLevelBuildReport(
 		TopLevelBuild topLevelBuild) {
 
-		String buildURLString = topLevelBuild.getBuildURL();
-
-		if (!_topLevelBuildReports.containsKey(buildURLString)) {
-			_topLevelBuildReports.put(
-				buildURLString, new DefaultTopLevelBuildReport(topLevelBuild));
-		}
-
-		return _topLevelBuildReports.get(buildURLString);
+		return new DefaultTopLevelBuildReport(topLevelBuild);
 	}
 
 	public static TopLevelBuildReport newTopLevelBuildReport(URL buildURL) {
 		String buildURLString = JenkinsResultsParserUtil.getRemoteURL(
-			buildURL.toString());
+			String.valueOf(buildURL));
 
-		if (!_topLevelBuildReports.containsKey(buildURLString)) {
-			_topLevelBuildReports.put(
-				buildURLString, new URLTopLevelBuildReport(buildURL));
-		}
-
-		return _topLevelBuildReports.get(buildURLString);
+		return _topLevelBuildReports.computeIfAbsent(
+			buildURLString, URLTopLevelBuildReport::new);
 	}
 
 	private static final Map<String, TopLevelBuildReport>
-		_topLevelBuildReports = new HashMap<>();
+		_topLevelBuildReports = new ConcurrentHashMap<>();
 
 }

@@ -69,7 +69,7 @@ public class CPSpecificationOptionCacheModel
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(31);
+		StringBundler sb = new StringBundler(39);
 
 		sb.append("{mvccVersion=");
 		sb.append(mvccVersion);
@@ -77,6 +77,8 @@ public class CPSpecificationOptionCacheModel
 		sb.append(ctCollectionId);
 		sb.append(", uuid=");
 		sb.append(uuid);
+		sb.append(", externalReferenceCode=");
+		sb.append(externalReferenceCode);
 		sb.append(", CPSpecificationOptionId=");
 		sb.append(CPSpecificationOptionId);
 		sb.append(", companyId=");
@@ -99,8 +101,14 @@ public class CPSpecificationOptionCacheModel
 		sb.append(facetable);
 		sb.append(", key=");
 		sb.append(key);
+		sb.append(", priority=");
+		sb.append(priority);
+		sb.append(", visible=");
+		sb.append(visible);
 		sb.append(", lastPublishDate=");
 		sb.append(lastPublishDate);
+		sb.append(", status=");
+		sb.append(status);
 		sb.append("}");
 
 		return sb.toString();
@@ -119,6 +127,14 @@ public class CPSpecificationOptionCacheModel
 		}
 		else {
 			cpSpecificationOptionImpl.setUuid(uuid);
+		}
+
+		if (externalReferenceCode == null) {
+			cpSpecificationOptionImpl.setExternalReferenceCode("");
+		}
+		else {
+			cpSpecificationOptionImpl.setExternalReferenceCode(
+				externalReferenceCode);
 		}
 
 		cpSpecificationOptionImpl.setCPSpecificationOptionId(
@@ -172,6 +188,9 @@ public class CPSpecificationOptionCacheModel
 			cpSpecificationOptionImpl.setKey(key);
 		}
 
+		cpSpecificationOptionImpl.setPriority(priority);
+		cpSpecificationOptionImpl.setVisible(visible);
+
 		if (lastPublishDate == Long.MIN_VALUE) {
 			cpSpecificationOptionImpl.setLastPublishDate(null);
 		}
@@ -179,6 +198,8 @@ public class CPSpecificationOptionCacheModel
 			cpSpecificationOptionImpl.setLastPublishDate(
 				new Date(lastPublishDate));
 		}
+
+		cpSpecificationOptionImpl.setStatus(status);
 
 		cpSpecificationOptionImpl.resetOriginalValues();
 
@@ -191,6 +212,7 @@ public class CPSpecificationOptionCacheModel
 
 		ctCollectionId = objectInput.readLong();
 		uuid = objectInput.readUTF();
+		externalReferenceCode = objectInput.readUTF();
 
 		CPSpecificationOptionId = objectInput.readLong();
 
@@ -207,7 +229,13 @@ public class CPSpecificationOptionCacheModel
 
 		facetable = objectInput.readBoolean();
 		key = objectInput.readUTF();
+
+		priority = objectInput.readDouble();
+
+		visible = objectInput.readBoolean();
 		lastPublishDate = objectInput.readLong();
+
+		status = objectInput.readInt();
 	}
 
 	@Override
@@ -221,6 +249,13 @@ public class CPSpecificationOptionCacheModel
 		}
 		else {
 			objectOutput.writeUTF(uuid);
+		}
+
+		if (externalReferenceCode == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(externalReferenceCode);
 		}
 
 		objectOutput.writeLong(CPSpecificationOptionId);
@@ -264,12 +299,18 @@ public class CPSpecificationOptionCacheModel
 			objectOutput.writeUTF(key);
 		}
 
+		objectOutput.writeDouble(priority);
+
+		objectOutput.writeBoolean(visible);
 		objectOutput.writeLong(lastPublishDate);
+
+		objectOutput.writeInt(status);
 	}
 
 	public long mvccVersion;
 	public long ctCollectionId;
 	public String uuid;
+	public String externalReferenceCode;
 	public long CPSpecificationOptionId;
 	public long companyId;
 	public long userId;
@@ -281,6 +322,10 @@ public class CPSpecificationOptionCacheModel
 	public String description;
 	public boolean facetable;
 	public String key;
+	public double priority;
+	public boolean visible;
 	public long lastPublishDate;
+	public int status;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1693618283

@@ -24,7 +24,11 @@ public interface FragmentEntryProcessorRegistry {
 	}
 
 	public JSONObject getDefaultEditableValuesJSONObject(
-		String html, String configuration);
+		String html, JSONObject configurationJSONObject);
+
+	public String mergeDefaultEditableValues(
+		JSONObject configurationJSONObject, JSONObject editableValuesJSONObject,
+		String html);
 
 	public default String processFragmentEntryLinkCSS(
 			FragmentEntryLink fragmentEntryLink,
@@ -42,7 +46,18 @@ public interface FragmentEntryProcessorRegistry {
 		return fragmentEntryLink.getHtml();
 	}
 
-	public void validateFragmentEntryHTML(String html, String configuration)
+	public default String processFragmentEntryLinkHTML(
+			JSONObject editableValuesJSONObject,
+			FragmentEntryLink fragmentEntryLink,
+			FragmentEntryProcessorContext fragmentEntryProcessorContext)
+		throws PortalException {
+
+		return processFragmentEntryLinkHTML(
+			fragmentEntryLink, fragmentEntryProcessorContext);
+	}
+
+	public void validateFragmentEntryHTML(
+			String html, JSONObject configurationJSONObject)
 		throws PortalException;
 
 }

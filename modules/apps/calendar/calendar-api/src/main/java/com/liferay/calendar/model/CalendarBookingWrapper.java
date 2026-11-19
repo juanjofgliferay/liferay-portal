@@ -39,6 +39,7 @@ public class CalendarBookingWrapper
 		attributes.put("mvccVersion", getMvccVersion());
 		attributes.put("ctCollectionId", getCtCollectionId());
 		attributes.put("uuid", getUuid());
+		attributes.put("externalReferenceCode", getExternalReferenceCode());
 		attributes.put("calendarBookingId", getCalendarBookingId());
 		attributes.put("groupId", getGroupId());
 		attributes.put("companyId", getCompanyId());
@@ -90,6 +91,13 @@ public class CalendarBookingWrapper
 
 		if (uuid != null) {
 			setUuid(uuid);
+		}
+
+		String externalReferenceCode = (String)attributes.get(
+			"externalReferenceCode");
+
+		if (externalReferenceCode != null) {
+			setExternalReferenceCode(externalReferenceCode);
 		}
 
 		Long calendarBookingId = (Long)attributes.get("calendarBookingId");
@@ -457,6 +465,16 @@ public class CalendarBookingWrapper
 	@Override
 	public long getEndTime() {
 		return model.getEndTime();
+	}
+
+	/**
+	 * Returns the external reference code of this calendar booking.
+	 *
+	 * @return the external reference code of this calendar booking
+	 */
+	@Override
+	public String getExternalReferenceCode() {
+		return model.getExternalReferenceCode();
 	}
 
 	/**
@@ -1104,6 +1122,16 @@ public class CalendarBookingWrapper
 	}
 
 	/**
+	 * Sets the external reference code of this calendar booking.
+	 *
+	 * @param externalReferenceCode the external reference code of this calendar booking
+	 */
+	@Override
+	public void setExternalReferenceCode(String externalReferenceCode) {
+		model.setExternalReferenceCode(externalReferenceCode);
+	}
+
+	/**
 	 * Sets the first reminder of this calendar booking.
 	 *
 	 * @param firstReminder the first reminder of this calendar booking
@@ -1442,3 +1470,4 @@ public class CalendarBookingWrapper
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-558335866

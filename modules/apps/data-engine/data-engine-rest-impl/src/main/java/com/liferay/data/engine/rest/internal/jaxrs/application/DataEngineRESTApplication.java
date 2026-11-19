@@ -5,9 +5,9 @@
 
 package com.liferay.data.engine.rest.internal.jaxrs.application;
 
-import javax.annotation.Generated;
+import jakarta.annotation.Generated;
 
-import javax.ws.rs.core.Application;
+import jakarta.ws.rs.core.Application;
 
 import org.osgi.service.component.annotations.Component;
 
@@ -26,3 +26,4 @@ import org.osgi.service.component.annotations.Component;
 @Generated("")
 public class DataEngineRESTApplication extends Application {
 }
+// LIFERAY-REST-BUILDER-HASH:-1900592463

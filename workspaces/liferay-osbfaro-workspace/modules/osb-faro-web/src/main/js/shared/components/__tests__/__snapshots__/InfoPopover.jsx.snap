@@ -1,0 +1,21 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`InfoPopover should render 1`] = `
+<div>
+  <span
+    aria-label="foo title"
+    class="info-popover-root"
+    role="button"
+    tabindex="0"
+  >
+    <svg
+      class="lexicon-icon lexicon-icon-question-circle-full icon-root"
+      role="presentation"
+    >
+      <use
+        href="#question-circle-full"
+      />
+    </svg>
+  </span>
+</div>
+`;

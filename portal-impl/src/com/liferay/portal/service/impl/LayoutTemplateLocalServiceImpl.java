@@ -5,12 +5,13 @@
 
 package com.liferay.portal.service.impl;
 
+import com.liferay.petra.io.DummyWriter;
 import com.liferay.petra.io.StreamUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.aop.SkipAop;
 import com.liferay.portal.kernel.bean.BeanReference;
 import com.liferay.portal.kernel.exception.SystemException;
-import com.liferay.portal.kernel.io.DummyWriter;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.LayoutTemplate;
@@ -23,9 +24,9 @@ import com.liferay.portal.kernel.template.Template;
 import com.liferay.portal.kernel.template.TemplateConstants;
 import com.liferay.portal.kernel.template.TemplateManagerUtil;
 import com.liferay.portal.kernel.template.TemplateResourceLoaderUtil;
-import com.liferay.portal.kernel.transaction.Transactional;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ListUtil;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.xml.Document;
 import com.liferay.portal.kernel.xml.Element;
@@ -33,7 +34,8 @@ import com.liferay.portal.kernel.xml.UnsecureSAXReaderUtil;
 import com.liferay.portal.layoutconfiguration.util.velocity.InitColumnProcessor;
 import com.liferay.portal.model.impl.LayoutTemplateImpl;
 import com.liferay.portal.service.base.LayoutTemplateLocalServiceBaseImpl;
-import com.liferay.portal.util.PropsValues;
+
+import jakarta.servlet.ServletContext;
 
 import java.io.IOException;
 
@@ -47,15 +49,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import javax.servlet.ServletContext;
-
 /**
  * @author Ivica Cardic
  * @author Jorge Ferrer
  * @author Brian Wing Shun Chan
  * @author Raymond Augé
  */
-@Transactional(enabled = false)
+@SkipAop
 public class LayoutTemplateLocalServiceImpl
 	extends LayoutTemplateLocalServiceBaseImpl {
 
@@ -209,11 +209,13 @@ public class LayoutTemplateLocalServiceImpl
 		for (Map.Entry<String, LayoutTemplate> entry : _warCustom.entrySet()) {
 			String layoutTemplateId = entry.getKey();
 
-			if (!_portalCustom.containsKey(layoutTemplateId) &&
-				!themesCustom.containsKey(layoutTemplateId)) {
+			if (_portalCustom.containsKey(layoutTemplateId) ||
+				themesCustom.containsKey(layoutTemplateId)) {
 
-				customLayoutTemplates.add(_warCustom.get(layoutTemplateId));
+				continue;
 			}
+
+			customLayoutTemplates.add(_warCustom.get(layoutTemplateId));
 		}
 
 		for (Map.Entry<String, LayoutTemplate> entry :
@@ -221,11 +223,13 @@ public class LayoutTemplateLocalServiceImpl
 
 			String layoutTemplateId = entry.getKey();
 
-			if (!_portalCustom.containsKey(layoutTemplateId) &&
-				!_warCustom.containsKey(layoutTemplateId)) {
+			if (_portalCustom.containsKey(layoutTemplateId) ||
+				_warCustom.containsKey(layoutTemplateId)) {
 
-				customLayoutTemplates.add(themesCustom.get(layoutTemplateId));
+				continue;
 			}
+
+			customLayoutTemplates.add(themesCustom.get(layoutTemplateId));
 		}
 
 		return customLayoutTemplates;
@@ -396,9 +400,11 @@ public class LayoutTemplateLocalServiceImpl
 
 			layoutTemplateModel.setDefaultPluginSetting(pluginSetting);
 
-			if (layoutTemplates != null) {
-				layoutTemplates.add(layoutTemplateModel);
+			if (layoutTemplates == null) {
+				continue;
 			}
+
+			layoutTemplates.add(layoutTemplateModel);
 		}
 	}
 

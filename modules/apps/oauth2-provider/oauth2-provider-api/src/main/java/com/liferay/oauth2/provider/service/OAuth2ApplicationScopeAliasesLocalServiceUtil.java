@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -295,16 +296,6 @@ public class OAuth2ApplicationScopeAliasesLocalServiceUtil {
 		return getService().getOAuth2ApplicationScopeAliaseses(start, end);
 	}
 
-	public static List<OAuth2ApplicationScopeAliases>
-		getOAuth2ApplicationScopeAliaseses(
-			long oAuth2ApplicationId, int start, int end,
-			OrderByComparator<OAuth2ApplicationScopeAliases>
-				orderByComparator) {
-
-		return getService().getOAuth2ApplicationScopeAliaseses(
-			oAuth2ApplicationId, start, end, orderByComparator);
-	}
-
 	/**
 	 * Returns the number of o auth2 application scope aliaseses.
 	 *
@@ -358,15 +349,13 @@ public class OAuth2ApplicationScopeAliasesLocalServiceUtil {
 	}
 
 	public static OAuth2ApplicationScopeAliasesLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(
-		OAuth2ApplicationScopeAliasesLocalService service) {
-
-		_service = service;
-	}
-
-	private static volatile OAuth2ApplicationScopeAliasesLocalService _service;
+	private static final Snapshot<OAuth2ApplicationScopeAliasesLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			OAuth2ApplicationScopeAliasesLocalServiceUtil.class,
+			OAuth2ApplicationScopeAliasesLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-260102327

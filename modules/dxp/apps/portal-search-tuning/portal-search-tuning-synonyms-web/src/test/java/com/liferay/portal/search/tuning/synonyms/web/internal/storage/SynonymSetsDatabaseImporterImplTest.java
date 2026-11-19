@@ -6,10 +6,8 @@
 package com.liferay.portal.search.tuning.synonyms.web.internal.storage;
 
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
-import com.liferay.portal.search.query.Queries;
+import com.liferay.portal.search.spi.reindexer.IndexReindexer;
 import com.liferay.portal.search.tuning.synonyms.web.internal.BaseSynonymsWebTestCase;
-import com.liferay.portal.search.tuning.synonyms.web.internal.index.DocumentToSynonymSetTranslator;
-import com.liferay.portal.search.tuning.synonyms.web.internal.index.DocumentToSynonymSetTranslatorImpl;
 import com.liferay.portal.search.tuning.synonyms.web.internal.index.SynonymSetIndexReindexer;
 import com.liferay.portal.search.tuning.synonyms.web.internal.storage.helper.SynonymSetJSONStorageHelper;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
@@ -36,15 +34,7 @@ public class SynonymSetsDatabaseImporterImplTest
 	public void setUp() throws Exception {
 		_synonymSetsDatabaseImporterImpl =
 			new SynonymSetsDatabaseImporterImpl();
-		_documentToSynonymSetTranslator =
-			new DocumentToSynonymSetTranslatorImpl();
 
-		ReflectionTestUtil.setFieldValue(
-			_synonymSetsDatabaseImporterImpl, "documentToSynonymSetTranslator",
-			_documentToSynonymSetTranslator);
-
-		ReflectionTestUtil.setFieldValue(
-			_synonymSetsDatabaseImporterImpl, "queries", _queries);
 		ReflectionTestUtil.setFieldValue(
 			_synonymSetsDatabaseImporterImpl, "searchEngineAdapter",
 			searchEngineAdapter);
@@ -69,7 +59,7 @@ public class SynonymSetsDatabaseImporterImplTest
 		Mockito.verify(
 			_synonymSetIndexReindexer, Mockito.times(1)
 		).reindex(
-			Mockito.anyLong()
+			Mockito.anyLong(), Mockito.any(IndexReindexer.ExecutionMode.class)
 		);
 	}
 
@@ -80,12 +70,10 @@ public class SynonymSetsDatabaseImporterImplTest
 		Mockito.verify(
 			_synonymSetIndexReindexer, Mockito.never()
 		).reindex(
-			Mockito.anyLong()
+			Mockito.anyLong(), Mockito.any(IndexReindexer.ExecutionMode.class)
 		);
 	}
 
-	private DocumentToSynonymSetTranslator _documentToSynonymSetTranslator;
-	private final Queries _queries = Mockito.mock(Queries.class);
 	private final SynonymSetIndexReindexer _synonymSetIndexReindexer =
 		Mockito.mock(SynonymSetIndexReindexer.class);
 	private final SynonymSetJSONStorageHelper _synonymSetJSONStorageHelper =

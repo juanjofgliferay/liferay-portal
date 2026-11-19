@@ -40,16 +40,16 @@ import com.liferay.portal.security.permission.converter.PermissionConverter;
 import com.liferay.roles.admin.web.internal.group.type.contributor.util.GroupTypeContributorUtil;
 import com.liferay.taglib.search.ResultRow;
 
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.ResourceURL;
+
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
-import javax.portlet.PortletURL;
-import javax.portlet.ResourceURL;
-
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * @author Mariano Álvaro Sáiz
@@ -187,9 +187,11 @@ public class EditRolePermissionsSummaryDisplayContext {
 				_roleDisplayContext.getActionLabel(
 					resource.getName(), actionId));
 
-			if (!_permissionDisplays.contains(permissionDisplay)) {
-				_permissionDisplays.add(permissionDisplay);
+			if (_permissionDisplays.contains(permissionDisplay)) {
+				continue;
 			}
+
+			_permissionDisplays.add(permissionDisplay);
 		}
 
 		return _permissionDisplays;
@@ -404,10 +406,12 @@ public class EditRolePermissionsSummaryDisplayContext {
 							group.getDescriptiveName(
 								_themeDisplay.getLocale())));
 
-					if (j < (groups.size() - 1)) {
-						sb.append(StringPool.COMMA);
-						sb.append(StringPool.SPACE);
+					if (j >= (groups.size() - 1)) {
+						continue;
 					}
+
+					sb.append(StringPool.COMMA);
+					sb.append(StringPool.SPACE);
 				}
 
 				row.addText(sb.toString());

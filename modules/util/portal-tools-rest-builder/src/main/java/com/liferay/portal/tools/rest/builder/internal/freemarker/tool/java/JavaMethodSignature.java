@@ -22,17 +22,6 @@ public class JavaMethodSignature {
 		String path, PathItem pathItem, Operation operation,
 		Set<String> requestBodyMediaTypes, String schemaName,
 		List<JavaMethodParameter> javaMethodParameters, String methodName,
-		String returnType) {
-
-		this(
-			path, pathItem, operation, requestBodyMediaTypes, schemaName,
-			javaMethodParameters, methodName, returnType, null);
-	}
-
-	public JavaMethodSignature(
-		String path, PathItem pathItem, Operation operation,
-		Set<String> requestBodyMediaTypes, String schemaName,
-		List<JavaMethodParameter> javaMethodParameters, String methodName,
 		String returnType, String parentSchemaName) {
 
 		_path = path;
@@ -47,11 +36,13 @@ public class JavaMethodSignature {
 		for (JavaMethodParameter javaMethodParameter : _javaMethodParameters) {
 			FreeMarkerTool freeMarkerTool = FreeMarkerTool.getInstance();
 
-			if (freeMarkerTool.isPathParameter(
+			if (!freeMarkerTool.isPathParameter(
 					javaMethodParameter, operation)) {
 
-				_pathJavaMethodParameters.add(javaMethodParameter);
+				continue;
 			}
+
+			_pathJavaMethodParameters.add(javaMethodParameter);
 		}
 
 		_parentSchemaName = parentSchemaName;

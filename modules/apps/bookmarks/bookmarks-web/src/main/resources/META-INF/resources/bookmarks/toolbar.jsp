@@ -8,7 +8,7 @@
 <%@ include file="/bookmarks/init.jsp" %>
 
 <%
-BookmarksManagementToolbarDisplayContext bookmarksManagementToolbarDisplayContext = new BookmarksManagementToolbarDisplayContext(request, liferayPortletRequest, liferayPortletResponse, bookmarksGroupServiceOverriddenConfiguration, portalPreferences, trashHelper);
+BookmarksManagementToolbarDisplayContext bookmarksManagementToolbarDisplayContext = new BookmarksManagementToolbarDisplayContext(request, liferayPortletRequest, liferayPortletResponse, bookmarksGroupServiceConfiguration, portalPreferences, trashHelper);
 %>
 
 <portlet:actionURL name="/bookmarks/edit_entry" var="deleteEntriesURL" />
@@ -33,7 +33,7 @@ BookmarksManagementToolbarDisplayContext bookmarksManagementToolbarDisplayContex
 	filterLabelItems="<%= bookmarksManagementToolbarDisplayContext.getFilterLabelItems() %>"
 	infoPanelId="infoPanelId"
 	itemsTotal="<%= bookmarksManagementToolbarDisplayContext.getTotalItems() %>"
-	propsTransformer="bookmarks/js/BookmarksManagementToolbarPropsTransformer"
+	propsTransformer="{BookmarksManagementToolbarPropsTransformer} from bookmarks-web"
 	searchActionURL="<%= String.valueOf(bookmarksManagementToolbarDisplayContext.getSearchActionURL()) %>"
 	searchContainerId="<%= bookmarksManagementToolbarDisplayContext.getSearchContainerId() %>"
 	selectable="<%= bookmarksManagementToolbarDisplayContext.isSelectable() %>"

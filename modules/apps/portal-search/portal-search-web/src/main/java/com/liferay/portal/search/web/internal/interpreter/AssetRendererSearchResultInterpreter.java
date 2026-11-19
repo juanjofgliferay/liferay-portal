@@ -24,12 +24,12 @@ import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.search.document.Document;
 import com.liferay.portal.search.web.interpreter.SearchResultInterpreter;
 
-import java.util.Locale;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.WindowState;
 
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
-import javax.portlet.PortletURL;
-import javax.portlet.WindowState;
+import java.util.Locale;
 
 /**
  * @author Wade Cao
@@ -371,30 +371,6 @@ public class AssetRendererSearchResultInterpreter
 	}
 
 	@Override
-	public String getAssetUrlTitle(Document document) throws PortalException {
-		AssetRenderer<?> assetRenderer = getAssetRenderer(document);
-
-		if (assetRenderer == null) {
-			return StringPool.BLANK;
-		}
-
-		return assetRenderer.getUrlTitle();
-	}
-
-	@Override
-	public String getAssetUrlTitle(Document document, Locale locale)
-		throws PortalException {
-
-		AssetRenderer<?> assetRenderer = getAssetRenderer(document);
-
-		if (assetRenderer == null) {
-			return StringPool.BLANK;
-		}
-
-		return assetRenderer.getUrlTitle(locale);
-	}
-
-	@Override
 	public PortletURL getAssetURLView(
 			Document document, LiferayPortletResponse liferayPortletResponse,
 			WindowState windowState)
@@ -428,6 +404,30 @@ public class AssetRendererSearchResultInterpreter
 
 		return assetRenderer.getURLViewInContext(
 			liferayPortletRequest, liferayPortletResponse, noSuchEntryRedirect);
+	}
+
+	@Override
+	public String getAssetUrlTitle(Document document) throws PortalException {
+		AssetRenderer<?> assetRenderer = getAssetRenderer(document);
+
+		if (assetRenderer == null) {
+			return StringPool.BLANK;
+		}
+
+		return assetRenderer.getUrlTitle();
+	}
+
+	@Override
+	public String getAssetUrlTitle(Document document, Locale locale)
+		throws PortalException {
+
+		AssetRenderer<?> assetRenderer = getAssetRenderer(document);
+
+		if (assetRenderer == null) {
+			return StringPool.BLANK;
+		}
+
+		return assetRenderer.getUrlTitle(locale);
 	}
 
 	@Override

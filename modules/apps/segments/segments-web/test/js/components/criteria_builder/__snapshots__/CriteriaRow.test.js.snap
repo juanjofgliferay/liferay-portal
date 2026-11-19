@@ -3,14 +3,15 @@
 exports[`CriteriaRow renders 1`] = `
 <DocumentFragment>
   <div
-    class="criterion-row-root"
+    class="criterion-row-root drop-zone-user drop-zone-user-group_01-0-middle"
   >
     <div
       class="edit-container"
     >
-      <div
-        class="drag-icon"
+      <button
+        class="drag-icon text-secondary btn btn-monospaced btn-outline-borderless btn-sm btn-outline-unstyled"
         draggable="true"
+        type="button"
       >
         <svg
           class="lexicon-icon lexicon-icon-drag"
@@ -20,7 +21,7 @@ exports[`CriteriaRow renders 1`] = `
             href="#drag"
           />
         </svg>
-      </div>
+      </button>
       <span
         class="c-ml-2 criterion-string"
       >
@@ -63,9 +64,9 @@ exports[`CriteriaRow renders 1`] = `
         value="test_val"
       />
       <button
-        aria-label="duplicate-segment-property"
+        aria-label="duplicate-property"
         class="btn-outline-borderless btn-sm c-mr-1 btn btn-monospaced btn-secondary"
-        title="duplicate-segment-property"
+        title="duplicate-property"
         type="button"
       >
         <svg
@@ -78,9 +79,9 @@ exports[`CriteriaRow renders 1`] = `
         </svg>
       </button>
       <button
-        aria-label="delete-segment-property"
+        aria-label="delete-property"
         class="btn-outline-borderless btn-sm btn btn-monospaced btn-secondary"
-        title="delete-segment-property"
+        title="delete-property"
         type="button"
       >
         <svg
@@ -100,14 +101,15 @@ exports[`CriteriaRow renders 1`] = `
 exports[`CriteriaRow renders and inform there is an unknown property 1`] = `
 <DocumentFragment>
   <div
-    class="criterion-row-root criterion-row-root-error"
+    class="criterion-row-root drop-zone-user drop-zone-user-group_01-0-middle criterion-row-root-error"
   >
     <div
       class="edit-container"
     >
-      <div
-        class="drag-icon"
+      <button
+        class="drag-icon text-secondary btn btn-monospaced btn-outline-borderless btn-sm btn-outline-unstyled"
         draggable="true"
+        type="button"
       >
         <svg
           class="lexicon-icon lexicon-icon-drag"
@@ -117,7 +119,7 @@ exports[`CriteriaRow renders and inform there is an unknown property 1`] = `
             href="#drag"
           />
         </svg>
-      </div>
+      </button>
       <span
         class="c-ml-2 criterion-string"
       >
@@ -165,7 +167,7 @@ exports[`CriteriaRow renders and inform there is an unknown property 1`] = `
         class="btn-outline-danger btn-sm btn"
         type="button"
       >
-        delete-segment-property
+        delete-property
       </button>
     </div>
   </div>

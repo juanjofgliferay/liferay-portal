@@ -111,11 +111,7 @@ public class ListTypeEntryPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		ListTypeEntry newListTypeEntry = _persistence.create(pk);
-
-		newListTypeEntry.setMvccVersion(RandomTestUtil.nextLong());
+		ListTypeEntry newListTypeEntry = addListTypeEntry();
 
 		newListTypeEntry.setUuid(RandomTestUtil.randomString());
 
@@ -138,9 +134,15 @@ public class ListTypeEntryPersistenceTest {
 
 		newListTypeEntry.setName(RandomTestUtil.randomString());
 
+		newListTypeEntry.setSystem(RandomTestUtil.randomBoolean());
+
 		newListTypeEntry.setType(RandomTestUtil.randomString());
 
-		_listTypeEntries.add(_persistence.update(newListTypeEntry));
+		newListTypeEntry.setStatus(RandomTestUtil.nextInt());
+
+		newListTypeEntry = _persistence.update(newListTypeEntry);
+
+		_listTypeEntries.add(newListTypeEntry);
 
 		ListTypeEntry existingListTypeEntry = _persistence.findByPrimaryKey(
 			newListTypeEntry.getPrimaryKey());
@@ -178,7 +180,11 @@ public class ListTypeEntryPersistenceTest {
 		Assert.assertEquals(
 			existingListTypeEntry.getName(), newListTypeEntry.getName());
 		Assert.assertEquals(
+			existingListTypeEntry.isSystem(), newListTypeEntry.isSystem());
+		Assert.assertEquals(
 			existingListTypeEntry.getType(), newListTypeEntry.getType());
+		Assert.assertEquals(
+			existingListTypeEntry.getStatus(), newListTypeEntry.getStatus());
 	}
 
 	@Test
@@ -200,23 +206,24 @@ public class ListTypeEntryPersistenceTest {
 	}
 
 	@Test
-	public void testCountByListTypeEntryId() throws Exception {
-		_persistence.countByListTypeEntryId(RandomTestUtil.nextLong());
-
-		_persistence.countByListTypeEntryId(0L);
-	}
-
-	@Test
-	public void testCountByListTypeEntryIdArrayable() throws Exception {
-		_persistence.countByListTypeEntryId(
-			new long[] {RandomTestUtil.nextLong(), 0L});
-	}
-
-	@Test
 	public void testCountByListTypeDefinitionId() throws Exception {
 		_persistence.countByListTypeDefinitionId(RandomTestUtil.nextLong());
 
 		_persistence.countByListTypeDefinitionId(0L);
+	}
+
+	@Test
+	public void testCountByListTypeDefinitionIdArrayable() throws Exception {
+		_persistence.countByListTypeDefinitionId(
+			new long[] {RandomTestUtil.nextLong(), 0L});
+	}
+
+	@Test
+	public void testCountByC_U() throws Exception {
+		_persistence.countByC_U(
+			RandomTestUtil.nextLong(), RandomTestUtil.nextLong());
+
+		_persistence.countByC_U(0L, 0L);
 	}
 
 	@Test
@@ -267,7 +274,7 @@ public class ListTypeEntryPersistenceTest {
 			"externalReferenceCode", true, "listTypeEntryId", true, "companyId",
 			true, "userId", true, "userName", true, "createDate", true,
 			"modifiedDate", true, "listTypeDefinitionId", true, "key", true,
-			"name", true, "type", true);
+			"name", true, "system", true, "type", true, "status", true);
 	}
 
 	@Test
@@ -567,8 +574,6 @@ public class ListTypeEntryPersistenceTest {
 
 		ListTypeEntry listTypeEntry = _persistence.create(pk);
 
-		listTypeEntry.setMvccVersion(RandomTestUtil.nextLong());
-
 		listTypeEntry.setUuid(RandomTestUtil.randomString());
 
 		listTypeEntry.setExternalReferenceCode(RandomTestUtil.randomString());
@@ -589,7 +594,11 @@ public class ListTypeEntryPersistenceTest {
 
 		listTypeEntry.setName(RandomTestUtil.randomString());
 
+		listTypeEntry.setSystem(RandomTestUtil.randomBoolean());
+
 		listTypeEntry.setType(RandomTestUtil.randomString());
+
+		listTypeEntry.setStatus(RandomTestUtil.nextInt());
 
 		_listTypeEntries.add(_persistence.update(listTypeEntry));
 
@@ -602,3 +611,4 @@ public class ListTypeEntryPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1407382026

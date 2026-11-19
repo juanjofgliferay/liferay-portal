@@ -51,14 +51,15 @@ public class KBArticleInfoItemFieldValuesProvider
 				_getKBArticleInfoFieldValues(kbArticle)
 			).infoFieldValues(
 				_assetEntryInfoItemFieldSetProvider.getInfoFieldValues(
-					KBArticle.class.getName(), kbArticle.getResourcePrimKey())
+					kbArticle.getCompanyId(), KBArticle.class.getName(),
+					kbArticle.getResourcePrimKey())
 			).infoFieldValues(
 				_displayPageInfoItemFieldSetProvider.getInfoFieldValues(
 					new InfoItemReference(
 						KBArticle.class.getName(),
 						kbArticle.getResourcePrimKey()),
 					StringPool.BLANK, KBArticle.class.getSimpleName(),
-					_getThemeDisplay())
+					kbArticle, _getThemeDisplay())
 			).infoFieldValues(
 				_expandoInfoItemFieldSetProvider.getInfoFieldValues(
 					KBArticle.class.getName(), kbArticle)

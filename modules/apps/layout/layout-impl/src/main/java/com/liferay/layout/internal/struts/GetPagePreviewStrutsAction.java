@@ -5,6 +5,10 @@
 
 package com.liferay.layout.internal.struts;
 
+import com.liferay.asset.kernel.AssetRendererFactoryRegistryUtil;
+import com.liferay.asset.kernel.model.AssetEntry;
+import com.liferay.asset.kernel.model.AssetRendererFactory;
+import com.liferay.asset.util.LinkedAssetEntryIdsUtil;
 import com.liferay.info.constants.InfoDisplayWebKeys;
 import com.liferay.info.item.ClassPKInfoItemIdentifier;
 import com.liferay.info.item.InfoItemReference;
@@ -15,39 +19,35 @@ import com.liferay.layout.display.page.LayoutDisplayPageObjectProvider;
 import com.liferay.layout.display.page.LayoutDisplayPageProvider;
 import com.liferay.layout.display.page.LayoutDisplayPageProviderRegistry;
 import com.liferay.layout.display.page.constants.LayoutDisplayPageWebKeys;
-import com.liferay.petra.string.StringBundler;
-import com.liferay.petra.string.StringPool;
+import com.liferay.layout.page.template.model.LayoutPageTemplateEntry;
+import com.liferay.layout.page.template.service.LayoutPageTemplateEntryLocalService;
+import com.liferay.layout.renderer.LayoutPreviewRenderer;
+import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.LayoutConstants;
-import com.liferay.portal.kernel.model.LayoutSet;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.security.permission.PermissionCheckerFactoryUtil;
 import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
-import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.service.permission.LayoutPermissionUtil;
-import com.liferay.portal.kernel.servlet.ServletContextPool;
 import com.liferay.portal.kernel.servlet.ServletResponseUtil;
 import com.liferay.portal.kernel.struts.StrutsAction;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
-import com.liferay.portal.kernel.theme.ThemeUtil;
-import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.segments.constants.SegmentsWebKeys;
 import com.liferay.segments.service.SegmentsExperienceLocalService;
 
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
+import java.util.Locale;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -66,140 +66,133 @@ public class GetPagePreviewStrutsAction implements StrutsAction {
 			HttpServletResponse httpServletResponse)
 		throws Exception {
 
-		ThemeDisplay currentThemeDisplay =
+		ThemeDisplay themeDisplay =
 			(ThemeDisplay)httpServletRequest.getAttribute(
 				WebKeys.THEME_DISPLAY);
 
-		ThemeDisplay themeDisplay = (ThemeDisplay)currentThemeDisplay.clone();
+		Layout layout = themeDisplay.getLayout();
 
 		long selPlid = ParamUtil.getLong(httpServletRequest, "selPlid");
 
 		if (selPlid > 0) {
-			Layout layout = _layoutLocalService.fetchLayout(selPlid);
-
-			themeDisplay.setLayout(layout);
-
-			LayoutSet layoutSet = layout.getLayoutSet();
-
-			themeDisplay.setLayoutSet(layoutSet);
-			themeDisplay.setLookAndFeel(
-				layoutSet.getTheme(), layoutSet.getColorScheme());
-
-			themeDisplay.setPlid(layout.getPlid());
-			themeDisplay.setScopeGroupId(layout.getGroupId());
+			layout = _layoutLocalService.fetchLayout(selPlid);
 		}
 
-		if (!LayoutPermissionUtil.containsLayoutUpdatePermission(
-				PermissionCheckerFactoryUtil.create(themeDisplay.getRealUser()),
-				themeDisplay.getLayout())) {
+		if (!_containsLayoutPreviewDraftPermission(
+				layout, themeDisplay.getRealUser())) {
 
 			httpServletResponse.setStatus(HttpServletResponse.SC_NOT_FOUND);
 
 			return null;
 		}
 
-		long[] currentSegmentsExperienceIds = GetterUtil.getLongValues(
-			httpServletRequest.getAttribute(
-				SegmentsWebKeys.SEGMENTS_EXPERIENCE_IDS));
-		Layout currentLayout = (Layout)httpServletRequest.getAttribute(
-			WebKeys.LAYOUT);
-		boolean currentPortletDecorate = GetterUtil.getBoolean(
-			httpServletRequest.getAttribute(WebKeys.PORTLET_DECORATE));
+		String className = ParamUtil.getString(httpServletRequest, "className");
+		long classPK = ParamUtil.getLong(httpServletRequest, "classPK");
 
-		try {
-			long segmentsExperienceId = ParamUtil.getLong(
-				httpServletRequest, "segmentsExperienceId",
-				_segmentsExperienceLocalService.
-					fetchDefaultSegmentsExperienceId(selPlid));
-
-			httpServletRequest.setAttribute(
-				SegmentsWebKeys.SEGMENTS_EXPERIENCE_IDS,
-				new long[] {segmentsExperienceId});
-
-			httpServletRequest.setAttribute(
-				WebKeys.PORTLET_DECORATE, Boolean.FALSE);
-
-			String languageId = ParamUtil.getString(
-				httpServletRequest, "languageId",
-				LocaleUtil.toLanguageId(themeDisplay.getLocale()));
-
-			themeDisplay.setLocale(LocaleUtil.fromLanguageId(languageId));
-
-			themeDisplay.setSignedIn(false);
-
-			User guestUser = _userLocalService.getGuestUser(
-				themeDisplay.getCompanyId());
-
-			themeDisplay.setUser(guestUser);
-
-			Layout layout = themeDisplay.getLayout();
-
-			layout.setClassNameId(0);
-
-			String className = ParamUtil.getString(
-				httpServletRequest, "className");
-			long classPK = ParamUtil.getLong(httpServletRequest, "classPK");
-
-			if (layout.isTypeAssetDisplay() &&
-				(Validator.isNull(className) || (classPK <= 0))) {
-
-				layout.setType(LayoutConstants.TYPE_CONTENT);
-			}
-
-			ServiceContext serviceContext =
-				ServiceContextThreadLocal.getServiceContext();
-
-			ServiceContext clonedServiceContext =
-				(ServiceContext)serviceContext.clone();
-
-			clonedServiceContext.setPlid(layout.getPlid());
-			clonedServiceContext.setScopeGroupId(layout.getGroupId());
-
-			ServiceContextThreadLocal.pushServiceContext(clonedServiceContext);
-
-			httpServletRequest.setAttribute(WebKeys.LAYOUT, layout);
-			httpServletRequest.setAttribute(
-				WebKeys.THEME_DISPLAY, themeDisplay);
-
-			if (Validator.isNotNull(className) && (classPK > 0)) {
-				_includeInfoItemObjects(className, classPK, httpServletRequest);
-			}
-
-			layout.includeLayoutContent(
-				httpServletRequest, httpServletResponse);
-
-			ServletContext servletContext = ServletContextPool.get(
-				StringPool.BLANK);
-			LayoutSet layoutSet = themeDisplay.getLayoutSet();
-
-			Document document = Jsoup.parse(
-				ThemeUtil.include(
-					servletContext, httpServletRequest, httpServletResponse,
-					"portal_normal.ftl", layoutSet.getTheme(), false));
-
-			Element contentElement = document.getElementById("content");
-
-			StringBundler sb = (StringBundler)httpServletRequest.getAttribute(
-				WebKeys.LAYOUT_CONTENT);
-
-			contentElement.html(sb.toString());
-
-			ServletResponseUtil.write(httpServletResponse, document.toString());
+		if (Validator.isNotNull(className) && (classPK > 0)) {
+			_includeInfoItemObjects(className, classPK, httpServletRequest);
 		}
-		finally {
-			httpServletRequest.setAttribute(
-				SegmentsWebKeys.SEGMENTS_EXPERIENCE_IDS,
-				currentSegmentsExperienceIds);
-			httpServletRequest.setAttribute(WebKeys.LAYOUT, currentLayout);
-			httpServletRequest.setAttribute(
-				WebKeys.PORTLET_DECORATE, currentPortletDecorate);
-			httpServletRequest.setAttribute(
-				WebKeys.THEME_DISPLAY, currentThemeDisplay);
+		else if (layout.isTypeAssetDisplay()) {
+			layout.setType(LayoutConstants.TYPE_CONTENT);
+		}
 
-			ServiceContextThreadLocal.popServiceContext();
+		Locale locale = LocaleUtil.fromLanguageId(
+			ParamUtil.getString(
+				httpServletRequest, "languageId",
+				LocaleUtil.toLanguageId(themeDisplay.getLocale())));
+
+		long segmentsExperienceId = ParamUtil.getLong(
+			httpServletRequest, "segmentsExperienceId",
+			_segmentsExperienceLocalService.fetchDefaultSegmentsExperienceId(
+				selPlid));
+
+		ServiceContext serviceContext =
+			ServiceContextThreadLocal.getServiceContext();
+
+		serviceContext.setRequest(httpServletRequest);
+
+		themeDisplay.setResponse(httpServletResponse);
+
+		String html = _layoutPreviewRenderer.render(
+			layout, locale, segmentsExperienceId, serviceContext);
+
+		if (html != null) {
+			ServletResponseUtil.write(httpServletResponse, html);
 		}
 
 		return null;
+	}
+
+	private void _addLinkedAssetEntryId(
+		String className, long classPK, HttpServletRequest httpServletRequest) {
+
+		AssetRendererFactory<?> assetRendererFactory =
+			AssetRendererFactoryRegistryUtil.getAssetRendererFactoryByClassName(
+				className);
+
+		if (assetRendererFactory == null) {
+			return;
+		}
+
+		try {
+			AssetEntry assetEntry = assetRendererFactory.getAssetEntry(
+				className, classPK);
+
+			if (assetEntry != null) {
+				LinkedAssetEntryIdsUtil.addLinkedAssetEntryId(
+					httpServletRequest, assetEntry.getEntryId());
+			}
+		}
+		catch (PortalException portalException) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(portalException);
+			}
+		}
+	}
+
+	private boolean _containsLayoutPreviewDraftPermission(
+			Layout layout, User user)
+		throws Exception {
+
+		Group group = layout.getGroup();
+
+		if (group.hasStagingGroup()) {
+			Layout stagingLayout = _fetchStagingLayout(
+				layout, group.getStagingGroup());
+
+			if (stagingLayout != null) {
+				layout = stagingLayout;
+			}
+		}
+
+		return LayoutPermissionUtil.containsLayoutPreviewDraftPermission(
+			PermissionCheckerFactoryUtil.create(user), layout);
+	}
+
+	private Layout _fetchStagingLayout(Layout layout, Group stagingGroup) {
+		LayoutPageTemplateEntry layoutPageTemplateEntry =
+			_layoutPageTemplateEntryLocalService.
+				fetchLayoutPageTemplateEntryByPlid(layout.getPlid());
+
+		if (layoutPageTemplateEntry != null) {
+			LayoutPageTemplateEntry stagingLayoutPageTemplateEntry =
+				_layoutPageTemplateEntryLocalService.
+					fetchLayoutPageTemplateEntry(
+						stagingGroup.getGroupId(),
+						layoutPageTemplateEntry.
+							getLayoutPageTemplateEntryKey());
+
+			if (stagingLayoutPageTemplateEntry != null) {
+				return _layoutLocalService.fetchLayout(
+					stagingLayoutPageTemplateEntry.getPlid());
+			}
+
+			return null;
+		}
+
+		return _layoutLocalService.fetchLayoutByUuidAndGroupId(
+			layout.getUuid(), stagingGroup.getGroupId(),
+			layout.isPrivateLayout());
 	}
 
 	private void _includeInfoItemObjects(
@@ -213,13 +206,8 @@ public class GetPagePreviewStrutsAction implements StrutsAction {
 				ClassPKInfoItemIdentifier.INFO_ITEM_SERVICE_FILTER);
 
 		ClassPKInfoItemIdentifier classPKInfoItemIdentifier =
-			new ClassPKInfoItemIdentifier(classPK);
-
-		String version = ParamUtil.getString(httpServletRequest, "version");
-
-		if (Validator.isNotNull(version)) {
-			classPKInfoItemIdentifier.setVersion(version);
-		}
+			new ClassPKInfoItemIdentifier(
+				classPK, ParamUtil.getString(httpServletRequest, "version"));
 
 		Object infoItem = infoItemObjectProvider.getInfoItem(
 			classPKInfoItemIdentifier);
@@ -236,7 +224,8 @@ public class GetPagePreviewStrutsAction implements StrutsAction {
 
 		LayoutDisplayPageProvider<?> layoutDisplayPageProvider =
 			_layoutDisplayPageProviderRegistry.
-				getLayoutDisplayPageProviderByClassName(className);
+				getLayoutDisplayPageProviderByClassName(
+					_portal.getCompanyId(httpServletRequest), className);
 
 		httpServletRequest.setAttribute(
 			LayoutDisplayPageWebKeys.LAYOUT_DISPLAY_PAGE_PROVIDER,
@@ -251,7 +240,12 @@ public class GetPagePreviewStrutsAction implements StrutsAction {
 				LayoutDisplayPageWebKeys.LAYOUT_DISPLAY_PAGE_OBJECT_PROVIDER,
 				layoutDisplayPageObjectProvider);
 		}
+
+		_addLinkedAssetEntryId(className, classPK, httpServletRequest);
 	}
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		GetPagePreviewStrutsAction.class);
 
 	@Reference
 	private InfoItemServiceRegistry _infoItemServiceRegistry;
@@ -264,12 +258,16 @@ public class GetPagePreviewStrutsAction implements StrutsAction {
 	private LayoutLocalService _layoutLocalService;
 
 	@Reference
+	private LayoutPageTemplateEntryLocalService
+		_layoutPageTemplateEntryLocalService;
+
+	@Reference
+	private LayoutPreviewRenderer _layoutPreviewRenderer;
+
+	@Reference
 	private Portal _portal;
 
 	@Reference
 	private SegmentsExperienceLocalService _segmentsExperienceLocalService;
-
-	@Reference
-	private UserLocalService _userLocalService;
 
 }

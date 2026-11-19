@@ -21,6 +21,7 @@ import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.PortalUtil;
 
 import java.util.List;
 import java.util.Locale;
@@ -33,9 +34,10 @@ public class DDMDataProviderTestUtil {
 
 	public static DDMDataProviderInstance createDDMRestDataProviderInstance(
 			DDMDataProvider restDDMDataProvider, Group group,
-			List<DDMDataProviderInputParametersSettings> inputParameterSettings,
+			List<DDMDataProviderInputParametersSettings>
+				inputParametersSettingsList,
 			List<DDMDataProviderOutputParametersSettings>
-				outputParameterSettings)
+				outputParametersSettingsList)
 		throws Exception {
 
 		DDMForm ddmForm = DDMFormFactory.create(
@@ -68,7 +70,8 @@ public class DDMDataProviderTestUtil {
 		ddmFormValues.addDDMFormFieldValue(
 			DDMFormValuesTestUtil.createUnlocalizedDDMFormFieldValue(
 				"url",
-				"http://localhost:8080/api/jsonws/country/get-countries"));
+				"http://localhost:" + PortalUtil.getPortalServerPort(false) +
+					"/api/jsonws/country/get-countries"));
 		ddmFormValues.addDDMFormFieldValue(
 			DDMFormValuesTestUtil.createUnlocalizedDDMFormFieldValue(
 				"username", "test@liferay.com"));
@@ -76,21 +79,21 @@ public class DDMDataProviderTestUtil {
 			DDMFormValuesTestUtil.createUnlocalizedDDMFormFieldValue(
 				"timeout", "30000"));
 
-		if (inputParameterSettings != null) {
-			for (DDMDataProviderInputParametersSettings inputParameterSetting :
-					inputParameterSettings) {
+		if (inputParametersSettingsList != null) {
+			for (DDMDataProviderInputParametersSettings
+					inputParametersSettings : inputParametersSettingsList) {
 
 				ddmFormValues.addDDMFormFieldValue(
-					createInputParameter(inputParameterSetting));
+					createInputParameter(inputParametersSettings));
 			}
 		}
 
-		if (outputParameterSettings != null) {
+		if (outputParametersSettingsList != null) {
 			for (DDMDataProviderOutputParametersSettings
-					outputParameterSetting : outputParameterSettings) {
+					outputParametersSettings : outputParametersSettingsList) {
 
 				ddmFormValues.addDDMFormFieldValue(
-					createOutputParameter(outputParameterSetting));
+					createOutputParameter(outputParametersSettings));
 			}
 		}
 
@@ -108,7 +111,7 @@ public class DDMDataProviderTestUtil {
 	}
 
 	protected static DDMFormFieldValue createInputParameter(
-		DDMDataProviderInputParametersSettings inputParameterSetting) {
+		DDMDataProviderInputParametersSettings inputParametersSettings) {
 
 		DDMFormFieldValue inputParameters =
 			DDMFormValuesTestUtil.createDDMFormFieldValue(
@@ -117,23 +120,23 @@ public class DDMDataProviderTestUtil {
 		inputParameters.addNestedDDMFormFieldValue(
 			DDMFormValuesTestUtil.createUnlocalizedDDMFormFieldValue(
 				"inputParameterLabel",
-				inputParameterSetting.inputParameterLabel()));
+				inputParametersSettings.inputParameterLabel()));
 
 		inputParameters.addNestedDDMFormFieldValue(
 			DDMFormValuesTestUtil.createUnlocalizedDDMFormFieldValue(
 				"inputParameterName",
-				inputParameterSetting.inputParameterName()));
+				inputParametersSettings.inputParameterName()));
 
 		inputParameters.addNestedDDMFormFieldValue(
 			DDMFormValuesTestUtil.createUnlocalizedDDMFormFieldValue(
 				"inputParameterType",
-				inputParameterSetting.inputParameterType()));
+				inputParametersSettings.inputParameterType()));
 
 		return inputParameters;
 	}
 
 	protected static DDMFormFieldValue createOutputParameter(
-		DDMDataProviderOutputParametersSettings outputParameterSetting) {
+		DDMDataProviderOutputParametersSettings outputParametersSettings) {
 
 		DDMFormFieldValue outputParameters =
 			DDMFormValuesTestUtil.createDDMFormFieldValue(
@@ -142,17 +145,17 @@ public class DDMDataProviderTestUtil {
 		outputParameters.addNestedDDMFormFieldValue(
 			DDMFormValuesTestUtil.createUnlocalizedDDMFormFieldValue(
 				"outputParameterName",
-				outputParameterSetting.outputParameterName()));
+				outputParametersSettings.outputParameterName()));
 
 		outputParameters.addNestedDDMFormFieldValue(
 			DDMFormValuesTestUtil.createUnlocalizedDDMFormFieldValue(
 				"outputParameterPath",
-				outputParameterSetting.outputParameterPath()));
+				outputParametersSettings.outputParameterPath()));
 
 		outputParameters.addNestedDDMFormFieldValue(
 			DDMFormValuesTestUtil.createUnlocalizedDDMFormFieldValue(
 				"outputParameterType",
-				outputParameterSetting.outputParameterType()));
+				outputParametersSettings.outputParameterType()));
 
 		return outputParameters;
 	}

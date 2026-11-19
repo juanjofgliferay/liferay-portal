@@ -8,22 +8,18 @@ package com.liferay.dynamic.data.mapping.form.web.internal.display.context.util;
 import com.liferay.dynamic.data.mapping.model.DDMForm;
 import com.liferay.dynamic.data.mapping.model.DDMFormField;
 import com.liferay.dynamic.data.mapping.model.DDMFormInstance;
-import com.liferay.dynamic.data.mapping.model.DDMFormInstanceRecord;
 import com.liferay.dynamic.data.mapping.model.DDMStructure;
 import com.liferay.dynamic.data.mapping.service.DDMFormInstanceRecordLocalService;
-import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
-import java.util.List;
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.Map;
 import java.util.Objects;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Carolina Barbosa
@@ -49,23 +45,13 @@ public class DDMFormGuestUploadFieldUtil {
 		DDMFormInstanceRecordLocalService ddmFormInstanceRecordLocalService =
 			_ddmFormInstanceRecordLocalServiceSnapshot.get();
 
-		List<DDMFormInstanceRecord> ddmFormInstanceRecords =
-			ddmFormInstanceRecordLocalService.getFormInstanceRecords(
+		int count =
+			ddmFormInstanceRecordLocalService.getFormInstanceRecordsCount(
 				ddmFormInstance.getFormInstanceId(),
-				WorkflowConstants.STATUS_ANY, QueryUtil.ALL_POS,
-				QueryUtil.ALL_POS, null);
+				httpServletRequest.getRemoteAddr());
 
-		for (int i = 0; i < ddmFormInstanceRecords.size(); i++) {
-			DDMFormInstanceRecord ddmFormInstanceRecord =
-				ddmFormInstanceRecords.get(i);
-
-			if (Objects.equals(
-					ddmFormInstanceRecord.getIpAddress(),
-					httpServletRequest.getRemoteAddr()) &&
-				((i + 1) == guestUploadMaximumSubmissions)) {
-
-				return true;
-			}
+		if (count >= guestUploadMaximumSubmissions) {
+			return true;
 		}
 
 		return false;

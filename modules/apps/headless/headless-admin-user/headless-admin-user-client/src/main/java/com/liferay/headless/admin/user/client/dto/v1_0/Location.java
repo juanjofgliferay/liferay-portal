@@ -8,12 +8,12 @@ package com.liferay.headless.admin.user.client.dto.v1_0;
 import com.liferay.headless.admin.user.client.function.UnsafeSupplier;
 import com.liferay.headless.admin.user.client.serdes.v1_0.LocationSerDes;
 
+import jakarta.annotation.Generated;
+
 import java.io.Serializable;
 
 import java.util.Map;
 import java.util.Objects;
-
-import javax.annotation.Generated;
 
 /**
  * @author Javier Gamarra
@@ -46,6 +46,53 @@ public class Location implements Cloneable, Serializable {
 	}
 
 	protected String addressCountry;
+
+	public String getAddressCountryCode() {
+		return addressCountryCode;
+	}
+
+	public void setAddressCountryCode(String addressCountryCode) {
+		this.addressCountryCode = addressCountryCode;
+	}
+
+	public void setAddressCountryCode(
+		UnsafeSupplier<String, Exception> addressCountryCodeUnsafeSupplier) {
+
+		try {
+			addressCountryCode = addressCountryCodeUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String addressCountryCode;
+
+	public String getAddressCountryExternalReferenceCode() {
+		return addressCountryExternalReferenceCode;
+	}
+
+	public void setAddressCountryExternalReferenceCode(
+		String addressCountryExternalReferenceCode) {
+
+		this.addressCountryExternalReferenceCode =
+			addressCountryExternalReferenceCode;
+	}
+
+	public void setAddressCountryExternalReferenceCode(
+		UnsafeSupplier<String, Exception>
+			addressCountryExternalReferenceCodeUnsafeSupplier) {
+
+		try {
+			addressCountryExternalReferenceCode =
+				addressCountryExternalReferenceCodeUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String addressCountryExternalReferenceCode;
 
 	public Map<String, String> getAddressCountry_i18n() {
 		return addressCountry_i18n;
@@ -91,6 +138,53 @@ public class Location implements Cloneable, Serializable {
 	}
 
 	protected String addressRegion;
+
+	public String getAddressRegionCode() {
+		return addressRegionCode;
+	}
+
+	public void setAddressRegionCode(String addressRegionCode) {
+		this.addressRegionCode = addressRegionCode;
+	}
+
+	public void setAddressRegionCode(
+		UnsafeSupplier<String, Exception> addressRegionCodeUnsafeSupplier) {
+
+		try {
+			addressRegionCode = addressRegionCodeUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String addressRegionCode;
+
+	public String getAddressRegionExternalReferenceCode() {
+		return addressRegionExternalReferenceCode;
+	}
+
+	public void setAddressRegionExternalReferenceCode(
+		String addressRegionExternalReferenceCode) {
+
+		this.addressRegionExternalReferenceCode =
+			addressRegionExternalReferenceCode;
+	}
+
+	public void setAddressRegionExternalReferenceCode(
+		UnsafeSupplier<String, Exception>
+			addressRegionExternalReferenceCodeUnsafeSupplier) {
+
+		try {
+			addressRegionExternalReferenceCode =
+				addressRegionExternalReferenceCodeUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String addressRegionExternalReferenceCode;
 
 	public Long getId() {
 		return id;
@@ -143,3 +237,4 @@ public class Location implements Cloneable, Serializable {
 	}
 
 }
+// LIFERAY-REST-BUILDER-HASH:-210445096

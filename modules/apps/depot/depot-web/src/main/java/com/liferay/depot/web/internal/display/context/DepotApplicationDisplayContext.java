@@ -7,9 +7,8 @@ package com.liferay.depot.web.internal.display.context;
 
 import com.liferay.depot.model.DepotEntry;
 import com.liferay.depot.web.internal.constants.DepotAdminWebKeys;
+import com.liferay.item.selector.taglib.GroupSelectorBreadcrumbUtil;
 import com.liferay.portal.kernel.language.LanguageUtil;
-import com.liferay.portal.kernel.portlet.PortletURLUtil;
-import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.JavaConstants;
@@ -17,12 +16,12 @@ import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import javax.portlet.PortletException;
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
-import javax.portlet.PortletURL;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+import jakarta.portlet.PortletURL;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * @author Alicia García
@@ -32,12 +31,13 @@ public class DepotApplicationDisplayContext {
 	public DepotApplicationDisplayContext(
 		HttpServletRequest httpServletRequest, Portal portal) {
 
+		_httpServletRequest = httpServletRequest;
 		_portal = portal;
 
 		_portletRequest = (PortletRequest)httpServletRequest.getAttribute(
-			JavaConstants.JAVAX_PORTLET_REQUEST);
+			JavaConstants.JAKARTA_PORTLET_REQUEST);
 		_portletResponse = (PortletResponse)httpServletRequest.getAttribute(
-			JavaConstants.JAVAX_PORTLET_RESPONSE);
+			JavaConstants.JAKARTA_PORTLET_RESPONSE);
 		_themeDisplay = (ThemeDisplay)httpServletRequest.getAttribute(
 			WebKeys.THEME_DISPLAY);
 	}
@@ -86,17 +86,13 @@ public class DepotApplicationDisplayContext {
 	}
 
 	private String _getViewGroupSelectorURL() throws PortletException {
-		return PortletURLBuilder.create(
-			PortletURLUtil.clone(
-				getPortletURL(),
-				_portal.getLiferayPortletResponse(_portletResponse))
-		).setParameter(
-			"groupType", "site"
-		).setParameter(
-			"showGroupSelector", true
-		).buildString();
+		return GroupSelectorBreadcrumbUtil.getGroupSelectorURL(
+			_httpServletRequest,
+			_portal.getLiferayPortletResponse(_portletResponse),
+			getPortletURL());
 	}
 
+	private final HttpServletRequest _httpServletRequest;
 	private final Portal _portal;
 	private String _portletId;
 	private final PortletRequest _portletRequest;

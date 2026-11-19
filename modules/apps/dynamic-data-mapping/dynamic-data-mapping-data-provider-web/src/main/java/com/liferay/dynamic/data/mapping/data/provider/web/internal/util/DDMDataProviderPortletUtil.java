@@ -35,11 +35,12 @@ public class DDMDataProviderPortletUtil {
 		OrderByComparator<DDMDataProviderInstance> orderByComparator = null;
 
 		if (orderByCol.equals("modified-date")) {
-			orderByComparator = new DataProviderInstanceModifiedDateComparator(
-				orderByAsc);
+			orderByComparator =
+				DataProviderInstanceModifiedDateComparator.getInstance(
+					orderByAsc);
 		}
 		else if (orderByCol.equals("name")) {
-			orderByComparator = new DataProviderInstanceNameComparator(
+			orderByComparator = DataProviderInstanceNameComparator.getInstance(
 				orderByAsc);
 		}
 
@@ -55,9 +56,11 @@ public class DDMDataProviderPortletUtil {
 			ddmForm.getDDMFormFieldsMap(true);
 
 		for (DDMFormField ddmFormField : ddmFormFieldsMap.values()) {
-			if (Objects.equals(type, ddmFormField.getType())) {
-				ddmFormFieldNames.add(ddmFormField.getName());
+			if (!Objects.equals(type, ddmFormField.getType())) {
+				continue;
 			}
+
+			ddmFormFieldNames.add(ddmFormField.getName());
 		}
 
 		return ddmFormFieldNames;

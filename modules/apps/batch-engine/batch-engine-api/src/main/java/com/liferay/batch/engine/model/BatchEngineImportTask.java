@@ -56,4 +56,7 @@ public interface BatchEngineImportTask
 
 	public int getBatchEngineImportTaskErrorsCount();
 
+	public String getParameterValue(String name);
+
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1159782434

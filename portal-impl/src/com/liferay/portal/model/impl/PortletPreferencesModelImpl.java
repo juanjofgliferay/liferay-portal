@@ -85,6 +85,8 @@ public class PortletPreferencesModelImpl
 
 	public static final String TABLE_SQL_DROP = "drop table PortletPreferences";
 
+	public static final String ENTITY_ALIAS = "portletPreferences";
+
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY portletPreferences.portletPreferencesId ASC";
 
@@ -153,7 +155,7 @@ public class PortletPreferencesModelImpl
 	public static final long PORTLETPREFERENCESID_COLUMN_BITMASK = 32L;
 
 	public static final long LOCK_EXPIRATION_TIME = GetterUtil.getLong(
-		com.liferay.portal.util.PropsUtil.get(
+		com.liferay.portal.kernel.util.PropsUtil.get(
 			"lock.expiration.time.com.liferay.portal.kernel.model.PortletPreferences"));
 
 	public PortletPreferencesModelImpl() {
@@ -834,3 +836,4 @@ public class PortletPreferencesModelImpl
 	private PortletPreferences _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:369257641

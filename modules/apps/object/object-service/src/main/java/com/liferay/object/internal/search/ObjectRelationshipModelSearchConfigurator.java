@@ -6,10 +6,12 @@
 package com.liferay.object.internal.search;
 
 import com.liferay.object.model.ObjectRelationship;
+import com.liferay.object.service.ObjectRelationshipLocalService;
 import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.search.spi.model.index.contributor.ModelIndexerWriterContributor;
 import com.liferay.portal.search.spi.model.registrar.ModelSearchConfigurator;
 
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
@@ -40,10 +42,18 @@ public class ObjectRelationshipModelSearchConfigurator
 		return _modelIndexWriterContributor;
 	}
 
-	@Reference(
-		target = "(indexer.class.name=com.liferay.object.model.ObjectRelationship)"
-	)
+	@Activate
+	protected void activate() {
+		_modelIndexWriterContributor = new ModelIndexerWriterContributor<>(
+			_objectRelationshipLocalServiceLocalService::
+				getIndexableActionableDynamicQuery);
+	}
+
 	private ModelIndexerWriterContributor<ObjectRelationship>
 		_modelIndexWriterContributor;
+
+	@Reference
+	private ObjectRelationshipLocalService
+		_objectRelationshipLocalServiceLocalService;
 
 }

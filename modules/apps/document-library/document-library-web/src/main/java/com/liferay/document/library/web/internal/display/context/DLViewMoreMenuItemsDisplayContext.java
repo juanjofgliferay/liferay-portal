@@ -26,14 +26,14 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.List;
 import java.util.Locale;
-
-import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Brian I. Kim
@@ -146,7 +146,7 @@ public class DLViewMoreMenuItemsDisplayContext {
 				themeDisplay.getCompanyId(), folderId,
 				SiteConnectedGroupGroupProviderUtil.
 					getCurrentAndAncestorSiteAndDepotGroupIds(
-						themeDisplay.getScopeGroupId(), true),
+						themeDisplay.getScopeGroupId(), false, true),
 				displayTerms.getKeywords(), includeBasicFileEntryType,
 				_inherited, searchContainer.getStart(),
 				searchContainer.getEnd()),
@@ -154,7 +154,7 @@ public class DLViewMoreMenuItemsDisplayContext {
 				themeDisplay.getCompanyId(), folderId,
 				SiteConnectedGroupGroupProviderUtil.
 					getCurrentAndAncestorSiteAndDepotGroupIds(
-						themeDisplay.getScopeGroupId(), true),
+						themeDisplay.getScopeGroupId(), false, true),
 				displayTerms.getKeywords(), includeBasicFileEntryType,
 				_inherited));
 
@@ -173,20 +173,22 @@ public class DLViewMoreMenuItemsDisplayContext {
 		while (folderId != DLFolderConstants.DEFAULT_PARENT_FOLDER_ID) {
 			Folder folder = DLAppServiceUtil.getFolder(folderId);
 
-			if ((folder != null) && (folder.getModel() instanceof DLFolder)) {
-				DLFolder dlFolder = (DLFolder)folder.getModel();
-
-				if (dlFolder.getRestrictionType() ==
-						DLFolderConstants.
-							RESTRICTION_TYPE_FILE_ENTRY_TYPES_AND_WORKFLOW) {
-
-					_inherited = false;
-
-					break;
-				}
-
-				folderId = dlFolder.getParentFolderId();
+			if ((folder == null) || !(folder.getModel() instanceof DLFolder)) {
+				continue;
 			}
+
+			DLFolder dlFolder = (DLFolder)folder.getModel();
+
+			if (dlFolder.getRestrictionType() ==
+					DLFolderConstants.
+						RESTRICTION_TYPE_FILE_ENTRY_TYPES_AND_WORKFLOW) {
+
+				_inherited = false;
+
+				break;
+			}
+
+			folderId = dlFolder.getParentFolderId();
 		}
 
 		return folderId;

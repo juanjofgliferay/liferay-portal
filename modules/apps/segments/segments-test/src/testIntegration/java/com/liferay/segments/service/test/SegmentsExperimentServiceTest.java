@@ -66,24 +66,12 @@ public class SegmentsExperimentServiceTest {
 		_group = GroupTestUtil.addGroup();
 
 		_role = RoleLocalServiceUtil.addRole(
-			TestPropsValues.getUserId(), null, 0, StringUtil.randomString(),
-			null, null, RoleConstants.TYPE_SITE, null,
+			RandomTestUtil.randomString(), TestPropsValues.getUserId(), null, 0,
+			StringUtil.randomString(), null, null, RoleConstants.TYPE_SITE,
+			null,
 			ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
 
 		_user = UserTestUtil.addGroupUser(_group, _role.getName());
-	}
-
-	@Test(expected = PrincipalException.MustHavePermission.class)
-	public void testAddSegmentsExperimentWithoutManageSegmentsEntriesPermission()
-		throws Exception {
-
-		try (ContextUserReplace contextUserReplace = new ContextUserReplace(
-				_user, PermissionCheckerFactoryUtil.create(_user))) {
-
-			_addSegmentsExperiment(
-				ServiceContextTestUtil.getServiceContext(
-					_group, _user.getUserId()));
-		}
 	}
 
 	@Test
@@ -94,6 +82,19 @@ public class SegmentsExperimentServiceTest {
 			_group.getCompanyId(), Layout.class.getName(),
 			ResourceConstants.SCOPE_GROUP, String.valueOf(_group.getGroupId()),
 			_role.getRoleId(), ActionKeys.UPDATE);
+
+		try (ContextUserReplace contextUserReplace = new ContextUserReplace(
+				_user, PermissionCheckerFactoryUtil.create(_user))) {
+
+			_addSegmentsExperiment(
+				ServiceContextTestUtil.getServiceContext(
+					_group, _user.getUserId()));
+		}
+	}
+
+	@Test(expected = PrincipalException.MustHavePermission.class)
+	public void testAddSegmentsExperimentWithoutManageSegmentsEntriesPermission()
+		throws Exception {
 
 		try (ContextUserReplace contextUserReplace = new ContextUserReplace(
 				_user, PermissionCheckerFactoryUtil.create(_user))) {
@@ -184,7 +185,7 @@ public class SegmentsExperimentServiceTest {
 			Assert.assertNull(
 				_segmentsExperimentService.fetchSegmentsExperiment(
 					layout.getGroupId(),
-					segmentsExperiment.getSegmentsExperienceId(),
+					segmentsExperiment.getSegmentsExperienceKey(),
 					layout.getPlid()));
 		}
 	}
@@ -204,23 +205,8 @@ public class SegmentsExperimentServiceTest {
 				segmentsExperiment,
 				_segmentsExperimentService.fetchSegmentsExperiment(
 					layout.getGroupId(),
-					segmentsExperiment.getSegmentsExperienceId(),
+					segmentsExperiment.getSegmentsExperienceKey(),
 					layout.getPlid()));
-		}
-	}
-
-	@Test(expected = PrincipalException.MustHavePermission.class)
-	public void testUpdateSegmentsExperimentWithoutUpdatePermission()
-		throws Exception {
-
-		SegmentsExperiment segmentsExperiment = _addSegmentsExperiment();
-
-		try (ContextUserReplace contextUserReplace = new ContextUserReplace(
-				_user, PermissionCheckerFactoryUtil.create(_user))) {
-
-			_segmentsExperimentService.updateSegmentsExperimentStatus(
-				segmentsExperiment.getSegmentsExperimentKey(),
-				SegmentsExperimentConstants.STATUS_TERMINATED);
 		}
 	}
 
@@ -242,6 +228,21 @@ public class SegmentsExperimentServiceTest {
 			_segmentsExperimentService.updateSegmentsExperimentStatus(
 				segmentsExperiment.getSegmentsExperimentKey(),
 				SegmentsExperimentConstants.STATUS_RUNNING);
+		}
+	}
+
+	@Test(expected = PrincipalException.MustHavePermission.class)
+	public void testUpdateSegmentsExperimentWithoutUpdatePermission()
+		throws Exception {
+
+		SegmentsExperiment segmentsExperiment = _addSegmentsExperiment();
+
+		try (ContextUserReplace contextUserReplace = new ContextUserReplace(
+				_user, PermissionCheckerFactoryUtil.create(_user))) {
+
+			_segmentsExperimentService.updateSegmentsExperimentStatus(
+				segmentsExperiment.getSegmentsExperimentKey(),
+				SegmentsExperimentConstants.STATUS_TERMINATED);
 		}
 	}
 

@@ -8,13 +8,13 @@ package com.liferay.headless.commerce.admin.catalog.client.dto.v1_0;
 import com.liferay.headless.commerce.admin.catalog.client.function.UnsafeSupplier;
 import com.liferay.headless.commerce.admin.catalog.client.serdes.v1_0.ProductSerDes;
 
+import jakarta.annotation.Generated;
+
 import java.io.Serializable;
 
 import java.util.Date;
 import java.util.Map;
 import java.util.Objects;
-
-import javax.annotation.Generated;
 
 /**
  * @author Zoltán Takács
@@ -112,6 +112,78 @@ public class Product implements Cloneable, Serializable {
 
 	protected Catalog catalog;
 
+	public String getCatalogCurrencyCode() {
+		return catalogCurrencyCode;
+	}
+
+	public void setCatalogCurrencyCode(String catalogCurrencyCode) {
+		this.catalogCurrencyCode = catalogCurrencyCode;
+	}
+
+	public void setCatalogCurrencyCode(
+		UnsafeSupplier<String, Exception> catalogCurrencyCodeUnsafeSupplier) {
+
+		try {
+			catalogCurrencyCode = catalogCurrencyCodeUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String catalogCurrencyCode;
+
+	public String getCatalogCurrencyExternalReferenceCode() {
+		return catalogCurrencyExternalReferenceCode;
+	}
+
+	public void setCatalogCurrencyExternalReferenceCode(
+		String catalogCurrencyExternalReferenceCode) {
+
+		this.catalogCurrencyExternalReferenceCode =
+			catalogCurrencyExternalReferenceCode;
+	}
+
+	public void setCatalogCurrencyExternalReferenceCode(
+		UnsafeSupplier<String, Exception>
+			catalogCurrencyExternalReferenceCodeUnsafeSupplier) {
+
+		try {
+			catalogCurrencyExternalReferenceCode =
+				catalogCurrencyExternalReferenceCodeUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String catalogCurrencyExternalReferenceCode;
+
+	public String getCatalogExternalReferenceCode() {
+		return catalogExternalReferenceCode;
+	}
+
+	public void setCatalogExternalReferenceCode(
+		String catalogExternalReferenceCode) {
+
+		this.catalogExternalReferenceCode = catalogExternalReferenceCode;
+	}
+
+	public void setCatalogExternalReferenceCode(
+		UnsafeSupplier<String, Exception>
+			catalogExternalReferenceCodeUnsafeSupplier) {
+
+		try {
+			catalogExternalReferenceCode =
+				catalogExternalReferenceCodeUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String catalogExternalReferenceCode;
+
 	public Long getCatalogId() {
 		return catalogId;
 	}
@@ -175,16 +247,45 @@ public class Product implements Cloneable, Serializable {
 
 	protected Date createDate;
 
-	public CustomField[] getCustomFields() {
+	public Creator getCreator() {
+		return creator;
+	}
+
+	public void setCreator(Creator creator) {
+		this.creator = creator;
+	}
+
+	public void setCreator(
+		UnsafeSupplier<Creator, Exception> creatorUnsafeSupplier) {
+
+		try {
+			creator = creatorUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected Creator creator;
+
+	public com.liferay.headless.commerce.admin.catalog.client.custom.field.
+		CustomField[] getCustomFields() {
+
 		return customFields;
 	}
 
-	public void setCustomFields(CustomField[] customFields) {
+	public void setCustomFields(
+		com.liferay.headless.commerce.admin.catalog.client.custom.field.
+			CustomField[] customFields) {
+
 		this.customFields = customFields;
 	}
 
 	public void setCustomFields(
-		UnsafeSupplier<CustomField[], Exception> customFieldsUnsafeSupplier) {
+		UnsafeSupplier
+			<com.liferay.headless.commerce.admin.catalog.client.custom.field.
+				CustomField[],
+			 Exception> customFieldsUnsafeSupplier) {
 
 		try {
 			customFields = customFieldsUnsafeSupplier.get();
@@ -194,7 +295,50 @@ public class Product implements Cloneable, Serializable {
 		}
 	}
 
-	protected CustomField[] customFields;
+	protected com.liferay.headless.commerce.admin.catalog.client.custom.field.
+		CustomField[] customFields;
+
+	public Date getDateCreated() {
+		return dateCreated;
+	}
+
+	public void setDateCreated(Date dateCreated) {
+		this.dateCreated = dateCreated;
+	}
+
+	public void setDateCreated(
+		UnsafeSupplier<Date, Exception> dateCreatedUnsafeSupplier) {
+
+		try {
+			dateCreated = dateCreatedUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected Date dateCreated;
+
+	public Date getDateModified() {
+		return dateModified;
+	}
+
+	public void setDateModified(Date dateModified) {
+		this.dateModified = dateModified;
+	}
+
+	public void setDateModified(
+		UnsafeSupplier<Date, Exception> dateModifiedUnsafeSupplier) {
+
+		try {
+			dateModified = dateModifiedUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected Date dateModified;
 
 	public String getDefaultSku() {
 		return defaultSku;
@@ -343,6 +487,28 @@ public class Product implements Cloneable, Serializable {
 	}
 
 	protected String externalReferenceCode;
+
+	public GroupedProduct[] getGroupedProducts() {
+		return groupedProducts;
+	}
+
+	public void setGroupedProducts(GroupedProduct[] groupedProducts) {
+		this.groupedProducts = groupedProducts;
+	}
+
+	public void setGroupedProducts(
+		UnsafeSupplier<GroupedProduct[], Exception>
+			groupedProductsUnsafeSupplier) {
+
+		try {
+			groupedProducts = groupedProductsUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected GroupedProduct[] groupedProducts;
 
 	public Long getId() {
 		return id;
@@ -691,6 +857,28 @@ public class Product implements Cloneable, Serializable {
 	}
 
 	protected ProductConfiguration productConfiguration;
+
+	public ProductProductGroup[] getProductGroups() {
+		return productGroups;
+	}
+
+	public void setProductGroups(ProductProductGroup[] productGroups) {
+		this.productGroups = productGroups;
+	}
+
+	public void setProductGroups(
+		UnsafeSupplier<ProductProductGroup[], Exception>
+			productGroupsUnsafeSupplier) {
+
+		try {
+			productGroups = productGroupsUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected ProductProductGroup[] productGroups;
 
 	public Long getProductId() {
 		return productId;
@@ -1138,3 +1326,4 @@ public class Product implements Cloneable, Serializable {
 	}
 
 }
+// LIFERAY-REST-BUILDER-HASH:-636597727

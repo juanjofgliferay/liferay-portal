@@ -8,6 +8,7 @@ package com.liferay.commerce.product.type.virtual.web.internal.frontend.taglib.s
 import com.liferay.commerce.product.model.CPDefinition;
 import com.liferay.commerce.product.model.CPInstance;
 import com.liferay.commerce.product.portlet.action.ActionHelper;
+import com.liferay.commerce.product.service.CPDefinitionLocalService;
 import com.liferay.commerce.product.type.virtual.constants.VirtualCPTypeConstants;
 import com.liferay.commerce.product.type.virtual.web.internal.display.context.CPDefinitionVirtualSettingDisplayContext;
 import com.liferay.commerce.product.type.virtual.web.internal.portlet.action.helper.CPDefinitionVirtualSettingActionHelper;
@@ -22,17 +23,17 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import java.io.IOException;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
 /**
- * @author Joao Victor Alves
+ * @author João Victor Alves
  */
 @Component(
 	property = "screen.navigation.entry.order:Integer=10",
@@ -79,7 +80,7 @@ public class CPInstanceVirtualSettingsScreenNavigationEntry
 			cpDefinitionVirtualSettingDisplayContext =
 				new CPDefinitionVirtualSettingDisplayContext(
 					_actionHelper, httpServletRequest, _dlAppService,
-					_journalArticleService,
+					_journalArticleService, _cpDefinitionLocalService,
 					_cpDefinitionVirtualSettingActionHelper, _itemSelector);
 
 		httpServletRequest.setAttribute(
@@ -96,6 +97,9 @@ public class CPInstanceVirtualSettingsScreenNavigationEntry
 
 	@Reference
 	private ActionHelper _actionHelper;
+
+	@Reference
+	private CPDefinitionLocalService _cpDefinitionLocalService;
 
 	@Reference
 	private CPDefinitionVirtualSettingActionHelper

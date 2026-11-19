@@ -8,7 +8,6 @@ package com.liferay.source.formatter.check;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.source.formatter.check.util.JavaSourceUtil;
 
@@ -23,27 +22,6 @@ import java.util.regex.Pattern;
  */
 public abstract class BaseUpgradeCheck extends BaseFileCheck {
 
-	public boolean hasValidParameters(
-		String content, int expectedParametersSize, String fileContent,
-		String fileName, String message, List<String> parameterList,
-		String[] parameterTypes) {
-
-		if (parameterList.size() != expectedParametersSize) {
-			return false;
-		}
-
-		if (!hasParameterTypes(
-				content, fileContent, fileName,
-				ArrayUtil.toStringArray(parameterList), parameterTypes)) {
-
-			addMessage(fileName, message);
-
-			return false;
-		}
-
-		return true;
-	}
-
 	protected static String addNewImportsJSPHeader(
 		String newContent, String[] newImports) {
 
@@ -52,9 +30,11 @@ public abstract class BaseUpgradeCheck extends BaseFileCheck {
 		List<String> missingImports = new ArrayList<>();
 
 		for (String newImport : newImports) {
-			if (!newContent.contains("import=\"" + newImport)) {
-				missingImports.add(newImport);
+			if (newContent.contains("import=\"" + newImport)) {
+				continue;
 			}
+
+			missingImports.add(newImport);
 		}
 
 		if (missingImports.isEmpty()) {
@@ -177,6 +157,20 @@ public abstract class BaseUpgradeCheck extends BaseFileCheck {
 		}
 
 		return false;
+	}
+
+	protected String joinLines(String... lines) {
+		StringBundler sb = new StringBundler((lines.length * 2) - 1);
+
+		for (String line : lines) {
+			if (sb.index() > 0) {
+				sb.append(StringPool.NEW_LINE);
+			}
+
+			sb.append(line);
+		}
+
+		return sb.toString();
 	}
 
 	private static final Pattern _copyrightPattern = Pattern.compile(

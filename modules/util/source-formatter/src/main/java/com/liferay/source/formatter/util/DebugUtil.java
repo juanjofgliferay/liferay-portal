@@ -49,11 +49,8 @@ public class DebugUtil {
 	public static synchronized void increaseProcessingTime(
 		String checkName, long processingTime) {
 
-		double checkTotalProcessingTime = 0.0;
-
-		if (_processingTimeMap.containsKey(checkName)) {
-			checkTotalProcessingTime = _processingTimeMap.get(checkName);
-		}
+		double checkTotalProcessingTime = _processingTimeMap.getOrDefault(
+			checkName, 0.0);
 
 		checkTotalProcessingTime +=
 			(double)processingTime / Math.max(1, _concurrentTasksCount.get());
@@ -74,11 +71,11 @@ public class DebugUtil {
 
 		StringBundler sb = new StringBundler(5);
 
-		sb.append("'");
+		sb.append("\"");
 		sb.append(checkName);
-		sb.append("' modified '");
+		sb.append("\" modified \"");
 		sb.append(fileName);
-		sb.append("':");
+		sb.append("\":");
 
 		System.out.println(sb.toString());
 
@@ -187,17 +184,22 @@ public class DebugUtil {
 	}
 
 	private static void _printProcessingTimeInformation(CheckType checkType) {
-		if (!_checkNamesMap.containsKey(checkType)) {
+		List<String> checkNames = _checkNamesMap.get(checkType);
+
+		if (checkNames == null) {
 			return;
 		}
 
 		final Map<String, Double> checkTypeProcessingTimeMap = new HashMap<>();
 
-		for (String checkName : _checkNamesMap.get(checkType)) {
-			if (_processingTimeMap.containsKey(checkName)) {
-				checkTypeProcessingTimeMap.put(
-					checkName, _processingTimeMap.get(checkName));
+		for (String checkName : checkNames) {
+			Double processingTime = _processingTimeMap.get(checkName);
+
+			if (processingTime == null) {
+				continue;
 			}
+
+			checkTypeProcessingTimeMap.put(checkName, processingTime);
 		}
 
 		if (checkTypeProcessingTimeMap.isEmpty()) {
@@ -207,9 +209,9 @@ public class DebugUtil {
 		StringBundler sb = new StringBundler(5);
 
 		sb.append("\n");
-		sb.append("==== Processing Time Information for '");
+		sb.append("==== Processing Time Information for \"");
 		sb.append(checkType.getValue());
-		sb.append("' ====\n\n");
+		sb.append("\" ====\n\n");
 
 		System.out.println(sb.toString());
 

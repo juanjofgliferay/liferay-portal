@@ -1,5 +1,6 @@
 import com.bmuschko.gradle.docker.tasks.container.DockerCopyFileFromContainer
 import com.bmuschko.gradle.docker.tasks.container.DockerRemoveContainer
+import com.bmuschko.gradle.docker.tasks.container.DockerStopContainer
 import com.bmuschko.gradle.docker.tasks.image.DockerInspectImage
 import com.bmuschko.gradle.docker.tasks.image.DockerRemoveImage
 
@@ -14,7 +15,7 @@ apply plugin: "com.liferay.workspace"
 gradle.liferayWorkspace {
 	dockerContainerId = "create_docker_container_container"
 	dockerImageId = "create_docker_container_image"
-	product = "portal-7.4-ga8"
+	product = "dxp-2023.q4.6"
 }
 
 gradle.projectsEvaluated {
@@ -23,9 +24,8 @@ gradle.projectsEvaluated {
 	rootProject.tasks.register("copyOverrideTestScript", DockerCopyFileFromContainer) {
 		dependsOn "createDockerContainer"
 
-		compressed = true
 		containerId = "create_docker_container_container"
-		hostPath = rootProject.buildDir.path
+		hostPath = "${rootProject.buildDir}/override_test.sh"
 		remotePath = "/home/liferay/configs/local/scripts/override_test.sh"
 	}
 
@@ -35,8 +35,34 @@ gradle.projectsEvaluated {
 		imageId = "create_docker_container_image"
 	}
 
+	rootProject.tasks.register("testStopDockerContainer", DockerStopContainer) {
+		onError {
+			if (logger.isWarnEnabled()) {
+				logger.warn("No container with ID '${gradle.liferayWorkspace.dockerContainerId}' found")
+			}
+		}
+		targetContainerId {
+			gradle.liferayWorkspace.dockerContainerId
+		}
+	}
+
+	rootProject.tasks.register("testRemoveDockerContainer", DockerRemoveContainer) {
+		dependsOn "testStopDockerContainer"
+
+		force = true
+		onError {
+			if (logger.isWarnEnabled()) {
+				logger.warn("No container with ID '${gradle.liferayWorkspace.dockerContainerId}' found")
+			}
+		}
+		removeVolumes = true
+		targetContainerId {
+			gradle.liferayWorkspace.dockerContainerId
+		}
+	}
+
 	rootProject.tasks.register("removeImage", DockerRemoveImage) {
-		dependsOn "removeDockerContainer"
+		dependsOn "testRemoveDockerContainer"
 
 		targetImageId {
 			gradle.liferayWorkspace.dockerImageId

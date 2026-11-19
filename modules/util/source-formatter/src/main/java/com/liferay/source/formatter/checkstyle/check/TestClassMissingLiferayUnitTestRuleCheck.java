@@ -25,9 +25,7 @@ public class TestClassMissingLiferayUnitTestRuleCheck extends BaseCheck {
 
 	@Override
 	protected void doVisitToken(DetailAST detailAST) {
-		DetailAST parentDetailAST = detailAST.getParent();
-
-		if (parentDetailAST != null) {
+		if (!isDirectChildOfCompilationUnit(detailAST)) {
 			return;
 		}
 
@@ -40,7 +38,7 @@ public class TestClassMissingLiferayUnitTestRuleCheck extends BaseCheck {
 			return;
 		}
 
-		List<String> pathNames = getAttributeValues(_PAHT_NAMES_WHITELIST);
+		List<String> pathNames = getAttributeValues(_PATH_NAMES_WHITELIST_KEY);
 
 		for (String pathName : pathNames) {
 			if (!absolutePath.contains(pathName)) {
@@ -51,12 +49,10 @@ public class TestClassMissingLiferayUnitTestRuleCheck extends BaseCheck {
 				detailAST, "RunWith");
 
 			if (annotationDetailAST != null) {
-				List<DetailAST> literalClassDetailASTList = getAllChildTokens(
+				List<DetailAST> literalClassDetailASTs = getAllChildTokens(
 					annotationDetailAST, true, TokenTypes.LITERAL_CLASS);
 
-				for (DetailAST literalClassDetailAST :
-						literalClassDetailASTList) {
-
+				for (DetailAST literalClassDetailAST : literalClassDetailASTs) {
 					DetailAST identDetailAST =
 						literalClassDetailAST.getPreviousSibling();
 
@@ -73,11 +69,11 @@ public class TestClassMissingLiferayUnitTestRuleCheck extends BaseCheck {
 			DetailAST objBlockDetailAST = detailAST.findFirstToken(
 				TokenTypes.OBJBLOCK);
 
-			List<DetailAST> variableDefinitionDetailASTList = getAllChildTokens(
+			List<DetailAST> variableDefinitionDetailASTs = getAllChildTokens(
 				objBlockDetailAST, false, TokenTypes.VARIABLE_DEF);
 
 			for (DetailAST variableDefinitionDetailAST :
-					variableDefinitionDetailASTList) {
+					variableDefinitionDetailASTs) {
 
 				DetailAST typeDetailAST =
 					variableDefinitionDetailAST.findFirstToken(TokenTypes.TYPE);
@@ -94,12 +90,12 @@ public class TestClassMissingLiferayUnitTestRuleCheck extends BaseCheck {
 					return;
 				}
 
-				List<DetailAST> dotDetailASTList = getAllChildTokens(
+				List<DetailAST> dotDetailASTs = getAllChildTokens(
 					variableDefinitionDetailAST, true, TokenTypes.DOT);
 
 				FullIdent fullIdent = null;
 
-				for (DetailAST dotDetailAST : dotDetailASTList) {
+				for (DetailAST dotDetailAST : dotDetailASTs) {
 					fullIdent = FullIdent.createFullIdent(dotDetailAST);
 
 					if (Objects.equals(
@@ -113,16 +109,19 @@ public class TestClassMissingLiferayUnitTestRuleCheck extends BaseCheck {
 
 			List<String> importNames = getImportNames(detailAST);
 
-			if (!importNames.contains(
+			if (importNames.contains(
 					"com.liferay.portal.test.rule.LiferayUnitTestRule")) {
 
-				log(detailAST, _MSG_REQUIRE_TEST_RULE);
+				continue;
 			}
+
+			log(detailAST, _MSG_REQUIRE_TEST_RULE);
 		}
 	}
 
 	private static final String _MSG_REQUIRE_TEST_RULE = "test.rule.missing";
 
-	private static final String _PAHT_NAMES_WHITELIST = "pathNamesWhiltelist";
+	private static final String _PATH_NAMES_WHITELIST_KEY =
+		"pathNamesWhitelist";
 
 }

@@ -6,8 +6,12 @@
 package com.liferay.dynamic.data.mapping.util.comparator;
 
 import com.liferay.dynamic.data.mapping.model.DDMFormInstance;
+import com.liferay.portal.kernel.util.CollatorUtil;
+import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.StringUtil;
+
+import java.text.Collator;
 
 /**
  * @author Rafael Praxedes
@@ -21,12 +25,12 @@ public class DDMFormInstanceNameComparator
 
 	public static final String[] ORDER_BY_FIELDS = {"name"};
 
-	public DDMFormInstanceNameComparator() {
-		this(false);
-	}
+	public static DDMFormInstanceNameComparator getInstance(boolean ascending) {
+		if (ascending) {
+			return _INSTANCE_ASCENDING;
+		}
 
-	public DDMFormInstanceNameComparator(boolean ascending) {
-		_ascending = ascending;
+		return _INSTANCE_DESCENDING;
 	}
 
 	@Override
@@ -36,7 +40,9 @@ public class DDMFormInstanceNameComparator
 		String name1 = StringUtil.toLowerCase(ddmFormInstance1.getName());
 		String name2 = StringUtil.toLowerCase(ddmFormInstance2.getName());
 
-		int value = name1.compareTo(name2);
+		Collator collator = CollatorUtil.getInstance(LocaleUtil.getDefault());
+
+		int value = collator.compare(name1, name2);
 
 		if (_ascending) {
 			return value;
@@ -63,6 +69,16 @@ public class DDMFormInstanceNameComparator
 	public boolean isAscending() {
 		return _ascending;
 	}
+
+	private DDMFormInstanceNameComparator(boolean ascending) {
+		_ascending = ascending;
+	}
+
+	private static final DDMFormInstanceNameComparator _INSTANCE_ASCENDING =
+		new DDMFormInstanceNameComparator(true);
+
+	private static final DDMFormInstanceNameComparator _INSTANCE_DESCENDING =
+		new DDMFormInstanceNameComparator(false);
 
 	private final boolean _ascending;
 

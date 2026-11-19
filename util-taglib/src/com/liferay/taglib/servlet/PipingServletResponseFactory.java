@@ -5,18 +5,18 @@
 
 package com.liferay.taglib.servlet;
 
+import com.liferay.petra.io.WriterOutputStream;
 import com.liferay.petra.reflect.ReflectionUtil;
-import com.liferay.portal.kernel.io.WriterOutputStream;
 import com.liferay.portal.kernel.servlet.PipingServletResponse;
 import com.liferay.portal.kernel.servlet.ServletOutputStreamAdapter;
 import com.liferay.portal.kernel.util.ServerDetector;
 
-import java.io.IOException;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.jsp.JspWriter;
+import jakarta.servlet.jsp.PageContext;
+import jakarta.servlet.jsp.tagext.BodyContent;
 
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.jsp.JspWriter;
-import javax.servlet.jsp.PageContext;
-import javax.servlet.jsp.tagext.BodyContent;
+import java.io.IOException;
 
 /**
  * @author Shuyang Zhou

@@ -32,14 +32,14 @@ import com.liferay.site.navigation.taglib.servlet.taglib.NavigationMenuMode;
 import com.liferay.site.navigation.type.SiteNavigationMenuItemType;
 import com.liferay.site.navigation.type.SiteNavigationMenuItemTypeRegistry;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Pavel Savinov
@@ -123,6 +123,23 @@ public class NavItemUtil {
 		return navItems;
 	}
 
+	public static List<NavItem> getNavItems(
+			List<NavItem> branchNavItems, HttpServletRequest httpServletRequest,
+			NavigationMenuMode navigationMenuMode, String rootItemId,
+			int rootItemLevel, String rootItemType, long siteNavigationMenuId)
+		throws Exception {
+
+		if (siteNavigationMenuId > 0) {
+			return _getMenuNavItems(
+				httpServletRequest, branchNavItems, rootItemType, rootItemLevel,
+				siteNavigationMenuId, rootItemId);
+		}
+
+		return _getNavItems(
+			navigationMenuMode, httpServletRequest, rootItemType, rootItemLevel,
+			rootItemId, branchNavItems);
+	}
+
 	public static Map<String, Object> getNavigationMenuContext(
 		int displayDepth, String expandedLevels,
 		HttpServletRequest httpServletRequest,
@@ -162,23 +179,6 @@ public class NavItemUtil {
 		).build();
 	}
 
-	public static List<NavItem> getNavItems(
-			List<NavItem> branchNavItems, HttpServletRequest httpServletRequest,
-			NavigationMenuMode navigationMenuMode, String rootItemId,
-			int rootItemLevel, String rootItemType, long siteNavigationMenuId)
-		throws Exception {
-
-		if (siteNavigationMenuId > 0) {
-			return _getMenuNavItems(
-				httpServletRequest, branchNavItems, rootItemType, rootItemLevel,
-				siteNavigationMenuId, rootItemId);
-		}
-
-		return _getNavItems(
-			navigationMenuMode, httpServletRequest, rootItemType, rootItemLevel,
-			rootItemId, branchNavItems);
-	}
-
 	private static List<NavItem> _fromLayouts(
 			NavigationMenuMode navigationMenuMode,
 			HttpServletRequest httpServletRequest, ThemeDisplay themeDisplay)
@@ -194,9 +194,13 @@ public class NavItemUtil {
 			privateLayout = true;
 		}
 
-		return NavItem.fromLayouts(
-			httpServletRequest, _getLayouts(privateLayout, themeDisplay),
-			themeDisplay);
+		List<Layout> layouts = _getLayouts(privateLayout, themeDisplay);
+
+		if (Objects.equals(layouts, themeDisplay.getLayouts())) {
+			return themeDisplay.getNavItems();
+		}
+
+		return NavItem.fromLayouts(httpServletRequest, layouts, themeDisplay);
 	}
 
 	private static List<NavItem> _getBranchNavItems(
@@ -280,13 +284,15 @@ public class NavItemUtil {
 		while (iterator.hasNext()) {
 			Layout layout = iterator.next();
 
-			if (layout.isHidden() ||
-				!LayoutPermissionUtil.contains(
+			if (!layout.isHidden() && layout.isPublished() &&
+				LayoutPermissionUtil.contains(
 					themeDisplay.getPermissionChecker(), layout,
 					ActionKeys.VIEW)) {
 
-				iterator.remove();
+				continue;
 			}
+
+			iterator.remove();
 		}
 
 		return layouts;
@@ -428,9 +434,12 @@ public class NavItemUtil {
 					siteNavigationMenuItem.getTypeSettings()
 				).build();
 
-			String itemLayoutUuid = unicodeProperties.getProperty("layoutUuid");
+			String externalReferenceCode = unicodeProperties.getProperty(
+				"externalReferenceCode");
 
-			if (Objects.equals(layout.getUuid(), itemLayoutUuid)) {
+			if (Objects.equals(
+					layout.getExternalReferenceCode(), externalReferenceCode)) {
+
 				return siteNavigationMenuItem.getSiteNavigationMenuItemId();
 			}
 		}

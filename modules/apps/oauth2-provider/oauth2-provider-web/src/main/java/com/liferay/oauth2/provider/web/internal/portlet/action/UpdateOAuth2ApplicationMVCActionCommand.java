@@ -5,8 +5,8 @@
 
 package com.liferay.oauth2.provider.web.internal.portlet.action;
 
+import com.liferay.document.library.helper.DLURLHelper;
 import com.liferay.document.library.kernel.service.DLAppService;
-import com.liferay.document.library.util.DLURLHelper;
 import com.liferay.oauth2.provider.configuration.OAuth2ProviderConfiguration;
 import com.liferay.oauth2.provider.constants.ClientProfile;
 import com.liferay.oauth2.provider.constants.GrantType;
@@ -32,6 +32,10 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.PortletPreferences;
+
 import java.io.InputStream;
 
 import java.util.ArrayList;
@@ -39,10 +43,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.PortletPreferences;
 
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -55,7 +55,7 @@ import org.osgi.service.component.annotations.Reference;
 @Component(
 	configurationPid = "com.liferay.oauth2.provider.configuration.OAuth2ProviderConfiguration",
 	property = {
-		"javax.portlet.name=" + OAuth2ProviderPortletKeys.OAUTH2_ADMIN,
+		"jakarta.portlet.name=" + OAuth2ProviderPortletKeys.OAUTH2_ADMIN,
 		"mvc.command.name=/oauth2_provider/update_oauth2_application"
 	},
 	service = MVCActionCommand.class
@@ -92,9 +92,11 @@ public class UpdateOAuth2ApplicationMVCActionCommand
 		List<String> featuresList = new ArrayList<>();
 
 		for (String feature : oAuth2Features) {
-			if (ParamUtil.getBoolean(request, "feature-" + feature)) {
-				featuresList.add(feature);
+			if (!ParamUtil.getBoolean(request, "feature-" + feature)) {
+				continue;
 			}
+
+			featuresList.add(feature);
 		}
 
 		List<GrantType> allowedGrantTypesList = new ArrayList<>();
@@ -102,13 +104,13 @@ public class UpdateOAuth2ApplicationMVCActionCommand
 			oAuth2AdminPortletDisplayContext.getGrantTypes(portletPreferences);
 
 		for (GrantType grantType : clientProfile.grantTypes()) {
-			if (!grantTypes.contains(grantType)) {
+			if (!grantTypes.contains(grantType) ||
+				!ParamUtil.getBoolean(request, "grant-" + grantType.name())) {
+
 				continue;
 			}
 
-			if (ParamUtil.getBoolean(request, "grant-" + grantType.name())) {
-				allowedGrantTypesList.add(grantType);
-			}
+			allowedGrantTypesList.add(grantType);
 		}
 
 		String clientAuthenticationMethod = ParamUtil.get(
@@ -153,10 +155,12 @@ public class UpdateOAuth2ApplicationMVCActionCommand
 				}
 
 				for (GrantType grantType : allowedGrantTypesList) {
-					if (!grantType.isSupportsPublicClients()) {
-						clientSecret =
-							OAuth2SecureRandomGenerator.generateClientSecret();
+					if (grantType.isSupportsPublicClients()) {
+						continue;
 					}
+
+					clientSecret =
+						OAuth2SecureRandomGenerator.generateClientSecret();
 				}
 
 				ServiceContext serviceContext =

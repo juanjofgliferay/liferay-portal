@@ -36,8 +36,8 @@ if (Validator.isNull(keywords)) {
 	request.setAttribute("view_pages.jsp-orderByCol", orderByCol);
 	request.setAttribute("view_pages.jsp-orderByType", orderByType);
 
-	wikiPagesSearchContainer.setOrderByType(orderByType);
 	wikiPagesSearchContainer.setOrderByCol(orderByCol);
+	wikiPagesSearchContainer.setOrderByType(orderByType);
 }
 
 wikiPagesSearchContainer.setRowChecker(new PagesChecker(liferayPortletRequest, liferayPortletResponse));
@@ -75,7 +75,7 @@ WikiPagesManagementToolbarDisplayContext wikiPagesManagementToolbarDisplayContex
 	infoPanelId="infoPanelId"
 	itemsTotal="<%= wikiPagesManagementToolbarDisplayContext.getTotalItems() %>"
 	orderDropdownItems="<%= wikiPagesManagementToolbarDisplayContext.getOrderByDropdownItems() %>"
-	propsTransformer="wiki_admin/js/WikiPagesManagementToolbarPropsTransformer"
+	propsTransformer="{WikiPagesManagementToolbarPropsTransformer} from wiki-web"
 	searchActionURL="<%= String.valueOf(wikiPagesManagementToolbarDisplayContext.getSearchActionURL()) %>"
 	searchContainerId="wikiPages"
 	selectable="<%= wikiPagesManagementToolbarDisplayContext.isSelectable() %>"
@@ -191,7 +191,7 @@ WikiPagesManagementToolbarDisplayContext wikiPagesManagementToolbarDisplayContex
 							>
 								<h2 class="h5">
 									<aui:a href="<%= rowURL.toString() %>">
-										<%= curPage.getTitle() %>
+										<%= HtmlUtil.escape(curPage.getTitle()) %>
 									</aui:a>
 								</h2>
 
@@ -225,7 +225,7 @@ WikiPagesManagementToolbarDisplayContext wikiPagesManagementToolbarDisplayContex
 								cssClass="table-cell-expand table-cell-minw-200 table-title"
 								href="<%= rowURL %>"
 								name="title"
-								value="<%= curPage.getTitle() %>"
+								value="<%= HtmlUtil.escape(curPage.getTitle()) %>"
 							/>
 
 							<liferay-ui:search-container-column-status
@@ -251,7 +251,7 @@ WikiPagesManagementToolbarDisplayContext wikiPagesManagementToolbarDisplayContex
 							<liferay-ui:search-container-column-text
 								cssClass="table-cell-expand-smaller table-cell-minw-150"
 								name="user"
-								value="<%= HtmlUtil.escape(PortalUtil.getUserName(curPage)) %>"
+								value="<%= HtmlUtil.escape(curPage.getUserName()) %>"
 							/>
 
 							<liferay-ui:search-container-column-date

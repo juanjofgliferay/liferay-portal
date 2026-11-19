@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import '@testing-library/jest-dom/extend-expect';
+import '@testing-library/jest-dom';
 import {fireEvent, render} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
@@ -12,12 +12,16 @@ import {TextField} from '../../../../../src/main/resources/META-INF/resources/pa
 
 const INPUT_NAME = 'test';
 
-const renderTextField = (typeOptions = {}, onValueSelect = () => {}) =>
+const renderTextField = (
+	typeOptions = {},
+	onValueSelect = () => {},
+	value = ''
+) =>
 	render(
 		<TextField
 			field={{label: INPUT_NAME, name: INPUT_NAME, typeOptions}}
 			onValueSelect={onValueSelect}
-			value=""
+			value={value}
 		/>
 	);
 
@@ -103,7 +107,7 @@ describe('TextField', () => {
 		expect(input.min).toEqual('0');
 	});
 
-	it('shows the error message defined in the typeoptions when the value is not valid', () => {
+	it('shows the error message defined in the typeoptions when the value is not valid', async () => {
 		const errorMessage = 'bad';
 
 		const {getByLabelText, getByText} = renderTextField({
@@ -112,34 +116,148 @@ describe('TextField', () => {
 
 		const input = getByLabelText(INPUT_NAME);
 
-		userEvent.type(input, '5');
+		await userEvent.clear(input);
+		await userEvent.type(input, '5');
 
 		expect(getByText(errorMessage)).toBeInTheDocument();
 	});
 
-	it('shows the default error message when no one is provided', () => {
+	it('shows the default error message when no one is provided', async () => {
 		const {getByLabelText, getByText} = renderTextField({
 			validation: {max: 3, min: 0, type: 'number'},
 		});
 
 		const input = getByLabelText(INPUT_NAME);
 
-		userEvent.type(input, '5');
+		await userEvent.clear(input);
+		await userEvent.type(input, '5');
 
 		expect(getByText('you-have-entered-invalid-data')).toBeInTheDocument();
 	});
 
-	it('calls the onValueSelect callback when the input changes', () => {
+	it('shows the error message defined in the type options when validation type email and value is not valid', async () => {
+		const errorMessage = 'Please enter a valid URL with 14-30 characters';
+
+		const {getByLabelText, getByText, queryByText} = renderTextField({
+			validation: {
+				errorMessage,
+				maxLength: 30,
+				minLength: 14,
+				type: 'email',
+			},
+		});
+
+		const input = getByLabelText(INPUT_NAME);
+
+		await userEvent.clear(input);
+		await userEvent.type(input, 't');
+		fireEvent.blur(input);
+
+		expect(getByText(errorMessage)).toBeInTheDocument();
+
+		await userEvent.clear(input);
+		await userEvent.type(input, 'giannis.antetokounmpo@liferay.com');
+		fireEvent.blur(input);
+
+		expect(queryByText(errorMessage)).toBeInTheDocument();
+	});
+
+	it('shows the error message defined in the type options when validation type url and value is not valid', async () => {
+		const errorMessage = 'Please enter a valid URL with 22-35 characters';
+
+		const {getByLabelText, getByText, queryByText} = renderTextField({
+			validation: {
+				errorMessage,
+				maxLength: 35,
+				minLength: 22,
+				type: 'url',
+			},
+		});
+
+		const input = getByLabelText(INPUT_NAME);
+
+		await userEvent.clear(input);
+		await userEvent.type(input, 'h');
+
+		expect(getByText(errorMessage)).toBeInTheDocument();
+
+		await userEvent.clear(input);
+		await userEvent.type(input, 'https://giannisantetokounmpo.liferay.com');
+
+		expect(queryByText(errorMessage)).not.toBeInTheDocument();
+	});
+
+	it('renders an input with the required attribute when defined in the validation', () => {
+		const {getByRole} = renderTextField({
+			validation: {required: true, type: 'text'},
+		});
+
+		const input = getByRole('textbox');
+
+		expect(input).toBeInTheDocument();
+		expect(input.required).toBe(true);
+	});
+
+	it('renders an input with the pattern and required attributes when both are defined in the validation', () => {
+		const regexp = '[0-9]*';
+
+		const {getByRole} = renderTextField({
+			validation: {regexp, required: true, type: 'pattern'},
+		});
+
+		const input = getByRole('textbox');
+
+		expect(input.pattern).toBe(regexp);
+		expect(input.required).toBe(true);
+	});
+
+	it('marks the label as mandatory when the field is required', () => {
+		const {getByText} = renderTextField({
+			validation: {required: true, type: 'text'},
+		});
+
+		expect(getByText('mandatory')).toBeInTheDocument();
+	});
+
+	it('does not mark the label as mandatory when the field is not required', () => {
+		const {queryByText} = renderTextField({
+			validation: {type: 'text'},
+		});
+
+		expect(queryByText('mandatory')).not.toBeInTheDocument();
+	});
+
+	it('shows a required error message and does not call the onValueSelect callback when a required field is cleared', async () => {
+		const onValueSelect = jest.fn();
+
+		const {getByRole, getByText} = renderTextField(
+			{validation: {required: true, type: 'text'}},
+			onValueSelect,
+			'something'
+		);
+
+		const input = getByRole('textbox');
+
+		await userEvent.clear(input);
+
+		fireEvent.blur(input);
+
+		expect(getByText('this-field-is-required')).toBeInTheDocument();
+		expect(onValueSelect).not.toHaveBeenCalled();
+	});
+
+	it('calls the onValueSelect callback when the input changes', async () => {
 		const onValueSelect = jest.fn();
 		const {getByLabelText} = renderTextField({}, onValueSelect);
 
 		const input = getByLabelText(INPUT_NAME);
 
-		userEvent.type(input, 'something');
+		await userEvent.clear(input);
+		await userEvent.type(input, 'something');
 
 		fireEvent.blur(input, {event: {target: {checkValidity: () => true}}});
 
-		expect(onValueSelect).toBeCalledWith(INPUT_NAME, 'something');
+		expect(onValueSelect).toHaveBeenCalledWith(INPUT_NAME, 'something');
 	});
 
 	it('calls the onValueSelect callback when Enter key is pressed', async () => {
@@ -148,6 +266,7 @@ describe('TextField', () => {
 
 		const input = getByLabelText(INPUT_NAME);
 
+		await userEvent.clear(input);
 		await userEvent.type(input, 'something');
 
 		fireEvent.keyDown(input, {
@@ -157,10 +276,10 @@ describe('TextField', () => {
 			},
 		});
 
-		expect(onValueSelect).toBeCalledWith(INPUT_NAME, 'something');
+		expect(onValueSelect).toHaveBeenCalledWith(INPUT_NAME, 'something');
 	});
 
-	it('does not call the onValueSelect callback when the input is not valid', () => {
+	it('does not call the onValueSelect callback when the input is not valid', async () => {
 		const onValueSelect = jest.fn();
 		const {getByLabelText} = renderTextField(
 			{validation: {max: 10, type: 'number'}},
@@ -169,10 +288,11 @@ describe('TextField', () => {
 
 		const input = getByLabelText(INPUT_NAME);
 
-		userEvent.type(input, 12);
+		await userEvent.clear(input);
+		await userEvent.type(input, '12');
 
 		fireEvent.blur(input);
 
-		expect(onValueSelect).not.toBeCalled();
+		expect(onValueSelect).not.toHaveBeenCalled();
 	});
 });

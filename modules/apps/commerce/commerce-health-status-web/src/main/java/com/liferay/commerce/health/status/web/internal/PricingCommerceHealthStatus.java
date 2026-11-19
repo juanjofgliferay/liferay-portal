@@ -21,7 +21,6 @@ import com.liferay.commerce.product.model.CPInstanceUnitOfMeasure;
 import com.liferay.commerce.product.model.CommerceCatalog;
 import com.liferay.commerce.product.service.CPDefinitionLocalService;
 import com.liferay.commerce.product.service.CPInstanceLocalService;
-import com.liferay.commerce.product.service.CPInstanceUnitOfMeasureLocalService;
 import com.liferay.commerce.product.service.CommerceCatalogLocalService;
 import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
@@ -31,13 +30,14 @@ import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextFactory;
-import com.liferay.portal.kernel.settings.SystemSettingsLocator;
 import com.liferay.portal.kernel.transaction.Propagation;
 import com.liferay.portal.kernel.transaction.TransactionConfig;
 import com.liferay.portal.kernel.transaction.TransactionInvokerUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.ResourceBundleUtil;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.math.BigDecimal;
 
@@ -46,8 +46,6 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.ResourceBundle;
 import java.util.concurrent.Callable;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -124,10 +122,8 @@ public class PricingCommerceHealthStatus implements CommerceHealthStatus {
 		throws PortalException {
 
 		CommercePricingConfiguration commercePricingConfiguration =
-			_configurationProvider.getConfiguration(
-				CommercePricingConfiguration.class,
-				new SystemSettingsLocator(
-					CommercePricingConstants.SERVICE_NAME));
+			_configurationProvider.getSystemConfiguration(
+				CommercePricingConfiguration.class);
 
 		if (Objects.equals(
 				commercePricingConfiguration.commercePricingCalculationKey(),
@@ -224,9 +220,8 @@ public class PricingCommerceHealthStatus implements CommerceHealthStatus {
 
 			commercePriceList =
 				_commercePriceListLocalService.addCatalogBaseCommercePriceList(
-					commerceCatalog.getGroupId(), serviceContext.getUserId(),
-					commerceCurrency.getCommerceCurrencyId(), type, name,
-					serviceContext);
+					serviceContext.getUserId(), commerceCatalog.getGroupId(),
+					commerceCurrency.getCode(), name, type, serviceContext);
 
 			List<CPDefinition> cpDefinitions =
 				_cpDefinitionLocalService.getCPDefinitions(
@@ -270,10 +265,6 @@ public class PricingCommerceHealthStatus implements CommerceHealthStatus {
 	private CPInstanceLocalService _cpInstanceLocalService;
 
 	@Reference
-	private CPInstanceUnitOfMeasureLocalService
-		_cpInstanceUnitOfMeasureLocalService;
-
-	@Reference
 	private Language _language;
 
 	private class PricingCallable implements Callable<Object> {
@@ -281,10 +272,8 @@ public class PricingCommerceHealthStatus implements CommerceHealthStatus {
 		@Override
 		public Object call() throws Exception {
 			CommercePricingConfiguration commercePricingConfiguration =
-				_configurationProvider.getConfiguration(
-					CommercePricingConfiguration.class,
-					new SystemSettingsLocator(
-						CommercePricingConstants.SERVICE_NAME));
+				_configurationProvider.getSystemConfiguration(
+					CommercePricingConfiguration.class);
 
 			if (Objects.equals(
 					commercePricingConfiguration.

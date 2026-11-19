@@ -46,8 +46,9 @@ public class ObjectRelationshipServiceHttp {
 				HttpPrincipal httpPrincipal, String externalReferenceCode,
 				long objectDefinitionId1, long objectDefinitionId2,
 				long parameterObjectFieldId, String deletionType,
-				java.util.Map<java.util.Locale, String> labelMap, String name,
-				boolean system, String type,
+				java.util.Map<java.util.Locale, String> descriptionMap,
+				boolean edge, java.util.Map<java.util.Locale, String> labelMap,
+				String name, boolean system, String type,
 				com.liferay.object.model.ObjectField objectField)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
@@ -59,7 +60,8 @@ public class ObjectRelationshipServiceHttp {
 			MethodHandler methodHandler = new MethodHandler(
 				methodKey, externalReferenceCode, objectDefinitionId1,
 				objectDefinitionId2, parameterObjectFieldId, deletionType,
-				labelMap, name, system, type, objectField);
+				descriptionMap, edge, labelMap, name, system, type,
+				objectField);
 
 			Object returnObj = null;
 
@@ -344,8 +346,9 @@ public class ObjectRelationshipServiceHttp {
 			updateObjectRelationship(
 				HttpPrincipal httpPrincipal, String externalReferenceCode,
 				long objectRelationshipId, long parameterObjectFieldId,
-				String deletionType, boolean edge,
-				java.util.Map<java.util.Locale, String> labelMap,
+				String deletionType,
+				java.util.Map<java.util.Locale, String> descriptionMap,
+				boolean edge, java.util.Map<java.util.Locale, String> labelMap,
 				com.liferay.object.model.ObjectField objectField)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
@@ -356,8 +359,8 @@ public class ObjectRelationshipServiceHttp {
 
 			MethodHandler methodHandler = new MethodHandler(
 				methodKey, externalReferenceCode, objectRelationshipId,
-				parameterObjectFieldId, deletionType, edge, labelMap,
-				objectField);
+				parameterObjectFieldId, deletionType, descriptionMap, edge,
+				labelMap, objectField);
 
 			Object returnObj = null;
 
@@ -393,7 +396,8 @@ public class ObjectRelationshipServiceHttp {
 	private static final Class<?>[] _addObjectRelationshipParameterTypes0 =
 		new Class[] {
 			String.class, long.class, long.class, long.class, String.class,
-			java.util.Map.class, String.class, boolean.class, String.class,
+			java.util.Map.class, boolean.class, java.util.Map.class,
+			String.class, boolean.class, String.class,
 			com.liferay.object.model.ObjectField.class
 		};
 	private static final Class<?>[]
@@ -414,8 +418,10 @@ public class ObjectRelationshipServiceHttp {
 		new Class[] {long.class, int.class, int.class};
 	private static final Class<?>[] _updateObjectRelationshipParameterTypes7 =
 		new Class[] {
-			String.class, long.class, long.class, String.class, boolean.class,
-			java.util.Map.class, com.liferay.object.model.ObjectField.class
+			String.class, long.class, long.class, String.class,
+			java.util.Map.class, boolean.class, java.util.Map.class,
+			com.liferay.object.model.ObjectField.class
 		};
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1860049716

@@ -112,11 +112,7 @@ public class DDLRecordPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		DDLRecord newDDLRecord = _persistence.create(pk);
-
-		newDDLRecord.setMvccVersion(RandomTestUtil.nextLong());
+		DDLRecord newDDLRecord = addDDLRecord();
 
 		newDDLRecord.setCtCollectionId(RandomTestUtil.nextLong());
 
@@ -154,7 +150,9 @@ public class DDLRecordPersistenceTest {
 
 		newDDLRecord.setLastPublishDate(RandomTestUtil.nextDate());
 
-		_ddlRecords.add(_persistence.update(newDDLRecord));
+		newDDLRecord = _persistence.update(newDDLRecord);
+
+		_ddlRecords.add(newDDLRecord);
 
 		DDLRecord existingDDLRecord = _persistence.findByPrimaryKey(
 			newDDLRecord.getPrimaryKey());
@@ -238,13 +236,6 @@ public class DDLRecordPersistenceTest {
 	}
 
 	@Test
-	public void testCountByCompanyId() throws Exception {
-		_persistence.countByCompanyId(RandomTestUtil.nextLong());
-
-		_persistence.countByCompanyId(0L);
-	}
-
-	@Test
 	public void testCountByRecordSetId() throws Exception {
 		_persistence.countByRecordSetId(RandomTestUtil.nextLong());
 
@@ -257,24 +248,6 @@ public class DDLRecordPersistenceTest {
 			RandomTestUtil.nextLong(), RandomTestUtil.nextLong());
 
 		_persistence.countByR_U(0L, 0L);
-	}
-
-	@Test
-	public void testCountByR_R() throws Exception {
-		_persistence.countByR_R(RandomTestUtil.nextLong(), "");
-
-		_persistence.countByR_R(0L, "null");
-
-		_persistence.countByR_R(0L, (String)null);
-	}
-
-	@Test
-	public void testCountByC_C() throws Exception {
-		_persistence.countByC_C("", RandomTestUtil.nextLong());
-
-		_persistence.countByC_C("null", 0L);
-
-		_persistence.countByC_C((String)null, 0L);
 	}
 
 	@Test
@@ -582,8 +555,6 @@ public class DDLRecordPersistenceTest {
 
 		DDLRecord ddlRecord = _persistence.create(pk);
 
-		ddlRecord.setMvccVersion(RandomTestUtil.nextLong());
-
 		ddlRecord.setCtCollectionId(RandomTestUtil.nextLong());
 
 		ddlRecord.setUuid(RandomTestUtil.randomString());
@@ -630,3 +601,4 @@ public class DDLRecordPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:24647790

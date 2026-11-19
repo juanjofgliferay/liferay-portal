@@ -5,6 +5,7 @@
 
 package com.liferay.site.memberships.web.internal.display.context;
 
+import com.liferay.depot.util.DepotRoleUtil;
 import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
@@ -25,13 +26,14 @@ import com.liferay.roles.admin.search.RoleSearch;
 import com.liferay.roles.admin.search.RoleSearchTerms;
 import com.liferay.site.memberships.constants.SiteMembershipsPortletKeys;
 
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+
+import java.util.List;
 import java.util.Objects;
-
-import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Eudaldo Alonso
@@ -197,27 +199,29 @@ public class SelectRolesDisplayContext {
 		RoleSearchTerms searchTerms =
 			(RoleSearchTerms)roleSearch.getSearchTerms();
 
-		roleSearch.setResultsAndTotal(
-			TransformUtil.transform(
-				RoleLocalServiceUtil.search(
-					themeDisplay.getCompanyId(), searchTerms.getKeywords(),
-					new Integer[] {getRoleType()}, QueryUtil.ALL_POS,
-					QueryUtil.ALL_POS, roleSearch.getOrderByComparator()),
-				role -> {
-					if (Objects.equals(
-							role.getName(), RoleConstants.ORGANIZATION_USER) ||
-						Objects.equals(
-							role.getName(), RoleConstants.SITE_MEMBER) ||
-						!RolePermissionUtil.contains(
-							themeDisplay.getPermissionChecker(),
-							themeDisplay.getScopeGroupId(), role.getRoleId(),
-							ActionKeys.VIEW)) {
+		List<Role> roles = TransformUtil.transform(
+			RoleLocalServiceUtil.search(
+				themeDisplay.getCompanyId(), searchTerms.getKeywords(),
+				new Integer[] {getRoleType()}, QueryUtil.ALL_POS,
+				QueryUtil.ALL_POS, roleSearch.getOrderByComparator()),
+			role -> {
+				if (Objects.equals(
+						role.getName(), RoleConstants.ORGANIZATION_USER) ||
+					Objects.equals(role.getName(), RoleConstants.SITE_MEMBER) ||
+					!RolePermissionUtil.contains(
+						themeDisplay.getPermissionChecker(),
+						themeDisplay.getScopeGroupId(), role.getRoleId(),
+						ActionKeys.VIEW)) {
 
-						return null;
-					}
+					return null;
+				}
 
-					return role;
-				}));
+				return role;
+			});
+
+		roles = DepotRoleUtil.filter(getGroupId(), roles);
+
+		roleSearch.setResultsAndTotal(roles);
 
 		_roleSearch = roleSearch;
 

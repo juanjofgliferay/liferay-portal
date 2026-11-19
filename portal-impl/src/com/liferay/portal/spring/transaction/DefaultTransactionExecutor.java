@@ -5,6 +5,8 @@
 
 package com.liferay.portal.spring.transaction;
 
+import com.liferay.petra.function.UnsafeSupplier;
+import com.liferay.portal.kernel.transaction.Propagation;
 import com.liferay.portal.kernel.transaction.TransactionLifecycleManager;
 
 import org.springframework.transaction.PlatformTransactionManager;
@@ -13,7 +15,7 @@ import org.springframework.transaction.PlatformTransactionManager;
  * @author Michael C. Han
  * @author Shuyang Zhou
  */
-public class DefaultTransactionExecutor extends BaseTransactionExecutor {
+public class DefaultTransactionExecutor implements TransactionExecutor {
 
 	public DefaultTransactionExecutor(
 		PlatformTransactionManager platformTransactionManager) {
@@ -53,6 +55,46 @@ public class DefaultTransactionExecutor extends BaseTransactionExecutor {
 			transactionStatusAdapter.reportLifecycleListenerThrowables(
 				transactionManagerThrowable);
 		}
+	}
+
+	@Override
+	public <T> T execute(
+			TransactionAttributeAdapter transactionAttributeAdapter,
+			UnsafeSupplier<T, Throwable> unsafeSupplier)
+		throws Throwable {
+
+		TransactionStatusAdapter transactionStatusAdapter = start(
+			transactionAttributeAdapter);
+
+		T returnValue = null;
+
+		try {
+			if (transactionAttributeAdapter.getPropagation() ==
+					Propagation.NESTED) {
+
+				if (transactionStatusAdapter.isNewTransaction()) {
+					returnValue = _invokeWithNewTransaction(unsafeSupplier);
+				}
+				else {
+					returnValue = _invokeWithSavepoint(unsafeSupplier);
+				}
+			}
+			else if (transactionStatusAdapter.isNewTransaction()) {
+				returnValue = _invokeWithNewTransaction(unsafeSupplier);
+			}
+			else {
+				returnValue = _invokeWithAmbientTransaction(unsafeSupplier);
+			}
+		}
+		catch (Throwable throwable) {
+			rollback(
+				throwable, transactionAttributeAdapter,
+				transactionStatusAdapter);
+		}
+
+		commit(transactionAttributeAdapter, transactionStatusAdapter);
+
+		return returnValue;
 	}
 
 	@Override
@@ -136,6 +178,27 @@ public class DefaultTransactionExecutor extends BaseTransactionExecutor {
 			transactionAttributeAdapter, transactionStatusAdapter);
 
 		return transactionStatusAdapter;
+	}
+
+	private <T> T _invokeWithAmbientTransaction(
+			UnsafeSupplier<T, Throwable> unsafeSupplier)
+		throws Throwable {
+
+		return unsafeSupplier.get();
+	}
+
+	private <T> T _invokeWithNewTransaction(
+			UnsafeSupplier<T, Throwable> unsafeSupplier)
+		throws Throwable {
+
+		return unsafeSupplier.get();
+	}
+
+	private <T> T _invokeWithSavepoint(
+			UnsafeSupplier<T, Throwable> unsafeSupplier)
+		throws Throwable {
+
+		return unsafeSupplier.get();
 	}
 
 	private final PlatformTransactionManager _platformTransactionManager;

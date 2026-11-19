@@ -9,9 +9,8 @@ import com.liferay.frontend.taglib.form.navigator.FormNavigatorEntry;
 import com.liferay.journal.model.JournalArticle;
 import com.liferay.journal.web.internal.util.JournalUtil;
 import com.liferay.portal.kernel.model.User;
-import com.liferay.portal.kernel.service.GroupLocalService;
 
-import javax.servlet.ServletContext;
+import jakarta.servlet.ServletContext;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -51,9 +50,6 @@ public class JournalDisplayPagePreviewFormNavigatorEntry
 	protected String getJspPath() {
 		return "/article/asset_display_page_preview.jsp";
 	}
-
-	@Reference
-	private GroupLocalService _groupLocalService;
 
 	@Reference(target = "(osgi.web.symbolicname=com.liferay.journal.web)")
 	private ServletContext _servletContext;

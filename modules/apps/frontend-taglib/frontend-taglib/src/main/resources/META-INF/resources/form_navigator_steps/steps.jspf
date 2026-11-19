@@ -6,7 +6,7 @@
 --%>
 
 <liferay-util:html-top>
-	<link href="<%= PortalUtil.getStaticResourceURL(request, PortalUtil.getPathProxy() + application.getContextPath() + "/css/form_navigator.css") %>" rel="stylesheet" type="text/css" />
+	<aui:link hashedFile="<%= true %>" href="frontend-taglib/css/form_navigator.css" rel="stylesheet" type="text/css" />
 </liferay-util:html-top>
 
 <div class="taglib-form-navigator" id="<portlet:namespace />tabsBoundingBox">
@@ -388,7 +388,13 @@
 
 		formNode.on('blur', updateSectionError, 'input, select, textarea');
 
-		formNode.on('autofields:update', updateSectionError);
+		if (Liferay.FeatureFlags['LPD-57347']) {
+			formNode.on('autofields:update', updateSectionError);
+		}
+
+		formNode
+			.getDOMNode()
+			.addEventListener('autofields:update', updateSectionError);
 
 		var updateSectionOnError = function (event) {
 			var form = event.form;

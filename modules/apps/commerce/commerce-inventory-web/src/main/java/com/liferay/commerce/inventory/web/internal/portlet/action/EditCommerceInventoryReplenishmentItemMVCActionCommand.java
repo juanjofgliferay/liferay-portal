@@ -5,10 +5,12 @@
 
 package com.liferay.commerce.inventory.web.internal.portlet.action;
 
+import com.liferay.commerce.inventory.exception.CommerceInventoryReplenishmentQuantityException;
 import com.liferay.commerce.inventory.exception.MVCCException;
 import com.liferay.commerce.inventory.model.CommerceInventoryReplenishmentItem;
 import com.liferay.commerce.inventory.service.CommerceInventoryReplenishmentItemService;
 import com.liferay.commerce.product.constants.CPPortletKeys;
+import com.liferay.commerce.util.CommerceOrderItemQuantityFormatter;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
@@ -19,12 +21,10 @@ import com.liferay.portal.kernel.servlet.SessionErrors;
 import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.ParamUtil;
 
-import java.math.BigDecimal;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
 import java.util.Calendar;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -35,7 +35,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + CPPortletKeys.COMMERCE_INVENTORY,
+		"jakarta.portlet.name=" + CPPortletKeys.COMMERCE_INVENTORY,
 		"mvc.command.name=/commerce_inventory/edit_commerce_inventory_replenishment_item"
 	},
 	service = MVCActionCommand.class
@@ -62,7 +62,9 @@ public class EditCommerceInventoryReplenishmentItemMVCActionCommand
 			}
 		}
 		catch (Exception exception) {
-			if (exception instanceof MVCCException ||
+			if (exception instanceof
+					CommerceInventoryReplenishmentQuantityException ||
+				exception instanceof MVCCException ||
 				exception instanceof PrincipalException.MustHavePermission) {
 
 				SessionErrors.add(actionRequest, exception.getClass());
@@ -80,7 +82,7 @@ public class EditCommerceInventoryReplenishmentItemMVCActionCommand
 
 	private void _addCommerceInventoryReplenishmentItem(
 			ActionRequest actionRequest)
-		throws PortalException {
+		throws Exception {
 
 		long commerceInventoryWarehouseId = ParamUtil.getLong(
 			actionRequest, "commerceInventoryWarehouseId");
@@ -93,16 +95,15 @@ public class EditCommerceInventoryReplenishmentItemMVCActionCommand
 
 		calendar.set(year, month, day);
 
-		BigDecimal quantity = (BigDecimal)ParamUtil.getNumber(
-			actionRequest, "quantity", BigDecimal.ZERO);
-		String sku = ParamUtil.getString(actionRequest, "sku");
-		String unitOfMeasureKey = ParamUtil.getString(
-			actionRequest, "unitOfMeasureKey");
-
 		_commerceInventoryReplenishmentItemService.
 			addCommerceInventoryReplenishmentItem(
 				null, commerceInventoryWarehouseId, calendar.getTime(),
-				quantity, sku, unitOfMeasureKey);
+				_commerceOrderItemQuantityFormatter.parse(
+					actionRequest,
+					CommerceInventoryReplenishmentItem.class.getName(),
+					"quantity"),
+				ParamUtil.getString(actionRequest, "sku"),
+				ParamUtil.getString(actionRequest, "unitOfMeasureKey"));
 	}
 
 	private void _deleteCommerceInventoryReplenishmentItem(
@@ -119,7 +120,7 @@ public class EditCommerceInventoryReplenishmentItemMVCActionCommand
 
 	private void _updateCommerceInventoryReplenishmentItem(
 			ActionRequest actionRequest)
-		throws PortalException {
+		throws Exception {
 
 		long commerceInventoryReplenishmentItemId = ParamUtil.getLong(
 			actionRequest, "commerceInventoryReplenishmentItemId");
@@ -128,9 +129,6 @@ public class EditCommerceInventoryReplenishmentItemMVCActionCommand
 			_commerceInventoryReplenishmentItemService.
 				getCommerceInventoryReplenishmentItem(
 					commerceInventoryReplenishmentItemId);
-
-		BigDecimal quantity = (BigDecimal)ParamUtil.getNumber(
-			actionRequest, "quantity", BigDecimal.ZERO);
 
 		int day = ParamUtil.getInteger(actionRequest, "dateDay");
 		int month = ParamUtil.getInteger(actionRequest, "dateMonth");
@@ -146,7 +144,11 @@ public class EditCommerceInventoryReplenishmentItemMVCActionCommand
 			updateCommerceInventoryReplenishmentItem(
 				commerceInventoryReplenishmentItem.getExternalReferenceCode(),
 				commerceInventoryReplenishmentItemId, calendar.getTime(),
-				quantity, mvccVersion);
+				_commerceOrderItemQuantityFormatter.parse(
+					actionRequest,
+					CommerceInventoryReplenishmentItem.class.getName(),
+					"quantity"),
+				mvccVersion);
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
@@ -155,5 +157,9 @@ public class EditCommerceInventoryReplenishmentItemMVCActionCommand
 	@Reference
 	private CommerceInventoryReplenishmentItemService
 		_commerceInventoryReplenishmentItemService;
+
+	@Reference
+	private CommerceOrderItemQuantityFormatter
+		_commerceOrderItemQuantityFormatter;
 
 }

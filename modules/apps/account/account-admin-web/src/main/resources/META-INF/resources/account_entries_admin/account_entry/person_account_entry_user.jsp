@@ -72,6 +72,7 @@ AccountEntryDisplay accountEntryDisplay = (AccountEntryDisplay)request.getAttrib
 		<liferay-ui:search-container-row
 			className="com.liferay.portal.kernel.model.User"
 			escapedModel="<%= true %>"
+			keyProperty="userId"
 		>
 			<liferay-ui:search-container-column-text
 				cssClass="table-cell-expand"
@@ -135,5 +136,5 @@ AccountEntryDisplay accountEntryDisplay = (AccountEntryDisplay)request.getAttrib
 			"userIdInput", "#personAccountEntryUserId"
 		).build()
 	%>'
-	module="account_entries_admin/js/PersonAccountEntryEventHandler.es"
+	module="{PersonAccountEntryEventHandler} from account-admin-web"
 />

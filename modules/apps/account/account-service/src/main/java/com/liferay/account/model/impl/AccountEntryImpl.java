@@ -7,24 +7,30 @@ package com.liferay.account.model.impl;
 
 import com.liferay.account.constants.AccountConstants;
 import com.liferay.account.model.AccountEntry;
-import com.liferay.account.model.AccountEntryOrganizationRel;
-import com.liferay.account.model.AccountEntryUserRel;
 import com.liferay.account.service.AccountEntryOrganizationRelLocalServiceUtil;
 import com.liferay.account.service.AccountEntryUserRelLocalServiceUtil;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Address;
+import com.liferay.portal.kernel.model.Contact;
+import com.liferay.portal.kernel.model.EmailAddress;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.GroupConstants;
 import com.liferay.portal.kernel.model.Organization;
+import com.liferay.portal.kernel.model.Phone;
 import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.model.Website;
 import com.liferay.portal.kernel.service.AddressLocalServiceUtil;
 import com.liferay.portal.kernel.service.ClassNameLocalServiceUtil;
+import com.liferay.portal.kernel.service.ContactServiceUtil;
+import com.liferay.portal.kernel.service.EmailAddressLocalServiceUtil;
 import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
+import com.liferay.portal.kernel.service.PhoneLocalServiceUtil;
+import com.liferay.portal.kernel.service.WebsiteLocalServiceUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -33,43 +39,51 @@ import java.util.List;
 public class AccountEntryImpl extends AccountEntryBaseImpl {
 
 	@Override
-	public List<Organization> fetchOrganizations() {
-		List<Organization> organizations = new ArrayList<>();
+	public Contact fetchContact() throws PortalException {
+		List<Contact> contacts = ContactServiceUtil.getContacts(
+			ClassNameLocalServiceUtil.getClassNameId(
+				AccountEntry.class.getName()),
+			getAccountEntryId(), 0, 1, null);
 
-		for (AccountEntryOrganizationRel accountEntryOrganizationRel :
-				AccountEntryOrganizationRelLocalServiceUtil.
-					getAccountEntryOrganizationRels(getAccountEntryId())) {
-
-			try {
-				organizations.add(
-					accountEntryOrganizationRel.getOrganization());
-			}
-			catch (PortalException portalException) {
-				_log.error(portalException);
-			}
+		if (contacts.isEmpty()) {
+			return null;
 		}
 
-		return organizations;
+		return contacts.get(0);
+	}
+
+	@Override
+	public List<Organization> fetchOrganizations() {
+		return TransformUtil.transform(
+			AccountEntryOrganizationRelLocalServiceUtil.
+				getAccountEntryOrganizationRels(getAccountEntryId()),
+			accountEntryOrganizationRel -> {
+				try {
+					return accountEntryOrganizationRel.getOrganization();
+				}
+				catch (PortalException portalException) {
+					_log.error(portalException);
+
+					return null;
+				}
+			});
 	}
 
 	@Override
 	public List<User> fetchUsers() {
-		List<User> users = new ArrayList<>();
+		return TransformUtil.transform(
+			AccountEntryUserRelLocalServiceUtil.
+				getAccountEntryUserRelsByAccountEntryId(getAccountEntryId()),
+			accountEntryUserRel -> {
+				try {
+					return accountEntryUserRel.getUser();
+				}
+				catch (PortalException portalException) {
+					_log.error(portalException);
 
-		for (AccountEntryUserRel accountEntryUserRel :
-				AccountEntryUserRelLocalServiceUtil.
-					getAccountEntryUserRelsByAccountEntryId(
-						getAccountEntryId())) {
-
-			try {
-				users.add(accountEntryUserRel.getUser());
-			}
-			catch (PortalException portalException) {
-				_log.error(portalException);
-			}
-		}
-
-		return users;
+					return null;
+				}
+			});
 	}
 
 	@Override
@@ -106,36 +120,46 @@ public class AccountEntryImpl extends AccountEntryBaseImpl {
 	}
 
 	@Override
+	public List<EmailAddress> getEmailAddresses() {
+		return EmailAddressLocalServiceUtil.getEmailAddresses(
+			getCompanyId(), AccountEntry.class.getName(), getAccountEntryId());
+	}
+
+	@Override
+	public List<Address> getListTypeAddresses(long[] listTypeIds) {
+		return AddressLocalServiceUtil.getListTypeAddresses(
+			getCompanyId(), AccountEntry.class.getName(), getAccountEntryId(),
+			listTypeIds);
+	}
+
+	@Override
+	public List<Phone> getPhones() {
+		return PhoneLocalServiceUtil.getPhones(
+			getCompanyId(), AccountEntry.class.getName(), getAccountEntryId());
+	}
+
+	@Override
+	public List<Website> getWebsites() {
+		return WebsiteLocalServiceUtil.getWebsites(
+			getCompanyId(), AccountEntry.class.getName(), getAccountEntryId());
+	}
+
+	@Override
 	public boolean isBusinessAccount() {
-		if (StringUtil.equals(
-				getType(), AccountConstants.ACCOUNT_ENTRY_TYPE_BUSINESS)) {
-
-			return true;
-		}
-
-		return false;
+		return StringUtil.equals(
+			getType(), AccountConstants.ACCOUNT_ENTRY_TYPE_BUSINESS);
 	}
 
 	@Override
 	public boolean isGuestAccount() {
-		if (StringUtil.equals(
-				getType(), AccountConstants.ACCOUNT_ENTRY_TYPE_GUEST)) {
-
-			return true;
-		}
-
-		return false;
+		return StringUtil.equals(
+			getType(), AccountConstants.ACCOUNT_ENTRY_TYPE_GUEST);
 	}
 
 	@Override
 	public boolean isPersonalAccount() {
-		if (StringUtil.equals(
-				getType(), AccountConstants.ACCOUNT_ENTRY_TYPE_PERSON)) {
-
-			return true;
-		}
-
-		return false;
+		return StringUtil.equals(
+			getType(), AccountConstants.ACCOUNT_ENTRY_TYPE_PERSON);
 	}
 
 	private Group _getAccountEntryGroup() {

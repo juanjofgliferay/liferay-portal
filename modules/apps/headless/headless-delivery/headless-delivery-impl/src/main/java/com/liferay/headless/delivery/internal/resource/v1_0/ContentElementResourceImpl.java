@@ -13,10 +13,8 @@ import com.liferay.headless.delivery.dto.v1_0.ContentElement;
 import com.liferay.headless.delivery.internal.odata.entity.v1_0.ContentElementEntityModel;
 import com.liferay.headless.delivery.resource.v1_0.ContentElementResource;
 import com.liferay.journal.model.JournalArticle;
-import com.liferay.portal.kernel.change.tracking.CTAware;
 import com.liferay.portal.kernel.search.BaseSearcher;
 import com.liferay.portal.kernel.search.BooleanClause;
-import com.liferay.portal.kernel.search.BooleanClauseFactoryUtil;
 import com.liferay.portal.kernel.search.BooleanClauseOccur;
 import com.liferay.portal.kernel.search.BooleanQuery;
 import com.liferay.portal.kernel.search.Field;
@@ -25,7 +23,6 @@ import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.search.facet.Facet;
 import com.liferay.portal.kernel.search.filter.BooleanFilter;
 import com.liferay.portal.kernel.search.filter.Filter;
-import com.liferay.portal.kernel.search.generic.BooleanQueryImpl;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.odata.entity.EntityModel;
 import com.liferay.portal.vulcan.aggregation.Aggregation;
@@ -38,10 +35,10 @@ import com.liferay.portal.vulcan.pagination.Pagination;
 import com.liferay.portal.vulcan.util.LocalizedMapUtil;
 import com.liferay.portal.vulcan.util.SearchUtil;
 
+import jakarta.ws.rs.core.MultivaluedMap;
+
 import java.util.HashMap;
 import java.util.Map;
-
-import javax.ws.rs.core.MultivaluedMap;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -54,7 +51,6 @@ import org.osgi.service.component.annotations.ServiceScope;
 	properties = "OSGI-INF/liferay/rest/v1_0/content-element.properties",
 	scope = ServiceScope.PROTOTYPE, service = ContentElementResource.class
 )
-@CTAware
 public class ContentElementResourceImpl extends BaseContentElementResourceImpl {
 
 	@Override
@@ -110,7 +106,7 @@ public class ContentElementResourceImpl extends BaseContentElementResourceImpl {
 
 		searchContext.addVulcanAggregation(aggregation);
 
-		BooleanQuery booleanQuery = new BooleanQueryImpl() {
+		BooleanQuery booleanQuery = new BooleanQuery() {
 			{
 				BooleanFilter booleanFilter = new BooleanFilter();
 
@@ -154,8 +150,7 @@ public class ContentElementResourceImpl extends BaseContentElementResourceImpl {
 
 		searchContext.setBooleanClauses(
 			new BooleanClause[] {
-				BooleanClauseFactoryUtil.create(
-					booleanQuery, BooleanClauseOccur.MUST.getName())
+				new BooleanClause<>(booleanQuery, BooleanClauseOccur.MUST)
 			});
 
 		searchContext.setCompanyId(contextCompany.getCompanyId());
@@ -191,13 +186,6 @@ public class ContentElementResourceImpl extends BaseContentElementResourceImpl {
 
 		return new ContentElement() {
 			{
-				id = assetEntry.getClassPK();
-				title = assetEntry.getTitle(
-					contextAcceptLanguage.getPreferredLocale());
-				title_i18n = LocalizedMapUtil.getI18nMap(
-					contextAcceptLanguage.isAcceptAllLanguages(),
-					assetEntry.getTitleMap());
-
 				setContent(
 					() -> {
 						if (dtoConverter == null) {
@@ -221,6 +209,14 @@ public class ContentElementResourceImpl extends BaseContentElementResourceImpl {
 
 						return dtoConverter.getContentType();
 					});
+				setId(assetEntry::getClassPK);
+				setTitle(
+					() -> assetEntry.getTitle(
+						contextAcceptLanguage.getPreferredLocale()));
+				setTitle_i18n(
+					() -> LocalizedMapUtil.getI18nMap(
+						contextAcceptLanguage.isAcceptAllLanguages(),
+						assetEntry.getTitleMap()));
 			}
 		};
 	}

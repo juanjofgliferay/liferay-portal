@@ -61,8 +61,8 @@ public class ObjectFieldServiceTest {
 	public void setUp() throws Exception {
 		_guestUser = _userLocalService.getGuestUser(
 			TestPropsValues.getCompanyId());
-		_objectDefinition = ObjectDefinitionTestUtil.addCustomObjectDefinition(
-			_objectDefinitionLocalService);
+		_objectDefinition =
+			ObjectDefinitionTestUtil.addCustomObjectDefinition();
 		_systemObjectDefinition =
 			ObjectDefinitionTestUtil.addUnmodifiableSystemObjectDefinition(
 				null, TestPropsValues.getUserId(), "Test", null,
@@ -70,7 +70,6 @@ public class ObjectFieldServiceTest {
 				"Test", null, null,
 				LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
 				ObjectDefinitionConstants.SCOPE_COMPANY, null, 1,
-				_objectDefinitionLocalService,
 				Collections.<ObjectField>emptyList());
 		_originalName = PrincipalThreadLocal.getName();
 		_originalPermissionChecker =
@@ -212,7 +211,7 @@ public class ObjectFieldServiceTest {
 			objectField = _objectFieldService.addCustomObjectField(
 				null, 0, objectDefinitionId,
 				ObjectFieldConstants.BUSINESS_TYPE_TEXT,
-				ObjectFieldConstants.DB_TYPE_STRING, false, false, null,
+				ObjectFieldConstants.DB_TYPE_STRING, null, false, false, null,
 				LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
 				false, StringUtil.randomId(),
 				ObjectFieldConstants.READ_ONLY_FALSE, null, true, false,
@@ -271,7 +270,7 @@ public class ObjectFieldServiceTest {
 
 			objectField = _objectFieldService.updateObjectField(
 				StringPool.BLANK, objectField.getObjectFieldId(), 0, "Text",
-				ObjectFieldConstants.DB_TYPE_STRING, true, false,
+				ObjectFieldConstants.DB_TYPE_STRING, null, true, false,
 				LanguageUtil.getLanguageId(LocaleUtil.getDefault()),
 				LocalizedMapUtil.getLocalizedMap("baker"), false, "baker",
 				ObjectFieldConstants.READ_ONLY_FALSE, null, true, false,

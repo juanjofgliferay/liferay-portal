@@ -26,11 +26,11 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.MimeTypesUtil;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.util.PropsValues;
 import com.liferay.wiki.configuration.WikiFileUploadConfiguration;
 import com.liferay.wiki.constants.WikiPortletKeys;
-import com.liferay.wiki.item.selector.criterion.WikiAttachmentItemSelectorCriterion;
+import com.liferay.wiki.item.selector.WikiAttachmentItemSelectorCriterion;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -135,6 +135,16 @@ public abstract class BaseWikiAttachmentImageEditorConfigContributor
 		String itemSelectedEventName, long wikiPageResourcePrimKey,
 		ThemeDisplay themeDisplay);
 
+	protected ItemSelectorCriterion getURLItemSelectorCriterion() {
+		ItemSelectorCriterion itemSelectorCriterion =
+			new URLItemSelectorCriterion();
+
+		itemSelectorCriterion.setDesiredItemSelectorReturnTypes(
+			new URLItemSelectorReturnType());
+
+		return itemSelectorCriterion;
+	}
+
 	protected ItemSelectorCriterion getUploadItemSelectorCriterion(
 		long wikiPageResourcePrimKey, ThemeDisplay themeDisplay,
 		RequestBackedPortletURLFactory requestBackedPortletURLFactory) {
@@ -177,16 +187,6 @@ public abstract class BaseWikiAttachmentImageEditorConfigContributor
 		).build();
 	}
 
-	protected ItemSelectorCriterion getURLItemSelectorCriterion() {
-		ItemSelectorCriterion itemSelectorCriterion =
-			new URLItemSelectorCriterion();
-
-		itemSelectorCriterion.setDesiredItemSelectorReturnTypes(
-			new URLItemSelectorReturnType());
-
-		return itemSelectorCriterion;
-	}
-
 	protected ItemSelectorCriterion getWikiAttachmentItemSelectorCriterion(
 		long wikiPageResourcePrimKey,
 		ItemSelectorReturnType... desiredItemSelectorReturnTypes) {
@@ -223,9 +223,11 @@ public abstract class BaseWikiAttachmentImageEditorConfigContributor
 		List<String> mimeTypes = new ArrayList<>();
 
 		for (String mimeType : dlFileEntryPreviewImageMimeTypes) {
-			if (wikiAttachmentMimeTypes.contains(mimeType)) {
-				mimeTypes.add(mimeType);
+			if (!wikiAttachmentMimeTypes.contains(mimeType)) {
+				continue;
 			}
+
+			mimeTypes.add(mimeType);
 		}
 
 		return mimeTypes.toArray(new String[0]);

@@ -6,17 +6,16 @@
 package com.liferay.portal.security.content.security.policy.internal;
 
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
+import com.liferay.portal.kernel.frontend.spa.FrontendSPA;
 import com.liferay.portal.kernel.security.SecureRandom;
 import com.liferay.portal.kernel.util.Base64;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.security.content.security.policy.internal.configuration.ContentSecurityPolicyConfiguration;
 import com.liferay.portal.security.content.security.policy.internal.configuration.ContentSecurityPolicyConfigurationUtil;
-import com.liferay.portal.util.PropsValues;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -37,20 +36,32 @@ public class ContentSecurityPolicyNonceManager {
 	}
 
 	public String getNonce(HttpServletRequest httpServletRequest) {
-		String nonce = GetterUtil.getString(_threadLocal.get());
+		String nonce = _threadLocal.get();
 
 		if (nonce != null) {
 			return nonce;
+		}
+
+		if (httpServletRequest == null) {
+			return StringPool.BLANK;
 		}
 
 		return GetterUtil.getString(httpServletRequest.getAttribute(_NONCE));
 	}
 
 	public String setNonce(HttpServletRequest httpServletRequest) {
-		String nonce = null;
-
 		httpServletRequest = _portal.getOriginalServletRequest(
 			httpServletRequest);
+
+		String nonce = (String)httpServletRequest.getAttribute(_NONCE);
+
+		if (nonce != null) {
+			_threadLocal.set(nonce);
+
+			return nonce;
+		}
+
+		HttpSession httpSession = httpServletRequest.getSession();
 
 		ContentSecurityPolicyConfiguration contentSecurityPolicyConfiguration =
 			ContentSecurityPolicyConfigurationUtil.
@@ -59,8 +70,8 @@ public class ContentSecurityPolicyNonceManager {
 		if (!contentSecurityPolicyConfiguration.enabled()) {
 			nonce = StringPool.BLANK;
 		}
-		else if (PropsValues.JAVASCRIPT_SINGLE_PAGE_APPLICATION_ENABLED) {
-			HttpSession httpSession = httpServletRequest.getSession();
+		else if (_frontendSPA.isEnabled(
+					_portal.getCompanyId(httpServletRequest))) {
 
 			nonce = (String)httpSession.getAttribute(_NONCE);
 
@@ -101,7 +112,7 @@ public class ContentSecurityPolicyNonceManager {
 		ContentSecurityPolicyNonceManager.class.getName() + "#NONCE";
 
 	@Reference
-	private ConfigurationProvider _configurationProvider;
+	private FrontendSPA _frontendSPA;
 
 	@Reference
 	private Portal _portal;

@@ -5,6 +5,7 @@
 
 package com.liferay.portal.kernel.servlet;
 
+import com.liferay.petra.io.StreamUtil;
 import com.liferay.petra.nio.CharsetEncoderUtil;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringBundler;
@@ -19,10 +20,12 @@ import com.liferay.portal.kernel.util.MimeTypesUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.PropsUtil;
 import com.liferay.portal.kernel.util.RandomAccessInputStream;
-import com.liferay.portal.kernel.util.StreamUtil;
 import com.liferay.portal.kernel.util.StringUtil;
-import com.liferay.portal.kernel.util.URLCodec;
 import com.liferay.portal.kernel.util.Validator;
+
+import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -44,26 +47,51 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
-import javax.servlet.ServletOutputStream;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 /**
  * @author Brian Wing Shun Chan
  * @author Shuyang Zhou
  */
 public class ServletResponseUtil {
 
+	public static boolean isBrowserExecutableContentType(String contentType) {
+		if (contentType == null) {
+			return false;
+		}
+
+		String lowerCaseContentType = StringUtil.toLowerCase(contentType);
+
+		if (lowerCaseContentType.startsWith("application/javascript") ||
+			lowerCaseContentType.startsWith("application/xhtml+xml") ||
+			lowerCaseContentType.startsWith("image/svg+xml") ||
+			lowerCaseContentType.startsWith("text/html") ||
+			lowerCaseContentType.startsWith("text/javascript")) {
+
+			return true;
+		}
+
+		return false;
+	}
+
+	public static boolean isBrowserExecutableContentType(
+		String contentType, String fileName) {
+
+		if (isBrowserExecutableContentType(contentType) ||
+			isBrowserExecutableContentType(
+				MimeTypesUtil.getExtensionContentType(
+					FileUtil.getExtension(fileName)))) {
+
+			return true;
+		}
+
+		return false;
+	}
+
 	public static boolean isClientAbortException(IOException ioException) {
 		Class<?> clazz = ioException.getClass();
 
 		String className = clazz.getName();
 
-		if (className.equals(_CLIENT_ABORT_EXCEPTION)) {
-			return true;
-		}
-
-		return false;
+		return className.equals(_CLIENT_ABORT_EXCEPTION);
 	}
 
 	public static void sendFile(
@@ -451,27 +479,6 @@ public class ServletResponseUtil {
 			return;
 		}
 
-		String contentDispositionFileName = "filename=\"" + fileName + "\"";
-
-		// If necessary for non-ASCII characters, encode based on RFC 2184.
-		// However, not all browsers support RFC 2184. See LEP-3127.
-
-		boolean ascii = true;
-
-		for (int i = 0; i < fileName.length(); i++) {
-			if (!Validator.isAscii(fileName.charAt(i))) {
-				ascii = false;
-
-				break;
-			}
-		}
-
-		if (!ascii) {
-			String encodedFileName = URLCodec.encodeURL(fileName, true);
-
-			contentDispositionFileName = "filename*=UTF-8''" + encodedFileName;
-		}
-
 		if (Validator.isNull(contentDispositionType)) {
 			String extension = GetterUtil.getString(
 				FileUtil.getExtension(fileName));
@@ -522,19 +529,17 @@ public class ServletResponseUtil {
 			}
 		}
 
-		StringBundler sb = new StringBundler(4);
-
-		sb.append(contentDispositionType);
-		sb.append(StringPool.SEMICOLON);
-		sb.append(StringPool.SPACE);
-		sb.append(contentDispositionFileName);
+		String contentDisposition =
+			ContentDispositionUtil.getContentDispositionHeaderValue(
+				contentDispositionType, fileName);
 
 		if (_log.isDebugEnabled()) {
-			_log.debug("Setting content disposition header " + sb.toString());
+			_log.debug(
+				"Setting content disposition header " + contentDisposition);
 		}
 
 		httpServletResponse.setHeader(
-			HttpHeaders.CONTENT_DISPOSITION, sb.toString());
+			HttpHeaders.CONTENT_DISPOSITION, contentDisposition);
 	}
 
 	protected static void setHeaders(
@@ -820,7 +825,14 @@ public class ServletResponseUtil {
 			_checkSocketException(ioException);
 		}
 		finally {
-			StreamUtil.cleanUp(true, inputStream);
+			try {
+				inputStream.close();
+			}
+			catch (IOException ioException) {
+				if (_log.isWarnEnabled()) {
+					_log.warn(ioException);
+				}
+			}
 		}
 	}
 

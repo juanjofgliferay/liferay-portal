@@ -11,10 +11,9 @@ import com.liferay.portal.kernel.cluster.Priority;
 import com.liferay.portal.kernel.messaging.Message;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.rule.NewEnv;
-import com.liferay.portal.kernel.test.util.PropsTestUtil;
-import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.ObjectValuePair;
 import com.liferay.portal.kernel.util.PropsKeys;
+import com.liferay.portal.kernel.util.PropsUtil;
 import com.liferay.portal.test.log.LogCapture;
 import com.liferay.portal.test.log.LogEntry;
 import com.liferay.portal.test.log.LoggerTestUtil;
@@ -22,8 +21,9 @@ import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import java.io.Serializable;
 
+import java.util.Collections;
 import java.util.List;
-import java.util.Properties;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.logging.Level;
@@ -113,8 +113,8 @@ public class ClusterLinkImplTest extends BaseClusterTestCase {
 
 	@Test
 	public void testInitChannels() {
-		try (LogCapture logCapture = LoggerTestUtil.configureJDKLogger(
-				ClusterLinkImpl.class.getName(), Level.OFF)) {
+		try (LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
+				ClusterLinkImpl.class.getName(), LoggerTestUtil.OFF)) {
 
 			// Test 1, create ClusterLinkImpl#MAX_CHANNEL_COUNT channels
 
@@ -240,40 +240,33 @@ public class ClusterLinkImplTest extends BaseClusterTestCase {
 	}
 
 	private ClusterLinkImpl _getClusterLinkImpl(int channels) {
-		ClusterLinkImpl clusterLinkImpl = new ClusterLinkImpl();
+		ClusterLinkImpl clusterLinkImpl = new ClusterLinkImpl() {
 
-		Properties channelNameProperties = new Properties();
-		Properties channelPropertiesProperties = new Properties();
+			@Override
+			protected void modified(Map<String, Object> properties) {
+				ReflectionTestUtil.setFieldValue(
+					this, "_clusterChannelFactory",
+					new TestClusterChannelFactory());
+			}
 
-		for (int i = 0; i < channels; i++) {
-			channelNameProperties.put(
-				StringPool.PERIOD + i, "test-channel-name-transport-" + i);
-			channelPropertiesProperties.put(
-				StringPool.PERIOD + i,
-				"test-channel-properties-transport-" + i);
-		}
+		};
 
-		ReflectionTestUtil.setFieldValue(
-			clusterLinkImpl, "_props",
-			PropsTestUtil.setProps(
-				HashMapBuilder.<String, Object>put(
-					PropsKeys.CLUSTER_LINK_CHANNEL_LOGIC_NAME_TRANSPORT,
-					new Properties()
-				).put(
-					PropsKeys.CLUSTER_LINK_CHANNEL_NAME_TRANSPORT,
-					channelNameProperties
-				).put(
-					PropsKeys.CLUSTER_LINK_CHANNEL_PROPERTIES_TRANSPORT,
-					channelPropertiesProperties
-				).build()));
-		ReflectionTestUtil.setFieldValue(
-			clusterLinkImpl, "_clusterChannelFactory",
-			new TestClusterChannelFactory());
 		ReflectionTestUtil.setFieldValue(
 			clusterLinkImpl, "_portalExecutorManager",
 			new MockPortalExecutorManager());
 
-		clusterLinkImpl.activate();
+		for (int i = 0; i < channels; i++) {
+			PropsUtil.set(
+				PropsKeys.CLUSTER_LINK_CHANNEL_NAME_TRANSPORT +
+					StringPool.PERIOD + i,
+				"test-channel-name-transport-" + i);
+			PropsUtil.set(
+				PropsKeys.CLUSTER_LINK_CHANNEL_PROPERTIES_TRANSPORT +
+					StringPool.PERIOD + i,
+				"test-channel-properties-transport-" + i);
+		}
+
+		clusterLinkImpl.activate(Collections.emptyMap());
 
 		return clusterLinkImpl;
 	}

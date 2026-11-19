@@ -69,7 +69,7 @@ public class LayoutPageTemplateEntryCacheModel
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(51);
+		StringBundler sb = new StringBundler(55);
 
 		sb.append("{mvccVersion=");
 		sb.append(mvccVersion);
@@ -77,6 +77,8 @@ public class LayoutPageTemplateEntryCacheModel
 		sb.append(ctCollectionId);
 		sb.append(", uuid=");
 		sb.append(uuid);
+		sb.append(", externalReferenceCode=");
+		sb.append(externalReferenceCode);
 		sb.append(", layoutPageTemplateEntryId=");
 		sb.append(layoutPageTemplateEntryId);
 		sb.append(", groupId=");
@@ -99,6 +101,8 @@ public class LayoutPageTemplateEntryCacheModel
 		sb.append(classNameId);
 		sb.append(", classTypeId=");
 		sb.append(classTypeId);
+		sb.append(", classTypeKey=");
+		sb.append(classTypeKey);
 		sb.append(", name=");
 		sb.append(name);
 		sb.append(", type=");
@@ -141,6 +145,14 @@ public class LayoutPageTemplateEntryCacheModel
 			layoutPageTemplateEntryImpl.setUuid(uuid);
 		}
 
+		if (externalReferenceCode == null) {
+			layoutPageTemplateEntryImpl.setExternalReferenceCode("");
+		}
+		else {
+			layoutPageTemplateEntryImpl.setExternalReferenceCode(
+				externalReferenceCode);
+		}
+
 		layoutPageTemplateEntryImpl.setLayoutPageTemplateEntryId(
 			layoutPageTemplateEntryId);
 		layoutPageTemplateEntryImpl.setGroupId(groupId);
@@ -181,6 +193,13 @@ public class LayoutPageTemplateEntryCacheModel
 
 		layoutPageTemplateEntryImpl.setClassNameId(classNameId);
 		layoutPageTemplateEntryImpl.setClassTypeId(classTypeId);
+
+		if (classTypeKey == null) {
+			layoutPageTemplateEntryImpl.setClassTypeKey("");
+		}
+		else {
+			layoutPageTemplateEntryImpl.setClassTypeKey(classTypeKey);
+		}
 
 		if (name == null) {
 			layoutPageTemplateEntryImpl.setName("");
@@ -231,6 +250,7 @@ public class LayoutPageTemplateEntryCacheModel
 
 		ctCollectionId = objectInput.readLong();
 		uuid = objectInput.readUTF();
+		externalReferenceCode = objectInput.readUTF();
 
 		layoutPageTemplateEntryId = objectInput.readLong();
 
@@ -249,6 +269,7 @@ public class LayoutPageTemplateEntryCacheModel
 		classNameId = objectInput.readLong();
 
 		classTypeId = objectInput.readLong();
+		classTypeKey = objectInput.readUTF();
 		name = objectInput.readUTF();
 
 		type = objectInput.readInt();
@@ -282,6 +303,13 @@ public class LayoutPageTemplateEntryCacheModel
 			objectOutput.writeUTF(uuid);
 		}
 
+		if (externalReferenceCode == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(externalReferenceCode);
+		}
+
 		objectOutput.writeLong(layoutPageTemplateEntryId);
 
 		objectOutput.writeLong(groupId);
@@ -312,6 +340,13 @@ public class LayoutPageTemplateEntryCacheModel
 		objectOutput.writeLong(classNameId);
 
 		objectOutput.writeLong(classTypeId);
+
+		if (classTypeKey == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(classTypeKey);
+		}
 
 		if (name == null) {
 			objectOutput.writeUTF("");
@@ -348,6 +383,7 @@ public class LayoutPageTemplateEntryCacheModel
 	public long mvccVersion;
 	public long ctCollectionId;
 	public String uuid;
+	public String externalReferenceCode;
 	public long layoutPageTemplateEntryId;
 	public long groupId;
 	public long companyId;
@@ -359,6 +395,7 @@ public class LayoutPageTemplateEntryCacheModel
 	public String layoutPageTemplateEntryKey;
 	public long classNameId;
 	public long classTypeId;
+	public String classTypeKey;
 	public String name;
 	public int type;
 	public long previewFileEntryId;
@@ -372,3 +409,4 @@ public class LayoutPageTemplateEntryCacheModel
 	public long statusDate;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:480673767

@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -27,8 +28,10 @@ import java.util.Map;
  *
  * @author Alessio Antonio Rendina
  * @see CommerceNotificationTemplateLocalService
+ * @deprecated As of Cavanaugh (7.4.x)
  * @generated
  */
+@Deprecated
 public class CommerceNotificationTemplateLocalServiceUtil {
 
 	/*
@@ -66,24 +69,6 @@ public class CommerceNotificationTemplateLocalServiceUtil {
 		return getService().addCommerceNotificationTemplate(
 			userId, groupId, name, description, from, fromNameMap, to, cc, bcc,
 			type, enabled, subjectMap, bodyMap, serviceContext);
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x)
-	 */
-	@Deprecated
-	public static CommerceNotificationTemplate addCommerceNotificationTemplate(
-			String name, String description, String from,
-			Map<java.util.Locale, String> fromNameMap, String to, String cc,
-			String bcc, String type, boolean enabled,
-			Map<java.util.Locale, String> subjectMap,
-			Map<java.util.Locale, String> bodyMap,
-			com.liferay.portal.kernel.service.ServiceContext serviceContext)
-		throws PortalException {
-
-		return getService().addCommerceNotificationTemplate(
-			name, description, from, fromNameMap, to, cc, bcc, type, enabled,
-			subjectMap, bodyMap, serviceContext);
 	}
 
 	/**
@@ -330,24 +315,6 @@ public class CommerceNotificationTemplateLocalServiceUtil {
 
 	public static List<CommerceNotificationTemplate>
 		getCommerceNotificationTemplates(
-			long groupId, boolean enabled, int start, int end,
-			OrderByComparator<CommerceNotificationTemplate> orderByComparator) {
-
-		return getService().getCommerceNotificationTemplates(
-			groupId, enabled, start, end, orderByComparator);
-	}
-
-	public static List<CommerceNotificationTemplate>
-		getCommerceNotificationTemplates(
-			long groupId, int start, int end,
-			OrderByComparator<CommerceNotificationTemplate> orderByComparator) {
-
-		return getService().getCommerceNotificationTemplates(
-			groupId, start, end, orderByComparator);
-	}
-
-	public static List<CommerceNotificationTemplate>
-		getCommerceNotificationTemplates(
 			long groupId, String type, boolean enabled) {
 
 		return getService().getCommerceNotificationTemplates(
@@ -395,17 +362,6 @@ public class CommerceNotificationTemplateLocalServiceUtil {
 	 */
 	public static int getCommerceNotificationTemplatesCount() {
 		return getService().getCommerceNotificationTemplatesCount();
-	}
-
-	public static int getCommerceNotificationTemplatesCount(long groupId) {
-		return getService().getCommerceNotificationTemplatesCount(groupId);
-	}
-
-	public static int getCommerceNotificationTemplatesCount(
-		long groupId, boolean enabled) {
-
-		return getService().getCommerceNotificationTemplatesCount(
-			groupId, enabled);
 	}
 
 	public static com.liferay.portal.kernel.dao.orm.ExportActionableDynamicQuery
@@ -477,15 +433,13 @@ public class CommerceNotificationTemplateLocalServiceUtil {
 	}
 
 	public static CommerceNotificationTemplateLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(
-		CommerceNotificationTemplateLocalService service) {
-
-		_service = service;
-	}
-
-	private static volatile CommerceNotificationTemplateLocalService _service;
+	private static final Snapshot<CommerceNotificationTemplateLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			CommerceNotificationTemplateLocalServiceUtil.class,
+			CommerceNotificationTemplateLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:160886374

@@ -26,8 +26,10 @@ import java.util.List;
  *
  * @author Brian Wing Shun Chan
  * @see LayoutBranchLocalService
+ * @deprecated As of Cavanaugh (7.4.x), with no direct replacement
  * @generated
  */
+@Deprecated
 public class LayoutBranchLocalServiceUtil {
 
 	/*
@@ -257,14 +259,6 @@ public class LayoutBranchLocalServiceUtil {
 		return getService().getLayoutBranch(layoutBranchId);
 	}
 
-	public static List<LayoutBranch> getLayoutBranches(
-		long layoutSetBranchId, long plid, int start, int end,
-		OrderByComparator<LayoutBranch> orderByComparator) {
-
-		return getService().getLayoutBranches(
-			layoutSetBranchId, plid, start, end, orderByComparator);
-	}
-
 	/**
 	 * Returns a range of all the layout branches.
 	 *
@@ -362,3 +356,4 @@ public class LayoutBranchLocalServiceUtil {
 	private static volatile LayoutBranchLocalService _service;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1066047502

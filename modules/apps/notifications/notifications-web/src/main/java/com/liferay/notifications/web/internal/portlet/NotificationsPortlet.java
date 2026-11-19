@@ -8,16 +8,21 @@ package com.liferay.notifications.web.internal.portlet;
 import com.liferay.bulk.selection.BulkSelection;
 import com.liferay.bulk.selection.BulkSelectionFactory;
 import com.liferay.notifications.web.internal.constants.NotificationsPortletKeys;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.Language;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Release;
 import com.liferay.portal.kernel.model.UserNotificationDelivery;
 import com.liferay.portal.kernel.model.UserNotificationEvent;
 import com.liferay.portal.kernel.notifications.UserNotificationDefinition;
 import com.liferay.portal.kernel.notifications.UserNotificationDeliveryType;
+import com.liferay.portal.kernel.notifications.UserNotificationFeedEntry;
 import com.liferay.portal.kernel.notifications.UserNotificationManagerUtil;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCPortlet;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
+import com.liferay.portal.kernel.service.ServiceContextFactory;
 import com.liferay.portal.kernel.service.UserNotificationDeliveryLocalService;
 import com.liferay.portal.kernel.service.UserNotificationEventLocalService;
 import com.liferay.portal.kernel.servlet.SessionMessages;
@@ -30,12 +35,12 @@ import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.subscription.model.Subscription;
 import com.liferay.subscription.service.SubscriptionLocalService;
 
-import java.util.Map;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.Portlet;
+import jakarta.portlet.PortletException;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.Portlet;
-import javax.portlet.PortletException;
+import java.util.Map;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -50,15 +55,15 @@ import org.osgi.service.component.annotations.Reference;
 		"com.liferay.portlet.css-class-wrapper=notifications-portlet",
 		"com.liferay.portlet.display-category=category.hidden",
 		"com.liferay.portlet.use-default-template=true",
-		"javax.portlet.display-name=Notifications",
-		"javax.portlet.expiration-cache=0",
-		"javax.portlet.init-param.add-process-action-success-action=false",
-		"javax.portlet.init-param.template-path=/META-INF/resources/",
-		"javax.portlet.init-param.view-template=/notifications/view.jsp",
-		"javax.portlet.name=" + NotificationsPortletKeys.NOTIFICATIONS,
-		"javax.portlet.resource-bundle=content.Language",
-		"javax.portlet.security-role-ref=administrator,guest,power-user,user",
-		"javax.portlet.version=3.0"
+		"jakarta.portlet.display-name=Notifications",
+		"jakarta.portlet.expiration-cache=0",
+		"jakarta.portlet.init-param.add-process-action-success-action=false",
+		"jakarta.portlet.init-param.template-path=/META-INF/resources/",
+		"jakarta.portlet.init-param.view-template=/notifications/view.jsp",
+		"jakarta.portlet.name=" + NotificationsPortletKeys.NOTIFICATIONS,
+		"jakarta.portlet.resource-bundle=content.Language",
+		"jakarta.portlet.security-role-ref=administrator,guest,power-user,user",
+		"jakarta.portlet.version=4.0"
 	},
 	service = Portlet.class
 )
@@ -93,9 +98,7 @@ public class NotificationsPortlet extends MVCPortlet {
 		_sendRedirect(actionRequest, actionResponse);
 	}
 
-	public void markAsRead(
-			ActionRequest actionRequest, ActionResponse actionResponse,
-			String actionName)
+	public void markAsRead(ActionRequest actionRequest, String actionName)
 		throws Exception {
 
 		ThemeDisplay themeDisplay = (ThemeDisplay)actionRequest.getAttribute(
@@ -123,8 +126,6 @@ public class NotificationsPortlet extends MVCPortlet {
 		}
 
 		_addSuccessMessage(actionRequest, message);
-
-		_sendRedirect(actionRequest, actionResponse);
 	}
 
 	public void markAsUnread(
@@ -178,10 +179,15 @@ public class NotificationsPortlet extends MVCPortlet {
 				delete(actionRequest, actionResponse, actionName);
 			}
 			else if (actionName.equals("markAllNotificationsAsRead") ||
-					 actionName.equals("markNotificationAsRead") ||
 					 actionName.equals("markNotificationsAsRead")) {
 
-				markAsRead(actionRequest, actionResponse, actionName);
+				markAsRead(actionRequest, actionName);
+
+				_sendRedirect(actionRequest, actionResponse);
+			}
+			else if (actionName.equals("markNotificationAsRead")) {
+				_markAsRead(
+					actionName, actionRequest, actionResponse, themeDisplay);
 			}
 			else if (actionName.equals("markNotificationAsUnread") ||
 					 actionName.equals("markNotificationsAsUnread")) {
@@ -315,6 +321,48 @@ public class NotificationsPortlet extends MVCPortlet {
 		).build();
 	}
 
+	private void _markAsRead(
+			String actionName, ActionRequest actionRequest,
+			ActionResponse actionResponse, ThemeDisplay themeDisplay)
+		throws Exception {
+
+		markAsRead(actionRequest, actionName);
+
+		UserNotificationEvent userNotificationEvent =
+			_userNotificationEventLocalService.fetchUserNotificationEvent(
+				ParamUtil.getLong(actionRequest, "userNotificationEventId"));
+
+		if (userNotificationEvent == null) {
+			_sendRedirect(actionRequest, actionResponse);
+
+			return;
+		}
+
+		UserNotificationFeedEntry userNotificationFeedEntry =
+			UserNotificationManagerUtil.interpret(
+				StringPool.BLANK, userNotificationEvent,
+				ServiceContextFactory.getInstance(actionRequest));
+
+		if (userNotificationFeedEntry == null) {
+			_sendRedirect(actionRequest, actionResponse);
+
+			return;
+		}
+
+		String link = userNotificationFeedEntry.getLink();
+
+		if (Validator.isNull(link)) {
+			_sendRedirect(actionRequest, actionResponse);
+
+			return;
+		}
+
+		actionResponse.sendRedirect(
+			_portal.escapeRedirect(
+				_portal.addPreservedParameters(
+					themeDisplay, link, false, true)));
+	}
+
 	private void _sendRedirect(
 			ActionRequest actionRequest, ActionResponse actionResponse)
 		throws Exception {
@@ -370,6 +418,20 @@ public class NotificationsPortlet extends MVCPortlet {
 				userNotificationDelivery.getClassNameId(),
 				userNotificationDelivery.getNotificationType());
 
+		if (userNotificationDefinition == null) {
+			if (_log.isWarnEnabled()) {
+				_log.warn(
+					String.format(
+						"No user notification definition found for class " +
+							"name ID %d, notification type %d, and portlet %s",
+						userNotificationDelivery.getClassNameId(),
+						userNotificationDelivery.getNotificationType(),
+						userNotificationDelivery.getPortletId()));
+			}
+
+			return;
+		}
+
 		UserNotificationDeliveryType userNotificationDeliveryType =
 			userNotificationDefinition.getUserNotificationDeliveryType(
 				userNotificationDelivery.getDeliveryType());
@@ -381,6 +443,9 @@ public class NotificationsPortlet extends MVCPortlet {
 		_userNotificationDeliveryLocalService.updateUserNotificationDelivery(
 			userNotificationDeliveryId, deliver);
 	}
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		NotificationsPortlet.class);
 
 	@Reference
 	private Language _language;

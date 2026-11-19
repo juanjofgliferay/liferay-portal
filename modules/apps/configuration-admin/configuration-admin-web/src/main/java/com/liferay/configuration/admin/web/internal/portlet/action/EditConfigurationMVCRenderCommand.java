@@ -27,16 +27,15 @@ import com.liferay.portal.kernel.settings.LocationVariableResolver;
 import com.liferay.portal.kernel.settings.SettingsLocatorHelper;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ParamUtil;
-import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.PortletException;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
 import java.util.List;
 import java.util.Map;
-
-import javax.portlet.PortletException;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.service.cm.Configuration;
@@ -50,9 +49,9 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + ConfigurationAdminPortletKeys.INSTANCE_SETTINGS,
-		"javax.portlet.name=" + ConfigurationAdminPortletKeys.SITE_SETTINGS,
-		"javax.portlet.name=" + ConfigurationAdminPortletKeys.SYSTEM_SETTINGS,
+		"jakarta.portlet.name=" + ConfigurationAdminPortletKeys.INSTANCE_SETTINGS,
+		"jakarta.portlet.name=" + ConfigurationAdminPortletKeys.SITE_SETTINGS,
+		"jakarta.portlet.name=" + ConfigurationAdminPortletKeys.SYSTEM_SETTINGS,
 		"mvc.command.name=/configuration_admin/edit_configuration",
 		"service.ranking:Integer=" + (Integer.MAX_VALUE - 1000)
 	},
@@ -91,7 +90,7 @@ public class EditConfigurationMVCRenderCommand implements MVCRenderCommand {
 			Configuration configuration =
 				_configurationModelRetriever.getConfiguration(
 					pid, configurationScopeDisplayContext.getScope(),
-					configurationScopeDisplayContext.getScopePK());
+					configurationScopeDisplayContext.getScopePK(), false);
 
 			if (configurationModel.isFactory() && pid.equals(factoryPid)) {
 				configuration = null;
@@ -110,8 +109,7 @@ public class EditConfigurationMVCRenderCommand implements MVCRenderCommand {
 						configurationScopeDisplayContext.getScopePK()));
 
 			ConfigurationEntry configurationEntry =
-				new ConfigurationModelConfigurationEntry(
-					configurationModel, _portal.getLocale(renderRequest));
+				new ConfigurationModelConfigurationEntry(configurationModel);
 
 			renderRequest.setAttribute(
 				ConfigurationAdminWebKeys.CONFIGURATION_ENTRY,
@@ -124,8 +122,7 @@ public class EditConfigurationMVCRenderCommand implements MVCRenderCommand {
 						configurationModel.getBaseID()));
 
 			List<ConfigurationMenuItem> configurationMenuItems =
-				_configurationMenuItemsServiceTrackerMap.getService(
-					configurationModel.getBaseID());
+				_serviceTrackerMap.getService(configurationModel.getBaseID());
 
 			if (configurationMenuItems != null) {
 				renderRequest.setAttribute(
@@ -162,15 +159,13 @@ public class EditConfigurationMVCRenderCommand implements MVCRenderCommand {
 
 	@Activate
 	protected void activate(BundleContext bundleContext) {
-		_configurationMenuItemsServiceTrackerMap =
-			ServiceTrackerMapFactory.openMultiValueMap(
-				bundleContext, ConfigurationMenuItem.class,
-				"configuration.pid");
+		_serviceTrackerMap = ServiceTrackerMapFactory.openMultiValueMap(
+			bundleContext, ConfigurationMenuItem.class, "configuration.pid");
 	}
 
 	@Deactivate
 	protected void deactivate() {
-		_configurationMenuItemsServiceTrackerMap.close();
+		_serviceTrackerMap.close();
 	}
 
 	@Reference
@@ -180,17 +175,14 @@ public class EditConfigurationMVCRenderCommand implements MVCRenderCommand {
 	private ConfigurationFormRendererRetriever
 		_configurationFormRendererRetriever;
 
-	private ServiceTrackerMap<String, List<ConfigurationMenuItem>>
-		_configurationMenuItemsServiceTrackerMap;
-
 	@Reference(target = "(filter.visibility=*)")
 	private ConfigurationModelRetriever _configurationModelRetriever;
 
 	@Reference
 	private DDMFormRenderer _ddmFormRenderer;
 
-	@Reference
-	private Portal _portal;
+	private ServiceTrackerMap<String, List<ConfigurationMenuItem>>
+		_serviceTrackerMap;
 
 	@Reference
 	private SettingsLocatorHelper _settingsLocatorHelper;

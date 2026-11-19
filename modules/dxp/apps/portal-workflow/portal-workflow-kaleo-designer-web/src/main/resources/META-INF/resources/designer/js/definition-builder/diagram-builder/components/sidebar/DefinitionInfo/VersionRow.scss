@@ -1,0 +1,43 @@
+@import 'atlas-custom-properties/_variables';
+
+.lfr-workflow__version-row {
+	&-container {
+		align-items: center;
+		display: flex;
+		justify-content: space-between;
+	}
+
+	&-info-container {
+		display: flex;
+		flex-direction: column;
+	}
+
+	&-info-date-user {
+		color: $secondary;
+		font-size: 13px;
+		line-height: 18px;
+		word-wrap: break-word;
+	}
+
+	&-info-number {
+		color: $dark;
+		font-size: 14px;
+		font-weight: 600;
+		line-height: 21px;
+	}
+
+	&-restore-button {
+		color: $secondary;
+		transition: 0.3s ease;
+
+		&:hover {
+			color: $dark;
+			transition: 0.3s ease;
+		}
+	}
+}
+
+.lexicon-icon-restore {
+	height: 24px;
+	width: 24px;
+}

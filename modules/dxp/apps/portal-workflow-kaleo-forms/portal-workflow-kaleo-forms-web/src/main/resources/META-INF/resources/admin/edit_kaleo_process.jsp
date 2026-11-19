@@ -7,6 +7,8 @@
 
 <%@ include file="/admin/init.jsp" %>
 
+<%@ include file="/admin/deprecated_warning.jspf" %>
+
 <%
 String redirect = ParamUtil.getString(request, "redirect");
 
@@ -22,9 +24,9 @@ String historyKey = ParamUtil.getString(request, "historyKey");
 
 KaleoProcess kaleoProcess = (KaleoProcess)request.getAttribute(KaleoFormsWebKeys.KALEO_PROCESS);
 
-long kaleoProcessId = BeanParamUtil.getLong(kaleoProcess, request, "kaleoProcessId");
+long kaleoProcessId = BeanParamUtil.getLong(kaleoProcess, request, "kaleoProcessId", KaleoProcess::getKaleoProcessId);
 
-long groupId = BeanParamUtil.getLong(kaleoProcess, request, "groupId", scopeGroupId);
+long groupId = BeanParamUtil.getLong(kaleoProcess, request, "groupId", KaleoProcess::getGroupId, scopeGroupId);
 
 String kaleoProcessName = KaleoFormsUtil.getKaleoProcessName(kaleoProcess, portletSession, locale);
 

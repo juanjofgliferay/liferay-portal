@@ -8,6 +8,7 @@ package com.liferay.document.library.web.internal.servlet;
 import com.liferay.document.library.kernel.model.DLFileEntry;
 import com.liferay.document.library.web.internal.configuration.CacheControlConfiguration;
 import com.liferay.document.library.web.internal.configuration.helper.CacheControlConfigurationHelper;
+import com.liferay.portal.kernel.change.tracking.CTCollectionThreadLocal;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
@@ -15,13 +16,19 @@ import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.repository.http.header.customizer.FileEntryHttpHeaderCustomizer;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
-import com.liferay.portal.kernel.security.permission.PermissionCheckerFactoryUtil;
+import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
 import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.servlet.HttpHeaders;
 import com.liferay.portal.kernel.util.ArrayUtil;
 
+import java.util.Map;
+
+import org.osgi.framework.BundleContext;
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.service.component.annotations.Modified;
 import org.osgi.service.component.annotations.Reference;
 
 /**
@@ -47,8 +54,30 @@ public class CacheControlFileEntryHttpHeaderCustomizer
 		}
 	}
 
+	@Activate
+	protected void activate(
+		BundleContext bundleContext, Map<String, Object> properties) {
+
+		_cacheControlConfigurationHelper = new CacheControlConfigurationHelper(
+			bundleContext, properties);
+	}
+
+	@Deactivate
+	protected void deactivate() {
+		_cacheControlConfigurationHelper.destroy();
+	}
+
+	@Modified
+	protected void modified(Map<String, Object> properties) {
+		_cacheControlConfigurationHelper.modified(properties);
+	}
+
 	private String _getHttpHeaderValue(FileEntry fileEntry, String currentValue)
 		throws PortalException {
+
+		if (!CTCollectionThreadLocal.isProductionMode()) {
+			return HttpHeaders.CACHE_CONTROL_NO_CACHE_VALUE;
+		}
 
 		CacheControlConfiguration cacheControlConfiguration =
 			_cacheControlConfigurationHelper.
@@ -65,7 +94,8 @@ public class CacheControlFileEntryHttpHeaderCustomizer
 			fileEntry.getCompanyId());
 
 		if (!_dlFileEntryModelResourcePermission.contains(
-				PermissionCheckerFactoryUtil.create(company.getGuestUser()),
+				PermissionThreadLocal.getPermissionChecker(
+					company.getGuestUser(), false),
 				fileEntry.getPrimaryKey(), ActionKeys.VIEW)) {
 
 			return currentValue;
@@ -83,7 +113,6 @@ public class CacheControlFileEntryHttpHeaderCustomizer
 	private static final Log _log = LogFactoryUtil.getLog(
 		CacheControlFileEntryHttpHeaderCustomizer.class);
 
-	@Reference
 	private CacheControlConfigurationHelper _cacheControlConfigurationHelper;
 
 	@Reference

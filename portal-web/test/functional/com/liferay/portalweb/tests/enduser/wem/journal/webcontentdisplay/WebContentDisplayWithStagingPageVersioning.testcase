@@ -1,4 +1,4 @@
-@component-name = "portal-wcd"
+@component-name = "portal-content-management"
 definition {
 
 	property ci.retries.disabled = "true";
@@ -11,6 +11,10 @@ definition {
 			TestCase.setUpPortalInstance();
 
 			User.firstLoginPG();
+		}
+
+		task ("Enable the Staging Page Variations deprecation feature flag") {
+			Staging.enablePageVariationsFeatureFlag();
 		}
 
 		task ("Add a site") {

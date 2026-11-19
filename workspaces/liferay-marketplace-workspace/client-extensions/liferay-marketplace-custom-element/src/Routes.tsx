@@ -3,38 +3,76 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {CustomerGatePage} from './pages/CustomerGatePage/CustomerGatePage';
-import GetAppPage from './pages/GetAppPage/GetAppPage';
-import {NextSteps} from './pages/NextSteps';
-import {AppCreationFlow} from './pages/PublishedAppsDashboard/Apps/AppCreationFlow/AppCreationFlow';
-import PublishedAppsDashboardRouter from './pages/PublishedAppsDashboard/PublishedAppsDashboardRouter';
-import PublisherGateRouter from './pages/PublisherGate/PublisheGateRouter';
-import PurchasedAppsDashboardRouter from './pages/PurchasedAppsDashboard/PurchasedAppsDashboardRouter';
-import PurchasedSolutions from './pages/PurchasedSolutions/PurchasedSolutions';
+import React, {Suspense} from 'react';
 
-const Routes = {
-	'create-app': AppCreationFlow,
-	'customer-gate': CustomerGatePage,
-	'get-app': GetAppPage,
-	'next-steps': NextSteps,
-	'published-apps': PublishedAppsDashboardRouter,
-	'publisher-gate': PublisherGateRouter,
-	'purchased-apps': PurchasedAppsDashboardRouter,
-	'purchased-solutions': PurchasedSolutions,
+import Loading from './components/Loading';
+import {MarketplaceProperties} from './utils/attributes';
+
+const lazyRoutes = {
+	'administrator-dashboard': React.lazy(
+		() =>
+			import(
+				'./pages/AdministratorDashboard/AdministratorDashboardRouter'
+			)
+	),
+	'finance-dashboard': React.lazy(
+		() => import('./pages/FinanceDashboard/FinanceDashboardRouter')
+	),
+	'license-agreement': React.lazy(
+		() => import('./pages/LicenseAgreementPage')
+	),
+	'new-account-trigger': React.lazy(
+		() => import('./pages/NewAccount/NewAccountButton')
+	),
+	'next-steps': React.lazy(() => import('./pages/NextSteps')),
+	'oauth2-authorize': React.lazy(
+		() => import('./pages/OAuth2Authorize/OAuth2AuthorizeRouter')
+	),
+	'product-feedback': React.lazy(() => import('./pages/ProductFeedback')),
+	'product-purchase': React.lazy(
+		() => import('./pages/ProductPurchase/ProductPurchaseRouter')
+	),
+	'published-apps': React.lazy(
+		() => import('./pages/PublisherDashboard/PublisherDashboardRouter')
+	),
+	'publisher-gate': React.lazy(
+		() => import('./pages/PublisherGate/PublisherGateRouter')
+	),
+	'purchased-apps': React.lazy(
+		() => import('./pages/CustomerDashboard/CustomerDashboardRouter')
+	),
+	'ssa-dashboard': React.lazy(
+		() => import('./pages/SSADashboard/SSADashboardRouter')
+	),
 } as const;
 
-export type RouteType = keyof typeof Routes;
+export type RouteType = keyof typeof lazyRoutes;
 
 type AppRoutesProps = {
-	route: RouteType;
+	path: RouteType;
+	properties: MarketplaceProperties;
 };
 
-export default function AppRoutes({route}: AppRoutesProps) {
-	const Route = Routes[route];
+export default function Routes({path, properties}: AppRoutesProps) {
+	const Route = lazyRoutes[path] as React.FC<{
+		properties: MarketplaceProperties;
+	}>;
 
 	if (!Route) {
 		return <h1>Page not found</h1>;
 	}
 
-	return <Route />;
+	return (
+		<Suspense
+			fallback={
+				<Loading
+					className="mt-4"
+					displayType="secondary"
+					shape="squares"
+				/>
+			}
+		>
+			<Route properties={properties} />
+		</Suspense>
+	);
 }

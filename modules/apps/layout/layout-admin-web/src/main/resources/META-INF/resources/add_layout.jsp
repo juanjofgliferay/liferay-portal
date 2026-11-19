@@ -8,23 +8,39 @@
 <%@ include file="/init.jsp" %>
 
 <%
+List<SiteNavigationMenu> autoSiteNavigationMenus = layoutsAdminDisplayContext.getAutoSiteNavigationMenus();
+boolean emptyLayout = ParamUtil.getBoolean(request, "emptyLayout");
 boolean copyPermissions = ParamUtil.getBoolean(request, "copyPermissions");
 long sourcePlid = ParamUtil.getLong(request, "sourcePlid");
 
-List<SiteNavigationMenu> autoSiteNavigationMenus = layoutsAdminDisplayContext.getAutoSiteNavigationMenus();
+String actionURL;
+
+if (emptyLayout) {
+	actionURL = layoutsAdminDisplayContext.getConvertEmptyLayoutURL();
+}
+else {
+	actionURL = (sourcePlid <= 0) ? layoutsAdminDisplayContext.getAddLayoutURL() : layoutsAdminDisplayContext.getCopyLayoutActionURL(copyPermissions, sourcePlid);
+}
 %>
 
 <clay:container-fluid>
 	<liferay-frontend:edit-form
-		action="<%= (sourcePlid <= 0) ? layoutsAdminDisplayContext.getAddLayoutURL() : layoutsAdminDisplayContext.getCopyLayoutActionURL(copyPermissions, sourcePlid) %>"
-		cssClass="add-layout-form"
+		action="<%= actionURL %>"
+		cssClass="add-layout-form d-none"
 		method="post"
 		name="fm"
 		onSubmit="event.preventDefault();"
 		validateOnBlur="<%= false %>"
 	>
 		<liferay-frontend:edit-form-body>
-			<aui:input label="name" name="name" placeholder='<%= LanguageUtil.get(request, "add-page-name") %>' required="<%= true %>" />
+			<c:choose>
+				<c:when test="<%= emptyLayout %>">
+					<aui:input data-qa-id="addPageNameInput" label="name" name="name" required="<%= true %>" value='<%= ParamUtil.getString(request, "externalReferenceCode") %>' />
+				</c:when>
+				<c:otherwise>
+					<aui:input data-qa-id="addPageNameInput" label="name" name="name" placeholder='<%= LanguageUtil.get(request, "add-page-name") %>' required="<%= true %>" />
+				</c:otherwise>
+			</c:choose>
 
 			<c:choose>
 				<c:when test="<%= autoSiteNavigationMenus.size() > 1 %>">
@@ -93,13 +109,16 @@ List<SiteNavigationMenu> autoSiteNavigationMenus = layoutsAdminDisplayContext.ge
 					</c:choose>
 				</aui:fieldset>
 			</c:if>
+			</div>
 		</liferay-frontend:edit-form-body>
 
 		<liferay-frontend:edit-form-footer>
-			<liferay-frontend:edit-form-buttons
-				submitId="addButton"
-				submitLabel="add"
-			/>
+			<div data-qa-id="addLayoutFooter">
+				<liferay-frontend:edit-form-buttons
+					submitId="addButton"
+					submitLabel="add"
+				/>
+			</div>
 		</liferay-frontend:edit-form-footer>
 	</liferay-frontend:edit-form>
 </clay:container-fluid>
@@ -107,5 +126,5 @@ List<SiteNavigationMenu> autoSiteNavigationMenus = layoutsAdminDisplayContext.ge
 <liferay-frontend:component
 	componentId='<%= liferayPortletResponse.getNamespace() + "addLayout" %>'
 	context="<%= layoutsAdminDisplayContext.getProps() %>"
-	module="js/AddLayout"
+	module="{AddLayout} from layout-admin-web"
 />

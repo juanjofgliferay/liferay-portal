@@ -5,14 +5,12 @@
 
 package com.liferay.users.admin.internal.workflow;
 
-import com.liferay.portal.kernel.audit.AuditRequestThreadLocal;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.security.permission.ResourceActionsUtil;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.util.GetterUtil;
-import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.workflow.BaseWorkflowHandler;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.kernel.workflow.WorkflowHandler;
@@ -21,9 +19,6 @@ import java.io.Serializable;
 
 import java.util.Locale;
 import java.util.Map;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -72,54 +67,11 @@ public class UserWorkflowHandler extends BaseWorkflowHandler<User> {
 
 			_userLocalService.completeUserRegistration(user, serviceContext);
 
-			_updateAuditRequestThreadLocal(workflowContext);
+			user = _userLocalService.getUser(userId);
 		}
 
-		return _userLocalService.updateStatus(userId, status, serviceContext);
+		return _userLocalService.updateStatus(user, status, serviceContext);
 	}
-
-	private void _updateAuditRequestThreadLocal(
-		Map<String, Serializable> workflowContext) {
-
-		AuditRequestThreadLocal auditRequestThreadLocal =
-			AuditRequestThreadLocal.getAuditThreadLocal();
-
-		ServiceContext serviceContext = (ServiceContext)workflowContext.get(
-			WorkflowConstants.CONTEXT_SERVICE_CONTEXT);
-
-		auditRequestThreadLocal.setClientHost(serviceContext.getRemoteHost());
-		auditRequestThreadLocal.setClientIP(serviceContext.getRemoteAddr());
-
-		long userId = GetterUtil.getLong(
-			(String)workflowContext.get(WorkflowConstants.CONTEXT_USER_ID));
-
-		if (userId != 0) {
-			auditRequestThreadLocal.setRealUserId(userId);
-		}
-
-		HttpServletRequest httpServletRequest =
-			_portal.getOriginalServletRequest(serviceContext.getRequest());
-
-		if (httpServletRequest == null) {
-			return;
-		}
-
-		auditRequestThreadLocal.setServerName(
-			httpServletRequest.getServerName());
-		auditRequestThreadLocal.setServerPort(
-			httpServletRequest.getServerPort());
-
-		HttpSession httpSession = httpServletRequest.getSession();
-
-		if (httpSession == null) {
-			return;
-		}
-
-		auditRequestThreadLocal.setSessionID(httpSession.getId());
-	}
-
-	@Reference
-	private Portal _portal;
 
 	@Reference
 	private UserLocalService _userLocalService;

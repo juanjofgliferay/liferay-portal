@@ -7,23 +7,22 @@ import ClayAlert from '@clayui/alert';
 import ClayButton from '@clayui/button';
 import ClayForm from '@clayui/form';
 import ClayModal, {ClayModalProvider, useModal} from '@clayui/modal';
-import {Observer} from '@clayui/modal/lib/types';
 import {
 	API,
 	FormError,
 	Input,
-	REQUIRED_MSG,
+	constantsUtils,
 	useForm,
 } from '@liferay/object-js-components-web';
 import React, {useEffect, useState} from 'react';
 
 import {defaultLanguageId} from '../utils/constants';
 
-const ModalAddListTypeDefinition: React.FC<IProps> = ({
-	apiURL,
-	observer,
-	onClose,
-}) => {
+import type {Observer} from '@clayui/modal/src/types';
+
+const ModalAddListTypeDefinition: React.FC<
+	{children?: React.ReactNode | undefined} & IProps
+> = ({apiURL, observer, onClose}) => {
 	const initialValues: TInitialValues = {
 		name_i18n: {[defaultLanguageId]: ''},
 	};
@@ -45,7 +44,7 @@ const ModalAddListTypeDefinition: React.FC<IProps> = ({
 		const errors: FormError<TInitialValues> = {};
 
 		if (!values.name_i18n[defaultLanguageId]) {
-			errors.name_i18n = REQUIRED_MSG;
+			errors.name_i18n = constantsUtils.REQUIRED_MSG;
 		}
 
 		return errors;
@@ -60,7 +59,9 @@ const ModalAddListTypeDefinition: React.FC<IProps> = ({
 	return (
 		<ClayModal observer={observer}>
 			<ClayForm onSubmit={handleSubmit}>
-				<ClayModal.Header>
+				<ClayModal.Header
+					closeButtonAriaLabel={Liferay.Language.get('close')}
+				>
 					{Liferay.Language.get('new-picklist')}
 				</ClayModal.Header>
 
@@ -117,7 +118,9 @@ type TInitialValues = {
 	name_i18n: LocalizedValue<string>;
 };
 
-const ModalWithProvider: React.FC<IProps> = ({apiURL}) => {
+const ModalWithProvider: React.FC<
+	{children?: React.ReactNode | undefined} & IProps
+> = ({apiURL}) => {
 	const [visibleModal, setVisibleModal] = useState<boolean>(false);
 	const {observer, onClose} = useModal({
 		onClose: () => setVisibleModal(false),

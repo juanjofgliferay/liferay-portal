@@ -27,12 +27,13 @@ public class ContractionsCheck extends BaseCheck {
 		for (String contraction : _CONTRACTIONS) {
 			int i = s.indexOf(StringUtil.toLowerCase(contraction));
 
-			if ((i != -1) && !Character.isLetterOrDigit(s.charAt(i - 1)) &&
-				!Character.isLetterOrDigit(
-					s.charAt(i + contraction.length()))) {
+			if ((i == -1) || Character.isLetterOrDigit(s.charAt(i - 1)) ||
+				Character.isLetterOrDigit(s.charAt(i + contraction.length()))) {
 
-				log(detailAST, _MSG_AVOID_CONTRACTION, contraction);
+				continue;
 			}
+
+			log(detailAST, _MSG_AVOID_CONTRACTION, contraction);
 		}
 	}
 
@@ -40,8 +41,8 @@ public class ContractionsCheck extends BaseCheck {
 		"aren't", "can't", "could've", "couldn't", "didn't", "doesn't", "don't",
 		"hadn't", "hasn't", "haven't", "how's", "I'd", "I'll", "I've", "isn't",
 		"it's", "let's", "shouldn't", "that's", "there's", "wasn't", "we'd",
-		"we'll", "we're", "we've", "weren't", "what's", "where's", "would've",
-		"wouldn't", "you'd", "you'll", "you're", "you've"
+		"we'll", "we're", "we've", "weren't", "what's", "where's", "won't",
+		"would've", "wouldn't", "you'd", "you'll", "you're", "you've"
 	};
 
 	private static final String _MSG_AVOID_CONTRACTION = "contraction.avoid";

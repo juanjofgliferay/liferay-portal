@@ -13,23 +13,26 @@ import com.liferay.frontend.taglib.clay.servlet.taglib.display.context.BaseManag
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.CreationMenu;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.CreationMenuBuilder;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
 import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
+import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.staging.processes.web.internal.search.PublishConfigurationDisplayTerms;
 import com.liferay.staging.processes.web.internal.search.PublishConfigurationSearchTerms;
 
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.jsp.PageContext;
+
 import java.util.Objects;
-
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.jsp.PageContext;
 
 /**
  * @author Péter Alius
@@ -104,6 +107,21 @@ public class StagingProcessesWebPublishTemplatesToolbarDisplayContext
 		return _searchContainer;
 	}
 
+	@Override
+	public Boolean isShowCreationMenu() {
+		ThemeDisplay themeDisplay =
+			(ThemeDisplay)httpServletRequest.getAttribute(
+				WebKeys.THEME_DISPLAY);
+
+		if (!FeatureFlagManagerUtil.isEnabled(
+				themeDisplay.getCompanyId(), "LPD-101272")) {
+
+			return false;
+		}
+
+		return super.isShowCreationMenu();
+	}
+
 	private SearchContainer<ExportImportConfiguration> _createSearchContainer(
 		long companyId, long groupId, PortletURL iteratorURL,
 		boolean stagedRemotely) {
@@ -119,7 +137,7 @@ public class StagingProcessesWebPublishTemplatesToolbarDisplayContext
 
 		searchContainer.setOrderByCol("name");
 		searchContainer.setOrderByComparator(
-			new ExportImportConfigurationNameComparator(
+			ExportImportConfigurationNameComparator.getInstance(
 				Objects.equals(getOrderByType(), "asc")));
 		searchContainer.setOrderByType(getOrderByType());
 

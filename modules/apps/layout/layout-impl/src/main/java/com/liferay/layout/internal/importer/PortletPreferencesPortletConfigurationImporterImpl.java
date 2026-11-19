@@ -5,7 +5,13 @@
 
 package com.liferay.layout.internal.importer;
 
+import com.liferay.exportimport.kernel.lar.ExportImportThreadLocal;
+import com.liferay.exportimport.kernel.lar.PortletDataException;
+import com.liferay.exportimport.portlet.preferences.processor.Capability;
+import com.liferay.exportimport.portlet.preferences.processor.ExportImportPortletPreferencesProcessor;
+import com.liferay.exportimport.portlet.preferences.processor.ExportImportPortletPreferencesProcessorRegistryUtil;
 import com.liferay.layout.importer.PortletPreferencesPortletConfigurationImporter;
+import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.Portlet;
 import com.liferay.portal.kernel.portlet.PortletIdCodec;
@@ -14,12 +20,14 @@ import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.service.PortletLocalService;
 import com.liferay.portal.kernel.service.PortletPreferencesLocalService;
 import com.liferay.portal.kernel.util.ArrayUtil;
+import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.PortletKeys;
 
-import java.util.Collection;
-import java.util.Map;
+import jakarta.portlet.PortletPreferences;
 
-import javax.portlet.PortletPreferences;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -76,6 +84,9 @@ public class PortletPreferencesPortletConfigurationImporterImpl
 			}
 		}
 
+		_processImportPortletPreferences(
+			layout.getCompanyId(), portletId, portletPreferences);
+
 		String portletPreferencesXML = PortletPreferencesFactoryUtil.toXML(
 			portletPreferences);
 
@@ -97,6 +108,42 @@ public class PortletPreferencesPortletConfigurationImporterImpl
 				PortletKeys.PREFS_OWNER_ID_DEFAULT,
 				PortletKeys.PREFS_OWNER_TYPE_LAYOUT, layout.getPlid(),
 				portletId, portletPreferencesXML);
+		}
+	}
+
+	private void _processImportPortletPreferences(
+		long companyId, String portletId,
+		PortletPreferences portletPreferences) {
+
+		if (!ExportImportThreadLocal.isStagingInProcess()) {
+			return;
+		}
+
+		ExportImportPortletPreferencesProcessor
+			exportImportPortletPreferencesProcessor =
+				ExportImportPortletPreferencesProcessorRegistryUtil.
+					getExportImportPortletPreferencesProcessor(
+						PortletIdCodec.decodePortletName(portletId));
+
+		if (exportImportPortletPreferencesProcessor == null) {
+			return;
+		}
+
+		try {
+			List<Capability> importCapabilities =
+				exportImportPortletPreferencesProcessor.getImportCapabilities();
+
+			if (ListUtil.isNotEmpty(importCapabilities)) {
+				for (Capability importCapability : importCapabilities) {
+					importCapability.process(companyId, portletPreferences);
+				}
+			}
+
+			exportImportPortletPreferencesProcessor.
+				processImportPortletPreferences(companyId, portletPreferences);
+		}
+		catch (PortletDataException portletDataException) {
+			ReflectionUtil.throwException(portletDataException);
 		}
 	}
 

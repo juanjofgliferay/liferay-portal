@@ -19,15 +19,19 @@ import com.liferay.portal.kernel.dao.orm.ProjectionFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.orm.RestrictionsFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.Session;
+import com.liferay.portal.kernel.security.permission.InlineSQLHelperUtil;
+import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.test.AssertUtils;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.transaction.Propagation;
 import com.liferay.portal.kernel.util.IntegerWrapper;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.OrderByComparatorFactoryUtil;
 import com.liferay.portal.kernel.util.Time;
+import com.liferay.portal.security.permission.SimplePermissionChecker;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PersistenceTestRule;
 import com.liferay.portal.test.rule.TransactionalTestRule;
@@ -115,11 +119,7 @@ public class CPInstancePersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		CPInstance newCPInstance = _persistence.create(pk);
-
-		newCPInstance.setMvccVersion(RandomTestUtil.nextLong());
+		CPInstance newCPInstance = addCPInstance();
 
 		newCPInstance.setCtCollectionId(RandomTestUtil.nextLong());
 
@@ -221,7 +221,9 @@ public class CPInstancePersistenceTest {
 
 		newCPInstance.setStatusDate(RandomTestUtil.nextDate());
 
-		_cpInstances.add(_persistence.update(newCPInstance));
+		newCPInstance = _persistence.update(newCPInstance);
+
+		_cpInstances.add(newCPInstance);
 
 		CPInstance existingCPInstance = _persistence.findByPrimaryKey(
 			newCPInstance.getPrimaryKey());
@@ -409,13 +411,6 @@ public class CPInstancePersistenceTest {
 	}
 
 	@Test
-	public void testCountByCompanyId() throws Exception {
-		_persistence.countByCompanyId(RandomTestUtil.nextLong());
-
-		_persistence.countByCompanyId(0L);
-	}
-
-	@Test
 	public void testCountByCPDefinitionId() throws Exception {
 		_persistence.countByCPDefinitionId(RandomTestUtil.nextLong());
 
@@ -535,6 +530,24 @@ public class CPInstancePersistenceTest {
 
 	@Test
 	public void testFilterFindByGroupId() throws Exception {
+		PermissionThreadLocal.setPermissionChecker(
+			new SimplePermissionChecker() {
+				{
+					init(TestPropsValues.getUser());
+				}
+
+				@Override
+				public boolean isCompanyAdmin(long companyId) {
+					return false;
+				}
+
+			});
+
+		Assert.assertTrue(InlineSQLHelperUtil.isEnabled(0));
+
+		_persistence.filterFindByGroupId(
+			0, QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
+
 		_persistence.filterFindByGroupId(
 			0, QueryUtil.ALL_POS, QueryUtil.ALL_POS, getOrderByComparator());
 	}
@@ -872,8 +885,6 @@ public class CPInstancePersistenceTest {
 
 		CPInstance cpInstance = _persistence.create(pk);
 
-		cpInstance.setMvccVersion(RandomTestUtil.nextLong());
-
 		cpInstance.setCtCollectionId(RandomTestUtil.nextLong());
 
 		cpInstance.setUuid(RandomTestUtil.randomString());
@@ -978,3 +989,4 @@ public class CPInstancePersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1534924798

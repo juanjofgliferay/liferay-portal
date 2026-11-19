@@ -36,17 +36,17 @@ import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.PortletException;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-
-import javax.portlet.PortletException;
-import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Pavel Savinov
@@ -185,18 +185,18 @@ public class LayoutClassedModelUsagesDisplayContext {
 		return _navigation;
 	}
 
-	public int getPagesUsageCount() {
-		return LayoutClassedModelUsageLocalServiceUtil.
-			getLayoutClassedModelUsagesCount(
-				_classNameId, _classPK,
-				LayoutClassedModelUsageConstants.TYPE_LAYOUT);
-	}
-
 	public int getPageTemplatesUsageCount() {
 		return LayoutClassedModelUsageLocalServiceUtil.
 			getLayoutClassedModelUsagesCount(
 				_classNameId, _classPK,
 				LayoutClassedModelUsageConstants.TYPE_PAGE_TEMPLATE);
+	}
+
+	public int getPagesUsageCount() {
+		return LayoutClassedModelUsageLocalServiceUtil.
+			getLayoutClassedModelUsagesCount(
+				_classNameId, _classPK,
+				LayoutClassedModelUsageConstants.TYPE_LAYOUT);
 	}
 
 	public PortletURL getPortletURL() throws PortletException {
@@ -248,7 +248,8 @@ public class LayoutClassedModelUsagesDisplayContext {
 		}
 
 		layoutClassedModelUsagesSearchContainer.setOrderByComparator(
-			new LayoutClassedModelUsageModifiedDateComparator(orderByAsc));
+			LayoutClassedModelUsageModifiedDateComparator.getInstance(
+				orderByAsc));
 		layoutClassedModelUsagesSearchContainer.setOrderByType(
 			_getOrderByType());
 
@@ -400,13 +401,15 @@ public class LayoutClassedModelUsagesDisplayContext {
 	private String _getLayoutClassedModelUsagesURL(
 		String className, long classPK) {
 
-		StringBundler sb = new StringBundler(6);
+		StringBundler sb = new StringBundler(8);
 
 		sb.append(
 			PortalUtil.getPortalURL(
 				PortalUtil.getHttpServletRequest(_renderRequest)));
 		sb.append(_themeDisplay.getPathMain());
-		sb.append("/portal/get_layout_classed_model_usages?className=");
+		sb.append("/portal/get_layout_classed_model_usages?p_l_id=");
+		sb.append(_themeDisplay.getPlid());
+		sb.append("&className=");
 		sb.append(className);
 		sb.append("&classPK=");
 		sb.append(String.valueOf(classPK));

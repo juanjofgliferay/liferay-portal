@@ -5,10 +5,16 @@
 
 package com.liferay.portal.search.web.internal.category.facet.portlet;
 
+import com.liferay.portal.search.web.internal.seo.SEOPortletPreferences;
+
 /**
  * @author Lino Alves
  */
-public interface CategoryFacetPortletPreferences {
+public interface CategoryFacetPortletPreferences extends SEOPortletPreferences {
+
+	public static final String
+		PREFERENCE_GROUP_VOCABULARY_EXTERNAL_REFERENCE_CODES =
+			"groupVocabularyExternalReferenceCodes";
 
 	public static final String PREFERENCE_KEY_DISPLAY_STYLE =
 		"categoryFacetDisplayStyle";
@@ -25,11 +31,11 @@ public interface CategoryFacetPortletPreferences {
 
 	public static final String PREFERENCE_KEY_PARAMETER_NAME = "parameterName";
 
-	public static final String PREFERENCE_VOCABULARY_IDS = "vocabularyIds";
-
 	public String getDisplayStyle();
 
 	public int getFrequencyThreshold();
+
+	public String[] getGroupVocabularyExternalReferenceCodes();
 
 	public int getMaxTerms();
 

@@ -5,8 +5,8 @@
 
 package com.liferay.jenkins.results.parser;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author Michael Hashimoto
@@ -14,15 +14,9 @@ import java.util.Map;
 public class HostFactory {
 
 	public static Host newHost(String name) {
-		if (_hosts.containsKey(name)) {
-			return _hosts.get(name);
-		}
-
-		_hosts.put(name, new DefaultHost(name));
-
-		return _hosts.get(name);
+		return _hosts.computeIfAbsent(name, DefaultHost::new);
 	}
 
-	private static final Map<String, Host> _hosts = new HashMap<>();
+	private static final Map<String, Host> _hosts = new ConcurrentHashMap<>();
 
 }

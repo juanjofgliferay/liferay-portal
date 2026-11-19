@@ -84,9 +84,15 @@ public interface CPOptionCategoryLocalService
 
 	@Indexable(type = IndexableType.REINDEX)
 	public CPOptionCategory addCPOptionCategory(
-			long userId, Map<Locale, String> titleMap,
-			Map<Locale, String> descriptionMap, double priority, String key,
-			ServiceContext serviceContext)
+			String externalReferenceCode, long userId,
+			Map<Locale, String> titleMap, Map<Locale, String> descriptionMap,
+			double priority, String key, ServiceContext serviceContext)
+		throws PortalException;
+
+	public CPOptionCategory addOrUpdateCPOptionCategory(
+			String externalReferenceCode, long userId, long cpOptionCategoryId,
+			Map<Locale, String> titleMap, Map<Locale, String> descriptionMap,
+			double priority, String key, ServiceContext serviceContext)
 		throws PortalException;
 
 	/**
@@ -223,6 +229,10 @@ public interface CPOptionCategoryLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public CPOptionCategory fetchCPOptionCategory(long companyId, String key);
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public CPOptionCategory fetchCPOptionCategoryByExternalReferenceCode(
+		String externalReferenceCode, long companyId);
+
 	/**
 	 * Returns the cp option category with the matching UUID and company.
 	 *
@@ -278,6 +288,11 @@ public interface CPOptionCategoryLocalService
 	public CPOptionCategory getCPOptionCategory(long companyId, String key)
 		throws PortalException;
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public CPOptionCategory getCPOptionCategoryByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws PortalException;
+
 	/**
 	 * Returns the cp option category with the matching UUID and company.
 	 *
@@ -297,6 +312,11 @@ public interface CPOptionCategoryLocalService
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public IndexableActionableDynamicQuery getIndexableActionableDynamicQuery();
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public CPOptionCategory getOrAddEmptyCPOptionCategory(
+			String externalReferenceCode, long companyId, long userId)
+		throws PortalException;
 
 	/**
 	 * Returns the OSGi service identifier.
@@ -334,8 +354,9 @@ public interface CPOptionCategoryLocalService
 
 	@Indexable(type = IndexableType.REINDEX)
 	public CPOptionCategory updateCPOptionCategory(
-			long cpOptionCategoryId, Map<Locale, String> titleMap,
-			Map<Locale, String> descriptionMap, double priority, String key)
+			String externalReferenceCode, long cpOptionCategoryId,
+			Map<Locale, String> titleMap, Map<Locale, String> descriptionMap,
+			double priority, String key)
 		throws PortalException;
 
 	@Override
@@ -354,3 +375,4 @@ public interface CPOptionCategoryLocalService
 		throws E;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1319528443

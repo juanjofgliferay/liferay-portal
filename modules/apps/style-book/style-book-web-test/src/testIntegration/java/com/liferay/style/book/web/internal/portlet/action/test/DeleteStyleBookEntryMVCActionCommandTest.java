@@ -14,6 +14,7 @@ import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
 import com.liferay.portal.kernel.portletfilerepository.PortletFileRepositoryUtil;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.test.portlet.MockActionResponse;
 import com.liferay.portal.kernel.test.portlet.MockLiferayPortletActionRequest;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
@@ -25,7 +26,7 @@ import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
-import com.liferay.portletmvc4spring.test.mock.web.portlet.MockActionResponse;
+import com.liferay.style.book.constants.StyleBookPortletKeys;
 import com.liferay.style.book.model.StyleBookEntry;
 import com.liferay.style.book.service.StyleBookEntryLocalService;
 
@@ -63,15 +64,17 @@ public class DeleteStyleBookEntryMVCActionCommandTest {
 	public void testDeleteStyleBookEntries() throws Exception {
 		StyleBookEntry styleBookEntry1 =
 			_styleBookEntryLocalService.addStyleBookEntry(
-				TestPropsValues.getUserId(), _group.getGroupId(),
+				null, TestPropsValues.getUserId(), _group.getGroupId(), false,
+				StringPool.BLANK, StringPool.BLANK,
 				RandomTestUtil.randomString(), StringPool.BLANK,
-				_serviceContext);
+				RandomTestUtil.randomString(), _serviceContext);
 
 		StyleBookEntry styleBookEntry2 =
 			_styleBookEntryLocalService.addStyleBookEntry(
-				TestPropsValues.getUserId(), _group.getGroupId(),
+				null, TestPropsValues.getUserId(), _group.getGroupId(), false,
+				StringPool.BLANK, StringPool.BLANK,
 				RandomTestUtil.randomString(), StringPool.BLANK,
-				_serviceContext);
+				RandomTestUtil.randomString(), _serviceContext);
 
 		MockLiferayPortletActionRequest mockLiferayPortletActionRequest =
 			new MockLiferayPortletActionRequest();
@@ -98,8 +101,9 @@ public class DeleteStyleBookEntryMVCActionCommandTest {
 
 		StyleBookEntry styleBookEntry =
 			_styleBookEntryLocalService.addStyleBookEntry(
-				TestPropsValues.getUserId(), _group.getGroupId(), name,
-				StringPool.BLANK, _serviceContext);
+				null, TestPropsValues.getUserId(), _group.getGroupId(), false,
+				StringPool.BLANK, StringPool.BLANK, name, StringPool.BLANK,
+				RandomTestUtil.randomString(), _serviceContext);
 
 		MockLiferayPortletActionRequest mockLiferayPortletActionRequest =
 			new MockLiferayPortletActionRequest();
@@ -127,14 +131,16 @@ public class DeleteStyleBookEntryMVCActionCommandTest {
 
 		StyleBookEntry styleBookEntry =
 			_styleBookEntryLocalService.addStyleBookEntry(
-				TestPropsValues.getUserId(), _group.getGroupId(),
+				null, TestPropsValues.getUserId(), _group.getGroupId(), false,
+				StringPool.BLANK, StringPool.BLANK,
 				RandomTestUtil.randomString(), StringPool.BLANK,
-				_serviceContext);
+				RandomTestUtil.randomString(), _serviceContext);
 
 		FileEntry fileEntry = _addFileEntry(styleBookEntry);
 
 		styleBookEntry = _styleBookEntryLocalService.updatePreviewFileEntryId(
-			styleBookEntry.getStyleBookEntryId(), fileEntry.getFileEntryId());
+			styleBookEntry.getStyleBookEntryId(), fileEntry.getFileEntryId(),
+			_serviceContext);
 
 		MockLiferayPortletActionRequest mockLiferayPortletActionRequest =
 			new MockLiferayPortletActionRequest();
@@ -158,15 +164,16 @@ public class DeleteStyleBookEntryMVCActionCommandTest {
 				_group, TestPropsValues.getUserId());
 
 		Repository repository = PortletFileRepositoryUtil.addPortletRepository(
-			_group.getGroupId(), RandomTestUtil.randomString(), serviceContext);
+			_group.getGroupId(), StyleBookPortletKeys.STYLE_BOOK,
+			serviceContext);
 
 		Class<?> clazz = getClass();
 
 		return PortletFileRepositoryUtil.addPortletFileEntry(
 			null, _group.getGroupId(), TestPropsValues.getUserId(),
 			StyleBookEntry.class.getName(),
-			styleBookEntry.getStyleBookEntryId(), RandomTestUtil.randomString(),
-			repository.getDlFolderId(),
+			styleBookEntry.getStyleBookEntryId(),
+			StyleBookPortletKeys.STYLE_BOOK, repository.getDlFolderId(),
 			clazz.getResourceAsStream("dependencies/thumbnail.png"),
 			RandomTestUtil.randomString(), ContentTypes.IMAGE_PNG, false);
 	}

@@ -105,6 +105,7 @@ public class CommerceInventoryReplenishmentItemLocalServiceImpl
 			companyId, sku, unitOfMeasureKey);
 	}
 
+	@Override
 	public CommerceInventoryReplenishmentItem
 		fetchCommerceInventoryReplenishmentItem(
 			long companyId, String sku, String unitOfMeasureKey,
@@ -116,15 +117,6 @@ public class CommerceInventoryReplenishmentItemLocalServiceImpl
 	}
 
 	@Override
-	public List<CommerceInventoryReplenishmentItem>
-		getCommerceInventoryReplenishmentItemsByCommerceInventoryWarehouseId(
-			long commerceInventoryWarehouseId, int start, int end) {
-
-		return commerceInventoryReplenishmentItemPersistence.
-			findByCommerceInventoryWarehouseId(
-				commerceInventoryWarehouseId, start, end);
-	}
-
 	public List<CommerceInventoryReplenishmentItem>
 		getCommerceInventoryReplenishmentItemsByCompanyIdSkuAndUnitOfMeasureKey(
 			long companyId, String sku, String unitOfMeasureKey, int start,
@@ -144,7 +136,14 @@ public class CommerceInventoryReplenishmentItemLocalServiceImpl
 			CommerceInventoryReplenishmentItemTable.INSTANCE.companyId.eq(
 				companyId
 			).and(
-				CommerceInventoryReplenishmentItemTable.INSTANCE.sku.eq(sku)
+				() -> {
+					if (Validator.isNull(sku)) {
+						return null;
+					}
+
+					return CommerceInventoryReplenishmentItemTable.INSTANCE.sku.
+						eq(sku);
+				}
 			).and(
 				() -> {
 					if (Validator.isNull(unitOfMeasureKey)) {
@@ -201,7 +200,7 @@ public class CommerceInventoryReplenishmentItemLocalServiceImpl
 		}
 
 		List<BigDecimal> results =
-			commerceInventoryReplenishmentItemLocalService.dynamicQuery(
+			commerceInventoryReplenishmentItemPersistence.findWithDynamicQuery(
 				dynamicQuery);
 
 		if (results.get(0) == null) {
@@ -212,21 +211,45 @@ public class CommerceInventoryReplenishmentItemLocalServiceImpl
 	}
 
 	@Override
-	public int
-		getCommerceInventoryReplenishmentItemsCountByCommerceInventoryWarehouseId(
-			long commerceInventoryWarehouseId) {
+	public List<Long> getCommerceInventoryWarehouseIds(
+		long companyId, String sku, String unitOfMeasureKey) {
 
-		return commerceInventoryReplenishmentItemPersistence.
-			countByCommerceInventoryWarehouseId(commerceInventoryWarehouseId);
-	}
+		DSLQuery dslQuery = DSLQueryFactoryUtil.selectDistinct(
+			CommerceInventoryReplenishmentItemTable.INSTANCE.
+				commerceInventoryWarehouseId
+		).from(
+			CommerceInventoryReplenishmentItemTable.INSTANCE
+		).leftJoinOn(
+			CommerceInventoryWarehouseTable.INSTANCE,
+			CommerceInventoryReplenishmentItemTable.INSTANCE.
+				commerceInventoryWarehouseId.eq(
+					CommerceInventoryWarehouseTable.INSTANCE.
+						commerceInventoryWarehouseId)
+		).where(
+			CommerceInventoryReplenishmentItemTable.INSTANCE.companyId.eq(
+				companyId
+			).and(
+				() -> {
+					if (Validator.isNull(sku)) {
+						return null;
+					}
 
-	@Override
-	public int
-		getCommerceInventoryReplenishmentItemsCountByCompanyIdSkuAndUnitOfMeasureKey(
-			long companyId, String sku, String unitOfMeasureKey) {
+					return CommerceInventoryReplenishmentItemTable.INSTANCE.sku.
+						eq(sku);
+				}
+			).and(
+				() -> {
+					if (Validator.isNull(unitOfMeasureKey)) {
+						return null;
+					}
 
-		return commerceInventoryReplenishmentItemPersistence.countByC_S_U(
-			companyId, sku, unitOfMeasureKey);
+					return CommerceInventoryReplenishmentItemTable.INSTANCE.
+						unitOfMeasureKey.eq(unitOfMeasureKey);
+				}
+			)
+		);
+
+		return dslQuery(dslQuery);
 	}
 
 	@Override

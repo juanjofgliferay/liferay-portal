@@ -5,6 +5,7 @@
 
 package com.liferay.fragment.web.internal.display.context;
 
+import com.liferay.design.library.util.DesignLibraryUtil;
 import com.liferay.fragment.constants.FragmentActionKeys;
 import com.liferay.fragment.constants.FragmentPortletKeys;
 import com.liferay.fragment.contributor.FragmentCollectionContributor;
@@ -13,7 +14,7 @@ import com.liferay.fragment.model.FragmentCollection;
 import com.liferay.fragment.model.FragmentComposition;
 import com.liferay.fragment.model.FragmentEntry;
 import com.liferay.fragment.service.FragmentCollectionLocalServiceUtil;
-import com.liferay.fragment.service.FragmentEntryServiceUtil;
+import com.liferay.fragment.service.FragmentEntryLocalServiceUtil;
 import com.liferay.fragment.util.comparator.FragmentCollectionContributorNameComparator;
 import com.liferay.fragment.util.comparator.FragmentCompositionFragmentEntryNameComparator;
 import com.liferay.fragment.web.internal.constants.FragmentTypeConstants;
@@ -25,11 +26,14 @@ import com.liferay.frontend.taglib.clay.servlet.taglib.util.IconItem;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.NavigationItem;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.NavigationItemListBuilder;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.VerticalNavItemList;
+import com.liferay.marketplace.constants.MarketplaceActionKeys;
+import com.liferay.marketplace.constants.MarketplacePortletKeys;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.search.EmptyOnClickRowChecker;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.instance.PortalInstancePool;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONUtil;
@@ -41,6 +45,7 @@ import com.liferay.portal.kernel.portlet.LiferayWindowState;
 import com.liferay.portal.kernel.portlet.SearchOrderByUtil;
 import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
+import com.liferay.portal.kernel.service.permission.PortletPermissionUtil;
 import com.liferay.portal.kernel.theme.PortletDisplay;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.HashMapBuilder;
@@ -51,7 +56,13 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
-import com.liferay.portal.util.PortalInstances;
+
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -59,13 +70,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Jürgen Kappler
@@ -86,6 +90,8 @@ public class FragmentDisplayContext {
 					FragmentCollectionContributorRegistry.class.getName());
 		_themeDisplay = (ThemeDisplay)httpServletRequest.getAttribute(
 			WebKeys.THEME_DISPLAY);
+
+		_updatePortletDisplay();
 	}
 
 	public List<DropdownItem> getActionDropdownItems() throws Exception {
@@ -156,24 +162,28 @@ public class FragmentDisplayContext {
 	}
 
 	public String getAvailableActions(Object object) {
-		if (!FragmentPermission.contains(
+		List<String> availableActions = new ArrayList<>();
+
+		boolean marketplace = _isMarketplace(object);
+
+		if (!marketplace) {
+			availableActions.add(
+				"exportFragmentCompositionsAndFragmentEntries");
+		}
+
+		if (FragmentPermission.contains(
 				_themeDisplay.getPermissionChecker(),
 				_themeDisplay.getScopeGroupId(),
 				FragmentActionKeys.MANAGE_FRAGMENT_ENTRIES)) {
 
-			return "exportFragmentCompositionsAndFragmentEntries";
+			if (!marketplace && (object instanceof FragmentEntry)) {
+				availableActions.add("copySelectedFragmentEntries");
+			}
+
+			availableActions.add(
+				"deleteFragmentCompositionsAndFragmentEntries");
+			availableActions.add("moveFragmentCompositionsAndFragmentEntries");
 		}
-
-		List<String> availableActions = new ArrayList<>();
-
-		availableActions.add("exportFragmentCompositionsAndFragmentEntries");
-
-		if (object instanceof FragmentEntry) {
-			availableActions.add("copySelectedFragmentEntries");
-		}
-
-		availableActions.add("deleteFragmentCompositionsAndFragmentEntries");
-		availableActions.add("moveFragmentCompositionsAndFragmentEntries");
 
 		return StringUtil.merge(availableActions, StringPool.COMMA);
 	}
@@ -259,7 +269,7 @@ public class FragmentDisplayContext {
 				_themeDisplay.getLocale()));
 
 		contributedEntries.sort(
-			new FragmentCompositionFragmentEntryNameComparator(true));
+			FragmentCompositionFragmentEntryNameComparator.getInstance(true));
 
 		if (isSearch()) {
 			contributedEntries = ListUtil.filter(
@@ -284,14 +294,51 @@ public class FragmentDisplayContext {
 		return _contributedEntriesSearchContainer;
 	}
 
+	public long getEditFragmentCollectionId() {
+		long fragmentCollectionId = ParamUtil.getLong(
+			_httpServletRequest, "fragmentCollectionId");
+
+		if (fragmentCollectionId == 0) {
+			String externalReferenceCode = ParamUtil.getString(
+				_httpServletRequest, "fragmentCollectionExternalReferenceCode");
+
+			if (Validator.isNotNull(externalReferenceCode)) {
+				FragmentCollection fragmentCollection =
+					FragmentCollectionLocalServiceUtil.
+						fetchFragmentCollectionByExternalReferenceCode(
+							externalReferenceCode,
+							_themeDisplay.getScopeGroupId());
+
+				if (fragmentCollection != null) {
+					fragmentCollectionId =
+						fragmentCollection.getFragmentCollectionId();
+				}
+			}
+		}
+
+		return fragmentCollectionId;
+	}
+
 	public FragmentCollection getFragmentCollection() {
 		if (_fragmentCollection != null) {
 			return _fragmentCollection;
 		}
 
-		_fragmentCollection =
+		FragmentCollection fragmentCollection =
 			FragmentCollectionLocalServiceUtil.fetchFragmentCollection(
 				getFragmentCollectionId());
+
+		if ((fragmentCollection != null) &&
+			(fragmentCollection.getGroupId() != CompanyConstants.SYSTEM) &&
+			(fragmentCollection.getGroupId() !=
+				_themeDisplay.getCompanyGroupId()) &&
+			(fragmentCollection.getGroupId() !=
+				_themeDisplay.getScopeGroupId())) {
+
+			fragmentCollection = null;
+		}
+
+		_fragmentCollection = fragmentCollection;
 
 		return _fragmentCollection;
 	}
@@ -320,9 +367,13 @@ public class FragmentDisplayContext {
 			return _fragmentCollectionId;
 		}
 
-		_fragmentCollectionId = ParamUtil.getLong(
-			_httpServletRequest, "fragmentCollectionId",
-			_getDefaultFragmentCollectionId());
+		long fragmentCollectionId = getEditFragmentCollectionId();
+
+		if (fragmentCollectionId == 0) {
+			fragmentCollectionId = _getDefaultFragmentCollectionId();
+		}
+
+		_fragmentCollectionId = fragmentCollectionId;
 
 		return _fragmentCollectionId;
 	}
@@ -426,6 +477,10 @@ public class FragmentDisplayContext {
 				_renderResponse
 			).setMVCRenderCommandName(
 				"/fragment/view_fragment_collections"
+			).setParameter(
+				"action", "delete"
+			).setParameter(
+				"includeMarketplaceFragmentCollections", true
 			).setWindowState(
 				LiferayWindowState.POP_UP
 			).buildString()
@@ -434,9 +489,11 @@ public class FragmentDisplayContext {
 			() -> PortletURLBuilder.createRenderURL(
 				_renderResponse
 			).setMVCRenderCommandName(
-				"/fragment/view_fragment_collections"
+				"/fragment/view_exportable_fragment_collections"
 			).setParameter(
 				"includeGlobalFragmentCollections", true
+			).setParameter(
+				"includeMarketplaceFragmentCollections", false
 			).setWindowState(
 				LiferayWindowState.POP_UP
 			).buildString()
@@ -485,7 +542,7 @@ public class FragmentDisplayContext {
 		if (isSearch()) {
 			fragmentEntriesSearchContainer.setResultsAndTotal(
 				() ->
-					FragmentEntryServiceUtil.
+					FragmentEntryLocalServiceUtil.
 						getFragmentCompositionsAndFragmentEntries(
 							fragmentCollection.getGroupId(),
 							fragmentCollection.getFragmentCollectionId(),
@@ -494,7 +551,7 @@ public class FragmentDisplayContext {
 							fragmentEntriesSearchContainer.getEnd(),
 							fragmentEntriesSearchContainer.
 								getOrderByComparator()),
-				FragmentEntryServiceUtil.
+				FragmentEntryLocalServiceUtil.
 					getFragmentCompositionsAndFragmentEntriesCount(
 						fragmentCollection.getGroupId(),
 						fragmentCollection.getFragmentCollectionId(),
@@ -503,7 +560,7 @@ public class FragmentDisplayContext {
 		else {
 			fragmentEntriesSearchContainer.setResultsAndTotal(
 				() ->
-					FragmentEntryServiceUtil.
+					FragmentEntryLocalServiceUtil.
 						getFragmentCompositionsAndFragmentEntries(
 							fragmentCollection.getGroupId(),
 							fragmentCollection.getFragmentCollectionId(),
@@ -512,7 +569,7 @@ public class FragmentDisplayContext {
 							fragmentEntriesSearchContainer.getEnd(),
 							fragmentEntriesSearchContainer.
 								getOrderByComparator()),
-				FragmentEntryServiceUtil.
+				FragmentEntryLocalServiceUtil.
 					getFragmentCompositionsAndFragmentEntriesCount(
 						fragmentCollection.getGroupId(),
 						fragmentCollection.getFragmentCollectionId(),
@@ -541,15 +598,59 @@ public class FragmentDisplayContext {
 		return group.getDescriptiveName(_themeDisplay.getLocale());
 	}
 
-	public String getNavigation() {
-		if (_navigation != null) {
-			return _navigation;
-		}
+	public Map<String, Object> getMarketplaceProps() throws PortalException {
+		Map<String, Object> additionalProps = getAdditionalProps();
 
-		_navigation = ParamUtil.getString(
-			_httpServletRequest, "navigation", "all");
+		return HashMapBuilder.<String, Object>put(
+			"addFragmentCollectionURL",
+			additionalProps.get("addFragmentCollectionURL")
+		).put(
+			"body",
+			LanguageUtil.get(
+				_httpServletRequest,
+				"we-are-excited-to-share-that-marketplace-is-now-part-of-" +
+					"fragments")
+		).put(
+			"fragmentCollections", additionalProps.get("fragmentCollections")
+		).put(
+			"fragmentPortletNamespace", _renderResponse.getNamespace()
+		).put(
+			"fragmentsImportURL",
+			() -> {
+				LiferayPortletURL importURL =
+					(LiferayPortletURL)_renderResponse.createResourceURL();
 
-		return _navigation;
+				importURL.setCopyCurrentRenderParameters(false);
+				importURL.setResourceID("/fragment/import");
+
+				return importURL.toString();
+			}
+		).put(
+			"heading",
+			LanguageUtil.get(
+				_httpServletRequest, "marketplace-is-now-in-fragments")
+		).put(
+			"permissions",
+			HashMapBuilder.<String, Object>put(
+				"installFreeApps",
+				PortletPermissionUtil.contains(
+					_themeDisplay.getPermissionChecker(),
+					MarketplacePortletKeys.FRAGMENTS,
+					MarketplaceActionKeys.INSTALL_FREE_BUNDLED_APPS)
+			).put(
+				"manageFragmentsEntries",
+				() -> FragmentPermission.contains(
+					_themeDisplay.getPermissionChecker(),
+					_themeDisplay.getScopeGroupId(),
+					FragmentActionKeys.MANAGE_FRAGMENT_ENTRIES)
+			).put(
+				"purchaseAndInstallPaidApps",
+				PortletPermissionUtil.contains(
+					_themeDisplay.getPermissionChecker(),
+					MarketplacePortletKeys.FRAGMENTS,
+					MarketplaceActionKeys.PURCHASE_AND_INSTALL_PAID_APPS)
+			).build()
+		).build();
 	}
 
 	public List<NavigationItem> getNavigationItems() {
@@ -637,8 +738,7 @@ public class FragmentDisplayContext {
 						).buildString());
 					verticalNavItem.setId(String.valueOf(fragmentCollectionId));
 
-					verticalNavItem.setLabel(
-						HtmlUtil.escape(fragmentCollection.getName()));
+					verticalNavItem.setLabel(fragmentCollection.getName());
 				});
 		}
 
@@ -658,12 +758,13 @@ public class FragmentDisplayContext {
 				verticalNavItem -> {
 					verticalNavItem.addIcon(
 						IconItem.of("lock", StringPool.BLANK));
-
 					verticalNavItem.setActive(
 						Objects.equals(
 							fragmentCollectionContributor.
 								getFragmentCollectionKey(),
 							getFragmentCollectionKey()));
+					verticalNavItem.setDeprecated(
+						fragmentCollectionContributor.isDeprecated());
 
 					String fragmentCollectionKey =
 						fragmentCollectionContributor.
@@ -678,9 +779,8 @@ public class FragmentDisplayContext {
 					verticalNavItem.setId(fragmentCollectionKey);
 
 					verticalNavItem.setLabel(
-						HtmlUtil.escape(
-							fragmentCollectionContributor.getName(
-								_themeDisplay.getLocale())));
+						fragmentCollectionContributor.getName(
+							_themeDisplay.getLocale()));
 				});
 		}
 
@@ -722,6 +822,11 @@ public class FragmentDisplayContext {
 		return _updatePermission;
 	}
 
+	public boolean isHideCollectionsPanel() {
+		return DesignLibraryUtil.isDesignLibraryScope(
+			_themeDisplay.getScopeGroup());
+	}
+
 	public boolean isLocked(FragmentCollection fragmentCollection) {
 		if ((fragmentCollection.getGroupId() != CompanyConstants.SYSTEM) &&
 			(fragmentCollection.getGroupId() !=
@@ -734,7 +839,7 @@ public class FragmentDisplayContext {
 
 		if ((fragmentCollection.getGroupId() == CompanyConstants.SYSTEM) &&
 			((_themeDisplay.getCompanyId() !=
-				PortalInstances.getDefaultCompanyId()) ||
+				PortalInstancePool.getDefaultCompanyId()) ||
 			 !scopeGroup.isCompany())) {
 
 			return true;
@@ -744,31 +849,37 @@ public class FragmentDisplayContext {
 	}
 
 	public boolean isSearch() {
-		if (Validator.isNotNull(_getKeywords())) {
-			return true;
-		}
-
-		return false;
+		return Validator.isNotNull(_getKeywords());
 	}
 
 	public boolean isSelectedFragmentCollectionContributor() {
-		if (Validator.isNotNull(getFragmentCollectionKey())) {
+		return Validator.isNotNull(getFragmentCollectionKey());
+	}
+
+	public boolean isShowFragmentCollectionActions() {
+		return !isSelectedFragmentCollectionContributor();
+	}
+
+	public boolean isShowMarketplace() throws PortalException {
+		if (PortletPermissionUtil.contains(
+				_themeDisplay.getPermissionChecker(),
+				MarketplacePortletKeys.FRAGMENTS,
+				MarketplaceActionKeys.INSTALL_FREE_BUNDLED_APPS) ||
+			PortletPermissionUtil.contains(
+				_themeDisplay.getPermissionChecker(),
+				MarketplacePortletKeys.FRAGMENTS,
+				MarketplaceActionKeys.PURCHASE_AND_INSTALL_PAID_APPS)) {
+
 			return true;
 		}
 
-		return false;
+		return PortletPermissionUtil.contains(
+			_themeDisplay.getPermissionChecker(),
+			MarketplacePortletKeys.FRAGMENTS, MarketplaceActionKeys.VIEW_APPS);
 	}
 
 	public boolean isViewResources() {
 		if (Objects.equals(_getTabs1(), "resources") && _isScopeGroup()) {
-			return true;
-		}
-
-		return false;
-	}
-
-	public boolean showFragmentCollectionActions() {
-		if (!isSelectedFragmentCollectionContributor()) {
 			return true;
 		}
 
@@ -948,6 +1059,19 @@ public class FragmentDisplayContext {
 		return _tabs1;
 	}
 
+	private boolean _isMarketplace(Object object) {
+		if (object instanceof FragmentComposition) {
+			FragmentComposition fragmentComposition =
+				(FragmentComposition)object;
+
+			return fragmentComposition.isMarketplace();
+		}
+
+		FragmentEntry fragmentEntry = (FragmentEntry)object;
+
+		return fragmentEntry.isMarketplace();
+	}
+
 	private boolean _isScopeGroup() {
 		FragmentCollection fragmentCollection = getFragmentCollection();
 
@@ -968,6 +1092,32 @@ public class FragmentDisplayContext {
 		return true;
 	}
 
+	private void _updatePortletDisplay() {
+		if (!DesignLibraryUtil.isDesignLibraryScope(
+				_themeDisplay.getScopeGroup())) {
+
+			return;
+		}
+
+		PortletDisplay portletDisplay = _themeDisplay.getPortletDisplay();
+
+		portletDisplay.setPortletDecoratorId("barebone");
+		portletDisplay.setShowBackIcon(true);
+
+		String backURL = ParamUtil.getString(_httpServletRequest, "backURL");
+
+		if (Validator.isNull(backURL)) {
+			backURL = ParamUtil.getString(_httpServletRequest, "redirect");
+		}
+
+		if (Validator.isNull(backURL)) {
+			backURL = DesignLibraryUtil.getDesignLibraryResourcesURL(
+				_themeDisplay.getScopeGroup(), _httpServletRequest);
+		}
+
+		portletDisplay.setURLBack(backURL);
+	}
+
 	private SearchContainer<Object> _contributedEntriesSearchContainer;
 	private FragmentCollection _fragmentCollection;
 	private final FragmentCollectionContributorRegistry
@@ -977,7 +1127,6 @@ public class FragmentDisplayContext {
 	private SearchContainer<Object> _fragmentEntriesSearchContainer;
 	private final HttpServletRequest _httpServletRequest;
 	private String _keywords;
-	private String _navigation;
 	private String _orderByCol;
 	private String _orderByType;
 	private final RenderRequest _renderRequest;

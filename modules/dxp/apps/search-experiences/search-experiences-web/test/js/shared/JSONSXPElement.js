@@ -9,13 +9,18 @@ import React from 'react';
 import JSONSXPElement from '../../../src/main/resources/META-INF/resources/sxp_blueprint_admin/js/shared/JSONSXPElement';
 import {QUERY_SXP_ELEMENTS} from '../mocks/sxpElements';
 
-import '@testing-library/jest-dom/extend-expect';
+import '@testing-library/jest-dom';
 
 jest.mock(
 	'../../../src/main/resources/META-INF/resources/sxp_blueprint_admin/js/shared/CodeMirrorEditor',
-	() => ({onChange, value}) => (
-		<textarea aria-label="text-area" onChange={onChange} value={value} />
-	)
+	() =>
+		({onChange, value}) => (
+			<textarea
+				aria-label="text-area"
+				onChange={onChange}
+				value={value}
+			/>
+		)
 );
 
 const onDeleteSXPElement = jest.fn();

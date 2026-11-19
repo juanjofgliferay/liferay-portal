@@ -47,8 +47,10 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 /**
+ * @deprecated As of Cavanaugh (7.4.x), with no direct replacement
  * @generated
  */
+@Deprecated
 @RunWith(Arquillian.class)
 public class RecentLayoutSetBranchPersistenceTest {
 
@@ -112,12 +114,8 @@ public class RecentLayoutSetBranchPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		RecentLayoutSetBranch newRecentLayoutSetBranch = _persistence.create(
-			pk);
-
-		newRecentLayoutSetBranch.setMvccVersion(RandomTestUtil.nextLong());
+		RecentLayoutSetBranch newRecentLayoutSetBranch =
+			addRecentLayoutSetBranch();
 
 		newRecentLayoutSetBranch.setGroupId(RandomTestUtil.nextLong());
 
@@ -130,8 +128,10 @@ public class RecentLayoutSetBranchPersistenceTest {
 
 		newRecentLayoutSetBranch.setLayoutSetId(RandomTestUtil.nextLong());
 
-		_recentLayoutSetBranchs.add(
-			_persistence.update(newRecentLayoutSetBranch));
+		newRecentLayoutSetBranch = _persistence.update(
+			newRecentLayoutSetBranch);
+
+		_recentLayoutSetBranchs.add(newRecentLayoutSetBranch);
 
 		RecentLayoutSetBranch existingRecentLayoutSetBranch =
 			_persistence.findByPrimaryKey(
@@ -158,13 +158,6 @@ public class RecentLayoutSetBranchPersistenceTest {
 		Assert.assertEquals(
 			existingRecentLayoutSetBranch.getLayoutSetId(),
 			newRecentLayoutSetBranch.getLayoutSetId());
-	}
-
-	@Test
-	public void testCountByGroupId() throws Exception {
-		_persistence.countByGroupId(RandomTestUtil.nextLong());
-
-		_persistence.countByGroupId(0L);
 	}
 
 	@Test
@@ -534,8 +527,6 @@ public class RecentLayoutSetBranchPersistenceTest {
 
 		RecentLayoutSetBranch recentLayoutSetBranch = _persistence.create(pk);
 
-		recentLayoutSetBranch.setMvccVersion(RandomTestUtil.nextLong());
-
 		recentLayoutSetBranch.setGroupId(RandomTestUtil.nextLong());
 
 		recentLayoutSetBranch.setCompanyId(RandomTestUtil.nextLong());
@@ -557,3 +548,4 @@ public class RecentLayoutSetBranchPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1018792785

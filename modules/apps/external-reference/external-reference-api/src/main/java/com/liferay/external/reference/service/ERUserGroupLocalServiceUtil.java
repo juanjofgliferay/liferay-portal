@@ -5,7 +5,7 @@
 
 package com.liferay.external.reference.service;
 
-import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.module.service.Snapshot;
 
 /**
  * Provides the local service utility for ERUserGroup. This utility wraps
@@ -26,17 +26,6 @@ public class ERUserGroupLocalServiceUtil {
 	 *
 	 * Never modify this class directly. Add custom service methods to <code>com.liferay.external.reference.service.impl.ERUserGroupLocalServiceImpl</code> and rerun ServiceBuilder to regenerate this class.
 	 */
-	public static com.liferay.portal.kernel.model.UserGroup
-			addOrUpdateUserGroup(
-				String externalReferenceCode, long userId, long companyId,
-				String name, String description,
-				com.liferay.portal.kernel.service.ServiceContext serviceContext)
-		throws PortalException {
-
-		return getService().addOrUpdateUserGroup(
-			externalReferenceCode, userId, companyId, name, description,
-			serviceContext);
-	}
 
 	/**
 	 * Returns the OSGi service identifier.
@@ -48,13 +37,12 @@ public class ERUserGroupLocalServiceUtil {
 	}
 
 	public static ERUserGroupLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(ERUserGroupLocalService service) {
-		_service = service;
-	}
-
-	private static volatile ERUserGroupLocalService _service;
+	private static final Snapshot<ERUserGroupLocalService> _serviceSnapshot =
+		new Snapshot<>(
+			ERUserGroupLocalServiceUtil.class, ERUserGroupLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1935665924

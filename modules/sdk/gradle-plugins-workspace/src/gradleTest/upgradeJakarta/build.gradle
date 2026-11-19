@@ -1,0 +1,17 @@
+task runGradleTest
+
+runGradleTest {
+	dependsOn upgradeJakarta
+
+	doLast {
+		File buildGradleFile = new File(buildDir.getParentFile(), "modules/foo-web/build.gradle")
+
+		assert buildGradleFile.text.contains('jakarta.portlet')
+		assert !buildGradleFile.text.contains('javax.portlet')
+
+		File portletFile = new File(buildDir.getParentFile(), "modules/foo-web/src/main/java/com/liferay/foo/web/internal/portlet/FooPortlet.java")
+
+		assert portletFile.text.contains('jakarta.portlet')
+		assert !portletFile.text.contains('javax.portlet')
+	}
+}

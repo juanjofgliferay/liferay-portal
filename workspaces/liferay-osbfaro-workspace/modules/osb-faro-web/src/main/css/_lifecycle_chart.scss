@@ -1,0 +1,24 @@
+.stage-metrics-track {
+	scroll-snap-type: x mandatory;
+	scrollbar-width: none;
+}
+
+.stage-metrics {
+	flex: 1 0 calc((100% - 4rem) / 5);
+	min-width: 11.5rem;
+	scroll-snap-align: start;
+
+	&__bar {
+		background-color: $cadmin-indigo;
+
+		&--empty {
+			border: 1px dashed $cadmin-secondary-l2;
+		}
+	}
+
+	&__conversion {
+		bottom: 0.5rem;
+		position: absolute;
+		right: 0.5rem;
+	}
+}

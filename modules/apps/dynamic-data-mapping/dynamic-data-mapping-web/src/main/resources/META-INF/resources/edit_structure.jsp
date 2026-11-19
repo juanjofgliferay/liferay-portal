@@ -20,9 +20,9 @@ if (structure != null) {
 	structureVersion = structure.getLatestStructureVersion();
 }
 
-long groupId = BeanParamUtil.getLong(structure, request, "groupId", scopeGroupId);
+long groupId = BeanParamUtil.getLong(structure, request, "groupId", DDMStructure::getGroupId, scopeGroupId);
 
-long parentStructureId = BeanParamUtil.getLong(structure, request, "parentStructureId", DDMStructureConstants.DEFAULT_PARENT_STRUCTURE_ID);
+long parentStructureId = BeanParamUtil.getLong(structure, request, "parentStructureId", DDMStructure::getParentStructureId, DDMStructureConstants.DEFAULT_PARENT_STRUCTURE_ID);
 
 String parentStructureName = StringPool.BLANK;
 
@@ -35,15 +35,15 @@ catch (NoSuchStructureException nsee) {
 }
 
 long classNameId = PortalUtil.getClassNameId(DDMStructure.class);
-long classPK = BeanParamUtil.getLong(structure, request, "structureId");
+long classPK = BeanParamUtil.getLong(structure, request, "structureId", DDMStructure::getStructureId);
 
 String script = null;
 
 if (structure != null) {
-	script = BeanParamUtil.getString(structureVersion, request, "definition");
+	script = BeanParamUtil.getString(structureVersion, request, "definition", DDMStructureVersion::getDefinition);
 }
 else {
-	script = BeanParamUtil.getString(structure, request, "definition");
+	script = BeanParamUtil.getString(structure, request, "definition", DDMStructure::getDefinition);
 }
 
 JSONArray fieldsJSONArray = null;
@@ -245,9 +245,20 @@ if (Validator.isNotNull(requestUpdateStructureURL)) {
 
 					<aui:input name="name" />
 
-					<clay:panel-group>
-						<clay:panel
-							displayTitle='<%= LanguageUtil.get(request, "details") %>'
+					<liferay-ui:panel-container
+						cssClass="lfr-structure-entry-details-container"
+						extended="<%= false %>"
+						id="structureDetailsPanelContainer"
+						persistState="<%= true %>"
+					>
+						<liferay-ui:panel
+							collapsible="<%= true %>"
+							defaultState="closed"
+							extended="<%= false %>"
+							id="structureDetailsSectionPanel"
+							markupView="lexicon"
+							persistState="<%= true %>"
+							title='<%= LanguageUtil.get(request, "details") %>'
 						>
 							<clay:row
 								cssClass="lfr-ddm-types-form-column"
@@ -282,8 +293,8 @@ if (Validator.isNotNull(requestUpdateStructureURL)) {
 									<aui:input name="webDavURL" type="resource" value="<%= structure.getWebDavURL(themeDisplay, refererWebDAVToken) %>" />
 								</c:if>
 							</c:if>
-						</clay:panel>
-					</clay:panel-group>
+						</liferay-ui:panel>
+					</liferay-ui:panel-container>
 
 					<%@ include file="/form_builder.jspf" %>
 				</aui:fieldset>
@@ -335,37 +346,36 @@ if (Validator.isNotNull(requestUpdateStructureURL)) {
 			Portlet portlet = PortletLocalServiceUtil.getPortletById(portletDisplay.getId());
 			%>
 
-			url:
-				'<%=
-					PortletURLBuilder.create(
-						PortletURLFactoryUtil.create(request, DDMPortletKeys.DYNAMIC_DATA_MAPPING, PortletRequest.RENDER_PHASE)
-					).setMVCPath(
-						"/select_structure.jsp"
-					).setParameter(
-						"classNameId", PortalUtil.getClassNameId(DDMStructure.class)
-					).setParameter(
-						"classPK", (structure != null) ? structure.getPrimaryKey() : 0
-					).setParameter(
-						"groupId", groupId
-					).setParameter(
-						"navigationStartsOn", DDMNavigationHelper.EDIT_STRUCTURE
-					).setParameter(
-						"portletResourceNamespace", liferayPortletResponse.getNamespace()
-					).setParameter(
-						"refererPortletName", refererPortletName
-					).setParameter(
-						"showAncestorScopes", true
-					).setParameter(
-						"showBackURL", false
-					).setParameter(
-						"showHeader", false
-					).setParameter(
-						"showManageTemplates", false
-					).setParameter(
-						"structureAvailableFields", liferayPortletResponse.getNamespace() + "getAvailableFields"
-					).setWindowState(
-						LiferayWindowState.POP_UP
-					).buildString()
+			url: '<%=
+				PortletURLBuilder.create(
+					PortletURLFactoryUtil.create(request, DDMPortletKeys.DYNAMIC_DATA_MAPPING, PortletRequest.RENDER_PHASE)
+				).setMVCPath(
+					"/select_structure.jsp"
+				).setParameter(
+					"classNameId", PortalUtil.getClassNameId(DDMStructure.class)
+				).setParameter(
+					"classPK", (structure != null) ? structure.getPrimaryKey() : 0
+				).setParameter(
+					"groupId", groupId
+				).setParameter(
+					"navigationStartsOn", DDMNavigationHelper.EDIT_STRUCTURE
+				).setParameter(
+					"portletResourceNamespace", liferayPortletResponse.getNamespace()
+				).setParameter(
+					"refererPortletName", refererPortletName
+				).setParameter(
+					"showAncestorScopes", true
+				).setParameter(
+					"showBackURL", false
+				).setParameter(
+					"showHeader", false
+				).setParameter(
+					"showManageTemplates", false
+				).setParameter(
+					"structureAvailableFields", liferayPortletResponse.getNamespace() + "getAvailableFields"
+				).setWindowState(
+					LiferayWindowState.POP_UP
+				).buildString()
 				%>',
 		});
 	}

@@ -111,9 +111,7 @@ public class SamlSpMessagePersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		SamlSpMessage newSamlSpMessage = _persistence.create(pk);
+		SamlSpMessage newSamlSpMessage = addSamlSpMessage();
 
 		newSamlSpMessage.setCompanyId(RandomTestUtil.nextLong());
 
@@ -121,11 +119,13 @@ public class SamlSpMessagePersistenceTest {
 
 		newSamlSpMessage.setSamlIdpEntityId(RandomTestUtil.randomString());
 
-		newSamlSpMessage.setSamlIdpResponseKey(RandomTestUtil.randomString());
-
 		newSamlSpMessage.setExpirationDate(RandomTestUtil.nextDate());
 
-		_samlSpMessages.add(_persistence.update(newSamlSpMessage));
+		newSamlSpMessage.setSamlIdpResponseKey(RandomTestUtil.randomString());
+
+		newSamlSpMessage = _persistence.update(newSamlSpMessage);
+
+		_samlSpMessages.add(newSamlSpMessage);
 
 		SamlSpMessage existingSamlSpMessage = _persistence.findByPrimaryKey(
 			newSamlSpMessage.getPrimaryKey());
@@ -143,11 +143,11 @@ public class SamlSpMessagePersistenceTest {
 			existingSamlSpMessage.getSamlIdpEntityId(),
 			newSamlSpMessage.getSamlIdpEntityId());
 		Assert.assertEquals(
-			existingSamlSpMessage.getSamlIdpResponseKey(),
-			newSamlSpMessage.getSamlIdpResponseKey());
-		Assert.assertEquals(
 			Time.getShortTimestamp(existingSamlSpMessage.getExpirationDate()),
 			Time.getShortTimestamp(newSamlSpMessage.getExpirationDate()));
+		Assert.assertEquals(
+			existingSamlSpMessage.getSamlIdpResponseKey(),
+			newSamlSpMessage.getSamlIdpResponseKey());
 	}
 
 	@Test
@@ -192,8 +192,8 @@ public class SamlSpMessagePersistenceTest {
 	protected OrderByComparator<SamlSpMessage> getOrderByComparator() {
 		return OrderByComparatorFactoryUtil.create(
 			"SamlSpMessage", "samlSpMessageId", true, "companyId", true,
-			"createDate", true, "samlIdpEntityId", true, "samlIdpResponseKey",
-			true, "expirationDate", true);
+			"createDate", true, "samlIdpEntityId", true, "expirationDate", true,
+			"samlIdpResponseKey", true);
 	}
 
 	@Test
@@ -483,9 +483,9 @@ public class SamlSpMessagePersistenceTest {
 
 		samlSpMessage.setSamlIdpEntityId(RandomTestUtil.randomString());
 
-		samlSpMessage.setSamlIdpResponseKey(RandomTestUtil.randomString());
-
 		samlSpMessage.setExpirationDate(RandomTestUtil.nextDate());
+
+		samlSpMessage.setSamlIdpResponseKey(RandomTestUtil.randomString());
 
 		_samlSpMessages.add(_persistence.update(samlSpMessage));
 
@@ -498,3 +498,4 @@ public class SamlSpMessagePersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:502647292

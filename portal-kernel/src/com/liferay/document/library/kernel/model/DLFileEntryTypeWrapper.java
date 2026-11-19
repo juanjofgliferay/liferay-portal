@@ -39,6 +39,7 @@ public class DLFileEntryTypeWrapper
 		attributes.put("mvccVersion", getMvccVersion());
 		attributes.put("ctCollectionId", getCtCollectionId());
 		attributes.put("uuid", getUuid());
+		attributes.put("externalReferenceCode", getExternalReferenceCode());
 		attributes.put("fileEntryTypeId", getFileEntryTypeId());
 		attributes.put("groupId", getGroupId());
 		attributes.put("companyId", getCompanyId());
@@ -74,6 +75,13 @@ public class DLFileEntryTypeWrapper
 
 		if (uuid != null) {
 			setUuid(uuid);
+		}
+
+		String externalReferenceCode = (String)attributes.get(
+			"externalReferenceCode");
+
+		if (externalReferenceCode != null) {
+			setExternalReferenceCode(externalReferenceCode);
 		}
 
 		Long fileEntryTypeId = (Long)attributes.get("fileEntryTypeId");
@@ -296,6 +304,16 @@ public class DLFileEntryTypeWrapper
 	@Override
 	public Map<java.util.Locale, String> getDescriptionMap() {
 		return model.getDescriptionMap();
+	}
+
+	/**
+	 * Returns the external reference code of this document library file entry type.
+	 *
+	 * @return the external reference code of this document library file entry type
+	 */
+	@Override
+	public String getExternalReferenceCode() {
+		return model.getExternalReferenceCode();
 	}
 
 	/**
@@ -636,6 +654,16 @@ public class DLFileEntryTypeWrapper
 	}
 
 	/**
+	 * Sets the external reference code of this document library file entry type.
+	 *
+	 * @param externalReferenceCode the external reference code of this document library file entry type
+	 */
+	@Override
+	public void setExternalReferenceCode(String externalReferenceCode) {
+		model.setExternalReferenceCode(externalReferenceCode);
+	}
+
+	/**
 	 * Sets the file entry type ID of this document library file entry type.
 	 *
 	 * @param fileEntryTypeId the file entry type ID of this document library file entry type
@@ -848,3 +876,4 @@ public class DLFileEntryTypeWrapper
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1597599625

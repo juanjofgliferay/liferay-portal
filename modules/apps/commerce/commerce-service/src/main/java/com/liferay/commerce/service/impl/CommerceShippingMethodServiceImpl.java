@@ -11,10 +11,12 @@ import com.liferay.commerce.product.model.CommerceChannel;
 import com.liferay.commerce.product.service.CommerceChannelLocalService;
 import com.liferay.commerce.service.CommerceAddressRestrictionLocalService;
 import com.liferay.commerce.service.base.CommerceShippingMethodServiceBaseImpl;
+import com.liferay.commerce.service.persistence.CommerceAddressRestrictionPersistence;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
+import com.liferay.portal.kernel.service.ClassNameLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
@@ -46,7 +48,7 @@ public class CommerceShippingMethodServiceImpl
 			long groupId, long commerceShippingMethodId, long countryId)
 		throws PortalException {
 
-		_checkCommerceChannel(groupId);
+		_checkCommerceChannel(ActionKeys.UPDATE, groupId);
 
 		return commerceShippingMethodLocalService.addCommerceAddressRestriction(
 			getUserId(), groupId, commerceShippingMethodId, countryId);
@@ -75,7 +77,7 @@ public class CommerceShippingMethodServiceImpl
 			String trackingURL)
 		throws PortalException {
 
-		_checkCommerceChannel(groupId);
+		_checkCommerceChannel(ActionKeys.UPDATE, groupId);
 
 		return commerceShippingMethodLocalService.addCommerceShippingMethod(
 			getUserId(), groupId, nameMap, descriptionMap, active, engineKey,
@@ -88,11 +90,12 @@ public class CommerceShippingMethodServiceImpl
 		throws PortalException {
 
 		CommerceShippingMethod commerceShippingMethod =
-			commerceShippingMethodLocalService.fetchCommerceShippingMethod(
+			commerceShippingMethodPersistence.fetchByPrimaryKey(
 				commerceShippingMethodId);
 
 		if (commerceShippingMethod != null) {
-			_checkCommerceChannel(commerceShippingMethod.getGroupId());
+			_checkCommerceChannel(
+				ActionKeys.UPDATE, commerceShippingMethod.getGroupId());
 		}
 
 		return commerceShippingMethodLocalService.createCommerceShippingMethod(
@@ -105,10 +108,11 @@ public class CommerceShippingMethodServiceImpl
 		throws PortalException {
 
 		CommerceAddressRestriction commerceAddressRestriction =
-			_commerceAddressRestrictionLocalService.
-				getCommerceAddressRestriction(commerceAddressRestrictionId);
+			_commerceAddressRestrictionPersistence.findByPrimaryKey(
+				commerceAddressRestrictionId);
 
-		_checkCommerceChannel(commerceAddressRestriction.getGroupId());
+		_checkCommerceChannel(
+			ActionKeys.UPDATE, commerceAddressRestriction.getGroupId());
 
 		commerceShippingMethodLocalService.deleteCommerceAddressRestriction(
 			commerceAddressRestrictionId);
@@ -119,10 +123,11 @@ public class CommerceShippingMethodServiceImpl
 		throws PortalException {
 
 		CommerceShippingMethod commerceShippingMethod =
-			commerceShippingMethodLocalService.getCommerceShippingMethod(
+			commerceShippingMethodPersistence.findByPrimaryKey(
 				commerceShippingMethodId);
 
-		_checkCommerceChannel(commerceShippingMethod.getGroupId());
+		_checkCommerceChannel(
+			ActionKeys.UPDATE, commerceShippingMethod.getGroupId());
 
 		_commerceAddressRestrictionLocalService.
 			deleteCommerceAddressRestrictions(
@@ -135,10 +140,11 @@ public class CommerceShippingMethodServiceImpl
 		throws PortalException {
 
 		CommerceShippingMethod commerceShippingMethod =
-			commerceShippingMethodLocalService.getCommerceShippingMethod(
+			commerceShippingMethodPersistence.findByPrimaryKey(
 				commerceShippingMethodId);
 
-		_checkCommerceChannel(commerceShippingMethod.getGroupId());
+		_checkCommerceChannel(
+			ActionKeys.UPDATE, commerceShippingMethod.getGroupId());
 
 		commerceShippingMethodLocalService.deleteCommerceShippingMethod(
 			commerceShippingMethod);
@@ -150,11 +156,11 @@ public class CommerceShippingMethodServiceImpl
 		throws PortalException {
 
 		CommerceShippingMethod commerceShippingMethod =
-			commerceShippingMethodLocalService.fetchCommerceShippingMethod(
-				groupId, engineKey);
+			commerceShippingMethodPersistence.fetchByG_E(groupId, engineKey);
 
 		if (commerceShippingMethod != null) {
-			_checkCommerceChannel(commerceShippingMethod.getGroupId());
+			_checkCommerceChannel(
+				ActionKeys.VIEW, commerceShippingMethod.getGroupId());
 		}
 
 		return commerceShippingMethod;
@@ -167,14 +173,16 @@ public class CommerceShippingMethodServiceImpl
 		throws PortalException {
 
 		CommerceShippingMethod commerceShippingMethod =
-			commerceShippingMethodLocalService.getCommerceShippingMethod(
+			commerceShippingMethodPersistence.findByPrimaryKey(
 				commerceShippingMethodId);
 
-		_checkCommerceChannel(commerceShippingMethod.getGroupId());
+		_checkCommerceChannel(
+			ActionKeys.VIEW, commerceShippingMethod.getGroupId());
 
-		return commerceShippingMethodLocalService.
-			getCommerceAddressRestrictions(
-				commerceShippingMethodId, start, end, orderByComparator);
+		return _commerceAddressRestrictionPersistence.findByC_C(
+			_classNameLocalService.getClassNameId(
+				CommerceShippingMethod.class.getName()),
+			commerceShippingMethodId, start, end, orderByComparator);
 	}
 
 	@Override
@@ -183,13 +191,16 @@ public class CommerceShippingMethodServiceImpl
 		throws PortalException {
 
 		CommerceShippingMethod commerceShippingMethod =
-			commerceShippingMethodLocalService.getCommerceShippingMethod(
+			commerceShippingMethodPersistence.findByPrimaryKey(
 				commerceShippingMethodId);
 
-		_checkCommerceChannel(commerceShippingMethod.getGroupId());
+		_checkCommerceChannel(
+			ActionKeys.VIEW, commerceShippingMethod.getGroupId());
 
-		return commerceShippingMethodLocalService.
-			getCommerceAddressRestrictionsCount(commerceShippingMethodId);
+		return _commerceAddressRestrictionPersistence.countByC_C(
+			_classNameLocalService.getClassNameId(
+				CommerceShippingMethod.class.getName()),
+			commerceShippingMethodId);
 	}
 
 	@Override
@@ -198,10 +209,11 @@ public class CommerceShippingMethodServiceImpl
 		throws PortalException {
 
 		CommerceShippingMethod commerceShippingMethod =
-			commerceShippingMethodLocalService.getCommerceShippingMethod(
+			commerceShippingMethodPersistence.findByPrimaryKey(
 				commerceShippingMethodId);
 
-		_checkCommerceChannel(commerceShippingMethod.getGroupId());
+		_checkCommerceChannel(
+			ActionKeys.VIEW, commerceShippingMethod.getGroupId());
 
 		return commerceShippingMethod;
 	}
@@ -212,9 +224,9 @@ public class CommerceShippingMethodServiceImpl
 			OrderByComparator<CommerceShippingMethod> orderByComparator)
 		throws PortalException {
 
-		_checkCommerceChannel(groupId);
+		_checkCommerceChannel(ActionKeys.VIEW, groupId);
 
-		return commerceShippingMethodLocalService.getCommerceShippingMethods(
+		return commerceShippingMethodPersistence.findByG_A(
 			groupId, active, start, end, orderByComparator);
 	}
 
@@ -224,9 +236,9 @@ public class CommerceShippingMethodServiceImpl
 			OrderByComparator<CommerceShippingMethod> orderByComparator)
 		throws PortalException {
 
-		_checkCommerceChannel(groupId);
+		_checkCommerceChannel(ActionKeys.VIEW, groupId);
 
-		return commerceShippingMethodLocalService.getCommerceShippingMethods(
+		return commerceShippingMethodPersistence.findByGroupId(
 			groupId, start, end, orderByComparator);
 	}
 
@@ -235,7 +247,7 @@ public class CommerceShippingMethodServiceImpl
 			long groupId, long countryId, boolean active)
 		throws PortalException {
 
-		_checkCommerceChannel(groupId);
+		_checkCommerceChannel(ActionKeys.VIEW, groupId);
 
 		return commerceShippingMethodLocalService.getCommerceShippingMethods(
 			groupId, countryId, active);
@@ -245,10 +257,9 @@ public class CommerceShippingMethodServiceImpl
 	public int getCommerceShippingMethodsCount(long groupId)
 		throws PortalException {
 
-		_checkCommerceChannel(groupId);
+		_checkCommerceChannel(ActionKeys.VIEW, groupId);
 
-		return commerceShippingMethodLocalService.
-			getCommerceShippingMethodsCount(groupId);
+		return commerceShippingMethodPersistence.countByGroupId(groupId);
 	}
 
 	@Override
@@ -257,15 +268,28 @@ public class CommerceShippingMethodServiceImpl
 		throws PortalException {
 
 		CommerceShippingMethod commerceShippingMethod =
-			commerceShippingMethodLocalService.fetchCommerceShippingMethod(
+			commerceShippingMethodPersistence.fetchByPrimaryKey(
 				commerceShippingMethodId);
 
 		if (commerceShippingMethod != null) {
-			_checkCommerceChannel(commerceShippingMethod.getGroupId());
+			_checkCommerceChannel(
+				ActionKeys.UPDATE, commerceShippingMethod.getGroupId());
 		}
 
 		return commerceShippingMethodLocalService.setActive(
 			commerceShippingMethodId, active);
+	}
+
+	@Override
+	public CommerceShippingMethod updateCommerceShippingMethod(
+			CommerceShippingMethod commerceShippingMethod)
+		throws PortalException {
+
+		_checkCommerceChannel(
+			ActionKeys.UPDATE, commerceShippingMethod.getGroupId());
+
+		return commerceShippingMethodLocalService.updateCommerceShippingMethod(
+			commerceShippingMethod);
 	}
 
 	@Override
@@ -276,27 +300,37 @@ public class CommerceShippingMethodServiceImpl
 		throws PortalException {
 
 		CommerceShippingMethod commerceShippingMethod =
-			commerceShippingMethodLocalService.getCommerceShippingMethod(
+			commerceShippingMethodPersistence.findByPrimaryKey(
 				commerceShippingMethodId);
 
-		_checkCommerceChannel(commerceShippingMethod.getGroupId());
+		_checkCommerceChannel(
+			ActionKeys.UPDATE, commerceShippingMethod.getGroupId());
 
 		return commerceShippingMethodLocalService.updateCommerceShippingMethod(
 			commerceShippingMethod.getCommerceShippingMethodId(), nameMap,
 			descriptionMap, active, imageFile, priority, trackingURL);
 	}
 
-	private void _checkCommerceChannel(long groupId) throws PortalException {
+	private void _checkCommerceChannel(String actionId, long groupId)
+		throws PortalException {
+
 		CommerceChannel commerceChannel =
 			_commerceChannelLocalService.getCommerceChannelByGroupId(groupId);
 
 		_commerceChannelModelResourcePermission.check(
-			getPermissionChecker(), commerceChannel, ActionKeys.UPDATE);
+			getPermissionChecker(), commerceChannel, actionId);
 	}
+
+	@Reference
+	private ClassNameLocalService _classNameLocalService;
 
 	@Reference
 	private CommerceAddressRestrictionLocalService
 		_commerceAddressRestrictionLocalService;
+
+	@Reference
+	private CommerceAddressRestrictionPersistence
+		_commerceAddressRestrictionPersistence;
 
 	@Reference
 	private CommerceChannelLocalService _commerceChannelLocalService;

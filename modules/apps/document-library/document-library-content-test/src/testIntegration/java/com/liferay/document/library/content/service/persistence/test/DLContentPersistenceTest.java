@@ -36,7 +36,6 @@ import java.io.Serializable;
 import java.sql.Blob;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -116,11 +115,7 @@ public class DLContentPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		DLContent newDLContent = _persistence.create(pk);
-
-		newDLContent.setMvccVersion(RandomTestUtil.nextLong());
+		DLContent newDLContent = addDLContent();
 
 		newDLContent.setCtCollectionId(RandomTestUtil.nextLong());
 
@@ -144,7 +139,9 @@ public class DLContentPersistenceTest {
 
 		newDLContent.setSize(RandomTestUtil.nextLong());
 
-		_dlContents.add(_persistence.update(newDLContent));
+		newDLContent = _persistence.update(newDLContent);
+
+		_dlContents.add(newDLContent);
 
 		DLContent existingDLContent = _persistence.findByPrimaryKey(
 			newDLContent.getPrimaryKey());
@@ -169,10 +166,8 @@ public class DLContentPersistenceTest {
 			existingDLContent.getVersion(), newDLContent.getVersion());
 		Blob existingData = existingDLContent.getData();
 
-		Assert.assertTrue(
-			Arrays.equals(
-				existingData.getBytes(1, (int)existingData.length()),
-				newDataBytes));
+		Assert.assertArrayEquals(
+			newDataBytes, existingData.getBytes(1, (int)existingData.length()));
 		Assert.assertEquals(
 			existingDLContent.getSize(), newDLContent.getSize());
 	}
@@ -529,8 +524,6 @@ public class DLContentPersistenceTest {
 
 		DLContent dlContent = _persistence.create(pk);
 
-		dlContent.setMvccVersion(RandomTestUtil.nextLong());
-
 		dlContent.setCtCollectionId(RandomTestUtil.nextLong());
 
 		dlContent.setGroupId(RandomTestUtil.nextLong());
@@ -563,3 +556,4 @@ public class DLContentPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:289783635

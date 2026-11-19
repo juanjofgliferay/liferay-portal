@@ -5,9 +5,10 @@
 
 package com.liferay.depot.web.internal.servlet.taglib;
 
+import com.liferay.depot.constants.DepotConstants;
+import com.liferay.depot.constants.DepotPortletKeys;
 import com.liferay.depot.model.DepotEntry;
 import com.liferay.depot.service.DepotEntryService;
-import com.liferay.depot.web.internal.constants.DepotPortletKeys;
 import com.liferay.item.selector.constants.ItemSelectorPortletKeys;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.Language;
@@ -24,16 +25,16 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.site.util.GroupURLProvider;
+import com.liferay.site.provider.GroupURLProvider;
+
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -76,14 +77,22 @@ public class DepotBreadcrumbEntryContributorImpl
 		List<BreadcrumbEntry> breadcrumbEntries = new ArrayList<>();
 
 		try {
+			DepotEntry depotEntry = _getDepotEntry(
+				scopeGroup.getGroupId(), depotEntryId);
+
+			if ((depotEntry.getType() == DepotConstants.TYPE_DESIGN_LIBRARY) ||
+				(depotEntry.getType() == DepotConstants.TYPE_SPACE)) {
+
+				return originalBreadcrumbEntries;
+			}
+
 			breadcrumbEntries.add(
 				_getAssetLibrariesBreadcrumbEntry(
 					themeDisplay.getControlPanelGroup(), httpServletRequest));
 
 			breadcrumbEntries.add(
 				_getAssetLibraryBreadcrumbEntry(
-					_getDepotEntry(scopeGroup.getGroupId(), depotEntryId),
-					httpServletRequest));
+					depotEntry, httpServletRequest));
 
 			if (originalBreadcrumbEntries.isEmpty() &&
 				!Objects.equals(
@@ -114,6 +123,12 @@ public class DepotBreadcrumbEntryContributorImpl
 		}
 
 		breadcrumbEntries.addAll(originalBreadcrumbEntries);
+
+		BreadcrumbEntry breadcrumbEntry = breadcrumbEntries.get(
+			breadcrumbEntries.size() - 1);
+
+		breadcrumbEntry.setBrowsable(false);
+		breadcrumbEntry.setURL(null);
 
 		return breadcrumbEntries;
 	}
@@ -179,7 +194,7 @@ public class DepotBreadcrumbEntryContributorImpl
 			_groupURLProvider.getGroupURL(
 				scopeGroup,
 				(PortletRequest)httpServletRequest.getAttribute(
-					JavaConstants.JAVAX_PORTLET_REQUEST)));
+					JavaConstants.JAKARTA_PORTLET_REQUEST)));
 
 		return breadcrumbEntry;
 	}

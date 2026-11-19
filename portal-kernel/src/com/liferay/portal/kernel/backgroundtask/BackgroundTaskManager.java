@@ -47,6 +47,11 @@ public interface BackgroundTaskManager {
 			InputStream inputStream)
 		throws PortalException;
 
+	public void addBackgroundTaskAttachment(
+			long userId, long backgroundTaskId, String sourceFileName,
+			String title, File file)
+		throws PortalException;
+
 	public BackgroundTask amendBackgroundTask(
 		long backgroundTaskId, Map<String, Serializable> taskContextMap,
 		int status, ServiceContext serviceContext);
@@ -87,6 +92,8 @@ public interface BackgroundTaskManager {
 
 	public BackgroundTask getBackgroundTask(long backgroundTaskId)
 		throws PortalException;
+
+	public String getBackgroundTaskStatusJSON(long backgroundTaskId);
 
 	public List<BackgroundTask> getBackgroundTasks(long groupId, int status);
 
@@ -193,8 +200,6 @@ public interface BackgroundTaskManager {
 
 	public int getBackgroundTasksCount(
 		long[] groupIds, String name, String[] taskExecutorClassNames);
-
-	public String getBackgroundTaskStatusJSON(long backgroundTaskId);
 
 	public void resumeBackgroundTask(long backgroundTaskId);
 

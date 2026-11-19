@@ -12,6 +12,7 @@ import com.liferay.commerce.shop.by.diagram.model.CSDiagramEntry;
 import com.liferay.commerce.shop.by.diagram.model.CSDiagramPin;
 import com.liferay.commerce.shop.by.diagram.service.CSDiagramPinLocalService;
 import com.liferay.commerce.shop.by.diagram.service.base.CSDiagramEntryLocalServiceBaseImpl;
+import com.liferay.commerce.shop.by.diagram.service.persistence.CSDiagramPinPersistence;
 import com.liferay.expando.kernel.service.ExpandoRowLocalService;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
@@ -97,19 +98,21 @@ public class CSDiagramEntryLocalServiceImpl
 		csDiagramEntry = csDiagramEntryPersistence.remove(csDiagramEntry);
 
 		List<CSDiagramPin> csDiagramPins =
-			_csDiagramPinLocalService.getCSDiagramPins(
+			_csDiagramPinPersistence.findByCPDefinitionId(
 				csDiagramEntry.getCPDefinitionId(), QueryUtil.ALL_POS,
 				QueryUtil.ALL_POS);
 
 		for (CSDiagramPin csDiagramPin : csDiagramPins) {
-			if ((csDiagramEntry.getCPDefinitionId() ==
-					csDiagramPin.getCPDefinitionId()) &&
-				Objects.equals(
+			if ((csDiagramEntry.getCPDefinitionId() !=
+					csDiagramPin.getCPDefinitionId()) ||
+				!Objects.equals(
 					csDiagramEntry.getSequence(), csDiagramPin.getSequence())) {
 
-				_csDiagramPinLocalService.deleteCSDiagramPin(
-					csDiagramPin.getCSDiagramPinId());
+				continue;
 			}
+
+			_csDiagramPinLocalService.deleteCSDiagramPin(
+				csDiagramPin.getCSDiagramPinId());
 		}
 
 		_expandoRowLocalService.deleteRows(
@@ -155,19 +158,6 @@ public class CSDiagramEntryLocalServiceImpl
 			cProductId, start, end, orderByComparator);
 	}
 
-	@Override
-	public List<CSDiagramEntry> getCSDiagramEntries(
-		long cpDefinitionId, int start, int end) {
-
-		return csDiagramEntryPersistence.findByCPDefinitionId(
-			cpDefinitionId, start, end);
-	}
-
-	@Override
-	public int getCSDiagramEntriesCount(long cpDefinitionId) {
-		return csDiagramEntryPersistence.countByCPDefinitionId(cpDefinitionId);
-	}
-
 	@Indexable(type = IndexableType.REINDEX)
 	@Override
 	public CSDiagramEntry getCSDiagramEntry(
@@ -185,7 +175,7 @@ public class CSDiagramEntryLocalServiceImpl
 		throws PortalException {
 
 		CSDiagramEntry csDiagramEntry =
-			csDiagramEntryLocalService.getCSDiagramEntry(csDiagramEntryId);
+			csDiagramEntryPersistence.findByPrimaryKey(csDiagramEntryId);
 
 		_validate(csDiagramEntry, csDiagramEntry.getCPDefinitionId(), sequence);
 
@@ -218,6 +208,9 @@ public class CSDiagramEntryLocalServiceImpl
 
 	@Reference
 	private CSDiagramPinLocalService _csDiagramPinLocalService;
+
+	@Reference
+	private CSDiagramPinPersistence _csDiagramPinPersistence;
 
 	@Reference
 	private ExpandoRowLocalService _expandoRowLocalService;

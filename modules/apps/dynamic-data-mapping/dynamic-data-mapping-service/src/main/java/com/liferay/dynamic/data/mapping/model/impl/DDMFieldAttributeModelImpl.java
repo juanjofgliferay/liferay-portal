@@ -86,6 +86,8 @@ public class DDMFieldAttributeModelImpl
 
 	public static final String TABLE_SQL_DROP = "drop table DDMFieldAttribute";
 
+	public static final String ENTITY_ALIAS = "ddmFieldAttribute";
+
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY ddmFieldAttribute.fieldAttributeId ASC";
 
@@ -120,20 +122,14 @@ public class DDMFieldAttributeModelImpl
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long SMALLATTRIBUTEVALUE_COLUMN_BITMASK = 8L;
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
-	 */
-	@Deprecated
-	public static final long STORAGEID_COLUMN_BITMASK = 16L;
+	public static final long STORAGEID_COLUMN_BITMASK = 8L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
 	 *		#getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long FIELDATTRIBUTEID_COLUMN_BITMASK = 32L;
+	public static final long FIELDATTRIBUTEID_COLUMN_BITMASK = 16L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
@@ -529,15 +525,6 @@ public class DDMFieldAttributeModelImpl
 		_smallAttributeValue = smallAttributeValue;
 	}
 
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #getColumnOriginalValue(String)}
-	 */
-	@Deprecated
-	public String getOriginalSmallAttributeValue() {
-		return getColumnOriginalValue("smallAttributeValue");
-	}
-
 	public long getColumnBitmask() {
 		if (_columnBitmask > 0) {
 			return _columnBitmask;
@@ -915,3 +902,4 @@ public class DDMFieldAttributeModelImpl
 	private DDMFieldAttribute _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1493715916

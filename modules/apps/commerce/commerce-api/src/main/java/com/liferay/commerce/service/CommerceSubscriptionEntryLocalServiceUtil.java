@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -293,13 +294,6 @@ public class CommerceSubscriptionEntryLocalServiceUtil {
 	}
 
 	public static List<CommerceSubscriptionEntry>
-		getActiveCommerceSubscriptionEntries(long commerceAccountId) {
-
-		return getService().getActiveCommerceSubscriptionEntries(
-			commerceAccountId);
-	}
-
-	public static List<CommerceSubscriptionEntry>
 		getCommerceDeliverySubscriptionEntriesToRenew() {
 
 		return getService().getCommerceDeliverySubscriptionEntriesToRenew();
@@ -396,13 +390,6 @@ public class CommerceSubscriptionEntryLocalServiceUtil {
 
 		return getService().getCommerceSubscriptionEntriesCount(
 			companyId, userId);
-	}
-
-	public static int getCommerceSubscriptionEntriesCount(
-		long companyId, long groupId, long userId) {
-
-		return getService().getCommerceSubscriptionEntriesCount(
-			companyId, groupId, userId);
 	}
 
 	public static List<CommerceSubscriptionEntry>
@@ -626,15 +613,13 @@ public class CommerceSubscriptionEntryLocalServiceUtil {
 	}
 
 	public static CommerceSubscriptionEntryLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(
-		CommerceSubscriptionEntryLocalService service) {
-
-		_service = service;
-	}
-
-	private static volatile CommerceSubscriptionEntryLocalService _service;
+	private static final Snapshot<CommerceSubscriptionEntryLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			CommerceSubscriptionEntryLocalServiceUtil.class,
+			CommerceSubscriptionEntryLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-337708368

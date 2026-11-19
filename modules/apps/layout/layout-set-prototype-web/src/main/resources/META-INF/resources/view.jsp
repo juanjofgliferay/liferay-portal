@@ -7,40 +7,48 @@
 
 <%@ include file="/init.jsp" %>
 
-<%@ include file="/propagation_alert.jspf" %>
-
 <liferay-ui:error exception="<%= RequiredLayoutSetPrototypeException.class %>" message="you-cannot-delete-site-templates-that-are-used-by-a-site" />
 
+<%
+String executeLayoutSetPrototypeSyncErrorMessage = (String)SessionMessages.get(renderRequest, "executeLayoutSetPrototypeSyncErrorMessage");
+String executeLayoutSetPrototypeSyncInfoMessage = (String)SessionMessages.get(renderRequest, "executeLayoutSetPrototypeSyncInfoMessage");
+%>
+
+<c:if test="<%= executeLayoutSetPrototypeSyncErrorMessage != null %>">
+	<aui:script>
+		Liferay.Util.openToast({
+			message:
+				'<%= UnicodeFormatter.toString(executeLayoutSetPrototypeSyncErrorMessage) %>',
+			type: 'danger',
+		});
+	</aui:script>
+</c:if>
+
+<c:if test="<%= executeLayoutSetPrototypeSyncInfoMessage != null %>">
+	<aui:script>
+		Liferay.Util.openToast({
+			message:
+				'<%= UnicodeFormatter.toString(executeLayoutSetPrototypeSyncInfoMessage) %>',
+			type: 'info',
+		});
+	</aui:script>
+</c:if>
+
 <clay:management-toolbar
-	actionDropdownItems="<%= layoutSetPrototypeDisplayContext.getActionDropdownItems() %>"
-	clearResultsURL="<%= layoutSetPrototypeDisplayContext.getClearResultsURL() %>"
-	creationMenu="<%= layoutSetPrototypeDisplayContext.isShowAddButton() ? layoutSetPrototypeDisplayContext.getCreationMenu() : null %>"
-	filterDropdownItems="<%= layoutSetPrototypeDisplayContext.getFilterDropdownItems() %>"
-	infoPanelId="infoPanelId"
-	itemsTotal="<%= layoutSetPrototypeDisplayContext.getTotalItems() %>"
-	orderDropdownItems="<%= layoutSetPrototypeDisplayContext.getOrderByDropdownItems() %>"
-	propsTransformer="js/LayoutSetPrototypeManagementToolbarPropsTransformer"
-	searchActionURL="<%= layoutSetPrototypeDisplayContext.getSearchActionURL() %>"
-	searchContainerId="layoutSetPrototype"
-	searchFormName="searchFm"
-	showInfoButton="<%= false %>"
-	showSearch="<%= false %>"
-	sortingOrder="<%= layoutSetPrototypeDisplayContext.getOrderByType() %>"
-	sortingURL="<%= layoutSetPrototypeDisplayContext.getSortingURL() %>"
-	viewTypeItems="<%= layoutSetPrototypeDisplayContext.getViewTypeItems() %>"
+	managementToolbarDisplayContext="<%= new LayoutSetPrototypeManagementToolbarDisplayContext(request, layoutSetPrototypeDisplayContext, liferayPortletRequest, liferayPortletResponse, layoutSetPrototypeDisplayContext.getSearchContainer()) %>"
+	propsTransformer="{LayoutSetPrototypeManagementToolbarPropsTransformer} from layout-set-prototype-web"
 />
 
 <portlet:actionURL name="deleteLayoutSetPrototypes" var="deleteLayoutSetPrototypesURL">
 	<portlet:param name="redirect" value="<%= currentURL %>" />
 </portlet:actionURL>
 
-<aui:form action="<%= deleteLayoutSetPrototypesURL %>" cssClass="container-fluid container-fluid-max-xl" name="fm">
+<aui:form action="<%= deleteLayoutSetPrototypesURL %>" cssClass="container-fluid container-fluid-max-xxxl" name="fm">
 	<liferay-ui:search-container
 		searchContainer="<%= layoutSetPrototypeDisplayContext.getSearchContainer() %>"
 	>
 		<liferay-ui:search-container-row
 			className="com.liferay.portal.kernel.model.LayoutSetPrototype"
-			escapedModel="<%= true %>"
 			keyProperty="layoutSetPrototypeId"
 			modelVar="layoutSetPrototype"
 		>
@@ -70,15 +78,20 @@
 						Date createDate = layoutSetPrototype.getModifiedDate();
 						%>
 
-						<h6 class="text-default">
+						<div class="h6 text-default">
 							<span><liferay-ui:message arguments="<%= LanguageUtil.getTimeDescription(request, System.currentTimeMillis() - createDate.getTime(), true) %>" key="created-x-ago" /></span>
-						</h6>
+						</div>
 
-						<h5>
-							<aui:a href="<%= (rowURL != null) ? rowURL.toString() : StringPool.BLANK %>" target="_blank"><%= layoutSetPrototype.getName(locale) %></aui:a>
-						</h5>
+						<div class="h5">
+							<clay:link
+								href="<%= rowURL %>"
+								label="<%= layoutSetPrototype.getName(locale) %>"
+								target="_blank"
+								translated="<%= false %>"
+							/>
+						</div>
 
-						<h6 class="text-default">
+						<div class="h6 text-default">
 							<c:choose>
 								<c:when test="<%= layoutSetPrototype.isActive() %>">
 									<span><liferay-ui:message key="active" /></span>
@@ -87,21 +100,21 @@
 									<span><liferay-ui:message key="not-active" /></span>
 								</c:otherwise>
 							</c:choose>
-						</h6>
+						</div>
 					</liferay-ui:search-container-column-text>
 
 					<liferay-ui:search-container-column-text>
 						<clay:dropdown-actions
 							aria-label='<%= LanguageUtil.get(request, "show-actions") %>'
 							dropdownItems="<%= layoutSetPrototypeDisplayContext.getLayoutSetPrototypeActionDropdownItems(layoutSetPrototype) %>"
-							propsTransformer="js/LayoutSetPrototypeDropdownDefaultPropsTransformer"
+							propsTransformer="{LayoutSetPrototypeDropdownDefaultPropsTransformer} from layout-set-prototype-web"
 						/>
 					</liferay-ui:search-container-column-text>
 				</c:when>
 				<c:when test="<%= layoutSetPrototypeDisplayContext.isIconView() %>">
 					<liferay-ui:search-container-column-text>
 						<clay:vertical-card
-							propsTransformer="js/LayoutSetPrototypeDropdownDefaultPropsTransformer"
+							propsTransformer="{LayoutSetPrototypeDropdownDefaultPropsTransformer} from layout-set-prototype-web"
 							verticalCard="<%= new LayoutSetPrototypeVerticalCard(layoutSetPrototype, renderRequest, renderResponse, searchContainer.getRowChecker()) %>"
 						/>
 					</liferay-ui:search-container-column-text>
@@ -117,21 +130,14 @@
 							iconAfter="shortcut"
 							label="<%= layoutSetPrototype.getName(locale) %>"
 							target="_blank"
+							translated="<%= false %>"
 						/>
-
-						<%
-						int mergeFailCount = layoutSetPrototype.getMergeFailCount();
-						%>
-
-						<c:if test="<%= mergeFailCount > PropsValues.LAYOUT_SET_PROTOTYPE_MERGE_FAIL_THRESHOLD %>">
-							<liferay-ui:message arguments='<%= new Object[] {mergeFailCount, LanguageUtil.get(request, "site-template")} %>' key="the-propagation-of-changes-from-the-x-has-been-disabled-temporarily-after-x-errors" translateArguments="<%= false %>" />
-						</c:if>
 					</liferay-ui:search-container-column-text>
 
 					<liferay-ui:search-container-column-text
 						cssClass="table-cell-expand table-cell-minw-300"
 						name="description"
-						value="<%= layoutSetPrototype.getDescription(locale) %>"
+						value="<%= HtmlUtil.escape(layoutSetPrototype.getDescription(locale)) %>"
 					/>
 
 					<liferay-ui:search-container-column-date
@@ -150,7 +156,7 @@
 						<clay:dropdown-actions
 							aria-label='<%= LanguageUtil.get(request, "show-actions") %>'
 							dropdownItems="<%= layoutSetPrototypeDisplayContext.getLayoutSetPrototypeActionDropdownItems(layoutSetPrototype) %>"
-							propsTransformer="js/LayoutSetPrototypeDropdownDefaultPropsTransformer"
+							propsTransformer="{LayoutSetPrototypeDropdownDefaultPropsTransformer} from layout-set-prototype-web"
 						/>
 					</liferay-ui:search-container-column-text>
 				</c:when>

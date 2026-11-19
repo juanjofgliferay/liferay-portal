@@ -101,7 +101,7 @@ export function MaxLengthProperties({
 					onToggle={handleToggle}
 					toggled={!!settings.showCounter}
 					tooltip={Liferay.Language.get(
-						'when-enabled-a-character-counter-will-be-shown-to-the-user'
+						'when-enabled-a-character-counter-is-shown-to-the-user'
 					)}
 				/>
 
@@ -117,6 +117,7 @@ export function MaxLengthProperties({
 							'1',
 							defaultMaxLengthText
 						)}
+						id="maxLength"
 						label={Liferay.Language.get(
 							'maximum-number-of-characters'
 						)}

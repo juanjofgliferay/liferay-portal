@@ -15,7 +15,7 @@ import com.liferay.portal.kernel.session.timeout.SessionTimeoutUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -54,7 +54,7 @@ public class SessionTimeoutImpl implements SessionTimeout {
 
 		try {
 			return _configurationProvider.getGroupConfiguration(
-				SessionTimeoutConfiguration.class,
+				SessionTimeoutConfiguration.class, themeDisplay.getCompanyId(),
 				themeDisplay.getSiteGroupId());
 		}
 		catch (ConfigurationException configurationException) {

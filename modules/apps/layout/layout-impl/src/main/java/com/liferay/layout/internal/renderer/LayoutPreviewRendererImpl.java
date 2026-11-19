@@ -1,0 +1,245 @@
+/**
+ * SPDX-FileCopyrightText: (c) 2026 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
+ */
+
+package com.liferay.layout.internal.renderer;
+
+import com.liferay.layout.constants.LayoutWebKeys;
+import com.liferay.layout.renderer.LayoutPreviewRenderer;
+import com.liferay.layout.util.LayoutServiceContextHelper;
+import com.liferay.layout.util.structure.LayoutStructure;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.Layout;
+import com.liferay.portal.kernel.model.LayoutConstants;
+import com.liferay.portal.kernel.model.Theme;
+import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.service.LayoutLocalService;
+import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
+import com.liferay.portal.kernel.service.UserLocalService;
+import com.liferay.portal.kernel.servlet.DynamicServletRequest;
+import com.liferay.portal.kernel.servlet.ServletContextPool;
+import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.theme.ThemeUtil;
+import com.liferay.portal.kernel.util.Constants;
+import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.HashMapBuilder;
+import com.liferay.portal.kernel.util.ListUtil;
+import com.liferay.portal.kernel.util.LocaleThreadLocal;
+import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.portal.struts.Definition;
+import com.liferay.portal.struts.TilesUtil;
+import com.liferay.segments.constants.SegmentsWebKeys;
+
+import jakarta.servlet.http.HttpServletRequest;
+
+import java.util.Locale;
+
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
+
+/**
+ * @author Lourdes Fernández Besada
+ */
+@Component(service = LayoutPreviewRenderer.class)
+public class LayoutPreviewRendererImpl implements LayoutPreviewRenderer {
+
+	@Override
+	public String render(
+			Layout layout, Locale locale, long segmentsExperienceId)
+		throws Exception {
+
+		try (AutoCloseable autoCloseable =
+				_layoutServiceContextHelper.getServiceContextAutoCloseable(
+					layout)) {
+
+			return render(
+				layout, locale, segmentsExperienceId,
+				ServiceContextThreadLocal.getServiceContext());
+		}
+	}
+
+	@Override
+	public String render(
+			Layout layout, Locale locale, long segmentsExperienceId,
+			ServiceContext serviceContext)
+		throws Exception {
+
+		HttpServletRequest httpServletRequest = serviceContext.getRequest();
+
+		ThemeDisplay originalThemeDisplay =
+			(ThemeDisplay)httpServletRequest.getAttribute(
+				WebKeys.THEME_DISPLAY);
+
+		ThemeDisplay themeDisplay = (ThemeDisplay)originalThemeDisplay.clone();
+
+		themeDisplay.setLayout(layout);
+		themeDisplay.setLayoutSet(layout.getLayoutSet());
+		themeDisplay.setLayouts(
+			ListUtil.filter(
+				_layoutLocalService.getLayouts(
+					layout.getGroupId(), layout.isPrivateLayout(),
+					LayoutConstants.DEFAULT_PARENT_LAYOUT_ID),
+				curLayout -> !curLayout.isHidden() && curLayout.isPublished()));
+
+		themeDisplay.setPlid(layout.getPlid());
+		themeDisplay.setScopeGroupId(layout.getGroupId());
+		themeDisplay.setSiteGroupId(layout.getGroupId());
+
+		long originalClassNameId = layout.getClassNameId();
+		Object originalDefinition = httpServletRequest.getAttribute(
+			TilesUtil.DEFINITION);
+		Layout originalLayout = (Layout)httpServletRequest.getAttribute(
+			WebKeys.LAYOUT);
+		LayoutStructure originalLayoutStructure =
+			(LayoutStructure)httpServletRequest.getAttribute(
+				LayoutWebKeys.LAYOUT_STRUCTURE);
+		Object originalLocale = httpServletRequest.getAttribute(WebKeys.LOCALE);
+		Object originalOutputData = httpServletRequest.getAttribute(
+			WebKeys.OUTPUT_DATA);
+		boolean originalPortletDecorate = GetterUtil.getBoolean(
+			httpServletRequest.getAttribute(WebKeys.PORTLET_DECORATE));
+		long[] originalSegmentsExperienceIds = GetterUtil.getLongValues(
+			httpServletRequest.getAttribute(
+				SegmentsWebKeys.SEGMENTS_EXPERIENCE_IDS));
+		Locale originalSiteDefaultLocale =
+			LocaleThreadLocal.getSiteDefaultLocale();
+		Locale originalThemeDisplayLocale =
+			LocaleThreadLocal.getThemeDisplayLocale();
+
+		ServiceContext clonedServiceContext =
+			(ServiceContext)serviceContext.clone();
+
+		clonedServiceContext.setPlid(layout.getPlid());
+		clonedServiceContext.setScopeGroupId(layout.getGroupId());
+
+		ServiceContextThreadLocal.pushServiceContext(clonedServiceContext);
+
+		try {
+			LocaleThreadLocal.setThemeDisplayLocale(locale);
+
+			httpServletRequest.setAttribute(
+				SegmentsWebKeys.SEGMENTS_EXPERIENCE_IDS,
+				new long[] {segmentsExperienceId});
+			httpServletRequest.setAttribute(WebKeys.LOCALE, locale);
+			httpServletRequest.setAttribute(WebKeys.OUTPUT_DATA, null);
+			httpServletRequest.setAttribute(
+				WebKeys.PORTLET_DECORATE, Boolean.FALSE);
+
+			themeDisplay.setLanguageId(LocaleUtil.toLanguageId(locale));
+			themeDisplay.setLocale(locale);
+
+			Theme theme = layout.getTheme();
+
+			themeDisplay.setLookAndFeel(theme, layout.getColorScheme());
+
+			themeDisplay.setShowSignInIcon(true);
+			themeDisplay.setSignedIn(false);
+
+			if (layout.getGroupId() != originalThemeDisplay.getSiteGroupId()) {
+				themeDisplay.setSiteDefaultLocale(
+					_portal.getSiteDefaultLocale(layout.getGroupId()));
+			}
+
+			User guestUser = _userLocalService.getGuestUser(
+				themeDisplay.getCompanyId());
+
+			themeDisplay.setUser(guestUser);
+
+			layout.setClassNameId(0);
+
+			httpServletRequest.setAttribute(WebKeys.LAYOUT, layout);
+
+			httpServletRequest.setAttribute(
+				WebKeys.THEME_DISPLAY, themeDisplay);
+
+			DynamicServletRequest dynamicServletRequest =
+				new DynamicServletRequest(httpServletRequest);
+
+			dynamicServletRequest.setParameter("p_l_mode", Constants.PREVIEW);
+			dynamicServletRequest.setParameter(
+				"segmentsExperienceId", String.valueOf(segmentsExperienceId));
+
+			httpServletRequest = dynamicServletRequest;
+
+			layout.includeLayoutContent(
+				httpServletRequest, themeDisplay.getResponse());
+
+			httpServletRequest.setAttribute(TilesUtil.DEFINITION, _definition);
+
+			String html = ThemeUtil.include(
+				ServletContextPool.get(_portal.getServletContextName()),
+				httpServletRequest, themeDisplay.getResponse(),
+				"portal_normal.ftl", theme, false);
+
+			StringBundler sb = (StringBundler)httpServletRequest.getAttribute(
+				WebKeys.LAYOUT_CONTENT);
+
+			if (sb == null) {
+				return html;
+			}
+
+			if (_log.isWarnEnabled()) {
+				_log.warn(
+					"Replacing all body content because theme " +
+						theme.getThemeId() + " lacks a content include");
+			}
+
+			return ThemeUtil.replaceBodyContent(html, sb.toString());
+		}
+		finally {
+			httpServletRequest.setAttribute(
+				LayoutWebKeys.LAYOUT_STRUCTURE, originalLayoutStructure);
+			httpServletRequest.setAttribute(
+				SegmentsWebKeys.SEGMENTS_EXPERIENCE_IDS,
+				originalSegmentsExperienceIds);
+			httpServletRequest.setAttribute(
+				TilesUtil.DEFINITION, originalDefinition);
+			httpServletRequest.setAttribute(WebKeys.LAYOUT, originalLayout);
+			httpServletRequest.setAttribute(WebKeys.LOCALE, originalLocale);
+			httpServletRequest.setAttribute(
+				WebKeys.OUTPUT_DATA, originalOutputData);
+			httpServletRequest.setAttribute(
+				WebKeys.PORTLET_DECORATE, originalPortletDecorate);
+			httpServletRequest.setAttribute(
+				WebKeys.THEME_DISPLAY, originalThemeDisplay);
+
+			layout.setClassNameId(originalClassNameId);
+
+			LocaleThreadLocal.setSiteDefaultLocale(originalSiteDefaultLocale);
+			LocaleThreadLocal.setThemeDisplayLocale(originalThemeDisplayLocale);
+
+			ServiceContextThreadLocal.popServiceContext();
+		}
+	}
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		LayoutPreviewRendererImpl.class);
+
+	private static final Definition _definition = new Definition(
+		StringPool.BLANK,
+		HashMapBuilder.put(
+			"content", "/portal/layout_content.jsp"
+		).put(
+			"selectable", "true"
+		).build());
+
+	@Reference
+	private LayoutLocalService _layoutLocalService;
+
+	@Reference
+	private LayoutServiceContextHelper _layoutServiceContextHelper;
+
+	@Reference
+	private Portal _portal;
+
+	@Reference
+	private UserLocalService _userLocalService;
+
+}

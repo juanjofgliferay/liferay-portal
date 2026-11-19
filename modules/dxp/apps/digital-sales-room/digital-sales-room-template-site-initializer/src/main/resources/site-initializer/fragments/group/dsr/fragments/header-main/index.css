@@ -1,0 +1,104 @@
+.dsr-container-logo {
+	align-items: center;
+	background-color: var(--gray-200, #F1F2F5);
+	border-radius: 50%;
+	display: flex;
+	height: 100px;
+	justify-content: center;
+	position: relative;
+	width: 100px;
+}
+
+.dsr-container-logo.dsr-secondary-logo {
+	margin-right: -2rem;
+}
+
+.dsr-container-logos {
+	bottom: -50px;
+	display:flex;
+	position:absolute;
+	right: 2.25rem;
+}
+
+.dsr-container-logos img,
+.dsr-container-logos picture {
+	height: 80px !important;
+	width: 80px !important;
+}
+
+#dsr-header-main {
+	background-color: var(--white);
+}
+
+.dsr-header-banner {
+	align-items: center;
+	background-color: var(--gray-200);
+	display: flex;
+	height: 15rem;
+	justify-content: center;
+	position:relative;
+}
+
+.dsr-header-banner h1 {
+	bottom: 1.75rem;
+	color: var(--white, #FFF);
+	font-size: 2rem;
+	font-weight: 400;
+	left: 1.75rem;
+	max-width: 80%;
+	position: absolute;
+}
+
+.dsr-header-banner img {
+	height: 100%;
+	object-fit: cover;
+	width: 100%;
+}
+
+.dsr-header-banner picture {
+	height: 100%;
+	width: 100%;
+}
+
+.dsr-logo {
+	background-color: #4D20EC;
+	border-radius: 50%;
+	height: 80px;
+	object-fit: cover;
+	position: absolute;
+	width: 80px;
+	z-index: 2;
+}
+
+.dsr-logo-background {
+	background-color: var(--white, #FFF);
+	bottom: 0;
+	height: 50%;
+	position: absolute;
+	width: 100%;
+}
+
+.dsr-logo-name {
+	bottom: 0;
+	color: var(--white, #FFF);
+	font-size: 3rem;
+	font-weight: bold;
+	left: 50%;
+	line-height: 80px;
+	position: absolute;
+	right: 0;
+	text-align: center;
+	text-transform: capitalize;
+	top: 50%;
+	transform: translate(-50%, -50%);
+}
+
+.dsr-primary-logo .dsr-logo-api,
+.dsr-primary-logo .dsr-logo-custom,
+.dsr-primary-logo .dsr-logo-name {
+	opacity: 0;
+}
+
+.dsr-primary-logo .dsr-logo-custom {
+	z-index: 3;
+}

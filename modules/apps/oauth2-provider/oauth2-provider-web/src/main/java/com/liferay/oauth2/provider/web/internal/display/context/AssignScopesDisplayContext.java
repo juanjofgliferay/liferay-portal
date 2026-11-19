@@ -5,7 +5,7 @@
 
 package com.liferay.oauth2.provider.web.internal.display.context;
 
-import com.liferay.document.library.util.DLURLHelper;
+import com.liferay.document.library.helper.DLURLHelper;
 import com.liferay.oauth2.provider.configuration.OAuth2ProviderConfiguration;
 import com.liferay.oauth2.provider.model.OAuth2Application;
 import com.liferay.oauth2.provider.model.OAuth2ScopeGrant;
@@ -29,6 +29,8 @@ import com.liferay.portal.kernel.util.SetUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.portlet.PortletRequest;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -42,8 +44,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
-
-import javax.portlet.PortletRequest;
 
 /**
  * @author Stian Sigvartsen
@@ -251,9 +251,11 @@ public class AssignScopesDisplayContext
 				Set<LiferayOAuth2Scope> liferayOAuth2Scopes =
 					applicationAssignableScopes.getLiferayOAuth2Scopes();
 
-				if (liferayOAuth2Scopes.isEmpty()) {
-					unassignable = false;
+				if (!liferayOAuth2Scopes.isEmpty()) {
+					continue;
 				}
+
+				unassignable = false;
 			}
 
 			if (!unassignable) {

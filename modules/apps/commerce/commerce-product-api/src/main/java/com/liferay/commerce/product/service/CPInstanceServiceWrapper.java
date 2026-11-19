@@ -138,19 +138,19 @@ public class CPInstanceServiceWrapper
 	}
 
 	@Override
-	public CPInstance fetchByExternalReferenceCode(
-			String externalReferenceCode, long companyId)
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return _cpInstanceService.fetchByExternalReferenceCode(
-			externalReferenceCode, companyId);
-	}
-
-	@Override
 	public CPInstance fetchCPInstance(long cpInstanceId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _cpInstanceService.fetchCPInstance(cpInstanceId);
+	}
+
+	@Override
+	public CPInstance fetchCPInstanceByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _cpInstanceService.fetchCPInstanceByExternalReferenceCode(
+			externalReferenceCode, companyId);
 	}
 
 	@Override
@@ -213,6 +213,15 @@ public class CPInstanceServiceWrapper
 
 		return _cpInstanceService.getCProductInstance(
 			cProductId, cpInstanceUuid);
+	}
+
+	@Override
+	public CPInstance getOrAddEmptyCPInstance(
+			String externalReferenceCode, long cpDefinitionId, long groupId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _cpInstanceService.getOrAddEmptyCPInstance(
+			externalReferenceCode, cpDefinitionId, groupId);
 	}
 
 	/**
@@ -383,3 +392,4 @@ public class CPInstanceServiceWrapper
 	private CPInstanceService _cpInstanceService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1652927503

@@ -22,12 +22,12 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.Locale;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -96,6 +96,11 @@ public class DDMFormInstanceCTDisplayRenderer
 	}
 
 	@Override
+	public boolean isShowPreviewDiff() {
+		return true;
+	}
+
+	@Override
 	public String renderPreview(DisplayContext<DDMFormInstance> displayContext)
 		throws Exception {
 
@@ -113,7 +118,7 @@ public class DDMFormInstanceCTDisplayRenderer
 
 		PortletResponse portletResponse =
 			(PortletResponse)httpServletRequest.getAttribute(
-				JavaConstants.JAVAX_PORTLET_RESPONSE);
+				JavaConstants.JAKARTA_PORTLET_RESPONSE);
 
 		ddmFormFieldRenderingContext.setPortletNamespace(
 			portletResponse.getNamespace());
@@ -126,11 +131,6 @@ public class DDMFormInstanceCTDisplayRenderer
 
 		return DDMFormRendererUtil.render(
 			ddmFormInstance.getDDMForm(), ddmFormFieldRenderingContext);
-	}
-
-	@Override
-	public boolean showPreviewDiff() {
-		return true;
 	}
 
 	@Override

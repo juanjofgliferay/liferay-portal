@@ -19,14 +19,18 @@ import com.liferay.portal.kernel.dao.orm.ProjectionFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.orm.RestrictionsFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.Session;
+import com.liferay.portal.kernel.security.permission.InlineSQLHelperUtil;
+import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.transaction.Propagation;
 import com.liferay.portal.kernel.util.IntegerWrapper;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.OrderByComparatorFactoryUtil;
 import com.liferay.portal.kernel.util.Time;
+import com.liferay.portal.security.permission.SimplePermissionChecker;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PersistenceTestRule;
 import com.liferay.portal.test.rule.TransactionalTestRule;
@@ -112,11 +116,7 @@ public class BlogsEntryPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		BlogsEntry newBlogsEntry = _persistence.create(pk);
-
-		newBlogsEntry.setMvccVersion(RandomTestUtil.nextLong());
+		BlogsEntry newBlogsEntry = addBlogsEntry();
 
 		newBlogsEntry.setCtCollectionId(RandomTestUtil.nextLong());
 
@@ -178,7 +178,9 @@ public class BlogsEntryPersistenceTest {
 
 		newBlogsEntry.setStatusDate(RandomTestUtil.nextDate());
 
-		_blogsEntries.add(_persistence.update(newBlogsEntry));
+		newBlogsEntry = _persistence.update(newBlogsEntry);
+
+		_blogsEntries.add(newBlogsEntry);
 
 		BlogsEntry existingBlogsEntry = _persistence.findByPrimaryKey(
 			newBlogsEntry.getPrimaryKey());
@@ -323,27 +325,12 @@ public class BlogsEntryPersistenceTest {
 	}
 
 	@Test
-	public void testCountByCompanyId() throws Exception {
-		_persistence.countByCompanyId(RandomTestUtil.nextLong());
-
-		_persistence.countByCompanyId(0L);
-	}
-
-	@Test
 	public void testCountByG_UT() throws Exception {
 		_persistence.countByG_UT(RandomTestUtil.nextLong(), "");
 
 		_persistence.countByG_UT(0L, "null");
 
 		_persistence.countByG_UT(0L, (String)null);
-	}
-
-	@Test
-	public void testCountByG_LtD() throws Exception {
-		_persistence.countByG_LtD(
-			RandomTestUtil.nextLong(), RandomTestUtil.nextDate());
-
-		_persistence.countByG_LtD(0L, RandomTestUtil.nextDate());
 	}
 
 	@Test
@@ -363,35 +350,11 @@ public class BlogsEntryPersistenceTest {
 	}
 
 	@Test
-	public void testCountByC_U() throws Exception {
-		_persistence.countByC_U(
-			RandomTestUtil.nextLong(), RandomTestUtil.nextLong());
-
-		_persistence.countByC_U(0L, 0L);
-	}
-
-	@Test
 	public void testCountByC_LtD() throws Exception {
 		_persistence.countByC_LtD(
 			RandomTestUtil.nextLong(), RandomTestUtil.nextDate());
 
 		_persistence.countByC_LtD(0L, RandomTestUtil.nextDate());
-	}
-
-	@Test
-	public void testCountByC_S() throws Exception {
-		_persistence.countByC_S(
-			RandomTestUtil.nextLong(), RandomTestUtil.nextInt());
-
-		_persistence.countByC_S(0L, 0);
-	}
-
-	@Test
-	public void testCountByC_NotS() throws Exception {
-		_persistence.countByC_NotS(
-			RandomTestUtil.nextLong(), RandomTestUtil.nextInt());
-
-		_persistence.countByC_NotS(0L, 0);
 	}
 
 	@Test
@@ -473,24 +436,6 @@ public class BlogsEntryPersistenceTest {
 	}
 
 	@Test
-	public void testCountByC_U_S() throws Exception {
-		_persistence.countByC_U_S(
-			RandomTestUtil.nextLong(), RandomTestUtil.nextLong(),
-			RandomTestUtil.nextInt());
-
-		_persistence.countByC_U_S(0L, 0L, 0);
-	}
-
-	@Test
-	public void testCountByC_U_NotS() throws Exception {
-		_persistence.countByC_U_NotS(
-			RandomTestUtil.nextLong(), RandomTestUtil.nextLong(),
-			RandomTestUtil.nextInt());
-
-		_persistence.countByC_U_NotS(0L, 0L, 0);
-	}
-
-	@Test
 	public void testCountByC_LtD_S() throws Exception {
 		_persistence.countByC_LtD_S(
 			RandomTestUtil.nextLong(), RandomTestUtil.nextDate(),
@@ -506,24 +451,6 @@ public class BlogsEntryPersistenceTest {
 			RandomTestUtil.nextInt());
 
 		_persistence.countByC_LtD_NotS(0L, RandomTestUtil.nextDate(), 0);
-	}
-
-	@Test
-	public void testCountByG_U_LtD_S() throws Exception {
-		_persistence.countByG_U_LtD_S(
-			RandomTestUtil.nextLong(), RandomTestUtil.nextLong(),
-			RandomTestUtil.nextDate(), RandomTestUtil.nextInt());
-
-		_persistence.countByG_U_LtD_S(0L, 0L, RandomTestUtil.nextDate(), 0);
-	}
-
-	@Test
-	public void testCountByG_U_LtD_NotS() throws Exception {
-		_persistence.countByG_U_LtD_NotS(
-			RandomTestUtil.nextLong(), RandomTestUtil.nextLong(),
-			RandomTestUtil.nextDate(), RandomTestUtil.nextInt());
-
-		_persistence.countByG_U_LtD_NotS(0L, 0L, RandomTestUtil.nextDate(), 0);
 	}
 
 	@Test
@@ -560,6 +487,24 @@ public class BlogsEntryPersistenceTest {
 
 	@Test
 	public void testFilterFindByGroupId() throws Exception {
+		PermissionThreadLocal.setPermissionChecker(
+			new SimplePermissionChecker() {
+				{
+					init(TestPropsValues.getUser());
+				}
+
+				@Override
+				public boolean isCompanyAdmin(long companyId) {
+					return false;
+				}
+
+			});
+
+		Assert.assertTrue(InlineSQLHelperUtil.isEnabled(0));
+
+		_persistence.filterFindByGroupId(
+			0, QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
+
 		_persistence.filterFindByGroupId(
 			0, QueryUtil.ALL_POS, QueryUtil.ALL_POS, getOrderByComparator());
 	}
@@ -872,8 +817,6 @@ public class BlogsEntryPersistenceTest {
 
 		BlogsEntry blogsEntry = _persistence.create(pk);
 
-		blogsEntry.setMvccVersion(RandomTestUtil.nextLong());
-
 		blogsEntry.setCtCollectionId(RandomTestUtil.nextLong());
 
 		blogsEntry.setUuid(RandomTestUtil.randomString());
@@ -944,3 +887,4 @@ public class BlogsEntryPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-2087994996

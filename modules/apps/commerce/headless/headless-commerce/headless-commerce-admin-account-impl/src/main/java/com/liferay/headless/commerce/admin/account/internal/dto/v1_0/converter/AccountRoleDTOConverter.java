@@ -20,7 +20,10 @@ import org.osgi.service.component.annotations.Reference;
  * @author Alessio Antonio Rendina
  */
 @Component(
-	property = "dto.class.name=com.liferay.portal.kernel.model.UserGroupRole",
+	property = {
+		"default=true",
+		"dto.class.name=com.liferay.portal.kernel.model.UserGroupRole"
+	},
 	service = DTOConverter.class
 )
 public class AccountRoleDTOConverter
@@ -43,11 +46,13 @@ public class AccountRoleDTOConverter
 
 		return new AccountRole() {
 			{
-				description = LanguageUtils.getLanguageIdMap(
-					role.getDescriptionMap());
-				name = role.getName();
-				roleId = role.getRoleId();
-				title = LanguageUtils.getLanguageIdMap(role.getTitleMap());
+				setDescription(
+					() -> LanguageUtils.getLanguageIdMap(
+						role.getDescriptionMap()));
+				setName(role::getName);
+				setRoleId(role::getRoleId);
+				setTitle(
+					() -> LanguageUtils.getLanguageIdMap(role.getTitleMap()));
 			}
 		};
 	}

@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -250,13 +251,6 @@ public class ChangesetCollectionLocalServiceUtil {
 		return getService().getChangesetCollection(changesetCollectionId);
 	}
 
-	public static ChangesetCollection getChangesetCollection(
-			long groupId, String name)
-		throws com.liferay.changeset.exception.NoSuchCollectionException {
-
-		return getService().getChangesetCollection(groupId, name);
-	}
-
 	/**
 	 * Returns a range of all the changeset collections.
 	 *
@@ -325,13 +319,13 @@ public class ChangesetCollectionLocalServiceUtil {
 	}
 
 	public static ChangesetCollectionLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(ChangesetCollectionLocalService service) {
-		_service = service;
-	}
-
-	private static volatile ChangesetCollectionLocalService _service;
+	private static final Snapshot<ChangesetCollectionLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			ChangesetCollectionLocalServiceUtil.class,
+			ChangesetCollectionLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1070033204

@@ -6,7 +6,6 @@
 package com.liferay.commerce.order.content.web.internal.frontend.data.set.util;
 
 import com.liferay.commerce.constants.CommerceOrderConstants;
-import com.liferay.commerce.context.CommerceGroupThreadLocal;
 import com.liferay.commerce.currency.model.CommerceMoney;
 import com.liferay.commerce.model.CommerceOrder;
 import com.liferay.commerce.model.CommerceOrderType;
@@ -20,6 +19,8 @@ import com.liferay.commerce.order.status.CommerceOrderStatus;
 import com.liferay.commerce.order.status.CommerceOrderStatusRegistry;
 import com.liferay.commerce.pricing.constants.CommercePricingConstants;
 import com.liferay.commerce.service.CommerceOrderTypeService;
+import com.liferay.commerce.util.CommerceGroupThreadLocal;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.LanguageUtil;
@@ -38,21 +39,20 @@ import com.liferay.portal.kernel.util.ResourceBundleUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.WindowStateException;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.text.DateFormat;
 import java.text.Format;
 
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.ResourceBundle;
 import java.util.TimeZone;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
-import javax.portlet.WindowStateException;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Alessio Antonio Rendina
@@ -138,95 +138,13 @@ public class CommerceOrderFDSUtil {
 			"commerceOrderImporterTypeKey",
 			CommerceOrdersCommerceOrderImporterTypeImpl.KEY
 		).setParameter(
+			"orderDetailURL",
+			ParamUtil.getString(httpServletRequest, "orderDetailURL")
+		).setParameter(
 			"selectedCommerceOrderId", order.getOrderId()
 		).setWindowState(
 			LiferayWindowState.POP_UP
 		).buildString();
-	}
-
-	public static List<Order> getOrders(
-			long commerceChannelGroupId, List<CommerceOrder> commerceOrders,
-			CommerceOrderStatusRegistry commerceOrderStatusRegistry,
-			CommerceOrderTypeService commerceOrderTypeService,
-			GroupLocalService groupLocalService, String priceDisplayType,
-			boolean showCommerceOrderCreateTime, ThemeDisplay themeDisplay)
-		throws PortalException {
-
-		List<Order> orders = new ArrayList<>();
-
-		CommerceGroupThreadLocal.set(
-			groupLocalService.fetchGroup(commerceChannelGroupId));
-
-		for (CommerceOrder commerceOrder : commerceOrders) {
-			String amount = StringPool.BLANK;
-
-			CommerceMoney totalCommerceMoney = commerceOrder.getTotalMoney();
-
-			if (priceDisplayType.equals(
-					CommercePricingConstants.TAX_INCLUDED_IN_PRICE)) {
-
-				totalCommerceMoney = commerceOrder.getTotalWithTaxAmountMoney();
-			}
-
-			if (totalCommerceMoney != null) {
-				amount = totalCommerceMoney.format(themeDisplay.getLocale());
-			}
-
-			ResourceBundle resourceBundle = ResourceBundleUtil.getBundle(
-				"content.Language", themeDisplay.getLocale(),
-				CommerceOrderFDSUtil.class);
-
-			String commerceOrderStatusLabel = LanguageUtil.get(
-				resourceBundle,
-				CommerceOrderConstants.getOrderStatusLabel(
-					commerceOrder.getOrderStatus()));
-
-			if (commerceOrderStatusLabel == null) {
-				CommerceOrderStatus commerceOrderStatus =
-					commerceOrderStatusRegistry.getCommerceOrderStatus(
-						commerceOrder.getOrderStatus());
-
-				commerceOrderStatusLabel = commerceOrderStatus.getLabel(
-					themeDisplay.getLocale());
-			}
-
-			String workflowStatusLabel = LanguageUtil.get(
-				resourceBundle,
-				WorkflowConstants.getStatusLabel(commerceOrder.getStatus()));
-
-			Date orderDate = commerceOrder.getCreateDate();
-
-			if (commerceOrder.getOrderDate() != null) {
-				orderDate = commerceOrder.getOrderDate();
-			}
-
-			String commerceOrderTypeName = StringPool.BLANK;
-
-			CommerceOrderType commerceOrderType =
-				commerceOrderTypeService.fetchCommerceOrderType(
-					commerceOrder.getCommerceOrderTypeId());
-
-			if (commerceOrderType != null) {
-				commerceOrderTypeName = commerceOrderType.getName(
-					themeDisplay.getLocale());
-			}
-
-			orders.add(
-				new Order(
-					commerceOrder.getExternalReferenceCode(),
-					commerceOrder.getCommerceOrderId(),
-					commerceOrder.getCommerceAccountName(),
-					_formatCommerceOrderCreateDate(
-						themeDisplay.getLocale(), orderDate,
-						showCommerceOrderCreateTime,
-						themeDisplay.getTimeZone()),
-					commerceOrder.getUserName(), commerceOrderStatusLabel,
-					commerceOrderTypeName,
-					commerceOrder.getPurchaseOrderNumber(), workflowStatusLabel,
-					amount));
-		}
-
-		return orders;
 	}
 
 	public static String getOrderViewDetailURL(
@@ -259,6 +177,91 @@ public class CommerceOrderFDSUtil {
 			"commerceOrderId", String.valueOf(commerceOrderId));
 
 		return portletURL.toString();
+	}
+
+	public static List<Order> getOrders(
+			long commerceChannelGroupId, List<CommerceOrder> commerceOrders,
+			CommerceOrderStatusRegistry commerceOrderStatusRegistry,
+			CommerceOrderTypeService commerceOrderTypeService,
+			GroupLocalService groupLocalService, String priceDisplayType,
+			boolean showCommerceOrderCreateTime, ThemeDisplay themeDisplay)
+		throws PortalException {
+
+		CommerceGroupThreadLocal.set(
+			groupLocalService.fetchGroup(commerceChannelGroupId));
+
+		return TransformUtil.transform(
+			commerceOrders,
+			commerceOrder -> {
+				String amount = StringPool.BLANK;
+
+				CommerceMoney totalCommerceMoney =
+					commerceOrder.getTotalMoney();
+
+				if (priceDisplayType.equals(
+						CommercePricingConstants.TAX_INCLUDED_IN_PRICE)) {
+
+					totalCommerceMoney =
+						commerceOrder.getTotalWithTaxAmountMoney();
+				}
+
+				if (totalCommerceMoney != null) {
+					amount = totalCommerceMoney.format(
+						themeDisplay.getLocale());
+				}
+
+				ResourceBundle resourceBundle = ResourceBundleUtil.getBundle(
+					"content.Language", themeDisplay.getLocale(),
+					CommerceOrderFDSUtil.class);
+
+				String commerceOrderStatusLabel = LanguageUtil.get(
+					resourceBundle,
+					CommerceOrderConstants.getOrderStatusLabel(
+						commerceOrder.getOrderStatus()));
+
+				if (commerceOrderStatusLabel == null) {
+					CommerceOrderStatus commerceOrderStatus =
+						commerceOrderStatusRegistry.getCommerceOrderStatus(
+							commerceOrder.getOrderStatus());
+
+					commerceOrderStatusLabel = commerceOrderStatus.getLabel(
+						themeDisplay.getLocale());
+				}
+
+				String workflowStatusLabel = LanguageUtil.get(
+					resourceBundle,
+					WorkflowConstants.getStatusLabel(
+						commerceOrder.getStatus()));
+
+				String commerceOrderTypeName = StringPool.BLANK;
+
+				CommerceOrderType commerceOrderType =
+					commerceOrderTypeService.fetchCommerceOrderType(
+						commerceOrder.getCommerceOrderTypeId());
+
+				if (commerceOrderType != null) {
+					commerceOrderTypeName = commerceOrderType.getName(
+						themeDisplay.getLocale());
+				}
+
+				return new Order(
+					commerceOrder.getExternalReferenceCode(),
+					commerceOrder.getCommerceOrderId(),
+					commerceOrder.getCommerceAccountName(), amount,
+					commerceOrder.getUserName(),
+					_formatCommerceOrderDate(
+						themeDisplay.getLocale(), commerceOrder.getCreateDate(),
+						showCommerceOrderCreateTime,
+						themeDisplay.getTimeZone()),
+					commerceOrder.getName(),
+					_formatCommerceOrderDate(
+						themeDisplay.getLocale(), commerceOrder.getOrderDate(),
+						showCommerceOrderCreateTime,
+						themeDisplay.getTimeZone()),
+					commerceOrderStatusLabel, commerceOrderTypeName,
+					commerceOrder.getPurchaseOrderNumber(),
+					workflowStatusLabel);
+			});
 	}
 
 	public static String getViewShipmentURL(
@@ -312,27 +315,30 @@ public class CommerceOrderFDSUtil {
 			CommerceWishListsCommerceOrderImporterTypeImpl.KEY
 		).setParameter(
 			"commerceWishListId", wishList.getWishListId()
+		).setParameter(
+			"orderDetailURL",
+			ParamUtil.getString(httpServletRequest, "orderDetailURL")
 		).setWindowState(
 			LiferayWindowState.POP_UP
 		).buildString();
 	}
 
-	private static String _formatCommerceOrderCreateDate(
+	private static String _formatCommerceOrderDate(
 		Locale locale, Date orderDate, boolean showCommerceOrderCreateTime,
 		TimeZone timeZone) {
 
-		Format commerceOrderDateFormat = FastDateFormatFactoryUtil.getDate(
+		Format dateFormat = FastDateFormatFactoryUtil.getDate(
 			DateFormat.MEDIUM, locale, timeZone);
 
 		if (showCommerceOrderCreateTime) {
-			Format commerceOrderTimeFormat = FastDateFormatFactoryUtil.getTime(
+			Format timeFormat = FastDateFormatFactoryUtil.getTime(
 				DateFormat.MEDIUM, locale, timeZone);
 
-			return commerceOrderDateFormat.format(orderDate) + " " +
-				commerceOrderTimeFormat.format(orderDate);
+			return dateFormat.format(orderDate) + " " +
+				timeFormat.format(orderDate);
 		}
 
-		return commerceOrderDateFormat.format(orderDate);
+		return dateFormat.format(orderDate);
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(

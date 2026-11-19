@@ -32,7 +32,6 @@ import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
-import com.liferay.portal.test.rule.FeatureFlags;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
@@ -58,7 +57,6 @@ import org.junit.runner.RunWith;
 /**
  * @author Andrea Sbarra
  */
-@FeatureFlags("COMMERCE-11287")
 @RunWith(Arquillian.class)
 public class CPInstanceUnitOfMeasureLocalServiceTest {
 
@@ -117,6 +115,47 @@ public class CPInstanceUnitOfMeasureLocalServiceTest {
 		Assert.assertNotNull(_getCpInstanceUnitOfMeasure(cpInstances.get(0)));
 	}
 
+	@Test
+	public void testAddCPInstanceUnitOfMeasureWithSpecialCharactersName()
+		throws PortalException {
+
+		frutillaRule.scenario(
+			"Create a new UOM for a CPInstance"
+		).given(
+			"A product definition with a default SKU"
+		).when(
+			"Unit Of Measure is added"
+		).then(
+			"UOM name is added with special characters"
+		).and(
+			"UOM name is created and converted without special characters."
+		);
+
+		CPDefinition cpDefinition = CPTestUtil.addCPDefinitionFromCatalog(
+			_commerceCatalog.getGroupId(), SimpleCPTypeConstants.NAME, true,
+			true);
+
+		List<CPInstance> cpInstances = cpDefinition.getCPInstances();
+
+		CPInstance cpInstance = cpInstances.get(0);
+
+		CPInstanceUnitOfMeasure cpInstanceUnitOfMeasure =
+			_cpInstanceUnitOfMeasureLocalService.addCPInstanceUnitOfMeasure(
+				_user.getUserId(), cpInstance.getCPInstanceId(), true,
+				BigDecimal.TEN, "KEY",
+				HashMapBuilder.put(
+					LocaleUtil.getDefault(), "<Test>Unit of Measure"
+				).build(),
+				2, BigDecimal.ZERO, true, 0.0, BigDecimal.ONE,
+				cpInstance.getSku());
+
+		Assert.assertNotNull(cpInstanceUnitOfMeasure);
+
+		Assert.assertEquals(
+			"Unit of Measure",
+			cpInstanceUnitOfMeasure.getName(LocaleUtil.getDefault()));
+	}
+
 	@Test(
 		expected = CPInstanceUnitOfMeasureIncrementalOrderQuantityException.class
 	)
@@ -150,7 +189,8 @@ public class CPInstanceUnitOfMeasureLocalServiceTest {
 				HashMapBuilder.put(
 					LocaleUtil.getDefault(), "NOME"
 				).build(),
-				2, true, 0.0, BigDecimal.ONE, cpInstance.getSku());
+				2, BigDecimal.ZERO, true, 0.0, BigDecimal.ONE,
+				cpInstance.getSku());
 
 		Assert.assertNull(cpInstanceUnitOfMeasure);
 
@@ -193,7 +233,8 @@ public class CPInstanceUnitOfMeasureLocalServiceTest {
 				HashMapBuilder.put(
 					LocaleUtil.getDefault(), "NOME"
 				).build(),
-				2, true, 0.0, BigDecimal.ONE, cpInstance.getSku());
+				2, BigDecimal.ZERO, true, 0.0, BigDecimal.ONE,
+				cpInstance.getSku());
 
 		Assert.assertNull(cpInstanceUnitOfMeasure);
 
@@ -236,7 +277,7 @@ public class CPInstanceUnitOfMeasureLocalServiceTest {
 				HashMapBuilder.put(
 					LocaleUtil.getDefault(), "NOME"
 				).build(),
-				2, true, 0.0, null, cpInstance.getSku());
+				2, BigDecimal.ZERO, true, 0.0, null, cpInstance.getSku());
 
 		Assert.assertNull(cpInstanceUnitOfMeasure);
 
@@ -279,7 +320,7 @@ public class CPInstanceUnitOfMeasureLocalServiceTest {
 				HashMapBuilder.put(
 					LocaleUtil.getDefault(), "NOME"
 				).build(),
-				2, true, 0.0, BigDecimal.ONE, null);
+				2, BigDecimal.ZERO, true, 0.0, BigDecimal.ONE, null);
 
 		Assert.assertNull(cpInstanceUnitOfMeasure);
 
@@ -364,14 +405,14 @@ public class CPInstanceUnitOfMeasureLocalServiceTest {
 		CPInstanceUnitOfMeasure cpInstanceUnitOfMeasure1 =
 			_cpInstanceUnitOfMeasureLocalService.addCPInstanceUnitOfMeasure(
 				_user.getUserId(), cpInstance.getCPInstanceId(), true,
-				BigDecimal.TEN, "KEY1", nameMap, 2, true, 0.0, BigDecimal.ONE,
-				cpInstance.getSku());
+				BigDecimal.TEN, "KEY1", nameMap, 2, BigDecimal.ZERO, true, 0.0,
+				BigDecimal.ONE, cpInstance.getSku());
 
 		CPInstanceUnitOfMeasure cpInstanceUnitOfMeasure2 =
 			_cpInstanceUnitOfMeasureLocalService.addCPInstanceUnitOfMeasure(
 				_user.getUserId(), cpInstance.getCPInstanceId(), true,
-				BigDecimal.TEN, "KEY2", nameMap, 2, true, 0.0, BigDecimal.ONE,
-				cpInstance.getSku());
+				BigDecimal.TEN, "KEY2", nameMap, 2, BigDecimal.ZERO, true, 0.0,
+				BigDecimal.ONE, cpInstance.getSku());
 
 		List<CPInstanceUnitOfMeasure> cpInstanceUnitOfMeasures =
 			_cpInstanceUnitOfMeasureLocalService.getCPInstanceUnitOfMeasures(
@@ -387,9 +428,11 @@ public class CPInstanceUnitOfMeasureLocalServiceTest {
 		for (CPInstanceUnitOfMeasure cpInstanceUnitOfMeasure :
 				cpInstanceUnitOfMeasures) {
 
-			if (cpInstanceUnitOfMeasure.isPrimary()) {
-				primaryCPInstanceUnitOfMeasureCount++;
+			if (!cpInstanceUnitOfMeasure.isPrimary()) {
+				continue;
 			}
+
+			primaryCPInstanceUnitOfMeasureCount++;
 		}
 
 		Assert.assertEquals(1, primaryCPInstanceUnitOfMeasureCount);
@@ -398,7 +441,8 @@ public class CPInstanceUnitOfMeasureLocalServiceTest {
 			_cpInstanceUnitOfMeasureLocalService.updateCPInstanceUnitOfMeasure(
 				cpInstanceUnitOfMeasure1.getCPInstanceUnitOfMeasureId(),
 				cpInstance.getCPInstanceId(), true, BigDecimal.ONE, "KEY1",
-				nameMap, 2, true, 0.0, BigDecimal.ONE, cpInstance.getSku());
+				nameMap, 2, BigDecimal.ZERO, true, 0.0, BigDecimal.ONE,
+				cpInstance.getSku());
 
 		Assert.assertTrue("Primary", cpInstanceUnitOfMeasure1.isPrimary());
 
@@ -442,7 +486,7 @@ public class CPInstanceUnitOfMeasureLocalServiceTest {
 				HashMapBuilder.put(
 					LocaleUtil.getDefault(), "NOME 2"
 				).build(),
-				3, false, 1.0, BigDecimal.TEN,
+				3, BigDecimal.ONE, false, 1.0, BigDecimal.TEN,
 				cpInstanceUnitOfMeasure.getSku());
 
 		Assert.assertNotNull(cpInstanceUnitOfMeasure);
@@ -469,6 +513,58 @@ public class CPInstanceUnitOfMeasureLocalServiceTest {
 			Double.valueOf(cpInstanceUnitOfMeasure.getPriority()));
 		Assert.assertEquals(
 			"Rate", BigDecimal.TEN, cpInstanceUnitOfMeasure.getRate());
+	}
+
+	@Test
+	public void testUpdateCPInstanceUnitOfMeasureWithSpecialCharactersName()
+		throws PortalException {
+
+		frutillaRule.scenario(
+			"Create a new UOM for a CPInstance"
+		).given(
+			"I have a product definition with a default SKU"
+		).when(
+			"Unit Of Measure is created"
+		).then(
+			"UOM name is update with special characters"
+		).and(
+			"UOM name is converted without special characters."
+		);
+
+		CPDefinition cpDefinition = CPTestUtil.addCPDefinitionFromCatalog(
+			_commerceCatalog.getGroupId(), SimpleCPTypeConstants.NAME, true,
+			true);
+
+		List<CPInstance> cpInstances = cpDefinition.getCPInstances();
+
+		CPInstance cpInstance = cpInstances.get(0);
+
+		CPInstanceUnitOfMeasure cpInstanceUnitOfMeasure =
+			_cpInstanceUnitOfMeasureLocalService.addCPInstanceUnitOfMeasure(
+				_user.getUserId(), cpInstance.getCPInstanceId(), true,
+				BigDecimal.TEN, "KEY",
+				HashMapBuilder.put(
+					LocaleUtil.getDefault(), "Name"
+				).build(),
+				2, BigDecimal.ZERO, true, 0.0, BigDecimal.ONE,
+				cpInstance.getSku());
+
+		Assert.assertNotNull(cpInstanceUnitOfMeasure);
+
+		cpInstanceUnitOfMeasure =
+			_cpInstanceUnitOfMeasureLocalService.updateCPInstanceUnitOfMeasure(
+				cpInstanceUnitOfMeasure.getCPInstanceUnitOfMeasureId(),
+				cpInstanceUnitOfMeasure.getCPInstanceId(), true, BigDecimal.TEN,
+				"KEY",
+				HashMapBuilder.put(
+					LocaleUtil.getDefault(), "<Test>Unit of Measure"
+				).build(),
+				2, BigDecimal.ZERO, true, 0.0, BigDecimal.ONE,
+				cpInstance.getSku());
+
+		Assert.assertEquals(
+			"Unit of Measure",
+			cpInstanceUnitOfMeasure.getName(LocaleUtil.getDefault()));
 	}
 
 	@Test(
@@ -507,7 +603,7 @@ public class CPInstanceUnitOfMeasureLocalServiceTest {
 				HashMapBuilder.put(
 					LocaleUtil.getDefault(), "NOME"
 				).build(),
-				cpInstanceUnitOfMeasure.getPrecision(),
+				cpInstanceUnitOfMeasure.getPrecision(), BigDecimal.ONE,
 				cpInstanceUnitOfMeasure.isPrimary(),
 				cpInstanceUnitOfMeasure.getPriority(),
 				cpInstanceUnitOfMeasure.getRate(),
@@ -553,7 +649,8 @@ public class CPInstanceUnitOfMeasureLocalServiceTest {
 				HashMapBuilder.put(
 					LocaleUtil.getDefault(), "NOME"
 				).build(),
-				2, true, 0.0, BigDecimal.ONE, cpInstanceUnitOfMeasure.getSku());
+				2, BigDecimal.ZERO, true, 0.0, BigDecimal.ONE,
+				cpInstanceUnitOfMeasure.getSku());
 
 		Assert.assertEquals("Key", "KEY", cpInstanceUnitOfMeasure.getKey());
 	}
@@ -593,7 +690,8 @@ public class CPInstanceUnitOfMeasureLocalServiceTest {
 				HashMapBuilder.put(
 					LocaleUtil.getDefault(), "NOME"
 				).build(),
-				2, true, 0.0, null, cpInstanceUnitOfMeasure.getSku());
+				2, BigDecimal.ZERO, true, 0.0, null,
+				cpInstanceUnitOfMeasure.getSku());
 
 		Assert.assertEquals(
 			"Rate", BigDecimal.ONE, cpInstanceUnitOfMeasure.getRate());
@@ -612,7 +710,7 @@ public class CPInstanceUnitOfMeasureLocalServiceTest {
 			HashMapBuilder.put(
 				LocaleUtil.getDefault(), "NOME"
 			).build(),
-			2, true, 0.0, BigDecimal.ONE, cpInstance.getSku());
+			2, BigDecimal.ZERO, true, 0.0, BigDecimal.ONE, cpInstance.getSku());
 	}
 
 	private static Company _company;

@@ -117,11 +117,18 @@ public class CommerceOrderTypeModelImpl
 
 	public static final String TABLE_SQL_DROP = "drop table CommerceOrderType";
 
+	public static final String ENTITY_ALIAS = "commerceOrderType";
+
+	public static final String FILTER_PK_COLUMN_NAME = "commerceOrderTypeId";
+
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY commerceOrderType.createDate DESC";
 
 	public static final String ORDER_BY_SQL =
 		" ORDER BY CommerceOrderType.createDate DESC";
+
+	public static final String ORDER_BY_SQL_INLINE_DISTINCT =
+		" ORDER BY commerceOrderType.createDate DESC";
 
 	public static final String DATA_SOURCE = "liferayDataSource";
 
@@ -1767,3 +1774,4 @@ public class CommerceOrderTypeModelImpl
 	private CommerceOrderType _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:99287951

@@ -19,14 +19,18 @@ import com.liferay.portal.kernel.dao.orm.ProjectionFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.orm.RestrictionsFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.Session;
+import com.liferay.portal.kernel.security.permission.InlineSQLHelperUtil;
+import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.transaction.Propagation;
 import com.liferay.portal.kernel.util.IntegerWrapper;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.OrderByComparatorFactoryUtil;
 import com.liferay.portal.kernel.util.Time;
+import com.liferay.portal.security.permission.SimplePermissionChecker;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PersistenceTestRule;
 import com.liferay.portal.test.rule.TransactionalTestRule;
@@ -111,11 +115,7 @@ public class AssetVocabularyPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		AssetVocabulary newAssetVocabulary = _persistence.create(pk);
-
-		newAssetVocabulary.setMvccVersion(RandomTestUtil.nextLong());
+		AssetVocabulary newAssetVocabulary = addAssetVocabulary();
 
 		newAssetVocabulary.setCtCollectionId(RandomTestUtil.nextLong());
 
@@ -148,7 +148,11 @@ public class AssetVocabularyPersistenceTest {
 
 		newAssetVocabulary.setLastPublishDate(RandomTestUtil.nextDate());
 
-		_assetVocabularies.add(_persistence.update(newAssetVocabulary));
+		newAssetVocabulary.setStatus(RandomTestUtil.nextInt());
+
+		newAssetVocabulary = _persistence.update(newAssetVocabulary);
+
+		_assetVocabularies.add(newAssetVocabulary);
 
 		AssetVocabulary existingAssetVocabulary = _persistence.findByPrimaryKey(
 			newAssetVocabulary.getPrimaryKey());
@@ -202,6 +206,9 @@ public class AssetVocabularyPersistenceTest {
 			Time.getShortTimestamp(
 				existingAssetVocabulary.getLastPublishDate()),
 			Time.getShortTimestamp(newAssetVocabulary.getLastPublishDate()));
+		Assert.assertEquals(
+			existingAssetVocabulary.getStatus(),
+			newAssetVocabulary.getStatus());
 	}
 
 	@Test(
@@ -339,6 +346,24 @@ public class AssetVocabularyPersistenceTest {
 
 	@Test
 	public void testFilterFindByGroupId() throws Exception {
+		PermissionThreadLocal.setPermissionChecker(
+			new SimplePermissionChecker() {
+				{
+					init(TestPropsValues.getUser());
+				}
+
+				@Override
+				public boolean isCompanyAdmin(long companyId) {
+					return false;
+				}
+
+			});
+
+		Assert.assertTrue(InlineSQLHelperUtil.isEnabled(0));
+
+		_persistence.filterFindByGroupId(
+			0, QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
+
 		_persistence.filterFindByGroupId(
 			0, QueryUtil.ALL_POS, QueryUtil.ALL_POS, getOrderByComparator());
 	}
@@ -350,7 +375,7 @@ public class AssetVocabularyPersistenceTest {
 			"groupId", true, "companyId", true, "userId", true, "userName",
 			true, "createDate", true, "modifiedDate", true, "name", true,
 			"title", true, "description", true, "settings", true,
-			"visibilityType", true, "lastPublishDate", true);
+			"visibilityType", true, "lastPublishDate", true, "status", true);
 	}
 
 	@Test
@@ -657,8 +682,6 @@ public class AssetVocabularyPersistenceTest {
 
 		AssetVocabulary assetVocabulary = _persistence.create(pk);
 
-		assetVocabulary.setMvccVersion(RandomTestUtil.nextLong());
-
 		assetVocabulary.setCtCollectionId(RandomTestUtil.nextLong());
 
 		assetVocabulary.setUuid(RandomTestUtil.randomString());
@@ -689,6 +712,8 @@ public class AssetVocabularyPersistenceTest {
 
 		assetVocabulary.setLastPublishDate(RandomTestUtil.nextDate());
 
+		assetVocabulary.setStatus(RandomTestUtil.nextInt());
+
 		_assetVocabularies.add(_persistence.update(assetVocabulary));
 
 		return assetVocabulary;
@@ -700,3 +725,4 @@ public class AssetVocabularyPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1472907946

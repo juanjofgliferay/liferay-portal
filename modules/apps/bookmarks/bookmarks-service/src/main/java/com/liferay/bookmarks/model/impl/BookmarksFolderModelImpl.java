@@ -107,11 +107,18 @@ public class BookmarksFolderModelImpl
 
 	public static final String TABLE_SQL_DROP = "drop table BookmarksFolder";
 
+	public static final String ENTITY_ALIAS = "bookmarksFolder";
+
+	public static final String FILTER_PK_COLUMN_NAME = "folderId";
+
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY bookmarksFolder.parentFolderId ASC, bookmarksFolder.name ASC";
 
 	public static final String ORDER_BY_SQL =
 		" ORDER BY BookmarksFolder.parentFolderId ASC, BookmarksFolder.name ASC";
+
+	public static final String ORDER_BY_SQL_INLINE_DISTINCT =
+		" ORDER BY bookmarksFolder.parentFolderId ASC, bookmarksFolder.name ASC";
 
 	public static final String DATA_SOURCE = "liferayDataSource";
 
@@ -1454,3 +1461,4 @@ public class BookmarksFolderModelImpl
 	private BookmarksFolder _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1194587505

@@ -19,7 +19,7 @@ import com.liferay.portal.kernel.repository.model.FileEntryWrapper;
 import com.liferay.portal.kernel.repository.model.FileVersion;
 import com.liferay.portal.kernel.repository.model.FileVersionWrapper;
 import com.liferay.portal.kernel.repository.registry.RepositoryEventRegistry;
-import com.liferay.portal.kernel.transaction.TransactionCommitCallbackUtil;
+import com.liferay.portal.kernel.transaction.TransactionCallbackUtil;
 import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.repository.liferayrepository.LiferayProcessorLocalRepositoryWrapper;
 import com.liferay.portal.repository.liferayrepository.LiferayProcessorRepositoryWrapper;
@@ -100,25 +100,13 @@ public class LiferayProcessorCapability
 	private void _registerDLProcessorCallback(
 		FileEntry fileEntry, FileVersion fileVersion) {
 
-		TransactionCommitCallbackUtil.registerCallback(
+		TransactionCallbackUtil.registerCommitCallback(
 			() -> {
 				DLProcessorHelperUtil.trigger(
-					_wrap(fileEntry), _wrap(fileVersion), true);
+					fileEntry, _wrap(fileVersion), true);
 
 				return null;
 			});
-	}
-
-	private FileEntry _wrap(FileEntry fileEntry) {
-		if (fileEntry == null) {
-			return null;
-		}
-
-		if (ContentTypes.IMAGE_PNG.equals(fileEntry.getMimeType())) {
-			return new SafeFileEntry(fileEntry);
-		}
-
-		return fileEntry;
 	}
 
 	private FileVersion _wrap(FileVersion fileVersion) {

@@ -177,6 +177,11 @@ public class NotificationTemplateWrapper
 	}
 
 	@Override
+	public NotificationRecipient fetchNotificationRecipient() {
+		return model.fetchNotificationRecipient();
+	}
+
+	@Override
 	public String[] getAvailableLanguageIds() {
 		return model.getAvailableLanguageIds();
 	}
@@ -409,7 +414,9 @@ public class NotificationTemplateWrapper
 	}
 
 	@Override
-	public NotificationRecipient getNotificationRecipient() {
+	public NotificationRecipient getNotificationRecipient()
+		throws com.liferay.portal.kernel.exception.PortalException {
+
 		return model.getNotificationRecipient();
 	}
 
@@ -998,3 +1005,4 @@ public class NotificationTemplateWrapper
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:401666449

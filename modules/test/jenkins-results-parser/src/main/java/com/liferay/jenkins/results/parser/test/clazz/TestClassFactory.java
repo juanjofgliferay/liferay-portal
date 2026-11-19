@@ -11,21 +11,28 @@ import com.liferay.jenkins.results.parser.test.clazz.group.CompileModulesBatchTe
 import com.liferay.jenkins.results.parser.test.clazz.group.FunctionalBatchTestClassGroup;
 import com.liferay.jenkins.results.parser.test.clazz.group.JSUnitModulesBatchTestClassGroup;
 import com.liferay.jenkins.results.parser.test.clazz.group.JUnitBatchTestClassGroup;
+import com.liferay.jenkins.results.parser.test.clazz.group.ModulesJUnitBatchTestClassGroup;
 import com.liferay.jenkins.results.parser.test.clazz.group.NPMTestBatchTestClassGroup;
+import com.liferay.jenkins.results.parser.test.clazz.group.PlaywrightBatchTestClassGroup;
 import com.liferay.jenkins.results.parser.test.clazz.group.PluginsBatchTestClassGroup;
 import com.liferay.jenkins.results.parser.test.clazz.group.PluginsGulpBatchTestClassGroup;
+import com.liferay.jenkins.results.parser.test.clazz.group.RESTBuilderAndServiceBuilderModulesBatchTestClassGroup;
 import com.liferay.jenkins.results.parser.test.clazz.group.RESTBuilderModulesBatchTestClassGroup;
 import com.liferay.jenkins.results.parser.test.clazz.group.SemVerModulesBatchTestClassGroup;
 import com.liferay.jenkins.results.parser.test.clazz.group.ServiceBuilderModulesBatchTestClassGroup;
 import com.liferay.jenkins.results.parser.test.clazz.group.TCKJunitBatchTestClassGroup;
+import com.liferay.jenkins.results.parser.test.clazz.group.WorkspacesCompileBatchTestClassGroup;
+import com.liferay.jenkins.results.parser.test.clazz.group.WorkspacesJSUnitModulesBatchTestClassGroup;
+import com.liferay.jenkins.results.parser.test.clazz.group.WorkspacesModulesJUnitBatchTestClassGroup;
 
 import java.io.File;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.json.JSONObject;
 
@@ -34,9 +41,18 @@ import org.json.JSONObject;
  */
 public class TestClassFactory {
 
+	public static void clear() {
+		_jUnitTestClasses.clear();
+		_modulesJUnitTestClasses.clear();
+		_npmTestClasses.clear();
+		_playwrightJUnitTestClasses.clear();
+	}
+
 	public static List<JUnitTestClass> getJUnitTestClasses() {
 		List<JUnitTestClass> jUnitTestClasses = new ArrayList<>(
 			_jUnitTestClasses.values());
+
+		jUnitTestClasses.addAll(_modulesJUnitTestClasses.values());
 
 		Collections.sort(jUnitTestClasses);
 
@@ -52,8 +68,62 @@ public class TestClassFactory {
 		return npmTestClasses;
 	}
 
+	public static List<PlaywrightJUnitTestClass> getPlaywrightTestClasses() {
+		List<PlaywrightJUnitTestClass> playwrightJUnitTestClasses =
+			new ArrayList<>(_playwrightJUnitTestClasses.values());
+
+		Collections.sort(playwrightJUnitTestClasses);
+
+		return playwrightJUnitTestClasses;
+	}
+
+	public static TestClass newAntTargetTestClass(
+		BatchTestClassGroup batchTestClassGroup, File testClassFile,
+		String antTargetName) {
+
+		if (Objects.equals(antTargetName, "build-rests")) {
+			return new RESTBuilderAntTargetTestClass(
+				batchTestClassGroup, testClassFile, antTargetName);
+		}
+
+		if (Objects.equals(antTargetName, "build-services")) {
+			return new ServiceBuilderAntTargetTestClass(
+				batchTestClassGroup, testClassFile, antTargetName);
+		}
+
+		throw new IllegalArgumentException(
+			"Unsupported ant target name: " + antTargetName);
+	}
+
 	public static TestClass newTestClass(
 		BatchTestClassGroup batchTestClassGroup, File testClassFile) {
+
+		return _newTestClass(batchTestClassGroup, null, testClassFile, null);
+	}
+
+	public static TestClass newTestClass(
+		BatchTestClassGroup batchTestClassGroup, File testClassFile,
+		List<String> testClassMethodNames) {
+
+		if (batchTestClassGroup instanceof JUnitBatchTestClassGroup) {
+			if (batchTestClassGroup instanceof
+					ModulesJUnitBatchTestClassGroup) {
+
+				if (batchTestClassGroup instanceof
+						WorkspacesModulesJUnitBatchTestClassGroup) {
+
+					return new WorkspacesModulesJUnitTestClass(
+						batchTestClassGroup, testClassFile,
+						testClassMethodNames);
+				}
+
+				return new ModulesJUnitTestClass(
+					batchTestClassGroup, testClassFile, testClassMethodNames);
+			}
+
+			return new JUnitTestClass(
+				batchTestClassGroup, testClassFile, testClassMethodNames);
+		}
 
 		return _newTestClass(batchTestClassGroup, null, testClassFile, null);
 	}
@@ -80,7 +150,22 @@ public class TestClassFactory {
 	}
 
 	public static TestClassMethod newTestClassMethod(
+		boolean ignored, String name, String issues, TestClass testClass) {
+
+		if (testClass instanceof PlaywrightJUnitTestClass) {
+			return new PlaywrightTestClassMethod(
+				ignored, name, issues, testClass);
+		}
+
+		return new TestClassMethod(ignored, name, issues, testClass);
+	}
+
+	public static TestClassMethod newTestClassMethod(
 		boolean ignored, String name, TestClass testClass) {
+
+		if (testClass instanceof PlaywrightJUnitTestClass) {
+			return new PlaywrightTestClassMethod(ignored, name, testClass);
+		}
 
 		return new TestClassMethod(ignored, name, testClass);
 	}
@@ -88,177 +173,374 @@ public class TestClassFactory {
 	public static TestClassMethod newTestClassMethod(
 		JSONObject jsonObject, TestClass testClass) {
 
+		if (testClass instanceof PlaywrightJUnitTestClass) {
+			return new PlaywrightTestClassMethod(jsonObject, testClass);
+		}
+
 		return new TestClassMethod(jsonObject, testClass);
+	}
+
+	private static File _getCanonicalFile(
+		File testClassFile, JSONObject jsonObject) {
+
+		File canonicalFile = null;
+
+		if (testClassFile != null) {
+			canonicalFile = JenkinsResultsParserUtil.getCanonicalFile(
+				testClassFile);
+		}
+		else if ((jsonObject != null) && jsonObject.has("file")) {
+			canonicalFile = JenkinsResultsParserUtil.getCanonicalFile(
+				new File(jsonObject.getString("file")));
+		}
+		else {
+			throw new RuntimeException("Please set a test class file");
+		}
+
+		return canonicalFile;
 	}
 
 	private static TestClass _newTestClass(
 		BatchTestClassGroup batchTestClassGroup, JSONObject jsonObject,
 		File testClassFile, String testClassMethodName) {
 
-		if (batchTestClassGroup instanceof CompileModulesBatchTestClassGroup) {
-			if (jsonObject != null) {
+		long start = System.currentTimeMillis();
+
+		try {
+			if (batchTestClassGroup instanceof
+					CompileModulesBatchTestClassGroup) {
+
+				if (jsonObject != null) {
+					return new CompileModulesTestClass(
+						batchTestClassGroup, jsonObject);
+				}
+
 				return new CompileModulesTestClass(
-					batchTestClassGroup, jsonObject);
+					batchTestClassGroup, testClassFile);
 			}
+			else if (batchTestClassGroup instanceof
+						FunctionalBatchTestClassGroup) {
 
-			return new CompileModulesTestClass(
-				batchTestClassGroup, testClassFile);
-		}
-		else if (batchTestClassGroup instanceof FunctionalBatchTestClassGroup) {
-			if (jsonObject != null) {
-				return new FunctionalTestClass(batchTestClassGroup, jsonObject);
+				if (jsonObject != null) {
+					return new FunctionalTestClass(
+						batchTestClassGroup, jsonObject);
+				}
+
+				return new FunctionalTestClass(
+					batchTestClassGroup, testClassMethodName);
 			}
+			else if (batchTestClassGroup instanceof
+						JSUnitModulesBatchTestClassGroup) {
 
-			return new FunctionalTestClass(
-				batchTestClassGroup, testClassMethodName);
-		}
-		else if (batchTestClassGroup instanceof
-					JSUnitModulesBatchTestClassGroup) {
+				if (batchTestClassGroup instanceof
+						WorkspacesJSUnitModulesBatchTestClassGroup) {
 
-			if (jsonObject != null) {
-				return new JSUnitModulesTestClass(
-					batchTestClassGroup, jsonObject);
+					if (jsonObject != null) {
+						return new WorkspacesJSUnitJUnitTestClass(
+							batchTestClassGroup, jsonObject);
+					}
+
+					return new WorkspacesJSUnitJUnitTestClass(
+						batchTestClassGroup, testClassFile);
+				}
+
+				if (jsonObject != null) {
+					return new JSUnitJUnitTestClass(
+						batchTestClassGroup, jsonObject);
+				}
+
+				return new JSUnitJUnitTestClass(
+					batchTestClassGroup, testClassFile);
 			}
+			else if (batchTestClassGroup instanceof
+						ModulesJUnitBatchTestClassGroup) {
 
-			return new JSUnitModulesTestClass(
-				batchTestClassGroup, testClassFile);
-		}
-		else if (batchTestClassGroup instanceof JUnitBatchTestClassGroup) {
-			File canonicalFile;
+				File canonicalFile = _getCanonicalFile(
+					testClassFile, jsonObject);
 
-			if (testClassFile != null) {
-				canonicalFile = JenkinsResultsParserUtil.getCanonicalFile(
-					testClassFile);
-			}
-			else if ((jsonObject != null) && jsonObject.has("file")) {
-				canonicalFile = JenkinsResultsParserUtil.getCanonicalFile(
-					new File(jsonObject.getString("file")));
-			}
-			else {
-				throw new RuntimeException("Please set a test class file");
-			}
+				ModulesJUnitTestClass modulesJUnitTestClass =
+					_modulesJUnitTestClasses.get(canonicalFile);
 
-			if (_jUnitTestClasses.containsKey(canonicalFile)) {
+				if (modulesJUnitTestClass != null) {
+					return modulesJUnitTestClass;
+				}
+
+				if (batchTestClassGroup instanceof
+						WorkspacesModulesJUnitBatchTestClassGroup) {
+
+					if (jsonObject != null) {
+						modulesJUnitTestClass =
+							new WorkspacesModulesJUnitTestClass(
+								batchTestClassGroup, jsonObject);
+					}
+					else {
+						modulesJUnitTestClass =
+							new WorkspacesModulesJUnitTestClass(
+								batchTestClassGroup, testClassFile);
+					}
+				}
+				else {
+					if (jsonObject != null) {
+						modulesJUnitTestClass = new ModulesJUnitTestClass(
+							batchTestClassGroup, jsonObject);
+					}
+					else {
+						modulesJUnitTestClass = new ModulesJUnitTestClass(
+							batchTestClassGroup, testClassFile);
+					}
+				}
+
+				_modulesJUnitTestClasses.put(
+					canonicalFile, modulesJUnitTestClass);
+
+				return _modulesJUnitTestClasses.get(canonicalFile);
+			}
+			else if (batchTestClassGroup instanceof JUnitBatchTestClassGroup) {
+				File canonicalFile = _getCanonicalFile(
+					testClassFile, jsonObject);
+
+				JUnitTestClass jUnitTestClass = _jUnitTestClasses.get(
+					canonicalFile);
+
+				if (jUnitTestClass != null) {
+					return jUnitTestClass;
+				}
+
+				if (jsonObject != null) {
+					jUnitTestClass = new JUnitTestClass(
+						batchTestClassGroup, jsonObject);
+				}
+				else {
+					jUnitTestClass = new JUnitTestClass(
+						batchTestClassGroup, testClassFile);
+				}
+
+				_jUnitTestClasses.put(canonicalFile, jUnitTestClass);
+
 				return _jUnitTestClasses.get(canonicalFile);
 			}
+			else if (batchTestClassGroup instanceof
+						NPMTestBatchTestClassGroup) {
 
-			JUnitTestClass jUnitTestClass = null;
+				File canonicalFile = _getCanonicalFile(
+					testClassFile, jsonObject);
 
-			if (jsonObject != null) {
-				jUnitTestClass = new JUnitTestClass(
-					batchTestClassGroup, jsonObject);
-			}
-			else {
-				jUnitTestClass = new JUnitTestClass(
-					batchTestClassGroup, testClassFile);
-			}
+				NPMTestClass npmTestClass = _npmTestClasses.get(canonicalFile);
 
-			_jUnitTestClasses.put(canonicalFile, jUnitTestClass);
+				if (npmTestClass != null) {
+					return npmTestClass;
+				}
 
-			return _jUnitTestClasses.get(canonicalFile);
-		}
-		else if (batchTestClassGroup instanceof NPMTestBatchTestClassGroup) {
-			File canonicalFile;
+				if (jsonObject != null) {
+					npmTestClass = new NPMTestClass(
+						batchTestClassGroup, jsonObject);
+				}
+				else {
+					npmTestClass = new NPMTestClass(
+						batchTestClassGroup, testClassFile);
+				}
 
-			if (testClassFile != null) {
-				canonicalFile = JenkinsResultsParserUtil.getCanonicalFile(
-					testClassFile);
-			}
-			else if ((jsonObject != null) && jsonObject.has("file")) {
-				canonicalFile = JenkinsResultsParserUtil.getCanonicalFile(
-					new File(jsonObject.getString("file")));
-			}
-			else {
-				throw new RuntimeException("Please set a test class file");
-			}
+				_npmTestClasses.put(canonicalFile, npmTestClass);
 
-			if (_npmTestClasses.containsKey(canonicalFile)) {
 				return _npmTestClasses.get(canonicalFile);
 			}
+			else if (batchTestClassGroup instanceof
+						PlaywrightBatchTestClassGroup) {
 
-			NPMTestClass npmTestClass = null;
+				File canonicalFile = _getCanonicalFile(
+					testClassFile, jsonObject);
 
-			if (jsonObject != null) {
-				npmTestClass = new NPMTestClass(
-					batchTestClassGroup, jsonObject);
+				PlaywrightJUnitTestClass playwrightJUnitTestClass =
+					_playwrightJUnitTestClasses.get(canonicalFile);
+
+				if (playwrightJUnitTestClass != null) {
+					return playwrightJUnitTestClass;
+				}
+
+				if (jsonObject != null) {
+					playwrightJUnitTestClass = new PlaywrightJUnitTestClass(
+						batchTestClassGroup, jsonObject);
+				}
+				else {
+					playwrightJUnitTestClass = new PlaywrightJUnitTestClass(
+						batchTestClassGroup, testClassFile);
+				}
+
+				_playwrightJUnitTestClasses.put(
+					canonicalFile, playwrightJUnitTestClass);
+
+				return _playwrightJUnitTestClasses.get(canonicalFile);
 			}
-			else {
-				npmTestClass = new NPMTestClass(
+			else if (batchTestClassGroup instanceof
+						PluginsBatchTestClassGroup) {
+
+				if (jsonObject != null) {
+					return new PluginsTestClass(
+						batchTestClassGroup, jsonObject);
+				}
+
+				return new PluginsTestClass(batchTestClassGroup, testClassFile);
+			}
+			else if (batchTestClassGroup instanceof
+						PluginsGulpBatchTestClassGroup) {
+
+				if (jsonObject != null) {
+					return new PluginsGulpTestClass(
+						batchTestClassGroup, jsonObject);
+				}
+
+				return new PluginsGulpTestClass(
+					batchTestClassGroup, testClassFile);
+			}
+			else if (batchTestClassGroup instanceof
+						RESTBuilderAndServiceBuilderModulesBatchTestClassGroup) {
+
+				String antTargetName = null;
+
+				if (jsonObject != null) {
+					antTargetName = jsonObject.optString(
+						"ant_target_name", null);
+				}
+
+				if (Objects.equals(antTargetName, "build-rests")) {
+					if (jsonObject != null) {
+						return new RESTBuilderAntTargetTestClass(
+							batchTestClassGroup, jsonObject);
+					}
+
+					return new RESTBuilderAntTargetTestClass(
+						batchTestClassGroup, testClassFile, antTargetName);
+				}
+
+				if (jsonObject != null) {
+					return new ServiceBuilderAntTargetTestClass(
+						batchTestClassGroup, jsonObject);
+				}
+
+				return new ServiceBuilderAntTargetTestClass(
+					batchTestClassGroup, testClassFile, "build-services");
+			}
+			else if (batchTestClassGroup instanceof
+						RESTBuilderModulesBatchTestClassGroup) {
+
+				if ((testClassFile == null) && jsonObject.has("file")) {
+					testClassFile = new File(jsonObject.getString("file"));
+				}
+
+				String testClassFileName = testClassFile.getName();
+
+				if (testClassFileName.endsWith(".xml")) {
+					if (jsonObject != null) {
+						return new RESTBuilderAntTargetTestClass(
+							batchTestClassGroup, jsonObject);
+					}
+
+					return new RESTBuilderAntTargetTestClass(
+						batchTestClassGroup, testClassFile);
+				}
+
+				if (jsonObject != null) {
+					return new RESTBuilderModulesTestClass(
+						batchTestClassGroup, jsonObject);
+				}
+
+				return new RESTBuilderModulesTestClass(
+					batchTestClassGroup, testClassFile);
+			}
+			else if (batchTestClassGroup instanceof
+						SemVerModulesBatchTestClassGroup) {
+
+				if (jsonObject != null) {
+					return new SemVerModulesTestClass(
+						batchTestClassGroup, jsonObject);
+				}
+
+				return new SemVerModulesTestClass(
+					batchTestClassGroup, testClassFile);
+			}
+			else if (batchTestClassGroup instanceof
+						ServiceBuilderModulesBatchTestClassGroup) {
+
+				if ((testClassFile == null) && jsonObject.has("file")) {
+					testClassFile = new File(jsonObject.getString("file"));
+				}
+
+				String testClassFileName = testClassFile.getName();
+
+				if (testClassFileName.endsWith(".xml")) {
+					if (jsonObject != null) {
+						return new ServiceBuilderAntTargetTestClass(
+							batchTestClassGroup, jsonObject);
+					}
+
+					return new ServiceBuilderAntTargetTestClass(
+						batchTestClassGroup, testClassFile);
+				}
+
+				if (jsonObject != null) {
+					return new ServiceBuilderModulesTestClass(
+						batchTestClassGroup, jsonObject);
+				}
+
+				return new ServiceBuilderModulesTestClass(
+					batchTestClassGroup, testClassFile);
+			}
+			else if (batchTestClassGroup instanceof
+						TCKJunitBatchTestClassGroup) {
+
+				if (jsonObject != null) {
+					return new TCKTestClass(batchTestClassGroup, jsonObject);
+				}
+
+				return new TCKTestClass(batchTestClassGroup, testClassFile);
+			}
+			else if (batchTestClassGroup instanceof
+						WorkspacesCompileBatchTestClassGroup) {
+
+				if (jsonObject != null) {
+					return new WorkspacesCompileTestClass(
+						batchTestClassGroup, jsonObject);
+				}
+
+				return new WorkspacesCompileTestClass(
 					batchTestClassGroup, testClassFile);
 			}
 
-			_npmTestClasses.put(canonicalFile, npmTestClass);
-
-			return _npmTestClasses.get(canonicalFile);
-		}
-		else if (batchTestClassGroup instanceof PluginsBatchTestClassGroup) {
 			if (jsonObject != null) {
-				return new PluginsTestClass(batchTestClassGroup, jsonObject);
+				return new BatchTestClass(batchTestClassGroup, jsonObject);
 			}
 
-			return new PluginsTestClass(batchTestClassGroup, testClassFile);
+			return new BatchTestClass(batchTestClassGroup, testClassFile);
 		}
-		else if (batchTestClassGroup instanceof
-					PluginsGulpBatchTestClassGroup) {
+		finally {
+			long duration = System.currentTimeMillis() - start;
 
-			if (jsonObject != null) {
-				return new PluginsGulpTestClass(
-					batchTestClassGroup, jsonObject);
+			if (duration > 500) {
+				String testClassName = testClassMethodName;
+
+				if (testClassFile != null) {
+					testClassName = testClassFile.toString();
+				}
+				else if (jsonObject != null) {
+					testClassName = jsonObject.optString("file");
+				}
+
+				System.out.println(
+					JenkinsResultsParserUtil.combine(
+						"[", batchTestClassGroup.getBatchName(),
+						"] Created test class for ", testClassName, " in ",
+						JenkinsResultsParserUtil.toDurationString(duration)));
 			}
-
-			return new PluginsGulpTestClass(batchTestClassGroup, testClassFile);
 		}
-		else if (batchTestClassGroup instanceof
-					RESTBuilderModulesBatchTestClassGroup) {
-
-			if (jsonObject != null) {
-				return new RESTBuilderModulesTestClass(
-					batchTestClassGroup, jsonObject);
-			}
-
-			return new RESTBuilderModulesTestClass(
-				batchTestClassGroup, testClassFile);
-		}
-		else if (batchTestClassGroup instanceof
-					SemVerModulesBatchTestClassGroup) {
-
-			if (jsonObject != null) {
-				return new SemVerModulesTestClass(
-					batchTestClassGroup, jsonObject);
-			}
-
-			return new SemVerModulesTestClass(
-				batchTestClassGroup, testClassFile);
-		}
-		else if (batchTestClassGroup instanceof
-					ServiceBuilderModulesBatchTestClassGroup) {
-
-			if (jsonObject != null) {
-				return new ServiceBuilderModulesTestClass(
-					batchTestClassGroup, jsonObject);
-			}
-
-			return new ServiceBuilderModulesTestClass(
-				batchTestClassGroup, testClassFile);
-		}
-		else if (batchTestClassGroup instanceof TCKJunitBatchTestClassGroup) {
-			if (jsonObject != null) {
-				return new TCKTestClass(batchTestClassGroup, jsonObject);
-			}
-
-			return new TCKTestClass(batchTestClassGroup, testClassFile);
-		}
-
-		if (jsonObject != null) {
-			return new BatchTestClass(batchTestClassGroup, jsonObject);
-		}
-
-		return new BatchTestClass(batchTestClassGroup, testClassFile);
 	}
 
 	private static final Map<File, JUnitTestClass> _jUnitTestClasses =
-		new HashMap<>();
+		new ConcurrentHashMap<>();
+	private static final Map<File, ModulesJUnitTestClass>
+		_modulesJUnitTestClasses = new ConcurrentHashMap<>();
 	private static final Map<File, NPMTestClass> _npmTestClasses =
-		new HashMap<>();
+		new ConcurrentHashMap<>();
+	private static final Map<File, PlaywrightJUnitTestClass>
+		_playwrightJUnitTestClasses = new ConcurrentHashMap<>();
 
 }

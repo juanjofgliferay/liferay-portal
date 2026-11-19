@@ -9,8 +9,10 @@ import com.google.auth.oauth2.GoogleCredentials;
 import com.google.auth.oauth2.ServiceAccountCredentials;
 
 import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
+import com.liferay.portal.kernel.module.util.SystemBundleUtil;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.util.FileUtil;
+import com.liferay.portal.security.key.secret.SecretResolver;
 import com.liferay.portal.store.gcs.configuration.GCSStoreConfiguration;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
@@ -47,6 +49,17 @@ public class GCSStoreTest {
 
 		_gcsStore = new GCSStore();
 
+		SecretResolver secretResolver = Mockito.mock(SecretResolver.class);
+
+		Mockito.when(
+			secretResolver.resolve(Mockito.anyLong(), Mockito.any())
+		).thenAnswer(
+			invocation -> invocation.getArgument(1)
+		);
+
+		ReflectionTestUtil.setFieldValue(
+			_gcsStore, "_secretResolver", secretResolver);
+
 		Mockito.when(
 			ConfigurableUtil.createConfigurable(
 				Mockito.eq(GCSStoreConfiguration.class), Mockito.any(Map.class))
@@ -79,7 +92,8 @@ public class GCSStoreTest {
 
 		_mockServiceAccountKey(new String(serviceAccountKeyBytes));
 
-		_gcsStore.activate(Collections.emptyMap());
+		_gcsStore.activate(
+			SystemBundleUtil.getBundleContext(), Collections.emptyMap());
 
 		_assertGoogleCredentials(
 			ServiceAccountCredentials.fromStream(
@@ -90,7 +104,8 @@ public class GCSStoreTest {
 	public void testActivate2() throws Exception {
 		_mockServiceAccountKey(null);
 
-		_gcsStore.activate(Collections.emptyMap());
+		_gcsStore.activate(
+			SystemBundleUtil.getBundleContext(), Collections.emptyMap());
 
 		_assertGoogleCredentials(
 			ServiceAccountCredentials.getApplicationDefault());

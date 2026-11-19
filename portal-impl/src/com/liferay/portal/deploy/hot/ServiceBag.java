@@ -6,6 +6,8 @@
 package com.liferay.portal.deploy.hot;
 
 import com.liferay.portal.kernel.bean.ClassLoaderBeanHandler;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.module.framework.service.IdentifiableOSGiService;
 import com.liferay.portal.kernel.service.ServiceWrapper;
 import com.liferay.portal.kernel.util.AggregateClassLoader;
@@ -14,58 +16,121 @@ import com.liferay.portal.spring.aop.AopInvocationHandler;
 
 import java.lang.reflect.InvocationHandler;
 
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.ServiceReference;
+
 /**
  * @author Raymond Augé
  */
 public class ServiceBag<V> {
 
 	public ServiceBag(
-		ClassLoader classLoader, AopInvocationHandler aopInvocationHandler,
-		Class<?> serviceTypeClass, ServiceWrapper<V> serviceWrapper) {
+		AopInvocationHandler aopInvocationHandler, Class<?> serviceTypeClass,
+		ServiceWrapper<V> serviceWrapper, BundleContext bundleContext,
+		ServiceReference<?> serviceReference) {
 
 		_aopInvocationHandler = aopInvocationHandler;
+		_bundleContext = bundleContext;
+		_serviceReference = serviceReference;
 
 		Object previousService = serviceWrapper.getWrappedService();
 
 		if (!(previousService instanceof ServiceWrapper)) {
-			Class<?> previousServiceClass = previousService.getClass();
+			if (!_isLiferayOwned(previousService)) {
+				Class<?> previousServiceClass = previousService.getClass();
 
-			ClassLoader previousServiceAggregateClassLoader =
-				AggregateClassLoader.getAggregateClassLoader(
+				ClassLoader classLoader = _getClassLoader(
 					previousServiceClass.getClassLoader(),
-					IdentifiableOSGiService.class.getClassLoader());
+					IdentifiableOSGiService.class);
 
-			previousService = ProxyUtil.newProxyInstance(
-				previousServiceAggregateClassLoader,
-				new Class<?>[] {
-					serviceTypeClass, IdentifiableOSGiService.class
-				},
-				new ClassLoaderBeanHandler(
-					previousService, previousServiceAggregateClassLoader));
+				previousService = ProxyUtil.newProxyInstance(
+					classLoader,
+					new Class<?>[] {
+						serviceTypeClass, IdentifiableOSGiService.class
+					},
+					new ClassLoaderBeanHandler(previousService, classLoader));
+			}
 
 			serviceWrapper.setWrappedService((V)previousService);
 		}
 
-		ClassLoader newServiceAggregateClassLoader =
-			AggregateClassLoader.getAggregateClassLoader(
-				serviceTypeClass.getClassLoader(),
-				IdentifiableOSGiService.class.getClassLoader());
+		Object nextTarget = serviceWrapper;
 
-		Object nextTarget = ProxyUtil.newProxyInstance(
-			newServiceAggregateClassLoader,
-			new Class<?>[] {
-				serviceTypeClass, ServiceWrapper.class,
-				IdentifiableOSGiService.class
-			},
-			new ClassLoaderBeanHandler(serviceWrapper, classLoader));
+		if (!_isLiferayOwned(nextTarget)) {
+			Class<?> clazz = serviceWrapper.getClass();
+
+			nextTarget = ProxyUtil.newProxyInstance(
+				_getClassLoader(
+					serviceTypeClass.getClassLoader(),
+					IdentifiableOSGiService.class),
+				new Class<?>[] {serviceTypeClass, ServiceWrapper.class},
+				new ClassLoaderBeanHandler(
+					serviceWrapper, clazz.getClassLoader()));
+		}
 
 		_aopInvocationHandler.setTarget(nextTarget);
 
 		_serviceWrapper = (ServiceWrapper<?>)nextTarget;
 	}
 
+	public void replace() {
+		synchronized (_aopInvocationHandler) {
+			_replace();
+		}
+
+		if (_serviceReference != null) {
+			_bundleContext.ungetService(_serviceReference);
+		}
+	}
+
+	private ClassLoader _getClassLoader(
+		ClassLoader classLoader, Class<?> clazz) {
+
+		try {
+			if ((classLoader == clazz.getClassLoader()) ||
+				(clazz == classLoader.loadClass(clazz.getName()))) {
+
+				return classLoader;
+			}
+		}
+		catch (ClassNotFoundException classNotFoundException) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(
+					"Unable to load class " + clazz, classNotFoundException);
+			}
+		}
+
+		return AggregateClassLoader.getAggregateClassLoader(
+			classLoader, clazz.getClassLoader());
+	}
+
+	private boolean _isLiferayOwned(Object object) {
+		Class<?> clazz = object.getClass();
+
+		String className = clazz.getName();
+
+		if (className.startsWith("com.liferay.")) {
+			return true;
+		}
+
+		InvocationHandler invocationHandler = ProxyUtil.fetchInvocationHandler(
+			object, InvocationHandler.class);
+
+		if (invocationHandler != null) {
+			clazz = invocationHandler.getClass();
+
+			className = clazz.getName();
+
+			if (className.startsWith("com.liferay.")) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
 	@SuppressWarnings("unchecked")
-	public <T> void replace() throws Exception {
+	private <T> void _replace() {
 		Object currentService = _aopInvocationHandler.getTarget();
 
 		ServiceWrapper<T> previousService = null;
@@ -130,7 +195,11 @@ public class ServiceBag<V> {
 		}
 	}
 
+	private static final Log _log = LogFactoryUtil.getLog(ServiceBag.class);
+
 	private final AopInvocationHandler _aopInvocationHandler;
+	private final BundleContext _bundleContext;
+	private final ServiceReference<?> _serviceReference;
 	private final ServiceWrapper<?> _serviceWrapper;
 
 }

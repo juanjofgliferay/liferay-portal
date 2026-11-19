@@ -13,7 +13,7 @@ Boolean saved = GetterUtil.getBoolean(request.getAttribute("liferay-saved-conten
 
 <div>
 	<clay:button
-		aria-label="<%= GetterUtil.getString((String)request.getAttribute("liferay-saved-content:saved-content:label")) %>"
+		aria-label='<%= GetterUtil.getString((String)request.getAttribute("liferay-saved-content:saved-content:label")) %>'
 		disabled="<%= true %>"
 		displayType="secondary"
 		monospaced="<%= true %>"
@@ -25,7 +25,7 @@ Boolean saved = GetterUtil.getBoolean(request.getAttribute("liferay-saved-conten
 	</clay:button>
 
 	<react:component
-		module="js/SavedContentEntry"
+		module="{SavedContentEntry} from saved-content-taglib"
 		props='<%= (Map<String, Object>)request.getAttribute("liferay-saved-content:saved-content:data") %>'
 	/>
 </div>

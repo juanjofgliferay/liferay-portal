@@ -21,10 +21,13 @@ import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
 import com.liferay.portal.kernel.security.permission.resource.PortletResourcePermission;
+import com.liferay.portal.kernel.service.ListTypeLocalService;
 
+import jakarta.servlet.http.HttpServletRequest;
+
+import java.util.Collections;
 import java.util.List;
-
-import javax.servlet.http.HttpServletRequest;
+import java.util.function.ToLongFunction;
 
 /**
  * @author Andrea Di Giorgi
@@ -44,6 +47,7 @@ public class ShippingAddressCheckoutStepDisplayContext
 			commerceChannelAccountEntryRelLocalService,
 		CommerceChannelLocalService commerceChannelLocalService,
 		HttpServletRequest httpServletRequest,
+		ListTypeLocalService listTypeLocalService,
 		PortletResourcePermission portletResourcePermission) {
 
 		super(
@@ -51,11 +55,15 @@ public class ShippingAddressCheckoutStepDisplayContext
 			accountRoleLocalService, commerceAddressService,
 			commerceChannelAccountEntryRelLocalService,
 			commerceChannelLocalService, httpServletRequest,
-			portletResourcePermission);
+			listTypeLocalService, portletResourcePermission);
 	}
 
 	@Override
 	public List<CommerceAddress> getCommerceAddresses() throws PortalException {
+		if (!hasViewCommerceAddressesPermission()) {
+			return Collections.emptyList();
+		}
+
 		CommerceContext commerceContext = getCommerceContext();
 		CommerceOrder commerceOrder = getCommerceOrder();
 
@@ -119,6 +127,13 @@ public class ShippingAddressCheckoutStepDisplayContext
 	@Override
 	public String getTitle() {
 		return "shipping-address";
+	}
+
+	@Override
+	protected ToLongFunction<CommerceOrder>
+		getCommerceOrderAddressIdToLongFunction() {
+
+		return CommerceOrder::getShippingAddressId;
 	}
 
 }

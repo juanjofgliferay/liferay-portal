@@ -14,6 +14,50 @@ import org.junit.Test;
 public class StringUtilTest {
 
 	@Test
+	public void testIsURL() {
+		Assert.assertFalse(StringUtil.isUrl("http://example.com:-80"));
+		Assert.assertFalse(StringUtil.isUrl("https://example.com:port"));
+		Assert.assertTrue(StringUtil.isUrl("http://localhost:3000"));
+		Assert.assertTrue(
+			StringUtil.isUrl("https://en.wikipedia.org/wiki/Baseball"));
+		Assert.assertTrue(StringUtil.isUrl("https://www.example.com"));
+		Assert.assertTrue(
+			StringUtil.isUrl("https://www.example.com/something-*-else"));
+	}
+
+	@Test
+	public void testNormalizeFilePath() {
+		Assert.assertNull(StringUtil.normalizeFilePath(null));
+		Assert.assertEquals("", StringUtil.normalizeFilePath(""));
+		Assert.assertEquals(
+			"/opt/build/upgradeJakarta/dependencies.txt",
+			StringUtil.normalizeFilePath(
+				"/opt/build/upgradeJakarta/dependencies.txt"));
+		Assert.assertEquals(
+			"C:/build/upgradeJakarta/dependencies.txt",
+			StringUtil.normalizeFilePath(
+				"C:\\build\\upgradeJakarta\\dependencies.txt"));
+	}
+
+	@Test
+	public void testSuffix() {
+		Assert.assertEquals("foo", StringUtil.suffixIfNotBlank("foo", ""));
+		Assert.assertEquals(
+			"foo",
+			StringUtil.suffixIfNotBlank("foo", StringUtil.FORWARD_SLASH, ""));
+		Assert.assertEquals(
+			"foo",
+			StringUtil.suffixIfNotBlank("foo", StringUtil.FORWARD_SLASH, null));
+		Assert.assertEquals("foo", StringUtil.suffixIfNotBlank("foo", null));
+		Assert.assertEquals(
+			"foo/bar",
+			StringUtil.suffixIfNotBlank(
+				"foo", StringUtil.FORWARD_SLASH, "bar"));
+		Assert.assertEquals(
+			"foo_bar", StringUtil.suffixIfNotBlank("foo", "bar"));
+	}
+
+	@Test
 	public void testiFromCamelCaseToHyphenated() throws Exception {
 		Assert.assertEquals(
 			"-tt-tes-ttt", StringUtil.getDockerSafeName("-TTTesTTT"));

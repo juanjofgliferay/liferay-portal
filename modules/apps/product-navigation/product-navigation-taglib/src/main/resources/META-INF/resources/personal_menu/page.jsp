@@ -28,24 +28,7 @@ if (size != null) {
 }
 %>
 
-<style type="text/css">
-	.dropdown-menu-personal-menu {
-		max-height: none;
-		z-index: 1021;
-	}
-
-	.dropdown-menu-personal-menu .dropdown-item-indicator {
-		padding-right: 0.5rem;
-	}
-
-	div.personal-menu-dropdown .btn {
-		border-radius: 5000px;
-	}
-
-	div.personal-menu-dropdown .dropdown-item {
-		color: #6B6C7E;
-	}
-</style>
+<aui:link hashedFile="<%= true %>" href="product-navigation-taglib/css/main.css" rel="stylesheet" type="text/css" />
 
 <div class="personal-menu-dropdown" id="<%= namespace %>personal_menu_dropdown">
 	<c:choose>
@@ -100,6 +83,8 @@ if (size != null) {
 	).put(
 		"label", label
 	).put(
+		"showColorSchemeButton", FeatureFlagManagerUtil.isEnabled("LPD-57922") && (themeDisplay.isShowControlPanelIcon() || GroupPermissionUtil.contains(themeDisplay.getPermissionChecker(), themeDisplay.getScopeGroup(), ActionKeys.VIEW_SITE_ADMINISTRATION))
+	).put(
 		"size", size
 	).put(
 		"userName", HtmlUtil.escape(user2.getFullName())
@@ -111,7 +96,7 @@ if (size != null) {
 	%>
 
 	<react:component
-		module="personal_menu/js/PersonalMenu.es"
+		module="{PersonalMenu} from product-navigation-taglib"
 		props="<%= props %>"
 	/>
 </div>

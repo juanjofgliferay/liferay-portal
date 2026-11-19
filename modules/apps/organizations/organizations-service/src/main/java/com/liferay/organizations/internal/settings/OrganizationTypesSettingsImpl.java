@@ -6,12 +6,12 @@
 package com.liferay.organizations.internal.settings;
 
 import com.liferay.organizations.internal.configuration.OrganizationTypeConfigurationWrapper;
-import com.liferay.osgi.service.tracker.collections.map.ServiceReferenceMapperFactory;
 import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMap;
 import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMapFactory;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.users.admin.kernel.organization.types.OrganizationTypesSettings;
 
 import org.osgi.framework.BundleContext;
@@ -41,8 +41,7 @@ public class OrganizationTypesSettingsImpl
 
 	@Override
 	public String[] getTypes() {
-		return ArrayUtil.toStringArray(
-			_organizationTypeConfigurationWrapperServiceTrackerMap.keySet());
+		return ArrayUtil.toStringArray(_serviceTrackerMap.keySet());
 	}
 
 	@Override
@@ -86,19 +85,16 @@ public class OrganizationTypesSettingsImpl
 
 	@Activate
 	protected void activate(BundleContext bundleContext) {
-		_organizationTypeConfigurationWrapperServiceTrackerMap =
-			ServiceTrackerMapFactory.openSingleValueMap(
-				bundleContext, OrganizationTypeConfigurationWrapper.class, null,
-				ServiceReferenceMapperFactory.create(
-					bundleContext,
-					(organizationTypeConfigurationWrapper, emitter) ->
-						emitter.emit(
-							organizationTypeConfigurationWrapper.getName())));
+		_serviceTrackerMap = ServiceTrackerMapFactory.openSingleValueMap(
+			bundleContext, OrganizationTypeConfigurationWrapper.class, null,
+			(serviceReference, emitter) -> emitter.emit(
+				GetterUtil.getString(
+					serviceReference.getProperty("name"), "organization")));
 	}
 
 	@Deactivate
 	protected void deactivate() {
-		_organizationTypeConfigurationWrapperServiceTrackerMap.close();
+		_serviceTrackerMap.close();
 	}
 
 	private OrganizationTypeConfigurationWrapper
@@ -106,8 +102,7 @@ public class OrganizationTypesSettingsImpl
 
 		OrganizationTypeConfigurationWrapper
 			organizationTypeConfigurationWrapper =
-				_organizationTypeConfigurationWrapperServiceTrackerMap.
-					getService(type);
+				_serviceTrackerMap.getService(type);
 
 		if (organizationTypeConfigurationWrapper == null) {
 			_log.error("Unable to get organization type: " + type);
@@ -120,6 +115,6 @@ public class OrganizationTypesSettingsImpl
 		OrganizationTypesSettingsImpl.class);
 
 	private ServiceTrackerMap<String, OrganizationTypeConfigurationWrapper>
-		_organizationTypeConfigurationWrapperServiceTrackerMap;
+		_serviceTrackerMap;
 
 }

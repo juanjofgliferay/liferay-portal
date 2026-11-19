@@ -10,10 +10,13 @@ import com.liferay.commerce.product.constants.CPConstants;
 import com.liferay.commerce.product.constants.CPField;
 import com.liferay.commerce.product.exception.CPOptionKeyException;
 import com.liferay.commerce.product.exception.CPOptionSKUContributorException;
+import com.liferay.commerce.product.exception.RequiredCPOptionException;
 import com.liferay.commerce.product.model.CPOption;
 import com.liferay.commerce.product.service.CPOptionValueLocalService;
 import com.liferay.commerce.product.service.base.CPOptionLocalServiceBaseImpl;
+import com.liferay.commerce.product.service.persistence.CPDefinitionOptionRelPersistence;
 import com.liferay.expando.kernel.service.ExpandoRowLocalService;
+import com.liferay.exportimport.kernel.empty.model.EmptyModelManager;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -36,19 +39,22 @@ import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.service.ResourceLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserLocalService;
-import com.liferay.portal.kernel.settings.SystemSettingsLocator;
 import com.liferay.portal.kernel.systemevent.SystemEvent;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.FriendlyURLNormalizer;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.LinkedHashMapBuilder;
+import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
 import java.io.Serializable;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -79,10 +85,6 @@ public class CPOptionLocalServiceImpl extends CPOptionLocalServiceBaseImpl {
 
 		User user = _userLocalService.getUser(userId);
 
-		if (Validator.isBlank(externalReferenceCode)) {
-			externalReferenceCode = null;
-		}
-
 		key = _friendlyURLNormalizer.normalizeWithPeriodsAndSlashes(key);
 
 		_validateCPOptionKey(0, user.getCompanyId(), key);
@@ -102,6 +104,14 @@ public class CPOptionLocalServiceImpl extends CPOptionLocalServiceBaseImpl {
 		cpOption.setRequired(required);
 		cpOption.setSkuContributor(skuContributor);
 		cpOption.setKey(key);
+
+		if (_emptyModelManager.isEmptyModel()) {
+			cpOption.setStatus(WorkflowConstants.STATUS_EMPTY);
+		}
+		else {
+			cpOption.setStatus(WorkflowConstants.STATUS_APPROVED);
+		}
+
 		cpOption.setExpandoBridgeAttributes(serviceContext);
 
 		cpOption = cpOptionPersistence.update(cpOption);
@@ -121,10 +131,7 @@ public class CPOptionLocalServiceImpl extends CPOptionLocalServiceBaseImpl {
 			boolean skuContributor, String key, ServiceContext serviceContext)
 		throws PortalException {
 
-		if (Validator.isBlank(externalReferenceCode)) {
-			externalReferenceCode = null;
-		}
-		else {
+		if (Validator.isNotNull(externalReferenceCode)) {
 			CPOption cpOption = cpOptionPersistence.fetchByERC_C(
 				externalReferenceCode, serviceContext.getCompanyId());
 
@@ -146,6 +153,15 @@ public class CPOptionLocalServiceImpl extends CPOptionLocalServiceBaseImpl {
 	@Override
 	@SystemEvent(type = SystemEventConstants.TYPE_DELETE)
 	public CPOption deleteCPOption(CPOption cpOption) throws PortalException {
+
+		// Commerce product option rels
+
+		int count = _cpDefinitionOptionRelPersistence.countByCPOptionId(
+			cpOption.getCPOptionId());
+
+		if (count > 0) {
+			throw new RequiredCPOptionException();
+		}
 
 		// Commerce product option
 
@@ -186,18 +202,6 @@ public class CPOptionLocalServiceImpl extends CPOptionLocalServiceBaseImpl {
 	}
 
 	@Override
-	public CPOption fetchByExternalReferenceCode(
-		String externalReferenceCode, long companyId) {
-
-		if (Validator.isBlank(externalReferenceCode)) {
-			return null;
-		}
-
-		return cpOptionPersistence.fetchByERC_C(
-			externalReferenceCode, companyId);
-	}
-
-	@Override
 	public CPOption fetchCPOption(long companyId, String key) {
 		return cpOptionPersistence.fetchByC_K(companyId, key);
 	}
@@ -221,6 +225,29 @@ public class CPOptionLocalServiceImpl extends CPOptionLocalServiceBaseImpl {
 	@Override
 	public int getCPOptionsCount(long companyId) {
 		return cpOptionPersistence.countByCompanyId(companyId);
+	}
+
+	@Override
+	public CPOption getOrAddEmptyCPOption(
+			String externalReferenceCode, long companyId, long userId,
+			Map<Locale, String> nameMap, String commerceOptionTypeKey,
+			boolean skuContributor, String key)
+		throws PortalException {
+
+		ServiceContext serviceContext = new ServiceContext();
+
+		serviceContext.setCompanyId(companyId);
+		serviceContext.setUserId(userId);
+
+		return _emptyModelManager.getOrAddEmptyModel(
+			CPOption.class, companyId,
+			() -> cpOptionLocalService.addCPOption(
+				externalReferenceCode, userId,
+				_getNameMap(externalReferenceCode, nameMap), null,
+				commerceOptionTypeKey, false, false, skuContributor,
+				GetterUtil.get(key, externalReferenceCode), serviceContext),
+			externalReferenceCode, this::fetchCPOptionByExternalReferenceCode,
+			this::getCPOptionByExternalReferenceCode, CPOption.class.getName());
 	}
 
 	@Override
@@ -259,6 +286,11 @@ public class CPOptionLocalServiceImpl extends CPOptionLocalServiceBaseImpl {
 		cpOption.setRequired(required);
 		cpOption.setSkuContributor(skuContributor);
 		cpOption.setKey(key);
+		cpOption.setStatus(
+			_emptyModelManager.solveEmptyModel(
+				cpOption.getExternalReferenceCode(),
+				cpOption.getModelClassName(), cpOption.getCompanyId(), 0,
+				cpOption.getStatus(), () -> WorkflowConstants.STATUS_APPROVED));
 		cpOption.setExpandoBridgeAttributes(serviceContext);
 
 		return cpOptionPersistence.update(cpOption);
@@ -270,7 +302,7 @@ public class CPOptionLocalServiceImpl extends CPOptionLocalServiceBaseImpl {
 			String externalReferenceCode, long cpOptionId)
 		throws PortalException {
 
-		CPOption cpOption = cpOptionLocalService.getCPOption(cpOptionId);
+		CPOption cpOption = cpOptionPersistence.findByPrimaryKey(cpOptionId);
 
 		cpOption.setExternalReferenceCode(externalReferenceCode);
 
@@ -323,9 +355,8 @@ public class CPOptionLocalServiceImpl extends CPOptionLocalServiceBaseImpl {
 	private CPOptionConfiguration _getCPOptionConfiguration()
 		throws ConfigurationException {
 
-		return _configurationProvider.getConfiguration(
-			CPOptionConfiguration.class,
-			new SystemSettingsLocator(CPConstants.SERVICE_NAME_CP_OPTION));
+		return _configurationProvider.getSystemConfiguration(
+			CPOptionConfiguration.class);
 	}
 
 	private List<CPOption> _getCPOptions(Hits hits) throws PortalException {
@@ -358,6 +389,17 @@ public class CPOptionLocalServiceImpl extends CPOptionLocalServiceBaseImpl {
 		return cpOptions;
 	}
 
+	private Map<Locale, String> _getNameMap(
+		String externalReferenceCode, Map<Locale, String> nameMap) {
+
+		if (MapUtil.isEmpty(nameMap)) {
+			return Collections.singletonMap(
+				LocaleUtil.getSiteDefault(), externalReferenceCode);
+		}
+
+		return nameMap;
+	}
+
 	private BaseModelSearchResult<CPOption> _searchCPOptions(
 			SearchContext searchContext)
 		throws PortalException {
@@ -377,6 +419,17 @@ public class CPOptionLocalServiceImpl extends CPOptionLocalServiceBaseImpl {
 
 		throw new SearchException(
 			"Unable to fix the search index after 10 attempts");
+	}
+
+	private void _validateCPOptionKey(
+			long cpOptionId, long companyId, String key)
+		throws PortalException {
+
+		CPOption cpOption = cpOptionPersistence.fetchByC_K(companyId, key);
+
+		if ((cpOption != null) && (cpOption.getCPOptionId() != cpOptionId)) {
+			throw new CPOptionKeyException();
+		}
 	}
 
 	private void _validateCommerceOptionTypeKey(
@@ -407,17 +460,6 @@ public class CPOptionLocalServiceImpl extends CPOptionLocalServiceBaseImpl {
 		throw new CPOptionSKUContributorException();
 	}
 
-	private void _validateCPOptionKey(
-			long cpOptionId, long companyId, String key)
-		throws PortalException {
-
-		CPOption cpOption = cpOptionPersistence.fetchByC_K(companyId, key);
-
-		if ((cpOption != null) && (cpOption.getCPOptionId() != cpOptionId)) {
-			throw new CPOptionKeyException();
-		}
-	}
-
 	private static final String[] _SELECTED_FIELD_NAMES = {
 		Field.ENTRY_CLASS_PK, Field.COMPANY_ID, Field.UID
 	};
@@ -426,7 +468,13 @@ public class CPOptionLocalServiceImpl extends CPOptionLocalServiceBaseImpl {
 	private ConfigurationProvider _configurationProvider;
 
 	@Reference
+	private CPDefinitionOptionRelPersistence _cpDefinitionOptionRelPersistence;
+
+	@Reference
 	private CPOptionValueLocalService _cpOptionValueLocalService;
+
+	@Reference
+	private EmptyModelManager _emptyModelManager;
 
 	@Reference
 	private ExpandoRowLocalService _expandoRowLocalService;

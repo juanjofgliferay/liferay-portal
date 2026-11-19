@@ -5,10 +5,11 @@
 
 package com.liferay.portal.tools.java.parser;
 
-import antlr.CommonHiddenStreamToken;
-
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+
+import org.antlr.v4.runtime.Token;
 
 /**
  * @author Hugo Huijser
@@ -28,9 +29,8 @@ public class ParsedJavaClass {
 		String followingNestedCodeBlockClassName) {
 
 		ParsedJavaTerm parsedJavaTerm = new ParsedJavaTerm(
-			content, startPosition, endPosition, className,
-			precedingNestedCodeBlockClassName,
-			followingNestedCodeBlockClassName);
+			className, content, endPosition, followingNestedCodeBlockClassName,
+			precedingNestedCodeBlockClassName, startPosition);
 
 		if (_firstParsedJavaTerm == null) {
 			_firstParsedJavaTerm = parsedJavaTerm;
@@ -90,21 +90,22 @@ public class ParsedJavaClass {
 		}
 	}
 
-	public void addPrecedingCommentToken(
-		CommonHiddenStreamToken precedingCommentToken, Position startPosition) {
+	public void addPrecedingCommentTokens(
+		List<Token> precedingCommentTokens, Position startPosition) {
 
 		ParsedJavaTerm parsedJavaTerm = _lastParsedJavaTerm;
 
 		while (true) {
 			if (parsedJavaTerm == null) {
 				_precedingCommentTokensMap.put(
-					startPosition, precedingCommentToken);
+					startPosition, precedingCommentTokens);
 
 				return;
 			}
 
 			if (startPosition.equals(parsedJavaTerm.getStartPosition())) {
-				parsedJavaTerm.setPrecedingCommentToken(precedingCommentToken);
+				parsedJavaTerm.setPrecedingCommentTokens(
+					precedingCommentTokens);
 
 				return;
 			}
@@ -134,7 +135,7 @@ public class ParsedJavaClass {
 	}
 
 	public void processCommentTokens() {
-		for (Map.Entry<Position, CommonHiddenStreamToken> entry :
+		for (Map.Entry<Position, List<Token>> entry :
 				_precedingCommentTokensMap.entrySet()) {
 
 			Position startPosition = entry.getKey();
@@ -161,7 +162,7 @@ public class ParsedJavaClass {
 
 	private ParsedJavaTerm _firstParsedJavaTerm;
 	private ParsedJavaTerm _lastParsedJavaTerm;
-	private final Map<Position, CommonHiddenStreamToken>
-		_precedingCommentTokensMap = new HashMap<>();
+	private final Map<Position, List<Token>> _precedingCommentTokensMap =
+		new HashMap<>();
 
 }

@@ -8,7 +8,6 @@ package com.liferay.commerce.product.internal.search;
 import com.liferay.commerce.product.model.CPOptionCategory;
 import com.liferay.commerce.product.service.CPOptionCategoryLocalService;
 import com.liferay.portal.kernel.dao.orm.IndexableActionableDynamicQuery;
-import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.search.BaseIndexer;
@@ -20,13 +19,12 @@ import com.liferay.portal.kernel.search.Indexer;
 import com.liferay.portal.kernel.search.SearchContext;
 import com.liferay.portal.kernel.search.Summary;
 import com.liferay.portal.kernel.search.filter.BooleanFilter;
-import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.Localization;
 
-import java.util.Locale;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
 
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
+import java.util.Locale;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -110,11 +108,13 @@ public class CPOptionCategoryIndexer extends BaseIndexer<CPOptionCategory> {
 				_localization.getLocalizedName(Field.TITLE, languageId), title);
 			document.addText(FIELD_KEY, cpOptionCategory.getKey());
 
-			if (languageId.equals(cpOptionCategoryDefaultLanguageId)) {
-				document.addText(Field.DESCRIPTION, description);
-				document.addText(Field.TITLE, title);
-				document.addText("defaultLanguageId", languageId);
+			if (!languageId.equals(cpOptionCategoryDefaultLanguageId)) {
+				continue;
 			}
+
+			document.addText(Field.DESCRIPTION, description);
+			document.addText(Field.TITLE, title);
+			document.addText("defaultLanguageId", languageId);
 		}
 
 		if (_log.isDebugEnabled()) {
@@ -153,34 +153,11 @@ public class CPOptionCategoryIndexer extends BaseIndexer<CPOptionCategory> {
 	}
 
 	@Override
-	protected void doReindex(String[] ids) throws Exception {
-		long companyId = GetterUtil.getLong(ids[0]);
+	protected IndexableActionableDynamicQuery
+		getIndexableActionableDynamicQuery() {
 
-		_reindexCPOptionCategorys(companyId);
-	}
-
-	private void _reindexCPOptionCategorys(long companyId) throws Exception {
-		IndexableActionableDynamicQuery indexableActionableDynamicQuery =
-			_cpOptionCategoryLocalService.getIndexableActionableDynamicQuery();
-
-		indexableActionableDynamicQuery.setCompanyId(companyId);
-		indexableActionableDynamicQuery.setPerformActionMethod(
-			(CPOptionCategory cpOptionCategory) -> {
-				try {
-					indexableActionableDynamicQuery.addDocuments(
-						getDocument(cpOptionCategory));
-				}
-				catch (PortalException portalException) {
-					if (_log.isWarnEnabled()) {
-						_log.warn(
-							"Unable to index commerce product option " +
-								"category " + cpOptionCategory,
-							portalException);
-					}
-				}
-			});
-
-		indexableActionableDynamicQuery.performActions();
+		return _cpOptionCategoryLocalService.
+			getIndexableActionableDynamicQuery();
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(

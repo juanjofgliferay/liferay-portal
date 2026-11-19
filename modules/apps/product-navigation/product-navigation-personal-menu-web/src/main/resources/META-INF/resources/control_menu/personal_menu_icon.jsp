@@ -7,29 +7,6 @@
 
 <%@ include file="/init.jsp" %>
 
-<style type="text/css">
-	#impersonate-user-icon {
-		color: #272833;
-	}
-
-	#impersonate-user-icon .lexicon-icon {
-		margin-top: -.125rem;
-	}
-
-	#impersonate-user-sticker {
-		bottom: -.4rem;
-		color: #000;
-		font-size: .6rem;
-		height: 1.2rem;
-		right: -0.4rem;
-		width: 1.2rem;
-	}
-
-	#personal-menu-icon-wrapper .lexicon-icon {
-		margin-top: -.25rem;
-	}
-</style>
-
 <li class="control-menu-nav-item">
 	<span class="user-avatar-link">
 		<liferay-product-navigation:personal-menu
@@ -46,13 +23,12 @@
 			String notificationsURL = PersonalApplicationURLUtil.getPersonalApplicationURL(request, PortletProviderUtil.getPortletId(UserNotificationEvent.class.getName(), PortletProvider.Action.VIEW));
 			%>
 
-			<aui:a href="<%= (notificationsURL != null) ? notificationsURL : null %>">
+			<a aria-label="<%= notificationsCount + StringPool.SPACE + LanguageUtil.get(request, "new-notification") %>" class="panel-notifications-count" href="<%= (notificationsURL != null) ? notificationsURL : null %>" title="<%= notificationsCount + StringPool.SPACE + LanguageUtil.get(request, "new-notification") %>">
 				<clay:badge
-					cssClass="panel-notifications-count"
 					displayType="danger"
 					label="<%= String.valueOf(notificationsCount) %>"
 				/>
-			</aui:a>
+			</a>
 		</c:if>
 	</span>
 </li>

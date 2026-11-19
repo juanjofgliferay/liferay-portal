@@ -5,8 +5,7 @@
 
 package com.liferay.layout.content.page.editor.web.internal.portlet.action;
 
-import com.liferay.fragment.model.FragmentEntryLink;
-import com.liferay.fragment.service.FragmentEntryLinkLocalService;
+import com.liferay.fragment.service.FragmentEntryLinkService;
 import com.liferay.layout.content.page.editor.constants.ContentPageEditorPortletKeys;
 import com.liferay.layout.content.page.editor.web.internal.util.layout.structure.LayoutStructureUtil;
 import com.liferay.portal.kernel.json.JSONArray;
@@ -17,8 +16,8 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -28,7 +27,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + ContentPageEditorPortletKeys.CONTENT_PAGE_EDITOR_PORTLET,
+		"jakarta.portlet.name=" + ContentPageEditorPortletKeys.CONTENT_PAGE_EDITOR_PORTLET,
 		"mvc.command.name=/layout_content_page_editor/restore_collection_display_config"
 	},
 	service = MVCActionCommand.class
@@ -61,14 +60,11 @@ public class RestoreCollectionDisplayConfigMVCActionCommand
 			JSONObject fragmentEntryLinkJSONObject =
 				(JSONObject)filterFragmentEntryLink;
 
-			FragmentEntryLink fragmentEntryLink =
-				_fragmentEntryLinkLocalService.getFragmentEntryLink(
-					fragmentEntryLinkJSONObject.getLong("fragmentEntryLinkId"));
-
 			JSONObject editableValuesJSONObject =
 				fragmentEntryLinkJSONObject.getJSONObject("editableValues");
 
-			fragmentEntryLink.setEditableValues(
+			_fragmentEntryLinkService.updateFragmentEntryLink(
+				fragmentEntryLinkJSONObject.getLong("fragmentEntryLinkId"),
 				editableValuesJSONObject.toString());
 		}
 
@@ -82,7 +78,7 @@ public class RestoreCollectionDisplayConfigMVCActionCommand
 	}
 
 	@Reference
-	private FragmentEntryLinkLocalService _fragmentEntryLinkLocalService;
+	private FragmentEntryLinkService _fragmentEntryLinkService;
 
 	@Reference
 	private JSONFactory _jsonFactory;

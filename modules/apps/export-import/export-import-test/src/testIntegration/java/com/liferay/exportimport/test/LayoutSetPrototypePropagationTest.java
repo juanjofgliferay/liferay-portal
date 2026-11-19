@@ -6,82 +6,169 @@
 package com.liferay.exportimport.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.asset.kernel.model.AssetCategory;
+import com.liferay.asset.kernel.model.AssetVocabulary;
+import com.liferay.asset.kernel.service.AssetCategoryLocalServiceUtil;
+import com.liferay.asset.kernel.service.AssetVocabularyLocalServiceUtil;
+import com.liferay.asset.test.util.AssetTestUtil;
+import com.liferay.change.tracking.configuration.CTSettingsConfiguration;
+import com.liferay.change.tracking.model.CTCollection;
+import com.liferay.change.tracking.service.CTCollectionLocalService;
+import com.liferay.change.tracking.service.CTProcessLocalService;
 import com.liferay.dynamic.data.mapping.test.util.DDMStructureTestUtil;
+import com.liferay.exportimport.kernel.background.task.BackgroundTaskExecutorNames;
+import com.liferay.exportimport.kernel.background.task.constants.LayoutSetPrototypeBackgroundTaskConstants;
+import com.liferay.exportimport.kernel.lar.ExportImportHelperUtil;
+import com.liferay.exportimport.kernel.lar.ExportImportThreadLocal;
+import com.liferay.exportimport.kernel.lar.PortletDataHandlerKeys;
 import com.liferay.exportimport.kernel.staging.MergeLayoutPrototypesThreadLocal;
+import com.liferay.exportimport.test.util.ExportImportTestUtil;
+import com.liferay.fragment.constants.FragmentConstants;
+import com.liferay.fragment.entry.processor.constants.FragmentEntryProcessorConstants;
+import com.liferay.fragment.model.FragmentCollection;
+import com.liferay.fragment.model.FragmentEntry;
+import com.liferay.fragment.model.FragmentEntryLink;
+import com.liferay.fragment.service.FragmentCollectionLocalService;
+import com.liferay.fragment.service.FragmentEntryLinkLocalServiceUtil;
+import com.liferay.fragment.service.FragmentEntryLocalService;
 import com.liferay.journal.constants.JournalContentPortletKeys;
+import com.liferay.journal.constants.JournalPortletKeys;
 import com.liferay.journal.model.JournalArticle;
 import com.liferay.journal.service.JournalArticleLocalServiceUtil;
 import com.liferay.journal.test.util.JournalTestUtil;
 import com.liferay.journal.util.JournalContent;
-import com.liferay.layout.set.prototype.helper.LayoutSetPrototypeHelper;
+import com.liferay.layout.constants.LayoutTypeSettingsConstants;
+import com.liferay.layout.page.template.constants.LayoutPageTemplateEntryTypeConstants;
+import com.liferay.layout.page.template.model.LayoutPageTemplateEntry;
+import com.liferay.layout.page.template.service.LayoutPageTemplateEntryLocalServiceUtil;
+import com.liferay.layout.page.template.test.util.LayoutPageTemplateTestUtil;
+import com.liferay.layout.set.prototype.constants.LayoutSetPrototypePortletKeys;
+import com.liferay.layout.test.util.ContentLayoutTestUtil;
 import com.liferay.layout.test.util.LayoutTestUtil;
+import com.liferay.petra.lang.SafeCloseable;
+import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.dao.orm.QueryUtil;
+import com.liferay.portal.background.task.service.BackgroundTaskLocalService;
+import com.liferay.portal.background.task.service.persistence.BackgroundTaskPersistence;
+import com.liferay.portal.configuration.test.util.CompanyConfigurationTemporarySwapper;
+import com.liferay.portal.image.ImageToolUtil;
+import com.liferay.portal.kernel.backgroundtask.BackgroundTask;
+import com.liferay.portal.kernel.backgroundtask.BackgroundTaskExecutor;
+import com.liferay.portal.kernel.backgroundtask.BackgroundTaskResult;
+import com.liferay.portal.kernel.backgroundtask.BaseBackgroundTaskExecutor;
+import com.liferay.portal.kernel.backgroundtask.constants.BackgroundTaskConstants;
+import com.liferay.portal.kernel.backgroundtask.display.BackgroundTaskDisplay;
+import com.liferay.portal.kernel.change.tracking.CTCollectionThreadLocal;
+import com.liferay.portal.kernel.dao.orm.Session;
+import com.liferay.portal.kernel.dao.orm.SessionFactory;
 import com.liferay.portal.kernel.exception.LayoutParentLayoutIdException;
+import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.json.JSONObject;
+import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.messaging.BaseMessageListener;
+import com.liferay.portal.kernel.messaging.DestinationNames;
+import com.liferay.portal.kernel.messaging.Message;
+import com.liferay.portal.kernel.messaging.MessageListener;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.LayoutConstants;
 import com.liferay.portal.kernel.model.LayoutSet;
 import com.liferay.portal.kernel.model.LayoutSetPrototype;
 import com.liferay.portal.kernel.model.Portlet;
+import com.liferay.portal.kernel.model.PortletPreferencesIds;
 import com.liferay.portal.kernel.model.ResourceConstants;
 import com.liferay.portal.kernel.model.Role;
 import com.liferay.portal.kernel.model.Theme;
 import com.liferay.portal.kernel.model.ThemeSetting;
 import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.model.UserNotificationEvent;
 import com.liferay.portal.kernel.model.role.RoleConstants;
+import com.liferay.portal.kernel.portlet.PortletIdCodec;
+import com.liferay.portal.kernel.portlet.PortletPreferencesFactory;
 import com.liferay.portal.kernel.portlet.PortletPreferencesFactoryUtil;
-import com.liferay.portal.kernel.security.auth.PrincipalException;
+import com.liferay.portal.kernel.portlet.bridges.mvc.MVCPortlet;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
-import com.liferay.portal.kernel.security.permission.PermissionCheckerFactoryUtil;
-import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
+import com.liferay.portal.kernel.security.permission.ResourceActions;
 import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
+import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.service.LayoutLocalServiceUtil;
-import com.liferay.portal.kernel.service.LayoutServiceUtil;
 import com.liferay.portal.kernel.service.LayoutSetLocalServiceUtil;
 import com.liferay.portal.kernel.service.LayoutSetPrototypeLocalServiceUtil;
 import com.liferay.portal.kernel.service.PortletLocalServiceUtil;
+import com.liferay.portal.kernel.service.PortletPreferenceValueLocalService;
+import com.liferay.portal.kernel.service.PortletPreferencesLocalService;
 import com.liferay.portal.kernel.service.ResourcePermissionLocalServiceUtil;
 import com.liferay.portal.kernel.service.ResourcePermissionServiceUtil;
 import com.liferay.portal.kernel.service.RoleLocalServiceUtil;
+import com.liferay.portal.kernel.service.UserNotificationEventLocalService;
+import com.liferay.portal.kernel.test.AssertUtils;
+import com.liferay.portal.kernel.test.TestInfo;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
+import com.liferay.portal.kernel.test.rule.Sync;
+import com.liferay.portal.kernel.test.util.GroupTestUtil;
+import com.liferay.portal.kernel.test.util.PropsValuesTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
-import com.liferay.portal.kernel.test.util.RoleTestUtil;
 import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.Constants;
-import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.FileUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
+import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
+import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.MapUtil;
+import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.SystemProperties;
 import com.liferay.portal.kernel.util.Time;
 import com.liferay.portal.kernel.util.UnicodeProperties;
+import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.model.impl.ThemeSettingImpl;
-import com.liferay.portal.servlet.filters.cache.CacheUtil;
+import com.liferay.portal.test.log.LogCapture;
+import com.liferay.portal.test.log.LoggerTestUtil;
+import com.liferay.portal.test.rule.FeatureFlag;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
+import com.liferay.segments.service.SegmentsExperienceLocalService;
 import com.liferay.sites.kernel.util.Sites;
 
+import jakarta.portlet.PortletPreferences;
+
+import java.awt.image.BufferedImage;
+
+import java.util.Collections;
 import java.util.Date;
+import java.util.Dictionary;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import javax.portlet.PortletPreferences;
+import java.util.Objects;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.FrameworkUtil;
+import org.osgi.framework.ServiceRegistration;
 
 /**
  * @author Julio Camarero
  * @author Eduardo García
  */
+@FeatureFlag("LPD-82107")
 @RunWith(Arquillian.class)
+@Sync
 public class LayoutSetPrototypePropagationTest
 	extends BasePrototypePropagationTestCase {
 
@@ -89,6 +176,14 @@ public class LayoutSetPrototypePropagationTest
 	@Rule
 	public static final AggregateTestRule aggregateTestRule =
 		new LiferayIntegrationTestRule();
+
+	@BeforeClass
+	public static void setUpClass() {
+		Bundle bundle = FrameworkUtil.getBundle(
+			LayoutSetPrototypePropagationTest.class);
+
+		_bundleContext = bundle.getBundleContext();
+	}
 
 	@Test
 	public void testAddChildLayoutWithLinkDisabled() throws Exception {
@@ -129,167 +224,65 @@ public class LayoutSetPrototypePropagationTest
 	}
 
 	@Test
-	public void testLayoutDeleteAndReadWithSameFriendlyURL() throws Exception {
-		setLinkEnabled(true);
-
-		Layout layout = LayoutTestUtil.addTypePortletLayout(
-			_layoutSetPrototypeGroup.getGroupId(), "test", true);
-
-		String friendlyURL = layout.getFriendlyURL();
-
-		Assert.assertEquals(
-			_initialPrototypeLayoutsCount, getGroupLayoutCount());
-
-		propagateChanges(group);
-
-		Assert.assertEquals(
-			_initialPrototypeLayoutsCount + 1, getGroupLayoutCount());
-
-		LayoutLocalServiceUtil.deleteLayout(
-			layout, ServiceContextTestUtil.getServiceContext());
-
-		Layout newLayout = LayoutTestUtil.addTypePortletLayout(
-			_layoutSetPrototypeGroup.getGroupId(), "test", true);
-
-		Assert.assertEquals(friendlyURL, newLayout.getFriendlyURL());
-
-		Assert.assertEquals(
-			_initialPrototypeLayoutsCount + 1, getGroupLayoutCount());
-
-		propagateChanges(group);
-
-		Assert.assertEquals(
-			_initialPrototypeLayoutsCount + 1, getGroupLayoutCount());
-
-		Layout propagatedLayout =
-			LayoutLocalServiceUtil.fetchLayoutByUuidAndGroupId(
-				newLayout.getUuid(), group.getGroupId(), false);
-
-		Assert.assertNotNull(
-			"Deleted and readded layout could not be found on propagated site",
-			propagatedLayout);
-
-		Assert.assertEquals(
-			"Friendly URLs of the source and target layouts should match",
-			friendlyURL, propagatedLayout.getFriendlyURL());
+	public void testLayoutPermissionPropagation() throws Exception {
+		_testLayoutPermissionPropagation(false);
+		_testLayoutPermissionPropagation(true);
 	}
 
 	@Test
-	public void testLayoutPermissionPropagationWithLinkEnabled()
-		throws Exception {
-
+	@TestInfo("LPD-50062")
+	public void testLayoutPropagationWithFragmentEntries() throws Exception {
 		setLinkEnabled(true);
 
-		Role role = RoleLocalServiceUtil.getRole(
-			TestPropsValues.getCompanyId(), RoleConstants.POWER_USER);
+		Layout layout1 = _addLayout(_layoutSetPrototypeGroup.getGroupId());
 
-		ResourcePermissionServiceUtil.setIndividualResourcePermissions(
-			prototypeLayout.getGroupId(), prototypeLayout.getCompanyId(),
-			Layout.class.getName(),
-			String.valueOf(prototypeLayout.getPrimaryKey()), role.getRoleId(),
-			new String[] {ActionKeys.CUSTOMIZE});
+		Layout draftLayout1 = layout1.fetchDraftLayout();
 
-		prototypeLayout = updateModifiedDate(
-			prototypeLayout,
-			new Date(System.currentTimeMillis() + Time.MINUTE));
+		FragmentCollection fragmentCollection =
+			_fragmentCollectionLocalService.addFragmentCollection(
+				null, TestPropsValues.getUserId(),
+				_layoutSetPrototypeGroup.getGroupId(),
+				StringUtil.randomString(), StringPool.BLANK,
+				ServiceContextTestUtil.getServiceContext(
+					_layoutSetPrototypeGroup.getGroupId()));
 
-		CacheUtil.clearCache(prototypeLayout.getCompanyId());
+		FragmentEntry fragmentEntry =
+			_fragmentEntryLocalService.addFragmentEntry(
+				null, TestPropsValues.getUserId(),
+				_layoutSetPrototypeGroup.getGroupId(),
+				fragmentCollection.getFragmentCollectionId(),
+				RandomTestUtil.randomString(), RandomTestUtil.randomString(),
+				StringPool.BLANK, "<h1>Heading Example</h1>", StringPool.BLANK,
+				false, StringPool.BLANK, null, 0, false, false,
+				FragmentConstants.TYPE_COMPONENT, null,
+				WorkflowConstants.STATUS_APPROVED,
+				ServiceContextTestUtil.getServiceContext(
+					_layoutSetPrototypeGroup.getGroupId()));
+
+		ContentLayoutTestUtil.addFragmentEntryLinkToLayout(
+			StringPool.BLANK, fragmentEntry.getCss(),
+			fragmentEntry.getConfiguration(),
+			fragmentEntry.getExternalReferenceCode(), null,
+			fragmentEntry.getHtml(), fragmentEntry.getJs(), draftLayout1,
+			fragmentEntry.getFragmentEntryKey(), fragmentEntry.getType(), null,
+			0,
+			_segmentsExperienceLocalService.fetchDefaultSegmentsExperienceId(
+				draftLayout1.getPlid()));
+
+		ContentLayoutTestUtil.publishLayout(draftLayout1, layout1);
 
 		propagateChanges(group);
 
-		Assert.assertTrue(
-			ResourcePermissionLocalServiceUtil.hasResourcePermission(
-				layout.getCompanyId(), Layout.class.getName(),
-				ResourceConstants.SCOPE_INDIVIDUAL,
-				String.valueOf(layout.getPrimaryKey()), role.getRoleId(),
-				ActionKeys.CUSTOMIZE));
-	}
-
-	@Test
-	public void testLayoutPropagationWhenLoadingLayoutsTreeWithLinkEnabled()
-		throws Exception {
-
-		setLinkEnabled(true);
-
-		LayoutTestUtil.addTypePortletLayout(_layoutSetPrototypeGroup, true);
-
-		Assert.assertEquals(
-			_initialPrototypeLayoutsCount, getGroupLayoutCount());
-
-		MergeLayoutPrototypesThreadLocal.setSkipMerge(false);
-
-		LayoutServiceUtil.getLayouts(
-			group.getGroupId(), false, LayoutConstants.DEFAULT_PARENT_LAYOUT_ID,
-			false, QueryUtil.ALL_POS, QueryUtil.ALL_POS);
-
-		Thread.sleep(2000);
-
-		Assert.assertEquals(
-			_initialPrototypeLayoutsCount + 1, getGroupLayoutCount());
-	}
-
-	@Test
-	public void testLayoutPropagationWithFriendlyURLConflict()
-		throws Exception {
-
-		LayoutSet layoutSet = group.getPublicLayoutSet();
-
-		List<Layout> initialMergeFailFriendlyURLLayouts =
-			layoutSet.getMergeFailFriendlyURLLayouts();
-
-		setLinkEnabled(true);
-
-		LayoutTestUtil.addTypePortletLayout(group.getGroupId(), "test", false);
-		LayoutTestUtil.addTypePortletLayout(
-			_layoutSetPrototypeGroup.getGroupId(), "test", true);
+		_fragmentEntryLocalService.updateFragmentEntry(
+			TestPropsValues.getUserId(), fragmentEntry.getFragmentEntryId(),
+			fragmentEntry.getFragmentCollectionId(), fragmentEntry.getName(),
+			fragmentEntry.getCss(), "<h1>Updated Heading Example</h1>",
+			fragmentEntry.getJs(), fragmentEntry.isCacheable(),
+			fragmentEntry.getConfiguration(), fragmentEntry.getIcon(),
+			fragmentEntry.getPreviewFileEntryId(), fragmentEntry.isReadOnly(),
+			fragmentEntry.getTypeOptions(), fragmentEntry.getStatus());
 
 		propagateChanges(group);
-
-		layoutSet = LayoutSetLocalServiceUtil.getLayoutSet(
-			layoutSet.getLayoutSetId());
-
-		List<Layout> mergeFailFriendlyURLLayouts =
-			layoutSet.getMergeFailFriendlyURLLayouts();
-
-		Assert.assertEquals(
-			mergeFailFriendlyURLLayouts.toString(),
-			initialMergeFailFriendlyURLLayouts.size() + 1,
-			mergeFailFriendlyURLLayouts.size());
-	}
-
-	@Test
-	public void testLayoutPropagationWithFriendlyURLConflictResolvedByDelete()
-		throws Exception {
-
-		LayoutSet layoutSet = group.getPublicLayoutSet();
-
-		List<Layout> initialMergeFailFriendlyURLLayouts =
-			layoutSet.getMergeFailFriendlyURLLayouts();
-
-		setLinkEnabled(true);
-
-		Layout layout = LayoutTestUtil.addTypePortletLayout(
-			group.getGroupId(), "test", false);
-
-		LayoutTestUtil.addTypePortletLayout(
-			_layoutSetPrototypeGroup.getGroupId(), "test", true);
-
-		propagateChanges(group);
-
-		LayoutLocalServiceUtil.deleteLayout(layout);
-
-		propagateChanges(group);
-
-		layoutSet = LayoutSetLocalServiceUtil.getLayoutSet(
-			layoutSet.getLayoutSetId());
-
-		List<Layout> mergeFailFriendlyURLLayouts =
-			layoutSet.getMergeFailFriendlyURLLayouts();
-
-		Assert.assertEquals(
-			mergeFailFriendlyURLLayouts.toString(),
-			initialMergeFailFriendlyURLLayouts.size(),
-			mergeFailFriendlyURLLayouts.size());
 	}
 
 	@Test
@@ -312,40 +305,938 @@ public class LayoutSetPrototypePropagationTest
 	}
 
 	@Test
+	@TestInfo("LPD-80908")
 	public void testLayoutPropagationWithLinkEnabled() throws Exception {
 		doTestLayoutPropagation(true);
 	}
 
 	@Test
+	@TestInfo("LPS-161955")
 	public void testLayoutPropagationWithMasterLayout() throws Exception {
-		Layout siteTemplateMasterLayout = LayoutTestUtil.addTypeContentLayout(
-			_layoutSetPrototypeGroup, true, false);
+		LayoutPageTemplateEntry masterLayoutPageTemplateEntry =
+			LayoutPageTemplateTestUtil.addLayoutPageTemplateEntry(
+				_layoutSetPrototypeGroup.getGroupId(),
+				LayoutPageTemplateEntryTypeConstants.MASTER_LAYOUT,
+				WorkflowConstants.STATUS_APPROVED);
 
 		LayoutTestUtil.addTypeContentLayout(
 			_layoutSetPrototypeGroup, true, false,
-			siteTemplateMasterLayout.getPlid());
-
-		propagateChanges(group);
+			masterLayoutPageTemplateEntry.getExternalReferenceCode());
 
 		LayoutTestUtil.addTypeContentLayout(
 			_layoutSetPrototypeGroup, true, false,
-			siteTemplateMasterLayout.getPlid());
-
-		propagateChanges(group);
+			masterLayoutPageTemplateEntry.getExternalReferenceCode());
 
 		Assert.assertEquals(
 			0,
 			LayoutLocalServiceUtil.getMasterLayoutsCount(
-				group.getGroupId(), siteTemplateMasterLayout.getPlid()));
+				group.getGroupId(),
+				masterLayoutPageTemplateEntry.getExternalReferenceCode()));
 
-		Layout siteMasterLayout = LayoutLocalServiceUtil.getFriendlyURLLayout(
-			group.getGroupId(), false,
-			siteTemplateMasterLayout.getFriendlyURL());
+		Assert.assertNull(
+			LayoutPageTemplateEntryLocalServiceUtil.
+				fetchLayoutPageTemplateEntryByExternalReferenceCode(
+					masterLayoutPageTemplateEntry.getExternalReferenceCode(),
+					group.getGroupId()));
+
+		propagateChanges(group);
 
 		Assert.assertEquals(
 			4,
 			LayoutLocalServiceUtil.getMasterLayoutsCount(
-				group.getGroupId(), siteMasterLayout.getPlid()));
+				group.getGroupId(),
+				masterLayoutPageTemplateEntry.getExternalReferenceCode()));
+
+		Assert.assertNotNull(
+			LayoutPageTemplateEntryLocalServiceUtil.
+				fetchLayoutPageTemplateEntryByExternalReferenceCode(
+					masterLayoutPageTemplateEntry.getExternalReferenceCode(),
+					group.getGroupId()));
+
+		Layout masterLayout = LayoutLocalServiceUtil.getLayout(
+			masterLayoutPageTemplateEntry.getPlid());
+
+		Assert.assertNotNull(
+			LayoutLocalServiceUtil.fetchLayoutByExternalReferenceCode(
+				masterLayout.getExternalReferenceCode(), group.getGroupId()));
+	}
+
+	@Test
+	public void testLayoutPropagationWithPortletPreferencesAfterRepublishingLayout()
+		throws Exception {
+
+		String portletName = "com_liferay_test_portlet_TestPortlet";
+
+		_registerTestPortlet(portletName);
+
+		Layout layoutSetPrototypePublishedLayout = _addLayout(
+			_layoutSetPrototypeGroup.getGroupId());
+
+		Layout layoutSetPrototypeDraftLayout =
+			layoutSetPrototypePublishedLayout.fetchDraftLayout();
+
+		String portletId = _addPortletToLayout(
+			layoutSetPrototypeDraftLayout, portletName);
+
+		PortletPreferencesIds portletPreferencesIds =
+			_portletPreferencesFactory.getPortletPreferencesIds(
+				layoutSetPrototypeDraftLayout.getCompanyId(),
+				layoutSetPrototypeDraftLayout.getGroupId(), 0,
+				layoutSetPrototypeDraftLayout.getPlid(), portletId);
+
+		PortletPreferences portletPreferences =
+			_portletPreferencesLocalService.fetchPreferences(
+				portletPreferencesIds);
+
+		String key = RandomTestUtil.randomString();
+		String value = RandomTestUtil.randomString();
+
+		portletPreferences.setValue(key, value);
+
+		_portletPreferencesLocalService.updatePreferences(
+			portletPreferencesIds.getOwnerId(),
+			portletPreferencesIds.getOwnerType(),
+			portletPreferencesIds.getPlid(),
+			portletPreferencesIds.getPortletId(), portletPreferences);
+
+		ContentLayoutTestUtil.publishLayout(
+			layoutSetPrototypeDraftLayout, layoutSetPrototypePublishedLayout);
+
+		propagateChanges(group);
+
+		Layout groupPublishedLayout =
+			_layoutLocalService.fetchLayoutByFriendlyURL(
+				group.getGroupId(), false,
+				layoutSetPrototypePublishedLayout.getFriendlyURL());
+
+		_verifyPortletPreferenceValue(
+			groupPublishedLayout, portletId, key, value);
+
+		Layout groupDrafLayout = groupPublishedLayout.fetchDraftLayout();
+
+		_verifyPortletPreferenceValue(groupDrafLayout, portletId, key, value);
+
+		ContentLayoutTestUtil.publishLayout(
+			layoutSetPrototypeDraftLayout, layoutSetPrototypePublishedLayout);
+
+		propagateChanges(group);
+
+		_verifyPortletPreferenceValue(
+			groupPublishedLayout, portletId, key, value);
+
+		_verifyPortletPreferenceValue(groupDrafLayout, portletId, key, value);
+	}
+
+	@Test
+	@TestInfo("LPD-81019")
+	public void testLayoutSetPrototypeLayoutERCPropagation() throws Exception {
+		long prototypeGroupId = _layoutSetPrototypeGroup.getGroupId();
+
+		Layout contentLayout = _addLayout(prototypeGroupId);
+		Layout embeddedLayout = LayoutTestUtil.addTypeEmbeddedLayout(
+			prototypeGroupId, true);
+		Layout linkToPageLayout = LayoutTestUtil.addTypeLinkToLayoutLayout(
+			prototypeGroupId, true, prototypeLayout.getLayoutId());
+		Layout linkToURLLayout = LayoutTestUtil.addTypeLinkToURLLayout(
+			prototypeGroupId, true, "http://www.liferay.com");
+		Layout nodeLayout = LayoutTestUtil.addTypeNodeLayout(
+			prototypeGroupId, true);
+		Layout widgetLayout = LayoutTestUtil.addTypePortletLayout(
+			prototypeGroupId, true);
+
+		propagateChanges(group);
+
+		_assertLayoutSetPrototypeLayoutERC(contentLayout, group.getGroupId());
+		_assertLayoutSetPrototypeLayoutERC(embeddedLayout, group.getGroupId());
+		_assertLayoutSetPrototypeLayoutERC(
+			linkToPageLayout, group.getGroupId());
+		_assertLayoutSetPrototypeLayoutERC(linkToURLLayout, group.getGroupId());
+		_assertLayoutSetPrototypeLayoutERC(nodeLayout, group.getGroupId());
+		_assertLayoutSetPrototypeLayoutERC(widgetLayout, group.getGroupId());
+	}
+
+	@Test
+	public void testLayoutSetPrototypePropagation() throws Exception {
+		long userId = TestPropsValues.getUserId();
+
+		int initialCount = _layoutLocalService.getLayoutsCount(
+			group.getGroupId(), false);
+
+		LayoutTestUtil.addTypePortletLayout(_layoutSetPrototypeGroup, true);
+
+		long timestamp = System.currentTimeMillis();
+
+		propagateChanges(false, group);
+
+		_assertNotification("successful", timestamp, userId);
+
+		Assert.assertEquals(
+			initialCount + 1,
+			_layoutLocalService.getLayoutsCount(group.getGroupId(), false));
+	}
+
+	@Test
+	public void testLayoutSetPrototypePropagationCheckNotification()
+		throws Exception {
+
+		_testLayoutSetPrototypePropagationCheckNotification(
+			"completed-with-errors",
+			_getRandomStatus(
+				BackgroundTaskConstants.STATUS_COMPLETED_WITH_ERRORS,
+				BackgroundTaskConstants.STATUS_SUCCESSFUL),
+			BackgroundTaskConstants.STATUS_COMPLETED_WITH_ERRORS);
+
+		_testLayoutSetPrototypePropagationCheckNotification(
+			"failed",
+			_getRandomStatus(
+				BackgroundTaskConstants.STATUS_COMPLETED_WITH_ERRORS,
+				BackgroundTaskConstants.STATUS_SUCCESSFUL),
+			BackgroundTaskConstants.STATUS_FAILED);
+
+		_testLayoutSetPrototypePropagationCheckNotification(
+			"successful", BackgroundTaskConstants.STATUS_SUCCESSFUL,
+			BackgroundTaskConstants.STATUS_SUCCESSFUL);
+	}
+
+	@Test
+	@TestInfo("LPD-107737")
+	public void testLayoutSetPrototypePropagationCheckNotificationWithBackgroundTaskReloadedFromDatabase()
+		throws Exception {
+
+		long userId = TestPropsValues.getUserId();
+
+		try (SafeCloseable safeCloseable = _registerServiceWithSafeCloseable(
+				BackgroundTaskExecutor.class,
+				HashMapDictionaryBuilder.<String, Object>put(
+					"background.task.executor.class.name",
+					BackgroundTaskExecutorNames.
+						LAYOUT_SET_PROTOTYPE_MERGE_BACKGROUND_TASK_EXECUTOR
+				).put(
+					"service.ranking", 1000
+				).build(),
+				new TestBackgroundTaskExecutor(Collections.emptyMap()) {
+
+					@Override
+					public BackgroundTaskResult execute(
+						BackgroundTask backgroundTask) {
+
+						Session session =
+							_backgroundTaskSessionFactory.getCurrentSession();
+
+						session.flush();
+
+						session.clear();
+
+						_backgroundTaskPersistence.clearCache();
+
+						return super.execute(backgroundTask);
+					}
+
+				})) {
+
+			long timestamp = System.currentTimeMillis();
+
+			_sites.mergeLayoutSetPrototypeLayouts(_layoutSetPrototype, userId);
+
+			_assertNotification("successful", timestamp, userId);
+		}
+	}
+
+	@Test
+	public void testLayoutSetPrototypePropagationDeletesCacheFile()
+		throws Exception {
+
+		_testLayoutSetPrototypePropagation(true);
+	}
+
+	@Test
+	public void testLayoutSetPrototypePropagationDoesNotPropagateDeletions()
+		throws Exception {
+
+		long userId = TestPropsValues.getUserId();
+
+		int initialCount = _layoutLocalService.getLayoutsCount(
+			group.getGroupId(), false);
+
+		Layout layout1 = LayoutTestUtil.addTypePortletLayout(
+			_layoutSetPrototypeGroup, true);
+		Layout layout2 = LayoutTestUtil.addTypePortletLayout(
+			_layoutSetPrototypeGroup, true);
+
+		propagateChanges(group);
+
+		Assert.assertEquals(
+			initialCount + 2,
+			_layoutLocalService.getLayoutsCount(group.getGroupId(), false));
+
+		_layoutLocalService.deleteLayout(layout1);
+
+		long timestamp = System.currentTimeMillis();
+
+		propagateChanges(false, group);
+
+		_assertNotification("successful", timestamp, userId);
+
+		Assert.assertEquals(
+			initialCount + 2,
+			_layoutLocalService.getLayoutsCount(group.getGroupId(), false));
+
+		layout1 = LayoutLocalServiceUtil.getFriendlyURLLayout(
+			group.getGroupId(), false, layout1.getFriendlyURL());
+
+		Assert.assertNull(layout1.getLayoutSetPrototypeLayout());
+
+		layout2 = LayoutLocalServiceUtil.getFriendlyURLLayout(
+			group.getGroupId(), false, layout2.getFriendlyURL());
+
+		Assert.assertNotNull(layout2.getLayoutSetPrototypeLayout());
+	}
+
+	@Test
+	public void testLayoutSetPrototypePropagationKeepsCacheFile()
+		throws Exception {
+
+		_testLayoutSetPrototypePropagation(false);
+	}
+
+	@Test
+	@TestInfo("LPD-112142")
+	public void testLayoutSetPrototypePropagationLinkToLayoutLayoutWithChildLayouts()
+		throws Exception {
+
+		LayoutSetPrototype layoutSetPrototype =
+			LayoutTestUtil.addLayoutSetPrototype(RandomTestUtil.randomString());
+
+		Group layoutSetPrototypeGroup = layoutSetPrototype.getGroup();
+
+		Layout homeLayout = LayoutTestUtil.addTypePortletLayout(
+			layoutSetPrototypeGroup, true);
+
+		Layout linkToLayoutLayout = LayoutTestUtil.addTypeLinkToLayoutLayout(
+			layoutSetPrototypeGroup.getGroupId(), true,
+			homeLayout.getLayoutId());
+
+		for (int i = 0; i < 3; i++) {
+			Layout childLayout = LayoutTestUtil.addTypePortletLayout(
+				layoutSetPrototypeGroup, true);
+
+			_layoutLocalService.updateParentLayoutId(
+				childLayout.getPlid(), linkToLayoutLayout.getPlid());
+		}
+
+		Group targetGroup = GroupTestUtil.addGroup();
+
+		setLinkEnabled(
+			targetGroup, layoutSetPrototype.getLayoutSetPrototypeId(), 0, true,
+			true);
+
+		propagateChanges(true, layoutSetPrototype);
+
+		List<Layout> targetLayouts = _layoutLocalService.getLayouts(
+			targetGroup.getGroupId(), false);
+
+		for (Layout targetLayout : targetLayouts) {
+			Assert.assertNotEquals(
+				targetLayout.toString(), LayoutConstants.TYPE_EMPTY,
+				targetLayout.getType());
+		}
+
+		Assert.assertEquals(
+			targetLayouts.toString(),
+			_layoutLocalService.getLayoutsCount(
+				layoutSetPrototypeGroup.getGroupId(), true),
+			targetLayouts.size());
+	}
+
+	@Test
+	public void testLayoutSetPrototypePropagationOverridesLogo()
+		throws Exception {
+
+		LayoutSetLocalServiceUtil.updateLogo(
+			group.getGroupId(), false, true,
+			ImageToolUtil.getBytes(
+				new BufferedImage(1, 1, BufferedImage.TYPE_INT_RGB), "png"));
+
+		LayoutSet layoutSet = LayoutSetLocalServiceUtil.getLayoutSet(
+			group.getGroupId(), false);
+
+		long logoId = layoutSet.getLogoId();
+
+		LayoutSetLocalServiceUtil.updateLogo(
+			_layoutSetPrototypeGroup.getGroupId(), true, true,
+			ImageToolUtil.getBytes(
+				new BufferedImage(2, 2, BufferedImage.TYPE_INT_RGB), "png"));
+
+		long timestamp = System.currentTimeMillis();
+
+		propagateChanges(false, group);
+
+		_assertNotification(
+			"successful", timestamp, TestPropsValues.getUserId());
+
+		layoutSet = LayoutSetLocalServiceUtil.getLayoutSet(
+			group.getGroupId(), false);
+
+		Assert.assertNotEquals(logoId, layoutSet.getLogoId());
+	}
+
+	@Test
+	public void testLayoutSetPrototypePropagationOverridesSiteChanges()
+		throws Exception {
+
+		AssetVocabulary layoutSetPrototypeAssetVocabulary =
+			AssetTestUtil.addVocabulary(_layoutSetPrototypeGroup.getGroupId());
+
+		AssetCategory layoutSetPrototypeAssetCategory =
+			AssetTestUtil.addCategory(
+				_layoutSetPrototypeGroup.getGroupId(),
+				layoutSetPrototypeAssetVocabulary.getVocabularyId());
+
+		String title = layoutSetPrototypeAssetCategory.getTitle(
+			LocaleUtil.getSiteDefault());
+
+		AssetVocabulary siteAssetVocabulary = AssetTestUtil.addVocabulary(
+			group.getGroupId());
+
+		AssetCategory siteAssetCategory = AssetTestUtil.addCategory(
+			group.getGroupId(), siteAssetVocabulary.getVocabularyId());
+
+		long timestamp = System.currentTimeMillis();
+
+		propagateChanges(false, group);
+
+		_assertNotification(
+			"successful", timestamp, TestPropsValues.getUserId());
+
+		AssetCategory assetCategory =
+			AssetCategoryLocalServiceUtil.fetchAssetCategoryByUuidAndGroupId(
+				layoutSetPrototypeAssetCategory.getUuid(), group.getGroupId());
+
+		assetCategory = AssetCategoryLocalServiceUtil.updateCategory(
+			assetCategory.getExternalReferenceCode(),
+			TestPropsValues.getUserId(), assetCategory.getCategoryId(),
+			assetCategory.getParentCategoryId(),
+			Collections.singletonMap(
+				LocaleUtil.getSiteDefault(), "New Asset Category"),
+			assetCategory.getDescriptionMap(), assetCategory.getVocabularyId(),
+			null, ServiceContextTestUtil.getServiceContext(group.getGroupId()));
+
+		Assert.assertEquals(
+			"New Asset Category",
+			assetCategory.getTitle(LocaleUtil.getSiteDefault()));
+
+		timestamp = System.currentTimeMillis();
+
+		propagateChanges(false, group);
+
+		_assertNotification(
+			"successful", timestamp, TestPropsValues.getUserId());
+
+		assetCategory =
+			AssetCategoryLocalServiceUtil.getAssetCategoryByUuidAndGroupId(
+				layoutSetPrototypeAssetCategory.getUuid(), group.getGroupId());
+
+		Assert.assertEquals(
+			title, assetCategory.getTitle(LocaleUtil.getSiteDefault()));
+
+		Assert.assertNotNull(
+			AssetCategoryLocalServiceUtil.fetchAssetCategory(
+				siteAssetCategory.getCategoryId()));
+	}
+
+	@Test
+	public void testLayoutSetPrototypePropagationToAllLinkedSites()
+		throws Exception {
+
+		long userId = TestPropsValues.getUserId();
+
+		Group group2 = GroupTestUtil.addGroup();
+
+		_sites.updateLayoutSetPrototypesLinks(
+			group2, _layoutSetPrototype.getLayoutSetPrototypeId(), 0, true,
+			true);
+
+		long timestamp1 = System.currentTimeMillis();
+
+		propagateChanges(false, _layoutSetPrototype);
+
+		_assertNotification("successful", timestamp1, userId);
+
+		int initialCount1 = _layoutLocalService.getLayoutsCount(
+			group.getGroupId(), false);
+		int initialCount2 = _layoutLocalService.getLayoutsCount(
+			group2.getGroupId(), false);
+
+		LayoutTestUtil.addTypePortletLayout(_layoutSetPrototypeGroup, true);
+
+		long timestamp2 = System.currentTimeMillis();
+
+		propagateChanges(false, _layoutSetPrototype);
+
+		_assertNotification("successful", timestamp2, userId);
+
+		Assert.assertEquals(
+			initialCount1 + 1,
+			_layoutLocalService.getLayoutsCount(group.getGroupId(), false));
+		Assert.assertEquals(
+			initialCount2 + 1,
+			_layoutLocalService.getLayoutsCount(group2.getGroupId(), false));
+
+		GroupLocalServiceUtil.deleteGroup(group2);
+	}
+
+	@Test
+	@TestInfo("LPD-108617")
+	public void testLayoutSetPrototypePropagationToPrivateAndPublicLayouts()
+		throws Exception {
+
+		_testLayoutSetPrototypePropagation(false, true);
+		_testLayoutSetPrototypePropagation(true, false);
+		_testLayoutSetPrototypePropagation(true, true);
+	}
+
+	@Test
+	@TestInfo("LPD-108617")
+	public void testLayoutSetPrototypePropagationWithChildLayoutFirst()
+		throws Exception {
+
+		Group testGroup = GroupTestUtil.addGroup();
+
+		setLinkEnabled(
+			testGroup, _layoutSetPrototype.getLayoutSetPrototypeId(), 0, true,
+			false);
+
+		Layout childLayout = LayoutTestUtil.addTypePortletLayout(
+			_layoutSetPrototypeGroup, true);
+		Layout parentLayout = LayoutTestUtil.addTypePortletLayout(
+			_layoutSetPrototypeGroup, true);
+
+		childLayout = _layoutLocalService.updateParentLayoutId(
+			childLayout.getPlid(), parentLayout.getPlid());
+
+		long timestamp = System.currentTimeMillis();
+
+		propagateChanges(false, _layoutSetPrototype);
+
+		_assertNotification(
+			"successful", timestamp, TestPropsValues.getUserId());
+
+		Layout linkedChildLayout = _getLinkedLayout(
+			testGroup.getGroupId(), false, childLayout);
+		Layout linkedParentLayout = _getLinkedLayout(
+			testGroup.getGroupId(), false, parentLayout);
+
+		Assert.assertEquals(
+			linkedParentLayout.getLayoutId(),
+			linkedChildLayout.getParentLayoutId());
+		Assert.assertEquals(
+			LayoutConstants.TYPE_PORTLET, linkedParentLayout.getType());
+
+		Assert.assertEquals(childLayout.getUuid(), linkedChildLayout.getUuid());
+		Assert.assertEquals(
+			parentLayout.getUuid(), linkedParentLayout.getUuid());
+
+		GroupTestUtil.deleteGroup(testGroup);
+	}
+
+	@Test
+	@TestInfo("LPD-110362")
+	public void testLayoutSetPrototypePropagationWithDefaultVocabulary()
+		throws Exception {
+
+		_testLayoutSetPrototypePropagationWithDefaultVocabulary(false);
+	}
+
+	@FeatureFlag(enable = false, value = "LPD-82107")
+	@Test
+	@TestInfo("LPD-110362")
+	public void testLayoutSetPrototypePropagationWithDefaultVocabularyAndFeatureFlagDisabled()
+		throws Exception {
+
+		_testLayoutSetPrototypePropagationWithDefaultVocabulary(true);
+	}
+
+	@Test
+	@TestInfo("LPD-110362")
+	public void testLayoutSetPrototypePropagationWithDefaultVocabularyFromTwoLayoutSetPrototypes()
+		throws Exception {
+
+		AssetVocabulary assetVocabulary =
+			AssetVocabularyLocalServiceUtil.addDefaultVocabulary(
+				group.getGroupId());
+
+		AssetVocabulary layoutSetPrototypeAssetVocabulary1 =
+			AssetVocabularyLocalServiceUtil.addDefaultVocabulary(
+				_layoutSetPrototypeGroup.getGroupId());
+
+		AssetCategory layoutSetPrototypeAssetCategory1 =
+			AssetTestUtil.addCategory(
+				_layoutSetPrototypeGroup.getGroupId(),
+				layoutSetPrototypeAssetVocabulary1.getVocabularyId());
+
+		_privateLayoutSetPrototype = LayoutTestUtil.addLayoutSetPrototype(
+			RandomTestUtil.randomString());
+
+		Group layoutSetPrototypeGroup = _privateLayoutSetPrototype.getGroup();
+
+		LayoutTestUtil.addTypePortletLayout(layoutSetPrototypeGroup, true);
+
+		AssetVocabulary layoutSetPrototypeAssetVocabulary2 =
+			AssetVocabularyLocalServiceUtil.addDefaultVocabulary(
+				layoutSetPrototypeGroup.getGroupId());
+
+		AssetCategory layoutSetPrototypeAssetCategory2 =
+			AssetTestUtil.addCategory(
+				layoutSetPrototypeGroup.getGroupId(),
+				layoutSetPrototypeAssetVocabulary2.getVocabularyId());
+
+		LayoutSetLocalServiceUtil.updateLayoutSetPrototypeLinkEnabled(
+			group.getGroupId(), true, true,
+			_privateLayoutSetPrototype.getUuid());
+
+		List<AssetVocabulary> assetVocabularies =
+			AssetVocabularyLocalServiceUtil.getGroupVocabularies(
+				new long[] {group.getGroupId()});
+
+		int vocabulariesCount = assetVocabularies.size();
+
+		propagateChanges(false, group);
+
+		_sites.mergeLayoutSetPrototypeLayouts(
+			_privateLayoutSetPrototype, TestPropsValues.getUserId());
+
+		assetVocabularies =
+			AssetVocabularyLocalServiceUtil.getGroupVocabularies(
+				new long[] {group.getGroupId()});
+
+		Assert.assertEquals(
+			assetVocabularies.toString(), vocabulariesCount,
+			assetVocabularies.size());
+
+		_assertAssetCategory(assetVocabulary, layoutSetPrototypeAssetCategory1);
+		_assertAssetCategory(assetVocabulary, layoutSetPrototypeAssetCategory2);
+	}
+
+	@Test
+	public void testLayoutSetPrototypePropagationWithExportImportInProcess()
+		throws Exception {
+
+		_testLayoutSetPrototypePropagationWithExportImportInProcess(
+			ExportImportThreadLocal::setLayoutExportInProcess);
+		_testLayoutSetPrototypePropagationWithExportImportInProcess(
+			ExportImportThreadLocal::setLayoutImportInProcess);
+		_testLayoutSetPrototypePropagationWithExportImportInProcess(
+			ExportImportThreadLocal::setLayoutStagingInProcess);
+	}
+
+	@Test
+	public void testLayoutSetPrototypePropagationWithLayoutSelection()
+		throws Exception {
+
+		Layout syncedLayout = LayoutTestUtil.addTypePortletLayout(
+			_layoutSetPrototypeGroup, true);
+		Layout skippedLayout = LayoutTestUtil.addTypePortletLayout(
+			_layoutSetPrototypeGroup, true);
+
+		int initialCount = _layoutLocalService.getLayoutsCount(
+			group.getGroupId(), false);
+
+		_sites.mergeLayoutSetPrototypeLayouts(
+			_layoutSetPrototype, TestPropsValues.getUserId(),
+			new long[] {syncedLayout.getLayoutId()},
+			_getSelectionParameterMap(false));
+
+		Assert.assertEquals(
+			initialCount + 1,
+			_layoutLocalService.getLayoutsCount(group.getGroupId(), false));
+		Assert.assertNotNull(
+			_layoutLocalService.fetchLayoutByFriendlyURL(
+				group.getGroupId(), false, syncedLayout.getFriendlyURL()));
+		Assert.assertNull(
+			_layoutLocalService.fetchLayoutByFriendlyURL(
+				group.getGroupId(), false, skippedLayout.getFriendlyURL()));
+	}
+
+	@Test
+	public void testLayoutSetPrototypePropagationWithLayoutSetSettingsUnselected()
+		throws Exception {
+
+		LayoutSet layoutSet = LayoutSetLocalServiceUtil.getLayoutSet(
+			group.getGroupId(), false);
+
+		UnicodeProperties settingsUnicodeProperties =
+			layoutSet.getSettingsProperties();
+
+		settingsUnicodeProperties.setProperty(
+			Sites.SHOW_SITE_NAME, Boolean.FALSE.toString());
+
+		layoutSet.setSettingsProperties(settingsUnicodeProperties);
+
+		layoutSet = LayoutSetLocalServiceUtil.updateLayoutSet(layoutSet);
+
+		_sites.mergeLayoutSetPrototypeLayouts(
+			_layoutSetPrototype, TestPropsValues.getUserId(),
+			ExportImportHelperUtil.getAllLayoutIds(
+				_layoutSetPrototypeGroup.getGroupId(), true),
+			_getSelectionParameterMap(false));
+
+		layoutSet = LayoutSetLocalServiceUtil.getLayoutSet(
+			layoutSet.getLayoutSetId());
+
+		settingsUnicodeProperties = layoutSet.getSettingsProperties();
+
+		Assert.assertEquals(
+			Boolean.FALSE.toString(),
+			settingsUnicodeProperties.getProperty(Sites.SHOW_SITE_NAME));
+	}
+
+	@Test
+	public void testLayoutSetPrototypePropagationWithLinkDisabled()
+		throws Exception {
+
+		long userId = TestPropsValues.getUserId();
+
+		_sites.updateLayoutSetPrototypesLinks(
+			group, _layoutSetPrototype.getLayoutSetPrototypeId(), 0, false,
+			false);
+
+		int initialCount = _layoutLocalService.getLayoutsCount(
+			group.getGroupId(), false);
+
+		LayoutTestUtil.addTypePortletLayout(_layoutSetPrototypeGroup, true);
+
+		long timestamp = System.currentTimeMillis();
+
+		propagateChanges(false, group);
+
+		_assertNotification("successful", timestamp, userId);
+
+		Assert.assertEquals(
+			initialCount,
+			_layoutLocalService.getLayoutsCount(group.getGroupId(), false));
+	}
+
+	@Test
+	public void testLayoutSetPrototypePropagationWithLookAndFeelUnselected()
+		throws Exception {
+
+		LayoutSet prototypePrivateLayoutSet =
+			_layoutSetPrototypeGroup.getPrivateLayoutSet();
+
+		prototypePrivateLayoutSet.setThemeId(_THEME_ID);
+
+		LayoutSetLocalServiceUtil.updateLayoutSet(prototypePrivateLayoutSet);
+
+		LayoutSet layoutSet = LayoutSetLocalServiceUtil.getLayoutSet(
+			group.getGroupId(), false);
+
+		String themeId = layoutSet.getThemeId();
+
+		Assert.assertNotEquals(_THEME_ID, themeId);
+
+		_sites.mergeLayoutSetPrototypeLayouts(
+			_layoutSetPrototype, TestPropsValues.getUserId(),
+			ExportImportHelperUtil.getAllLayoutIds(
+				_layoutSetPrototypeGroup.getGroupId(), true),
+			_getSelectionParameterMap(false));
+
+		layoutSet = LayoutSetLocalServiceUtil.getLayoutSet(
+			layoutSet.getLayoutSetId());
+
+		Assert.assertEquals(themeId, layoutSet.getThemeId());
+	}
+
+	@Test
+	public void testLayoutSetPrototypePropagationWithPortletDataSelection()
+		throws Exception {
+
+		String content = RandomTestUtil.randomString();
+
+		JournalTestUtil.updateArticle(
+			_layoutSetPrototypeJournalArticle, RandomTestUtil.randomString(),
+			DDMStructureTestUtil.getSampleStructuredContent(content));
+
+		_sites.mergeLayoutSetPrototypeLayouts(
+			_layoutSetPrototype, TestPropsValues.getUserId(),
+			ExportImportHelperUtil.getAllLayoutIds(
+				_layoutSetPrototypeGroup.getGroupId(), true),
+			_getSelectionParameterMap(true));
+
+		Assert.assertEquals(
+			content,
+			_journalContent.getContent(
+				journalArticle.getGroupId(), journalArticle.getArticleId(),
+				Constants.VIEW, LocaleUtil.toLanguageId(LocaleUtil.US)));
+	}
+
+	@Test
+	public void testLayoutSetPrototypePropagationWithPortletDataUnselected()
+		throws Exception {
+
+		String languageId = LocaleUtil.toLanguageId(LocaleUtil.US);
+
+		String content = _journalContent.getContent(
+			journalArticle.getGroupId(), journalArticle.getArticleId(),
+			Constants.VIEW, languageId);
+
+		JournalTestUtil.updateArticle(
+			_layoutSetPrototypeJournalArticle, RandomTestUtil.randomString(),
+			DDMStructureTestUtil.getSampleStructuredContent(
+				RandomTestUtil.randomString()));
+
+		_sites.mergeLayoutSetPrototypeLayouts(
+			_layoutSetPrototype, TestPropsValues.getUserId(),
+			ExportImportHelperUtil.getAllLayoutIds(
+				_layoutSetPrototypeGroup.getGroupId(), true),
+			_getSelectionParameterMap(false));
+
+		Assert.assertEquals(
+			content,
+			_journalContent.getContent(
+				journalArticle.getGroupId(), journalArticle.getArticleId(),
+				Constants.VIEW, languageId));
+	}
+
+	@FeatureFlag("LPD-104837")
+	@Test
+	@TestInfo("LPD-105505")
+	public void testLayoutSetPrototypePropagationWithPublicationsEnabled()
+		throws Exception {
+
+		try (CompanyConfigurationTemporarySwapper
+				companyConfigurationTemporarySwapper =
+					new CompanyConfigurationTemporarySwapper(
+						TestPropsValues.getCompanyId(),
+						CTSettingsConfiguration.class.getName(),
+						HashMapDictionaryBuilder.<String, Object>put(
+							"enabled", true
+						).build())) {
+
+			long userId = TestPropsValues.getUserId();
+
+			int initialCount = _layoutLocalService.getLayoutsCount(
+				group.getGroupId(), false);
+
+			LayoutTestUtil.addTypePortletLayout(_layoutSetPrototypeGroup, true);
+
+			_ctCollection = _ctCollectionLocalService.addCTCollection(
+				null, TestPropsValues.getCompanyId(), userId, 0,
+				RandomTestUtil.randomString(), RandomTestUtil.randomString());
+
+			long timestamp = System.currentTimeMillis();
+
+			try (SafeCloseable safeCloseable =
+					CTCollectionThreadLocal.setCTCollectionIdWithSafeCloseable(
+						_ctCollection.getCtCollectionId())) {
+
+				propagateChanges(false, _layoutSetPrototype);
+
+				_assertNotification("successful", timestamp, userId);
+
+				Assert.assertEquals(
+					initialCount + 1,
+					_layoutLocalService.getLayoutsCount(
+						group.getGroupId(), false));
+			}
+
+			Assert.assertEquals(
+				initialCount,
+				_layoutLocalService.getLayoutsCount(group.getGroupId(), false));
+
+			_ctProcessLocalService.addCTProcess(
+				userId, _ctCollection.getCtCollectionId());
+
+			Assert.assertEquals(
+				initialCount + 1,
+				_layoutLocalService.getLayoutsCount(group.getGroupId(), false));
+		}
+	}
+
+	@Test
+	@TestInfo("LPD-105505")
+	public void testLayoutSetPrototypePropagationWithPublicationsEnabledAndFeatureFlagDisabled()
+		throws Exception {
+
+		try (CompanyConfigurationTemporarySwapper
+				companyConfigurationTemporarySwapper =
+					new CompanyConfigurationTemporarySwapper(
+						TestPropsValues.getCompanyId(),
+						CTSettingsConfiguration.class.getName(),
+						HashMapDictionaryBuilder.<String, Object>put(
+							"enabled", true
+						).build())) {
+
+			AssertUtils.assertFailure(
+				IllegalStateException.class,
+				"The site template merge cannot start while publications is " +
+					"enabled",
+				() -> propagateChanges(false, _layoutSetPrototype));
+		}
+	}
+
+	@Test
+	public void testMasterPageTemplateThemeSettingsAfterLayoutPropagation()
+		throws Exception {
+
+		LayoutSet prototypePrivateLayoutSet =
+			_layoutSetPrototypeGroup.getPrivateLayoutSet();
+
+		prototypePrivateLayoutSet.setThemeId(_THEME_ID);
+
+		LayoutSetLocalServiceUtil.updateLayoutSet(prototypePrivateLayoutSet);
+
+		LayoutSet prototypePublicLayoutSet =
+			_layoutSetPrototypeGroup.getPublicLayoutSet();
+
+		prototypePublicLayoutSet.setThemeId(_THEME_ID);
+
+		LayoutSetLocalServiceUtil.updateLayoutSet(prototypePublicLayoutSet);
+
+		LayoutPageTemplateEntry masterLayoutPageTemplateEntry =
+			LayoutPageTemplateTestUtil.addLayoutPageTemplateEntry(
+				_layoutSetPrototypeGroup.getGroupId(),
+				LayoutPageTemplateEntryTypeConstants.MASTER_LAYOUT,
+				WorkflowConstants.STATUS_APPROVED);
+
+		Layout siteTemplateLayoutFromMasterLayout =
+			LayoutTestUtil.addTypeContentLayout(
+				_layoutSetPrototypeGroup, true, false,
+				masterLayoutPageTemplateEntry.getExternalReferenceCode());
+
+		propagateChanges(group);
+
+		Layout masterLayout = LayoutLocalServiceUtil.getLayout(
+			masterLayoutPageTemplateEntry.getPlid());
+
+		Theme masterLayoutTheme = masterLayout.getTheme();
+
+		Layout siteMasterLayout =
+			LayoutLocalServiceUtil.getLayoutByExternalReferenceCode(
+				masterLayout.getExternalReferenceCode(), group.getGroupId());
+
+		Theme siteMasterLayoutTheme = siteMasterLayout.getTheme();
+
+		Assert.assertEquals(
+			siteMasterLayoutTheme.getThemeId(), masterLayoutTheme.getThemeId());
+		Assert.assertEquals(siteMasterLayoutTheme.getThemeId(), _THEME_ID);
+
+		Layout siteLayoutFromMasterLayout =
+			LayoutLocalServiceUtil.getLayoutByExternalReferenceCode(
+				siteTemplateLayoutFromMasterLayout.getExternalReferenceCode(),
+				group.getGroupId());
+
+		Theme siteLayoutFromMasterLayoutTheme =
+			siteLayoutFromMasterLayout.getTheme();
+
+		Theme siteTemplateLayoutFromMasterLayoutTheme =
+			siteTemplateLayoutFromMasterLayout.getTheme();
+
+		Assert.assertEquals(
+			siteLayoutFromMasterLayoutTheme.getThemeId(),
+			siteTemplateLayoutFromMasterLayoutTheme.getThemeId());
+
+		Assert.assertEquals(
+			siteLayoutFromMasterLayoutTheme.getThemeId(), _THEME_ID);
 	}
 
 	@Test
@@ -372,9 +1263,13 @@ public class LayoutSetPrototypePropagationTest
 		doTestPortletPreferencesPropagation(true, true);
 	}
 
+	@Ignore
 	@Test
 	public void testPortletPreferencesPropagationWithPreferencesUniquePerLayoutEnabled()
 		throws Exception {
+
+		// TODO LPD-92847 Shared portlet preferences are not exported through
+		// the new Batch + Export/Import framework path since LPD-57377
 
 		Portlet portlet = PortletLocalServiceUtil.getPortletById(
 			TestPropsValues.getCompanyId(),
@@ -383,214 +1278,200 @@ public class LayoutSetPrototypePropagationTest
 		boolean preferencesUniquePerLayout =
 			portlet.getPreferencesUniquePerLayout();
 
-		try {
-			portlet.setPreferencesUniquePerLayout(false);
+		portlet.setPreferencesUniquePerLayout(false);
 
-			_layoutSetPrototypeLayout = LayoutTestUtil.addTypePortletLayout(
-				_layoutSetPrototypeGroup, true, layoutPrototype, true);
+		_layoutSetPrototypeLayout = LayoutTestUtil.addTypePortletLayout(
+			_layoutSetPrototypeGroup, true, globalGroupId, layoutPrototype,
+			true);
 
-			Map<String, String[]> preferenceMap = HashMapBuilder.put(
-				"bulletStyle", new String[] {"Dots"}
-			).build();
+		Map<String, String[]> preferenceMap = HashMapBuilder.put(
+			"bulletStyle", new String[] {"Dots"}
+		).build();
 
-			String testPortletId1 = LayoutTestUtil.addPortletToLayout(
-				TestPropsValues.getUserId(), _layoutSetPrototypeLayout,
-				JournalContentPortletKeys.JOURNAL_CONTENT, "column-1",
-				preferenceMap);
+		String testPortletId1 = LayoutTestUtil.addPortletToLayout(
+			TestPropsValues.getUserId(), _layoutSetPrototypeLayout,
+			JournalContentPortletKeys.JOURNAL_CONTENT, "column-1",
+			preferenceMap);
 
-			preferenceMap.put("bulletStyle", new String[] {"Arrows"});
+		preferenceMap.put("bulletStyle", new String[] {"Arrows"});
 
-			String testPortletId2 = LayoutTestUtil.addPortletToLayout(
-				TestPropsValues.getUserId(), _layoutSetPrototypeLayout,
-				JournalContentPortletKeys.JOURNAL_CONTENT, "column-2",
-				preferenceMap);
-
-			propagateChanges(group);
-
-			Layout layout = LayoutLocalServiceUtil.getFriendlyURLLayout(
-				group.getGroupId(), false,
-				_layoutSetPrototypeLayout.getFriendlyURL());
-
-			PortletPreferences testPortletIdPortletPreferences =
-				PortletPreferencesFactoryUtil.getPortletSetup(
-					group.getGroupId(), layout,
-					JournalContentPortletKeys.JOURNAL_CONTENT, null);
-
-			Assert.assertEquals(
-				"Arrows",
-				testPortletIdPortletPreferences.getValue(
-					"bulletStyle", StringPool.BLANK));
-
-			PortletPreferences testPortletId1PortletPreferences =
-				PortletPreferencesFactoryUtil.getPortletSetup(
-					layout, testPortletId1, null);
-
-			Assert.assertEquals(
-				"Arrows",
-				testPortletId1PortletPreferences.getValue(
-					"bulletStyle", StringPool.BLANK));
-
-			PortletPreferences testPortletId2PortletPreferences =
-				PortletPreferencesFactoryUtil.getPortletSetup(
-					layout, testPortletId2, null);
-
-			Assert.assertEquals(
-				"Arrows",
-				testPortletId2PortletPreferences.getValue(
-					"bulletStyle", StringPool.BLANK));
-		}
-		finally {
-			portlet.setPreferencesUniquePerLayout(preferencesUniquePerLayout);
-		}
-	}
-
-	@Test
-	public void testResetLayoutTemplate() throws Exception {
-		_layoutSetPrototypeHelper.resetPrototype(layout);
-		_layoutSetPrototypeHelper.resetPrototype(_layout);
+		String testPortletId2 = LayoutTestUtil.addPortletToLayout(
+			TestPropsValues.getUserId(), _layoutSetPrototypeLayout,
+			JournalContentPortletKeys.JOURNAL_CONTENT, "column-2",
+			preferenceMap);
 
 		propagateChanges(group);
 
-		setLinkEnabled(true);
+		Layout layout = LayoutLocalServiceUtil.getFriendlyURLLayout(
+			group.getGroupId(), false,
+			_layoutSetPrototypeLayout.getFriendlyURL());
 
-		layout = LayoutTestUtil.updateLayoutTemplateId(layout, "1_column");
+		PortletPreferences testPortletIdPortletPreferences =
+			PortletPreferencesFactoryUtil.getPortletSetup(
+				group.getGroupId(), layout,
+				JournalContentPortletKeys.JOURNAL_CONTENT, null);
 
-		Assert.assertTrue(_sites.isLayoutModifiedSinceLastMerge(layout));
-
-		Assert.assertFalse(_sites.isLayoutModifiedSinceLastMerge(_layout));
-
-		_layout = LayoutTestUtil.updateLayoutTemplateId(_layout, "1_column");
-
-		layout = LayoutLocalServiceUtil.getLayout(layout.getPlid());
-
-		_layoutSetPrototypeHelper.resetPrototype(layout);
-
-		layout = propagateChanges(layout);
-
-		Assert.assertFalse(_sites.isLayoutModifiedSinceLastMerge(layout));
 		Assert.assertEquals(
-			initialLayoutTemplateId,
-			LayoutTestUtil.getLayoutTemplateId(layout));
+			"Arrows",
+			testPortletIdPortletPreferences.getValue(
+				"bulletStyle", StringPool.BLANK));
 
-		_layout = propagateChanges(_layout);
+		PortletPreferences testPortletId1PortletPreferences =
+			PortletPreferencesFactoryUtil.getPortletSetup(
+				layout, testPortletId1, null);
 
-		Assert.assertTrue(_sites.isLayoutModifiedSinceLastMerge(_layout));
 		Assert.assertEquals(
-			"1_column", LayoutTestUtil.getLayoutTemplateId(_layout));
+			"Arrows",
+			testPortletId1PortletPreferences.getValue(
+				"bulletStyle", StringPool.BLANK));
+
+		PortletPreferences testPortletId2PortletPreferences =
+			PortletPreferencesFactoryUtil.getPortletSetup(
+				layout, testPortletId2, null);
+
+		Assert.assertEquals(
+			"Arrows",
+			testPortletId2PortletPreferences.getValue(
+				"bulletStyle", StringPool.BLANK));
+
+		portlet.setPreferencesUniquePerLayout(preferencesUniquePerLayout);
 	}
 
+	@FeatureFlag(enable = false, value = "LPD-38869")
 	@Test
-	public void testResetPortletPreferences() throws Exception {
-		LayoutTestUtil.updateLayoutPortletPreference(
-			prototypeLayout, portletId, "showAvailableLocales",
-			Boolean.FALSE.toString());
+	public void testThemeSettingsAfterLayoutPropagation() throws Exception {
+		LayoutSet prototypePrivateLayoutSet =
+			_layoutSetPrototypeGroup.getPrivateLayoutSet();
 
-		_layoutSetPrototypeHelper.resetPrototype(layout);
-		_layoutSetPrototypeHelper.resetPrototype(_layout);
+		prototypePrivateLayoutSet.setThemeId(_THEME_ID);
+		prototypePrivateLayoutSet.setColorSchemeId(_COLOR_SCHEME_ID);
+
+		prototypePrivateLayoutSet = LayoutSetLocalServiceUtil.updateLayoutSet(
+			prototypePrivateLayoutSet);
+
+		LayoutSet prototypePublicLayoutSet =
+			_layoutSetPrototypeGroup.getPublicLayoutSet();
+
+		prototypePublicLayoutSet.setThemeId(_THEME_ID);
+
+		prototypePrivateLayoutSet.setColorSchemeId(_COLOR_SCHEME_ID);
+
+		LayoutSetLocalServiceUtil.updateLayoutSet(prototypePublicLayoutSet);
 
 		propagateChanges(group);
 
-		setLinkEnabled(true);
-
-		layout = LayoutTestUtil.updateLayoutPortletPreference(
-			layout, portletId, "showAvailableLocales", Boolean.TRUE.toString());
-
-		Assert.assertTrue(_sites.isLayoutModifiedSinceLastMerge(layout));
-
-		Assert.assertFalse(_sites.isLayoutModifiedSinceLastMerge(_layout));
-
-		_layout = LayoutTestUtil.updateLayoutPortletPreference(
-			_layout, _portletId, "showAvailableLocales",
-			Boolean.TRUE.toString());
-
-		layout = LayoutLocalServiceUtil.getLayout(layout.getPlid());
-
-		_layoutSetPrototypeHelper.resetPrototype(layout);
-
-		layout = propagateChanges(layout);
-
-		Assert.assertFalse(_sites.isLayoutModifiedSinceLastMerge(layout));
-
-		PortletPreferences layoutPortletPreferences =
-			LayoutTestUtil.getPortletPreferences(layout, portletId);
+		LayoutSet propagatedLayoutSet = group.getPrivateLayoutSet();
 
 		Assert.assertEquals(
-			Boolean.FALSE.toString(),
-			layoutPortletPreferences.getValue(
-				"showAvailableLocales", StringPool.BLANK));
+			prototypePrivateLayoutSet.getThemeId(),
+			propagatedLayoutSet.getThemeId());
+		Assert.assertEquals(
+			prototypePrivateLayoutSet.getColorSchemeId(),
+			propagatedLayoutSet.getColorSchemeId());
+	}
 
-		_layout = propagateChanges(_layout);
+	@FeatureFlag("LPD-38869")
+	@Test
+	public void testThemeSettingsAfterLayoutPropagationWithPrivateLinkEnabled()
+		throws Exception {
 
-		Assert.assertTrue(_sites.isLayoutModifiedSinceLastMerge(_layout));
+		LayoutSetPrototype layoutSetPrototype =
+			LayoutTestUtil.addLayoutSetPrototype(RandomTestUtil.randomString());
 
-		layoutPortletPreferences = LayoutTestUtil.getPortletPreferences(
-			_layout, _portletId);
+		Group layoutSetPrototypeGroup = layoutSetPrototype.getGroup();
+
+		LayoutSet prototypePrivateLayoutSet =
+			layoutSetPrototypeGroup.getPrivateLayoutSet();
+
+		prototypePrivateLayoutSet.setThemeId(_THEME_ID);
+
+		prototypePrivateLayoutSet = LayoutSetLocalServiceUtil.updateLayoutSet(
+			prototypePrivateLayoutSet);
+
+		Group testGroup = GroupTestUtil.addGroup();
+
+		LayoutSet privateLayoutSet = LayoutSetLocalServiceUtil.fetchLayoutSet(
+			testGroup.getGroupId(), true);
+
+		privateLayoutSet.setLayoutSetPrototypeLinkEnabled(true);
+
+		LayoutSetLocalServiceUtil.updateLayoutSet(privateLayoutSet);
+
+		setLinkEnabled(
+			testGroup, 0, layoutSetPrototype.getLayoutSetPrototypeId(), false,
+			true);
+
+		_sites.mergeLayoutSetPrototypeLayouts(testGroup.getPrivateLayoutSet());
+
+		LayoutSet publicLayoutSet = LayoutSetLocalServiceUtil.getLayoutSet(
+			testGroup.getGroupId(), false);
+
+		Assert.assertNotEquals(
+			prototypePrivateLayoutSet.getThemeId(),
+			publicLayoutSet.getThemeId());
+
+		privateLayoutSet = LayoutSetLocalServiceUtil.getLayoutSet(
+			testGroup.getGroupId(), true);
 
 		Assert.assertEquals(
-			Boolean.TRUE.toString(),
-			layoutPortletPreferences.getValue(
-				"showAvailableLocales", StringPool.BLANK));
+			prototypePrivateLayoutSet.getThemeId(),
+			privateLayoutSet.getThemeId());
+
+		GroupTestUtil.deleteGroup(testGroup);
+
+		GroupTestUtil.deleteGroup(layoutSetPrototypeGroup);
 	}
 
+	@FeatureFlag("LPD-38869")
 	@Test
-	public void testResetPrototypeWithoutPermissions() throws Exception {
-		PermissionThreadLocal.setPermissionChecker(
-			PermissionCheckerFactoryUtil.create(_user1));
+	public void testThemeSettingsAfterLayoutPropagationWithPublicLinkEnabled()
+		throws Exception {
 
-		Group userGroup = GroupLocalServiceUtil.getUserGroup(
-			_user2.getCompanyId(), _user2.getUserId());
+		LayoutSetPrototype layoutSetPrototype =
+			LayoutTestUtil.addLayoutSetPrototype(RandomTestUtil.randomString());
 
-		LayoutSet layoutSet = LayoutSetLocalServiceUtil.getLayoutSet(
-			userGroup.getGroupId(), true);
+		Group layoutSetPrototypeGroup = layoutSetPrototype.getGroup();
 
-		try {
-			_layoutSetPrototypeHelper.resetPrototype(layoutSet);
+		LayoutSet prototypePrivateLayoutSet =
+			layoutSetPrototypeGroup.getPrivateLayoutSet();
 
-			Assert.fail(
-				"The user should not be able to reset another user's " +
-					"dashboard");
-		}
-		catch (PrincipalException principalException) {
-			if (_log.isDebugEnabled()) {
-				_log.debug(principalException);
-			}
-		}
-	}
+		prototypePrivateLayoutSet.setThemeId(_THEME_ID);
 
-	@Test
-	public void testResetPrototypeWithPermissions() throws Exception {
-		Role role = RoleTestUtil.addRole(RoleConstants.TYPE_REGULAR);
+		prototypePrivateLayoutSet = LayoutSetLocalServiceUtil.updateLayoutSet(
+			prototypePrivateLayoutSet);
 
-		RoleLocalServiceUtil.addUserRole(_user1.getUserId(), role);
+		Group testGroup = GroupTestUtil.addGroup();
 
-		ResourcePermissionLocalServiceUtil.addResourcePermission(
-			_user1.getCompanyId(), Group.class.getName(),
-			ResourceConstants.SCOPE_COMPANY,
-			String.valueOf(_user1.getCompanyId()), role.getRoleId(),
-			ActionKeys.UPDATE);
+		LayoutSet publicLayoutSet = LayoutSetLocalServiceUtil.fetchLayoutSet(
+			testGroup.getGroupId(), false);
 
-		PermissionThreadLocal.setPermissionChecker(
-			PermissionCheckerFactoryUtil.create(_user1));
+		publicLayoutSet.setLayoutSetPrototypeLinkEnabled(true);
 
-		Group userGroup = GroupLocalServiceUtil.getUserGroup(
-			_user2.getCompanyId(), _user2.getUserId());
+		LayoutSetLocalServiceUtil.updateLayoutSet(publicLayoutSet);
 
-		_layoutSetPrototypeHelper.resetPrototype(
-			LayoutSetLocalServiceUtil.getLayoutSet(
-				userGroup.getGroupId(), true));
-	}
+		setLinkEnabled(
+			testGroup, layoutSetPrototype.getLayoutSetPrototypeId(), 0, true,
+			false);
 
-	@Test
-	public void testResetUserPrototypeWithoutPermissions() throws Exception {
-		PermissionThreadLocal.setPermissionChecker(
-			PermissionCheckerFactoryUtil.create(_user1));
+		_sites.mergeLayoutSetPrototypeLayouts(testGroup.getPublicLayoutSet());
 
-		Group userGroup = GroupLocalServiceUtil.getUserGroup(
-			_user1.getCompanyId(), _user1.getUserId());
+		publicLayoutSet = LayoutSetLocalServiceUtil.getLayoutSet(
+			testGroup.getGroupId(), false);
 
-		_layoutSetPrototypeHelper.resetPrototype(
-			LayoutSetLocalServiceUtil.getLayoutSet(
-				userGroup.getGroupId(), true));
+		Assert.assertEquals(
+			prototypePrivateLayoutSet.getThemeId(),
+			publicLayoutSet.getThemeId());
+
+		LayoutSet privateLayoutSet = LayoutSetLocalServiceUtil.getLayoutSet(
+			testGroup.getGroupId(), true);
+
+		Assert.assertNotEquals(
+			prototypePrivateLayoutSet.getThemeId(),
+			privateLayoutSet.getThemeId());
+
+		GroupTestUtil.deleteGroup(testGroup);
+
+		GroupTestUtil.deleteGroup(layoutSetPrototypeGroup);
 	}
 
 	@Test
@@ -622,16 +1503,6 @@ public class LayoutSetPrototypePropagationTest
 			prototypeLayoutSet);
 
 		setLinkEnabled(true);
-
-		_layoutSetPrototype =
-			LayoutSetPrototypeLocalServiceUtil.fetchLayoutSetPrototype(
-				_layoutSetPrototype.getLayoutSetPrototypeId());
-
-		_layoutSetPrototype.setModifiedDate(new Date());
-
-		_layoutSetPrototype =
-			LayoutSetPrototypeLocalServiceUtil.updateLayoutSetPrototype(
-				_layoutSetPrototype);
 
 		propagateChanges(group);
 
@@ -672,8 +1543,8 @@ public class LayoutSetPrototypePropagationTest
 			prototypeLayout, initialLayoutTemplateId);
 
 		_layoutSetPrototypeJournalArticle = JournalTestUtil.addArticle(
-			_layoutSetPrototypeGroup.getGroupId(), "Test Article",
-			"Test Content");
+			_layoutSetPrototypeGroup.getGroupId(),
+			RandomTestUtil.randomString(), RandomTestUtil.randomString());
 
 		portletId = addPortletToLayout(
 			TestPropsValues.getUserId(), prototypeLayout,
@@ -745,6 +1616,12 @@ public class LayoutSetPrototypePropagationTest
 		Layout layout = LayoutTestUtil.addTypePortletLayout(
 			_layoutSetPrototypeGroup, true);
 
+		Layout childLayout = LayoutTestUtil.addTypePortletLayout(
+			_layoutSetPrototypeGroup.getGroupId(), true);
+
+		childLayout = _layoutLocalService.updateParentLayoutId(
+			childLayout.getPlid(), layout.getPlid());
+
 		Assert.assertEquals(
 			_initialPrototypeLayoutsCount, getGroupLayoutCount());
 
@@ -752,7 +1629,19 @@ public class LayoutSetPrototypePropagationTest
 
 		if (linkEnabled) {
 			Assert.assertEquals(
-				_initialPrototypeLayoutsCount + 1, getGroupLayoutCount());
+				_initialPrototypeLayoutsCount + 2, getGroupLayoutCount());
+
+			Layout propagatedLayout =
+				LayoutLocalServiceUtil.getLayoutByExternalReferenceCode(
+					layout.getExternalReferenceCode(), group.getGroupId());
+
+			Layout propagatedChildLayout =
+				LayoutLocalServiceUtil.getLayoutByExternalReferenceCode(
+					childLayout.getExternalReferenceCode(), group.getGroupId());
+
+			Assert.assertEquals(
+				propagatedLayout.getLayoutId(),
+				propagatedChildLayout.getParentLayoutId());
 		}
 		else {
 			Assert.assertEquals(
@@ -764,7 +1653,7 @@ public class LayoutSetPrototypePropagationTest
 
 		if (linkEnabled) {
 			Assert.assertEquals(
-				_initialPrototypeLayoutsCount + 1, getGroupLayoutCount());
+				_initialPrototypeLayoutsCount + 2, getGroupLayoutCount());
 		}
 		else {
 			Assert.assertEquals(
@@ -773,8 +1662,14 @@ public class LayoutSetPrototypePropagationTest
 
 		propagateChanges(group);
 
-		Assert.assertEquals(
-			_initialPrototypeLayoutsCount, getGroupLayoutCount());
+		if (linkEnabled) {
+			Assert.assertEquals(
+				_initialPrototypeLayoutsCount + 2, getGroupLayoutCount());
+		}
+		else {
+			Assert.assertEquals(
+				_initialPrototypeLayoutsCount, getGroupLayoutCount());
+		}
 	}
 
 	protected void doTestLayoutPropagationWithLayoutPrototype(
@@ -784,10 +1679,8 @@ public class LayoutSetPrototypePropagationTest
 		MergeLayoutPrototypesThreadLocal.clearMergeComplete();
 
 		_layoutSetPrototypeLayout = LayoutTestUtil.addTypePortletLayout(
-			_layoutSetPrototypeGroup, true, layoutPrototype,
+			_layoutSetPrototypeGroup, true, globalGroupId, layoutPrototype,
 			layoutSetLayoutLinkEnabled);
-
-		_layoutSetPrototypeLayout = propagateChanges(_layoutSetPrototypeLayout);
 
 		propagateChanges(group);
 
@@ -798,15 +1691,23 @@ public class LayoutSetPrototypePropagationTest
 		LayoutTestUtil.updateLayoutTemplateId(
 			layoutPrototypeLayout, "1_column");
 
-		if (layoutSetLayoutLinkEnabled) {
-			Assert.assertEquals(
-				initialLayoutTemplateId,
-				LayoutTestUtil.getLayoutTemplateId(layout));
-		}
+		layout = LayoutLocalServiceUtil.getLayout(layout.getPlid());
+
+		Assert.assertEquals(
+			initialLayoutTemplateId,
+			LayoutTestUtil.getLayoutTemplateId(layout));
+
+		// The Page Template does not propagate on Site-Template-linked pages
+
+		_sites.mergeLayoutPrototypeLayout(layout);
+
+		layout = LayoutLocalServiceUtil.getLayout(layout.getPlid());
+
+		Assert.assertEquals(
+			initialLayoutTemplateId,
+			LayoutTestUtil.getLayoutTemplateId(layout));
 
 		layout = propagateChanges(layout);
-
-		propagateChanges(group);
 
 		if (layoutSetLayoutLinkEnabled) {
 			Assert.assertEquals(
@@ -841,15 +1742,13 @@ public class LayoutSetPrototypePropagationTest
 			content.put(languageId, localization);
 		}
 
-		String newContent = DDMStructureTestUtil.getSampleStructuredContent(
-			"New Test Content");
+		String newContent = RandomTestUtil.randomString();
 
 		JournalTestUtil.updateArticle(
-			_layoutSetPrototypeJournalArticle, "New Test Title", newContent);
+			_layoutSetPrototypeJournalArticle, RandomTestUtil.randomString(),
+			DDMStructureTestUtil.getSampleStructuredContent(newContent));
 
 		propagateChanges(group);
-
-		// Portlet data is no longer propagated once the group has been created
 
 		for (String languageId : journalArticle.getAvailableLanguageIds()) {
 			String localization = content.get(languageId);
@@ -858,7 +1757,12 @@ public class LayoutSetPrototypePropagationTest
 				journalArticle.getGroupId(), journalArticle.getArticleId(),
 				Constants.VIEW, languageId);
 
-			Assert.assertEquals(localization, importedLocalization);
+			if (linkEnabled) {
+				Assert.assertEquals(newContent, importedLocalization);
+			}
+			else {
+				Assert.assertEquals(localization, importedLocalization);
+			}
 		}
 	}
 
@@ -873,47 +1777,62 @@ public class LayoutSetPrototypePropagationTest
 		return LayoutLocalServiceUtil.getLayoutsCount(group, false);
 	}
 
-	protected void propagateChanges(Group group) throws Exception {
-		MergeLayoutPrototypesThreadLocal.clearMergeComplete();
+	protected void propagateChanges(boolean initial, Group group)
+		throws Exception {
 
 		LayoutSet layoutSet = LayoutSetLocalServiceUtil.getLayoutSet(
 			group.getGroupId(), false);
 
-		MergeLayoutPrototypesThreadLocal.setSkipMerge(false);
-
-		_sites.mergeLayoutSetPrototypeLayouts(group, layoutSet);
-
-		Thread.sleep(2000);
-
-		LayoutSetPrototype layoutSetPrototype =
+		propagateChanges(
+			initial,
 			LayoutSetPrototypeLocalServiceUtil.
 				getLayoutSetPrototypeByUuidAndCompanyId(
 					layoutSet.getLayoutSetPrototypeUuid(),
-					layoutSet.getCompanyId());
-
-		LayoutSet layoutSetPrototypeLayoutSet =
-			layoutSetPrototype.getLayoutSet();
-
-		UnicodeProperties layoutSetPrototypeSettingsUnicodeProperties =
-			layoutSetPrototypeLayoutSet.getSettingsProperties();
-
-		int mergeFailCount = GetterUtil.getInteger(
-			layoutSetPrototypeSettingsUnicodeProperties.getProperty(
-				Sites.MERGE_FAIL_COUNT));
-
-		Assert.assertEquals(0, mergeFailCount);
+					layoutSet.getCompanyId()));
 	}
 
-	protected void setLayoutsUpdateable(boolean layoutsUpdateable)
+	protected void propagateChanges(
+			boolean initial, LayoutSetPrototype layoutSetPrototype)
 		throws Exception {
 
-		_layoutSetPrototype =
-			LayoutSetPrototypeLocalServiceUtil.updateLayoutSetPrototype(
-				_layoutSetPrototype.getLayoutSetPrototypeId(),
-				_layoutSetPrototype.getNameMap(),
-				_layoutSetPrototype.getDescriptionMap(),
-				_layoutSetPrototype.isActive(), layoutsUpdateable,
-				ServiceContextTestUtil.getServiceContext());
+		if (initial) {
+			for (LayoutSet layoutSet :
+					LayoutSetLocalServiceUtil.
+						getLayoutSetsByLayoutSetPrototypeUuid(
+							layoutSetPrototype.getUuid())) {
+
+				_sites.mergeLayoutSetPrototypeLayouts(layoutSet);
+			}
+		}
+		else {
+			_sites.mergeLayoutSetPrototypeLayouts(
+				layoutSetPrototype, TestPropsValues.getUserId());
+		}
+	}
+
+	protected void propagateChanges(Group group) throws Exception {
+		propagateChanges(RandomTestUtil.randomBoolean(), group);
+	}
+
+	@Override
+	protected Layout propagateChanges(Layout layout) throws Exception {
+		Layout layoutSetPrototypeLayout =
+			_layoutLocalService.fetchLayoutByExternalReferenceCode(
+				layout.getLayoutSetPrototypeLayoutERC(),
+				_layoutSetPrototypeGroup.getGroupId());
+
+		if (layoutSetPrototypeLayout != null) {
+			super.propagateChanges(layoutSetPrototypeLayout);
+		}
+
+		propagateChanges(group);
+
+		return LayoutLocalServiceUtil.getLayout(layout.getPlid());
+	}
+
+	@Override
+	protected boolean propagatesLocalEntityReferences() {
+		return true;
 	}
 
 	protected Layout setLayoutUpdateable(
@@ -931,18 +1850,30 @@ public class LayoutSetPrototypePropagationTest
 		return LayoutLocalServiceUtil.updateLayout(layout);
 	}
 
+	protected void setLayoutsUpdateable(boolean layoutsUpdateable)
+		throws Exception {
+
+		_layoutSetPrototype =
+			LayoutSetPrototypeLocalServiceUtil.updateLayoutSetPrototype(
+				_layoutSetPrototype.getLayoutSetPrototypeId(),
+				_layoutSetPrototype.getNameMap(),
+				_layoutSetPrototype.getDescriptionMap(),
+				_layoutSetPrototype.isActive(), layoutsUpdateable,
+				ServiceContextTestUtil.getServiceContext());
+	}
+
 	@Override
 	protected void setLinkEnabled(boolean linkEnabled) throws Exception {
 		if ((layout != null) && (_layout != null)) {
 			layout = LayoutLocalServiceUtil.getLayout(layout.getPlid());
 
-			layout.setLayoutPrototypeLinkEnabled(linkEnabled);
+			layout.setPortletLayoutPageTemplateEntryLinkEnabled(linkEnabled);
 
 			LayoutLocalServiceUtil.updateLayout(layout);
 
 			_layout = LayoutLocalServiceUtil.getLayout(_layout.getPlid());
 
-			_layout.setLayoutPrototypeLinkEnabled(linkEnabled);
+			_layout.setPortletLayoutPageTemplateEntryLinkEnabled(linkEnabled);
 
 			LayoutLocalServiceUtil.updateLayout(_layout);
 		}
@@ -952,8 +1883,17 @@ public class LayoutSetPrototypePropagationTest
 		_sites.updateLayoutSetPrototypesLinks(
 			group, _layoutSetPrototype.getLayoutSetPrototypeId(), 0,
 			linkEnabled, linkEnabled);
+	}
 
-		Thread.sleep(2000);
+	protected void setLinkEnabled(
+			Group group, long publicLayoutSetPrototypeId,
+			long privateLayoutSetPrototypeId, boolean publicLinkEnabled,
+			boolean privateLinkEnabled)
+		throws Exception {
+
+		_sites.updateLayoutSetPrototypesLinks(
+			group, publicLayoutSetPrototypeId, privateLayoutSetPrototypeId,
+			publicLinkEnabled, privateLinkEnabled);
 	}
 
 	protected void testAddChildLayout(boolean layoutSetPrototypeLinkEnabled)
@@ -981,8 +1921,654 @@ public class LayoutSetPrototypePropagationTest
 		}
 	}
 
+	@Override
+	protected boolean useColumnCustomizable() {
+		return false;
+	}
+
+	private Layout _addLayout(long groupId) throws Exception {
+		Layout layout = _layoutLocalService.addLayout(
+			null, TestPropsValues.getUserId(), groupId, true,
+			LayoutConstants.DEFAULT_PARENT_LAYOUT_ID,
+			RandomTestUtil.randomString(), null, null,
+			LayoutConstants.TYPE_CONTENT, false, StringPool.BLANK,
+			ServiceContextTestUtil.getServiceContext());
+
+		Layout draftLayout = layout.fetchDraftLayout();
+
+		UnicodeProperties unicodeProperties =
+			layout.getTypeSettingsProperties();
+
+		unicodeProperties.setProperty(
+			LayoutTypeSettingsConstants.KEY_PUBLISHED, Boolean.TRUE.toString());
+
+		draftLayout.setTypeSettingsProperties(unicodeProperties);
+
+		_layoutLocalService.updateLayout(draftLayout);
+
+		return layout;
+	}
+
+	private String _addPortletToLayout(Layout layout, String portletId)
+		throws Exception {
+
+		JSONObject processAddPortletJSONObject =
+			ContentLayoutTestUtil.addPortletToLayout(layout, portletId);
+
+		JSONObject fragmentEntryLinkJSONObject =
+			processAddPortletJSONObject.getJSONObject("fragmentEntryLink");
+
+		JSONObject editableValuesJSONObject =
+			fragmentEntryLinkJSONObject.getJSONObject("editableValues");
+
+		return PortletIdCodec.encode(
+			editableValuesJSONObject.getString("portletId"),
+			editableValuesJSONObject.getString("instanceId"));
+	}
+
+	private void _assertAssetCategory(
+		AssetVocabulary assetVocabulary,
+		AssetCategory layoutSetPrototypeAssetCategory) {
+
+		AssetCategory assetCategory =
+			AssetCategoryLocalServiceUtil.
+				fetchAssetCategoryByExternalReferenceCode(
+					layoutSetPrototypeAssetCategory.getExternalReferenceCode(),
+					group.getGroupId());
+
+		Assert.assertEquals(
+			assetVocabulary.getVocabularyId(), assetCategory.getVocabularyId());
+	}
+
+	private void _assertLayoutSetPrototypeLayoutERC(
+			Layout prototypeLayout, long groupId)
+		throws Exception {
+
+		Layout propagatedLayout =
+			LayoutLocalServiceUtil.fetchLayoutByUuidAndGroupId(
+				prototypeLayout.getUuid(), groupId, false);
+
+		Assert.assertNotNull(propagatedLayout);
+		Assert.assertEquals(
+			prototypeLayout.getExternalReferenceCode(),
+			propagatedLayout.getLayoutSetPrototypeLayoutERC());
+	}
+
+	private void _assertNotification(
+			String expectedResult, long timestamp, long userId)
+		throws Exception {
+
+		ExportImportTestUtil.retryAssert(
+			1, TimeUnit.SECONDS, 5, TimeUnit.SECONDS,
+			() -> {
+				String result = _getLatestMergeNotificationResult(
+					timestamp, userId);
+
+				Assert.assertEquals(expectedResult, result);
+			});
+	}
+
+	private Layout _getEditableValuesLayout(String editableValues, long groupId)
+		throws Exception {
+
+		JSONObject editableValuesJSONObject = JSONFactoryUtil.createJSONObject(
+			editableValues);
+
+		JSONObject layoutJSONObject = JSONUtil.getValueAsJSONObject(
+			editableValuesJSONObject,
+			"JSONObject/" +
+				FragmentEntryProcessorConstants.
+					KEY_EDITABLE_FRAGMENT_ENTRY_PROCESSOR,
+			"JSONObject/element-text", "JSONObject/config",
+			"JSONObject/layout");
+
+		if (layoutJSONObject.has("layoutId")) {
+			return _layoutLocalService.fetchLayout(
+				layoutJSONObject.getLong("groupId"),
+				layoutJSONObject.getBoolean("privateLayout"),
+				layoutJSONObject.getLong("layoutId"));
+		}
+
+		return _layoutLocalService.fetchLayoutByExternalReferenceCode(
+			layoutJSONObject.getString("externalReferenceCode"), groupId);
+	}
+
+	private String _getLatestMergeNotificationResult(
+			long timestamp, long userId)
+		throws Exception {
+
+		List<UserNotificationEvent> userNotificationEvents =
+			_userNotificationEventLocalService.getUserNotificationEvents(
+				userId);
+
+		for (int i = userNotificationEvents.size() - 1; i >= 0; i--) {
+			UserNotificationEvent userNotificationEvent =
+				userNotificationEvents.get(i);
+
+			if ((userNotificationEvent.getTimestamp() < timestamp) ||
+				!Objects.equals(
+					userNotificationEvent.getType(),
+					LayoutSetPrototypePortletKeys.LAYOUT_SET_PROTOTYPE)) {
+
+				continue;
+			}
+
+			JSONObject payloadJSONObject = JSONFactoryUtil.createJSONObject(
+				userNotificationEvent.getPayload());
+
+			return payloadJSONObject.getString("result");
+		}
+
+		return null;
+	}
+
+	private Layout _getLinkedLayout(
+			long groupId, boolean privateLayout, Layout prototypeLayout)
+		throws Exception {
+
+		for (Layout layout :
+				_layoutLocalService.getLayouts(groupId, privateLayout)) {
+
+			if (Objects.equals(
+					prototypeLayout.getExternalReferenceCode(),
+					layout.getLayoutSetPrototypeLayoutERC())) {
+
+				return layout;
+			}
+		}
+
+		throw new AssertionError(
+			StringBundler.concat(
+				"No layout is linked to ",
+				prototypeLayout.getExternalReferenceCode(), " in group ",
+				groupId, " with private layout ", privateLayout));
+	}
+
+	private int _getRandomStatus(int... statuses) {
+		return statuses[RandomTestUtil.randomInt(0, statuses.length - 1)];
+	}
+
+	private Map<String, String[]> _getSelectionParameterMap(
+		boolean journalPortletData) {
+
+		return HashMapBuilder.put(
+			PortletDataHandlerKeys.PORTLET_CONFIGURATION,
+			new String[] {Boolean.TRUE.toString()}
+		).put(
+			PortletDataHandlerKeys.PORTLET_CONFIGURATION_ALL,
+			new String[] {Boolean.TRUE.toString()}
+		).put(
+			PortletDataHandlerKeys.PORTLET_DATA,
+			new String[] {Boolean.TRUE.toString()}
+		).put(
+			PortletDataHandlerKeys.PORTLET_DATA + StringPool.UNDERLINE +
+				JournalPortletKeys.JOURNAL,
+			new String[] {String.valueOf(journalPortletData)}
+		).put(
+			PortletDataHandlerKeys.PORTLET_DATA_CONTROL_DEFAULT,
+			new String[] {Boolean.TRUE.toString()}
+		).put(
+			PortletDataHandlerKeys.PORTLET_SETUP_ALL,
+			new String[] {Boolean.TRUE.toString()}
+		).build();
+	}
+
+	private SafeCloseable _registerMessageListenerWithSafeCloseable(
+		MessageListener messageListener) {
+
+		return _registerServiceWithSafeCloseable(
+			MessageListener.class,
+			HashMapDictionaryBuilder.<String, Object>put(
+				"destination.name", DestinationNames.BACKGROUND_TASK_STATUS
+			).put(
+				"service.ranking", Integer.MAX_VALUE
+			).build(),
+			messageListener);
+	}
+
+	private <S> SafeCloseable _registerServiceWithSafeCloseable(
+		Class<S> clazz, Dictionary<String, ?> properties, S service) {
+
+		Bundle bundle = FrameworkUtil.getBundle(
+			LayoutSetPrototypePropagationTest.class);
+
+		BundleContext bundleContext = bundle.getBundleContext();
+
+		ServiceRegistration<S> serviceRegistration =
+			bundleContext.registerService(clazz, service, properties);
+
+		return serviceRegistration::unregister;
+	}
+
+	private void _registerTestPortlet(String portletName) {
+		Bundle bundle = FrameworkUtil.getBundle(
+			LayoutSetPrototypePropagationTest.class);
+
+		BundleContext bundleContext = bundle.getBundleContext();
+
+		bundleContext.registerService(
+			jakarta.portlet.Portlet.class, new MVCPortlet(),
+			HashMapDictionaryBuilder.<String, Object>put(
+				"com.liferay.portlet.instanceable", "true"
+			).put(
+				"com.liferay.portlet.preferences-owned-by-group", "true"
+			).put(
+				"jakarta.portlet.init-param.view-template", "/view.jsp"
+			).put(
+				"jakarta.portlet.name", portletName
+			).build());
+	}
+
+	private void _testLayoutPermissionPropagation(boolean initial)
+		throws Exception {
+
+		setLinkEnabled(true);
+
+		Role role = RoleLocalServiceUtil.getRole(
+			TestPropsValues.getCompanyId(), RoleConstants.POWER_USER);
+
+		ResourcePermissionServiceUtil.setIndividualResourcePermissions(
+			prototypeLayout.getGroupId(), prototypeLayout.getCompanyId(),
+			Layout.class.getName(),
+			String.valueOf(prototypeLayout.getPrimaryKey()), role.getRoleId(),
+			new String[] {ActionKeys.CUSTOMIZE});
+
+		prototypeLayout = updateModifiedDate(
+			prototypeLayout,
+			new Date(System.currentTimeMillis() + Time.MINUTE));
+
+		propagateChanges(initial, group);
+
+		Assert.assertEquals(
+			initial,
+			ResourcePermissionLocalServiceUtil.hasResourcePermission(
+				layout.getCompanyId(), Layout.class.getName(),
+				ResourceConstants.SCOPE_INDIVIDUAL,
+				String.valueOf(layout.getPrimaryKey()), role.getRoleId(),
+				ActionKeys.CUSTOMIZE));
+	}
+
+	private void _testLayoutSetPrototypePropagation(boolean deleteCacheFile)
+		throws Exception {
+
+		TestMessageListener testMessageListener = new TestMessageListener();
+
+		try (SafeCloseable safeCloseable1 =
+				PropsValuesTestUtil.swapWithSafeCloseable(
+					"LAYOUT_SET_PROTOTYPE_MERGE_DELETE_CACHE_FILE_ENABLED",
+					deleteCacheFile);
+			SafeCloseable safeCloseable2 =
+				_registerMessageListenerWithSafeCloseable(
+					testMessageListener)) {
+
+			LayoutTestUtil.addTypePortletLayout(_layoutSetPrototypeGroup, true);
+
+			long timestamp = System.currentTimeMillis();
+
+			propagateChanges(false, group);
+
+			Assert.assertTrue(testMessageListener._fileExists);
+
+			_assertNotification(
+				"successful", timestamp, TestPropsValues.getUserId());
+
+			Assert.assertEquals(
+				!deleteCacheFile, FileUtil.exists(testMessageListener._path));
+		}
+		finally {
+			FileUtil.delete(testMessageListener._path);
+		}
+	}
+
+	private void _testLayoutSetPrototypePropagation(
+			boolean privateLayoutSetPrototypeLink,
+			boolean publicLayoutSetPrototypeLink)
+		throws Exception {
+
+		Group testGroup = GroupTestUtil.addGroup();
+
+		long publicLayoutSetPrototypeId = 0;
+
+		if (publicLayoutSetPrototypeLink) {
+			publicLayoutSetPrototypeId =
+				_layoutSetPrototype.getLayoutSetPrototypeId();
+		}
+
+		long privateLayoutSetPrototypeId = 0;
+
+		if (privateLayoutSetPrototypeLink) {
+			privateLayoutSetPrototypeId =
+				_layoutSetPrototype.getLayoutSetPrototypeId();
+		}
+
+		setLinkEnabled(
+			testGroup, publicLayoutSetPrototypeId, privateLayoutSetPrototypeId,
+			publicLayoutSetPrototypeLink, privateLayoutSetPrototypeLink);
+
+		Layout childLayout = LayoutTestUtil.addTypePortletLayout(
+			_layoutSetPrototypeGroup, true);
+		Layout parentLayout = LayoutTestUtil.addTypePortletLayout(
+			_layoutSetPrototypeGroup, true);
+
+		childLayout = _layoutLocalService.updateParentLayoutId(
+			childLayout.getPlid(), parentLayout.getPlid());
+
+		Layout contentLayout = _addLayout(
+			_layoutSetPrototypeGroup.getGroupId());
+
+		Layout draftContentLayout = contentLayout.fetchDraftLayout();
+
+		ContentLayoutTestUtil.addFragmentEntryLinkToLayout(
+			JSONUtil.put(
+				FragmentEntryProcessorConstants.
+					KEY_EDITABLE_FRAGMENT_ENTRY_PROCESSOR,
+				JSONUtil.put(
+					"element-text",
+					JSONUtil.put(
+						"config",
+						JSONUtil.put(
+							"layout",
+							JSONUtil.put(
+								"groupId", childLayout.getGroupId()
+							).put(
+								"layoutId", childLayout.getLayoutId()
+							).put(
+								"layoutUuid", childLayout.getUuid()
+							).put(
+								"privateLayout", childLayout.isPrivateLayout()
+							)
+						).put(
+							"mapperType", "link"
+						)
+					).put(
+						"defaultValue", RandomTestUtil.randomString()
+					))
+			).toString(),
+			StringPool.BLANK, StringPool.BLANK, null, null,
+			"<h1 data-lfr-editable-id=\"element-text\" " +
+				"data-lfr-editable-type=\"text\">Heading Example</h1>",
+			StringPool.BLANK, draftContentLayout, "BASIC_COMPONENT-heading",
+			FragmentConstants.TYPE_COMPONENT, null, 0,
+			_segmentsExperienceLocalService.fetchDefaultSegmentsExperienceId(
+				draftContentLayout.getPlid()));
+
+		ContentLayoutTestUtil.publishLayout(draftContentLayout, contentLayout);
+
+		if (!publicLayoutSetPrototypeLink) {
+			_layoutLocalService.addLayout(
+				childLayout.getExternalReferenceCode(),
+				TestPropsValues.getUserId(), testGroup.getGroupId(), false,
+				LayoutConstants.DEFAULT_PARENT_LAYOUT_ID,
+				RandomTestUtil.randomString(), null, null,
+				LayoutConstants.TYPE_PORTLET, false, StringPool.BLANK,
+				ServiceContextTestUtil.getServiceContext(
+					testGroup.getGroupId()));
+		}
+
+		long timestamp = System.currentTimeMillis();
+
+		propagateChanges(false, _layoutSetPrototype);
+
+		_assertNotification(
+			"successful", timestamp, TestPropsValues.getUserId());
+
+		int privateLayoutsCount = _layoutLocalService.getLayoutsCount(
+			testGroup, true);
+		int publicLayoutsCount = _layoutLocalService.getLayoutsCount(
+			testGroup, false);
+
+		String languageId = LocaleUtil.toLanguageId(
+			LocaleUtil.getSiteDefault());
+		String name = RandomTestUtil.randomString();
+
+		_layoutLocalService.updateName(childLayout.getPlid(), name, languageId);
+		_layoutLocalService.updateName(
+			contentLayout.getPlid(), name, languageId);
+
+		timestamp = System.currentTimeMillis();
+
+		propagateChanges(false, _layoutSetPrototype);
+
+		_assertNotification(
+			"successful", timestamp, TestPropsValues.getUserId());
+
+		Assert.assertEquals(
+			privateLayoutsCount,
+			_layoutLocalService.getLayoutsCount(testGroup, true));
+		Assert.assertEquals(
+			publicLayoutsCount,
+			_layoutLocalService.getLayoutsCount(testGroup, false));
+
+		List<FragmentEntryLink> prototypeFragmentEntryLinks =
+			FragmentEntryLinkLocalServiceUtil.getFragmentEntryLinksByPlid(
+				contentLayout.getGroupId(), contentLayout.getPlid());
+
+		FragmentEntryLink prototypeFragmentEntryLink =
+			prototypeFragmentEntryLinks.get(0);
+
+		for (boolean privateLayout : new boolean[] {false, true}) {
+			if ((privateLayout && !privateLayoutSetPrototypeLink) ||
+				(!privateLayout && !publicLayoutSetPrototypeLink)) {
+
+				continue;
+			}
+
+			Layout linkedContentLayout = _getLinkedLayout(
+				testGroup.getGroupId(), privateLayout, contentLayout);
+
+			String suffix = StringPool.BLANK;
+
+			if (privateLayout) {
+				suffix = LayoutConstants.EXTERNAL_REFERENCE_CODE_SUFFIX_PRIVATE;
+			}
+
+			Assert.assertEquals(
+				contentLayout.getExternalReferenceCode() + suffix,
+				linkedContentLayout.getExternalReferenceCode());
+			Assert.assertEquals(name, linkedContentLayout.getName(languageId));
+
+			List<FragmentEntryLink> fragmentEntryLinks =
+				FragmentEntryLinkLocalServiceUtil.getFragmentEntryLinksByPlid(
+					testGroup.getGroupId(), linkedContentLayout.getPlid());
+
+			Assert.assertEquals(
+				fragmentEntryLinks.toString(), 1, fragmentEntryLinks.size());
+
+			Layout linkedChildLayout = _getLinkedLayout(
+				testGroup.getGroupId(), privateLayout, childLayout);
+
+			Assert.assertEquals(name, linkedChildLayout.getName(languageId));
+
+			Layout linkedParentLayout = _getLinkedLayout(
+				testGroup.getGroupId(), privateLayout, parentLayout);
+
+			Assert.assertEquals(
+				linkedParentLayout.getLayoutId(),
+				linkedChildLayout.getParentLayoutId());
+
+			FragmentEntryLink fragmentEntryLink = fragmentEntryLinks.get(0);
+
+			Assert.assertEquals(
+				linkedChildLayout,
+				_getEditableValuesLayout(
+					fragmentEntryLink.getEditableValues(),
+					testGroup.getGroupId()));
+
+			if (privateLayout) {
+				Assert.assertNotEquals(
+					prototypeFragmentEntryLink.getUuid(),
+					fragmentEntryLink.getUuid());
+			}
+			else {
+				Assert.assertEquals(
+					prototypeFragmentEntryLink.getUuid(),
+					fragmentEntryLink.getUuid());
+			}
+		}
+
+		GroupTestUtil.deleteGroup(testGroup);
+	}
+
+	private void _testLayoutSetPrototypePropagationCheckNotification(
+			String expectedResult, int status1, int status2)
+		throws Exception {
+
+		long userId = TestPropsValues.getUserId();
+
+		Group testGroup = GroupTestUtil.addGroup();
+
+		_sites.updateLayoutSetPrototypesLinks(
+			testGroup, _layoutSetPrototype.getLayoutSetPrototypeId(), 0, true,
+			false);
+
+		try (SafeCloseable safeCloseable = _registerServiceWithSafeCloseable(
+				BackgroundTaskExecutor.class,
+				HashMapDictionaryBuilder.<String, Object>put(
+					"background.task.executor.class.name",
+					BackgroundTaskExecutorNames.
+						LAYOUT_SET_PROTOTYPE_MERGE_BACKGROUND_TASK_EXECUTOR
+				).put(
+					"service.ranking", 1000
+				).build(),
+				new TestBackgroundTaskExecutor(
+					HashMapBuilder.put(
+						group.getGroupId(), status1
+					).put(
+						testGroup.getGroupId(), status2
+					).build()))) {
+
+			long timestamp = System.currentTimeMillis();
+
+			try (LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
+					"com.liferay.portal.background.task.internal.messaging." +
+						"BackgroundTaskMessageListener",
+					LoggerTestUtil.OFF)) {
+
+				_sites.mergeLayoutSetPrototypeLayouts(
+					_layoutSetPrototype, userId);
+
+				_assertNotification(expectedResult, timestamp, userId);
+			}
+		}
+
+		GroupLocalServiceUtil.deleteGroup(testGroup);
+	}
+
+	private void _testLayoutSetPrototypePropagationWithDefaultVocabulary(
+			boolean initial)
+		throws Exception {
+
+		AssetVocabulary assetVocabulary =
+			AssetVocabularyLocalServiceUtil.addDefaultVocabulary(
+				group.getGroupId());
+
+		AssetVocabulary layoutSetPrototypeAssetVocabulary =
+			AssetVocabularyLocalServiceUtil.addDefaultVocabulary(
+				_layoutSetPrototypeGroup.getGroupId());
+
+		AssetCategory layoutSetPrototypeAssetCategory =
+			AssetTestUtil.addCategory(
+				_layoutSetPrototypeGroup.getGroupId(),
+				layoutSetPrototypeAssetVocabulary.getVocabularyId());
+
+		List<AssetVocabulary> assetVocabularies =
+			AssetVocabularyLocalServiceUtil.getGroupVocabularies(
+				new long[] {group.getGroupId()});
+
+		int vocabulariesCount = assetVocabularies.size();
+
+		propagateChanges(initial, group);
+
+		assetVocabularies =
+			AssetVocabularyLocalServiceUtil.getGroupVocabularies(
+				new long[] {group.getGroupId()});
+
+		Assert.assertEquals(
+			assetVocabularies.toString(), vocabulariesCount,
+			assetVocabularies.size());
+
+		_assertAssetCategory(assetVocabulary, layoutSetPrototypeAssetCategory);
+	}
+
+	private void _testLayoutSetPrototypePropagationWithExportImportInProcess(
+			Consumer<Boolean> exportImportThreadLocalConsumer)
+		throws Exception {
+
+		try {
+			exportImportThreadLocalConsumer.accept(true);
+
+			propagateChanges(group);
+
+			Assert.fail();
+		}
+		catch (IllegalStateException illegalStateException) {
+		}
+		finally {
+			exportImportThreadLocalConsumer.accept(false);
+		}
+	}
+
+	private void _verifyPortletPreferenceValue(
+		Layout layout, String portletId, String key, String expectedValue) {
+
+		PortletPreferencesIds portletPreferencesIds =
+			_portletPreferencesFactory.getPortletPreferencesIds(
+				layout.getCompanyId(), layout.getGroupId(), 0, layout.getPlid(),
+				portletId);
+
+		com.liferay.portal.kernel.model.PortletPreferences portletPreferences =
+			_portletPreferencesLocalService.fetchPortletPreferences(
+				portletPreferencesIds.getOwnerId(),
+				portletPreferencesIds.getOwnerType(), layout.getPlid(),
+				portletPreferencesIds.getPortletId());
+
+		PortletPreferences jxPortletPreferences =
+			_portletPreferenceValueLocalService.getPreferences(
+				portletPreferences);
+
+		Assert.assertEquals(
+			expectedValue, jxPortletPreferences.getValue(key, null));
+	}
+
+	private static final String _COLOR_SCHEME_ID =
+		RandomTestUtil.randomString();
+
+	private static final String _TEMP_DIR =
+		SystemProperties.get(SystemProperties.TMP_DIR) +
+			"/liferay/layout_set_prototype/";
+
+	private static final String _THEME_ID = "minium_WAR_miniumtheme";
+
 	private static final Log _log = LogFactoryUtil.getLog(
 		LayoutSetPrototypePropagationTest.class);
+
+	private static BundleContext _bundleContext;
+
+	@Inject
+	private BackgroundTaskLocalService _backgroundTaskLocalService;
+
+	@Inject
+	private BackgroundTaskPersistence _backgroundTaskPersistence;
+
+	@Inject(
+		filter = "origin.bundle.symbolic.name=com.liferay.portal.background.task.service"
+	)
+	private SessionFactory _backgroundTaskSessionFactory;
+
+	@DeleteAfterTestRun
+	private CTCollection _ctCollection;
+
+	@Inject
+	private CTCollectionLocalService _ctCollectionLocalService;
+
+	@Inject
+	private CTProcessLocalService _ctProcessLocalService;
+
+	@Inject
+	private FragmentCollectionLocalService _fragmentCollectionLocalService;
+
+	@Inject
+	private FragmentEntryLocalService _fragmentEntryLocalService;
 
 	private int _initialLayoutCount;
 	private int _initialPrototypeLayoutsCount;
@@ -992,21 +2578,40 @@ public class LayoutSetPrototypePropagationTest
 
 	private Layout _layout;
 
+	@Inject
+	private LayoutLocalService _layoutLocalService;
+
 	@DeleteAfterTestRun
 	private LayoutSetPrototype _layoutSetPrototype;
 
 	private Group _layoutSetPrototypeGroup;
-
-	@Inject
-	private LayoutSetPrototypeHelper _layoutSetPrototypeHelper;
-
 	private JournalArticle _layoutSetPrototypeJournalArticle;
 
 	@DeleteAfterTestRun
 	private Layout _layoutSetPrototypeLayout;
 
 	private String _portletId;
+
+	@Inject
+	private PortletPreferenceValueLocalService
+		_portletPreferenceValueLocalService;
+
+	@Inject
+	private PortletPreferencesFactory _portletPreferencesFactory;
+
+	@Inject
+	private PortletPreferencesLocalService _portletPreferencesLocalService;
+
+	@DeleteAfterTestRun
+	private LayoutSetPrototype _privateLayoutSetPrototype;
+
 	private Layout _prototypeLayout;
+
+	@Inject
+	private ResourceActions _resourceActions;
+
+	@Inject
+	private SegmentsExperienceLocalService _segmentsExperienceLocalService;
 
 	@Inject
 	private Sites _sites;
@@ -1016,5 +2621,89 @@ public class LayoutSetPrototypePropagationTest
 
 	@DeleteAfterTestRun
 	private User _user2;
+
+	@Inject
+	private UserNotificationEventLocalService
+		_userNotificationEventLocalService;
+
+	private static class TestBackgroundTaskExecutor
+		extends BaseBackgroundTaskExecutor {
+
+		public TestBackgroundTaskExecutor(Map<Long, Integer> groupIdStatusMap) {
+			_groupIdStatusMap = groupIdStatusMap;
+		}
+
+		@Override
+		public BackgroundTaskExecutor clone() {
+			return this;
+		}
+
+		@Override
+		public BackgroundTaskResult execute(BackgroundTask backgroundTask) {
+			Integer status = _groupIdStatusMap.getOrDefault(
+				backgroundTask.getGroupId(),
+				BackgroundTaskConstants.STATUS_SUCCESSFUL);
+
+			if (status == BackgroundTaskConstants.STATUS_FAILED) {
+				throw new RuntimeException();
+			}
+
+			return new BackgroundTaskResult(status);
+		}
+
+		@Override
+		public BackgroundTaskDisplay getBackgroundTaskDisplay(
+			BackgroundTask backgroundTask) {
+
+			return null;
+		}
+
+		private final Map<Long, Integer> _groupIdStatusMap;
+
+	}
+
+	private class TestMessageListener extends BaseMessageListener {
+
+		@Override
+		protected void doReceive(Message message) throws PortalException {
+			if (!Objects.equals(
+					message.getString("taskExecutorClassName"),
+					BackgroundTaskExecutorNames.
+						LAYOUT_SET_PROTOTYPE_MERGE_BACKGROUND_TASK_EXECUTOR)) {
+
+				return;
+			}
+
+			int backgroundTaskStatus = message.getInteger("status");
+
+			if ((backgroundTaskStatus !=
+					BackgroundTaskConstants.STATUS_CANCELLED) &&
+				(backgroundTaskStatus !=
+					BackgroundTaskConstants.STATUS_COMPLETED_WITH_ERRORS) &&
+				(backgroundTaskStatus !=
+					BackgroundTaskConstants.STATUS_FAILED) &&
+				(backgroundTaskStatus !=
+					BackgroundTaskConstants.STATUS_SUCCESSFUL)) {
+
+				return;
+			}
+
+			com.liferay.portal.background.task.model.BackgroundTask
+				backgroundTask = _backgroundTaskLocalService.getBackgroundTask(
+					message.getLong("backgroundTaskId"));
+
+			String sessionId = MapUtil.getString(
+				backgroundTask.getTaskContextMap(),
+				LayoutSetPrototypeBackgroundTaskConstants.SESSION_ID);
+
+			_path = _TEMP_DIR + sessionId + ".lar";
+
+			_fileExists = FileUtil.exists(_path);
+		}
+
+		private boolean _fileExists;
+		private String _path;
+
+	}
 
 }

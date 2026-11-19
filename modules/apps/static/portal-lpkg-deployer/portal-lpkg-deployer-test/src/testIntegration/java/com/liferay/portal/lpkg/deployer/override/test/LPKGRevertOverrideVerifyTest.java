@@ -6,8 +6,8 @@
 package com.liferay.portal.lpkg.deployer.override.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.util.PropsValues;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -107,9 +107,11 @@ public class LPKGRevertOverrideVerifyTest {
 		leftoverEntries.addAll(jars.entrySet());
 
 		for (Map.Entry<String, String> entry : leftoverEntries) {
-			if (entry.getValue() == null) {
-				leftoverEntries.remove(entry);
+			if (entry.getValue() != null) {
+				continue;
 			}
+
+			leftoverEntries.remove(entry);
 		}
 
 		Collections.sort(

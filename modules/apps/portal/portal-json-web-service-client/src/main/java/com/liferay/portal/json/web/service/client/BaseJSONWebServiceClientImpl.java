@@ -16,7 +16,10 @@ import com.liferay.portal.json.web.service.client.internal.IdleConnectionMonitor
 import com.liferay.portal.json.web.service.client.internal.X509TrustManagerImpl;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
+
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 
@@ -40,8 +43,6 @@ import java.util.regex.Pattern;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 
-import javax.servlet.http.HttpServletResponse;
-
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
@@ -57,6 +58,8 @@ import org.apache.http.auth.NTCredentials;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.AuthCache;
 import org.apache.http.client.CredentialsProvider;
+import org.apache.http.client.config.CookieSpecs;
+import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
@@ -247,6 +250,14 @@ public abstract class BaseJSONWebServiceClientImpl
 		log("GET", url, parameters, headers);
 
 		HttpGet httpGet = new HttpGet(url);
+
+		httpGet.setConfig(
+			RequestConfig.custom(
+			).setCookieSpec(
+				CookieSpecs.STANDARD
+			).setRedirectsEnabled(
+				_redirectsEnabled
+			).build());
 
 		addHeaders(httpGet, headers);
 
@@ -723,6 +734,10 @@ public abstract class BaseJSONWebServiceClientImpl
 		_proxyWorkstation = proxyWorkstation;
 	}
 
+	public void setRedirectsEnabled(boolean redirectsEnabled) {
+		_redirectsEnabled = redirectsEnabled;
+	}
+
 	@Override
 	public void setTrustSelfSignedCertificates(
 		boolean trustSelfSignedCertificates) {
@@ -893,6 +908,39 @@ public abstract class BaseJSONWebServiceClientImpl
 		return poolingNHttpClientConnectionManager;
 	}
 
+	protected SSLIOSessionStrategy getSSLIOSessionStrategy() {
+		SSLContextBuilder sslContextBuilder = SSLContexts.custom();
+
+		SSLContext sslContext = null;
+
+		try {
+			sslContext = sslContextBuilder.build();
+
+			sslContext.init(
+				null,
+				new TrustManager[] {
+					new X509TrustManagerImpl(
+						_keyStore, _trustSelfSignedCertificates)
+				},
+				null);
+		}
+		catch (SecurityException securityException) {
+			throw securityException;
+		}
+		catch (Exception exception) {
+			throw new RuntimeException(exception);
+		}
+
+		String[] httpsProtocols = _split(System.getProperty("https.protocols"));
+
+		String[] cipherSuites = _split(
+			System.getProperty("https.cipherSuites"));
+
+		return new SSLIOSessionStrategy(
+			sslContext, httpsProtocols, cipherSuites,
+			SSLIOSessionStrategy.getDefaultHostnameVerifier());
+	}
+
 	protected Registry<SchemeIOSessionStrategy>
 		getSchemeIOSessionStrategyRegistry() {
 
@@ -910,36 +958,6 @@ public abstract class BaseJSONWebServiceClientImpl
 		}
 
 		return registryBuilder.build();
-	}
-
-	protected SSLIOSessionStrategy getSSLIOSessionStrategy() {
-		SSLContextBuilder sslContextBuilder = SSLContexts.custom();
-
-		SSLContext sslContext = null;
-
-		try {
-			sslContext = sslContextBuilder.build();
-
-			sslContext.init(
-				null,
-				new TrustManager[] {
-					new X509TrustManagerImpl(
-						_keyStore, _trustSelfSignedCertificates)
-				},
-				null);
-		}
-		catch (Exception exception) {
-			throw new RuntimeException(exception);
-		}
-
-		String[] httpsProtocols = _split(System.getProperty("https.protocols"));
-
-		String[] cipherSuites = _split(
-			System.getProperty("https.cipherSuites"));
-
-		return new SSLIOSessionStrategy(
-			sslContext, httpsProtocols, cipherSuites,
-			SSLIOSessionStrategy.getDefaultHostnameVerifier());
 	}
 
 	protected int getStatus(String json) {
@@ -1117,11 +1135,7 @@ public abstract class BaseJSONWebServiceClientImpl
 
 		String contentTypeHeaderValue = contentTypeHeader.getValue();
 
-		if (contentTypeHeaderValue.contains("application/json")) {
-			return true;
-		}
-
-		return false;
+		return contentTypeHeaderValue.contains("application/json");
 	}
 
 	private boolean _isBlank(String s) {
@@ -1157,7 +1171,7 @@ public abstract class BaseJSONWebServiceClientImpl
 	}
 
 	private List<NameValuePair> _toNameValuePairs(String... keyValuesArray) {
-		if ((keyValuesArray == null) || (keyValuesArray.length == 0)) {
+		if (ArrayUtil.isEmpty(keyValuesArray)) {
 			return Collections.emptyList();
 		}
 
@@ -1193,9 +1207,11 @@ public abstract class BaseJSONWebServiceClientImpl
 
 			stringBuilder.append(nameValuePair.getValue());
 
-			if (iterator.hasNext()) {
-				stringBuilder.append(",");
+			if (!iterator.hasNext()) {
+				continue;
 			}
+
+			stringBuilder.append(",");
 		}
 
 		stringBuilder.append("}");
@@ -1235,6 +1251,7 @@ public abstract class BaseJSONWebServiceClientImpl
 	private String _proxyLogin;
 	private String _proxyPassword;
 	private String _proxyWorkstation;
+	private boolean _redirectsEnabled = true;
 	private boolean _trustSelfSignedCertificates = true;
 
 }

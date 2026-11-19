@@ -12,8 +12,10 @@ import com.liferay.portal.kernel.service.ServiceWrapper;
  *
  * @author Alessio Antonio Rendina
  * @see CommerceNotificationQueueEntryService
+ * @deprecated As of Cavanaugh (7.4.x)
  * @generated
  */
+@Deprecated
 public class CommerceNotificationQueueEntryServiceWrapper
 	implements CommerceNotificationQueueEntryService,
 			   ServiceWrapper<CommerceNotificationQueueEntryService> {
@@ -104,3 +106,4 @@ public class CommerceNotificationQueueEntryServiceWrapper
 		_commerceNotificationQueueEntryService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:641525915

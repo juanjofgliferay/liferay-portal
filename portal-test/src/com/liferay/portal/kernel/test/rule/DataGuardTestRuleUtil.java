@@ -21,6 +21,7 @@ import com.liferay.portal.kernel.dao.orm.SessionWrapper;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.model.BaseModel;
+import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.PersistedModel;
 import com.liferay.portal.kernel.model.Portlet;
 import com.liferay.portal.kernel.model.ResourceConstants;
@@ -39,6 +40,7 @@ import com.liferay.portal.kernel.transaction.TransactionConfig;
 import com.liferay.portal.kernel.transaction.TransactionInvokerUtil;
 import com.liferay.portal.kernel.util.PortalClassLoaderUtil;
 import com.liferay.portal.kernel.util.ProxyUtil;
+import com.liferay.portal.kernel.util.SetUtil;
 import com.liferay.portal.service.PersistedModelLocalServiceRegistryUtil;
 
 import java.io.Closeable;
@@ -51,10 +53,11 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Deque;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.junit.Assert;
@@ -85,7 +88,7 @@ public class DataGuardTestRuleUtil {
 
 		serviceRegistration.unregister();
 
-		_recordsThreadLocal.remove();
+		_records.remove();
 
 		_autoDeleteAndAssert(
 			testClassName, dataBag._dataMap, dataBag._portlets,
@@ -113,7 +116,7 @@ public class DataGuardTestRuleUtil {
 		Map<String, Map<Serializable, String>> records =
 			new ConcurrentHashMap<>();
 
-		_recordsThreadLocal.set(records);
+		_records.set(records);
 
 		ServiceRegistration<SessionCustomizer> serviceRegistration =
 			bundleContext.registerService(
@@ -128,7 +131,7 @@ public class DataGuardTestRuleUtil {
 	public static DataBag beforeMethod() {
 		return new DataBag(
 			_captureDataMap(), PortletLocalServiceUtil.getPortlets(),
-			_recordsThreadLocal.get(), null);
+			_records.get(), null);
 	}
 
 	public static void smartDelete(
@@ -145,33 +148,42 @@ public class DataGuardTestRuleUtil {
 		for (Method method : clazz.getMethods()) {
 			String methodName = method.getName();
 
-			if (methodName.startsWith("delete") &&
-				Arrays.equals(method.getParameterTypes(), parameterTypes)) {
+			if (!methodName.startsWith("delete") ||
+				!Arrays.equals(method.getParameterTypes(), parameterTypes)) {
 
-				if (deleteMethod == null) {
+				continue;
+			}
+
+			if (deleteMethod == null) {
+				deleteMethod = method;
+			}
+			else {
+				String deleteMethodName = deleteMethod.getName();
+
+				if (deleteMethodName.length() > methodName.length()) {
 					deleteMethod = method;
-				}
-				else {
-					String deleteMethodName = deleteMethod.getName();
-
-					if (deleteMethodName.length() > methodName.length()) {
-						deleteMethod = method;
-					}
 				}
 			}
 		}
 
+		BaseModel<?> persistedBaseModel = (BaseModel<?>)persistedModel;
+
+		PersistedModel refetchedPersistedModel =
+			persistedModelLocalService.fetchPersistedModel(
+				persistedBaseModel.getPrimaryKeyObj());
+
+		if (refetchedPersistedModel == null) {
+			return;
+		}
+
 		try {
 			if (deleteMethod == null) {
-				persistedModelLocalService.deletePersistedModel(persistedModel);
+				persistedModelLocalService.deletePersistedModel(
+					refetchedPersistedModel);
 			}
 			else {
-				BaseModel<?> baseModel = (BaseModel<?>)persistedModel;
-
 				deleteMethod.invoke(
-					persistedModelLocalService,
-					persistedModelLocalService.getPersistedModel(
-						baseModel.getPrimaryKeyObj()));
+					persistedModelLocalService, refetchedPersistedModel);
 			}
 		}
 		catch (Throwable throwable1) {
@@ -261,9 +273,11 @@ public class DataGuardTestRuleUtil {
 		throws Throwable {
 
 		for (Portlet portlet : PortletLocalServiceUtil.getPortlets()) {
-			if (!previousPortlets.remove(portlet)) {
-				PortletLocalServiceUtil.destroyPortlet(portlet);
+			if (previousPortlets.remove(portlet)) {
+				continue;
 			}
+
+			PortletLocalServiceUtil.destroyPortlet(portlet);
 		}
 
 		if (autoDelete) {
@@ -289,39 +303,41 @@ public class DataGuardTestRuleUtil {
 				leftoverBaseModels.removeAll(previsoutBaseModels);
 			}
 
-			if (!leftoverBaseModels.isEmpty()) {
-				sb.append(testClassName);
-				sb.append(" caused leftover data for class :");
-				sb.append(className);
-				sb.append(" with data : [\n");
+			if (leftoverBaseModels.isEmpty()) {
+				continue;
+			}
 
-				for (BaseModel<?> baseModel : leftoverBaseModels) {
-					sb.append(StringPool.TAB);
-					sb.append(baseModel);
+			sb.append(testClassName);
+			sb.append(" caused leftover data for class :");
+			sb.append(className);
+			sb.append(" with data : [\n");
 
-					String backtraceInfo = null;
+			for (BaseModel<?> baseModel : leftoverBaseModels) {
+				sb.append(StringPool.TAB);
+				sb.append(baseModel);
 
-					Map<Serializable, String> map = records.get(
-						baseModel.getModelClassName());
+				String backtraceInfo = null;
 
-					if (map != null) {
-						backtraceInfo = map.get(baseModel.getPrimaryKeyObj());
-					}
+				Map<Serializable, String> map = records.get(
+					baseModel.getModelClassName());
 
-					if (backtraceInfo == null) {
-						sb.append(" with no backtrace info,\n");
-					}
-					else {
-						sb.append(" with backtrace info,\n");
-						sb.append(StringPool.TAB);
-						sb.append(StringPool.TAB);
-						sb.append(backtraceInfo);
-						sb.append(",\n");
-					}
+				if (map != null) {
+					backtraceInfo = map.get(baseModel.getPrimaryKeyObj());
 				}
 
-				sb.setStringAt("\n]\n", sb.index() - 1);
+				if (backtraceInfo == null) {
+					sb.append(" with no backtrace info,\n");
+				}
+				else {
+					sb.append(" with backtrace info,\n");
+					sb.append(StringPool.TAB);
+					sb.append(StringPool.TAB);
+					sb.append(backtraceInfo);
+					sb.append(",\n");
+				}
 			}
+
+			sb.setStringAt("\n]\n", sb.index() - 1);
 		}
 
 		Assert.assertTrue(sb.toString(), sb.index() == 0);
@@ -400,7 +416,7 @@ public class DataGuardTestRuleUtil {
 		Map<String, PersistedModelLocalService> persistedModelLocalServices =
 			_getPersistedModelLocalServices();
 
-		Map<String, List<BaseModel<?>>> dataMap = new HashMap<>();
+		Map<String, List<BaseModel<?>>> dataMap = new LinkedHashMap<>();
 
 		for (Map.Entry<String, PersistedModelLocalService> entry :
 				persistedModelLocalServices.entrySet()) {
@@ -520,18 +536,33 @@ public class DataGuardTestRuleUtil {
 		_getPersistedModelLocalServices() {
 
 		Map<String, PersistedModelLocalService>
-			scrubbedPersistedModelLocalServices = new HashMap<>();
+			scrubbedPersistedModelLocalServices = new LinkedHashMap<>();
 
 		ServiceTrackerMap<String, PersistedModelLocalService>
 			serviceTrackerMap = ReflectionTestUtil.getFieldValue(
 				PersistedModelLocalServiceRegistryUtil.class,
 				"_serviceTrackerMap");
 
-		for (String modeClassName : serviceTrackerMap.keySet()) {
-			if (modeClassName.indexOf(CharPool.POUND) == -1) {
-				scrubbedPersistedModelLocalServices.put(
-					modeClassName, serviceTrackerMap.getService(modeClassName));
+		for (String modelClassName : _PRIORITIZED_MODEL_CLASS_NAMES) {
+			if (!serviceTrackerMap.containsKey(modelClassName) ||
+				(modelClassName.indexOf(CharPool.POUND) != -1)) {
+
+				continue;
 			}
+
+			scrubbedPersistedModelLocalServices.put(
+				modelClassName, serviceTrackerMap.getService(modelClassName));
+		}
+
+		for (String modelClassName : serviceTrackerMap.keySet()) {
+			if (_blacklistedModelClassNames.contains(modelClassName) ||
+				(modelClassName.indexOf(CharPool.POUND) != -1)) {
+
+				continue;
+			}
+
+			scrubbedPersistedModelLocalServices.put(
+				modelClassName, serviceTrackerMap.getService(modelClassName));
 		}
 
 		return scrubbedPersistedModelLocalServices;
@@ -564,7 +595,7 @@ public class DataGuardTestRuleUtil {
 			"com.liferay.portal.spring.transaction." +
 				"TransactionExecutorThreadLocal");
 
-		Field field = clazz.getDeclaredField("_transactionExecutorThreadLocal");
+		Field field = clazz.getDeclaredField("_transactionExecutorDeque");
 
 		field.setAccessible(true);
 
@@ -592,21 +623,20 @@ public class DataGuardTestRuleUtil {
 		Object portletTransactionExecutor = bundleContext.getService(
 			serviceReference);
 
-		ThreadLocal<Deque<Object>> transactionExecutorsThreadLocal =
+		ThreadLocal<Deque<Object>> deque =
 			(ThreadLocal<Deque<Object>>)field.get(null);
 
-		Deque<Object> transactionExecutors =
-			transactionExecutorsThreadLocal.get();
+		Deque<Object> transactionExecutorDeque = deque.get();
 
-		if (portletTransactionExecutor == transactionExecutors.peek()) {
+		if (portletTransactionExecutor == transactionExecutorDeque.peek()) {
 			return () -> {
 			};
 		}
 
-		transactionExecutors.push(portletTransactionExecutor);
+		transactionExecutorDeque.push(portletTransactionExecutor);
 
 		return () -> {
-			transactionExecutors.pop();
+			transactionExecutorDeque.pop();
 
 			bundleContext.ungetService(serviceReference);
 		};
@@ -640,8 +670,17 @@ public class DataGuardTestRuleUtil {
 			basePersistence, "_sessionFactory", originalSessionFactory);
 	}
 
+	private static final String[] _PRIORITIZED_MODEL_CLASS_NAMES = {
+		Company.class.getName()
+	};
+
+	private static final Set<String> _blacklistedModelClassNames =
+		SetUtil.fromArray(
+			"com.liferay.dispatch.model.DispatchLog",
+			"com.liferay.portal.kernel.model.ClassName",
+			"com.liferay.portal.security.audit.storage.model.AuditEvent");
 	private static final ThreadLocal<Map<String, Map<Serializable, String>>>
-		_recordsThreadLocal = new ThreadLocal<>();
+		_records = new ThreadLocal<>();
 	private static final TransactionConfig _transactionConfig =
 		TransactionConfig.Factory.create(
 			Propagation.SUPPORTS,
@@ -688,13 +727,6 @@ public class DataGuardTestRuleUtil {
 			return super.save(object);
 		}
 
-		@Override
-		public void saveOrUpdate(Object object) throws ORMException {
-			_record(object);
-
-			super.saveOrUpdate(object);
-		}
-
 		private RecordingSessionWrapper(
 			Session session, Map<String, Map<Serializable, String>> records) {
 
@@ -706,7 +738,10 @@ public class DataGuardTestRuleUtil {
 		private void _record(Object object) {
 			BaseModel<?> baseModel = (BaseModel<?>)object;
 
-			if (baseModel.isNew()) {
+			if (baseModel.isNew() &&
+				!_blacklistedModelClassNames.contains(
+					baseModel.getModelClassName())) {
+
 				Map<Serializable, String> map = _records.computeIfAbsent(
 					baseModel.getModelClassName(),
 					className -> new ConcurrentHashMap<>());

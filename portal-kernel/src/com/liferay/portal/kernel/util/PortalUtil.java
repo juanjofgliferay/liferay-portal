@@ -26,35 +26,36 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.upload.UploadPortletRequest;
 import com.liferay.portal.kernel.upload.UploadServletRequest;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.PortletConfig;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.PortletMode;
+import jakarta.portlet.PortletPreferences;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.PreferencesValidator;
+import jakarta.portlet.WindowState;
+
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
+
 import java.io.IOException;
 
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.Properties;
 import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.TimeZone;
-import java.util.TreeMap;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.PortletConfig;
-import javax.portlet.PortletException;
-import javax.portlet.PortletMode;
-import javax.portlet.PortletPreferences;
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
-import javax.portlet.PortletURL;
-import javax.portlet.PreferencesValidator;
-import javax.portlet.WindowState;
-
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
 
 /**
  * @author Brian Wing Shun Chan
@@ -255,6 +256,10 @@ public class PortalUtil {
 		return _portal.escapeRedirect(url);
 	}
 
+	public static String fetchClassName(long classNameId) {
+		return _portal.fetchClassName(classNameId);
+	}
+
 	/**
 	 * Generates a random key to identify the request based on the input string.
 	 *
@@ -342,6 +347,45 @@ public class PortalUtil {
 
 	public static long[] getAncestorSiteGroupIds(long groupId) {
 		return _portal.getAncestorSiteGroupIds(groupId);
+	}
+
+	/**
+	 * Returns the secure (HTTPS) or insecure (HTTP) content distribution
+	 * network (CDN) host address for this portal.
+	 *
+	 * @param  secure whether to get the secure CDN host address
+	 * @return the CDN host address
+	 */
+	public static String getCDNHost(boolean secure) {
+		return _portal.getCDNHost(secure);
+	}
+
+	public static String getCDNHost(HttpServletRequest httpServletRequest)
+		throws PortalException {
+
+		return _portal.getCDNHost(httpServletRequest);
+	}
+
+	/**
+	 * Returns the insecure (HTTP) content distribution network (CDN) host
+	 * address
+	 *
+	 * @param  companyId the company ID of a site
+	 * @return the CDN host address
+	 */
+	public static String getCDNHostHttp(long companyId) {
+		return _portal.getCDNHostHttp(companyId);
+	}
+
+	/**
+	 * Returns the secure (HTTPS) content distribution network (CDN) host
+	 * address
+	 *
+	 * @param  companyId the company ID of a site
+	 * @return the CDN host address
+	 */
+	public static String getCDNHostHttps(long companyId) {
+		return _portal.getCDNHostHttps(companyId);
 	}
 
 	/**
@@ -440,43 +484,22 @@ public class PortalUtil {
 			includeQueryString);
 	}
 
-	/**
-	 * Returns the secure (HTTPS) or insecure (HTTP) content distribution
-	 * network (CDN) host address for this portal.
-	 *
-	 * @param  secure whether to get the secure CDN host address
-	 * @return the CDN host address
-	 */
-	public static String getCDNHost(boolean secure) {
-		return _portal.getCDNHost(secure);
-	}
-
-	public static String getCDNHost(HttpServletRequest httpServletRequest)
+	public static String getChangeLanguageURL(
+			String currentURL, HttpServletRequest httpServletRequest,
+			Locale locale, ThemeDisplay themeDisplay)
 		throws PortalException {
 
-		return _portal.getCDNHost(httpServletRequest);
+		return _portal.getChangeLanguageURL(
+			currentURL, httpServletRequest, locale, themeDisplay);
 	}
 
-	/**
-	 * Returns the insecure (HTTP) content distribution network (CDN) host
-	 * address
-	 *
-	 * @param  companyId the company ID of a site
-	 * @return the CDN host address
-	 */
-	public static String getCDNHostHttp(long companyId) {
-		return _portal.getCDNHostHttp(companyId);
-	}
+	public static Map<Locale, String> getChangeLanguageURLs(
+			String currentURL, HttpServletRequest httpServletRequest,
+			Collection<Locale> locales, ThemeDisplay themeDisplay)
+		throws PortalException {
 
-	/**
-	 * Returns the secure (HTTPS) content distribution network (CDN) host
-	 * address
-	 *
-	 * @param  companyId the company ID of a site
-	 * @return the CDN host address
-	 */
-	public static String getCDNHostHttps(long companyId) {
-		return _portal.getCDNHostHttps(companyId);
+		return _portal.getChangeLanguageURLs(
+			currentURL, httpServletRequest, locales, themeDisplay);
 	}
 
 	/**
@@ -513,6 +536,14 @@ public class PortalUtil {
 		throws PortalException {
 
 		return _portal.getCompany(httpServletRequest);
+	}
+
+	public static Company getCompany(
+			HttpServletRequest httpServletRequest,
+			boolean fallbackToDefaultCompany)
+		throws PortalException {
+
+		return _portal.getCompany(httpServletRequest, fallbackToDefaultCompany);
 	}
 
 	public static Company getCompany(PortletRequest portletRequest)
@@ -769,6 +800,12 @@ public class PortalUtil {
 		return _portal.getDefaultCompanyId();
 	}
 
+	public static String getDefaultVirtualHostname(
+		boolean companyFallback, LayoutSet layoutSet) {
+
+		return _portal.getDefaultVirtualHostname(companyFallback, layoutSet);
+	}
+
 	public static String getEmailFromAddress(
 		PortletPreferences portletPreferences, long companyId,
 		String defaultValue) {
@@ -864,11 +901,15 @@ public class PortalUtil {
 		return _portal.getJsSafePortletId(portletId);
 	}
 
-	public static String getLayoutActualURL(Layout layout) {
+	public static String getLayoutActualURL(Layout layout)
+		throws PortalException {
+
 		return _portal.getLayoutActualURL(layout);
 	}
 
-	public static String getLayoutActualURL(Layout layout, String mainPath) {
+	public static String getLayoutActualURL(Layout layout, String mainPath)
+		throws PortalException {
+
 		return _portal.getLayoutActualURL(layout, mainPath);
 	}
 
@@ -1031,20 +1072,6 @@ public class PortalUtil {
 
 	public static Locale getLocale(PortletRequest portletRequest) {
 		return _portal.getLocale(portletRequest);
-	}
-
-	public static String getLocalizedFriendlyURL(
-		HttpServletRequest httpServletRequest, Layout layout, Locale locale,
-		Locale originalLocale) {
-
-		return _portal.getLocalizedFriendlyURL(
-			httpServletRequest, layout, locale, originalLocale);
-	}
-
-	public static String getMailId(
-		String mx, String popPortletPrefix, Object... ids) {
-
-		return _portal.getMailId(mx, popPortletPrefix, ids);
 	}
 
 	public static String getNetvibesURL(
@@ -1474,6 +1501,14 @@ public class PortalUtil {
 		return _portal.getSystemSiteRoles();
 	}
 
+	public static String getURLWithSessionId(String url, String sessionId) {
+		return _portal.getURLWithSessionId(url, sessionId);
+	}
+
+	public static String getUniqueElementId() {
+		return _portal.getUniqueElementId();
+	}
+
 	public static String getUniqueElementId(
 		HttpServletRequest httpServletRequest, String namespace, String id) {
 
@@ -1508,10 +1543,6 @@ public class PortalUtil {
 
 	public static Date getUptime() {
 		return _portal.getUptime();
-	}
-
-	public static String getURLWithSessionId(String url, String sessionId) {
-		return _portal.getURLWithSessionId(url, sessionId);
 	}
 
 	public static User getUser(HttpServletRequest httpServletRequest)
@@ -1591,7 +1622,7 @@ public class PortalUtil {
 		return _portal.getValidUserId(companyId, userId);
 	}
 
-	public static TreeMap<String, String> getVirtualHostnames(
+	public static NavigableMap<String, String> getVirtualHostnames(
 		LayoutSet layoutSet) {
 
 		return _portal.getVirtualHostnames(layoutSet);
@@ -1602,10 +1633,6 @@ public class PortalUtil {
 		throws PortalException {
 
 		return _portal.getWidgetURL(portlet, themeDisplay);
-	}
-
-	public static void initCustomSQL() {
-		_portal.initCustomSQL();
 	}
 
 	public static User initUser(HttpServletRequest httpServletRequest)
@@ -1692,16 +1719,16 @@ public class PortalUtil {
 		return _portal.isOmniadmin(user);
 	}
 
+	public static boolean isRSSFeedsEnabled() {
+		return _portal.isRSSFeedsEnabled();
+	}
+
 	public static boolean isReservedParameter(String name) {
 		return _portal.isReservedParameter(name);
 	}
 
 	public static boolean isRightToLeft(HttpServletRequest httpServletRequest) {
 		return _portal.isRightToLeft(httpServletRequest);
-	}
-
-	public static boolean isRSSFeedsEnabled() {
-		return _portal.isRSSFeedsEnabled();
 	}
 
 	public static boolean isSecure(HttpServletRequest httpServletRequest) {

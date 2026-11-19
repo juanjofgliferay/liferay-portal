@@ -6,6 +6,7 @@
 package com.liferay.depot.internal.security.permission.wrapper.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.depot.constants.DepotConstants;
 import com.liferay.depot.constants.DepotRolesConstants;
 import com.liferay.depot.model.DepotEntry;
 import com.liferay.depot.service.DepotEntryGroupRelLocalService;
@@ -15,26 +16,34 @@ import com.liferay.document.library.kernel.model.DLFileEntry;
 import com.liferay.document.library.kernel.model.DLFolderConstants;
 import com.liferay.document.library.kernel.service.DLAppLocalService;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.model.GroupConstants;
 import com.liferay.portal.kernel.model.ResourceConstants;
+import com.liferay.portal.kernel.model.Role;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.model.role.RoleConstants;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.security.permission.PermissionCheckerFactory;
+import com.liferay.portal.kernel.service.GroupLocalService;
+import com.liferay.portal.kernel.service.RoleLocalService;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
+import com.liferay.portal.kernel.test.util.FeatureFlagTestUtil;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.RoleTestUtil;
 import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
+import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.test.rule.FeatureFlag;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
@@ -65,6 +74,12 @@ public class DepotPermissionCheckerWrapperTest {
 
 	@Before
 	public void setUp() throws Exception {
+		FeatureFlagTestUtil.invokeFeatureFlagListeners(
+			TestPropsValues.getCompanyId(),
+			FeatureFlagManagerUtil.isEnabled(
+				TestPropsValues.getCompanyId(), "LPD-57283"),
+			"LPD-57283");
+
 		_group = GroupTestUtil.addGroup();
 	}
 
@@ -81,46 +96,6 @@ public class DepotPermissionCheckerWrapperTest {
 				Assert.assertTrue(
 					permissionChecker.isContentReviewer(
 						depotEntry.getCompanyId(), depotEntry.getGroupId()));
-			});
-	}
-
-	@Test
-	public void testHasPermissionForADepotGroupDelegatesToDepot()
-		throws Exception {
-
-		DepotEntry depotEntry = _addDepotEntry(TestPropsValues.getUserId());
-
-		DepotTestUtil.withRegularUser(
-			(user, role) -> {
-				PermissionChecker permissionChecker =
-					_permissionCheckerFactory.create(user);
-
-				Assert.assertFalse(
-					permissionChecker.hasPermission(
-						depotEntry.getGroup(), Group.class.getName(),
-						depotEntry.getGroupId(), ActionKeys.VIEW));
-
-				RoleTestUtil.addResourcePermission(
-					role, Group.class.getName(),
-					ResourceConstants.SCOPE_COMPANY,
-					String.valueOf(TestPropsValues.getCompanyId()),
-					ActionKeys.VIEW);
-
-				Assert.assertFalse(
-					permissionChecker.hasPermission(
-						depotEntry.getGroup(), Group.class.getName(),
-						depotEntry.getGroupId(), ActionKeys.VIEW));
-
-				RoleTestUtil.addResourcePermission(
-					role, DepotEntry.class.getName(),
-					ResourceConstants.SCOPE_COMPANY,
-					String.valueOf(TestPropsValues.getCompanyId()),
-					ActionKeys.VIEW);
-
-				Assert.assertTrue(
-					permissionChecker.hasPermission(
-						depotEntry.getGroup(), Group.class.getName(),
-						depotEntry.getGroupId(), ActionKeys.VIEW));
 			});
 	}
 
@@ -172,6 +147,167 @@ public class DepotPermissionCheckerWrapperTest {
 	}
 
 	@Test
+	public void testHasPermissionWithDepotGroup() throws Exception {
+		_testHasPermissionWithDepotGroup(ActionKeys.ASSIGN_MEMBERS);
+		_testHasPermissionWithDepotGroup(ActionKeys.ASSIGN_USER_ROLES);
+		_testHasPermissionWithDepotGroup(ActionKeys.VIEW);
+		_testHasPermissionWithDepotGroup(ActionKeys.VIEW_MEMBERS);
+		_testHasPermissionWithDepotGroup(ActionKeys.VIEW_SITE_ADMINISTRATION);
+	}
+
+	@Test
+	public void testHasPermissionWithRoleAndAssetLibraryAdministrator()
+		throws Exception {
+
+		DepotEntry depotEntry = _addDepotEntry(TestPropsValues.getUserId());
+
+		DepotTestUtil.withAssetLibraryAdministrator(
+			depotEntry,
+			user -> {
+				PermissionChecker permissionChecker =
+					_permissionCheckerFactory.create(user);
+
+				Role role = _roleLocalService.getRole(
+					TestPropsValues.getCompanyId(),
+					DepotRolesConstants.ASSET_LIBRARY_MEMBER);
+
+				Assert.assertTrue(
+					permissionChecker.hasPermission(
+						depotEntry.getGroupId(), Role.class.getName(),
+						role.getRoleId(), ActionKeys.ASSIGN_MEMBERS));
+
+				Assert.assertFalse(
+					permissionChecker.hasPermission(
+						0, Role.class.getName(), role.getRoleId(),
+						ActionKeys.DELETE));
+				Assert.assertFalse(
+					permissionChecker.hasPermission(
+						0, Role.class.getName(), role.getRoleId(),
+						ActionKeys.UPDATE));
+
+				Role ownerRole = _roleLocalService.getRole(
+					TestPropsValues.getCompanyId(),
+					DepotRolesConstants.ASSET_LIBRARY_OWNER);
+
+				Assert.assertFalse(
+					permissionChecker.hasPermission(
+						depotEntry.getGroupId(), Role.class.getName(),
+						ownerRole.getRoleId(), ActionKeys.ASSIGN_MEMBERS));
+			});
+	}
+
+	@Test
+	public void testHasPermissionWithSiteAndAssetLibraryAdministrator()
+		throws Exception {
+
+		DepotEntry depotEntry = _addDepotEntry(TestPropsValues.getUserId());
+
+		_connectedGroup = _addPrivateGroup();
+
+		_depotEntryGroupRelLocalService.addDepotEntryGroupRel(
+			depotEntry.getDepotEntryId(), _connectedGroup.getGroupId());
+
+		_privateGroup = _addPrivateGroup();
+
+		DepotTestUtil.withAssetLibraryAdministrator(
+			depotEntry,
+			user -> {
+				PermissionChecker permissionChecker =
+					_permissionCheckerFactory.create(user);
+
+				Assert.assertTrue(
+					permissionChecker.hasPermission(
+						_connectedGroup.getGroupId(), Group.class.getName(),
+						_connectedGroup.getGroupId(), ActionKeys.VIEW));
+
+				Assert.assertFalse(
+					permissionChecker.hasPermission(
+						_privateGroup.getGroupId(), Group.class.getName(),
+						_privateGroup.getGroupId(), ActionKeys.VIEW));
+			});
+	}
+
+	@Test
+	public void testHasPermissionWithSiteAndAssetLibraryOwner()
+		throws Exception {
+
+		DepotEntry depotEntry = _addDepotEntry(TestPropsValues.getUserId());
+
+		_connectedGroup = _addPrivateGroup();
+
+		_depotEntryGroupRelLocalService.addDepotEntryGroupRel(
+			depotEntry.getDepotEntryId(), _connectedGroup.getGroupId());
+
+		_privateGroup = _addPrivateGroup();
+
+		DepotTestUtil.withAssetLibraryOwner(
+			depotEntry,
+			user -> {
+				PermissionChecker permissionChecker =
+					_permissionCheckerFactory.create(user);
+
+				Assert.assertTrue(
+					permissionChecker.hasPermission(
+						_connectedGroup.getGroupId(), Group.class.getName(),
+						_connectedGroup.getGroupId(), ActionKeys.VIEW));
+				Assert.assertFalse(
+					permissionChecker.hasPermission(
+						_privateGroup.getGroupId(), Group.class.getName(),
+						_privateGroup.getGroupId(), ActionKeys.VIEW));
+			});
+	}
+
+	@Test
+	public void testHasPermissionWithUserAndAssetLibraryAdministrator()
+		throws Exception {
+
+		_user = UserTestUtil.addUser();
+
+		DepotEntry depotEntry = _addDepotEntry(TestPropsValues.getUserId());
+
+		DepotTestUtil.withAssetLibraryMember(
+			depotEntry,
+			assetLibraryMemberUser ->
+				DepotTestUtil.withAssetLibraryAdministrator(
+					depotEntry,
+					user -> {
+						PermissionChecker permissionChecker =
+							_permissionCheckerFactory.create(user);
+
+						Assert.assertFalse(
+							permissionChecker.hasPermission(
+								null, User.class.getName(), _user.getUserId(),
+								ActionKeys.DELETE));
+						Assert.assertFalse(
+							permissionChecker.hasPermission(
+								null, User.class.getName(), _user.getUserId(),
+								ActionKeys.IMPERSONATE));
+						Assert.assertFalse(
+							permissionChecker.hasPermission(
+								null, User.class.getName(), _user.getUserId(),
+								ActionKeys.UPDATE));
+						Assert.assertFalse(
+							permissionChecker.hasPermission(
+								null, User.class.getName(), _user.getUserId(),
+								ActionKeys.VIEW));
+						Assert.assertFalse(
+							permissionChecker.hasPermission(
+								depotEntry.getGroupId(), User.class.getName(),
+								_user.getUserId(), ActionKeys.VIEW));
+						Assert.assertTrue(
+							permissionChecker.hasPermission(
+								null, User.class.getName(),
+								assetLibraryMemberUser.getUserId(),
+								ActionKeys.VIEW));
+						Assert.assertTrue(
+							permissionChecker.hasPermission(
+								depotEntry.getGroupId(), User.class.getName(),
+								assetLibraryMemberUser.getUserId(),
+								ActionKeys.VIEW));
+					}));
+	}
+
+	@Test
 	public void testHasPermissionsWithDepotGroupAndAssetLibraryAdmin()
 		throws Exception {
 
@@ -187,37 +323,92 @@ public class DepotPermissionCheckerWrapperTest {
 					permissionChecker.hasPermission(
 						depotEntry.getGroup(), Group.class.getName(),
 						depotEntry.getGroupId(), ActionKeys.ASSIGN_MEMBERS));
-
-				Assert.assertTrue(
-					permissionChecker.hasPermission(
-						depotEntry.getGroup(), Group.class.getName(),
-						depotEntry.getGroupId(), ActionKeys.ASSIGN_USER_ROLES));
-
 				Assert.assertTrue(
 					permissionChecker.hasPermission(
 						depotEntry.getGroup(), Group.class.getName(),
 						depotEntry.getGroupId(), ActionKeys.DELETE));
-
 				Assert.assertTrue(
 					permissionChecker.hasPermission(
 						depotEntry.getGroup(), Group.class.getName(),
 						depotEntry.getGroupId(), ActionKeys.UPDATE));
-
 				Assert.assertTrue(
 					permissionChecker.hasPermission(
 						depotEntry.getGroup(), Group.class.getName(),
 						depotEntry.getGroupId(), ActionKeys.VIEW));
-
 				Assert.assertTrue(
 					permissionChecker.hasPermission(
 						depotEntry.getGroup(), Group.class.getName(),
 						depotEntry.getGroupId(), ActionKeys.VIEW_MEMBERS));
-
 				Assert.assertTrue(
 					permissionChecker.hasPermission(
 						depotEntry.getGroup(), Group.class.getName(),
 						depotEntry.getGroupId(),
 						ActionKeys.VIEW_SITE_ADMINISTRATION));
+			});
+	}
+
+	@FeatureFlag("LPD-57283")
+	@Test
+	public void testHasPermissionsWithDepotGroupAndDesignLibraryAdministrator()
+		throws Exception {
+
+		DepotEntry depotEntry = _addDesignLibraryDepotEntry(
+			TestPropsValues.getUserId());
+
+		DepotTestUtil.withDesignLibraryAdministrator(
+			depotEntry,
+			user -> {
+				PermissionChecker permissionChecker =
+					_permissionCheckerFactory.create(user);
+
+				Assert.assertTrue(
+					permissionChecker.hasPermission(
+						depotEntry.getGroup(), Group.class.getName(),
+						depotEntry.getGroupId(), ActionKeys.ASSIGN_MEMBERS));
+				Assert.assertTrue(
+					permissionChecker.hasPermission(
+						depotEntry.getGroup(), Group.class.getName(),
+						depotEntry.getGroupId(), ActionKeys.UPDATE));
+				Assert.assertTrue(
+					permissionChecker.hasPermission(
+						depotEntry.getGroup(), Group.class.getName(),
+						depotEntry.getGroupId(), ActionKeys.VIEW));
+				Assert.assertTrue(
+					permissionChecker.hasPermission(
+						depotEntry.getGroup(), Group.class.getName(),
+						depotEntry.getGroupId(), ActionKeys.VIEW_MEMBERS));
+			});
+	}
+
+	@Test
+	public void testHasPermissionsWithDepotGroupAndProjectManager()
+		throws Exception {
+
+		DepotEntry depotEntry = _addProjectDepotEntry(
+			TestPropsValues.getUserId());
+
+		DepotTestUtil.withProjectManager(
+			depotEntry,
+			user -> {
+				PermissionChecker permissionChecker =
+					_permissionCheckerFactory.create(user);
+
+				Assert.assertTrue(
+					permissionChecker.hasPermission(
+						depotEntry.getGroup(), Group.class.getName(),
+						depotEntry.getGroupId(), ActionKeys.ASSIGN_MEMBERS));
+				Assert.assertTrue(
+					permissionChecker.hasPermission(
+						depotEntry.getGroup(), Group.class.getName(),
+						depotEntry.getGroupId(), ActionKeys.UPDATE));
+				Assert.assertTrue(
+					permissionChecker.hasPermission(
+						depotEntry.getGroup(), Group.class.getName(),
+						depotEntry.getGroupId(), ActionKeys.VIEW));
+				Assert.assertTrue(
+					permissionChecker.hasPermission(
+						depotEntry.getGroup(), Group.class.getName(),
+						depotEntry.getGroupId(), ActionKeys.VIEW_MEMBERS));
 			});
 	}
 
@@ -264,6 +455,26 @@ public class DepotPermissionCheckerWrapperTest {
 		DepotEntry depotEntry = _addDepotEntry(TestPropsValues.getUserId());
 
 		DepotTestUtil.withAssetLibraryContentReviewer(
+			depotEntry,
+			user -> {
+				PermissionChecker permissionChecker =
+					_permissionCheckerFactory.create(user);
+
+				Assert.assertTrue(
+					permissionChecker.isContentReviewer(
+						user.getCompanyId(), depotEntry.getGroupId()));
+			});
+	}
+
+	@FeatureFlag("LPD-57283")
+	@Test
+	public void testIsContentReviewerWithDesignLibraryContentReviewer()
+		throws Exception {
+
+		DepotEntry depotEntry = _addDesignLibraryDepotEntry(
+			TestPropsValues.getUserId());
+
+		DepotTestUtil.withDesignLibraryContentReviewer(
 			depotEntry,
 			user -> {
 				PermissionChecker permissionChecker =
@@ -329,8 +540,45 @@ public class DepotPermissionCheckerWrapperTest {
 			});
 	}
 
+	@FeatureFlag("LPD-57283")
 	@Test
-	public void testIsGroupAdminWithGroup0AndNoOmniAdmin() throws Exception {
+	public void testIsGroupAdminWithDepotGroupAndDesignLibraryAdministrator()
+		throws Exception {
+
+		DepotEntry depotEntry = _addDesignLibraryDepotEntry(
+			TestPropsValues.getUserId());
+
+		DepotTestUtil.withDesignLibraryAdministrator(
+			depotEntry,
+			user -> {
+				PermissionChecker permissionChecker =
+					_permissionCheckerFactory.create(user);
+
+				Assert.assertTrue(
+					permissionChecker.isGroupAdmin(depotEntry.getGroupId()));
+			});
+	}
+
+	@Test
+	public void testIsGroupAdminWithDepotGroupAndProjectManager()
+		throws Exception {
+
+		DepotEntry depotEntry = _addProjectDepotEntry(
+			TestPropsValues.getUserId());
+
+		DepotTestUtil.withProjectManager(
+			depotEntry,
+			user -> {
+				PermissionChecker permissionChecker =
+					_permissionCheckerFactory.create(user);
+
+				Assert.assertTrue(
+					permissionChecker.isGroupAdmin(depotEntry.getGroupId()));
+			});
+	}
+
+	@Test
+	public void testIsGroupAdminWithGroup0AndNoOmniadmin() throws Exception {
 		DepotTestUtil.withRegularUser(
 			(user, role) -> {
 				PermissionChecker permissionChecker =
@@ -353,7 +601,7 @@ public class DepotPermissionCheckerWrapperTest {
 	}
 
 	@Test
-	public void testIsGroupAdminWithOmniAdmin() throws PortalException {
+	public void testIsGroupAdminWithOmniadmin() throws PortalException {
 		PermissionChecker permissionChecker = _permissionCheckerFactory.create(
 			TestPropsValues.getUser());
 
@@ -439,8 +687,45 @@ public class DepotPermissionCheckerWrapperTest {
 			});
 	}
 
+	@FeatureFlag("LPD-57283")
 	@Test
-	public void testIsGroupMemberWithGroup0AndNoOmniAdmin() throws Exception {
+	public void testIsGroupMemberWithDepotGroupAndDesignLibraryMember()
+		throws Exception {
+
+		DepotEntry depotEntry = _addDesignLibraryDepotEntry(
+			TestPropsValues.getUserId());
+
+		DepotTestUtil.withDesignLibraryMember(
+			depotEntry,
+			user -> {
+				PermissionChecker permissionChecker =
+					_permissionCheckerFactory.create(user);
+
+				Assert.assertTrue(
+					permissionChecker.isGroupMember(depotEntry.getGroupId()));
+			});
+	}
+
+	@Test
+	public void testIsGroupMemberWithDepotGroupAndProjectMember()
+		throws Exception {
+
+		DepotEntry depotEntry = _addProjectDepotEntry(
+			TestPropsValues.getUserId());
+
+		DepotTestUtil.withProjectMember(
+			depotEntry,
+			user -> {
+				PermissionChecker permissionChecker =
+					_permissionCheckerFactory.create(user);
+
+				Assert.assertTrue(
+					permissionChecker.isGroupMember(depotEntry.getGroupId()));
+			});
+	}
+
+	@Test
+	public void testIsGroupMemberWithGroup0AndNoOmniadmin() throws Exception {
 		DepotTestUtil.withRegularUser(
 			(user, role) -> {
 				PermissionChecker permissionChecker =
@@ -463,7 +748,7 @@ public class DepotPermissionCheckerWrapperTest {
 	}
 
 	@Test
-	public void testIsGroupMemberWithOmniAdmin() throws PortalException {
+	public void testIsGroupMemberWithOmniadmin() throws PortalException {
 		PermissionChecker permissionChecker = _permissionCheckerFactory.create(
 			TestPropsValues.getUser());
 
@@ -551,8 +836,27 @@ public class DepotPermissionCheckerWrapperTest {
 			});
 	}
 
+	@FeatureFlag("LPD-57283")
 	@Test
-	public void testIsGroupOwnerWithGroup0AndNoOmniAdmin() throws Exception {
+	public void testIsGroupOwnerWithDepotGroupAndDesignLibraryOwner()
+		throws Exception {
+
+		DepotEntry depotEntry = _addDesignLibraryDepotEntry(
+			TestPropsValues.getUserId());
+
+		DepotTestUtil.withDesignLibraryOwner(
+			depotEntry,
+			user -> {
+				PermissionChecker permissionChecker =
+					_permissionCheckerFactory.create(user);
+
+				Assert.assertTrue(
+					permissionChecker.isGroupOwner(depotEntry.getGroupId()));
+			});
+	}
+
+	@Test
+	public void testIsGroupOwnerWithGroup0AndNoOmniadmin() throws Exception {
 		DepotTestUtil.withRegularUser(
 			(user, role) -> {
 				PermissionChecker permissionChecker =
@@ -575,7 +879,7 @@ public class DepotPermissionCheckerWrapperTest {
 	}
 
 	@Test
-	public void testIsGroupOwnerWithOmniAdmin() throws PortalException {
+	public void testIsGroupOwnerWithOmniadmin() throws PortalException {
 		PermissionChecker permissionChecker = _permissionCheckerFactory.create(
 			TestPropsValues.getUser());
 
@@ -632,6 +936,54 @@ public class DepotPermissionCheckerWrapperTest {
 								DLFileEntry.class.getName(),
 								fileEntry.getFileEntryId(), ActionKeys.UPDATE));
 					})));
+	}
+
+	@Test
+	public void testProjectManagerDoesNotHaveAssignMembersPermissionOnAssetLibraryOwnerRole()
+		throws Exception {
+
+		DepotEntry depotEntry = _addProjectDepotEntry(
+			TestPropsValues.getUserId());
+
+		DepotTestUtil.withProjectManager(
+			depotEntry,
+			user -> {
+				PermissionChecker permissionChecker =
+					_permissionCheckerFactory.create(user);
+
+				Role role = _roleLocalService.getRole(
+					TestPropsValues.getCompanyId(),
+					DepotRolesConstants.ASSET_LIBRARY_OWNER);
+
+				Assert.assertFalse(
+					permissionChecker.hasPermission(
+						depotEntry.getGroupId(), Role.class.getName(),
+						role.getRoleId(), ActionKeys.ASSIGN_MEMBERS));
+			});
+	}
+
+	@Test
+	public void testProjectManagerHasAssignMembersPermissionOnProjectManagerRole()
+		throws Exception {
+
+		DepotEntry depotEntry = _addProjectDepotEntry(
+			TestPropsValues.getUserId());
+
+		DepotTestUtil.withProjectManager(
+			depotEntry,
+			user -> {
+				PermissionChecker permissionChecker =
+					_permissionCheckerFactory.create(user);
+
+				Role role = _roleLocalService.getRole(
+					TestPropsValues.getCompanyId(),
+					DepotRolesConstants.PROJECT_MANAGER);
+
+				Assert.assertTrue(
+					permissionChecker.hasPermission(
+						depotEntry.getGroupId(), Role.class.getName(),
+						role.getRoleId(), ActionKeys.ASSIGN_MEMBERS));
+			});
 	}
 
 	@Test
@@ -701,7 +1053,23 @@ public class DepotPermissionCheckerWrapperTest {
 			HashMapBuilder.put(
 				LocaleUtil.getDefault(), RandomTestUtil.randomString()
 			).build(),
-			Collections.emptyMap(),
+			Collections.emptyMap(), DepotConstants.TYPE_ASSET_LIBRARY,
+			ServiceContextTestUtil.getServiceContext(
+				TestPropsValues.getGroupId(), userId));
+
+		_depotEntries.add(depotEntry);
+
+		return depotEntry;
+	}
+
+	private DepotEntry _addDesignLibraryDepotEntry(long userId)
+		throws Exception {
+
+		DepotEntry depotEntry = _depotEntryLocalService.addDepotEntry(
+			HashMapBuilder.put(
+				LocaleUtil.getDefault(), RandomTestUtil.randomString()
+			).build(),
+			Collections.emptyMap(), DepotConstants.TYPE_DESIGN_LIBRARY,
 			ServiceContextTestUtil.getServiceContext(
 				TestPropsValues.getGroupId(), userId));
 
@@ -717,9 +1085,71 @@ public class DepotPermissionCheckerWrapperTest {
 			StringUtil.randomString(), ContentTypes.APPLICATION_OCTET_STREAM,
 			StringUtil.randomString(), StringUtil.randomString(),
 			StringUtil.randomString(), StringUtil.randomString(), new byte[0],
-			null, null,
+			null, null, null,
 			ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
 	}
+
+	private Group _addPrivateGroup() throws Exception {
+		Group group = GroupTestUtil.addGroup();
+
+		group.setType(GroupConstants.TYPE_SITE_PRIVATE);
+
+		return _groupLocalService.updateGroup(group);
+	}
+
+	private DepotEntry _addProjectDepotEntry(long userId) throws Exception {
+		DepotEntry depotEntry = _depotEntryLocalService.addDepotEntry(
+			HashMapBuilder.put(
+				LocaleUtil.getDefault(), RandomTestUtil.randomString()
+			).build(),
+			Collections.emptyMap(), DepotConstants.TYPE_PROJECT,
+			ServiceContextTestUtil.getServiceContext(
+				TestPropsValues.getGroupId(), userId));
+
+		_depotEntries.add(depotEntry);
+
+		return depotEntry;
+	}
+
+	private void _testHasPermissionWithDepotGroup(String actionId)
+		throws Exception {
+
+		DepotEntry depotEntry = _addDepotEntry(TestPropsValues.getUserId());
+
+		DepotTestUtil.withRegularUser(
+			(user, role) -> {
+				PermissionChecker permissionChecker =
+					_permissionCheckerFactory.create(user);
+
+				Assert.assertFalse(
+					permissionChecker.hasPermission(
+						depotEntry.getGroup(), Group.class.getName(),
+						depotEntry.getGroupId(), actionId));
+
+				RoleTestUtil.addResourcePermission(
+					role, Group.class.getName(),
+					ResourceConstants.SCOPE_COMPANY,
+					String.valueOf(TestPropsValues.getCompanyId()), actionId);
+
+				Assert.assertFalse(
+					permissionChecker.hasPermission(
+						depotEntry.getGroup(), Group.class.getName(),
+						depotEntry.getGroupId(), actionId));
+
+				RoleTestUtil.addResourcePermission(
+					role, DepotEntry.class.getName(),
+					ResourceConstants.SCOPE_COMPANY,
+					String.valueOf(TestPropsValues.getCompanyId()), actionId);
+
+				Assert.assertTrue(
+					permissionChecker.hasPermission(
+						depotEntry.getGroup(), Group.class.getName(),
+						depotEntry.getGroupId(), actionId));
+			});
+	}
+
+	@DeleteAfterTestRun
+	private Group _connectedGroup;
 
 	@DeleteAfterTestRun
 	private final List<DepotEntry> _depotEntries = new ArrayList<>();
@@ -737,7 +1167,19 @@ public class DepotPermissionCheckerWrapperTest {
 	private Group _group;
 
 	@Inject
+	private GroupLocalService _groupLocalService;
+
+	@Inject
 	private PermissionCheckerFactory _permissionCheckerFactory;
+
+	@DeleteAfterTestRun
+	private Group _privateGroup;
+
+	@Inject
+	private RoleLocalService _roleLocalService;
+
+	@DeleteAfterTestRun
+	private User _user;
 
 	@Inject
 	private UserLocalService _userLocalService;

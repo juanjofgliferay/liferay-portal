@@ -7,6 +7,7 @@ package com.liferay.analytics.layout.page.template.web.internal.servlet.taglib.t
 
 import com.liferay.analytics.layout.page.template.web.internal.MockObject;
 import com.liferay.analytics.layout.page.template.web.internal.layout.display.page.MockObjectLayoutDisplayPageObjectProvider;
+import com.liferay.analytics.test.util.AnalyticsCompanyConfigurationTemporarySwapper;
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.blogs.model.BlogsEntry;
 import com.liferay.blogs.service.BlogsEntryLocalService;
@@ -34,13 +35,12 @@ import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.FileUtil;
-import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 
-import java.io.IOException;
-
 import java.util.Collections;
+import java.util.Locale;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -87,9 +87,7 @@ public class AnalyticsRenderFragmentLayoutPostDynamicIncludeTest {
 		MockHttpServletResponse mockHttpServletResponse =
 			new MockHttpServletResponse();
 
-		_dynamicInclude.include(
-			mockHttpServletRequest, mockHttpServletResponse,
-			RandomTestUtil.randomString());
+		_include(mockHttpServletRequest, mockHttpServletResponse);
 
 		Assert.assertEquals(
 			"</div>", mockHttpServletResponse.getContentAsString());
@@ -107,7 +105,7 @@ public class AnalyticsRenderFragmentLayoutPostDynamicIncludeTest {
 			FileUtil.getBytes(
 				AnalyticsRenderFragmentLayoutPreDynamicIncludeTest.class,
 				"dependencies/image.jpg"),
-			null, null, new ServiceContext());
+			null, null, null, new ServiceContext());
 
 		mockHttpServletRequest.setAttribute(
 			LayoutDisplayPageWebKeys.LAYOUT_DISPLAY_PAGE_OBJECT_PROVIDER,
@@ -120,9 +118,7 @@ public class AnalyticsRenderFragmentLayoutPostDynamicIncludeTest {
 		MockHttpServletResponse mockHttpServletResponse =
 			new MockHttpServletResponse();
 
-		_dynamicInclude.include(
-			mockHttpServletRequest, mockHttpServletResponse,
-			RandomTestUtil.randomString());
+		_include(mockHttpServletRequest, mockHttpServletResponse);
 
 		Assert.assertEquals(
 			"</div>", mockHttpServletResponse.getContentAsString());
@@ -149,44 +145,35 @@ public class AnalyticsRenderFragmentLayoutPostDynamicIncludeTest {
 		MockHttpServletResponse mockHttpServletResponse =
 			new MockHttpServletResponse();
 
-		_dynamicInclude.include(
-			mockHttpServletRequest, mockHttpServletResponse,
-			RandomTestUtil.randomString());
+		_include(mockHttpServletRequest, mockHttpServletResponse);
 
 		Assert.assertEquals(
 			"</div>", mockHttpServletResponse.getContentAsString());
 	}
 
 	@Test
-	public void testIncludeWithoutLayoutDisplayPageObjectProvider()
-		throws IOException {
+	public void testIncludeWithUnregisteredClassAndEscapedCharactersInTitle()
+		throws Exception {
 
-		MockHttpServletRequest mockHttpServletRequest =
-			new MockHttpServletRequest();
-
-		MockHttpServletResponse mockHttpServletResponse =
-			new MockHttpServletResponse();
-
-		_dynamicInclude.include(
-			mockHttpServletRequest, mockHttpServletResponse,
-			RandomTestUtil.randomString());
-
-		Assert.assertEquals(
-			StringPool.BLANK, mockHttpServletResponse.getContentAsString());
-	}
-
-	@Test
-	public void testIncludeWithUnregisteredClass() throws IOException {
 		ClassName className = _classNameLocalService.addClassName(
 			MockObject.class.getName());
 
 		MockHttpServletRequest mockHttpServletRequest =
 			new MockHttpServletRequest();
 
+		String title = "Title with 'single quote' and \n new line";
+
 		MockObjectLayoutDisplayPageObjectProvider
 			mockObjectLayoutDisplayPageObjectProvider =
 				new MockObjectLayoutDisplayPageObjectProvider(
-					className.getClassNameId());
+					className.getClassNameId()) {
+
+					@Override
+					public String getTitle(Locale locale) {
+						return title;
+					}
+
+				};
 
 		mockHttpServletRequest.setAttribute(
 			LayoutDisplayPageWebKeys.LAYOUT_DISPLAY_PAGE_OBJECT_PROVIDER,
@@ -195,23 +182,52 @@ public class AnalyticsRenderFragmentLayoutPostDynamicIncludeTest {
 		MockHttpServletResponse mockHttpServletResponse =
 			new MockHttpServletResponse();
 
-		_dynamicInclude.include(
-			mockHttpServletRequest, mockHttpServletResponse,
-			RandomTestUtil.randomString());
+		_include(mockHttpServletRequest, mockHttpServletResponse);
 
 		Assert.assertEquals(
 			StringBundler.concat(
-				"<script type=\"text/javascript\">\n", "Analytics.track(\"",
-				"model.resource.", MockObject.class.getCanonicalName(),
-				" Viewed\", {'classPK': ",
+				"<script type=\"text/javascript\">\nwindow.onload = ",
+				"function() {window.Analytics && ",
+				"window.Analytics.track(\"model.resource.",
+				MockObject.class.getCanonicalName(), " Viewed\", {'classPK': ",
 				mockObjectLayoutDisplayPageObjectProvider.getClassPK(),
-				", 'title': '",
-				mockObjectLayoutDisplayPageObjectProvider.getTitle(
-					LocaleUtil.getSiteDefault()),
+				", 'title': '", HtmlUtil.escapeJS(title),
 				"', 'type': 'model.resource.",
 				MockObject.class.getCanonicalName(),
-				"'});\n\n</script><script>\n\n</script>"),
+				"'})};\n\n</script><script>\n\n</script>"),
 			mockHttpServletResponse.getContentAsString());
+	}
+
+	@Test
+	public void testIncludeWithoutLayoutDisplayPageObjectProvider()
+		throws Exception {
+
+		MockHttpServletRequest mockHttpServletRequest =
+			new MockHttpServletRequest();
+
+		MockHttpServletResponse mockHttpServletResponse =
+			new MockHttpServletResponse();
+
+		_include(mockHttpServletRequest, mockHttpServletResponse);
+
+		Assert.assertEquals(
+			StringPool.BLANK, mockHttpServletResponse.getContentAsString());
+	}
+
+	private void _include(
+			MockHttpServletRequest mockHttpServletRequest,
+			MockHttpServletResponse mockHttpServletResponse)
+		throws Exception {
+
+		try (AnalyticsCompanyConfigurationTemporarySwapper
+				analyticsCompanyConfigurationTemporarySwapper =
+					new AnalyticsCompanyConfigurationTemporarySwapper(
+						TestPropsValues.getCompanyId())) {
+
+			_dynamicInclude.include(
+				mockHttpServletRequest, mockHttpServletResponse,
+				RandomTestUtil.randomString());
+		}
 	}
 
 	@Inject

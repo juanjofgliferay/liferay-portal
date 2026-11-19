@@ -6,7 +6,6 @@
 package com.liferay.portlet.configuration.web.internal.portlet.configuration.icon;
 
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
@@ -24,8 +23,8 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portlet.configuration.kernel.util.PortletConfigurationApplicationType;
 
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -109,15 +108,11 @@ public class ConfigurationPortletConfigurationIcon
 
 	@Override
 	public double getWeight() {
-		return 14.0;
+		return 16.0;
 	}
 
 	@Override
 	public boolean isShow(PortletRequest portletRequest) {
-		if (!FeatureFlagManagerUtil.isEnabled("LPS-197692")) {
-			return false;
-		}
-
 		ThemeDisplay themeDisplay = (ThemeDisplay)portletRequest.getAttribute(
 			WebKeys.THEME_DISPLAY);
 

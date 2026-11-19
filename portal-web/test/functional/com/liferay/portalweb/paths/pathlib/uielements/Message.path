@@ -52,17 +52,22 @@
 </tr>
 <tr>
 	<td>EMPTY_DEPOT_ROLE</td>
-	<td>//div[contains(@id,'depotRoles')]/p[contains(@class,'text-secondary')]</td>
+	<td>//div[contains(@id,'depotRoles')]/div[contains(@class,'c-empty-state')]/p[contains(@class,'c-empty-state-text')]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>EMPTY_INFO</td>
-	<td>//div[contains(@class,'taglib-empty-result-message')]</td>
+	<td>//div[contains(concat(' ',normalize-space(@class),' '),' taglib-empty-result-message ') or div[contains(@class,'c-empty-state-image') and contains(@class,'result-message-header')]]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>EMPTY_INFO_2</td>
 	<td>//div[contains(@class,'panel-default')][2]//div[contains(@class,'empty-result-message')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>EMPTY_INFO_COMPACT</td>
+	<td>//div[contains(concat(' ',normalize-space(@class),' '),' c-empty-state ')]/p[contains(@class,'c-empty-state-text')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -82,27 +87,27 @@
 </tr>
 <tr>
 	<td>EMPTY_INFO_DEPOT_HIDE</td>
-	<td>//div[not(contains(@class,'hide'))]//p[contains(@class,'text-secondary')]</td>
+	<td>//div[not(contains(@class,'hide'))]//p[contains(@class,'c-empty-state-text')]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>EMPTY_INFO_TAGLIB</td>
-	<td>//div[contains(@class,'taglib-empty-result-message')]</td>
+	<td>//div[contains(concat(' ',normalize-space(@class),' '),' taglib-empty-result-message ') or div[contains(@class,'c-empty-state-image') and contains(@class,'result-message-header')]]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>EMPTY_INFO_TAGLIB_TITLE</td>
-	<td>//div/h1[contains(@class,'taglib-empty-result-message-title')]</td>
+	<td>//div[contains(@class,'taglib-empty-result-message')]//div[contains(@class,'c-empty-state-title')]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>EMPTY_INFO_TAGLIB_DESCRIPTION</td>
-	<td>//div/p[contains(@class,'taglib-empty-result-message-description')]</td>
+	<td>//div[contains(@class,'taglib-empty-result-message')]//div[contains(@class,'c-empty-state-text')]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>ERROR</td>
-	<td>//div[contains(@class,'alert') and (contains(@class,'alert-error') or contains(@class,'alert-danger'))][not(contains(@style,'display: none'))]</td>
+	<td>//div[(contains(@class,'upload-error-message') and contains(normalize-space(text()), '${value1}')) or (contains(@class,'alert') and (contains(@class,'alert-error') or contains(@class,'alert-danger')) and not(contains(@style,'display: none')))]</td>
 	<td></td>
 </tr>
 <tr>
@@ -416,6 +421,11 @@
 	<td></td>
 </tr>
 <tr>
+	<td>RECYCLE_BIN_WORKFLOW_STATUS</td>
+	<td>//span[contains(@class,'label-info')]/span</td>
+	<td></td>
+</tr>
+<tr>
 	<td>REQUIRED_INFO</td>
 	<td>//div[contains(@class,'required') and contains(@role,'alert')]</td>
 	<td></td>
@@ -472,12 +482,12 @@
 </tr>
 <tr>
 	<td>SUCCESS_IMPORT_TRANSLATIONS_ITEM</td>
-	<td>//div[contains(@class,'translation-import-body-form')]//div[contains(@class,'panel-body')]//ul//li/p</td>
+	<td>//div[contains(@class,'panel')]//div[contains(@class,'panel-body')]//ul//li/p</td>
 	<td></td>
 </tr>
 <tr>
 	<td>SUCCESS_IMPORT_TRANSLATIONS_ITEM_N</td>
-	<td>//div[contains(@class,'translation-import-body-form')]//div[contains(@class,'panel-body')]//ul//li[${key_indexNumber}]/p</td>
+	<td>//div[contains(@class,'panel')]//div[contains(@class,'panel-body')]//ul//li[${key_indexNumber}]/p</td>
 	<td></td>
 </tr>
 <tr>
@@ -523,6 +533,11 @@
 <tr>
 	<td>WARNING_FEEDBACK</td>
 	<td>//div[contains(@class,'form-feedback-item')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>WARNING_FEEDBACK_SPECIFIC</td>
+	<td>//div[contains(@class,'form-feedback-item') and contains(.,'${key_warningMessage}')]</td>
 	<td></td>
 </tr>
 <tr>

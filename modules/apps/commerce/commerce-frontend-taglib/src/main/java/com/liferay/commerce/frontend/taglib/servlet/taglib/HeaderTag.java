@@ -13,12 +13,12 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.taglib.util.IncludeTag;
 
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.jsp.PageContext;
+
 import java.util.List;
-
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.jsp.PageContext;
 
 /**
  * @author Fabio Diego Mastrorilli
@@ -29,8 +29,16 @@ public class HeaderTag extends IncludeTag {
 		return _actions;
 	}
 
-	public String getAssignerModalUrl() {
-		return _assignerModalUrl;
+	public String getAdditionalStatusLabel() {
+		return _additionalStatusLabel;
+	}
+
+	public String getAdditionalStatusLabelStyle() {
+		return _additionalStatusLabelStyle;
+	}
+
+	public String getAssignerModalURL() {
+		return _assignerModalURL;
 	}
 
 	public Object getBean() {
@@ -49,6 +57,10 @@ public class HeaderTag extends IncludeTag {
 		return _cssClasses;
 	}
 
+	public long getDisplayBeanId() {
+		return _displayBeanId;
+	}
+
 	public List<DropdownItem> getDropdownItems() {
 		return _dropdownItems;
 	}
@@ -57,8 +69,8 @@ public class HeaderTag extends IncludeTag {
 		return _externalReferenceCode;
 	}
 
-	public String getExternalReferenceCodeEditUrl() {
-		return _externalReferenceCodeEditUrl;
+	public String getExternalReferenceCodeEditURL() {
+		return _externalReferenceCodeEditURL;
 	}
 
 	public boolean getFullWidth() {
@@ -69,16 +81,16 @@ public class HeaderTag extends IncludeTag {
 		return _model;
 	}
 
-	public String getPreviewUrl() {
-		return _previewUrl;
+	public String getPreviewURL() {
+		return _previewURL;
 	}
 
 	public String getSpritemap() {
 		return _spritemap;
 	}
 
-	public String getThumbnailUrl() {
-		return _thumbnailUrl;
+	public String getThumbnailURL() {
+		return _thumbnailURL;
 	}
 
 	public String getTitle() {
@@ -101,8 +113,18 @@ public class HeaderTag extends IncludeTag {
 		_actions = actions;
 	}
 
-	public void setAssignerModalUrl(String assignerModalUrl) {
-		_assignerModalUrl = assignerModalUrl;
+	public void setAdditionalStatusLabel(String additionalStatusLabel) {
+		_additionalStatusLabel = additionalStatusLabel;
+	}
+
+	public void setAdditionalStatusLabelStyle(
+		String additionalStatusLabelStyle) {
+
+		_additionalStatusLabelStyle = additionalStatusLabelStyle;
+	}
+
+	public void setAssignerModalURL(String assignerModalURL) {
+		_assignerModalURL = assignerModalURL;
 	}
 
 	public void setBean(Object bean) {
@@ -117,6 +139,10 @@ public class HeaderTag extends IncludeTag {
 		_cssClasses = cssClasses;
 	}
 
+	public void setDisplayBeanId(long displayBeanId) {
+		_displayBeanId = displayBeanId;
+	}
+
 	public void setDropdownItems(List<DropdownItem> dropdownItems) {
 		_dropdownItems = dropdownItems;
 	}
@@ -125,10 +151,10 @@ public class HeaderTag extends IncludeTag {
 		_externalReferenceCode = externalReferenceCode;
 	}
 
-	public void setExternalReferenceCodeEditUrl(
-		String externalReferenceCodeEditUrl) {
+	public void setExternalReferenceCodeEditURL(
+		String externalReferenceCodeEditURL) {
 
-		_externalReferenceCodeEditUrl = externalReferenceCodeEditUrl;
+		_externalReferenceCodeEditURL = externalReferenceCodeEditURL;
 	}
 
 	public void setFullWidth(boolean fullWidth) {
@@ -146,16 +172,16 @@ public class HeaderTag extends IncludeTag {
 		setServletContext(ServletContextUtil.getServletContext());
 	}
 
-	public void setPreviewUrl(String previewUrl) {
-		_previewUrl = previewUrl;
+	public void setPreviewURL(String previewURL) {
+		_previewURL = previewURL;
 	}
 
 	public void setSpritemap(String spritemap) {
 		_spritemap = spritemap;
 	}
 
-	public void setThumbnailUrl(String thumbnailUrl) {
-		_thumbnailUrl = thumbnailUrl;
+	public void setThumbnailURL(String thumbnailURL) {
+		_thumbnailURL = thumbnailURL;
 	}
 
 	public void setTitle(String title) {
@@ -179,18 +205,21 @@ public class HeaderTag extends IncludeTag {
 		super.cleanUp();
 
 		_actions = null;
-		_assignerModalUrl = null;
+		_additionalStatusLabel = null;
+		_additionalStatusLabelStyle = null;
+		_assignerModalURL = null;
 		_bean = null;
 		_beanIdLabel = null;
 		_cssClasses = null;
+		_displayBeanId = 0;
 		_dropdownItems = null;
 		_externalReferenceCode = null;
-		_externalReferenceCodeEditUrl = null;
+		_externalReferenceCodeEditURL = null;
 		_fullWidth = false;
 		_model = null;
-		_previewUrl = null;
+		_previewURL = null;
 		_spritemap = null;
-		_thumbnailUrl = null;
+		_thumbnailURL = null;
 		_title = null;
 		_transitionPortletURL = null;
 		_version = null;
@@ -217,20 +246,28 @@ public class HeaderTag extends IncludeTag {
 		httpServletRequest.setAttribute(
 			"liferay-commerce:header:actions", _actions);
 		httpServletRequest.setAttribute(
-			"liferay-commerce:header:assignerModalUrl", _assignerModalUrl);
+			"liferay-commerce:header:additionalStatusLabel",
+			_additionalStatusLabel);
+		httpServletRequest.setAttribute(
+			"liferay-commerce:header:additionalStatusLabelStyle",
+			_additionalStatusLabelStyle);
+		httpServletRequest.setAttribute(
+			"liferay-commerce:header:assignerModalURL", _assignerModalURL);
 		httpServletRequest.setAttribute("liferay-commerce:header:bean", _bean);
 		httpServletRequest.setAttribute(
 			"liferay-commerce:header:beanIdLabel", _beanIdLabel);
 		httpServletRequest.setAttribute(
 			"liferay-commerce:header:cssClasses", _cssClasses);
 		httpServletRequest.setAttribute(
+			"liferay-commerce:header:displayBeanId", _displayBeanId);
+		httpServletRequest.setAttribute(
 			"liferay-commerce:header:dropdownItems", _dropdownItems);
 		httpServletRequest.setAttribute(
 			"liferay-commerce:header:externalReferenceCode",
 			_externalReferenceCode);
 		httpServletRequest.setAttribute(
-			"liferay-commerce:header:externalReferenceCodeEditUrl",
-			_externalReferenceCodeEditUrl);
+			"liferay-commerce:header:externalReferenceCodeEditURL",
+			_externalReferenceCodeEditURL);
 		httpServletRequest.setAttribute(
 			"liferay-commerce:header:fullWidth", _fullWidth);
 		httpServletRequest.setAttribute(
@@ -238,11 +275,11 @@ public class HeaderTag extends IncludeTag {
 		httpServletRequest.setAttribute(
 			"liferay-commerce:header:model", _model);
 		httpServletRequest.setAttribute(
-			"liferay-commerce:header:previewUrl", _previewUrl);
+			"liferay-commerce:header:previewURL", _previewURL);
 		httpServletRequest.setAttribute(
 			"liferay-commerce:header:spritemap", _spritemap);
 		httpServletRequest.setAttribute(
-			"liferay-commerce:header:thumbnailUrl", _thumbnailUrl);
+			"liferay-commerce:header:thumbnailURL", _thumbnailURL);
 		httpServletRequest.setAttribute(
 			"liferay-commerce:header:title", _title);
 		httpServletRequest.setAttribute(
@@ -257,18 +294,21 @@ public class HeaderTag extends IncludeTag {
 	private static final String _PAGE = "/header/page.jsp";
 
 	private List<HeaderActionModel> _actions;
-	private String _assignerModalUrl;
+	private String _additionalStatusLabel;
+	private String _additionalStatusLabelStyle;
+	private String _assignerModalURL;
 	private Object _bean;
 	private String _beanIdLabel;
 	private String _cssClasses;
+	private long _displayBeanId;
 	private List<DropdownItem> _dropdownItems;
 	private String _externalReferenceCode;
-	private String _externalReferenceCodeEditUrl;
+	private String _externalReferenceCodeEditURL;
 	private boolean _fullWidth;
 	private Class<?> _model;
-	private String _previewUrl;
+	private String _previewURL;
 	private String _spritemap;
-	private String _thumbnailUrl;
+	private String _thumbnailURL;
 	private String _title;
 	private PortletURL _transitionPortletURL;
 	private String _version;

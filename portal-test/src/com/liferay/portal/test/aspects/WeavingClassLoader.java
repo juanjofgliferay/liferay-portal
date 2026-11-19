@@ -5,11 +5,11 @@
 
 package com.liferay.portal.test.aspects;
 
+import com.liferay.petra.io.StreamUtil;
+import com.liferay.petra.io.unsync.UnsyncByteArrayOutputStream;
 import com.liferay.petra.string.StringBundler;
-import com.liferay.portal.kernel.io.unsync.UnsyncByteArrayOutputStream;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.util.StreamUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 
 import java.io.File;
@@ -78,6 +78,10 @@ public class WeavingClassLoader extends URLClassLoader {
 				if (_log.isWarnEnabled()) {
 					_log.warn("Abort weaving class " + name, abortException);
 				}
+			}
+
+			if (data == null) {
+				return super.findClass(name);
 			}
 
 			if (Arrays.equals(oldData, data)) {

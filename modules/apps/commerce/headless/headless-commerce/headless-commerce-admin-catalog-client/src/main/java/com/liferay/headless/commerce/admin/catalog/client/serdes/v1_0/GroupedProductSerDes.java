@@ -8,13 +8,14 @@ package com.liferay.headless.commerce.admin.catalog.client.serdes.v1_0;
 import com.liferay.headless.commerce.admin.catalog.client.dto.v1_0.GroupedProduct;
 import com.liferay.headless.commerce.admin.catalog.client.json.BaseJSONParser;
 
+import jakarta.annotation.Generated;
+
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
-
-import javax.annotation.Generated;
 
 /**
  * @author Zoltán Takács
@@ -79,6 +80,20 @@ public class GroupedProductSerDes {
 			sb.append("\"entryProductName\": ");
 
 			sb.append(_toJSON(groupedProduct.getEntryProductName()));
+		}
+
+		if (groupedProduct.getEntryProductType() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"entryProductType\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(groupedProduct.getEntryProductType()));
+
+			sb.append("\"");
 		}
 
 		if (groupedProduct.getId() != null) {
@@ -193,6 +208,15 @@ public class GroupedProductSerDes {
 				String.valueOf(groupedProduct.getEntryProductName()));
 		}
 
+		if (groupedProduct.getEntryProductType() == null) {
+			map.put("entryProductType", null);
+		}
+		else {
+			map.put(
+				"entryProductType",
+				String.valueOf(groupedProduct.getEntryProductType()));
+		}
+
 		if (groupedProduct.getId() == null) {
 			map.put("id", null);
 		}
@@ -256,6 +280,46 @@ public class GroupedProductSerDes {
 		}
 
 		@Override
+		protected boolean parseMaps(String jsonParserFieldName) {
+			if (Objects.equals(
+					jsonParserFieldName, "entryProductExternalReferenceCode")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "entryProductId")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "entryProductName")) {
+				return true;
+			}
+			else if (Objects.equals(jsonParserFieldName, "entryProductType")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "id")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "priority")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "productExternalReferenceCode")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "productId")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "productName")) {
+				return true;
+			}
+			else if (Objects.equals(jsonParserFieldName, "quantity")) {
+				return false;
+			}
+
+			return false;
+		}
+
+		@Override
 		protected void setField(
 			GroupedProduct groupedProduct, String jsonParserFieldName,
 			Object jsonParserFieldValue) {
@@ -277,8 +341,13 @@ public class GroupedProductSerDes {
 			else if (Objects.equals(jsonParserFieldName, "entryProductName")) {
 				if (jsonParserFieldValue != null) {
 					groupedProduct.setEntryProductName(
-						(Map)GroupedProductSerDes.toMap(
-							(String)jsonParserFieldValue));
+						(Map<String, String>)jsonParserFieldValue);
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "entryProductType")) {
+				if (jsonParserFieldValue != null) {
+					groupedProduct.setEntryProductType(
+						(String)jsonParserFieldValue);
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "id")) {
@@ -310,8 +379,7 @@ public class GroupedProductSerDes {
 			else if (Objects.equals(jsonParserFieldName, "productName")) {
 				if (jsonParserFieldValue != null) {
 					groupedProduct.setProductName(
-						(Map)GroupedProductSerDes.toMap(
-							(String)jsonParserFieldValue));
+						(Map<String, String>)jsonParserFieldValue);
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "quantity")) {
@@ -352,36 +420,7 @@ public class GroupedProductSerDes {
 
 			Object value = entry.getValue();
 
-			Class<?> valueClass = value.getClass();
-
-			if (value instanceof Map) {
-				sb.append(_toJSON((Map)value));
-			}
-			else if (valueClass.isArray()) {
-				Object[] values = (Object[])value;
-
-				sb.append("[");
-
-				for (int i = 0; i < values.length; i++) {
-					sb.append("\"");
-					sb.append(_escape(values[i]));
-					sb.append("\"");
-
-					if ((i + 1) < values.length) {
-						sb.append(", ");
-					}
-				}
-
-				sb.append("]");
-			}
-			else if (value instanceof String) {
-				sb.append("\"");
-				sb.append(_escape(entry.getValue()));
-				sb.append("\"");
-			}
-			else {
-				sb.append(String.valueOf(entry.getValue()));
-			}
+			sb.append(_toJSON(value));
 
 			if (iterator.hasNext()) {
 				sb.append(", ");
@@ -393,4 +432,47 @@ public class GroupedProductSerDes {
 		return sb.toString();
 	}
 
+	private static String _toJSON(Object value) {
+		if (value == null) {
+			return "null";
+		}
+
+		if (value instanceof Collection) {
+			Collection<?> collection = (Collection<?>)value;
+
+			return _toJSON(collection.toArray());
+		}
+
+		if (value instanceof Map) {
+			return _toJSON((Map)value);
+		}
+
+		Class<?> clazz = value.getClass();
+
+		if (clazz.isArray()) {
+			StringBuilder sb = new StringBuilder("[");
+
+			Object[] values = (Object[])value;
+
+			for (int i = 0; i < values.length; i++) {
+				sb.append(_toJSON(values[i]));
+
+				if ((i + 1) < values.length) {
+					sb.append(", ");
+				}
+			}
+
+			sb.append("]");
+
+			return sb.toString();
+		}
+
+		if (value instanceof String) {
+			return "\"" + _escape(value) + "\"";
+		}
+
+		return String.valueOf(value);
+	}
+
 }
+// LIFERAY-REST-BUILDER-HASH:1790005814

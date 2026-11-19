@@ -26,14 +26,14 @@ import com.liferay.portal.search.aggregation.pipeline.BucketScriptPipelineAggreg
 import com.liferay.portal.search.aggregation.pipeline.BucketSortPipelineAggregation;
 import com.liferay.portal.search.aggregation.pipeline.GapPolicy;
 import com.liferay.portal.search.document.Document;
-import com.liferay.portal.search.engine.adapter.search.SearchRequestExecutor;
+import com.liferay.portal.search.engine.adapter.SearchEngineAdapter;
 import com.liferay.portal.search.engine.adapter.search.SearchSearchRequest;
 import com.liferay.portal.search.engine.adapter.search.SearchSearchResponse;
 import com.liferay.portal.search.hits.SearchHit;
 import com.liferay.portal.search.hits.SearchHits;
 import com.liferay.portal.search.index.IndexNameBuilder;
 import com.liferay.portal.search.query.BooleanQuery;
-import com.liferay.portal.search.query.Queries;
+import com.liferay.portal.search.query.QueriesUtil;
 import com.liferay.portal.search.script.Script;
 import com.liferay.portal.search.script.Scripts;
 import com.liferay.portal.search.sort.FieldSort;
@@ -57,161 +57,6 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(service = ResourceHelper.class)
 public class ResourceHelper {
-
-	public ScriptedMetricAggregation createBreachedScriptedMetricAggregation() {
-		ScriptedMetricAggregation scriptedMetricAggregation =
-			_aggregations.scriptedMetric("breachedInstanceCount");
-
-		scriptedMetricAggregation.setCombineScript(
-			_workflowMetricsSlaCombineScript);
-		scriptedMetricAggregation.setInitScript(_workflowMetricsSlaInitScript);
-		scriptedMetricAggregation.setMapScript(_workflowMetricsSlaMapScript);
-		scriptedMetricAggregation.setReduceScript(
-			_workflowMetricsSlaBreachedReduceScript);
-
-		return scriptedMetricAggregation;
-	}
-
-	public BucketScriptPipelineAggregation
-		createBucketScriptPipelineAggregation() {
-
-		BucketScriptPipelineAggregation bucketScriptPipelineAggregation =
-			_aggregations.bucketScript(
-				"breachedInstancePercentage",
-				_workflowMetricsSlaBreachedInstancePercentageScript);
-
-		bucketScriptPipelineAggregation.addBucketPath(
-			"breachedInstanceCount", "breached>breachedInstanceCount.value");
-		bucketScriptPipelineAggregation.addBucketPath(
-			"instanceCount", "countFilter>instanceCount.value");
-
-		return bucketScriptPipelineAggregation;
-	}
-
-	public BucketSortPipelineAggregation createBucketSortPipelineAggregation(
-		FieldSort fieldSort, Pagination pagination) {
-
-		BucketSortPipelineAggregation bucketSortPipelineAggregation =
-			_aggregations.bucketSort("sort");
-
-		FieldSort keyFieldSort = _sorts.field("_key");
-
-		keyFieldSort.setSortOrder(SortOrder.ASC);
-
-		bucketSortPipelineAggregation.addSortFields(fieldSort, keyFieldSort);
-
-		bucketSortPipelineAggregation.setFrom(pagination.getStartPosition());
-		bucketSortPipelineAggregation.setGapPolicy(GapPolicy.INSTANT_ZEROS);
-		bucketSortPipelineAggregation.setSize(pagination.getPageSize());
-
-		return bucketSortPipelineAggregation;
-	}
-
-	public BooleanQuery createInstanceCompletedBooleanQuery(
-		boolean instanceCompleted) {
-
-		BooleanQuery booleanQuery = createMustNotBooleanQuery();
-
-		return booleanQuery.addMustQueryClauses(
-			_queries.term("instanceCompleted", instanceCompleted));
-	}
-
-	public BooleanQuery createMustNotBooleanQuery() {
-		BooleanQuery booleanQuery = _queries.booleanQuery();
-
-		return booleanQuery.addMustNotQueryClauses(
-			_queries.term("status", WorkflowMetricsSLAStatus.NEW.name()));
-	}
-
-	public ScriptedMetricAggregation createOnTimeScriptedMetricAggregation() {
-		ScriptedMetricAggregation scriptedMetricAggregation =
-			_aggregations.scriptedMetric("instanceCount");
-
-		scriptedMetricAggregation.setCombineScript(
-			_workflowMetricsSlaCombineScript);
-		scriptedMetricAggregation.setInitScript(_workflowMetricsSlaInitScript);
-		scriptedMetricAggregation.setMapScript(_workflowMetricsSlaMapScript);
-		scriptedMetricAggregation.setReduceScript(
-			_workflowMetricsSlaOnTimeReduceScript);
-
-		return scriptedMetricAggregation;
-	}
-
-	public ScriptedMetricAggregation
-		createOnTimeTaskByAssigneeScriptedMetricAggregation() {
-
-		ScriptedMetricAggregation scriptedMetricAggregation =
-			_aggregations.scriptedMetric("taskCount");
-
-		scriptedMetricAggregation.setCombineScript(
-			_workflowMetricsSlaTaskAssigneeCombineScript);
-		scriptedMetricAggregation.setInitScript(
-			_workflowMetricsSlaTaskAssigneeInitScript);
-		scriptedMetricAggregation.setMapScript(
-			_workflowMetricsSlaTaskAssigneeMapScript);
-		scriptedMetricAggregation.setReduceScript(
-			_workflowMetricsSlaTaskAssigneeOnTimeReduceScript);
-
-		return scriptedMetricAggregation;
-	}
-
-	public ScriptedMetricAggregation createOverdueScriptedMetricAggregation() {
-		ScriptedMetricAggregation scriptedMetricAggregation =
-			_aggregations.scriptedMetric("instanceCount");
-
-		scriptedMetricAggregation.setCombineScript(
-			_workflowMetricsSlaCombineScript);
-		scriptedMetricAggregation.setInitScript(_workflowMetricsSlaInitScript);
-		scriptedMetricAggregation.setMapScript(_workflowMetricsSlaMapScript);
-		scriptedMetricAggregation.setReduceScript(
-			_workflowMetricsSlaOverdueReduceScript);
-
-		return scriptedMetricAggregation;
-	}
-
-	public ScriptedMetricAggregation
-		createOverdueTaskByAssigneeScriptedMetricAggregation() {
-
-		ScriptedMetricAggregation scriptedMetricAggregation =
-			_aggregations.scriptedMetric("taskCount");
-
-		scriptedMetricAggregation.setCombineScript(
-			_workflowMetricsSlaTaskAssigneeCombineScript);
-		scriptedMetricAggregation.setInitScript(
-			_workflowMetricsSlaTaskAssigneeInitScript);
-		scriptedMetricAggregation.setMapScript(
-			_workflowMetricsSlaTaskAssigneeMapScript);
-		scriptedMetricAggregation.setReduceScript(
-			_workflowMetricsSlaTaskAssigneeOverdueReduceScript);
-
-		return scriptedMetricAggregation;
-	}
-
-	public Script createScript(Class<?> clazz, String resourceName)
-		throws IOException {
-
-		return _scripts.script(
-			StringUtil.read(
-				clazz.getResourceAsStream("dependencies/" + resourceName)));
-	}
-
-	public BooleanQuery createTasksBooleanQuery(
-		long companyId, boolean instanceCompleted) {
-
-		BooleanQuery booleanQuery = _queries.booleanQuery();
-
-		booleanQuery.addFilterQueryClauses(
-			_queries.term(
-				"_index",
-				_indexNameBuilder.getIndexName(companyId) +
-					WorkflowMetricsIndexNameConstants.SUFFIX_TASK));
-
-		booleanQuery.addMustQueryClauses(
-			_queries.term("instanceCompleted", instanceCompleted));
-
-		return booleanQuery.addMustNotQueryClauses(
-			_queries.term("instanceId", 0));
-	}
 
 	public ScriptedMetricAggregation
 		creatInstanceCountScriptedMetricAggregation(
@@ -327,6 +172,161 @@ public class ResourceHelper {
 		return scriptedMetricAggregation;
 	}
 
+	public ScriptedMetricAggregation createBreachedScriptedMetricAggregation() {
+		ScriptedMetricAggregation scriptedMetricAggregation =
+			_aggregations.scriptedMetric("breachedInstanceCount");
+
+		scriptedMetricAggregation.setCombineScript(
+			_workflowMetricsSlaCombineScript);
+		scriptedMetricAggregation.setInitScript(_workflowMetricsSlaInitScript);
+		scriptedMetricAggregation.setMapScript(_workflowMetricsSlaMapScript);
+		scriptedMetricAggregation.setReduceScript(
+			_workflowMetricsSlaBreachedReduceScript);
+
+		return scriptedMetricAggregation;
+	}
+
+	public BucketScriptPipelineAggregation
+		createBucketScriptPipelineAggregation() {
+
+		BucketScriptPipelineAggregation bucketScriptPipelineAggregation =
+			_aggregations.bucketScript(
+				"breachedInstancePercentage",
+				_workflowMetricsSlaBreachedInstancePercentageScript);
+
+		bucketScriptPipelineAggregation.addBucketPath(
+			"breachedInstanceCount", "breached>breachedInstanceCount.value");
+		bucketScriptPipelineAggregation.addBucketPath(
+			"instanceCount", "countFilter>instanceCount.value");
+
+		return bucketScriptPipelineAggregation;
+	}
+
+	public BucketSortPipelineAggregation createBucketSortPipelineAggregation(
+		FieldSort fieldSort, Pagination pagination) {
+
+		BucketSortPipelineAggregation bucketSortPipelineAggregation =
+			_aggregations.bucketSort("sort");
+
+		FieldSort keyFieldSort = _sorts.field("_key");
+
+		keyFieldSort.setSortOrder(SortOrder.ASC);
+
+		bucketSortPipelineAggregation.addSortFields(fieldSort, keyFieldSort);
+
+		bucketSortPipelineAggregation.setFrom(pagination.getStartPosition());
+		bucketSortPipelineAggregation.setGapPolicy(GapPolicy.INSTANT_ZEROS);
+		bucketSortPipelineAggregation.setSize(pagination.getPageSize());
+
+		return bucketSortPipelineAggregation;
+	}
+
+	public BooleanQuery createInstanceCompletedBooleanQuery(
+		boolean instanceCompleted) {
+
+		BooleanQuery booleanQuery = createMustNotBooleanQuery();
+
+		return booleanQuery.addMustQueryClauses(
+			QueriesUtil.term("instanceCompleted", instanceCompleted));
+	}
+
+	public BooleanQuery createMustNotBooleanQuery() {
+		BooleanQuery booleanQuery = QueriesUtil.booleanQuery();
+
+		return booleanQuery.addMustNotQueryClauses(
+			QueriesUtil.term("status", WorkflowMetricsSLAStatus.NEW.name()));
+	}
+
+	public ScriptedMetricAggregation createOnTimeScriptedMetricAggregation() {
+		ScriptedMetricAggregation scriptedMetricAggregation =
+			_aggregations.scriptedMetric("instanceCount");
+
+		scriptedMetricAggregation.setCombineScript(
+			_workflowMetricsSlaCombineScript);
+		scriptedMetricAggregation.setInitScript(_workflowMetricsSlaInitScript);
+		scriptedMetricAggregation.setMapScript(_workflowMetricsSlaMapScript);
+		scriptedMetricAggregation.setReduceScript(
+			_workflowMetricsSlaOnTimeReduceScript);
+
+		return scriptedMetricAggregation;
+	}
+
+	public ScriptedMetricAggregation
+		createOnTimeTaskByAssigneeScriptedMetricAggregation() {
+
+		ScriptedMetricAggregation scriptedMetricAggregation =
+			_aggregations.scriptedMetric("taskCount");
+
+		scriptedMetricAggregation.setCombineScript(
+			_workflowMetricsSlaTaskAssigneeCombineScript);
+		scriptedMetricAggregation.setInitScript(
+			_workflowMetricsSlaTaskAssigneeInitScript);
+		scriptedMetricAggregation.setMapScript(
+			_workflowMetricsSlaTaskAssigneeMapScript);
+		scriptedMetricAggregation.setReduceScript(
+			_workflowMetricsSlaTaskAssigneeOnTimeReduceScript);
+
+		return scriptedMetricAggregation;
+	}
+
+	public ScriptedMetricAggregation createOverdueScriptedMetricAggregation() {
+		ScriptedMetricAggregation scriptedMetricAggregation =
+			_aggregations.scriptedMetric("instanceCount");
+
+		scriptedMetricAggregation.setCombineScript(
+			_workflowMetricsSlaCombineScript);
+		scriptedMetricAggregation.setInitScript(_workflowMetricsSlaInitScript);
+		scriptedMetricAggregation.setMapScript(_workflowMetricsSlaMapScript);
+		scriptedMetricAggregation.setReduceScript(
+			_workflowMetricsSlaOverdueReduceScript);
+
+		return scriptedMetricAggregation;
+	}
+
+	public ScriptedMetricAggregation
+		createOverdueTaskByAssigneeScriptedMetricAggregation() {
+
+		ScriptedMetricAggregation scriptedMetricAggregation =
+			_aggregations.scriptedMetric("taskCount");
+
+		scriptedMetricAggregation.setCombineScript(
+			_workflowMetricsSlaTaskAssigneeCombineScript);
+		scriptedMetricAggregation.setInitScript(
+			_workflowMetricsSlaTaskAssigneeInitScript);
+		scriptedMetricAggregation.setMapScript(
+			_workflowMetricsSlaTaskAssigneeMapScript);
+		scriptedMetricAggregation.setReduceScript(
+			_workflowMetricsSlaTaskAssigneeOverdueReduceScript);
+
+		return scriptedMetricAggregation;
+	}
+
+	public Script createScript(Class<?> clazz, String resourceName)
+		throws IOException {
+
+		return Scripts.INSTANCE.script(
+			StringUtil.read(
+				clazz.getResourceAsStream("dependencies/" + resourceName)));
+	}
+
+	public BooleanQuery createTasksBooleanQuery(
+		long companyId, boolean instanceCompleted) {
+
+		BooleanQuery booleanQuery = QueriesUtil.booleanQuery();
+
+		booleanQuery.addFilterQueryClauses(
+			QueriesUtil.term(
+				"_index",
+				_indexNameBuilder.getIndexName(companyId) +
+					WorkflowMetricsIndexNameConstants.SUFFIX_TASK));
+
+		booleanQuery.addMustQueryClauses(
+			QueriesUtil.term("instanceCompleted", instanceCompleted));
+
+		return booleanQuery.addMustNotQueryClauses(
+			QueriesUtil.term("instanceId", 0));
+	}
+
 	public long getBreachedInstanceCount(Bucket bucket) {
 		FilterAggregationResult filterAggregationResult =
 			(FilterAggregationResult)bucket.getChildAggregationResult(
@@ -337,7 +337,8 @@ public class ResourceHelper {
 				filterAggregationResult.getChildAggregationResult(
 					"breachedInstanceCount");
 
-		return GetterUtil.getLong(scriptedMetricAggregationResult.getValue());
+		return getScriptedMetricAggregationResultValue(
+			scriptedMetricAggregationResult);
 	}
 
 	public double getBreachedInstancePercentage(Bucket bucket) {
@@ -371,17 +372,17 @@ public class ResourceHelper {
 			_indexNameBuilder.getIndexName(companyId) +
 				WorkflowMetricsIndexNameConstants.SUFFIX_PROCESS);
 
-		BooleanQuery booleanQuery = _queries.booleanQuery();
+		BooleanQuery booleanQuery = QueriesUtil.booleanQuery();
 
 		searchSearchRequest.setQuery(
 			booleanQuery.addMustQueryClauses(
-				_queries.term("companyId", companyId),
-				_queries.term("processId", processId)));
+				QueriesUtil.term("companyId", companyId),
+				QueriesUtil.term("processId", processId)));
 
 		searchSearchRequest.setSelectedFieldNames("version");
 
 		SearchSearchResponse searchSearchResponse =
-			_searchRequestExecutor.executeSearchRequest(searchSearchRequest);
+			_searchEngineAdapter.execute(searchSearchRequest);
 
 		SearchHits searchHits = searchSearchResponse.getSearchHits();
 
@@ -413,7 +414,8 @@ public class ResourceHelper {
 				filterAggregationResult.getChildAggregationResult(
 					"instanceCount");
 
-		return GetterUtil.getLong(scriptedMetricAggregationResult.getValue());
+		return getScriptedMetricAggregationResultValue(
+			scriptedMetricAggregationResult);
 	}
 
 	public long getOnTimeTaskCount(Bucket bucket) {
@@ -428,7 +430,8 @@ public class ResourceHelper {
 			(ScriptedMetricAggregationResult)
 				filterAggregationResult.getChildAggregationResult("taskCount");
 
-		return GetterUtil.getLong(scriptedMetricAggregationResult.getValue());
+		return getScriptedMetricAggregationResultValue(
+			scriptedMetricAggregationResult);
 	}
 
 	public long getOverdueInstanceCount(Bucket bucket) {
@@ -441,7 +444,8 @@ public class ResourceHelper {
 				filterAggregationResult.getChildAggregationResult(
 					"instanceCount");
 
-		return GetterUtil.getLong(scriptedMetricAggregationResult.getValue());
+		return getScriptedMetricAggregationResultValue(
+			scriptedMetricAggregationResult);
 	}
 
 	public long getOverdueTaskCount(Bucket bucket) {
@@ -457,7 +461,19 @@ public class ResourceHelper {
 			(ScriptedMetricAggregationResult)
 				filterAggregationResult.getChildAggregationResult("taskCount");
 
-		return GetterUtil.getLong(scriptedMetricAggregationResult.getValue());
+		return getScriptedMetricAggregationResultValue(
+			scriptedMetricAggregationResult);
+	}
+
+	public long getScriptedMetricAggregationResultValue(
+		ScriptedMetricAggregationResult scriptedMetricAggregationResult) {
+
+		if (scriptedMetricAggregationResult == null) {
+			return 0;
+		}
+
+		return GetterUtil.getLong(
+			String.valueOf(scriptedMetricAggregationResult.getValue()));
 	}
 
 	@Activate
@@ -520,13 +536,7 @@ public class ResourceHelper {
 	private IndexNameBuilder _indexNameBuilder;
 
 	@Reference
-	private Queries _queries;
-
-	@Reference
-	private Scripts _scripts;
-
-	@Reference
-	private SearchRequestExecutor _searchRequestExecutor;
+	private SearchEngineAdapter _searchEngineAdapter;
 
 	@Reference
 	private Sorts _sorts;

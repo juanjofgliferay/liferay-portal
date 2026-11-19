@@ -191,8 +191,9 @@ public class LayoutRemoteStagingBackgroundTaskExecutor
 
 		deleteTempLarOnSuccess(file);
 
-		return processMissingReferences(
-			backgroundTask.getBackgroundTaskId(), missingReferences);
+		return getBackgroundTaskResult(
+			backgroundTask.getBackgroundTaskId(), exportImportConfiguration,
+			missingReferences);
 	}
 
 	protected File exportLayoutsAsFile(
@@ -204,9 +205,9 @@ public class LayoutRemoteStagingBackgroundTaskExecutor
 		List<Layout> layouts = new ArrayList<>();
 
 		if (layoutIdMap != null) {
-			Set<Map.Entry<Long, Boolean>> entrySet = layoutIdMap.entrySet();
+			Set<Map.Entry<Long, Boolean>> entries = layoutIdMap.entrySet();
 
-			for (Map.Entry<Long, Boolean> entry : entrySet) {
+			for (Map.Entry<Long, Boolean> entry : entries) {
 				long plid = GetterUtil.getLong(String.valueOf(entry.getKey()));
 
 				Layout layout = null;
@@ -224,7 +225,7 @@ public class LayoutRemoteStagingBackgroundTaskExecutor
 						_log.debug(noSuchLayoutException);
 					}
 
-					entrySet.remove(plid);
+					entries.remove(plid);
 
 					continue;
 				}
@@ -241,19 +242,25 @@ public class LayoutRemoteStagingBackgroundTaskExecutor
 					httpPrincipal, layout, remoteGroupId);
 
 				for (Layout parentLayout : parentLayouts) {
-					if (!layouts.contains(parentLayout)) {
-						layouts.add(parentLayout);
+					if (layouts.contains(parentLayout)) {
+						continue;
 					}
+
+					layouts.add(parentLayout);
 				}
 
 				boolean includeChildren = entry.getValue();
 
-				if (includeChildren) {
-					for (Layout childLayout : layout.getAllChildren()) {
-						if (!layouts.contains(childLayout)) {
-							layouts.add(childLayout);
-						}
+				if (!includeChildren) {
+					continue;
+				}
+
+				for (Layout childLayout : layout.getAllChildren()) {
+					if (layouts.contains(childLayout)) {
+						continue;
 					}
+
+					layouts.add(childLayout);
 				}
 			}
 		}

@@ -16,7 +16,10 @@ if (Validator.isNull(backURL)) {
 	backURL = portletURL.toString();
 }
 
-SelectLayoutPageTemplateEntryDisplayContext selectLayoutPageTemplateEntryDisplayContext = new SelectLayoutPageTemplateEntryDisplayContext(request, liferayPortletResponse);
+SelectLayoutPageTemplateEntryDisplayContext selectLayoutPageTemplateEntryDisplayContext = (SelectLayoutPageTemplateEntryDisplayContext)request.getAttribute(SelectLayoutPageTemplateEntryDisplayContext.class.getName());
+
+Group designLibraryGroup = selectLayoutPageTemplateEntryDisplayContext.getDesignLibraryGroup();
+LayoutPageTemplateCollection layoutPageTemplateCollection = selectLayoutPageTemplateEntryDisplayContext.getLayoutPageTemplateCollection();
 
 portletDisplay.setShowBackIcon(true);
 portletDisplay.setURLBack(backURL);
@@ -28,6 +31,7 @@ renderResponse.setTitle(LanguageUtil.get(request, "select-template"));
 <clay:container-fluid
 	cssClass="container-view"
 	id='<%= liferayPortletResponse.getNamespace() + "layoutPageTemplateEntries" %>'
+	size="xxxl"
 >
 	<clay:row>
 		<clay:col
@@ -37,15 +41,18 @@ renderResponse.setTitle(LanguageUtil.get(request, "select-template"));
 				<liferay-ui:message key="page-template-sets" />
 			</div>
 
-			<clay:vertical-nav
-				verticalNavItems="<%= layoutsAdminDisplayContext.getVerticalNavItemList(selectLayoutPageTemplateEntryDisplayContext) %>"
-			/>
+			<div class="page-template-sets-vertical-nav">
+				<clay:vertical-nav
+					verticalNavItems="<%= layoutsAdminDisplayContext.getVerticalNavItemList(selectLayoutPageTemplateEntryDisplayContext) %>"
+				/>
+			</div>
 		</clay:col>
 
 		<clay:col
 			lg="9"
 		>
 			<clay:sheet
+				cssClass='<%= (designLibraryGroup != null) ? "design-library-page-template-set" : StringPool.BLANK %>'
 				size="full"
 			>
 				<h2 class="sheet-title">
@@ -55,26 +62,50 @@ renderResponse.setTitle(LanguageUtil.get(request, "select-template"));
 						<clay:content-col
 							expand="<%= true %>"
 						>
-							<span class="text-uppercase">
-								<c:choose>
-									<c:when test="<%= selectLayoutPageTemplateEntryDisplayContext.isContentPages() %>">
+							<div class="inline-item">
+								<span class="text-uppercase">
+									<c:choose>
+										<c:when test="<%= selectLayoutPageTemplateEntryDisplayContext.isContentPages() %>">
+											<c:if test="<%= layoutPageTemplateCollection != null %>">
+												<%= HtmlUtil.escape(layoutPageTemplateCollection.getName()) %>
+											</c:if>
+										</c:when>
+										<c:when test="<%= selectLayoutPageTemplateEntryDisplayContext.isBasicTemplates() %>">
+											<liferay-ui:message key="basic-templates" />
+										</c:when>
+										<c:when test="<%= selectLayoutPageTemplateEntryDisplayContext.isGlobalTemplates() %>">
+											<liferay-ui:message key="global-templates" />
+										</c:when>
+									</c:choose>
+								</span>
 
-										<%
-										LayoutPageTemplateCollection layoutPageTemplateCollection = LayoutPageTemplateCollectionLocalServiceUtil.fetchLayoutPageTemplateCollection(selectLayoutPageTemplateEntryDisplayContext.getLayoutPageTemplateCollectionId());
-										%>
+								<c:if test="<%= designLibraryGroup != null %>">
 
-										<c:if test="<%= layoutPageTemplateCollection != null %>">
-											<%= HtmlUtil.escape(layoutPageTemplateCollection.getName()) %>
-										</c:if>
-									</c:when>
-									<c:when test="<%= selectLayoutPageTemplateEntryDisplayContext.isBasicTemplates() %>">
-										<liferay-ui:message key="basic-templates" />
-									</c:when>
-									<c:when test="<%= selectLayoutPageTemplateEntryDisplayContext.isGlobalTemplates() %>">
-										<liferay-ui:message key="global-templates" />
-									</c:when>
-								</c:choose>
-							</span>
+									<%
+									String designLibraryName = designLibraryGroup.getDescriptiveName(locale);
+									%>
+
+									<clay:label
+										aria-label='<%= LanguageUtil.format(request, "x-from-x-design-library", new String[] {layoutPageTemplateCollection.getName(), designLibraryName}) %>'
+										cssClass="c-ml-2"
+										displayType="inverse-content-5"
+										large="<%= true %>"
+									>
+										<clay:label-item-before>
+											<clay:sticker
+												cssClass="bg-white rounded"
+												icon="books-brush"
+												inline="<%= true %>"
+												size="xs"
+											/>
+										</clay:label-item-before>
+
+										<clay:label-item-expand>
+											<%= HtmlUtil.escape(designLibraryName) %>
+										</clay:label-item-expand>
+									</clay:label>
+								</c:if>
+							</div>
 						</clay:content-col>
 					</clay:content-row>
 				</h2>
@@ -96,7 +127,7 @@ renderResponse.setTitle(LanguageUtil.get(request, "select-template"));
 							>
 								<liferay-ui:search-container-column-text>
 									<react:component
-										module="js/LayoutPageTemplateEntryCard"
+										module="{LayoutPageTemplateEntryCard} from layout-admin-web"
 										props="<%= selectLayoutPageTemplateEntryDisplayContext.getLayoutPageTemplateEntryCardProps(layoutPageTemplateEntry) %>"
 									/>
 								</liferay-ui:search-container-column-text>
@@ -120,14 +151,12 @@ renderResponse.setTitle(LanguageUtil.get(request, "select-template"));
 	</clay:row>
 </clay:container-fluid>
 
-<aui:script require="frontend-js-web/index as frontendJsWeb">
-	var {delegate} = frontendJsWeb;
-
+<aui:script sandbox="<%= true %>">
 	var layoutPageTemplateEntries = document.getElementById(
 		'<portlet:namespace />layoutPageTemplateEntries'
 	);
 
-	var addLayoutActionOptionQueryClickHandler = delegate(
+	var addLayoutActionOptionQueryClickHandler = Liferay.Util.delegate(
 		layoutPageTemplateEntries,
 		'click',
 		'.add-layout-action-option',
@@ -137,13 +166,13 @@ renderResponse.setTitle(LanguageUtil.get(request, "select-template"));
 				height: '60vh',
 				id: 'addLayoutDialog',
 				size: 'md',
-				title: '<liferay-ui:message key="add-page" />',
+				title: '<liferay-ui:message key="<%= layoutsAdminDisplayContext.getAddModalTitle() %>" />',
 				url: event.delegateTarget.dataset.addLayoutUrl,
 			});
 		}
 	);
 
-	var addLayoutActionOptionQueryKeyDownHandler = delegate(
+	var addLayoutActionOptionQueryKeyDownHandler = Liferay.Util.delegate(
 		layoutPageTemplateEntries,
 		'keydown',
 		'.add-layout-action-option',

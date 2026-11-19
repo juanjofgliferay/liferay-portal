@@ -112,11 +112,7 @@ public class KaleoInstancePersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		KaleoInstance newKaleoInstance = _persistence.create(pk);
-
-		newKaleoInstance.setMvccVersion(RandomTestUtil.nextLong());
+		KaleoInstance newKaleoInstance = addKaleoInstance();
 
 		newKaleoInstance.setCtCollectionId(RandomTestUtil.nextLong());
 
@@ -154,7 +150,9 @@ public class KaleoInstancePersistenceTest {
 
 		newKaleoInstance.setWorkflowContext(RandomTestUtil.randomString());
 
-		_kaleoInstances.add(_persistence.update(newKaleoInstance));
+		newKaleoInstance = _persistence.update(newKaleoInstance);
+
+		_kaleoInstances.add(newKaleoInstance);
 
 		KaleoInstance existingKaleoInstance = _persistence.findByPrimaryKey(
 			newKaleoInstance.getPrimaryKey());
@@ -256,34 +254,12 @@ public class KaleoInstancePersistenceTest {
 	}
 
 	@Test
-	public void testCountByCN_CPK() throws Exception {
-		_persistence.countByCN_CPK("", RandomTestUtil.nextLong());
-
-		_persistence.countByCN_CPK("null", 0L);
-
-		_persistence.countByCN_CPK((String)null, 0L);
-	}
-
-	@Test
 	public void testCountByKII_C_U() throws Exception {
 		_persistence.countByKII_C_U(
 			RandomTestUtil.nextLong(), RandomTestUtil.nextLong(),
 			RandomTestUtil.nextLong());
 
 		_persistence.countByKII_C_U(0L, 0L, 0L);
-	}
-
-	@Test
-	public void testCountByC_KDN_KDV_CD() throws Exception {
-		_persistence.countByC_KDN_KDV_CD(
-			RandomTestUtil.nextLong(), "", RandomTestUtil.nextInt(),
-			RandomTestUtil.nextDate());
-
-		_persistence.countByC_KDN_KDV_CD(
-			0L, "null", 0, RandomTestUtil.nextDate());
-
-		_persistence.countByC_KDN_KDV_CD(
-			0L, (String)null, 0, RandomTestUtil.nextDate());
 	}
 
 	@Test
@@ -607,8 +583,6 @@ public class KaleoInstancePersistenceTest {
 
 		KaleoInstance kaleoInstance = _persistence.create(pk);
 
-		kaleoInstance.setMvccVersion(RandomTestUtil.nextLong());
-
 		kaleoInstance.setCtCollectionId(RandomTestUtil.nextLong());
 
 		kaleoInstance.setGroupId(RandomTestUtil.nextLong());
@@ -656,3 +630,4 @@ public class KaleoInstancePersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1817386380

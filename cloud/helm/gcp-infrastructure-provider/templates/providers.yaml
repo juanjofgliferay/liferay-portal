@@ -1,0 +1,24 @@
+{{- if .Values.providers.enabled -}}
+{{- $providers := list
+    (dict "name" "provider-family-gcp" "runtimeConfigName" "gcp-family-config" "syncWave" "-85")
+    (dict "name" "provider-gcp-cloudplatform" "runtimeConfigName" "gcp-cloudplatform-config")
+    (dict "name" "provider-gcp-kms" "runtimeConfigName" "gcp-kms-config")
+    (dict "name" "provider-gcp-sql" "runtimeConfigName" "gcp-sql-config")
+    (dict "name" "provider-gcp-storage" "runtimeConfigName" "gcp-storage-config")
+-}}
+{{- range $provider := $providers }}
+---
+apiVersion: pkg.crossplane.io/v1
+kind: Provider
+metadata:
+    annotations:
+        argocd.argoproj.io/sync-options: ServerSideApply=true,SkipDryRunOnMissingResource=true
+        argocd.argoproj.io/sync-wave: {{ $provider.syncWave | default "-80" | quote }}
+    name: {{ $provider.name }}
+spec:
+    package: xpkg.upbound.io/upbound/{{ $provider.name }}:v3.1.0
+    runtimeConfigRef:
+        name: {{ $provider.runtimeConfigName }}
+    skipDependencyResolution: true
+{{- end }}
+{{- end -}}

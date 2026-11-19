@@ -14,11 +14,13 @@ import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.Http;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.HttpUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Time;
 import com.liferay.portal.kernel.webcache.WebCacheItem;
 import com.liferay.portal.kernel.webcache.WebCachePoolUtil;
+import com.liferay.portal.security.key.secret.SecretResolverUtil;
 
 import java.security.KeyFactory;
 import java.security.PrivateKey;
@@ -35,38 +37,37 @@ import net.oauth.signature.pem.PKCS1EncodedKeySpec;
 public class DSAccessTokenWebCacheItem implements WebCacheItem {
 
 	public static JSONObject get(
-		String apiUsername, String environment, String integrationKey,
-		String rsaPrivateKey) {
+		String accountURL, String apiUsername, long companyId,
+		String environment, String integrationKey, String rsaPrivateKey) {
 
 		return (JSONObject)WebCachePoolUtil.get(
 			StringBundler.concat(
 				DSAccessTokenWebCacheItem.class.getName(), StringPool.POUND,
+				companyId, StringPool.POUND, accountURL, StringPool.POUND,
 				apiUsername, StringPool.POUND, environment, StringPool.POUND,
 				integrationKey, StringPool.POUND, rsaPrivateKey),
 			new DSAccessTokenWebCacheItem(
-				apiUsername, environment, integrationKey, rsaPrivateKey));
+				accountURL, apiUsername, companyId, environment, integrationKey,
+				rsaPrivateKey));
 	}
 
 	public DSAccessTokenWebCacheItem(
-		String apiUsername, String environment, String integrationKey,
-		String rsaPrivateKey) {
+		String accountURL, String apiUsername, long companyId,
+		String environment, String integrationKey, String rsaPrivateKey) {
 
+		_accountURL = accountURL;
 		_apiUsername = apiUsername;
 		_environment = environment;
-		_integrationKey = integrationKey;
+		_integrationKey = SecretResolverUtil.resolve(companyId, integrationKey);
 
-		if (environment.equals("production")) {
-			_environmentBaseURI = "account.docusign.com";
-		}
-		else {
-			_environmentBaseURI = "account-d.docusign.com";
-		}
-
-		if (rsaPrivateKey != null) {
-			_rsaPrivateKeyBytes = rsaPrivateKey.getBytes();
-		}
-		else {
+		if (rsaPrivateKey == null) {
 			_rsaPrivateKeyBytes = new byte[0];
+		}
+		else {
+			String pem = _getPEM(
+				SecretResolverUtil.resolve(companyId, rsaPrivateKey));
+
+			_rsaPrivateKeyBytes = pem.getBytes();
 		}
 	}
 
@@ -87,8 +88,7 @@ public class DSAccessTokenWebCacheItem implements WebCacheItem {
 				).put(
 					"grant_type", "urn:ietf:params:oauth:grant-type:jwt-bearer"
 				).build());
-			options.setLocation(
-				"https://" + _environmentBaseURI + "/oauth/token");
+			options.setLocation(_accountURL + "/oauth/token");
 			options.setPost(true);
 
 			return JSONFactoryUtil.createJSONObject(
@@ -128,7 +128,7 @@ public class DSAccessTokenWebCacheItem implements WebCacheItem {
 		).toString();
 
 		String bodyJSON = JSONUtil.put(
-			"aud", _environmentBaseURI
+			"aud", HttpComponentsUtil.getDomain(_accountURL)
 		).put(
 			"exp", _getUnixTime(3600)
 		).put(
@@ -148,6 +148,32 @@ public class DSAccessTokenWebCacheItem implements WebCacheItem {
 
 		return StringUtil.removeSubstring(
 			token + "." + _encode(signature.sign()), "=");
+	}
+
+	private String _getPEM(String rsaPrivateKey) {
+
+		// PEMReader needs the markers and the base64 body on their own lines.
+		// Neither base64 nor a marker can contain a backslash, so an escaped
+		// line break is unambiguous.
+
+		String pem = StringUtil.replace(
+			rsaPrivateKey.trim(), "\\\\n", StringPool.NEW_LINE);
+
+		pem = StringUtil.replace(pem, "\\n", StringPool.NEW_LINE);
+
+		int beginIndex = pem.indexOf(_PEM_MARKER_BEGIN);
+		int endIndex = pem.lastIndexOf(_PEM_MARKER_END);
+
+		if ((beginIndex == -1) || (endIndex == -1)) {
+			return pem;
+		}
+
+		String body = pem.substring(
+			beginIndex + _PEM_MARKER_BEGIN.length(), endIndex);
+
+		return StringBundler.concat(
+			_PEM_MARKER_BEGIN, StringPool.NEW_LINE, body.trim(),
+			StringPool.NEW_LINE, _PEM_MARKER_END);
 	}
 
 	private Object _getUnixTime(long offset) {
@@ -171,14 +197,20 @@ public class DSAccessTokenWebCacheItem implements WebCacheItem {
 		return keyFactory.generatePrivate(pkcs1EncodedKeySpec.getKeySpec());
 	}
 
+	private static final String _PEM_MARKER_BEGIN =
+		"-----BEGIN RSA PRIVATE KEY-----";
+
+	private static final String _PEM_MARKER_END =
+		"-----END RSA PRIVATE KEY-----";
+
 	private static final long _REFRESH_TIME = Time.MINUTE * 45;
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		DSAccessTokenWebCacheItem.class);
 
+	private final String _accountURL;
 	private final String _apiUsername;
 	private final String _environment;
-	private final String _environmentBaseURI;
 	private final String _integrationKey;
 	private final byte[] _rsaPrivateKeyBytes;
 

@@ -5,30 +5,29 @@
 
 package com.liferay.portlet.configuration.web.internal.util.comparator;
 
-import com.liferay.portal.kernel.settings.ArchivedSettings;
+import com.liferay.portal.kernel.model.PortletItem;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 /**
  * @author Eudaldo Alonso
  */
 public class ArchivedSettingsNameComparator
-	extends OrderByComparator<ArchivedSettings> {
+	extends OrderByComparator<PortletItem> {
 
-	public ArchivedSettingsNameComparator() {
-		this(false);
-	}
+	public static ArchivedSettingsNameComparator getInstance(
+		boolean ascending) {
 
-	public ArchivedSettingsNameComparator(boolean ascending) {
-		_ascending = ascending;
+		if (ascending) {
+			return _INSTANCE_ASCENDING;
+		}
+
+		return _INSTANCE_DESCENDING;
 	}
 
 	@Override
-	public int compare(
-		ArchivedSettings archivedSettings1,
-		ArchivedSettings archivedSettings2) {
-
-		String name1 = archivedSettings1.getName();
-		String name2 = archivedSettings2.getName();
+	public int compare(PortletItem portletItem1, PortletItem portletItem2) {
+		String name1 = portletItem1.getName();
+		String name2 = portletItem2.getName();
 
 		int value = name1.compareTo(name2);
 
@@ -38,6 +37,16 @@ public class ArchivedSettingsNameComparator
 
 		return -value;
 	}
+
+	private ArchivedSettingsNameComparator(boolean ascending) {
+		_ascending = ascending;
+	}
+
+	private static final ArchivedSettingsNameComparator _INSTANCE_ASCENDING =
+		new ArchivedSettingsNameComparator(true);
+
+	private static final ArchivedSettingsNameComparator _INSTANCE_DESCENDING =
+		new ArchivedSettingsNameComparator(false);
 
 	private final boolean _ascending;
 

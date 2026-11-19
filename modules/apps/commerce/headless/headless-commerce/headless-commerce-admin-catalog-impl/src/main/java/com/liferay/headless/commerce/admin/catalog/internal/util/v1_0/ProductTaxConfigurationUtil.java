@@ -6,9 +6,14 @@
 package com.liferay.headless.commerce.admin.catalog.internal.util.v1_0;
 
 import com.liferay.commerce.product.model.CPDefinition;
+import com.liferay.commerce.product.model.CPTaxCategory;
 import com.liferay.commerce.product.service.CPDefinitionService;
+import com.liferay.commerce.product.service.CPTaxCategoryService;
 import com.liferay.headless.commerce.admin.catalog.dto.v1_0.ProductTaxConfiguration;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.lazy.referencing.LazyReferencingThreadLocal;
+import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.Validator;
 
 /**
  * @author Alessio Antonio Rendina
@@ -16,15 +21,45 @@ import com.liferay.portal.kernel.exception.PortalException;
 public class ProductTaxConfigurationUtil {
 
 	public static CPDefinition updateCPDefinitionTaxCategoryInfo(
-			CPDefinitionService cpDefinitionService,
-			ProductTaxConfiguration productTaxConfiguration,
-			CPDefinition cpDefinition)
+			CPDefinition cpDefinition, CPDefinitionService cpDefinitionService,
+			CPTaxCategoryService cpTaxCategoryService,
+			ProductTaxConfiguration productTaxConfiguration)
 		throws PortalException {
 
 		return cpDefinitionService.updateTaxCategoryInfo(
-			cpDefinition.getCPDefinitionId(), productTaxConfiguration.getId(),
+			cpDefinition.getCPDefinitionId(),
+			_getCPTaxCategoryId(
+				cpDefinition.getCompanyId(), cpTaxCategoryService,
+				productTaxConfiguration),
 			ProductUtil.isTaxExempt(cpDefinition, productTaxConfiguration),
 			false);
+	}
+
+	private static long _getCPTaxCategoryId(
+			long companyId, CPTaxCategoryService cpTaxCategoryService,
+			ProductTaxConfiguration productTaxConfiguration)
+		throws PortalException {
+
+		String externalReferenceCode =
+			productTaxConfiguration.getTaxCategoryExternalReferenceCode();
+
+		if (Validator.isNull(externalReferenceCode)) {
+			return GetterUtil.getLong(productTaxConfiguration.getId());
+		}
+
+		if (!LazyReferencingThreadLocal.isEnabled()) {
+			CPTaxCategory cpTaxCategory =
+				cpTaxCategoryService.getCPTaxCategoryByExternalReferenceCode(
+					externalReferenceCode, companyId);
+
+			return cpTaxCategory.getCPTaxCategoryId();
+		}
+
+		CPTaxCategory cpTaxCategory =
+			cpTaxCategoryService.getOrAddEmptyCPTaxCategory(
+				externalReferenceCode);
+
+		return cpTaxCategory.getCPTaxCategoryId();
 	}
 
 }

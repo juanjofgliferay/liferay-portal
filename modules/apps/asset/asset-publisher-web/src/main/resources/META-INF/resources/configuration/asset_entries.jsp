@@ -94,7 +94,7 @@ long[] groupIds = assetPublisherDisplayContext.getGroupIds();
 %>
 
 <c:if test="<%= ArrayUtil.isNotEmpty(groupIds) %>">
-	<div class="d-flex">
+	<div class="d-flex flex-wrap">
 
 		<%
 		for (long groupId : groupIds) {
@@ -103,19 +103,21 @@ long[] groupIds = assetPublisherDisplayContext.getGroupIds();
 			String title = LanguageUtil.format(request, (groupIds.length == 1) ? "select" : "select-in-x", HtmlUtil.escape(group.getDescriptiveName(locale)), false);
 		%>
 
-				<clay:dropdown-menu
+				<clay:button
 					additionalProps='<%=
 						HashMapBuilder.<String, Object>put(
+							"assetEntryTypes", assetPublisherDisplayContext.getAssetEntryTypesJSONArray(groupId)
+						).put(
 							"currentURL", configurationRenderURL.toString()
+						).put(
+							"groupIds", assetPublisherDisplayContext.getConnectedGroupIdsString(groupId)
 						).build()
 					%>'
 					aria-label="<%= title %>"
 					cssClass="mr-2"
 					displayType="secondary"
-					dropdownItems="<%= assetPublisherDisplayContext.getDropdownItems(group) %>"
 					label="<%= title %>"
-					propsTransformer="js/AssetEntrySelectionDropdownPropsTransformer"
-					title="<%= title %>"
+					propsTransformer="{AssetEntrySelectionDropdownPropsTransformer} from asset-publisher-web"
 				/>
 
 		<%
@@ -125,7 +127,7 @@ long[] groupIds = assetPublisherDisplayContext.getGroupIds();
 	</div>
 </c:if>
 
-<script>
+<aui:script>
 	function <portlet:namespace />moveSelectionDown(assetEntryOrder) {
 		Liferay.Util.postForm(document.<portlet:namespace />fm, {
 			data: {
@@ -145,4 +147,4 @@ long[] groupIds = assetPublisherDisplayContext.getGroupIds();
 			},
 		});
 	}
-</script>
+</aui:script>

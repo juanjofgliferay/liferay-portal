@@ -418,9 +418,7 @@ public class CalendarLocalServiceWrapper
 	}
 
 	@Override
-	public boolean hasStagingCalendar(Calendar calendar)
-		throws com.liferay.portal.kernel.exception.PortalException {
-
+	public boolean hasStagingCalendar(Calendar calendar) {
 		return _calendarLocalService.hasStagingCalendar(calendar);
 	}
 
@@ -434,50 +432,6 @@ public class CalendarLocalServiceWrapper
 	@Override
 	public boolean isStagingCalendar(Calendar calendar) {
 		return _calendarLocalService.isStagingCalendar(calendar);
-	}
-
-	@Override
-	public java.util.List<Calendar> search(
-		long companyId, long[] groupIds, long[] calendarResourceIds,
-		String keywords, boolean andOperator, int start, int end,
-		com.liferay.portal.kernel.util.OrderByComparator<Calendar>
-			orderByComparator) {
-
-		return _calendarLocalService.search(
-			companyId, groupIds, calendarResourceIds, keywords, andOperator,
-			start, end, orderByComparator);
-	}
-
-	@Override
-	public java.util.List<Calendar> search(
-		long companyId, long[] groupIds, long[] calendarResourceIds,
-		String name, String description, boolean andOperator, int start,
-		int end,
-		com.liferay.portal.kernel.util.OrderByComparator<Calendar>
-			orderByComparator) {
-
-		return _calendarLocalService.search(
-			companyId, groupIds, calendarResourceIds, name, description,
-			andOperator, start, end, orderByComparator);
-	}
-
-	@Override
-	public int searchCount(
-		long companyId, long[] groupIds, long[] calendarResourceIds,
-		String keywords, boolean andOperator) {
-
-		return _calendarLocalService.searchCount(
-			companyId, groupIds, calendarResourceIds, keywords, andOperator);
-	}
-
-	@Override
-	public int searchCount(
-		long companyId, long[] groupIds, long[] calendarResourceIds,
-		String name, String description, boolean andOperator) {
-
-		return _calendarLocalService.searchCount(
-			companyId, groupIds, calendarResourceIds, name, description,
-			andOperator);
 	}
 
 	/**
@@ -574,3 +528,4 @@ public class CalendarLocalServiceWrapper
 	private CalendarLocalService _calendarLocalService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:2076997840

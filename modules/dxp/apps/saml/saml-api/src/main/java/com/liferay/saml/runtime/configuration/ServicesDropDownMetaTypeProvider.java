@@ -70,8 +70,7 @@ public class ServicesDropDownMetaTypeProvider
 
 		try {
 			Filter filter = bundleContext.createFilter(
-				String.format(
-					"(&(objectClass=%s)(%s))", className, "component.name=*"));
+				"(&(component.name=*)(objectClass=" + className + "))");
 
 			_serviceTracker = new ServiceTracker<>(bundleContext, filter, null);
 
@@ -180,13 +179,13 @@ public class ServicesDropDownMetaTypeProvider
 			}
 
 			@Override
-			public InputStream getIcon(int size) throws IOException {
-				return null;
+			public String getID() {
+				return _metatypePID;
 			}
 
 			@Override
-			public String getID() {
-				return _metatypePID;
+			public InputStream getIcon(int size) throws IOException {
+				return null;
 			}
 
 			@Override

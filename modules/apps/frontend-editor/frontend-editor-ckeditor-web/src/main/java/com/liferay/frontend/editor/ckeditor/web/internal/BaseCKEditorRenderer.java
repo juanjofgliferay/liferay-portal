@@ -10,7 +10,7 @@ import com.liferay.frontend.editor.ckeditor.web.internal.constants.CKEditorConst
 import com.liferay.portal.kernel.servlet.PortalWebResourceConstants;
 
 /**
- * @author Joao Victor Alves
+ * @author João Victor Alves
  */
 public abstract class BaseCKEditorRenderer implements EditorRenderer {
 
@@ -25,13 +25,13 @@ public abstract class BaseCKEditorRenderer implements EditorRenderer {
 	}
 
 	@Override
-	public String getResourcesJspPath() {
-		return null;
+	public String getResourceType() {
+		return PortalWebResourceConstants.RESOURCE_TYPE_EDITOR_CKEDITOR;
 	}
 
 	@Override
-	public String getResourceType() {
-		return PortalWebResourceConstants.RESOURCE_TYPE_EDITOR_CKEDITOR;
+	public String getResourcesJspPath() {
+		return null;
 	}
 
 }

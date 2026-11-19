@@ -9,11 +9,12 @@ import com.liferay.commerce.price.list.model.CommercePriceEntry;
 import com.liferay.commerce.price.list.model.CommerceTierPriceEntry;
 import com.liferay.commerce.price.list.service.CommerceTierPriceEntryService;
 import com.liferay.headless.commerce.admin.pricing.dto.v2_0.TierPrice;
+import com.liferay.headless.commerce.core.helper.ServiceContextHelper;
 import com.liferay.headless.commerce.core.util.DateConfig;
-import com.liferay.headless.commerce.core.util.ServiceContextHelper;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.Validator;
 
 import java.math.BigDecimal;
 
@@ -36,9 +37,14 @@ public class TierPriceUtil {
 		DateConfig expirationDateConfig = DateConfig.toExpirationDateConfig(
 			tierPrice.getExpirationDate(), serviceContext.getTimeZone());
 
+		long tierPriceId = 0;
+
+		if (Validator.isNull(tierPrice.getExternalReferenceCode())) {
+			tierPriceId = GetterUtil.getLong(tierPrice.getId());
+		}
+
 		return commerceTierPriceEntryService.addOrUpdateCommerceTierPriceEntry(
-			tierPrice.getExternalReferenceCode(),
-			GetterUtil.getLong(tierPrice.getId()),
+			tierPrice.getExternalReferenceCode(), tierPriceId,
 			commercePriceEntry.getCommercePriceEntryId(),
 			BigDecimal.valueOf(tierPrice.getPrice()),
 			tierPrice.getMinimumQuantity(), commercePriceEntry.isBulkPricing(),

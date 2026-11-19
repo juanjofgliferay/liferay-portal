@@ -21,11 +21,11 @@ import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermi
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 
+import jakarta.portlet.PortletRequest;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.List;
-
-import javax.portlet.PortletRequest;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -56,7 +56,7 @@ public class ProductsLimitCOREntryFDSActionProvider
 			dropdownItem -> {
 				dropdownItem.setHref(
 					_getConfigurableProductDeleteURL(
-						corEntryId, product.getCProductId(),
+						corEntryId, product.getExternalReferenceCode(),
 						httpServletRequest));
 				dropdownItem.setLabel(
 					_language.get(httpServletRequest, "delete"));
@@ -65,7 +65,7 @@ public class ProductsLimitCOREntryFDSActionProvider
 	}
 
 	private String _getConfigurableProductDeleteURL(
-		long corEntryId, long cProductId,
+		long corEntryId, String cProductExternalReferenceCode,
 		HttpServletRequest httpServletRequest) {
 
 		return PortletURLBuilder.create(
@@ -83,7 +83,7 @@ public class ProductsLimitCOREntryFDSActionProvider
 		).setParameter(
 			"corEntryId", corEntryId
 		).setParameter(
-			"cProductId", cProductId
+			"cProductExternalReferenceCode", cProductExternalReferenceCode
 		).buildString();
 	}
 

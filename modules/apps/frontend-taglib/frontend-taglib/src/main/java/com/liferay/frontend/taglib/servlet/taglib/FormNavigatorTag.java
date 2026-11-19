@@ -20,13 +20,13 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.taglib.util.IncludeTag;
 
+import jakarta.portlet.PortletResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.jsp.PageContext;
+
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.portlet.PortletResponse;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.jsp.PageContext;
 
 /**
  * @author Eudaldo Alonso
@@ -142,7 +142,7 @@ public class FormNavigatorTag extends IncludeTag {
 		if (Validator.isNull(backURL)) {
 			PortletResponse portletResponse =
 				(PortletResponse)httpServletRequest.getAttribute(
-					JavaConstants.JAVAX_PORTLET_RESPONSE);
+					JavaConstants.JAKARTA_PORTLET_RESPONSE);
 
 			LiferayPortletResponse liferayPortletResponse =
 				PortalUtil.getLiferayPortletResponse(portletResponse);
@@ -168,13 +168,15 @@ public class FormNavigatorTag extends IncludeTag {
 				WebKeys.THEME_DISPLAY);
 
 		for (String categoryKey : formNavigatorCategoryProvider.getKeys(_id)) {
-			if (ListUtil.isNotEmpty(
+			if (ListUtil.isEmpty(
 					formNavigatorEntryProvider.getFormNavigatorEntries(
 						_id, categoryKey, themeDisplay.getUser(),
 						_formModelBean))) {
 
-				categoryKeys.add(categoryKey);
+				continue;
 			}
+
+			categoryKeys.add(categoryKey);
 		}
 
 		return ArrayUtil.toStringArray(categoryKeys);

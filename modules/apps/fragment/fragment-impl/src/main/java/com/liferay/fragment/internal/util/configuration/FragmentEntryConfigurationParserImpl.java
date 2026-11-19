@@ -7,6 +7,7 @@ package com.liferay.fragment.internal.util.configuration;
 
 import com.liferay.fragment.constants.FragmentConfigurationFieldDataType;
 import com.liferay.fragment.entry.processor.constants.FragmentEntryProcessorConstants;
+import com.liferay.fragment.entry.processor.helper.LayoutReferenceResolver;
 import com.liferay.fragment.util.configuration.FragmentConfigurationField;
 import com.liferay.fragment.util.configuration.FragmentEntryConfigurationParser;
 import com.liferay.fragment.util.configuration.FragmentEntryMenuDisplayConfiguration;
@@ -14,7 +15,11 @@ import com.liferay.frontend.token.definition.FrontendToken;
 import com.liferay.frontend.token.definition.FrontendTokenDefinition;
 import com.liferay.frontend.token.definition.FrontendTokenDefinitionRegistry;
 import com.liferay.frontend.token.definition.FrontendTokenMapping;
+import com.liferay.info.exception.NoSuchInfoItemException;
 import com.liferay.info.item.ClassPKInfoItemIdentifier;
+import com.liferay.info.item.ERCInfoItemIdentifier;
+import com.liferay.info.item.InfoItemIdentifier;
+import com.liferay.info.item.InfoItemReference;
 import com.liferay.info.item.InfoItemServiceRegistry;
 import com.liferay.info.item.provider.InfoItemObjectProvider;
 import com.liferay.info.pagination.InfoPage;
@@ -34,11 +39,7 @@ import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
-import com.liferay.portal.kernel.model.LayoutSet;
-import com.liferay.portal.kernel.service.LayoutLocalService;
-import com.liferay.portal.kernel.service.LayoutSetLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
@@ -72,10 +73,10 @@ public class FragmentEntryConfigurationParserImpl
 
 	@Override
 	public JSONObject getConfigurationDefaultValuesJSONObject(
-		String configuration) {
+		JSONObject configurationJSONObject) {
 
 		List<FragmentConfigurationField> fragmentConfigurationFields =
-			getFragmentConfigurationFields(configuration);
+			getFragmentConfigurationFields(configurationJSONObject);
 
 		JSONObject defaultValuesJSONObject = _jsonFactory.createJSONObject();
 
@@ -84,7 +85,7 @@ public class FragmentEntryConfigurationParserImpl
 
 			defaultValuesJSONObject.put(
 				fragmentConfigurationField.getName(),
-				getFieldValue(
+				_getFieldValue(
 					fragmentConfigurationField,
 					LocaleUtil.getMostRelevantLocale(), null));
 		}
@@ -94,51 +95,12 @@ public class FragmentEntryConfigurationParserImpl
 
 	@Override
 	public Object getConfigurationFieldValue(
-		String editableValues, String fieldName,
+		JSONObject editableValuesJSONObject, String fieldName,
 		FragmentConfigurationFieldDataType fragmentConfigurationFieldDataType) {
 
-		try {
-			JSONObject editableValuesJSONObject = _jsonFactory.createJSONObject(
-				editableValues);
-
-			JSONObject configurationValuesJSONObject =
-				editableValuesJSONObject.getJSONObject(
-					FragmentEntryProcessorConstants.
-						KEY_FREEMARKER_FRAGMENT_ENTRY_PROCESSOR);
-
-			if (configurationValuesJSONObject == null) {
-				return null;
-			}
-
-			return _getFieldValue(
-				fragmentConfigurationFieldDataType,
-				configurationValuesJSONObject.getString(fieldName));
+		if (editableValuesJSONObject == null) {
+			return null;
 		}
-		catch (JSONException jsonException) {
-			if (_log.isDebugEnabled()) {
-				_log.debug(
-					"Unable to parse configuration JSON: " + editableValues,
-					jsonException);
-			}
-		}
-
-		return null;
-	}
-
-	@Override
-	public JSONObject getConfigurationJSONObject(
-			String configuration, String editableValues, Locale locale)
-		throws JSONException {
-
-		JSONObject configurationDefaultValuesJSONObject =
-			getConfigurationDefaultValuesJSONObject(configuration);
-
-		if (configurationDefaultValuesJSONObject == null) {
-			return _jsonFactory.createJSONObject();
-		}
-
-		JSONObject editableValuesJSONObject = _jsonFactory.createJSONObject(
-			editableValues);
 
 		JSONObject configurationValuesJSONObject =
 			editableValuesJSONObject.getJSONObject(
@@ -146,42 +108,69 @@ public class FragmentEntryConfigurationParserImpl
 					KEY_FREEMARKER_FRAGMENT_ENTRY_PROCESSOR);
 
 		if (configurationValuesJSONObject == null) {
-			return configurationDefaultValuesJSONObject;
+			return null;
 		}
 
-		List<FragmentConfigurationField> configurationFields =
-			getFragmentConfigurationFields(configuration);
+		return _getFieldValue(
+			fragmentConfigurationFieldDataType,
+			configurationValuesJSONObject.getString(fieldName));
+	}
 
-		for (FragmentConfigurationField configurationField :
-				configurationFields) {
+	@Override
+	public JSONObject getConfigurationJSONObject(
+			JSONObject configurationJSONObject,
+			JSONObject editableValuesJSONObject, Locale locale)
+		throws JSONException {
 
-			String name = configurationField.getName();
+		List<FragmentConfigurationField> fragmentConfigurationFields =
+			getFragmentConfigurationFields(configurationJSONObject);
 
-			Object object = configurationValuesJSONObject.get(name);
+		JSONObject configurationValuesJSONObject =
+			editableValuesJSONObject.getJSONObject(
+				FragmentEntryProcessorConstants.
+					KEY_FREEMARKER_FRAGMENT_ENTRY_PROCESSOR);
 
-			if (object == null) {
-				continue;
+		JSONObject jsonObject = _jsonFactory.createJSONObject();
+
+		for (FragmentConfigurationField fragmentConfigurationField :
+				fragmentConfigurationFields) {
+
+			String name = fragmentConfigurationField.getName();
+
+			if ((configurationValuesJSONObject == null) ||
+				(configurationValuesJSONObject.get(name) == null)) {
+
+				jsonObject.put(
+					name,
+					_getFieldValue(
+						fragmentConfigurationField,
+						LocaleUtil.getMostRelevantLocale(), null));
 			}
-
-			configurationDefaultValuesJSONObject.put(
-				name,
-				getFieldValue(
-					configurationField, locale,
-					configurationValuesJSONObject.getString(name)));
+			else {
+				jsonObject.put(
+					name,
+					_getFieldValue(
+						fragmentConfigurationField, locale,
+						configurationValuesJSONObject.getString(name)));
+			}
 		}
 
-		return configurationDefaultValuesJSONObject;
+		return jsonObject;
 	}
 
 	@Override
 	public Map<String, Object> getContextObjects(
-		JSONObject configurationValuesJSONObject, String configuration,
-		Object displayObject, long[] segmentsEntryIds) {
+		JSONObject configurationValuesJSONObject,
+		JSONObject configurationJSONObject, JSONObject editableValuesJSONObject,
+		Object displayObject, InfoItemReference fallbackInfoItemReference,
+		long[] segmentsEntryIds) {
 
-		HashMap<String, Object> contextObjects = new HashMap<>();
+		Map<String, Object> contextObjects = new HashMap<>();
+
+		Object fallbackInfoItem = null;
 
 		List<FragmentConfigurationField> fragmentConfigurationFields =
-			getFragmentConfigurationFields(configuration);
+			getFragmentConfigurationFields(configurationJSONObject);
 
 		for (FragmentConfigurationField fragmentConfigurationField :
 				fragmentConfigurationFields) {
@@ -196,6 +185,26 @@ public class FragmentEntryConfigurationParserImpl
 				if (displayObject == null) {
 					contextObject = _getInfoDisplayObjectEntry(
 						configurationValuesJSONObject.getString(name));
+
+					if ((fallbackInfoItemReference != null) &&
+						((contextObject == null) ||
+						 Validator.isNull(
+							 getConfigurationFieldValue(
+								 editableValuesJSONObject, name,
+								 FragmentConfigurationFieldDataType.STRING))) &&
+						_isItemType(
+							fallbackInfoItemReference.getClassName(),
+							fragmentConfigurationField)) {
+
+						if (fallbackInfoItem == null) {
+							fallbackInfoItem = _getInfoItem(
+								fallbackInfoItemReference);
+						}
+
+						if (fallbackInfoItem != null) {
+							contextObject = fallbackInfoItem;
+						}
+					}
 				}
 
 				if (contextObject != null) {
@@ -210,10 +219,24 @@ public class FragmentEntryConfigurationParserImpl
 					fragmentConfigurationField.getType(),
 					"collectionSelector")) {
 
+				ServiceContext serviceContext =
+					ServiceContextThreadLocal.getServiceContext();
+
+				if (serviceContext == null) {
+					return null;
+				}
+
+				ThemeDisplay themeDisplay = serviceContext.getThemeDisplay();
+
+				if (themeDisplay == null) {
+					return null;
+				}
+
 				Object contextListObject = _getInfoListObjectEntry(
-					configurationValuesJSONObject.getString(name),
+					themeDisplay.getCompanyId(), themeDisplay.getScopeGroupId(),
 					segmentsEntryIds,
-					fragmentConfigurationField.getTypeOptionsJSONObject());
+					fragmentConfigurationField.getTypeOptionsJSONObject(),
+					configurationValuesJSONObject.getString(name));
 
 				if (contextListObject != null) {
 					contextObjects.put(
@@ -221,18 +244,21 @@ public class FragmentEntryConfigurationParserImpl
 				}
 			}
 
-			if (StringUtil.equalsIgnoreCase(
+			if (!StringUtil.equalsIgnoreCase(
 					fragmentConfigurationField.getType(),
 					"navigationMenuSelector")) {
 
-				Object contextObject = _getNavItemsContextObject(
-					configurationValuesJSONObject.getString(name));
-
-				if (contextObject != null) {
-					contextObjects.put(
-						name + _CONTEXT_OBJECT_SUFFIX, contextObject);
-				}
+				continue;
 			}
+
+			Object contextObject = _getNavItemsContextObject(
+				configurationValuesJSONObject.getString(name));
+
+			if (contextObject == null) {
+				continue;
+			}
+
+			contextObjects.put(name + _CONTEXT_OBJECT_SUFFIX, contextObject);
 		}
 
 		return contextObjects;
@@ -240,60 +266,34 @@ public class FragmentEntryConfigurationParserImpl
 
 	@Override
 	public Object getFieldValue(
-		FragmentConfigurationField fragmentConfigurationField, Locale locale,
-		String value) {
-
-		return _getFieldValue(fragmentConfigurationField, locale, value);
-	}
-
-	@Override
-	public Object getFieldValue(
-		String editableValues,
+		JSONObject editableValuesJSONObject,
 		FragmentConfigurationField fragmentConfigurationField, Locale locale) {
 
-		try {
-			JSONObject editableValuesJSONObject = _jsonFactory.createJSONObject(
-				editableValues);
-
-			JSONObject configurationValuesJSONObject =
-				editableValuesJSONObject.getJSONObject(
-					FragmentEntryProcessorConstants.
-						KEY_FREEMARKER_FRAGMENT_ENTRY_PROCESSOR);
-
-			if (configurationValuesJSONObject == null) {
-				return fragmentConfigurationField.getDefaultValue();
-			}
-
-			return getFieldValue(
-				fragmentConfigurationField, locale,
-				configurationValuesJSONObject.getString(
-					fragmentConfigurationField.getName(), null));
-		}
-		catch (Exception exception) {
-			if (_log.isDebugEnabled()) {
-				_log.debug(exception);
-			}
-
+		if (editableValuesJSONObject == null) {
 			return fragmentConfigurationField.getDefaultValue();
 		}
+
+		JSONObject configurationValuesJSONObject =
+			editableValuesJSONObject.getJSONObject(
+				FragmentEntryProcessorConstants.
+					KEY_FREEMARKER_FRAGMENT_ENTRY_PROCESSOR);
+
+		if (configurationValuesJSONObject == null) {
+			return fragmentConfigurationField.getDefaultValue();
+		}
+
+		return _getFieldValue(
+			fragmentConfigurationField, locale,
+			configurationValuesJSONObject.getString(
+				fragmentConfigurationField.getName(), null));
 	}
 
 	@Override
 	public Object getFieldValue(
-		String configuration, String editableValues, Locale locale,
-		String name) {
+		JSONObject configurationJSONObject, JSONObject editableValuesJSONObject,
+		Locale locale, String name) {
 
-		JSONObject editableValuesJSONObject = null;
-
-		try {
-			editableValuesJSONObject = _jsonFactory.createJSONObject(
-				editableValues);
-		}
-		catch (Exception exception) {
-			if (_log.isDebugEnabled()) {
-				_log.debug(exception);
-			}
-
+		if (editableValuesJSONObject == null) {
 			return null;
 		}
 
@@ -307,7 +307,7 @@ public class FragmentEntryConfigurationParserImpl
 		}
 
 		List<FragmentConfigurationField> fragmentConfigurationFields =
-			getFragmentConfigurationFields(configuration);
+			getFragmentConfigurationFields(configurationJSONObject);
 
 		for (FragmentConfigurationField fragmentConfigurationField :
 				fragmentConfigurationFields) {
@@ -316,7 +316,7 @@ public class FragmentEntryConfigurationParserImpl
 				continue;
 			}
 
-			return getFieldValue(
+			return _getFieldValue(
 				fragmentConfigurationField, locale,
 				configurationValuesJSONObject.getString(name));
 		}
@@ -325,10 +325,20 @@ public class FragmentEntryConfigurationParserImpl
 	}
 
 	@Override
-	public List<FragmentConfigurationField> getFragmentConfigurationFields(
-		String configuration) {
+	public Object getFieldValue(
+		JSONObject configurationJSONObject, JSONObject editableValuesJSONObject,
+		String name) {
 
-		JSONArray fieldSetsJSONArray = _getFieldSetsJSONArray(configuration);
+		return getFieldValue(
+			configurationJSONObject, editableValuesJSONObject, null, name);
+	}
+
+	@Override
+	public List<FragmentConfigurationField> getFragmentConfigurationFields(
+		JSONObject configurationJSONObject) {
+
+		JSONArray fieldSetsJSONArray = _getFieldSetsJSONArray(
+			configurationJSONObject);
 
 		if (fieldSetsJSONArray == null) {
 			return Collections.emptyList();
@@ -357,13 +367,17 @@ public class FragmentEntryConfigurationParserImpl
 	}
 
 	@Override
-	public String translateConfiguration(
+	public JSONObject translateConfiguration(
 		JSONObject jsonObject, ResourceBundle resourceBundle) {
+
+		if (jsonObject == null) {
+			return null;
+		}
 
 		JSONArray fieldSetsJSONArray = jsonObject.getJSONArray("fieldSets");
 
 		if (fieldSetsJSONArray == null) {
-			return StringPool.BLANK;
+			return null;
 		}
 
 		Iterator<JSONObject> iterator = fieldSetsJSONArray.iterator();
@@ -388,7 +402,7 @@ public class FragmentEntryConfigurationParserImpl
 						fieldJSONObject, resourceBundle));
 			});
 
-		return jsonObject.toString();
+		return jsonObject;
 	}
 
 	private String _getColorPickerCssVariable(String fieldValue) {
@@ -405,14 +419,9 @@ public class FragmentEntryConfigurationParserImpl
 			return fieldValue;
 		}
 
-		Group group = themeDisplay.getScopeGroup();
-
-		LayoutSet layoutSet = _layoutSetLocalService.fetchLayoutSet(
-			themeDisplay.getSiteGroupId(), group.isLayoutSetPrototype());
-
 		FrontendTokenDefinition frontendTokenDefinition =
 			_frontendTokenDefinitionRegistry.getFrontendTokenDefinition(
-				layoutSet.getThemeId());
+				themeDisplay.getLayout());
 
 		if (frontendTokenDefinition == null) {
 			return fieldValue;
@@ -446,22 +455,14 @@ public class FragmentEntryConfigurationParserImpl
 		return fieldValue;
 	}
 
-	private JSONArray _getFieldSetsJSONArray(String configuration) {
-		try {
-			JSONObject configurationJSONObject = _jsonFactory.createJSONObject(
-				configuration);
+	private JSONArray _getFieldSetsJSONArray(
+		JSONObject configurationJSONObject) {
 
-			return configurationJSONObject.getJSONArray("fieldSets");
-		}
-		catch (JSONException jsonException) {
-			if (_log.isDebugEnabled()) {
-				_log.debug(
-					"Unable to parse configuration JSON: " + configuration,
-					jsonException);
-			}
+		if (configurationJSONObject == null) {
+			return null;
 		}
 
-		return null;
+		return configurationJSONObject.getJSONArray("fieldSets");
 	}
 
 	private Object _getFieldValue(
@@ -471,7 +472,7 @@ public class FragmentEntryConfigurationParserImpl
 		String parsedValue = GetterUtil.getString(value);
 
 		if (fragmentConfigurationField.isLocalizable() &&
-			JSONUtil.isJSONObject(parsedValue)) {
+			JSONUtil.isJSONObject(parsedValue) && (locale != null)) {
 
 			try {
 				JSONObject valueJSONObject = _jsonFactory.createJSONObject(
@@ -494,6 +495,13 @@ public class FragmentEntryConfigurationParserImpl
 
 		if (StringUtil.equalsIgnoreCase(
 				fragmentConfigurationField.getType(), "checkbox")) {
+
+			if (fragmentConfigurationField.isLocalizable() &&
+				(locale == null)) {
+
+				return _getFieldValue(
+					FragmentConfigurationFieldDataType.OBJECT, parsedValue);
+			}
 
 			return _getFieldValue(
 				FragmentConfigurationFieldDataType.BOOLEAN, parsedValue);
@@ -521,6 +529,13 @@ public class FragmentEntryConfigurationParserImpl
 		else if (StringUtil.equalsIgnoreCase(
 					fragmentConfigurationField.getType(), "colorPicker")) {
 
+			if (fragmentConfigurationField.isLocalizable() &&
+				(locale == null)) {
+
+				return _getFieldValue(
+					FragmentConfigurationFieldDataType.OBJECT, parsedValue);
+			}
+
 			String fieldValue = (String)_getFieldValue(
 				FragmentConfigurationFieldDataType.STRING, parsedValue);
 
@@ -536,7 +551,17 @@ public class FragmentEntryConfigurationParserImpl
 				 StringUtil.equalsIgnoreCase(
 					 fragmentConfigurationField.getType(), "select") ||
 				 StringUtil.equalsIgnoreCase(
+					 fragmentConfigurationField.getType(),
+					 "targetCollectionDisplay") ||
+				 StringUtil.equalsIgnoreCase(
 					 fragmentConfigurationField.getType(), "text")) {
+
+			if (fragmentConfigurationField.isLocalizable() &&
+				(locale == null)) {
+
+				return _getFieldValue(
+					FragmentConfigurationFieldDataType.OBJECT, parsedValue);
+			}
 
 			FragmentConfigurationFieldDataType
 				fragmentConfigurationFieldDataType =
@@ -625,18 +650,49 @@ public class FragmentEntryConfigurationParserImpl
 		try {
 			JSONObject jsonObject = _jsonFactory.createJSONObject(value);
 
+			String className = jsonObject.getString("className");
+			long classPK = jsonObject.getLong("classPK");
+			String externalReferenceCode = jsonObject.getString(
+				"externalReferenceCode");
+
+			if (Validator.isNull(className) ||
+				((classPK <= 0) && Validator.isNull(externalReferenceCode))) {
+
+				return null;
+			}
+
 			InfoItemObjectProvider<?> infoItemObjectProvider =
 				_infoItemServiceRegistry.getFirstInfoItemService(
-					InfoItemObjectProvider.class,
-					jsonObject.getString("className"),
+					InfoItemObjectProvider.class, className,
 					ClassPKInfoItemIdentifier.INFO_ITEM_SERVICE_FILTER);
 
 			if (infoItemObjectProvider == null) {
 				return null;
 			}
 
+			if (classPK > 0) {
+				return infoItemObjectProvider.getInfoItem(
+					new ClassPKInfoItemIdentifier(classPK));
+			}
+
+			ServiceContext serviceContext =
+				ServiceContextThreadLocal.getServiceContext();
+
+			if (serviceContext == null) {
+				return null;
+			}
+
+			ThemeDisplay themeDisplay = serviceContext.getThemeDisplay();
+
+			if (themeDisplay == null) {
+				return null;
+			}
+
 			return infoItemObjectProvider.getInfoItem(
-				new ClassPKInfoItemIdentifier(jsonObject.getLong("classPK")));
+				themeDisplay.getScopeGroupId(),
+				new ERCInfoItemIdentifier(
+					externalReferenceCode,
+					jsonObject.getString("scopeExternalReferenceCode")));
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
@@ -672,6 +728,10 @@ public class FragmentEntryConfigurationParserImpl
 				"externalReferenceCode",
 				configurationValueJSONObject.getString("externalReferenceCode")
 			).put(
+				"scopeExternalReferenceCode",
+				configurationValueJSONObject.getString(
+					"scopeExternalReferenceCode")
+			).put(
 				"template", configurationValueJSONObject.get("template")
 			).put(
 				"title", configurationValueJSONObject.getString("title")
@@ -691,9 +751,42 @@ public class FragmentEntryConfigurationParserImpl
 		return null;
 	}
 
+	private Object _getInfoItem(InfoItemReference infoItemReference) {
+		InfoItemIdentifier infoItemIdentifier =
+			infoItemReference.getInfoItemIdentifier();
+
+		InfoItemObjectProvider<?> infoItemObjectProvider =
+			_infoItemServiceRegistry.getFirstInfoItemService(
+				InfoItemObjectProvider.class, infoItemReference.getClassName(),
+				infoItemIdentifier.getInfoItemServiceFilter());
+
+		if (infoItemObjectProvider == null) {
+			return null;
+		}
+
+		try {
+			ServiceContext serviceContext =
+				ServiceContextThreadLocal.getServiceContext();
+
+			if (serviceContext == null) {
+				return infoItemObjectProvider.getInfoItem(infoItemIdentifier);
+			}
+
+			return infoItemObjectProvider.getInfoItem(
+				serviceContext.getScopeGroupId(), infoItemIdentifier);
+		}
+		catch (NoSuchInfoItemException noSuchInfoItemException) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(noSuchInfoItemException);
+			}
+		}
+
+		return null;
+	}
+
 	private Object _getInfoListObjectEntry(
-		String value, long[] segmentsEntryIds,
-		JSONObject typeOptionsJSONObject) {
+		long companyId, long scopeGroupId, long[] segmentsEntryIds,
+		JSONObject typeOptionsJSONObject, String value) {
 
 		if (Validator.isNull(value)) {
 			return Collections.emptyList();
@@ -738,11 +831,13 @@ public class FragmentEntryConfigurationParserImpl
 				}
 			}
 
+			defaultLayoutListRetrieverContext.setScopeGroupId(scopeGroupId);
 			defaultLayoutListRetrieverContext.setSegmentsEntryIds(
 				segmentsEntryIds);
 
 			InfoPage<?> infoPage = layoutListRetriever.getInfoPage(
-				listObjectReferenceFactory.getListObjectReference(jsonObject),
+				listObjectReferenceFactory.getListObjectReference(
+					companyId, scopeGroupId, jsonObject),
 				defaultLayoutListRetrieverContext);
 
 			return infoPage.getPageItems();
@@ -782,7 +877,9 @@ public class FragmentEntryConfigurationParserImpl
 
 		FragmentEntryMenuDisplayConfiguration
 			fragmentEntryMenuDisplayConfiguration =
-				new FragmentEntryMenuDisplayConfiguration(value);
+				new FragmentEntryMenuDisplayConfiguration(
+					serviceContext.getCompanyId(), value,
+					serviceContext.getScopeGroupId());
 
 		return NavItemUtil.getNavigationMenuContext(
 			1, "auto", serviceContext.getRequest(),
@@ -794,8 +891,16 @@ public class FragmentEntryConfigurationParserImpl
 	}
 
 	private Object _getURLValue(String value) {
+		if (Validator.isNull(value)) {
+			return null;
+		}
+
 		JSONObject jsonObject = (JSONObject)_getFieldValue(
 			FragmentConfigurationFieldDataType.OBJECT, value);
+
+		if (jsonObject == null) {
+			return null;
+		}
 
 		JSONObject layoutJSONObject = jsonObject.getJSONObject("layout");
 
@@ -803,23 +908,27 @@ public class FragmentEntryConfigurationParserImpl
 			return jsonObject.getString("href");
 		}
 
-		long groupId = layoutJSONObject.getLong("groupId");
-		boolean privateLayout = layoutJSONObject.getBoolean("privateLayout");
-		long layoutId = layoutJSONObject.getLong("layoutId");
+		ServiceContext serviceContext =
+			ServiceContextThreadLocal.getServiceContext();
 
-		Layout layout = _layoutLocalService.fetchLayout(
-			groupId, privateLayout, layoutId);
+		if ((serviceContext == null) ||
+			(serviceContext.getThemeDisplay() == null)) {
+
+			return StringPool.POUND;
+		}
+
+		ThemeDisplay themeDisplay = serviceContext.getThemeDisplay();
+
+		Layout layout = _layoutReferenceResolver.resolve(
+			themeDisplay.getCompanyId(), layoutJSONObject,
+			themeDisplay.getScopeGroupId());
 
 		if (layout == null) {
 			return StringPool.POUND;
 		}
 
-		ServiceContext serviceContext =
-			ServiceContextThreadLocal.getServiceContext();
-
 		try {
-			return _portal.getLayoutFullURL(
-				layout, serviceContext.getThemeDisplay());
+			return _portal.getLayoutFullURL(layout, themeDisplay);
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
@@ -828,6 +937,26 @@ public class FragmentEntryConfigurationParserImpl
 
 			return null;
 		}
+	}
+
+	private boolean _isItemType(
+		String className,
+		FragmentConfigurationField fragmentConfigurationField) {
+
+		JSONObject typeOptionsJSONObject =
+			fragmentConfigurationField.getTypeOptionsJSONObject();
+
+		if (typeOptionsJSONObject == null) {
+			return true;
+		}
+
+		String itemType = typeOptionsJSONObject.getString("itemType");
+
+		if (Validator.isNull(itemType) || Objects.equals(itemType, className)) {
+			return true;
+		}
+
+		return false;
 	}
 
 	private void _translateConfigurationField(
@@ -923,10 +1052,7 @@ public class FragmentEntryConfigurationParserImpl
 	private LayoutListRetrieverRegistry _layoutListRetrieverRegistry;
 
 	@Reference
-	private LayoutLocalService _layoutLocalService;
-
-	@Reference
-	private LayoutSetLocalService _layoutSetLocalService;
+	private LayoutReferenceResolver _layoutReferenceResolver;
 
 	@Reference
 	private ListObjectReferenceFactoryRegistry

@@ -9,6 +9,8 @@ import com.liferay.headless.delivery.dto.v1_0.ClassFieldsReference;
 import com.liferay.headless.delivery.dto.v1_0.ClassPKReference;
 import com.liferay.headless.delivery.dto.v1_0.ContextReference;
 import com.liferay.headless.delivery.dto.v1_0.Field;
+import com.liferay.layout.page.template.model.LayoutPageTemplateEntry;
+import com.liferay.layout.page.template.service.LayoutPageTemplateEntryLocalServiceUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.log.Log;
@@ -16,9 +18,14 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
-import com.liferay.portal.kernel.service.LayoutLocalServiceUtil;
+import com.liferay.portal.kernel.service.LayoutServiceUtil;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
+
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * @author Jürgen Kappler
@@ -69,6 +76,56 @@ public class FragmentMappedValueUtil {
 		return false;
 	}
 
+	public static ClassFieldsReference toDisplayPageClassFieldsReference(
+		String displayPageUniqueFieldId) {
+
+		if (!StringUtil.startsWith(
+				displayPageUniqueFieldId,
+				LayoutPageTemplateEntry.class.getSimpleName())) {
+
+			return null;
+		}
+
+		Matcher matcher = _pattern.matcher(displayPageUniqueFieldId);
+
+		if (!matcher.find()) {
+			return null;
+		}
+
+		try {
+			ClassFieldsReference classFieldsReference =
+				new ClassFieldsReference();
+
+			classFieldsReference.setClassName(
+				LayoutPageTemplateEntry.class::getName);
+
+			Field field = new Field();
+
+			field.setFieldName(() -> "externalReferenceCode");
+
+			LayoutPageTemplateEntry layoutPageTemplateEntry =
+				LayoutPageTemplateEntryLocalServiceUtil.
+					getLayoutPageTemplateEntry(
+						GetterUtil.getLong(matcher.group(1)));
+
+			field.setFieldValue(
+				layoutPageTemplateEntry::getExternalReferenceCode);
+
+			classFieldsReference.setFields(() -> new Field[] {field});
+
+			return classFieldsReference;
+		}
+		catch (Exception exception) {
+			if (_log.isWarnEnabled()) {
+				_log.warn(
+					"Unable to set item reference: " + exception.getMessage(),
+					exception);
+			}
+		}
+
+		return null;
+	}
+
 	public static Object toItemReference(JSONObject jsonObject) {
 		String collectionFieldId = jsonObject.getString("collectionFieldId");
 		String fieldId = jsonObject.getString("fieldId");
@@ -84,7 +141,7 @@ public class FragmentMappedValueUtil {
 		if (Validator.isNotNull(collectionFieldId)) {
 			return new ContextReference() {
 				{
-					contextSource = ContextSource.COLLECTION_ITEM;
+					setContextSource(() -> ContextSource.COLLECTION_ITEM);
 				}
 			};
 		}
@@ -96,15 +153,15 @@ public class FragmentMappedValueUtil {
 		if (Validator.isNotNull(mappedField)) {
 			return new ContextReference() {
 				{
-					contextSource = ContextSource.DISPLAY_PAGE_ITEM;
+					setContextSource(() -> ContextSource.DISPLAY_PAGE_ITEM);
 				}
 			};
 		}
 
 		return new ClassPKReference() {
 			{
-				className = _toItemClassName(jsonObject);
-				classPK = _toItemClassPK(jsonObject);
+				setClassName(() -> _toItemClassName(jsonObject));
+				setClassPK(() -> _toItemClassPK(jsonObject));
 			}
 		};
 	}
@@ -115,7 +172,7 @@ public class FragmentMappedValueUtil {
 		final Layout layout;
 
 		try {
-			layout = LayoutLocalServiceUtil.getLayout(
+			layout = LayoutServiceUtil.getLayout(
 				layoutJSONObject.getLong("groupId"),
 				layoutJSONObject.getBoolean("privateLayout"),
 				layoutJSONObject.getLong("layoutId"));
@@ -133,31 +190,33 @@ public class FragmentMappedValueUtil {
 
 		return new ClassFieldsReference() {
 			{
-				className = Layout.class.getName();
-
+				setClassName(() -> Layout.class.getName());
 				setFields(
 					() -> {
-						Field friendlyURLField = new Field();
-
-						friendlyURLField.setFieldName("friendlyURL");
-						friendlyURLField.setFieldValue(layout.getFriendlyURL());
-
-						Field privatePageField = new Field();
-
-						privatePageField.setFieldName("privatePage");
-						privatePageField.setFieldValue(
-							String.valueOf(layout.isPrivateLayout()));
-
-						Field siteKeyField = new Field();
-
 						Group group = GroupLocalServiceUtil.getGroup(
 							layout.getGroupId());
 
-						siteKeyField.setFieldName("siteKey");
-						siteKeyField.setFieldValue(group.getGroupKey());
-
 						return new Field[] {
-							friendlyURLField, privatePageField, siteKeyField
+							new Field() {
+								{
+									setFieldName(() -> "friendlyURL");
+									setFieldValue(layout::getFriendlyURL);
+								}
+							},
+							new Field() {
+								{
+									setFieldName(() -> "privatePage");
+									setFieldValue(
+										() -> String.valueOf(
+											layout.isPrivateLayout()));
+								}
+							},
+							new Field() {
+								{
+									setFieldName(() -> "siteKey");
+									setFieldValue(group::getGroupKey);
+								}
+							}
 						};
 					});
 			}
@@ -238,5 +297,7 @@ public class FragmentMappedValueUtil {
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		FragmentMappedValueUtil.class);
+
+	private static final Pattern _pattern = Pattern.compile("_(\\d+)$");
 
 }

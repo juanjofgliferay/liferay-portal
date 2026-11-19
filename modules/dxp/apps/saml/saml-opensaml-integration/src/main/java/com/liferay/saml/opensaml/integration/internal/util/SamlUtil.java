@@ -41,6 +41,7 @@ import org.opensaml.saml.saml2.metadata.AssertionConsumerService;
 import org.opensaml.saml.saml2.metadata.EntitiesDescriptor;
 import org.opensaml.saml.saml2.metadata.EntityDescriptor;
 import org.opensaml.saml.saml2.metadata.IDPSSODescriptor;
+import org.opensaml.saml.saml2.metadata.RoleDescriptor;
 import org.opensaml.saml.saml2.metadata.SPSSODescriptor;
 import org.opensaml.saml.saml2.metadata.SSODescriptor;
 import org.opensaml.saml.saml2.metadata.SingleLogoutService;
@@ -129,13 +130,15 @@ public class SamlUtil {
 			for (XMLObject xmlObject : xmlValues) {
 				Serializable value = getXMLObjectValue(xmlObject);
 
-				if (value != null) {
-					if (implicitMapping) {
-						values.add(value);
-					}
-					else {
-						values.add(0, value);
-					}
+				if (value == null) {
+					continue;
+				}
+
+				if (implicitMapping) {
+					values.add(value);
+				}
+				else {
+					values.add(0, value);
 				}
 			}
 
@@ -342,6 +345,60 @@ public class SamlUtil {
 		return null;
 	}
 
+	public static SingleLogoutService resolveSingleLogoutService(
+		RoleDescriptor roleDescriptor, String preferredBinding) {
+
+		if (roleDescriptor instanceof IDPSSODescriptor) {
+			return resolveSingleLogoutService(
+				(IDPSSODescriptor)roleDescriptor, preferredBinding);
+		}
+		else if (roleDescriptor instanceof SSODescriptor) {
+			return resolveSingleLogoutService(
+				(SPSSODescriptor)roleDescriptor, preferredBinding);
+		}
+
+		throw new UnsupportedOperationException(
+			"Invalid role descriptor " + roleDescriptor);
+	}
+
+	public static SingleLogoutService resolveSingleLogoutService(
+		SSODescriptor ssoDescriptor, String preferredBinding) {
+
+		List<SingleLogoutService> singleLogoutServices =
+			ssoDescriptor.getSingleLogoutServices();
+
+		for (SingleLogoutService singleLogoutService : singleLogoutServices) {
+			if (preferredBinding.equals(singleLogoutService.getBinding())) {
+				return singleLogoutService;
+			}
+		}
+
+		if (!singleLogoutServices.isEmpty()) {
+			return singleLogoutServices.get(0);
+		}
+
+		return null;
+	}
+
+	public static SingleSignOnService resolveSingleSignOnService(
+		IDPSSODescriptor idpSSODescriptor, String preferredBinding) {
+
+		List<SingleSignOnService> singleSignOnServices =
+			idpSSODescriptor.getSingleSignOnServices();
+
+		for (SingleSignOnService singleSignOnService : singleSignOnServices) {
+			if (preferredBinding.equals(singleSignOnService.getBinding())) {
+				return singleSignOnService;
+			}
+		}
+
+		if (!singleSignOnServices.isEmpty()) {
+			return singleSignOnServices.get(0);
+		}
+
+		return null;
+	}
+
 	public static AssertionConsumerService resolverAssertionConsumerService(
 		MessageContext<?> messageContext, String binding,
 		boolean dynamicACSURL) {
@@ -404,44 +461,6 @@ public class SamlUtil {
 			if (binding.equals(assertionConsumerService.getBinding())) {
 				return assertionConsumerService;
 			}
-		}
-
-		return null;
-	}
-
-	public static SingleLogoutService resolveSingleLogoutService(
-		SSODescriptor ssoDescriptor, String preferredBinding) {
-
-		List<SingleLogoutService> singleLogoutServices =
-			ssoDescriptor.getSingleLogoutServices();
-
-		for (SingleLogoutService singleLogoutService : singleLogoutServices) {
-			if (preferredBinding.equals(singleLogoutService.getBinding())) {
-				return singleLogoutService;
-			}
-		}
-
-		if (!singleLogoutServices.isEmpty()) {
-			return singleLogoutServices.get(0);
-		}
-
-		return null;
-	}
-
-	public static SingleSignOnService resolveSingleSignOnService(
-		IDPSSODescriptor idpSSODescriptor, String preferredBinding) {
-
-		List<SingleSignOnService> singleSignOnServices =
-			idpSSODescriptor.getSingleSignOnServices();
-
-		for (SingleSignOnService singleSignOnService : singleSignOnServices) {
-			if (preferredBinding.equals(singleSignOnService.getBinding())) {
-				return singleSignOnService;
-			}
-		}
-
-		if (!singleSignOnServices.isEmpty()) {
-			return singleSignOnServices.get(0);
 		}
 
 		return null;

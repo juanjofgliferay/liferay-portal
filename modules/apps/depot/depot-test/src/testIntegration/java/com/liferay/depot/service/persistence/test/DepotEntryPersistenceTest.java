@@ -111,11 +111,9 @@ public class DepotEntryPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
+		DepotEntry newDepotEntry = addDepotEntry();
 
-		DepotEntry newDepotEntry = _persistence.create(pk);
-
-		newDepotEntry.setMvccVersion(RandomTestUtil.nextLong());
+		newDepotEntry.setCtCollectionId(RandomTestUtil.nextLong());
 
 		newDepotEntry.setUuid(RandomTestUtil.randomString());
 
@@ -131,7 +129,11 @@ public class DepotEntryPersistenceTest {
 
 		newDepotEntry.setModifiedDate(RandomTestUtil.nextDate());
 
-		_depotEntries.add(_persistence.update(newDepotEntry));
+		newDepotEntry.setType(RandomTestUtil.nextInt());
+
+		newDepotEntry = _persistence.update(newDepotEntry);
+
+		_depotEntries.add(newDepotEntry);
 
 		DepotEntry existingDepotEntry = _persistence.findByPrimaryKey(
 			newDepotEntry.getPrimaryKey());
@@ -139,6 +141,9 @@ public class DepotEntryPersistenceTest {
 		Assert.assertEquals(
 			existingDepotEntry.getMvccVersion(),
 			newDepotEntry.getMvccVersion());
+		Assert.assertEquals(
+			existingDepotEntry.getCtCollectionId(),
+			newDepotEntry.getCtCollectionId());
 		Assert.assertEquals(
 			existingDepotEntry.getUuid(), newDepotEntry.getUuid());
 		Assert.assertEquals(
@@ -158,6 +163,8 @@ public class DepotEntryPersistenceTest {
 		Assert.assertEquals(
 			Time.getShortTimestamp(existingDepotEntry.getModifiedDate()),
 			Time.getShortTimestamp(newDepotEntry.getModifiedDate()));
+		Assert.assertEquals(
+			existingDepotEntry.getType(), newDepotEntry.getType());
 	}
 
 	@Test
@@ -195,6 +202,14 @@ public class DepotEntryPersistenceTest {
 	}
 
 	@Test
+	public void testCountByC_T() throws Exception {
+		_persistence.countByC_T(
+			RandomTestUtil.nextLong(), RandomTestUtil.nextInt());
+
+		_persistence.countByC_T(0L, 0);
+	}
+
+	@Test
 	public void testFindByPrimaryKeyExisting() throws Exception {
 		DepotEntry newDepotEntry = addDepotEntry();
 
@@ -219,9 +234,10 @@ public class DepotEntryPersistenceTest {
 
 	protected OrderByComparator<DepotEntry> getOrderByComparator() {
 		return OrderByComparatorFactoryUtil.create(
-			"DepotEntry", "mvccVersion", true, "uuid", true, "depotEntryId",
-			true, "groupId", true, "companyId", true, "userId", true,
-			"userName", true, "createDate", true, "modifiedDate", true);
+			"DepotEntry", "mvccVersion", true, "ctCollectionId", true, "uuid",
+			true, "depotEntryId", true, "groupId", true, "companyId", true,
+			"userId", true, "userName", true, "createDate", true,
+			"modifiedDate", true, "type", true);
 	}
 
 	@Test
@@ -507,7 +523,7 @@ public class DepotEntryPersistenceTest {
 
 		DepotEntry depotEntry = _persistence.create(pk);
 
-		depotEntry.setMvccVersion(RandomTestUtil.nextLong());
+		depotEntry.setCtCollectionId(RandomTestUtil.nextLong());
 
 		depotEntry.setUuid(RandomTestUtil.randomString());
 
@@ -523,6 +539,8 @@ public class DepotEntryPersistenceTest {
 
 		depotEntry.setModifiedDate(RandomTestUtil.nextDate());
 
+		depotEntry.setType(RandomTestUtil.nextInt());
+
 		_depotEntries.add(_persistence.update(depotEntry));
 
 		return depotEntry;
@@ -533,3 +551,4 @@ public class DepotEntryPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-2131875545

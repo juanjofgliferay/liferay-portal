@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -65,7 +66,8 @@ public class CPDefinitionOptionValueRelLocalServiceUtil {
 	}
 
 	public static CPDefinitionOptionValueRel addCPDefinitionOptionValueRel(
-			long cpDefinitionOptionRelId, long cpInstanceId, String key,
+			String externalReferenceCode, long cpDefinitionOptionRelId,
+			long cpInstanceId, String key,
 			Map<java.util.Locale, String> nameMap, boolean preselected,
 			java.math.BigDecimal deltaPrice, double priority,
 			java.math.BigDecimal quantity, String unitOfMeasureKey,
@@ -73,18 +75,20 @@ public class CPDefinitionOptionValueRelLocalServiceUtil {
 		throws PortalException {
 
 		return getService().addCPDefinitionOptionValueRel(
-			cpDefinitionOptionRelId, cpInstanceId, key, nameMap, preselected,
-			deltaPrice, priority, quantity, unitOfMeasureKey, serviceContext);
+			externalReferenceCode, cpDefinitionOptionRelId, cpInstanceId, key,
+			nameMap, preselected, deltaPrice, priority, quantity,
+			unitOfMeasureKey, serviceContext);
 	}
 
 	public static CPDefinitionOptionValueRel addCPDefinitionOptionValueRel(
-			long cpDefinitionOptionRelId, String key,
-			Map<java.util.Locale, String> nameMap, double priority,
+			String externalReferenceCode, long cpDefinitionOptionRelId,
+			String key, Map<java.util.Locale, String> nameMap, double priority,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().addCPDefinitionOptionValueRel(
-			cpDefinitionOptionRelId, key, nameMap, priority, serviceContext);
+			externalReferenceCode, cpDefinitionOptionRelId, key, nameMap,
+			priority, serviceContext);
 	}
 
 	/**
@@ -271,6 +275,15 @@ public class CPDefinitionOptionValueRelLocalServiceUtil {
 			cpDefinitionOptionRelId, key);
 	}
 
+	public static CPDefinitionOptionValueRel
+		fetchCPDefinitionOptionValueRelByExternalReferenceCode(
+			String externalReferenceCode, long companyId) {
+
+		return getService().
+			fetchCPDefinitionOptionValueRelByExternalReferenceCode(
+				externalReferenceCode, companyId);
+	}
+
 	/**
 	 * Returns the cp definition option value rel matching the UUID and group.
 	 *
@@ -310,6 +323,14 @@ public class CPDefinitionOptionValueRelLocalServiceUtil {
 		return getService().getActionableDynamicQuery();
 	}
 
+	public static List<CPDefinitionOptionValueRel>
+		getApprovedCPInstanceCPDefinitionOptionValueRels(
+			long cpDefinitionOptionRelId) {
+
+		return getService().getApprovedCPInstanceCPDefinitionOptionValueRels(
+			cpDefinitionOptionRelId);
+	}
+
 	/**
 	 * Returns the cp definition option value rel with the primary key.
 	 *
@@ -323,6 +344,16 @@ public class CPDefinitionOptionValueRelLocalServiceUtil {
 
 		return getService().getCPDefinitionOptionValueRel(
 			CPDefinitionOptionValueRelId);
+	}
+
+	public static CPDefinitionOptionValueRel
+			getCPDefinitionOptionValueRelByExternalReferenceCode(
+				String externalReferenceCode, long companyId)
+		throws PortalException {
+
+		return getService().
+			getCPDefinitionOptionValueRelByExternalReferenceCode(
+				externalReferenceCode, companyId);
 	}
 
 	/**
@@ -471,6 +502,17 @@ public class CPDefinitionOptionValueRelLocalServiceUtil {
 		return getService().getIndexableActionableDynamicQuery();
 	}
 
+	public static CPDefinitionOptionValueRel
+			getOrAddEmptyCPDefinitionOptionValueRel(
+				String externalReferenceCode, long companyId, long userId,
+				long cpDefinitionOptionRelId, String key)
+		throws PortalException {
+
+		return getService().getOrAddEmptyCPDefinitionOptionValueRel(
+			externalReferenceCode, companyId, userId, cpDefinitionOptionRelId,
+			key);
+	}
+
 	/**
 	 * Returns the OSGi service identifier.
 	 *
@@ -594,16 +636,22 @@ public class CPDefinitionOptionValueRelLocalServiceUtil {
 			cpDefinitionOptionValueRelId, preselected);
 	}
 
+	public static CPDefinitionOptionValueRel updateExternalReferenceCode(
+			long cpDefinitionOptionValueRelId, String externalReferenceCode)
+		throws PortalException {
+
+		return getService().updateExternalReferenceCode(
+			cpDefinitionOptionValueRelId, externalReferenceCode);
+	}
+
 	public static CPDefinitionOptionValueRelLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(
-		CPDefinitionOptionValueRelLocalService service) {
-
-		_service = service;
-	}
-
-	private static volatile CPDefinitionOptionValueRelLocalService _service;
+	private static final Snapshot<CPDefinitionOptionValueRelLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			CPDefinitionOptionValueRelLocalServiceUtil.class,
+			CPDefinitionOptionValueRelLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-660542759

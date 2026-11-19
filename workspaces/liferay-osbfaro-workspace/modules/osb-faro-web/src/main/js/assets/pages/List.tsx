@@ -1,0 +1,602 @@
+import * as breadcrumbs from 'shared/util/breadcrumbs';
+import BasePage from 'shared/components/base-page';
+import Card from 'shared/components/Card';
+import ClayIcon from 'shared/components/Icon';
+import ClayLink from '@clayui/link';
+import ClaySticker from '@clayui/sticker';
+import FaroConstants, {RangeKeyTimeRanges} from 'shared/util/constants';
+import React, {useMemo, useRef, useState} from 'react';
+import URLConstants from 'shared/util/url-constants';
+import {ASSET_OBJECT_TYPE_LANG_MAP} from 'shared/util/lang';
+import {AssetObjectTypes} from 'shared/util/constants';
+import {CSVType} from 'shared/components/download-report/utils';
+import {DownloadStaticCSVReport} from 'shared/components/download-report/DownloadStaticCSVReport';
+import {DropdownRangeKey} from 'shared/components/dropdown-range-key/DropdownRangeKey';
+import {
+	EMPTY_STATE_IMAGE,
+	EMPTY_STATE_REDUCED_MOTION_IMAGE,
+	FrontendDataSet,
+	pagination,
+} from 'shared/components/FrontendDataSet';
+import {getAssetDescriptorByRESTType} from 'assets/descriptors';
+import {getMimeType} from 'assets/components/mime-type';
+import {InfoPanel} from 'assets/components/InfoPanel';
+import {pickBy} from 'lodash';
+import {RangeSelectors} from 'shared/types';
+import {
+	removeUriQueryParam,
+	Routes,
+	setUriQueryValues,
+	toRoute,
+} from 'shared/util/router';
+import {toThousands} from 'shared/util/numbers';
+import {useChannelContext} from 'shared/context/channel';
+import {useLocation, useParams} from 'react-router-dom';
+import {useHistoryAdapter} from 'shared/hooks/useHistoryAdapter';
+import {useLDPEnabled} from 'shared/hooks/useLDPEnabled';
+import {useQueryRangeSelectors} from 'shared/hooks/useQueryRangeSelectors';
+
+const {cur: DEFAULT_CUR} = FaroConstants.pagination;
+
+const OBJECT_TYPES = Object.values(AssetObjectTypes);
+
+const getAssetURL = ({
+	accountId,
+	accountName,
+	channelId,
+	groupId,
+	itemData,
+	rangeSelectorParams,
+	segmentId,
+	segmentName,
+	value = '',
+}: {
+	accountId?: string | null;
+	accountName?: string | null;
+	channelId: string;
+	groupId: string;
+	itemData: any;
+	rangeSelectorParams: string;
+	segmentId?: string | null;
+	segmentName?: string | null;
+	value?: string;
+}) => {
+	const assetTitle = value || itemData.assetTitle || itemData.id;
+
+	const {slug} = getAssetDescriptorByRESTType(itemData.assetType);
+
+	const queryParams = new URLSearchParams(rangeSelectorParams);
+
+	if (accountId) {
+		queryParams.set('accountId', accountId);
+	}
+
+	if (accountName) {
+		queryParams.set('accountName', accountName);
+	}
+
+	if (segmentId) {
+		queryParams.set('segmentId', segmentId);
+	}
+
+	if (segmentName) {
+		queryParams.set('segmentName', segmentName);
+	}
+
+	return `${toRoute(Routes.ASSETS_DASHBOARD_OVERVIEW, {
+		assetId: itemData.id,
+		assetType: slug,
+		channelId,
+		groupId,
+		touchpoint: 'Any',
+		...(itemData.assetType && {
+			type: itemData.assetType,
+		}),
+		...(assetTitle && {
+			title: assetTitle,
+		}),
+	})}?${queryParams.toString()}`;
+};
+
+const columns = {
+	assetMetricRenderer: ({value}: {value: {value: number}}) => (
+		<span>{toThousands(value.value)}</span>
+	),
+	assetTitleRenderer:
+		({
+			accountId,
+			accountName,
+			channelId,
+			groupId,
+			rangeSelectorParams,
+			segmentId,
+			segmentName,
+		}: {
+			accountId?: string | null;
+			accountName?: string | null;
+			channelId: string;
+			groupId: string;
+			rangeSelectorParams: string;
+			segmentId?: string | null;
+			segmentName?: string | null;
+		}) =>
+		({itemData, value}: {itemData: any; value?: string}) => {
+			const URL = getAssetURL({
+				accountId,
+				accountName,
+				channelId,
+				groupId,
+				itemData,
+				rangeSelectorParams,
+				segmentId,
+				segmentName,
+				value,
+			});
+
+			const mimeType = getMimeType({
+				assetType: itemData?.assetType,
+				mimeType: itemData?.mimeType,
+			});
+
+			return (
+				<div className="align-items-center d-flex">
+					<div className="mr-3">
+						<ClaySticker
+							className={mimeType.className}
+							displayType="dark"
+						>
+							<ClayIcon symbol={mimeType.icon} />
+						</ClaySticker>
+					</div>
+
+					<div>
+						<ClayLink displayType="tertiary" href={URL}>
+							{value || itemData.id}
+						</ClayLink>
+					</div>
+				</div>
+			);
+		},
+};
+
+const assetsEmptyStateDescription = (
+	<>
+		<span className="mr-1">
+			{Liferay.Language.get(
+				'check-back-later-to-verify-if-data-has-been-received-from-your-data-sources,-or-you-can-try-a-different-date-range'
+			)}
+		</span>
+
+		<ClayLink
+			href={URLConstants.AssetsDefinitionDocumentation}
+			key="DOCUMENTATION"
+			target="_blank"
+		>
+			{Liferay.Language.get('learn-more-about-assets')}
+		</ClayLink>
+	</>
+);
+
+const TABLE_FIELDS = [
+	{
+		contentRenderer: 'assetTitleRenderer',
+		fieldName: 'assetTitle',
+		label: Liferay.Language.get('title'),
+		sortable: true,
+		truncate: true,
+	},
+	{
+		fieldName: 'assetType',
+		label: Liferay.Language.get('type'),
+		sortable: true,
+	},
+	{
+		contentRenderer: 'assetMetricRenderer',
+		fieldName: 'viewsMetric',
+		label: Liferay.Language.get('views'),
+		sortable: true,
+	},
+	{
+		contentRenderer: 'assetMetricRenderer',
+		fieldName: 'impressionsMetric',
+		label: Liferay.Language.get('impressions'),
+		sortable: true,
+	},
+	{
+		contentRenderer: 'assetMetricRenderer',
+		fieldName: 'downloadsMetric',
+		label: Liferay.Language.get('downloads'),
+		sortable: true,
+	},
+];
+
+const List = () => {
+	const history = useHistoryAdapter();
+	const {search} = useLocation();
+	const {selectedChannel} = useChannelContext();
+	const {channelId, groupId} = useParams();
+	const initialRangeSelectors = useQueryRangeSelectors();
+	const LDPEnabled = useLDPEnabled({groupId: groupId!});
+
+	const searchParams = new URLSearchParams(search);
+	const accountId = searchParams.get('accountId');
+	const accountName = searchParams.get('accountName');
+	const orderBy = searchParams.get('orderBy');
+	const segmentId = searchParams.get('segmentId');
+	const segmentName = searchParams.get('segmentName');
+
+	const objectType = OBJECT_TYPES.find(
+		(value) => value === searchParams.get('objectType')
+	);
+
+	const sortableFields = TABLE_FIELDS.filter((field) => field.sortable);
+
+	const sorts = sortableFields.some((field) => field.fieldName === orderBy)
+		? sortableFields.map((field) => ({
+				active: field.fieldName === orderBy,
+				direction: 'desc' as const,
+				key: field.fieldName,
+				label: field.label,
+			}))
+		: undefined;
+
+	const [rangeSelectors, setRangeSelectors] = useState<RangeSelectors>(
+		initialRangeSelectors
+	);
+
+	const [infoPanelData, setInfoPanelData] = useState<any>(null);
+
+	// The data set reports the filters and search it is showing through
+	// additionalAPIURLParametersTransformer, which runs on every data load
+	// rather than during render, so it is kept in a ref and read on demand by
+	// the CSV export (a state update here would re-trigger the same load).
+
+	const fdsQueryRef = useRef({filter: '', query: ''});
+
+	const customRange =
+		rangeSelectors.rangeKey === RangeKeyTimeRanges.CustomRange;
+
+	const rangeSelectorParams = customRange
+		? `rangeEnd=${rangeSelectors.rangeEnd}&rangeStart=${rangeSelectors.rangeStart}`
+		: `rangeKey=${rangeSelectors.rangeKey}`;
+
+	// Links keep the key too: without it `useQueryRangeSelectors` reads no
+	// range at all and falls back to the default.
+
+	const linkRangeSelectorParams = customRange
+		? `rangeKey=${RangeKeyTimeRanges.CustomRange}&${rangeSelectorParams}`
+		: rangeSelectorParams;
+
+	const filters = useMemo(
+		() => [
+			...(LDPEnabled
+				? [
+						{
+							apiURL: `/o/faro/contacts/${groupId}/account/search?channelId=${channelId}&filter=(rangeKey eq '${rangeSelectors.rangeKey}')`,
+							autocompleteEnabled: true,
+							entityFieldType: 'string',
+							id: 'accountIds',
+							itemKey: 'id',
+							itemLabel: 'accountName',
+							label: Liferay.Language.get('accounts'),
+							multiple: true,
+							...(accountId && {
+								preloadedData: {
+									selectedItems: [
+										{
+											label: accountName || accountId,
+											value: accountId,
+										},
+									],
+								},
+							}),
+							type: 'selection',
+						},
+						{
+							apiURL: `/o/faro/contacts/${groupId}/individual_segment/search?channelId=${channelId}&${rangeSelectorParams}`,
+							autocompleteEnabled: true,
+							entityFieldType: 'string',
+							id: 'segmentIds',
+							itemKey: 'id',
+							itemLabel: 'name',
+							label: Liferay.Language.get('segments'),
+							multiple: true,
+							...(segmentId && {
+								preloadedData: {
+									selectedItems: [
+										{
+											label: segmentName || segmentId,
+											value: segmentId,
+										},
+									],
+								},
+							}),
+							type: 'selection',
+						},
+					]
+				: []),
+			{
+				apiURL: `/o/faro/contacts/${groupId}/asset-summary-types?channelId=${channelId}&${rangeSelectorParams}`,
+				autocompleteEnabled: true,
+				entityFieldType: 'string',
+				id: 'assetType',
+				itemKey: 'name',
+				itemLabel: 'name',
+				label: Liferay.Language.get('type'),
+				multiple: true,
+				type: 'selection',
+			},
+			{
+				entityFieldType: 'string',
+				id: 'objectType',
+				items: OBJECT_TYPES.map((value) => ({
+					label: ASSET_OBJECT_TYPE_LANG_MAP[value],
+					value,
+				})),
+				label: Liferay.Language.get('asset-structure-type'),
+				multiple: false,
+				...(objectType && {
+					preloadedData: {
+						selectedItems: [
+							{
+								label: ASSET_OBJECT_TYPE_LANG_MAP[objectType],
+								value: objectType,
+							},
+						],
+					},
+				}),
+				type: 'selection',
+			},
+			{
+				apiURL: `/o/faro/contacts/${groupId}/asset-summary-tags?channelId=${channelId}&${rangeSelectorParams}`,
+				autocompleteEnabled: true,
+				entityFieldType: 'string',
+				id: 'tags/id',
+				itemKey: 'id',
+				itemLabel: 'name',
+				label: Liferay.Language.get('tags'),
+				multiple: true,
+				type: 'selection',
+			},
+			{
+				apiURL: `/o/faro/contacts/${groupId}/asset-summary-categories?channelId=${channelId}&${rangeSelectorParams}`,
+				autocompleteEnabled: true,
+				entityFieldType: 'string',
+				id: 'categories/id',
+				itemKey: 'id',
+				itemLabel: 'name',
+				label: Liferay.Language.get('categories'),
+				multiple: true,
+				type: 'selection',
+			},
+			{
+				apiURL: `/o/faro/contacts/${groupId}/asset-summary-cmp-projects?channelId=${channelId}&${rangeSelectorParams}`,
+				autocompleteEnabled: true,
+				entityFieldType: 'string',
+				id: 'cmpProjects/id',
+				itemKey: 'id',
+				itemLabel: 'name',
+				label: Liferay.Language.get('cmp-projects'),
+				multiple: true,
+				type: 'selection',
+			},
+			{
+				apiURL: `/o/faro/contacts/${groupId}/asset-summary-mime-types?channelId=${channelId}&${rangeSelectorParams}`,
+				autocompleteEnabled: true,
+				entityFieldType: 'string',
+				id: 'mimeType',
+				itemKey: 'id',
+				itemLabel: 'name',
+				label: Liferay.Language.get('file-type'),
+				multiple: true,
+				type: 'selection',
+			},
+		],
+		[
+			accountId,
+			accountName,
+			channelId,
+			groupId,
+			LDPEnabled,
+			objectType,
+			rangeSelectorParams,
+			segmentId,
+			segmentName,
+		]
+	);
+
+	return (
+		<BasePage documentTitle={Liferay.Language.get('assets')}>
+			<BasePage.Header
+				breadcrumbs={[
+					breadcrumbs.getHome({
+						channelId: channelId!,
+						groupId: groupId!,
+						label: selectedChannel?.name,
+					}),
+				]}
+				fluid
+				groupId={groupId!}
+			>
+				<BasePage.Header.TitleSection
+					title={Liferay.Language.get('assets')}
+				/>
+			</BasePage.Header>
+
+			<BasePage.SubHeader fluid>
+				<div className="d-flex justify-content-end w-100">
+					<DropdownRangeKey
+						bordered
+						legacy={false}
+						onRangeSelectorChange={(rangeSelectors) => {
+							history.push(
+								setUriQueryValues(
+									pickBy({
+										page: DEFAULT_CUR,
+										...rangeSelectors,
+									}),
+									removeUriQueryParam(
+										window.location.href,
+										'rangeEnd',
+										'rangeStart'
+									)
+								)
+							);
+
+							setRangeSelectors(rangeSelectors);
+						}}
+						rangeSelectors={rangeSelectors}
+					/>
+
+					<span className="align-self-stretch border-left mx-3" />
+
+					<DownloadStaticCSVReport
+						bordered
+						disabled={false}
+						getFDSQuery={() => fdsQueryRef.current}
+						rangeSelectors={rangeSelectors}
+						type={CSVType.Asset}
+						typeLang={Liferay.Language.get('assets')}
+					/>
+				</div>
+			</BasePage.SubHeader>
+
+			<BasePage.Body fluid>
+				<Card minHeight={300}>
+					<FrontendDataSet
+
+						// Not a real transformation: this reports the query the
+						// data set is about to send so the CSV export can match
+						// what is on screen, and hands back the additional
+						// parameters unchanged.
+
+						additionalAPIURLParametersTransformer={(
+							loadDataArgs
+						) => {
+							const {odataFiltersStrings = [], searchParam = ''} =
+								loadDataArgs;
+
+							fdsQueryRef.current = {
+								filter: odataFiltersStrings
+									.filter(Boolean)
+									.map((odataString) => `(${odataString})`)
+									.join(' and '),
+								query: searchParam,
+							};
+
+							return loadDataArgs.additionalAPIURLParameters;
+						}}
+						apiURL={`/o/faro/contacts/${groupId}/asset-summary?channelId=${channelId}&${rangeSelectorParams}`}
+						customDataRenderers={{
+							assetMetricRenderer: columns.assetMetricRenderer,
+							assetTitleRenderer: columns.assetTitleRenderer({
+								accountId,
+								accountName,
+								channelId: channelId!,
+								groupId: groupId!,
+								rangeSelectorParams: linkRangeSelectorParams,
+								segmentId,
+								segmentName,
+							}),
+						}}
+						emptyState={{
+							description:
+								assetsEmptyStateDescription as unknown as string,
+							image: EMPTY_STATE_IMAGE,
+							imageReducedMotion:
+								EMPTY_STATE_REDUCED_MOTION_IMAGE,
+							title: Liferay.Language.get('no-assets-were-found'),
+						}}
+						filters={filters}
+						groupedFilters={[
+							{
+								filters: [
+									'assetType',
+									'objectType',
+									'tags/id',
+									'categories/id',
+									'cmpProjects/id',
+									'mimeType',
+								],
+								label: Liferay.Language.get('filter-by'),
+							},
+							...(LDPEnabled
+								? [
+										{
+											filters: [
+												'accountIds',
+												'segmentIds',
+											],
+											label: Liferay.Language.get(
+												'filter-by-people'
+											),
+										},
+									]
+								: []),
+						]}
+						id="assetTable"
+						itemsActions={[
+							{
+								data: {
+									id: 'infoPanel',
+								},
+								icon: 'info-circle-open',
+								label: Liferay.Language.get('show-details'),
+								onClick: setInfoPanelData,
+							},
+							{
+								data: {
+									id: 'viewAsset',
+								},
+								icon: 'view',
+								label: Liferay.Language.get('view'),
+								onClick: ({itemData}: {itemData: any}) => {
+									history.push(
+										getAssetURL({
+											accountId,
+											accountName,
+											channelId: channelId!,
+											groupId: groupId!,
+											itemData,
+											rangeSelectorParams:
+												linkRangeSelectorParams,
+											segmentId,
+											segmentName,
+										})
+									);
+								},
+							},
+						]}
+
+						// Trick to restart FDS every time the rangeSelectors changes.
+
+						key={Object.values(rangeSelectors).join()}
+						pagination={pagination}
+						showPagination
+						snapshotsEnabled
+						sorts={sorts}
+						views={[
+							{
+								contentRenderer: 'table',
+								default: true,
+								label: Liferay.Language.get('default-view'),
+								name: 'table',
+								schema: {
+									fields: TABLE_FIELDS,
+								},
+								thumbnail: 'table',
+							},
+						]}
+					/>
+				</Card>
+
+				<InfoPanel
+					data={infoPanelData}
+					onClose={() => setInfoPanelData(null)}
+				/>
+			</BasePage.Body>
+		</BasePage>
+	);
+};
+
+export default List;

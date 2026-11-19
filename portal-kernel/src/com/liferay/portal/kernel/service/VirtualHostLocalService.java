@@ -198,18 +198,13 @@ public interface VirtualHostLocalService
 		DynamicQuery dynamicQuery, Projection projection);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public VirtualHost fetchCompanyDefaultVirtualHost(long companyId);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public VirtualHost fetchVirtualHost(long virtualHostId);
 
-	/**
-	 * @deprecated As of Mueller (7.2.x), replaced by {@link
-	 #getVirtualHosts(long, long)}
-	 */
-	@Deprecated
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public VirtualHost fetchVirtualHost(long companyId, long layoutSetId);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public VirtualHost fetchVirtualHost(String hostname);
+	public VirtualHost fetchVirtualHost(String virtualHostname);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public ActionableDynamicQuery getActionableDynamicQuery();
@@ -243,17 +238,9 @@ public interface VirtualHostLocalService
 	public VirtualHost getVirtualHost(long virtualHostId)
 		throws PortalException;
 
-	/**
-	 * @deprecated As of Mueller (7.2.x), replaced by {@link
-	 #getVirtualHosts(long, long)}
-	 */
-	@Deprecated
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public VirtualHost getVirtualHost(long companyId, long layoutSetId)
+	public VirtualHost getVirtualHost(String virtualHostname)
 		throws PortalException;
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public VirtualHost getVirtualHost(String hostname) throws PortalException;
 
 	/**
 	 * Returns a range of all the virtual hosts.
@@ -288,14 +275,6 @@ public interface VirtualHostLocalService
 		long excludedLayoutSetId, String[] virtualHostNames);
 
 	/**
-	 * @deprecated As of Mueller (7.2.x), replaced by {@link
-	 #updateVirtualHosts(long, long, TreeMap)}
-	 */
-	@Deprecated
-	public VirtualHost updateVirtualHost(
-		long companyId, long layoutSetId, String hostname);
-
-	/**
 	 * Updates the virtual host in the database or adds it if it does not yet exist. Also notifies the appropriate model listeners.
 	 *
 	 * <p>
@@ -309,7 +288,8 @@ public interface VirtualHostLocalService
 	public VirtualHost updateVirtualHost(VirtualHost virtualHost);
 
 	public List<VirtualHost> updateVirtualHosts(
-		long companyId, long layoutSetId, TreeMap<String, String> hostnames);
+		long companyId, long layoutSetId,
+		TreeMap<String, String> virtualHostnames);
 
 	@Override
 	@Transactional(enabled = false)
@@ -327,3 +307,4 @@ public interface VirtualHostLocalService
 		throws E;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1321434399

@@ -6,6 +6,7 @@
 package com.liferay.commerce.order.importer.item;
 
 import com.liferay.commerce.price.CommerceOrderItemPrice;
+import com.liferay.portal.kernel.util.ArrayUtil;
 
 import java.math.BigDecimal;
 
@@ -19,11 +20,6 @@ public class CommerceOrderImporterItemImpl
 	implements CommerceOrderImporterItem {
 
 	@Override
-	public CommerceOrderItemPrice getCommerceOrderItemPrice() {
-		return _commerceOrderItemPrice;
-	}
-
-	@Override
 	public long getCPDefinitionId() {
 		return _cpDefinitionId;
 	}
@@ -31,6 +27,11 @@ public class CommerceOrderImporterItemImpl
 	@Override
 	public long getCPInstanceId() {
 		return _cpInstanceId;
+	}
+
+	@Override
+	public CommerceOrderItemPrice getCommerceOrderItemPrice() {
+		return _commerceOrderItemPrice;
 	}
 
 	@Override
@@ -77,6 +78,7 @@ public class CommerceOrderImporterItemImpl
 		return _sku;
 	}
 
+	@Override
 	public String getUnitOfMeasureKey() {
 		return _unitOfMeasureKey;
 	}
@@ -92,19 +94,7 @@ public class CommerceOrderImporterItemImpl
 
 	@Override
 	public boolean isValid() {
-		String[] errorMessages = getErrorMessages();
-
-		if ((errorMessages == null) || (errorMessages.length == 0)) {
-			return true;
-		}
-
-		return false;
-	}
-
-	public void setCommerceOrderItemPrice(
-		CommerceOrderItemPrice commerceOrderItemPrice) {
-
-		_commerceOrderItemPrice = commerceOrderItemPrice;
+		return ArrayUtil.isEmpty(getErrorMessages());
 	}
 
 	public void setCPDefinitionId(long cpDefinitionId) {
@@ -113,6 +103,12 @@ public class CommerceOrderImporterItemImpl
 
 	public void setCPInstanceId(long cpInstanceId) {
 		_cpInstanceId = cpInstanceId;
+	}
+
+	public void setCommerceOrderItemPrice(
+		CommerceOrderItemPrice commerceOrderItemPrice) {
+
+		_commerceOrderItemPrice = commerceOrderItemPrice;
 	}
 
 	public void setErrorMessages(String[] errorMessages) {

@@ -10,7 +10,6 @@ import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Layout;
-import com.liferay.portal.kernel.model.LayoutTypePortlet;
 import com.liferay.portal.kernel.portlet.configuration.icon.PortletConfigurationIconMenu;
 import com.liferay.portal.kernel.portlet.toolbar.PortletToolbar;
 import com.liferay.portal.kernel.util.Constants;
@@ -23,13 +22,15 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.PortletPreferences;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.io.IOException;
 import java.io.Serializable;
 import java.io.Writer;
 
-import javax.portlet.PortletPreferences;
-
-import javax.servlet.http.HttpServletRequest;
+import java.util.function.Supplier;
 
 /**
  * Provides general configuration methods for the portlet, providing access to
@@ -124,7 +125,8 @@ public class PortletDisplay implements Cloneable, Serializable {
 		_urlPrint = master.getURLPrint();
 		_urlRefresh = master.getURLRefresh();
 		_urlStaging = master.getURLStaging();
-		_webDAVEnabled = master.isWebDAVEnabled();
+		_webDAVEnabled = master._webDAVEnabled;
+		_webDAVEnabledSupplier = master._webDAVEnabledSupplier;
 	}
 
 	public void copyTo(PortletDisplay slave) {
@@ -192,9 +194,10 @@ public class PortletDisplay implements Cloneable, Serializable {
 		slave.setURLPrint(_urlPrint);
 		slave.setURLRefresh(_urlRefresh);
 		slave.setURLStaging(_urlStaging);
-		slave.setWebDAVEnabled(_webDAVEnabled);
 
 		slave._title = _title;
+		slave._webDAVEnabled = _webDAVEnabled;
+		slave._webDAVEnabledSupplier = _webDAVEnabledSupplier;
 	}
 
 	public int getColumnCount() {
@@ -463,15 +466,7 @@ public class PortletDisplay implements Cloneable, Serializable {
 
 		Layout layout = _themeDisplay.getLayout();
 
-		LayoutTypePortlet layoutTypePortlet =
-			_themeDisplay.getLayoutTypePortlet();
-
-		HttpServletRequest httpServletRequest = _themeDisplay.getRequest();
-
-		String ppid = ParamUtil.getString(httpServletRequest, "p_p_id");
-
-		if ((!layoutTypePortlet.hasStateMax() || Validator.isNull(ppid)) &&
-			Validator.isNull(portletSetupPortletDecoratorId) &&
+		if (Validator.isNull(portletSetupPortletDecoratorId) &&
 			(layout.isTypeAssetDisplay() || layout.isTypeContent())) {
 
 			return false;
@@ -498,11 +493,7 @@ public class PortletDisplay implements Cloneable, Serializable {
 			return false;
 		}
 
-		if (layoutMode.equals(Constants.PREVIEW)) {
-			return false;
-		}
-
-		return true;
+		return !layoutMode.equals(Constants.PREVIEW);
 	}
 
 	public boolean isShowPrintIcon() {
@@ -538,6 +529,12 @@ public class PortletDisplay implements Cloneable, Serializable {
 	}
 
 	public boolean isWebDAVEnabled() {
+		if (_webDAVEnabledSupplier != null) {
+			_webDAVEnabled = _webDAVEnabledSupplier.get();
+
+			_webDAVEnabledSupplier = null;
+		}
+
 		return _webDAVEnabled;
 	}
 
@@ -606,6 +603,7 @@ public class PortletDisplay implements Cloneable, Serializable {
 		_urlPrint = StringPool.BLANK;
 		_urlRefresh = StringPool.BLANK;
 		_webDAVEnabled = false;
+		_webDAVEnabledSupplier = null;
 	}
 
 	public void setActive(boolean active) {
@@ -898,8 +896,10 @@ public class PortletDisplay implements Cloneable, Serializable {
 		_urlStaging = urlStaging;
 	}
 
-	public void setWebDAVEnabled(boolean webDAVEnabled) {
-		_webDAVEnabled = webDAVEnabled;
+	public void setWebDAVEnabledSupplier(
+		Supplier<Boolean> webDAVEnabledSupplier) {
+
+		_webDAVEnabledSupplier = webDAVEnabledSupplier;
 	}
 
 	public void writeContent(Writer writer) throws IOException {
@@ -979,5 +979,6 @@ public class PortletDisplay implements Cloneable, Serializable {
 	private String _urlRefresh = StringPool.BLANK;
 	private String _urlStaging = StringPool.BLANK;
 	private boolean _webDAVEnabled;
+	private transient Supplier<Boolean> _webDAVEnabledSupplier;
 
 }

@@ -8,11 +8,11 @@ package com.liferay.headless.batch.engine.client.dto.v1_0;
 import com.liferay.headless.batch.engine.client.function.UnsafeSupplier;
 import com.liferay.headless.batch.engine.client.serdes.v1_0.FailedItemSerDes;
 
+import jakarta.annotation.Generated;
+
 import java.io.Serializable;
 
 import java.util.Objects;
-
-import javax.annotation.Generated;
 
 /**
  * @author Ivica Cardic
@@ -118,3 +118,4 @@ public class FailedItem implements Cloneable, Serializable {
 	}
 
 }
+// LIFERAY-REST-BUILDER-HASH:-621327955

@@ -1,0 +1,79 @@
+/**
+ * SPDX-FileCopyrightText: (c) 2025 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
+ */
+
+import {IInternalRenderer, IItemsActions} from '@liferay/frontend-data-set-web';
+
+import {IVocabulary} from '../../common/types/IVocabulary';
+import {openGenericFDSDeleteConfirmationModal} from '../../common/utils/genericOpenModalUtil';
+import MultipleScopesRenderer from './cell_renderers/MultipleScopesRenderer';
+import SimpleActionLinkRenderer from './cell_renderers/SimpleActionLinkRenderer';
+import VocabularyRenderer from './cell_renderers/VocabularyRenderer';
+import styleDeleteAction from './utils/styleDeleteAction';
+
+export default function VocabularyFDSPropsTransformer({
+	additionalProps,
+	itemsActions,
+	...otherProps
+}: {
+	additionalProps?: {cmpEnabled?: boolean};
+	itemsActions: IItemsActions[];
+	otherProps: any;
+}) {
+	return {
+		...otherProps,
+		additionalProps,
+		customRenderers: {
+			tableCell: [
+				{
+					component: VocabularyRenderer,
+					name: 'customVocabularyRenderer',
+					type: 'internal',
+				} as IInternalRenderer,
+				{
+					component: (props: any) =>
+						MultipleScopesRenderer({
+							...props,
+							cmpEnabled: additionalProps?.cmpEnabled,
+						}),
+					name: 'scopeTableCellRenderer',
+					type: 'internal',
+				} as IInternalRenderer,
+				{
+					component: (props: any) =>
+						SimpleActionLinkRenderer({
+							...props,
+							systemIconLabel:
+								Liferay.Language.get('system-vocabulary'),
+						}),
+					name: 'simpleActionLinkTableCellRenderer',
+					type: 'internal',
+				} as IInternalRenderer,
+			],
+		},
+		hideManagementBarInEmptyState: true,
+		itemsActions: itemsActions.map(styleDeleteAction),
+		onActionDropdownItemClick({
+			action,
+			itemData,
+			loadData,
+		}: {
+			action: {data: {id: string}};
+			itemData: IVocabulary;
+			loadData: any;
+		}) {
+			if (action.data.id === 'delete') {
+				openGenericFDSDeleteConfirmationModal(
+					Liferay.Language.get('delete-vocabulary-confirmation'),
+					itemData.actions?.delete?.method,
+					itemData.actions?.delete?.href,
+					itemData.name,
+					loadData
+				);
+			}
+		},
+		searchAsYouType: true,
+		searchSuggestionsEnabled: true,
+	};
+}

@@ -110,9 +110,7 @@ public class AuditEventPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		AuditEvent newAuditEvent = _persistence.create(pk);
+		AuditEvent newAuditEvent = addAuditEvent();
 
 		newAuditEvent.setGroupId(RandomTestUtil.nextLong());
 
@@ -124,17 +122,48 @@ public class AuditEventPersistenceTest {
 
 		newAuditEvent.setCreateDate(RandomTestUtil.nextDate());
 
-		newAuditEvent.setEventType(RandomTestUtil.randomString());
+		newAuditEvent.setAccountEntryId(RandomTestUtil.nextLong());
+
+		newAuditEvent.setAdditionalInfo(RandomTestUtil.randomString());
 
 		newAuditEvent.setClassName(RandomTestUtil.randomString());
 
 		newAuditEvent.setClassPK(RandomTestUtil.randomString());
 
-		newAuditEvent.setMessage(RandomTestUtil.randomString());
-
 		newAuditEvent.setClientHost(RandomTestUtil.randomString());
 
 		newAuditEvent.setClientIP(RandomTestUtil.randomString());
+
+		newAuditEvent.setContextName(RandomTestUtil.randomString());
+
+		newAuditEvent.setCorrelationId(RandomTestUtil.randomString());
+
+		newAuditEvent.setEventType(RandomTestUtil.randomString());
+
+		newAuditEvent.setHttpMethod(RandomTestUtil.randomString());
+
+		newAuditEvent.setImpersonated(RandomTestUtil.randomBoolean());
+
+		newAuditEvent.setImpersonatedUserEmailAddress(
+			RandomTestUtil.randomString());
+
+		newAuditEvent.setImpersonatedUserId(RandomTestUtil.nextLong());
+
+		newAuditEvent.setImpersonatedUserName(RandomTestUtil.randomString());
+
+		newAuditEvent.setMessage(RandomTestUtil.randomString());
+
+		newAuditEvent.setObjectName(RandomTestUtil.randomString());
+
+		newAuditEvent.setRequestId(RandomTestUtil.randomString());
+
+		newAuditEvent.setRequestIdGenerated(RandomTestUtil.randomBoolean());
+
+		newAuditEvent.setResourceAction(RandomTestUtil.randomString());
+
+		newAuditEvent.setResourceType(RandomTestUtil.randomString());
+
+		newAuditEvent.setRoles(RandomTestUtil.randomString());
 
 		newAuditEvent.setServerName(RandomTestUtil.randomString());
 
@@ -142,9 +171,13 @@ public class AuditEventPersistenceTest {
 
 		newAuditEvent.setSessionID(RandomTestUtil.randomString());
 
-		newAuditEvent.setAdditionalInfo(RandomTestUtil.randomString());
+		newAuditEvent.setUserAgent(RandomTestUtil.randomString());
 
-		_auditEvents.add(_persistence.update(newAuditEvent));
+		newAuditEvent.setUserEmailAddress(RandomTestUtil.randomString());
+
+		newAuditEvent = _persistence.update(newAuditEvent);
+
+		_auditEvents.add(newAuditEvent);
 
 		AuditEvent existingAuditEvent = _persistence.findByPrimaryKey(
 			newAuditEvent.getPrimaryKey());
@@ -164,17 +197,58 @@ public class AuditEventPersistenceTest {
 			Time.getShortTimestamp(existingAuditEvent.getCreateDate()),
 			Time.getShortTimestamp(newAuditEvent.getCreateDate()));
 		Assert.assertEquals(
-			existingAuditEvent.getEventType(), newAuditEvent.getEventType());
+			existingAuditEvent.getAccountEntryId(),
+			newAuditEvent.getAccountEntryId());
+		Assert.assertEquals(
+			existingAuditEvent.getAdditionalInfo(),
+			newAuditEvent.getAdditionalInfo());
 		Assert.assertEquals(
 			existingAuditEvent.getClassName(), newAuditEvent.getClassName());
 		Assert.assertEquals(
 			existingAuditEvent.getClassPK(), newAuditEvent.getClassPK());
 		Assert.assertEquals(
-			existingAuditEvent.getMessage(), newAuditEvent.getMessage());
-		Assert.assertEquals(
 			existingAuditEvent.getClientHost(), newAuditEvent.getClientHost());
 		Assert.assertEquals(
 			existingAuditEvent.getClientIP(), newAuditEvent.getClientIP());
+		Assert.assertEquals(
+			existingAuditEvent.getContextName(),
+			newAuditEvent.getContextName());
+		Assert.assertEquals(
+			existingAuditEvent.getCorrelationId(),
+			newAuditEvent.getCorrelationId());
+		Assert.assertEquals(
+			existingAuditEvent.getEventType(), newAuditEvent.getEventType());
+		Assert.assertEquals(
+			existingAuditEvent.getHttpMethod(), newAuditEvent.getHttpMethod());
+		Assert.assertEquals(
+			existingAuditEvent.isImpersonated(),
+			newAuditEvent.isImpersonated());
+		Assert.assertEquals(
+			existingAuditEvent.getImpersonatedUserEmailAddress(),
+			newAuditEvent.getImpersonatedUserEmailAddress());
+		Assert.assertEquals(
+			existingAuditEvent.getImpersonatedUserId(),
+			newAuditEvent.getImpersonatedUserId());
+		Assert.assertEquals(
+			existingAuditEvent.getImpersonatedUserName(),
+			newAuditEvent.getImpersonatedUserName());
+		Assert.assertEquals(
+			existingAuditEvent.getMessage(), newAuditEvent.getMessage());
+		Assert.assertEquals(
+			existingAuditEvent.getObjectName(), newAuditEvent.getObjectName());
+		Assert.assertEquals(
+			existingAuditEvent.getRequestId(), newAuditEvent.getRequestId());
+		Assert.assertEquals(
+			existingAuditEvent.isRequestIdGenerated(),
+			newAuditEvent.isRequestIdGenerated());
+		Assert.assertEquals(
+			existingAuditEvent.getResourceAction(),
+			newAuditEvent.getResourceAction());
+		Assert.assertEquals(
+			existingAuditEvent.getResourceType(),
+			newAuditEvent.getResourceType());
+		Assert.assertEquals(
+			existingAuditEvent.getRoles(), newAuditEvent.getRoles());
 		Assert.assertEquals(
 			existingAuditEvent.getServerName(), newAuditEvent.getServerName());
 		Assert.assertEquals(
@@ -182,8 +256,10 @@ public class AuditEventPersistenceTest {
 		Assert.assertEquals(
 			existingAuditEvent.getSessionID(), newAuditEvent.getSessionID());
 		Assert.assertEquals(
-			existingAuditEvent.getAdditionalInfo(),
-			newAuditEvent.getAdditionalInfo());
+			existingAuditEvent.getUserAgent(), newAuditEvent.getUserAgent());
+		Assert.assertEquals(
+			existingAuditEvent.getUserEmailAddress(),
+			newAuditEvent.getUserEmailAddress());
 	}
 
 	@Test
@@ -220,9 +296,15 @@ public class AuditEventPersistenceTest {
 		return OrderByComparatorFactoryUtil.create(
 			"Audit_AuditEvent", "auditEventId", true, "groupId", true,
 			"companyId", true, "userId", true, "userName", true, "createDate",
-			true, "eventType", true, "className", true, "classPK", true,
-			"message", true, "clientHost", true, "clientIP", true, "serverName",
-			true, "serverPort", true, "sessionID", true);
+			true, "accountEntryId", true, "className", true, "classPK", true,
+			"clientHost", true, "clientIP", true, "contextName", true,
+			"correlationId", true, "eventType", true, "httpMethod", true,
+			"impersonated", true, "impersonatedUserEmailAddress", true,
+			"impersonatedUserId", true, "impersonatedUserName", true, "message",
+			true, "objectName", true, "requestId", true, "requestIdGenerated",
+			true, "resourceAction", true, "resourceType", true, "serverName",
+			true, "serverPort", true, "sessionID", true, "userAgent", true,
+			"userEmailAddress", true);
 	}
 
 	@Test
@@ -449,17 +531,48 @@ public class AuditEventPersistenceTest {
 
 		auditEvent.setCreateDate(RandomTestUtil.nextDate());
 
-		auditEvent.setEventType(RandomTestUtil.randomString());
+		auditEvent.setAccountEntryId(RandomTestUtil.nextLong());
+
+		auditEvent.setAdditionalInfo(RandomTestUtil.randomString());
 
 		auditEvent.setClassName(RandomTestUtil.randomString());
 
 		auditEvent.setClassPK(RandomTestUtil.randomString());
 
-		auditEvent.setMessage(RandomTestUtil.randomString());
-
 		auditEvent.setClientHost(RandomTestUtil.randomString());
 
 		auditEvent.setClientIP(RandomTestUtil.randomString());
+
+		auditEvent.setContextName(RandomTestUtil.randomString());
+
+		auditEvent.setCorrelationId(RandomTestUtil.randomString());
+
+		auditEvent.setEventType(RandomTestUtil.randomString());
+
+		auditEvent.setHttpMethod(RandomTestUtil.randomString());
+
+		auditEvent.setImpersonated(RandomTestUtil.randomBoolean());
+
+		auditEvent.setImpersonatedUserEmailAddress(
+			RandomTestUtil.randomString());
+
+		auditEvent.setImpersonatedUserId(RandomTestUtil.nextLong());
+
+		auditEvent.setImpersonatedUserName(RandomTestUtil.randomString());
+
+		auditEvent.setMessage(RandomTestUtil.randomString());
+
+		auditEvent.setObjectName(RandomTestUtil.randomString());
+
+		auditEvent.setRequestId(RandomTestUtil.randomString());
+
+		auditEvent.setRequestIdGenerated(RandomTestUtil.randomBoolean());
+
+		auditEvent.setResourceAction(RandomTestUtil.randomString());
+
+		auditEvent.setResourceType(RandomTestUtil.randomString());
+
+		auditEvent.setRoles(RandomTestUtil.randomString());
 
 		auditEvent.setServerName(RandomTestUtil.randomString());
 
@@ -467,7 +580,9 @@ public class AuditEventPersistenceTest {
 
 		auditEvent.setSessionID(RandomTestUtil.randomString());
 
-		auditEvent.setAdditionalInfo(RandomTestUtil.randomString());
+		auditEvent.setUserAgent(RandomTestUtil.randomString());
+
+		auditEvent.setUserEmailAddress(RandomTestUtil.randomString());
 
 		_auditEvents.add(_persistence.update(auditEvent));
 
@@ -479,3 +594,4 @@ public class AuditEventPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1262735458

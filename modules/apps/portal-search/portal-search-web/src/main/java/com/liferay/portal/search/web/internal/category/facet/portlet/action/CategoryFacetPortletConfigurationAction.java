@@ -5,27 +5,79 @@
 
 package com.liferay.portal.search.web.internal.category.facet.portlet.action;
 
+import com.liferay.asset.kernel.service.AssetVocabularyLocalService;
+import com.liferay.asset.kernel.service.AssetVocabularyService;
+import com.liferay.depot.group.provider.SiteConnectedGroupGroupProvider;
 import com.liferay.portal.kernel.portlet.ConfigurationAction;
-import com.liferay.portal.kernel.portlet.DefaultConfigurationAction;
+import com.liferay.portal.kernel.service.GroupLocalService;
+import com.liferay.portal.kernel.service.GroupService;
+import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.search.web.internal.category.facet.constants.CategoryFacetPortletKeys;
+import com.liferay.portal.search.web.internal.category.facet.display.context.CategoryFacetConfigurationDisplayContext;
+import com.liferay.portlet.display.template.portlet.action.BaseConfigurationAction;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.portlet.PortletConfig;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Lino Alves
  */
 @Component(
-	property = "javax.portlet.name=" + CategoryFacetPortletKeys.CATEGORY_FACET,
+	property = "jakarta.portlet.name=" + CategoryFacetPortletKeys.CATEGORY_FACET,
 	service = ConfigurationAction.class
 )
 public class CategoryFacetPortletConfigurationAction
-	extends DefaultConfigurationAction {
+	extends BaseConfigurationAction {
 
 	@Override
 	public String getJspPath(HttpServletRequest httpServletRequest) {
 		return "/category/facet/configuration.jsp";
 	}
+
+	@Override
+	public void include(
+			PortletConfig portletConfig, HttpServletRequest httpServletRequest,
+			HttpServletResponse httpServletResponse)
+		throws Exception {
+
+		httpServletRequest.setAttribute(
+			AssetVocabularyLocalService.class.getName(),
+			_assetVocabularyLocalService);
+		httpServletRequest.setAttribute(
+			GroupLocalService.class.getName(), _groupLocalService);
+
+		ThemeDisplay themeDisplay =
+			(ThemeDisplay)httpServletRequest.getAttribute(
+				WebKeys.THEME_DISPLAY);
+
+		httpServletRequest.setAttribute(
+			WebKeys.PORTLET_DISPLAY_CONTEXT,
+			new CategoryFacetConfigurationDisplayContext(
+				_assetVocabularyService, _groupLocalService, _groupService,
+				themeDisplay.getLocale(), _siteConnectedGroupGroupProvider));
+
+		super.include(portletConfig, httpServletRequest, httpServletResponse);
+	}
+
+	@Reference
+	private AssetVocabularyLocalService _assetVocabularyLocalService;
+
+	@Reference
+	private AssetVocabularyService _assetVocabularyService;
+
+	@Reference
+	private GroupLocalService _groupLocalService;
+
+	@Reference
+	private GroupService _groupService;
+
+	@Reference
+	private SiteConnectedGroupGroupProvider _siteConnectedGroupGroupProvider;
 
 }

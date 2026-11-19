@@ -7,6 +7,7 @@ package com.liferay.info.item;
 
 import com.liferay.info.item.provider.filter.InfoItemServiceFilter;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.util.Validator;
 
 import java.util.Objects;
 
@@ -20,6 +21,26 @@ public class ERCInfoItemIdentifier extends BaseInfoItemIdentifier {
 
 	public ERCInfoItemIdentifier(String externalReferenceCode) {
 		_externalReferenceCode = externalReferenceCode;
+
+		_scopeExternalReferenceCode = null;
+	}
+
+	public ERCInfoItemIdentifier(
+		String externalReferenceCode, String scopeExternalReferenceCode) {
+
+		_externalReferenceCode = externalReferenceCode;
+		_scopeExternalReferenceCode = scopeExternalReferenceCode;
+	}
+
+	public ERCInfoItemIdentifier(
+		String externalReferenceCode, String scopeExternalReferenceCode,
+		String version) {
+
+		this(externalReferenceCode, scopeExternalReferenceCode);
+
+		if (Validator.isNotNull(version)) {
+			setVersion(version);
+		}
 	}
 
 	@Override
@@ -35,9 +56,17 @@ public class ERCInfoItemIdentifier extends BaseInfoItemIdentifier {
 		ERCInfoItemIdentifier ercInfoItemIdentifier =
 			(ERCInfoItemIdentifier)object;
 
-		return Objects.equals(
-			_externalReferenceCode,
-			ercInfoItemIdentifier._externalReferenceCode);
+		if (Objects.equals(
+				_externalReferenceCode,
+				ercInfoItemIdentifier._externalReferenceCode) &&
+			Objects.equals(
+				_scopeExternalReferenceCode,
+				ercInfoItemIdentifier._scopeExternalReferenceCode)) {
+
+			return true;
+		}
+
+		return false;
 	}
 
 	public String getExternalReferenceCode() {
@@ -49,18 +78,25 @@ public class ERCInfoItemIdentifier extends BaseInfoItemIdentifier {
 		return INFO_ITEM_SERVICE_FILTER;
 	}
 
+	public String getScopeExternalReferenceCode() {
+		return _scopeExternalReferenceCode;
+	}
+
 	@Override
 	public int hashCode() {
-		return Objects.hash(_externalReferenceCode);
+		return Objects.hash(
+			_externalReferenceCode, _scopeExternalReferenceCode);
 	}
 
 	@Override
 	public String toString() {
 		return StringBundler.concat(
 			"{className=", ERCInfoItemIdentifier.class.getName(),
-			", externalReferenceCode=", _externalReferenceCode, "}");
+			", externalReferenceCode=", _externalReferenceCode,
+			", scopeExternalReferenceCode=", _scopeExternalReferenceCode, "}");
 	}
 
 	private final String _externalReferenceCode;
+	private final String _scopeExternalReferenceCode;
 
 }

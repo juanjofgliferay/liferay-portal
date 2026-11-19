@@ -16,12 +16,14 @@ import com.liferay.portal.workflow.kaleo.definition.Definition;
 public interface WorkflowDeployer {
 
 	public WorkflowDefinition deploy(
-			String title, String name, String scope, Definition definition,
+			String externalReferenceCode, String title, String name,
+			String scope, boolean system, Definition definition,
 			ServiceContext serviceContext)
 		throws PortalException;
 
 	public WorkflowDefinition save(
-			String title, String name, String scope, Definition definition,
+			String externalReferenceCode, String title, String name,
+			String scope, boolean system, Definition definition,
 			ServiceContext serviceContext)
 		throws PortalException;
 

@@ -27,7 +27,8 @@ public interface ApplePushNotificationsSenderConfiguration {
 
 	@Meta.AD(
 		description = "certificate-password-description",
-		name = "certificate-password-name", required = false
+		name = "certificate-password-name", required = false,
+		type = Meta.Type.Password
 	)
 	public String certificatePassword();
 
@@ -38,8 +39,7 @@ public interface ApplePushNotificationsSenderConfiguration {
 	public String certificatePath();
 
 	@Meta.AD(
-		description = "sandbox-description", name = "sandbox-name",
-		required = false
+		description = "sandbox-description", name = "sandbox", required = false
 	)
 	public boolean sandbox();
 

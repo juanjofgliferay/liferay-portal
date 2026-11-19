@@ -8,13 +8,14 @@ package com.liferay.headless.admin.content.client.serdes.v1_0;
 import com.liferay.headless.admin.content.client.dto.v1_0.TaxonomyCategoryBrief;
 import com.liferay.headless.admin.content.client.json.BaseJSONParser;
 
+import jakarta.annotation.Generated;
+
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
-
-import javax.annotation.Generated;
 
 /**
  * @author Javier Gamarra
@@ -53,18 +54,46 @@ public class TaxonomyCategoryBriefSerDes {
 
 			sb.append("\"embeddedTaxonomyCategory\": ");
 
-			if (taxonomyCategoryBrief.getEmbeddedTaxonomyCategory() instanceof
-					String) {
+			sb.append(
+				_toJSON(taxonomyCategoryBrief.getEmbeddedTaxonomyCategory()));
+		}
 
-				sb.append("\"");
-				sb.append(
-					(String)
-						taxonomyCategoryBrief.getEmbeddedTaxonomyCategory());
-				sb.append("\"");
+		if (taxonomyCategoryBrief.
+				getParentTaxonomyCategoryExternalReferenceCode() != null) {
+
+			if (sb.length() > 1) {
+				sb.append(", ");
 			}
-			else {
-				sb.append(taxonomyCategoryBrief.getEmbeddedTaxonomyCategory());
+
+			sb.append("\"parentTaxonomyCategoryExternalReferenceCode\": ");
+
+			sb.append("\"");
+
+			sb.append(
+				_escape(
+					taxonomyCategoryBrief.
+						getParentTaxonomyCategoryExternalReferenceCode()));
+
+			sb.append("\"");
+		}
+
+		if (taxonomyCategoryBrief.getParentVocabularyExternalReferenceCode() !=
+				null) {
+
+			if (sb.length() > 1) {
+				sb.append(", ");
 			}
+
+			sb.append("\"parentVocabularyExternalReferenceCode\": ");
+
+			sb.append("\"");
+
+			sb.append(
+				_escape(
+					taxonomyCategoryBrief.
+						getParentVocabularyExternalReferenceCode()));
+
+			sb.append("\"");
 		}
 
 		if (taxonomyCategoryBrief.getTaxonomyCategoryId() != null) {
@@ -109,7 +138,9 @@ public class TaxonomyCategoryBriefSerDes {
 
 			sb.append("\"taxonomyCategoryReference\": ");
 
-			sb.append(taxonomyCategoryBrief.getTaxonomyCategoryReference());
+			sb.append(
+				String.valueOf(
+					taxonomyCategoryBrief.getTaxonomyCategoryReference()));
 		}
 
 		sb.append("}");
@@ -141,6 +172,32 @@ public class TaxonomyCategoryBriefSerDes {
 				"embeddedTaxonomyCategory",
 				String.valueOf(
 					taxonomyCategoryBrief.getEmbeddedTaxonomyCategory()));
+		}
+
+		if (taxonomyCategoryBrief.
+				getParentTaxonomyCategoryExternalReferenceCode() == null) {
+
+			map.put("parentTaxonomyCategoryExternalReferenceCode", null);
+		}
+		else {
+			map.put(
+				"parentTaxonomyCategoryExternalReferenceCode",
+				String.valueOf(
+					taxonomyCategoryBrief.
+						getParentTaxonomyCategoryExternalReferenceCode()));
+		}
+
+		if (taxonomyCategoryBrief.getParentVocabularyExternalReferenceCode() ==
+				null) {
+
+			map.put("parentVocabularyExternalReferenceCode", null);
+		}
+		else {
+			map.put(
+				"parentVocabularyExternalReferenceCode",
+				String.valueOf(
+					taxonomyCategoryBrief.
+						getParentVocabularyExternalReferenceCode()));
 		}
 
 		if (taxonomyCategoryBrief.getTaxonomyCategoryId() == null) {
@@ -199,6 +256,49 @@ public class TaxonomyCategoryBriefSerDes {
 		}
 
 		@Override
+		protected boolean parseMaps(String jsonParserFieldName) {
+			if (Objects.equals(
+					jsonParserFieldName, "embeddedTaxonomyCategory")) {
+
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName,
+						"parentTaxonomyCategoryExternalReferenceCode")) {
+
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName,
+						"parentVocabularyExternalReferenceCode")) {
+
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "taxonomyCategoryId")) {
+
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "taxonomyCategoryName")) {
+
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "taxonomyCategoryName_i18n")) {
+
+				return true;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "taxonomyCategoryReference")) {
+
+				return false;
+			}
+
+			return false;
+		}
+
+		@Override
 		protected void setField(
 			TaxonomyCategoryBrief taxonomyCategoryBrief,
 			String jsonParserFieldName, Object jsonParserFieldValue) {
@@ -209,6 +309,26 @@ public class TaxonomyCategoryBriefSerDes {
 				if (jsonParserFieldValue != null) {
 					taxonomyCategoryBrief.setEmbeddedTaxonomyCategory(
 						(Object)jsonParserFieldValue);
+				}
+			}
+			else if (Objects.equals(
+						jsonParserFieldName,
+						"parentTaxonomyCategoryExternalReferenceCode")) {
+
+				if (jsonParserFieldValue != null) {
+					taxonomyCategoryBrief.
+						setParentTaxonomyCategoryExternalReferenceCode(
+							(String)jsonParserFieldValue);
+				}
+			}
+			else if (Objects.equals(
+						jsonParserFieldName,
+						"parentVocabularyExternalReferenceCode")) {
+
+				if (jsonParserFieldValue != null) {
+					taxonomyCategoryBrief.
+						setParentVocabularyExternalReferenceCode(
+							(String)jsonParserFieldValue);
 				}
 			}
 			else if (Objects.equals(
@@ -232,8 +352,7 @@ public class TaxonomyCategoryBriefSerDes {
 
 				if (jsonParserFieldValue != null) {
 					taxonomyCategoryBrief.setTaxonomyCategoryName_i18n(
-						(Map)TaxonomyCategoryBriefSerDes.toMap(
-							(String)jsonParserFieldValue));
+						(Map<String, String>)jsonParserFieldValue);
 				}
 			}
 			else if (Objects.equals(
@@ -277,36 +396,7 @@ public class TaxonomyCategoryBriefSerDes {
 
 			Object value = entry.getValue();
 
-			Class<?> valueClass = value.getClass();
-
-			if (value instanceof Map) {
-				sb.append(_toJSON((Map)value));
-			}
-			else if (valueClass.isArray()) {
-				Object[] values = (Object[])value;
-
-				sb.append("[");
-
-				for (int i = 0; i < values.length; i++) {
-					sb.append("\"");
-					sb.append(_escape(values[i]));
-					sb.append("\"");
-
-					if ((i + 1) < values.length) {
-						sb.append(", ");
-					}
-				}
-
-				sb.append("]");
-			}
-			else if (value instanceof String) {
-				sb.append("\"");
-				sb.append(_escape(entry.getValue()));
-				sb.append("\"");
-			}
-			else {
-				sb.append(String.valueOf(entry.getValue()));
-			}
+			sb.append(_toJSON(value));
 
 			if (iterator.hasNext()) {
 				sb.append(", ");
@@ -318,4 +408,47 @@ public class TaxonomyCategoryBriefSerDes {
 		return sb.toString();
 	}
 
+	private static String _toJSON(Object value) {
+		if (value == null) {
+			return "null";
+		}
+
+		if (value instanceof Collection) {
+			Collection<?> collection = (Collection<?>)value;
+
+			return _toJSON(collection.toArray());
+		}
+
+		if (value instanceof Map) {
+			return _toJSON((Map)value);
+		}
+
+		Class<?> clazz = value.getClass();
+
+		if (clazz.isArray()) {
+			StringBuilder sb = new StringBuilder("[");
+
+			Object[] values = (Object[])value;
+
+			for (int i = 0; i < values.length; i++) {
+				sb.append(_toJSON(values[i]));
+
+				if ((i + 1) < values.length) {
+					sb.append(", ");
+				}
+			}
+
+			sb.append("]");
+
+			return sb.toString();
+		}
+
+		if (value instanceof String) {
+			return "\"" + _escape(value) + "\"";
+		}
+
+		return String.valueOf(value);
+	}
+
 }
+// LIFERAY-REST-BUILDER-HASH:-1057246899

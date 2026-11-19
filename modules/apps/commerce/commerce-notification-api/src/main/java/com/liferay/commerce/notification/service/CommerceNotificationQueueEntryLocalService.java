@@ -40,8 +40,10 @@ import org.osgi.annotation.versioning.ProviderType;
  *
  * @author Alessio Antonio Rendina
  * @see CommerceNotificationQueueEntryLocalServiceUtil
+ * @deprecated As of Cavanaugh (7.4.x)
  * @generated
  */
+@Deprecated
 @ProviderType
 @Transactional(
 	isolation = Isolation.PORTAL,
@@ -110,7 +112,8 @@ public interface CommerceNotificationQueueEntryLocalService
 			CommerceNotificationQueueEntry commerceNotificationQueueEntry)
 		throws PortalException;
 
-	public void deleteCommerceNotificationQueueEntries(Date sentDate);
+	public void deleteCommerceNotificationQueueEntries(Date sentDate)
+		throws PortalException;
 
 	public void deleteCommerceNotificationQueueEntries(long groupId)
 		throws PortalException;
@@ -253,13 +256,6 @@ public interface CommerceNotificationQueueEntryLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<CommerceNotificationQueueEntry>
 		getCommerceNotificationQueueEntries(
-			long groupId, int start, int end,
-			OrderByComparator<CommerceNotificationQueueEntry>
-				orderByComparator);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<CommerceNotificationQueueEntry>
-		getCommerceNotificationQueueEntries(
 			long groupId, String className, long classPK, boolean sent,
 			int start, int end,
 			OrderByComparator<CommerceNotificationQueueEntry>
@@ -272,9 +268,6 @@ public interface CommerceNotificationQueueEntryLocalService
 	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public int getCommerceNotificationQueueEntriesCount();
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getCommerceNotificationQueueEntriesCount(long groupId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public int getCommerceNotificationQueueEntriesCount(
@@ -339,3 +332,4 @@ public interface CommerceNotificationQueueEntryLocalService
 		throws PortalException;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-365169516

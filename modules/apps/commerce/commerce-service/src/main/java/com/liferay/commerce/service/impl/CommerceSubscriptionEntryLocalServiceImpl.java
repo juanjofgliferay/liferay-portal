@@ -13,7 +13,7 @@ import com.liferay.commerce.internal.search.CommerceSubscriptionEntryIndexer;
 import com.liferay.commerce.model.CommerceOrder;
 import com.liferay.commerce.model.CommerceOrderItem;
 import com.liferay.commerce.model.CommerceSubscriptionEntry;
-import com.liferay.commerce.notification.util.CommerceNotificationHelper;
+import com.liferay.commerce.notification.CommerceNotificationSender;
 import com.liferay.commerce.product.util.CPSubscriptionType;
 import com.liferay.commerce.product.util.CPSubscriptionTypeRegistry;
 import com.liferay.commerce.service.base.CommerceSubscriptionEntryLocalServiceBaseImpl;
@@ -39,7 +39,7 @@ import com.liferay.portal.kernel.search.SearchContext;
 import com.liferay.portal.kernel.search.SearchException;
 import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.service.UserLocalService;
-import com.liferay.portal.kernel.transaction.TransactionCommitCallbackUtil;
+import com.liferay.portal.kernel.transaction.TransactionCallbackUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.LinkedHashMapBuilder;
@@ -133,6 +133,11 @@ public class CommerceSubscriptionEntryLocalServiceImpl
 			_cpSubscriptionTypeRegistry.getCPSubscriptionType(subscriptionType);
 
 		if (cpSubscriptionType != null) {
+			commerceSubscriptionEntry.
+				setSubscriptionTypeSettingsUnicodeProperties(
+					cpSubscriptionType.
+						getSubscriptionTypeSettingsUnicodeProperties(
+							subscriptionTypeSettingsUnicodeProperties));
 			commerceSubscriptionEntry.setSubscriptionStatus(
 				CommerceSubscriptionEntryConstants.SUBSCRIPTION_STATUS_ACTIVE);
 			commerceSubscriptionEntry.setNextIterationDate(
@@ -143,19 +148,14 @@ public class CommerceSubscriptionEntryLocalServiceImpl
 				cpSubscriptionType.getSubscriptionStartDate(
 					user.getTimeZone(),
 					subscriptionTypeSettingsUnicodeProperties));
-			commerceSubscriptionEntry.
-				setSubscriptionTypeSettingsUnicodeProperties(
-					cpSubscriptionType.
-						getSubscriptionTypeSettingsUnicodeProperties(
-							subscriptionTypeSettingsUnicodeProperties));
 		}
 		else {
-			commerceSubscriptionEntry.setSubscriptionStatus(
-				CommerceSubscriptionEntryConstants.
-					SUBSCRIPTION_STATUS_INACTIVE);
 			commerceSubscriptionEntry.
 				setSubscriptionTypeSettingsUnicodeProperties(
 					subscriptionTypeSettingsUnicodeProperties);
+			commerceSubscriptionEntry.setSubscriptionStatus(
+				CommerceSubscriptionEntryConstants.
+					SUBSCRIPTION_STATUS_INACTIVE);
 		}
 
 		CPSubscriptionType deliveryCPSubscriptionType =
@@ -163,6 +163,11 @@ public class CommerceSubscriptionEntryLocalServiceImpl
 				deliverySubscriptionType);
 
 		if (deliveryCPSubscriptionType != null) {
+			commerceSubscriptionEntry.
+				setDeliverySubscriptionTypeSettingsUnicodeProperties(
+					deliveryCPSubscriptionType.
+						getDeliverySubscriptionTypeSettingsUnicodeProperties(
+							deliverySubscriptionTypeSettingsUnicodeProperties));
 			commerceSubscriptionEntry.setDeliverySubscriptionStatus(
 				CommerceSubscriptionEntryConstants.SUBSCRIPTION_STATUS_ACTIVE);
 			commerceSubscriptionEntry.setDeliveryNextIterationDate(
@@ -173,19 +178,14 @@ public class CommerceSubscriptionEntryLocalServiceImpl
 				deliveryCPSubscriptionType.getSubscriptionStartDate(
 					user.getTimeZone(),
 					deliverySubscriptionTypeSettingsUnicodeProperties));
-			commerceSubscriptionEntry.
-				setDeliverySubscriptionTypeSettingsUnicodeProperties(
-					deliveryCPSubscriptionType.
-						getDeliverySubscriptionTypeSettingsUnicodeProperties(
-							deliverySubscriptionTypeSettingsUnicodeProperties));
 		}
 		else {
-			commerceSubscriptionEntry.setDeliverySubscriptionStatus(
-				CommerceSubscriptionEntryConstants.
-					SUBSCRIPTION_STATUS_INACTIVE);
 			commerceSubscriptionEntry.
 				setDeliverySubscriptionTypeSettingsUnicodeProperties(
 					deliverySubscriptionTypeSettingsUnicodeProperties);
+			commerceSubscriptionEntry.setDeliverySubscriptionStatus(
+				CommerceSubscriptionEntryConstants.
+					SUBSCRIPTION_STATUS_INACTIVE);
 		}
 
 		return commerceSubscriptionEntryPersistence.update(
@@ -219,15 +219,6 @@ public class CommerceSubscriptionEntryLocalServiceImpl
 		getActiveCommerceSubscriptionEntries() {
 
 		return commerceSubscriptionEntryPersistence.findBySubscriptionStatus(
-			CommerceSubscriptionEntryConstants.SUBSCRIPTION_STATUS_ACTIVE);
-	}
-
-	@Override
-	public List<CommerceSubscriptionEntry> getActiveCommerceSubscriptionEntries(
-		long commerceAccountId) {
-
-		return commerceSubscriptionEntryFinder.findByA_S(
-			commerceAccountId,
 			CommerceSubscriptionEntryConstants.SUBSCRIPTION_STATUS_ACTIVE);
 	}
 
@@ -271,14 +262,6 @@ public class CommerceSubscriptionEntryLocalServiceImpl
 
 		return commerceSubscriptionEntryPersistence.countByC_U(
 			companyId, userId);
-	}
-
-	@Override
-	public int getCommerceSubscriptionEntriesCount(
-		long companyId, long groupId, long userId) {
-
-		return commerceSubscriptionEntryPersistence.countByG_C_U(
-			groupId, companyId, userId);
 	}
 
 	@Override
@@ -348,7 +331,7 @@ public class CommerceSubscriptionEntryLocalServiceImpl
 		if (commerceOrderItem != null) {
 			CommerceOrder commerceOrder = commerceOrderItem.getCommerceOrder();
 
-			_commerceNotificationHelper.sendNotifications(
+			_commerceNotificationSender.sendNotifications(
 				commerceOrder.getGroupId(), commerceOrder.getUserId(),
 				CommerceSubscriptionNotificationConstants.SUBSCRIPTION_RENEWED,
 				updatedSubscriptionEntry);
@@ -414,7 +397,7 @@ public class CommerceSubscriptionEntryLocalServiceImpl
 		if (commerceOrderItem != null) {
 			CommerceOrder commerceOrder = commerceOrderItem.getCommerceOrder();
 
-			_commerceNotificationHelper.sendNotifications(
+			_commerceNotificationSender.sendNotifications(
 				commerceOrder.getGroupId(), commerceOrder.getUserId(),
 				CommerceSubscriptionNotificationConstants.SUBSCRIPTION_RENEWED,
 				updatedSubscriptionEntry);
@@ -790,7 +773,7 @@ public class CommerceSubscriptionEntryLocalServiceImpl
 	private void _sendSubscriptionStatusMessage(
 		long commerceSubscriptionEntryId, int subscriptionStatus) {
 
-		TransactionCommitCallbackUtil.registerCallback(
+		TransactionCallbackUtil.registerCommitCallback(
 			() -> {
 				Message message = new Message();
 
@@ -839,7 +822,7 @@ public class CommerceSubscriptionEntryLocalServiceImpl
 		CommerceSubscriptionEntryLocalServiceImpl.class);
 
 	@Reference
-	private CommerceNotificationHelper _commerceNotificationHelper;
+	private CommerceNotificationSender _commerceNotificationSender;
 
 	@Reference
 	private CPSubscriptionTypeRegistry _cpSubscriptionTypeRegistry;

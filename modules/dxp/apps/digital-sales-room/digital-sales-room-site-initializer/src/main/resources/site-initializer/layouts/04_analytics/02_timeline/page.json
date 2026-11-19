@@ -1,0 +1,25 @@
+{
+	"friendlyURL": "/analytics/view-timeline",
+	"hidden": true,
+	"name": "Timeline",
+	"name_i18n": {
+		"[$FOR_EACH_LANGUAGE_ID$]": "timeline"
+	},
+	"permissions": [
+		{
+			"actionIds": [
+			],
+			"roleName": "Guest",
+			"scope": 4
+		},
+		{
+			"actionIds": [
+			],
+			"roleName": "Site Member",
+			"scope": 4
+		}
+	],
+	"private": false,
+	"system": false,
+	"type": "content"
+}

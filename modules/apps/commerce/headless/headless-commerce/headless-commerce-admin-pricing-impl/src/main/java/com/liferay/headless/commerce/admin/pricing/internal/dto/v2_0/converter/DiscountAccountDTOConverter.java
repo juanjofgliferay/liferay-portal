@@ -20,7 +20,10 @@ import org.osgi.service.component.annotations.Reference;
  * @author Riccardo Alberti
  */
 @Component(
-	property = "dto.class.name=com.liferay.commerce.discount.model.CommerceDiscountAccountRel",
+	property = {
+		"default=true",
+		"dto.class.name=com.liferay.commerce.discount.model.CommerceDiscountAccountRel"
+	},
 	service = DTOConverter.class
 )
 public class DiscountAccountDTOConverter
@@ -46,16 +49,19 @@ public class DiscountAccountDTOConverter
 
 		return new DiscountAccount() {
 			{
-				accountExternalReferenceCode =
-					accountEntry.getExternalReferenceCode();
-				accountId = accountEntry.getAccountEntryId();
-				actions = dtoConverterContext.getActions();
-				discountAccountId =
-					commerceDiscountAccountRel.
-						getCommerceDiscountAccountRelId();
-				discountExternalReferenceCode =
-					commerceDiscount.getExternalReferenceCode();
-				discountId = commerceDiscount.getCommerceDiscountId();
+				setAccountExternalReferenceCode(
+					accountEntry::getExternalReferenceCode);
+				setAccountId(accountEntry::getAccountEntryId);
+				setAccountType(
+					() -> DiscountAccount.AccountType.create(
+						accountEntry.getType()));
+				setActions(dtoConverterContext::getActions);
+				setDiscountAccountId(
+					commerceDiscountAccountRel::
+						getCommerceDiscountAccountRelId);
+				setDiscountExternalReferenceCode(
+					commerceDiscount::getExternalReferenceCode);
+				setDiscountId(commerceDiscount::getCommerceDiscountId);
 			}
 		};
 	}

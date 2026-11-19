@@ -65,18 +65,18 @@ CPSku cpSku = cpContentHelper.getDefaultCPSku(cpCatalogEntry);
 		<div class="card-body d-flex flex-column justify-content-between py-2">
 			<div class="cp-information">
 				<c:if test="<%= showSku %>">
-					<p class="card-subtitle" title="<%= (cpSku == null) ? StringPool.BLANK : cpSku.getSku() %>">
+					<p class="card-subtitle" title="<%= (cpSku == null) ? StringPool.BLANK : HtmlUtil.escapeAttribute(cpSku.getSku()) %>">
 						<span class="text-truncate-inline">
-							<span class="text-truncate"><%= (cpSku == null) ? StringPool.BLANK : cpSku.getSku() %></span>
+							<span class="text-truncate"><%= (cpSku == null) ? StringPool.BLANK : HtmlUtil.escape(cpSku.getSku()) %></span>
 						</span>
 					</p>
 				</c:if>
 
 				<c:if test="<%= showName %>">
-					<p class="card-title" title="<%= cpCatalogEntry.getName() %>">
+					<p class="card-title" title="<%= HtmlUtil.escapeAttribute(cpCatalogEntry.getName()) %>">
 						<a href="<%= productDetailURL %>">
 							<span class="text-truncate-inline">
-								<span class="text-truncate"><%= cpCatalogEntry.getName() %></span>
+								<span class="text-truncate"><%= HtmlUtil.escape(cpCatalogEntry.getName()) %></span>
 							</span>
 						</a>
 					</p>
@@ -101,7 +101,7 @@ CPSku cpSku = cpContentHelper.getDefaultCPSku(cpCatalogEntry);
 					<c:choose>
 						<c:when test="<%= (cpSku == null) || cpContentHelper.hasCPDefinitionOptionRels(cpCatalogEntry.getCPDefinitionId()) %>">
 							<div class="add-to-cart d-flex my-2 pt-5" id="<%= PortalUtil.generateRandomKey(request, "taglib") + StringPool.UNDERLINE %>add_to_cart">
-								<a class="btn btn-block btn-secondary" href="<%= productDetailURL %>" role="button" style="margin-top: 0.35rem;">
+								<a class="btn btn-block btn-secondary mt-2" href="<%= productDetailURL %>" role="button">
 									<liferay-ui:message key="view-all-variants" />
 								</a>
 							</div>

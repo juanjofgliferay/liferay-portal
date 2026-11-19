@@ -6,10 +6,13 @@
 package com.liferay.object.internal.action.executor;
 
 import com.liferay.dynamic.data.mapping.expression.DDMExpressionFactory;
+import com.liferay.object.action.executor.BaseObjectActionExecutor;
 import com.liferay.object.action.executor.ObjectActionExecutor;
+import com.liferay.object.action.util.ObjectActionThreadLocal;
 import com.liferay.object.constants.ObjectActionConstants;
 import com.liferay.object.constants.ObjectActionExecutorConstants;
 import com.liferay.object.entry.util.ObjectEntryThreadLocal;
+import com.liferay.object.internal.action.util.ObjectActionStatusUtil;
 import com.liferay.object.internal.action.util.ObjectEntryVariablesUtil;
 import com.liferay.object.model.ObjectDefinition;
 import com.liferay.object.model.ObjectField;
@@ -27,7 +30,6 @@ import com.liferay.object.system.SystemObjectDefinitionManagerRegistry;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.service.UserLocalService;
-import com.liferay.portal.kernel.transaction.TransactionCommitCallbackUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.SetUtil;
 import com.liferay.portal.kernel.util.UnicodeProperties;
@@ -46,10 +48,15 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(service = ObjectActionExecutor.class)
 public class UpdateObjectEntryObjectActionExecutorImpl
-	implements ObjectActionExecutor {
+	extends BaseObjectActionExecutor {
 
 	@Override
-	public void execute(
+	public String getKey() {
+		return ObjectActionExecutorConstants.KEY_UPDATE_OBJECT_ENTRY;
+	}
+
+	@Override
+	protected void doExecute(
 			long companyId, long objectActionId,
 			UnicodeProperties parametersUnicodeProperties,
 			JSONObject payloadJSONObject, long userId)
@@ -59,26 +66,17 @@ public class UpdateObjectEntryObjectActionExecutorImpl
 			_objectDefinitionLocalService.fetchObjectDefinition(
 				payloadJSONObject.getLong("objectDefinitionId"));
 
-		TransactionCommitCallbackUtil.registerCallback(
-			() -> {
-				_execute(
-					objectActionId, objectDefinition,
-					GetterUtil.getLong(payloadJSONObject.getLong("classPK")),
-					_userLocalService.getUser(userId),
-					_getValues(
-						objectDefinition, parametersUnicodeProperties,
-						ObjectEntryVariablesUtil.getVariables(
-							_dtoConverterRegistry, objectDefinition,
-							payloadJSONObject,
-							_systemObjectDefinitionManagerRegistry)));
+		ObjectActionThreadLocal.setSkipObjectActionExecution(false);
 
-				return null;
-			});
-	}
-
-	@Override
-	public String getKey() {
-		return ObjectActionExecutorConstants.KEY_UPDATE_OBJECT_ENTRY;
+		_execute(
+			objectActionId, objectDefinition,
+			GetterUtil.getLong(payloadJSONObject.getLong("classPK")),
+			_userLocalService.getUser(userId),
+			_getValues(
+				objectDefinition, parametersUnicodeProperties,
+				ObjectEntryVariablesUtil.getVariables(
+					_dtoConverterRegistry, objectDefinition, payloadJSONObject,
+					_systemObjectDefinitionManagerRegistry)));
 	}
 
 	private void _execute(
@@ -102,12 +100,14 @@ public class UpdateObjectEntryObjectActionExecutorImpl
 			ObjectEntryThreadLocal.isSkipObjectEntryResourcePermission();
 
 		try {
+			ObjectActionThreadLocal.setClearObjectEntryIdsMap(false);
 			ObjectEntryThreadLocal.setSkipObjectEntryResourcePermission(true);
 			ObjectEntryThreadLocal.setSkipReadOnlyObjectFieldsValidation(true);
 
 			DefaultObjectEntryManager defaultObjectEntryManager =
 				DefaultObjectEntryManagerProvider.provide(
 					_objectEntryManagerRegistry.getObjectEntryManager(
+						objectDefinition.getCompanyId(),
 						objectDefinition.getStorageType()));
 
 			defaultObjectEntryManager.partialUpdateObjectEntry(
@@ -117,33 +117,39 @@ public class UpdateObjectEntryObjectActionExecutorImpl
 				objectDefinition, primaryKey,
 				new ObjectEntry() {
 					{
-						properties = values;
-
+						setProperties(() -> values);
 						setStatus(
-							() -> {
-								com.liferay.object.model.ObjectEntry
-									serviceBuilderObjectEntry =
-										_objectEntryService.getObjectEntry(
-											primaryKey);
+							() -> new Status() {
+								{
+									setCode(
+										() -> {
+											com.liferay.object.model.ObjectEntry
+												serviceBuilderObjectEntry =
+													_objectEntryService.
+														getObjectEntry(
+															primaryKey);
 
-								return new Status() {
-									{
-										code =
-											serviceBuilderObjectEntry.
+											return serviceBuilderObjectEntry.
 												getStatus();
-									}
-								};
+										});
+								}
 							});
 					}
 				});
 		}
 		catch (Exception exception) {
-			_objectActionLocalService.updateStatus(
-				objectActionId, ObjectActionConstants.STATUS_FAILED);
+
+			// The write happens after the commit, so the rethrow below cannot
+			// undo it
+
+			ObjectActionStatusUtil.updateStatusAfterCommit(
+				_objectActionLocalService, objectActionId,
+				ObjectActionConstants.STATUS_FAILED);
 
 			throw exception;
 		}
 		finally {
+			ObjectActionThreadLocal.setClearObjectEntryIdsMap(true);
 			ObjectEntryThreadLocal.setSkipObjectEntryResourcePermission(
 				skipObjectEntryResourcePermission);
 			ObjectEntryThreadLocal.setSkipReadOnlyObjectFieldsValidation(false);
@@ -157,7 +163,12 @@ public class UpdateObjectEntryObjectActionExecutorImpl
 		throws Exception {
 
 		Map<String, Object> values = ObjectEntryVariablesUtil.getValues(
-			_ddmExpressionFactory, parametersUnicodeProperties, variables);
+			_ddmExpressionFactory, objectDefinition,
+			parametersUnicodeProperties, variables);
+
+		if (!objectDefinition.isUnmodifiableSystemObject()) {
+			return values;
+		}
 
 		Map<String, Object> baseModel = (Map<String, Object>)variables.get(
 			"baseModel");

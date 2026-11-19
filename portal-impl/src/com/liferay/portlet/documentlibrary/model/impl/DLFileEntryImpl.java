@@ -5,12 +5,14 @@
 
 package com.liferay.portlet.documentlibrary.model.impl;
 
+import com.liferay.document.library.kernel.exception.NoSuchFileVersionException;
 import com.liferay.document.library.kernel.model.DLFileEntry;
 import com.liferay.document.library.kernel.model.DLFileEntryConstants;
 import com.liferay.document.library.kernel.model.DLFileEntryMetadata;
 import com.liferay.document.library.kernel.model.DLFileEntryType;
 import com.liferay.document.library.kernel.model.DLFileShortcut;
 import com.liferay.document.library.kernel.model.DLFileVersion;
+import com.liferay.document.library.kernel.model.DLFileVersionTable;
 import com.liferay.document.library.kernel.model.DLFolder;
 import com.liferay.document.library.kernel.model.DLFolderConstants;
 import com.liferay.document.library.kernel.service.DLFileEntryLocalServiceUtil;
@@ -18,6 +20,7 @@ import com.liferay.document.library.kernel.service.DLFileEntryMetadataLocalServi
 import com.liferay.document.library.kernel.service.DLFileEntryServiceUtil;
 import com.liferay.document.library.kernel.service.DLFileEntryTypeLocalServiceUtil;
 import com.liferay.document.library.kernel.service.DLFileShortcutLocalServiceUtil;
+import com.liferay.document.library.kernel.service.DLFileVersionLocalService;
 import com.liferay.document.library.kernel.service.DLFileVersionLocalServiceUtil;
 import com.liferay.document.library.kernel.service.DLFileVersionServiceUtil;
 import com.liferay.document.library.kernel.service.DLFolderLocalServiceUtil;
@@ -27,6 +30,7 @@ import com.liferay.dynamic.data.mapping.kernel.DDMStructure;
 import com.liferay.dynamic.data.mapping.kernel.StorageEngineManagerUtil;
 import com.liferay.expando.kernel.model.ExpandoBridge;
 import com.liferay.exportimport.kernel.lar.StagedModelType;
+import com.liferay.petra.sql.dsl.DSLQueryFactoryUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -34,17 +38,17 @@ import com.liferay.portal.kernel.lock.Lock;
 import com.liferay.portal.kernel.lock.LockManagerUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.model.Repository;
+import com.liferay.portal.kernel.search.ReindexCacheThreadLocal;
 import com.liferay.portal.kernel.security.auth.PrincipalThreadLocal;
 import com.liferay.portal.kernel.service.ClassNameLocalServiceUtil;
 import com.liferay.portal.kernel.service.RepositoryLocalServiceUtil;
 import com.liferay.portal.kernel.util.FileUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.UnicodeProperties;
+import com.liferay.portal.kernel.util.UnicodePropertiesBuilder;
 import com.liferay.portal.kernel.view.count.ViewCountManagerUtil;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
-import java.io.IOException;
 import java.io.InputStream;
 
 import java.util.HashMap;
@@ -81,12 +85,6 @@ public class DLFileEntryImpl extends DLFileEntryBaseImpl {
 	}
 
 	@Override
-	public long getDataRepositoryId() {
-		return DLFolderConstants.getDataRepositoryId(
-			getGroupId(), getFolderId());
-	}
-
-	@Override
 	public Map<String, DDMFormValues> getDDMFormValuesMap(long fileVersionId)
 		throws PortalException {
 
@@ -110,12 +108,14 @@ public class DLFileEntryImpl extends DLFileEntryBaseImpl {
 				DLFileEntryMetadataLocalServiceUtil.fetchFileEntryMetadata(
 					ddmStructure.getStructureId(), fileVersionId);
 
-			if (dlFileEntryMetadata != null) {
-				ddmFormValuesMap.put(
-					ddmStructure.getStructureKey(),
-					StorageEngineManagerUtil.getDDMFormValues(
-						dlFileEntryMetadata.getDDMStorageId()));
+			if (dlFileEntryMetadata == null) {
+				continue;
 			}
+
+			ddmFormValuesMap.put(
+				ddmStructure.getStructureKey(),
+				StorageEngineManagerUtil.getDDMFormValues(
+					dlFileEntryMetadata.getDDMStorageId()));
 		}
 
 		return ddmFormValuesMap;
@@ -125,6 +125,12 @@ public class DLFileEntryImpl extends DLFileEntryBaseImpl {
 	public DLFileEntryType getDLFileEntryType() throws PortalException {
 		return DLFileEntryTypeLocalServiceUtil.getDLFileEntryType(
 			getFileEntryTypeId());
+	}
+
+	@Override
+	public long getDataRepositoryId() {
+		return DLFolderConstants.getDataRepositoryId(
+			getGroupId(), getFolderId());
 	}
 
 	@Override
@@ -155,14 +161,11 @@ public class DLFileEntryImpl extends DLFileEntryBaseImpl {
 	@Override
 	public UnicodeProperties getExtraSettingsProperties() {
 		if (_extraSettingsUnicodeProperties == null) {
-			_extraSettingsUnicodeProperties = new UnicodeProperties(true);
-
-			try {
-				_extraSettingsUnicodeProperties.load(super.getExtraSettings());
-			}
-			catch (IOException ioException) {
-				_log.error(ioException);
-			}
+			_extraSettingsUnicodeProperties = UnicodePropertiesBuilder.create(
+				true
+			).load(
+				super.getExtraSettings()
+			).build();
 		}
 
 		return _extraSettingsUnicodeProperties;
@@ -181,8 +184,71 @@ public class DLFileEntryImpl extends DLFileEntryBaseImpl {
 
 	@Override
 	public DLFileVersion getFileVersion(String version) throws PortalException {
-		return DLFileVersionLocalServiceUtil.getFileVersion(
-			getFileEntryId(), version);
+		Map<String, DLFileVersion> dlFileVersions =
+			ReindexCacheThreadLocal.getGlobalReindexCache(
+				() -> {
+					DLFileVersionLocalService dlFileVersionLocalService =
+						DLFileVersionLocalServiceUtil.getService();
+
+					return dlFileVersionLocalService.dslQueryCount(
+						DSLQueryFactoryUtil.count(
+						).from(
+							DLFileVersionTable.INSTANCE
+						),
+						false);
+				},
+				DLFileEntryImpl.class.getName(),
+				count -> {
+					Map<String, DLFileVersion> localDLFileVersions =
+						new HashMap<>();
+
+					if (count == 0) {
+						return localDLFileVersions;
+					}
+
+					DLFileVersionLocalService dlFileVersionLocalService =
+						DLFileVersionLocalServiceUtil.getService();
+
+					for (DLFileVersion dlFileVersion :
+							dlFileVersionLocalService.
+								<List<DLFileVersion>>dslQuery(
+									DSLQueryFactoryUtil.select(
+										DLFileVersionTable.INSTANCE
+									).from(
+										DLFileVersionTable.INSTANCE
+									),
+									false)) {
+
+						localDLFileVersions.put(
+							dlFileVersion.getFileEntryId() + StringPool.POUND +
+								dlFileVersion.getVersion(),
+							dlFileVersion);
+					}
+
+					return localDLFileVersions;
+				});
+
+		if (dlFileVersions == null) {
+			return DLFileVersionLocalServiceUtil.getFileVersion(
+				getFileEntryId(), version);
+		}
+
+		DLFileVersion dlFileVersion = dlFileVersions.get(
+			getFileEntryId() + StringPool.POUND + version);
+
+		if (dlFileVersion == null) {
+			StringBundler sb = new StringBundler(5);
+
+			sb.append("No DLFileVersion exists with the key {fileEntryId=");
+			sb.append(getFileEntryId());
+			sb.append(", version=");
+			sb.append(version);
+			sb.append("}");
+
+			throw new NoSuchFileVersionException(sb.toString());
+		}
+
+		return dlFileVersion;
 	}
 
 	@Override
@@ -329,13 +395,7 @@ public class DLFileEntryImpl extends DLFileEntryBaseImpl {
 				return false;
 			}
 
-			Repository repository = RepositoryLocalServiceUtil.getRepository(
-				repositoryId);
-
-			DLFolder dlFolder = DLFolderLocalServiceUtil.getFolder(
-				repository.getDlFolderId());
-
-			return dlFolder.isHidden();
+			return RepositoryLocalServiceUtil.isHidden(repositoryId);
 		}
 		catch (PortalException portalException) {
 			if (_log.isWarnEnabled()) {

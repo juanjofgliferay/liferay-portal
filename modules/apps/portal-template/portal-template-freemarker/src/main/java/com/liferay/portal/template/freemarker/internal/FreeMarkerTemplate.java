@@ -5,6 +5,7 @@
 
 package com.liferay.portal.template.freemarker.internal;
 
+import com.liferay.petra.function.UnsafeSupplierValue;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.template.StringTemplateResource;
@@ -16,6 +17,7 @@ import com.liferay.portal.template.TemplateResourceThreadLocal;
 import com.liferay.portal.template.engine.BaseTemplate;
 import com.liferay.portal.template.engine.TemplateContextHelper;
 
+import freemarker.core.Environment;
 import freemarker.core.ParseException;
 
 import freemarker.ext.beans.BeansWrapper;
@@ -35,14 +37,14 @@ import freemarker.template.TemplateModelWithAPISupport;
 import freemarker.template.WrappingTemplateModel;
 import freemarker.template.utility.ObjectWrapperWithAPISupport;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.Serializable;
 import java.io.Writer;
 
 import java.util.HashMap;
 import java.util.Map;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * @author Mika Koivisto
@@ -76,6 +78,10 @@ public class FreeMarkerTemplate extends BaseTemplate {
 
 		_freeMarkerManager.addTaglibSupport(
 			context, httpServletRequest, httpServletResponse, _beansWrapper);
+
+		setTaglibContext(
+			_freeMarkerManager.getContributedTemplateModels(
+				httpServletRequest.getServletContext(), _beansWrapper));
 	}
 
 	@Override
@@ -143,11 +149,15 @@ public class FreeMarkerTemplate extends BaseTemplate {
 						getTemplateResourceUUID(templateResource),
 						TemplateConstants.DEFAUT_ENCODING);
 
-					template.setObjectWrapper(_beansWrapper);
+					Environment environment =
+						template.createProcessingEnvironment(
+							new CachableDefaultMapAdapter(
+								context, _beansWrapper),
+							writer);
 
-					template.process(
-						new CachableDefaultMapAdapter(context, _beansWrapper),
-						writer);
+					environment.setObjectWrapper(_beansWrapper);
+
+					environment.process();
 				}
 				finally {
 					TemplateResourceThreadLocal.setTemplateResource(
@@ -208,6 +218,13 @@ public class FreeMarkerTemplate extends BaseTemplate {
 
 			Object value = _map.get(key);
 
+			if (value instanceof UnsafeSupplierValue) {
+				UnsafeSupplierValue<?, RuntimeException> unsafeSupplierValue =
+					(UnsafeSupplierValue<?, RuntimeException>)value;
+
+				value = unsafeSupplierValue.getValue();
+			}
+
 			if (value == null) {
 				_wrappedValueMap.put(key, _NULL_TEMPLATE_MODEL);
 
@@ -222,17 +239,17 @@ public class FreeMarkerTemplate extends BaseTemplate {
 		}
 
 		@Override
-		@SuppressWarnings("rawtypes")
-		public Object getAdaptedObject(Class hint) {
-			return _map;
-		}
-
-		@Override
 		public TemplateModel getAPI() throws TemplateModelException {
 			ObjectWrapperWithAPISupport objectWrapperWithAPISupport =
 				(ObjectWrapperWithAPISupport)_objectWrapper;
 
 			return objectWrapperWithAPISupport.wrapAsAPI(_map);
+		}
+
+		@Override
+		@SuppressWarnings("rawtypes")
+		public Object getAdaptedObject(Class hint) {
+			return _map;
 		}
 
 		@Override

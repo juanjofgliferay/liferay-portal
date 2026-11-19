@@ -7,13 +7,12 @@ package com.liferay.commerce.internal.service;
 
 import com.liferay.account.model.AccountEntry;
 import com.liferay.account.model.AccountEntryTable;
-import com.liferay.account.service.AccountEntryLocalService;
 import com.liferay.account.service.AccountEntryLocalServiceWrapper;
-import com.liferay.commerce.context.CommerceContextThreadLocal;
-import com.liferay.commerce.context.CommerceGroupThreadLocal;
 import com.liferay.commerce.internal.util.AccountEntryUtil;
 import com.liferay.commerce.product.constants.CommerceChannelAccountEntryRelConstants;
 import com.liferay.commerce.product.model.CommerceChannelAccountEntryRelTable;
+import com.liferay.commerce.util.CommerceContextThreadLocal;
+import com.liferay.commerce.util.CommerceGroupThreadLocal;
 import com.liferay.petra.sql.dsl.DSLQueryFactoryUtil;
 import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.petra.sql.dsl.query.JoinStep;
@@ -153,9 +152,6 @@ public class CommerceChannelAccountEntryRelAccountEntryLocalServiceWrapper
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		CommerceChannelAccountEntryRelAccountEntryLocalServiceWrapper.class);
-
-	@Reference
-	private AccountEntryLocalService _accountEntryLocalService;
 
 	@Reference
 	private ClassNameLocalService _classNameLocalService;

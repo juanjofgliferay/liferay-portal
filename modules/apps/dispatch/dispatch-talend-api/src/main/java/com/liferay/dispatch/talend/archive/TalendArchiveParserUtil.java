@@ -85,9 +85,10 @@ public class TalendArchiveParserUtil {
 			if (talendArchive.hasJVMOptions()) {
 				String newJVMOptions = talendArchive.getJVMOptions();
 
-				if (unicodeProperties.containsKey("JAVA_OPTS")) {
-					newJVMOptions = getJVMOptions(
-						newJVMOptions, unicodeProperties.get("JAVA_OPTS"));
+				String jvmOptions = unicodeProperties.get("JAVA_OPTS");
+
+				if (jvmOptions != null) {
+					newJVMOptions = getJVMOptions(newJVMOptions, jvmOptions);
 				}
 
 				unicodeProperties.put("JAVA_OPTS", newJVMOptions);
@@ -138,9 +139,11 @@ public class TalendArchiveParserUtil {
 				token = token.substring(0, token.length() - 1);
 			}
 
-			if (token.startsWith("-X")) {
-				jvmOptionsList.add(token);
+			if (!token.startsWith("-X")) {
+				continue;
 			}
+
+			jvmOptionsList.add(token);
 		}
 	}
 
@@ -160,13 +163,47 @@ public class TalendArchiveParserUtil {
 
 				String name = zipEntry.getName();
 
-				if (name.endsWith(contextPropertiesSuffix)) {
-					properties.load(zipFile.getInputStream(zipEntry));
+				if (!name.endsWith(contextPropertiesSuffix)) {
+					continue;
 				}
+
+				properties.load(zipFile.getInputStream(zipEntry));
 			}
 		}
 
 		return properties;
+	}
+
+	private static List<String> _getJVMOptionsList(
+			File jobDirectory, String jobName)
+		throws IOException {
+
+		List<String> jvmOptionsList = new ArrayList<>();
+
+		Path path = jobDirectory.toPath();
+
+		List<String> jobScriptPathStrings = _getJobScriptPathStrings(
+			path.resolve(jobName));
+
+		for (String jobScriptPathString : jobScriptPathStrings) {
+			try (BufferedReader bufferedReader = new BufferedReader(
+					new FileReader(jobScriptPathString))) {
+
+				String line = bufferedReader.readLine();
+
+				while (line != null) {
+					_addJVMOptionsList(jvmOptionsList, line);
+
+					line = bufferedReader.readLine();
+				}
+
+				if (!jvmOptionsList.isEmpty()) {
+					break;
+				}
+			}
+		}
+
+		return jvmOptionsList;
 	}
 
 	private static File _getJobDirectory(InputStream jobArchiveInputStream)
@@ -308,38 +345,6 @@ public class TalendArchiveParserUtil {
 		pathStrings.sort(null);
 
 		return pathStrings;
-	}
-
-	private static List<String> _getJVMOptionsList(
-			File jobDirectory, String jobName)
-		throws IOException {
-
-		Path path = jobDirectory.toPath();
-
-		List<String> jobScriptPathStrings = _getJobScriptPathStrings(
-			path.resolve(jobName));
-
-		List<String> jvmOptionsList = new ArrayList<>();
-
-		for (String jobScriptPathString : jobScriptPathStrings) {
-			try (BufferedReader bufferedReader = new BufferedReader(
-					new FileReader(jobScriptPathString))) {
-
-				String line = bufferedReader.readLine();
-
-				while (line != null) {
-					_addJVMOptionsList(jvmOptionsList, line);
-
-					line = bufferedReader.readLine();
-				}
-
-				if (!jvmOptionsList.isEmpty()) {
-					break;
-				}
-			}
-		}
-
-		return jvmOptionsList;
 	}
 
 	private static List<String> _getSubjobEntries(

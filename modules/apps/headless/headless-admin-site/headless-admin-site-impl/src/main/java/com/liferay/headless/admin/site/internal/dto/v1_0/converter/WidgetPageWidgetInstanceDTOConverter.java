@@ -1,0 +1,378 @@
+/**
+ * SPDX-FileCopyrightText: (c) 2025 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
+ */
+
+package com.liferay.headless.admin.site.internal.dto.v1_0.converter;
+
+import com.liferay.headless.admin.site.dto.v1_0.AdvancedStylingConfig;
+import com.liferay.headless.admin.site.dto.v1_0.BasicWidgetPageWidgetInstance;
+import com.liferay.headless.admin.site.dto.v1_0.GeneralConfig;
+import com.liferay.headless.admin.site.dto.v1_0.NestedApplicationsWidgetPageWidgetInstance;
+import com.liferay.headless.admin.site.dto.v1_0.NestedWidgetSection;
+import com.liferay.headless.admin.site.dto.v1_0.WidgetLookAndFeelConfig;
+import com.liferay.headless.admin.site.dto.v1_0.WidgetPageWidgetInstance;
+import com.liferay.headless.admin.site.dto.v1_0.WidgetPermission;
+import com.liferay.headless.admin.site.internal.resource.v1_0.util.LayoutUtil;
+import com.liferay.layout.exporter.PortletPermissionsExporter;
+import com.liferay.layout.exporter.PortletPreferencesPortletConfigurationExporter;
+import com.liferay.petra.function.transform.TransformUtil;
+import com.liferay.portal.kernel.json.JSONFactory;
+import com.liferay.portal.kernel.json.JSONObject;
+import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.model.Layout;
+import com.liferay.portal.kernel.model.LayoutTypePortlet;
+import com.liferay.portal.kernel.portlet.PortletIdCodec;
+import com.liferay.portal.kernel.portlet.PortletPreferencesFactory;
+import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.ListUtil;
+import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.MapUtil;
+import com.liferay.portal.kernel.util.PortletKeys;
+import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.UnicodeProperties;
+import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.vulcan.dto.converter.DTOConverter;
+import com.liferay.portal.vulcan.dto.converter.DTOConverterContext;
+import com.liferay.portal.vulcan.util.LocalizedMapUtil;
+
+import jakarta.portlet.PortletPreferences;
+
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
+
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
+
+/**
+ * @author Lourdes Fernández Besada
+ */
+@Component(service = DTOConverter.class)
+public class WidgetPageWidgetInstanceDTOConverter
+	implements DTOConverter<Layout, WidgetPageWidgetInstance> {
+
+	@Override
+	public String getContentType() {
+		return WidgetPageWidgetInstance.class.getSimpleName();
+	}
+
+	@Override
+	public WidgetPageWidgetInstance toDTO(
+			DTOConverterContext dtoConverterContext, Layout layout)
+		throws Exception {
+
+		String portletId = GetterUtil.getString(
+			dtoConverterContext.getAttribute("portletId"), null);
+
+		if ((portletId == null) || !layout.isTypePortlet()) {
+			return null;
+		}
+
+		LayoutTypePortlet layoutTypePortlet =
+			(LayoutTypePortlet)layout.getLayoutType();
+
+		if (!layoutTypePortlet.hasPortletId(portletId)) {
+			return null;
+		}
+
+		WidgetPageWidgetInstance widgetPageWidgetInstance = null;
+
+		if (portletId.contains(PortletKeys.NESTED_PORTLETS)) {
+			NestedApplicationsWidgetPageWidgetInstance
+				nestedApplicationsWidgetPageWidgetInstance =
+					new NestedApplicationsWidgetPageWidgetInstance();
+
+			nestedApplicationsWidgetPageWidgetInstance.setNestedWidgetSections(
+				() -> _getNestedWidgetSections(
+					dtoConverterContext, portletId, layout));
+
+			widgetPageWidgetInstance =
+				nestedApplicationsWidgetPageWidgetInstance;
+
+			widgetPageWidgetInstance.setType(
+				() ->
+					WidgetPageWidgetInstance.Type.
+						NESTED_APPLICATIONS_WIDGET_PAGE_WIDGET_INSTANCE);
+		}
+		else {
+			widgetPageWidgetInstance = new BasicWidgetPageWidgetInstance();
+
+			widgetPageWidgetInstance.setType(
+				() ->
+					WidgetPageWidgetInstance.Type.
+						BASIC_WIDGET_PAGE_WIDGET_INSTANCE);
+		}
+
+		widgetPageWidgetInstance.setExternalReferenceCode(() -> portletId);
+		widgetPageWidgetInstance.setParentSectionId(
+			() -> LayoutUtil.getParentSectionId(layout, portletId));
+		widgetPageWidgetInstance.setPosition(
+			() -> LayoutUtil.getPosition(layout, portletId));
+		widgetPageWidgetInstance.setWidgetConfig(
+			() -> {
+				Map<String, Object> portletConfigurationMap =
+					_portletPreferencesPortletConfigurationExporter.
+						getPortletConfiguration(layout.getPlid(), portletId);
+
+				if (MapUtil.isEmpty(portletConfigurationMap)) {
+					return null;
+				}
+
+				Map<String, Object> widgetConfig = new HashMap<>();
+
+				for (Map.Entry<String, Object> entry :
+						portletConfigurationMap.entrySet()) {
+
+					String key = entry.getKey();
+
+					if (_excludePreferencesNames.contains(key) ||
+						key.startsWith("portletSetupTitle_")) {
+
+						continue;
+					}
+
+					widgetConfig.put(key, entry.getValue());
+				}
+
+				if (MapUtil.isEmpty(widgetConfig)) {
+					return null;
+				}
+
+				return widgetConfig;
+			});
+		widgetPageWidgetInstance.setWidgetInstanceId(
+			() -> PortletIdCodec.decodeInstanceId(portletId));
+		widgetPageWidgetInstance.setWidgetLookAndFeelConfig(
+			() -> _getWidgetLookAndFeelConfig(layout, portletId));
+		widgetPageWidgetInstance.setWidgetName(
+			() -> PortletIdCodec.decodePortletName(portletId));
+		widgetPageWidgetInstance.setWidgetPermissions(
+			() -> {
+				Map<String, String[]> permissionsMap =
+					_portletPermissionsExporter.getPortletPermissions(
+						layout.getPlid(), portletId);
+
+				if (MapUtil.isEmpty(permissionsMap)) {
+					return null;
+				}
+
+				return TransformUtil.transformToArray(
+					permissionsMap.entrySet(),
+					entry -> new WidgetPermission() {
+						{
+							setActionIds(entry::getValue);
+							setRoleName(entry::getKey);
+						}
+					},
+					WidgetPermission.class);
+			});
+
+		return widgetPageWidgetInstance;
+	}
+
+	@Override
+	public WidgetPageWidgetInstance toDTO(Layout layout) {
+		return null;
+	}
+
+	private AdvancedStylingConfig _getAdvancedStylingConfig(
+		PortletPreferences portletPreferences) {
+
+		JSONObject jsonObject = _jsonFactory.safeCreateJSONObject(
+			portletPreferences.getValue("portletSetupCss", null));
+
+		if (jsonObject == null) {
+			return null;
+		}
+
+		JSONObject advancedDataJSONObject = jsonObject.getJSONObject(
+			"advancedData");
+
+		if (advancedDataJSONObject == null) {
+			return null;
+		}
+
+		String customCSS = advancedDataJSONObject.getString("customCSS");
+		String customCSSClassName = advancedDataJSONObject.getString(
+			"customCSSClassName");
+
+		if (Validator.isNull(customCSS) &&
+			Validator.isNull(customCSSClassName)) {
+
+			return null;
+		}
+
+		AdvancedStylingConfig advancedStylingConfig =
+			new AdvancedStylingConfig();
+
+		advancedStylingConfig.setCustomCSS(() -> customCSS);
+		advancedStylingConfig.setCustomCSSClassNames(() -> customCSSClassName);
+
+		return advancedStylingConfig;
+	}
+
+	private Map<String, String> _getCustomTitleMap(
+		long groupId, PortletPreferences portletPreferences) {
+
+		Map<Locale, String> map = new HashMap<>();
+
+		for (Locale locale : LanguageUtil.getAvailableLocales(groupId)) {
+			String portletSetupTitle = portletPreferences.getValue(
+				"portletSetupTitle_" + LocaleUtil.toLanguageId(locale), null);
+
+			if (Validator.isNull(portletSetupTitle)) {
+				continue;
+			}
+
+			map.put(locale, portletSetupTitle);
+		}
+
+		if (MapUtil.isEmpty(map)) {
+			return null;
+		}
+
+		return LocalizedMapUtil.getI18nMap(map);
+	}
+
+	private NestedWidgetSection[] _getNestedWidgetSections(
+		DTOConverterContext dtoConverterContext, String portletId,
+		Layout layout) {
+
+		if (!portletId.contains(PortletKeys.NESTED_PORTLETS)) {
+			return null;
+		}
+
+		Set<String> portletNestedColumnIds = new TreeSet<>();
+
+		UnicodeProperties unicodeProperties =
+			layout.getTypeSettingsProperties();
+
+		for (String key : unicodeProperties.keySet()) {
+			if (!key.startsWith("_" + portletId)) {
+				continue;
+			}
+
+			portletNestedColumnIds.add(key);
+		}
+
+		return TransformUtil.transformToArray(
+			portletNestedColumnIds,
+			portletNestedColumnId -> new NestedWidgetSection() {
+				{
+					setId(() -> portletNestedColumnId);
+					setWidgetPageWidgetInstances(
+						() -> _getWidgetPageWidgetInstances(
+							portletNestedColumnId, dtoConverterContext,
+							layout));
+				}
+			},
+			NestedWidgetSection.class);
+	}
+
+	private WidgetLookAndFeelConfig _getWidgetLookAndFeelConfig(
+		Layout layout, String portletId) {
+
+		WidgetLookAndFeelConfig widgetLookAndFeelConfig =
+			new WidgetLookAndFeelConfig();
+
+		GeneralConfig generalConfig = new GeneralConfig();
+
+		PortletPreferences portletPreferences =
+			_portletPreferencesFactory.getStrictLayoutPortletSetup(
+				layout, portletId);
+
+		String portletSetupPortletDecoratorId = GetterUtil.getString(
+			portletPreferences.getValue("portletSetupPortletDecoratorId", null),
+			null);
+
+		GeneralConfig.ApplicationDecorator applicationDecorator =
+			_toApplicationDecorator(portletSetupPortletDecoratorId);
+
+		generalConfig.setApplicationDecorator(() -> applicationDecorator);
+		generalConfig.setCustomApplicationDecorator(
+			() -> {
+				if (applicationDecorator != null) {
+					return null;
+				}
+
+				return portletSetupPortletDecoratorId;
+			});
+
+		generalConfig.setCustomTitle_i18n(
+			() -> _getCustomTitleMap(layout.getGroupId(), portletPreferences));
+		generalConfig.setUseCustomTitle(
+			() -> {
+				Object value = portletPreferences.getValue(
+					"portletSetupUseCustomTitle", null);
+
+				if (value == null) {
+					return null;
+				}
+
+				return GetterUtil.getBoolean(value);
+			});
+
+		widgetLookAndFeelConfig.setAdvancedStylingConfig(
+			() -> _getAdvancedStylingConfig(portletPreferences));
+		widgetLookAndFeelConfig.setGeneralConfig(() -> generalConfig);
+
+		return widgetLookAndFeelConfig;
+	}
+
+	private WidgetPageWidgetInstance[] _getWidgetPageWidgetInstances(
+		String column, DTOConverterContext dtoConverterContext, Layout layout) {
+
+		return TransformUtil.transformToArray(
+			com.liferay.petra.string.StringUtil.split(
+				layout.getTypeSettingsProperty(column)),
+			portletId -> {
+				dtoConverterContext.setAttribute("portletId", portletId);
+
+				return toDTO(dtoConverterContext, layout);
+			},
+			WidgetPageWidgetInstance.class);
+	}
+
+	private GeneralConfig.ApplicationDecorator _toApplicationDecorator(
+		String value) {
+
+		if (value == null) {
+			return null;
+		}
+
+		for (GeneralConfig.ApplicationDecorator applicationDecorator :
+				GeneralConfig.ApplicationDecorator.values()) {
+
+			if (StringUtil.equalsIgnoreCase(
+					applicationDecorator.getValue(), value)) {
+
+				return applicationDecorator;
+			}
+		}
+
+		return null;
+	}
+
+	private static final Collection<String> _excludePreferencesNames =
+		ListUtil.fromArray(
+			"portletSetupUseCustomTitle", "portletSetupPortletDecoratorId",
+			"portletSetupCss");
+
+	@Reference
+	private JSONFactory _jsonFactory;
+
+	@Reference
+	private PortletPermissionsExporter _portletPermissionsExporter;
+
+	@Reference
+	private PortletPreferencesFactory _portletPreferencesFactory;
+
+	@Reference
+	private PortletPreferencesPortletConfigurationExporter
+		_portletPreferencesPortletConfigurationExporter;
+
+}

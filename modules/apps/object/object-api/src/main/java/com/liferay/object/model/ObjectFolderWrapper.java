@@ -45,6 +45,7 @@ public class ObjectFolderWrapper
 		attributes.put("modifiedDate", getModifiedDate());
 		attributes.put("label", getLabel());
 		attributes.put("name", getName());
+		attributes.put("status", getStatus());
 
 		return attributes;
 	}
@@ -116,6 +117,12 @@ public class ObjectFolderWrapper
 
 		if (name != null) {
 			setName(name);
+		}
+
+		Integer status = (Integer)attributes.get("status");
+
+		if (status != null) {
+			setStatus(status);
 		}
 	}
 
@@ -291,6 +298,16 @@ public class ObjectFolderWrapper
 	}
 
 	/**
+	 * Returns the status of this object folder.
+	 *
+	 * @return the status of this object folder
+	 */
+	@Override
+	public int getStatus() {
+		return model.getStatus();
+	}
+
+	/**
 	 * Returns the user ID of this object folder.
 	 *
 	 * @return the user ID of this object folder
@@ -331,8 +348,8 @@ public class ObjectFolderWrapper
 	}
 
 	@Override
-	public boolean isUncategorized() {
-		return model.isUncategorized();
+	public boolean isDefault() {
+		return model.isDefault();
 	}
 
 	@Override
@@ -500,6 +517,16 @@ public class ObjectFolderWrapper
 	}
 
 	/**
+	 * Sets the status of this object folder.
+	 *
+	 * @param status the status of this object folder
+	 */
+	@Override
+	public void setStatus(int status) {
+		model.setStatus(status);
+	}
+
+	/**
 	 * Sets the user ID of this object folder.
 	 *
 	 * @param userId the user ID of this object folder
@@ -555,3 +582,4 @@ public class ObjectFolderWrapper
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:350678910

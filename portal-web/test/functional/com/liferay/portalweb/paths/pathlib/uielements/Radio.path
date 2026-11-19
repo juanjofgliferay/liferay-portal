@@ -16,6 +16,11 @@
 	<td></td>
 </tr>
 <tr>
+	<td>ANY_CHECKED</td>
+	<td>//label[contains(.,'${radioLabel}')]/input[@type='radio' and @checked]</td>
+	<td></td>
+</tr>
+<tr>
 	<td>APPEND</td>
 	<td>//label[contains(.,'Append')]/input</td>
 	<td></td>
@@ -63,6 +68,16 @@
 <tr>
 	<td>CUSTOM_ABSTRACT</td>
 	<td>//label[contains(.,'Custom Abstract')]/input[contains(@id,'customAbstract')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>DEFAULT_URL</td>
+	<td>//label[contains(.,'Default')]/input[@type='radio']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>DEFAULT_URL_DISABLED</td>
+	<td>//label[contains(.,'Default')]/input[@type='radio' and @disabled]</td>
 	<td></td>
 </tr>
 <tr>

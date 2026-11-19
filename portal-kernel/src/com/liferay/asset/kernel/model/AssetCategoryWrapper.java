@@ -53,7 +53,9 @@ public class AssetCategoryWrapper
 		attributes.put("title", getTitle());
 		attributes.put("description", getDescription());
 		attributes.put("vocabularyId", getVocabularyId());
+		attributes.put("system", isSystem());
 		attributes.put("lastPublishDate", getLastPublishDate());
+		attributes.put("status", getStatus());
 
 		return attributes;
 	}
@@ -163,10 +165,22 @@ public class AssetCategoryWrapper
 			setVocabularyId(vocabularyId);
 		}
 
+		Boolean system = (Boolean)attributes.get("system");
+
+		if (system != null) {
+			setSystem(system);
+		}
+
 		Date lastPublishDate = (Date)attributes.get("lastPublishDate");
 
 		if (lastPublishDate != null) {
 			setLastPublishDate(lastPublishDate);
+		}
+
+		Integer status = (Integer)attributes.get("status");
+
+		if (status != null) {
+			setStatus(status);
 		}
 	}
 
@@ -415,6 +429,26 @@ public class AssetCategoryWrapper
 	}
 
 	/**
+	 * Returns the status of this asset category.
+	 *
+	 * @return the status of this asset category
+	 */
+	@Override
+	public int getStatus() {
+		return model.getStatus();
+	}
+
+	/**
+	 * Returns the system of this asset category.
+	 *
+	 * @return the system of this asset category
+	 */
+	@Override
+	public boolean getSystem() {
+		return model.getSystem();
+	}
+
+	/**
 	 * Returns the title of this asset category.
 	 *
 	 * @return the title of this asset category
@@ -553,6 +587,16 @@ public class AssetCategoryWrapper
 	@Override
 	public boolean isRootCategory() {
 		return model.isRootCategory();
+	}
+
+	/**
+	 * Returns <code>true</code> if this asset category is system.
+	 *
+	 * @return <code>true</code> if this asset category is system; <code>false</code> otherwise
+	 */
+	@Override
+	public boolean isSystem() {
+		return model.isSystem();
 	}
 
 	@Override
@@ -763,6 +807,26 @@ public class AssetCategoryWrapper
 	}
 
 	/**
+	 * Sets the status of this asset category.
+	 *
+	 * @param status the status of this asset category
+	 */
+	@Override
+	public void setStatus(int status) {
+		model.setStatus(status);
+	}
+
+	/**
+	 * Sets whether this asset category is system.
+	 *
+	 * @param system the system of this asset category
+	 */
+	@Override
+	public void setSystem(boolean system) {
+		model.setSystem(system);
+	}
+
+	/**
 	 * Sets the title of this asset category.
 	 *
 	 * @param title the title of this asset category
@@ -921,3 +985,4 @@ public class AssetCategoryWrapper
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1786975427

@@ -22,8 +22,8 @@ import com.liferay.wiki.exception.NoSuchPageException;
 import com.liferay.wiki.model.WikiPage;
 import com.liferay.wiki.service.WikiPageService;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -32,7 +32,8 @@ import org.osgi.service.component.annotations.Reference;
  * @author Jorge Ferrer
  */
 @Component(
-	property = "path=/wiki/get_page_attachment", service = StrutsAction.class
+	property = {"layout.required=false", "path=/wiki/get_page_attachment"},
+	service = StrutsAction.class
 )
 public class GetPageAttachmentStrutsAction implements StrutsAction {
 

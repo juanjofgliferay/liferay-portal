@@ -7,7 +7,9 @@ package com.liferay.portal.dao.db.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.petra.function.UnsafeConsumer;
+import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.dao.db.BaseDB;
 import com.liferay.portal.kernel.dao.db.BaseDBProcess;
 import com.liferay.portal.kernel.dao.db.DB;
 import com.liferay.portal.kernel.dao.db.DBInspector;
@@ -16,8 +18,11 @@ import com.liferay.portal.kernel.dao.db.IndexMetadata;
 import com.liferay.portal.kernel.dao.jdbc.DataAccess;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
+import com.liferay.portal.kernel.upgrade.UpgradeProcess;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.test.log.LogCapture;
+import com.liferay.portal.test.log.LoggerTestUtil;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 
 import java.sql.Connection;
@@ -31,10 +36,14 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -60,6 +69,8 @@ public class BaseDBProcessTest extends BaseDBProcess {
 		_dbInspector = new DBInspector(_connection);
 
 		_db = DBManagerUtil.getDB();
+		_tempIndexCounter = ReflectionTestUtil.getFieldValue(
+			BaseDB.class, "_tempIndexCounter");
 	}
 
 	@AfterClass
@@ -80,7 +91,7 @@ public class BaseDBProcessTest extends BaseDBProcess {
 				"typeLong LONG null, typeLongDefault LONG default 10 not null,",
 				"typeSBlob SBLOB, typeString STRING null, typeText TEXT null, ",
 				"typeVarchar VARCHAR(75) null, typeVarcharDefault VARCHAR(10) ",
-				"default 'testValue' not null);"));
+				"default 'testValue' not null)"));
 	}
 
 	@After
@@ -89,21 +100,77 @@ public class BaseDBProcessTest extends BaseDBProcess {
 	}
 
 	@Test
-	public void testAlterColumnNameChangeType() throws Exception {
-		try {
-			alterColumnName(_TABLE_NAME, "typeBoolean", "typeChanged VARCHAR");
+	public void testAddMultipleTemporaryIndex() throws Exception {
+		UpgradeProcess upgradeProcess = new UpgradeProcess() {
 
-			Assert.fail();
-		}
-		catch (SQLException sqlException) {
-			Assert.assertFalse(
-				_dbInspector.hasColumn(_TABLE_NAME, "typeChanged"));
-		}
+			@Override
+			protected void doUpgrade() throws Exception {
+				String tempIndexName1 =
+					"IX_TEMP_" + (_tempIndexCounter.get() + 1);
+				String tempIndexName2 =
+					"IX_TEMP_" + (_tempIndexCounter.get() + 2);
+
+				DB db = DBManagerUtil.getDB();
+
+				try (SafeCloseable safeCloseable1 = db.addTemporaryIndex(
+						connection, _TABLE_NAME, false, "typeVarchar");
+					SafeCloseable safeCloseable2 = db.addTemporaryIndex(
+						connection, _TABLE_NAME, false, "id", "typeVarchar")) {
+
+					Assert.assertTrue(hasIndex(_TABLE_NAME, tempIndexName1));
+					Assert.assertTrue(hasIndex(_TABLE_NAME, tempIndexName2));
+				}
+
+				Assert.assertFalse(hasIndex(_TABLE_NAME, tempIndexName1));
+				Assert.assertFalse(hasIndex(_TABLE_NAME, tempIndexName2));
+			}
+
+		};
+
+		upgradeProcess.upgrade();
+	}
+
+	@Test
+	public void testAddTemporaryIndex() throws Exception {
+		UpgradeProcess upgradeProcess = new UpgradeProcess() {
+
+			@Override
+			protected void doUpgrade() throws Exception {
+				String tempIndexName =
+					"IX_TEMP_" + (_tempIndexCounter.get() + 1);
+
+				DB db = DBManagerUtil.getDB();
+
+				try (SafeCloseable safeCloseable = db.addTemporaryIndex(
+						connection, _TABLE_NAME, false, "typeVarchar")) {
+
+					Assert.assertTrue(hasIndex(_TABLE_NAME, tempIndexName));
+				}
+
+				Assert.assertFalse(hasIndex(_TABLE_NAME, tempIndexName));
+			}
+
+		};
+
+		upgradeProcess.upgrade();
+	}
+
+	@Test
+	public void testAlterColumnName() throws Exception {
+		alterColumnName(
+			_TABLE_NAME, "typeVarcharDefault", "typeVarcharDefaultTest");
+
+		Assert.assertFalse(
+			_dbInspector.hasColumn(_TABLE_NAME, "typeVarcharDefault"));
+		Assert.assertTrue(
+			_dbInspector.hasColumnType(
+				_TABLE_NAME, "typeVarcharDefaultTest",
+				"VARCHAR(10) default 'testValue' not null"));
 	}
 
 	@Test
 	public void testAlterColumnNameNoNeeded() throws Exception {
-		alterColumnName(_TABLE_NAME, "deletedColumn", "typeBoolean BOOLEAN");
+		alterColumnName(_TABLE_NAME, "deletedColumn", "typeBoolean");
 
 		Assert.assertFalse(
 			_dbInspector.hasColumn(_TABLE_NAME, "deletedColumn"));
@@ -115,7 +182,7 @@ public class BaseDBProcessTest extends BaseDBProcess {
 	@Test
 	public void testAlterColumnNameNoNeededOldColumnExist() throws Exception {
 		try {
-			alterColumnName(_TABLE_NAME, "typeInteger", "typeBoolean BOOLEAN");
+			alterColumnName(_TABLE_NAME, "typeInteger", "typeBoolean");
 
 			Assert.fail();
 		}
@@ -130,48 +197,25 @@ public class BaseDBProcessTest extends BaseDBProcess {
 	}
 
 	@Test
-	public void testAlterColumnNameNoNeededWithAlterType() throws Exception {
-		try {
-			alterColumnName(
-				_TABLE_NAME, "deletedColumn", "typeBoolean VARCHAR");
+	public void testAlterColumnNameNoNullableChange() throws Exception {
+		alterColumnName(_TABLE_NAME, "nilColumn", "nilColumnTest");
 
-			Assert.fail();
-		}
-		catch (SQLException sqlException) {
-			Assert.assertFalse(
-				_dbInspector.hasColumn(_TABLE_NAME, "deletedColumn"));
+		Assert.assertTrue(
+			_dbInspector.hasColumnType(
+				_TABLE_NAME, "nilColumnTest", "VARCHAR(75) null"));
 
-			Assert.assertFalse(
-				_dbInspector.hasColumnType(
-					_TABLE_NAME, "typeBoolean", "VARCHAR"));
-		}
-	}
+		alterColumnName(_TABLE_NAME, "notNilColumn", "notNilColumnTest");
 
-	@Test
-	public void testAlterColumnNameNoNeededWithAlterTypeAndOldColumnExist()
-		throws Exception {
-
-		try {
-			alterColumnName(_TABLE_NAME, "typeInteger", "typeBoolean VARCHAR");
-
-			Assert.fail();
-		}
-		catch (SQLException sqlException) {
-			Assert.assertTrue(
-				_dbInspector.hasColumn(_TABLE_NAME, "typeInteger"));
-
-			Assert.assertFalse(
-				_dbInspector.hasColumnType(
-					_TABLE_NAME, "typeBoolean", "VARCHAR"));
-		}
+		Assert.assertTrue(
+			_dbInspector.hasColumnType(
+				_TABLE_NAME, "notNilColumnTest", "VARCHAR(75) not null"));
 	}
 
 	@Test
 	public void testAlterColumnNameNonexistentColumn() throws Exception {
 		try {
 			alterColumnName(
-				_TABLE_NAME, "nonexistentColumn",
-				"newNonexistentColumn LONG null");
+				_TABLE_NAME, "nonexistentColumn", "newNonexistentColumn");
 
 			Assert.fail();
 		}
@@ -182,26 +226,8 @@ public class BaseDBProcessTest extends BaseDBProcess {
 	}
 
 	@Test
-	public void testAlterColumnNameNoNullableChange() throws Exception {
-		alterColumnName(
-			_TABLE_NAME, "nilColumn", "nilColumnTest VARCHAR(75) null");
-
-		Assert.assertTrue(
-			_dbInspector.hasColumnType(
-				_TABLE_NAME, "nilColumnTest", "VARCHAR(75) null"));
-
-		alterColumnName(
-			_TABLE_NAME, "notNilColumn",
-			"notNilColumnTest VARCHAR(75) not null");
-
-		Assert.assertTrue(
-			_dbInspector.hasColumnType(
-				_TABLE_NAME, "notNilColumnTest", "VARCHAR(75) not null"));
-	}
-
-	@Test
 	public void testAlterColumnNameSameColumnDifferentCase() throws Exception {
-		alterColumnName(_TABLE_NAME, "typeInteger", "TypeInteger INTEGER");
+		alterColumnName(_TABLE_NAME, "typeInteger", "TypeInteger");
 
 		if (StringUtil.equals(
 				_dbInspector.normalizeName("typeInteger"),
@@ -214,6 +240,56 @@ public class BaseDBProcessTest extends BaseDBProcess {
 			Assert.assertTrue(
 				_dbInspector.hasColumn(_TABLE_NAME, "TypeInteger"));
 		}
+	}
+
+	@Test
+	public void testAlterColumnNameTwice() throws Exception {
+		alterColumnName(_TABLE_NAME, "typeInteger", "typeIntegerTest");
+		alterColumnName(_TABLE_NAME, "typeInteger", "typeIntegerTest");
+
+		Assert.assertFalse(_dbInspector.hasColumn(_TABLE_NAME, "typeInteger"));
+
+		Assert.assertTrue(
+			_dbInspector.hasColumnType(
+				_TABLE_NAME, "typeIntegerTest", "INTEGER"));
+	}
+
+	@Test
+	public void testAlterColumnNameWithType() throws Exception {
+		_addIndex(new String[] {"typeVarchar", "typeBoolean"});
+
+		try (LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
+				BaseDBProcess.class.getName(), LoggerTestUtil.WARN)) {
+
+			alterColumnName(
+				_TABLE_NAME, "typeVarchar", "typeVarcharTest VARCHAR(75) null");
+			alterColumnName(
+				_TABLE_NAME, "typeVarchar", "typeVarcharTest VARCHAR(75) null");
+
+			List<String> messages = logCapture.getMessages();
+
+			Assert.assertEquals(messages.toString(), 2, messages.size());
+
+			String message = StringBundler.concat(
+				"Ignoring column definition \"typeVarcharTest VARCHAR(75) ",
+				"null\" passed as the new name of ", _TABLE_NAME,
+				".typeVarchar");
+
+			Assert.assertEquals(message, messages.get(0));
+			Assert.assertEquals(message, messages.get(1));
+		}
+
+		Assert.assertFalse(_dbInspector.hasColumn(_TABLE_NAME, "typeVarchar"));
+
+		Assert.assertTrue(
+			_dbInspector.hasColumnType(
+				_TABLE_NAME, "typeVarcharTest", "VARCHAR(75) null"));
+
+		_validateIndex(
+			new String[] {
+				_dbInspector.normalizeName("typeVarcharTest"),
+				_dbInspector.normalizeName("typeBoolean")
+			});
 	}
 
 	@Test
@@ -342,11 +418,12 @@ public class BaseDBProcessTest extends BaseDBProcess {
 
 		try (PreparedStatement preparedStatement = _connection.prepareStatement(
 				"select typeString from " + _TABLE_NAME);
+
 			ResultSet resultSet = preparedStatement.executeQuery()) {
 
 			resultSet.next();
 
-			Assert.assertEquals("testValue", resultSet.getString(1));
+			Assert.assertEquals("testValue", resultSet.getString("typeString"));
 		}
 	}
 
@@ -354,8 +431,7 @@ public class BaseDBProcessTest extends BaseDBProcess {
 	public void testAlterIndexedColumnName() throws Exception {
 		_addIndex(new String[] {"typeVarchar", "typeBoolean"});
 
-		alterColumnName(
-			_TABLE_NAME, "typeVarchar", "typeVarcharTest VARCHAR(75) null");
+		alterColumnName(_TABLE_NAME, "typeVarchar", "typeVarcharTest");
 
 		Assert.assertTrue(
 			_dbInspector.hasColumn(_TABLE_NAME, "typeVarcharTest"));
@@ -386,7 +462,7 @@ public class BaseDBProcessTest extends BaseDBProcess {
 
 	@Test
 	public void testAlterPrimaryKeyName() throws Exception {
-		alterColumnName(_TABLE_NAME, "id", "idTest LONG not null");
+		alterColumnName(_TABLE_NAME, "id", "idTest");
 
 		String[] primaryKeyColumnNames = ReflectionTestUtil.invoke(
 			_db, "getPrimaryKeyColumnNames",
@@ -443,7 +519,7 @@ public class BaseDBProcessTest extends BaseDBProcess {
 		Assert.assertFalse(_dbInspector.hasColumn(_TABLE_NAME, "typeVarchar"));
 
 		List<IndexMetadata> indexMetadatas = ReflectionTestUtil.invoke(
-			_db, "getIndexes",
+			_db, "getIndexMetadatas",
 			new Class<?>[] {
 				Connection.class, String.class, String.class, boolean.class
 			},
@@ -456,6 +532,17 @@ public class BaseDBProcessTest extends BaseDBProcess {
 	@Test
 	public void testAlterTableDropNonexistentColumn() throws Exception {
 		alterTableDropColumn(_TABLE_NAME, "nonexistentColumn");
+	}
+
+	@Test
+	public void testDropIndexes() throws Exception {
+		_addIndex(new String[] {"typeVarchar", "typeBoolean"});
+
+		Assert.assertTrue(hasIndex(_TABLE_NAME, _INDEX_NAME));
+
+		dropIndexes(Collections.singletonList(_INDEX_NAME), _TABLE_NAME);
+
+		Assert.assertFalse(hasIndex(_TABLE_NAME, _INDEX_NAME));
 	}
 
 	@Test
@@ -477,9 +564,7 @@ public class BaseDBProcessTest extends BaseDBProcess {
 				"select id from " + _TABLE_NAME,
 				resultSet -> new Object[] {resultSet.getInt("id")},
 				values -> {
-					Thread currentThread = Thread.currentThread();
-
-					threadIds.add(currentThread.getId());
+					_recordThread(threadIds);
 
 					int value = (int)values[0];
 
@@ -499,9 +584,7 @@ public class BaseDBProcessTest extends BaseDBProcess {
 				"update " + _TABLE_NAME + " set typeInteger = ? where id = ?",
 				resultSet -> new Object[] {resultSet.getInt("id")},
 				(values, preparedStatement) -> {
-					Thread currentThread = Thread.currentThread();
-
-					threadIds.add(currentThread.getId());
+					_recordThread(threadIds);
 
 					int value = (int)values[0];
 
@@ -525,9 +608,7 @@ public class BaseDBProcessTest extends BaseDBProcess {
 			threadIds -> processConcurrently(
 				values.toArray(new Integer[0]),
 				value -> {
-					Thread currentThread = Thread.currentThread();
-
-					threadIds.add(currentThread.getId());
+					_recordThread(threadIds);
 
 					runSQL(
 						StringBundler.concat(
@@ -555,9 +636,21 @@ public class BaseDBProcessTest extends BaseDBProcess {
 		}
 	}
 
+	private void _recordThread(Set<Long> threadIds)
+		throws InterruptedException {
+
+		Thread currentThread = Thread.currentThread();
+
+		threadIds.add(currentThread.getId());
+
+		_countDownLatch.countDown();
+
+		_countDownLatch.await(1, TimeUnit.MINUTES);
+	}
+
 	private void _validateIndex(String[] columnNames) throws Exception {
 		List<IndexMetadata> indexMetadatas = ReflectionTestUtil.invoke(
-			_db, "getIndexes",
+			_db, "getIndexMetadatas",
 			new Class<?>[] {
 				Connection.class, String.class, String.class, boolean.class
 			},
@@ -581,6 +674,10 @@ public class BaseDBProcessTest extends BaseDBProcess {
 			UnsafeConsumer<Set<Long>, Exception> unsafeConsumer)
 		throws Exception {
 
+		Runtime runtime = Runtime.getRuntime();
+
+		Assume.assumeTrue(runtime.availableProcessors() > 1);
+
 		_populateTable();
 
 		Set<Long> threadIds = Collections.synchronizedSet(new HashSet<>());
@@ -594,16 +691,17 @@ public class BaseDBProcessTest extends BaseDBProcess {
 
 	private void _validateTableContent() throws Exception {
 		try (PreparedStatement preparedStatement = connection.prepareStatement(
-				StringBundler.concat(
-					"select count(1) from ", _TABLE_NAME,
-					" where id >= 1 and id <= ", _PROCESS_CONCURRENTLY_COUNT,
-					" and typeInteger = id"));
-			ResultSet resultSet = preparedStatement.executeQuery()) {
+				"select count(1) as count from " + _TABLE_NAME +
+					" where id >= 1 and id <= ? and typeInteger = id")) {
 
-			resultSet.next();
+			preparedStatement.setInt(1, _PROCESS_CONCURRENTLY_COUNT);
 
-			Assert.assertEquals(
-				_PROCESS_CONCURRENTLY_COUNT, resultSet.getInt(1));
+			try (ResultSet resultSet = preparedStatement.executeQuery()) {
+				resultSet.next();
+
+				Assert.assertEquals(
+					_PROCESS_CONCURRENTLY_COUNT, resultSet.getLong("count"));
+			}
 		}
 	}
 
@@ -611,10 +709,13 @@ public class BaseDBProcessTest extends BaseDBProcess {
 
 	private static final int _PROCESS_CONCURRENTLY_COUNT = 100;
 
-	private static final String _TABLE_NAME = "BasedDBProcessTest";
+	private static final String _TABLE_NAME = "BaseDBProcessTest";
 
 	private static Connection _connection;
 	private static DB _db;
 	private static DBInspector _dbInspector;
+	private static AtomicLong _tempIndexCounter;
+
+	private final CountDownLatch _countDownLatch = new CountDownLatch(2);
 
 }

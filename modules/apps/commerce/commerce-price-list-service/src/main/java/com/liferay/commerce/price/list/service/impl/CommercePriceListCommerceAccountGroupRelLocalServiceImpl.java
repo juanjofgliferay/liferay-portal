@@ -88,10 +88,12 @@ public class CommercePriceListCommerceAccountGroupRelLocalServiceImpl
 
 	@Override
 	public void deleteCommercePriceListAccountGroupRelsByCommercePriceListId(
-		long commercePriceListId) {
+			long commercePriceListId)
+		throws PortalException {
 
-		commercePriceListCommerceAccountGroupRelPersistence.
-			removeByCommercePriceListId(commercePriceListId);
+		commercePriceListCommerceAccountGroupRelLocalService.
+			deleteCommercePriceListCommerceAccountGroupRels(
+				commercePriceListId);
 	}
 
 	@Override
@@ -188,22 +190,6 @@ public class CommercePriceListCommerceAccountGroupRelLocalServiceImpl
 
 		return commercePriceListCommerceAccountGroupRelFinder.
 			findByCommercePriceListId(commercePriceListId, name, start, end);
-	}
-
-	@Override
-	public int getCommercePriceListCommerceAccountGroupRelsCount(
-		long commercePriceListId) {
-
-		return commercePriceListCommerceAccountGroupRelPersistence.
-			countByCommercePriceListId(commercePriceListId);
-	}
-
-	@Override
-	public int getCommercePriceListCommerceAccountGroupRelsCount(
-		long commercePriceListId, String name) {
-
-		return commercePriceListCommerceAccountGroupRelFinder.
-			countByCommercePriceListId(commercePriceListId, name);
 	}
 
 	@Override

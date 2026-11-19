@@ -22,6 +22,20 @@ public class Tree {
 		this.rootNode = rootNode;
 	}
 
+	public Node fetchNode(long primaryKey) {
+		Iterator<Node> iterator = iterator();
+
+		while (iterator.hasNext()) {
+			Node node = iterator.next();
+
+			if (node.getPrimaryKey() == primaryKey) {
+				return node;
+			}
+		}
+
+		return null;
+	}
+
 	public List<Edge> getAncestorEdges(long primaryKey) {
 		Node node = getNode(primaryKey);
 
@@ -44,10 +58,24 @@ public class Tree {
 		return edges;
 	}
 
-	public Node getNode(long primaryKey) {
-		Iterator<Node> iterator = iterator();
+	public int getHeight(Node node) {
+		if (node == null) {
+			return -1;
+		}
 
+		int maxHeight = -1;
+
+		for (Node childNode : node.getChildNodes()) {
+			maxHeight = Math.max(maxHeight, getHeight(childNode));
+		}
+
+		return maxHeight + 1;
+	}
+
+	public Node getNode(long primaryKey) {
 		Node node = null;
+
+		Iterator<Node> iterator = iterator();
 
 		while (iterator.hasNext()) {
 			node = iterator.next();

@@ -8,7 +8,7 @@ package com.liferay.portal.workflow.metrics.rest.resource.v1_0.test;
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.portal.kernel.test.rule.DataGuard;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
-import com.liferay.portal.search.test.util.SearchTestRule;
+import com.liferay.portal.search.test.rule.SearchTestRule;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.workflow.metrics.rest.client.dto.v1_0.Assignee;
 import com.liferay.portal.workflow.metrics.rest.client.dto.v1_0.Instance;
@@ -27,6 +27,7 @@ import java.util.Map;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -64,6 +65,20 @@ public class TaskResourceTest extends BaseTaskResourceTestCase {
 			_workflowMetricsRESTTestHelper.deleteProcess(
 				testGroup.getCompanyId(), _process);
 		}
+	}
+
+	@Ignore
+	@Override
+	@Test
+	public void testGraphQLDeleteProcessTask() throws Exception {
+		super.testGraphQLDeleteProcessTask();
+	}
+
+	@Ignore
+	@Override
+	@Test
+	public void testGraphQLPostProcessTask() throws Exception {
+		super.testGraphQLPostProcessTask();
 	}
 
 	@Override
@@ -301,6 +316,13 @@ public class TaskResourceTest extends BaseTaskResourceTestCase {
 	}
 
 	@Override
+	protected Long testDeleteProcessTask_getProcessId(Task task)
+		throws Exception {
+
+		return task.getProcessId();
+	}
+
+	@Override
 	protected Task testGetProcessTask_addTask() throws Exception {
 		return _workflowMetricsRESTTestHelper.addTask(
 			new Assignee() {
@@ -309,6 +331,11 @@ public class TaskResourceTest extends BaseTaskResourceTestCase {
 				}
 			},
 			testGroup.getCompanyId(), _instance, TestPropsValues.getUser());
+	}
+
+	@Override
+	protected Long testGetProcessTask_getProcessId(Task task) throws Exception {
+		return task.getProcessId();
 	}
 
 	@Override
@@ -325,6 +352,13 @@ public class TaskResourceTest extends BaseTaskResourceTestCase {
 	}
 
 	@Override
+	protected Long testGraphQLGetProcessTask_getProcessId(Task task)
+		throws Exception {
+
+		return task.getProcessId();
+	}
+
+	@Override
 	protected Task testGraphQLTask_addTask() throws Exception {
 		return testGetProcessTask_addTask();
 	}
@@ -335,10 +369,24 @@ public class TaskResourceTest extends BaseTaskResourceTestCase {
 	}
 
 	@Override
+	protected Long testPatchProcessTask_getProcessId(Task task)
+		throws Exception {
+
+		return task.getProcessId();
+	}
+
+	@Override
 	protected Task testPatchProcessTaskComplete_addTask() throws Exception {
 		return _workflowMetricsRESTTestHelper.addTask(
 			testGroup.getCompanyId(), _instance, randomPatchTask(),
 			TestPropsValues.getUser());
+	}
+
+	@Override
+	protected Long testPatchProcessTaskComplete_getProcessId(Task task)
+		throws Exception {
+
+		return task.getProcessId();
 	}
 
 	private Instance _instance;

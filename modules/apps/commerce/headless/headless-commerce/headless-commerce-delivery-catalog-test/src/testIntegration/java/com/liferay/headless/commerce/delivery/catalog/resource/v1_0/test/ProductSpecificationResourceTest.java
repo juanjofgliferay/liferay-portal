@@ -10,6 +10,7 @@ import com.liferay.commerce.product.model.CPDefinition;
 import com.liferay.commerce.product.model.CPDefinitionSpecificationOptionValue;
 import com.liferay.commerce.product.model.CPOptionCategory;
 import com.liferay.commerce.product.model.CPSpecificationOption;
+import com.liferay.commerce.product.model.CProduct;
 import com.liferay.commerce.product.model.CommerceChannel;
 import com.liferay.commerce.product.service.CPDefinitionSpecificationOptionValueLocalService;
 import com.liferay.commerce.product.service.CPOptionCategoryLocalService;
@@ -17,6 +18,7 @@ import com.liferay.commerce.product.service.CPSpecificationOptionLocalService;
 import com.liferay.commerce.product.test.util.CPTestUtil;
 import com.liferay.commerce.test.util.CommerceTestUtil;
 import com.liferay.headless.commerce.delivery.catalog.client.dto.v1_0.ProductSpecification;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
@@ -56,17 +58,20 @@ public class ProductSpecificationResourceTest
 			testGroup.getGroupId(), "simple", true, false);
 
 		_cpOptionCategory = _cpOptionCategoryLocalService.addCPOptionCategory(
-			_user.getUserId(), RandomTestUtil.randomLocaleStringMap(),
+			RandomTestUtil.randomString(), _user.getUserId(),
+			RandomTestUtil.randomLocaleStringMap(),
 			RandomTestUtil.randomLocaleStringMap(),
 			RandomTestUtil.randomDouble(), RandomTestUtil.randomString(),
 			_serviceContext);
 
 		_cpSpecificationOption =
 			_cpSpecificationOptionLocalService.addCPSpecificationOption(
-				_user.getUserId(), _cpOptionCategory.getCPOptionCategoryId(),
+				RandomTestUtil.randomString(), _user.getUserId(),
+				_cpOptionCategory.getCPOptionCategoryId(), null,
 				RandomTestUtil.randomLocaleStringMap(),
 				RandomTestUtil.randomLocaleStringMap(), true,
-				RandomTestUtil.randomString(), _serviceContext);
+				RandomTestUtil.randomString(), RandomTestUtil.randomDouble(),
+				true, _serviceContext);
 	}
 
 	@Override
@@ -85,6 +90,36 @@ public class ProductSpecificationResourceTest
 				value = StringUtil.toLowerCase(RandomTestUtil.randomString());
 			}
 		};
+	}
+
+	@Override
+	protected ProductSpecification
+			testGetChannelByExternalReferenceCodeChannelExternalReferenceCodeProductByExternalReferenceCodeProductExternalReferenceCodeProductSpecificationsPage_addProductSpecification(
+				String channelExternalReferenceCode,
+				String productExternalReferenceCode,
+				ProductSpecification productSpecification)
+		throws Exception {
+
+		return _addCPDefinitionSpecificationOptionValue(
+			_cpDefinition.getCProductId(), productSpecification);
+	}
+
+	@Override
+	protected String
+			testGetChannelByExternalReferenceCodeChannelExternalReferenceCodeProductByExternalReferenceCodeProductExternalReferenceCodeProductSpecificationsPage_getChannelExternalReferenceCode()
+		throws Exception {
+
+		return _commerceChannel.getExternalReferenceCode();
+	}
+
+	@Override
+	protected String
+			testGetChannelByExternalReferenceCodeChannelExternalReferenceCodeProductByExternalReferenceCodeProductExternalReferenceCodeProductSpecificationsPage_getProductExternalReferenceCode()
+		throws Exception {
+
+		CProduct cProduct = _cpDefinition.getCProduct();
+
+		return cProduct.getExternalReferenceCode();
 	}
 
 	@Override
@@ -112,15 +147,6 @@ public class ProductSpecificationResourceTest
 		return _cpDefinition.getCProductId();
 	}
 
-	@Override
-	protected ProductSpecification
-			testGraphQLProductSpecification_addProductSpecification()
-		throws Exception {
-
-		return _addCPDefinitionSpecificationOptionValue(
-			_cpDefinition.getCProductId(), randomProductSpecification());
-	}
-
 	private ProductSpecification _addCPDefinitionSpecificationOptionValue(
 			Long localProductId, ProductSpecification productSpecification)
 		throws Exception {
@@ -129,11 +155,12 @@ public class ProductSpecificationResourceTest
 			cpDefinitionSpecificationOptionValue =
 				_cpDefinitionSpecificationOptionValueLocalService.
 					addCPDefinitionSpecificationOptionValue(
-						_cpDefinition.getCPDefinitionId(),
+						StringPool.BLANK, _cpDefinition.getCPDefinitionId(),
 						productSpecification.getSpecificationId(),
 						productSpecification.getOptionCategoryId(),
-						RandomTestUtil.randomLocaleStringMap(),
-						productSpecification.getPriority(), _serviceContext);
+						productSpecification.getPriority(),
+						RandomTestUtil.randomLocaleStringMap(), true,
+						_serviceContext);
 
 		_cpDefinitionSpecificationOptionValues.add(
 			cpDefinitionSpecificationOptionValue);

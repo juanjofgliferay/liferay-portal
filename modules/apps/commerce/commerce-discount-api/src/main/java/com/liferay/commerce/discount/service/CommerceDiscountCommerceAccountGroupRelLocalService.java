@@ -136,8 +136,9 @@ public interface CommerceDiscountCommerceAccountGroupRelLocalService
 	 */
 	@Deprecated
 	public void
-		deleteCommerceDiscountCommerceAccountGroupRelsBycommerceAccountGroupId(
-			long commerceAccountGroupId);
+			deleteCommerceDiscountCommerceAccountGroupRelsBycommerceAccountGroupId(
+				long commerceAccountGroupId)
+		throws PortalException;
 
 	public void
 			deleteCommerceDiscountCommerceAccountGroupRelsByCommerceDiscountId(
@@ -229,11 +230,6 @@ public interface CommerceDiscountCommerceAccountGroupRelLocalService
 			long commerceDiscountCommerceAccountGroupRelId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public CommerceDiscountCommerceAccountGroupRel
-		fetchCommerceDiscountCommerceAccountGroupRel(
-			long commerceDiscountId, long commerceAccountGroupId);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public ActionableDynamicQuery getActionableDynamicQuery();
 
 	/**
@@ -271,11 +267,6 @@ public interface CommerceDiscountCommerceAccountGroupRelLocalService
 			OrderByComparator<CommerceDiscountCommerceAccountGroupRel>
 				orderByComparator);
 
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<CommerceDiscountCommerceAccountGroupRel>
-		getCommerceDiscountCommerceAccountGroupRels(
-			long commerceDiscountId, String name, int start, int end);
-
 	/**
 	 * Returns the number of commerce discount commerce account group rels.
 	 *
@@ -283,14 +274,6 @@ public interface CommerceDiscountCommerceAccountGroupRelLocalService
 	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public int getCommerceDiscountCommerceAccountGroupRelsCount();
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getCommerceDiscountCommerceAccountGroupRelsCount(
-		long commerceDiscountId);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getCommerceDiscountCommerceAccountGroupRelsCount(
-		long commerceDiscountId, String name);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public IndexableActionableDynamicQuery getIndexableActionableDynamicQuery();
@@ -327,3 +310,4 @@ public interface CommerceDiscountCommerceAccountGroupRelLocalService
 				commerceDiscountCommerceAccountGroupRel);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1909024504

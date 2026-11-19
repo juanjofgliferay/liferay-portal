@@ -7,13 +7,13 @@ package com.liferay.portal.kernel.servlet.taglib;
 
 import com.liferay.portal.kernel.log.Log;
 
-import java.io.IOException;
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
-import javax.servlet.RequestDispatcher;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 
 /**
  * @author Philip Jones
@@ -43,11 +43,6 @@ public abstract class BaseJSPDynamicInclude extends BaseDynamicInclude {
 			throw new IOException(
 				"Unable to include JSP " + getJspPath(), servletException);
 		}
-	}
-
-	@Override
-	public void register(
-		DynamicInclude.DynamicIncludeRegistry dynamicIncludeRegistry) {
 	}
 
 	protected abstract String getJspPath();

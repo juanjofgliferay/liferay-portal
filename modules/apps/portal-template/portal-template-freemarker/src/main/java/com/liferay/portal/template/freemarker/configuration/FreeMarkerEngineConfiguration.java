@@ -20,6 +20,30 @@ import com.liferay.portal.configuration.metatype.annotations.ExtendedObjectClass
 )
 public interface FreeMarkerEngineConfiguration {
 
+	@Meta.AD(
+		description = "allowed-classes-help", name = "allowed-classes",
+		required = false
+	)
+	public String[] allowedClasses();
+
+	@Meta.AD(
+		description = "allowed-instantiable-classes-help",
+		name = "allowed-instantiable-classes", required = false
+	)
+	public String[] allowedInstantiableClasses();
+
+	@Meta.AD(
+		deflt = "2147483647", name = "async-render-thread-pool-max-queue-size",
+		required = false
+	)
+	public int asyncRenderThreadPoolMaxQueueSize();
+
+	@Meta.AD(
+		deflt = "2147483647", name = "async-render-thread-pool-max-size",
+		required = false
+	)
+	public int asyncRenderThreadPoolMaxSize();
+
 	@Meta.AD(deflt = "0", name = "async-render-timeout", required = false)
 	public long asyncRenderTimeout();
 
@@ -29,69 +53,50 @@ public interface FreeMarkerEngineConfiguration {
 	public int asyncRenderTimeoutThreshold();
 
 	@Meta.AD(
-		deflt = "2147483647", name = "async-render-thread-pool-max-size",
-		required = false
-	)
-	public int asyncRenderThreadPoolMaxSize();
-
-	@Meta.AD(
-		deflt = "2147483647", name = "async-render-thread-pool-max-queue-size",
-		required = false
-	)
-	public int asyncRenderThreadPoolMaxQueueSize();
-
-	@Meta.AD(deflt = "false", name = "localized-lookup", required = false)
-	public boolean localizedLookup();
-
-	@Meta.AD(deflt = "0", name = "loop-count-threshold", required = false)
-	public int loopCountThreshold();
-
-	@Meta.AD(
-		deflt = "60000", name = "resource-modification-check", required = false
-	)
-	public int resourceModificationCheck();
-
-	@Meta.AD(
 		deflt = "true", name = "include-navigation-items-in-the-context",
 		required = false
 	)
 	public boolean includeNavItemsInTheContext();
 
-	@Meta.AD(name = "allowed-classes", required = false)
-	public String[] allowedClasses();
-
-	@Meta.AD(
-		deflt = "com.ibm.*|com.liferay.portal.json.jabsorb.serializer.LiferayJSONDeserializationWhitelist|com.liferay.portal.spring.context.*|io.undertow.*|java.lang.Class|java.lang.ClassLoader|java.lang.Compiler|java.lang.Package|java.lang.Process|java.lang.Runtime|java.lang.RuntimePermission|java.lang.SecurityManager|java.lang.System|java.lang.Thread|java.lang.ThreadGroup|java.lang.ThreadLocal|org.apache.*|org.glassfish.*|org.jboss.*|org.springframework.*|org.wildfly.*|weblogic.*",
-		name = "restricted-classes", required = false
-	)
-	public String[] restrictedClasses();
-
-	@Meta.AD(
-		deflt = "com.liferay.portal.model.impl.CompanyImpl#getKey",
-		name = "restricted-methods", required = false
-	)
-	public String[] restrictedMethods();
-
-	@Meta.AD(
-		deflt = "httpUtilUnsafe|objectUtil|serviceLocator|staticFieldGetter|staticUtil",
-		name = "restricted-variables", required = false
-	)
-	public String[] restrictedVariables();
+	@Meta.AD(deflt = "false", name = "localized-lookup", required = false)
+	public boolean localizedLookup();
 
 	@Meta.AD(
 		deflt = "false", name = "log-template-exceptions", required = false
 	)
 	public boolean logTemplateExceptions();
 
-	@Meta.AD(
-		deflt = "rethrow", name = "template-exception-handler", required = false
-	)
-	public String templateExceptionHandler();
+	@Meta.AD(deflt = "0", name = "loop-count-threshold", required = false)
+	public int loopCountThreshold();
 
 	@Meta.AD(
 		deflt = "FTL_liferay.ftl as liferay", name = "macro-library",
 		required = false
 	)
 	public String[] macroLibrary();
+
+	@Meta.AD(
+		deflt = "com.ibm.*|com.liferay.portal.spring.context.*|io.undertow.*|java.io.*|java.lang.Class|java.lang.ClassLoader|java.lang.Package|java.lang.Process|java.lang.ProcessBuilder|java.lang.Runtime|java.lang.RuntimePermission|java.lang.SecurityManager|java.lang.System|java.lang.Thread|java.lang.ThreadGroup|java.lang.ThreadLocal|java.nio.*|java.nio.file.FileSystem|java.nio.file.Path|java.nio.file.spi.FileSystemProvider|org.apache.*|org.eclipse.osgi.*|org.glassfish.*|org.jboss.*|org.springframework.*|org.wildfly.*|weblogic.*",
+		description = "restricted-classes-help", name = "restricted-classes",
+		required = false
+	)
+	public String[] restrictedClasses();
+
+	@Meta.AD(
+		deflt = "", description = "restricted-methods-help",
+		name = "restricted-methods", required = false
+	)
+	public String[] restrictedMethods();
+
+	@Meta.AD(
+		deflt = "enumUtil|httpUtil|httpUtilUnsafe|objectUtil|portletConfig|propsUtil|saxReaderUtil|serviceLocator|staticFieldGetter|staticUtil",
+		name = "restricted-variables", required = false
+	)
+	public String[] restrictedVariables();
+
+	@Meta.AD(
+		deflt = "rethrow", name = "template-exception-handler", required = false
+	)
+	public String templateExceptionHandler();
 
 }

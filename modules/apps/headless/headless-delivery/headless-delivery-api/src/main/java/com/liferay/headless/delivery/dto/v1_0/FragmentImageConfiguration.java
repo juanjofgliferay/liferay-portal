@@ -11,23 +11,25 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import com.liferay.petra.function.UnsafeSupplier;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Javier Gamarra
@@ -37,6 +39,9 @@ import javax.xml.bind.annotation.XmlRootElement;
 @GraphQLName(
 	description = "Represents the Adaptive Media fragment image configuration for different viewports.",
 	value = "FragmentImageConfiguration"
+)
+@io.swagger.v3.oas.annotations.media.Schema(
+	description = "Represents the Adaptive Media fragment image configuration for different viewports."
 )
 @JsonFilter("Liferay.Vulcan")
 @XmlRootElement(name = "FragmentImageConfiguration")
@@ -52,30 +57,40 @@ public class FragmentImageConfiguration implements Serializable {
 			FragmentImageConfiguration.class, json);
 	}
 
-	@Schema(
+	@io.swagger.v3.oas.annotations.media.Schema(
 		description = "The landscape mobile configuration of the fragment image."
 	)
 	public String getLandscapeMobile() {
+		if (_landscapeMobileSupplier != null) {
+			landscapeMobile = _landscapeMobileSupplier.get();
+
+			_landscapeMobileSupplier = null;
+		}
+
 		return landscapeMobile;
 	}
 
 	public void setLandscapeMobile(String landscapeMobile) {
 		this.landscapeMobile = landscapeMobile;
+
+		_landscapeMobileSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setLandscapeMobile(
 		UnsafeSupplier<String, Exception> landscapeMobileUnsafeSupplier) {
 
-		try {
-			landscapeMobile = landscapeMobileUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_landscapeMobileSupplier = () -> {
+			try {
+				return landscapeMobileUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -84,30 +99,43 @@ public class FragmentImageConfiguration implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String landscapeMobile;
 
-	@Schema(
+	@JsonIgnore
+	private Supplier<String> _landscapeMobileSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
 		description = "The portrait mobile configuration of the fragment image."
 	)
 	public String getPortraitMobile() {
+		if (_portraitMobileSupplier != null) {
+			portraitMobile = _portraitMobileSupplier.get();
+
+			_portraitMobileSupplier = null;
+		}
+
 		return portraitMobile;
 	}
 
 	public void setPortraitMobile(String portraitMobile) {
 		this.portraitMobile = portraitMobile;
+
+		_portraitMobileSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setPortraitMobile(
 		UnsafeSupplier<String, Exception> portraitMobileUnsafeSupplier) {
 
-		try {
-			portraitMobile = portraitMobileUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_portraitMobileSupplier = () -> {
+			try {
+				return portraitMobileUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -116,28 +144,43 @@ public class FragmentImageConfiguration implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String portraitMobile;
 
-	@Schema(description = "The tablet configuration of the fragment image.")
+	@JsonIgnore
+	private Supplier<String> _portraitMobileSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The tablet configuration of the fragment image."
+	)
 	public String getTablet() {
+		if (_tabletSupplier != null) {
+			tablet = _tabletSupplier.get();
+
+			_tabletSupplier = null;
+		}
+
 		return tablet;
 	}
 
 	public void setTablet(String tablet) {
 		this.tablet = tablet;
+
+		_tabletSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setTablet(
 		UnsafeSupplier<String, Exception> tabletUnsafeSupplier) {
 
-		try {
-			tablet = tabletUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_tabletSupplier = () -> {
+			try {
+				return tabletUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -145,6 +188,9 @@ public class FragmentImageConfiguration implements Serializable {
 	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String tablet;
+
+	@JsonIgnore
+	private Supplier<String> _tabletSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -175,6 +221,8 @@ public class FragmentImageConfiguration implements Serializable {
 
 		sb.append("{");
 
+		String landscapeMobile = getLandscapeMobile();
+
 		if (landscapeMobile != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -189,6 +237,8 @@ public class FragmentImageConfiguration implements Serializable {
 			sb.append("\"");
 		}
 
+		String portraitMobile = getPortraitMobile();
+
 		if (portraitMobile != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -202,6 +252,8 @@ public class FragmentImageConfiguration implements Serializable {
 
 			sb.append("\"");
 		}
+
+		String tablet = getTablet();
 
 		if (tablet != null) {
 			if (sb.length() > 1) {
@@ -222,8 +274,8 @@ public class FragmentImageConfiguration implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.delivery.dto.v1_0.FragmentImageConfiguration",
 		name = "x-class-name"
 	)
@@ -269,7 +321,10 @@ public class FragmentImageConfiguration implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -307,6 +362,27 @@ public class FragmentImageConfiguration implements Serializable {
 		return sb.toString();
 	}
 
+	private static String _toJSON(Object value) {
+		if (value instanceof Collection) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONArray((Collection<?>)value));
+		}
+		else if (value instanceof Map) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONObject((Map<?, ?>)value));
+		}
+		else if (value instanceof Object[]) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONArray(
+					Arrays.asList((Object[])value)));
+		}
+		else if (value instanceof String) {
+			return StringBundler.concat("\"", _escape(value), "\"");
+		}
+
+		return String.valueOf(value);
+	}
+
 	private static final String[][] _JSON_ESCAPE_STRINGS = {
 		{"\\", "\"", "\b", "\f", "\n", "\r", "\t"},
 		{"\\\\", "\\\"", "\\b", "\\f", "\\n", "\\r", "\\t"}
@@ -315,3 +391,4 @@ public class FragmentImageConfiguration implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:-702313978

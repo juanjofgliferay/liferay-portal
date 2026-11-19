@@ -59,7 +59,7 @@ public class StagingLocalServiceUtil {
 	}
 
 	public static void disableStaging(
-			javax.portlet.PortletRequest portletRequest,
+			jakarta.portlet.PortletRequest portletRequest,
 			com.liferay.portal.kernel.model.Group liveGroup,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
@@ -131,3 +131,4 @@ public class StagingLocalServiceUtil {
 	private static volatile StagingLocalService _service;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1865771843

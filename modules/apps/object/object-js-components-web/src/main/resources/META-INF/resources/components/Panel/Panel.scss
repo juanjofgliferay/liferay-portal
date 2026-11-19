@@ -1,7 +1,7 @@
-@import 'atlas-variables';
+@import 'atlas-custom-properties/_variables';
 
-$borderColor: #cdced9;
-$bgColor: #fff;
+$bgColor: $white;
+$borderColor: $gray-400;
 
 .object-admin-panel {
 	background-color: $bgColor;

@@ -55,14 +55,15 @@ public class CPOptionValueServiceImpl extends CPOptionValueServiceBaseImpl {
 			ServiceContext serviceContext)
 		throws PortalException {
 
-		CPOptionValue cpOptionValue =
-			cpOptionValueLocalService.fetchByExternalReferenceCode(
-				externalReferenceCode, serviceContext.getCompanyId());
+		CPOptionValue cpOptionValue = cpOptionValuePersistence.fetchByERC_C(
+			externalReferenceCode, serviceContext.getCompanyId());
 
-		if (cpOptionValue == null) {
-			_cpOptionModelResourcePermission.check(
-				getPermissionChecker(), cpOptionId, ActionKeys.UPDATE);
+		if (cpOptionValue != null) {
+			cpOptionId = cpOptionValue.getCPOptionId();
 		}
+
+		_cpOptionModelResourcePermission.check(
+			getPermissionChecker(), cpOptionId, ActionKeys.UPDATE);
 
 		return cpOptionValueLocalService.addOrUpdateCPOptionValue(
 			externalReferenceCode, cpOptionId, nameMap, priority, key,
@@ -73,8 +74,8 @@ public class CPOptionValueServiceImpl extends CPOptionValueServiceBaseImpl {
 	public void deleteCPOptionValue(long cpOptionValueId)
 		throws PortalException {
 
-		CPOptionValue cpOptionValue =
-			cpOptionValueLocalService.fetchCPOptionValue(cpOptionValueId);
+		CPOptionValue cpOptionValue = cpOptionValuePersistence.findByPrimaryKey(
+			cpOptionValueId);
 
 		_cpOptionModelResourcePermission.check(
 			getPermissionChecker(), cpOptionValue.getCPOptionId(),
@@ -84,13 +85,11 @@ public class CPOptionValueServiceImpl extends CPOptionValueServiceBaseImpl {
 	}
 
 	@Override
-	public CPOptionValue fetchByExternalReferenceCode(
-			String externalReferenceCode, long companyId)
+	public CPOptionValue fetchCPOptionValue(long cpOptionValueId)
 		throws PortalException {
 
 		CPOptionValue cpOptionValue =
-			cpOptionValueLocalService.fetchByExternalReferenceCode(
-				externalReferenceCode, companyId);
+			cpOptionValuePersistence.fetchByPrimaryKey(cpOptionValueId);
 
 		if (cpOptionValue != null) {
 			_cpOptionModelResourcePermission.check(
@@ -102,11 +101,12 @@ public class CPOptionValueServiceImpl extends CPOptionValueServiceBaseImpl {
 	}
 
 	@Override
-	public CPOptionValue fetchCPOptionValue(long cpOptionValueId)
+	public CPOptionValue fetchCPOptionValueByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
 		throws PortalException {
 
-		CPOptionValue cpOptionValue =
-			cpOptionValueLocalService.fetchCPOptionValue(cpOptionValueId);
+		CPOptionValue cpOptionValue = cpOptionValuePersistence.fetchByERC_C(
+			externalReferenceCode, companyId);
 
 		if (cpOptionValue != null) {
 			_cpOptionModelResourcePermission.check(
@@ -121,8 +121,8 @@ public class CPOptionValueServiceImpl extends CPOptionValueServiceBaseImpl {
 	public CPOptionValue getCPOptionValue(long cpOptionValueId)
 		throws PortalException {
 
-		CPOptionValue cpOptionValue =
-			cpOptionValueLocalService.getCPOptionValue(cpOptionValueId);
+		CPOptionValue cpOptionValue = cpOptionValuePersistence.findByPrimaryKey(
+			cpOptionValueId);
 
 		_cpOptionModelResourcePermission.check(
 			getPermissionChecker(), cpOptionValue.getCPOptionId(),
@@ -139,7 +139,7 @@ public class CPOptionValueServiceImpl extends CPOptionValueServiceBaseImpl {
 		_cpOptionModelResourcePermission.check(
 			getPermissionChecker(), cpOptionId, ActionKeys.VIEW);
 
-		return cpOptionValueLocalService.getCPOptionValues(
+		return cpOptionValuePersistence.findByCPOptionId(
 			cpOptionId, start, end);
 	}
 
@@ -148,7 +148,7 @@ public class CPOptionValueServiceImpl extends CPOptionValueServiceBaseImpl {
 		_cpOptionModelResourcePermission.check(
 			getPermissionChecker(), cpOptionId, ActionKeys.VIEW);
 
-		return cpOptionValueLocalService.getCPOptionValuesCount(cpOptionId);
+		return cpOptionValuePersistence.countByCPOptionId(cpOptionId);
 	}
 
 	@Override
@@ -187,7 +187,7 @@ public class CPOptionValueServiceImpl extends CPOptionValueServiceBaseImpl {
 
 		_cpOptionModelResourcePermission.check(
 			getPermissionChecker(), cpOptionValue.getCPOptionId(),
-			ActionKeys.VIEW);
+			ActionKeys.UPDATE);
 
 		return cpOptionValueLocalService.updateCPOptionValue(
 			cpOptionValue.getCPOptionValueId(), nameMap, priority, key,

@@ -11,7 +11,6 @@ import com.liferay.commerce.inventory.model.CommerceInventoryBookedQuantity;
 import com.liferay.commerce.inventory.service.base.CommerceInventoryBookedQuantityServiceBaseImpl;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.security.permission.resource.PortletResourcePermission;
 
 import java.util.Collections;
@@ -39,15 +38,14 @@ public class CommerceInventoryBookedQuantityServiceImpl
 			getCommerceInventoryBookedQuantities(
 				long companyId, String sku, String unitOfMeasureKey, int start,
 				int end)
-		throws PrincipalException {
+		throws PortalException {
 
 		_portletResourcePermission.check(
 			getPermissionChecker(), null,
-			CommerceInventoryActionKeys.MANAGE_INVENTORY);
+			CommerceInventoryActionKeys.VIEW_INVENTORIES);
 
-		return commerceInventoryBookedQuantityLocalService.
-			getCommerceInventoryBookedQuantities(
-				companyId, sku, unitOfMeasureKey, start, end);
+		return commerceInventoryBookedQuantityPersistence.findByC_S_U(
+			companyId, sku, unitOfMeasureKey, start, end);
 	}
 
 	@Override
@@ -59,7 +57,7 @@ public class CommerceInventoryBookedQuantityServiceImpl
 
 		if (_portletResourcePermission.contains(
 				getPermissionChecker(), null,
-				CommerceInventoryActionKeys.MANAGE_INVENTORY)) {
+				CommerceInventoryActionKeys.VIEW_INVENTORIES)) {
 
 			return commerceInventoryBookedQuantityLocalService.
 				getCommerceInventoryBookedQuantities(
@@ -72,15 +70,14 @@ public class CommerceInventoryBookedQuantityServiceImpl
 	@Override
 	public int getCommerceInventoryBookedQuantitiesCount(
 			long companyId, String sku, String unitOfMeasureKey)
-		throws PrincipalException {
+		throws PortalException {
 
 		_portletResourcePermission.check(
 			getPermissionChecker(), null,
-			CommerceInventoryActionKeys.MANAGE_INVENTORY);
+			CommerceInventoryActionKeys.VIEW_INVENTORIES);
 
-		return commerceInventoryBookedQuantityLocalService.
-			getCommerceInventoryBookedQuantitiesCount(
-				companyId, sku, unitOfMeasureKey);
+		return commerceInventoryBookedQuantityPersistence.countByC_S_U(
+			companyId, sku, unitOfMeasureKey);
 	}
 
 	@Override
@@ -91,7 +88,7 @@ public class CommerceInventoryBookedQuantityServiceImpl
 
 		if (_portletResourcePermission.contains(
 				getPermissionChecker(), null,
-				CommerceInventoryActionKeys.MANAGE_INVENTORY)) {
+				CommerceInventoryActionKeys.VIEW_INVENTORIES)) {
 
 			return commerceInventoryBookedQuantityLocalService.
 				getCommerceInventoryBookedQuantitiesCount(

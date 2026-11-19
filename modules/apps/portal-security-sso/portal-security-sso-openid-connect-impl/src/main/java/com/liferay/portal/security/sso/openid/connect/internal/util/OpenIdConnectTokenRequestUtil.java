@@ -8,6 +8,9 @@ package com.liferay.portal.security.sso.openid.connect.internal.util;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.security.fips.FIPSAuditEventFactory;
+import com.liferay.portal.kernel.security.fips.FIPSAuditUtil;
+import com.liferay.portal.kernel.security.fips.FIPSModeValidator;
 import com.liferay.portal.security.sso.openid.connect.OpenIdConnectServiceException;
 
 import com.nimbusds.jose.JOSEException;
@@ -25,8 +28,8 @@ import com.nimbusds.oauth2.sdk.TokenResponse;
 import com.nimbusds.oauth2.sdk.auth.ClientSecretBasic;
 import com.nimbusds.oauth2.sdk.auth.Secret;
 import com.nimbusds.oauth2.sdk.http.HTTPRequest;
-import com.nimbusds.oauth2.sdk.http.HTTPResponse;
 import com.nimbusds.oauth2.sdk.id.ClientID;
+import com.nimbusds.oauth2.sdk.id.Issuer;
 import com.nimbusds.oauth2.sdk.pkce.CodeVerifier;
 import com.nimbusds.oauth2.sdk.token.RefreshToken;
 import com.nimbusds.oauth2.sdk.util.JSONObjectUtils;
@@ -34,7 +37,6 @@ import com.nimbusds.openid.connect.sdk.AuthenticationSuccessResponse;
 import com.nimbusds.openid.connect.sdk.Nonce;
 import com.nimbusds.openid.connect.sdk.OIDCTokenResponse;
 import com.nimbusds.openid.connect.sdk.OIDCTokenResponseParser;
-import com.nimbusds.openid.connect.sdk.claims.IDTokenClaimsSet;
 import com.nimbusds.openid.connect.sdk.op.OIDCProviderMetadata;
 import com.nimbusds.openid.connect.sdk.rp.OIDCClientInformation;
 import com.nimbusds.openid.connect.sdk.rp.OIDCClientMetadata;
@@ -65,7 +67,7 @@ public class OpenIdConnectTokenRequestUtil {
 			CodeVerifier codeVerifier, Nonce nonce,
 			OIDCClientInformation oidcClientInformation,
 			OIDCProviderMetadata oidcProviderMetadata, URI redirectURI,
-			String tokenRequestParametersJSON)
+			int timeout, String tokenRequestParametersJSON)
 		throws Exception {
 
 		AuthorizationGrant authorizationCodeGrant = new AuthorizationCodeGrant(
@@ -74,14 +76,15 @@ public class OpenIdConnectTokenRequestUtil {
 
 		return _requestOIDCTokens(
 			authorizationCodeGrant, nonce, oidcClientInformation,
-			oidcProviderMetadata,
+			oidcProviderMetadata, timeout,
 			JSONObjectUtils.parse(tokenRequestParametersJSON));
 	}
 
 	public static OIDCTokens request(
 			OIDCClientInformation oidcClientInformation,
 			OIDCProviderMetadata oidcProviderMetadata,
-			RefreshToken refreshToken, String tokenRequestParametersJSON)
+			RefreshToken refreshToken, int timeout,
+			String tokenRequestParametersJSON)
 		throws Exception {
 
 		AuthorizationGrant refreshTokenGrant = new RefreshTokenGrant(
@@ -89,14 +92,14 @@ public class OpenIdConnectTokenRequestUtil {
 
 		return _requestOIDCTokens(
 			refreshTokenGrant, null, oidcClientInformation,
-			oidcProviderMetadata,
+			oidcProviderMetadata, timeout,
 			JSONObjectUtils.parse(tokenRequestParametersJSON));
 	}
 
 	private static OIDCTokens _requestOIDCTokens(
 			AuthorizationGrant authorizationCodeGrant, Nonce nonce,
 			OIDCClientInformation oidcClientInformation,
-			OIDCProviderMetadata oidcProviderMetadata,
+			OIDCProviderMetadata oidcProviderMetadata, int timeout,
 			JSONObject tokenRequestParametersJSONObject)
 		throws Exception {
 
@@ -122,15 +125,18 @@ public class OpenIdConnectTokenRequestUtil {
 
 		HTTPRequest httpRequest = tokenRequest.toHTTPRequest();
 
+		httpRequest.setReadTimeout(timeout);
+
 		if (_log.isDebugEnabled()) {
-			_log.debug("Query: " + httpRequest.getQuery());
+			_log.debug(
+				StringBundler.concat(
+					"Requesting tokens from ", uri, " with grant type \"",
+					authorizationCodeGrant.getType(), "\""));
 		}
 
 		try {
-			HTTPResponse httpResponse = httpRequest.send();
-
 			TokenResponse tokenResponse = OIDCTokenResponseParser.parse(
-				httpResponse);
+				OpenIdConnectHttpUtil.send(httpRequest));
 
 			if (tokenResponse instanceof TokenErrorResponse) {
 				TokenErrorResponse tokenErrorResponse =
@@ -150,7 +156,7 @@ public class OpenIdConnectTokenRequestUtil {
 			OIDCTokens oidcTokens = oidcTokenResponse.getOIDCTokens();
 
 			_validate(
-				clientID, secret, nonce,
+				authorizationCodeGrant, clientID, secret, nonce,
 				oidcClientInformation.getOIDCMetadata(), oidcProviderMetadata,
 				oidcTokens);
 
@@ -172,29 +178,55 @@ public class OpenIdConnectTokenRequestUtil {
 		}
 	}
 
-	private static IDTokenClaimsSet _validate(
-			ClientID clientID, Secret clientSecret, Nonce nonce,
+	private static void _validate(
+			AuthorizationGrant authorizationCodeGrant, ClientID clientID,
+			Secret clientSecret, Nonce nonce,
 			OIDCClientMetadata oidcClientMetadata,
 			OIDCProviderMetadata oidcProviderMetadata, OIDCTokens oidcTokens)
 		throws OpenIdConnectServiceException.TokenException {
 
+		String algorithm = null;
+
+		JWSAlgorithm jwsAlgorithm = oidcClientMetadata.getIDTokenJWSAlg();
+
+		if (jwsAlgorithm != null) {
+			algorithm = jwsAlgorithm.getName();
+		}
+
+		try {
+			FIPSModeValidator.validateJWSAlgorithm(algorithm);
+		}
+		catch (SecurityException securityException) {
+			String tokenIssuer = null;
+
+			Issuer issuer = oidcProviderMetadata.getIssuer();
+
+			if (issuer != null) {
+				tokenIssuer = issuer.getValue();
+			}
+
+			FIPSAuditUtil.write(
+				FIPSAuditEventFactory.createFederationTokenRejected(
+					"backchannel", algorithm, tokenIssuer, "OIDC"));
+
+			throw new OpenIdConnectServiceException.TokenException(
+				securityException.getMessage(), securityException);
+		}
+
 		IDTokenValidator idTokenValidator = null;
 
-		if (JWSAlgorithm.Family.HMAC_SHA.contains(
-				oidcClientMetadata.getIDTokenJWSAlg())) {
-
+		if (JWSAlgorithm.Family.HMAC_SHA.contains(jwsAlgorithm)) {
 			idTokenValidator = new IDTokenValidator(
-				oidcProviderMetadata.getIssuer(), clientID,
-				oidcClientMetadata.getIDTokenJWSAlg(), clientSecret);
+				oidcProviderMetadata.getIssuer(), clientID, jwsAlgorithm,
+				clientSecret);
 		}
 		else {
 			URI uri = oidcProviderMetadata.getJWKSetURI();
 
 			try {
 				idTokenValidator = new IDTokenValidator(
-					oidcProviderMetadata.getIssuer(), clientID,
-					oidcClientMetadata.getIDTokenJWSAlg(), uri.toURL(),
-					new DefaultResourceRetriever(1000, 1000));
+					oidcProviderMetadata.getIssuer(), clientID, jwsAlgorithm,
+					uri.toURL(), new DefaultResourceRetriever(1000, 1000));
 			}
 			catch (MalformedURLException malformedURLException) {
 				throw new OpenIdConnectServiceException.TokenException(
@@ -204,8 +236,14 @@ public class OpenIdConnectTokenRequestUtil {
 			}
 		}
 
+		if ((authorizationCodeGrant instanceof RefreshTokenGrant) &&
+			(oidcTokens.getIDToken() == null)) {
+
+			return;
+		}
+
 		try {
-			return idTokenValidator.validate(oidcTokens.getIDToken(), nonce);
+			idTokenValidator.validate(oidcTokens.getIDToken(), nonce);
 		}
 		catch (BadJOSEException | JOSEException exception) {
 			throw new OpenIdConnectServiceException.TokenException(

@@ -16,6 +16,7 @@ import java.io.File;
 import java.net.URI;
 
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.Properties;
 
 import org.junit.Assert;
@@ -57,6 +58,10 @@ public class ProjectTemplatesServiceBuilderWorkspaceTest
 					"7.2.10.7"
 				},
 				{
+					"ds", "guestbook", "com.liferay.docs.guestbook", "dxp",
+					"2024.q1.1"
+				},
+				{
 					"ds", "guestbook", "com.liferay.docs.guestbook", "portal",
 					"7.3.7"
 				},
@@ -78,6 +83,10 @@ public class ProjectTemplatesServiceBuilderWorkspaceTest
 				},
 				{
 					"ds", "backend-integration", "com.liferay.docs.guestbook",
+					"dxp", "2024.q1.1"
+				},
+				{
+					"ds", "backend-integration", "com.liferay.docs.guestbook",
 					"portal", "7.3.7"
 				},
 				{
@@ -90,6 +99,10 @@ public class ProjectTemplatesServiceBuilderWorkspaceTest
 				},
 				{
 					"spring", "backend-integration",
+					"com.liferay.docs.guestbook", "dxp", "2024.q1.1"
+				},
+				{
+					"spring", "backend-integration",
 					"com.liferay.docs.guestbook", "portal", "7.3.7"
 				},
 				{
@@ -98,7 +111,9 @@ public class ProjectTemplatesServiceBuilderWorkspaceTest
 				},
 				{"spring", "sample", "com.test.sample", "dxp", "7.0.10.17"},
 				{"spring", "sample", "com.test.sample", "dxp", "7.1.10.7"},
+				{"spring", "sample", "com.test.sample", "dxp", "2024.q1.1"},
 				{"ds", "sample", "com.test.sample", "dxp", "7.2.10.7"},
+				{"ds", "sample", "com.test.sample", "dxp", "2024.q1.1"},
 				{"ds", "sample", "com.test.sample", "portal", "7.3.7"},
 				{"ds", "sample", "com.test.sample", "portal", "7.4.3.56"}
 			});
@@ -148,6 +163,12 @@ public class ProjectTemplatesServiceBuilderWorkspaceTest
 				"liferay.workspace.product=" + liferayWorkspaceProduct);
 		}
 
+		if (Objects.equals(_liferayVersion, "7.4.3.56")) {
+			writeGradlePropertiesInWorkspace(
+				gradleWorkspaceDir,
+				"com.liferay.portal.tools.service.builder.version=1.0.483");
+		}
+
 		File gradleWorkspaceModulesDir = new File(
 			gradleWorkspaceDir, "modules");
 
@@ -188,7 +209,9 @@ public class ProjectTemplatesServiceBuilderWorkspaceTest
 				"dependency-injector=\"ds\"");
 		}
 
-		if (VersionUtil.getMinorVersion(_liferayVersion) < 3) {
+		if (VersionUtil.isLiferayQuarterlyVersion(_liferayVersion) ||
+			(VersionUtil.getMinorVersion(_liferayVersion) < 3)) {
+
 			testContains(
 				gradleProjectDir, _name + "-api/build.gradle",
 				DEPENDENCY_RELEASE_DXP_API);
@@ -240,6 +263,13 @@ public class ProjectTemplatesServiceBuilderWorkspaceTest
 			}
 			else {
 				projectPath = ":modules:" + _name;
+			}
+
+			if (Objects.equals(_liferayVersion, "7.4.3.56")) {
+				updateMavenPomElementText(
+					new File(
+						mavenProjectDir.toPath() + "/" + _name + "-service"),
+					"//version[text()='1.0.501']", "1.0.483");
 			}
 
 			testBuildTemplateServiceBuilder(

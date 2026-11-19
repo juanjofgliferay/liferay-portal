@@ -1,0 +1,27 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`StringMatchInput should render 1`] = `
+<div>
+  <div
+    class="string-match-input-root"
+  >
+    <div
+      class="form-control form-control-tag-group"
+    >
+      <span
+        class="label metadata-tag-root label-lg label-inverse-secondary"
+      >
+        <span
+          class="label-item label-item-expand"
+        >
+          url
+        </span>
+      </span>
+      <input
+        class="form-control-inset"
+        value=".*custom-assets"
+      />
+    </div>
+  </div>
+</div>
+`;

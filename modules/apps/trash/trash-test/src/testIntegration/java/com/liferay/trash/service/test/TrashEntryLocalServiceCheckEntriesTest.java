@@ -6,12 +6,14 @@
 package com.liferay.trash.service.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.document.library.kernel.exception.NoSuchFileEntryException;
 import com.liferay.document.library.kernel.model.DLFileEntry;
 import com.liferay.document.library.kernel.model.DLFolderConstants;
 import com.liferay.document.library.kernel.service.DLAppLocalServiceUtil;
 import com.liferay.document.library.kernel.service.DLTrashLocalServiceUtil;
 import com.liferay.exportimport.kernel.service.StagingLocalServiceUtil;
 import com.liferay.layout.test.util.LayoutTestUtil;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.Group;
@@ -19,7 +21,7 @@ import com.liferay.portal.kernel.model.GroupConstants;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.repository.model.FileEntry;
-import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
+import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
 import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
 import com.liferay.portal.kernel.test.constants.TestDataConstants;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
@@ -39,6 +41,10 @@ import com.liferay.portal.kernel.util.PrefsPropsUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.Time;
 import com.liferay.portal.kernel.util.UnicodeProperties;
+import com.liferay.portal.kernel.workflow.WorkflowConstants;
+import com.liferay.portal.test.log.LogCapture;
+import com.liferay.portal.test.log.LogEntry;
+import com.liferay.portal.test.log.LoggerTestUtil;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
@@ -88,26 +94,26 @@ public class TrashEntryLocalServiceCheckEntriesTest {
 
 	@Test
 	public void testCompanies() throws Exception {
-		Long companyId = CompanyThreadLocal.getCompanyId();
+		long[] companyIds = new long[_COMPANIES_COUNT];
 
 		for (int i = 0; i < _COMPANIES_COUNT; i++) {
-			long newCompanyId = createCompany();
-
-			CompanyThreadLocal.setCompanyId(newCompanyId);
-
-			Group group = updateTrashEntriesMaxAge(
-				createGroup(newCompanyId), _MAX_AGE);
-
-			createTrashEntries(group);
+			companyIds[i] = createCompany();
 		}
+
+		CompanyLocalServiceUtil.forEachCompanyId(
+			companyId -> {
+				Group group = updateTrashEntriesMaxAge(
+					createGroup(companyId), _MAX_AGE);
+
+				createTrashEntries(group);
+			},
+			companyIds);
 
 		TrashEntryLocalServiceUtil.checkEntries();
 
 		Assert.assertEquals(
 			_COMPANIES_COUNT * _NOT_EXPIRED_TRASH_ENTRIES_COUNT,
 			TrashEntryLocalServiceUtil.getTrashEntriesCount());
-
-		CompanyThreadLocal.setCompanyId(companyId);
 	}
 
 	@Test
@@ -116,6 +122,20 @@ public class TrashEntryLocalServiceCheckEntriesTest {
 			createGroup(TestPropsValues.getCompanyId()), 2);
 
 		deleteTrashEntries(group);
+	}
+
+	@Test
+	public void testGroupTrashDisabled() throws Exception {
+		Group group = createGroup(TestPropsValues.getCompanyId());
+
+		createFileEntryTrashEntry(group, false);
+
+		TrashTestUtil.disableTrash(group);
+
+		TrashEntryLocalServiceUtil.checkEntries();
+
+		Assert.assertEquals(
+			0, TrashEntryLocalServiceUtil.getTrashEntriesCount());
 	}
 
 	@Test
@@ -132,20 +152,6 @@ public class TrashEntryLocalServiceCheckEntriesTest {
 		Assert.assertEquals(
 			_GROUPS_COUNT * _NOT_EXPIRED_TRASH_ENTRIES_COUNT,
 			TrashEntryLocalServiceUtil.getTrashEntriesCount());
-	}
-
-	@Test
-	public void testGroupTrashDisabled() throws Exception {
-		Group group = createGroup(TestPropsValues.getCompanyId());
-
-		createFileEntryTrashEntry(group, false);
-
-		TrashTestUtil.disableTrash(group);
-
-		TrashEntryLocalServiceUtil.checkEntries();
-
-		Assert.assertEquals(
-			0, TrashEntryLocalServiceUtil.getTrashEntriesCount());
 	}
 
 	@Test
@@ -210,6 +216,56 @@ public class TrashEntryLocalServiceCheckEntriesTest {
 			0, TrashEntryLocalServiceUtil.getTrashEntriesCount());
 	}
 
+	@Test
+	public void testUndeletableTrashEntry() throws Exception {
+		Group group = updateTrashEntriesMaxAge(
+			createGroup(TestPropsValues.getCompanyId()), _MAX_AGE);
+
+		createFileEntryTrashEntry(group, true);
+
+		TrashEntry trashEntry = TrashEntryLocalServiceUtil.addTrashEntry(
+			TestPropsValues.getUserId(), group.getGroupId(),
+			DLFileEntry.class.getName(), RandomTestUtil.randomLong(), null,
+			null, WorkflowConstants.STATUS_APPROVED, null, null);
+
+		int maxAge = _trashHelper.getMaxAge(group);
+
+		Date createDate = trashEntry.getCreateDate();
+
+		trashEntry.setCreateDate(
+			new Date(createDate.getTime() - (maxAge * Time.MINUTE) - Time.DAY));
+
+		trashEntry = TrashEntryLocalServiceUtil.updateTrashEntry(trashEntry);
+
+		try (LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
+				"com.liferay.trash.service.impl.TrashEntryLocalServiceImpl",
+				LoggerTestUtil.WARN)) {
+
+			TrashEntryLocalServiceUtil.checkEntries();
+
+			List<LogEntry> logEntries = logCapture.getLogEntries();
+
+			Assert.assertEquals(logEntries.toString(), 1, logEntries.size());
+
+			LogEntry logEntry = logEntries.get(0);
+
+			Assert.assertEquals(
+				"Unable to check trash entry " + trashEntry.getEntryId(),
+				logEntry.getMessage());
+			Assert.assertEquals(LoggerTestUtil.WARN, logEntry.getPriority());
+
+			Throwable throwable = logEntry.getThrowable();
+
+			Assert.assertSame(
+				NoSuchFileEntryException.class, throwable.getClass());
+		}
+
+		Assert.assertEquals(
+			1, TrashEntryLocalServiceUtil.getTrashEntriesCount());
+		Assert.assertNotNull(
+			TrashEntryLocalServiceUtil.fetchEntry(trashEntry.getEntryId()));
+	}
+
 	protected long createCompany() throws Exception {
 		Company company = CompanyTestUtil.addCompany(
 			RandomTestUtil.randomString());
@@ -228,7 +284,7 @@ public class TrashEntryLocalServiceCheckEntriesTest {
 			null, user.getUserId(), group.getGroupId(),
 			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
 			RandomTestUtil.randomString(), ContentTypes.TEXT_PLAIN,
-			TestDataConstants.TEST_BYTE_ARRAY, null, null,
+			TestDataConstants.TEST_BYTE_ARRAY, null, null, null,
 			ServiceContextTestUtil.getServiceContext(
 				group.getGroupId(), user.getUserId()));
 
@@ -270,15 +326,15 @@ public class TrashEntryLocalServiceCheckEntriesTest {
 		Layout layout = LayoutTestUtil.addTypePortletLayout(group);
 
 		return GroupLocalServiceUtil.addGroup(
-			user.getUserId(), GroupConstants.DEFAULT_PARENT_GROUP_ID,
-			Layout.class.getName(), layout.getPlid(),
-			GroupConstants.DEFAULT_LIVE_GROUP_ID,
+			StringPool.BLANK, user.getUserId(),
+			GroupConstants.DEFAULT_PARENT_GROUP_ID, Layout.class.getName(),
+			layout.getPlid(), GroupConstants.DEFAULT_LIVE_GROUP_ID,
 			HashMapBuilder.put(
 				LocaleUtil.getDefault(), String.valueOf(layout.getPlid())
 			).build(),
-			(Map<Locale, String>)null, 0, true,
-			GroupConstants.DEFAULT_MEMBERSHIP_RESTRICTION, null, false, true,
-			null);
+			(Map<Locale, String>)null, 0, null, true,
+			GroupConstants.DEFAULT_MEMBERSHIP_RESTRICTION, null, false, false,
+			true, null);
 	}
 
 	protected void createTrashEntries(Group group) throws Exception {

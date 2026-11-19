@@ -7,7 +7,6 @@ package com.liferay.exportimport.test.util.lar;
 
 import com.liferay.asset.kernel.model.AssetEntry;
 import com.liferay.asset.kernel.service.AssetEntryLocalServiceUtil;
-import com.liferay.asset.link.model.AssetLink;
 import com.liferay.asset.link.service.AssetLinkLocalServiceUtil;
 import com.liferay.exportimport.kernel.configuration.ExportImportConfigurationSettingsMapFactoryUtil;
 import com.liferay.exportimport.kernel.configuration.constants.ExportImportConfigurationConstants;
@@ -61,13 +60,25 @@ public abstract class BaseExportImportTestCase {
 			Map<String, String[]> parameterMap, boolean expectError)
 		throws Exception {
 
-		try (LogCapture logCapture = getLogCapture(expectError)) {
+		importLayouts(parameterMap, expectError, false);
+	}
+
+	public void importLayouts(
+			Map<String, String[]> parameterMap, boolean expectError,
+			boolean privateLayout)
+		throws Exception {
+
+		try (LogCapture logCapture1 = LoggerTestUtil.configureLog4JLogger(
+				"com.liferay.headless.admin.site.internal.util.LogUtil",
+				LoggerTestUtil.ERROR);
+			LogCapture logCapture2 = getLogCapture(expectError)) {
+
 			User user = TestPropsValues.getUser();
 
 			Map<String, Serializable> importLayoutSettingsMap =
 				ExportImportConfigurationSettingsMapFactoryUtil.
 					buildImportLayoutSettingsMap(
-						user, importedGroup.getGroupId(), false, null,
+						user, importedGroup.getGroupId(), privateLayout, null,
 						parameterMap);
 
 			ExportImportConfiguration exportImportConfiguration =
@@ -106,7 +117,7 @@ public abstract class BaseExportImportTestCase {
 		}
 	}
 
-	protected AssetLink addAssetLink(
+	protected void addAssetLink(
 			StagedModel sourceStagedModel, StagedModel targetStagedModel,
 			int weight)
 		throws PortalException {
@@ -114,7 +125,7 @@ public abstract class BaseExportImportTestCase {
 		AssetEntry originAssetEntry = getAssetEntry(sourceStagedModel);
 		AssetEntry targetAssetEntry = getAssetEntry(targetStagedModel);
 
-		return AssetLinkLocalServiceUtil.addLink(
+		AssetLinkLocalServiceUtil.addLink(
 			TestPropsValues.getUserId(), originAssetEntry.getEntryId(),
 			targetAssetEntry.getEntryId(), 0, weight);
 	}
@@ -133,7 +144,7 @@ public abstract class BaseExportImportTestCase {
 			new PortletDataHandlerBoolean(namespace, name);
 
 		addParameter(
-			parameterMap, portletDataHandlerBoolean.getNamespacedControlName(),
+			parameterMap, portletDataHandlerBoolean.getNamespacedName(),
 			String.valueOf(value));
 	}
 
@@ -179,13 +190,21 @@ public abstract class BaseExportImportTestCase {
 			boolean expectError)
 		throws Exception {
 
+		exportLayouts(layoutIds, parameterMap, expectError, false);
+	}
+
+	protected void exportLayouts(
+			long[] layoutIds, Map<String, String[]> parameterMap,
+			boolean expectError, boolean privateLayout)
+		throws Exception {
+
 		try (LogCapture logCapture = getLogCapture(expectError)) {
 			User user = TestPropsValues.getUser();
 
 			Map<String, Serializable> exportLayoutSettingsMap =
 				ExportImportConfigurationSettingsMapFactoryUtil.
 					buildExportLayoutSettingsMap(
-						user, group.getGroupId(), false, layoutIds,
+						user, group.getGroupId(), privateLayout, layoutIds,
 						parameterMap);
 
 			ExportImportConfiguration exportImportConfiguration =

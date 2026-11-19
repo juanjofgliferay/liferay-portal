@@ -5,15 +5,13 @@
 
 package com.liferay.portal.vulcan.jaxrs.exception.mapper;
 
-import com.liferay.petra.string.StringUtil;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.ext.ExceptionMapper;
 
 import java.util.List;
-
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.ext.ExceptionMapper;
 
 /**
  * @author Javier Gamarra
@@ -25,16 +23,14 @@ public abstract class BaseExceptionMapper<T extends Throwable>
 	public Response toResponse(T exception) {
 		Problem problem = getProblem(exception);
 
+		if (problem.getThrowable() == null) {
+			problem.setThrowable(exception);
+		}
+
 		String type = problem.getType();
 
 		if (type != null) {
-			String[] segments = type.split("\\.");
-
-			String exceptionType = segments[segments.length - 1];
-
-			if (exceptionType != null) {
-				problem.setType(StringUtil.replace(exceptionType, '$', '.'));
-			}
+			problem.setType(ExceptionMapperUtil.getType(type));
 		}
 
 		return Response.status(

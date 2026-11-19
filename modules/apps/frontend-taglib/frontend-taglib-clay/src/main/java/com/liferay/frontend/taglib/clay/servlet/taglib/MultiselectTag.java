@@ -15,12 +15,12 @@ import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.taglib.util.TagResourceBundleUtil;
 
+import jakarta.servlet.jsp.JspException;
+import jakarta.servlet.jsp.JspWriter;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import javax.servlet.jsp.JspException;
-import javax.servlet.jsp.JspWriter;
 
 /**
  * @author Kresimir Coko
@@ -97,13 +97,6 @@ public class MultiselectTag extends BaseContainerTag {
 
 	public void setDisabledClearAll(boolean disabledClearAll) {
 		_disabledClearAll = disabledClearAll;
-	}
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), with no direct replacement
-	 */
-	@Deprecated
-	public void setExtractData(Object extractData) {
 	}
 
 	public void setHelpText(String helpText) {

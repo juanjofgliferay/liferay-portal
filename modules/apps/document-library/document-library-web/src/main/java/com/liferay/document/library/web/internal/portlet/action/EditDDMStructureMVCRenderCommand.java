@@ -17,9 +17,9 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import javax.portlet.PortletException;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -29,9 +29,9 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + DLPortletKeys.DOCUMENT_LIBRARY,
-		"javax.portlet.name=" + DLPortletKeys.DOCUMENT_LIBRARY_ADMIN,
-		"javax.portlet.name=" + DLPortletKeys.MEDIA_GALLERY_DISPLAY,
+		"jakarta.portlet.name=" + DLPortletKeys.DOCUMENT_LIBRARY,
+		"jakarta.portlet.name=" + DLPortletKeys.DOCUMENT_LIBRARY_ADMIN,
+		"jakarta.portlet.name=" + DLPortletKeys.MEDIA_GALLERY_DISPLAY,
 		"mvc.command.name=/document_library/edit_ddm_structure"
 	},
 	service = MVCRenderCommand.class
@@ -46,7 +46,7 @@ public class EditDDMStructureMVCRenderCommand implements MVCRenderCommand {
 		try {
 			renderRequest.setAttribute(
 				WebKeys.DOCUMENT_LIBRARY_DYNAMIC_DATA_MAPPING_STRUCTURE,
-				_fetchDDMStructure(renderRequest));
+				_getDDMStructure(renderRequest));
 		}
 		catch (PortalException portalException) {
 			SessionErrors.add(renderRequest, portalException.getClass());
@@ -57,20 +57,24 @@ public class EditDDMStructureMVCRenderCommand implements MVCRenderCommand {
 		return "/document_library/ddm/edit_ddm_structure.jsp";
 	}
 
-	private DDMStructure _fetchDDMStructure(RenderRequest renderRequest)
+	private DDMStructure _getDDMStructure(RenderRequest renderRequest)
 		throws PortalException {
 
-		DDMStructure ddmStructure = _ddmStructureLocalService.fetchDDMStructure(
-			ParamUtil.getLong(renderRequest, "ddmStructureId"));
+		long ddmStructureId = ParamUtil.getLong(
+			renderRequest, "ddmStructureId");
 
-		if (ddmStructure != null) {
-			ThemeDisplay themeDisplay =
-				(ThemeDisplay)renderRequest.getAttribute(WebKeys.THEME_DISPLAY);
-
-			_ddmStructureModelResourcePermission.check(
-				themeDisplay.getPermissionChecker(), ddmStructure,
-				ActionKeys.UPDATE);
+		if (ddmStructureId <= 0) {
+			return null;
 		}
+
+		DDMStructure ddmStructure = _ddmStructureLocalService.getDDMStructure(
+			ddmStructureId);
+		ThemeDisplay themeDisplay = (ThemeDisplay)renderRequest.getAttribute(
+			WebKeys.THEME_DISPLAY);
+
+		_ddmStructureModelResourcePermission.check(
+			themeDisplay.getPermissionChecker(), ddmStructure,
+			ActionKeys.UPDATE);
 
 		return ddmStructure;
 	}

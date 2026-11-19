@@ -17,8 +17,10 @@ import java.util.Date;
  *
  * @author Alessio Antonio Rendina
  * @see CommerceNotificationAttachment
+ * @deprecated
  * @generated
  */
+@Deprecated
 public class CommerceNotificationAttachmentTable
 	extends BaseTable<CommerceNotificationAttachmentTable> {
 
@@ -68,3 +70,4 @@ public class CommerceNotificationAttachmentTable
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-2019906588

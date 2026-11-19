@@ -19,12 +19,17 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"panel.app.order:Integer=600",
+		"panel.app.order:Integer=400",
 		"panel.category.key=" + PanelCategoryKeys.CONTROL_PANEL_USERS
 	},
 	service = PanelApp.class
 )
 public class MonitoringPanelApp extends BasePanelApp {
+
+	@Override
+	public String getIcon() {
+		return "display-content";
+	}
 
 	@Override
 	public Portlet getPortlet() {
@@ -37,7 +42,7 @@ public class MonitoringPanelApp extends BasePanelApp {
 	}
 
 	@Reference(
-		target = "(javax.portlet.name=" + MonitoringPortletKeys.MONITORING + ")"
+		target = "(jakarta.portlet.name=" + MonitoringPortletKeys.MONITORING + ")"
 	)
 	private Portlet _portlet;
 

@@ -464,8 +464,7 @@ public class DDMFormInstanceWrapper
 
 	@Override
 	public com.liferay.dynamic.data.mapping.storage.DDMFormValues
-			getSettingsDDMFormValues()
-		throws com.liferay.portal.kernel.exception.PortalException {
+		getSettingsDDMFormValues() {
 
 		return model.getSettingsDDMFormValues();
 	}
@@ -831,6 +830,13 @@ public class DDMFormInstanceWrapper
 		model.setSettings(settings);
 	}
 
+	@Override
+	public void setSettingsDDMFormValues(
+		com.liferay.dynamic.data.mapping.storage.DDMFormValues ddmFormValues) {
+
+		model.setSettingsDDMFormValues(ddmFormValues);
+	}
+
 	/**
 	 * Sets the structure ID of this ddm form instance.
 	 *
@@ -951,3 +957,4 @@ public class DDMFormInstanceWrapper
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1814034847

@@ -109,11 +109,7 @@ public class DDMFieldAttributePersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		DDMFieldAttribute newDDMFieldAttribute = _persistence.create(pk);
-
-		newDDMFieldAttribute.setMvccVersion(RandomTestUtil.nextLong());
+		DDMFieldAttribute newDDMFieldAttribute = addDDMFieldAttribute();
 
 		newDDMFieldAttribute.setCtCollectionId(RandomTestUtil.nextLong());
 
@@ -133,7 +129,9 @@ public class DDMFieldAttributePersistenceTest {
 		newDDMFieldAttribute.setSmallAttributeValue(
 			RandomTestUtil.randomString());
 
-		_ddmFieldAttributes.add(_persistence.update(newDDMFieldAttribute));
+		newDDMFieldAttribute = _persistence.update(newDDMFieldAttribute);
+
+		_ddmFieldAttributes.add(newDDMFieldAttribute);
 
 		DDMFieldAttribute existingDDMFieldAttribute =
 			_persistence.findByPrimaryKey(newDDMFieldAttribute.getPrimaryKey());
@@ -202,15 +200,6 @@ public class DDMFieldAttributePersistenceTest {
 			new String[] {
 				RandomTestUtil.randomString(), "", "null", null, null
 			});
-	}
-
-	@Test
-	public void testCountByAN_SAV() throws Exception {
-		_persistence.countByAN_SAV("", "");
-
-		_persistence.countByAN_SAV("null", "null");
-
-		_persistence.countByAN_SAV((String)null, (String)null);
 	}
 
 	@Test
@@ -520,8 +509,6 @@ public class DDMFieldAttributePersistenceTest {
 
 		DDMFieldAttribute ddmFieldAttribute = _persistence.create(pk);
 
-		ddmFieldAttribute.setMvccVersion(RandomTestUtil.nextLong());
-
 		ddmFieldAttribute.setCtCollectionId(RandomTestUtil.nextLong());
 
 		ddmFieldAttribute.setCompanyId(RandomTestUtil.nextLong());
@@ -549,3 +536,4 @@ public class DDMFieldAttributePersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1174954459

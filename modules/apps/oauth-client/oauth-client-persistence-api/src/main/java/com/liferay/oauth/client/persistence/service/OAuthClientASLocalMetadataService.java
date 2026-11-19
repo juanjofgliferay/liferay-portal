@@ -14,6 +14,7 @@ import com.liferay.portal.kernel.service.BaseService;
 import com.liferay.portal.kernel.transaction.Isolation;
 import com.liferay.portal.kernel.transaction.Propagation;
 import com.liferay.portal.kernel.transaction.Transactional;
+import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.util.List;
 
@@ -43,7 +44,15 @@ public interface OAuthClientASLocalMetadataService extends BaseService {
 	 * Never modify this interface directly. Add custom service methods to <code>com.liferay.oauth.client.persistence.service.impl.OAuthClientASLocalMetadataServiceImpl</code> and rerun ServiceBuilder to automatically copy the method declarations to this interface. Consume the o auth client as local metadata remote service via injection or a <code>org.osgi.util.tracker.ServiceTracker</code>. Use {@link OAuthClientASLocalMetadataServiceUtil} if injection and service tracking are not available.
 	 */
 	public OAuthClientASLocalMetadata addOAuthClientASLocalMetadata(
-			long userId, String metadataJSON, String wellKnownURISuffix)
+			String metadataJSON, String wellKnownURISuffix)
+		throws PortalException;
+
+	public OAuthClientASLocalMetadata addOAuthClientASLocalMetadata(
+			String externalReferenceCode, String authorizationEndpoint,
+			String issuer, String jwksURI, boolean localWellKnownEnabled,
+			String registrationEndpoint, String[] supportedGrantTypes,
+			String[] supportedScopes, String[] supportedSubjectTypes,
+			String tokenEndpoint, String userInfoEndpoint)
 		throws PortalException;
 
 	public OAuthClientASLocalMetadata deleteOAuthClientASLocalMetadata(
@@ -51,7 +60,23 @@ public interface OAuthClientASLocalMetadataService extends BaseService {
 		throws PortalException;
 
 	public OAuthClientASLocalMetadata deleteOAuthClientASLocalMetadata(
-			String localWellKnownURI)
+			long companyId, String localWellKnownURI)
+		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public OAuthClientASLocalMetadata fetchOAuthClientASLocalMetadata(
+			long oAuthClientASLocalMetadataId)
+		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public OAuthClientASLocalMetadata fetchOAuthClientASLocalMetadata(
+			long companyId, String issuer)
+		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public OAuthClientASLocalMetadata
+			fetchOAuthClientASLocalMetadataByExternalReferenceCode(
+				String externalReferenceCode, long companyId)
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
@@ -65,7 +90,25 @@ public interface OAuthClientASLocalMetadataService extends BaseService {
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public OAuthClientASLocalMetadata getOAuthClientASLocalMetadata(
-			String localWellKnownURI)
+			long companyId, boolean localWellKnownEnabled,
+			OrderByComparator<OAuthClientASLocalMetadata> orderByComparator)
+		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public OAuthClientASLocalMetadata getOAuthClientASLocalMetadata(
+			long companyId, String issuer)
+		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public OAuthClientASLocalMetadata
+			getOAuthClientASLocalMetadataByExternalReferenceCode(
+				String externalReferenceCode, long companyId)
+		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public OAuthClientASLocalMetadata
+			getOAuthClientASLocalMetadataByLocalWellKnownURI(
+				long companyId, String localWellKnownURI)
 		throws PortalException;
 
 	/**
@@ -88,4 +131,13 @@ public interface OAuthClientASLocalMetadataService extends BaseService {
 			String wellKnownURISuffix)
 		throws PortalException;
 
+	public OAuthClientASLocalMetadata updateOAuthClientASLocalMetadata(
+			long oAuthClientASLocalMetadataId, String authorizationEndpoint,
+			String issuer, String jwksURI, boolean localWellKnownEnabled,
+			String registrationEndpoint, String[] supportedGrantTypes,
+			String[] supportedScopes, String[] supportedSubjectTypes,
+			String tokenEndpoint, String userInfoEndpoint)
+		throws PortalException;
+
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-482209157

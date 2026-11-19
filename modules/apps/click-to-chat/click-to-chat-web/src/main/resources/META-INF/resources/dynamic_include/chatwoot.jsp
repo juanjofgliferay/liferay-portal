@@ -7,7 +7,7 @@
 
 <%@ include file="/dynamic_include/init.jsp" %>
 
-<script>
+<aui:script position="inline">
 	if (!(window.$chatwoot && window.$chatwoot.hasLoaded)) {
 		(function (d, t) {
 			var BASE_URL = 'https://app.chatwoot.com';
@@ -22,7 +22,8 @@
 			g.onload = function () {
 				window.chatwootSDK.run({
 					baseUrl: BASE_URL,
-					websiteToken: '<%= clickToChatChatProviderAccountId %>',
+					websiteToken:
+						'<%= HtmlUtil.escapeJS(clickToChatChatProviderAccountId) %>',
 				});
 			};
 		})(document, 'script');
@@ -31,9 +32,9 @@
 	<c:if test="<%= themeDisplay.isSignedIn() %>">
 		window.onload = function () {
 			window.$chatwoot.setUser('<%= user.getUserId() %>', {
-				email: '<%= user.getEmailAddress() %>',
-				name: '<%= user.getScreenName() %>',
+				email: '<%= HtmlUtil.escapeJS(user.getEmailAddress()) %>',
+				name: '<%= HtmlUtil.escapeJS(user.getScreenName()) %>',
 			});
 		};
 	</c:if>
-</script>
+</aui:script>

@@ -119,27 +119,29 @@ public class PoshiElementFactoryTest {
 			"PoshiScriptMacro.macro");
 
 		int[] expectedLineNumbers = {
-			5, 11, 13, 19, 21, 31, 32, 33, 35, 37, 41, 45, 49, 53, 57, 61
+			5, 10, 12, 18, 20, 29, 30, 31, 33, 35, 39, 43, 47, 51, 55, 59
 		};
 
 		int i = 0;
 
 		for (Node node : Dom4JUtil.toNodeList(rootPoshiElement.content())) {
-			if (node instanceof PoshiElement) {
-				PoshiElement poshiElement = (PoshiElement)node;
+			if (!(node instanceof PoshiElement)) {
+				continue;
+			}
 
-				for (Node childNode :
-						Dom4JUtil.toNodeList(poshiElement.content())) {
+			PoshiElement poshiElement = (PoshiElement)node;
 
-					PoshiNode<?, ?> childPoshiNode = (PoshiNode<?, ?>)childNode;
+			for (Node childNode :
+					Dom4JUtil.toNodeList(poshiElement.content())) {
 
-					Assert.assertEquals(
-						"The the expected line number does not match",
-						expectedLineNumbers[i],
-						childPoshiNode.getPoshiScriptLineNumber());
+				PoshiNode<?, ?> childPoshiNode = (PoshiNode<?, ?>)childNode;
 
-					i++;
-				}
+				Assert.assertEquals(
+					"The the expected line number does not match",
+					expectedLineNumbers[i],
+					childPoshiNode.getPoshiScriptLineNumber());
+
+				i++;
 			}
 		}
 	}

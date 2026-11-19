@@ -11,7 +11,6 @@ import com.liferay.commerce.inventory.model.CommerceInventoryWarehouseItem;
 import com.liferay.commerce.inventory.service.base.CommerceInventoryWarehouseItemServiceBaseImpl;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
 import com.liferay.portal.kernel.security.permission.resource.PortletResourcePermission;
@@ -41,7 +40,8 @@ public class CommerceInventoryWarehouseItemServiceImpl
 	@Override
 	public CommerceInventoryWarehouseItem addCommerceInventoryWarehouseItem(
 			String externalReferenceCode, long commerceInventoryWarehouseId,
-			BigDecimal quantity, String sku, String unitOfMeasureKey)
+			BigDecimal quantity, BigDecimal reservedQuantity, String sku,
+			String unitOfMeasureKey)
 		throws PortalException {
 
 		_commerceInventoryWarehouseModelResourcePermission.check(
@@ -51,7 +51,8 @@ public class CommerceInventoryWarehouseItemServiceImpl
 		return commerceInventoryWarehouseItemLocalService.
 			addCommerceInventoryWarehouseItem(
 				externalReferenceCode, getUserId(),
-				commerceInventoryWarehouseId, quantity, sku, unitOfMeasureKey);
+				commerceInventoryWarehouseId, quantity, reservedQuantity, sku,
+				unitOfMeasureKey);
 	}
 
 	@Override
@@ -59,7 +60,8 @@ public class CommerceInventoryWarehouseItemServiceImpl
 			addOrUpdateCommerceInventoryWarehouseItem(
 				String externalReferenceCode, long companyId,
 				long commerceInventoryWarehouseId, BigDecimal quantity,
-				String sku, String unitOfMeasureKey)
+				BigDecimal reservedQuantity, String sku,
+				String unitOfMeasureKey)
 		throws PortalException {
 
 		_commerceInventoryWarehouseModelResourcePermission.check(
@@ -69,7 +71,8 @@ public class CommerceInventoryWarehouseItemServiceImpl
 		return commerceInventoryWarehouseItemLocalService.
 			addOrUpdateCommerceInventoryWarehouseItem(
 				externalReferenceCode, companyId, getUserId(),
-				commerceInventoryWarehouseId, quantity, sku, unitOfMeasureKey);
+				commerceInventoryWarehouseId, quantity, reservedQuantity, sku,
+				unitOfMeasureKey);
 	}
 
 	@Override
@@ -78,9 +81,8 @@ public class CommerceInventoryWarehouseItemServiceImpl
 		throws PortalException {
 
 		CommerceInventoryWarehouseItem commerceInventoryWarehouseItem =
-			commerceInventoryWarehouseItemLocalService.
-				fetchCommerceInventoryWarehouseItem(
-					commerceInventoryWarehouseItemId);
+			commerceInventoryWarehouseItemPersistence.fetchByPrimaryKey(
+				commerceInventoryWarehouseItemId);
 
 		if (commerceInventoryWarehouseItem != null) {
 			_commerceInventoryWarehouseModelResourcePermission.check(
@@ -100,17 +102,31 @@ public class CommerceInventoryWarehouseItemServiceImpl
 			long companyId, String sku, String unitOfMeasureKey)
 		throws PortalException {
 
-		PortletResourcePermission portletResourcePermission =
-			_commerceInventoryWarehouseModelResourcePermission.
-				getPortletResourcePermission();
+		for (Long commerceInventoryWarehouseId :
+				commerceInventoryWarehouseItemLocalService.
+					getCommerceInventoryWarehouseIds(
+						companyId, sku, unitOfMeasureKey)) {
 
-		portletResourcePermission.check(
-			getPermissionChecker(), null,
-			CommerceInventoryActionKeys.MANAGE_INVENTORY);
+			if (!_commerceInventoryWarehouseModelResourcePermission.contains(
+					getPermissionChecker(), commerceInventoryWarehouseId,
+					ActionKeys.UPDATE)) {
 
-		commerceInventoryWarehouseItemLocalService.
-			deleteCommerceInventoryWarehouseItems(
-				companyId, sku, unitOfMeasureKey);
+				continue;
+			}
+
+			CommerceInventoryWarehouseItem commerceInventoryWarehouseItem =
+				commerceInventoryWarehouseItemPersistence.fetchByCIWI_S_U(
+					commerceInventoryWarehouseId, sku, unitOfMeasureKey);
+
+			if (commerceInventoryWarehouseItem == null) {
+				continue;
+			}
+
+			commerceInventoryWarehouseItemLocalService.
+				deleteCommerceInventoryWarehouseItem(
+					commerceInventoryWarehouseItem.
+						getCommerceInventoryWarehouseItemId());
+		}
 	}
 
 	@Override
@@ -123,9 +139,8 @@ public class CommerceInventoryWarehouseItemServiceImpl
 			getPermissionChecker(), commerceInventoryWarehouseId,
 			ActionKeys.VIEW);
 
-		return commerceInventoryWarehouseItemLocalService.
-			fetchCommerceInventoryWarehouseItem(
-				commerceInventoryWarehouseId, sku, unitOfMeasureKey);
+		return commerceInventoryWarehouseItemPersistence.fetchByCIWI_S_U(
+			commerceInventoryWarehouseId, sku, unitOfMeasureKey);
 	}
 
 	@Override
@@ -135,9 +150,8 @@ public class CommerceInventoryWarehouseItemServiceImpl
 		throws PortalException {
 
 		CommerceInventoryWarehouseItem commerceInventoryWarehouseItem =
-			commerceInventoryWarehouseItemLocalService.
-				fetchCommerceInventoryWarehouseItemByExternalReferenceCode(
-					externalReferenceCode, companyId);
+			commerceInventoryWarehouseItemPersistence.fetchByERC_C(
+				externalReferenceCode, companyId);
 
 		if (commerceInventoryWarehouseItem != null) {
 			_commerceInventoryWarehouseModelResourcePermission.check(
@@ -156,9 +170,8 @@ public class CommerceInventoryWarehouseItemServiceImpl
 		throws PortalException {
 
 		CommerceInventoryWarehouseItem commerceInventoryWarehouseItem =
-			commerceInventoryWarehouseItemLocalService.
-				getCommerceInventoryWarehouseItem(
-					commerceInventoryWarehouseItemId);
+			commerceInventoryWarehouseItemPersistence.findByPrimaryKey(
+				commerceInventoryWarehouseItemId);
 
 		_commerceInventoryWarehouseModelResourcePermission.check(
 			getPermissionChecker(),
@@ -178,9 +191,8 @@ public class CommerceInventoryWarehouseItemServiceImpl
 			getPermissionChecker(), commerceInventoryWarehouseId,
 			ActionKeys.VIEW);
 
-		return commerceInventoryWarehouseItemLocalService.
-			getCommerceInventoryWarehouseItem(
-				commerceInventoryWarehouseId, sku, unitOfMeasureKey);
+		return commerceInventoryWarehouseItemPersistence.findByCIWI_S_U(
+			commerceInventoryWarehouseId, sku, unitOfMeasureKey);
 	}
 
 	@Override
@@ -193,8 +205,8 @@ public class CommerceInventoryWarehouseItemServiceImpl
 			getPermissionChecker(), commerceInventoryWarehouseId,
 			ActionKeys.VIEW);
 
-		return commerceInventoryWarehouseItemLocalService.
-			getCommerceInventoryWarehouseItems(
+		return commerceInventoryWarehouseItemPersistence.
+			findByCommerceInventoryWarehouseId(
 				commerceInventoryWarehouseId, start, end);
 	}
 
@@ -210,32 +222,21 @@ public class CommerceInventoryWarehouseItemServiceImpl
 
 		portletResourcePermission.check(
 			getPermissionChecker(), null,
-			CommerceInventoryActionKeys.MANAGE_INVENTORY);
+			CommerceInventoryActionKeys.VIEW_INVENTORIES);
 
-		return commerceInventoryWarehouseItemLocalService.
-			getCommerceInventoryWarehouseItemsByCompanyId(
-				companyId, start, end);
+		return commerceInventoryWarehouseItemPersistence.findByCompanyId(
+			companyId, start, end);
 	}
 
 	@Override
 	public List<CommerceInventoryWarehouseItem>
-			getCommerceInventoryWarehouseItemsByCompanyIdSkuAndUnitOfMeasureKey(
-				long companyId, String sku, String unitOfMeasureKey, int start,
-				int end)
-		throws PrincipalException {
-
-		PortletResourcePermission portletResourcePermission =
-			_commerceInventoryWarehouseModelResourcePermission.
-				getPortletResourcePermission();
-
-		boolean replacePermissionCheck = !portletResourcePermission.contains(
-			getPermissionChecker(), null,
-			CommerceInventoryActionKeys.MANAGE_INVENTORY);
+		getCommerceInventoryWarehouseItemsByCompanyIdSkuAndUnitOfMeasureKey(
+			long companyId, String sku, String unitOfMeasureKey, int start,
+			int end) {
 
 		return commerceInventoryWarehouseItemLocalService.
 			getCommerceInventoryWarehouseItemsByCompanyIdSkuAndUnitOfMeasureKey(
-				companyId, sku, unitOfMeasureKey, start, end,
-				replacePermissionCheck);
+				companyId, sku, unitOfMeasureKey, start, end, true);
 	}
 
 	@Override
@@ -247,14 +248,14 @@ public class CommerceInventoryWarehouseItemServiceImpl
 			getPermissionChecker(), commerceInventoryWarehouseId,
 			ActionKeys.VIEW);
 
-		return commerceInventoryWarehouseItemLocalService.
-			getCommerceInventoryWarehouseItemsCount(
-				commerceInventoryWarehouseId);
+		return commerceInventoryWarehouseItemPersistence.
+			countByCommerceInventoryWarehouseId(commerceInventoryWarehouseId);
 	}
 
 	@Override
 	public int getCommerceInventoryWarehouseItemsCount(
-			long companyId, long groupId, String sku, String unitOfMeasureKey)
+			long companyId, long accountEntryId, long groupId, String sku,
+			String unitOfMeasureKey)
 		throws PortalException {
 
 		PortletResourcePermission portletResourcePermission =
@@ -263,11 +264,11 @@ public class CommerceInventoryWarehouseItemServiceImpl
 
 		portletResourcePermission.check(
 			getPermissionChecker(), null,
-			CommerceInventoryActionKeys.MANAGE_INVENTORY);
+			CommerceInventoryActionKeys.VIEW_INVENTORIES);
 
 		return commerceInventoryWarehouseItemLocalService.
 			getCommerceInventoryWarehouseItemsCount(
-				companyId, groupId, sku, unitOfMeasureKey);
+				companyId, accountEntryId, groupId, sku, unitOfMeasureKey);
 	}
 
 	@Override
@@ -275,16 +276,9 @@ public class CommerceInventoryWarehouseItemServiceImpl
 			long companyId, String sku, String unitOfMeasureKey)
 		throws PortalException {
 
-		PortletResourcePermission portletResourcePermission =
-			_commerceInventoryWarehouseModelResourcePermission.
-				getPortletResourcePermission();
-
 		return commerceInventoryWarehouseItemLocalService.
 			getCommerceInventoryWarehouseItemsCount(
-				companyId, sku, unitOfMeasureKey,
-				!portletResourcePermission.contains(
-					getPermissionChecker(), null,
-					CommerceInventoryActionKeys.MANAGE_INVENTORY));
+				companyId, sku, unitOfMeasureKey, true);
 	}
 
 	@Override
@@ -298,16 +292,16 @@ public class CommerceInventoryWarehouseItemServiceImpl
 
 		portletResourcePermission.check(
 			getPermissionChecker(), null,
-			CommerceInventoryActionKeys.MANAGE_INVENTORY);
+			CommerceInventoryActionKeys.VIEW_INVENTORIES);
 
-		return commerceInventoryWarehouseItemLocalService.
-			getCommerceInventoryWarehouseItemsCountByCompanyId(companyId);
+		return commerceInventoryWarehouseItemPersistence.countByCompanyId(
+			companyId);
 	}
 
 	@Override
 	public int getCommerceInventoryWarehouseItemsCountByModifiedDate(
 			long companyId, Date startDate, Date endDate)
-		throws PrincipalException {
+		throws PortalException {
 
 		PortletResourcePermission portletResourcePermission =
 			_commerceInventoryWarehouseModelResourcePermission.
@@ -315,7 +309,7 @@ public class CommerceInventoryWarehouseItemServiceImpl
 
 		portletResourcePermission.check(
 			getPermissionChecker(), null,
-			CommerceInventoryActionKeys.MANAGE_INVENTORY);
+			CommerceInventoryActionKeys.VIEW_INVENTORIES);
 
 		return commerceInventoryWarehouseItemLocalService.
 			getCommerceInventoryWarehouseItemsCountByModifiedDate(
@@ -327,7 +321,7 @@ public class CommerceInventoryWarehouseItemServiceImpl
 			getCommerceInventoryWarehouseItemsCountByModifiedDate(
 				long companyId, Date startDate, Date endDate, int start,
 				int end)
-		throws PrincipalException {
+		throws PortalException {
 
 		PortletResourcePermission portletResourcePermission =
 			_commerceInventoryWarehouseModelResourcePermission.
@@ -335,7 +329,7 @@ public class CommerceInventoryWarehouseItemServiceImpl
 
 		portletResourcePermission.check(
 			getPermissionChecker(), null,
-			CommerceInventoryActionKeys.MANAGE_INVENTORY);
+			CommerceInventoryActionKeys.VIEW_INVENTORIES);
 
 		return commerceInventoryWarehouseItemLocalService.
 			getCommerceInventoryWarehouseItemsByModifiedDate(
@@ -344,10 +338,11 @@ public class CommerceInventoryWarehouseItemServiceImpl
 
 	@Override
 	public BigDecimal getStockQuantity(
-		long companyId, long groupId, String sku, String unitOfMeasureKey) {
+		long companyId, long accountEntryId, long groupId, String sku,
+		String unitOfMeasureKey) {
 
 		return commerceInventoryWarehouseItemLocalService.getStockQuantity(
-			companyId, groupId, sku, unitOfMeasureKey);
+			companyId, accountEntryId, groupId, sku, unitOfMeasureKey);
 	}
 
 	@Override
@@ -365,9 +360,8 @@ public class CommerceInventoryWarehouseItemServiceImpl
 		throws PortalException {
 
 		CommerceInventoryWarehouseItem commerceInventoryWarehouseItem =
-			commerceInventoryWarehouseItemLocalService.
-				fetchCommerceInventoryWarehouseItem(
-					commerceInventoryWarehouseItemId);
+			commerceInventoryWarehouseItemPersistence.fetchByPrimaryKey(
+				commerceInventoryWarehouseItemId);
 
 		if (commerceInventoryWarehouseItem != null) {
 			_commerceInventoryWarehouseModelResourcePermission.check(
@@ -407,13 +401,13 @@ public class CommerceInventoryWarehouseItemServiceImpl
 	@Override
 	public CommerceInventoryWarehouseItem updateCommerceInventoryWarehouseItem(
 			long commerceInventoryWarehouseItemId, BigDecimal quantity,
-			BigDecimal reservedQuantity, long mvccVersion)
+			BigDecimal reservedQuantity, String unitOfMeasureKey,
+			long mvccVersion)
 		throws PortalException {
 
 		CommerceInventoryWarehouseItem commerceInventoryWarehouseItem =
-			commerceInventoryWarehouseItemLocalService.
-				fetchCommerceInventoryWarehouseItem(
-					commerceInventoryWarehouseItemId);
+			commerceInventoryWarehouseItemPersistence.fetchByPrimaryKey(
+				commerceInventoryWarehouseItemId);
 
 		if (commerceInventoryWarehouseItem != null) {
 			_commerceInventoryWarehouseModelResourcePermission.check(
@@ -426,32 +420,7 @@ public class CommerceInventoryWarehouseItemServiceImpl
 		return commerceInventoryWarehouseItemLocalService.
 			updateCommerceInventoryWarehouseItem(
 				getUserId(), commerceInventoryWarehouseItemId, quantity,
-				reservedQuantity, mvccVersion);
-	}
-
-	@Override
-	public CommerceInventoryWarehouseItem updateCommerceInventoryWarehouseItem(
-			long commerceInventoryWarehouseItemId, long mvccVersion,
-			BigDecimal quantity, String unitOfMeasureKey)
-		throws PortalException {
-
-		CommerceInventoryWarehouseItem commerceInventoryWarehouseItem =
-			commerceInventoryWarehouseItemLocalService.
-				fetchCommerceInventoryWarehouseItem(
-					commerceInventoryWarehouseItemId);
-
-		if (commerceInventoryWarehouseItem != null) {
-			_commerceInventoryWarehouseModelResourcePermission.check(
-				getPermissionChecker(),
-				commerceInventoryWarehouseItem.
-					getCommerceInventoryWarehouseId(),
-				ActionKeys.UPDATE);
-		}
-
-		return commerceInventoryWarehouseItemLocalService.
-			updateCommerceInventoryWarehouseItem(
-				getUserId(), commerceInventoryWarehouseItemId, mvccVersion,
-				quantity, unitOfMeasureKey);
+				reservedQuantity, unitOfMeasureKey, mvccVersion);
 	}
 
 	@Reference(

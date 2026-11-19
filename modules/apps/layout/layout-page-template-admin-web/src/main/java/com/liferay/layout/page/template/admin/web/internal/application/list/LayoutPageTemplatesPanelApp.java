@@ -9,7 +9,11 @@ import com.liferay.application.list.BasePanelApp;
 import com.liferay.application.list.PanelApp;
 import com.liferay.application.list.constants.PanelCategoryKeys;
 import com.liferay.layout.page.template.admin.constants.LayoutPageTemplateAdminPortletKeys;
+import com.liferay.layout.page.template.constants.LayoutPageTemplateConstants;
+import com.liferay.layout.page.template.constants.LayoutPageTemplateEntryTypeConstants;
+import com.liferay.layout.page.template.service.LayoutPageTemplateEntryService;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Portlet;
@@ -29,7 +33,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + LayoutPageTemplateAdminPortletKeys.LAYOUT_PAGE_TEMPLATES,
+		"jakarta.portlet.name=" + LayoutPageTemplateAdminPortletKeys.LAYOUT_PAGE_TEMPLATES,
 		"panel.app.order:Integer=400",
 		"panel.category.key=" + PanelCategoryKeys.SITE_ADMINISTRATION_DESIGN
 	},
@@ -76,6 +80,23 @@ public class LayoutPageTemplatesPanelApp extends BasePanelApp {
 			return false;
 		}
 
+		if (group.isCompany() &&
+			!FeatureFlagManagerUtil.isEnabled(
+				group.getCompanyId(), "LPD-76864")) {
+
+			int count =
+				_layoutPageTemplateEntryService.
+					getLayoutPageTemplateEntriesCountByType(
+						group.getGroupId(),
+						LayoutPageTemplateConstants.
+							PARENT_LAYOUT_PAGE_TEMPLATE_COLLECTION_ID_DEFAULT,
+						LayoutPageTemplateEntryTypeConstants.WIDGET_PAGE);
+
+			if (count == 0) {
+				return false;
+			}
+		}
+
 		return super.isShow(permissionChecker, group);
 	}
 
@@ -85,8 +106,11 @@ public class LayoutPageTemplatesPanelApp extends BasePanelApp {
 	@Reference
 	private Language _language;
 
+	@Reference
+	private LayoutPageTemplateEntryService _layoutPageTemplateEntryService;
+
 	@Reference(
-		target = "(javax.portlet.name=" + LayoutPageTemplateAdminPortletKeys.LAYOUT_PAGE_TEMPLATES + ")"
+		target = "(jakarta.portlet.name=" + LayoutPageTemplateAdminPortletKeys.LAYOUT_PAGE_TEMPLATES + ")"
 	)
 	private Portlet _portlet;
 

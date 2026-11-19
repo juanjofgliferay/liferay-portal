@@ -9,7 +9,6 @@ import com.liferay.change.tracking.constants.CTConstants;
 import com.liferay.change.tracking.model.CTCollection;
 import com.liferay.change.tracking.model.CTEntry;
 import com.liferay.change.tracking.service.CTCollectionLocalService;
-import com.liferay.change.tracking.service.CTEntryLocalService;
 import com.liferay.change.tracking.spi.display.CTDisplayRenderer;
 import com.liferay.change.tracking.spi.display.CTDisplayRendererRegistry;
 import com.liferay.journal.model.JournalArticle;
@@ -38,6 +37,7 @@ import com.liferay.portal.kernel.util.Localization;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.search.spi.model.index.contributor.ModelDocumentContributor;
 
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -70,6 +70,44 @@ public class CTEntryModelDocumentContributor
 		}
 
 		document.addKeyword("ctCollectionId", ctEntry.getCtCollectionId());
+
+		CTCollection ctCollection = _ctCollectionLocalService.fetchCTCollection(
+			ctEntry.getCtCollectionId());
+
+		if (ctCollection != null) {
+			document.addKeywordSortable(
+				"ctCollectionName", ctCollection.getName());
+			document.addKeyword("ctCollectionStatus", ctCollection.getStatus());
+			document.addLocalizedKeyword(
+				"ctCollectionStatusLabel",
+				_localization.getLocalizationMap(
+					_language.getAvailableLocales(), LocaleUtil.getDefault(),
+					WorkflowConstants.getStatusLabel(ctCollection.getStatus())),
+				true, true);
+
+			if ((ctCollection.getStatus() ==
+					WorkflowConstants.STATUS_APPROVED) ||
+				(ctCollection.getStatus() ==
+					WorkflowConstants.STATUS_SCHEDULED)) {
+
+				document.addDateSortable(
+					"ctCollectionStatusDate",
+					_getCTCollectionStatusDate(ctCollection));
+
+				User ctCollectionStatusUser = _userLocalService.fetchUser(
+					ctCollection.getStatusByUserId());
+
+				if (ctCollectionStatusUser != null) {
+					document.addKeyword(
+						"ctCollectionStatusUserId",
+						ctCollectionStatusUser.getUserId());
+					document.addKeywordSortable(
+						"ctCollectionStatusUserName",
+						ctCollectionStatusUser.getFullName());
+				}
+			}
+		}
+
 		document.addKeyword("modelClassNameId", ctEntry.getModelClassNameId());
 		document.addKeyword("modelClassPK", ctEntry.getModelClassPK());
 
@@ -92,6 +130,18 @@ public class CTEntryModelDocumentContributor
 		Set<Locale> locales = _language.getAvailableLocales();
 
 		return locales.toArray(new Locale[0]);
+	}
+
+	private Date _getCTCollectionStatusDate(CTCollection ctCollection) {
+		if (ctCollection.getStatus() == WorkflowConstants.STATUS_APPROVED) {
+			return ctCollection.getStatusDate();
+		}
+
+		if (ctCollection.getStatus() == WorkflowConstants.STATUS_SCHEDULED) {
+			return ctCollection.getScheduledDate();
+		}
+
+		return null;
 	}
 
 	private Map<Locale, String> _getChangeTypeLabelMap(
@@ -139,11 +189,13 @@ public class CTEntryModelDocumentContributor
 		else {
 			Map<String, Object> modelAttributes = model.getModelAttributes();
 
-			if (modelAttributes.containsKey("groupId")) {
-				groupId = (long)modelAttributes.get("groupId");
+			if (modelAttributes.get("groupId") instanceof Long groupIdValue) {
+				groupId = groupIdValue;
 			}
-			else if (modelAttributes.containsKey("plid")) {
-				long plid = (long)modelAttributes.get("plid");
+			else {
+				if (!(modelAttributes.get("plid") instanceof Long plid)) {
+					return null;
+				}
 
 				try (SafeCloseable safeCloseable =
 						CTCollectionThreadLocal.
@@ -283,9 +335,11 @@ public class CTEntryModelDocumentContributor
 
 		Map<String, Object> modelAttributes = model.getModelAttributes();
 
-		if (modelAttributes.containsKey("status")) {
-			int status = (int)modelAttributes.get("status");
+		if (modelAttributes.get("plid") instanceof Long plid) {
+			document.addKeyword("plid", plid);
+		}
 
+		if (modelAttributes.get("status") instanceof Integer status) {
 			document.addKeyword(Field.STATUS, status);
 			document.addLocalizedKeyword(
 				"statusLabel",
@@ -304,9 +358,6 @@ public class CTEntryModelDocumentContributor
 
 	@Reference
 	private CTDisplayRendererRegistry _ctDisplayRendererRegistry;
-
-	@Reference
-	private CTEntryLocalService _ctEntryLocalService;
 
 	@Reference
 	private GroupLocalService _groupLocalService;

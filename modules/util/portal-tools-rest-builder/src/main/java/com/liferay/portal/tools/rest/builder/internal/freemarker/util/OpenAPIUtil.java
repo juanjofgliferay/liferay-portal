@@ -6,17 +6,18 @@
 package com.liferay.portal.tools.rest.builder.internal.freemarker.util;
 
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.TextFormatter;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.tools.rest.builder.internal.freemarker.tool.java.parser.util.OpenAPIParserUtil;
 import com.liferay.portal.tools.rest.builder.internal.yaml.config.ConfigYAML;
 import com.liferay.portal.tools.rest.builder.internal.yaml.openapi.Components;
+import com.liferay.portal.tools.rest.builder.internal.yaml.openapi.Discriminator;
 import com.liferay.portal.tools.rest.builder.internal.yaml.openapi.Info;
 import com.liferay.portal.tools.rest.builder.internal.yaml.openapi.Items;
 import com.liferay.portal.tools.rest.builder.internal.yaml.openapi.OpenAPIYAML;
 import com.liferay.portal.tools.rest.builder.internal.yaml.openapi.Schema;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -24,6 +25,7 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -50,37 +52,27 @@ public class OpenAPIUtil {
 		return "v" + matcher.replaceFirst("");
 	}
 
-	public static String formatSingular(String s) {
-		if (s.endsWith("ases")) {
-
-			// bases to base
-
-			s = s.substring(0, s.length() - 1);
-		}
-		else if (s.endsWith("auses")) {
-
-			// clauses to clause
-
-			s = s.substring(0, s.length() - 1);
-		}
-		else if (s.endsWith("ses") || s.endsWith("xes")) {
-			s = s.substring(0, s.length() - 2);
-		}
-		else if (s.endsWith("ies")) {
-			s = s.substring(0, s.length() - 3) + "y";
-		}
-		else if (s.endsWith("s")) {
-			s = s.substring(0, s.length() - 1);
+	public static String formatPlural(ConfigYAML configYAML, String s) {
+		if (!ConfigUtil.isVersionCompatible(configYAML, 16)) {
+			return TextFormatter.formatPlural(s);
 		}
 
-		return s;
+		return _format(s, TextFormatter::formatPlural);
+	}
+
+	public static String formatSingular(ConfigYAML configYAML, String s) {
+		if (!ConfigUtil.isVersionCompatible(configYAML, 16)) {
+			return _formatSingular(configYAML, s);
+		}
+
+		return _format(s, string -> _formatSingular(configYAML, string));
 	}
 
 	public static Map<String, Schema> getAllExternalSchemas(
 			ConfigYAML configYAML, OpenAPIYAML openAPIYAML)
 		throws Exception {
 
-		Map<String, Schema> allExternalSchemas = new HashMap<>();
+		Map<String, Schema> allExternalSchemas = new TreeMap<>();
 
 		Map<String, Schema> externalSchemas =
 			OpenAPIParserUtil.getExternalSchemas(configYAML, openAPIYAML);
@@ -98,13 +90,27 @@ public class OpenAPIUtil {
 
 		Queue<Map<String, Schema>> queue = new LinkedList<>();
 
-		queue.add(allExternalSchemas);
+		queue.add(new TreeMap<>(allExternalSchemas));
 
 		Map<String, Schema> map = null;
 
 		while ((map = queue.poll()) != null) {
 			for (Map.Entry<String, Schema> entry : map.entrySet()) {
 				Schema schema = entry.getValue();
+
+				Discriminator discriminator = schema.getDiscriminator();
+
+				if ((discriminator != null) &&
+					(discriminator.getMapping() != null)) {
+
+					Map<String, String> mapping = discriminator.getMapping();
+
+					for (String mappingReference : mapping.values()) {
+						_addExternalReference(
+							allExternalSchemas, externalSchemas, queue,
+							mappingReference);
+					}
+				}
 
 				Map<String, Schema> propertySchemas = null;
 
@@ -123,9 +129,16 @@ public class OpenAPIUtil {
 				else if (schema.getAllOfSchemas() != null) {
 					List<Schema> allOfSchemas = schema.getAllOfSchemas();
 
-					queue.add(
-						Collections.singletonMap(
-							entry.getKey(), allOfSchemas.get(0)));
+					for (Schema allOfSchema : allOfSchemas) {
+						if (allOfSchema.getReference() != null) {
+							_addExternalReference(
+								allExternalSchemas, externalSchemas, queue,
+								allOfSchema.getReference());
+						}
+						else if (allOfSchema.getPropertySchemas() != null) {
+							queue.add(allOfSchema.getPropertySchemas());
+						}
+					}
 				}
 				else if (schema.getReference() != null) {
 					_addExternalReference(
@@ -144,7 +157,7 @@ public class OpenAPIUtil {
 					entry.getKey());
 
 				if (items != null) {
-					schemaName = formatSingular(schemaName);
+					schemaName = formatSingular(configYAML, schemaName);
 				}
 
 				allExternalSchemas.put(schemaName, schema);
@@ -199,7 +212,6 @@ public class OpenAPIUtil {
 					if (schema.isMergeProperties() &&
 						ConfigUtil.isVersionCompatible(configYAML, 4)) {
 
-						schema.setAllOfSchemas(null);
 						schema.setPropertySchemas(propertySchemas);
 					}
 				}
@@ -208,14 +220,42 @@ public class OpenAPIUtil {
 				}
 
 				if (propertySchemas == null) {
-					continue;
+					List<Schema> allOfSchemas = schema.getAllOfSchemas();
+
+					if (allOfSchemas == null) {
+						continue;
+					}
+
+					boolean polymorphicChild = false;
+
+					for (Schema allOfSchema : allOfSchemas) {
+						if (allOfSchema.getReference() == null) {
+							continue;
+						}
+
+						Schema referenceSchema = allSchemas.get(
+							OpenAPIParserUtil.getReferenceName(
+								allOfSchema.getReference()));
+
+						if (referenceSchema.getDiscriminator() == null) {
+							continue;
+						}
+
+						polymorphicChild = true;
+
+						break;
+					}
+
+					if (!polymorphicChild) {
+						continue;
+					}
 				}
 
 				String schemaName = StringUtil.upperCaseFirstLetter(
 					entry.getKey());
 
 				if (items != null) {
-					schemaName = formatSingular(schemaName);
+					schemaName = formatSingular(configYAML, schemaName);
 				}
 
 				allSchemas.put(schemaName, schema);
@@ -232,11 +272,14 @@ public class OpenAPIUtil {
 						String schemaKey = StringUtil.upperCaseFirstLetter(
 							iterator.next());
 
-						if (!allSchemas.containsKey(schemaKey)) {
-							allSchemas.put(schemaKey, oneOfSchema);
+						Schema curSchema = allSchemas.putIfAbsent(
+							schemaKey, oneOfSchema);
 
-							queue.add(schemas);
+						if (curSchema != null) {
+							continue;
 						}
+
+						queue.add(schemas);
 					}
 				}
 
@@ -247,7 +290,7 @@ public class OpenAPIUtil {
 		return allSchemas;
 	}
 
-	public static Map<String, Schema> getGlobalEnumSchemas(
+	public static Map<String, Schema> getEnumSchemas(
 		ConfigYAML configYAML, Map<String, Schema> schemas) {
 
 		Map<String, Schema> globalEnumSchemas = new TreeMap<>();
@@ -270,19 +313,32 @@ public class OpenAPIUtil {
 				propertySchemas = schema.getPropertySchemas();
 			}
 
-			if ((propertySchemas == null) && (schema.getEnumValues() != null)) {
-				String schemaName = StringUtil.upperCaseFirstLetter(
-					entry.getKey());
-
-				if (items != null) {
-					schemaName = formatSingular(schemaName);
-				}
-
-				globalEnumSchemas.put(schemaName, schema);
+			if ((propertySchemas != null) || (schema.getEnumValues() == null)) {
+				continue;
 			}
+
+			String schemaName = StringUtil.upperCaseFirstLetter(entry.getKey());
+
+			if (items != null) {
+				schemaName = formatSingular(configYAML, schemaName);
+			}
+
+			globalEnumSchemas.put(schemaName, schema);
 		}
 
 		return globalEnumSchemas;
+	}
+
+	public static Map<String, Schema> getGlobalEnumSchemas(
+		ConfigYAML configYAML, OpenAPIYAML openAPIYAML) {
+
+		Components components = openAPIYAML.getComponents();
+
+		if (components == null) {
+			return Collections.emptyMap();
+		}
+
+		return getEnumSchemas(configYAML, components.getSchemas());
 	}
 
 	private static void _addExternalReference(
@@ -301,6 +357,64 @@ public class OpenAPIUtil {
 			allExternalSchemas.putAll(externalSchemaMap);
 			queue.add(externalSchemaMap);
 		}
+	}
+
+	private static String _format(String s, Function<String, String> function) {
+		if (Validator.isNull(s)) {
+			return s;
+		}
+
+		int pos = s.length();
+
+		while ((pos > 0) && Character.isDigit(s.charAt(pos - 1))) {
+			pos--;
+		}
+
+		if (pos == s.length()) {
+			return function.apply(s);
+		}
+
+		String prefix = s.substring(0, pos);
+
+		return function.apply(prefix) + s.substring(pos);
+	}
+
+	private static String _formatSingular(ConfigYAML configYAML, String s) {
+		if (s.endsWith("ases")) {
+
+			// bases to base
+
+			s = s.substring(0, s.length() - 1);
+		}
+		else if (s.endsWith("auses")) {
+
+			// clauses to clause
+
+			s = s.substring(0, s.length() - 1);
+		}
+		else if (s.endsWith("ouses") &&
+				 ConfigUtil.isVersionCompatible(configYAML, 16)) {
+
+			// warehouses to warehouse
+
+			s = s.substring(0, s.length() - 1);
+		}
+		else if (s.endsWith("ses") || s.endsWith("xes")) {
+			s = s.substring(0, s.length() - 2);
+		}
+		else if (s.endsWith("ies")) {
+			s = s.substring(0, s.length() - 3) + "y";
+		}
+		else if (s.endsWith("s") &&
+				 (!s.endsWith("ss") ||
+				  !ConfigUtil.isVersionCompatible(configYAML, 6)) &&
+				 (!s.endsWith("tus") ||
+				  !ConfigUtil.isVersionCompatible(configYAML, 11))) {
+
+			s = s.substring(0, s.length() - 1);
+		}
+
+		return s;
 	}
 
 	private static boolean _isAnyAllOfSchemasMissing(

@@ -16,7 +16,9 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.RandomAccess;
+import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 /**
  * The String utility class.
@@ -90,6 +92,58 @@ public class StringUtil {
 		}
 
 		return true;
+	}
+
+	public static void forEachLine(String s, Consumer<String> consumer) {
+		forEachLineUntil(
+			s,
+			line -> {
+				consumer.accept(line);
+
+				return false;
+			});
+	}
+
+	public static boolean forEachLineUntil(
+		String s, Predicate<String> predicate) {
+
+		int length = s.length();
+		int nextNewLine = s.indexOf(CharPool.NEW_LINE);
+		int nextReturn = s.indexOf(CharPool.RETURN);
+		int start = 0;
+
+		while (start < length) {
+			if ((nextNewLine != -1) && (nextNewLine < start)) {
+				nextNewLine = s.indexOf(CharPool.NEW_LINE, start);
+			}
+
+			if ((nextReturn != -1) && (nextReturn < start)) {
+				nextReturn = s.indexOf(CharPool.RETURN, start);
+			}
+
+			int end = nextNewLine;
+
+			if ((end == -1) || ((nextReturn != -1) && (nextReturn < end))) {
+				end = nextReturn;
+			}
+
+			if (end == -1) {
+				return predicate.test(s.substring(start));
+			}
+
+			if (predicate.test(s.substring(start, end))) {
+				return true;
+			}
+
+			if ((end == nextReturn) && (nextNewLine == (end + 1))) {
+				start = end + 2;
+			}
+			else {
+				start = end + 1;
+			}
+		}
+
+		return false;
 	}
 
 	public static String merge(boolean[] array, String delimiter) {
@@ -168,25 +222,26 @@ public class StringUtil {
 	}
 
 	public static <T> String merge(
-		Collection<T> col, Function<T, String> toStringFunction,
+		Collection<T> collection, Function<T, String> toStringFunction,
 		String delimiter) {
 
-		if (col instanceof List && col instanceof RandomAccess) {
+		if (collection instanceof List && collection instanceof RandomAccess) {
 			return merge(
-				(List<T> & RandomAccess)col, toStringFunction, delimiter);
+				(List<T> & RandomAccess)collection, toStringFunction,
+				delimiter);
 		}
 
-		if (col == null) {
+		if (collection == null) {
 			return null;
 		}
 
-		if (col.isEmpty()) {
+		if (collection.isEmpty()) {
 			return StringPool.BLANK;
 		}
 
-		StringBundler sb = new StringBundler(2 * col.size());
+		StringBundler sb = new StringBundler(2 * collection.size());
 
-		for (T t : col) {
+		for (T t : collection) {
 			sb.append(toStringFunction.apply(t));
 			sb.append(delimiter);
 		}
@@ -196,8 +251,8 @@ public class StringUtil {
 		return sb.toString();
 	}
 
-	public static <T> String merge(Collection<T> col, String delimiter) {
-		return merge(col, String::valueOf, delimiter);
+	public static <T> String merge(Collection<T> collection, String delimiter) {
+		return merge(collection, String::valueOf, delimiter);
 	}
 
 	public static String merge(double[] array, String delimiter) {
@@ -594,13 +649,15 @@ public class StringUtil {
 
 			offset += count;
 
-			if (offset == buffer.length) {
-				byte[] newBuffer = new byte[buffer.length << 1];
-
-				System.arraycopy(buffer, 0, newBuffer, 0, buffer.length);
-
-				buffer = newBuffer;
+			if (offset != buffer.length) {
+				continue;
 			}
+
+			byte[] newBuffer = new byte[buffer.length << 1];
+
+			System.arraycopy(buffer, 0, newBuffer, 0, buffer.length);
+
+			buffer = newBuffer;
 		}
 
 		if (offset == 0) {

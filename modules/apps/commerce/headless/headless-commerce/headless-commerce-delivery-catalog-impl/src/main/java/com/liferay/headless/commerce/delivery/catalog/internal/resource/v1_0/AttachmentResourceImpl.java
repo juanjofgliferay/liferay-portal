@@ -5,9 +5,9 @@
 
 package com.liferay.headless.commerce.delivery.catalog.internal.resource.v1_0;
 
-import com.liferay.account.exception.NoSuchEntryException;
-import com.liferay.account.model.AccountEntry;
 import com.liferay.account.service.AccountEntryLocalService;
+import com.liferay.account.service.AccountEntryService;
+import com.liferay.commerce.helper.CommerceAccountHelper;
 import com.liferay.commerce.product.constants.CPAttachmentFileEntryConstants;
 import com.liferay.commerce.product.exception.NoSuchCPDefinitionException;
 import com.liferay.commerce.product.model.CPAttachmentFileEntry;
@@ -16,12 +16,14 @@ import com.liferay.commerce.product.model.CommerceChannel;
 import com.liferay.commerce.product.service.CPAttachmentFileEntryLocalService;
 import com.liferay.commerce.product.service.CPDefinitionLocalService;
 import com.liferay.commerce.product.service.CommerceChannelLocalService;
-import com.liferay.commerce.util.CommerceAccountHelper;
+import com.liferay.commerce.util.CommerceChannelConfigurationUtil;
 import com.liferay.headless.commerce.delivery.catalog.dto.v1_0.Attachment;
 import com.liferay.headless.commerce.delivery.catalog.dto.v1_0.Product;
 import com.liferay.headless.commerce.delivery.catalog.internal.dto.v1_0.converter.AttachmentDTOConverterContext;
+import com.liferay.headless.commerce.delivery.catalog.internal.util.v1_0.AccountUtil;
 import com.liferay.headless.commerce.delivery.catalog.resource.v1_0.AttachmentResource;
 import com.liferay.portal.kernel.change.tracking.CTAware;
+import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.service.ClassNameLocalService;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.vulcan.dto.converter.DTOConverter;
@@ -53,18 +55,27 @@ public class AttachmentResourceImpl extends BaseAttachmentResourceImpl {
 		throws Exception {
 
 		CPDefinition cpDefinition =
-			_cpDefinitionLocalService.fetchCPDefinitionByCProductId(productId);
+			_cpDefinitionLocalService.fetchCPDefinitionByCProductId(
+				productId, true);
 
-		if (cpDefinition == null) {
+		CommerceChannel commerceChannel =
+			_commerceChannelLocalService.getCommerceChannel(channelId);
+
+		if ((cpDefinition == null) ||
+			!CommerceChannelConfigurationUtil.isGuestBrowsingEnabled(
+				PermissionThreadLocal.getPermissionChecker(),
+				commerceChannel.getGroupId())) {
+
 			throw new NoSuchCPDefinitionException(
 				"Unable to find product with ID " + productId);
 		}
 
 		return _getAttachmentPage(
 			cpDefinition,
-			_getAccountId(
-				accountId,
-				_commerceChannelLocalService.getCommerceChannel(channelId)),
+			AccountUtil.getAccountId(
+				contextCompany.getCompanyId(), commerceChannel.getGroupId(),
+				contextUser.getUserId(), _accountEntryLocalService,
+				_accountEntryService, accountId, _commerceAccountHelper, null),
 			CPAttachmentFileEntryConstants.TYPE_OTHER, pagination);
 	}
 
@@ -76,50 +87,28 @@ public class AttachmentResourceImpl extends BaseAttachmentResourceImpl {
 		throws Exception {
 
 		CPDefinition cpDefinition =
-			_cpDefinitionLocalService.fetchCPDefinitionByCProductId(productId);
+			_cpDefinitionLocalService.fetchCPDefinitionByCProductId(
+				productId, true);
 
-		if (cpDefinition == null) {
+		CommerceChannel commerceChannel =
+			_commerceChannelLocalService.getCommerceChannel(channelId);
+
+		if ((cpDefinition == null) ||
+			!CommerceChannelConfigurationUtil.isGuestBrowsingEnabled(
+				PermissionThreadLocal.getPermissionChecker(),
+				commerceChannel.getGroupId())) {
+
 			throw new NoSuchCPDefinitionException(
 				"Unable to find product with ID " + productId);
 		}
 
 		return _getAttachmentPage(
 			cpDefinition,
-			_getAccountId(
-				accountId,
-				_commerceChannelLocalService.getCommerceChannel(channelId)),
+			AccountUtil.getAccountId(
+				contextCompany.getCompanyId(), commerceChannel.getGroupId(),
+				contextUser.getUserId(), _accountEntryLocalService,
+				_accountEntryService, accountId, _commerceAccountHelper, null),
 			CPAttachmentFileEntryConstants.TYPE_IMAGE, pagination);
-	}
-
-	private Long _getAccountId(Long accountId, CommerceChannel commerceChannel)
-		throws Exception {
-
-		int countUserAccounts =
-			_commerceAccountHelper.countUserCommerceAccounts(
-				contextUser.getUserId(), commerceChannel.getGroupId());
-
-		if (countUserAccounts > 1) {
-			if (accountId == null) {
-				throw new NoSuchEntryException();
-			}
-		}
-		else {
-			long[] accountIds =
-				_commerceAccountHelper.getUserCommerceAccountIds(
-					contextUser.getUserId(), commerceChannel.getGroupId());
-
-			if (accountIds.length == 0) {
-				AccountEntry accountEntry =
-					_accountEntryLocalService.getGuestAccountEntry(
-						contextCompany.getCompanyId());
-
-				accountIds = new long[] {accountEntry.getAccountEntryId()};
-			}
-
-			return accountIds[0];
-		}
-
-		return accountId;
 	}
 
 	private Page<Attachment> _getAttachmentPage(
@@ -157,6 +146,9 @@ public class AttachmentResourceImpl extends BaseAttachmentResourceImpl {
 
 	@Reference
 	private AccountEntryLocalService _accountEntryLocalService;
+
+	@Reference
+	private AccountEntryService _accountEntryService;
 
 	@Reference(
 		target = "(component.name=com.liferay.headless.commerce.delivery.catalog.internal.dto.v1_0.converter.AttachmentDTOConverter)"

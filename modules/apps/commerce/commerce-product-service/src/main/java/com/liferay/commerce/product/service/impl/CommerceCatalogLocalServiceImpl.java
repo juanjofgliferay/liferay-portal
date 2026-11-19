@@ -13,13 +13,17 @@ import com.liferay.account.service.AccountEntryLocalService;
 import com.liferay.commerce.product.constants.CommerceCatalogConstants;
 import com.liferay.commerce.product.exception.CommerceCatalogProductsException;
 import com.liferay.commerce.product.exception.CommerceCatalogSystemException;
+import com.liferay.commerce.product.model.CPConfigurationList;
 import com.liferay.commerce.product.model.CommerceCatalog;
+import com.liferay.commerce.product.service.CPConfigurationListLocalService;
 import com.liferay.commerce.product.service.CPDefinitionLocalService;
 import com.liferay.commerce.product.service.base.CommerceCatalogLocalServiceBaseImpl;
+import com.liferay.exportimport.kernel.empty.model.EmptyModelManager;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.GroupConstants;
@@ -44,13 +48,17 @@ import com.liferay.portal.kernel.service.ResourceLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.systemevent.SystemEvent;
+import com.liferay.portal.kernel.util.CalendarFactoryUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.GroupThreadLocal;
+import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.StringUtil;
-import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.uuid.PortalUUIDUtil;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 
 import org.osgi.service.component.annotations.Component;
@@ -79,10 +87,6 @@ public class CommerceCatalogLocalServiceImpl
 
 		User user = _userLocalService.getUser(serviceContext.getUserId());
 
-		if (Validator.isBlank(externalReferenceCode)) {
-			externalReferenceCode = null;
-		}
-
 		long commerceCatalogId = counterLocalService.increment();
 
 		CommerceCatalog commerceCatalog = commerceCatalogPersistence.create(
@@ -98,15 +102,23 @@ public class CommerceCatalogLocalServiceImpl
 		commerceCatalog.setCatalogDefaultLanguageId(catalogDefaultLanguageId);
 		commerceCatalog.setSystem(system);
 
+		if (_emptyModelManager.isEmptyModel()) {
+			commerceCatalog.setStatus(WorkflowConstants.STATUS_EMPTY);
+		}
+		else {
+			commerceCatalog.setStatus(WorkflowConstants.STATUS_APPROVED);
+		}
+
 		// Group
 
 		_groupLocalService.addGroup(
-			user.getUserId(), GroupConstants.DEFAULT_PARENT_GROUP_ID,
+			StringPool.BLANK, user.getUserId(),
+			GroupConstants.DEFAULT_PARENT_GROUP_ID,
 			CommerceCatalog.class.getName(), commerceCatalogId,
 			GroupConstants.DEFAULT_LIVE_GROUP_ID, getLocalizationMap(name),
-			null, GroupConstants.TYPE_SITE_PRIVATE, false,
-			GroupConstants.DEFAULT_MEMBERSHIP_RESTRICTION, null, false, true,
-			null);
+			null, GroupConstants.TYPE_SITE_PRIVATE, null, false,
+			GroupConstants.DEFAULT_MEMBERSHIP_RESTRICTION, null, false, false,
+			true, null);
 
 		commerceCatalog = commerceCatalogPersistence.update(commerceCatalog);
 
@@ -114,6 +126,29 @@ public class CommerceCatalogLocalServiceImpl
 
 		_resourceLocalService.addModelResources(
 			commerceCatalog, serviceContext);
+
+		// Commerce product configuration list
+
+		Date date = new Date();
+
+		Calendar calendar = CalendarFactoryUtil.getCalendar(date.getTime());
+
+		int displayDateHour = calendar.get(Calendar.HOUR);
+
+		if (calendar.get(Calendar.AM_PM) == Calendar.PM) {
+			displayDateHour += 12;
+		}
+
+		_cpConfigurationListLocalService.addCPConfigurationList(
+			null, user.getUserId(), commerceCatalog.getGroupId(), 0, true,
+			_language.format(
+				LocaleUtil.fromLanguageId(
+					commerceCatalog.getCatalogDefaultLanguageId()),
+				"master-configuration-x", commerceCatalog.getName(), false),
+			0D, calendar.get(Calendar.MONTH),
+			calendar.get(Calendar.DAY_OF_MONTH), calendar.get(Calendar.YEAR),
+			displayDateHour, calendar.get(Calendar.MINUTE), 0, 0, 0, 0, 0, true,
+			new ServiceContext());
 
 		return commerceCatalog;
 	}
@@ -169,12 +204,24 @@ public class CommerceCatalogLocalServiceImpl
 
 		// Group
 
-		_groupLocalService.deleteGroup(groupId);
+		if (!GroupThreadLocal.isDeleteInProcess()) {
+			_groupLocalService.deleteGroup(groupId);
+		}
 
 		// Resources
 
 		_resourceLocalService.deleteResource(
 			commerceCatalog, ResourceConstants.SCOPE_INDIVIDUAL);
+
+		// Commerce product configuration lists
+
+		for (CPConfigurationList cpConfigurationList :
+				_cpConfigurationListLocalService.getCPConfigurationLists(
+					groupId, commerceCatalog.getCompanyId())) {
+
+			_cpConfigurationListLocalService.deleteCPConfigurationList(
+				cpConfigurationList, true);
+		}
 
 		return commerceCatalog;
 	}
@@ -199,18 +246,6 @@ public class CommerceCatalogLocalServiceImpl
 			commerceCatalogLocalService.forceDeleteCommerceCatalog(
 				commerceCatalog);
 		}
-	}
-
-	@Override
-	public CommerceCatalog fetchByExternalReferenceCode(
-		String externalReferenceCode, long companyId) {
-
-		if (Validator.isBlank(externalReferenceCode)) {
-			return null;
-		}
-
-		return commerceCatalogPersistence.fetchByERC_C(
-			externalReferenceCode, companyId);
 	}
 
 	@Override
@@ -252,6 +287,14 @@ public class CommerceCatalogLocalServiceImpl
 			commerceCatalog.getCommerceCatalogId());
 
 		if (group != null) {
+			for (CPConfigurationList cpConfigurationList :
+					_cpConfigurationListLocalService.getCPConfigurationLists(
+						group.getGroupId(), commerceCatalog.getCompanyId())) {
+
+				_cpConfigurationListLocalService.deleteCPConfigurationList(
+					cpConfigurationList, true);
+			}
+
 			_groupLocalService.deleteGroup(group);
 		}
 
@@ -263,7 +306,7 @@ public class CommerceCatalogLocalServiceImpl
 		throws PortalException {
 
 		CommerceCatalog commerceCatalog =
-			commerceCatalogLocalService.getCommerceCatalog(commerceCatalogId);
+			commerceCatalogPersistence.findByPrimaryKey(commerceCatalogId);
 
 		Group group = _groupLocalService.fetchGroup(
 			commerceCatalog.getCompanyId(),
@@ -279,6 +322,11 @@ public class CommerceCatalogLocalServiceImpl
 	}
 
 	@Override
+	public List<CommerceCatalog> getCommerceCatalogs(long companyId) {
+		return commerceCatalogPersistence.findByCompanyId(companyId);
+	}
+
+	@Override
 	public List<CommerceCatalog> getCommerceCatalogs(
 		long companyId, boolean system) {
 
@@ -290,6 +338,32 @@ public class CommerceCatalogLocalServiceImpl
 		long accountEntryId) {
 
 		return commerceCatalogPersistence.findByAccountEntryId(accountEntryId);
+	}
+
+	@Override
+	public CommerceCatalog getOrAddEmptyCommerceCatalog(
+			String externalReferenceCode, long companyId, long userId,
+			String name, String commerceCurrencyCode)
+		throws PortalException {
+
+		ServiceContext serviceContext = new ServiceContext();
+
+		serviceContext.setCompanyId(companyId);
+		serviceContext.setUserId(userId);
+
+		return _emptyModelManager.getOrAddEmptyModel(
+			CommerceCatalog.class, companyId,
+			() -> commerceCatalogLocalService.addCommerceCatalog(
+				externalReferenceCode,
+				AccountConstants.ACCOUNT_ENTRY_ID_DEFAULT,
+				GetterUtil.get(name, externalReferenceCode),
+				commerceCurrencyCode,
+				LocaleUtil.toLanguageId(LocaleUtil.getSiteDefault()), false,
+				serviceContext),
+			externalReferenceCode,
+			this::fetchCommerceCatalogByExternalReferenceCode,
+			this::getCommerceCatalogByExternalReferenceCode,
+			CommerceCatalog.class.getName());
 	}
 
 	@Override
@@ -340,6 +414,12 @@ public class CommerceCatalogLocalServiceImpl
 		commerceCatalog.setName(name);
 		commerceCatalog.setCommerceCurrencyCode(commerceCurrencyCode);
 		commerceCatalog.setCatalogDefaultLanguageId(catalogDefaultLanguageId);
+		commerceCatalog.setStatus(
+			_emptyModelManager.solveEmptyModel(
+				commerceCatalog.getExternalReferenceCode(),
+				commerceCatalog.getModelClassName(),
+				commerceCatalog.getCompanyId(), 0, commerceCatalog.getStatus(),
+				() -> WorkflowConstants.STATUS_APPROVED));
 
 		return commerceCatalogPersistence.update(commerceCatalog);
 	}
@@ -469,6 +549,10 @@ public class CommerceCatalogLocalServiceImpl
 		AccountEntry accountEntry = _accountEntryLocalService.getAccountEntry(
 			accountEntryId);
 
+		if (accountEntry.getStatus() == WorkflowConstants.STATUS_EMPTY) {
+			return;
+		}
+
 		if (!StringUtil.equals(
 				accountEntry.getType(),
 				AccountConstants.ACCOUNT_ENTRY_TYPE_SUPPLIER)) {
@@ -477,6 +561,10 @@ public class CommerceCatalogLocalServiceImpl
 				"Commerce catalogs can only be assigned with an account " +
 					"entry type:" +
 						AccountConstants.ACCOUNT_ENTRY_TYPE_SUPPLIER);
+		}
+
+		if (accountEntry.getStatus() == WorkflowConstants.STATUS_EMPTY) {
+			return;
 		}
 
 		if (accountEntry.getStatus() != WorkflowConstants.STATUS_APPROVED) {
@@ -500,10 +588,19 @@ public class CommerceCatalogLocalServiceImpl
 	private CompanyLocalService _companyLocalService;
 
 	@Reference
+	private CPConfigurationListLocalService _cpConfigurationListLocalService;
+
+	@Reference
 	private CPDefinitionLocalService _cpDefinitionLocalService;
 
 	@Reference
+	private EmptyModelManager _emptyModelManager;
+
+	@Reference
 	private GroupLocalService _groupLocalService;
+
+	@Reference
+	private Language _language;
 
 	@Reference
 	private ResourceLocalService _resourceLocalService;

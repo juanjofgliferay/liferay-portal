@@ -10,8 +10,6 @@ import com.liferay.portal.instance.lifecycle.BasePortalInstanceLifecycleListener
 import com.liferay.portal.instance.lifecycle.PortalInstanceLifecycleListener;
 import com.liferay.portal.kernel.model.Company;
 
-import java.util.concurrent.CompletableFuture;
-
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
@@ -27,11 +25,7 @@ public class MultiCompanyBatchEngineUnitPortalInstanceLifecycleListener
 
 	@Override
 	public void portalInstanceRegistered(Company company) throws Exception {
-		CompletableFuture<Void> completableFuture =
-			_multiCompanyBatchEngineUnitProcessor.processBatchEngineUnits(
-				company);
-
-		completableFuture.get();
+		_multiCompanyBatchEngineUnitProcessor.processBatchEngineUnits(company);
 	}
 
 	@Override
@@ -42,10 +36,5 @@ public class MultiCompanyBatchEngineUnitPortalInstanceLifecycleListener
 	@Reference
 	private MultiCompanyBatchEngineUnitProcessor
 		_multiCompanyBatchEngineUnitProcessor;
-
-	@Reference(
-		target = "(component.name=com.liferay.object.internal.instance.lifecycle.UncategorizedObjectFolderPortalInstanceLifecycleListener)"
-	)
-	private PortalInstanceLifecycleListener _portalInstanceLifecycleListener;
 
 }

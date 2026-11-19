@@ -8,8 +8,12 @@ package com.liferay.source.formatter.check;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.tools.ToolsUtil;
+import com.liferay.source.formatter.check.util.JSONSourceUtil;
+import com.liferay.source.formatter.check.util.SourceUtil;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -64,9 +68,11 @@ public class PoshiIndentationCheck extends BaseFileCheck {
 					StringPool.CLOSE_BRACKET, StringPool.CLOSE_CURLY_BRACE
 				});
 
-			if (trimmedLine.endsWith("'{")) {
-				level++;
+			if (!trimmedLine.endsWith("'{")) {
+				continue;
 			}
+
+			level++;
 		}
 
 		StringBundler sb = new StringBundler((lines.length * 2) + 2);
@@ -79,7 +85,7 @@ public class PoshiIndentationCheck extends BaseFileCheck {
 		sb.append(CharPool.NEW_LINE);
 		sb.append(indent);
 
-		return sb.toString();
+		return _formatJSONInCurl(sb.toString());
 	}
 
 	private String _fixTableIndentation(
@@ -157,21 +163,76 @@ public class PoshiIndentationCheck extends BaseFileCheck {
 					matcher.group(4), matcher.group(1));
 			}
 
-			if ((replacement != null) &&
-				!StringUtil.equals(matcher.group(4), replacement)) {
+			if ((replacement == null) ||
+				StringUtil.equals(matcher.group(4), replacement)) {
 
-				matcher.appendReplacement(
-					sb,
-					Matcher.quoteReplacement(
-						StringUtil.replaceFirst(
-							matcher.group(), matcher.group(4), replacement)));
+				continue;
 			}
+
+			matcher.appendReplacement(
+				sb,
+				Matcher.quoteReplacement(
+					StringUtil.replaceFirst(
+						matcher.group(), matcher.group(4), replacement)));
 		}
 
 		if (sb.length() > 0) {
 			matcher.appendTail(sb);
 
 			return sb.toString();
+		}
+
+		return content;
+	}
+
+	private String _formatJSONInCurl(String content) {
+		int x = content.indexOf("-d '{");
+
+		if (x == -1) {
+			return content;
+		}
+
+		int y = x;
+
+		while (true) {
+			y = content.indexOf("}", y + 1);
+
+			if (y == -1) {
+				return content;
+			}
+
+			if (ToolsUtil.isInsideQuotes(content, y)) {
+				continue;
+			}
+
+			String s = content.substring(x + 4, y + 1);
+
+			int level = getLevel(
+				s, StringPool.OPEN_CURLY_BRACE, StringPool.CLOSE_CURLY_BRACE);
+
+			if (level != 0) {
+				continue;
+			}
+
+			JSONObject jsonObject = JSONSourceUtil.getJSONObject(s);
+
+			if (jsonObject == null) {
+				break;
+			}
+
+			int lineNumber = SourceUtil.getLineNumber(content, x);
+
+			String replacement = JSONSourceUtil.fixIndentation(
+				jsonObject,
+				SourceUtil.getIndent(SourceUtil.getLine(content, lineNumber)));
+
+			replacement = StringUtil.trim(replacement);
+
+			if (s.equals(replacement)) {
+				break;
+			}
+
+			return StringUtil.replaceFirst(content, s, replacement, x);
 		}
 
 		return content;

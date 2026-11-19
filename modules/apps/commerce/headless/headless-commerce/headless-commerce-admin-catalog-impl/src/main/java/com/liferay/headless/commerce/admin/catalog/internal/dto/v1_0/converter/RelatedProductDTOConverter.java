@@ -5,9 +5,11 @@
 
 package com.liferay.headless.commerce.admin.catalog.internal.dto.v1_0.converter;
 
+import com.liferay.commerce.product.model.CPDefinition;
 import com.liferay.commerce.product.model.CPDefinitionLink;
 import com.liferay.commerce.product.model.CProduct;
 import com.liferay.commerce.product.service.CPDefinitionLinkService;
+import com.liferay.commerce.product.service.CPDefinitionService;
 import com.liferay.headless.commerce.admin.catalog.dto.v1_0.RelatedProduct;
 import com.liferay.portal.vulcan.dto.converter.DTOConverter;
 import com.liferay.portal.vulcan.dto.converter.DTOConverterContext;
@@ -19,7 +21,10 @@ import org.osgi.service.component.annotations.Reference;
  * @author Alessio Antonio Rendina
  */
 @Component(
-	property = "dto.class.name=com.liferay.commerce.product.model.CPDefinitionLink",
+	property = {
+		"default=true",
+		"dto.class.name=com.liferay.commerce.product.model.CPDefinitionLink"
+	},
 	service = DTOConverter.class
 )
 public class RelatedProductDTOConverter
@@ -40,19 +45,34 @@ public class RelatedProductDTOConverter
 
 		CProduct cProduct = cpDefinitionLink.getCProduct();
 
+		CPDefinition cpDefinition =
+			_cpDefinitionService.fetchCPDefinitionByCProductId(
+				cProduct.getCProductId(), false);
+
 		return new RelatedProduct() {
 			{
-				id = cpDefinitionLink.getCPDefinitionLinkId();
-				priority = cpDefinitionLink.getPriority();
-				productExternalReferenceCode =
-					cProduct.getExternalReferenceCode();
-				productId = cProduct.getCProductId();
-				type = cpDefinitionLink.getType();
+				setId(cpDefinitionLink::getCPDefinitionLinkId);
+				setPriority(cpDefinitionLink::getPriority);
+				setProductExternalReferenceCode(
+					cProduct::getExternalReferenceCode);
+				setProductId(cProduct::getCProductId);
+				setProductType(
+					() -> {
+						if (cpDefinition == null) {
+							return null;
+						}
+
+						return cpDefinition.getProductTypeName();
+					});
+				setType(cpDefinitionLink::getType);
 			}
 		};
 	}
 
 	@Reference
 	private CPDefinitionLinkService _cpDefinitionLinkService;
+
+	@Reference
+	private CPDefinitionService _cpDefinitionService;
 
 }

@@ -8,6 +8,7 @@ package com.liferay.blogs.web.internal.util;
 import com.liferay.asset.kernel.model.AssetEntry;
 import com.liferay.asset.kernel.service.AssetEntryServiceUtil;
 import com.liferay.asset.kernel.service.persistence.AssetEntryQuery;
+import com.liferay.blogs.configuration.BlogsGroupServiceConfiguration;
 import com.liferay.blogs.model.BlogsEntry;
 import com.liferay.blogs.util.comparator.EntryDisplayDateComparator;
 import com.liferay.blogs.util.comparator.EntryTitleComparator;
@@ -24,14 +25,15 @@ import com.liferay.portal.kernel.util.FriendlyURLNormalizerUtil;
 import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.LinkedHashMapBuilder;
 import com.liferay.portal.kernel.util.OrderByComparator;
+import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.PortletRequest;
+
 import java.util.List;
 import java.util.Map;
-
-import javax.portlet.PortletRequest;
 
 /**
  * @author Brian Wing Shun Chan
@@ -161,55 +163,10 @@ public class BlogsUtil {
 		).build();
 	}
 
-	public static Map<String, String> getEmailFromDefinitionTerms(
-		PortletRequest portletRequest, String emailFromAddress,
-		String emailFromName) {
-
-		ThemeDisplay themeDisplay = (ThemeDisplay)portletRequest.getAttribute(
-			WebKeys.THEME_DISPLAY);
-
-		return LinkedHashMapBuilder.put(
-			"[$BLOGS_ENTRY_USER_ADDRESS$]",
-			LanguageUtil.get(
-				themeDisplay.getLocale(),
-				"the-email-address-of-the-user-who-added-the-blog-entry")
-		).put(
-			"[$BLOGS_ENTRY_USER_NAME$]",
-			LanguageUtil.get(
-				themeDisplay.getLocale(), "the-user-who-added-the-blog-entry")
-		).put(
-			"[$COMPANY_ID$]",
-			LanguageUtil.get(
-				themeDisplay.getLocale(),
-				"the-company-id-associated-with-the-blog")
-		).put(
-			"[$COMPANY_MX$]",
-			LanguageUtil.get(
-				themeDisplay.getLocale(),
-				"the-company-mx-associated-with-the-blog")
-		).put(
-			"[$COMPANY_NAME$]",
-			LanguageUtil.get(
-				themeDisplay.getLocale(),
-				"the-company-name-associated-with-the-blog")
-		).put(
-			"[$PORTLET_NAME$]",
-			() -> {
-				PortletDisplay portletDisplay =
-					themeDisplay.getPortletDisplay();
-
-				return HtmlUtil.escape(portletDisplay.getTitle());
-			}
-		).put(
-			"[$SITE_NAME$]",
-			LanguageUtil.get(
-				themeDisplay.getLocale(),
-				"the-site-name-associated-with-the-blog")
-		).build();
-	}
-
 	public static OrderByComparator<BlogsEntry> getOrderByComparator(
 		String orderByCol, String orderByType) {
+
+		OrderByComparator<BlogsEntry> orderByComparator = null;
 
 		boolean orderByAsc = true;
 
@@ -217,13 +174,12 @@ public class BlogsUtil {
 			orderByAsc = false;
 		}
 
-		OrderByComparator<BlogsEntry> orderByComparator = null;
-
 		if (orderByCol.equals("display-date")) {
-			orderByComparator = new EntryDisplayDateComparator(orderByAsc);
+			orderByComparator = EntryDisplayDateComparator.getInstance(
+				orderByAsc);
 		}
 		else {
-			orderByComparator = new EntryTitleComparator(orderByAsc);
+			orderByComparator = EntryTitleComparator.getInstance(orderByAsc);
 		}
 
 		return orderByComparator;
@@ -271,6 +227,16 @@ public class BlogsUtil {
 
 		return ModelHintsUtil.trimString(
 			BlogsEntry.class.getName(), "urlTitle", title);
+	}
+
+	public static boolean isRSSFeedsEnabled(
+		BlogsGroupServiceConfiguration blogsGroupServiceConfiguration) {
+
+		if (!PortalUtil.isRSSFeedsEnabled()) {
+			return false;
+		}
+
+		return blogsGroupServiceConfiguration.enableRss();
 	}
 
 }

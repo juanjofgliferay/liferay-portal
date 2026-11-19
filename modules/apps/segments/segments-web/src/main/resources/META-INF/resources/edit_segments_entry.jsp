@@ -21,6 +21,7 @@ if (Validator.isNotNull(backURL)) {
 renderResponse.setTitle(editSegmentsEntryDisplayContext.getTitle(locale));
 %>
 
+<liferay-ui:error embed="<%= false %>" exception="<%= LockedSegmentsEntryException.class %>" message="the-segment-cannot-be-edited-because-it-is-used-by-a-running-ab-test" />
 <liferay-ui:error embed="<%= false %>" exception="<%= SegmentsEntryCriteriaException.class %>" message="invalid-criteria" />
 <liferay-ui:error embed="<%= false %>" exception="<%= SegmentsEntryKeyException.class %>" message="key-is-already-used" />
 <liferay-ui:error embed="<%= false %>" exception="<%= SegmentsEntryNameException.class %>" message="please-enter-a-valid-name" />
@@ -32,7 +33,6 @@ renderResponse.setTitle(editSegmentsEntryDisplayContext.getTitle(locale));
 	<aui:input name="groupId" type="hidden" value="<%= editSegmentsEntryDisplayContext.getGroupId() %>" />
 	<aui:input name="segmentsEntryId" type="hidden" value="<%= editSegmentsEntryDisplayContext.getSegmentsEntryId() %>" />
 	<aui:input name="segmentsEntryKey" type="hidden" value="<%= editSegmentsEntryDisplayContext.getSegmentsEntryKey() %>" />
-	<aui:input name="type" type="hidden" value="<%= editSegmentsEntryDisplayContext.getType() %>" />
 	<aui:input name="dynamic" type="hidden" value="<%= true %>" />
 
 	<div id="<%= liferayPortletResponse.getNamespace() %>-segment-edit-root">
@@ -41,7 +41,7 @@ renderResponse.setTitle(editSegmentsEntryDisplayContext.getTitle(locale));
 		</div>
 
 		<react:component
-			module="js/SegmentsApp.es"
+			module="{SegmentsApp} from segments-web"
 			props="<%= editSegmentsEntryDisplayContext.getData() %>"
 		/>
 	</div>

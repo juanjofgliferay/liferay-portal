@@ -39,20 +39,15 @@ public class RelatedProductUtil {
 				relatedProduct.getProductExternalReferenceCode())) {
 
 			cpDefinition =
-				cpDefinitionService.
-					fetchCPDefinitionByCProductExternalReferenceCode(
-						relatedProduct.getProductExternalReferenceCode(),
-						serviceContext.getCompanyId());
-
-			if (cpDefinition == null) {
-				throw new NoSuchCPDefinitionException(
-					"Unable to find product with external reference code " +
-						relatedProduct.getProductExternalReferenceCode());
-			}
+				ProductUtil.getCPDefinitionByCProductExternalReferenceCode(
+					serviceContext.getCompanyId(), cpDefinitionService,
+					relatedProduct.getProductExternalReferenceCode(),
+					serviceContext.getScopeGroupId(),
+					relatedProduct.getProductType());
 		}
 		else {
 			cpDefinition = cpDefinitionService.fetchCPDefinitionByCProductId(
-				relatedProduct.getProductId());
+				relatedProduct.getProductId(), false);
 
 			if (cpDefinition == null) {
 				throw new NoSuchCPDefinitionException(

@@ -5,29 +5,69 @@
 
 package com.liferay.object.internal.field.business.type;
 
+import com.liferay.document.library.helper.DLURLHelper;
+import com.liferay.document.library.kernel.model.DLFileEntry;
+import com.liferay.document.library.kernel.model.DLFileEntryMetadata;
+import com.liferay.document.library.kernel.model.DLFolder;
+import com.liferay.document.library.kernel.processor.PDFProcessorUtil;
+import com.liferay.document.library.kernel.service.DLAppService;
+import com.liferay.document.library.kernel.service.DLFileEntryLocalService;
+import com.liferay.document.library.kernel.service.DLFileEntryMetadataLocalService;
+import com.liferay.dynamic.data.mapping.model.DDMField;
+import com.liferay.dynamic.data.mapping.model.DDMFieldAttribute;
+import com.liferay.dynamic.data.mapping.service.DDMFieldLocalService;
+import com.liferay.exportimport.attachment.ExportImportAttachmentManager;
+import com.liferay.object.constants.ObjectDefinitionConstants;
 import com.liferay.object.constants.ObjectFieldConstants;
 import com.liferay.object.constants.ObjectFieldSettingConstants;
 import com.liferay.object.dynamic.data.mapping.form.field.type.constants.ObjectDDMFormFieldTypeConstants;
 import com.liferay.object.exception.ObjectFieldSettingValueException;
 import com.liferay.object.field.business.type.ObjectFieldBusinessType;
 import com.liferay.object.field.render.ObjectFieldRenderingContext;
+import com.liferay.object.field.setting.util.ObjectFieldSettingUtil;
 import com.liferay.object.model.ObjectDefinition;
+import com.liferay.object.model.ObjectEntry;
 import com.liferay.object.model.ObjectField;
 import com.liferay.object.model.ObjectFieldSetting;
+import com.liferay.object.rest.dto.v1_0.FileEntry;
+import com.liferay.object.rest.dto.v1_0.Folder;
+import com.liferay.object.rest.dto.v1_0.util.LinkUtil;
 import com.liferay.object.scope.ObjectScopeProvider;
 import com.liferay.object.scope.ObjectScopeProviderRegistry;
 import com.liferay.object.service.ObjectDefinitionLocalService;
+import com.liferay.object.service.ObjectEntryService;
+import com.liferay.petra.function.UnsafeFunction;
+import com.liferay.petra.function.UnsafeSupplierValue;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.language.Language;
+import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.model.GroupConstants;
+import com.liferay.portal.kernel.repository.model.FileVersion;
+import com.liferay.portal.kernel.security.auth.GuestOrUserUtil;
+import com.liferay.portal.kernel.service.GroupLocalService;
+import com.liferay.portal.kernel.util.Base64;
+import com.liferay.portal.kernel.util.File;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
+import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.MapUtil;
+import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.SetUtil;
+import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.repository.liferayrepository.model.LiferayFileEntry;
+import com.liferay.portal.vulcan.dto.converter.DTOConverterContext;
 import com.liferay.portal.vulcan.extension.PropertyDefinition;
+import com.liferay.portal.vulcan.fields.NestedFieldsSupplier;
+import com.liferay.portal.vulcan.scope.Scope;
+
+import java.io.Serializable;
 
 import java.math.BigDecimal;
 
@@ -53,7 +93,8 @@ public class AttachmentObjectFieldBusinessType
 	@Override
 	public Set<String> getAllowedObjectFieldSettingsNames() {
 		return SetUtil.fromArray(
-			ObjectFieldSettingConstants.NAME_SHOW_FILES_IN_DOCS_AND_MEDIA,
+			ObjectFieldSettingConstants.NAME_SHOW_FILES_IN_LIBRARY,
+			ObjectFieldSettingConstants.NAME_STORAGE_DEPOT_GROUP,
 			ObjectFieldSettingConstants.NAME_STORAGE_DL_FOLDER_PATH);
 	}
 
@@ -68,14 +109,164 @@ public class AttachmentObjectFieldBusinessType
 	}
 
 	@Override
+	public Serializable getDTOValue(
+			DTOConverterContext dtoConverterContext,
+			ObjectDefinition objectDefinition, ObjectEntry objectEntry,
+			ObjectField objectField, Serializable serializable)
+		throws Exception {
+
+		if (serializable instanceof FileEntry) {
+			return serializable;
+		}
+
+		final long fileEntryId;
+
+		if (serializable instanceof Long) {
+			fileEntryId = GetterUtil.getLong(serializable);
+		}
+		else if (serializable instanceof Map) {
+			fileEntryId = MapUtil.getLong(
+				(Map<String, Serializable>)serializable, "id");
+		}
+		else {
+			fileEntryId = 0;
+		}
+
+		if (fileEntryId == 0) {
+			return null;
+		}
+
+		UnsafeSupplierValue<DLFileEntry, Exception>
+			dlFileEntryUnsafeSupplierValue = new UnsafeSupplierValue<>(
+				() -> _dLFileEntryLocalService.fetchDLFileEntry(fileEntryId));
+
+		UnsafeSupplierValue<LiferayFileEntry, Exception>
+			liferayFileEntryUnsafeSupplierValue = new UnsafeSupplierValue<>(
+				() -> _toValue(
+					LiferayFileEntry::new, dlFileEntryUnsafeSupplierValue));
+
+		return new FileEntry() {
+			{
+				setAlternativeText(
+					() -> _toValue(
+						liferayFileEntry -> {
+							FileVersion fileVersion =
+								liferayFileEntry.getFileVersion();
+
+							return fileVersion.getDescription();
+						},
+						liferayFileEntryUnsafeSupplierValue));
+				setExtension(
+					() -> _toValue(
+						DLFileEntry::getExtension,
+						dlFileEntryUnsafeSupplierValue));
+				setExternalReferenceCode(
+					() -> _toValue(
+						DLFileEntry::getExternalReferenceCode,
+						dlFileEntryUnsafeSupplierValue));
+				setFileBase64(
+					() -> _toValue(
+						dlFileEntry -> _getFileBase64(dlFileEntry, objectField),
+						dlFileEntryUnsafeSupplierValue));
+				setFileURL(
+					() -> _toValue(
+						dlFileEntry -> _getFileURL(dlFileEntry, objectField),
+						dlFileEntryUnsafeSupplierValue));
+				setFolder(
+					() -> _toValue(
+						dlFileEntry -> _getFolder(dlFileEntry, objectField),
+						dlFileEntryUnsafeSupplierValue));
+				setId(() -> fileEntryId);
+				setLink(
+					() -> _toValue(
+						dlFileEntry -> LinkUtil.toLink(
+							_dlAppService, dlFileEntry, _dlURLHelper,
+							objectEntry.getGroupId(),
+							objectDefinition.getExternalReferenceCode(),
+							objectEntry, _objectEntryService, objectField,
+							GuestOrUserUtil.getPermissionChecker(), _portal),
+						dlFileEntryUnsafeSupplierValue));
+				setMetadata(
+					() -> _toValue(
+						liferayFileEntry -> _getMetadata(
+							liferayFileEntry.getFileVersion(),
+							dtoConverterContext.getLocale(), objectField),
+						liferayFileEntryUnsafeSupplierValue));
+				setMimeType(
+					() -> _toValue(
+						DLFileEntry::getMimeType,
+						dlFileEntryUnsafeSupplierValue));
+				setName(
+					() -> _toValue(
+						DLFileEntry::getFileName,
+						dlFileEntryUnsafeSupplierValue));
+				setPreviewURL(
+					() -> _toValue(
+						liferayFileEntry -> _getPreviewURL(
+							liferayFileEntry, objectField),
+						liferayFileEntryUnsafeSupplierValue));
+				setScope(
+					() -> _toValue(
+						dlFileEntry -> _getScope(
+							dlFileEntry, objectDefinition, objectEntry),
+						dlFileEntryUnsafeSupplierValue));
+				setSize(
+					() -> _toValue(
+						dlFileEntry -> LanguageUtil.formatStorageSize(
+							dlFileEntry.getSize(),
+							dtoConverterContext.getLocale()),
+						dlFileEntryUnsafeSupplierValue));
+				setThumbnailURL(
+					() -> _toValue(
+						dlFileEntry -> _getThumbnailURL(
+							dlFileEntry, objectField),
+						dlFileEntryUnsafeSupplierValue));
+			}
+		};
+	}
+
+	@Override
 	public String getDescription(Locale locale) {
 		return _language.get(
 			locale, "upload-files-or-select-from-documents-and-media");
 	}
 
 	@Override
+	public Object getDisplayContextValue(
+			ObjectField objectField, long userId, Map<String, Object> values)
+		throws PortalException {
+
+		if (objectField.isLocalized()) {
+			return getLocalizedValues(null, objectField, userId, values);
+		}
+
+		return super.getDisplayContextValue(objectField, userId, values);
+	}
+
+	@Override
 	public String getLabel(Locale locale) {
 		return _language.get(locale, "attachment");
+	}
+
+	@Override
+	public Map<String, Object> getLocalizedValues(
+			Long groupId, ObjectField objectField, Long userId,
+			Map<String, Object> values)
+		throws PortalException {
+
+		Map<String, Object> localizedValues = super.getLocalizedValues(
+			groupId, objectField, userId, values);
+
+		if (localizedValues == null) {
+			return null;
+		}
+
+		for (Map.Entry<String, Object> entry : localizedValues.entrySet()) {
+			localizedValues.put(
+				entry.getKey(), _getFileEntryId(entry.getValue()));
+		}
+
+		return localizedValues;
 	}
 
 	@Override
@@ -85,14 +276,15 @@ public class AttachmentObjectFieldBusinessType
 
 	@Override
 	public Map<String, Object> getProperties(
-		ObjectField objectField,
-		ObjectFieldRenderingContext objectFieldRenderingContext) {
+			ObjectField objectField,
+			ObjectFieldRenderingContext objectFieldRenderingContext)
+		throws PortalException {
 
 		Map<String, Object> properties = super.getProperties(
 			objectField, objectFieldRenderingContext);
 
 		properties.remove(
-			ObjectFieldSettingConstants.NAME_SHOW_FILES_IN_DOCS_AND_MEDIA);
+			ObjectFieldSettingConstants.NAME_SHOW_FILES_IN_LIBRARY);
 		properties.remove(
 			ObjectFieldSettingConstants.NAME_STORAGE_DL_FOLDER_PATH);
 
@@ -135,37 +327,12 @@ public class AttachmentObjectFieldBusinessType
 
 	@Override
 	public Object getValue(
-			ObjectField objectField, long userId, Map<String, Object> values)
+			Long groupId, ObjectField objectField, long userId,
+			Map<String, Object> values)
 		throws PortalException {
 
-		Object value = values.get(objectField.getName());
-
-		long fileEntryId = GetterUtil.getLong(value);
-
-		if (fileEntryId > 0) {
-			return fileEntryId;
-		}
-
-		if (value instanceof Map) {
-			fileEntryId = MapUtil.getLong((Map<String, Object>)value, "id");
-		}
-		else {
-			String stringValue = MapUtil.getString(
-				values, objectField.getName());
-
-			if (JSONUtil.isJSONObject(stringValue)) {
-				JSONObject jsonObject = jsonFactory.createJSONObject(
-					stringValue);
-
-				fileEntryId = GetterUtil.getLong(jsonObject.get("id"));
-			}
-		}
-
-		if (fileEntryId > 0) {
-			return fileEntryId;
-		}
-
-		return value;
+		return _getFileEntryId(
+			super.getValue(groupId, objectField, userId, values));
 	}
 
 	@Override
@@ -188,22 +355,46 @@ public class AttachmentObjectFieldBusinessType
 			ObjectFieldSettingConstants.NAME_FILE_SOURCE);
 
 		if (Objects.equals(
+				fileSource,
+				ObjectFieldSettingConstants.VALUE_CMS_BASIC_DOCUMENT) ||
+			Objects.equals(
 				fileSource, ObjectFieldSettingConstants.VALUE_DOCS_AND_MEDIA)) {
 
 			validateNotAllowedObjectFieldSettingNames(
 				SetUtil.fromArray(
-					ObjectFieldSettingConstants.
-						NAME_SHOW_FILES_IN_DOCS_AND_MEDIA,
+					ObjectFieldSettingConstants.NAME_SHOW_FILES_IN_LIBRARY,
+					ObjectFieldSettingConstants.NAME_STORAGE_DEPOT_GROUP,
 					ObjectFieldSettingConstants.NAME_STORAGE_DL_FOLDER_PATH),
 				objectField.getName(), objectFieldSettingsValues);
 		}
 		else if (Objects.equals(
 					fileSource,
-					ObjectFieldSettingConstants.VALUE_USER_COMPUTER)) {
+					ObjectFieldSettingConstants.
+						VALUE_USER_COMPUTER_TO_CMS_BASIC_DOCUMENT)) {
 
 			validateRelatedObjectFieldSettings(
 				objectField,
-				ObjectFieldSettingConstants.NAME_SHOW_FILES_IN_DOCS_AND_MEDIA,
+				ObjectFieldSettingConstants.NAME_SHOW_FILES_IN_LIBRARY,
+				ObjectFieldSettingConstants.NAME_STORAGE_DEPOT_GROUP,
+				objectFieldSettingsValues);
+			validateRelatedObjectFieldSettings(
+				objectField,
+				ObjectFieldSettingConstants.NAME_SHOW_FILES_IN_LIBRARY,
+				ObjectFieldSettingConstants.NAME_STORAGE_DL_FOLDER_PATH,
+				objectFieldSettingsValues);
+		}
+		else if (Objects.equals(
+					fileSource,
+					ObjectFieldSettingConstants.
+						VALUE_USER_COMPUTER_TO_DOCS_AND_MEDIA)) {
+
+			validateNotAllowedObjectFieldSettingNames(
+				SetUtil.fromArray(
+					ObjectFieldSettingConstants.NAME_STORAGE_DEPOT_GROUP),
+				objectField.getName(), objectFieldSettingsValues);
+			validateRelatedObjectFieldSettings(
+				objectField,
+				ObjectFieldSettingConstants.NAME_SHOW_FILES_IN_LIBRARY,
 				ObjectFieldSettingConstants.NAME_STORAGE_DL_FOLDER_PATH,
 				objectFieldSettingsValues);
 		}
@@ -235,8 +426,389 @@ public class AttachmentObjectFieldBusinessType
 		}
 	}
 
+	@Override
+	protected void validateObjectFieldSettingValue(
+			ObjectField objectField, String objectFieldSettingName,
+			Map<String, String> objectFieldSettingsValues)
+		throws PortalException {
+
+		super.validateObjectFieldSettingValue(
+			objectField, objectFieldSettingName, objectFieldSettingsValues);
+
+		String objectFieldSettingValue = objectFieldSettingsValues.get(
+			objectFieldSettingName);
+
+		if (Objects.equals(
+				objectFieldSettingName,
+				ObjectFieldSettingConstants.NAME_STORAGE_DEPOT_GROUP)) {
+
+			Group group = _groupLocalService.fetchGroup(
+				GetterUtil.getLong(objectFieldSettingValue));
+
+			if ((group == null) || !group.isDepot()) {
+				throw new ObjectFieldSettingValueException.InvalidValue(
+					objectField.getName(),
+					ObjectFieldSettingConstants.NAME_STORAGE_DEPOT_GROUP,
+					objectFieldSettingValue);
+			}
+		}
+	}
+
+	private String _getAspectRatio(
+		long imageLength, long imageWidth, Locale locale) {
+
+		if ((imageLength <= 0) || (imageWidth <= 0)) {
+			return null;
+		}
+
+		if (imageLength > imageWidth) {
+			return _language.get(locale, "tall");
+		}
+		else if (imageLength < imageWidth) {
+			return _language.get(locale, "wide");
+		}
+
+		return _language.get(locale, "square");
+	}
+
+	private long _getDDMFormFieldsValueValue(
+		List<DLFileEntryMetadata> dlFileEntryMetadatas, String fieldName) {
+
+		if (ListUtil.isEmpty(dlFileEntryMetadatas)) {
+			return 0;
+		}
+
+		for (DLFileEntryMetadata dlFileEntryMetadata : dlFileEntryMetadatas) {
+			Long ddmFormFieldsValueValue = _getDDMFormFieldsValueValue(
+				dlFileEntryMetadata.getDDMStorageId(), fieldName);
+
+			if (ddmFormFieldsValueValue != null) {
+				return ddmFormFieldsValueValue;
+			}
+		}
+
+		return 0;
+	}
+
+	private Long _getDDMFormFieldsValueValue(
+		long ddmStorageId, String fieldName) {
+
+		List<DDMField> ddmFields = _ddmFieldLocalService.getDDMFields(
+			ddmStorageId, fieldName);
+
+		if (ListUtil.isEmpty(ddmFields)) {
+			return null;
+		}
+
+		DDMField ddmField = ddmFields.get(0);
+
+		DDMFieldAttribute ddmFieldAttribute =
+			_ddmFieldLocalService.fetchDDMFieldAttribute(
+				ddmField.getFieldId(), StringPool.BLANK, StringPool.BLANK);
+
+		if ((ddmFieldAttribute == null) ||
+			(ddmFieldAttribute.getAttributeValue() == null) ||
+			!Validator.isNumber(ddmFieldAttribute.getAttributeValue())) {
+
+			return null;
+		}
+
+		return Long.valueOf(ddmFieldAttribute.getAttributeValue());
+	}
+
+	private String _getFileBase64(
+			DLFileEntry dlFileEntry, ObjectField objectField)
+		throws Exception {
+
+		return NestedFieldsSupplier.supply(
+			objectField.getName() + ".fileBase64",
+			fieldName -> Base64.encode(
+				_file.getBytes(dlFileEntry.getContentStream())));
+	}
+
+	private Object _getFileEntryId(Object value) throws PortalException {
+		if (value instanceof FileEntry fileEntry) {
+			long fileEntryId = GetterUtil.getLong(fileEntry.getId());
+
+			if (fileEntryId > 0) {
+				return fileEntryId;
+			}
+		}
+
+		long fileEntryId = GetterUtil.getLong(value);
+
+		if (fileEntryId > 0) {
+			return fileEntryId;
+		}
+
+		if (value instanceof Map) {
+			fileEntryId = MapUtil.getLong((Map<String, Object>)value, "id");
+		}
+		else {
+			String valueString = String.valueOf(value);
+
+			if (JSONUtil.isJSONObject(valueString)) {
+				JSONObject jsonObject = jsonFactory.createJSONObject(
+					valueString);
+
+				fileEntryId = GetterUtil.getLong(jsonObject.get("id"));
+			}
+		}
+
+		if (fileEntryId > 0) {
+			return fileEntryId;
+		}
+
+		return value;
+	}
+
+	private String _getFileURL(DLFileEntry dlFileEntry, ObjectField objectField)
+		throws Exception {
+
+		String fileSource = ObjectFieldSettingUtil.getValue(
+			ObjectFieldSettingConstants.NAME_FILE_SOURCE, objectField);
+
+		if (Objects.equals(
+				fileSource,
+				ObjectFieldSettingConstants.VALUE_CMS_BASIC_DOCUMENT) ||
+			Objects.equals(
+				fileSource, ObjectFieldSettingConstants.VALUE_DOCS_AND_MEDIA) ||
+			GetterUtil.getBoolean(
+				ObjectFieldSettingUtil.getValue(
+					ObjectFieldSettingConstants.NAME_SHOW_FILES_IN_LIBRARY,
+					objectField.getObjectFieldSettings()))) {
+
+			return null;
+		}
+
+		return _exportImportAttachmentManager.getFileURL(dlFileEntry);
+	}
+
+	private Folder _getFolder(DLFileEntry dlFileEntry, ObjectField objectField)
+		throws Exception {
+
+		return NestedFieldsSupplier.supply(
+			objectField.getName() + ".folder",
+			fieldName -> {
+				if (!Objects.equals(
+						ObjectFieldSettingConstants.VALUE_DOCS_AND_MEDIA,
+						ObjectFieldSettingUtil.getValue(
+							ObjectFieldSettingConstants.NAME_FILE_SOURCE,
+							objectField))) {
+
+					return null;
+				}
+
+				return new Folder() {
+					{
+						setExternalReferenceCode(
+							() -> {
+								if (dlFileEntry.getFolderId() == 0) {
+									return null;
+								}
+
+								DLFolder dlFolder = dlFileEntry.getFolder();
+
+								return dlFolder.getExternalReferenceCode();
+							});
+						setSiteId(dlFileEntry::getGroupId);
+					}
+				};
+			});
+	}
+
+	private Map<String, Object> _getMetadata(
+			FileVersion fileVersion, Locale locale, ObjectField objectField)
+		throws Exception {
+
+		List<DLFileEntryMetadata> dlFileEntryMetadatas =
+			_dlFileEntryMetadataLocalService.getFileVersionFileEntryMetadatas(
+				fileVersion.getFileVersionId());
+
+		long tiffImageLength = _getDDMFormFieldsValueValue(
+			dlFileEntryMetadatas, "TIFF_IMAGE_LENGTH");
+		long tiffImageWidth = _getDDMFormFieldsValueValue(
+			dlFileEntryMetadatas, "TIFF_IMAGE_WIDTH");
+
+		return NestedFieldsSupplier.supply(
+			objectField.getName() + ".metadata",
+			fieldName -> {
+				if (fileVersion.getSize() == 0) {
+					return null;
+				}
+
+				return HashMapBuilder.<String, Object>put(
+					"aspectRatio",
+					_getAspectRatio(tiffImageLength, tiffImageWidth, locale)
+				).put(
+					"numberOfPages",
+					() -> {
+						if (!PDFProcessorUtil.hasImages(fileVersion) &&
+							!PDFProcessorUtil.isDocumentSupported(
+								fileVersion.getMimeType())) {
+
+							return null;
+						}
+
+						return PDFProcessorUtil.getPreviewFileCount(
+							fileVersion);
+					}
+				).put(
+					"resolution",
+					_getResolution(tiffImageLength, tiffImageWidth, locale)
+				).build();
+			});
+	}
+
+	private String _getPreviewURL(LiferayFileEntry liferayFileEntry)
+		throws PortalException {
+
+		if (StringUtil.startsWith(liferayFileEntry.getMimeType(), "video/")) {
+			return _dlURLHelper.getPreviewURL(
+				liferayFileEntry, liferayFileEntry.getFileVersion(), null,
+				"&videoEmbed=true", true, true);
+		}
+
+		return _dlURLHelper.getPreviewURL(
+			liferayFileEntry, liferayFileEntry.getFileVersion(), null,
+			StringPool.BLANK, false, false);
+	}
+
+	private String _getPreviewURL(
+			LiferayFileEntry liferayFileEntry, ObjectField objectField)
+		throws Exception {
+
+		return NestedFieldsSupplier.supply(
+			objectField.getName() + ".previewURL",
+			fieldName -> {
+				String previewURL = _getPreviewURL(liferayFileEntry);
+
+				if (Validator.isNull(previewURL)) {
+					return null;
+				}
+
+				return previewURL;
+			});
+	}
+
+	private String _getResolution(
+		long imageLength, long imageWidth, Locale locale) {
+
+		if ((imageLength <= 0) || (imageWidth <= 0)) {
+			return null;
+		}
+
+		long max = Math.max(imageLength, imageWidth);
+		long min = Math.min(imageLength, imageWidth);
+
+		if ((min <= _RESOLUTION_SMALL_MIN) && (max <= _RESOLUTION_SMALL_MAX)) {
+			return _language.format(
+				locale, "resolution-small-up-to-x-x",
+				new Object[] {_RESOLUTION_SMALL_MAX, _RESOLUTION_SMALL_MIN});
+		}
+
+		if ((min <= _RESOLUTION_MEDIUM_MIN) &&
+			(max <= _RESOLUTION_MEDIUM_MAX)) {
+
+			return _language.format(
+				locale, "resolution-medium-up-to-x-x",
+				new Object[] {_RESOLUTION_MEDIUM_MAX, _RESOLUTION_MEDIUM_MIN});
+		}
+
+		return _language.format(
+			locale, "resolution-large-bigger-than-x", _RESOLUTION_MEDIUM_MAX);
+	}
+
+	private Scope _getScope(
+			DLFileEntry dlFileEntry, ObjectDefinition objectDefinition,
+			ObjectEntry objectEntry)
+		throws Exception {
+
+		if ((objectEntry.getGroupId() == dlFileEntry.getGroupId()) &&
+			!Objects.equals(
+				objectDefinition.getScope(),
+				ObjectDefinitionConstants.SCOPE_COMPANY)) {
+
+			return null;
+		}
+
+		Group group = _groupLocalService.getGroup(dlFileEntry.getGroupId());
+
+		if (group.getType() == GroupConstants.TYPE_DEPOT) {
+			return Scope.ofReference(
+				group.getExternalReferenceCode(), Scope.Type.ASSET_LIBRARY);
+		}
+
+		return Scope.ofReference(
+			group.getExternalReferenceCode(), Scope.Type.SITE);
+	}
+
+	private String _getThumbnailURL(
+			DLFileEntry dlFileEntry, ObjectField objectField)
+		throws Exception {
+
+		return NestedFieldsSupplier.supply(
+			objectField.getName() + ".thumbnailURL",
+			fieldName -> {
+				String thumbnailURL = _dlURLHelper.getThumbnailSrc(
+					new LiferayFileEntry(dlFileEntry), null);
+
+				if (Validator.isNull(thumbnailURL)) {
+					return null;
+				}
+
+				return thumbnailURL;
+			});
+	}
+
+	private <S, T> T _toValue(
+			UnsafeFunction<S, T, Exception> unsafeFunction,
+			UnsafeSupplierValue<S, Exception> unsafeSupplierValue)
+		throws Exception {
+
+		S value = unsafeSupplierValue.getValue();
+
+		if (value == null) {
+			return null;
+		}
+
+		return unsafeFunction.apply(value);
+	}
+
+	private static final long _RESOLUTION_MEDIUM_MAX = 1024;
+
+	private static final long _RESOLUTION_MEDIUM_MIN = 768;
+
+	private static final long _RESOLUTION_SMALL_MAX = 400;
+
+	private static final long _RESOLUTION_SMALL_MIN = 300;
+
 	private static final Log _log = LogFactoryUtil.getLog(
 		AttachmentObjectFieldBusinessType.class);
+
+	@Reference
+	private DLFileEntryLocalService _dLFileEntryLocalService;
+
+	@Reference
+	private DDMFieldLocalService _ddmFieldLocalService;
+
+	@Reference
+	private DLAppService _dlAppService;
+
+	@Reference
+	private DLFileEntryMetadataLocalService _dlFileEntryMetadataLocalService;
+
+	@Reference
+	private DLURLHelper _dlURLHelper;
+
+	@Reference
+	private ExportImportAttachmentManager _exportImportAttachmentManager;
+
+	@Reference
+	private File _file;
+
+	@Reference
+	private GroupLocalService _groupLocalService;
 
 	@Reference
 	private Language _language;
@@ -245,6 +817,12 @@ public class AttachmentObjectFieldBusinessType
 	private ObjectDefinitionLocalService _objectDefinitionLocalService;
 
 	@Reference
+	private ObjectEntryService _objectEntryService;
+
+	@Reference
 	private ObjectScopeProviderRegistry _objectScopeProviderRegistry;
+
+	@Reference
+	private Portal _portal;
 
 }

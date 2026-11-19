@@ -7,11 +7,16 @@ package com.liferay.portlet.asset.service.impl;
 
 import com.liferay.asset.kernel.exception.DuplicateVocabularyException;
 import com.liferay.asset.kernel.exception.DuplicateVocabularyExternalReferenceCodeException;
+import com.liferay.asset.kernel.exception.SystemVocabularyException;
+import com.liferay.asset.kernel.exception.VocabularyExternalReferenceCodeException;
 import com.liferay.asset.kernel.exception.VocabularyNameException;
+import com.liferay.asset.kernel.exception.VocabularyVisibilityTypeException;
 import com.liferay.asset.kernel.model.AssetCategoryConstants;
 import com.liferay.asset.kernel.model.AssetVocabulary;
 import com.liferay.asset.kernel.model.AssetVocabularyConstants;
 import com.liferay.asset.kernel.service.AssetCategoryLocalService;
+import com.liferay.exportimport.kernel.empty.model.EmptyModelManagerUtil;
+import com.liferay.exportimport.kernel.lar.ExportImportThreadLocal;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
@@ -19,6 +24,7 @@ import com.liferay.portal.kernel.bean.BeanReference;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.model.ModelHintsUtil;
 import com.liferay.portal.kernel.model.ResourceConstants;
 import com.liferay.portal.kernel.model.SystemEventConstants;
 import com.liferay.portal.kernel.model.User;
@@ -40,21 +46,30 @@ import com.liferay.portal.kernel.service.ResourceLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.service.permission.ModelPermissions;
+import com.liferay.portal.kernel.service.persistence.UserPersistence;
 import com.liferay.portal.kernel.systemevent.SystemEvent;
+import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.GroupThreadLocal;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.MapUtil;
+import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.util.PropsValues;
+import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portlet.asset.service.base.AssetVocabularyLocalServiceBaseImpl;
+import com.liferay.portlet.asset.util.AssetVocabularySettingsHelper;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Provides the local service for accessing, adding, deleting, and updating
@@ -91,8 +106,10 @@ public class AssetVocabularyLocalServiceImpl
 		serviceContext.setScopeGroupId(groupId);
 
 		return assetVocabularyLocalService.addVocabulary(
-			guestUserId, groupId, StringPool.BLANK, titleMap, null,
-			StringPool.BLANK, serviceContext);
+			AssetVocabularyConstants.EXTERNAL_REFERENCE_CODE_TOPIC, guestUserId,
+			groupId, titleMap.get(LocaleUtil.getSiteDefault()),
+			StringPool.BLANK, titleMap, null, StringPool.BLANK,
+			AssetVocabularyConstants.VISIBILITY_TYPE_PUBLIC, serviceContext);
 	}
 
 	@Override
@@ -163,20 +180,24 @@ public class AssetVocabularyLocalServiceImpl
 
 		// Vocabulary
 
-		User user = _userLocalService.getUser(userId);
+		User user = _userPersistence.findByPrimaryKey(userId);
+
+		Map<Locale, String> trimmedTitleMap = _getTrimmedTitleMap(titleMap);
 
 		if (Validator.isNull(name)) {
 			name = _generateVocabularyName(
-				groupId, titleMap.get(LocaleUtil.getSiteDefault()));
+				groupId, trimmedTitleMap.get(LocaleUtil.getSiteDefault()));
 		}
 
 		name = _getVocabularyName(name);
 
 		validate(groupId, name);
 
+		_validateVisibilityType(visibilityType);
+
 		long vocabularyId = counterLocalService.increment();
 
-		_validateExternalReferenceCode(externalReferenceCode, groupId);
+		_validateExternalReferenceCode(externalReferenceCode, groupId, null);
 
 		AssetVocabulary vocabulary = assetVocabularyPersistence.create(
 			vocabularyId);
@@ -193,12 +214,22 @@ public class AssetVocabularyLocalServiceImpl
 			vocabulary.setTitle(title);
 		}
 		else {
-			vocabulary.setTitleMap(titleMap);
+			vocabulary.setTitleMap(trimmedTitleMap);
 		}
 
 		vocabulary.setDescriptionMap(descriptionMap);
 		vocabulary.setSettings(settings);
 		vocabulary.setVisibilityType(visibilityType);
+
+		if (EmptyModelManagerUtil.isEmptyModel() ||
+			(visibilityType ==
+				AssetVocabularyConstants.VISIBILITY_TYPE_EMPTY)) {
+
+			vocabulary.setStatus(WorkflowConstants.STATUS_EMPTY);
+		}
+		else {
+			vocabulary.setStatus(WorkflowConstants.STATUS_APPROVED);
+		}
 
 		vocabulary = assetVocabularyPersistence.update(vocabulary);
 
@@ -262,6 +293,13 @@ public class AssetVocabularyLocalServiceImpl
 	public AssetVocabulary deleteVocabulary(AssetVocabulary vocabulary)
 		throws PortalException {
 
+		if (!ExportImportThreadLocal.isImportInProcess() &&
+			!GroupThreadLocal.isDeleteInProcess() && vocabulary.isSystem()) {
+
+			throw new SystemVocabularyException.MustNotDelete(
+				vocabulary.getVocabularyId());
+		}
+
 		// Vocabulary
 
 		assetVocabularyPersistence.remove(vocabulary);
@@ -299,36 +337,8 @@ public class AssetVocabularyLocalServiceImpl
 	}
 
 	@Override
-	public List<AssetVocabulary> getGroupsVocabularies(long[] groupIds) {
-		return getGroupsVocabularies(groupIds, null);
-	}
-
-	@Override
-	public List<AssetVocabulary> getGroupsVocabularies(
-		long[] groupIds, String className) {
-
-		return getGroupsVocabularies(
-			groupIds, className, AssetCategoryConstants.ALL_CLASS_TYPE_PK);
-	}
-
-	@Override
-	public List<AssetVocabulary> getGroupsVocabularies(
-		long[] groupIds, String className, long classTypePK) {
-
-		List<AssetVocabulary> vocabularies =
-			assetVocabularyPersistence.findByGroupId(groupIds);
-
-		if (Validator.isNull(className)) {
-			return vocabularies;
-		}
-
-		long classNameId = _classNameLocalService.getClassNameId(className);
-
-		return ListUtil.filter(
-			vocabularies,
-			assetVocabulary ->
-				assetVocabulary.isAssociatedToClassNameIdAndClassTypePK(
-					classNameId, classTypePK));
+	public int getCompanyVocabulariesCount(long companyId) {
+		return assetVocabularyPersistence.countByCompanyId(companyId);
 	}
 
 	@Override
@@ -364,6 +374,10 @@ public class AssetVocabularyLocalServiceImpl
 
 	@Override
 	public List<AssetVocabulary> getGroupVocabularies(long[] groupIds) {
+		if (ArrayUtil.isEmpty(groupIds)) {
+			return Collections.emptyList();
+		}
+
 		return assetVocabularyPersistence.findByGroupId(groupIds);
 	}
 
@@ -371,12 +385,11 @@ public class AssetVocabularyLocalServiceImpl
 	public List<AssetVocabulary> getGroupVocabularies(
 		long[] groupIds, int[] visibilityTypes) {
 
-		return assetVocabularyPersistence.findByG_V(groupIds, visibilityTypes);
-	}
+		if (ArrayUtil.isEmpty(groupIds)) {
+			return Collections.emptyList();
+		}
 
-	@Override
-	public int getGroupVocabulariesCount(long[] groupIds) {
-		return assetVocabularyPersistence.countByGroupId(groupIds);
+		return assetVocabularyPersistence.findByG_V(groupIds, visibilityTypes);
 	}
 
 	@Override
@@ -384,6 +397,62 @@ public class AssetVocabularyLocalServiceImpl
 		throws PortalException {
 
 		return assetVocabularyPersistence.findByG_N(groupId, name);
+	}
+
+	@Override
+	public List<AssetVocabulary> getGroupsVocabularies(long[] groupIds) {
+		return getGroupsVocabularies(groupIds, null);
+	}
+
+	@Override
+	public List<AssetVocabulary> getGroupsVocabularies(
+		long[] groupIds, String className) {
+
+		return getGroupsVocabularies(
+			groupIds, className, AssetCategoryConstants.ALL_CLASS_TYPE_PK);
+	}
+
+	@Override
+	public List<AssetVocabulary> getGroupsVocabularies(
+		long[] groupIds, String className, long classTypePK) {
+
+		if (ArrayUtil.isEmpty(groupIds)) {
+			return Collections.emptyList();
+		}
+
+		List<AssetVocabulary> vocabularies =
+			assetVocabularyPersistence.findByGroupId(groupIds);
+
+		if (Validator.isNull(className)) {
+			return vocabularies;
+		}
+
+		long classNameId = _classNameLocalService.getClassNameId(className);
+
+		return ListUtil.filter(
+			vocabularies,
+			assetVocabulary ->
+				assetVocabulary.isAssociatedToClassNameIdAndClassTypePK(
+					classNameId, classTypePK));
+	}
+
+	public AssetVocabulary getOrAddEmptyVocabulary(
+			String externalReferenceCode, long userId, long groupId)
+		throws PortalException {
+
+		return EmptyModelManagerUtil.getOrAddEmptyModel(
+			AssetVocabulary.class,
+			() -> assetVocabularyLocalService.addVocabulary(
+				externalReferenceCode, userId, groupId, externalReferenceCode,
+				externalReferenceCode,
+				Collections.singletonMap(
+					LocaleUtil.getSiteDefault(), externalReferenceCode),
+				null, null, AssetVocabularyConstants.VISIBILITY_TYPE_EMPTY,
+				new ServiceContext()),
+			externalReferenceCode,
+			this::fetchAssetVocabularyByExternalReferenceCode,
+			this::getAssetVocabularyByExternalReferenceCode, groupId,
+			"vocabulary");
 	}
 
 	@Override
@@ -453,30 +522,55 @@ public class AssetVocabularyLocalServiceImpl
 
 	@Override
 	public AssetVocabulary updateVocabulary(
-			long vocabularyId, Map<Locale, String> titleMap,
-			Map<Locale, String> descriptionMap, String settings)
+			String externalReferenceCode, long vocabularyId,
+			Map<Locale, String> titleMap, Map<Locale, String> descriptionMap,
+			String settings)
 		throws PortalException {
 
 		return assetVocabularyLocalService.updateVocabulary(
-			vocabularyId, titleMap, descriptionMap, settings,
-			AssetVocabularyConstants.VISIBILITY_TYPE_PUBLIC);
+			externalReferenceCode, vocabularyId, titleMap, descriptionMap,
+			settings, AssetVocabularyConstants.VISIBILITY_TYPE_PUBLIC);
 	}
 
 	@Indexable(type = IndexableType.REINDEX)
 	@Override
 	public AssetVocabulary updateVocabulary(
-			long vocabularyId, Map<Locale, String> titleMap,
-			Map<Locale, String> descriptionMap, String settings,
-			int visibilityType)
+			String externalReferenceCode, long vocabularyId,
+			Map<Locale, String> titleMap, Map<Locale, String> descriptionMap,
+			String settings, int visibilityType)
 		throws PortalException {
+
+		_validateVisibilityType(visibilityType);
 
 		AssetVocabulary vocabulary =
 			assetVocabularyPersistence.findByPrimaryKey(vocabularyId);
 
-		vocabulary.setTitleMap(titleMap);
+		Map<Locale, String> trimmedTitleMap = _getTrimmedTitleMap(titleMap);
+
+		_validateSystemVocabulary(
+			descriptionMap, externalReferenceCode, settings, trimmedTitleMap,
+			visibilityType, vocabulary);
+
+		if (Validator.isNotNull(externalReferenceCode)) {
+			_validateExternalReferenceCode(
+				externalReferenceCode, vocabulary.getGroupId(), vocabulary);
+
+			vocabulary.setExternalReferenceCode(externalReferenceCode);
+		}
+
+		vocabulary.setName(
+			_getAssetVocabularyName(trimmedTitleMap, vocabulary));
+		vocabulary.setTitleMap(trimmedTitleMap);
+
 		vocabulary.setDescriptionMap(descriptionMap);
 		vocabulary.setSettings(settings);
 		vocabulary.setVisibilityType(visibilityType);
+		vocabulary.setStatus(
+			EmptyModelManagerUtil.solveEmptyModel(
+				externalReferenceCode, vocabulary.getModelClassName(),
+				vocabulary.getCompanyId(), vocabulary.getGroupId(),
+				vocabulary.getStatus(),
+				() -> WorkflowConstants.STATUS_APPROVED));
 
 		return assetVocabularyPersistence.update(vocabulary);
 	}
@@ -484,15 +578,32 @@ public class AssetVocabularyLocalServiceImpl
 	@Indexable(type = IndexableType.REINDEX)
 	@Override
 	public AssetVocabulary updateVocabulary(
-			long vocabularyId, String title, Map<Locale, String> titleMap,
-			Map<Locale, String> descriptionMap, String settings,
-			ServiceContext serviceContext)
+			String externalReferenceCode, long vocabularyId, String title,
+			Map<Locale, String> titleMap, Map<Locale, String> descriptionMap,
+			String settings, int visibilityType, ServiceContext serviceContext)
 		throws PortalException {
+
+		_validateVisibilityType(visibilityType);
 
 		AssetVocabulary vocabulary =
 			assetVocabularyPersistence.findByPrimaryKey(vocabularyId);
 
-		vocabulary.setTitleMap(titleMap);
+		Map<Locale, String> trimmedTitleMap = _getTrimmedTitleMap(titleMap);
+
+		_validateSystemVocabulary(
+			descriptionMap, externalReferenceCode, settings, trimmedTitleMap,
+			visibilityType, vocabulary);
+
+		if (Validator.isNotNull(externalReferenceCode)) {
+			_validateExternalReferenceCode(
+				externalReferenceCode, vocabulary.getGroupId(), vocabulary);
+
+			vocabulary.setExternalReferenceCode(externalReferenceCode);
+		}
+
+		vocabulary.setName(
+			_getAssetVocabularyName(trimmedTitleMap, vocabulary));
+		vocabulary.setTitleMap(trimmedTitleMap);
 
 		if (Validator.isNotNull(title)) {
 			vocabulary.setTitle(title);
@@ -500,8 +611,25 @@ public class AssetVocabularyLocalServiceImpl
 
 		vocabulary.setDescriptionMap(descriptionMap);
 		vocabulary.setSettings(settings);
+		vocabulary.setVisibilityType(visibilityType);
+		vocabulary.setStatus(
+			EmptyModelManagerUtil.solveEmptyModel(
+				externalReferenceCode, vocabulary.getModelClassName(),
+				vocabulary.getCompanyId(), vocabulary.getGroupId(),
+				vocabulary.getStatus(),
+				() -> WorkflowConstants.STATUS_APPROVED));
 
-		return assetVocabularyPersistence.update(vocabulary);
+		vocabulary = assetVocabularyPersistence.update(vocabulary);
+
+		if (serviceContext.isAddGroupPermissions() ||
+			serviceContext.isAddGuestPermissions()) {
+
+			addVocabularyResources(
+				vocabulary, serviceContext.isAddGroupPermissions(),
+				serviceContext.isAddGuestPermissions());
+		}
+
+		return vocabulary;
 	}
 
 	protected SearchContext buildSearchContext(
@@ -570,6 +698,16 @@ public class AssetVocabularyLocalServiceImpl
 		}
 	}
 
+	private boolean _equals(
+		Map<Locale, String> map1, Map<Locale, String> map2) {
+
+		if (MapUtil.isEmpty(map1) && MapUtil.isEmpty(map2)) {
+			return true;
+		}
+
+		return Objects.equals(map1, map2);
+	}
+
 	private String _generateVocabularyName(long groupId, String name) {
 		String vocabularyName = _getVocabularyName(name);
 
@@ -592,6 +730,39 @@ public class AssetVocabularyLocalServiceImpl
 		}
 	}
 
+	private String _getAssetVocabularyName(
+			Map<Locale, String> titleMap, AssetVocabulary vocabulary)
+		throws PortalException {
+
+		if (vocabulary.getStatus() != WorkflowConstants.STATUS_EMPTY) {
+			return vocabulary.getName();
+		}
+
+		String title = titleMap.get(
+			PortalUtil.getSiteDefaultLocale(vocabulary.getGroupId()));
+
+		if (Validator.isNull(title)) {
+			return vocabulary.getName();
+		}
+
+		return _generateVocabularyName(vocabulary.getGroupId(), title);
+	}
+
+	private Map<Locale, String> _getTrimmedTitleMap(
+		Map<Locale, String> titleMap) {
+
+		Map<Locale, String> trimmedTitleMap = new HashMap<>();
+
+		for (Map.Entry<Locale, String> entry : titleMap.entrySet()) {
+			trimmedTitleMap.put(
+				entry.getKey(),
+				ModelHintsUtil.trimString(
+					AssetVocabulary.class.getName(), "name", entry.getValue()));
+		}
+
+		return trimmedTitleMap;
+	}
+
 	private String _getVocabularyName(String vocabularyName) {
 		if (vocabularyName != null) {
 			vocabularyName = vocabularyName.trim();
@@ -602,25 +773,111 @@ public class AssetVocabularyLocalServiceImpl
 		return StringPool.BLANK;
 	}
 
+	private boolean _isValidSystemVocabularySettings(
+		String originalSettings, String settings) {
+
+		AssetVocabularySettingsHelper assetVocabularySettingsHelper =
+			new AssetVocabularySettingsHelper(settings);
+		AssetVocabularySettingsHelper originalAssetVocabularySettingsHelper =
+			new AssetVocabularySettingsHelper(originalSettings);
+
+		assetVocabularySettingsHelper.setMultiValued(
+			originalAssetVocabularySettingsHelper.isMultiValued());
+
+		return Objects.equals(
+			originalAssetVocabularySettingsHelper.toString(),
+			assetVocabularySettingsHelper.toString());
+	}
+
 	private void _validateExternalReferenceCode(
-			String externalReferenceCode, long groupId)
+			String externalReferenceCode, long groupId,
+			AssetVocabulary vocabulary)
 		throws PortalException {
 
 		if (Validator.isNull(externalReferenceCode)) {
 			return;
 		}
 
+		if ((vocabulary != null) &&
+			Objects.equals(
+				vocabulary.getExternalReferenceCode(),
+				AssetVocabularyConstants.EXTERNAL_REFERENCE_CODE_TOPIC) &&
+			!Objects.equals(
+				externalReferenceCode,
+				AssetVocabularyConstants.EXTERNAL_REFERENCE_CODE_TOPIC)) {
+
+			throw new VocabularyExternalReferenceCodeException(
+				StringBundler.concat(
+					"External reference code of default vocabulary ",
+					vocabulary.getVocabularyId(), " cannot be changed"));
+		}
+
+		int maxLength = ModelHintsUtil.getMaxLength(
+			AssetVocabulary.class.getName(), "externalReferenceCode");
+
+		if (externalReferenceCode.length() > maxLength) {
+			throw new VocabularyExternalReferenceCodeException(
+				StringBundler.concat(
+					"External reference code length cannot exceed ", maxLength,
+					" characters"));
+		}
+
 		AssetVocabulary assetVocabulary =
 			assetVocabularyPersistence.fetchByERC_G(
 				externalReferenceCode, groupId);
 
-		if (assetVocabulary != null) {
+		if ((assetVocabulary != null) && !assetVocabulary.equals(vocabulary)) {
 			throw new DuplicateVocabularyExternalReferenceCodeException(
 				StringBundler.concat(
 					"Duplicate vocabulary external reference code ",
 					externalReferenceCode, " in group ", groupId));
 		}
 	}
+
+	private void _validateSystemVocabulary(
+			Map<Locale, String> descriptionMap, String externalReferenceCode,
+			String settings, Map<Locale, String> trimmedTitleMap,
+			int visibilityType, AssetVocabulary vocabulary)
+		throws PortalException {
+
+		if (ExportImportThreadLocal.isImportInProcess() ||
+			!vocabulary.isSystem()) {
+
+			return;
+		}
+
+		if ((Validator.isNotNull(externalReferenceCode) &&
+			 !externalReferenceCode.equals(
+				 vocabulary.getExternalReferenceCode())) ||
+			!trimmedTitleMap.equals(vocabulary.getTitleMap())) {
+
+			throw new SystemVocabularyException.MustNotRename(
+				vocabulary.getVocabularyId());
+		}
+
+		if (!_equals(descriptionMap, vocabulary.getDescriptionMap()) ||
+			(visibilityType != vocabulary.getVisibilityType()) ||
+			!_isValidSystemVocabularySettings(
+				vocabulary.getSettings(), settings)) {
+
+			throw new SystemVocabularyException.MustNotModify(
+				vocabulary.getVocabularyId());
+		}
+	}
+
+	private void _validateVisibilityType(int visibilityType)
+		throws PortalException {
+
+		if (!ArrayUtil.contains(_VISIBILITY_TYPES, visibilityType)) {
+			throw new VocabularyVisibilityTypeException();
+		}
+	}
+
+	private static final int[] _VISIBILITY_TYPES = {
+		AssetVocabularyConstants.VISIBILITY_TYPE_EMPTY,
+		AssetVocabularyConstants.VISIBILITY_TYPE_INTERNAL,
+		AssetVocabularyConstants.VISIBILITY_TYPE_PUBLIC
+	};
 
 	@BeanReference(type = AssetCategoryLocalService.class)
 	private AssetCategoryLocalService _assetCategoryLocalService;
@@ -636,5 +893,8 @@ public class AssetVocabularyLocalServiceImpl
 
 	@BeanReference(type = UserLocalService.class)
 	private UserLocalService _userLocalService;
+
+	@BeanReference(type = UserPersistence.class)
+	private UserPersistence _userPersistence;
 
 }

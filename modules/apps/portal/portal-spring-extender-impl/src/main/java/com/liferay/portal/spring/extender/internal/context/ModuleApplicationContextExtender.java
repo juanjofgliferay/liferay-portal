@@ -5,18 +5,17 @@
 
 package com.liferay.portal.spring.extender.internal.context;
 
+import com.liferay.petra.io.unsync.UnsyncBufferedReader;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.configuration.Configuration;
 import com.liferay.portal.kernel.configuration.ConfigurationFactoryUtil;
-import com.liferay.portal.kernel.io.unsync.UnsyncBufferedReader;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Release;
 import com.liferay.portal.kernel.module.framework.ModuleServiceLifecycle;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.spring.configurator.ConfigurableApplicationContextConfigurator;
 
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -112,8 +111,7 @@ public class ModuleApplicationContextExtender
 
 			_component.setImplementation(
 				new ModuleApplicationContextRegistrator(
-					_configurableApplicationContextConfigurator, _bundle,
-					bundleContext.getBundle()));
+					_bundle, bundleContext.getBundle()));
 
 			BundleWiring bundleWiring = _bundle.adapt(BundleWiring.class);
 
@@ -186,7 +184,9 @@ public class ModuleApplicationContextExtender
 			}
 
 			try (InputStream inputStream = url.openStream();
+
 				Reader reader = new InputStreamReader(inputStream);
+
 				UnsyncBufferedReader unsyncBufferedReader =
 					new UnsyncBufferedReader(reader)) {
 
@@ -247,10 +247,6 @@ public class ModuleApplicationContextExtender
 
 	private BundleContext _bundleContext;
 	private BundleTracker<?> _bundleTracker;
-
-	@Reference
-	private ConfigurableApplicationContextConfigurator
-		_configurableApplicationContextConfigurator;
 
 	@Reference(target = ModuleServiceLifecycle.PORTAL_INITIALIZED)
 	private ModuleServiceLifecycle _moduleServiceLifecycle;

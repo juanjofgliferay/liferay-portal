@@ -16,17 +16,16 @@ import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.MapUtil;
+import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.search.aggregation.Aggregations;
+import com.liferay.portal.search.asset.AssetSubtypeIdentifierBuilder;
 import com.liferay.portal.search.collapse.CollapseBuilderFactory;
 import com.liferay.portal.search.collapse.InnerHitBuilderFactory;
 import com.liferay.portal.search.filter.ComplexQueryPartBuilderFactory;
-import com.liferay.portal.search.geolocation.GeoBuilders;
 import com.liferay.portal.search.highlight.FieldConfigBuilderFactory;
 import com.liferay.portal.search.highlight.HighlightBuilderFactory;
-import com.liferay.portal.search.query.Queries;
 import com.liferay.portal.search.rescore.RescoreBuilderFactory;
-import com.liferay.portal.search.script.Scripts;
 import com.liferay.portal.search.searcher.SearchRequestBuilder;
 import com.liferay.portal.search.significance.SignificanceHeuristics;
 import com.liferay.portal.search.sort.Sorts;
@@ -34,10 +33,11 @@ import com.liferay.portal.vulcan.dto.converter.DTOConverter;
 import com.liferay.portal.vulcan.dto.converter.DTOConverterRegistry;
 import com.liferay.search.experiences.blueprint.exception.InvalidElementInstanceException;
 import com.liferay.search.experiences.blueprint.parameter.SXPParameter;
+import com.liferay.search.experiences.blueprint.parameter.contributor.SXPParameterContributorProvider;
 import com.liferay.search.experiences.blueprint.search.request.enhancer.SXPBlueprintSearchRequestEnhancer;
 import com.liferay.search.experiences.internal.blueprint.highlight.HighlightConverter;
 import com.liferay.search.experiences.internal.blueprint.parameter.SXPParameterData;
-import com.liferay.search.experiences.internal.blueprint.parameter.SXPParameterDataCreator;
+import com.liferay.search.experiences.internal.blueprint.parameter.util.SXPParameterDataCreatorUtil;
 import com.liferay.search.experiences.internal.blueprint.property.PropertyExpander;
 import com.liferay.search.experiences.internal.blueprint.property.PropertyResolver;
 import com.liferay.search.experiences.internal.blueprint.query.QueryConverter;
@@ -51,11 +51,14 @@ import com.liferay.search.experiences.internal.blueprint.search.request.body.con
 import com.liferay.search.experiences.internal.blueprint.search.request.body.contributor.SortSXPSearchRequestBodyContributor;
 import com.liferay.search.experiences.internal.blueprint.search.request.body.contributor.SuggestSXPSearchRequestBodyContributor;
 import com.liferay.search.experiences.internal.blueprint.sort.SortConverter;
+import com.liferay.search.experiences.rest.dto.v1_0.Clause;
 import com.liferay.search.experiences.rest.dto.v1_0.Configuration;
 import com.liferay.search.experiences.rest.dto.v1_0.ElementDefinition;
 import com.liferay.search.experiences.rest.dto.v1_0.ElementInstance;
 import com.liferay.search.experiences.rest.dto.v1_0.Field;
 import com.liferay.search.experiences.rest.dto.v1_0.FieldSet;
+import com.liferay.search.experiences.rest.dto.v1_0.QueryConfiguration;
+import com.liferay.search.experiences.rest.dto.v1_0.QueryEntry;
 import com.liferay.search.experiences.rest.dto.v1_0.SXPBlueprint;
 import com.liferay.search.experiences.rest.dto.v1_0.SXPElement;
 import com.liferay.search.experiences.rest.dto.v1_0.TypeOptions;
@@ -109,20 +112,22 @@ public class SXPBlueprintSearchRequestEnhancerImpl
 		HighlightConverter highlightConverter = new HighlightConverter(
 			_fieldConfigBuilderFactory, _highlightBuilderFactory);
 
-		QueryConverter queryConverter = new QueryConverter(_queries);
-		ScriptConverter scriptConverter = new ScriptConverter(_scripts);
+		QueryConverter queryConverter = new QueryConverter();
+		ScriptConverter scriptConverter = new ScriptConverter();
 
 		SortConverter sortConverter = new SortConverter(
-			_geoBuilders, queryConverter, scriptConverter, _sorts);
+			queryConverter, scriptConverter, _sorts);
 
 		_sxpSearchRequestBodyContributors = Arrays.asList(
 			new AdvancedSXPSearchRequestBodyContributor(
 				_collapseBuilderFactory, _innerHitBuilderFactory,
 				sortConverter),
 			new AggsSXPSearchRequestBodyContributor(
-				_aggregations, _geoBuilders, highlightConverter, queryConverter,
+				_aggregations, highlightConverter, queryConverter,
 				scriptConverter, _significanceHeuristics, _sorts),
-			new GeneralSXPSearchRequestBodyContributor(),
+			new GeneralSXPSearchRequestBodyContributor(
+				_assetSubtypeIdentifierBuilder,
+				_complexQueryPartBuilderFactory),
 			new HighlightSXPSearchRequestBodyContributor(highlightConverter),
 			new QuerySXPSearchRequestBodyContributor(
 				_complexQueryPartBuilderFactory, queryConverter,
@@ -140,6 +145,8 @@ public class SXPBlueprintSearchRequestEnhancerImpl
 			return;
 		}
 
+		_decodeQueries(configuration);
+
 		for (SXPSearchRequestBodyContributor sxpSearchRequestBodyContributor :
 				_sxpSearchRequestBodyContributors) {
 
@@ -150,6 +157,38 @@ public class SXPBlueprintSearchRequestEnhancerImpl
 			catch (Exception exception) {
 				exceptionListener.exceptionThrown(exception);
 			}
+		}
+	}
+
+	private void _decodeQueries(Configuration configuration) {
+		QueryConfiguration queryConfiguration =
+			configuration.getQueryConfiguration();
+
+		if ((queryConfiguration == null) ||
+			(queryConfiguration.getQueryEntries() == null)) {
+
+			return;
+		}
+
+		for (QueryEntry queryEntry : queryConfiguration.getQueryEntries()) {
+			Clause[] clauses = queryEntry.getClauses();
+
+			if (clauses == null) {
+				continue;
+			}
+
+			for (Clause clause : clauses) {
+				String query = StringUtil.replace(
+					String.valueOf(clause.getQuery()),
+					new String[] {
+						"&#34;", "&#36;", "&#91;", "&#92;", "&#93;", "&#8725;"
+					},
+					new String[] {"\\\"", "$", "[", "\\\\", "]", "/"});
+
+				clause.setQuery(() -> _jsonFactory.createJSONObject(query));
+			}
+
+			queryEntry.setClauses(() -> clauses);
 		}
 	}
 
@@ -200,11 +239,12 @@ public class SXPBlueprintSearchRequestEnhancerImpl
 
 		RuntimeException runtimeException = new RuntimeException();
 
-		SXPParameterData sxpParameterData = _sxpParameterDataCreator.create(
+		SXPParameterData sxpParameterData = SXPParameterDataCreatorUtil.create(
 			runtimeException::addSuppressed,
 			searchRequestBuilder.withSearchContextGet(
 				searchContext -> searchContext),
-			sxpBlueprint);
+			sxpBlueprint,
+			_sxpParameterContributorProvider.getSxpParameterContributors());
 
 		if (configuration != null) {
 			_contributeSXPSearchRequestBodyContributors(
@@ -488,6 +528,9 @@ public class SXPBlueprintSearchRequestEnhancerImpl
 	private Aggregations _aggregations;
 
 	@Reference
+	private AssetSubtypeIdentifierBuilder _assetSubtypeIdentifierBuilder;
+
+	@Reference
 	private CollapseBuilderFactory _collapseBuilderFactory;
 
 	@Reference
@@ -500,9 +543,6 @@ public class SXPBlueprintSearchRequestEnhancerImpl
 	private FieldConfigBuilderFactory _fieldConfigBuilderFactory;
 
 	@Reference
-	private GeoBuilders _geoBuilders;
-
-	@Reference
 	private HighlightBuilderFactory _highlightBuilderFactory;
 
 	@Reference
@@ -512,13 +552,7 @@ public class SXPBlueprintSearchRequestEnhancerImpl
 	private JSONFactory _jsonFactory;
 
 	@Reference
-	private Queries _queries;
-
-	@Reference
 	private RescoreBuilderFactory _rescoreBuilderFactory;
-
-	@Reference
-	private Scripts _scripts;
 
 	@Reference
 	private SignificanceHeuristics _significanceHeuristics;
@@ -527,7 +561,7 @@ public class SXPBlueprintSearchRequestEnhancerImpl
 	private Sorts _sorts;
 
 	@Reference
-	private SXPParameterDataCreator _sxpParameterDataCreator;
+	private SXPParameterContributorProvider _sxpParameterContributorProvider;
 
 	private List<SXPSearchRequestBodyContributor>
 		_sxpSearchRequestBodyContributors;

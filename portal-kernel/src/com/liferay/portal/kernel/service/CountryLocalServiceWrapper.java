@@ -45,15 +45,26 @@ public class CountryLocalServiceWrapper
 
 	@Override
 	public Country addCountry(
-			String a2, String a3, boolean active, boolean billingAllowed,
-			String idd, String name, String number, double position,
-			boolean shippingAllowed, boolean subjectToVAT, boolean zipRequired,
-			ServiceContext serviceContext)
+			String externalReferenceCode, String a2, String a3, boolean active,
+			boolean billingAllowed, String idd, String name, String number,
+			double position, boolean shippingAllowed, boolean subjectToVAT,
+			boolean zipRequired, ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _countryLocalService.addCountry(
-			a2, a3, active, billingAllowed, idd, name, number, position,
-			shippingAllowed, subjectToVAT, zipRequired, serviceContext);
+			externalReferenceCode, a2, a3, active, billingAllowed, idd, name,
+			number, position, shippingAllowed, subjectToVAT, zipRequired,
+			serviceContext);
+	}
+
+	@Override
+	public com.liferay.portal.kernel.model.CountryLocalization
+			addCountryLocalization(
+				Country country, String languageId, String title)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _countryLocalService.addCountryLocalization(
+			country, languageId, title);
 	}
 
 	/**
@@ -249,6 +260,14 @@ public class CountryLocalServiceWrapper
 	}
 
 	@Override
+	public Country fetchCountryByExternalReferenceCode(
+		String externalReferenceCode, long companyId) {
+
+		return _countryLocalService.fetchCountryByExternalReferenceCode(
+			externalReferenceCode, companyId);
+	}
+
+	@Override
 	public Country fetchCountryByName(long companyId, String name) {
 		return _countryLocalService.fetchCountryByName(companyId, name);
 	}
@@ -299,33 +318,8 @@ public class CountryLocalServiceWrapper
 	}
 
 	@Override
-	public java.util.List<Country> getCompanyCountries(
-		long companyId, boolean active, int start, int end,
-		com.liferay.portal.kernel.util.OrderByComparator<Country>
-			orderByComparator) {
-
-		return _countryLocalService.getCompanyCountries(
-			companyId, active, start, end, orderByComparator);
-	}
-
-	@Override
-	public java.util.List<Country> getCompanyCountries(
-		long companyId, int start, int end,
-		com.liferay.portal.kernel.util.OrderByComparator<Country>
-			orderByComparator) {
-
-		return _countryLocalService.getCompanyCountries(
-			companyId, start, end, orderByComparator);
-	}
-
-	@Override
 	public int getCompanyCountriesCount(long companyId) {
 		return _countryLocalService.getCompanyCountriesCount(companyId);
-	}
-
-	@Override
-	public int getCompanyCountriesCount(long companyId, boolean active) {
-		return _countryLocalService.getCompanyCountriesCount(companyId, active);
 	}
 
 	/**
@@ -376,10 +370,12 @@ public class CountryLocalServiceWrapper
 	}
 
 	@Override
-	public Country getCountryByA3(long companyId, String a3)
+	public Country getCountryByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
-		return _countryLocalService.getCountryByA3(companyId, a3);
+		return _countryLocalService.getCountryByExternalReferenceCode(
+			externalReferenceCode, companyId);
 	}
 
 	@Override
@@ -503,14 +499,15 @@ public class CountryLocalServiceWrapper
 
 	@Override
 	public Country updateCountry(
-			long countryId, String a2, String a3, boolean active,
-			boolean billingAllowed, String idd, String name, String number,
-			double position, boolean shippingAllowed, boolean subjectToVAT)
+			String externalReferenceCode, long countryId, String a2, String a3,
+			boolean active, boolean billingAllowed, String idd, String name,
+			String number, double position, boolean shippingAllowed,
+			boolean subjectToVAT)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _countryLocalService.updateCountry(
-			countryId, a2, a3, active, billingAllowed, idd, name, number,
-			position, shippingAllowed, subjectToVAT);
+			externalReferenceCode, countryId, a2, a3, active, billingAllowed,
+			idd, name, number, position, shippingAllowed, subjectToVAT);
 	}
 
 	@Override
@@ -579,3 +576,4 @@ public class CountryLocalServiceWrapper
 	private CountryLocalService _countryLocalService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1758230882

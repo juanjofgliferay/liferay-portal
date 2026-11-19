@@ -315,14 +315,6 @@ public class CPAttachmentFileEntryLocalServiceWrapper
 	}
 
 	@Override
-	public CPAttachmentFileEntry fetchByExternalReferenceCode(
-		String externalReferenceCode, long companyId) {
-
-		return _cpAttachmentFileEntryLocalService.fetchByExternalReferenceCode(
-			externalReferenceCode, companyId);
-	}
-
-	@Override
 	public CPAttachmentFileEntry fetchCPAttachmentFileEntry(
 		long CPAttachmentFileEntryId) {
 
@@ -574,6 +566,18 @@ public class CPAttachmentFileEntryLocalServiceWrapper
 			getIndexableActionableDynamicQuery();
 	}
 
+	@Override
+	public CPAttachmentFileEntry getOrAddEmptyCPAttachmentFileEntry(
+			String externalReferenceCode, long companyId, long userId,
+			long groupId, long classNameId, long classPK)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _cpAttachmentFileEntryLocalService.
+			getOrAddEmptyCPAttachmentFileEntry(
+				externalReferenceCode, companyId, userId, groupId, classNameId,
+				classPK);
+	}
+
 	/**
 	 * Returns the OSGi service identifier.
 	 *
@@ -702,3 +706,4 @@ public class CPAttachmentFileEntryLocalServiceWrapper
 		_cpAttachmentFileEntryLocalService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:576170114

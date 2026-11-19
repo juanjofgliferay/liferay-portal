@@ -19,7 +19,6 @@ import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.util.ListUtil;
-import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.util.AbstractMap;
 import java.util.ArrayList;
@@ -171,26 +170,14 @@ public class OAuth2ApplicationScopeAliasesLocalServiceImpl
 		List<String> assignedScopeAliases = getScopeAliasesList(
 			oAuth2ApplicationScopeAliasesId);
 
-		if ((scopeAliases.size() == assignedScopeAliases.size()) &&
-			assignedScopeAliases.containsAll(scopeAliases)) {
+		if ((scopeAliases.size() != assignedScopeAliases.size()) ||
+			!assignedScopeAliases.containsAll(scopeAliases)) {
 
-			return fetchOAuth2ApplicationScopeAliases(
-				oAuth2ApplicationScopeAliasesId);
+			return null;
 		}
 
-		return null;
-	}
-
-	@Override
-	public List<OAuth2ApplicationScopeAliases>
-		getOAuth2ApplicationScopeAliaseses(
-			long oAuth2ApplicationId, int start, int end,
-			OrderByComparator<OAuth2ApplicationScopeAliases>
-				orderByComparator) {
-
-		return oAuth2ApplicationScopeAliasesPersistence.
-			findByOAuth2ApplicationId(
-				oAuth2ApplicationId, start, end, orderByComparator);
+		return fetchOAuth2ApplicationScopeAliases(
+			oAuth2ApplicationScopeAliasesId);
 	}
 
 	@Override
@@ -283,9 +270,11 @@ public class OAuth2ApplicationScopeAliasesLocalServiceImpl
 						s -> new ArrayList<>());
 
 				for (String scopeAlias : _scopeAliases) {
-					if (!scopeAliasList.contains(scopeAlias)) {
-						scopeAliasList.add(scopeAlias);
+					if (scopeAliasList.contains(scopeAlias)) {
+						continue;
 					}
+
+					scopeAliasList.add(scopeAlias);
 				}
 			}
 

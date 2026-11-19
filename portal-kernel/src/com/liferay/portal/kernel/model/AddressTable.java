@@ -75,15 +75,20 @@ public class AddressTable extends BaseTable<AddressTable> {
 		"street2", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
 	public final Column<AddressTable, String> street3 = createColumn(
 		"street3", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
+	public final Column<AddressTable, String> subtype = createColumn(
+		"subtype", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
 	public final Column<AddressTable, Date> validationDate = createColumn(
 		"validationDate", Date.class, Types.TIMESTAMP, Column.FLAG_DEFAULT);
 	public final Column<AddressTable, Integer> validationStatus = createColumn(
 		"validationStatus", Integer.class, Types.INTEGER, Column.FLAG_DEFAULT);
 	public final Column<AddressTable, String> zip = createColumn(
 		"zip", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
+	public final Column<AddressTable, Integer> status = createColumn(
+		"status", Integer.class, Types.INTEGER, Column.FLAG_DEFAULT);
 
 	private AddressTable() {
 		super("Address", AddressTable::new);
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:61083401

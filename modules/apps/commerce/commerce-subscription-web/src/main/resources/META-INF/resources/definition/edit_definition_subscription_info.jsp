@@ -22,15 +22,15 @@ if (!cpSubscriptionTypes.isEmpty()) {
 	defaultCPSubscriptionType = firstCPSubscriptionType.getName();
 }
 
-boolean subscriptionEnabled = BeanParamUtil.getBoolean(cpDefinition, request, "subscriptionEnabled", false);
-int subscriptionLength = BeanParamUtil.getInteger(cpDefinition, request, "subscriptionLength", 1);
-String subscriptionType = BeanParamUtil.getString(cpDefinition, request, "subscriptionType", defaultCPSubscriptionType);
-long maxSubscriptionCycles = BeanParamUtil.getLong(cpDefinition, request, "maxSubscriptionCycles");
+boolean subscriptionEnabled = BeanParamUtil.getBoolean(cpDefinition, request, "subscriptionEnabled", CPDefinition::isSubscriptionEnabled, false);
+int subscriptionLength = BeanParamUtil.getInteger(cpDefinition, request, "subscriptionLength", CPDefinition::getSubscriptionLength, 1);
+String subscriptionType = BeanParamUtil.getString(cpDefinition, request, "subscriptionType", CPDefinition::getSubscriptionType, defaultCPSubscriptionType);
+long maxSubscriptionCycles = BeanParamUtil.getLong(cpDefinition, request, "maxSubscriptionCycles", CPDefinition::getMaxSubscriptionCycles);
 
-boolean deliverySubscriptionEnabled = BeanParamUtil.getBoolean(cpDefinition, request, "deliverySubscriptionEnabled", false);
-int deliverySubscriptionLength = BeanParamUtil.getInteger(cpDefinition, request, "deliverySubscriptionLength", 1);
-String deliverySubscriptionType = BeanParamUtil.getString(cpDefinition, request, "deliverySubscriptionType", defaultCPSubscriptionType);
-long deliveryMaxSubscriptionCycles = BeanParamUtil.getLong(cpDefinition, request, "deliveryMaxSubscriptionCycles");
+boolean deliverySubscriptionEnabled = BeanParamUtil.getBoolean(cpDefinition, request, "deliverySubscriptionEnabled", CPDefinition::isDeliverySubscriptionEnabled, false);
+int deliverySubscriptionLength = BeanParamUtil.getInteger(cpDefinition, request, "deliverySubscriptionLength", CPDefinition::getDeliverySubscriptionLength, 1);
+String deliverySubscriptionType = BeanParamUtil.getString(cpDefinition, request, "deliverySubscriptionType", CPDefinition::getDeliverySubscriptionType, defaultCPSubscriptionType);
+long deliveryMaxSubscriptionCycles = BeanParamUtil.getLong(cpDefinition, request, "deliveryMaxSubscriptionCycles", CPDefinition::getDeliveryMaxSubscriptionCycles);
 
 String defaultCPSubscriptionTypeLabel = StringPool.BLANK;
 String defaultDeliveryCPSubscriptionTypeLabel = StringPool.BLANK;
@@ -306,8 +306,7 @@ if (deliveryMaxSubscriptionCycles > 0) {
 			document.querySelector(
 				'#<portlet:namespace />cycleLengthContainer .input-group-text'
 			).innerHTML = subscriptionTypeLabel;
-		},
-		['liferay-portlet-url']
+		}
 	);
 
 	Liferay.provide(
@@ -345,8 +344,7 @@ if (deliveryMaxSubscriptionCycles > 0) {
 			document.querySelector(
 				'#<portlet:namespace />deliveryCycleLengthContainer .input-group-text'
 			).innerHTML = subscriptionTypeLabel;
-		},
-		['liferay-portlet-url']
+		}
 	);
 </aui:script>
 
@@ -354,8 +352,9 @@ if (deliveryMaxSubscriptionCycles > 0) {
 	document
 		.getElementById('<portlet:namespace />neverEnds')
 		.addEventListener('change', (event) => {
-			const formValidator = Liferay.Form.get('<portlet:namespace />fm')
-				.formValidator;
+			const formValidator = Liferay.Form.get(
+				'<portlet:namespace />fm'
+			).formValidator;
 
 			formValidator.validateField(
 				'<portlet:namespace />maxSubscriptionCycles'
@@ -365,8 +364,9 @@ if (deliveryMaxSubscriptionCycles > 0) {
 	document
 		.getElementById('<portlet:namespace />deliveryNeverEnds')
 		.addEventListener('change', (event) => {
-			const formValidator = Liferay.Form.get('<portlet:namespace />fm')
-				.formValidator;
+			const formValidator = Liferay.Form.get(
+				'<portlet:namespace />fm'
+			).formValidator;
 
 			formValidator.validateField(
 				'<portlet:namespace />deliveryMaxSubscriptionCycles'

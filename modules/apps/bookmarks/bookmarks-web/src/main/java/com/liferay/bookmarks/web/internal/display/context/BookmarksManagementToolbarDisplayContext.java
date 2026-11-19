@@ -5,7 +5,7 @@
 
 package com.liferay.bookmarks.web.internal.display.context;
 
-import com.liferay.bookmarks.configuration.BookmarksGroupServiceOverriddenConfiguration;
+import com.liferay.bookmarks.configuration.BookmarksGroupServiceConfiguration;
 import com.liferay.bookmarks.constants.BookmarksFolderConstants;
 import com.liferay.bookmarks.constants.BookmarksPortletKeys;
 import com.liferay.bookmarks.constants.BookmarksWebKeys;
@@ -38,12 +38,12 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.trash.TrashHelper;
 
+import jakarta.portlet.PortletException;
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.List;
-
-import javax.portlet.PortletException;
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Alejandro Tardín
@@ -54,15 +54,14 @@ public class BookmarksManagementToolbarDisplayContext {
 		HttpServletRequest httpServletRequest,
 		LiferayPortletRequest liferayPortletRequest,
 		LiferayPortletResponse liferayPortletResponse,
-		BookmarksGroupServiceOverriddenConfiguration
-			bookmarksGroupServiceOverriddenConfiguration,
+		BookmarksGroupServiceConfiguration bookmarksGroupServiceConfiguration,
 		PortalPreferences portalPreferences, TrashHelper trashHelper) {
 
 		_httpServletRequest = httpServletRequest;
 		_liferayPortletRequest = liferayPortletRequest;
 		_liferayPortletResponse = liferayPortletResponse;
-		_bookmarksGroupServiceOverriddenConfiguration =
-			bookmarksGroupServiceOverriddenConfiguration;
+		_bookmarksGroupServiceConfiguration =
+			bookmarksGroupServiceConfiguration;
 		_portalPreferences = portalPreferences;
 		_trashHelper = trashHelper;
 
@@ -135,8 +134,7 @@ public class BookmarksManagementToolbarDisplayContext {
 				dropdownGroupItem.setDropdownItems(
 					_getFilterNavigationDropdownItems());
 				dropdownGroupItem.setLabel(
-					LanguageUtil.get(
-						_httpServletRequest, "filter-by-navigation"));
+					LanguageUtil.get(_httpServletRequest, "filter-by"));
 			}
 		).build();
 	}
@@ -170,7 +168,7 @@ public class BookmarksManagementToolbarDisplayContext {
 
 				labelItem.setCloseable(true);
 				labelItem.setLabel(
-					LanguageUtil.get(_httpServletRequest, "recent"));
+					LanguageUtil.get(_httpServletRequest, "recent[items]"));
 			}
 		).build();
 	}
@@ -271,8 +269,7 @@ public class BookmarksManagementToolbarDisplayContext {
 	}
 
 	public boolean isShowSearch() {
-		return _bookmarksGroupServiceOverriddenConfiguration.
-			showFoldersSearch();
+		return _bookmarksGroupServiceConfiguration.showFoldersSearch();
 	}
 
 	private List<DropdownItem> _getFilterNavigationDropdownItems() {
@@ -353,8 +350,8 @@ public class BookmarksManagementToolbarDisplayContext {
 		).buildString();
 	}
 
-	private final BookmarksGroupServiceOverriddenConfiguration
-		_bookmarksGroupServiceOverriddenConfiguration;
+	private final BookmarksGroupServiceConfiguration
+		_bookmarksGroupServiceConfiguration;
 	private final PortletURL _currentURLObj;
 	private final long _folderId;
 	private final HttpServletRequest _httpServletRequest;

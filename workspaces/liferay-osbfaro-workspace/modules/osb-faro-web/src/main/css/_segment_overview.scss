@@ -1,0 +1,35 @@
+.segment-overview-root {
+	.composition-card-root {
+		flex-shrink: 0;
+
+		.composition-chart-root {
+			align-items: center;
+			display: flex;
+
+			.chart-root {
+				width: 30%;
+			}
+
+			.legend-template {
+				margin-bottom: 0;
+				padding: 0;
+				width: 70%;
+
+				.legend-template-column {
+					font-size: $fontSizeSmall;
+				}
+
+				li {
+					&:not(:last-child) {
+						padding-bottom: 1rem;
+					}
+				}
+			}
+		}
+	}
+
+	.overview-column-side {
+		display: flex;
+		flex-direction: column;
+	}
+}

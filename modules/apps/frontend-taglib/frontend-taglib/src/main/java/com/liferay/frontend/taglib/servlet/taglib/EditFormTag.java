@@ -12,16 +12,16 @@ import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.taglib.util.IncludeTag;
 
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.jsp.JspException;
+import jakarta.servlet.jsp.PageContext;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.jsp.JspException;
-import javax.servlet.jsp.PageContext;
 
 /**
  * @author Eudaldo Alonso
@@ -57,6 +57,10 @@ public class EditFormTag extends IncludeTag {
 
 	public String getPortletNamespace() {
 		return _portletNamespace;
+	}
+
+	public String getTitle() {
+		return _title;
 	}
 
 	public boolean isEscapeXml() {
@@ -132,6 +136,10 @@ public class EditFormTag extends IncludeTag {
 		_portletNamespace = portletNamespace;
 	}
 
+	public void setTitle(String title) {
+		_title = title;
+	}
+
 	public void setUseNamespace(boolean useNamespace) {
 		_useNamespace = useNamespace;
 	}
@@ -158,6 +166,7 @@ public class EditFormTag extends IncludeTag {
 		_name = "fm";
 		_onSubmit = null;
 		_portletNamespace = null;
+		_title = null;
 		_useNamespace = true;
 		_validateOnBlur = true;
 		_wrappedFormContent = true;
@@ -212,6 +221,8 @@ public class EditFormTag extends IncludeTag {
 			"liferay-frontend:edit-form:onSubmit", _onSubmit);
 		httpServletRequest.setAttribute(
 			"liferay-frontend:edit-form:portletNamespace", _portletNamespace);
+		httpServletRequest.setAttribute(
+			"liferay-frontend:edit-form:title", _title);
 		httpServletRequest.setAttribute(
 			"liferay-frontend:edit-form:useNamespace",
 			String.valueOf(_useNamespace));
@@ -273,6 +284,7 @@ public class EditFormTag extends IncludeTag {
 	private String _name = "fm";
 	private String _onSubmit;
 	private String _portletNamespace;
+	private String _title;
 	private boolean _useNamespace = true;
 	private boolean _validateOnBlur = true;
 	private final Map<String, List<ValidatorTag>> _validatorTagsMap =

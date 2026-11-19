@@ -37,11 +37,11 @@ public class SegmentsEntryModelDocumentContributor
 
 	@Override
 	public void contribute(Document document, SegmentsEntry segmentsEntry) {
-		document.addKeyword(
-			SegmentsEntryField.ACTIVE, segmentsEntry.isActive());
 		document.addLocalizedKeyword(
 			Field.DESCRIPTION, segmentsEntry.getDescriptionMap(), true);
 		document.addDate(Field.MODIFIED_DATE, segmentsEntry.getModifiedDate());
+		document.addKeyword(
+			SegmentsEntryField.ACTIVE, segmentsEntry.isActive());
 
 		_searchLocalizationHelper.addLocalizedField(
 			document, Field.NAME,
@@ -63,6 +63,7 @@ public class SegmentsEntryModelDocumentContributor
 				SegmentsEntryRole::getRoleId));
 		document.addKeyword(
 			"source", StringUtil.toLowerCase(segmentsEntry.getSource()));
+		document.addKeyword("type", segmentsEntry.getType());
 	}
 
 	private Locale _getSiteDefaultLocale(long groupId) {

@@ -82,8 +82,7 @@ public class CommerceTaxMethodServiceImpl
 		throws PortalException {
 
 		CommerceTaxMethod commerceTaxMethod =
-			commerceTaxMethodLocalService.getCommerceTaxMethod(
-				commerceTaxMethodId);
+			commerceTaxMethodPersistence.findByPrimaryKey(commerceTaxMethodId);
 
 		_checkCommerceChannel(commerceTaxMethod.getGroupId());
 
@@ -98,8 +97,7 @@ public class CommerceTaxMethodServiceImpl
 
 		_checkCommerceChannel(groupId);
 
-		return commerceTaxMethodLocalService.fetchCommerceTaxMethod(
-			groupId, engineKey);
+		return commerceTaxMethodPersistence.fetchByG_E(groupId, engineKey);
 	}
 
 	@Override
@@ -107,12 +105,11 @@ public class CommerceTaxMethodServiceImpl
 		throws PortalException {
 
 		CommerceTaxMethod commerceTaxMethod =
-			commerceTaxMethodLocalService.getCommerceTaxMethod(
-				commerceTaxMethodId);
+			commerceTaxMethodPersistence.findByPrimaryKey(commerceTaxMethodId);
 
 		_checkCommerceChannel(commerceTaxMethod.getGroupId());
 
-		return commerceTaxMethodLocalService.getCommerceTaxMethod(
+		return commerceTaxMethodPersistence.findByPrimaryKey(
 			commerceTaxMethodId);
 	}
 
@@ -122,7 +119,7 @@ public class CommerceTaxMethodServiceImpl
 
 		_checkCommerceChannel(groupId);
 
-		return commerceTaxMethodLocalService.getCommerceTaxMethods(groupId);
+		return commerceTaxMethodPersistence.findByGroupId(groupId);
 	}
 
 	@Override
@@ -141,8 +138,7 @@ public class CommerceTaxMethodServiceImpl
 		throws PortalException {
 
 		CommerceTaxMethod commerceTaxMethod =
-			commerceTaxMethodLocalService.fetchCommerceTaxMethod(
-				commerceTaxMethodId);
+			commerceTaxMethodPersistence.fetchByPrimaryKey(commerceTaxMethodId);
 
 		if (commerceTaxMethod != null) {
 			_checkCommerceChannel(commerceTaxMethod.getGroupId());
@@ -154,14 +150,24 @@ public class CommerceTaxMethodServiceImpl
 
 	@Override
 	public CommerceTaxMethod updateCommerceTaxMethod(
+			CommerceTaxMethod commerceTaxMethod)
+		throws PortalException {
+
+		_checkCommerceChannel(commerceTaxMethod.getGroupId());
+
+		return commerceTaxMethodLocalService.updateCommerceTaxMethod(
+			commerceTaxMethod);
+	}
+
+	@Override
+	public CommerceTaxMethod updateCommerceTaxMethod(
 			long commerceTaxMethodId, Map<Locale, String> nameMap,
 			Map<Locale, String> descriptionMap, boolean percentage,
 			boolean active)
 		throws PortalException {
 
 		CommerceTaxMethod commerceTaxMethod =
-			commerceTaxMethodLocalService.getCommerceTaxMethod(
-				commerceTaxMethodId);
+			commerceTaxMethodPersistence.findByPrimaryKey(commerceTaxMethodId);
 
 		_checkCommerceChannel(commerceTaxMethod.getGroupId());
 

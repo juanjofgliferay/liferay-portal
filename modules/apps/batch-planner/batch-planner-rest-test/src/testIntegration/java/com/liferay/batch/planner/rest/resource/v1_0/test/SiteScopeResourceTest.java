@@ -13,7 +13,7 @@ import com.liferay.batch.planner.rest.client.pagination.Page;
 import com.liferay.object.constants.ObjectDefinitionConstants;
 import com.liferay.object.field.util.ObjectFieldUtil;
 import com.liferay.object.model.ObjectDefinition;
-import com.liferay.object.rest.test.util.ObjectDefinitionTestUtil;
+import com.liferay.object.test.util.ObjectDefinitionTestUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
@@ -64,7 +64,7 @@ public class SiteScopeResourceTest extends BaseSiteScopeResourceTestCase {
 		_testGetPlanInternalClassNameKeySiteScopesPageNotFound(
 			true, internalClassNameKey);
 
-		Group globalGroup = testCompany.getGroup();
+		Group companyGroup = testCompany.getGroup();
 
 		Group group = GroupTestUtil.addGroupToCompany(
 			testCompany.getCompanyId());
@@ -103,13 +103,13 @@ public class SiteScopeResourceTest extends BaseSiteScopeResourceTestCase {
 		internalClassNameKey = _getInternalClassNameKey(objectDefinition2);
 
 		_testGetPlanInternalClassNameKeySiteScopesPage(
-			Arrays.asList(globalGroup, group, testGroup), null,
+			Arrays.asList(companyGroup, group, testGroup), null,
 			internalClassNameKey);
 		_testGetPlanInternalClassNameKeySiteScopesPage(
-			Arrays.asList(globalGroup, group, testGroup), false,
+			Arrays.asList(companyGroup, group, testGroup), false,
 			internalClassNameKey);
 		_testGetPlanInternalClassNameKeySiteScopesPage(
-			Arrays.asList(globalGroup, group, testGroup), true,
+			Arrays.asList(companyGroup, group, testGroup), true,
 			internalClassNameKey);
 
 		// Service builder entity (company scoped)
@@ -122,7 +122,7 @@ public class SiteScopeResourceTest extends BaseSiteScopeResourceTestCase {
 		_testGetPlanInternalClassNameKeySiteScopesPage(
 			Collections.emptyList(), false, internalClassNameKey);
 		_testGetPlanInternalClassNameKeySiteScopesPage(
-			Arrays.asList(globalGroup, testGroup), true, internalClassNameKey);
+			Arrays.asList(companyGroup, testGroup), true, internalClassNameKey);
 
 		// Service builder entity (site scoped)
 
@@ -130,13 +130,13 @@ public class SiteScopeResourceTest extends BaseSiteScopeResourceTestCase {
 			"com.liferay.headless.delivery.dto.v1_0.BlogPosting";
 
 		_testGetPlanInternalClassNameKeySiteScopesPage(
-			Arrays.asList(globalGroup, group, testGroup), null,
+			Arrays.asList(companyGroup, group, testGroup), null,
 			internalClassNameKey);
 		_testGetPlanInternalClassNameKeySiteScopesPage(
-			Arrays.asList(globalGroup, group, testGroup), false,
+			Arrays.asList(companyGroup, group, testGroup), false,
 			internalClassNameKey);
 		_testGetPlanInternalClassNameKeySiteScopesPage(
-			Arrays.asList(globalGroup, group, testGroup), true,
+			Arrays.asList(companyGroup, group, testGroup), true,
 			internalClassNameKey);
 	}
 

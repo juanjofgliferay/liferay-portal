@@ -1,0 +1,159 @@
+/**
+ * SPDX-FileCopyrightText: (c) 2026 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
+ */
+
+import React, {useState} from 'react';
+
+import {Wizard, WizardStep} from '../../components/Wizard';
+import {ContentSelection} from '../../components/forms/content_selector/ContentSelector';
+import {postImportProcess} from '../../services/postImportProcess';
+import {ImportPreview} from '../../types/exportImportPreview';
+import {DataStrategy, UserIdStrategy} from '../../types/exportImportProcess';
+import {Scope} from '../../types/scope';
+import {
+	toPortletDataHandlerSections,
+	toProcessRequestFlags,
+} from '../../utils/contentSelection';
+import {navigateToProcesses} from '../../utils/navigateToProcesses';
+import {toGroupReferences} from '../../utils/toGroupReferences';
+import {toPortletDataHandlers} from '../../utils/toPortletDataHandlers';
+import DataSelectionStep from './steps/DataSelectionStep';
+import FileSelectionStep from './steps/FileSelectionStep';
+import SettingsStep, {SETTINGS_STEP_INITIAL_VALUES} from './steps/SettingsStep';
+
+export function NewImport({
+	backURL,
+	commentsAndRatingsEnabled = false,
+	importPreviewAPIURL,
+	importProcessAPIURL,
+	scope,
+	siteSelectionEnabled = false,
+	spaceSelectionEnabled = false,
+}: {
+	backURL: string;
+	commentsAndRatingsEnabled?: boolean;
+	importPreviewAPIURL: string;
+	importProcessAPIURL: string;
+	scope: Scope;
+	siteSelectionEnabled?: boolean;
+	spaceSelectionEnabled?: boolean;
+}) {
+	const [importPreview, setImportPreview] = useState<
+		ImportPreview | undefined
+	>();
+
+	return (
+		<Wizard backURL={backURL}>
+			<WizardStep
+				initialValues={{
+					fileSelector: undefined,
+					name: '',
+				}}
+				isStepValid={(values) =>
+					values.fileSelector instanceof File &&
+					!!values.name.trim() &&
+					!!importPreview
+				}
+				title={Liferay.Language.get('setup')}
+			>
+				<FileSelectionStep
+					importPreviewAPIURL={importPreviewAPIURL}
+					setImportPreview={setImportPreview}
+				/>
+			</WizardStep>
+
+			<WizardStep
+				initialValues={{
+					contentSelection: undefined,
+					deletions: false,
+					permissions: false,
+					siteExternalReferenceCodes: [],
+					spaceExternalReferenceCodes: [],
+				}}
+				isStepValid={(values) =>
+					!!values.contentSelection ||
+					!!values.siteExternalReferenceCodes?.length ||
+					!!values.spaceExternalReferenceCodes?.length
+				}
+				title={Liferay.Language.get('data-selection')}
+			>
+				<DataSelectionStep
+					commentsAndRatingsEnabled={commentsAndRatingsEnabled}
+					importPreview={importPreview}
+					siteSelectionEnabled={siteSelectionEnabled}
+					spaceSelectionEnabled={spaceSelectionEnabled}
+				/>
+			</WizardStep>
+
+			<WizardStep
+				actionButtonLabel={Liferay.Language.get('import')}
+				actionButtonSymbol="import"
+				initialValues={SETTINGS_STEP_INITIAL_VALUES}
+				onSubmit={async (values, {setStatus}) => {
+					if (!importPreview) {
+						Liferay.Util.openToast({
+							message: Liferay.Language.get(
+								'an-unexpected-error-occurred'
+							),
+							type: 'danger',
+						});
+
+						return;
+					}
+
+					const contentSelection = values.contentSelection as
+						| ContentSelection
+						| undefined;
+
+					const result = await postImportProcess({
+						importProcessRequest: {
+							...toProcessRequestFlags(contentSelection),
+							...(spaceSelectionEnabled && {
+								assetLibraries: toGroupReferences(
+									values.spaceExternalReferenceCodes as string[]
+								),
+							}),
+							dataStrategy: values.dataStrategy as DataStrategy,
+							deletions: !!values.deletions,
+							name: values.name,
+							permissions: !!values.permissions,
+							portletDataHandlers: toPortletDataHandlers(
+								toPortletDataHandlerSections(
+									importPreview.portletDataHandlers ?? []
+								),
+								contentSelection
+							),
+							...(siteSelectionEnabled && {
+								sites: toGroupReferences(
+									values.siteExternalReferenceCodes as string[]
+								),
+							}),
+							userIdStrategy:
+								values.userIdStrategy as UserIdStrategy,
+						},
+						url: importProcessAPIURL,
+					});
+
+					if (result.error) {
+						Liferay.Util.openToast({
+							message: result.error,
+							type: 'danger',
+						});
+
+						return;
+					}
+
+					navigateToProcesses(
+						setStatus,
+						Liferay.Language.get('the-process-has-started'),
+						backURL
+					);
+				}}
+				title={Liferay.Language.get('settings')}
+			>
+				<SettingsStep scope={scope} />
+			</WizardStep>
+		</Wizard>
+	);
+}

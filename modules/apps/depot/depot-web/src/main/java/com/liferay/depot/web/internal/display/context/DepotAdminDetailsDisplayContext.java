@@ -13,10 +13,10 @@ import com.liferay.depot.web.internal.constants.DepotAdminWebKeys;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.Group;
 
+import jakarta.portlet.PortletRequest;
+
 import java.util.Collection;
 import java.util.Locale;
-
-import javax.portlet.PortletRequest;
 
 /**
  * @author Cristina González
@@ -31,8 +31,11 @@ public class DepotAdminDetailsDisplayContext {
 		_portletRequest = portletRequest;
 	}
 
-	public Collection<DepotApplication> getDepotApplications() {
-		return _depotApplicationController.getCustomizableDepotApplications();
+	public Collection<DepotApplication> getDepotApplications()
+		throws PortalException {
+
+		return _depotApplicationController.getCustomizableDepotApplications(
+			_getGroupId());
 	}
 
 	public long getDepotEntryId() {

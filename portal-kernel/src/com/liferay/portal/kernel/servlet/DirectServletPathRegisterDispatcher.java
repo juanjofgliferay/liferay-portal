@@ -7,12 +7,12 @@ package com.liferay.portal.kernel.servlet;
 
 import com.liferay.portal.kernel.util.WebKeys;
 
-import java.io.IOException;
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
 
-import javax.servlet.RequestDispatcher;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
+import java.io.IOException;
 
 /**
  * @author Shuyang Zhou
@@ -23,7 +23,9 @@ public class DirectServletPathRegisterDispatcher implements RequestDispatcher {
 		String path, RequestDispatcher requestDispatcher) {
 
 		_path = path;
-		_requestDispatcher = requestDispatcher;
+
+		_requestDispatcher = new IncludePathRequestDispatcher(
+			path, requestDispatcher);
 	}
 
 	@Override
@@ -41,27 +43,9 @@ public class DirectServletPathRegisterDispatcher implements RequestDispatcher {
 			ServletRequest servletRequest, ServletResponse servletResponse)
 		throws IOException, ServletException {
 
-		String includePathInfo = (String)servletRequest.getAttribute(
-			RequestDispatcher.INCLUDE_PATH_INFO);
-
-		servletRequest.setAttribute(RequestDispatcher.INCLUDE_PATH_INFO, null);
-
-		String includeServletPath = (String)servletRequest.getAttribute(
-			RequestDispatcher.INCLUDE_SERVLET_PATH);
-
-		servletRequest.setAttribute(
-			RequestDispatcher.INCLUDE_SERVLET_PATH, _path);
 		servletRequest.setAttribute(WebKeys.SERVLET_PATH, _path);
 
-		try {
-			_requestDispatcher.include(servletRequest, servletResponse);
-		}
-		finally {
-			servletRequest.setAttribute(
-				RequestDispatcher.INCLUDE_PATH_INFO, includePathInfo);
-			servletRequest.setAttribute(
-				RequestDispatcher.INCLUDE_SERVLET_PATH, includeServletPath);
-		}
+		_requestDispatcher.include(servletRequest, servletResponse);
 	}
 
 	private final String _path;

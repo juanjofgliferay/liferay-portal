@@ -22,8 +22,10 @@ import java.util.Date;
  * The cache model class for representing LayoutRevision in entity cache.
  *
  * @author Brian Wing Shun Chan
+ * @deprecated As of Cavanaugh (7.4.x), with no direct replacement
  * @generated
  */
+@Deprecated
 public class LayoutRevisionCacheModel
 	implements CacheModel<LayoutRevision>, Externalizable, MVCCModel {
 
@@ -454,3 +456,4 @@ public class LayoutRevisionCacheModel
 	public long statusDate;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1040580446

@@ -26,11 +26,12 @@ import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.ResourceBundleUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.portal.security.key.secret.SecretResolver;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.Locale;
 import java.util.Map;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -94,11 +95,15 @@ public class SearchLocationDDMFormFieldTemplateContextContributor
 			(ThemeDisplay)httpServletRequest.getAttribute(
 				WebKeys.THEME_DISPLAY);
 
-		return GooglePlacesUtil.getGooglePlacesAPIKey(
-			themeDisplay.getCompanyId(),
-			GetterUtil.getLong(
-				ddmFormFieldRenderingContext.getProperty("groupId")),
-			_groupLocalService);
+		long companyId = themeDisplay.getCompanyId();
+
+		return _secretResolver.resolve(
+			companyId,
+			GooglePlacesUtil.getGooglePlacesAPIKey(
+				companyId,
+				GetterUtil.getLong(
+					ddmFormFieldRenderingContext.getProperty("groupId")),
+				_groupLocalService));
 	}
 
 	private JSONObject _getLabelsJSONObject(
@@ -151,5 +156,8 @@ public class SearchLocationDDMFormFieldTemplateContextContributor
 
 	@Reference
 	private Language _language;
+
+	@Reference
+	private SecretResolver _secretResolver;
 
 }

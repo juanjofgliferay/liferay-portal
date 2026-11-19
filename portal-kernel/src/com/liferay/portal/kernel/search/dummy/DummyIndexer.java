@@ -16,10 +16,10 @@ import com.liferay.portal.kernel.search.Summary;
 import com.liferay.portal.kernel.search.filter.BooleanFilter;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 
-import java.util.Collection;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
 
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
+import java.util.Collection;
 
 /**
  * @author Brian Wing Shun Chan
@@ -166,7 +166,7 @@ public class DummyIndexer implements Indexer<Object> {
 	}
 
 	@Override
-	public void reindex(String[] ids) {
+	public void reindexCompany(long companyId) {
 	}
 
 	@Override

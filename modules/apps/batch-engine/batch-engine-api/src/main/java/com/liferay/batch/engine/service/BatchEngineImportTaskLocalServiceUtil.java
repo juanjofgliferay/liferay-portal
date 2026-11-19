@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.InputStream;
@@ -333,20 +334,6 @@ public class BatchEngineImportTaskLocalServiceUtil {
 	}
 
 	public static List<BatchEngineImportTask> getBatchEngineImportTasks(
-		long companyId, int start, int end) {
-
-		return getService().getBatchEngineImportTasks(companyId, start, end);
-	}
-
-	public static List<BatchEngineImportTask> getBatchEngineImportTasks(
-		long companyId, int start, int end,
-		OrderByComparator<BatchEngineImportTask> orderByComparator) {
-
-		return getService().getBatchEngineImportTasks(
-			companyId, start, end, orderByComparator);
-	}
-
-	public static List<BatchEngineImportTask> getBatchEngineImportTasks(
 		String executeStatus) {
 
 		return getService().getBatchEngineImportTasks(executeStatus);
@@ -359,10 +346,6 @@ public class BatchEngineImportTaskLocalServiceUtil {
 	 */
 	public static int getBatchEngineImportTasksCount() {
 		return getService().getBatchEngineImportTasksCount();
-	}
-
-	public static int getBatchEngineImportTasksCount(long companyId) {
-		return getService().getBatchEngineImportTasksCount(companyId);
 	}
 
 	public static
@@ -428,13 +411,13 @@ public class BatchEngineImportTaskLocalServiceUtil {
 	}
 
 	public static BatchEngineImportTaskLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(BatchEngineImportTaskLocalService service) {
-		_service = service;
-	}
-
-	private static volatile BatchEngineImportTaskLocalService _service;
+	private static final Snapshot<BatchEngineImportTaskLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			BatchEngineImportTaskLocalServiceUtil.class,
+			BatchEngineImportTaskLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1585085194

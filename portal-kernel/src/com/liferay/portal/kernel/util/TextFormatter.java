@@ -6,6 +6,7 @@
 package com.liferay.portal.kernel.util;
 
 import com.liferay.petra.string.CharPool;
+import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 
 import java.text.NumberFormat;
@@ -81,6 +82,10 @@ public class TextFormatter {
 
 	public static final int Q = 16;
 
+	// formatId --> FORMAT_ID, friendlyURLMapper --> FRIENDLY_URL_MAPPER
+
+	public static final int R = 17;
+
 	public static String format(String s, int style) {
 		if (Validator.isNull(s)) {
 			return null;
@@ -136,6 +141,9 @@ public class TextFormatter {
 		else if (style == Q) {
 			return _formatQ(s);
 		}
+		else if (style == R) {
+			return _formatR(s);
+		}
 
 		return s;
 	}
@@ -154,9 +162,11 @@ public class TextFormatter {
 		}
 
 		for (int i = 0; i < chars.length; i++) {
-			if (chars[i] == ' ') {
-				chars[i + 1] = Character.toUpperCase(chars[i + 1]);
+			if (chars[i] != ' ') {
+				continue;
 			}
+
+			chars[i + 1] = Character.toUpperCase(chars[i + 1]);
 		}
 
 		return new String(chars);
@@ -316,7 +326,7 @@ public class TextFormatter {
 			String lowerCaseFirstChar = StringUtil.toLowerCase(
 				s.substring(0, 1));
 
-			return s = lowerCaseFirstChar.concat(s.substring(1));
+			return lowerCaseFirstChar.concat(s.substring(1));
 		}
 
 		StringBuilder sb = new StringBuilder(s);
@@ -343,9 +353,11 @@ public class TextFormatter {
 		StringBuilder sb = new StringBuilder(StringUtil.toLowerCase(s));
 
 		for (int i = 0; i < s.length(); i++) {
-			if ((i == 0) || (s.charAt(i - 1) == ' ')) {
-				sb.setCharAt(i, Character.toUpperCase(s.charAt(i)));
+			if ((i != 0) && (s.charAt(i - 1) != ' ')) {
+				continue;
 			}
+
+			sb.setCharAt(i, Character.toUpperCase(s.charAt(i)));
 		}
 
 		return sb.toString();
@@ -371,7 +383,7 @@ public class TextFormatter {
 
 		String lowerCaseFirstChar = StringUtil.toLowerCase(s.substring(0, 1));
 
-		return s = lowerCaseFirstChar.concat(s.substring(1));
+		return lowerCaseFirstChar.concat(s.substring(1));
 	}
 
 	private static String _formatM(String s) {
@@ -407,19 +419,30 @@ public class TextFormatter {
 		for (int i = 0; i < s.length(); i++) {
 			char c = s.charAt(i);
 
-			if (Character.isUpperCase(c) && (i > 0) && ((i + 1) < s.length())) {
-				int delta = sb.length() - s.length();
+			if (!Character.isUpperCase(c) || (i <= 0) ||
+				((i + 1) >= s.length())) {
 
-				if (Character.isLowerCase(s.charAt(i + 1))) {
-					sb.insert(i + delta, CharPool.DASH);
-				}
-				else if (Character.isLowerCase(s.charAt(i - 1))) {
-					sb.insert(i + delta, CharPool.DASH);
-				}
+				continue;
+			}
+
+			int delta = sb.length() - s.length();
+
+			if (Character.isLowerCase(s.charAt(i + 1))) {
+				sb.insert(i + delta, CharPool.DASH);
+			}
+			else if (Character.isLowerCase(s.charAt(i - 1))) {
+				sb.insert(i + delta, CharPool.DASH);
 			}
 		}
 
 		return sb.toString();
+	}
+
+	private static String _formatR(String s) {
+		s = _formatH(s);
+		s = _formatA(s);
+
+		return s;
 	}
 
 	private static final double _STORAGE_SIZE_DENOMINATOR = 1024.0;

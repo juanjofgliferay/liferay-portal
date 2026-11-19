@@ -9,6 +9,7 @@ import com.liferay.portal.kernel.util.GetterUtil;
 
 import com.puppycrawl.tools.checkstyle.api.DetailAST;
 import com.puppycrawl.tools.checkstyle.api.TokenTypes;
+import com.puppycrawl.tools.checkstyle.utils.TokenUtil;
 
 import java.util.List;
 
@@ -24,10 +25,10 @@ public class SizeIsZeroCheck extends BaseCheck {
 
 	@Override
 	protected void doVisitToken(DetailAST detailAST) {
-		List<DetailAST> methodCallDetailASTList = getMethodCalls(
+		List<DetailAST> methodCallDetailASTs = getMethodCalls(
 			detailAST, "size");
 
-		for (DetailAST methodCallDetailAST : methodCallDetailASTList) {
+		for (DetailAST methodCallDetailAST : methodCallDetailASTs) {
 			_checkMethodCall(methodCallDetailAST);
 		}
 	}
@@ -47,12 +48,12 @@ public class SizeIsZeroCheck extends BaseCheck {
 		DetailAST parentDetailAST = methodCallDetailAST.getParent();
 
 		if (((compareCount != 0) ||
-			 ((parentDetailAST.getType() != TokenTypes.EQUAL) &&
-			  (parentDetailAST.getType() != TokenTypes.NOT_EQUAL) &&
-			  (parentDetailAST.getType() != TokenTypes.GT))) &&
+			 !TokenUtil.isOfType(
+				 parentDetailAST, TokenTypes.EQUAL, TokenTypes.GT,
+				 TokenTypes.NOT_EQUAL)) &&
 			((compareCount != 1) ||
-			 ((parentDetailAST.getType() != TokenTypes.GE) &&
-			  (parentDetailAST.getType() != TokenTypes.LT)))) {
+			 !TokenUtil.isOfType(
+				 parentDetailAST, TokenTypes.GE, TokenTypes.LT))) {
 
 			return;
 		}

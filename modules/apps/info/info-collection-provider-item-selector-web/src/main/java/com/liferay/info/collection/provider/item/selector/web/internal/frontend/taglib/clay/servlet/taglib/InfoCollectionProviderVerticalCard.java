@@ -9,6 +9,7 @@ import com.liferay.frontend.taglib.clay.servlet.taglib.BaseVerticalCard;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.LabelItem;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.LabelItemListBuilder;
 import com.liferay.info.collection.provider.BetaInfoCollectionProvider;
+import com.liferay.info.collection.provider.DeprecatedInfoCollectionProvider;
 import com.liferay.info.collection.provider.FilteredInfoCollectionProvider;
 import com.liferay.info.collection.provider.InfoCollectionProvider;
 import com.liferay.info.collection.provider.SingleFormVariationInfoCollectionProvider;
@@ -21,9 +22,9 @@ import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.security.permission.ResourceActionsUtil;
 import com.liferay.portal.kernel.util.Validator;
 
-import java.util.List;
+import jakarta.portlet.RenderRequest;
 
-import javax.portlet.RenderRequest;
+import java.util.List;
 
 /**
  * @author Eudaldo Alonso
@@ -32,13 +33,14 @@ public class InfoCollectionProviderVerticalCard extends BaseVerticalCard {
 
 	public InfoCollectionProviderVerticalCard(
 		InfoCollectionProvider<?> infoCollectionProvider,
-		InfoItemServiceRegistry infoItemServiceRegistry,
+		InfoItemServiceRegistry infoItemServiceRegistry, String label,
 		RenderRequest renderRequest, RowChecker rowChecker) {
 
 		super(null, renderRequest, rowChecker);
 
 		_infoCollectionProvider = infoCollectionProvider;
 		_infoItemServiceRegistry = infoItemServiceRegistry;
+		_label = label;
 	}
 
 	@Override
@@ -68,6 +70,19 @@ public class InfoCollectionProviderVerticalCard extends BaseVerticalCard {
 			).build();
 		}
 
+		if (_infoCollectionProvider instanceof
+				DeprecatedInfoCollectionProvider<?>) {
+
+			return LabelItemListBuilder.add(
+				labelItem -> {
+					labelItem.setDisplayType("warning");
+					labelItem.setLabel(
+						LanguageUtil.get(
+							themeDisplay.getLocale(), "deprecated"));
+				}
+			).build();
+		}
+
 		return super.getLabels();
 	}
 
@@ -93,7 +108,7 @@ public class InfoCollectionProviderVerticalCard extends BaseVerticalCard {
 
 	@Override
 	public String getTitle() {
-		return _infoCollectionProvider.getLabel(themeDisplay.getLocale());
+		return _label;
 	}
 
 	@Override
@@ -150,5 +165,6 @@ public class InfoCollectionProviderVerticalCard extends BaseVerticalCard {
 
 	private final InfoCollectionProvider<?> _infoCollectionProvider;
 	private final InfoItemServiceRegistry _infoItemServiceRegistry;
+	private final String _label;
 
 }

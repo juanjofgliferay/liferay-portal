@@ -1,0 +1,173 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`ManuallyRetrainModelModal should render 1`] = `
+<body
+  class="dxp modal-open"
+>
+  <div
+    aria-hidden="true"
+    data-suppressed="true"
+  />
+  <div>
+    <div
+      aria-hidden="true"
+      class="modal-backdrop fade show"
+      data-suppressed="true"
+    />
+    <div
+      class="fade modal d-block show"
+    >
+      <div
+        class="modal-dialog"
+      >
+        <div
+          aria-labelledby="clay-modal-label-1"
+          aria-modal="true"
+          class="modal-content"
+          role="dialog"
+          tabindex="-1"
+        >
+          <div
+            class="modal-header"
+          >
+            <h1
+              class="modal-title"
+              id="clay-modal-label-1"
+              tabindex="-1"
+            >
+              Manually Retrain Model
+            </h1>
+            <button
+              aria-label="Close"
+              class="close btn btn-unstyled"
+              type="button"
+            >
+              <svg
+                class="lexicon-icon lexicon-icon-times"
+                role="presentation"
+              >
+                <use
+                  href="#times"
+                />
+              </svg>
+            </button>
+          </div>
+          <form
+            class="form-root"
+          >
+            <div
+              class="modal-body"
+            >
+              <div
+                class="mb-3"
+              >
+                Select an interaction period for the selected items.
+              </div>
+              <div
+                class="form-group"
+              >
+                <div
+                  class="form-group-item"
+                >
+                  <div
+                    class=""
+                  >
+                    <label
+                      class="form-control-label label-root"
+                      for="runDataPeriod"
+                    >
+                      <span
+                        class="content-container"
+                      >
+                        Select Interaction Period
+                      </span>
+                    </label>
+                    <select
+                      class="form-control select-root"
+                      id="runDataPeriod"
+                      name="runDataPeriod"
+                    >
+                      <option
+                        value="LAST_7_DAYS"
+                      >
+                        Last 7 days
+                      </option>
+                      <option
+                        value="LAST_30_DAYS"
+                      >
+                        Last 30 days
+                      </option>
+                      <option
+                        value="LAST_180_DAYS"
+                      >
+                        Last 180 days
+                      </option>
+                      <option
+                        value="LAST_365_DAYS"
+                      >
+                        Last Year
+                      </option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <div
+                  class="font-weight-semi-bold mb-2"
+                >
+                  Monthly Training Allowance
+                </div>
+                <div
+                  class="d-flex"
+                >
+                  Scheduled:
+                  <span
+                    class="font-weight-semi-bold ml-3"
+                  >
+                    3
+                  </span>
+                </div>
+                <div
+                  class="d-flex"
+                >
+                  Remaining:
+                  <span
+                    class="font-weight-semi-bold ml-3"
+                  >
+                    3
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div
+              class="modal-footer"
+            >
+              <div
+                class="modal-item-last"
+              >
+                <div
+                  class="btn-group-spaced"
+                  role="group"
+                >
+                  <button
+                    class="button-root btn btn-secondary"
+                    type="button"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    class="button-root btn btn-primary"
+                    type="button"
+                  >
+                    Retrain
+                  </button>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+`;

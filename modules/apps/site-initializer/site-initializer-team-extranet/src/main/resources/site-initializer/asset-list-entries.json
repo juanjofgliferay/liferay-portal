@@ -1,6 +1,6 @@
 [
 	{
-		"ddmStructureKey": "ENTRY",
+		"assetEntrySubtypeId": "[$DDM_STRUCTURE_ID:ENTRY$]",
 		"title": "Blog Entries",
 		"unicodeProperties": {
 			"anyClassType": "anyClassTypeJournalArticleAssetRendererFactory",
@@ -23,25 +23,11 @@
 					"key": "orderByType2",
 					"value": "ASC"
 				}
-			],
-			"query": [
-				{
-					"key": "queryAndOperator",
-					"value": "true"
-				},
-				{
-					"key": "queryContains",
-					"value": "true"
-				},
-				{
-					"key": "queryName",
-					"value": "assetTags"
-				}
 			]
 		}
 	},
 	{
-		"ddmStructureKey": "ENTRY",
+		"assetEntrySubtypeId": "[$DDM_STRUCTURE_ID:ENTRY$]",
 		"title": "Featured Blog Entries",
 		"unicodeProperties": {
 			"anyClassType": "anyClassTypeJournalArticleAssetRendererFactory",
@@ -64,25 +50,11 @@
 					"key": "orderByType2",
 					"value": "ASC"
 				}
-			],
-			"query": [
-				{
-					"key": "queryAndOperator",
-					"value": "true"
-				},
-				{
-					"key": "queryContains",
-					"value": "true"
-				},
-				{
-					"key": "queryName",
-					"value": "assetTags"
-				}
 			]
 		}
 	},
 	{
-		"ddmStructureKey": "MEMBER",
+		"assetEntrySubtypeId": "[$DDM_STRUCTURE_ID:MEMBER$]",
 		"title": "Team Members",
 		"unicodeProperties": {
 			"anyClassType": "anyClassTypeJournalArticleAssetRendererFactory",
@@ -105,25 +77,11 @@
 					"key": "orderByType2",
 					"value": "ASC"
 				}
-			],
-			"query": [
-				{
-					"key": "queryAndOperator",
-					"value": "true"
-				},
-				{
-					"key": "queryContains",
-					"value": "true"
-				},
-				{
-					"key": "queryName",
-					"value": "assetTags"
-				}
 			]
 		}
 	},
 	{
-		"ddmStructureKey": "POSITION",
+		"assetEntrySubtypeId": "[$DDM_STRUCTURE_ID:POSITION$]",
 		"title": "Job Positions",
 		"unicodeProperties": {
 			"anyClassType": "anyClassTypeJournalArticleAssetRendererFactory",
@@ -145,20 +103,6 @@
 				{
 					"key": "orderByType2",
 					"value": "ASC"
-				}
-			],
-			"query": [
-				{
-					"key": "queryAndOperator",
-					"value": "true"
-				},
-				{
-					"key": "queryContains",
-					"value": "true"
-				},
-				{
-					"key": "queryName",
-					"value": "assetTags"
 				}
 			]
 		}

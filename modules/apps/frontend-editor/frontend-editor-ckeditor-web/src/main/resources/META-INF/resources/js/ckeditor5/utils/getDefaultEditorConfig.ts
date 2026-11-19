@@ -1,0 +1,409 @@
+/**
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
+ */
+
+import {Alignment} from '@ckeditor/ckeditor5-alignment';
+import {
+	Bold,
+	Italic,
+	Strikethrough,
+	Underline,
+} from '@ckeditor/ckeditor5-basic-styles';
+import {BlockQuote} from '@ckeditor/ckeditor5-block-quote';
+import {EditorConfig} from '@ckeditor/ckeditor5-core';
+import {Essentials} from '@ckeditor/ckeditor5-essentials';
+import {FindAndReplace} from '@ckeditor/ckeditor5-find-and-replace';
+import {Font} from '@ckeditor/ckeditor5-font';
+import {Heading} from '@ckeditor/ckeditor5-heading';
+import {HorizontalLine} from '@ckeditor/ckeditor5-horizontal-line';
+import {
+	GeneralHtmlSupport,
+	GeneralHtmlSupportConfig,
+} from '@ckeditor/ckeditor5-html-support';
+import {
+	Image,
+	ImageBlock,
+	ImageCaption,
+	ImageInline,
+	ImageResize,
+	ImageStyle,
+	ImageToolbar,
+} from '@ckeditor/ckeditor5-image';
+import {Indent} from '@ckeditor/ckeditor5-indent';
+import {Link, LinkImage} from '@ckeditor/ckeditor5-link';
+import {List} from '@ckeditor/ckeditor5-list';
+import {MediaEmbed} from '@ckeditor/ckeditor5-media-embed';
+import {Paragraph} from '@ckeditor/ckeditor5-paragraph';
+import {PasteFromOffice} from '@ckeditor/ckeditor5-paste-from-office';
+import {PasteFromOfficeEnhanced} from '@ckeditor/ckeditor5-paste-from-office-enhanced';
+import {RemoveFormat} from '@ckeditor/ckeditor5-remove-format';
+import {SourceEditing} from '@ckeditor/ckeditor5-source-editing';
+import {SourceEditingEnhanced} from '@ckeditor/ckeditor5-source-editing-enhanced';
+import {Style} from '@ckeditor/ckeditor5-style';
+import {
+	Table,
+	TableCaption,
+	TableProperties,
+	TableToolbar,
+} from '@ckeditor/ckeditor5-table';
+import {BlockToolbar} from '@ckeditor/ckeditor5-ui';
+import {WritingAssistant} from '@liferay/ai-hub-cell-js-components-web';
+import {sub} from 'frontend-js-web';
+
+import AICreator from '../plugins/AICreator';
+import HeadlessItemSelector from '../plugins/HeadlessItemSelector';
+import ItemSelector from '../plugins/ItemSelector';
+import {EEditorConfigPreset, EEditorVariant} from './types';
+
+const FONT_COLORS = [
+	{color: '#000000', label: 'Black'},
+	{color: '#4d4d4d', label: 'Dim grey'},
+	{color: '#999999', label: 'Grey'},
+	{color: '#e6e6e6', label: 'Light grey'},
+	{color: '#ffffff', hasBorder: true, label: 'White'},
+	{color: '#e64c4c', label: 'Red'},
+	{color: '#e6994c', label: 'Orange'},
+	{color: '#e6e64c', label: 'Yellow'},
+	{color: '#99e64c', label: 'Light green'},
+	{color: '#4ce64c', label: 'Green'},
+	{color: '#4ce699', label: 'Aquamarine'},
+	{color: '#4ce6e6', label: 'Turquoise'},
+	{color: '#4c99e6', label: 'Light blue'},
+	{color: '#4c4ce6', label: 'Blue'},
+	{color: '#994ce6', label: 'Purple'},
+];
+
+const getDefaultEditorConfig = ({
+	editorVariant,
+	preset,
+	showAICreator,
+	showPasteFromOfficeEnhanced,
+	showSourceEditingEnhanced,
+}: {
+	editorVariant: EEditorVariant;
+	preset: EEditorConfigPreset;
+	showAICreator?: boolean;
+	showPasteFromOfficeEnhanced?: boolean;
+	showSourceEditingEnhanced?: boolean;
+}): EditorConfig => {
+	const basicPlugins = [
+		BlockToolbar,
+		Bold,
+		Essentials,
+		GeneralHtmlSupport,
+		Italic,
+		Image,
+		Link,
+		LinkImage,
+		List,
+		Paragraph,
+		PasteFromOffice,
+		...(showPasteFromOfficeEnhanced ? [PasteFromOfficeEnhanced] : []),
+		Underline,
+	];
+
+	const classicUI = {
+		viewportOffset: {
+			top: 56,
+		},
+	};
+
+	const htmlSupport: GeneralHtmlSupportConfig = {
+		allow: [
+			{
+				attributes: true,
+				classes: true,
+				name: /.*/,
+				styles: true,
+			},
+		],
+		allowEmpty: ['img'],
+		disallow: [{name: 'script'}, {attributes: /on.*/}],
+	};
+
+	if (preset === EEditorConfigPreset.BASIC) {
+		const basicEditorConfig: EditorConfig = {
+			htmlSupport,
+			plugins: basicPlugins,
+			toolbar: {
+				items: [
+					'accessibilityHelp',
+					'|',
+					'undo',
+					'redo',
+					'|',
+					'bold',
+					'italic',
+					'underline',
+					'|',
+					'numberedList',
+					'bulletedList',
+					'|',
+					'link',
+				],
+				shouldNotGroupWhenFull: false,
+			},
+			ui:
+				editorVariant === EEditorVariant.CLASSIC
+					? classicUI
+					: undefined,
+		};
+
+		return basicEditorConfig;
+	}
+
+	const advancedPlugins = [
+		...basicPlugins,
+		Alignment,
+		BlockQuote,
+		FindAndReplace,
+		Font,
+		Heading,
+		HeadlessItemSelector,
+		HorizontalLine,
+		ImageBlock,
+		ImageCaption,
+		ImageInline,
+		ImageResize,
+		ImageStyle,
+		ImageToolbar,
+		Indent,
+		ItemSelector,
+		MediaEmbed,
+		RemoveFormat,
+		Strikethrough,
+		Style,
+		Table,
+		TableCaption,
+		TableProperties,
+		TableToolbar,
+	];
+
+	if (showAICreator) {
+		advancedPlugins.push(AICreator);
+	}
+
+	if (editorVariant === EEditorVariant.CLASSIC) {
+		advancedPlugins.push(
+			showSourceEditingEnhanced ? SourceEditingEnhanced : SourceEditing
+		);
+	}
+
+	if (Liferay.FeatureFlags['LPD-62272']) {
+		advancedPlugins.push(WritingAssistant);
+	}
+
+	const toolbarItems = [
+		'accessibilityHelp',
+		'|',
+		'undo',
+		'redo',
+		'findAndReplace',
+		'|',
+		'style',
+		'|',
+		'heading',
+		'|',
+		'bold',
+		'italic',
+		'underline',
+		'strikethrough',
+		'|',
+		'fontColor',
+		'fontBackgroundColor',
+		'|',
+		'removeFormat',
+		'|',
+		'numberedList',
+		'bulletedList',
+		'|',
+		'indent',
+		'outdent',
+		'|',
+		'blockQuote',
+		'|',
+		'link',
+		'insertTable',
+		'imageSelector',
+		'videoSelector',
+		'|',
+		'horizontalLine',
+		'|',
+		'alignment',
+	];
+
+	if (showAICreator) {
+		toolbarItems.push('|');
+		toolbarItems.push('aiCreator');
+	}
+
+	if (editorVariant === EEditorVariant.CLASSIC) {
+		toolbarItems.push('|');
+		toolbarItems.push(
+			showSourceEditingEnhanced
+				? 'sourceEditingEnhanced'
+				: 'sourceEditing'
+		);
+	}
+
+	const advancedEditorConfig: EditorConfig = {
+		alignment: {
+			options: ['left', 'center', 'right'],
+		},
+		fontBackgroundColor: {
+			colorPicker: {
+				format: 'hex',
+			},
+			colors: FONT_COLORS,
+		},
+		fontColor: {
+			colorPicker: {
+				format: 'hex',
+			},
+			colors: FONT_COLORS,
+		},
+		heading: {
+			options: [
+				{
+					class: 'lfr-editor-heading_paragraph',
+					model: 'paragraph',
+					title: Liferay.Language.get('normal'),
+				},
+				{
+					class: 'lfr-editor-heading_heading1',
+					model: 'heading1',
+					title: sub(Liferay.Language.get('heading-x'), 1),
+					view: 'h1',
+				},
+				{
+					class: 'lfr-editor-heading_heading2',
+					model: 'heading2',
+					title: sub(Liferay.Language.get('heading-x'), 2),
+					view: 'h2',
+				},
+				{
+					class: 'lfr-editor-heading_heading3',
+					model: 'heading3',
+					title: sub(Liferay.Language.get('heading-x'), 3),
+					view: 'h3',
+				},
+			],
+		},
+		htmlSupport,
+		image: {
+			toolbar: [
+				'imageStyle:inline',
+				'imageStyle:alignBlockLeft',
+				'imageStyle:block',
+				'imageStyle:alignBlockRight',
+				'imageStyle:side',
+				'toggleImageCaption',
+				'imageTextAlternative',
+			],
+		},
+		mediaEmbed: {
+			extraProviders: [
+				{
+					html: ([url]: string[]) =>
+						'<div style="position: relative; padding-bottom: 56.2493%; height: 0;">' +
+						`<video controls src="${url}" style="position: absolute; width: 100%; height: 100%; top: 0; left: 0;"></video>` +
+						'</div>',
+					name: 'directVideo',
+					url: /^.+\.(mp4|webm|ogg|ogv|mov|avi|m4v|mkv|wmv)(?:[/?].*)?$/i,
+				},
+			],
+			previewsInData: true,
+		},
+		plugins: advancedPlugins,
+		sourceEditingEnhanced: {
+			theme: 'dark',
+		},
+		style: {
+			definitions: [
+				{
+					classes: ['alert', 'alert-info'],
+					element: 'p',
+					name: Liferay.Language.get('info-message'),
+				},
+				{
+					classes: ['alert', 'alert-warning'],
+					element: 'p',
+					name: Liferay.Language.get('alert-message'),
+				},
+				{
+					classes: ['alert', 'alert-danger'],
+					element: 'p',
+					name: Liferay.Language.get('error-message'),
+				},
+				{
+					classes: ['cite'],
+					element: 'cite',
+					name: Liferay.Language.get('cited-work'),
+				},
+				{
+					classes: ['code'],
+					element: 'code',
+					name: Liferay.Language.get('computer-code'),
+				},
+				{
+					classes: ['text-primary'],
+					element: 'span',
+					name: Liferay.Language.get('primary[style]'),
+				},
+				{
+					classes: ['text-secondary'],
+					element: 'span',
+					name: Liferay.Language.get('secondary'),
+				},
+				{
+					classes: ['text-success'],
+					element: 'span',
+					name: Liferay.Language.get('success'),
+				},
+				{
+					classes: ['text-danger'],
+					element: 'span',
+					name: Liferay.Language.get('danger'),
+				},
+				{
+					classes: ['text-warning'],
+					element: 'span',
+					name: Liferay.Language.get('warning'),
+				},
+				{
+					classes: ['text-info'],
+					element: 'span',
+					name: Liferay.Language.get('info'),
+				},
+				{
+					classes: ['text-dark'],
+					element: 'span',
+					name: Liferay.Language.get('dark'),
+				},
+				{
+					classes: ['text-light'],
+					element: 'span',
+					name: Liferay.Language.get('light'),
+				},
+			],
+		},
+		table: {
+			contentToolbar: [
+				'tableColumn',
+				'tableRow',
+				'tableProperties',
+				'toggleTableCaption',
+			],
+		},
+		toolbar: {
+			items: toolbarItems,
+			shouldNotGroupWhenFull: true,
+		},
+		ui: editorVariant === EEditorVariant.CLASSIC ? classicUI : undefined,
+	};
+
+	return advancedEditorConfig;
+};
+
+export default getDefaultEditorConfig;

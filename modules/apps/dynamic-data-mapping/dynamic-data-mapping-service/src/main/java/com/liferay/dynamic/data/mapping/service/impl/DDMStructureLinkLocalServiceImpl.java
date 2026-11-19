@@ -9,17 +9,12 @@ import com.liferay.dynamic.data.mapping.exception.NoSuchStructureLinkException;
 import com.liferay.dynamic.data.mapping.model.DDMStructure;
 import com.liferay.dynamic.data.mapping.model.DDMStructureLink;
 import com.liferay.dynamic.data.mapping.service.base.DDMStructureLinkLocalServiceBaseImpl;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.aop.AopService;
-import com.liferay.portal.kernel.dao.orm.DynamicQuery;
-import com.liferay.portal.kernel.dao.orm.Property;
-import com.liferay.portal.kernel.dao.orm.PropertyFactoryUtil;
-import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.util.OrderByComparator;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.osgi.service.component.annotations.Component;
@@ -99,27 +94,24 @@ public class DDMStructureLinkLocalServiceImpl
 		}
 	}
 
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
 	@Override
-	public List<DDMStructureLink> getClassNameStructureLinks(long classNameId) {
-		DynamicQuery dynamicQuery = dynamicQuery();
+	public List<DDMStructure> getStructureLinkStructures(
+			long classNameId, long classPK)
+		throws PortalException {
 
-		Property classNameIdProperty = PropertyFactoryUtil.forName(
-			"classNameId");
-
-		dynamicQuery.add(classNameIdProperty.eq(classNameId));
-
-		return dynamicQuery(dynamicQuery);
+		return TransformUtil.transform(
+			getStructureLinks(classNameId, classPK),
+			structureLink -> structureLink.getStructure());
 	}
 
 	@Override
-	public DDMStructureLink getStructureLink(long structureLinkId)
+	public List<DDMStructure> getStructureLinkStructures(
+			long classNameId, long classPK, int start, int end)
 		throws PortalException {
 
-		return ddmStructureLinkPersistence.findByPrimaryKey(structureLinkId);
+		return TransformUtil.transform(
+			getStructureLinks(classNameId, classPK, start, end),
+			structureLink -> structureLink.getStructure());
 	}
 
 	@Override
@@ -153,86 +145,6 @@ public class DDMStructureLinkLocalServiceImpl
 	@Override
 	public int getStructureLinksCount(long classNameId, long classPK) {
 		return ddmStructureLinkPersistence.countByC_C(classNameId, classPK);
-	}
-
-	@Override
-	public List<DDMStructure> getStructureLinkStructures(
-			long classNameId, long classPK)
-		throws PortalException {
-
-		List<DDMStructure> structures = new ArrayList<>();
-
-		List<DDMStructureLink> structureLinks = getStructureLinks(
-			classNameId, classPK);
-
-		for (DDMStructureLink structureLink : structureLinks) {
-			structures.add(structureLink.getStructure());
-		}
-
-		return structures;
-	}
-
-	@Override
-	public List<DDMStructure> getStructureLinkStructures(
-			long classNameId, long classPK, int start, int end)
-		throws PortalException {
-
-		List<DDMStructure> structures = new ArrayList<>();
-
-		List<DDMStructureLink> structureLinks = getStructureLinks(
-			classNameId, classPK, start, end);
-
-		for (DDMStructureLink structureLink : structureLinks) {
-			structures.add(structureLink.getStructure());
-		}
-
-		return structures;
-	}
-
-	@Override
-	public List<DDMStructure> getStructureLinkStructures(
-			long classNameId, long classPK, String keywords)
-		throws PortalException {
-
-		return getStructureLinkStructures(
-			classNameId, classPK, keywords, QueryUtil.ALL_POS,
-			QueryUtil.ALL_POS);
-	}
-
-	@Override
-	public List<DDMStructure> getStructureLinkStructures(
-			long classNameId, long classPK, String keywords, int start, int end)
-		throws PortalException {
-
-		return getStructureLinkStructures(
-			classNameId, classPK, keywords, start, end, null);
-	}
-
-	@Override
-	public List<DDMStructure> getStructureLinkStructures(
-			long classNameId, long classPK, String keywords, int start, int end,
-			OrderByComparator<DDMStructureLink> orderByComparator)
-		throws PortalException {
-
-		List<DDMStructure> structures = new ArrayList<>();
-
-		List<DDMStructureLink> structureLinks =
-			ddmStructureLinkFinder.findByKeywords(
-				classNameId, classPK, keywords, start, end, orderByComparator);
-
-		for (DDMStructureLink structureLink : structureLinks) {
-			structures.add(structureLink.getStructure());
-		}
-
-		return structures;
-	}
-
-	@Override
-	public int getStructureLinkStructuresCount(
-		long classNameId, long classPK, String keywords) {
-
-		return ddmStructureLinkFinder.countByKeywords(
-			classNameId, classPK, keywords);
 	}
 
 	@Override

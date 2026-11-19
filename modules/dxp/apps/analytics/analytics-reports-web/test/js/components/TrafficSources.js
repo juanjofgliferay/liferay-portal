@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import '@testing-library/jest-dom/extend-expect';
+import '@testing-library/jest-dom';
 import {fireEvent, render, waitFor} from '@testing-library/react';
 import React from 'react';
 
@@ -193,6 +193,57 @@ describe('TrafficSources', () => {
 		const zeroValues = getAllByText('0');
 		expect(zeroValues.length).toBe(2);
 
+		expect(
+			getByText(
+				'your-page-has-no-incoming-traffic-from-traffic-channels-yet'
+			)
+		).toBeInTheDocument();
+	});
+
+	it('renders the empty pie chart and dashes when the content was published today even if traffic data is present', async () => {
+		const mockTrafficSourcesDataProvider = jest.fn(() =>
+			Promise.resolve([
+				{
+					endpointURL: 'http://localhost:8080/',
+					helpMessage: 'Testing Help Message',
+					name: 'testing',
+					share: 30.0,
+					title: 'Testing',
+					value: 32178,
+				},
+				{
+					endpointURL: 'http://localhost:8080/',
+					helpMessage: 'Second Testing Help Message',
+					name: 'second-testing',
+					share: 70.0,
+					title: 'Second Testing',
+					value: 278256,
+				},
+			])
+		);
+
+		const {getAllByText, getByText, queryByRole} = render(
+			<StoreContextProvider
+				value={{languageTag: mockLanguageTag, publishedToday: true}}
+			>
+				<TrafficSources
+					dataProvider={mockTrafficSourcesDataProvider}
+					languageTag="en-US"
+					onTrafficSourceClick={noop}
+				/>
+			</StoreContextProvider>
+		);
+
+		await waitFor(() => {
+			expect(mockTrafficSourcesDataProvider).toHaveBeenCalledTimes(1);
+		});
+
+		expect(getByText('Testing')).toBeInTheDocument();
+		expect(getByText('Second Testing')).toBeInTheDocument();
+		expect(
+			queryByRole('button', {name: 'Testing'})
+		).not.toBeInTheDocument();
+		expect(getAllByText('-')).toHaveLength(2);
 		expect(
 			getByText(
 				'your-page-has-no-incoming-traffic-from-traffic-channels-yet'

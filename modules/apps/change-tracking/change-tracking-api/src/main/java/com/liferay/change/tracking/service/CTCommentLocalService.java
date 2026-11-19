@@ -235,9 +235,6 @@ public interface CTCommentLocalService
 	public int getCTCommentsCount();
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<CTComment> getCTEntryCTComments(long ctEntryId);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public IndexableActionableDynamicQuery getIndexableActionableDynamicQuery();
 
 	/**
@@ -272,3 +269,4 @@ public interface CTCommentLocalService
 		throws PortalException;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:798299060

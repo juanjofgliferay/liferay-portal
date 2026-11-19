@@ -11,6 +11,7 @@ import com.liferay.document.library.kernel.exception.FileSizeException;
 import com.liferay.document.library.kernel.exception.FolderNameException;
 import com.liferay.document.library.kernel.exception.InvalidFileVersionException;
 import com.liferay.document.library.kernel.exception.SourceFileNameException;
+import com.liferay.portal.kernel.exception.PortalException;
 
 import java.io.File;
 import java.io.InputStream;
@@ -27,6 +28,8 @@ public interface DLValidator {
 
 	public String fixName(String name);
 
+	public long getMaxAllowableDownloadSize(long groupId);
+
 	public long getMaxAllowableSize(long groupId, String mimeType);
 
 	public long getMaxAllowableSize(long groupId, String mimeType, long limit);
@@ -38,8 +41,14 @@ public interface DLValidator {
 	public void validateDirectoryName(String directoryName)
 		throws FolderNameException;
 
+	public void validateDownloadSize(long groupId, long size)
+		throws FileSizeException;
+
 	public void validateFileExtension(String fileName)
 		throws FileExtensionException;
+
+	public void validateFileMimeType(long companyId, String mimeType)
+		throws PortalException;
 
 	public void validateFileName(String fileName) throws FileNameException;
 

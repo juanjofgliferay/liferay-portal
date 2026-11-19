@@ -105,9 +105,8 @@ public class CPDefinitionGroupedEntryServiceImpl
 
 		_checkCommerceCatalog(cpDefinitionId, ActionKeys.VIEW);
 
-		return cpDefinitionGroupedEntryLocalService.
-			getCPDefinitionGroupedEntries(
-				cpDefinitionId, start, end, orderByComparator);
+		return cpDefinitionGroupedEntryPersistence.findByCPDefinitionId(
+			cpDefinitionId, start, end, orderByComparator);
 	}
 
 	@Override
@@ -129,8 +128,8 @@ public class CPDefinitionGroupedEntryServiceImpl
 
 		_checkCommerceCatalog(cpDefinitionId, ActionKeys.VIEW);
 
-		return cpDefinitionGroupedEntryLocalService.
-			getCPDefinitionGroupedEntriesCount(cpDefinitionId);
+		return cpDefinitionGroupedEntryPersistence.countByCPDefinitionId(
+			cpDefinitionId);
 	}
 
 	@Override
@@ -151,7 +150,7 @@ public class CPDefinitionGroupedEntryServiceImpl
 		throws PortalException {
 
 		CPDefinitionGroupedEntry cpDefinitionGroupedEntry =
-			cpDefinitionGroupedEntryLocalService.getCPDefinitionGroupedEntry(
+			cpDefinitionGroupedEntryPersistence.findByPrimaryKey(
 				cpDefinitionGroupedEntryId);
 
 		if (cpDefinitionGroupedEntry != null) {
@@ -212,13 +211,13 @@ public class CPDefinitionGroupedEntryServiceImpl
 	}
 
 	@Reference
+	protected CProductLocalService cProductLocalService;
+
+	@Reference
 	protected CommerceCatalogLocalService commerceCatalogLocalService;
 
 	@Reference
 	protected CPDefinitionLocalService cpDefinitionLocalService;
-
-	@Reference
-	protected CProductLocalService cProductLocalService;
 
 	private void _checkCommerceCatalog(long cpDefinitionId, String actionId)
 		throws PortalException {

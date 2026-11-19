@@ -7,6 +7,7 @@ package com.liferay.object.internal.system;
 
 import com.liferay.object.constants.ObjectDefinitionConstants;
 import com.liferay.object.constants.ObjectRelationshipConstants;
+import com.liferay.object.field.builder.BooleanObjectFieldBuilder;
 import com.liferay.object.field.builder.TextObjectFieldBuilder;
 import com.liferay.object.model.ObjectDefinition;
 import com.liferay.object.model.ObjectField;
@@ -21,13 +22,15 @@ import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.model.Address;
 import com.liferay.portal.kernel.model.AddressTable;
 import com.liferay.portal.kernel.model.BaseModel;
+import com.liferay.portal.kernel.model.Contact;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.service.AddressLocalService;
+import com.liferay.portal.kernel.service.AddressService;
+import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.SetUtil;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -42,7 +45,8 @@ public class AddressSystemObjectDefinitionManager
 	extends BaseSystemObjectDefinitionManager {
 
 	@Override
-	public long addBaseModel(User user, Map<String, Object> values)
+	public long addBaseModel(
+			boolean checkPermissions, User user, Map<String, Object> values)
 		throws Exception {
 
 		return ReflectionUtil.throwException(
@@ -56,6 +60,7 @@ public class AddressSystemObjectDefinitionManager
 		return _addressLocalService.deleteAddress((Address)baseModel);
 	}
 
+	@Override
 	public BaseModel<?> fetchBaseModelByExternalReferenceCode(
 		String externalReferenceCode, long companyId) {
 
@@ -78,15 +83,6 @@ public class AddressSystemObjectDefinitionManager
 	}
 
 	@Override
-	public String getBaseModelExternalReferenceCode(long primaryKey)
-		throws PortalException {
-
-		Address address = _addressLocalService.getAddress(primaryKey);
-
-		return address.getExternalReferenceCode();
-	}
-
-	@Override
 	public String getExternalReferenceCode() {
 		return "L_POSTAL_ADDRESS";
 	}
@@ -99,8 +95,12 @@ public class AddressSystemObjectDefinitionManager
 	}
 
 	@Override
-	public Map<Locale, String> getLabelMap() {
-		return createLabelMap("postal-address");
+	public Map<String, String> getLabelKeys() {
+		return HashMapBuilder.put(
+			"label", "postal-address"
+		).put(
+			"pluralLabel", "postal-addresses"
+		).build();
 	}
 
 	@Override
@@ -113,12 +113,98 @@ public class AddressSystemObjectDefinitionManager
 		return Arrays.asList(
 			new TextObjectFieldBuilder(
 			).labelMap(
+				createLabelMap("country")
+			).name(
+				"addressCountry"
+			).required(
+				false
+			).system(
+				true
+			).build(),
+			new TextObjectFieldBuilder(
+			).dbColumnName(
+				"city"
+			).labelMap(
+				createLabelMap("city")
+			).name(
+				"addressLocality"
+			).required(
+				true
+			).system(
+				true
+			).build(),
+			new TextObjectFieldBuilder(
+			).labelMap(
+				createLabelMap("region")
+			).name(
+				"addressRegion"
+			).required(
+				true
+			).system(
+				true
+			).build(),
+			new TextObjectFieldBuilder(
+			).dbColumnName(
+				"subtype"
+			).labelMap(
+				createLabelMap("subtype")
+			).name(
+				"addressSubtype"
+			).required(
+				false
+			).system(
+				true
+			).build(),
+			new TextObjectFieldBuilder(
+			).labelMap(
+				createLabelMap("type")
+			).name(
+				"addressType"
+			).required(
+				true
+			).system(
+				true
+			).build(),
+			new TextObjectFieldBuilder(
+			).labelMap(
 				createLabelMap("name")
 			).name(
 				"name"
 			).required(
 				true
 			).system(
+				true
+			).build(),
+			new TextObjectFieldBuilder(
+			).labelMap(
+				createLabelMap("phone-number")
+			).name(
+				"phoneNumber"
+			).required(
+				false
+			).system(
+				true
+			).build(),
+			new TextObjectFieldBuilder(
+			).dbColumnName(
+				"zip"
+			).labelMap(
+				createLabelMap("postal-code")
+			).name(
+				"postalCode"
+			).required(
+				true
+			).system(
+				true
+			).build(),
+			new BooleanObjectFieldBuilder(
+			).dbColumnName(
+				"primary_"
+			).labelMap(
+				createLabelMap("primary")
+			).name(
+				"primary"
+			).required(
 				true
 			).build(),
 			new TextObjectFieldBuilder(
@@ -132,12 +218,41 @@ public class AddressSystemObjectDefinitionManager
 				true
 			).system(
 				true
+			).build(),
+			new TextObjectFieldBuilder(
+			).dbColumnName(
+				"street2"
+			).labelMap(
+				createLabelMap("street2")
+			).name(
+				"streetAddressLine2"
+			).required(
+				false
+			).system(
+				true
+			).build(),
+			new TextObjectFieldBuilder(
+			).dbColumnName(
+				"street3"
+			).labelMap(
+				createLabelMap("street3")
+			).name(
+				"streetAddressLine3"
+			).required(
+				false
+			).system(
+				true
 			).build());
 	}
 
 	@Override
-	public Map<Locale, String> getPluralLabelMap() {
-		return createLabelMap("postal-addresses");
+	public BaseModel<?> getOrAddEmptyBaseModel(
+			String externalReferenceCode, User user)
+		throws PortalException {
+
+		return _addressService.getOrAddEmptyAddress(
+			externalReferenceCode, Contact.class.getName(),
+			user.getContactId());
 	}
 
 	@Override
@@ -168,8 +283,10 @@ public class AddressSystemObjectDefinitionManager
 		Map<String, Object> variables = super.getVariables(
 			contentType, objectDefinition, oldValues, payloadJSONObject);
 
-		if (variables.containsKey("street1")) {
-			variables.put("streetAddressLine1", variables.get("street1"));
+		Object street1 = variables.get("street1");
+
+		if (street1 != null) {
+			variables.put("streetAddressLine1", street1);
 		}
 
 		return variables;
@@ -177,7 +294,7 @@ public class AddressSystemObjectDefinitionManager
 
 	@Override
 	public int getVersion() {
-		return 1;
+		return 3;
 	}
 
 	@Override
@@ -190,5 +307,8 @@ public class AddressSystemObjectDefinitionManager
 
 	@Reference
 	private AddressLocalService _addressLocalService;
+
+	@Reference
+	private AddressService _addressService;
 
 }

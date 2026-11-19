@@ -9,6 +9,7 @@ import com.liferay.document.library.kernel.model.DLFileEntry;
 import com.liferay.document.library.kernel.model.DLFileShortcut;
 import com.liferay.document.library.kernel.model.DLFolder;
 import com.liferay.document.library.kernel.model.DLFolderConstants;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.ContainerModel;
 import com.liferay.portal.kernel.model.TrashedModel;
@@ -20,7 +21,6 @@ import com.liferay.portal.kernel.repository.capabilities.UnsupportedCapabilityEx
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.repository.model.FileShortcut;
 import com.liferay.portal.kernel.repository.model.Folder;
-import com.liferay.portal.kernel.repository.model.RepositoryEntry;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.trash.BaseTrashHandler;
@@ -61,16 +61,10 @@ public abstract class BaseDLTrashHandler extends BaseTrashHandler {
 
 		DocumentRepository documentRepository = getDocumentRepository(classPK);
 
-		List<Folder> folders = documentRepository.getFolders(
-			parentContainerModelId, false, start, end, null);
-
-		List<ContainerModel> containerModels = new ArrayList<>(folders.size());
-
-		for (Folder folder : folders) {
-			containerModels.add((ContainerModel)folder.getModel());
-		}
-
-		return containerModels;
+		return TransformUtil.transform(
+			documentRepository.getFolders(
+				parentContainerModelId, false, start, end, null),
+			folder -> (ContainerModel)folder.getModel());
 	}
 
 	@Override
@@ -148,47 +142,41 @@ public abstract class BaseDLTrashHandler extends BaseTrashHandler {
 	}
 
 	@Override
-	public int getTrashModelsCount(long classPK) throws PortalException {
-		DocumentRepository documentRepository = getDocumentRepository(classPK);
-
-		return documentRepository.getFileEntriesAndFileShortcutsCount(
-			classPK, WorkflowConstants.STATUS_IN_TRASH);
-	}
-
-	@Override
 	public List<TrashedModel> getTrashModelTrashedModels(
 			long classPK, int start, int end,
 			OrderByComparator<?> orderByComparator)
 		throws PortalException {
 
-		List<TrashedModel> trashedModels = new ArrayList<>();
-
 		DocumentRepository documentRepository = getDocumentRepository(classPK);
 
-		List<RepositoryEntry> repositoryEntries =
+		return TransformUtil.transform(
 			documentRepository.getFoldersAndFileEntriesAndFileShortcuts(
 				classPK, WorkflowConstants.STATUS_IN_TRASH, false, start, end,
-				orderByComparator);
+				orderByComparator),
+			repositoryEntry -> {
+				if (repositoryEntry instanceof FileShortcut) {
+					FileShortcut fileShortcut = (FileShortcut)repositoryEntry;
 
-		for (RepositoryEntry repositoryEntry : repositoryEntries) {
-			if (repositoryEntry instanceof FileShortcut) {
-				FileShortcut fileShortcut = (FileShortcut)repositoryEntry;
+					return (DLFileShortcut)fileShortcut.getModel();
+				}
+				else if (repositoryEntry instanceof FileEntry) {
+					FileEntry fileEntry = (FileEntry)repositoryEntry;
 
-				trashedModels.add((DLFileShortcut)fileShortcut.getModel());
-			}
-			else if (repositoryEntry instanceof FileEntry) {
-				FileEntry fileEntry = (FileEntry)repositoryEntry;
+					return (DLFileEntry)fileEntry.getModel();
+				}
 
-				trashedModels.add((DLFileEntry)fileEntry.getModel());
-			}
-			else {
 				Folder folder = (Folder)repositoryEntry;
 
-				trashedModels.add((DLFolder)folder.getModel());
-			}
-		}
+				return (DLFolder)folder.getModel();
+			});
+	}
 
-		return trashedModels;
+	@Override
+	public int getTrashModelsCount(long classPK) throws PortalException {
+		DocumentRepository documentRepository = getDocumentRepository(classPK);
+
+		return documentRepository.getFileEntriesAndFileShortcutsCount(
+			classPK, WorkflowConstants.STATUS_IN_TRASH);
 	}
 
 	protected DLFolder fetchDLFolder(long classPK) throws PortalException {

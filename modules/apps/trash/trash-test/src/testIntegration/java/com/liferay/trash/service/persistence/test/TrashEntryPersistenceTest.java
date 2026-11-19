@@ -111,11 +111,7 @@ public class TrashEntryPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		TrashEntry newTrashEntry = _persistence.create(pk);
-
-		newTrashEntry.setMvccVersion(RandomTestUtil.nextLong());
+		TrashEntry newTrashEntry = addTrashEntry();
 
 		newTrashEntry.setCtCollectionId(RandomTestUtil.nextLong());
 
@@ -139,7 +135,9 @@ public class TrashEntryPersistenceTest {
 
 		newTrashEntry.setStatus(RandomTestUtil.nextInt());
 
-		_trashEntries.add(_persistence.update(newTrashEntry));
+		newTrashEntry = _persistence.update(newTrashEntry);
+
+		_trashEntries.add(newTrashEntry);
 
 		TrashEntry existingTrashEntry = _persistence.findByPrimaryKey(
 			newTrashEntry.getPrimaryKey());
@@ -186,13 +184,6 @@ public class TrashEntryPersistenceTest {
 	}
 
 	@Test
-	public void testCountByCompanyId() throws Exception {
-		_persistence.countByCompanyId(RandomTestUtil.nextLong());
-
-		_persistence.countByCompanyId(0L);
-	}
-
-	@Test
 	public void testCountByG_LtCD() throws Exception {
 		_persistence.countByG_LtCD(
 			RandomTestUtil.nextLong(), RandomTestUtil.nextDate());
@@ -201,19 +192,27 @@ public class TrashEntryPersistenceTest {
 	}
 
 	@Test
-	public void testCountByG_C() throws Exception {
-		_persistence.countByG_C(
+	public void testCountByG_CN() throws Exception {
+		_persistence.countByG_CN(
 			RandomTestUtil.nextLong(), RandomTestUtil.nextLong());
 
-		_persistence.countByG_C(0L, 0L);
+		_persistence.countByG_CN(0L, 0L);
 	}
 
 	@Test
-	public void testCountByC_C() throws Exception {
-		_persistence.countByC_C(
+	public void testCountByC_CN() throws Exception {
+		_persistence.countByC_CN(
 			RandomTestUtil.nextLong(), RandomTestUtil.nextLong());
 
-		_persistence.countByC_C(0L, 0L);
+		_persistence.countByC_CN(0L, 0L);
+	}
+
+	@Test
+	public void testCountByCN_CPK() throws Exception {
+		_persistence.countByCN_CPK(
+			RandomTestUtil.nextLong(), RandomTestUtil.nextLong());
+
+		_persistence.countByCN_CPK(0L, 0L);
 	}
 
 	@Test
@@ -518,8 +517,6 @@ public class TrashEntryPersistenceTest {
 
 		TrashEntry trashEntry = _persistence.create(pk);
 
-		trashEntry.setMvccVersion(RandomTestUtil.nextLong());
-
 		trashEntry.setCtCollectionId(RandomTestUtil.nextLong());
 
 		trashEntry.setGroupId(RandomTestUtil.nextLong());
@@ -552,3 +549,4 @@ public class TrashEntryPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-2007480708

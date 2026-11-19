@@ -5,9 +5,9 @@
 
 import ClayLabel from '@clayui/label';
 import React from 'react';
-import {withRouter} from 'react-router-dom';
 
 import Link from '../components/Link.es';
+import {withRouter} from '../hooks/withRouter.es';
 
 export default withRouter(({tags = [], sectionTitle = ''}) => {
 	if (tags.length) {
@@ -21,6 +21,7 @@ export default withRouter(({tags = [], sectionTitle = ''}) => {
 					<ClayLabel displayType="secondary">
 						<Link
 							key={tag}
+							slugTo={false}
 							to={`/questions/${sectionTitle}?selectedtags=${tag}&taggedwith=some-specific-tag`}
 						>
 							{tag}

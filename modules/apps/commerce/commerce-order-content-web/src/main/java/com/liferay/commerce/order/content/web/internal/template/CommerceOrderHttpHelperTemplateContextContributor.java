@@ -6,11 +6,14 @@
 package com.liferay.commerce.order.content.web.internal.template;
 
 import com.liferay.commerce.order.CommerceOrderHttpHelper;
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
+import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.template.TemplateContextContributor;
+import com.liferay.portal.kernel.util.Portal;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.Map;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -19,7 +22,11 @@ import org.osgi.service.component.annotations.Reference;
  * @author Alec Sloan
  */
 @Component(
-	property = "type=" + TemplateContextContributor.TYPE_GLOBAL,
+	property = {
+		"template.context.keys=commerceOrderHttpHelper",
+		"template.context.keys=commerceReturnsEnabled",
+		"type=" + TemplateContextContributor.TYPE_GLOBAL
+	},
 	service = TemplateContextContributor.class
 )
 public class CommerceOrderHttpHelperTemplateContextContributor
@@ -31,9 +38,24 @@ public class CommerceOrderHttpHelperTemplateContextContributor
 		HttpServletRequest httpServletRequest) {
 
 		contextObjects.put("commerceOrderHttpHelper", _commerceOrderHttpHelper);
+		contextObjects.put(
+			"commerceReturnsEnabled",
+			FeatureFlagManagerUtil.isEnabled(
+				_getCompanyId(httpServletRequest), "LPD-10562"));
+	}
+
+	private long _getCompanyId(HttpServletRequest httpServletRequest) {
+		if (httpServletRequest == null) {
+			return CompanyThreadLocal.getCompanyId();
+		}
+
+		return _portal.getCompanyId(httpServletRequest);
 	}
 
 	@Reference
 	private CommerceOrderHttpHelper _commerceOrderHttpHelper;
+
+	@Reference
+	private Portal _portal;
 
 }

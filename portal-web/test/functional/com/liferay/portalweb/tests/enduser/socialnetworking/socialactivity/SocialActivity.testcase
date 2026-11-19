@@ -1,7 +1,10 @@
-@component-name = "portal-social-networking"
+@component-name = "portal-content-management"
 definition {
 
-	property portal.release = "true";
+	property browser.chrome.version = "139.0";
+	property custom.properties = "feature.flag.LPD-35013=false";
+	property osgi.modules.includes = "wiki";
+	property portal.release = "false";
 	property portal.upstream = "true";
 	property testray.main.component.name = "Social Networking";
 
@@ -9,6 +12,8 @@ definition {
 		TestCase.setUpPortalInstance();
 
 		User.firstLoginPG();
+
+		WikiPortlet.enableWiki();
 	}
 
 	tearDown {
@@ -33,15 +38,7 @@ definition {
 		property test.liferay.virtual.instance = "false";
 		property test.run.type = "single";
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Configuration",
-			panel = "Control Panel",
-			portlet = "System Settings");
-
-		SystemSettings.gotoConfiguration(
-			configurationCategory = "User Activity",
-			configurationName = "Social Activity",
-			configurationScope = "Virtual Instance Scope");
+		SystemSettings.openToConfigInSystemSettings(portletId = "com.liferay.social.activity.internal.configuration.SocialActivitySystemConfiguration");
 
 		FormFields.viewCheckboxChecked(fieldName = "enableUserSocialActivityTracking");
 
@@ -90,19 +87,11 @@ definition {
 		property test.liferay.virtual.instance = "false";
 		property test.run.type = "single";
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Configuration",
-			panel = "Control Panel",
-			portlet = "System Settings");
-
-		SystemSettings.gotoConfiguration(
-			configurationCategory = "User Activity",
-			configurationName = "Social Activity",
-			configurationScope = "Virtual Instance Scope");
+		SystemSettings.openToConfigInSystemSettings(portletId = "com.liferay.social.activity.internal.configuration.SocialActivitySystemConfiguration");
 
 		FormFields.disableCheckbox(fieldName = "enable");
 
-		PortletEntry.save();
+		SystemSettings.saveConfiguration();
 
 		FormFields.viewCheckboxNotChecked(fieldName = "enable");
 

@@ -5,8 +5,8 @@
 
 package com.liferay.portal.upload;
 
+import com.liferay.petra.io.ByteArrayFileInputStream;
 import com.liferay.petra.string.StringBundler;
-import com.liferay.portal.kernel.io.ByteArrayFileInputStream;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.module.service.Snapshot;
@@ -20,6 +20,11 @@ import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ProgressTracker;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
+
+import jakarta.servlet.ServletInputStream;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequestWrapper;
+import jakarta.servlet.http.HttpSession;
 
 import java.io.File;
 import java.io.IOException;
@@ -35,11 +40,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
-
-import javax.servlet.ServletInputStream;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletRequestWrapper;
-import javax.servlet.http.HttpSession;
 
 /**
  * @author Brian Wing Shun Chan
@@ -87,7 +87,8 @@ public class UploadServletRequestImpl
 
 			int contentLength = httpServletRequest.getContentLength();
 			long uploadServletRequestImplMaxSize =
-				UploadServletRequestConfigurationProviderUtil.getMaxSize();
+				UploadServletRequestConfigurationProviderUtil.
+					getMaxSizeWithPadding();
 			long uploadServletRequestImplSize = 0;
 
 			if ((uploadServletRequestImplMaxSize > 0) &&
@@ -115,6 +116,8 @@ public class UploadServletRequestImpl
 						httpServletRequest.setAttribute(
 							WebKeys.UPLOAD_EXCEPTION, uploadException);
 
+						fileItem.delete();
+
 						continue;
 					}
 
@@ -124,12 +127,8 @@ public class UploadServletRequestImpl
 				if (fileItem.isFormField()) {
 					String fieldName = fileItem.getFieldName();
 
-					if (!_regularParameters.containsKey(fieldName)) {
-						_regularParameters.put(
-							fieldName, new ArrayList<String>());
-					}
-
-					List<String> values = _regularParameters.get(fieldName);
+					List<String> values = _regularParameters.computeIfAbsent(
+						fieldName, key -> new ArrayList<>());
 
 					if (fileItem.getSize() > FileItem.THRESHOLD_SIZE) {
 						UploadException uploadException = new UploadException(
@@ -146,6 +145,8 @@ public class UploadServletRequestImpl
 					}
 
 					values.add(fileItem.getString());
+
+					fileItem.delete();
 
 					continue;
 				}
@@ -361,13 +362,15 @@ public class UploadServletRequestImpl
 			for (int i = 0; i < liferayFileItems.length; i++) {
 				FileItem liferayFileItem = liferayFileItems[i];
 
-				if (Validator.isNotNull(liferayFileItem.getFileName())) {
-					if (liferayFileItem.isInMemory()) {
-						files[i] = liferayFileItem.getTempFile();
-					}
-					else {
-						files[i] = liferayFileItem.getStoreLocation();
-					}
+				if (Validator.isNull(liferayFileItem.getFileName())) {
+					continue;
+				}
+
+				if (liferayFileItem.isInMemory()) {
+					files[i] = liferayFileItem.getTempFile();
+				}
+				else {
+					files[i] = liferayFileItem.getStoreLocation();
 				}
 			}
 
@@ -402,10 +405,12 @@ public class UploadServletRequestImpl
 			for (int i = 0; i < liferayFileItems.length; i++) {
 				FileItem liferayFileItem = liferayFileItems[i];
 
-				if (Validator.isNotNull(liferayFileItem.getFileName())) {
-					inputStreams[i] = getInputStream(
-						liferayFileItem, deleteOnClose);
+				if (Validator.isNull(liferayFileItem.getFileName())) {
+					continue;
 				}
+
+				inputStreams[i] = getInputStream(
+					liferayFileItem, deleteOnClose);
 			}
 		}
 
@@ -461,9 +466,11 @@ public class UploadServletRequestImpl
 
 			String[] values = getParameterValues(name);
 
-			if (values != null) {
-				map.put(name, values);
+			if (values == null) {
+				continue;
 			}
+
+			map.put(name, values);
 		}
 
 		return map;

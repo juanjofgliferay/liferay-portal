@@ -16,19 +16,33 @@ import com.liferay.portal.kernel.audit.AuditException;
 import com.liferay.portal.kernel.audit.AuditMessage;
 import com.liferay.portal.kernel.audit.AuditRouterUtil;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
+import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.CompanyConstants;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.Time;
-import com.liferay.portal.util.PropsValues;
+
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 
 import java.io.IOException;
+
+import java.nio.charset.StandardCharsets;
+
+import java.security.MessageDigest;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -36,13 +50,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-
-import javax.servlet.RequestDispatcher;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
 
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -88,6 +95,17 @@ public class EmailOTPBrowserMFAChecker implements BrowserMFAChecker {
 
 		HttpSession httpSession = originalHttpServletRequest.getSession();
 
+		Long mfaEmailOTPUserId = (Long)httpSession.getAttribute(
+			MFAEmailOTPWebKeys.MFA_EMAIL_OTP_USER_ID);
+
+		if ((mfaEmailOTPUserId != null) && (mfaEmailOTPUserId != userId)) {
+			httpSession.removeAttribute(MFAEmailOTPWebKeys.MFA_EMAIL_OTP_PHASE);
+			httpSession.removeAttribute(
+				MFAEmailOTPWebKeys.MFA_EMAIL_OTP_SET_AT_TIME);
+			httpSession.removeAttribute(
+				MFAEmailOTPWebKeys.MFA_EMAIL_OTP_USER_ID);
+		}
+
 		httpServletRequest.setAttribute(
 			MFAEmailOTPWebKeys.MFA_EMAIL_OTP_SEND_TO_ADDRESS_OBFUSCATED,
 			obfuscateEmailAddress(user.getEmailAddress()));
@@ -119,11 +137,7 @@ public class EmailOTPBrowserMFAChecker implements BrowserMFAChecker {
 
 		HttpSession httpSession = originalHttpServletRequest.getSession(false);
 
-		if (_isVerified(httpSession, userId)) {
-			return true;
-		}
-
-		return false;
+		return _isVerified(httpSession, userId);
 	}
 
 	@Override
@@ -357,7 +371,11 @@ public class EmailOTPBrowserMFAChecker implements BrowserMFAChecker {
 		String expectedMFAEmailOTP = (String)httpSession.getAttribute(
 			MFAEmailOTPWebKeys.MFA_EMAIL_OTP);
 
-		if ((expectedMFAEmailOTP == null) || !expectedMFAEmailOTP.equals(otp)) {
+		if ((expectedMFAEmailOTP == null) || (otp == null) ||
+			!MessageDigest.isEqual(
+				otp.getBytes(StandardCharsets.UTF_8),
+				expectedMFAEmailOTP.getBytes(StandardCharsets.UTF_8))) {
+
 			return false;
 		}
 
@@ -396,51 +414,74 @@ public class EmailOTPBrowserMFAChecker implements BrowserMFAChecker {
 		public AuditMessage buildNonexistentUserVerificationFailureAuditMessage(
 			long companyId, long userId, String checkerClassName) {
 
-			return new AuditMessage(
-				MFAEmailOTPEventTypes.MFA_EMAIL_OTP_VERIFICATION_FAILURE,
-				companyId, userId, "Nonexistent", checkerClassName,
-				String.valueOf(userId), null,
-				JSONUtil.put("reason", "Nonexistent User"));
+			AuditMessage auditMessage = new AuditMessage(
+				companyId, userId, "Nonexistent", "verify_failure",
+				JSONUtil.put("reason", "Nonexistent User"), checkerClassName,
+				String.valueOf(userId),
+				MFAEmailOTPEventTypes.MFA_EMAIL_OTP_VERIFICATION_FAILURE, null,
+				"mfa");
+
+			_setVerificationResult(auditMessage, "verification_failure");
+
+			return auditMessage;
 		}
 
 		public AuditMessage buildNotVerifiedAuditMessage(
 			User user, String checkerClassName, String reason) {
 
-			return new AuditMessage(
-				MFAEmailOTPEventTypes.MFA_EMAIL_OTP_NOT_VERIFIED,
+			AuditMessage auditMessage = new AuditMessage(
 				user.getCompanyId(), user.getUserId(), user.getFullName(),
-				checkerClassName, String.valueOf(user.getPrimaryKey()), null,
-				JSONUtil.put("reason", reason));
+				"verify_failure", JSONUtil.put("reason", reason),
+				checkerClassName, String.valueOf(user.getPrimaryKey()),
+				MFAEmailOTPEventTypes.MFA_EMAIL_OTP_NOT_VERIFIED, null, "mfa");
+
+			_setVerificationResult(auditMessage, "not_verified");
+
+			return auditMessage;
 		}
 
 		public AuditMessage buildVerificationFailureAuditMessage(
 			User user, String checkerClassName, String reason) {
 
-			return new AuditMessage(
-				MFAEmailOTPEventTypes.MFA_EMAIL_OTP_VERIFICATION_FAILURE,
+			AuditMessage auditMessage = new AuditMessage(
 				user.getCompanyId(), user.getUserId(), user.getFullName(),
-				checkerClassName, String.valueOf(user.getPrimaryKey()), null,
-				JSONUtil.put("reason", reason));
+				"verify_failure", JSONUtil.put("reason", reason),
+				checkerClassName, String.valueOf(user.getPrimaryKey()),
+				MFAEmailOTPEventTypes.MFA_EMAIL_OTP_VERIFICATION_FAILURE, null,
+				"mfa");
+
+			_setVerificationResult(auditMessage, "verification_failure");
+
+			return auditMessage;
 		}
 
 		public AuditMessage buildVerificationSuccessAuditMessage(
 			User user, String checkerClassName) {
 
-			return new AuditMessage(
-				MFAEmailOTPEventTypes.MFA_EMAIL_OTP_VERIFICATION_SUCCESS,
+			AuditMessage auditMessage = new AuditMessage(
 				user.getCompanyId(), user.getUserId(), user.getFullName(),
-				checkerClassName, String.valueOf(user.getPrimaryKey()), null,
-				null);
+				"verify", null, checkerClassName,
+				String.valueOf(user.getPrimaryKey()),
+				MFAEmailOTPEventTypes.MFA_EMAIL_OTP_VERIFICATION_SUCCESS, null,
+				"mfa");
+
+			_setVerificationResult(auditMessage, "verification_success");
+
+			return auditMessage;
 		}
 
 		public AuditMessage buildVerifiedAuditMessage(
 			User user, String checkerClassName) {
 
-			return new AuditMessage(
-				MFAEmailOTPEventTypes.MFA_EMAIL_OTP_VERIFIED,
+			AuditMessage auditMessage = new AuditMessage(
 				user.getCompanyId(), user.getUserId(), user.getFullName(),
-				checkerClassName, String.valueOf(user.getPrimaryKey()), null,
-				null);
+				"verify", null, checkerClassName,
+				String.valueOf(user.getPrimaryKey()),
+				MFAEmailOTPEventTypes.MFA_EMAIL_OTP_VERIFIED, null, "mfa");
+
+			_setVerificationResult(auditMessage, "verified");
+
+			return auditMessage;
 		}
 
 		public void routeAuditMessage(AuditMessage auditMessage) {
@@ -457,6 +498,27 @@ public class EmailOTPBrowserMFAChecker implements BrowserMFAChecker {
 					_log.debug(exception);
 				}
 			}
+		}
+
+		private void _setVerificationResult(
+			AuditMessage auditMessage, String outcome) {
+
+			long companyId = auditMessage.getCompanyId();
+
+			if ((companyId == CompanyConstants.SYSTEM) ||
+				!FeatureFlagManagerUtil.isEnabled(companyId, "LPD-6417")) {
+
+				return;
+			}
+
+			JSONObject additionalInfoJSONObject =
+				auditMessage.getAdditionalInfo();
+
+			additionalInfoJSONObject.put(
+				"factor", "email_otp"
+			).put(
+				"outcome", outcome
+			);
 		}
 
 		private final Log _log = LogFactoryUtil.getLog(

@@ -12,6 +12,8 @@ import com.liferay.commerce.product.content.helper.CPCompareContentHelper;
 import com.liferay.commerce.product.content.web.internal.configuration.CPCompareContentMiniPortletInstanceConfiguration;
 import com.liferay.commerce.product.content.web.internal.configuration.CPCompareContentPortletInstanceConfiguration;
 import com.liferay.commerce.product.data.source.CPDataSourceResult;
+import com.liferay.commerce.product.helper.CPCompareHelper;
+import com.liferay.commerce.product.helper.CPDefinitionHelper;
 import com.liferay.commerce.product.model.CPDefinition;
 import com.liferay.commerce.product.model.CPDefinitionOptionRel;
 import com.liferay.commerce.product.model.CPDefinitionOptionValueRel;
@@ -25,8 +27,7 @@ import com.liferay.commerce.product.service.CPDefinitionLocalService;
 import com.liferay.commerce.product.service.CPDefinitionSpecificationOptionValueLocalService;
 import com.liferay.commerce.product.service.CPMeasurementUnitLocalService;
 import com.liferay.commerce.product.service.CPOptionCategoryLocalService;
-import com.liferay.commerce.product.util.CPCompareHelper;
-import com.liferay.commerce.product.util.CPDefinitionHelper;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
@@ -41,17 +42,17 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.StringUtil;
 
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
-
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -61,49 +62,6 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(service = CPCompareContentHelper.class)
 public class CPCompareContentHelperImpl implements CPCompareContentHelper {
-
-	@Override
-	public Set<CPSpecificationOption> getCategorizedCPSpecificationOptions(
-			CPDataSourceResult cpDataSourceResult)
-		throws PortalException {
-
-		Set<CPSpecificationOption> cpSpecificationOptions =
-			new LinkedHashSet<>();
-
-		for (CPCatalogEntry cpCatalogEntry :
-				cpDataSourceResult.getCPCatalogEntries()) {
-
-			cpSpecificationOptions.addAll(
-				getCPSpecificationOptions(cpCatalogEntry, true));
-		}
-
-		return cpSpecificationOptions;
-	}
-
-	@Override
-	public String getCompareContentPortletNamespace() {
-		return _portal.getPortletNamespace(
-			CPPortletKeys.CP_COMPARE_CONTENT_WEB);
-	}
-
-	@Override
-	public String getCompareProductsURL(ThemeDisplay themeDisplay)
-		throws PortalException {
-
-		Layout curLayout = themeDisplay.getLayout();
-
-		long plid = _portal.getPlidFromPortletId(
-			themeDisplay.getScopeGroupId(), curLayout.isPrivateLayout(),
-			CPPortletKeys.CP_COMPARE_CONTENT_WEB);
-
-		Layout layout = _layoutLocalService.fetchLayout(plid);
-
-		if (layout == null) {
-			return StringPool.BLANK;
-		}
-
-		return _portal.getLayoutURL(layout, themeDisplay);
-	}
 
 	@Override
 	public List<CPCatalogEntry> getCPCatalogEntries(
@@ -223,6 +181,49 @@ public class CPCompareContentHelperImpl implements CPCompareContentHelper {
 	}
 
 	@Override
+	public Set<CPSpecificationOption> getCategorizedCPSpecificationOptions(
+			CPDataSourceResult cpDataSourceResult)
+		throws PortalException {
+
+		Set<CPSpecificationOption> cpSpecificationOptions =
+			new LinkedHashSet<>();
+
+		for (CPCatalogEntry cpCatalogEntry :
+				cpDataSourceResult.getCPCatalogEntries()) {
+
+			cpSpecificationOptions.addAll(
+				getCPSpecificationOptions(cpCatalogEntry, true));
+		}
+
+		return cpSpecificationOptions;
+	}
+
+	@Override
+	public String getCompareContentPortletNamespace() {
+		return _portal.getPortletNamespace(
+			CPPortletKeys.CP_COMPARE_CONTENT_WEB);
+	}
+
+	@Override
+	public String getCompareProductsURL(ThemeDisplay themeDisplay)
+		throws PortalException {
+
+		Layout curLayout = themeDisplay.getLayout();
+
+		long plid = _portal.getPlidFromPortletId(
+			themeDisplay.getScopeGroupId(), curLayout.isPrivateLayout(),
+			CPPortletKeys.CP_COMPARE_CONTENT_WEB);
+
+		Layout layout = _layoutLocalService.fetchLayout(plid);
+
+		if (layout == null) {
+			return StringPool.BLANK;
+		}
+
+		return _portal.getLayoutURL(layout, themeDisplay);
+	}
+
+	@Override
 	public String getDefaultImageFileURL(
 			long commerceAccountId, long cpDefinitionId)
 		throws PortalException {
@@ -318,16 +319,10 @@ public class CPCompareContentHelperImpl implements CPCompareContentHelper {
 		List<CPDefinitionOptionValueRel> cpDefinitionOptionValueRels,
 		Locale locale) {
 
-		List<String> cpDefinitionOptionValueRelValues = new ArrayList<>();
-
-		for (CPDefinitionOptionValueRel cpDefinitionOptionValueRel :
-				cpDefinitionOptionValueRels) {
-
-			cpDefinitionOptionValueRelValues.add(
-				cpDefinitionOptionValueRel.getName(locale));
-		}
-
-		return cpDefinitionOptionValueRelValues;
+		return TransformUtil.transform(
+			cpDefinitionOptionValueRels,
+			cpDefinitionOptionValueRel -> cpDefinitionOptionValueRel.getName(
+				locale));
 	}
 
 	protected List<CPSpecificationOption> getCPSpecificationOptions(
@@ -341,7 +336,10 @@ public class CPCompareContentHelperImpl implements CPCompareContentHelper {
 
 		for (CPDefinitionSpecificationOptionValue
 				cpDefinitionSpecificationOptionValue :
-					cpDefinition.getCPDefinitionSpecificationOptionValues()) {
+					_cpDefinitionSpecificationOptionValueLocalService.
+						getCPDefinitionSpecificationOptionValues(
+							cpDefinition.getCPDefinitionId(), true,
+							QueryUtil.ALL_POS, QueryUtil.ALL_POS, null)) {
 
 			CPSpecificationOption cpSpecificationOption =
 				cpDefinitionSpecificationOptionValue.getCPSpecificationOption();
@@ -352,11 +350,13 @@ public class CPCompareContentHelperImpl implements CPCompareContentHelper {
 				cpSpecificationOptions.add(cpSpecificationOption);
 			}
 
-			if (!categorized &&
-				(cpSpecificationOption.getCPOptionCategoryId() == 0)) {
+			if (categorized ||
+				(cpSpecificationOption.getCPOptionCategoryId() != 0)) {
 
-				cpSpecificationOptions.add(cpSpecificationOption);
+				continue;
 			}
+
+			cpSpecificationOptions.add(cpSpecificationOption);
 		}
 
 		return cpSpecificationOptions;
@@ -379,11 +379,13 @@ public class CPCompareContentHelperImpl implements CPCompareContentHelper {
 				_commerceOptionTypeRegistry.getCommerceOptionType(
 					cpDefinitionOptionRel.getCommerceOptionTypeKey());
 
-			if ((commerceOptionType != null) &&
-				commerceOptionType.hasValues()) {
+			if ((commerceOptionType == null) ||
+				!commerceOptionType.hasValues()) {
 
-				multiValueCPDefinitionOptionRels.add(cpDefinitionOptionRel);
+				continue;
 			}
+
+			multiValueCPDefinitionOptionRels.add(cpDefinitionOptionRel);
 		}
 
 		return multiValueCPDefinitionOptionRels;

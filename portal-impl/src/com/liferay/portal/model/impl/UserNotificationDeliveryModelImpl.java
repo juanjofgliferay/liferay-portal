@@ -92,6 +92,8 @@ public class UserNotificationDeliveryModelImpl
 	public static final String TABLE_SQL_DROP =
 		"drop table UserNotificationDelivery";
 
+	public static final String ENTITY_ALIAS = "userNotificationDelivery";
+
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY userNotificationDelivery.userNotificationDeliveryId ASC";
 
@@ -160,7 +162,7 @@ public class UserNotificationDeliveryModelImpl
 	public static final long USERNOTIFICATIONDELIVERYID_COLUMN_BITMASK = 32L;
 
 	public static final long LOCK_EXPIRATION_TIME = GetterUtil.getLong(
-		com.liferay.portal.util.PropsUtil.get(
+		com.liferay.portal.kernel.util.PropsUtil.get(
 			"lock.expiration.time.com.liferay.portal.kernel.model.UserNotificationDelivery"));
 
 	public UserNotificationDeliveryModelImpl() {
@@ -912,3 +914,4 @@ public class UserNotificationDeliveryModelImpl
 	private UserNotificationDelivery _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1812128488

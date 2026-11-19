@@ -6,7 +6,11 @@
 package com.liferay.style.book.service;
 
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.module.service.Snapshot;
+import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.style.book.model.StyleBookEntry;
+
+import java.util.List;
 
 /**
  * Provides the remote service utility for StyleBookEntry. This utility wraps
@@ -28,22 +32,40 @@ public class StyleBookEntryServiceUtil {
 	 * Never modify this class directly. Add custom service methods to <code>com.liferay.style.book.service.impl.StyleBookEntryServiceImpl</code> and rerun ServiceBuilder to regenerate this class.
 	 */
 	public static StyleBookEntry addStyleBookEntry(
-			long groupId, String name, String styleBookEntryKey,
+			String externalReferenceCode, long groupId,
+			boolean defaultStyleBookEntry, String frontendTokenDefinition,
+			String frontendTokensValues, String name, String styleBookEntryKey,
+			String themeId,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().addStyleBookEntry(
-			groupId, name, styleBookEntryKey, serviceContext);
+			externalReferenceCode, groupId, defaultStyleBookEntry,
+			frontendTokenDefinition, frontendTokensValues, name,
+			styleBookEntryKey, themeId, serviceContext);
 	}
 
 	public static StyleBookEntry addStyleBookEntry(
-			long groupId, String frontendTokensValues, String name,
-			String styleBookEntryKey,
+			String externalReferenceCode, long groupId, String name,
+			String styleBookEntryKey, String themeId,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().addStyleBookEntry(
-			groupId, frontendTokensValues, name, styleBookEntryKey,
+			externalReferenceCode, groupId, name, styleBookEntryKey, themeId,
+			serviceContext);
+	}
+
+	public static StyleBookEntry addStyleBookEntry(
+			String externalReferenceCode, long groupId,
+			String frontendTokenDefinition, String frontendTokensValues,
+			String name, String styleBookEntryKey, String themeId,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
+		throws PortalException {
+
+		return getService().addStyleBookEntry(
+			externalReferenceCode, groupId, frontendTokenDefinition,
+			frontendTokensValues, name, styleBookEntryKey, themeId,
 			serviceContext);
 	}
 
@@ -63,6 +85,14 @@ public class StyleBookEntryServiceUtil {
 	}
 
 	public static StyleBookEntry deleteStyleBookEntry(
+			String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		return getService().deleteStyleBookEntry(
+			externalReferenceCode, groupId);
+	}
+
+	public static StyleBookEntry deleteStyleBookEntry(
 			StyleBookEntry styleBookEntry)
 		throws PortalException {
 
@@ -76,6 +106,14 @@ public class StyleBookEntryServiceUtil {
 		return getService().discardDraftStyleBookEntry(styleBookEntryId);
 	}
 
+	public static StyleBookEntry fetchStyleBookEntryByExternalReferenceCode(
+			String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		return getService().fetchStyleBookEntryByExternalReferenceCode(
+			externalReferenceCode, groupId);
+	}
+
 	/**
 	 * Returns the OSGi service identifier.
 	 *
@@ -83,6 +121,50 @@ public class StyleBookEntryServiceUtil {
 	 */
 	public static String getOSGiServiceIdentifier() {
 		return getService().getOSGiServiceIdentifier();
+	}
+
+	public static List<StyleBookEntry> getStyleBookEntries(
+			long groupId, int start, int end,
+			OrderByComparator<StyleBookEntry> orderByComparator)
+		throws com.liferay.portal.kernel.security.auth.PrincipalException {
+
+		return getService().getStyleBookEntries(
+			groupId, start, end, orderByComparator);
+	}
+
+	public static List<StyleBookEntry> getStyleBookEntries(
+			long groupId, String name, int start, int end,
+			OrderByComparator<StyleBookEntry> orderByComparator)
+		throws com.liferay.portal.kernel.security.auth.PrincipalException {
+
+		return getService().getStyleBookEntries(
+			groupId, name, start, end, orderByComparator);
+	}
+
+	public static int getStyleBookEntriesCount(long groupId)
+		throws com.liferay.portal.kernel.security.auth.PrincipalException {
+
+		return getService().getStyleBookEntriesCount(groupId);
+	}
+
+	public static int getStyleBookEntriesCount(long groupId, String name)
+		throws com.liferay.portal.kernel.security.auth.PrincipalException {
+
+		return getService().getStyleBookEntriesCount(groupId, name);
+	}
+
+	public static StyleBookEntry getStyleBookEntry(long styleBookEntryId)
+		throws PortalException {
+
+		return getService().getStyleBookEntry(styleBookEntryId);
+	}
+
+	public static StyleBookEntry getStyleBookEntryByExternalReferenceCode(
+			String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		return getService().getStyleBookEntryByExternalReferenceCode(
+			externalReferenceCode, groupId);
 	}
 
 	public static StyleBookEntry publishDraft(long styleBookEntryId)
@@ -97,6 +179,34 @@ public class StyleBookEntryServiceUtil {
 
 		return getService().updateDefaultStyleBookEntry(
 			styleBookEntryId, defaultStyleBookEntry);
+	}
+
+	public static StyleBookEntry updateFrontendTokenDefinition(
+			long styleBookEntryId, String frontendTokenDefinition,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
+		throws PortalException {
+
+		return getService().updateFrontendTokenDefinition(
+			styleBookEntryId, frontendTokenDefinition, serviceContext);
+	}
+
+	public static StyleBookEntry updateFrontendTokenDefinition(
+			long styleBookEntryId, String cssVariableMappingValue,
+			String defaultValue, String editorType,
+			String frontendTokenCategoryLabel, String frontendTokenCategoryName,
+			String frontendTokenDescription, String frontendTokenLabel,
+			String frontendTokenName, String frontendTokenSetDescription,
+			String frontendTokenSetLabel, String frontendTokenSetName,
+			String frontendTokenType,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
+		throws PortalException {
+
+		return getService().updateFrontendTokenDefinition(
+			styleBookEntryId, cssVariableMappingValue, defaultValue, editorType,
+			frontendTokenCategoryLabel, frontendTokenCategoryName,
+			frontendTokenDescription, frontendTokenLabel, frontendTokenName,
+			frontendTokenSetDescription, frontendTokenSetLabel,
+			frontendTokenSetName, frontendTokenType, serviceContext);
 	}
 
 	public static StyleBookEntry updateFrontendTokensValues(
@@ -114,29 +224,35 @@ public class StyleBookEntryServiceUtil {
 	}
 
 	public static StyleBookEntry updatePreviewFileEntryId(
-			long styleBookEntryId, long previewFileEntryId)
+			long styleBookEntryId, long previewFileEntryId,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().updatePreviewFileEntryId(
-			styleBookEntryId, previewFileEntryId);
+			styleBookEntryId, previewFileEntryId, serviceContext);
 	}
 
 	public static StyleBookEntry updateStyleBookEntry(
-			long styleBookEntryId, String frontendTokensValues, String name)
+			long styleBookEntryId, boolean defaultStyleBookEntry,
+			String frontendTokenDefinition, String frontendTokensValues,
+			String name, String styleBookEntryKey, long previewFileEntryId,
+			String themeId,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().updateStyleBookEntry(
-			styleBookEntryId, frontendTokensValues, name);
+			styleBookEntryId, defaultStyleBookEntry, frontendTokenDefinition,
+			frontendTokensValues, name, styleBookEntryKey, previewFileEntryId,
+			themeId, serviceContext);
 	}
 
 	public static StyleBookEntryService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(StyleBookEntryService service) {
-		_service = service;
-	}
-
-	private static volatile StyleBookEntryService _service;
+	private static final Snapshot<StyleBookEntryService> _serviceSnapshot =
+		new Snapshot<>(
+			StyleBookEntryServiceUtil.class, StyleBookEntryService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1760402165

@@ -6,11 +6,14 @@
 package com.liferay.portlet.exportimport.service.impl;
 
 import com.liferay.exportimport.kernel.configuration.constants.ExportImportConfigurationConstants;
+import com.liferay.exportimport.kernel.exception.ExportImportConfigurationNameException;
 import com.liferay.exportimport.kernel.model.ExportImportConfiguration;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.bean.BeanReference;
+import com.liferay.portal.kernel.change.tracking.CTAware;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.model.ModelHintsUtil;
 import com.liferay.portal.kernel.model.SystemEventConstants;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.search.BaseModelSearchResult;
@@ -50,6 +53,7 @@ import java.util.Map;
 public class ExportImportConfigurationLocalServiceImpl
 	extends ExportImportConfigurationLocalServiceBaseImpl {
 
+	@CTAware
 	@Override
 	public ExportImportConfiguration addDraftExportImportConfiguration(
 			long userId, int type, Map<String, Serializable> settingsMap)
@@ -61,6 +65,7 @@ public class ExportImportConfigurationLocalServiceImpl
 				type, settingsMap);
 	}
 
+	@CTAware
 	@Override
 	public ExportImportConfiguration addDraftExportImportConfiguration(
 			long userId, String name, int type,
@@ -81,6 +86,7 @@ public class ExportImportConfigurationLocalServiceImpl
 				WorkflowConstants.STATUS_DRAFT, new ServiceContext());
 	}
 
+	@CTAware
 	@Indexable(type = IndexableType.REINDEX)
 	@Override
 	public ExportImportConfiguration addExportImportConfiguration(
@@ -88,6 +94,8 @@ public class ExportImportConfigurationLocalServiceImpl
 			int type, Map<String, Serializable> settingsMap, int status,
 			ServiceContext serviceContext)
 		throws PortalException {
+
+		_validate(name);
 
 		User user = _userPersistence.findByPrimaryKey(userId);
 
@@ -119,6 +127,7 @@ public class ExportImportConfigurationLocalServiceImpl
 			exportImportConfiguration);
 	}
 
+	@CTAware
 	@Override
 	public ExportImportConfiguration addExportImportConfiguration(
 			long userId, long groupId, String name, String description,
@@ -132,6 +141,7 @@ public class ExportImportConfigurationLocalServiceImpl
 				WorkflowConstants.STATUS_APPROVED, serviceContext);
 	}
 
+	@CTAware
 	@Indexable(type = IndexableType.DELETE)
 	@Override
 	@SystemEvent(type = SystemEventConstants.TYPE_DELETE)
@@ -143,6 +153,7 @@ public class ExportImportConfigurationLocalServiceImpl
 		return exportImportConfiguration;
 	}
 
+	@CTAware
 	@Override
 	public ExportImportConfiguration deleteExportImportConfiguration(
 			long exportImportConfigurationId)
@@ -156,6 +167,7 @@ public class ExportImportConfigurationLocalServiceImpl
 			deleteExportImportConfiguration(exportImportConfiguration);
 	}
 
+	@CTAware
 	@Override
 	public void deleteExportImportConfigurations(long groupId) {
 		List<ExportImportConfiguration> exportImportConfigurations =
@@ -184,8 +196,8 @@ public class ExportImportConfigurationLocalServiceImpl
 				document.get("exportImportConfigurationId"));
 
 			ExportImportConfiguration exportImportConfiguration =
-				exportImportConfigurationLocalService.
-					getExportImportConfiguration(exportImportConfigurationId);
+				exportImportConfigurationPersistence.findByPrimaryKey(
+					exportImportConfigurationId);
 
 			if (exportImportConfiguration == null) {
 				exportImportConfigurations = null;
@@ -237,24 +249,6 @@ public class ExportImportConfigurationLocalServiceImpl
 	}
 
 	@Override
-	public List<ExportImportConfiguration> getExportImportConfigurations(
-		long companyId, long groupId, String name, String description, int type,
-		boolean andSearch, int start, int end,
-		OrderByComparator<ExportImportConfiguration> orderByComparator) {
-
-		return exportImportConfigurationFinder.findByC_G_N_D_T(
-			companyId, groupId, name, description, type,
-			WorkflowConstants.STATUS_APPROVED, andSearch, start, end,
-			orderByComparator);
-	}
-
-	@Override
-	public int getExportImportConfigurationsCount(long groupId) {
-		return exportImportConfigurationPersistence.countByG_S(
-			groupId, WorkflowConstants.STATUS_APPROVED);
-	}
-
-	@Override
 	public int getExportImportConfigurationsCount(long groupId, int type) {
 		return exportImportConfigurationPersistence.countByG_T_S(
 			groupId, type, WorkflowConstants.STATUS_APPROVED);
@@ -267,16 +261,6 @@ public class ExportImportConfigurationLocalServiceImpl
 		return exportImportConfigurationFinder.countByKeywords(
 			companyId, groupId, keywords, type,
 			WorkflowConstants.STATUS_APPROVED);
-	}
-
-	@Override
-	public int getExportImportConfigurationsCount(
-		long companyId, long groupId, String name, String description, int type,
-		boolean andSearch) {
-
-		return exportImportConfigurationFinder.countByC_G_N_D_T(
-			companyId, groupId, name, description, type,
-			WorkflowConstants.STATUS_APPROVED, andSearch);
 	}
 
 	@Indexable(type = IndexableType.REINDEX)
@@ -364,6 +348,8 @@ public class ExportImportConfigurationLocalServiceImpl
 			ServiceContext serviceContext)
 		throws PortalException {
 
+		_validate(name);
+
 		User user = _userPersistence.findByPrimaryKey(userId);
 
 		ExportImportConfiguration exportImportConfiguration =
@@ -439,6 +425,19 @@ public class ExportImportConfigurationLocalServiceImpl
 		queryConfig.setScoreEnabled(false);
 
 		return searchContext;
+	}
+
+	private void _validate(String name)
+		throws ExportImportConfigurationNameException.
+			MustNotExceedMaximumLength {
+
+		int nameMaxLength = ModelHintsUtil.getMaxLength(
+			ExportImportConfiguration.class.getName(), "name");
+
+		if (Validator.isNotNull(name) && (name.length() > nameMaxLength)) {
+			throw new ExportImportConfigurationNameException.
+				MustNotExceedMaximumLength(name, nameMaxLength);
+		}
 	}
 
 	@BeanReference(type = UserPersistence.class)

@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -35,6 +36,14 @@ public class NotificationTemplateLocalServiceUtil {
 	 *
 	 * Never modify this class directly. Add custom service methods to <code>com.liferay.notification.service.impl.NotificationTemplateLocalServiceImpl</code> and rerun ServiceBuilder to regenerate this class.
 	 */
+	public static NotificationTemplate addAssigneeNotificationTemplate(
+			String externalReferenceCode, long userId, String termName)
+		throws PortalException {
+
+		return getService().addAssigneeNotificationTemplate(
+			externalReferenceCode, userId, termName);
+	}
+
 	public static NotificationTemplate addNotificationTemplate(
 			com.liferay.notification.context.NotificationContext
 				notificationContext)
@@ -67,6 +76,14 @@ public class NotificationTemplateLocalServiceUtil {
 			externalReferenceCode, userId, type);
 	}
 
+	public static NotificationTemplate addSubscriptionNotificationTemplate(
+			String externalReferenceCode, long userId)
+		throws PortalException {
+
+		return getService().addSubscriptionNotificationTemplate(
+			externalReferenceCode, userId);
+	}
+
 	/**
 	 * Creates a new notification template with the primary key. Does not add the notification template to the database.
 	 *
@@ -87,6 +104,12 @@ public class NotificationTemplateLocalServiceUtil {
 		throws PortalException {
 
 		return getService().createPersistedModel(primaryKeyObj);
+	}
+
+	public static void deleteCompanyNotificationTemplates(long companyId)
+		throws PortalException {
+
+		getService().deleteCompanyNotificationTemplates(companyId);
 	}
 
 	/**
@@ -379,13 +402,13 @@ public class NotificationTemplateLocalServiceUtil {
 	}
 
 	public static NotificationTemplateLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(NotificationTemplateLocalService service) {
-		_service = service;
-	}
-
-	private static volatile NotificationTemplateLocalService _service;
+	private static final Snapshot<NotificationTemplateLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			NotificationTemplateLocalServiceUtil.class,
+			NotificationTemplateLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-628580951

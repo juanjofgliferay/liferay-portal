@@ -5,54 +5,53 @@
 
 package com.liferay.depot.web.internal.display.context;
 
+import com.liferay.depot.constants.DepotConstants;
+import com.liferay.depot.constants.DepotPortletKeys;
 import com.liferay.depot.model.DepotEntry;
+import com.liferay.depot.search.DepotEntrySearch;
 import com.liferay.depot.service.DepotEntryGroupRelServiceUtil;
-import com.liferay.depot.service.DepotEntryLocalService;
-import com.liferay.depot.web.internal.constants.DepotPortletKeys;
+import com.liferay.depot.service.DepotEntryService;
+import com.liferay.depot.service.DepotEntryServiceUtil;
 import com.liferay.depot.web.internal.frontend.taglib.clay.servlet.taglib.DepotEntryVerticalCard;
-import com.liferay.depot.web.internal.search.DepotEntrySearch;
 import com.liferay.depot.web.internal.servlet.taglib.util.DepotActionDropdownItemsProvider;
-import com.liferay.depot.web.internal.util.DepotAdminGroupSearchProvider;
+import com.liferay.depot.web.internal.util.DepotEntryAdminSearchUtil;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItem;
-import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
 import com.liferay.portal.kernel.portlet.SearchDisplayStyleUtil;
 import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
+import com.liferay.portal.kernel.util.JavaConstants;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.site.search.GroupSearch;
+import com.liferay.staging.StagingGroupHelper;
+import com.liferay.staging.StagingGroupHelperUtil;
+
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+import jakarta.portlet.PortletURL;
 
 import java.util.List;
 import java.util.Objects;
 
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
-
 /**
  * @author Alejandro Tardín
+ * @author Roberto Díaz
  */
 public class DepotAdminDisplayContext {
 
 	public DepotAdminDisplayContext(
-		HttpServletRequest httpServletRequest,
+		DepotEntryService depotEntryService, Language language,
 		LiferayPortletRequest liferayPortletRequest,
 		LiferayPortletResponse liferayPortletResponse) {
 
+		_depotEntryService = depotEntryService;
+		_language = language;
 		_liferayPortletRequest = liferayPortletRequest;
 		_liferayPortletResponse = liferayPortletResponse;
-
-		_depotAdminGroupSearchProvider =
-			(DepotAdminGroupSearchProvider)httpServletRequest.getAttribute(
-				DepotAdminGroupSearchProvider.class.getName());
-		_depotEntryLocalService =
-			(DepotEntryLocalService)httpServletRequest.getAttribute(
-				DepotEntryLocalService.class.getName());
 	}
 
 	public List<DropdownItem> getActionDropdownItems(DepotEntry depotEntry) {
@@ -65,6 +64,38 @@ public class DepotAdminDisplayContext {
 
 	public String getDefaultDisplayStyle() {
 		return "icon";
+	}
+
+	public DepotEntry getDepotEntry(DepotEntry depotEntry)
+		throws PortalException {
+
+		Group group = depotEntry.getGroup();
+
+		StagingGroupHelper stagingGroupHelper =
+			StagingGroupHelperUtil.getStagingGroupHelper();
+
+		if (stagingGroupHelper.isLocalStagingGroup(group) ||
+			stagingGroupHelper.isRemoteStagingGroup(group)) {
+
+			return depotEntry;
+		}
+
+		Group localStagingGroup = stagingGroupHelper.fetchLocalStagingGroup(
+			group);
+
+		if (localStagingGroup == null) {
+			return depotEntry;
+		}
+
+		DepotEntry stagingGroupDepotEntry =
+			DepotEntryServiceUtil.fetchGroupDepotEntry(
+				localStagingGroup.getGroupId());
+
+		if (stagingGroupDepotEntry == null) {
+			return depotEntry;
+		}
+
+		return stagingGroupDepotEntry;
 	}
 
 	public int getDepotEntryConnectedGroupsCount(DepotEntry depotEntry)
@@ -136,35 +167,18 @@ public class DepotAdminDisplayContext {
 			return _depotEntrySearch;
 		}
 
-		_depotEntrySearch = new DepotEntrySearch(
-			_liferayPortletRequest, _liferayPortletResponse, _getPortletURL(),
-			getSearchContainerId());
+		PortletRequest portletRequest =
+			(PortletRequest)_liferayPortletRequest.getAttribute(
+				JavaConstants.JAKARTA_PORTLET_REQUEST);
+		PortletResponse portletResponse =
+			(PortletResponse)_liferayPortletRequest.getAttribute(
+				JavaConstants.JAKARTA_PORTLET_RESPONSE);
 
-		GroupSearch groupSearch = _depotAdminGroupSearchProvider.getGroupSearch(
-			_liferayPortletRequest, _getPortletURL());
-
-		_depotEntrySearch.setResultsAndTotal(
-			() -> TransformUtil.transform(
-				groupSearch.getResults(),
-				searchResult -> {
-					Group group = _getGroup(searchResult);
-
-					return _depotEntryLocalService.fetchGroupDepotEntry(
-						group.getGroupId());
-				}),
-			groupSearch.getTotal());
+		_depotEntrySearch = DepotEntryAdminSearchUtil.getDepotEntrySearch(
+			_depotEntryService, DepotConstants.TYPE_ASSET_LIBRARY, _language,
+			portletRequest, portletResponse, _getPortletURL());
 
 		return _depotEntrySearch;
-	}
-
-	private Group _getGroup(Group group) {
-		Group stagingGroup = group.getStagingGroup();
-
-		if (stagingGroup == null) {
-			return group;
-		}
-
-		return stagingGroup;
 	}
 
 	private PortletURL _getPortletURL() {
@@ -175,10 +189,10 @@ public class DepotAdminDisplayContext {
 		).buildPortletURL();
 	}
 
-	private final DepotAdminGroupSearchProvider _depotAdminGroupSearchProvider;
-	private final DepotEntryLocalService _depotEntryLocalService;
 	private DepotEntrySearch _depotEntrySearch;
+	private final DepotEntryService _depotEntryService;
 	private String _displayStyle;
+	private final Language _language;
 	private final LiferayPortletRequest _liferayPortletRequest;
 	private final LiferayPortletResponse _liferayPortletResponse;
 

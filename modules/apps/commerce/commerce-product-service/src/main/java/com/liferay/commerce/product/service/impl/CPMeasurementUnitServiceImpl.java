@@ -6,11 +6,13 @@
 package com.liferay.commerce.product.service.impl;
 
 import com.liferay.commerce.product.constants.CPActionKeys;
-import com.liferay.commerce.product.constants.CPConstants;
 import com.liferay.commerce.product.model.CPMeasurementUnit;
 import com.liferay.commerce.product.service.base.CPMeasurementUnitServiceBaseImpl;
+import com.liferay.commerce.product.util.comparator.CPMeasurementUnitPriorityComparator;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.security.permission.ActionKeys;
+import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
 import com.liferay.portal.kernel.security.permission.resource.PortletResourcePermission;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.util.OrderByComparator;
@@ -43,9 +45,8 @@ public class CPMeasurementUnitServiceImpl
 			ServiceContext serviceContext)
 		throws PortalException {
 
-		_portletResourcePermission.check(
-			getPermissionChecker(), null,
-			CPActionKeys.MANAGE_COMMERCE_PRODUCT_MEASUREMENT_UNITS);
+		_checkPortletResourcePermission(
+			CPActionKeys.ADD_COMMERCE_PRODUCT_MEASUREMENT_UNIT);
 
 		return cpMeasurementUnitLocalService.addCPMeasurementUnit(
 			externalReferenceCode, nameMap, key, rate, primary, priority, type,
@@ -56,9 +57,8 @@ public class CPMeasurementUnitServiceImpl
 	public void deleteCPMeasurementUnit(long cpMeasurementUnitId)
 		throws PortalException {
 
-		_portletResourcePermission.check(
-			getPermissionChecker(), null,
-			CPActionKeys.MANAGE_COMMERCE_PRODUCT_MEASUREMENT_UNITS);
+		_cpMeasurementUnitModelResourcePermission.check(
+			getPermissionChecker(), cpMeasurementUnitId, ActionKeys.DELETE);
 
 		cpMeasurementUnitLocalService.deleteCPMeasurementUnit(
 			cpMeasurementUnitId);
@@ -68,39 +68,49 @@ public class CPMeasurementUnitServiceImpl
 	public CPMeasurementUnit fetchCPMeasurementUnit(long cpMeasurementUnitId)
 		throws PortalException {
 
-		_portletResourcePermission.check(
-			getPermissionChecker(), null,
-			CPActionKeys.MANAGE_COMMERCE_PRODUCT_MEASUREMENT_UNITS);
+		CPMeasurementUnit cpMeasurementUnit =
+			cpMeasurementUnitPersistence.fetchByPrimaryKey(cpMeasurementUnitId);
 
-		return cpMeasurementUnitLocalService.fetchCPMeasurementUnit(
-			cpMeasurementUnitId);
+		if (cpMeasurementUnit != null) {
+			_cpMeasurementUnitModelResourcePermission.check(
+				getPermissionChecker(), cpMeasurementUnitId, ActionKeys.VIEW);
+		}
+
+		return cpMeasurementUnit;
+	}
+
+	@Override
+	public CPMeasurementUnit fetchCPMeasurementUnit(long companyId, String key)
+		throws PortalException {
+
+		CPMeasurementUnit cpMeasurementUnit =
+			cpMeasurementUnitPersistence.fetchByC_K(companyId, key);
+
+		if (cpMeasurementUnit != null) {
+			_cpMeasurementUnitModelResourcePermission.check(
+				getPermissionChecker(),
+				cpMeasurementUnit.getCPMeasurementUnitId(), ActionKeys.VIEW);
+		}
+
+		return cpMeasurementUnit;
 	}
 
 	@Override
 	public CPMeasurementUnit fetchCPMeasurementUnitByExternalReferenceCode(
-			long companyId, String externalReferenceCode)
+			String externalReferenceCode, long companyId)
 		throws PortalException {
 
-		_portletResourcePermission.check(
-			getPermissionChecker(), null,
-			CPActionKeys.MANAGE_COMMERCE_PRODUCT_MEASUREMENT_UNITS);
+		CPMeasurementUnit cpMeasurementUnit =
+			cpMeasurementUnitPersistence.fetchByERC_C(
+				externalReferenceCode, companyId);
 
-		return cpMeasurementUnitLocalService.
-			fetchCPMeasurementUnitByExternalReferenceCode(
-				companyId, externalReferenceCode);
-	}
+		if (cpMeasurementUnit != null) {
+			_cpMeasurementUnitModelResourcePermission.check(
+				getPermissionChecker(),
+				cpMeasurementUnit.getCPMeasurementUnitId(), ActionKeys.VIEW);
+		}
 
-	@Override
-	public CPMeasurementUnit fetchCPMeasurementUnitByKey(
-			long companyId, String key)
-		throws PortalException {
-
-		_portletResourcePermission.check(
-			getPermissionChecker(), null,
-			CPActionKeys.MANAGE_COMMERCE_PRODUCT_MEASUREMENT_UNITS);
-
-		return cpMeasurementUnitLocalService.fetchCPMeasurementUnitByKey(
-			companyId, key);
+		return cpMeasurementUnit;
 	}
 
 	@Override
@@ -108,59 +118,29 @@ public class CPMeasurementUnitServiceImpl
 			long companyId, int type)
 		throws PortalException {
 
-		_portletResourcePermission.check(
-			getPermissionChecker(), null,
-			CPActionKeys.MANAGE_COMMERCE_PRODUCT_MEASUREMENT_UNITS);
+		CPMeasurementUnit cpMeasurementUnit =
+			cpMeasurementUnitPersistence.fetchByC_P_T_First(
+				companyId, true, type,
+				CPMeasurementUnitPriorityComparator.getInstance(false));
 
-		return cpMeasurementUnitLocalService.fetchPrimaryCPMeasurementUnit(
-			companyId, type);
-	}
+		if (cpMeasurementUnit != null) {
+			_cpMeasurementUnitModelResourcePermission.check(
+				getPermissionChecker(),
+				cpMeasurementUnit.getCPMeasurementUnitId(), ActionKeys.VIEW);
+		}
 
-	public CPMeasurementUnit fetchPrimaryCPMeasurementUnitByType(
-			long companyId, int type)
-		throws PortalException {
-
-		_portletResourcePermission.check(
-			getPermissionChecker(), null,
-			CPActionKeys.MANAGE_COMMERCE_PRODUCT_MEASUREMENT_UNITS);
-
-		return cpMeasurementUnitLocalService.
-			fetchPrimaryCPMeasurementUnitByType(companyId, type);
+		return cpMeasurementUnit;
 	}
 
 	@Override
 	public CPMeasurementUnit getCPMeasurementUnit(long cpMeasurementUnitId)
 		throws PortalException {
 
-		_portletResourcePermission.check(
-			getPermissionChecker(), null,
-			CPActionKeys.MANAGE_COMMERCE_PRODUCT_MEASUREMENT_UNITS);
+		_cpMeasurementUnitModelResourcePermission.check(
+			getPermissionChecker(), cpMeasurementUnitId, ActionKeys.VIEW);
 
-		return cpMeasurementUnitLocalService.getCPMeasurementUnit(
+		return cpMeasurementUnitPersistence.findByPrimaryKey(
 			cpMeasurementUnitId);
-	}
-
-	@Override
-	public CPMeasurementUnit getCPMeasurementUnitByKey(
-			long companyId, String key)
-		throws PortalException {
-
-		_portletResourcePermission.check(
-			getPermissionChecker(), null,
-			CPActionKeys.MANAGE_COMMERCE_PRODUCT_MEASUREMENT_UNITS);
-
-		return cpMeasurementUnitLocalService.getCPMeasurementUnitByKey(
-			companyId, key);
-	}
-
-	public List<CPMeasurementUnit> getCPMeasurementUnits(long companyId)
-		throws PortalException {
-
-		_portletResourcePermission.check(
-			getPermissionChecker(), null,
-			CPActionKeys.MANAGE_COMMERCE_PRODUCT_MEASUREMENT_UNITS);
-
-		return cpMeasurementUnitLocalService.getCPMeasurementUnits(companyId);
 	}
 
 	@Override
@@ -169,11 +149,10 @@ public class CPMeasurementUnitServiceImpl
 			OrderByComparator<CPMeasurementUnit> orderByComparator)
 		throws PortalException {
 
-		_portletResourcePermission.check(
-			getPermissionChecker(), null,
-			CPActionKeys.MANAGE_COMMERCE_PRODUCT_MEASUREMENT_UNITS);
+		_checkPortletResourcePermission(
+			CPActionKeys.VIEW_COMMERCE_PRODUCT_MEASUREMENT_UNITS);
 
-		return cpMeasurementUnitLocalService.getCPMeasurementUnits(
+		return cpMeasurementUnitPersistence.findByC_T(
 			companyId, type, start, end, orderByComparator);
 	}
 
@@ -183,63 +162,31 @@ public class CPMeasurementUnitServiceImpl
 			OrderByComparator<CPMeasurementUnit> orderByComparator)
 		throws PortalException {
 
-		_portletResourcePermission.check(
-			getPermissionChecker(), null,
-			CPActionKeys.MANAGE_COMMERCE_PRODUCT_MEASUREMENT_UNITS);
+		_checkPortletResourcePermission(
+			CPActionKeys.VIEW_COMMERCE_PRODUCT_MEASUREMENT_UNITS);
 
-		return cpMeasurementUnitLocalService.getCPMeasurementUnits(
+		return cpMeasurementUnitPersistence.findByCompanyId(
 			companyId, start, end, orderByComparator);
-	}
-
-	@Override
-	public List<CPMeasurementUnit> getCPMeasurementUnitsByType(
-			long companyId, int type)
-		throws PortalException {
-
-		_portletResourcePermission.check(
-			getPermissionChecker(), null,
-			CPActionKeys.MANAGE_COMMERCE_PRODUCT_MEASUREMENT_UNITS);
-
-		return cpMeasurementUnitLocalService.getCPMeasurementUnitsByType(
-			companyId, type);
-	}
-
-	@Override
-	public List<CPMeasurementUnit> getCPMeasurementUnitsByType(
-			long companyId, int type, int start, int end,
-			OrderByComparator<CPMeasurementUnit> orderByComparator)
-		throws PortalException {
-
-		_portletResourcePermission.check(
-			getPermissionChecker(), null,
-			CPActionKeys.MANAGE_COMMERCE_PRODUCT_MEASUREMENT_UNITS);
-
-		return cpMeasurementUnitLocalService.getCPMeasurementUnitsByType(
-			companyId, type, start, end, orderByComparator);
 	}
 
 	@Override
 	public int getCPMeasurementUnitsCount(long companyId)
 		throws PortalException {
 
-		_portletResourcePermission.check(
-			getPermissionChecker(), null,
-			CPActionKeys.MANAGE_COMMERCE_PRODUCT_MEASUREMENT_UNITS);
+		_checkPortletResourcePermission(
+			CPActionKeys.VIEW_COMMERCE_PRODUCT_MEASUREMENT_UNITS);
 
-		return cpMeasurementUnitLocalService.getCPMeasurementUnitsCount(
-			companyId);
+		return cpMeasurementUnitPersistence.countByCompanyId(companyId);
 	}
 
 	@Override
 	public int getCPMeasurementUnitsCount(long companyId, int type)
 		throws PortalException {
 
-		_portletResourcePermission.check(
-			getPermissionChecker(), null,
-			CPActionKeys.MANAGE_COMMERCE_PRODUCT_MEASUREMENT_UNITS);
+		_checkPortletResourcePermission(
+			CPActionKeys.VIEW_COMMERCE_PRODUCT_MEASUREMENT_UNITS);
 
-		return cpMeasurementUnitLocalService.getCPMeasurementUnitsCount(
-			companyId, type);
+		return cpMeasurementUnitPersistence.countByC_T(companyId, type);
 	}
 
 	@Override
@@ -247,9 +194,8 @@ public class CPMeasurementUnitServiceImpl
 			long cpMeasurementUnitId, boolean primary)
 		throws PortalException {
 
-		_portletResourcePermission.check(
-			getPermissionChecker(), null,
-			CPActionKeys.MANAGE_COMMERCE_PRODUCT_MEASUREMENT_UNITS);
+		_cpMeasurementUnitModelResourcePermission.check(
+			getPermissionChecker(), cpMeasurementUnitId, ActionKeys.UPDATE);
 
 		return cpMeasurementUnitLocalService.setPrimary(
 			cpMeasurementUnitId, primary);
@@ -263,18 +209,28 @@ public class CPMeasurementUnitServiceImpl
 			ServiceContext serviceContext)
 		throws PortalException {
 
-		_portletResourcePermission.check(
-			getPermissionChecker(), null,
-			CPActionKeys.MANAGE_COMMERCE_PRODUCT_MEASUREMENT_UNITS);
+		_cpMeasurementUnitModelResourcePermission.check(
+			getPermissionChecker(), cpMeasurementUnitId, ActionKeys.UPDATE);
 
 		return cpMeasurementUnitLocalService.updateCPMeasurementUnit(
 			externalReferenceCode, cpMeasurementUnitId, nameMap, key, rate,
 			primary, priority, type, serviceContext);
 	}
 
+	private void _checkPortletResourcePermission(String actionId)
+		throws PortalException {
+
+		PortletResourcePermission portletResourcePermission =
+			_cpMeasurementUnitModelResourcePermission.
+				getPortletResourcePermission();
+
+		portletResourcePermission.check(getPermissionChecker(), null, actionId);
+	}
+
 	@Reference(
-		target = "(resource.name=" + CPConstants.RESOURCE_NAME_PRODUCT + ")"
+		target = "(model.class.name=com.liferay.commerce.product.model.CPMeasurementUnit)"
 	)
-	private PortletResourcePermission _portletResourcePermission;
+	private ModelResourcePermission<CPMeasurementUnit>
+		_cpMeasurementUnitModelResourcePermission;
 
 }

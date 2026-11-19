@@ -440,17 +440,18 @@ public final class CommandLogger {
 
 			String valueKey = "value" + (i + 1);
 
-			if (_poshiVariablesContext.containsKeyInExecuteMap(valueKey)) {
-				sb.append(_getLineItemText("misc", " with "));
-				sb.append(_getLineItemText("param-type", valueKey));
-
-				String paramValue =
-					_poshiVariablesContext.getStringFromExecuteMap(valueKey);
-
-				sb.append(
-					_getLineItemText(
-						"param-value", HtmlUtil.escape(paramValue)));
+			if (!_poshiVariablesContext.containsKeyInExecuteMap(valueKey)) {
+				continue;
 			}
+
+			sb.append(_getLineItemText("misc", " with "));
+			sb.append(_getLineItemText("param-type", valueKey));
+
+			String paramValue = _poshiVariablesContext.getStringFromExecuteMap(
+				valueKey);
+
+			sb.append(
+				_getLineItemText("param-value", HtmlUtil.escape(paramValue)));
 		}
 
 		return sb.toString();
@@ -661,6 +662,17 @@ public final class CommandLogger {
 		return loggerElement;
 	}
 
+	private LoggerElement _getScreenshotSpanLoggerElement(
+		String screenshotName) {
+
+		LoggerElement loggerElement = new LoggerElement();
+
+		loggerElement.setName("span");
+		loggerElement.setText(StringUtil.upperCaseFirstLetter(screenshotName));
+
+		return loggerElement;
+	}
+
 	private LoggerElement _getScreenshotsLoggerElement(int detailsLinkId)
 		throws Exception {
 
@@ -677,17 +689,6 @@ public final class CommandLogger {
 
 		loggerElement.addChildLoggerElement(
 			_getScreenshotContainerLoggerElement("after", detailsLinkId));
-
-		return loggerElement;
-	}
-
-	private LoggerElement _getScreenshotSpanLoggerElement(
-		String screenshotName) {
-
-		LoggerElement loggerElement = new LoggerElement();
-
-		loggerElement.setName("span");
-		loggerElement.setText(StringUtil.upperCaseFirstLetter(screenshotName));
 
 		return loggerElement;
 	}

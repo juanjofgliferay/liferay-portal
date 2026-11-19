@@ -8,7 +8,6 @@ package com.liferay.jenkins.results.parser.test.clazz.group;
 import com.liferay.jenkins.results.parser.JenkinsResultsParserUtil;
 import com.liferay.jenkins.results.parser.PortalGitWorkingDirectory;
 import com.liferay.jenkins.results.parser.PortalTestClassJob;
-import com.liferay.jenkins.results.parser.test.clazz.TestClass;
 import com.liferay.jenkins.results.parser.test.clazz.TestClassFactory;
 
 import java.io.File;
@@ -16,7 +15,6 @@ import java.io.IOException;
 
 import java.nio.file.PathMatcher;
 
-import java.util.Collections;
 import java.util.List;
 
 import org.json.JSONObject;
@@ -33,9 +31,7 @@ public class ServiceBuilderModulesBatchTestClassGroup
 			return 0;
 		}
 
-		if ((_buildType == BuildType.FULL) ||
-			(testClasses.isEmpty() && (_buildType == BuildType.CORE))) {
-
+		if (!containsTestClasses() && (_buildType == BuildType.CORE)) {
 			return 1;
 		}
 
@@ -82,11 +78,9 @@ public class ServiceBuilderModulesBatchTestClassGroup
 
 	@Override
 	protected void setAxisTestClassGroups() {
-		int testClassCount = testClasses.size();
-
 		int axisCount = getAxisCount();
 
-		if ((testClassCount == 0) && (axisCount == 1)) {
+		if (!containsTestClasses() && (axisCount == 1)) {
 			axisTestClassGroups.add(
 				0, TestClassGroupFactory.newAxisTestClassGroup(this));
 
@@ -101,6 +95,17 @@ public class ServiceBuilderModulesBatchTestClassGroup
 		PortalGitWorkingDirectory portalGitWorkingDirectory =
 			getPortalGitWorkingDirectory();
 
+		File portalImplBuildFile = new File(
+			portalGitWorkingDirectory.getWorkingDirectory(),
+			"portal-impl/build.xml");
+
+		if (isUnifiedBuilderSupported()) {
+			addTestClass(
+				TestClassFactory.newTestClass(this, portalImplBuildFile));
+
+			return;
+		}
+
 		File portalModulesBaseDir = new File(
 			portalGitWorkingDirectory.getWorkingDirectory(), "modules");
 
@@ -108,9 +113,7 @@ public class ServiceBuilderModulesBatchTestClassGroup
 			getExcludesJobProperties());
 		List<PathMatcher> includesPathMatchers = getIncludesPathMatchers();
 
-		if (testRelevantChanges &&
-			!(includeStableTestSuite && isStableTestSuiteBatch())) {
-
+		if (testRelevantChanges) {
 			List<File> modifiedFiles =
 				portalGitWorkingDirectory.getModifiedFilesList();
 
@@ -124,32 +127,32 @@ public class ServiceBuilderModulesBatchTestClassGroup
 
 			if (!modifiedPortalToolsServiceBuilderFiles.isEmpty()) {
 				_buildType = BuildType.FULL;
-
-				return;
-			}
-
-			List<File> modifiedPortalImplFiles =
-				JenkinsResultsParserUtil.getIncludedFiles(
-					null,
-					getPathMatchers(
-						"portal-impl/**",
-						portalGitWorkingDirectory.getWorkingDirectory()),
-					modifiedFiles);
-
-			if (!modifiedPortalImplFiles.isEmpty()) {
-				_buildType = BuildType.CORE;
 			}
 			else {
-				List<File> modifiedPortalKernelFiles =
+				List<File> modifiedPortalImplFiles =
 					JenkinsResultsParserUtil.getIncludedFiles(
 						null,
 						getPathMatchers(
-							"portal-kernel/**",
+							"portal-impl/**",
 							portalGitWorkingDirectory.getWorkingDirectory()),
 						modifiedFiles);
 
-				if (!modifiedPortalKernelFiles.isEmpty()) {
+				if (!modifiedPortalImplFiles.isEmpty()) {
 					_buildType = BuildType.CORE;
+				}
+				else {
+					List<File> modifiedPortalKernelFiles =
+						JenkinsResultsParserUtil.getIncludedFiles(
+							null,
+							getPathMatchers(
+								"portal-kernel/**",
+								portalGitWorkingDirectory.
+									getWorkingDirectory()),
+							modifiedFiles);
+
+					if (!modifiedPortalKernelFiles.isEmpty()) {
+						_buildType = BuildType.CORE;
+					}
 				}
 			}
 
@@ -165,18 +168,12 @@ public class ServiceBuilderModulesBatchTestClassGroup
 					excludesPathMatchers, includesPathMatchers));
 		}
 
-		for (File moduleDir : moduleDirsList) {
-			TestClass testClass = TestClassFactory.newTestClass(
-				this, moduleDir);
-
-			if (!testClass.hasTestClassMethods()) {
-				continue;
-			}
-
-			testClasses.add(testClass);
+		if (_buildType != null) {
+			addTestClass(
+				TestClassFactory.newTestClass(this, portalImplBuildFile));
 		}
 
-		Collections.sort(testClasses);
+		addTestClasses(moduleDirsList);
 	}
 
 	private BuildType _buildType;

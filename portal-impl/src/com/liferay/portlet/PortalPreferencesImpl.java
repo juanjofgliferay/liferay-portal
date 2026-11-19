@@ -76,9 +76,14 @@ public class PortalPreferencesImpl
 
 	@Override
 	public PortalPreferencesImpl clone() {
+		Map<PortalPreferenceKey, String[]> preferences = _originalPreferences;
+
+		if (_modifiedPreferences != null) {
+			preferences = new HashMap<>(_modifiedPreferences);
+		}
+
 		return new PortalPreferencesImpl(
-			getOwnerId(), getOwnerType(), new HashMap<>(getPreferences()),
-			isSignedIn());
+			getOwnerId(), getOwnerType(), preferences, isSignedIn());
 	}
 
 	@Override
@@ -119,10 +124,11 @@ public class PortalPreferencesImpl
 
 			PortalPreferenceKey portalPreferenceKey = entry.getKey();
 
-			if (portalPreferenceKey.matchNamespace(namespace)) {
-				preferenceMap.put(
-					portalPreferenceKey.getKey(), entry.getValue());
+			if (!portalPreferenceKey.matchNamespace(namespace)) {
+				continue;
 			}
+
+			preferenceMap.put(portalPreferenceKey.getKey(), entry.getValue());
 		}
 
 		return preferenceMap;
@@ -242,9 +248,11 @@ public class PortalPreferencesImpl
 
 				PortalPreferenceKey portalPreferenceKey = entry.getKey();
 
-				if (portalPreferenceKey.matchNamespace(namespace)) {
-					reset(namespace, portalPreferenceKey.getKey());
+				if (!portalPreferenceKey.matchNamespace(namespace)) {
+					continue;
 				}
+
+				reset(namespace, portalPreferenceKey.getKey());
 			}
 		}
 		catch (ConcurrentModificationException
@@ -514,13 +522,13 @@ public class PortalPreferencesImpl
 						values = PreferencesValueUtil.getActualValues(values);
 					}
 
-					if (!Arrays.equals(originalValues, values)) {
-						throw new ConcurrentModificationException();
-					}
-
 					_modifiedPreferences = null;
 
 					_originalPreferences = preferenceMap;
+
+					if (!Arrays.equals(originalValues, values)) {
+						throw new ConcurrentModificationException();
+					}
 				}
 				else {
 					throw exception;

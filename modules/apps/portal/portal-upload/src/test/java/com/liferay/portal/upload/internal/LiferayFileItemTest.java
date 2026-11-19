@@ -5,25 +5,19 @@
 
 package com.liferay.portal.upload.internal;
 
-import com.liferay.portal.kernel.module.util.SystemBundleUtil;
-import com.liferay.portal.kernel.test.util.DependenciesTestUtil;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.FastDateFormatFactoryUtil;
 import com.liferay.portal.kernel.util.FileUtil;
-import com.liferay.portal.kernel.util.MimeTypes;
+import com.liferay.portal.kernel.util.MimeTypesUtil;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 import com.liferay.portal.util.FastDateFormatFactoryImpl;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
-
-import java.util.Set;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -33,10 +27,6 @@ import org.junit.Test;
 
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
-
-import org.osgi.framework.BundleContext;
-import org.osgi.framework.FrameworkUtil;
-import org.osgi.framework.ServiceRegistration;
 
 /**
  * @author Manuel de la Peña
@@ -56,80 +46,29 @@ public class LiferayFileItemTest {
 			new FastDateFormatFactoryImpl());
 
 		Mockito.when(
-			FrameworkUtil.getBundle(Mockito.any())
-		).thenReturn(
-			_bundleContext.getBundle()
+			MimeTypesUtil.getContentType(
+				Mockito.any(InputStream.class), Mockito.anyString())
+		).thenAnswer(
+			invocationOnMock -> {
+				String fileName = invocationOnMock.getArgument(1, String.class);
+
+				if (fileName.endsWith(".txt")) {
+					return ContentTypes.TEXT_PLAIN;
+				}
+
+				throw new IOException();
+			}
 		);
 
+		_tempDir = FileUtil.createTempFolder();
+
 		_liferayFileItemFactory = new LiferayFileItemFactory(
-			FileUtil.createTempFolder(), 0, "UTF-8");
-
-		_mimeTypesServiceRegistration = _bundleContext.registerService(
-			MimeTypes.class,
-			new MimeTypes() {
-
-				@Override
-				public String getContentType(File file) {
-					throw new UnsupportedOperationException();
-				}
-
-				@Override
-				public String getContentType(File file, String fileName) {
-					throw new UnsupportedOperationException();
-				}
-
-				@Override
-				public String getContentType(
-					InputStream inputStream, String fileName) {
-
-					try {
-						Path path = Files.createTempFile(null, null);
-
-						Files.copy(
-							inputStream, path,
-							StandardCopyOption.REPLACE_EXISTING);
-
-						String contentType = Files.probeContentType(path);
-
-						if (contentType == null) {
-							contentType = ContentTypes.APPLICATION_OCTET_STREAM;
-						}
-
-						Files.delete(path);
-
-						return contentType;
-					}
-					catch (IOException ioException) {
-						throw new RuntimeException(ioException);
-					}
-				}
-
-				@Override
-				public String getContentType(String fileName) {
-					throw new UnsupportedOperationException();
-				}
-
-				@Override
-				public String getExtensionContentType(String extension) {
-					throw new UnsupportedOperationException();
-				}
-
-				@Override
-				public Set<String> getExtensions(String contentType) {
-					throw new UnsupportedOperationException();
-				}
-
-			},
-			null);
+			_tempDir, 0, "UTF-8");
 	}
 
 	@AfterClass
 	public static void tearDownClass() {
-		if (_mimeTypesServiceRegistration != null) {
-			_mimeTypesServiceRegistration.unregister();
-		}
-
-		_frameworkUtilMockedStatic.close();
+		_mimeTypesUtilMockedStatic.close();
 	}
 
 	@Test
@@ -146,8 +85,40 @@ public class LiferayFileItemTest {
 	}
 
 	@Test
-	public void testGetContentTypeFromInvalidFile() throws IOException {
+	public void testDelete() throws Exception {
 		LiferayFileItem liferayFileItem = _liferayFileItemFactory.createItem(
+			RandomTestUtil.randomString(), RandomTestUtil.randomString(), false,
+			RandomTestUtil.randomString() + ".txt");
+
+		liferayFileItem.getOutputStream();
+
+		File tempFile = liferayFileItem.getTempFile();
+
+		FileUtil.write(tempFile, RandomTestUtil.randomString());
+
+		Assert.assertTrue(tempFile.getAbsolutePath(), tempFile.exists());
+
+		liferayFileItem.delete();
+
+		Assert.assertFalse(tempFile.getAbsolutePath(), tempFile.exists());
+
+		Assert.assertNotEquals(tempFile, liferayFileItem.getTempFile());
+	}
+
+	@Test
+	public void testGetContentType() throws IOException {
+		LiferayFileItem liferayFileItem = _liferayFileItemFactory.createItem(
+			RandomTestUtil.randomString(), RandomTestUtil.randomString(), false,
+			RandomTestUtil.randomString() + ".txt");
+
+		Assert.assertNotNull(liferayFileItem);
+
+		liferayFileItem.getOutputStream();
+
+		Assert.assertEquals(
+			ContentTypes.TEXT_PLAIN, liferayFileItem.getContentType());
+
+		liferayFileItem = _liferayFileItemFactory.createItem(
 			RandomTestUtil.randomString(), RandomTestUtil.randomString(), false,
 			RandomTestUtil.randomString());
 
@@ -156,24 +127,8 @@ public class LiferayFileItemTest {
 		liferayFileItem.getOutputStream();
 
 		Assert.assertEquals(
-			ContentTypes.TEXT_PLAIN, liferayFileItem.getContentType());
-	}
-
-	@Test
-	public void testGetContentTypeFromRealFile() throws Exception {
-		File file = DependenciesTestUtil.getDependencyAsFile(
-			getClass(), "LiferayFileItem.txt");
-
-		String contentType = Files.probeContentType(file.toPath());
-
-		LiferayFileItem liferayFileItem = _liferayFileItemFactory.createItem(
-			RandomTestUtil.randomString(), contentType, false, file.getName());
-
-		Assert.assertNotNull(liferayFileItem);
-
-		liferayFileItem.getOutputStream();
-
-		Assert.assertEquals(contentType, liferayFileItem.getContentType());
+			ContentTypes.APPLICATION_OCTET_STREAM,
+			liferayFileItem.getContentType());
 	}
 
 	@Test
@@ -192,6 +147,40 @@ public class LiferayFileItemTest {
 			"theFile");
 
 		Assert.assertEquals("", liferayFileItem.getFileNameExtension());
+	}
+
+	@Test
+	public void testGetTempFile() {
+		LiferayFileItem liferayFileItem = _liferayFileItemFactory.createItem(
+			RandomTestUtil.randomString(), RandomTestUtil.randomString(), false,
+			RandomTestUtil.randomString() + ".txt");
+
+		File tempFile = liferayFileItem.getTempFile();
+
+		Assert.assertEquals(_tempDir, tempFile.getParentFile());
+
+		String name = tempFile.getName();
+
+		Assert.assertTrue(name, name.startsWith("upload_"));
+		Assert.assertTrue(name, name.endsWith(".txt"));
+	}
+
+	@Test
+	public void testGetTempFileWithPathInFileName() {
+		LiferayFileItem liferayFileItem = _liferayFileItemFactory.createItem(
+			RandomTestUtil.randomString(), RandomTestUtil.randomString(), false,
+			StringBundler.concat(
+				RandomTestUtil.randomString(), StringPool.PERIOD,
+				RandomTestUtil.randomString(), "/../../",
+				RandomTestUtil.randomString()));
+
+		File tempFile = liferayFileItem.getTempFile();
+
+		Assert.assertEquals(_tempDir, tempFile.getParentFile());
+
+		String name = tempFile.getName();
+
+		Assert.assertTrue(name, name.matches("upload_\\d+"));
 	}
 
 	@Test
@@ -218,11 +207,9 @@ public class LiferayFileItemTest {
 		Assert.assertEquals("", liferayFileItem.getString());
 	}
 
-	private static final BundleContext _bundleContext =
-		SystemBundleUtil.getBundleContext();
-	private static final MockedStatic<FrameworkUtil>
-		_frameworkUtilMockedStatic = Mockito.mockStatic(FrameworkUtil.class);
 	private static LiferayFileItemFactory _liferayFileItemFactory;
-	private static ServiceRegistration<MimeTypes> _mimeTypesServiceRegistration;
+	private static final MockedStatic<MimeTypesUtil>
+		_mimeTypesUtilMockedStatic = Mockito.mockStatic(MimeTypesUtil.class);
+	private static File _tempDir;
 
 }

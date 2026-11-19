@@ -7,6 +7,7 @@ package com.liferay.segments.configuration;
 
 import aQute.bnd.annotation.metatype.Meta;
 
+import com.liferay.portal.configuration.metatype.annotations.ExtendedAttributeDefinition;
 import com.liferay.portal.configuration.metatype.annotations.ExtendedObjectClassDefinition;
 
 /**
@@ -21,17 +22,18 @@ import com.liferay.portal.configuration.metatype.annotations.ExtendedObjectClass
 public interface SegmentsConfiguration {
 
 	@Meta.AD(
-		deflt = "true", description = "segmentation-enabled-description",
-		name = "segmentation-enabled-name", required = false
-	)
-	public boolean segmentationEnabled();
-
-	@Meta.AD(
 		deflt = "false", description = "role-segmentation-enabled-description",
 		name = "role-segmentation-enabled-name", required = false
 	)
 	public boolean roleSegmentationEnabled();
 
+	@Meta.AD(
+		deflt = "true", description = "segmentation-enabled-description",
+		name = "segmentation-enabled-name", required = false
+	)
+	public boolean segmentationEnabled();
+
+	@ExtendedAttributeDefinition(featureFlagKey = "LPD-78863")
 	@Meta.AD(
 		deflt = "120",
 		description = "segments-preview-check-interval-description", min = "1",

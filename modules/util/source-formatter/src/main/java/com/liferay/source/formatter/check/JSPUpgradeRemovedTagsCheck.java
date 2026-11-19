@@ -5,11 +5,11 @@
 
 package com.liferay.source.formatter.check;
 
+import com.liferay.petra.io.unsync.UnsyncBufferedReader;
+import com.liferay.petra.io.unsync.UnsyncStringReader;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.json.JSONObjectImpl;
-import com.liferay.portal.kernel.io.unsync.UnsyncBufferedReader;
-import com.liferay.portal.kernel.io.unsync.UnsyncStringReader;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.util.Tuple;
@@ -37,7 +37,7 @@ public class JSPUpgradeRemovedTagsCheck extends BaseTagAttributesCheck {
 		String upgradeFromVersion = getAttributeValue(
 			SourceFormatterUtil.UPGRADE_FROM_VERSION, absolutePath);
 		String upgradeToVersion = getAttributeValue(
-			SourceFormatterUtil.UPGRADE_TO_VERSION, absolutePath);
+			SourceFormatterUtil.UPGRADE_TO_RELEASE_VERSION, absolutePath);
 
 		if ((upgradeFromVersion == null) || (upgradeToVersion == null)) {
 			return content;
@@ -141,8 +141,9 @@ public class JSPUpgradeRemovedTagsCheck extends BaseTagAttributesCheck {
 			addMessage(
 				fileName,
 				StringBundler.concat(
-					"Taglib '", taglibName, "' no longer exists in version '",
-					upgradeToVersion, "'"),
+					"Taglib \"", taglibName,
+					"\" no longer exists in version \"", upgradeToVersion,
+					"\""),
 				lineNumber);
 		}
 
@@ -152,8 +153,9 @@ public class JSPUpgradeRemovedTagsCheck extends BaseTagAttributesCheck {
 			addMessage(
 				fileName,
 				StringBundler.concat(
-					"Tag '", tag.getFullName(),
-					"' no longer exists in version '", upgradeToVersion, "'"),
+					"Tag \"", tag.getFullName(),
+					"\" no longer exists in version \"", upgradeToVersion,
+					"\""),
 				lineNumber);
 		}
 
@@ -166,15 +168,17 @@ public class JSPUpgradeRemovedTagsCheck extends BaseTagAttributesCheck {
 				(List<String>)upgradeToTagStatusTuple.getObject(1);
 
 			for (String upgradeFromTagAttribute : upgradeFromTagAttributes) {
-				if (!upgradeToTagAttributes.contains(upgradeFromTagAttribute)) {
-					addMessage(
-						fileName,
-						StringBundler.concat(
-							"Attribute '", upgradeFromTagAttribute,
-							"' no longer exists for tag '", tag.getFullName(),
-							"' in version '", upgradeToVersion, "'"),
-						lineNumber);
+				if (upgradeToTagAttributes.contains(upgradeFromTagAttribute)) {
+					continue;
 				}
+
+				addMessage(
+					fileName,
+					StringBundler.concat(
+						"Attribute \"", upgradeFromTagAttribute,
+						"\" no longer exists for tag \"", tag.getFullName(),
+						"\" in version \"", upgradeToVersion, "\""),
+					lineNumber);
 			}
 		}
 	}
@@ -198,30 +202,6 @@ public class JSPUpgradeRemovedTagsCheck extends BaseTagAttributesCheck {
 		}
 
 		return attributeNames;
-	}
-
-	private synchronized JSONObject _getTaglibsJSONObject(String version)
-		throws Exception {
-
-		JSONObject taglibsJSONObject = _taglibsJSONObjectMap.get(version);
-
-		if (taglibsJSONObject != null) {
-			return taglibsJSONObject;
-		}
-
-		JSONObject portalJSONObject =
-			PortalJSONObjectUtil.getPortalJSONObjectByVersion(version);
-
-		if (portalJSONObject.has("taglibs")) {
-			taglibsJSONObject = portalJSONObject.getJSONObject("taglibs");
-		}
-		else {
-			taglibsJSONObject = new JSONObjectImpl();
-		}
-
-		_taglibsJSONObjectMap.put(version, taglibsJSONObject);
-
-		return taglibsJSONObject;
 	}
 
 	private Tuple _getTagStatusTuple(JSONObject taglibsJSONObject, Tag tag) {
@@ -249,12 +229,38 @@ public class JSPUpgradeRemovedTagsCheck extends BaseTagAttributesCheck {
 		for (Map.Entry<String, String> entry : attributesMap.entrySet()) {
 			String attributeName = entry.getKey();
 
-			if (attributeNames.contains(attributeName)) {
-				matchingAttributeNames.add(attributeName);
+			if (!attributeNames.contains(attributeName)) {
+				continue;
 			}
+
+			matchingAttributeNames.add(attributeName);
 		}
 
 		return new Tuple(TagStatus.ATTRIBUTES_FOUND, matchingAttributeNames);
+	}
+
+	private synchronized JSONObject _getTaglibsJSONObject(String version)
+		throws Exception {
+
+		JSONObject taglibsJSONObject = _taglibsJSONObjectMap.get(version);
+
+		if (taglibsJSONObject != null) {
+			return taglibsJSONObject;
+		}
+
+		JSONObject portalJSONObject =
+			PortalJSONObjectUtil.getPortalJSONObjectByVersion(version);
+
+		if (portalJSONObject.has("taglibs")) {
+			taglibsJSONObject = portalJSONObject.getJSONObject("taglibs");
+		}
+		else {
+			taglibsJSONObject = new JSONObjectImpl();
+		}
+
+		_taglibsJSONObjectMap.put(version, taglibsJSONObject);
+
+		return taglibsJSONObject;
 	}
 
 	private static final Pattern _multilineTagPattern = Pattern.compile(

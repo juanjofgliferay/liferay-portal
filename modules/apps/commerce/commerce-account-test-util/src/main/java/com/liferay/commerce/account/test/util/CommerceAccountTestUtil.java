@@ -33,8 +33,7 @@ import com.liferay.portal.kernel.workflow.WorkflowConstants;
 public class CommerceAccountTestUtil {
 
 	public static void addAccountEntryOrganizationRels(
-			long accountEntryId, long[] organizationIds,
-			ServiceContext serviceContext)
+			long accountEntryId, long[] organizationIds)
 		throws PortalException {
 
 		AccountEntryOrganizationRelLocalServiceUtil.
@@ -65,19 +64,21 @@ public class CommerceAccountTestUtil {
 						new long[] {userId});
 				}
 
-				if (!ArrayUtil.contains(
+				if (ArrayUtil.contains(
 						user.getGroupIds(), serviceContext.getScopeGroupId())) {
 
-					UserLocalServiceUtil.addGroupUsers(
-						serviceContext.getScopeGroupId(), new long[] {userId});
+					continue;
 				}
+
+				UserLocalServiceUtil.addGroupUsers(
+					serviceContext.getScopeGroupId(), new long[] {userId});
 			}
 		}
 	}
 
 	public static AccountGroup addAccountGroup(
-			long companyId, String name, String type,
-			String externalReferenceCode, ServiceContext serviceContext)
+			String name, String type, String externalReferenceCode,
+			ServiceContext serviceContext)
 		throws PortalException {
 
 		if (Validator.isBlank(externalReferenceCode)) {
@@ -86,7 +87,8 @@ public class CommerceAccountTestUtil {
 
 		AccountGroup accountGroup =
 			AccountGroupLocalServiceUtil.addAccountGroup(
-				serviceContext.getUserId(), null, name, serviceContext);
+				StringPool.BLANK, serviceContext.getUserId(), null, name,
+				serviceContext);
 
 		accountGroup.setExternalReferenceCode(externalReferenceCode);
 		accountGroup.setDefaultAccountGroup(false);
@@ -97,13 +99,12 @@ public class CommerceAccountTestUtil {
 	}
 
 	public static AccountGroup addAccountGroupAndAccountRel(
-			long companyId, String name, String type, long accountEntryId,
+			String name, String type, long accountEntryId,
 			ServiceContext serviceContext)
 		throws PortalException {
 
 		AccountGroup accountGroup = addAccountGroup(
-			companyId, name, type, RandomTestUtil.randomString(),
-			serviceContext);
+			name, type, RandomTestUtil.randomString(), serviceContext);
 
 		AccountGroupRelLocalServiceUtil.addAccountGroupRel(
 			accountGroup.getAccountGroupId(), AccountEntry.class.getName(),
@@ -129,8 +130,9 @@ public class CommerceAccountTestUtil {
 
 		AccountEntry accountEntry =
 			AccountEntryLocalServiceUtil.addAccountEntry(
-				userId, AccountConstants.PARENT_ACCOUNT_ENTRY_ID_DEFAULT, name,
-				null, null, email, null, StringPool.BLANK,
+				StringPool.BLANK, userId,
+				AccountConstants.PARENT_ACCOUNT_ENTRY_ID_DEFAULT, name, null,
+				null, email, null, StringPool.BLANK,
 				AccountConstants.ACCOUNT_ENTRY_TYPE_BUSINESS,
 				WorkflowConstants.STATUS_APPROVED, serviceContext);
 
@@ -157,7 +159,7 @@ public class CommerceAccountTestUtil {
 			accountEntry.getAccountEntryId(), userIds, serviceContext);
 
 		addAccountEntryOrganizationRels(
-			accountEntry.getAccountEntryId(), organizationIds, serviceContext);
+			accountEntry.getAccountEntryId(), organizationIds);
 
 		return accountEntry;
 	}
@@ -184,7 +186,8 @@ public class CommerceAccountTestUtil {
 
 		AccountEntry accountEntry =
 			AccountEntryLocalServiceUtil.addAccountEntry(
-				userId, AccountConstants.PARENT_ACCOUNT_ENTRY_ID_DEFAULT,
+				StringPool.BLANK, userId,
+				AccountConstants.PARENT_ACCOUNT_ENTRY_ID_DEFAULT,
 				user.getFullName(), null, null, user.getEmailAddress(), null,
 				StringPool.BLANK, AccountConstants.ACCOUNT_ENTRY_TYPE_PERSON,
 				WorkflowConstants.STATUS_APPROVED, serviceContext);

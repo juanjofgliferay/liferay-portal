@@ -50,13 +50,15 @@ public class LayoutSEOEntryWrapper
 		attributes.put("layoutId", getLayoutId());
 		attributes.put("canonicalURL", getCanonicalURL());
 		attributes.put("canonicalURLEnabled", isCanonicalURLEnabled());
-		attributes.put("DDMStorageId", getDDMStorageId());
 		attributes.put("openGraphDescription", getOpenGraphDescription());
 		attributes.put(
 			"openGraphDescriptionEnabled", isOpenGraphDescriptionEnabled());
 		attributes.put("openGraphImageAlt", getOpenGraphImageAlt());
 		attributes.put(
-			"openGraphImageFileEntryId", getOpenGraphImageFileEntryId());
+			"openGraphImageFileEntryERC", getOpenGraphImageFileEntryERC());
+		attributes.put(
+			"openGraphImageFileEntryScopeERC",
+			getOpenGraphImageFileEntryScopeERC());
 		attributes.put("openGraphTitle", getOpenGraphTitle());
 		attributes.put("openGraphTitleEnabled", isOpenGraphTitleEnabled());
 		attributes.put("lastPublishDate", getLastPublishDate());
@@ -151,12 +153,6 @@ public class LayoutSEOEntryWrapper
 			setCanonicalURLEnabled(canonicalURLEnabled);
 		}
 
-		Long DDMStorageId = (Long)attributes.get("DDMStorageId");
-
-		if (DDMStorageId != null) {
-			setDDMStorageId(DDMStorageId);
-		}
-
 		String openGraphDescription = (String)attributes.get(
 			"openGraphDescription");
 
@@ -177,11 +173,18 @@ public class LayoutSEOEntryWrapper
 			setOpenGraphImageAlt(openGraphImageAlt);
 		}
 
-		Long openGraphImageFileEntryId = (Long)attributes.get(
-			"openGraphImageFileEntryId");
+		String openGraphImageFileEntryERC = (String)attributes.get(
+			"openGraphImageFileEntryERC");
 
-		if (openGraphImageFileEntryId != null) {
-			setOpenGraphImageFileEntryId(openGraphImageFileEntryId);
+		if (openGraphImageFileEntryERC != null) {
+			setOpenGraphImageFileEntryERC(openGraphImageFileEntryERC);
+		}
+
+		String openGraphImageFileEntryScopeERC = (String)attributes.get(
+			"openGraphImageFileEntryScopeERC");
+
+		if (openGraphImageFileEntryScopeERC != null) {
+			setOpenGraphImageFileEntryScopeERC(openGraphImageFileEntryScopeERC);
 		}
 
 		String openGraphTitle = (String)attributes.get("openGraphTitle");
@@ -328,16 +331,6 @@ public class LayoutSEOEntryWrapper
 	@Override
 	public long getCtCollectionId() {
 		return model.getCtCollectionId();
-	}
-
-	/**
-	 * Returns the ddm storage ID of this layout seo entry.
-	 *
-	 * @return the ddm storage ID of this layout seo entry
-	 */
-	@Override
-	public long getDDMStorageId() {
-		return model.getDDMStorageId();
 	}
 
 	@Override
@@ -574,13 +567,28 @@ public class LayoutSEOEntryWrapper
 	}
 
 	/**
-	 * Returns the open graph image file entry ID of this layout seo entry.
+	 * Returns the open graph image file entry erc of this layout seo entry.
 	 *
-	 * @return the open graph image file entry ID of this layout seo entry
+	 * @return the open graph image file entry erc of this layout seo entry
 	 */
 	@Override
-	public long getOpenGraphImageFileEntryId() {
-		return model.getOpenGraphImageFileEntryId();
+	public String getOpenGraphImageFileEntryERC() {
+		return model.getOpenGraphImageFileEntryERC();
+	}
+
+	@Override
+	public long getOpenGraphImageFileEntryGroupId() {
+		return model.getOpenGraphImageFileEntryGroupId();
+	}
+
+	/**
+	 * Returns the open graph image file entry scope erc of this layout seo entry.
+	 *
+	 * @return the open graph image file entry scope erc of this layout seo entry
+	 */
+	@Override
+	public String getOpenGraphImageFileEntryScopeERC() {
+		return model.getOpenGraphImageFileEntryScopeERC();
 	}
 
 	/**
@@ -899,16 +907,6 @@ public class LayoutSEOEntryWrapper
 	}
 
 	/**
-	 * Sets the ddm storage ID of this layout seo entry.
-	 *
-	 * @param DDMStorageId the ddm storage ID of this layout seo entry
-	 */
-	@Override
-	public void setDDMStorageId(long DDMStorageId) {
-		model.setDDMStorageId(DDMStorageId);
-	}
-
-	/**
 	 * Sets the group ID of this layout seo entry.
 	 *
 	 * @param groupId the group ID of this layout seo entry
@@ -1121,13 +1119,28 @@ public class LayoutSEOEntryWrapper
 	}
 
 	/**
-	 * Sets the open graph image file entry ID of this layout seo entry.
+	 * Sets the open graph image file entry erc of this layout seo entry.
 	 *
-	 * @param openGraphImageFileEntryId the open graph image file entry ID of this layout seo entry
+	 * @param openGraphImageFileEntryERC the open graph image file entry erc of this layout seo entry
 	 */
 	@Override
-	public void setOpenGraphImageFileEntryId(long openGraphImageFileEntryId) {
-		model.setOpenGraphImageFileEntryId(openGraphImageFileEntryId);
+	public void setOpenGraphImageFileEntryERC(
+		String openGraphImageFileEntryERC) {
+
+		model.setOpenGraphImageFileEntryERC(openGraphImageFileEntryERC);
+	}
+
+	/**
+	 * Sets the open graph image file entry scope erc of this layout seo entry.
+	 *
+	 * @param openGraphImageFileEntryScopeERC the open graph image file entry scope erc of this layout seo entry
+	 */
+	@Override
+	public void setOpenGraphImageFileEntryScopeERC(
+		String openGraphImageFileEntryScopeERC) {
+
+		model.setOpenGraphImageFileEntryScopeERC(
+			openGraphImageFileEntryScopeERC);
 	}
 
 	/**
@@ -1299,3 +1312,4 @@ public class LayoutSEOEntryWrapper
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1358185464

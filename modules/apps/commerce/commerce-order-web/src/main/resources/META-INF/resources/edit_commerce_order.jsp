@@ -22,7 +22,7 @@ else {
 }
 
 portletDisplay.setShowBackIcon(true);
-portletDisplay.setURLBack(String.valueOf(renderResponse.createRenderURL()));
+portletDisplay.setURLBack(ParamUtil.getString(request, "backURL", String.valueOf(renderResponse.createRenderURL())));
 %>
 
 <liferay-portlet:renderURL var="editCommerceOrderExternalReferenceCodeURL" windowState="<%= LiferayWindowState.POP_UP.toString() %>">
@@ -35,9 +35,9 @@ portletDisplay.setURLBack(String.valueOf(renderResponse.createRenderURL()));
 	bean="<%= commerceOrder %>"
 	beanIdLabel="id"
 	externalReferenceCode="<%= commerceOrder.getExternalReferenceCode() %>"
-	externalReferenceCodeEditUrl="<%= editCommerceOrderExternalReferenceCodeURL %>"
+	externalReferenceCodeEditURL="<%= editCommerceOrderExternalReferenceCodeURL %>"
 	model="<%= CommerceOrder.class %>"
-	thumbnailUrl="<%= commerceOrderEditDisplayContext.getCommerceAccountThumbnailURL() %>"
+	thumbnailURL="<%= commerceOrderEditDisplayContext.getCommerceAccountThumbnailURL() %>"
 	title="<%= headerTitle %>"
 	transitionPortletURL="<%= commerceOrderEditDisplayContext.getTransitionOrderPortletURL() %>"
 />

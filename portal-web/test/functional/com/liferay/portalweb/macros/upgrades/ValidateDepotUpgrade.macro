@@ -7,7 +7,6 @@ definition {
 		AssetListsAdmin.selectAsset(
 			assetListName = "Depot Manual Asset List",
 			assetName = "DM Document Title Without Publish",
-			assetType = "Basic Document",
 			itemSubtype = "Basic Document",
 			itemType = "Document");
 
@@ -71,7 +70,6 @@ definition {
 		AssetListsAdmin.selectAsset(
 			assetListName = "Depot Manual Asset List",
 			assetName = "DM Document Title Without Publish",
-			assetType = "Basic Document",
 			itemSubtype = "Basic Document",
 			itemType = "Document");
 
@@ -104,6 +102,20 @@ definition {
 			key_assetTitle = "DM Document Title Without Publish",
 			locator1 = "AP#ASSET_ABSTRACT_TITLE",
 			value1 = "DM Document Title Without Publish");
+
+		Navigator.gotoStagedSitePage(
+			pageName = "Test Page Collections",
+			siteName = "Site Name Local Staging");
+
+		AssetPublisherPortlet.gotoConfigurationPG(portletIndex = 1);
+
+		Click(
+			ariaLabel = "Clear Collection",
+			locator1 = "Button#ANY_WITH_ARIA_LABEL");
+
+		PortletEntry.save();
+
+		IFrame.closeFrame();
 
 		DepotNavigator.openDepotAssetListsAdminStaging(depotName = "Test Depot Name Local Staging");
 
@@ -775,6 +787,7 @@ definition {
 		WebContentNavigator.gotoEditCP(webContentTitle = "WC WebContent Title");
 
 		WebContent.editCP(
+			upgradedFieldLabel = "true",
 			webContentContentEdit = "WC WebContent Content Edit",
 			webContentTitle = "WC WebContent Title",
 			webContentTitleEdit = "WC WebContent Title Edit");
@@ -802,7 +815,7 @@ definition {
 			webContentText = "This is a Text field",
 			webContentTitle = "Web Content Title With Structure");
 
-		PortletEntry.publish();
+		WebContent.publishWithPermissions();
 
 		WebContentNavigator.openWebContentAdmin(siteURLKey = "site-name");
 

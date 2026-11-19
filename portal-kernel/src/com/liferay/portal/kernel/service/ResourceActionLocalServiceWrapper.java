@@ -300,6 +300,11 @@ public class ResourceActionLocalServiceWrapper
 		return _resourceActionLocalService.getPersistedModel(primaryKeyObj);
 	}
 
+	@Override
+	public String getRegistryName() {
+		return _resourceActionLocalService.getRegistryName();
+	}
+
 	/**
 	 * Returns the resource action with the primary key.
 	 *
@@ -363,6 +368,11 @@ public class ResourceActionLocalServiceWrapper
 		return _resourceActionLocalService.getResourceActionsCount(name);
 	}
 
+	@Override
+	public void invalidate() {
+		_resourceActionLocalService.invalidate();
+	}
+
 	/**
 	 * Updates the resource action in the database or adds it if it does not yet exist. Also notifies the appropriate model listeners.
 	 *
@@ -400,3 +410,4 @@ public class ResourceActionLocalServiceWrapper
 	private ResourceActionLocalService _resourceActionLocalService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:831804535

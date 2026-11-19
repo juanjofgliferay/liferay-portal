@@ -6,12 +6,13 @@
 package com.liferay.fragment.web.internal.display.context;
 
 import com.liferay.fragment.web.internal.constants.FragmentTypeConstants;
+import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
 
-import java.util.Objects;
+import jakarta.servlet.http.HttpServletRequest;
 
-import javax.servlet.http.HttpServletRequest;
+import java.util.Objects;
 
 /**
  * @author Jürgen Kappler
@@ -23,11 +24,12 @@ public class FragmentManagementToolbarDisplayContextFactory {
 	}
 
 	public FragmentManagementToolbarDisplayContext
-		getFragmentManagementToolbarDisplayContext(
-			HttpServletRequest httpServletRequest,
-			LiferayPortletRequest liferayPortletRequest,
-			LiferayPortletResponse liferayPortletResponse,
-			FragmentDisplayContext fragmentDisplayContext) {
+			getFragmentManagementToolbarDisplayContext(
+				HttpServletRequest httpServletRequest,
+				LiferayPortletRequest liferayPortletRequest,
+				LiferayPortletResponse liferayPortletResponse,
+				FragmentDisplayContext fragmentDisplayContext)
+		throws PortalException {
 
 		String type = fragmentDisplayContext.getFragmentType();
 
@@ -37,15 +39,15 @@ public class FragmentManagementToolbarDisplayContextFactory {
 				liferayPortletResponse, fragmentDisplayContext);
 		}
 
-		if (Objects.equals(
+		if (!Objects.equals(
 				type, FragmentTypeConstants.INHERITED_FRAGMENT_TYPE)) {
 
-			return new InheritedFragmentManagementToolbarDisplayContext(
-				httpServletRequest, liferayPortletRequest,
-				liferayPortletResponse, fragmentDisplayContext);
+			return null;
 		}
 
-		return null;
+		return new InheritedFragmentManagementToolbarDisplayContext(
+			httpServletRequest, liferayPortletRequest, liferayPortletResponse,
+			fragmentDisplayContext);
 	}
 
 	private FragmentManagementToolbarDisplayContextFactory() {

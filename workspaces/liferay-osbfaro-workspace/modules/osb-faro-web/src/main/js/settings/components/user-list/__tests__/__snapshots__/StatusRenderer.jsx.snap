@@ -1,0 +1,17 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`StatusRenderer should render 1`] = `
+<div>
+  <td>
+    <span
+      class="label label-inverse-success"
+    >
+      <span
+        class="label-item label-item-expand"
+      >
+        Approved
+      </span>
+    </span>
+  </td>
+</div>
+`;

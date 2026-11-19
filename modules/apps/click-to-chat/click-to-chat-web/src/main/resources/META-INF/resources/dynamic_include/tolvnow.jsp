@@ -7,15 +7,18 @@
 
 <%@ include file="/dynamic_include/init.jsp" %>
 
-<script type="text/javascript">
+<aui:script position="inline" type="text/javascript">
 	var _tn = _tn || [];
 
-	_tn.push(['account', '<%= clickToChatChatProviderAccountId %>']);
+	_tn.push([
+		'account',
+		'<%= HtmlUtil.escapeJS(clickToChatChatProviderAccountId) %>',
+	]);
 	_tn.push(['action', 'track-view']);
 
 	<c:if test="<%= themeDisplay.isSignedIn() %>">
-		_tn.push(['_setEmail', '<%= user.getEmailAddress() %>']);
-		_tn.push(['_setName', '<%= user.getScreenName() %>']);
+		_tn.push(['_setEmail', '<%= HtmlUtil.escapeJS(user.getEmailAddress()) %>']);
+		_tn.push(['_setName', '<%= HtmlUtil.escapeJS(user.getScreenName()) %>']);
 	</c:if>
 
 	(function () {
@@ -47,4 +50,4 @@
 			loadTolnowScript();
 		}
 	})();
-</script>
+</aui:script>

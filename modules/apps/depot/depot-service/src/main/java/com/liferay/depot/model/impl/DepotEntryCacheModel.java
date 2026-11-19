@@ -68,10 +68,12 @@ public class DepotEntryCacheModel
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(19);
+		StringBundler sb = new StringBundler(23);
 
 		sb.append("{mvccVersion=");
 		sb.append(mvccVersion);
+		sb.append(", ctCollectionId=");
+		sb.append(ctCollectionId);
 		sb.append(", uuid=");
 		sb.append(uuid);
 		sb.append(", depotEntryId=");
@@ -88,6 +90,8 @@ public class DepotEntryCacheModel
 		sb.append(createDate);
 		sb.append(", modifiedDate=");
 		sb.append(modifiedDate);
+		sb.append(", type=");
+		sb.append(type);
 		sb.append("}");
 
 		return sb.toString();
@@ -98,6 +102,7 @@ public class DepotEntryCacheModel
 		DepotEntryImpl depotEntryImpl = new DepotEntryImpl();
 
 		depotEntryImpl.setMvccVersion(mvccVersion);
+		depotEntryImpl.setCtCollectionId(ctCollectionId);
 
 		if (uuid == null) {
 			depotEntryImpl.setUuid("");
@@ -132,6 +137,8 @@ public class DepotEntryCacheModel
 			depotEntryImpl.setModifiedDate(new Date(modifiedDate));
 		}
 
+		depotEntryImpl.setType(type);
+
 		depotEntryImpl.resetOriginalValues();
 
 		return depotEntryImpl;
@@ -140,6 +147,8 @@ public class DepotEntryCacheModel
 	@Override
 	public void readExternal(ObjectInput objectInput) throws IOException {
 		mvccVersion = objectInput.readLong();
+
+		ctCollectionId = objectInput.readLong();
 		uuid = objectInput.readUTF();
 
 		depotEntryId = objectInput.readLong();
@@ -152,11 +161,15 @@ public class DepotEntryCacheModel
 		userName = objectInput.readUTF();
 		createDate = objectInput.readLong();
 		modifiedDate = objectInput.readLong();
+
+		type = objectInput.readInt();
 	}
 
 	@Override
 	public void writeExternal(ObjectOutput objectOutput) throws IOException {
 		objectOutput.writeLong(mvccVersion);
+
+		objectOutput.writeLong(ctCollectionId);
 
 		if (uuid == null) {
 			objectOutput.writeUTF("");
@@ -182,9 +195,12 @@ public class DepotEntryCacheModel
 
 		objectOutput.writeLong(createDate);
 		objectOutput.writeLong(modifiedDate);
+
+		objectOutput.writeInt(type);
 	}
 
 	public long mvccVersion;
+	public long ctCollectionId;
 	public String uuid;
 	public long depotEntryId;
 	public long groupId;
@@ -193,5 +209,7 @@ public class DepotEntryCacheModel
 	public String userName;
 	public long createDate;
 	public long modifiedDate;
+	public int type;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1273783026

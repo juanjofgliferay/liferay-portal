@@ -26,14 +26,13 @@ import com.liferay.portal.kernel.notifications.BaseUserNotificationHandler;
 import com.liferay.portal.kernel.notifications.UserNotificationHandler;
 import com.liferay.portal.kernel.portlet.PortletURLFactoryUtil;
 import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
-import com.liferay.portal.kernel.service.PortletLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.Portal;
 
-import java.util.Locale;
+import jakarta.portlet.PortletRequest;
 
-import javax.portlet.PortletRequest;
+import java.util.Locale;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -42,7 +41,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Akos Thurzo
  */
 @Component(
-	property = "javax.portlet.name=" + ExportImportPortletKeys.EXPORT_IMPORT,
+	property = "jakarta.portlet.name=" + ExportImportPortletKeys.EXPORT_IMPORT,
 	service = UserNotificationHandler.class
 )
 public class ExportImportUserNotificationHandler
@@ -76,7 +75,9 @@ public class ExportImportUserNotificationHandler
 		BackgroundTask backgroundTask =
 			_backgroundTaskLocalService.fetchBackgroundTask(backgroundTaskId);
 
-		if (backgroundTask == null) {
+		if ((backgroundTask == null) ||
+			(serviceContext.getThemeDisplay() == null)) {
+
 			return StringPool.BLANK;
 		}
 
@@ -182,8 +183,5 @@ public class ExportImportUserNotificationHandler
 
 	@Reference
 	private Portal _portal;
-
-	@Reference
-	private PortletLocalService _portletLocalService;
 
 }

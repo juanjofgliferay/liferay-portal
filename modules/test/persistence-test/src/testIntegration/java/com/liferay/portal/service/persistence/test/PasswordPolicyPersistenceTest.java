@@ -110,11 +110,7 @@ public class PasswordPolicyPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		PasswordPolicy newPasswordPolicy = _persistence.create(pk);
-
-		newPasswordPolicy.setMvccVersion(RandomTestUtil.nextLong());
+		PasswordPolicy newPasswordPolicy = addPasswordPolicy();
 
 		newPasswordPolicy.setUuid(RandomTestUtil.randomString());
 
@@ -183,7 +179,9 @@ public class PasswordPolicyPersistenceTest {
 
 		newPasswordPolicy.setResetTicketMaxAge(RandomTestUtil.nextLong());
 
-		_passwordPolicies.add(_persistence.update(newPasswordPolicy));
+		newPasswordPolicy = _persistence.update(newPasswordPolicy);
+
+		_passwordPolicies.add(newPasswordPolicy);
 
 		PasswordPolicy existingPasswordPolicy = _persistence.findByPrimaryKey(
 			newPasswordPolicy.getPrimaryKey());
@@ -310,14 +308,6 @@ public class PasswordPolicyPersistenceTest {
 		_persistence.countByCompanyId(RandomTestUtil.nextLong());
 
 		_persistence.countByCompanyId(0L);
-	}
-
-	@Test
-	public void testCountByC_DP() throws Exception {
-		_persistence.countByC_DP(
-			RandomTestUtil.nextLong(), RandomTestUtil.randomBoolean());
-
-		_persistence.countByC_DP(0L, RandomTestUtil.randomBoolean());
 	}
 
 	@Test
@@ -640,17 +630,6 @@ public class PasswordPolicyPersistenceTest {
 				passwordPolicy, "getColumnOriginalValue",
 				new Class<?>[] {String.class}, "companyId"));
 		Assert.assertEquals(
-			Boolean.valueOf(passwordPolicy.getDefaultPolicy()),
-			ReflectionTestUtil.<Boolean>invoke(
-				passwordPolicy, "getColumnOriginalValue",
-				new Class<?>[] {String.class}, "defaultPolicy"));
-
-		Assert.assertEquals(
-			Long.valueOf(passwordPolicy.getCompanyId()),
-			ReflectionTestUtil.<Long>invoke(
-				passwordPolicy, "getColumnOriginalValue",
-				new Class<?>[] {String.class}, "companyId"));
-		Assert.assertEquals(
 			passwordPolicy.getName(),
 			ReflectionTestUtil.invoke(
 				passwordPolicy, "getColumnOriginalValue",
@@ -661,8 +640,6 @@ public class PasswordPolicyPersistenceTest {
 		long pk = RandomTestUtil.nextLong();
 
 		PasswordPolicy passwordPolicy = _persistence.create(pk);
-
-		passwordPolicy.setMvccVersion(RandomTestUtil.nextLong());
 
 		passwordPolicy.setUuid(RandomTestUtil.randomString());
 
@@ -741,3 +718,4 @@ public class PasswordPolicyPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-436708279

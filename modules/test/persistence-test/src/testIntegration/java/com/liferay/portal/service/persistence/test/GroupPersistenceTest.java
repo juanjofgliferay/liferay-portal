@@ -111,11 +111,7 @@ public class GroupPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		Group newGroup = _persistence.create(pk);
-
-		newGroup.setMvccVersion(RandomTestUtil.nextLong());
+		Group newGroup = addGroup();
 
 		newGroup.setCtCollectionId(RandomTestUtil.nextLong());
 
@@ -163,7 +159,9 @@ public class GroupPersistenceTest {
 
 		newGroup.setActive(RandomTestUtil.randomBoolean());
 
-		_groups.add(_persistence.update(newGroup));
+		newGroup = _persistence.update(newGroup);
+
+		_groups.add(newGroup);
 
 		Group existingGroup = _persistence.findByPrimaryKey(
 			newGroup.getPrimaryKey());
@@ -342,23 +340,6 @@ public class GroupPersistenceTest {
 			RandomTestUtil.nextLong(), RandomTestUtil.nextLong());
 
 		_persistence.countByC_CPK(0L, 0L);
-	}
-
-	@Test
-	public void testCountByT_A() throws Exception {
-		_persistence.countByT_A(
-			RandomTestUtil.nextInt(), RandomTestUtil.randomBoolean());
-
-		_persistence.countByT_A(0, RandomTestUtil.randomBoolean());
-	}
-
-	@Test
-	public void testCountByGtG_C_P() throws Exception {
-		_persistence.countByGtG_C_P(
-			RandomTestUtil.nextLong(), RandomTestUtil.nextLong(),
-			RandomTestUtil.nextLong());
-
-		_persistence.countByGtG_C_P(0L, 0L, 0L);
 	}
 
 	@Test
@@ -799,12 +780,6 @@ public class GroupPersistenceTest {
 				"groupId"));
 
 		Assert.assertEquals(
-			Long.valueOf(group.getLiveGroupId()),
-			ReflectionTestUtil.<Long>invoke(
-				group, "getColumnOriginalValue", new Class<?>[] {String.class},
-				"liveGroupId"));
-
-		Assert.assertEquals(
 			Long.valueOf(group.getCompanyId()),
 			ReflectionTestUtil.<Long>invoke(
 				group, "getColumnOriginalValue", new Class<?>[] {String.class},
@@ -896,8 +871,6 @@ public class GroupPersistenceTest {
 
 		Group group = _persistence.create(pk);
 
-		group.setMvccVersion(RandomTestUtil.nextLong());
-
 		group.setCtCollectionId(RandomTestUtil.nextLong());
 
 		group.setUuid(RandomTestUtil.randomString());
@@ -954,3 +927,4 @@ public class GroupPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-755357897

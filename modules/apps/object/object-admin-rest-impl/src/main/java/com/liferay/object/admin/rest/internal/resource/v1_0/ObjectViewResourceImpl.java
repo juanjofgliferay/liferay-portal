@@ -33,7 +33,7 @@ import com.liferay.portal.vulcan.pagination.Pagination;
 import com.liferay.portal.vulcan.util.LocalizedMapUtil;
 import com.liferay.portal.vulcan.util.SearchUtil;
 
-import javax.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.MultivaluedMap;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -157,9 +157,9 @@ public class ObjectViewResourceImpl extends BaseObjectViewResourceImpl {
 
 		return _toObjectView(
 			_objectViewService.addObjectView(
-				objectDefinitionId,
+				objectView.getExternalReferenceCode(), objectDefinitionId,
 				GetterUtil.getBoolean(objectView.getDefaultObjectView()),
-				LocalizedMapUtil.getLocalizedMap(objectView.getName()),
+				LocalizedMapUtil.populateLocalizedMap(objectView.getName()),
 				transformToList(
 					objectView.getObjectViewColumns(),
 					this::_toObjectViewColumn),
@@ -178,7 +178,7 @@ public class ObjectViewResourceImpl extends BaseObjectViewResourceImpl {
 
 		return _toObjectView(
 			_objectViewService.addObjectView(
-				objectView.getObjectDefinitionId(), false,
+				null, objectView.getObjectDefinitionId(), false,
 				NameMapUtil.copy(objectView.getNameMap()),
 				objectView.getObjectViewColumns(),
 				objectView.getObjectViewFilterColumns(),
@@ -191,8 +191,9 @@ public class ObjectViewResourceImpl extends BaseObjectViewResourceImpl {
 
 		return _toObjectView(
 			_objectViewService.updateObjectView(
-				objectViewId, objectView.getDefaultObjectView(),
-				LocalizedMapUtil.getLocalizedMap(objectView.getName()),
+				objectView.getExternalReferenceCode(), objectViewId,
+				objectView.getDefaultObjectView(),
+				LocalizedMapUtil.populateLocalizedMap(objectView.getName()),
 				transformToList(
 					objectView.getObjectViewColumns(),
 					this::_toObjectViewColumn),
@@ -249,7 +250,7 @@ public class ObjectViewResourceImpl extends BaseObjectViewResourceImpl {
 				_objectViewColumnPersistence.create(0L);
 
 		serviceBuilderObjectViewColumn.setLabelMap(
-			LocalizedMapUtil.getLocalizedMap(objectViewColumn.getLabel()));
+			LocalizedMapUtil.populateLocalizedMap(objectViewColumn.getLabel()));
 		serviceBuilderObjectViewColumn.setObjectFieldName(
 			objectViewColumn.getObjectFieldName());
 		serviceBuilderObjectViewColumn.setPriority(

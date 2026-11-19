@@ -11,14 +11,18 @@ import com.liferay.portal.kernel.util.JavaConstants;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 
+import jakarta.portlet.PortletRequest;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
+
 import java.io.IOException;
 import java.io.Serializable;
 
-import javax.portlet.PortletRequest;
+import java.nio.charset.StandardCharsets;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
+import java.security.MessageDigest;
 
 /**
  * @author Adolfo Pérez
@@ -35,19 +39,19 @@ public final class SharepointRepositoryRequestState implements Serializable {
 	}
 
 	public static void save(
-		HttpServletRequest httpServletRequest, String state) {
+		HttpServletRequest httpServletRequest, String nonce, String state) {
 
 		HttpSession httpSession = httpServletRequest.getSession();
 
 		PortletRequest portletRequest =
 			(PortletRequest)httpServletRequest.getAttribute(
-				JavaConstants.JAVAX_PORTLET_REQUEST);
+				JavaConstants.JAKARTA_PORTLET_REQUEST);
 
 		httpSession.setAttribute(
 			SharepointRepositoryRequestState.class.getName(),
 			new SharepointRepositoryRequestState(
-				ParamUtil.getLong(portletRequest, "folderId"),
-				PortalUtil.getCurrentCompleteURL(httpServletRequest), state));
+				ParamUtil.getLong(portletRequest, "folderId"), nonce, state,
+				PortalUtil.getCurrentCompleteURL(httpServletRequest)));
 	}
 
 	public long getFolderId() {
@@ -67,27 +71,41 @@ public final class SharepointRepositoryRequestState implements Serializable {
 		httpServletResponse.sendRedirect(_url);
 	}
 
-	public void validate(String state) throws AuthorizationException {
-		if (!state.equals(_state)) {
+	public void validateNonce(String nonce) throws AuthorizationException {
+		if ((nonce == null) ||
+			!MessageDigest.isEqual(
+				nonce.getBytes(StandardCharsets.UTF_8),
+				_nonce.getBytes(StandardCharsets.UTF_8))) {
+
+			throw new OAuth2AuthorizationException.InvalidNonce(
+				"The Sharepoint server returned an invalid nonce");
+		}
+	}
+
+	public void validateState(String state) throws AuthorizationException {
+		if ((state == null) ||
+			!MessageDigest.isEqual(
+				state.getBytes(StandardCharsets.UTF_8),
+				_state.getBytes(StandardCharsets.UTF_8))) {
+
 			throw new OAuth2AuthorizationException.InvalidState(
-				String.format(
-					"The Sharepoint server returned an invalid state %s that " +
-						"does not match the expected state %s",
-					_state, state));
+				"The Sharepoint server returned an invalid state");
 		}
 	}
 
 	private SharepointRepositoryRequestState(
-		long folderId, String url, String state) {
+		long folderId, String nonce, String state, String url) {
 
 		_folderId = folderId;
-		_url = url;
+		_nonce = nonce;
 		_state = state;
+		_url = url;
 	}
 
 	private static final long serialVersionUID = 1L;
 
 	private final long _folderId;
+	private final String _nonce;
 	private final String _state;
 	private final String _url;
 

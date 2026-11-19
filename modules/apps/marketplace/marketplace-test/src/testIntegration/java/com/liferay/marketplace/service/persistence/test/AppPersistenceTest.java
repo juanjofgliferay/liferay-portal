@@ -111,9 +111,7 @@ public class AppPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		App newApp = _persistence.create(pk);
+		App newApp = addApp();
 
 		newApp.setUuid(RandomTestUtil.randomString());
 
@@ -141,7 +139,9 @@ public class AppPersistenceTest {
 
 		newApp.setRequired(RandomTestUtil.randomBoolean());
 
-		_apps.add(_persistence.update(newApp));
+		newApp = _persistence.update(newApp);
+
+		_apps.add(newApp);
 
 		App existingApp = _persistence.findByPrimaryKey(newApp.getPrimaryKey());
 
@@ -183,13 +183,6 @@ public class AppPersistenceTest {
 		_persistence.countByUuid_C("null", 0L);
 
 		_persistence.countByUuid_C((String)null, 0L);
-	}
-
-	@Test
-	public void testCountByCompanyId() throws Exception {
-		_persistence.countByCompanyId(RandomTestUtil.nextLong());
-
-		_persistence.countByCompanyId(0L);
 	}
 
 	@Test
@@ -534,3 +527,4 @@ public class AppPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-386908081

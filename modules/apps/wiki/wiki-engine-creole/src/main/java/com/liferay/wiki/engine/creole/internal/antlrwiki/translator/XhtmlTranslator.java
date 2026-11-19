@@ -33,13 +33,13 @@ import com.liferay.wiki.engine.creole.internal.util.WikiEngineCreoleComponentPro
 import com.liferay.wiki.model.WikiPage;
 import com.liferay.wiki.service.WikiPageLocalServiceUtil;
 
+import jakarta.portlet.PortletURL;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.ResourceBundle;
-
-import javax.portlet.PortletURL;
 
 /**
  * @author Miguel Pastor
@@ -100,7 +100,9 @@ public class XhtmlTranslator extends XhtmlTranslationVisitor {
 
 		append(" src=\"");
 
-		if (imageNode.isAbsoluteLink()) {
+		if (imageNode.isAbsoluteLink() ||
+			StringUtil.startsWith(imageNode.getLink(), "data:image/")) {
+
 			append(HtmlUtil.escapeAttribute(imageNode.getLink()));
 		}
 		else {
@@ -169,7 +171,7 @@ public class XhtmlTranslator extends XhtmlTranslationVisitor {
 
 		append("<div class=\"toc\">");
 		append("<div class=\"collapsebox\">");
-		append("<h4>");
+		append("<div class=\"h4\">");
 
 		String title = tableOfContentsNode.getTitle();
 
@@ -185,7 +187,7 @@ public class XhtmlTranslator extends XhtmlTranslationVisitor {
 
 		append(StringPool.NBSP);
 		append("<a class=\"toc-trigger\" href=\"javascript:void(0);\">[-]");
-		append("</a></h4>");
+		append("</a></div>");
 		append("<div class=\"toc-index\">");
 
 		_appendTableOfContents(tableOfContents, 1);
@@ -257,7 +259,7 @@ public class XhtmlTranslator extends XhtmlTranslationVisitor {
 				_getHeadingMarkup(
 					_page.getTitle(), content, _tableOfContentsHeadingCounts));
 			append("\">");
-			append(content);
+			append(HtmlUtil.escape(content));
 			append("</a>");
 
 			int count = _tableOfContentsHeadingCounts.getOrDefault(content, 0);
@@ -307,15 +309,18 @@ public class XhtmlTranslator extends XhtmlTranslationVisitor {
 
 		String postfix = StringPool.BLANK;
 
-		if (textCounts.containsKey(text)) {
-			postfix = StringPool.DASH + textCounts.get(text);
+		Integer textCount = textCounts.get(text);
+
+		if (textCount != null) {
+			postfix = StringPool.DASH + textCount;
 		}
 
-		return StringUtil.replace(
-			StringBundler.concat(
-				_HEADING_ANCHOR_PREFIX, prefix, StringPool.DASH, text.trim(),
-				postfix),
-			CharPool.SPACE, CharPool.PLUS);
+		return HtmlUtil.escapeAttribute(
+			StringUtil.replace(
+				StringBundler.concat(
+					_HEADING_ANCHOR_PREFIX, prefix, StringPool.DASH,
+					text.trim(), postfix),
+				CharPool.SPACE, CharPool.PLUS));
 	}
 
 	private ResourceBundle _getResourceBundle(Locale locale) {

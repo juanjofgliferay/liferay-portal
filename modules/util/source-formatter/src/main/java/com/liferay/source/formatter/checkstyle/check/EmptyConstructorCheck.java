@@ -43,10 +43,10 @@ public class EmptyConstructorCheck extends BaseCheck {
 			return;
 		}
 
-		List<DetailAST> constructorDefinitionDetailASTList = getAllChildTokens(
+		List<DetailAST> constructorDefinitionDetailASTs = getAllChildTokens(
 			parentDetailAST, false, TokenTypes.CTOR_DEF);
 
-		if (constructorDefinitionDetailASTList.size() > 1) {
+		if (constructorDefinitionDetailASTs.size() > 1) {
 			return;
 		}
 
@@ -68,12 +68,12 @@ public class EmptyConstructorCheck extends BaseCheck {
 			DetailAST firstChildDetailAST = lastChildDetailAST.getFirstChild();
 
 			if (firstChildDetailAST.getType() == TokenTypes.RCURLY) {
-				log(detailAST, _MSG_UNNEEDED_EMTPY_CONSTRUCTOR);
+				log(detailAST, _MSG_UNNEEDED_EMPTY_CONSTRUCTOR);
 			}
 		}
 	}
 
-	private static final String _MSG_UNNEEDED_EMTPY_CONSTRUCTOR =
+	private static final String _MSG_UNNEEDED_EMPTY_CONSTRUCTOR =
 		"empty.constructor.unneeded";
 
 }

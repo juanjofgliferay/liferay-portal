@@ -51,9 +51,6 @@ public interface CPInstance extends CPInstanceModel, PersistedModel {
 
 	public CPInstanceUnitOfMeasure fetchCPInstanceUnitOfMeasure(String key);
 
-	public CommerceCatalog getCommerceCatalog()
-		throws com.liferay.portal.kernel.exception.PortalException;
-
 	public CPDefinition getCPDefinition()
 		throws com.liferay.portal.kernel.exception.PortalException;
 
@@ -68,11 +65,16 @@ public interface CPInstance extends CPInstanceModel, PersistedModel {
 	public CPSubscriptionInfo getCPSubscriptionInfo()
 		throws com.liferay.portal.kernel.exception.PortalException;
 
+	public CommerceCatalog getCommerceCatalog()
+		throws com.liferay.portal.kernel.exception.PortalException;
+
 	public com.liferay.portal.kernel.util.UnicodeProperties
 		getDeliverySubscriptionTypeSettingsUnicodeProperties();
 
 	public com.liferay.portal.kernel.util.UnicodeProperties
 		getSubscriptionTypeSettingsUnicodeProperties();
+
+	public boolean hasCPInstanceUnitOfMeasures();
 
 	public void setDeliverySubscriptionTypeSettingsUnicodeProperties(
 		com.liferay.portal.kernel.util.UnicodeProperties
@@ -83,3 +85,4 @@ public interface CPInstance extends CPInstanceModel, PersistedModel {
 			subscriptionTypeSettingsUnicodeProperties);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:655342155

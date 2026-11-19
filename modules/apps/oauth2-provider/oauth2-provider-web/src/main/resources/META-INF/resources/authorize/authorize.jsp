@@ -28,7 +28,11 @@ if (Validator.isNotNull(replyTo) && !replyTo.startsWith(PortalUtil.getPortalURL(
 		<div class="sheet">
 			<div class="panel-group panel-group-flush">
 				<div class="panel-body">
-					<div class="app-icon aspect-ratio-bg-cover" style="background-image: url('<%= HtmlUtil.escapeAttribute(oAuth2AuthorizePortletDisplayContext.getThumbnailURL()) %>');"></div>
+					<clay:sticker
+						cssClass="app-icon"
+						imageAlt=""
+						imageSrc="<%= HtmlUtil.escapeAttribute(oAuth2AuthorizePortletDisplayContext.getThumbnailURL()) %>"
+					/>
 
 					<liferay-user:user-portrait
 						user="<%= user %>"
@@ -42,12 +46,12 @@ if (Validator.isNotNull(replyTo) && !replyTo.startsWith(PortalUtil.getPortalURL(
 						</c:when>
 						<c:when test="<%= !oAuth2AuthorizePortletDisplayContext.hasCreateTokenApplicationPermission(oAuth2Application) %>">
 							<h1>
-								<liferay-ui:message key="you-dont-have-permissions-to-authorize-the-application" />
+								<liferay-ui:message key="you-do-not-have-permissions-to-authorize-the-application" />
 							</h1>
 						</c:when>
 						<c:otherwise>
 							<h1>
-								<%= LanguageUtil.format(request, "authorize-x", new String[] {oAuth2Application.getName()}) %>
+								<%= LanguageUtil.format(request, "authorize-x", new String[] {HtmlUtil.escape(oAuth2Application.getName())}) %>
 							</h1>
 
 							<p class="application-wants-permissions text-truncate">
@@ -70,10 +74,10 @@ if (Validator.isNotNull(replyTo) && !replyTo.startsWith(PortalUtil.getPortalURL(
 										}
 
 										messageArguments[1] = getApplicationScopeDescription;
-										messageArguments[0] = LanguageUtil.format(request, "x-y", messageArguments);
+										messageArguments[0] = LanguageUtil.format(request, "x,-y", messageArguments);
 									}
 
-									messageArguments[1] = messageArguments[0];
+									messageArguments[1] = HtmlUtil.escape(messageArguments[0]);
 									messageArguments[0] = HtmlUtil.escape(assignableScopes.getApplicationDescription(applicationName));
 								%>
 
@@ -134,7 +138,7 @@ if (Validator.isNotNull(replyTo) && !replyTo.startsWith(PortalUtil.getPortalURL(
 
 								<aui:button id="cancel" type="submit" value="cancel" />
 
-								<script>
+								<aui:script>
 									var allowButton = document.getElementById('<portlet:namespace />allow');
 
 									if (allowButton) {
@@ -152,7 +156,7 @@ if (Validator.isNotNull(replyTo) && !replyTo.startsWith(PortalUtil.getPortalURL(
 											Liferay.Util.postForm(document.<portlet:namespace />fm);
 										});
 									}
-								</script>
+								</aui:script>
 							</div>
 						</c:otherwise>
 					</c:choose>

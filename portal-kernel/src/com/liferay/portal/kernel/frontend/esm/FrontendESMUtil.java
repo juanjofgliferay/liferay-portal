@@ -5,22 +5,37 @@
 
 package com.liferay.portal.kernel.frontend.esm;
 
-import java.util.concurrent.atomic.AtomicReference;
+import com.liferay.portal.kernel.module.service.Snapshot;
+import com.liferay.portal.kernel.theme.ThemeDisplay;
 
 /**
  * @author Iván Zaera Avellón
  */
 public class FrontendESMUtil {
 
-	public static String getScriptType() {
-		return _scriptType.get();
+	public static String buildExportsURL(
+		ThemeDisplay themeDisplay, String contextPath, String exportModule) {
+
+		return buildURL(
+			themeDisplay, contextPath,
+			"exports/" + exportModule.replaceAll("/", "\\$"));
 	}
 
-	public static void setScriptType(String scriptType) {
-		_scriptType.set(scriptType);
+	public static String buildURL(
+		ThemeDisplay themeDisplay, String contextPath) {
+
+		return buildURL(themeDisplay, contextPath, "index");
 	}
 
-	private static final AtomicReference<String> _scriptType =
-		new AtomicReference<>("module");
+	public static String buildURL(
+		ThemeDisplay themeDisplay, String contextPath, String submodule) {
+
+		FrontendESM frontendESM = _frontendESMSnapshot.get();
+
+		return frontendESM.buildURL(themeDisplay, contextPath, submodule);
+	}
+
+	private static final Snapshot<FrontendESM> _frontendESMSnapshot =
+		new Snapshot<>(FrontendESMUtil.class, FrontendESM.class);
 
 }

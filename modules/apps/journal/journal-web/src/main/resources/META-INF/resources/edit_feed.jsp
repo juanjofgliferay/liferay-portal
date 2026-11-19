@@ -120,7 +120,7 @@ renderResponse.setTitle(editJournalFeedDisplayContext.getTitle());
 						%>'
 						displayType="secondary"
 						label="select"
-						propsTransformer="js/SelectDDMStructureButtonPropsTransformer"
+						propsTransformer="{SelectDDMStructureButtonPropsTransformer} from journal-web"
 					/>
 
 					<clay:button
@@ -168,7 +168,7 @@ renderResponse.setTitle(editJournalFeedDisplayContext.getTitle());
 						%>'
 						displayType="secondary"
 						label="select"
-						propsTransformer="js/SelectAssetCategoryButtonPropsTransformer"
+						propsTransformer="{SelectAssetCategoryButtonPropsTransformer} from journal-web"
 					/>
 
 					<clay:button
@@ -213,7 +213,7 @@ renderResponse.setTitle(editJournalFeedDisplayContext.getTitle());
 				%>
 
 				<c:if test="<%= ddmForm != null %>">
-					<optgroup label="<liferay-ui:message key="structure-fields" />">
+					<optgroup label="<liferay-ui:message key="content-structure-fields" />">
 
 						<%
 						Map<String, DDMFormField> ddmFormFieldsMap = ddmForm.getDDMFormFieldsMap(true);
@@ -298,7 +298,7 @@ renderResponse.setTitle(editJournalFeedDisplayContext.getTitle());
 			"renderedWebContent", JournalFeedConstants.RENDERED_WEB_CONTENT
 		).build()
 	%>'
-	module="js/EditFeed"
+	module="{EditFeed} from journal-web"
 />
 
 <aui:script>

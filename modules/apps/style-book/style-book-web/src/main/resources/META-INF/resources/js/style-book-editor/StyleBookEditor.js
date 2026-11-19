@@ -15,6 +15,10 @@ import {LAYOUT_TYPES} from './constants/layoutTypes';
 import {LayoutContextProvider} from './contexts/LayoutContext';
 import {StyleBookEditorContextProvider} from './contexts/StyleBookEditorContext';
 import {useCloseProductMenu} from './useCloseProductMenu';
+import {getFrontendTokenDefinitionsFactory} from './utils/getFrontendTokenDefinitionsFactory';
+import {getFrontendTokenValuesSorter} from './utils/getFrontendTokenValuesSorter';
+import {getFrontendTokensFactory} from './utils/getFrontendTokensFactory';
+import {getResolvedFrontendTokenValues} from './utils/getResolvedFrontendTokenValues';
 
 const StyleBookEditor = React.memo(() => {
 	useCloseProductMenu();
@@ -48,8 +52,13 @@ const StyleBookEditor = React.memo(() => {
 });
 
 export default function ({
+	addFrontendTokenURL,
+	customFrontendTokenDefinition,
+	customTokenDefinitionId,
+	customTokenDefinitionPriority,
+	defaultTokenDefinitionPriority,
 	fragmentCollectionPreviewURL = '',
-	frontendTokenDefinition = [],
+	frontendTokenDefinitions = [],
 	frontendTokensValues = {},
 	isPrivateLayoutsEnabled,
 	namespace,
@@ -58,25 +67,48 @@ export default function ({
 	redirectURL,
 	saveDraftURL,
 	styleBookEntryId,
+	themeFrontendTokenDefinitionId,
 	themeName,
 } = {}) {
+	const sortFrontendTokenValues = getFrontendTokenValuesSorter({
+		customTokenDefinitionId,
+		customTokenDefinitionPriority,
+		defaultPriority: defaultTokenDefinitionPriority,
+		frontendTokenDefinitions,
+	});
+
 	initializeConfig({
+		addFrontendTokenURL,
+		customTokenDefinitionId,
+		defaultTokenDefinitionPriority,
 		fragmentCollectionPreviewURL,
-		frontendTokenDefinition,
-		frontendTokens: getFrontendTokens(frontendTokenDefinition),
+		getFrontendTokenDefinitions: getFrontendTokenDefinitionsFactory({
+			frontendTokenDefinitions,
+			themeFrontendTokenDefinitionId,
+		}),
+		getFrontendTokens: getFrontendTokensFactory({
+			frontendTokenDefinitions,
+		}),
 		isPrivateLayoutsEnabled,
 		namespace,
 		previewOptions,
 		publishURL,
 		redirectURL,
+		resolveFrontendTokenValues: (frontendTokensValues) =>
+			sortFrontendTokenValues(
+				getResolvedFrontendTokenValues(frontendTokensValues)
+			),
 		saveDraftURL,
 		styleBookEntryId,
+		themeFrontendTokenDefinitionId,
 		themeName,
 	});
 
 	return (
 		<StyleBookEditorContextProvider
 			initialState={{
+				customFrontendTokenDefinition:
+					customFrontendTokenDefinition ?? {},
 				draftStatus: DRAFT_STATUS.notSaved,
 				frontendTokensValues,
 				redoHistory: [],
@@ -109,29 +141,3 @@ function getMostRecentLayout(previewOptions) {
 
 	return null;
 }
-
-const getFrontendTokens = ({frontendTokenCategories}) => {
-	let tokens = {};
-
-	if (!frontendTokenCategories) {
-		return tokens;
-	}
-
-	for (const category of frontendTokenCategories) {
-		for (const tokenSet of category.frontendTokenSets) {
-			for (const token of tokenSet.frontendTokens) {
-				tokens = {
-					...tokens,
-					[token.name]: {
-						...token,
-						tokenCategoryLabel: category.label,
-						tokenSetLabel: tokenSet.label,
-						value: token.defaultValue,
-					},
-				};
-			}
-		}
-	}
-
-	return tokens;
-};

@@ -220,10 +220,6 @@ public interface CommerceDiscountRelLocalService
 		long commerceDiscountRelId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public CommerceDiscountRel fetchCommerceDiscountRel(
-		String className, long classPK);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public ActionableDynamicQuery getActionableDynamicQuery();
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
@@ -281,6 +277,10 @@ public interface CommerceDiscountRelLocalService
 		long commerceDiscountId, String className, int start, int end,
 		OrderByComparator<CommerceDiscountRel> orderByComparator);
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<CommerceDiscountRel> getCommerceDiscountRels(
+		long commerceDiscountId, String className, long classPK);
+
 	/**
 	 * Returns the number of commerce discount rels.
 	 *
@@ -288,10 +288,6 @@ public interface CommerceDiscountRelLocalService
 	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public int getCommerceDiscountRelsCount();
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getCommerceDiscountRelsCount(
-		long commerceDiscountId, String className);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<CommerceDiscountRel>
@@ -351,4 +347,10 @@ public interface CommerceDiscountRelLocalService
 	public CommerceDiscountRel updateCommerceDiscountRel(
 		CommerceDiscountRel commerceDiscountRel);
 
+	public CommerceDiscountRel updateTypeSettings(
+			long commerceDiscountRelId,
+			UnicodeProperties typeSettingsUnicodeProperties)
+		throws PortalException;
+
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1315522545

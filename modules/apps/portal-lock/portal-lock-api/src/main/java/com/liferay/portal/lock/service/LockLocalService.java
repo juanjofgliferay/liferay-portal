@@ -256,6 +256,12 @@ public interface LockLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<Lock> getLocks(int start, int end);
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<Lock> getLocks(long companyId, long userId, String className);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<Lock> getLocks(long companyId, String className);
+
 	/**
 	 * Returns the number of locks.
 	 *
@@ -340,3 +346,4 @@ public interface LockLocalService
 	public Lock updateLock(Lock lock);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:758571434

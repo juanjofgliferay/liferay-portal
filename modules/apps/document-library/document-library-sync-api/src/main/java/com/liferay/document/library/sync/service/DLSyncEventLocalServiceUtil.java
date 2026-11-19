@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -48,12 +49,6 @@ public class DLSyncEventLocalServiceUtil {
 	 */
 	public static DLSyncEvent addDLSyncEvent(DLSyncEvent dlSyncEvent) {
 		return getService().addDLSyncEvent(dlSyncEvent);
-	}
-
-	public static DLSyncEvent addDLSyncEvent(
-		String event, String type, long typePK) {
-
-		return getService().addDLSyncEvent(event, type, typePK);
 	}
 
 	/**
@@ -105,10 +100,6 @@ public class DLSyncEventLocalServiceUtil {
 		throws PortalException {
 
 		return getService().deleteDLSyncEvent(syncEventId);
-	}
-
-	public static void deleteDLSyncEvents() {
-		getService().deleteDLSyncEvents();
 	}
 
 	/**
@@ -244,10 +235,6 @@ public class DLSyncEventLocalServiceUtil {
 		return getService().getDLSyncEvents(start, end);
 	}
 
-	public static List<DLSyncEvent> getDLSyncEvents(long modifiedTime) {
-		return getService().getDLSyncEvents(modifiedTime);
-	}
-
 	/**
 	 * Returns the number of dl sync events.
 	 *
@@ -262,10 +249,6 @@ public class DLSyncEventLocalServiceUtil {
 			getIndexableActionableDynamicQuery() {
 
 		return getService().getIndexableActionableDynamicQuery();
-	}
-
-	public static List<DLSyncEvent> getLatestDLSyncEvents() {
-		return getService().getLatestDLSyncEvents();
 	}
 
 	/**
@@ -301,13 +284,12 @@ public class DLSyncEventLocalServiceUtil {
 	}
 
 	public static DLSyncEventLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(DLSyncEventLocalService service) {
-		_service = service;
-	}
-
-	private static volatile DLSyncEventLocalService _service;
+	private static final Snapshot<DLSyncEventLocalService> _serviceSnapshot =
+		new Snapshot<>(
+			DLSyncEventLocalServiceUtil.class, DLSyncEventLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:808561281

@@ -48,12 +48,13 @@ public class AccountGroupLocalServiceWrapper
 
 	@Override
 	public com.liferay.account.model.AccountGroup addAccountGroup(
-			long userId, String description, String name,
+			String externalReferenceCode, long userId, String description,
+			String name,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _accountGroupLocalService.addAccountGroup(
-			userId, description, name, serviceContext);
+			externalReferenceCode, userId, description, name, serviceContext);
 	}
 
 	@Override
@@ -338,28 +339,6 @@ public class AccountGroupLocalServiceWrapper
 
 	@Override
 	public java.util.List<com.liferay.account.model.AccountGroup>
-		getAccountGroups(
-			long companyId, int start, int end,
-			com.liferay.portal.kernel.util.OrderByComparator
-				<com.liferay.account.model.AccountGroup> orderByComparator) {
-
-		return _accountGroupLocalService.getAccountGroups(
-			companyId, start, end, orderByComparator);
-	}
-
-	@Override
-	public java.util.List<com.liferay.account.model.AccountGroup>
-		getAccountGroups(
-			long companyId, String name, int start, int end,
-			com.liferay.portal.kernel.util.OrderByComparator
-				<com.liferay.account.model.AccountGroup> orderByComparator) {
-
-		return _accountGroupLocalService.getAccountGroups(
-			companyId, name, start, end, orderByComparator);
-	}
-
-	@Override
-	public java.util.List<com.liferay.account.model.AccountGroup>
 		getAccountGroupsByAccountEntryId(
 			long accountEntryId, int start, int end) {
 
@@ -386,16 +365,6 @@ public class AccountGroupLocalServiceWrapper
 	}
 
 	@Override
-	public int getAccountGroupsCount(long companyId) {
-		return _accountGroupLocalService.getAccountGroupsCount(companyId);
-	}
-
-	@Override
-	public long getAccountGroupsCount(long companyId, String name) {
-		return _accountGroupLocalService.getAccountGroupsCount(companyId, name);
-	}
-
-	@Override
 	public int getAccountGroupsCountByAccountEntryId(long accountEntryId) {
 		return _accountGroupLocalService.getAccountGroupsCountByAccountEntryId(
 			accountEntryId);
@@ -410,7 +379,8 @@ public class AccountGroupLocalServiceWrapper
 
 	@Override
 	public com.liferay.account.model.AccountGroup getDefaultAccountGroup(
-		long companyId) {
+			long companyId)
+		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _accountGroupLocalService.getDefaultAccountGroup(companyId);
 	}
@@ -430,6 +400,16 @@ public class AccountGroupLocalServiceWrapper
 		getIndexableActionableDynamicQuery() {
 
 		return _accountGroupLocalService.getIndexableActionableDynamicQuery();
+	}
+
+	@Override
+	public com.liferay.account.model.AccountGroup getOrAddEmptyAccountGroup(
+			String externalReferenceCode, long companyId, long userId,
+			String name)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _accountGroupLocalService.getOrAddEmptyAccountGroup(
+			externalReferenceCode, companyId, userId, name);
 	}
 
 	/**
@@ -500,12 +480,14 @@ public class AccountGroupLocalServiceWrapper
 
 	@Override
 	public com.liferay.account.model.AccountGroup updateAccountGroup(
-			long accountGroupId, String description, String name,
+			String externalReferenceCode, long accountGroupId,
+			String description, String name,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _accountGroupLocalService.updateAccountGroup(
-			accountGroupId, description, name, serviceContext);
+			externalReferenceCode, accountGroupId, description, name,
+			serviceContext);
 	}
 
 	@Override
@@ -547,3 +529,4 @@ public class AccountGroupLocalServiceWrapper
 	private AccountGroupLocalService _accountGroupLocalService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-941979684

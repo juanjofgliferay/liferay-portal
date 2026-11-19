@@ -254,10 +254,7 @@ definition {
 
 	@summary = "Default summary"
 	macro commerceInitializersTearDown() {
-		ApplicationsMenu.gotoPortlet(
-			category = "Sites",
-			panel = "Control Panel",
-			portlet = "Sites");
+		Site.openSitesAdmin();
 
 		CommerceJSONSitesAPI._deleteCommerceSites();
 	}
@@ -293,7 +290,7 @@ definition {
 			category = "Settings",
 			portlet = "Health Check");
 
-		for (var buttonRowName : list "Service Access Policy,Commerce Countries,Commerce Currencies,Commerce Product Measurement Units,Account Roles,Catalog Base Price Lists/Promotions") {
+		for (var buttonRowName : list "Service Access Policy,Commerce Currencies,Commerce Product Measurement Units,Account Roles,Catalog Base Price Lists/Promotions") {
 			if (!(IsElementPresent(key_buttonRowName = ${buttonRowName}, key_buttonStatus = "disabled", locator1 = "CommerceEntry#FIX_ISSUE_BUTTON_NAME"))) {
 				Click(
 					key_buttonRowName = ${buttonRowName},
@@ -306,9 +303,7 @@ definition {
 			}
 		}
 
-		CommerceNavigator.gotoPortlet(
-			category = "Store Management",
-			portlet = "Channels");
+		CommerceChannels.openChannelsAdmin();
 
 		Click(locator1 = "Button#PLUS");
 
@@ -361,37 +356,6 @@ definition {
 				User.logoutPG();
 			}
 		}
-	}
-
-	@summary = "Default summary"
-	macro configureWorkflow(workflowDefinition = null, workflowResourceValue = null) {
-		var key_workflowResourceValue = ${workflowResourceValue};
-
-		if (!(IsElementPresent(locator1 = "Pagination#ICON_DISABLED", type = "angle-right")) && (IsElementPresent(locator1 = "Pagination#FIRST_LINK"))) {
-			Pagination.changePagination(itemsPerPage = 40);
-		}
-
-		AssertClick.pauseAssertTextClickAt(
-			key_rowEntry = ${workflowResourceValue},
-			locator1 = "CommerceEntry#EDIT_ROW",
-			value1 = "Edit");
-
-		WaitForElementPresent(
-			key_rowEntry = ${workflowResourceValue},
-			locator1 = "CommerceEntry#RESOURCE_TABLE_SELECT",
-			value1 = ${workflowDefinition});
-
-		Select(
-			key_rowEntry = ${workflowResourceValue},
-			locator1 = "CommerceEntry#RESOURCE_TABLE_SELECT",
-			value1 = ${workflowDefinition});
-
-		AssertClick(
-			key_rowEntry = ${workflowResourceValue},
-			locator1 = "CommerceEntry#RESOURCE_TABLE_SAVE",
-			value1 = "Save");
-
-		Alert.viewSuccessMessage();
 	}
 
 	@summary = "Default summary"
@@ -464,11 +428,11 @@ definition {
 			collectionName = "Layout Elements",
 			fragmentName = "Grid");
 
-		PageEditor.editLayoutGrid(
-			columnCount = 2,
-			panel = "General");
+		PageEditor.editLayoutGrid(columnCount = 2);
 
 		PageEditor.clickConfigurableField(fragmentName = "Grid");
+
+		PageEditor.gotoTab(tabName = "Browser");
 
 		DragAndDrop.dragAndDrop(
 			key_position = 2,

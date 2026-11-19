@@ -13,14 +13,14 @@ import com.liferay.portal.vulcan.extension.EntityExtensionHandler;
 import com.liferay.portal.vulcan.extension.ExtensionProvider;
 import com.liferay.portal.vulcan.extension.PropertyDefinition;
 
+import jakarta.validation.ValidationException;
+
 import java.io.Serializable;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
-
-import javax.validation.ValidationException;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -254,7 +254,8 @@ public class EntityExtensionHandlerTest {
 		).setExtendedProperties(
 			Mockito.eq(_COMPANY_ID), Mockito.eq(_USER_ID),
 			Mockito.eq(_CLASS_NAME), Mockito.eq(_OBJECT),
-			Mockito.eq(Collections.singletonMap(propertyName1, propertyValue1))
+			Mockito.eq(Collections.singletonMap(propertyName1, propertyValue1)),
+			Mockito.eq(false)
 		);
 
 		Mockito.verify(
@@ -262,7 +263,8 @@ public class EntityExtensionHandlerTest {
 		).setExtendedProperties(
 			Mockito.eq(_COMPANY_ID), Mockito.eq(_USER_ID),
 			Mockito.eq(_CLASS_NAME), Mockito.eq(_OBJECT),
-			Mockito.eq(Collections.singletonMap(propertyName2, propertyValue2))
+			Mockito.eq(Collections.singletonMap(propertyName2, propertyValue2)),
+			Mockito.eq(false)
 		);
 	}
 

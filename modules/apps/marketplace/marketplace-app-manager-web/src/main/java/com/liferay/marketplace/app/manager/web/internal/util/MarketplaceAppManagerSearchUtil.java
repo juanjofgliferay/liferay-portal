@@ -37,17 +37,21 @@ public class MarketplaceAppManagerSearchUtil {
 			bundles, StringPool.BLANK, BundleStateConstants.ANY, locale);
 
 		for (AppDisplay appDisplay : appDisplays) {
-			if (_hasAppDisplayKeywordsMatch(appDisplay, keywordsRegex)) {
-				results.add(appDisplay);
+			if (!_hasAppDisplayKeywordsMatch(appDisplay, keywordsRegex)) {
+				continue;
 			}
+
+			results.add(appDisplay);
 		}
 
 		// Bundle
 
 		for (Bundle bundle : bundles) {
-			if (_hasBundleKeywordsMatch(bundle, keywordsRegex)) {
-				results.add(bundle);
+			if (!_hasBundleKeywordsMatch(bundle, keywordsRegex)) {
+				continue;
 			}
+
+			results.add(bundle);
 		}
 
 		return results;
@@ -62,11 +66,7 @@ public class MarketplaceAppManagerSearchUtil {
 
 		Matcher matcher = pattern.matcher(string);
 
-		if (matcher.find()) {
-			return true;
-		}
-
-		return false;
+		return matcher.find();
 	}
 
 	private static String _getKeywordsRegex(String keywords) {
@@ -111,11 +111,7 @@ public class MarketplaceAppManagerSearchUtil {
 
 		String bundleName = headers.get(Constants.BUNDLE_NAME);
 
-		if (_containsMatches(keywordsRegex, bundleName)) {
-			return true;
-		}
-
-		return false;
+		return _containsMatches(keywordsRegex, bundleName);
 	}
 
 }

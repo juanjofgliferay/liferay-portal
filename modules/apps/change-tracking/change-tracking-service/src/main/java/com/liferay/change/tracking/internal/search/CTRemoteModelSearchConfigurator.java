@@ -6,10 +6,12 @@
 package com.liferay.change.tracking.internal.search;
 
 import com.liferay.change.tracking.model.CTRemote;
+import com.liferay.change.tracking.service.CTRemoteLocalService;
 import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.search.spi.model.index.contributor.ModelIndexerWriterContributor;
 import com.liferay.portal.search.spi.model.registrar.ModelSearchConfigurator;
 
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
@@ -45,9 +47,15 @@ public class CTRemoteModelSearchConfigurator
 		return true;
 	}
 
-	@Reference(
-		target = "(indexer.class.name=com.liferay.change.tracking.model.CTRemote)"
-	)
+	@Activate
+	protected void activate() {
+		_modelIndexWriterContributor = new ModelIndexerWriterContributor<>(
+			_ctRemoteLocalService::getIndexableActionableDynamicQuery);
+	}
+
+	@Reference
+	private CTRemoteLocalService _ctRemoteLocalService;
+
 	private ModelIndexerWriterContributor<CTRemote>
 		_modelIndexWriterContributor;
 

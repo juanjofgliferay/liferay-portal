@@ -60,19 +60,19 @@ public class CPOptionValueServiceWrapper
 	}
 
 	@Override
-	public CPOptionValue fetchByExternalReferenceCode(
-			String externalReferenceCode, long companyId)
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return _cpOptionValueService.fetchByExternalReferenceCode(
-			externalReferenceCode, companyId);
-	}
-
-	@Override
 	public CPOptionValue fetchCPOptionValue(long cpOptionValueId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _cpOptionValueService.fetchCPOptionValue(cpOptionValueId);
+	}
+
+	@Override
+	public CPOptionValue fetchCPOptionValueByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _cpOptionValueService.fetchCPOptionValueByExternalReferenceCode(
+			externalReferenceCode, companyId);
 	}
 
 	@Override
@@ -152,3 +152,4 @@ public class CPOptionValueServiceWrapper
 	private CPOptionValueService _cpOptionValueService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-2139151853

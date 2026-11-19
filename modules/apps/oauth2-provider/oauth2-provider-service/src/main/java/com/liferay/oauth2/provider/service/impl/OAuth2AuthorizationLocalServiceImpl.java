@@ -10,6 +10,7 @@ import com.liferay.oauth2.provider.exception.NoSuchOAuth2AuthorizationException;
 import com.liferay.oauth2.provider.model.OAuth2Authorization;
 import com.liferay.oauth2.provider.model.OAuth2ScopeGrant;
 import com.liferay.oauth2.provider.service.base.OAuth2AuthorizationLocalServiceBaseImpl;
+import com.liferay.oauth2.provider.util.OAuth2TokenContentUtil;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
 import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
@@ -18,6 +19,10 @@ import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.Time;
+
+import java.nio.charset.StandardCharsets;
+
+import java.security.MessageDigest;
 
 import java.util.Collection;
 import java.util.Date;
@@ -39,35 +44,14 @@ import org.osgi.service.component.annotations.Modified;
 public class OAuth2AuthorizationLocalServiceImpl
 	extends OAuth2AuthorizationLocalServiceBaseImpl {
 
-	/**
-	 * @deprecated As of Mueller (7.2.x), replaced by {@link
-	 *             #addOAuth2Authorization(long, long, String, long,long,
-	 *             String, Date, Date, String, String, String, Date, Date)}
-	 */
-	@Deprecated
 	@Override
 	public OAuth2Authorization addOAuth2Authorization(
 		long companyId, long userId, String userName, long oAuth2ApplicationId,
 		long oAuth2ApplicationScopeAliasesId, String accessTokenContent,
 		Date accessTokenCreateDate, Date accessTokenExpirationDate,
-		String remoteIPInfo, String refreshTokenContent,
-		Date refreshTokenCreateDate, Date refreshTokenExpirationDate) {
-
-		return addOAuth2Authorization(
-			companyId, userId, userName, oAuth2ApplicationId,
-			oAuth2ApplicationScopeAliasesId, accessTokenContent,
-			accessTokenCreateDate, accessTokenExpirationDate, null,
-			remoteIPInfo, refreshTokenContent, refreshTokenCreateDate,
-			refreshTokenExpirationDate);
-	}
-
-	@Override
-	public OAuth2Authorization addOAuth2Authorization(
-		long companyId, long userId, String userName, long oAuth2ApplicationId,
-		long oAuth2ApplicationScopeAliasesId, String accessTokenContent,
-		Date accessTokenCreateDate, Date accessTokenExpirationDate,
-		String remoteHostInfo, String remoteIPInfo, String refreshTokenContent,
-		Date refreshTokenCreateDate, Date refreshTokenExpirationDate) {
+		List<String> audiencesList, String remoteHostInfo, String remoteIPInfo,
+		String refreshTokenContent, Date refreshTokenCreateDate,
+		Date refreshTokenExpirationDate) {
 
 		long oAuth2AuthorizationId = counterLocalService.increment(
 			OAuth2Authorization.class.getName());
@@ -82,13 +66,16 @@ public class OAuth2AuthorizationLocalServiceImpl
 		oAuth2Authorization.setOAuth2ApplicationId(oAuth2ApplicationId);
 		oAuth2Authorization.setOAuth2ApplicationScopeAliasesId(
 			oAuth2ApplicationScopeAliasesId);
-		oAuth2Authorization.setAccessTokenContent(accessTokenContent);
+		oAuth2Authorization.setAccessTokenContent(
+			OAuth2TokenContentUtil.getTokenContent(accessTokenContent));
 		oAuth2Authorization.setAccessTokenCreateDate(accessTokenCreateDate);
 		oAuth2Authorization.setAccessTokenExpirationDate(
 			accessTokenExpirationDate);
+		oAuth2Authorization.setAudiencesList(audiencesList);
 		oAuth2Authorization.setRemoteHostInfo(remoteHostInfo);
 		oAuth2Authorization.setRemoteIPInfo(remoteIPInfo);
-		oAuth2Authorization.setRefreshTokenContent(refreshTokenContent);
+		oAuth2Authorization.setRefreshTokenContent(
+			OAuth2TokenContentUtil.getTokenContent(refreshTokenContent));
 		oAuth2Authorization.setRefreshTokenCreateDate(refreshTokenCreateDate);
 		oAuth2Authorization.setRefreshTokenExpirationDate(
 			refreshTokenExpirationDate);
@@ -137,8 +124,18 @@ public class OAuth2AuthorizationLocalServiceImpl
 	}
 
 	@Override
+	public void deleteOAuth2Authorizations(
+		long userId, long oAuth2ApplicationId) {
+
+		oAuth2AuthorizationPersistence.removeByU_O(userId, oAuth2ApplicationId);
+	}
+
+	@Override
 	public OAuth2Authorization fetchOAuth2AuthorizationByAccessTokenContent(
 		String accessTokenContent) {
+
+		accessTokenContent = OAuth2TokenContentUtil.getTokenContent(
+			accessTokenContent);
 
 		List<OAuth2Authorization> oAuth2Authorizations =
 			oAuth2AuthorizationPersistence.findByC_ATCH(
@@ -146,8 +143,13 @@ public class OAuth2AuthorizationLocalServiceImpl
 				accessTokenContent.hashCode());
 
 		for (OAuth2Authorization oAuth2Authorization : oAuth2Authorizations) {
-			if (accessTokenContent.equals(
-					oAuth2Authorization.getAccessTokenContent())) {
+			String currentAccessTokenContent =
+				oAuth2Authorization.getAccessTokenContent();
+
+			if (MessageDigest.isEqual(
+					accessTokenContent.getBytes(StandardCharsets.UTF_8),
+					currentAccessTokenContent.getBytes(
+						StandardCharsets.UTF_8))) {
 
 				return oAuth2Authorization;
 			}
@@ -160,14 +162,22 @@ public class OAuth2AuthorizationLocalServiceImpl
 	public OAuth2Authorization fetchOAuth2AuthorizationByRefreshTokenContent(
 		String refreshTokenContent) {
 
+		refreshTokenContent = OAuth2TokenContentUtil.getTokenContent(
+			refreshTokenContent);
+
 		List<OAuth2Authorization> oAuth2Authorizations =
 			oAuth2AuthorizationPersistence.findByC_RTCH(
 				CompanyThreadLocal.getCompanyId(),
 				refreshTokenContent.hashCode());
 
 		for (OAuth2Authorization oAuth2Authorization : oAuth2Authorizations) {
-			if (refreshTokenContent.equals(
-					oAuth2Authorization.getRefreshTokenContent())) {
+			String currentRefreshTokenContent =
+				oAuth2Authorization.getRefreshTokenContent();
+
+			if (MessageDigest.isEqual(
+					refreshTokenContent.getBytes(StandardCharsets.UTF_8),
+					currentRefreshTokenContent.getBytes(
+						StandardCharsets.UTF_8))) {
 
 				return oAuth2Authorization;
 			}

@@ -9,6 +9,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.reports.engine.console.model.Entry;
 
@@ -273,17 +274,6 @@ public class EntryLocalServiceUtil {
 		return getService().getEntries(start, end);
 	}
 
-	public static List<Entry> getEntries(
-		long groupId, String definitionName, String userName,
-		java.util.Date createDateGT, java.util.Date createDateLT,
-		boolean andSearch, int start, int end,
-		OrderByComparator<Entry> orderByComparator) {
-
-		return getService().getEntries(
-			groupId, definitionName, userName, createDateGT, createDateLT,
-			andSearch, start, end, orderByComparator);
-	}
-
 	/**
 	 * Returns the number of entries.
 	 *
@@ -291,16 +281,6 @@ public class EntryLocalServiceUtil {
 	 */
 	public static int getEntriesCount() {
 		return getService().getEntriesCount();
-	}
-
-	public static int getEntriesCount(
-		long groupId, String definitionName, String userName,
-		java.util.Date createDateGT, java.util.Date createDateLT,
-		boolean andSearch) {
-
-		return getService().getEntriesCount(
-			groupId, definitionName, userName, createDateGT, createDateLT,
-			andSearch);
 	}
 
 	/**
@@ -384,13 +364,11 @@ public class EntryLocalServiceUtil {
 	}
 
 	public static EntryLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(EntryLocalService service) {
-		_service = service;
-	}
-
-	private static volatile EntryLocalService _service;
+	private static final Snapshot<EntryLocalService> _serviceSnapshot =
+		new Snapshot<>(EntryLocalServiceUtil.class, EntryLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-516966523

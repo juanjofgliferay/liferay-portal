@@ -16,22 +16,36 @@ import org.dom4j.Element;
 public class RebaseFailureMessageGenerator extends BaseFailureMessageGenerator {
 
 	@Override
-	public Element getMessageElement(Build build) {
-		String consoleText = build.getConsoleText();
-
+	public String getMessage(String consoleText) {
 		if (!consoleText.contains(_TOKEN_COULD_NOT_APPLY) ||
-			!consoleText.contains(_TOKEN_UNABLE_TO_REBASE)) {
+			(!consoleText.contains(_TOKEN_MERGE_CONFLICT_IN) &&
+			 !consoleText.contains(_TOKEN_UNABLE_TO_REBASE))) {
 
 			return null;
 		}
 
-		int start = consoleText.lastIndexOf(_TOKEN_UNABLE_TO_REBASE);
+		int start = consoleText.lastIndexOf(_TOKEN_MERGE_CONFLICT_IN);
+
+		if (consoleText.contains(_TOKEN_UNABLE_TO_REBASE)) {
+			start = consoleText.lastIndexOf(_TOKEN_UNABLE_TO_REBASE);
+		}
 
 		start = consoleText.lastIndexOf("\n", start);
 
 		int end = consoleText.indexOf(_TOKEN_COULD_NOT_APPLY, start);
 
 		end = consoleText.indexOf("\n", end);
+
+		return getConsoleTextSnippet(consoleText, false, start, end);
+	}
+
+	@Override
+	public Element getMessageElement(Build build) {
+		Element messageElement = super.getMessageElement(build);
+
+		if (messageElement == null) {
+			return null;
+		}
 
 		return Dom4JUtil.getNewElement(
 			"div", null,
@@ -42,10 +56,12 @@ public class RebaseFailureMessageGenerator extends BaseFailureMessageGenerator {
 				Dom4JUtil.getNewElement(
 					"strong", null,
 					getBaseBranchAnchorElement(build.getTopLevelBuild())),
-				getConsoleTextSnippetElement(consoleText, false, start, end)));
+				messageElement));
 	}
 
-	private static final String _TOKEN_COULD_NOT_APPLY = "Could not apply";
+	private static final String _TOKEN_COULD_NOT_APPLY = "could not apply";
+
+	private static final String _TOKEN_MERGE_CONFLICT_IN = "Merge conflict in";
 
 	private static final String _TOKEN_UNABLE_TO_REBASE = "Unable to rebase";
 

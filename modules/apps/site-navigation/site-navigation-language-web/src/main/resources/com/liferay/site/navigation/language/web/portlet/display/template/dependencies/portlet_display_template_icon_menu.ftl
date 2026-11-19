@@ -1,12 +1,20 @@
 <#if entries?has_content>
-	<#assign normalizedDefaultLanguageId = stringUtil.replace(languageId, "_", "-") />
+	<#assign
+		normalizedDefaultLanguageId = stringUtil.replace(languageId, "_", "-")
+
+		triggerAriaLabel = languageUtil.format(locale, "select-a-language.-current-language-x", normalizedDefaultLanguageId, false)
+
+		triggerTitle = languageUtil.get(locale, "select-a-language")
+	/>
 
 	<div class="text-truncate">
 		<@liferay_ui["icon-menu"]
 			direction="left-side"
 			icon=stringUtil.toLowerCase(normalizedDefaultLanguageId)
 			markupView="lexicon"
+			message=triggerTitle
 			showWhenSingleIcon=true
+			triggerAriaLabel=triggerAriaLabel
 			triggerLabel=normalizedDefaultLanguageId
 			triggerType="button"
 		>
@@ -27,6 +35,7 @@
 						iconCssClass="inline-item inline-item-before"
 						markupView="lexicon"
 						message=displayName
+						method="get"
 						url=entry.getURL()
 					/>
 				</#if>

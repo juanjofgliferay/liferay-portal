@@ -33,25 +33,26 @@ public class SystemEventLocalServiceWrapper
 
 	@Override
 	public SystemEvent addSystemEvent(
-			long userId, long groupId, String className, long classPK,
-			String classUuid, String referrerClassName, int type,
-			String extraData)
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return _systemEventLocalService.addSystemEvent(
-			userId, groupId, className, classPK, classUuid, referrerClassName,
-			type, extraData);
-	}
-
-	@Override
-	public SystemEvent addSystemEvent(
-			long companyId, String className, long classPK, String classUuid,
+			long userId, long groupId, String classExternalReferenceCode,
+			String className, long classPK, String classUuid,
 			String referrerClassName, int type, String extraData)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _systemEventLocalService.addSystemEvent(
-			companyId, className, classPK, classUuid, referrerClassName, type,
-			extraData);
+			userId, groupId, classExternalReferenceCode, className, classPK,
+			classUuid, referrerClassName, type, extraData);
+	}
+
+	@Override
+	public SystemEvent addSystemEvent(
+			long companyId, String classExternalReferenceCode, String className,
+			long classPK, String classUuid, String referrerClassName, int type,
+			String extraData)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _systemEventLocalService.addSystemEvent(
+			companyId, classExternalReferenceCode, className, classPK,
+			classUuid, referrerClassName, type, extraData);
 	}
 
 	/**
@@ -334,14 +335,6 @@ public class SystemEventLocalServiceWrapper
 
 	@Override
 	public java.util.List<SystemEvent> getSystemEvents(
-		long groupId, long classNameId, long classPK) {
-
-		return _systemEventLocalService.getSystemEvents(
-			groupId, classNameId, classPK);
-	}
-
-	@Override
-	public java.util.List<SystemEvent> getSystemEvents(
 		long groupId, long classNameId, long classPK, int type) {
 
 		return _systemEventLocalService.getSystemEvents(
@@ -420,3 +413,4 @@ public class SystemEventLocalServiceWrapper
 	private SystemEventLocalService _systemEventLocalService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:484107589

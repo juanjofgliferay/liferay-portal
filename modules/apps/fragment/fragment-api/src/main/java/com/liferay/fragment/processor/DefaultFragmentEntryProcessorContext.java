@@ -7,16 +7,21 @@ package com.liferay.fragment.processor;
 
 import com.liferay.asset.kernel.model.AssetRendererFactory;
 import com.liferay.fragment.constants.FragmentEntryLinkConstants;
+import com.liferay.fragment.input.template.parser.InputTemplateNode;
 import com.liferay.info.form.InfoForm;
 import com.liferay.info.item.InfoItemIdentifier;
 import com.liferay.info.item.InfoItemReference;
-import com.liferay.portal.kernel.uuid.PortalUUIDUtil;
+import com.liferay.portal.kernel.util.PortalUtil;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+import java.io.Serializable;
+
+import java.util.LinkedHashMap;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * @author Pavel Savinov
@@ -25,15 +30,38 @@ public class DefaultFragmentEntryProcessorContext
 	implements FragmentEntryProcessorContext {
 
 	public DefaultFragmentEntryProcessorContext(
-		HttpServletRequest httpServletRequest,
-		HttpServletResponse httpServletResponse, String mode, Locale locale) {
+		long companyId, HttpServletRequest httpServletRequest,
+		HttpServletResponse httpServletResponse, Locale locale, String mode,
+		long scopeGroupId) {
 
+		_companyId = companyId;
 		_httpServletRequest = httpServletRequest;
 		_httpServletResponse = httpServletResponse;
-		_mode = mode;
 		_locale = locale;
+		_mode = mode;
+		_scopeGroupId = scopeGroupId;
 
-		_fragmentElementId = "fragment-" + PortalUUIDUtil.generate();
+		_fragmentElementId = "fragment-" + PortalUtil.getUniqueElementId();
+	}
+
+	@Override
+	public Serializable getAttribute(String name) {
+		return _attributes.get(name);
+	}
+
+	@Override
+	public Map<String, Serializable> getAttributes() {
+		return _attributes;
+	}
+
+	@Override
+	public long getCompanyId() {
+		return _companyId;
+	}
+
+	@Override
+	public Object getContextInfoItem() {
+		return _contextInfoItem;
 	}
 
 	@Override
@@ -59,6 +87,11 @@ public class DefaultFragmentEntryProcessorContext
 	@Override
 	public InfoForm getInfoForm() {
 		return _infoForm;
+	}
+
+	@Override
+	public InputTemplateNode getInputTemplateNode() {
+		return _inputTemplateNode;
 	}
 
 	@Override
@@ -92,35 +125,50 @@ public class DefaultFragmentEntryProcessorContext
 	}
 
 	@Override
+	public long getScopeGroupId() {
+		return _scopeGroupId;
+	}
+
+	@Override
 	public long[] getSegmentsEntryIds() {
 		return _segmentsEntryIds;
 	}
 
 	@Override
-	public boolean isEditMode() {
-		if (Objects.equals(getMode(), FragmentEntryLinkConstants.EDIT)) {
-			return true;
-		}
+	public boolean isDisablePortletRender() {
+		return _disablePortletRender;
+	}
 
-		return false;
+	@Override
+	public boolean isEditMode() {
+		return Objects.equals(getMode(), FragmentEntryLinkConstants.EDIT);
 	}
 
 	@Override
 	public boolean isIndexMode() {
-		if (Objects.equals(getMode(), FragmentEntryLinkConstants.INDEX)) {
-			return true;
-		}
+		return Objects.equals(getMode(), FragmentEntryLinkConstants.INDEX);
+	}
 
-		return false;
+	@Override
+	public boolean isPreviewMode() {
+		return Objects.equals(getMode(), FragmentEntryLinkConstants.PREVIEW);
 	}
 
 	@Override
 	public boolean isViewMode() {
-		if (Objects.equals(getMode(), FragmentEntryLinkConstants.VIEW)) {
-			return true;
-		}
+		return Objects.equals(getMode(), FragmentEntryLinkConstants.VIEW);
+	}
 
-		return false;
+	public void setAttribute(String name, Serializable value) {
+		_attributes.put(name, value);
+	}
+
+	public void setAttributes(Map<String, Serializable> attributes) {
+		_attributes = attributes;
+	}
+
+	public void setContextInfoItem(Object contextInfoItem) {
+		_contextInfoItem = contextInfoItem;
 	}
 
 	public void setContextInfoItemReference(
@@ -129,12 +177,20 @@ public class DefaultFragmentEntryProcessorContext
 		_infoItemReference = infoItemReference;
 	}
 
+	public void setDisablePortletRender(boolean disablePortletRender) {
+		_disablePortletRender = disablePortletRender;
+	}
+
 	public void setFragmentElementId(String fragmentElementId) {
 		_fragmentElementId = fragmentElementId;
 	}
 
 	public void setInfoForm(InfoForm infoForm) {
 		_infoForm = infoForm;
+	}
+
+	public void setInputTemplateNode(InputTemplateNode inputTemplateNode) {
+		_inputTemplateNode = inputTemplateNode;
 	}
 
 	public void setPreviewClassNameId(long previewClassNameId) {
@@ -157,17 +213,23 @@ public class DefaultFragmentEntryProcessorContext
 		_segmentsEntryIds = segmentsEntryIds;
 	}
 
+	private Map<String, Serializable> _attributes = new LinkedHashMap<>();
+	private final long _companyId;
+	private Object _contextInfoItem;
+	private boolean _disablePortletRender;
 	private String _fragmentElementId;
 	private final HttpServletRequest _httpServletRequest;
 	private final HttpServletResponse _httpServletResponse;
 	private InfoForm _infoForm;
 	private InfoItemReference _infoItemReference;
+	private InputTemplateNode _inputTemplateNode;
 	private final Locale _locale;
 	private final String _mode;
 	private long _previewClassNameId;
 	private long _previewClassPK;
 	private int _previewType = AssetRendererFactory.TYPE_LATEST_APPROVED;
 	private String _previewVersion = InfoItemIdentifier.VERSION_LATEST_APPROVED;
+	private final long _scopeGroupId;
 	private long[] _segmentsEntryIds = new long[0];
 
 }

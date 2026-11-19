@@ -30,13 +30,6 @@ public class JSONFactoryUtil {
 		return _jsonFactory.convertXMLtoJSONMLObject(xml);
 	}
 
-	public static JSONTransformer createJavaScriptNormalizerJSONTransformer(
-		List<String> javaScriptAttributes) {
-
-		return _jsonFactory.createJavaScriptNormalizerJSONTransformer(
-			javaScriptAttributes);
-	}
-
 	public static JSONArray createJSONArray() {
 		return _jsonFactory.createJSONArray();
 	}
@@ -73,6 +66,13 @@ public class JSONFactoryUtil {
 
 	public static JSONSerializer createJSONSerializer() {
 		return _jsonFactory.createJSONSerializer();
+	}
+
+	public static JSONTransformer createJavaScriptNormalizerJSONTransformer(
+		List<String> javaScriptAttributes) {
+
+		return _jsonFactory.createJavaScriptNormalizerJSONTransformer(
+			javaScriptAttributes);
 	}
 
 	public static Object deserialize(JSONObject jsonObject) {
@@ -127,12 +127,24 @@ public class JSONFactoryUtil {
 		return _jsonFactory.looseSerializeDeep(object, jsonTransformer, clazz);
 	}
 
+	public static JSONObject safeCreateJSONObject(String json) {
+		return _jsonFactory.safeCreateJSONObject(json);
+	}
+
+	public static JSONObject safeCreateJSONObject(String json, boolean strict) {
+		return _jsonFactory.safeCreateJSONObject(json, strict);
+	}
+
 	public static String serialize(Object object) {
 		return _jsonFactory.serialize(object);
 	}
 
 	public static String serializeThrowable(Throwable throwable) {
 		return _jsonFactory.serializeThrowable(throwable);
+	}
+
+	public static String toString(JSONObject jsonObject) {
+		return _jsonFactory.toString(jsonObject);
 	}
 
 	public void setJSONFactory(JSONFactory jsonFactory) {

@@ -19,18 +19,8 @@ import org.json.JSONObject;
 public class PortalAppReleaseJob extends BaseJob implements PortalTestClassJob {
 
 	@Override
-	public Set<String> getDistTypes() {
+	public Set<String> getAppServerTypes() {
 		return Collections.emptySet();
-	}
-
-	@Override
-	public List<String> getJobPropertyOptions() {
-		List<String> jobPropertyOptions = super.getJobPropertyOptions();
-
-		jobPropertyOptions.add(
-			_portalGitWorkingDirectory.getUpstreamBranchName());
-
-		return jobPropertyOptions;
 	}
 
 	@Override
@@ -45,6 +35,16 @@ public class PortalAppReleaseJob extends BaseJob implements PortalTestClassJob {
 			"portal_upstream_branch_name", _portalUpstreamBranchName);
 
 		return jsonObject;
+	}
+
+	@Override
+	public List<String> getJobPropertyOptions() {
+		List<String> jobPropertyOptions = super.getJobPropertyOptions();
+
+		jobPropertyOptions.add(
+			_portalGitWorkingDirectory.getUpstreamBranchName());
+
+		return jobPropertyOptions;
 	}
 
 	@Override

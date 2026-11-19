@@ -6,9 +6,6 @@
 package com.liferay.product.navigation.applications.menu.web.internal.product.navigation.control.menu;
 
 import com.liferay.application.list.PanelAppRegistry;
-import com.liferay.application.list.PanelCategory;
-import com.liferay.application.list.PanelCategoryRegistry;
-import com.liferay.application.list.constants.PanelCategoryKeys;
 import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
@@ -20,8 +17,8 @@ import com.liferay.product.navigation.control.menu.BaseJSPProductNavigationContr
 import com.liferay.product.navigation.control.menu.ProductNavigationControlMenuEntry;
 import com.liferay.product.navigation.control.menu.constants.ProductNavigationControlMenuCategoryKeys;
 
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -41,37 +38,28 @@ public class ApplicationsMenuApplicationMenuProductNavigationControlMenuEntry
 
 	@Override
 	public String getIconJspPath() {
-		return "/applications_menu/applications_menu.jsp";
+		return "/applications_menu/applications_menu_control_menu_entry.jsp";
 	}
 
 	@Override
 	public boolean isShow(HttpServletRequest httpServletRequest)
 		throws PortalException {
 
+		String layoutMode = ParamUtil.getString(
+			httpServletRequest, "p_l_mode", Constants.VIEW);
+
+		if (layoutMode.equals(Constants.EDIT) ||
+			layoutMode.equals(Constants.HISTORY)) {
+
+			return false;
+		}
+
 		ThemeDisplay themeDisplay =
 			(ThemeDisplay)httpServletRequest.getAttribute(
 				WebKeys.THEME_DISPLAY);
 
-		if (!ApplicationsMenuUtil.isEnableApplicationsMenu(
-				themeDisplay.getCompanyId(), _configurationProvider)) {
-
-			return false;
-		}
-
-		String layoutMode = ParamUtil.getString(
-			httpServletRequest, "p_l_mode", Constants.VIEW);
-
-		if (layoutMode.equals(Constants.EDIT)) {
-			return false;
-		}
-
-		if (ApplicationsMenuUtil.hasChildPanelApps(
-				_panelAppRegistry, _panelCategoryRegistry, themeDisplay)) {
-
-			return true;
-		}
-
-		return false;
+		return ApplicationsMenuUtil.hasChildPanelApps(
+			_panelAppRegistry, themeDisplay);
 	}
 
 	@Override
@@ -84,12 +72,6 @@ public class ApplicationsMenuApplicationMenuProductNavigationControlMenuEntry
 
 	@Reference
 	private PanelAppRegistry _panelAppRegistry;
-
-	@Reference(target = "(panel.category.key=" + PanelCategoryKeys.HIDDEN + ")")
-	private PanelCategory _panelCategory;
-
-	@Reference
-	private PanelCategoryRegistry _panelCategoryRegistry;
 
 	@Reference(
 		target = "(osgi.web.symbolicname=com.liferay.product.navigation.applications.menu.web)"

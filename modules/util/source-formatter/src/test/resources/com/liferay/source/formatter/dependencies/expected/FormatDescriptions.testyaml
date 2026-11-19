@@ -1,0 +1,9 @@
+properties:
+    dateCreated:
+        description:
+            The external link's creation date.
+        type: string
+    domain:
+        description:
+            Liferay is an all-in-one DXP, LCAP, and Commerce platform. This chart provides cloud infrastructure resource definitions to support Liferay cloud native infrastructure.
+        type: string

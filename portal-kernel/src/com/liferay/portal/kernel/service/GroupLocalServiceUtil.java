@@ -52,33 +52,21 @@ public class GroupLocalServiceUtil {
 	}
 
 	public static Group addGroup(
-			long userId, long parentGroupId, String className, long classPK,
-			long liveGroupId, Map<java.util.Locale, String> nameMap,
+			String externalReferenceCode, long userId, long parentGroupId,
+			String className, long classPK, long liveGroupId,
+			Map<java.util.Locale, String> nameMap,
 			Map<java.util.Locale, String> descriptionMap, int type,
-			boolean manualMembership, int membershipRestriction,
-			String friendlyURL, boolean site, boolean inheritContent,
-			boolean active, ServiceContext serviceContext)
-		throws PortalException {
-
-		return getService().addGroup(
-			userId, parentGroupId, className, classPK, liveGroupId, nameMap,
-			descriptionMap, type, manualMembership, membershipRestriction,
-			friendlyURL, site, inheritContent, active, serviceContext);
-	}
-
-	public static Group addGroup(
-			long userId, long parentGroupId, String className, long classPK,
-			long liveGroupId, Map<java.util.Locale, String> nameMap,
-			Map<java.util.Locale, String> descriptionMap, int type,
-			boolean manualMembership, int membershipRestriction,
-			String friendlyURL, boolean site, boolean active,
+			String typeSettings, boolean manualMembership,
+			int membershipRestriction, String friendlyURL, boolean site,
+			boolean inheritContent, boolean active,
 			ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().addGroup(
-			userId, parentGroupId, className, classPK, liveGroupId, nameMap,
-			descriptionMap, type, manualMembership, membershipRestriction,
-			friendlyURL, site, active, serviceContext);
+			externalReferenceCode, userId, parentGroupId, className, classPK,
+			liveGroupId, nameMap, descriptionMap, type, typeSettings,
+			manualMembership, membershipRestriction, friendlyURL, site,
+			inheritContent, active, serviceContext);
 	}
 
 	public static boolean addOrganizationGroup(
@@ -172,19 +160,6 @@ public class GroupLocalServiceUtil {
 
 	public static boolean addUserGroups(long userId, long[] groupIds) {
 		return getService().addUserGroups(userId, groupIds);
-	}
-
-	/**
-	 * Adds a company group if it does not exist. This method is typically used
-	 * when a virtual host is added.
-	 *
-	 * @param companyId the primary key of the company
-	 * @throws PortalException if a portal exception occurred
-	 */
-	public static void checkCompanyGroup(long companyId)
-		throws PortalException {
-
-		getService().checkCompanyGroup(companyId);
 	}
 
 	public static Group checkScopeGroup(
@@ -537,9 +512,7 @@ public class GroupLocalServiceUtil {
 	 matching group could not be found
 	 * @throws PortalException if a portal exception occurred
 	 */
-	public static Group fetchUserPersonalSiteGroup(long companyId)
-		throws PortalException {
-
+	public static Group fetchUserPersonalSiteGroup(long companyId) {
 		return getService().fetchUserPersonalSiteGroup(companyId);
 	}
 
@@ -547,10 +520,6 @@ public class GroupLocalServiceUtil {
 		getActionableDynamicQuery() {
 
 		return getService().getActionableDynamicQuery();
-	}
-
-	public static List<Long> getActiveGroupIds(long userId) {
-		return getService().getActiveGroupIds(userId);
 	}
 
 	/**
@@ -1056,24 +1025,6 @@ public class GroupLocalServiceUtil {
 	}
 
 	/**
-	 * Returns the number of groups that are children or the parent group and
-	 * that have at least one layout
-	 *
-	 * @param companyId the primary key of the company
-	 * @param parentGroupId the primary key of the parent group
-	 * @param site whether the group is to be associated with a main site
-	 * @param active whether to return only active groups, or only inactive
-	 groups
-	 * @return the number of matching groups
-	 */
-	public static int getLayoutsGroupsCount(
-		long companyId, long parentGroupId, boolean site, boolean active) {
-
-		return getService().getLayoutsGroupsCount(
-			companyId, parentGroupId, site, active);
-	}
-
-	/**
 	 * Returns all live groups.
 	 *
 	 * @return all live groups
@@ -1221,19 +1172,6 @@ public class GroupLocalServiceUtil {
 	}
 
 	/**
-	 * Returns the staging group.
-	 *
-	 * @param liveGroupId the primary key of the live group
-	 * @return the staging group
-	 * @throws PortalException if a portal exception occurred
-	 */
-	public static Group getStagingGroup(long liveGroupId)
-		throws PortalException {
-
-		return getService().getStagingGroup(liveGroupId);
-	}
-
-	/**
 	 * Returns the group directly associated with the user.
 	 *
 	 * @param companyId the primary key of the company
@@ -1363,6 +1301,21 @@ public class GroupLocalServiceUtil {
 			userId, start, end, orderByComparator);
 	}
 
+	public static List<Group> getUserGroups(
+			com.liferay.portal.kernel.model.User user, boolean inherit)
+		throws PortalException {
+
+		return getService().getUserGroups(user, inherit);
+	}
+
+	public static List<Group> getUserGroups(
+			com.liferay.portal.kernel.model.User user, boolean inherit,
+			int start, int end)
+		throws PortalException {
+
+		return getService().getUserGroups(user, inherit, start, end);
+	}
+
 	public static int getUserGroupsCount(long userId) {
 		return getService().getUserGroupsCount(userId);
 	}
@@ -1375,8 +1328,7 @@ public class GroupLocalServiceUtil {
 	 * @throws PortalException if a portal exception occurred
 	 */
 	public static List<Group> getUserGroupsGroups(
-			List<com.liferay.portal.kernel.model.UserGroup> userGroups)
-		throws PortalException {
+		List<com.liferay.portal.kernel.model.UserGroup> userGroups) {
 
 		return getService().getUserGroupsGroups(userGroups);
 	}
@@ -1391,6 +1343,12 @@ public class GroupLocalServiceUtil {
 		List<com.liferay.portal.kernel.model.UserGroup> userGroups) {
 
 		return getService().getUserGroupsRelatedGroups(userGroups);
+	}
+
+	public static Map<Long, long[]> getUserInheritedSiteGroupIds(
+		long companyId) {
+
+		return getService().getUserInheritedSiteGroupIds(companyId);
 	}
 
 	/**
@@ -1484,17 +1442,6 @@ public class GroupLocalServiceUtil {
 		return getService().hasRoleGroups(roleId);
 	}
 
-	/**
-	 * Returns <code>true</code> if the live group has a staging group.
-	 *
-	 * @param liveGroupId the primary key of the live group
-	 * @return <code>true</code> if the live group has a staging group;
-	 <code>false</code> otherwise
-	 */
-	public static boolean hasStagingGroup(long liveGroupId) {
-		return getService().hasStagingGroup(liveGroupId);
-	}
-
 	public static boolean hasUserGroup(long userId, long groupId) {
 		return getService().hasUserGroup(userId, groupId);
 	}
@@ -1531,6 +1478,10 @@ public class GroupLocalServiceUtil {
 
 	public static boolean isLiveGroupActive(Group group) {
 		return getService().isLiveGroupActive(group);
+	}
+
+	public static boolean isMaintenanceMode(Group group) {
+		return getService().isMaintenanceMode(group);
 	}
 
 	/**
@@ -1574,40 +1525,6 @@ public class GroupLocalServiceUtil {
 	 */
 	public static void rebuildTree(long companyId) throws PortalException {
 		getService().rebuildTree(companyId);
-	}
-
-	/**
-	 * Returns an ordered range of all the company's groups, optionally
-	 * including the user's inherited organization groups and user groups.
-	 * System and staged groups are not included.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end -
-	 * start</code> instances. <code>start</code> and <code>end</code> are not
-	 * primary keys, they are indexes in the result set. Thus, <code>0</code>
-	 * refers to the first result in the set. Setting both <code>start</code>
-	 * and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full
-	 * result set.
-	 * </p>
-	 *
-	 * @param companyId the primary key of the company
-	 * @param params the finder params (optionally <code>null</code>). To
-	 include a user's organizations, inherited organizations, and user
-	 groups in the search, add an entry with key
-	 &quot;usersGroups&quot; mapped to the user's ID and an entry with
-	 key &quot;inherit&quot; mapped to a non-<code>null</code> object.
-	 For more information see {@link
-	 com.liferay.portal.kernel.service.persistence.GroupFinder}.
-	 * @param start the lower bound of the range of groups to return
-	 * @param end the upper bound of the range of groups to return (not
-	 inclusive)
-	 * @return the matching groups ordered by name
-	 */
-	public static List<Group> search(
-		long companyId, java.util.LinkedHashMap<String, Object> params,
-		int start, int end) {
-
-		return getService().search(companyId, params, start, end);
 	}
 
 	/**
@@ -2328,35 +2245,6 @@ public class GroupLocalServiceUtil {
 	}
 
 	/**
-	 * Returns the number of groups belonging to the parent group and immediate
-	 * organization groups that match the name and description, optionally
-	 * including the user's inherited organization groups and user groups.
-	 * System and staged groups are not included.
-	 *
-	 * @param companyId the primary key of the company
-	 * @param parentGroupId the primary key of the parent group
-	 * @param name the group's name (optionally <code>null</code>)
-	 * @param description the group's description (optionally
-	 <code>null</code>)
-	 * @param params the finder params (optionally <code>null</code>). To
-	 include the user's inherited organization groups and user groups
-	 in the search, add entries having &quot;usersGroups&quot; and
-	 &quot;inherit&quot; as keys mapped to the the user's ID. For more
-	 information see {@link
-	 com.liferay.portal.kernel.service.persistence.GroupFinder}.
-	 * @param andOperator whether every field must match its keywords, or just
-	 one field.
-	 * @return the number of matching groups
-	 */
-	public static int searchCount(
-		long companyId, long parentGroupId, String name, String description,
-		java.util.LinkedHashMap<String, Object> params, boolean andOperator) {
-
-		return getService().searchCount(
-			companyId, parentGroupId, name, description, params, andOperator);
-	}
-
-	/**
 	 * Returns the number of groups belonging to the parent group that match the
 	 * class name IDs, and keywords, optionally including the user's inherited
 	 * organization groups and user groups. System and staged groups are not
@@ -2441,35 +2329,6 @@ public class GroupLocalServiceUtil {
 
 		return getService().searchCount(
 			companyId, classNameIds, keywords, params);
-	}
-
-	/**
-	 * Returns the number of groups that match the class name IDs, name, and
-	 * description, optionally including the user's inherited organization
-	 * groups and user groups. System and staged groups are not included.
-	 *
-	 * @param companyId the primary key of the company
-	 * @param classNameIds the primary keys of the class names of the entities
-	 the groups are related to (optionally <code>null</code>)
-	 * @param name the group's name (optionally <code>null</code>)
-	 * @param description the group's description (optionally
-	 <code>null</code>)
-	 * @param params the finder params (optionally <code>null</code>). To
-	 include the user's inherited organization groups and user groups
-	 in the search, add entries having &quot;usersGroups&quot; and
-	 &quot;inherit&quot; as keys mapped to the the user's ID. For more
-	 information see {@link
-	 com.liferay.portal.kernel.service.persistence.GroupFinder}.
-	 * @param andOperator whether every field must match its keywords, or just
-	 one field.
-	 * @return the number of matching groups
-	 */
-	public static int searchCount(
-		long companyId, long[] classNameIds, String name, String description,
-		java.util.LinkedHashMap<String, Object> params, boolean andOperator) {
-
-		return getService().searchCount(
-			companyId, classNameIds, name, description, params, andOperator);
 	}
 
 	/**
@@ -2613,13 +2472,14 @@ public class GroupLocalServiceUtil {
 			long groupId, long parentGroupId,
 			Map<java.util.Locale, String> nameMap,
 			Map<java.util.Locale, String> descriptionMap, int type,
-			boolean manualMembership, int membershipRestriction,
-			String friendlyURL, boolean inheritContent, boolean active,
+			String typeSettings, boolean manualMembership,
+			int membershipRestriction, String friendlyURL,
+			boolean inheritContent, boolean active,
 			ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().updateGroup(
-			groupId, parentGroupId, nameMap, descriptionMap, type,
+			groupId, parentGroupId, nameMap, descriptionMap, type, typeSettings,
 			manualMembership, membershipRestriction, friendlyURL,
 			inheritContent, active, serviceContext);
 	}
@@ -2675,3 +2535,4 @@ public class GroupLocalServiceUtil {
 	private static volatile GroupLocalService _service;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-384579219

@@ -12,11 +12,11 @@ import com.liferay.portal.kernel.servlet.taglib.DynamicInclude;
 import com.liferay.portal.kernel.servlet.taglib.aui.ScriptData;
 import com.liferay.portal.kernel.util.StringUtil;
 
-import java.io.IOException;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -24,7 +24,10 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Leonardo Barros
  */
-@Component(service = DynamicInclude.class)
+@Component(
+	property = "dynamic.include.key=com.liferay.analytics.web#/dynamic_include/top_head.jsp#post",
+	service = DynamicInclude.class
+)
 public class DDMFormAnalyticsTopHeadJSPDynamicInclude
 	extends BaseJSPDynamicInclude {
 
@@ -45,12 +48,6 @@ public class DDMFormAnalyticsTopHeadJSPDynamicInclude
 			null, _TMPL_CONTENT, null, ScriptData.ModulesType.AUI);
 
 		scriptData.writeTo(httpServletResponse.getWriter());
-	}
-
-	@Override
-	public void register(DynamicIncludeRegistry dynamicIncludeRegistry) {
-		dynamicIncludeRegistry.register(
-			"/html/common/themes/top_head.jsp#post");
 	}
 
 	@Override

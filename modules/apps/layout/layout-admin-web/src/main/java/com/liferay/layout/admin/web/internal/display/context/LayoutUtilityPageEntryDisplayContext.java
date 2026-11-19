@@ -6,8 +6,11 @@
 package com.liferay.layout.admin.web.internal.display.context;
 
 import com.liferay.layout.admin.web.internal.security.permission.resource.LayoutUtilityPageEntryPermission;
+import com.liferay.layout.utility.page.kernel.LayoutUtilityPageEntryViewRenderer;
+import com.liferay.layout.utility.page.kernel.LayoutUtilityPageEntryViewRendererRegistryUtil;
 import com.liferay.layout.utility.page.model.LayoutUtilityPageEntry;
-import com.liferay.layout.utility.page.service.LayoutUtilityPageEntryLocalServiceUtil;
+import com.liferay.layout.utility.page.service.LayoutUtilityPageEntryServiceUtil;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.search.EmptyOnClickRowChecker;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
@@ -17,17 +20,20 @@ import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.service.LayoutLocalServiceUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.OrderByComparator;
+import com.liferay.portal.kernel.util.OrderByComparatorFactoryUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
+import java.util.Objects;
 
 /**
  * @author Jürgen Kappler
@@ -80,17 +86,49 @@ public class LayoutUtilityPageEntryDisplayContext {
 				"there-are-no-utility-pages");
 
 		layoutUtilityPageEntrySearchContainer.setOrderByCol(getOrderByCol());
+
+		OrderByComparator<LayoutUtilityPageEntry> orderByComparator =
+			_getOrderByComparator();
+
+		layoutUtilityPageEntrySearchContainer.setOrderByComparator(
+			orderByComparator);
+
 		layoutUtilityPageEntrySearchContainer.setOrderByType(getOrderByType());
-		layoutUtilityPageEntrySearchContainer.setResultsAndTotal(
-			() ->
-				LayoutUtilityPageEntryLocalServiceUtil.
-					getLayoutUtilityPageEntries(
-						_themeDisplay.getScopeGroupId(),
-						layoutUtilityPageEntrySearchContainer.getStart(),
-						layoutUtilityPageEntrySearchContainer.getEnd(), null),
-			LayoutUtilityPageEntryLocalServiceUtil.
-				getLayoutUtilityPageEntriesCount(
-					_themeDisplay.getScopeGroupId()));
+
+		String[] types = TransformUtil.transformToArray(
+			LayoutUtilityPageEntryViewRendererRegistryUtil.
+				getLayoutUtilityPageEntryViewRenderers(),
+			LayoutUtilityPageEntryViewRenderer::getType, String.class);
+
+		if (Validator.isNotNull(_getKeywords())) {
+			layoutUtilityPageEntrySearchContainer.setResultsAndTotal(
+				() ->
+					LayoutUtilityPageEntryServiceUtil.
+						getLayoutUtilityPageEntries(
+							_themeDisplay.getScopeGroupId(), _getKeywords(),
+							types,
+							layoutUtilityPageEntrySearchContainer.getStart(),
+							layoutUtilityPageEntrySearchContainer.getEnd(),
+							orderByComparator),
+				LayoutUtilityPageEntryServiceUtil.
+					getLayoutUtilityPageEntriesCount(
+						_themeDisplay.getScopeGroupId(), _getKeywords(),
+						types));
+		}
+		else {
+			layoutUtilityPageEntrySearchContainer.setResultsAndTotal(
+				() ->
+					LayoutUtilityPageEntryServiceUtil.
+						getLayoutUtilityPageEntries(
+							_themeDisplay.getScopeGroupId(), types,
+							layoutUtilityPageEntrySearchContainer.getStart(),
+							layoutUtilityPageEntrySearchContainer.getEnd(),
+							orderByComparator),
+				LayoutUtilityPageEntryServiceUtil.
+					getLayoutUtilityPageEntriesCount(
+						_themeDisplay.getScopeGroupId(), types));
+		}
+
 		layoutUtilityPageEntrySearchContainer.setRowChecker(
 			new EmptyOnClickRowChecker(_renderResponse));
 
@@ -107,7 +145,7 @@ public class LayoutUtilityPageEntryDisplayContext {
 
 		_orderByCol = ParamUtil.getString(
 			_renderRequest, SearchContainer.DEFAULT_ORDER_BY_COL_PARAM,
-			"modified-date");
+			"create-date");
 
 		return _orderByCol;
 	}
@@ -121,6 +159,36 @@ public class LayoutUtilityPageEntryDisplayContext {
 			_renderRequest, SearchContainer.DEFAULT_ORDER_BY_TYPE_PARAM, "asc");
 
 		return _orderByType;
+	}
+
+	private String _getKeywords() {
+		if (_keywords != null) {
+			return _keywords;
+		}
+
+		_keywords = ParamUtil.getString(_renderRequest, "keywords");
+
+		return _keywords;
+	}
+
+	private OrderByComparator<LayoutUtilityPageEntry> _getOrderByComparator() {
+		boolean orderByAsc = false;
+
+		if (Objects.equals(getOrderByType(), "asc")) {
+			orderByAsc = true;
+		}
+
+		if (Objects.equals(getOrderByCol(), "create-date")) {
+			return OrderByComparatorFactoryUtil.create(
+				"LayoutUtilityPageEntry", "createDate", orderByAsc);
+		}
+
+		if (Objects.equals(getOrderByCol(), "name")) {
+			return OrderByComparatorFactoryUtil.create(
+				"LayoutUtilityPageEntry", "name", orderByAsc);
+		}
+
+		return null;
 	}
 
 	private PortletURL _getPortletURL() {
@@ -141,6 +209,7 @@ public class LayoutUtilityPageEntryDisplayContext {
 		return _tabs1;
 	}
 
+	private String _keywords;
 	private SearchContainer<LayoutUtilityPageEntry>
 		_layoutUtilityPageEntrySearchContainer;
 	private String _orderByCol;

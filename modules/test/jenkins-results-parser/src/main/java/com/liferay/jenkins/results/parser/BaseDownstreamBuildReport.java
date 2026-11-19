@@ -5,12 +5,13 @@
 
 package com.liferay.jenkins.results.parser;
 
+import java.net.MalformedURLException;
+import java.net.URL;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -25,6 +26,10 @@ public abstract class BaseDownstreamBuildReport
 	public String getAxisName() {
 		JSONObject buildReportJSONObject = getBuildReportJSONObject();
 
+		if (buildReportJSONObject == null) {
+			return null;
+		}
+
 		return buildReportJSONObject.optString("axisName", null);
 	}
 
@@ -34,29 +39,265 @@ public abstract class BaseDownstreamBuildReport
 	}
 
 	@Override
-	public List<TestClassReport> getTestClassReports() {
+	public JSONObject getBuildReportJSONObject() {
+		return _buildReportJSONObject;
+	}
+
+	@Override
+	public int getFailCount() {
+		JSONObject buildReportJSONObject = getBuildReportJSONObject();
+
+		if (buildReportJSONObject == null) {
+			return 0;
+		}
+
+		return buildReportJSONObject.optInt("failCount", 0);
+	}
+
+	@Override
+	public List<FailureReport> getFailureReports() {
+		List<FailureReport> failureReports = new ArrayList<>(
+			super.getFailureReports());
+
+		for (TestReport testReport : getTestReports()) {
+			if (!testReport.isFailing()) {
+				continue;
+			}
+
+			failureReports.add(
+				FailureReportFactory.newFailureReport(this, null, testReport));
+		}
+
+		return failureReports;
+	}
+
+	@Override
+	public String getJobVariant() {
+		Map<String, String> buildParameters = getBuildParameters();
+
+		return buildParameters.get("JOB_VARIANT");
+	}
+
+	@Override
+	public int getPassCount() {
+		JSONObject buildReportJSONObject = getBuildReportJSONObject();
+
+		return buildReportJSONObject.optInt("passCount", 0);
+	}
+
+	@Override
+	public int getSkipCount() {
+		JSONObject buildReportJSONObject = getBuildReportJSONObject();
+
+		if (buildReportJSONObject == null) {
+			return 0;
+		}
+
+		return buildReportJSONObject.optInt("skipCount", 0);
+	}
+
+	@Override
+	public synchronized TestClassReport getTestClassReport(
+		String testClassName) {
+
+		Map<String, TestClassReport> testClassReportsMap =
+			_getTestClassReportsMap();
+
+		return testClassReportsMap.get(testClassName);
+	}
+
+	@Override
+	public synchronized List<TestClassReport> getTestClassReports() {
+		Map<String, TestClassReport> testClassReportsMap =
+			_getTestClassReportsMap();
+
+		return new ArrayList<>(testClassReportsMap.values());
+	}
+
+	@Override
+	public synchronized List<TestReport> getTestReports() {
+		if (_testReports != null) {
+			return _testReports;
+		}
+
+		List<TestReport> testReports = new ArrayList<>();
+
+		JSONObject buildReportJSONObject = getBuildReportJSONObject();
+
+		if (buildReportJSONObject == null) {
+			_testReports = testReports;
+
+			return _testReports;
+		}
+
+		JSONArray testResultsJSONArray = buildReportJSONObject.optJSONArray(
+			"testResults");
+
+		if ((testResultsJSONArray == null) ||
+			(testResultsJSONArray.length() == 0)) {
+
+			_testReports = _getLiveTestReports();
+
+			return _testReports;
+		}
+
+		for (int i = 0; i < testResultsJSONArray.length(); i++) {
+			testReports.add(
+				TestReportFactory.newTestReport(
+					this, testResultsJSONArray.getJSONObject(i)));
+		}
+
+		_testReports = testReports;
+
+		return _testReports;
+	}
+
+	@Override
+	public URL getTestrayCaseResultURL() {
+		JSONObject buildReportJSONObject = getBuildReportJSONObject();
+
+		if (buildReportJSONObject == null) {
+			return null;
+		}
+
+		String testrayCaseResultURL = buildReportJSONObject.optString(
+			"testrayCaseResultURL");
+
+		if (JenkinsResultsParserUtil.isNullOrEmpty(testrayCaseResultURL)) {
+			return null;
+		}
+
+		try {
+			return new URL(testrayCaseResultURL);
+		}
+		catch (MalformedURLException malformedURLException) {
+			return null;
+		}
+	}
+
+	@Override
+	public TopLevelBuildReport getTopLevelBuildReport() {
+		return _topLevelBuildReport;
+	}
+
+	@Override
+	public boolean isBuildCached() {
+		return _buildCached;
+	}
+
+	@Override
+	public boolean isBuildTimedOut() {
+		String result = getResult();
+
+		long jobTimeoutMinutes = JenkinsResultsParserUtil.getJobTimeoutMinutes(
+			getJenkinsMaster(), getJobName());
+
+		if (((result == null) || result.equals("ABORTED")) &&
+			(getDuration() >= ((jobTimeoutMinutes - 20) * 60 * 1000))) {
+
+			return true;
+		}
+
+		return false;
+	}
+
+	public void setAxisName(String axisName) {
+		if (JenkinsResultsParserUtil.isNullOrEmpty(axisName)) {
+			return;
+		}
+
+		_buildReportJSONObject.put("axisName", axisName);
+	}
+
+	protected BaseDownstreamBuildReport(DownstreamBuild downstreamBuild) {
+		super(downstreamBuild.getBuildURL());
+
+		_batchName = downstreamBuild.getBatchName();
+		_buildCached = false;
+		_buildReportJSONObject = downstreamBuild.getBuildReportJSONObject();
+		_topLevelBuildReport = null;
+	}
+
+	protected BaseDownstreamBuildReport(
+		String batchName, JSONObject buildReportJSONObject,
+		TopLevelBuildReport topLevelBuildReport) {
+
+		super(buildReportJSONObject.getString("buildURL"));
+
+		_batchName = batchName;
+		_buildReportJSONObject = buildReportJSONObject;
+		_topLevelBuildReport = topLevelBuildReport;
+
+		_buildCached = buildReportJSONObject.optBoolean("buildCached", false);
+	}
+
+	private List<TestReport> _getLiveTestReports() {
+		List<TestReport> testReports = new ArrayList<>();
+
+		JenkinsMaster jenkinsMaster = getJenkinsMaster();
+
+		if ((jenkinsMaster == null) || !jenkinsMaster.isAvailable()) {
+			return testReports;
+		}
+
+		String testReportURL = JenkinsResultsParserUtil.getLocalURL(
+			JenkinsResultsParserUtil.combine(
+				String.valueOf(getBuildURL()), "/testReport/api/json"));
+
+		JSONObject testReportJSONObject = null;
+
+		try {
+			if (!JenkinsResultsParserUtil.exists(new URL(testReportURL))) {
+				return testReports;
+			}
+
+			testReportJSONObject = JenkinsResultsParserUtil.toJSONObject(
+				testReportURL, false, 5000);
+		}
+		catch (Exception exception) {
+			return testReports;
+		}
+
+		if (testReportJSONObject == null) {
+			return testReports;
+		}
+
+		JSONArray suitesJSONArray = testReportJSONObject.optJSONArray("suites");
+
+		if (suitesJSONArray == null) {
+			return testReports;
+		}
+
+		for (int i = 0; i < suitesJSONArray.length(); i++) {
+			JSONObject suiteJSONObject = suitesJSONArray.getJSONObject(i);
+
+			JSONArray casesJSONArray = suiteJSONObject.optJSONArray("cases");
+
+			if (casesJSONArray == null) {
+				continue;
+			}
+
+			for (int j = 0; j < casesJSONArray.length(); j++) {
+				testReports.add(
+					TestReportFactory.newTestReport(
+						this,
+						_toTestResultJSONObject(
+							casesJSONArray.getJSONObject(j))));
+			}
+		}
+
+		return testReports;
+	}
+
+	private Map<String, TestClassReport> _getTestClassReportsMap() {
 		if (_testClassReportsMap != null) {
-			return new ArrayList<>(_testClassReportsMap.values());
+			return _testClassReportsMap;
 		}
 
 		_testClassReportsMap = new TreeMap<>();
 
-		String batchName = getBatchName();
-
 		for (TestReport testReport : getTestReports()) {
-			String testClassName = testReport.getTestName();
-
-			if (batchName.startsWith("integration") ||
-				batchName.startsWith("modules-integration") ||
-				batchName.startsWith("modules-unit") ||
-				batchName.startsWith("unit")) {
-
-				Matcher matcher = _jUnitTestNamePattern.matcher(testClassName);
-
-				if (matcher.find()) {
-					testClassName = matcher.group("testClassName");
-				}
-			}
+			String testClassName = testReport.getTestClassName();
 
 			TestClassReport testClassReport = _testClassReportsMap.get(
 				testClassName);
@@ -71,51 +312,56 @@ public abstract class BaseDownstreamBuildReport
 			testClassReport.addTestReport(testReport);
 		}
 
-		return new ArrayList<>(_testClassReportsMap.values());
+		return _testClassReportsMap;
 	}
 
-	@Override
-	public List<TestReport> getTestReports() {
-		List<TestReport> testReports = new ArrayList<>();
+	private JSONObject _toTestResultJSONObject(JSONObject caseJSONObject) {
+		JSONObject testResultJSONObject = new JSONObject(
+		).put(
+			"duration", (long)(caseJSONObject.optDouble("duration", 0) * 1000)
+		);
 
-		JSONObject buildReportJSONObject = getBuildReportJSONObject();
+		String errorDetails = caseJSONObject.optString("errorDetails");
 
-		JSONArray testResultsJSONArray = buildReportJSONObject.optJSONArray(
-			"testResults");
+		if (errorDetails != null) {
+			if (errorDetails.contains("\n")) {
+				errorDetails = errorDetails.substring(
+					0, errorDetails.indexOf("\n"));
+			}
 
-		if (testResultsJSONArray == null) {
-			return testReports;
+			if (errorDetails.length() > 200) {
+				errorDetails = errorDetails.substring(0, 200);
+			}
+
+			testResultJSONObject.put("errorDetails", errorDetails);
 		}
 
-		for (int i = 0; i < testResultsJSONArray.length(); i++) {
-			testReports.add(
-				TestReportFactory.newTestReport(
-					this, testResultsJSONArray.getJSONObject(i)));
+		String status = caseJSONObject.optString("status");
+
+		if (!status.equals("FIXED") && !status.equals("PASSED") &&
+			!status.equals("SKIPPED")) {
+
+			testResultJSONObject.put(
+				"errorStackTrace", caseJSONObject.optString("errorStackTrace"));
 		}
 
-		return testReports;
+		testResultJSONObject.put(
+			"name",
+			JenkinsResultsParserUtil.combine(
+				caseJSONObject.optString("className"), ".",
+				caseJSONObject.optString("name"))
+		).put(
+			"status", status
+		);
+
+		return testResultJSONObject;
 	}
-
-	@Override
-	public TopLevelBuildReport getTopLevelBuildReport() {
-		return _topLevelBuildReport;
-	}
-
-	protected BaseDownstreamBuildReport(
-		String batchName, JSONObject buildReportJSONObject,
-		TopLevelBuildReport topLevelBuildReport) {
-
-		super(buildReportJSONObject);
-
-		_batchName = batchName;
-		_topLevelBuildReport = topLevelBuildReport;
-	}
-
-	private static final Pattern _jUnitTestNamePattern = Pattern.compile(
-		"(?<testClassName>.*Test)\\.(?<testName>[^\\.]+)");
 
 	private final String _batchName;
+	private final boolean _buildCached;
+	private final JSONObject _buildReportJSONObject;
 	private Map<String, TestClassReport> _testClassReportsMap;
+	private List<TestReport> _testReports;
 	private final TopLevelBuildReport _topLevelBuildReport;
 
 }

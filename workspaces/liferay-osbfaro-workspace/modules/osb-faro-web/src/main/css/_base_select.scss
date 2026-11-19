@@ -1,0 +1,17 @@
+.base-select-input-root {
+	&.inset {
+		.input-group-inset-item,
+		.input-root {
+			background-color: transparent;
+			border-width: 0;
+			margin-bottom: 0.125rem;
+			margin-top: 0.125rem;
+			min-height: 1.5rem;
+			padding: 0;
+
+			&:disabled::placeholder {
+				color: $mainLighten52;
+			}
+		}
+	}
+}

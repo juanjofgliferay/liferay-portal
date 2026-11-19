@@ -12,13 +12,11 @@ import com.liferay.portal.kernel.dao.orm.DynamicQueryFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.ProjectionFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.orm.RestrictionsFactoryUtil;
-import com.liferay.portal.kernel.dao.orm.Session;
 import com.liferay.portal.kernel.exception.NoSuchLayoutRevisionException;
 import com.liferay.portal.kernel.model.LayoutRevision;
 import com.liferay.portal.kernel.service.LayoutRevisionLocalServiceUtil;
 import com.liferay.portal.kernel.service.persistence.LayoutRevisionPersistence;
 import com.liferay.portal.kernel.service.persistence.LayoutRevisionUtil;
-import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.transaction.Propagation;
@@ -48,8 +46,10 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 /**
+ * @deprecated As of Cavanaugh (7.4.x), with no direct replacement
  * @generated
  */
+@Deprecated
 @RunWith(Arquillian.class)
 public class LayoutRevisionPersistenceTest {
 
@@ -110,11 +110,7 @@ public class LayoutRevisionPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		LayoutRevision newLayoutRevision = _persistence.create(pk);
-
-		newLayoutRevision.setMvccVersion(RandomTestUtil.nextLong());
+		LayoutRevision newLayoutRevision = addLayoutRevision();
 
 		newLayoutRevision.setGroupId(RandomTestUtil.nextLong());
 
@@ -170,7 +166,9 @@ public class LayoutRevisionPersistenceTest {
 
 		newLayoutRevision.setStatusDate(RandomTestUtil.nextDate());
 
-		_layoutRevisions.add(_persistence.update(newLayoutRevision));
+		newLayoutRevision = _persistence.update(newLayoutRevision);
+
+		_layoutRevisions.add(newLayoutRevision);
 
 		LayoutRevision existingLayoutRevision = _persistence.findByPrimaryKey(
 			newLayoutRevision.getPrimaryKey());
@@ -335,15 +333,6 @@ public class LayoutRevisionPersistenceTest {
 	}
 
 	@Test
-	public void testCountByL_H_P() throws Exception {
-		_persistence.countByL_H_P(
-			RandomTestUtil.nextLong(), RandomTestUtil.randomBoolean(),
-			RandomTestUtil.nextLong());
-
-		_persistence.countByL_H_P(0L, RandomTestUtil.randomBoolean(), 0L);
-	}
-
-	@Test
 	public void testCountByL_H_P_Collection() throws Exception {
 		_persistence.countByL_H_P_Collection(
 			RandomTestUtil.nextLong(), RandomTestUtil.randomBoolean(),
@@ -369,15 +358,6 @@ public class LayoutRevisionPersistenceTest {
 			RandomTestUtil.nextInt());
 
 		_persistence.countByL_P_S(0L, 0L, 0);
-	}
-
-	@Test
-	public void testCountByL_L_H_P() throws Exception {
-		_persistence.countByL_L_H_P(
-			RandomTestUtil.nextLong(), RandomTestUtil.nextLong(),
-			RandomTestUtil.randomBoolean(), RandomTestUtil.nextLong());
-
-		_persistence.countByL_L_H_P(0L, 0L, RandomTestUtil.randomBoolean(), 0L);
 	}
 
 	@Test
@@ -630,101 +610,10 @@ public class LayoutRevisionPersistenceTest {
 		Assert.assertEquals(0, result.size());
 	}
 
-	@Test
-	public void testResetOriginalValues() throws Exception {
-		LayoutRevision newLayoutRevision = addLayoutRevision();
-
-		_persistence.clearCache();
-
-		_assertOriginalValues(
-			_persistence.findByPrimaryKey(newLayoutRevision.getPrimaryKey()));
-	}
-
-	@Test
-	public void testResetOriginalValuesWithDynamicQueryLoadFromDatabase()
-		throws Exception {
-
-		_testResetOriginalValuesWithDynamicQuery(true);
-	}
-
-	@Test
-	public void testResetOriginalValuesWithDynamicQueryLoadFromSession()
-		throws Exception {
-
-		_testResetOriginalValuesWithDynamicQuery(false);
-	}
-
-	private void _testResetOriginalValuesWithDynamicQuery(boolean clearSession)
-		throws Exception {
-
-		LayoutRevision newLayoutRevision = addLayoutRevision();
-
-		if (clearSession) {
-			Session session = _persistence.openSession();
-
-			session.flush();
-
-			session.clear();
-		}
-
-		DynamicQuery dynamicQuery = DynamicQueryFactoryUtil.forClass(
-			LayoutRevision.class, _dynamicQueryClassLoader);
-
-		dynamicQuery.add(
-			RestrictionsFactoryUtil.eq(
-				"layoutRevisionId", newLayoutRevision.getLayoutRevisionId()));
-
-		List<LayoutRevision> result = _persistence.findWithDynamicQuery(
-			dynamicQuery);
-
-		_assertOriginalValues(result.get(0));
-	}
-
-	private void _assertOriginalValues(LayoutRevision layoutRevision) {
-		Assert.assertEquals(
-			Long.valueOf(layoutRevision.getLayoutSetBranchId()),
-			ReflectionTestUtil.<Long>invoke(
-				layoutRevision, "getColumnOriginalValue",
-				new Class<?>[] {String.class}, "layoutSetBranchId"));
-		Assert.assertEquals(
-			Boolean.valueOf(layoutRevision.getHead()),
-			ReflectionTestUtil.<Boolean>invoke(
-				layoutRevision, "getColumnOriginalValue",
-				new Class<?>[] {String.class}, "head"));
-		Assert.assertEquals(
-			Long.valueOf(layoutRevision.getPlid()),
-			ReflectionTestUtil.<Long>invoke(
-				layoutRevision, "getColumnOriginalValue",
-				new Class<?>[] {String.class}, "plid"));
-
-		Assert.assertEquals(
-			Long.valueOf(layoutRevision.getLayoutSetBranchId()),
-			ReflectionTestUtil.<Long>invoke(
-				layoutRevision, "getColumnOriginalValue",
-				new Class<?>[] {String.class}, "layoutSetBranchId"));
-		Assert.assertEquals(
-			Long.valueOf(layoutRevision.getLayoutBranchId()),
-			ReflectionTestUtil.<Long>invoke(
-				layoutRevision, "getColumnOriginalValue",
-				new Class<?>[] {String.class}, "layoutBranchId"));
-		Assert.assertEquals(
-			Boolean.valueOf(layoutRevision.getHead()),
-			ReflectionTestUtil.<Boolean>invoke(
-				layoutRevision, "getColumnOriginalValue",
-				new Class<?>[] {String.class}, "head"));
-		Assert.assertEquals(
-			Long.valueOf(layoutRevision.getPlid()),
-			ReflectionTestUtil.<Long>invoke(
-				layoutRevision, "getColumnOriginalValue",
-				new Class<?>[] {String.class}, "plid"));
-	}
-
 	protected LayoutRevision addLayoutRevision() throws Exception {
 		long pk = RandomTestUtil.nextLong();
 
 		LayoutRevision layoutRevision = _persistence.create(pk);
-
-		layoutRevision.setMvccVersion(RandomTestUtil.nextLong());
 
 		layoutRevision.setGroupId(RandomTestUtil.nextLong());
 
@@ -791,3 +680,4 @@ public class LayoutRevisionPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1024471097

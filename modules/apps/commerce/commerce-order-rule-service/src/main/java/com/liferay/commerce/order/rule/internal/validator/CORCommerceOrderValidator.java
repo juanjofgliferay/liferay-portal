@@ -251,7 +251,7 @@ public class CORCommerceOrderValidator implements CommerceOrderValidator {
 	@Override
 	public CommerceOrderValidatorResult validate(
 			Locale locale, CommerceOrder commerceOrder, CPInstance cpInstance,
-			BigDecimal quantity)
+			String json, BigDecimal quantity, boolean child)
 		throws PortalException {
 
 		return new CommerceOrderValidatorResult(true);
@@ -275,16 +275,16 @@ public class CORCommerceOrderValidator implements CommerceOrderValidator {
 		for (COREntry corEntry : corEntries) {
 			String type = corEntry.getType();
 
-			if (!validatedRuleType.contains(type)) {
-				validatedRuleType.add(type);
+			if (!validatedRuleType.add(type)) {
+				continue;
+			}
 
-				COREntryType corEntryType =
-					_corEntryTypeRegistry.getCOREntryType(type);
+			COREntryType corEntryType = _corEntryTypeRegistry.getCOREntryType(
+				type);
 
-				if (!corEntryType.evaluate(corEntry, commerceOrder)) {
-					return corEntryType.getErrorMessage(
-						corEntry, commerceOrder, locale);
-				}
+			if (!corEntryType.evaluate(corEntry, commerceOrder)) {
+				return corEntryType.getErrorMessage(
+					corEntry, commerceOrder, locale);
 			}
 		}
 

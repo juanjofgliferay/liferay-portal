@@ -8,7 +8,6 @@ package com.liferay.trash.service.impl;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.service.ClassNameLocalService;
 import com.liferay.portal.kernel.util.UnicodeProperties;
-import com.liferay.portal.kernel.util.Validator;
 import com.liferay.trash.model.TrashVersion;
 import com.liferay.trash.service.base.TrashVersionLocalServiceBaseImpl;
 
@@ -52,7 +51,7 @@ public class TrashVersionLocalServiceImpl
 
 	@Override
 	public TrashVersion deleteTrashVersion(String className, long classPK) {
-		TrashVersion trashVersion = trashVersionPersistence.fetchByC_C(
+		TrashVersion trashVersion = trashVersionPersistence.fetchByCN_CPK(
 			_classNameLocalService.getClassNameId(className), classPK);
 
 		if (trashVersion != null) {
@@ -64,23 +63,13 @@ public class TrashVersionLocalServiceImpl
 
 	@Override
 	public TrashVersion fetchVersion(String className, long classPK) {
-		return trashVersionPersistence.fetchByC_C(
+		return trashVersionPersistence.fetchByCN_CPK(
 			_classNameLocalService.getClassNameId(className), classPK);
 	}
 
 	@Override
 	public List<TrashVersion> getVersions(long entryId) {
 		return trashVersionPersistence.findByEntryId(entryId);
-	}
-
-	@Override
-	public List<TrashVersion> getVersions(long entryId, String className) {
-		if (Validator.isNull(className)) {
-			return trashVersionPersistence.findByEntryId(entryId);
-		}
-
-		return trashVersionPersistence.findByE_C(
-			entryId, _classNameLocalService.getClassNameId(className));
 	}
 
 	@Reference

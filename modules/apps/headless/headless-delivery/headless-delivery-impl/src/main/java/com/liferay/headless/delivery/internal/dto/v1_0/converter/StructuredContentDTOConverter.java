@@ -11,8 +11,8 @@ import com.liferay.asset.kernel.service.AssetCategoryLocalService;
 import com.liferay.asset.kernel.service.AssetEntryLocalService;
 import com.liferay.asset.kernel.service.AssetTagLocalService;
 import com.liferay.asset.link.service.AssetLinkLocalService;
+import com.liferay.document.library.helper.DLURLHelper;
 import com.liferay.document.library.kernel.service.DLAppService;
-import com.liferay.document.library.util.DLURLHelper;
 import com.liferay.dynamic.data.mapping.model.DDMStructure;
 import com.liferay.dynamic.data.mapping.service.DDMTemplateLocalService;
 import com.liferay.dynamic.data.mapping.storage.DDMFormValues;
@@ -22,7 +22,6 @@ import com.liferay.headless.delivery.dto.v1_0.StructuredContent;
 import com.liferay.headless.delivery.dto.v1_0.TaxonomyCategoryBrief;
 import com.liferay.headless.delivery.dto.v1_0.util.ContentFieldUtil;
 import com.liferay.headless.delivery.dto.v1_0.util.CreatorUtil;
-import com.liferay.headless.delivery.dto.v1_0.util.CustomFieldsUtil;
 import com.liferay.headless.delivery.internal.dto.v1_0.util.AggregateRatingUtil;
 import com.liferay.headless.delivery.internal.dto.v1_0.util.DisplayPageRendererUtil;
 import com.liferay.headless.delivery.internal.dto.v1_0.util.RelatedContentUtil;
@@ -35,18 +34,20 @@ import com.liferay.journal.service.JournalArticleService;
 import com.liferay.journal.util.JournalContent;
 import com.liferay.layout.display.page.LayoutDisplayPageProviderRegistry;
 import com.liferay.layout.page.template.service.LayoutPageTemplateEntryService;
+import com.liferay.layout.util.LayoutServiceContextHelper;
 import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.comment.CommentManager;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.service.ClassNameLocalService;
 import com.liferay.portal.kernel.service.GroupLocalService;
-import com.liferay.portal.kernel.service.LayoutLocalService;
+import com.liferay.portal.kernel.service.LayoutService;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.vulcan.custom.field.CustomFieldsUtil;
 import com.liferay.portal.vulcan.dto.converter.DTOConverter;
 import com.liferay.portal.vulcan.dto.converter.DTOConverterContext;
 import com.liferay.portal.vulcan.util.GroupUtil;
@@ -55,14 +56,14 @@ import com.liferay.portal.vulcan.util.LocalizedMapUtil;
 import com.liferay.ratings.kernel.service.RatingsStatsLocalService;
 import com.liferay.subscription.service.SubscriptionLocalService;
 
+import jakarta.servlet.http.HttpServletRequest;
+
+import jakarta.ws.rs.core.UriInfo;
+
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-
-import javax.servlet.http.HttpServletRequest;
-
-import javax.ws.rs.core.UriInfo;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -72,7 +73,10 @@ import org.osgi.service.component.annotations.Reference;
  * @author Víctor Galán
  */
 @Component(
-	property = "dto.class.name=com.liferay.journal.model.JournalArticle",
+	property = {
+		"default=true",
+		"dto.class.name=com.liferay.journal.model.JournalArticle"
+	},
 	service = DTOConverter.class
 )
 public class StructuredContentDTOConverter
@@ -113,82 +117,74 @@ public class StructuredContentDTOConverter
 
 		return new StructuredContent() {
 			{
-				actions = dtoConverterContext.getActions();
-				aggregateRating = AggregateRatingUtil.toAggregateRating(
-					_ratingsStatsLocalService.fetchStats(
+				setActions(dtoConverterContext::getActions);
+				setAggregateRating(
+					() -> AggregateRatingUtil.toAggregateRating(
+						_ratingsStatsLocalService.fetchStats(
+							JournalArticle.class.getName(),
+							journalArticle.getResourcePrimKey())));
+				setAssetLibraryKey(() -> GroupUtil.getAssetLibraryKey(group));
+				setAvailableLanguages(
+					() -> LocaleUtil.toW3cLanguageIds(
+						journalArticle.getAvailableLanguageIds()));
+				setContentFields(
+					() -> _toContentFields(
+						_dlAppService, _dlURLHelper, dtoConverterContext,
+						journalArticle, _journalArticleService,
+						_layoutService));
+				setContentStructureId(ddmStructure::getStructureId);
+				setCreator(
+					() -> CreatorUtil.toCreator(
+						dtoConverterContext, _portal,
+						_userLocalService.fetchUser(
+							journalArticle.getUserId())));
+				setCustomFields(
+					() -> CustomFieldsUtil.toCustomFields(
+						dtoConverterContext.isAcceptAllLanguages(),
+						JournalArticle.class.getName(), journalArticle.getId(),
+						journalArticle.getCompanyId(),
+						dtoConverterContext.getLocale()));
+				setDateCreated(journalArticle::getCreateDate);
+				setDateExpired(journalArticle::getExpirationDate);
+				setDateModified(journalArticle::getModifiedDate);
+				setDatePublished(journalArticle::getDisplayDate);
+				setDescription(
+					() -> journalArticle.getDescription(
+						dtoConverterContext.getLocale()));
+				setDescription_i18n(
+					() -> LocalizedMapUtil.getI18nMap(
+						dtoConverterContext.isAcceptAllLanguages(),
+						_filterDescriptionMap(
+							journalArticle.getDescriptionMap())));
+				setExternalReferenceCode(
+					journalArticle::getExternalReferenceCode);
+				setFriendlyUrlPath(
+					() -> journalArticle.getUrlTitle(
+						dtoConverterContext.getLocale()));
+				setFriendlyUrlPath_i18n(
+					() -> LocalizedMapUtil.getI18nMap(
+						dtoConverterContext.isAcceptAllLanguages(),
+						journalArticle.getFriendlyURLMap()));
+				setId(journalArticle::getResourcePrimKey);
+				setKey(journalArticle::getArticleId);
+				setKeywords(
+					() -> ListUtil.toArray(
+						_assetTagLocalService.getTags(
+							JournalArticle.class.getName(),
+							journalArticle.getResourcePrimKey()),
+						AssetTag.NAME_ACCESSOR));
+				setNeverExpire(
+					() -> {
+						if (journalArticle.getExpirationDate() == null) {
+							return true;
+						}
+
+						return false;
+					});
+				setNumberOfComments(
+					() -> _commentManager.getCommentsCount(
 						JournalArticle.class.getName(),
 						journalArticle.getResourcePrimKey()));
-				assetLibraryKey = GroupUtil.getAssetLibraryKey(group);
-				availableLanguages = LocaleUtil.toW3cLanguageIds(
-					journalArticle.getAvailableLanguageIds());
-				contentFields = _toContentFields(
-					_dlAppService, _dlURLHelper, dtoConverterContext,
-					journalArticle, _journalArticleService,
-					_layoutLocalService);
-				contentStructureId = ddmStructure.getStructureId();
-				creator = CreatorUtil.toCreator(
-					dtoConverterContext, _portal,
-					_userLocalService.fetchUser(journalArticle.getUserId()));
-				customFields = CustomFieldsUtil.toCustomFields(
-					dtoConverterContext.isAcceptAllLanguages(),
-					JournalArticle.class.getName(), journalArticle.getId(),
-					journalArticle.getCompanyId(),
-					dtoConverterContext.getLocale());
-				dateCreated = journalArticle.getCreateDate();
-				dateModified = journalArticle.getModifiedDate();
-				datePublished = journalArticle.getDisplayDate();
-				description = journalArticle.getDescription(
-					dtoConverterContext.getLocale());
-				description_i18n = LocalizedMapUtil.getI18nMap(
-					dtoConverterContext.isAcceptAllLanguages(),
-					_filterDescriptionMap(journalArticle.getDescriptionMap()));
-				externalReferenceCode =
-					journalArticle.getExternalReferenceCode();
-				friendlyUrlPath = journalArticle.getUrlTitle(
-					dtoConverterContext.getLocale());
-				friendlyUrlPath_i18n = LocalizedMapUtil.getI18nMap(
-					dtoConverterContext.isAcceptAllLanguages(),
-					journalArticle.getFriendlyURLMap());
-				id = journalArticle.getResourcePrimKey();
-				key = journalArticle.getArticleId();
-				keywords = ListUtil.toArray(
-					_assetTagLocalService.getTags(
-						JournalArticle.class.getName(),
-						journalArticle.getResourcePrimKey()),
-					AssetTag.NAME_ACCESSOR);
-				numberOfComments = _commentManager.getCommentsCount(
-					JournalArticle.class.getName(),
-					journalArticle.getResourcePrimKey());
-				relatedContents = RelatedContentUtil.toRelatedContents(
-					_assetEntryLocalService, _assetLinkLocalService,
-					dtoConverterContext.getDTOConverterRegistry(),
-					JournalArticle.class.getName(),
-					journalArticle.getResourcePrimKey(),
-					dtoConverterContext.getLocale());
-				renderedContents = _toRenderedContents(
-					ddmStructure, dtoConverterContext, journalArticle);
-				siteId = GroupUtil.getSiteId(group);
-				structuredContentFolderId = journalArticle.getFolderId();
-				subscribed = _subscriptionLocalService.isSubscribed(
-					journalArticle.getCompanyId(),
-					dtoConverterContext.getUserId(),
-					JournalArticle.class.getName(),
-					journalArticle.getResourcePrimKey());
-				taxonomyCategoryBriefs = TransformUtil.transformToArray(
-					_assetCategoryLocalService.getCategories(
-						JournalArticle.class.getName(),
-						journalArticle.getResourcePrimKey()),
-					assetCategory ->
-						TaxonomyCategoryBriefUtil.toTaxonomyCategoryBrief(
-							assetCategory, dtoConverterContext),
-					TaxonomyCategoryBrief.class);
-				title = journalArticle.getTitle(
-					dtoConverterContext.getLocale());
-				title_i18n = LocalizedMapUtil.getI18nMap(
-					dtoConverterContext.isAcceptAllLanguages(),
-					journalArticle.getTitleMap());
-				uuid = journalArticle.getUuid();
-
 				setPriority(
 					() -> {
 						AssetEntry assetEntry =
@@ -202,6 +198,41 @@ public class StructuredContentDTOConverter
 
 						return assetEntry.getPriority();
 					});
+				setRelatedContents(
+					() -> RelatedContentUtil.toRelatedContents(
+						_assetEntryLocalService, _assetLinkLocalService,
+						dtoConverterContext.getDTOConverterRegistry(),
+						JournalArticle.class.getName(),
+						journalArticle.getResourcePrimKey(),
+						dtoConverterContext.getLocale()));
+				setRenderedContents(
+					() -> _toRenderedContents(
+						ddmStructure, dtoConverterContext, journalArticle));
+				setSiteId(() -> GroupUtil.getSiteId(group));
+				setStructuredContentFolderId(journalArticle::getFolderId);
+				setSubscribed(
+					() -> _subscriptionLocalService.isSubscribed(
+						journalArticle.getCompanyId(),
+						dtoConverterContext.getUserId(),
+						JournalArticle.class.getName(),
+						journalArticle.getResourcePrimKey()));
+				setTaxonomyCategoryBriefs(
+					() -> TransformUtil.transformToArray(
+						_assetCategoryLocalService.getCategories(
+							JournalArticle.class.getName(),
+							journalArticle.getResourcePrimKey()),
+						assetCategory ->
+							TaxonomyCategoryBriefUtil.toTaxonomyCategoryBrief(
+								assetCategory, dtoConverterContext),
+						TaxonomyCategoryBrief.class));
+				setTitle(
+					() -> journalArticle.getTitle(
+						dtoConverterContext.getLocale()));
+				setTitle_i18n(
+					() -> LocalizedMapUtil.getI18nMap(
+						dtoConverterContext.isAcceptAllLanguages(),
+						journalArticle.getTitleMap()));
+				setUuid(journalArticle::getUuid);
 			}
 		};
 	}
@@ -227,7 +258,7 @@ public class StructuredContentDTOConverter
 			DTOConverterContext dtoConverterContext,
 			JournalArticle journalArticle,
 			JournalArticleService journalArticleService,
-			LayoutLocalService layoutLocalService)
+			LayoutService layoutService)
 		throws Exception {
 
 		DDMFormValues ddmFormValues = journalArticle.getDDMFormValues();
@@ -236,7 +267,7 @@ public class StructuredContentDTOConverter
 			ddmFormValues.getDDMFormFieldValues(),
 			ddmFormFieldValue -> ContentFieldUtil.toContentField(
 				ddmFormFieldValue, dlAppService, dlURLHelper,
-				dtoConverterContext, journalArticleService, layoutLocalService),
+				dtoConverterContext, journalArticleService, layoutService),
 			ContentField.class);
 	}
 
@@ -259,28 +290,23 @@ public class StructuredContentDTOConverter
 			ddmStructure.getTemplates(),
 			ddmTemplate -> new RenderedContent() {
 				{
-					contentTemplateId = ddmTemplate.getTemplateKey();
-					contentTemplateName = ddmTemplate.getName(locale);
-					contentTemplateName_i18n = LocalizedMapUtil.getI18nMap(
-						acceptAllLanguages, ddmTemplate.getNameMap());
-					renderedContentURL = JaxRsLinkUtil.getJaxRsLink(
-						"headless-delivery",
-						BaseStructuredContentResourceImpl.class,
-						"getStructuredContentRenderedContentContentTemplate",
-						uriInfo, journalArticle.getResourcePrimKey(),
-						ddmTemplate.getTemplateKey());
-
+					setContentTemplateId(ddmTemplate::getTemplateKey);
+					setContentTemplateName(() -> ddmTemplate.getName(locale));
+					setContentTemplateName_i18n(
+						() -> LocalizedMapUtil.getI18nMap(
+							acceptAllLanguages, ddmTemplate.getNameMap()));
 					setMarkedAsDefault(
-						() -> {
-							if (Objects.equals(
-									ddmTemplate.getTemplateKey(),
-									journalArticle.getDDMTemplateKey())) {
-
-								return true;
-							}
-
-							return false;
-						});
+						() -> Objects.equals(
+							ddmTemplate.getTemplateKey(),
+							journalArticle.getDDMTemplateKey()));
+					setRenderedContentURL(
+						() -> JaxRsLinkUtil.getJaxRsLink(
+							"headless-delivery",
+							BaseStructuredContentResourceImpl.class,
+							"getStructuredContentRenderedContentContent" +
+								"Template",
+							uriInfo, journalArticle.getResourcePrimKey(),
+							ddmTemplate.getTemplateKey()));
 					setRenderedContentValue(
 						() -> {
 							if (!dtoConverterContext.containsNestedFieldsValue(
@@ -309,7 +335,8 @@ public class StructuredContentDTOConverter
 				ddmStructure.getStructureId(), dtoConverterContext,
 				journalArticle.getGroupId(), journalArticle,
 				_infoItemServiceRegistry, _layoutDisplayPageProviderRegistry,
-				_layoutLocalService, _layoutPageTemplateEntryService,
+				_layoutService, _layoutPageTemplateEntryService,
+				_layoutServiceContextHelper,
 				"getStructuredContentRenderedContentByDisplayPageDisplayPage" +
 					"Key");
 
@@ -360,10 +387,13 @@ public class StructuredContentDTOConverter
 		_layoutDisplayPageProviderRegistry;
 
 	@Reference
-	private LayoutLocalService _layoutLocalService;
+	private LayoutPageTemplateEntryService _layoutPageTemplateEntryService;
 
 	@Reference
-	private LayoutPageTemplateEntryService _layoutPageTemplateEntryService;
+	private LayoutService _layoutService;
+
+	@Reference
+	private LayoutServiceContextHelper _layoutServiceContextHelper;
 
 	@Reference
 	private Portal _portal;

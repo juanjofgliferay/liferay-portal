@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -190,12 +191,6 @@ public class DDMFormInstanceLocalServiceUtil {
 		throws PortalException {
 
 		getService().deleteFormInstance(ddmFormInstanceId);
-	}
-
-	public static void deleteFormInstances(long groupId)
-		throws PortalException {
-
-		getService().deleteFormInstances(groupId);
 	}
 
 	/**
@@ -420,11 +415,10 @@ public class DDMFormInstanceLocalServiceUtil {
 		return getService().getFormInstance(ddmFormInstanceId);
 	}
 
-	public static DDMFormInstance getFormInstance(
-			String uuid, long ddmFormInstanceId)
+	public static DDMFormInstance getFormInstanceByStructureId(long structureId)
 		throws PortalException {
 
-		return getService().getFormInstance(uuid, ddmFormInstanceId);
+		return getService().getFormInstanceByStructureId(structureId);
 	}
 
 	public static List<DDMFormInstance> getFormInstances(long groupId) {
@@ -442,8 +436,7 @@ public class DDMFormInstanceLocalServiceUtil {
 	}
 
 	public static com.liferay.dynamic.data.mapping.storage.DDMFormValues
-			getFormInstanceSettingsFormValues(DDMFormInstance formInstance)
-		throws PortalException {
+		getFormInstanceSettingsFormValues(DDMFormInstance formInstance) {
 
 		return getService().getFormInstanceSettingsFormValues(formInstance);
 	}
@@ -486,30 +479,6 @@ public class DDMFormInstanceLocalServiceUtil {
 
 		return getService().search(
 			companyId, groupId, keywords, start, end, orderByComparator);
-	}
-
-	public static List<DDMFormInstance> search(
-		long companyId, long groupId, String[] names, String[] descriptions,
-		boolean andOperator, int start, int end,
-		OrderByComparator<DDMFormInstance> orderByComparator) {
-
-		return getService().search(
-			companyId, groupId, names, descriptions, andOperator, start, end,
-			orderByComparator);
-	}
-
-	public static int searchCount(
-		long companyId, long groupId, String keywords) {
-
-		return getService().searchCount(companyId, groupId, keywords);
-	}
-
-	public static int searchCount(
-		long companyId, long groupId, String[] names, String[] descriptions,
-		boolean andOperator) {
-
-		return getService().searchCount(
-			companyId, groupId, names, descriptions, andOperator);
 	}
 
 	public static void sendEmail(
@@ -577,13 +546,13 @@ public class DDMFormInstanceLocalServiceUtil {
 	}
 
 	public static DDMFormInstanceLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(DDMFormInstanceLocalService service) {
-		_service = service;
-	}
-
-	private static volatile DDMFormInstanceLocalService _service;
+	private static final Snapshot<DDMFormInstanceLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			DDMFormInstanceLocalServiceUtil.class,
+			DDMFormInstanceLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:2046615117

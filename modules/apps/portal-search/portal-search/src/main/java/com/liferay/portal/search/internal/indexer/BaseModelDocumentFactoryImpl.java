@@ -6,23 +6,15 @@
 package com.liferay.portal.search.internal.indexer;
 
 import com.liferay.asset.kernel.AssetRendererFactoryRegistryUtil;
-import com.liferay.asset.kernel.model.AssetEntry;
 import com.liferay.asset.kernel.model.AssetRendererFactory;
-import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.log.Log;
-import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.BaseModel;
 import com.liferay.portal.kernel.model.ResourcedModel;
+import com.liferay.portal.kernel.search.Document;
 import com.liferay.portal.kernel.search.DocumentImpl;
 import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.kernel.util.Tuple;
-import com.liferay.portal.search.document.Document;
-import com.liferay.portal.search.document.DocumentBuilder;
-import com.liferay.portal.search.document.DocumentBuilderFactory;
 import com.liferay.portal.search.indexer.BaseModelDocumentFactory;
 import com.liferay.portal.search.model.uid.UIDFactory;
-
-import java.util.Map;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -34,41 +26,39 @@ import org.osgi.service.component.annotations.Reference;
 public class BaseModelDocumentFactoryImpl implements BaseModelDocumentFactory {
 
 	@Override
-	public com.liferay.portal.kernel.search.Document createDocument(
-		BaseModel<?> baseModel) {
-
-		DocumentBuilder documentBuilder = documentBuilderFactory.builder();
+	public Document createDocument(BaseModel<?> baseModel) {
+		Document document = new DocumentImpl();
 
 		Tuple classPKResourcePrimKeyTuple = _getClassPKResourcePrimKey(
 			baseModel);
 
-		documentBuilder.setString(
-			Field.ENTRY_CLASS_NAME, baseModel.getModelClassName()
-		).setLong(
-			Field.ENTRY_CLASS_PK, (Long)classPKResourcePrimKeyTuple.getObject(0)
-		).setLong(
-			Field.ROOT_ENTRY_CLASS_PK,
-			_getRootEntryClassPK(classPKResourcePrimKeyTuple)
-		);
+		document.add(
+			new Field(Field.ENTRY_CLASS_NAME, baseModel.getModelClassName()));
 
-		uidFactory.setUID(baseModel, documentBuilder);
+		Long entryClassPK = (Long)classPKResourcePrimKeyTuple.getObject(0);
 
-		Document document = documentBuilder.build();
+		if (entryClassPK != null) {
+			document.add(
+				new Field(Field.ENTRY_CLASS_PK, String.valueOf(entryClassPK)));
+		}
 
-		_enforceStandardUID(document);
+		Long rootEntryClassPK = _getRootEntryClassPK(
+			classPKResourcePrimKeyTuple);
 
-		return _toLegacyDocument(document);
+		if (rootEntryClassPK != null) {
+			document.add(
+				new Field(
+					Field.ROOT_ENTRY_CLASS_PK,
+					String.valueOf(rootEntryClassPK)));
+		}
+
+		document.add(new Field(Field.UID, uidFactory.getUID(baseModel)));
+
+		return document;
 	}
-
-	@Reference
-	protected DocumentBuilderFactory documentBuilderFactory;
 
 	@Reference
 	protected UIDFactory uidFactory;
-
-	private void _enforceStandardUID(Document document) {
-		uidFactory.getUID(document);
-	}
 
 	private Tuple _getClassPKResourcePrimKey(BaseModel<?> baseModel) {
 		long classPK = 0;
@@ -98,22 +88,7 @@ public class BaseModelDocumentFactoryImpl implements BaseModelDocumentFactory {
 			return classPK;
 		}
 
-		try {
-			AssetEntry assetEntry = assetRendererFactory.getAssetEntry(entry);
-
-			if (assetEntry != null) {
-				return assetEntry.getClassPK();
-			}
-
-			return 0;
-		}
-		catch (PortalException portalException) {
-			if (_log.isDebugEnabled()) {
-				_log.debug(portalException);
-			}
-		}
-
-		return classPK;
+		return assetRendererFactory.getAssetEntryClassPK(entry);
 	}
 
 	private Long _getRootEntryClassPK(Tuple classPKResourcePrimKeyTuple) {
@@ -125,23 +100,5 @@ public class BaseModelDocumentFactoryImpl implements BaseModelDocumentFactory {
 
 		return null;
 	}
-
-	private com.liferay.portal.kernel.search.Document _toLegacyDocument(
-		Document document) {
-
-		DocumentImpl documentImpl = new DocumentImpl();
-
-		Map<String, com.liferay.portal.search.document.Field> fields =
-			document.getFields();
-
-		fields.forEach(
-			(key, field) -> documentImpl.add(
-				new Field(key, String.valueOf(field.getValue()))));
-
-		return documentImpl;
-	}
-
-	private static final Log _log = LogFactoryUtil.getLog(
-		BaseModelDocumentFactoryImpl.class);
 
 }

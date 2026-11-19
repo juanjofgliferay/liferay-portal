@@ -19,26 +19,33 @@ import com.liferay.object.constants.ObjectFieldConstants;
 import com.liferay.object.constants.ObjectWebKeys;
 import com.liferay.object.model.ObjectAction;
 import com.liferay.object.model.ObjectDefinition;
+import com.liferay.object.model.ObjectField;
 import com.liferay.object.service.ObjectDefinitionLocalService;
+import com.liferay.object.service.ObjectFieldLocalService;
+import com.liferay.object.service.ObjectFolderLocalService;
 import com.liferay.object.web.internal.object.definitions.display.context.util.ObjectCodeEditorUtil;
 import com.liferay.petra.function.UnsafeConsumer;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.notifications.UserNotificationManagerUtil;
 import com.liferay.portal.kernel.portlet.LiferayWindowState;
 import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.portlet.url.builder.ResourceURLBuilder;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.security.script.management.configuration.helper.ScriptManagementConfigurationHelper;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Marco Leo
@@ -53,15 +60,24 @@ public class ObjectDefinitionsActionsDisplayContext
 		ObjectActionTriggerRegistry objectActionTriggerRegistry,
 		ObjectDefinitionLocalService objectDefinitionLocalService,
 		ModelResourcePermission<ObjectDefinition>
-			objectDefinitionModelResourcePermission) {
+			objectDefinitionModelResourcePermission,
+		ObjectFieldLocalService objectFieldLocalService,
+		ObjectFolderLocalService objectFolderLocalService,
+		ScriptManagementConfigurationHelper
+			scriptManagementConfigurationHelper) {
 
-		super(httpServletRequest, objectDefinitionModelResourcePermission);
+		super(
+			httpServletRequest, objectDefinitionModelResourcePermission,
+			objectFolderLocalService);
 
 		_jsonFactory = jsonFactory;
 		_notificationTemplateLocalService = notificationTemplateLocalService;
 		_objectActionExecutorRegistry = objectActionExecutorRegistry;
 		_objectActionTriggerRegistry = objectActionTriggerRegistry;
 		_objectDefinitionLocalService = objectDefinitionLocalService;
+		_objectFieldLocalService = objectFieldLocalService;
+		_scriptManagementConfigurationHelper =
+			scriptManagementConfigurationHelper;
 	}
 
 	public String getEditObjectActionURL() throws Exception {
@@ -112,9 +128,11 @@ public class ObjectDefinitionsActionsDisplayContext
 			ObjectWebKeys.OBJECT_ACTION);
 	}
 
-	public List<Map<String, Object>> getObjectActionCodeEditorElements() {
+	public List<Map<String, Object>> getObjectActionCodeEditorElements()
+		throws PortalException {
+
 		return ObjectCodeEditorUtil.getCodeEditorElements(
-			true, true, objectRequestHelper.getLocale(),
+			true, true, false, objectRequestHelper.getLocale(),
 			getObjectDefinitionId(),
 			objectField -> !objectField.compareBusinessType(
 				ObjectFieldConstants.BUSINESS_TYPE_AGGREGATION));
@@ -184,7 +202,7 @@ public class ObjectDefinitionsActionsDisplayContext
 				return conditionExpression;
 			}
 		).put(
-			"description", objectAction.getDescription()
+			"description", objectAction.getDescriptionMap()
 		).put(
 			"errorMessage", objectAction.getErrorMessageMap()
 		).put(
@@ -222,6 +240,11 @@ public class ObjectDefinitionsActionsDisplayContext
 
 			if ((StringUtil.equals(
 					objectActionTrigger.getKey(),
+					ObjectActionTriggerConstants.KEY_ON_AFTER_LOGIN) &&
+				 !StringUtil.equals(
+					 objectDefinition.getClassName(), User.class.getName())) ||
+				(StringUtil.equals(
+					objectActionTrigger.getKey(),
 					ObjectActionTriggerConstants.KEY_ON_AFTER_ROOT_UPDATE) &&
 				 !objectDefinition.isRootNode()) ||
 				(StringUtil.equals(
@@ -253,6 +276,7 @@ public class ObjectDefinitionsActionsDisplayContext
 		return objectActionTriggersJSONArray;
 	}
 
+	@Override
 	public ObjectDefinition getObjectDefinition() {
 		HttpServletRequest httpServletRequest =
 			objectRequestHelper.getRequest();
@@ -272,12 +296,34 @@ public class ObjectDefinitionsActionsDisplayContext
 		).buildString();
 	}
 
+	public List<ObjectField> getObjectFields() {
+		return _objectFieldLocalService.getObjectFields(
+			getObjectDefinitionId());
+	}
+
+	public String getScriptManagementConfigurationPortletURL()
+		throws PortalException {
+
+		return _scriptManagementConfigurationHelper.
+			getScriptManagementConfigurationPortletURL();
+	}
+
 	public String getValidateExpressionURL() {
 		return ResourceURLBuilder.createResourceURL(
 			objectRequestHelper.getLiferayPortletResponse()
 		).setResourceID(
 			"/object_definitions/validate_expression"
 		).buildString();
+	}
+
+	public boolean hasUserNotificationHandler(String className) {
+		return UserNotificationManagerUtil.hasUserNotificationHandler(
+			className, StringPool.BLANK);
+	}
+
+	public boolean isAllowScriptContentToBeExecutedOrIncluded() {
+		return _scriptManagementConfigurationHelper.
+			isAllowScriptContentToBeExecutedOrIncluded();
 	}
 
 	@Override
@@ -311,5 +357,8 @@ public class ObjectDefinitionsActionsDisplayContext
 	private final ObjectActionExecutorRegistry _objectActionExecutorRegistry;
 	private final ObjectActionTriggerRegistry _objectActionTriggerRegistry;
 	private final ObjectDefinitionLocalService _objectDefinitionLocalService;
+	private final ObjectFieldLocalService _objectFieldLocalService;
+	private final ScriptManagementConfigurationHelper
+		_scriptManagementConfigurationHelper;
 
 }

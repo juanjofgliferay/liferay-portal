@@ -53,10 +53,12 @@ public class SharingEntryCacheModel
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(29);
+		StringBundler sb = new StringBundler(35);
 
 		sb.append("{uuid=");
 		sb.append(uuid);
+		sb.append(", externalReferenceCode=");
+		sb.append(externalReferenceCode);
 		sb.append(", sharingEntryId=");
 		sb.append(sharingEntryId);
 		sb.append(", groupId=");
@@ -71,6 +73,10 @@ public class SharingEntryCacheModel
 		sb.append(createDate);
 		sb.append(", modifiedDate=");
 		sb.append(modifiedDate);
+		sb.append(", toTicketId=");
+		sb.append(toTicketId);
+		sb.append(", toUserGroupId=");
+		sb.append(toUserGroupId);
 		sb.append(", toUserId=");
 		sb.append(toUserId);
 		sb.append(", classNameId=");
@@ -99,6 +105,13 @@ public class SharingEntryCacheModel
 			sharingEntryImpl.setUuid(uuid);
 		}
 
+		if (externalReferenceCode == null) {
+			sharingEntryImpl.setExternalReferenceCode("");
+		}
+		else {
+			sharingEntryImpl.setExternalReferenceCode(externalReferenceCode);
+		}
+
 		sharingEntryImpl.setSharingEntryId(sharingEntryId);
 		sharingEntryImpl.setGroupId(groupId);
 		sharingEntryImpl.setCompanyId(companyId);
@@ -125,6 +138,8 @@ public class SharingEntryCacheModel
 			sharingEntryImpl.setModifiedDate(new Date(modifiedDate));
 		}
 
+		sharingEntryImpl.setToTicketId(toTicketId);
+		sharingEntryImpl.setToUserGroupId(toUserGroupId);
 		sharingEntryImpl.setToUserId(toUserId);
 		sharingEntryImpl.setClassNameId(classNameId);
 		sharingEntryImpl.setClassPK(classPK);
@@ -146,6 +161,7 @@ public class SharingEntryCacheModel
 	@Override
 	public void readExternal(ObjectInput objectInput) throws IOException {
 		uuid = objectInput.readUTF();
+		externalReferenceCode = objectInput.readUTF();
 
 		sharingEntryId = objectInput.readLong();
 
@@ -157,6 +173,10 @@ public class SharingEntryCacheModel
 		userName = objectInput.readUTF();
 		createDate = objectInput.readLong();
 		modifiedDate = objectInput.readLong();
+
+		toTicketId = objectInput.readLong();
+
+		toUserGroupId = objectInput.readLong();
 
 		toUserId = objectInput.readLong();
 
@@ -179,6 +199,13 @@ public class SharingEntryCacheModel
 			objectOutput.writeUTF(uuid);
 		}
 
+		if (externalReferenceCode == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(externalReferenceCode);
+		}
+
 		objectOutput.writeLong(sharingEntryId);
 
 		objectOutput.writeLong(groupId);
@@ -197,6 +224,10 @@ public class SharingEntryCacheModel
 		objectOutput.writeLong(createDate);
 		objectOutput.writeLong(modifiedDate);
 
+		objectOutput.writeLong(toTicketId);
+
+		objectOutput.writeLong(toUserGroupId);
+
 		objectOutput.writeLong(toUserId);
 
 		objectOutput.writeLong(classNameId);
@@ -210,6 +241,7 @@ public class SharingEntryCacheModel
 	}
 
 	public String uuid;
+	public String externalReferenceCode;
 	public long sharingEntryId;
 	public long groupId;
 	public long companyId;
@@ -217,6 +249,8 @@ public class SharingEntryCacheModel
 	public String userName;
 	public long createDate;
 	public long modifiedDate;
+	public long toTicketId;
+	public long toUserGroupId;
 	public long toUserId;
 	public long classNameId;
 	public long classPK;
@@ -225,3 +259,4 @@ public class SharingEntryCacheModel
 	public long expirationDate;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:997798964

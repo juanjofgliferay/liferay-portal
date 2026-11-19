@@ -21,9 +21,9 @@ import com.liferay.portal.configuration.metatype.annotations.ExtendedObjectClass
 public interface AssetPublisherWebConfiguration {
 
 	/**
-	 * Set the cron expression to schedule when to check for new assets.
-	 * Users will be notified via email of new assets. If it is empty or
-	 * invalid, {@link #checkInterval()} is used instead.
+	 * Set the cron expression to schedule when to check for new assets. Users
+	 * will be notified via email of new assets. If it is empty or invalid,
+	 * {@link #checkInterval()} is used instead.
 	 *
 	 * @return cron expression to schedule when to check for new assets.
 	 */
@@ -34,9 +34,9 @@ public interface AssetPublisherWebConfiguration {
 	public String checkCronExpression();
 
 	/**
-	 * Set the interval in hours on how often to check for new assets.
-	 * Users will be notified via email of new assets. This field is ignored if
-	 * {@link #checkCronExpression()} is set to a valid value.
+	 * Set the interval in hours on how often to check for new assets. Users
+	 * will be notified via email of new assets. This field is ignored if {@link
+	 * #checkCronExpression()} is set to a valid value.
 	 *
 	 * @return interval in hours on how often to check for new assets.
 	 */
@@ -84,20 +84,8 @@ public interface AssetPublisherWebConfiguration {
 	public int dynamicSubscriptionLimit();
 
 	/**
-	 * Set this to <code>true</code> to enable exporting contents related to
-	 * asset entries for manual selection.
-	 *
-	 * @return <code>true</code> if manual export is enabled.
-	 */
-	@Meta.AD(
-		deflt = "false", description = "manual-export-enabled-key-description",
-		name = "manual-export-enabled", required = false
-	)
-	public boolean manualExportEnabled();
-
-	/**
-	 * Set this to <code>true</code> to disable autoscroll when opening
-	 * an asset.
+	 * Set this to <code>true</code> to disable autoscroll when opening an
+	 * asset.
 	 *
 	 * @return <code>true</code> autoScroll is enabled.
 	 */
@@ -108,17 +96,16 @@ public interface AssetPublisherWebConfiguration {
 	public boolean enableAutoscroll();
 
 	/**
-	 * Set this to <code>true</code> to search assets in Asset Publisher from
-	 * the index. Set this to <code>false</code> to search assets in Asset
-	 * Publisher from the database.
+	 * Set this to <code>true</code> to enable exporting contents related to
+	 * asset entries for manual selection.
 	 *
-	 * @return <code>true</code> search with index is enabled.
+	 * @return <code>true</code> if manual export is enabled.
 	 */
 	@Meta.AD(
-		deflt = "true", description = "search-with-index-key-description",
-		name = "search-with-index", required = false
+		deflt = "false", description = "manual-export-enabled-key-description",
+		name = "manual-export-enabled", required = false
 	)
-	public boolean searchWithIndex();
+	public boolean manualExportEnabled();
 
 	/**
 	 * Set this to <code>true</code> to allow users to configure Asset
@@ -135,5 +122,18 @@ public interface AssetPublisherWebConfiguration {
 		name = "permission-checking-configurable", required = false
 	)
 	public boolean permissionCheckingConfigurable();
+
+	/**
+	 * Set this to <code>true</code> to search assets in Asset Publisher from
+	 * the index. Set this to <code>false</code> to search assets in Asset
+	 * Publisher from the database.
+	 *
+	 * @return <code>true</code> search with index is enabled.
+	 */
+	@Meta.AD(
+		deflt = "true", description = "search-with-index-key-description",
+		name = "search-with-index", required = false
+	)
+	public boolean searchWithIndex();
 
 }

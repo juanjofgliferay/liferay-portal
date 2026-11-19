@@ -22,6 +22,7 @@ import com.liferay.portal.kernel.repository.model.FileVersion;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
+import com.liferay.portal.kernel.servlet.HttpHeaders;
 import com.liferay.portal.kernel.servlet.ServletResponseUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.FileUtil;
@@ -33,16 +34,16 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.repository.liferayrepository.model.LiferayFileEntry;
 
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
 import java.util.List;
-
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * @author Iván Zaera
@@ -111,6 +112,10 @@ public class GetFileActionHelper {
 
 		name = FileUtil.stripExtension(name);
 
+		ThemeDisplay themeDisplay =
+			(ThemeDisplay)httpServletRequest.getAttribute(
+				WebKeys.THEME_DISPLAY);
+
 		FileEntry fileEntry = null;
 
 		if (Validator.isNotNull(uuid) && (groupId > 0)) {
@@ -147,15 +152,11 @@ public class GetFileActionHelper {
 				}
 
 				if (dlFileEntry != null) {
-					ThemeDisplay themeDisplay =
-						(ThemeDisplay)httpServletRequest.getAttribute(
-							WebKeys.THEME_DISPLAY);
+					fileEntry = new LiferayFileEntry(dlFileEntry);
 
 					DLFileEntryPermission.check(
-						themeDisplay.getPermissionChecker(), dlFileEntry,
+						themeDisplay.getPermissionChecker(), fileEntry,
 						ActionKeys.VIEW);
-
-					fileEntry = new LiferayFileEntry(dlFileEntry);
 				}
 			}
 		}
@@ -168,17 +169,21 @@ public class GetFileActionHelper {
 			fileEntry = DLAppServiceUtil.getFileEntry(fileEntryId);
 		}
 
-		if (Validator.isNull(version)) {
-			if ((fileEntry != null) &&
-				Validator.isNotNull(fileEntry.getVersion())) {
+		if ((fileEntry == null) ||
+			(Validator.isNull(version) &&
+			 Validator.isNull(fileEntry.getVersion()))) {
 
-				version = fileEntry.getVersion();
-			}
-			else {
-				throw new NoSuchFileEntryException(
-					"{fileEntryId=" + fileEntryId + "}");
-			}
+			throw new NoSuchFileEntryException(
+				"{fileEntryId=" + fileEntryId + "}");
 		}
+
+		if (Validator.isNull(version)) {
+			version = fileEntry.getVersion();
+		}
+
+		DLFileEntryPermission.check(
+			themeDisplay.getPermissionChecker(), fileEntry,
+			ActionKeys.DOWNLOAD);
 
 		FileVersion fileVersion = fileEntry.getFileVersion(version);
 
@@ -214,9 +219,17 @@ public class GetFileActionHelper {
 			}
 		}
 
+		String contentDispositionType = null;
+
+		if (ServletResponseUtil.isBrowserExecutableContentType(
+				contentType, fileName)) {
+
+			contentDispositionType = HttpHeaders.CONTENT_DISPOSITION_ATTACHMENT;
+		}
+
 		ServletResponseUtil.sendFile(
 			httpServletRequest, httpServletResponse, fileName, inputStream,
-			contentLength, contentType);
+			contentLength, contentType, contentDispositionType);
 	}
 
 	private void _processPrincipalException(

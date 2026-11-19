@@ -20,6 +20,7 @@ import com.liferay.portal.kernel.exception.LayoutBranchNameException;
 import com.liferay.portal.kernel.exception.LayoutSetBranchNameException;
 import com.liferay.portal.kernel.exception.NoSuchGroupException;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.exception.RemoteOptionsException;
 import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
@@ -43,26 +44,25 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
-import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.staging.bar.web.internal.portlet.constants.StagingBarPortletKeys;
 import com.liferay.staging.constants.StagingProcessesWebKeys;
+
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.Portlet;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.io.IOException;
 
 import java.net.ConnectException;
 
 import java.util.List;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.Portlet;
-import javax.portlet.PortletException;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -82,14 +82,14 @@ import org.osgi.service.component.annotations.Reference;
 		"com.liferay.portlet.show-portlet-inactive=false",
 		"com.liferay.portlet.system=true",
 		"com.liferay.portlet.use-default-template=false",
-		"javax.portlet.display-name=Staging Bar",
-		"javax.portlet.expiration-cache=0",
-		"javax.portlet.init-param.template-path=/META-INF/resources/",
-		"javax.portlet.init-param.view-template=/view.jsp",
-		"javax.portlet.name=" + StagingBarPortletKeys.STAGING_BAR,
-		"javax.portlet.resource-bundle=content.Language",
-		"javax.portlet.security-role-ref=power-user,user",
-		"javax.portlet.version=3.0"
+		"jakarta.portlet.display-name=Staging Bar",
+		"jakarta.portlet.expiration-cache=0",
+		"jakarta.portlet.init-param.template-path=/META-INF/resources/",
+		"jakarta.portlet.init-param.view-template=/view.jsp",
+		"jakarta.portlet.name=" + StagingBarPortletKeys.STAGING_BAR,
+		"jakarta.portlet.resource-bundle=content.Language",
+		"jakarta.portlet.security-role-ref=power-user,user",
+		"jakarta.portlet.version=4.0"
 	},
 	service = Portlet.class
 )
@@ -285,25 +285,12 @@ public class StagingBarPortlet extends MVCPortlet {
 						stagingGroup.getGroupId(), layout.isPrivateLayout());
 			}
 
-			UnicodeProperties typeSettingsUnicodeProperties =
-				group.getTypeSettingsProperties();
-
-			String remoteAddress = typeSettingsUnicodeProperties.getProperty(
-				"remoteAddress");
-			int remotePort = GetterUtil.getInteger(
-				typeSettingsUnicodeProperties.getProperty("remotePort"));
-			String remotePathContext =
-				typeSettingsUnicodeProperties.getProperty("remotePathContext");
-			boolean secureConnection = GetterUtil.getBoolean(
-				typeSettingsUnicodeProperties.getProperty("secureConnection"));
-
-			remoteURL = _stagingURLHelper.buildRemoteURL(
-				remoteAddress, remotePort, remotePathContext, secureConnection);
-
 			if ((liveGroup != null) && group.isStagedRemotely()) {
 				try {
 					remoteSiteURL = _staging.getRemoteSiteURL(
 						group, layout.isPrivateLayout());
+					remoteURL = _stagingURLHelper.buildRemoteURL(
+						group.getTypeSettingsProperties());
 				}
 				catch (AuthException authException) {
 					_log.error(authException);
@@ -313,14 +300,20 @@ public class StagingBarPortlet extends MVCPortlet {
 				catch (SystemException systemException) {
 					Throwable throwable = systemException.getCause();
 
-					if (!(throwable instanceof ConnectException)) {
-						throw systemException;
+					if (throwable instanceof ConnectException) {
+						if (_log.isWarnEnabled()) {
+							_log.warn(
+								"Unable to connect to remote live: " +
+									throwable.getMessage());
+						}
 					}
-
-					if (_log.isWarnEnabled()) {
-						_log.warn(
-							"Unable to connect to remote live: " +
-								throwable.getMessage());
+					else if (throwable instanceof RemoteOptionsException) {
+						if (_log.isWarnEnabled()) {
+							_log.warn(systemException);
+						}
+					}
+					else {
+						throw systemException;
 					}
 
 					SessionErrors.add(

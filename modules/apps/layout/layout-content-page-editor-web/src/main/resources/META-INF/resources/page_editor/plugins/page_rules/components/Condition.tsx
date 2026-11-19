@@ -3,34 +3,38 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
+import {ScreenReaderAnnouncerContext} from '@liferay/layout-js-components-web';
 import {sub} from 'frontend-js-web';
-import React, {ComponentProps, FC, useContext, useRef} from 'react';
+import React, {useContext} from 'react';
 
+import {LAYOUT_TYPES} from '../../../app/config/constants/layoutTypes';
 import {config} from '../../../app/config/index';
-import RulesService from '../../../app/services/RulesService';
-import {CACHE_KEYS} from '../../../app/utils/cache';
-import useCache from '../../../app/utils/useCache';
-import useConditionValues from '../../../app/utils/useConditionValues';
-import RuleBuilderItem from './RuleBuilderItem';
+import {
+	MappingField,
+	MappingFieldAttributes,
+	MappingFields,
+} from '../../../types/MappingField';
+import {Condition as ConditionType, RuleError} from '../../../types/Rule';
+import FieldFragmentTypeSelector from './FieldFragmentTypeSelector';
+import FormFragmentTypeSelector from './FormFragmentTypeSelector';
 import RuleSelect from './RuleSelect';
-import {ScreenReaderAnnouncerContext} from './ScreenReaderContext';
-
-export interface Condition {
-	condition?: 'user' | 'role' | 'segment';
-	id: string;
-	type: 'user' | undefined;
-	value?: string;
-}
+import UserTypeSelector from './UserTypeSelector';
 
 interface ConditionProps {
-	condition: Condition;
-	onConditionChange: (condition: Condition) => void;
-	onDeleteCondition: () => void;
-	showDeleteButton: boolean;
-	wrapperRef?: ComponentProps<typeof RuleBuilderItem>['wrapperRef'];
+	condition: ConditionType;
+	inputFragmentItems: {label: string; value: string}[];
+	mappingFieldItems: {
+		attributes?: MappingFieldAttributes;
+		label: string;
+		type: string;
+		value: string;
+	}[];
+	onConditionChange: (condition: ConditionType) => void;
 }
 
-const TYPE_VALUES = {
+export const TYPE_VALUES = {
+	field: 'field',
+	formFragment: 'form',
 	user: 'user',
 } as const;
 
@@ -39,203 +43,127 @@ export const CONDITION_TYPE_ITEMS = [
 		label: Liferay.Language.get('user'),
 		value: TYPE_VALUES.user,
 	},
+	{
+		label: Liferay.Language.get('form-fragment'),
+		value: TYPE_VALUES.formFragment,
+	},
 ] as const;
 
-const CONDITION_VALUES = {
-	role: 'role',
-	segment: 'segment',
-	user: 'user',
-} as const;
-
-export const CONDITION_ITEMS = {
-	[TYPE_VALUES.user]: [
-		{
-			label: Liferay.Language.get('is-the-user'),
-			value: CONDITION_VALUES.user,
-		},
-
-		{
-			label: Liferay.Language.get('has-the-role-of'),
-			value: CONDITION_VALUES.role,
-		},
-		{
-			label: Liferay.Language.get('belongs-to-segment'),
-			value: CONDITION_VALUES.segment,
-		},
-	],
-} as const;
-
-const VALUE_SELECTOR_COMPONENTS: Record<
-	typeof CONDITION_VALUES[keyof typeof CONDITION_VALUES],
-	FC<SelectorProps> | null
-> = {
-	[CONDITION_VALUES.user]: UserSelector,
-	[CONDITION_VALUES.role]: RolesSelector,
-	[CONDITION_VALUES.segment]: SegmentsSelector,
-};
+const SUPPORTED_FIELD_TYPES = new Set<string>([
+	'boolean',
+	'date',
+	'date-time',
+	'file',
+	'long-text',
+	'multiselect',
+	'number',
+	'select',
+	'text',
+	'url',
+]);
 
 export default function Condition({
 	condition,
+	inputFragmentItems,
+	mappingFieldItems,
 	onConditionChange,
-	onDeleteCondition,
-	showDeleteButton,
-	wrapperRef,
 }: ConditionProps) {
 	const {sendMessage} = useContext(ScreenReaderAnnouncerContext);
 
-	const ValueSelectorComponent: FC<SelectorProps> | null = condition.condition
-		? VALUE_SELECTOR_COMPONENTS[condition.condition]
-		: null;
+	const onErrorChange = (error: RuleError | null) => {
+		if (condition.error?.element.id !== error?.element.id) {
+			onConditionChange({...condition, error});
+		}
+	};
 
-	const [{description}] = useConditionValues({conditions: [condition]});
-
-	const selectRef = useRef<HTMLButtonElement | undefined>();
-
-	const completeConditon = !!condition.value;
+	const conditionTypeItems =
+		config.layoutType === LAYOUT_TYPES.display &&
+		config.selectedMappingTypes?.formEnabled
+			? [
+					...CONDITION_TYPE_ITEMS,
+					{
+						label: sub(
+							Liferay.Language.get('x-field'),
+							config.selectedMappingTypes?.type.label
+						),
+						value: TYPE_VALUES.field,
+					},
+				]
+			: CONDITION_TYPE_ITEMS;
 
 	return (
-		<RuleBuilderItem
-			aria-label={
-				completeConditon
-					? description
-					: Liferay.Language.get('incomplete-condition')
-			}
-			description={description}
-			onDeleteButtonClick={onDeleteCondition}
-			onItemSelected={() => {
-				selectRef.current?.focus();
-			}}
-			showDeleteButton={showDeleteButton}
-			type="condition"
-			wrapperRef={wrapperRef}
-		>
+		<>
 			<RuleSelect
 				aria-label={Liferay.Language.get(
 					'select-item-for-the-condition'
 				)}
-				items={CONDITION_TYPE_ITEMS}
+				items={conditionTypeItems}
+				onErrorChange={onErrorChange}
 				onSelectionChange={(type) =>
 					onConditionChange({...condition, type})
 				}
 				selectedKey={condition.type}
-				triggerRef={selectRef}
 			/>
 
-			{condition.type && CONDITION_ITEMS[condition.type] ? (
-				<RuleSelect
-					aria-label={sub(
-						Liferay.Language.get('select-x'),
-						Liferay.Language.get('condition')
-					)}
-					items={CONDITION_ITEMS[condition.type]}
-					onSelectionChange={(selectedCondition) =>
-						onConditionChange({
-							...condition,
-							condition: selectedCondition,
-							value: undefined,
-						})
-					}
-					selectedKey={condition.condition}
+			{condition.type === TYPE_VALUES.field ? (
+				<FieldFragmentTypeSelector
+					condition={condition}
+					items={mappingFieldItems}
+					onConditionChange={onConditionChange}
+					onErrorChange={onErrorChange}
+					sendMessage={sendMessage}
 				/>
 			) : null}
 
-			{ValueSelectorComponent ? (
-				<ValueSelectorComponent
-					onValueChanged={(value) => {
-						onConditionChange({
-							...condition,
-							value,
-						});
-
-						sendMessage(
-							Liferay.Language.get('condition-completed')
-						);
-					}}
-					value={condition.value}
+			{condition.type === TYPE_VALUES.formFragment ? (
+				<FormFragmentTypeSelector
+					condition={condition}
+					inputFragmentItems={inputFragmentItems}
+					onConditionChange={onConditionChange}
+					onErrorChange={onErrorChange}
+					sendMessage={sendMessage}
 				/>
 			) : null}
-		</RuleBuilderItem>
+
+			{condition.type === TYPE_VALUES.user ? (
+				<UserTypeSelector
+					condition={condition}
+					onConditionChange={onConditionChange}
+					onErrorChange={onErrorChange}
+					sendMessage={sendMessage}
+				/>
+			) : null}
+		</>
 	);
 }
 
-interface SelectorProps {
-	onValueChanged: (value: string) => void;
-	value: string | undefined;
-}
-
-function RolesSelector({onValueChanged, value}: SelectorProps) {
-	const roles = useCache({
-		fetcher: () => RulesService.getRoles(),
-		key: [CACHE_KEYS.roles],
-	});
-
-	if (!roles) {
-		return null;
+export function filterAndConvertMappingFields(
+	mappingFields: MappingFields | null
+): {
+	attributes?: MappingFieldAttributes;
+	label: string;
+	type: string;
+	value: string;
+}[] {
+	if (!mappingFields || !config.selectedMappingTypes?.type) {
+		return [];
 	}
 
-	return (
-		<RuleSelect
-			aria-label={sub(
-				Liferay.Language.get('select-x'),
-				Liferay.Language.get('role')
-			)}
-			items={roles.map((role) => ({
-				label: role.name,
-				value: role.roleId,
-			}))}
-			onSelectionChange={(value: React.Key) =>
-				onValueChanged(value as string)
-			}
-			selectedKey={value}
-		/>
-	);
-}
+	return mappingFields
+		.flatMap((field) => ('fields' in field ? field.fields : [field]))
+		.filter((field) => {
+			const mappingField = field as MappingField;
 
-function UserSelector({onValueChanged, value}: SelectorProps) {
-	const users = useCache({
-		fetcher: () => RulesService.getUsers(),
-		key: [CACHE_KEYS.users],
-	});
+			return SUPPORTED_FIELD_TYPES.has(mappingField.type);
+		})
+		.map((field) => {
+			const mappingField = field as MappingField;
 
-	if (!users) {
-		return null;
-	}
-
-	return (
-		<RuleSelect
-			aria-label={sub(
-				Liferay.Language.get('select-x'),
-				Liferay.Language.get('user')
-			)}
-			items={users.map((user) => ({
-				label: user.screenName,
-				value: user.userId,
-			}))}
-			onSelectionChange={(value: React.Key) =>
-				onValueChanged(value as string)
-			}
-			selectedKey={value}
-		/>
-	);
-}
-
-function SegmentsSelector({onValueChanged, value}: SelectorProps) {
-	return (
-		<RuleSelect
-			aria-label={sub(
-				Liferay.Language.get('select-x'),
-				Liferay.Language.get('segment')
-			)}
-			items={Object.values(config.availableSegmentsEntries).map(
-				(segmentsEntry) => ({
-					label: segmentsEntry.name,
-					value: segmentsEntry.segmentsEntryId,
-				})
-			)}
-			onSelectionChange={(value: React.Key) =>
-				onValueChanged(value as string)
-			}
-			selectedKey={value}
-		/>
-	);
+			return {
+				attributes: mappingField.attributes,
+				label: mappingField.label,
+				type: mappingField.type,
+				value: mappingField.key,
+			};
+		});
 }

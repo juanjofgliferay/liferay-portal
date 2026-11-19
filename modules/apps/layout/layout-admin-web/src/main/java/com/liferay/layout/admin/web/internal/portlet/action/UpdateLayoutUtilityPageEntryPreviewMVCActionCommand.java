@@ -6,9 +6,8 @@
 package com.liferay.layout.admin.web.internal.portlet.action;
 
 import com.liferay.document.library.kernel.model.DLFileEntry;
-import com.liferay.document.library.kernel.service.DLAppLocalService;
+import com.liferay.document.library.kernel.service.DLAppService;
 import com.liferay.document.library.kernel.service.DLFileEntryLocalService;
-import com.liferay.document.library.kernel.service.DLFolderLocalService;
 import com.liferay.layout.admin.constants.LayoutAdminPortletKeys;
 import com.liferay.layout.utility.page.model.LayoutUtilityPageEntry;
 import com.liferay.layout.utility.page.service.LayoutUtilityPageEntryService;
@@ -18,13 +17,14 @@ import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
 import com.liferay.portal.kernel.portletfilerepository.PortletFileRepository;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.ServiceContextFactory;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.TempFileEntryUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -34,7 +34,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + LayoutAdminPortletKeys.GROUP_PAGES,
+		"jakarta.portlet.name=" + LayoutAdminPortletKeys.GROUP_PAGES,
 		"mvc.command.name=/layout_admin/update_layout_utility_page_entry_preview"
 	},
 	service = MVCActionCommand.class
@@ -55,7 +55,7 @@ public class UpdateLayoutUtilityPageEntryPreviewMVCActionCommand
 
 		long fileEntryId = ParamUtil.getLong(actionRequest, "fileEntryId");
 
-		FileEntry fileEntry = _dlAppLocalService.getFileEntry(fileEntryId);
+		FileEntry fileEntry = _dlAppService.getFileEntry(fileEntryId);
 
 		Repository repository = _portletFileRepository.fetchPortletRepository(
 			themeDisplay.getScopeGroupId(), LayoutAdminPortletKeys.GROUP_PAGES);
@@ -97,7 +97,9 @@ public class UpdateLayoutUtilityPageEntryPreviewMVCActionCommand
 			false);
 
 		_layoutUtilityPageEntryService.updateLayoutUtilityPageEntry(
-			layoutUtilityPageEntryId, fileEntry.getFileEntryId());
+			layoutUtilityPageEntryId, fileEntry.getFileEntryId(),
+			ServiceContextFactory.getInstance(
+				LayoutUtilityPageEntry.class.getName(), actionRequest));
 
 		TempFileEntryUtil.deleteTempFileEntry(fileEntryId);
 
@@ -105,13 +107,10 @@ public class UpdateLayoutUtilityPageEntryPreviewMVCActionCommand
 	}
 
 	@Reference
-	private DLAppLocalService _dlAppLocalService;
+	private DLAppService _dlAppService;
 
 	@Reference
 	private DLFileEntryLocalService _dlFileEntryLocalService;
-
-	@Reference
-	private DLFolderLocalService _dlFolderLocalService;
 
 	@Reference
 	private LayoutUtilityPageEntryService _layoutUtilityPageEntryService;

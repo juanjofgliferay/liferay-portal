@@ -9,24 +9,25 @@ import com.liferay.document.library.constants.DLPortletKeys;
 import com.liferay.document.library.kernel.service.DLAppService;
 import com.liferay.document.library.opener.google.drive.web.internal.DLOpenerGoogleDriveManager;
 import com.liferay.document.library.opener.google.drive.web.internal.constants.DLOpenerGoogleDriveWebKeys;
-import com.liferay.document.library.opener.google.drive.web.internal.helper.GoogleDrivePortletRequestAuthorizationHelper;
+import com.liferay.document.library.opener.google.drive.web.internal.oauth.GoogleDrivePortletRequestAuthorizationUtil;
 import com.liferay.document.library.opener.google.drive.web.internal.oauth.OAuth2StateUtil;
 import com.liferay.document.library.opener.oauth.OAuth2State;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.portlet.PortletURLFactory;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCRenderCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.constants.MVCRenderConstants;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 
+import jakarta.portlet.PortletException;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
+
 import java.io.IOException;
-
-import javax.portlet.PortletException;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.RequestDispatcher;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -36,8 +37,8 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + DLPortletKeys.DOCUMENT_LIBRARY,
-		"javax.portlet.name=" + DLPortletKeys.DOCUMENT_LIBRARY_ADMIN,
+		"jakarta.portlet.name=" + DLPortletKeys.DOCUMENT_LIBRARY,
+		"jakarta.portlet.name=" + DLPortletKeys.DOCUMENT_LIBRARY_ADMIN,
 		"mvc.command.name=/document_library/open_google_docs"
 	},
 	service = MVCRenderCommand.class
@@ -55,8 +56,10 @@ public class OpenGoogleDocsMVCRenderCommand implements MVCRenderCommand {
 					_portal.getHttpServletRequest(renderRequest)));
 
 			if (oAuth2State == null) {
-				_googleDrivePortletRequestAuthorizationHelper.
-					performAuthorizationFlow(renderRequest, renderResponse);
+				GoogleDrivePortletRequestAuthorizationUtil.
+					performAuthorizationFlow(
+						_googleDriveManager, _portal, renderRequest,
+						renderResponse, _portletURLFactory);
 			}
 			else {
 				renderRequest.setAttribute(
@@ -90,11 +93,10 @@ public class OpenGoogleDocsMVCRenderCommand implements MVCRenderCommand {
 	private DLOpenerGoogleDriveManager _googleDriveManager;
 
 	@Reference
-	private GoogleDrivePortletRequestAuthorizationHelper
-		_googleDrivePortletRequestAuthorizationHelper;
+	private Portal _portal;
 
 	@Reference
-	private Portal _portal;
+	private PortletURLFactory _portletURLFactory;
 
 	@Reference(
 		target = "(osgi.web.symbolicname=com.liferay.document.library.opener.google.drive.web)"

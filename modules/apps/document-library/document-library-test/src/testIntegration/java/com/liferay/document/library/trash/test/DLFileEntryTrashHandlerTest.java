@@ -27,9 +27,16 @@ import com.liferay.portal.kernel.model.TrashedModel;
 import com.liferay.portal.kernel.model.WorkflowedModel;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.repository.model.Folder;
+import com.liferay.portal.kernel.search.Document;
+import com.liferay.portal.kernel.search.Field;
+import com.liferay.portal.kernel.search.Hits;
+import com.liferay.portal.kernel.search.Indexer;
+import com.liferay.portal.kernel.search.IndexerRegistryUtil;
+import com.liferay.portal.kernel.search.SearchContext;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.SearchContextTestUtil;
 import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.trash.TrashHandler;
@@ -58,6 +65,9 @@ import com.liferay.trash.test.util.WhenIsIndexableBaseModel;
 import com.liferay.trash.test.util.WhenIsMoveableFromTrashBaseModel;
 import com.liferay.trash.test.util.WhenIsRestorableBaseModel;
 import com.liferay.trash.test.util.WhenIsUpdatableBaseModel;
+
+import java.util.Arrays;
+import java.util.Collections;
 
 import org.junit.Assert;
 import org.junit.ClassRule;
@@ -212,6 +222,72 @@ public class DLFileEntryTrashHandlerTest
 			dlFileVersion.getFileName());
 	}
 
+	@Test
+	public void testRestoreExpiredFileEntry() throws Exception {
+		DLFileEntry dlFileEntry = (DLFileEntry)addBaseModelWithWorkflow(
+			ServiceContextTestUtil.getServiceContext(group.getGroupId()));
+
+		dlFileEntry = DLFileEntryLocalServiceUtil.updateStatus(
+			dlFileEntry.getUserId(), dlFileEntry, dlFileEntry.getFileVersion(),
+			WorkflowConstants.STATUS_EXPIRED,
+			ServiceContextTestUtil.getServiceContext(group.getGroupId()),
+			Collections.emptyMap());
+
+		Assert.assertEquals(
+			WorkflowConstants.STATUS_EXPIRED, dlFileEntry.getStatus());
+
+		moveBaseModelToTrash(dlFileEntry.getFileEntryId());
+
+		Assert.assertEquals(
+			WorkflowConstants.STATUS_IN_TRASH, dlFileEntry.getStatus());
+
+		_restoreTrashEntry(dlFileEntry.getFileEntryId());
+
+		Assert.assertEquals(
+			WorkflowConstants.STATUS_EXPIRED, dlFileEntry.getStatus());
+
+		_assertIndexed(
+			dlFileEntry.getFileEntryId(), WorkflowConstants.STATUS_EXPIRED);
+	}
+
+	@Test
+	public void testRestoreFileEntryWithDraftLatestVersion() throws Exception {
+		ServiceContext serviceContext =
+			ServiceContextTestUtil.getServiceContext(group.getGroupId());
+
+		DLFileEntry dlFileEntry = (DLFileEntry)addBaseModelWithWorkflow(
+			serviceContext);
+
+		serviceContext.setWorkflowAction(WorkflowConstants.ACTION_SAVE_DRAFT);
+
+		updateBaseModel(dlFileEntry.getFileEntryId(), serviceContext);
+
+		_assertRestoredFileEntryVisible(dlFileEntry.getFileEntryId());
+	}
+
+	@Test
+	public void testRestoreFileEntryWithExpiredLatestVersion()
+		throws Exception {
+
+		ServiceContext serviceContext =
+			ServiceContextTestUtil.getServiceContext(group.getGroupId());
+
+		DLFileEntry dlFileEntry = (DLFileEntry)addBaseModelWithWorkflow(
+			serviceContext);
+
+		dlFileEntry = (DLFileEntry)updateBaseModel(
+			dlFileEntry.getFileEntryId(), serviceContext);
+
+		DLFileVersion dlFileVersion = dlFileEntry.getFileVersion();
+
+		DLFileEntryLocalServiceUtil.updateStatus(
+			dlFileEntry.getUserId(), dlFileVersion.getFileVersionId(),
+			WorkflowConstants.STATUS_EXPIRED, serviceContext,
+			Collections.emptyMap());
+
+		_assertRestoredFileEntryVisible(dlFileEntry.getFileEntryId());
+	}
+
 	@Override
 	@Test(expected = TrashEntryException.class)
 	public void testTrashParentAndBaseModel() throws Exception {
@@ -238,8 +314,9 @@ public class DLFileEntryTrashHandlerTest
 			primaryKey, RandomTestUtil.randomString() + ".txt",
 			ContentTypes.TEXT_PLAIN, dlFileEntry.getTitle(), StringPool.BLANK,
 			StringPool.BLANK, StringPool.BLANK, DLVersionNumberIncrease.MINOR,
-			content.getBytes(), dlFileEntry.getExpirationDate(),
-			dlFileEntry.getReviewDate(), serviceContext);
+			content.getBytes(), dlFileEntry.getDisplayDate(),
+			dlFileEntry.getExpirationDate(), dlFileEntry.getReviewDate(),
+			serviceContext);
 
 		LiferayFileEntry liferayFileEntry = (LiferayFileEntry)fileEntry;
 
@@ -358,6 +435,50 @@ public class DLFileEntryTrashHandlerTest
 	@Override
 	protected void moveBaseModelToTrash(long primaryKey) throws Exception {
 		DLTrashServiceUtil.moveFileEntryToTrash(primaryKey);
+	}
+
+	private void _assertIndexed(long fileEntryId, int status) throws Exception {
+		Indexer<DLFileEntry> indexer = IndexerRegistryUtil.getIndexer(
+			DLFileEntry.class);
+
+		SearchContext searchContext = SearchContextTestUtil.getSearchContext(
+			group.getGroupId());
+
+		searchContext.setAttribute(Field.STATUS, status);
+
+		Hits hits = indexer.search(searchContext);
+
+		Document[] documents = hits.getDocs();
+
+		Assert.assertEquals(Arrays.toString(documents), 1, documents.length);
+
+		Document document = documents[0];
+
+		Assert.assertEquals(
+			String.valueOf(fileEntryId), document.get(Field.ENTRY_CLASS_PK));
+	}
+
+	private void _assertRestoredFileEntryVisible(long fileEntryId)
+		throws Exception {
+
+		moveBaseModelToTrash(fileEntryId);
+
+		_restoreTrashEntry(fileEntryId);
+
+		Assert.assertTrue(
+			isAssetEntryVisible(
+				DLFileEntryLocalServiceUtil.getFileEntry(fileEntryId),
+				fileEntryId));
+
+		_assertIndexed(fileEntryId, WorkflowConstants.STATUS_APPROVED);
+	}
+
+	private void _restoreTrashEntry(long fileEntryId) throws Exception {
+		TrashHandler trashHandler = TrashHandlerRegistryUtil.getTrashHandler(
+			getBaseModelClassName());
+
+		trashHandler.restoreTrashEntry(
+			TestPropsValues.getUserId(), fileEntryId);
 	}
 
 	private static final String _FILE_ENTRY_TITLE = RandomTestUtil.randomString(

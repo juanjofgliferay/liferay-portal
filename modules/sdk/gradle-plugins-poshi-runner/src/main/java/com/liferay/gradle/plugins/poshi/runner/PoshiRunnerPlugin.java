@@ -49,6 +49,8 @@ import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.artifacts.DependencySet;
 import org.gradle.api.file.CopySpec;
+import org.gradle.api.file.Directory;
+import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.FileTree;
 import org.gradle.api.logging.Logger;
@@ -67,7 +69,6 @@ import org.gradle.api.tasks.testing.Test;
 import org.gradle.api.tasks.testing.TestTaskReports;
 import org.gradle.api.tasks.testing.logging.TestLoggingContainer;
 import org.gradle.process.ExecSpec;
-import org.gradle.util.CollectionUtils;
 import org.gradle.util.GUtil;
 
 /**
@@ -455,6 +456,8 @@ public class PoshiRunnerPlugin implements Plugin<Project> {
 		test.setTestClassesDirs(
 			project.files(_getExpandedPoshiRunnerDir(project)));
 
+		test.useJUnitPlatform();
+
 		TaskOutputs taskOutputs = test.getOutputs();
 
 		taskOutputs.upToDateWhen(
@@ -618,7 +621,7 @@ public class PoshiRunnerPlugin implements Plugin<Project> {
 		Test test, Properties poshiProperties,
 		PoshiRunnerExtension poshiRunnerExtension) {
 
-		_configureTaskRunPoshiBinResultsDir(test);
+		_configureTaskRunPoshiBinaryResultsDirectory(test);
 		_configureTaskRunPoshiReports(test);
 
 		Project project = test.getProject();
@@ -642,14 +645,18 @@ public class PoshiRunnerPlugin implements Plugin<Project> {
 		_populateWebDriverSystemProperties(test, poshiProperties);
 	}
 
-	private void _configureTaskRunPoshiBinResultsDir(Test test) {
-		if (test.getBinResultsDir() != null) {
+	private void _configureTaskRunPoshiBinaryResultsDirectory(Test test) {
+		DirectoryProperty directoryProperty = test.getBinaryResultsDirectory();
+
+		Directory directory = directoryProperty.getOrNull();
+
+		if (directory != null) {
 			return;
 		}
 
 		Project project = test.getProject();
 
-		test.setBinResultsDir(
+		directoryProperty.set(
 			project.file("test-results/binary/" + RUN_POSHI_TASK_NAME));
 	}
 
@@ -660,16 +667,25 @@ public class PoshiRunnerPlugin implements Plugin<Project> {
 
 		DirectoryReport directoryReport = testTaskReports.getHtml();
 
-		if (directoryReport.getDestination() == null) {
-			directoryReport.setDestination(project.file("tests"));
+		DirectoryProperty directoryProperty =
+			directoryReport.getOutputLocation();
+
+		Directory directory = directoryProperty.getOrNull();
+
+		if (directory == null) {
+			directoryProperty.set(project.file("tests"));
 		}
 
 		JUnitXmlReport jUnitXmlReport = testTaskReports.getJunitXml();
 
 		jUnitXmlReport.setOutputPerTestCase(true);
 
-		if (jUnitXmlReport.getDestination() == null) {
-			jUnitXmlReport.setDestination(project.file("test-results"));
+		directoryProperty = jUnitXmlReport.getOutputLocation();
+
+		directory = directoryProperty.getOrNull();
+
+		if (directory == null) {
+			directoryProperty.set(project.file("test-results"));
 		}
 	}
 
@@ -718,8 +734,7 @@ public class PoshiRunnerPlugin implements Plugin<Project> {
 
 		StringBuilder sb = new StringBuilder();
 
-		sb.append(
-			"https://edgedl.me.gvt1.com/edgedl/chrome/chrome-for-testing/");
+		sb.append("https://storage.googleapis.com/chrome-for-testing-public/");
 		sb.append(chromeDriverVersion);
 		sb.append("/");
 
@@ -830,8 +845,11 @@ public class PoshiRunnerPlugin implements Plugin<Project> {
 			Integer chromeMajorVersion = Integer.parseInt(
 				matcher.group("majorVersion"));
 
-			if (_chromeDriverVersions.containsKey(chromeMajorVersion)) {
-				return _chromeDriverVersions.get(chromeMajorVersion);
+			String chromeDriverVersion = _chromeDriverVersions.get(
+				chromeMajorVersion);
+
+			if (chromeDriverVersion != null) {
+				return chromeDriverVersion;
 			}
 
 			try {
@@ -855,7 +873,7 @@ public class PoshiRunnerPlugin implements Plugin<Project> {
 					_LEGACY_CHROME_DRIVER_BASE_URL + "LATEST_RELEASE_" +
 						chromeMajorVersion.toString());
 
-				String chromeDriverVersion = StringUtil.read(url.openStream());
+				chromeDriverVersion = StringUtil.read(url.openStream());
 
 				return chromeDriverVersion.trim();
 			}
@@ -1053,20 +1071,24 @@ public class PoshiRunnerPlugin implements Plugin<Project> {
 			poshiRunnerExtension.getPoshiPropertiesFiles());
 
 		for (File poshiPropertiesFile : poshiPropertiesFiles) {
-			if (poshiPropertiesFile != null) {
-				if (poshiPropertiesFile.exists()) {
-					poshiProperties.putAll(
-						GUtil.loadProperties(poshiPropertiesFile));
-				}
-
-				File poshiExtPropertiesFile = _getPoshiExtPropertiesFile(
-					poshiPropertiesFile);
-
-				if (poshiExtPropertiesFile.exists()) {
-					poshiProperties.putAll(
-						GUtil.loadProperties(poshiExtPropertiesFile));
-				}
+			if (poshiPropertiesFile == null) {
+				continue;
 			}
+
+			if (poshiPropertiesFile.exists()) {
+				poshiProperties.putAll(
+					GUtil.loadProperties(poshiPropertiesFile));
+			}
+
+			File poshiExtPropertiesFile = _getPoshiExtPropertiesFile(
+				poshiPropertiesFile);
+
+			if (!poshiExtPropertiesFile.exists()) {
+				continue;
+			}
+
+			poshiProperties.putAll(
+				GUtil.loadProperties(poshiExtPropertiesFile));
 		}
 
 		return poshiProperties;
@@ -1203,7 +1225,7 @@ public class PoshiRunnerPlugin implements Plugin<Project> {
 
 		if (!testNames.isEmpty()) {
 			gradleSystemProperties.put(
-				"test.name", CollectionUtils.join(",", testNames));
+				"test.name", String.join(",", testNames));
 		}
 
 		ExtensionContainer extensionContainer = project.getExtensions();
@@ -1219,18 +1241,20 @@ public class PoshiRunnerPlugin implements Plugin<Project> {
 
 			String[] array = propertyName.split("(?=\\p{Upper})");
 
-			if (Objects.equals(array[0], "poshi") && (array.length > 1)) {
-				StringBuilder sb = new StringBuilder();
-
-				for (int i = 1; i < array.length; i++) {
-					sb.append(array[i].toLowerCase());
-					sb.append('.');
-				}
-
-				sb.setLength(sb.length() - 1);
-
-				gradleSystemProperties.put(sb.toString(), entry.getValue());
+			if (!Objects.equals(array[0], "poshi") || (array.length <= 1)) {
+				continue;
 			}
+
+			StringBuilder sb = new StringBuilder();
+
+			for (int i = 1; i < array.length; i++) {
+				sb.append(array[i].toLowerCase());
+				sb.append('.');
+			}
+
+			sb.setLength(sb.length() - 1);
+
+			gradleSystemProperties.put(sb.toString(), entry.getValue());
 		}
 
 		if (poshiProperties != null) {

@@ -5,22 +5,25 @@
 
 package com.liferay.document.library.internal.service;
 
+import com.liferay.document.library.configuration.DLFileEntryFriendlyURLConfiguration;
 import com.liferay.document.library.kernel.model.DLFileEntry;
 import com.liferay.document.library.kernel.model.DLVersionNumberIncrease;
 import com.liferay.document.library.kernel.service.DLFileEntryLocalServiceWrapper;
+import com.liferay.document.library.kernel.util.DLUtil;
 import com.liferay.dynamic.data.mapping.kernel.DDMFormValues;
 import com.liferay.exportimport.kernel.lar.ExportImportThreadLocal;
 import com.liferay.friendly.url.model.FriendlyURLEntry;
 import com.liferay.friendly.url.service.FriendlyURLEntryLocalService;
+import com.liferay.petra.string.StringPool;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProviderUtil;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.service.ClassNameLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
 import com.liferay.portal.kernel.service.ServiceWrapper;
+import com.liferay.portal.kernel.util.FileUtil;
 import com.liferay.portal.kernel.util.FriendlyURLNormalizer;
-import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.Validator;
 
 import java.io.File;
@@ -35,8 +38,12 @@ import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Alicia García
+ * @author Roberto Díaz
  */
-@Component(service = ServiceWrapper.class)
+@Component(
+	configurationPid = "com.liferay.document.library.configuration.DLFileEntryFriendlyURLConfiguration",
+	service = ServiceWrapper.class
+)
 public class FriendlyURLDLFileEntryLocalServiceWrapper
 	extends DLFileEntryLocalServiceWrapper {
 
@@ -47,18 +54,21 @@ public class FriendlyURLDLFileEntryLocalServiceWrapper
 			String mimeType, String title, String urlTitle, String description,
 			String changeLog, long fileEntryTypeId,
 			Map<String, DDMFormValues> ddmFormValuesMap, File file,
-			InputStream inputStream, long size, Date expirationDate,
-			Date reviewDate, ServiceContext serviceContext)
+			InputStream inputStream, long size, Date displayDate,
+			Date expirationDate, Date reviewDate, ServiceContext serviceContext)
 		throws PortalException {
 
 		DLFileEntry dlFileEntry = super.addFileEntry(
 			externalReferenceCode, userId, groupId, repositoryId, folderId,
 			sourceFileName, mimeType, title, urlTitle, description, changeLog,
 			fileEntryTypeId, ddmFormValuesMap, file, inputStream, size,
-			expirationDate, reviewDate, serviceContext);
+			displayDate, expirationDate, reviewDate, serviceContext);
 
 		if (!ExportImportThreadLocal.isImportInProcess()) {
-			_addFriendlyURLEntry(dlFileEntry, _getUrlTitle(title, urlTitle));
+			_addFriendlyURLEntry(
+				dlFileEntry,
+				_getNormalizedURLTitle(
+					dlFileEntry, _getUrlTitle(dlFileEntry, title, urlTitle)));
 		}
 
 		return dlFileEntry;
@@ -84,15 +94,15 @@ public class FriendlyURLDLFileEntryLocalServiceWrapper
 			String mimeType, String title, String urlTitle, String description,
 			String changeLog, DLVersionNumberIncrease dlVersionNumberIncrease,
 			long fileEntryTypeId, Map<String, DDMFormValues> ddmFormValuesMap,
-			File file, InputStream inputStream, long size, Date expirationDate,
-			Date reviewDate, ServiceContext serviceContext)
+			File file, InputStream inputStream, long size, Date displayDate,
+			Date expirationDate, Date reviewDate, ServiceContext serviceContext)
 		throws PortalException {
 
 		DLFileEntry dlFileEntry = super.updateFileEntry(
 			userId, fileEntryId, sourceFileName, mimeType, title, urlTitle,
 			description, changeLog, dlVersionNumberIncrease, fileEntryTypeId,
-			ddmFormValuesMap, file, inputStream, size, expirationDate,
-			reviewDate, serviceContext);
+			ddmFormValuesMap, file, inputStream, size, displayDate,
+			expirationDate, reviewDate, serviceContext);
 
 		if (!ExportImportThreadLocal.isImportInProcess()) {
 			_updateFriendlyURL(dlFileEntry, title, urlTitle);
@@ -107,9 +117,7 @@ public class FriendlyURLDLFileEntryLocalServiceWrapper
 		String uniqueUrlTitle = _friendlyURLEntryLocalService.getUniqueUrlTitle(
 			dlFileEntry.getGroupId(),
 			_classNameLocalService.getClassNameId(FileEntry.class),
-			dlFileEntry.getFileEntryId(),
-			_friendlyURLNormalizer.normalizeWithPeriodsAndSlashes(urlTitle),
-			_language.getLanguageId(LocaleUtil.getSiteDefault()));
+			dlFileEntry.getFileEntryId(), urlTitle);
 
 		_friendlyURLEntryLocalService.addFriendlyURLEntry(
 			dlFileEntry.getGroupId(),
@@ -118,12 +126,51 @@ public class FriendlyURLDLFileEntryLocalServiceWrapper
 			ServiceContextThreadLocal.getServiceContext());
 	}
 
-	private String _getUrlTitle(String title, String urlTitle) {
+	private String _getNormalizedURLTitle(
+			DLFileEntry dlFileEntry, String urlTitle)
+		throws PortalException {
+
+		if (_isFriendlyURLWithExtensionEnabled(dlFileEntry.getCompanyId()) &&
+			Validator.isNotNull(FileUtil.getExtension(urlTitle))) {
+
+			String normalizedURLTitle =
+				_friendlyURLNormalizer.normalizeWithPeriodsAndSlashes(
+					FileUtil.stripExtension(urlTitle));
+
+			return normalizedURLTitle + StringPool.PERIOD +
+				dlFileEntry.getExtension();
+		}
+
+		return _friendlyURLNormalizer.normalizeWithPeriodsAndSlashes(urlTitle);
+	}
+
+	private String _getUrlTitle(
+			DLFileEntry dlFileEntry, String title, String urlTitle)
+		throws PortalException {
+
 		if (!Validator.isBlank(urlTitle)) {
 			return urlTitle;
 		}
 
-		return title;
+		if (Validator.isNotNull(FileUtil.getExtension(title)) ||
+			!_isFriendlyURLWithExtensionEnabled(dlFileEntry.getCompanyId())) {
+
+			return title;
+		}
+
+		return DLUtil.getTitleWithExtension(title, dlFileEntry.getExtension());
+	}
+
+	private boolean _isFriendlyURLWithExtensionEnabled(long companyId)
+		throws PortalException {
+
+		DLFileEntryFriendlyURLConfiguration
+			dlFileEntryFriendlyURLConfiguration =
+				ConfigurationProviderUtil.getCompanyConfiguration(
+					DLFileEntryFriendlyURLConfiguration.class, companyId);
+
+		return dlFileEntryFriendlyURLConfiguration.
+			enableFriendlyURLWithExtension();
 	}
 
 	private void _updateFriendlyURL(
@@ -136,13 +183,16 @@ public class FriendlyURLDLFileEntryLocalServiceWrapper
 				dlFileEntry.getFileEntryId());
 
 		if (friendlyURLEntry == null) {
-			_addFriendlyURLEntry(dlFileEntry, _getUrlTitle(title, urlTitle));
+			_addFriendlyURLEntry(
+				dlFileEntry,
+				_getNormalizedURLTitle(
+					dlFileEntry, _getUrlTitle(dlFileEntry, title, urlTitle)));
 
 			return;
 		}
 
-		String normalizedUrlTitle =
-			_friendlyURLNormalizer.normalizeWithPeriodsAndSlashes(urlTitle);
+		String normalizedUrlTitle = _getNormalizedURLTitle(
+			dlFileEntry, urlTitle);
 
 		if (Validator.isNotNull(urlTitle) &&
 			!Objects.equals(
@@ -160,8 +210,5 @@ public class FriendlyURLDLFileEntryLocalServiceWrapper
 
 	@Reference
 	private FriendlyURLNormalizer _friendlyURLNormalizer;
-
-	@Reference
-	private Language _language;
 
 }

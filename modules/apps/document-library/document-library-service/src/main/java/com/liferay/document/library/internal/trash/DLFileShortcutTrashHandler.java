@@ -5,7 +5,7 @@
 
 package com.liferay.document.library.internal.trash;
 
-import com.liferay.document.library.kernel.exception.NoSuchFileEntryException;
+import com.liferay.document.library.helper.DLURLHelper;
 import com.liferay.document.library.kernel.exception.NoSuchFolderException;
 import com.liferay.document.library.kernel.model.DLFileShortcut;
 import com.liferay.document.library.kernel.model.DLFileShortcutConstants;
@@ -14,7 +14,6 @@ import com.liferay.document.library.kernel.model.DLFolderConstants;
 import com.liferay.document.library.kernel.service.DLAppLocalService;
 import com.liferay.document.library.kernel.service.DLFileShortcutLocalService;
 import com.liferay.document.library.kernel.util.DLUtil;
-import com.liferay.document.library.util.DLURLHelper;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
@@ -40,7 +39,7 @@ import com.liferay.portal.kernel.trash.TrashRenderer;
 import com.liferay.trash.TrashHelper;
 import com.liferay.trash.constants.TrashActionKeys;
 
-import javax.portlet.PortletRequest;
+import jakarta.portlet.PortletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -124,6 +123,14 @@ public class DLFileShortcutTrashHandler extends BaseDLTrashHandler {
 	}
 
 	@Override
+	public TrashRenderer getTrashRenderer(long classPK) throws PortalException {
+		DLFileShortcut dlFileShortcut =
+			_dlFileShortcutLocalService.getFileShortcut(classPK);
+
+		return new DLFileShortcutTrashRenderer(dlFileShortcut, _trashHelper);
+	}
+
+	@Override
 	public TrashedModel getTrashedModel(long classPK) {
 		try {
 			return _getDLFileShortcut(classPK);
@@ -135,14 +142,6 @@ public class DLFileShortcutTrashHandler extends BaseDLTrashHandler {
 
 			return null;
 		}
-	}
-
-	@Override
-	public TrashRenderer getTrashRenderer(long classPK) throws PortalException {
-		DLFileShortcut dlFileShortcut =
-			_dlFileShortcutLocalService.getFileShortcut(classPK);
-
-		return new DLFileShortcutTrashRenderer(dlFileShortcut, _trashHelper);
 	}
 
 	@Override
@@ -194,23 +193,11 @@ public class DLFileShortcutTrashHandler extends BaseDLTrashHandler {
 			return false;
 		}
 
-		try {
-			FileEntry toFileEntry = _dlAppLocalService.getFileEntry(
-				dlFileShortcut.getToFileEntryId());
+		FileEntry toFileEntry = _dlAppLocalService.fetchFileEntry(
+			dlFileShortcut.getToFileEntryId());
 
-			if (toFileEntry.isInTrash()) {
-				return false;
-			}
-		}
-		catch (NoSuchFileEntryException noSuchFileEntryException) {
-			if (_log.isDebugEnabled()) {
-				_log.debug(noSuchFileEntryException);
-			}
-
-			return false;
-		}
-
-		if (!hasTrashPermission(
+		if ((toFileEntry == null) || toFileEntry.isInTrash() ||
+			!hasTrashPermission(
 				PermissionThreadLocal.getPermissionChecker(),
 				dlFileShortcut.getGroupId(), classPK,
 				TrashActionKeys.RESTORE)) {

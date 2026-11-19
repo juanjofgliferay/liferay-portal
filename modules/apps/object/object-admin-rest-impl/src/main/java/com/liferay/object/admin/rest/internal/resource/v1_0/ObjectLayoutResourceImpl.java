@@ -38,7 +38,7 @@ import com.liferay.portal.vulcan.pagination.Pagination;
 import com.liferay.portal.vulcan.util.LocalizedMapUtil;
 import com.liferay.portal.vulcan.util.SearchUtil;
 
-import javax.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.MultivaluedMap;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -165,7 +165,7 @@ public class ObjectLayoutResourceImpl extends BaseObjectLayoutResourceImpl {
 			_objectLayoutService.addObjectLayout(
 				objectDefinitionId,
 				GetterUtil.getBoolean(objectLayout.getDefaultObjectLayout()),
-				LocalizedMapUtil.getLocalizedMap(objectLayout.getName()),
+				LocalizedMapUtil.populateLocalizedMap(objectLayout.getName()),
 				transformToList(
 					objectLayout.getObjectLayoutTabs(),
 					objectLayoutTab -> _toObjectLayoutTab(
@@ -187,13 +187,13 @@ public class ObjectLayoutResourceImpl extends BaseObjectLayoutResourceImpl {
 						contextCompany.getCompanyId());
 
 			objectLayout.setObjectDefinitionId(
-				objectDefinition.getObjectDefinitionId());
+				objectDefinition::getObjectDefinitionId);
 		}
 
 		return _toObjectLayout(
 			_objectLayoutService.updateObjectLayout(
 				objectLayoutId, objectLayout.getDefaultObjectLayout(),
-				LocalizedMapUtil.getLocalizedMap(objectLayout.getName()),
+				LocalizedMapUtil.populateLocalizedMap(objectLayout.getName()),
 				transformToList(
 					objectLayout.getObjectLayoutTabs(),
 					objectLayoutTab -> _toObjectLayoutTab(
@@ -239,7 +239,7 @@ public class ObjectLayoutResourceImpl extends BaseObjectLayoutResourceImpl {
 		serviceBuilderObjectLayoutBox.setCollapsable(
 			objectLayoutBox.getCollapsable());
 		serviceBuilderObjectLayoutBox.setNameMap(
-			LocalizedMapUtil.getLocalizedMap(objectLayoutBox.getName()));
+			LocalizedMapUtil.populateLocalizedMap(objectLayoutBox.getName()));
 		serviceBuilderObjectLayoutBox.setObjectLayoutRows(
 			transformToList(
 				objectLayoutBox.getObjectLayoutRows(),
@@ -282,13 +282,13 @@ public class ObjectLayoutResourceImpl extends BaseObjectLayoutResourceImpl {
 		com.liferay.object.model.ObjectLayoutRow serviceBuilderObjectLayoutRow =
 			_objectLayoutRowPersistence.create(0L);
 
+		serviceBuilderObjectLayoutRow.setPriority(
+			objectLayoutRow.getPriority());
 		serviceBuilderObjectLayoutRow.setObjectLayoutColumns(
 			transformToList(
 				objectLayoutRow.getObjectLayoutColumns(),
 				objectLayoutColumn -> _toObjectLayoutColumn(
 					objectDefinitionId, objectLayoutColumn)));
-		serviceBuilderObjectLayoutRow.setPriority(
-			objectLayoutRow.getPriority());
 
 		return serviceBuilderObjectLayoutRow;
 	}
@@ -301,7 +301,7 @@ public class ObjectLayoutResourceImpl extends BaseObjectLayoutResourceImpl {
 			_objectLayoutTabPersistence.create(0L);
 
 		serviceBuilderObjectLayoutTab.setNameMap(
-			LocalizedMapUtil.getLocalizedMap(objectLayoutTab.getName()));
+			LocalizedMapUtil.populateLocalizedMap(objectLayoutTab.getName()));
 		serviceBuilderObjectLayoutTab.setObjectLayoutBoxes(
 			transformToList(
 				objectLayoutTab.getObjectLayoutBoxes(),

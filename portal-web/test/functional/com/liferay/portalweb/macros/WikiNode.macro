@@ -50,7 +50,7 @@ definition {
 		PortletEntry.inputTitle(title = ${wikiPageTitle});
 
 		SelectFrame.selectFrameNoLoading(
-			key_title = "Rich Text Editor",
+			key_title = "Editor",
 			locator1 = "IFrame#MODAL_ANY");
 
 		Type(
@@ -137,7 +137,9 @@ definition {
 		if (IsElementPresent(locator1 = "Wiki#NODE_TABLE_ACTIONS_GENERIC_DROPDOWN_2")) {
 			ManagementBar.clickSelectAllCheckbox();
 
-			Click(locator1 = "Icon#DELETE");
+			Click(
+				key_text = "trash",
+				locator1 = "ManagementBar#ANY_ICON");
 		}
 
 		JSONRecycleBin.emptyRecycleBin();
@@ -168,11 +170,19 @@ definition {
 	macro viewImageIsPresent(wikiPageTitle = null, contentImageName = null) {
 		LexiconEntry.changeDisplayStyle(displayStyle = "table");
 
+		AssertElementPresent(
+			key_wikiNodeName = ${wikiPageTitle},
+			locator1 = "Wiki#NODE_TABLE_WIKI_NAME");
+
 		Click(
 			key_wikiNodeName = ${wikiPageTitle},
 			locator1 = "Wiki#NODE_TABLE_WIKI_NAME");
 
-		AssertElementPresent(
+		WaitForSPARefresh();
+
+		WaitForPageLoad();
+
+		WaitForElementPresent(
 			key_contentImageName = ${contentImageName},
 			locator1 = "Wiki#CONTENT_IMAGE_NAME");
 	}

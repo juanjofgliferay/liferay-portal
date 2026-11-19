@@ -10,8 +10,10 @@ package com.liferay.portal.kernel.service;
  *
  * @author Brian Wing Shun Chan
  * @see LayoutSetBranchService
+ * @deprecated As of Cavanaugh (7.4.x), with no direct replacement
  * @generated
  */
+@Deprecated
 public class LayoutSetBranchServiceWrapper
 	implements LayoutSetBranchService, ServiceWrapper<LayoutSetBranchService> {
 
@@ -29,7 +31,8 @@ public class LayoutSetBranchServiceWrapper
 	public com.liferay.portal.kernel.model.LayoutSetBranch addLayoutSetBranch(
 			long groupId, boolean privateLayout, java.lang.String name,
 			java.lang.String description, boolean master,
-			long copyLayoutSetBranchId, ServiceContext serviceContext)
+			long copyLayoutSetBranchId,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _layoutSetBranchService.addLayoutSetBranch(
@@ -74,7 +77,7 @@ public class LayoutSetBranchServiceWrapper
 	@Override
 	public com.liferay.portal.kernel.model.LayoutSetBranch mergeLayoutSetBranch(
 			long layoutSetBranchId, long mergeLayoutSetBranchId,
-			ServiceContext serviceContext)
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _layoutSetBranchService.mergeLayoutSetBranch(
@@ -85,7 +88,8 @@ public class LayoutSetBranchServiceWrapper
 	public com.liferay.portal.kernel.model.LayoutSetBranch
 			updateLayoutSetBranch(
 				long groupId, long layoutSetBranchId, java.lang.String name,
-				java.lang.String description, ServiceContext serviceContext)
+				java.lang.String description,
+				com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _layoutSetBranchService.updateLayoutSetBranch(
@@ -107,3 +111,4 @@ public class LayoutSetBranchServiceWrapper
 	private LayoutSetBranchService _layoutSetBranchService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:246094601

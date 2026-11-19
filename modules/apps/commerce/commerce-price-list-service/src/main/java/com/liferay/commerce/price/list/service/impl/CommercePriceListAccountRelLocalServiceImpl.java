@@ -140,14 +140,6 @@ public class CommercePriceListAccountRelLocalServiceImpl
 	}
 
 	@Override
-	public CommercePriceListAccountRel fetchCommercePriceListAccountRel(
-		long commerceAccountId, long commercePriceListId) {
-
-		return commercePriceListAccountRelPersistence.fetchByCAI_CPI(
-			commerceAccountId, commercePriceListId);
-	}
-
-	@Override
 	public List<CommercePriceListAccountRel> getCommercePriceListAccountRels(
 		long commercePriceListId) {
 
@@ -170,20 +162,6 @@ public class CommercePriceListAccountRelLocalServiceImpl
 
 		return commercePriceListAccountRelFinder.findByCommercePriceListId(
 			commercePriceListId, name, start, end);
-	}
-
-	@Override
-	public int getCommercePriceListAccountRelsCount(long commercePriceListId) {
-		return commercePriceListAccountRelPersistence.
-			countByCommercePriceListId(commercePriceListId);
-	}
-
-	@Override
-	public int getCommercePriceListAccountRelsCount(
-		long commercePriceListId, String name) {
-
-		return commercePriceListAccountRelFinder.countByCommercePriceListId(
-			commercePriceListId, name);
 	}
 
 	private void _reindexCommercePriceList(long commercePriceListId)

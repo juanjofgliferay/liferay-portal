@@ -1,0 +1,90 @@
+.alert-feed {
+	max-width: 600px;
+	position: fixed;
+	right: 1rem;
+	top: 1rem;
+	width: 100%;
+}
+
+.circle {
+	align-items: center;
+	border-radius: 50%;
+	display: flex;
+	justify-content: center;
+	margin-right: 0.5rem;
+}
+
+.c-pointer {
+	cursor: pointer;
+}
+
+.description-secondary {
+	color: $secondary;
+	line-height: 1.6rem;
+}
+
+.text-l-secondary {
+	color: $mainLighten52 !important;
+}
+
+/**
+ * Flex Grow Util;
+ */
+
+.flex-grow-1 {
+	flex-grow: 1 !important;
+}
+
+/**
+ * Font Size Utils
+ */
+
+.font-size-sm {
+	font-size: $fontSizeSmall;
+}
+
+/**
+ * Font Weight Utils
+ */
+
+.font-weight-semibold {
+	font-weight: $fontWeightSemiBold;
+}
+
+/**
+ * Css to add bg white in the rechart tooltips
+ */
+
+.bb-tooltip-container {
+	background-color: white;
+}
+
+/**
+ * Force dropdown to appear on top of AC old Modals
+ */
+
+.dropdown-menu {
+	z-index: 1060;
+}
+
+/**
+ * Opacity Utility
+ */
+
+.opacity-25 {
+	opacity: 25%;
+}
+
+.opacity-50 {
+	opacity: 50%;
+}
+
+/**
+ * White Space
+ */
+
+.white-space-normal {
+	overflow-wrap: break-word;
+	white-space: normal !important;
+	word-break: normal;
+}

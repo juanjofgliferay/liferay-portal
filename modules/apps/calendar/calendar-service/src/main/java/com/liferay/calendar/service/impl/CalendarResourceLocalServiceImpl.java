@@ -208,7 +208,7 @@ public class CalendarResourceLocalServiceImpl
 	@Override
 	public CalendarResource fetchCalendarResource(long groupId, String code) {
 		return calendarResourcePersistence.fetchByG_C_First(
-			groupId, code, new CalendarResourceCodeComparator());
+			groupId, code, CalendarResourceCodeComparator.getInstance(false));
 	}
 
 	@Override
@@ -216,23 +216,6 @@ public class CalendarResourceLocalServiceImpl
 		throws PortalException {
 
 		return calendarResourcePersistence.findByPrimaryKey(calendarResourceId);
-	}
-
-	@Override
-	public List<CalendarResource> getCalendarResources(long groupId) {
-		return calendarResourcePersistence.findByGroupId(groupId);
-	}
-
-	@Override
-	public List<CalendarResource> search(
-		long companyId, long[] groupIds, long[] classNameIds, String code,
-		String name, String description, boolean active, boolean andOperator,
-		int start, int end,
-		OrderByComparator<CalendarResource> orderByComparator) {
-
-		return calendarResourceFinder.findByC_G_C_C_N_D_A(
-			companyId, groupIds, classNameIds, code, name, description, active,
-			andOperator, start, end, orderByComparator);
 	}
 
 	@Override
@@ -253,16 +236,6 @@ public class CalendarResourceLocalServiceImpl
 
 		return calendarResourceFinder.countByKeywords(
 			companyId, groupIds, classNameIds, keywords, active);
-	}
-
-	@Override
-	public int searchCount(
-		long companyId, long[] groupIds, long[] classNameIds, String code,
-		String name, String description, boolean active, boolean andOperator) {
-
-		return calendarResourceFinder.countByC_G_C_C_N_D_A(
-			companyId, groupIds, classNameIds, code, name, description, active,
-			andOperator);
 	}
 
 	@Override

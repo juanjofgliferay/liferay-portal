@@ -1,4 +1,4 @@
-@component-name = "portal-web-forms-and-data-lists"
+@component-name = "portal-bpm"
 definition {
 
 	property osgi.module.configuration.file.names = "com.liferay.frontend.js.loader.modules.extender.internal.configuration.Details.config";
@@ -52,6 +52,8 @@ definition {
 			optionValue = "Option 1",
 			rowNumber = 1);
 
+		FormFields.clickAddOptionButton();
+
 		FormFields.editOptionsRow(
 			optionName = "Option2",
 			optionValue = "Option 2",
@@ -100,6 +102,10 @@ definition {
 				optionName = "Select${number}",
 				optionValue = "Select ${number}",
 				rowNumber = ${number});
+
+			if (${number} != 4) {
+				FormFields.clickAddOptionButton();
+			}
 		}
 
 		Form.gotoAdvancedTab();
@@ -423,7 +429,6 @@ definition {
 	@description = "Verify can that a Form create an empty option in the Select from List"
 	@priority = 3
 	test CanCreateEmptyOption {
-		property portal.acceptance = "true";
 		property portal.upstream = "true";
 
 		FormsAdmin.addForm();
@@ -438,6 +443,8 @@ definition {
 			fieldReference = "Option1234",
 			optionValue = "Option1",
 			rowNumber = 1);
+
+		FormFields.clickAddOptionButton();
 
 		FormFields.editOptionsRowValueOrFieldReference(
 			fieldReference = "Option2345",
@@ -498,6 +505,8 @@ definition {
 			fieldPositionNumber = 0,
 			fieldType = "Single Selection");
 
+		var singleSelectionFieldName = FormFields.getFieldName();
+
 		FormFields.editOptionsRow(
 			optionValue = "United",
 			rowNumber = 1);
@@ -543,7 +552,7 @@ definition {
 		FormsAdminNavigator.gotoPublishedForm();
 
 		FormFields.selectRadioOption(
-			fieldName = "Single Selection",
+			fieldName = ${singleSelectionFieldName},
 			radioOption = "United");
 
 		Click.javaScriptClick(
@@ -580,7 +589,7 @@ definition {
 			outputParameterName = "Country Names",
 			outputParameterPath = "nameCurrentValue",
 			outputParameterType = "List",
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			url = "${portalURL}/api/jsonws/country/get-countries",
 			username = "test@liferay.com");
 
@@ -966,10 +975,9 @@ definition {
 		}
 
 		task ("Then United States is selected in Country field and US Postal Code is displayed with the value entered") {
-			AssertTextEquals(
-				key_fieldName = "Country",
-				locator1 = "FormFields#SELECT_FIELD",
-				value1 = "United States");
+			AssertElementPresent(
+				key_fieldName = "United States",
+				locator1 = "FormFields#FIELD");
 
 			AssertValue(
 				key_labelName = "US Postal Code",
@@ -1109,6 +1117,8 @@ definition {
 			optionName = "Option1",
 			optionValue = "Option 1");
 
+		FormFields.clickAddOptionButton();
+
 		FormFields.editOptionsRow(
 			optionName = "Option2",
 			optionValue = "Option 2",
@@ -1136,7 +1146,6 @@ definition {
 	@description = "LPS-68362 - Verify that options can be removed"
 	@priority = 3
 	test OptionsCanBeDeleted {
-		property portal.acceptance = "true";
 		property portal.upstream = "true";
 		property test.liferay.virtual.instance = "false";
 		property test.run.type = "single";
@@ -1158,6 +1167,10 @@ definition {
 				optionName = "Select${number}",
 				optionValue = "Select ${number}",
 				rowNumber = ${number});
+
+			if (${number} != 3) {
+				FormFields.clickAddOptionButton();
+			}
 		}
 
 		FormFields.deleteOptionsRow(rowNumber = 3);
@@ -1208,6 +1221,8 @@ definition {
 			optionName = "Option1",
 			optionValue = "Option 1");
 
+		FormFields.clickAddOptionButton();
+
 		FormFields.editOptionsRow(
 			optionName = "Option2",
 			optionValue = "Option 2",
@@ -1250,10 +1265,14 @@ definition {
 			optionValue = "Option A",
 			rowNumber = 1);
 
+		FormFields.clickAddOptionButton();
+
 		FormFields.editOptionsRow(
 			optionName = "Option2",
 			optionValue = "Option C",
 			rowNumber = 2);
+
+		FormFields.clickAddOptionButton();
 
 		FormFields.editOptionsRow(
 			optionName = "Option3",
@@ -1333,6 +1352,8 @@ definition {
 			optionName = "Option1",
 			optionValue = "Option 1",
 			rowNumber = 1);
+
+		FormFields.clickAddOptionButton();
 
 		FormFields.editOptionsRow(
 			optionName = "Option2",

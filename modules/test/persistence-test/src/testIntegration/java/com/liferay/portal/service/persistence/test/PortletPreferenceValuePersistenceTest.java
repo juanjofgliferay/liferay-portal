@@ -112,12 +112,8 @@ public class PortletPreferenceValuePersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		PortletPreferenceValue newPortletPreferenceValue = _persistence.create(
-			pk);
-
-		newPortletPreferenceValue.setMvccVersion(RandomTestUtil.nextLong());
+		PortletPreferenceValue newPortletPreferenceValue =
+			addPortletPreferenceValue();
 
 		newPortletPreferenceValue.setCtCollectionId(RandomTestUtil.nextLong());
 
@@ -136,8 +132,10 @@ public class PortletPreferenceValuePersistenceTest {
 
 		newPortletPreferenceValue.setSmallValue(RandomTestUtil.randomString());
 
-		_portletPreferenceValues.add(
-			_persistence.update(newPortletPreferenceValue));
+		newPortletPreferenceValue = _persistence.update(
+			newPortletPreferenceValue);
+
+		_portletPreferenceValues.add(newPortletPreferenceValue);
 
 		PortletPreferenceValue existingPortletPreferenceValue =
 			_persistence.findByPrimaryKey(
@@ -180,15 +178,6 @@ public class PortletPreferenceValuePersistenceTest {
 		_persistence.countByPortletPreferencesId(RandomTestUtil.nextLong());
 
 		_persistence.countByPortletPreferencesId(0L);
-	}
-
-	@Test
-	public void testCountByP_N() throws Exception {
-		_persistence.countByP_N(RandomTestUtil.nextLong(), "");
-
-		_persistence.countByP_N(0L, "null");
-
-		_persistence.countByP_N(0L, (String)null);
 	}
 
 	@Test
@@ -570,8 +559,6 @@ public class PortletPreferenceValuePersistenceTest {
 
 		PortletPreferenceValue portletPreferenceValue = _persistence.create(pk);
 
-		portletPreferenceValue.setMvccVersion(RandomTestUtil.nextLong());
-
 		portletPreferenceValue.setCtCollectionId(RandomTestUtil.nextLong());
 
 		portletPreferenceValue.setCompanyId(RandomTestUtil.nextLong());
@@ -601,3 +588,4 @@ public class PortletPreferenceValuePersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1506101311

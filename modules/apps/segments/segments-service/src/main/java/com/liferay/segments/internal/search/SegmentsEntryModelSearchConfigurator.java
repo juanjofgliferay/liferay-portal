@@ -9,8 +9,11 @@ import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.search.spi.model.index.contributor.ModelIndexerWriterContributor;
 import com.liferay.portal.search.spi.model.registrar.ModelSearchConfigurator;
 import com.liferay.portal.search.spi.model.result.contributor.ModelSummaryContributor;
+import com.liferay.segments.internal.search.spi.model.result.contributor.SegmentsEntryModelSummaryContributor;
 import com.liferay.segments.model.SegmentsEntry;
+import com.liferay.segments.service.SegmentsEntryLocalService;
 
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
@@ -52,15 +55,18 @@ public class SegmentsEntryModelSearchConfigurator
 		return _modelSummaryContributor;
 	}
 
-	@Reference(
-		target = "(indexer.class.name=com.liferay.segments.model.SegmentsEntry)"
-	)
+	@Activate
+	protected void activate() {
+		_modelIndexWriterContributor = new ModelIndexerWriterContributor<>(
+			_segmentsEntryLocalService::getIndexableActionableDynamicQuery);
+	}
+
 	private ModelIndexerWriterContributor<SegmentsEntry>
 		_modelIndexWriterContributor;
+	private final ModelSummaryContributor _modelSummaryContributor =
+		new SegmentsEntryModelSummaryContributor();
 
-	@Reference(
-		target = "(indexer.class.name=com.liferay.segments.model.SegmentsEntry)"
-	)
-	private ModelSummaryContributor _modelSummaryContributor;
+	@Reference
+	private SegmentsEntryLocalService _segmentsEntryLocalService;
 
 }

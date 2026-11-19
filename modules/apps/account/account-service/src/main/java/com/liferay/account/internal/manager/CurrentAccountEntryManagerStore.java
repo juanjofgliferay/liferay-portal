@@ -20,7 +20,7 @@ import com.liferay.portal.kernel.servlet.PortalSessionThreadLocal;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.PortletKeys;
 
-import javax.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpSession;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -41,8 +41,12 @@ public class CurrentAccountEntryManagerStore {
 		long currentAccountEntryId = GetterUtil.getLong(
 			httpSession.getAttribute(_getKey(groupId)));
 
-		return _accountEntryLocalService.fetchAccountEntry(
-			currentAccountEntryId);
+		if (currentAccountEntryId > 0) {
+			return _accountEntryLocalService.fetchAccountEntry(
+				currentAccountEntryId);
+		}
+
+		return null;
 	}
 
 	public AccountEntry getAccountEntryFromPortalPreferences(
@@ -153,11 +157,11 @@ public class CurrentAccountEntryManagerStore {
 	private AccountEntryLocalService _accountEntryLocalService;
 
 	@Reference
-	private PortalPreferencesLocalService _portalPreferencesLocalService;
-
-	@Reference
 	private PortalPreferenceValueLocalService
 		_portalPreferenceValueLocalService;
+
+	@Reference
+	private PortalPreferencesLocalService _portalPreferencesLocalService;
 
 	@Reference
 	private PortletPreferencesFactory _portletPreferencesFactory;

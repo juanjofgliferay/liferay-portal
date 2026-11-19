@@ -13,12 +13,12 @@ import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.util.HashMap;
 import java.util.Map;
-
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 
@@ -53,12 +53,14 @@ public class CookiesPreAction extends Action {
 		for (Cookie cookie : cookies) {
 			String cookieName = cookie.getName();
 
-			if (cookieName.equals(
-					CookiesConstants.NAME_USER_CONSENT_CONFIGURED) ||
-				cookieName.startsWith("CONSENT_TYPE_")) {
+			if (!cookieName.equals(
+					CookiesConstants.NAME_USER_CONSENT_CONFIGURED) &&
+				!cookieName.startsWith("CONSENT_TYPE_")) {
 
-				cookieValues.put(cookieName, cookie.getValue());
+				continue;
 			}
+
+			cookieValues.put(cookieName, cookie.getValue());
 		}
 
 		return cookieValues;

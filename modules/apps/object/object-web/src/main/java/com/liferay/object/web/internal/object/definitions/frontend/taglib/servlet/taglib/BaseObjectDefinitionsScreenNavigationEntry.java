@@ -9,10 +9,12 @@ import com.liferay.frontend.taglib.servlet.taglib.ScreenNavigationEntry;
 import com.liferay.frontend.taglib.servlet.taglib.util.JSPRenderer;
 import com.liferay.object.model.ObjectDefinition;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import java.util.Locale;
 
 import org.osgi.service.component.annotations.Reference;
 
@@ -30,6 +32,11 @@ public abstract class BaseObjectDefinitionsScreenNavigationEntry
 	}
 
 	public abstract String getJspPath();
+
+	@Override
+	public String getLabel(Locale locale) {
+		return null;
+	}
 
 	@Override
 	public void render(

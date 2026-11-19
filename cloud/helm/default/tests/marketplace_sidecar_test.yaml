@@ -1,0 +1,132 @@
+suite: Marketplace Sync Sidecar
+templates:
+    -   templates/configmap.yaml
+    -   templates/liferay-init-scripts-cm.yaml
+    -   templates/liferay-network-cm.yaml
+    -   templates/workloads.yaml
+tests:
+    -   asserts:
+            -   contains:
+                    any: true
+                    content:
+                        name: liferay-marketplace-sync
+                    path: spec.template.spec.initContainers
+        documentSelector:
+            path: kind
+            skipEmptyTemplates: true
+            value: StatefulSet
+        it: Adds the marketplace sync sidecar when marketplace is enabled
+        set:
+            licensing.enabled: true
+            marketplace.enabled: true
+    -   asserts:
+            -   failedTemplate:
+                    errorMessage: The marketplace sync runs the deploy-sync script that the operator publishes, so licensing.enabled must be true when marketplace.enabled is true
+        it: Fails when marketplace is enabled without licensing
+        set:
+            marketplace.enabled: true
+        template: templates/workloads.yaml
+    -   asserts:
+            -   contains:
+                    any: true
+                    content:
+                        name: liferay-marketplace
+                        persistentVolumeClaim:
+                            claimName: liferay-default-marketplace
+                    path: spec.template.spec.volumes
+        documentSelector:
+            path: kind
+            skipEmptyTemplates: true
+            value: StatefulSet
+        it: Links the marketplace volume with the marketplace claim
+        set:
+            licensing.enabled: true
+            marketplace.enabled: true
+    -   asserts:
+            -   contains:
+                    any: true
+                    content:
+                        mountPath: /liferay-init-scripts
+                        name: liferay-deploy-sync
+                    path: spec.template.spec.initContainers[?(@.name=="liferay-marketplace-sync")].volumeMounts
+            -   contains:
+                    any: true
+                    content:
+                        mountPath: /marketplace
+                        name: liferay-marketplace
+                        readOnly: true
+                    path: spec.template.spec.initContainers[?(@.name=="liferay-marketplace-sync")].volumeMounts
+            -   contains:
+                    any: true
+                    content:
+                        mountPath: /opt/liferay
+                        name: liferay-persistent-volume
+                        subPath: liferay
+                    path: spec.template.spec.initContainers[?(@.name=="liferay-marketplace-sync")].volumeMounts
+        documentSelector:
+            path: kind
+            skipEmptyTemplates: true
+            value: StatefulSet
+        it: Mounts the marketplace volume, sync script, and deploy folder
+        set:
+            licensing.enabled: true
+            marketplace.enabled: true
+    -   asserts:
+            -   notContains:
+                    any: true
+                    content:
+                        name: liferay-marketplace-sync
+                    path: spec.template.spec.initContainers
+        documentSelector:
+            path: kind
+            skipEmptyTemplates: true
+            value: StatefulSet
+        it: Omits the marketplace sync sidecar when marketplace is disabled
+        set:
+            marketplace.enabled: false
+    -   asserts:
+            -   contains:
+                    any: true
+                    content:
+                        name: LIFERAY_SYNC_SOURCE
+                        value: /marketplace
+                    path: spec.template.spec.initContainers[?(@.name=="liferay-marketplace-sync")].env
+            -   contains:
+                    any: true
+                    content:
+                        name: LIFERAY_SYNC_DEST
+                        value: /opt/liferay/deploy
+                    path: spec.template.spec.initContainers[?(@.name=="liferay-marketplace-sync")].env
+            -   contains:
+                    any: true
+                    content:
+                        name: LIFERAY_SYNC_PATTERN
+                        value: "*.lpkg"
+                    path: spec.template.spec.initContainers[?(@.name=="liferay-marketplace-sync")].env
+            -   contains:
+                    any: true
+                    content:
+                        name: LIFERAY_SYNC_INTERVAL
+                        value: "120"
+                    path: spec.template.spec.initContainers[?(@.name=="liferay-marketplace-sync")].env
+        documentSelector:
+            path: kind
+            skipEmptyTemplates: true
+            value: StatefulSet
+        it: Passes the marketplace sync configuration to the sidecar
+        set:
+            licensing.enabled: true
+            marketplace.enabled: true
+            marketplace.syncInterval: 120
+    -   asserts:
+            -   equal:
+                    path: spec.template.spec.initContainers[?(@.name=="liferay-marketplace-sync")].restartPolicy
+                    value: Always
+        documentSelector:
+            path: kind
+            skipEmptyTemplates: true
+            value: StatefulSet
+        it: Runs the marketplace sync sidecar as a native sidecar
+        set:
+            licensing.enabled: true
+            marketplace.enabled: true

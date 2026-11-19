@@ -5,11 +5,19 @@
 
 package com.liferay.headless.commerce.admin.catalog.internal.dto.v1_0.converter;
 
+import com.liferay.account.model.AccountEntry;
+import com.liferay.account.service.AccountEntryLocalService;
+import com.liferay.commerce.currency.model.CommerceCurrency;
+import com.liferay.commerce.currency.service.CommerceCurrencyLocalService;
 import com.liferay.commerce.product.model.CommerceCatalog;
 import com.liferay.commerce.product.service.CommerceCatalogService;
 import com.liferay.headless.commerce.admin.catalog.dto.v1_0.Catalog;
+import com.liferay.headless.commerce.admin.catalog.internal.dto.v1_0.util.CreatorUtil;
+import com.liferay.portal.kernel.service.UserLocalService;
+import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.vulcan.dto.converter.DTOConverter;
 import com.liferay.portal.vulcan.dto.converter.DTOConverterContext;
+import com.liferay.portal.vulcan.fields.NestedFieldsSupplier;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -18,7 +26,10 @@ import org.osgi.service.component.annotations.Reference;
  * @author Alessio Antonio Rendina
  */
 @Component(
-	property = "dto.class.name=com.liferay.commerce.product.model.CommerceCatalog",
+	property = {
+		"default=true",
+		"dto.class.name=com.liferay.commerce.product.model.CommerceCatalog"
+	},
 	service = DTOConverter.class
 )
 public class CatalogDTOConverter
@@ -37,23 +48,70 @@ public class CatalogDTOConverter
 			_commerceCatalogService.getCommerceCatalog(
 				(Long)dtoConverterContext.getId());
 
+		AccountEntry accountEntry = _accountEntryLocalService.fetchAccountEntry(
+			commerceCatalog.getAccountEntryId());
+		CommerceCurrency commerceCurrency =
+			_commerceCurrencyLocalService.getCommerceCurrency(
+				commerceCatalog.getCompanyId(),
+				commerceCatalog.getCommerceCurrencyCode());
+
 		return new Catalog() {
 			{
-				accountId = commerceCatalog.getAccountEntryId();
-				actions = dtoConverterContext.getActions();
-				currencyCode = commerceCatalog.getCommerceCurrencyCode();
-				defaultLanguageId =
-					commerceCatalog.getCatalogDefaultLanguageId();
-				externalReferenceCode =
-					commerceCatalog.getExternalReferenceCode();
-				id = commerceCatalog.getCommerceCatalogId();
-				name = commerceCatalog.getName();
-				system = commerceCatalog.isSystem();
+				setAccountExternalReferenceCode(
+					() -> {
+						if (accountEntry == null) {
+							return null;
+						}
+
+						return accountEntry.getExternalReferenceCode();
+					});
+				setAccountId(commerceCatalog::getAccountEntryId);
+				setAccountType(
+					() -> {
+						if (accountEntry == null) {
+							return null;
+						}
+
+						return AccountType.create(accountEntry.getType());
+					});
+				setActions(dtoConverterContext::getActions);
+				setCreator(
+					() -> NestedFieldsSupplier.supply(
+						"creator",
+						fieldName -> CreatorUtil.toCreator(
+							_portal,
+							_userLocalService.fetchUser(
+								commerceCatalog.getUserId()))));
+				setCurrencyCode(commerceCurrency::getCode);
+				setCurrencyExternalReferenceCode(
+					commerceCurrency::getExternalReferenceCode);
+				setCurrencyId(commerceCurrency::getCommerceCurrencyId);
+				setDateCreated(commerceCatalog::getCreateDate);
+				setDateModified(commerceCatalog::getModifiedDate);
+				setDefaultLanguageId(
+					commerceCatalog::getCatalogDefaultLanguageId);
+				setExternalReferenceCode(
+					commerceCatalog::getExternalReferenceCode);
+				setId(commerceCatalog::getCommerceCatalogId);
+				setName(commerceCatalog::getName);
+				setSystem(commerceCatalog::isSystem);
 			}
 		};
 	}
 
 	@Reference
+	private AccountEntryLocalService _accountEntryLocalService;
+
+	@Reference
 	private CommerceCatalogService _commerceCatalogService;
+
+	@Reference
+	private CommerceCurrencyLocalService _commerceCurrencyLocalService;
+
+	@Reference
+	private Portal _portal;
+
+	@Reference
+	private UserLocalService _userLocalService;
 
 }

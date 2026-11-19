@@ -8,8 +8,8 @@ package com.liferay.captcha.taglib.internal.struts;
 import com.liferay.captcha.util.CaptchaUtil;
 import com.liferay.portal.kernel.struts.StrutsAction;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 
@@ -17,7 +17,8 @@ import org.osgi.service.component.annotations.Component;
  * @author Alejandro Tardín
  */
 @Component(
-	property = "path=/portal/captcha/get_image", service = StrutsAction.class
+	property = {"layout.required=false", "path=/portal/captcha/get_image"},
+	service = StrutsAction.class
 )
 public class GetCaptchaImageStrutsAction implements StrutsAction {
 

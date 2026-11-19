@@ -21,20 +21,20 @@ if (bean instanceof WorkflowedModel) {
 String myWorkflowTasksPortletNamespace = PortalUtil.getPortletNamespace(PortletKeys.MY_WORKFLOW_TASK);
 %>
 
-<div class="bg-white border-bottom commerce-header<%= fullWidth ? " container-fluid" : StringPool.BLANK %><%= Validator.isNotNull(wrapperCssClasses) ? StringPool.SPACE + wrapperCssClasses : StringPool.BLANK %> side-panel-top-anchor">
-	<div class="container<%= Validator.isNotNull(cssClasses) ? StringPool.SPACE + HtmlUtil.escapeAttribute(cssClasses) : StringPool.BLANK %>">
+<div class="bg-white border-bottom commerce-header<%= Validator.isNotNull(wrapperCssClasses) ? StringPool.SPACE + wrapperCssClasses : StringPool.BLANK %> side-panel-top-anchor">
+	<div class="container-fluid container-fluid-max-xxxl<%= Validator.isNotNull(cssClasses) ? StringPool.SPACE + HtmlUtil.escapeAttribute(cssClasses) : StringPool.BLANK %>">
 		<div class="align-items-center c-py-3 c-py-lg-2 d-lg-flex">
 			<div class="align-items-center d-flex">
-				<c:if test="<%= Validator.isNotNull(thumbnailUrl) %>">
+				<c:if test="<%= Validator.isNotNull(thumbnailURL) %>">
 					<span class="d-none d-sm-block sticker sticker-xl">
 						<span class="sticker-overlay">
-							<img alt="thumbnail" class="sticker-img" src="<%= HtmlUtil.escapeAttribute(thumbnailUrl) %>" />
+							<img alt="thumbnail" class="sticker-img" src="<%= HtmlUtil.escapeAttribute(thumbnailURL) %>" />
 						</span>
 					</span>
 				</c:if>
 
 				<div class="border-right c-ml-sm-2 c-mr-3 c-pr-3 header-details">
-					<h3 class="c-mb-0 commerce-header-title text-truncate">
+					<h3 class="c-mb-0 commerce-header-title text-truncate" data-qa-id="headerDetailsTitle">
 						<%= HtmlUtil.escape(title) %>
 					</h3>
 
@@ -55,20 +55,27 @@ String myWorkflowTasksPortletNamespace = PortalUtil.getPortletNamespace(PortletK
 							</c:choose>
 						</c:if>
 					</c:if>
+
+					<c:if test="<%= Validator.isNotNull(additionalStatusLabel) %>">
+						<clay:label
+							displayType='<%= Validator.isNull(additionalStatusLabelStyle) ? "secondary" : additionalStatusLabelStyle %>'
+							label="<%= additionalStatusLabel %>"
+						/>
+					</c:if>
 				</div>
 
 				<div class="header-info">
 					<c:if test="<%= Validator.isNotNull(beanIdLabel) %>">
-						<div class="align-items-center d-flex">
-							<span class="header-info-title">
-								<liferay-ui:message key="<%= HtmlUtil.escape(beanIdLabel) %>" />:
+						<div class="align-items-center d-flex py-1">
+							<span class="header-info-title text-black-50">
+								<liferay-ui:message key="<%= HtmlUtil.escape(beanIdLabel) %>" />
 							</span>
 
-							<strong class="c-ml-1 header-info-value">
-								<%= beanId %>
+							<strong class="c-ml-2 header-info-value" data-qa-id="<%= beanId %>">
+								<%= (displayBeanId > 0) ? String.valueOf(displayBeanId) : "" %>
 							</strong>
 
-							<span class="c-ml-1 lfr-portal-tooltip text-secondary" title="<%= LanguageUtil.get(request, "identification-number") %>">
+							<span class="c-ml-2 lfr-portal-tooltip text-secondary" title="<%= LanguageUtil.get(request, "identification-number") %>">
 								<clay:icon
 									symbol="question-circle"
 								/>
@@ -76,45 +83,37 @@ String myWorkflowTasksPortletNamespace = PortalUtil.getPortletNamespace(PortletK
 						</div>
 					</c:if>
 
-					<c:if test="<%= Validator.isNotNull(externalReferenceCode) || Validator.isNotNull(externalReferenceCodeEditUrl) %>">
-						<div class="align-items-center c-mt-n2 d-flex">
-							<span class="header-info-title">
-								<liferay-ui:message key="erc" />:
+					<c:if test="<%= Validator.isNotNull(externalReferenceCode) || Validator.isNotNull(externalReferenceCodeEditURL) %>">
+						<div class="align-items-center c-mt-n2 d-flex py-1">
+							<span class="header-info-title text-secondary">
+								<liferay-ui:message key="erc" />
 							</span>
 
-							<strong class="c-ml-1 header-info-value">
+							<strong class="c-ml-2 header-info-value">
 								<%= HtmlUtil.escape(externalReferenceCode) %>
 							</strong>
 
-							<span class="c-ml-1 lfr-portal-tooltip text-secondary" title="<%= LanguageUtil.get(request, "external-reference-code") %>">
+							<span class="c-ml-2 lfr-portal-tooltip text-secondary" title="<%= LanguageUtil.get(request, "external-reference-code") %>">
 								<clay:icon
 									symbol="question-circle"
 								/>
 							</span>
 
-							<c:if test="<%= Validator.isNotNull(externalReferenceCodeEditUrl) %>">
+							<c:if test="<%= Validator.isNotNull(externalReferenceCodeEditURL) %>">
 								<clay:button
-									cssClass="c-ml-1 c-p-0 h-auto text-secondary w-auto"
+									additionalProps='<%=
+										HashMapBuilder.<String, Object>put(
+											"title", LanguageUtil.format(request, "edit-x", "external-reference-code")
+										).put(
+											"url", externalReferenceCodeEditURL
+										).build()
+									%>'
+									cssClass="text-secondary"
 									displayType="link"
 									icon="pencil"
 									id="erc-edit-modal-opener"
+									propsTransformer="{ExternalReferenceCodeButtonPropsTransformer} from commerce-frontend-taglib"
 									small="<%= true %>"
-								/>
-
-								<aui:script require="commerce-frontend-js/utilities/eventsDefinitions as events">
-									document
-										.querySelector('#erc-edit-modal-opener')
-										.addEventListener('click', (e) => {
-											e.preventDefault();
-											Liferay.fire(events.OPEN_MODAL, {id: 'erc-edit-modal'});
-										});
-								</aui:script>
-
-								<commerce-ui:modal
-									id="erc-edit-modal"
-									refreshPageOnClose="<%= true %>"
-									title='<%= LanguageUtil.format(request, "edit-x", "external-reference-code") %>'
-									url="<%= externalReferenceCodeEditUrl %>"
 								/>
 							</c:if>
 						</div>
@@ -146,13 +145,15 @@ String myWorkflowTasksPortletNamespace = PortalUtil.getPortletNamespace(PortletK
 							<liferay-ui:message key="assigned-to" />:
 						</div>
 
-						<button aria-expanded="false" aria-haspopup="true" class="align-items-center btn btn-secondary d-flex dropdown-toggle header-assign-button justify-content-between" data-toggle="dropdown" onclick="<portlet:namespace />toggleDropdown();" type="button">
-							<liferay-ui:message key="<%= HtmlUtil.escape(assignee) %>" />
+						<liferay-ui:csp>
+							<button aria-expanded="false" aria-haspopup="true" class="align-items-center btn btn-secondary d-flex dropdown-toggle header-assign-button justify-content-between" data-toggle="dropdown" onclick="<portlet:namespace />toggleDropdown();" type="button">
+								<liferay-ui:message key="<%= HtmlUtil.escape(assignee) %>" />
 
-							<clay:icon
-								symbol="caret-bottom"
-							/>
-						</button>
+								<clay:icon
+									symbol="caret-bottom"
+								/>
+							</button>
+						</liferay-ui:csp>
 
 						<div class="dropdown-menu dropdown-menu-right" id="<portlet:namespace />commerce-dropdown-assigned-to">
 							<c:if test="<%= !assignedToCurrentUser %>">
@@ -175,19 +176,12 @@ String myWorkflowTasksPortletNamespace = PortalUtil.getPortletNamespace(PortletK
 									document
 										.querySelector('#<portlet:namespace />assign-to-me-modal-opener')
 										.addEventListener('click', (e) => {
-											Liferay.Util.openWindow({
-												dialog: {
-													destroyOnHide: true,
-													height: 430,
-													resizable: false,
-													width: 896,
-												},
-												dialogIframe: {
-													bodyCssClass: 'dialog-with-footer task-dialog',
-												},
+											Liferay.Util.openModal({
+												containerProps: {},
 												id: '<%= myWorkflowTasksPortletNamespace %>assignToDialog',
+												iframeBodyCssClass: 'dialog-with-footer task-dialog',
 												title: '<liferay-ui:message key="assign-to-me" />',
-												uri: '<%= HtmlUtil.escapeJS(assignToMeURL) %>',
+												url: '<%= HtmlUtil.escapeJS(assignToMeURL) %>',
 											});
 										});
 								</aui:script>
@@ -211,19 +205,12 @@ String myWorkflowTasksPortletNamespace = PortalUtil.getPortletNamespace(PortletK
 								document
 									.querySelector('#<portlet:namespace />assign-to-modal-opener')
 									.addEventListener('click', (e) => {
-										Liferay.Util.openWindow({
-											dialog: {
-												destroyOnHide: true,
-												height: 430,
-												resizable: false,
-												width: 896,
-											},
-											dialogIframe: {
-												bodyCssClass: 'dialog-with-footer task-dialog',
-											},
+										Liferay.Util.openModal({
+											containerProps: {},
 											id: '<%= myWorkflowTasksPortletNamespace %>assignToDialog',
+											iframeBodyCssClass: 'dialog-with-footer task-dialog',
 											title: '<liferay-ui:message key="assign-to-..." />',
-											uri: '<%= HtmlUtil.escapeJS(assignToURL) %>',
+											url: '<%= HtmlUtil.escapeJS(assignToURL) %>',
 										});
 									});
 
@@ -292,7 +279,18 @@ String myWorkflowTasksPortletNamespace = PortalUtil.getPortletNamespace(PortletK
 														' not found!'
 												);
 											}
-											submitForm(form);
+											<c:choose>
+												<c:when test="<%= Validator.isNotNull(action.getSubmitButtonId()) %>">
+													document
+														.getElementById(
+															'<%= HtmlUtil.escapeJS(action.getSubmitButtonId()) %>'
+														)
+														.click();
+												</c:when>
+												<c:otherwise>
+													submitForm(form);
+												</c:otherwise>
+											</c:choose>
 										});
 								</aui:script>
 							</c:if>
@@ -304,7 +302,7 @@ String myWorkflowTasksPortletNamespace = PortalUtil.getPortletNamespace(PortletK
 					</div>
 				</c:if>
 
-				<c:if test="<%= Validator.isNotNull(dropdownItems) || Validator.isNotNull(previewUrl) %>">
+				<c:if test="<%= Validator.isNotNull(dropdownItems) || Validator.isNotNull(previewURL) %>">
 					<c:if test="<%= Validator.isNotNull(dropdownItems) && (dropdownItems.size() > 0) %>">
 						<div class="c-ml-3" id="dropdown-header-container">
 							<liferay-ui:icon
@@ -313,18 +311,22 @@ String myWorkflowTasksPortletNamespace = PortalUtil.getPortletNamespace(PortletK
 							/>
 						</div>
 
-						<aui:script require="commerce-frontend-js/components/dropdown/entry as dropdown">
-							dropdown.default('dropdown-header', 'dropdown-header-container', {
-								items: <%= jsonSerializer.serializeDeep(dropdownItems) %>,
-								spritemap: '<%= themeDisplay.getPathThemeSpritemap() %>',
-							});
-						</aui:script>
+						<liferay-frontend:component
+							context='<%=
+								HashMapBuilder.<String, Object>put(
+									"items", dropdownItems
+								).put(
+									"spritemap", themeDisplay.getPathThemeSpritemap()
+								).build()
+							%>'
+							module="{dropdownMain} from commerce-frontend-taglib"
+						/>
 					</c:if>
 
-					<c:if test="<%= Validator.isNotNull(previewUrl) %>">
+					<c:if test="<%= Validator.isNotNull(previewURL) %>">
 						<clay:link
 							cssClass="btn btn-outline-borderless btn-outline-secondary btn-sm text-primary"
-							href="<%= previewUrl %>"
+							href="<%= previewURL %>"
 							icon="shortcut"
 						/>
 					</c:if>
@@ -334,33 +336,10 @@ String myWorkflowTasksPortletNamespace = PortalUtil.getPortletNamespace(PortletK
 	</div>
 </div>
 
-<aui:script require="frontend-js-web/index as frontendJsWeb">
-	var {debounce} = frontendJsWeb;
-
-	var commerceHeader = document.querySelector('.commerce-header');
-	var pageHeader = document.querySelector('.page-header');
-
-	function updateMenuDistanceFromTop() {
-		if (!commerceHeader || !commerceHeader.getClientRects()[0]) return;
-		var distanceFromTop = commerceHeader.getClientRects()[0].bottom;
-		pageHeader.style.top = distanceFromTop + 'px';
-	}
-
-	var debouncedUpdateMenuDistanceFromTop = debounce(
-		updateMenuDistanceFromTop,
-		200
-	);
+<aui:script sandbox="<%= true %>">
+	const pageHeader = document.querySelector('.page-header');
 
 	if (pageHeader) {
 		pageHeader.classList.add('sticky-header-menu');
-		updateMenuDistanceFromTop();
-		window.addEventListener('resize', debouncedUpdateMenuDistanceFromTop);
-
-		Liferay.once('beforeNavigate', () => {
-			window.removeEventListener(
-				'resize',
-				debouncedUpdateMenuDistanceFromTop
-			);
-		});
 	}
 </aui:script>

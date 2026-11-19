@@ -23,6 +23,7 @@ import com.liferay.document.library.kernel.service.DLFileEntryTypeLocalService;
 import com.liferay.document.library.kernel.service.DLFileVersionLocalService;
 import com.liferay.document.library.kernel.service.DLTrashService;
 import com.liferay.document.library.kernel.store.DLStoreUtil;
+import com.liferay.document.library.kernel.util.DLUtil;
 import com.liferay.document.library.util.DLFileEntryTypeUtil;
 import com.liferay.dynamic.data.mapping.io.DDMFormValuesDeserializer;
 import com.liferay.dynamic.data.mapping.io.DDMFormValuesDeserializerDeserializeRequest;
@@ -50,6 +51,7 @@ import com.liferay.friendly.url.service.FriendlyURLEntryLocalService;
 import com.liferay.osgi.service.tracker.collections.list.ServiceTrackerList;
 import com.liferay.osgi.service.tracker.collections.list.ServiceTrackerListFactory;
 import com.liferay.petra.function.transform.TransformUtil;
+import com.liferay.petra.io.DummyOutputStream;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
@@ -89,7 +91,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -131,11 +132,28 @@ public class FileEntryStagedModelDataHandler
 	}
 
 	@Override
+	public FileEntry fetchStagedModelByExternalReferenceCodeAndGroupId(
+		String externalReferenceCode, long groupId) {
+
+		try {
+			return _dlAppLocalService.fetchFileEntryByExternalReferenceCode(
+				groupId, externalReferenceCode);
+		}
+		catch (PortalException portalException) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(portalException);
+			}
+
+			return null;
+		}
+	}
+
+	@Override
 	public FileEntry fetchStagedModelByUuidAndGroupId(
 		String uuid, long groupId) {
 
 		try {
-			return _dlAppLocalService.getFileEntryByUuidAndGroupId(
+			return _dlAppLocalService.fetchFileEntryByUuidAndGroupId(
 				uuid, groupId);
 		}
 		catch (PortalException portalException) {
@@ -151,18 +169,11 @@ public class FileEntryStagedModelDataHandler
 	public List<FileEntry> fetchStagedModelsByUuidAndCompanyId(
 		String uuid, long companyId) {
 
-		List<DLFileEntry> dlFileEntries =
+		return TransformUtil.transform(
 			_dlFileEntryLocalService.getDLFileEntriesByUuidAndCompanyId(
 				uuid, companyId, QueryUtil.ALL_POS, QueryUtil.ALL_POS,
-				new StagedModelModifiedDateComparator<>());
-
-		List<FileEntry> fileEntries = new ArrayList<>();
-
-		for (DLFileEntry dlFileEntry : dlFileEntries) {
-			fileEntries.add(new LiferayFileEntry(dlFileEntry));
-		}
-
-		return fileEntries;
+				new StagedModelModifiedDateComparator<>()),
+			dlFileEntry -> new LiferayFileEntry(dlFileEntry));
 	}
 
 	@Override
@@ -452,8 +463,8 @@ public class FileEntryStagedModelDataHandler
 			FileEntry importedFileEntry = null;
 
 			if (portletDataContext.isDataStrategyMirror()) {
-				FileEntry existingFileEntry = fetchStagedModelByUuidAndGroupId(
-					fileEntry.getUuid(), portletDataContext.getScopeGroupId());
+				FileEntry existingFileEntry = fetchExistingStagedModel(
+					fileEntry, portletDataContext.getScopeGroupId());
 
 				if (existingFileEntry == null) {
 					if (portletDataContext.
@@ -481,17 +492,19 @@ public class FileEntryStagedModelDataHandler
 						"fileVersionUuid", fileVersionUuid);
 					serviceContext.setUuid(fileEntry.getUuid());
 
-					String fileEntryTitle =
-						_dlFileEntryLocalService.getUniqueTitle(
-							portletDataContext.getScopeGroupId(), folderId, 0,
-							fileEntry.getTitle(), fileEntry.getExtension());
-
 					importedFileEntry = _dlAppLocalService.addFileEntry(
 						fileEntry.getExternalReferenceCode(), userId,
-						repositoryId, folderId, fileEntry.getFileName(),
-						fileEntry.getMimeType(), fileEntryTitle,
+						repositoryId, folderId,
+						DLUtil.getUniqueFileName(
+							portletDataContext.getScopeGroupId(), folderId,
+							fileEntry.getFileName(), false),
+						fileEntry.getMimeType(),
+						_dlFileEntryLocalService.getUniqueTitle(
+							portletDataContext.getScopeGroupId(), folderId, 0,
+							fileEntry.getTitle(), fileEntry.getExtension()),
 						StringPool.BLANK, fileEntry.getDescription(), null,
 						inputStream, fileEntry.getSize(),
+						fileEntry.getDisplayDate(),
 						fileEntry.getExpirationDate(),
 						fileEntry.getReviewDate(), serviceContext);
 
@@ -524,6 +537,10 @@ public class FileEntryStagedModelDataHandler
 							if (existingFileVersionInputStream == null) {
 								updateFileEntry = true;
 							}
+							else {
+								existingFileVersionInputStream.transferTo(
+									new DummyOutputStream());
+							}
 						}
 						catch (Exception exception) {
 							if (_log.isDebugEnabled()) {
@@ -540,11 +557,14 @@ public class FileEntryStagedModelDataHandler
 						if (updateFileEntry) {
 							DLFileVersion alreadyExistingFileVersion =
 								_dlFileVersionLocalService.
-									getFileVersionByUuidAndGroupId(
+									fetchDLFileVersionByUuidAndGroupId(
 										fileVersionUuid,
 										existingFileEntry.getGroupId());
 
-							if (alreadyExistingFileVersion != null) {
+							if ((alreadyExistingFileVersion != null) &&
+								(alreadyExistingFileVersion.getFileEntryId() ==
+									existingFileEntry.getFileEntryId())) {
+
 								serviceContext.setAttribute(
 									"existingDLFileVersionId",
 									alreadyExistingFileVersion.
@@ -570,6 +590,7 @@ public class FileEntryStagedModelDataHandler
 									fileEntry.getDescription(), null,
 									DLVersionNumberIncrease.MINOR, inputStream,
 									fileEntry.getSize(),
+									fileEntry.getDisplayDate(),
 									fileEntry.getExpirationDate(),
 									fileEntry.getReviewDate(), serviceContext);
 						}
@@ -588,6 +609,15 @@ public class FileEntryStagedModelDataHandler
 									userId, importedFileEntry.getFileEntryId(),
 									folderId, serviceContext);
 						}
+
+						DLFileEntry importedDLFileEntry =
+							_dlFileEntryLocalService.fetchDLFileEntry(
+								importedFileEntry.getFileEntryId());
+
+						importedDLFileEntry.setUuid(fileEntry.getUuid());
+
+						_dlFileEntryLocalService.updateDLFileEntry(
+							importedDLFileEntry);
 
 						if (importedFileEntry instanceof LiferayFileEntry) {
 							LiferayFileEntry liferayFileEntry =
@@ -631,16 +661,19 @@ public class FileEntryStagedModelDataHandler
 				}
 			}
 			else {
-				String fileEntryTitle = _dlFileEntryLocalService.getUniqueTitle(
-					portletDataContext.getScopeGroupId(), folderId, 0,
-					fileEntry.getTitle(), fileEntry.getExtension());
-
 				importedFileEntry = _dlAppLocalService.addFileEntry(
 					fileEntry.getExternalReferenceCode(), userId, repositoryId,
-					folderId, fileEntry.getFileName(), fileEntry.getMimeType(),
-					fileEntryTitle, StringPool.BLANK,
-					fileEntry.getDescription(), null, inputStream,
-					fileEntry.getSize(), fileEntry.getExpirationDate(),
+					folderId,
+					DLUtil.getUniqueFileName(
+						portletDataContext.getScopeGroupId(), folderId,
+						fileEntry.getFileName(), false),
+					fileEntry.getMimeType(),
+					_dlFileEntryLocalService.getUniqueTitle(
+						portletDataContext.getScopeGroupId(), folderId, 0,
+						fileEntry.getTitle(), fileEntry.getExtension()),
+					StringPool.BLANK, fileEntry.getDescription(), null,
+					inputStream, fileEntry.getSize(),
+					fileEntry.getDisplayDate(), fileEntry.getExpirationDate(),
 					fileEntry.getReviewDate(), serviceContext);
 			}
 
@@ -991,13 +1024,15 @@ public class FileEntryStagedModelDataHandler
 				_assetDisplayPageEntryLocalService.fetchAssetDisplayPageEntry(
 					assetDisplayPageEntryId);
 
-			if (existingAssetDisplayPageEntry != null) {
-				existingAssetDisplayPageEntry.setClassPK(
-					importedFileEntry.getFileEntryId());
-
-				_assetDisplayPageEntryLocalService.updateAssetDisplayPageEntry(
-					existingAssetDisplayPageEntry);
+			if (existingAssetDisplayPageEntry == null) {
+				continue;
 			}
+
+			existingAssetDisplayPageEntry.setClassPK(
+				importedFileEntry.getFileEntryId());
+
+			_assetDisplayPageEntryLocalService.updateAssetDisplayPageEntry(
+				existingAssetDisplayPageEntry);
 		}
 	}
 
@@ -1038,13 +1073,15 @@ public class FileEntryStagedModelDataHandler
 				_friendlyURLEntryLocalService.fetchFriendlyURLEntry(
 					friendlyURLEntryId);
 
-			if (existingFriendlyURLEntry != null) {
-				existingFriendlyURLEntry.setClassPK(
-					importedFileEntry.getFileEntryId());
-
-				_friendlyURLEntryLocalService.updateFriendlyURLEntry(
-					existingFriendlyURLEntry);
+			if (existingFriendlyURLEntry == null) {
+				continue;
 			}
+
+			existingFriendlyURLEntry.setClassPK(
+				importedFileEntry.getFileEntryId());
+
+			_friendlyURLEntryLocalService.updateFriendlyURLEntry(
+				existingFriendlyURLEntry);
 		}
 
 		if (ExportImportThreadLocal.isStagingInProcess() &&

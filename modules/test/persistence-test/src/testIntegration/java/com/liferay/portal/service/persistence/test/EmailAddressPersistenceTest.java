@@ -12,11 +12,14 @@ import com.liferay.portal.kernel.dao.orm.DynamicQueryFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.ProjectionFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.orm.RestrictionsFactoryUtil;
+import com.liferay.portal.kernel.dao.orm.Session;
+import com.liferay.portal.kernel.exception.DuplicateEmailAddressExternalReferenceCodeException;
 import com.liferay.portal.kernel.exception.NoSuchEmailAddressException;
 import com.liferay.portal.kernel.model.EmailAddress;
 import com.liferay.portal.kernel.service.EmailAddressLocalServiceUtil;
 import com.liferay.portal.kernel.service.persistence.EmailAddressPersistence;
 import com.liferay.portal.kernel.service.persistence.EmailAddressUtil;
+import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.transaction.Propagation;
@@ -108,15 +111,13 @@ public class EmailAddressPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		EmailAddress newEmailAddress = _persistence.create(pk);
-
-		newEmailAddress.setMvccVersion(RandomTestUtil.nextLong());
+		EmailAddress newEmailAddress = addEmailAddress();
 
 		newEmailAddress.setCtCollectionId(RandomTestUtil.nextLong());
 
 		newEmailAddress.setUuid(RandomTestUtil.randomString());
+
+		newEmailAddress.setExternalReferenceCode(RandomTestUtil.randomString());
 
 		newEmailAddress.setCompanyId(RandomTestUtil.nextLong());
 
@@ -138,7 +139,9 @@ public class EmailAddressPersistenceTest {
 
 		newEmailAddress.setPrimary(RandomTestUtil.randomBoolean());
 
-		_emailAddresses.add(_persistence.update(newEmailAddress));
+		newEmailAddress = _persistence.update(newEmailAddress);
+
+		_emailAddresses.add(newEmailAddress);
 
 		EmailAddress existingEmailAddress = _persistence.findByPrimaryKey(
 			newEmailAddress.getPrimaryKey());
@@ -151,6 +154,9 @@ public class EmailAddressPersistenceTest {
 			newEmailAddress.getCtCollectionId());
 		Assert.assertEquals(
 			existingEmailAddress.getUuid(), newEmailAddress.getUuid());
+		Assert.assertEquals(
+			existingEmailAddress.getExternalReferenceCode(),
+			newEmailAddress.getExternalReferenceCode());
 		Assert.assertEquals(
 			existingEmailAddress.getEmailAddressId(),
 			newEmailAddress.getEmailAddressId());
@@ -181,6 +187,26 @@ public class EmailAddressPersistenceTest {
 			existingEmailAddress.isPrimary(), newEmailAddress.isPrimary());
 	}
 
+	@Test(expected = DuplicateEmailAddressExternalReferenceCodeException.class)
+	public void testUpdateWithExistingExternalReferenceCode() throws Exception {
+		EmailAddress emailAddress = addEmailAddress();
+
+		EmailAddress newEmailAddress = addEmailAddress();
+
+		newEmailAddress.setCompanyId(emailAddress.getCompanyId());
+
+		newEmailAddress = _persistence.update(newEmailAddress);
+
+		Session session = _persistence.getCurrentSession();
+
+		session.evict(newEmailAddress);
+
+		newEmailAddress.setExternalReferenceCode(
+			emailAddress.getExternalReferenceCode());
+
+		_persistence.update(newEmailAddress);
+	}
+
 	@Test
 	public void testCountByUuid() throws Exception {
 		_persistence.countByUuid("");
@@ -200,28 +226,6 @@ public class EmailAddressPersistenceTest {
 	}
 
 	@Test
-	public void testCountByCompanyId() throws Exception {
-		_persistence.countByCompanyId(RandomTestUtil.nextLong());
-
-		_persistence.countByCompanyId(0L);
-	}
-
-	@Test
-	public void testCountByUserId() throws Exception {
-		_persistence.countByUserId(RandomTestUtil.nextLong());
-
-		_persistence.countByUserId(0L);
-	}
-
-	@Test
-	public void testCountByC_C() throws Exception {
-		_persistence.countByC_C(
-			RandomTestUtil.nextLong(), RandomTestUtil.nextLong());
-
-		_persistence.countByC_C(0L, 0L);
-	}
-
-	@Test
 	public void testCountByC_C_C() throws Exception {
 		_persistence.countByC_C_C(
 			RandomTestUtil.nextLong(), RandomTestUtil.nextLong(),
@@ -237,6 +241,15 @@ public class EmailAddressPersistenceTest {
 			RandomTestUtil.nextLong(), RandomTestUtil.randomBoolean());
 
 		_persistence.countByC_C_C_P(0L, 0L, 0L, RandomTestUtil.randomBoolean());
+	}
+
+	@Test
+	public void testCountByERC_C() throws Exception {
+		_persistence.countByERC_C("", RandomTestUtil.nextLong());
+
+		_persistence.countByERC_C("null", 0L);
+
+		_persistence.countByERC_C((String)null, 0L);
 	}
 
 	@Test
@@ -265,10 +278,10 @@ public class EmailAddressPersistenceTest {
 	protected OrderByComparator<EmailAddress> getOrderByComparator() {
 		return OrderByComparatorFactoryUtil.create(
 			"EmailAddress", "mvccVersion", true, "ctCollectionId", true, "uuid",
-			true, "emailAddressId", true, "companyId", true, "userId", true,
-			"userName", true, "createDate", true, "modifiedDate", true,
-			"classNameId", true, "classPK", true, "address", true, "listTypeId",
-			true, "primary", true);
+			true, "externalReferenceCode", true, "emailAddressId", true,
+			"companyId", true, "userId", true, "userName", true, "createDate",
+			true, "modifiedDate", true, "classNameId", true, "classPK", true,
+			"address", true, "listTypeId", true, "primary", true);
 	}
 
 	@Test
@@ -484,16 +497,79 @@ public class EmailAddressPersistenceTest {
 		Assert.assertEquals(0, result.size());
 	}
 
+	@Test
+	public void testResetOriginalValues() throws Exception {
+		EmailAddress newEmailAddress = addEmailAddress();
+
+		_persistence.clearCache();
+
+		_assertOriginalValues(
+			_persistence.findByPrimaryKey(newEmailAddress.getPrimaryKey()));
+	}
+
+	@Test
+	public void testResetOriginalValuesWithDynamicQueryLoadFromDatabase()
+		throws Exception {
+
+		_testResetOriginalValuesWithDynamicQuery(true);
+	}
+
+	@Test
+	public void testResetOriginalValuesWithDynamicQueryLoadFromSession()
+		throws Exception {
+
+		_testResetOriginalValuesWithDynamicQuery(false);
+	}
+
+	private void _testResetOriginalValuesWithDynamicQuery(boolean clearSession)
+		throws Exception {
+
+		EmailAddress newEmailAddress = addEmailAddress();
+
+		if (clearSession) {
+			Session session = _persistence.openSession();
+
+			session.flush();
+
+			session.clear();
+		}
+
+		DynamicQuery dynamicQuery = DynamicQueryFactoryUtil.forClass(
+			EmailAddress.class, _dynamicQueryClassLoader);
+
+		dynamicQuery.add(
+			RestrictionsFactoryUtil.eq(
+				"emailAddressId", newEmailAddress.getEmailAddressId()));
+
+		List<EmailAddress> result = _persistence.findWithDynamicQuery(
+			dynamicQuery);
+
+		_assertOriginalValues(result.get(0));
+	}
+
+	private void _assertOriginalValues(EmailAddress emailAddress) {
+		Assert.assertEquals(
+			emailAddress.getExternalReferenceCode(),
+			ReflectionTestUtil.invoke(
+				emailAddress, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "externalReferenceCode"));
+		Assert.assertEquals(
+			Long.valueOf(emailAddress.getCompanyId()),
+			ReflectionTestUtil.<Long>invoke(
+				emailAddress, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "companyId"));
+	}
+
 	protected EmailAddress addEmailAddress() throws Exception {
 		long pk = RandomTestUtil.nextLong();
 
 		EmailAddress emailAddress = _persistence.create(pk);
 
-		emailAddress.setMvccVersion(RandomTestUtil.nextLong());
-
 		emailAddress.setCtCollectionId(RandomTestUtil.nextLong());
 
 		emailAddress.setUuid(RandomTestUtil.randomString());
+
+		emailAddress.setExternalReferenceCode(RandomTestUtil.randomString());
 
 		emailAddress.setCompanyId(RandomTestUtil.nextLong());
 
@@ -525,3 +601,4 @@ public class EmailAddressPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:861494353

@@ -115,13 +115,8 @@ public class ObjectValidationRuleSettingPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
 		ObjectValidationRuleSetting newObjectValidationRuleSetting =
-			_persistence.create(pk);
-
-		newObjectValidationRuleSetting.setMvccVersion(
-			RandomTestUtil.nextLong());
+			addObjectValidationRuleSetting();
 
 		newObjectValidationRuleSetting.setUuid(RandomTestUtil.randomString());
 
@@ -144,8 +139,10 @@ public class ObjectValidationRuleSettingPersistenceTest {
 
 		newObjectValidationRuleSetting.setValue(RandomTestUtil.randomString());
 
-		_objectValidationRuleSettings.add(
-			_persistence.update(newObjectValidationRuleSetting));
+		newObjectValidationRuleSetting = _persistence.update(
+			newObjectValidationRuleSetting);
+
+		_objectValidationRuleSettings.add(newObjectValidationRuleSetting);
 
 		ObjectValidationRuleSetting existingObjectValidationRuleSetting =
 			_persistence.findByPrimaryKey(
@@ -622,8 +619,6 @@ public class ObjectValidationRuleSettingPersistenceTest {
 		ObjectValidationRuleSetting objectValidationRuleSetting =
 			_persistence.create(pk);
 
-		objectValidationRuleSetting.setMvccVersion(RandomTestUtil.nextLong());
-
 		objectValidationRuleSetting.setUuid(RandomTestUtil.randomString());
 
 		objectValidationRuleSetting.setCompanyId(RandomTestUtil.nextLong());
@@ -655,3 +650,4 @@ public class ObjectValidationRuleSettingPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1704230727

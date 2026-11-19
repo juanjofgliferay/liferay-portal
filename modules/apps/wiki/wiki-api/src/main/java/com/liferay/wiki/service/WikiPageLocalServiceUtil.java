@@ -9,6 +9,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.wiki.model.WikiPage;
 
@@ -397,7 +398,7 @@ public class WikiPageLocalServiceUtil {
 	 * reference code
 	 *
 	 * @param groupId the primary key of the group
-	 * @param externalReferenceCode the wiki page external reference code
+	 * @param externalReferenceCode the wiki page's external reference code
 	 * @return the latest matching wiki page, or <code>null</code> if no
 	 matching wiki page could be found
 	 */
@@ -412,6 +413,10 @@ public class WikiPageLocalServiceUtil {
 		return getService().fetchPage(resourcePrimKey);
 	}
 
+	public static WikiPage fetchPage(long resourcePrimKey, Boolean head) {
+		return getService().fetchPage(resourcePrimKey, head);
+	}
+
 	public static WikiPage fetchPage(long nodeId, String title) {
 		return getService().fetchPage(nodeId, title);
 	}
@@ -420,6 +425,12 @@ public class WikiPageLocalServiceUtil {
 		long nodeId, String title, double version) {
 
 		return getService().fetchPage(nodeId, title, version);
+	}
+
+	public static PersistedModel fetchPersistedModel(
+		Serializable primaryKeyObj) {
+
+		return getService().fetchPersistedModel(primaryKeyObj);
 	}
 
 	public static WikiPage fetchWikiPage(long pageId) {
@@ -490,8 +501,8 @@ public class WikiPageLocalServiceUtil {
 	}
 
 	public static com.liferay.wiki.model.WikiPageDisplay getDisplay(
-			long nodeId, String title, javax.portlet.PortletURL viewPageURL,
-			java.util.function.Supplier<javax.portlet.PortletURL>
+			long nodeId, String title, jakarta.portlet.PortletURL viewPageURL,
+			java.util.function.Supplier<jakarta.portlet.PortletURL>
 				editPageURLSupplier,
 			String attachmentURLPrefix)
 		throws PortalException {
@@ -558,7 +569,7 @@ public class WikiPageLocalServiceUtil {
 	 * reference code
 	 *
 	 * @param groupId the primary key of the group
-	 * @param externalReferenceCode the wiki page external reference code
+	 * @param externalReferenceCode the wiki page's external reference code
 	 * @return the latest matching wiki page
 	 * @throws PortalException if a portal exception occurred
 	 */
@@ -632,8 +643,8 @@ public class WikiPageLocalServiceUtil {
 	}
 
 	public static com.liferay.wiki.model.WikiPageDisplay getPageDisplay(
-			long nodeId, String title, javax.portlet.PortletURL viewPageURL,
-			javax.portlet.PortletURL editPageURL, String attachmentURLPrefix)
+			long nodeId, String title, jakarta.portlet.PortletURL viewPageURL,
+			jakarta.portlet.PortletURL editPageURL, String attachmentURLPrefix)
 		throws PortalException {
 
 		return getService().getPageDisplay(
@@ -641,8 +652,8 @@ public class WikiPageLocalServiceUtil {
 	}
 
 	public static com.liferay.wiki.model.WikiPageDisplay getPageDisplay(
-			WikiPage page, javax.portlet.PortletURL viewPageURL,
-			javax.portlet.PortletURL editPageURL, String attachmentURLPrefix)
+			WikiPage page, jakarta.portlet.PortletURL viewPageURL,
+			jakarta.portlet.PortletURL editPageURL, String attachmentURLPrefix)
 		throws PortalException {
 
 		return getService().getPageDisplay(
@@ -650,8 +661,8 @@ public class WikiPageLocalServiceUtil {
 	}
 
 	public static com.liferay.wiki.model.WikiPageDisplay getPageDisplay(
-			WikiPage page, javax.portlet.PortletURL viewPageURL,
-			javax.portlet.PortletURL editPageURL, String attachmentURLPrefix,
+			WikiPage page, jakarta.portlet.PortletURL viewPageURL,
+			jakarta.portlet.PortletURL editPageURL, String attachmentURLPrefix,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
@@ -661,8 +672,8 @@ public class WikiPageLocalServiceUtil {
 	}
 
 	public static com.liferay.wiki.model.WikiPageDisplay getPageDisplay(
-			WikiPage page, javax.portlet.PortletURL viewPageURL,
-			java.util.function.Supplier<javax.portlet.PortletURL>
+			WikiPage page, jakarta.portlet.PortletURL viewPageURL,
+			java.util.function.Supplier<jakarta.portlet.PortletURL>
 				editPageURLSupplier,
 			String attachmentURLPrefix,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
@@ -719,12 +730,6 @@ public class WikiPageLocalServiceUtil {
 	}
 
 	public static List<WikiPage> getPages(
-		long userId, long nodeId, int status, int start, int end) {
-
-		return getService().getPages(userId, nodeId, status, start, end);
-	}
-
-	public static List<WikiPage> getPages(
 		long groupId, long nodeId, int status, long statusByUserId) {
 
 		return getService().getPages(groupId, nodeId, status, statusByUserId);
@@ -750,10 +755,6 @@ public class WikiPageLocalServiceUtil {
 			nodeId, title, start, end, orderByComparator);
 	}
 
-	public static List<WikiPage> getPages(String format) {
-		return getService().getPages(format);
-	}
-
 	public static int getPagesCount(long nodeId) {
 		return getService().getPagesCount(nodeId);
 	}
@@ -766,24 +767,12 @@ public class WikiPageLocalServiceUtil {
 		return getService().getPagesCount(nodeId, head, status);
 	}
 
-	public static int getPagesCount(long nodeId, int status) {
-		return getService().getPagesCount(nodeId, status);
-	}
-
-	public static int getPagesCount(long userId, long nodeId, int status) {
-		return getService().getPagesCount(userId, nodeId, status);
-	}
-
 	public static int getPagesCount(long nodeId, String title) {
 		return getService().getPagesCount(nodeId, title);
 	}
 
 	public static int getPagesCount(long nodeId, String title, boolean head) {
 		return getService().getPagesCount(nodeId, title, head);
-	}
-
-	public static int getPagesCount(String format) {
-		return getService().getPagesCount(format);
 	}
 
 	public static List<? extends PersistedModel> getPersistedModel(
@@ -806,16 +795,6 @@ public class WikiPageLocalServiceUtil {
 		throws PortalException {
 
 		return getService().getPreviousVersionPage(page);
-	}
-
-	public static List<WikiPage> getRecentChanges(
-		long groupId, long nodeId, int start, int end) {
-
-		return getService().getRecentChanges(groupId, nodeId, start, end);
-	}
-
-	public static int getRecentChangesCount(long groupId, long nodeId) {
-		return getService().getRecentChangesCount(groupId, nodeId);
 	}
 
 	public static List<WikiPage> getRedirectorPages(
@@ -1090,13 +1069,12 @@ public class WikiPageLocalServiceUtil {
 	}
 
 	public static WikiPageLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(WikiPageLocalService service) {
-		_service = service;
-	}
-
-	private static volatile WikiPageLocalService _service;
+	private static final Snapshot<WikiPageLocalService> _serviceSnapshot =
+		new Snapshot<>(
+			WikiPageLocalServiceUtil.class, WikiPageLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-173878131

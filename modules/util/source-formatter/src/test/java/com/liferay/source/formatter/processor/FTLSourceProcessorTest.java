@@ -13,8 +13,18 @@ import org.junit.Test;
 public class FTLSourceProcessorTest extends BaseSourceProcessorTestCase {
 
 	@Test
+	public void testFormatImports() throws Exception {
+		test("FormatImports.testftl");
+	}
+
+	@Test
 	public void testIncorrectComments() throws Exception {
 		test("MacroTagAttributes.testftl");
+	}
+
+	@Test
+	public void testJsonAssign() throws Exception {
+		test("JsonAssign.testftl");
 	}
 
 	@Test

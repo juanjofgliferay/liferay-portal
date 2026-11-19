@@ -12,9 +12,9 @@ import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.vulcan.jaxrs.exception.mapper.BaseExceptionMapper;
 import com.liferay.portal.vulcan.jaxrs.exception.mapper.Problem;
 
-import java.util.List;
+import jakarta.ws.rs.core.Response;
 
-import javax.ws.rs.core.Response;
+import java.util.List;
 
 /**
  * Converts any {@code UnrecognizedPropertyException} to a {@code 400} error.
@@ -46,9 +46,11 @@ public class UnrecognizedPropertyExceptionMapper
 					"The property \"", reference.getFieldName(),
 					"\" is not defined in ", clazz.getSimpleName(), "."));
 
-			if ((i + 1) < references.size()) {
-				sb.append(" ");
+			if ((i + 1) >= references.size()) {
+				continue;
 			}
+
+			sb.append(" ");
 		}
 
 		return new Problem(Response.Status.BAD_REQUEST, sb.toString());

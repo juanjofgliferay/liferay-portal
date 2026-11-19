@@ -1,0 +1,142 @@
+/**
+ * SPDX-FileCopyrightText: (c) 2026 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
+ */
+
+import ClayEmptyState from '..';
+import {cleanup, render} from '@testing-library/react';
+import React from 'react';
+
+describe('ClayEmptyState', () => {
+	afterEach(cleanup);
+
+	it('renders with default values', () => {
+		const {container} = render(<ClayEmptyState />);
+
+		expect(container).toMatchSnapshot();
+	});
+
+	it('renders with an image provided', () => {
+		const {container} = render(
+			<ClayEmptyState imgSrc="https://via.placeholder.com/256" />
+		);
+
+		expect(container).toMatchSnapshot();
+	});
+
+	it('does not render a reduced motion classes if imgSrcReducedMotion={null}', () => {
+		const {container} = render(
+			<ClayEmptyState
+				imgSrc="https://via.placeholder.com/256"
+				imgSrcReducedMotion={null}
+			/>
+		);
+
+		expect(
+			container.querySelector('.d-none-c-prefers-reduced-motion')
+		).toBe(null);
+	});
+
+	it('renders with a reduced motion image provided', () => {
+		const {container} = render(
+			<ClayEmptyState
+				imgSrc="https://via.placeholder.com/256"
+				imgSrcReducedMotion="https://via.placeholder.com/256"
+			/>
+		);
+
+		expect(container).toMatchSnapshot();
+	});
+
+	it('when passing `title` property with null, render the title section', () => {
+		const {queryByText} = render(<ClayEmptyState title={null} />);
+
+		expect(queryByText('No results found')).toBeDefined();
+	});
+
+	it('renders with a children content', () => {
+		const {container} = render(
+			<ClayEmptyState>My Empty State</ClayEmptyState>
+		);
+
+		expect(container).toMatchSnapshot();
+	});
+
+	it('renders with different image props', () => {
+		const {container} = render(
+			<ClayEmptyState
+				imgProps={{alt: 'hello world'}}
+				imgSrc="https://via.placeholder.com/256"
+			>
+				My Empty State
+			</ClayEmptyState>
+		);
+
+		expect(container).toMatchSnapshot();
+	});
+
+	it('does not render the image wrapper when no image is provided', () => {
+		const {container} = render(<ClayEmptyState />);
+
+		expect(container.querySelector('.c-empty-state-image')).toBe(null);
+	});
+
+	it('renders the element passed to `image` in place of the image', () => {
+		const {container} = render(
+			<ClayEmptyState
+				image={
+					<svg aria-hidden="true" className="lexicon-icon">
+						<use href="/o/empty_states.svg#empty-state" />
+					</svg>
+				}
+			/>
+		);
+
+		expect(container).toMatchSnapshot();
+	});
+
+	it('renders the element passed to `image` instead of the image defined by `imgSrc` and `imgProps`', () => {
+		const {container} = render(
+			<ClayEmptyState
+				image={<svg data-testid="image" />}
+				imgProps={{alt: 'hello world'}}
+				imgSrc="https://via.placeholder.com/256"
+			/>
+		);
+
+		expect(container.querySelector('img')).toBe(null);
+		expect(container.querySelector('.c-empty-state-aspect-ratio')).toBe(
+			null
+		);
+		expect(
+			container.querySelector(
+				'.c-empty-state-illustration > [data-testid]'
+			)
+		).not.toBe(null);
+	});
+
+	it('adds the animation class when only `image` is provided', () => {
+		const {container} = render(
+			<ClayEmptyState image={<svg data-testid="image" />} />
+		);
+
+		expect(container.querySelector('.c-empty-state-animation')).not.toBe(
+			null
+		);
+	});
+
+	it('renders with different reduced motion image props', () => {
+		const {container} = render(
+			<ClayEmptyState
+				imgProps={{alt: 'hello world'}}
+				imgPropsReducedMotion={{alt: 'hello world?'}}
+				imgSrc="https://via.placeholder.com/256"
+				imgSrcReducedMotion="https://via.placeholder.com/256"
+			>
+				My Empty State
+			</ClayEmptyState>
+		);
+
+		expect(container).toMatchSnapshot();
+	});
+});

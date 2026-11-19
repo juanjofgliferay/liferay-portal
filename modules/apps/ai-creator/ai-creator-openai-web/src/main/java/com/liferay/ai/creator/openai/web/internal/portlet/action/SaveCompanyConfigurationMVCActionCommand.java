@@ -5,7 +5,6 @@
 
 package com.liferay.ai.creator.openai.web.internal.portlet.action;
 
-import com.liferay.ai.creator.openai.configuration.manager.AICreatorOpenAIConfigurationManager;
 import com.liferay.configuration.admin.constants.ConfigurationAdminPortletKeys;
 import com.liferay.portal.kernel.module.configuration.ConfigurationException;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
@@ -14,17 +13,16 @@ import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 
-import javax.portlet.PortletException;
+import jakarta.portlet.PortletException;
 
 import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Lourdes Fernández Besada
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + ConfigurationAdminPortletKeys.INSTANCE_SETTINGS,
+		"jakarta.portlet.name=" + ConfigurationAdminPortletKeys.INSTANCE_SETTINGS,
 		"mvc.command.name=/instance_settings/save_company_configuration"
 	},
 	service = MVCActionCommand.class
@@ -49,19 +47,21 @@ public class SaveCompanyConfigurationMVCActionCommand
 	}
 
 	@Override
-	protected void saveAICreatorOpenAIConfiguration(
-			String apiKey, boolean enableChatGPT, boolean enableDALLE,
-			ThemeDisplay themeDisplay)
-		throws ConfigurationException {
-
-		_aiCreatorOpenAIConfigurationManager.
-			saveAICreatorOpenAICompanyConfiguration(
-				themeDisplay.getCompanyId(), apiKey, enableChatGPT,
-				enableDALLE);
+	protected String getInheritedAPIKey(ThemeDisplay themeDisplay) {
+		return null;
 	}
 
-	@Reference
-	private AICreatorOpenAIConfigurationManager
-		_aiCreatorOpenAIConfigurationManager;
+	@Override
+	protected void saveAICreatorOpenAIConfiguration(
+			String apiKey, boolean enableChatGPT,
+			boolean enableOpenAIImageGeneration, String imageModel,
+			String imageSizes, ThemeDisplay themeDisplay)
+		throws ConfigurationException {
+
+		aiCreatorOpenAIConfigurationManager.
+			saveAICreatorOpenAICompanyConfiguration(
+				apiKey, themeDisplay.getCompanyId(), enableChatGPT,
+				enableOpenAIImageGeneration, imageModel, imageSizes);
+	}
 
 }

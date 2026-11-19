@@ -9,9 +9,9 @@ import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.workflow.metrics.exception.WorkflowMetricsSLADefinitionTimeframeException;
 import com.liferay.portal.workflow.metrics.rest.dto.v1_0.GenericError;
 
-import java.util.List;
+import jakarta.ws.rs.ext.ExceptionMapper;
 
-import javax.ws.rs.ext.ExceptionMapper;
+import java.util.List;
 
 import org.osgi.service.component.annotations.Component;
 
@@ -40,9 +40,9 @@ public class SLATimeframeExceptionMapper
 			fieldName -> {
 				GenericError genericError = new GenericError();
 
-				genericError.setFieldName(fieldName);
+				genericError.setFieldName(() -> fieldName);
 				genericError.setMessage(
-					getMessage("selected-option-is-no-longer-available"));
+					() -> getMessage("selected-option-is-no-longer-available"));
 
 				return genericError;
 			});
@@ -50,9 +50,10 @@ public class SLATimeframeExceptionMapper
 		genericErrors.add(
 			new GenericError() {
 				{
-					message = SLATimeframeExceptionMapper.this.getMessage(
-						"the-time-frame-options-changed-in-the-workflow-" +
-							"definition");
+					setMessage(
+						() -> SLATimeframeExceptionMapper.this.getMessage(
+							"the-time-frame-options-changed-in-the-workflow-" +
+								"definition"));
 				}
 			});
 

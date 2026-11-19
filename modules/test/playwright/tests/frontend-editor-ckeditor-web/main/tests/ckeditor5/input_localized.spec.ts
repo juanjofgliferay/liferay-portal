@@ -1,0 +1,175 @@
+/**
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
+ */
+
+import {expect, mergeTests} from '@playwright/test';
+
+import {featureFlagsTest} from '../../../../../fixtures/featureFlagsTest';
+import {loginTest} from '../../../../../fixtures/loginTest';
+import {inputLocalizedPageTest} from '../../../../frontend-editor-ckeditor5-sample-web/fixtures/inputLocalizedPageTest';
+
+export const test = mergeTests(
+	featureFlagsTest({
+		'LPD-11235': {enabled: false},
+		'LPS-178052': {enabled: true},
+	}),
+	inputLocalizedPageTest,
+	loginTest()
+);
+
+test(
+	'Editor and languages dropdown properly function',
+	{tag: '@LPD-54165'},
+	async ({inputLocalizedPage}) => {
+		await test.step('Check all the editors are displayed', async () => {
+			await expect(inputLocalizedPage.content.editor).toBeVisible();
+			await expect(
+				inputLocalizedPage.content.languageButton
+			).toBeVisible();
+
+			await expect(inputLocalizedPage.default.editor).toBeVisible();
+			await expect(
+				inputLocalizedPage.default.languageButton
+			).toBeVisible();
+
+			await expect(inputLocalizedPage.inputOnly.editor).toBeVisible();
+		});
+
+		await test.step('Check the initial content is displayed', async () => {
+			await test.step('Check that "English" text is displayed', async () => {
+				await expect(inputLocalizedPage.content.editor).toHaveText(
+					'English'
+				);
+			});
+
+			await test.step('Switch to es-ES locale', async () => {
+				await inputLocalizedPage.switchLanguage(
+					inputLocalizedPage.content.languageButton,
+					inputLocalizedPage.spanishOption,
+					'es-ES'
+				);
+			});
+
+			await test.step('Check that "Spanish" is in the editor', async () => {
+				await expect(inputLocalizedPage.content.editor).toHaveText(
+					'Spanish'
+				);
+			});
+
+			await test.step('Switch to en-US locale', async () => {
+				await inputLocalizedPage.switchLanguage(
+					inputLocalizedPage.content.languageButton,
+					inputLocalizedPage.englishOption,
+					'en-US'
+				);
+			});
+		});
+
+		await test.step('Check that multiple translations can be added', async () => {
+			await test.step('Fill default editor with "English"', async () => {
+				await inputLocalizedPage.default.editor.fill('English');
+			});
+
+			await test.step('Switch to es-ES and fill editor with "Spanish"', async () => {
+				await inputLocalizedPage.switchLanguage(
+					inputLocalizedPage.default.languageButton,
+					inputLocalizedPage.spanishOption,
+					'es-ES'
+				);
+
+				await inputLocalizedPage.default.editor.fill('Spanish');
+			});
+
+			await test.step('Switch to en-US and check editor displays "English" still', async () => {
+				await inputLocalizedPage.switchLanguage(
+					inputLocalizedPage.default.languageButton,
+					inputLocalizedPage.englishOption,
+					'en-US'
+				);
+
+				await expect(async () => {
+					await expect(inputLocalizedPage.default.editor).toHaveText(
+						'English'
+					);
+				}).toPass();
+			});
+
+			await test.step('Switch to es-ES and check editor displays "Spanish" still', async () => {
+				await inputLocalizedPage.switchLanguage(
+					inputLocalizedPage.default.languageButton,
+					inputLocalizedPage.spanishOption,
+					'es-ES'
+				);
+
+				await expect(async () => {
+					expect(inputLocalizedPage.default.editor).toHaveText(
+						'Spanish'
+					);
+				}).toPass();
+			});
+
+			await test.step('Switch back to english to reset to original state', async () => {
+				await inputLocalizedPage.switchLanguage(
+					inputLocalizedPage.default.languageButton,
+					inputLocalizedPage.englishOption,
+					'en-US'
+				);
+			});
+		});
+
+		await test.step('Check that the languages dropdown is hidden', async () => {
+			await expect(
+				inputLocalizedPage.inputOnly.container.getByTitle(
+					'Select a Language'
+				)
+			).toHaveCount(0);
+		});
+
+		await test.step('Check the languages dropdown are synced', async () => {
+			await test.step('Switch to es-ES locale', async () => {
+				await inputLocalizedPage.switchLanguage(
+					inputLocalizedPage.default.languageButton,
+					inputLocalizedPage.spanishOption,
+					'es-ES'
+				);
+			});
+
+			await test.step('Check the default and content language buttons are displaying es-ES', async () => {
+				await expect(async () => {
+					await expect(
+						inputLocalizedPage.default.languageButton
+					).toContainText('es-ES');
+				}).toPass();
+
+				await expect(async () => {
+					await expect(
+						inputLocalizedPage.content.languageButton
+					).toContainText('es-ES');
+				}).toPass();
+			});
+
+			await test.step('Switch to en-US locale', async () => {
+				await inputLocalizedPage.switchLanguage(
+					inputLocalizedPage.content.languageButton,
+					inputLocalizedPage.englishOption,
+					'en-US'
+				);
+			});
+
+			await test.step('Check the default and content language buttons are displaying en-US', async () => {
+				await expect(async () => {
+					await expect(
+						inputLocalizedPage.default.languageButton
+					).toContainText('en-US');
+				}).toPass();
+
+				await expect(async () => {
+					await expect(
+						inputLocalizedPage.content.languageButton
+					).toContainText('en-US');
+				}).toPass();
+			});
+		});
+	}
+);

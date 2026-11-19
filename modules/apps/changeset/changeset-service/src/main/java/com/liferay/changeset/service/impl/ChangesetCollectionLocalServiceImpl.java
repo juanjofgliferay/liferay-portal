@@ -5,7 +5,6 @@
 
 package com.liferay.changeset.service.impl;
 
-import com.liferay.changeset.exception.NoSuchCollectionException;
 import com.liferay.changeset.model.ChangesetCollection;
 import com.liferay.changeset.service.ChangesetEntryLocalService;
 import com.liferay.changeset.service.base.ChangesetCollectionLocalServiceBaseImpl;
@@ -76,8 +75,7 @@ public class ChangesetCollectionLocalServiceImpl
 		throws PortalException {
 
 		ChangesetCollection changesetCollection =
-			changesetCollectionLocalService.fetchChangesetCollection(
-				groupId, name);
+			changesetCollectionPersistence.fetchByG_N(groupId, name);
 
 		if (changesetCollection != null) {
 			return changesetCollection;
@@ -89,13 +87,6 @@ public class ChangesetCollectionLocalServiceImpl
 
 		return changesetCollectionLocalService.addChangesetCollection(
 			user.getUserId(), groupId, name, StringPool.BLANK);
-	}
-
-	@Override
-	public ChangesetCollection getChangesetCollection(long groupId, String name)
-		throws NoSuchCollectionException {
-
-		return changesetCollectionPersistence.findByG_N(groupId, name);
 	}
 
 	@Reference

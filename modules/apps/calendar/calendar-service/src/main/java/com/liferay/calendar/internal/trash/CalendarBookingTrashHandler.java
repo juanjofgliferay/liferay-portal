@@ -37,9 +37,13 @@ public class CalendarBookingTrashHandler extends BaseTrashHandler {
 	}
 
 	@Override
-	public boolean isInTrash(long classPK) throws PortalException {
+	public boolean isInTrash(long classPK) {
 		CalendarBooking calendarBooking =
-			_calendarBookingLocalService.getCalendarBooking(classPK);
+			_calendarBookingLocalService.fetchCalendarBooking(classPK);
+
+		if (calendarBooking == null) {
+			return false;
+		}
 
 		return calendarBooking.isInTrash();
 	}
@@ -57,11 +61,7 @@ public class CalendarBookingTrashHandler extends BaseTrashHandler {
 			return false;
 		}
 
-		if (calendarBooking.isMasterBooking()) {
-			return true;
-		}
-
-		return false;
+		return calendarBooking.isMasterBooking();
 	}
 
 	@Override

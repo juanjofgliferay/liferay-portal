@@ -4,16 +4,16 @@
  */
 
 import ClayForm, {ClayCheckbox} from '@clayui/form';
-import {useLiferayState} from '@liferay/frontend-js-state-web';
+import {useLiferayState} from '@liferay/frontend-js-state-web/react';
 import classnames from 'classnames';
 import React, {useEffect, useState} from 'react';
 
 import skuOptionsAtom from '../../utilities/atoms/skuOptionsAtom';
 import Asterisk from './Asterisk';
 import {
+	INITIAL_SKU_OPTIONS_ATOM_STATE,
 	getProductOptionName,
 	getSkuOptionsErrors,
-	initialSkuOptionsAtomState,
 	isRequired,
 } from './utils';
 
@@ -27,9 +27,8 @@ const ProductOptionCheckboxMultiple = ({
 	const errorsKey = isFromMiniCart ? 'miniCartErrors' : 'errors';
 	const [hasErrors, setHasErrors] = useState(false);
 	const skuOptionsKey = isFromMiniCart ? 'miniCartSkuOptions' : 'skuOptions';
-	const [skuOptionsAtomState, setSkuOptionsAtomState] = useLiferayState(
-		skuOptionsAtom
-	);
+	const [skuOptionsAtomState, setSkuOptionsAtomState] =
+		useLiferayState(skuOptionsAtom);
 
 	const [productOptionValues, setProductOptionValues] = useState(
 		productOption.productOptionValues
@@ -53,6 +52,7 @@ const ProductOptionCheckboxMultiple = ({
 				),
 				...(!isFromMiniCart && {namespace}),
 			}),
+
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 		[hasErrors]
 	);
@@ -122,7 +122,7 @@ const ProductOptionCheckboxMultiple = ({
 							skuOptionValueNames,
 							value,
 						},
-				  ],
+					],
 		});
 
 		return () =>
@@ -131,8 +131,8 @@ const ProductOptionCheckboxMultiple = ({
 						...skuOptionsAtomState,
 						miniCartErrors: [],
 						miniCartSkuOptions: [],
-				  })
-				: setSkuOptionsAtomState(initialSkuOptionsAtomState);
+					})
+				: setSkuOptionsAtomState(INITIAL_SKU_OPTIONS_ATOM_STATE);
 
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
@@ -171,22 +171,22 @@ const ProductOptionCheckboxMultiple = ({
 									...currentSkuOptions[curSkuOptionIndex]
 										.skuOptionValueNames,
 									curProductOptionValue.name,
-							  ]
+								]
 							: currentSkuOptions[
 									curSkuOptionIndex
-							  ].skuOptionValueNames.filter(
+								].skuOptionValueNames.filter(
 									(curVal) =>
 										curVal !== curProductOptionValue.name
-							  ),
+								),
 						value: checked
 							? [
 									...currentSkuOptions[curSkuOptionIndex]
 										.value,
 									value,
-							  ]
+								]
 							: currentSkuOptions[curSkuOptionIndex].value.filter(
 									(curVal) => !(curVal === value)
-							  ),
+								),
 					};
 				}
 

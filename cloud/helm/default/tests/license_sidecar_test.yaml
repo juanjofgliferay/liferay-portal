@@ -1,0 +1,163 @@
+suite: License Sync Sidecar
+templates:
+    -   templates/configmap.yaml
+    -   templates/liferay-init-scripts-cm.yaml
+    -   templates/liferay-network-cm.yaml
+    -   templates/workloads.yaml
+tests:
+    -   asserts:
+            -   contains:
+                    any: true
+                    content:
+                        name: liferay-license-sync
+                    path: spec.template.spec.initContainers
+        documentSelector:
+            path: kind
+            skipEmptyTemplates: true
+            value: StatefulSet
+        it: Adds the license sync sidecar when the license is enabled
+        set:
+            licensing.enabled: true
+    -   asserts:
+            -   contains:
+                    any: true
+                    content:
+                        name: liferay-license
+                        secret:
+                            items:
+                                -   key: license.xml
+                                    path: license.xml
+                            optional: true
+                            secretName: custom-entitlements
+                    path: spec.template.spec.volumes
+        documentSelector:
+            path: kind
+            skipEmptyTemplates: true
+            value: StatefulSet
+        it: Honors an overridden license secret name
+        set:
+            licensing.enabled: true
+            licensing.secretName: custom-entitlements
+    -   asserts:
+            -   contains:
+                    any: true
+                    content:
+                        mountPath: /liferay-init-scripts
+                        name: liferay-deploy-sync
+                    path: spec.template.spec.initContainers[?(@.name=="liferay-license-sync")].volumeMounts
+            -   contains:
+                    any: true
+                    content:
+                        mountPath: /opt/liferay
+                        name: liferay-persistent-volume
+                        subPath: liferay
+                    path: spec.template.spec.initContainers[?(@.name=="liferay-license-sync")].volumeMounts
+            -   contains:
+                    any: true
+                    content:
+                        mountPath: /secret
+                        name: liferay-license
+                    path: spec.template.spec.initContainers[?(@.name=="liferay-license-sync")].volumeMounts
+        documentSelector:
+            path: kind
+            skipEmptyTemplates: true
+            value: StatefulSet
+        it: Mounts the license secret, sync script, and deploy folder
+        set:
+            licensing.enabled: true
+    -   asserts:
+            -   contains:
+                    any: true
+                    content:
+                        name: liferay-deploy-sync
+                        secret:
+                            optional: true
+                            secretName: liferay-default-deploy-sync
+                    path: spec.template.spec.volumes
+        documentSelector:
+            path: kind
+            skipEmptyTemplates: true
+            value: StatefulSet
+        it: Mounts the operator deploy sync secret as an optional volume
+        set:
+            licensing.enabled: true
+    -   asserts:
+            -   notContains:
+                    any: true
+                    content:
+                        name: liferay-deploy-sync
+                    path: spec.template.spec.volumes
+        documentSelector:
+            path: kind
+            skipEmptyTemplates: true
+            value: StatefulSet
+        it: Omits the deploy sync volume when the license is disabled
+    -   asserts:
+            -   notContains:
+                    any: true
+                    content:
+                        name: liferay-license-sync
+                    path: spec.template.spec.initContainers
+        documentSelector:
+            path: kind
+            skipEmptyTemplates: true
+            value: StatefulSet
+        it: Omits the license sync sidecar when the license is disabled
+        set:
+            licensing.enabled: false
+    -   asserts:
+            -   notContains:
+                    any: true
+                    content:
+                        name: liferay-license
+                    path: spec.template.spec.volumes
+        documentSelector:
+            path: kind
+            skipEmptyTemplates: true
+            value: StatefulSet
+        it: Omits the license volume when the license is disabled
+    -   asserts:
+            -   contains:
+                    any: true
+                    content:
+                        name: LIFERAY_SYNC_INTERVAL
+                        value: "120"
+                    path: spec.template.spec.initContainers[?(@.name=="liferay-license-sync")].env
+        documentSelector:
+            path: kind
+            skipEmptyTemplates: true
+            value: StatefulSet
+        it: Passes the configured sync interval to the sidecar
+        set:
+            licensing.enabled: true
+            licensing.syncInterval: 120
+    -   asserts:
+            -   contains:
+                    any: true
+                    content:
+                        name: liferay-license
+                        secret:
+                            items:
+                                -   key: license.xml
+                                    path: license.xml
+                            optional: true
+                            secretName: liferay-default-entitlements
+                    path: spec.template.spec.volumes
+        documentSelector:
+            path: kind
+            skipEmptyTemplates: true
+            value: StatefulSet
+        it: Projects the operator entitlements license as an optional volume
+        set:
+            licensing.enabled: true
+    -   asserts:
+            -   equal:
+                    path: spec.template.spec.initContainers[?(@.name=="liferay-license-sync")].restartPolicy
+                    value: Always
+        documentSelector:
+            path: kind
+            skipEmptyTemplates: true
+            value: StatefulSet
+        it: Runs the license sync sidecar as a native sidecar
+        set:
+            licensing.enabled: true

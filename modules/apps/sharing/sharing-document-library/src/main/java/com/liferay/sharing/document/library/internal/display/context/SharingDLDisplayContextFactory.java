@@ -11,6 +11,7 @@ import com.liferay.document.library.display.context.DLViewFileVersionDisplayCont
 import com.liferay.document.library.kernel.model.DLFileEntryType;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.repository.model.FileShortcut;
 import com.liferay.portal.kernel.repository.model.FileVersion;
@@ -19,12 +20,13 @@ import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.sharing.configuration.SharingConfiguration;
 import com.liferay.sharing.configuration.SharingConfigurationFactory;
 import com.liferay.sharing.display.context.util.SharingDropdownItemFactory;
+import com.liferay.sharing.display.context.util.SharingJavaScriptFactory;
 import com.liferay.sharing.document.library.internal.constants.SharingDLWebKeys;
 import com.liferay.sharing.security.permission.SharingPermission;
 import com.liferay.sharing.service.SharingEntryLocalService;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -69,6 +71,17 @@ public class SharingDLDisplayContextFactory implements DLDisplayContextFactory {
 		HttpServletRequest httpServletRequest,
 		HttpServletResponse httpServletResponse, FileVersion fileVersion) {
 
+		SharingDropdownItemFactory sharingDropdownItemFactory =
+			_sharingDropdownItemFactorySnapshot.get();
+		SharingJavaScriptFactory sharingJavaScriptFactory =
+			_sharingJavaScriptFactorySnapshot.get();
+
+		if ((sharingDropdownItemFactory == null) ||
+			(sharingJavaScriptFactory == null)) {
+
+			return parentDLViewFileVersionDisplayContext;
+		}
+
 		try {
 			SharingConfiguration sharingConfiguration =
 				_getSharingConfiguration(httpServletRequest);
@@ -82,8 +95,9 @@ public class SharingDLDisplayContextFactory implements DLDisplayContextFactory {
 			return new SharingDLViewFileVersionDisplayContext(
 				parentDLViewFileVersionDisplayContext, httpServletRequest,
 				httpServletResponse, fileEntry, fileVersion,
-				_sharingEntryLocalService, _sharingDropdownItemFactory,
-				_sharingPermission, sharingConfiguration);
+				_sharingEntryLocalService, sharingDropdownItemFactory,
+				sharingJavaScriptFactory, _sharingPermission,
+				sharingConfiguration);
 		}
 		catch (PortalException portalException) {
 			throw new SystemException(
@@ -118,11 +132,17 @@ public class SharingDLDisplayContextFactory implements DLDisplayContextFactory {
 		return sharingConfiguration;
 	}
 
-	@Reference
-	private SharingConfigurationFactory _sharingConfigurationFactory;
+	private static final Snapshot<SharingDropdownItemFactory>
+		_sharingDropdownItemFactorySnapshot = new Snapshot<>(
+			SharingDLDisplayContextFactory.class,
+			SharingDropdownItemFactory.class, null, true);
+	private static final Snapshot<SharingJavaScriptFactory>
+		_sharingJavaScriptFactorySnapshot = new Snapshot<>(
+			SharingDLDisplayContextFactory.class,
+			SharingJavaScriptFactory.class, null, true);
 
 	@Reference
-	private SharingDropdownItemFactory _sharingDropdownItemFactory;
+	private SharingConfigurationFactory _sharingConfigurationFactory;
 
 	@Reference
 	private SharingEntryLocalService _sharingEntryLocalService;

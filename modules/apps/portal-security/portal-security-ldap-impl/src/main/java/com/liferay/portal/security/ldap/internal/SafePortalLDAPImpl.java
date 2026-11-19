@@ -5,12 +5,15 @@
 
 package com.liferay.portal.security.ldap.internal;
 
+import com.liferay.petra.lang.SafeCloseable;
+import com.liferay.petra.lang.ThreadContextClassLoaderUtil;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.CompanyConstants;
+import com.liferay.portal.kernel.security.fips.FIPSModeValidator;
 import com.liferay.portal.kernel.security.ldap.LDAPSettings;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
@@ -18,10 +21,12 @@ import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.PrefsPropsUtil;
 import com.liferay.portal.kernel.util.PropertiesUtil;
-import com.liferay.portal.kernel.util.Props;
 import com.liferay.portal.kernel.util.PropsKeys;
+import com.liferay.portal.kernel.util.PropsUtil;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.security.key.secret.SecretResolver;
 import com.liferay.portal.security.ldap.SafeLdapContext;
 import com.liferay.portal.security.ldap.SafeLdapFilter;
 import com.liferay.portal.security.ldap.SafeLdapFilterConstraints;
@@ -31,6 +36,9 @@ import com.liferay.portal.security.ldap.UserConverterKeys;
 import com.liferay.portal.security.ldap.configuration.ConfigurationProvider;
 import com.liferay.portal.security.ldap.configuration.LDAPServerConfiguration;
 import com.liferay.portal.security.ldap.configuration.SystemLDAPConfiguration;
+import com.liferay.portal.security.ldap.constants.LDAPReferralModes;
+import com.liferay.portal.security.ldap.internal.ssl.LDAPSSLSocketFactory;
+import com.liferay.portal.security.ldap.internal.util.SafeLdapReferralUtil;
 import com.liferay.portal.security.ldap.internal.validator.SafeLdapContextImpl;
 import com.liferay.portal.security.ldap.util.LDAPUtil;
 import com.liferay.portal.security.ldap.validator.LDAPFilterValidator;
@@ -38,6 +46,7 @@ import com.liferay.portal.security.ldap.validator.LDAPFilterValidator;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.Properties;
 
 import javax.naming.Binding;
@@ -408,13 +417,16 @@ public class SafePortalLDAPImpl implements SafePortalLDAP {
 		return getSafeLdapContext(
 			companyId, ldapServerConfiguration.baseProviderURL(),
 			ldapServerConfiguration.securityPrincipal(),
-			ldapServerConfiguration.securityCredential());
+			_secretResolver.resolve(
+				companyId, ldapServerConfiguration.securityCredential()));
 	}
 
 	@Override
 	public SafeLdapContext getSafeLdapContext(
 		long companyId, String providerURL, String principal,
 		String credentials) {
+
+		FIPSModeValidator.validateURL(providerURL);
 
 		SystemLDAPConfiguration systemLDAPConfiguration =
 			_systemLDAPConfigurationProvider.getConfiguration(companyId);
@@ -425,8 +437,6 @@ public class SafePortalLDAPImpl implements SafePortalLDAP {
 			Context.INITIAL_CONTEXT_FACTORY,
 			systemLDAPConfiguration.factoryInitial());
 		environmentProperties.put(Context.PROVIDER_URL, providerURL);
-		environmentProperties.put(
-			Context.REFERRAL, systemLDAPConfiguration.referral());
 		environmentProperties.put(Context.SECURITY_CREDENTIALS, credentials);
 		environmentProperties.put(Context.SECURITY_PRINCIPAL, principal);
 
@@ -451,15 +461,30 @@ public class SafePortalLDAPImpl implements SafePortalLDAP {
 				connectionProperty[0], connectionProperty[1]);
 		}
 
+		if (PropsValues.FIPS_ENABLED) {
+			environmentProperties.put(Context.SECURITY_PROTOCOL, "ssl");
+			environmentProperties.put(
+				"java.naming.ldap.factory.socket",
+				LDAPSSLSocketFactory.class.getName());
+		}
+
+		SafeLdapReferralUtil.setProperties(
+			environmentProperties, systemLDAPConfiguration.referral());
+
 		if (_log.isDebugEnabled()) {
 			_log.debug(
 				MapUtil.toString(
 					environmentProperties, null, Context.SECURITY_CREDENTIALS));
 		}
 
-		try {
+		try (SafeCloseable safeCloseable = ThreadContextClassLoaderUtil.swap(
+				SafeLdapContextImpl.class.getClassLoader())) {
+
 			return new SafeLdapContextImpl(
-				new InitialLdapContext(environmentProperties, null));
+				new InitialLdapContext(environmentProperties, null),
+				Objects.equals(
+					systemLDAPConfiguration.referral(),
+					LDAPReferralModes.FOLLOW));
 		}
 		catch (Exception exception) {
 			if (_log.isWarnEnabled()) {
@@ -955,7 +980,7 @@ public class SafePortalLDAPImpl implements SafePortalLDAP {
 	@Activate
 	protected void activate() {
 		_companySecurityAuthType = GetterUtil.getString(
-			_props.get(PropsKeys.COMPANY_SECURITY_AUTH_TYPE));
+			PropsUtil.get(PropsKeys.COMPANY_SECURITY_AUTH_TYPE));
 	}
 
 	private Attributes _getAttributes(
@@ -1084,7 +1109,7 @@ public class SafePortalLDAPImpl implements SafePortalLDAP {
 	private LDAPSettings _ldapSettings;
 
 	@Reference
-	private Props _props;
+	private SecretResolver _secretResolver;
 
 	@Reference(
 		target = "(factoryPid=com.liferay.portal.security.ldap.configuration.SystemLDAPConfiguration)"

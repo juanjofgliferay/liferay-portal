@@ -8,13 +8,14 @@ package com.liferay.headless.delivery.client.serdes.v1_0;
 import com.liferay.headless.delivery.client.dto.v1_0.FragmentImage;
 import com.liferay.headless.delivery.client.json.BaseJSONParser;
 
+import jakarta.annotation.Generated;
+
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
-
-import javax.annotation.Generated;
 
 /**
  * @author Javier Gamarra
@@ -53,14 +54,7 @@ public class FragmentImageSerDes {
 
 			sb.append("\"description\": ");
 
-			if (fragmentImage.getDescription() instanceof String) {
-				sb.append("\"");
-				sb.append((String)fragmentImage.getDescription());
-				sb.append("\"");
-			}
-			else {
-				sb.append(fragmentImage.getDescription());
-			}
+			sb.append(_toJSON(fragmentImage.getDescription()));
 		}
 
 		if (fragmentImage.getFragmentImageClassPKReference() != null) {
@@ -82,14 +76,7 @@ public class FragmentImageSerDes {
 
 			sb.append("\"title\": ");
 
-			if (fragmentImage.getTitle() instanceof String) {
-				sb.append("\"");
-				sb.append((String)fragmentImage.getTitle());
-				sb.append("\"");
-			}
-			else {
-				sb.append(fragmentImage.getTitle());
-			}
+			sb.append(_toJSON(fragmentImage.getTitle()));
 		}
 
 		if (fragmentImage.getUrl() != null) {
@@ -99,14 +86,7 @@ public class FragmentImageSerDes {
 
 			sb.append("\"url\": ");
 
-			if (fragmentImage.getUrl() instanceof String) {
-				sb.append("\"");
-				sb.append((String)fragmentImage.getUrl());
-				sb.append("\"");
-			}
-			else {
-				sb.append(fragmentImage.getUrl());
-			}
+			sb.append(_toJSON(fragmentImage.getUrl()));
 		}
 
 		sb.append("}");
@@ -177,6 +157,26 @@ public class FragmentImageSerDes {
 		}
 
 		@Override
+		protected boolean parseMaps(String jsonParserFieldName) {
+			if (Objects.equals(jsonParserFieldName, "description")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "fragmentImageClassPKReference")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "title")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "url")) {
+				return false;
+			}
+
+			return false;
+		}
+
+		@Override
 		protected void setField(
 			FragmentImage fragmentImage, String jsonParserFieldName,
 			Object jsonParserFieldValue) {
@@ -237,36 +237,7 @@ public class FragmentImageSerDes {
 
 			Object value = entry.getValue();
 
-			Class<?> valueClass = value.getClass();
-
-			if (value instanceof Map) {
-				sb.append(_toJSON((Map)value));
-			}
-			else if (valueClass.isArray()) {
-				Object[] values = (Object[])value;
-
-				sb.append("[");
-
-				for (int i = 0; i < values.length; i++) {
-					sb.append("\"");
-					sb.append(_escape(values[i]));
-					sb.append("\"");
-
-					if ((i + 1) < values.length) {
-						sb.append(", ");
-					}
-				}
-
-				sb.append("]");
-			}
-			else if (value instanceof String) {
-				sb.append("\"");
-				sb.append(_escape(entry.getValue()));
-				sb.append("\"");
-			}
-			else {
-				sb.append(String.valueOf(entry.getValue()));
-			}
+			sb.append(_toJSON(value));
 
 			if (iterator.hasNext()) {
 				sb.append(", ");
@@ -278,4 +249,47 @@ public class FragmentImageSerDes {
 		return sb.toString();
 	}
 
+	private static String _toJSON(Object value) {
+		if (value == null) {
+			return "null";
+		}
+
+		if (value instanceof Collection) {
+			Collection<?> collection = (Collection<?>)value;
+
+			return _toJSON(collection.toArray());
+		}
+
+		if (value instanceof Map) {
+			return _toJSON((Map)value);
+		}
+
+		Class<?> clazz = value.getClass();
+
+		if (clazz.isArray()) {
+			StringBuilder sb = new StringBuilder("[");
+
+			Object[] values = (Object[])value;
+
+			for (int i = 0; i < values.length; i++) {
+				sb.append(_toJSON(values[i]));
+
+				if ((i + 1) < values.length) {
+					sb.append(", ");
+				}
+			}
+
+			sb.append("]");
+
+			return sb.toString();
+		}
+
+		if (value instanceof String) {
+			return "\"" + _escape(value) + "\"";
+		}
+
+		return String.valueOf(value);
+	}
+
 }
+// LIFERAY-REST-BUILDER-HASH:867080409

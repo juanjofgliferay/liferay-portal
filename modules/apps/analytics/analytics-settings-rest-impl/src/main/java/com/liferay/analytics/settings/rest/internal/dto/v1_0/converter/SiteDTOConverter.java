@@ -18,7 +18,9 @@ import org.osgi.service.component.annotations.Component;
  * @author Riccardo Ferrari
  */
 @Component(
-	property = "dto.class.name=com.liferay.portal.kernel.model.Group",
+	property = {
+		"default=true", "dto.class.name=com.liferay.portal.kernel.model.Group"
+	},
 	service = DTOConverter.class
 )
 public class SiteDTOConverter implements DTOConverter<Group, Site> {
@@ -37,10 +39,6 @@ public class SiteDTOConverter implements DTOConverter<Group, Site> {
 
 		return new Site() {
 			{
-				friendlyURL = group.getFriendlyURL();
-				id = group.getGroupId();
-				name = group.getDescriptiveName();
-
 				setChannelName(
 					() -> {
 						UnicodeProperties typeSettingsUnicodeProperties =
@@ -53,6 +51,9 @@ public class SiteDTOConverter implements DTOConverter<Group, Site> {
 						return siteDTOConverterContext.getChannelName(
 							GetterUtil.getLong(analyticsChannelId));
 					});
+				setFriendlyURL(group::getFriendlyURL);
+				setId(group::getGroupId);
+				setName(group::getDescriptiveName);
 			}
 		};
 	}

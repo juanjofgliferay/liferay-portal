@@ -5,18 +5,17 @@
 
 package com.liferay.headless.commerce.admin.catalog.internal.jaxrs.exception.mapper;
 
-import com.liferay.commerce.product.exception.CPSpecificationOptionKeyException;
+import com.liferay.commerce.product.exception.CPDefinitionSpecificationOptionValueKeyException;
 import com.liferay.portal.vulcan.jaxrs.exception.mapper.BaseExceptionMapper;
 import com.liferay.portal.vulcan.jaxrs.exception.mapper.Problem;
 
-import javax.ws.rs.ext.ExceptionMapper;
-import javax.ws.rs.ext.Provider;
+import jakarta.ws.rs.ext.ExceptionMapper;
+import jakarta.ws.rs.ext.Provider;
 
 import org.osgi.service.component.annotations.Component;
 
 /**
  * @author Alessio Antonio Rendina
- * @author Zoltán Takács
  */
 @Component(
 	property = {
@@ -28,13 +27,15 @@ import org.osgi.service.component.annotations.Component;
 )
 @Provider
 public class ProductSpecificationKeyExceptionMapper
-	extends BaseExceptionMapper<CPSpecificationOptionKeyException> {
+	extends BaseExceptionMapper
+		<CPDefinitionSpecificationOptionValueKeyException> {
 
 	@Override
 	protected Problem getProblem(
-		CPSpecificationOptionKeyException cpSpecificationOptionKeyException) {
+		CPDefinitionSpecificationOptionValueKeyException
+			cpDefinitionSpecificationOptionValueKeyException) {
 
-		return new Problem(cpSpecificationOptionKeyException);
+		return new Problem(cpDefinitionSpecificationOptionValueKeyException);
 	}
 
 }

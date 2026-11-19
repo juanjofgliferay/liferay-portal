@@ -45,8 +45,7 @@ public class ClassUtilTest {
 		URL.setURLStreamHandlerFactory(
 			protocol -> {
 				if (protocol.equals("vfs") || protocol.equals("zip") ||
-					protocol.equals("bundleresource") ||
-					protocol.equals("wsjar")) {
+					protocol.equals("bundleresource")) {
 
 					return new URLStreamHandler() {
 
@@ -71,6 +70,13 @@ public class ClassUtilTest {
 	@Test
 	public void testConstructor() {
 		new ClassUtil();
+	}
+
+	@Test
+	public void testGetClassName() {
+		Assert.assertEquals(
+			"java.lang.Object", ClassUtil.getClassName(new Object()));
+		Assert.assertNull(ClassUtil.getClassName(null));
 	}
 
 	@Test
@@ -119,13 +125,6 @@ public class ClassUtilTest {
 		_testGetClassesWithFile(
 			"TestClass.txt", "@Annotation({A.class,B.class} TestClass", "A",
 			"B", "Annotation", "TestClass");
-	}
-
-	@Test
-	public void testGetClassName() {
-		Assert.assertEquals(
-			"java.lang.Object", ClassUtil.getClassName(new Object()));
-		Assert.assertNull(ClassUtil.getClassName(null));
 	}
 
 	@Test

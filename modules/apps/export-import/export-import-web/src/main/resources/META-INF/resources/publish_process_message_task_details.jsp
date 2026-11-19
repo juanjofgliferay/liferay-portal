@@ -8,7 +8,7 @@
 <%@ include file="/init.jsp" %>
 
 <%
-long backgroundTaskId = ParamUtil.getLong(request, BackgroundTaskConstants.BACKGROUND_TASK_ID);
+long backgroundTaskId = ParamUtil.getLong(request, BackgroundTaskConstants.MESSAGE_KEY_BACKGROUND_TASK_ID);
 
 BackgroundTask backgroundTask = BackgroundTaskManagerUtil.fetchBackgroundTask(backgroundTaskId);
 
@@ -24,7 +24,7 @@ catch (Exception e) {
 <c:choose>
 	<c:when test="<%= jsonObject == null %>">
 		<div class="alert <%= (backgroundTask.getStatus() == BackgroundTaskConstants.STATUS_FAILED) ? "alert-danger" : StringPool.BLANK %> publish-error">
-			<liferay-ui:message arguments="<%= backgroundTask.getStatusMessage() %>" key="unable-to-execute-process-x" translateArguments="<%= false %>" />
+			<liferay-ui:message key="an-unexpected-error-occurred" />
 		</div>
 	</c:when>
 	<c:otherwise>
@@ -37,10 +37,10 @@ catch (Exception e) {
 
 			<c:choose>
 				<c:when test="<%= exported && !validated %>">
-					<h4 class="upload-error-message"><liferay-ui:message key="the-publish-process-did-not-start-due-to-validation-errors" /></h4>
+					<div class="h4 upload-error-message"><liferay-ui:message key="the-publish-process-did-not-start-due-to-validation-errors" /></div>
 				</c:when>
 				<c:otherwise>
-					<h4 class="upload-error-message"><liferay-ui:message key="an-unexpected-error-occurred-with-the-publish-process.-please-check-your-portal-and-publishing-configuration" /></h4>
+					<div class="h4 upload-error-message"><liferay-ui:message key="an-unexpected-error-occurred-with-the-publish-process.-please-check-your-portal-and-publishing-configuration" /></div>
 				</c:otherwise>
 			</c:choose>
 
@@ -63,7 +63,7 @@ catch (Exception e) {
 						<li>
 							<%= messageListItemJSONObject.getString("type") %>
 
-							<%= messageListItemJSONObject.getString("site") %>:
+							<%= HtmlUtil.escape(messageListItemJSONObject.getString("site")) %>:
 
 							<strong><%= HtmlUtil.escape(messageListItemJSONObject.getString("name")) %></strong>
 

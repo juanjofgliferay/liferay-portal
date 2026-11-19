@@ -26,7 +26,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"panel.app.order:Integer=700",
+		"panel.app.order:Integer=800",
 		"panel.category.key=" + PanelCategoryKeys.CONTROL_PANEL_SECURITY
 	},
 	service = PanelApp.class
@@ -58,7 +58,7 @@ public class PortalCompanyLogPanelApp extends BasePanelApp {
 	}
 
 	@Reference(
-		target = "(javax.portlet.name=" + PortalCompanyLogPortletKeys.PORTAL_COMPANY_LOG + ")"
+		target = "(jakarta.portlet.name=" + PortalCompanyLogPortletKeys.PORTAL_COMPANY_LOG + ")"
 	)
 	private Portlet _portlet;
 

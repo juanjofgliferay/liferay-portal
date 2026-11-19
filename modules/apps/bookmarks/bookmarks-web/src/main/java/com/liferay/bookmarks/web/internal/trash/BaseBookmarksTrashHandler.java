@@ -9,6 +9,7 @@ import com.liferay.bookmarks.model.BookmarksEntry;
 import com.liferay.bookmarks.model.BookmarksFolder;
 import com.liferay.bookmarks.service.BookmarksEntryLocalServiceUtil;
 import com.liferay.bookmarks.service.BookmarksFolderLocalServiceUtil;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.ContainerModel;
 import com.liferay.portal.kernel.model.TrashedModel;
@@ -43,17 +44,10 @@ public abstract class BaseBookmarksTrashHandler extends BaseTrashHandler {
 			long classPK, long parentContainerModelId, int start, int end)
 		throws PortalException {
 
-		List<BookmarksFolder> folders =
+		return TransformUtil.transform(
 			BookmarksFolderLocalServiceUtil.getFolders(
-				getGroupId(classPK), parentContainerModelId, start, end);
-
-		List<ContainerModel> containerModels = new ArrayList<>(folders.size());
-
-		for (BookmarksFolder curFolder : folders) {
-			containerModels.add(curFolder);
-		}
-
-		return containerModels;
+				getGroupId(classPK), parentContainerModelId, start, end),
+			folder -> folder);
 	}
 
 	@Override
@@ -136,44 +130,34 @@ public abstract class BaseBookmarksTrashHandler extends BaseTrashHandler {
 	}
 
 	@Override
+	public List<TrashedModel> getTrashModelTrashedModels(
+			long classPK, int start, int end,
+			OrderByComparator<?> orderByComparator)
+		throws PortalException {
+
+		BookmarksFolder folder = BookmarksFolderLocalServiceUtil.getFolder(
+			classPK);
+
+		return TransformUtil.transform(
+			BookmarksFolderLocalServiceUtil.getFoldersAndEntries(
+				folder.getGroupId(), classPK, WorkflowConstants.STATUS_IN_TRASH,
+				start, end, orderByComparator),
+			folderOrEntry -> {
+				if (folderOrEntry instanceof BookmarksFolder) {
+					return (BookmarksFolder)folderOrEntry;
+				}
+
+				return (BookmarksEntry)folderOrEntry;
+			});
+	}
+
+	@Override
 	public int getTrashModelsCount(long classPK) throws PortalException {
 		BookmarksFolder folder = BookmarksFolderLocalServiceUtil.getFolder(
 			classPK);
 
 		return BookmarksFolderLocalServiceUtil.getFoldersAndEntriesCount(
 			folder.getGroupId(), classPK, WorkflowConstants.STATUS_IN_TRASH);
-	}
-
-	@Override
-	public List<TrashedModel> getTrashModelTrashedModels(
-			long classPK, int start, int end,
-			OrderByComparator<?> orderByComparator)
-		throws PortalException {
-
-		List<TrashedModel> trashedModels = new ArrayList<>();
-
-		BookmarksFolder folder = BookmarksFolderLocalServiceUtil.getFolder(
-			classPK);
-
-		List<Object> foldersAndEntries =
-			BookmarksFolderLocalServiceUtil.getFoldersAndEntries(
-				folder.getGroupId(), classPK, WorkflowConstants.STATUS_IN_TRASH,
-				start, end, orderByComparator);
-
-		for (Object folderOrEntry : foldersAndEntries) {
-			if (folderOrEntry instanceof BookmarksFolder) {
-				BookmarksFolder curFolder = (BookmarksFolder)folderOrEntry;
-
-				trashedModels.add(curFolder);
-			}
-			else {
-				BookmarksEntry entry = (BookmarksEntry)folderOrEntry;
-
-				trashedModels.add(entry);
-			}
-		}
-
-		return trashedModels;
 	}
 
 	protected abstract long getGroupId(long classPK) throws PortalException;

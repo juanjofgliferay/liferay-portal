@@ -1,38 +1,6 @@
 definition {
 
 	@summary = "Default summary"
-	macro _selectAssetType(assetType = null) {
-		var key_assetType = ${assetType};
-
-		AssertClick(
-			locator1 = "AssetRelatedAssets#RELATED_ASSETS_SELECT",
-			value1 = "Select");
-
-		var assetTypeLocator = StringUtil.replace(${assetType}, " ", "_");
-
-		var assetTypeLocator = StringUtil.upperCase(${assetTypeLocator});
-
-		MenuItem.click(menuItem = ${assetType});
-	}
-
-	@summary = "Default summary"
-	macro gotoBookmarksSelectionPG(assetType = null) {
-		Portlet.clickPortletPlusIconPG(portletName = "Bookmarks");
-
-		MenuItem.click(menuItem = "Bookmark");
-
-		Panel.expandPanel(panel = "Related Assets");
-
-		AssertClick(
-			locator1 = "AssetRelatedAssets#RELATED_ASSETS_SELECT",
-			value1 = "Select");
-
-		var key_assetType = ${assetType};
-
-		MenuItem.click(menuItem = ${assetType});
-	}
-
-	@summary = "Default summary"
 	macro removeAsset() {
 		Panel.expandPanel(panel = "Related Assets");
 
@@ -46,58 +14,32 @@ definition {
 	}
 
 	@summary = "Default summary"
-	macro selectAsset(scopeSite = null, depotName = null, otherSite = null, assetTitle = null, assetType = null) {
-		Panel.expandPanel(panel = "Related Assets");
-
-		RelatedAssets._selectAssetType(assetType = ${assetType});
-
-		SelectFrame(value1 = "relative=top");
-
-		SelectFrame(
-			key_title = "Select ${assetType}",
-			locator1 = "IFrame#MODAL_ANY");
-
-		if (isSet(scopeSite)) {
-			Click(locator1 = "Dropdown#FILTER_AND_ORDER");
-
-			MenuItem.click(menuItem = ${scopeSite});
-		}
-
-		if (isSet(assetAll)) {
-			PortletEntry.selectAll();
+	macro selectAsset(assetTitle = null, scopeAssetType = null) {
+		if (isSet(scopeAssetType) && (${scopeAssetType} == "Blogs Entry")) {
+			Blogs.expandPanel(panel = "Related Assets");
 		}
 		else {
-			if (isSet(depotName)) {
-				AssertClick(
-					key_breadcrumbName = "Sites and Libraries",
-					locator1 = "Breadcrumb#BREADCRUMB_ENTRY",
-					value1 = "Sites and Libraries");
-
-				AssertClick(
-					key_groupTab = "Asset Library",
-					locator1 = "ItemSelector#NAVIGATION_GROUP_TAB",
-					value1 = "Asset Library");
-
-				LexiconCard.clickCard(card = ${depotName});
-			}
-			else if (isSet(otherSite)) {
-				Click(
-					key_breadcrumbName = "Sites and Libraries",
-					locator1 = "Breadcrumb#BREADCRUMB_ENTRY");
-
-				LexiconCard.clickCard(card = ${otherSite});
-			}
-
-			LexiconEntry.changeDisplayStyle(displayStyle = "table");
-
-			Click(
-				key_assetTitle = ${assetTitle},
-				locator1 = "AssetRelatedAssets#ASSET_TABLE_CHECKBOX");
+			Panel.expandPanel(panel = "Related Assets");
 		}
 
-		SelectFrame(value1 = "relative=top");
+		AssertClick(
+			locator1 = "AssetRelatedAssets#RELATED_ASSETS_SELECT",
+			value1 = "Select");
 
-		Button.clickDone();
+		WaitForVisible(locator1 = "ItemSelector#INLINE_MODAL");
+
+		if (isSet(assetAll)) {
+			Click(locator1 = "ItemSelector#INLINE_MODAL_SELECT_ALL_CHECKBOX");
+		}
+		else {
+			var key_itemTitle = ${assetTitle};
+
+			Click(locator1 = "ItemSelector#INLINE_MODAL_ROW_CHECKBOX");
+		}
+
+		Click(locator1 = "ItemSelector#INLINE_MODAL_SELECT_BUTTON");
+
+		WaitForElementNotPresent(locator1 = "ItemSelector#INLINE_MODAL");
 	}
 
 	@summary = "Default summary"

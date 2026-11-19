@@ -8,13 +8,13 @@ package com.liferay.notification.rest.client.dto.v1_0;
 import com.liferay.notification.rest.client.function.UnsafeSupplier;
 import com.liferay.notification.rest.client.serdes.v1_0.NotificationTemplateSerDes;
 
+import jakarta.annotation.Generated;
+
 import java.io.Serializable;
 
 import java.util.Date;
 import java.util.Map;
 import java.util.Objects;
-
-import javax.annotation.Generated;
 
 /**
  * @author Gabriel Albuquerque
@@ -118,6 +118,27 @@ public class NotificationTemplate implements Cloneable, Serializable {
 	}
 
 	protected Map<String, String> body;
+
+	public Creator getCreator() {
+		return creator;
+	}
+
+	public void setCreator(Creator creator) {
+		this.creator = creator;
+	}
+
+	public void setCreator(
+		UnsafeSupplier<Creator, Exception> creatorUnsafeSupplier) {
+
+		try {
+			creator = creatorUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected Creator creator;
 
 	public Date getDateCreated() {
 		return dateCreated;
@@ -339,6 +360,35 @@ public class NotificationTemplate implements Cloneable, Serializable {
 
 	protected Long objectDefinitionId;
 
+	public com.liferay.notification.rest.client.permission.Permission[]
+		getPermissions() {
+
+		return permissions;
+	}
+
+	public void setPermissions(
+		com.liferay.notification.rest.client.permission.Permission[]
+			permissions) {
+
+		this.permissions = permissions;
+	}
+
+	public void setPermissions(
+		UnsafeSupplier
+			<com.liferay.notification.rest.client.permission.Permission[],
+			 Exception> permissionsUnsafeSupplier) {
+
+		try {
+			permissions = permissionsUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected com.liferay.notification.rest.client.permission.Permission[]
+		permissions;
+
 	public String getRecipientType() {
 		return recipientType;
 	}
@@ -529,3 +579,4 @@ public class NotificationTemplate implements Cloneable, Serializable {
 	}
 
 }
+// LIFERAY-REST-BUILDER-HASH:-761232059

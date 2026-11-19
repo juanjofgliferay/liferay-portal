@@ -7,8 +7,10 @@ package com.liferay.portlet.asset.service.impl;
 
 import com.liferay.asset.kernel.AssetRendererFactoryRegistryUtil;
 import com.liferay.asset.kernel.model.AssetEntry;
+import com.liferay.asset.kernel.model.AssetRenderer;
 import com.liferay.asset.kernel.model.AssetRendererFactory;
 import com.liferay.asset.kernel.service.persistence.AssetEntryQuery;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.cache.thread.local.Lifecycle;
@@ -23,7 +25,7 @@ import com.liferay.portal.kernel.security.access.control.AccessControlled;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.util.ArrayUtil;
-import com.liferay.portal.util.PropsValues;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portlet.asset.service.base.AssetEntryServiceBaseImpl;
 import com.liferay.portlet.asset.service.permission.AssetEntryPermission;
 import com.liferay.portlet.asset.util.AssetUtil;
@@ -45,7 +47,7 @@ public class AssetEntryServiceImpl extends AssetEntryServiceBaseImpl {
 
 	@Override
 	public AssetEntry fetchEntry(long entryId) throws PortalException {
-		AssetEntry entry = assetEntryLocalService.fetchEntry(entryId);
+		AssetEntry entry = assetEntryPersistence.fetchByPrimaryKey(entryId);
 
 		if (entry != null) {
 			AssetEntryPermission.check(
@@ -59,32 +61,29 @@ public class AssetEntryServiceImpl extends AssetEntryServiceBaseImpl {
 	public List<AssetEntry> getCompanyEntries(
 		long companyId, int start, int end) {
 
-		List<AssetEntry> entries = new ArrayList<>();
+		return TransformUtil.transform(
+			assetEntryPersistence.findByCompanyId(companyId, start, end),
+			entry -> {
+				try {
+					if (AssetEntryPermission.contains(
+							getPermissionChecker(), entry, ActionKeys.VIEW)) {
 
-		List<AssetEntry> companyEntries =
-			assetEntryLocalService.getCompanyEntries(companyId, start, end);
-
-		for (AssetEntry entry : companyEntries) {
-			try {
-				if (AssetEntryPermission.contains(
-						getPermissionChecker(), entry, ActionKeys.VIEW)) {
-
-					entries.add(entry);
+						return entry;
+					}
 				}
-			}
-			catch (PortalException portalException) {
-				if (_log.isWarnEnabled()) {
-					_log.warn(portalException);
+				catch (PortalException portalException) {
+					if (_log.isWarnEnabled()) {
+						_log.warn(portalException);
+					}
 				}
-			}
-		}
 
-		return entries;
+				return null;
+			});
 	}
 
 	@Override
 	public int getCompanyEntriesCount(long companyId) {
-		return assetEntryLocalService.getCompanyEntriesCount(companyId);
+		return assetEntryPersistence.countByCompanyId(companyId);
 	}
 
 	@Override
@@ -121,7 +120,7 @@ public class AssetEntryServiceImpl extends AssetEntryServiceBaseImpl {
 
 	@Override
 	public AssetEntry getEntry(long entryId) throws PortalException {
-		AssetEntry entry = assetEntryLocalService.getEntry(entryId);
+		AssetEntry entry = assetEntryPersistence.findByPrimaryKey(entryId);
 
 		AssetEntryPermission.check(
 			getPermissionChecker(), entry, ActionKeys.VIEW);
@@ -179,6 +178,23 @@ public class AssetEntryServiceImpl extends AssetEntryServiceBaseImpl {
 		AssetEntryPermission.check(
 			getPermissionChecker(), className, classPK, ActionKeys.UPDATE);
 
+		AssetEntry entry = assetEntryLocalService.fetchEntry(
+			className, classPK);
+
+		if (entry != null) {
+			groupId = entry.getGroupId();
+		}
+		else {
+			AssetRendererFactory<?> assetRendererFactory =
+				AssetRendererFactoryRegistryUtil.
+					getAssetRendererFactoryByClassName(className);
+
+			AssetRenderer<?> assetRenderer =
+				assetRendererFactory.getAssetRenderer(classPK);
+
+			groupId = assetRenderer.getGroupId();
+		}
+
 		return assetEntryLocalService.updateEntry(
 			getUserId(), groupId, createDate, modifiedDate, className, classPK,
 			classUuid, classTypeId, categoryIds, tagNames, listable, visible,
@@ -203,6 +219,7 @@ public class AssetEntryServiceImpl extends AssetEntryServiceBaseImpl {
 			AssetUtil.filterCategoryIds(
 				getPermissionChecker(), entryQuery.getAnyCategoryIds()));
 		filteredEntryQuery.setAnyTagIds(entryQuery.getAnyTagIds());
+		filteredEntryQuery.setEnablePermissions(true);
 
 		return filteredEntryQuery;
 	}

@@ -118,6 +118,7 @@ public class JournalArticleTypeUpgradeProcess extends UpgradeProcess {
 	private Set<String> _getArticleTypes() throws Exception {
 		try (PreparedStatement preparedStatement = connection.prepareStatement(
 				"select distinct type_ from JournalArticle");
+
 			ResultSet resultSet = preparedStatement.executeQuery()) {
 
 			Set<String> types = new HashSet<>();
@@ -132,62 +133,18 @@ public class JournalArticleTypeUpgradeProcess extends UpgradeProcess {
 
 	private boolean _hasSelectedArticleTypes() throws Exception {
 		try (PreparedStatement preparedStatement = connection.prepareStatement(
-				"select count(*) from JournalArticle where type_ != 'general'");
+				"select count(*) as count from JournalArticle where type_ != " +
+					"'general'");
+
 			ResultSet resultSet = preparedStatement.executeQuery()) {
 
 			while (resultSet.next()) {
-				int count = resultSet.getInt(1);
-
-				if (count > 0) {
+				if (resultSet.getLong("count") > 0) {
 					return true;
 				}
 			}
 
 			return false;
-		}
-	}
-
-	private void _updateArticles(
-			long companyId,
-			Map<String, Long> journalArticleTypesToAssetCategoryIds)
-		throws Exception {
-
-		try (PreparedStatement preparedStatement = connection.prepareStatement(
-				StringBundler.concat(
-					"select JournalArticle.resourcePrimKey, ",
-					"JournalArticle.type_ from JournalArticle left join ",
-					"JournalArticle tempJournalArticle on ",
-					"(JournalArticle.groupId = tempJournalArticle.groupId) ",
-					"and (JournalArticle.articleId = ",
-					"tempJournalArticle.articleId) and ",
-					"(JournalArticle.version < tempJournalArticle.version) ",
-					"where JournalArticle.companyId = ? and ",
-					"tempJournalArticle.id_ is null"))) {
-
-			preparedStatement.setLong(1, companyId);
-
-			try (ResultSet resultSet = preparedStatement.executeQuery()) {
-				while (resultSet.next()) {
-					long resourcePrimKey = resultSet.getLong("resourcePrimKey");
-
-					AssetEntry assetEntry = _assetEntryLocalService.fetchEntry(
-						JournalArticle.class.getName(), resourcePrimKey);
-
-					if (assetEntry == null) {
-						continue;
-					}
-
-					String type = StringUtil.toLowerCase(
-						resultSet.getString("type_"));
-
-					long assetCategoryId =
-						journalArticleTypesToAssetCategoryIds.get(type);
-
-					_assetEntryAssetCategoryRelLocalService.
-						addAssetEntryAssetCategoryRel(
-							assetEntry.getEntryId(), assetCategoryId);
-				}
-			}
 		}
 	}
 
@@ -247,6 +204,50 @@ public class JournalArticleTypeUpgradeProcess extends UpgradeProcess {
 			finally {
 				LocaleThreadLocal.setDefaultLocale(
 					localeThreadLocalDefaultLocale);
+			}
+		}
+	}
+
+	private void _updateArticles(
+			long companyId,
+			Map<String, Long> journalArticleTypesToAssetCategoryIds)
+		throws Exception {
+
+		try (PreparedStatement preparedStatement = connection.prepareStatement(
+				StringBundler.concat(
+					"select JournalArticle.resourcePrimKey, ",
+					"JournalArticle.type_ from JournalArticle left join ",
+					"JournalArticle tempJournalArticle on ",
+					"(JournalArticle.groupId = tempJournalArticle.groupId) ",
+					"and (JournalArticle.articleId = ",
+					"tempJournalArticle.articleId) and ",
+					"(JournalArticle.version < tempJournalArticle.version) ",
+					"where JournalArticle.companyId = ? and ",
+					"tempJournalArticle.id_ is null"))) {
+
+			preparedStatement.setLong(1, companyId);
+
+			try (ResultSet resultSet = preparedStatement.executeQuery()) {
+				while (resultSet.next()) {
+					long resourcePrimKey = resultSet.getLong("resourcePrimKey");
+
+					AssetEntry assetEntry = _assetEntryLocalService.fetchEntry(
+						JournalArticle.class.getName(), resourcePrimKey);
+
+					if (assetEntry == null) {
+						continue;
+					}
+
+					String type = StringUtil.toLowerCase(
+						resultSet.getString("type_"));
+
+					long assetCategoryId =
+						journalArticleTypesToAssetCategoryIds.get(type);
+
+					_assetEntryAssetCategoryRelLocalService.
+						addAssetEntryAssetCategoryRel(
+							assetEntry.getEntryId(), assetCategoryId);
+				}
 			}
 		}
 	}

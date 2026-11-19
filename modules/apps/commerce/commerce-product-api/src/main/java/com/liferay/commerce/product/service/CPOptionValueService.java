@@ -64,12 +64,12 @@ public interface CPOptionValueService extends BaseService {
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public CPOptionValue fetchByExternalReferenceCode(
-			String externalReferenceCode, long companyId)
+	public CPOptionValue fetchCPOptionValue(long cpOptionValueId)
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public CPOptionValue fetchCPOptionValue(long cpOptionValueId)
+	public CPOptionValue fetchCPOptionValueByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
@@ -108,3 +108,4 @@ public interface CPOptionValueService extends BaseService {
 		throws PortalException;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:213417763

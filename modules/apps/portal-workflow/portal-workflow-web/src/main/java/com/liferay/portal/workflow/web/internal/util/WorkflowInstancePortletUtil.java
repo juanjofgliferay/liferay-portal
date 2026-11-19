@@ -14,9 +14,8 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.workflow.WorkflowInstance;
 import com.liferay.portal.workflow.comparator.WorkflowComparatorFactory;
 import com.liferay.portal.workflow.constants.WorkflowPortletKeys;
-import com.liferay.portal.workflow.web.internal.configuration.WorkflowInstanceWebConfiguration;
 
-import javax.portlet.PortletRequest;
+import jakarta.portlet.PortletRequest;
 
 /**
  * @author Marcellus Tavares
@@ -33,13 +32,9 @@ public class WorkflowInstancePortletUtil {
 			portletRequest, "displayStyle");
 
 		if (Validator.isNull(displayStyle)) {
-			WorkflowInstanceWebConfiguration workflowInstanceWebConfiguration =
-				(WorkflowInstanceWebConfiguration)portletRequest.getAttribute(
-					WorkflowInstanceWebConfiguration.class.getName());
-
 			displayStyle = portalPreferences.getValue(
 				WorkflowPortletKeys.USER_WORKFLOW, "instance-display-style",
-				workflowInstanceWebConfiguration.defaultDisplayView());
+				"list");
 		}
 		else if (ArrayUtil.contains(displayViews, displayStyle)) {
 			portalPreferences.setValue(

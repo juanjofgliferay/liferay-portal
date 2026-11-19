@@ -7,11 +7,14 @@ package com.liferay.commerce.wish.list.service.impl;
 
 import com.liferay.commerce.wish.list.exception.CommerceWishListNameException;
 import com.liferay.commerce.wish.list.exception.GuestWishListMaxAllowedException;
+import com.liferay.commerce.wish.list.exception.NoSuchWishListException;
+import com.liferay.commerce.wish.list.exception.RequiredCommerceWishListException;
 import com.liferay.commerce.wish.list.internal.configuration.CommerceWishListConfiguration;
 import com.liferay.commerce.wish.list.model.CommerceWishList;
 import com.liferay.commerce.wish.list.model.CommerceWishListItem;
 import com.liferay.commerce.wish.list.service.CommerceWishListItemLocalService;
 import com.liferay.commerce.wish.list.service.base.CommerceWishListLocalServiceBaseImpl;
+import com.liferay.commerce.wish.list.service.persistence.CommerceWishListItemPersistence;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
 import com.liferay.portal.kernel.cache.thread.local.ThreadLocalCachable;
@@ -20,7 +23,6 @@ import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.SystemEventConstants;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.model.UserConstants;
-import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.systemevent.SystemEvent;
 import com.liferay.portal.kernel.util.OrderByComparator;
@@ -48,11 +50,10 @@ public class CommerceWishListLocalServiceImpl
 
 	@Override
 	public CommerceWishList addCommerceWishList(
-			String name, boolean defaultWishList, ServiceContext serviceContext)
+			long userId, long groupId, String name, boolean defaultWishList)
 		throws PortalException {
 
-		User user = _userLocalService.getUser(serviceContext.getUserId());
-		long groupId = serviceContext.getScopeGroupId();
+		User user = _userLocalService.getUser(userId);
 
 		if (user.isGuestUser()) {
 			_validateGuestWishLists();
@@ -78,13 +79,14 @@ public class CommerceWishListLocalServiceImpl
 	@Override
 	@SystemEvent(type = SystemEventConstants.TYPE_DELETE)
 	public CommerceWishList deleteCommerceWishList(
-		CommerceWishList commerceWishList) {
+			CommerceWishList commerceWishList)
+		throws PortalException {
 
-		// Commerce wish list
+		if (commerceWishList.isDefaultWishList()) {
+			throw new RequiredCommerceWishListException();
+		}
 
 		commerceWishListPersistence.remove(commerceWishList);
-
-		// Commerce wish list items
 
 		_commerceWishListItemLocalService.deleteCommerceWishListItems(
 			commerceWishList.getCommerceWishListId());
@@ -105,7 +107,12 @@ public class CommerceWishListLocalServiceImpl
 
 	@Override
 	public void deleteCommerceWishLists(long userId, Date date) {
-		commerceWishListPersistence.removeByU_LtC(userId, date);
+		for (CommerceWishList commerceWishList :
+				commerceWishListPersistence.findByU_LtC(userId, date)) {
+
+			commerceWishListLocalService.forceDeleteCommerceWishList(
+				commerceWishList);
+		}
 	}
 
 	@Override
@@ -114,7 +121,7 @@ public class CommerceWishListLocalServiceImpl
 			commerceWishListPersistence.findByGroupId(groupId);
 
 		for (CommerceWishList commerceWishList : commerceWishLists) {
-			commerceWishListLocalService.deleteCommerceWishList(
+			commerceWishListLocalService.forceDeleteCommerceWishList(
 				commerceWishList);
 		}
 	}
@@ -125,14 +132,14 @@ public class CommerceWishListLocalServiceImpl
 			commerceWishListPersistence.findByUserId(userId);
 
 		for (CommerceWishList commerceWishList : commerceWishLists) {
-			commerceWishListLocalService.deleteCommerceWishList(
+			commerceWishListLocalService.forceDeleteCommerceWishList(
 				commerceWishList);
 		}
 	}
 
 	@Override
 	public CommerceWishList fetchCommerceWishList(
-		long groupId, long userId, boolean defaultWishList,
+		long userId, long groupId, boolean defaultWishList,
 		OrderByComparator<CommerceWishList> orderByComparator) {
 
 		return commerceWishListPersistence.fetchByG_U_D_First(
@@ -140,47 +147,18 @@ public class CommerceWishListLocalServiceImpl
 	}
 
 	@Override
-	public List<CommerceWishList> getCommerceWishLists(
-		long groupId, int start, int end,
-		OrderByComparator<CommerceWishList> orderByComparator) {
-
-		return commerceWishListPersistence.findByGroupId(
-			groupId, start, end, orderByComparator);
-	}
-
-	@Override
-	public List<CommerceWishList> getCommerceWishLists(
-		long groupId, long userId, int start, int end,
-		OrderByComparator<CommerceWishList> orderByComparator) {
-
-		return commerceWishListPersistence.findByG_U(
-			groupId, userId, start, end, orderByComparator);
-	}
-
-	@Override
-	public int getCommerceWishListsCount(long groupId) {
-		return commerceWishListPersistence.countByGroupId(groupId);
-	}
-
-	@Override
-	public int getCommerceWishListsCount(long groupId, long userId) {
-		return commerceWishListPersistence.countByG_U(groupId, userId);
-	}
-
-	@Override
 	@ThreadLocalCachable
-	public CommerceWishList getDefaultCommerceWishList(
-			long groupId, long userId, String guestUuid)
+	public CommerceWishList fetchDefaultCommerceWishList(
+			long userId, long groupId, String guestUuid)
 		throws PortalException {
 
-		User user = _userLocalService.getUser(userId);
+		User user = _userLocalService.fetchUser(userId);
 
 		CommerceWishList guestCommerceWishList = null;
 
 		if (Validator.isNotNull(guestUuid)) {
-			guestCommerceWishList =
-				commerceWishListLocalService.
-					fetchCommerceWishListByUuidAndGroupId(guestUuid, groupId);
+			guestCommerceWishList = commerceWishListPersistence.fetchByUUID_G(
+				guestUuid, groupId);
 
 			if ((guestCommerceWishList != null) &&
 				!guestCommerceWishList.isGuestWishList()) {
@@ -189,12 +167,7 @@ public class CommerceWishListLocalServiceImpl
 			}
 		}
 
-		ServiceContext serviceContext = new ServiceContext();
-
-		serviceContext.setScopeGroupId(groupId);
-		serviceContext.setUserId(user.getUserId());
-
-		if (user.isGuestUser()) {
+		if ((user == null) || user.isGuestUser()) {
 			return guestCommerceWishList;
 		}
 
@@ -214,10 +187,68 @@ public class CommerceWishListLocalServiceImpl
 			}
 		}
 
-		if (guestCommerceWishList != null) {
+		if ((guestCommerceWishList != null) && (commerceWishList != null)) {
 			_mergeCommerceWishList(
 				guestCommerceWishList.getCommerceWishListId(),
-				commerceWishList.getCommerceWishListId(), serviceContext);
+				commerceWishList.getCommerceWishListId());
+		}
+
+		return commerceWishList;
+	}
+
+	@Override
+	@SystemEvent(type = SystemEventConstants.TYPE_DELETE)
+	public CommerceWishList forceDeleteCommerceWishList(
+		CommerceWishList commerceWishList) {
+
+		commerceWishListPersistence.remove(commerceWishList);
+
+		_commerceWishListItemLocalService.deleteCommerceWishListItems(
+			commerceWishList.getCommerceWishListId());
+
+		return commerceWishList;
+	}
+
+	@Override
+	public List<CommerceWishList> getCommerceWishLists(
+		long groupId, int start, int end,
+		OrderByComparator<CommerceWishList> orderByComparator) {
+
+		return commerceWishListPersistence.findByGroupId(
+			groupId, start, end, orderByComparator);
+	}
+
+	@Override
+	public List<CommerceWishList> getCommerceWishLists(
+		long userId, long groupId, int start, int end,
+		OrderByComparator<CommerceWishList> orderByComparator) {
+
+		return commerceWishListPersistence.findByG_U(
+			groupId, userId, start, end, orderByComparator);
+	}
+
+	@Override
+	public int getCommerceWishListsCount(long groupId) {
+		return commerceWishListPersistence.countByGroupId(groupId);
+	}
+
+	@Override
+	public int getCommerceWishListsCount(long userId, long groupId) {
+		return commerceWishListPersistence.countByG_U(groupId, userId);
+	}
+
+	@Override
+	@ThreadLocalCachable
+	public CommerceWishList getDefaultCommerceWishList(
+			long userId, long groupId, String guestUuid)
+		throws PortalException {
+
+		CommerceWishList commerceWishList = fetchDefaultCommerceWishList(
+			userId, groupId, guestUuid);
+
+		if (commerceWishList == null) {
+			throw new NoSuchWishListException(
+				"No default commerce wish list exists for user " + userId);
 		}
 
 		return commerceWishList;
@@ -249,19 +280,18 @@ public class CommerceWishListLocalServiceImpl
 	}
 
 	private void _mergeCommerceWishList(
-			long fromCommerceWishListId, long toCommerceWishListId,
-			ServiceContext serviceContext)
+			long fromCommerceWishListId, long toCommerceWishListId)
 		throws PortalException {
 
 		// Commerce wish list items
 
 		List<CommerceWishListItem> fromCommerceWishListItems =
-			_commerceWishListItemLocalService.getCommerceWishListItems(
+			_commerceWishListItemPersistence.findByCommerceWishListId(
 				fromCommerceWishListId, QueryUtil.ALL_POS, QueryUtil.ALL_POS,
 				null);
 
 		List<CommerceWishListItem> toCommerceWishListItems =
-			_commerceWishListItemLocalService.getCommerceWishListItems(
+			_commerceWishListItemPersistence.findByCommerceWishListId(
 				toCommerceWishListId, QueryUtil.ALL_POS, QueryUtil.ALL_POS,
 				null);
 
@@ -288,13 +318,14 @@ public class CommerceWishListLocalServiceImpl
 				}
 			}
 
-			if (!found) {
-				_commerceWishListItemLocalService.addCommerceWishListItem(
-					toCommerceWishListId,
-					fromCommerceWishListItem.getCProductId(),
-					fromCommerceWishListItem.getCPInstanceUuid(), json,
-					serviceContext);
+			if (found) {
+				continue;
 			}
+
+			_commerceWishListItemLocalService.addCommerceWishListItem(
+				fromCommerceWishListItem.getUserId(), toCommerceWishListId,
+				fromCommerceWishListItem.getCPInstanceUuid(),
+				fromCommerceWishListItem.getCProductId(), json);
 		}
 
 		// Commerce wish list
@@ -317,13 +348,15 @@ public class CommerceWishListLocalServiceImpl
 				commerceWishListPersistence.findByG_U_D(groupId, userId, true);
 
 			for (CommerceWishList commerceWishList : commerceWishLists) {
-				if (commerceWishList.getCommerceWishListId() !=
+				if (commerceWishList.getCommerceWishListId() ==
 						commerceWishListId) {
 
-					commerceWishList.setDefaultWishList(false);
-
-					commerceWishListPersistence.update(commerceWishList);
+					continue;
 				}
+
+				commerceWishList.setDefaultWishList(false);
+
+				commerceWishListPersistence.update(commerceWishList);
 			}
 		}
 	}
@@ -341,6 +374,9 @@ public class CommerceWishListLocalServiceImpl
 
 	@Reference
 	private CommerceWishListItemLocalService _commerceWishListItemLocalService;
+
+	@Reference
+	private CommerceWishListItemPersistence _commerceWishListItemPersistence;
 
 	@Reference
 	private UserLocalService _userLocalService;

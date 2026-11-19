@@ -8,6 +8,7 @@ package com.liferay.digital.signature.web.internal.portlet.action;
 import com.liferay.configuration.admin.constants.ConfigurationAdminPortletKeys;
 import com.liferay.digital.signature.configuration.DigitalSignatureConfiguration;
 import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCActionCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
@@ -19,8 +20,8 @@ import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -30,7 +31,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + ConfigurationAdminPortletKeys.INSTANCE_SETTINGS,
+		"jakarta.portlet.name=" + ConfigurationAdminPortletKeys.INSTANCE_SETTINGS,
 		"mvc.command.name=/digital_signature/save_company_configuration"
 	},
 	service = MVCActionCommand.class
@@ -57,6 +58,21 @@ public class SaveCompanyConfigurationMVCActionCommand
 			return;
 		}
 
+		boolean embeddedViewEnabled = ParamUtil.getBoolean(
+			actionRequest, "embeddedViewEnabled");
+
+		if (!FeatureFlagManagerUtil.isEnabled(
+				themeDisplay.getCompanyId(), "LPD-69290")) {
+
+			DigitalSignatureConfiguration digitalSignatureConfiguration =
+				_configurationProvider.getCompanyConfiguration(
+					DigitalSignatureConfiguration.class,
+					themeDisplay.getCompanyId());
+
+			embeddedViewEnabled =
+				digitalSignatureConfiguration.embeddedViewEnabled();
+		}
+
 		_configurationProvider.saveCompanyConfiguration(
 			DigitalSignatureConfiguration.class, themeDisplay.getCompanyId(),
 			HashMapDictionaryBuilder.<String, Object>put(
@@ -67,6 +83,8 @@ public class SaveCompanyConfigurationMVCActionCommand
 				ParamUtil.getString(actionRequest, "apiAccountId")
 			).put(
 				"apiUsername", ParamUtil.getString(actionRequest, "apiUsername")
+			).put(
+				"embeddedViewEnabled", embeddedViewEnabled
 			).put(
 				"enabled", ParamUtil.getBoolean(actionRequest, "enabled")
 			).put(

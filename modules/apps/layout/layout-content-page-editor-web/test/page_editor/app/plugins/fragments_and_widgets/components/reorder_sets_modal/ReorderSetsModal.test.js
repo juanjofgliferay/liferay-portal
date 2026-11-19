@@ -6,7 +6,7 @@
 import {DndProvider} from 'react-dnd';
 import {HTML5Backend} from 'react-dnd-html5-backend';
 
-import '@testing-library/jest-dom/extend-expect';
+import '@testing-library/jest-dom';
 import {act, fireEvent, render, screen} from '@testing-library/react';
 import React from 'react';
 
@@ -221,7 +221,7 @@ describe('ReorderSetsModal', () => {
 
 		fireEvent.click(screen.getByText('save'));
 
-		expect(mockDispatch).not.toBeCalled();
+		expect(mockDispatch).not.toHaveBeenCalled();
 	});
 
 	it('allows focusing drag and drop icons', () => {
@@ -230,7 +230,7 @@ describe('ReorderSetsModal', () => {
 		act(() => jest.runAllTimers());
 
 		const reorderButton = getByRole('button', {
-			name: /reorder category 1/i,
+			name: /reorder\[arrange\] category 1/i,
 		});
 
 		reorderButton.focus();
@@ -243,7 +243,7 @@ describe('ReorderSetsModal', () => {
 		act(() => jest.runAllTimers());
 
 		const reorderButton = getByRole('button', {
-			name: /reorder category 1/i,
+			name: /reorder\[arrange\] category 1/i,
 		});
 
 		reorderButton.focus();
@@ -251,18 +251,18 @@ describe('ReorderSetsModal', () => {
 
 		expect(document.activeElement).toBe(
 			getByRole('button', {
-				name: /reorder category 2/i,
+				name: /reorder\[arrange\] category 2/i,
 			})
 		);
 	});
 
 	it('allows moving items using keyboard', () => {
-		const {getAllByText, getByRole, getByText} = renderComponent();
+		const {getByRole, getByText} = renderComponent();
 
 		act(() => jest.runAllTimers());
 
 		const reorderButton = getByRole('button', {
-			name: /reorder category 1/i,
+			name: /reorder\[arrange\] category 1/i,
 		});
 
 		reorderButton.focus();
@@ -271,11 +271,13 @@ describe('ReorderSetsModal', () => {
 		expect(getByText(/use-up-and-down-arrows/i)).toBeInTheDocument();
 		dispatchKey(reorderButton, 'keyup', 'ArrowDown');
 
-		getAllByText(/targeting-x-of-x/i).forEach((element) =>
-			expect(element).toBeInTheDocument()
-		);
+		expect(
+			screen.queryByText('targeting-top[position]-of-Category 2')
+		).toBeInTheDocument();
 
 		dispatchKey(reorderButton, 'keyup', 'Enter');
-		expect(getByText(/x-placed-on-x-of-x/i)).toBeInTheDocument();
+		expect(
+			getByText('Category 1-placed-on-top[position]-of-Category 2')
+		).toBeInTheDocument();
 	});
 });

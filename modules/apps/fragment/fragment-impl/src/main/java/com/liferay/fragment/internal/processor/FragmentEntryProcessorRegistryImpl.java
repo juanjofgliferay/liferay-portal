@@ -5,38 +5,67 @@
 
 package com.liferay.fragment.internal.processor;
 
+import com.liferay.fragment.constants.FragmentWebKeys;
+import com.liferay.fragment.entry.processor.constants.FragmentEntryProcessorConstants;
 import com.liferay.fragment.model.FragmentEntryLink;
 import com.liferay.fragment.processor.CSSFragmentEntryProcessor;
+import com.liferay.fragment.processor.DefaultEditableValuesFragmentEntryProcessor;
 import com.liferay.fragment.processor.DocumentFragmentEntryProcessor;
+import com.liferay.fragment.processor.DocumentFragmentEntryValidator;
 import com.liferay.fragment.processor.FragmentEntryAutocompleteContributor;
 import com.liferay.fragment.processor.FragmentEntryProcessor;
 import com.liferay.fragment.processor.FragmentEntryProcessorContext;
 import com.liferay.fragment.processor.FragmentEntryProcessorRegistry;
 import com.liferay.fragment.processor.FragmentEntryValidator;
+import com.liferay.fragment.processor.util.FragmentEntryHtmlParserUtil;
+import com.liferay.fragment.renderer.FragmentPortletRenderer;
 import com.liferay.osgi.service.tracker.collections.list.ServiceTrackerList;
 import com.liferay.osgi.service.tracker.collections.list.ServiceTrackerListFactory;
 import com.liferay.osgi.service.tracker.collections.map.PropertyServiceReferenceComparator;
+import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMap;
+import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMapFactory;
 import com.liferay.petra.lang.CentralizedThreadLocal;
+import com.liferay.petra.string.CharPool;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.cache.PortalCache;
+import com.liferay.portal.kernel.cache.PortalCacheHelperUtil;
+import com.liferay.portal.kernel.cache.PortalCacheManagerNames;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
+import com.liferay.portal.kernel.model.impl.DefaultLayoutTypeAccessPolicyImpl;
+import com.liferay.portal.kernel.portlet.PortletIdCodec;
+import com.liferay.portal.kernel.portlet.PortletPreferencesFactoryUtil;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.ParamUtil;
+import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.Validator;
+
+import jakarta.servlet.http.HttpServletRequest;
+
+import java.io.Serializable;
 
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
-import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 
 import org.osgi.framework.BundleContext;
+import org.osgi.framework.ServiceReference;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
+import org.osgi.util.tracker.ServiceTrackerCustomizer;
 
 /**
  * @author Pavel Savinov
@@ -93,7 +122,7 @@ public class FragmentEntryProcessorRegistryImpl
 
 	@Override
 	public JSONObject getDefaultEditableValuesJSONObject(
-		String html, String configuration) {
+		String html, JSONObject configurationJSONObject) {
 
 		JSONObject jsonObject = _jsonFactory.createJSONObject();
 
@@ -102,19 +131,116 @@ public class FragmentEntryProcessorRegistryImpl
 
 			JSONObject defaultEditableValuesJSONObject =
 				fragmentEntryProcessor.getDefaultEditableValuesJSONObject(
-					html, configuration);
+					configurationJSONObject, html);
 
-			if ((defaultEditableValuesJSONObject != null) &&
-				(defaultEditableValuesJSONObject.length() > 0)) {
+			if ((defaultEditableValuesJSONObject == null) ||
+				(defaultEditableValuesJSONObject.length() <= 0)) {
 
-				Class<?> clazz = fragmentEntryProcessor.getClass();
-
-				jsonObject.put(
-					clazz.getName(), defaultEditableValuesJSONObject);
+				continue;
 			}
+
+			Class<?> clazz = fragmentEntryProcessor.getClass();
+
+			jsonObject.put(clazz.getName(), defaultEditableValuesJSONObject);
+		}
+
+		Document document = _getDocument(html);
+
+		for (DefaultEditableValuesFragmentEntryProcessor
+				defaultEditableValuesFragmentEntryProcessor :
+					_serviceTrackerMap.values()) {
+
+			JSONObject defaultEditableValuesJSONObject =
+				defaultEditableValuesFragmentEntryProcessor.
+					getDefaultEditableValuesJSONObject(
+						configurationJSONObject, document);
+
+			if ((defaultEditableValuesJSONObject == null) ||
+				(defaultEditableValuesJSONObject.length() <= 0)) {
+
+				continue;
+			}
+
+			jsonObject.put(
+				defaultEditableValuesFragmentEntryProcessor.getKey(),
+				defaultEditableValuesJSONObject);
 		}
 
 		return jsonObject;
+	}
+
+	@Override
+	public String mergeDefaultEditableValues(
+		JSONObject configurationJSONObject, JSONObject editableValuesJSONObject,
+		String html) {
+
+		JSONObject defaultEditableValuesJSONObject =
+			getDefaultEditableValuesJSONObject(html, configurationJSONObject);
+
+		JSONObject defaultEditableFragmentEntryProcessorJSONObject =
+			defaultEditableValuesJSONObject.getJSONObject(
+				FragmentEntryProcessorConstants.
+					KEY_EDITABLE_FRAGMENT_ENTRY_PROCESSOR);
+
+		if (defaultEditableFragmentEntryProcessorJSONObject == null) {
+			return editableValuesJSONObject.toString();
+		}
+
+		JSONObject editableFragmentEntryProcessorJSONObject =
+			editableValuesJSONObject.getJSONObject(
+				FragmentEntryProcessorConstants.
+					KEY_EDITABLE_FRAGMENT_ENTRY_PROCESSOR);
+
+		if (editableFragmentEntryProcessorJSONObject == null) {
+			editableFragmentEntryProcessorJSONObject =
+				_jsonFactory.createJSONObject();
+		}
+
+		Iterator<String> defaultEditableValuesIterator =
+			defaultEditableFragmentEntryProcessorJSONObject.keys();
+
+		while (defaultEditableValuesIterator.hasNext()) {
+			String key = defaultEditableValuesIterator.next();
+
+			if (!editableFragmentEntryProcessorJSONObject.has(key)) {
+				continue;
+			}
+
+			JSONObject editableValueJSONObject =
+				editableFragmentEntryProcessorJSONObject.getJSONObject(key);
+
+			JSONObject defaultEditableValueJSONObject =
+				defaultEditableFragmentEntryProcessorJSONObject.getJSONObject(
+					key);
+
+			editableValueJSONObject.put(
+				"defaultValue",
+				defaultEditableValueJSONObject.get("defaultValue"));
+
+			defaultEditableFragmentEntryProcessorJSONObject.put(
+				key, editableValueJSONObject);
+		}
+
+		Iterator<String> editableValuesIterator =
+			editableFragmentEntryProcessorJSONObject.keys();
+
+		while (editableValuesIterator.hasNext()) {
+			String key = editableValuesIterator.next();
+
+			if (defaultEditableFragmentEntryProcessorJSONObject.has(key)) {
+				continue;
+			}
+
+			defaultEditableFragmentEntryProcessorJSONObject.put(
+				key, editableFragmentEntryProcessorJSONObject.get(key));
+		}
+
+		editableValuesJSONObject.put(
+			FragmentEntryProcessorConstants.
+				KEY_EDITABLE_FRAGMENT_ENTRY_PROCESSOR,
+			defaultEditableFragmentEntryProcessorJSONObject);
+
+		return editableValuesJSONObject.toString();
 	}
 
 	@Override
@@ -141,38 +267,125 @@ public class FragmentEntryProcessorRegistryImpl
 			FragmentEntryProcessorContext fragmentEntryProcessorContext)
 		throws PortalException {
 
+		JSONObject editableValuesJSONObject =
+			fragmentEntryLink.getEditableValuesJSONObject();
+
+		if ((editableValuesJSONObject != null) &&
+			(editableValuesJSONObject.length() == 0)) {
+
+			editableValuesJSONObject = _jsonFactory.createJSONObject();
+		}
+
+		return processFragmentEntryLinkHTML(
+			editableValuesJSONObject, fragmentEntryLink,
+			fragmentEntryProcessorContext);
+	}
+
+	@Override
+	public String processFragmentEntryLinkHTML(
+			JSONObject editableValuesJSONObject,
+			FragmentEntryLink fragmentEntryLink,
+			FragmentEntryProcessorContext fragmentEntryProcessorContext)
+		throws PortalException {
+
+		if (fragmentEntryLink.isTypePortlet()) {
+			if (fragmentEntryProcessorContext.isDisablePortletRender()) {
+				return StringPool.BLANK;
+			}
+
+			return _renderWidgetHTML(
+				fragmentEntryLink, fragmentEntryProcessorContext);
+		}
+
 		String html = fragmentEntryLink.getHtml();
 
 		for (FragmentEntryProcessor fragmentEntryProcessor :
 				_fragmentEntryProcessors) {
 
 			html = fragmentEntryProcessor.processFragmentEntryLinkHTML(
-				fragmentEntryLink, html, fragmentEntryProcessorContext);
+				editableValuesJSONObject, fragmentEntryLink,
+				fragmentEntryProcessorContext, html);
+		}
+
+		DefaultEditableValuesFragmentEntryProcessor
+			defaultEditableValuesFragmentEntryProcessor = null;
+
+		if (editableValuesJSONObject.length() == 0) {
+			defaultEditableValuesFragmentEntryProcessor =
+				_serviceTrackerMap.getService(
+					FragmentEntryProcessorConstants.
+						KEY_EDITABLE_FRAGMENT_ENTRY_PROCESSOR);
+		}
+
+		if (!_isDocumentRequired(
+				html, defaultEditableValuesFragmentEntryProcessor)) {
+
+			if (defaultEditableValuesFragmentEntryProcessor != null) {
+				editableValuesJSONObject.put(
+					FragmentEntryProcessorConstants.
+						KEY_EDITABLE_FRAGMENT_ENTRY_PROCESSOR,
+					_jsonFactory.createJSONObject());
+			}
+
+			return html;
 		}
 
 		Document document = _getDocument(html);
 
-		for (DocumentFragmentEntryProcessor documentFragmentEntryProcessor :
-				_documentFragmentEntryProcessors) {
+		if (defaultEditableValuesFragmentEntryProcessor != null) {
+			editableValuesJSONObject.put(
+				FragmentEntryProcessorConstants.
+					KEY_EDITABLE_FRAGMENT_ENTRY_PROCESSOR,
+				defaultEditableValuesFragmentEntryProcessor.
+					getDefaultEditableValuesJSONObject(
+						fragmentEntryLink.getConfigurationJSONObject(),
+						document));
+		}
 
-			documentFragmentEntryProcessor.processFragmentEntryLinkHTML(
-				fragmentEntryLink, document, fragmentEntryProcessorContext);
+		Map<String, String> htmls = null;
+
+		try {
+			for (DocumentFragmentEntryProcessor documentFragmentEntryProcessor :
+					_documentFragmentEntryProcessors) {
+
+				documentFragmentEntryProcessor.processFragmentEntryLinkHTML(
+					document, editableValuesJSONObject, fragmentEntryLink,
+					fragmentEntryProcessorContext);
+			}
+		}
+		finally {
+			Map<String, Serializable> attributes =
+				fragmentEntryProcessorContext.getAttributes();
+
+			htmls = (Map<String, String>)attributes.remove(
+				DocumentFragmentEntryProcessor.class.getName());
 		}
 
 		Element bodyElement = document.body();
 
-		return bodyElement.html();
+		html = bodyElement.html();
+
+		if (htmls == null) {
+			return html;
+		}
+
+		for (Map.Entry<String, String> entry : htmls.entrySet()) {
+			html = StringUtil.replace(html, entry.getKey(), entry.getValue());
+		}
+
+		return html;
 	}
 
 	@Override
-	public void validateFragmentEntryHTML(String html, String configuration)
+	public void validateFragmentEntryHTML(
+			String html, JSONObject configurationJSONObject)
 		throws PortalException {
 
 		if (CompanyThreadLocal.isInitializingPortalInstance()) {
 			return;
 		}
 
-		Set<String> validHTMLs = _validHTMLsThreadLocal.get();
+		Set<String> validHTMLs = _validHTMLs.get();
 
 		if (validHTMLs.contains(html)) {
 			return;
@@ -182,7 +395,16 @@ public class FragmentEntryProcessorRegistryImpl
 				_fragmentEntryValidators) {
 
 			fragmentEntryValidator.validateFragmentEntryHTML(
-				html, configuration, LocaleUtil.getDefault());
+				html, configurationJSONObject, LocaleUtil.getDefault());
+		}
+
+		Document document = _getDocument(html);
+
+		for (DocumentFragmentEntryValidator documentFragmentEntryValidator :
+				_documentFragmentEntryValidators) {
+
+			documentFragmentEntryValidator.validateFragmentEntryHTML(
+				document, configurationJSONObject, LocaleUtil.getDefault());
 		}
 
 		validHTMLs.add(html);
@@ -195,11 +417,23 @@ public class FragmentEntryProcessorRegistryImpl
 			Collections.reverseOrder(
 				new PropertyServiceReferenceComparator<>(
 					"fragment.entry.processor.priority")));
+		_serviceTrackerMap = ServiceTrackerMapFactory.openSingleValueMap(
+			bundleContext, DefaultEditableValuesFragmentEntryProcessor.class,
+			"fragment.entry.processor.key",
+			_getServiceTrackerCustomizer(bundleContext));
 		_documentFragmentEntryProcessors = ServiceTrackerListFactory.open(
-			bundleContext, DocumentFragmentEntryProcessor.class,
+			bundleContext, DocumentFragmentEntryProcessor.class, null,
+			_getServiceTrackerCustomizer(bundleContext),
 			Collections.reverseOrder(
 				new PropertyServiceReferenceComparator<>(
 					"fragment.entry.processor.priority")));
+		_documentFragmentEntryValidators = ServiceTrackerListFactory.open(
+			bundleContext, DocumentFragmentEntryValidator.class,
+			Collections.reverseOrder(
+				new PropertyServiceReferenceComparator<>(
+					"fragment.entry.processor.priority")));
+		_documentPortalCache = PortalCacheHelperUtil.getPortalCache(
+			PortalCacheManagerNames.SINGLE_VM, _DOCUMENT_PORTAL_CACHE_NAME);
 		_fragmentEntryAutocompleteContributors = ServiceTrackerListFactory.open(
 			bundleContext, FragmentEntryAutocompleteContributor.class,
 			Collections.reverseOrder(
@@ -219,41 +453,250 @@ public class FragmentEntryProcessorRegistryImpl
 
 	@Deactivate
 	protected void deactivate() {
+		PortalCacheHelperUtil.removePortalCache(
+			PortalCacheManagerNames.SINGLE_VM, _DOCUMENT_PORTAL_CACHE_NAME);
 		_cssFragmentEntryProcessors.close();
 		_documentFragmentEntryProcessors.close();
+		_documentFragmentEntryValidators.close();
 		_fragmentEntryAutocompleteContributors.close();
 		_fragmentEntryProcessors.close();
 		_fragmentEntryValidators.close();
+		_serviceTrackerMap.close();
 	}
 
 	private Document _getDocument(String html) {
-		Document document = Jsoup.parseBodyFragment(html);
+		Document document = _documentPortalCache.get(html);
 
-		Document.OutputSettings outputSettings = new Document.OutputSettings();
+		if (document == null) {
+			document = FragmentEntryHtmlParserUtil.parseBodyFragment(html);
 
-		outputSettings.prettyPrint(false);
+			_documentPortalCache.put(html, document);
+		}
 
-		document.outputSettings(outputSettings);
-
-		return document;
+		return document.clone();
 	}
 
-	private static final ThreadLocal<Set<String>> _validHTMLsThreadLocal =
+	private String[] _getMarkers(ServiceReference<?> serviceReference) {
+		Object value = serviceReference.getProperty(
+			"fragment.entry.processor.marker");
+
+		if (value instanceof String marker) {
+			return new String[] {marker};
+		}
+
+		if (value instanceof String[] markers) {
+			return markers;
+		}
+
+		return null;
+	}
+
+	private <S> ServiceTrackerCustomizer<S, S> _getServiceTrackerCustomizer(
+		BundleContext bundleContext) {
+
+		return new ServiceTrackerCustomizer<S, S>() {
+
+			@Override
+			public S addingService(ServiceReference<S> serviceReference) {
+				S service = bundleContext.getService(serviceReference);
+
+				if (service == null) {
+					return null;
+				}
+
+				String[] markers = _getMarkers(serviceReference);
+
+				if (markers != null) {
+					_markers.put(service, markers);
+				}
+
+				return service;
+			}
+
+			@Override
+			public void modifiedService(
+				ServiceReference<S> serviceReference, S service) {
+
+				String[] markers = _getMarkers(serviceReference);
+
+				if (markers == null) {
+					_markers.remove(service);
+				}
+				else {
+					_markers.put(service, markers);
+				}
+			}
+
+			@Override
+			public void removedService(
+				ServiceReference<S> serviceReference, S service) {
+
+				_markers.remove(service);
+
+				bundleContext.ungetService(serviceReference);
+			}
+
+		};
+	}
+
+	private boolean _hasMarker(String html, Object processor) {
+		String[] markers = _markers.get(processor);
+
+		if (markers == null) {
+			return true;
+		}
+
+		for (String marker : markers) {
+			if (html.contains(marker)) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	private boolean _hasMarkers(
+		String html,
+		DefaultEditableValuesFragmentEntryProcessor
+			defaultEditableValuesFragmentEntryProcessor) {
+
+		if ((defaultEditableValuesFragmentEntryProcessor != null) &&
+			_hasMarker(html, defaultEditableValuesFragmentEntryProcessor)) {
+
+			return true;
+		}
+
+		for (DocumentFragmentEntryProcessor documentFragmentEntryProcessor :
+				_documentFragmentEntryProcessors) {
+
+			if (_hasMarker(html, documentFragmentEntryProcessor)) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	private boolean _isDocumentRequired(
+		String html,
+		DefaultEditableValuesFragmentEntryProcessor
+			defaultEditableValuesFragmentEntryProcessor) {
+
+		if (_hasMarkers(html, defaultEditableValuesFragmentEntryProcessor)) {
+			return true;
+		}
+
+		String lowerCaseHTML = _toLowerCaseASCII(html);
+
+		if (lowerCaseHTML == html) {
+			return false;
+		}
+
+		return _hasMarkers(
+			lowerCaseHTML, defaultEditableValuesFragmentEntryProcessor);
+	}
+
+	private String _renderWidgetHTML(
+			FragmentEntryLink fragmentEntryLink,
+			FragmentEntryProcessorContext fragmentEntryProcessorContext)
+		throws PortalException {
+
+		JSONObject jsonObject = fragmentEntryLink.getEditableValuesJSONObject();
+
+		String portletId = jsonObject.getString("portletId");
+
+		if (Validator.isNull(portletId)) {
+			return StringPool.BLANK;
+		}
+
+		HttpServletRequest httpServletRequest =
+			fragmentEntryProcessorContext.getHttpServletRequest();
+
+		String instanceId = jsonObject.getString("instanceId");
+
+		String encodedPortletId = PortletIdCodec.encode(portletId, instanceId);
+
+		String html = _fragmentPortletRenderer.renderPortlet(
+			fragmentEntryLink, httpServletRequest,
+			fragmentEntryProcessorContext.getHttpServletResponse(), portletId,
+			instanceId,
+			PortletPreferencesFactoryUtil.toXML(
+				PortletPreferencesFactoryUtil.getPortletPreferences(
+					httpServletRequest, encodedPortletId)));
+
+		String checkAccessAllowedToPortletCacheKey = StringBundler.concat(
+			"LIFERAY_SHARED_",
+			DefaultLayoutTypeAccessPolicyImpl.class.getName(), "#",
+			ParamUtil.getLong(httpServletRequest, "p_l_id"), "#",
+			encodedPortletId);
+
+		httpServletRequest.setAttribute(
+			FragmentWebKeys.ACCESS_ALLOWED_TO_FRAGMENT_ENTRY_LINK_ID +
+				fragmentEntryLink.getFragmentEntryLinkId(),
+			GetterUtil.getBoolean(
+				httpServletRequest.getAttribute(
+					checkAccessAllowedToPortletCacheKey),
+				true));
+
+		return html;
+	}
+
+	private String _toLowerCaseASCII(char[] chars, int index) {
+		for (int i = index; i < chars.length; i++) {
+			char c = chars[i];
+
+			if ((c < CharPool.UPPER_CASE_A) || (c > CharPool.UPPER_CASE_Z)) {
+				continue;
+			}
+
+			chars[i] = (char)(c + 32);
+		}
+
+		return new String(chars);
+	}
+
+	private String _toLowerCaseASCII(String html) {
+		for (int i = 0; i < html.length(); i++) {
+			char c = html.charAt(i);
+
+			if ((c >= CharPool.UPPER_CASE_A) && (c <= CharPool.UPPER_CASE_Z)) {
+				return _toLowerCaseASCII(html.toCharArray(), i);
+			}
+		}
+
+		return html;
+	}
+
+	private static final String _DOCUMENT_PORTAL_CACHE_NAME =
+		FragmentEntryProcessorRegistryImpl.class.getName() +
+			"._documentPortalCache";
+
+	private static final ThreadLocal<Set<String>> _validHTMLs =
 		new CentralizedThreadLocal(
-			FragmentEntryProcessorRegistryImpl.class.getName() +
-				"._validHTMLsThreadLocal",
+			FragmentEntryProcessorRegistryImpl.class.getName() + "._validHTMLs",
 			HashSet::new);
 
 	private ServiceTrackerList<CSSFragmentEntryProcessor>
 		_cssFragmentEntryProcessors;
 	private ServiceTrackerList<DocumentFragmentEntryProcessor>
 		_documentFragmentEntryProcessors;
+	private ServiceTrackerList<DocumentFragmentEntryValidator>
+		_documentFragmentEntryValidators;
+	private PortalCache<String, Document> _documentPortalCache;
 	private ServiceTrackerList<FragmentEntryAutocompleteContributor>
 		_fragmentEntryAutocompleteContributors;
 	private ServiceTrackerList<FragmentEntryProcessor> _fragmentEntryProcessors;
 	private ServiceTrackerList<FragmentEntryValidator> _fragmentEntryValidators;
 
 	@Reference
+	private FragmentPortletRenderer _fragmentPortletRenderer;
+
+	@Reference
 	private JSONFactory _jsonFactory;
+
+	private final Map<Object, String[]> _markers = new ConcurrentHashMap<>();
+	private ServiceTrackerMap
+		<String, DefaultEditableValuesFragmentEntryProcessor>
+			_serviceTrackerMap;
 
 }

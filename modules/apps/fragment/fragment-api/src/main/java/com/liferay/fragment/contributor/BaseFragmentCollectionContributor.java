@@ -20,6 +20,7 @@ import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.CompanyConstants;
 import com.liferay.portal.kernel.resource.bundle.ResourceBundleLoader;
 import com.liferay.portal.kernel.resource.bundle.ResourceBundleLoaderUtil;
 import com.liferay.portal.kernel.util.FileUtil;
@@ -29,6 +30,8 @@ import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.URLUtil;
 import com.liferay.portal.kernel.util.Validator;
+
+import jakarta.servlet.ServletContext;
 
 import java.io.InputStream;
 
@@ -44,8 +47,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.Set;
-
-import javax.servlet.ServletContext;
 
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -119,6 +120,31 @@ public abstract class BaseFragmentCollectionContributor
 	@Override
 	public List<FragmentEntry> getFragmentEntries(Locale locale) {
 		return _getFragmentEntries(getFragmentEntries(), locale);
+	}
+
+	@Override
+	public String getFragmentEntryName(String fragmentEntryKey, Locale locale) {
+		_initialize();
+
+		Map<Locale, String> names = _fragmentEntryNames.get(fragmentEntryKey);
+
+		if (names == null) {
+			return null;
+		}
+
+		String name = names.get(locale);
+
+		if (Validator.isNotNull(name)) {
+			return name;
+		}
+
+		name = names.get(LocaleUtil.getDefault());
+
+		if (Validator.isNotNull(name)) {
+			return name;
+		}
+
+		return _fragmentEntryJSONNames.get(fragmentEntryKey);
 	}
 
 	@Override
@@ -199,6 +225,7 @@ public abstract class BaseFragmentCollectionContributor
 			_fragmentCompositionNames = new HashMap<>();
 			_fragmentCompositions = new ArrayList<>();
 			_fragmentEntries = new HashMap<>();
+			_fragmentEntryJSONNames = new HashMap<>();
 			_fragmentEntryNames = new HashMap<>();
 
 			if (MapUtil.isEmpty(names) ||
@@ -218,11 +245,11 @@ public abstract class BaseFragmentCollectionContributor
 
 					FragmentEntry fragmentEntry = _getFragmentEntry(url);
 
-					List<FragmentEntry> fragmentEntryList =
+					List<FragmentEntry> fragmentEntries =
 						_fragmentEntries.computeIfAbsent(
 							fragmentEntry.getType(), type -> new ArrayList<>());
 
-					fragmentEntryList.add(fragmentEntry);
+					fragmentEntries.add(fragmentEntry);
 				}
 			}
 
@@ -305,6 +332,7 @@ public abstract class BaseFragmentCollectionContributor
 		FragmentComposition fragmentComposition =
 			fragmentCompositionLocalService.createFragmentComposition(0L);
 
+		fragmentComposition.setCompanyId(CompanyConstants.SYSTEM);
 		fragmentComposition.setFragmentCompositionKey(fragmentCompositionKey);
 		fragmentComposition.setName(name);
 		fragmentComposition.setData(definition);
@@ -368,6 +396,7 @@ public abstract class BaseFragmentCollectionContributor
 		_setLocalizedNames(name, names, getResourceBundleLoader());
 
 		_fragmentEntryNames.put(fragmentEntryKey, names);
+		_fragmentEntryJSONNames.put(fragmentEntryKey, name);
 
 		String path = FileUtil.getPath(url.getPath());
 
@@ -395,6 +424,7 @@ public abstract class BaseFragmentCollectionContributor
 		FragmentEntry fragmentEntry =
 			fragmentEntryLocalService.createFragmentEntry(0L);
 
+		fragmentEntry.setCompanyId(CompanyConstants.SYSTEM);
 		fragmentEntry.setFragmentEntryKey(fragmentEntryKey);
 		fragmentEntry.setName(name);
 		fragmentEntry.setCss(css);
@@ -477,17 +507,19 @@ public abstract class BaseFragmentCollectionContributor
 		availableLocales.add(LocaleUtil.getDefault());
 
 		for (Locale locale : availableLocales) {
-			if (Validator.isNotNull(name)) {
-				String languageId = LocaleUtil.toLanguageId(locale);
-
-				ResourceBundle resourceBundle =
-					resourceBundleLoader.loadResourceBundle(
-						LocaleUtil.fromLanguageId(languageId));
-
-				names.put(
-					LocaleUtil.fromLanguageId(languageId),
-					LanguageUtil.get(resourceBundle, name, name));
+			if (Validator.isNull(name)) {
+				continue;
 			}
+
+			String languageId = LocaleUtil.toLanguageId(locale);
+
+			ResourceBundle resourceBundle =
+				resourceBundleLoader.loadResourceBundle(
+					LocaleUtil.fromLanguageId(languageId));
+
+			names.put(
+				LocaleUtil.fromLanguageId(languageId),
+				LanguageUtil.get(resourceBundle, name, name));
 		}
 	}
 
@@ -498,6 +530,7 @@ public abstract class BaseFragmentCollectionContributor
 	private Map<String, Map<Locale, String>> _fragmentCompositionNames;
 	private List<FragmentComposition> _fragmentCompositions;
 	private Map<Integer, List<FragmentEntry>> _fragmentEntries;
+	private Map<String, String> _fragmentEntryJSONNames;
 	private Map<String, Map<Locale, String>> _fragmentEntryNames;
 	private volatile boolean _initialized;
 	private Map<Locale, String> _names;

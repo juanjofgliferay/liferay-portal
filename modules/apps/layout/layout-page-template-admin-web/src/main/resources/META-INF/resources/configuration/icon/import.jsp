@@ -15,16 +15,15 @@
 				onClose: function (event) {
 					window.location.reload();
 				},
-				title: '<liferay-ui:message key="import" />',
-				url:
-					'<%=
-						PortletURLBuilder.create(
-							PortalUtil.getControlPanelPortletURL(liferayPortletRequest, LayoutPageTemplateAdminPortletKeys.LAYOUT_PAGE_TEMPLATES, PortletRequest.RENDER_PHASE)
-						).setMVCRenderCommandName(
-							"/layout_page_template_admin/view_import"
-						).setWindowState(
-							LiferayWindowState.POP_UP
-						).buildString()
+				title: '<liferay-ui:message key="import[noun]" />',
+				url: '<%=
+					PortletURLBuilder.create(
+						PortalUtil.getControlPanelPortletURL(liferayPortletRequest, LayoutPageTemplateAdminPortletKeys.LAYOUT_PAGE_TEMPLATES, PortletRequest.RENDER_PHASE)
+					).setMVCRenderCommandName(
+						"/layout_page_template_admin/view_import"
+					).setWindowState(
+						LiferayWindowState.POP_UP
+					).buildString()
 			%>',
 			});
 		}

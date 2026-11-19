@@ -10,7 +10,6 @@ import com.liferay.dynamic.data.mapping.form.field.type.constants.DDMFormFieldTy
 import com.liferay.dynamic.data.mapping.form.field.type.internal.util.DDMFormFieldTypeUtil;
 import com.liferay.dynamic.data.mapping.model.DDMFormField;
 import com.liferay.dynamic.data.mapping.render.DDMFormFieldRenderingContext;
-import com.liferay.frontend.js.loader.modules.extender.npm.NPMResolver;
 import com.liferay.map.util.MapProviderHelperUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.service.GroupLocalService;
@@ -18,14 +17,14 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.PrefsPropsUtil;
-import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.portal.security.key.secret.SecretResolver;
+
+import jakarta.portlet.PortletPreferences;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.Map;
-
-import javax.portlet.PortletPreferences;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -65,8 +64,6 @@ public class GeolocationDDMFormFieldTemplateContextContributor
 		).put(
 			"mapProviderKey", mapProviderKey
 		).put(
-			"moduleName", getModuleName(mapProviderKey)
-		).put(
 			"predefinedValue",
 			DDMFormFieldTypeUtil.getPropertyValue(
 				ddmFormField, ddmFormFieldRenderingContext.getLocale(),
@@ -81,29 +78,24 @@ public class GeolocationDDMFormFieldTemplateContextContributor
 		).build();
 	}
 
-	protected String getModuleName(String mapProviderKey) {
-		if (StringUtil.equals(mapProviderKey, "GoogleMaps")) {
-			return _npmResolver.resolveModuleName(
-				"@liferay/map-google-maps/js/MapGoogleMaps");
-		}
-
-		return _npmResolver.resolveModuleName(
-			"@liferay/map-openstreetmap/js/MapOpenStreetMap");
-	}
-
 	private String _getGoogleMapsAPIKey(
 		Group group, ThemeDisplay themeDisplay) {
 
-		PortletPreferences companyPortletPreferences =
-			PrefsPropsUtil.getPreferences(themeDisplay.getCompanyId());
+		long companyId = themeDisplay.getCompanyId();
 
-		if (group == null) {
-			return companyPortletPreferences.getValue("googleMapsAPIKey", null);
+		PortletPreferences companyPortletPreferences =
+			PrefsPropsUtil.getPreferences(companyId);
+
+		String googleMapsAPIKey = companyPortletPreferences.getValue(
+			"googleMapsAPIKey", null);
+
+		if (group != null) {
+			googleMapsAPIKey = GetterUtil.getString(
+				group.getTypeSettingsProperty("googleMapsAPIKey"),
+				googleMapsAPIKey);
 		}
 
-		return GetterUtil.getString(
-			group.getTypeSettingsProperty("googleMapsAPIKey"),
-			companyPortletPreferences.getValue("googleMapsAPIKey", null));
+		return _secretResolver.resolve(companyId, googleMapsAPIKey);
 	}
 
 	private Group _getGroup(
@@ -128,6 +120,6 @@ public class GeolocationDDMFormFieldTemplateContextContributor
 	private GroupLocalService _groupLocalService;
 
 	@Reference
-	private NPMResolver _npmResolver;
+	private SecretResolver _secretResolver;
 
 }

@@ -5,12 +5,14 @@
 
 package com.liferay.layout.page.template.internal.upgrade.v5_1_1;
 
-import com.liferay.portal.dao.orm.common.SQLTransformer;
+import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.dao.jdbc.AutoBatchPreparedStatementUtil;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.LayoutConstants;
+import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.upgrade.UpgradeProcess;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
@@ -26,9 +28,11 @@ import java.util.List;
 public class LayoutPageTemplateStructureUpgradeProcess extends UpgradeProcess {
 
 	public LayoutPageTemplateStructureUpgradeProcess(
-		LayoutLocalService layoutLocalService) {
+		LayoutLocalService layoutLocalService,
+		UserLocalService userLocalService) {
 
 		_layoutLocalService = layoutLocalService;
+		_userLocalService = userLocalService;
 	}
 
 	@Override
@@ -72,36 +76,48 @@ public class LayoutPageTemplateStructureUpgradeProcess extends UpgradeProcess {
 		List<Long> plids = new ArrayList<>();
 
 		try (PreparedStatement preparedStatement1 = connection.prepareStatement(
-				SQLTransformer.transform(
-					"select layoutPageTemplateStructureId, classPK from " +
-						"LayoutPageTemplateStructure where classPK in " +
-							"(select plid from Layout where type_ = ?)"));
+				StringBundler.concat(
+					"select LayoutPageTemplateStructure.ctCollectionId, ",
+					"LayoutPageTemplateStructure.",
+					"layoutPageTemplateStructureId, ",
+					"LayoutPageTemplateStructure.classPK from ",
+					"LayoutPageTemplateStructure inner join Layout on ",
+					"LayoutPageTemplateStructure.ctCollectionId = ",
+					"Layout.ctCollectionId and LayoutPageTemplateStructure.",
+					"classPK = Layout.plid and Layout.type_ = ?"));
 			PreparedStatement preparedStatement2 =
 				AutoBatchPreparedStatementUtil.autoBatch(
 					connection,
-					"delete from LayoutPageTemplateStructure where classPK = " +
-						"?");
+					"delete from LayoutPageTemplateStructure where " +
+						"ctCollectionId = ? and " +
+							"layoutPageTemplateStructureId = ?");
 			PreparedStatement preparedStatement3 =
 				AutoBatchPreparedStatementUtil.concurrentAutoBatch(
 					connection,
 					"delete from LayoutPageTemplateStructureRel where " +
-						"layoutPageTemplateStructureId = ?")) {
+						"ctCollectionId = ? and " +
+							"layoutPageTemplateStructureId = ?")) {
 
 			preparedStatement1.setString(1, LayoutConstants.TYPE_PORTLET);
 
 			ResultSet resultSet = preparedStatement1.executeQuery();
 
 			while (resultSet.next()) {
-				long classPK = resultSet.getLong("classPK");
+				plids.add(resultSet.getLong("classPK"));
 
-				plids.add(classPK);
+				long ctCollectionId = resultSet.getLong("ctCollectionId");
 
-				preparedStatement2.setLong(1, classPK);
+				preparedStatement2.setLong(1, ctCollectionId);
+
+				long layoutPageTemplateStructureId = resultSet.getLong(
+					"layoutPageTemplateStructureId");
+
+				preparedStatement2.setLong(2, layoutPageTemplateStructureId);
 
 				preparedStatement2.addBatch();
 
-				preparedStatement3.setLong(
-					1, resultSet.getLong("layoutPageTemplateStructureId"));
+				preparedStatement3.setLong(1, ctCollectionId);
+				preparedStatement3.setLong(2, layoutPageTemplateStructureId);
 
 				preparedStatement3.addBatch();
 			}
@@ -120,12 +136,19 @@ public class LayoutPageTemplateStructureUpgradeProcess extends UpgradeProcess {
 				continue;
 			}
 
+			User user = _userLocalService.fetchUser(layout.getUserId());
+
+			if (user == null) {
+				user = _userLocalService.getGuestUser(layout.getCompanyId());
+			}
+
 			_layoutLocalService.updateStatus(
-				layout.getUserId(), plid, WorkflowConstants.STATUS_APPROVED,
+				user.getUserId(), plid, WorkflowConstants.STATUS_APPROVED,
 				serviceContext);
 		}
 	}
 
 	private final LayoutLocalService _layoutLocalService;
+	private final UserLocalService _userLocalService;
 
 }

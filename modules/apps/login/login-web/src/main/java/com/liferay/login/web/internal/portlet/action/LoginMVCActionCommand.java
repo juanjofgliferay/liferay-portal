@@ -5,12 +5,17 @@
 
 package com.liferay.login.web.internal.portlet.action;
 
+import com.liferay.layout.utility.page.kernel.constants.LayoutUtilityPageEntryConstants;
+import com.liferay.layout.utility.page.kernel.provider.LayoutUtilityPageEntryLayoutProvider;
 import com.liferay.login.web.constants.LoginPortletKeys;
+import com.liferay.login.web.internal.portlet.util.LoginUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.exception.CompanyMaxUsersException;
 import com.liferay.portal.kernel.exception.CookieNotSupportedException;
 import com.liferay.portal.kernel.exception.NoSuchUserException;
 import com.liferay.portal.kernel.exception.PasswordExpiredException;
+import com.liferay.portal.kernel.exception.PwdEncryptorException;
+import com.liferay.portal.kernel.exception.UserActiveException;
 import com.liferay.portal.kernel.exception.UserEmailAddressException;
 import com.liferay.portal.kernel.exception.UserIdException;
 import com.liferay.portal.kernel.exception.UserLockoutException;
@@ -18,7 +23,10 @@ import com.liferay.portal.kernel.exception.UserPasswordException;
 import com.liferay.portal.kernel.exception.UserScreenNameException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.Company;
+import com.liferay.portal.kernel.model.CompanyConstants;
 import com.liferay.portal.kernel.model.Layout;
+import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.PortletPreferencesFactoryUtil;
 import com.liferay.portal.kernel.portlet.PortletURLFactoryUtil;
@@ -26,27 +34,30 @@ import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCActionCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
 import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.security.auth.AuthException;
+import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.servlet.SessionErrors;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.Http;
 import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.URLCodec;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.security.auth.session.AuthenticatedSessionManagerUtil;
-import com.liferay.portal.util.PropsValues;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.PortletPreferences;
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
-import javax.portlet.WindowState;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.PortletPreferences;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletSession;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.WindowState;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -57,8 +68,10 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + LoginPortletKeys.FAST_LOGIN,
-		"javax.portlet.name=" + LoginPortletKeys.LOGIN,
+		"jakarta.portlet.name=" + LoginPortletKeys.CREATE_ACCOUNT,
+		"jakarta.portlet.name=" + LoginPortletKeys.FAST_LOGIN,
+		"jakarta.portlet.name=" + LoginPortletKeys.FORGOT_PASSWORD,
+		"jakarta.portlet.name=" + LoginPortletKeys.LOGIN,
 		"mvc.command.name=/login/login"
 	},
 	service = MVCActionCommand.class
@@ -120,16 +133,56 @@ public class LoginMVCActionCommand extends BaseMVCActionCommand {
 
 					SessionErrors.add(actionRequest, exception.getClass());
 				}
+
+				_postProcessAuthFailure(actionRequest, actionResponse);
+
+				hideDefaultErrorMessage(actionRequest);
+
+				return;
 			}
-			else if (exception instanceof CompanyMaxUsersException ||
-					 exception instanceof CookieNotSupportedException ||
-					 exception instanceof NoSuchUserException ||
-					 exception instanceof PasswordExpiredException ||
-					 exception instanceof UserEmailAddressException ||
-					 exception instanceof UserIdException ||
-					 exception instanceof UserLockoutException ||
-					 exception instanceof UserPasswordException ||
-					 exception instanceof UserScreenNameException) {
+			else if (exception instanceof
+						UserLockoutException.PasswordPolicyLockout) {
+
+				Company company = themeDisplay.getCompany();
+
+				if (!company.isSendPasswordResetLink()) {
+					User user = _getUser(actionRequest);
+
+					PortletPreferences portletPreferences =
+						actionRequest.getPreferences();
+
+					String emailFromName = portletPreferences.getValue(
+						"emailFromName", null);
+					String emailFromAddress = portletPreferences.getValue(
+						"emailFromAddress", null);
+
+					String emailToAddress = user.getEmailAddress();
+
+					LoginUtil.sendPasswordLockout(
+						actionRequest, emailFromName, emailFromAddress,
+						emailToAddress, null, null);
+				}
+
+				SessionErrors.add(
+					actionRequest, exception.getClass(), exception);
+
+				_postProcessAuthFailure(actionRequest, actionResponse);
+
+				hideDefaultErrorMessage(actionRequest);
+
+				return;
+			}
+
+			if (exception instanceof CompanyMaxUsersException ||
+				exception instanceof CookieNotSupportedException ||
+				exception instanceof NoSuchUserException ||
+				exception instanceof PasswordExpiredException ||
+				exception instanceof PwdEncryptorException ||
+				exception instanceof UserEmailAddressException ||
+				exception instanceof UserIdException ||
+				exception instanceof UserLockoutException ||
+				exception instanceof UserPasswordException ||
+				exception instanceof UserScreenNameException) {
 
 				SessionErrors.add(
 					actionRequest, exception.getClass(), exception);
@@ -216,11 +269,7 @@ public class LoginMVCActionCommand extends BaseMVCActionCommand {
 			if (Validator.isNotNull(redirect) &&
 				!redirect.startsWith(Http.HTTP)) {
 
-				redirect = _portal.getPortalURL(
-					httpServletRequest
-				).concat(
-					redirect
-				);
+				redirect = _portal.getPortalURL(httpServletRequest) + redirect;
 			}
 		}
 
@@ -239,6 +288,53 @@ public class LoginMVCActionCommand extends BaseMVCActionCommand {
 		}
 	}
 
+	private User _getUser(ActionRequest actionRequest) throws Exception {
+		User user = null;
+
+		ThemeDisplay themeDisplay = (ThemeDisplay)actionRequest.getAttribute(
+			WebKeys.THEME_DISPLAY);
+
+		PortletPreferences portletPreferences = actionRequest.getPreferences();
+
+		String authType = portletPreferences.getValue("authType", null);
+
+		if (Validator.isNull(authType)) {
+			Company company = themeDisplay.getCompany();
+
+			authType = company.getAuthType();
+		}
+
+		PortletSession portletSession = actionRequest.getPortletSession();
+
+		String login = (String)portletSession.getAttribute(
+			WebKeys.FORGOT_PASSWORD_REMINDER_USER_EMAIL_ADDRESS);
+
+		if (Validator.isNull(login)) {
+			login = ParamUtil.getString(actionRequest, "login");
+		}
+
+		if (authType.equals(CompanyConstants.AUTH_TYPE_EA)) {
+			user = _userLocalService.getUserByEmailAddress(
+				themeDisplay.getCompanyId(), login);
+		}
+		else if (authType.equals(CompanyConstants.AUTH_TYPE_SN)) {
+			user = _userLocalService.getUserByScreenName(
+				themeDisplay.getCompanyId(), login);
+		}
+		else if (authType.equals(CompanyConstants.AUTH_TYPE_ID)) {
+			user = _userLocalService.getUserById(GetterUtil.getLong(login));
+		}
+		else {
+			throw new NoSuchUserException("User does not exist");
+		}
+
+		if (!user.isActive()) {
+			throw new UserActiveException("Inactive user " + user.getUuid());
+		}
+
+		return user;
+	}
+
 	private void _postProcessAuthFailure(
 			ActionRequest actionRequest, ActionResponse actionResponse)
 		throws Exception {
@@ -246,9 +342,18 @@ public class LoginMVCActionCommand extends BaseMVCActionCommand {
 		LiferayPortletRequest liferayPortletRequest =
 			_portal.getLiferayPortletRequest(actionRequest);
 
-		String portletName = liferayPortletRequest.getPortletName();
+		ThemeDisplay themeDisplay = (ThemeDisplay)actionRequest.getAttribute(
+			WebKeys.THEME_DISPLAY);
 
-		Layout layout = (Layout)actionRequest.getAttribute(WebKeys.LAYOUT);
+		Layout layout =
+			_layoutUtilityPageEntryLayoutProvider.
+				getDefaultLayoutUtilityPageEntryLayout(
+					themeDisplay.getScopeGroupId(),
+					LayoutUtilityPageEntryConstants.TYPE_LOGIN);
+
+		if (layout == null) {
+			layout = (Layout)actionRequest.getAttribute(WebKeys.LAYOUT);
+		}
 
 		PortletURL portletURL = PortletURLBuilder.create(
 			PortletURLFactoryUtil.create(
@@ -275,8 +380,15 @@ public class LoginMVCActionCommand extends BaseMVCActionCommand {
 			SessionErrors.add(actionRequest, "login", login);
 		}
 
+		String portletName = liferayPortletRequest.getPortletName();
+
 		if (portletName.equals(LoginPortletKeys.LOGIN)) {
-			portletURL.setWindowState(WindowState.MAXIMIZED);
+			if (layout.isTypeUtility()) {
+				portletURL.setWindowState(WindowState.NORMAL);
+			}
+			else {
+				portletURL.setWindowState(WindowState.MAXIMIZED);
+			}
 		}
 		else {
 			portletURL.setWindowState(actionRequest.getWindowState());
@@ -289,6 +401,13 @@ public class LoginMVCActionCommand extends BaseMVCActionCommand {
 		LoginMVCActionCommand.class);
 
 	@Reference
+	private LayoutUtilityPageEntryLayoutProvider
+		_layoutUtilityPageEntryLayoutProvider;
+
+	@Reference
 	private Portal _portal;
+
+	@Reference
+	private UserLocalService _userLocalService;
 
 }

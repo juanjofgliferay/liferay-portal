@@ -17,8 +17,6 @@ import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
-import com.liferay.portal.kernel.portlet.PortalPreferences;
-import com.liferay.portal.kernel.portlet.PortletPreferencesFactoryUtil;
 import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.LocaleUtil;
@@ -26,12 +24,12 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.List;
 import java.util.Locale;
-
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Alessio Antonio Rendina
@@ -45,51 +43,10 @@ public abstract class BaseCPDefinitionsDisplayContext {
 		this.actionHelper = actionHelper;
 		this.httpServletRequest = httpServletRequest;
 
-		portalPreferences = PortletPreferencesFactoryUtil.getPortalPreferences(
-			this.httpServletRequest);
-
 		cpRequestHelper = new CPRequestHelper(httpServletRequest);
 
 		liferayPortletRequest = cpRequestHelper.getLiferayPortletRequest();
 		liferayPortletResponse = cpRequestHelper.getLiferayPortletResponse();
-	}
-
-	public String getCatalogDefaultLanguageId() throws PortalException {
-		CommerceCatalog commerceCatalog = getCommerceCatalog();
-
-		if (commerceCatalog == null) {
-			ThemeDisplay themeDisplay = cpRequestHelper.getThemeDisplay();
-
-			return LocaleUtil.toLanguageId(themeDisplay.getSiteDefaultLocale());
-		}
-
-		return commerceCatalog.getCatalogDefaultLanguageId();
-	}
-
-	public CommerceCatalog getCommerceCatalog() throws PortalException {
-		if (_commerceCatalog != null) {
-			return _commerceCatalog;
-		}
-
-		CPDefinition cpDefinition = getCPDefinition();
-
-		if (cpDefinition == null) {
-			return null;
-		}
-
-		_commerceCatalog = _cpDefinition.getCommerceCatalog();
-
-		return _commerceCatalog;
-	}
-
-	public long getCommerceCatalogId() throws PortalException {
-		CommerceCatalog commerceCatalog = getCommerceCatalog();
-
-		if (commerceCatalog == null) {
-			return 0;
-		}
-
-		return commerceCatalog.getCommerceCatalogId();
 	}
 
 	public CPDefinition getCPDefinition() throws PortalException {
@@ -130,6 +87,44 @@ public abstract class BaseCPDefinitionsDisplayContext {
 
 	public List<CPType> getCPTypes() {
 		return actionHelper.getCPTypes();
+	}
+
+	public String getCatalogDefaultLanguageId() throws PortalException {
+		CommerceCatalog commerceCatalog = getCommerceCatalog();
+
+		if (commerceCatalog == null) {
+			ThemeDisplay themeDisplay = cpRequestHelper.getThemeDisplay();
+
+			return LocaleUtil.toLanguageId(themeDisplay.getSiteDefaultLocale());
+		}
+
+		return commerceCatalog.getCatalogDefaultLanguageId();
+	}
+
+	public CommerceCatalog getCommerceCatalog() throws PortalException {
+		if (_commerceCatalog != null) {
+			return _commerceCatalog;
+		}
+
+		CPDefinition cpDefinition = getCPDefinition();
+
+		if (cpDefinition == null) {
+			return null;
+		}
+
+		_commerceCatalog = _cpDefinition.getCommerceCatalog();
+
+		return _commerceCatalog;
+	}
+
+	public long getCommerceCatalogId() throws PortalException {
+		CommerceCatalog commerceCatalog = getCommerceCatalog();
+
+		if (commerceCatalog == null) {
+			return 0;
+		}
+
+		return commerceCatalog.getCommerceCatalogId();
 	}
 
 	public PortletURL getEditProductDefinitionURL() throws PortalException {
@@ -200,7 +195,6 @@ public abstract class BaseCPDefinitionsDisplayContext {
 	protected final HttpServletRequest httpServletRequest;
 	protected final LiferayPortletRequest liferayPortletRequest;
 	protected final LiferayPortletResponse liferayPortletResponse;
-	protected final PortalPreferences portalPreferences;
 
 	private CommerceCatalog _commerceCatalog;
 	private CPDefinition _cpDefinition;

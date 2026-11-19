@@ -48,7 +48,7 @@ public class VersionCommerceOrderValidatorImpl
 	@Override
 	public CommerceOrderValidatorResult validate(
 			Locale locale, CommerceOrder commerceOrder, CPInstance cpInstance,
-			BigDecimal quantity)
+			String json, BigDecimal quantity, boolean child)
 		throws PortalException {
 
 		return new CommerceOrderValidatorResult(true);
@@ -94,16 +94,16 @@ public class VersionCommerceOrderValidatorImpl
 		return new CommerceOrderValidatorResult(true);
 	}
 
-	protected void setCommerceOrderItemLocalService(
-		CommerceOrderItemLocalService commerceOrderItemLocalService) {
-
-		_commerceOrderItemLocalService = commerceOrderItemLocalService;
-	}
-
 	protected void setCPInstanceLocalService(
 		CPInstanceLocalService cpInstanceLocalService) {
 
 		_cpInstanceLocalService = cpInstanceLocalService;
+	}
+
+	protected void setCommerceOrderItemLocalService(
+		CommerceOrderItemLocalService commerceOrderItemLocalService) {
+
+		_commerceOrderItemLocalService = commerceOrderItemLocalService;
 	}
 
 	private String _getLocalizedMessage(Locale locale, String key) {

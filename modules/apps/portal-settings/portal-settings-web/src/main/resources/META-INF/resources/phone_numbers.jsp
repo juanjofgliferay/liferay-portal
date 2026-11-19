@@ -82,11 +82,11 @@
 					<aui:input name='<%= "phoneId" + phonesIndex %>' type="hidden" value="<%= phone.getPhoneId() %>" />
 
 					<div class="form-group-item">
-						<aui:input fieldParam='<%= "phoneNumber" + phonesIndex %>' id='<%= "phoneNumber" + phonesIndex %>' inlineField="<%= true %>" name="number" />
+						<aui:input fieldParam='<%= "phoneNumber" + phonesIndex %>' id='<%= "phoneNumber" + phonesIndex %>' inlineField="<%= true %>" label="phone-number" name="number" />
 					</div>
 
 					<div class="form-group-item">
-						<aui:input fieldParam='<%= "phoneExtension" + phonesIndex %>' id='<%= "phoneExtension" + phonesIndex %>' inlineField="<%= true %>" name="extension" />
+						<aui:input fieldParam='<%= "phoneExtension" + phonesIndex %>' id='<%= "phoneExtension" + phonesIndex %>' inlineField="<%= true %>" label="phone-extension" name="extension" />
 					</div>
 
 					<div class="form-group-item">
@@ -105,12 +105,14 @@
 			<aui:input name="phonesIndexes" type="hidden" value="<%= StringUtil.merge(phonesIndexes) %>" />
 		</aui:fieldset>
 
-		<aui:script use="liferay-auto-fields">
-			new Liferay.AutoFields({
+		<aui:script type="module">
+			import {autoFields} from '<%= FrontendESMUtil.buildURL(themeDisplay, "frontend-js-web", "auto_fields") %>';
+
+			autoFields({
 				contentBox: '#<portlet:namespace />phoneNumbers',
 				fieldIndexes: '<portlet:namespace />phonesIndexes',
 				namespace: '<portlet:namespace />',
-			}).render();
+			});
 		</aui:script>
 	</c:when>
 	<c:otherwise>

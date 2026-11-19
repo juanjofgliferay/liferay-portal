@@ -7,6 +7,7 @@ package com.liferay.exportimport.kernel.lar;
 
 import com.liferay.portal.kernel.backgroundtask.BackgroundTask;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.Portlet;
 import com.liferay.portal.kernel.model.StagedModel;
@@ -16,12 +17,13 @@ import com.liferay.portal.kernel.xml.Document;
 import com.liferay.portal.kernel.xml.Element;
 import com.liferay.portal.kernel.zip.ZipWriter;
 
+import jakarta.portlet.PortletRequest;
+
 import java.io.File;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
-
-import javax.portlet.PortletRequest;
 
 /**
  * @author Zsolt Berentey
@@ -42,6 +44,13 @@ public class ExportImportHelperUtil {
 			_exportImportHelperSnapshot.get();
 
 		return exportImportHelper.getAllLayoutIdsMap(groupId, privateLayout);
+	}
+
+	public static int getChildGroupsCount(Group group) throws PortalException {
+		ExportImportHelper exportImportHelper =
+			_exportImportHelperSnapshot.get();
+
+		return exportImportHelper.getChildGroupsCount(group);
 	}
 
 	public static List<Portlet> getDataSiteAndInstanceLevelPortlets(
@@ -66,6 +75,16 @@ public class ExportImportHelperUtil {
 			companyId, excludeDataAlwaysStaged);
 	}
 
+	public static Portlet getDataSiteLevelPortlet(
+		String className, long companyId, boolean excludeDataAlwaysStaged) {
+
+		ExportImportHelper exportImportHelper =
+			_exportImportHelperSnapshot.get();
+
+		return exportImportHelper.getDataSiteLevelPortlet(
+			className, companyId, excludeDataAlwaysStaged);
+	}
+
 	public static List<Portlet> getDataSiteLevelPortlets(long companyId)
 		throws Exception {
 
@@ -86,15 +105,24 @@ public class ExportImportHelperUtil {
 			companyId, excludeDataAlwaysStaged);
 	}
 
-	public static String getExportableRootPortletId(
-			long companyId, String portletId)
+	public static List<ExportImportGroup> getExportImportGroups(
+			FileEntry fileEntry)
 		throws Exception {
 
 		ExportImportHelper exportImportHelper =
 			_exportImportHelperSnapshot.get();
 
-		return exportImportHelper.getExportableRootPortletId(
-			companyId, portletId);
+		return exportImportHelper.getExportImportGroups(fileEntry);
+	}
+
+	public static List<ExportImportGroup> getExportImportGroups(
+			PortletDataContext portletDataContext)
+		throws Exception {
+
+		ExportImportHelper exportImportHelper =
+			_exportImportHelperSnapshot.get();
+
+		return exportImportHelper.getExportImportGroups(portletDataContext);
 	}
 
 	public static Map<String, Boolean> getExportPortletControlsMap(
@@ -119,6 +147,36 @@ public class ExportImportHelperUtil {
 
 		return exportImportHelper.getExportPortletControlsMap(
 			companyId, portletId, parameterMap, type);
+	}
+
+	public static List<Portlet> getExportablePortlets(
+		long companyId, boolean excludeDataAlwaysStaged, long groupId) {
+
+		ExportImportHelper exportImportHelper =
+			_exportImportHelperSnapshot.get();
+
+		return exportImportHelper.getExportablePortlets(
+			companyId, excludeDataAlwaysStaged, groupId);
+	}
+
+	public static String getExportableRootPortletId(
+			long companyId, String portletId)
+		throws Exception {
+
+		ExportImportHelper exportImportHelper =
+			_exportImportHelperSnapshot.get();
+
+		return exportImportHelper.getExportableRootPortletId(
+			companyId, portletId);
+	}
+
+	public static String getGroupPath(Group group, Locale locale)
+		throws PortalException {
+
+		ExportImportHelper exportImportHelper =
+			_exportImportHelperSnapshot.get();
+
+		return exportImportHelper.getGroupPath(group, locale);
 	}
 
 	public static Map<String, Boolean> getImportPortletControlsMap(
@@ -334,6 +392,22 @@ public class ExportImportHelperUtil {
 			_exportImportHelperSnapshot.get();
 
 		return exportImportHelper.isExportPortletData(portletDataContext);
+	}
+
+	public static boolean isGroupMatching(
+		ExportImportGroup exportImportGroup, Group group) {
+
+		ExportImportHelper exportImportHelper =
+			_exportImportHelperSnapshot.get();
+
+		return exportImportHelper.isGroupMatching(exportImportGroup, group);
+	}
+
+	public static boolean isGroupSupported(Group group) {
+		ExportImportHelper exportImportHelper =
+			_exportImportHelperSnapshot.get();
+
+		return exportImportHelper.isGroupSupported(group);
 	}
 
 	public static boolean isLayoutRevisionInReview(Layout layout) {

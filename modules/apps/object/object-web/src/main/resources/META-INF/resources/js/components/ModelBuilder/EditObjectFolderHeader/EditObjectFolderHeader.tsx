@@ -6,11 +6,10 @@
 import ClayButton, {ClayButtonWithIcon} from '@clayui/button';
 import ClayIcon from '@clayui/icon';
 import {ClayTooltipProvider} from '@clayui/tooltip';
-import {getLocalizableLabel} from '@liferay/object-js-components-web';
+import {stringUtils} from '@liferay/object-js-components-web';
 import classNames from 'classnames';
 import React from 'react';
 
-import {defaultLanguageId} from '../../../utils/constants';
 import {useObjectFolderContext} from '../ModelBuilderContext/objectFolderContext';
 import {TYPES} from '../ModelBuilderContext/typesEnum';
 
@@ -19,18 +18,14 @@ import './EditObjectFolderHeader.scss';
 interface EditObjectFolderHeaderProps {
 	hasDraftObjectDefinitions: boolean;
 	selectedObjectFolder: ObjectFolder;
-	setShowModal: (value: React.SetStateAction<ModelBuilderModals>) => void;
 }
 
 export default function EditObjectFolderHeader({
 	hasDraftObjectDefinitions,
 	selectedObjectFolder,
-	setShowModal,
 }: EditObjectFolderHeaderProps) {
-	const [
-		{showChangesSaved, showSidebars},
-		dispatch,
-	] = useObjectFolderContext();
+	const [{showChangesSaved, showSidebars}, dispatch] =
+		useObjectFolderContext();
 
 	return (
 		<div className="lfr-objects__model-builder-header">
@@ -40,7 +35,8 @@ export default function EditObjectFolderHeader({
 						className={classNames(
 							'lfr-objects__model-builder-header-object-folder-info-label',
 							{
-								'lfr-objects__model-builder-header-object-folder-info-label-changes-saved': showChangesSaved,
+								'lfr-objects__model-builder-header-object-folder-info-label-changes-saved':
+									showChangesSaved,
 							}
 						)}
 					>
@@ -50,18 +46,17 @@ export default function EditObjectFolderHeader({
 									Liferay.Language.get(
 										'object-folder-label'
 									) +
-									`: ${getLocalizableLabel(
-										defaultLanguageId,
-										selectedObjectFolder.label,
-										selectedObjectFolder.name
-									)}`
+									`: ${stringUtils.getLocalizableLabel({
+										fallbackLabel:
+											selectedObjectFolder.name,
+										labels: selectedObjectFolder.label,
+									})}`
 								}
 							>
-								{getLocalizableLabel(
-									defaultLanguageId,
-									selectedObjectFolder.label,
-									selectedObjectFolder.name
-								)}
+								{stringUtils.getLocalizableLabel({
+									fallbackLabel: selectedObjectFolder.name,
+									labels: selectedObjectFolder.label,
+								})}
 							</span>
 						</ClayTooltipProvider>
 					</div>
@@ -75,7 +70,8 @@ export default function EditObjectFolderHeader({
 							className={classNames(
 								'lfr-objects__model-builder-header-object-folder-info-erc-content',
 								{
-									'lfr-objects__model-builder-header-object-folder-info-erc-content-changes-saved': showChangesSaved,
+									'lfr-objects__model-builder-header-object-folder-info-erc-content-changes-saved':
+										showChangesSaved,
 								}
 							)}
 							title={
@@ -99,23 +95,23 @@ export default function EditObjectFolderHeader({
 						</span>
 					</ClayTooltipProvider>
 
-					{selectedObjectFolder.externalReferenceCode !==
-						'uncategorized' &&
+					{selectedObjectFolder.externalReferenceCode !== 'default' &&
 						selectedObjectFolder.actions?.update && (
 							<ClayButtonWithIcon
 								aria-label={Liferay.Language.get(
 									'edit-label-and-erc'
 								)}
 								displayType="unstyled"
+								name="editObjectFolderButton"
 								onClick={() =>
-									setShowModal(
-										(
-											previousState: ModelBuilderModals
-										) => ({
-											...previousState,
-											editObjectFolder: true,
-										})
-									)
+									dispatch({
+										payload: {
+											updatedModelBuilderModals: {
+												editObjectFolder: true,
+											},
+										},
+										type: TYPES.UPDATE_VISIBILITY_MODEL_BUILDER_MODALS,
+									})
 								}
 								symbol="pencil"
 							/>
@@ -150,12 +146,14 @@ export default function EditObjectFolderHeader({
 						disabled={!hasDraftObjectDefinitions}
 						displayType="primary"
 						onClick={() => {
-							setShowModal(
-								(previousState: ModelBuilderModals) => ({
-									...previousState,
-									publishObjectDefinitions: true,
-								})
-							);
+							dispatch({
+								payload: {
+									updatedModelBuilderModals: {
+										publishObjectDefinitions: true,
+									},
+								},
+								type: TYPES.UPDATE_VISIBILITY_MODEL_BUILDER_MODALS,
+							});
 						}}
 						size="sm"
 					>

@@ -9,17 +9,18 @@ import com.liferay.commerce.constants.CommerceHealthStatusConstants;
 import com.liferay.commerce.health.status.CommerceHealthStatus;
 import com.liferay.commerce.product.model.CPMeasurementUnit;
 import com.liferay.commerce.product.service.CPMeasurementUnitLocalService;
+import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextFactory;
 import com.liferay.portal.kernel.util.ResourceBundleUtil;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.List;
 import java.util.Locale;
 import java.util.ResourceBundle;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -91,7 +92,8 @@ public class MeasurementUnitsCommerceHealthStatus
 		throws PortalException {
 
 		List<CPMeasurementUnit> cpMeasurementUnits =
-			_cpMeasurementUnitLocalService.getCPMeasurementUnits(companyId);
+			_cpMeasurementUnitLocalService.getCPMeasurementUnits(
+				companyId, QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
 
 		return !cpMeasurementUnits.isEmpty();
 	}

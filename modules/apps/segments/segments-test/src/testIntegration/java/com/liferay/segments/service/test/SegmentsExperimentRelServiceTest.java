@@ -25,6 +25,7 @@ import com.liferay.portal.kernel.test.context.ContextUserReplace;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
+import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
@@ -64,8 +65,9 @@ public class SegmentsExperimentRelServiceTest {
 		_group = GroupTestUtil.addGroup();
 
 		_role = RoleLocalServiceUtil.addRole(
-			TestPropsValues.getUserId(), null, 0, StringUtil.randomString(),
-			null, null, RoleConstants.TYPE_SITE, null,
+			RandomTestUtil.randomString(), TestPropsValues.getUserId(), null, 0,
+			StringUtil.randomString(), null, null, RoleConstants.TYPE_SITE,
+			null,
 			ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
 
 		_user = UserTestUtil.addGroupUser(_group, _role.getName());
@@ -77,9 +79,14 @@ public class SegmentsExperimentRelServiceTest {
 		_classPK = layout.getPlid();
 	}
 
-	@Test(expected = PrincipalException.MustHavePermission.class)
-	public void testAddSegmentsExperienceWithoutUpdateLayoutsPermission()
+	@Test
+	public void testAddSegmentsExperienceWithUpdateLayoutPermission()
 		throws Exception {
+
+		ResourcePermissionLocalServiceUtil.addResourcePermission(
+			_group.getCompanyId(), Layout.class.getName(),
+			ResourceConstants.SCOPE_GROUP, String.valueOf(_group.getGroupId()),
+			_role.getRoleId(), ActionKeys.UPDATE);
 
 		try (ContextUserReplace contextUserReplace = new ContextUserReplace(
 				_user, PermissionCheckerFactoryUtil.create(_user))) {
@@ -90,14 +97,9 @@ public class SegmentsExperimentRelServiceTest {
 		}
 	}
 
-	@Test
-	public void testAddSegmentsExperienceWithUpdateLayoutPermission()
+	@Test(expected = PrincipalException.MustHavePermission.class)
+	public void testAddSegmentsExperienceWithoutUpdateLayoutsPermission()
 		throws Exception {
-
-		ResourcePermissionLocalServiceUtil.addResourcePermission(
-			_group.getCompanyId(), Layout.class.getName(),
-			ResourceConstants.SCOPE_GROUP, String.valueOf(_group.getGroupId()),
-			_role.getRoleId(), ActionKeys.UPDATE);
 
 		try (ContextUserReplace contextUserReplace = new ContextUserReplace(
 				_user, PermissionCheckerFactoryUtil.create(_user))) {

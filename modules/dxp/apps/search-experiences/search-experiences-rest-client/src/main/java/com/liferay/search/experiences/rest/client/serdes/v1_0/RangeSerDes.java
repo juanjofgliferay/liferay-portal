@@ -8,13 +8,14 @@ package com.liferay.search.experiences.rest.client.serdes.v1_0;
 import com.liferay.search.experiences.rest.client.dto.v1_0.Range;
 import com.liferay.search.experiences.rest.client.json.BaseJSONParser;
 
+import jakarta.annotation.Generated;
+
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
-
-import javax.annotation.Generated;
 
 /**
  * @author Brian Wing Shun Chan
@@ -65,14 +66,7 @@ public class RangeSerDes {
 
 			sb.append("\"gt\": ");
 
-			if (range.getGt() instanceof String) {
-				sb.append("\"");
-				sb.append((String)range.getGt());
-				sb.append("\"");
-			}
-			else {
-				sb.append(range.getGt());
-			}
+			sb.append(_toJSON(range.getGt()));
 		}
 
 		if (range.getGte() != null) {
@@ -82,14 +76,7 @@ public class RangeSerDes {
 
 			sb.append("\"gte\": ");
 
-			if (range.getGte() instanceof String) {
-				sb.append("\"");
-				sb.append((String)range.getGte());
-				sb.append("\"");
-			}
-			else {
-				sb.append(range.getGte());
-			}
+			sb.append(_toJSON(range.getGte()));
 		}
 
 		if (range.getLt() != null) {
@@ -99,14 +86,7 @@ public class RangeSerDes {
 
 			sb.append("\"lt\": ");
 
-			if (range.getLt() instanceof String) {
-				sb.append("\"");
-				sb.append((String)range.getLt());
-				sb.append("\"");
-			}
-			else {
-				sb.append(range.getLt());
-			}
+			sb.append(_toJSON(range.getLt()));
 		}
 
 		if (range.getLte() != null) {
@@ -116,14 +96,7 @@ public class RangeSerDes {
 
 			sb.append("\"lte\": ");
 
-			if (range.getLte() instanceof String) {
-				sb.append("\"");
-				sb.append((String)range.getLte());
-				sb.append("\"");
-			}
-			else {
-				sb.append(range.getLte());
-			}
+			sb.append(_toJSON(range.getLte()));
 		}
 
 		if (range.getParameterName() != null) {
@@ -216,6 +189,30 @@ public class RangeSerDes {
 		}
 
 		@Override
+		protected boolean parseMaps(String jsonParserFieldName) {
+			if (Objects.equals(jsonParserFieldName, "format")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "gt")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "gte")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "lt")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "lte")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "parameterName")) {
+				return false;
+			}
+
+			return false;
+		}
+
+		@Override
 		protected void setField(
 			Range range, String jsonParserFieldName,
 			Object jsonParserFieldValue) {
@@ -282,36 +279,7 @@ public class RangeSerDes {
 
 			Object value = entry.getValue();
 
-			Class<?> valueClass = value.getClass();
-
-			if (value instanceof Map) {
-				sb.append(_toJSON((Map)value));
-			}
-			else if (valueClass.isArray()) {
-				Object[] values = (Object[])value;
-
-				sb.append("[");
-
-				for (int i = 0; i < values.length; i++) {
-					sb.append("\"");
-					sb.append(_escape(values[i]));
-					sb.append("\"");
-
-					if ((i + 1) < values.length) {
-						sb.append(", ");
-					}
-				}
-
-				sb.append("]");
-			}
-			else if (value instanceof String) {
-				sb.append("\"");
-				sb.append(_escape(entry.getValue()));
-				sb.append("\"");
-			}
-			else {
-				sb.append(String.valueOf(entry.getValue()));
-			}
+			sb.append(_toJSON(value));
 
 			if (iterator.hasNext()) {
 				sb.append(", ");
@@ -323,4 +291,47 @@ public class RangeSerDes {
 		return sb.toString();
 	}
 
+	private static String _toJSON(Object value) {
+		if (value == null) {
+			return "null";
+		}
+
+		if (value instanceof Collection) {
+			Collection<?> collection = (Collection<?>)value;
+
+			return _toJSON(collection.toArray());
+		}
+
+		if (value instanceof Map) {
+			return _toJSON((Map)value);
+		}
+
+		Class<?> clazz = value.getClass();
+
+		if (clazz.isArray()) {
+			StringBuilder sb = new StringBuilder("[");
+
+			Object[] values = (Object[])value;
+
+			for (int i = 0; i < values.length; i++) {
+				sb.append(_toJSON(values[i]));
+
+				if ((i + 1) < values.length) {
+					sb.append(", ");
+				}
+			}
+
+			sb.append("]");
+
+			return sb.toString();
+		}
+
+		if (value instanceof String) {
+			return "\"" + _escape(value) + "\"";
+		}
+
+		return String.valueOf(value);
+	}
+
 }
+// LIFERAY-REST-BUILDER-HASH:-110757399

@@ -9,9 +9,10 @@ import ClayLabel from '@clayui/label';
 import classnames from 'classnames';
 import {useMutation} from 'graphql-hooks';
 import React, {useContext, useState} from 'react';
-import {Link, withRouter} from 'react-router-dom';
+import {Link} from 'react-router';
 
 import {AppContext} from '../AppContext.es';
+import {withRouter} from '../hooks/withRouter.es';
 import FlagsContainer from '../pages/questions/components/FlagsContainer';
 import {deleteMessageQuery} from '../utils/client.es';
 import {fromNow} from '../utils/time.es';
@@ -25,14 +26,13 @@ export default withRouter(
 		commentChange,
 		display,
 		editable = true,
-		match: {url},
+		location,
 		showSignature,
 		styledItems = false,
 	}) => {
 		const context = useContext(AppContext);
-		const [showDeleteCommentModal, setShowDeleteCommentModal] = useState(
-			false
-		);
+		const [showDeleteCommentModal, setShowDeleteCommentModal] =
+			useState(false);
 
 		const [deleteMessage] = useMutation(deleteMessageQuery);
 
@@ -42,8 +42,10 @@ export default withRouter(
 			<div className="c-my-3 pl-3 questions-reply row">
 				<div
 					className={classnames({
-						'align-items-md-center col-2 col-md-1 d-flex justify-content-end justify-content-md-center': !styledItems,
-						'pt-1 d-flex justify-content-end justify-content-md-center': styledItems,
+						'align-items-md-center col-2 col-md-1 d-flex justify-content-end justify-content-md-center':
+							!styledItems,
+						'pt-1 d-flex justify-content-end justify-content-md-center':
+							styledItems,
 					})}
 				>
 					<ClayIcon
@@ -127,7 +129,7 @@ export default withRouter(
 								>
 									<Link
 										className="text-reset"
-										to={`${url}/answers/${comment.friendlyUrlPath}/edit`}
+										to={`${location.pathname}/answers/${comment.friendlyUrlPath}/edit`}
 									>
 										{Liferay.Language.get('edit')}
 									</Link>
@@ -136,7 +138,7 @@ export default withRouter(
 
 							<Modal
 								body={Liferay.Language.get(
-									'do-you-want-to-delete–this-comment'
+									'do-you-want-to-delete-this-comment'
 								)}
 								callback={() => {
 									deleteMessage({

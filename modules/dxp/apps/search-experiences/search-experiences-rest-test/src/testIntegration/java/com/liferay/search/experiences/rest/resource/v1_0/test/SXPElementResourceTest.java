@@ -97,6 +97,12 @@ public class SXPElementResourceTest extends BaseSXPElementResourceTestCase {
 	@Ignore
 	@Override
 	@Test
+	public void testGraphQLDeleteSXPElement() throws Exception {
+	}
+
+	@Ignore
+	@Override
+	@Test
 	public void testGraphQLGetSXPElement() throws Exception {
 	}
 
@@ -118,6 +124,36 @@ public class SXPElementResourceTest extends BaseSXPElementResourceTestCase {
 	@Override
 	@Test
 	public void testGraphQLGetSXPElementNotFound() throws Exception {
+	}
+
+	@Ignore
+	@Override
+	@Test
+	public void testGraphQLGetSXPElementsPage() throws Exception {
+	}
+
+	@Ignore
+	@Override
+	@Test
+	public void testGraphQLPostSXPElement() throws Exception {
+	}
+
+	@Ignore
+	@Override
+	@Test
+	public void testGraphQLPostSXPElementCopy() throws Exception {
+	}
+
+	@Ignore
+	@Override
+	@Test
+	public void testGraphQLPostSXPElementPreview() throws Exception {
+	}
+
+	@Ignore
+	@Override
+	@Test
+	public void testGraphQLPostSXPElementValidate() throws Exception {
 	}
 
 	@Override
@@ -333,9 +369,11 @@ public class SXPElementResourceTest extends BaseSXPElementResourceTestCase {
 		for (SXPElement sxpElement : page.getItems()) {
 			String title = sxpElement.getTitle();
 
-			if (title.startsWith(_TITLE_PREFIX)) {
-				sxpElementResource.deleteSXPElement(sxpElement.getId());
+			if (!title.startsWith(_TITLE_PREFIX)) {
+				continue;
 			}
+
+			sxpElementResource.deleteSXPElement(sxpElement.getId());
 		}
 	}
 

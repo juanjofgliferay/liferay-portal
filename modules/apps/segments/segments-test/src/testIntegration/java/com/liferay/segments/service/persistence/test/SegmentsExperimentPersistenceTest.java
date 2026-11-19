@@ -112,11 +112,7 @@ public class SegmentsExperimentPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		SegmentsExperiment newSegmentsExperiment = _persistence.create(pk);
-
-		newSegmentsExperiment.setMvccVersion(RandomTestUtil.nextLong());
+		SegmentsExperiment newSegmentsExperiment = addSegmentsExperiment();
 
 		newSegmentsExperiment.setCtCollectionId(RandomTestUtil.nextLong());
 
@@ -152,7 +148,9 @@ public class SegmentsExperimentPersistenceTest {
 
 		newSegmentsExperiment.setStatus(RandomTestUtil.nextInt());
 
-		_segmentsExperiments.add(_persistence.update(newSegmentsExperiment));
+		newSegmentsExperiment = _persistence.update(newSegmentsExperiment);
+
+		_segmentsExperiments.add(newSegmentsExperiment);
 
 		SegmentsExperiment existingSegmentsExperiment =
 			_persistence.findByPrimaryKey(
@@ -243,13 +241,6 @@ public class SegmentsExperimentPersistenceTest {
 	}
 
 	@Test
-	public void testCountByGroupId() throws Exception {
-		_persistence.countByGroupId(RandomTestUtil.nextLong());
-
-		_persistence.countByGroupId(0L);
-	}
-
-	@Test
 	public void testCountBySegmentsExperimentKey() throws Exception {
 		_persistence.countBySegmentsExperimentKey("");
 
@@ -298,12 +289,6 @@ public class SegmentsExperimentPersistenceTest {
 	public void testFindAll() throws Exception {
 		_persistence.findAll(
 			QueryUtil.ALL_POS, QueryUtil.ALL_POS, getOrderByComparator());
-	}
-
-	@Test
-	public void testFilterFindByGroupId() throws Exception {
-		_persistence.filterFindByGroupId(
-			0, QueryUtil.ALL_POS, QueryUtil.ALL_POS, getOrderByComparator());
 	}
 
 	protected OrderByComparator<SegmentsExperiment> getOrderByComparator() {
@@ -636,8 +621,6 @@ public class SegmentsExperimentPersistenceTest {
 
 		SegmentsExperiment segmentsExperiment = _persistence.create(pk);
 
-		segmentsExperiment.setMvccVersion(RandomTestUtil.nextLong());
-
 		segmentsExperiment.setCtCollectionId(RandomTestUtil.nextLong());
 
 		segmentsExperiment.setUuid(RandomTestUtil.randomString());
@@ -682,3 +665,4 @@ public class SegmentsExperimentPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-221619992

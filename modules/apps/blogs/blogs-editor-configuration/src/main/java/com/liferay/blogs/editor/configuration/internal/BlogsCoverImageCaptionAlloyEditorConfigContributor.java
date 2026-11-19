@@ -24,8 +24,8 @@ import org.osgi.service.component.annotations.Component;
 @Component(
 	property = {
 		"editor.config.key=coverImageCaptionEditor", "editor.name=alloyeditor",
-		"javax.portlet.name=" + BlogsPortletKeys.BLOGS,
-		"javax.portlet.name=" + BlogsPortletKeys.BLOGS_ADMIN
+		"jakarta.portlet.name=" + BlogsPortletKeys.BLOGS,
+		"jakarta.portlet.name=" + BlogsPortletKeys.BLOGS_ADMIN
 	},
 	service = EditorConfigContributor.class
 )
@@ -42,18 +42,6 @@ public class BlogsCoverImageCaptionAlloyEditorConfigContributor
 			"extraPlugins", "ae_placeholder,ae_selectionregion,ae_uicore"
 		).put(
 			"toolbars", _getToolbarsJSONObject()
-		);
-	}
-
-	private JSONObject _getToolbarsJSONObject() {
-		return JSONUtil.put("styles", _getToolbarsStylesJSONObject());
-	}
-
-	private JSONObject _getToolbarsStylesJSONObject() {
-		return JSONUtil.put(
-			"selections", _getToolbarStylesSelectionsJSONArray()
-		).put(
-			"tabIndex", 1
 		);
 	}
 
@@ -80,6 +68,18 @@ public class BlogsCoverImageCaptionAlloyEditorConfigContributor
 			"name", "text"
 		).put(
 			"test", "AlloyEditor.SelectionTest.text"
+		);
+	}
+
+	private JSONObject _getToolbarsJSONObject() {
+		return JSONUtil.put("styles", _getToolbarsStylesJSONObject());
+	}
+
+	private JSONObject _getToolbarsStylesJSONObject() {
+		return JSONUtil.put(
+			"selections", _getToolbarStylesSelectionsJSONArray()
+		).put(
+			"tabIndex", 1
 		);
 	}
 

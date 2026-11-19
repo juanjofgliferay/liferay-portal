@@ -14,8 +14,9 @@ import com.liferay.content.dashboard.item.ContentDashboardItemVersion;
 import com.liferay.content.dashboard.item.type.ContentDashboardItemSubtype;
 import com.liferay.content.dashboard.web.internal.constants.ContentDashboardPortletKeys;
 import com.liferay.content.dashboard.web.internal.item.ContentDashboardItemFactoryRegistry;
+import com.liferay.content.dashboard.web.internal.item.filter.ContentDashboardItemFilterProviderRegistry;
 import com.liferay.content.dashboard.web.internal.search.request.ContentDashboardSearchContextBuilder;
-import com.liferay.content.dashboard.web.internal.searcher.ContentDashboardSearchRequestBuilderFactory;
+import com.liferay.content.dashboard.web.internal.util.ContentDashboardSearchRequestBuilderUtil;
 import com.liferay.info.search.InfoSearchClassMapperRegistry;
 import com.liferay.petra.string.StringPool;
 import com.liferay.petra.string.StringUtil;
@@ -29,26 +30,30 @@ import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCResourceCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCResourceCommand;
 import com.liferay.portal.kernel.search.Document;
 import com.liferay.portal.kernel.search.Field;
+import com.liferay.portal.kernel.search.SearchContext;
 import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ContentTypes;
+import com.liferay.portal.kernel.util.FastDateFormatFactoryUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.search.configuration.DefaultSearchResultPermissionFilterConfiguration;
+import com.liferay.portal.search.legacy.searcher.SearchRequestBuilderFactory;
 import com.liferay.portal.search.searcher.SearchResponse;
 import com.liferay.portal.search.searcher.Searcher;
+
+import jakarta.portlet.ResourceRequest;
+import jakarta.portlet.ResourceResponse;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
-import java.time.Instant;
+import java.text.Format;
+
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 
 import java.util.Date;
@@ -57,9 +62,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Supplier;
-
-import javax.portlet.ResourceRequest;
-import javax.portlet.ResourceResponse;
 
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Cell;
@@ -78,7 +80,7 @@ import org.osgi.service.component.annotations.Reference;
 @Component(
 	configurationPid = "com.liferay.portal.search.configuration.DefaultSearchResultPermissionFilterConfiguration",
 	property = {
-		"javax.portlet.name=" + ContentDashboardPortletKeys.CONTENT_DASHBOARD_ADMIN,
+		"jakarta.portlet.name=" + ContentDashboardPortletKeys.CONTENT_DASHBOARD_ADMIN,
 		"mvc.command.name=/content_dashboard/get_content_dashboard_items_xls"
 	},
 	service = MVCResourceCommand.class
@@ -103,14 +105,13 @@ public class GetContentDashboardItemsXlsMVCResourceCommand
 		ThemeDisplay themeDisplay = (ThemeDisplay)resourceRequest.getAttribute(
 			WebKeys.THEME_DISPLAY);
 
-		Locale locale = themeDisplay.getLocale();
-
 		WorkbookBuilder workbookBuilder = new WorkbookBuilder(
-			locale, _language.get(locale, "content-dashboard-data"));
+			themeDisplay.getLocale(),
+			_language.get(themeDisplay.getLocale(), "content-dashboard-data"));
 
 		_addWorkbookHeaders(workbookBuilder);
 
-		_addWorkbookRows(locale, resourceRequest, workbookBuilder);
+		_addWorkbookRows(themeDisplay, resourceRequest, workbookBuilder);
 
 		LocalDate localDate = LocalDate.now();
 
@@ -123,8 +124,10 @@ public class GetContentDashboardItemsXlsMVCResourceCommand
 	}
 
 	private void _addWorkbookCell(
-		ContentDashboardItem<?> contentDashboardItem, Locale locale,
+		ContentDashboardItem<?> contentDashboardItem, ThemeDisplay themeDisplay,
 		WorkbookBuilder workbookBuilder) {
+
+		Locale locale = themeDisplay.getLocale();
 
 		workbookBuilder.cell(
 			String.valueOf(contentDashboardItem.getId())
@@ -154,6 +157,10 @@ public class GetContentDashboardItemsXlsMVCResourceCommand
 						contentDashboardItem.
 							getLatestContentDashboardItemVersions(locale);
 
+				if (ListUtil.isEmpty(latestContentDashboardItemVersions)) {
+					return StringPool.BLANK;
+				}
+
 				ContentDashboardItemVersion contentDashboardItemVersion =
 					latestContentDashboardItemVersions.get(0);
 
@@ -170,13 +177,13 @@ public class GetContentDashboardItemsXlsMVCResourceCommand
 				contentDashboardItem.getAssetTags(), AssetTag.NAME_ACCESSOR,
 				StringPool.COMMA_AND_SPACE)
 		).cell(
-			_toString(contentDashboardItem.getModifiedDate())
+			_toString(contentDashboardItem.getModifiedDate(), themeDisplay)
 		).cell(
 			() -> {
 				Date reviewDate = contentDashboardItem.getReviewDate();
 
 				if (reviewDate != null) {
-					return _toString(reviewDate);
+					return _toString(reviewDate, themeDisplay);
 				}
 
 				return StringPool.DASH;
@@ -185,20 +192,21 @@ public class GetContentDashboardItemsXlsMVCResourceCommand
 			contentDashboardItem.getDescription(locale)
 		);
 
-		List<ContentDashboardItem.SpecificInformation<?>>
-			specificInformationList =
-				contentDashboardItem.getSpecificInformationList(locale);
-
-		workbookBuilder.cell(_toString(specificInformationList, "extension"));
-
-		workbookBuilder.cell(_toString(specificInformationList, "file-name"));
+		List<ContentDashboardItem.SpecificInformation<?>> specificInformations =
+			contentDashboardItem.getSpecificInformationList(locale);
 
 		workbookBuilder.cell(
-			_toString(specificInformationList, "size")
+			_toString("extension", specificInformations, themeDisplay));
+
+		workbookBuilder.cell(
+			_toString("file-name", specificInformations, themeDisplay));
+
+		workbookBuilder.cell(
+			_toString("size", specificInformations, themeDisplay)
 		).cell(
-			_toString(specificInformationList, "display-date")
+			_toString("display-date", specificInformations, themeDisplay)
 		).cell(
-			_toString(contentDashboardItem.getCreateDate())
+			_toString(contentDashboardItem.getCreateDate(), themeDisplay)
 		);
 
 		workbookBuilder.cell(
@@ -248,7 +256,7 @@ public class GetContentDashboardItemsXlsMVCResourceCommand
 	}
 
 	private void _addWorkbookRows(
-		Locale locale, ResourceRequest resourceRequest,
+		ThemeDisplay themeDisplay, ResourceRequest resourceRequest,
 		WorkbookBuilder workbookBuilder) {
 
 		int searchQueryResultWindowLimit =
@@ -270,12 +278,14 @@ public class GetContentDashboardItemsXlsMVCResourceCommand
 				ContentDashboardItem<?> contentDashboardItem =
 					_toContentDashboardItem(document);
 
-				if (contentDashboardItem != null) {
-					workbookBuilder.row();
-
-					_addWorkbookCell(
-						contentDashboardItem, locale, workbookBuilder);
+				if (contentDashboardItem == null) {
+					continue;
 				}
+
+				workbookBuilder.row();
+
+				_addWorkbookCell(
+					contentDashboardItem, themeDisplay, workbookBuilder);
 			}
 
 			if (documents.size() < searchQueryResultWindowLimit) {
@@ -289,20 +299,25 @@ public class GetContentDashboardItemsXlsMVCResourceCommand
 	private SearchResponse _getSearchResponse(
 		int end, ResourceRequest resourceRequest, int start) {
 
+		SearchContext searchContext = new ContentDashboardSearchContextBuilder(
+			_portal.getHttpServletRequest(resourceRequest),
+			_assetCategoryLocalService, _assetVocabularyLocalService,
+			_contentDashboardItemFilterProviderRegistry
+		).withEnd(
+			end
+		).withSort(
+			new Sort(Field.CREATE_DATE, Sort.LONG_TYPE, false),
+			new Sort(Field.CLASS_NAME_ID, Sort.LONG_TYPE, false),
+			new Sort(Field.CLASS_PK, Sort.LONG_TYPE, false)
+		).withStart(
+			start
+		).build();
+
 		return _searcher.search(
-			_contentDashboardSearchRequestBuilderFactory.builder(
-				new ContentDashboardSearchContextBuilder(
-					_portal.getHttpServletRequest(resourceRequest),
-					_assetCategoryLocalService, _assetVocabularyLocalService
-				).withEnd(
-					end
-				).withSort(
-					new Sort(Field.CREATE_DATE, Sort.LONG_TYPE, false),
-					new Sort(Field.CLASS_NAME_ID, Sort.LONG_TYPE, false),
-					new Sort(Field.CLASS_PK, Sort.LONG_TYPE, false)
-				).withStart(
-					start
-				).build()
+			ContentDashboardSearchRequestBuilderUtil.builder(
+				_contentDashboardItemFactoryRegistry,
+				_infoSearchClassMapperRegistry, searchContext,
+				_searchRequestBuilderFactory
 			).build());
 	}
 
@@ -327,39 +342,36 @@ public class GetContentDashboardItemsXlsMVCResourceCommand
 		}
 	}
 
-	private String _toString(Date date) {
-		Instant instant = date.toInstant();
+	private String _toString(Date date, ThemeDisplay themeDisplay) {
+		Format format = FastDateFormatFactoryUtil.getDateTime(
+			themeDisplay.getLocale(), themeDisplay.getTimeZone());
 
-		ZonedDateTime zonedDateTime = instant.atZone(ZoneId.systemDefault());
-
-		LocalDateTime localDateTime = zonedDateTime.toLocalDateTime();
-
-		return localDateTime.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+		return format.format(date);
 	}
 
 	private String _toString(
-		List<ContentDashboardItem.SpecificInformation<?>>
-			specificInformationList,
-		String fieldName) {
+		String fieldName,
+		List<ContentDashboardItem.SpecificInformation<?>> specificInformations,
+		ThemeDisplay themeDisplay) {
 
-		if (specificInformationList == null) {
+		if (specificInformations == null) {
 			return StringPool.BLANK;
 		}
 
 		for (ContentDashboardItem.SpecificInformation<?> specificInformation :
-				specificInformationList) {
+				specificInformations) {
 
 			if (Objects.equals(specificInformation.getKey(), fieldName)) {
-				return _toString(specificInformation.getValue());
+				return _toString(themeDisplay, specificInformation.getValue());
 			}
 		}
 
 		return StringPool.BLANK;
 	}
 
-	private String _toString(Object value) {
+	private String _toString(ThemeDisplay themeDisplay, Object value) {
 		if (value instanceof Date) {
-			return _toString((Date)value);
+			return _toString((Date)value, themeDisplay);
 		}
 
 		if (value == null) {
@@ -383,8 +395,8 @@ public class GetContentDashboardItemsXlsMVCResourceCommand
 		_contentDashboardItemFactoryRegistry;
 
 	@Reference
-	private ContentDashboardSearchRequestBuilderFactory
-		_contentDashboardSearchRequestBuilderFactory;
+	private ContentDashboardItemFilterProviderRegistry
+		_contentDashboardItemFilterProviderRegistry;
 
 	private volatile DefaultSearchResultPermissionFilterConfiguration
 		_defaultSearchResultPermissionFilterConfiguration;
@@ -397,6 +409,9 @@ public class GetContentDashboardItemsXlsMVCResourceCommand
 
 	@Reference
 	private Portal _portal;
+
+	@Reference
+	private SearchRequestBuilderFactory _searchRequestBuilderFactory;
 
 	@Reference
 	private Searcher _searcher;

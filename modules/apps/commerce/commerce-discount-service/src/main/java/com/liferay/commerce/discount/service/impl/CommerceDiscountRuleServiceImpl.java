@@ -61,11 +61,26 @@ public class CommerceDiscountRuleServiceImpl
 	}
 
 	@Override
+	public CommerceDiscountRule addOrUpdateCommerceDiscountRule(
+			String externalReferenceCode, long commerceDiscountRuleId,
+			long commerceDiscountId, String name, String type,
+			String typeSettings, ServiceContext serviceContext)
+		throws PortalException {
+
+		_commerceDiscountResourcePermission.check(
+			getPermissionChecker(), commerceDiscountId, ActionKeys.UPDATE);
+
+		return commerceDiscountRuleLocalService.addOrUpdateCommerceDiscountRule(
+			externalReferenceCode, commerceDiscountRuleId, commerceDiscountId,
+			name, type, typeSettings, serviceContext);
+	}
+
+	@Override
 	public void deleteCommerceDiscountRule(long commerceDiscountRuleId)
 		throws PortalException {
 
 		CommerceDiscountRule commerceDiscountRule =
-			commerceDiscountRuleLocalService.getCommerceDiscountRule(
+			commerceDiscountRulePersistence.findByPrimaryKey(
 				commerceDiscountRuleId);
 
 		_commerceDiscountResourcePermission.check(
@@ -82,7 +97,7 @@ public class CommerceDiscountRuleServiceImpl
 		throws PortalException {
 
 		CommerceDiscountRule commerceDiscountRule =
-			commerceDiscountRuleLocalService.fetchCommerceDiscountRule(
+			commerceDiscountRulePersistence.fetchByPrimaryKey(
 				commerceDiscountRuleId);
 
 		if (commerceDiscountRule != null) {
@@ -101,7 +116,7 @@ public class CommerceDiscountRuleServiceImpl
 		throws PortalException {
 
 		CommerceDiscountRule commerceDiscountRule =
-			commerceDiscountRuleLocalService.getCommerceDiscountRule(
+			commerceDiscountRulePersistence.findByPrimaryKey(
 				commerceDiscountRuleId);
 
 		_commerceDiscountResourcePermission.check(
@@ -120,7 +135,7 @@ public class CommerceDiscountRuleServiceImpl
 		_commerceDiscountResourcePermission.check(
 			getPermissionChecker(), commerceDiscountId, ActionKeys.UPDATE);
 
-		return commerceDiscountRuleLocalService.getCommerceDiscountRules(
+		return commerceDiscountRulePersistence.findByCommerceDiscountId(
 			commerceDiscountId, start, end, orderByComparator);
 	}
 
@@ -140,7 +155,7 @@ public class CommerceDiscountRuleServiceImpl
 		_commerceDiscountResourcePermission.check(
 			getPermissionChecker(), commerceDiscountId, ActionKeys.UPDATE);
 
-		return commerceDiscountRuleLocalService.getCommerceDiscountRulesCount(
+		return commerceDiscountRulePersistence.countByCommerceDiscountId(
 			commerceDiscountId);
 	}
 
@@ -159,7 +174,7 @@ public class CommerceDiscountRuleServiceImpl
 		throws PortalException {
 
 		CommerceDiscountRule commerceDiscountRule =
-			commerceDiscountRuleLocalService.getCommerceDiscountRule(
+			commerceDiscountRulePersistence.findByPrimaryKey(
 				commerceDiscountRuleId);
 
 		_commerceDiscountResourcePermission.check(
@@ -177,7 +192,7 @@ public class CommerceDiscountRuleServiceImpl
 		throws PortalException {
 
 		CommerceDiscountRule commerceDiscountRule =
-			commerceDiscountRuleLocalService.getCommerceDiscountRule(
+			commerceDiscountRulePersistence.findByPrimaryKey(
 				commerceDiscountRuleId);
 
 		_commerceDiscountResourcePermission.check(

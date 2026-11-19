@@ -20,6 +20,7 @@ import com.liferay.portlet.documentlibrary.service.base.DLFileEntryMetadataLocal
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * @author Alexander Chow
@@ -57,6 +58,16 @@ public class DLFileEntryMetadataLocalServiceImpl
 		for (DLFileEntryMetadata fileEntryMetadata : fileEntryMetadatas) {
 			deleteFileEntryMetadata(fileEntryMetadata);
 		}
+	}
+
+	@Override
+	public void deleteFileEntryMetadataByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws PortalException {
+
+		deleteFileEntryMetadata(
+			dlFileEntryMetadataPersistence.findByERC_C(
+				externalReferenceCode, companyId));
 	}
 
 	@Override
@@ -132,7 +143,8 @@ public class DLFileEntryMetadataLocalServiceImpl
 
 	@Override
 	public void updateFileEntryMetadata(
-			long companyId, List<DDMStructure> ddmStructures, long fileEntryId,
+			String externalReferenceCode, long companyId,
+			List<DDMStructure> ddmStructures, long fileEntryId,
 			long fileVersionId, Map<String, DDMFormValues> ddmFormValuesMap,
 			ServiceContext serviceContext)
 		throws PortalException {
@@ -141,17 +153,20 @@ public class DLFileEntryMetadataLocalServiceImpl
 			DDMFormValues ddmFormValues = ddmFormValuesMap.get(
 				ddmStructure.getStructureKey());
 
-			if (ddmFormValues != null) {
-				updateFileEntryMetadata(
-					companyId, ddmStructure, fileEntryId, fileVersionId,
-					ddmFormValues, serviceContext);
+			if (ddmFormValues == null) {
+				continue;
 			}
+
+			updateFileEntryMetadata(
+				externalReferenceCode, companyId, ddmStructure, fileEntryId,
+				fileVersionId, ddmFormValues, serviceContext);
 		}
 	}
 
 	@Override
 	public void updateFileEntryMetadata(
-			long fileEntryTypeId, long fileEntryId, long fileVersionId,
+			String externalReferenceCode, long fileEntryTypeId,
+			long fileEntryId, long fileVersionId,
 			Map<String, DDMFormValues> ddmFormValuesMap,
 			ServiceContext serviceContext)
 		throws PortalException {
@@ -160,14 +175,15 @@ public class DLFileEntryMetadataLocalServiceImpl
 			_dlFileEntryTypeLocalService.getFileEntryType(fileEntryTypeId);
 
 		updateFileEntryMetadata(
-			fileEntryType.getCompanyId(), fileEntryType.getDDMStructures(),
-			fileEntryId, fileVersionId, ddmFormValuesMap, serviceContext);
+			externalReferenceCode, fileEntryType.getCompanyId(),
+			fileEntryType.getDDMStructures(), fileEntryId, fileVersionId,
+			ddmFormValuesMap, serviceContext);
 	}
 
 	protected void updateFileEntryMetadata(
-			long companyId, DDMStructure ddmStructure, long fileEntryId,
-			long fileVersionId, DDMFormValues ddmFormValues,
-			ServiceContext serviceContext)
+			String externalReferenceCode, long companyId,
+			DDMStructure ddmStructure, long fileEntryId, long fileVersionId,
+			DDMFormValues ddmFormValues, ServiceContext serviceContext)
 		throws PortalException {
 
 		DLFileEntryMetadata fileEntryMetadata =
@@ -175,19 +191,28 @@ public class DLFileEntryMetadataLocalServiceImpl
 				ddmStructure.getStructureId(), fileVersionId);
 
 		if (fileEntryMetadata != null) {
+			if (!Objects.equals(
+					fileEntryMetadata.getExternalReferenceCode(),
+					externalReferenceCode)) {
+
+				fileEntryMetadata.setExternalReferenceCode(
+					externalReferenceCode);
+
+				fileEntryMetadata = dlFileEntryMetadataPersistence.update(
+					fileEntryMetadata);
+			}
+
 			StorageEngineManagerUtil.update(
 				fileEntryMetadata.getDDMStorageId(), ddmFormValues,
 				serviceContext);
 		}
 		else {
-
-			// File entry metadata
-
 			long fileEntryMetadataId = counterLocalService.increment();
 
 			fileEntryMetadata = dlFileEntryMetadataPersistence.create(
 				fileEntryMetadataId);
 
+			fileEntryMetadata.setExternalReferenceCode(externalReferenceCode);
 			fileEntryMetadata.setDDMStorageId(
 				StorageEngineManagerUtil.create(
 					companyId, ddmStructure.getStructureId(), ddmFormValues,
@@ -198,8 +223,6 @@ public class DLFileEntryMetadataLocalServiceImpl
 
 			fileEntryMetadata = dlFileEntryMetadataPersistence.update(
 				fileEntryMetadata);
-
-			// Dynamic data mapping structure link
 
 			DDMStructureLinkManagerUtil.addStructureLink(
 				_classNameLocalService.getClassNameId(

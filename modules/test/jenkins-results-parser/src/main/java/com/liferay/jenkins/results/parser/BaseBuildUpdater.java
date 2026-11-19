@@ -5,8 +5,16 @@
 
 package com.liferay.jenkins.results.parser;
 
+import java.io.IOException;
+
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import org.json.JSONObject;
 
 /**
  * @author Michael Hashimoto
@@ -63,47 +71,65 @@ public abstract class BaseBuildUpdater implements BuildUpdater {
 	}
 
 	protected void runMissing() {
-		if (isBuildQueued()) {
-			_build.setStatus("queued");
+		if (isBuildRunning()) {
+			_missingTickCount = 0;
 
-			runQueued();
+			_build.setStatus("running");
 
 			return;
 		}
 
-		if (isBuildRunning()) {
-			_build.setStatus("running");
+		if (isBuildQueued()) {
+			_missingTickCount = 0;
 
-			runRunning();
+			_build.setStatus("queued");
 
 			return;
 		}
 
 		if (isBuildCompleted()) {
+			_missingTickCount = 0;
+
 			_build.setStatus("completed");
 
 			return;
 		}
 
-		if (!_build.hasMaximumInvocationCount()) {
-			_build.setStatus("starting");
+		_missingTickCount++;
 
-			_build.reset();
+		if (_missingTickCount < _getMissingReinvokeTickCount()) {
+			return;
+		}
 
-			runStarting();
+		if (_missingReinvocationCount < _getMissingMaximumReinvocationCount()) {
+			_missingTickCount = 0;
+
+			if (!_reattachMatchingBuild()) {
+				_missingReinvocationCount++;
+
+				_build.reset();
+
+				reinvoke();
+			}
+
+			_build.setStatus("queued");
 
 			return;
 		}
 
-		runReporting();
+		_missingTickCount = 0;
+
+		_build.setStatus("reporting");
 	}
 
 	protected void runQueued() {
 		if (isBuildRunning()) {
 			_build.setStatus("running");
 
-			runRunning();
+			return;
+		}
 
+		if (isBuildQueued()) {
 			return;
 		}
 
@@ -113,9 +139,7 @@ public abstract class BaseBuildUpdater implements BuildUpdater {
 			return;
 		}
 
-		if (!isBuildQueued()) {
-			_build.setStatus("missing");
-		}
+		_build.setStatus("missing");
 	}
 
 	protected void runReporting() {
@@ -127,9 +151,28 @@ public abstract class BaseBuildUpdater implements BuildUpdater {
 
 				return;
 			}
+
+			if (_build instanceof AppServerBundleDownstreamBuild) {
+				AppServerBundleDownstreamBuild appServerBundleDownstreamBuild =
+					(AppServerBundleDownstreamBuild)_build;
+
+				try {
+					appServerBundleDownstreamBuild.
+						createBuildFailureObjectRef();
+				}
+				catch (IOException ioException) {
+					throw new RuntimeException(ioException);
+				}
+			}
 		}
 
-		runCompleted();
+		_build.setStatus("completed");
+
+		if (_build instanceof DownstreamBuild) {
+			DownstreamBuild downstreamBuild = (DownstreamBuild)_build;
+
+			downstreamBuild.generateBuildReport();
+		}
 	}
 
 	protected void runRunning() {
@@ -140,8 +183,6 @@ public abstract class BaseBuildUpdater implements BuildUpdater {
 		}
 
 		_build.setStatus("reporting");
-
-		runReporting();
 	}
 
 	protected void runStarting() {
@@ -157,15 +198,63 @@ public abstract class BaseBuildUpdater implements BuildUpdater {
 		_build.setStatus("queued");
 	}
 
+	private int _getMissingMaximumReinvocationCount() {
+		try {
+			String missingMaxReinvocationCount =
+				JenkinsResultsParserUtil.getBuildProperty(
+					"build.missing.max.reinvocation.count");
+
+			if (JenkinsResultsParserUtil.isInteger(
+					missingMaxReinvocationCount)) {
+
+				return Integer.parseInt(missingMaxReinvocationCount);
+			}
+		}
+		catch (IOException ioException) {
+		}
+
+		return _MISSING_MAXIMUM_REINVOCATION_COUNT_DEFAULT;
+	}
+
+	private int _getMissingReinvokeTickCount() {
+		try {
+			String missingReinvokeTickCount =
+				JenkinsResultsParserUtil.getBuildProperty(
+					"build.missing.reinvoke.tick.count");
+
+			if (JenkinsResultsParserUtil.isInteger(missingReinvokeTickCount)) {
+				return Integer.parseInt(missingReinvokeTickCount);
+			}
+		}
+		catch (IOException ioException) {
+		}
+
+		return _MISSING_REINVOKE_TICK_COUNT_DEFAULT;
+	}
+
+	private boolean _hasMaximumInvocationCount() {
+		Build build = getBuild();
+
+		if ((isBuildCompleted() && !isBuildFailing()) || !isBuildCompleted() ||
+			build.isFromArchive()) {
+
+			return false;
+		}
+
+		_setCurrentReinvokeRule();
+
+		return build.hasMaximumInvocationCount();
+	}
+
 	private boolean _isApplyReinvokeRules() {
 		Build build = getBuild();
 
-		if (build instanceof AxisBuild || build instanceof ParentBuild) {
+		if (build instanceof ParentBuild) {
 			return false;
 		}
 
 		if ((isBuildCompleted() && !isBuildFailing()) || !isBuildCompleted() ||
-			build.isFromArchive() || build.hasMaximumInvocationCount()) {
+			build.isFromArchive() || _hasMaximumInvocationCount()) {
 
 			return false;
 		}
@@ -185,10 +274,6 @@ public abstract class BaseBuildUpdater implements BuildUpdater {
 
 	private boolean _isApplySlaveOfflineRules() {
 		Build build = getBuild();
-
-		if (build instanceof BatchBuild) {
-			return false;
-		}
 
 		if ((isBuildCompleted() && !isBuildFailing()) || !isBuildCompleted() ||
 			build.isFromArchive()) {
@@ -224,12 +309,65 @@ public abstract class BaseBuildUpdater implements BuildUpdater {
 		return false;
 	}
 
+	private boolean _reattachMatchingBuild() {
+		Build build = getBuild();
+
+		Build.Invocation currentInvocation = build.getCurrentInvocation();
+
+		if (currentInvocation == null) {
+			return false;
+		}
+
+		JenkinsMaster jenkinsMaster = currentInvocation.getJenkinsMaster();
+
+		if (jenkinsMaster == null) {
+			return false;
+		}
+
+		Map<String, String> parameters = build.getParameters();
+
+		if (parameters.isEmpty()) {
+			return false;
+		}
+
+		String jobName = build.getJobName();
+
+		JSONObject buildJSONObject = jenkinsMaster.getInProgressBuildJSONObject(
+			jobName, parameters);
+
+		if (buildJSONObject != null) {
+			currentInvocation.setQueueId(buildJSONObject.getLong("queueId"));
+
+			System.out.println(
+				JenkinsResultsParserUtil.combine(
+					"[", build.getBuildName(),
+					"] Reattached to the running build ",
+					buildJSONObject.getString("url")));
+
+			return true;
+		}
+
+		JSONObject queueItemJSONObject = jenkinsMaster.getQueuedBuildJSONObject(
+			jobName, parameters);
+
+		if (queueItemJSONObject != null) {
+			currentInvocation.setQueueId(queueItemJSONObject.getLong("id"));
+
+			System.out.println(
+				JenkinsResultsParserUtil.combine(
+					"[", build.getBuildName(),
+					"] Reattached to the queued build"));
+
+			return true;
+		}
+
+		return false;
+	}
+
 	private void _reinvoke(ReinvokeRule reinvokeRule) {
 		Build build = getBuild();
 
-		if (build instanceof AxisBuild || build instanceof ParentBuild ||
-			build.hasMaximumInvocationCount()) {
-
+		if ((build instanceof ParentBuild) || _hasMaximumInvocationCount()) {
 			return;
 		}
 
@@ -270,13 +408,102 @@ public abstract class BaseBuildUpdater implements BuildUpdater {
 			if ((notificationRecipients != null) &&
 				!notificationRecipients.isEmpty()) {
 
-				NotificationUtil.sendEmail(
-					message, "jenkins", "Build Reinvoked",
-					reinvokeRule.notificationRecipients);
+				List<String> invalidNotificationRecipients = new ArrayList<>();
+
+				for (String notificationRecipient :
+						notificationRecipients.split(",")) {
+
+					notificationRecipient = notificationRecipient.trim();
+
+					Matcher matcher = _notificationRecipentsPattern.matcher(
+						notificationRecipient);
+
+					if (matcher.find()) {
+						String slack = matcher.group("slack");
+
+						if (!JenkinsResultsParserUtil.isNullOrEmpty(slack)) {
+							NotificationUtil.sendSlackNotification(
+								message, slack, "Build Reinvoked");
+
+							continue;
+						}
+
+						String email = matcher.group("slack");
+
+						if (!JenkinsResultsParserUtil.isNullOrEmpty(email)) {
+							NotificationUtil.sendEmail(
+								message, "jenkins", "Build Reinvoked", email);
+						}
+					}
+					else {
+						invalidNotificationRecipients.add(
+							notificationRecipient);
+					}
+				}
+
+				if (!invalidNotificationRecipients.isEmpty()) {
+					String invalidNotificationRecipientsString =
+						JenkinsResultsParserUtil.join(
+							",", invalidNotificationRecipients);
+
+					System.out.println(
+						"WARNING: Invalid notification recipients found: " +
+							invalidNotificationRecipientsString);
+				}
+			}
+
+			String reinvokeBuildPriority =
+				reinvokeRule.getReinvokeBuildPriority();
+
+			if ((reinvokeBuildPriority != null) &&
+				!reinvokeBuildPriority.isEmpty()) {
+
+				Map<String, String> reinvokeBuildParameters = new HashMap<>();
+
+				reinvokeBuildParameters.put(
+					"BUILD_PRIORITY", reinvokeBuildPriority);
+
+				reinvoke(reinvokeBuildParameters);
+
+				return;
 			}
 		}
 
 		reinvoke();
+	}
+
+	private void _setCurrentReinvokeRule() {
+		Build build = getBuild();
+
+		if (build instanceof ParentBuild) {
+			return;
+		}
+
+		if ((isBuildCompleted() && !isBuildFailing()) || !isBuildCompleted() ||
+			build.isFromArchive()) {
+
+			return;
+		}
+
+		Build.Invocation currentInvocation = build.getCurrentInvocation();
+
+		if (_reinvokeRulesMap.containsKey(currentInvocation)) {
+			return;
+		}
+
+		for (ReinvokeRule reinvokeRule : ReinvokeRule.getReinvokeRules()) {
+			if (!reinvokeRule.matches(build)) {
+				continue;
+			}
+
+			_reinvokeRulesMap.put(currentInvocation, reinvokeRule);
+
+			currentInvocation.setReinvokeRule(reinvokeRule);
+
+			break;
+		}
+
+		_reinvokeRulesMap.put(currentInvocation, null);
 	}
 
 	private void _takeSlaveOffline(SlaveOfflineRule slaveOfflineRule) {
@@ -286,50 +513,21 @@ public abstract class BaseBuildUpdater implements BuildUpdater {
 			return;
 		}
 
-		String pinnedMessage = "";
-
-		if (!slaveOfflineRule.shutdown) {
-			pinnedMessage = "PINNED\n";
-		}
-
-		JenkinsSlave jenkinsSlave = build.getJenkinsSlave();
-
-		JenkinsMaster jenkinsMaster = jenkinsSlave.getJenkinsMaster();
-
-		String slaveOfflineRuleString = slaveOfflineRule.toString();
-
-		slaveOfflineRuleString = slaveOfflineRuleString.replace("\\", "\\\\");
-
-		String message = JenkinsResultsParserUtil.combine(
-			pinnedMessage, slaveOfflineRule.getName(), " failure detected at ",
-			build.getBuildURL(), ". ", jenkinsSlave.getName(),
-			" will be taken offline.\n\n", slaveOfflineRuleString,
-			"\n\n\nOffline Slave URL: https://", jenkinsMaster.getName(),
-			".liferay.com/computer/", jenkinsSlave.getName(), "\n");
-
-		System.out.println(message);
-
-		TopLevelBuild topLevelBuild = build.getTopLevelBuild();
-
-		if (topLevelBuild != null) {
-			message = JenkinsResultsParserUtil.combine(
-				message, "Top Level Build URL: ", topLevelBuild.getBuildURL());
-		}
-
-		jenkinsSlave.takeSlavesOffline(message);
-
-		String notificationRecipients =
-			slaveOfflineRule.getNotificationRecipients();
-
-		if ((notificationRecipients != null) &&
-			!notificationRecipients.isEmpty()) {
-
-			NotificationUtil.sendEmail(
-				message, "jenkins", "Slave Offline",
-				slaveOfflineRule.notificationRecipients);
-		}
+		slaveOfflineRule.takeSlaveOffline(build);
 	}
 
+	private static final int _MISSING_MAXIMUM_REINVOCATION_COUNT_DEFAULT = 2;
+
+	private static final int _MISSING_REINVOKE_TICK_COUNT_DEFAULT = 3;
+
+	private static final Pattern _notificationRecipentsPattern =
+		Pattern.compile(
+			"slack:(?:<@)?(?<slack>[\\w-]+)>?|(?<email>[\\w-]+@[\\w.-]+)");
+
 	private final Build _build;
+	private int _missingReinvocationCount;
+	private int _missingTickCount;
+	private final Map<Build.Invocation, ReinvokeRule> _reinvokeRulesMap =
+		new HashMap<>();
 
 }

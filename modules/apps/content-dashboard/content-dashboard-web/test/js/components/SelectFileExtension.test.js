@@ -6,7 +6,7 @@
 import {render} from '@testing-library/react';
 import React from 'react';
 
-import '@testing-library/jest-dom/extend-expect';
+import '@testing-library/jest-dom';
 
 import SelectFileExtension from '../../../src/main/resources/META-INF/resources/js/components/SelectFileExtension';
 
@@ -72,6 +72,7 @@ jest.mock('frontend-js-web', () => ({
 	getOpener: jest.fn(() => ({
 		Liferay: {
 			fire: jest.fn(),
+			on: jest.fn(() => ({detach: jest.fn()})),
 		},
 	})),
 }));

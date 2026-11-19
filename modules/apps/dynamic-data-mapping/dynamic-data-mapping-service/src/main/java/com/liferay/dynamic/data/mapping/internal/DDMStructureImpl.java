@@ -12,13 +12,13 @@ import com.liferay.dynamic.data.mapping.kernel.DDMTemplate;
 import com.liferay.dynamic.data.mapping.util.DDMBeanTranslatorUtil;
 import com.liferay.expando.kernel.model.ExpandoBridge;
 import com.liferay.exportimport.kernel.lar.StagedModelType;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.kernel.exception.LocaleException;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 
 import java.io.Serializable;
 
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -91,15 +91,9 @@ public class DDMStructureImpl implements DDMStructure {
 
 	@Override
 	public List<DDMFormField> getDDMFormFields(boolean includeTransientFields) {
-		List<DDMFormField> ddmFormFields = new ArrayList<>();
-
-		for (com.liferay.dynamic.data.mapping.model.DDMFormField ddmFormField :
-				_ddmStructure.getDDMFormFields(includeTransientFields)) {
-
-			ddmFormFields.add(DDMBeanTranslatorUtil.translate(ddmFormField));
-		}
-
-		return ddmFormFields;
+		return TransformUtil.transform(
+			_ddmStructure.getDDMFormFields(includeTransientFields),
+			ddmFormField -> DDMBeanTranslatorUtil.translate(ddmFormField));
 	}
 
 	@Override
@@ -330,18 +324,9 @@ public class DDMStructureImpl implements DDMStructure {
 
 	@Override
 	public List<DDMTemplate> getTemplates() throws PortalException {
-		List<com.liferay.dynamic.data.mapping.model.DDMTemplate> ddmTemplates =
-			_ddmStructure.getTemplates();
-
-		List<DDMTemplate> templates = new ArrayList<>();
-
-		for (com.liferay.dynamic.data.mapping.model.DDMTemplate ddmTemplate :
-				ddmTemplates) {
-
-			templates.add(new DDMTemplateImpl(ddmTemplate));
-		}
-
-		return templates;
+		return TransformUtil.transform(
+			_ddmStructure.getTemplates(),
+			ddmTemplate -> new DDMTemplateImpl(ddmTemplate));
 	}
 
 	@Override

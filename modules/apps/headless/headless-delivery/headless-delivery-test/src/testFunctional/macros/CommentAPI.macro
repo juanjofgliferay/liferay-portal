@@ -1,52 +1,9 @@
 definition {
 
 	@summary = "Default summary"
-	macro _createNCommentsInBlogPosting(numberOfCommentsToCreate = null, createStrategy = null, blogPostingId = null) {
-		Variables.assertDefined(parameterList = "${blogPostingId},${numberOfCommentsToCreate},${createStrategy}");
-
-		var size = ${numberOfCommentsToCreate} + 1;
-		var i = 1;
-		var body = '''
-			[
-		''';
-
-		while ((${i} != ${size}) && (maxIterations = "100")) {
-			var commentBody = '''
-				{
-					"text": "commentText${i}"
-				}
-			''';
-			var j = ${i} + 1;
-
-			if (${j} == ${size}) {
-				var body = StringUtil.replace(${body}, ${body}, "${body}${commentBody}]");
-			}
-			else {
-				var commentBody = StringUtil.replace(${commentBody}, ${commentBody}, "${commentBody},");
-
-				var body = StringUtil.replace(${body}, ${body}, "${body}${commentBody}");
-			}
-
-			var i = ${i} + 1;
-		}
-
-		var portalURL = JSONCompany.getPortalURL();
-
-		var curl = '''
-			${portalURL}/o/headless-delivery/v1.0/blog-postings/${blogPostingId}/comments/batch?createStrategy=${createStrategy} \
-				-u test@liferay.com:test \
-				-H Content-Type: application/json \
-				-d ${body}
-		''';
-
-		var curl = JSONCurlUtil.post(${curl});
-
-		return ${curl};
-	}
-
-	@summary = "Default summary"
 	macro _curlBlogPostingComments(blogPostingId = null, commentId = null) {
 		var portalURL = JSONCompany.getPortalURL();
+		var userPassword = PropsUtil.get("default.admin.password");
 
 		if (isSet(commentId)) {
 			var api = "comments/${commentId}/comments";
@@ -57,7 +14,7 @@ definition {
 
 		var curl = '''
 			${portalURL}/o/headless-delivery/v1.0/${api} \
-				-u test@liferay.com:test \
+				-u test@liferay.com:${userPassword} \
 				-H Content-Type: application/json
 		''';
 
@@ -72,6 +29,7 @@ definition {
 		var siteId = JSONGroupAPI._getGroupIdByNameNoSelenium(
 			groupName = "Guest",
 			site = "true");
+		var userPassword = PropsUtil.get("default.admin.password");
 
 		if (isSet(blogPostingChildCommentErc)) {
 			var api = "comments/by-external-reference-code/${blogPostingCommentErc}/comments/by-external-reference-code/${blogPostingChildCommentErc}";
@@ -82,7 +40,7 @@ definition {
 
 		var curl = '''
 			${portalURL}/o/headless-delivery/v1.0/sites/${siteId}/${api} \
-				-u test@liferay.com:test \
+				-u test@liferay.com:${userPassword} \
 				-H accept: application/json
 		''';
 
@@ -144,21 +102,20 @@ definition {
 			var responseToParse = JSONCurlUtil.get(${curl});
 		}
 
-		var fieldValue = JSONUtil.getWithJSONPath(${responseToParse}, "$..${fieldName}");
+		var jsonPath = "$..${fieldName}";
+
+		// Every comment and blog posting embeds a creator whose external
+		// reference code defaults to a UUID, so the recursive path returns
+		// it alongside the entity's own code. Read the code from the page
+		// items instead. See LPD-107646.
+
+		if (${fieldName} == "externalReferenceCode") {
+			var jsonPath = "$.items[*].externalReferenceCode";
+		}
+
+		var fieldValue = JSONUtil.getWithJSONPath(${responseToParse}, ${jsonPath});
 
 		return ${fieldValue};
-	}
-
-	@summary = "Default summary"
-	macro getIdOfCreateNCommentsInBlogPostingBatchEngineImportTask(numberOfCommentsToCreate = null, createStrategy = null, blogPostingId = null) {
-		var response = CommentAPI._createNCommentsInBlogPosting(
-			blogPostingId = ${blogPostingId},
-			createStrategy = ${createStrategy},
-			numberOfCommentsToCreate = ${numberOfCommentsToCreate});
-
-		var importTaskId = JSONPathUtil.getIdValue(response = ${response});
-
-		return ${importTaskId};
 	}
 
 }

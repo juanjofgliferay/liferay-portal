@@ -1,0 +1,70 @@
+query getWorkspaceGroupChannelPagesPage(
+	$accountId: String
+	$channelId: String
+	$dataSourceId: String
+	$individualId: String
+	$keywords: String
+	$rangeEnd: String
+	$rangeKey: Int
+	$rangeStart: String
+	$segmentId: String
+	$size: Int!
+	$sort: Sort!
+	$start: Int!
+) {
+	pageMetricBag: pages(
+		accountId: $accountId
+		channelId: $channelId
+		dataSourceId: $dataSourceId
+		individualId: $individualId
+		keywords: $keywords
+		rangeEnd: $rangeEnd
+		rangeKey: $rangeKey
+		rangeStart: $rangeStart
+		segmentId: $segmentId
+		size: $size
+		sort: $sort
+		start: $start
+	) {
+		pageMetrics: assetMetrics {
+			... on PageMetric {
+				assetId
+				assetTitle
+				assetType
+				avgTimeOnPageMetric {
+					value
+				}
+				bounceRateMetric {
+					value
+				}
+				dataSourceId
+				directAccessMetric {
+					value
+				}
+				entrancesMetric {
+					value
+				}
+				exitRateMetric {
+					value
+				}
+				indirectAccessMetric {
+					value
+				}
+				urls
+				viewsMetric {
+					trend {
+						percentage
+					}
+					value
+				}
+				visitorsMetric {
+					trend {
+						percentage
+					}
+					value
+				}
+			}
+		}
+		total
+	}
+}

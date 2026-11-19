@@ -23,35 +23,36 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.upload.UploadPortletRequest;
 import com.liferay.portal.kernel.upload.UploadServletRequest;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.PortletConfig;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.PortletMode;
+import jakarta.portlet.PortletPreferences;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.PreferencesValidator;
+import jakarta.portlet.WindowState;
+
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
+
 import java.io.IOException;
 
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.Properties;
 import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.TimeZone;
-import java.util.TreeMap;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.PortletConfig;
-import javax.portlet.PortletException;
-import javax.portlet.PortletMode;
-import javax.portlet.PortletPreferences;
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
-import javax.portlet.PortletURL;
-import javax.portlet.PreferencesValidator;
-import javax.portlet.WindowState;
-
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
 
 import org.osgi.annotation.versioning.ProviderType;
 
@@ -228,6 +229,8 @@ public interface Portal {
 	 */
 	public String escapeRedirect(String url);
 
+	public String fetchClassName(long classNameId);
+
 	/**
 	 * Generates a random key to identify the request based on the input string.
 	 *
@@ -286,6 +289,36 @@ public interface Portal {
 		throws PortalException;
 
 	public long[] getAncestorSiteGroupIds(long groupId);
+
+	/**
+	 * Returns the secure (HTTPS) or insecure (HTTP) content distribution
+	 * network (CDN) host address for this portal.
+	 *
+	 * @param  secure whether to get the secure or insecure CDN host address
+	 * @return the CDN host address
+	 */
+	public String getCDNHost(boolean secure);
+
+	public String getCDNHost(HttpServletRequest httpServletRequest)
+		throws PortalException;
+
+	/**
+	 * Returns the insecure (HTTP) content distribution network (CDN) host
+	 * address
+	 *
+	 * @param  companyId the company ID of a site
+	 * @return the CDN host address
+	 */
+	public String getCDNHostHttp(long companyId);
+
+	/**
+	 * Returns the secure (HTTPS) content distribution network (CDN) host
+	 * address
+	 *
+	 * @param  companyId the company ID of a site
+	 * @return the CDN host address
+	 */
+	public String getCDNHostHttps(long companyId);
 
 	/**
 	 * Returns the canonical URL of the page, to distinguish it among its
@@ -350,35 +383,15 @@ public interface Portal {
 			boolean forceLayoutFriendlyURL, boolean includeQueryString)
 		throws PortalException;
 
-	/**
-	 * Returns the secure (HTTPS) or insecure (HTTP) content distribution
-	 * network (CDN) host address for this portal.
-	 *
-	 * @param  secure whether to get the secure or insecure CDN host address
-	 * @return the CDN host address
-	 */
-	public String getCDNHost(boolean secure);
-
-	public String getCDNHost(HttpServletRequest httpServletRequest)
+	public String getChangeLanguageURL(
+			String currentURL, HttpServletRequest httpServletRequest,
+			Locale locale, ThemeDisplay themeDisplay)
 		throws PortalException;
 
-	/**
-	 * Returns the insecure (HTTP) content distribution network (CDN) host
-	 * address
-	 *
-	 * @param  companyId the company ID of a site
-	 * @return the CDN host address
-	 */
-	public String getCDNHostHttp(long companyId);
-
-	/**
-	 * Returns the secure (HTTPS) content distribution network (CDN) host
-	 * address
-	 *
-	 * @param  companyId the company ID of a site
-	 * @return the CDN host address
-	 */
-	public String getCDNHostHttps(long companyId);
+	public Map<Locale, String> getChangeLanguageURLs(
+			String currentURL, HttpServletRequest httpServletRequest,
+			Collection<Locale> locales, ThemeDisplay themeDisplay)
+		throws PortalException;
 
 	/**
 	 * Returns the fully qualified name of the class from its ID.
@@ -405,6 +418,11 @@ public interface Portal {
 	public long getClassNameId(String value);
 
 	public Company getCompany(HttpServletRequest httpServletRequest)
+		throws PortalException;
+
+	public Company getCompany(
+			HttpServletRequest httpServletRequest,
+			boolean fallbackToDefaultCompany)
 		throws PortalException;
 
 	public Company getCompany(PortletRequest portletRequest)
@@ -569,6 +587,9 @@ public interface Portal {
 
 	public long getDefaultCompanyId();
 
+	public String getDefaultVirtualHostname(
+		boolean companyFallback, LayoutSet layoutSet);
+
 	public String getEmailFromAddress(
 		PortletPreferences portletPreferences, long companyId,
 		String defaultValue);
@@ -616,9 +637,10 @@ public interface Portal {
 
 	public String getJsSafePortletId(String portletId);
 
-	public String getLayoutActualURL(Layout layout);
+	public String getLayoutActualURL(Layout layout) throws PortalException;
 
-	public String getLayoutActualURL(Layout layout, String mainPath);
+	public String getLayoutActualURL(Layout layout, String mainPath)
+		throws PortalException;
 
 	public String getLayoutActualURL(
 			long groupId, boolean privateLayout, String mainPath,
@@ -704,12 +726,6 @@ public interface Portal {
 		HttpServletResponse httpServletResponse, boolean initialize);
 
 	public Locale getLocale(PortletRequest portletRequest);
-
-	public String getLocalizedFriendlyURL(
-		HttpServletRequest httpServletRequest, Layout layout, Locale locale,
-		Locale originalLocale);
-
-	public String getMailId(String mx, String popPortletPrefix, Object... ids);
 
 	public String getNetvibesURL(Portlet portlet, ThemeDisplay themeDisplay)
 		throws PortalException;
@@ -932,6 +948,10 @@ public interface Portal {
 
 	public String[] getSystemSiteRoles();
 
+	public String getURLWithSessionId(String url, String sessionId);
+
+	public String getUniqueElementId();
+
 	public String getUniqueElementId(
 		HttpServletRequest httpServletRequest, String namespace, String id);
 
@@ -949,8 +969,6 @@ public interface Portal {
 		String location);
 
 	public Date getUptime();
-
-	public String getURLWithSessionId(String url, String sessionId);
 
 	public User getUser(HttpServletRequest httpServletRequest)
 		throws PortalException;
@@ -989,12 +1007,11 @@ public interface Portal {
 	public long getValidUserId(long companyId, long userId)
 		throws PortalException;
 
-	public TreeMap<String, String> getVirtualHostnames(LayoutSet layoutSet);
+	public NavigableMap<String, String> getVirtualHostnames(
+		LayoutSet layoutSet);
 
 	public String getWidgetURL(Portlet portlet, ThemeDisplay themeDisplay)
 		throws PortalException;
-
-	public void initCustomSQL();
 
 	public User initUser(HttpServletRequest httpServletRequest)
 		throws Exception;
@@ -1034,11 +1051,11 @@ public interface Portal {
 
 	public boolean isOmniadmin(User user);
 
+	public boolean isRSSFeedsEnabled();
+
 	public boolean isReservedParameter(String name);
 
 	public boolean isRightToLeft(HttpServletRequest httpServletRequest);
-
-	public boolean isRSSFeedsEnabled();
 
 	public boolean isSecure(HttpServletRequest httpServletRequest);
 

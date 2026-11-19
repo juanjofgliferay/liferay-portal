@@ -5,13 +5,14 @@
 
 package com.liferay.portal.osgi.web.wab.extender.internal;
 
+import com.liferay.portal.kernel.feature.flag.FeatureFlagListener;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
 import com.liferay.portal.kernel.util.PropertiesUtil;
 import com.liferay.portal.kernel.util.SetUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.osgi.web.servlet.JSPServletFactory;
-import com.liferay.portal.osgi.web.servlet.JSPTaglibHelper;
 import com.liferay.portal.profile.PortalProfile;
 
 import java.io.IOException;
@@ -38,12 +39,10 @@ public class WebBundleDeployer {
 
 	public WebBundleDeployer(
 		BundleContext bundleContext, JSPServletFactory jspServletFactory,
-		JSPTaglibHelper jspTaglibHelper,
 		Dictionary<String, Object> properties) {
 
 		_bundleContext = bundleContext;
 		_jspServletFactory = jspServletFactory;
-		_jspTaglibHelper = jspTaglibHelper;
 		_properties = properties;
 	}
 
@@ -53,7 +52,7 @@ public class WebBundleDeployer {
 		}
 	}
 
-	public ServiceRegistration<PortalProfile> doStart(Bundle bundle) {
+	public ServiceRegistration<?> doStart(Bundle bundle) {
 		Enumeration<URL> enumeration = bundle.findEntries(
 			"/WEB-INF", "liferay-plugin-package.properties", false);
 
@@ -66,6 +65,20 @@ public class WebBundleDeployer {
 		try {
 			Properties properties = PropertiesUtil.load(
 				enumeration.nextElement());
+
+			Set<String> featureFlagKeys = SetUtil.fromArray(
+				StringUtil.split(
+					properties.getProperty("liferay-feature-flag-keys")));
+
+			if (!featureFlagKeys.isEmpty()) {
+				return _bundleContext.registerService(
+					FeatureFlagListener.class,
+					new WarFeatureFlagListener(bundle, featureFlagKeys),
+					HashMapDictionaryBuilder.<String, Object>put(
+						"feature.flag.key",
+						featureFlagKeys.toArray(new String[0])
+					).build());
+			}
 
 			Set<String> portalProfileNames = SetUtil.fromArray(
 				StringUtil.split(
@@ -123,7 +136,7 @@ public class WebBundleDeployer {
 	private void _initWabBundle(Bundle bundle) {
 		try {
 			WabBundleProcessor wabBundleProcessor = new WabBundleProcessor(
-				bundle, _jspServletFactory, _jspTaglibHelper);
+				bundle, _jspServletFactory);
 
 			wabBundleProcessor.init(_properties);
 
@@ -141,10 +154,34 @@ public class WebBundleDeployer {
 
 	private final BundleContext _bundleContext;
 	private final JSPServletFactory _jspServletFactory;
-	private final JSPTaglibHelper _jspTaglibHelper;
 	private final Dictionary<String, Object> _properties;
 	private final ConcurrentMap<Bundle, WabBundleProcessor>
 		_wabBundleProcessors = new ConcurrentHashMap<>();
+
+	private class WarFeatureFlagListener implements FeatureFlagListener {
+
+		@Override
+		public void onValue(
+			long companyId, String featureFlagKey, boolean enabled) {
+
+			if (enabled && _featureFlagKeys.contains(featureFlagKey) &&
+				!_wabBundleProcessors.containsKey(_bundle)) {
+
+				_initWabBundle(_bundle);
+			}
+		}
+
+		private WarFeatureFlagListener(
+			Bundle bundle, Set<String> featureFlagKeys) {
+
+			_bundle = bundle;
+			_featureFlagKeys = featureFlagKeys;
+		}
+
+		private final Bundle _bundle;
+		private final Set<String> _featureFlagKeys;
+
+	}
 
 	private class WarModuleProfile implements PortalProfile {
 

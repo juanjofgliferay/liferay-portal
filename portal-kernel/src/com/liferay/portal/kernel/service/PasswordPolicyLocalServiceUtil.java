@@ -234,6 +234,10 @@ public class PasswordPolicyLocalServiceUtil {
 		return getService().dynamicQueryCount(dynamicQuery, projection);
 	}
 
+	public static PasswordPolicy fetchDefaultPasswordPolicy(long companyId) {
+		return getService().fetchDefaultPasswordPolicy(companyId);
+	}
+
 	public static PasswordPolicy fetchPasswordPolicy(long passwordPolicyId) {
 		return getService().fetchPasswordPolicy(passwordPolicyId);
 	}
@@ -242,6 +246,19 @@ public class PasswordPolicyLocalServiceUtil {
 		long companyId, String name) {
 
 		return getService().fetchPasswordPolicy(companyId, name);
+	}
+
+	public static PasswordPolicy fetchPasswordPolicyByUser(
+			com.liferay.portal.kernel.model.User user)
+		throws PortalException {
+
+		return getService().fetchPasswordPolicyByUser(user);
+	}
+
+	public static PasswordPolicy fetchPasswordPolicyByUserId(long userId)
+		throws PortalException {
+
+		return getService().fetchPasswordPolicyByUserId(userId);
 	}
 
 	/**
@@ -332,13 +349,6 @@ public class PasswordPolicyLocalServiceUtil {
 	}
 
 	public static PasswordPolicy getPasswordPolicy(
-			long companyId, boolean defaultPolicy)
-		throws PortalException {
-
-		return getService().getPasswordPolicy(companyId, defaultPolicy);
-	}
-
-	public static PasswordPolicy getPasswordPolicy(
 			long companyId, long[] organizationIds)
 		throws PortalException {
 
@@ -381,18 +391,6 @@ public class PasswordPolicyLocalServiceUtil {
 		throws PortalException {
 
 		return getService().getPersistedModel(primaryKeyObj);
-	}
-
-	public static List<PasswordPolicy> search(
-		long companyId, String name, int start, int end,
-		OrderByComparator<PasswordPolicy> orderByComparator) {
-
-		return getService().search(
-			companyId, name, start, end, orderByComparator);
-	}
-
-	public static int searchCount(long companyId, String name) {
-		return getService().searchCount(companyId, name);
 	}
 
 	public static PasswordPolicy updatePasswordPolicy(
@@ -443,3 +441,4 @@ public class PasswordPolicyLocalServiceUtil {
 	private static volatile PasswordPolicyLocalService _service;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-152017128

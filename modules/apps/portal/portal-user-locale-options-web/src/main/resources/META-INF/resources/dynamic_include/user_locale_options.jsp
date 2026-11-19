@@ -9,6 +9,20 @@
 
 <%
 Locale userLocale = user.getLocale();
+
+long groupId = layout.getGroupId();
+boolean privateLayout = layout.isPrivateLayout();
+long layoutId = layout.getLayoutId();
+
+if (layout instanceof VirtualLayout) {
+	VirtualLayout virtualLayout = (VirtualLayout)layout;
+
+	Layout sourceLayout = virtualLayout.getSourceLayout();
+
+	groupId = sourceLayout.getGroupId();
+	privateLayout = sourceLayout.isPrivateLayout();
+	layoutId = sourceLayout.getLayoutId();
+}
 %>
 
 <liferay-util:buffer
@@ -20,16 +34,20 @@ Locale userLocale = user.getLocale();
 		</div>
 
 		<c:if test="<%= LanguageUtil.isAvailableLocale(themeDisplay.getSiteGroupId(), user.getLocale()) || (PortalUtil.isGroupControlPanelPath(themeDisplay.getURLCurrent()) && LanguageUtil.isAvailableLocale(userLocale)) %>">
-			<aui:a cssClass="d-block" href='<%= themeDisplay.getPathMain() + "/portal/update_language?p_l_id=" + themeDisplay.getPlid() + "&redirect=" + URLCodec.encodeURL(themeDisplay.getURLCurrent()) + "&languageId=" + user.getLanguageId() + "&persistState=false&showUserLocaleOptionsMessage=false" %>'>
-				<%= LanguageUtil.format(userLocale, "display-the-page-in-x", userLocale.getDisplayName(userLocale)) %>
-			</aui:a>
+			<clay:link
+				cssClass="d-block"
+				href='<%= themeDisplay.getPathMain() + "/portal/update_language?redirect=" + URLCodec.encodeURL(themeDisplay.getURLCurrent()) + "&groupId=" + groupId + "&privateLayout=" + privateLayout + "&layoutId=" + layoutId + "&languageId=" + user.getLanguageId() + "&persistState=false&showUserLocaleOptionsMessage=false" %>'
+				label='<%= LanguageUtil.format(userLocale, "display-the-page-in-x", userLocale.getDisplayName(userLocale)) %>'
+			/>
 		</c:if>
 	</div>
 
 	<div dir="<%= LanguageUtil.get(request, "lang.dir") %>">
-		<aui:a cssClass="d-block" href='<%= themeDisplay.getPathMain() + "/portal/update_language?p_l_id=" + themeDisplay.getPlid() + "&redirect=" + URLCodec.encodeURL(themeDisplay.getURLCurrent()) + "&languageId=" + themeDisplay.getLanguageId() + "&showUserLocaleOptionsMessage=false" %>'>
-			<%= LanguageUtil.format(locale, "set-x-as-your-preferred-language", locale.getDisplayName(locale)) %>
-		</aui:a>
+		<clay:link
+			cssClass="d-block"
+			href='<%= themeDisplay.getPathMain() + "/portal/update_language?redirect=" + URLCodec.encodeURL(themeDisplay.getURLCurrent()) + "&groupId=" + groupId + "&privateLayout=" + privateLayout + "&layoutId=" + layoutId + "&languageId=" + themeDisplay.getLanguageId() + "&showUserLocaleOptionsMessage=false" %>'
+			label='<%= LanguageUtil.format(locale, "set-x-as-your-preferred-language", locale.getDisplayName(locale)) %>'
+		/>
 	</div>
 </liferay-util:buffer>
 

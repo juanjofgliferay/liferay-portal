@@ -16,6 +16,7 @@ import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerCustomizer
 import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerCustomizerFactory.ServiceWrapper;
 import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMap;
 import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMapFactory;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
@@ -92,15 +93,17 @@ public class CommerceOrderValidatorRegistryImpl
 			for (CommerceOrderValidatorResult commerceOrderValidatorResult :
 					commerceOrderValidatorResults) {
 
-				if ((commerceOrderValidatorResult.getCommerceOrderItemId() >
-						0) &&
-					(commerceOrderItem.getCommerceOrderItemId() ==
+				if ((commerceOrderValidatorResult.getCommerceOrderItemId() <=
+						0) ||
+					(commerceOrderItem.getCommerceOrderItemId() !=
 						commerceOrderValidatorResult.
 							getCommerceOrderItemId())) {
 
-					filteredCommerceOrderValidatorResults.add(
-						commerceOrderValidatorResult);
+					continue;
 				}
+
+				filteredCommerceOrderValidatorResults.add(
+					commerceOrderValidatorResult);
 			}
 
 			commerceOrderValidatorResultsMap.put(
@@ -148,20 +151,6 @@ public class CommerceOrderValidatorRegistryImpl
 
 		commerceOrderValidatorResults.addAll(validate(locale, commerceOrder));
 
-		List<CommerceOrderItem> commerceOrderItems =
-			commerceOrder.getCommerceOrderItems();
-
-		for (CommerceOrderItem commerceOrderItem : commerceOrderItems) {
-			List<CommerceOrderValidatorResult>
-				itemCommerceOrderValidatorResults = validate(
-					locale, commerceOrderItem);
-
-			if (ListUtil.isNotEmpty(itemCommerceOrderValidatorResults)) {
-				commerceOrderValidatorResults.addAll(
-					itemCommerceOrderValidatorResults);
-			}
-		}
-
 		return commerceOrderValidatorResults.isEmpty();
 	}
 
@@ -182,9 +171,18 @@ public class CommerceOrderValidatorRegistryImpl
 			CommerceOrderValidatorResult commerceOrderValidatorResult =
 				commerceOrderValidator.validate(locale, commerceOrder);
 
-			if (!commerceOrderValidatorResult.isValid()) {
-				commerceOrderValidatorResults.add(commerceOrderValidatorResult);
+			if (commerceOrderValidatorResult.isValid()) {
+				continue;
 			}
+
+			commerceOrderValidatorResults.add(commerceOrderValidatorResult);
+		}
+
+		for (CommerceOrderItem commerceOrderItem :
+				commerceOrder.getCommerceOrderItems()) {
+
+			commerceOrderValidatorResults.addAll(
+				validate(locale, commerceOrderItem));
 		}
 
 		return commerceOrderValidatorResults;
@@ -193,28 +191,23 @@ public class CommerceOrderValidatorRegistryImpl
 	@Override
 	public List<CommerceOrderValidatorResult> validate(
 			Locale locale, CommerceOrder commerceOrder, CPInstance cpInstance,
-			BigDecimal quantity)
+			String json, BigDecimal quantity, boolean child)
 		throws PortalException {
 
-		List<CommerceOrderValidatorResult> commerceOrderValidatorResults =
-			new ArrayList<>();
+		return TransformUtil.transform(
+			getCommerceOrderValidators(),
+			commerceOrderValidator -> {
+				CommerceOrderValidatorResult commerceOrderValidatorResult =
+					commerceOrderValidator.validate(
+						locale, commerceOrder, cpInstance, json, quantity,
+						child);
 
-		List<CommerceOrderValidator> commerceOrderValidators =
-			getCommerceOrderValidators();
+				if (!commerceOrderValidatorResult.isValid()) {
+					return commerceOrderValidatorResult;
+				}
 
-		for (CommerceOrderValidator commerceOrderValidator :
-				commerceOrderValidators) {
-
-			CommerceOrderValidatorResult commerceOrderValidatorResult =
-				commerceOrderValidator.validate(
-					locale, commerceOrder, cpInstance, quantity);
-
-			if (!commerceOrderValidatorResult.isValid()) {
-				commerceOrderValidatorResults.add(commerceOrderValidatorResult);
-			}
-		}
-
-		return commerceOrderValidatorResults;
+				return null;
+			});
 	}
 
 	@Override
@@ -222,24 +215,18 @@ public class CommerceOrderValidatorRegistryImpl
 			Locale locale, CommerceOrderItem commerceOrderItem)
 		throws PortalException {
 
-		List<CommerceOrderValidatorResult> commerceOrderValidatorResults =
-			new ArrayList<>();
+		return TransformUtil.transform(
+			getCommerceOrderValidators(),
+			commerceOrderValidator -> {
+				CommerceOrderValidatorResult commerceOrderValidatorResult =
+					commerceOrderValidator.validate(locale, commerceOrderItem);
 
-		List<CommerceOrderValidator> commerceOrderValidators =
-			getCommerceOrderValidators();
+				if (!commerceOrderValidatorResult.isValid()) {
+					return commerceOrderValidatorResult;
+				}
 
-		for (CommerceOrderValidator commerceOrderValidator :
-				commerceOrderValidators) {
-
-			CommerceOrderValidatorResult commerceOrderValidatorResult =
-				commerceOrderValidator.validate(locale, commerceOrderItem);
-
-			if (!commerceOrderValidatorResult.isValid()) {
-				commerceOrderValidatorResults.add(commerceOrderValidatorResult);
-			}
-		}
-
-		return commerceOrderValidatorResults;
+				return null;
+			});
 	}
 
 	@Activate

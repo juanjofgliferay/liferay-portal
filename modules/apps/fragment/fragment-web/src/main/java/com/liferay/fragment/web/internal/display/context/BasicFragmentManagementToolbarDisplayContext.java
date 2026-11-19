@@ -5,33 +5,44 @@
 
 package com.liferay.fragment.web.internal.display.context;
 
-import com.liferay.fragment.collection.item.selector.criterion.FragmentCollectionItemSelectorCriterion;
+import com.liferay.fragment.collection.item.selector.FragmentCollectionItemSelectorCriterion;
 import com.liferay.fragment.constants.FragmentActionKeys;
 import com.liferay.fragment.constants.FragmentConstants;
+import com.liferay.fragment.model.FragmentCollection;
 import com.liferay.fragment.web.internal.info.field.type.CaptchaInfoFieldType;
+import com.liferay.fragment.web.internal.info.field.type.FormButtonInfoFieldType;
+import com.liferay.fragment.web.internal.info.field.type.LocalizationSelectInfoFieldType;
+import com.liferay.fragment.web.internal.info.field.type.StepperInfoFieldType;
 import com.liferay.fragment.web.internal.security.permission.resource.FragmentPermission;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.CreationMenu;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.CreationMenuBuilder;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItem;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItemListBuilder;
+import com.liferay.info.field.type.AssigneeInfoFieldType;
 import com.liferay.info.field.type.BooleanInfoFieldType;
 import com.liferay.info.field.type.DateInfoFieldType;
 import com.liferay.info.field.type.DateTimeInfoFieldType;
+import com.liferay.info.field.type.EmailInfoFieldType;
 import com.liferay.info.field.type.FileInfoFieldType;
+import com.liferay.info.field.type.FriendlyURLInfoFieldType;
 import com.liferay.info.field.type.HTMLInfoFieldType;
 import com.liferay.info.field.type.InfoFieldType;
 import com.liferay.info.field.type.LongTextInfoFieldType;
 import com.liferay.info.field.type.MultiselectInfoFieldType;
 import com.liferay.info.field.type.NumberInfoFieldType;
+import com.liferay.info.field.type.PhoneNumberInfoFieldType;
 import com.liferay.info.field.type.RelationshipInfoFieldType;
 import com.liferay.info.field.type.SelectInfoFieldType;
 import com.liferay.info.field.type.TextInfoFieldType;
 import com.liferay.item.selector.ItemSelector;
 import com.liferay.item.selector.criteria.UUIDItemSelectorReturnType;
+import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
 import com.liferay.portal.kernel.portlet.RequestBackedPortletURLFactory;
@@ -42,12 +53,12 @@ import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.ResourceURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.List;
 import java.util.Map;
-
-import javax.portlet.ResourceURL;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Eudaldo Alonso
@@ -56,10 +67,11 @@ public class BasicFragmentManagementToolbarDisplayContext
 	extends FragmentManagementToolbarDisplayContext {
 
 	public BasicFragmentManagementToolbarDisplayContext(
-		HttpServletRequest httpServletRequest,
-		LiferayPortletRequest liferayPortletRequest,
-		LiferayPortletResponse liferayPortletResponse,
-		FragmentDisplayContext fragmentDisplayContext) {
+			HttpServletRequest httpServletRequest,
+			LiferayPortletRequest liferayPortletRequest,
+			LiferayPortletResponse liferayPortletResponse,
+			FragmentDisplayContext fragmentDisplayContext)
+		throws PortalException {
 
 		super(
 			httpServletRequest, liferayPortletRequest, liferayPortletResponse,
@@ -230,7 +242,40 @@ public class BasicFragmentManagementToolbarDisplayContext
 
 	@Override
 	public CreationMenu getCreationMenu() {
+		ThemeDisplay themeDisplay =
+			(ThemeDisplay)httpServletRequest.getAttribute(
+				WebKeys.THEME_DISPLAY);
+
+		boolean generateFragmentWithAIEnabled =
+			FeatureFlagManagerUtil.isEnabled(
+				themeDisplay.getCompanyId(), "LPD-62272") &&
+			FeatureFlagManagerUtil.isEnabled(
+				themeDisplay.getCompanyId(), "LPD-94003");
+
 		return CreationMenuBuilder.addDropdownItem(
+			() -> generateFragmentWithAIEnabled,
+			dropdownItem -> {
+				dropdownItem.putData("action", "generateFragmentWithAI");
+
+				FragmentCollection fragmentCollection =
+					fragmentDisplayContext.getFragmentCollection();
+
+				dropdownItem.putData(
+					"fragmentSetExternalReferenceCode",
+					fragmentCollection.getExternalReferenceCode());
+
+				Group group = themeDisplay.getScopeGroup();
+
+				dropdownItem.putData(
+					"siteExternalReferenceCode",
+					group.getExternalReferenceCode());
+
+				dropdownItem.setIcon("stars");
+				dropdownItem.setLabel(
+					LanguageUtil.get(
+						httpServletRequest, "generate-fragment-with-ai"));
+			}
+		).addDropdownItem(
 			dropdownItem -> {
 				dropdownItem.putData("action", "addFragmentEntry");
 
@@ -250,8 +295,16 @@ public class BasicFragmentManagementToolbarDisplayContext
 				dropdownItem.putData(
 					"title",
 					LanguageUtil.get(httpServletRequest, "add-fragment"));
-				dropdownItem.setLabel(
-					LanguageUtil.get(httpServletRequest, "add"));
+
+				if (generateFragmentWithAIEnabled) {
+					dropdownItem.setIcon("code");
+					dropdownItem.setLabel(
+						LanguageUtil.get(httpServletRequest, "fragment"));
+				}
+				else {
+					dropdownItem.setLabel(
+						LanguageUtil.get(httpServletRequest, "add"));
+				}
 			}
 		).build();
 	}
@@ -262,15 +315,9 @@ public class BasicFragmentManagementToolbarDisplayContext
 			(ThemeDisplay)httpServletRequest.getAttribute(
 				WebKeys.THEME_DISPLAY);
 
-		if (FragmentPermission.contains(
-				themeDisplay.getPermissionChecker(),
-				themeDisplay.getScopeGroupId(),
-				FragmentActionKeys.MANAGE_FRAGMENT_ENTRIES)) {
-
-			return true;
-		}
-
-		return false;
+		return FragmentPermission.contains(
+			themeDisplay.getPermissionChecker(), themeDisplay.getScopeGroupId(),
+			FragmentActionKeys.MANAGE_FRAGMENT_ENTRIES);
 	}
 
 	private JSONArray _getFieldTypesJSONArray() {
@@ -328,12 +375,16 @@ public class BasicFragmentManagementToolbarDisplayContext
 	}
 
 	private static final InfoFieldType[] _INFO_FIELD_TYPES = {
-		BooleanInfoFieldType.INSTANCE, CaptchaInfoFieldType.INSTANCE,
-		DateInfoFieldType.INSTANCE, DateTimeInfoFieldType.INSTANCE,
-		FileInfoFieldType.INSTANCE, HTMLInfoFieldType.INSTANCE,
+		AssigneeInfoFieldType.INSTANCE, BooleanInfoFieldType.INSTANCE,
+		CaptchaInfoFieldType.INSTANCE, DateInfoFieldType.INSTANCE,
+		DateTimeInfoFieldType.INSTANCE, EmailInfoFieldType.INSTANCE,
+		FileInfoFieldType.INSTANCE, FormButtonInfoFieldType.INSTANCE,
+		FriendlyURLInfoFieldType.INSTANCE, HTMLInfoFieldType.INSTANCE,
+		LocalizationSelectInfoFieldType.INSTANCE,
 		LongTextInfoFieldType.INSTANCE, MultiselectInfoFieldType.INSTANCE,
-		NumberInfoFieldType.INSTANCE, RelationshipInfoFieldType.INSTANCE,
-		SelectInfoFieldType.INSTANCE, TextInfoFieldType.INSTANCE
+		NumberInfoFieldType.INSTANCE, PhoneNumberInfoFieldType.INSTANCE,
+		RelationshipInfoFieldType.INSTANCE, SelectInfoFieldType.INSTANCE,
+		StepperInfoFieldType.INSTANCE, TextInfoFieldType.INSTANCE
 	};
 
 	private final ItemSelector _itemSelector;

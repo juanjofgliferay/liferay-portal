@@ -109,11 +109,7 @@ public class SocialActivityPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		SocialActivity newSocialActivity = _persistence.create(pk);
-
-		newSocialActivity.setMvccVersion(RandomTestUtil.nextLong());
+		SocialActivity newSocialActivity = addSocialActivity();
 
 		newSocialActivity.setCtCollectionId(RandomTestUtil.nextLong());
 
@@ -143,7 +139,9 @@ public class SocialActivityPersistenceTest {
 
 		newSocialActivity.setReceiverUserId(RandomTestUtil.nextLong());
 
-		_socialActivities.add(_persistence.update(newSocialActivity));
+		newSocialActivity = _persistence.update(newSocialActivity);
+
+		_socialActivities.add(newSocialActivity);
 
 		SocialActivity existingSocialActivity = _persistence.findByPrimaryKey(
 			newSocialActivity.getPrimaryKey());
@@ -204,13 +202,6 @@ public class SocialActivityPersistenceTest {
 	}
 
 	@Test
-	public void testCountByCompanyId() throws Exception {
-		_persistence.countByCompanyId(RandomTestUtil.nextLong());
-
-		_persistence.countByCompanyId(0L);
-	}
-
-	@Test
 	public void testCountByUserId() throws Exception {
 		_persistence.countByUserId(RandomTestUtil.nextLong());
 
@@ -236,6 +227,14 @@ public class SocialActivityPersistenceTest {
 		_persistence.countByReceiverUserId(RandomTestUtil.nextLong());
 
 		_persistence.countByReceiverUserId(0L);
+	}
+
+	@Test
+	public void testCountByC_CN() throws Exception {
+		_persistence.countByC_CN(
+			RandomTestUtil.nextLong(), RandomTestUtil.nextLong());
+
+		_persistence.countByC_CN(0L, 0L);
 	}
 
 	@Test
@@ -631,8 +630,6 @@ public class SocialActivityPersistenceTest {
 
 		SocialActivity socialActivity = _persistence.create(pk);
 
-		socialActivity.setMvccVersion(RandomTestUtil.nextLong());
-
 		socialActivity.setCtCollectionId(RandomTestUtil.nextLong());
 
 		socialActivity.setGroupId(RandomTestUtil.nextLong());
@@ -672,3 +669,4 @@ public class SocialActivityPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1269711837

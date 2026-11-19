@@ -5,16 +5,26 @@
 
 package com.liferay.jenkins.results.parser;
 
+import com.liferay.jenkins.results.parser.test.batch.TestBatch;
+import com.liferay.jenkins.results.parser.test.suite.RelevantTestSuite;
+
 import java.io.File;
 import java.io.IOException;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+
+import org.apache.commons.codec.digest.DigestUtils;
 
 import org.json.JSONObject;
 
@@ -26,10 +36,27 @@ public class PortalWorkspaceGitRepository extends BaseWorkspaceGitRepository {
 	public boolean bypassCITestRelevant() {
 		setUp();
 
-		String ciTestRelevantBypassFilePathPatterns =
-			JenkinsResultsParserUtil.getCIProperty(
-				getUpstreamBranchName(),
-				"ci.test.relevant.bypass.file.path.patterns", getName());
+		Properties testProperties = JenkinsResultsParserUtil.getProperties(
+			new File(getDirectory(), "test.properties"));
+
+		boolean relevantEngineEnabled = Boolean.parseBoolean(
+			testProperties.getProperty("relevant.engine.enabled"));
+
+		if (relevantEngineEnabled) {
+			RelevantTestSuite relevantTestSuite = new RelevantTestSuite(
+				_getRelevantPortalAcceptancePullRequestJob());
+
+			List<TestBatch> testBatches = relevantTestSuite.getTestBatches(
+				true);
+
+			return testBatches.isEmpty();
+		}
+
+		Properties ciProperties = JenkinsResultsParserUtil.getProperties(
+			new File(getDirectory(), "ci.properties"));
+
+		String ciTestRelevantBypassFilePathPatterns = ciProperties.getProperty(
+			"ci.test.relevant.bypass.file.path.patterns", getName());
 
 		if (JenkinsResultsParserUtil.isNullOrEmpty(
 				ciTestRelevantBypassFilePathPatterns)) {
@@ -54,11 +81,22 @@ public class PortalWorkspaceGitRepository extends BaseWorkspaceGitRepository {
 				JenkinsResultsParserUtil.getCanonicalPath(deletedFile));
 		}
 
-		if (!multiPattern.matchesAll(filePaths.toArray(new String[0]))) {
-			return false;
+		return multiPattern.matchesAll(filePaths.toArray(new String[0]));
+	}
+
+	public Properties getAppServerProperties() {
+		if (_appServerProperties != null) {
+			return _appServerProperties;
 		}
 
-		return true;
+		_appServerProperties = JenkinsResultsParserUtil.getProperties(
+			new File(getDirectory(), "app.server.properties"));
+
+		return _appServerProperties;
+	}
+
+	public PortalWorkspaceGitRepository getBasePortalWorkspaceGitRepository() {
+		return _basePortalWorkspaceGitRepository;
 	}
 
 	public String getLiferayFacesAlloyURL() {
@@ -101,21 +139,47 @@ public class PortalWorkspaceGitRepository extends BaseWorkspaceGitRepository {
 
 	public String getPortalPrivateRepositoryDirName() {
 		return JenkinsResultsParserUtil.getGitDirectoryName(
-			"liferay-portal-ee", getUpstreamBranchName() + "-private");
+			"liferay-portal-ee", "master-private");
+	}
+
+	public void setBasePortalWorkspaceGitRepository(
+		PortalWorkspaceGitRepository basePortalWorkspaceGitRepository) {
+
+		_basePortalWorkspaceGitRepository = basePortalWorkspaceGitRepository;
+	}
+
+	public void setPrimaryPortalBranchPrivate(
+		boolean primaryPortalBranchPrivate) {
+
+		_primaryPortalBranchPrivate = primaryPortalBranchPrivate;
 	}
 
 	public void setUpPortalProfile() {
-		String upstreamBranchName = getUpstreamBranchName();
+		String setupProfileDXPBranchNamesString = null;
 
-		if (!upstreamBranchName.equals("master") &&
-			!upstreamBranchName.matches("7\\.\\d+\\.x")) {
+		try {
+			setupProfileDXPBranchNamesString =
+				JenkinsResultsParserUtil.getBuildProperty(
+					"portal.setup.profile.dxp.branch.names");
 
+			if (JenkinsResultsParserUtil.isNullOrEmpty(
+					setupProfileDXPBranchNamesString)) {
+
+				return;
+			}
+		}
+		catch (IOException ioException) {
 			return;
 		}
 
-		Retryable<Object> setupProfileDXPRetryable = new Retryable<Object>(
-			true, _SETUP_PROFILE_DXP_RETRY_COUNT,
-			_SETUP_PROFILE_DXP_RETRY_DELAY, true) {
+		List<String> setupProfileDXPBranchNames = Arrays.asList(
+			setupProfileDXPBranchNamesString.split(","));
+
+		if (!setupProfileDXPBranchNames.contains(getUpstreamBranchName())) {
+			return;
+		}
+
+		Retryable<Object> retryable = new Retryable<Object>(true, 2, 5, true) {
 
 			@Override
 			public Object execute() {
@@ -132,14 +196,20 @@ public class PortalWorkspaceGitRepository extends BaseWorkspaceGitRepository {
 
 		};
 
-		setupProfileDXPRetryable.executeWithRetries();
+		retryable.executeWithRetries();
 	}
 
 	public void setUpTCKHome() {
+		File tckBuildFile = new File(getDirectory(), "build-test-tck.xml");
+
+		if (!tckBuildFile.exists()) {
+			return;
+		}
+
 		Map<String, String> parameters = new HashMap<>();
 
 		String tckHome = JenkinsResultsParserUtil.getProperty(
-			_getPortalTestProperties(), "tck.home");
+			getPortalTestProperties(), "tck.home");
 
 		if (!JenkinsResultsParserUtil.isNullOrEmpty(tckHome)) {
 			parameters.put("tck.home", tckHome);
@@ -180,6 +250,99 @@ public class PortalWorkspaceGitRepository extends BaseWorkspaceGitRepository {
 		super(remoteGitRef, upstreamBranchName);
 	}
 
+	protected void downloadYarnCache() {
+		String yarnCacheS3ObjectPath = _getYarnCacheS3ObjectPath();
+
+		if (!CloudBucketUtil.isS3ObjectPathAvailable(yarnCacheS3ObjectPath)) {
+			throw new RuntimeException(
+				"Unable to download " + yarnCacheS3ObjectPath);
+		}
+
+		File yarnCacheFile = null;
+
+		try {
+			yarnCacheFile = File.createTempFile(
+				"yarn-cache", ".zip", getDirectory());
+
+			CloudBucketUtil.downloadS3File(
+				yarnCacheFile, yarnCacheS3ObjectPath);
+
+			JenkinsResultsParserUtil.unzip(yarnCacheFile, getDirectory());
+
+			System.out.println(
+				JenkinsResultsParserUtil.combine(
+					"Successfully unzipped ", yarnCacheS3ObjectPath, " to ",
+					JenkinsResultsParserUtil.getCanonicalPath(getDirectory())));
+		}
+		catch (IOException ioException) {
+			throw new RuntimeException(ioException);
+		}
+		finally {
+			if (yarnCacheFile != null) {
+				JenkinsResultsParserUtil.delete(yarnCacheFile);
+			}
+		}
+	}
+
+	protected Properties getPortalTestProperties() {
+		Properties testProperties = getProperties("portal.test.properties");
+
+		String companyDefaultLocale = Environment.get(
+			"TEST_COMPANY_DEFAULT_LOCALE");
+
+		if (!JenkinsResultsParserUtil.isNullOrEmpty(companyDefaultLocale)) {
+			testProperties.setProperty(
+				"test.company.default.locale", companyDefaultLocale);
+		}
+
+		String portalLatestBundleVersion = Environment.get(
+			"PORTAL_LATEST_BUNDLE_VERSION");
+
+		if (JenkinsResultsParserUtil.isNullOrEmpty(portalLatestBundleVersion)) {
+			try {
+				portalLatestBundleVersion =
+					JenkinsResultsParserUtil.getBuildProperty(
+						"portal.latest.bundle.version",
+						getUpstreamBranchName());
+			}
+			catch (IOException ioException) {
+				System.out.println(
+					"WARNING: Unable to get \"portal.latest.bundle.version\"");
+			}
+		}
+
+		if (!JenkinsResultsParserUtil.isNullOrEmpty(
+				portalLatestBundleVersion)) {
+
+			testProperties.put(
+				"test.released.release.bundle.version",
+				portalLatestBundleVersion);
+
+			Properties buildProperties = null;
+
+			try {
+				buildProperties = JenkinsResultsParserUtil.getBuildProperties();
+			}
+			catch (IOException ioException) {
+				throw new RuntimeException(ioException);
+			}
+
+			String portalBundleTomcatURL = JenkinsResultsParserUtil.getProperty(
+				buildProperties, "portal.bundle.tomcat",
+				portalLatestBundleVersion);
+
+			if (!JenkinsResultsParserUtil.isNullOrEmpty(
+					portalBundleTomcatURL)) {
+
+				testProperties.put(
+					"test.released.test.portal.bundle.zip.url",
+					portalBundleTomcatURL);
+			}
+		}
+
+		return testProperties;
+	}
+
 	@Override
 	protected Set<String> getPropertyOptions() {
 		Set<String> propertyOptions = new HashSet<>(super.getPropertyOptions());
@@ -187,6 +350,374 @@ public class PortalWorkspaceGitRepository extends BaseWorkspaceGitRepository {
 		propertyOptions.add(getUpstreamBranchName());
 
 		return propertyOptions;
+	}
+
+	protected boolean isBinariesCacheEnabled() {
+		try {
+			return Boolean.parseBoolean(
+				JenkinsResultsParserUtil.getBuildProperty(
+					"binaries.cache.enabled", Environment.get("CI_TEST_SUITE"),
+					Environment.get("JOB_NAME"), getUpstreamBranchName()));
+		}
+		catch (IOException ioException) {
+			return true;
+		}
+	}
+
+	protected boolean isYarnCacheAvailable() {
+		if (!JenkinsResultsParserUtil.isCloudCINode() ||
+			!CloudBucketUtil.isS3ObjectPathAvailable(
+				_getYarnCacheS3ObjectPath())) {
+
+			return false;
+		}
+
+		return true;
+	}
+
+	protected boolean isYarnCacheEnabled() {
+		try {
+			return Boolean.parseBoolean(
+				JenkinsResultsParserUtil.getBuildProperty(
+					"yarn.cache.enabled", Environment.get("CI_TEST_SUITE"),
+					Environment.get("JOB_NAME"), getUpstreamBranchName()));
+		}
+		catch (IOException ioException) {
+			return true;
+		}
+	}
+
+	protected boolean isYarnInstalled() {
+		File yarnIntegrityFile = new File(
+			getDirectory(), "modules/node_modules/.yarn-integrity");
+
+		return yarnIntegrityFile.exists();
+	}
+
+	@Override
+	protected void setUpAdditionalCaches() throws IOException {
+		_configureBasePortalWorkspaceGitRepository();
+
+		_setUpBasePortalCache();
+
+		if (isBinariesCacheEnabled()) {
+			setUpBinariesCache();
+			setUpWorkspaceYarnMirrors();
+		}
+
+		if (isYarnCacheEnabled()) {
+			setUpYarnCache();
+		}
+	}
+
+	protected void setUpBinariesCache() {
+		if (!JenkinsResultsParserUtil.isCloudCINode() || _setUpBinariesCache) {
+			return;
+		}
+
+		String binariesCacheS3Path;
+
+		try {
+			binariesCacheS3Path = JenkinsResultsParserUtil.getBuildProperty(
+				"binaries.cache.s3.path", getUpstreamBranchName());
+		}
+		catch (IOException ioException) {
+			System.out.println(
+				"WARNING: Unable to get \"binaries.cache.s3.path\"");
+
+			_setUpBinariesCache = true;
+
+			return;
+		}
+
+		if (JenkinsResultsParserUtil.isNullOrEmpty(binariesCacheS3Path)) {
+			return;
+		}
+
+		File binariesCacheTarGzipFile = new File(
+			getDirectory(), "binaries-cache.tar.gz");
+
+		try {
+			CloudBucketUtil.downloadS3File(
+				binariesCacheTarGzipFile, binariesCacheS3Path);
+		}
+		catch (IOException ioException) {
+			System.out.println(
+				"WARNING: Unable to download " + binariesCacheS3Path);
+
+			_setUpBinariesCache = true;
+
+			return;
+		}
+
+		try {
+			JenkinsResultsParserUtil.unTarGzip(
+				binariesCacheTarGzipFile, getDirectory());
+
+			System.out.println(
+				"Successfully untared " + binariesCacheS3Path + " to " +
+					getDirectory());
+		}
+		catch (Exception exception) {
+			throw new RuntimeException(exception);
+		}
+		finally {
+			JenkinsResultsParserUtil.delete(binariesCacheTarGzipFile);
+
+			_setUpBinariesCache = true;
+		}
+	}
+
+	protected void setUpWorkspaceYarnMirrors() {
+		File workspacesDirectory = new File(getDirectory(), "workspaces");
+
+		File[] files = workspacesDirectory.listFiles();
+
+		if (files == null) {
+			return;
+		}
+
+		File nodeModulesCacheDirectory = new File(
+			workspacesDirectory, "node_modules_cache");
+
+		nodeModulesCacheDirectory.mkdirs();
+
+		for (File file : files) {
+			File yarnRCFile = new File(file, ".yarnrc");
+
+			if (!yarnRCFile.exists()) {
+				continue;
+			}
+
+			Path path = Paths.get(
+				file.getPath(), nodeModulesCacheDirectory.getName());
+
+			if (Files.exists(path) || Files.isSymbolicLink(path)) {
+				continue;
+			}
+
+			try {
+				Files.createSymbolicLink(
+					path, Paths.get("..", nodeModulesCacheDirectory.getName()));
+
+				System.out.println(
+					"Created Yarn mirror symbolic link at " + path);
+			}
+			catch (IOException ioException) {
+				System.out.println("WARNING: Unable to create " + path);
+			}
+		}
+	}
+
+	protected synchronized void setUpYarn() {
+		if (_setUpYarn || isYarnInstalled()) {
+			return;
+		}
+
+		PortalGitWorkingDirectory portalGitWorkingDirectory =
+			(PortalGitWorkingDirectory)getGitWorkingDirectory();
+
+		portalGitWorkingDirectory.setUpYarn();
+
+		_setUpYarn = true;
+	}
+
+	protected synchronized void setUpYarnCache() {
+		String upstreamBranchName = getUpstreamBranchName();
+
+		if (!JenkinsResultsParserUtil.isCloudCINode() || _setUpYarnCache ||
+			upstreamBranchName.startsWith("ee-")) {
+
+			return;
+		}
+
+		if (isYarnCacheAvailable()) {
+			downloadYarnCache();
+
+			touchYarnCache();
+
+			_setUpYarnCache = true;
+
+			return;
+		}
+
+		setUpYarn();
+
+		uploadYarnCache();
+
+		_setUpYarnCache = true;
+	}
+
+	protected void touchYarnCache() {
+		try {
+			CloudBucketUtil.touchS3File(_getYarnCacheS3ObjectPath());
+		}
+		catch (IOException ioException) {
+			throw new RuntimeException(ioException);
+		}
+	}
+
+	protected synchronized void uploadYarnCache() {
+		String yarnCacheS3ObjectPath = _getYarnCacheS3ObjectPath();
+
+		if (!CloudBucketUtil.isValidS3ObjectPath(yarnCacheS3ObjectPath)) {
+			return;
+		}
+
+		File yarnCacheFile = null;
+
+		try {
+			yarnCacheFile = File.createTempFile(
+				"yarn-cache", ".zip", getDirectory());
+
+			JenkinsResultsParserUtil.delete(yarnCacheFile);
+
+			PortalGitWorkingDirectory portalGitWorkingDirectory =
+				(PortalGitWorkingDirectory)getGitWorkingDirectory();
+
+			yarnCacheFile = portalGitWorkingDirectory.createYarnCache(
+				yarnCacheFile.getName());
+
+			CloudBucketUtil.uploadS3File(yarnCacheS3ObjectPath, yarnCacheFile);
+
+			System.out.println(
+				"Successfully uploaded to " + yarnCacheS3ObjectPath);
+		}
+		catch (IOException ioException) {
+			throw new RuntimeException(ioException);
+		}
+		finally {
+			if (yarnCacheFile != null) {
+				JenkinsResultsParserUtil.delete(yarnCacheFile);
+			}
+		}
+	}
+
+	private void _checkoutBasePortalWorkspaceGitRepository() {
+		GitWorkingDirectory baseGitWorkingDirectory =
+			_basePortalWorkspaceGitRepository.getGitWorkingDirectory();
+
+		LocalGitBranch baseLocalGitBranch =
+			baseGitWorkingDirectory.getCurrentLocalGitBranch();
+
+		GitWorkingDirectory gitWorkingDirectory = getGitWorkingDirectory();
+
+		gitWorkingDirectory.fetchLocalGitBranch(
+			baseLocalGitBranch.getName(), baseLocalGitBranch);
+
+		Properties properties = new Properties();
+
+		properties.setProperty(
+			"public.branch.git.hash", baseLocalGitBranch.getSHA());
+
+		JenkinsResultsParserUtil.writePropertiesFile(
+			new File(
+				getDirectory(),
+				JenkinsResultsParserUtil.combine(
+					"working.dir.", Environment.get("HOSTNAME"),
+					".properties")),
+			properties, true);
+
+		try {
+			AntUtil.callTarget(
+				getDirectory(), "build-working-dir.xml", "checkout-portal");
+		}
+		catch (AntException antException) {
+			throw new RuntimeException(antException);
+		}
+	}
+
+	private void _configureBasePortalWorkspaceGitRepository() {
+		if ((_basePortalWorkspaceGitRepository == null) ||
+			!_primaryPortalBranchPrivate) {
+
+			return;
+		}
+
+		String gitCommit = getFileContent("git-commit/liferay-portal");
+
+		if (JenkinsResultsParserUtil.isNullOrEmpty(gitCommit)) {
+			return;
+		}
+
+		if (JenkinsResultsParserUtil.isSHA(gitCommit)) {
+			_basePortalWorkspaceGitRepository.setCommitFileIsSHA(true);
+			_basePortalWorkspaceGitRepository.setSenderBranchSHA(gitCommit);
+
+			return;
+		}
+
+		if (!GitUtil.isValidGitHubRefURL(gitCommit) &&
+			!PullRequest.isValidGitHubPullRequestURL(gitCommit)) {
+
+			return;
+		}
+
+		_basePortalWorkspaceGitRepository.setGitHubURL(gitCommit);
+	}
+
+	private void _downloadBasePortalCache() throws IOException {
+		String basePortalCacheS3ObjectPath = _getBasePortalCacheS3ObjectPath();
+
+		if (!CloudBucketUtil.isS3ObjectPathAvailable(
+				basePortalCacheS3ObjectPath)) {
+
+			throw new RuntimeException(
+				"Unable to download " + basePortalCacheS3ObjectPath);
+		}
+
+		File basePortalCacheFile = null;
+
+		try {
+			basePortalCacheFile = File.createTempFile(
+				"base-portal-cache", ".zip", getDirectory());
+
+			CloudBucketUtil.downloadS3File(
+				basePortalCacheFile, basePortalCacheS3ObjectPath);
+
+			JenkinsResultsParserUtil.unzip(basePortalCacheFile, getDirectory());
+
+			System.out.println(
+				JenkinsResultsParserUtil.combine(
+					"Successfully unzipped ", basePortalCacheS3ObjectPath,
+					" to ",
+					JenkinsResultsParserUtil.getCanonicalPath(getDirectory())));
+		}
+		finally {
+			if (basePortalCacheFile != null) {
+				JenkinsResultsParserUtil.delete(basePortalCacheFile);
+			}
+		}
+	}
+
+	private String _getBasePortalCacheS3ObjectPath() {
+		try {
+			if (_basePortalWorkspaceGitRepository == null) {
+				return null;
+			}
+
+			String basePortalCachesPath =
+				JenkinsResultsParserUtil.getBuildProperty(
+					"cloud.ci.s3.bucket.base.portal.caches.path");
+
+			if (JenkinsResultsParserUtil.isNullOrEmpty(basePortalCachesPath)) {
+				return null;
+			}
+
+			return JenkinsResultsParserUtil.combine(
+				basePortalCachesPath, "/",
+				_basePortalWorkspaceGitRepository.getName(), "/",
+				_basePortalWorkspaceGitRepository.getBaseBranchSHA(), "/",
+				_basePortalWorkspaceGitRepository.getSenderBranchSHA(),
+				"/base-portal-cache.zip");
+		}
+		catch (IOException ioException) {
+			System.out.println(
+				"WARNING: Unable to get the property " +
+					"\"cloud.ci.s3.bucket.base.portal.caches.path\"");
+
+			return null;
+		}
 	}
 
 	private String _getLiferayFacesURL(
@@ -211,18 +742,173 @@ public class PortalWorkspaceGitRepository extends BaseWorkspaceGitRepository {
 		}
 	}
 
-	private Properties _getPortalTestProperties() {
-		Properties testProperties = getProperties("portal.test.properties");
+	private PortalAcceptancePullRequestJob
+		_getRelevantPortalAcceptancePullRequestJob() {
 
-		String companyDefaultLocale = System.getenv(
-			"TEST_COMPANY_DEFAULT_LOCALE");
+		String upstreamBranchName = getUpstreamBranchName();
 
-		if (!JenkinsResultsParserUtil.isNullOrEmpty(companyDefaultLocale)) {
-			testProperties.setProperty(
-				"test.company.default.locale", companyDefaultLocale);
+		PortalGitWorkingDirectory portalGitWorkingDirectory =
+			(PortalGitWorkingDirectory)getGitWorkingDirectory();
+
+		portalGitWorkingDirectory.getGitRepositoryName();
+
+		return (PortalAcceptancePullRequestJob)JobFactory.newJob(
+			Job.BuildProfile.DXP, "test-portal-acceptance-pullrequest(master)",
+			null, portalGitWorkingDirectory, upstreamBranchName, null,
+			portalGitWorkingDirectory.getGitRepositoryName(), "relevant",
+			upstreamBranchName);
+	}
+
+	private String _getYarnCacheS3ObjectPath() {
+		String yarnLockDigest = _getYarnLockDigest();
+
+		if (JenkinsResultsParserUtil.isNullOrEmpty(yarnLockDigest)) {
+			return null;
 		}
 
-		return testProperties;
+		try {
+			return JenkinsResultsParserUtil.combine(
+				JenkinsResultsParserUtil.getBuildProperty(
+					"cloud.ci.s3.bucket.yarn.caches.path"),
+				"/", getName(), "/", yarnLockDigest, "/yarn-cache.zip");
+		}
+		catch (IOException ioException) {
+			System.out.println(
+				"WARNING: Unable to get the property " +
+					"\"cloud.ci.s3.bucket.yarn.caches.path\"");
+
+			return null;
+		}
+	}
+
+	private synchronized String _getYarnLockDigest() {
+		if (_yarnLockDigest != null) {
+			return _yarnLockDigest;
+		}
+
+		File yarnLockFile = new File(getDirectory(), "modules/yarn.lock");
+
+		if (!yarnLockFile.exists()) {
+			_yarnLockDigest = "";
+
+			return _yarnLockDigest;
+		}
+
+		try {
+			String yarnLockFileContent = JenkinsResultsParserUtil.read(
+				yarnLockFile);
+
+			String nodejsNpmCiRegistry =
+				JenkinsResultsParserUtil.getBuildProperty(
+					"portal.build.properties[nodejs.npm.ci.registry]",
+					getUpstreamBranchName());
+
+			if (!JenkinsResultsParserUtil.isNullOrEmpty(nodejsNpmCiRegistry)) {
+				yarnLockFileContent = yarnLockFileContent.replace(
+					"https://registry.yarnpkg.com", nodejsNpmCiRegistry);
+			}
+
+			_yarnLockDigest = DigestUtils.sha256Hex(yarnLockFileContent);
+		}
+		catch (IOException ioException) {
+			_yarnLockDigest = "";
+
+			return _yarnLockDigest;
+		}
+
+		return _yarnLockDigest;
+	}
+
+	private boolean _isBasePortalCacheAvailable() {
+		if (!JenkinsResultsParserUtil.isCloudCINode() ||
+			!CloudBucketUtil.isS3ObjectPathAvailable(
+				_getBasePortalCacheS3ObjectPath())) {
+
+			return false;
+		}
+
+		return true;
+	}
+
+	private synchronized void _setUpBasePortalCache() throws IOException {
+		if ((_basePortalWorkspaceGitRepository == null) ||
+			_setUpBasePortalCache) {
+
+			return;
+		}
+
+		File buildWorkingDirFile = new File(
+			getDirectory(), "build-working-dir.xml");
+
+		if (!buildWorkingDirFile.exists()) {
+			return;
+		}
+
+		if (_isBasePortalCacheAvailable()) {
+			_downloadBasePortalCache();
+
+			CloudBucketUtil.touchS3File(_getBasePortalCacheS3ObjectPath());
+
+			_setUpBasePortalCache = true;
+
+			return;
+		}
+
+		if (!JenkinsResultsParserUtil.isTopLevelJobName(
+				Environment.get("JOB_NAME"))) {
+
+			System.out.println(
+				"WARNING: Unable to find " + _getBasePortalCacheS3ObjectPath());
+
+			_setUpBasePortalCache = true;
+
+			return;
+		}
+
+		_basePortalWorkspaceGitRepository.setUp();
+
+		_checkoutBasePortalWorkspaceGitRepository();
+
+		_uploadBasePortalCache();
+
+		_setUpBasePortalCache = true;
+	}
+
+	private synchronized void _uploadBasePortalCache() throws IOException {
+		String basePortalCacheS3ObjectPath = _getBasePortalCacheS3ObjectPath();
+
+		if (!JenkinsResultsParserUtil.isCloudCINode() ||
+			!CloudBucketUtil.isValidS3ObjectPath(basePortalCacheS3ObjectPath)) {
+
+			return;
+		}
+
+		File basePortalCacheFile = null;
+
+		try {
+			basePortalCacheFile = File.createTempFile(
+				"base-portal-cache", ".zip", getDirectory());
+
+			JenkinsResultsParserUtil.delete(basePortalCacheFile);
+
+			PortalGitWorkingDirectory portalGitWorkingDirectory =
+				(PortalGitWorkingDirectory)getGitWorkingDirectory();
+
+			basePortalCacheFile =
+				portalGitWorkingDirectory.createBasePortalCache(
+					basePortalCacheFile.getName());
+
+			CloudBucketUtil.uploadS3File(
+				basePortalCacheS3ObjectPath, basePortalCacheFile);
+
+			System.out.println(
+				"Successfully uploaded to " + basePortalCacheS3ObjectPath);
+		}
+		finally {
+			if (basePortalCacheFile != null) {
+				JenkinsResultsParserUtil.delete(basePortalCacheFile);
+			}
+		}
 	}
 
 	private void _writeAppServerPropertiesFile() {
@@ -230,7 +916,7 @@ public class PortalWorkspaceGitRepository extends BaseWorkspaceGitRepository {
 			new File(
 				getDirectory(),
 				JenkinsResultsParserUtil.combine(
-					"app.server.", System.getenv("HOSTNAME"), ".properties")),
+					"app.server.", Environment.get("HOSTNAME"), ".properties")),
 			getProperties("portal.app.server.properties"), true);
 	}
 
@@ -239,7 +925,7 @@ public class PortalWorkspaceGitRepository extends BaseWorkspaceGitRepository {
 			new File(
 				getDirectory(),
 				JenkinsResultsParserUtil.combine(
-					"build.", System.getenv("HOSTNAME"), ".properties")),
+					"build.", Environment.get("HOSTNAME"), ".properties")),
 			getProperties("portal.build.properties"), true);
 	}
 
@@ -248,7 +934,7 @@ public class PortalWorkspaceGitRepository extends BaseWorkspaceGitRepository {
 			new File(
 				getDirectory(),
 				JenkinsResultsParserUtil.combine(
-					"release.", System.getenv("HOSTNAME"), ".properties")),
+					"release.", Environment.get("HOSTNAME"), ".properties")),
 			getProperties("portal.release.properties"), true);
 	}
 
@@ -257,7 +943,7 @@ public class PortalWorkspaceGitRepository extends BaseWorkspaceGitRepository {
 			new File(
 				getDirectory(),
 				JenkinsResultsParserUtil.combine(
-					"sql/sql.", System.getenv("HOSTNAME"), ".properties")),
+					"sql/sql.", Environment.get("HOSTNAME"), ".properties")),
 			getProperties("portal.sql.properties"), true);
 	}
 
@@ -266,12 +952,17 @@ public class PortalWorkspaceGitRepository extends BaseWorkspaceGitRepository {
 			new File(
 				getDirectory(),
 				JenkinsResultsParserUtil.combine(
-					"test.", System.getenv("HOSTNAME"), ".properties")),
-			_getPortalTestProperties(), true);
+					"test.", Environment.get("HOSTNAME"), ".properties")),
+			getPortalTestProperties(), true);
 	}
 
-	private static final int _SETUP_PROFILE_DXP_RETRY_COUNT = 2;
-
-	private static final int _SETUP_PROFILE_DXP_RETRY_DELAY = 5;
+	private Properties _appServerProperties;
+	private PortalWorkspaceGitRepository _basePortalWorkspaceGitRepository;
+	private boolean _primaryPortalBranchPrivate;
+	private boolean _setUpBasePortalCache;
+	private boolean _setUpBinariesCache;
+	private boolean _setUpYarn;
+	private boolean _setUpYarnCache;
+	private String _yarnLockDigest;
 
 }

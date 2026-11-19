@@ -11,16 +11,6 @@
 CommerceShippingFixedOptionRelsDisplayContext commerceShippingFixedOptionRelsDisplayContext = (CommerceShippingFixedOptionRelsDisplayContext)request.getAttribute(WebKeys.PORTLET_DISPLAY_CONTEXT);
 
 CommerceShippingFixedOptionRel commerceShippingFixedOptionRel = commerceShippingFixedOptionRelsDisplayContext.getCommerceShippingFixedOptionRel();
-
-long countryId = commerceShippingFixedOptionRelsDisplayContext.getCountryId();
-long regionId = commerceShippingFixedOptionRelsDisplayContext.getRegionId();
-long commerceShippingMethodId = commerceShippingFixedOptionRelsDisplayContext.getCommerceShippingMethodId();
-
-long commerceShippingFixedOptionRelId = 0;
-
-if (commerceShippingFixedOptionRel != null) {
-	commerceShippingFixedOptionRelId = commerceShippingFixedOptionRel.getCommerceShippingFixedOptionRelId();
-}
 %>
 
 <liferay-frontend:side-panel-content
@@ -31,8 +21,11 @@ if (commerceShippingFixedOptionRel != null) {
 	<aui:form action="<%= editCommerceShippingFixedOptionRelActionURL %>" method="post" name="fm">
 		<aui:input name="<%= Constants.CMD %>" type="hidden" value="<%= (commerceShippingFixedOptionRel == null) ? Constants.ADD : Constants.UPDATE %>" />
 		<aui:input name="redirect" type="hidden" value="<%= currentURL %>" />
-		<aui:input name="commerceShippingFixedOptionRelId" type="hidden" value="<%= commerceShippingFixedOptionRelId %>" />
-		<aui:input name="commerceShippingMethodId" type="hidden" value="<%= commerceShippingMethodId %>" />
+		<aui:input name="commerceShippingFixedOptionId" type="hidden" value="<%= commerceShippingFixedOptionRelsDisplayContext.getCommerceShippingFixedOptionId() %>" />
+		<aui:input name="commerceShippingFixedOptionRelId" type="hidden" value="<%= commerceShippingFixedOptionRelsDisplayContext.getCommerceShippingFixedOptionRelId() %>" />
+		<aui:input name="commerceShippingMethodId" type="hidden" value="<%= commerceShippingFixedOptionRelsDisplayContext.getCommerceShippingMethodId() %>" />
+
+		<liferay-ui:error exception="<%= CommerceShippingFixedOptionRelPriceException.class %>" message="please-enter-a-valid-price" />
 
 		<div class="alert alert-info">
 			<liferay-ui:message key="commerce-shipping-fixed-option-rel-info" />
@@ -41,40 +34,6 @@ if (commerceShippingFixedOptionRel != null) {
 		<commerce-ui:panel
 			title='<%= LanguageUtil.get(request, "details") %>'
 		>
-			<div class="row">
-				<div class="col-md-6">
-					<aui:select bean="<%= commerceShippingFixedOptionRel %>" label="shipping-option" model="<%= CommerceShippingFixedOptionRel.class %>" name="commerceShippingFixedOptionId" required="<%= true %>">
-
-						<%
-						for (CommerceShippingFixedOption commerceShippingFixedOption : commerceShippingFixedOptionRelsDisplayContext.getCommerceShippingFixedOptions()) {
-						%>
-
-							<aui:option label="<%= commerceShippingFixedOption.getName(languageId) %>" value="<%= commerceShippingFixedOption.getCommerceShippingFixedOptionId() %>" />
-
-						<%
-						}
-						%>
-
-					</aui:select>
-				</div>
-
-				<div class="col-md-6">
-					<aui:select bean="<%= commerceShippingFixedOptionRel %>" label="warehouse" model="<%= CommerceShippingFixedOptionRel.class %>" name="commerceInventoryWarehouseId" showEmptyOption="<%= true %>">
-
-						<%
-						for (CommerceInventoryWarehouse commerceInventoryWarehouse : commerceShippingFixedOptionRelsDisplayContext.getCommerceInventoryWarehouses()) {
-						%>
-
-							<aui:option label="<%= commerceInventoryWarehouse.getName(locale) %>" value="<%= commerceInventoryWarehouse.getCommerceInventoryWarehouseId() %>" />
-
-						<%
-						}
-						%>
-
-					</aui:select>
-				</div>
-			</div>
-
 			<div class="row">
 				<div class="col-md-4">
 					<aui:select bean="<%= commerceShippingFixedOptionRel %>" label="country" model="<%= CommerceShippingFixedOptionRel.class %>" name="countryId" showEmptyOption="<%= true %>">
@@ -144,7 +103,7 @@ if (commerceShippingFixedOptionRel != null) {
 	</aui:form>
 </liferay-frontend:side-panel-content>
 
-<aui:script use="aui-base,liferay-dynamic-select">
+<aui:script use="aui-base">
 	new Liferay.DynamicSelect([
 		{
 			select: '<portlet:namespace />countryId',
@@ -161,7 +120,8 @@ if (commerceShippingFixedOptionRel != null) {
 			selectDesc: 'nameCurrentValue',
 			selectId: 'countryId',
 			selectSort: '<%= true %>',
-			selectVal: '<%= countryId %>',
+			selectVal:
+				'<%= commerceShippingFixedOptionRelsDisplayContext.getCountryId() %>',
 		},
 		{
 			select: '<portlet:namespace />regionId',
@@ -177,7 +137,8 @@ if (commerceShippingFixedOptionRel != null) {
 			},
 			selectDesc: 'name',
 			selectId: 'regionId',
-			selectVal: '<%= regionId %>',
+			selectVal:
+				'<%= commerceShippingFixedOptionRelsDisplayContext.getRegionId() %>',
 		},
 	]);
 </aui:script>

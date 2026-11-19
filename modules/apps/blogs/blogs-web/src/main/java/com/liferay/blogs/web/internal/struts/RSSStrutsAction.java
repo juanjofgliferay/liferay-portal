@@ -5,9 +5,10 @@
 
 package com.liferay.blogs.web.internal.struts;
 
-import com.liferay.blogs.configuration.BlogsGroupServiceOverriddenConfiguration;
+import com.liferay.blogs.configuration.BlogsGroupServiceConfiguration;
 import com.liferay.blogs.constants.BlogsConstants;
 import com.liferay.blogs.service.BlogsEntryService;
+import com.liferay.blogs.web.internal.util.BlogsUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
@@ -28,12 +29,12 @@ import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.rss.util.RSSUtil;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.nio.charset.StandardCharsets;
 
 import java.util.Date;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -177,15 +178,14 @@ public class RSSStrutsAction implements StrutsAction {
 			(ThemeDisplay)httpServletRequest.getAttribute(
 				WebKeys.THEME_DISPLAY);
 
-		BlogsGroupServiceOverriddenConfiguration
-			blogsGroupServiceOverriddenConfiguration =
-				_configurationProvider.getConfiguration(
-					BlogsGroupServiceOverriddenConfiguration.class,
-					new GroupServiceSettingsLocator(
-						themeDisplay.getSiteGroupId(),
-						BlogsConstants.SERVICE_NAME));
+		BlogsGroupServiceConfiguration blogsGroupServiceConfiguration =
+			_configurationProvider.getConfiguration(
+				BlogsGroupServiceConfiguration.class,
+				new GroupServiceSettingsLocator(
+					themeDisplay.getSiteGroupId(),
+					BlogsConstants.SERVICE_NAME));
 
-		return blogsGroupServiceOverriddenConfiguration.enableRss();
+		return BlogsUtil.isRSSFeedsEnabled(blogsGroupServiceConfiguration);
 	}
 
 	@Reference

@@ -18,8 +18,10 @@ import com.liferay.commerce.notification.service.CommerceNotificationQueueEntryL
  * @author Alessio Antonio Rendina
  * @see CommerceNotificationQueueEntryImpl
  * @see CommerceNotificationQueueEntry
+ * @deprecated
  * @generated
  */
+@Deprecated
 public abstract class CommerceNotificationQueueEntryBaseImpl
 	extends CommerceNotificationQueueEntryModelImpl
 	implements CommerceNotificationQueueEntry {
@@ -42,3 +44,4 @@ public abstract class CommerceNotificationQueueEntryBaseImpl
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-815451879

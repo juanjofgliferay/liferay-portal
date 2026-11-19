@@ -24,19 +24,38 @@ import java.util.regex.Pattern;
 public class CopyrightCheck extends BaseFileCheck {
 
 	@Override
+	public boolean isLiferaySourceCheck() {
+		return true;
+	}
+
+	@Override
 	protected String doProcess(
 			String fileName, String absolutePath, String content)
 		throws Exception {
 
+		SourceProcessor sourceProcessor = getSourceProcessor();
+
+		SourceFormatterArgs sourceFormatterArgs =
+			sourceProcessor.getSourceFormatterArgs();
+
+		String gitWorkingBranchName =
+			sourceFormatterArgs.getGitWorkingBranchName();
+
+		if (gitWorkingBranchName.matches("release-\\d{4}\\.q[1-4]")) {
+			return content;
+		}
+
 		if (!fileName.endsWith(".tpl") && !fileName.endsWith(".vm")) {
-			content = _fixCopyright(fileName, absolutePath, content);
+			content = _fixCopyright(
+				fileName, absolutePath, content, sourceFormatterArgs);
 		}
 
 		return content;
 	}
 
 	private String _fixCopyright(
-			String fileName, String absolutePath, String content)
+			String fileName, String absolutePath, String content,
+			SourceFormatterArgs sourceFormatterArgs)
 		throws Exception {
 
 		int x = content.indexOf("/**\n * SPDX-FileCopyrightText: (c) ");
@@ -55,24 +74,19 @@ public class CopyrightCheck extends BaseFileCheck {
 			return content;
 		}
 
-		if (!content.startsWith("/**\n * SPDX-FileCopyrightText: (c) ") &&
-			!content.startsWith("<%--\n/**\n * SPDX-FileCopyrightText: (c) ") &&
-			!content.startsWith(
-				_XML_DECLARATION +
-					"<!--\n/**\n * SPDX-FileCopyrightText: (c) ")) {
+		if ((fileName.endsWith(".java") &&
+			 !content.startsWith("/**\n * SPDX-FileCopyrightText: (c) ")) ||
+			((fileName.endsWith(".jsp") || fileName.endsWith(".jspf")) &&
+			 !content.startsWith(
+				 "<%--\n/**\n * SPDX-FileCopyrightText: (c) "))) {
 
 			addMessage(fileName, "File must start with copyright");
 
 			return content;
 		}
 
-		SourceProcessor sourceProcessor = getSourceProcessor();
-
-		SourceFormatterArgs sourceFormatterArgs =
-			sourceProcessor.getSourceFormatterArgs();
-
 		for (String currentBranchRenamedFileName :
-				_getCurrentBranchRenamedFileNames(sourceFormatterArgs)) {
+				sourceFormatterArgs.getCurrentBranchRenamedFileNames()) {
 
 			if (absolutePath.endsWith(currentBranchRenamedFileName)) {
 				return content;
@@ -80,7 +94,7 @@ public class CopyrightCheck extends BaseFileCheck {
 		}
 
 		for (String currentBranchAddedFileNames :
-				_getCurrentBranchAddedFileName(sourceFormatterArgs)) {
+				sourceFormatterArgs.getCurrentBranchAddedFileNames()) {
 
 			if (absolutePath.endsWith(currentBranchAddedFileNames)) {
 				SimpleDateFormat simpleDateFormat = new SimpleDateFormat(
@@ -135,21 +149,6 @@ public class CopyrightCheck extends BaseFileCheck {
 		return content;
 	}
 
-	private synchronized List<String> _getCurrentBranchAddedFileName(
-			SourceFormatterArgs sourceFormatterArgs)
-		throws Exception {
-
-		if (_currentBranchAddedFileNames != null) {
-			return _currentBranchAddedFileNames;
-		}
-
-		_currentBranchAddedFileNames = GitUtil.getCurrentBranchAddedFileNames(
-			sourceFormatterArgs.getBaseDirName(),
-			sourceFormatterArgs.getGitWorkingBranchName());
-
-		return _currentBranchAddedFileNames;
-	}
-
 	private synchronized List<String> _getCurrentBranchFileNames(
 			SourceFormatterArgs sourceFormatterArgs)
 		throws Exception {
@@ -165,30 +164,9 @@ public class CopyrightCheck extends BaseFileCheck {
 		return _currentBranchFileNames;
 	}
 
-	private synchronized List<String> _getCurrentBranchRenamedFileNames(
-			SourceFormatterArgs sourceFormatterArgs)
-		throws Exception {
-
-		if (_currentBranchRenamedFileNames != null) {
-			return _currentBranchRenamedFileNames;
-		}
-
-		_currentBranchRenamedFileNames =
-			GitUtil.getCurrentBranchRenamedFileNames(
-				sourceFormatterArgs.getBaseDirName(),
-				sourceFormatterArgs.getGitWorkingBranchName());
-
-		return _currentBranchRenamedFileNames;
-	}
-
-	private static final String _XML_DECLARATION =
-		"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
-
 	private static final Pattern _copyrightPattern = Pattern.compile(
 		"[\\+-] \\* SPDX-FileCopyrightText: \\(c\\) (\\d{4}) Liferay, Inc\\. " +
 			"https://liferay\\.com");
-	private static List<String> _currentBranchAddedFileNames;
 	private static List<String> _currentBranchFileNames;
-	private static List<String> _currentBranchRenamedFileNames;
 
 }

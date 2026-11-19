@@ -61,7 +61,7 @@ const METRICS_STATIC_VALUES = {
 	analyticsReportsHistoricalViews: {
 		color: CHART_COLORS.analyticsReportsHistoricalViews,
 		iconType: 'circle',
-		langKey: Liferay.Language.get('views-metric'),
+		langKey: Liferay.Language.get('views'),
 	},
 };
 
@@ -136,6 +136,7 @@ export default function Chart({dataProviders = [], publishDate}) {
 
 	const {
 		dataSet,
+		experienceId,
 		lineChartLoading,
 		timeRange,
 		timeSpanKey,
@@ -144,9 +145,10 @@ export default function Chart({dataProviders = [], publishDate}) {
 
 	const isPreviousPeriodButtonDisabled = useIsPreviousPeriodButtonDisabled();
 
-	const dateFormatters = useMemo(() => dateFormat(languageTag), [
-		languageTag,
-	]);
+	const dateFormatters = useMemo(
+		() => dateFormat(languageTag),
+		[languageTag]
+	);
 
 	const isMounted = useIsMounted();
 
@@ -213,8 +215,9 @@ export default function Chart({dataProviders = [], publishDate}) {
 		return () => {
 			gone = true;
 		};
+
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [timeSpanKey, timeSpanOffset]);
+	}, [experienceId, timeSpanKey, timeSpanOffset]);
 
 	const {histogram, keyList} = dataSet;
 
@@ -296,7 +299,7 @@ export default function Chart({dataProviders = [], publishDate}) {
 												new Date(
 													timeRange.endDate
 												).getDate(),
-										  ]
+											]
 										: []
 								}
 								interval="preserveStartEnd"

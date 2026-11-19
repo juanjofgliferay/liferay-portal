@@ -5,8 +5,6 @@
 
 package com.liferay.feature.flag.web.internal.feature.flag;
 
-import java.util.function.Function;
-
 /**
  * @author Drew Brokke
  */
@@ -16,9 +14,8 @@ public interface FeatureFlagsBagProvider {
 
 	public FeatureFlagsBag getOrCreateFeatureFlagsBag(long companyId);
 
-	public void setEnabled(long companyId, String key, boolean enabled);
+	public boolean isSystemKey(String key);
 
-	public <T> T withFeatureFlagsBag(
-		long companyId, Function<FeatureFlagsBag, T> function);
+	public void setEnabled(long companyId, String key, boolean enabled);
 
 }

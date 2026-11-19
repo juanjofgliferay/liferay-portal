@@ -19,7 +19,7 @@ import com.liferay.message.boards.constants.MBMessageConstants;
 import com.liferay.message.boards.model.MBCategory;
 import com.liferay.message.boards.model.MBMessage;
 import com.liferay.message.boards.model.MBThread;
-import com.liferay.message.boards.service.MBCategoryLocalServiceUtil;
+import com.liferay.message.boards.service.MBCategoryLocalService;
 import com.liferay.message.boards.service.MBCategoryServiceUtil;
 import com.liferay.message.boards.service.MBMessageLocalServiceUtil;
 import com.liferay.message.boards.service.MBThreadLocalService;
@@ -46,6 +46,7 @@ import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import java.io.InputStream;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -135,7 +136,7 @@ public class MBMessageStagedModelDataHandlerTest
 		exportImportStagedModel(mbMessage);
 
 		MBCategory mbCategory = MBCategoryServiceUtil.addCategory(
-			TestPropsValues.getUserId(),
+			null, TestPropsValues.getUserId(),
 			MBCategoryConstants.DEFAULT_PARENT_CATEGORY_ID,
 			RandomTestUtil.randomString(), StringPool.BLANK,
 			ServiceContextTestUtil.getServiceContext(
@@ -169,8 +170,8 @@ public class MBMessageStagedModelDataHandlerTest
 		Map<String, List<StagedModel>> dependentStagedModelsMap =
 			new HashMap<>();
 
-		MBCategory category = MBCategoryServiceUtil.addCategory(
-			TestPropsValues.getUserId(),
+		MBCategory category = _mbCategoryLocalService.addCategory(
+			null, TestPropsValues.getUserId(),
 			MBCategoryConstants.DEFAULT_PARENT_CATEGORY_ID,
 			RandomTestUtil.randomString(), StringPool.BLANK,
 			ServiceContextTestUtil.getServiceContext(
@@ -235,6 +236,23 @@ public class MBMessageStagedModelDataHandlerTest
 				fileEntry.getRepositoryId()));
 
 		return message;
+	}
+
+	@Override
+	protected StagedModel addStagedModelWithExternalReferenceCode(
+			Group group, String externalReferenceCode,
+			Map<String, List<StagedModel>> dependentStagedModelsMap)
+		throws Exception {
+
+		return MBMessageLocalServiceUtil.addMessage(
+			externalReferenceCode, TestPropsValues.getUserId(),
+			RandomTestUtil.randomString(), group.getGroupId(),
+			MBCategoryConstants.DEFAULT_PARENT_CATEGORY_ID, 0, 0,
+			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
+			MBMessageConstants.DEFAULT_FORMAT, Collections.emptyList(), false,
+			0.0, false,
+			ServiceContextTestUtil.getServiceContext(
+				group.getGroupId(), TestPropsValues.getUserId()));
 	}
 
 	@Override
@@ -332,7 +350,7 @@ public class MBMessageStagedModelDataHandlerTest
 
 		MBCategory category = (MBCategory)dependentStagedModels.get(0);
 
-		MBCategoryLocalServiceUtil.getMBCategoryByUuidAndGroupId(
+		_mbCategoryLocalService.getMBCategoryByUuidAndGroupId(
 			category.getUuid(), group.getGroupId());
 	}
 
@@ -377,6 +395,9 @@ public class MBMessageStagedModelDataHandlerTest
 			message.isAllowPingbacks(), importedMessage.isAllowPingbacks());
 		Assert.assertEquals(message.isAnswer(), importedMessage.isAnswer());
 	}
+
+	@Inject
+	private MBCategoryLocalService _mbCategoryLocalService;
 
 	@Inject
 	private MBThreadLocalService _mbThreadLocalService;

@@ -5,11 +5,13 @@
 
 package com.liferay.portal.workflow.kaleo.runtime;
 
+import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.workflow.WorkflowDefinition;
 import com.liferay.portal.kernel.workflow.WorkflowException;
 import com.liferay.portal.kernel.workflow.WorkflowInstance;
+import com.liferay.portal.kernel.workflow.WorkflowTransition;
 import com.liferay.portal.kernel.workflow.search.WorkflowModelSearchResult;
 
 import java.io.InputStream;
@@ -31,12 +33,16 @@ public interface WorkflowEngine {
 			String name, int version, ServiceContext serviceContext)
 		throws WorkflowException;
 
+	public void deleteWorkflowInstance(long workflowInstanceId)
+		throws PortalException;
+
 	public void deleteWorkflowInstance(
 			long workflowInstanceId, ServiceContext serviceContext)
 		throws WorkflowException;
 
 	public WorkflowDefinition deployWorkflowDefinition(
-			String title, String name, String scope, InputStream inputStream,
+			String externalReferenceCode, String title, String name,
+			String scope, boolean system, InputStream inputStream,
 			ServiceContext serviceContext)
 		throws WorkflowException;
 
@@ -48,6 +54,13 @@ public interface WorkflowEngine {
 	public List<String> getNextTransitionNames(
 			long workflowInstanceId, ServiceContext serviceContext)
 		throws WorkflowException;
+
+	public List<WorkflowTransition> getNextWorkflowTransitions(
+			long workflowInstanceId, ServiceContext serviceContext)
+		throws WorkflowException;
+
+	public WorkflowInstance getWorkflowInstance(long workflowInstanceId)
+		throws PortalException;
 
 	public WorkflowInstance getWorkflowInstance(
 			long workflowInstanceId, ServiceContext serviceContext)
@@ -88,8 +101,15 @@ public interface WorkflowEngine {
 			ServiceContext serviceContext)
 		throws WorkflowException;
 
+	public WorkflowInstance liberalStartWorkflowInstance(
+			String workflowDefinitionName, Integer workflowDefinitionVersion,
+			String transitionName, Map<String, Serializable> workflowContext,
+			ServiceContext serviceContext, boolean waitForCompletion)
+		throws WorkflowException;
+
 	public WorkflowDefinition saveWorkflowDefinition(
-			String title, String name, String scope, byte[] bytes,
+			String externalReferenceCode, String title, String name,
+			String scope, boolean system, byte[] bytes,
 			ServiceContext serviceContext)
 		throws WorkflowException;
 
@@ -150,6 +170,10 @@ public interface WorkflowEngine {
 			String transitionName, Map<String, Serializable> workflowContext,
 			ServiceContext serviceContext, boolean waitForCompletion)
 		throws WorkflowException;
+
+	public WorkflowInstance updateContext(
+			long workflowInstanceId, Map<String, Serializable> workflowContext)
+		throws PortalException;
 
 	public WorkflowInstance updateContext(
 			long workflowInstanceId, Map<String, Serializable> workflowContext,

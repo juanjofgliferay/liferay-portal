@@ -71,6 +71,22 @@ public class ServiceContextAdviceTest {
 	}
 
 	@Test
+	public void testWithException() {
+		AopMethodInvocation aopMethodInvocation = _createTestMethodInvocation(
+			ReflectionTestUtil.getMethod(
+				TestInterceptedClass.class, "method", ServiceContext.class));
+
+		try {
+			aopMethodInvocation.proceed(new Object[] {null});
+
+			Assert.fail();
+		}
+		catch (Throwable throwable) {
+			Assert.assertTrue(throwable instanceof IllegalStateException);
+		}
+	}
+
+	@Test
 	public void testWithNoArguments() {
 		AopMethodInvocation aopMethodInvocation = ReflectionTestUtil.invoke(
 			_aopInvocationHandler, "_getAopMethodInvocation",
@@ -99,21 +115,6 @@ public class ServiceContextAdviceTest {
 	}
 
 	@Test
-	public void testWithoutServiceContextParameter() {
-		ServiceContextThreadLocal.pushServiceContext(new ServiceContext());
-
-		AopMethodInvocation aopMethodInvocation = ReflectionTestUtil.invoke(
-			_aopInvocationHandler, "_getAopMethodInvocation",
-			new Class<?>[] {Method.class},
-			ReflectionTestUtil.getMethod(
-				TestInterceptedClass.class, "method", Object.class));
-
-		Assert.assertNull(
-			ReflectionTestUtil.getFieldValue(
-				aopMethodInvocation, "_nextAopMethodInvocation"));
-	}
-
-	@Test
 	public void testWithServiceContextWrapper() throws Throwable {
 		ServiceContext serviceContext = new ServiceContext();
 
@@ -134,6 +135,21 @@ public class ServiceContextAdviceTest {
 
 		Assert.assertSame(
 			serviceContext, ServiceContextThreadLocal.popServiceContext());
+	}
+
+	@Test
+	public void testWithoutServiceContextParameter() {
+		ServiceContextThreadLocal.pushServiceContext(new ServiceContext());
+
+		AopMethodInvocation aopMethodInvocation = ReflectionTestUtil.invoke(
+			_aopInvocationHandler, "_getAopMethodInvocation",
+			new Class<?>[] {Method.class},
+			ReflectionTestUtil.getMethod(
+				TestInterceptedClass.class, "method", Object.class));
+
+		Assert.assertNull(
+			ReflectionTestUtil.getFieldValue(
+				aopMethodInvocation, "_nextAopMethodInvocation"));
 	}
 
 	private AopMethodInvocation _createTestMethodInvocation(Method method) {
@@ -160,6 +176,10 @@ public class ServiceContextAdviceTest {
 
 		@SuppressWarnings("unused")
 		public void method(ServiceContext serviceContext) {
+			if (ServiceContextThreadLocal.getServiceContext() == null) {
+				throw new IllegalStateException();
+			}
+
 			if (serviceContext == null) {
 				Assert.assertNotNull(
 					ServiceContextThreadLocal.getServiceContext());

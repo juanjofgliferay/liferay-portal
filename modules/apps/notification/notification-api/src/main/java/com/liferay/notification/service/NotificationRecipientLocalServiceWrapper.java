@@ -29,6 +29,16 @@ public class NotificationRecipientLocalServiceWrapper
 		_notificationRecipientLocalService = notificationRecipientLocalService;
 	}
 
+	@Override
+	public com.liferay.notification.model.NotificationRecipient
+			addNotificationRecipient(
+				long userId, long classNameId, long classPK)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _notificationRecipientLocalService.addNotificationRecipient(
+			userId, classNameId, classPK);
+	}
+
 	/**
 	 * Adds the notification recipient to the database. Also notifies the appropriate model listeners.
 	 *
@@ -239,6 +249,14 @@ public class NotificationRecipientLocalServiceWrapper
 			notificationRecipientId);
 	}
 
+	@Override
+	public com.liferay.notification.model.NotificationRecipient
+		fetchNotificationRecipientByClassPK(long classPK) {
+
+		return _notificationRecipientLocalService.
+			fetchNotificationRecipientByClassPK(classPK);
+	}
+
 	/**
 	 * Returns the notification recipient with the matching UUID and company.
 	 *
@@ -298,7 +316,8 @@ public class NotificationRecipientLocalServiceWrapper
 
 	@Override
 	public com.liferay.notification.model.NotificationRecipient
-		getNotificationRecipientByClassPK(long classPK) {
+			getNotificationRecipientByClassPK(long classPK)
+		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _notificationRecipientLocalService.
 			getNotificationRecipientByClassPK(classPK);
@@ -415,3 +434,4 @@ public class NotificationRecipientLocalServiceWrapper
 		_notificationRecipientLocalService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:2348665

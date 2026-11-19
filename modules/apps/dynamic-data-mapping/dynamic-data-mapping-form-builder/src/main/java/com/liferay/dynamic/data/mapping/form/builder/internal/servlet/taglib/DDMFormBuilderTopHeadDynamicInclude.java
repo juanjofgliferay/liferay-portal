@@ -6,18 +6,20 @@
 package com.liferay.dynamic.data.mapping.form.builder.internal.servlet.taglib;
 
 import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.content.security.policy.ContentSecurityPolicyNonceProviderUtil;
 import com.liferay.portal.kernel.servlet.taglib.BaseDynamicInclude;
 import com.liferay.portal.kernel.servlet.taglib.DynamicInclude;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 import java.io.PrintWriter;
-
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -26,7 +28,14 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Rafael Praxedes
  */
-@Component(service = DynamicInclude.class)
+@Component(
+	property = {
+		"dynamic.include.key=com.liferay.data.engine.taglib#/data_layout_builder/start.jsp#pre",
+		"dynamic.include.key=com.liferay.dynamic.data.mapping.form.web#EditElementSetMVCRenderCommand#render",
+		"dynamic.include.key=com.liferay.dynamic.data.mapping.form.web#EditFormInstanceMVCRenderCommand#render"
+	},
+	service = DynamicInclude.class
+)
 public class DDMFormBuilderTopHeadDynamicInclude extends BaseDynamicInclude {
 
 	@Override
@@ -39,29 +48,25 @@ public class DDMFormBuilderTopHeadDynamicInclude extends BaseDynamicInclude {
 			(ThemeDisplay)httpServletRequest.getAttribute(
 				WebKeys.THEME_DISPLAY);
 
+		String fileName = "/css/main.css";
+
+		if (_portal.isRightToLeft(httpServletRequest)) {
+			fileName = "/css/main_rtl.css";
+		}
+
 		PrintWriter printWriter = httpServletResponse.getWriter();
 
-		String content = "<link href=\"".concat(
+		printWriter.print("<link href=\"");
+		printWriter.print(
 			_portal.getStaticResourceURL(
 				httpServletRequest,
 				StringBundler.concat(
-					themeDisplay.getCDNBaseURL(), _postfix, "/css/main.css")));
-
-		printWriter.println(
-			content.concat("\" rel=\"stylesheet\" type = \"text/css\" />"));
-	}
-
-	@Override
-	public void register(DynamicIncludeRegistry dynamicIncludeRegistry) {
-		dynamicIncludeRegistry.register(
-			"com.liferay.data.engine.taglib#/data_layout_builder/start.jsp" +
-				"#pre");
-		dynamicIncludeRegistry.register(
-			"com.liferay.dynamic.data.mapping.form.web#" +
-				"EditElementSetMVCRenderCommand#render");
-		dynamicIncludeRegistry.register(
-			"com.liferay.dynamic.data.mapping.form.web#" +
-				"EditFormInstanceMVCRenderCommand#render");
+					themeDisplay.getCDNBaseURL(), _postfix, fileName)));
+		printWriter.print(StringPool.QUOTE);
+		printWriter.print(
+			ContentSecurityPolicyNonceProviderUtil.getNonceAttribute(
+				httpServletRequest));
+		printWriter.println(" rel=\"stylesheet\" type = \"text/css\" />");
 	}
 
 	@Activate

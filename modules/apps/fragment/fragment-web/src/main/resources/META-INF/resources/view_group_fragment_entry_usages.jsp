@@ -8,7 +8,7 @@
 <%@ include file="/init.jsp" %>
 
 <%
-GroupFragmentEntryLinkDisplayContext groupFragmentEntryLinkDisplayContext = new GroupFragmentEntryLinkDisplayContext(renderRequest, renderResponse);
+GroupFragmentEntryLinkDisplayContext groupFragmentEntryLinkDisplayContext = (GroupFragmentEntryLinkDisplayContext)request.getAttribute(GroupFragmentEntryLinkDisplayContext.class.getName());
 
 FragmentEntry fragmentEntry = groupFragmentEntryLinkDisplayContext.getFragmentEntry();
 
@@ -19,8 +19,18 @@ portletDisplay.setURLBackTitle(portletDisplay.getPortletDisplayName());
 renderResponse.setTitle(LanguageUtil.format(request, "usages-and-propagation-x", fragmentEntry.getName()));
 %>
 
+<liferay-ui:error exception="<%= InvalidPropagationTargetGroupsException.class %>" message="the-selected-sites-are-no-longer-connected-to-this-design-library" />
+
+<c:if test='<%= SessionMessages.contains(renderRequest, "sitesSkippedFromPropagation") %>'>
+	<clay:alert
+		displayType="warning"
+		message="some-of-the-selected-sites-are-no-longer-connected-to-this-design-library-and-were-not-updated"
+	/>
+</c:if>
+
 <clay:container-fluid
 	cssClass="container-form-lg"
+	size="xxxl"
 >
 	<clay:sheet>
 		<clay:row>
@@ -29,12 +39,13 @@ renderResponse.setTitle(LanguageUtil.format(request, "usages-and-propagation-x",
 			>
 				<clay:management-toolbar
 					managementToolbarDisplayContext="<%= new GroupFragmentEntryUsageManagementToolbarDisplayContext(request, liferayPortletRequest, liferayPortletResponse, groupFragmentEntryLinkDisplayContext.getSearchContainer()) %>"
-					propsTransformer="js/FragmentEntryUsagesManagementToolbarPropsTransformer"
+					propsTransformer="{FragmentEntryUsagesManagementToolbarPropsTransformer} from fragment-web"
 				/>
 
 				<portlet:actionURL name="/fragment/propagate_group_fragment_entry_changes" var="propagateGroupFragmentEntryChangesURL">
 					<portlet:param name="redirect" value="<%= currentURL %>" />
-					<portlet:param name="fragmentEntryId" value="<%= String.valueOf(fragmentEntry.getFragmentEntryId()) %>" />
+					<portlet:param name="fragmentEntryERC" value="<%= fragmentEntry.getExternalReferenceCode() %>" />
+					<portlet:param name="fragmentEntryGroupId" value="<%= String.valueOf(fragmentEntry.getGroupId()) %>" />
 				</portlet:actionURL>
 
 				<aui:form action="<%= propagateGroupFragmentEntryChangesURL %>" name="fm">
@@ -49,7 +60,7 @@ renderResponse.setTitle(LanguageUtil.format(request, "usages-and-propagation-x",
 							<liferay-ui:search-container-column-text
 								cssClass="table-cell-expand table-cell-minw-200"
 								name="name"
-								value="<%= group.getDescriptiveName(locale) %>"
+								value="<%= HtmlUtil.escape(group.getDescriptiveName(locale)) %>"
 							/>
 
 							<liferay-ui:search-container-column-text

@@ -18,7 +18,7 @@ import Hint from './Hint';
 const KEYWORD_VALUE_TYPE = [
 	{label: Liferay.Language.get('traffic'), name: 'traffic'},
 	{label: Liferay.Language.get('search-volume'), name: 'volume'},
-	{label: Liferay.Language.get('position'), name: 'position'},
+	{label: Liferay.Language.get('position[ranking]'), name: 'position'},
 ];
 
 type CountryKeyworks = {
@@ -89,9 +89,9 @@ export default function Keywords({currentPage}: Props) {
 		return countryKeywords ? countryKeywords.keywords : [];
 	}, [currentPage.data.countrySearchKeywords, currentCountry]);
 
-	const handleCountrySelection: React.ChangeEventHandler<HTMLSelectElement> = (
-		event
-	) => {
+	const handleCountrySelection: React.ChangeEventHandler<
+		HTMLSelectElement
+	> = (event) => {
 		const country = event.target.value;
 		setCurrentCountry(country);
 	};
@@ -110,9 +110,9 @@ export default function Keywords({currentPage}: Props) {
 
 	return (
 		<>
-			<h5 className="mt-3 sheet-subtitle">
+			<div className="mt-3 sheet-subtitle">
 				{Liferay.Language.get('best-keywords')}
-			</h5>
+			</div>
 
 			<div className="mb-3 text-secondary">
 				{Liferay.Language.get('best-keywords-description')}
@@ -234,10 +234,10 @@ export default function Keywords({currentPage}: Props) {
 																'traffic'
 																? traffic
 																: keywordValueType.name ===
-																  'volume'
-																? searchVolume
-																: position
-													  )}
+																	  'volume'
+																	? searchVolume
+																	: position
+														)}
 											</span>
 										</ClayList.ItemField>
 									</ClayList.Item>

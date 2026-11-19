@@ -52,26 +52,18 @@ public class AddressLocalServiceUtil {
 
 	public static Address addAddress(
 			String externalReferenceCode, long userId, String className,
-			long classPK, String name, String description, String street1,
-			String street2, String street3, String city, String zip,
-			long regionId, long countryId, long listTypeId, boolean mailing,
-			boolean primary, String phoneNumber, ServiceContext serviceContext)
-		throws PortalException {
-
-		return getService().addAddress(
-			externalReferenceCode, userId, className, classPK, name,
-			description, street1, street2, street3, city, zip, regionId,
-			countryId, listTypeId, mailing, primary, phoneNumber,
-			serviceContext);
-	}
-
-	public static Address copyAddress(
-			long sourceAddressId, String className, long classPK,
+			long classPK, long countryId, long listTypeId, long regionId,
+			String city, String description, boolean mailing, String name,
+			boolean primary, String street1, String street2, String street3,
+			String subtype, String zip, String phoneNumber,
 			ServiceContext serviceContext)
 		throws PortalException {
 
-		return getService().copyAddress(
-			sourceAddressId, className, classPK, serviceContext);
+		return getService().addAddress(
+			externalReferenceCode, userId, className, classPK, countryId,
+			listTypeId, regionId, city, description, mailing, name, primary,
+			street1, street2, street3, subtype, zip, phoneNumber,
+			serviceContext);
 	}
 
 	/**
@@ -296,10 +288,6 @@ public class AddressLocalServiceUtil {
 		return getService().getAddressByUuidAndCompanyId(uuid, companyId);
 	}
 
-	public static List<Address> getAddresses() {
-		return getService().getAddresses();
-	}
-
 	/**
 	 * Returns a range of all the addresses.
 	 *
@@ -366,13 +354,13 @@ public class AddressLocalServiceUtil {
 			companyId, className, classPK, listTypeIds);
 	}
 
-	public static List<Address> getListTypeAddresses(
-		long companyId, String className, long classPK, long[] listTypeIds,
-		int start, int end, OrderByComparator<Address> orderByComparator) {
+	public static Address getOrAddEmptyAddress(
+			String externalReferenceCode, long companyId, long userId,
+			String className, long classPK)
+		throws PortalException {
 
-		return getService().getListTypeAddresses(
-			companyId, className, classPK, listTypeIds, start, end,
-			orderByComparator);
+		return getService().getOrAddEmptyAddress(
+			externalReferenceCode, companyId, userId, className, classPK);
 	}
 
 	/**
@@ -419,26 +407,32 @@ public class AddressLocalServiceUtil {
 	}
 
 	public static Address updateAddress(
-			long addressId, String street1, String street2, String street3,
-			String city, String zip, long regionId, long countryId,
-			long listTypeId, boolean mailing, boolean primary)
+			String externalReferenceCode, long addressId, long countryId,
+			long listTypeId, long regionId, String city, String description,
+			boolean mailing, String name, boolean primary, String street1,
+			String street2, String street3, String subtype, String zip,
+			String phoneNumber)
 		throws PortalException {
 
 		return getService().updateAddress(
-			addressId, street1, street2, street3, city, zip, regionId,
-			countryId, listTypeId, mailing, primary);
+			externalReferenceCode, addressId, countryId, listTypeId, regionId,
+			city, description, mailing, name, primary, street1, street2,
+			street3, subtype, zip, phoneNumber);
 	}
 
-	public static Address updateAddress(
-			long addressId, String name, String description, String street1,
-			String street2, String street3, String city, String zip,
-			long regionId, long countryId, long listTypeId, boolean mailing,
-			boolean primary, String phoneNumber)
+	public static Address updateExternalReferenceCode(
+		Address address, String externalReferenceCode) {
+
+		return getService().updateExternalReferenceCode(
+			address, externalReferenceCode);
+	}
+
+	public static Address updateExternalReferenceCode(
+			long addressId, String externalReferenceCode)
 		throws PortalException {
 
-		return getService().updateAddress(
-			addressId, name, description, street1, street2, street3, city, zip,
-			regionId, countryId, listTypeId, mailing, primary, phoneNumber);
+		return getService().updateExternalReferenceCode(
+			addressId, externalReferenceCode);
 	}
 
 	public static AddressLocalService getService() {
@@ -452,3 +446,4 @@ public class AddressLocalServiceUtil {
 	private static volatile AddressLocalService _service;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1634309251

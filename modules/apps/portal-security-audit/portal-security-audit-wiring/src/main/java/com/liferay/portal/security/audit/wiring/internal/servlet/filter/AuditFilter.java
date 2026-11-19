@@ -6,10 +6,11 @@
 package com.liferay.portal.security.audit.wiring.internal.servlet.filter;
 
 import com.liferay.petra.lang.CentralizedThreadLocal;
-import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
-import com.liferay.portal.kernel.audit.AuditRequestThreadLocal;
+import com.liferay.portal.kernel.audit.AuditRequestContext;
+import com.liferay.portal.kernel.audit.AuditRequestContextThreadLocal;
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogContext;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
@@ -23,22 +24,19 @@ import com.liferay.portal.kernel.servlet.BaseFilter;
 import com.liferay.portal.kernel.servlet.HttpHeaders;
 import com.liferay.portal.kernel.servlet.TryFilter;
 import com.liferay.portal.kernel.util.HashMapBuilder;
-import com.liferay.portal.kernel.util.HashMapDictionary;
-import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.PrefsPropsUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.portal.kernel.uuid.PortalUUIDUtil;
 import com.liferay.portal.security.audit.wiring.internal.configuration.AuditLogContextConfiguration;
+
+import jakarta.servlet.Filter;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 
 import java.util.HashMap;
 import java.util.Map;
-
-import javax.servlet.Filter;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceRegistration;
@@ -71,79 +69,93 @@ public class AuditFilter extends BaseFilter implements TryFilter {
 			HttpServletResponse httpServletResponse)
 		throws Exception {
 
-		AuditRequestThreadLocal auditRequestThreadLocal =
-			AuditRequestThreadLocal.getAuditThreadLocal();
+		AuditRequestContext auditRequestContext =
+			AuditRequestContextThreadLocal.getAuditRequestContext();
 
-		auditRequestThreadLocal.setClientHost(
-			httpServletRequest.getRemoteHost());
+		auditRequestContext.setClientHost(httpServletRequest.getRemoteHost());
 
 		String remoteAddr = httpServletRequest.getRemoteAddr();
 
-		auditRequestThreadLocal.setClientIP(remoteAddr);
+		auditRequestContext.setClientIP(remoteAddr);
 
-		auditRequestThreadLocal.setQueryString(
-			httpServletRequest.getQueryString());
+		auditRequestContext.setQueryString(httpServletRequest.getQueryString());
 
 		String userEmailAddress = StringPool.BLANK;
 
-		HttpSession httpSession = httpServletRequest.getSession();
+		HttpSession httpSession = httpServletRequest.getSession(false);
 
-		Long userId = (Long)httpSession.getAttribute(WebKeys.USER_ID);
+		String auditSessionId = null;
+		Long userId = null;
+
+		if (httpSession != null) {
+			auditSessionId = (String)httpSession.getAttribute(
+				WebKeys.AUDIT_SESSION_ID);
+			userId = (Long)httpSession.getAttribute(WebKeys.USER_ID);
+		}
 
 		String userLogin = StringPool.BLANK;
 
 		if (userId != null) {
-			try (SafeCloseable safeCloseable =
-					CompanyThreadLocal.setWithSafeCloseable(
-						_portal.getCompanyId(httpServletRequest))) {
+			User user = _userLocalService.fetchUser(userId);
 
-				User user = _userLocalService.fetchUser(userId);
+			if (user != null) {
+				userEmailAddress = user.getEmailAddress();
 
-				if (user != null) {
-					userEmailAddress = user.getEmailAddress();
+				auditRequestContext.setRealUserEmailAddress(userEmailAddress);
 
-					auditRequestThreadLocal.setRealUserEmailAddress(
-						userEmailAddress);
+				auditRequestContext.setRealUserId(userId);
 
-					auditRequestThreadLocal.setRealUserId(userId);
+				userLogin = _getUserLogin(user);
 
-					userLogin = _getUserLogin(user);
-
-					auditRequestThreadLocal.setRealUserLogin(userLogin);
-				}
+				auditRequestContext.setRealUserLogin(userLogin);
 			}
 		}
 
 		StringBuffer sb = httpServletRequest.getRequestURL();
 
-		auditRequestThreadLocal.setRequestURL(sb.toString());
+		auditRequestContext.setRequestURL(sb.toString());
 
-		auditRequestThreadLocal.setServerName(
-			httpServletRequest.getServerName());
-		auditRequestThreadLocal.setServerPort(
-			httpServletRequest.getServerPort());
-		auditRequestThreadLocal.setSessionID(httpSession.getId());
+		auditRequestContext.setServerName(httpServletRequest.getServerName());
+		auditRequestContext.setServerPort(httpServletRequest.getServerPort());
+		auditRequestContext.setSessionID(auditSessionId);
+
+		long companyId = CompanyThreadLocal.getCompanyId();
+
+		String xRequestId = httpServletRequest.getHeader(
+			HttpHeaders.X_REQUEST_ID);
+
+		if (FeatureFlagManagerUtil.isEnabled(companyId, "LPD-6417")) {
+			if (_isValidXRequestId(xRequestId)) {
+				auditRequestContext.setRequestId(xRequestId);
+				auditRequestContext.setRequestIdGenerated(false);
+			}
+			else {
+				xRequestId = auditRequestContext.getRequestId();
+			}
+
+			auditRequestContext.setHttpMethod(
+				_truncate(75, httpServletRequest.getMethod()));
+			auditRequestContext.setUserAgent(
+				_truncate(
+					255, httpServletRequest.getHeader(HttpHeaders.USER_AGENT)));
+		}
 
 		if (!_auditLogContextConfiguration.enabled()) {
 			return null;
 		}
 
-		String xRequestId = null;
+		if (!FeatureFlagManagerUtil.isEnabled(companyId, "LPD-6417") &&
+			(!_auditLogContextConfiguration.useIncomingXRequestId() ||
+			 !_isValidXRequestId(xRequestId))) {
 
-		if (_auditLogContextConfiguration.useIncomingXRequestId()) {
-			xRequestId = httpServletRequest.getHeader(HttpHeaders.X_REQUEST_ID);
-		}
-
-		if (!_isValidXRequestId(xRequestId)) {
-			xRequestId = PortalUUIDUtil.generate();
+			xRequestId = auditRequestContext.getRequestId();
 		}
 
 		httpServletResponse.setHeader(HttpHeaders.X_REQUEST_ID, xRequestId);
 
 		_auditLogContext.setContext(
-			remoteAddr, _portal.getCompanyId(httpServletRequest),
-			httpServletRequest.getServerName(), userEmailAddress, userId,
-			userLogin, xRequestId);
+			remoteAddr, companyId, httpServletRequest.getServerName(),
+			userEmailAddress, userId, userLogin, xRequestId);
 
 		return null;
 	}
@@ -155,7 +167,7 @@ public class AuditFilter extends BaseFilter implements TryFilter {
 		_auditLogContext = new AuditLogContext();
 
 		_serviceRegistration = bundleContext.registerService(
-			LogContext.class, _auditLogContext, new HashMapDictionary());
+			LogContext.class, _auditLogContext, null);
 
 		_auditLogContextConfiguration = ConfigurableUtil.createConfigurable(
 			AuditLogContextConfiguration.class, properties);
@@ -224,6 +236,14 @@ public class AuditFilter extends BaseFilter implements TryFilter {
 		return true;
 	}
 
+	private String _truncate(int length, String s) {
+		if ((s == null) || (s.length() <= length)) {
+			return s;
+		}
+
+		return s.substring(0, length);
+	}
+
 	private static final Log _log = LogFactoryUtil.getLog(AuditFilter.class);
 
 	private AuditLogContext _auditLogContext;
@@ -231,9 +251,6 @@ public class AuditFilter extends BaseFilter implements TryFilter {
 
 	@Reference
 	private CompanyLocalService _companyLocalService;
-
-	@Reference
-	private Portal _portal;
 
 	private ServiceRegistration<LogContext> _serviceRegistration;
 

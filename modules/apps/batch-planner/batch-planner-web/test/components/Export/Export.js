@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import '@testing-library/jest-dom/extend-expect';
+import '@testing-library/jest-dom';
 import {
 	act,
 	configure,
@@ -26,21 +26,24 @@ import {
 } from '../../../src/main/resources/META-INF/resources/js/constants';
 import Export from '../../../src/main/resources/META-INF/resources/js/export/Export';
 
-const INPUT_VALUE_TEST = 'test';
 const BASE_PROPS = {
 	formExportDataQuerySelector: 'form',
 	formExportURL: 'https://formUrl.test',
 	portletNamespace: 'test',
 };
+const INPUT_VALUE_TEST = 'test';
 
 const externalReferenceCode = '1234';
-let mockApi;
 
 const mockCreateObjectUrl = jest.fn(() => 'test.url/bloburl');
 window.URL.createObjectURL = mockCreateObjectUrl;
 window.URL.revokeObjectURL = jest.fn();
 
 configure({asyncUtilTimeout: 5000});
+
+jest.mock('frontend-js-components-web', () => {
+	jest.fn();
+});
 
 jest.mock(
 	'../../../src/main/resources/META-INF/resources/js/BatchPlannerExport',
@@ -68,24 +71,25 @@ describe('Export', () => {
 	});
 
 	beforeEach(() => {
+		fetchMock.mockGlobal();
+
 		const blob = new Blob(['a', 'b', 'c', 'd']);
 
-		mockApi = fetchMock
-			.mock(BASE_PROPS.formExportURL, () => ({
+		fetchMock
+			.route(BASE_PROPS.formExportURL, () => ({
 				externalReferenceCode,
 			}))
-			.mock(
+			.route(
 				`/o/headless-batch-engine/v1.0/export-task/by-external-reference-code/${externalReferenceCode}/content`,
 				{
 					body: blob,
 					headers: {'Content-Type': 'application/pdf'},
-				},
-				{sendAsJson: false}
+				}
 			);
 	});
 
 	afterEach(() => {
-		fetchMock.restore();
+		fetchMock.hardReset();
 	});
 
 	it('must render export button', () => {
@@ -155,7 +159,9 @@ describe('Export', () => {
 
 		await findByText(Liferay.Language.get('download'));
 
-		expect(mockApi.calls(BASE_PROPS.formExportURL).length).toBe(1);
+		expect(
+			fetchMock.callHistory.calls(BASE_PROPS.formExportURL).length
+		).toBe(1);
 	});
 
 	it.skip('must show the correct progress percentage', async () => {
@@ -163,7 +169,7 @@ describe('Export', () => {
 			externalReferenceCode
 		);
 
-		fetchMock.mock(exportTaskStatusURL, () => ({
+		fetchMock.route(exportTaskStatusURL, () => ({
 			body: {
 				className:
 					'com.liferay.headless.commerce.delivery.catalog.dto.v1_0.Product',
@@ -201,10 +207,10 @@ describe('Export', () => {
 		);
 
 		fetchMock
-			.mock(BASE_PROPS.formExportURL, () => ({
+			.route(BASE_PROPS.formExportURL, () => ({
 				externalReferenceCode,
 			}))
-			.mock(exportTaskStatusURL, () => ({
+			.route(exportTaskStatusURL, () => ({
 				body: {
 					className:
 						'com.liferay.headless.commerce.delivery.catalog.dto.v1_0.Product',
@@ -239,7 +245,7 @@ describe('Export', () => {
 			externalReferenceCode
 		);
 
-		fetchMock.mock(exportTaskStatusURL, () => ({
+		fetchMock.route(exportTaskStatusURL, () => ({
 			body: {
 				className:
 					'com.liferay.headless.commerce.delivery.catalog.dto.v1_0.Product',
@@ -278,7 +284,7 @@ describe('Export', () => {
 			externalReferenceCode
 		);
 
-		fetchMock.mock(exportTaskStatusURL, () => ({
+		fetchMock.route(exportTaskStatusURL, () => ({
 			body: {
 				className:
 					'com.liferay.headless.commerce.delivery.catalog.dto.v1_0.Product',
@@ -320,7 +326,7 @@ describe('Export', () => {
 		});
 
 		await waitFor(() => {
-			expect(fetchExportedFile).toBeCalled();
+			expect(fetchExportedFile).toHaveBeenCalled();
 		});
 	});
 });

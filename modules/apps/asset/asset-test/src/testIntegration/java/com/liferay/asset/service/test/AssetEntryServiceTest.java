@@ -9,23 +9,58 @@ import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.asset.kernel.exception.AssetCategoryException;
 import com.liferay.asset.kernel.model.AssetCategoryConstants;
 import com.liferay.asset.kernel.model.AssetEntry;
+import com.liferay.asset.kernel.model.AssetVocabulary;
 import com.liferay.asset.kernel.service.AssetEntryLocalService;
+import com.liferay.asset.kernel.service.AssetEntryService;
+import com.liferay.asset.kernel.service.AssetTagLocalService;
+import com.liferay.asset.kernel.service.AssetVocabularyGroupRelLocalService;
 import com.liferay.asset.kernel.service.persistence.AssetEntryQuery;
 import com.liferay.asset.test.util.AssetTestUtil;
-import com.liferay.portal.kernel.dao.orm.QueryUtil;
+import com.liferay.blogs.model.BlogsEntry;
+import com.liferay.blogs.service.BlogsEntryLocalService;
+import com.liferay.depot.constants.DepotConstants;
+import com.liferay.depot.model.DepotEntry;
+import com.liferay.depot.service.DepotEntryLocalService;
+import com.liferay.journal.model.JournalArticle;
+import com.liferay.journal.test.util.JournalTestUtil;
+import com.liferay.object.model.ObjectDefinition;
+import com.liferay.object.test.util.ObjectDefinitionTestUtil;
+import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.cache.thread.local.Lifecycle;
+import com.liferay.portal.kernel.cache.thread.local.ThreadLocalCache;
+import com.liferay.portal.kernel.cache.thread.local.ThreadLocalCacheManager;
 import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.model.GroupConstants;
+import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.search.Document;
+import com.liferay.portal.kernel.search.Field;
+import com.liferay.portal.kernel.search.Hits;
+import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.service.CompanyLocalService;
+import com.liferay.portal.kernel.service.GroupLocalService;
+import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.test.TestInfo;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
+import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
+import com.liferay.portal.kernel.test.util.TestPropsValues;
+import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.CalendarFactoryUtil;
+import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.ListUtil;
+import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.view.count.ViewCountManager;
+import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
+import com.liferay.portlet.asset.service.impl.AssetEntryServiceImpl;
 import com.liferay.ratings.test.util.RatingsTestUtil;
 
 import java.util.ArrayList;
@@ -77,6 +112,58 @@ public class AssetEntryServiceTest {
 
 		Assert.assertEquals(
 			initialAssetEntriesCount + 1, actualAssetEntriesCount);
+	}
+
+	@Test
+	@TestInfo("LPD-110129")
+	public void testGetEntriesFiltersByViewPermission() throws Exception {
+		_privateGroup = GroupTestUtil.addGroupWithType(
+			GroupConstants.TYPE_SITE_PRIVATE);
+
+		ServiceContext serviceContext =
+			ServiceContextTestUtil.getServiceContext(
+				_privateGroup.getGroupId());
+
+		serviceContext.setAddGuestPermissions(false);
+
+		_blogsEntryLocalService.addEntry(
+			TestPropsValues.getUserId(), RandomTestUtil.randomString(),
+			RandomTestUtil.randomString(), serviceContext);
+
+		AssetEntryQuery assetEntryQuery = new AssetEntryQuery();
+
+		assetEntryQuery.setGroupIds(new long[] {_privateGroup.getGroupId()});
+
+		ThreadLocalCache<Object[]> threadLocalCache =
+			ThreadLocalCacheManager.getThreadLocalCache(
+				Lifecycle.REQUEST, AssetEntryServiceImpl.class.getName());
+
+		threadLocalCache.removeAll();
+
+		List<AssetEntry> adminAssetEntries = _assetEntryService.getEntries(
+			assetEntryQuery);
+
+		Assert.assertEquals(
+			adminAssetEntries.toString(), 1, adminAssetEntries.size());
+
+		UserTestUtil.setUser(UserTestUtil.addUser());
+
+		try {
+			threadLocalCache.removeAll();
+
+			List<AssetEntry> assetEntries = _assetEntryService.getEntries(
+				assetEntryQuery);
+
+			Assert.assertTrue(assetEntries.isEmpty());
+
+			int assetEntriesCount = _assetEntryService.getEntriesCount(
+				assetEntryQuery);
+
+			Assert.assertEquals(0, assetEntriesCount);
+		}
+		finally {
+			UserTestUtil.setUser(TestPropsValues.getUser());
+		}
 	}
 
 	@Test
@@ -218,20 +305,94 @@ public class AssetEntryServiceTest {
 	}
 
 	@Test
-	public void testGetTopViewedEntries() throws Exception {
-		AssetEntry assetEntry = AssetTestUtil.addAssetEntry(
-			_group.getGroupId(), new Date(), "testClass");
+	public void testSearch() throws Exception {
+		JournalArticle journalArticle1 = JournalTestUtil.addArticle(
+			_group.getGroupId(), 0);
+		JournalArticle journalArticle2 = JournalTestUtil.addArticle(
+			_group.getGroupId(), 0);
 
-		_viewCountManager.incrementViewCount(
-			assetEntry.getCompanyId(), _portal.getClassNameId(AssetEntry.class),
-			assetEntry.getEntryId(), 2);
+		Hits hits = _assetEntryLocalService.search(
+			_group.getCompanyId(), new long[] {_group.getGroupId()},
+			TestPropsValues.getUserId(),
+			new long[] {_portal.getClassNameId(JournalArticle.class.getName())},
+			-1L, StringPool.BLANK, false,
+			new int[] {WorkflowConstants.STATUS_APPROVED}, 0, 50,
+			new Sort[] {new Sort(Field.MODIFIED_DATE, Sort.LONG_TYPE, true)});
 
-		List<AssetEntry> topViewEntries =
-			_assetEntryLocalService.getTopViewedEntries(
-				"testClass", false, QueryUtil.ALL_POS, QueryUtil.ALL_POS);
+		Assert.assertTrue(hits.toString(), hits.getLength() >= 2);
+
+		Document[] documents = hits.getDocs();
 
 		Assert.assertEquals(
-			topViewEntries.toString(), 1, topViewEntries.size());
+			journalArticle2.getResourcePrimKey(),
+			GetterUtil.getLong(documents[0].get(Field.ENTRY_CLASS_PK)));
+		Assert.assertEquals(
+			journalArticle1.getResourcePrimKey(),
+			GetterUtil.getLong(documents[1].get(Field.ENTRY_CLASS_PK)));
+	}
+
+	@Test
+	public void testUpdateEntry() throws Exception {
+		User user = UserTestUtil.addUser(_group.getGroupId());
+
+		BlogsEntry blogsEntry = _blogsEntryLocalService.addEntry(
+			user.getUserId(), RandomTestUtil.randomString(),
+			RandomTestUtil.randomString(),
+			ServiceContextTestUtil.getServiceContext(
+				_group.getGroupId(), user.getUserId()));
+
+		_otherGroup = GroupTestUtil.addGroup();
+
+		String tagName = StringUtil.toLowerCase(RandomTestUtil.randomString());
+
+		UserTestUtil.setUser(user);
+
+		try {
+			AssetEntry assetEntry = _assetEntryService.updateEntry(
+				_otherGroup.getGroupId(), null, null,
+				BlogsEntry.class.getName(), blogsEntry.getEntryId(),
+				blogsEntry.getUuid(), 0, new long[0], new String[] {tagName},
+				true, true, null, null, null, null, null,
+				RandomTestUtil.randomString(), null, null, null, null, 0, 0,
+				null);
+
+			Assert.assertEquals(_group.getGroupId(), assetEntry.getGroupId());
+
+			_assetEntryLocalService.deleteEntry(assetEntry);
+
+			assetEntry = _assetEntryService.updateEntry(
+				_otherGroup.getGroupId(), null, null,
+				BlogsEntry.class.getName(), blogsEntry.getEntryId(),
+				blogsEntry.getUuid(), 0, new long[0], new String[0], true, true,
+				null, null, null, null, null, RandomTestUtil.randomString(),
+				null, null, null, null, 0, 0, null);
+
+			Assert.assertEquals(_group.getGroupId(), assetEntry.getGroupId());
+
+			Company company = _companyLocalService.getCompany(
+				_group.getCompanyId());
+
+			assetEntry.setGroupId(company.getGroupId());
+
+			_assetEntryLocalService.updateAssetEntry(assetEntry);
+
+			assetEntry = _assetEntryService.updateEntry(
+				_otherGroup.getGroupId(), null, null,
+				BlogsEntry.class.getName(), blogsEntry.getEntryId(),
+				blogsEntry.getUuid(), 0, new long[0], new String[0], true, true,
+				null, null, null, null, null, RandomTestUtil.randomString(),
+				null, null, null, null, 0, 0, null);
+
+			Assert.assertEquals(company.getGroupId(), assetEntry.getGroupId());
+		}
+		finally {
+			UserTestUtil.setUser(TestPropsValues.getUser());
+		}
+
+		Assert.assertNotNull(
+			_assetTagLocalService.fetchTag(_group.getGroupId(), tagName));
+		Assert.assertNull(
+			_assetTagLocalService.fetchTag(_otherGroup.getGroupId(), tagName));
 	}
 
 	@Test(expected = AssetCategoryException.class)
@@ -246,6 +407,41 @@ public class AssetEntryServiceTest {
 		_assetEntryLocalService.validate(
 			company.getGroupId(), Group.class.getName(), _group.getGroupId(), 0,
 			new long[0], new String[0]);
+	}
+
+	@Test(expected = AssetCategoryException.class)
+	public void testValidateCMS() throws Exception {
+		ObjectDefinition objectDefinition =
+			ObjectDefinitionTestUtil.publishObjectDefinition();
+
+		Group cmsGroup = _groupLocalService.getGroup(
+			TestPropsValues.getCompanyId(), GroupConstants.CMS);
+
+		_depotEntry = _depotEntryLocalService.addDepotEntry(
+			HashMapBuilder.put(
+				LocaleUtil.getDefault(), RandomTestUtil.randomString()
+			).build(),
+			HashMapBuilder.put(
+				LocaleUtil.getDefault(), RandomTestUtil.randomString()
+			).build(),
+			DepotConstants.TYPE_SPACE,
+			ServiceContextTestUtil.getServiceContext(cmsGroup.getGroupId()));
+
+		AssetEntry assetEntry = AssetTestUtil.addAssetEntry(
+			_depotEntry.getGroupId(), new Date(),
+			objectDefinition.getClassName());
+
+		AssetVocabulary assetVocabulary = AssetTestUtil.addVocabulary(
+			cmsGroup.getGroupId(), AssetCategoryConstants.ALL_CLASS_NAME_ID,
+			AssetCategoryConstants.ALL_CLASS_TYPE_PK, true);
+
+		_assetVocabularyGroupRelLocalService.addAssetVocabularyGroupRel(
+			_depotEntry.getGroupId(), assetVocabulary.getVocabularyId(),
+			_depotEntry.getType());
+
+		_assetEntryLocalService.validate(
+			_depotEntry.getGroupId(), assetEntry.getClassName(),
+			assetEntry.getClassPK(), 0, new long[0], new String[0]);
 	}
 
 	protected List<AssetEntry> createAssetEntries() throws Exception {
@@ -316,18 +512,46 @@ public class AssetEntryServiceTest {
 	}
 
 	@Inject
-	private static AssetEntryLocalService _assetEntryLocalService;
+	private AssetEntryLocalService _assetEntryLocalService;
 
 	@Inject
-	private static CompanyLocalService _companyLocalService;
+	private AssetEntryService _assetEntryService;
 
 	@Inject
-	private static Portal _portal;
+	private AssetTagLocalService _assetTagLocalService;
 
 	@Inject
-	private static ViewCountManager _viewCountManager;
+	private AssetVocabularyGroupRelLocalService
+		_assetVocabularyGroupRelLocalService;
+
+	@Inject
+	private BlogsEntryLocalService _blogsEntryLocalService;
+
+	@Inject
+	private CompanyLocalService _companyLocalService;
+
+	@DeleteAfterTestRun
+	private DepotEntry _depotEntry;
+
+	@Inject
+	private DepotEntryLocalService _depotEntryLocalService;
 
 	@DeleteAfterTestRun
 	private Group _group;
+
+	@Inject
+	private GroupLocalService _groupLocalService;
+
+	@DeleteAfterTestRun
+	private Group _otherGroup;
+
+	@Inject
+	private Portal _portal;
+
+	@DeleteAfterTestRun
+	private Group _privateGroup;
+
+	@Inject
+	private ViewCountManager _viewCountManager;
 
 }

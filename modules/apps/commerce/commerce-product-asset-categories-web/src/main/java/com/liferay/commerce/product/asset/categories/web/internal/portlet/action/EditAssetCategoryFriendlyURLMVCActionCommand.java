@@ -6,14 +6,11 @@
 package com.liferay.commerce.product.asset.categories.web.internal.portlet.action;
 
 import com.liferay.asset.kernel.model.AssetCategory;
+import com.liferay.asset.kernel.model.AssetCategoryConstants;
 import com.liferay.asset.kernel.service.AssetCategoryService;
 import com.liferay.commerce.product.asset.categories.web.internal.constants.CommerceProductAssetCategoriesPortletKeys;
-import com.liferay.friendly.url.model.FriendlyURLEntry;
 import com.liferay.friendly.url.service.FriendlyURLEntryLocalService;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.log.Log;
-import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCActionCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
 import com.liferay.portal.kernel.service.ServiceContext;
@@ -24,12 +21,12 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -39,7 +36,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + CommerceProductAssetCategoriesPortletKeys.ASSET_CATEGORIES_ADMIN,
+		"jakarta.portlet.name=" + CommerceProductAssetCategoriesPortletKeys.ASSET_CATEGORIES_ADMIN,
 		"mvc.command.name=/commerce_product_asset_categories/edit_asset_category_friendly_url"
 	},
 	service = MVCActionCommand.class
@@ -65,34 +62,26 @@ public class EditAssetCategoryFriendlyURLMVCActionCommand
 
 		// Commerce product friendly URL
 
-		try {
-			FriendlyURLEntry friendlyURLEntry =
-				_friendlyURLEntryLocalService.getMainFriendlyURLEntry(
-					_portal.getClassNameId(AssetCategory.class), categoryId);
+		_friendlyURLEntryLocalService.addFriendlyURLEntry(
+			assetCategory.getGroupId(),
+			_portal.getClassNameId(AssetCategory.class),
+			_getParentClassPK(assetCategory), categoryId,
+			assetCategory.getDefaultLanguageId(),
+			_getUniqueUrlTitles(assetCategory, urlTitleMap), serviceContext);
+	}
 
-			_friendlyURLEntryLocalService.updateFriendlyURLEntry(
-				friendlyURLEntry.getFriendlyURLEntryId(),
-				friendlyURLEntry.getClassNameId(),
-				friendlyURLEntry.getClassPK(),
-				friendlyURLEntry.getDefaultLanguageId(),
-				_getUniqueUrlTitles(assetCategory, urlTitleMap));
-		}
-		catch (Exception exception) {
-			if (_log.isDebugEnabled()) {
-				_log.debug(exception);
-			}
+	private long _getParentClassPK(AssetCategory assetCategory) {
+		if (assetCategory.getParentCategoryId() ==
+				AssetCategoryConstants.DEFAULT_PARENT_CATEGORY_ID) {
 
-			_friendlyURLEntryLocalService.addFriendlyURLEntry(
-				assetCategory.getGroupId(),
-				_portal.getClassNameId(AssetCategory.class), categoryId,
-				_getUniqueUrlTitles(assetCategory, urlTitleMap),
-				serviceContext);
+			return assetCategory.getVocabularyId();
 		}
+
+		return assetCategory.getParentCategoryId();
 	}
 
 	private Map<String, String> _getUniqueUrlTitles(
-			AssetCategory assetCategory, Map<Locale, String> urlTitleMap)
-		throws PortalException {
+		AssetCategory assetCategory, Map<Locale, String> urlTitleMap) {
 
 		Map<String, String> newUrlTitleMap = new HashMap<>();
 
@@ -103,22 +92,22 @@ public class EditAssetCategoryFriendlyURLMVCActionCommand
 
 			String urlTitle = urlTitleMap.get(locale);
 
-			if (Validator.isNotNull(urlTitle) ||
-				((urlTitle != null) && urlTitle.equals(StringPool.BLANK))) {
+			if (Validator.isNull(urlTitle) &&
+				((urlTitle == null) || !urlTitle.equals(StringPool.BLANK))) {
 
-				urlTitle = _friendlyURLEntryLocalService.getUniqueUrlTitle(
-					assetCategory.getGroupId(), classNameId,
-					assetCategory.getCategoryId(), urlTitle, null);
-
-				newUrlTitleMap.put(LocaleUtil.toLanguageId(locale), urlTitle);
+				continue;
 			}
+
+			urlTitle = _friendlyURLEntryLocalService.getUniqueUrlTitle(
+				assetCategory.getGroupId(), classNameId,
+				_getParentClassPK(assetCategory), assetCategory.getCategoryId(),
+				urlTitle);
+
+			newUrlTitleMap.put(LocaleUtil.toLanguageId(locale), urlTitle);
 		}
 
 		return newUrlTitleMap;
 	}
-
-	private static final Log _log = LogFactoryUtil.getLog(
-		EditAssetCategoryFriendlyURLMVCActionCommand.class);
 
 	@Reference
 	private AssetCategoryService _assetCategoryService;

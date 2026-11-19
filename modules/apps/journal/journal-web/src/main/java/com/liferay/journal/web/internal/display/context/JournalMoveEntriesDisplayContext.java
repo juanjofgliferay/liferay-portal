@@ -25,12 +25,12 @@ import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Julio Camarero
@@ -76,9 +76,11 @@ public class JournalMoveEntriesDisplayContext {
 			JournalArticle article = JournalArticleServiceUtil.fetchArticle(
 				themeDisplay.getScopeGroupId(), articleId);
 
-			if (article != null) {
-				articles.add(article);
+			if (article == null) {
+				continue;
 			}
+
+			articles.add(article);
 		}
 
 		return articles;
@@ -94,9 +96,11 @@ public class JournalMoveEntriesDisplayContext {
 			JournalFolder folder = JournalFolderServiceUtil.fetchFolder(
 				folderId);
 
-			if (folder != null) {
-				folders.add(folder);
+			if (folder == null) {
+				continue;
 			}
+
+			folders.add(folder);
 		}
 
 		return folders;

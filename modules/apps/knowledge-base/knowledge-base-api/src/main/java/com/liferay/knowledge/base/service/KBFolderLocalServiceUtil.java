@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -367,13 +368,6 @@ public class KBFolderLocalServiceUtil {
 	}
 
 	public static List<Object> getKBFoldersAndKBArticles(
-		long groupId, long parentResourcePrimKey) {
-
-		return getService().getKBFoldersAndKBArticles(
-			groupId, parentResourcePrimKey);
-	}
-
-	public static List<Object> getKBFoldersAndKBArticles(
 		long groupId, long parentResourcePrimKey, int status) {
 
 		return getService().getKBFoldersAndKBArticles(
@@ -528,13 +522,12 @@ public class KBFolderLocalServiceUtil {
 	}
 
 	public static KBFolderLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(KBFolderLocalService service) {
-		_service = service;
-	}
-
-	private static volatile KBFolderLocalService _service;
+	private static final Snapshot<KBFolderLocalService> _serviceSnapshot =
+		new Snapshot<>(
+			KBFolderLocalServiceUtil.class, KBFolderLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-140310027

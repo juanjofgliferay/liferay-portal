@@ -10,6 +10,7 @@ import com.liferay.expando.kernel.util.ExpandoBridgeFactoryUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.bean.AutoEscapeBeanHandler;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.json.JSON;
 import com.liferay.portal.kernel.model.CacheModel;
 import com.liferay.portal.kernel.model.ModelWrapper;
 import com.liferay.portal.kernel.model.User;
@@ -49,6 +50,7 @@ import java.util.function.Function;
  * @see KaleoInstanceImpl
  * @generated
  */
+@JSON(strict = true)
 public class KaleoInstanceModelImpl
 	extends BaseModelImpl<KaleoInstance> implements KaleoInstanceModel {
 
@@ -105,6 +107,8 @@ public class KaleoInstanceModelImpl
 
 	public static final String TABLE_SQL_DROP = "drop table KaleoInstance";
 
+	public static final String ENTITY_ALIAS = "kaleoInstance";
+
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY kaleoInstance.kaleoInstanceId ASC";
 
@@ -121,67 +125,37 @@ public class KaleoInstanceModelImpl
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long CLASSNAME_COLUMN_BITMASK = 1L;
+	public static final long COMPANYID_COLUMN_BITMASK = 1L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long CLASSPK_COLUMN_BITMASK = 2L;
+	public static final long COMPLETED_COLUMN_BITMASK = 2L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long COMPANYID_COLUMN_BITMASK = 4L;
+	public static final long KALEODEFINITIONID_COLUMN_BITMASK = 4L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long COMPLETED_COLUMN_BITMASK = 8L;
+	public static final long KALEODEFINITIONVERSIONID_COLUMN_BITMASK = 8L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long COMPLETIONDATE_COLUMN_BITMASK = 16L;
+	public static final long KALEOINSTANCEID_COLUMN_BITMASK = 16L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long KALEODEFINITIONID_COLUMN_BITMASK = 32L;
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
-	 */
-	@Deprecated
-	public static final long KALEODEFINITIONNAME_COLUMN_BITMASK = 64L;
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
-	 */
-	@Deprecated
-	public static final long KALEODEFINITIONVERSION_COLUMN_BITMASK = 128L;
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
-	 */
-	@Deprecated
-	public static final long KALEODEFINITIONVERSIONID_COLUMN_BITMASK = 256L;
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
-	 */
-	@Deprecated
-	public static final long KALEOINSTANCEID_COLUMN_BITMASK = 512L;
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
-	 */
-	@Deprecated
-	public static final long USERID_COLUMN_BITMASK = 1024L;
+	public static final long USERID_COLUMN_BITMASK = 32L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
@@ -427,6 +401,7 @@ public class KaleoInstanceModelImpl
 
 	}
 
+	@JSON
 	@Override
 	public long getMvccVersion() {
 		return _mvccVersion;
@@ -441,6 +416,7 @@ public class KaleoInstanceModelImpl
 		_mvccVersion = mvccVersion;
 	}
 
+	@JSON
 	@Override
 	public long getCtCollectionId() {
 		return _ctCollectionId;
@@ -455,6 +431,7 @@ public class KaleoInstanceModelImpl
 		_ctCollectionId = ctCollectionId;
 	}
 
+	@JSON
 	@Override
 	public long getKaleoInstanceId() {
 		return _kaleoInstanceId;
@@ -479,6 +456,7 @@ public class KaleoInstanceModelImpl
 			this.<Long>getColumnOriginalValue("kaleoInstanceId"));
 	}
 
+	@JSON
 	@Override
 	public long getGroupId() {
 		return _groupId;
@@ -493,6 +471,7 @@ public class KaleoInstanceModelImpl
 		_groupId = groupId;
 	}
 
+	@JSON
 	@Override
 	public long getCompanyId() {
 		return _companyId;
@@ -517,6 +496,7 @@ public class KaleoInstanceModelImpl
 			this.<Long>getColumnOriginalValue("companyId"));
 	}
 
+	@JSON
 	@Override
 	public long getUserId() {
 		return _userId;
@@ -556,6 +536,7 @@ public class KaleoInstanceModelImpl
 		return GetterUtil.getLong(this.<Long>getColumnOriginalValue("userId"));
 	}
 
+	@JSON
 	@Override
 	public String getUserName() {
 		if (_userName == null) {
@@ -575,6 +556,7 @@ public class KaleoInstanceModelImpl
 		_userName = userName;
 	}
 
+	@JSON
 	@Override
 	public Date getCreateDate() {
 		return _createDate;
@@ -589,6 +571,7 @@ public class KaleoInstanceModelImpl
 		_createDate = createDate;
 	}
 
+	@JSON
 	@Override
 	public Date getModifiedDate() {
 		return _modifiedDate;
@@ -609,6 +592,7 @@ public class KaleoInstanceModelImpl
 		_modifiedDate = modifiedDate;
 	}
 
+	@JSON
 	@Override
 	public long getKaleoDefinitionId() {
 		return _kaleoDefinitionId;
@@ -633,6 +617,7 @@ public class KaleoInstanceModelImpl
 			this.<Long>getColumnOriginalValue("kaleoDefinitionId"));
 	}
 
+	@JSON
 	@Override
 	public long getKaleoDefinitionVersionId() {
 		return _kaleoDefinitionVersionId;
@@ -657,6 +642,7 @@ public class KaleoInstanceModelImpl
 			this.<Long>getColumnOriginalValue("kaleoDefinitionVersionId"));
 	}
 
+	@JSON
 	@Override
 	public String getKaleoDefinitionName() {
 		if (_kaleoDefinitionName == null) {
@@ -676,15 +662,7 @@ public class KaleoInstanceModelImpl
 		_kaleoDefinitionName = kaleoDefinitionName;
 	}
 
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #getColumnOriginalValue(String)}
-	 */
-	@Deprecated
-	public String getOriginalKaleoDefinitionName() {
-		return getColumnOriginalValue("kaleoDefinitionName");
-	}
-
+	@JSON
 	@Override
 	public int getKaleoDefinitionVersion() {
 		return _kaleoDefinitionVersion;
@@ -699,16 +677,7 @@ public class KaleoInstanceModelImpl
 		_kaleoDefinitionVersion = kaleoDefinitionVersion;
 	}
 
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #getColumnOriginalValue(String)}
-	 */
-	@Deprecated
-	public int getOriginalKaleoDefinitionVersion() {
-		return GetterUtil.getInteger(
-			this.<Integer>getColumnOriginalValue("kaleoDefinitionVersion"));
-	}
-
+	@JSON
 	@Override
 	public long getRootKaleoInstanceTokenId() {
 		return _rootKaleoInstanceTokenId;
@@ -723,11 +692,13 @@ public class KaleoInstanceModelImpl
 		_rootKaleoInstanceTokenId = rootKaleoInstanceTokenId;
 	}
 
+	@JSON
 	@Override
 	public boolean getActive() {
 		return _active;
 	}
 
+	@JSON
 	@Override
 	public boolean isActive() {
 		return _active;
@@ -742,6 +713,7 @@ public class KaleoInstanceModelImpl
 		_active = active;
 	}
 
+	@JSON
 	@Override
 	public String getClassName() {
 		if (_className == null) {
@@ -761,15 +733,7 @@ public class KaleoInstanceModelImpl
 		_className = className;
 	}
 
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #getColumnOriginalValue(String)}
-	 */
-	@Deprecated
-	public String getOriginalClassName() {
-		return getColumnOriginalValue("className");
-	}
-
+	@JSON
 	@Override
 	public long getClassPK() {
 		return _classPK;
@@ -784,20 +748,13 @@ public class KaleoInstanceModelImpl
 		_classPK = classPK;
 	}
 
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #getColumnOriginalValue(String)}
-	 */
-	@Deprecated
-	public long getOriginalClassPK() {
-		return GetterUtil.getLong(this.<Long>getColumnOriginalValue("classPK"));
-	}
-
+	@JSON
 	@Override
 	public boolean getCompleted() {
 		return _completed;
 	}
 
+	@JSON
 	@Override
 	public boolean isCompleted() {
 		return _completed;
@@ -822,6 +779,7 @@ public class KaleoInstanceModelImpl
 			this.<Boolean>getColumnOriginalValue("completed"));
 	}
 
+	@JSON
 	@Override
 	public Date getCompletionDate() {
 		return _completionDate;
@@ -836,15 +794,7 @@ public class KaleoInstanceModelImpl
 		_completionDate = completionDate;
 	}
 
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #getColumnOriginalValue(String)}
-	 */
-	@Deprecated
-	public Date getOriginalCompletionDate() {
-		return getColumnOriginalValue("completionDate");
-	}
-
+	@JSON
 	@Override
 	public String getWorkflowContext() {
 		if (_workflowContext == null) {
@@ -1374,3 +1324,4 @@ public class KaleoInstanceModelImpl
 	private KaleoInstance _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:478375816

@@ -23,12 +23,26 @@ import com.liferay.portal.kernel.security.permission.PermissionCheckerFactory;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.servlet.ProtectedPrincipal;
-import com.liferay.portal.kernel.settings.CompanyServiceSettingsLocator;
 import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
+
+import jakarta.annotation.Priority;
+
+import jakarta.servlet.http.HttpServletRequest;
+
+import jakarta.ws.rs.Priorities;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.container.ContainerRequestContext;
+import jakarta.ws.rs.container.ContainerRequestFilter;
+import jakarta.ws.rs.container.PreMatching;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.SecurityContext;
+import jakarta.ws.rs.core.UriInfo;
+import jakarta.ws.rs.ext.Provider;
 
 import java.net.URI;
 
@@ -36,21 +50,6 @@ import java.security.Principal;
 
 import java.util.List;
 import java.util.Objects;
-
-import javax.annotation.Priority;
-
-import javax.servlet.http.HttpServletRequest;
-
-import javax.ws.rs.Priorities;
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.container.ContainerRequestContext;
-import javax.ws.rs.container.ContainerRequestFilter;
-import javax.ws.rs.container.PreMatching;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.SecurityContext;
-import javax.ws.rs.core.UriInfo;
-import javax.ws.rs.ext.Provider;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -228,23 +227,16 @@ public class AuthorizationCodeGrantServiceContainerRequestFilter
 			return false;
 		}
 
-		if (_oAuth2ApplicationModelResourcePermission.contains(
-				_permissionCheckerFactory.create(user), oAuth2Application,
-				ActionKeys.VIEW)) {
-
-			return true;
-		}
-
-		return false;
+		return _oAuth2ApplicationModelResourcePermission.contains(
+			_permissionCheckerFactory.create(user), oAuth2Application,
+			ActionKeys.VIEW);
 	}
 
 	private String _getLoginURL() throws ConfigurationException {
 		AuthorizeScreenConfiguration authorizeScreenConfiguration =
-			_configurationProvider.getConfiguration(
+			_configurationProvider.getCompanyConfiguration(
 				AuthorizeScreenConfiguration.class,
-				new CompanyServiceSettingsLocator(
-					_portal.getCompanyId(_httpServletRequest),
-					AuthorizeScreenConfiguration.class.getName()));
+				_portal.getCompanyId(_httpServletRequest));
 
 		String loginURL = authorizeScreenConfiguration.loginURL();
 

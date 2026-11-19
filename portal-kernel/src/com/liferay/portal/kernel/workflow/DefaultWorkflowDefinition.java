@@ -33,6 +33,7 @@ public class DefaultWorkflowDefinition
 		return _content;
 	}
 
+	@Override
 	public String getContentAsXML() {
 		return _contentAsXML;
 	}
@@ -49,6 +50,21 @@ public class DefaultWorkflowDefinition
 		}
 
 		return _description;
+	}
+
+	@Override
+	public String getExternalReferenceCode() {
+		return _externalReferenceCode;
+	}
+
+	@Override
+	public String getGroupExternalReferenceCode() {
+		return _groupExternalReferenceCode;
+	}
+
+	@Override
+	public long getGroupId() {
+		return _groupId;
 	}
 
 	@Override
@@ -120,6 +136,11 @@ public class DefaultWorkflowDefinition
 		return _active;
 	}
 
+	@Override
+	public boolean isSystem() {
+		return _system;
+	}
+
 	public void setActive(boolean active) {
 		_active = active;
 	}
@@ -144,6 +165,20 @@ public class DefaultWorkflowDefinition
 		_description = description;
 	}
 
+	public void setExternalReferenceCode(String externalReferenceCode) {
+		_externalReferenceCode = externalReferenceCode;
+	}
+
+	public void setGroupExternalReferenceCode(
+		String groupExternalReferenceCode) {
+
+		_groupExternalReferenceCode = groupExternalReferenceCode;
+	}
+
+	public void setGroupId(long groupId) {
+		_groupId = groupId;
+	}
+
 	public void setInputStream(InputStream inputStream) {
 		_inputStream = inputStream;
 	}
@@ -162,6 +197,10 @@ public class DefaultWorkflowDefinition
 
 	public void setScope(String scope) {
 		_scope = scope;
+	}
+
+	public void setSystem(boolean system) {
+		_system = system;
 	}
 
 	public void setTitle(String title) {
@@ -196,11 +235,15 @@ public class DefaultWorkflowDefinition
 	private String _contentAsXML;
 	private Date _createDate;
 	private String _description;
+	private String _externalReferenceCode;
+	private String _groupExternalReferenceCode;
+	private long _groupId;
 	private InputStream _inputStream;
 	private Date _modifiedDate;
 	private String _name;
 	private Map<String, Object> _optionalAttributes;
 	private String _scope;
+	private boolean _system;
 	private String _title;
 	private long _userId;
 	private int _version;

@@ -30,7 +30,6 @@ import java.util.List;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -83,6 +82,39 @@ public class OrganizationMembershipPolicyMembershipsTest
 	}
 
 	@Test(expected = MembershipPolicyException.class)
+	public void testAssignUserToForbiddenOrganizations() throws Exception {
+		long[] userIds = addUsers();
+
+		MembershipPolicyTestUtil.updateUser(
+			UserLocalServiceUtil.getUser(userIds[0]),
+			addForbiddenOrganizations(), null, null, null,
+			Collections.<UserGroupRole>emptyList());
+	}
+
+	@Test
+	public void testAssignUserToRequiredOrganizations() throws Exception {
+		long[] userIds = addUsers();
+
+		long[] requiredOrganizationIds = addRequiredOrganizations();
+
+		int initialOrganizationUsersCount =
+			UserLocalServiceUtil.getOrganizationUsersCount(
+				requiredOrganizationIds[0]);
+
+		MembershipPolicyTestUtil.updateUser(
+			UserLocalServiceUtil.getUser(userIds[0]),
+			new long[] {requiredOrganizationIds[0]}, null, null, null,
+			Collections.<UserGroupRole>emptyList());
+
+		Assert.assertEquals(
+			initialOrganizationUsersCount + 1,
+			UserLocalServiceUtil.getOrganizationUsersCount(
+				requiredOrganizationIds[0]));
+
+		Assert.assertTrue(isPropagateMembership());
+	}
+
+	@Test(expected = MembershipPolicyException.class)
 	public void testAssignUsersToForbiddenOrganization() throws Exception {
 		long[] forbiddenOrganizationIds = addForbiddenOrganizations();
 
@@ -109,58 +141,12 @@ public class OrganizationMembershipPolicyMembershipsTest
 		Assert.assertTrue(isPropagateMembership());
 	}
 
-	@Test(expected = MembershipPolicyException.class)
-	public void testAssignUserToForbiddenOrganizations() throws Exception {
-		long[] userIds = addUsers();
-
-		MembershipPolicyTestUtil.updateUser(
-			UserLocalServiceUtil.getUser(userIds[0]),
-			addForbiddenOrganizations(), null, null, null,
-			Collections.<UserGroupRole>emptyList());
-	}
-
-	@Ignore
-	@Test
-	public void testAssignUserToRequiredOrganizations() throws Exception {
-		long[] userIds = addUsers();
-
-		long[] requiredOrganizationIds = addRequiredOrganizations();
-
-		int initialOrganizationUsersCount =
-			UserLocalServiceUtil.getOrganizationUsersCount(
-				requiredOrganizationIds[0]);
-
-		MembershipPolicyTestUtil.updateUser(
-			UserLocalServiceUtil.getUser(userIds[0]),
-			new long[] {requiredOrganizationIds[0]}, null, null, null,
-			Collections.<UserGroupRole>emptyList());
-
-		Assert.assertEquals(
-			initialOrganizationUsersCount + 1,
-			UserLocalServiceUtil.getOrganizationUsersCount(
-				requiredOrganizationIds[0]));
-
-		Assert.assertTrue(isPropagateMembership());
-	}
-
 	@Test
 	public void testPropagateWhenAddingUserToRequiredOrganizations()
 		throws Exception {
 
 		MembershipPolicyTestUtil.addUser(
 			addRequiredOrganizations(), null, null, null);
-
-		Assert.assertTrue(isPropagateMembership());
-	}
-
-	@Test
-	public void testPropagateWhenAssigningUsersToRequiredOrganization()
-		throws Exception {
-
-		long[] requiredOrganizationIds = addRequiredOrganizations();
-
-		UserServiceUtil.addOrganizationUsers(
-			requiredOrganizationIds[0], addUsers());
 
 		Assert.assertTrue(isPropagateMembership());
 	}
@@ -175,6 +161,18 @@ public class OrganizationMembershipPolicyMembershipsTest
 			UserLocalServiceUtil.getUser(userIds[0]),
 			addRequiredOrganizations(), null, null, null,
 			Collections.<UserGroupRole>emptyList());
+
+		Assert.assertTrue(isPropagateMembership());
+	}
+
+	@Test
+	public void testPropagateWhenAssigningUsersToRequiredOrganization()
+		throws Exception {
+
+		long[] requiredOrganizationIds = addRequiredOrganizations();
+
+		UserServiceUtil.addOrganizationUsers(
+			requiredOrganizationIds[0], addUsers());
 
 		Assert.assertTrue(isPropagateMembership());
 	}

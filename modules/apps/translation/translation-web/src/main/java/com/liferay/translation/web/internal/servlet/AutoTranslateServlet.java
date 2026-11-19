@@ -14,6 +14,7 @@ import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.servlet.ServletResponseUtil;
 import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.Portal;
@@ -24,14 +25,14 @@ import com.liferay.translation.translator.Translator;
 import com.liferay.translation.translator.TranslatorPacket;
 import com.liferay.translation.translator.TranslatorRegistry;
 
+import jakarta.servlet.Servlet;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 
 import java.util.Map;
-
-import javax.servlet.Servlet;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -56,6 +57,21 @@ public class AutoTranslateServlet extends HttpServlet {
 		throws IOException {
 
 		try {
+			User user = _portal.getUser(httpServletRequest);
+
+			if ((user == null) || user.isGuestUser()) {
+				httpServletResponse.setStatus(HttpServletResponse.SC_FORBIDDEN);
+
+				_writeErrorJSON(
+					httpServletResponse,
+					_language.get(
+						_portal.getLocale(httpServletRequest),
+						"you-do-not-have-permission-to-access-the-requested-" +
+							"resource"));
+
+				return;
+			}
+
 			String content = StreamUtil.toString(
 				httpServletRequest.getInputStream());
 

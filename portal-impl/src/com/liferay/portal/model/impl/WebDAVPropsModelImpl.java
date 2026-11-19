@@ -84,6 +84,8 @@ public class WebDAVPropsModelImpl
 
 	public static final String TABLE_SQL_DROP = "drop table WebDAVProps";
 
+	public static final String ENTITY_ALIAS = "webDAVProps";
+
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY webDAVProps.webDavPropsId ASC";
 
@@ -134,7 +136,7 @@ public class WebDAVPropsModelImpl
 	public static final long WEBDAVPROPSID_COLUMN_BITMASK = 4L;
 
 	public static final long LOCK_EXPIRATION_TIME = GetterUtil.getLong(
-		com.liferay.portal.util.PropsUtil.get(
+		com.liferay.portal.kernel.util.PropsUtil.get(
 			"lock.expiration.time.com.liferay.portal.kernel.model.WebDAVProps"));
 
 	public WebDAVPropsModelImpl() {
@@ -801,3 +803,4 @@ public class WebDAVPropsModelImpl
 	private WebDAVProps _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-2047070226

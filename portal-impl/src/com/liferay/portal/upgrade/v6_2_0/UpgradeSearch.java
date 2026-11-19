@@ -11,7 +11,7 @@ import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.portlet.PortletPreferencesFactoryUtil;
 import com.liferay.portal.kernel.util.Validator;
 
-import javax.portlet.PortletPreferences;
+import jakarta.portlet.PortletPreferences;
 
 /**
  * @author Alexander Chow
@@ -23,9 +23,7 @@ public class UpgradeSearch extends BaseUpgradePortletPreferences {
 		return new String[] {"3"};
 	}
 
-	protected JSONObject upgradeDataJSONObject(JSONObject dataJSONObject)
-		throws Exception {
-
+	protected JSONObject upgradeDataJSONObject(JSONObject dataJSONObject) {
 		JSONArray valuesJSONArray = dataJSONObject.getJSONArray("values");
 
 		boolean hasBookmarksEntry = false;
@@ -47,11 +45,13 @@ public class UpgradeSearch extends BaseUpgradePortletPreferences {
 				hasDLFileEntry = true;
 			}
 
-			if (value.equals(
+			if (!value.equals(
 					"com.liferay.portlet.journal.model.JournalArticle")) {
 
-				hasJournalArticle = true;
+				continue;
 			}
+
+			hasJournalArticle = true;
 		}
 
 		if (!hasBookmarksEntry && !hasDLFileEntry && !hasJournalArticle) {

@@ -1,0 +1,107 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`IndividualAttributesModal should render 1`] = `
+<body
+  class="dxp modal-open"
+>
+  <div
+    aria-hidden="true"
+    data-suppressed="true"
+  />
+  <div>
+    <div
+      aria-hidden="true"
+      class="modal-backdrop fade show"
+      data-suppressed="true"
+    />
+    <div
+      class="fade modal d-block show"
+    >
+      <div
+        class="modal-dialog"
+      >
+        <div
+          aria-labelledby="clay-modal-label-1"
+          aria-modal="true"
+          class="modal-content"
+          role="dialog"
+          tabindex="-1"
+        >
+          <div
+            class="modal-header"
+          >
+            <h1
+              class="modal-title"
+              id="clay-modal-label-1"
+              tabindex="-1"
+            >
+              testFildName0
+            </h1>
+            <button
+              aria-label="Close"
+              class="close btn btn-unstyled"
+              type="button"
+            >
+              <svg
+                class="lexicon-icon lexicon-icon-times"
+                role="presentation"
+              >
+                <use
+                  href="#times"
+                />
+              </svg>
+            </button>
+          </div>
+          <div
+            class="modal-body"
+          >
+            <div
+              class="h5"
+            >
+              Data Sources
+            </div>
+            <div
+              class="flex-grow-1 mx-4 table-root"
+            >
+              <div
+                class="table-responsive"
+              >
+                <table
+                  class="table table-autofit table-list table-nowrap table-head-bordered table-hover table-striped"
+                >
+                  <thead>
+                    <tr>
+                      <th
+                        class="table-head-title"
+                      >
+                        Source
+                      </th>
+                      <th
+                        class="table-head-title"
+                      >
+                        Attribute
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr
+                      class=""
+                    >
+                      <td>
+                        LIFERAY-DATASOURCE-FARO-EXAMPLE-0
+                      </td>
+                      <td>
+                        testMiddleName0
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+`;

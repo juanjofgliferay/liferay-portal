@@ -32,8 +32,7 @@ public class CommerceTermEntryModelDocumentContributor
 		Document document, CommerceTermEntry commerceTermEntry) {
 
 		document.addKeyword(Field.NAME, commerceTermEntry.getName());
-		document.addNumberSortable(
-			Field.PRIORITY, commerceTermEntry.getPriority());
+		document.addKeyword(Field.PRIORITY, commerceTermEntry.getPriority());
 		document.addText(Field.TYPE, commerceTermEntry.getType());
 
 		List<String> languageIds =
@@ -41,9 +40,9 @@ public class CommerceTermEntryModelDocumentContributor
 				commerceTermEntry.getCommerceTermEntryId());
 
 		for (String languageId : languageIds) {
-			document.addKeywordSortable(
+			document.addKeyword(
 				_localization.getLocalizedName("label", languageId),
-				commerceTermEntry.getLabel(languageId));
+				commerceTermEntry.getLabel(languageId), true);
 		}
 	}
 

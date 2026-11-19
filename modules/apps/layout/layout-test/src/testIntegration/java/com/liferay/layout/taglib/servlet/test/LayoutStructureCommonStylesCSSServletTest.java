@@ -8,15 +8,20 @@ package com.liferay.layout.taglib.servlet.test;
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.layout.page.template.service.LayoutPageTemplateStructureLocalService;
 import com.liferay.layout.test.util.LayoutTestUtil;
+import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
+import com.liferay.portal.kernel.model.ResourceConstants;
+import com.liferay.portal.kernel.model.role.RoleConstants;
+import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
 import com.liferay.portal.kernel.servlet.HttpMethods;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
+import com.liferay.portal.kernel.test.util.RoleTestUtil;
 import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
@@ -28,8 +33,9 @@ import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
 import com.liferay.segments.service.SegmentsExperienceLocalService;
 
-import javax.servlet.Servlet;
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.Servlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -47,6 +53,13 @@ import org.springframework.mock.web.MockHttpServletResponse;
  */
 @RunWith(Arquillian.class)
 public class LayoutStructureCommonStylesCSSServletTest {
+
+	public static final String COMMON_CSS_STYLE = StringBundler.concat(
+		".lfr-layout-structure-item-container {padding: 0;} ",
+		".lfr-layout-structure-item-row {overflow: hidden;} ",
+		".portlet-borderless .portlet-content {padding: 0;}",
+		"[data-lfr-editable-type=\"rich-text\"] > p:only-child ",
+		"{margin-bottom:0;}");
 
 	@ClassRule
 	@Rule
@@ -72,11 +85,11 @@ public class LayoutStructureCommonStylesCSSServletTest {
 	}
 
 	@Test
-	public void testDoesNotRender() throws Exception {
+	public void testService() throws Exception {
 		_layoutPageTemplateStructureLocalService.
 			updateLayoutPageTemplateStructureData(
-				_group.getGroupId(), _layout.getPlid(),
-				_read("layout_structure_container_fixed.json"));
+				TestPropsValues.getUserId(), _group.getGroupId(),
+				_layout.getPlid(), _read("layout_structure.json"));
 
 		MockHttpServletResponse mockHttpServletResponse =
 			new MockHttpServletResponse();
@@ -85,31 +98,15 @@ public class LayoutStructureCommonStylesCSSServletTest {
 
 		Assert.assertEquals(
 			_normalize(mockHttpServletResponse.getContentAsString()),
-			_normalize(_read("expected_style_container_fixed.css")));
+			_normalize(COMMON_CSS_STYLE + _read("expected_style.css")));
 	}
 
 	@Test
-	public void testRenderCommonStyles() throws Exception {
+	public void testServiceWithCustomCSS() throws Exception {
 		_layoutPageTemplateStructureLocalService.
 			updateLayoutPageTemplateStructureData(
-				_group.getGroupId(), _layout.getPlid(),
-				_read("layout_structure.json"));
-
-		MockHttpServletResponse mockHttpServletResponse =
-			new MockHttpServletResponse();
-
-		_servlet.service(_getHttpServletRequest(), mockHttpServletResponse);
-
-		Assert.assertEquals(
-			_normalize(mockHttpServletResponse.getContentAsString()),
-			_normalize(_read("expected_style.css")));
-	}
-
-	@Test
-	public void testRenderCommonStylesWithCustomCSS() throws Exception {
-		_layoutPageTemplateStructureLocalService.
-			updateLayoutPageTemplateStructureData(
-				_group.getGroupId(), _layout.getPlid(),
+				TestPropsValues.getUserId(), _group.getGroupId(),
+				_layout.getPlid(),
 				_read("layout_structure_with_custom_css.json"));
 
 		MockHttpServletResponse mockHttpServletResponse =
@@ -119,32 +116,18 @@ public class LayoutStructureCommonStylesCSSServletTest {
 
 		Assert.assertEquals(
 			_normalize(mockHttpServletResponse.getContentAsString()),
-			_normalize(_read("expected_style_with_custom_css.css")));
+			_normalize(
+				COMMON_CSS_STYLE +
+					_read("expected_style_with_custom_css.css")));
 	}
 
 	@Test
-	public void testRenderCommonStylesWithResponsive() throws Exception {
+	public void testServiceWithFixedContainer() throws Exception {
 		_layoutPageTemplateStructureLocalService.
 			updateLayoutPageTemplateStructureData(
-				_group.getGroupId(), _layout.getPlid(),
-				_read("layout_structure_with_responsive_styles.json"));
-
-		MockHttpServletResponse mockHttpServletResponse =
-			new MockHttpServletResponse();
-
-		_servlet.service(_getHttpServletRequest(), mockHttpServletResponse);
-
-		Assert.assertEquals(
-			_normalize(mockHttpServletResponse.getContentAsString()),
-			_normalize(_read("expected_style_with_responsive_styles.css")));
-	}
-
-	@Test
-	public void testRenderEmptyTagWhenItDoesNotHaveStyles() throws Exception {
-		_layoutPageTemplateStructureLocalService.
-			updateLayoutPageTemplateStructureData(
-				_group.getGroupId(), _layout.getPlid(),
-				_read("layout_structure_without_styles.json"));
+				TestPropsValues.getUserId(), _group.getGroupId(),
+				_layout.getPlid(),
+				_read("layout_structure_container_fixed.json"));
 
 		MockHttpServletResponse mockHttpServletResponse =
 			new MockHttpServletResponse();
@@ -154,8 +137,71 @@ public class LayoutStructureCommonStylesCSSServletTest {
 		Assert.assertEquals(
 			_normalize(mockHttpServletResponse.getContentAsString()),
 			_normalize(
-				".lfr-layout-structure-item-container {padding: 0;}." +
-					"lfr-layout-structure-item-row {overflow: hidden;}"));
+				COMMON_CSS_STYLE +
+					_read("expected_style_container_fixed.css")));
+	}
+
+	@Test
+	public void testServiceWithResponsiveStyles() throws Exception {
+		_layoutPageTemplateStructureLocalService.
+			updateLayoutPageTemplateStructureData(
+				TestPropsValues.getUserId(), _group.getGroupId(),
+				_layout.getPlid(),
+				_read("layout_structure_with_responsive_styles.json"));
+
+		MockHttpServletResponse mockHttpServletResponse =
+			new MockHttpServletResponse();
+
+		_servlet.service(_getHttpServletRequest(), mockHttpServletResponse);
+
+		Assert.assertEquals(
+			_normalize(mockHttpServletResponse.getContentAsString()),
+			_normalize(
+				COMMON_CSS_STYLE +
+					_read("expected_style_with_responsive_styles.css")));
+	}
+
+	@Test
+	public void testServiceWithoutStyles() throws Exception {
+		_layoutPageTemplateStructureLocalService.
+			updateLayoutPageTemplateStructureData(
+				TestPropsValues.getUserId(), _group.getGroupId(),
+				_layout.getPlid(),
+				_read("layout_structure_without_styles.json"));
+
+		MockHttpServletResponse mockHttpServletResponse =
+			new MockHttpServletResponse();
+
+		_servlet.service(_getHttpServletRequest(), mockHttpServletResponse);
+
+		Assert.assertEquals(
+			_normalize(mockHttpServletResponse.getContentAsString()),
+			_normalize(COMMON_CSS_STYLE));
+	}
+
+	@Test
+	public void testServiceWithoutViewPermission() throws Exception {
+		_layoutPageTemplateStructureLocalService.
+			updateLayoutPageTemplateStructureData(
+				TestPropsValues.getUserId(), _group.getGroupId(),
+				_layout.getPlid(),
+				_read("layout_structure_with_custom_css.json"));
+
+		RoleTestUtil.removeResourcePermission(
+			RoleConstants.GUEST, Layout.class.getName(),
+			ResourceConstants.SCOPE_INDIVIDUAL,
+			String.valueOf(_layout.getPlid()), ActionKeys.VIEW);
+
+		MockHttpServletResponse mockHttpServletResponse =
+			new MockHttpServletResponse();
+
+		_servlet.service(_getHttpServletRequest(), mockHttpServletResponse);
+
+		Assert.assertEquals(
+			StringPool.BLANK, mockHttpServletResponse.getContentAsString());
+		Assert.assertEquals(
+			HttpServletResponse.SC_NOT_FOUND,
+			mockHttpServletResponse.getStatus());
 	}
 
 	private HttpServletRequest _getHttpServletRequest() throws Exception {

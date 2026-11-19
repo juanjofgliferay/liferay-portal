@@ -5,21 +5,22 @@
 
 package com.liferay.portal.util;
 
+import com.liferay.petra.io.StreamUtil;
+import com.liferay.petra.io.unsync.UnsyncBufferedReader;
+import com.liferay.petra.io.unsync.UnsyncByteArrayOutputStream;
 import com.liferay.petra.nio.CharsetEncoderUtil;
 import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.io.unsync.UnsyncBufferedReader;
-import com.liferay.portal.kernel.io.unsync.UnsyncByteArrayOutputStream;
+import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.util.Digester;
 import com.liferay.portal.kernel.util.DigesterUtil;
 import com.liferay.portal.kernel.util.FileComparator;
 import com.liferay.portal.kernel.util.PropsKeys;
+import com.liferay.portal.kernel.util.PropsUtil;
 import com.liferay.portal.kernel.util.PwdGenerator;
-import com.liferay.portal.kernel.util.StreamUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.SystemProperties;
 import com.liferay.portal.kernel.util.Time;
@@ -120,7 +121,13 @@ public class FileImpl implements com.liferay.portal.kernel.util.File {
 		File directory;
 
 		while ((directory = queue.poll()) != null) {
-			for (File file : directory.listFiles()) {
+			File[] files = directory.listFiles();
+
+			if (files == null) {
+				continue;
+			}
+
+			for (File file : files) {
 				String path = file.getPath();
 
 				File targetFile = new File(
@@ -272,7 +279,13 @@ public class FileImpl implements com.liferay.portal.kernel.util.File {
 			File curDirectory;
 
 			while ((curDirectory = visitQueue.poll()) != null) {
-				for (File file : curDirectory.listFiles()) {
+				File[] files = curDirectory.listFiles();
+
+				if (files == null) {
+					continue;
+				}
+
+				for (File file : files) {
 					if (file.isFile()) {
 						file.delete();
 					}
@@ -393,7 +406,10 @@ public class FileImpl implements com.liferay.portal.kernel.util.File {
 	@Override
 	public String getMD5Checksum(File file) throws IOException {
 		try (FileInputStream fileInputStream = new FileInputStream(file)) {
-			return DigesterUtil.digestHex(Digester.MD5, fileInputStream);
+			return DigesterUtil.digestHex(DigesterUtil.MD5, fileInputStream);
+		}
+		catch (SystemException systemException) {
+			throw new IOException(systemException);
 		}
 	}
 
@@ -475,9 +491,11 @@ public class FileImpl implements com.liferay.portal.kernel.util.File {
 		File[] fileArray = file.listFiles();
 
 		for (int i = 0; (fileArray != null) && (i < fileArray.length); i++) {
-			if (fileArray[i].isDirectory()) {
-				dirs.add(fileArray[i].getName());
+			if (!fileArray[i].isDirectory()) {
+				continue;
 			}
+
+			dirs.add(fileArray[i].getName());
 		}
 
 		return dirs.toArray(new String[0]);
@@ -495,9 +513,11 @@ public class FileImpl implements com.liferay.portal.kernel.util.File {
 		File[] fileArray = file.listFiles();
 
 		for (int i = 0; (fileArray != null) && (i < fileArray.length); i++) {
-			if (fileArray[i].isFile()) {
-				files.add(fileArray[i].getName());
+			if (!fileArray[i].isFile()) {
+				continue;
 			}
+
+			files.add(fileArray[i].getName());
 		}
 
 		return files.toArray(new String[0]);
@@ -749,6 +769,7 @@ public class FileImpl implements com.liferay.portal.kernel.util.File {
 	@Override
 	public void unzip(File source, File destination) {
 		try (InputStream inputStream = new FileInputStream(source);
+
 			ZipInputStream zipInputStream = new ZipInputStream(inputStream)) {
 
 			ZipEntry entry = null;
@@ -920,7 +941,7 @@ public class FileImpl implements com.liferay.portal.kernel.util.File {
 		write(new File(pathName, fileName), s, lazy, append);
 	}
 
-	protected void mkdirsParentFile(File file) throws IOException {
+	protected void mkdirsParentFile(File file) {
 		File parentFile = file.getParentFile();
 
 		if (parentFile == null) {

@@ -39,6 +39,15 @@ public class CTCollectionTemplateServiceWrapper
 	}
 
 	@Override
+	public com.liferay.change.tracking.model.CTCollectionTemplate
+			deleteCTCollectionTemplate(long ctCollectionTemplateId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _ctCollectionTemplateService.deleteCTCollectionTemplate(
+			ctCollectionTemplateId);
+	}
+
+	@Override
 	public java.util.List
 		<com.liferay.change.tracking.model.CTCollectionTemplate>
 			getCTCollectionTemplates(
@@ -93,3 +102,4 @@ public class CTCollectionTemplateServiceWrapper
 	private CTCollectionTemplateService _ctCollectionTemplateService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:820454776

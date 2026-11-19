@@ -4,3 +4,54 @@
 		display: block;
 	}
 }
+
+.user-avatar-link {
+	display: block;
+	position: relative;
+
+	@at-root {
+		.panel-notifications-count {
+			&,
+			html#{$cadmin-selector} .cadmin & {
+				border-radius: $rounded-pill;
+				display: flex;
+				margin: 0;
+				max-width: none;
+				position: absolute;
+				right: calc(100% - 0.7rem);
+				top: -0.4rem;
+			}
+		}
+
+		.badge {
+			&,
+			html#{$cadmin-selector} .cadmin & {
+				margin: 0.25rem;
+			}
+		}
+	}
+
+	.text-default {
+		align-items: center;
+		display: flex;
+
+		.user-full-name {
+			margin-left: 0.5rem;
+
+			@include media-breakpoint-down(xs) {
+				display: none;
+			}
+		}
+	}
+}
+
+.user-personal-bar {
+	.fieldset {
+		position: relative;
+	}
+
+	.user-avatar-link .panel-notifications-count {
+		right: calc(100% - 1rem);
+		top: -0.6rem;
+	}
+}

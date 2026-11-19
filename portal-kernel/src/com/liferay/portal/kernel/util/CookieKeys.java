@@ -9,9 +9,9 @@ import com.liferay.portal.kernel.cookies.CookiesManagerUtil;
 import com.liferay.portal.kernel.cookies.UnsupportedCookieException;
 import com.liferay.portal.kernel.exception.CookieNotSupportedException;
 
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 /**
  * @author Brian Wing Shun Chan
@@ -20,9 +20,6 @@ import javax.servlet.http.HttpServletResponse;
  */
 @Deprecated
 public class CookieKeys {
-
-	public static final String COMMERCE_CONTINUE_AS_GUEST =
-		"COMMERCE_CONTINUE_AS_GUEST";
 
 	public static final String COMPANY_ID = "COMPANY_ID";
 
@@ -41,8 +38,6 @@ public class CookieKeys {
 	public static final String PASSWORD = "PASSWORD";
 
 	public static final String REMEMBER_ME = "REMEMBER_ME";
-
-	public static final String REMOTE_PREFERENCE_PREFIX = "REMOTE_PREFERENCE_";
 
 	public static final String USER_UUID = "USER_UUID";
 

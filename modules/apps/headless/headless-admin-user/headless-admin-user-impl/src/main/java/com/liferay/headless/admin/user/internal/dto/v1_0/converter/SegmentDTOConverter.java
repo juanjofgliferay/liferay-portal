@@ -27,7 +27,10 @@ import org.osgi.service.component.annotations.Reference;
  * @author Jürgen Kappler
  */
 @Component(
-	property = "dto.class.name=com.liferay.segments.model.SegmentsEntry",
+	property = {
+		"default=true",
+		"dto.class.name=com.liferay.segments.model.SegmentsEntry"
+	},
 	service = DTOConverter.class
 )
 public class SegmentDTOConverter
@@ -35,21 +38,14 @@ public class SegmentDTOConverter
 
 	@Override
 	public String getContentType() {
-		return SegmentsEntry.class.getSimpleName();
+		return Segment.class.getSimpleName();
 	}
 
 	@Override
 	public Segment toDTO(SegmentsEntry segmentsEntry) {
 		return new Segment() {
 			{
-				active = segmentsEntry.isActive();
-				dateCreated = segmentsEntry.getCreateDate();
-				dateModified = segmentsEntry.getModifiedDate();
-				id = segmentsEntry.getSegmentsEntryId();
-				name = segmentsEntry.getName(
-					segmentsEntry.getDefaultLanguageId());
-				siteId = segmentsEntry.getGroupId();
-
+				setActive(segmentsEntry::isActive);
 				setCriteria(
 					() -> {
 						String criteria = segmentsEntry.getCriteria();
@@ -64,21 +60,30 @@ public class SegmentDTOConverter
 					() -> {
 						String criteria = segmentsEntry.getCriteria();
 
-						if (!criteria.isEmpty()) {
-							try {
-								return _toMap(
-									_jsonFactory.createJSONObject(
-										segmentsEntry.getCriteria()));
-							}
-							catch (JSONException jsonException) {
-								if (_log.isWarnEnabled()) {
-									_log.warn(jsonException);
-								}
+						if (criteria.isEmpty()) {
+							return null;
+						}
+
+						try {
+							return _toMap(
+								_jsonFactory.createJSONObject(
+									segmentsEntry.getCriteria()));
+						}
+						catch (JSONException jsonException) {
+							if (_log.isWarnEnabled()) {
+								_log.warn(jsonException);
 							}
 						}
 
 						return null;
 					});
+				setDateCreated(segmentsEntry::getCreateDate);
+				setDateModified(segmentsEntry::getModifiedDate);
+				setId(segmentsEntry::getSegmentsEntryId);
+				setName(
+					() -> segmentsEntry.getName(
+						segmentsEntry.getDefaultLanguageId()));
+				setSiteId(segmentsEntry::getGroupId);
 				setSource(
 					() -> {
 						if (StringUtil.equals(

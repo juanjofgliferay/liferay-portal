@@ -42,6 +42,10 @@ public class Schema {
 		return _description;
 	}
 
+	public Discriminator getDiscriminator() {
+		return _discriminator;
+	}
+
 	public List<String> getEnumValues() {
 		return _enumValues;
 	}
@@ -58,20 +62,20 @@ public class Schema {
 		return _items;
 	}
 
-	public Double getMaximum() {
-		return _maximum;
-	}
-
 	public Integer getMaxLength() {
 		return _maxLength;
 	}
 
-	public Double getMinimum() {
-		return _minimum;
+	public Double getMaximum() {
+		return _maximum;
 	}
 
 	public Integer getMinLength() {
 		return _minLength;
+	}
+
+	public Double getMinimum() {
+		return _minimum;
 	}
 
 	public String getName() {
@@ -150,6 +154,10 @@ public class Schema {
 		_description = description;
 	}
 
+	public void setDiscriminator(Discriminator discriminator) {
+		_discriminator = discriminator;
+	}
+
 	public void setEnumValues(List<String> enumValues) {
 		_enumValues = enumValues;
 	}
@@ -174,24 +182,24 @@ public class Schema {
 		_jsonString = jsonString;
 	}
 
-	public void setMaximum(Double maximum) {
-		_maximum = maximum;
-	}
-
 	public void setMaxLength(Integer maxLength) {
 		_maxLength = maxLength;
+	}
+
+	public void setMaximum(Double maximum) {
+		_maximum = maximum;
 	}
 
 	public void setMergeProperties(boolean mergeProperties) {
 		_mergeProperties = mergeProperties;
 	}
 
-	public void setMinimum(Double minimum) {
-		_minimum = minimum;
-	}
-
 	public void setMinLength(Integer minLength) {
 		_minLength = minLength;
+	}
+
+	public void setMinimum(Double minimum) {
+		_minimum = minimum;
 	}
 
 	public void setName(String name) {
@@ -238,17 +246,18 @@ public class Schema {
 	private String _default;
 	private boolean _deprecated;
 	private String _description;
+	private Discriminator _discriminator;
 	private List<String> _enumValues;
 	private Object _example;
 	private String _format;
 	private Items _items;
 	private boolean _jsonMap;
 	private boolean _jsonString;
-	private Double _maximum;
 	private Integer _maxLength;
+	private Double _maximum;
 	private boolean _mergeProperties = true;
-	private Double _minimum;
 	private Integer _minLength;
+	private Double _minimum;
 	private String _name;
 	private List<Schema> _oneOfSchemas;
 	private Map<String, Schema> _propertySchemas;

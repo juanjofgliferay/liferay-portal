@@ -50,21 +50,24 @@ public class DDMStructureIndexTypeUpgradeProcess extends UpgradeProcess {
 			try (ResultSet resultSet = preparedStatement1.executeQuery()) {
 				while (resultSet.next()) {
 					String newDefinition = _upgradeIndexType(
-						resultSet.getString(1));
+						resultSet.getString("definition"));
 
 					preparedStatement2.setString(1, newDefinition);
 
-					preparedStatement2.setLong(2, resultSet.getLong(2));
+					long structureId = resultSet.getLong("structureId");
+
+					preparedStatement2.setLong(2, structureId);
 
 					preparedStatement2.addBatch();
 
 					preparedStatement3.setString(1, newDefinition);
-					preparedStatement3.setLong(2, resultSet.getLong(2));
+					preparedStatement3.setLong(2, structureId);
 
 					preparedStatement3.addBatch();
 				}
 
 				preparedStatement2.executeBatch();
+
 				preparedStatement3.executeBatch();
 			}
 		}
@@ -81,9 +84,11 @@ public class DDMStructureIndexTypeUpgradeProcess extends UpgradeProcess {
 			for (int i = 0; i < fieldsJSONArray.length(); i++) {
 				JSONObject jsonObject = fieldsJSONArray.getJSONObject(i);
 
-				if (!jsonObject.has("indexType")) {
-					jsonObject.put("indexType", "text");
+				if (jsonObject.has("indexType")) {
+					continue;
 				}
+
+				jsonObject.put("indexType", "text");
 			}
 
 			return definitionJSONObject.toString();

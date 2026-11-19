@@ -4,6 +4,7 @@
  */
 
 import ClayEmptyState from '@clayui/empty-state';
+import ClayIcon from '@clayui/icon';
 import ClayList from '@clayui/list';
 import {sub} from 'frontend-js-web';
 import React, {useState} from 'react';
@@ -34,13 +35,13 @@ const FeatureFlagList: React.FC<IFeatureFlagListProps> = ({featureFlags}) => {
 					description={Liferay.Language.get(
 						'no-feature-flags-were-found'
 					)}
-					imgProps={{
-						alt: Liferay.Language.get(
-							'no-feature-flags-were-found'
-						),
-					}}
-					imgSrc={`${Liferay.ThemeDisplay.getPathThemeImages()}/states/search_state.gif`}
-					imgSrcReducedMotion={`${Liferay.ThemeDisplay.getPathThemeImages()}/states/empty_state_reduced_motion.gif`}
+					image={
+						<ClayIcon
+							className="c-empty-state-icon c-empty-state-icon-search-state"
+							illustration
+							symbol="search-state"
+						/>
+					}
 				/>
 			)}
 
@@ -48,7 +49,6 @@ const FeatureFlagList: React.FC<IFeatureFlagListProps> = ({featureFlags}) => {
 				<ClayList>
 					{items.map(
 						({
-							companyId,
 							dependenciesFulfilled,
 							dependencyKeys,
 							description,
@@ -62,7 +62,7 @@ const FeatureFlagList: React.FC<IFeatureFlagListProps> = ({featureFlags}) => {
 										<ClayList.ItemTitle>
 											{`${title} `}
 
-											<span className="text-muted">
+											<span className="small text-secondary">
 												({key})
 											</span>
 										</ClayList.ItemTitle>
@@ -77,7 +77,7 @@ const FeatureFlagList: React.FC<IFeatureFlagListProps> = ({featureFlags}) => {
 													Liferay.Language.get(
 														'dependencies-x'
 													),
-													dependencyKeys as string[]
+													dependencyKeys.join(', ')
 												)}
 											</ClayList.ItemText>
 										)}
@@ -86,7 +86,6 @@ const FeatureFlagList: React.FC<IFeatureFlagListProps> = ({featureFlags}) => {
 									<ClayList.ItemField>
 										<FeatureFlagToggle
 											ariaLabel={title}
-											companyId={companyId}
 											disabled={!dependenciesFulfilled}
 											enabled={enabled}
 											featureFlagKey={key}
@@ -94,14 +93,15 @@ const FeatureFlagList: React.FC<IFeatureFlagListProps> = ({featureFlags}) => {
 											onItemsChange={(newItems) => {
 												setItems((items) =>
 													items.map((item) => {
-														const newItem = newItems.find(
-															(newItem) => {
-																return (
-																	newItem.key ===
-																	item.key
-																);
-															}
-														);
+														const newItem =
+															newItems.find(
+																(newItem) => {
+																	return (
+																		newItem.key ===
+																		item.key
+																	);
+																}
+															);
 
 														if (newItem) {
 															return {

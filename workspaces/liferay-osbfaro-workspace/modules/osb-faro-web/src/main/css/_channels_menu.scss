@@ -1,0 +1,32 @@
+$c: '.channels-menu';
+
+#{$c}-root {
+	margin-top: 20px;
+	position: relative;
+
+	#{$c}-label {
+		color: $dark;
+		font-size: $fontSizeExtraSmall;
+		font-weight: $fontWeightSemiBold;
+		letter-spacing: 0.5px;
+		margin-bottom: 4px;
+		text-transform: uppercase;
+		white-space: nowrap;
+	}
+
+	#{$c}-icon {
+		align-items: center;
+		bottom: 0;
+		color: $mainLighten28;
+		display: flex;
+		font-size: $fontSizeMedium;
+		justify-content: center;
+		left: 0;
+		margin: auto;
+		opacity: 0;
+		position: absolute;
+		right: 0;
+		top: 0;
+		visibility: hidden;
+	}
+}

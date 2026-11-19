@@ -6,9 +6,13 @@
 package com.liferay.layout.admin.web.internal.helper;
 
 import com.liferay.exportimport.kernel.staging.StagingUtil;
+import com.liferay.fragment.processor.PortletRegistry;
+import com.liferay.layout.admin.web.internal.util.OrphanPortletsUtil;
 import com.liferay.layout.util.template.LayoutConverter;
 import com.liferay.layout.util.template.LayoutConverterRegistry;
+import com.liferay.portal.kernel.change.tracking.CTCollectionThreadLocal;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
@@ -17,24 +21,16 @@ import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.LayoutConstants;
 import com.liferay.portal.kernel.model.LayoutType;
 import com.liferay.portal.kernel.model.LayoutTypePortlet;
-import com.liferay.portal.kernel.model.Portlet;
-import com.liferay.portal.kernel.model.PortletPreferences;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.service.LayoutLocalServiceUtil;
-import com.liferay.portal.kernel.service.PortletLocalServiceUtil;
-import com.liferay.portal.kernel.service.PortletPreferencesLocalServiceUtil;
 import com.liferay.portal.kernel.service.permission.GroupPermissionUtil;
 import com.liferay.portal.kernel.service.permission.LayoutPermissionUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
-import com.liferay.portal.kernel.util.PortletKeys;
-import com.liferay.portal.kernel.util.Validator;
 import com.liferay.staging.StagingGroupHelper;
 import com.liferay.staging.StagingGroupHelperUtil;
 import com.liferay.translation.constants.TranslationActionKeys;
 import com.liferay.translation.security.permission.TranslationPermission;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
@@ -46,10 +42,11 @@ public class LayoutActionsHelper {
 
 	public LayoutActionsHelper(
 		LayoutConverterRegistry layoutConverterRegistry,
-		ThemeDisplay themeDisplay,
+		PortletRegistry portletRegistry, ThemeDisplay themeDisplay,
 		TranslationPermission translationPermission) {
 
 		_layoutConverterRegistry = layoutConverterRegistry;
+		_portletRegistry = portletRegistry;
 		_themeDisplay = themeDisplay;
 		_translationPermission = translationPermission;
 	}
@@ -75,6 +72,10 @@ public class LayoutActionsHelper {
 	}
 
 	public boolean isShowConfigureAction(Layout layout) throws PortalException {
+		if (layout.isTypeEmpty()) {
+			return false;
+		}
+
 		return LayoutPermissionUtil.containsLayoutRestrictedUpdatePermission(
 			_themeDisplay.getPermissionChecker(), layout);
 	}
@@ -161,11 +162,7 @@ public class LayoutActionsHelper {
 			return false;
 		}
 
-		if (draftLayout.isDraft()) {
-			return true;
-		}
-
-		return false;
+		return draftLayout.isDraft();
 	}
 
 	public boolean isShowExportTranslationAction(Layout layout) {
@@ -203,7 +200,7 @@ public class LayoutActionsHelper {
 		if (StagingUtil.isIncomplete(layout) ||
 			!layout.isSupportsEmbeddedPortlets() ||
 			!isShowAddRootLayoutButton(selGroup) ||
-			!_hasOrphanPortlets(layout)) {
+			!OrphanPortletsUtil.hasOrphanPortlets(layout, _portletRegistry)) {
 
 			return false;
 		}
@@ -214,7 +211,9 @@ public class LayoutActionsHelper {
 	public boolean isShowPermissionsAction(Layout layout, Group selGroup)
 		throws PortalException {
 
-		if (StagingUtil.isIncomplete(layout) || selGroup.isLayoutPrototype()) {
+		if (StagingUtil.isIncomplete(layout) || layout.isTypeEmpty() ||
+			selGroup.isLayoutPrototype()) {
+
 			return false;
 		}
 
@@ -226,10 +225,8 @@ public class LayoutActionsHelper {
 	public boolean isShowPreviewDraftActions(Layout layout)
 		throws PortalException {
 
-		if (!layout.isTypeContent() ||
-			!LayoutPermissionUtil.contains(
-				_themeDisplay.getPermissionChecker(), layout,
-				ActionKeys.UPDATE)) {
+		if (!LayoutPermissionUtil.containsLayoutPreviewDraftPermission(
+				_themeDisplay.getPermissionChecker(), layout)) {
 
 			return false;
 		}
@@ -257,72 +254,23 @@ public class LayoutActionsHelper {
 		return false;
 	}
 
-	public boolean isShowViewCollectionItemsAction(Layout layout) {
-		if (!Objects.equals(
-				layout.getType(), LayoutConstants.TYPE_COLLECTION)) {
+	public boolean isShowViewHistoryAction(Layout layout)
+		throws PortalException {
+
+		if (!CTCollectionThreadLocal.isProductionMode() ||
+			!FeatureFlagManagerUtil.isEnabled(
+				_themeDisplay.getCompanyId(), "LPD-10622") ||
+			!layout.isTypeContent()) {
 
 			return false;
 		}
 
-		String collectionType = layout.getTypeSettingsProperty(
-			"collectionType");
-
-		if (Validator.isNull(collectionType)) {
-			return false;
-		}
-
-		String collectionPK = layout.getTypeSettingsProperty("collectionPK");
-
-		if (Validator.isNull(collectionPK)) {
-			return false;
-		}
-
-		return true;
+		return LayoutPermissionUtil.contains(
+			_themeDisplay.getPermissionChecker(), layout, ActionKeys.UPDATE);
 	}
 
 	public boolean isShowViewLayoutAction(Layout layout) {
 		if (layout.isDenied() || layout.isPending() || layout.isPublished()) {
-			return true;
-		}
-
-		return false;
-	}
-
-	private boolean _hasOrphanPortlets(Layout layout) {
-		if (!layout.isSupportsEmbeddedPortlets()) {
-			return false;
-		}
-
-		LayoutTypePortlet selLayoutTypePortlet =
-			(LayoutTypePortlet)layout.getLayoutType();
-
-		List<Portlet> explicitlyAddedPortlets =
-			selLayoutTypePortlet.getExplicitlyAddedPortlets();
-
-		List<String> explicitlyAddedPortletIds = new ArrayList<>();
-
-		for (Portlet explicitlyAddedPortlet : explicitlyAddedPortlets) {
-			explicitlyAddedPortletIds.add(
-				explicitlyAddedPortlet.getPortletId());
-		}
-
-		List<PortletPreferences> portletPreferencesList =
-			PortletPreferencesLocalServiceUtil.getPortletPreferences(
-				PortletKeys.PREFS_OWNER_ID_DEFAULT,
-				PortletKeys.PREFS_OWNER_TYPE_LAYOUT, layout.getPlid());
-
-		for (PortletPreferences portletPreferences : portletPreferencesList) {
-			String portletId = portletPreferences.getPortletId();
-
-			Portlet portlet = PortletLocalServiceUtil.getPortletById(
-				layout.getCompanyId(), portletId);
-
-			if (portlet.isSystem() ||
-				explicitlyAddedPortletIds.contains(portletId)) {
-
-				continue;
-			}
-
 			return true;
 		}
 
@@ -375,6 +323,7 @@ public class LayoutActionsHelper {
 		LayoutActionsHelper.class);
 
 	private final LayoutConverterRegistry _layoutConverterRegistry;
+	private final PortletRegistry _portletRegistry;
 	private final ThemeDisplay _themeDisplay;
 	private final TranslationPermission _translationPermission;
 

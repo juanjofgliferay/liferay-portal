@@ -13,12 +13,12 @@ import com.liferay.portal.kernel.servlet.taglib.BaseJSPDynamicInclude;
 import com.liferay.portal.kernel.servlet.taglib.DynamicInclude;
 import com.liferay.portal.kernel.util.Portal;
 
-import java.io.IOException;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
+import java.io.IOException;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -26,7 +26,13 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Adolfo Pérez
  */
-@Component(service = DynamicInclude.class)
+@Component(
+	property = {
+		"dynamic.include.key=com.liferay.document.library.web#/document_library/view.jsp#post",
+		"dynamic.include.key=com.liferay.document.library.web#/document_library/view_file_entry.jsp#post"
+	},
+	service = DynamicInclude.class
+)
 public class OneDriveViewPostJSPDynamicInclude extends BaseJSPDynamicInclude {
 
 	@Override
@@ -43,15 +49,6 @@ public class OneDriveViewPostJSPDynamicInclude extends BaseJSPDynamicInclude {
 		_setRedirectingOAuth2RequestAttributes(httpServletRequest);
 
 		super.include(httpServletRequest, httpServletResponse, key);
-	}
-
-	@Override
-	public void register(DynamicIncludeRegistry dynamicIncludeRegistry) {
-		dynamicIncludeRegistry.register(
-			"com.liferay.document.library.web#/document_library/view.jsp#post");
-		dynamicIncludeRegistry.register(
-			"com.liferay.document.library.web#/document_library" +
-				"/view_file_entry.jsp#post");
 	}
 
 	@Override

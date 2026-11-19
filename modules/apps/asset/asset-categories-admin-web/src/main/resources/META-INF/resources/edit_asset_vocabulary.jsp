@@ -16,6 +16,8 @@ AssetVocabulary vocabulary = null;
 
 if (vocabularyId > 0) {
 	vocabulary = AssetVocabularyServiceUtil.fetchVocabulary(vocabularyId);
+
+	CTTimelineUtil.setCTTimelineKeys(renderRequest, AssetVocabulary.class, vocabularyId);
 }
 
 portletDisplay.setShowBackIcon(true);
@@ -39,6 +41,7 @@ renderResponse.setTitle((vocabulary == null) ? LanguageUtil.get(request, "add-vo
 
 	<liferay-frontend:edit-form-body>
 		<liferay-ui:error exception="<%= DuplicateVocabularyException.class %>" message="please-enter-a-unique-name" />
+		<liferay-ui:error exception="<%= DuplicateVocabularyExternalReferenceCodeException.class %>" message="please-enter-a-unique-external-reference-code" />
 		<liferay-ui:error exception="<%= VocabularyNameException.class %>" message="please-enter-a-valid-name" />
 
 		<aui:model-context bean="<%= vocabulary %>" model="<%= AssetVocabulary.class %>" />
@@ -48,9 +51,11 @@ renderResponse.setTitle((vocabulary == null) ? LanguageUtil.get(request, "add-vo
 			collapsible="<%= true %>"
 			label="details"
 		>
-			<aui:input label="name" name="title" placeholder="name" />
+			<aui:input disabled="<%= assetCategoriesDisplayContext.isSystemVocabulary(vocabulary) %>" label="name" name="title" placeholder="name" />
 
-			<aui:input name="description" placeholder="description" />
+			<aui:input disabled="<%= assetCategoriesDisplayContext.isExternalReferenceCodeInputDisabled(vocabulary) %>" label="external-reference-code" name="externalReferenceCode" placeholder="external-reference-code" />
+
+			<aui:input disabled="<%= assetCategoriesDisplayContext.isSystemVocabulary(vocabulary) %>" name="description" placeholder="description" />
 
 			<aui:input helpMessage="multi-valued-help" inlineLabel="right" label="allow-multiple-categories" labelCssClass="simple-toggle-switch" name="multiValued" type="toggle-switch" value="<%= (vocabulary != null) ? vocabulary.isMultiValued() : true %>" />
 
@@ -65,13 +70,15 @@ renderResponse.setTitle((vocabulary == null) ? LanguageUtil.get(request, "add-vo
 					</span>
 				</label>
 
-				<aui:input checked="<%= (vocabulary != null) ? (vocabulary.getVisibilityType() == AssetVocabularyConstants.VISIBILITY_TYPE_PUBLIC) : true %>" disabled="<%= !(vocabulary == null) %>" id="visibilityTypePublic" label="public" name="visibilityType" type="radio" value="<%= AssetVocabularyConstants.VISIBILITY_TYPE_PUBLIC %>" />
+				<aui:input checked="<%= assetCategoriesDisplayContext.isVisibilityTypePublicChecked(vocabulary) %>" disabled="<%= assetCategoriesDisplayContext.isVisibilityTypeDisabled(vocabulary) %>" id="visibilityTypePublic" label="public" name="visibilityType" type="radio" value="<%= AssetVocabularyConstants.VISIBILITY_TYPE_PUBLIC %>" />
 
-				<aui:input checked="<%= (vocabulary != null) ? (vocabulary.getVisibilityType() == AssetVocabularyConstants.VISIBILITY_TYPE_INTERNAL) : false %>" disabled="<%= !(vocabulary == null) %>" label="internal" name="visibilityType" type="radio" value="<%= AssetVocabularyConstants.VISIBILITY_TYPE_INTERNAL %>" />
+				<aui:input checked="<%= assetCategoriesDisplayContext.isVisibilityTypeInternalChecked(vocabulary) %>" disabled="<%= assetCategoriesDisplayContext.isVisibilityTypeDisabled(vocabulary) %>" label="internal" name="visibilityType" type="radio" value="<%= AssetVocabularyConstants.VISIBILITY_TYPE_INTERNAL %>" />
 			</div>
 		</liferay-frontend:fieldset>
 
-		<%@ include file="/edit_vocabulary_settings.jspf" %>
+		<c:if test="<%= !assetCategoriesDisplayContext.isSystemVocabulary(vocabulary) %>">
+			<%@ include file="/edit_vocabulary_settings.jspf" %>
+		</c:if>
 
 		<c:if test="<%= vocabulary == null %>">
 			<liferay-frontend:fieldset

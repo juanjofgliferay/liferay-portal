@@ -46,13 +46,6 @@ public class TalendProcess {
 		return _processConfig;
 	}
 
-	@Override
-	public String toString() {
-		return StringBundler.concat(
-			"{mainMethodArguments=", _mainMethodArguments, ", processConfig=",
-			_processConfig, "}");
-	}
-
 	public static class Builder {
 
 		public TalendProcess build() {
@@ -109,29 +102,33 @@ public class TalendProcess {
 			ProcessConfig.Builder processConfigBuilder =
 				new ProcessConfig.Builder();
 
+			List<String> arguments = new ArrayList<>();
+
 			if (_jvmOptions != null) {
-				processConfigBuilder.setArguments(_jvmOptions);
+				arguments.addAll(_jvmOptions);
 			}
 
 			ProcessConfig portalProcessConfig =
 				PortalClassPathUtil.getPortalProcessConfig();
 
-			processConfigBuilder.setBootstrapClassPath(
+			return processConfigBuilder.setArguments(
+				arguments
+			).setBootstrapClassPath(
 				_getBootstrapClassPath(
-					portalProcessConfig.getBootstrapClassPathHolders()));
-			processConfigBuilder.setProcessLogConsumer(
-				portalProcessConfig.getProcessLogConsumer());
-			processConfigBuilder.setReactClassLoader(
+					portalProcessConfig.getBootstrapClassPathHolders())
+			).setJavaExecutable(
+				System.getProperty("java.home") + "/bin/java"
+			).setProcessLogConsumer(
+				portalProcessConfig.getProcessLogConsumer()
+			).setReactClassLoader(
 				AggregateClassLoader.getAggregateClassLoader(
 					portalProcessConfig.getReactClassLoader(),
-					TalendProcess.class.getClassLoader()));
-
-			processConfigBuilder.setRuntimeClassPath(
+					TalendProcess.class.getClassLoader())
+			).setRuntimeClassPath(
 				StringBundler.concat(
 					_talendArchive.getClassPath(), File.pathSeparator,
-					_BUNDLE_FILE_PATH));
-
-			return processConfigBuilder.build();
+					_BUNDLE_FILE_PATH)
+			).build();
 		}
 
 		private String _getBootstrapClassPath(PathHolder[] pathHolders) {

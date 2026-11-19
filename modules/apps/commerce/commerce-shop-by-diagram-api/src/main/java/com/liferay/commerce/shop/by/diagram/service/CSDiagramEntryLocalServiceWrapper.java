@@ -256,6 +256,15 @@ public class CSDiagramEntryLocalServiceWrapper
 	}
 
 	@Override
+	public CSDiagramEntry fetchCSDiagramEntryByExternalReferenceCode(
+		String externalReferenceCode, long companyId) {
+
+		return _csDiagramEntryLocalService.
+			fetchCSDiagramEntryByExternalReferenceCode(
+				externalReferenceCode, companyId);
+	}
+
+	@Override
 	public com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery
 		getActionableDynamicQuery() {
 
@@ -299,14 +308,6 @@ public class CSDiagramEntryLocalServiceWrapper
 		return _csDiagramEntryLocalService.getCSDiagramEntries(start, end);
 	}
 
-	@Override
-	public java.util.List<CSDiagramEntry> getCSDiagramEntries(
-		long cpDefinitionId, int start, int end) {
-
-		return _csDiagramEntryLocalService.getCSDiagramEntries(
-			cpDefinitionId, start, end);
-	}
-
 	/**
 	 * Returns the number of cs diagram entries.
 	 *
@@ -315,12 +316,6 @@ public class CSDiagramEntryLocalServiceWrapper
 	@Override
 	public int getCSDiagramEntriesCount() {
 		return _csDiagramEntryLocalService.getCSDiagramEntriesCount();
-	}
-
-	@Override
-	public int getCSDiagramEntriesCount(long cpDefinitionId) {
-		return _csDiagramEntryLocalService.getCSDiagramEntriesCount(
-			cpDefinitionId);
 	}
 
 	/**
@@ -344,6 +339,16 @@ public class CSDiagramEntryLocalServiceWrapper
 
 		return _csDiagramEntryLocalService.getCSDiagramEntry(
 			cpDefinitionId, sequence);
+	}
+
+	@Override
+	public CSDiagramEntry getCSDiagramEntryByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _csDiagramEntryLocalService.
+			getCSDiagramEntryByExternalReferenceCode(
+				externalReferenceCode, companyId);
 	}
 
 	@Override
@@ -441,3 +446,4 @@ public class CSDiagramEntryLocalServiceWrapper
 	private CSDiagramEntryLocalService _csDiagramEntryLocalService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:717376868

@@ -112,9 +112,11 @@ public class ObjectActionModelImpl
 	}
 
 	public static final String TABLE_SQL_CREATE =
-		"create table ObjectAction (mvccVersion LONG default 0 not null,uuid_ VARCHAR(75) null,externalReferenceCode VARCHAR(75) null,objectActionId LONG not null primary key,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,objectDefinitionId LONG,active_ BOOLEAN,conditionExpression TEXT null,description VARCHAR(75) null,errorMessage STRING null,label STRING null,name VARCHAR(75) null,objectActionExecutorKey VARCHAR(255) null,objectActionTriggerKey VARCHAR(75) null,parameters TEXT null,system_ BOOLEAN,status INTEGER)";
+		"create table ObjectAction (mvccVersion LONG default 0 not null,uuid_ VARCHAR(75) null,externalReferenceCode VARCHAR(75) null,objectActionId LONG not null primary key,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,objectDefinitionId LONG,active_ BOOLEAN,conditionExpression TEXT null,description STRING null,errorMessage STRING null,label STRING null,name VARCHAR(75) null,objectActionExecutorKey VARCHAR(255) null,objectActionTriggerKey VARCHAR(75) null,parameters TEXT null,system_ BOOLEAN,status INTEGER)";
 
 	public static final String TABLE_SQL_DROP = "drop table ObjectAction";
+
+	public static final String ENTITY_ALIAS = "objectAction";
 
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY objectAction.objectActionId ASC";
@@ -156,26 +158,32 @@ public class ObjectActionModelImpl
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long OBJECTACTIONTRIGGERKEY_COLUMN_BITMASK = 16L;
+	public static final long OBJECTACTIONEXECUTORKEY_COLUMN_BITMASK = 16L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long OBJECTDEFINITIONID_COLUMN_BITMASK = 32L;
+	public static final long OBJECTACTIONTRIGGERKEY_COLUMN_BITMASK = 32L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long UUID_COLUMN_BITMASK = 64L;
+	public static final long OBJECTDEFINITIONID_COLUMN_BITMASK = 64L;
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
+	 */
+	@Deprecated
+	public static final long UUID_COLUMN_BITMASK = 128L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
 	 *		#getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long OBJECTACTIONID_COLUMN_BITMASK = 128L;
+	public static final long OBJECTACTIONID_COLUMN_BITMASK = 256L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
@@ -705,12 +713,104 @@ public class ObjectActionModelImpl
 	}
 
 	@Override
+	public String getDescription(Locale locale) {
+		String languageId = LocaleUtil.toLanguageId(locale);
+
+		return getDescription(languageId);
+	}
+
+	@Override
+	public String getDescription(Locale locale, boolean useDefault) {
+		String languageId = LocaleUtil.toLanguageId(locale);
+
+		return getDescription(languageId, useDefault);
+	}
+
+	@Override
+	public String getDescription(String languageId) {
+		return LocalizationUtil.getLocalization(getDescription(), languageId);
+	}
+
+	@Override
+	public String getDescription(String languageId, boolean useDefault) {
+		return LocalizationUtil.getLocalization(
+			getDescription(), languageId, useDefault);
+	}
+
+	@Override
+	public String getDescriptionCurrentLanguageId() {
+		return _descriptionCurrentLanguageId;
+	}
+
+	@JSON
+	@Override
+	public String getDescriptionCurrentValue() {
+		Locale locale = getLocale(_descriptionCurrentLanguageId);
+
+		return getDescription(locale);
+	}
+
+	@Override
+	public Map<Locale, String> getDescriptionMap() {
+		return LocalizationUtil.getLocalizationMap(getDescription());
+	}
+
+	@Override
 	public void setDescription(String description) {
 		if (_columnOriginalValues == Collections.EMPTY_MAP) {
 			_setColumnOriginalValues();
 		}
 
 		_description = description;
+	}
+
+	@Override
+	public void setDescription(String description, Locale locale) {
+		setDescription(description, locale, LocaleUtil.getDefault());
+	}
+
+	@Override
+	public void setDescription(
+		String description, Locale locale, Locale defaultLocale) {
+
+		String languageId = LocaleUtil.toLanguageId(locale);
+		String defaultLanguageId = LocaleUtil.toLanguageId(defaultLocale);
+
+		if (Validator.isNotNull(description)) {
+			setDescription(
+				LocalizationUtil.updateLocalization(
+					getDescription(), "Description", description, languageId,
+					defaultLanguageId));
+		}
+		else {
+			setDescription(
+				LocalizationUtil.removeLocalization(
+					getDescription(), "Description", languageId));
+		}
+	}
+
+	@Override
+	public void setDescriptionCurrentLanguageId(String languageId) {
+		_descriptionCurrentLanguageId = languageId;
+	}
+
+	@Override
+	public void setDescriptionMap(Map<Locale, String> descriptionMap) {
+		setDescriptionMap(descriptionMap, LocaleUtil.getDefault());
+	}
+
+	@Override
+	public void setDescriptionMap(
+		Map<Locale, String> descriptionMap, Locale defaultLocale) {
+
+		if (descriptionMap == null) {
+			return;
+		}
+
+		setDescription(
+			LocalizationUtil.updateLocalization(
+				descriptionMap, getDescription(), "Description",
+				LocaleUtil.toLanguageId(defaultLocale)));
 	}
 
 	@JSON
@@ -983,6 +1083,15 @@ public class ObjectActionModelImpl
 		_objectActionExecutorKey = objectActionExecutorKey;
 	}
 
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
+	 *             #getColumnOriginalValue(String)}
+	 */
+	@Deprecated
+	public String getOriginalObjectActionExecutorKey() {
+		return getColumnOriginalValue("objectActionExecutorKey");
+	}
+
 	@JSON
 	@Override
 	public String getObjectActionTriggerKey() {
@@ -1115,6 +1224,17 @@ public class ObjectActionModelImpl
 	public String[] getAvailableLanguageIds() {
 		Set<String> availableLanguageIds = new TreeSet<String>();
 
+		Map<Locale, String> descriptionMap = getDescriptionMap();
+
+		for (Map.Entry<Locale, String> entry : descriptionMap.entrySet()) {
+			Locale locale = entry.getKey();
+			String value = entry.getValue();
+
+			if (Validator.isNotNull(value)) {
+				availableLanguageIds.add(LocaleUtil.toLanguageId(locale));
+			}
+		}
+
 		Map<Locale, String> errorMessageMap = getErrorMessageMap();
 
 		for (Map.Entry<Locale, String> entry : errorMessageMap.entrySet()) {
@@ -1143,7 +1263,7 @@ public class ObjectActionModelImpl
 
 	@Override
 	public String getDefaultLanguageId() {
-		String xml = getErrorMessage();
+		String xml = getDescription();
 
 		if (xml == null) {
 			return "";
@@ -1177,6 +1297,17 @@ public class ObjectActionModelImpl
 		Locale defaultLocale = LocaleUtil.getDefault();
 
 		String modelDefaultLanguageId = getDefaultLanguageId();
+
+		String description = getDescription(defaultLocale);
+
+		if (Validator.isNull(description)) {
+			setDescription(
+				getDescription(modelDefaultLanguageId), defaultLocale);
+		}
+		else {
+			setDescription(
+				getDescription(defaultLocale), defaultLocale, defaultLocale);
+		}
 
 		String errorMessage = getErrorMessage(defaultLocale);
 
@@ -1577,6 +1708,7 @@ public class ObjectActionModelImpl
 	private boolean _active;
 	private String _conditionExpression;
 	private String _description;
+	private String _descriptionCurrentLanguageId;
 	private String _errorMessage;
 	private String _errorMessageCurrentLanguageId;
 	private String _label;
@@ -1716,3 +1848,4 @@ public class ObjectActionModelImpl
 	private ObjectAction _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-731248622

@@ -7,6 +7,7 @@ package com.liferay.portal.url.builder.internal.util;
 
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.DigesterUtil;
@@ -24,15 +25,27 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleEvent;
 import org.osgi.framework.BundleListener;
-import org.osgi.service.component.annotations.Activate;
-import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.Deactivate;
 
 /**
  * @author Iván Zaera Avellón
  */
-@Component(service = CacheHelper.class)
 public class CacheHelper {
+
+	public CacheHelper(BundleContext bundleContext) {
+		_bundleContext = bundleContext;
+
+		_bundleListener = bundleEvent -> {
+			if (bundleEvent.getType() == BundleEvent.STOPPED) {
+				Bundle bundle = bundleEvent.getBundle();
+
+				_digests.remove(bundle.getBundleId());
+			}
+		};
+
+		bundleContext.addBundleListener(_bundleListener);
+
+		_lastRestartTime = System.currentTimeMillis();
+	}
 
 	public void appendCacheParam(
 		StringBundler sb, Bundle bundle, CachePolicy cachePolicy,
@@ -72,25 +85,7 @@ public class CacheHelper {
 			sb, "t", String.valueOf(System.currentTimeMillis()));
 	}
 
-	@Activate
-	protected void activate(BundleContext bundleContext) {
-		_bundleContext = bundleContext;
-
-		_bundleListener = bundleEvent -> {
-			if (bundleEvent.getType() == BundleEvent.STOPPED) {
-				Bundle bundle = bundleEvent.getBundle();
-
-				_digests.remove(bundle.getBundleId());
-			}
-		};
-
-		bundleContext.addBundleListener(_bundleListener);
-
-		_lastRestartTime = System.currentTimeMillis();
-	}
-
-	@Deactivate
-	protected void deactivate() {
+	public void destroy() {
 		_bundleContext.removeBundleListener(_bundleListener);
 	}
 
@@ -133,13 +128,13 @@ public class CacheHelper {
 
 			return digest;
 		}
-		catch (IOException ioException) {
+		catch (IOException | SystemException exception) {
 			if (_log.isWarnEnabled()) {
 				_log.warn(
 					StringBundler.concat(
 						"Unable to digest resource ", path, " inside bundle ",
 						bundle.getSymbolicName()),
-					ioException);
+					exception);
 			}
 
 			digests.put(cacheKey, _NULL_HOLDER);
@@ -152,10 +147,10 @@ public class CacheHelper {
 
 	private static final Log _log = LogFactoryUtil.getLog(CacheHelper.class);
 
-	private BundleContext _bundleContext;
-	private BundleListener _bundleListener;
+	private final BundleContext _bundleContext;
+	private final BundleListener _bundleListener;
 	private final Map<Long, Map<String, String>> _digests =
 		new ConcurrentHashMap<>();
-	private long _lastRestartTime;
+	private final long _lastRestartTime;
 
 }

@@ -221,6 +221,10 @@ public interface DLFileVersionLocalService
 		long fileEntryId, boolean excludeWorkingCopy);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public DLFileVersion fetchLatestFileVersion(
+		long fileEntryId, boolean excludeWorkingCopy, int status);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public ActionableDynamicQuery getActionableDynamicQuery();
 
 	/**
@@ -308,10 +312,6 @@ public interface DLFileVersionLocalService
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public DLFileVersion getFileVersionByUuidAndGroupId(
-		String uuid, long groupId);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<DLFileVersion> getFileVersions(long fileEntryId, int status);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
@@ -351,8 +351,6 @@ public interface DLFileVersionLocalService
 	public PersistedModel getPersistedModel(Serializable primaryKeyObj)
 		throws PortalException;
 
-	public void rebuildTree(long companyId) throws PortalException;
-
 	public void setTreePaths(long folderId, String treePath)
 		throws PortalException;
 
@@ -385,3 +383,4 @@ public interface DLFileVersionLocalService
 		throws E;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:172385808

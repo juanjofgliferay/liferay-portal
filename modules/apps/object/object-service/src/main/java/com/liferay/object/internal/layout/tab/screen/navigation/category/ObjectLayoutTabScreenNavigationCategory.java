@@ -14,16 +14,17 @@ import com.liferay.object.model.ObjectLayoutTab;
 import com.liferay.object.model.ObjectRelationship;
 import com.liferay.object.service.ObjectDefinitionLocalServiceUtil;
 import com.liferay.object.service.ObjectLayoutLocalServiceUtil;
+import com.liferay.object.service.ObjectLayoutTabLocalServiceUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.model.User;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 
 import java.util.Locale;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * @author Feliphe Marinho
@@ -85,6 +86,16 @@ public class ObjectLayoutTabScreenNavigationCategory
 
 		if ((objectLayout != null) && (_objectLayoutTab == null)) {
 			return false;
+		}
+
+		if (_objectLayoutTab != null) {
+			ObjectLayoutTab currentObjectLayoutTab =
+				ObjectLayoutTabLocalServiceUtil.fetchObjectLayoutTab(
+					_objectLayoutTab.getObjectLayoutTabId());
+
+			if (currentObjectLayoutTab == null) {
+				return false;
+			}
 		}
 
 		if (_objectRelationship == null) {

@@ -96,13 +96,19 @@ public interface BackgroundTaskLocalService
 			InputStream inputStream)
 		throws PortalException;
 
+	public void addBackgroundTaskAttachment(
+			long userId, long backgroundTaskId, String sourceFileName,
+			String title, File file)
+		throws PortalException;
+
 	public BackgroundTask amendBackgroundTask(
 		long backgroundTaskId, Map<String, Serializable> taskContextMap,
 		int status, ServiceContext serviceContext);
 
 	public BackgroundTask amendBackgroundTask(
 		long backgroundTaskId, Map<String, Serializable> taskContextMap,
-		int status, String statusMessage, ServiceContext serviceContext);
+		String errorStackTrace, int status, String statusMessage,
+		ServiceContext serviceContext);
 
 	@Clusterable(onMaster = true)
 	public void cleanUpBackgroundTask(long backgroundTaskId, int status);
@@ -466,3 +472,4 @@ public interface BackgroundTaskLocalService
 	public BackgroundTask updateBackgroundTask(BackgroundTask backgroundTask);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:2071560740

@@ -115,12 +115,8 @@ public class CommerceQualifierEntryPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		CommerceQualifierEntry newCommerceQualifierEntry = _persistence.create(
-			pk);
-
-		newCommerceQualifierEntry.setMvccVersion(RandomTestUtil.nextLong());
+		CommerceQualifierEntry newCommerceQualifierEntry =
+			addCommerceQualifierEntry();
 
 		newCommerceQualifierEntry.setCompanyId(RandomTestUtil.nextLong());
 
@@ -148,8 +144,10 @@ public class CommerceQualifierEntryPersistenceTest {
 		newCommerceQualifierEntry.setTargetCommerceQualifierMetadataKey(
 			RandomTestUtil.randomString());
 
-		_commerceQualifierEntries.add(
-			_persistence.update(newCommerceQualifierEntry));
+		newCommerceQualifierEntry = _persistence.update(
+			newCommerceQualifierEntry);
+
+		_commerceQualifierEntries.add(newCommerceQualifierEntry);
 
 		CommerceQualifierEntry existingCommerceQualifierEntry =
 			_persistence.findByPrimaryKey(
@@ -215,24 +213,6 @@ public class CommerceQualifierEntryPersistenceTest {
 			RandomTestUtil.nextLong(), RandomTestUtil.nextLong());
 
 		_persistence.countByT_T(0L, 0L);
-	}
-
-	@Test
-	public void testCountByS_S_T() throws Exception {
-		_persistence.countByS_S_T(
-			RandomTestUtil.nextLong(), RandomTestUtil.nextLong(),
-			RandomTestUtil.nextLong());
-
-		_persistence.countByS_S_T(0L, 0L, 0L);
-	}
-
-	@Test
-	public void testCountByS_T_T() throws Exception {
-		_persistence.countByS_T_T(
-			RandomTestUtil.nextLong(), RandomTestUtil.nextLong(),
-			RandomTestUtil.nextLong());
-
-		_persistence.countByS_T_T(0L, 0L, 0L);
 	}
 
 	@Test
@@ -603,8 +583,6 @@ public class CommerceQualifierEntryPersistenceTest {
 
 		CommerceQualifierEntry commerceQualifierEntry = _persistence.create(pk);
 
-		commerceQualifierEntry.setMvccVersion(RandomTestUtil.nextLong());
-
 		commerceQualifierEntry.setCompanyId(RandomTestUtil.nextLong());
 
 		commerceQualifierEntry.setUserId(RandomTestUtil.nextLong());
@@ -641,3 +619,4 @@ public class CommerceQualifierEntryPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1933955187

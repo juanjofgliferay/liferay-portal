@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -302,33 +303,6 @@ public class DDMTemplateLinkLocalServiceUtil {
 		return getService().getPersistedModel(primaryKeyObj);
 	}
 
-	public static DDMTemplateLink getTemplateLink(long templateLinkId)
-		throws PortalException {
-
-		return getService().getTemplateLink(templateLinkId);
-	}
-
-	public static DDMTemplateLink getTemplateLink(
-			long classNameId, long classPK)
-		throws PortalException {
-
-		return getService().getTemplateLink(classNameId, classPK);
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static List<DDMTemplateLink> getTemplateLinks(long classNameId) {
-		return getService().getTemplateLinks(classNameId);
-	}
-
-	public static List<DDMTemplateLink> getTemplateLinksByTemplateId(
-		long templateId) {
-
-		return getService().getTemplateLinksByTemplateId(templateId);
-	}
-
 	/**
 	 * Updates the ddm template link in the database or adds it if it does not yet exist. Also notifies the appropriate model listeners.
 	 *
@@ -346,13 +320,6 @@ public class DDMTemplateLinkLocalServiceUtil {
 	}
 
 	public static DDMTemplateLink updateTemplateLink(
-			long templateLinkId, long templateId)
-		throws PortalException {
-
-		return getService().updateTemplateLink(templateLinkId, templateId);
-	}
-
-	public static DDMTemplateLink updateTemplateLink(
 		long classNameId, long classPK, long templateId) {
 
 		return getService().updateTemplateLink(
@@ -360,13 +327,13 @@ public class DDMTemplateLinkLocalServiceUtil {
 	}
 
 	public static DDMTemplateLinkLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(DDMTemplateLinkLocalService service) {
-		_service = service;
-	}
-
-	private static volatile DDMTemplateLinkLocalService _service;
+	private static final Snapshot<DDMTemplateLinkLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			DDMTemplateLinkLocalServiceUtil.class,
+			DDMTemplateLinkLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-521565827

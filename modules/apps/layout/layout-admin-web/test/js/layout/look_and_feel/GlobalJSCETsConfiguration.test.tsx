@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import '@testing-library/jest-dom/extend-expect';
+import '@testing-library/jest-dom';
 import {
 	act,
 	findByRole,
@@ -11,12 +11,12 @@ import {
 	render,
 	screen,
 } from '@testing-library/react';
-import {openSelectionModal} from 'frontend-js-web';
+import {openSelectionModal} from 'frontend-js-components-web';
 import * as React from 'react';
 
 import GlobalJSCETsConfiguration from '../../../../src/main/resources/META-INF/resources/js/layout/look_and_feel/GlobalJSCETsConfiguration';
 
-jest.mock('frontend-js-web', () => ({
+jest.mock('frontend-js-components-web', () => ({
 	openSelectionModal: jest.fn(),
 	openToast: () => {},
 }));
@@ -35,6 +35,7 @@ describe('GlobalJSCETsConfiguration', () => {
 			<GlobalJSCETsConfiguration
 				globalJSCETSelectorURL=""
 				globalJSCETs={[]}
+				isReadOnly={false}
 				portletNamespace=""
 				selectGlobalJSCETsEventName=""
 			/>
@@ -55,12 +56,49 @@ describe('GlobalJSCETsConfiguration', () => {
 						name: 'Nice Global JS',
 					},
 				]}
+				isReadOnly={false}
 				portletNamespace=""
 				selectGlobalJSCETsEventName=""
 			/>
 		);
 
 		await screen.findByText('Nice Global JS');
+	});
+
+	it('renders a dropdown with default, async and defer options for js global extensions', async () => {
+		render(
+			<GlobalJSCETsConfiguration
+				globalJSCETSelectorURL=""
+				globalJSCETs={[
+					{
+						cetExternalReferenceCode: 'niceId',
+						inherited: false,
+						inheritedLabel: '',
+						name: 'Nice Global JS',
+					},
+				]}
+				isReadOnly={false}
+				portletNamespace=""
+				selectGlobalJSCETsEventName=""
+			/>
+		);
+
+		const selectElement =
+			document.querySelector<HTMLInputElement>('.load-type-select');
+
+		expect(selectElement?.value).toBe('default');
+
+		fireEvent.change(selectElement as Element, {
+			target: {value: 'async'},
+		});
+
+		expect(selectElement?.value).toBe('async');
+
+		fireEvent.change(selectElement as Element, {
+			target: {value: 'defer'},
+		});
+
+		expect(selectElement?.value).toBe('defer');
 	});
 
 	it('renders a hidden input with the list of selected extensions', async () => {
@@ -82,6 +120,7 @@ describe('GlobalJSCETsConfiguration', () => {
 						name: 'Nice Global JS v2',
 					},
 				]}
+				isReadOnly={false}
 				portletNamespace=""
 				selectGlobalJSCETsEventName=""
 			/>
@@ -103,6 +142,7 @@ describe('GlobalJSCETsConfiguration', () => {
 						name: 'Nice Global JS',
 					},
 				]}
+				isReadOnly={false}
 				portletNamespace=""
 				selectGlobalJSCETsEventName=""
 			/>
@@ -137,6 +177,7 @@ describe('GlobalJSCETsConfiguration', () => {
 						name: 'Nice Global JS',
 					},
 				]}
+				isReadOnly={false}
 				portletNamespace=""
 				selectGlobalJSCETsEventName=""
 			/>
@@ -219,6 +260,7 @@ describe('GlobalJSCETsConfiguration', () => {
 						scriptLocation: 'bottom',
 					},
 				]}
+				isReadOnly={false}
 				portletNamespace=""
 				selectGlobalJSCETsEventName=""
 			/>
@@ -302,6 +344,7 @@ describe('GlobalJSCETsConfiguration', () => {
 						name: 'Nice Global JS',
 					},
 				]}
+				isReadOnly={false}
 				portletNamespace=""
 				selectGlobalJSCETsEventName=""
 			/>

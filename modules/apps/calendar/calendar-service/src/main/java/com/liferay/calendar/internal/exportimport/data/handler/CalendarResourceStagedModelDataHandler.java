@@ -47,7 +47,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Daniel Kocsis
  */
 @Component(
-	property = "javax.portlet.name=" + CalendarPortletKeys.CALENDAR_ADMIN,
+	property = "jakarta.portlet.name=" + CalendarPortletKeys.CALENDAR_ADMIN,
 	service = StagedModelDataHandler.class
 )
 public class CalendarResourceStagedModelDataHandler
@@ -343,12 +343,14 @@ public class CalendarResourceStagedModelDataHandler
 			Calendar calendar = _calendarLocalService.fetchCalendar(
 				MapUtil.getLong(calendarIds, calendarId));
 
-			if (calendar != null) {
-				calendar.setCalendarResourceId(
-					importedCalendarResource.getCalendarResourceId());
-
-				_calendarLocalService.updateCalendar(calendar);
+			if (calendar == null) {
+				continue;
 			}
+
+			calendar.setCalendarResourceId(
+				importedCalendarResource.getCalendarResourceId());
+
+			_calendarLocalService.updateCalendar(calendar);
 		}
 	}
 

@@ -7,15 +7,28 @@ package com.liferay.object.admin.rest.resource.v1_0.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.object.admin.rest.client.dto.v1_0.ObjectRelationship;
+import com.liferay.object.admin.rest.client.pagination.Page;
+import com.liferay.object.admin.rest.client.problem.Problem;
+import com.liferay.object.admin.rest.client.resource.v1_0.ObjectRelationshipResource;
 import com.liferay.object.admin.rest.resource.v1_0.test.util.ObjectDefinitionTestUtil;
+import com.liferay.object.constants.ObjectDefinitionConstants;
 import com.liferay.object.model.ObjectDefinition;
 import com.liferay.object.service.ObjectDefinitionLocalService;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
+import com.liferay.portal.kernel.util.HashMapBuilder;
+import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.StringUtil;
-import com.liferay.portal.test.rule.FeatureFlags;
 import com.liferay.portal.test.rule.Inject;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -28,7 +41,6 @@ import org.junit.runner.RunWith;
  * @author Javier Gamarra
  * @author Murilo Stodolni
  */
-@FeatureFlags("LPS-187142")
 @RunWith(Arquillian.class)
 public class ObjectRelationshipResourceTest
 	extends BaseObjectRelationshipResourceTestCase {
@@ -66,6 +78,42 @@ public class ObjectRelationshipResourceTest
 	public void testGetObjectDefinitionByExternalReferenceCodeObjectRelationshipsPageWithFilterDateTimeEquals() {
 	}
 
+	@Override
+	@Test
+	public void testGetObjectDefinitionObjectRelationshipsPage()
+		throws Exception {
+
+		super.testGetObjectDefinitionObjectRelationshipsPage();
+
+		ObjectRelationship randomObjectRelationship =
+			randomObjectRelationship();
+
+		String objectRelationshipLabel1 = RandomTestUtil.randomString();
+		String objectRelationshipLabel2 = RandomTestUtil.randomString();
+
+		randomObjectRelationship.setLabel(
+			HashMapBuilder.put(
+				LocaleUtil.BRAZIL.toLanguageTag(), objectRelationshipLabel1
+			).put(
+				LocaleUtil.US.toLanguageTag(), objectRelationshipLabel2
+			).build());
+
+		ObjectRelationship objectRelationship =
+			testGetObjectDefinitionObjectRelationshipsPage_addObjectRelationship(
+				testGetObjectDefinitionObjectRelationshipsPage_getObjectDefinitionId(),
+				randomObjectRelationship);
+
+		_testGetObjectDefinitionObjectRelationshipsPage(
+			objectRelationship, LocaleUtil.BRAZIL, objectRelationshipLabel1);
+		_testGetObjectDefinitionObjectRelationshipsPage(
+			objectRelationship, LocaleUtil.BRAZIL,
+			objectRelationship.getName());
+		_testGetObjectDefinitionObjectRelationshipsPage(
+			objectRelationship, LocaleUtil.US, objectRelationshipLabel2);
+		_testGetObjectDefinitionObjectRelationshipsPage(
+			objectRelationship, LocaleUtil.US, objectRelationship.getName());
+	}
+
 	@Ignore
 	@Override
 	@Test
@@ -96,6 +144,8 @@ public class ObjectRelationshipResourceTest
 			RandomTestUtil.randomString());
 		randomObjectRelationship.setObjectDefinitionId2(0L);
 		randomObjectRelationship.setObjectDefinitionModifiable2(() -> null);
+		randomObjectRelationship.setObjectDefinitionScope2(
+			ObjectDefinitionConstants.SCOPE_SITE);
 		randomObjectRelationship.setObjectDefinitionSystem2(() -> null);
 
 		ObjectRelationship postObjectRelationship =
@@ -111,7 +161,50 @@ public class ObjectRelationshipResourceTest
 
 		Assert.assertTrue(
 			postObjectRelationship.getObjectDefinitionModifiable2());
+		Assert.assertEquals(
+			randomObjectRelationship.getObjectDefinitionScope2(),
+			postObjectRelationship.getObjectDefinitionScope2());
 		Assert.assertFalse(postObjectRelationship.getObjectDefinitionSystem2());
+
+		ObjectRelationship systemObjectRelationship =
+			randomObjectRelationship();
+
+		String externalReferenceCode =
+			ObjectDefinitionConstants.
+				EXTERNAL_REFERENCE_CODE_PREFIX_SYSTEM_OBJECT_DEFINITION +
+					RandomTestUtil.randomString();
+
+		systemObjectRelationship.setObjectDefinitionExternalReferenceCode2(
+			externalReferenceCode);
+
+		systemObjectRelationship.setObjectDefinitionId2(0L);
+		systemObjectRelationship.setObjectDefinitionModifiable2(() -> null);
+		systemObjectRelationship.setObjectDefinitionScope2(
+			RandomTestUtil.randomString());
+		systemObjectRelationship.setObjectDefinitionSystem2(() -> null);
+
+		ObjectRelationship postSystemObjectRelationship =
+			testPostObjectDefinitionObjectRelationship_addObjectRelationship(
+				systemObjectRelationship);
+
+		ObjectDefinition objectDefinition =
+			_objectDefinitionLocalService.
+				getObjectDefinitionByExternalReferenceCode(
+					externalReferenceCode, TestPropsValues.getCompanyId());
+
+		Assert.assertTrue(objectDefinition.isSystem());
+
+		Assert.assertTrue(
+			postSystemObjectRelationship.getObjectDefinitionSystem2());
+	}
+
+	@Override
+	@Test
+	public void testPutObjectRelationship() throws Exception {
+		super.testPutObjectRelationship();
+
+		_testPutObjectRelationshipDescription(Collections.emptyMap());
+		_testPutObjectRelationshipDescription(null);
 	}
 
 	@Override
@@ -164,11 +257,50 @@ public class ObjectRelationshipResourceTest
 		Assert.assertEquals(
 			newObjectRelationship.getExternalReferenceCode(),
 			putObjectRelationship.getExternalReferenceCode());
+
+		randomObjectRelationship = randomObjectRelationship();
+
+		randomObjectRelationship.setObjectDefinitionId1((Long)null);
+
+		putObjectRelationship =
+			objectRelationshipResource.
+				putObjectRelationshipByExternalReferenceCode(
+					postObjectRelationship.getExternalReferenceCode(),
+					randomObjectRelationship);
+
+		Assert.assertEquals(
+			Long.valueOf(_objectDefinition1.getObjectDefinitionId()),
+			putObjectRelationship.getObjectDefinitionId1());
+
+		randomObjectRelationship.setObjectDefinitionExternalReferenceCode1(
+			(String)null);
+
+		try {
+			objectRelationshipResource.
+				putObjectRelationshipByExternalReferenceCode(
+					postObjectRelationship.getExternalReferenceCode(),
+					randomObjectRelationship);
+
+			Assert.fail();
+		}
+		catch (Problem.ProblemException problemException) {
+			Problem problem = problemException.getProblem();
+
+			Assert.assertEquals("NOT_FOUND", problem.getStatus());
+			Assert.assertNull(problem.getTitle());
+		}
+	}
+
+	@Override
+	protected String[] getAdditionalAssertFieldNames() {
+		return new String[] {"description"};
 	}
 
 	@Override
 	protected String[] getIgnoredEntityFieldNames() {
-		return new String[] {"dateCreated", "dateModified", "label", "userId"};
+		return new String[] {
+			"dateCreated", "dateModified", "description", "label", "userId"
+		};
 	}
 
 	@Override
@@ -176,6 +308,9 @@ public class ObjectRelationshipResourceTest
 		ObjectRelationship objectRelationship =
 			super.randomObjectRelationship();
 
+		objectRelationship.setDescription(
+			Collections.singletonMap(
+				LocaleUtil.US.toString(), RandomTestUtil.randomString()));
 		objectRelationship.setEdge(false);
 		objectRelationship.setName("a" + RandomTestUtil.randomString());
 		objectRelationship.setObjectDefinitionExternalReferenceCode1(
@@ -243,11 +378,36 @@ public class ObjectRelationshipResourceTest
 
 	@Override
 	protected ObjectRelationship
+			testGraphQLGetObjectDefinitionByExternalReferenceCodeObjectRelationshipsPageObjectDefinitionObjectRelationship_addObjectRelationship(
+				String externalReferenceCode,
+				ObjectRelationship objectRelationship)
+		throws Exception {
+
+		return testPostObjectDefinitionObjectRelationship_addObjectRelationship(
+			randomObjectRelationship());
+	}
+
+	@Override
+	protected ObjectRelationship
 			testGraphQLObjectRelationship_addObjectRelationship()
 		throws Exception {
 
 		return testPostObjectDefinitionObjectRelationship_addObjectRelationship(
 			randomObjectRelationship());
+	}
+
+	@Override
+	protected Long
+		testGraphQLPostObjectDefinitionByExternalReferenceCodeObjectRelationship_getObjectDefinitionId() {
+
+		return _objectDefinition1.getObjectDefinitionId();
+	}
+
+	@Override
+	protected Long
+		testGraphQLPostObjectDefinitionObjectRelationship_getObjectDefinitionId() {
+
+		return _objectDefinition1.getObjectDefinitionId();
 	}
 
 	@Override
@@ -278,6 +438,55 @@ public class ObjectRelationshipResourceTest
 
 		return testPostObjectDefinitionObjectRelationship_addObjectRelationship(
 			randomObjectRelationship());
+	}
+
+	private void _testGetObjectDefinitionObjectRelationshipsPage(
+			ObjectRelationship expectedObjectRelationship, Locale locale,
+			String search)
+		throws Exception {
+
+		User user = testVulcanCRUDItemDelegate_getUser();
+
+		ObjectRelationshipResource objectRelationshipResource =
+			ObjectRelationshipResource.builder(
+			).authentication(
+				user.getEmailAddress(), PropsValues.DEFAULT_ADMIN_PASSWORD
+			).endpoint(
+				testCompany.getVirtualHostname(),
+				PortalUtil.getPortalServerPort(false), "http"
+			).locale(
+				locale
+			).build();
+
+		Page<ObjectRelationship> page =
+			objectRelationshipResource.
+				getObjectDefinitionObjectRelationshipsPage(
+					testGetObjectDefinitionObjectRelationshipsPage_getObjectDefinitionId(),
+					search, null, null, null);
+
+		assertEquals(
+			Collections.singletonList(expectedObjectRelationship),
+			(List<ObjectRelationship>)page.getItems());
+	}
+
+	private void _testPutObjectRelationshipDescription(
+			Map<String, String> descriptionMap)
+		throws Exception {
+
+		ObjectRelationship objectRelationship =
+			testPostObjectDefinitionObjectRelationship_addObjectRelationship(
+				randomObjectRelationship());
+
+		Map<String, String> expectedDescriptionMap =
+			objectRelationship.getDescription();
+
+		objectRelationship.setDescription(descriptionMap);
+
+		objectRelationship = objectRelationshipResource.putObjectRelationship(
+			objectRelationship.getId(), objectRelationship);
+
+		Assert.assertEquals(
+			expectedDescriptionMap, objectRelationship.getDescription());
 	}
 
 	private ObjectDefinition _objectDefinition1;

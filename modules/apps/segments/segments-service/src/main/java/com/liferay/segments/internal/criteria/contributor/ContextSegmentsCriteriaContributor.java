@@ -12,11 +12,11 @@ import com.liferay.segments.criteria.contributor.SegmentsCriteriaContributor;
 import com.liferay.segments.criteria.mapper.SegmentsCriteriaJSONObjectMapper;
 import com.liferay.segments.field.Field;
 import com.liferay.segments.internal.odata.entity.ContextEntityModel;
-import com.liferay.segments.internal.odata.entity.EntityModelFieldMapper;
+import com.liferay.segments.internal.odata.entity.EntityModelFieldMapperUtil;
+
+import jakarta.portlet.PortletRequest;
 
 import java.util.List;
-
-import javax.portlet.PortletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -31,7 +31,7 @@ import org.osgi.service.component.annotations.ReferencePolicyOption;
 	property = {
 		"segments.criteria.contributor.key=" + ContextSegmentsCriteriaContributor.KEY,
 		"segments.criteria.contributor.model.class.name=*",
-		"segments.criteria.contributor.priority:Integer=1"
+		"segments.criteria.contributor.priority:Integer=30"
 	},
 	service = SegmentsCriteriaContributor.class
 )
@@ -59,7 +59,8 @@ public class ContextSegmentsCriteriaContributor
 
 	@Override
 	public List<Field> getFields(PortletRequest portletRequest) {
-		return _entityModelFieldMapper.getFields(_entityModel, portletRequest);
+		return EntityModelFieldMapperUtil.getFields(
+			_entityModel, portletRequest);
 	}
 
 	@Override
@@ -79,9 +80,6 @@ public class ContextSegmentsCriteriaContributor
 		target = "(entity.model.name=" + ContextEntityModel.NAME + ")"
 	)
 	private volatile EntityModel _entityModel;
-
-	@Reference
-	private EntityModelFieldMapper _entityModelFieldMapper;
 
 	@Reference(target = "(segments.criteria.mapper.key=odata)")
 	private SegmentsCriteriaJSONObjectMapper _segmentsCriteriaJSONObjectMapper;

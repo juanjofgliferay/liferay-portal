@@ -20,7 +20,10 @@ import org.osgi.service.component.annotations.Reference;
  * @author Andrea Sbarra
  */
 @Component(
-	property = "dto.class.name=com.liferay.headless.commerce.delivery.order.dto.v1_0.PlacedOrderComment",
+	property = {
+		"default=true",
+		"dto.class.name=com.liferay.headless.commerce.delivery.order.dto.v1_0.PlacedOrderComment"
+	},
 	service = DTOConverter.class
 )
 public class PlacedOrderCommentDTOConverter
@@ -39,16 +42,22 @@ public class PlacedOrderCommentDTOConverter
 			_commerceOrderNoteService.getCommerceOrderNote(
 				(Long)dtoConverterContext.getId());
 
-		CommerceOrder commerceOrder = _commerceOrderService.getCommerceOrder(
-			commerceOrderNote.getCommerceOrderId());
-
 		return new PlacedOrderComment() {
 			{
-				author = commerceOrderNote.getUserName();
-				content = commerceOrderNote.getContent();
-				id = commerceOrderNote.getCommerceOrderNoteId();
-				orderId = commerceOrder.getCommerceOrderId();
-				restricted = commerceOrderNote.isRestricted();
+				setAuthor(commerceOrderNote::getUserName);
+				setContent(commerceOrderNote::getContent);
+				setExternalReferenceCode(
+					commerceOrderNote::getExternalReferenceCode);
+				setId(commerceOrderNote::getCommerceOrderNoteId);
+				setOrderId(
+					() -> {
+						CommerceOrder commerceOrder =
+							_commerceOrderService.getCommerceOrder(
+								commerceOrderNote.getCommerceOrderId());
+
+						return commerceOrder.getCommerceOrderId();
+					});
+				setRestricted(commerceOrderNote::isRestricted);
 			}
 		};
 	}

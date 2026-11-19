@@ -11,13 +11,21 @@ import com.liferay.portal.kernel.dao.db.DB;
 import com.liferay.portal.kernel.dao.db.DBInspector;
 import com.liferay.portal.kernel.dao.db.DBManagerUtil;
 import com.liferay.portal.kernel.dao.jdbc.DataAccess;
+import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.upgrade.UpgradeProcess;
 import com.liferay.portal.kernel.upgrade.UpgradeProcessFactory;
 import com.liferay.portal.kernel.upgrade.UpgradeStep;
+import com.liferay.portal.test.log.LogCapture;
+import com.liferay.portal.test.log.LoggerTestUtil;
+import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 
 import java.sql.Connection;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.regex.Pattern;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -56,19 +64,25 @@ public class UpgradeProcessFactoryTest {
 
 	@Before
 	public void setUp() throws Exception {
-		_db.runSQL(
-			StringBundler.concat(
-				"create table ", _TABLE_NAME_1, " (id LONG not null primary ",
-				"key, notNilColumn VARCHAR(75) not null, nilColumn ",
-				"VARCHAR(75) null, typeBlob BLOB, typeBoolean BOOLEAN,",
-				"typeDate DATE null, typeDouble DOUBLE, typeInteger INTEGER, ",
-				"typeLong LONG null, typeSBlob SBLOB, typeString STRING null, ",
-				"typeText TEXT null, typeVarchar VARCHAR(75) null);"));
+		_companyLocalService.forEachCompany(
+			company -> _db.runSQL(
+				StringBundler.concat(
+					"create table ", _TABLE_NAME_1,
+					" (id LONG not null primary key, notNilColumn VARCHAR(75) ",
+					"not null, nilColumn VARCHAR(75) null, typeBlob BLOB, ",
+					"typeBoolean BOOLEAN,typeDate DATE null, typeDouble ",
+					"DOUBLE, typeInteger INTEGER, typeLong LONG null, ",
+					"typeSBlob SBLOB, typeString STRING null, typeText TEXT ",
+					"null, typeVarchar VARCHAR(75) null)")));
 	}
 
 	@After
 	public void tearDown() throws Exception {
-		_db.runSQL("DROP_TABLE_IF_EXISTS(" + _TABLE_NAME_1 + ")");
+		_companyLocalService.forEachCompany(
+			company -> {
+				_db.runSQL("DROP_TABLE_IF_EXISTS(" + _TABLE_NAME_1 + ")");
+				_db.runSQL("DROP_TABLE_IF_EXISTS(" + _TABLE_NAME_2 + ")");
+			});
 	}
 
 	@Test
@@ -76,7 +90,12 @@ public class UpgradeProcessFactoryTest {
 		UpgradeProcess upgradeProcess = UpgradeProcessFactory.addColumns(
 			_TABLE_NAME_1, "newColumn LONG default 0 NOT NULL");
 
-		upgradeProcess.upgrade();
+		_assertUpgrade(
+			UpgradeProcessFactoryTest.class,
+			StringBundler.concat(
+				"Modifying table ", _TABLE_NAME_1,
+				" to add the columns [newColumn LONG default 0 NOT NULL]"),
+			upgradeProcess);
 
 		Assert.assertTrue(
 			_dbInspector.hasColumnType(
@@ -86,9 +105,14 @@ public class UpgradeProcessFactoryTest {
 	@Test
 	public void testAlterColumnName() throws Exception {
 		UpgradeProcess upgradeProcess = UpgradeProcessFactory.alterColumnName(
-			_TABLE_NAME_1, "typeLong", "newTypeLong LONG null");
+			_TABLE_NAME_1, "typeLong", "newTypeLong");
 
-		upgradeProcess.upgrade();
+		_assertUpgrade(
+			UpgradeProcessFactoryTest.class,
+			StringBundler.concat(
+				"Modifying table ", _TABLE_NAME_1,
+				" to alter the name of the column typeLong to newTypeLong"),
+			upgradeProcess);
 
 		Assert.assertTrue(
 			_dbInspector.hasColumnType(
@@ -101,7 +125,13 @@ public class UpgradeProcessFactoryTest {
 		UpgradeProcess upgradeProcess = UpgradeProcessFactory.alterColumnType(
 			_TABLE_NAME_1, "typeText", "VARCHAR(250) null");
 
-		upgradeProcess.upgrade();
+		_assertUpgrade(
+			UpgradeProcessFactoryTest.class,
+			StringBundler.concat(
+				"Modifying table ", _TABLE_NAME_1,
+				" to alter the type of the column typeText to VARCHAR(250) ",
+				"null"),
+			upgradeProcess);
 
 		Assert.assertTrue(
 			_dbInspector.hasColumnType(
@@ -115,7 +145,12 @@ public class UpgradeProcessFactoryTest {
 		UpgradeProcess upgradeProcess = UpgradeProcessFactory.dropColumns(
 			_TABLE_NAME_1, "typeDate");
 
-		upgradeProcess.upgrade();
+		_assertUpgrade(
+			UpgradeProcessFactoryTest.class,
+			StringBundler.concat(
+				"Modifying table ", _TABLE_NAME_1,
+				" to drop the columns [typeDate]"),
+			upgradeProcess);
 
 		Assert.assertFalse(_dbInspector.hasColumn(_TABLE_NAME_1, "typeDate"));
 	}
@@ -129,10 +164,28 @@ public class UpgradeProcessFactoryTest {
 		UpgradeProcess upgradeProcess = UpgradeProcessFactory.dropTables(
 			_TABLE_NAME_1, _TABLE_NAME_2);
 
-		upgradeProcess.upgrade();
+		_assertUpgrade(
+			UpgradeProcessFactoryTest.class,
+			StringBundler.concat(
+				"Modifying schema to drop tables [", _TABLE_NAME_1, ", ",
+				_TABLE_NAME_2, "]"),
+			upgradeProcess);
 
-		Assert.assertFalse(_dbInspector.hasTable(_TABLE_NAME_1, false));
-		Assert.assertFalse(_dbInspector.hasTable(_TABLE_NAME_2, false));
+		Assert.assertFalse(_dbInspector.hasTable(_TABLE_NAME_1));
+		Assert.assertFalse(_dbInspector.hasTable(_TABLE_NAME_2));
+	}
+
+	@Test
+	public void testRunSQL() throws Exception {
+		UpgradeProcess upgradeProcess = UpgradeProcessFactory.runSQL(
+			"create table " + _TABLE_NAME_2 +
+				" (id LONG not null primary key)");
+
+		_assertUpgrade(
+			UpgradeProcessFactoryTest.class,
+			"Modifying schema to run SQL updates", upgradeProcess);
+
+		Assert.assertTrue(_dbInspector.hasTable(_TABLE_NAME_2));
 	}
 
 	@Test
@@ -156,11 +209,23 @@ public class UpgradeProcessFactoryTest {
 
 		UpgradeStep[] upgradeSteps = upgradeProcess.getUpgradeSteps();
 
-		for (UpgradeStep upgradeStep : upgradeSteps) {
-			UpgradeProcess innerUpgradeProcess = (UpgradeProcess)upgradeStep;
+		Assert.assertEquals(
+			Arrays.toString(upgradeSteps), 3, upgradeSteps.length);
 
-			innerUpgradeProcess.upgrade();
-		}
+		upgradeProcess.upgrade();
+
+		_assertUpgrade(
+			upgradeProcess.getClass(),
+			StringBundler.concat(
+				"Modifying table ", _TABLE_NAME_1,
+				" to add the columns [newColumn LONG null]"),
+			(UpgradeProcess)upgradeSteps[1]);
+		_assertUpgrade(
+			upgradeProcess.getClass(),
+			StringBundler.concat(
+				"Modifying table ", _TABLE_NAME_1,
+				" to drop the columns [typeDate]"),
+			(UpgradeProcess)upgradeSteps[2]);
 
 		Assert.assertTrue(
 			_dbInspector.hasColumnType(
@@ -180,8 +245,7 @@ public class UpgradeProcessFactoryTest {
 			protected UpgradeStep[] getPostUpgradeSteps() {
 				return new UpgradeStep[] {
 					UpgradeProcessFactory.alterColumnName(
-						_TABLE_NAME_1, "newColumn",
-						"newColumnModified LONG null")
+						_TABLE_NAME_1, "newColumn", "newColumnModified")
 				};
 			}
 
@@ -198,11 +262,31 @@ public class UpgradeProcessFactoryTest {
 
 		UpgradeStep[] upgradeSteps = upgradeProcess.getUpgradeSteps();
 
-		for (UpgradeStep upgradeStep : upgradeSteps) {
-			UpgradeProcess innerUpgradeProcess = (UpgradeProcess)upgradeStep;
+		Assert.assertEquals(
+			Arrays.toString(upgradeSteps), 4, upgradeSteps.length);
 
-			innerUpgradeProcess.upgrade();
-		}
+		_assertUpgrade(
+			upgradeProcess.getClass(),
+			StringBundler.concat(
+				"Modifying table ", _TABLE_NAME_1,
+				" to add the columns [newColumn LONG null]"),
+			(UpgradeProcess)upgradeSteps[0]);
+		_assertUpgrade(
+			upgradeProcess.getClass(),
+			StringBundler.concat(
+				"Modifying table ", _TABLE_NAME_1,
+				" to drop the columns [typeDate]"),
+			(UpgradeProcess)upgradeSteps[1]);
+
+		upgradeProcess.upgrade();
+
+		_assertUpgrade(
+			upgradeProcess.getClass(),
+			StringBundler.concat(
+				"Modifying table ", _TABLE_NAME_1,
+				" to alter the name of the column newColumn to ",
+				"newColumnModified"),
+			(UpgradeProcess)upgradeSteps[3]);
 
 		Assert.assertTrue(
 			_dbInspector.hasColumnType(
@@ -231,16 +315,51 @@ public class UpgradeProcessFactoryTest {
 
 		UpgradeStep[] upgradeSteps = upgradeProcess.getUpgradeSteps();
 
-		for (UpgradeStep upgradeStep : upgradeSteps) {
-			UpgradeProcess innerUpgradeProcess = (UpgradeProcess)upgradeStep;
+		Assert.assertEquals(
+			Arrays.toString(upgradeSteps), 3, upgradeSteps.length);
 
-			innerUpgradeProcess.upgrade();
-		}
+		_assertUpgrade(
+			upgradeProcess.getClass(),
+			StringBundler.concat(
+				"Modifying table ", _TABLE_NAME_1,
+				" to add the columns [newColumn LONG null]"),
+			(UpgradeProcess)upgradeSteps[0]);
+		_assertUpgrade(
+			upgradeProcess.getClass(),
+			StringBundler.concat(
+				"Modifying table ", _TABLE_NAME_1,
+				" to drop the columns [typeDate]"),
+			(UpgradeProcess)upgradeSteps[1]);
+
+		upgradeProcess.upgrade();
 
 		Assert.assertTrue(
 			_dbInspector.hasColumnType(
 				_TABLE_NAME_1, "newColumn", "LONG null"));
 		Assert.assertFalse(_dbInspector.hasColumn(_TABLE_NAME_1, "typeDate"));
+	}
+
+	private void _assertUpgrade(
+			Class<?> callerClass, String expectedMessage,
+			UpgradeProcess upgradeProcess)
+		throws Exception {
+
+		try (LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
+				UpgradeProcess.class.getName(), LoggerTestUtil.INFO)) {
+
+			upgradeProcess.upgrade();
+
+			List<String> messages = logCapture.getMessages();
+
+			String message = messages.get(0);
+
+			Assert.assertTrue(
+				message,
+				message.matches(
+					StringBundler.concat(
+						"Upgrading ", Pattern.quote(callerClass.getName()),
+						":\\d+ - ", Pattern.quote(expectedMessage), ".*")));
+		}
 	}
 
 	private static final String _TABLE_NAME_1 = "UpgradeProcessFactoryTest1";
@@ -250,5 +369,8 @@ public class UpgradeProcessFactoryTest {
 	private static Connection _connection;
 	private static DB _db;
 	private static DBInspector _dbInspector;
+
+	@Inject
+	private CompanyLocalService _companyLocalService;
 
 }

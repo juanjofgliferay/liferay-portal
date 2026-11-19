@@ -10,7 +10,7 @@ import com.google.common.collect.Lists;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.commons.lang.StringEscapeUtils;
+import org.apache.commons.lang3.StringEscapeUtils;
 
 import org.dom4j.DocumentException;
 import org.dom4j.Element;
@@ -67,14 +67,14 @@ public class RootCauseAnalysisToolBuild extends DefaultTopLevelBuild {
 		_workspaceGitRepository = workspaceGitRepository;
 	}
 
-	protected RootCauseAnalysisToolBuild(String url) {
-		this(url, null);
+	protected RootCauseAnalysisToolBuild(String buildURL) {
+		this(buildURL, null);
 	}
 
 	protected RootCauseAnalysisToolBuild(
-		String url, TopLevelBuild topLevelBuild) {
+		String buildURL, TopLevelBuild topLevelBuild) {
 
-		super(url, topLevelBuild);
+		super(buildURL, topLevelBuild);
 	}
 
 	protected Element getBuildDurationCellElement(
@@ -126,7 +126,7 @@ public class RootCauseAnalysisToolBuild extends DefaultTopLevelBuild {
 	protected Element getCommitDateCellElement(LocalGitCommit localGitCommit) {
 		return Dom4JUtil.getNewElement(
 			"td", null,
-			StringEscapeUtils.escapeXml(
+			StringEscapeUtils.escapeXml10(
 				JenkinsResultsParserUtil.toDateString(
 					localGitCommit.getCommitDate(), _DATE_FORMAT_COMMIT,
 					"PST")));
@@ -263,9 +263,11 @@ public class RootCauseAnalysisToolBuild extends DefaultTopLevelBuild {
 						gitCommitGroups.add(gitCommitGroup);
 					}
 
-					if (retestLocalGitCommit != null) {
-						gitCommitGroup.add(retestLocalGitCommit);
+					if (retestLocalGitCommit == null) {
+						continue;
 					}
+
+					gitCommitGroup.add(retestLocalGitCommit);
 				}
 
 				return gitCommitGroups;
@@ -332,7 +334,7 @@ public class RootCauseAnalysisToolBuild extends DefaultTopLevelBuild {
 
 		return Dom4JUtil.getNewElement(
 			"td", null,
-			StringEscapeUtils.escapeXml(localGitCommit.getMessage()));
+			StringEscapeUtils.escapeXml10(localGitCommit.getMessage()));
 	}
 
 	protected Element getEmptyCellElement() {
@@ -402,7 +404,7 @@ public class RootCauseAnalysisToolBuild extends DefaultTopLevelBuild {
 		StringBuilder sb = new StringBuilder();
 
 		sb.append("$(document).ready(function() {\n");
-		sb.append("$('[data-toggle=\"toggle\"]').change(function(){\n");
+		sb.append("$('[data-toggle=\"toggle\"]').change(function() {\n");
 		sb.append("$(this).parents().next('.hidden-row').toggle();\n");
 		sb.append("var label = $(this).parent('td').find('label');\n");
 		sb.append("var text = label.text();\n");
@@ -515,17 +517,19 @@ public class RootCauseAnalysisToolBuild extends DefaultTopLevelBuild {
 					gitCommitGroup.get(0), portalBuildData, gitCommitGroup,
 					nextGitCommitGroup, firstCommit));
 
-			if (gitCommitGroup.size() > 1) {
-				Element commitGroupElement = Dom4JUtil.getNewElement(
-					"tbody", tableBodyElement);
+			if (gitCommitGroup.size() <= 1) {
+				continue;
+			}
 
-				commitGroupElement.addAttribute("class", "hidden-row");
+			Element commitGroupElement = Dom4JUtil.getNewElement(
+				"tbody", tableBodyElement);
 
-				for (int j = 1; j < gitCommitGroup.size(); j++) {
-					Dom4JUtil.addToElement(
-						commitGroupElement,
-						getCommitGroupRowElement(gitCommitGroup.get(j)));
-				}
+			commitGroupElement.addAttribute("class", "hidden-row");
+
+			for (int j = 1; j < gitCommitGroup.size(); j++) {
+				Dom4JUtil.addToElement(
+					commitGroupElement,
+					getCommitGroupRowElement(gitCommitGroup.get(j)));
 			}
 		}
 

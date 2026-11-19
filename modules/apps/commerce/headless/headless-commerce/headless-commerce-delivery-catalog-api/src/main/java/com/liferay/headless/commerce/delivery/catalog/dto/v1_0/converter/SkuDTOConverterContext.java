@@ -7,14 +7,15 @@ package com.liferay.headless.commerce.delivery.catalog.dto.v1_0.converter;
 
 import com.liferay.commerce.context.CommerceContext;
 import com.liferay.commerce.product.model.CPDefinition;
+import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.vulcan.dto.converter.DefaultDTOConverterContext;
+
+import jakarta.ws.rs.core.UriInfo;
 
 import java.math.BigDecimal;
 
 import java.util.Locale;
-
-import javax.ws.rs.core.UriInfo;
 
 /**
  * @author Andrea Sbarra
@@ -25,8 +26,8 @@ public class SkuDTOConverterContext extends DefaultDTOConverterContext {
 	public SkuDTOConverterContext(
 		CommerceContext commerceContext, long companyId,
 		CPDefinition cpDefinition, Locale locale, BigDecimal quantity,
-		long resourcePrimKey, String unitOfMeasureKey, UriInfo uriInfo,
-		User user) {
+		long resourcePrimKey, JSONArray skuOptionsJSONArray,
+		String unitOfMeasureKey, UriInfo uriInfo, User user) {
 
 		super(resourcePrimKey, locale, uriInfo, user);
 
@@ -34,7 +35,12 @@ public class SkuDTOConverterContext extends DefaultDTOConverterContext {
 		_companyId = companyId;
 		_cpDefinition = cpDefinition;
 		_quantity = quantity;
+		_skuOptionsJSONArray = skuOptionsJSONArray;
 		_unitOfMeasureKey = unitOfMeasureKey;
+	}
+
+	public CPDefinition getCPDefinition() {
+		return _cpDefinition;
 	}
 
 	public CommerceContext getCommerceContext() {
@@ -45,12 +51,12 @@ public class SkuDTOConverterContext extends DefaultDTOConverterContext {
 		return _companyId;
 	}
 
-	public CPDefinition getCPDefinition() {
-		return _cpDefinition;
-	}
-
 	public BigDecimal getQuantity() {
 		return _quantity;
+	}
+
+	public JSONArray getSkuOptionsJSONArray() {
+		return _skuOptionsJSONArray;
 	}
 
 	public String getUnitOfMeasureKey() {
@@ -61,6 +67,7 @@ public class SkuDTOConverterContext extends DefaultDTOConverterContext {
 	private final long _companyId;
 	private final CPDefinition _cpDefinition;
 	private final BigDecimal _quantity;
+	private final JSONArray _skuOptionsJSONArray;
 	private final String _unitOfMeasureKey;
 
 }

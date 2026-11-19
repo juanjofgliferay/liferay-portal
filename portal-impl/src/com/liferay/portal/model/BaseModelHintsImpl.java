@@ -187,6 +187,8 @@ public abstract class BaseModelHintsImpl implements ModelHints {
 		return ListUtil.fromCollection(_models);
 	}
 
+	public abstract SAXReader getSAXReader();
+
 	@Override
 	public Tuple getSanitizeTuple(String model, String field) {
 		Map<String, FieldDataBag> fieldDataBags = _fieldDataBagsMap.get(model);
@@ -217,15 +219,15 @@ public abstract class BaseModelHintsImpl implements ModelHints {
 		for (FieldDataBag fieldDataBag : fieldDataBags.values()) {
 			Tuple tuple = fieldDataBag._sanitize;
 
-			if (tuple != null) {
-				sanitizeTuples.add(tuple);
+			if (tuple == null) {
+				continue;
 			}
+
+			sanitizeTuples.add(tuple);
 		}
 
 		return sanitizeTuples;
 	}
-
-	public abstract SAXReader getSAXReader();
 
 	@Override
 	public String getType(String model, String field) {
@@ -293,11 +295,7 @@ public abstract class BaseModelHintsImpl implements ModelHints {
 
 	@Override
 	public boolean isCustomValidator(String validatorName) {
-		if (validatorName.equals("custom")) {
-			return true;
-		}
-
-		return false;
+		return validatorName.equals("custom");
 	}
 
 	@Override
@@ -522,10 +520,12 @@ public abstract class BaseModelHintsImpl implements ModelHints {
 					fieldDataBag._sanitize = fieldSanitize;
 				}
 
-				if (!fieldValidators.isEmpty()) {
-					fieldDataBag._validators = ListUtil.fromMapValues(
-						fieldValidators);
+				if (fieldValidators.isEmpty()) {
+					continue;
 				}
+
+				fieldDataBag._validators = ListUtil.fromMapValues(
+					fieldValidators);
 			}
 		}
 	}

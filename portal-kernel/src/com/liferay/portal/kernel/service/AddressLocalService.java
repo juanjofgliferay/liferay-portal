@@ -83,14 +83,10 @@ public interface AddressLocalService
 	@Indexable(type = IndexableType.REINDEX)
 	public Address addAddress(
 			String externalReferenceCode, long userId, String className,
-			long classPK, String name, String description, String street1,
-			String street2, String street3, String city, String zip,
-			long regionId, long countryId, long listTypeId, boolean mailing,
-			boolean primary, String phoneNumber, ServiceContext serviceContext)
-		throws PortalException;
-
-	public Address copyAddress(
-			long sourceAddressId, String className, long classPK,
+			long classPK, long countryId, long listTypeId, long regionId,
+			String city, String description, boolean mailing, String name,
+			boolean primary, String street1, String street2, String street3,
+			String subtype, String zip, String phoneNumber,
 			ServiceContext serviceContext)
 		throws PortalException;
 
@@ -272,9 +268,6 @@ public interface AddressLocalService
 	public Address getAddressByUuidAndCompanyId(String uuid, long companyId)
 		throws PortalException;
 
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<Address> getAddresses();
-
 	/**
 	 * Returns a range of all the addresses.
 	 *
@@ -322,9 +315,10 @@ public interface AddressLocalService
 		long companyId, String className, long classPK, long[] listTypeIds);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<Address> getListTypeAddresses(
-		long companyId, String className, long classPK, long[] listTypeIds,
-		int start, int end, OrderByComparator<Address> orderByComparator);
+	public Address getOrAddEmptyAddress(
+			String externalReferenceCode, long companyId, long userId,
+			String className, long classPK)
+		throws PortalException;
 
 	/**
 	 * Returns the OSGi service identifier.
@@ -360,18 +354,20 @@ public interface AddressLocalService
 	@Indexable(type = IndexableType.REINDEX)
 	public Address updateAddress(Address address);
 
-	public Address updateAddress(
-			long addressId, String street1, String street2, String street3,
-			String city, String zip, long regionId, long countryId,
-			long listTypeId, boolean mailing, boolean primary)
-		throws PortalException;
-
 	@Indexable(type = IndexableType.REINDEX)
 	public Address updateAddress(
-			long addressId, String name, String description, String street1,
-			String street2, String street3, String city, String zip,
-			long regionId, long countryId, long listTypeId, boolean mailing,
-			boolean primary, String phoneNumber)
+			String externalReferenceCode, long addressId, long countryId,
+			long listTypeId, long regionId, String city, String description,
+			boolean mailing, String name, boolean primary, String street1,
+			String street2, String street3, String subtype, String zip,
+			String phoneNumber)
+		throws PortalException;
+
+	public Address updateExternalReferenceCode(
+		Address address, String externalReferenceCode);
+
+	public Address updateExternalReferenceCode(
+			long addressId, String externalReferenceCode)
 		throws PortalException;
 
 	@Override
@@ -389,3 +385,4 @@ public interface AddressLocalService
 		throws E;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-653820932

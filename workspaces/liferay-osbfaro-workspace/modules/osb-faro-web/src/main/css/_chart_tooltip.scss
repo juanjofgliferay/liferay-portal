@@ -1,0 +1,14 @@
+.bb-legend-item a {
+	color: inherit;
+}
+
+.bb-tooltip-container {
+	border: 1px solid $mainLighten65;
+	border-radius: 3px;
+	max-width: none;
+	padding: 0;
+
+	.analytics-tooltip-chart {
+		display: block;
+	}
+}

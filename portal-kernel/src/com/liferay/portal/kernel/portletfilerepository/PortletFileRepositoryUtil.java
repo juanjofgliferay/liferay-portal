@@ -191,6 +191,17 @@ public class PortletFileRepositoryUtil {
 			groupId, folderId, fileName);
 	}
 
+	public static FileEntry fetchPortletFileEntryByExternalReferenceCode(
+		String externalReferenceCode, long groupId) {
+
+		PortletFileRepository portletFileRepository =
+			_portletFileRepositorySnapshot.get();
+
+		return portletFileRepository.
+			fetchPortletFileEntryByExternalReferenceCode(
+				externalReferenceCode, groupId);
+	}
+
 	public static Repository fetchPortletRepository(
 		long groupId, String portletId) {
 
@@ -481,6 +492,31 @@ public class PortletFileRepositoryUtil {
 
 		return portletFileRepository.searchPortletFileEntries(
 			repositoryId, searchContext);
+	}
+
+	public static FileEntry updatePortletFileEntry(
+			long userId, long fileEntryId, File file, String fileName,
+			String mimeType, ServiceContext serviceContext)
+		throws PortalException {
+
+		PortletFileRepository portletFileRepository =
+			_portletFileRepositorySnapshot.get();
+
+		return portletFileRepository.updatePortletFileEntry(
+			userId, fileEntryId, file, fileName, mimeType, serviceContext);
+	}
+
+	public static FileEntry updatePortletFileEntry(
+			long userId, long fileEntryId, InputStream inputStream,
+			String fileName, String mimeType, ServiceContext serviceContext)
+		throws PortalException {
+
+		PortletFileRepository portletFileRepository =
+			_portletFileRepositorySnapshot.get();
+
+		return portletFileRepository.updatePortletFileEntry(
+			userId, fileEntryId, inputStream, fileName, mimeType,
+			serviceContext);
 	}
 
 	private static final Snapshot<PortletFileRepository>

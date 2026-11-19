@@ -37,6 +37,7 @@ public class CSDiagramEntryWrapper
 
 		attributes.put("mvccVersion", getMvccVersion());
 		attributes.put("ctCollectionId", getCtCollectionId());
+		attributes.put("externalReferenceCode", getExternalReferenceCode());
 		attributes.put("CSDiagramEntryId", getCSDiagramEntryId());
 		attributes.put("companyId", getCompanyId());
 		attributes.put("userId", getUserId());
@@ -66,6 +67,13 @@ public class CSDiagramEntryWrapper
 
 		if (ctCollectionId != null) {
 			setCtCollectionId(ctCollectionId);
+		}
+
+		String externalReferenceCode = (String)attributes.get(
+			"externalReferenceCode");
+
+		if (externalReferenceCode != null) {
+			setExternalReferenceCode(externalReferenceCode);
 		}
 
 		Long CSDiagramEntryId = (Long)attributes.get("CSDiagramEntryId");
@@ -237,6 +245,16 @@ public class CSDiagramEntryWrapper
 	@Override
 	public boolean getDiagram() {
 		return model.getDiagram();
+	}
+
+	/**
+	 * Returns the external reference code of this cs diagram entry.
+	 *
+	 * @return the external reference code of this cs diagram entry
+	 */
+	@Override
+	public String getExternalReferenceCode() {
+		return model.getExternalReferenceCode();
 	}
 
 	/**
@@ -425,6 +443,16 @@ public class CSDiagramEntryWrapper
 	}
 
 	/**
+	 * Sets the external reference code of this cs diagram entry.
+	 *
+	 * @param externalReferenceCode the external reference code of this cs diagram entry
+	 */
+	@Override
+	public void setExternalReferenceCode(String externalReferenceCode) {
+		model.setExternalReferenceCode(externalReferenceCode);
+	}
+
+	/**
 	 * Sets the modified date of this cs diagram entry.
 	 *
 	 * @param modifiedDate the modified date of this cs diagram entry
@@ -539,3 +567,4 @@ public class CSDiagramEntryWrapper
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1323005912

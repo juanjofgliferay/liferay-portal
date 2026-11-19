@@ -5,7 +5,6 @@
 
 package com.liferay.social.activity.internal.manager;
 
-import com.liferay.osgi.service.tracker.collections.map.PropertyServiceReferenceMapper;
 import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMap;
 import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMapFactory;
 import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
@@ -94,10 +93,6 @@ public class SocialActivityManagerImpl<T extends ClassedModel & GroupedModel>
 
 	@Override
 	public void deleteActivities(T model) throws PortalException {
-		if (!_isEnabled(model.getCompanyId())) {
-			return;
-		}
-
 		SocialActivityManager<T> socialActivityManager =
 			_getSocialActivityManager(model.getModelClassName());
 
@@ -138,8 +133,7 @@ public class SocialActivityManagerImpl<T extends ClassedModel & GroupedModel>
 		_serviceTrackerMap = ServiceTrackerMapFactory.openSingleValueMap(
 			bundleContext,
 			(Class<SocialActivityManager<T>>)(Class)SocialActivityManager.class,
-			"(model.class.name=*)",
-			new PropertyServiceReferenceMapper<>("model.class.name"));
+			"model.class.name");
 
 		_socialActivitySystemConfiguration =
 			ConfigurableUtil.createConfigurable(

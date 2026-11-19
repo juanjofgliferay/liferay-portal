@@ -9,23 +9,30 @@ import com.liferay.info.exception.InfoFormFileUploadException;
 import com.liferay.info.exception.NoSuchFormVariationException;
 import com.liferay.info.field.InfoField;
 import com.liferay.info.field.InfoFieldValue;
+import com.liferay.info.field.RelatedInfoFieldValue;
+import com.liferay.info.field.type.AssigneeInfoFieldType;
 import com.liferay.info.field.type.BooleanInfoFieldType;
 import com.liferay.info.field.type.DateInfoFieldType;
 import com.liferay.info.field.type.DateTimeInfoFieldType;
+import com.liferay.info.field.type.EmailInfoFieldType;
 import com.liferay.info.field.type.FileInfoFieldType;
+import com.liferay.info.field.type.FriendlyURLInfoFieldType;
 import com.liferay.info.field.type.HTMLInfoFieldType;
 import com.liferay.info.field.type.LongTextInfoFieldType;
 import com.liferay.info.field.type.MultiselectInfoFieldType;
 import com.liferay.info.field.type.NumberInfoFieldType;
+import com.liferay.info.field.type.PhoneNumberInfoFieldType;
 import com.liferay.info.field.type.RelationshipInfoFieldType;
 import com.liferay.info.field.type.SelectInfoFieldType;
 import com.liferay.info.field.type.TextInfoFieldType;
 import com.liferay.info.form.InfoForm;
 import com.liferay.info.item.InfoItemServiceRegistry;
 import com.liferay.info.item.provider.InfoItemFormProvider;
+import com.liferay.info.item.updater.InfoItemFieldValuesUpdater;
 import com.liferay.info.localized.InfoLocalizedValue;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.repository.model.FileEntry;
@@ -36,12 +43,16 @@ import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.DateUtil;
 import com.liferay.portal.kernel.util.FileUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.ListUtil;
+import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.TempFileEntryUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.io.File;
 import java.io.IOException;
@@ -53,16 +64,18 @@ import java.text.ParseException;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-
-import javax.servlet.http.HttpServletRequest;
+import java.util.Set;
 
 /**
  * @author Rubén Pulido
@@ -76,7 +89,7 @@ public class InfoRequestFieldValuesProviderHelper {
 	}
 
 	public Map<String, InfoFieldValue<Object>> getInfoFieldValues(
-			HttpServletRequest httpServletRequest)
+			HttpServletRequest httpServletRequest, InfoForm infoForm)
 		throws InfoFormFileUploadException {
 
 		Map<String, InfoFieldValue<Object>> infoFieldValues = new HashMap<>();
@@ -88,196 +101,157 @@ public class InfoRequestFieldValuesProviderHelper {
 			(ThemeDisplay)uploadServletRequest.getAttribute(
 				WebKeys.THEME_DISPLAY);
 
-		String[] checkboxNames = StringUtil.split(
-			ParamUtil.getString(uploadServletRequest, "checkboxNames"));
-		String className = PortalUtil.getClassName(
-			ParamUtil.getLong(uploadServletRequest, "classNameId"));
-		String classTypeId = ParamUtil.getString(
-			uploadServletRequest, "classTypeId");
+		String[] checkboxNames = ParamUtil.getStringValues(
+			uploadServletRequest, "checkboxNames");
+		String[] deletedItemIdentifiers = ParamUtil.getStringValues(
+			uploadServletRequest, "deletedItemIdentifiers");
 		long groupId = ParamUtil.getLong(uploadServletRequest, "groupId");
 
+		Set<Locale> availableLocales = LanguageUtil.getAvailableLocales(
+			themeDisplay.getSiteGroupId());
 		Map<String, FileItem[]> multipartParameterMap =
 			uploadServletRequest.getMultipartParameterMap();
-
 		Map<String, List<String>> regularParameterMap =
 			uploadServletRequest.getRegularParameterMap();
 
-		for (InfoField<?> infoField :
-				_getInfoFields(className, classTypeId, groupId)) {
+		Map<String, List<InputName>> inputNamesMap = _getInputNamesMap(
+			LocaleUtil.toLanguageIds(availableLocales), multipartParameterMap,
+			regularParameterMap);
 
-			if (!infoField.isEditable()) {
-				continue;
-			}
-
-			FileItem[] multipartParameters = multipartParameterMap.get(
-				infoField.getName());
-
-			if ((multipartParameters != null) &&
-				(infoField.getInfoFieldType() instanceof FileInfoFieldType)) {
-
-				for (FileItem fileItem : multipartParameters) {
-					InfoFieldValue<Object> infoFieldValue =
-						_getFileInfoFieldValue(
-							fileItem, groupId, infoField, themeDisplay);
-
-					if (infoFieldValue != null) {
-						infoFieldValues.put(
-							infoField.getUniqueId(), infoFieldValue);
-					}
-				}
-			}
-
-			if (infoField.getInfoFieldType() instanceof
-					MultiselectInfoFieldType) {
-
-				infoFieldValues.put(
-					infoField.getUniqueId(),
-					_getMultiselectInfoFieldValue(
-						infoField, themeDisplay.getLocale(),
-						regularParameterMap.get(infoField.getName())));
+		for (InfoField<?> infoField : _getInfoFields(infoForm)) {
+			if (!infoField.isEditable() &&
+				!ArrayUtil.contains(
+					_ALLOWED_NONEDITABLE_FIELDS, infoField.getName())) {
 
 				continue;
 			}
 
-			List<String> regularParameters = regularParameterMap.get(
-				infoField.getName());
+			Collection<InputName> inputNames = _getInputNames(
+				infoField, inputNamesMap);
 
-			if (regularParameters == null) {
+			if (inputNames.isEmpty()) {
 				if ((infoField.getInfoFieldType() instanceof
 						BooleanInfoFieldType) &&
-					ArrayUtil.contains(checkboxNames, infoField.getName())) {
+					ArrayUtil.contains(
+						checkboxNames, infoField.getUniqueId())) {
 
 					infoFieldValues.put(
 						infoField.getUniqueId(),
 						_getInfoFieldValue(
-							infoField, themeDisplay.getLocale(), false));
+							true, infoField, themeDisplay.getLocale(), false));
+
+					continue;
 				}
 
-				continue;
+				if ((infoField.getInfoFieldType() instanceof
+						MultiselectInfoFieldType) &&
+					ArrayUtil.contains(
+						checkboxNames, infoField.getUniqueId())) {
+
+					infoFieldValues.put(
+						infoField.getUniqueId(),
+						_getInfoFieldValue(
+							true, infoField, themeDisplay.getLocale(),
+							Collections.emptyList()));
+
+					continue;
+				}
 			}
 
-			for (String value : regularParameters) {
-				InfoFieldValue<Object> infoFieldValue = _getInfoFieldValue(
-					infoField, themeDisplay.getLocale(), value);
+			for (InputName inputName : inputNames) {
+				if (infoField.isLocalizable()) {
+					_putInfoFieldValue(
+						infoFieldValues,
+						new InfoFieldValue<>(
+							infoField,
+							InfoLocalizedValue.builder(
+							).defaultLocale(
+								themeDisplay.getSiteDefaultLocale()
+							).<InfoFormFileUploadException>value(
+								unsafeBiConsumer -> {
+									for (Locale locale : availableLocales) {
+										String languageId =
+											LanguageUtil.getLanguageId(locale);
 
-				if (infoFieldValue != null) {
-					infoFieldValues.put(
-						infoField.getUniqueId(), infoFieldValue);
+										String localizedInputName =
+											inputName.getName() +
+												StringPool.UNDERLINE +
+													languageId;
+
+										Object value = _parseValue(
+											groupId, infoField, locale,
+											multipartParameterMap,
+											localizedInputName,
+											regularParameterMap,
+											themeDisplay.getUserId());
+
+										if (value == null) {
+											continue;
+										}
+
+										unsafeBiConsumer.accept(locale, value);
+									}
+								}
+							).build()),
+						inputName);
+
+					continue;
 				}
+
+				List<String> regularParameters = regularParameterMap.get(
+					inputName.getName());
+
+				Object value = _parseValue(
+					groupId, infoField, themeDisplay.getLocale(),
+					multipartParameterMap, inputName.getName(),
+					regularParameterMap, themeDisplay.getUserId());
+
+				InfoFieldValue<Object> infoFieldValue = _getInfoFieldValue(
+					regularParameters != null, infoField,
+					themeDisplay.getLocale(), value);
+
+				if (infoFieldValue == null) {
+					continue;
+				}
+
+				_putInfoFieldValue(infoFieldValues, infoFieldValue, inputName);
 			}
 		}
+
+		InfoField<MultiselectInfoFieldType> infoField = InfoField.builder(
+		).infoFieldType(
+			MultiselectInfoFieldType.INSTANCE
+		).namespace(
+			InfoItemFieldValuesUpdater.class.getSimpleName()
+		).name(
+			"deletedItemIdentifiers"
+		).build();
+
+		infoFieldValues.put(
+			infoField.getUniqueId(),
+			new InfoFieldValue<>(infoField, deletedItemIdentifiers));
 
 		return infoFieldValues;
 	}
 
-	private InfoFieldValue<Object> _getBooleanInfoFieldValue(
-		InfoField<?> infoField, Locale locale, String value) {
+	public InfoForm getInfoForm(HttpServletRequest httpServletRequest) {
+		UploadServletRequest uploadServletRequest =
+			PortalUtil.getUploadServletRequest(httpServletRequest);
 
-		return _getInfoFieldValue(
-			infoField, locale, GetterUtil.getBoolean(value));
-	}
-
-	private InfoFieldValue<Object> _getDateInfoFieldValue(
-		InfoField<?> infoField, Locale locale, String value) {
-
-		if (Validator.isBlank(value)) {
-			return _getInfoFieldValue(
-				infoField, locale, (Object)StringPool.BLANK);
-		}
-
-		try {
-			Date date = DateUtil.parseDate("yyyy-MM-dd", value, locale);
-
-			return _getInfoFieldValue(infoField, locale, date);
-		}
-		catch (ParseException parseException) {
-			if (_log.isDebugEnabled()) {
-				_log.debug(parseException);
-			}
-		}
-
-		return null;
-	}
-
-	private InfoFieldValue<Object> _getDateTimeInfoFieldValue(
-		InfoField<?> infoField, Locale locale, String value) {
-
-		LocalDateTime localDateTime = LocalDateTime.parse(
-			value, DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm"));
-
-		return _getInfoFieldValue(infoField, locale, localDateTime);
-	}
-
-	private InfoFieldValue<Object> _getFileInfoFieldValue(
-			FileItem fileItem, long groupId, InfoField infoField,
-			ThemeDisplay themeDisplay)
-		throws InfoFormFileUploadException {
-
-		if ((fileItem.getSize() < 0) ||
-			Validator.isNull(fileItem.getFileName())) {
-
-			return _getInfoFieldValue(
-				infoField, themeDisplay.getLocale(), (Object)StringPool.BLANK);
-		}
-
-		try (InputStream inputStream = fileItem.getInputStream()) {
-			if (inputStream == null) {
-				throw new InfoFormFileUploadException(infoField.getUniqueId());
-			}
-
-			File file = FileUtil.createTempFile(inputStream);
-
-			if (file == null) {
-				throw new InfoFormFileUploadException(infoField.getUniqueId());
-			}
-
-			FileEntry fileEntry = TempFileEntryUtil.addTempFileEntry(
-				groupId, themeDisplay.getUserId(),
-				InfoRequestFieldValuesProviderHelper.class.getName(),
-				TempFileEntryUtil.getTempFileName(fileItem.getFileName()), file,
-				fileItem.getContentType());
-
-			return _getInfoFieldValue(
-				infoField, themeDisplay.getLocale(),
-				String.valueOf(fileEntry.getFileEntryId()));
-		}
-		catch (IOException | PortalException exception) {
-			if (_log.isDebugEnabled()) {
-				_log.debug(exception);
-			}
-
-			throw new InfoFormFileUploadException(infoField.getUniqueId());
-		}
-	}
-
-	private <T> List<InfoField<?>> _getInfoFields(
-		String className, String formVariationKey, long groupId) {
-
-		InfoItemFormProvider<T> infoItemFormProvider =
-			_infoItemServiceRegistry.getFirstInfoItemService(
-				InfoItemFormProvider.class, className);
-
-		if (infoItemFormProvider == null) {
-			return new ArrayList<>();
-		}
-
-		try {
-			InfoForm infoForm = infoItemFormProvider.getInfoForm(
-				formVariationKey, groupId);
-
-			return infoForm.getAllInfoFields();
-		}
-		catch (NoSuchFormVariationException noSuchFormVariationException) {
-			if (_log.isDebugEnabled()) {
-				_log.debug(noSuchFormVariationException);
-			}
-
-			return new ArrayList<>();
-		}
+		return _getInfoForm(
+			PortalUtil.getClassName(
+				ParamUtil.getLong(uploadServletRequest, "classNameId")),
+			ParamUtil.getString(uploadServletRequest, "classTypeId"),
+			ParamUtil.getLong(uploadServletRequest, "groupId"));
 	}
 
 	private InfoFieldValue<Object> _getInfoFieldValue(
-		InfoField<?> infoField, Locale locale, Object object) {
+		boolean includeNullValues, InfoField<?> infoField, Locale locale,
+		Object value) {
+
+		if ((value == null) && !includeNullValues) {
+			return null;
+		}
 
 		if (infoField.isLocalizable()) {
 			return new InfoFieldValue<>(
@@ -286,76 +260,362 @@ public class InfoRequestFieldValuesProviderHelper {
 				).defaultLocale(
 					locale
 				).value(
-					locale, object
+					locale, value
 				).build());
 		}
 
-		return new InfoFieldValue<>(infoField, object);
+		return new InfoFieldValue<>(infoField, value);
 	}
 
-	private InfoFieldValue<Object> _getInfoFieldValue(
-		InfoField<?> infoField, Locale locale, String value) {
+	private List<InfoField<?>> _getInfoFields(InfoForm infoForm) {
+		if (infoForm == null) {
+			return new ArrayList<>();
+		}
+
+		return infoForm.getAllInfoFields();
+	}
+
+	private <T> InfoForm _getInfoForm(
+		String className, String formVariationKey, long groupId) {
+
+		InfoItemFormProvider<T> infoItemFormProvider =
+			_infoItemServiceRegistry.getFirstInfoItemService(
+				InfoItemFormProvider.class, className);
+
+		if (infoItemFormProvider == null) {
+			return null;
+		}
+
+		try {
+			return infoItemFormProvider.getInfoForm(formVariationKey, groupId);
+		}
+		catch (NoSuchFormVariationException noSuchFormVariationException) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(noSuchFormVariationException);
+			}
+
+			return null;
+		}
+	}
+
+	private InputName _getInputName(boolean localized, String name) {
+		int index = name.indexOf("[$");
+
+		if ((index == -1) || !name.endsWith("$]")) {
+			return new InputName(localized, name, null, name);
+		}
+
+		String[] externalReferenceCodes = StringUtil.split(
+			name.substring(index + 2, name.length() - 2), StringPool.DOLLAR);
+
+		if (externalReferenceCodes.length != 2) {
+			return new InputName(localized, name, null, name);
+		}
+
+		return new InputName(
+			localized, name,
+			new RelatedInfoFieldValue.RelatedInfoFieldValueIdentifier(
+				externalReferenceCodes[0], externalReferenceCodes[1]),
+			name.substring(0, index));
+	}
+
+	private Collection<InputName> _getInputNames(
+		InfoField<?> infoField, Map<String, List<InputName>> inputNamesMap) {
+
+		Map<String, InputName> inputNames = new LinkedHashMap<>();
+
+		for (InputName inputName :
+				inputNamesMap.getOrDefault(
+					infoField.getUniqueId(), Collections.emptyList())) {
+
+			if (infoField.isLocalizable() != inputName.isLocalized()) {
+				continue;
+			}
+
+			inputNames.putIfAbsent(inputName.getName(), inputName);
+		}
+
+		return inputNames.values();
+	}
+
+	private Map<String, List<InputName>> _getInputNamesMap(
+		String[] languageIds, Map<String, FileItem[]> multipartParameterMap,
+		Map<String, List<String>> regularParameterMap) {
+
+		Map<String, List<InputName>> inputNamesMap = new HashMap<>();
+
+		Set<String> parameterNames = new LinkedHashSet<>(
+			multipartParameterMap.keySet());
+
+		parameterNames.addAll(regularParameterMap.keySet());
+
+		for (String parameterName : parameterNames) {
+			List<InputName> inputNames = new ArrayList<>();
+
+			inputNames.add(_getInputName(false, parameterName));
+
+			for (String languageId : languageIds) {
+				if (parameterName.endsWith(StringPool.UNDERLINE + languageId)) {
+					inputNames.add(
+						_getInputName(
+							true,
+							StringUtil.replaceLast(
+								parameterName,
+								StringPool.UNDERLINE + languageId,
+								StringPool.BLANK)));
+
+					break;
+				}
+			}
+
+			for (InputName inputName : inputNames) {
+				List<InputName> uniqueIdInputNames =
+					inputNamesMap.computeIfAbsent(
+						inputName.getUniqueId(), uniqueId -> new ArrayList<>());
+
+				uniqueIdInputNames.add(inputName);
+			}
+		}
+
+		return inputNamesMap;
+	}
+
+	private Object _parseValue(
+			long groupId, InfoField<?> infoField, Locale locale,
+			Map<String, FileItem[]> multipartParameterMap, String name,
+			Map<String, List<String>> regularParameterMap, long userId)
+		throws InfoFormFileUploadException {
+
+		if ((infoField.getInfoFieldType() instanceof FileInfoFieldType) &&
+			multipartParameterMap.containsKey(name)) {
+
+			FileItem[] fileItems = multipartParameterMap.get(name);
+
+			if (ArrayUtil.isEmpty(fileItems)) {
+				return null;
+			}
+
+			FileItem fileItem = fileItems[0];
+
+			if ((fileItem.getSize() < 0) ||
+				Validator.isNull(fileItem.getFileName())) {
+
+				return StringPool.BLANK;
+			}
+
+			try (InputStream inputStream = fileItem.getInputStream()) {
+				if (inputStream == null) {
+					throw new InfoFormFileUploadException(
+						infoField.getUniqueId());
+				}
+
+				File file = FileUtil.createTempFile(inputStream);
+
+				if (file == null) {
+					throw new InfoFormFileUploadException(
+						infoField.getUniqueId());
+				}
+
+				FileEntry fileEntry = TempFileEntryUtil.addTempFileEntry(
+					groupId, userId,
+					InfoRequestFieldValuesProviderHelper.class.getName(),
+					TempFileEntryUtil.getTempFileName(fileItem.getFileName()),
+					file, fileItem.getContentType());
+
+				return fileEntry.getFileEntryId();
+			}
+			catch (IOException | PortalException exception) {
+				if (_log.isDebugEnabled()) {
+					_log.debug(exception);
+				}
+
+				throw new InfoFormFileUploadException(infoField.getUniqueId());
+			}
+		}
+
+		List<String> values = regularParameterMap.get(name);
+
+		if (values == null) {
+			return null;
+		}
+
+		if (infoField.getInfoFieldType() instanceof MultiselectInfoFieldType) {
+			return ListUtil.filter(values, Validator::isNotNull);
+		}
+
+		if (infoField.getInfoFieldType() instanceof RelationshipInfoFieldType) {
+			InfoField<RelationshipInfoFieldType>
+				relationshipInfoFieldTypeInfoField =
+					(InfoField<RelationshipInfoFieldType>)infoField;
+
+			if (relationshipInfoFieldTypeInfoField.getAttribute(
+					RelationshipInfoFieldType.MULTIPLE)) {
+
+				return ListUtil.filter(values, Validator::isNotNull);
+			}
+		}
+
+		if (ListUtil.isEmpty(values)) {
+			return null;
+		}
+
+		String value = values.get(0);
 
 		if (infoField.getInfoFieldType() instanceof BooleanInfoFieldType) {
-			return _getBooleanInfoFieldValue(infoField, locale, value);
+			return GetterUtil.getBoolean(value);
 		}
 
 		if (infoField.getInfoFieldType() instanceof DateInfoFieldType) {
-			return _getDateInfoFieldValue(infoField, locale, value);
+			if (Validator.isBlank(value)) {
+				return StringPool.BLANK;
+			}
+
+			try {
+				return DateUtil.parseDate("yyyy-MM-dd", value, locale);
+			}
+			catch (ParseException parseException) {
+				if (_log.isDebugEnabled()) {
+					_log.debug(parseException);
+				}
+			}
 		}
 
 		if (infoField.getInfoFieldType() instanceof DateTimeInfoFieldType) {
-			return _getDateTimeInfoFieldValue(infoField, locale, value);
+			if (Validator.isBlank(value)) {
+				return StringPool.BLANK;
+			}
+
+			try {
+				return LocalDateTime.parse(
+					value, DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm"));
+			}
+			catch (DateTimeParseException dateTimeParseException) {
+				if (_log.isDebugEnabled()) {
+					_log.debug(dateTimeParseException);
+				}
+			}
 		}
 
 		if (infoField.getInfoFieldType() instanceof NumberInfoFieldType) {
-			return _getNumberInfoFieldValue(infoField, locale, value);
+			InfoField<NumberInfoFieldType> numberInfoFieldTypeInfoField =
+				(InfoField<NumberInfoFieldType>)infoField;
+
+			if (GetterUtil.getBoolean(
+					numberInfoFieldTypeInfoField.getAttribute(
+						NumberInfoFieldType.DECIMAL))) {
+
+				if (Validator.isBlank(value)) {
+					return StringPool.BLANK;
+				}
+
+				return new BigDecimal(value);
+			}
+
+			return GetterUtil.getLong(value);
 		}
 
-		if (infoField.getInfoFieldType() instanceof FileInfoFieldType ||
+		if (infoField.getInfoFieldType() instanceof AssigneeInfoFieldType ||
+			infoField.getInfoFieldType() instanceof EmailInfoFieldType ||
+			infoField.getInfoFieldType() instanceof FileInfoFieldType ||
+			infoField.getInfoFieldType() instanceof FriendlyURLInfoFieldType ||
 			infoField.getInfoFieldType() instanceof HTMLInfoFieldType ||
-			infoField.getInfoFieldType() instanceof MultiselectInfoFieldType ||
 			infoField.getInfoFieldType() instanceof LongTextInfoFieldType ||
+			infoField.getInfoFieldType() instanceof PhoneNumberInfoFieldType ||
 			infoField.getInfoFieldType() instanceof RelationshipInfoFieldType ||
 			infoField.getInfoFieldType() instanceof SelectInfoFieldType ||
 			infoField.getInfoFieldType() instanceof TextInfoFieldType) {
 
-			return _getInfoFieldValue(infoField, locale, (Object)value);
+			return value;
 		}
 
 		return null;
 	}
 
-	private InfoFieldValue<Object> _getMultiselectInfoFieldValue(
-		InfoField infoField, Locale locale, Object value) {
+	private void _putInfoFieldValue(
+		Map<String, InfoFieldValue<Object>> infoFieldValues,
+		InfoFieldValue<Object> initialInfoFieldValue, InputName inputName) {
 
-		if (Validator.isNull(value)) {
-			value = Collections.emptyList();
+		RelatedInfoFieldValue.RelatedInfoFieldValueIdentifier
+			relatedInfoFieldValueIdentifier =
+				inputName.getRelatedInfoFieldValueIdentifier();
+
+		if (relatedInfoFieldValueIdentifier == null) {
+			infoFieldValues.put(inputName.getUniqueId(), initialInfoFieldValue);
+
+			return;
 		}
 
-		return _getInfoFieldValue(infoField, locale, value);
-	}
+		InfoField<?> infoField = initialInfoFieldValue.getInfoField();
 
-	private InfoFieldValue<Object> _getNumberInfoFieldValue(
-		InfoField infoField, Locale locale, String value) {
+		InfoFieldValue<Object> infoFieldValue = infoFieldValues.get(
+			infoField.getUniqueId());
 
-		if (GetterUtil.getBoolean(
-				infoField.getAttribute(NumberInfoFieldType.DECIMAL))) {
-
-			if (Validator.isBlank(value)) {
-				return _getInfoFieldValue(
-					infoField, locale, (Object)StringPool.BLANK);
-			}
-
-			return _getInfoFieldValue(infoField, locale, new BigDecimal(value));
+		if (infoFieldValue == null) {
+			infoFieldValue = new InfoFieldValue<>(
+				infoField, new RelatedInfoFieldValue<>(new LinkedHashMap<>()));
 		}
 
-		return _getInfoFieldValue(infoField, locale, GetterUtil.getLong(value));
+		RelatedInfoFieldValue relatedInfoFieldValue =
+			(RelatedInfoFieldValue)infoFieldValue.getValue();
+
+		Map
+			<RelatedInfoFieldValue.RelatedInfoFieldValueIdentifier,
+			 InfoFieldValue<?>> relatedInfoFieldValues =
+				relatedInfoFieldValue.getRelatedInfoFieldValues();
+
+		relatedInfoFieldValues.put(
+			relatedInfoFieldValueIdentifier, initialInfoFieldValue);
+
+		infoFieldValues.put(infoField.getUniqueId(), infoFieldValue);
 	}
+
+	private static final String[] _ALLOWED_NONEDITABLE_FIELDS = {
+		"expirationDate", "reviewDate"
+	};
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		InfoRequestFieldValuesProviderHelper.class);
 
 	private final InfoItemServiceRegistry _infoItemServiceRegistry;
+
+	private static class InputName {
+
+		public InputName(
+			boolean localized, String name,
+			RelatedInfoFieldValue.RelatedInfoFieldValueIdentifier
+				relatedInfoFieldValueIdentifier,
+			String uniqueId) {
+
+			_localized = localized;
+			_name = name;
+			_relatedInfoFieldValueIdentifier = relatedInfoFieldValueIdentifier;
+			_uniqueId = uniqueId;
+		}
+
+		public String getName() {
+			return _name;
+		}
+
+		public RelatedInfoFieldValue.RelatedInfoFieldValueIdentifier
+			getRelatedInfoFieldValueIdentifier() {
+
+			return _relatedInfoFieldValueIdentifier;
+		}
+
+		public String getUniqueId() {
+			return _uniqueId;
+		}
+
+		public boolean isLocalized() {
+			return _localized;
+		}
+
+		private final boolean _localized;
+		private final String _name;
+		private final RelatedInfoFieldValue.RelatedInfoFieldValueIdentifier
+			_relatedInfoFieldValueIdentifier;
+		private final String _uniqueId;
+
+	}
 
 }

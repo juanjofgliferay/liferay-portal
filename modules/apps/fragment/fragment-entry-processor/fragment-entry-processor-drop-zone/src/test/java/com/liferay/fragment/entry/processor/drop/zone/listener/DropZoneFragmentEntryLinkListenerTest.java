@@ -9,25 +9,35 @@ import com.liferay.fragment.entry.processor.drop.zone.FragmentEntryProcessorDrop
 import com.liferay.fragment.model.FragmentEntryLink;
 import com.liferay.fragment.processor.FragmentEntryProcessorContext;
 import com.liferay.fragment.processor.FragmentEntryProcessorRegistry;
+import com.liferay.fragment.util.configuration.FragmentEntryConfigurationParser;
 import com.liferay.layout.page.template.model.LayoutPageTemplateStructure;
 import com.liferay.layout.page.template.service.LayoutPageTemplateStructureLocalService;
 import com.liferay.layout.util.structure.FragmentDropZoneLayoutStructureItem;
 import com.liferay.layout.util.structure.FragmentStyledLayoutStructureItem;
 import com.liferay.layout.util.structure.LayoutStructure;
 import com.liferay.layout.util.structure.LayoutStructureItem;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
+import com.liferay.portal.kernel.test.TestInfo;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.KeyValuePair;
+import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
+import com.liferay.portal.util.PortalImpl;
 
+import java.util.Collections;
 import java.util.List;
 
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -45,12 +55,20 @@ public class DropZoneFragmentEntryLinkListenerTest {
 	public static final LiferayUnitTestRule liferayUnitTestRule =
 		LiferayUnitTestRule.INSTANCE;
 
+	@BeforeClass
+	public static void setUpClass() {
+		PortalUtil portalUtil = new PortalUtil();
+
+		portalUtil.setPortal(new PortalImpl());
+	}
+
 	@Before
 	public void setUp() {
 		_setUpDropZoneFragmentEntryLinkListener();
 	}
 
 	@Test
+	@TestInfo("LPS-121223")
 	public void testProcessFragmentEntryLinkHTMLInEditAddingDropZone()
 		throws Exception {
 
@@ -111,7 +129,8 @@ public class DropZoneFragmentEntryLinkListenerTest {
 
 		_setUpLayoutPageTemplateStructure(layoutStructure.toString());
 
-		_assertUpdateLayoutPageTemplateStructureData(true, fragmentEntryLink);
+		_assertUpdateLayoutPageTemplateStructureData(
+			true, new String[0], fragmentEntryLink);
 	}
 
 	@Test
@@ -161,7 +180,8 @@ public class DropZoneFragmentEntryLinkListenerTest {
 
 		_setUpLayoutPageTemplateStructure(layoutStructure.toString());
 
-		_assertUpdateLayoutPageTemplateStructureData(true, fragmentEntryLink);
+		_assertUpdateLayoutPageTemplateStructureData(
+			true, new String[0], fragmentEntryLink);
 	}
 
 	@Test
@@ -183,11 +203,12 @@ public class DropZoneFragmentEntryLinkListenerTest {
 
 		_setUpLayoutPageTemplateStructure(layoutStructure.toString());
 
-		_assertUpdateLayoutPageTemplateStructureData(true, fragmentEntryLink);
+		_assertUpdateLayoutPageTemplateStructureData(
+			true, new String[0], fragmentEntryLink);
 	}
 
 	@Test
-	public void testProcessFragmentEntryLinkHTMLInEditRemovingDropZone()
+	public void testProcessFragmentEntryLinkHTMLInEditRemovingDropZones()
 		throws Exception {
 
 		FragmentEntryLink fragmentEntryLink =
@@ -203,12 +224,18 @@ public class DropZoneFragmentEntryLinkListenerTest {
 				FragmentEntryProcessorDropZoneTestUtil.
 					addFragmentDropZoneLayoutStructureItems(
 						fragmentEntryLink, layoutStructure, dropZoneId1,
-						RandomTestUtil.randomString(), dropZoneId2);
+						RandomTestUtil.randomString(), dropZoneId2,
+						RandomTestUtil.randomString());
 
+		FragmentDropZoneLayoutStructureItem
+			deletedFragmentDropZoneLayoutStructureItem1 =
+				fragmentDropZoneLayoutStructureItems[1];
+		FragmentDropZoneLayoutStructureItem
+			deletedFragmentDropZoneLayoutStructureItem2 =
+				fragmentDropZoneLayoutStructureItems[3];
 		FragmentDropZoneLayoutStructureItem
 			fragmentDropZoneLayoutStructureItem1 =
 				fragmentDropZoneLayoutStructureItems[0];
-
 		FragmentDropZoneLayoutStructureItem
 			fragmentDropZoneLayoutStructureItem2 =
 				fragmentDropZoneLayoutStructureItems[2];
@@ -221,11 +248,56 @@ public class DropZoneFragmentEntryLinkListenerTest {
 		_setUpLayoutPageTemplateStructure(layoutStructure.toString());
 
 		_assertUpdateLayoutPageTemplateStructureData(
+			false,
+			new String[] {
+				deletedFragmentDropZoneLayoutStructureItem1.getItemId(),
+				deletedFragmentDropZoneLayoutStructureItem2.getItemId()
+			},
 			fragmentEntryLink,
 			new KeyValuePair(
 				dropZoneId1, fragmentDropZoneLayoutStructureItem1.getItemId()),
 			new KeyValuePair(
 				dropZoneId2, fragmentDropZoneLayoutStructureItem2.getItemId()));
+	}
+
+	@Test
+	@TestInfo("LPD-39780")
+	public void testProcessFragmentEntryLinkHTMLInEditRemovingDropZonesWithoutIds()
+		throws Exception {
+
+		FragmentEntryLink fragmentEntryLink =
+			FragmentEntryProcessorDropZoneTestUtil.getMockFragmentEntryLink();
+
+		LayoutStructure layoutStructure = new LayoutStructure();
+
+		FragmentDropZoneLayoutStructureItem[]
+			fragmentDropZoneLayoutStructureItems =
+				FragmentEntryProcessorDropZoneTestUtil.
+					addFragmentDropZoneLayoutStructureItems(
+						fragmentEntryLink, layoutStructure, StringPool.BLANK,
+						StringPool.BLANK, StringPool.BLANK);
+
+		_setUpFragmentEntryProcessorRegistry(
+			fragmentEntryLink,
+			FragmentEntryProcessorDropZoneTestUtil.getHTML(StringPool.BLANK));
+
+		_setUpLayoutPageTemplateStructure(layoutStructure.toString());
+
+		FragmentDropZoneLayoutStructureItem
+			fragmentDropZoneLayoutStructureItem =
+				fragmentDropZoneLayoutStructureItems[0];
+
+		_assertUpdateLayoutPageTemplateStructureData(
+			false,
+			TransformUtil.transform(
+				ArrayUtil.subset(fragmentDropZoneLayoutStructureItems, 1, 2),
+				curFragmentDropZoneLayoutStructureItem ->
+					curFragmentDropZoneLayoutStructureItem.getItemId(),
+				String.class),
+			fragmentEntryLink,
+			new KeyValuePair(
+				StringPool.BLANK,
+				fragmentDropZoneLayoutStructureItem.getItemId()));
 	}
 
 	@Test
@@ -278,21 +350,53 @@ public class DropZoneFragmentEntryLinkListenerTest {
 	}
 
 	private void _assertUpdateLayoutPageTemplateStructureData(
-			boolean never, FragmentEntryLink fragmentEntryLink,
+			boolean never, String[] deletedItemIds,
+			FragmentEntryLink fragmentEntryLink,
 			KeyValuePair... dropZoneIdItemIdKeyValuePairs)
 		throws Exception {
 
-		ServiceContextThreadLocal.pushServiceContext(new ServiceContext());
+		ServiceContext serviceContext = Mockito.mock(ServiceContext.class);
 
-		_dropZoneFragmentEntryLinkListener.updateLayoutPageTemplateStructure(
-			fragmentEntryLink, null);
+		ThemeDisplay themeDisplay = Mockito.mock(ThemeDisplay.class);
+
+		Mockito.when(
+			serviceContext.getThemeDisplay()
+		).thenReturn(
+			themeDisplay
+		);
+
+		ServiceContextThreadLocal.pushServiceContext(serviceContext);
+
+		try {
+			_dropZoneFragmentEntryLinkListener.
+				updateLayoutPageTemplateStructure(fragmentEntryLink, null);
+		}
+		finally {
+			ServiceContextThreadLocal.popServiceContext();
+		}
+
+		Mockito.verify(
+			serviceContext
+		).getRequest();
+
+		Mockito.verify(
+			serviceContext
+		).getResponse();
+
+		Mockito.verify(
+			themeDisplay
+		).getRequest();
+
+		Mockito.verify(
+			themeDisplay
+		).getResponse();
 
 		if (never) {
 			Mockito.verify(
 				_layoutPageTemplateStructureLocalService, Mockito.never()
 			).updateLayoutPageTemplateStructureData(
 				Mockito.anyLong(), Mockito.anyLong(), Mockito.anyLong(),
-				Mockito.anyString()
+				Mockito.anyLong(), Mockito.anyString()
 			);
 
 			return;
@@ -305,7 +409,7 @@ public class DropZoneFragmentEntryLinkListenerTest {
 			_layoutPageTemplateStructureLocalService
 		).updateLayoutPageTemplateStructureData(
 			Mockito.anyLong(), Mockito.anyLong(), Mockito.anyLong(),
-			argumentCaptor.capture()
+			Mockito.anyLong(), argumentCaptor.capture()
 		);
 
 		LayoutStructure layoutStructure = LayoutStructure.of(
@@ -349,9 +453,16 @@ public class DropZoneFragmentEntryLinkListenerTest {
 
 			String itemId = dropZoneIdItemIdKeyValuePairs[i].getValue();
 
-			if (!Validator.isBlank(itemId)) {
-				Assert.assertEquals(itemId, layoutStructureItem.getItemId());
+			if (Validator.isBlank(itemId)) {
+				continue;
 			}
+
+			Assert.assertEquals(itemId, layoutStructureItem.getItemId());
+		}
+
+		for (String deletedItemId : deletedItemIds) {
+			Assert.assertTrue(
+				layoutStructure.isItemMarkedForDeletion(deletedItemId));
 		}
 	}
 
@@ -361,7 +472,8 @@ public class DropZoneFragmentEntryLinkListenerTest {
 		throws Exception {
 
 		_assertUpdateLayoutPageTemplateStructureData(
-			false, fragmentEntryLink, dropZoneIdItemIdKeyValuePairs);
+			false, new String[0], fragmentEntryLink,
+			dropZoneIdItemIdKeyValuePairs);
 	}
 
 	private void _assertUpdateLayoutPageTemplateStructureData(
@@ -425,6 +537,21 @@ public class DropZoneFragmentEntryLinkListenerTest {
 		ReflectionTestUtil.setFieldValue(
 			_dropZoneFragmentEntryLinkListener,
 			"_fragmentEntryProcessorRegistry", _fragmentEntryProcessorRegistry);
+
+		FragmentEntryConfigurationParser fragmentEntryConfigurationParser =
+			Mockito.mock(FragmentEntryConfigurationParser.class);
+
+		Mockito.when(
+			fragmentEntryConfigurationParser.getFragmentConfigurationFields(
+				Mockito.nullable(JSONObject.class))
+		).thenReturn(
+			Collections.emptyList()
+		);
+
+		ReflectionTestUtil.setFieldValue(
+			_dropZoneFragmentEntryLinkListener,
+			"_fragmentEntryConfigurationParser",
+			fragmentEntryConfigurationParser);
 	}
 
 	private void _setUpFragmentEntryProcessorRegistry(

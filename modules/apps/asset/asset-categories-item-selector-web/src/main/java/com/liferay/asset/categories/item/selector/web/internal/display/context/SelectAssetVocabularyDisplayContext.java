@@ -9,7 +9,9 @@ import com.liferay.asset.categories.item.selector.web.internal.constants.AssetCa
 import com.liferay.asset.kernel.model.AssetVocabulary;
 import com.liferay.asset.kernel.model.AssetVocabularyConstants;
 import com.liferay.asset.kernel.service.AssetVocabularyServiceUtil;
+import com.liferay.depot.util.SiteConnectedGroupGroupProviderUtil;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
+import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.portlet.PortletURLUtil;
 import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
@@ -21,14 +23,14 @@ import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.site.navigation.taglib.servlet.taglib.util.BreadcrumbEntryListBuilder;
 
+import jakarta.portlet.PortletException;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.List;
-
-import javax.portlet.PortletException;
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Rubén Pulido
@@ -56,8 +58,8 @@ public class SelectAssetVocabularyDisplayContext {
 		return _assetCategoryTreeNodeId;
 	}
 
-	public SearchContainer<AssetVocabulary>
-		getAssetVocabularySearchContainer() {
+	public SearchContainer<AssetVocabulary> getAssetVocabularySearchContainer()
+		throws PortalException {
 
 		SearchContainer<AssetVocabulary> searchContainer =
 			new SearchContainer<>(
@@ -103,12 +105,13 @@ public class SelectAssetVocabularyDisplayContext {
 		).build();
 	}
 
-	private List<AssetVocabulary> _getAssetVocabularies() {
+	private List<AssetVocabulary> _getAssetVocabularies()
+		throws PortalException {
+
 		return AssetVocabularyServiceUtil.getGroupVocabularies(
-			new long[] {
-				_themeDisplay.getCompanyGroupId(),
-				_themeDisplay.getScopeGroupId()
-			},
+			SiteConnectedGroupGroupProviderUtil.
+				getCurrentAndAncestorSiteAndDepotGroupIds(
+					_themeDisplay.getScopeGroupId()),
 			new int[] {AssetVocabularyConstants.VISIBILITY_TYPE_PUBLIC});
 	}
 
@@ -117,7 +120,7 @@ public class SelectAssetVocabularyDisplayContext {
 
 		PortletResponse portletResponse =
 			(PortletResponse)_httpServletRequest.getAttribute(
-				JavaConstants.JAVAX_PORTLET_RESPONSE);
+				JavaConstants.JAKARTA_PORTLET_RESPONSE);
 
 		return PortletURLBuilder.create(
 			PortletURLUtil.clone(
@@ -137,7 +140,7 @@ public class SelectAssetVocabularyDisplayContext {
 
 	private PortletRequest _getPortletRequest() {
 		return (PortletRequest)_httpServletRequest.getAttribute(
-			JavaConstants.JAVAX_PORTLET_REQUEST);
+			JavaConstants.JAKARTA_PORTLET_REQUEST);
 	}
 
 	private Long _assetCategoryTreeNodeId;

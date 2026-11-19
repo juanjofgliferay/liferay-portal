@@ -1,10 +1,10 @@
-@component-name = "core-infrastructure"
+@component-name = "portal-core-infra"
 definition {
 
 	property app.server.types = "tomcat";
 	property ci.retries.disabled = "true";
 	property configure.read.write.database = "jdbc";
-	property database.types = "mysql";
+	property database.types = "mysql,postgresql";
 	property portal.release = "true";
 	property portal.upstream = "true";
 	property test.assert.warning.exceptions = "true";
@@ -35,8 +35,8 @@ definition {
 
 		MenuItem.click(menuItem = "Checkout");
 
-		SQL.assertTextInMySQLStatementResult(
-			mysqlStatement = "SELECT COUNT(*) FROM lportal.Lock_ WHERE className LIKE '%com.liferay.document.library.kernel.model.DLFileEntry%'",
+		SQL.assertTextInSQLStatementResult(
+			sqlStatement = "SELECT COUNT(*) FROM Lock_ WHERE className LIKE '%com.liferay.document.library.kernel.model.DLFileEntry%'",
 			text = 1);
 
 		Refresh();
@@ -47,8 +47,8 @@ definition {
 
 		Click(locator1 = "Button#SAVE");
 
-		SQL.assertTextInMySQLStatementResult(
-			mysqlStatement = "SELECT COUNT(*) FROM lportal.Lock_ WHERE className LIKE '%com.liferay.document.library.kernel.model.DLFileEntry%'",
+		SQL.assertTextInSQLStatementResult(
+			sqlStatement = "SELECT COUNT(*) FROM Lock_ WHERE className LIKE '%com.liferay.document.library.kernel.model.DLFileEntry%'",
 			text = 0);
 
 		DMNavigator.openDocumentsAndMediaAdmin(siteURLKey = "guest");
@@ -57,12 +57,12 @@ definition {
 
 		MenuItem.click(menuItem = "Checkout");
 
-		while ((IsTextEqual(locator1 = "DocumentsAndMedia#ICON_DOCUMENT_WORKFLOW_STATUS", value1 = "Draft")) && (maxIterations = "6")) {
+		while ((IsElementPresent(locator1 = "DocumentsAndMedia#ICON_DOCUMENT_WORKFLOW_STATUS_DRAFT")) && (maxIterations = "6")) {
 			Refresh();
 		}
 
-		SQL.assertTextInMySQLStatementResult(
-			mysqlStatement = "SELECT COUNT(*) FROM lportal.Lock_ WHERE className LIKE '%com.liferay.document.library.kernel.model.DLFileEntry%'",
+		SQL.assertTextInSQLStatementResult(
+			sqlStatement = "SELECT COUNT(*) FROM Lock_ WHERE className LIKE '%com.liferay.document.library.kernel.model.DLFileEntry%'",
 			text = 0);
 
 		JSONMBMessage.addMessage(
@@ -78,16 +78,16 @@ definition {
 
 		MenuItem.click(menuItem = "Lock");
 
-		SQL.assertTextInMySQLStatementResult(
-			mysqlStatement = "SELECT COUNT(*) FROM lportal.Lock_ WHERE className LIKE '%com.liferay.message.boards.model.MBThread%'",
+		SQL.assertTextInSQLStatementResult(
+			sqlStatement = "SELECT COUNT(*) FROM Lock_ WHERE className LIKE '%com.liferay.message.boards.model.MBThread%'",
 			text = 1);
 
 		Click(locator1 = "MessageBoards#VERTICAL_ELLIPSIS");
 
 		MenuItem.click(menuItem = "Unlock");
 
-		SQL.assertTextInMySQLStatementResult(
-			mysqlStatement = "SELECT COUNT(*) FROM lportal.Lock_ WHERE className LIKE '%com.liferay.message.boards.model.MBThread%'",
+		SQL.assertTextInSQLStatementResult(
+			sqlStatement = "SELECT COUNT(*) FROM Lock_ WHERE className LIKE '%com.liferay.message.boards.model.MBThread%'",
 			text = 0);
 	}
 
@@ -99,6 +99,8 @@ definition {
 		property remote.elasticsearch.enabled = "true";
 		property test.liferay.virtual.instance = "false";
 		property test.run.type = "single";
+
+		PagesAdmin.enableWidgetPages();
 
 		Clustering.viewClusterStatusInConsole();
 
@@ -121,12 +123,12 @@ definition {
 			entryTitle = "Blogs Entry1 Title");
 
 		User.logoutPG(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			userEmailAddress = "test@liferay.com");
 
 		User.loginPG(
 			nodePort = 9080,
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			userEmailAddress = "test@liferay.com");
 
 		Page.assertNodePortPG(nodePort = 9080);
@@ -149,6 +151,31 @@ definition {
 		property test.liferay.virtual.instance = "false";
 		property test.run.type = "single";
 
+		PagesAdmin.enableWidgetPages();
+
+		Smoke.viewWelcomeContentPage();
+
+		ServerAdministration.openServerAdmin();
+
+		ServerAdministration.addCategoryLogLevels(
+			categoryLevel = "ALL",
+			categoryName = "com.liferay.portal.dao.jdbc.util.DynamicDataSource");
+
+		Smoke.runSmoke();
+
+		AssertConsoleTextPresent(value1 = "Returning write data source");
+
+		AssertConsoleTextPresent(value1 = "Returning read data source");
+	}
+
+	@priority = 3
+	test SmokeWithJDBCAndReadDataSourceTimeout {
+		property custom.properties = "jdbc.read.data.source.unavailable.timeout=5000";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
+		PagesAdmin.enableWidgetPages();
+
 		Smoke.viewWelcomeContentPage();
 
 		ServerAdministration.openServerAdmin();
@@ -169,6 +196,8 @@ definition {
 		property configure.read.write.database = "jndi";
 		property test.liferay.virtual.instance = "false";
 		property test.run.type = "single";
+
+		PagesAdmin.enableWidgetPages();
 
 		Smoke.viewWelcomeContentPage();
 

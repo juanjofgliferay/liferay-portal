@@ -7,6 +7,7 @@ package com.liferay.commerce.product.service;
 
 import com.liferay.commerce.product.model.CPInstance;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.util.List;
@@ -137,18 +138,18 @@ public class CPInstanceServiceUtil {
 		getService().deleteCPInstance(cpInstanceId);
 	}
 
-	public static CPInstance fetchByExternalReferenceCode(
-			String externalReferenceCode, long companyId)
-		throws PortalException {
-
-		return getService().fetchByExternalReferenceCode(
-			externalReferenceCode, companyId);
-	}
-
 	public static CPInstance fetchCPInstance(long cpInstanceId)
 		throws PortalException {
 
 		return getService().fetchCPInstance(cpInstanceId);
+	}
+
+	public static CPInstance fetchCPInstanceByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws PortalException {
+
+		return getService().fetchCPInstanceByExternalReferenceCode(
+			externalReferenceCode, companyId);
 	}
 
 	public static CPInstance fetchCProductInstance(
@@ -201,6 +202,14 @@ public class CPInstanceServiceUtil {
 		throws PortalException {
 
 		return getService().getCProductInstance(cProductId, cpInstanceUuid);
+	}
+
+	public static CPInstance getOrAddEmptyCPInstance(
+			String externalReferenceCode, long cpDefinitionId, long groupId)
+		throws PortalException {
+
+		return getService().getOrAddEmptyCPInstance(
+			externalReferenceCode, cpDefinitionId, groupId);
 	}
 
 	/**
@@ -349,13 +358,11 @@ public class CPInstanceServiceUtil {
 	}
 
 	public static CPInstanceService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(CPInstanceService service) {
-		_service = service;
-	}
-
-	private static volatile CPInstanceService _service;
+	private static final Snapshot<CPInstanceService> _serviceSnapshot =
+		new Snapshot<>(CPInstanceServiceUtil.class, CPInstanceService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-594295841

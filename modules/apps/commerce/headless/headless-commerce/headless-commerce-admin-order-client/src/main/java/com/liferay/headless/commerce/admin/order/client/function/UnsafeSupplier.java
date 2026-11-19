@@ -5,7 +5,7 @@
 
 package com.liferay.headless.commerce.admin.order.client.function;
 
-import javax.annotation.Generated;
+import jakarta.annotation.Generated;
 
 /**
  * @author Alessio Antonio Rendina
@@ -18,3 +18,4 @@ public interface UnsafeSupplier<T, E extends Throwable> {
 	public T get() throws E;
 
 }
+// LIFERAY-REST-BUILDER-HASH:2081249987

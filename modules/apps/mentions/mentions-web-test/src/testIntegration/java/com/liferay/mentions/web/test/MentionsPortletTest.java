@@ -37,7 +37,7 @@ import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
 
-import javax.portlet.Portlet;
+import jakarta.portlet.Portlet;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -66,24 +66,6 @@ public class MentionsPortletTest {
 		_group = GroupTestUtil.addGroup();
 
 		_layout = _addLayout(_group.getGroupId(), TestPropsValues.getUserId());
-	}
-
-	@Test
-	public void testServletResponseWithoutQuery() throws Exception {
-		User user = _addUser("example");
-
-		try {
-			JSONArray jsonArray = _getServletResponseJSONArray(null);
-
-			Assert.assertEquals(1, jsonArray.length());
-
-			JSONObject jsonObject = jsonArray.getJSONObject(0);
-
-			Assert.assertEquals("example", jsonObject.getString("screenName"));
-		}
-		finally {
-			_userLocalService.deleteUser(user);
-		}
 	}
 
 	@Test
@@ -153,6 +135,24 @@ public class MentionsPortletTest {
 		Assert.assertEquals(0, jsonArray.length());
 	}
 
+	@Test
+	public void testServletResponseWithoutQuery() throws Exception {
+		User user = _addUser("example");
+
+		try {
+			JSONArray jsonArray = _getServletResponseJSONArray(null);
+
+			Assert.assertEquals(1, jsonArray.length());
+
+			JSONObject jsonObject = jsonArray.getJSONObject(0);
+
+			Assert.assertEquals("example", jsonObject.getString("screenName"));
+		}
+		finally {
+			_userLocalService.deleteUser(user);
+		}
+	}
+
 	private Layout _addLayout(long groupId, long userId) throws Exception {
 		String name = RandomTestUtil.randomString();
 
@@ -160,10 +160,10 @@ public class MentionsPortletTest {
 			StringPool.SLASH + FriendlyURLNormalizerUtil.normalize(name);
 
 		return _layoutLocalService.addLayout(
-			userId, groupId, false, LayoutConstants.DEFAULT_PARENT_LAYOUT_ID,
-			name, null, RandomTestUtil.randomString(),
-			LayoutConstants.TYPE_PORTLET, false, friendlyURL,
-			ServiceContextTestUtil.getServiceContext());
+			null, userId, groupId, false,
+			LayoutConstants.DEFAULT_PARENT_LAYOUT_ID, name, null,
+			RandomTestUtil.randomString(), LayoutConstants.TYPE_PORTLET, false,
+			friendlyURL, ServiceContextTestUtil.getServiceContext());
 	}
 
 	private User _addUser(String screenName) throws Exception {
@@ -179,10 +179,10 @@ public class MentionsPortletTest {
 			String query)
 		throws Exception {
 
-		ThemeDisplay themeDisplay = _getThemeDisplay();
-
 		MockLiferayResourceRequest mockLiferayResourceRequest =
 			new MockLiferayResourceRequest();
+
+		ThemeDisplay themeDisplay = _getThemeDisplay();
 
 		mockLiferayResourceRequest.setAttribute(
 			WebKeys.THEME_DISPLAY, themeDisplay);
@@ -243,7 +243,7 @@ public class MentionsPortletTest {
 	@Inject
 	private LayoutLocalService _layoutLocalService;
 
-	@Inject(filter = "javax.portlet.name=" + MentionsPortletKeys.MENTIONS)
+	@Inject(filter = "jakarta.portlet.name=" + MentionsPortletKeys.MENTIONS)
 	private Portlet _portlet;
 
 	@Inject

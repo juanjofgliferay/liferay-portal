@@ -57,13 +57,14 @@ public class AssetCategoryServiceWrapper
 			String externalReferenceCode, long groupId, long parentCategoryId,
 			java.util.Map<java.util.Locale, String> titleMap,
 			java.util.Map<java.util.Locale, String> descriptionMap,
-			long vocabularyId, String[] categoryProperties,
+			long vocabularyId, boolean system, String[] categoryProperties,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _assetCategoryService.addCategory(
 			externalReferenceCode, groupId, parentCategoryId, titleMap,
-			descriptionMap, vocabularyId, categoryProperties, serviceContext);
+			descriptionMap, vocabularyId, system, categoryProperties,
+			serviceContext);
 	}
 
 	@Override
@@ -81,10 +82,28 @@ public class AssetCategoryServiceWrapper
 	}
 
 	@Override
+	public AssetCategory deleteCategoryByExternalReferenceCode(
+			String externalReferenceCode, long groupId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _assetCategoryService.deleteCategoryByExternalReferenceCode(
+			externalReferenceCode, groupId);
+	}
+
+	@Override
 	public AssetCategory fetchCategory(long categoryId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _assetCategoryService.fetchCategory(categoryId);
+	}
+
+	@Override
+	public AssetCategory fetchCategoryByExternalReferenceCode(
+			String externalReferenceCode, long groupId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _assetCategoryService.fetchCategoryByExternalReferenceCode(
+			externalReferenceCode, groupId);
 	}
 
 	@Override
@@ -190,6 +209,27 @@ public class AssetCategoryServiceWrapper
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _assetCategoryService.getChildCategoriesCount(parentCategoryId);
+	}
+
+	@Override
+	public AssetCategory getOrAddEmptyCategory(
+			String externalReferenceCode, long groupId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _assetCategoryService.getOrAddEmptyCategory(
+			externalReferenceCode, groupId);
+	}
+
+	@Override
+	public AssetCategory getOrAddEmptyCategoryWithAncestors(
+			String externalReferenceCode, long groupId,
+			String parentCategoryExternalReferenceCode,
+			String vocabularyExternalReferenceCode)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _assetCategoryService.getOrAddEmptyCategoryWithAncestors(
+			externalReferenceCode, groupId, parentCategoryExternalReferenceCode,
+			vocabularyExternalReferenceCode);
 	}
 
 	/**
@@ -422,7 +462,8 @@ public class AssetCategoryServiceWrapper
 
 	@Override
 	public AssetCategory updateCategory(
-			long categoryId, long parentCategoryId,
+			String externalReferenceCode, long categoryId,
+			long parentCategoryId,
 			java.util.Map<java.util.Locale, String> titleMap,
 			java.util.Map<java.util.Locale, String> descriptionMap,
 			long vocabularyId, String[] categoryProperties,
@@ -430,8 +471,8 @@ public class AssetCategoryServiceWrapper
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _assetCategoryService.updateCategory(
-			categoryId, parentCategoryId, titleMap, descriptionMap,
-			vocabularyId, categoryProperties, serviceContext);
+			externalReferenceCode, categoryId, parentCategoryId, titleMap,
+			descriptionMap, vocabularyId, categoryProperties, serviceContext);
 	}
 
 	@Override
@@ -447,3 +488,4 @@ public class AssetCategoryServiceWrapper
 	private AssetCategoryService _assetCategoryService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-176315480

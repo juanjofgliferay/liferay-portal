@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -52,35 +53,6 @@ public class DDMStructureLocalServiceUtil {
 	}
 
 	public static DDMStructure addStructure(
-			long userId, long groupId, long parentStructureId, long classNameId,
-			String structureKey, Map<java.util.Locale, String> nameMap,
-			Map<java.util.Locale, String> descriptionMap,
-			com.liferay.dynamic.data.mapping.model.DDMForm ddmForm,
-			com.liferay.dynamic.data.mapping.model.DDMFormLayout ddmFormLayout,
-			String storageType, int type,
-			com.liferay.portal.kernel.service.ServiceContext serviceContext)
-		throws PortalException {
-
-		return getService().addStructure(
-			userId, groupId, parentStructureId, classNameId, structureKey,
-			nameMap, descriptionMap, ddmForm, ddmFormLayout, storageType, type,
-			serviceContext);
-	}
-
-	public static DDMStructure addStructure(
-			long userId, long groupId, long parentStructureId, long classNameId,
-			String structureKey, Map<java.util.Locale, String> nameMap,
-			Map<java.util.Locale, String> descriptionMap, String definition,
-			String storageType,
-			com.liferay.portal.kernel.service.ServiceContext serviceContext)
-		throws PortalException {
-
-		return getService().addStructure(
-			userId, groupId, parentStructureId, classNameId, structureKey,
-			nameMap, descriptionMap, definition, storageType, serviceContext);
-	}
-
-	public static DDMStructure addStructure(
 			long userId, long groupId, long classNameId,
 			Map<java.util.Locale, String> nameMap,
 			Map<java.util.Locale, String> descriptionMap,
@@ -110,6 +82,38 @@ public class DDMStructureLocalServiceUtil {
 			userId, groupId, parentStructureKey, classNameId, structureKey,
 			nameMap, descriptionMap, ddmForm, ddmFormLayout, storageType, type,
 			serviceContext);
+	}
+
+	public static DDMStructure addStructure(
+			String externalReferenceCode, long userId, long groupId,
+			long parentStructureId, long classNameId, String structureKey,
+			Map<java.util.Locale, String> nameMap,
+			Map<java.util.Locale, String> descriptionMap,
+			com.liferay.dynamic.data.mapping.model.DDMForm ddmForm,
+			com.liferay.dynamic.data.mapping.model.DDMFormLayout ddmFormLayout,
+			String storageType, int type,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
+		throws PortalException {
+
+		return getService().addStructure(
+			externalReferenceCode, userId, groupId, parentStructureId,
+			classNameId, structureKey, nameMap, descriptionMap, ddmForm,
+			ddmFormLayout, storageType, type, serviceContext);
+	}
+
+	public static DDMStructure addStructure(
+			String externalReferenceCode, long userId, long groupId,
+			long parentStructureId, long classNameId, String structureKey,
+			Map<java.util.Locale, String> nameMap,
+			Map<java.util.Locale, String> descriptionMap, String definition,
+			String storageType,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
+		throws PortalException {
+
+		return getService().addStructure(
+			externalReferenceCode, userId, groupId, parentStructureId,
+			classNameId, structureKey, nameMap, descriptionMap, definition,
+			storageType, serviceContext);
 	}
 
 	/**
@@ -472,6 +476,13 @@ public class DDMStructureLocalServiceUtil {
 			groupId, classNameId, structureKey, includeAncestorStructures);
 	}
 
+	public static DDMStructure fetchStructureByExternalReferenceCode(
+		String externalReferenceCode, long groupId, long classNameId) {
+
+		return getService().fetchStructureByExternalReferenceCode(
+			externalReferenceCode, groupId, classNameId);
+	}
+
 	public static DDMStructure fetchStructureByUuidAndGroupId(
 		String uuid, long groupId, boolean includeAncestorStructures) {
 
@@ -726,18 +737,12 @@ public class DDMStructureLocalServiceUtil {
 			groupId, classNameId, structureKey, includeAncestorStructures);
 	}
 
-	/**
-	 * Returns all the structures matching the group, name, and description.
-	 *
-	 * @param groupId the primary key of the structure's group
-	 * @param name the structure's name
-	 * @param description the structure's description
-	 * @return the matching structures
-	 */
-	public static List<DDMStructure> getStructure(
-		long groupId, String name, String description) {
+	public static DDMStructure getStructureByExternalReferenceCode(
+			String externalReferenceCode, long groupId, long classNameId)
+		throws PortalException {
 
-		return getService().getStructure(groupId, name, description);
+		return getService().getStructureByExternalReferenceCode(
+			externalReferenceCode, groupId, classNameId);
 	}
 
 	public static com.liferay.dynamic.data.mapping.model.DDMForm
@@ -880,12 +885,6 @@ public class DDMStructureLocalServiceUtil {
 			orderByComparator);
 	}
 
-	public static List<DDMStructure> getStructures(
-		long groupId, String name, String description) {
-
-		return getService().getStructures(groupId, name, description);
-	}
-
 	/**
 	 * Returns all the structures belonging to the groups.
 	 *
@@ -947,40 +946,6 @@ public class DDMStructureLocalServiceUtil {
 	}
 
 	/**
-	 * Returns an ordered range of all the structures matching the group, class
-	 * name ID, name, and description.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end -
-	 * start</code> instances. <code>start</code> and <code>end</code> are not
-	 * primary keys, they are indexes in the result set. Thus, <code>0</code>
-	 * refers to the first result in the set. Setting both <code>start</code>
-	 * and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full
-	 * result set.
-	 * </p>
-	 *
-	 * @param groupIds the primary keys of the groups
-	 * @param classNameId the primary key of the class name for the structure's
-	 related model
-	 * @param name the name keywords
-	 * @param description the description keywords
-	 * @param start the lower bound of the range of structures to return
-	 * @param end the upper bound of the range of structures to return (not
-	 inclusive)
-	 * @param orderByComparator the comparator to order the structures
-	 (optionally <code>null</code>)
-	 * @return the range of matching structures ordered by the comparator
-	 */
-	public static List<DDMStructure> getStructures(
-		long[] groupIds, long classNameId, String name, String description,
-		int start, int end, OrderByComparator<DDMStructure> orderByComparator) {
-
-		return getService().getStructures(
-			groupIds, classNameId, name, description, start, end,
-			orderByComparator);
-	}
-
-	/**
 	 * Returns the number of structures belonging to the group.
 	 *
 	 * @param groupId the primary key of the group
@@ -1030,7 +995,8 @@ public class DDMStructureLocalServiceUtil {
 	}
 
 	public static String prepareLocalizedDefinitionForImport(
-		DDMStructure structure, java.util.Locale defaultImportLocale) {
+			DDMStructure structure, java.util.Locale defaultImportLocale)
+		throws PortalException {
 
 		return getService().prepareLocalizedDefinitionForImport(
 			structure, defaultImportLocale);
@@ -1246,25 +1212,26 @@ public class DDMStructureLocalServiceUtil {
 	}
 
 	public static DDMStructure updateStructure(
-			long userId, long structureId, long parentStructureId,
+			String externalReferenceCode, long userId, long structureId,
+			long groupId, long parentStructureId, long classNameId,
 			String structureKey, Map<java.util.Locale, String> nameMap,
 			Map<java.util.Locale, String> descriptionMap, String definition,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().updateStructure(
-			userId, structureId, parentStructureId, structureKey, nameMap,
+			externalReferenceCode, userId, structureId, groupId,
+			parentStructureId, classNameId, structureKey, nameMap,
 			descriptionMap, definition, serviceContext);
 	}
 
 	public static DDMStructureLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(DDMStructureLocalService service) {
-		_service = service;
-	}
-
-	private static volatile DDMStructureLocalService _service;
+	private static final Snapshot<DDMStructureLocalService> _serviceSnapshot =
+		new Snapshot<>(
+			DDMStructureLocalServiceUtil.class, DDMStructureLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:444842820

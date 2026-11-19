@@ -7,6 +7,7 @@ package com.liferay.object.service;
 
 import com.liferay.object.model.ObjectAction;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.module.service.Snapshot;
 
 import java.util.Map;
 
@@ -31,7 +32,8 @@ public class ObjectActionServiceUtil {
 	 */
 	public static ObjectAction addObjectAction(
 			String externalReferenceCode, long objectDefinitionId,
-			boolean active, String conditionExpression, String description,
+			boolean active, String conditionExpression,
+			Map<java.util.Locale, String> descriptionMap,
 			Map<java.util.Locale, String> errorMessageMap,
 			Map<java.util.Locale, String> labelMap, String name,
 			String objectActionExecutorKey, String objectActionTriggerKey,
@@ -42,8 +44,8 @@ public class ObjectActionServiceUtil {
 
 		return getService().addObjectAction(
 			externalReferenceCode, objectDefinitionId, active,
-			conditionExpression, description, errorMessageMap, labelMap, name,
-			objectActionExecutorKey, objectActionTriggerKey,
+			conditionExpression, descriptionMap, errorMessageMap, labelMap,
+			name, objectActionExecutorKey, objectActionTriggerKey,
 			parametersUnicodeProperties, system);
 	}
 
@@ -70,7 +72,8 @@ public class ObjectActionServiceUtil {
 
 	public static ObjectAction updateObjectAction(
 			String externalReferenceCode, long objectActionId, boolean active,
-			String conditionExpression, String description,
+			String conditionExpression,
+			Map<java.util.Locale, String> descriptionMap,
 			Map<java.util.Locale, String> errorMessageMap,
 			Map<java.util.Locale, String> labelMap, String name,
 			String objectActionExecutorKey, String objectActionTriggerKey,
@@ -80,19 +83,18 @@ public class ObjectActionServiceUtil {
 
 		return getService().updateObjectAction(
 			externalReferenceCode, objectActionId, active, conditionExpression,
-			description, errorMessageMap, labelMap, name,
+			descriptionMap, errorMessageMap, labelMap, name,
 			objectActionExecutorKey, objectActionTriggerKey,
 			parametersUnicodeProperties);
 	}
 
 	public static ObjectActionService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(ObjectActionService service) {
-		_service = service;
-	}
-
-	private static volatile ObjectActionService _service;
+	private static final Snapshot<ObjectActionService> _serviceSnapshot =
+		new Snapshot<>(
+			ObjectActionServiceUtil.class, ObjectActionService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-855011659

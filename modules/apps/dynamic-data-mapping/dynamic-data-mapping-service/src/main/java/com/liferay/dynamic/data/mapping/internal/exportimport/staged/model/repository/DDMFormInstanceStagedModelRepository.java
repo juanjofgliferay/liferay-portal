@@ -90,7 +90,8 @@ public class DDMFormInstanceStagedModelRepository
 			_ddmFormInstanceLocalService.search(
 				portletDataContext.getCompanyId(),
 				portletDataContext.getScopeGroupId(), null, QueryUtil.ALL_POS,
-				QueryUtil.ALL_POS, new DDMFormInstanceNameComparator());
+				QueryUtil.ALL_POS,
+				DDMFormInstanceNameComparator.getInstance(false));
 
 		for (DDMFormInstance formInstance : formInstances) {
 			formInstanceDDMStructureIds.add(formInstance.getStructureId());
@@ -183,11 +184,13 @@ public class DDMFormInstanceStagedModelRepository
 		throws PortalException {
 
 		for (Long ddmStructureId : ddmStructureIds) {
-			if (_ddmStructureLocalService.fetchDDMStructure(ddmStructureId) !=
+			if (_ddmStructureLocalService.fetchDDMStructure(ddmStructureId) ==
 					null) {
 
-				_ddmStructureLocalService.deleteStructure(ddmStructureId);
+				continue;
 			}
+
+			_ddmStructureLocalService.deleteStructure(ddmStructureId);
 		}
 	}
 

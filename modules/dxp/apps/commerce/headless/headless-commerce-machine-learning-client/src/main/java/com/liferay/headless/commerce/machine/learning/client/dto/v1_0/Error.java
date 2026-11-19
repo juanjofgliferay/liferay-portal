@@ -8,11 +8,11 @@ package com.liferay.headless.commerce.machine.learning.client.dto.v1_0;
 import com.liferay.headless.commerce.machine.learning.client.function.UnsafeSupplier;
 import com.liferay.headless.commerce.machine.learning.client.serdes.v1_0.ErrorSerDes;
 
+import jakarta.annotation.Generated;
+
 import java.io.Serializable;
 
 import java.util.Objects;
-
-import javax.annotation.Generated;
 
 /**
  * @author Riccardo Ferrari
@@ -141,3 +141,4 @@ public class Error implements Cloneable, Serializable {
 	}
 
 }
+// LIFERAY-REST-BUILDER-HASH:-1592080957

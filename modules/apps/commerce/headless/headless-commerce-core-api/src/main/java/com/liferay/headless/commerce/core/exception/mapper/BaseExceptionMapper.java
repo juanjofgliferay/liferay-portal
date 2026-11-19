@@ -9,9 +9,9 @@ import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.ext.ExceptionMapper;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.ext.ExceptionMapper;
 
 /**
  * @author Igor Beslic
@@ -71,9 +71,11 @@ public abstract class BaseExceptionMapper<E extends Throwable>
 			sb.append(args[i + 1]);
 			sb.append("\"");
 
-			if ((i + 2) < args.length) {
-				sb.append(", ");
+			if ((i + 2) >= args.length) {
+				continue;
 			}
+
+			sb.append(", ");
 		}
 
 		sb.append("}}");

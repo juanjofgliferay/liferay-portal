@@ -11,17 +11,18 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.PropsUtil;
+import com.liferay.portal.kernel.util.ProxyFactory;
 import com.liferay.portal.kernel.util.StringUtil;
+
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpSessionContext;
 
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpSession;
-import javax.servlet.http.HttpSessionContext;
 
 /**
  * @author Brian Wing Shun Chan
@@ -67,9 +68,11 @@ public class SharedSession implements HttpSession {
 			while (portalHttpSessionNamesEnumeration.hasMoreElements()) {
 				String name = portalHttpSessionNamesEnumeration.nextElement();
 
-				if (containsSharedAttribute(name)) {
-					namesList.add(name);
+				if (!containsSharedAttribute(name)) {
+					continue;
 				}
+
+				namesList.add(name);
 			}
 
 			namesEnumeration = Collections.enumeration(namesList);
@@ -117,18 +120,14 @@ public class SharedSession implements HttpSession {
 	 * @deprecated As of Paton (6.1.x)
 	 */
 	@Deprecated
-	@Override
 	public HttpSessionContext getSessionContext() {
-		HttpSession httpSession = getSessionDelegate();
-
-		return httpSession.getSessionContext();
+		return ProxyFactory.newDummyInstance(HttpSessionContext.class);
 	}
 
 	/**
 	 * @deprecated As of Wilberforce (7.0.x)
 	 */
 	@Deprecated
-	@Override
 	public Object getValue(String name) {
 		return getAttribute(name);
 	}
@@ -137,7 +136,6 @@ public class SharedSession implements HttpSession {
 	 * @deprecated As of Wilberforce (7.0.x)
 	 */
 	@Deprecated
-	@Override
 	public String[] getValueNames() {
 		List<String> names = ListUtil.fromEnumeration(getAttributeNames());
 
@@ -162,7 +160,6 @@ public class SharedSession implements HttpSession {
 	 * @deprecated As of Wilberforce (7.0.x)
 	 */
 	@Deprecated
-	@Override
 	public void putValue(String name, Object value) {
 		setAttribute(name, value);
 	}
@@ -178,7 +175,6 @@ public class SharedSession implements HttpSession {
 	 * @deprecated As of Wilberforce (7.0.x)
 	 */
 	@Deprecated
-	@Override
 	public void removeValue(String name) {
 		removeAttribute(name);
 	}
@@ -302,7 +298,6 @@ public class SharedSession implements HttpSession {
 		 * @deprecated As of Bunyan (6.0.x)
 		 */
 		@Deprecated
-		@Override
 		public HttpSessionContext getSessionContext() {
 			return null;
 		}
@@ -311,7 +306,6 @@ public class SharedSession implements HttpSession {
 		 * @deprecated As of Wilberforce (7.0.x)
 		 */
 		@Deprecated
-		@Override
 		public Object getValue(String name) {
 			return getAttribute(name);
 		}
@@ -320,7 +314,6 @@ public class SharedSession implements HttpSession {
 		 * @deprecated As of Wilberforce (7.0.x)
 		 */
 		@Deprecated
-		@Override
 		public String[] getValueNames() {
 			List<String> names = ListUtil.fromEnumeration(getAttributeNames());
 
@@ -341,7 +334,6 @@ public class SharedSession implements HttpSession {
 		 * @deprecated As of Wilberforce (7.0.x)
 		 */
 		@Deprecated
-		@Override
 		public void putValue(String name, Object value) {
 			setAttribute(name, value);
 		}
@@ -355,7 +347,6 @@ public class SharedSession implements HttpSession {
 		 * @deprecated As of Wilberforce (7.0.x)
 		 */
 		@Deprecated
-		@Override
 		public void removeValue(String name) {
 			removeAttribute(name);
 		}

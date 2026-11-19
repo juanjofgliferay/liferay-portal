@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -129,7 +130,8 @@ public class CommerceDiscountOrderTypeRelLocalServiceUtil {
 	}
 
 	public static void deleteCommerceDiscountOrderTypeRels(
-		long commerceDiscountId) {
+			long commerceDiscountId)
+		throws PortalException {
 
 		getService().deleteCommerceDiscountOrderTypeRels(commerceDiscountId);
 	}
@@ -234,14 +236,6 @@ public class CommerceDiscountOrderTypeRelLocalServiceUtil {
 
 		return getService().fetchCommerceDiscountOrderTypeRel(
 			commerceDiscountOrderTypeRelId);
-	}
-
-	public static CommerceDiscountOrderTypeRel
-		fetchCommerceDiscountOrderTypeRel(
-			long commerceDiscountId, long commerceOrderTypeId) {
-
-		return getService().fetchCommerceDiscountOrderTypeRel(
-			commerceDiscountId, commerceOrderTypeId);
 	}
 
 	/**
@@ -400,16 +394,22 @@ public class CommerceDiscountOrderTypeRelLocalServiceUtil {
 			commerceDiscountOrderTypeRel);
 	}
 
+	public static CommerceDiscountOrderTypeRel updatePriority(
+			long commerceDiscountOrderTypeRelId, int priority)
+		throws PortalException {
+
+		return getService().updatePriority(
+			commerceDiscountOrderTypeRelId, priority);
+	}
+
 	public static CommerceDiscountOrderTypeRelLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(
-		CommerceDiscountOrderTypeRelLocalService service) {
-
-		_service = service;
-	}
-
-	private static volatile CommerceDiscountOrderTypeRelLocalService _service;
+	private static final Snapshot<CommerceDiscountOrderTypeRelLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			CommerceDiscountOrderTypeRelLocalServiceUtil.class,
+			CommerceDiscountOrderTypeRelLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1674081734

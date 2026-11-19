@@ -25,10 +25,10 @@ import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.segments.field.Field;
 import com.liferay.segments.field.customizer.SegmentsFieldCustomizer;
 
+import jakarta.portlet.PortletRequest;
+
 import java.util.List;
 import java.util.Locale;
-
-import javax.portlet.PortletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -51,13 +51,13 @@ public class AssetCategorySegmentsFieldCustomizer
 	public static final String KEY = "category";
 
 	@Override
-	public ClassedModel getClassedModel(String fieldValue) {
-		return _getAssetCategory(fieldValue);
+	public String getClassName() {
+		return AssetCategory.class.getName();
 	}
 
 	@Override
-	public String getClassName() {
-		return AssetCategory.class.getName();
+	public ClassedModel getClassedModel(String fieldValue) {
+		return _getAssetCategory(fieldValue);
 	}
 
 	@Override

@@ -112,12 +112,8 @@ public class ExportImportConfigurationPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
 		ExportImportConfiguration newExportImportConfiguration =
-			_persistence.create(pk);
-
-		newExportImportConfiguration.setMvccVersion(RandomTestUtil.nextLong());
+			addExportImportConfiguration();
 
 		newExportImportConfiguration.setGroupId(RandomTestUtil.nextLong());
 
@@ -150,8 +146,10 @@ public class ExportImportConfigurationPersistenceTest {
 
 		newExportImportConfiguration.setStatusDate(RandomTestUtil.nextDate());
 
-		_exportImportConfigurations.add(
-			_persistence.update(newExportImportConfiguration));
+		newExportImportConfiguration = _persistence.update(
+			newExportImportConfiguration);
+
+		_exportImportConfigurations.add(newExportImportConfiguration);
 
 		ExportImportConfiguration existingExportImportConfiguration =
 			_persistence.findByPrimaryKey(
@@ -225,22 +223,6 @@ public class ExportImportConfigurationPersistenceTest {
 		_persistence.countByCompanyId(RandomTestUtil.nextLong());
 
 		_persistence.countByCompanyId(0L);
-	}
-
-	@Test
-	public void testCountByG_T() throws Exception {
-		_persistence.countByG_T(
-			RandomTestUtil.nextLong(), RandomTestUtil.nextInt());
-
-		_persistence.countByG_T(0L, 0);
-	}
-
-	@Test
-	public void testCountByG_S() throws Exception {
-		_persistence.countByG_S(
-			RandomTestUtil.nextLong(), RandomTestUtil.nextInt());
-
-		_persistence.countByG_S(0L, 0);
 	}
 
 	@Test
@@ -542,8 +524,6 @@ public class ExportImportConfigurationPersistenceTest {
 		ExportImportConfiguration exportImportConfiguration =
 			_persistence.create(pk);
 
-		exportImportConfiguration.setMvccVersion(RandomTestUtil.nextLong());
-
 		exportImportConfiguration.setGroupId(RandomTestUtil.nextLong());
 
 		exportImportConfiguration.setCompanyId(RandomTestUtil.nextLong());
@@ -585,3 +565,4 @@ public class ExportImportConfigurationPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:190379522

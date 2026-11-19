@@ -11,33 +11,41 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import com.liferay.petra.function.UnsafeSupplier;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMin;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-import javax.validation.constraints.DecimalMin;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Zoltán Takács
  * @generated
  */
 @Generated("")
-@GraphQLName("GroupedProduct")
+@GraphQLName(
+	description = "Bundle membership entry for a grouped-type product; links a parent grouped product to a child product with a quantity and a sort priority; admin catalog write view used under a parent product whose `productType` is grouped.",
+	value = "GroupedProduct"
+)
+@io.swagger.v3.oas.annotations.media.Schema(
+	description = "Bundle membership entry for a grouped-type product; links a parent grouped product to a child product with a quantity and a sort priority; admin catalog write view used under a parent product whose `productType` is grouped."
+)
 @JsonFilter("Liferay.Vulcan")
 @XmlRootElement(name = "GroupedProduct")
 public class GroupedProduct implements Serializable {
@@ -50,8 +58,18 @@ public class GroupedProduct implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(GroupedProduct.class, json);
 	}
 
-	@Schema(example = "exampleERC")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "External reference code of the child product included in the bundle; on create, used to look up the child when `entryProductId` is not supplied.",
+		example = "exampleERC"
+	)
 	public String getEntryProductExternalReferenceCode() {
+		if (_entryProductExternalReferenceCodeSupplier != null) {
+			entryProductExternalReferenceCode =
+				_entryProductExternalReferenceCodeSupplier.get();
+
+			_entryProductExternalReferenceCodeSupplier = null;
+		}
+
 		return entryProductExternalReferenceCode;
 	}
 
@@ -60,6 +78,8 @@ public class GroupedProduct implements Serializable {
 
 		this.entryProductExternalReferenceCode =
 			entryProductExternalReferenceCode;
+
+		_entryProductExternalReferenceCodeSupplier = null;
 	}
 
 	@JsonIgnore
@@ -67,61 +87,94 @@ public class GroupedProduct implements Serializable {
 		UnsafeSupplier<String, Exception>
 			entryProductExternalReferenceCodeUnsafeSupplier) {
 
-		try {
-			entryProductExternalReferenceCode =
-				entryProductExternalReferenceCodeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_entryProductExternalReferenceCodeSupplier = () -> {
+			try {
+				return entryProductExternalReferenceCodeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "External reference code of the child product included in the bundle; on create, used to look up the child when `entryProductId` is not supplied."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String entryProductExternalReferenceCode;
 
+	@JsonIgnore
+	private Supplier<String> _entryProductExternalReferenceCodeSupplier;
+
 	@DecimalMin("0")
-	@Schema(example = "33131")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Identifier of the child product included in the bundle; required on create when `entryProductExternalReferenceCode` does not resolve.",
+		example = "33131"
+	)
 	public Long getEntryProductId() {
+		if (_entryProductIdSupplier != null) {
+			entryProductId = _entryProductIdSupplier.get();
+
+			_entryProductIdSupplier = null;
+		}
+
 		return entryProductId;
 	}
 
 	public void setEntryProductId(Long entryProductId) {
 		this.entryProductId = entryProductId;
+
+		_entryProductIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setEntryProductId(
 		UnsafeSupplier<Long, Exception> entryProductIdUnsafeSupplier) {
 
-		try {
-			entryProductId = entryProductIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_entryProductIdSupplier = () -> {
+			try {
+				return entryProductIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Identifier of the child product included in the bundle; required on create when `entryProductExternalReferenceCode` does not resolve."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long entryProductId;
 
-	@Schema(
+	@JsonIgnore
+	private Supplier<Long> _entryProductIdSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Localized child product name as a map whose keys are locale codes and whose values are the translated strings; read-only.",
 		example = "{en_US=Hand Saw, hr_HR=Product Name HR, hu_HU=Product Name HU}"
 	)
 	@Valid
 	public Map<String, String> getEntryProductName() {
+		if (_entryProductNameSupplier != null) {
+			entryProductName = _entryProductNameSupplier.get();
+
+			_entryProductNameSupplier = null;
+		}
+
 		return entryProductName;
 	}
 
 	public void setEntryProductName(Map<String, String> entryProductName) {
 		this.entryProductName = entryProductName;
+
+		_entryProductNameSupplier = null;
 	}
 
 	@JsonIgnore
@@ -129,78 +182,177 @@ public class GroupedProduct implements Serializable {
 		UnsafeSupplier<Map<String, String>, Exception>
 			entryProductNameUnsafeSupplier) {
 
-		try {
-			entryProductName = entryProductNameUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_entryProductNameSupplier = () -> {
+			try {
+				return entryProductNameUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Localized child product name as a map whose keys are locale codes and whose values are the translated strings; read-only."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Map<String, String> entryProductName;
 
+	@JsonIgnore
+	private Supplier<Map<String, String>> _entryProductNameSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Product type of the child product named by `entryProductExternalReferenceCode`. The type cannot be defaulted because it cannot be changed after a product is created, so it must travel with the reference whenever the child product is imported after its parent.",
+		example = "simple"
+	)
+	public String getEntryProductType() {
+		if (_entryProductTypeSupplier != null) {
+			entryProductType = _entryProductTypeSupplier.get();
+
+			_entryProductTypeSupplier = null;
+		}
+
+		return entryProductType;
+	}
+
+	public void setEntryProductType(String entryProductType) {
+		this.entryProductType = entryProductType;
+
+		_entryProductTypeSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setEntryProductType(
+		UnsafeSupplier<String, Exception> entryProductTypeUnsafeSupplier) {
+
+		_entryProductTypeSupplier = () -> {
+			try {
+				return entryProductTypeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField(
+		description = "Product type of the child product named by `entryProductExternalReferenceCode`. The type cannot be defaulted because it cannot be changed after a product is created, so it must travel with the reference whenever the child product is imported after its parent."
+	)
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected String entryProductType;
+
+	@JsonIgnore
+	private Supplier<String> _entryProductTypeSupplier;
+
 	@DecimalMin("0")
-	@Schema(example = "33130")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Primary key of the bundle membership entry; read-only.",
+		example = "33130"
+	)
 	public Long getId() {
+		if (_idSupplier != null) {
+			id = _idSupplier.get();
+
+			_idSupplier = null;
+		}
+
 		return id;
 	}
 
 	public void setId(Long id) {
 		this.id = id;
+
+		_idSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setId(UnsafeSupplier<Long, Exception> idUnsafeSupplier) {
-		try {
-			id = idUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_idSupplier = () -> {
+			try {
+				return idUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Primary key of the bundle membership entry; read-only."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Long id;
 
-	@Schema(example = "1.2")
+	@JsonIgnore
+	private Supplier<Long> _idSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Sort order of this entry within its parent grouped product; lower values appear first; defaults to 0.0 when omitted on create.",
+		example = "1.2"
+	)
 	public Double getPriority() {
+		if (_prioritySupplier != null) {
+			priority = _prioritySupplier.get();
+
+			_prioritySupplier = null;
+		}
+
 		return priority;
 	}
 
 	public void setPriority(Double priority) {
 		this.priority = priority;
+
+		_prioritySupplier = null;
 	}
 
 	@JsonIgnore
 	public void setPriority(
 		UnsafeSupplier<Double, Exception> priorityUnsafeSupplier) {
 
-		try {
-			priority = priorityUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_prioritySupplier = () -> {
+			try {
+				return priorityUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Sort order of this entry within its parent grouped product; lower values appear first; defaults to 0.0 when omitted on create."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Double priority;
 
-	@Schema(example = "exampleERC")
+	@JsonIgnore
+	private Supplier<Double> _prioritySupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "External reference code of the parent grouped product; read-only and derived from the path used to scope the entry.",
+		example = "exampleERC"
+	)
 	public String getProductExternalReferenceCode() {
+		if (_productExternalReferenceCodeSupplier != null) {
+			productExternalReferenceCode =
+				_productExternalReferenceCodeSupplier.get();
+
+			_productExternalReferenceCodeSupplier = null;
+		}
+
 		return productExternalReferenceCode;
 	}
 
@@ -208,6 +360,8 @@ public class GroupedProduct implements Serializable {
 		String productExternalReferenceCode) {
 
 		this.productExternalReferenceCode = productExternalReferenceCode;
+
+		_productExternalReferenceCodeSupplier = null;
 	}
 
 	@JsonIgnore
@@ -215,61 +369,94 @@ public class GroupedProduct implements Serializable {
 		UnsafeSupplier<String, Exception>
 			productExternalReferenceCodeUnsafeSupplier) {
 
-		try {
-			productExternalReferenceCode =
-				productExternalReferenceCodeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_productExternalReferenceCodeSupplier = () -> {
+			try {
+				return productExternalReferenceCodeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "External reference code of the parent grouped product; read-only and derived from the path used to scope the entry."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected String productExternalReferenceCode;
 
+	@JsonIgnore
+	private Supplier<String> _productExternalReferenceCodeSupplier;
+
 	@DecimalMin("0")
-	@Schema(example = "33131")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Identifier of the parent grouped product; read-only and derived from the path used to scope the entry.",
+		example = "33131"
+	)
 	public Long getProductId() {
+		if (_productIdSupplier != null) {
+			productId = _productIdSupplier.get();
+
+			_productIdSupplier = null;
+		}
+
 		return productId;
 	}
 
 	public void setProductId(Long productId) {
 		this.productId = productId;
+
+		_productIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setProductId(
 		UnsafeSupplier<Long, Exception> productIdUnsafeSupplier) {
 
-		try {
-			productId = productIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_productIdSupplier = () -> {
+			try {
+				return productIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Identifier of the parent grouped product; read-only and derived from the path used to scope the entry."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Long productId;
 
-	@Schema(
+	@JsonIgnore
+	private Supplier<Long> _productIdSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Localized parent product name as a map whose keys are locale codes and whose values are the translated strings; read-only.",
 		example = "{en_US=Hand Saw, hr_HR=Product Name HR, hu_HU=Product Name HU}"
 	)
 	@Valid
 	public Map<String, String> getProductName() {
+		if (_productNameSupplier != null) {
+			productName = _productNameSupplier.get();
+
+			_productNameSupplier = null;
+		}
+
 		return productName;
 	}
 
 	public void setProductName(Map<String, String> productName) {
 		this.productName = productName;
+
+		_productNameSupplier = null;
 	}
 
 	@JsonIgnore
@@ -277,49 +464,74 @@ public class GroupedProduct implements Serializable {
 		UnsafeSupplier<Map<String, String>, Exception>
 			productNameUnsafeSupplier) {
 
-		try {
-			productName = productNameUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_productNameSupplier = () -> {
+			try {
+				return productNameUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Localized parent product name as a map whose keys are locale codes and whose values are the translated strings; read-only."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Map<String, String> productName;
 
+	@JsonIgnore
+	private Supplier<Map<String, String>> _productNameSupplier;
+
 	@DecimalMin("0")
-	@Schema(example = "1")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Quantity of the child product included per parent unit; must be greater than zero or the request is rejected; required on create.",
+		example = "1"
+	)
 	public Integer getQuantity() {
+		if (_quantitySupplier != null) {
+			quantity = _quantitySupplier.get();
+
+			_quantitySupplier = null;
+		}
+
 		return quantity;
 	}
 
 	public void setQuantity(Integer quantity) {
 		this.quantity = quantity;
+
+		_quantitySupplier = null;
 	}
 
 	@JsonIgnore
 	public void setQuantity(
 		UnsafeSupplier<Integer, Exception> quantityUnsafeSupplier) {
 
-		try {
-			quantity = quantityUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_quantitySupplier = () -> {
+			try {
+				return quantityUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Quantity of the child product included per parent unit; must be greater than zero or the request is rejected; required on create."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Integer quantity;
+
+	@JsonIgnore
+	private Supplier<Integer> _quantitySupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -348,6 +560,9 @@ public class GroupedProduct implements Serializable {
 
 		sb.append("{");
 
+		String entryProductExternalReferenceCode =
+			getEntryProductExternalReferenceCode();
+
 		if (entryProductExternalReferenceCode != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -362,6 +577,8 @@ public class GroupedProduct implements Serializable {
 			sb.append("\"");
 		}
 
+		Long entryProductId = getEntryProductId();
+
 		if (entryProductId != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -371,6 +588,8 @@ public class GroupedProduct implements Serializable {
 
 			sb.append(entryProductId);
 		}
+
+		Map<String, String> entryProductName = getEntryProductName();
 
 		if (entryProductName != null) {
 			if (sb.length() > 1) {
@@ -382,6 +601,24 @@ public class GroupedProduct implements Serializable {
 			sb.append(_toJSON(entryProductName));
 		}
 
+		String entryProductType = getEntryProductType();
+
+		if (entryProductType != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"entryProductType\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(entryProductType));
+
+			sb.append("\"");
+		}
+
+		Long id = getId();
+
 		if (id != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -392,6 +629,8 @@ public class GroupedProduct implements Serializable {
 			sb.append(id);
 		}
 
+		Double priority = getPriority();
+
 		if (priority != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -401,6 +640,8 @@ public class GroupedProduct implements Serializable {
 
 			sb.append(priority);
 		}
+
+		String productExternalReferenceCode = getProductExternalReferenceCode();
 
 		if (productExternalReferenceCode != null) {
 			if (sb.length() > 1) {
@@ -416,6 +657,8 @@ public class GroupedProduct implements Serializable {
 			sb.append("\"");
 		}
 
+		Long productId = getProductId();
+
 		if (productId != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -426,6 +669,8 @@ public class GroupedProduct implements Serializable {
 			sb.append(productId);
 		}
 
+		Map<String, String> productName = getProductName();
+
 		if (productName != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -435,6 +680,8 @@ public class GroupedProduct implements Serializable {
 
 			sb.append(_toJSON(productName));
 		}
+
+		Integer quantity = getQuantity();
 
 		if (quantity != null) {
 			if (sb.length() > 1) {
@@ -451,8 +698,8 @@ public class GroupedProduct implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.commerce.admin.catalog.dto.v1_0.GroupedProduct",
 		name = "x-class-name"
 	)
@@ -498,7 +745,10 @@ public class GroupedProduct implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -536,6 +786,27 @@ public class GroupedProduct implements Serializable {
 		return sb.toString();
 	}
 
+	private static String _toJSON(Object value) {
+		if (value instanceof Collection) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONArray((Collection<?>)value));
+		}
+		else if (value instanceof Map) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONObject((Map<?, ?>)value));
+		}
+		else if (value instanceof Object[]) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONArray(
+					Arrays.asList((Object[])value)));
+		}
+		else if (value instanceof String) {
+			return StringBundler.concat("\"", _escape(value), "\"");
+		}
+
+		return String.valueOf(value);
+	}
+
 	private static final String[][] _JSON_ESCAPE_STRINGS = {
 		{"\\", "\"", "\b", "\f", "\n", "\r", "\t"},
 		{"\\\\", "\\\"", "\\b", "\\f", "\\n", "\\r", "\\t"}
@@ -544,3 +815,4 @@ public class GroupedProduct implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:-246738344

@@ -19,16 +19,18 @@ import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.CompanyConstants;
 import com.liferay.portal.kernel.scheduler.SchedulerEngine;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
-import com.liferay.portal.kernel.security.auth.PrincipalThreadLocal;
 import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
+import com.liferay.portal.kernel.test.rule.AggregateTestRule;
+import com.liferay.portal.kernel.test.rule.AssumeTestRule;
+import com.liferay.portal.kernel.test.rule.CompanyProviderClassTestRule;
 import com.liferay.portal.kernel.test.util.CompanyTestUtil;
-import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.test.rule.Inject;
+import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
+import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
 import com.liferay.portal.util.PortalInstances;
-import com.liferay.portal.util.PropsUtil;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -45,6 +47,8 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 import org.osgi.framework.Bundle;
@@ -55,8 +59,23 @@ import org.osgi.framework.ServiceRegistration;
 /**
  * @author Alberto Chaparro
  */
-public abstract class BaseDBPartitionMessageBusInterceptorTestCase
-	extends BaseDBPartitionTestCase {
+public abstract class BaseDBPartitionMessageBusInterceptorTestCase {
+
+	@ClassRule
+	@Rule
+	public static final AggregateTestRule aggregateTestRule =
+		new AggregateTestRule(
+			new AssumeTestRule("assume"),
+			new LiferayIntegrationTestRule() {
+				{
+					skipTestRule(CompanyProviderClassTestRule.INSTANCE);
+				}
+			},
+			PermissionCheckerMethodTestRule.INSTANCE);
+
+	public static void assume() {
+		BaseDBPartitionTestCase.assume();
+	}
 
 	@AfterClass
 	public static void tearDownClass() throws Exception {
@@ -68,27 +87,17 @@ public abstract class BaseDBPartitionMessageBusInterceptorTestCase
 
 		_serviceRegistrations.clear();
 
-		PropsUtil.set(
-			"database.partition.enabled", _originalDatabasePartitionEnabled);
-
 		_companyLocalService.deleteCompany(_company);
-
-		PrincipalThreadLocal.setName(_originalName);
 	}
 
 	@Before
 	public void setUp() {
-		_currentExcludedMessageBusDestinationNames =
+		_originalExcludedMessageBusDestinationNames =
 			ReflectionTestUtil.getFieldValue(
 				_dbPartitionMessageBusInterceptor,
 				"_excludedMessageBusDestinationNames");
-
-		_currentExcludedSchedulerJobNames = ReflectionTestUtil.getFieldValue(
+		_originalExcludedSchedulerJobNames = ReflectionTestUtil.getFieldValue(
 			_dbPartitionMessageBusInterceptor, "_excludedSchedulerJobNames");
-
-		_currentCompanyId = CompanyThreadLocal.getCompanyId();
-
-		CompanyThreadLocal.setCompanyId(CompanyConstants.SYSTEM);
 	}
 
 	@After
@@ -96,12 +105,10 @@ public abstract class BaseDBPartitionMessageBusInterceptorTestCase
 		ReflectionTestUtil.setFieldValue(
 			_dbPartitionMessageBusInterceptor,
 			"_excludedMessageBusDestinationNames",
-			_currentExcludedMessageBusDestinationNames);
+			_originalExcludedMessageBusDestinationNames);
 		ReflectionTestUtil.setFieldValue(
 			_dbPartitionMessageBusInterceptor, "_excludedSchedulerJobNames",
-			_currentExcludedSchedulerJobNames);
-
-		CompanyThreadLocal.setCompanyId(_currentCompanyId);
+			_originalExcludedSchedulerJobNames);
 	}
 
 	@Test
@@ -117,14 +124,17 @@ public abstract class BaseDBPartitionMessageBusInterceptorTestCase
 
 		// Test 2
 
-		CompanyThreadLocal.setCompanyId(_company.getCompanyId());
+		try (SafeCloseable safeCloseable =
+				CompanyThreadLocal.setCompanyIdWithSafeCloseable(
+					_company.getCompanyId())) {
 
-		_countDownLatch = new CountDownLatch(1);
+			_countDownLatch = new CountDownLatch(1);
 
-		_messageBus.sendMessage(_DESTINATION_NAME, new Message());
+			_messageBus.sendMessage(_DESTINATION_NAME, new Message());
 
-		_testDBPartitionMessageListener.assertCollected(
-			_company.getCompanyId());
+			_testDBPartitionMessageListener.assertCollected(
+				_company.getCompanyId());
+		}
 	}
 
 	@Test
@@ -196,32 +206,38 @@ public abstract class BaseDBPartitionMessageBusInterceptorTestCase
 
 		// Test 2
 
-		CompanyThreadLocal.setCompanyId(_company.getCompanyId());
+		try (SafeCloseable safeCloseable =
+				CompanyThreadLocal.setCompanyIdWithSafeCloseable(
+					_company.getCompanyId())) {
 
-		message = new Message();
+			message = new Message();
 
-		message.put("companyId", CompanyConstants.SYSTEM);
+			message.put("companyId", CompanyConstants.SYSTEM);
 
-		_countDownLatch = new CountDownLatch(_activeCompanyIds.length);
+			_countDownLatch = new CountDownLatch(_activeCompanyIds.length);
 
-		_messageBus.sendMessage(_DESTINATION_NAME, message);
+			_messageBus.sendMessage(_DESTINATION_NAME, message);
 
-		_testDBPartitionMessageListener.assertCollected(_activeCompanyIds);
+			_testDBPartitionMessageListener.assertCollected(_activeCompanyIds);
+		}
 
 		// Test 3
 
-		CompanyThreadLocal.setCompanyId(_company.getCompanyId());
+		try (SafeCloseable safeCloseable =
+				CompanyThreadLocal.setCompanyIdWithSafeCloseable(
+					_company.getCompanyId())) {
 
-		message = new Message();
+			message = new Message();
 
-		message.put("companyId", _company.getCompanyId());
+			message.put("companyId", _company.getCompanyId());
 
-		_countDownLatch = new CountDownLatch(1);
+			_countDownLatch = new CountDownLatch(1);
 
-		_messageBus.sendMessage(_DESTINATION_NAME, message);
+			_messageBus.sendMessage(_DESTINATION_NAME, message);
 
-		_testDBPartitionMessageListener.assertCollected(
-			_company.getCompanyId());
+			_testDBPartitionMessageListener.assertCollected(
+				_company.getCompanyId());
+		}
 	}
 
 	@Test
@@ -229,7 +245,7 @@ public abstract class BaseDBPartitionMessageBusInterceptorTestCase
 		throws InterruptedException {
 
 		try (SafeCloseable safeCloseable =
-				PortalInstances.setCompanyInDeletionProcess(
+				PortalInstances.setCompanyInDeletionProcessWithSafeCloseable(
 					_activeCompanyIds[0])) {
 
 			_countDownLatch = new CountDownLatch(_activeCompanyIds.length);
@@ -242,10 +258,6 @@ public abstract class BaseDBPartitionMessageBusInterceptorTestCase
 	}
 
 	protected static void setUpClass(String destinationType) throws Exception {
-		_originalName = PrincipalThreadLocal.getName();
-
-		PrincipalThreadLocal.setName(TestPropsValues.getUserId());
-
 		_company = CompanyTestUtil.addCompany();
 
 		Set<Long> companyIds = new TreeSet<>();
@@ -258,11 +270,6 @@ public abstract class BaseDBPartitionMessageBusInterceptorTestCase
 			});
 
 		_activeCompanyIds = companyIds.toArray(new Long[0]);
-
-		_originalDatabasePartitionEnabled = PropsUtil.get(
-			"database.partition.enabled");
-
-		PropsUtil.set("database.partition.enabled", "true");
 
 		_testDBPartitionMessageListener = new TestDBPartitionMessageListener();
 
@@ -296,27 +303,24 @@ public abstract class BaseDBPartitionMessageBusInterceptorTestCase
 
 	private static volatile CountDownLatch _countDownLatch;
 
-	@Inject(
-		filter = "component.name=com.liferay.portal.db.partition.internal.messaging.DBPartitionMessageBusInterceptor"
-	)
-	private static MessageBusInterceptor _dbPartitionMessageBusInterceptor;
-
 	@Inject
 	private static DestinationFactory _destinationFactory;
 
-	@Inject
-	private static MessageBus _messageBus;
-
-	private static String _originalDatabasePartitionEnabled;
-	private static String _originalName;
 	private static final List<ServiceRegistration<?>> _serviceRegistrations =
 		new ArrayList<>();
 	private static TestDBPartitionMessageListener
 		_testDBPartitionMessageListener;
 
-	private long _currentCompanyId;
-	private Set<String> _currentExcludedMessageBusDestinationNames;
-	private Set<String> _currentExcludedSchedulerJobNames;
+	@Inject(
+		filter = "component.name=com.liferay.portal.db.partition.internal.messaging.DBPartitionMessageBusInterceptor"
+	)
+	private MessageBusInterceptor _dbPartitionMessageBusInterceptor;
+
+	@Inject
+	private MessageBus _messageBus;
+
+	private Set<String> _originalExcludedMessageBusDestinationNames;
+	private Set<String> _originalExcludedSchedulerJobNames;
 
 	private static class TestDBPartitionMessageListener
 		extends BaseMessageListener {

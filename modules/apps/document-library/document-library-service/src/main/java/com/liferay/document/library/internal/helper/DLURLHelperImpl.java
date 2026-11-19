@@ -5,7 +5,9 @@
 
 package com.liferay.document.library.internal.helper;
 
+import com.liferay.change.tracking.constants.CTConstants;
 import com.liferay.document.library.constants.DLFileVersionPreviewConstants;
+import com.liferay.document.library.helper.DLURLHelper;
 import com.liferay.document.library.kernel.model.DLFolderConstants;
 import com.liferay.document.library.kernel.processor.ImageProcessorUtil;
 import com.liferay.document.library.kernel.processor.PDFProcessorUtil;
@@ -14,7 +16,6 @@ import com.liferay.document.library.kernel.service.DLAppLocalService;
 import com.liferay.document.library.kernel.util.DL;
 import com.liferay.document.library.service.DLFileVersionPreviewLocalService;
 import com.liferay.document.library.url.provider.DLFileVersionURLProvider;
-import com.liferay.document.library.util.DLURLHelper;
 import com.liferay.friendly.url.model.FriendlyURLEntry;
 import com.liferay.friendly.url.service.FriendlyURLEntryLocalService;
 import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMap;
@@ -36,18 +37,17 @@ import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.URLCodec;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.util.PropsValues;
 import com.liferay.portlet.documentlibrary.webdav.DLWebDAVUtil;
 import com.liferay.trash.TrashHelper;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletURL;
+
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.service.component.annotations.Activate;
@@ -214,6 +214,14 @@ public class DLURLHelperImpl implements DLURLHelper {
 		String previewURLPrefix = _getPreviewURLPrefix(
 			themeDisplay, absoluteURL);
 
+		if (fileVersion.getCtCollectionId() !=
+				CTConstants.CT_COLLECTION_ID_PRODUCTION) {
+
+			queryString = StringBundler.concat(
+				"&previewCTCollectionId=", fileVersion.getCtCollectionId(),
+				queryString);
+		}
+
 		String previewURL = _getFriendlyURL(
 			fileEntry, previewURLPrefix, queryString, appendVersion);
 
@@ -223,19 +231,30 @@ public class DLURLHelperImpl implements DLURLHelper {
 				appendVersion);
 		}
 
-		if ((themeDisplay != null) &&
-			Validator.isNotNull(themeDisplay.getDoAsUserId())) {
-
-			previewURL = _portal.addPreservedParameters(
-				themeDisplay, previewURL, false, true);
+		if (themeDisplay == null) {
+			return previewURL;
 		}
 
-		if ((themeDisplay != null) && themeDisplay.isAddSessionIdToURL()) {
-			return _portal.getURLWithSessionId(
+		if (themeDisplay.isAddSessionIdToURL()) {
+			previewURL = _portal.getURLWithSessionId(
 				previewURL, themeDisplay.getSessionId());
 		}
 
+		if (Validator.isNotNull(themeDisplay.getDoAsUserId())) {
+			previewURL = _portal.addPreservedParameters(
+				themeDisplay, previewURL);
+		}
+
 		return previewURL;
+	}
+
+	@Override
+	public String getPreviewURL(
+		String fileEntryFriendlyURL, String groupFriendlyURL) {
+
+		return _getFriendlyURL(
+			fileEntryFriendlyURL, groupFriendlyURL,
+			_getPreviewURLPrefix(null, false), StringPool.BLANK);
 	}
 
 	@Override
@@ -375,9 +394,7 @@ public class DLURLHelperImpl implements DLURLHelper {
 	}
 
 	@Activate
-	protected void activate(
-		BundleContext bundleContext, Map<String, Object> properties) {
-
+	protected void activate(BundleContext bundleContext) {
 		_serviceTrackerMap = ServiceTrackerMapFactory.openSingleValueMap(
 			bundleContext, DLFileVersionURLProvider.class, null,
 			(serviceReference, emitter) -> {
@@ -403,13 +420,14 @@ public class DLURLHelperImpl implements DLURLHelper {
 		DLFileVersionURLProvider dlFileVersionURLProvider =
 			_serviceTrackerMap.getService(type);
 
-		if (dlFileVersionURLProvider != null) {
-			String url = dlFileVersionURLProvider.getURL(
-				fileVersion, themeDisplay);
+		if (dlFileVersionURLProvider == null) {
+			return null;
+		}
 
-			if (Validator.isNotNull(url)) {
-				return url;
-			}
+		String url = dlFileVersionURLProvider.getURL(fileVersion, themeDisplay);
+
+		if (Validator.isNotNull(url)) {
+			return url;
 		}
 
 		return null;
@@ -434,11 +452,6 @@ public class DLURLHelperImpl implements DLURLHelper {
 			return null;
 		}
 
-		StringBundler sb = new StringBundler(6);
-
-		sb.append(previewURLPrefix);
-		sb.append(FriendlyURLResolverConstants.URL_SEPARATOR_Y_FILE_ENTRY);
-
 		Group group = _groupLocalService.fetchGroup(fileEntry.getGroupId());
 
 		if (group == null) {
@@ -446,10 +459,22 @@ public class DLURLHelperImpl implements DLURLHelper {
 				friendlyURLEntry.getGroupId());
 		}
 
-		sb.append(group.getFriendlyURL());
+		return _getFriendlyURL(
+			friendlyURLEntry.getUrlTitle(), group.getFriendlyURL(),
+			previewURLPrefix, queryString);
+	}
 
+	private String _getFriendlyURL(
+		String fileEntryFriendlyURL, String groupFriendlyURL,
+		String previewURLPrefix, String queryString) {
+
+		StringBundler sb = new StringBundler(6);
+
+		sb.append(previewURLPrefix);
+		sb.append(FriendlyURLResolverConstants.URL_SEPARATOR_Y_FILE_ENTRY);
+		sb.append(groupFriendlyURL);
 		sb.append(StringPool.SLASH);
-		sb.append(friendlyURLEntry.getUrlTitle());
+		sb.append(fileEntryFriendlyURL);
 
 		if (Validator.isNotNull(queryString)) {
 			sb.append(queryString.replaceFirst("&", "?"));

@@ -36,10 +36,12 @@ import com.liferay.portal.kernel.model.Region;
 import com.liferay.portal.kernel.settings.GroupServiceSettingsLocator;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.ResourceBundleUtil;
 import com.liferay.portal.kernel.util.URLCodec;
 import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.security.key.secret.SecretResolver;
 
 import com.paypal.core.PayPalEnvironment;
 import com.paypal.core.PayPalHttpClient;
@@ -73,10 +75,16 @@ import com.paypal.payments.CapturesRefundRequest;
 import com.paypal.payments.Refund;
 import com.paypal.payments.RefundRequest;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.io.IOException;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+
+import java.nio.charset.StandardCharsets;
+
+import java.security.MessageDigest;
 
 import java.util.Collections;
 import java.util.Iterator;
@@ -84,8 +92,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.ResourceBundle;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -253,7 +259,7 @@ public class PayPalCommercePaymentIntegration
 	}
 
 	@Override
-	public String getPaymentIntegrationName() {
+	public String getName(Locale locale) {
 		return "PayPal";
 	}
 
@@ -261,6 +267,32 @@ public class PayPalCommercePaymentIntegration
 	public int getPaymentIntegrationType() {
 		return CommercePaymentIntegrationConstants.
 			TYPE_INTERNAL_ONLINE_REDIRECT;
+	}
+
+	@Override
+	public boolean isValid(
+			HttpServletRequest httpServletRequest,
+			CommercePaymentEntry commercePaymentEntry)
+		throws PortalException {
+
+		if (commercePaymentEntry.getPaymentStatus() !=
+				CommercePaymentEntryConstants.STATUS_CREATED) {
+
+			return true;
+		}
+
+		String token = ParamUtil.getString(httpServletRequest, "token");
+		String transactionCode = commercePaymentEntry.getTransactionCode();
+
+		if (Validator.isBlank(token) || Validator.isBlank(transactionCode) ||
+			!MessageDigest.isEqual(
+				token.getBytes(StandardCharsets.UTF_8),
+				transactionCode.getBytes(StandardCharsets.UTF_8))) {
+
+			return false;
+		}
+
+		return true;
 	}
 
 	@Override
@@ -348,8 +380,7 @@ public class PayPalCommercePaymentIntegration
 						"&orderType=normal",
 						commercePaymentEntry.getCallbackURL())
 				).shippingPreference(
-					PayPalCommercePaymentMethodConstants.
-						SHIPPING_PREFERENCE_PROVIDED
+					_getShippingPreference(commercePaymentEntry.getClassPK())
 				).userAction(
 					PayPalCommercePaymentMethodConstants.USER_ACTION_PAY_NOW
 				)
@@ -508,7 +539,7 @@ public class PayPalCommercePaymentIntegration
 		PayPalGroupServiceConfiguration payPalGroupServiceConfiguration =
 			_getPayPalGroupServiceConfiguration(commerceOrder.getGroupId());
 
-		return new PurchaseUnitRequest(
+		PurchaseUnitRequest purchaseUnitRequest = new PurchaseUnitRequest(
 		).amountWithBreakdown(
 			new AmountWithBreakdown(
 			).amountBreakdown(
@@ -533,17 +564,16 @@ public class PayPalCommercePaymentIntegration
 				commerceOrder.getCommerceOrderItems(),
 				commerceOrderItem -> {
 					BigDecimal finalPrice = commerceOrderItem.getFinalPrice();
+					BigDecimal quantity = commerceOrderItem.getQuantity();
 
-					BigDecimal unitAmount = finalPrice.divide(
-						commerceOrderItem.getQuantity());
+					BigDecimal unitAmount = finalPrice.divide(quantity);
 
 					return new Item(
 					).name(
 						commerceOrderItem.getName(locale)
 					).quantity(
-						String.valueOf(
-							commerceOrderItem.getQuantity(
-							).stripTrailingZeros())
+						quantity.stripTrailingZeros(
+						).toPlainString()
 					).sku(
 						commerceOrderItem.getSku()
 					).unitAmount(
@@ -557,9 +587,14 @@ public class PayPalCommercePaymentIntegration
 			)
 		).referenceId(
 			String.valueOf(commercePaymentEntry.getCommercePaymentEntryId())
-		).shippingDetail(
-			_toShippingDetail(commerceOrder.getShippingAddress())
 		);
+
+		if (commerceOrder.isShippable()) {
+			purchaseUnitRequest.shippingDetail(
+				_toShippingDetail(commerceOrder.getShippingAddress()));
+		}
+
+		return purchaseUnitRequest;
 	}
 
 	private PurchaseUnitRequest _getDefaultPurchaseUnitRequest(
@@ -668,20 +703,30 @@ public class PayPalCommercePaymentIntegration
 		PayPalGroupServiceConfiguration payPalGroupServiceConfiguration =
 			_getPayPalGroupServiceConfiguration(commercePaymentEntry);
 
+		String clientSecret = _secretResolver.resolve(
+			commercePaymentEntry.getCompanyId(),
+			payPalGroupServiceConfiguration.clientSecret());
+
 		if (Objects.equals(
 				payPalGroupServiceConfiguration.mode(),
 				PayPalCommercePaymentMethodConstants.MODE_LIVE)) {
 
 			return new PayPalHttpClient(
 				new PayPalEnvironment.Live(
-					payPalGroupServiceConfiguration.clientId(),
-					payPalGroupServiceConfiguration.clientSecret()));
+					payPalGroupServiceConfiguration.clientId(), clientSecret));
 		}
 
 		return new PayPalHttpClient(
 			new PayPalEnvironment.Sandbox(
-				payPalGroupServiceConfiguration.clientId(),
-				payPalGroupServiceConfiguration.clientSecret()));
+				payPalGroupServiceConfiguration.clientId(), clientSecret));
+	}
+
+	private String _getRegionCode(Region region) {
+		if (region == null) {
+			return null;
+		}
+
+		return region.getRegionCode();
 	}
 
 	private String _getResource(Locale locale, String key) {
@@ -695,6 +740,19 @@ public class PayPalCommercePaymentIntegration
 	private ResourceBundle _getResourceBundle(Locale locale) {
 		return ResourceBundleUtil.getBundle(
 			"content.Language", locale, getClass());
+	}
+
+	private String _getShippingPreference(long commerceOrderId) {
+		CommerceOrder commerceOrder =
+			_commerceOrderLocalService.fetchCommerceOrder(commerceOrderId);
+
+		if ((commerceOrder != null) && commerceOrder.isShippable()) {
+			return PayPalCommercePaymentMethodConstants.
+				SHIPPING_PREFERENCE_PROVIDED;
+		}
+
+		return PayPalCommercePaymentMethodConstants.
+			SHIPPING_PREFERENCE_NO_SHIPPING;
 	}
 
 	private Money _toMoney(
@@ -727,9 +785,8 @@ public class PayPalCommercePaymentIntegration
 		}
 
 		Country country = shippingCommerceAddress.getCountry();
-		Region region = shippingCommerceAddress.getRegion();
 
-		if ((country == null) || (region == null)) {
+		if (country == null) {
 			return null;
 		}
 
@@ -741,7 +798,7 @@ public class PayPalCommercePaymentIntegration
 			).addressLine2(
 				shippingCommerceAddress.getStreet2()
 			).adminArea1(
-				region.getRegionCode()
+				_getRegionCode(shippingCommerceAddress.getRegion())
 			).adminArea2(
 				shippingCommerceAddress.getCity()
 			).countryCode(
@@ -777,5 +834,8 @@ public class PayPalCommercePaymentIntegration
 
 	@Reference
 	private Portal _portal;
+
+	@Reference
+	private SecretResolver _secretResolver;
 
 }

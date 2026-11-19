@@ -9,17 +9,19 @@ import com.liferay.portal.kernel.util.ObjectValuePair;
 import com.liferay.portal.vulcan.graphql.servlet.ServletData;
 import com.liferay.segments.asah.rest.internal.graphql.mutation.v1_0.Mutation;
 import com.liferay.segments.asah.rest.internal.graphql.query.v1_0.Query;
+import com.liferay.segments.asah.rest.internal.resource.v1_0.AsahSegmentsEntryResourceImpl;
 import com.liferay.segments.asah.rest.internal.resource.v1_0.ExperimentResourceImpl;
 import com.liferay.segments.asah.rest.internal.resource.v1_0.ExperimentRunResourceImpl;
 import com.liferay.segments.asah.rest.internal.resource.v1_0.StatusResourceImpl;
+import com.liferay.segments.asah.rest.resource.v1_0.AsahSegmentsEntryResource;
 import com.liferay.segments.asah.rest.resource.v1_0.ExperimentResource;
 import com.liferay.segments.asah.rest.resource.v1_0.ExperimentRunResource;
 import com.liferay.segments.asah.rest.resource.v1_0.StatusResource;
 
+import jakarta.annotation.Generated;
+
 import java.util.HashMap;
 import java.util.Map;
-
-import javax.annotation.Generated;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.service.component.ComponentServiceObjects;
@@ -38,6 +40,8 @@ public class ServletDataImpl implements ServletData {
 
 	@Activate
 	public void activate(BundleContext bundleContext) {
+		Mutation.setAsahSegmentsEntryResourceComponentServiceObjects(
+			_asahSegmentsEntryResourceComponentServiceObjects);
 		Mutation.setExperimentResourceComponentServiceObjects(
 			_experimentResourceComponentServiceObjects);
 		Mutation.setExperimentRunResourceComponentServiceObjects(
@@ -84,6 +88,16 @@ public class ServletDataImpl implements ServletData {
 			new HashMap<String, ObjectValuePair<Class<?>, String>>() {
 				{
 					put(
+						"mutation#createAsahSegmentsEntry",
+						new ObjectValuePair<>(
+							AsahSegmentsEntryResourceImpl.class,
+							"postAsahSegmentsEntry"));
+					put(
+						"mutation#createAsahSegmentsEntryBatch",
+						new ObjectValuePair<>(
+							AsahSegmentsEntryResourceImpl.class,
+							"postAsahSegmentsEntryBatch"));
+					put(
 						"mutation#deleteExperiment",
 						new ObjectValuePair<>(
 							ExperimentResourceImpl.class, "deleteExperiment"));
@@ -115,6 +129,10 @@ public class ServletDataImpl implements ServletData {
 			};
 
 	@Reference(scope = ReferenceScope.PROTOTYPE_REQUIRED)
+	private ComponentServiceObjects<AsahSegmentsEntryResource>
+		_asahSegmentsEntryResourceComponentServiceObjects;
+
+	@Reference(scope = ReferenceScope.PROTOTYPE_REQUIRED)
 	private ComponentServiceObjects<ExperimentResource>
 		_experimentResourceComponentServiceObjects;
 
@@ -127,3 +145,4 @@ public class ServletDataImpl implements ServletData {
 		_statusResourceComponentServiceObjects;
 
 }
+// LIFERAY-REST-BUILDER-HASH:-1362832505

@@ -16,14 +16,15 @@ public class XMLSourceProcessorTest extends BaseSourceProcessorTestCase {
 	public void testIncorrectEmptyLines() throws Exception {
 		test("IncorrectEmptyLines1.testxml");
 		test("IncorrectEmptyLines2.testxml");
+		test("IncorrectEmptyLines3.testxml");
 	}
 
 	@Test
 	public void testIncorrectMessageInEchoTag() throws Exception {
 		test(
 			"IncorrectEchoTagWithMessage.testxml",
-			"Do not use self-closing tag for attribute 'message' in '" +
-				"<echo>' tag",
+			"Do not use self-closing tag for attribute \"message\" in \"" +
+				"<echo>\" tag",
 			9);
 	}
 

@@ -5,11 +5,11 @@
 
 package com.liferay.portal.kernel.settings;
 
+import jakarta.portlet.ValidatorException;
+
 import java.io.IOException;
 
 import java.util.Collection;
-
-import javax.portlet.ValidatorException;
 
 /**
  * @author Iván Zaera
@@ -18,13 +18,9 @@ public interface ModifiableSettings extends Settings {
 
 	public Collection<String> getModifiedKeys();
 
-	public void reset();
-
 	public void reset(String key);
 
 	public ModifiableSettings setValue(String key, String value);
-
-	public ModifiableSettings setValues(ModifiableSettings modifiableSettings);
 
 	public ModifiableSettings setValues(String key, String[] values);
 

@@ -10,7 +10,7 @@
 <%
 BookmarksFolder folder = (BookmarksFolder)request.getAttribute(BookmarksWebKeys.BOOKMARKS_FOLDER);
 
-long folderId = BeanParamUtil.getLong(folder, request, "folderId", BookmarksFolderConstants.DEFAULT_PARENT_FOLDER_ID);
+long folderId = BeanParamUtil.getLong(folder, request, "folderId", BookmarksFolder::getFolderId, BookmarksFolderConstants.DEFAULT_PARENT_FOLDER_ID);
 
 String eventName = ParamUtil.getString(request, "eventName", liferayPortletResponse.getNamespace() + "selectFolder");
 
@@ -95,9 +95,9 @@ if (folder != null) {
 						cssClass="selector-button"
 						data='<%=
 							HashMapBuilder.<String, Object>put(
-								"entityid", curFolder.getFolderId()
+								"resourceid", curFolder.getFolderId()
 							).put(
-								"entityname", curFolder.getName()
+								"resourcename", curFolder.getName()
 							).build()
 						%>'
 						value="choose"
@@ -120,9 +120,9 @@ if (folder != null) {
 					cssClass="selector-button"
 					data='<%=
 						HashMapBuilder.<String, Object>put(
-							"entityid", folderId
+							"resourceid", folderId
 						).put(
-							"entityname", folderName
+							"resourcename", folderName
 						).build()
 					%>'
 					value="choose-this-folder"

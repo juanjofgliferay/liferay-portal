@@ -1,0 +1,952 @@
+alerting:
+    defaultChannel: ""
+    folder: alerts
+    interval: 1m
+    notificationChannels: {}
+    recordingRules:
+        container-cpu-limit-utilization-ratio:
+            expr: |
+                sum by (container, namespace, pod) (
+                    rate(container_cpu_usage_seconds_total{container!="", container!="POD"}[5m])
+                )
+                /
+                sum by (container, namespace, pod) (
+                    kube_pod_container_resource_limits{resource="cpu"}
+                )
+            record: liferay:container_cpu_limit_utilization:ratio
+        container-memory-limit-utilization-ratio:
+            expr: |
+                sum by (container, namespace, pod) (
+                    container_memory_working_set_bytes{container!="", container!="POD"}
+                )
+                /
+                sum by (container, namespace, pod) (
+                    kube_pod_container_resource_limits{resource="memory"}
+                )
+            record: liferay:container_memory_limit_utilization:ratio
+        db-cpu-reserved-cores-aws:
+            cloudProvider: aws
+            expr: |
+                sum by (environment_id, project_id, database_id, data_plane) (
+                    label_replace(
+                        label_replace(
+                            label_replace(
+                                label_replace(
+                                    liferay:_rds_vcpu,
+                                    "environment_id", "$1", "tag_EnvironmentId", "(.+)"),
+                                "project_id", "$1", "tag_ProjectId", "(.+)"),
+                            "data_plane", "$1", "dbinstance_identifier", ".*-database-(blue|green)$"),
+                        "database_id", "$1", "dbinstance_identifier", "(.+)")
+                )
+            record: liferay:db_cpu_reserved_cores
+        db-cpu-reserved-cores-gcp:
+            cloudProvider: gcp
+            expr: |
+                sum by (environment_id, database_id, data_plane) (
+                    label_replace(
+                        label_replace(
+                            label_replace(
+                                cloudsql_googleapis_com:database_cpu_reserved_cores,
+                                "environment_id", "liferay-$1", "database_id", "[^:]*:(.+)-infra-db-instance-(?:blue|green)$"),
+                            "data_plane", "$1", "database_id", ".*-(blue|green)$"),
+                        "database_id", "$1", "database_id", "[^:]*:(.+)")
+                )
+            record: liferay:db_cpu_reserved_cores
+            scope: global
+        db-cpu-used-cores-aws:
+            cloudProvider: aws
+            expr: |
+                sum by (environment_id, project_id, database_id, data_plane) (
+                    label_replace(
+                        label_replace(
+                            label_replace(
+                                label_replace(
+                                    liferay:_rds_vcpu
+                                    * on(dbinstance_identifier) group_left()
+                                    (rds_cpu_usage_percent_average{job="prometheus-rds-exporter"} / 100),
+                                    "environment_id", "$1", "tag_EnvironmentId", "(.+)"),
+                                "project_id", "$1", "tag_ProjectId", "(.+)"),
+                            "data_plane", "$1", "dbinstance_identifier", ".*-database-(blue|green)$"),
+                        "database_id", "$1", "dbinstance_identifier", "(.+)")
+                )
+            record: liferay:db_cpu_used_cores
+        db-cpu-used-cores-gcp:
+            cloudProvider: gcp
+            expr: |
+                sum by (environment_id, database_id, data_plane) (
+                    label_replace(
+                        label_replace(
+                            label_replace(
+                                rate(cloudsql_googleapis_com:database_cpu_usage_time[5m]),
+                                "environment_id", "liferay-$1", "database_id", "[^:]*:(.+)-infra-db-instance-(?:blue|green)$"),
+                            "data_plane", "$1", "database_id", ".*-(blue|green)$"),
+                        "database_id", "$1", "database_id", "[^:]*:(.+)")
+                )
+            record: liferay:db_cpu_used_cores
+            scope: global
+        db-cpu-utilization-percent-aws:
+            cloudProvider: aws
+            expr: |
+                sum by (environment_id, project_id, database_id, data_plane, engine) (
+                    label_replace(
+                        label_replace(
+                            label_replace(
+                                label_replace(
+                                    label_replace(
+                                        aws_rds_cpuutilization_average{job="cloudwatch-rds"}
+                                        * on(dbinstance_identifier) group_left(tag_EnvironmentId, tag_ProjectId) liferay:_rds_meta,
+                                        "environment_id", "$1", "tag_EnvironmentId", "(.+)"),
+                                    "project_id", "$1", "tag_ProjectId", "(.+)"),
+                                "data_plane", "$1", "dbinstance_identifier", ".*-database-(blue|green)$"),
+                            "database_id", "$1", "dbinstance_identifier", "(.+)"),
+                        "engine", "$1", "dimension_EngineName", "(.+)")
+                )
+            record: liferay:db_cpu_utilization_percent
+        db-cpu-utilization-percent-azure:
+            cloudProvider: azure
+            expr: |
+                sum by (environment_id, project_id, database_id, data_plane) (
+                    label_replace(
+                        label_replace(
+                            label_replace(
+                                label_replace(
+                                    label_join(
+                                        azure_microsoft_dbforpostgresql_flexibleservers_cpu_percent_average_percent{job="azure-postgresql"},
+                                        "environment_id", "-", "tag_project_id", "tag_environment_id"),
+                                    "environment_id", "liferay-$1", "environment_id", "(.+)"),
+                                "project_id", "$1", "tag_project_id", "(.+)"),
+                            "data_plane", "$1", "resourcename", ".*-(blue|green)$"),
+                        "database_id", "$1", "resourcename", "(.+)")
+                )
+            record: liferay:db_cpu_utilization_percent
+        db-cpu-utilization-percent-gcp:
+            cloudProvider: gcp
+            expr: |
+                sum by (environment_id, database_id, data_plane) (
+                    label_replace(
+                        label_replace(
+                            label_replace(
+                                cloudsql_googleapis_com:database_cpu_utilization * 100,
+                                "environment_id", "liferay-$1", "database_id", "[^:]*:(.+)-infra-db-instance-(?:blue|green)$"),
+                            "data_plane", "$1", "database_id", ".*-(blue|green)$"),
+                        "database_id", "$1", "database_id", "[^:]*:(.+)")
+                )
+            record: liferay:db_cpu_utilization_percent
+            scope: global
+        db-disk-total-bytes-aws:
+            cloudProvider: aws
+            expr: |
+                sum by (environment_id, project_id, database_id, data_plane, engine) (
+                    label_replace(
+                        label_replace(
+                            label_replace(
+                                label_replace(
+                                    rds_allocated_storage_bytes{job="prometheus-rds-exporter"}
+                                    * on(dbinstance_identifier) group_left(tag_EnvironmentId, tag_ProjectId) liferay:_rds_meta,
+                                    "environment_id", "$1", "tag_EnvironmentId", "(.+)"),
+                                "project_id", "$1", "tag_ProjectId", "(.+)"),
+                            "data_plane", "$1", "dbinstance_identifier", ".*-database-(blue|green)$"),
+                        "database_id", "$1", "dbinstance_identifier", "(.+)")
+                )
+            record: liferay:db_disk_total_bytes
+        db-disk-total-bytes-azure:
+            cloudProvider: azure
+            expr: |
+                sum by (environment_id, project_id, database_id, data_plane) (
+                    label_replace(
+                        label_replace(
+                            label_replace(
+                                label_replace(
+                                    label_join(
+                                        (azure_microsoft_dbforpostgresql_flexibleservers_storage_used_average_bytes{job="azure-postgresql"}
+                                         + azure_microsoft_dbforpostgresql_flexibleservers_storage_free_average_bytes{job="azure-postgresql"}),
+                                        "environment_id", "-", "tag_project_id", "tag_environment_id"),
+                                    "environment_id", "liferay-$1", "environment_id", "(.+)"),
+                                "project_id", "$1", "tag_project_id", "(.+)"),
+                            "data_plane", "$1", "resourcename", ".*-(blue|green)$"),
+                        "database_id", "$1", "resourcename", "(.+)")
+                )
+            record: liferay:db_disk_total_bytes
+        db-disk-total-bytes-gcp:
+            cloudProvider: gcp
+            expr: |
+                sum by (environment_id, database_id, data_plane) (
+                    label_replace(
+                        label_replace(
+                            label_replace(
+                                cloudsql_googleapis_com:database_disk_quota,
+                                "environment_id", "liferay-$1", "database_id", "[^:]*:(.+)-infra-db-instance-(?:blue|green)$"),
+                            "data_plane", "$1", "database_id", ".*-(blue|green)$"),
+                        "database_id", "$1", "database_id", "[^:]*:(.+)")
+                )
+            record: liferay:db_disk_total_bytes
+            scope: global
+        db-disk-used-bytes-aws:
+            cloudProvider: aws
+            expr: |
+                sum by (environment_id, project_id, database_id, data_plane) (
+                    label_replace(
+                        label_replace(
+                            label_replace(
+                                label_replace(
+                                    (rds_allocated_storage_bytes{job="prometheus-rds-exporter"}
+                                     - on(dbinstance_identifier) rds_free_storage_bytes{job="prometheus-rds-exporter"})
+                                    * on(dbinstance_identifier) group_left(tag_EnvironmentId, tag_ProjectId) liferay:_rds_meta,
+                                    "environment_id", "$1", "tag_EnvironmentId", "(.+)"),
+                                "project_id", "$1", "tag_ProjectId", "(.+)"),
+                            "data_plane", "$1", "dbinstance_identifier", ".*-database-(blue|green)$"),
+                        "database_id", "$1", "dbinstance_identifier", "(.+)")
+                )
+            record: liferay:db_disk_used_bytes
+        db-disk-used-bytes-azure:
+            cloudProvider: azure
+            expr: |
+                sum by (environment_id, project_id, database_id, data_plane) (
+                    label_replace(
+                        label_replace(
+                            label_replace(
+                                label_replace(
+                                    label_join(
+                                        azure_microsoft_dbforpostgresql_flexibleservers_storage_used_average_bytes{job="azure-postgresql"},
+                                        "environment_id", "-", "tag_project_id", "tag_environment_id"),
+                                    "environment_id", "liferay-$1", "environment_id", "(.+)"),
+                                "project_id", "$1", "tag_project_id", "(.+)"),
+                            "data_plane", "$1", "resourcename", ".*-(blue|green)$"),
+                        "database_id", "$1", "resourcename", "(.+)")
+                )
+            record: liferay:db_disk_used_bytes
+        db-disk-used-bytes-gcp:
+            cloudProvider: gcp
+            expr: |
+                sum by (environment_id, database_id, data_plane) (
+                    label_replace(
+                        label_replace(
+                            label_replace(
+                                cloudsql_googleapis_com:database_disk_bytes_used,
+                                "environment_id", "liferay-$1", "database_id", "[^:]*:(.+)-infra-db-instance-(?:blue|green)$"),
+                            "data_plane", "$1", "database_id", ".*-(blue|green)$"),
+                        "database_id", "$1", "database_id", "[^:]*:(.+)")
+                )
+            record: liferay:db_disk_used_bytes
+            scope: global
+        db-instance-state-aws:
+            cloudProvider: aws
+            expr: |
+                sum by (environment_id, project_id, database_id, data_plane, state) (
+                    label_replace(
+                        label_replace(
+                            label_replace(
+                                label_replace(
+                                    label_replace(rds_instance_status{job="prometheus-rds-exporter"} == 1, "state", "RUNNING", "dbinstance_identifier", ".*")
+                                    * on(dbinstance_identifier) group_left(tag_EnvironmentId, tag_ProjectId) liferay:_rds_meta,
+                                    "environment_id", "$1", "tag_EnvironmentId", "(.+)"),
+                                "project_id", "$1", "tag_ProjectId", "(.+)"),
+                            "data_plane", "$1", "dbinstance_identifier", ".*-database-(blue|green)$"),
+                        "database_id", "$1", "dbinstance_identifier", "(.+)")
+                )
+            record: liferay:db_instance_state
+        db-instance-state-azure:
+            cloudProvider: azure
+            expr: |
+                sum by (environment_id, project_id, database_id, data_plane, state) (
+                    label_replace(
+                        label_replace(
+                            label_replace(
+                                label_replace(
+                                    label_join(
+                                        label_replace(azure_microsoft_dbforpostgresql_flexibleservers_is_db_alive_average_count{job="azure-postgresql"} == 1, "state", "RUNNING", "resourcename", ".*"),
+                                        "environment_id", "-", "tag_project_id", "tag_environment_id"),
+                                    "environment_id", "liferay-$1", "environment_id", "(.+)"),
+                                "project_id", "$1", "tag_project_id", "(.+)"),
+                            "data_plane", "$1", "resourcename", ".*-(blue|green)$"),
+                        "database_id", "$1", "resourcename", "(.+)")
+                )
+            record: liferay:db_instance_state
+        db-instance-state-gcp:
+            cloudProvider: gcp
+            expr: |
+                sum by (environment_id, database_id, data_plane, state) (
+                    label_replace(
+                        label_replace(
+                            label_replace(
+                                last_over_time(cloudsql_googleapis_com:database_instance_state[5m]) > 0,
+                                "environment_id", "liferay-$1", "database_id", "[^:]*:(.+)-infra-db-instance-(?:blue|green)$"),
+                            "data_plane", "$1", "database_id", ".*-(blue|green)$"),
+                        "database_id", "$1", "database_id", "[^:]*:(.+)")
+                )
+            record: liferay:db_instance_state
+            scope: global
+        db-memory-total-bytes-aws:
+            cloudProvider: aws
+            expr: |
+                sum by (environment_id, project_id, database_id, data_plane) (
+                    label_replace(
+                        label_replace(
+                            label_replace(
+                                label_replace(
+                                    liferay:_rds_memory_bytes,
+                                    "environment_id", "$1", "tag_EnvironmentId", "(.+)"),
+                                "project_id", "$1", "tag_ProjectId", "(.+)"),
+                            "data_plane", "$1", "dbinstance_identifier", ".*-database-(blue|green)$"),
+                        "database_id", "$1", "dbinstance_identifier", "(.+)")
+                )
+            record: liferay:db_memory_total_bytes
+        db-memory-total-bytes-gcp:
+            cloudProvider: gcp
+            expr: |
+                sum by (environment_id, database_id, data_plane) (
+                    label_replace(
+                        label_replace(
+                            label_replace(
+                                cloudsql_googleapis_com:database_memory_quota,
+                                "environment_id", "liferay-$1", "database_id", "[^:]*:(.+)-infra-db-instance-(?:blue|green)$"),
+                            "data_plane", "$1", "database_id", ".*-(blue|green)$"),
+                        "database_id", "$1", "database_id", "[^:]*:(.+)")
+                )
+            record: liferay:db_memory_total_bytes
+            scope: global
+        db-memory-used-bytes-aws:
+            cloudProvider: aws
+            expr: |
+                sum by (environment_id, project_id, database_id, data_plane) (
+                    label_replace(
+                        label_replace(
+                            label_replace(
+                                label_replace(
+                                    liferay:_rds_memory_bytes
+                                    - on(dbinstance_identifier)
+                                    rds_freeable_memory_bytes{job="prometheus-rds-exporter"},
+                                    "environment_id", "$1", "tag_EnvironmentId", "(.+)"),
+                                "project_id", "$1", "tag_ProjectId", "(.+)"),
+                            "data_plane", "$1", "dbinstance_identifier", ".*-database-(blue|green)$"),
+                        "database_id", "$1", "dbinstance_identifier", "(.+)")
+                )
+            record: liferay:db_memory_used_bytes
+        db-memory-used-bytes-gcp:
+            cloudProvider: gcp
+            expr: |
+                sum by (environment_id, database_id, data_plane) (
+                    label_replace(
+                        label_replace(
+                            label_replace(
+                                cloudsql_googleapis_com:database_memory_usage,
+                                "environment_id", "liferay-$1", "database_id", "[^:]*:(.+)-infra-db-instance-(?:blue|green)$"),
+                            "data_plane", "$1", "database_id", ".*-(blue|green)$"),
+                        "database_id", "$1", "database_id", "[^:]*:(.+)")
+                )
+            record: liferay:db_memory_used_bytes
+            scope: global
+        db-memory-utilization-percent-azure:
+            cloudProvider: azure
+            expr: |
+                sum by (environment_id, project_id, database_id, data_plane) (
+                    label_replace(
+                        label_replace(
+                            label_replace(
+                                label_replace(
+                                    label_join(
+                                        azure_microsoft_dbforpostgresql_flexibleservers_memory_percent_average_percent{job="azure-postgresql"},
+                                        "environment_id", "-", "tag_project_id", "tag_environment_id"),
+                                    "environment_id", "liferay-$1", "environment_id", "(.+)"),
+                                "project_id", "$1", "tag_project_id", "(.+)"),
+                            "data_plane", "$1", "resourcename", ".*-(blue|green)$"),
+                        "database_id", "$1", "resourcename", "(.+)")
+                )
+            record: liferay:db_memory_utilization_percent
+        rds-memory-bytes-aws:
+            cloudProvider: aws
+            expr: |
+                rds_instance_memory_bytes{job="prometheus-rds-exporter"}
+                * on(instance_class) group_right
+                liferay:_rds_meta
+            record: liferay:_rds_memory_bytes
+        rds-meta-aws:
+            cloudProvider: aws
+            expr: |
+                group by (dbinstance_identifier, tag_EnvironmentId, tag_ProjectId, instance_class) (
+                    (label_replace(aws_rds_info, "dbinstance_identifier", "$1", "tag_Name", "(.+)") + 1)
+                    * on(dbinstance_identifier) group_left(instance_class)
+                    rds_instance_info{job="prometheus-rds-exporter"}
+                )
+            record: liferay:_rds_meta
+        rds-vcpu-avg-aws:
+            cloudProvider: aws
+            expr: |
+                rds_instance_vcpu_average{job="prometheus-rds-exporter"}
+                * on(instance_class) group_right
+                liferay:_rds_meta
+            record: liferay:_rds_vcpu
+    rules:
+        cpu-limit-utilization:
+            expr: |
+                avg_over_time(liferay:container_cpu_limit_utilization:ratio{cluster=~"${CLUSTER}"}[2m]) > 0.8
+                and on(namespace)
+                kube_namespace_labels{label_liferay_com_observable="true", cluster=~"${CLUSTER}"}
+            for: 5m
+            interval: 2m
+            labels:
+                aggregation_period: 2m
+                type: warning
+                unit: percent
+            title: Container CPU Limit Utilization Above 80%
+        frequent-pod-restarts:
+            expr: |
+                sum by (container, namespace, pod) (
+                    increase(kube_pod_container_status_restarts_total{cluster=~"${CLUSTER}"}[30m])
+                ) > 3
+                and on(namespace)
+                kube_namespace_labels{label_liferay_com_observable="true", cluster=~"${CLUSTER}"}
+            labels:
+                aggregation_period: 30m
+                type: warning
+                unit: occurrences
+            title: High Rate of Pod Restarts Detected
+        memory-limit-utilization:
+            expr: |
+                avg_over_time(liferay:container_memory_limit_utilization:ratio{cluster=~"${CLUSTER}"}[2m]) > 0.8
+                and on(namespace)
+                kube_namespace_labels{label_liferay_com_observable="true", cluster=~"${CLUSTER}"}
+            for: 5m
+            interval: 2m
+            labels:
+                aggregation_period: 2m
+                type: warning
+                unit: percent
+            title: Container Memory Limit Utilization Above 80%
+        zero-ready-replicas:
+            expr: |
+                (
+                    max_over_time(kube_deployment_status_replicas_ready{cluster=~"${CLUSTER}"}[10m]) == 0
+                    or
+                    max_over_time(kube_statefulset_status_replicas_ready{cluster=~"${CLUSTER}"}[10m]) == 0
+                )
+                and on(namespace)
+                kube_namespace_labels{label_liferay_com_observable="true", cluster=~"${CLUSTER}"}
+            labels:
+                aggregation_period: 10m
+                type: critical
+                unit: state
+            title: Deployment or StatefulSet With Zero Ready Replicas
+    templates: {}
+alloy:
+    enabled: false
+    iam:
+        awsRoleArn: ""
+        azureClientId: ""
+        gcpServiceAccount: ""
+    remoteWrite:
+        basicAuth:
+            password: ""
+            username: ""
+        bearerToken: ""
+        headers: {}
+        url: ""
+    scrape:
+        azurePostgreSQL:
+            metrics:
+                -   cpu_percent
+                -   is_db_alive
+                -   memory_percent
+                -   storage_free
+                -   storage_used
+            scrapeInterval: 1m
+        cadvisor:
+            enabled: true
+            path: /metrics/cadvisor
+        cloudwatchRDS:
+            discoveryInterval: 5m
+            enabled: false
+            metrics:
+                -   name: CPUUtilization
+                    statistics:
+                        -   Average
+                        -   Maximum
+                -   name: DiskQueueDepth
+                    statistics:
+                        -   Average
+                        -   Maximum
+                -   name: FreeStorageSpace
+                    statistics:
+                        -   Average
+                        -   Minimum
+                -   name: FreeableMemory
+                    statistics:
+                        -   Average
+                        -   Minimum
+                -   name: ReadIOPS
+                    statistics:
+                        -   Average
+                -   name: ReadLatency
+                    statistics:
+                        -   Average
+                        -   Maximum
+                -   name: ReplicaLag
+                    statistics:
+                        -   Average
+                        -   Maximum
+                -   name: SwapUsage
+                    statistics:
+                        -   Average
+                        -   Maximum
+                -   name: WriteIOPS
+                    statistics:
+                        -   Average
+                -   name: WriteLatency
+                    statistics:
+                        -   Average
+                        -   Maximum
+            nameTagRegex: .*-database-(blue|green)$
+            region: ""
+            scrapeInterval: 1m
+        elasticsearchExporter:
+            enabled: true
+            path: /metrics
+            port: metrics
+        envoy:
+            enabled: true
+            path: /stats/prometheus
+            port: 19001
+        kubeStateMetrics:
+            enabled: true
+            path: /metrics
+            port: http
+        liferay:
+            enabled: true
+            matchLabels:
+                component: liferay
+            path: /metrics
+            port: 12345
+        nodeExporter:
+            enabled: true
+            path: /metrics
+            port: metrics
+        rdsExporter:
+            enabled: false
+            path: /metrics
+            port: http
+    scrapeInterval: 1m
+aws:
+    ampWorkspaceID: ""
+    ampWorkspaceURL: ""
+    region: ""
+azure:
+    location: ""
+    prometheusWorkspaceEndpoint: ""
+    prometheusWorkspaceId: ""
+    remoteWrite:
+        dataCollectionRuleId: ""
+        metricsIngestionEndpoint: ""
+        tenantId: ""
+    resourceGroupName: ""
+    subscriptionId: ""
+centralHub:
+    argoWorkflowsURL: ""
+    argocdURL: ""
+    gitURL: ""
+    monitoringTiles: []
+cloudProvider: ""
+clusterSecretStore:
+    name: ""
+customLabels: {}
+dashboards:
+    folder: Liferay
+    items:
+        backups:
+            file: dashboards/backups.json
+        central-hub:
+            file: dashboards/central-hub.json
+        databases:
+            file: dashboards/databases.json
+        kubernetes-workloads:
+            file: dashboards/kubernetes-workloads.json
+        load-balancers:
+            file: dashboards/load-balancers.json
+datasource:
+    name: Prometheus
+    type: prometheus
+    uid: managed-prometheus
+frontend:
+    image:
+        repository: gke.gcr.io/prometheus-engine/frontend
+        tag: v0.18.0-gke.2
+    port: 9090
+    resources:
+        limits:
+            cpu: 100m
+            memory: 128Mi
+        requests:
+            cpu: 10m
+            memory: 32Mi
+fullnameOverride: ""
+gateway:
+    annotations: {}
+    enabled: false
+    name: grafana-gateway
+    provider:
+        envoy:
+            accessControl:
+                allowedCIDRs: []
+                enabled: false
+            backendTrafficPolicySpec: {}
+            className: ""
+            clientTrafficPolicySpec: {}
+            envoyProxy:
+                podAnnotations: {}
+                replicas: 2
+                serviceAnnotations: {}
+            proxyNamespace: envoy-gateway-system
+        gke:
+            backendPolicy: {}
+            className: gke-l7-global-external-managed
+            gatewayPolicy: {}
+            healthCheck: {}
+            loadBalancerIPBlocks:
+                -   35.191.0.0/16
+                -   130.211.0.0/22
+        name: envoy
+    tls:
+        clusterIssuer: ""
+        externalSecretKey: ""
+gcp:
+    clusterName: ""
+    projectId: ""
+grafana:
+    admin:
+        existingSecret: grafana-admin-credentials
+    datasources: {}
+    envFromSecrets:
+        -   name: grafana-smtp-credentials
+            optional: true
+        -   name: grafana-sso-credentials
+            optional: true
+    grafana.ini:
+        analytics:
+            check_for_plugin_updates: true
+            check_for_updates: true
+            reporting_enabled: false
+        annotations:
+            cleanupjob_batchsize: 300
+        annotations.api:
+            max_age: 10d
+            max_annotations_to_keep: 3000
+        annotations.dashboard:
+            max_age: 10d
+            max_annotations_to_keep: 3000
+        auth:
+            azure_auth_enabled: true
+            sigv4_auth_enabled: true
+        azure:
+            workload_identity_client_id: ""
+            workload_identity_enabled: true
+            workload_identity_tenant_id: ""
+            workload_identity_token_file: /var/run/secrets/azure/tokens/azure-identity-token
+        dashboards:
+            default_home_dashboard_path: /tmp/dashboards/Liferay/central-hub.json
+        feature_toggles:
+            enable: accessControlOnCall,externalServiceAccounts,idForwarding
+        log:
+            filters: plugins:error
+            level: error
+            mode: console
+        log.console:
+            format: json
+        panels:
+            disable_sanitize_html: true
+        plugins:
+            disable_plugins: grafana-lokiexplore-app
+        server:
+            enable_gzip: true
+            read_timeout: 0
+            root_url: "{{ with .Values.route.main.hostnames }}https://{{ first . }}{{ else }}%(protocol)s://%(domain)s:%(http_port)s{{ end }}"
+        unified_alerting.state_history.annotations:
+            max_age: 10d
+            max_annotations_to_keep: 3000
+        users:
+            default_theme: light
+    networkPolicy:
+        enabled: false
+    podAnnotations:
+        cluster-autoscaler.kubernetes.io/safe-to-evict: "true"
+    podDisruptionBudget:
+        maxUnavailable: 1
+    podLabels:
+        azure.workload.identity/use: "true"
+    rbac:
+        namespaced: true
+    resources:
+        limits:
+            cpu: 500m
+            memory: 512Mi
+        requests:
+            cpu: 100m
+            memory: 256Mi
+    route:
+        main:
+            hostnames: []
+            parentRefs:
+                -   group: gateway.networking.k8s.io
+                    kind: Gateway
+                    name: grafana-gateway
+                    sectionName: https
+        redirect:
+            enabled: false
+            hostnames: []
+            httpsRedirect: true
+            parentRefs:
+                -   group: gateway.networking.k8s.io
+                    kind: Gateway
+                    name: grafana-gateway
+                    sectionName: http
+    serviceAccount:
+        annotations:
+            azure.workload.identity/client-id: ""
+            eks.amazonaws.com/role-arn: ""
+        automountServiceAccountToken: true
+        name: grafana
+    serviceMonitor:
+        enabled: false
+    sidecar:
+        alerts:
+            enabled: true
+            env:
+                HEALTH_PORT: 8081
+            labelValue: "true"
+            resource: configmap
+            searchNamespace: ""
+            watchMethod: SLEEP
+        dashboards:
+            enabled: true
+            env:
+                HEALTH_PORT: 8084
+            folderAnnotation: grafana_folder
+            labelValue: "true"
+            provider:
+                foldersFromFilesStructure: true
+            resource: configmap
+            searchNamespace: ""
+            watchMethod: SLEEP
+        datasources:
+            alertmanager:
+                enabled: false
+            defaultDatasourceEnabled: true
+            enabled: true
+            env:
+                HEALTH_PORT: 8082
+            labelValue: "true"
+            resource: configmap
+            searchNamespace: ""
+            timeout: 180s
+            watchMethod: SLEEP
+        logLevel: error
+        plugins:
+            enabled: true
+    testFramework:
+        enabled: false
+grafana-alloy:
+    alloy:
+        clustering:
+            enabled: true
+        configMap:
+            create: false
+            key: config.alloy
+            name: liferay-alloy-config
+        mounts:
+            extra:
+                -   mountPath: /var/run/secrets/alloy
+                    name: remote-write-credentials
+                    readOnly: true
+        securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+                drop:
+                    -   ALL
+            privileged: false
+            readOnlyRootFilesystem: false
+    configReloader:
+        securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+                drop:
+                    -   ALL
+            privileged: false
+            readOnlyRootFilesystem: false
+    controller:
+        podLabels:
+            azure.workload.identity/use: "true"
+        priorityClassName: system-node-critical
+        type: daemonset
+        volumes:
+            extra:
+                -   name: remote-write-credentials
+                    secret:
+                        optional: true
+                        secretName: liferay-alloy-remote-write
+    global:
+        podSecurityContext:
+            fsGroup: 473
+            runAsGroup: 473
+            runAsNonRoot: true
+            runAsUser: 473
+            seccompProfile:
+                type: RuntimeDefault
+    serviceAccount:
+        create: false
+        name: liferay-alloy
+kube-state-metrics:
+    customResourceState:
+        create: false
+        enabled: true
+    enabled: true
+    extraArgs:
+        -   --config=/etc/customresourcestate/options.yaml
+        -   --v=1
+    networkPolicy:
+        egress:
+            -   {}
+        enabled: true
+        ingress:
+            -   from:
+                    -   namespaceSelector:
+                            matchLabels:
+                                kubernetes.io/metadata.name: gmp-system
+                    -   podSelector: {}
+    podDisruptionBudget:
+        maxUnavailable: 1
+    prometheus:
+        monitor:
+            enabled: false
+    prometheusScrape: false
+    resources:
+        limits:
+            cpu: 100m
+            memory: 512Mi
+        requests:
+            cpu: 30m
+            memory: 128Mi
+    serviceAccount:
+        automountServiceAccountToken: false
+kubeStateMetrics:
+    customResources:
+        liferay-backup:
+            cloudProvider: gcp
+            plural: liferaybackups
+            resource:
+                groupVersionKind:
+                    group: backup.liferay.cloud
+                    kind: LiferayBackup
+                    version: v1alpha1
+                labelsFromPath:
+                    name:
+                        -   metadata
+                        -   name
+                    namespace:
+                        -   metadata
+                        -   namespace
+                metrics:
+                    -   each:
+                            gauge:
+                                path:
+                                    -   status
+                                valueFrom:
+                                    -   completionTime
+                            type: Gauge
+                        help: Completion time of the Liferay backup in Unix seconds
+                        name: liferay_backup_completion_time_seconds
+                    -   each:
+                            gauge:
+                                path:
+                                    -   status
+                                valueFrom:
+                                    -   startTime
+                            type: Gauge
+                        help: Start time of the Liferay backup in Unix seconds
+                        name: liferay_backup_start_time_seconds
+                    -   each:
+                            gauge:
+                                labelsFromPath:
+                                    reason:
+                                        -   reason
+                                    type:
+                                        -   type
+                                path:
+                                    -   status
+                                    -   conditions
+                                valueFrom:
+                                    -   status
+                            type: Gauge
+                        help: Liferay backup condition status (1 = True, 0 = False)
+                        name: liferay_backup_status_condition
+    metricAllowlist:
+        kube_deployment_status_replicas_ready: true
+        kube_namespace_labels: true
+        kube_node_info: true
+        kube_node_status_condition: true
+        kube_pod_container_info: true
+        kube_pod_container_resource_limits: true
+        kube_pod_container_resource_requests: true
+        kube_pod_container_status_restarts_total: true
+        kube_statefulset_labels: true
+        kube_statefulset_status_replicas_ready: true
+    metricLabelsAllowlist:
+        namespaces:
+            liferay.com/observable: true
+        statefulsets:
+            helm.sh/chart: true
+nameOverride: ""
+prometheus-node-exporter:
+    enabled: true
+    extraArgs:
+        -   --log.format=json
+        -   --log.level=error
+    networkPolicy:
+        enabled: true
+        ingress:
+            -   from:
+                    -   namespaceSelector:
+                            matchLabels:
+                                kubernetes.io/metadata.name: gmp-system
+                    -   podSelector: {}
+    priorityClassName: system-node-critical
+    prometheus:
+        monitor:
+            enabled: false
+        podMonitor:
+            enabled: false
+    rbac:
+        create: true
+    resources:
+        limits:
+            cpu: 102m
+            memory: 180Mi
+        requests:
+            cpu: 102m
+            memory: 180Mi
+    service:
+        enabled: true
+    serviceAccount:
+        automountServiceAccountToken: false
+        create: true
+rdsExporter:
+    enabled: false
+    iam:
+        awsRoleArn: ""
+    image:
+        repository: public.ecr.aws/qonto/prometheus-rds-exporter
+        tag: 0.13.0
+    region: ""
+    resources:
+        limits:
+            cpu: 100m
+            memory: 128Mi
+        requests:
+            cpu: 25m
+            memory: 64Mi
+smtp:
+    credentialsSecretKey: ""
+    enabled: false
+    secretStoreName: ""
+sso:
+    credentialsSecretKey: ""
+    enabled: false
+    provider: generic_oauth
+    secretStoreName: ""

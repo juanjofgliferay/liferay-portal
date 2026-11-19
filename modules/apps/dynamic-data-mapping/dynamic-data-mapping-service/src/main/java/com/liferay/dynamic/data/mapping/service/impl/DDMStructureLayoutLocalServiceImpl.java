@@ -5,7 +5,6 @@
 
 package com.liferay.dynamic.data.mapping.service.impl;
 
-import com.liferay.dynamic.data.mapping.internal.search.helper.DDMSearchHelper;
 import com.liferay.dynamic.data.mapping.io.DDMFormLayoutDeserializer;
 import com.liferay.dynamic.data.mapping.io.DDMFormLayoutDeserializerDeserializeRequest;
 import com.liferay.dynamic.data.mapping.io.DDMFormLayoutDeserializerDeserializeResponse;
@@ -14,24 +13,17 @@ import com.liferay.dynamic.data.mapping.io.DDMFormLayoutSerializerSerializeReque
 import com.liferay.dynamic.data.mapping.io.DDMFormLayoutSerializerSerializeResponse;
 import com.liferay.dynamic.data.mapping.model.DDMFormLayout;
 import com.liferay.dynamic.data.mapping.model.DDMStructureLayout;
-import com.liferay.dynamic.data.mapping.model.DDMStructureVersion;
 import com.liferay.dynamic.data.mapping.service.base.DDMStructureLayoutLocalServiceBaseImpl;
 import com.liferay.dynamic.data.mapping.validator.DDMFormLayoutValidator;
-import com.liferay.petra.string.StringPool;
 import com.liferay.portal.aop.AopService;
-import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.model.SystemEventConstants;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.search.Indexable;
 import com.liferay.portal.kernel.search.IndexableType;
-import com.liferay.portal.kernel.search.SearchContext;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserLocalService;
-import com.liferay.portal.kernel.systemevent.SystemEvent;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
-import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
 import java.util.Date;
 import java.util.List;
@@ -137,47 +129,6 @@ public class DDMStructureLayoutLocalServiceImpl
 	}
 
 	@Override
-	public void deleteDDMStructureLayouts(
-			long classNameId, DDMStructureVersion ddmStructureVersion)
-		throws PortalException {
-
-		for (DDMStructureLayout ddmStructureLayout :
-				ddmStructureLayoutPersistence.findByG_C_SV(
-					ddmStructureVersion.getGroupId(), classNameId,
-					ddmStructureVersion.getStructureVersionId())) {
-
-			deleteDDMStructureLayout(ddmStructureLayout);
-		}
-	}
-
-	@Override
-	@SystemEvent(type = SystemEventConstants.TYPE_DELETE)
-	public void deleteStructureLayout(DDMStructureLayout structureLayout) {
-		deleteDDMStructureLayout(structureLayout);
-	}
-
-	@Override
-	public void deleteStructureLayout(long structureLayoutId)
-		throws PortalException {
-
-		deleteDDMStructureLayout(structureLayoutId);
-	}
-
-	@Override
-	public DDMStructureLayout fetchStructureLayout(long structureLayoutId) {
-		return ddmStructureLayoutPersistence.fetchByPrimaryKey(
-			structureLayoutId);
-	}
-
-	@Override
-	public DDMStructureLayout fetchStructureLayout(
-		long groupId, long classNameId, String structureLayoutKey) {
-
-		return ddmStructureLayoutPersistence.fetchByG_C_S(
-			groupId, classNameId, GetterUtil.getString(structureLayoutKey));
-	}
-
-	@Override
 	public DDMStructureLayout getStructureLayout(long structureLayoutId)
 		throws PortalException {
 
@@ -228,15 +179,6 @@ public class DDMStructureLayoutLocalServiceImpl
 
 	@Override
 	public List<DDMStructureLayout> getStructureLayouts(
-		long groupId, long classNameId, int start, int end,
-		OrderByComparator<DDMStructureLayout> orderByComparator) {
-
-		return ddmStructureLayoutPersistence.findByG_C(
-			groupId, classNameId, start, end, orderByComparator);
-	}
-
-	@Override
-	public List<DDMStructureLayout> getStructureLayouts(
 		long groupId, long classNameId, long structureVersionId) {
 
 		return ddmStructureLayoutPersistence.findByG_C_SV(
@@ -254,70 +196,11 @@ public class DDMStructureLayoutLocalServiceImpl
 	}
 
 	@Override
-	public int getStructureLayoutsCount(long groupId) {
-		return ddmStructureLayoutPersistence.countByGroupId(groupId);
-	}
-
-	@Override
-	public int getStructureLayoutsCount(long groupId, long classNameId) {
-		return ddmStructureLayoutPersistence.countByG_C(groupId, classNameId);
-	}
-
-	@Override
 	public int getStructureLayoutsCount(
 		long groupId, long classNameId, long structureVersionId) {
 
 		return ddmStructureLayoutPersistence.countByG_C_SV(
 			groupId, classNameId, structureVersionId);
-	}
-
-	@Override
-	public List<DDMStructureLayout> search(
-			long companyId, long[] groupIds, long classNameId, String keywords,
-			int start, int end,
-			OrderByComparator<DDMStructureLayout> orderByComparator)
-		throws PortalException {
-
-		SearchContext searchContext =
-			_ddmSearchHelper.buildStructureLayoutSearchContext(
-				companyId, groupIds, classNameId, keywords, keywords,
-				StringPool.BLANK, null, WorkflowConstants.STATUS_ANY, start,
-				end, orderByComparator);
-
-		return _ddmSearchHelper.doSearch(
-			searchContext, DDMStructureLayout.class,
-			ddmStructureLayoutPersistence::findByPrimaryKey);
-	}
-
-	@Override
-	public int searchCount(
-			long companyId, long[] groupIds, long classNameId, String keywords)
-		throws PortalException {
-
-		SearchContext searchContext =
-			_ddmSearchHelper.buildStructureLayoutSearchContext(
-				companyId, groupIds, classNameId, keywords, keywords,
-				StringPool.BLANK, null, WorkflowConstants.STATUS_ANY,
-				QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
-
-		return _ddmSearchHelper.doSearchCount(
-			searchContext, DDMStructureLayout.class);
-	}
-
-	@Override
-	public DDMStructureLayout updateStructureLayout(
-			long structureLayoutId, DDMFormLayout ddmFormLayout,
-			ServiceContext serviceContext)
-		throws PortalException {
-
-		DDMStructureLayout structureLayout =
-			ddmStructureLayoutPersistence.findByPrimaryKey(structureLayoutId);
-
-		_validate(ddmFormLayout);
-
-		structureLayout.setDefinition(_serialize(ddmFormLayout));
-
-		return ddmStructureLayoutPersistence.update(structureLayout);
 	}
 
 	@Indexable(type = IndexableType.REINDEX)
@@ -358,9 +241,6 @@ public class DDMStructureLayoutLocalServiceImpl
 
 	@Reference
 	private DDMFormLayoutValidator _ddmFormLayoutValidator;
-
-	@Reference
-	private DDMSearchHelper _ddmSearchHelper;
 
 	@Reference(target = "(ddm.form.layout.deserializer.type=json)")
 	private DDMFormLayoutDeserializer _jsonDDMFormLayoutDeserializer;

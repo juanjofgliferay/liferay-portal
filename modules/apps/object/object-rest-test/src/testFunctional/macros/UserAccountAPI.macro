@@ -39,11 +39,13 @@ definition {
 			var api = "user-accounts";
 		}
 
+		var userPassword = PropsUtil.get("default.admin.password");
+
 		var curl = '''
 			${portalURL}/o/headless-admin-user/v1.0/${api} \
 				-H accept: application/json \
 				-H Content-Type: application/json \
-				-u test@liferay.com:test \
+				-u test@liferay.com:${userPassword} \
 		''';
 
 		return ${curl};
@@ -243,11 +245,12 @@ definition {
 		var roleId = UserAccountAPI.getRoleId(
 			roleName = ${roleName},
 			streetNumber = ${streetNumber});
+		var userPassword = PropsUtil.get("default.admin.password");
 
 		var curl = '''
 			${portalURL}/o/headless-admin-user/v1.0/roles/${roleId}/association/user-account/${userAccountId} \
 				-H accept: application/json \
-				-u test@liferay.com:test \
+				-u test@liferay.com:${userPassword} \
 		''';
 
 		var response = JSONCurlUtil.post(${curl});
@@ -272,12 +275,13 @@ definition {
 		Variables.assertDefined(parameterList = "${userAccountId},${relationshipName}");
 
 		var portalURL = JSONCompany.getPortalURL();
+		var userPassword = PropsUtil.get("default.admin.password");
 
 		var curl = '''
 			${portalURL}/o/headless-admin-user/v1.0/user-accounts/${userAccountId}/${relationshipName} \
 				-H accept: application/json \
 				-H Content-Type: application/json \
-				-u test@liferay.com:test \
+				-u test@liferay.com:${userPassword} \
 		''';
 
 		var response = JSONCurlUtil.get(${curl});
@@ -290,11 +294,12 @@ definition {
 		Variables.assertDefined(parameterList = "${roleName},${streetNumber}");
 
 		var portalURL = JSONCompany.getPortalURL();
+		var userPassword = PropsUtil.get("default.admin.password");
 
 		var curl = '''
 			${portalURL}/o/headless-admin-user/v1.0/roles \
 				-H accept: application/json \
-				-u test@liferay.com:test \
+				-u test@liferay.com:${userPassword} \
 		''';
 
 		var response = JSONCurlUtil.get(${curl});
@@ -334,61 +339,17 @@ definition {
 	}
 
 	@summary = "Default summary"
-	macro getUpdatedFieldOfUserAccountWithPatchRequest(fieldName = null, UserAccountId = null, updatedFieldValue = null) {
-		Variables.assertDefined(parameterList = "${fieldName},${updatedFieldValue}");
-
-		if (!(isSet(userAccountId))) {
-			var userAccountId = ${UserAccountId};
-		}
-
-		var curl = UserAccountAPI._curlUserAccount(userAccountId = ${userAccountId});
-		var body = '''-d {"${fieldName}":"${updatedFieldValue}"}''';
-
-		var curl = StringUtil.add(${curl}, ${body}, "");
-
-		var valueOfField = JSONCurlUtil.patch(${curl}, "$.${fieldName}");
-
-		return ${valueOfField};
-	}
-
-	@summary = "Default summary"
-	macro getUpdatedFieldOfUserAccountWithPutRequest(emailAddress = null, fieldName = null, UserAccountId = null, familyName = null, givenName = null, alternateName = null, updatedFieldValue = null) {
-		Variables.assertDefined(parameterList = "${alternateName},${emailAddress},${familyName},${givenName},${fieldName},${updatedFieldValue}");
-
-		if (!(isSet(userAccountId))) {
-			var userAccountId = ${UserAccountId};
-		}
-
-		var curl = UserAccountAPI._curlUserAccount(userAccountId = ${userAccountId});
-		var body = '''
-			-d {
-				"alternateName": "${alternateName}",
-				"emailAddress": "${emailAddress}",
-				"familyName": "${familyName}",
-				"givenName": "${givenName}",
-				"status": "Active",
-				"${fieldName}":"${updatedFieldValue}"
-			}
-		''';
-
-		var curl = StringUtil.add(${curl}, ${body}, "");
-
-		var valueOfField = JSONCurlUtil.put(${curl}, "$.${fieldName}");
-
-		return ${valueOfField};
-	}
-
-	@summary = "Default summary"
 	macro getUserFieldWithFilter(filter = null, jsonPath = null) {
 		Variables.assertDefined(parameterList = "${filter},${jsonPath}");
 
 		var portalURL = JSONCompany.getPortalURL();
+		var userPassword = PropsUtil.get("default.admin.password");
 
 		var curl = '''
 			${portalURL}/o/headless-admin-user/v1.0/user-accounts?filter='${filter}' \
 				-H accept: application/json \
 				-H Content-Type: application/json \
-				-u test@liferay.com:test \
+				-u test@liferay.com:${userPassword} \
 		''';
 
 		var fieldValue = JSONCurlUtil.get(${curl}, ${jsonPath});
@@ -432,12 +393,13 @@ definition {
 		Variables.assertDefined(parameterList = "${userAccountId},${customObjectId},${relationshipName}");
 
 		var portalURL = JSONCompany.getPortalURL();
+		var userPassword = PropsUtil.get("default.admin.password");
 
 		var curl = '''
 			${portalURL}/o/headless-admin-user/v1.0/user-accounts/${userAccountId}/${relationshipName}/${customObjectId} \
 				-H accept: application/json \
 				-H Content-Type: application/json \
-				-u test@liferay.com:test \
+				-u test@liferay.com:${userPassword} \
 		''';
 
 		var response = JSONCurlUtil.put(${curl});

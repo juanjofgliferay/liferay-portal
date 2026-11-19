@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -152,16 +153,6 @@ public class AssetLinkLocalServiceUtil {
 	 */
 	public static void deleteLinks(long entryId) {
 		getService().deleteLinks(entryId);
-	}
-
-	/**
-	 * Delete all links that associate the two asset entries.
-	 *
-	 * @param entryId1 the primary key of the first asset entry
-	 * @param entryId2 the primary key of the second asset entry
-	 */
-	public static void deleteLinks(long entryId1, long entryId2) {
-		getService().deleteLinks(entryId1, entryId2);
 	}
 
 	/**
@@ -417,23 +408,6 @@ public class AssetLinkLocalServiceUtil {
 	}
 
 	/**
-	 * Returns all the asset links of the given link type whose second entry ID
-	 * is the given entry ID.
-	 *
-	 * @param entryId the primary key of the asset entry
-	 * @param typeId the link type. Acceptable values include {@link
-	 AssetLinkConstants#TYPE_RELATED} which is a bidirectional
-	 relationship and {@link AssetLinkConstants#TYPE_CHILD} which is a
-	 unidirectional relationship. For more information see {@link
-	 AssetLinkConstants}
-	 * @return the asset links of the given link type whose second entry ID is
-	 the given entry ID
-	 */
-	public static List<AssetLink> getReverseLinks(long entryId, int typeId) {
-		return getService().getReverseLinks(entryId, typeId);
-	}
-
-	/**
 	 * Updates the asset link in the database or adds it if it does not yet exist. Also notifies the appropriate model listeners.
 	 *
 	 * <p>
@@ -485,13 +459,12 @@ public class AssetLinkLocalServiceUtil {
 	}
 
 	public static AssetLinkLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(AssetLinkLocalService service) {
-		_service = service;
-	}
-
-	private static volatile AssetLinkLocalService _service;
+	private static final Snapshot<AssetLinkLocalService> _serviceSnapshot =
+		new Snapshot<>(
+			AssetLinkLocalServiceUtil.class, AssetLinkLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-571770588

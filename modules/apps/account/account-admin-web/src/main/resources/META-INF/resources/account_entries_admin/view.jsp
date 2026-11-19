@@ -15,7 +15,7 @@ ViewAccountEntriesManagementToolbarDisplayContext viewAccountEntriesManagementTo
 
 <clay:management-toolbar
 	managementToolbarDisplayContext="<%= viewAccountEntriesManagementToolbarDisplayContext %>"
-	propsTransformer="account_entries_admin/js/AccountEntriesManagementToolbarPropsTransformer"
+	propsTransformer="{AccountEntriesManagementToolbarPropsTransformer} from account-admin-web"
 />
 
 <clay:container-fluid>
@@ -54,6 +54,7 @@ ViewAccountEntriesManagementToolbarDisplayContext viewAccountEntriesManagementTo
 					cssClass="autofit-col-expand table-title"
 					href="<%= rowURL %>"
 					name="name"
+					truncate="<%= true %>"
 					value="<%= HtmlUtil.escape(accountEntryDisplay.getName()) %>"
 				/>
 

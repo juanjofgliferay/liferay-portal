@@ -14,13 +14,13 @@ import com.liferay.portal.kernel.servlet.taglib.ui.QuickAccessEntry;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -28,7 +28,10 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Evan Thibodeau
  */
-@Component(service = DynamicInclude.class)
+@Component(
+	property = "dynamic.include.key=/html/common/themes/top_head.jsp#pre",
+	service = DynamicInclude.class
+)
 public class AccessibilityMenuTopHeadDynamicInclude extends BaseDynamicInclude {
 
 	@Override
@@ -62,11 +65,6 @@ public class AccessibilityMenuTopHeadDynamicInclude extends BaseDynamicInclude {
 		quickAccessEntry.setOnClick("Liferay.fire('openAccessibilityMenu');");
 
 		quickAccessEntries.add(quickAccessEntry);
-	}
-
-	@Override
-	public void register(DynamicIncludeRegistry dynamicIncludeRegistry) {
-		dynamicIncludeRegistry.register("/html/common/themes/top_head.jsp#pre");
 	}
 
 	@Reference

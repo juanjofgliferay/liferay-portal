@@ -20,25 +20,37 @@ let handleConnect = false;
 
 export default function BaseNode({
 	actions,
+	agentDefinitionExternalReferenceCode,
 	assignments,
 	className,
 	description,
 	descriptionSidebar,
-	dragHandle,
+	dragHandle: _dragHandle,
+	httpMethod,
 	icon,
 	id,
-	isConnectable,
-	isDragging,
+	inputVariables,
+	isConnectable: _isConnectable,
+	isDragging: _isDragging,
+	javaDelegate,
 	label,
 	newNode,
 	nodeTypeClassName,
 	notifications,
+	outputVariables,
+	prompt,
+	rag,
+	requestBody,
 	script,
 	scriptLanguage,
-	sourcePosition,
-	targetPosition,
+	sourcePosition: _sourcePosition,
+	targetPosition: _targetPosition,
 	taskTimers,
+	timeout,
+	tools,
 	type,
+	url,
+	userMessage,
 	xPos,
 	yPos,
 	...otherProps
@@ -133,14 +145,26 @@ export default function BaseNode({
 		setSelectedItem({
 			data: {
 				actions,
+				agentDefinitionExternalReferenceCode,
 				assignments,
 				description,
+				httpMethod,
+				inputVariables,
+				javaDelegate,
 				label,
 				newNode: false,
 				notifications,
+				outputVariables,
+				prompt,
+				rag,
+				requestBody,
 				script,
 				scriptLanguage,
 				taskTimers,
+				timeout,
+				tools,
+				url,
+				userMessage,
 			},
 			id,
 			type,
@@ -193,34 +217,41 @@ export default function BaseNode({
 
 			<div
 				className={`node ${nodeTypeClassName}`}
-				draghandle={dragHandle}
-				isconnectable={isConnectable?.toString()}
-				isdragging={isDragging?.toString()}
+				data-xpos={xPos}
+				data-ypos={yPos}
 				onClick={() => {
 					if (!descriptionSidebar) {
 						setSelectedItem({
 							data: {
 								actions,
+								agentDefinitionExternalReferenceCode,
 								assignments,
 								description,
+								httpMethod,
+								inputVariables,
+								javaDelegate,
 								label,
 								notifications,
+								outputVariables,
+								prompt,
+								rag,
+								requestBody,
 								script,
 								scriptLanguage,
 								taskTimers,
+								timeout,
+								tools,
+								url,
+								userMessage,
 							},
 							id,
 							type,
 						});
 					}
 				}}
-				sourceposition={sourcePosition}
 				style={{
 					position: displayBorderArea ? 'absolute' : 'unset',
 				}}
-				targetposition={targetPosition}
-				xpos={xPos}
-				ypos={yPos}
 				{...otherProps}
 			>
 				{descriptionSidebar && (
@@ -248,12 +279,24 @@ export default function BaseNode({
 }
 
 BaseNode.propTypes = {
+	agentDefinitionExternalReferenceCode: PropTypes.string,
 	className: PropTypes.string,
 	description: PropTypes.string,
 	descriptionSidebar: PropTypes.string,
+	httpMethod: PropTypes.string,
 	icon: PropTypes.string.isRequired,
 	id: PropTypes.string,
+	inputVariables: PropTypes.object,
+	javaDelegate: PropTypes.string,
 	label: PropTypes.object,
 	nodeTypeClassName: PropTypes.string,
+	outputVariables: PropTypes.object,
+	prompt: PropTypes.string,
+	rag: PropTypes.object,
+	requestBody: PropTypes.string,
+	timeout: PropTypes.string,
+	tools: PropTypes.object,
 	type: PropTypes.string.isRequired,
+	url: PropTypes.string,
+	userMessage: PropTypes.string,
 };

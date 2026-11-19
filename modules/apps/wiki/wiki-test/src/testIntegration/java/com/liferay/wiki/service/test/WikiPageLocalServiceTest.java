@@ -33,6 +33,7 @@ import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.model.PersistedModel;
 import com.liferay.portal.kernel.model.ResourceConstants;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.model.role.RoleConstants;
@@ -57,6 +58,7 @@ import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.kernel.workflow.WorkflowThreadLocal;
+import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.wiki.exception.DuplicatePageException;
 import com.liferay.wiki.exception.DuplicateWikiPageExternalReferenceCodeException;
@@ -64,7 +66,9 @@ import com.liferay.wiki.exception.NoSuchPageResourceException;
 import com.liferay.wiki.exception.PageTitleException;
 import com.liferay.wiki.model.WikiNode;
 import com.liferay.wiki.model.WikiPage;
+import com.liferay.wiki.service.WikiPageLocalService;
 import com.liferay.wiki.service.WikiPageLocalServiceUtil;
+import com.liferay.wiki.service.WikiPageServiceUtil;
 import com.liferay.wiki.test.util.WikiTestUtil;
 
 import java.io.Serializable;
@@ -196,6 +200,38 @@ public class WikiPageLocalServiceTest {
 	}
 
 	@Test
+	public void testAddPageWithRequiredCategory() throws Exception {
+		AssetVocabulary assetVocabulary = getRequiredAssetVocabulary();
+
+		ServiceContext serviceContext =
+			ServiceContextTestUtil.getServiceContext(_group.getGroupId());
+
+		AssetCategory assetCategory = AssetCategoryLocalServiceUtil.addCategory(
+			TestPropsValues.getUserId(), _group.getGroupId(), "category 1",
+			assetVocabulary.getVocabularyId(), serviceContext);
+
+		long categoryId = assetCategory.getCategoryId();
+
+		serviceContext.setAssetCategoryIds(new long[] {categoryId});
+
+		WikiPage page = WikiTestUtil.addPage(
+			TestPropsValues.getUserId(), _node.getNodeId(),
+			RandomTestUtil.randomString(), RandomTestUtil.randomString(), true,
+			serviceContext);
+
+		List<AssetCategory> assetCategories =
+			AssetCategoryLocalServiceUtil.getCategories(
+				WikiPage.class.getName(), page.getResourcePrimKey());
+
+		Assert.assertEquals(
+			assetCategories.toString(), 1, assetCategories.size());
+
+		AssetCategory persistedAssetCategory = assetCategories.get(0);
+
+		Assert.assertEquals(categoryId, persistedAssetCategory.getCategoryId());
+	}
+
+	@Test
 	public void testAddPageWithoutExternalReferenceCode() throws Exception {
 		WikiPage wikiPage1 = WikiTestUtil.addPage(
 			TestPropsValues.getUserId(), _node.getNodeId(),
@@ -237,38 +273,6 @@ public class WikiPageLocalServiceTest {
 
 			throw new AssetCategoryTestException();
 		}
-	}
-
-	@Test
-	public void testAddPageWithRequiredCategory() throws Exception {
-		AssetVocabulary assetVocabulary = getRequiredAssetVocabulary();
-
-		ServiceContext serviceContext =
-			ServiceContextTestUtil.getServiceContext(_group.getGroupId());
-
-		AssetCategory assetCategory = AssetCategoryLocalServiceUtil.addCategory(
-			TestPropsValues.getUserId(), _group.getGroupId(), "category 1",
-			assetVocabulary.getVocabularyId(), serviceContext);
-
-		long categoryId = assetCategory.getCategoryId();
-
-		serviceContext.setAssetCategoryIds(new long[] {categoryId});
-
-		WikiPage page = WikiTestUtil.addPage(
-			TestPropsValues.getUserId(), _node.getNodeId(),
-			RandomTestUtil.randomString(), RandomTestUtil.randomString(), true,
-			serviceContext);
-
-		List<AssetCategory> assetCategories =
-			AssetCategoryLocalServiceUtil.getCategories(
-				WikiPage.class.getName(), page.getResourcePrimKey());
-
-		Assert.assertEquals(
-			assetCategories.toString(), 1, assetCategories.size());
-
-		AssetCategory persistedAssetCategory = assetCategories.get(0);
-
-		Assert.assertEquals(categoryId, persistedAssetCategory.getCategoryId());
 	}
 
 	@Test
@@ -387,7 +391,7 @@ public class WikiPageLocalServiceTest {
 		WikiPage page = WikiTestUtil.addPage(
 			_group.getGroupId(), _node.getNodeId(), true);
 
-		WikiTestUtil.addWikiAttachment(
+		WikiTestUtil.addPageAttachment(
 			page.getUserId(), page.getNodeId(), page.getTitle(), getClass());
 
 		List<FileEntry> attachmentsFileEntries =
@@ -626,6 +630,18 @@ public class WikiPageLocalServiceTest {
 	}
 
 	@Test
+	public void testFetchPersistedModelByResourcePrimKey() throws Exception {
+		WikiPage wikiPage = WikiTestUtil.addPage(
+			_group.getGroupId(), _node.getNodeId(), true);
+
+		PersistedModel persistedModel =
+			_wikiPageLocalService.fetchPersistedModel(
+				wikiPage.getResourcePrimKey());
+
+		Assert.assertNotNull(persistedModel);
+	}
+
+	@Test
 	public void testGetAttachmentsFileEntriesWithDraftPage() throws Exception {
 		WikiPage approvedPage = _createPageWithDraftAttachments();
 
@@ -682,7 +698,7 @@ public class WikiPageLocalServiceTest {
 			TestPropsValues.getUserId(), _node.getNodeId(), "Page2",
 			RandomTestUtil.randomString(), true, serviceContext);
 
-		List<WikiPage> recentPages = WikiPageLocalServiceUtil.getRecentChanges(
+		List<WikiPage> recentPages = WikiPageServiceUtil.getRecentChanges(
 			_group.getGroupId(), _node.getNodeId(), QueryUtil.ALL_POS,
 			QueryUtil.ALL_POS);
 
@@ -717,7 +733,7 @@ public class WikiPageLocalServiceTest {
 
 		WikiPage updatedPage2 = WikiTestUtil.updatePage(page2);
 
-		List<WikiPage> recentPages = WikiPageLocalServiceUtil.getRecentChanges(
+		List<WikiPage> recentPages = WikiPageServiceUtil.getRecentChanges(
 			_group.getGroupId(), _node.getNodeId(), QueryUtil.ALL_POS,
 			QueryUtil.ALL_POS);
 
@@ -762,7 +778,7 @@ public class WikiPageLocalServiceTest {
 			TestPropsValues.getUserId(), _node.getNodeId(), "Page2",
 			RandomTestUtil.randomString(), true, serviceContext);
 
-		List<WikiPage> recentPages = WikiPageLocalServiceUtil.getRecentChanges(
+		List<WikiPage> recentPages = WikiPageServiceUtil.getRecentChanges(
 			_group.getGroupId(), _node.getNodeId(), QueryUtil.ALL_POS,
 			QueryUtil.ALL_POS);
 
@@ -787,7 +803,7 @@ public class WikiPageLocalServiceTest {
 
 		WikiPage updatedPage1 = WikiTestUtil.updatePage(page1);
 
-		List<WikiPage> recentPages = WikiPageLocalServiceUtil.getRecentChanges(
+		List<WikiPage> recentPages = WikiPageServiceUtil.getRecentChanges(
 			_group.getGroupId(), _node.getNodeId(), QueryUtil.ALL_POS,
 			QueryUtil.ALL_POS);
 
@@ -1379,7 +1395,7 @@ public class WikiPageLocalServiceTest {
 		WikiPage approvedPage = WikiTestUtil.addPage(
 			_group.getGroupId(), _node.getNodeId(), true);
 
-		WikiTestUtil.addWikiAttachment(
+		WikiTestUtil.addPageAttachment(
 			approvedPage.getUserId(), approvedPage.getNodeId(),
 			approvedPage.getTitle(), getClass());
 
@@ -1393,7 +1409,7 @@ public class WikiPageLocalServiceTest {
 			approvedPage, approvedPage.getUserId(), approvedPage.getTitle(),
 			approvedPage.getContent(), true, serviceContext);
 
-		WikiTestUtil.addWikiAttachment(
+		WikiTestUtil.addPageAttachment(
 			approvedPage.getUserId(), approvedPage.getNodeId(),
 			approvedPage.getTitle(), getClass());
 
@@ -1414,6 +1430,9 @@ public class WikiPageLocalServiceTest {
 
 	@DeleteAfterTestRun
 	private User _user;
+
+	@Inject
+	private WikiPageLocalService _wikiPageLocalService;
 
 	private static class AssetCategoryTestException extends PortalException {
 	}

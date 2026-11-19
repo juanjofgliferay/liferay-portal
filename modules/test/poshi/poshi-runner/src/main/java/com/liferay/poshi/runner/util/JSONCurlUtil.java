@@ -184,14 +184,13 @@ public class JSONCurlUtil {
 
 			_log(response);
 
+			inputStream = process.getErrorStream();
+
+			String errorString = ExecUtil.readInputStream(inputStream, true);
+
+			_log(errorString);
+
 			if (process.exitValue() != 0) {
-				inputStream = process.getErrorStream();
-
-				String errorString = ExecUtil.readInputStream(
-					inputStream, true);
-
-				_log(errorString);
-
 				throw new RuntimeException(
 					"Command finished with exit value: " + process.exitValue());
 			}
@@ -258,28 +257,29 @@ public class JSONCurlUtil {
 
 				Matcher optionTypeMatcher = _requestPattern.matcher(optionType);
 
-				if (optionTypeMatcher.matches()) {
-					String optionValue = "";
-
-					if (i < (tokens.size() - 1)) {
-						String nextToken = tokens.get(i + 1);
-
-						optionTypeMatcher = _requestPattern.matcher(nextToken);
-
-						if (!optionTypeMatcher.matches()) {
-							if (nextToken.matches("\\$CURLDATA:\\w{10}")) {
-								nextToken = _curlDataMap.get(nextToken);
-							}
-
-							optionValue = nextToken;
-
-							i++;
-						}
-					}
-
-					_requestOptions.add(
-						new RequestOption(optionType, optionValue));
+				if (!optionTypeMatcher.matches()) {
+					continue;
 				}
+
+				String optionValue = "";
+
+				if (i < (tokens.size() - 1)) {
+					String nextToken = tokens.get(i + 1);
+
+					optionTypeMatcher = _requestPattern.matcher(nextToken);
+
+					if (!optionTypeMatcher.matches()) {
+						if (nextToken.matches("\\$CURLDATA:\\w{10}")) {
+							nextToken = _curlDataMap.get(nextToken);
+						}
+
+						optionValue = nextToken;
+
+						i++;
+					}
+				}
+
+				_requestOptions.add(new RequestOption(optionType, optionValue));
 			}
 		}
 
@@ -340,11 +340,7 @@ public class JSONCurlUtil {
 		}
 
 		public String getRequestOptionType() {
-			if (_customOptionsMap.containsKey(_optionType)) {
-				return _customOptionsMap.get(_optionType);
-			}
-
-			return _optionType;
+			return _customOptionsMap.getOrDefault(_optionType, _optionType);
 		}
 
 		public String toString() {

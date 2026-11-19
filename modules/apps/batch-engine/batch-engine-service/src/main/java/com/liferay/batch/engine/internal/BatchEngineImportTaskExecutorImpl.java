@@ -5,11 +5,13 @@
 
 package com.liferay.batch.engine.internal;
 
+import com.liferay.batch.engine.BatchEngineContentProcessor;
 import com.liferay.batch.engine.BatchEngineImportTaskExecutor;
 import com.liferay.batch.engine.BatchEngineTaskContentType;
 import com.liferay.batch.engine.BatchEngineTaskExecuteStatus;
 import com.liferay.batch.engine.BatchEngineTaskItemDelegate;
 import com.liferay.batch.engine.BatchEngineTaskItemDelegateRegistry;
+import com.liferay.batch.engine.BatchEngineTaskItemDelegateRegistry.BatchEngineTaskItemDelegateSafeCloseable;
 import com.liferay.batch.engine.BatchEngineTaskOperation;
 import com.liferay.batch.engine.ItemClassRegistry;
 import com.liferay.batch.engine.action.ImportTaskPostAction;
@@ -17,32 +19,56 @@ import com.liferay.batch.engine.action.ImportTaskPreAction;
 import com.liferay.batch.engine.action.ItemReaderPostAction;
 import com.liferay.batch.engine.configuration.BatchEngineTaskCompanyConfiguration;
 import com.liferay.batch.engine.constants.BatchEngineImportTaskConstants;
-import com.liferay.batch.engine.internal.item.BatchEngineTaskItemDelegateExecutor;
-import com.liferay.batch.engine.internal.item.BatchEngineTaskItemDelegateExecutorFactory;
+import com.liferay.batch.engine.context.ImportTaskContext;
+import com.liferay.batch.engine.exception.BatchEngineImportTaskExecutorException;
+import com.liferay.batch.engine.exception.handler.BatchEngineImportTaskExceptionHandler;
 import com.liferay.batch.engine.internal.reader.BatchEngineImportTaskItemReader;
 import com.liferay.batch.engine.internal.reader.BatchEngineImportTaskItemReaderBuilder;
 import com.liferay.batch.engine.internal.reader.BatchEngineImportTaskItemReaderUtil;
-import com.liferay.batch.engine.internal.strategy.OnErrorContinueBatchEngineImportStrategy;
-import com.liferay.batch.engine.internal.strategy.OnErrorFailBatchEngineImportStrategy;
 import com.liferay.batch.engine.internal.task.progress.BatchEngineTaskProgress;
 import com.liferay.batch.engine.internal.task.progress.BatchEngineTaskProgressFactory;
+import com.liferay.batch.engine.internal.util.ErrorMessageUtil;
 import com.liferay.batch.engine.internal.util.ItemIndexThreadLocal;
+import com.liferay.batch.engine.internal.util.PasswordFieldUtil;
+import com.liferay.batch.engine.internal.util.ZipInputStreamUtil;
+import com.liferay.batch.engine.language.LanguageKeyResolver;
 import com.liferay.batch.engine.model.BatchEngineImportTask;
 import com.liferay.batch.engine.service.BatchEngineImportTaskErrorLocalService;
+import com.liferay.batch.engine.service.BatchEngineImportTaskErrorLocalServiceUtil;
 import com.liferay.batch.engine.service.BatchEngineImportTaskLocalService;
-import com.liferay.batch.engine.strategy.BatchEngineImportStrategy;
+import com.liferay.batch.engine.thread.local.BatchEngineThreadLocal;
+import com.liferay.exportimport.kernel.lar.ExportImportThreadLocal;
 import com.liferay.osgi.service.tracker.collections.list.ServiceTrackerList;
 import com.liferay.osgi.service.tracker.collections.list.ServiceTrackerListFactory;
+import com.liferay.osgi.service.tracker.collections.map.PropertyServiceReferenceMapper;
+import com.liferay.osgi.service.tracker.collections.map.ServiceReferenceMapper;
+import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMap;
+import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMapFactory;
+import com.liferay.petra.function.UnsafeFunction;
 import com.liferay.petra.lang.SafeCloseable;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
+import com.liferay.portal.kernel.backgroundtask.BackgroundTaskStatusMessageSender;
 import com.liferay.portal.kernel.change.tracking.CTCollectionThreadLocal;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.search.SearchContext;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.service.UserLocalService;
+import com.liferay.portal.kernel.spring.orm.LastSessionRecorderHelperUtil;
+import com.liferay.portal.kernel.transaction.Propagation;
+import com.liferay.portal.kernel.transaction.TransactionConfig;
+import com.liferay.portal.kernel.transaction.TransactionInvokerUtil;
+import com.liferay.portal.kernel.util.FileUtil;
 import com.liferay.portal.kernel.util.ListUtil;
+import com.liferay.portal.kernel.util.PropsValues;
+import com.liferay.portal.kernel.util.Validator;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.Serializable;
 
@@ -52,6 +78,8 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.Callable;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.service.component.annotations.Activate;
@@ -68,12 +96,20 @@ public class BatchEngineImportTaskExecutorImpl
 
 	@Override
 	public void execute(BatchEngineImportTask batchEngineImportTask) {
-		BatchEngineTaskItemDelegate<?> batchEngineTaskItemDelegate =
-			_batchEngineTaskItemDelegateRegistry.getBatchEngineTaskItemDelegate(
-				batchEngineImportTask.getClassName(),
-				batchEngineImportTask.getTaskItemDelegateName());
+		try (BatchEngineTaskItemDelegateSafeCloseable
+				batchEngineTaskItemDelegateSafeCloseable =
+					_batchEngineTaskItemDelegateRegistry.
+						getBatchEngineTaskItemDelegateWithSafeCloseable(
+							batchEngineImportTask.getCompanyId(),
+							batchEngineImportTask.getClassName(),
+							batchEngineImportTask.getTaskItemDelegateName())) {
 
-		execute(batchEngineImportTask, batchEngineTaskItemDelegate, true);
+			execute(
+				batchEngineImportTask,
+				batchEngineTaskItemDelegateSafeCloseable.
+					getBatchEngineTaskItemDelegate(),
+				true);
+		}
 	}
 
 	@Override
@@ -82,11 +118,46 @@ public class BatchEngineImportTaskExecutorImpl
 		BatchEngineTaskItemDelegate<?> batchEngineTaskItemDelegate,
 		boolean checkPermissions) {
 
-		SafeCloseable safeCloseable = CompanyThreadLocal.setWithSafeCloseable(
-			batchEngineImportTask.getCompanyId(),
-			CTCollectionThreadLocal.getCTCollectionId());
+		long startTime = 0;
 
-		try {
+		if (_log.isInfoEnabled()) {
+			_log.info(
+				"Started batch engine import task " +
+					batchEngineImportTask.getBatchEngineImportTaskId());
+
+			startTime = System.currentTimeMillis();
+		}
+
+		SafeCloseable safeCloseable1 =
+			CompanyThreadLocal.setCompanyIdWithSafeCloseable(
+				batchEngineImportTask.getCompanyId(),
+				CTCollectionThreadLocal.getCTCollectionId());
+
+		File file;
+
+		try (InputStream inputStream =
+				_batchEngineImportTaskLocalService.openContentInputStream(
+					batchEngineImportTask.getBatchEngineImportTaskId())) {
+
+			file = FileUtil.createTempFile(inputStream);
+		}
+		catch (Throwable throwable) {
+			_log.error(
+				"Unable to save batch engine import task content as temp file" +
+					batchEngineImportTask,
+				throwable);
+
+			_updateBatchEngineImportTask(
+				BatchEngineTaskExecuteStatus.FAILED, batchEngineImportTask,
+				throwable);
+
+			return;
+		}
+
+		try (SafeCloseable safeCloseable2 =
+				BatchEngineThreadLocal.setBatchImportInProcessWithSafeCloseable(
+					true)) {
+
 			batchEngineImportTask.setExecuteStatus(
 				BatchEngineTaskExecuteStatus.STARTED.toString());
 			batchEngineImportTask.setStartTime(new Date());
@@ -96,19 +167,29 @@ public class BatchEngineImportTaskExecutorImpl
 					BatchEngineTaskContentType.valueOf(
 						batchEngineImportTask.getContentType()));
 
-			batchEngineImportTask.setTotalItemsCount(
-				batchEngineTaskProgress.getTotalItemsCount(
-					_batchEngineImportTaskLocalService.openContentInputStream(
-						batchEngineImportTask.getBatchEngineImportTaskId())));
+			try (InputStream inputStream = new FileInputStream(file)) {
+				batchEngineImportTask.setTotalItemsCount(
+					batchEngineTaskProgress.getTotalItemsCount(inputStream));
+			}
 
-			_batchEngineImportTaskLocalService.updateBatchEngineImportTask(
-				batchEngineImportTask);
+			batchEngineImportTask =
+				_batchEngineImportTaskLocalService.updateBatchEngineImportTask(
+					batchEngineImportTask);
 
-			BatchEngineTaskExecutorUtil.execute(
-				checkPermissions,
-				() -> _importItems(
-					batchEngineImportTask, batchEngineTaskItemDelegate),
-				_userLocalService.getUser(batchEngineImportTask.getUserId()));
+			User user = _userLocalService.getUser(
+				batchEngineImportTask.getUserId());
+
+			BatchEngineImportTask finalBatchEngineImportTask =
+				batchEngineImportTask;
+
+			try (SafeCloseable safeCloseable3 = SearchContext.openBatchMode()) {
+				batchEngineImportTask = BatchEngineTaskExecutorUtil.execute(
+					checkPermissions,
+					() -> _importFile(
+						finalBatchEngineImportTask, batchEngineTaskItemDelegate,
+						file, user),
+					user);
+			}
 
 			_updateBatchEngineImportTask(
 				BatchEngineTaskExecuteStatus.COMPLETED, batchEngineImportTask,
@@ -122,73 +203,135 @@ public class BatchEngineImportTaskExecutorImpl
 
 			_updateBatchEngineImportTask(
 				BatchEngineTaskExecuteStatus.FAILED, batchEngineImportTask,
-				throwable.toString());
+				throwable);
 		}
 		finally {
+			file.delete();
 
 			// LPS-167011 Because of call to _updateBatchEngineImportTask when
 			// catching a Throwable
 
-			safeCloseable.close();
+			safeCloseable1.close();
+		}
+
+		if (_log.isInfoEnabled()) {
+			_log.info(
+				StringBundler.concat(
+					"Finished batch engine import task ",
+					batchEngineImportTask.getBatchEngineImportTaskId(), " in ",
+					System.currentTimeMillis() - startTime, "ms"));
 		}
 	}
 
 	@Activate
-	protected void activate(
-		BundleContext bundleContext, Map<String, Object> properties) {
-
-		_batchEngineTaskItemDelegateExecutorFactory =
-			new BatchEngineTaskItemDelegateExecutorFactory(
-				_batchEngineTaskItemDelegateRegistry, null, null, null);
+	protected void activate(BundleContext bundleContext) {
+		_batchEngineImportTaskExceptionHandlers =
+			ServiceTrackerListFactory.open(
+				bundleContext, BatchEngineImportTaskExceptionHandler.class);
 		_importTaskPostActions = ServiceTrackerListFactory.open(
 			bundleContext, ImportTaskPostAction.class);
 		_importTaskPreActions = ServiceTrackerListFactory.open(
 			bundleContext, ImportTaskPreAction.class);
 		_itemReaderPostActions = ServiceTrackerListFactory.open(
 			bundleContext, ItemReaderPostAction.class);
+
+		ServiceReferenceMapper<String, BatchEngineContentProcessor>
+			propertyServiceReferenceMapper =
+				new PropertyServiceReferenceMapper<>("field.name");
+
+		_serviceTrackerMap = ServiceTrackerMapFactory.openMultiValueMap(
+			bundleContext, BatchEngineContentProcessor.class, null,
+			(serviceReference, emitter) -> {
+				String modelClassName = (String)serviceReference.getProperty(
+					"model.class.name");
+
+				if (serviceReference.getProperty("field.name") == null) {
+					emitter.emit(_getKey("*", modelClassName));
+				}
+				else {
+					propertyServiceReferenceMapper.map(
+						serviceReference,
+						key -> emitter.emit(_getKey(key, modelClassName)));
+				}
+			});
+	}
+
+	protected <T> void addBatchEngineImportTaskError(
+		BatchEngineImportTask batchEngineImportTask,
+		BatchEngineTaskItemDelegate<T> batchEngineTaskItemDelegate,
+		Exception exception, T item, int itemIndex) {
+
+		try {
+
+			// Record the error in a nested savepoint on the shared connection.
+			// The failing item has already rolled back to its own savepoint, so
+			// the connection is usable again and the error survives with the
+			// enclosing transaction. A separate connection is not needed and
+			// would risk deadlocking against the outer import transaction.
+
+			TransactionInvokerUtil.invoke(
+				_nestedTransactionConfig,
+				() -> {
+					String errorMessage = ErrorMessageUtil.getErrorMessage(
+						exception, batchEngineImportTask.getUserId());
+
+					BatchEngineImportTaskErrorLocalServiceUtil.
+						addBatchEngineImportTaskError(
+							batchEngineImportTask.getCompanyId(),
+							batchEngineImportTask.getUserId(),
+							batchEngineImportTask.getBatchEngineImportTaskId(),
+							PasswordFieldUtil.toString(item), itemIndex,
+							errorMessage);
+
+					_batchEngineImportTaskExceptionHandlers.forEach(
+						batchEngineImportTaskExceptionHandler ->
+							batchEngineImportTaskExceptionHandler.handle(
+								batchEngineImportTask,
+								batchEngineTaskItemDelegate, exception, item,
+								errorMessage));
+
+					return null;
+				});
+		}
+		catch (Throwable throwable) {
+			throw new RuntimeException(throwable);
+		}
 	}
 
 	@Deactivate
 	protected void deactivate() {
+		_batchEngineImportTaskExceptionHandlers.close();
 		_importTaskPostActions.close();
 		_importTaskPreActions.close();
 		_itemReaderPostActions.close();
+		_serviceTrackerMap.close();
 	}
 
-	private void _commitItems(
+	private <T> BatchEngineImportTask _commitItems(
 			BatchEngineImportTask batchEngineImportTask,
-			BatchEngineTaskItemDelegateExecutor
-				batchEngineTaskItemDelegateExecutor,
-			List<Object> items, int processedItemsCount)
+			BatchEngineTaskItemDelegate<T> batchEngineTaskItemDelegate,
+			List<T> items, Map<String, Serializable> parameters,
+			int processedItemsCount)
 		throws Throwable {
 
-		batchEngineTaskItemDelegateExecutor.saveItems(
-			_createBatchEngineImportStrategy(batchEngineImportTask),
+		BatchEngineTaskOperation batchEngineTaskOperation =
 			BatchEngineTaskOperation.valueOf(
-				batchEngineImportTask.getOperation()),
-			items);
+				batchEngineImportTask.getOperation());
+
+		if (batchEngineTaskOperation == BatchEngineTaskOperation.CREATE) {
+			batchEngineTaskItemDelegate.create(items, parameters);
+		}
+		else if (batchEngineTaskOperation == BatchEngineTaskOperation.DELETE) {
+			batchEngineTaskItemDelegate.delete(items, parameters);
+		}
+		else {
+			batchEngineTaskItemDelegate.update(items, parameters);
+		}
 
 		batchEngineImportTask.setProcessedItemsCount(processedItemsCount);
 
-		_batchEngineImportTaskLocalService.updateBatchEngineImportTask(
+		return _batchEngineImportTaskLocalService.updateBatchEngineImportTask(
 			batchEngineImportTask);
-	}
-
-	private BatchEngineImportStrategy _createBatchEngineImportStrategy(
-		BatchEngineImportTask batchEngineImportTask) {
-
-		if (batchEngineImportTask.getImportStrategy() ==
-				BatchEngineImportTaskConstants.
-					IMPORT_STRATEGY_ON_ERROR_CONTINUE) {
-
-			return new OnErrorContinueBatchEngineImportStrategy(
-				batchEngineImportTask, _importTaskPostActions.toList(),
-				_importTaskPreActions.toList());
-		}
-
-		return new OnErrorFailBatchEngineImportStrategy(
-			batchEngineImportTask, _importTaskPostActions.toList(),
-			_importTaskPreActions.toList());
 	}
 
 	private BatchEngineImportTaskItemReader _getBatchEngineImportTaskItemReader(
@@ -207,16 +350,19 @@ public class BatchEngineImportTaskExecutorImpl
 			fieldNameMapping = Collections.emptyMap();
 		}
 
+		BatchEngineTaskContentType batchEngineTaskContentType =
+			BatchEngineTaskContentType.valueOf(
+				batchEngineImportTask.getContentType());
+
 		return batchEngineImportTaskItemReaderBuilder.
 			batchEngineTaskContentType(
-				BatchEngineTaskContentType.valueOf(
-					batchEngineImportTask.getContentType())
+				batchEngineTaskContentType
 			).csvFileColumnDelimiter(
 				_getCSVFileColumnDelimiter(batchEngineImportTask.getCompanyId())
 			).fieldNames(
 				ListUtil.fromCollection(fieldNameMapping.keySet())
 			).inputStream(
-				inputStream
+				ZipInputStreamUtil.asZipInputStream(inputStream)
 			).parameters(
 				parameters
 			).build();
@@ -231,6 +377,48 @@ public class BatchEngineImportTaskExecutorImpl
 		return batchEngineTaskCompanyConfiguration.csvFileColumnDelimiter();
 	}
 
+	private <T> Callable<Void> _getImportItemCallable(
+		BatchEngineImportTask batchEngineImportTask,
+		BatchEngineTaskItemDelegate<T> batchEngineTaskItemDelegate, T item,
+		UnsafeFunction<T, T, Exception> unsafeFunction) {
+
+		return () -> {
+			ImportTaskContext importTaskContext = new ImportTaskContext();
+
+			for (ImportTaskPreAction importTaskPreAction :
+					_importTaskPreActions) {
+
+				importTaskPreAction.run(
+					batchEngineImportTask, batchEngineTaskItemDelegate,
+					importTaskContext, item);
+			}
+
+			T persistedItem = unsafeFunction.apply(item);
+
+			if (persistedItem == null) {
+				return null;
+			}
+
+			for (ImportTaskPostAction importTaskPostAction :
+					_importTaskPostActions) {
+
+				importTaskPostAction.run(
+					batchEngineImportTask, batchEngineTaskItemDelegate,
+					importTaskContext, item, persistedItem);
+			}
+
+			return null;
+		};
+	}
+
+	private String _getKey(String key, String modelClassName) {
+		if (modelClassName == null) {
+			return key;
+		}
+
+		return modelClassName + StringPool.POUND + key;
+	}
+
 	private Map<String, Serializable> _getParameters(
 		BatchEngineImportTask batchEngineImportTask) {
 
@@ -241,67 +429,94 @@ public class BatchEngineImportTaskExecutorImpl
 			parameters = new HashMap<>();
 		}
 
-		parameters.computeIfAbsent(
-			"taskItemDelegateName",
-			key -> batchEngineImportTask.getTaskItemDelegateName());
-
 		return parameters;
 	}
 
 	private void _handleException(
-			BatchEngineImportTask batchEngineImportTask, Exception exception,
-			int processedItemsCount)
+			BatchEngineImportTask batchEngineImportTask,
+			BatchEngineTaskItemDelegate<?> batchEngineTaskItemDelegate,
+			Exception exception1, int processedItemsCount)
 		throws Exception {
+
+		if (exception1 instanceof
+				BatchEngineImportTaskExecutorException
+					batchEngineImportTaskExecutorException) {
+
+			Exception exception2 =
+				_unwrapBatchEngineImportTaskExecutorException(
+					batchEngineImportTaskExecutorException);
+
+			Object item = batchEngineImportTaskExecutorException.getItem();
+
+			_batchEngineImportTaskExceptionHandlers.forEach(
+				batchEngineImportTaskExceptionHandler ->
+					batchEngineImportTaskExceptionHandler.handle(
+						batchEngineImportTask, batchEngineTaskItemDelegate,
+						exception2, item,
+						ErrorMessageUtil.getErrorMessage(
+							exception2, batchEngineImportTask.getUserId())));
+		}
 
 		_batchEngineImportTaskErrorLocalService.addBatchEngineImportTaskError(
 			batchEngineImportTask.getCompanyId(),
 			batchEngineImportTask.getUserId(),
 			batchEngineImportTask.getBatchEngineImportTaskId(), null,
-			processedItemsCount, exception.toString());
+			processedItemsCount,
+			ErrorMessageUtil.getErrorMessage(
+				exception1, batchEngineImportTask.getUserId()));
 
 		if (batchEngineImportTask.getImportStrategy() ==
 				BatchEngineImportTaskConstants.
 					IMPORT_STRATEGY_ON_ERROR_CONTINUE) {
 
-			_log.error(exception);
+			_log.error(exception1);
 		}
 		else if (batchEngineImportTask.getImportStrategy() ==
 					BatchEngineImportTaskConstants.
 						IMPORT_STRATEGY_ON_ERROR_FAIL) {
 
-			throw exception;
+			throw exception1;
 		}
 	}
 
-	private void _importItems(
+	private <T> BatchEngineImportTask _importFile(
 			BatchEngineImportTask batchEngineImportTask,
-			BatchEngineTaskItemDelegate<?> batchEngineTaskItemDelegate)
+			BatchEngineTaskItemDelegate<T> batchEngineTaskItemDelegate,
+			File file, User user)
 		throws Throwable {
 
 		Map<String, Serializable> parameters = _getParameters(
 			batchEngineImportTask);
 
-		try (BatchEngineImportTaskItemReader batchEngineImportTaskItemReader =
+		try (InputStream inputStream = new FileInputStream(file);
+
+			BatchEngineImportTaskItemReader batchEngineImportTaskItemReader =
 				_getBatchEngineImportTaskItemReader(
-					batchEngineImportTask,
-					_batchEngineImportTaskLocalService.openContentInputStream(
-						batchEngineImportTask.getBatchEngineImportTaskId()),
-					parameters)) {
+					batchEngineImportTask, inputStream, parameters)) {
 
-			BatchEngineTaskItemDelegateExecutor
-				batchEngineTaskItemDelegateExecutor =
-					_batchEngineTaskItemDelegateExecutorFactory.create(
-						batchEngineTaskItemDelegate,
-						_companyLocalService.getCompany(
-							batchEngineImportTask.getCompanyId()),
-						parameters,
-						_userLocalService.getUser(
-							batchEngineImportTask.getUserId()));
+			BatchEngineTaskExecutorUtil.setContextFields(
+				batchEngineImportTask.getCompanyId(),
+				batchEngineTaskItemDelegate, parameters, user);
 
-			List<Object> items = new ArrayList<>();
+			BatchEngineImportTask finalBatchEngineImportTask =
+				batchEngineImportTask;
+
+			batchEngineTaskItemDelegate.setImportItemUnsafeBiConsumer(
+				(item, unsafeFunction) -> _importItem(
+					finalBatchEngineImportTask, batchEngineTaskItemDelegate,
+					item, unsafeFunction));
+
+			List<T> items = new ArrayList<>();
 
 			Class<?> itemClass = _itemClassRegistry.getItemClass(
 				batchEngineTaskItemDelegate);
+
+			Set<String> passwordFieldNames = Collections.emptySet();
+
+			if (Validator.isNotNull(PropsValues.BATCH_ENGINE_ENCRYPTION_KEY)) {
+				passwordFieldNames = PasswordFieldUtil.getPasswordFieldNames(
+					itemClass);
+			}
 
 			int processedItemsCount = 0;
 
@@ -311,9 +526,10 @@ public class BatchEngineImportTaskExecutorImpl
 				}
 
 				try {
-					Object item = _readItem(
+					T item = _readItem(
 						batchEngineImportTask, batchEngineImportTaskItemReader,
-						batchEngineImportTask.getFieldNameMapping(), itemClass);
+						batchEngineImportTask.getFieldNameMapping(), itemClass,
+						passwordFieldNames);
 
 					if (item == null) {
 						break;
@@ -329,33 +545,173 @@ public class BatchEngineImportTaskExecutorImpl
 					processedItemsCount++;
 
 					_handleException(
-						batchEngineImportTask, exception, processedItemsCount);
+						batchEngineImportTask, batchEngineTaskItemDelegate,
+						exception, processedItemsCount);
 				}
 
-				if (items.size() == batchEngineImportTask.getBatchSize()) {
-					_commitItems(
-						batchEngineImportTask,
-						batchEngineTaskItemDelegateExecutor, items,
-						processedItemsCount);
-
-					items.clear();
-
-					ItemIndexThreadLocal.clear();
+				if (items.size() != batchEngineImportTask.getBatchSize()) {
+					continue;
 				}
+
+				batchEngineImportTask = _commitItems(
+					batchEngineImportTask, batchEngineTaskItemDelegate, items,
+					parameters, processedItemsCount);
+
+				BatchEngineTaskExecutorUtil.sendBatchProgressMessage(
+					_backgroundTaskStatusMessageSender, processedItemsCount);
+
+				items.clear();
+
+				ItemIndexThreadLocal.clear();
 			}
 
 			if (!items.isEmpty()) {
-				_commitItems(
-					batchEngineImportTask, batchEngineTaskItemDelegateExecutor,
-					items, processedItemsCount);
+				batchEngineImportTask = _commitItems(
+					batchEngineImportTask, batchEngineTaskItemDelegate, items,
+					parameters, processedItemsCount);
 			}
+
+			if (processedItemsCount > 0) {
+				BatchEngineTaskExecutorUtil.sendBatchProgressMessage(
+					_backgroundTaskStatusMessageSender, processedItemsCount);
+			}
+		}
+
+		return batchEngineImportTask;
+	}
+
+	private <T> void _importItem(
+			BatchEngineImportTask batchEngineImportTask,
+			BatchEngineTaskItemDelegate<T> batchEngineTaskItemDelegate, T item,
+			UnsafeFunction<T, T, Exception> unsafeFunction)
+		throws Exception {
+
+		Callable<Void> importItemCallable = _getImportItemCallable(
+			batchEngineImportTask, batchEngineTaskItemDelegate, item,
+			unsafeFunction);
+
+		try {
+
+			// Run every item in a nested savepoint. A failing item rolls back
+			// to the savepoint, which restores the shared connection to a
+			// usable state even on PostgreSQL, where any statement error
+			// otherwise aborts the whole transaction. Because the savepoint
+			// shares the enclosing connection, there is no second connection
+			// that could deadlock against the outer import transaction on
+			// databases that take table level write locks.
+
+			TransactionInvokerUtil.invoke(
+				_nestedTransactionConfig, importItemCallable);
+
+			LastSessionRecorderHelperUtil.syncLastSessionState();
+		}
+		catch (Throwable throwable) {
+			Exception exception =
+				throwable instanceof Exception ? (Exception)throwable :
+					new Exception(throwable.getMessage(), throwable);
+
+			_log.error(exception);
+
+			addBatchEngineImportTaskError(
+				batchEngineImportTask, batchEngineTaskItemDelegate, exception,
+				item, ItemIndexThreadLocal.get());
+
+			if (batchEngineImportTask.getImportStrategy() ==
+					BatchEngineImportTaskConstants.
+						IMPORT_STRATEGY_ON_ERROR_FAIL) {
+
+				throw exception;
+			}
+		}
+		finally {
+			ItemIndexThreadLocal.remove();
 		}
 	}
 
-	private Object _readItem(
+	private String _invokeBatchEngineContentProcessors(
+		List<BatchEngineContentProcessor> batchEngineContentProcessors,
+		Map<String, Object> fieldNameValueMap, String value) {
+
+		if (ListUtil.isEmpty(batchEngineContentProcessors)) {
+			return value;
+		}
+
+		for (BatchEngineContentProcessor batchEngineContentProcessor :
+				batchEngineContentProcessors) {
+
+			value = batchEngineContentProcessor.process(
+				value, fieldNameValueMap);
+		}
+
+		return value;
+	}
+
+	private String _invokeBatchEngineContentProcessors(
+		Map<String, Object> fieldNameValueMap, String key,
+		String modelClassName, String value) {
+
+		value = _invokeBatchEngineContentProcessors(
+			_serviceTrackerMap.getService(key), fieldNameValueMap, value);
+
+		return _invokeBatchEngineContentProcessors(
+			_serviceTrackerMap.getService(_getKey(key, modelClassName)),
+			fieldNameValueMap, value);
+	}
+
+	private Map<String, Object> _processFieldNameValueMap(
+		Map<String, Object> map, String modelClassName, String name) {
+
+		Map<String, Object> fieldNameValueMap = Collections.unmodifiableMap(
+			map);
+
+		for (Map.Entry<String, Object> entry : map.entrySet()) {
+			entry.setValue(
+				_processValue(
+					entry.getKey(), fieldNameValueMap, modelClassName, name,
+					entry.getValue()));
+		}
+
+		return map;
+	}
+
+	private Object _processValue(
+		String fieldName, Map<String, Object> fieldNameValueMap,
+		String modelClassName, String parentFieldName, Object value) {
+
+		if (value instanceof List) {
+			List<Object> list = (List<Object>)value;
+
+			list.replaceAll(
+				item -> _processValue(
+					fieldName, fieldNameValueMap, modelClassName,
+					parentFieldName, item));
+		}
+		else if (value instanceof Map) {
+			_processFieldNameValueMap(
+				(Map<String, Object>)value, modelClassName, fieldName);
+		}
+		else if (value instanceof String valueString) {
+			valueString = _invokeBatchEngineContentProcessors(
+				fieldNameValueMap, "*", modelClassName, valueString);
+
+			String key = fieldName;
+
+			if (parentFieldName != null) {
+				key = parentFieldName + StringPool.PERIOD + fieldName;
+			}
+
+			return _invokeBatchEngineContentProcessors(
+				fieldNameValueMap, key, modelClassName, valueString);
+		}
+
+		return value;
+	}
+
+	private <T> T _readItem(
 			BatchEngineImportTask batchEngineImportTask,
 			BatchEngineImportTaskItemReader batchEngineImportTaskItemReader,
-			Map<String, Serializable> fieldNameMapping, Class<?> itemClass)
+			Map<String, Serializable> fieldNameMapping, Class<?> itemClass,
+			Set<String> passwordFieldNames)
 		throws Exception {
 
 		Map<String, Object> fieldNameValueMap =
@@ -365,19 +721,44 @@ public class BatchEngineImportTaskExecutorImpl
 			return null;
 		}
 
-		return BatchEngineImportTaskItemReaderUtil.convertValue(
+		_languageKeyResolver.expand(
+			batchEngineImportTask.getCompanyId(), fieldNameValueMap);
+
+		if (ExportImportThreadLocal.isImportInProcess()) {
+			_processFieldNameValueMap(
+				fieldNameValueMap, itemClass.getName(), null);
+		}
+
+		return (T)BatchEngineImportTaskItemReaderUtil.convertValue(
 			batchEngineImportTask, itemClass,
-			BatchEngineImportTaskItemReaderUtil.mapFieldNames(
-				fieldNameMapping, fieldNameValueMap),
+			PasswordFieldUtil.replacePasswordFields(
+				BatchEngineImportTaskItemReaderUtil.mapFieldNames(
+					fieldNameMapping, fieldNameValueMap),
+				passwordFieldNames, PasswordFieldUtil::decrypt),
 			_itemReaderPostActions.toList());
+	}
+
+	private Exception _unwrapBatchEngineImportTaskExecutorException(
+		BatchEngineImportTaskExecutorException
+			batchEngineImportTaskExecutorException) {
+
+		Throwable throwable = batchEngineImportTaskExecutorException.getCause();
+
+		if (throwable instanceof Exception) {
+			return (Exception)throwable;
+		}
+
+		return batchEngineImportTaskExecutorException;
 	}
 
 	private void _updateBatchEngineImportTask(
 		BatchEngineTaskExecuteStatus batchEngineTaskExecuteStatus,
-		BatchEngineImportTask batchEngineImportTask, String errorMessage) {
+		BatchEngineImportTask batchEngineImportTask, Throwable throwable) {
 
 		batchEngineImportTask.setEndTime(new Date());
-		batchEngineImportTask.setErrorMessage(errorMessage);
+		batchEngineImportTask.setErrorMessage(
+			ErrorMessageUtil.getErrorMessage(
+				throwable, batchEngineImportTask.getUserId()));
 		batchEngineImportTask.setExecuteStatus(
 			batchEngineTaskExecuteStatus.toString());
 
@@ -387,6 +768,7 @@ public class BatchEngineImportTaskExecutorImpl
 
 		BatchEngineTaskCallbackUtil.sendCallback(
 			batchEngineImportTask.getCallbackURL(),
+			batchEngineImportTask.getCompanyId(),
 			batchEngineImportTask.getExecuteStatus(),
 			batchEngineImportTask.getBatchEngineImportTaskId());
 	}
@@ -394,16 +776,24 @@ public class BatchEngineImportTaskExecutorImpl
 	private static final Log _log = LogFactoryUtil.getLog(
 		BatchEngineImportTaskExecutorImpl.class);
 
+	private static final TransactionConfig _nestedTransactionConfig =
+		TransactionConfig.Factory.create(
+			Propagation.NESTED, new Class<?>[] {Exception.class});
+
+	@Reference
+	private BackgroundTaskStatusMessageSender
+		_backgroundTaskStatusMessageSender;
+
 	@Reference
 	private BatchEngineImportTaskErrorLocalService
 		_batchEngineImportTaskErrorLocalService;
 
+	private ServiceTrackerList<BatchEngineImportTaskExceptionHandler>
+		_batchEngineImportTaskExceptionHandlers;
+
 	@Reference
 	private BatchEngineImportTaskLocalService
 		_batchEngineImportTaskLocalService;
-
-	private BatchEngineTaskItemDelegateExecutorFactory
-		_batchEngineTaskItemDelegateExecutorFactory;
 
 	@Reference
 	private BatchEngineTaskItemDelegateRegistry
@@ -425,6 +815,12 @@ public class BatchEngineImportTaskExecutorImpl
 	private ItemClassRegistry _itemClassRegistry;
 
 	private ServiceTrackerList<ItemReaderPostAction> _itemReaderPostActions;
+
+	@Reference
+	private LanguageKeyResolver _languageKeyResolver;
+
+	private ServiceTrackerMap<String, List<BatchEngineContentProcessor>>
+		_serviceTrackerMap;
 
 	@Reference
 	private UserLocalService _userLocalService;

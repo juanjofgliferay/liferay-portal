@@ -7,9 +7,11 @@ package com.liferay.journal.web.internal.info.item.provider;
 
 import com.liferay.info.exception.NoSuchInfoItemException;
 import com.liferay.info.item.ClassPKInfoItemIdentifier;
+import com.liferay.info.item.ERCInfoItemIdentifier;
 import com.liferay.info.item.GroupKeyInfoItemIdentifier;
 import com.liferay.info.item.GroupUrlTitleInfoItemIdentifier;
 import com.liferay.info.item.InfoItemIdentifier;
+import com.liferay.info.item.provider.BaseInfoItemObjectProvider;
 import com.liferay.info.item.provider.InfoItemObjectProvider;
 import com.liferay.journal.exception.NoSuchArticleException;
 import com.liferay.journal.exception.NoSuchArticleResourceException;
@@ -39,6 +41,7 @@ import org.osgi.service.component.annotations.Reference;
 @Component(
 	property = {
 		"info.item.identifier=com.liferay.info.item.ClassPKInfoItemIdentifier",
+		"info.item.identifier=com.liferay.info.item.ERCInfoItemIdentifier",
 		"info.item.identifier=com.liferay.info.item.GroupKeyInfoItemIdentifier",
 		"info.item.identifier=com.liferay.info.item.GroupUrlTitleInfoItemIdentifier",
 		"item.class.name=com.liferay.journal.model.JournalArticle",
@@ -47,23 +50,23 @@ import org.osgi.service.component.annotations.Reference;
 	service = InfoItemObjectProvider.class
 )
 public class JournalArticleInfoItemObjectProvider
-	implements InfoItemObjectProvider<JournalArticle> {
+	extends BaseInfoItemObjectProvider<JournalArticle> {
 
 	@Override
-	public JournalArticle getInfoItem(InfoItemIdentifier infoItemIdentifier)
+	protected JournalArticle doGetInfoItem(
+			long groupId, InfoItemIdentifier infoItemIdentifier)
 		throws NoSuchInfoItemException {
 
 		if (!(infoItemIdentifier instanceof ClassPKInfoItemIdentifier) &&
+			!(infoItemIdentifier instanceof ERCInfoItemIdentifier) &&
 			!(infoItemIdentifier instanceof GroupKeyInfoItemIdentifier) &&
 			!(infoItemIdentifier instanceof GroupUrlTitleInfoItemIdentifier)) {
 
 			throw new NoSuchInfoItemException(
-				"Unsupported info item identifier type " + infoItemIdentifier);
+				"Unsupported info item identifier " + infoItemIdentifier);
 		}
 
 		JournalArticle article = null;
-
-		String version = infoItemIdentifier.getVersion();
 
 		try {
 			if (infoItemIdentifier instanceof ClassPKInfoItemIdentifier) {
@@ -71,7 +74,16 @@ public class JournalArticleInfoItemObjectProvider
 					(ClassPKInfoItemIdentifier)infoItemIdentifier;
 
 				article = _getArticle(
-					classPKInfoItemIdentifier.getClassPK(), version);
+					classPKInfoItemIdentifier.getClassPK(),
+					infoItemIdentifier.getVersion());
+			}
+			else if (infoItemIdentifier instanceof ERCInfoItemIdentifier) {
+				ERCInfoItemIdentifier ercInfoItemIdentifier =
+					(ERCInfoItemIdentifier)infoItemIdentifier;
+
+				article = _getArticle(
+					ercInfoItemIdentifier.getExternalReferenceCode(), groupId,
+					infoItemIdentifier.getVersion());
 			}
 			else if (infoItemIdentifier instanceof GroupKeyInfoItemIdentifier) {
 				GroupKeyInfoItemIdentifier groupKeyInfoItemIdentifier =
@@ -79,7 +91,8 @@ public class JournalArticleInfoItemObjectProvider
 
 				article = _getArticle(
 					groupKeyInfoItemIdentifier.getGroupId(),
-					groupKeyInfoItemIdentifier.getKey(), version);
+					groupKeyInfoItemIdentifier.getKey(),
+					infoItemIdentifier.getVersion());
 			}
 			else if (infoItemIdentifier instanceof
 						GroupUrlTitleInfoItemIdentifier) {
@@ -90,12 +103,14 @@ public class JournalArticleInfoItemObjectProvider
 
 				article = _getArticleByUrlTitle(
 					groupURLTitleInfoItemIdentifier.getGroupId(),
-					groupURLTitleInfoItemIdentifier.getUrlTitle(), version);
+					groupURLTitleInfoItemIdentifier.getUrlTitle(),
+					infoItemIdentifier.getVersion());
 			}
 
 			if ((article != null) &&
 				!Objects.equals(
-					version, InfoItemIdentifier.VERSION_LATEST_APPROVED) &&
+					infoItemIdentifier.getVersion(),
+					InfoItemIdentifier.VERSION_LATEST_APPROVED) &&
 				_isSignedIn() && !_hasPermission(article)) {
 
 				article = _getArticle(
@@ -120,9 +135,7 @@ public class JournalArticleInfoItemObjectProvider
 				"Unable to get journal article " + infoItemIdentifier);
 		}
 
-		if (article.isScheduled() || article.isInTrash() ||
-			(article.isPending() && !_isSignedIn())) {
-
+		if (article.isInTrash()) {
 			return null;
 		}
 
@@ -132,10 +145,7 @@ public class JournalArticleInfoItemObjectProvider
 	private JournalArticle _getArticle(long classPK, String version)
 		throws PortalException {
 
-		if (Validator.isNull(version) ||
-			Objects.equals(
-				version, InfoItemIdentifier.VERSION_LATEST_APPROVED)) {
-
+		if (_shouldReturnLatestApprovedArticle(version)) {
 			return _journalArticleLocalService.fetchLatestArticle(classPK);
 		}
 		else if (Objects.equals(version, InfoItemIdentifier.VERSION_LATEST)) {
@@ -159,10 +169,7 @@ public class JournalArticleInfoItemObjectProvider
 			long groupId, String articleId, String version)
 		throws PortalException {
 
-		if (Validator.isNull(version) ||
-			Objects.equals(
-				version, InfoItemIdentifier.VERSION_LATEST_APPROVED)) {
-
+		if (_shouldReturnLatestApprovedArticle(version)) {
 			return _journalArticleLocalService.fetchLatestArticle(
 				groupId, articleId, WorkflowConstants.STATUS_APPROVED);
 		}
@@ -175,14 +182,38 @@ public class JournalArticleInfoItemObjectProvider
 			groupId, articleId, GetterUtil.getDouble(version));
 	}
 
+	private JournalArticle _getArticle(
+			String externalReferenceCode, long groupId, String version)
+		throws PortalException {
+
+		if (_shouldReturnLatestApprovedArticle(version)) {
+			return _journalArticleLocalService.
+				fetchLatestArticleByExternalReferenceCode(
+					groupId, externalReferenceCode,
+					WorkflowConstants.STATUS_APPROVED, true);
+		}
+
+		if (Objects.equals(version, InfoItemIdentifier.VERSION_LATEST)) {
+			return _journalArticleLocalService.
+				fetchLatestArticleByExternalReferenceCode(
+					groupId, externalReferenceCode);
+		}
+
+		JournalArticle journalArticle =
+			_journalArticleLocalService.
+				fetchLatestArticleByExternalReferenceCode(
+					groupId, externalReferenceCode);
+
+		return _journalArticleLocalService.getArticle(
+			journalArticle.getGroupId(), journalArticle.getArticleId(),
+			GetterUtil.getDouble(version));
+	}
+
 	private JournalArticle _getArticleByUrlTitle(
 			long groupId, String urlTitle, String version)
 		throws PortalException {
 
-		if (Validator.isNull(version) ||
-			Objects.equals(
-				version, InfoItemIdentifier.VERSION_LATEST_APPROVED)) {
-
+		if (_shouldReturnLatestApprovedArticle(version)) {
 			return _journalArticleLocalService.fetchLatestArticleByUrlTitle(
 				groupId, urlTitle, WorkflowConstants.STATUS_APPROVED);
 		}
@@ -232,6 +263,18 @@ public class JournalArticleInfoItemObjectProvider
 		}
 
 		return permissionChecker.isSignedIn();
+	}
+
+	private boolean _shouldReturnLatestApprovedArticle(String version) {
+		if (Validator.isNull(version) ||
+			Objects.equals(version, InfoItemIdentifier.VERSION_EDITABLE) ||
+			Objects.equals(
+				version, InfoItemIdentifier.VERSION_LATEST_APPROVED)) {
+
+			return true;
+		}
+
+		return false;
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(

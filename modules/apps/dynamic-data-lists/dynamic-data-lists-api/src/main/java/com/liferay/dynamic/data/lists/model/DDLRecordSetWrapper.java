@@ -531,21 +531,6 @@ public class DDLRecordSetWrapper
 		return model.getSettings();
 	}
 
-	@Override
-	public com.liferay.dynamic.data.mapping.storage.DDMFormValues
-			getSettingsDDMFormValues()
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return model.getSettingsDDMFormValues();
-	}
-
-	@Override
-	public DDLRecordSetSettings getSettingsModel()
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return model.getSettingsModel();
-	}
-
 	/**
 	 * Returns the user ID of this ddl record set.
 	 *
@@ -1026,3 +1011,4 @@ public class DDLRecordSetWrapper
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:862164548

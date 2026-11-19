@@ -8,23 +8,23 @@ package com.liferay.fragment.web.internal.display.context;
 import com.liferay.fragment.constants.FragmentActionKeys;
 import com.liferay.fragment.constants.FragmentPortletKeys;
 import com.liferay.fragment.model.FragmentEntry;
-import com.liferay.fragment.model.FragmentEntryLinkTable;
-import com.liferay.fragment.service.FragmentEntryLinkLocalServiceUtil;
-import com.liferay.fragment.service.FragmentEntryLocalServiceUtil;
+import com.liferay.fragment.service.FragmentEntryLinkLocalService;
+import com.liferay.fragment.service.FragmentEntryLocalService;
 import com.liferay.fragment.web.internal.security.permission.resource.FragmentPermission;
-import com.liferay.petra.sql.dsl.DSLQueryFactoryUtil;
-import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.search.EmptyOnClickRowChecker;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.portlet.SearchOrderByUtil;
-import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
+import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.util.comparator.GroupNameComparator;
+
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -33,17 +33,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
 /**
  * @author Jürgen Kappler
  */
 public class GroupFragmentEntryLinkDisplayContext {
 
 	public GroupFragmentEntryLinkDisplayContext(
-		RenderRequest renderRequest, RenderResponse renderResponse) {
+		FragmentEntryLinkLocalService fragmentEntryLinkLocalService,
+		FragmentEntryLocalService fragmentEntryLocalService,
+		GroupLocalService groupLocalService, RenderRequest renderRequest,
+		RenderResponse renderResponse) {
 
+		_fragmentEntryLinkLocalService = fragmentEntryLinkLocalService;
+		_fragmentEntryLocalService = fragmentEntryLocalService;
+		_groupLocalService = groupLocalService;
 		_renderRequest = renderRequest;
 		_renderResponse = renderResponse;
 	}
@@ -59,13 +62,18 @@ public class GroupFragmentEntryLinkDisplayContext {
 		return _fragmentCollectionId;
 	}
 
-	public FragmentEntry getFragmentEntry() throws PortalException {
+	public FragmentEntry getFragmentEntry() {
 		if (_fragmentEntry != null) {
 			return _fragmentEntry;
 		}
 
-		_fragmentEntry = FragmentEntryLocalServiceUtil.getFragmentEntry(
-			getFragmentEntryId());
+		try {
+			_fragmentEntry = _fragmentEntryLocalService.getFragmentEntry(
+				getFragmentEntryId());
+		}
+		catch (PortalException portalException) {
+			throw new RuntimeException(portalException);
+		}
 
 		return _fragmentEntry;
 	}
@@ -80,7 +88,7 @@ public class GroupFragmentEntryLinkDisplayContext {
 		return _fragmentEntryId;
 	}
 
-	public long getFragmentGroupUsageCount(Group group) {
+	public long getFragmentGroupUsageCount(Group group) throws PortalException {
 		Map<Group, Integer> groupFragmentEntryUsages =
 			_getGroupFragmentEntryUsages();
 
@@ -121,7 +129,7 @@ public class GroupFragmentEntryLinkDisplayContext {
 		return _redirect;
 	}
 
-	public SearchContainer<Group> getSearchContainer() {
+	public SearchContainer<Group> getSearchContainer() throws PortalException {
 		if (_searchContainer != null) {
 			return _searchContainer;
 		}
@@ -170,31 +178,24 @@ public class GroupFragmentEntryLinkDisplayContext {
 		return _searchContainer;
 	}
 
-	private Map<Group, Integer> _getGroupFragmentEntryUsages() {
+	private Map<Group, Integer> _getGroupFragmentEntryUsages()
+		throws PortalException {
+
 		if (_groupFragmentEntryUsages != null) {
 			return _groupFragmentEntryUsages;
 		}
 
 		Map<Group, Integer> groupFragmentEntryUsages = new HashMap<>();
 
-		DSLQuery dslQuery = DSLQueryFactoryUtil.selectDistinct(
-			FragmentEntryLinkTable.INSTANCE.groupId
-		).from(
-			FragmentEntryLinkTable.INSTANCE
-		).where(
-			FragmentEntryLinkTable.INSTANCE.fragmentEntryId.eq(
-				getFragmentEntryId())
-		);
+		Map<Long, Integer> groupFragmentEntryUsageCounts =
+			_fragmentEntryLinkLocalService.getGroupFragmentEntryUsageCounts(
+				getFragmentEntry());
 
-		List<Long> groupIds = FragmentEntryLinkLocalServiceUtil.dslQuery(
-			dslQuery);
+		for (Map.Entry<Long, Integer> entry :
+				groupFragmentEntryUsageCounts.entrySet()) {
 
-		for (long groupId : groupIds) {
 			groupFragmentEntryUsages.put(
-				GroupLocalServiceUtil.fetchGroup(groupId),
-				FragmentEntryLinkLocalServiceUtil.
-					getLayoutFragmentEntryLinksCountByFragmentEntryId(
-						groupId, getFragmentEntryId()));
+				_groupLocalService.getGroup(entry.getKey()), entry.getValue());
 		}
 
 		_groupFragmentEntryUsages = groupFragmentEntryUsages;
@@ -205,7 +206,10 @@ public class GroupFragmentEntryLinkDisplayContext {
 	private Long _fragmentCollectionId;
 	private FragmentEntry _fragmentEntry;
 	private Long _fragmentEntryId;
+	private final FragmentEntryLinkLocalService _fragmentEntryLinkLocalService;
+	private final FragmentEntryLocalService _fragmentEntryLocalService;
 	private Map<Group, Integer> _groupFragmentEntryUsages;
+	private final GroupLocalService _groupLocalService;
 	private String _orderByCol;
 	private String _orderByType;
 	private String _redirect;

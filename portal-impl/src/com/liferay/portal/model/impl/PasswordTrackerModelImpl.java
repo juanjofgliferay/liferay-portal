@@ -79,9 +79,11 @@ public class PasswordTrackerModelImpl
 	}
 
 	public static final String TABLE_SQL_CREATE =
-		"create table PasswordTracker (mvccVersion LONG default 0 not null,passwordTrackerId LONG not null primary key,companyId LONG,userId LONG,createDate DATE null,password_ VARCHAR(75) null)";
+		"create table PasswordTracker (mvccVersion LONG default 0 not null,passwordTrackerId LONG not null primary key,companyId LONG,userId LONG,createDate DATE null,password_ VARCHAR(255) null)";
 
 	public static final String TABLE_SQL_DROP = "drop table PasswordTracker";
+
+	public static final String ENTITY_ALIAS = "passwordTracker";
 
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY passwordTracker.userId DESC, passwordTracker.createDate DESC";
@@ -127,7 +129,7 @@ public class PasswordTrackerModelImpl
 	public static final long CREATEDATE_COLUMN_BITMASK = 2L;
 
 	public static final long LOCK_EXPIRATION_TIME = GetterUtil.getLong(
-		com.liferay.portal.util.PropsUtil.get(
+		com.liferay.portal.kernel.util.PropsUtil.get(
 			"lock.expiration.time.com.liferay.portal.kernel.model.PasswordTracker"));
 
 	public PasswordTrackerModelImpl() {
@@ -746,3 +748,4 @@ public class PasswordTrackerModelImpl
 	private PasswordTracker _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1913455649

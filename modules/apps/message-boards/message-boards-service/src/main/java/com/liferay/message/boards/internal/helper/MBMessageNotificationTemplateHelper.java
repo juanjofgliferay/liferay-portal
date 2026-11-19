@@ -23,12 +23,12 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.apache.commons.lang.StringUtils;
 
@@ -234,6 +234,14 @@ public class MBMessageNotificationTemplateHelper {
 		return StringUtils.repeat(_QUOTE_MARK, depth) + _getQuoteMark();
 	}
 
+	private String _getQuoteMark() {
+		if (_htmlFormat) {
+			return StringPool.BLANK;
+		}
+
+		return _QUOTE_MARK + StringPool.SPACE;
+	}
+
 	private String _getQuotedMessage(
 		boolean lastPosition, String messageBody, String quoteMark) {
 
@@ -256,14 +264,6 @@ public class MBMessageNotificationTemplateHelper {
 		}
 
 		return sb.toString();
-	}
-
-	private String _getQuoteMark() {
-		if (_htmlFormat) {
-			return StringPool.BLANK;
-		}
-
-		return _QUOTE_MARK + StringPool.SPACE;
 	}
 
 	private String _getUserName(MBMessage message, String quoteMark) {

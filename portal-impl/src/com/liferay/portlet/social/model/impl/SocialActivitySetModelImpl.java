@@ -95,6 +95,8 @@ public class SocialActivitySetModelImpl
 
 	public static final String TABLE_SQL_DROP = "drop table SocialActivitySet";
 
+	public static final String ENTITY_ALIAS = "socialActivitySet";
+
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY socialActivitySet.modifiedDate DESC";
 
@@ -129,41 +131,23 @@ public class SocialActivitySetModelImpl
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long CLASSNAMEID_COLUMN_BITMASK = 1L;
+	public static final long GROUPID_COLUMN_BITMASK = 1L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long CLASSPK_COLUMN_BITMASK = 2L;
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
-	 */
-	@Deprecated
-	public static final long GROUPID_COLUMN_BITMASK = 4L;
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
-	 */
-	@Deprecated
-	public static final long TYPE_COLUMN_BITMASK = 8L;
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
-	 */
-	@Deprecated
-	public static final long USERID_COLUMN_BITMASK = 16L;
+	public static final long USERID_COLUMN_BITMASK = 2L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
 	 *		#getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long MODIFIEDDATE_COLUMN_BITMASK = 32L;
+	public static final long MODIFIEDDATE_COLUMN_BITMASK = 4L;
 
 	public static final long LOCK_EXPIRATION_TIME = GetterUtil.getLong(
-		com.liferay.portal.util.PropsUtil.get(
+		com.liferay.portal.kernel.util.PropsUtil.get(
 			"lock.expiration.time.com.liferay.social.kernel.model.SocialActivitySet"));
 
 	public SocialActivitySetModelImpl() {
@@ -544,16 +528,6 @@ public class SocialActivitySetModelImpl
 		_classNameId = classNameId;
 	}
 
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #getColumnOriginalValue(String)}
-	 */
-	@Deprecated
-	public long getOriginalClassNameId() {
-		return GetterUtil.getLong(
-			this.<Long>getColumnOriginalValue("classNameId"));
-	}
-
 	@Override
 	public long getClassPK() {
 		return _classPK;
@@ -568,15 +542,6 @@ public class SocialActivitySetModelImpl
 		_classPK = classPK;
 	}
 
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #getColumnOriginalValue(String)}
-	 */
-	@Deprecated
-	public long getOriginalClassPK() {
-		return GetterUtil.getLong(this.<Long>getColumnOriginalValue("classPK"));
-	}
-
 	@Override
 	public int getType() {
 		return _type;
@@ -589,16 +554,6 @@ public class SocialActivitySetModelImpl
 		}
 
 		_type = type;
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #getColumnOriginalValue(String)}
-	 */
-	@Deprecated
-	public int getOriginalType() {
-		return GetterUtil.getInteger(
-			this.<Integer>getColumnOriginalValue("type_"));
 	}
 
 	@Override
@@ -1032,3 +987,4 @@ public class SocialActivitySetModelImpl
 	private SocialActivitySet _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1083092678

@@ -7,12 +7,14 @@ package com.liferay.portal.service.impl;
 
 import com.liferay.asset.kernel.service.AssetEntryLocalService;
 import com.liferay.expando.kernel.service.ExpandoRowLocalService;
+import com.liferay.exportimport.kernel.empty.model.EmptyModelManagerUtil;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.bean.BeanReference;
-import com.liferay.portal.kernel.dao.orm.QueryDefinition;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.DuplicateOrganizationException;
+import com.liferay.portal.kernel.exception.OrganizationCommentsException;
 import com.liferay.portal.kernel.exception.OrganizationNameException;
 import com.liferay.portal.kernel.exception.OrganizationParentException;
 import com.liferay.portal.kernel.exception.OrganizationTypeException;
@@ -25,6 +27,7 @@ import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.GroupConstants;
 import com.liferay.portal.kernel.model.ListType;
 import com.liferay.portal.kernel.model.ListTypeConstants;
+import com.liferay.portal.kernel.model.ModelHintsUtil;
 import com.liferay.portal.kernel.model.Organization;
 import com.liferay.portal.kernel.model.OrganizationConstants;
 import com.liferay.portal.kernel.model.Region;
@@ -39,6 +42,8 @@ import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.search.BaseModelSearchResult;
 import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.kernel.search.Hits;
+import com.liferay.portal.kernel.search.Indexable;
+import com.liferay.portal.kernel.search.IndexableType;
 import com.liferay.portal.kernel.search.Indexer;
 import com.liferay.portal.kernel.search.IndexerRegistryUtil;
 import com.liferay.portal.kernel.search.QueryConfig;
@@ -54,19 +59,19 @@ import com.liferay.portal.kernel.service.ListTypeLocalService;
 import com.liferay.portal.kernel.service.PasswordPolicyRelLocalService;
 import com.liferay.portal.kernel.service.PhoneLocalService;
 import com.liferay.portal.kernel.service.ResourceLocalService;
-import com.liferay.portal.kernel.service.RoleLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserGroupRoleLocalService;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.service.WebsiteLocalService;
 import com.liferay.portal.kernel.service.persistence.CompanyPersistence;
 import com.liferay.portal.kernel.service.persistence.CountryPersistence;
-import com.liferay.portal.kernel.service.persistence.GroupPersistence;
+import com.liferay.portal.kernel.service.persistence.ListTypePersistence;
 import com.liferay.portal.kernel.service.persistence.RegionPersistence;
+import com.liferay.portal.kernel.service.persistence.RolePersistence;
 import com.liferay.portal.kernel.service.persistence.UserFinder;
-import com.liferay.portal.kernel.service.persistence.UserPersistence;
+import com.liferay.portal.kernel.service.persistence.UserGroupRolePersistence;
 import com.liferay.portal.kernel.systemevent.SystemEvent;
-import com.liferay.portal.kernel.transaction.TransactionCommitCallbackUtil;
+import com.liferay.portal.kernel.transaction.TransactionCallbackUtil;
 import com.liferay.portal.kernel.tree.TreeModelTasksAdapter;
 import com.liferay.portal.kernel.tree.TreePathUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
@@ -75,6 +80,7 @@ import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.SetUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
@@ -83,7 +89,6 @@ import com.liferay.portal.kernel.util.comparator.OrganizationNameComparator;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.service.base.OrganizationLocalServiceBaseImpl;
 import com.liferay.portal.util.PortalInstances;
-import com.liferay.portal.util.PropsValues;
 import com.liferay.portlet.usersadmin.search.OrganizationUsersSearcher;
 import com.liferay.portlet.usersadmin.util.UsersAdminUtil;
 import com.liferay.users.admin.kernel.file.uploads.UserFileUploadsSettings;
@@ -155,12 +160,7 @@ public class OrganizationLocalServiceImpl
 			return false;
 		}
 
-		try {
-			reindexUsers(organization);
-		}
-		catch (PortalException portalException) {
-			throw new SystemException(portalException);
-		}
+		reindexUsers(organization);
 
 		return true;
 	}
@@ -180,12 +180,7 @@ public class OrganizationLocalServiceImpl
 			return false;
 		}
 
-		try {
-			reindexUsers(organizations);
-		}
-		catch (PortalException portalException) {
-			throw new SystemException(portalException);
-		}
+		reindexUsers(organizations);
 
 		return true;
 	}
@@ -213,6 +208,48 @@ public class OrganizationLocalServiceImpl
 		return true;
 	}
 
+	@Override
+	public Organization addOrUpdateOrganization(
+			String externalReferenceCode, long userId,
+			long parentOrganizationId, String name, String type, long regionId,
+			long countryId, long statusListTypeId, String comments,
+			boolean hasLogo, byte[] logoBytes, boolean site,
+			ServiceContext serviceContext)
+		throws PortalException {
+
+		User user = userPersistence.findByPrimaryKey(userId);
+
+		Organization organization = organizationPersistence.fetchByERC_C(
+			externalReferenceCode, user.getCompanyId());
+
+		if (organization == null) {
+			organization = addOrganization(
+				externalReferenceCode, userId, parentOrganizationId, name, type,
+				regionId, countryId, statusListTypeId, comments, site,
+				serviceContext);
+
+			UserFileUploadsSettings userFileUploadsSettings =
+				_userFileUploadsSettingsSnapshot.get();
+
+			PortalUtil.updateImageId(
+				organization, hasLogo, logoBytes, "logoId",
+				userFileUploadsSettings.getImageMaxSize(),
+				userFileUploadsSettings.getImageMaxHeight(),
+				userFileUploadsSettings.getImageMaxWidth());
+
+			organization = organizationPersistence.update(organization);
+		}
+		else {
+			organization = updateOrganization(
+				externalReferenceCode, user.getCompanyId(),
+				organization.getOrganizationId(), parentOrganizationId, name,
+				type, regionId, countryId, statusListTypeId, comments, hasLogo,
+				logoBytes, site, serviceContext);
+		}
+
+		return organization;
+	}
+
 	/**
 	 * Adds an organization.
 	 *
@@ -238,9 +275,9 @@ public class OrganizationLocalServiceImpl
 
 		String[] types = getTypes();
 
-		User user = _userPersistence.findByPrimaryKey(userId);
+		User user = userPersistence.findByPrimaryKey(userId);
 
-		ListType listType = _listTypeLocalService.getListType(
+		ListType listType = _listTypePersistence.findByC_N_T(
 			user.getCompanyId(), ListTypeConstants.ORGANIZATION_STATUS_DEFAULT,
 			ListTypeConstants.ORGANIZATION_STATUS);
 
@@ -285,14 +322,14 @@ public class OrganizationLocalServiceImpl
 
 		// Organization
 
-		User user = _userPersistence.findByPrimaryKey(userId);
+		User user = userPersistence.findByPrimaryKey(userId);
 
 		parentOrganizationId = getParentOrganizationId(
 			user.getCompanyId(), parentOrganizationId);
 
 		validate(
 			user.getCompanyId(), parentOrganizationId, name, type, countryId,
-			statusListTypeId);
+			statusListTypeId, comments);
 
 		long organizationId = counterLocalService.increment();
 
@@ -316,6 +353,14 @@ public class OrganizationLocalServiceImpl
 		organization.setCountryId(countryId);
 		organization.setStatusListTypeId(statusListTypeId);
 		organization.setComments(comments);
+
+		if (EmptyModelManagerUtil.isEmptyModel()) {
+			organization.setStatus(WorkflowConstants.STATUS_EMPTY);
+		}
+		else {
+			organization.setStatus(WorkflowConstants.STATUS_APPROVED);
+		}
+
 		organization.setExpandoBridgeAttributes(serviceContext);
 
 		organization = organizationPersistence.update(organization);
@@ -340,15 +385,16 @@ public class OrganizationLocalServiceImpl
 		}
 
 		Group group = _groupLocalService.addGroup(
-			userId, parentGroupId, Organization.class.getName(), organizationId,
+			StringPool.BLANK, userId, parentGroupId,
+			Organization.class.getName(), organizationId,
 			GroupConstants.DEFAULT_LIVE_GROUP_ID, getLocalizationMap(name),
-			null, GroupConstants.TYPE_SITE_PRIVATE, false,
-			GroupConstants.DEFAULT_MEMBERSHIP_RESTRICTION, null, site, true,
-			null);
+			null, GroupConstants.TYPE_SITE_PRIVATE, null, false,
+			GroupConstants.DEFAULT_MEMBERSHIP_RESTRICTION, null, site, false,
+			true, null);
 
 		// Role
 
-		Role role = _roleLocalService.getRole(
+		Role role = _rolePersistence.findByC_N(
 			organization.getCompanyId(), RoleConstants.ORGANIZATION_OWNER);
 
 		_userGroupRoleLocalService.addUserGroupRoles(
@@ -431,48 +477,6 @@ public class OrganizationLocalServiceImpl
 		return user;
 	}
 
-	@Override
-	public Organization addOrUpdateOrganization(
-			String externalReferenceCode, long userId,
-			long parentOrganizationId, String name, String type, long regionId,
-			long countryId, long statusListTypeId, String comments,
-			boolean hasLogo, byte[] logoBytes, boolean site,
-			ServiceContext serviceContext)
-		throws PortalException {
-
-		User user = _userLocalService.getUser(userId);
-
-		Organization organization = organizationPersistence.fetchByERC_C(
-			externalReferenceCode, user.getCompanyId());
-
-		if (organization == null) {
-			organization = addOrganization(
-				externalReferenceCode, userId, parentOrganizationId, name, type,
-				regionId, countryId, statusListTypeId, comments, site,
-				serviceContext);
-
-			UserFileUploadsSettings userFileUploadsSettings =
-				_userFileUploadsSettingsSnapshot.get();
-
-			PortalUtil.updateImageId(
-				organization, hasLogo, logoBytes, "logoId",
-				userFileUploadsSettings.getImageMaxSize(),
-				userFileUploadsSettings.getImageMaxHeight(),
-				userFileUploadsSettings.getImageMaxWidth());
-
-			organization = organizationPersistence.update(organization);
-		}
-		else {
-			organization = updateOrganization(
-				externalReferenceCode, user.getCompanyId(),
-				organization.getOrganizationId(), parentOrganizationId, name,
-				type, regionId, countryId, statusListTypeId, comments, hasLogo,
-				logoBytes, site, serviceContext);
-		}
-
-		return organization;
-	}
-
 	/**
 	 * Assigns the password policy to the organizations, removing any other
 	 * currently assigned password policies.
@@ -488,6 +492,36 @@ public class OrganizationLocalServiceImpl
 			passwordPolicyId, Organization.class.getName(), organizationIds);
 	}
 
+	/**
+	 * Adds the organization to the user.
+	 *
+	 * @param userId the primary key of the user
+	 * @param organizationId the primary key of the organization
+	 * @return <code>true</code> if the association between the ${userId} and ${organizationId} is added; <code>false</code> if it was already added
+	 */
+	@Override
+	public boolean addUserOrganization(long userId, long organizationId) {
+		if (!super.addUserOrganization(userId, organizationId)) {
+			return false;
+		}
+
+		_reindexUser(userId);
+
+		return true;
+	}
+
+	/**
+	 * Adds the organization to the user.
+	 *
+	 * @param userId the primary key of the user
+	 * @param organization the organization
+	 * @return <code>true</code> if the association between the ${userId} and ${organization} is added; <code>false</code> if it was already added
+	 */
+	@Override
+	public boolean addUserOrganization(long userId, Organization organization) {
+		return addUserOrganization(userId, organization.getOrganizationId());
+	}
+
 	@Override
 	public void addUserOrganizationByEmailAddress(
 			String emailAddress, long organizationId)
@@ -496,10 +530,127 @@ public class OrganizationLocalServiceImpl
 		Organization organization = organizationPersistence.findByPrimaryKey(
 			organizationId);
 
-		User user = _userPersistence.findByC_EA(
+		User user = userPersistence.findByC_EA(
 			organization.getCompanyId(), emailAddress);
 
 		_userLocalService.addOrganizationUser(organizationId, user);
+	}
+
+	/**
+	 * Adds the organizations to the user.
+	 *
+	 * @param userId the primary key of the user
+	 * @param organizations the organizations
+	 * @return <code>true</code> if at least an association between the ${userId} and the ${organizations} is added; <code>false</code> if all were already added
+	 */
+	@Override
+	public boolean addUserOrganizations(
+		long userId, List<Organization> organizations) {
+
+		return addUserOrganizations(
+			userId,
+			ListUtil.toLongArray(
+				organizations, Organization.ORGANIZATION_ID_ACCESSOR));
+	}
+
+	/**
+	 * Adds the organizations to the user.
+	 *
+	 * @param userId the primary key of the user
+	 * @param organizationIds the primary keys of the organizations
+	 * @return <code>true</code> if at least an association between the ${userId} and the ${organizationIds} is added; <code>false</code> if all were already added
+	 */
+	@Override
+	public boolean addUserOrganizations(long userId, long[] organizationIds) {
+		if (!super.addUserOrganizations(userId, organizationIds)) {
+			return false;
+		}
+
+		_reindexUser(userId);
+
+		return true;
+	}
+
+	/**
+	 * Clears the organizations from the group.
+	 *
+	 * @param groupId the primary key of the group
+	 */
+	@Override
+	public void clearGroupOrganizations(long groupId) {
+		long[] organizationIds = groupPersistence.getOrganizationPrimaryKeys(
+			groupId);
+
+		super.clearGroupOrganizations(groupId);
+
+		_reindexUsers(organizationIds);
+	}
+
+	/**
+	 * Clears the organizations from the user.
+	 *
+	 * @param userId the primary key of the user
+	 */
+	@Override
+	public void clearUserOrganizations(long userId) {
+		super.clearUserOrganizations(userId);
+
+		_reindexUser(userId);
+	}
+
+	/**
+	 * Deletes the organization from the group.
+	 *
+	 * @param groupId the primary key of the group
+	 * @param organizationId the primary key of the organization
+	 */
+	@Override
+	public void deleteGroupOrganization(long groupId, long organizationId) {
+		super.deleteGroupOrganization(groupId, organizationId);
+
+		_reindexUsers(new long[] {organizationId});
+	}
+
+	/**
+	 * Deletes the organization from the group.
+	 *
+	 * @param groupId the primary key of the group
+	 * @param organization the organization
+	 */
+	@Override
+	public void deleteGroupOrganization(
+		long groupId, Organization organization) {
+
+		deleteGroupOrganization(groupId, organization.getOrganizationId());
+	}
+
+	/**
+	 * Deletes the organizations from the group.
+	 *
+	 * @param groupId the primary key of the group
+	 * @param organizations the organizations
+	 */
+	@Override
+	public void deleteGroupOrganizations(
+		long groupId, List<Organization> organizations) {
+
+		deleteGroupOrganizations(
+			groupId,
+			ListUtil.toLongArray(
+				organizations, Organization.ORGANIZATION_ID_ACCESSOR));
+	}
+
+	/**
+	 * Deletes the organizations from the group.
+	 *
+	 * @param groupId the primary key of the group
+	 * @param organizationIds the primary keys of the organizations
+	 */
+	@Override
+	public void deleteGroupOrganizations(long groupId, long[] organizationIds) {
+		super.deleteGroupOrganizations(groupId, organizationIds);
+
+		_reindexUsers(organizationIds);
 	}
 
 	/**
@@ -602,7 +753,7 @@ public class OrganizationLocalServiceImpl
 		if (group.isSite()) {
 			group.setSite(false);
 
-			group = _groupPersistence.update(group);
+			group = groupPersistence.update(group);
 		}
 
 		_groupLocalService.deleteGroup(group);
@@ -616,9 +767,43 @@ public class OrganizationLocalServiceImpl
 
 		// Organization
 
+		List<User> users = organizationPersistence.getUsers(
+			organization.getOrganizationId());
+
 		organizationPersistence.remove(organization);
 
+		// Indexer
+
+		Indexer<User> indexer = IndexerRegistryUtil.nullSafeGetIndexer(
+			User.class);
+
+		indexer.reindex(users);
+
 		return organization;
+	}
+
+	/**
+	 * Deletes the organization from the user.
+	 *
+	 * @param userId the primary key of the user
+	 * @param organizationId the primary key of the organization
+	 */
+	@Override
+	public void deleteUserOrganization(long userId, long organizationId) {
+		super.deleteUserOrganization(userId, organizationId);
+
+		_reindexUser(userId);
+	}
+
+	/**
+	 * Deletes the organization from the user.
+	 *
+	 * @param userId the primary key of the user
+	 * @param organization the organization
+	 */
+	@Override
+	public void deleteUserOrganization(long userId, Organization organization) {
+		deleteUserOrganization(userId, organization.getOrganizationId());
 	}
 
 	@Override
@@ -629,11 +814,40 @@ public class OrganizationLocalServiceImpl
 		Organization organization = organizationPersistence.findByPrimaryKey(
 			organizationId);
 
-		User user = _userPersistence.findByC_EA(
+		User user = userPersistence.findByC_EA(
 			organization.getCompanyId(), emailAddress);
 
 		_userLocalService.unsetOrganizationUsers(
 			organizationId, new long[] {user.getUserId()});
+	}
+
+	/**
+	 * Deletes the organizations from the user.
+	 *
+	 * @param userId the primary key of the user
+	 * @param organizations the organizations
+	 */
+	@Override
+	public void deleteUserOrganizations(
+		long userId, List<Organization> organizations) {
+
+		deleteUserOrganizations(
+			userId,
+			ListUtil.toLongArray(
+				organizations, Organization.ORGANIZATION_ID_ACCESSOR));
+	}
+
+	/**
+	 * Deletes the organizations from the user.
+	 *
+	 * @param userId the primary key of the user
+	 * @param organizationIds the primary keys of the organizations
+	 */
+	@Override
+	public void deleteUserOrganizations(long userId, long[] organizationIds) {
+		super.deleteUserOrganizations(userId, organizationIds);
+
+		_reindexUser(userId);
 	}
 
 	/**
@@ -663,14 +877,14 @@ public class OrganizationLocalServiceImpl
 		throws PortalException {
 
 		long[] groupOrganizationIds =
-			_groupPersistence.getOrganizationPrimaryKeys(groupId);
+			groupPersistence.getOrganizationPrimaryKeys(groupId);
 
 		if (groupOrganizationIds.length == 0) {
 			return Collections.emptyList();
 		}
 
-		long[] userOrganizationIds =
-			_userPersistence.getOrganizationPrimaryKeys(userId);
+		long[] userOrganizationIds = userPersistence.getOrganizationPrimaryKeys(
+			userId);
 
 		if (userOrganizationIds.length == 0) {
 			return Collections.emptyList();
@@ -697,6 +911,40 @@ public class OrganizationLocalServiceImpl
 	@Override
 	public List<Organization> getNoAssetOrganizations() {
 		return organizationFinder.findO_ByNoAssets();
+	}
+
+	@Indexable(type = IndexableType.REINDEX)
+	@Override
+	public Organization getOrAddEmptyOrganization(
+			String externalReferenceCode, long companyId, long userId,
+			String name)
+		throws PortalException {
+
+		return EmptyModelManagerUtil.getOrAddEmptyModel(
+			Organization.class, companyId, externalReferenceCode,
+			this::fetchOrganizationByExternalReferenceCode,
+			this::getOrganizationByExternalReferenceCode,
+			() -> {
+				String organizationName = name;
+
+				if (Validator.isNull(name) ||
+					(fetchOrganization(companyId, name) != null)) {
+
+					organizationName = externalReferenceCode;
+				}
+
+				String[] types = getTypes();
+
+				ListType listType = _listTypePersistence.findByC_N_T(
+					companyId, ListTypeConstants.ORGANIZATION_STATUS_DEFAULT,
+					ListTypeConstants.ORGANIZATION_STATUS);
+
+				return addOrganization(
+					externalReferenceCode, userId, 0, organizationName,
+					types[0], 0, 0, listType.getListTypeId(), StringPool.BLANK,
+					false, null);
+			},
+			Organization.class.getName());
 	}
 
 	/**
@@ -739,19 +987,21 @@ public class OrganizationLocalServiceImpl
 			OrderByComparator<Organization> orderByComparator)
 		throws PortalException {
 
-		User user = _userPersistence.findByPrimaryKey(userId);
+		User user = userPersistence.findByPrimaryKey(userId);
 
 		List<Organization> organizations = ListUtil.copy(
-			_userPersistence.getOrganizations(userId));
+			userPersistence.getOrganizations(userId));
 
 		Iterator<Organization> iterator = organizations.iterator();
 
 		while (iterator.hasNext()) {
 			Organization organization = iterator.next();
 
-			if (organization.getCompanyId() != user.getCompanyId()) {
-				iterator.remove();
+			if (organization.getCompanyId() == user.getCompanyId()) {
+				continue;
 			}
+
+			iterator.remove();
 		}
 
 		if (organizations.isEmpty()) {
@@ -759,7 +1009,7 @@ public class OrganizationLocalServiceImpl
 		}
 
 		if (orderByComparator == null) {
-			orderByComparator = new OrganizationNameComparator(true);
+			orderByComparator = OrganizationNameComparator.getInstance(true);
 		}
 
 		Collections.sort(organizations, orderByComparator);
@@ -878,56 +1128,8 @@ public class OrganizationLocalServiceImpl
 		return organizations;
 	}
 
-	/**
-	 * Returns all the organizations and users belonging to the parent
-	 * organization.
-	 *
-	 * @param  companyId the primary key of the organization and user's company
-	 * @param  parentOrganizationId the primary key of the organization and
-	 *         user's parent organization
-	 * @param  status the user's workflow status
-	 * @param  start the lower bound of the range of organizations and users to
-	 *         return
-	 * @param  end the upper bound of the range of organizations and users to
-	 *         return (not inclusive)
-	 * @param  orderByComparator the comparator to order the organizations and
-	 *         users (optionally <code>null</code>)
-	 * @return the organizations and users belonging to the parent organization
-	 */
-	@Override
-	public List<Object> getOrganizationsAndUsers(
-		long companyId, long parentOrganizationId, int status, int start,
-		int end, OrderByComparator<?> orderByComparator) {
-
-		QueryDefinition<?> queryDefinition = new QueryDefinition<>(
-			status, false, 0, false, start, end,
-			(OrderByComparator<Object>)orderByComparator);
-
-		return organizationFinder.findO_U_ByC_P(
-			companyId, parentOrganizationId, queryDefinition);
-	}
-
-	/**
-	 * Returns the number of organizations and users belonging to the parent
-	 * organization.
-	 *
-	 * @param  companyId the primary key of the organization and user's company
-	 * @param  parentOrganizationId the primary key of the organization and
-	 *         user's parent organization
-	 * @param  status the user's workflow status
-	 * @return the number of organizations and users belonging to the parent
-	 *         organization
-	 */
-	@Override
-	public int getOrganizationsAndUsersCount(
-		long companyId, long parentOrganizationId, int status) {
-
-		QueryDefinition<?> queryDefinition = new QueryDefinition<>(
-			status, false, 0, false, QueryUtil.ALL_POS, QueryUtil.ALL_POS,
-			null);
-
-		return organizationFinder.countO_U_ByC_P(
-			companyId, parentOrganizationId, queryDefinition);
+	public List<Organization> getOrganizationsByLogoId(long logoId) {
+		return organizationPersistence.findByLogoId(logoId);
 	}
 
 	/**
@@ -1063,15 +1265,15 @@ public class OrganizationLocalServiceImpl
 		List<Organization> allOrganizations,
 		List<Organization> availableOrganizations) {
 
-		List<Organization> subsetOrganizations = new ArrayList<>();
+		return TransformUtil.transform(
+			allOrganizations,
+			organization -> {
+				if (availableOrganizations.contains(organization)) {
+					return organization;
+				}
 
-		for (Organization organization : allOrganizations) {
-			if (availableOrganizations.contains(organization)) {
-				subsetOrganizations.add(organization);
-			}
-		}
-
-		return subsetOrganizations;
+				return null;
+			});
 	}
 
 	@Override
@@ -1107,27 +1309,29 @@ public class OrganizationLocalServiceImpl
 		throws PortalException {
 
 		if (!includeAdministrative) {
-			return _userPersistence.getOrganizationPrimaryKeys(userId);
+			return userPersistence.getOrganizationPrimaryKeys(userId);
 		}
 
 		Set<Long> organizationIds = SetUtil.fromArray(
-			_userPersistence.getOrganizationPrimaryKeys(userId));
+			userPersistence.getOrganizationPrimaryKeys(userId));
 
 		List<UserGroupRole> userGroupRoles =
-			_userGroupRoleLocalService.getUserGroupRoles(userId);
+			_userGroupRolePersistence.findByUserId(userId);
 
 		for (UserGroupRole userGroupRole : userGroupRoles) {
 			Role role = userGroupRole.getRole();
 
 			String roleName = role.getName();
 
-			if (roleName.equals(RoleConstants.ORGANIZATION_ADMINISTRATOR) ||
-				roleName.equals(RoleConstants.ORGANIZATION_OWNER)) {
+			if (!roleName.equals(RoleConstants.ORGANIZATION_ADMINISTRATOR) &&
+				!roleName.equals(RoleConstants.ORGANIZATION_OWNER)) {
 
-				Group group = userGroupRole.getGroup();
-
-				organizationIds.add(group.getOrganizationId());
+				continue;
 			}
+
+			Group group = userGroupRole.getGroup();
+
+			organizationIds.add(group.getOrganizationId());
 		}
 
 		return ArrayUtil.toLongArray(organizationIds);
@@ -1165,24 +1369,26 @@ public class OrganizationLocalServiceImpl
 			getUserOrganizations(userId));
 
 		List<UserGroupRole> userGroupRoles =
-			_userGroupRoleLocalService.getUserGroupRoles(userId);
+			_userGroupRolePersistence.findByUserId(userId);
 
 		for (UserGroupRole userGroupRole : userGroupRoles) {
 			Role role = userGroupRole.getRole();
 
 			String roleName = role.getName();
 
-			if (roleName.equals(RoleConstants.ORGANIZATION_ADMINISTRATOR) ||
-				roleName.equals(RoleConstants.ORGANIZATION_OWNER)) {
+			if (!roleName.equals(RoleConstants.ORGANIZATION_ADMINISTRATOR) &&
+				!roleName.equals(RoleConstants.ORGANIZATION_OWNER)) {
 
-				Group group = userGroupRole.getGroup();
-
-				Organization organization =
-					organizationPersistence.findByPrimaryKey(
-						group.getOrganizationId());
-
-				organizations.add(organization);
+				continue;
 			}
+
+			Group group = userGroupRole.getGroup();
+
+			Organization organization =
+				organizationPersistence.findByPrimaryKey(
+					group.getOrganizationId());
+
+			organizations.add(organization);
 		}
 
 		return new ArrayList<>(organizations);
@@ -1258,8 +1464,7 @@ public class OrganizationLocalServiceImpl
 		throws PortalException {
 
 		if (!inheritSuborganizations) {
-			return _userPersistence.containsOrganization(
-				userId, organizationId);
+			return userPersistence.containsOrganization(userId, organizationId);
 		}
 
 		List<Organization> organizationsTree = new ArrayList<>();
@@ -1339,82 +1544,18 @@ public class OrganizationLocalServiceImpl
 					return organizationPersistence.findByGtO_C_P(
 						previousId, companyId, parentPrimaryKey,
 						QueryUtil.ALL_POS, size,
-						new OrganizationIdComparator(true));
+						OrganizationIdComparator.getInstance(true));
 				}
 
 			});
 	}
 
 	/**
-	 * Returns an ordered range of all the organizations that match the
-	 * keywords, using the indexer. It is preferable to use this method instead
-	 * of the non-indexed version whenever possible for performance reasons.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end -
-	 * start</code> instances. <code>start</code> and <code>end</code> are not
-	 * primary keys, they are indexes in the result set. Thus, <code>0</code>
-	 * refers to the first result in the set. Setting both <code>start</code>
-	 * and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full
-	 * result set.
-	 * </p>
-	 *
-	 * @param  companyId the primary key of the organization's company
-	 * @param  parentOrganizationId the primary key of the organization's parent
-	 *         organization
-	 * @param  keywords the keywords (space separated), which may occur in the
-	 *         organization's name, street, city, zipcode, type, region or
-	 *         country (optionally <code>null</code>)
-	 * @param  params the finder parameters (optionally <code>null</code>).
-	 * @param  start the lower bound of the range of organizations to return
-	 * @param  end the upper bound of the range of organizations to return (not
-	 *         inclusive)
-	 * @param  sort the field and direction by which to sort (optionally
-	 *         <code>null</code>)
-	 * @return the matching organizations ordered by name
-	 */
-	@Override
-	public Hits search(
-		long companyId, long parentOrganizationId, String keywords,
-		LinkedHashMap<String, Object> params, int start, int end, Sort sort) {
-
-		String name = null;
-		String type = null;
-		String street = null;
-		String city = null;
-		String zip = null;
-		String region = null;
-		String country = null;
-		boolean andOperator = false;
-
-		if (Validator.isNotNull(keywords)) {
-			name = keywords;
-			type = keywords;
-			street = keywords;
-			city = keywords;
-			zip = keywords;
-			region = keywords;
-			country = keywords;
-		}
-		else {
-			andOperator = true;
-		}
-
-		if (params != null) {
-			params.put("keywords", keywords);
-		}
-
-		return search(
-			companyId, parentOrganizationId, name, type, street, city, zip,
-			region, country, params, andOperator, start, end, sort);
-	}
-
-	/**
 	 * Returns a name ordered range of all the organizations that match the
 	 * keywords, type, region, and country, without using the indexer. It is
-	 * preferable to use the indexed version {@link #search(long, long, String,
-	 * LinkedHashMap, int, int, Sort)} instead of this method wherever possible
-	 * for performance reasons.
+	 * preferable to use the indexed version {@link #searchOrganizations(long,
+	 * long, String, LinkedHashMap, int, int, Sort)} instead of this method
+	 * wherever possible for performance reasons.
 	 *
 	 * <p>
 	 * Useful when paginating results. Returns a maximum of <code>end -
@@ -1453,7 +1594,7 @@ public class OrganizationLocalServiceImpl
 		return search(
 			companyId, parentOrganizationId, keywords, type, regionId,
 			countryId, params, start, end,
-			new OrganizationNameComparator(true));
+			OrganizationNameComparator.getInstance(true));
 	}
 
 	/**
@@ -1513,128 +1654,6 @@ public class OrganizationLocalServiceImpl
 			companyId, parentOrganizationId, parentOrganizationIdComparator,
 			keywords, type, regionId, countryId, params, start, end,
 			orderByComparator);
-	}
-
-	/**
-	 * Returns a name ordered range of all the organizations with the type,
-	 * region, and country, and whose name, street, city, and zipcode match the
-	 * keywords specified for them, without using the indexer. It is preferable
-	 * to use the indexed version {@link #search(long, long, String, String,
-	 * String, String, String, String, String, LinkedHashMap, boolean, int, int,
-	 * Sort)} instead of this method wherever possible for performance reasons.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end -
-	 * start</code> instances. <code>start</code> and <code>end</code> are not
-	 * primary keys, they are indexes in the result set. Thus, <code>0</code>
-	 * refers to the first result in the set. Setting both <code>start</code>
-	 * and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full
-	 * result set.
-	 * </p>
-	 *
-	 * @param  companyId the primary key of the organization's company
-	 * @param  parentOrganizationId the primary key of the organization's parent
-	 * @param  name the name keywords (space separated, optionally
-	 *         <code>null</code>)
-	 * @param  type the organization's type (optionally <code>null</code>)
-	 * @param  street the street keywords (optionally <code>null</code>)
-	 * @param  city the city keywords (optionally <code>null</code>)
-	 * @param  zip the zipcode keywords (optionally <code>null</code>)
-	 * @param  regionId the primary key of the organization's region (optionally
-	 *         <code>null</code>)
-	 * @param  countryId the primary key of the organization's country
-	 *         (optionally <code>null</code>)
-	 * @param  params the finder parameters (optionally <code>null</code>). For
-	 *         more information see {@link
-	 *         com.liferay.portal.kernel.service.persistence.OrganizationFinder}
-	 * @param  andOperator whether every field must match its keywords, or just
-	 *         one field. For example, &quot;organizations with the name
-	 *         'Employees' and city 'Chicago'&quot; vs &quot;organizations with
-	 *         the name 'Employees' or the city 'Chicago'&quot;.
-	 * @param  start the lower bound of the range of organizations to return
-	 * @param  end the upper bound of the range of organizations to return (not
-	 *         inclusive)
-	 * @return the matching organizations ordered by name
-	 * @see    com.liferay.portal.kernel.service.persistence.OrganizationFinder
-	 */
-	@Override
-	public List<Organization> search(
-		long companyId, long parentOrganizationId, String name, String type,
-		String street, String city, String zip, Long regionId, Long countryId,
-		LinkedHashMap<String, Object> params, boolean andOperator, int start,
-		int end) {
-
-		return search(
-			companyId, parentOrganizationId, name, type, street, city, zip,
-			regionId, countryId, params, andOperator, start, end,
-			new OrganizationNameComparator(true));
-	}
-
-	/**
-	 * Returns an ordered range of all the organizations with the type, region,
-	 * and country, and whose name, street, city, and zipcode match the keywords
-	 * specified for them, without using the indexer. It is preferable to use
-	 * the indexed version {@link #search(long, long, String, String, String,
-	 * String, String, String, String, LinkedHashMap, boolean, int, int, Sort)}
-	 * instead of this method wherever possible for performance reasons.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end -
-	 * start</code> instances. <code>start</code> and <code>end</code> are not
-	 * primary keys, they are indexes in the result set. Thus, <code>0</code>
-	 * refers to the first result in the set. Setting both <code>start</code>
-	 * and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full
-	 * result set.
-	 * </p>
-	 *
-	 * @param  companyId the primary key of the organization's company
-	 * @param  parentOrganizationId the primary key of the organization's parent
-	 *         organization
-	 * @param  name the name keywords (space separated, optionally
-	 *         <code>null</code>)
-	 * @param  type the organization's type (optionally <code>null</code>)
-	 * @param  street the street keywords (optionally <code>null</code>)
-	 * @param  city the city keywords (optionally <code>null</code>)
-	 * @param  zip the zipcode keywords (optionally <code>null</code>)
-	 * @param  regionId the primary key of the organization's region (optionally
-	 *         <code>null</code>)
-	 * @param  countryId the primary key of the organization's country
-	 *         (optionally <code>null</code>)
-	 * @param  params the finder parameters (optionally <code>null</code>). For
-	 *         more information see {@link
-	 *         com.liferay.portal.kernel.service.persistence.OrganizationFinder}
-	 * @param  andOperator whether every field must match its keywords, or just
-	 *         one field. For example, &quot;organizations with the name
-	 *         'Employees' and city 'Chicago'&quot; vs &quot;organizations with
-	 *         the name 'Employees' or the city 'Chicago'&quot;.
-	 * @param  start the lower bound of the range of organizations to return
-	 * @param  end the upper bound of the range of organizations to return (not
-	 *         inclusive)
-	 * @param  orderByComparator the comparator to order the organizations
-	 *         (optionally <code>null</code>)
-	 * @return the matching organizations ordered by comparator
-	 *         <code>orderByComparator</code>
-	 * @see    com.liferay.portal.kernel.service.persistence.OrganizationFinder
-	 */
-	@Override
-	public List<Organization> search(
-		long companyId, long parentOrganizationId, String name, String type,
-		String street, String city, String zip, Long regionId, Long countryId,
-		LinkedHashMap<String, Object> params, boolean andOperator, int start,
-		int end, OrderByComparator<Organization> orderByComparator) {
-
-		String parentOrganizationIdComparator = StringPool.EQUAL;
-
-		if (parentOrganizationId ==
-				OrganizationConstants.ANY_PARENT_ORGANIZATION_ID) {
-
-			parentOrganizationIdComparator = StringPool.NOT_EQUAL;
-		}
-
-		return organizationFinder.findO_ByC_PO_N_T_S_C_Z_R_C(
-			companyId, parentOrganizationId, parentOrganizationIdComparator,
-			name, type, street, city, zip, regionId, countryId, params,
-			andOperator, start, end, orderByComparator);
 	}
 
 	/**
@@ -1762,74 +1781,6 @@ public class OrganizationLocalServiceImpl
 				params.put("keywords", keywords);
 			}
 
-			SearchContext searchContext = buildSearchContext(
-				companyId, parentOrganizationId, name, type, street, city, zip,
-				regionId, countryId, params, andOperator, QueryUtil.ALL_POS,
-				QueryUtil.ALL_POS, null);
-
-			return (int)indexer.searchCount(searchContext);
-		}
-		catch (Exception exception) {
-			throw new SystemException(exception);
-		}
-	}
-
-	/**
-	 * Returns the number of organizations with the type, region, and country,
-	 * and whose name, street, city, and zipcode match the keywords specified
-	 * for them.
-	 *
-	 * @param  companyId the primary key of the organization's company
-	 * @param  parentOrganizationId the primary key of the organization's parent
-	 *         organization
-	 * @param  name the name keywords (space separated, optionally
-	 *         <code>null</code>)
-	 * @param  type the organization's type (optionally <code>null</code>)
-	 * @param  street the street keywords (optionally <code>null</code>)
-	 * @param  city the city keywords (optionally <code>null</code>)
-	 * @param  zip the zipcode keywords (optionally <code>null</code>)
-	 * @param  regionId the primary key of the organization's region (optionally
-	 *         <code>null</code>)
-	 * @param  countryId the primary key of the organization's country
-	 *         (optionally <code>null</code>)
-	 * @param  params the finder parameters (optionally <code>null</code>). For
-	 *         more information see {@link
-	 *         com.liferay.portal.kernel.service.persistence.OrganizationFinder}
-	 * @param  andOperator whether every field must match its keywords, or just
-	 *         one field. For example, &quot;organizations with the name
-	 *         'Employees' and city 'Chicago'&quot; vs &quot;organizations with
-	 *         the name 'Employees' or the city 'Chicago'&quot;.
-	 * @return the number of matching organizations
-	 * @see    com.liferay.portal.kernel.service.persistence.OrganizationFinder
-	 */
-	@Override
-	public int searchCount(
-		long companyId, long parentOrganizationId, String name, String type,
-		String street, String city, String zip, Long regionId, Long countryId,
-		LinkedHashMap<String, Object> params, boolean andOperator) {
-
-		Indexer<?> indexer = IndexerRegistryUtil.nullSafeGetIndexer(
-			Organization.class);
-
-		if (!indexer.isIndexerEnabled() ||
-			!PropsValues.ORGANIZATIONS_SEARCH_WITH_INDEX ||
-			isUseCustomSQL(params)) {
-
-			String parentOrganizationIdComparator = StringPool.EQUAL;
-
-			if (parentOrganizationId ==
-					OrganizationConstants.ANY_PARENT_ORGANIZATION_ID) {
-
-				parentOrganizationIdComparator = StringPool.NOT_EQUAL;
-			}
-
-			return organizationFinder.countO_ByC_PO_N_T_S_C_Z_R_C(
-				companyId, parentOrganizationId, parentOrganizationIdComparator,
-				name, type, street, city, zip, regionId, countryId, params,
-				andOperator);
-		}
-
-		try {
 			SearchContext searchContext = buildSearchContext(
 				companyId, parentOrganizationId, name, type, street, city, zip,
 				regionId, countryId, params, andOperator, QueryUtil.ALL_POS,
@@ -1978,6 +1929,40 @@ public class OrganizationLocalServiceImpl
 	}
 
 	/**
+	 * Sets the organizations in the group, removing and adding organizations to
+	 * the group as necessary.
+	 *
+	 * @param groupId the primary key of the group
+	 * @param organizationIds the primary keys of the organizations
+	 */
+	@Override
+	public void setGroupOrganizations(long groupId, long[] organizationIds) {
+		long[] oldOrganizationIds = groupPersistence.getOrganizationPrimaryKeys(
+			groupId);
+
+		super.setGroupOrganizations(groupId, organizationIds);
+
+		_reindexUsers(
+			ArrayUtil.toLongArray(
+				SetUtil.symmetricDifference(
+					organizationIds, oldOrganizationIds)));
+	}
+
+	/**
+	 * Sets the organizations in the user, removing and adding organizations to
+	 * the user as necessary.
+	 *
+	 * @param userId the primary key of the user
+	 * @param organizationIds the primary keys of the organizations
+	 */
+	@Override
+	public void setUserOrganizations(long userId, long[] organizationIds) {
+		super.setUserOrganizations(userId, organizationIds);
+
+		_reindexUser(userId);
+	}
+
+	/**
 	 * Removes the organizations from the group.
 	 *
 	 * @param groupId the primary key of the group
@@ -1985,7 +1970,7 @@ public class OrganizationLocalServiceImpl
 	 */
 	@Override
 	public void unsetGroupOrganizations(long groupId, long[] organizationIds) {
-		_groupPersistence.removeOrganizations(groupId, organizationIds);
+		groupPersistence.removeOrganizations(groupId, organizationIds);
 
 		try {
 			reindexUsers(organizationIds);
@@ -2024,7 +2009,7 @@ public class OrganizationLocalServiceImpl
 			String[] assetTagNames)
 		throws PortalException {
 
-		User user = _userPersistence.findByPrimaryKey(userId);
+		User user = userPersistence.findByPrimaryKey(userId);
 
 		Company company = _companyPersistence.findByPrimaryKey(
 			user.getCompanyId());
@@ -2097,7 +2082,7 @@ public class OrganizationLocalServiceImpl
 
 		validate(
 			companyId, organizationId, parentOrganizationId, name, type,
-			countryId, statusListTypeId);
+			countryId, statusListTypeId, comments);
 
 		Organization organization = organizationPersistence.findByPrimaryKey(
 			organizationId);
@@ -2125,6 +2110,11 @@ public class OrganizationLocalServiceImpl
 			userFileUploadsSettings.getImageMaxHeight(),
 			userFileUploadsSettings.getImageMaxWidth());
 
+		organization.setStatus(
+			EmptyModelManagerUtil.solveEmptyModel(
+				externalReferenceCode, organization.getModelClassName(),
+				organization.getCompanyId(), 0L, organization.getStatus(),
+				() -> WorkflowConstants.STATUS_APPROVED));
 		organization.setExpandoBridgeAttributes(serviceContext);
 
 		organization = organizationPersistence.update(organization);
@@ -2169,7 +2159,7 @@ public class OrganizationLocalServiceImpl
 		if (createSite || !oldName.equals(name) || organizationGroup) {
 			_groupLocalService.updateGroup(
 				group.getGroupId(), parentGroupId, getLocalizationMap(name),
-				group.getDescriptionMap(), group.getType(),
+				group.getDescriptionMap(), group.getType(), null,
 				group.isManualMembership(), group.getMembershipRestriction(),
 				group.getFriendlyURL(), group.isInheritContent(),
 				group.isActive(), null);
@@ -2191,14 +2181,16 @@ public class OrganizationLocalServiceImpl
 			for (Organization childOrganization : childOrganizations) {
 				Group childGroup = childOrganization.getGroup();
 
-				if (childGroup.isSite() &&
-					(childGroup.getParentGroupId() ==
+				if (!childGroup.isSite() ||
+					(childGroup.getParentGroupId() !=
 						GroupConstants.DEFAULT_PARENT_GROUP_ID)) {
 
-					childGroup.setParentGroupId(group.getGroupId());
-
-					_groupLocalService.updateGroup(childGroup);
+					continue;
 				}
+
+				childGroup.setParentGroupId(group.getGroupId());
+
+				_groupLocalService.updateGroup(childGroup);
 			}
 		}
 
@@ -2246,16 +2238,18 @@ public class OrganizationLocalServiceImpl
 		List<Organization> organizations) {
 
 		for (Organization organization : organizations) {
-			if (!allSuborganizations.contains(organization)) {
-				allSuborganizations.add(organization);
-
-				List<Organization> suborganizations =
-					organizationPersistence.findByC_P(
-						organization.getCompanyId(),
-						organization.getOrganizationId());
-
-				addSuborganizations(allSuborganizations, suborganizations);
+			if (allSuborganizations.contains(organization)) {
+				continue;
 			}
+
+			allSuborganizations.add(organization);
+
+			List<Organization> suborganizations =
+				organizationPersistence.findByC_P(
+					organization.getCompanyId(),
+					organization.getOrganizationId());
+
+			addSuborganizations(allSuborganizations, suborganizations);
 		}
 	}
 
@@ -2438,7 +2432,7 @@ public class OrganizationLocalServiceImpl
 						organization.getOrganizationId(),
 						StringPool.FORWARD_SLASH))[0],
 				QueryUtil.ALL_POS, QueryUtil.ALL_POS,
-				new OrganizationNameComparator(true));
+				OrganizationNameComparator.getInstance(true));
 
 		long[] organizationIds = new long[organizations.size()];
 
@@ -2502,34 +2496,21 @@ public class OrganizationLocalServiceImpl
 
 		String treePath = organization.getTreePath();
 
-		if (treePath.contains(
-				StringPool.SLASH + parentOrganizationId + StringPool.SLASH)) {
-
-			return true;
-		}
-
-		return false;
+		return treePath.contains(
+			StringPool.SLASH + parentOrganizationId + StringPool.SLASH);
 	}
 
 	protected boolean isUseCustomSQL(LinkedHashMap<String, Object> params) {
-		if (MapUtil.isEmpty(params)) {
-			return false;
-		}
-
-		return true;
+		return MapUtil.isNotEmpty(params);
 	}
 
-	protected void reindex(long companyId, long[] userIds)
-		throws PortalException {
-
+	protected void reindex(long companyId, long[] userIds) {
 		ReindexerBridge reindexerBridge = _reindexerBridgeSnapshot.get();
 
 		reindexerBridge.reindex(companyId, User.class.getName(), userIds);
 	}
 
-	protected void reindexUsers(List<Organization> organizations)
-		throws PortalException {
-
+	protected void reindexUsers(List<Organization> organizations) {
 		for (Organization organization : organizations) {
 			reindexUsers(organization);
 		}
@@ -2545,15 +2526,13 @@ public class OrganizationLocalServiceImpl
 		}
 	}
 
-	protected void reindexUsers(Organization organization)
-		throws PortalException {
-
+	protected void reindexUsers(Organization organization) {
 		long[] userIds = getUserPrimaryKeys(organization.getOrganizationId());
 
 		if (ArrayUtil.isNotEmpty(userIds)) {
 			long companyId = organization.getCompanyId();
 
-			TransactionCommitCallbackUtil.registerCallback(
+			TransactionCallbackUtil.registerCommitCallback(
 				() -> {
 					reindex(companyId, userIds);
 
@@ -2564,7 +2543,8 @@ public class OrganizationLocalServiceImpl
 
 	protected void validate(
 			long companyId, long organizationId, long parentOrganizationId,
-			String name, String type, long countryId, long statusListTypeId)
+			String name, String type, long countryId, long statusListTypeId,
+			String comments)
 		throws PortalException {
 
 		if (!ArrayUtil.contains(getTypes(), type)) {
@@ -2619,7 +2599,15 @@ public class OrganizationLocalServiceImpl
 		}
 
 		if (Validator.isNull(name)) {
-			throw new OrganizationNameException();
+			throw new OrganizationNameException.MustNotBeNull();
+		}
+
+		int maxLength = ModelHintsUtil.getMaxLength(
+			Organization.class.getName(), "name");
+
+		if (name.length() > maxLength) {
+			throw new OrganizationNameException.MustNotExceedMaximumLength(
+				name, maxLength);
 		}
 
 		Organization organization = organizationPersistence.fetchByC_N(
@@ -2640,22 +2628,32 @@ public class OrganizationLocalServiceImpl
 		boolean countryRequired = organizationTypesSettings.isCountryRequired(
 			type);
 
-		if (countryRequired || (countryId > 0)) {
+		if ((countryRequired && !EmptyModelManagerUtil.isEmptyModel()) ||
+			(countryId > 0)) {
+
 			_countryPersistence.findByPrimaryKey(countryId);
 		}
 
 		_listTypeLocalService.validate(
 			statusListTypeId, ListTypeConstants.ORGANIZATION_STATUS);
+
+		maxLength = ModelHintsUtil.getMaxLength(
+			Organization.class.getName(), "comments");
+
+		if (Validator.isNotNull(comments) && (comments.length() > maxLength)) {
+			throw new OrganizationCommentsException.MustNotExceedMaximumLength(
+				comments, maxLength);
+		}
 	}
 
 	protected void validate(
 			long companyId, long parentOrganizationId, String name, String type,
-			long countryId, long statusListTypeId)
+			long countryId, long statusListTypeId, String comments)
 		throws PortalException {
 
 		validate(
 			companyId, 0, parentOrganizationId, name, type, countryId,
-			statusListTypeId);
+			statusListTypeId, comments);
 	}
 
 	private Sort[] _getSorts(Sort sort) {
@@ -2670,6 +2668,27 @@ public class OrganizationLocalServiceImpl
 		}
 
 		return sorts;
+	}
+
+	private void _reindexUser(long userId) {
+		Indexer<User> indexer = IndexerRegistryUtil.nullSafeGetIndexer(
+			User.class);
+
+		try {
+			indexer.reindex(User.class.getName(), userId);
+		}
+		catch (SearchException searchException) {
+			throw new SystemException(searchException);
+		}
+	}
+
+	private void _reindexUsers(long[] organizationIds) {
+		try {
+			reindexUsers(organizationIds);
+		}
+		catch (PortalException portalException) {
+			throw new SystemException(portalException);
+		}
 	}
 
 	private static final String _TYPE_FIELD_NAME = Field.getSortableFieldName(
@@ -2707,11 +2726,11 @@ public class OrganizationLocalServiceImpl
 	@BeanReference(type = GroupLocalService.class)
 	private GroupLocalService _groupLocalService;
 
-	@BeanReference(type = GroupPersistence.class)
-	private GroupPersistence _groupPersistence;
-
 	@BeanReference(type = ListTypeLocalService.class)
 	private ListTypeLocalService _listTypeLocalService;
+
+	@BeanReference(type = ListTypePersistence.class)
+	private ListTypePersistence _listTypePersistence;
 
 	@BeanReference(type = PasswordPolicyRelLocalService.class)
 	private PasswordPolicyRelLocalService _passwordPolicyRelLocalService;
@@ -2725,8 +2744,8 @@ public class OrganizationLocalServiceImpl
 	@BeanReference(type = ResourceLocalService.class)
 	private ResourceLocalService _resourceLocalService;
 
-	@BeanReference(type = RoleLocalService.class)
-	private RoleLocalService _roleLocalService;
+	@BeanReference(type = RolePersistence.class)
+	private RolePersistence _rolePersistence;
 
 	@BeanReference(type = UserFinder.class)
 	private UserFinder _userFinder;
@@ -2734,11 +2753,11 @@ public class OrganizationLocalServiceImpl
 	@BeanReference(type = UserGroupRoleLocalService.class)
 	private UserGroupRoleLocalService _userGroupRoleLocalService;
 
+	@BeanReference(type = UserGroupRolePersistence.class)
+	private UserGroupRolePersistence _userGroupRolePersistence;
+
 	@BeanReference(type = UserLocalService.class)
 	private UserLocalService _userLocalService;
-
-	@BeanReference(type = UserPersistence.class)
-	private UserPersistence _userPersistence;
 
 	@BeanReference(type = WebsiteLocalService.class)
 	private WebsiteLocalService _websiteLocalService;

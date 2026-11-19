@@ -19,13 +19,13 @@ import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.util.PortletKeys;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.util.PortalImpl;
-import com.liferay.portal.util.PropsValues;
 
-import javax.portlet.PortletMode;
-import javax.portlet.WindowState;
+import jakarta.portlet.PortletMode;
+import jakarta.portlet.WindowState;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -60,6 +60,25 @@ public class PortalImplControlPanelFullURLTest {
 		sb.append(PropsValues.CONTROL_PANEL_LAYOUT_FRIENDLY_URL);
 
 		String portletId = PortletKeys.SERVER_ADMIN;
+
+		sb.append(_getQueryString(portletId));
+
+		Assert.assertEquals(
+			sb.toString(),
+			_portalImpl.getControlPanelFullURL(
+				_group.getGroupId(), portletId, null));
+	}
+
+	@Test
+	public void testInstancePortlet() throws Exception {
+		StringBundler sb = new StringBundler(5);
+
+		sb.append(_getPortalURL());
+		sb.append(_portalImpl.getPathFriendlyURLPrivateGroup());
+		sb.append(GroupConstants.CONTROL_PANEL_FRIENDLY_URL);
+		sb.append(PropsValues.CONTROL_PANEL_LAYOUT_FRIENDLY_URL);
+
+		String portletId = PortletKeys.EXPANDO;
 
 		sb.append(_getQueryString(portletId));
 

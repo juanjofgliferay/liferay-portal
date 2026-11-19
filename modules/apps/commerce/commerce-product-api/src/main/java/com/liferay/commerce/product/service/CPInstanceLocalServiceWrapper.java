@@ -350,14 +350,6 @@ public class CPInstanceLocalServiceWrapper
 	}
 
 	@Override
-	public CPInstance fetchByExternalReferenceCode(
-		String externalReferenceCode, long companyId) {
-
-		return _cpInstanceLocalService.fetchByExternalReferenceCode(
-			externalReferenceCode, companyId);
-	}
-
-	@Override
 	public CPInstance fetchCPInstance(long CPInstanceId) {
 		return _cpInstanceLocalService.fetchCPInstance(CPInstanceId);
 	}
@@ -605,6 +597,16 @@ public class CPInstanceLocalServiceWrapper
 		getIndexableActionableDynamicQuery() {
 
 		return _cpInstanceLocalService.getIndexableActionableDynamicQuery();
+	}
+
+	@Override
+	public CPInstance getOrAddEmptyCPInstance(
+			String externalReferenceCode, long cpDefinitionId, long groupId,
+			long companyId, long userId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _cpInstanceLocalService.getOrAddEmptyCPInstance(
+			externalReferenceCode, cpDefinitionId, groupId, companyId, userId);
 	}
 
 	/**
@@ -907,3 +909,4 @@ public class CPInstanceLocalServiceWrapper
 	private CPInstanceLocalService _cpInstanceLocalService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:210732494

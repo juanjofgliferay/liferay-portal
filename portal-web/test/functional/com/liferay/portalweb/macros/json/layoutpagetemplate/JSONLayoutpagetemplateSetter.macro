@@ -35,15 +35,15 @@ definition {
 	}
 
 	@summary = "Default summary"
-	macro setClassTypeId(structureName = null, groupId = null, classNameId = null) {
+	macro setClassTypeKey(structureName = null, groupId = null, classNameId = null) {
 		Variables.assertDefined(parameterList = "${classNameId},${groupId},${structureName}");
 
-		var classTypeId = JSONDDMstructureAPI._getStructureId(
+		var classTypeKey = JSONDDMstructureAPI._getStructureKey(
 			classNameId = ${classNameId},
 			groupId = ${groupId},
 			structureName = ${structureName});
 
-		return ${classTypeId};
+		return ${classTypeKey};
 	}
 
 	@summary = "Default summary"
@@ -81,6 +81,21 @@ definition {
 			grandParentGroupName = ${grandParentGroupName},
 			groupKey = ${groupKey},
 			parentGroupName = ${parentGroupName},
+			site = ${site});
+
+		return ${groupId};
+	}
+
+	@summary = "Default summary"
+	macro setGroupIdByName(groupName = null) {
+		Variables.assertDefined(parameterList = ${groupName});
+
+		if (!(isSet(site))) {
+			var site = "true";
+		}
+
+		var groupId = JSONGroupAPI._getGroupIdByName(
+			groupName = ${groupName},
 			site = ${site});
 
 		return ${groupId};

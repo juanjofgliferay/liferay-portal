@@ -18,6 +18,7 @@ import com.liferay.portal.kernel.security.permission.resource.PortletResourcePer
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.util.UnicodeProperties;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.osgi.service.component.annotations.Component;
@@ -90,12 +91,27 @@ public class CommerceChannelServiceImpl extends CommerceChannelServiceBaseImpl {
 	}
 
 	@Override
-	public CommerceChannel fetchByExternalReferenceCode(
+	public CommerceChannel fetchCommerceChannel(long commerceChannelId)
+		throws PortalException {
+
+		CommerceChannel commerceChannel =
+			commerceChannelPersistence.fetchByPrimaryKey(commerceChannelId);
+
+		if (commerceChannel != null) {
+			_commerceChannelModelResourcePermission.check(
+				getPermissionChecker(), commerceChannelId, ActionKeys.VIEW);
+		}
+
+		return commerceChannel;
+	}
+
+	@Override
+	public CommerceChannel fetchCommerceChannelByExternalReferenceCode(
 			String externalReferenceCode, long companyId)
 		throws PortalException {
 
 		CommerceChannel commerceChannel =
-			commerceChannelLocalService.fetchByExternalReferenceCode(
+			commerceChannelPersistence.fetchByERC_C(
 				externalReferenceCode, companyId);
 
 		if (commerceChannel != null) {
@@ -108,29 +124,13 @@ public class CommerceChannelServiceImpl extends CommerceChannelServiceBaseImpl {
 	}
 
 	@Override
-	public CommerceChannel fetchCommerceChannel(long commerceChannelId)
-		throws PortalException {
-
-		CommerceChannel commerceChannel =
-			commerceChannelLocalService.fetchCommerceChannel(commerceChannelId);
-
-		if (commerceChannel != null) {
-			_commerceChannelModelResourcePermission.check(
-				getPermissionChecker(), commerceChannelId, ActionKeys.VIEW);
-		}
-
-		return commerceChannel;
-	}
-
-	@Override
 	public CommerceChannel getCommerceChannel(long commerceChannelId)
 		throws PortalException {
 
 		_commerceChannelModelResourcePermission.check(
 			getPermissionChecker(), commerceChannelId, ActionKeys.VIEW);
 
-		return commerceChannelLocalService.getCommerceChannel(
-			commerceChannelId);
+		return commerceChannelPersistence.findByPrimaryKey(commerceChannelId);
 	}
 
 	@Override
@@ -152,6 +152,56 @@ public class CommerceChannelServiceImpl extends CommerceChannelServiceBaseImpl {
 		throws PortalException {
 
 		return commerceChannelPersistence.filterFindByCompanyId(companyId);
+	}
+
+	@Override
+	public List<CommerceChannel> getEligibleCommerceChannels(
+			long accountEntryId, String name, int start, int end)
+		throws PortalException {
+
+		List<CommerceChannel> commerceChannels = new ArrayList<>();
+
+		for (CommerceChannel commerceChannel :
+				commerceChannelLocalService.getEligibleCommerceChannels(
+					accountEntryId, name, start, end)) {
+
+			if (!_commerceChannelModelResourcePermission.contains(
+					getPermissionChecker(), commerceChannel, ActionKeys.VIEW)) {
+
+				continue;
+			}
+
+			commerceChannels.add(commerceChannel);
+		}
+
+		return commerceChannels;
+	}
+
+	@Override
+	public CommerceChannel getOrAddEmptyCommerceChannel(
+			String externalReferenceCode)
+		throws PortalException {
+
+		PermissionChecker permissionChecker = getPermissionChecker();
+
+		CommerceChannel commerceChannel =
+			commerceChannelService.fetchCommerceChannelByExternalReferenceCode(
+				externalReferenceCode, permissionChecker.getCompanyId());
+
+		if (commerceChannel != null) {
+			return commerceChannel;
+		}
+
+		PortletResourcePermission portletResourcePermission =
+			_commerceChannelModelResourcePermission.
+				getPortletResourcePermission();
+
+		portletResourcePermission.check(
+			permissionChecker, null, CPActionKeys.ADD_COMMERCE_CHANNEL);
+
+		return commerceChannelLocalService.getOrAddEmptyCommerceChannel(
+			externalReferenceCode, permissionChecker.getCompanyId(),
+			permissionChecker.getUserId());
 	}
 
 	@Override
@@ -198,8 +248,7 @@ public class CommerceChannelServiceImpl extends CommerceChannelServiceBaseImpl {
 				permissionChecker, null, CPActionKeys.VIEW_COMMERCE_CHANNELS)) {
 
 			CommerceChannel commerceChannel =
-				commerceChannelLocalService.getCommerceChannel(
-					commerceChannelId);
+				commerceChannelPersistence.findByPrimaryKey(commerceChannelId);
 
 			accountEntryId = commerceChannel.getAccountEntryId();
 		}

@@ -42,10 +42,10 @@ public class ThreadNameCheck extends BaseCheck {
 			return;
 		}
 
-		List<DetailAST> exprDetailASTList = getAllChildTokens(
+		List<DetailAST> exprDetailASTs = getAllChildTokens(
 			elistDetailAST, false, TokenTypes.EXPR);
 
-		for (DetailAST exprDetailAST : exprDetailASTList) {
+		for (DetailAST exprDetailAST : exprDetailASTs) {
 			firstChildDetailAST = exprDetailAST.getFirstChild();
 
 			if (firstChildDetailAST.getType() != TokenTypes.STRING_LITERAL) {
@@ -56,14 +56,20 @@ public class ThreadNameCheck extends BaseCheck {
 
 			name = name.substring(1, name.length() - 1);
 
+			if (name.length() == 0) {
+				continue;
+			}
+
 			Matcher matcher = _camelCasePattern.matcher(name);
 
 			String expectedName = StringUtil.getTitleCase(
 				matcher.replaceAll("$1 $2"), false);
 
-			if (!name.equals(expectedName)) {
-				log(firstChildDetailAST, _MSG_RENAME_THREAD, expectedName);
+			if (name.equals(expectedName)) {
+				continue;
 			}
+
+			log(firstChildDetailAST, _MSG_RENAME_THREAD, expectedName);
 		}
 	}
 

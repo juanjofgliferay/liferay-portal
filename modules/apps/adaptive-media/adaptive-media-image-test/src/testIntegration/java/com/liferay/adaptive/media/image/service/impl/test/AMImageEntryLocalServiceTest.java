@@ -17,9 +17,9 @@ import com.liferay.document.library.kernel.model.DLFileEntryTypeConstants;
 import com.liferay.document.library.kernel.model.DLFolderConstants;
 import com.liferay.document.library.kernel.service.DLFileEntryLocalServiceUtil;
 import com.liferay.document.library.kernel.store.DLStoreUtil;
+import com.liferay.petra.io.unsync.UnsyncByteArrayInputStream;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.io.unsync.UnsyncByteArrayInputStream;
 import com.liferay.portal.kernel.model.CompanyConstants;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.repository.model.FileEntry;
@@ -75,7 +75,7 @@ public class AMImageEntryLocalServiceTest {
 	public void setUp() throws Exception {
 		_group = GroupTestUtil.addGroup();
 
-		deleteAllAMImageConfigurationEntries();
+		_amImageConfigurationEntries = deleteAllAMImageConfigurationEntries();
 
 		Bundle bundle = FrameworkUtil.getBundle(
 			AMImageEntryLocalServiceTest.class);
@@ -86,6 +86,17 @@ public class AMImageEntryLocalServiceTest {
 	@After
 	public void tearDown() throws Exception {
 		deleteAllAMImageConfigurationEntries();
+
+		for (AMImageConfigurationEntry amImageConfigurationEntry :
+				_amImageConfigurationEntries) {
+
+			_amImageConfigurationHelper.addAMImageConfigurationEntry(
+				TestPropsValues.getCompanyId(),
+				amImageConfigurationEntry.getName(),
+				amImageConfigurationEntry.getDescription(),
+				amImageConfigurationEntry.getUUID(),
+				amImageConfigurationEntry.getProperties());
+		}
 	}
 
 	@Test
@@ -489,7 +500,9 @@ public class AMImageEntryLocalServiceTest {
 
 			int percentage = AMImageEntryLocalServiceUtil.getPercentage(
 				TestPropsValues.getCompanyId(),
-				amImageConfigurationEntry.getUUID());
+				amImageConfigurationEntry.getUUID(),
+				AMImageEntryLocalServiceUtil.getExpectedAMImageEntriesCount(
+					TestPropsValues.getCompanyId()));
 
 			Assert.assertTrue(String.valueOf(percentage), percentage <= 20);
 		}
@@ -538,7 +551,9 @@ public class AMImageEntryLocalServiceTest {
 				100,
 				AMImageEntryLocalServiceUtil.getPercentage(
 					TestPropsValues.getCompanyId(),
-					amImageConfigurationEntry.getUUID()));
+					amImageConfigurationEntry.getUUID(),
+					AMImageEntryLocalServiceUtil.getExpectedAMImageEntriesCount(
+						TestPropsValues.getCompanyId())));
 		}
 		finally {
 			_unregisterAMImageCounter(amImageCounterServiceRegistration);
@@ -555,7 +570,40 @@ public class AMImageEntryLocalServiceTest {
 			0,
 			AMImageEntryLocalServiceUtil.getPercentage(
 				TestPropsValues.getCompanyId(),
-				amImageConfigurationEntry1.getUUID()));
+				amImageConfigurationEntry1.getUUID(),
+				AMImageEntryLocalServiceUtil.getExpectedAMImageEntriesCount(
+					TestPropsValues.getCompanyId())));
+	}
+
+	@Test
+	public void testHasAMImageEntryContentReturnsCachedResultWhenContentMissing()
+		throws Exception {
+
+		AMImageConfigurationEntry amImageConfigurationEntry =
+			_addAMImageConfigurationEntry("uuid", 100, 200);
+
+		byte[] bytes = _getImageBytes();
+
+		FileEntry fileEntry = _addFileEntry(
+			bytes,
+			ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
+
+		FileVersion fileVersion = fileEntry.getFileVersion();
+
+		AMImageEntryLocalServiceUtil.addAMImageEntry(
+			amImageConfigurationEntry, fileVersion, 100, 300,
+			new UnsyncByteArrayInputStream(bytes), 12345);
+
+		Assert.assertTrue(
+			AMImageEntryLocalServiceUtil.hasAMImageEntryContent(
+				amImageConfigurationEntry.getUUID(), fileVersion));
+
+		DLStoreUtil.deleteDirectory(
+			fileEntry.getCompanyId(), CompanyConstants.SYSTEM, "adaptive");
+
+		Assert.assertTrue(
+			AMImageEntryLocalServiceUtil.hasAMImageEntryContent(
+				amImageConfigurationEntry.getUUID(), fileVersion));
 	}
 
 	@Test
@@ -609,7 +657,8 @@ public class AMImageEntryLocalServiceTest {
 				amImageConfigurationEntry.getUUID(), fileVersion));
 	}
 
-	protected void deleteAllAMImageConfigurationEntries()
+	protected Collection<AMImageConfigurationEntry>
+			deleteAllAMImageConfigurationEntries()
 		throws IOException, PortalException {
 
 		Collection<AMImageConfigurationEntry> amImageConfigurationEntries =
@@ -624,6 +673,8 @@ public class AMImageEntryLocalServiceTest {
 				TestPropsValues.getCompanyId(),
 				amImageConfigurationEntry.getUUID());
 		}
+
+		return amImageConfigurationEntries;
 	}
 
 	private AMImageConfigurationEntry _addAMImageConfigurationEntry(
@@ -669,7 +720,7 @@ public class AMImageEntryLocalServiceTest {
 			StringPool.BLANK, StringPool.BLANK,
 			DLFileEntryTypeConstants.COMPANY_ID_BASIC_DOCUMENT,
 			Collections.emptyMap(), null, new UnsyncByteArrayInputStream(bytes),
-			bytes.length, null, null, serviceContext);
+			bytes.length, null, null, null, serviceContext);
 
 		return new LiferayFileEntry(dlFileEntry);
 	}
@@ -698,6 +749,8 @@ public class AMImageEntryLocalServiceTest {
 			serviceRegistration.unregister();
 		}
 	}
+
+	private Collection<AMImageConfigurationEntry> _amImageConfigurationEntries;
 
 	@Inject
 	private AMImageConfigurationHelper _amImageConfigurationHelper;

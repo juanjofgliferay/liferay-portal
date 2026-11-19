@@ -13,24 +13,31 @@ import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMapFactory
 import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.util.CamelCaseUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.MapUtil;
+import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.SetUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.TextFormatter;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.vulcan.extension.EntityExtensionHandler;
 import com.liferay.portal.vulcan.extension.ExtensionProviderRegistry;
 import com.liferay.portal.vulcan.extension.PropertyDefinition;
 import com.liferay.portal.vulcan.extension.util.ExtensionUtil;
+import com.liferay.portal.vulcan.feature.flag.FeatureFlagChecker;
 import com.liferay.portal.vulcan.internal.configuration.util.ConfigurationUtil;
 import com.liferay.portal.vulcan.openapi.DTOProperty;
 import com.liferay.portal.vulcan.openapi.OpenAPIContext;
 import com.liferay.portal.vulcan.openapi.OpenAPISchemaFilter;
 import com.liferay.portal.vulcan.openapi.contributor.OpenAPIContributor;
 import com.liferay.portal.vulcan.resource.OpenAPIResource;
+import com.liferay.portal.vulcan.util.OpenAPISchemaUtil;
 import com.liferay.portal.vulcan.util.UriInfoUtil;
 
 import io.swagger.v3.core.converter.AnnotatedType;
@@ -68,6 +75,15 @@ import io.swagger.v3.oas.models.security.SecurityScheme;
 import io.swagger.v3.oas.models.servers.Server;
 import io.swagger.v3.oas.models.tags.Tag;
 
+import jakarta.servlet.http.HttpServletRequest;
+
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriBuilder;
+import jakarta.ws.rs.core.UriInfo;
+
+import java.lang.reflect.Method;
+
 import java.net.URI;
 
 import java.time.LocalDateTime;
@@ -86,12 +102,7 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import javax.servlet.http.HttpServletRequest;
-
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriBuilder;
-import javax.ws.rs.core.UriInfo;
+import org.apache.cxf.jaxrs.utils.AnnotationUtils;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.InvalidSyntaxException;
@@ -149,11 +160,10 @@ public class OpenAPIResourceImpl implements OpenAPIResource {
 
 	@Override
 	public Map<String, Schema> getSchemas(Class<?> entityClass) {
+		ModelConverters modelConverters = ModelConverters.getInstance();
+
 		return new HashMap<>(
-			ModelConverters.getInstance(
-			).readAll(
-				new AnnotatedType(entityClass)
-			));
+			modelConverters.readAll(new AnnotatedType(entityClass)));
 	}
 
 	@Override
@@ -261,9 +271,11 @@ public class OpenAPIResourceImpl implements OpenAPIResource {
 				securityRequirements.addAll(openAPI.getSecurity());
 			}
 
-			if (openAPI.getTags() != null) {
-				tags.addAll(openAPI.getTags());
+			if (openAPI.getTags() == null) {
+				continue;
 			}
+
+			tags.addAll(openAPI.getTags());
 		}
 
 		OpenAPI openAPI1 = new OpenAPI();
@@ -371,34 +383,33 @@ public class OpenAPIResourceImpl implements OpenAPIResource {
 	protected void activate(BundleContext bundleContext)
 		throws InvalidSyntaxException {
 
-		_entityClassNameServiceTrackerMap =
-			ServiceTrackerMapFactory.openSingleValueMap(
-				bundleContext, null,
-				"(" + JaxrsWhiteboardConstants.JAX_RS_RESOURCE + "=true)",
-				new PropertyServiceReferenceMapper<>("component.name"),
-				new ServiceTrackerCustomizer<Object, String>() {
+		_serviceTrackerMap = ServiceTrackerMapFactory.openSingleValueMap(
+			bundleContext, null,
+			"(" + JaxrsWhiteboardConstants.JAX_RS_RESOURCE + "=true)",
+			new PropertyServiceReferenceMapper<>("component.name"),
+			new ServiceTrackerCustomizer<Object, String>() {
 
-					@Override
-					public String addingService(
-						ServiceReference<Object> serviceReference) {
+				@Override
+				public String addingService(
+					ServiceReference<Object> serviceReference) {
 
-						return (String)serviceReference.getProperty(
-							"entity.class.name");
-					}
+					return (String)serviceReference.getProperty(
+						"entity.class.name");
+				}
 
-					@Override
-					public void modifiedService(
-						ServiceReference<Object> serviceReference,
-						String entityClassName) {
-					}
+				@Override
+				public void modifiedService(
+					ServiceReference<Object> serviceReference,
+					String entityClassName) {
+				}
 
-					@Override
-					public void removedService(
-						ServiceReference<Object> serviceReference,
-						String entityClassName) {
-					}
+				@Override
+				public void removedService(
+					ServiceReference<Object> serviceReference,
+					String entityClassName) {
+				}
 
-				});
+			});
 
 		_trackedOpenAPIContributors = ServiceTrackerListFactory.open(
 			bundleContext, OpenAPIContributor.class);
@@ -408,7 +419,7 @@ public class OpenAPIResourceImpl implements OpenAPIResource {
 	protected void deactivate() {
 		_trackedOpenAPIContributors.close();
 
-		_entityClassNameServiceTrackerMap.close();
+		_serviceTrackerMap.close();
 	}
 
 	private static String _getUpdatedReference(
@@ -511,6 +522,14 @@ public class OpenAPIResourceImpl implements OpenAPIResource {
 			_updateSchemaReferences(additionalPropertiesSchema, schemaPrefix);
 		}
 
+		List<Schema> allOfSchemas = schema.getAllOf();
+
+		if (ListUtil.isNotEmpty(allOfSchemas)) {
+			for (Schema allOfSchema : allOfSchemas) {
+				_updateSchemaReferences(allOfSchema, schemaPrefix);
+			}
+		}
+
 		if (schema instanceof ArraySchema) {
 			ArraySchema arraySchema = (ArraySchema)schema;
 
@@ -529,6 +548,26 @@ public class OpenAPIResourceImpl implements OpenAPIResource {
 
 		schema.set$ref(
 			_getUpdatedSchemaReference(schema.get$ref(), schemaPrefix));
+	}
+
+	private String _getApplicationPath(UriInfo uriInfo) {
+		if (uriInfo == null) {
+			return null;
+		}
+
+		URI baseURI = uriInfo.getBaseUri();
+
+		String path = baseURI.getPath();
+
+		String applicationPath = path.substring(
+			path.indexOf(Portal.PATH_MODULE + "/") +
+				Portal.PATH_MODULE.length());
+
+		if (applicationPath.endsWith("/")) {
+			return applicationPath.substring(0, applicationPath.length() - 1);
+		}
+
+		return applicationPath;
 	}
 
 	private String _getBasePath(
@@ -552,24 +591,24 @@ public class OpenAPIResourceImpl implements OpenAPIResource {
 		Set<String> classNames = new HashSet<>();
 
 		for (Class<?> resourceClass : resourceClasses) {
-			String entryClassName =
-				_entityClassNameServiceTrackerMap.getService(
-					resourceClass.getName());
+			String entryClassName = _serviceTrackerMap.getService(
+				resourceClass.getName());
 
-			if (entryClassName != null) {
-				classNames.add(entryClassName);
+			if (entryClassName == null) {
+				continue;
 			}
+
+			classNames.add(entryClassName);
 		}
 
 		return classNames;
 	}
 
 	private DTOProperty _getDTOProperty(PropertyDefinition propertyDefinition) {
-		PropertyDefinition.PropertyType propertyType =
-			propertyDefinition.getPropertyType();
-
 		DTOProperty dtoProperty;
 
+		PropertyDefinition.PropertyType propertyType =
+			propertyDefinition.getPropertyType();
 		String type = null;
 
 		if ((propertyType ==
@@ -670,6 +709,41 @@ public class OpenAPIResourceImpl implements OpenAPIResource {
 		return propertyDefinitions;
 	}
 
+	private Set<String> _getFeatureFlagDisabledOperationIds(
+		Set<Class<?>> resourceClasses) {
+
+		Set<String> operationIds = new HashSet<>();
+
+		long companyId = CompanyThreadLocal.getCompanyId();
+
+		for (Class<?> resourceClass : resourceClasses) {
+			for (Class<?> currentClass = resourceClass; currentClass != null;
+				 currentClass = currentClass.getSuperclass()) {
+
+				for (Method method : currentClass.getDeclaredMethods()) {
+					if (AnnotationUtils.getHttpMethodValue(method) == null) {
+						continue;
+					}
+
+					try {
+						if (_featureFlagChecker.isEnabled(companyId, method)) {
+							continue;
+						}
+					}
+					catch (Exception exception) {
+						if (_log.isWarnEnabled()) {
+							_log.warn(exception);
+						}
+					}
+
+					operationIds.add(_getOperationId(method));
+				}
+			}
+		}
+
+		return operationIds;
+	}
+
 	private Response _getOpenAPI(
 			HttpServletRequest httpServletRequest,
 			OpenAPIContributor openAPIContributor,
@@ -713,21 +787,23 @@ public class OpenAPIResourceImpl implements OpenAPIResource {
 			_mergeOpenAPISchemaFilters(
 				openAPISchemaFilter,
 				_getOpenAPISchemaFilter(
-					_getBasePath(null, uriInfo), _extensionProviderRegistry,
+					_getApplicationPath(uriInfo), _extensionProviderRegistry,
 					resourceClasses));
 
-		if (mergedOpenAPISchemaFilter != null) {
-			SpecFilter specFilter = new SpecFilter();
+		OpenAPISpecFilter openAPISpecFilter = _toOpenAPISpecFilter(
+			mergedOpenAPISchemaFilter, resourceClasses);
 
+		if (openAPISpecFilter != null) {
 			Map<String, List<String>> queryParameters = null;
 
 			if (uriInfo != null) {
 				queryParameters = uriInfo.getQueryParameters();
 			}
 
+			SpecFilter specFilter = new SpecFilter();
+
 			openAPI = specFilter.filter(
-				openAPI, _toOpenAPISpecFilter(mergedOpenAPISchemaFilter),
-				queryParameters, null, null);
+				openAPI, openAPISpecFilter, queryParameters, null, null);
 		}
 
 		if (openAPI == null) {
@@ -770,37 +846,29 @@ public class OpenAPIResourceImpl implements OpenAPIResource {
 	}
 
 	private OpenAPISchemaFilter _getOpenAPISchemaFilter(
-			String basePath,
+			String applicationPath,
 			ExtensionProviderRegistry extensionProviderRegistry,
 			Set<Class<?>> resourceClasses)
 		throws Exception {
 
-		Set<String> classNames = _getDTOClassNames(resourceClasses);
-
-		if (SetUtil.isEmpty(classNames)) {
-			return null;
-		}
-
-		long companyId = CompanyThreadLocal.getCompanyId();
-
 		Map<String, List<PropertyDefinition>> propertyDefinitionsMap =
 			new HashMap<>();
 
-		for (String className : classNames) {
+		long companyId = CompanyThreadLocal.getCompanyId();
+
+		for (String className : _getDTOClassNames(resourceClasses)) {
 			List<PropertyDefinition> propertyDefinitions =
 				_getExtendedPropertyDefinitions(
 					className, companyId, extensionProviderRegistry);
 
-			if (ListUtil.isNotEmpty(propertyDefinitions)) {
-				propertyDefinitionsMap.put(className, propertyDefinitions);
+			if (ListUtil.isEmpty(propertyDefinitions)) {
+				continue;
 			}
+
+			propertyDefinitionsMap.put(className, propertyDefinitions);
 		}
 
-		if (MapUtil.isNotEmpty(propertyDefinitionsMap)) {
-			return _getOpenAPISchemaFilter(basePath, propertyDefinitionsMap);
-		}
-
-		return null;
+		return _getOpenAPISchemaFilter(applicationPath, propertyDefinitionsMap);
 	}
 
 	private OpenAPISchemaFilter _getOpenAPISchemaFilter(
@@ -832,16 +900,25 @@ public class OpenAPIResourceImpl implements OpenAPIResource {
 		};
 	}
 
+	private String _getOperationId(Method method) {
+		io.swagger.v3.oas.annotations.Operation operation =
+			method.getAnnotation(io.swagger.v3.oas.annotations.Operation.class);
+
+		if ((operation != null) &&
+			Validator.isNotNull(operation.operationId())) {
+
+			return operation.operationId();
+		}
+
+		return method.getName();
+	}
+
 	private OpenAPISchemaFilter _mergeOpenAPISchemaFilters(
 		OpenAPISchemaFilter openAPISchemaFilter1,
 		OpenAPISchemaFilter openAPISchemaFilter2) {
 
 		if (openAPISchemaFilter1 == null) {
 			return openAPISchemaFilter2;
-		}
-
-		if (openAPISchemaFilter2 == null) {
-			return openAPISchemaFilter1;
 		}
 
 		OpenAPISchemaFilter mergedOpenAPISchemaFilter =
@@ -866,13 +943,27 @@ public class OpenAPIResourceImpl implements OpenAPIResource {
 	}
 
 	private OpenAPISpecFilter _toOpenAPISpecFilter(
-		OpenAPISchemaFilter openAPISchemaFilter) {
+		OpenAPISchemaFilter openAPISchemaFilter,
+		Set<Class<?>> resourceClasses) {
 
 		List<DTOProperty> dtoProperties =
 			openAPISchemaFilter.getDTOProperties();
-
+		Set<String> excludedOperationIds =
+			ConfigurationUtil.getExcludedOperationIds(
+				CompanyThreadLocal.getCompanyId(), _configurationAdmin,
+				openAPISchemaFilter.getApplicationPath());
+		Set<String> featureFlagDisabledOperationIds =
+			_getFeatureFlagDisabledOperationIds(resourceClasses);
 		Map<String, String> schemaMappings =
 			openAPISchemaFilter.getSchemaMappings();
+
+		if (ListUtil.isEmpty(dtoProperties) &&
+			SetUtil.isEmpty(excludedOperationIds) &&
+			SetUtil.isEmpty(featureFlagDisabledOperationIds) &&
+			MapUtil.isEmpty(schemaMappings)) {
+
+			return null;
+		}
 
 		return new AbstractSpecFilter() {
 
@@ -884,7 +975,16 @@ public class OpenAPIResourceImpl implements OpenAPIResource {
 
 				Components components = openAPI.getComponents();
 
-				Map<String, Schema> schemas = components.getSchemas();
+				Map<String, Schema> schemas = null;
+
+				if (components != null) {
+					schemas = components.getSchemas();
+				}
+
+				if (MapUtil.isEmpty(schemas)) {
+					return super.filterOpenAPI(
+						openAPI, params, cookies, headers);
+				}
 
 				for (Map.Entry<String, String> entry :
 						schemaMappings.entrySet()) {
@@ -926,12 +1026,9 @@ public class OpenAPIResourceImpl implements OpenAPIResource {
 
 				String operationId = operation.getOperationId();
 
-				Set<String> excludedOperationIds =
-					ConfigurationUtil.getExcludedOperationIds(
-						CompanyThreadLocal.getCompanyId(), _configurationAdmin,
-						openAPISchemaFilter.getApplicationPath());
+				if (excludedOperationIds.contains(operationId) ||
+					featureFlagDisabledOperationIds.contains(operationId)) {
 
-				if (excludedOperationIds.contains(operationId)) {
 					return Optional.empty();
 				}
 
@@ -944,6 +1041,10 @@ public class OpenAPIResourceImpl implements OpenAPIResource {
 
 					operationId = StringUtil.replace(
 						operationId, entry.getKey(), entry.getValue());
+
+					operationId = StringUtil.replace(
+						operationId, "Related" + entry.getValue(),
+						"Related" + entry.getKey());
 				}
 
 				operation.setOperationId(operationId);
@@ -957,11 +1058,13 @@ public class OpenAPIResourceImpl implements OpenAPIResource {
 							schemaMappings.entrySet()) {
 
 						for (int i = 0; i < newTags.size(); i++) {
-							if (Objects.equals(
+							if (!Objects.equals(
 									entry.getKey(), newTags.get(i))) {
 
-								newTags.set(i, entry.getValue());
+								continue;
 							}
+
+							newTags.set(i, entry.getValue());
 						}
 					}
 
@@ -987,13 +1090,14 @@ public class OpenAPIResourceImpl implements OpenAPIResource {
 					String schemaName = StringUtil.lowerCaseFirstLetter(
 						entry.getKey());
 
-					if (parameterName.contains(schemaName)) {
-						parameter.setName(
-							StringUtil.replace(
-								parameterName, schemaName,
-								StringUtil.lowerCaseFirstLetter(
-									entry.getValue())));
+					if (!parameterName.contains(schemaName)) {
+						continue;
 					}
+
+					parameter.setName(
+						StringUtil.replace(
+							parameterName, schemaName,
+							StringUtil.lowerCaseFirstLetter(entry.getValue())));
 				}
 
 				return super.filterParameter(
@@ -1059,9 +1163,11 @@ public class OpenAPIResourceImpl implements OpenAPIResource {
 							childDTOProperty.getName(),
 							_addSchema(childDTOProperty));
 
-						if (childDTOProperty.isRequired()) {
-							schema.addRequiredItem(childDTOProperty.getName());
+						if (!childDTOProperty.isRequired()) {
+							continue;
 						}
+
+						schema.addRequiredItem(childDTOProperty.getName());
 					}
 
 					return Optional.of(schema);
@@ -1081,11 +1187,21 @@ public class OpenAPIResourceImpl implements OpenAPIResource {
 
 					_replaceReference(entry, propertySchema);
 
-					if (propertySchema instanceof ArraySchema) {
-						ArraySchema arraySchema = (ArraySchema)propertySchema;
+					List<Schema> allOfSchemas = propertySchema.getAllOf();
 
-						_replaceReference(entry, arraySchema.getItems());
+					if (ListUtil.isNotEmpty(allOfSchemas)) {
+						for (Schema allOfSchema : allOfSchemas) {
+							_replaceReference(entry, allOfSchema);
+						}
 					}
+
+					if (!(propertySchema instanceof ArraySchema)) {
+						continue;
+					}
+
+					ArraySchema arraySchema = (ArraySchema)propertySchema;
+
+					_replaceReference(entry, arraySchema.getItems());
 				}
 
 				return super.filterSchemaProperty(
@@ -1099,7 +1215,10 @@ public class OpenAPIResourceImpl implements OpenAPIResource {
 					ArraySchema arraySchema = new ArraySchema();
 
 					arraySchema.setDescription(dtoProperty.getDescription());
-					arraySchema.setExtensions(dtoProperty.getExtensions());
+					arraySchema.setExtensions(
+						HashMapBuilder.putAll(
+							dtoProperty.getExtensions()
+						).build());
 					arraySchema.setName(dtoProperty.getName());
 					arraySchema.setType("array");
 
@@ -1132,8 +1251,12 @@ public class OpenAPIResourceImpl implements OpenAPIResource {
 				Schema<Object> schema = new Schema<>();
 
 				schema.setDescription(dtoProperty.getDescription());
-				schema.setExtensions(dtoProperty.getExtensions());
+				schema.setExtensions(
+					HashMapBuilder.putAll(
+						dtoProperty.getExtensions()
+					).build());
 				schema.setName(dtoProperty.getName());
+				schema.setReadOnly(dtoProperty.getReadOnly());
 
 				if (type.equals("Boolean")) {
 					schema.setType("boolean");
@@ -1185,9 +1308,10 @@ public class OpenAPIResourceImpl implements OpenAPIResource {
 						if (StringUtil.equals(
 								childDTOProperty.getType(), "Object")) {
 
-							schema.set$ref(
+							OpenAPISchemaUtil.setReference(
 								"#/components/schemas/" +
-									childDTOProperty.getName());
+									childDTOProperty.getName(),
+								schema);
 						}
 						else {
 							schema.addProperties(
@@ -1220,15 +1344,17 @@ public class OpenAPIResourceImpl implements OpenAPIResource {
 
 					Schema schema = entry.getValue();
 
-					if (schemas.containsKey(schema.getName())) {
-						String newName = "C." + schema.getName();
-
-						schema.setName(newName);
-
-						DTOProperty dtoProperty = entry.getKey();
-
-						dtoProperty.setName(newName);
+					if (!schemas.containsKey(schema.getName())) {
+						continue;
 					}
+
+					String newName = "C." + schema.getName();
+
+					schema.setName(newName);
+
+					DTOProperty dtoProperty = entry.getKey();
+
+					dtoProperty.setName(newName);
 				}
 			}
 
@@ -1243,36 +1369,39 @@ public class OpenAPIResourceImpl implements OpenAPIResource {
 					for (DTOProperty childDTOProperty1 :
 							dtoProperty.getDTOProperties()) {
 
-						if (StringUtil.equals(
+						if (!StringUtil.equals(
 								childDTOProperty1.getType(), "Object")) {
 
-							Schema schema = new Schema();
+							continue;
+						}
 
-							schema.setDescription(
-								childDTOProperty1.getDescription());
-							schema.setExtensions(
-								childDTOProperty1.getExtensions());
-							schema.setName(childDTOProperty1.getName());
-							schema.setType("object");
+						Schema schema = new Schema();
 
-							for (DTOProperty childDTOProperty2 :
-									childDTOProperty1.getDTOProperties()) {
+						schema.setDescription(
+							childDTOProperty1.getDescription());
+						schema.setExtensions(
+							HashMapBuilder.putAll(
+								childDTOProperty1.getExtensions()
+							).build());
+						schema.setName(childDTOProperty1.getName());
+						schema.setType("object");
 
-								schema.addProperties(
-									childDTOProperty2.getName(),
-									_addSchema(childDTOProperty2));
+						for (DTOProperty childDTOProperty2 :
+								childDTOProperty1.getDTOProperties()) {
 
-								if (childDTOProperty2.isRequired()) {
-									schema.addRequiredItem(
-										childDTOProperty2.getName());
-								}
+							schema.addProperties(
+								childDTOProperty2.getName(),
+								_addSchema(childDTOProperty2));
 
-								schemas.putAll(
-									_getNewSchemas(childDTOProperty2));
+							if (childDTOProperty2.isRequired()) {
+								schema.addRequiredItem(
+									childDTOProperty2.getName());
 							}
 
-							schemas.put(childDTOProperty1, schema);
+							schemas.putAll(_getNewSchemas(childDTOProperty2));
 						}
+
+						schemas.put(childDTOProperty1, schema);
 					}
 				}
 				else {
@@ -1431,17 +1560,22 @@ public class OpenAPIResourceImpl implements OpenAPIResource {
 		}
 	}
 
+	private static final Log _log = LogFactoryUtil.getLog(
+		OpenAPIResourceImpl.class);
+
 	private static final Pattern _pattern = Pattern.compile(
 		"\\{(.*)(:.*)(/?)\\}");
 
 	@Reference
 	private ConfigurationAdmin _configurationAdmin;
 
-	private ServiceTrackerMap<String, String> _entityClassNameServiceTrackerMap;
-
 	@Reference
 	private ExtensionProviderRegistry _extensionProviderRegistry;
 
+	@Reference
+	private FeatureFlagChecker _featureFlagChecker;
+
+	private ServiceTrackerMap<String, String> _serviceTrackerMap;
 	private ServiceTrackerList<OpenAPIContributor> _trackedOpenAPIContributors;
 
 }

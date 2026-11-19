@@ -22,11 +22,13 @@ import com.liferay.portal.kernel.settings.LocalizedValuesMap;
 import com.liferay.portal.kernel.settings.Settings;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
+import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.Localization;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalClassLoaderUtil;
 import com.liferay.portal.kernel.util.PrefsParamUtil;
+import com.liferay.portal.kernel.util.PropsUtil;
 import com.liferay.portal.kernel.util.ResourceBundleUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Tuple;
@@ -35,6 +37,11 @@ import com.liferay.portal.kernel.xml.Document;
 import com.liferay.portal.kernel.xml.Element;
 import com.liferay.portal.kernel.xml.XMLUtil;
 
+import jakarta.portlet.PortletPreferences;
+import jakarta.portlet.PortletRequest;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.io.IOException;
 import java.io.Serializable;
 
@@ -42,14 +49,11 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.ResourceBundle;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
-
-import javax.portlet.PortletPreferences;
-import javax.portlet.PortletRequest;
-
-import javax.servlet.http.HttpServletRequest;
 
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLOutputFactory;
@@ -77,9 +81,11 @@ public class LocalizationImpl implements Localization {
 
 			String value = jsonObject.getString(languageId);
 
-			if (Validator.isNotNull(value)) {
-				map.put(locale, value);
+			if (Validator.isNull(value)) {
+				continue;
 			}
+
+			map.put(locale, value);
 		}
 
 		return map;
@@ -210,6 +216,25 @@ public class LocalizationImpl implements Localization {
 	public String getLocalization(
 		String xml, String requestedLanguageId, boolean useDefault,
 		String defaultValue) {
+
+		if ((xml == null) && useDefault) {
+			return null;
+		}
+
+		String openTag = "language-id=\"" + requestedLanguageId + "\">";
+
+		int startIndex = xml.indexOf(openTag);
+
+		if (startIndex != -1) {
+			startIndex += openTag.length();
+
+			int endIndex = xml.indexOf("</", startIndex);
+
+			if (endIndex != -1) {
+				return StringUtil.stripCDATA(
+					HtmlUtil.unescape(xml.substring(startIndex, endIndex)));
+			}
+		}
 
 		if (!Validator.isXml(xml)) {
 			if (useDefault ||
@@ -357,13 +382,15 @@ public class LocalizationImpl implements Localization {
 
 		Map<Locale, String> map = new HashMap<>();
 
-		String defaultValue = LanguageUtil.get(defaultLocale, key);
-
 		for (Locale locale : locales) {
-			String value = LanguageUtil.get(locale, key);
+			String value = LanguageUtil.get(locale, key, null);
 
-			if (!locale.equals(defaultLocale) && value.equals(defaultValue)) {
-				continue;
+			if (value == null) {
+				if (!locale.equals(defaultLocale)) {
+					continue;
+				}
+
+				value = key;
 			}
 
 			map.put(locale, value);
@@ -499,14 +526,36 @@ public class LocalizationImpl implements Localization {
 
 		Map<Locale, String> map = new HashMap<>();
 
-		for (Locale locale : LanguageUtil.getAvailableLocales()) {
-			String languageId = LocaleUtil.toLanguageId(locale);
+		if (Validator.isNull(xml)) {
+			return map;
+		}
+
+		Map<String, Locale> availableLocaleMap =
+			LanguageUtil.getAvailableLocaleMap();
+
+		Locale siteDefaultLocale = LocaleUtil.getSiteDefault();
+
+		for (Map.Entry<String, Locale> entry : availableLocaleMap.entrySet()) {
+			String languageId = entry.getKey();
+			Locale locale = entry.getValue();
+
+			if (!useDefault && !xml.contains(languageId)) {
+				if (!Validator.isXml(xml) &&
+					Objects.equals(locale, siteDefaultLocale)) {
+
+					map.put(entry.getValue(), xml);
+				}
+
+				continue;
+			}
 
 			String value = getLocalization(xml, languageId, useDefault);
 
-			if (Validator.isNotNull(value)) {
-				map.put(locale, value);
+			if (Validator.isNull(value)) {
+				continue;
 			}
+
+			map.put(locale, value);
 		}
 
 		return map;
@@ -547,9 +596,11 @@ public class LocalizationImpl implements Localization {
 			String value = _getLocalization(
 				bundleName, locale, classLoader, key, null);
 
-			if (Validator.isNotNull(value) && !value.equals(defaultValue)) {
-				map.put(locale, value);
+			if (Validator.isNull(value) || value.equals(defaultValue)) {
+				continue;
 			}
+
+			map.put(locale, value);
 		}
 
 		return map;
@@ -615,9 +666,11 @@ public class LocalizationImpl implements Localization {
 				portletRequest, prefixedLocalizedKey,
 				portletPreferences.getValue(localizedKey, null));
 
-			if (value != null) {
-				xml = updateLocalization(xml, parameter, value, languageId);
+			if (value == null) {
+				continue;
 			}
+
+			xml = updateLocalization(xml, parameter, value, languageId);
 		}
 
 		if (getLocalization(xml, defaultLanguageId, true, null) == null) {
@@ -791,16 +844,18 @@ public class LocalizationImpl implements Localization {
 			for (Locale locale : availableLocales) {
 				String value = localizedValuesMap.get(locale);
 
-				if (value != null) {
-					xmlStreamWriter.writeStartElement(key);
-
-					xmlStreamWriter.writeAttribute(
-						"language-id", locale.toString());
-
-					xmlStreamWriter.writeCharacters(value);
-
-					xmlStreamWriter.writeEndElement();
+				if (value == null) {
+					continue;
 				}
+
+				xmlStreamWriter.writeStartElement(key);
+
+				xmlStreamWriter.writeAttribute(
+					"language-id", locale.toString());
+
+				xmlStreamWriter.writeCharacters(value);
+
+				xmlStreamWriter.writeEndElement();
 			}
 
 			xmlStreamWriter.writeEndElement();
@@ -850,10 +905,12 @@ public class LocalizationImpl implements Localization {
 			sb.append(defaultLanguageId);
 
 			for (String languageId : map.keySet()) {
-				if (!defaultLanguageId.equals(languageId)) {
-					sb.append(StringPool.COMMA);
-					sb.append(languageId);
+				if (defaultLanguageId.equals(languageId)) {
+					continue;
 				}
+
+				sb.append(StringPool.COMMA);
+				sb.append(languageId);
 			}
 
 			xmlStreamWriter.writeAttribute(_AVAILABLE_LOCALES, sb.toString());
@@ -912,11 +969,13 @@ public class LocalizationImpl implements Localization {
 		for (Locale availableLocale :
 				LanguageUtil.getAvailableLocales(groupId)) {
 
-			if (!localizationMap.containsKey(availableLocale) ||
-				Validator.isNull(localizationMap.get(availableLocale))) {
+			if (localizationMap.containsKey(availableLocale) &&
+				Validator.isNotNull(localizationMap.get(availableLocale))) {
 
-				localizationMap.put(availableLocale, defaultValue);
+				continue;
 			}
+
+			localizationMap.put(availableLocale, defaultValue);
 		}
 
 		return localizationMap;
@@ -1103,11 +1162,13 @@ public class LocalizationImpl implements Localization {
 				Locale locale = entry.getKey();
 				String value = entry.getValue();
 
-				if (availableLocales.contains(locale) &&
-					Validator.isNotNull(value)) {
+				if (!availableLocales.contains(locale) ||
+					Validator.isNull(value)) {
 
-					map.put(LocaleUtil.toLanguageId(locale), value);
+					continue;
 				}
+
+				map.put(LocaleUtil.toLanguageId(locale), value);
 			}
 
 			if (map.isEmpty()) {
@@ -1416,6 +1477,18 @@ public class LocalizationImpl implements Localization {
 			return defaultValue;
 		}
 
+		int startIndex = xml.indexOf(name + "=\"");
+
+		if (startIndex != -1) {
+			startIndex += name.length() + 2;
+
+			int endIndex = xml.indexOf('"', startIndex);
+
+			if (endIndex != -1) {
+				return xml.substring(startIndex, endIndex);
+			}
+		}
+
 		String value = null;
 
 		XMLStreamReader xmlStreamReader = null;
@@ -1472,19 +1545,26 @@ public class LocalizationImpl implements Localization {
 		String xml, String requestedLanguageId, boolean useDefault,
 		String value) {
 
-		if (Validator.isNotNull(xml) && !xml.equals(_EMPTY_ROOT_NODE)) {
-			_cache.compute(
-				xml,
-				(key, map) -> {
-					if (map == null) {
-						map = new HashMap<>();
-					}
+		if (Validator.isNull(xml) || xml.equals(_EMPTY_ROOT_NODE) ||
+			(value == null)) {
 
-					map.put(new Tuple(useDefault, requestedLanguageId), value);
-
-					return map;
-				});
+			return;
 		}
+
+		Map<Tuple, String> valueMap = _cache.get(xml);
+
+		if (valueMap == null) {
+			valueMap = new ConcurrentHashMap<>();
+
+			Map<Tuple, String> previousValueMap = _cache.putIfAbsent(
+				xml, valueMap);
+
+			if (previousValueMap != null) {
+				valueMap = previousValueMap;
+			}
+		}
+
+		valueMap.put(new Tuple(useDefault, requestedLanguageId), value);
 	}
 
 	private static final String _AVAILABLE_LOCALES = "available-locales";

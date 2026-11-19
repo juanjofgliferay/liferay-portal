@@ -19,8 +19,8 @@ import com.liferay.content.dashboard.web.internal.display.context.ContentDashboa
 import com.liferay.content.dashboard.web.internal.item.ContentDashboardItemFactoryRegistry;
 import com.liferay.content.dashboard.web.internal.item.filter.ContentDashboardItemFilterProviderRegistry;
 import com.liferay.content.dashboard.web.internal.search.request.ContentDashboardSearchContextBuilder;
-import com.liferay.content.dashboard.web.internal.searcher.ContentDashboardSearchRequestBuilderFactory;
 import com.liferay.content.dashboard.web.internal.servlet.taglib.util.ContentDashboardDropdownItemsProvider;
+import com.liferay.content.dashboard.web.internal.util.ContentDashboardSearchRequestBuilderUtil;
 import com.liferay.content.dashboard.web.internal.util.ContentDashboardUtil;
 import com.liferay.info.search.InfoSearchClassMapperRegistry;
 import com.liferay.item.selector.ItemSelector;
@@ -36,19 +36,19 @@ import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.ResourceBundleUtil;
 import com.liferay.portal.search.aggregation.Aggregations;
-import com.liferay.portal.search.query.Queries;
+import com.liferay.portal.search.legacy.searcher.SearchRequestBuilderFactory;
 import com.liferay.portal.search.searcher.Searcher;
 import com.liferay.sharing.display.context.util.SharingJavaScriptFactory;
+
+import jakarta.portlet.Portlet;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
 
 import java.io.IOException;
 
 import java.util.List;
 import java.util.ResourceBundle;
-
-import javax.portlet.Portlet;
-import javax.portlet.PortletException;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -69,15 +69,15 @@ import org.osgi.service.component.annotations.Reference;
 		"com.liferay.portlet.private-session-attributes=false",
 		"com.liferay.portlet.render-weight=50",
 		"com.liferay.portlet.use-default-template=true",
-		"javax.portlet.display-name=Content Dashboard",
-		"javax.portlet.expiration-cache=0",
-		"javax.portlet.init-param.template-path=/META-INF/resources/",
-		"javax.portlet.init-param.view-template=/view.jsp",
-		"javax.portlet.name=" + ContentDashboardPortletKeys.CONTENT_DASHBOARD_ADMIN,
-		"javax.portlet.portlet-mode=text/html",
-		"javax.portlet.resource-bundle=content.Language",
-		"javax.portlet.security-role-ref=power-user,user",
-		"javax.portlet.version=3.0"
+		"jakarta.portlet.display-name=Content Dashboard",
+		"jakarta.portlet.expiration-cache=0",
+		"jakarta.portlet.init-param.template-path=/META-INF/resources/",
+		"jakarta.portlet.init-param.view-template=/view.jsp",
+		"jakarta.portlet.name=" + ContentDashboardPortletKeys.CONTENT_DASHBOARD_ADMIN,
+		"jakarta.portlet.portlet-mode=text/html",
+		"jakarta.portlet.resource-bundle=content.Language",
+		"jakarta.portlet.security-role-ref=power-user,user",
+		"jakarta.portlet.version=4.0"
 	},
 	service = Portlet.class
 )
@@ -90,15 +90,21 @@ public class ContentDashboardAdminPortlet extends MVCPortlet {
 
 		ResourceBundle resourceBundle = ResourceBundleUtil.getBundle(
 			_portal.getLocale(renderRequest), getClass());
+		ContentDashboardSearchContextBuilder
+			contentDashboardSearchContextBuilder =
+				new ContentDashboardSearchContextBuilder(
+					_portal.getHttpServletRequest(renderRequest),
+					_assetCategoryLocalService, _assetVocabularyLocalService,
+					_contentDashboardItemFilterProviderRegistry);
 
 		ContentDashboardDataProvider contentDashboardDataProvider =
 			new ContentDashboardDataProvider(
-				_aggregations,
-				new ContentDashboardSearchContextBuilder(
-					_portal.getHttpServletRequest(renderRequest),
-					_assetCategoryLocalService, _assetVocabularyLocalService),
-				_contentDashboardSearchRequestBuilderFactory,
-				_portal.getLocale(renderRequest), _queries, resourceBundle,
+				_aggregations, _portal.getLocale(renderRequest), resourceBundle,
+				ContentDashboardSearchRequestBuilderUtil.builder(
+					_contentDashboardItemFactoryRegistry,
+					_infoSearchClassMapperRegistry,
+					contentDashboardSearchContextBuilder.build(),
+					_searchRequestBuilderFactory),
 				_searcher);
 
 		LiferayPortletRequest liferayPortletRequest =
@@ -111,9 +117,9 @@ public class ContentDashboardAdminPortlet extends MVCPortlet {
 				ContentDashboardItemSearchContainerFactory.getInstance(
 					_assetCategoryLocalService, _assetVocabularyLocalService,
 					_contentDashboardItemFactoryRegistry,
-					_contentDashboardSearchRequestBuilderFactory,
+					_contentDashboardItemFilterProviderRegistry,
 					_infoSearchClassMapperRegistry, _portal, renderRequest,
-					renderResponse, _searcher);
+					renderResponse, _searchRequestBuilderFactory, _searcher);
 
 		SearchContainer<ContentDashboardItem<?>> searchContainer =
 			contentDashboardItemSearchContainerFactory.create();
@@ -177,7 +183,7 @@ public class ContentDashboardAdminPortlet extends MVCPortlet {
 				_portal.getHttpServletRequest(liferayPortletRequest),
 				_infoSearchClassMapperRegistry));
 
-		_sharingJavaScriptFactory.requestSharingJavascript();
+		_sharingJavaScriptFactory.requestSharingJavaScript();
 
 		super.render(renderRequest, renderResponse);
 	}
@@ -204,10 +210,6 @@ public class ContentDashboardAdminPortlet extends MVCPortlet {
 		_contentDashboardItemSubtypeFactoryRegistry;
 
 	@Reference
-	private ContentDashboardSearchRequestBuilderFactory
-		_contentDashboardSearchRequestBuilderFactory;
-
-	@Reference
 	private GroupLocalService _groupLocalService;
 
 	@Reference
@@ -223,7 +225,7 @@ public class ContentDashboardAdminPortlet extends MVCPortlet {
 	private Portal _portal;
 
 	@Reference
-	private Queries _queries;
+	private SearchRequestBuilderFactory _searchRequestBuilderFactory;
 
 	@Reference
 	private Searcher _searcher;

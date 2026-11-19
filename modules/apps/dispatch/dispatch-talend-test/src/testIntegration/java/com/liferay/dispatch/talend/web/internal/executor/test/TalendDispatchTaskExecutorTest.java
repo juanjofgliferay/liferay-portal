@@ -77,12 +77,12 @@ public class TalendDispatchTaskExecutorTest {
 		List<DispatchLog> dispatchLogs =
 			_dispatchLogLocalService.getDispatchLogs(
 				dispatchTrigger.getDispatchTriggerId(), QueryUtil.ALL_POS,
-				QueryUtil.ALL_POS);
+				QueryUtil.ALL_POS, null);
 
 		DispatchLog dispatchLog = dispatchLogs.get(0);
 
 		Assert.assertEquals(
-			DispatchTaskStatus.SUCCESSFUL,
+			dispatchLog.getError(), DispatchTaskStatus.SUCCESSFUL,
 			DispatchTaskStatus.valueOf(dispatchLog.getStatus()));
 	}
 

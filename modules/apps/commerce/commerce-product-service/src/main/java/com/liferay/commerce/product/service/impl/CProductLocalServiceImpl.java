@@ -5,13 +5,13 @@
 
 package com.liferay.commerce.product.service.impl;
 
-import com.liferay.commerce.product.exception.DuplicateCProductException;
 import com.liferay.commerce.product.model.CPDefinition;
 import com.liferay.commerce.product.model.CPInstance;
 import com.liferay.commerce.product.model.CProduct;
 import com.liferay.commerce.product.service.CPDefinitionLinkLocalService;
 import com.liferay.commerce.product.service.base.CProductLocalServiceBaseImpl;
 import com.liferay.commerce.product.service.persistence.CPInstancePersistence;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.SystemEventConstants;
@@ -19,9 +19,8 @@ import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.search.Indexer;
 import com.liferay.portal.kernel.search.IndexerRegistryUtil;
 import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.SystemEventLocalService;
 import com.liferay.portal.kernel.service.UserLocalService;
-import com.liferay.portal.kernel.systemevent.SystemEvent;
-import com.liferay.portal.kernel.util.Validator;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -38,17 +37,11 @@ public class CProductLocalServiceImpl extends CProductLocalServiceBaseImpl {
 
 	@Override
 	public CProduct addCProduct(
-			String externalReferenceCode, long groupId, long userId,
+			String externalReferenceCode, long userId, long groupId,
 			ServiceContext serviceContext)
 		throws PortalException {
 
 		User user = _userLocalService.getUser(userId);
-
-		if (Validator.isBlank(externalReferenceCode)) {
-			externalReferenceCode = null;
-		}
-
-		_validate(externalReferenceCode, user.getCompanyId());
 
 		CProduct cProduct = cProductLocalService.createCProduct(
 			counterLocalService.increment());
@@ -64,12 +57,17 @@ public class CProductLocalServiceImpl extends CProductLocalServiceBaseImpl {
 	}
 
 	@Override
-	@SystemEvent(type = SystemEventConstants.TYPE_DELETE)
 	public CProduct deleteCProduct(CProduct cProduct) throws PortalException {
 		cProduct = cProductPersistence.remove(cProduct);
 
 		_cpDefinitionLinkLocalService.deleteCPDefinitionLinksByCProductId(
 			cProduct.getCProductId());
+
+		_systemEventLocalService.addSystemEvent(
+			cProduct.getCompanyId(), cProduct.getExternalReferenceCode(),
+			CProduct.class.getName(), cProduct.getCProductId(),
+			cProduct.getUuid(), null, SystemEventConstants.TYPE_DELETE,
+			StringPool.BLANK);
 
 		return cProduct;
 	}
@@ -96,7 +94,7 @@ public class CProductLocalServiceImpl extends CProductLocalServiceBaseImpl {
 
 	@Override
 	public int increment(long cProductId) throws PortalException {
-		CProduct cProduct = cProductLocalService.getCProduct(cProductId);
+		CProduct cProduct = cProductPersistence.findByPrimaryKey(cProductId);
 
 		cProduct.setLatestVersion(cProduct.getLatestVersion() + 1);
 
@@ -110,13 +108,7 @@ public class CProductLocalServiceImpl extends CProductLocalServiceBaseImpl {
 			String externalReferenceCode, long cProductId)
 		throws PortalException {
 
-		CProduct cProduct = cProductLocalService.getCProduct(cProductId);
-
-		if (externalReferenceCode.equals(cProduct.getExternalReferenceCode())) {
-			return cProduct;
-		}
-
-		_validate(externalReferenceCode, cProduct.getCompanyId());
+		CProduct cProduct = cProductPersistence.findByPrimaryKey(cProductId);
 
 		cProduct.setExternalReferenceCode(externalReferenceCode);
 
@@ -132,7 +124,7 @@ public class CProductLocalServiceImpl extends CProductLocalServiceBaseImpl {
 			long cProductId, long publishedCPDefinitionId)
 		throws PortalException {
 
-		CProduct cProduct = cProductLocalService.getCProduct(cProductId);
+		CProduct cProduct = cProductPersistence.findByPrimaryKey(cProductId);
 
 		long originalPublishedCPDefinitionId =
 			cProduct.getPublishedCPDefinitionId();
@@ -163,25 +155,11 @@ public class CProductLocalServiceImpl extends CProductLocalServiceBaseImpl {
 		indexer.reindex(CPDefinition.class.getName(), cpDefinitionId);
 	}
 
-	private void _validate(String externalReferenceCode, long companyId)
-		throws PortalException {
-
-		if (Validator.isNull(externalReferenceCode)) {
-			return;
-		}
-
-		CProduct cProduct = cProductPersistence.fetchByERC_C(
-			externalReferenceCode, companyId);
-
-		if (cProduct != null) {
-			throw new DuplicateCProductException(
-				"There is another commerce product with external reference " +
-					"code " + externalReferenceCode);
-		}
-	}
-
 	@Reference
 	private CPDefinitionLinkLocalService _cpDefinitionLinkLocalService;
+
+	@Reference
+	private SystemEventLocalService _systemEventLocalService;
 
 	@Reference
 	private UserLocalService _userLocalService;

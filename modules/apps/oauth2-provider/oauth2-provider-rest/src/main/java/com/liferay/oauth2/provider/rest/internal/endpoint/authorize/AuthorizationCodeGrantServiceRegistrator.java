@@ -6,6 +6,7 @@
 package com.liferay.oauth2.provider.rest.internal.endpoint.authorize;
 
 import com.liferay.oauth2.provider.configuration.OAuth2ProviderConfiguration;
+import com.liferay.oauth2.provider.constants.OAuth2AuthorizationConstants;
 import com.liferay.oauth2.provider.model.OAuth2Authorization;
 import com.liferay.oauth2.provider.rest.internal.endpoint.constants.OAuth2ProviderRESTEndpointConstants;
 import com.liferay.oauth2.provider.rest.internal.endpoint.liferay.LiferayOAuthDataProvider;
@@ -19,20 +20,19 @@ import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
 import com.liferay.portal.kernel.util.MapUtil;
 
-import java.net.URI;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriInfo;
+
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
-
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletRequest;
-
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
 
 import org.apache.cxf.jaxrs.ext.MessageContext;
 import org.apache.cxf.rs.security.oauth2.common.Client;
@@ -46,7 +46,6 @@ import org.apache.cxf.rs.security.oauth2.grants.code.ServerAuthorizationCodeGran
 import org.apache.cxf.rs.security.oauth2.provider.OAuthServiceException;
 import org.apache.cxf.rs.security.oauth2.provider.SubjectCreator;
 import org.apache.cxf.rs.security.oauth2.services.AuthorizationCodeGrantService;
-import org.apache.cxf.rs.security.oauth2.tokens.refresh.RefreshToken;
 import org.apache.cxf.rs.security.oauth2.utils.OAuthConstants;
 import org.apache.cxf.rs.security.oauth2.utils.OAuthUtils;
 
@@ -174,16 +173,26 @@ public class AuthorizationCodeGrantServiceRegistrator {
 				rememberDeviceContent.equals(
 					oAuth2Authorization.getRememberDeviceContent())) {
 
-				RefreshToken refreshToken =
-					liferayOAuthDataProvider.getRefreshToken(
-						oAuth2Authorization.getRefreshTokenContent());
+				Date refreshTokenCreateDate =
+					oAuth2Authorization.getRefreshTokenCreateDate();
+				Date refreshTokenExpirationDate =
+					oAuth2Authorization.getRefreshTokenExpirationDate();
 
-				if ((refreshToken != null) &&
-					!OAuthUtils.isExpired(
-						refreshToken.getIssuedAt(),
-						refreshToken.getExpiresIn())) {
+				if ((refreshTokenCreateDate != null) &&
+					(refreshTokenExpirationDate != null) &&
+					!OAuth2AuthorizationConstants.
+						ACCESS_TOKEN_CONTENT_EXPIRED_TOKEN.equals(
+							oAuth2Authorization.getRefreshTokenContent())) {
 
-					return true;
+					long issuedAt = refreshTokenCreateDate.getTime() / 1000;
+
+					if (!OAuthUtils.isExpired(
+							issuedAt,
+							(refreshTokenExpirationDate.getTime() / 1000) -
+								issuedAt)) {
+
+						return true;
+					}
 				}
 			}
 
@@ -282,13 +291,7 @@ public class AuthorizationCodeGrantServiceRegistrator {
 			UUID uuid = new UUID(
 				SecureRandomUtil.nextLong(), SecureRandomUtil.nextLong());
 
-			Cookie cookie = new Cookie(cookieName, uuid.toString());
-
-			URI uri = _uriInfo.getBaseUri();
-
-			cookie.setPath(uri.getPath());
-
-			return cookie;
+			return new Cookie(cookieName, uuid.toString());
 		}
 
 		private LiferayOAuthDataProvider _getLiferayOAuthDataProvider() {

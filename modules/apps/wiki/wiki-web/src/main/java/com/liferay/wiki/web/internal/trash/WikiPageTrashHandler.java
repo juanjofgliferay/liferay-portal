@@ -6,6 +6,7 @@
 package com.liferay.wiki.web.internal.trash;
 
 import com.liferay.document.library.kernel.model.DLFileEntry;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
@@ -46,11 +47,10 @@ import com.liferay.wiki.service.WikiPageService;
 import com.liferay.wiki.web.internal.asset.model.WikiPageAssetRenderer;
 import com.liferay.wiki.web.internal.util.WikiPageAttachmentsUtil;
 
-import java.util.ArrayList;
-import java.util.List;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletURL;
 
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
+import java.util.List;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -240,18 +240,10 @@ public class WikiPageTrashHandler extends BaseWikiTrashHandler {
 	}
 
 	@Override
-	public TrashedModel getTrashedModel(long classPK) {
-		return _wikiPageLocalService.fetchLatestPage(
-			classPK, WorkflowConstants.STATUS_ANY, false);
-	}
-
-	@Override
 	public List<TrashedModel> getTrashModelTrashedModels(
 			long classPK, int start, int end,
 			OrderByComparator<?> orderByComparator)
 		throws PortalException {
-
-		List<TrashedModel> trashedModels = new ArrayList<>();
 
 		WikiPage page = _wikiPageLocalService.getPage(classPK);
 
@@ -260,11 +252,7 @@ public class WikiPageTrashHandler extends BaseWikiTrashHandler {
 			WorkflowConstants.STATUS_IN_TRASH, start, end,
 			(OrderByComparator<WikiPage>)orderByComparator);
 
-		for (WikiPage curPage : pages) {
-			trashedModels.add(curPage);
-		}
-
-		return trashedModels;
+		return TransformUtil.transform(pages, curPage -> curPage);
 	}
 
 	@Override
@@ -274,6 +262,12 @@ public class WikiPageTrashHandler extends BaseWikiTrashHandler {
 
 		return new WikiPageAssetRenderer(
 			_htmlParser, _trashHelper, _wikiEngineRenderer, page);
+	}
+
+	@Override
+	public TrashedModel getTrashedModel(long classPK) {
+		return _wikiPageLocalService.fetchLatestPage(
+			classPK, WorkflowConstants.STATUS_ANY, false);
 	}
 
 	@Override

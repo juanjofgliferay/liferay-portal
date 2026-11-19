@@ -16,15 +16,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.osgi.service.component.annotations.Component;
-
 /**
  * @author Jürgen Kappler
  */
-@Component(
-	property = "class.name=com.liferay.layout.util.structure.DropZoneLayoutStructureItem",
-	service = LayoutStructureItemMapper.class
-)
 public class DropZoneLayoutStructureItemMapper
 	implements LayoutStructureItemMapper {
 
@@ -33,36 +27,21 @@ public class DropZoneLayoutStructureItemMapper
 		long groupId, LayoutStructureItem layoutStructureItem,
 		boolean saveInlineContent, boolean saveMappingConfiguration) {
 
-		DropZoneLayoutStructureItem dropZoneLayoutStructureItem =
-			(DropZoneLayoutStructureItem)layoutStructureItem;
-
 		return new PageElement() {
 			{
-				definition = new PageDropZoneDefinition() {
-					{
-						fragmentSettings = _toFragmentSettingsMap(
-							dropZoneLayoutStructureItem);
-					}
-				};
-				id = layoutStructureItem.getItemId();
-				type = Type.DROP_ZONE;
+				setDefinition(
+					() -> new PageDropZoneDefinition() {
+						{
+							setFragmentSettings(
+								() -> _toFragmentSettingsMap(
+									(DropZoneLayoutStructureItem)
+										layoutStructureItem));
+						}
+					});
+				setId(layoutStructureItem::getItemId);
+				setType(() -> Type.DROP_ZONE);
 			}
 		};
-	}
-
-	private Fragment[] _toFragments(List<String> fragmentEntryKeys) {
-		List<Fragment> fragments = new ArrayList<>();
-
-		for (String fragmentEntryKey : fragmentEntryKeys) {
-			fragments.add(
-				new Fragment() {
-					{
-						key = fragmentEntryKey;
-					}
-				});
-		}
-
-		return fragments.toArray(new Fragment[0]);
 	}
 
 	private Map<String, Fragment[]> _toFragmentSettingsMap(
@@ -79,6 +58,21 @@ public class DropZoneLayoutStructureItemMapper
 			"allowedFragments",
 			_toFragments(dropZoneLayoutStructureItem.getFragmentEntryKeys())
 		).build();
+	}
+
+	private Fragment[] _toFragments(List<String> fragmentEntryKeys) {
+		List<Fragment> fragments = new ArrayList<>();
+
+		for (String fragmentEntryKey : fragmentEntryKeys) {
+			fragments.add(
+				new Fragment() {
+					{
+						setKey(() -> fragmentEntryKey);
+					}
+				});
+		}
+
+		return fragments.toArray(new Fragment[0]);
 	}
 
 }

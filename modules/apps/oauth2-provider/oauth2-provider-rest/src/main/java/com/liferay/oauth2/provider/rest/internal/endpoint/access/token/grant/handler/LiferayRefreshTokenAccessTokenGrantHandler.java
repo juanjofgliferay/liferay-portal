@@ -6,17 +6,23 @@
 package com.liferay.oauth2.provider.rest.internal.endpoint.access.token.grant.handler;
 
 import com.liferay.oauth2.provider.configuration.OAuth2ProviderConfiguration;
+import com.liferay.oauth2.provider.constants.OAuth2AuthorizationConstants;
 import com.liferay.oauth2.provider.model.OAuth2Application;
+import com.liferay.oauth2.provider.model.OAuth2Authorization;
 import com.liferay.oauth2.provider.rest.internal.endpoint.liferay.LiferayOAuthDataProvider;
+import com.liferay.oauth2.provider.rest.internal.endpoint.util.OAuth2ErrorUtil;
+import com.liferay.oauth2.provider.service.OAuth2AuthorizationLocalService;
 import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.ListUtil;
+
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.Response;
 
 import java.util.List;
 import java.util.Map;
-
-import javax.ws.rs.core.MultivaluedMap;
 
 import org.apache.cxf.rs.security.oauth2.common.Client;
 import org.apache.cxf.rs.security.oauth2.common.ServerAccessToken;
@@ -58,6 +64,22 @@ public class LiferayRefreshTokenAccessTokenGrantHandler
 	protected ServerAccessToken doCreateAccessToken(
 		Client client, MultivaluedMap<String, String> params) {
 
+		List<String> resources = getResources(params);
+
+		if (ListUtil.isNotEmpty(resources)) {
+			RefreshToken refreshToken =
+				_liferayOAuthDataProvider.getRefreshToken(
+					params.getFirst("refresh_token"));
+
+			List<String> audiences = refreshToken.getAudiences();
+
+			if (!audiences.containsAll(resources)) {
+				OAuth2ErrorUtil.reportInvalidRequestError(
+					"The resource parameter is not a granted audience",
+					"invalid_target", Response.Status.BAD_REQUEST);
+			}
+		}
+
 		return _refreshTokenGrantHandler.createAccessToken(client, params);
 	}
 
@@ -92,14 +114,21 @@ public class LiferayRefreshTokenAccessTokenGrantHandler
 			// refresh a token belonging to a client other than the
 			// authenticated client
 
-			_liferayOAuthDataProvider.doRevokeRefreshToken(refreshToken);
+			OAuth2Authorization oAuth2Authorization =
+				_oAuth2AuthorizationLocalService.
+					fetchOAuth2AuthorizationByRefreshTokenContent(
+						refreshTokenString);
 
-			for (String accessToken : refreshToken.getAccessTokens()) {
-				ServerAccessToken serverAccessToken =
-					_liferayOAuthDataProvider.getAccessToken(accessToken);
+			if (oAuth2Authorization != null) {
+				oAuth2Authorization.setAccessTokenContent(
+					OAuth2AuthorizationConstants.
+						ACCESS_TOKEN_CONTENT_EXPIRED_TOKEN);
+				oAuth2Authorization.setRefreshTokenContent(
+					OAuth2AuthorizationConstants.
+						ACCESS_TOKEN_CONTENT_EXPIRED_TOKEN);
 
-				_liferayOAuthDataProvider.doRevokeAccessToken(
-					serverAccessToken);
+				_oAuth2AuthorizationLocalService.updateOAuth2Authorization(
+					oAuth2Authorization);
 			}
 
 			if (_log.isDebugEnabled()) {
@@ -131,6 +160,9 @@ public class LiferayRefreshTokenAccessTokenGrantHandler
 
 	@Reference
 	private LiferayOAuthDataProvider _liferayOAuthDataProvider;
+
+	@Reference
+	private OAuth2AuthorizationLocalService _oAuth2AuthorizationLocalService;
 
 	private OAuth2ProviderConfiguration _oAuth2ProviderConfiguration;
 	private RefreshTokenGrantHandler _refreshTokenGrantHandler;

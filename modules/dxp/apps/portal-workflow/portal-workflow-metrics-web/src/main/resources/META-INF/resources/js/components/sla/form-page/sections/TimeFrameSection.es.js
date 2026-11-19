@@ -98,11 +98,11 @@ export default function TimeFrameSection() {
 					<FormGroupWithStatus
 						className="form-group"
 						htmlFor="slaTimePause"
-						label={Liferay.Language.get('pause')}
+						label={Liferay.Language.get('pause[noun]')}
 					>
 						<div className="form-text">
 							{Liferay.Language.get(
-								'time-wont-be-considered-when'
+								'time-will-not-be-considered-when'
 							)}
 						</div>
 

@@ -149,19 +149,33 @@ public interface AuditEventModel extends BaseModel<AuditEvent>, ShardedModel {
 	public void setCreateDate(Date createDate);
 
 	/**
-	 * Returns the event type of this audit event.
+	 * Returns the account entry ID of this audit event.
 	 *
-	 * @return the event type of this audit event
+	 * @return the account entry ID of this audit event
 	 */
-	@AutoEscape
-	public String getEventType();
+	public long getAccountEntryId();
 
 	/**
-	 * Sets the event type of this audit event.
+	 * Sets the account entry ID of this audit event.
 	 *
-	 * @param eventType the event type of this audit event
+	 * @param accountEntryId the account entry ID of this audit event
 	 */
-	public void setEventType(String eventType);
+	public void setAccountEntryId(long accountEntryId);
+
+	/**
+	 * Returns the additional info of this audit event.
+	 *
+	 * @return the additional info of this audit event
+	 */
+	@AutoEscape
+	public String getAdditionalInfo();
+
+	/**
+	 * Sets the additional info of this audit event.
+	 *
+	 * @param additionalInfo the additional info of this audit event
+	 */
+	public void setAdditionalInfo(String additionalInfo);
 
 	/**
 	 * Returns the class name of this audit event.
@@ -194,21 +208,6 @@ public interface AuditEventModel extends BaseModel<AuditEvent>, ShardedModel {
 	public void setClassPK(String classPK);
 
 	/**
-	 * Returns the message of this audit event.
-	 *
-	 * @return the message of this audit event
-	 */
-	@AutoEscape
-	public String getMessage();
-
-	/**
-	 * Sets the message of this audit event.
-	 *
-	 * @param message the message of this audit event
-	 */
-	public void setMessage(String message);
-
-	/**
 	 * Returns the client host of this audit event.
 	 *
 	 * @return the client host of this audit event
@@ -237,6 +236,257 @@ public interface AuditEventModel extends BaseModel<AuditEvent>, ShardedModel {
 	 * @param clientIP the client ip of this audit event
 	 */
 	public void setClientIP(String clientIP);
+
+	/**
+	 * Returns the context name of this audit event.
+	 *
+	 * @return the context name of this audit event
+	 */
+	@AutoEscape
+	public String getContextName();
+
+	/**
+	 * Sets the context name of this audit event.
+	 *
+	 * @param contextName the context name of this audit event
+	 */
+	public void setContextName(String contextName);
+
+	/**
+	 * Returns the correlation ID of this audit event.
+	 *
+	 * @return the correlation ID of this audit event
+	 */
+	@AutoEscape
+	public String getCorrelationId();
+
+	/**
+	 * Sets the correlation ID of this audit event.
+	 *
+	 * @param correlationId the correlation ID of this audit event
+	 */
+	public void setCorrelationId(String correlationId);
+
+	/**
+	 * Returns the event type of this audit event.
+	 *
+	 * @return the event type of this audit event
+	 */
+	@AutoEscape
+	public String getEventType();
+
+	/**
+	 * Sets the event type of this audit event.
+	 *
+	 * @param eventType the event type of this audit event
+	 */
+	public void setEventType(String eventType);
+
+	/**
+	 * Returns the http method of this audit event.
+	 *
+	 * @return the http method of this audit event
+	 */
+	@AutoEscape
+	public String getHttpMethod();
+
+	/**
+	 * Sets the http method of this audit event.
+	 *
+	 * @param httpMethod the http method of this audit event
+	 */
+	public void setHttpMethod(String httpMethod);
+
+	/**
+	 * Returns the impersonated of this audit event.
+	 *
+	 * @return the impersonated of this audit event
+	 */
+	public boolean getImpersonated();
+
+	/**
+	 * Returns <code>true</code> if this audit event is impersonated.
+	 *
+	 * @return <code>true</code> if this audit event is impersonated; <code>false</code> otherwise
+	 */
+	public boolean isImpersonated();
+
+	/**
+	 * Sets whether this audit event is impersonated.
+	 *
+	 * @param impersonated the impersonated of this audit event
+	 */
+	public void setImpersonated(boolean impersonated);
+
+	/**
+	 * Returns the impersonated user email address of this audit event.
+	 *
+	 * @return the impersonated user email address of this audit event
+	 */
+	@AutoEscape
+	public String getImpersonatedUserEmailAddress();
+
+	/**
+	 * Sets the impersonated user email address of this audit event.
+	 *
+	 * @param impersonatedUserEmailAddress the impersonated user email address of this audit event
+	 */
+	public void setImpersonatedUserEmailAddress(
+		String impersonatedUserEmailAddress);
+
+	/**
+	 * Returns the impersonated user ID of this audit event.
+	 *
+	 * @return the impersonated user ID of this audit event
+	 */
+	public long getImpersonatedUserId();
+
+	/**
+	 * Sets the impersonated user ID of this audit event.
+	 *
+	 * @param impersonatedUserId the impersonated user ID of this audit event
+	 */
+	public void setImpersonatedUserId(long impersonatedUserId);
+
+	/**
+	 * Returns the impersonated user uuid of this audit event.
+	 *
+	 * @return the impersonated user uuid of this audit event
+	 */
+	public String getImpersonatedUserUuid();
+
+	/**
+	 * Sets the impersonated user uuid of this audit event.
+	 *
+	 * @param impersonatedUserUuid the impersonated user uuid of this audit event
+	 */
+	public void setImpersonatedUserUuid(String impersonatedUserUuid);
+
+	/**
+	 * Returns the impersonated user name of this audit event.
+	 *
+	 * @return the impersonated user name of this audit event
+	 */
+	@AutoEscape
+	public String getImpersonatedUserName();
+
+	/**
+	 * Sets the impersonated user name of this audit event.
+	 *
+	 * @param impersonatedUserName the impersonated user name of this audit event
+	 */
+	public void setImpersonatedUserName(String impersonatedUserName);
+
+	/**
+	 * Returns the message of this audit event.
+	 *
+	 * @return the message of this audit event
+	 */
+	@AutoEscape
+	public String getMessage();
+
+	/**
+	 * Sets the message of this audit event.
+	 *
+	 * @param message the message of this audit event
+	 */
+	public void setMessage(String message);
+
+	/**
+	 * Returns the object name of this audit event.
+	 *
+	 * @return the object name of this audit event
+	 */
+	@AutoEscape
+	public String getObjectName();
+
+	/**
+	 * Sets the object name of this audit event.
+	 *
+	 * @param objectName the object name of this audit event
+	 */
+	public void setObjectName(String objectName);
+
+	/**
+	 * Returns the request ID of this audit event.
+	 *
+	 * @return the request ID of this audit event
+	 */
+	@AutoEscape
+	public String getRequestId();
+
+	/**
+	 * Sets the request ID of this audit event.
+	 *
+	 * @param requestId the request ID of this audit event
+	 */
+	public void setRequestId(String requestId);
+
+	/**
+	 * Returns the request ID generated of this audit event.
+	 *
+	 * @return the request ID generated of this audit event
+	 */
+	public boolean getRequestIdGenerated();
+
+	/**
+	 * Returns <code>true</code> if this audit event is request ID generated.
+	 *
+	 * @return <code>true</code> if this audit event is request ID generated; <code>false</code> otherwise
+	 */
+	public boolean isRequestIdGenerated();
+
+	/**
+	 * Sets whether this audit event is request ID generated.
+	 *
+	 * @param requestIdGenerated the request ID generated of this audit event
+	 */
+	public void setRequestIdGenerated(boolean requestIdGenerated);
+
+	/**
+	 * Returns the resource action of this audit event.
+	 *
+	 * @return the resource action of this audit event
+	 */
+	@AutoEscape
+	public String getResourceAction();
+
+	/**
+	 * Sets the resource action of this audit event.
+	 *
+	 * @param resourceAction the resource action of this audit event
+	 */
+	public void setResourceAction(String resourceAction);
+
+	/**
+	 * Returns the resource type of this audit event.
+	 *
+	 * @return the resource type of this audit event
+	 */
+	@AutoEscape
+	public String getResourceType();
+
+	/**
+	 * Sets the resource type of this audit event.
+	 *
+	 * @param resourceType the resource type of this audit event
+	 */
+	public void setResourceType(String resourceType);
+
+	/**
+	 * Returns the roles of this audit event.
+	 *
+	 * @return the roles of this audit event
+	 */
+	@AutoEscape
+	public String getRoles();
+
+	/**
+	 * Sets the roles of this audit event.
+	 *
+	 * @param roles the roles of this audit event
+	 */
+	public void setRoles(String roles);
 
 	/**
 	 * Returns the server name of this audit event.
@@ -283,19 +533,34 @@ public interface AuditEventModel extends BaseModel<AuditEvent>, ShardedModel {
 	public void setSessionID(String sessionID);
 
 	/**
-	 * Returns the additional info of this audit event.
+	 * Returns the user agent of this audit event.
 	 *
-	 * @return the additional info of this audit event
+	 * @return the user agent of this audit event
 	 */
 	@AutoEscape
-	public String getAdditionalInfo();
+	public String getUserAgent();
 
 	/**
-	 * Sets the additional info of this audit event.
+	 * Sets the user agent of this audit event.
 	 *
-	 * @param additionalInfo the additional info of this audit event
+	 * @param userAgent the user agent of this audit event
 	 */
-	public void setAdditionalInfo(String additionalInfo);
+	public void setUserAgent(String userAgent);
+
+	/**
+	 * Returns the user email address of this audit event.
+	 *
+	 * @return the user email address of this audit event
+	 */
+	@AutoEscape
+	public String getUserEmailAddress();
+
+	/**
+	 * Sets the user email address of this audit event.
+	 *
+	 * @param userEmailAddress the user email address of this audit event
+	 */
+	public void setUserEmailAddress(String userEmailAddress);
 
 	@Override
 	public AuditEvent cloneWithOriginalValues();
@@ -305,3 +570,4 @@ public interface AuditEventModel extends BaseModel<AuditEvent>, ShardedModel {
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1801397197

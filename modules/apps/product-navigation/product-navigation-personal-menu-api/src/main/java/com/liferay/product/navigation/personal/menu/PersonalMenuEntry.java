@@ -10,11 +10,11 @@ import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 
+import jakarta.portlet.PortletRequest;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.Locale;
-
-import javax.portlet.PortletRequest;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * Provides an interface that defines the entries to be used by a {@code
@@ -57,7 +57,9 @@ public interface PersonalMenuEntry {
 	 */
 	public String getLabel(Locale locale);
 
-	public default String getOnClickJSModuleURL() {
+	public default String getOnClickESModule(
+		HttpServletRequest httpServletRequest) {
+
 		return null;
 	}
 

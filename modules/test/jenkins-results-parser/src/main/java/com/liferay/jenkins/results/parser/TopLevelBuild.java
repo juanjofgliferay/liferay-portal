@@ -5,7 +5,11 @@
 
 package com.liferay.jenkins.results.parser;
 
+import com.liferay.jenkins.results.parser.testray.TestrayContext;
+
 import java.io.File;
+
+import java.net.URL;
 
 import java.util.List;
 import java.util.Map;
@@ -17,6 +21,9 @@ import org.dom4j.Element;
  */
 public interface TopLevelBuild extends ParentBuild {
 
+	public void addCachedDownstreamBuildReport(
+		DownstreamBuildReport downstreamBuildReport);
+
 	public String getAcceptanceUpstreamJobName();
 
 	public String getAcceptanceUpstreamJobURL();
@@ -26,14 +33,6 @@ public interface TopLevelBuild extends ParentBuild {
 	public Map<String, String> getBaseGitRepositoryDetailsTempMap();
 
 	public Build getControllerBuild();
-
-	public AxisBuild getDownstreamAxisBuild(String axisName);
-
-	public List<AxisBuild> getDownstreamAxisBuilds();
-
-	public BatchBuild getDownstreamBatchBuild(String jobVariant);
-
-	public List<BatchBuild> getDownstreamBatchBuilds();
 
 	public DownstreamBuild getDownstreamBuild(String axisName);
 
@@ -54,6 +53,20 @@ public interface TopLevelBuild extends ParentBuild {
 	public List<String> getProjectNames();
 
 	public String getStatusSummary();
+
+	public URL getTestrayCaseResultURL();
+
+	public TestrayContext getTestrayContext();
+
+	public TopLevelBuildReport getTopLevelBuildReport();
+
+	public long getTotalActualDuration();
+
+	public int getTotalActualSlavesUsedCount();
+
+	public long getTotalCachedDuration();
+
+	public int getTotalCachedSlavesUsedCount();
 
 	public Element getValidationGitHubMessageElement();
 

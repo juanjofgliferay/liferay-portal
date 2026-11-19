@@ -12,11 +12,11 @@ import com.liferay.portal.kernel.servlet.SessionErrors;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.Validator;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.PortletConfig;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.PortletConfig;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 
@@ -25,7 +25,7 @@ import org.osgi.service.component.annotations.Component;
  * @author Brian Wing Shun Chan
  */
 @Component(
-	property = "javax.portlet.name=" + KBPortletKeys.KNOWLEDGE_BASE_ADMIN,
+	property = "jakarta.portlet.name=" + KBPortletKeys.KNOWLEDGE_BASE_ADMIN,
 	service = ConfigurationAction.class
 )
 public class AdminConfigurationAction
@@ -33,7 +33,7 @@ public class AdminConfigurationAction
 
 	@Override
 	public String getJspPath(HttpServletRequest httpServletRequest) {
-		return "/admin/configuration.jsp";
+		return "/admin/configuration_browse.jsp";
 	}
 
 	@Override
@@ -43,11 +43,12 @@ public class AdminConfigurationAction
 		throws Exception {
 
 		validateEmail(actionRequest, "emailKBArticleAdded");
+		validateEmail(actionRequest, "emailKBArticleExpired");
+		validateEmail(actionRequest, "emailKBArticleReview");
 		validateEmail(actionRequest, "emailKBArticleSuggestionInProgress");
 		validateEmail(actionRequest, "emailKBArticleSuggestionReceived");
 		validateEmail(actionRequest, "emailKBArticleSuggestionResolved");
 		validateEmail(actionRequest, "emailKBArticleUpdated");
-		validateEmailFrom(actionRequest);
 
 		super.processAction(portletConfig, actionRequest, actionResponse);
 	}

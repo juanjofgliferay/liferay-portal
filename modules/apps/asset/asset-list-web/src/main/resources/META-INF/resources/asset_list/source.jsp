@@ -10,6 +10,7 @@
 <%
 List<AssetRendererFactory<?>> classTypesAssetRendererFactories = new ArrayList<>();
 List<Map<String, Object>> classTypesList = new ArrayList<>();
+long[] nonexistentClassNameIds = editAssetListDisplayContext.getNonexistentClassNameIds();
 %>
 
 <liferay-frontend:fieldset
@@ -23,20 +24,12 @@ List<Map<String, Object>> classTypesList = new ArrayList<>();
 
 	List<KeyValuePair> typesLeftList = new ArrayList<KeyValuePair>();
 
-	long[] classNameIds = editAssetListDisplayContext.getClassNameIds();
-
-	for (long classNameId : classNameIds) {
-		typesLeftList.add(new KeyValuePair(String.valueOf(classNameId), ResourceActionsUtil.getModelResource(locale, PortalUtil.getClassName(classNameId))));
-	}
-
-	// Right list
-
-	List<KeyValuePair> typesRightList = new ArrayList<KeyValuePair>();
+	long[] classNameIds = ArrayUtil.clone(editAssetListDisplayContext.getClassNameIds());
 
 	Arrays.sort(classNameIds);
 	%>
 
-	<aui:select label="item-type" name="TypeSettingsProperties--anyAssetType--" title="item-type">
+	<aui:select helpMessage="changing-this-setting-will-reset-all-mappings-for-this-collection" label="item-type" name="TypeSettingsProperties--anyAssetType--" title="item-type">
 		<aui:option label='<%= StringPool.DASH + LanguageUtil.get(request, "not-selected") + StringPool.DASH %>' selected="<%= editAssetListDisplayContext.isNoAssetTypeSelected() %>" value="" />
 
 		<optgroup label="<liferay-ui:message key="single-item-type" />">
@@ -45,21 +38,28 @@ List<Map<String, Object>> classTypesList = new ArrayList<>();
 			for (long classNameId : editAssetListDisplayContext.getAvailableClassNameIds()) {
 				ClassName className = ClassNameLocalServiceUtil.getClassName(classNameId);
 
+				ObjectDefinition objectDefinition = _fetchObjectDefinition(className, company);
+
+				String label = _getLabel(className, locale, objectDefinition);
+
 				if (Arrays.binarySearch(classNameIds, classNameId) < 0) {
-					typesRightList.add(new KeyValuePair(String.valueOf(classNameId), ResourceActionsUtil.getModelResource(locale, className.getValue())));
+					typesLeftList.add(new KeyValuePair(String.valueOf(classNameId), label));
 				}
 			%>
 
-				<aui:option label="<%= ResourceActionsUtil.getModelResource(locale, className.getValue()) %>" selected="<%= (classNameIds.length == 1) && (classNameId == classNameIds[0]) %>" value="<%= classNameId %>" />
+				<aui:option label="<%= label %>" selected="<%= (classNameIds.length == 1) && (classNameId == classNameIds[0]) %>" value="<%= classNameId %>" />
 
 			<%
 			}
 			%>
 
+			<c:if test="<%= ArrayUtil.isEmpty(classNameIds) && ArrayUtil.isNotEmpty(nonexistentClassNameIds) %>">
+				<aui:option label="<%= nonexistentClassNameIds[0] %>" selected="<%= true %>" value="<%= nonexistentClassNameIds[0] %>" />
+			</c:if>
 		</optgroup>
 
 		<optgroup label="<liferay-ui:message key="multiple-item-types" />">
-			<aui:option label='<%= LanguageUtil.get(request, "select-types") + StringPool.TRIPLE_PERIOD %>' selected="<%= !editAssetListDisplayContext.isAnyAssetType() && !editAssetListDisplayContext.isNoAssetTypeSelected() && (classNameIds.length > 1) %>" value="<%= false %>" />
+			<aui:option label='<%= LanguageUtil.get(request, "select-types") %>' selected="<%= !editAssetListDisplayContext.isAnyAssetType() && !editAssetListDisplayContext.isNoAssetTypeSelected() && (classNameIds.length > 1) %>" value="<%= false %>" />
 			<aui:option label="all-types" selected="<%= editAssetListDisplayContext.isAnyAssetType() %>" value="<%= true %>" />
 		</optgroup>
 	</aui:select>
@@ -67,20 +67,77 @@ List<Map<String, Object>> classTypesList = new ArrayList<>();
 	<aui:input name="TypeSettingsProperties--classNameIds--" type="hidden" />
 
 	<%
-	typesRightList = ListUtil.sort(typesRightList, new KeyValuePairComparator(false, true));
+	typesLeftList = ListUtil.sort(typesLeftList, new KeyValuePairComparator(false, true));
+
+	// Right list
+
+	List<KeyValuePair> typesRightList = new ArrayList<KeyValuePair>();
+
+	for (long classNameId : editAssetListDisplayContext.getClassNameIds()) {
+		if (ArrayUtil.contains(nonexistentClassNameIds, classNameId)) {
+			typesRightList.add(new KeyValuePair(String.valueOf(classNameId), String.valueOf(classNameId)));
+
+			continue;
+		}
+
+		ClassName className = ClassNameLocalServiceUtil.getClassName(classNameId);
+
+		typesRightList.add(new KeyValuePair(String.valueOf(classNameId), _getLabel(className, locale, _fetchObjectDefinition(className, company))));
+	}
 	%>
 
 	<div class="<%= editAssetListDisplayContext.isAnyAssetType() ? "hide" : "" %>" id="<portlet:namespace />classNamesBoxes">
 		<liferay-ui:input-move-boxes
-			leftBoxName="currentClassNameIds"
+			leftBoxName="availableClassNameIds"
 			leftList="<%= typesLeftList %>"
-			leftReorder="<%= Boolean.TRUE.toString() %>"
-			leftTitle="selected"
-			rightBoxName="availableClassNameIds"
+			leftTitle="available"
+			rightBoxName="currentClassNameIds"
 			rightList="<%= typesRightList %>"
-			rightTitle="available"
+			rightReorder="<%= Boolean.TRUE.toString() %>"
+			rightTitle="in-use"
 		/>
 	</div>
+
+	<c:if test="<%= ArrayUtil.isNotEmpty(nonexistentClassNameIds) %>">
+		<div id="<portlet:namespace />nonexistentClassNameIds">
+			<clay:alert
+				displayType="warning"
+				message="missing-type-references-warning"
+			/>
+
+			<ul class="list-group">
+
+				<%
+				for (long nonexistentClassNameId : nonexistentClassNameIds) {
+				%>
+
+					<li class="list-group-item list-group-item-flex" data-class-name-id="<%= nonexistentClassNameId %>">
+						<clay:content-col
+							expand="<%= true %>"
+						>
+							<div>
+								<span class="list-group-title"><%= nonexistentClassNameId %></span>
+
+								<span class="c-ml-1 inline-item">
+									<clay:sticker
+										displayType="warning"
+										icon="warning-full"
+										size="sm"
+									/>
+
+									<strong class="text-2 text-warning"><liferay-ui:message key="missing" /></strong>
+								</span>
+							</div>
+						</clay:content-col>
+					</li>
+
+				<%
+				}
+				%>
+
+			</ul>
+		</div>
+	</c:if>
 
 	<%
 	UnicodeProperties unicodeProperties = editAssetListDisplayContext.getUnicodeProperties();
@@ -96,33 +153,15 @@ List<Map<String, Object>> classTypesList = new ArrayList<>();
 			continue;
 		}
 
-		classTypes.sort(new ClassTypeNameComparator(true));
+		classTypes.sort(new ClassTypeNameComparator(locale));
 
 		classTypesAssetRendererFactories.add(assetRendererFactory);
 
 		String className = editAssetListDisplayContext.getClassName(assetRendererFactory);
 
-		Long[] assetSelectedClassTypeIds = editAssetListDisplayContext.getClassTypeIds(unicodeProperties, className, classTypes);
-
 		// Left list
 
 		List<KeyValuePair> subtypesLeftList = new ArrayList<KeyValuePair>();
-
-		for (long subtypeId : assetSelectedClassTypeIds) {
-			try {
-				ClassType classType = classTypeReader.getClassType(subtypeId, locale);
-
-				subtypesLeftList.add(new KeyValuePair(String.valueOf(subtypeId), HtmlUtil.escape(classType.getName())));
-			}
-			catch (NoSuchModelException nsme) {
-			}
-		}
-
-		Arrays.sort(assetSelectedClassTypeIds);
-
-		// Right list
-
-		List<KeyValuePair> subtypesRightList = new ArrayList<KeyValuePair>();
 
 		boolean noAssetSubtypeSelected = false;
 
@@ -135,10 +174,18 @@ List<Map<String, Object>> classTypesList = new ArrayList<>();
 		if (noAssetSubtypeSelected) {
 			anyAssetSubtype = false;
 		}
+
+		Long[] assetSelectedClassTypeIds = ArrayUtil.clone(editAssetListDisplayContext.getClassTypeIds(unicodeProperties, className, classTypes));
+
+		Arrays.sort(assetSelectedClassTypeIds);
+
+		long[] availableClassTypeIds = ListUtil.toLongArray(classTypes, ClassType::getClassTypeId);
+
+		Arrays.sort(availableClassTypeIds);
 	%>
 
-		<div class='asset-subtype <%= (assetSelectedClassTypeIds.length < 1) ? StringPool.BLANK : "hide" %>' id="<portlet:namespace /><%= className %>Options">
-			<aui:select label='<%= LanguageUtil.get(request, "item-subtype") %>' name='<%= "TypeSettingsProperties--anyClassType" + className + "--" %>'>
+		<div class='asset-subtype <%= (assetSelectedClassTypeIds.length < 1) ? StringPool.BLANK : "hide" %>' data-class-name="<%= className %>" id="<portlet:namespace /><%= className %>Options">
+			<aui:select helpMessage="changing-this-setting-will-reset-all-mappings-for-this-collection" label='<%= LanguageUtil.get(request, "item-subtype") %>' name='<%= "TypeSettingsProperties--anyClassType" + className + "--" %>'>
 				<aui:option label='<%= StringPool.DASH + LanguageUtil.get(request, "not-selected") + StringPool.DASH %>' selected="<%= editAssetListDisplayContext.isNoAssetTypeSelected() %>" value="" />
 
 				<optgroup label="<%= LanguageUtil.get(request, "single-item-subtype") %>">
@@ -146,11 +193,22 @@ List<Map<String, Object>> classTypesList = new ArrayList<>();
 					<%
 					for (ClassType classType : classTypes) {
 						if (Arrays.binarySearch(assetSelectedClassTypeIds, classType.getClassTypeId()) < 0) {
-							subtypesRightList.add(new KeyValuePair(String.valueOf(classType.getClassTypeId()), HtmlUtil.escape(classType.getName())));
+							subtypesLeftList.add(new KeyValuePair(String.valueOf(classType.getClassTypeId()), HtmlUtil.escape(classType.getName())));
 						}
 					%>
 
 						<aui:option label="<%= HtmlUtil.escapeAttribute(classType.getName()) %>" selected="<%= !anyAssetSubtype && (assetSelectedClassTypeIds.length == 1) && (assetSelectedClassTypeIds[0]).equals(classType.getClassTypeId()) && !noAssetSubtypeSelected %>" value="<%= classType.getClassTypeId() %>" />
+
+					<%
+					}
+
+					for (Long assetSelectedClassTypeId : assetSelectedClassTypeIds) {
+						if (Arrays.binarySearch(availableClassTypeIds, assetSelectedClassTypeId) >= 0) {
+							continue;
+						}
+					%>
+
+						<aui:option label='<%= LanguageUtil.format(request, "id-x", String.valueOf(assetSelectedClassTypeId)) %>' selected="<%= !anyAssetSubtype && (assetSelectedClassTypeIds.length == 1) && !noAssetSubtypeSelected %>" value="<%= assetSelectedClassTypeId %>" />
 
 					<%
 					}
@@ -159,7 +217,7 @@ List<Map<String, Object>> classTypesList = new ArrayList<>();
 				</optgroup>
 
 				<optgroup label="<%= LanguageUtil.get(request, "multiple-item-subtypes") %>">
-					<aui:option label='<%= LanguageUtil.get(request, "select-more-than-one") + StringPool.TRIPLE_PERIOD %>' selected="<%= !anyAssetSubtype && (assetSelectedClassTypeIds.length > 1) && !noAssetSubtypeSelected %>" value="<%= false %>" />
+					<aui:option label='<%= LanguageUtil.get(request, "select-more-than-one") %>' selected="<%= !anyAssetSubtype && (assetSelectedClassTypeIds.length > 1) && !noAssetSubtypeSelected %>" value="<%= false %>" />
 					<aui:option label="all-subtypes" selected="<%= anyAssetSubtype %>" value="<%= true %>" />
 				</optgroup>
 			</aui:select>
@@ -186,7 +244,7 @@ List<Map<String, Object>> classTypesList = new ArrayList<>();
 						}
 					%>
 
-						<span class="asset-subtypefields hide" id="<portlet:namespace /><%= classType.getClassTypeId() %>_<%= className %>Options">
+						<span class="asset-subtypefields hide" data-class-name="<%= className %>" id="<portlet:namespace /><%= classType.getClassTypeId() %>_<%= className %>Options">
 							<portlet:renderURL var="selectStructureFieldURL" windowState="<%= LiferayWindowState.POP_UP.toString() %>">
 								<portlet:param name="mvcPath" value="/asset_list/select_structure_field.jsp" />
 								<portlet:param name="className" value="<%= assetRendererFactory.getClassName() %>" />
@@ -197,9 +255,9 @@ List<Map<String, Object>> classTypesList = new ArrayList<>();
 							<span class="asset-subtypefields-popup" id="<portlet:namespace /><%= classType.getClassTypeId() %>_<%= className %>PopUpButton">
 								<clay:button
 									borderless="<%= false %>"
+									data-href="<%= selectStructureFieldURL.toString() %>"
 									disabled="<%= !editAssetListDisplayContext.isSubtypeFieldsFilterEnabled() %>"
 									displayType="secondary"
-									data-href="<%= selectStructureFieldURL.toString() %>"
 									label="select"
 									type="button"
 								/>
@@ -209,21 +267,41 @@ List<Map<String, Object>> classTypesList = new ArrayList<>();
 					<%
 					}
 
-					typesRightList = ListUtil.sort(typesRightList, new KeyValuePairComparator(false, true));
+					typesLeftList = ListUtil.sort(typesLeftList, new KeyValuePairComparator(false, true));
 					%>
 
 				</div>
 			</c:if>
 
+			<%
+
+			// Right list
+
+			List<KeyValuePair> subtypesRightList = new ArrayList<KeyValuePair>();
+
+			for (long subtypeId : editAssetListDisplayContext.getClassTypeIds(unicodeProperties, className, classTypes)) {
+				try {
+					ClassType classType = classTypeReader.getClassType(subtypeId, locale);
+
+					subtypesRightList.add(new KeyValuePair(String.valueOf(subtypeId), HtmlUtil.escape(classType.getName())));
+				}
+				catch (NoSuchModelException noSuchModelException) {
+				}
+				catch (PortalException portalException) {
+					subtypesRightList.add(new KeyValuePair(String.valueOf(subtypeId), String.valueOf(subtypeId)));
+				}
+			}
+			%>
+
 			<div class="<%= (assetSelectedClassTypeIds.length > 1) ? StringPool.BLANK : "hide" %>" id="<portlet:namespace /><%= className %>Boxes">
 				<liferay-ui:input-move-boxes
-					leftBoxName='<%= className + "currentClassTypeIds" %>'
+					leftBoxName='<%= className + "availableClassTypeIds" %>'
 					leftList="<%= subtypesLeftList %>"
-					leftReorder="<%= Boolean.TRUE.toString() %>"
-					leftTitle="selected"
-					rightBoxName='<%= className + "availableClassTypeIds" %>'
+					leftTitle="available"
+					rightBoxName='<%= className + "currentClassTypeIds" %>'
 					rightList="<%= subtypesRightList %>"
-					rightTitle="available"
+					rightReorder="<%= Boolean.TRUE.toString() %>"
+					rightTitle="in-use"
 				/>
 			</div>
 		</div>
@@ -314,7 +392,27 @@ List<Map<String, Object>> classTypesList = new ArrayList<>();
 	context='<%=
 		HashMapBuilder.<String, Object>put(
 			"classTypes", classTypesList
+		).put(
+			"initialProperties", editAssetListDisplayContext.getTypePropertiesJSONArray()
+		).put(
+			"propertiesURL", editAssetListDisplayContext.getTypePropertiesURL()
 		).build()
 	%>'
-	module="js/Source"
+	module="{Source} from asset-list-web"
 />
+
+<%!
+private ObjectDefinition _fetchObjectDefinition(ClassName className, Company company) {
+	return ObjectDefinitionLocalServiceUtil.fetchObjectDefinitionByClassName(company.getCompanyId(), className.getValue());
+}
+
+private String _getLabel(ClassName className, Locale locale, ObjectDefinition objectDefinition) {
+	String label = ResourceActionsUtil.getModelResource(locale, className.getValue());
+
+	if ((objectDefinition != null) && objectDefinition.isCMS()) {
+		label = StringUtil.appendParentheticalSuffix(label, "CMS");
+	}
+
+	return label;
+}
+%>

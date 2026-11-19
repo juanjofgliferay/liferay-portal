@@ -19,6 +19,7 @@ import com.puppycrawl.tools.checkstyle.api.DetailAST;
 import com.puppycrawl.tools.checkstyle.api.FullIdent;
 import com.puppycrawl.tools.checkstyle.api.TokenTypes;
 import com.puppycrawl.tools.checkstyle.utils.AnnotationUtil;
+import com.puppycrawl.tools.checkstyle.utils.TokenUtil;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -47,10 +48,10 @@ public abstract class BaseAPICheck extends BaseCheck {
 
 		List<ConstructorCall> constructorCalls = new ArrayList<>();
 
-		List<DetailAST> literalNewDetailASTList = getAllChildTokens(
+		List<DetailAST> literalNewDetailASTs = getAllChildTokens(
 			detailAST, true, TokenTypes.LITERAL_NEW);
 
-		for (DetailAST literalNewDetailAST : literalNewDetailASTList) {
+		for (DetailAST literalNewDetailAST : literalNewDetailASTs) {
 			if (skipDeprecated &&
 				(hasDeprecatedParent(literalNewDetailAST) ||
 				 hasSuppressDeprecationWarningsAnnotation(
@@ -69,16 +70,18 @@ public abstract class BaseAPICheck extends BaseCheck {
 			String constructorTypeName = _getConstructorTypeName(
 				literalNewDetailAST);
 
-			if ((constructorTypeName != null) &&
-				constructorTypeName.startsWith("com.liferay.") &&
-				!excludeImportNames.contains(constructorTypeName)) {
+			if ((constructorTypeName == null) ||
+				!constructorTypeName.startsWith("com.liferay.") ||
+				excludeImportNames.contains(constructorTypeName)) {
 
-				constructorCalls.add(
-					new ConstructorCall(
-						constructorTypeName,
-						_getParameterTypeNames(literalNewDetailAST),
-						literalNewDetailAST.getLineNo()));
+				continue;
 			}
+
+			constructorCalls.add(
+				new ConstructorCall(
+					constructorTypeName,
+					_getParameterTypeNames(literalNewDetailAST),
+					literalNewDetailAST.getLineNo()));
 		}
 
 		return constructorCalls;
@@ -188,10 +191,10 @@ public abstract class BaseAPICheck extends BaseCheck {
 
 		List<MethodCall> methodCalls = new ArrayList<>();
 
-		List<DetailAST> methodCallDetailASTList = getAllChildTokens(
+		List<DetailAST> methodCallDetailASTs = getAllChildTokens(
 			detailAST, true, TokenTypes.METHOD_CALL);
 
-		for (DetailAST methodCallDetailAST : methodCallDetailASTList) {
+		for (DetailAST methodCallDetailAST : methodCallDetailASTs) {
 			if (skipDeprecated &&
 				(hasDeprecatedParent(methodCallDetailAST) ||
 				 hasSuppressDeprecationWarningsAnnotation(
@@ -233,15 +236,17 @@ public abstract class BaseAPICheck extends BaseCheck {
 				continue;
 			}
 
-			if (variableTypeName.startsWith("com.liferay.") &&
-				!excludeImportNames.contains(variableTypeName)) {
+			if (!variableTypeName.startsWith("com.liferay.") ||
+				excludeImportNames.contains(variableTypeName)) {
 
-				methodCalls.add(
-					new MethodCall(
-						methodName, variableTypeName,
-						_getParameterTypeNames(methodCallDetailAST),
-						methodCallDetailAST.getLineNo()));
+				continue;
 			}
+
+			methodCalls.add(
+				new MethodCall(
+					methodName, variableTypeName,
+					_getParameterTypeNames(methodCallDetailAST),
+					methodCallDetailAST.getLineNo()));
 		}
 
 		return methodCalls;
@@ -319,15 +324,17 @@ public abstract class BaseAPICheck extends BaseCheck {
 			while (iterator.hasNext()) {
 				String extendedClassName = iterator.next();
 
-				if (extendedClassName.startsWith("com.liferay.")) {
-					methodJSONObjects.addAll(
-						getMethodJSONObjects(
-							new MethodCall(
-								methodCall.getName(), extendedClassName,
-								methodCall.getParameterTypeNames(),
-								methodCall.getLineNumber()),
-							javaClassesJSONObject));
+				if (!extendedClassName.startsWith("com.liferay.")) {
+					continue;
 				}
+
+				methodJSONObjects.addAll(
+					getMethodJSONObjects(
+						new MethodCall(
+							methodCall.getName(), extendedClassName,
+							methodCall.getParameterTypeNames(),
+							methodCall.getLineNumber()),
+						javaClassesJSONObject));
 			}
 		}
 
@@ -340,11 +347,11 @@ public abstract class BaseAPICheck extends BaseCheck {
 
 		Map<String, Set<Integer>> typeNamesMap = new HashMap<>();
 
-		List<DetailAST> clauseDetailASTList = getAllChildTokens(
+		List<DetailAST> clauseDetailASTs = getAllChildTokens(
 			detailAST, true, TokenTypes.EXTENDS_CLAUSE,
 			TokenTypes.IMPLEMENTS_CLAUSE);
 
-		for (DetailAST clauseDetailAST : clauseDetailASTList) {
+		for (DetailAST clauseDetailAST : clauseDetailASTs) {
 			if (skipDeprecated &&
 				(hasDeprecatedParent(clauseDetailAST) ||
 				 hasSuppressDeprecationWarningsAnnotation(clauseDetailAST))) {
@@ -352,10 +359,10 @@ public abstract class BaseAPICheck extends BaseCheck {
 				continue;
 			}
 
-			List<DetailAST> childDetailASTList = getAllChildTokens(
+			List<DetailAST> childDetailASTs = getAllChildTokens(
 				clauseDetailAST, false, TokenTypes.DOT, TokenTypes.IDENT);
 
-			for (DetailAST childDetailAST : childDetailASTList) {
+			for (DetailAST childDetailAST : childDetailASTs) {
 				if (childDetailAST.getType() == TokenTypes.IDENT) {
 					typeNamesMap = _addTypeName(
 						typeNamesMap,
@@ -388,19 +395,20 @@ public abstract class BaseAPICheck extends BaseCheck {
 			}
 		}
 
-		List<DetailAST> typeDetailASTList = getAllChildTokens(
+		List<DetailAST> typeDetailASTs = getAllChildTokens(
 			detailAST, true, TokenTypes.TYPE);
 
-		for (DetailAST typeDetailAST : typeDetailASTList) {
-			if (!skipDeprecated ||
-				(!hasDeprecatedParent(typeDetailAST) &&
-				 !hasSuppressDeprecationWarningsAnnotation(typeDetailAST))) {
+		for (DetailAST typeDetailAST : typeDetailASTs) {
+			if (skipDeprecated &&
+				(hasDeprecatedParent(typeDetailAST) ||
+				 hasSuppressDeprecationWarningsAnnotation(typeDetailAST))) {
 
-				typeNamesMap = _addTypeName(
-					typeNamesMap,
-					getTypeName(typeDetailAST, false, false, true),
-					typeDetailAST.getLineNo(), excludeImportNames);
+				continue;
 			}
+
+			typeNamesMap = _addTypeName(
+				typeNamesMap, getTypeName(typeDetailAST, false, false, true),
+				typeDetailAST.getLineNo(), excludeImportNames);
 		}
 
 		return typeNamesMap;
@@ -412,10 +420,10 @@ public abstract class BaseAPICheck extends BaseCheck {
 
 		List<VariableCall> variableCalls = new ArrayList<>();
 
-		List<DetailAST> dotDetailASTList = getAllChildTokens(
+		List<DetailAST> dotDetailASTs = getAllChildTokens(
 			detailAST, true, TokenTypes.DOT);
 
-		for (DetailAST dotDetailAST : dotDetailASTList) {
+		for (DetailAST dotDetailAST : dotDetailASTs) {
 			if (skipDeprecated &&
 				(hasDeprecatedParent(dotDetailAST) ||
 				 hasSuppressDeprecationWarningsAnnotation(dotDetailAST))) {
@@ -492,9 +500,9 @@ public abstract class BaseAPICheck extends BaseCheck {
 				return false;
 			}
 
-			if (((parentDetailAST.getType() == TokenTypes.CTOR_DEF) ||
-				 (parentDetailAST.getType() == TokenTypes.METHOD_DEF) ||
-				 (parentDetailAST.getType() == TokenTypes.VARIABLE_DEF)) &&
+			if (TokenUtil.isOfType(
+					parentDetailAST, TokenTypes.CTOR_DEF, TokenTypes.METHOD_DEF,
+					TokenTypes.VARIABLE_DEF) &&
 				AnnotationUtil.containsAnnotation(
 					parentDetailAST, "Deprecated")) {
 
@@ -520,13 +528,11 @@ public abstract class BaseAPICheck extends BaseCheck {
 					parentDetailAST, "SuppressWarnings");
 
 				if (annotationDetailAST != null) {
-					List<DetailAST> literalStringDetailASTList =
-						getAllChildTokens(
-							annotationDetailAST, true,
-							TokenTypes.STRING_LITERAL);
+					List<DetailAST> literalStringDetailASTs = getAllChildTokens(
+						annotationDetailAST, true, TokenTypes.STRING_LITERAL);
 
 					for (DetailAST literalStringDetailAST :
-							literalStringDetailASTList) {
+							literalStringDetailASTs) {
 
 						String s = literalStringDetailAST.getText();
 
@@ -700,9 +706,9 @@ public abstract class BaseAPICheck extends BaseCheck {
 			return "char";
 		}
 
-		if ((detailAST.getType() == TokenTypes.LITERAL_FALSE) ||
-			(detailAST.getType() == TokenTypes.LITERAL_TRUE) ||
-			(detailAST.getType() == TokenTypes.LNOT)) {
+		if (TokenUtil.isOfType(
+				detailAST, TokenTypes.LITERAL_FALSE, TokenTypes.LITERAL_TRUE,
+				TokenTypes.LNOT)) {
 
 			return "boolean";
 		}
@@ -739,13 +745,15 @@ public abstract class BaseAPICheck extends BaseCheck {
 			DetailAST curDetailAST = firstChildDetailAST.getNextSibling();
 
 			while (true) {
-				if (curDetailAST.getType() != TokenTypes.ARRAY_DECLARATOR) {
+				if ((curDetailAST == null) ||
+					(curDetailAST.getType() != TokenTypes.ARRAY_DECLARATOR)) {
+
 					return parameterTypeName;
 				}
 
 				parameterTypeName += "[]";
 
-				curDetailAST = curDetailAST.getFirstChild();
+				curDetailAST = curDetailAST.getNextSibling();
 			}
 		}
 
@@ -809,13 +817,11 @@ public abstract class BaseAPICheck extends BaseCheck {
 			return "long";
 		}
 
-		if ((detailAST.getType() == TokenTypes.LITERAL_BOOLEAN) ||
-			(detailAST.getType() == TokenTypes.LITERAL_BYTE) ||
-			(detailAST.getType() == TokenTypes.LITERAL_DOUBLE) ||
-			(detailAST.getType() == TokenTypes.LITERAL_FLOAT) ||
-			(detailAST.getType() == TokenTypes.LITERAL_INT) ||
-			(detailAST.getType() == TokenTypes.LITERAL_LONG) ||
-			(detailAST.getType() == TokenTypes.LITERAL_SHORT)) {
+		if (TokenUtil.isOfType(
+				detailAST, TokenTypes.LITERAL_BOOLEAN, TokenTypes.LITERAL_BYTE,
+				TokenTypes.LITERAL_DOUBLE, TokenTypes.LITERAL_FLOAT,
+				TokenTypes.LITERAL_INT, TokenTypes.LITERAL_LONG,
+				TokenTypes.LITERAL_SHORT)) {
 
 			return detailAST.getText();
 		}
@@ -832,10 +838,10 @@ public abstract class BaseAPICheck extends BaseCheck {
 
 		DetailAST elistDetailAST = detailAST.findFirstToken(TokenTypes.ELIST);
 
-		List<DetailAST> exprDetailASTList = getAllChildTokens(
+		List<DetailAST> exprDetailASTs = getAllChildTokens(
 			elistDetailAST, false, TokenTypes.EXPR);
 
-		for (DetailAST exprDetailAST : exprDetailASTList) {
+		for (DetailAST exprDetailAST : exprDetailASTs) {
 			parameterTypeNames.add(
 				_getParameterTypeName(exprDetailAST.getFirstChild()));
 		}

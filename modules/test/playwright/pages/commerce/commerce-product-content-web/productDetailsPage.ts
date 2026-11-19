@@ -1,0 +1,396 @@
+/**
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
+ */
+
+import {FrameLocator, Locator, Page} from '@playwright/test';
+
+import {selectOptionContaining} from '../../../tests/commerce/utils/selectOptionContaining';
+import {CommerceLayoutsPage} from '../commerce-order-content-web/commerceLayoutsPage';
+
+export class ProductDetailsPage {
+	readonly addToCartButton: Locator;
+	readonly allowedQuantitiesSelect: Locator;
+	readonly attachments: Locator;
+	readonly attachmentItem: (title: string) => Promise<Locator>;
+	readonly attachmentItems: Locator;
+	readonly diagramPin: (pinSequence: string) => Promise<Locator>;
+	readonly breadcrumb: Locator;
+	readonly breadcrumbLink: (name: string) => Locator;
+	readonly diagramSvgPin: (sequence: string) => Locator;
+	readonly diagramTooltip: Locator;
+	readonly diagramTooltipExternalName: (name: string) => Locator;
+	readonly diagramTooltipQuantity: Locator;
+	readonly diagramTooltipReplacementAlert: (text: string) => Locator;
+	readonly diagramTooltipSubtitleLink: (name: string) => Locator;
+	readonly diagramTooltipTitleLink: (name: string) => Locator;
+	readonly diagramTooltipViewLink: Locator;
+	readonly downloadAttachmentLink: Locator;
+	readonly downloadSampleField: (
+		downloadSampleText: string
+	) => Promise<Locator>;
+	readonly fullDescriptionField: (
+		fullDescription: string
+	) => Promise<Locator>;
+	readonly gtinField: (gtin: string) => Promise<Locator>;
+	readonly inStockQuantity: Locator;
+	readonly layoutsPage: CommerceLayoutsPage;
+	readonly mappedProductAddToCartButton: Locator;
+	readonly mappedProductCheckbox: Locator;
+	readonly mappedProductCheckboxFor: (
+		sku: string,
+		productName: string
+	) => Locator;
+	readonly mappedProductRow: (value: string) => Locator;
+	readonly mappedProductRowAt: (index: number) => Locator;
+	readonly mappedProductSelectAllCheckbox: Locator;
+	readonly mappedProductsTable: Locator;
+	readonly minimumQuantityPerOrderLabel: (minQuantity: number) => Locator;
+	readonly mpnField: (mpn: string) => Promise<Locator>;
+	readonly nameField: (name: string) => Promise<Locator>;
+	readonly optionField: (
+		optionName: string,
+		container?: Locator | Page
+	) => Locator;
+	readonly optionRadio: (
+		optionValue: string,
+		container?: Locator | Page
+	) => Locator;
+	readonly optionSelector: (optionName: string) => Locator;
+	readonly optionValueCheckbox: (
+		optionValueName: string,
+		container?: Locator | Page
+	) => Locator;
+	readonly optionSelectorValues: (optionName: string) => Locator;
+	readonly page: Page;
+	readonly pageTitle: Locator;
+	readonly paginationText: (text: string) => Locator;
+	readonly pinAddToCartButton: Locator;
+	readonly priceContainer: Locator;
+	readonly priceFragment: Locator;
+	readonly priceFragmentDiscount: Locator;
+	readonly priceFragmentDiscountLevels: Locator;
+	readonly priceFragmentInactivePrice: Locator;
+	readonly priceFragmentListPrice: Locator;
+	readonly priceFragmentPromoInactivePrice: Locator;
+	readonly priceFragmentPromoPrice: Locator;
+	readonly priceFragmentNetPrice: Locator;
+	readonly priceFragmentPriceOnApplicationLabel: Locator;
+	readonly priceField: (
+		price: string,
+		container?: Locator | Page
+	) => Promise<Locator>;
+	readonly productNameHeading: (productName: string) => Promise<Locator>;
+	readonly productDetail: Locator;
+	readonly productDetailAddToCartButton: Locator;
+	readonly productDetailAvailabilityLabel: Locator;
+	readonly productDetailValue: (label: string) => Locator;
+	readonly productDetailQuantitySelector: Locator;
+	readonly productOptionUploadFormFeedback: Locator;
+	readonly relatedDiagramLink: (name: string) => Locator;
+	readonly productTitle: (productName: string) => Locator;
+	readonly promoPriceField: (
+		promoPrice: string,
+		container?: Locator | Page
+	) => Promise<Locator>;
+	readonly quantitySelector: Locator;
+	readonly quantitySelectorErrorContainer: Locator;
+	readonly quantitySelectorPopoverMessage: (message: string) => Locator;
+	readonly replacementProductButton: Locator;
+	readonly replacementsSearchBar: Locator;
+	readonly replacementsSearchButton: Locator;
+	readonly replacementsTab: Locator;
+	readonly replacementsTableCell: (cellValue: string) => Locator;
+	readonly availabilityLabel: Locator;
+	readonly dynamicFieldLabels: Locator;
+	readonly dynamicFieldValues: Locator;
+	readonly requestAQuoteButton: Locator;
+	readonly requestAQuoteModal: Locator;
+	readonly requestAQuoteModalSubmit: Locator;
+	readonly requestQuoteFragment: Locator;
+	readonly requestQuoteFragmentButton: Locator;
+	readonly selectDocumentFrame: FrameLocator;
+	readonly selectedDocumentLabel: Locator;
+	readonly selectOption: (
+		optionLabel: string,
+		optionName: string
+	) => Promise<string[]>;
+	readonly shortDescriptionField: (
+		shortDescription: string
+	) => Promise<Locator>;
+	readonly skuField: (sku: string) => Promise<Locator>;
+	readonly unitOfMeasureSelect: Locator;
+	readonly unitOfMeasureSelectedOption: Locator;
+	readonly uomCombobox: Locator;
+	readonly uomPriceTable: Locator;
+	readonly uomPriceTableColumnHeader: (columnName: string) => Locator;
+	readonly uomPriceTableRow: (rowIndex: number) => Locator;
+	readonly uomPriceTableRowCells: (rowIndex: number) => Locator;
+	readonly uomPriceTableRows: Locator;
+	readonly uomTable: (uomTableCell: string) => Promise<Locator>;
+	readonly viewButton: Locator;
+
+	constructor(page: Page) {
+		this.addToCartButton = page
+			.getByRole('button', {exact: true, name: 'Add to Cart'})
+			.first();
+		this.allowedQuantitiesSelect = page.locator('select.quantity-selector');
+		this.attachments = page.locator(
+			'#_com_liferay_commerce_product_content_web_internal_portlet_CPContentPortlet_navCPMedia'
+		);
+		this.attachmentItem = async (title: string) => {
+			return page.getByText(title);
+		};
+		this.attachmentItems = this.attachments.locator('li.list-group-item');
+		this.diagramPin = async (pinSequence: string) => {
+			return page
+				.locator("[class='pin-node-text']")
+				.filter({hasText: pinSequence});
+		};
+		this.breadcrumb = page.getByLabel('Breadcrumb');
+		this.breadcrumbLink = (name: string) =>
+			this.breadcrumb.getByRole('link', {name});
+		this.diagramSvgPin = (sequence: string) =>
+			page
+				.locator('text.pin')
+				.filter({hasText: new RegExp(`^${sequence}$`)});
+		this.diagramTooltip = page.locator('.diagram-tooltip');
+		this.diagramTooltipExternalName = (name: string) =>
+			this.diagramTooltip.locator('.h4').filter({hasText: name});
+		this.diagramTooltipQuantity =
+			this.diagramTooltip.getByText('Quantity:');
+		this.diagramTooltipReplacementAlert = (text: string) =>
+			this.diagramTooltip.getByText(text);
+		this.diagramTooltipSubtitleLink = (name: string) =>
+			this.diagramTooltip
+				.locator('.component-subtitle')
+				.getByRole('link', {exact: true, name});
+		this.diagramTooltipTitleLink = (name: string) =>
+			this.diagramTooltip
+				.locator('.component-title')
+				.getByRole('link', {exact: true, name});
+		this.diagramTooltipViewLink = this.diagramTooltip.getByRole('link', {
+			exact: true,
+			name: 'View',
+		});
+		this.downloadAttachmentLink = page.getByRole('link', {
+			exact: true,
+			name: 'Download',
+		});
+		this.downloadSampleField = async (downloadSampleText: string) => {
+			return page.getByRole('link', {name: downloadSampleText});
+		};
+		this.fullDescriptionField = async (fullDescription: string) => {
+			return page.getByText(fullDescription, {exact: true});
+		};
+		this.gtinField = async (gtin: string) => {
+			return page.getByText(gtin);
+		};
+		this.inStockQuantity = page.locator(
+			'span[data-text-cp-instance-stock-quantity]'
+		);
+		this.layoutsPage = new CommerceLayoutsPage(page);
+		this.mappedProductAddToCartButton = page.getByRole('button', {
+			name: 'Add Selected Product(s) to',
+		});
+		this.mappedProductCheckbox = page.getByLabel('Select SKU');
+		this.mappedProductCheckboxFor = (sku: string, productName: string) =>
+			page.getByLabel(`Select SKU ${sku}, ${productName}`, {exact: true});
+		this.mappedProductRow = (value: string) =>
+			page
+				.locator('.shop-by-diagram-table tbody tr')
+				.filter({hasText: value});
+		this.mappedProductRowAt = (index: number) =>
+			page.locator('.shop-by-diagram-table tbody tr').nth(index);
+		this.mappedProductSelectAllCheckbox = page.locator(
+			'.shop-by-diagram-table thead input[type="checkbox"]'
+		);
+		this.mappedProductsTable = page.locator('.shop-by-diagram-table');
+		this.minimumQuantityPerOrderLabel = (minQuantity: number) =>
+			page.getByText(`Minimum Quantity per Order: ${minQuantity}`, {
+				exact: true,
+			});
+		this.mpnField = async (mpn: string) => {
+			return page.getByText(mpn, {exact: true});
+		};
+		this.nameField = async (name: string) => {
+			return page.getByRole('heading', {exact: true, name});
+		};
+		this.optionField = (
+			optionName: string,
+			container: Locator | Page = page
+		) => container.getByLabel(optionName, {exact: true});
+		this.optionRadio = (
+			optionValue: string,
+			container: Locator | Page = page
+		) => container.getByRole('radio', {exact: true, name: optionValue});
+		this.optionValueCheckbox = (
+			optionValueName: string,
+			container: Locator | Page = page
+		) => container.getByRole('checkbox', {name: optionValueName});
+		this.optionSelector = (optionName: string) => {
+			return page.getByLabel(optionName);
+		};
+		this.optionSelectorValues = (optionName: string) =>
+			this.optionSelector(optionName).locator('option');
+		this.page = page;
+		this.paginationText = (text: string) => page.getByText(text);
+		this.pinAddToCartButton = page
+			.locator("[class='diagram-tooltip']")
+			.getByRole('button');
+		this.availabilityLabel = page.locator('[class*="availability-label"]');
+		this.dynamicFieldLabels = page.locator(
+			'[class*="dynamic-field"] .node-label'
+		);
+		this.dynamicFieldValues = page.locator(
+			'[class*="dynamic-field"] .node-value'
+		);
+		this.priceContainer = page.locator('div.price-container');
+		this.priceFragment = page.locator('span.price');
+		this.priceFragmentDiscount = this.priceFragment.locator(
+			'.price-value-discount'
+		);
+		this.priceFragmentDiscountLevels = this.priceFragment.locator(
+			'.price-value-discount .price-value-percentages'
+		);
+		this.priceFragmentInactivePrice = this.priceFragment.locator(
+			'.price-value-inactive:not(.price-value-promo)'
+		);
+		this.priceFragmentListPrice = this.priceFragment.locator(
+			'[class="price-value"]'
+		);
+		this.priceFragmentNetPrice =
+			this.priceFragment.locator('.price-value-final');
+		this.priceFragmentPromoInactivePrice = this.priceFragment.locator(
+			'.price-value-promo.price-value-inactive'
+		);
+		this.priceFragmentPromoPrice =
+			this.priceFragment.locator('.price-value-promo');
+		this.priceFragmentPriceOnApplicationLabel = this.priceFragment.locator(
+			'.price-on-application'
+		);
+		this.priceField = async (price: string, container = this.page) => {
+			return container.getByText(price, {exact: true});
+		};
+		this.productNameHeading = async (productName) => {
+			return page.getByRole('heading', {name: productName});
+		};
+		this.productDetail = page.locator('.product-detail').first();
+		this.productDetailAddToCartButton = this.productDetail.getByRole(
+			'button',
+			{name: 'Add to Cart'}
+		);
+		this.productDetailAvailabilityLabel = this.productDetail.locator(
+			'[class*="availability-label"]'
+		);
+		this.productDetailValue = (label: string) =>
+			this.productDetail
+				.locator('p')
+				.filter({has: page.getByText(label, {exact: true})})
+				.locator('span')
+				.last();
+		this.productDetailQuantitySelector = this.productDetail.getByRole(
+			'spinbutton',
+			{name: 'Quantity Selector'}
+		);
+		this.productOptionUploadFormFeedback = page.locator(
+			'.product-option-upload'
+		);
+		this.relatedDiagramLink = (name: string) =>
+			page
+				.locator('[class*="product-publisher"] p a')
+				.filter({hasText: name});
+		this.productTitle = (productName: string) =>
+			page
+				.locator('.portlet-content .component-title')
+				.filter({hasText: productName});
+		this.promoPriceField = async (
+			promoPrice: string,
+			container = this.page
+		) => {
+			return container.getByText(promoPrice);
+		};
+		this.quantitySelector = page.getByRole('spinbutton', {
+			exact: true,
+			name: 'Quantity Selector',
+		});
+		this.quantitySelectorErrorContainer = page
+			.locator('.has-error')
+			.filter({has: this.quantitySelector});
+		this.quantitySelectorPopoverMessage = (message: string) =>
+			page
+				.locator('.quantity-selector-popover')
+				.getByText(message, {exact: true});
+		this.replacementProductButton = page.getByRole('button', {
+			name: 'Replacement Product',
+		});
+		this.replacementsSearchBar = page
+			.getByTestId('managementToolbar')
+			.getByPlaceholder('Search');
+		this.replacementsSearchButton = page.getByRole('button', {
+			name: 'Search',
+		});
+		this.replacementsTab = page.getByRole('tab', {name: 'Replacements'});
+		this.replacementsTableCell = (cellValue: string) =>
+			page.getByRole('cell', {name: cellValue});
+		this.requestAQuoteButton = page
+			.locator('.product-detail-actions')
+			.getByRole('button', {
+				name: 'Request A Quote',
+			});
+		this.requestAQuoteModal = page.locator('.modal-content');
+		this.requestAQuoteModalSubmit = this.requestAQuoteModal.getByRole(
+			'button',
+			{
+				name: 'Submit',
+			}
+		);
+		this.requestQuoteFragment = page.locator('.request-quote-wrapper');
+		this.requestQuoteFragmentButton = this.requestQuoteFragment.locator(
+			'button:not(.skeleton)'
+		);
+		this.selectDocumentFrame = page.frameLocator(
+			'iframe[title="Select Document"]'
+		);
+		this.selectedDocumentLabel = page.getByLabel('File', {exact: true});
+		this.selectOption = (optionLabel: string, optionName: string) =>
+			page.getByLabel(optionName).selectOption({label: optionLabel});
+		this.shortDescriptionField = async (shortDescription: string) => {
+			return page.getByText(shortDescription);
+		};
+		this.skuField = async (sku: string) => {
+			return page.getByText(sku, {exact: true});
+		};
+		this.unitOfMeasureSelect = page.locator(
+			'select.unit-of-measure-selector'
+		);
+		this.unitOfMeasureSelectedOption =
+			this.unitOfMeasureSelect.locator('option:checked');
+		this.uomCombobox = page.getByRole('combobox', {exact: true});
+		this.uomPriceTable = page.locator('.tier-price-table table');
+		this.uomPriceTableColumnHeader = (columnName: string) =>
+			this.uomPriceTable
+				.locator('thead')
+				.getByText(columnName, {exact: true});
+		this.uomPriceTableRow = (rowIndex: number) =>
+			this.uomPriceTableRows.nth(rowIndex);
+		this.uomPriceTableRowCells = (rowIndex: number) =>
+			this.uomPriceTableRow(rowIndex).locator('td');
+		this.uomPriceTableRows = this.uomPriceTable.locator('tbody tr');
+		this.uomTable = async (cellValue: string) => {
+			return page.getByRole('cell', {name: cellValue});
+		};
+		this.viewButton = page.getByLabel('View');
+	}
+
+	async goto() {
+		await this.layoutsPage.goto();
+	}
+
+	async selectOptionContaining(optionLabel: string, optionName: string) {
+		await selectOptionContaining(
+			this.optionSelector(optionName),
+			optionLabel
+		);
+	}
+}

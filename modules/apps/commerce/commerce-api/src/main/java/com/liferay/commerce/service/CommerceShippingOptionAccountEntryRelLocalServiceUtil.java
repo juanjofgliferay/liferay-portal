@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -260,14 +261,6 @@ public class CommerceShippingOptionAccountEntryRelLocalServiceUtil {
 			CommerceShippingOptionAccountEntryRelId);
 	}
 
-	public static CommerceShippingOptionAccountEntryRel
-		fetchCommerceShippingOptionAccountEntryRel(
-			long accountEntryId, long commerceChannelId) {
-
-		return getService().fetchCommerceShippingOptionAccountEntryRel(
-			accountEntryId, commerceChannelId);
-	}
-
 	public static com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery
 		getActionableDynamicQuery() {
 
@@ -308,13 +301,6 @@ public class CommerceShippingOptionAccountEntryRelLocalServiceUtil {
 			start, end);
 	}
 
-	public static List<CommerceShippingOptionAccountEntryRel>
-		getCommerceShippingOptionAccountEntryRels(long accountEntryId) {
-
-		return getService().getCommerceShippingOptionAccountEntryRels(
-			accountEntryId);
-	}
-
 	/**
 	 * Returns the number of commerce shipping option account entry rels.
 	 *
@@ -322,13 +308,6 @@ public class CommerceShippingOptionAccountEntryRelLocalServiceUtil {
 	 */
 	public static int getCommerceShippingOptionAccountEntryRelsCount() {
 		return getService().getCommerceShippingOptionAccountEntryRelsCount();
-	}
-
-	public static int getCommerceShippingOptionAccountEntryRelsCount(
-		long accountEntryId) {
-
-		return getService().getCommerceShippingOptionAccountEntryRelsCount(
-			accountEntryId);
 	}
 
 	public static
@@ -390,16 +369,14 @@ public class CommerceShippingOptionAccountEntryRelLocalServiceUtil {
 	public static CommerceShippingOptionAccountEntryRelLocalService
 		getService() {
 
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(
-		CommerceShippingOptionAccountEntryRelLocalService service) {
-
-		_service = service;
-	}
-
-	private static volatile CommerceShippingOptionAccountEntryRelLocalService
-		_service;
+	private static final Snapshot
+		<CommerceShippingOptionAccountEntryRelLocalService> _serviceSnapshot =
+			new Snapshot<>(
+				CommerceShippingOptionAccountEntryRelLocalServiceUtil.class,
+				CommerceShippingOptionAccountEntryRelLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-12795038

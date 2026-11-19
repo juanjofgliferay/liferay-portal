@@ -6,21 +6,33 @@
 package com.liferay.roles.service.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
+import com.liferay.portal.kernel.lazy.referencing.LazyReferencingThreadLocal;
 import com.liferay.portal.kernel.model.ClassName;
+import com.liferay.portal.kernel.model.ResourceConstants;
 import com.liferay.portal.kernel.model.Role;
+import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.model.role.RoleConstants;
+import com.liferay.portal.kernel.security.auth.PrincipalException;
+import com.liferay.portal.kernel.security.permission.ActionKeys;
+import com.liferay.portal.kernel.security.permission.PermissionCheckerFactoryUtil;
 import com.liferay.portal.kernel.service.ClassNameLocalService;
 import com.liferay.portal.kernel.service.RoleService;
+import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.UserLocalService;
+import com.liferay.portal.kernel.test.context.ContextUserReplace;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.RoleTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
+import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.LinkedHashMapBuilder;
 import com.liferay.portal.kernel.util.ListUtil;
+import com.liferay.portal.kernel.util.PortletKeys;
 import com.liferay.portal.kernel.util.comparator.RoleRoleIdComparator;
 import com.liferay.portal.security.permission.test.util.BasePermissionTestCase;
 import com.liferay.portal.test.rule.Inject;
@@ -63,24 +75,98 @@ public class RoleServiceTest extends BasePermissionTestCase {
 	}
 
 	@Test
-	public void testSearch() throws Exception {
-		List<Role> roles = _roleService.search(
-			group.getCompanyId(), StringPool.BLANK,
-			new Integer[] {RoleConstants.TYPE_REGULAR}, new LinkedHashMap<>(),
-			QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
+	public void testCopyRole() throws Exception {
+		Role role1 = RoleTestUtil.addRole(RoleConstants.TYPE_REGULAR);
+		User user = UserTestUtil.addUser();
+
+		PrincipalException.MustHavePermission mustHavePermission =
+			Assert.assertThrows(
+				PrincipalException.MustHavePermission.class,
+				() -> _copyRole(role1, user));
 
 		Assert.assertTrue(
-			"Role not found with permissions", roles.contains(_role));
+			ArrayUtil.contains(
+				mustHavePermission.actionId, ActionKeys.ADD_ROLE));
 
-		removePortletModelViewPermission();
+		Role role2 = RoleTestUtil.addRole(RoleConstants.TYPE_REGULAR);
 
-		roles = _roleService.search(
-			group.getCompanyId(), StringPool.BLANK,
-			new Integer[] {RoleConstants.TYPE_REGULAR}, new LinkedHashMap<>(),
-			QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
+		RoleTestUtil.addResourcePermission(
+			role2, PortletKeys.PORTAL, ResourceConstants.SCOPE_COMPANY,
+			String.valueOf(TestPropsValues.getCompanyId()),
+			ActionKeys.ADD_ROLE);
 
-		Assert.assertFalse(
-			"Role found without permissions", roles.contains(_role));
+		_userLocalService.addRoleUser(role2.getRoleId(), user.getUserId());
+
+		mustHavePermission = Assert.assertThrows(
+			PrincipalException.MustHavePermission.class,
+			() -> _copyRole(role1, user));
+
+		Assert.assertTrue(
+			ArrayUtil.contains(mustHavePermission.actionId, ActionKeys.VIEW));
+
+		RoleTestUtil.addResourcePermission(
+			role2, Role.class.getName(), ResourceConstants.SCOPE_COMPANY,
+			String.valueOf(TestPropsValues.getCompanyId()), ActionKeys.VIEW);
+
+		Role role3 = _copyRole(role1, user);
+
+		Assert.assertEquals(user.getUserId(), role3.getUserId());
+	}
+
+	@Test
+	public void testGetOrAddEmptyRole() throws Exception {
+		try (SafeCloseable safeCloseable =
+				LazyReferencingThreadLocal.setEnabledWithSafeCloseable(true)) {
+
+			// With permissions
+
+			Role role1 = RoleTestUtil.addRole(RoleConstants.TYPE_REGULAR);
+
+			RoleTestUtil.addResourcePermission(
+				role1, PortletKeys.PORTAL, ResourceConstants.SCOPE_COMPANY,
+				String.valueOf(TestPropsValues.getCompanyId()),
+				ActionKeys.ADD_ROLE);
+
+			User user = UserTestUtil.addUser();
+
+			_userLocalService.addRoleUser(role1.getRoleId(), user.getUserId());
+
+			try (ContextUserReplace contextUserReplace = new ContextUserReplace(
+					user, PermissionCheckerFactoryUtil.create(user))) {
+
+				Role role2 = _roleService.getOrAddEmptyRole(
+					RandomTestUtil.randomString(),
+					RandomTestUtil.randomString(), 0,
+					RandomTestUtil.randomString(), RoleConstants.TYPE_REGULAR);
+
+				Assert.assertNotNull(role2);
+			}
+
+			// Without permissions
+
+			user = UserTestUtil.addUser();
+
+			try (ContextUserReplace contextUserReplace = new ContextUserReplace(
+					user, PermissionCheckerFactoryUtil.create(user))) {
+
+				_roleService.getOrAddEmptyRole(
+					RandomTestUtil.randomString(),
+					RandomTestUtil.randomString(), 0,
+					RandomTestUtil.randomString(), RoleConstants.TYPE_REGULAR);
+
+				Assert.fail();
+			}
+			catch (PrincipalException.MustHavePermission principalException) {
+				Assert.assertNotNull(principalException);
+			}
+		}
+	}
+
+	@Test
+	public void testSearch() throws Exception {
+		_testSearch();
+		_testSearchWithClassNameId();
+		_testSearchWithSubtype();
 	}
 
 	@Test
@@ -97,67 +183,6 @@ public class RoleServiceTest extends BasePermissionTestCase {
 				group.getCompanyId(), StringPool.BLANK,
 				new Integer[] {RoleConstants.TYPE_REGULAR},
 				new LinkedHashMap<>()));
-	}
-
-	@Test
-	public void testSearchWithClassNameId() throws Exception {
-		UserTestUtil.setUser(TestPropsValues.getUser());
-
-		_className = _classNameLocalService.addClassName(
-			RandomTestUtil.randomString());
-
-		List<Role> expectedRoles = new ArrayList<>();
-
-		expectedRoles.add(
-			_roleService.addRole(
-				_className.getClassName(), RandomTestUtil.nextLong(),
-				RandomTestUtil.randomString(),
-				RandomTestUtil.randomLocaleStringMap(),
-				RandomTestUtil.randomLocaleStringMap(),
-				RoleConstants.TYPE_PROVIDER, null, null));
-		expectedRoles.add(
-			_roleService.addRole(
-				_className.getClassName(), RandomTestUtil.nextLong(),
-				RandomTestUtil.randomString(),
-				RandomTestUtil.randomLocaleStringMap(),
-				RandomTestUtil.randomLocaleStringMap(),
-				RoleConstants.TYPE_PROVIDER, null, null));
-		expectedRoles.add(
-			_roleService.addRole(
-				_className.getClassName(), RandomTestUtil.nextLong(),
-				RandomTestUtil.randomString(),
-				RandomTestUtil.randomLocaleStringMap(),
-				RandomTestUtil.randomLocaleStringMap(),
-				RoleConstants.TYPE_PROVIDER, null, null));
-
-		_roles.addAll(expectedRoles);
-
-		_roles.add(
-			_roleService.addRole(
-				Role.class.getName(), RandomTestUtil.nextLong(),
-				RandomTestUtil.randomString(),
-				RandomTestUtil.randomLocaleStringMap(),
-				RandomTestUtil.randomLocaleStringMap(),
-				RoleConstants.TYPE_PROVIDER, null, null));
-
-		LinkedHashMap<String, Object> params =
-			LinkedHashMapBuilder.<String, Object>put(
-				"classNameId", _className.getClassNameId()
-			).build();
-
-		Assert.assertEquals(
-			expectedRoles.size(),
-			_roleService.searchCount(
-				TestPropsValues.getCompanyId(), StringPool.BLANK,
-				new Integer[] {RoleConstants.TYPE_PROVIDER}, params));
-
-		List<Role> roles = _roleService.search(
-			group.getCompanyId(), StringPool.BLANK,
-			new Integer[] {RoleConstants.TYPE_PROVIDER}, params,
-			QueryUtil.ALL_POS, QueryUtil.ALL_POS, new RoleRoleIdComparator());
-
-		Assert.assertEquals(
-			ListUtil.sort(expectedRoles, new RoleRoleIdComparator()), roles);
 	}
 
 	@Override
@@ -180,6 +205,145 @@ public class RoleServiceTest extends BasePermissionTestCase {
 		return RoleConstants.USER;
 	}
 
+	private Role _addRoleWithSubtype(String subtype) throws Exception {
+		return _roleService.addRole(
+			RandomTestUtil.randomString(), null, 0,
+			RandomTestUtil.randomString(),
+			RandomTestUtil.randomLocaleStringMap(),
+			RandomTestUtil.randomLocaleStringMap(), RoleConstants.TYPE_REGULAR,
+			subtype, null);
+	}
+
+	private Role _copyRole(Role sourceRole, User user) throws Exception {
+		try (ContextUserReplace contextUserReplace = new ContextUserReplace(
+				user, PermissionCheckerFactoryUtil.create(user))) {
+
+			return _roleService.copyRole(
+				TestPropsValues.getUserId(), RandomTestUtil.randomString(),
+				sourceRole.getRoleId(), new ServiceContext());
+		}
+	}
+
+	private void _testSearch() throws Exception {
+		List<Role> roles = _roleService.search(
+			group.getCompanyId(), StringPool.BLANK,
+			new Integer[] {RoleConstants.TYPE_REGULAR}, new LinkedHashMap<>(),
+			QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
+
+		Assert.assertTrue(
+			"Role not found with permissions", roles.contains(_role));
+
+		removePortletModelViewPermission();
+
+		roles = _roleService.search(
+			group.getCompanyId(), StringPool.BLANK,
+			new Integer[] {RoleConstants.TYPE_REGULAR}, new LinkedHashMap<>(),
+			QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
+
+		Assert.assertFalse(
+			"Role found without permissions", roles.contains(_role));
+	}
+
+	private void _testSearchWithClassNameId() throws Exception {
+		UserTestUtil.setUser(TestPropsValues.getUser());
+
+		_className = _classNameLocalService.addClassName(
+			RandomTestUtil.randomString());
+
+		List<Role> expectedRoles = new ArrayList<>();
+
+		expectedRoles.add(
+			_roleService.addRole(
+				RandomTestUtil.randomString(), _className.getClassName(),
+				RandomTestUtil.nextLong(), RandomTestUtil.randomString(),
+				RandomTestUtil.randomLocaleStringMap(),
+				RandomTestUtil.randomLocaleStringMap(),
+				RoleConstants.TYPE_PROVIDER, null, null));
+		expectedRoles.add(
+			_roleService.addRole(
+				RandomTestUtil.randomString(), _className.getClassName(),
+				RandomTestUtil.nextLong(), RandomTestUtil.randomString(),
+				RandomTestUtil.randomLocaleStringMap(),
+				RandomTestUtil.randomLocaleStringMap(),
+				RoleConstants.TYPE_PROVIDER, null, null));
+		expectedRoles.add(
+			_roleService.addRole(
+				RandomTestUtil.randomString(), _className.getClassName(),
+				RandomTestUtil.nextLong(), RandomTestUtil.randomString(),
+				RandomTestUtil.randomLocaleStringMap(),
+				RandomTestUtil.randomLocaleStringMap(),
+				RoleConstants.TYPE_PROVIDER, null, null));
+
+		_roles.addAll(expectedRoles);
+
+		_roles.add(
+			_roleService.addRole(
+				RandomTestUtil.randomString(), Role.class.getName(),
+				RandomTestUtil.nextLong(), RandomTestUtil.randomString(),
+				RandomTestUtil.randomLocaleStringMap(),
+				RandomTestUtil.randomLocaleStringMap(),
+				RoleConstants.TYPE_PROVIDER, null, null));
+
+		LinkedHashMap<String, Object> params =
+			LinkedHashMapBuilder.<String, Object>put(
+				"classNameId", _className.getClassNameId()
+			).build();
+
+		Assert.assertEquals(
+			expectedRoles.size(),
+			_roleService.searchCount(
+				TestPropsValues.getCompanyId(), StringPool.BLANK,
+				new Integer[] {RoleConstants.TYPE_PROVIDER}, params));
+
+		List<Role> roles = _roleService.search(
+			group.getCompanyId(), StringPool.BLANK,
+			new Integer[] {RoleConstants.TYPE_PROVIDER}, params,
+			QueryUtil.ALL_POS, QueryUtil.ALL_POS,
+			RoleRoleIdComparator.getInstance(false));
+
+		Assert.assertEquals(
+			ListUtil.sort(
+				expectedRoles, RoleRoleIdComparator.getInstance(false)),
+			roles);
+	}
+
+	private void _testSearchWithSubtype() throws Exception {
+		UserTestUtil.setUser(TestPropsValues.getUser());
+
+		String subtype = RandomTestUtil.randomString();
+
+		List<Role> expectedRoles = new ArrayList<>();
+
+		expectedRoles.add(_addRoleWithSubtype(subtype));
+		expectedRoles.add(_addRoleWithSubtype(subtype));
+
+		_roles.addAll(expectedRoles);
+
+		_roles.add(_addRoleWithSubtype(RandomTestUtil.randomString()));
+
+		LinkedHashMap<String, Object> params =
+			LinkedHashMapBuilder.<String, Object>put(
+				"subtype", subtype
+			).build();
+
+		Assert.assertEquals(
+			expectedRoles.size(),
+			_roleService.searchCount(
+				TestPropsValues.getCompanyId(), StringPool.BLANK,
+				new Integer[] {RoleConstants.TYPE_REGULAR}, params));
+
+		List<Role> roles = _roleService.search(
+			group.getCompanyId(), StringPool.BLANK,
+			new Integer[] {RoleConstants.TYPE_REGULAR}, params,
+			QueryUtil.ALL_POS, QueryUtil.ALL_POS,
+			RoleRoleIdComparator.getInstance(false));
+
+		Assert.assertEquals(
+			ListUtil.sort(
+				expectedRoles, RoleRoleIdComparator.getInstance(false)),
+			roles);
+	}
+
 	private ClassName _className;
 
 	@Inject
@@ -188,9 +352,12 @@ public class RoleServiceTest extends BasePermissionTestCase {
 	@DeleteAfterTestRun
 	private Role _role;
 
+	@Inject
+	private RoleService _roleService;
+
 	private final List<Role> _roles = new ArrayList<>();
 
 	@Inject
-	private RoleService _roleService;
+	private UserLocalService _userLocalService;
 
 }

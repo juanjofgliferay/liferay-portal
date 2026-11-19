@@ -23,12 +23,17 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"panel.app.order:Integer=300",
+		"panel.app.order:Integer=500",
 		"panel.category.key=" + PanelCategoryKeys.CONTROL_PANEL_OBJECT
 	},
 	service = PanelApp.class
 )
 public class HeadlessBuilderPanelApp extends BasePanelApp {
+
+	@Override
+	public String getIcon() {
+		return "api-web";
+	}
 
 	@Override
 	public Portlet getPortlet() {
@@ -44,7 +49,9 @@ public class HeadlessBuilderPanelApp extends BasePanelApp {
 	public boolean isShow(PermissionChecker permissionChecker, Group group)
 		throws PortalException {
 
-		if (!FeatureFlagManagerUtil.isEnabled("LPS-178642")) {
+		if (!FeatureFlagManagerUtil.isEnabled(
+				group.getCompanyId(), "LPS-178642")) {
+
 			return false;
 		}
 
@@ -52,7 +59,7 @@ public class HeadlessBuilderPanelApp extends BasePanelApp {
 	}
 
 	@Reference(
-		target = "(javax.portlet.name=" + HeadlessBuilderPortletKeys.HEADLESS_BUILDER + ")"
+		target = "(jakarta.portlet.name=" + HeadlessBuilderPortletKeys.HEADLESS_BUILDER + ")"
 	)
 	private Portlet _portlet;
 

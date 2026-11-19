@@ -18,7 +18,6 @@ import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 
 import org.junit.Assert;
@@ -270,20 +269,8 @@ public class AMImageAddConfigurationTest
 				TestPropsValues.getCompanyId(),
 				amImageConfigurationEntry -> true);
 
-		Assert.assertEquals(
-			amImageConfigurationEntries.toString(), 2,
-			amImageConfigurationEntries.size());
-
-		Iterator<AMImageConfigurationEntry> iterator =
-			amImageConfigurationEntries.iterator();
-
-		AMImageConfigurationEntry amImageConfigurationEntry = iterator.next();
-
-		Assert.assertEquals("1", amImageConfigurationEntry.getUUID());
-
-		amImageConfigurationEntry = iterator.next();
-
-		Assert.assertEquals("2", amImageConfigurationEntry.getUUID());
+		assertContains(amImageConfigurationEntries, "1");
+		assertContains(amImageConfigurationEntries, "2");
 	}
 
 	@Test
@@ -383,18 +370,6 @@ public class AMImageAddConfigurationTest
 			HashMapBuilder.put(
 				"max-width", "Invalid"
 			).build());
-	}
-
-	@Test(
-		expected = AMImageConfigurationException.RequiredWidthOrHeightException.class
-	)
-	public void testAddConfigurationEntryWithoutMaxHeightNorMaxWidth()
-		throws Exception {
-
-		Map<String, String> properties = new HashMap<>();
-
-		_amImageConfigurationHelper.addAMImageConfigurationEntry(
-			TestPropsValues.getCompanyId(), "one", "desc", "1", properties);
 	}
 
 	@Test
@@ -497,6 +472,18 @@ public class AMImageAddConfigurationTest
 			HashMapBuilder.put(
 				"max-width", "0"
 			).build());
+	}
+
+	@Test(
+		expected = AMImageConfigurationException.RequiredWidthOrHeightException.class
+	)
+	public void testAddConfigurationEntryWithoutMaxHeightNorMaxWidth()
+		throws Exception {
+
+		Map<String, String> properties = new HashMap<>();
+
+		_amImageConfigurationHelper.addAMImageConfigurationEntry(
+			TestPropsValues.getCompanyId(), "one", "desc", "1", properties);
 	}
 
 	@Test(

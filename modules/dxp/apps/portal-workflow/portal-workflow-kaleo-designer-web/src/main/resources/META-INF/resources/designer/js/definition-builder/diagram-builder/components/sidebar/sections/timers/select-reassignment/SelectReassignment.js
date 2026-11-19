@@ -4,8 +4,10 @@
  */
 
 import ClayForm, {ClaySelect} from '@clayui/form';
-import ClayIcon from '@clayui/icon';
-import React, {useEffect} from 'react';
+import React, {useContext, useEffect} from 'react';
+
+import {DefinitionBuilderContext} from '../../../../../../DefinitionBuilderContext';
+import HelpIcon from '../../shared-components/HelpIcon';
 
 const options = [
 	{
@@ -26,7 +28,6 @@ const options = [
 	},
 	{
 		assignmentType: 'roleType',
-		disabled: true,
 		label: Liferay.Language.get('role-type'),
 	},
 	{
@@ -40,27 +41,43 @@ const SelectReassignment = ({
 	setSection,
 	setSubSections,
 }) => {
+	const {
+		allowScriptContentToBeExecutedOrIncluded,
+		hadGroovyOrJavaScriptBefore,
+	} = useContext(DefinitionBuilderContext);
+
 	useEffect(() => {
 		if (!currentAssignmentType) {
 			setSection('assetCreator');
 		}
+
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
+
+	const getReassignmentTypeOptions = () => {
+		if (
+			!allowScriptContentToBeExecutedOrIncluded &&
+			!hadGroovyOrJavaScriptBefore
+		) {
+			return options.filter(
+				(option) => option.assignmentType !== 'scriptedReassignment'
+			);
+		}
+
+		return options;
+	};
 
 	return (
 		<ClayForm.Group>
 			<label htmlFor="reassignment-type">
 				{Liferay.Language.get('reassignment-type')}
 
-				<span
+				<HelpIcon
 					className="ml-2"
-					title={Liferay.Language.get('select-the-reassignment-type')}
-				>
-					<ClayIcon
-						className="text-muted"
-						symbol="question-circle-full"
-					/>
-				</span>
+					message={Liferay.Language.get(
+						'select-the-reassignment-type'
+					)}
+				/>
 			</label>
 
 			<ClaySelect
@@ -72,14 +89,16 @@ const SelectReassignment = ({
 					setSubSections([{identifier: `${Date.now()}-0`}]);
 				}}
 			>
-				{options.map(({assignmentType, disabled, label}) => (
-					<ClaySelect.Option
-						disabled={disabled}
-						key={assignmentType}
-						label={label}
-						value={assignmentType}
-					/>
-				))}
+				{getReassignmentTypeOptions().map(
+					({assignmentType, disabled, label}) => (
+						<ClaySelect.Option
+							disabled={disabled}
+							key={assignmentType}
+							label={label}
+							value={assignmentType}
+						/>
+					)
+				)}
 			</ClaySelect>
 		</ClayForm.Group>
 	);

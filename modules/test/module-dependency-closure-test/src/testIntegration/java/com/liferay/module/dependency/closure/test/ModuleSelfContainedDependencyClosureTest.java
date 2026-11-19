@@ -6,7 +6,7 @@
 package com.liferay.module.dependency.closure.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
-import com.liferay.portal.util.PropsValues;
+import com.liferay.portal.kernel.util.PropsValues;
 
 import java.io.File;
 import java.io.IOException;
@@ -71,9 +71,11 @@ public class ModuleSelfContainedDependencyClosureTest {
 					Dictionary<String, String> headers =
 						dependencyBundle.getHeaders(null);
 
-					if (headers.get("Test-Bridge-Pass-Code") != null) {
-						iterator.remove();
+					if (headers.get("Test-Bridge-Pass-Code") == null) {
+						continue;
 					}
+
+					iterator.remove();
 				}
 			}
 

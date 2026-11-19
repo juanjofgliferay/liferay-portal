@@ -10,10 +10,11 @@ import com.liferay.commerce.discount.model.CommerceDiscount;
 import com.liferay.commerce.discount.model.CommerceDiscountRule;
 import com.liferay.commerce.discount.service.CommerceDiscountRuleService;
 import com.liferay.commerce.discount.service.CommerceDiscountService;
+import com.liferay.headless.commerce.admin.pricing.dto.v2_0.Discount;
 import com.liferay.headless.commerce.admin.pricing.dto.v2_0.DiscountRule;
 import com.liferay.headless.commerce.admin.pricing.internal.util.v2_0.DiscountRuleUtil;
 import com.liferay.headless.commerce.admin.pricing.resource.v2_0.DiscountRuleResource;
-import com.liferay.headless.commerce.core.util.ServiceContextHelper;
+import com.liferay.headless.commerce.core.helper.ServiceContextHelper;
 import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.search.filter.Filter;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
@@ -22,10 +23,10 @@ import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.vulcan.dto.converter.DTOConverter;
 import com.liferay.portal.vulcan.dto.converter.DTOConverterRegistry;
 import com.liferay.portal.vulcan.dto.converter.DefaultDTOConverterContext;
+import com.liferay.portal.vulcan.fields.NestedField;
 import com.liferay.portal.vulcan.pagination.Page;
 import com.liferay.portal.vulcan.pagination.Pagination;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -38,7 +39,8 @@ import org.osgi.service.component.annotations.ServiceScope;
  */
 @Component(
 	properties = "OSGI-INF/liferay/rest/v2_0/discount-rule.properties",
-	scope = ServiceScope.PROTOTYPE, service = DiscountRuleResource.class
+	property = "nested.field.support=true", scope = ServiceScope.PROTOTYPE,
+	service = DiscountRuleResource.class
 )
 public class DiscountRuleResourceImpl extends BaseDiscountRuleResourceImpl {
 
@@ -54,8 +56,9 @@ public class DiscountRuleResourceImpl extends BaseDiscountRuleResourceImpl {
 		throws Exception {
 
 		CommerceDiscount commerceDiscount =
-			_commerceDiscountService.fetchByExternalReferenceCode(
-				externalReferenceCode, contextCompany.getCompanyId());
+			_commerceDiscountService.
+				fetchCommerceDiscountByExternalReferenceCode(
+					externalReferenceCode, contextCompany.getCompanyId());
 
 		if (commerceDiscount == null) {
 			throw new NoSuchDiscountException(
@@ -69,14 +72,15 @@ public class DiscountRuleResourceImpl extends BaseDiscountRuleResourceImpl {
 				pagination.getStartPosition(), pagination.getEndPosition(),
 				null);
 
-		int totalItems =
+		int totalCount =
 			_commerceDiscountRuleService.getCommerceDiscountRulesCount(
 				commerceDiscount.getCommerceDiscountId());
 
 		return Page.of(
-			_toDiscountRules(commerceDiscountRules), pagination, totalItems);
+			_toDiscountRules(commerceDiscountRules), pagination, totalCount);
 	}
 
+	@NestedField(parentClass = Discount.class, value = "discountRules")
 	@Override
 	public Page<DiscountRule> getDiscountIdDiscountRulesPage(
 			Long id, String search, Filter filter, Pagination pagination,
@@ -88,12 +92,12 @@ public class DiscountRuleResourceImpl extends BaseDiscountRuleResourceImpl {
 				id, search, pagination.getStartPosition(),
 				pagination.getEndPosition());
 
-		int totalItems =
+		int totalCount =
 			_commerceDiscountRuleService.getCommerceDiscountRulesCount(
 				id, search);
 
 		return Page.of(
-			_toDiscountRules(commerceDiscountRules), pagination, totalItems);
+			_toDiscountRules(commerceDiscountRules), pagination, totalCount);
 	}
 
 	@Override
@@ -115,8 +119,10 @@ public class DiscountRuleResourceImpl extends BaseDiscountRuleResourceImpl {
 					discountRule.getName(), commerceDiscountRule.getName()),
 				discountRule.getType(),
 				GetterUtil.get(
-					discountRule.getTypeSettings(),
-					commerceDiscountRule.getTypeSettings())));
+					discountRule.getTypeSettingsValue(),
+					GetterUtil.get(
+						discountRule.getTypeSettings(),
+						commerceDiscountRule.getTypeSettings()))));
 	}
 
 	@Override
@@ -125,8 +131,9 @@ public class DiscountRuleResourceImpl extends BaseDiscountRuleResourceImpl {
 		throws Exception {
 
 		CommerceDiscount commerceDiscount =
-			_commerceDiscountService.fetchByExternalReferenceCode(
-				externalReferenceCode, contextCompany.getCompanyId());
+			_commerceDiscountService.
+				fetchCommerceDiscountByExternalReferenceCode(
+					externalReferenceCode, contextCompany.getCompanyId());
 
 		if (commerceDiscount == null) {
 			throw new NoSuchDiscountException(
@@ -135,7 +142,7 @@ public class DiscountRuleResourceImpl extends BaseDiscountRuleResourceImpl {
 		}
 
 		CommerceDiscountRule commerceDiscountRule =
-			DiscountRuleUtil.addCommerceDiscountRule(
+			DiscountRuleUtil.addOrUpdateCommerceDiscountRule(
 				_commerceDiscountRuleService, discountRule, commerceDiscount,
 				_serviceContextHelper);
 
@@ -149,7 +156,7 @@ public class DiscountRuleResourceImpl extends BaseDiscountRuleResourceImpl {
 		throws Exception {
 
 		CommerceDiscountRule commerceDiscountRule =
-			DiscountRuleUtil.addCommerceDiscountRule(
+			DiscountRuleUtil.addOrUpdateCommerceDiscountRule(
 				_commerceDiscountRuleService, discountRule,
 				_commerceDiscountService.getCommerceDiscount(id),
 				_serviceContextHelper);
@@ -210,17 +217,10 @@ public class DiscountRuleResourceImpl extends BaseDiscountRuleResourceImpl {
 			List<CommerceDiscountRule> commerceDiscountRules)
 		throws Exception {
 
-		List<DiscountRule> discountRules = new ArrayList<>();
-
-		for (CommerceDiscountRule commerceDiscountRule :
-				commerceDiscountRules) {
-
-			discountRules.add(
-				_toDiscountRule(
-					commerceDiscountRule.getCommerceDiscountRuleId()));
-		}
-
-		return discountRules;
+		return transform(
+			commerceDiscountRules,
+			commerceDiscountRule -> _toDiscountRule(
+				commerceDiscountRule.getCommerceDiscountRuleId()));
 	}
 
 	@Reference(

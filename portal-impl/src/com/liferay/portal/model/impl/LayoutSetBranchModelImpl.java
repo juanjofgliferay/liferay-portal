@@ -48,8 +48,10 @@ import java.util.function.Function;
  *
  * @author Brian Wing Shun Chan
  * @see LayoutSetBranchImpl
+ * @deprecated As of Cavanaugh (7.4.x), with no direct replacement
  * @generated
  */
+@Deprecated
 @JSON(strict = true)
 public class LayoutSetBranchModelImpl
 	extends BaseModelImpl<LayoutSetBranch> implements LayoutSetBranchModel {
@@ -104,11 +106,18 @@ public class LayoutSetBranchModelImpl
 
 	public static final String TABLE_SQL_DROP = "drop table LayoutSetBranch";
 
+	public static final String ENTITY_ALIAS = "layoutSetBranch";
+
+	public static final String FILTER_PK_COLUMN_NAME = "layoutSetBranchId";
+
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY layoutSetBranch.name ASC";
 
 	public static final String ORDER_BY_SQL =
 		" ORDER BY LayoutSetBranch.name ASC";
+
+	public static final String ORDER_BY_SQL_INLINE_DISTINCT =
+		" ORDER BY layoutSetBranch.name ASC";
 
 	public static final String DATA_SOURCE = "liferayDataSource";
 
@@ -159,7 +168,7 @@ public class LayoutSetBranchModelImpl
 	public static final long PRIVATELAYOUT_COLUMN_BITMASK = 8L;
 
 	public static final long LOCK_EXPIRATION_TIME = GetterUtil.getLong(
-		com.liferay.portal.util.PropsUtil.get(
+		com.liferay.portal.kernel.util.PropsUtil.get(
 			"lock.expiration.time.com.liferay.portal.kernel.model.LayoutSetBranch"));
 
 	public LayoutSetBranchModelImpl() {
@@ -1300,3 +1309,4 @@ public class LayoutSetBranchModelImpl
 	private LayoutSetBranch _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1853393378

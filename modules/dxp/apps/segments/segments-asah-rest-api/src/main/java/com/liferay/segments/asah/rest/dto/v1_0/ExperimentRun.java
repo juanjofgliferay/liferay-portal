@@ -11,28 +11,30 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import com.liferay.petra.function.UnsafeSupplier;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.NotNull;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-import javax.validation.constraints.DecimalMax;
-import javax.validation.constraints.DecimalMin;
-import javax.validation.constraints.NotNull;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Javier Gamarra
@@ -40,8 +42,10 @@ import javax.xml.bind.annotation.XmlRootElement;
  */
 @Generated("")
 @GraphQLName("ExperimentRun")
+@io.swagger.v3.oas.annotations.media.Schema(
+	requiredProperties = {"confidenceLevel", "experimentVariants"}
+)
 @JsonFilter("Liferay.Vulcan")
-@Schema(requiredProperties = {"confidenceLevel", "experimentVariants"})
 @XmlRootElement(name = "ExperimentRun")
 public class ExperimentRun implements Serializable {
 
@@ -55,28 +59,38 @@ public class ExperimentRun implements Serializable {
 
 	@DecimalMax("99")
 	@DecimalMin("80")
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Double getConfidenceLevel() {
+		if (_confidenceLevelSupplier != null) {
+			confidenceLevel = _confidenceLevelSupplier.get();
+
+			_confidenceLevelSupplier = null;
+		}
+
 		return confidenceLevel;
 	}
 
 	public void setConfidenceLevel(Double confidenceLevel) {
 		this.confidenceLevel = confidenceLevel;
+
+		_confidenceLevelSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setConfidenceLevel(
 		UnsafeSupplier<Double, Exception> confidenceLevelUnsafeSupplier) {
 
-		try {
-			confidenceLevel = confidenceLevelUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_confidenceLevelSupplier = () -> {
+			try {
+				return confidenceLevelUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
@@ -84,14 +98,25 @@ public class ExperimentRun implements Serializable {
 	@NotNull
 	protected Double confidenceLevel;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Double> _confidenceLevelSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public ExperimentVariant[] getExperimentVariants() {
+		if (_experimentVariantsSupplier != null) {
+			experimentVariants = _experimentVariantsSupplier.get();
+
+			_experimentVariantsSupplier = null;
+		}
+
 		return experimentVariants;
 	}
 
 	public void setExperimentVariants(ExperimentVariant[] experimentVariants) {
 		this.experimentVariants = experimentVariants;
+
+		_experimentVariantsSupplier = null;
 	}
 
 	@JsonIgnore
@@ -99,15 +124,17 @@ public class ExperimentRun implements Serializable {
 		UnsafeSupplier<ExperimentVariant[], Exception>
 			experimentVariantsUnsafeSupplier) {
 
-		try {
-			experimentVariants = experimentVariantsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_experimentVariantsSupplier = () -> {
+			try {
+				return experimentVariantsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
@@ -115,33 +142,49 @@ public class ExperimentRun implements Serializable {
 	@NotNull
 	protected ExperimentVariant[] experimentVariants;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<ExperimentVariant[]> _experimentVariantsSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getStatus() {
+		if (_statusSupplier != null) {
+			status = _statusSupplier.get();
+
+			_statusSupplier = null;
+		}
+
 		return status;
 	}
 
 	public void setStatus(String status) {
 		this.status = status;
+
+		_statusSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setStatus(
 		UnsafeSupplier<String, Exception> statusUnsafeSupplier) {
 
-		try {
-			status = statusUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_statusSupplier = () -> {
+			try {
+				return statusUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected String status;
+
+	@JsonIgnore
+	private Supplier<String> _statusSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -170,6 +213,8 @@ public class ExperimentRun implements Serializable {
 
 		sb.append("{");
 
+		Double confidenceLevel = getConfidenceLevel();
+
 		if (confidenceLevel != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -179,6 +224,8 @@ public class ExperimentRun implements Serializable {
 
 			sb.append(confidenceLevel);
 		}
+
+		ExperimentVariant[] experimentVariants = getExperimentVariants();
 
 		if (experimentVariants != null) {
 			if (sb.length() > 1) {
@@ -200,6 +247,8 @@ public class ExperimentRun implements Serializable {
 			sb.append("]");
 		}
 
+		String status = getStatus();
+
 		if (status != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -219,8 +268,8 @@ public class ExperimentRun implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.segments.asah.rest.dto.v1_0.ExperimentRun",
 		name = "x-class-name"
 	)
@@ -266,7 +315,10 @@ public class ExperimentRun implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -304,6 +356,27 @@ public class ExperimentRun implements Serializable {
 		return sb.toString();
 	}
 
+	private static String _toJSON(Object value) {
+		if (value instanceof Collection) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONArray((Collection<?>)value));
+		}
+		else if (value instanceof Map) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONObject((Map<?, ?>)value));
+		}
+		else if (value instanceof Object[]) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONArray(
+					Arrays.asList((Object[])value)));
+		}
+		else if (value instanceof String) {
+			return StringBundler.concat("\"", _escape(value), "\"");
+		}
+
+		return String.valueOf(value);
+	}
+
 	private static final String[][] _JSON_ESCAPE_STRINGS = {
 		{"\\", "\"", "\b", "\f", "\n", "\r", "\t"},
 		{"\\\\", "\\\"", "\\b", "\\f", "\\n", "\\r", "\\t"}
@@ -312,3 +385,4 @@ public class ExperimentRun implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:1514097911

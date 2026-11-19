@@ -277,10 +277,12 @@ public class UpgradeDDMStructureTest {
 
 						String className = clazz.getName();
 
-						if (className.contains(_CLASS_NAME)) {
-							_ddmStructureUpgradeProcess =
-								(UpgradeProcess)upgradeStep;
+						if (!className.contains(_CLASS_NAME)) {
+							continue;
 						}
+
+						_ddmStructureUpgradeProcess =
+							(UpgradeProcess)upgradeStep;
 					}
 				}
 
@@ -313,15 +315,15 @@ public class UpgradeDDMStructureTest {
 		"com.liferay.dynamic.data.mapping.internal.upgrade.v3_9_1." +
 			"DDMStructureUpgradeProcess";
 
-	@Inject(
-		filter = "(&(component.name=com.liferay.dynamic.data.mapping.internal.upgrade.registry.DDMServiceUpgradeStepRegistrator))"
-	)
-	private static UpgradeStepRegistrator _upgradeStepRegistrator;
-
 	private UpgradeProcess _ddmStructureUpgradeProcess;
 
 	@DeleteAfterTestRun
 	private Group _group;
+
+	@Inject(
+		filter = "(&(component.name=com.liferay.dynamic.data.mapping.internal.upgrade.registry.DDMServiceUpgradeStepRegistrator))"
+	)
+	private UpgradeStepRegistrator _upgradeStepRegistrator;
 
 	private long _userId;
 

@@ -5,7 +5,6 @@
 
 package com.liferay.poshi.runner;
 
-import com.liferay.data.guard.connector.client.DataGuardClient;
 import com.liferay.poshi.core.PoshiContext;
 import com.liferay.poshi.core.PoshiGetterUtil;
 import com.liferay.poshi.core.PoshiProperties;
@@ -77,10 +76,12 @@ public class PoshiRunner {
 
 			int failures = testResultMessages.size() - passes;
 
-			if ((passes > 0) && (failures > 0)) {
-				sb.append("\n");
-				sb.append(testResult.getKey());
+			if ((passes <= 0) || (failures <= 0)) {
+				continue;
 			}
+
+			sb.append("\n");
+			sb.append(testResult.getKey());
 		}
 
 		if (sb.length() != 0) {
@@ -178,14 +179,6 @@ public class PoshiRunner {
 		FileUtil.delete(new File(_poshiProperties.outputDirName));
 
 		try {
-			if (_poshiProperties.liferayDataGuardEnabled) {
-				_dataGuardClient = new DataGuardClient();
-
-				_dataGuardClient.connect();
-
-				_dataGuardId = _dataGuardClient.startCapture();
-			}
-
 			_summaryLogger.startRunning();
 
 			Properties properties =
@@ -205,10 +198,17 @@ public class PoshiRunner {
 
 			throw webDriverException;
 		}
-		catch (Exception exception) {
+		catch (Exception exception1) {
 			LiferaySeleniumUtil.printJavaProcessStacktrace();
 
-			_throwException(exception);
+			StringBuilder sb = new StringBuilder();
+
+			sb.append("TEST_SETUP_ERROR: ");
+			sb.append(exception1.getMessage());
+
+			Exception exception2 = new Exception(sb.toString(), exception1);
+
+			_throwException(exception2);
 		}
 	}
 
@@ -248,25 +248,6 @@ public class PoshiRunner {
 			PoshiStackTrace.clear(_testNamespacedClassCommandName);
 			PoshiVariablesContext.clear(_testNamespacedClassCommandName);
 			SummaryLogger.clear(_testNamespacedClassCommandName);
-		}
-
-		if (!_poshiProperties.liferayDataGuardEnabled) {
-			return;
-		}
-
-		try {
-			_dataGuardClient.endCapture(
-				_dataGuardId, _testNamespacedClassCommandName);
-		}
-		catch (Throwable throwable) {
-			System.out.println(throwable.getMessage());
-
-			throwable.printStackTrace();
-
-			throw throwable;
-		}
-		finally {
-			_dataGuardClient.close();
 		}
 	}
 
@@ -355,8 +336,6 @@ public class PoshiRunner {
 		throw poshiRunnerException;
 	}
 
-	private static DataGuardClient _dataGuardClient;
-	private static long _dataGuardId;
 	private static int _jvmRetryCount;
 	private static final PoshiProperties _poshiProperties =
 		PoshiProperties.getPoshiProperties();
@@ -495,8 +474,8 @@ public class PoshiRunner {
 			}
 
 			private final Statement _statement;
-			private int _testcaseRetryCount;
 			private final List<String> _testResultMessages = new ArrayList<>();
+			private int _testcaseRetryCount;
 			private final Throwable[] _validRetryThrowables = {
 				new TimeoutException(), new UnreachableBrowserException(null),
 				new WebDriverException(

@@ -8,10 +8,13 @@ package com.liferay.asset.list.internal.upgrade.registry;
 import com.liferay.asset.list.internal.upgrade.v1_3_0.AssetListEntryUpgradeProcess;
 import com.liferay.asset.list.internal.upgrade.v1_4_0.AssetListEntryUsageUpgradeProcess;
 import com.liferay.asset.list.internal.upgrade.v1_5_0.AssetListEntrySegmentsEntryRelUpgradeProcess;
+import com.liferay.asset.list.internal.upgrade.v3_2_0.util.AssetListEntryAudienceEntryRelTable;
 import com.liferay.layout.page.template.service.LayoutPageTemplateEntryLocalService;
 import com.liferay.layout.page.template.service.LayoutPageTemplateStructureLocalService;
 import com.liferay.portal.kernel.service.LayoutLocalService;
+import com.liferay.portal.kernel.upgrade.BaseExternalReferenceCodeUpgradeProcess;
 import com.liferay.portal.kernel.upgrade.CTModelUpgradeProcess;
+import com.liferay.portal.kernel.upgrade.DummyUpgradeStep;
 import com.liferay.portal.kernel.upgrade.MVCCVersionUpgradeProcess;
 import com.liferay.portal.kernel.upgrade.UpgradeProcessFactory;
 import com.liferay.portal.kernel.util.Portal;
@@ -65,8 +68,9 @@ public class AssetListServiceUpgradeStepRegistrator
 
 		registry.register(
 			"1.6.0", "1.7.0",
-			new com.liferay.asset.list.internal.upgrade.v1_7_0.
-				AssetListEntrySegmentsEntryRelUpgradeProcess());
+			UpgradeProcessFactory.runSQL(
+				"update AssetListEntrySegmentsEntryRel set priority = -1 " +
+					"where priority is null"));
 
 		registry.register(
 			"1.7.0", "1.8.0",
@@ -85,6 +89,41 @@ public class AssetListServiceUpgradeStepRegistrator
 			UpgradeProcessFactory.dropColumns(
 				"AssetListEntryUsage", "assetListEntryId", "classPK",
 				"portletId"));
+
+		registry.register("2.0.0", "2.0.1", new DummyUpgradeStep());
+
+		registry.register(
+			"2.0.1", "2.1.0",
+			new BaseExternalReferenceCodeUpgradeProcess() {
+
+				@Override
+				protected String[] getTableNames() {
+					return new String[] {"AssetListEntry"};
+				}
+
+			});
+
+		registry.register(
+			"2.1.0", "2.1.1",
+			new com.liferay.asset.list.internal.upgrade.v2_1_1.
+				AssetListEntryAssetEntryRelUpgradeProcess());
+
+		registry.register(
+			"2.1.1", "3.0.0",
+			new com.liferay.asset.list.internal.upgrade.v3_0_0.
+				AssetListEntryUsageUpgradeProcess());
+
+		registry.register(
+			"3.0.0", "3.1.0",
+			new com.liferay.asset.list.internal.upgrade.v3_1_0.
+				AssetListEntrySegmentsEntryRelTypeSettingsUpgradeProcess());
+
+		registry.register(
+			"3.1.0", "3.2.0",
+			UpgradeProcessFactory.addColumns(
+				"AssetListEntryAssetEntryRel",
+				"audienceEntryERC VARCHAR(75) null"),
+			AssetListEntryAudienceEntryRelTable.create());
 	}
 
 	@Reference

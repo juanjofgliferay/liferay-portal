@@ -7,9 +7,9 @@ import ClayButton from '@clayui/button';
 import ClayForm from '@clayui/form';
 import {useMutation} from 'graphql-hooks';
 import React, {useCallback, useContext, useRef, useState} from 'react';
-import {withRouter} from 'react-router-dom';
 
 import {AppContext} from '../AppContext.es';
+import {withRouter} from '../hooks/withRouter.es';
 import {createCommentQuery, getUserActivityQuery} from '../utils/client.es';
 import {deleteCacheKey, getContextLink} from '../utils/utils.es';
 import Comment from './Comment.es';
@@ -24,10 +24,8 @@ export default withRouter(
 		display,
 		editable = true,
 		entityId,
-		match: {
-			params: {questionId, sectionTitle},
-		},
 		onSubscription,
+		params: {questionId, sectionTitle},
 		question,
 		showNewComment,
 		showNewCommentChange,
@@ -124,10 +122,10 @@ export default withRouter(
 										context.trustedUser
 											? Liferay.Language.get(
 													'add-comment'
-											  )
+												)
 											: Liferay.Language.get(
 													'submit-for-publication'
-											  )
+												)
 									}
 									disabled={isReplyButtonDisable}
 									displayType="primary"
@@ -137,7 +135,7 @@ export default withRouter(
 										? Liferay.Language.get('add-comment')
 										: Liferay.Language.get(
 												'submit-for-workflow'
-										  )}
+											)}
 								</ClayButton>
 
 								<ClayButton

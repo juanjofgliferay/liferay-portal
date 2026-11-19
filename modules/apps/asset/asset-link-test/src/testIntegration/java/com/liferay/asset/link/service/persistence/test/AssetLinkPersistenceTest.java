@@ -111,11 +111,7 @@ public class AssetLinkPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		AssetLink newAssetLink = _persistence.create(pk);
-
-		newAssetLink.setMvccVersion(RandomTestUtil.nextLong());
+		AssetLink newAssetLink = addAssetLink();
 
 		newAssetLink.setCtCollectionId(RandomTestUtil.nextLong());
 
@@ -135,7 +131,9 @@ public class AssetLinkPersistenceTest {
 
 		newAssetLink.setWeight(RandomTestUtil.nextInt());
 
-		_assetLinks.add(_persistence.update(newAssetLink));
+		newAssetLink = _persistence.update(newAssetLink);
+
+		_assetLinks.add(newAssetLink);
 
 		AssetLink existingAssetLink = _persistence.findByPrimaryKey(
 			newAssetLink.getPrimaryKey());
@@ -178,14 +176,6 @@ public class AssetLinkPersistenceTest {
 		_persistence.countByEntryId2(RandomTestUtil.nextLong());
 
 		_persistence.countByEntryId2(0L);
-	}
-
-	@Test
-	public void testCountByE_E() throws Exception {
-		_persistence.countByE_E(
-			RandomTestUtil.nextLong(), RandomTestUtil.nextLong());
-
-		_persistence.countByE_E(0L, 0L);
 	}
 
 	@Test
@@ -520,8 +510,6 @@ public class AssetLinkPersistenceTest {
 
 		AssetLink assetLink = _persistence.create(pk);
 
-		assetLink.setMvccVersion(RandomTestUtil.nextLong());
-
 		assetLink.setCtCollectionId(RandomTestUtil.nextLong());
 
 		assetLink.setCompanyId(RandomTestUtil.nextLong());
@@ -550,3 +538,4 @@ public class AssetLinkPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-332573669

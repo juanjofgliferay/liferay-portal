@@ -21,10 +21,10 @@ import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
 
+import jakarta.portlet.Portlet;
+
 import java.util.ArrayList;
 import java.util.Collection;
-
-import javax.portlet.Portlet;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -68,7 +68,12 @@ public class PortalImplLayoutPortletTest {
 				).put(
 					"com.liferay.portlet.preferences-owned-by-group", "true"
 				).put(
-					"javax.portlet.name",
+					"jakarta.portlet.init-param.template-path",
+					"/META-INF/resources/"
+				).put(
+					"jakarta.portlet.init-param.view-template", "/view.jsp"
+				).put(
+					"jakarta.portlet.name",
 					_TEST_PORTLET_NAME_PREF_OWNER_TYPE_LAYOUT
 				).build()));
 
@@ -82,7 +87,12 @@ public class PortalImplLayoutPortletTest {
 				).put(
 					"com.liferay.portlet.preferences-unique-per-layout", "false"
 				).put(
-					"javax.portlet.name",
+					"jakarta.portlet.init-param.template-path",
+					"/META-INF/resources/"
+				).put(
+					"jakarta.portlet.init-param.view-template", "/view.jsp"
+				).put(
+					"jakarta.portlet.name",
 					_TEST_PORTLET_NAME_PREF_OWNER_TYPE_GROUP
 				).build()));
 	}

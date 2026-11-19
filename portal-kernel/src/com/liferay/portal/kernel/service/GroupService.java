@@ -52,18 +52,11 @@ public interface GroupService extends BaseService {
 	 * Never modify this interface directly. Add custom service methods to <code>com.liferay.portal.service.impl.GroupServiceImpl</code> and rerun ServiceBuilder to automatically copy the method declarations to this interface. Consume the group remote service via injection or a <code>org.osgi.util.tracker.ServiceTracker</code>. Use {@link GroupServiceUtil} if injection and service tracking are not available.
 	 */
 	public Group addGroup(
-			long parentGroupId, long liveGroupId, Map<Locale, String> nameMap,
-			Map<Locale, String> descriptionMap, int type,
-			boolean manualMembership, int membershipRestriction,
-			String friendlyURL, boolean site, boolean inheritContent,
-			boolean active, ServiceContext serviceContext)
-		throws PortalException;
-
-	public Group addGroup(
-			long parentGroupId, long liveGroupId, Map<Locale, String> nameMap,
-			Map<Locale, String> descriptionMap, int type,
-			boolean manualMembership, int membershipRestriction,
-			String friendlyURL, boolean site, boolean active,
+			String externalReferenceCode, long parentGroupId, long liveGroupId,
+			Map<Locale, String> nameMap, Map<Locale, String> descriptionMap,
+			int type, String typeSettings, boolean manualMembership,
+			int membershipRestriction, String friendlyURL, boolean site,
+			boolean inheritContent, boolean active,
 			ServiceContext serviceContext)
 		throws PortalException;
 
@@ -148,6 +141,11 @@ public interface GroupService extends BaseService {
 	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public Group getGroup(long companyId, String groupKey)
+		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public Group getGroupByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
 		throws PortalException;
 
 	/**
@@ -483,8 +481,8 @@ public interface GroupService extends BaseService {
 	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<Group> search(
-			long companyId, String name, String description, String[] params,
-			int start, int end)
+			long companyId, String name, String description,
+			LinkedHashMap<String, Object> params, int start, int end)
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
@@ -511,7 +509,8 @@ public interface GroupService extends BaseService {
 	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public int searchCount(
-		long companyId, String name, String description, String[] params);
+		long companyId, String name, String description,
+		LinkedHashMap<String, Object> params);
 
 	/**
 	 * Sets the groups associated with the role, removing and adding
@@ -548,7 +547,7 @@ public interface GroupService extends BaseService {
 
 	public Group updateGroup(
 			long groupId, long parentGroupId, Map<Locale, String> nameMap,
-			Map<Locale, String> descriptionMap, int type,
+			Map<Locale, String> descriptionMap, int type, String typeSettings,
 			boolean manualMembership, int membershipRestriction,
 			String friendlyURL, boolean inheritContent, boolean active,
 			ServiceContext serviceContext)
@@ -571,3 +570,4 @@ public interface GroupService extends BaseService {
 		throws PortalException;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:463219875

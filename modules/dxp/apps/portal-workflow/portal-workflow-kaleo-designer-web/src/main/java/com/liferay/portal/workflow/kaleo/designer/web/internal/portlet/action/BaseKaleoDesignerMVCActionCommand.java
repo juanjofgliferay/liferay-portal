@@ -29,14 +29,14 @@ import com.liferay.portal.workflow.kaleo.model.KaleoDefinitionVersion;
 import com.liferay.portal.workflow.kaleo.service.KaleoDefinitionVersionLocalService;
 import com.liferay.portal.workflow.manager.WorkflowDefinitionManager;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.PortletRequest;
+
 import java.util.Locale;
 import java.util.Map;
 import java.util.ResourceBundle;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.PortletException;
-import javax.portlet.PortletRequest;
 
 import org.osgi.service.component.annotations.Reference;
 
@@ -110,8 +110,7 @@ public abstract class BaseKaleoDesignerMVCActionCommand
 			getResourceBundle(actionRequest), "workflow-updated-successfully");
 	}
 
-	protected String getTitle(
-			ActionRequest actionRequest, Map<Locale, String> titleMap)
+	protected String getTitle(Map<Locale, String> titleMap)
 		throws WorkflowException {
 
 		if (titleMap == null) {

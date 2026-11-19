@@ -19,6 +19,8 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.PortletRequest;
+
 import java.io.Serializable;
 
 import java.util.ArrayList;
@@ -27,8 +29,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.portlet.PortletRequest;
-
 /**
  * @author Brian Wing Shun Chan
  * @author Jorge Ferrer
@@ -36,21 +36,25 @@ import javax.portlet.PortletRequest;
  */
 public class AssetEntryQuery {
 
+	public static final String ORDER_BY_COLUMN_DEFAULT = "modifiedDate";
+
 	public static final String[] ORDER_BY_COLUMNS = {
-		"title", "createDate", "modifiedDate", "publishDate", "expirationDate",
-		"priority", "viewCount", "ratings", "ratingsTotalScore"
+		"createDate", "displayDate", "expirationDate", "modifiedDate",
+		"priority", "publishDate", "ratings", "ratingsTotalScore", "reviewDate",
+		"title", "userName", "viewCount"
 	};
 
 	public static String checkOrderByCol(String orderByCol) {
 		if (ArrayUtil.contains(ORDER_BY_COLUMNS, orderByCol) ||
 			((orderByCol != null) &&
-			 orderByCol.startsWith(
-				 DDMStructureManager.STRUCTURE_INDEXER_FIELD_PREFIX))) {
+			 (orderByCol.startsWith(
+				 DDMStructureManager.STRUCTURE_INDEXER_FIELD_PREFIX) ||
+			  orderByCol.startsWith("nestedFieldArray.")))) {
 
 			return orderByCol;
 		}
 
-		return ORDER_BY_COLUMNS[2];
+		return ORDER_BY_COLUMN_DEFAULT;
 	}
 
 	public static String checkOrderByType(String orderByType) {

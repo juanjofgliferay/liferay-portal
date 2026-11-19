@@ -89,4 +89,9 @@ public interface AccountEntryOrganizationRelService extends BaseService {
 	 */
 	public String getOSGiServiceIdentifier();
 
+	public void setAccountEntryOrganizationRels(
+			long accountEntryId, long[] organizationIds)
+		throws PortalException;
+
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1046664682

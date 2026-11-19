@@ -125,7 +125,7 @@ public interface SegmentsExperimentLocalService
 		throws PortalException;
 
 	public SegmentsExperiment deleteSegmentsExperiment(
-			long groupId, long segmentsExperienceId, long plid)
+			long groupId, String segmentsExperienceKey, long plid)
 		throws PortalException;
 
 	/**
@@ -228,11 +228,11 @@ public interface SegmentsExperimentLocalService
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public SegmentsExperiment fetchSegmentsExperiment(
-		long groupId, long segmentsExperienceId, long plid);
+		long groupId, String segmentsExperimentKey);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public SegmentsExperiment fetchSegmentsExperiment(
-		long groupId, String segmentsExperimentKey);
+		long groupId, String segmentsExperienceKey, long plid);
 
 	/**
 	 * Returns the segments experiment matching the UUID and group.
@@ -272,7 +272,7 @@ public interface SegmentsExperimentLocalService
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<SegmentsExperiment> getSegmentsEntrySegmentsExperiments(
-		long segmentsEntryId);
+		String segmentsEntryERC, long segmentsEntryGroupId);
 
 	/**
 	 * Returns the segments experiment with the primary key.
@@ -353,7 +353,7 @@ public interface SegmentsExperimentLocalService
 
 	public SegmentsExperiment runSegmentsExperiment(
 			long segmentsExperimentId, double confidenceLevel,
-			Map<Long, Double> segmentsExperienceIdSplitMap)
+			Map<Long, Double> segmentsExperienceIdSplitMap, String type)
 		throws PortalException;
 
 	public SegmentsExperiment updateSegmentsExperiment(
@@ -400,3 +400,4 @@ public interface SegmentsExperimentLocalService
 		throws E;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1369649502

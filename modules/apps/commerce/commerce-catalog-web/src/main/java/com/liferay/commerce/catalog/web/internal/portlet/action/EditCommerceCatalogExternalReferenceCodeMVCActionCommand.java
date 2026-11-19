@@ -6,6 +6,7 @@
 package com.liferay.commerce.catalog.web.internal.portlet.action;
 
 import com.liferay.commerce.product.constants.CPPortletKeys;
+import com.liferay.commerce.product.exception.DuplicateCommerceCatalogExternalReferenceCodeException;
 import com.liferay.commerce.product.exception.NoSuchCatalogException;
 import com.liferay.commerce.product.service.CommerceCatalogService;
 import com.liferay.portal.kernel.log.Log;
@@ -16,8 +17,8 @@ import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.servlet.SessionErrors;
 import com.liferay.portal.kernel.util.ParamUtil;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -27,7 +28,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + CPPortletKeys.COMMERCE_CATALOGS,
+		"jakarta.portlet.name=" + CPPortletKeys.COMMERCE_CATALOGS,
 		"mvc.command.name=/commerce_catalogs/edit_commerce_catalog_external_reference_code"
 	},
 	service = MVCActionCommand.class
@@ -44,7 +45,9 @@ public class EditCommerceCatalogExternalReferenceCodeMVCActionCommand
 			_updateCommerceCatalogExternalReferenceCode(actionRequest);
 		}
 		catch (Exception exception) {
-			if (exception instanceof NoSuchCatalogException ||
+			if (exception instanceof
+					DuplicateCommerceCatalogExternalReferenceCodeException ||
+				exception instanceof NoSuchCatalogException ||
 				exception instanceof PrincipalException) {
 
 				SessionErrors.add(actionRequest, exception.getClass());

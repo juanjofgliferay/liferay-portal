@@ -22,21 +22,19 @@ public class RatingUtil {
 		Map<String, Map<String, String>> actions, Portal portal,
 		RatingsEntry ratingsEntry, UserLocalService userLocalService) {
 
-		Rating rating = new Rating() {
-			{
-				bestRating = 1D;
-				creator = CreatorUtil.toCreator(
-					null, portal,
-					userLocalService.fetchUser(ratingsEntry.getUserId()));
-				dateCreated = ratingsEntry.getCreateDate();
-				dateModified = ratingsEntry.getModifiedDate();
-				id = ratingsEntry.getEntryId();
-				ratingValue = ratingsEntry.getScore();
-				worstRating = 0D;
-			}
-		};
+		Rating rating = new Rating();
 
-		rating.setActions(actions);
+		rating.setActions(() -> actions);
+		rating.setBestRating(() -> 1D);
+		rating.setCreator(
+			() -> CreatorUtil.toCreator(
+				null, portal,
+				userLocalService.fetchUser(ratingsEntry.getUserId())));
+		rating.setDateCreated(ratingsEntry::getCreateDate);
+		rating.setDateModified(ratingsEntry::getModifiedDate);
+		rating.setId(ratingsEntry::getEntryId);
+		rating.setRatingValue(ratingsEntry::getScore);
+		rating.setWorstRating(() -> 0D);
 
 		return rating;
 	}

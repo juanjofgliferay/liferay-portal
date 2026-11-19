@@ -173,8 +173,6 @@ public interface DDMFormInstanceLocalService
 	public void deleteFormInstance(long ddmFormInstanceId)
 		throws PortalException;
 
-	public void deleteFormInstances(long groupId) throws PortalException;
-
 	/**
 	 * @throws PortalException
 	 */
@@ -355,7 +353,7 @@ public interface DDMFormInstanceLocalService
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public DDMFormInstance getFormInstance(String uuid, long ddmFormInstanceId)
+	public DDMFormInstance getFormInstanceByStructureId(long structureId)
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
@@ -369,8 +367,7 @@ public interface DDMFormInstanceLocalService
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public DDMFormValues getFormInstanceSettingsFormValues(
-			DDMFormInstance formInstance)
-		throws PortalException;
+		DDMFormInstance formInstance);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public DDMFormInstanceSettings getFormInstanceSettingsModel(
@@ -399,20 +396,6 @@ public interface DDMFormInstanceLocalService
 	public List<DDMFormInstance> search(
 		long companyId, long groupId, String keywords, int start, int end,
 		OrderByComparator<DDMFormInstance> orderByComparator);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<DDMFormInstance> search(
-		long companyId, long groupId, String[] names, String[] descriptions,
-		boolean andOperator, int start, int end,
-		OrderByComparator<DDMFormInstance> orderByComparator);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int searchCount(long companyId, long groupId, String keywords);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int searchCount(
-		long companyId, long groupId, String[] names, String[] descriptions,
-		boolean andOperator);
 
 	public void sendEmail(
 			long userId, String message, String subject,
@@ -466,3 +449,4 @@ public interface DDMFormInstanceLocalService
 		throws E;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:2108574772

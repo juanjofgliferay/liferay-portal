@@ -19,12 +19,17 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"panel.app.order:Integer=800",
+		"panel.app.order:Integer=700",
 		"panel.category.key=" + PanelCategoryKeys.CONTROL_PANEL_SECURITY
 	},
 	service = PanelApp.class
 )
 public class SAPPanelApp extends BasePanelApp {
+
+	@Override
+	public String getIcon() {
+		return "shield-asterisk";
+	}
 
 	@Override
 	public Portlet getPortlet() {
@@ -37,7 +42,7 @@ public class SAPPanelApp extends BasePanelApp {
 	}
 
 	@Reference(
-		target = "(javax.portlet.name=" + SAPPortletKeys.SERVICE_ACCESS_POLICY + ")"
+		target = "(jakarta.portlet.name=" + SAPPortletKeys.SERVICE_ACCESS_POLICY + ")"
 	)
 	private Portlet _portlet;
 

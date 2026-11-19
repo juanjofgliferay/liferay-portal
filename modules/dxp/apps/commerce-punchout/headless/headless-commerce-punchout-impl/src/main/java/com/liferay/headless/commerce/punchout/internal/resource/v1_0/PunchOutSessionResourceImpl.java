@@ -9,6 +9,7 @@ import com.liferay.account.model.AccountEntry;
 import com.liferay.account.service.AccountEntryLocalService;
 import com.liferay.commerce.context.CommerceContext;
 import com.liferay.commerce.context.CommerceContextFactory;
+import com.liferay.commerce.helper.CommerceAccountHelper;
 import com.liferay.commerce.model.CommerceOrder;
 import com.liferay.commerce.model.CommerceOrderItem;
 import com.liferay.commerce.product.model.CommerceChannel;
@@ -19,8 +20,8 @@ import com.liferay.commerce.punchout.oauth2.provider.PunchOutAccessTokenProvider
 import com.liferay.commerce.punchout.oauth2.provider.model.PunchOutAccessToken;
 import com.liferay.commerce.service.CommerceOrderItemLocalService;
 import com.liferay.commerce.service.CommerceOrderLocalService;
-import com.liferay.commerce.util.CommerceAccountHelper;
-import com.liferay.headless.commerce.core.util.ServiceContextHelper;
+import com.liferay.commerce.util.CommerceURLValidatorUtil;
+import com.liferay.headless.commerce.core.helper.ServiceContextHelper;
 import com.liferay.headless.commerce.punchout.dto.v1_0.Cart;
 import com.liferay.headless.commerce.punchout.dto.v1_0.CartItem;
 import com.liferay.headless.commerce.punchout.dto.v1_0.Group;
@@ -50,6 +51,10 @@ import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.ws.rs.BadRequestException;
+import jakarta.ws.rs.ForbiddenException;
+import jakarta.ws.rs.InternalServerErrorException;
+
 import java.math.BigDecimal;
 
 import java.net.URLEncoder;
@@ -57,10 +62,6 @@ import java.net.URLEncoder;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
-
-import javax.ws.rs.BadRequestException;
-import javax.ws.rs.ForbiddenException;
-import javax.ws.rs.InternalServerErrorException;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -93,10 +94,23 @@ public class PunchOutSessionResourceImpl
 
 		if (!_punchOutEnabled(commerceChannel.getGroupId())) {
 			_log.error(
-				"Punch out request not allowed. Punch out is disabled for " +
+				"Punch out request is not allowed. Punch out is disabled for " +
 					"channel " + commerceChannel.getName());
 
-			throw new ForbiddenException("Punch out not allowed for channel");
+			throw new ForbiddenException(
+				"Punch out is not allowed for channel");
+		}
+
+		if (!CommerceURLValidatorUtil.isValidURL(
+				contextCompany.getCompanyId(),
+				punchOutSession.getPunchOutReturnURL())) {
+
+			_log.error(
+				"Punch out return URL " +
+					punchOutSession.getPunchOutReturnURL() + " is not allowed");
+
+			throw new BadRequestException(
+				"Punch out return URL is not allowed");
 		}
 
 		User buyerUser = punchOutSession.getBuyerUser();
@@ -170,9 +184,6 @@ public class PunchOutSessionResourceImpl
 			commerceOrderUuid = editCartCommerceOrder.getUuid();
 		}
 
-		String punchOutStartURL = _getPunchOutStartURL(
-			commerceChannel.getGroupId());
-
 		PunchOutContext punchOutContext = new PunchOutContext(
 			businessAccountEntry, buyerGroup, buyerLiferayUser, commerceChannel,
 			editCartCommerceOrder, punchOutSession);
@@ -186,17 +197,25 @@ public class PunchOutSessionResourceImpl
 				_punchOutSessionContributor.getPunchOutSessionAttributes(
 					punchOutContext));
 
-		String tokenString = Base64.encodeToURL(punchOutAccessToken.getToken());
+		cart.setChannelId(commerceChannel::getCommerceChannelId);
 
-		punchOutStartURL +=
-			StringPool.QUESTION + _PUNCH_OUT_ACCESS_TOKEN_PARAMETER +
-				URLEncoder.encode(tokenString, "UTF-8");
+		punchOutSession.setCart(() -> cart);
 
-		cart.setChannelId(commerceChannel.getCommerceChannelId());
+		punchOutSession.setPunchOutStartURL(
+			() -> {
+				String punchOutStartURL = _getPunchOutStartURL(
+					commerceChannel.getGroupId());
 
-		punchOutSession.setCart(cart);
+				String url = URLEncoder.encode(
+					Base64.encodeToURL(punchOutAccessToken.getToken()),
+					"UTF-8");
 
-		punchOutSession.setPunchOutStartURL(punchOutStartURL);
+				punchOutStartURL +=
+					StringPool.QUESTION + _PUNCH_OUT_ACCESS_TOKEN_PARAMETER +
+						url;
+
+				return punchOutStartURL;
+			});
 
 		return punchOutSession;
 	}
@@ -374,9 +393,9 @@ public class PunchOutSessionResourceImpl
 				commerceOrder.getCommerceOrderId(), -1, -1);
 
 		CommerceContext commerceContext = _commerceContextFactory.create(
-			contextCompany.getCompanyId(), commerceOrder.getGroupId(),
-			contextUser.getUserId(), commerceOrder.getCommerceOrderId(),
-			commerceOrder.getCommerceAccountId());
+			commerceOrder.getCommerceAccountId(), commerceOrder.getGroupId(),
+			null, commerceOrder.getCommerceOrderId(),
+			contextCompany.getCompanyId());
 
 		for (CartItem cartItem : cartItems) {
 			if (!commerceOrderItems.isEmpty()) {

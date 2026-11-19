@@ -47,7 +47,7 @@ request.setAttribute("view_user.jsp-user", user2);
 										markupView="lexicon"
 									/>
 
-									<liferay-ui:message key="connection" />
+									<liferay-ui:message key="connection[social]" />
 								</span>
 							</c:if>
 
@@ -123,7 +123,7 @@ request.setAttribute("view_user.jsp-user", user2);
 										cssClass='<%= showBlockIcon ? "action block" : "action block hide" %>'
 										image="../aui/ban-circle"
 										label="<%= true %>"
-										message="blocked"
+										message="blocked[user]"
 									/>
 								</c:when>
 								<c:otherwise>
@@ -339,7 +339,7 @@ request.setAttribute("view_user.jsp-user", user2);
 														sb.append("<li><a class=\"text-decoration-underline\" href=\"");
 														sb.append(searchURL);
 														sb.append("\">");
-														sb.append(assetTag.getName());
+														sb.append(HtmlUtil.escape(assetTag.getName()));
 														sb.append("</a></li>");
 													}
 													%>

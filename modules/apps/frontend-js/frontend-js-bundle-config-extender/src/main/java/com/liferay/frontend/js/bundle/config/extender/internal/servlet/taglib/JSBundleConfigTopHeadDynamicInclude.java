@@ -5,11 +5,10 @@
 
 package com.liferay.frontend.js.bundle.config.extender.internal.servlet.taglib;
 
-import com.liferay.frontend.js.bundle.config.extender.internal.JSBundleConfigRegistry;
+import com.liferay.frontend.js.bundle.config.extender.internal.JSBundleConfigRegistryUtil;
 import com.liferay.frontend.js.loader.modules.extender.npm.ModuleNameUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.content.security.policy.ContentSecurityPolicyNonceProvider;
 import com.liferay.portal.kernel.content.security.policy.ContentSecurityPolicyNonceProviderUtil;
 import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
@@ -24,6 +23,10 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.URLUtil;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -32,10 +35,6 @@ import java.net.URL;
 
 import java.util.Collection;
 
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
@@ -43,7 +42,10 @@ import org.osgi.service.component.annotations.Reference;
  * @author Chema Balsas
  */
 @Component(
-	property = "service.ranking:Integer=" + Integer.MIN_VALUE,
+	property = {
+		"dynamic.include.key=/html/common/themes/top_js.jspf#resources",
+		"service.ranking:Integer=" + Integer.MIN_VALUE
+	},
 	service = DynamicInclude.class
 )
 public class JSBundleConfigTopHeadDynamicInclude extends BaseDynamicInclude {
@@ -72,22 +74,16 @@ public class JSBundleConfigTopHeadDynamicInclude extends BaseDynamicInclude {
 		String bundleConfig = _getBundleConfig(StringPool.BLANK);
 
 		_objectValuePair = new ObjectValuePair<>(
-			_jsBundleConfigRegistry.getLastModified(), bundleConfig);
+			JSBundleConfigRegistryUtil.getLastModified(), bundleConfig);
 
 		_writeResponse(httpServletResponse, bundleConfig);
-	}
-
-	@Override
-	public void register(DynamicIncludeRegistry dynamicIncludeRegistry) {
-		dynamicIncludeRegistry.register(
-			"/html/common/themes/top_js.jspf#resources");
 	}
 
 	private String _getBundleConfig(String nonce) {
 		StringWriter stringWriter = new StringWriter();
 
-		Collection<JSBundleConfigRegistry.JSConfig> jsConfigs =
-			_jsBundleConfigRegistry.getJSConfigs();
+		Collection<JSBundleConfigRegistryUtil.JSConfig> jsConfigs =
+			JSBundleConfigRegistryUtil.getJSConfigs();
 
 		if (!jsConfigs.isEmpty()) {
 			stringWriter.write("<script");
@@ -96,7 +92,7 @@ public class JSBundleConfigTopHeadDynamicInclude extends BaseDynamicInclude {
 			stringWriter.write(ContentTypes.TEXT_JAVASCRIPT);
 			stringWriter.write("\">");
 
-			for (JSBundleConfigRegistry.JSConfig jsConfig : jsConfigs) {
+			for (JSBundleConfigRegistryUtil.JSConfig jsConfig : jsConfigs) {
 				try {
 					stringWriter.write("try {");
 
@@ -132,7 +128,9 @@ public class JSBundleConfigTopHeadDynamicInclude extends BaseDynamicInclude {
 		return stringWriter.toString();
 	}
 
-	private String _getModuleMain(JSBundleConfigRegistry.JSConfig jsConfig) {
+	private String _getModuleMain(
+		JSBundleConfigRegistryUtil.JSConfig jsConfig) {
+
 		try {
 			ServletContext servletContext = jsConfig.getServletContext();
 
@@ -169,7 +167,7 @@ public class JSBundleConfigTopHeadDynamicInclude extends BaseDynamicInclude {
 	}
 
 	private boolean _isStale() {
-		if (_jsBundleConfigRegistry.getLastModified() >
+		if (JSBundleConfigRegistryUtil.getLastModified() >
 				_objectValuePair.getKey()) {
 
 			return true;
@@ -189,13 +187,6 @@ public class JSBundleConfigTopHeadDynamicInclude extends BaseDynamicInclude {
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		JSBundleConfigTopHeadDynamicInclude.class);
-
-	@Reference
-	private ContentSecurityPolicyNonceProvider
-		_contentSecurityPolicyNonceProvider;
-
-	@Reference
-	private JSBundleConfigRegistry _jsBundleConfigRegistry;
 
 	@Reference
 	private JSONFactory _jsonFactory;

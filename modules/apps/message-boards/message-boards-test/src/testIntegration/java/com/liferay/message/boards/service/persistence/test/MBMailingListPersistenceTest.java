@@ -111,11 +111,7 @@ public class MBMailingListPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		MBMailingList newMBMailingList = _persistence.create(pk);
-
-		newMBMailingList.setMvccVersion(RandomTestUtil.nextLong());
+		MBMailingList newMBMailingList = addMBMailingList();
 
 		newMBMailingList.setCtCollectionId(RandomTestUtil.nextLong());
 
@@ -169,7 +165,9 @@ public class MBMailingListPersistenceTest {
 
 		newMBMailingList.setActive(RandomTestUtil.randomBoolean());
 
-		_mbMailingLists.add(_persistence.update(newMBMailingList));
+		newMBMailingList = _persistence.update(newMBMailingList);
+
+		_mbMailingLists.add(newMBMailingList);
 
 		MBMailingList existingMBMailingList = _persistence.findByPrimaryKey(
 			newMBMailingList.getPrimaryKey());
@@ -280,13 +278,6 @@ public class MBMailingListPersistenceTest {
 		_persistence.countByUuid_C("null", 0L);
 
 		_persistence.countByUuid_C((String)null, 0L);
-	}
-
-	@Test
-	public void testCountByActive() throws Exception {
-		_persistence.countByActive(RandomTestUtil.randomBoolean());
-
-		_persistence.countByActive(RandomTestUtil.randomBoolean());
 	}
 
 	@Test
@@ -626,8 +617,6 @@ public class MBMailingListPersistenceTest {
 
 		MBMailingList mbMailingList = _persistence.create(pk);
 
-		mbMailingList.setMvccVersion(RandomTestUtil.nextLong());
-
 		mbMailingList.setCtCollectionId(RandomTestUtil.nextLong());
 
 		mbMailingList.setUuid(RandomTestUtil.randomString());
@@ -691,3 +680,4 @@ public class MBMailingListPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-401143575

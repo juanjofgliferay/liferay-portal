@@ -1,0 +1,138 @@
+/**
+ * SPDX-FileCopyrightText: (c) 2026 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
+ */
+
+package com.liferay.jenkins.results.parser.monitor;
+
+import com.liferay.jenkins.results.parser.RandomTestUtil;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+
+import org.junit.Assert;
+import org.junit.Test;
+
+/**
+ * @author Brittney Nguyen
+ */
+public class MonitorResultTest extends com.liferay.jenkins.results.parser.Test {
+
+	@Test
+	public void testGetDurationMillis() {
+		MonitorResult monitorResult = new MonitorResult(
+			250, RandomTestUtil.randomString(), null, MonitorResult.Status.OK,
+			RandomTestUtil.randomLong());
+
+		testEquals(250L, monitorResult.getDurationMillis());
+
+		monitorResult = new MonitorResult(
+			RandomTestUtil.randomString(), null, MonitorResult.Status.OK,
+			RandomTestUtil.randomLong());
+
+		testEquals(
+			MonitorResult.DURATION_MILLIS_UNMEASURED,
+			monitorResult.getDurationMillis());
+	}
+
+	@Test
+	public void testGetLinkURLs() {
+		String linkURL = "https://" + RandomTestUtil.randomString();
+
+		List<String> linkURLs = new ArrayList<>(
+			Collections.singletonList(linkURL));
+
+		MonitorResult monitorResult = new MonitorResult(
+			linkURLs, RandomTestUtil.randomString(), null,
+			MonitorResult.Status.CRITICAL, RandomTestUtil.randomLong());
+
+		linkURLs.clear();
+
+		List<String> returnedLinkURLs = monitorResult.getLinkURLs();
+
+		testEquals(Collections.singletonList(linkURL), returnedLinkURLs);
+
+		try {
+			returnedLinkURLs.add(RandomTestUtil.randomString());
+
+			Assert.fail();
+		}
+		catch (UnsupportedOperationException unsupportedOperationException) {
+		}
+
+		monitorResult = new MonitorResult(
+			Collections.<String>emptyList(), RandomTestUtil.randomString(),
+			null, MonitorResult.Status.CRITICAL, RandomTestUtil.randomLong());
+
+		testEquals(Collections.emptyList(), monitorResult.getLinkURLs());
+
+		monitorResult = new MonitorResult(
+			RandomTestUtil.randomString(), null, MonitorResult.Status.OK,
+			RandomTestUtil.randomLong());
+
+		Assert.assertNull(monitorResult.getLinkURLs());
+	}
+
+	@Test
+	public void testGetMetricsIsUnmodifiable() {
+		Map<String, String> metrics = Collections.singletonMap("disk", "88");
+
+		MonitorResult monitorResult = new MonitorResult(
+			"disk high", metrics, MonitorResult.Status.WARN, 1L);
+
+		Map<String, String> returnedMetrics = monitorResult.getMetrics();
+
+		try {
+			returnedMetrics.put("cpu", "50");
+
+			Assert.fail();
+		}
+		catch (UnsupportedOperationException unsupportedOperationException) {
+		}
+	}
+
+	@Test
+	public void testGetMetricsNullYieldsEmpty() {
+		MonitorResult monitorResult = new MonitorResult(
+			"ok", null, MonitorResult.Status.OK, 1L);
+
+		Map<String, String> metrics = monitorResult.getMetrics();
+
+		Assert.assertTrue(metrics.isEmpty());
+	}
+
+	@Test
+	public void testGetMostSevere() {
+		testEquals(
+			MonitorResult.Status.CRITICAL,
+			MonitorResult.Status.getMostSevere(
+				Arrays.asList(
+					MonitorResult.Status.OK, MonitorResult.Status.WARN,
+					MonitorResult.Status.CRITICAL)));
+		testEquals(
+			MonitorResult.Status.OK,
+			MonitorResult.Status.getMostSevere(
+				Arrays.asList(
+					MonitorResult.Status.OK, MonitorResult.Status.OK)));
+		testEquals(
+			MonitorResult.Status.WARN,
+			MonitorResult.Status.getMostSevere(
+				Arrays.asList(
+					MonitorResult.Status.OK, MonitorResult.Status.WARN)));
+		testEquals(
+			MonitorResult.Status.CRITICAL,
+			MonitorResult.Status.getMostSevere(
+				Collections.<MonitorResult.Status>emptyList()));
+	}
+
+	@Test
+	public void testGetSeverityRank() {
+		testEquals(0, MonitorResult.Status.OK.getSeverityRank());
+		testEquals(2, MonitorResult.Status.WARN.getSeverityRank());
+		testEquals(3, MonitorResult.Status.CRITICAL.getSeverityRank());
+	}
+
+}

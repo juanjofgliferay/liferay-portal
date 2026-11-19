@@ -49,29 +49,31 @@ public class UpgradePortletId extends BasePortletIdUpgradeProcess {
 		while (iterator.hasNext()) {
 			String key = iterator.next();
 
-			if (StringUtil.startsWith(
-					key, LayoutTypePortletConstants.COLUMN_PREFIX) ||
-				StringUtil.startsWith(
+			if (!StringUtil.startsWith(
+					key, LayoutTypePortletConstants.COLUMN_PREFIX) &&
+				!StringUtil.startsWith(
 					key, LayoutTypePortletConstants.NESTED_COLUMN_IDS)) {
 
-				String[] portletIds = StringUtil.split(
-					typeSettingsUnicodeProperties.getProperty(key));
+				continue;
+			}
 
-				if (!ArrayUtil.contains(portletIds, oldRootPortletId)) {
-					continue;
-				}
+			String[] portletIds = StringUtil.split(
+				typeSettingsUnicodeProperties.getProperty(key));
 
-				if (portletIds.length > 1) {
-					portletIds = ArrayUtil.remove(portletIds, oldRootPortletId);
+			if (!ArrayUtil.contains(portletIds, oldRootPortletId)) {
+				continue;
+			}
 
-					String mergedPortletIds = StringUtil.merge(portletIds);
+			if (portletIds.length > 1) {
+				portletIds = ArrayUtil.remove(portletIds, oldRootPortletId);
 
-					typeSettingsUnicodeProperties.setProperty(
-						key, mergedPortletIds.concat(StringPool.COMMA));
-				}
-				else {
-					iterator.remove();
-				}
+				String mergedPortletIds = StringUtil.merge(portletIds);
+
+				typeSettingsUnicodeProperties.setProperty(
+					key, mergedPortletIds.concat(StringPool.COMMA));
+			}
+			else {
+				iterator.remove();
 			}
 		}
 
@@ -109,6 +111,7 @@ public class UpgradePortletId extends BasePortletIdUpgradeProcess {
 
 		try (PreparedStatement preparedStatement = connection.prepareStatement(
 				sql);
+
 			ResultSet resultSet = preparedStatement.executeQuery()) {
 
 			while (resultSet.next()) {

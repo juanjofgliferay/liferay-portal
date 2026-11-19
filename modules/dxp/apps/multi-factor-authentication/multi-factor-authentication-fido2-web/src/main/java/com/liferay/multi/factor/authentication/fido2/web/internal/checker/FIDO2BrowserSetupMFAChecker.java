@@ -32,8 +32,8 @@ import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapDictionary;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.SetUtil;
-import com.liferay.portal.util.PropsValues;
 
 import com.yubico.webauthn.AssertionRequest;
 import com.yubico.webauthn.AssertionResult;
@@ -51,20 +51,21 @@ import com.yubico.webauthn.data.ClientRegistrationExtensionOutputs;
 import com.yubico.webauthn.data.PublicKeyCredential;
 import com.yubico.webauthn.data.PublicKeyCredentialCreationOptions;
 import com.yubico.webauthn.data.PublicKeyCredentialDescriptor;
+import com.yubico.webauthn.data.PublicKeyCredentialParameters;
 import com.yubico.webauthn.data.RelyingPartyIdentity;
 import com.yubico.webauthn.data.UserIdentity;
+
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-
-import javax.servlet.RequestDispatcher;
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceRegistration;
@@ -154,11 +155,7 @@ public class FIDO2BrowserSetupMFAChecker
 			_mfaFIDO2CredentialEntryLocalService.
 				getMFAFIDO2CredentialEntriesByUserId(userId);
 
-		if (!mfaFIDO2CredentialEntries.isEmpty()) {
-			return true;
-		}
-
-		return false;
+		return !mfaFIDO2CredentialEntries.isEmpty();
 	}
 
 	@Override
@@ -168,11 +165,8 @@ public class FIDO2BrowserSetupMFAChecker
 		HttpServletRequest originalHttpServletRequest =
 			_portal.getOriginalServletRequest(httpServletRequest);
 
-		if (_isVerified(originalHttpServletRequest.getSession(false), userId)) {
-			return true;
-		}
-
-		return false;
+		return _isVerified(
+			originalHttpServletRequest.getSession(false), userId);
 	}
 
 	@Override
@@ -184,10 +178,23 @@ public class FIDO2BrowserSetupMFAChecker
 		for (MFAFIDO2CredentialEntry mfaFIDO2CredentialEntry :
 				mfaFIDO2CredentialEntries) {
 
-			if (mfaFIDO2CredentialEntry != null) {
-				_mfaFIDO2CredentialEntryLocalService.
-					deleteMFAFIDO2CredentialEntry(mfaFIDO2CredentialEntry);
+			if (mfaFIDO2CredentialEntry == null) {
+				continue;
 			}
+
+			_mfaFIDO2CredentialEntryLocalService.deleteMFAFIDO2CredentialEntry(
+				mfaFIDO2CredentialEntry);
+
+			MFAFIDO2AuditMessageBuilder mfaFIDO2AuditMessageBuilder =
+				_mfaFIDO2AuditMessageBuilderSnapshot.get();
+
+			if (mfaFIDO2AuditMessageBuilder == null) {
+				continue;
+			}
+
+			mfaFIDO2AuditMessageBuilder.routeAuditMessage(
+				mfaFIDO2AuditMessageBuilder.buildSetupRemovedAuditMessage(
+					userId));
 		}
 	}
 
@@ -209,6 +216,15 @@ public class FIDO2BrowserSetupMFAChecker
 			_mfaFIDO2CredentialEntryLocalService.addMFAFIDO2CredentialEntry(
 				userId, credentialIdByteArray.getBase64(), 0,
 				publicKeyCOSEByteArray.getBase64());
+
+			MFAFIDO2AuditMessageBuilder mfaFIDO2AuditMessageBuilder =
+				_mfaFIDO2AuditMessageBuilderSnapshot.get();
+
+			if (mfaFIDO2AuditMessageBuilder != null) {
+				mfaFIDO2AuditMessageBuilder.routeAuditMessage(
+					mfaFIDO2AuditMessageBuilder.buildSetupAddedAuditMessage(
+						userId));
+			}
 
 			return true;
 		}
@@ -364,6 +380,10 @@ public class FIDO2BrowserSetupMFAChecker
 			_mfaFIDO2Configuration.allowOriginPort()
 		).allowOriginSubdomain(
 			_mfaFIDO2Configuration.allowOriginSubdomain()
+		).preferredPubkeyParams(
+			Arrays.asList(
+				PublicKeyCredentialParameters.ES256,
+				PublicKeyCredentialParameters.RS256)
 		).build();
 
 		if (PropsValues.SESSION_ENABLE_PHISHING_PROTECTION) {

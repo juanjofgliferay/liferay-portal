@@ -1,14 +1,22 @@
 @component-name = "portal-commerce"
 definition {
 
-	property custom.properties = "company.security.strangers.verify=false${line.separator}jsonws.web.service.paths.excludes=";
+	property browser.chrome.version = "139.0";
+	property custom.properties = "company.security.strangers.verify=false${line.separator}feature.flag.LPD-11235=true${line.separator}jsonws.web.service.paths.excludes=";
 	property portal.release = "true";
 	property portal.upstream = "true";
-	property release.feature.flags.disable.DISABLE_PRIVATE_LAYOUTS = "true";
 	property testray.main.component.name = "Shopping Experience";
 
 	setUp {
 		CommerceConfiguration.commerceSetUp(minium = "true");
+
+		task ("Enable private pages") {
+			PagesAdmin.enablePrivatePages();
+		}
+
+		task ("Enable CKE4") {
+			PagesAdmin.enableCKE4();
+		}
 
 		task ("Setup: Create an account with a buyer user") {
 			CommerceEntry.addAccountEntryUser(
@@ -74,7 +82,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 		}
@@ -139,7 +147,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 
@@ -168,95 +176,6 @@ definition {
 			AssertElementPresent(
 				key_availability = "Unavailable",
 				locator1 = "CommerceFrontStore#FS_PRODUCT_AVAILABILITY");
-		}
-	}
-
-	@description = "Verify an Override Default Product Display Page overrides a Commerce Product Display Page Template marked as default."
-	@priority = 4
-	test CanDefaultCommerceProductDPTBeOverriddenByOverrideDefaultProductDisplayPageSet {
-		property portal.acceptance = "false";
-
-		task ("Given a new Commerce Product type display page template marked as default") {
-			JSONLayoutpagetemplate.addDisplayPageTemplateEntry(
-				contentType = "Product",
-				displayPageTemplateEntryName = "Test Commerce Product Display Page Template",
-				groupName = "Minium");
-
-			DisplayPageTemplate.addFragment(
-				collectionName = "Basic Components",
-				displayPageName = "Test Commerce Product Display Page Template",
-				fragmentName = "Heading",
-				publish = "false",
-				siteURLKey = "minium");
-
-			PageEditor.editFragmentText(
-				fragmentName = "Heading",
-				id = "element-text",
-				text = "Commerce Product Display Page Template");
-
-			Button.clickPublish();
-
-			Alert.viewSuccessMessage();
-
-			LexiconEntry.gotoEntryMenuItem(
-				menuItem = "Mark as Default",
-				rowEntry = "Test Commerce Product Display Page Template");
-
-			Alert.viewSuccessMessage();
-		}
-
-		task ("And given an Override Default Product Display Page is set for U-Joint") {
-			JSONLayout.addPublicLayout(
-				groupName = "Minium",
-				layoutName = "Test Public Widget Page");
-
-			JSONLayout.addWidgetToPublicLayout(
-				groupName = "Minium",
-				layoutName = "Test Public Widget Page",
-				widgetName = "Product Details");
-
-			CommerceChannels.openChannelsAdmin();
-
-			CommerceNavigator.gotoEntry(entryName = "Minium Portal");
-
-			CommerceEntry.gotoMenuTab(menuTab = "Product Display Pages");
-
-			CommerceChannels.overrideProductDisplayPage(
-				pageName = "Test Public Widget Page",
-				pageType = "Public",
-				product = "U-Joint");
-
-			CommerceEntry.assertDisplayPageOverride(
-				entryName = "U-Joint",
-				layout = "Test Public Widget Page");
-		}
-
-		task ("When the buyer logs in and clicks on the U-Joint product") {
-			User.logoutPG();
-
-			CommerceLogin.miniumLogin(
-				password = "test",
-				urlAppend = "web/minium",
-				userEmailAddress = "buyer@liferay.com");
-
-			Click(
-				key_productName = "u-joint",
-				locator1 = "CommerceFrontStore#PRODUCT_CARD_IMAGE");
-		}
-
-		task ("Then the Override Product Display Page is shown") {
-			FrontStore.assertProductDetails(
-				productListPrice = "24.00",
-				productName = "U-Joint",
-				productSKU = "MIN55861");
-		}
-
-		task ("And not the Commerce Product Display Page Template") {
-			AssertElementNotPresent(
-				fragmentName = "heading",
-				id = "element-text",
-				index = 1,
-				locator1 = "Fragment#CONTRIBUTED_FRAGMENT_TEXT");
 		}
 	}
 
@@ -323,7 +242,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 
@@ -500,7 +419,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 		}
@@ -600,7 +519,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 		}
@@ -655,9 +574,7 @@ definition {
 		}
 
 		task ("And a product updated") {
-			CommerceNavigator.gotoPortlet(
-				category = "Product Management",
-				portlet = "Products");
+			CommerceProducts.openProductsAdmin();
 
 			CommerceProducts.searchProduct(search = "U-Joint");
 
@@ -673,7 +590,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 
@@ -728,9 +645,7 @@ definition {
 		}
 
 		task ("And some categories of the new vocabulary are selected inside a product (e.g. ABS Sensor)") {
-			CommerceNavigator.gotoPortlet(
-				category = "Product Management",
-				portlet = "Products");
+			CommerceProducts.openProductsAdmin();
 
 			Click(
 				key_entryName = "ABS Sensor",
@@ -780,7 +695,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 		}
@@ -823,10 +738,7 @@ definition {
 		}
 
 		task ("And a product with Delivery Subscription") {
-			ApplicationsMenu.gotoPortlet(
-				category = "Product Management",
-				panel = "Commerce",
-				portlet = "Products");
+			CommerceProducts.openProductsAdmin();
 
 			CommerceNavigator.searchEntry(entryName = ${productName});
 
@@ -846,7 +758,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 
@@ -857,106 +769,6 @@ definition {
 
 		task ("Then verifies the mapped fragments are visible") {
 			CommerceDisplayPageTemplates.viewMappedFragmentsText(fragmentsTextList = "true,5,monthly,deliveryMonthDay=1 deliveryMonthlyMode=1");
-		}
-	}
-
-	@description = "This is a test for COMMERCE-7277 Verify mapped Detailed Information fields to fragments are visible in Store Fronts"
-	@priority = 5
-	test CanMapDetailedInformationFieldsToFragments {
-		property portal.acceptance = "true";
-
-		task ("Given a new product created") {
-			CommerceJSONProductsAPI._addCommerceProduct(
-				catalogName = "Minium",
-				neverExpire = "false",
-				price = 50,
-				productDescription = "Full Description",
-				productName = "Simple Product",
-				productType = "Simple",
-				shortDescription = "Short Description",
-				sku = "SKU1001");
-		}
-
-		task ("Given a new Commerce Product type display page template with fragment created and mapped with the Detailed Information fields") {
-			CommerceDisplayPageTemplates.addMappedDisplayPageTemplateEntry(
-				contentType = "Product",
-				displayPageName = "Test Commerce Product Display Page Template",
-				fieldsList = "Account Group Filter Enabled,Channel Filter Enabled,Create Date,Status,Tax Exempt,Telco or Electronics,Version",
-				fragmentName = "Heading",
-				groupName = "Minium",
-				menuItem = "Mark as Default",
-				siteURLKey = "minium");
-		}
-
-		task ("When the buyer logs in and clicks on the new product") {
-			User.logoutPG();
-
-			CommerceLogin.miniumLogin(
-				password = "test",
-				urlAppend = "web/minium",
-				userEmailAddress = "buyer@liferay.com");
-
-			Click(
-				key_productName = "Simple Product",
-				locator1 = "CommerceAccelerators#PRODUCT_CARD_NAME");
-		}
-
-		task ("Then verifies the mapped fragments are visible") {
-			var productCreateDate = CommerceJSONProductsAPI.getProductField(
-				jsonPath = "$.['createDate']",
-				productName = "Simple Product");
-
-			var productCreateDate = DateUtil.format(${productCreateDate}, "yyyy-MM-dd'T'HH:mm:ss'Z'", "M/d/yy h:mm a");
-
-			CommerceDisplayPageTemplates.viewMappedFragmentsText(fragmentsTextList = "false,false,${productCreateDate},0,false,false,1");
-		}
-	}
-
-	@description = "This is a test for COMMERCE-7277 Verify mapped Display Page and Schedule related fields to fragments are visible in Store Fronts"
-	@priority = 5
-	test CanMapDisplayPageAndScheduleFieldsToFragments {
-		property portal.acceptance = "true";
-
-		task ("Given a new product created") {
-			CommerceJSONProductsAPI._addCommerceProduct(
-				catalogName = "Minium",
-				neverExpire = "false",
-				price = 50,
-				productDescription = "This is a Full Description",
-				productName = "Simple Product",
-				productType = "Simple",
-				shortDescription = "This is a Short Description",
-				sku = "SKU1001");
-		}
-
-		task ("Given a new Commerce Product type display page template with fragment created and mapped with the Display Page and Schedule related fields") {
-			CommerceDisplayPageTemplates.addMappedDisplayPageTemplateEntry(
-				contentType = "Product",
-				displayPageName = "Test Commerce Product Display Page Template",
-				fieldsList = "Default,Display Date,Expiration Date",
-				fragmentName = "Heading",
-				groupName = "Minium",
-				menuItem = "Mark as Default",
-				siteURLKey = "minium");
-		}
-
-		task ("When the buyer logs in and clicks on a product") {
-			User.logoutPG();
-
-			CommerceLogin.miniumLogin(
-				password = "test",
-				urlAppend = "web/minium",
-				userEmailAddress = "buyer@liferay.com");
-
-			Click(
-				key_productName = "Simple Product",
-				locator1 = "CommerceAccelerators#PRODUCT_CARD_NAME");
-		}
-
-		task ("Then verifies the mapped fragments are visible") {
-			var baseURL = PropsUtil.get("portal.url");
-
-			CommerceDisplayPageTemplates.viewMappedFragmentsText(fragmentsTextList = "${baseURL}/web/minium/p/simple-product,1/1/23 1:01 AM,1/1/24 1:01 AM");
 		}
 	}
 
@@ -979,10 +791,7 @@ definition {
 		}
 
 		task ("And a product with Payment Subscription") {
-			ApplicationsMenu.gotoPortlet(
-				category = "Product Management",
-				panel = "Commerce",
-				portlet = "Products");
+			CommerceProducts.openProductsAdmin();
 
 			CommerceNavigator.searchEntry(entryName = ${productName});
 
@@ -1002,7 +811,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 
@@ -1013,85 +822,6 @@ definition {
 
 		task ("Then verifies the mapped fragments are visible") {
 			CommerceDisplayPageTemplates.viewMappedFragmentsText(fragmentsTextList = "true,10,monthly,monthDay=15 monthlyMode=1");
-		}
-	}
-
-	@description = "COMMERCE-9434 Verify that Product Attachments are available for use with Collection Display Fragments"
-	@priority = 5
-	test CanMapProductAttachmentsToACollectionDisplayFragment {
-		property portal.acceptance = "true";
-
-		var fileName1 = "Document_1.pdf";
-		var fileName2 = "Commerce_Black.jpg";
-
-		task ("Given a product with 2 attachments") {
-			CommerceProducts.openProductsAdmin();
-
-			CommerceProducts.searchAndGoToProductEntry(entryProductName = "U-Joint");
-
-			CommerceEntry.gotoMenuTab(menuTab = "Media");
-
-			CommerceProductImages.addAttachments(fileNames = "${fileName1},${fileName2}");
-		}
-
-		task ("And a new Commerce Product type Display Page Template is created") {
-			JSONLayoutpagetemplate.addDisplayPageTemplateEntry(
-				contentType = "Product",
-				displayPageTemplateEntryName = "Test Commerce Product Display Page Template",
-				groupName = "Minium");
-		}
-
-		task ("And the Collection Display fragment is deployed on the page") {
-			DisplayPageTemplate.addFragment(
-				collectionName = "Content Display",
-				displayPageName = "Test Commerce Product Display Page Template",
-				fragmentName = "Collection Display",
-				publish = "false",
-				siteURLKey = "minium");
-		}
-
-		task ("And Product Attachments is selected, Style Display is set to Bordered List") {
-			PageEditor.editCollectionDisplay(
-				fragmentName = "Collection Display",
-				infoItemRelatedListProviderName = "Product Attachments",
-				styleDisplay = "Bordered List");
-		}
-
-		task ("And the template is published and Marked as Default") {
-			Button.clickPublish();
-
-			Alert.viewSuccessMessage();
-
-			LexiconEntry.gotoEntryMenuItem(
-				menuItem = "Mark as Default",
-				rowEntry = "Test Commerce Product Display Page Template");
-
-			Alert.viewSuccessMessage();
-		}
-
-		task ("When the buyer logs in") {
-			User.logoutPG();
-
-			CommerceLogin.miniumLogin(
-				password = "test",
-				urlAppend = "web/minium",
-				userEmailAddress = "buyer@liferay.com");
-		}
-
-		task ("And navigates to the product details page") {
-			CommerceAcceleratorsInitializer.gotoMiniumProductDetailsPage(productName = "U-Joint");
-		}
-
-		task ("Then the buyer can see the product attachments mapped along with the 'Download' button") {
-			AssertElementPresent(
-				key_button = "Download",
-				key_entryName = ${fileName1},
-				locator1 = "CommerceFrontStore#PRODUCT_DETAILS_ATTACHMENTS_BUTTON");
-
-			AssertElementPresent(
-				key_button = "Download",
-				key_entryName = ${fileName2},
-				locator1 = "CommerceFrontStore#PRODUCT_DETAILS_ATTACHMENTS_BUTTON");
 		}
 	}
 
@@ -1108,20 +838,14 @@ definition {
 		var customField2Desc = "Custom Field Two Text";
 
 		task ("Given the admin already create the custom field 'Commerce Product' as text area") {
-			ApplicationsMenu.gotoPortlet(
-				category = "Configuration",
-				panel = "Control Panel",
-				portlet = "Custom Fields");
+			CustomFields.openCustomFieldAdmin();
 
 			CommerceConfiguration.addCP(
 				customFieldName = ${customField1Name},
 				customFieldType = "Text Area",
 				resourceName = "Product");
 
-			ApplicationsMenu.gotoPortlet(
-				category = "Configuration",
-				panel = "Control Panel",
-				portlet = "Custom Fields");
+			CustomFields.openCustomFieldAdmin();
 
 			CommerceConfiguration.addCP(
 				customFieldName = ${customField2Name},
@@ -1130,9 +854,7 @@ definition {
 		}
 
 		task ("And add 'Test Commerce Product Custom Field' inside the text area for the custom field for ABS Sensor") {
-			CommerceNavigator.gotoPortlet(
-				category = "Product Management",
-				portlet = "Products");
+			CommerceProducts.openProductsAdmin();
 
 			Click(
 				key_entryName = "ABS Sensor",
@@ -1178,7 +900,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 
@@ -1272,7 +994,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 		}
@@ -1367,7 +1089,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 		}
@@ -1413,9 +1135,7 @@ definition {
 		task ("Delete manually ABS Sensor to avoid problems during the tearDown (COMMERCE-11085)") {
 			User.logoutPG();
 
-			User.loginPG(
-				password = "test",
-				userEmailAddress = "test@liferay.com");
+			User.loginPG();
 
 			CommerceProducts.openProductsAdmin();
 
@@ -1447,7 +1167,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 
@@ -1507,7 +1227,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 
@@ -1524,9 +1244,7 @@ definition {
 		}
 
 		task ("Given the template page is unmarked as Default") {
-			User.logoutAndLoginPG(
-				userLoginEmailAddress = "test@liferay.com",
-				userLoginFullName = "Test Test");
+			User.logoutAndLoginPG();
 
 			DisplayPageTemplatesAdmin.openDisplayPagesAdmin(siteURLKey = "Minium");
 
@@ -1543,7 +1261,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 
@@ -1557,249 +1275,6 @@ definition {
 				productListPrice = "24.00",
 				productName = "U-Joint",
 				productSKU = "MIN55861");
-		}
-	}
-
-	@description = "This is a test for COMMERCE-9433. A default display page template for a specific product can override another display page template that is marked as default for all products"
-	@priority = 4
-	test CanSpecificProductDPTOverrideDefaultDPT {
-		property portal.acceptance = "true";
-
-		task ("Given a Commerce Product type display page template with fragments is created and mapped with fields") {
-			CommerceDisplayPageTemplates.addMappedDisplayPageTemplateEntry(
-				contentType = "Product",
-				displayPageName = "Test Commerce Product DPT",
-				fieldsList = "Availability Status,Inventory,Name",
-				fragmentName = "Heading",
-				groupName = "Minium",
-				siteURLKey = "minium");
-		}
-
-		task ("And a second Commerce Product type display page template with fragments created and mapped with fields and marked as default") {
-			CommerceDisplayPageTemplates.addMappedDisplayPageTemplateEntry(
-				contentType = "Product",
-				displayPageName = "New Commerce Product DPT",
-				fieldsList = "Name,SKU",
-				fragmentName = "Heading",
-				groupName = "Minium",
-				siteURLKey = "minium");
-
-			LexiconEntry.gotoEntryMenuItem(
-				menuItem = "Mark as Default",
-				rowEntry = "New Commerce Product DPT");
-
-			Alert.viewSuccessMessage();
-		}
-
-		task ("And the first DPT is set as default for a specific product") {
-			CommerceChannels.openChannelsAdmin();
-
-			CommerceNavigator.gotoEntry(entryName = "Minium Portal");
-
-			CommerceEntry.gotoMenuTab(menuTab = "Product Display Pages");
-
-			CommerceChannels.addOverrideDefaultProductDisplayPageTemplate(
-				displayPageTemplateName = "Test Commerce Product DPT",
-				product = "ABS Sensor");
-		}
-
-		task ("When buyer user logs in and goes to the Catalog page") {
-			User.logoutPG();
-
-			CommerceLogin.miniumLogin(
-				password = "test",
-				urlAppend = "web/minium",
-				userEmailAddress = "buyer@liferay.com");
-		}
-
-		task ("And clicks on ABS Sensor product") {
-			CommerceNavigator.searchCatalog(productName = "ABS Sensor");
-
-			CommerceAcceleratorsInitializer.gotoMiniumProductDetailsPage(productName = "ABS Sensor");
-		}
-
-		task ("Then the mapped fields of the first DPT are shown correctly for the product") {
-			CommerceDisplayPageTemplates.viewMappedFragmentsText(fragmentsTextList = "available,140,ABS Sensor");
-		}
-
-		task ("And the second default marked DPT mapped fields are shown for another product") {
-			Navigator.openWithAppendToBaseURL(urlAppend = "web/minium/catalog");
-
-			CommerceNavigator.gotoProductDetails(productName = "U-Joint");
-
-			CommerceDisplayPageTemplates.viewMappedFragmentsText(fragmentsTextList = "U-Joint,MIN55861");
-		}
-	}
-
-	@description = "This is a test for COMMERCE-9433. The Default Product Display Page can be overridden by a Display Page Template set for a specific product"
-	@priority = 3
-	test CanSpecificProductDPTSetOverrideDefaultProductDisplayPage {
-		property portal.acceptance = "false";
-
-		task ("Given a new Commerce Product type display page template with fragments created with mapped fields") {
-			CommerceDisplayPageTemplates.addMappedDisplayPageTemplateEntry(
-				contentType = "Product",
-				displayPageName = "Test Commerce Product DPT",
-				fieldsList = "Availability Status,Inventory,Name",
-				fragmentName = "Heading",
-				groupName = "Minium",
-				siteURLKey = "minium");
-		}
-
-		task ("And a Default Product Display Page is set") {
-			CommerceChannels.openChannelsAdmin();
-
-			CommerceNavigator.gotoEntry(entryName = "Minium Portal");
-
-			CommerceEntry.gotoMenuTab(menuTab = "Product Display Pages");
-
-			CommerceChannels.chooseDefaultDisplayPage(
-				pageName = "Account Management",
-				pageType = "Public");
-		}
-
-		task ("And the Default Display Page Template is set for a specific product") {
-			CommerceChannels.addOverrideDefaultProductDisplayPageTemplate(
-				displayPageTemplateName = "Test Commerce Product DPT",
-				product = "ABS Sensor");
-		}
-
-		task ("When buyer user logs in and goes to the Catalog page") {
-			User.logoutPG();
-
-			CommerceLogin.miniumLogin(
-				password = "test",
-				urlAppend = "web/minium",
-				userEmailAddress = "buyer@liferay.com");
-		}
-
-		task ("And clicks on ABS Sensor product") {
-			CommerceNavigator.searchCatalog(productName = "ABS Sensor");
-
-			CommerceAcceleratorsInitializer.gotoMiniumProductDetailsPage(productName = "ABS Sensor");
-		}
-
-		task ("Then the mapped fields of the DPT are shown correctly for ABS Sensor") {
-			CommerceDisplayPageTemplates.viewMappedFragmentsText(fragmentsTextList = "available,140,ABS Sensor");
-		}
-
-		task ("And the Default Product Display Page set is shown for the other products") {
-			Navigator.openWithAppendToBaseURL(urlAppend = "web/minium/catalog");
-
-			CommerceNavigator.gotoProductDetails(productName = "U-Joint");
-
-			AssertTextEquals(
-				key_rowNumber = 1,
-				locator1 = "WorkflowMetricsProcessListView#METRICS_OVERDUE_ITEMS_TABLE_ROW",
-				value1 = "Commerce Account");
-		}
-	}
-
-	@description = "This is a test for COMMERCE-9433. In the Product Display Page tab on Channels, it is possible to set a display page template to be shown for a specific product"
-	@priority = 4
-	test CanSpecificProductViewDPTSet {
-		property portal.acceptance = "true";
-
-		task ("Given a new Commerce Product type display page template with fragments created with mapped fields") {
-			CommerceDisplayPageTemplates.addMappedDisplayPageTemplateEntry(
-				contentType = "Product",
-				displayPageName = "Test Commerce Product DPT",
-				fieldsList = "Availability Status,Inventory,Name",
-				fragmentName = "Heading",
-				groupName = "Minium",
-				siteURLKey = "minium");
-		}
-
-		task ("And admin sets the DPT for a specific product by navigating to Channels page") {
-			CommerceChannels.openChannelsAdmin();
-
-			CommerceNavigator.gotoEntry(entryName = "Minium Portal");
-
-			CommerceEntry.gotoMenuTab(menuTab = "Product Display Pages");
-
-			CommerceChannels.addOverrideDefaultProductDisplayPageTemplate(
-				displayPageTemplateName = "Test Commerce Product DPT",
-				product = "ABS Sensor");
-		}
-
-		task ("When buyer user logs in and goes to the Catalog page") {
-			User.logoutPG();
-
-			CommerceLogin.miniumLogin(
-				password = "test",
-				urlAppend = "web/minium",
-				userEmailAddress = "buyer@liferay.com");
-		}
-
-		task ("And clicks on ABS Sensor product") {
-			CommerceNavigator.searchCatalog(productName = "ABS Sensor");
-
-			CommerceAcceleratorsInitializer.gotoMiniumProductDetailsPage(productName = "ABS Sensor");
-		}
-
-		task ("Then the mapped fields of the DPT are shown correctly for the product") {
-			CommerceDisplayPageTemplates.viewMappedFragmentsText(fragmentsTextList = "available,140,ABS Sensor");
-		}
-
-		task ("And the DPT is not applied to another product") {
-			Navigator.openWithAppendToBaseURL(urlAppend = "web/minium/catalog");
-
-			CommerceNavigator.gotoProductDetails(productName = "U-Joint");
-
-			FrontStore.assertProductDetails(
-				productListPrice = "24.00",
-				productName = "U-Joint",
-				productSKU = "MIN55861");
-		}
-
-		task ("When admin edits the DPT product") {
-			User.logoutAndLoginPG();
-
-			CommerceChannels.openChannelsAdmin();
-
-			CommerceNavigator.gotoEntry(entryName = "Minium Portal");
-
-			CommerceEntry.gotoMenuTab(menuTab = "Product Display Pages");
-
-			CommerceChannels.editOverrideProductDisplayPage(
-				newProduct = "Bearings",
-				product = "ABS Sensor");
-		}
-
-		task ("Then the DPT product is listed as Bearings and not ABS Sensor") {
-			CommerceEntry.assertNoDisplayPageOverride(
-				entryName = "ABS Sensor",
-				layout = "Test Commerce Product DPT");
-
-			CommerceEntry.assertDisplayPageOverride(
-				entryName = "Bearings",
-				layout = "Test Commerce Product DPT");
-		}
-
-		task ("When admin removes the DPT product") {
-			CommerceEntry.deleteCommerceEntry(entryName = "Bearings");
-
-			CommerceEntry.assertNoDisplayPageOverride(
-				entryName = "Bearings",
-				layout = "Test Commerce Product DPT");
-		}
-
-		task ("Then Bearings product does not show DPT mapped fields but the general product details") {
-			User.logoutPG();
-
-			CommerceLogin.miniumLogin(
-				password = "test",
-				urlAppend = "web/minium",
-				userEmailAddress = "buyer@liferay.com");
-
-			CommerceNavigator.searchCatalog(productName = "Bearings");
-
-			CommerceAcceleratorsInitializer.gotoMiniumProductDetailsPage(productName = "Bearings");
-
-			FrontStore.assertProductDetails(
-				productListPrice = "70.00",
-				productName = "Bearings",
-				productSKU = "MIN00673");
 		}
 	}
 
@@ -1878,7 +1353,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 

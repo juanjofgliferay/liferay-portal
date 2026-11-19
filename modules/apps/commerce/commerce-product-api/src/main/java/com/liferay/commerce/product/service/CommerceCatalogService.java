@@ -56,12 +56,12 @@ public interface CommerceCatalogService extends BaseService {
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public CommerceCatalog fetchByExternalReferenceCode(
-			String externalReferenceCode, long companyId)
+	public CommerceCatalog fetchCommerceCatalog(long commerceCatalogId)
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public CommerceCatalog fetchCommerceCatalog(long commerceCatalogId)
+	public CommerceCatalog fetchCommerceCatalogByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
@@ -75,6 +75,12 @@ public interface CommerceCatalogService extends BaseService {
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<CommerceCatalog> getCommerceCatalogs(
 		long companyId, int start, int end);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public CommerceCatalog getOrAddEmptyCommerceCatalog(
+			String externalReferenceCode, String name,
+			String commerceCurrencyCode)
+		throws PortalException;
 
 	/**
 	 * Returns the OSGi service identifier.
@@ -102,3 +108,4 @@ public interface CommerceCatalogService extends BaseService {
 		throws PortalException;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-315395064

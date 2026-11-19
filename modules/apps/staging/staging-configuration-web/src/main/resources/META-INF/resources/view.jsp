@@ -13,12 +13,11 @@ GroupDisplayContextHelper groupDisplayContextHelper = new GroupDisplayContextHel
 liveGroup = groupDisplayContextHelper.getLiveGroup();
 liveGroupId = groupDisplayContextHelper.getLiveGroupId();
 
+boolean liveGroupRemoteStaging = liveGroup.hasRemoteStagingGroup() && PropsValues.STAGING_LIVE_GROUP_REMOTE_STAGING_ENABLED;
 UnicodeProperties liveGroupTypeSettingsUnicodeProperties = liveGroup.getTypeSettingsProperties();
 
 LayoutSet privateLayoutSet = LayoutSetLocalServiceUtil.getLayoutSet(liveGroup.getGroupId(), true);
 LayoutSet publicLayoutSet = LayoutSetLocalServiceUtil.getLayoutSet(liveGroup.getGroupId(), false);
-
-boolean liveGroupRemoteStaging = liveGroup.hasRemoteStagingGroup() && PropsValues.STAGING_LIVE_GROUP_REMOTE_STAGING_ENABLED;
 
 boolean stagedLocally = liveGroup.isStaged() && !liveGroup.isStagedRemotely();
 
@@ -30,7 +29,7 @@ if (stagedLocally) {
 	stagingGroupId = stagingGroup.getGroupId();
 }
 
-BackgroundTask lastCompletedInitialPublicationBackgroundTask = BackgroundTaskManagerUtil.fetchFirstBackgroundTask(liveGroupId, BackgroundTaskExecutorNames.LAYOUT_STAGING_BACKGROUND_TASK_EXECUTOR, true, new BackgroundTaskCreateDateComparator(false));
+BackgroundTask lastCompletedInitialPublicationBackgroundTask = BackgroundTaskManagerUtil.fetchFirstBackgroundTask(liveGroupId, BackgroundTaskExecutorNames.LAYOUT_STAGING_BACKGROUND_TASK_EXECUTOR, true, BackgroundTaskCreateDateComparator.getInstance(false));
 %>
 
 <c:choose>
@@ -71,7 +70,7 @@ BackgroundTask lastCompletedInitialPublicationBackgroundTask = BackgroundTaskMan
 					<c:if test="<%= !privateLayoutSet.isLayoutSetPrototypeLinkActive() && !publicLayoutSet.isLayoutSetPrototypeLinkActive() %>">
 						<clay:sheet-header>
 							<div class="sheet-title">
-								<liferay-ui:message key="javax.portlet.title.com_liferay_staging_configuration_web_portlet_StagingConfigurationPortlet" />
+								<liferay-ui:message key="jakarta.portlet.title.com_liferay_staging_configuration_web_portlet_StagingConfigurationPortlet" />
 							</div>
 						</clay:sheet-header>
 
@@ -93,9 +92,7 @@ BackgroundTask lastCompletedInitialPublicationBackgroundTask = BackgroundTaskMan
 							</div>
 						</clay:sheet-footer>
 
-						<aui:script require="frontend-js-web/index as frontendJsWeb">
-							var {delegate} = frontendJsWeb;
-
+						<aui:script sandbox="<%= true %>">
 							var pwcWarning = document.getElementById('<portlet:namespace />pwcWarning');
 							var remoteStagingOptions = document.getElementById(
 								'<portlet:namespace />remoteStagingOptions'
@@ -113,7 +110,7 @@ BackgroundTask lastCompletedInitialPublicationBackgroundTask = BackgroundTaskMan
 								remoteStagingOptions &&
 								trashWarning
 							) {
-								delegate(stagingTypes, 'click', 'input', (event) => {
+								Liferay.Util.delegate(stagingTypes, 'click', 'input', (event) => {
 									var value = event.target.closest('input').value;
 
 									if (value != '<%= StagingConstants.TYPE_LOCAL_STAGING %>') {
@@ -160,7 +157,7 @@ BackgroundTask lastCompletedInitialPublicationBackgroundTask = BackgroundTaskMan
 	</c:otherwise>
 </c:choose>
 
-<script>
+<aui:script>
 	function <portlet:namespace />saveGroup(forceDisable) {
 		var form = document.<portlet:namespace />fm;
 		var ok = true;
@@ -168,9 +165,8 @@ BackgroundTask lastCompletedInitialPublicationBackgroundTask = BackgroundTaskMan
 		function doSubmit() {
 			if (forceDisable) {
 				form.elements['<portlet:namespace />forceDisable'].value = true;
-				form.elements[
-					'<portlet:namespace />stagingType'
-				].value = <%= StagingConstants.TYPE_NOT_STAGED %>;
+				form.elements['<portlet:namespace />stagingType'].value =
+					<%= StagingConstants.TYPE_NOT_STAGED %>;
 			}
 
 			submitForm(form);
@@ -261,4 +257,4 @@ BackgroundTask lastCompletedInitialPublicationBackgroundTask = BackgroundTaskMan
 			});
 		}
 	})();
-</script>
+</aui:script>

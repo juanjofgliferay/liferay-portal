@@ -9,7 +9,6 @@ import com.liferay.expando.kernel.model.ExpandoValue;
 import com.liferay.expando.kernel.model.ExpandoValueModel;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.bean.AutoEscapeBeanHandler;
-import com.liferay.portal.kernel.json.JSON;
 import com.liferay.portal.kernel.model.CacheModel;
 import com.liferay.portal.kernel.model.ModelWrapper;
 import com.liferay.portal.kernel.model.impl.BaseModelImpl;
@@ -46,7 +45,6 @@ import java.util.function.Function;
  * @see ExpandoValueImpl
  * @generated
  */
-@JSON(strict = true)
 public class ExpandoValueModelImpl
 	extends BaseModelImpl<ExpandoValue> implements ExpandoValueModel {
 
@@ -85,6 +83,8 @@ public class ExpandoValueModelImpl
 		"create table ExpandoValue (mvccVersion LONG default 0 not null,ctCollectionId LONG default 0 not null,valueId LONG not null,companyId LONG,tableId LONG,columnId LONG,rowId_ LONG,classNameId LONG,classPK LONG,data_ TEXT null,primary key (valueId, ctCollectionId))";
 
 	public static final String TABLE_SQL_DROP = "drop table ExpandoValue";
+
+	public static final String ENTITY_ALIAS = "expandoValue";
 
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY expandoValue.tableId ASC, expandoValue.rowId ASC, expandoValue.columnId ASC";
@@ -153,7 +153,7 @@ public class ExpandoValueModelImpl
 	public static final long TABLEID_COLUMN_BITMASK = 32L;
 
 	public static final long LOCK_EXPIRATION_TIME = GetterUtil.getLong(
-		com.liferay.portal.util.PropsUtil.get(
+		com.liferay.portal.kernel.util.PropsUtil.get(
 			"lock.expiration.time.com.liferay.expando.kernel.model.ExpandoValue"));
 
 	public ExpandoValueModelImpl() {
@@ -320,7 +320,6 @@ public class ExpandoValueModelImpl
 
 	}
 
-	@JSON
 	@Override
 	public long getMvccVersion() {
 		return _mvccVersion;
@@ -335,7 +334,6 @@ public class ExpandoValueModelImpl
 		_mvccVersion = mvccVersion;
 	}
 
-	@JSON
 	@Override
 	public long getCtCollectionId() {
 		return _ctCollectionId;
@@ -350,7 +348,6 @@ public class ExpandoValueModelImpl
 		_ctCollectionId = ctCollectionId;
 	}
 
-	@JSON
 	@Override
 	public long getValueId() {
 		return _valueId;
@@ -365,7 +362,6 @@ public class ExpandoValueModelImpl
 		_valueId = valueId;
 	}
 
-	@JSON
 	@Override
 	public long getCompanyId() {
 		return _companyId;
@@ -380,7 +376,6 @@ public class ExpandoValueModelImpl
 		_companyId = companyId;
 	}
 
-	@JSON
 	@Override
 	public long getTableId() {
 		return _tableId;
@@ -404,7 +399,6 @@ public class ExpandoValueModelImpl
 		return GetterUtil.getLong(this.<Long>getColumnOriginalValue("tableId"));
 	}
 
-	@JSON
 	@Override
 	public long getColumnId() {
 		return _columnId;
@@ -429,7 +423,6 @@ public class ExpandoValueModelImpl
 			this.<Long>getColumnOriginalValue("columnId"));
 	}
 
-	@JSON
 	@Override
 	public long getRowId() {
 		return _rowId;
@@ -473,7 +466,6 @@ public class ExpandoValueModelImpl
 		setClassNameId(classNameId);
 	}
 
-	@JSON
 	@Override
 	public long getClassNameId() {
 		return _classNameId;
@@ -498,7 +490,6 @@ public class ExpandoValueModelImpl
 			this.<Long>getColumnOriginalValue("classNameId"));
 	}
 
-	@JSON
 	@Override
 	public long getClassPK() {
 		return _classPK;
@@ -522,7 +513,6 @@ public class ExpandoValueModelImpl
 		return GetterUtil.getLong(this.<Long>getColumnOriginalValue("classPK"));
 	}
 
-	@JSON
 	@Override
 	public String getData() {
 		if (_data == null) {
@@ -931,3 +921,4 @@ public class ExpandoValueModelImpl
 	private ExpandoValue _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1817200459

@@ -31,52 +31,63 @@ public class StorageLinksUpgradeProcess extends UpgradeProcess {
 				connection.prepareStatement(
 					StringBundler.concat(
 						"select DDMStructureVersion.structureVersionId, ",
-						"DDMStorageLink.storageLinkId from DDMStorageLink ",
-						"inner join DDMStructure on DDMStructure.structureId ",
-						"= DDMStorageLink.structureVersionId inner join ",
-						"DDMStructureVersion on ",
-						"DDMStructureVersion.structureId = ",
-						"DDMStructure.structureId and ",
+						"DDMStorageLink.ctCollectionId, DDMStorageLink.",
+						"storageLinkId from DDMStorageLink inner join ",
+						"DDMStructure on DDMStructure.structureId = ",
+						"DDMStorageLink.structureVersionId inner join ",
+						"DDMStructureVersion on DDMStructureVersion.",
+						"structureId = DDMStructure.structureId and ",
 						"DDMStructureVersion.version = DDMStructure.version ",
-						"where DDMStorageLink.classNameId = ",
-						_classNameLocalService.getClassNameId(
-							JournalArticle.class)));
+						"where DDMStorageLink.classNameId = ?"));
 			PreparedStatement updatePreparedStatement =
 				AutoBatchPreparedStatementUtil.autoBatch(
 					connection,
 					"update DDMStorageLink set structureVersionId = ? where " +
-						"storageLinkId = ?");
-			ResultSet resultSet = selectPreparedStatement.executeQuery()) {
+						"ctCollectionId = ? and storageLinkId = ?")) {
 
-			while (resultSet.next()) {
-				updatePreparedStatement.setLong(1, resultSet.getLong(1));
-				updatePreparedStatement.setLong(2, resultSet.getLong(2));
+			selectPreparedStatement.setLong(
+				1, _classNameLocalService.getClassNameId(JournalArticle.class));
 
-				updatePreparedStatement.addBatch();
+			try (ResultSet resultSet = selectPreparedStatement.executeQuery()) {
+				while (resultSet.next()) {
+					updatePreparedStatement.setLong(
+						1, resultSet.getLong("structureVersionId"));
+					updatePreparedStatement.setLong(
+						2, resultSet.getLong("ctCollectionId"));
+					updatePreparedStatement.setLong(
+						3, resultSet.getLong("storageLinkId"));
+
+					updatePreparedStatement.addBatch();
+				}
+
+				updatePreparedStatement.executeBatch();
 			}
-
-			updatePreparedStatement.executeBatch();
 		}
 
 		try (PreparedStatement selectPreparedStatement =
 				connection.prepareStatement(
 					StringBundler.concat(
 						"select DDMStructureVersion.structureId, ",
-						"DDMStorageLink.storageLinkId from DDMStorageLink ",
-						"inner join DDMStructureVersion on ",
-						"DDMStructureVersion.structureVersionId = ",
-						"DDMStorageLink.structureVersionId where ",
-						"DDMStorageLink.structureId = 0"));
+						"DDMStorageLink.ctCollectionId, DDMStorageLink.",
+						"storageLinkId from DDMStorageLink inner join ",
+						"DDMStructureVersion on DDMStructureVersion.",
+						"structureVersionId = DDMStorageLink.",
+						"structureVersionId where DDMStorageLink.structureId ",
+						"= 0"));
 			PreparedStatement updatePreparedStatement =
 				AutoBatchPreparedStatementUtil.autoBatch(
 					connection,
 					"update DDMStorageLink set structureId = ? where " +
-						"storageLinkId = ?");
+						"ctCollectionId = ? and storageLinkId = ?");
 			ResultSet resultSet = selectPreparedStatement.executeQuery()) {
 
 			while (resultSet.next()) {
-				updatePreparedStatement.setLong(1, resultSet.getLong(1));
-				updatePreparedStatement.setLong(2, resultSet.getLong(2));
+				updatePreparedStatement.setLong(
+					1, resultSet.getLong("structureId"));
+				updatePreparedStatement.setLong(
+					2, resultSet.getLong("ctCollectionId"));
+				updatePreparedStatement.setLong(
+					3, resultSet.getLong("storageLinkId"));
 
 				updatePreparedStatement.addBatch();
 			}

@@ -70,6 +70,8 @@ public class CounterModelImpl
 
 	public static final String TABLE_SQL_DROP = "drop table Counter";
 
+	public static final String ENTITY_ALIAS = "counter";
+
 	public static final String ORDER_BY_JPQL = " ORDER BY counter.name ASC";
 
 	public static final String ORDER_BY_SQL = " ORDER BY Counter.name ASC";
@@ -106,7 +108,7 @@ public class CounterModelImpl
 	public static final long NAME_COLUMN_BITMASK = 1L;
 
 	public static final long LOCK_EXPIRATION_TIME = GetterUtil.getLong(
-		com.liferay.portal.util.PropsUtil.get(
+		com.liferay.portal.kernel.util.PropsUtil.get(
 			"lock.expiration.time.com.liferay.counter.kernel.model.Counter"));
 
 	public CounterModelImpl() {
@@ -517,3 +519,4 @@ public class CounterModelImpl
 	private Counter _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:927976806

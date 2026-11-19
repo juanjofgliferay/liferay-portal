@@ -7,8 +7,8 @@ package com.liferay.commerce.notification.service.impl;
 
 import com.liferay.commerce.notification.model.CommerceNotificationTemplate;
 import com.liferay.commerce.notification.model.CommerceNotificationTemplateCommerceAccountGroupRel;
-import com.liferay.commerce.notification.service.CommerceNotificationTemplateLocalService;
 import com.liferay.commerce.notification.service.base.CommerceNotificationTemplateCommerceAccountGroupRelServiceBaseImpl;
+import com.liferay.commerce.notification.service.persistence.CommerceNotificationTemplatePersistence;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
@@ -23,6 +23,7 @@ import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Alessio Antonio Rendina
+ * @deprecated As of Cavanaugh (7.4.x)
  */
 @Component(
 	property = {
@@ -31,6 +32,7 @@ import org.osgi.service.component.annotations.Reference;
 	},
 	service = AopService.class
 )
+@Deprecated
 public class CommerceNotificationTemplateCommerceAccountGroupRelServiceImpl
 	extends CommerceNotificationTemplateCommerceAccountGroupRelServiceBaseImpl {
 
@@ -58,8 +60,8 @@ public class CommerceNotificationTemplateCommerceAccountGroupRelServiceImpl
 
 		CommerceNotificationTemplateCommerceAccountGroupRel
 			commerceNotificationTemplateCommerceAccountGroupRel =
-				commerceNotificationTemplateCommerceAccountGroupRelLocalService.
-					getCommerceNotificationTemplateCommerceAccountGroupRel(
+				commerceNotificationTemplateCommerceAccountGroupRelPersistence.
+					findByPrimaryKey(
 						commerceNotificationTemplateCommerceAccountGroupRelId);
 
 		_commerceNotificationTemplateResourcePermission.check(
@@ -84,9 +86,8 @@ public class CommerceNotificationTemplateCommerceAccountGroupRelServiceImpl
 			getPermissionChecker(), commerceNotificationTemplateId,
 			ActionKeys.VIEW);
 
-		return commerceNotificationTemplateCommerceAccountGroupRelLocalService.
-			fetchCommerceNotificationTemplateCommerceAccountGroupRel(
-				commerceNotificationTemplateId, commerceAccountGroupId);
+		return commerceNotificationTemplateCommerceAccountGroupRelPersistence.
+			fetchByC_C(commerceNotificationTemplateId, commerceAccountGroupId);
 	}
 
 	@Override
@@ -99,9 +100,8 @@ public class CommerceNotificationTemplateCommerceAccountGroupRelServiceImpl
 		throws PortalException {
 
 		CommerceNotificationTemplate commerceNotificationTemplate =
-			_commerceNotificationTemplateLocalService.
-				fetchCommerceNotificationTemplate(
-					commerceNotificationTemplateId);
+			_commerceNotificationTemplatePersistence.fetchByPrimaryKey(
+				commerceNotificationTemplateId);
 
 		if (commerceNotificationTemplate != null) {
 			_commerceNotificationTemplateResourcePermission.check(
@@ -109,14 +109,14 @@ public class CommerceNotificationTemplateCommerceAccountGroupRelServiceImpl
 				ActionKeys.UPDATE);
 		}
 
-		return commerceNotificationTemplateCommerceAccountGroupRelLocalService.
-			getCommerceNotificationTemplateCommerceAccountGroupRels(
+		return commerceNotificationTemplateCommerceAccountGroupRelPersistence.
+			findByCommerceNotificationTemplateId(
 				commerceNotificationTemplateId, start, end, orderByComparator);
 	}
 
 	@Reference
-	private CommerceNotificationTemplateLocalService
-		_commerceNotificationTemplateLocalService;
+	private CommerceNotificationTemplatePersistence
+		_commerceNotificationTemplatePersistence;
 
 	@Reference(
 		target = "(model.class.name=com.liferay.commerce.notification.model.CommerceNotificationTemplate)"

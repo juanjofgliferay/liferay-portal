@@ -9,14 +9,15 @@ import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.fragment.constants.FragmentConstants;
 import com.liferay.fragment.contributor.FragmentCollectionContributor;
 import com.liferay.fragment.contributor.FragmentCollectionContributorRegistry;
+import com.liferay.fragment.model.FragmentComposition;
 import com.liferay.fragment.model.FragmentEntry;
 import com.liferay.fragment.model.FragmentEntryLink;
+import com.liferay.fragment.service.FragmentCompositionLocalServiceUtil;
 import com.liferay.fragment.service.FragmentEntryLinkLocalService;
 import com.liferay.fragment.service.FragmentEntryLocalServiceUtil;
 import com.liferay.layout.test.util.LayoutTestUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
@@ -29,6 +30,7 @@ import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.util.HashMapBuilder;
+import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
@@ -82,6 +84,27 @@ public class FragmentCollectionContributorTest {
 	}
 
 	@Test
+	public void testGetFragmentEntryName() {
+		Assert.assertEquals(
+			"Heading",
+			_fragmentCollectionContributorRegistry.getFragmentEntryName(
+				"BASIC_COMPONENT-heading", LocaleUtil.US));
+
+		FragmentEntry fragmentEntry =
+			_fragmentCollectionContributorRegistry.getFragmentEntry(
+				"BASIC_COMPONENT-heading");
+
+		String name = fragmentEntry.getName();
+
+		Assert.assertEquals(
+			"Título",
+			_fragmentCollectionContributorRegistry.getFragmentEntryName(
+				"BASIC_COMPONENT-heading", LocaleUtil.SPAIN));
+
+		Assert.assertEquals(name, fragmentEntry.getName());
+	}
+
+	@Test
 	public void testPropagateContributedFragmentEntry() throws Exception {
 		String fragmentCollectionContributorKey = RandomTestUtil.randomString();
 
@@ -97,8 +120,9 @@ public class FragmentCollectionContributorTest {
 
 		FragmentEntryLink fragmentEntryLink =
 			_fragmentEntryLinkLocalService.addFragmentEntryLink(
-				TestPropsValues.getUserId(), _group.getGroupId(), 0, 0,
-				segmentsExperienceId, layout.getPlid(), StringPool.BLANK,
+				null, TestPropsValues.getUserId(), _group.getGroupId(), null,
+				null, null, segmentsExperienceId, layout.getPlid(),
+				StringPool.BLANK,
 				"<div data-lfr-editable-id=\"editable-1\" " +
 					"data-lfr-editable-type=\"rich-text\">EDITABLE 1</div>",
 				StringPool.BLANK, StringPool.BLANK, null, StringPool.BLANK, 0,
@@ -129,8 +153,8 @@ public class FragmentCollectionContributorTest {
 			Assert.assertEquals(
 				modifiedHtml, persistedFragmentEntryLink.getHtml());
 
-			JSONObject jsonObject = JSONFactoryUtil.createJSONObject(
-				persistedFragmentEntryLink.getEditableValues());
+			JSONObject jsonObject =
+				persistedFragmentEntryLink.getEditableValuesJSONObject();
 
 			JSONObject editableFragmentEntryProcessorJSONObject =
 				jsonObject.getJSONObject(
@@ -169,6 +193,12 @@ public class FragmentCollectionContributorTest {
 	public void testRegisterContributedFragmentEntries() {
 		String fragmentCollectionContributorKey = RandomTestUtil.randomString();
 
+		FragmentComposition fragmentComposition =
+			FragmentCompositionLocalServiceUtil.createFragmentComposition(0L);
+
+		fragmentComposition.setFragmentCompositionKey(
+			"test-fragment-composition");
+
 		TestFragmentCollectionContributor testFragmentCollectionContributor =
 			new TestFragmentCollectionContributor(
 				fragmentCollectionContributorKey,
@@ -195,7 +225,8 @@ public class FragmentCollectionContributorTest {
 						"test-section-fragment-entry",
 						RandomTestUtil.randomString(),
 						FragmentConstants.TYPE_SECTION)
-				).build());
+				).build(),
+				fragmentComposition);
 
 		ServiceRegistration<?> serviceRegistration = _getServiceRegistration(
 			testFragmentCollectionContributor);
@@ -212,6 +243,13 @@ public class FragmentCollectionContributorTest {
 				fragmentEntries.get("test-section-fragment-entry"));
 			Assert.assertNull(
 				fragmentEntries.get("test-unsupported-fragment-entry"));
+
+			Assert.assertNotNull(
+				_fragmentCollectionContributorRegistry.getFragmentEntry(
+					"test-component-fragment-entry"));
+			Assert.assertNotNull(
+				_fragmentCollectionContributorRegistry.getFragmentComposition(
+					"test-fragment-composition"));
 		}
 		finally {
 			serviceRegistration.unregister();

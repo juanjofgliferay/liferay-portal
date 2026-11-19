@@ -6,14 +6,19 @@
 import userEvent from '@testing-library/user-event';
 import React from 'react';
 
-import '@testing-library/jest-dom/extend-expect';
+import '@testing-library/jest-dom';
+import {State} from '@liferay/frontend-js-state-web';
 import {act, fireEvent, render, screen} from '@testing-library/react';
 
+import {FRAGMENT_ENTRY_TYPES} from '../../../../../../../../../src/main/resources/META-INF/resources/page_editor/app/config/constants/fragmentEntryTypes';
+import {FREEMARKER_FRAGMENT_ENTRY_PROCESSOR} from '../../../../../../../../../src/main/resources/META-INF/resources/page_editor/app/config/constants/freemarkerFragmentEntryProcessor';
 import {LAYOUT_DATA_ITEM_TYPES} from '../../../../../../../../../src/main/resources/META-INF/resources/page_editor/app/config/constants/layoutDataItemTypes';
 import {VIEWPORT_SIZES} from '../../../../../../../../../src/main/resources/META-INF/resources/page_editor/app/config/constants/viewportSizes';
 import {config} from '../../../../../../../../../src/main/resources/META-INF/resources/page_editor/app/config/index';
 import {StoreAPIContextProvider} from '../../../../../../../../../src/main/resources/META-INF/resources/page_editor/app/contexts/StoreContext';
 import updateFormItemConfig from '../../../../../../../../../src/main/resources/META-INF/resources/page_editor/app/thunks/updateFormItemConfig';
+import {pageContentsAtom} from '../../../../../../../../../src/main/resources/META-INF/resources/page_editor/app/utils/usePageContents';
+import {openInfoFieldSelector} from '../../../../../../../../../src/main/resources/META-INF/resources/page_editor/common/openInfoFieldSelector';
 import {FormGeneralPanel} from '../../../../../../../../../src/main/resources/META-INF/resources/page_editor/plugins/browser/components/page_structure/components/item_configuration_panels/FormGeneralPanel';
 
 jest.mock(
@@ -23,7 +28,21 @@ jest.mock(
 
 jest.mock(
 	'../../../../../../../../../src/main/resources/META-INF/resources/page_editor/app/thunks/updateFormItemConfig',
-	() => jest.fn()
+	() => jest.fn(() => () => Promise.resolve())
+);
+
+jest.mock(
+	'../../../../../../../../../src/main/resources/META-INF/resources/page_editor/common/openInfoFieldSelector',
+	() => ({
+		openInfoFieldSelector: jest.fn(() => {}),
+	})
+);
+
+jest.mock(
+	'../../../../../../../../../src/main/resources/META-INF/resources/page_editor/app/services/FormService',
+	() => ({
+		getFormFields: jest.fn(() => Promise.resolve([])),
+	})
 );
 
 jest.mock(
@@ -48,6 +67,7 @@ jest.mock(
 					value: '0',
 				},
 				{
+					className: '11111-className',
 					isRestricted: false,
 					label: 'Form Type 1',
 					subtypes: [],
@@ -83,7 +103,12 @@ const UNMAPPED_FORM_ITEM = {
 	type: LAYOUT_DATA_ITEM_TYPES.form,
 };
 
-const renderComponent = ({item = MAPPED_FORM_ITEM, successMessage} = {}) => {
+const renderComponent = ({
+	item = MAPPED_FORM_ITEM,
+	items,
+	successMessage,
+	fragmentEntryLinks,
+} = {}) => {
 	const mockDispatch = jest.fn((a) => {
 		if (typeof a === 'function') {
 			return a(mockDispatch, () => state);
@@ -96,9 +121,11 @@ const renderComponent = ({item = MAPPED_FORM_ITEM, successMessage} = {}) => {
 	};
 
 	const state = {
+		fragmentEntryLinks: {...fragmentEntryLinks},
 		languageId: 'en_US',
 		layoutData: {
 			items: {
+				...items,
 				[item.itemId]: layoutDataItem,
 			},
 		},
@@ -129,27 +156,32 @@ const renderComponent = ({item = MAPPED_FORM_ITEM, successMessage} = {}) => {
 };
 
 describe('FormGeneralPanel', () => {
+	beforeAll(() => {
+		State.writeAtom(pageContentsAtom, {
+			data: [],
+			status: 'saved',
+		});
+	});
+
 	beforeEach(() => {
 		updateFormItemConfig.mockClear();
 	});
 
-	it('renders success interaction options if the form is mapped', async () => {
+	it('renders success action options if the form is mapped', async () => {
 		await act(async () => {
 			renderComponent();
 		});
 
-		expect(
-			screen.getByLabelText('success-interaction')
-		).toBeInTheDocument();
+		expect(screen.getByLabelText('success-action')).toBeInTheDocument();
 	});
 
-	it('does not renders success interaction options if the form is not mapped', async () => {
+	it('does not renders success action options if the form is not mapped', async () => {
 		await act(async () => {
 			renderComponent({item: UNMAPPED_FORM_ITEM});
 		});
 
 		expect(
-			screen.queryByLabelText('success-interaction')
+			screen.queryByLabelText('success-action')
 		).not.toBeInTheDocument();
 	});
 
@@ -174,14 +206,12 @@ describe('FormGeneralPanel', () => {
 
 		const input = screen.queryByLabelText('embedded-message');
 
-		userEvent.type(input, 'New message', {
-			initialSelectionEnd: 100,
-			initialSelectionStart: 0,
-		});
+		await userEvent.clear(input);
+		await userEvent.type(input, 'New message');
 
 		fireEvent.blur(input);
 
-		expect(updateFormItemConfig).toBeCalledWith(
+		expect(updateFormItemConfig).toHaveBeenCalledWith(
 			expect.objectContaining({
 				itemConfig: {
 					successMessage: {
@@ -200,14 +230,12 @@ describe('FormGeneralPanel', () => {
 
 		const input = screen.getByLabelText('external-url');
 
-		userEvent.type(input, 'https://liferay.com', {
-			initialSelectionEnd: 100,
-			initialSelectionStart: 0,
-		});
+		await userEvent.clear(input);
+		await userEvent.type(input, 'https://liferay.com');
 
 		fireEvent.blur(input);
 
-		expect(updateFormItemConfig).toBeCalledWith(
+		expect(updateFormItemConfig).toHaveBeenCalledWith(
 			expect.objectContaining({
 				itemConfig: {
 					successMessage: {
@@ -357,5 +385,59 @@ describe('FormGeneralPanel', () => {
 				'this-content-is-currently-unavailable-or-has-been-deleted.-users-cannot-see-this-fragment'
 			)
 		).toBeInTheDocument();
+	});
+
+	it('opens field selection modal with correct type when clicking sidebar button', async () => {
+		await act(async () => {
+			renderComponent();
+		});
+
+		const button = screen.getByText('manage-form-fields');
+
+		await fireEvent.click(button);
+
+		expect(openInfoFieldSelector).toHaveBeenCalledWith(
+			expect.objectContaining({
+				itemType: '11111-className',
+			})
+		);
+	});
+
+	it('opens field selection modal with the mapped fields', async () => {
+		await act(async () => {
+			renderComponent({
+				fragmentEntryLinks: {
+					1: {
+						editableValues: {
+							[FREEMARKER_FRAGMENT_ENTRY_PROCESSOR]: {
+								inputFieldId: 'field1',
+							},
+						},
+						fragmentEntryLinkId: '1',
+						fragmentEntryType: FRAGMENT_ENTRY_TYPES.input,
+					},
+				},
+				item: {...MAPPED_FORM_ITEM, children: ['input-item']},
+				items: {
+					'input-item': {
+						children: [],
+						config: {fragmentEntryLinkId: '1'},
+						itemId: 'input-item',
+						parentId: MAPPED_FORM_ITEM.itemId,
+						type: LAYOUT_DATA_ITEM_TYPES.fragment,
+					},
+				},
+			});
+		});
+
+		const button = screen.getByText('manage-form-fields');
+
+		await fireEvent.click(button);
+
+		expect(openInfoFieldSelector).toBeCalledWith(
+			expect.objectContaining({
+				selectedFields: ['field1'],
+			})
+		);
 	});
 });

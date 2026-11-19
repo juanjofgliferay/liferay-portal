@@ -5,20 +5,20 @@
 
 import ClayLayout from '@clayui/layout';
 import {usePrevious} from '@liferay/frontend-js-react-web';
-import React, {useContext, useMemo} from 'react';
-import {Route, Switch} from 'react-router-dom';
+import {fetch} from 'frontend-js-web';
+import React, {useContext, useEffect, useMemo} from 'react';
+import {Navigate, Outlet} from 'react-router';
 
 import HeaderKebab from '../../shared/components/header/HeaderKebab.es';
 import MetricsCalculatedInfo from '../../shared/components/last-updated-info/MetricsCalculatedInfo.es';
 import NavbarTabs from '../../shared/components/navbar-tabs/NavbarTabs.es';
 import PromisesResolver from '../../shared/components/promises-resolver/PromisesResolver.es';
 import {parse, stringify} from '../../shared/components/router/queryString.es';
-import {
-	getPathname,
-	withParams,
-} from '../../shared/components/router/routerUtil.es';
+import {getPathname} from '../../shared/components/router/routerUtil.es';
 import {useDateModified} from '../../shared/hooks/useDateModified.es';
 import {useProcessTitle} from '../../shared/hooks/useProcessTitle.es';
+import {useRouter} from '../../shared/hooks/useRouter.es';
+import {headers, metricsBaseURL} from '../../shared/rest/fetch.es';
 import {AppContext} from '../AppContext.es';
 import {useTimeRangeFetch} from '../filter/hooks/useTimeRangeFetch.es';
 import CompletedItemsCard from '../process-metrics/process-items/CompletedItemsCard.es';
@@ -30,7 +30,9 @@ import PendingItemsCard from './process-items/PendingItemsCard.es';
 import WorkloadByAssigneeCard from './workload-by-assignee-card/WorkloadByAssigneeCard.es';
 import WorkloadByStepCard from './workload-by-step-card/WorkloadByStepCard.es';
 
-const DashboardTab = ({processId, routeParams}) => {
+export function DashboardTab() {
+	const {routeParams} = useRouter();
+	const {processId} = routeParams;
 	const {fetchDateModified} = useContext(AppContext);
 
 	const {dateModified, fetchData} = useDateModified({
@@ -75,9 +77,11 @@ const DashboardTab = ({processId, routeParams}) => {
 			</ClayLayout.ContainerFluid>
 		</PromisesResolver>
 	);
-};
+}
 
-function PerformanceTab({processId, routeParams}) {
+export function PerformanceTab() {
+	const {location, navigate, routeParams} = useRouter();
+	const {processId} = routeParams;
 	const {fetchDateModified} = useContext(AppContext);
 
 	const {dateModified, fetchData} = useDateModified({
@@ -98,6 +102,68 @@ function PerformanceTab({processId, routeParams}) {
 
 	useTimeRangeFetch();
 
+	const addDefaultFiltersToQuery = (defaultTimeRange, query) => {
+		const prefixes = ['completion', 'step', 'assignee', 'completed'];
+
+		for (const prefix of prefixes) {
+			query.filters = {
+				...query.filters,
+				[prefix + 'DateEnd']: defaultTimeRange['dateEnd'],
+				[prefix + 'DateStart']: defaultTimeRange['dateStart'],
+				[prefix + 'TimeRange']: [defaultTimeRange['id']],
+			};
+		}
+
+		query.filters['completionVelocityUnit[0]'] = 'Days';
+		query.filters['stepProcessVersion[0]'] = 'allVersions';
+		query.filters['assigneeTaskNames[0]'] = 'allSteps';
+
+		return stringify(query);
+	};
+
+	const fetchTimeRanges = async () => {
+		let fetchURL = `${metricsBaseURL}${'/time-ranges'}`;
+
+		fetchURL = new URL(fetchURL, Liferay.ThemeDisplay.getPortalURL());
+
+		const response = await fetch(fetchURL, {
+			headers,
+			method: 'GET',
+		});
+
+		return await response.json();
+	};
+
+	useEffect(() => {
+		const replaceHistoryWithDefaultFilters = async () => {
+			const fetchedTimeRanges = await fetchTimeRanges();
+
+			const query = parse(location.search);
+
+			if (
+				fetchedTimeRanges?.items?.length &&
+				!query?.filters?.assigneeDateEnd
+			) {
+				const {items: timeRanges} = fetchedTimeRanges;
+
+				const defaultTimeRange = timeRanges.find(
+					(timeRange) => timeRange.defaultTimeRange
+				);
+
+				const queryWithDefaultFilters = addDefaultFiltersToQuery(
+					defaultTimeRange,
+					query
+				);
+
+				navigate({search: queryWithDefaultFilters}, {replace: true});
+			}
+		};
+
+		replaceHistoryWithDefaultFilters();
+
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, []);
+
 	return (
 		<PromisesResolver promises={promises}>
 			<MetricsCalculatedInfo dateModified={dateModified} />
@@ -115,8 +181,10 @@ function PerformanceTab({processId, routeParams}) {
 	);
 }
 
-export default function ProcessMetricsContainer({history, processId, query}) {
+export default function ProcessMetricsContainer() {
 	const {defaultDelta} = useContext(AppContext);
+	const {location, routeParams} = useRouter();
+	const {processId} = routeParams;
 
 	useProcessTitle(processId);
 
@@ -140,18 +208,18 @@ export default function ProcessMetricsContainer({history, processId, query}) {
 		},
 	};
 
-	if (history.location.pathname === `/metrics/${processId}`) {
+	if (location.pathname === `/metrics/${processId}`) {
 		const pathname = getPathname(
 			tabs.dashboard.params,
 			tabs.dashboard.path
 		);
 
 		const search = stringify({
-			...parse(query),
+			...parse(location.search),
 			filters: {taskNames: ['allSteps']},
 		});
 
-		history.replace({pathname, search});
+		return <Navigate replace to={{pathname, search}} />;
 	}
 
 	return (
@@ -169,19 +237,7 @@ export default function ProcessMetricsContainer({history, processId, query}) {
 
 			<SLAInfo processId={processId} />
 
-			<Switch>
-				<Route
-					exact
-					path={tabs.dashboard.path}
-					render={withParams(DashboardTab)}
-				/>
-
-				<Route
-					exact
-					path={tabs.performance.path}
-					render={withParams(PerformanceTab)}
-				/>
-			</Switch>
+			<Outlet />
 		</div>
 	);
 }

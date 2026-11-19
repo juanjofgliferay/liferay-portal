@@ -12,6 +12,8 @@ import com.liferay.portal.kernel.json.JSONUtil;
  */
 public class OAuthClientEntryConstants {
 
+	public static final long METADATA_CACHE_TIME_DEFAULT = 360000;
+
 	public static final String OIDC_USER_INFO_MAPPER_JSON = JSONUtil.put(
 		"address",
 		JSONUtil.put(
@@ -59,7 +61,11 @@ public class OAuthClientEntryConstants {
 			"screenName", ""
 		)
 	).put(
+		"users_groups", JSONUtil.put("groups", "groups")
+	).put(
 		"users_roles", JSONUtil.put("roles", "")
 	).toString();
+
+	public static final int TOKEN_CONNECTION_TIMEOUT_DEFAULT = 1000;
 
 }

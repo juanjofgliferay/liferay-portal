@@ -5,7 +5,7 @@
 
 package com.liferay.document.library.web.internal.portlet.action;
 
-import com.liferay.change.tracking.spi.constants.CTTimelineKeys;
+import com.liferay.change.tracking.spi.history.util.CTTimelineUtil;
 import com.liferay.document.library.kernel.exception.NoSuchFileEntryException;
 import com.liferay.document.library.kernel.exception.NoSuchFileVersionException;
 import com.liferay.document.library.kernel.model.DLFileEntry;
@@ -21,9 +21,9 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import javax.portlet.PortletException;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
 
 /**
  * @author Sergio González
@@ -39,6 +39,10 @@ public abstract class BaseFileEntryMVCRenderCommand
 		try {
 			FileEntry fileEntry = ActionUtil.getFileEntry(renderRequest);
 
+			if ((fileEntry == null) && isFileEntryRequired()) {
+				throw new NoSuchFileEntryException();
+			}
+
 			if (fileEntry != null) {
 				ThemeDisplay themeDisplay =
 					(ThemeDisplay)renderRequest.getAttribute(
@@ -47,10 +51,9 @@ public abstract class BaseFileEntryMVCRenderCommand
 				checkPermissions(
 					themeDisplay.getPermissionChecker(), fileEntry);
 
-				renderRequest.setAttribute(
-					CTTimelineKeys.CLASS_NAME, DLFileEntry.class.getName());
-				renderRequest.setAttribute(
-					CTTimelineKeys.CLASS_PK, fileEntry.getFileEntryId());
+				CTTimelineUtil.setCTTimelineKeys(
+					renderRequest, DLFileEntry.class,
+					fileEntry.getFileEntryId());
 			}
 
 			renderRequest.setAttribute(
@@ -86,6 +89,10 @@ public abstract class BaseFileEntryMVCRenderCommand
 	}
 
 	protected abstract String getPath();
+
+	protected boolean isFileEntryRequired() {
+		return true;
+	}
 
 	protected void setAttributes(
 			RenderRequest renderRequest, RenderResponse renderResponse)

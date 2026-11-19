@@ -49,7 +49,7 @@ import org.gradle.api.tasks.TaskProvider;
 import org.gradle.api.tasks.util.PatternFilterable;
 import org.gradle.api.tasks.util.PatternSet;
 import org.gradle.util.GUtil;
-import org.gradle.util.NameMatcher;
+import org.gradle.util.internal.NameMatcher;
 
 /**
  * @author Andrea Di Giorgi
@@ -458,9 +458,11 @@ public class GradleUtil {
 
 			String s = _nameMatcher.find(taskName, taskContainer.getNames());
 
-			if (s != null) {
-				fullyQualifiedTaskNames.add(s);
+			if (s == null) {
+				continue;
 			}
+
+			fullyQualifiedTaskNames.add(s);
 		}
 
 		return fullyQualifiedTaskNames;
@@ -521,11 +523,13 @@ public class GradleUtil {
 		while (iterator.hasNext()) {
 			Dependency dependency = iterator.next();
 
-			if (ArrayUtil.contains(
+			if (!ArrayUtil.contains(
 					dependencyNotations, _getDependencyNotation(dependency))) {
 
-				iterator.remove();
+				continue;
 			}
+
+			iterator.remove();
 		}
 	}
 
@@ -540,12 +544,28 @@ public class GradleUtil {
 		extraPropertiesExtension.set(name, value);
 	}
 
+	public static File toFile(File parentFile, Object object) {
+		object = toObject(object);
+
+		if (object == null) {
+			return null;
+		}
+
+		File file = new File(object.toString());
+
+		if (file.isAbsolute()) {
+			return file;
+		}
+
+		return new File(parentFile, object.toString());
+	}
+
 	public static File toFile(Project project, Object object) {
 		if (object == null) {
 			return null;
 		}
 
-		return project.file(object);
+		return toFile(project.getProjectDir(), object);
 	}
 
 	public static Integer toInteger(Object object) {

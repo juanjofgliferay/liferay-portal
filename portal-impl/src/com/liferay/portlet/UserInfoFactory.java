@@ -16,12 +16,12 @@ import com.liferay.portal.kernel.service.UserLocalServiceUtil;
 import com.liferay.portal.kernel.util.InstanceFactory;
 import com.liferay.portal.kernel.util.PortalUtil;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Brian Wing Shun Chan
@@ -99,9 +99,11 @@ public class UserInfoFactory {
 				String userAttributeValue = userAttributes.getValue(
 					userAttributeName);
 
-				if (userAttributeValue != null) {
-					userInfo.put(userAttributeName, userAttributeValue);
+				if (userAttributeValue == null) {
+					continue;
 				}
+
+				userInfo.put(userAttributeName, userAttributeValue);
 			}
 		}
 		catch (Exception exception) {
@@ -157,16 +159,20 @@ public class UserInfoFactory {
 				}
 			}
 
-			if (customUserAttributes != null) {
-				String userAttributeName = entry.getKey();
-
-				String attrValue = customUserAttributes.getValue(
-					userAttributeName, unmodifiableUserInfo);
-
-				if (attrValue != null) {
-					userInfo.put(userAttributeName, attrValue);
-				}
+			if (customUserAttributes == null) {
+				continue;
 			}
+
+			String userAttributeName = entry.getKey();
+
+			String attrValue = customUserAttributes.getValue(
+				userAttributeName, unmodifiableUserInfo);
+
+			if (attrValue == null) {
+				continue;
+			}
+
+			userInfo.put(userAttributeName, attrValue);
 		}
 
 		return userInfo;

@@ -69,9 +69,12 @@ public class CPMeasurementUnitTable extends BaseTable<CPMeasurementUnitTable> {
 		createColumn(
 			"lastPublishDate", Date.class, Types.TIMESTAMP,
 			Column.FLAG_DEFAULT);
+	public final Column<CPMeasurementUnitTable, Integer> status = createColumn(
+		"status", Integer.class, Types.INTEGER, Column.FLAG_DEFAULT);
 
 	private CPMeasurementUnitTable() {
 		super("CPMeasurementUnit", CPMeasurementUnitTable::new);
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-999501138

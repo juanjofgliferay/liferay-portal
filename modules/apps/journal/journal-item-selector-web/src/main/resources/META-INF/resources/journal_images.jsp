@@ -24,8 +24,11 @@ List<RepositoryEntry> portletFileEntries = new ArrayList<>();
 int portletFileEntriesCount = 0;
 
 if (journalArticle != null) {
-	portletFileEntries.addAll(journalArticle.getImagesFileEntries(start, end, (OrderByComparator<FileEntry>)journalItemSelectorViewDisplayContext.getOrderByComparator()));
 	portletFileEntriesCount = journalArticle.getImagesFileEntriesCount();
+
+	startAndEnd = SearchPaginationUtil.calculateStartAndEnd(start, end, portletFileEntriesCount);
+
+	portletFileEntries.addAll(journalArticle.getImagesFileEntries(startAndEnd[0], startAndEnd[1], (OrderByComparator<FileEntry>)journalItemSelectorViewDisplayContext.getOrderByComparator()));
 }
 %>
 
@@ -37,7 +40,7 @@ if (journalArticle != null) {
 	itemSelectorReturnTypeResolver="<%= journalItemSelectorViewDisplayContext.getItemSelectorReturnTypeResolver() %>"
 	maxFileSize="<%= DLValidatorUtil.getMaxAllowableSize(themeDisplay.getScopeGroupId(), null) %>"
 	mimeTypeRestriction="<%= journalItemSelectorViewDisplayContext.getMimeTypeRestriction() %>"
-	portletURL="<%= journalItemSelectorViewDisplayContext.getPortletURL(request, liferayPortletResponse) %>"
+	portletURL="<%= journalItemSelectorViewDisplayContext.getPortletURL(liferayPortletResponse) %>"
 	repositoryEntries="<%= portletFileEntries %>"
 	repositoryEntriesCount="<%= portletFileEntriesCount %>"
 	showSearch="<%= false %>"

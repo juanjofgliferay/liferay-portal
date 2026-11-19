@@ -1,0 +1,1247 @@
+/**
+ * SPDX-FileCopyrightText: (c) 2025 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
+ */
+
+import {ObjectDefinition} from '@liferay/object-admin-rest-client-js/v1_0';
+import {expect, mergeTests} from '@playwright/test';
+
+import {dataApiHelpersTest} from '../../../fixtures/dataApiHelpersTest';
+import {featureFlagsTest} from '../../../fixtures/featureFlagsTest';
+import {loginTest} from '../../../fixtures/loginTest';
+import {addCMSAdministrator} from '../../../utils/addCMSAdministrator';
+import {applyFDSSelectionFilter} from '../../../utils/applyFDSSelectionFilter';
+import {clickAndExpectToBeHidden} from '../../../utils/clickAndExpectToBeHidden';
+import {getRandomInt} from '../../../utils/getRandomInt';
+import getRandomString from '../../../utils/getRandomString';
+import {performUserSwitch, userData} from '../../../utils/performLogin';
+import {waitForAlert} from '../../../utils/waitForAlert';
+import {exportImportPagesTest} from '../../export-import-web/revamp/fixtures/exportImportPagesTest';
+import postSingleApproverCopy from '../../portal-workflow-kaleo-designer-web/main/utils/postSingleApproverCopy';
+import {structureBuilderPagesTest} from '../structure-builder/fixtures/structureBuilderPagesTest';
+import {cmsPagesTest} from './fixtures/cmsPagesTest';
+
+const test = mergeTests(
+	cmsPagesTest,
+	structureBuilderPagesTest,
+	dataApiHelpersTest,
+	loginTest()
+);
+
+const testWithExportImport = mergeTests(
+	cmsPagesTest,
+	dataApiHelpersTest,
+	exportImportPagesTest,
+	featureFlagsTest({
+		'LPD-57655': {enabled: true},
+	}),
+	loginTest(),
+	structureBuilderPagesTest
+);
+
+test(
+	'Structure can be deleted without confirmation if it does not have an approved status',
+	{tag: '@LPD-51516'},
+	async ({apiHelpers, page, structuresPage}) => {
+		const objectDefinition =
+			(await apiHelpers.objectAdmin.postRandomObjectDefinition({
+				objectFolderExternalReferenceCode: 'L_CMS_FILE_TYPES',
+				scope: 'depot',
+				status: {code: 2},
+			})) as ObjectDefinition;
+		const structureName = objectDefinition.name;
+
+		await structuresPage.goto();
+
+		await structuresPage.execItemAction({
+			action: 'Delete',
+			filter: structureName,
+		});
+		await waitForAlert(page, `${structureName} was deleted successfully`, {
+			type: 'success',
+		});
+
+		await expect(structuresPage.getItem(structureName)).toBeHidden();
+	}
+);
+
+test(
+	'Structure can be deleted after manual confirmation if it has an approved status',
+	{tag: '@LPD-51516'},
+	async ({apiHelpers, page, structuresPage}) => {
+		const objectDefinition =
+			(await apiHelpers.objectAdmin.postRandomObjectDefinition({
+				objectFolderExternalReferenceCode: 'L_CMS_FILE_TYPES',
+				scope: 'depot',
+				status: {code: 0},
+			})) as ObjectDefinition;
+		const structureName = objectDefinition.name;
+
+		await structuresPage.goto();
+
+		await structuresPage.execItemAction({
+			action: 'Delete',
+			filter: structureName,
+		});
+
+		await expect(page.locator('.liferay-modal .modal-dialog')).toHaveClass(
+			/modal-dialog-centered/
+		);
+
+		await page
+			.getByPlaceholder('Confirm Content Structure Name')
+			.fill(structureName);
+		await page.getByRole('button', {name: 'Delete'}).click();
+
+		await waitForAlert(page, `${structureName} was deleted successfully`, {
+			type: 'success',
+		});
+
+		await expect(structuresPage.getItem(structureName)).toBeHidden();
+	}
+);
+
+test(
+	'Structures cannot be deleted if they have a relation',
+	{tag: '@LPD-51516'},
+	async ({page, structureBuilderPage, structuresPage}) => {
+
+		// Create structures and relate them
+
+		const structureLabel = getRandomString();
+
+		await structureBuilderPage.createStructureFromData({
+			label: structureLabel,
+			name: `StructureName${getRandomInt()}`,
+			page: structureBuilderPage,
+		});
+
+		const structure2Label = getRandomString();
+
+		await structureBuilderPage.createStructureFromData({
+			label: structure2Label,
+			name: `StructureName2${getRandomInt()}`,
+			page: structureBuilderPage,
+		});
+
+		await structureBuilderPage.addReferencedStructures([structureLabel]);
+
+		await structureBuilderPage.publishStructure();
+
+		// Try to delete them
+
+		await structuresPage.goto();
+
+		await structuresPage.execItemAction({
+			action: 'Delete',
+			filter: structureLabel,
+		});
+
+		await expect(
+			page.getByRole('heading', {name: 'Deletion Not Allowed'})
+		).toBeVisible();
+
+		await expect(page.locator('.liferay-modal .modal-dialog')).toHaveClass(
+			/modal-dialog-centered/
+		);
+
+		await clickAndExpectToBeHidden({
+			target: page.getByRole('button', {name: 'OK'}),
+			trigger: page.getByRole('button', {name: 'OK'}),
+		});
+
+		await structuresPage.execItemAction({
+			action: 'Delete',
+			filter: structure2Label,
+		});
+
+		await expect(
+			page.getByRole('heading', {name: 'Deletion Not Allowed'})
+		).toBeVisible();
+	}
+);
+
+test(
+	'Some actions are only allowed to non-system structures',
+	{tag: '@LPD-51405'},
+	async ({apiHelpers, page, structuresPage}) => {
+		await structuresPage.goto();
+
+		await page
+			.getByRole('row', {name: 'Basic Document'})
+			.locator('.dropdown-toggle')
+			.click();
+
+		expect(
+			page.getByRole('menuitem', {exact: true, name: 'Edit'})
+		).toBeVisible();
+		expect(
+			page.getByRole('menuitem', {exact: true, name: 'View Usages'})
+		).toBeVisible();
+		expect(
+			page.getByRole('menuitem', {exact: true, name: 'Export as JSON'})
+		).toBeVisible();
+		expect(
+			page.getByRole('menuitem', {exact: true, name: 'Permissions'})
+		).toBeVisible();
+
+		expect(
+			page.getByRole('menuitem', {exact: true, name: 'Delete'})
+		).toBeHidden();
+
+		const objectDefinition =
+			(await apiHelpers.objectAdmin.postRandomObjectDefinition({
+				objectFolderExternalReferenceCode: 'L_CMS_FILE_TYPES',
+				scope: 'depot',
+				status: {code: 0},
+			})) as ObjectDefinition;
+
+		apiHelpers.data.push({
+			id: objectDefinition.id,
+			type: 'objectDefinition',
+		});
+
+		await structuresPage.goto();
+
+		await page
+			.getByRole('row', {name: objectDefinition.name})
+			.locator('.dropdown-toggle')
+			.click();
+
+		expect(
+			page.getByRole('menuitem', {exact: true, name: 'Edit'})
+		).toBeVisible();
+		expect(
+			page.getByRole('menuitem', {exact: true, name: 'View Usages'})
+		).toBeVisible();
+		expect(
+			page.getByRole('menuitem', {exact: true, name: 'Export as JSON'})
+		).toBeVisible();
+		expect(
+			page.getByRole('menuitem', {exact: true, name: 'Permissions'})
+		).toBeVisible();
+		expect(
+			page.getByRole('menuitem', {exact: true, name: 'Delete'})
+		).toBeVisible();
+	}
+);
+
+test(
+	'Bulk assign default workflow modal',
+	{tag: '@LPD-76635'},
+	async ({apiHelpers, page, structuresPage}) => {
+		let workflowDefinition: WorkflowDefinition;
+
+		await test.step('Create a custom workflow definition', async () => {
+			workflowDefinition = await postSingleApproverCopy(apiHelpers);
+
+			apiHelpers.data.push({
+				id: workflowDefinition.id,
+				type: 'workflowDefinition',
+			});
+		});
+
+		await test.step('Log in as an CMS Administrator', async () => {
+			const user = await apiHelpers.headlessAdminUser.postUserAccount();
+
+			userData[user.alternateName] = {
+				name: user.givenName,
+				password: 'test',
+				surname: user.familyName,
+			};
+
+			const cmsAdminRole =
+				await apiHelpers.headlessAdminUser.getRoleByName(
+					'CMS Administrator'
+				);
+
+			await apiHelpers.headlessAdminUser.postRoleUserAccountAssociation(
+				cmsAdminRole.id,
+				Number(user.id)
+			);
+
+			await performUserSwitch(page, user.alternateName);
+		});
+
+		await test.step('Check if the modal show the correct value default value', async () => {
+			await structuresPage.goto();
+
+			await page.getByRole('link', {name: 'Basic Document'}).click();
+
+			await page.getByRole('tab', {name: 'Workflow'}).click();
+
+			await page
+				.getByLabel('Select Workflow')
+				.first()
+				.selectOption(workflowDefinition.name);
+
+			await page.getByRole('button', {name: 'Publish'}).click();
+
+			await waitForAlert(page, `Success:`, {
+				type: 'success',
+			});
+
+			await structuresPage.goto();
+
+			await page
+				.getByRole('checkbox', {name: 'Select Basic Document'})
+				.click();
+
+			await page
+				.getByRole('button', {name: 'Assign Default Workflow'})
+				.click();
+
+			await expect(
+				page.getByLabel('Default Workflow', {exact: true})
+			).toBeVisible();
+
+			await expect(
+				page.getByLabel('Default Workflow', {exact: true})
+			).toHaveValue('');
+		});
+
+		await test.step('Check if the scoped workflow settings persist', async () => {
+			await page
+				.getByLabel('Default Workflow', {exact: true})
+				.selectOption('Single Approver');
+
+			await page
+				.getByLabel('Assign Default Workflow to')
+				.getByRole('button', {name: 'Assign Workflow'})
+				.click();
+
+			await waitForAlert(page, `Success:`, {
+				type: 'success',
+			});
+
+			await page.getByRole('link', {name: 'Basic Document'}).click();
+
+			await page.getByRole('tab', {name: 'Workflow'}).click();
+
+			await expect(page.getByLabel('Default Workflow')).toHaveValue(
+				'Single Approver'
+			);
+
+			await expect(
+				page.getByLabel('Select Workflow').first()
+			).toHaveValue(workflowDefinition.name);
+
+			await page.getByLabel('Select Workflow').first().selectOption('');
+
+			await page.getByRole('button', {name: 'Publish'}).click();
+
+			await waitForAlert(page, `Success:`, {
+				type: 'success',
+			});
+		});
+
+		await test.step('Check if the modal can detect mixed workflow options', async () => {
+			await structuresPage.goto();
+
+			await page
+				.getByRole('checkbox', {name: 'Select Basic Document'})
+				.click();
+
+			await page
+				.getByRole('checkbox', {name: 'Select Basic Web Content'})
+				.click();
+
+			await page
+				.getByRole('button', {name: 'Assign Default Workflow'})
+				.click();
+
+			await expect(
+				page.getByLabel('Default Workflow', {exact: true})
+			).toBeVisible();
+
+			await expect(
+				page.getByLabel('Default Workflow', {exact: true})
+			).toHaveValue('Mixed Workflows');
+
+			await expect(
+				page
+					.getByLabel('Assign Workflow')
+					.getByRole('button', {name: 'Assign Workflow'})
+			).toBeDisabled();
+		});
+
+		await test.step('Check if the Bulk action can update multiple structures', async () => {
+			await page
+				.getByLabel('Default Workflow', {exact: true})
+				.selectOption(workflowDefinition.name);
+
+			await expect(
+				page.getByRole('button', {name: 'Assign Workflow'})
+			).toBeEnabled();
+
+			await page.getByRole('button', {name: 'Assign Workflow'}).click();
+
+			await expect(
+				page
+					.getByRole('alert')
+					.locator('div')
+					.filter({hasText: 'Success:'})
+					.first()
+			).toBeVisible();
+
+			await page.getByRole('link', {name: 'Basic Document'}).click();
+
+			await page.getByRole('tab', {name: 'Workflow'}).click();
+
+			await expect(page.getByLabel('Default Workflow')).toBeVisible();
+
+			await expect(page.getByLabel('Default Workflow')).toHaveValue(
+				workflowDefinition.name
+			);
+
+			await structuresPage.goto();
+
+			await page.getByRole('link', {name: 'Basic Web Content'}).click();
+
+			await page.getByRole('tab', {name: 'Workflow'}).click();
+
+			await expect(page.getByLabel('Default Workflow')).toBeVisible();
+
+			await expect(page.getByLabel('Default Workflow')).toHaveValue(
+				workflowDefinition.name
+			);
+		});
+
+		await test.step('Check if the Bulk action can clear multiple structures', async () => {
+			await structuresPage.goto();
+
+			await page
+				.getByRole('checkbox', {name: 'Select Basic Document'})
+				.click();
+
+			await page
+				.getByRole('checkbox', {name: 'Select Basic Web Content'})
+				.click();
+
+			await page
+				.getByRole('button', {name: 'Assign Default Workflow'})
+				.click();
+
+			await expect(
+				page.getByLabel('Default Workflow', {exact: true})
+			).toBeVisible();
+
+			await page
+				.getByLabel('Default Workflow', {exact: true})
+				.selectOption('');
+
+			await expect(
+				page.getByRole('button', {name: 'Assign Workflow'})
+			).toBeEnabled();
+
+			await page.getByRole('button', {name: 'Assign Workflow'}).click();
+
+			await waitForAlert(page, `Success:`, {
+				type: 'success',
+			});
+
+			await page.getByRole('link', {name: 'Basic Document'}).click();
+
+			await page.getByRole('tab', {name: 'Workflow'}).click();
+
+			await expect(page.getByLabel('Default Workflow')).toBeVisible();
+
+			await expect(page.getByLabel('Default Workflow')).toHaveValue('');
+
+			await structuresPage.goto();
+
+			await page.getByRole('link', {name: 'Basic Web Content'}).click();
+
+			await page.getByRole('tab', {name: 'Workflow'}).click();
+
+			await expect(page.getByLabel('Default Workflow')).toBeVisible();
+
+			await expect(page.getByLabel('Default Workflow')).toHaveValue('');
+		});
+	}
+);
+
+testWithExportImport(
+	'Export and Import Content Structures actions open the export and import views from the breadcrumb',
+	{tag: '@LPD-78381'},
+	async ({exportImportPage, page, structuresPage}) => {
+		await structuresPage.openMenuItem('Export Content Structures');
+
+		await expect(page).toHaveURL(/view_export\.jsp/);
+
+		await expect(exportImportPage.newButton).toBeVisible();
+
+		await structuresPage.openMenuItem('Import Content Structures');
+
+		await expect(page).toHaveURL(/view_import\.jsp/);
+
+		await expect(exportImportPage.newButton).toBeVisible();
+	}
+);
+
+testWithExportImport(
+	'CMS Administrator can export and import content structures',
+	{tag: '@LPD-87533'},
+	async ({apiHelpers, exportImportPage, page, structuresPage}) => {
+		const exportName = `MyExport-${getRandomString()}`;
+
+		let folderPath: string;
+
+		await test.step('Log in as a CMS Administrator', async () => {
+			const user = await addCMSAdministrator(apiHelpers);
+
+			await performUserSwitch(page, user.alternateName);
+		});
+
+		await test.step('Export content structures and download the LAR', async () => {
+			await structuresPage.openMenuItem('Export Content Structures');
+
+			await exportImportPage.export(exportName);
+
+			await expect(
+				exportImportPage.taskStatusLabel(exportName)
+			).toBeVisible();
+
+			folderPath = await exportImportPage.download(exportName);
+		});
+
+		await test.step('Import the downloaded LAR back', async () => {
+			await structuresPage.openMenuItem('Import Content Structures');
+
+			await exportImportPage.newButton.click();
+
+			await exportImportPage.import({folderPath, name: exportName});
+		});
+	}
+);
+
+testWithExportImport(
+	'Content structure with a referenced structure and a repeatable group can be imported',
+	{tag: '@LPD-98702'},
+	async ({
+		apiHelpers,
+		exportImportPage,
+		page,
+		structureBuilderPage,
+		structuresPage,
+	}) => {
+		const exportName = `MyExport-${getRandomString()}`;
+		const structureLabel = getRandomString();
+		const structureName = `StructureName${getRandomInt()}`;
+
+		let folderPath: string;
+
+		await test.step('Create a structure with a referenced structure and a repeatable group', async () => {
+			await structureBuilderPage.createStructureFromData({
+				autoDelete: false,
+				label: structureLabel,
+				name: structureName,
+				page: structureBuilderPage,
+				publish: false,
+			});
+
+			await structureBuilderPage.addReferencedStructures([
+				'Basic Web Content',
+			]);
+
+			await structureBuilderPage.addField('Text');
+
+			await structureBuilderPage.createRepeatableGroup({
+				fields: [{label: 'Text'}],
+				label: 'Repeatable Group',
+			});
+
+			await structureBuilderPage.publishStructure();
+		});
+
+		await test.step('Export content structures and download the LAR', async () => {
+			await structuresPage.openMenuItem('Export Content Structures');
+
+			await exportImportPage.export(exportName);
+
+			await expect(
+				exportImportPage.taskStatusLabel(exportName)
+			).toBeVisible();
+
+			folderPath = await exportImportPage.download(exportName);
+		});
+
+		await test.step('Remove the referenced structure and delete the structure', async () => {
+			await structuresPage.goto();
+
+			await structuresPage.execItemAction({
+				action: 'Edit',
+				filter: structureLabel,
+			});
+
+			await structureBuilderPage.deleteFields([
+				{label: 'Basic Web Content'},
+			]);
+
+			await structureBuilderPage.publishStructure();
+
+			await structuresPage.goto();
+
+			await structuresPage.execItemAction({
+				action: 'Delete',
+				filter: structureLabel,
+			});
+
+			await page
+				.getByPlaceholder('Confirm Content Structure Name')
+				.fill(structureLabel);
+			await page.getByRole('button', {name: 'Delete'}).click();
+
+			await waitForAlert(
+				page,
+				`${structureLabel} was deleted successfully`,
+				{type: 'success'}
+			);
+		});
+
+		await test.step('Import the LAR back without errors', async () => {
+			await structuresPage.openMenuItem('Import Content Structures');
+
+			await exportImportPage.newButton.click();
+
+			await exportImportPage.import({folderPath, name: exportName});
+		});
+
+		await test.step('The structure is restored with its referenced structure and repeatable group', async () => {
+			const objectDefinition =
+				await apiHelpers.objectAdmin.waitForObjectDefinition(
+					structureName,
+					{timeout: 30_000}
+				);
+
+			apiHelpers.data.push({
+				id: objectDefinition.id,
+				type: 'objectDefinition',
+			});
+
+			await structureBuilderPage.editStructure(objectDefinition.id);
+
+			await expect(
+				page.locator('.treeview-link', {hasText: 'Basic Web Content'})
+			).toBeVisible();
+			await expect(
+				page.locator('.treeview-link', {hasText: 'Repeatable Group'})
+			).toBeVisible();
+		});
+	}
+);
+
+testWithExportImport(
+	'Export Content Structures list includes only object definitions from CMS folders',
+	{tag: '@LPD-78381'},
+	async ({
+		apiHelpers,
+		exportImportDataSelectionPage,
+		exportImportPage,
+		structuresPage,
+	}) => {
+		const getObjectDefinitionsCount = async () => {
+			await structuresPage.openMenuItem('Export Content Structures');
+
+			await exportImportPage.clickNew();
+
+			const exportableItems =
+				await exportImportDataSelectionPage.getExportableItems();
+
+			return exportableItems.get('Object Definitions') ?? 0;
+		};
+
+		const initialCount = await getObjectDefinitionsCount();
+
+		const objectDefinition1 =
+			await apiHelpers.objectAdmin.postRandomObjectDefinition({
+				objectFolderExternalReferenceCode: 'L_CMS_FILE_TYPES',
+				scope: 'depot',
+				status: {code: 2},
+			});
+
+		apiHelpers.data.push({
+			id: objectDefinition1.id,
+			type: 'objectDefinition',
+		});
+
+		const objectDefinition2 =
+			await apiHelpers.objectAdmin.postRandomObjectDefinition({
+				status: {code: 2},
+			});
+
+		apiHelpers.data.push({
+			id: objectDefinition2.id,
+			type: 'objectDefinition',
+		});
+
+		expect(await getObjectDefinitionsCount()).toBe(initialCount + 1);
+	}
+);
+
+test(
+	'New fields can be added and removed on Basic Web Content but existing fields are locked',
+	{tag: '@LPD-89302'},
+	async ({page, structureBuilderPage, structuresPage}) => {
+		await structuresPage.goto();
+
+		await page.getByRole('link', {name: 'Basic Web Content'}).click();
+
+		const contentTreeItem = page.locator('.treeview-link', {
+			hasText: 'Content',
+		});
+		const titleTreeItem = page.locator('.treeview-link', {
+			hasText: 'Title',
+		});
+
+		await structureBuilderPage.selectFields([{label: 'Content'}]);
+
+		await expect(
+			contentTreeItem.getByLabel('Field Options')
+		).not.toBeVisible();
+
+		await structureBuilderPage.selectFields([{label: 'Title'}]);
+
+		await expect(
+			titleTreeItem.getByLabel('Field Options')
+		).not.toBeVisible();
+
+		await structureBuilderPage.addField('Long Text');
+
+		const longTextTreeItem = page.locator('.treeview-link', {
+			hasText: 'Long Text',
+		});
+
+		await expect(longTextTreeItem).toBeVisible();
+
+		await structureBuilderPage.deleteFields([{label: 'Long Text'}]);
+
+		await expect(longTextTreeItem).not.toBeVisible();
+	}
+);
+
+test(
+	'View Usages lists the assets using the structure and deletes them with the CMS confirmation modal',
+	{tag: ['@LPD-89302', '@LPD-89560']},
+	async ({apiHelpers, page, structuresPage}) => {
+		const applicationName = 'cms/basic-web-contents';
+		const title = `Content ${getRandomString()}`;
+
+		await apiHelpers.objectEntry.postObjectEntry(
+			{
+				objectEntryFolderExternalReferenceCode: 'L_CONTENTS',
+				title,
+			},
+			applicationName,
+			'Default'
+		);
+
+		// Open the usages list of the structure
+
+		await structuresPage.goto();
+
+		await structuresPage.execItemAction({
+			action: 'View Usages',
+			filter: 'Basic Web Content',
+		});
+
+		await test.step('Usages list includes the asset', async () => {
+			await page.locator('.fds').waitFor();
+
+			await expect(page.getByRole('row', {name: title})).toBeVisible();
+		});
+
+		await test.step('Delete shows the CMS confirmation modal', async () => {
+
+			// Open the delete action of the usage entry
+
+			await structuresPage.dataSetFragmentPage.execItemAction({
+				action: 'Delete',
+				filter: title,
+			});
+
+			// The CMS confirmation modal must appear instead of a native
+			// confirm dialog
+
+			await expect(
+				page.getByText('Are you sure you want to delete this entry?')
+			).toBeVisible();
+
+			// Confirm the deletion
+
+			await page
+				.locator('.liferay-modal')
+				.getByRole('button', {exact: true, name: 'Delete'})
+				.click();
+
+			await waitForAlert(page, `${title} was successfully deleted`, {
+				type: 'success',
+			});
+		});
+	}
+);
+
+test(
+	'Permissions of a Content Structure can be modified',
+	{tag: '@LPD-89302'},
+	async ({apiHelpers, page, structuresPage}) => {
+		const objectDefinition =
+			(await apiHelpers.objectAdmin.postRandomObjectDefinition({
+				objectFolderExternalReferenceCode: 'L_CMS_CONTENT_STRUCTURES',
+				scope: 'depot',
+				status: {code: 0},
+			})) as ObjectDefinition;
+
+		apiHelpers.data.push({
+			id: objectDefinition.id,
+			type: 'objectDefinition',
+		});
+
+		const structureName = objectDefinition.name;
+
+		await structuresPage.goto();
+
+		await structuresPage.execItemAction({
+			action: 'Permissions',
+			filter: structureName,
+		});
+
+		const permissionsDialog = page.getByRole('dialog', {
+			name: 'Permissions',
+		});
+		const permissionsFrame = permissionsDialog.frameLocator('iframe');
+
+		const siteMemberDeleteCheckbox = permissionsFrame.getByLabel(
+			'Give Delete permission to users with the Site Member role.'
+		);
+		const siteMemberPermissionsCheckbox = permissionsFrame.getByLabel(
+			'Give Permissions permission to users with the Site Member role.'
+		);
+		const siteMemberUpdateCheckbox = permissionsFrame.getByLabel(
+			'Give Update permission to users with the Site Member role.'
+		);
+		const siteMemberViewCheckbox = permissionsFrame.getByLabel(
+			'Give View permission to users with the Site Member role.'
+		);
+
+		await siteMemberDeleteCheckbox.check();
+		await siteMemberPermissionsCheckbox.check();
+		await siteMemberUpdateCheckbox.check();
+		await siteMemberViewCheckbox.check();
+
+		await permissionsFrame.getByRole('button', {name: 'Save'}).click();
+
+		await waitForAlert(permissionsFrame);
+
+		await permissionsDialog.getByLabel('Close', {exact: true}).click();
+
+		await expect(permissionsDialog).not.toBeAttached();
+
+		await structuresPage.execItemAction({
+			action: 'Permissions',
+			filter: structureName,
+		});
+
+		await expect(siteMemberDeleteCheckbox).toBeChecked();
+		await expect(siteMemberPermissionsCheckbox).toBeChecked();
+		await expect(siteMemberUpdateCheckbox).toBeChecked();
+		await expect(siteMemberViewCheckbox).toBeChecked();
+	}
+);
+
+test(
+	'Content Structure can be scoped to specific spaces',
+	{tag: '@LPD-89302'},
+	async ({apiHelpers, page, structureBuilderPage, structuresPage}) => {
+		const structureLabel = `Structure${getRandomInt()}`;
+
+		const space1 = await apiHelpers.headlessAssetLibrary.createSpace();
+
+		const space2 = await apiHelpers.headlessAssetLibrary.createSpace();
+
+		await structureBuilderPage.createStructureFromData({
+			label: structureLabel,
+			name: structureLabel,
+			page: structureBuilderPage,
+			spaces: [space1.name, space2.name],
+		});
+
+		await structuresPage.goto();
+
+		const row = page.getByRole('row', {name: structureLabel});
+
+		await expect(row).toBeVisible();
+		await expect(row.getByText('All Spaces')).not.toBeVisible();
+
+		await page.getByRole('link', {name: structureLabel}).click();
+
+		await expect(
+			page.locator('.label-secondary', {hasText: space1.name})
+		).toBeVisible();
+		await expect(
+			page.locator('.label-secondary', {hasText: space2.name})
+		).toBeVisible();
+	}
+);
+
+test(
+	'Content Structures list can be filtered by space with include and exclude',
+	{tag: ['@LPD-89342', '@LPD-91933']},
+	async ({apiHelpers, page, structureBuilderPage, structuresPage}) => {
+		const structureLabel = `Structure${getRandomString()}`;
+
+		const space1 = await apiHelpers.headlessAssetLibrary.createSpace();
+
+		const space2 = await apiHelpers.headlessAssetLibrary.createSpace();
+
+		await structureBuilderPage.createStructureFromData({
+			label: structureLabel,
+			page: structureBuilderPage,
+			spaces: [space1.name],
+		});
+
+		const row = structuresPage.getItem(structureLabel);
+
+		await structuresPage.goto();
+		await applyFDSSelectionFilter(page, {
+			filter: 'Space',
+			value: space1.name,
+		});
+		await expect(row).toBeVisible();
+
+		await structuresPage.goto();
+		await applyFDSSelectionFilter(page, {
+			filter: 'Space',
+			value: space2.name,
+		});
+		await expect(row).toBeHidden();
+
+		await structuresPage.goto();
+		await applyFDSSelectionFilter(page, {
+			exclude: true,
+			filter: 'Space',
+			value: space1.name,
+		});
+		await expect(row).toBeHidden();
+
+		await structuresPage.goto();
+		await applyFDSSelectionFilter(page, {
+			exclude: true,
+			filter: 'Space',
+			value: space2.name,
+		});
+		await expect(row).toBeVisible();
+	}
+);
+
+test.describe('Import and Export Structures', () => {
+	test(
+		'Content Structure can be exported as JSON and imported back',
+		{tag: '@LPD-99759'},
+		async ({apiHelpers, page, structureBuilderPage, structuresPage}) => {
+			const structureLabel = `Structure${getRandomInt()}`;
+
+			// Build a plain structure
+
+			const id = await structureBuilderPage.createStructureFromData({
+				autoDelete: false,
+				label: structureLabel,
+				name: structureLabel,
+				page: structureBuilderPage,
+				publish: false,
+			});
+
+			await structureBuilderPage.addField('Text');
+
+			await structureBuilderPage.publishStructure();
+
+			// Export it, then delete it so the import has to recreate it
+
+			const jsonFilePath =
+				await structuresPage.exportStructureAsJSON(structureLabel);
+
+			await apiHelpers.deleteObjectDefinition(id);
+
+			await structuresPage.goto();
+
+			await expect(
+				structuresPage.getItem(structureLabel)
+			).not.toBeVisible();
+
+			// Import the JSON back; the structure is created from scratch
+
+			await structuresPage.importStructureFromJSON(jsonFilePath, {
+				override: false,
+			});
+
+			// Wait for the import response before navigating away, otherwise
+			// the navigation aborts the request while the server is still
+			// writing its response
+
+			await waitForAlert(page, 'successfully imported', {
+				type: 'success',
+			});
+
+			// The structure and its field are restored
+
+			await structuresPage.goto();
+
+			await expect(structuresPage.getItem(structureLabel)).toBeVisible();
+
+			// The import created a new object definition, so register its
+			// id for the cleanup
+
+			const objectDefinition =
+				await apiHelpers.objectAdmin.getObjectDefinitionByName(
+					structureLabel
+				);
+
+			apiHelpers.data.push({
+				id: objectDefinition.id,
+				type: 'objectDefinition',
+			});
+
+			await structuresPage.execItemAction({
+				action: 'Edit',
+				filter: structureLabel,
+			});
+
+			await expect(
+				page.locator('.treeview-link', {hasText: 'Text'})
+			).toBeVisible();
+		}
+	);
+
+	test(
+		'Content Structure with a repeatable field survives a JSON export and import round trip',
+		{tag: '@LPD-99759'},
+		async ({page, structureBuilderPage, structuresPage}) => {
+			const structureLabel = `Structure${getRandomInt()}`;
+			const repeatableGroupLabel = `Repeatable Group ${getRandomInt()}`;
+
+			// Build a structure with a repeatable field
+
+			const id = await structureBuilderPage.createStructureFromData({
+				label: structureLabel,
+				name: structureLabel,
+				page: structureBuilderPage,
+				publish: false,
+			});
+
+			await structureBuilderPage.addField('Text');
+
+			await structureBuilderPage.createRepeatableGroup({
+				fields: [{label: 'Text'}],
+				label: repeatableGroupLabel,
+			});
+
+			await structureBuilderPage.publishStructure();
+
+			// Export, then change the structure so the import has something to
+			// override
+
+			const jsonFilePath =
+				await structuresPage.exportStructureAsJSON(structureLabel);
+
+			await structureBuilderPage.editStructure(id);
+
+			await structureBuilderPage.addField('Long Text');
+
+			await structureBuilderPage.publishStructure();
+
+			// Import the JSON back and override the structure
+
+			await structuresPage.importStructureFromJSON(jsonFilePath);
+
+			await waitForAlert(page, 'successfully imported', {
+				type: 'success',
+			});
+
+			// The repeatable field is restored and the change is reverted
+
+			await structureBuilderPage.editStructure(id);
+
+			await expect(
+				page.locator('.treeview-link', {hasText: repeatableGroupLabel})
+			).toBeVisible();
+
+			await expect(
+				page.locator('.treeview-link', {hasText: 'Long Text'})
+			).not.toBeVisible();
+		}
+	);
+
+	test(
+		'Content Structure that references another survives a JSON export and import round trip',
+		{tag: '@LPD-99759'},
+		async ({page, structureBuilderPage, structuresPage}) => {
+			const referencedStructureLabel = `Referenced${getRandomInt()}`;
+			const structureLabel = `Structure${getRandomInt()}`;
+
+			// Build a structure and another one that references it
+
+			await structureBuilderPage.createStructureFromData({
+				label: referencedStructureLabel,
+				name: referencedStructureLabel,
+				page: structureBuilderPage,
+			});
+
+			const id = await structureBuilderPage.createStructureFromData({
+				label: structureLabel,
+				name: structureLabel,
+				page: structureBuilderPage,
+			});
+
+			await structureBuilderPage.addReferencedStructures([
+				referencedStructureLabel,
+			]);
+
+			await structureBuilderPage.publishStructure();
+
+			// Export, then change the structure so the import has something to
+			// override
+
+			const jsonFilePath =
+				await structuresPage.exportStructureAsJSON(structureLabel);
+
+			await structureBuilderPage.editStructure(id);
+
+			await structureBuilderPage.addField('Long Text');
+
+			await structureBuilderPage.publishStructure();
+
+			// Import the JSON back and override the structure
+
+			await structuresPage.importStructureFromJSON(jsonFilePath);
+
+			await waitForAlert(page, 'successfully imported', {
+				type: 'success',
+			});
+
+			// The referenced structure is still there and the change is reverted
+
+			await structureBuilderPage.editStructure(id);
+
+			await expect(
+				page.locator('.treeview-link', {
+					hasText: referencedStructureLabel,
+				})
+			).toBeVisible();
+
+			await expect(
+				page.locator('.treeview-link', {hasText: 'Long Text'})
+			).not.toBeVisible();
+		}
+	);
+
+	test(
+		'Importing a Content Structure overrides local changes',
+		{tag: '@LPD-99759'},
+		async ({page, structureBuilderPage, structuresPage}) => {
+			const structureLabel = `Structure${getRandomInt()}`;
+
+			// Build a plain structure and export it
+
+			const id = await structureBuilderPage.createStructureFromData({
+				label: structureLabel,
+				name: structureLabel,
+				page: structureBuilderPage,
+				publish: false,
+			});
+
+			await structureBuilderPage.addField('Boolean');
+
+			await structureBuilderPage.publishStructure();
+
+			const jsonFilePath =
+				await structuresPage.exportStructureAsJSON(structureLabel);
+
+			// Add a field after the export
+
+			await structureBuilderPage.editStructure(id);
+
+			await structureBuilderPage.addField('Long Text');
+
+			await expect(
+				page.locator('.treeview-link', {hasText: 'Long Text'})
+			).toBeVisible();
+
+			await structureBuilderPage.publishStructure();
+
+			// Importing the older JSON overrides the structure and drops the field
+
+			await structuresPage.importStructureFromJSON(jsonFilePath);
+
+			await waitForAlert(page, 'successfully imported', {
+				type: 'success',
+			});
+
+			await structureBuilderPage.editStructure(id);
+
+			await expect(
+				page.locator('.treeview-link', {hasText: 'Boolean'})
+			).toBeVisible();
+
+			await expect(
+				page.locator('.treeview-link', {hasText: 'Long Text'})
+			).not.toBeVisible();
+		}
+	);
+
+	test(
+		'Importing a Content Structure cannot drop a repeatable field the persisted structure still has',
+		{tag: '@LPD-99759'},
+		async ({page, structureBuilderPage, structuresPage}) => {
+			const structureLabel = `Structure${getRandomInt()}`;
+			const repeatableGroupLabel = `Repeatable Group ${getRandomInt()}`;
+
+			// Build a plain structure and export it (no repeatable field yet)
+
+			const id = await structureBuilderPage.createStructureFromData({
+				label: structureLabel,
+				name: structureLabel,
+				page: structureBuilderPage,
+				publish: false,
+			});
+
+			await structureBuilderPage.addField('Text');
+
+			await structureBuilderPage.publishStructure();
+
+			const jsonFilePath =
+				await structuresPage.exportStructureAsJSON(structureLabel);
+
+			// Add a repeatable field to the persisted structure after the export
+
+			await structureBuilderPage.editStructure(id);
+
+			await structureBuilderPage.addField('Numeric');
+
+			await structureBuilderPage.createRepeatableGroup({
+				fields: [{label: 'Numeric'}],
+				label: repeatableGroupLabel,
+			});
+
+			await structureBuilderPage.publishStructure();
+
+			// Importing the older JSON would drop the repeatable relationship, which
+			// is an edge relationship the import cannot delete, so it errors out and
+			// leaves the structure untouched
+
+			await structuresPage.importStructureFromJSON(jsonFilePath);
+
+			// The override cannot drop the repeatable relationship, so the modal
+			// shows an error and the structure is left untouched
+
+			await expect(
+				page.locator('.alert-danger', {hasText: 'cannot be deleted'})
+			).toBeVisible();
+
+			await structureBuilderPage.editStructure(id);
+
+			await expect(
+				page.locator('.treeview-link', {hasText: repeatableGroupLabel})
+			).toBeVisible();
+		}
+	);
+});

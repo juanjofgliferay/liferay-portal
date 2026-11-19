@@ -5,9 +5,9 @@
 
 package com.liferay.util.transport;
 
+import com.liferay.petra.io.unsync.UnsyncByteArrayInputStream;
+import com.liferay.petra.io.unsync.UnsyncByteArrayOutputStream;
 import com.liferay.petra.string.StringBundler;
-import com.liferay.portal.kernel.io.unsync.UnsyncByteArrayInputStream;
-import com.liferay.portal.kernel.io.unsync.UnsyncByteArrayOutputStream;
 
 import java.io.InputStream;
 
@@ -79,9 +79,11 @@ public class MulticastDatagramHandler implements DatagramHandler {
 
 				c = inputStream.read(buffer, 0, 1500);
 
-				if (c != -1) {
-					unsyncByteArrayOutputStream.write(buffer, 0, c);
+				if (c == -1) {
+					continue;
 				}
+
+				unsyncByteArrayOutputStream.write(buffer, 0, c);
 			}
 		}
 

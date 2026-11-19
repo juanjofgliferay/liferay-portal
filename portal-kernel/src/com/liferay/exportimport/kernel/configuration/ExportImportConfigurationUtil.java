@@ -17,12 +17,12 @@ import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.PortletRequest;
+
 import java.io.Serializable;
 
 import java.util.HashMap;
 import java.util.Map;
-
-import javax.portlet.PortletRequest;
 
 /**
  * @author Levente Hudák
@@ -75,9 +75,8 @@ public class ExportImportConfigurationUtil {
 	}
 
 	public static String[] getExportImportConfigurationParameter(
-			ExportImportConfiguration exportImportConfiguration,
-			String parameterName)
-		throws PortalException {
+		ExportImportConfiguration exportImportConfiguration,
+		String parameterName) {
 
 		Map<String, Serializable> settingsMap =
 			exportImportConfiguration.getSettingsMap();

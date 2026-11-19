@@ -21,13 +21,10 @@ import com.liferay.commerce.service.CommerceOrderItemLocalService;
 import com.liferay.commerce.service.CommerceOrderLocalService;
 import com.liferay.counter.kernel.service.CounterLocalService;
 import com.liferay.object.action.executor.ObjectActionExecutor;
-import com.liferay.object.model.ObjectDefinition;
 import com.liferay.object.scope.ObjectDefinitionScoped;
-import com.liferay.object.service.ObjectDefinitionLocalService;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.json.JSONObject;
-import com.liferay.portal.kernel.transaction.TransactionCommitCallbackUtil;
+import com.liferay.portal.kernel.transaction.TransactionCallbackUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.UnicodeProperties;
@@ -36,6 +33,7 @@ import com.liferay.portal.kernel.uuid.PortalUUIDUtil;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -60,17 +58,7 @@ public class SplitCommerceOrderByCatalogObjectActionExecutorImpl
 			JSONObject payloadJSONObject, long userId)
 		throws Exception {
 
-		ObjectDefinition objectDefinition =
-			_objectDefinitionLocalService.fetchObjectDefinition(
-				payloadJSONObject.getLong("objectDefinitionId"));
-
-		if (objectDefinition.isSystem() &&
-			!FeatureFlagManagerUtil.isEnabled("COMMERCE-11026")) {
-
-			throw new UnsupportedOperationException();
-		}
-
-		TransactionCommitCallbackUtil.registerCallback(
+		TransactionCallbackUtil.registerCommitCallback(
 			() -> {
 				long commerceOrderId = payloadJSONObject.getLong("classPK");
 
@@ -147,11 +135,7 @@ public class SplitCommerceOrderByCatalogObjectActionExecutorImpl
 
 	@Override
 	public List<String> getAllowedObjectDefinitionNames() {
-		if (FeatureFlagManagerUtil.isEnabled("COMMERCE-11026")) {
-			return Arrays.asList("CommerceOrder");
-		}
-
-		return Arrays.asList("NonexistingObjectDefinition");
+		return Arrays.asList("CommerceOrder");
 	}
 
 	@Override
@@ -395,26 +379,12 @@ public class SplitCommerceOrderByCatalogObjectActionExecutorImpl
 					CPDefinition cpDefinition =
 						commerceOrderItem.getCPDefinition();
 
-					CommerceCatalog commerceCatalog =
-						cpDefinition.getCommerceCatalog();
+					List<CommerceOrderItem> splitCommerceOrderItems =
+						commerceCatalogCommerceOrderItemsMap.computeIfAbsent(
+							cpDefinition.getCommerceCatalog(),
+							key -> new ArrayList<>());
 
-					if (commerceCatalogCommerceOrderItemsMap.containsKey(
-							commerceCatalog)) {
-
-						List<CommerceOrderItem> splitCommerceOrderItems =
-							commerceCatalogCommerceOrderItemsMap.get(
-								commerceCatalog);
-
-						splitCommerceOrderItems.add(commerceOrderItem);
-
-						commerceCatalogCommerceOrderItemsMap.put(
-							commerceCatalog, splitCommerceOrderItems);
-					}
-					else {
-						commerceCatalogCommerceOrderItemsMap.put(
-							commerceCatalog,
-							ListUtil.toList(commerceOrderItem));
-					}
+					splitCommerceOrderItems.add(commerceOrderItem);
 				}
 				catch (Exception exception) {
 					throw new RuntimeException(exception);
@@ -482,8 +452,5 @@ public class SplitCommerceOrderByCatalogObjectActionExecutorImpl
 
 	@Reference
 	private CounterLocalService _counterLocalService;
-
-	@Reference
-	private ObjectDefinitionLocalService _objectDefinitionLocalService;
 
 }

@@ -145,12 +145,15 @@ public interface AssetEntryLocalService
 
 	public void deleteAssetTagAssetEntry(long tagId, long entryId);
 
+	public void deleteEntries(long companyId, String className)
+		throws PortalException;
+
 	@SystemEvent(type = SystemEventConstants.TYPE_DELETE)
-	public void deleteEntry(AssetEntry entry) throws PortalException;
+	public AssetEntry deleteEntry(AssetEntry entry) throws PortalException;
 
-	public void deleteEntry(long entryId) throws PortalException;
+	public AssetEntry deleteEntry(long entryId) throws PortalException;
 
-	public void deleteEntry(String className, long classPK)
+	public AssetEntry deleteEntry(String className, long classPK)
 		throws PortalException;
 
 	public void deleteGroupEntries(long groupId) throws PortalException;
@@ -309,45 +312,10 @@ public interface AssetEntryLocalService
 	public long[] getAssetTagPrimaryKeys(long entryId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<AssetEntry> getCompanyEntries(
-		long companyId, int start, int end);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getCompanyEntriesCount(long companyId);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<AssetEntry> getEntries(AssetEntryQuery entryQuery);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<AssetEntry> getEntries(
-		long[] groupIds, long[] classNameIds, long[] classTypeIds,
-		String keywords, String userName, String title, String description,
-		Boolean listable, boolean advancedSearch, boolean andOperator,
-		int start, int end, String orderByCol1, String orderByCol2,
-		String orderByType1, String orderByType2);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<AssetEntry> getEntries(
-		long[] groupIds, long[] classNameIds, String keywords, String userName,
-		String title, String description, Boolean listable,
-		boolean advancedSearch, boolean andOperator, int start, int end,
-		String orderByCol1, String orderByCol2, String orderByType1,
-		String orderByType2);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public int getEntriesCount(AssetEntryQuery entryQuery);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getEntriesCount(
-		long[] groupIds, long[] classNameIds, long[] classTypeIds,
-		String keywords, String userName, String title, String description,
-		Boolean listable, boolean advancedSearch, boolean andOperator);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getEntriesCount(
-		long[] groupIds, long[] classNameIds, String keywords, String userName,
-		String title, String description, Boolean listable,
-		boolean advancedSearch, boolean andOperator);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public AssetEntry getEntry(long entryId) throws PortalException;
@@ -388,14 +356,6 @@ public interface AssetEntryLocalService
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<AssetEntry> getTopViewedEntries(
-		String className, boolean asc, int start, int end);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<AssetEntry> getTopViewedEntries(
-		String[] className, boolean asc, int start, int end);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public boolean hasAssetTagAssetEntries(long tagId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
@@ -425,15 +385,9 @@ public interface AssetEntryLocalService
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public Hits search(
-		long companyId, long[] groupIds, long userId, String className,
-		long classTypeId, String keywords, boolean showNonindexable, int status,
-		int start, int end);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public Hits search(
-		long companyId, long[] groupIds, long userId, String className,
+		long companyId, long[] groupIds, long userId, long[] classNameIds,
 		long classTypeId, String keywords, boolean showNonindexable,
-		int[] statuses, int start, int end);
+		int[] statuses, int start, int end, Sort[] sorts);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public Hits search(
@@ -444,7 +398,8 @@ public interface AssetEntryLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public Hits search(
 		long companyId, long[] groupIds, long userId, String className,
-		long classTypeId, String keywords, int status, int start, int end);
+		long classTypeId, String keywords, boolean showNonindexable,
+		int[] statuses, int start, int end, Sort[] sorts);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public Hits search(
@@ -461,55 +416,10 @@ public interface AssetEntryLocalService
 		int[] statuses, boolean andSearch, int start, int end);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public Hits search(
-		long companyId, long[] groupIds, long userId, String className,
-		long classTypeId, String userName, String title, String description,
-		String assetCategoryIds, String assetTagNames, int status,
-		boolean andSearch, int start, int end);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public Hits search(
-		long companyId, long[] groupIds, long userId, String className,
-		String keywords, int status, int start, int end);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public Hits search(
-		long companyId, long[] groupIds, long userId, String className,
-		String userName, String title, String description,
-		String assetCategoryIds, String assetTagNames, int status,
-		boolean andSearch, int start, int end);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public long searchCount(
-		long companyId, long[] groupIds, long userId, long[] classNameIds,
-		long classTypeId, String keywords, boolean showNonindexable,
-		int[] statuses);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public long searchCount(
-		long companyId, long[] groupIds, long userId, String className,
-		long classTypeId, String keywords, boolean showNonindexable,
-		int[] statuses);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public long searchCount(
 		long companyId, long[] groupIds, long userId, String className,
 		long classTypeId, String keywords, String assetCategoryIds,
 		String assetTagNames, boolean showInvisible, boolean showNonindexable,
-		int[] statuses, boolean andSearch);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public long searchCount(
-		long companyId, long[] groupIds, long userId, String className,
-		long classTypeId, String userName, String title, String description,
-		String assetCategoryIds, String assetTagNames, boolean showInvisible,
-		boolean showNonindexable, int[] statuses, boolean andSearch);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public long searchCount(
-		long companyId, long[] groupIds, long userId, String className,
-		long classTypeId, String userName, String title, String description,
-		String assetCategoryIds, String assetTagNames, boolean showNonindexable,
 		int[] statuses, boolean andSearch);
 
 	public void setAssetTagAssetEntries(long tagId, long[] entryIds);
@@ -591,3 +501,4 @@ public interface AssetEntryLocalService
 		throws E;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1570765028

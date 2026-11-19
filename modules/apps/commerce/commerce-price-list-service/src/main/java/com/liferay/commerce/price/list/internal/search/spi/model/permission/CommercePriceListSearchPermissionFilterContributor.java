@@ -20,7 +20,7 @@ import com.liferay.portal.kernel.search.filter.BooleanFilter;
 import com.liferay.portal.kernel.search.filter.TermsFilter;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.service.UserGroupRoleLocalService;
-import com.liferay.portal.search.spi.model.permission.SearchPermissionFilterContributor;
+import com.liferay.portal.search.spi.model.permission.contributor.SearchPermissionFilterContributor;
 
 import java.util.List;
 
@@ -53,14 +53,16 @@ public class CommercePriceListSearchPermissionFilterContributor
 					QueryUtil.ALL_POS, QueryUtil.ALL_POS);
 
 			for (AccountEntry accountEntry : accountEntries) {
-				if (_userGroupRoleLocalService.hasUserGroupRole(
+				if (!_userGroupRoleLocalService.hasUserGroupRole(
 						permissionChecker.getUserId(),
 						accountEntry.getAccountEntryGroupId(),
 						AccountRoleConstants.ROLE_NAME_ACCOUNT_SUPPLIER)) {
 
-					termsFilter.addValue(
-						String.valueOf(accountEntry.getAccountEntryId()));
+					continue;
 				}
+
+				termsFilter.addValue(
+					String.valueOf(accountEntry.getAccountEntryId()));
 			}
 
 			if (!termsFilter.isEmpty()) {

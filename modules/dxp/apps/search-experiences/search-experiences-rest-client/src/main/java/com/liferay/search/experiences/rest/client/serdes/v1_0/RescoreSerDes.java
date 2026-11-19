@@ -8,13 +8,14 @@ package com.liferay.search.experiences.rest.client.serdes.v1_0;
 import com.liferay.search.experiences.rest.client.dto.v1_0.Rescore;
 import com.liferay.search.experiences.rest.client.json.BaseJSONParser;
 
+import jakarta.annotation.Generated;
+
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
-
-import javax.annotation.Generated;
 
 /**
  * @author Brian Wing Shun Chan
@@ -51,14 +52,7 @@ public class RescoreSerDes {
 
 			sb.append("\"query\": ");
 
-			if (rescore.getQuery() instanceof String) {
-				sb.append("\"");
-				sb.append((String)rescore.getQuery());
-				sb.append("\"");
-			}
-			else {
-				sb.append(rescore.getQuery());
-			}
+			sb.append(_toJSON(rescore.getQuery()));
 		}
 
 		if (rescore.getQueryWeight() != null) {
@@ -68,14 +62,7 @@ public class RescoreSerDes {
 
 			sb.append("\"queryWeight\": ");
 
-			if (rescore.getQueryWeight() instanceof String) {
-				sb.append("\"");
-				sb.append((String)rescore.getQueryWeight());
-				sb.append("\"");
-			}
-			else {
-				sb.append(rescore.getQueryWeight());
-			}
+			sb.append(_toJSON(rescore.getQueryWeight()));
 		}
 
 		if (rescore.getRescoreQueryWeight() != null) {
@@ -85,14 +72,7 @@ public class RescoreSerDes {
 
 			sb.append("\"rescoreQueryWeight\": ");
 
-			if (rescore.getRescoreQueryWeight() instanceof String) {
-				sb.append("\"");
-				sb.append((String)rescore.getRescoreQueryWeight());
-				sb.append("\"");
-			}
-			else {
-				sb.append(rescore.getRescoreQueryWeight());
-			}
+			sb.append(_toJSON(rescore.getRescoreQueryWeight()));
 		}
 
 		if (rescore.getScoreMode() != null) {
@@ -116,14 +96,7 @@ public class RescoreSerDes {
 
 			sb.append("\"windowSize\": ");
 
-			if (rescore.getWindowSize() instanceof String) {
-				sb.append("\"");
-				sb.append((String)rescore.getWindowSize());
-				sb.append("\"");
-			}
-			else {
-				sb.append(rescore.getWindowSize());
-			}
+			sb.append(_toJSON(rescore.getWindowSize()));
 		}
 
 		sb.append("}");
@@ -197,6 +170,29 @@ public class RescoreSerDes {
 		}
 
 		@Override
+		protected boolean parseMaps(String jsonParserFieldName) {
+			if (Objects.equals(jsonParserFieldName, "query")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "queryWeight")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "rescoreQueryWeight")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "scoreMode")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "windowSize")) {
+				return false;
+			}
+
+			return false;
+		}
+
+		@Override
 		protected void setField(
 			Rescore rescore, String jsonParserFieldName,
 			Object jsonParserFieldValue) {
@@ -260,36 +256,7 @@ public class RescoreSerDes {
 
 			Object value = entry.getValue();
 
-			Class<?> valueClass = value.getClass();
-
-			if (value instanceof Map) {
-				sb.append(_toJSON((Map)value));
-			}
-			else if (valueClass.isArray()) {
-				Object[] values = (Object[])value;
-
-				sb.append("[");
-
-				for (int i = 0; i < values.length; i++) {
-					sb.append("\"");
-					sb.append(_escape(values[i]));
-					sb.append("\"");
-
-					if ((i + 1) < values.length) {
-						sb.append(", ");
-					}
-				}
-
-				sb.append("]");
-			}
-			else if (value instanceof String) {
-				sb.append("\"");
-				sb.append(_escape(entry.getValue()));
-				sb.append("\"");
-			}
-			else {
-				sb.append(String.valueOf(entry.getValue()));
-			}
+			sb.append(_toJSON(value));
 
 			if (iterator.hasNext()) {
 				sb.append(", ");
@@ -301,4 +268,47 @@ public class RescoreSerDes {
 		return sb.toString();
 	}
 
+	private static String _toJSON(Object value) {
+		if (value == null) {
+			return "null";
+		}
+
+		if (value instanceof Collection) {
+			Collection<?> collection = (Collection<?>)value;
+
+			return _toJSON(collection.toArray());
+		}
+
+		if (value instanceof Map) {
+			return _toJSON((Map)value);
+		}
+
+		Class<?> clazz = value.getClass();
+
+		if (clazz.isArray()) {
+			StringBuilder sb = new StringBuilder("[");
+
+			Object[] values = (Object[])value;
+
+			for (int i = 0; i < values.length; i++) {
+				sb.append(_toJSON(values[i]));
+
+				if ((i + 1) < values.length) {
+					sb.append(", ");
+				}
+			}
+
+			sb.append("]");
+
+			return sb.toString();
+		}
+
+		if (value instanceof String) {
+			return "\"" + _escape(value) + "\"";
+		}
+
+		return String.valueOf(value);
+	}
+
 }
+// LIFERAY-REST-BUILDER-HASH:757644924

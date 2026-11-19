@@ -6,17 +6,18 @@
 import ClayButton from '@clayui/button';
 import ClayForm from '@clayui/form';
 import ClayModal from '@clayui/modal';
-import {Observer} from '@clayui/modal/lib/types';
 import {
 	FormError,
 	Input,
-	REQUIRED_MSG,
+	constantsUtils,
 	useForm,
 } from '@liferay/object-js-components-web';
 import React from 'react';
 
 import {defaultLanguageId} from '../../../utils/constants';
 import {TYPES, useLayoutContext} from '../objectLayoutContext';
+
+import type {Observer} from '@clayui/modal/src/types';
 
 type TInitialValues = {
 	name: string;
@@ -58,7 +59,7 @@ export function ModalAddObjectLayoutBox({
 		const errors: FormError<TInitialValues> = {};
 
 		if (!values.name) {
-			errors.name = REQUIRED_MSG;
+			errors.name = constantsUtils.REQUIRED_MSG;
 		}
 
 		return errors;
@@ -73,7 +74,9 @@ export function ModalAddObjectLayoutBox({
 	return (
 		<ClayModal observer={observer}>
 			<ClayForm onSubmit={handleSubmit}>
-				<ClayModal.Header>
+				<ClayModal.Header
+					closeButtonAriaLabel={Liferay.Language.get('close')}
+				>
 					{Liferay.Language.get('add-block')}
 				</ClayModal.Header>
 

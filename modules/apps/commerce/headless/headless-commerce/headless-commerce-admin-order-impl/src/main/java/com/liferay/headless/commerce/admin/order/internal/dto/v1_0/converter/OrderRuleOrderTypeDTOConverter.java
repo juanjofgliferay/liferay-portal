@@ -9,7 +9,6 @@ import com.liferay.commerce.model.CommerceOrderType;
 import com.liferay.commerce.order.rule.model.COREntry;
 import com.liferay.commerce.order.rule.model.COREntryRel;
 import com.liferay.commerce.order.rule.service.COREntryRelService;
-import com.liferay.commerce.order.rule.service.COREntryService;
 import com.liferay.commerce.service.CommerceOrderTypeService;
 import com.liferay.headless.commerce.admin.order.dto.v1_0.OrderRuleOrderType;
 import com.liferay.portal.vulcan.dto.converter.DTOConverter;
@@ -22,7 +21,10 @@ import org.osgi.service.component.annotations.Reference;
  * @author Marco Leo
  */
 @Component(
-	property = "dto.class.name=com.liferay.commerce.order.rule.model.COREntryRel-OrderType",
+	property = {
+		"default=true",
+		"dto.class.name=com.liferay.commerce.order.rule.model.COREntryRel-OrderType"
+	},
 	service = DTOConverter.class
 )
 public class OrderRuleOrderTypeDTOConverter
@@ -47,14 +49,14 @@ public class OrderRuleOrderTypeDTOConverter
 
 		return new OrderRuleOrderType() {
 			{
-				actions = dtoConverterContext.getActions();
-				orderRuleExternalReferenceCode =
-					corEntry.getExternalReferenceCode();
-				orderRuleId = corEntry.getCOREntryId();
-				orderRuleOrderTypeId = corEntryRel.getCOREntryRelId();
-				orderTypeExternalReferenceCode =
-					commerceOrderType.getExternalReferenceCode();
-				orderTypeId = commerceOrderType.getCommerceOrderTypeId();
+				setActions(dtoConverterContext::getActions);
+				setOrderRuleExternalReferenceCode(
+					corEntry::getExternalReferenceCode);
+				setOrderRuleId(corEntry::getCOREntryId);
+				setOrderRuleOrderTypeId(corEntryRel::getCOREntryRelId);
+				setOrderTypeExternalReferenceCode(
+					commerceOrderType::getExternalReferenceCode);
+				setOrderTypeId(commerceOrderType::getCommerceOrderTypeId);
 			}
 		};
 	}
@@ -64,8 +66,5 @@ public class OrderRuleOrderTypeDTOConverter
 
 	@Reference
 	private COREntryRelService _corEntryRelService;
-
-	@Reference
-	private COREntryService _corEntryService;
 
 }

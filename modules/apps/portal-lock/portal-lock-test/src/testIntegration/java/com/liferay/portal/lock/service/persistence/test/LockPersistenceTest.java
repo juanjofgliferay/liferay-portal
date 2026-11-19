@@ -111,11 +111,7 @@ public class LockPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		Lock newLock = _persistence.create(pk);
-
-		newLock.setMvccVersion(RandomTestUtil.nextLong());
+		Lock newLock = addLock();
 
 		newLock.setUuid(RandomTestUtil.randomString());
 
@@ -137,7 +133,9 @@ public class LockPersistenceTest {
 
 		newLock.setExpirationDate(RandomTestUtil.nextDate());
 
-		_locks.add(_persistence.update(newLock));
+		newLock = _persistence.update(newLock);
+
+		_locks.add(newLock);
 
 		Lock existingLock = _persistence.findByPrimaryKey(
 			newLock.getPrimaryKey());
@@ -199,12 +197,31 @@ public class LockPersistenceTest {
 	}
 
 	@Test
+	public void testCountByC_C() throws Exception {
+		_persistence.countByC_C(RandomTestUtil.nextLong(), "");
+
+		_persistence.countByC_C(0L, "null");
+
+		_persistence.countByC_C(0L, (String)null);
+	}
+
+	@Test
 	public void testCountByC_K() throws Exception {
 		_persistence.countByC_K("", "");
 
 		_persistence.countByC_K("null", "null");
 
 		_persistence.countByC_K((String)null, (String)null);
+	}
+
+	@Test
+	public void testCountByC_U_C() throws Exception {
+		_persistence.countByC_U_C(
+			RandomTestUtil.nextLong(), RandomTestUtil.nextLong(), "");
+
+		_persistence.countByC_U_C(0L, 0L, "null");
+
+		_persistence.countByC_U_C(0L, 0L, (String)null);
 	}
 
 	@Test
@@ -502,8 +519,6 @@ public class LockPersistenceTest {
 
 		Lock lock = _persistence.create(pk);
 
-		lock.setMvccVersion(RandomTestUtil.nextLong());
-
 		lock.setUuid(RandomTestUtil.randomString());
 
 		lock.setCompanyId(RandomTestUtil.nextLong());
@@ -534,3 +549,4 @@ public class LockPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:410881603

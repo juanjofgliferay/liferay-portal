@@ -321,15 +321,6 @@ public interface CommerceShipmentItemLocalService
 		long commerceShipmentId, int start, int end,
 		OrderByComparator<CommerceShipmentItem> orderByComparator);
 
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<CommerceShipmentItem> getCommerceShipmentItems(
-		long commerceShipmentId, long commerceOrderItemId, int start, int end,
-		OrderByComparator<CommerceShipmentItem> orderByComparator);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<CommerceShipmentItem>
-		getCommerceShipmentItemsByCommerceOrderItemId(long commerceOrderItemId);
-
 	/**
 	 * Returns all the commerce shipment items matching the UUID and company.
 	 *
@@ -367,10 +358,6 @@ public interface CommerceShipmentItemLocalService
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public int getCommerceShipmentItemsCount(long commerceShipmentId);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getCommerceShipmentItemsCountByCommerceOrderItemId(
-		long commerceOrderItemId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public BigDecimal getCommerceShipmentOrderItemsQuantity(
@@ -424,3 +411,4 @@ public interface CommerceShipmentItemLocalService
 		throws PortalException;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:495712851

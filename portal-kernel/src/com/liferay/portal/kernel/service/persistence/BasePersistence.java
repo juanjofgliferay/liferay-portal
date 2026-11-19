@@ -17,6 +17,7 @@ import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.model.BaseModel;
 import com.liferay.portal.kernel.model.ModelListener;
 import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.template.TemplateRestricted;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -24,6 +25,7 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 
 import javax.sql.DataSource;
 
@@ -39,7 +41,12 @@ import javax.sql.DataSource;
  * @author Brian Wing Shun Chan
  * @see    com.liferay.portal.kernel.service.persistence.impl.BasePersistenceImpl
  */
+@TemplateRestricted
 public interface BasePersistence<T extends BaseModel<T>> {
+
+	public void cacheResult(List<T> models);
+
+	public void cacheResult(T model);
 
 	/**
 	 * Clears the cache for all instances of this model.
@@ -84,6 +91,8 @@ public interface BasePersistence<T extends BaseModel<T>> {
 
 	public void closeSession(Session session);
 
+	public int countAll();
+
 	/**
 	 * Returns the number of rows that match the dynamic query.
 	 *
@@ -104,8 +113,18 @@ public interface BasePersistence<T extends BaseModel<T>> {
 
 	public <R> R dslQuery(DSLQuery dslQuery);
 
+	public <R> R dslQuery(DSLQuery dslQuery, boolean useFinderCache);
+
 	public default int dslQueryCount(DSLQuery dslQuery) {
 		Long count = dslQuery(dslQuery);
+
+		return count.intValue();
+	}
+
+	public default int dslQueryCount(
+		DSLQuery dslQuery, boolean useFinderCache) {
+
+		Long count = dslQuery(dslQuery, useFinderCache);
 
 		return count.intValue();
 	}
@@ -122,6 +141,17 @@ public interface BasePersistence<T extends BaseModel<T>> {
 
 	public Map<Serializable, T> fetchByPrimaryKeys(
 		Set<Serializable> primaryKeys);
+
+	public List<T> findAll();
+
+	public List<T> findAll(int start, int end);
+
+	public List<T> findAll(
+		int start, int end, OrderByComparator<T> orderByComparator);
+
+	public List<T> findAll(
+		int start, int end, OrderByComparator<T> orderByComparator,
+		boolean useFinderCache);
 
 	/**
 	 * Returns the model instance with the primary key or throws a {@link
@@ -197,6 +227,8 @@ public interface BasePersistence<T extends BaseModel<T>> {
 
 	public Session getCurrentSession() throws ORMException;
 
+	public DB getDB();
+
 	/**
 	 * Returns the data source for this model.
 	 *
@@ -204,8 +236,6 @@ public interface BasePersistence<T extends BaseModel<T>> {
 	 * @see    #setDataSource(DataSource)
 	 */
 	public DataSource getDataSource();
-
-	public DB getDB();
 
 	public Dialect getDialect();
 
@@ -222,6 +252,8 @@ public interface BasePersistence<T extends BaseModel<T>> {
 	public Session openSession() throws ORMException;
 
 	public SystemException processException(Exception exception);
+
+	public T reassociateIfAbsent(T model);
 
 	/**
 	 * Registers a new listener for this model.
@@ -252,6 +284,10 @@ public interface BasePersistence<T extends BaseModel<T>> {
 	 * @return the model instance that was removed
 	 */
 	public T remove(T model);
+
+	public void removeAll();
+
+	public T removeByFunction(T model, Function<T, T> function);
 
 	/**
 	 * Sets the data source for this model.

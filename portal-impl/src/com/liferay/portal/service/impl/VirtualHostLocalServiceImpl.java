@@ -6,7 +6,7 @@
 package com.liferay.portal.service.impl;
 
 import com.liferay.petra.reflect.ReflectionUtil;
-import com.liferay.petra.string.StringPool;
+import com.liferay.portal.db.partition.util.DBPartitionUtil;
 import com.liferay.portal.kernel.bean.BeanReference;
 import com.liferay.portal.kernel.dao.orm.EntityCacheUtil;
 import com.liferay.portal.kernel.exception.AvailableLocaleException;
@@ -22,13 +22,15 @@ import com.liferay.portal.kernel.model.VirtualHost;
 import com.liferay.portal.kernel.service.persistence.CompanyPersistence;
 import com.liferay.portal.kernel.service.persistence.GroupPersistence;
 import com.liferay.portal.kernel.service.persistence.LayoutSetPersistence;
-import com.liferay.portal.kernel.transaction.TransactionCommitCallbackUtil;
+import com.liferay.portal.kernel.transaction.TransactionCallbackUtil;
+import com.liferay.portal.kernel.util.ArrayUtil;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
-import com.liferay.portal.kernel.util.TreeMapBuilder;
+import com.liferay.portal.kernel.util.PropsUtil;
+import com.liferay.portal.kernel.util.PropsValues;
+import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.model.impl.LayoutSetImpl;
 import com.liferay.portal.service.base.VirtualHostLocalServiceBaseImpl;
-import com.liferay.portal.util.PropsValues;
 
 import java.net.IDN;
 import java.net.Inet6Address;
@@ -36,6 +38,8 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
@@ -49,25 +53,58 @@ import java.util.TreeMap;
 public class VirtualHostLocalServiceImpl
 	extends VirtualHostLocalServiceBaseImpl {
 
-	/**
-	 * @deprecated As of Mueller (7.2.x), replaced by {@link
-	 *             #getVirtualHosts(long, long)}
-	 */
-	@Deprecated
 	@Override
-	public VirtualHost fetchVirtualHost(long companyId, long layoutSetId) {
-		return virtualHostPersistence.fetchByC_L_D(
-			companyId, layoutSetId, true);
+	public VirtualHost fetchCompanyDefaultVirtualHost(long companyId) {
+		List<VirtualHost> virtualHosts = getVirtualHosts(companyId, 0);
+
+		if (virtualHosts.isEmpty()) {
+			return null;
+		}
+
+		if (virtualHosts.size() == 1) {
+			VirtualHost virtualHost = virtualHosts.get(0);
+
+			if (virtualHost.isDefaultVirtualHost()) {
+				return virtualHost;
+			}
+
+			return null;
+		}
+
+		List<VirtualHost> defaultVirtualHosts = new ArrayList<>();
+
+		for (VirtualHost virtualHost : virtualHosts) {
+			if (!virtualHost.isDefaultVirtualHost()) {
+				continue;
+			}
+
+			defaultVirtualHosts.add(virtualHost);
+		}
+
+		if (defaultVirtualHosts.isEmpty()) {
+			return null;
+		}
+
+		if ((defaultVirtualHosts.size() > 1) && _log.isWarnEnabled()) {
+			_log.error(
+				"More than one default virtual host uses company ID " +
+					companyId);
+		}
+
+		return defaultVirtualHosts.get(defaultVirtualHosts.size() - 1);
 	}
 
 	@Override
-	public VirtualHost fetchVirtualHost(String hostname) {
-		if (Validator.isIPv6Address(hostname)) {
+	public VirtualHost fetchVirtualHost(String virtualHostname) {
+		virtualHostname = StringUtil.toLowerCase(
+			StringUtil.trim(virtualHostname));
+
+		if (Validator.isIPv6Address(virtualHostname)) {
 			try {
 				Inet6Address inet6Address = (Inet6Address)InetAddress.getByName(
-					hostname);
+					virtualHostname);
 
-				hostname = inet6Address.getHostAddress();
+				virtualHostname = inet6Address.getHostAddress();
 			}
 			catch (UnknownHostException unknownHostException) {
 				if (_log.isDebugEnabled()) {
@@ -77,41 +114,36 @@ public class VirtualHostLocalServiceImpl
 		}
 
 		VirtualHost virtualHost = virtualHostPersistence.fetchByHostname(
-			hostname);
+			virtualHostname);
 
-		if ((virtualHost == null) && hostname.contains("xn--")) {
+		if (virtualHost != null) {
+			return virtualHost;
+		}
+
+		for (String idnVirtualHostname : _getIDNHostnames(virtualHostname)) {
 			virtualHost = virtualHostPersistence.fetchByHostname(
-				IDN.toUnicode(hostname));
+				idnVirtualHostname);
+
+			if (virtualHost != null) {
+				return virtualHost;
+			}
+		}
+
+		return null;
+	}
+
+	@Override
+	public VirtualHost getVirtualHost(String virtualHostname)
+		throws PortalException {
+
+		VirtualHost virtualHost = fetchVirtualHost(virtualHostname);
+
+		if (virtualHost == null) {
+			throw new NoSuchVirtualHostException(
+				"{hostname=" + virtualHostname + "}");
 		}
 
 		return virtualHost;
-	}
-
-	/**
-	 * @deprecated As of Mueller (7.2.x), replaced by {@link
-	 *             #getVirtualHosts(long, long)}
-	 */
-	@Deprecated
-	@Override
-	public VirtualHost getVirtualHost(long companyId, long layoutSetId)
-		throws PortalException {
-
-		return virtualHostPersistence.findByC_L_D(companyId, layoutSetId, true);
-	}
-
-	@Override
-	public VirtualHost getVirtualHost(String hostname) throws PortalException {
-		try {
-			return virtualHostPersistence.findByHostname(hostname);
-		}
-		catch (NoSuchVirtualHostException noSuchVirtualHostException) {
-			if (hostname.contains("xn--")) {
-				return virtualHostPersistence.findByHostname(
-					IDN.toUnicode(hostname));
-			}
-
-			throw noSuchVirtualHostException;
-		}
 	}
 
 	@Override
@@ -121,42 +153,57 @@ public class VirtualHostLocalServiceImpl
 
 	@Override
 	public List<VirtualHost> getVirtualHosts(long companyId, long layoutSetId) {
-		return virtualHostPersistence.findByC_L(companyId, layoutSetId);
+		if (_cacheableQueryLimitLPD27353 <= 0) {
+			return virtualHostPersistence.findByC_L(companyId, layoutSetId);
+		}
+
+		List<VirtualHost> virtualHosts = virtualHostPersistence.findByCompanyId(
+			companyId);
+
+		if (virtualHosts.size() > _cacheableQueryLimitLPD27353) {
+			_cacheableQueryLimitLPD27353 = 0;
+		}
+
+		List<VirtualHost> filteredVirtualHosts = null;
+
+		for (VirtualHost virtualHost : virtualHosts) {
+			if (virtualHost.getLayoutSetId() != layoutSetId) {
+				continue;
+			}
+
+			if (filteredVirtualHosts == null) {
+				filteredVirtualHosts = new ArrayList<>(virtualHosts.size());
+			}
+
+			filteredVirtualHosts.add(virtualHost);
+		}
+
+		if (filteredVirtualHosts == null) {
+			return Collections.emptyList();
+		}
+
+		return filteredVirtualHosts;
 	}
 
 	@Override
 	public long getVirtualHostsCount(
 		long excludedLayoutSetId, String[] virtualHostNames) {
 
-		return virtualHostPersistence.countByNotL_H(
-			excludedLayoutSetId, virtualHostNames);
-	}
+		Set<String> hostnames = new HashSet<>();
 
-	/**
-	 * @deprecated As of Mueller (7.2.x), replaced by {@link
-	 *             #updateVirtualHosts(long, long, TreeMap)}
-	 */
-	@Deprecated
-	@Override
-	public VirtualHost updateVirtualHost(
-		long companyId, long layoutSetId, String hostname) {
-
-		List<VirtualHost> virtualHosts = updateVirtualHosts(
-			companyId, layoutSetId,
-			TreeMapBuilder.put(
-				hostname, StringPool.BLANK
-			).build());
-
-		if (virtualHosts.isEmpty()) {
-			return null;
+		for (String virtualHostName : virtualHostNames) {
+			hostnames.add(virtualHostName);
+			hostnames.addAll(_getIDNHostnames(virtualHostName));
 		}
 
-		return virtualHosts.get(0);
+		return virtualHostPersistence.countByNotL_H(
+			excludedLayoutSetId, ArrayUtil.toStringArray(hostnames));
 	}
 
 	@Override
 	public List<VirtualHost> updateVirtualHosts(
-		long companyId, long layoutSetId, TreeMap<String, String> hostnames) {
+		long companyId, long layoutSetId,
+		TreeMap<String, String> virtualHostnames) {
 
 		LayoutSet layoutSet = _layoutSetPersistence.fetchByPrimaryKey(
 			layoutSetId);
@@ -173,11 +220,11 @@ public class VirtualHostLocalServiceImpl
 
 		boolean first = true;
 
-		for (String curHostname : hostnames.navigableKeySet()) {
+		for (String curVirtualHostname : virtualHostnames.navigableKeySet()) {
 			VirtualHost virtualHost = null;
 
 			for (VirtualHost curVirtualHost : virtualHosts) {
-				if (curHostname.equals(curVirtualHost.getHostname())) {
+				if (curVirtualHostname.equals(curVirtualHost.getHostname())) {
 					virtualHost = curVirtualHost;
 
 					break;
@@ -185,18 +232,18 @@ public class VirtualHostLocalServiceImpl
 			}
 
 			if (virtualHost == null) {
-				long virtualHostId = counterLocalService.increment();
+				long virtualHostId = DBPartitionUtil.incrementCounter();
 
 				virtualHost = virtualHostPersistence.create(virtualHostId);
 
 				virtualHost.setCompanyId(companyId);
 				virtualHost.setLayoutSetId(layoutSetId);
-				virtualHost.setHostname(curHostname);
+				virtualHost.setHostname(curVirtualHostname);
 
 				virtualHosts.add(virtualHost);
 			}
 
-			String languageId = hostnames.get(curHostname);
+			String languageId = virtualHostnames.get(curVirtualHostname);
 
 			Locale locale = LocaleUtil.fromLanguageId(languageId, true, false);
 
@@ -222,11 +269,13 @@ public class VirtualHostLocalServiceImpl
 		while (iterator.hasNext()) {
 			VirtualHost virtualHost = iterator.next();
 
-			if (!hostnames.containsKey(virtualHost.getHostname())) {
-				iterator.remove();
-
-				virtualHostPersistence.remove(virtualHost);
+			if (virtualHostnames.containsKey(virtualHost.getHostname())) {
+				continue;
 			}
+
+			iterator.remove();
+
+			virtualHostPersistence.remove(virtualHost);
 		}
 
 		virtualHostPersistence.cacheResult(virtualHosts);
@@ -234,7 +283,7 @@ public class VirtualHostLocalServiceImpl
 		Company company = _companyPersistence.fetchByPrimaryKey(companyId);
 
 		if (company != null) {
-			TransactionCommitCallbackUtil.registerCallback(
+			TransactionCallbackUtil.registerCommitCallback(
 				() -> {
 					EntityCacheUtil.removeResult(
 						company.getClass(), company.getPrimaryKeyObj());
@@ -259,21 +308,39 @@ public class VirtualHostLocalServiceImpl
 
 		if (layoutSet != null) {
 			_layoutSetPersistence.clearCache(layoutSet);
-
-			TransactionCommitCallbackUtil.registerCallback(
-				() -> {
-					EntityCacheUtil.removeResult(
-						LayoutSetImpl.class, layoutSetId);
-
-					return null;
-				});
 		}
 
 		return virtualHosts;
 	}
 
+	private Set<String> _getIDNHostnames(String hostname) {
+		Set<String> idnHostnames = new HashSet<>();
+
+		idnHostnames.add(IDN.toUnicode(hostname));
+
+		try {
+			String asciiHostname = IDN.toASCII(hostname);
+
+			if (hostname.equals(IDN.toUnicode(asciiHostname))) {
+				idnHostnames.add(asciiHostname);
+			}
+		}
+		catch (IllegalArgumentException illegalArgumentException) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(illegalArgumentException);
+			}
+		}
+
+		idnHostnames.remove(hostname);
+
+		return idnHostnames;
+	}
+
 	private static final Log _log = LogFactoryUtil.getLog(
 		VirtualHostLocalServiceImpl.class);
+
+	private volatile int _cacheableQueryLimitLPD27353 = GetterUtil.getInteger(
+		PropsUtil.get("cacheable.query.limit.LPD-27353"));
 
 	@BeanReference(type = CompanyPersistence.class)
 	private CompanyPersistence _companyPersistence;

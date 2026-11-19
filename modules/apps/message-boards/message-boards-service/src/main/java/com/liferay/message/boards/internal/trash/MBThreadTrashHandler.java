@@ -13,10 +13,12 @@ import com.liferay.message.boards.model.MBMessage;
 import com.liferay.message.boards.model.MBThread;
 import com.liferay.message.boards.service.MBCategoryLocalService;
 import com.liferay.message.boards.service.MBThreadLocalService;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.ContainerModel;
 import com.liferay.portal.kernel.model.LayoutConstants;
 import com.liferay.portal.kernel.model.TrashedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.portlet.PortletProvider;
 import com.liferay.portal.kernel.portlet.PortletProviderUtil;
 import com.liferay.portal.kernel.portlet.PortletURLFactoryUtil;
@@ -35,13 +37,12 @@ import com.liferay.trash.BaseTrashHandler;
 import com.liferay.trash.TrashHelper;
 import com.liferay.trash.constants.TrashActionKeys;
 
-import java.util.ArrayList;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.ServletContext;
+
 import java.util.List;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
-
-import javax.servlet.ServletContext;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -89,19 +90,13 @@ public class MBThreadTrashHandler extends BaseTrashHandler {
 			long classPK, long parentContainerModelId, int start, int end)
 		throws PortalException {
 
-		List<ContainerModel> containerModels = new ArrayList<>();
-
 		MBThread thread = _mbThreadLocalService.getThread(classPK);
 
-		List<MBCategory> categories = _mbCategoryLocalService.getCategories(
-			thread.getGroupId(), parentContainerModelId,
-			WorkflowConstants.STATUS_APPROVED, start, end);
-
-		for (MBCategory category : categories) {
-			containerModels.add(category);
-		}
-
-		return containerModels;
+		return TransformUtil.transform(
+			_mbCategoryLocalService.getCategories(
+				thread.getGroupId(), parentContainerModelId,
+				WorkflowConstants.STATUS_APPROVED, start, end),
+			category -> category);
 	}
 
 	@Override
@@ -157,18 +152,18 @@ public class MBThreadTrashHandler extends BaseTrashHandler {
 	}
 
 	@Override
-	public TrashedModel getTrashedModel(long classPK) {
-		return _mbThreadLocalService.fetchMBThread(classPK);
-	}
-
-	@Override
 	public TrashRenderer getTrashRenderer(long classPK) throws PortalException {
 		MBThreadTrashRenderer mbThreadTrashRenderer = new MBThreadTrashRenderer(
 			_mbThreadLocalService.getThread(classPK), _assetHelper);
 
-		mbThreadTrashRenderer.setServletContext(_servletContext);
+		mbThreadTrashRenderer.setServletContext(_servletContextSnapshot.get());
 
 		return mbThreadTrashRenderer;
+	}
+
+	@Override
+	public TrashedModel getTrashedModel(long classPK) {
+		return _mbThreadLocalService.fetchMBThread(classPK);
 	}
 
 	@Override
@@ -302,6 +297,11 @@ public class MBThreadTrashHandler extends BaseTrashHandler {
 			permissionChecker, thread.getRootMessageId(), actionId);
 	}
 
+	private static final Snapshot<ServletContext> _servletContextSnapshot =
+		new Snapshot<>(
+			MBThreadTrashHandler.class, ServletContext.class,
+			"(osgi.web.symbolicname=com.liferay.message.boards.web)", true);
+
 	@Reference
 	private AssetHelper _assetHelper;
 
@@ -324,11 +324,6 @@ public class MBThreadTrashHandler extends BaseTrashHandler {
 
 	@Reference
 	private Portal _portal;
-
-	@Reference(
-		target = "(osgi.web.symbolicname=com.liferay.message.boards.web)"
-	)
-	private ServletContext _servletContext;
 
 	@Reference
 	private TrashHelper _trashHelper;

@@ -27,18 +27,18 @@ import com.liferay.portal.kernel.struts.LastPath;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.util.LayoutTypeAccessPolicyTracker;
-import com.liferay.portal.util.PropsValues;
+
+import jakarta.portlet.Event;
+
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.util.List;
 import java.util.Map;
-
-import javax.portlet.Event;
-
-import javax.servlet.RequestDispatcher;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * @author Tomas Polesovsky
@@ -99,18 +99,11 @@ public class SecurityPortletContainerWrapper implements PortletContainer {
 
 	@Override
 	public void processPublicRenderParameters(
-		HttpServletRequest httpServletRequest, Layout layout) {
+		HttpServletRequest httpServletRequest, Layout layout,
+		List<Portlet> portlets) {
 
 		_portletContainer.processPublicRenderParameters(
-			httpServletRequest, layout);
-	}
-
-	@Override
-	public void processPublicRenderParameters(
-		HttpServletRequest httpServletRequest, Layout layout, Portlet portlet) {
-
-		_portletContainer.processPublicRenderParameters(
-			httpServletRequest, layout, portlet);
+			httpServletRequest, layout, portlets);
 	}
 
 	@Override
@@ -413,6 +406,16 @@ public class SecurityPortletContainerWrapper implements PortletContainer {
 		String portletContent = null;
 
 		if (portlet.isShowPortletAccessDenied()) {
+			String key = StringBundler.concat(
+				SecurityPortletContainerWrapper.class.getName(),
+				"#SKIP_SHOW_PORTLET_ACCESS_DENIED#", portlet.getPortletId());
+
+			if (Boolean.TRUE.equals(httpServletRequest.getAttribute(key))) {
+				return;
+			}
+
+			httpServletRequest.setAttribute(key, Boolean.TRUE);
+
 			portletContent = "/html/portal/portlet_access_denied.jsp";
 		}
 

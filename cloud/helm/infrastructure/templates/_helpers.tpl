@@ -1,0 +1,90 @@
+{{- define "elasticsearch.containerSecurityContext" -}}
+allowPrivilegeEscalation: false
+capabilities:
+    drop:
+        -   ALL
+privileged: false
+readOnlyRootFilesystem: false
+{{- end -}}
+
+{{- define "elasticsearch.elasticUserSecretName" -}}
+{{- printf "%s-es-elastic-user" (include "elasticsearch.name" .) -}}
+{{- end -}}
+
+{{- define "elasticsearch.labels" -}}
+component: search
+environmentId: {{ .Values.environmentId | quote }}
+projectId: {{ .Values.projectId | quote }}
+{{- end -}}
+
+{{- define "elasticsearch.name" -}}
+{{- printf "%s-es" .Release.Name -}}
+{{- end -}}
+
+{{- define "elasticsearch.namespace" -}}
+{{- printf "%s-elasticsearch" .Release.Namespace -}}
+{{- end -}}
+
+{{- define "elasticsearch.podSecurityContext" -}}
+fsGroup: 1000
+runAsGroup: 1000
+runAsNonRoot: true
+runAsUser: 1000
+seccompProfile:
+    type: RuntimeDefault
+{{- end -}}
+
+{{- define "liferay.validateCIDR" -}}
+{{- $ipv4 := "^((25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\\.){3}(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])/(3[0-2]|[12]?[0-9])$" -}}
+{{- $ipv6 := "^[0-9A-Fa-f:]*:[0-9A-Fa-f:]*/(12[0-8]|1[01][0-9]|[1-9]?[0-9])$" -}}
+{{- if not (or (regexMatch $ipv4 (toString .)) (regexMatch $ipv6 (toString .))) -}}
+{{- fail (printf "The value %q contains an invalid CIDR: %s" "gateway.accessControl.allowedCIDRs" (toString .)) -}}
+{{- end -}}
+{{- end -}}
+
+{{- define "liferay.validateDNS1123Name" -}}
+{{- if not (regexMatch "^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$" .) -}}
+{{- fail (printf "Name is not DNS-1123 compliant: %s" .) -}}
+{{- end -}}
+{{- end -}}
+
+{{- define "liferay.validateEndpoint" -}}
+{{- $externalSecretKeys := dig "tls" "externalSecretKeys" (list) .endpoint -}}
+{{- if not (has (int .endpoint.port) (list 80 443)) -}}
+{{- fail (printf "The %s endpoint uses port %v, but gateways only listen on ports 80 and 443" .name .endpoint.port) -}}
+{{- end -}}
+{{- if and (eq (int .endpoint.port) 80) (not .endpoint.hostname) (ne .name "http") -}}
+{{- fail (printf "The %s endpoint uses port 80 without a hostname, which collides with the implicit http listener" .name) -}}
+{{- end -}}
+{{- if and (eq .endpoint.protocol "HTTPS") (not $externalSecretKeys) -}}
+{{- fail (printf "The %s endpoint serves HTTPS and must set tls.externalSecretKeys" .name) -}}
+{{- end -}}
+{{- if and (ne .endpoint.protocol "HTTPS") $externalSecretKeys -}}
+{{- fail (printf "The %s endpoint does not serve HTTPS and must not set tls.externalSecretKeys" .name) -}}
+{{- end -}}
+{{- end -}}
+
+{{- define "liferay.validateSecretKey" -}}
+{{- if not (hasPrefix .prefix .key) -}}
+{{- fail (printf "Secret key must start with %s: %s" .prefix .key) -}}
+{{- end -}}
+{{- end -}}
+
+{{- define "liferay.validateSecretNameSuffix" -}}
+{{- if regexMatch "-[A-Za-z0-9]{6}$" . -}}
+{{- fail (printf "Secret name must not end with a hyphen and six characters, because AWS Secrets Manager appends that shape to the ARN: %s" .) -}}
+{{- end -}}
+{{- end -}}
+
+{{- define "search.secretReaderServiceAccountName" -}}
+{{- printf "%s-search-secret-reader" .Release.Name -}}
+{{- end -}}
+
+{{- define "search.engine" -}}
+{{- $supportedEngines := .Values.search.supportedEngines -}}
+{{- $engine := .Values.search.engine | default (has "opensearch" $supportedEngines | ternary "opensearch" (first $supportedEngines)) -}}
+{{- if not (has $engine $supportedEngines) -}}
+{{- fail (printf "Search engine %s is not available on this cloud, which supports: %s" $engine (join ", " $supportedEngines)) -}}
+{{- end -}}
+{{- $engine -}}
+{{- end -}}

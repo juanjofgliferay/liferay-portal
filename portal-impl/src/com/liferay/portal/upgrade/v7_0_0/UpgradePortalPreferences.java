@@ -50,11 +50,13 @@ public class UpgradePortalPreferences extends UpgradeProcess {
 
 			String preferenceName = preferenceElement.elementText("name");
 
-			if (!preferenceName.contains(
+			if (preferenceName.contains(
 					"com.liferay.portal.kernel.staging.Staging")) {
 
-				newRootElement.add(preferenceElement.createCopy());
+				continue;
 			}
+
+			newRootElement.add(preferenceElement.createCopy());
 		}
 
 		return newDocument.formattedString(StringPool.DOUBLE_SPACE);
@@ -67,10 +69,13 @@ public class UpgradePortalPreferences extends UpgradeProcess {
 
 	protected void upgradeStagingPortalPreferences() throws Exception {
 		try (LoggingTimer loggingTimer = new LoggingTimer();
+
 			PreparedStatement preparedStatement1 = connection.prepareStatement(
 				"select portalPreferencesId, preferences from " +
 					"PortalPreferences");
+
 			ResultSet resultSet = preparedStatement1.executeQuery();
+
 			PreparedStatement preparedStatement2 =
 				AutoBatchPreparedStatementUtil.concurrentAutoBatch(
 					connection,

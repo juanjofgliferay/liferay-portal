@@ -512,6 +512,27 @@ public interface AssetCategoryModel
 	public void setVocabularyId(long vocabularyId);
 
 	/**
+	 * Returns the system of this asset category.
+	 *
+	 * @return the system of this asset category
+	 */
+	public boolean getSystem();
+
+	/**
+	 * Returns <code>true</code> if this asset category is system.
+	 *
+	 * @return <code>true</code> if this asset category is system; <code>false</code> otherwise
+	 */
+	public boolean isSystem();
+
+	/**
+	 * Sets whether this asset category is system.
+	 *
+	 * @param system the system of this asset category
+	 */
+	public void setSystem(boolean system);
+
+	/**
 	 * Returns the last publish date of this asset category.
 	 *
 	 * @return the last publish date of this asset category
@@ -526,6 +547,20 @@ public interface AssetCategoryModel
 	 */
 	@Override
 	public void setLastPublishDate(Date lastPublishDate);
+
+	/**
+	 * Returns the status of this asset category.
+	 *
+	 * @return the status of this asset category
+	 */
+	public int getStatus();
+
+	/**
+	 * Sets the status of this asset category.
+	 *
+	 * @param status the status of this asset category
+	 */
+	public void setStatus(int status);
 
 	@Override
 	public String[] getAvailableLanguageIds();
@@ -548,3 +583,4 @@ public interface AssetCategoryModel
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-158957911

@@ -8,7 +8,13 @@ package com.liferay.commerce.product.service.test;
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.commerce.product.exception.NoSuchCPSpecificationOptionException;
 import com.liferay.commerce.product.model.CPSpecificationOption;
+import com.liferay.commerce.product.model.CPSpecificationOptionListTypeDefinitionRel;
+import com.liferay.commerce.product.service.CPSpecificationOptionListTypeDefinitionRelLocalService;
 import com.liferay.commerce.product.service.CPSpecificationOptionLocalService;
+import com.liferay.list.type.model.ListTypeDefinition;
+import com.liferay.list.type.service.ListTypeDefinitionLocalService;
+import com.liferay.petra.lang.SafeCloseable;
+import com.liferay.portal.kernel.lazy.referencing.LazyReferencingThreadLocal;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.service.ServiceContext;
@@ -17,10 +23,16 @@ import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
+import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
+import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
+import com.liferay.portal.vulcan.util.LocalizedMapUtil;
+
+import java.util.Collections;
+import java.util.List;
 
 import org.frutilla.FrutillaRule;
 
@@ -62,7 +74,7 @@ public class CPSpecificationOptionLocalServiceTest {
 	}
 
 	@Test
-	public void testAddSpecficationOption() throws Exception {
+	public void testAddSpecificationOption() throws Exception {
 		frutillaRule.scenario(
 			"Add Specification option"
 		).given(
@@ -85,8 +97,180 @@ public class CPSpecificationOptionLocalServiceTest {
 			cpSpecificationOption1.getKey(), cpSpecificationOption2.getKey());
 	}
 
+	@Test
+	public void testAddSpecificationOptionWithMultiplePicklist()
+		throws Exception {
+
+		frutillaRule.scenario(
+			"Add Specification option with multiple picklist"
+		).given(
+			"A specification is created"
+		).when(
+			"Adding picklist to the specification"
+		).then(
+			"Multiple picklist can be added"
+		);
+
+		ListTypeDefinition listTypeDefinition1 =
+			_listTypeDefinitionLocalService.addListTypeDefinition(
+				RandomTestUtil.randomString(), TestPropsValues.getUserId(),
+				LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
+				false, Collections.emptyList(), new ServiceContext());
+		ListTypeDefinition listTypeDefinition2 =
+			_listTypeDefinitionLocalService.addListTypeDefinition(
+				RandomTestUtil.randomString(), TestPropsValues.getUserId(),
+				LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
+				false, Collections.emptyList(), new ServiceContext());
+
+		CPSpecificationOption cpSpecificationOption =
+			_cpSpecificationOptionLocalService.addCPSpecificationOption(
+				RandomTestUtil.randomString(), _serviceContext.getUserId(), 0L,
+				new long[] {
+					listTypeDefinition1.getListTypeDefinitionId(),
+					listTypeDefinition2.getListTypeDefinitionId()
+				},
+				RandomTestUtil.randomLocaleStringMap(),
+				RandomTestUtil.randomLocaleStringMap(),
+				RandomTestUtil.randomBoolean(), RandomTestUtil.randomString(),
+				RandomTestUtil.randomDouble(), true, _serviceContext);
+
+		List<ListTypeDefinition> listTypeDefinitions =
+			cpSpecificationOption.getListTypeDefinitions();
+
+		Assert.assertEquals(
+			listTypeDefinition1.toString(), 2, listTypeDefinitions.size());
+	}
+
+	@Test
+	public void testDeleteSpecificationOptionWithPicklist() throws Exception {
+		frutillaRule.scenario(
+			"Delete Specification option with a picklist"
+		).given(
+			"A specification is created with a picklist"
+		).when(
+			"Specification is deleted"
+		).then(
+			"Picklist relationship is deleted as well"
+		);
+
+		ListTypeDefinition listTypeDefinition =
+			_listTypeDefinitionLocalService.addListTypeDefinition(
+				RandomTestUtil.randomString(), TestPropsValues.getUserId(),
+				LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
+				false, Collections.emptyList(), new ServiceContext());
+
+		CPSpecificationOption cpSpecificationOption =
+			_cpSpecificationOptionLocalService.addCPSpecificationOption(
+				RandomTestUtil.randomString(), _serviceContext.getUserId(), 0L,
+				new long[] {listTypeDefinition.getListTypeDefinitionId()},
+				RandomTestUtil.randomLocaleStringMap(),
+				RandomTestUtil.randomLocaleStringMap(),
+				RandomTestUtil.randomBoolean(), RandomTestUtil.randomString(),
+				RandomTestUtil.randomDouble(), true, _serviceContext);
+
+		List<CPSpecificationOptionListTypeDefinitionRel>
+			cpSpecificationOptionListTypeDefinitionRels =
+				_cpSpecificationOptionListTypeDefinitionRelLocalService.
+					getCPSpecificationOptionListTypeDefinitionRels(
+						cpSpecificationOption.getCPSpecificationOptionId());
+
+		Assert.assertEquals(
+			listTypeDefinition.toString(), 1,
+			cpSpecificationOptionListTypeDefinitionRels.size());
+
+		_cpSpecificationOptionLocalService.deleteCPSpecificationOption(
+			cpSpecificationOption);
+
+		cpSpecificationOptionListTypeDefinitionRels =
+			_cpSpecificationOptionListTypeDefinitionRelLocalService.
+				getCPSpecificationOptionListTypeDefinitionRels(
+					cpSpecificationOption.getCPSpecificationOptionId());
+
+		Assert.assertEquals(
+			listTypeDefinition.toString(), 0,
+			cpSpecificationOptionListTypeDefinitionRels.size());
+	}
+
+	@Test
+	public void testGetOrAddEmptyCPSpecificationOption() throws Exception {
+		frutillaRule.scenario(
+			"Get or add an empty product specification option"
+		).given(
+			"A company and an external reference code"
+		).when(
+			"An empty product specification option is requested"
+		).then(
+			"A NoSuchCPSpecificationOptionException is thrown while lazy " +
+				"referencing is disabled"
+		).and(
+			"An empty stub with the given external reference code is " +
+				"returned while lazy referencing is enabled"
+		).and(
+			"The same product specification option is resolved on subsequent " +
+				"requests"
+		).and(
+			"The empty status is cleared once the stub is updated"
+		);
+
+		String externalReferenceCode = RandomTestUtil.randomString();
+
+		try {
+			_cpSpecificationOptionLocalService.
+				getOrAddEmptyCPSpecificationOption(
+					externalReferenceCode, _serviceContext.getCompanyId(),
+					_serviceContext.getUserId());
+
+			Assert.fail();
+		}
+		catch (NoSuchCPSpecificationOptionException
+					noSuchCPSpecificationOptionException) {
+
+			Assert.assertNotNull(noSuchCPSpecificationOptionException);
+		}
+
+		CPSpecificationOption cpSpecificationOption = null;
+
+		try (SafeCloseable safeCloseable =
+				LazyReferencingThreadLocal.setEnabledWithSafeCloseable(true)) {
+
+			cpSpecificationOption =
+				_cpSpecificationOptionLocalService.
+					getOrAddEmptyCPSpecificationOption(
+						externalReferenceCode, _serviceContext.getCompanyId(),
+						_serviceContext.getUserId());
+
+			Assert.assertEquals(
+				WorkflowConstants.STATUS_EMPTY,
+				cpSpecificationOption.getStatus());
+			Assert.assertEquals(
+				externalReferenceCode,
+				cpSpecificationOption.getExternalReferenceCode());
+
+			CPSpecificationOption resolvedCPSpecificationOption =
+				_cpSpecificationOptionLocalService.
+					getOrAddEmptyCPSpecificationOption(
+						externalReferenceCode, _serviceContext.getCompanyId(),
+						_serviceContext.getUserId());
+
+			Assert.assertEquals(
+				cpSpecificationOption.getCPSpecificationOptionId(),
+				resolvedCPSpecificationOption.getCPSpecificationOptionId());
+		}
+
+		cpSpecificationOption =
+			_cpSpecificationOptionLocalService.updateCPSpecificationOption(
+				externalReferenceCode,
+				cpSpecificationOption.getCPSpecificationOptionId(), 0L, null,
+				RandomTestUtil.randomLocaleStringMap(),
+				RandomTestUtil.randomLocaleStringMap(), false,
+				RandomTestUtil.randomString(), 0, true, _serviceContext);
+
+		Assert.assertNotEquals(
+			WorkflowConstants.STATUS_EMPTY, cpSpecificationOption.getStatus());
+	}
+
 	@Test(expected = NoSuchCPSpecificationOptionException.class)
-	public void testGetSpecficationOption() throws Exception {
+	public void testGetSpecificationOption() throws Exception {
 		frutillaRule.scenario(
 			"Get Specification option"
 		).given(
@@ -109,14 +293,16 @@ public class CPSpecificationOptionLocalServiceTest {
 		throws Exception {
 
 		return _cpSpecificationOptionLocalService.addCPSpecificationOption(
-			serviceContext.getUserId(), 0L,
+			RandomTestUtil.randomString(), serviceContext.getUserId(), 0L, null,
 			RandomTestUtil.randomLocaleStringMap(),
 			RandomTestUtil.randomLocaleStringMap(),
 			RandomTestUtil.randomBoolean(), RandomTestUtil.randomString(),
-			serviceContext);
+			RandomTestUtil.randomDouble(), true, serviceContext);
 	}
 
-	private static User _user;
+	@Inject
+	private CPSpecificationOptionListTypeDefinitionRelLocalService
+		_cpSpecificationOptionListTypeDefinitionRelLocalService;
 
 	@Inject
 	private CPSpecificationOptionLocalService
@@ -125,6 +311,10 @@ public class CPSpecificationOptionLocalServiceTest {
 	@DeleteAfterTestRun
 	private Group _group;
 
+	@Inject
+	private ListTypeDefinitionLocalService _listTypeDefinitionLocalService;
+
 	private ServiceContext _serviceContext;
+	private User _user;
 
 }

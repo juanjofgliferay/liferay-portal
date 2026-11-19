@@ -15,6 +15,7 @@ import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
+import com.liferay.portal.kernel.service.ClassNameLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
@@ -50,11 +51,24 @@ public class CommerceChannelRelServiceImpl
 	}
 
 	@Override
+	public List<CommerceChannelRel> addCommerceChannelRels(
+			String className, long[] classPKs, long commerceChannelId,
+			ServiceContext serviceContext)
+		throws PortalException {
+
+		_commerceChannelModelResourcePermission.check(
+			getPermissionChecker(), commerceChannelId, ActionKeys.UPDATE);
+
+		return commerceChannelRelLocalService.addCommerceChannelRels(
+			className, classPKs, commerceChannelId, serviceContext);
+	}
+
+	@Override
 	public void deleteCommerceChannelRel(long commerceChannelRelId)
 		throws PortalException {
 
 		CommerceChannelRel commerceChannelRel =
-			commerceChannelRelLocalService.getCommerceChannelRel(
+			commerceChannelRelPersistence.findByPrimaryKey(
 				commerceChannelRelId);
 
 		_commerceChannelModelResourcePermission.check(
@@ -75,7 +89,7 @@ public class CommerceChannelRelServiceImpl
 				QueryUtil.ALL_POS);
 
 		for (CommerceChannelRel commerceChannelRel : commerceChannelRels) {
-			commerceChannelRelLocalService.deleteCommerceChannelRel(
+			commerceChannelRelService.deleteCommerceChannelRel(
 				commerceChannelRel.getCommerceChannelRelId());
 		}
 	}
@@ -88,8 +102,9 @@ public class CommerceChannelRelServiceImpl
 		_commerceChannelModelResourcePermission.check(
 			getPermissionChecker(), commerceChannelId, ActionKeys.VIEW);
 
-		return commerceChannelRelLocalService.fetchCommerceChannelRel(
-			className, classPK, commerceChannelId);
+		return commerceChannelRelPersistence.fetchByC_C_C(
+			_classNameLocalService.getClassNameId(className), classPK,
+			commerceChannelId);
 	}
 
 	@Override
@@ -97,7 +112,7 @@ public class CommerceChannelRelServiceImpl
 		throws PortalException {
 
 		CommerceChannelRel commerceChannelRel =
-			commerceChannelRelLocalService.getCommerceChannelRel(
+			commerceChannelRelPersistence.findByPrimaryKey(
 				commerceChannelRelId);
 
 		_commerceChannelModelResourcePermission.check(
@@ -116,7 +131,7 @@ public class CommerceChannelRelServiceImpl
 		_commerceChannelModelResourcePermission.check(
 			getPermissionChecker(), commerceChannelId, ActionKeys.VIEW);
 
-		return commerceChannelRelLocalService.getCommerceChannelRels(
+		return commerceChannelRelPersistence.findByCommerceChannelId(
 			commerceChannelId, start, end, orderByComparator);
 	}
 
@@ -141,7 +156,7 @@ public class CommerceChannelRelServiceImpl
 		_commerceChannelModelResourcePermission.check(
 			getPermissionChecker(), commerceChannelId, ActionKeys.VIEW);
 
-		return commerceChannelRelLocalService.getCommerceChannelRelsCount(
+		return commerceChannelRelPersistence.countByCommerceChannelId(
 			commerceChannelId);
 	}
 
@@ -166,6 +181,59 @@ public class CommerceChannelRelServiceImpl
 		return commerceChannelRelFinder.countByC_C(
 			className, classPK, name, true);
 	}
+
+	@Override
+	public List<CommerceChannelRel> getCommerceCurrencyCommerceChannelRels(
+			long commerceChannelId, String name, int start, int end)
+		throws PortalException {
+
+		_commerceChannelModelResourcePermission.check(
+			getPermissionChecker(), commerceChannelId, ActionKeys.VIEW);
+
+		return commerceChannelRelLocalService.
+			getCommerceCurrencyCommerceChannelRels(
+				commerceChannelId, name, start, end);
+	}
+
+	@Override
+	public int getCommerceCurrencyCommerceChannelRelsCount(
+			long commerceChannelId, String name)
+		throws PortalException {
+
+		_commerceChannelModelResourcePermission.check(
+			getPermissionChecker(), commerceChannelId, ActionKeys.VIEW);
+
+		return commerceChannelRelLocalService.
+			getCommerceCurrencyCommerceChannelRelsCount(
+				commerceChannelId, name);
+	}
+
+	@Override
+	public List<CommerceChannelRel> getCountryCommerceChannelRels(
+			long commerceChannelId, String name, int start, int end)
+		throws PortalException {
+
+		_commerceChannelModelResourcePermission.check(
+			getPermissionChecker(), commerceChannelId, ActionKeys.VIEW);
+
+		return commerceChannelRelLocalService.getCountryCommerceChannelRels(
+			commerceChannelId, name, start, end);
+	}
+
+	@Override
+	public int getCountryCommerceChannelRelsCount(
+			long commerceChannelId, String name)
+		throws PortalException {
+
+		_commerceChannelModelResourcePermission.check(
+			getPermissionChecker(), commerceChannelId, ActionKeys.VIEW);
+
+		return commerceChannelRelLocalService.
+			getCountryCommerceChannelRelsCount(commerceChannelId, name);
+	}
+
+	@Reference
+	private ClassNameLocalService _classNameLocalService;
 
 	@Reference(
 		target = "(model.class.name=com.liferay.commerce.product.model.CommerceChannel)"

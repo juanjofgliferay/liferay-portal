@@ -17,8 +17,8 @@ import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.rule.Sync;
 import com.liferay.portal.kernel.test.rule.SynchronousDestinationTestRule;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.search.test.rule.SearchTestRule;
 import com.liferay.portal.search.test.util.IndexerFixture;
-import com.liferay.portal.search.test.util.SearchTestRule;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
 import com.liferay.users.admin.test.util.search.UserSearchFixture;
@@ -70,7 +70,7 @@ public class MBThreadIndexerReindexTest {
 
 		mbThreadIndexerFixture.searchNoOne(searchTerm);
 
-		mbThreadIndexerFixture.reindex(thread.getCompanyId());
+		mbThreadIndexerFixture.reindexCompany(thread.getCompanyId());
 
 		mbThreadIndexerFixture.searchOnlyOne(searchTerm);
 	}
@@ -93,7 +93,7 @@ public class MBThreadIndexerReindexTest {
 
 		mbThreadIndexerFixture.searchNoOne(searchTerm);
 
-		mbThreadIndexerFixture.reindex(mbMessage.getCompanyId());
+		mbThreadIndexerFixture.reindexCompany(mbMessage.getCompanyId());
 
 		mbThreadIndexerFixture.searchOnlyOne(searchTerm);
 	}
@@ -116,7 +116,7 @@ public class MBThreadIndexerReindexTest {
 
 		mbThreadIndexerFixture.searchNoOne(searchTerm);
 
-		mbThreadIndexerFixture.reindex(mbMessage.getCompanyId());
+		mbThreadIndexerFixture.reindexCompany(mbMessage.getCompanyId());
 
 		mbThreadIndexerFixture.searchOnlyOne(searchTerm);
 	}

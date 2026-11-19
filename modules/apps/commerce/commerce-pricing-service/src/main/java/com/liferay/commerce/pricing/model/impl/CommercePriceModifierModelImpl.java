@@ -122,6 +122,8 @@ public class CommercePriceModifierModelImpl
 	public static final String TABLE_SQL_DROP =
 		"drop table CommercePriceModifier";
 
+	public static final String ENTITY_ALIAS = "commercePriceModifier";
+
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY commercePriceModifier.displayDate DESC, commercePriceModifier.createDate DESC, commercePriceModifier.priority DESC";
 
@@ -180,27 +182,21 @@ public class CommercePriceModifierModelImpl
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long TARGET_COLUMN_BITMASK = 128L;
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
-	 */
-	@Deprecated
-	public static final long UUID_COLUMN_BITMASK = 256L;
+	public static final long UUID_COLUMN_BITMASK = 128L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
 	 *		#getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long CREATEDATE_COLUMN_BITMASK = 512L;
+	public static final long CREATEDATE_COLUMN_BITMASK = 256L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
 	 *		#getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long PRIORITY_COLUMN_BITMASK = 1024L;
+	public static final long PRIORITY_COLUMN_BITMASK = 512L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
@@ -795,15 +791,6 @@ public class CommercePriceModifierModelImpl
 		}
 
 		_target = target;
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #getColumnOriginalValue(String)}
-	 */
-	@Deprecated
-	public String getOriginalTarget() {
-		return getColumnOriginalValue("target");
 	}
 
 	@JSON
@@ -1741,3 +1728,4 @@ public class CommercePriceModifierModelImpl
 	private CommercePriceModifier _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:83478889

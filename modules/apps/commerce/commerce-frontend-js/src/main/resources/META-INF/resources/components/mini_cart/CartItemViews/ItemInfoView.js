@@ -11,20 +11,12 @@ import {sub} from 'frontend-js-web';
 import PropTypes from 'prop-types';
 import React, {useState} from 'react';
 
-import {parseOptions, parseValue} from '../util/index';
-
-function ItemInfoViewOptions({options}) {
-	return (
-		<div className="item-info-extra mt-3">
-			<h6 className="options">{options}</h6>
-		</div>
-	);
-}
+import {parseValue} from '../util/index';
 
 function ItemInfoViewBundle({childItems, options}) {
 	const [expanded, setExpanded] = useState(false);
 
-	return Liferay.FeatureFlags['COMMERCE-9599'] && options.length >= 1 ? (
+	return options.length >= 1 ? (
 		<ClayPanel
 			className="item-info-collapse mb-0"
 			collapsable
@@ -59,35 +51,52 @@ function ItemInfoViewBundle({childItems, options}) {
 						const {name, quantity, skuUnitOfMeasure} =
 							childItem || {};
 
-						return name ? (
-							<div className="item-info-extra pt-2" key={index}>
-								<h6 className="item-name">{skuOptionName}</h6>
+						const parsedSkuOptionValueNames =
+							parseValue(skuOptionValueNames);
+						const parsedValue = parseValue(value);
 
-								<p className="item-sku">
-									<span>
+						return (parsedSkuOptionValueNames || parsedValue) &&
+							parsedValue !== '{}' ? (
+							name ? (
+								<div
+									className="item-info-extra pt-2"
+									key={index}
+								>
+									<div className="h6 item-name">
+										{skuOptionName}
+									</div>
+
+									<p className="item-sku">
 										<span>
-											{parseValue(skuOptionValueNames) ||
-												parseValue(value)}
-										</span>
+											<span>
+												{parsedSkuOptionValueNames ||
+													parsedValue}
+											</span>
 
-										<span className="pl-2">
-											{`(${quantity} \u00D7 ${name} ${
-												skuUnitOfMeasure?.key || ''
-											})`}
+											<span className="pl-2">
+												{`(${quantity} \u00D7 ${name} ${
+													skuUnitOfMeasure?.key || ''
+												})`}
+											</span>
 										</span>
-									</span>
-								</p>
-							</div>
-						) : (
-							<div className="item-info-extra pt-2" key={index}>
-								<h6 className="item-name">{skuOptionName}</h6>
+									</p>
+								</div>
+							) : (
+								<div
+									className="item-info-extra pt-2"
+									key={index}
+								>
+									<div className="h6 item-name">
+										{skuOptionName}
+									</div>
 
-								<p className="item-sku">
-									{parseValue(skuOptionValueNames) ||
-										parseValue(value)}
-								</p>
-							</div>
-						);
+									<p className="item-sku">
+										{parsedSkuOptionValueNames ||
+											parsedValue}
+									</p>
+								</div>
+							)
+						) : null;
 					})}
 				</div>
 			</ClayPanel.Body>
@@ -137,7 +146,7 @@ function ItemInfoViewReplacement({replacedSku}) {
 function ItemInfoViewBase({name, sku}) {
 	return (
 		<div className="item-info-base">
-			<h5 className="item-name">{name}</h5>
+			<div className="h5 item-name">{name}</div>
 
 			<p className="item-sku">{sku}</p>
 		</div>
@@ -146,10 +155,8 @@ function ItemInfoViewBase({name, sku}) {
 
 function ItemInfoView({childItems = [], name, options = [], replacedSku, sku}) {
 	const hasReplacement = !!replacedSku;
-	const isBundle = !!childItems.length;
-	const hasOptions = !!parseOptions(options);
 
-	return Liferay.FeatureFlags['COMMERCE-9599'] ? (
+	return (
 		<>
 			<ItemInfoViewBase name={name} sku={sku} />
 
@@ -158,22 +165,6 @@ function ItemInfoView({childItems = [], name, options = [], replacedSku, sku}) {
 			)}
 
 			<ItemInfoViewBundle childItems={childItems} options={options} />
-		</>
-	) : (
-		<>
-			<ItemInfoViewBase name={name} sku={sku} />
-
-			{hasReplacement && (
-				<ItemInfoViewReplacement replacedSku={replacedSku} />
-			)}
-
-			{isBundle && (
-				<ItemInfoViewBundle childItems={childItems} options={options} />
-			)}
-
-			{hasOptions && (
-				<ItemInfoViewOptions options={parseOptions(options)} />
-			)}
 		</>
 	);
 }

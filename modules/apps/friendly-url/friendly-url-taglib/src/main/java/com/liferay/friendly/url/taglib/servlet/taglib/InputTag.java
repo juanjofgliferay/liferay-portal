@@ -29,15 +29,21 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.service.PersistedModelLocalServiceRegistryUtil;
 import com.liferay.taglib.util.IncludeTag;
 
-import java.util.Objects;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.jsp.PageContext;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.jsp.PageContext;
+import java.util.Locale;
+import java.util.Objects;
+import java.util.Set;
 
 /**
  * @author Adolfo Pérez
  */
 public class InputTag extends IncludeTag {
+
+	public Set<Locale> getAvailableLocales() {
+		return _availableLocales;
+	}
 
 	public String getClassName() {
 		return _className;
@@ -45,6 +51,10 @@ public class InputTag extends IncludeTag {
 
 	public long getClassPK() {
 		return _classPK;
+	}
+
+	public String getDefaultLanguageId() {
+		return _defaultLanguageId;
 	}
 
 	public String getHelpMessage() {
@@ -63,6 +73,10 @@ public class InputTag extends IncludeTag {
 		return _disabled;
 	}
 
+	public boolean isLanguagesDropdownVisible() {
+		return _languagesDropdownVisible;
+	}
+
 	public boolean isLocalizable() {
 		return _localizable;
 	}
@@ -75,12 +89,20 @@ public class InputTag extends IncludeTag {
 		return _showLabel;
 	}
 
+	public void setAvailableLocales(Set<Locale> availableLocales) {
+		_availableLocales = availableLocales;
+	}
+
 	public void setClassName(String className) {
 		_className = className;
 	}
 
 	public void setClassPK(long classPK) {
 		_classPK = classPK;
+	}
+
+	public void setDefaultLanguageId(String defaultLanguageId) {
+		_defaultLanguageId = defaultLanguageId;
 	}
 
 	public void setDisabled(boolean disabled) {
@@ -93,6 +115,10 @@ public class InputTag extends IncludeTag {
 
 	public void setInputAddon(String inputAddon) {
 		_inputAddon = inputAddon;
+	}
+
+	public void setLanguagesDropdownVisible(boolean languagesDropdownVisible) {
+		_languagesDropdownVisible = languagesDropdownVisible;
 	}
 
 	public void setLocalizable(boolean localizable) {
@@ -122,11 +148,14 @@ public class InputTag extends IncludeTag {
 	protected void cleanUp() {
 		super.cleanUp();
 
+		_availableLocales = null;
 		_className = null;
 		_classPK = 0;
+		_defaultLanguageId = null;
 		_disabled = false;
 		_helpMessage = null;
 		_inputAddon = null;
+		_languagesDropdownVisible = true;
 		_localizable = true;
 		_name = _DEFAULT_NAME;
 		_showHistory = true;
@@ -143,9 +172,15 @@ public class InputTag extends IncludeTag {
 		super.setAttributes(httpServletRequest);
 
 		httpServletRequest.setAttribute(
+			"liferay-friendly-url:input:availableLocales",
+			getAvailableLocales());
+		httpServletRequest.setAttribute(
 			"liferay-friendly-url:input:className", getClassName());
 		httpServletRequest.setAttribute(
 			"liferay-friendly-url:input:classPK", getClassPK());
+		httpServletRequest.setAttribute(
+			"liferay-friendly-url:input:defaultLanguageId",
+			getDefaultLanguageId());
 		httpServletRequest.setAttribute(
 			"liferay-friendly-url:input:disabled", isDisabled());
 		httpServletRequest.setAttribute(
@@ -155,6 +190,9 @@ public class InputTag extends IncludeTag {
 			"liferay-friendly-url:input:helpMessage", getHelpMessage());
 		httpServletRequest.setAttribute(
 			"liferay-friendly-url:input:inputAddon", getInputAddon());
+		httpServletRequest.setAttribute(
+			"liferay-friendly-url:input:languagesDropdownVisible",
+			isLanguagesDropdownVisible());
 		httpServletRequest.setAttribute(
 			"liferay-friendly-url:input:localizable", isLocalizable());
 		httpServletRequest.setAttribute(
@@ -209,8 +247,13 @@ public class InputTag extends IncludeTag {
 				return urlTitle;
 			}
 
-			String languageId = LanguageUtil.getLanguageId(
-				LocaleUtil.getDefault());
+			String languageId = BeanPropertiesUtil.getString(
+				_getModel(), "defaultLanguageId");
+
+			if (languageId == null) {
+				languageId = LanguageUtil.getLanguageId(
+					LocaleUtil.getDefault());
+			}
 
 			return LocalizationUtil.getXml(
 				HashMapBuilder.put(
@@ -293,11 +336,14 @@ public class InputTag extends IncludeTag {
 
 	private static final Log _log = LogFactoryUtil.getLog(InputTag.class);
 
+	private Set<Locale> _availableLocales;
 	private String _className;
 	private long _classPK;
+	private String _defaultLanguageId;
 	private boolean _disabled;
 	private String _helpMessage;
 	private String _inputAddon;
+	private boolean _languagesDropdownVisible = true;
 	private boolean _localizable = true;
 	private String _name = _DEFAULT_NAME;
 	private boolean _showHistory = true;

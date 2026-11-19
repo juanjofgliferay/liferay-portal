@@ -6,33 +6,48 @@
 import {SidebarCategory} from '@liferay/object-js-components-web';
 import React from 'react';
 
-import ObjectAction from './index';
+import {ObjectActionContainer} from './ObjectActionContainer';
 
 interface AddObjectActionProps {
+	allowScriptContentToBeExecutedOrIncluded: boolean;
 	apiURL: string;
+	companyAdmin: boolean;
+	hasUserNotificationHandler: boolean;
 	objectActionCodeEditorElements: SidebarCategory[];
 	objectActionExecutors: ObjectActionTriggerExecutorItem[];
 	objectActionTriggers: ObjectActionTriggerExecutorItem[];
 	objectDefinitionExternalReferenceCode: string;
 	objectDefinitionId: number;
 	objectDefinitionsRelationshipsURL: string;
+	objectFields: ObjectField[];
+	scriptManagementConfigurationPortletURL: string;
 	systemObject: boolean;
 	validateExpressionURL: string;
 }
 
 export default function AddObjectAction({
+	allowScriptContentToBeExecutedOrIncluded,
 	apiURL,
+	companyAdmin,
+	hasUserNotificationHandler,
 	objectActionCodeEditorElements,
 	objectActionExecutors = [],
 	objectActionTriggers = [],
 	objectDefinitionExternalReferenceCode,
 	objectDefinitionId,
 	objectDefinitionsRelationshipsURL,
+	objectFields,
+	scriptManagementConfigurationPortletURL,
 	systemObject,
 	validateExpressionURL,
 }: AddObjectActionProps) {
 	return (
-		<ObjectAction
+		<ObjectActionContainer
+			allowScriptContentToBeExecutedOrIncluded={
+				allowScriptContentToBeExecutedOrIncluded
+			}
+			companyAdmin={companyAdmin}
+			hasUserNotificationHandler={hasUserNotificationHandler}
 			objectAction={{active: true, system: false}}
 			objectActionCodeEditorElements={objectActionCodeEditorElements}
 			objectActionExecutors={objectActionExecutors}
@@ -44,10 +59,14 @@ export default function AddObjectAction({
 			objectDefinitionsRelationshipsURL={
 				objectDefinitionsRelationshipsURL
 			}
+			objectFields={objectFields}
 			requestParams={{
 				method: 'POST',
 				url: apiURL,
 			}}
+			scriptManagementConfigurationPortletURL={
+				scriptManagementConfigurationPortletURL
+			}
 			successMessage={Liferay.Language.get(
 				'the-object-action-was-created-successfully'
 			)}

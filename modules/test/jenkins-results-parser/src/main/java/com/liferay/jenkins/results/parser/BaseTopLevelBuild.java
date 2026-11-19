@@ -7,11 +7,13 @@ package com.liferay.jenkins.results.parser;
 
 import com.liferay.jenkins.results.parser.failure.message.generator.CIFailureMessageGenerator;
 import com.liferay.jenkins.results.parser.failure.message.generator.CITestSuiteValidationFailureMessageGenerator;
+import com.liferay.jenkins.results.parser.failure.message.generator.ClosedChannelExceptionFailureMessageGenerator;
 import com.liferay.jenkins.results.parser.failure.message.generator.CompileFailureMessageGenerator;
 import com.liferay.jenkins.results.parser.failure.message.generator.DownstreamFailureMessageGenerator;
 import com.liferay.jenkins.results.parser.failure.message.generator.FailureMessageGenerator;
 import com.liferay.jenkins.results.parser.failure.message.generator.FormatFailureMessageGenerator;
 import com.liferay.jenkins.results.parser.failure.message.generator.GenericFailureMessageGenerator;
+import com.liferay.jenkins.results.parser.failure.message.generator.GitForcePushFailureMessageGenerator;
 import com.liferay.jenkins.results.parser.failure.message.generator.GitLPushFailureMessageGenerator;
 import com.liferay.jenkins.results.parser.failure.message.generator.GradleTaskFailureMessageGenerator;
 import com.liferay.jenkins.results.parser.failure.message.generator.InvalidGitCommitSHAFailureMessageGenerator;
@@ -21,7 +23,15 @@ import com.liferay.jenkins.results.parser.failure.message.generator.JenkinsSourc
 import com.liferay.jenkins.results.parser.failure.message.generator.PoshiTestFailureMessageGenerator;
 import com.liferay.jenkins.results.parser.failure.message.generator.PoshiValidationFailureMessageGenerator;
 import com.liferay.jenkins.results.parser.failure.message.generator.RebaseFailureMessageGenerator;
+import com.liferay.jenkins.results.parser.failure.message.generator.RelevantRuleValidationFailureMessageGenerator;
+import com.liferay.jenkins.results.parser.persistent.resource.PersistentResourceFactory;
 import com.liferay.jenkins.results.parser.testray.TestrayBuild;
+import com.liferay.jenkins.results.parser.testray.TestrayCaseResult;
+import com.liferay.jenkins.results.parser.testray.TestrayContext;
+import com.liferay.jenkins.results.parser.testray.TestrayFactory;
+import com.liferay.jenkins.results.parser.testray.TestrayRoutine;
+import com.liferay.jenkins.results.parser.testray.TestrayServer;
+import com.liferay.jenkins.results.parser.testray.TopLevelStandaloneBuildTestrayCaseResult;
 
 import java.io.File;
 import java.io.IOException;
@@ -43,12 +53,12 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.http.client.utils.URIBuilder;
 
 import org.dom4j.DocumentException;
 import org.dom4j.Element;
@@ -61,6 +71,29 @@ import org.json.JSONObject;
  */
 public abstract class BaseTopLevelBuild
 	extends BaseParentBuild implements TopLevelBuild {
+
+	@Override
+	public void addCachedDownstreamBuildReport(
+		DownstreamBuildReport cachedDownstreamBuildReport) {
+
+		if (cachedDownstreamBuildReport == null) {
+			return;
+		}
+
+		addCachedDownstreamBuild(
+			BuildFactory.newBuild(cachedDownstreamBuildReport, this));
+	}
+
+	@Override
+	public void addTestrayAttachmentURL(URL testrayAttachmentURL) {
+		synchronized (_testrayAttachmentURLs) {
+			if (_testrayAttachmentURLs.contains(testrayAttachmentURL)) {
+				return;
+			}
+
+			_testrayAttachmentURLs.add(testrayAttachmentURL);
+		}
+	}
 
 	@Override
 	public void addTimelineData(TimelineData timelineData) {
@@ -210,6 +243,59 @@ public abstract class BaseTopLevelBuild
 	}
 
 	@Override
+	public JSONObject getBuildReportJSONObject() {
+		JSONObject buildReportJSONObject = super.getBuildReportJSONObject();
+
+		if (!(this instanceof ControllerTopLevelBuild)) {
+			buildReportJSONObject.put(
+				"testSuiteName", getTestSuiteName()
+			).put(
+				"totalActualDuration", getTotalActualDuration()
+			).put(
+				"totalCachedDuration", getTotalCachedDuration()
+			).put(
+				"totalDuration", getTotalDuration()
+			);
+		}
+
+		if (_testrayCaseResultURL != null) {
+			buildReportJSONObject.put(
+				"testrayCaseResultURL", String.valueOf(_testrayCaseResultURL));
+		}
+
+		if (_testrayContext != null) {
+			Map<File, TestrayBuild> testrayBuildsMap =
+				_testrayContext.getTestrayBuildsMap();
+
+			TestrayBuild testrayBuild = testrayBuildsMap.get(null);
+
+			if (testrayBuild != null) {
+				buildReportJSONObject.put(
+					"testrayBuildURL", String.valueOf(testrayBuild.getURL()));
+
+				TestrayRoutine testrayRoutine =
+					testrayBuild.getTestrayRoutine();
+
+				if (testrayRoutine != null) {
+					buildReportJSONObject.put(
+						"testrayRoutineURL",
+						String.valueOf(testrayRoutine.getURL()));
+				}
+
+				TestrayServer testrayServer = testrayBuild.getTestrayServer();
+
+				if (testrayServer != null) {
+					buildReportJSONObject.put(
+						"testrayServerURL",
+						String.valueOf(testrayServer.getURL()));
+				}
+			}
+		}
+
+		return buildReportJSONObject;
+	}
+
+	@Override
 	public Build getControllerBuild() {
 		if (_controllerBuild != null) {
 			return _controllerBuild;
@@ -242,129 +328,6 @@ public abstract class BaseTopLevelBuild
 		}
 
 		return sb.toString();
-	}
-
-	@Override
-	public AxisBuild getDownstreamAxisBuild(String axisName) {
-		AxisBuild targetAxisBuild = _downstreamAxisBuilds.get(axisName);
-
-		if (targetAxisBuild != null) {
-			return targetAxisBuild;
-		}
-
-		for (AxisBuild axisBuild : getDownstreamAxisBuilds()) {
-			if (axisName.equals(axisBuild.getAxisName())) {
-				return axisBuild;
-			}
-		}
-
-		return null;
-	}
-
-	@Override
-	public List<AxisBuild> getDownstreamAxisBuilds() {
-		if (_downstreamAxisBuildsPopulated &&
-			!_downstreamAxisBuilds.isEmpty()) {
-
-			List<AxisBuild> downstreamAxisBuilds = new ArrayList<>(
-				_downstreamAxisBuilds.values());
-
-			Collections.sort(
-				downstreamAxisBuilds,
-				new BaseBuild.BuildDisplayNameComparator());
-
-			return downstreamAxisBuilds;
-		}
-
-		List<AxisBuild> downstreamAxisBuilds = new ArrayList<>();
-
-		for (BatchBuild downstreamBatchBuild : getDownstreamBatchBuilds()) {
-			downstreamAxisBuilds.addAll(
-				downstreamBatchBuild.getDownstreamAxisBuilds());
-		}
-
-		synchronized (_downstreamAxisBuilds) {
-			if (isCompleted() && !_downstreamAxisBuildsPopulated) {
-				for (AxisBuild downstreamAxisBuild : downstreamAxisBuilds) {
-					_downstreamAxisBuilds.put(
-						downstreamAxisBuild.getAxisName(), downstreamAxisBuild);
-				}
-
-				_downstreamAxisBuildsPopulated = true;
-			}
-		}
-
-		Collections.sort(
-			downstreamAxisBuilds, new BaseBuild.BuildDisplayNameComparator());
-
-		return downstreamAxisBuilds;
-	}
-
-	@Override
-	public BatchBuild getDownstreamBatchBuild(String jobVariant) {
-		BatchBuild targetBatchBuild = _downstreamBatchBuilds.get(jobVariant);
-
-		if (targetBatchBuild != null) {
-			return targetBatchBuild;
-		}
-
-		for (BatchBuild batchBuild : getDownstreamBatchBuilds()) {
-			if (jobVariant.equals(batchBuild.getJobVariant())) {
-				return batchBuild;
-			}
-		}
-
-		return null;
-	}
-
-	@Override
-	public List<BatchBuild> getDownstreamBatchBuilds() {
-		if (_downstreamBatchBuildsPopulated &&
-			!_downstreamBatchBuilds.isEmpty()) {
-
-			List<BatchBuild> downstreamBatchBuilds = new ArrayList<>(
-				_downstreamBatchBuilds.values());
-
-			Collections.sort(
-				downstreamBatchBuilds,
-				new BaseBuild.BuildDisplayNameComparator());
-
-			return downstreamBatchBuilds;
-		}
-
-		List<BatchBuild> downstreamBatchBuilds = new ArrayList<>();
-
-		List<Build> downstreamBuilds = getDownstreamBuilds(null);
-
-		for (Build downstreamBuild : downstreamBuilds) {
-			if (!(downstreamBuild instanceof BatchBuild)) {
-				continue;
-			}
-
-			downstreamBatchBuilds.add((BatchBuild)downstreamBuild);
-		}
-
-		synchronized (_downstreamBatchBuilds) {
-			if (isCompleted() && !_downstreamBatchBuildsPopulated) {
-				for (BatchBuild downstreamBatchBuild : downstreamBatchBuilds) {
-					String jobVariant = downstreamBatchBuild.getJobVariant();
-
-					if (JenkinsResultsParserUtil.isNullOrEmpty(jobVariant)) {
-						continue;
-					}
-
-					_downstreamBatchBuilds.put(
-						jobVariant, downstreamBatchBuild);
-				}
-
-				_downstreamBatchBuildsPopulated = true;
-			}
-		}
-
-		Collections.sort(
-			downstreamBatchBuilds, new BaseBuild.BuildDisplayNameComparator());
-
-		return downstreamBatchBuilds;
 	}
 
 	@Override
@@ -578,8 +541,116 @@ public abstract class BaseTopLevelBuild
 		return testSuiteName;
 	}
 
+	@Override
+	public List<URL> getTestrayAttachmentURLs() {
+		synchronized (_testrayAttachmentURLs) {
+			return new ArrayList<>(_testrayAttachmentURLs);
+		}
+	}
+
+	@Override
+	public URL getTestrayCaseResultURL() {
+		synchronized (_testrayCaseResultURLLock) {
+			if (_testrayCaseResultURL != null) {
+				return _testrayCaseResultURL;
+			}
+
+			TestrayCaseResult.Status status = null;
+
+			if (getResult() == null) {
+				status = TestrayCaseResult.Status.INCOMPLETE;
+			}
+
+			TestrayContext testrayContext = getTestrayContext();
+
+			TopLevelStandaloneBuildTestrayCaseResult
+				topLevelStandaloneBuildTestrayCaseResult =
+					TestrayFactory.newTopLevelStandaloneBuildTestrayCaseResult(
+						status, testrayContext.getTestrayBuild(),
+						getTopLevelBuildReport());
+
+			topLevelStandaloneBuildTestrayCaseResult.initTestrayRun(getJob());
+
+			_testrayCaseResultURL =
+				topLevelStandaloneBuildTestrayCaseResult.
+					getTestrayCaseResultURL();
+
+			if (_testrayCaseResultURL != null) {
+				_testrayCaseResult = topLevelStandaloneBuildTestrayCaseResult;
+			}
+
+			return _testrayCaseResultURL;
+		}
+	}
+
+	@Override
+	public TestrayContext getTestrayContext() {
+		synchronized (_testrayContextLock) {
+			if (_testrayContext != null) {
+				return _testrayContext;
+			}
+
+			_testrayContext = TestrayFactory.newTestrayContext(
+				getBuildDatabase(), this);
+
+			Job job = getJob();
+
+			if (job != null) {
+				job.setTestrayContext(_testrayContext);
+			}
+
+			return _testrayContext;
+		}
+	}
+
 	public TimelineData getTimelineData() {
 		return new TimelineData(500, this);
+	}
+
+	@Override
+	public TopLevelBuildReport getTopLevelBuildReport() {
+		if (JenkinsResultsParserUtil.isNullOrEmpty(getBuildURL())) {
+			return null;
+		}
+
+		synchronized (_topLevelBuildReportLock) {
+			if (_topLevelBuildReport != null) {
+				return _topLevelBuildReport;
+			}
+
+			_topLevelBuildReport = BuildReportFactory.newTopLevelBuildReport(
+				this);
+
+			return _topLevelBuildReport;
+		}
+	}
+
+	@Override
+	public long getTotalActualDuration() {
+		return getTotalDuration() - getTotalCachedDuration();
+	}
+
+	@Override
+	public int getTotalActualSlavesUsedCount() {
+		return getTotalSlavesUsedCount() - getTotalCachedSlavesUsedCount();
+	}
+
+	@Override
+	public long getTotalCachedDuration() {
+		long totalDuration = 0L;
+
+		for (Build downstreamBuild : _getCachedDownstreamBuilds()) {
+			totalDuration += downstreamBuild.getDuration();
+		}
+
+		return totalDuration;
+	}
+
+	@Override
+	public int getTotalCachedSlavesUsedCount() {
+		List<Build> cachedDownstreamBuilds = _getCachedDownstreamBuilds();
+
+		return cachedDownstreamBuilds.size();
 	}
 
 	public URL getUserContentURL() {
@@ -602,9 +673,11 @@ public abstract class BaseTopLevelBuild
 		ValidationBuild validationBuild = null;
 
 		for (Build downstreamBuild : getDownstreamBuilds()) {
-			if (downstreamBuild instanceof ValidationBuild) {
-				validationBuild = (ValidationBuild)downstreamBuild;
+			if (!(downstreamBuild instanceof ValidationBuild)) {
+				continue;
 			}
+
+			validationBuild = (ValidationBuild)downstreamBuild;
 		}
 
 		if (validationBuild == null) {
@@ -653,8 +726,13 @@ public abstract class BaseTopLevelBuild
 		}
 
 		try {
+			URIBuilder uriBuilder = JenkinsResultsParserUtil.newURIBuilder(
+				buildURL + "/api/json");
+
+			uriBuilder.addParameter("tree", "result");
+
 			JSONObject buildJSONObject = JenkinsResultsParserUtil.toJSONObject(
-				buildURL + "/api/json?tree=result");
+				uriBuilder.toString());
 
 			if (!JenkinsResultsParserUtil.isNullOrEmpty(
 					buildJSONObject.optString("result", null))) {
@@ -757,6 +835,21 @@ public abstract class BaseTopLevelBuild
 		}
 
 		@Override
+		public String getSenderBranchSHAShort() {
+			String senderBranchSHA = getSenderBranchSHA();
+
+			if (senderBranchSHA == null) {
+				return null;
+			}
+
+			if (senderBranchSHA.length() >= 7) {
+				senderBranchSHA = senderBranchSHA.substring(0, 7);
+			}
+
+			return senderBranchSHA;
+		}
+
+		@Override
 		public RemoteGitRef getSenderRemoteGitRef() {
 			String remoteURL = null;
 
@@ -800,12 +893,12 @@ public abstract class BaseTopLevelBuild
 
 	}
 
-	protected BaseTopLevelBuild(String url) {
-		this(url, null);
+	protected BaseTopLevelBuild(String buildURL) {
+		this(buildURL, null);
 	}
 
-	protected BaseTopLevelBuild(String url, TopLevelBuild topLevelBuild) {
-		super(url, topLevelBuild);
+	protected BaseTopLevelBuild(String buildURL, TopLevelBuild topLevelBuild) {
+		super(buildURL, topLevelBuild);
 
 		Properties buildProperties = null;
 
@@ -856,6 +949,62 @@ public abstract class BaseTopLevelBuild
 			return;
 		}
 
+		boolean foundDownstreamBuilds = false;
+
+		BuildDatabase buildDatabase = getBuildDatabase();
+
+		Properties properties = buildDatabase.getProperties(
+			BUILD_URLS_PROPERTIES_KEY);
+
+		Map<String, String> urlAxisNames = new HashMap<>();
+
+		List<String> badBuildURLs = getBadBuildURLs();
+
+		for (String propertyName : properties.stringPropertyNames()) {
+			if (Objects.equals(propertyName, getJobVariant())) {
+				continue;
+			}
+
+			String buildURL = properties.getProperty(propertyName);
+
+			if (badBuildURLs.contains(buildURL)) {
+				continue;
+			}
+
+			urlAxisNames.put(buildURL, propertyName);
+		}
+
+		if (!urlAxisNames.isEmpty()) {
+			addDownstreamBuilds(urlAxisNames);
+
+			foundDownstreamBuilds = true;
+		}
+
+		properties = buildDatabase.getProperties(
+			CACHED_BUILD_URLS_PROPERTIES_KEY);
+
+		Set<String> cachedBuildURLs = properties.stringPropertyNames();
+
+		if (!cachedBuildURLs.isEmpty()) {
+			for (String cachedBuildURL : cachedBuildURLs) {
+				Build downstreamBuild = BuildFactory.newBuild(
+					cachedBuildURL, null, this);
+
+				downstreamBuild.setBuildCached(true);
+
+				addDownstreamBuild(downstreamBuild);
+			}
+
+			foundDownstreamBuilds = true;
+		}
+
+		if (foundDownstreamBuilds) {
+			return;
+		}
+
+		System.out.println(
+			"Unable to find downstream builds in build-database.json");
+
 		_findDownstreamBuildsInConsoleText();
 	}
 
@@ -896,18 +1045,26 @@ public abstract class BaseTopLevelBuild
 				}
 
 			});
+		archiveCallables.add(
+			new Callable<Object>() {
+
+				@Override
+				public Object call() {
+					PersistentResourceFactory.touchUsedPersistentResources(
+						getExecutorService());
+
+					return null;
+				}
+
+			});
 
 		return archiveCallables;
 	}
 
 	protected Element getBaseBranchDetailsElement() {
-		String baseBranchURL = JenkinsResultsParserUtil.combine(
-			"https://github.com/liferay/", getBaseGitRepositoryName(), "/tree/",
-			getBranchName());
-
+		String baseBranchSHA = null;
+		String baseBranchUsername = "liferay";
 		String baseGitRepositoryName = getBaseGitRepositoryName();
-
-		String baseGitRepositorySHA = null;
 
 		if ((this instanceof WorkspaceBuild) && !fromArchive) {
 			WorkspaceBuild workspaceBuild = (WorkspaceBuild)this;
@@ -917,34 +1074,39 @@ public abstract class BaseTopLevelBuild
 			WorkspaceGitRepository workspaceGitRepository =
 				workspace.getPrimaryWorkspaceGitRepository();
 
-			baseGitRepositorySHA = workspaceGitRepository.getBaseBranchSHA();
+			baseBranchSHA = workspaceGitRepository.getBaseBranchSHA();
+			baseBranchUsername = workspaceGitRepository.getBaseBranchUsername();
 		}
 		else if (!baseGitRepositoryName.equals("liferay-jenkins-ee") &&
 				 baseGitRepositoryName.endsWith("-ee")) {
 
-			baseGitRepositorySHA = getBaseGitRepositorySHA(
+			baseBranchSHA = getBaseGitRepositorySHA(
 				baseGitRepositoryName.substring(
 					0, baseGitRepositoryName.length() - 3));
 		}
 		else {
-			baseGitRepositorySHA = getBaseGitRepositorySHA(
-				baseGitRepositoryName);
+			baseBranchSHA = getBaseGitRepositorySHA(baseGitRepositoryName);
 		}
+
+		String baseBranchURL = JenkinsResultsParserUtil.combine(
+			"https://github.com/", baseBranchUsername, "/",
+			baseGitRepositoryName, "/tree/", getBranchName());
 
 		Element baseGitBranchDetailsElement = Dom4JUtil.getNewElement(
 			"p", null, "Branch Name: ",
 			Dom4JUtil.getNewAnchorElement(baseBranchURL, getBranchName()));
 
-		if (baseGitRepositorySHA != null) {
+		if (baseBranchSHA != null) {
 			String baseGitRepositoryCommitURL =
-				"https://github.com/liferay/" + baseGitRepositoryName +
-					"/commit/" + baseGitRepositorySHA;
+				JenkinsResultsParserUtil.combine(
+					"https://github.com/", baseBranchUsername, "/",
+					baseGitRepositoryName, "/commit/", baseBranchSHA);
 
 			Dom4JUtil.addToElement(
 				baseGitBranchDetailsElement, Dom4JUtil.getNewElement("br"),
 				"Branch GIT ID: ",
 				Dom4JUtil.getNewAnchorElement(
-					baseGitRepositoryCommitURL, baseGitRepositorySHA));
+					baseGitRepositoryCommitURL, baseBranchSHA));
 		}
 
 		return baseGitBranchDetailsElement;
@@ -959,78 +1121,73 @@ public abstract class BaseTopLevelBuild
 			sb.append("\nUnique Failures:");
 
 			for (Build failedDownstreamBuild : failedDownstreamBuilds) {
-				if (failedDownstreamBuild.isUniqueFailure()) {
-					sb.append("\n");
-					sb.append(failedDownstreamBuild.getDisplayName());
+				if (!failedDownstreamBuild.isUniqueFailure()) {
+					continue;
+				}
 
-					for (TestResult testResult :
-							failedDownstreamBuild.
-								getUniqueFailureTestResults()) {
+				sb.append("\n");
+				sb.append(failedDownstreamBuild.getDisplayName());
 
-						sb.append("\n\t");
-						sb.append(testResult.getDisplayName());
-					}
+				for (TestResult testResult :
+						failedDownstreamBuild.getUniqueFailureTestResults()) {
+
+					sb.append("\n\t");
+					sb.append(testResult.getDisplayName());
 				}
 			}
 
 			sb.append("\n\nUpstream Failures:");
 
 			for (Build failedDownstreamBuild : failedDownstreamBuilds) {
-				if (!failedDownstreamBuild.isUniqueFailure()) {
-					sb.append("\n");
-					sb.append(failedDownstreamBuild.getDisplayName());
+				if (failedDownstreamBuild.isUniqueFailure()) {
+					continue;
+				}
 
-					for (TestResult testResult :
-							failedDownstreamBuild.
-								getUpstreamJobFailureTestResults()) {
+				sb.append("\n");
+				sb.append(failedDownstreamBuild.getDisplayName());
 
-						sb.append("\n\t");
-						sb.append(testResult.getDisplayName());
-					}
+				for (TestResult testResult :
+						failedDownstreamBuild.
+							getUpstreamJobFailureTestResults()) {
+
+					sb.append("\n\t");
+					sb.append(testResult.getDisplayName());
 				}
 			}
 
 			System.out.println(sb.toString());
 		}
 
-		Map<Build, Element> downstreamBuildFailureMessages =
-			getDownstreamBuildMessages(failedDownstreamBuilds);
+		List<Element> downstreamBuildMessageElements =
+			getDownstreamBuildMessageElements(failedDownstreamBuilds);
+
+		System.out.println(
+			"Collected " + downstreamBuildMessageElements.size() +
+				" downstream failure messages");
 
 		List<Element> allCurrentBuildFailureElements = new ArrayList<>();
 		List<Element> upstreamBuildFailureElements = new ArrayList<>();
 
-		int maxFailureCount = 5;
+		int maxFailureCount = 20;
 
-		for (Map.Entry<Build, Element> entry :
-				downstreamBuildFailureMessages.entrySet()) {
+		for (Build failedDownstreamBuild : failedDownstreamBuilds) {
+			Element gitHubMessageElement =
+				failedDownstreamBuild.getGitHubMessageElement();
 
-			Build failedDownstreamBuild = entry.getKey();
-
-			Element failureElement = entry.getValue();
-
-			if (failureElement != null) {
-				if (!failedDownstreamBuild.isUniqueFailure()) {
-					upstreamBuildFailureElements.add(failureElement);
-
-					continue;
-				}
-
-				if (isHighPriorityBuildFailureElement(failureElement)) {
-					allCurrentBuildFailureElements.add(0, failureElement);
-
-					continue;
-				}
-
-				allCurrentBuildFailureElements.add(failureElement);
+			if (gitHubMessageElement != null) {
+				allCurrentBuildFailureElements.add(gitHubMessageElement);
 			}
 
-			Element upstreamJobFailureElement =
+			Element gitHubMessageUpstreamJobFailureElement =
 				failedDownstreamBuild.
 					getGitHubMessageUpstreamJobFailureElement();
 
-			if (upstreamJobFailureElement != null) {
-				upstreamBuildFailureElements.add(upstreamJobFailureElement);
+			if (gitHubMessageUpstreamJobFailureElement == null) {
+				continue;
 			}
+
+			upstreamBuildFailureElements.add(
+				gitHubMessageUpstreamJobFailureElement);
 		}
 
 		List<Element> buildFailureElements = new ArrayList<>();
@@ -1256,7 +1413,8 @@ public abstract class BaseTopLevelBuild
 			topLevelBuild.getJenkinsMaster();
 
 		return JenkinsResultsParserUtil.combine(
-			URL_BASE_TEMP_MAP, topLevelBuildJenkinsMaster.getName(), "/",
+			JenkinsResultsParserUtil.getJenkinsTempMapURL(), "/",
+			topLevelBuildJenkinsMaster.getName(), "/",
 			topLevelBuild.getJobName(), "/",
 			String.valueOf(topLevelBuild.getBuildNumber()), "/",
 			topLevelBuild.getJobName(), "/git.", gitRepositoryType,
@@ -1291,8 +1449,8 @@ public abstract class BaseTopLevelBuild
 
 		return Dom4JUtil.getNewElement(
 			"body", null, headingElement, subheadingElement,
-			getJenkinsReportCommitElement(), getJenkinsReportSummaryElement(),
-			getJenkinsReportTimelineElement(),
+			getJenkinsReportTestrayElement(), getJenkinsReportCommitElement(),
+			getJenkinsReportSummaryElement(), getJenkinsReportTimelineElement(),
 			getJenkinsReportTopLevelTableElement(),
 			getJenkinsReportDownstreamElement());
 	}
@@ -1441,7 +1599,7 @@ public abstract class BaseTopLevelBuild
 			Dom4JUtil.getNewElement(
 				"p", null,
 				Dom4JUtil.getNewAnchorElement(
-					_URL_CI_SYSTEM_STATUS, "CI System Status")),
+					_getCISystemStatusURL(), "CI System Status")),
 			Dom4JUtil.getNewElement(
 				"p", null, "Start Time: ",
 				toJenkinsReportDateString(
@@ -1454,11 +1612,28 @@ public abstract class BaseTopLevelBuild
 				"p", null, "Build Time: ",
 				JenkinsResultsParserUtil.toDurationString(getDuration())),
 			Dom4JUtil.getNewElement(
+				"p", null, "Actual CPU Usage Time: ",
+				JenkinsResultsParserUtil.toDurationString(
+					getTotalActualDuration())),
+			Dom4JUtil.getNewElement(
+				"p", null, "Cached CPU Usage Time: ",
+				JenkinsResultsParserUtil.toDurationString(
+					getTotalCachedDuration())),
+			Dom4JUtil.getNewElement(
 				"p", null, "Total CPU Usage Time: ",
 				JenkinsResultsParserUtil.toDurationString(getTotalDuration())),
 			Dom4JUtil.getNewElement(
+				"p", null, "Total number of Jenkins actual slaves used: ",
+				String.valueOf(getTotalActualSlavesUsedCount())),
+			Dom4JUtil.getNewElement(
+				"p", null, "Total number of Jenkins cached slaves used: ",
+				String.valueOf(getTotalCachedSlavesUsedCount())),
+			Dom4JUtil.getNewElement(
 				"p", null, "Total number of Jenkins slaves used: ",
 				String.valueOf(getTotalSlavesUsedCount())),
+			Dom4JUtil.getNewElement(
+				"p", null, "Total number of reinvocations: ",
+				String.valueOf(_getTotalReinvocationCount())),
 			Dom4JUtil.getNewElement(
 				"p", null, "Average delay time for invoked build to start: ",
 				JenkinsResultsParserUtil.toDurationString(
@@ -1560,6 +1735,51 @@ public abstract class BaseTopLevelBuild
 			resultElement);
 
 		return tableColumnHeaderElement;
+	}
+
+	protected Element getJenkinsReportTestrayElement() {
+		TestrayBuild testrayBuild = null;
+
+		if (_testrayContext != null) {
+			Map<File, TestrayBuild> testrayBuildsMap =
+				_testrayContext.getTestrayBuildsMap();
+
+			testrayBuild = testrayBuildsMap.get(null);
+		}
+
+		if ((testrayBuild == null) && (_testrayCaseResult == null)) {
+			return null;
+		}
+
+		Element testrayElement = Dom4JUtil.getNewElement("div");
+
+		if (testrayBuild != null) {
+			TestrayRoutine testrayRoutine = testrayBuild.getTestrayRoutine();
+
+			if (testrayRoutine != null) {
+				Dom4JUtil.getNewElement(
+					"p", testrayElement, "Testray Routine: ",
+					Dom4JUtil.getNewAnchorElement(
+						String.valueOf(testrayRoutine.getURL()),
+						testrayRoutine.getName()));
+			}
+
+			Dom4JUtil.getNewElement(
+				"p", testrayElement, "Testray Build: ",
+				Dom4JUtil.getNewAnchorElement(
+					String.valueOf(testrayBuild.getURL()),
+					testrayBuild.getName()));
+		}
+
+		if (_testrayCaseResult != null) {
+			Dom4JUtil.getNewElement(
+				"p", testrayElement, "Testray Case Result: ",
+				Dom4JUtil.getNewAnchorElement(
+					String.valueOf(_testrayCaseResultURL),
+					_testrayCaseResult.getName()));
+		}
+
+		return testrayElement;
 	}
 
 	protected Element getJenkinsReportTimelineElement() {
@@ -1689,50 +1909,52 @@ public abstract class BaseTopLevelBuild
 		Element jobSummaryListElement = Dom4JUtil.getNewElement("ul");
 
 		for (Build build : builds) {
-			if (Objects.equals(getResult(), "SUCCESS") == success) {
-				count++;
+			if (Objects.equals(getResult(), "SUCCESS") != success) {
+				continue;
+			}
 
-				if (count > _MAX_JOB_SUMMARY_LIST_SIZE) {
-					Element jobSummaryListItemElement = Dom4JUtil.getNewElement(
-						"li", jobSummaryListElement);
+			count++;
 
-					jobSummaryListItemElement.addText("...");
-
-					break;
-				}
-
-				if (build instanceof DownstreamBuild) {
-					DownstreamBuild downstreamBuild = (DownstreamBuild)build;
-
-					if (!Objects.equals(
-							batchName, downstreamBuild.getBatchName())) {
-
-						batchName = downstreamBuild.getBatchName();
-
-						Element batchListItemElement = Dom4JUtil.getNewElement(
-							"li", jobSummaryListElement);
-
-						batchListItemElement.addText(batchName);
-
-						batchListElement = Dom4JUtil.getNewElement(
-							"ul", batchListItemElement);
-					}
-
-					Element batchListItemElement = Dom4JUtil.getNewElement(
-						"li", batchListElement);
-
-					batchListItemElement.add(
-						build.getGitHubMessageBuildAnchorElement());
-
-					continue;
-				}
-
+			if (count > _MAX_JOB_SUMMARY_LIST_SIZE) {
 				Element jobSummaryListItemElement = Dom4JUtil.getNewElement(
 					"li", jobSummaryListElement);
 
-				jobSummaryListItemElement.add(
-					build.getGitHubMessageBuildAnchorElement());
+				jobSummaryListItemElement.addText("...");
+
+				break;
 			}
+
+			if (build instanceof DownstreamBuild) {
+				DownstreamBuild downstreamBuild = (DownstreamBuild)build;
+
+				if (!Objects.equals(
+						batchName, downstreamBuild.getBatchName())) {
+
+					batchName = downstreamBuild.getBatchName();
+
+					Element batchListItemElement = Dom4JUtil.getNewElement(
+						"li", jobSummaryListElement);
+
+					batchListItemElement.addText(batchName);
+
+					batchListElement = Dom4JUtil.getNewElement(
+						"ul", batchListItemElement);
+				}
+
+				Element batchListItemElement = Dom4JUtil.getNewElement(
+					"li", batchListElement);
+
+				batchListItemElement.add(
+					build.getGitHubMessageBuildAnchorElement());
+
+				continue;
+			}
+
+			Element jobSummaryListItemElement = Dom4JUtil.getNewElement(
+				"li", jobSummaryListElement);
+
+			jobSummaryListItemElement.add(
+				build.getGitHubMessageBuildAnchorElement());
 		}
 
 		return jobSummaryListElement;
@@ -1747,20 +1969,13 @@ public abstract class BaseTopLevelBuild
 	protected Element getReevaluationDetailsElement(
 		TopLevelBuildReport upstreamTopLevelBuildReport) {
 
-		Element growURLElement = Dom4JUtil.getNewAnchorElement(
-			"https://grow.liferay.com/share" +
-				"/CI+liferay-continuous-integration+GitHub+Commands#" +
-					"General-Commands",
-			"reevaluation");
-
-		String buildID = JenkinsResultsParserUtil.getBuildID(getBuildURL());
+		String buildId = JenkinsResultsParserUtil.getBuildId(getBuildURL());
 
 		Element preElement = Dom4JUtil.getNewElement(
-			"pre", null, "ci:reevaluate:" + buildID);
+			"pre", null, "ci:reevaluate:" + buildId);
 
 		return Dom4JUtil.getNewElement(
-			"p", null, "This pull is eligible for ", growURLElement,
-			". When this ",
+			"p", null, "This pull is eligible for reevaluation. When this ",
 			Dom4JUtil.getNewAnchorElement(
 				String.valueOf(upstreamTopLevelBuildReport.getBuildURL()),
 				"upstream build"),
@@ -1832,7 +2047,8 @@ public abstract class BaseTopLevelBuild
 		JenkinsMaster jenkinsMaster = getJenkinsMaster();
 
 		return JenkinsResultsParserUtil.combine(
-			URL_BASE_TEMP_MAP, jenkinsMaster.getName(), "/", getJobName(), "/",
+			JenkinsResultsParserUtil.getJenkinsTempMapURL(), "/",
+			jenkinsMaster.getName(), "/", getJobName(), "/",
 			String.valueOf(getBuildNumber()), "/", getJobName(), "/",
 			"start.properties");
 	}
@@ -1846,7 +2062,8 @@ public abstract class BaseTopLevelBuild
 		JenkinsMaster jenkinsMaster = getJenkinsMaster();
 
 		return JenkinsResultsParserUtil.combine(
-			URL_BASE_TEMP_MAP, jenkinsMaster.getName(), "/", getJobName(), "/",
+			JenkinsResultsParserUtil.getJenkinsTempMapURL(), "/",
+			jenkinsMaster.getName(), "/", getJobName(), "/",
 			String.valueOf(getBuildNumber()), "/", getJobName(), "/",
 			"stop.properties");
 	}
@@ -2004,6 +2221,10 @@ public abstract class BaseTopLevelBuild
 	protected boolean isEligibleForReevaluation(
 		String result, String upstreamBranchSHA) {
 
+		if (JenkinsResultsParserUtil.isNullOrEmpty(upstreamBranchSHA)) {
+			return false;
+		}
+
 		if ((result != null) && !result.matches("(APPROVED|SUCCESS)") &&
 			hasDownstreamBuilds() &&
 			!upstreamBranchSHA.equals(
@@ -2042,10 +2263,12 @@ public abstract class BaseTopLevelBuild
 				StatsDMetricsUtil.generateGaugeDeltaMetric(
 					"build_slave_usage_gauge", slaveUsage, metricLabels);
 
-			if (buildMetricMessage != null) {
-				sb.append(buildMetricMessage);
-				sb.append("\n");
+			if (buildMetricMessage == null) {
+				continue;
 			}
+
+			sb.append(buildMetricMessage);
+			sb.append("\n");
 		}
 
 		if (sb.length() > 0) {
@@ -2060,10 +2283,6 @@ public abstract class BaseTopLevelBuild
 			getModifiedDownstreamBuildsByStatus("completed");
 
 		for (Build modifiedCompletedBuild : modifiedCompletedBuilds) {
-			if (modifiedCompletedBuild instanceof BatchBuild) {
-				continue;
-			}
-
 			sendBuildMetrics(
 				StatsDMetricsUtil.generateTimerMetric(
 					"jenkins_job_build_duration",
@@ -2096,15 +2315,11 @@ public abstract class BaseTopLevelBuild
 
 		long start = JenkinsResultsParserUtil.getCurrentTimeMillis();
 
-		BuildDatabase buildDatabase = BuildDatabaseUtil.getBuildDatabase(this);
+		BuildDatabase buildDatabase = getBuildDatabase();
 
 		try {
-			JSONObject buildDatabaseJSONObject = new JSONObject(
-				JenkinsResultsParserUtil.read(
-					buildDatabase.getBuildDatabaseFile()));
-
 			writeArchiveFile(
-				buildDatabaseJSONObject.toString(4),
+				String.valueOf(buildDatabase.getJSONObject()),
 				getArchivePath() + "/" + urlSuffix);
 		}
 		catch (IOException ioException) {
@@ -2206,12 +2421,21 @@ public abstract class BaseTopLevelBuild
 			return;
 		}
 
+		String buildURL = getBuildURL();
+
+		if (JenkinsResultsParserUtil.isNullOrEmpty(buildURL)) {
+			System.out.println(
+				"Unable to archive properties to " + archiveFile);
+
+			return;
+		}
+
 		long start = JenkinsResultsParserUtil.getCurrentTimeMillis();
 
 		Properties archiveProperties = new Properties();
 
 		archiveProperties.setProperty(
-			"top.level.build.url", replaceBuildURL(getBuildURL()));
+			"top.level.build.url", replaceBuildURL(buildURL));
 
 		StringWriter sw = new StringWriter();
 
@@ -2259,9 +2483,11 @@ public abstract class BaseTopLevelBuild
 			List<String> downstreamBadBuildURLs =
 				downstreamBuild.getBadBuildURLs();
 
-			if (downstreamBadBuildURLs != null) {
-				downstreamBuildURLs.addAll(downstreamBadBuildURLs);
+			if (downstreamBadBuildURLs == null) {
+				continue;
 			}
+
+			downstreamBuildURLs.addAll(downstreamBadBuildURLs);
 		}
 
 		Map<String, String> urlAxisNames = new HashMap<>();
@@ -2314,6 +2540,42 @@ public abstract class BaseTopLevelBuild
 		addDownstreamBuilds(urlAxisNames);
 	}
 
+	private String _getCISystemStatusURL() {
+		try {
+			String masterHostname = JenkinsResultsParserUtil.getBuildProperty(
+				"jenkins.remote.url[test-1-0]");
+
+			if (!JenkinsResultsParserUtil.isNullOrEmpty(masterHostname)) {
+				if (!masterHostname.endsWith("/")) {
+					masterHostname += "/";
+				}
+
+				return JenkinsResultsParserUtil.combine(
+					masterHostname,
+					"userContent/reports/ci-system-status/index.html");
+			}
+		}
+		catch (IOException ioException) {
+			ioException.printStackTrace();
+		}
+
+		return _URL_CI_SYSTEM_STATUS;
+	}
+
+	private List<Build> _getCachedDownstreamBuilds() {
+		List<Build> cachedDownstreamBuilds = new ArrayList<>();
+
+		for (Build downstreamBuild : getDownstreamBuilds()) {
+			if (!downstreamBuild.isBuildCached()) {
+				continue;
+			}
+
+			cachedDownstreamBuilds.add(downstreamBuild);
+		}
+
+		return cachedDownstreamBuilds;
+	}
+
 	private Map<Map<String, String>, Integer> _getSlaveUsageByLabels() {
 		Map<Map<String, String>, Integer> slaveUsages = new HashMap<>();
 
@@ -2357,17 +2619,42 @@ public abstract class BaseTopLevelBuild
 			" Total ");
 	}
 
+	private int _getTotalReinvocationCount() {
+		BuildDatabase buildDatabase = getBuildDatabase();
+
+		Properties properties = buildDatabase.getProperties(
+			BAD_BUILD_URLS_PROPERTIES_KEY);
+
+		int totalReinvocationCount = 0;
+
+		for (String propertyName : properties.stringPropertyNames()) {
+			String badBuildURLsString = properties.getProperty(propertyName);
+
+			if (badBuildURLsString.isEmpty()) {
+				continue;
+			}
+
+			String[] badBuildURLs = badBuildURLsString.split(",");
+
+			totalReinvocationCount += badBuildURLs.length;
+		}
+
+		return totalReinvocationCount;
+	}
+
 	private static final FailureMessageGenerator[] _FAILURE_MESSAGE_GENERATORS =
 		{
 			new CITestSuiteValidationFailureMessageGenerator(),
 			new CompileFailureMessageGenerator(),
 			new FormatFailureMessageGenerator(),
+            new GitForcePushFailureMessageGenerator(),
 			new GitLPushFailureMessageGenerator(),
 			new JenkinsRegenFailureMessageGenerator(),
 			new JenkinsSourceFormatFailureMessageGenerator(),
 			new InvalidGitCommitSHAFailureMessageGenerator(),
 			new InvalidSenderSHAFailureMessageGenerator(),
 			new RebaseFailureMessageGenerator(),
+			new RelevantRuleValidationFailureMessageGenerator(),
 			//
 			new PoshiValidationFailureMessageGenerator(),
 			new PoshiTestFailureMessageGenerator(),
@@ -2377,6 +2664,7 @@ public abstract class BaseTopLevelBuild
 			new DownstreamFailureMessageGenerator(),
 			//
 			new CIFailureMessageGenerator(),
+			new ClosedChannelExceptionFailureMessageGenerator(),
 			//
 			new GenericFailureMessageGenerator()
 		};
@@ -2390,7 +2678,7 @@ public abstract class BaseTopLevelBuild
 		"https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.5.0/Chart.min.js";
 
 	private static final String _URL_CI_SYSTEM_STATUS =
-		"http://test-1-0.liferay.com/userContent/reports/ci-system-status" +
+		"https://test-1-0.liferay.com/userContent/reports/ci-system-status" +
 			"/index.html";
 
 	private static final Pattern _downstreamBuildURLPattern = Pattern.compile(
@@ -2404,16 +2692,18 @@ public abstract class BaseTopLevelBuild
 
 	private boolean _compareToUpstream;
 	private Build _controllerBuild;
-	private final Map<String, AxisBuild> _downstreamAxisBuilds =
-		new ConcurrentHashMap<>();
-	private boolean _downstreamAxisBuildsPopulated;
-	private final Map<String, BatchBuild> _downstreamBatchBuilds =
-		new ConcurrentHashMap<>();
-	private boolean _downstreamBatchBuildsPopulated;
 	private JenkinsCohort _jenkinsCohort;
 	private long _lastDownstreamBuildsListingTimestamp = -1L;
 	private String _metricsHostName;
 	private int _metricsHostPort;
 	private final boolean _sendBuildMetrics;
+	private final List<URL> _testrayAttachmentURLs = new ArrayList<>();
+	private TestrayCaseResult _testrayCaseResult;
+	private URL _testrayCaseResultURL;
+	private final Object _testrayCaseResultURLLock = new Object();
+	private TestrayContext _testrayContext;
+	private final Object _testrayContextLock = new Object();
+	private TopLevelBuildReport _topLevelBuildReport;
+	private final Object _topLevelBuildReportLock = new Object();
 
 }

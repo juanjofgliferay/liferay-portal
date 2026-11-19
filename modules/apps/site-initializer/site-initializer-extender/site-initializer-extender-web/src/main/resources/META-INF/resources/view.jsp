@@ -7,7 +7,9 @@
 
 <%@ include file="/init.jsp" %>
 
-<clay:container-fluid>
+<clay:container-fluid
+	fullWidth="<%= true %>"
+>
 	<clay:sheet
 		cssClass="custom-sheet"
 	>
@@ -16,7 +18,7 @@
 		<aui:form action="<%= synchronizeSiteInitializerActionURL %>" method="post" name="fm">
 			<clay:sheet-header>
 				<div class="sheet-title">
-					<%= portletDisplay.getTitle() %>
+					<%= HtmlUtil.escape(portletDisplay.getTitle()) %>
 				</div>
 			</clay:sheet-header>
 

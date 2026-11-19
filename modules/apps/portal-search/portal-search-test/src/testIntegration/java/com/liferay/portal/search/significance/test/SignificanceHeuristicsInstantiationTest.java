@@ -9,7 +9,7 @@ import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.search.script.Scripts;
 import com.liferay.portal.search.significance.SignificanceHeuristics;
-import com.liferay.portal.search.test.util.SearchTestRule;
+import com.liferay.portal.search.test.rule.SearchTestRule;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 
@@ -39,16 +39,14 @@ public class SignificanceHeuristicsInstantiationTest {
 			_significanceHeuristics.mutualInformation(false, false));
 		Assert.assertNotNull(_significanceHeuristics.percentageScore());
 		Assert.assertNotNull(
-			_significanceHeuristics.script(_scripts.script("script_id")));
+			_significanceHeuristics.script(
+				Scripts.INSTANCE.script("script_id")));
 	}
 
 	@Rule
 	public SearchTestRule searchTestRule = new SearchTestRule();
 
 	@Inject
-	private static Scripts _scripts;
-
-	@Inject
-	private static SignificanceHeuristics _significanceHeuristics;
+	private SignificanceHeuristics _significanceHeuristics;
 
 }

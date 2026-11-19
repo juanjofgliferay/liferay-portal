@@ -10,18 +10,21 @@ export const languages = {
 	en_US,
 };
 
+export type Word = keyof typeof en_US;
+
 export function translate(
-	word: string,
-	languageId = Liferay.ThemeDisplay.getLanguageId()
+	word: Word,
+	languageId = Liferay.ThemeDisplay.getDefaultLanguageId()
 ): string {
-	const languageProperties =
-		(languages as any)[languageId] ||
-		Liferay.ThemeDisplay.getDefaultLanguageId();
+	const languageProperties = (languages as any)[languageId];
 
 	return languageProperties[word] || word;
 }
 
-export function sub(word: string, words: string[] | string): string {
+export function sub(
+	word: Word,
+	words: Word[] | Word | string | string[]
+): string {
 	if (!Array.isArray(words)) {
 		words = [words];
 	}
@@ -29,7 +32,7 @@ export function sub(word: string, words: string[] | string): string {
 	let translatedWord = translate(word);
 
 	words.forEach((value, index) => {
-		const translatedKey = translate(value);
+		const translatedKey = translate(value as Word);
 		const key = `{${index}}`;
 		translatedWord = translatedWord.replace(key, translatedKey);
 	});

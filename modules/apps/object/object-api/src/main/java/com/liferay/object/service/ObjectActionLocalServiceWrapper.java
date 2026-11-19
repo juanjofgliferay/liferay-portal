@@ -49,7 +49,8 @@ public class ObjectActionLocalServiceWrapper
 	@Override
 	public com.liferay.object.model.ObjectAction addObjectAction(
 			String externalReferenceCode, long userId, long objectDefinitionId,
-			boolean active, String conditionExpression, String description,
+			boolean active, String conditionExpression,
+			java.util.Map<java.util.Locale, String> descriptionMap,
 			java.util.Map<java.util.Locale, String> errorMessageMap,
 			java.util.Map<java.util.Locale, String> labelMap, String name,
 			String objectActionExecutorKey, String objectActionTriggerKey,
@@ -60,8 +61,8 @@ public class ObjectActionLocalServiceWrapper
 
 		return _objectActionLocalService.addObjectAction(
 			externalReferenceCode, userId, objectDefinitionId, active,
-			conditionExpression, description, errorMessageMap, labelMap, name,
-			objectActionExecutorKey, objectActionTriggerKey,
+			conditionExpression, descriptionMap, errorMessageMap, labelMap,
+			name, objectActionExecutorKey, objectActionTriggerKey,
 			parametersUnicodeProperties, system);
 	}
 
@@ -69,7 +70,7 @@ public class ObjectActionLocalServiceWrapper
 	public com.liferay.object.model.ObjectAction addOrUpdateObjectAction(
 			String externalReferenceCode, long objectActionId, long userId,
 			long objectDefinitionId, boolean active, String conditionExpression,
-			String description,
+			java.util.Map<java.util.Locale, String> descriptionMap,
 			java.util.Map<java.util.Locale, String> errorMessageMap,
 			java.util.Map<java.util.Locale, String> labelMap, String name,
 			String objectActionExecutorKey, String objectActionTriggerKey,
@@ -80,9 +81,18 @@ public class ObjectActionLocalServiceWrapper
 
 		return _objectActionLocalService.addOrUpdateObjectAction(
 			externalReferenceCode, objectActionId, userId, objectDefinitionId,
-			active, conditionExpression, description, errorMessageMap, labelMap,
-			name, objectActionExecutorKey, objectActionTriggerKey,
+			active, conditionExpression, descriptionMap, errorMessageMap,
+			labelMap, name, objectActionExecutorKey, objectActionTriggerKey,
 			parametersUnicodeProperties, system);
+	}
+
+	@Override
+	public void addOrUpdateSubscriptionObjectActions(
+			com.liferay.object.model.ObjectDefinition objectDefinition)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		_objectActionLocalService.addOrUpdateSubscriptionObjectActions(
+			objectDefinition);
 	}
 
 	/**
@@ -276,6 +286,14 @@ public class ObjectActionLocalServiceWrapper
 
 	@Override
 	public com.liferay.object.model.ObjectAction fetchObjectAction(
+		long objectDefinitionId, String name) {
+
+		return _objectActionLocalService.fetchObjectAction(
+			objectDefinitionId, name);
+	}
+
+	@Override
+	public com.liferay.object.model.ObjectAction fetchObjectAction(
 		String externalReferenceCode, long objectDefinitionId) {
 
 		return _objectActionLocalService.fetchObjectAction(
@@ -362,6 +380,14 @@ public class ObjectActionLocalServiceWrapper
 			uuid, companyId);
 	}
 
+	@Override
+	public java.util.List<com.liferay.object.model.ObjectAction>
+		getObjectActions(boolean active, String objectActionExecutorKey) {
+
+		return _objectActionLocalService.getObjectActions(
+			active, objectActionExecutorKey);
+	}
+
 	/**
 	 * Returns a range of all the object actions.
 	 *
@@ -406,6 +432,16 @@ public class ObjectActionLocalServiceWrapper
 		return _objectActionLocalService.getObjectActionsCount();
 	}
 
+	@Override
+	public java.util.Map
+		<Long, java.util.List<com.liferay.object.model.ObjectAction>>
+			getObjectActionsMap(
+				long companyId, boolean active, String objectActionTriggerKey) {
+
+		return _objectActionLocalService.getObjectActionsMap(
+			companyId, active, objectActionTriggerKey);
+	}
+
 	/**
 	 * Returns the OSGi service identifier.
 	 *
@@ -425,6 +461,14 @@ public class ObjectActionLocalServiceWrapper
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _objectActionLocalService.getPersistedModel(primaryKeyObj);
+	}
+
+	@Override
+	public com.liferay.object.model.ObjectAction updateActive(
+			com.liferay.object.model.ObjectAction objectAction, boolean active)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _objectActionLocalService.updateActive(objectAction, active);
 	}
 
 	/**
@@ -447,7 +491,8 @@ public class ObjectActionLocalServiceWrapper
 	@Override
 	public com.liferay.object.model.ObjectAction updateObjectAction(
 			String externalReferenceCode, long objectActionId, boolean active,
-			String conditionExpression, String description,
+			String conditionExpression,
+			java.util.Map<java.util.Locale, String> descriptionMap,
 			java.util.Map<java.util.Locale, String> errorMessageMap,
 			java.util.Map<java.util.Locale, String> labelMap, String name,
 			String objectActionExecutorKey, String objectActionTriggerKey,
@@ -457,7 +502,7 @@ public class ObjectActionLocalServiceWrapper
 
 		return _objectActionLocalService.updateObjectAction(
 			externalReferenceCode, objectActionId, active, conditionExpression,
-			description, errorMessageMap, labelMap, name,
+			descriptionMap, errorMessageMap, labelMap, name,
 			objectActionExecutorKey, objectActionTriggerKey,
 			parametersUnicodeProperties);
 	}
@@ -490,3 +535,4 @@ public class ObjectActionLocalServiceWrapper
 	private ObjectActionLocalService _objectActionLocalService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:248818369

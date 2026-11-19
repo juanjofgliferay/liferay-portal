@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -129,7 +130,8 @@ public class CommercePriceListDiscountRelLocalServiceUtil {
 	}
 
 	public static void deleteCommercePriceListDiscountRels(
-		long commercePriceListId) {
+			long commercePriceListId)
+		throws PortalException {
 
 		getService().deleteCommercePriceListDiscountRels(commercePriceListId);
 	}
@@ -236,14 +238,6 @@ public class CommercePriceListDiscountRelLocalServiceUtil {
 			commercePriceListDiscountRelId);
 	}
 
-	public static CommercePriceListDiscountRel
-		fetchCommercePriceListDiscountRel(
-			long commerceDiscountId, long commercePriceListId) {
-
-		return getService().fetchCommercePriceListDiscountRel(
-			commerceDiscountId, commercePriceListId);
-	}
-
 	/**
 	 * Returns the commerce price list discount rel with the matching UUID and company.
 	 *
@@ -321,15 +315,6 @@ public class CommercePriceListDiscountRelLocalServiceUtil {
 			commercePriceListId);
 	}
 
-	public static List<CommercePriceListDiscountRel>
-		getCommercePriceListDiscountRels(
-			long commercePriceListId, int start, int end,
-			OrderByComparator<CommercePriceListDiscountRel> orderByComparator) {
-
-		return getService().getCommercePriceListDiscountRels(
-			commercePriceListId, start, end, orderByComparator);
-	}
-
 	/**
 	 * Returns the number of commerce price list discount rels.
 	 *
@@ -337,13 +322,6 @@ public class CommercePriceListDiscountRelLocalServiceUtil {
 	 */
 	public static int getCommercePriceListDiscountRelsCount() {
 		return getService().getCommercePriceListDiscountRelsCount();
-	}
-
-	public static int getCommercePriceListDiscountRelsCount(
-		long commercePriceListId) {
-
-		return getService().getCommercePriceListDiscountRelsCount(
-			commercePriceListId);
 	}
 
 	public static com.liferay.portal.kernel.dao.orm.ExportActionableDynamicQuery
@@ -398,15 +376,13 @@ public class CommercePriceListDiscountRelLocalServiceUtil {
 	}
 
 	public static CommercePriceListDiscountRelLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(
-		CommercePriceListDiscountRelLocalService service) {
-
-		_service = service;
-	}
-
-	private static volatile CommercePriceListDiscountRelLocalService _service;
+	private static final Snapshot<CommercePriceListDiscountRelLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			CommercePriceListDiscountRelLocalServiceUtil.class,
+			CommercePriceListDiscountRelLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:200513208

@@ -94,6 +94,8 @@ public class MBBanModelImpl extends BaseModelImpl<MBBan> implements MBBanModel {
 
 	public static final String TABLE_SQL_DROP = "drop table MBBan";
 
+	public static final String ENTITY_ALIAS = "mbBan";
+
 	public static final String ORDER_BY_JPQL = " ORDER BY mbBan.banId ASC";
 
 	public static final String ORDER_BY_SQL = " ORDER BY MBBan.banId ASC";
@@ -126,20 +128,14 @@ public class MBBanModelImpl extends BaseModelImpl<MBBan> implements MBBanModel {
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long USERID_COLUMN_BITMASK = 8L;
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
-	 */
-	@Deprecated
-	public static final long UUID_COLUMN_BITMASK = 16L;
+	public static final long UUID_COLUMN_BITMASK = 8L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
 	 *		#getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long BANID_COLUMN_BITMASK = 32L;
+	public static final long BANID_COLUMN_BITMASK = 16L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
@@ -461,15 +457,6 @@ public class MBBanModelImpl extends BaseModelImpl<MBBan> implements MBBanModel {
 
 	@Override
 	public void setUserUuid(String userUuid) {
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #getColumnOriginalValue(String)}
-	 */
-	@Deprecated
-	public long getOriginalUserId() {
-		return GetterUtil.getLong(this.<Long>getColumnOriginalValue("userId"));
 	}
 
 	@JSON
@@ -989,3 +976,4 @@ public class MBBanModelImpl extends BaseModelImpl<MBBan> implements MBBanModel {
 	private MBBan _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1162059240

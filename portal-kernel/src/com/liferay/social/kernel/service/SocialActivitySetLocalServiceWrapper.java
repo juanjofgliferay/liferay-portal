@@ -262,22 +262,6 @@ public class SocialActivitySetLocalServiceWrapper
 	}
 
 	@Override
-	public SocialActivitySet getClassActivitySet(
-		long classNameId, long classPK, int type) {
-
-		return _socialActivitySetLocalService.getClassActivitySet(
-			classNameId, classPK, type);
-	}
-
-	@Override
-	public SocialActivitySet getClassActivitySet(
-		long userId, long classNameId, long classPK, int type) {
-
-		return _socialActivitySetLocalService.getClassActivitySet(
-			userId, classNameId, classPK, type);
-	}
-
-	@Override
 	public java.util.List<SocialActivitySet> getGroupActivitySets(
 		long groupId, int start, int end) {
 
@@ -336,24 +320,10 @@ public class SocialActivitySetLocalServiceWrapper
 
 	@Override
 	public java.util.List<SocialActivitySet> getRelationActivitySets(
-		long userId, int start, int end) {
-
-		return _socialActivitySetLocalService.getRelationActivitySets(
-			userId, start, end);
-	}
-
-	@Override
-	public java.util.List<SocialActivitySet> getRelationActivitySets(
 		long userId, int type, int start, int end) {
 
 		return _socialActivitySetLocalService.getRelationActivitySets(
 			userId, type, start, end);
-	}
-
-	@Override
-	public int getRelationActivitySetsCount(long userId) {
-		return _socialActivitySetLocalService.getRelationActivitySetsCount(
-			userId);
 	}
 
 	@Override
@@ -403,22 +373,6 @@ public class SocialActivitySetLocalServiceWrapper
 	@Override
 	public int getSocialActivitySetsCount() {
 		return _socialActivitySetLocalService.getSocialActivitySetsCount();
-	}
-
-	@Override
-	public SocialActivitySet getUserActivitySet(
-		long groupId, long userId, int type) {
-
-		return _socialActivitySetLocalService.getUserActivitySet(
-			groupId, userId, type);
-	}
-
-	@Override
-	public SocialActivitySet getUserActivitySet(
-		long groupId, long userId, long classNameId, int type) {
-
-		return _socialActivitySetLocalService.getUserActivitySet(
-			groupId, userId, classNameId, type);
 	}
 
 	@Override
@@ -528,3 +482,4 @@ public class SocialActivitySetLocalServiceWrapper
 	private SocialActivitySetLocalService _socialActivitySetLocalService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-163532650

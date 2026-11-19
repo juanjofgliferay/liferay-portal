@@ -1,0 +1,374 @@
+/**
+ * SPDX-FileCopyrightText: (c) 2026 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
+ */
+
+import ClayButton from '@clayui/button';
+import ClayForm, {
+	ClayInput,
+	ClaySelectWithOption,
+	ClayToggle,
+} from '@clayui/form';
+import ClayPanel from '@clayui/panel';
+import {RequiredMark, Toolbar} from '@liferay/site-cms-site-initializer';
+import {fetch, navigate, sub} from 'frontend-js-web';
+import React, {useEffect, useState} from 'react';
+
+import PIMConnectorConfigurationField, {
+	IPIMConnectorConfigurationField,
+	PIMConnectorConfigurationValue,
+} from './edit_connector/PIMConnectorConfigurationField';
+
+const TEMP_OBFUSCATION_VALUE = 'TEMP_OBFUSCATION_VALUE';
+
+interface IPIMConnector {
+	configuration?: IPIMConnectorConfiguration | null;
+	key: string;
+	name: string;
+}
+
+interface IPIMConnectorConfiguration {
+	apiURL: string;
+	fields: IPIMConnectorConfigurationField[];
+	title: string;
+}
+
+interface IPIMConnectorConfigurationData {
+	externalReferenceCode: string;
+	values: {[name: string]: PIMConnectorConfigurationValue | null};
+}
+
+interface IPIMConnectorData {
+	active: boolean;
+	externalReferenceCode: string;
+	key: string;
+	name: string;
+}
+
+interface IProps {
+	apiURL: string;
+	backURL: string;
+	configuration: IPIMConnectorConfigurationData | null;
+	objectEntryId: number;
+	pimConnector: IPIMConnectorData | null;
+	pimConnectors: IPIMConnector[];
+	title: string;
+}
+
+function isEmpty(value?: PIMConnectorConfigurationValue | null) {
+	return (
+		value === undefined ||
+		value === null ||
+		value === '' ||
+		(Array.isArray(value) && !value.length)
+	);
+}
+
+function toRequestValue(
+	field: IPIMConnectorConfigurationField,
+	value: PIMConnectorConfigurationValue
+) {
+	if (
+		field.businessType === 'Decimal' ||
+		field.businessType === 'Integer' ||
+		field.businessType === 'LongInteger' ||
+		field.businessType === 'PrecisionDecimal'
+	) {
+		return Number(value);
+	}
+
+	if (field.businessType === 'DateTime') {
+		return new Date(String(value)).toISOString();
+	}
+
+	return value;
+}
+
+export default function EditPIMConnector({
+	apiURL,
+	backURL,
+	configuration,
+	objectEntryId,
+	pimConnector,
+	pimConnectors = [],
+	title,
+}: IProps) {
+	const isNew = Number(objectEntryId) === 0;
+
+	const [active, setActive] = useState(Boolean(pimConnector?.active));
+	const [key, setKey] = useState(pimConnector?.key || '');
+	const [name, setName] = useState(pimConnector?.name || '');
+	const [configurationValues, setConfigurationValues] = useState<{
+		[name: string]: PIMConnectorConfigurationValue | null;
+	}>(configuration?.values ?? {});
+
+	const pimConnectorConfiguration = pimConnectors.find(
+		(curPIMConnector) => curPIMConnector.key === key
+	)?.configuration;
+
+	useEffect(() => {
+		if (!isNew && !pimConnector) {
+			navigate(backURL);
+		}
+	}, [backURL, isNew, pimConnector]);
+
+	const saveConfiguration = async (externalReferenceCode: string) => {
+		if (!pimConnectorConfiguration) {
+			return;
+		}
+
+		const body: {[name: string]: unknown} = {};
+
+		for (const field of pimConnectorConfiguration.fields) {
+			const value = configurationValues[field.name];
+
+			if (
+				field.businessType === 'Encrypted' &&
+				value === TEMP_OBFUSCATION_VALUE
+			) {
+				continue;
+			}
+
+			body[field.name] = isEmpty(value)
+				? null
+				: toRequestValue(
+						field,
+						value as PIMConnectorConfigurationValue
+					);
+		}
+
+		const response = await fetch(
+			`${pimConnectorConfiguration.apiURL}/by-external-reference-code/${externalReferenceCode}`,
+			{
+				body: JSON.stringify(body),
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				method: configuration ? 'PATCH' : 'PUT',
+			}
+		);
+
+		if (!response.ok) {
+			throw new Error();
+		}
+	};
+
+	const handleSubmit = async (event: React.FormEvent) => {
+		event.preventDefault();
+
+		try {
+			const response = await fetch(
+				isNew ? apiURL : `${apiURL}/${objectEntryId}`,
+				{
+					body: JSON.stringify({
+						active,
+						key,
+						name,
+					}),
+					headers: {
+						'Content-Type': 'application/json',
+					},
+					method: isNew ? 'POST' : 'PUT',
+				}
+			);
+
+			if (!response.ok) {
+				throw new Error();
+			}
+
+			const {externalReferenceCode} = await response.json();
+
+			await saveConfiguration(externalReferenceCode);
+
+			Liferay.Util.openToast({
+				message: sub(
+					isNew
+						? Liferay.Language.get('x-was-published-successfully')
+						: Liferay.Language.get('x-was-updated-successfully'),
+					name
+				),
+				type: 'success',
+			});
+
+			navigate(backURL);
+		}
+		catch (error) {
+			Liferay.Util.openToast({
+				message: Liferay.Language.get('an-unexpected-error-occurred'),
+				type: 'danger',
+			});
+		}
+	};
+
+	const configurationComplete = (
+		pimConnectorConfiguration?.fields ?? []
+	).every(
+		(field) =>
+			!field.required ||
+			field.businessType === 'Boolean' ||
+			!isEmpty(configurationValues[field.name])
+	);
+
+	return (
+		<>
+			<Toolbar backURL={backURL} title={title}>
+				<Toolbar.Item>
+					<ClayButton
+						displayType="secondary"
+						onClick={() => navigate(backURL)}
+						size="sm"
+					>
+						{Liferay.Language.get('cancel')}
+					</ClayButton>
+
+					<ClayButton
+						className="inline-item-after"
+						disabled={
+							!name.trim() || !key || !configurationComplete
+						}
+						displayType="primary"
+						form="pimConnectorForm"
+						size="sm"
+						type="submit"
+					>
+						{Liferay.Language.get('save')}
+					</ClayButton>
+				</Toolbar.Item>
+			</Toolbar>
+
+			<div className="container-fluid container-fluid-max-md p-0 p-md-4">
+				<ClayForm id="pimConnectorForm" onSubmit={handleSubmit}>
+					<ClayPanel
+						aria-label={Liferay.Language.get('general')}
+						className="mb-4"
+						collapsable={false}
+						displayType="secondary"
+						role="group"
+					>
+						<div className="c-gap-4 d-flex flex-column p-4">
+							<h2 className="mb-0 py-2 text-6 text-dark">
+								{Liferay.Language.get('general')}
+							</h2>
+
+							<ClayForm.Group className="mb-0">
+								<label htmlFor="pimConnectorName">
+									{Liferay.Language.get('name')}
+
+									<RequiredMark />
+								</label>
+
+								<ClayInput
+									id="pimConnectorName"
+									onChange={(event) =>
+										setName(event.target.value)
+									}
+									required
+									type="text"
+									value={name}
+								/>
+							</ClayForm.Group>
+
+							<ClayForm.Group className="mb-0">
+								<label htmlFor="pimConnectorKey">
+									{Liferay.Language.get('connector')}
+
+									<RequiredMark />
+								</label>
+
+								<ClaySelectWithOption
+									aria-describedby={
+										isNew
+											? undefined
+											: 'pimConnectorKeyHelp'
+									}
+									disabled={!isNew}
+									id="pimConnectorKey"
+									onChange={(event) => {
+										setKey(event.target.value);
+										setConfigurationValues({});
+									}}
+									options={[
+										{
+											disabled: true,
+											label: Liferay.Language.get(
+												'select-a-connector'
+											),
+											value: '',
+										},
+										...pimConnectors.map(
+											(pimConnector) => ({
+												label: pimConnector.name,
+												value: pimConnector.key,
+											})
+										),
+									]}
+									required
+									value={key}
+								/>
+
+								{!isNew && (
+									<ClayForm.FeedbackGroup>
+										<ClayForm.Text id="pimConnectorKeyHelp">
+											{Liferay.Language.get(
+												'the-connector-type-cannot-be-changed-after-the-connector-is-created'
+											)}
+										</ClayForm.Text>
+									</ClayForm.FeedbackGroup>
+								)}
+							</ClayForm.Group>
+
+							<ClayForm.Group className="mb-0">
+								<ClayToggle
+									label={Liferay.Language.get('active')}
+									onToggle={setActive}
+									toggled={active}
+								/>
+							</ClayForm.Group>
+						</div>
+					</ClayPanel>
+
+					{pimConnectorConfiguration &&
+						!!pimConnectorConfiguration.fields.length && (
+							<ClayPanel
+								aria-label={pimConnectorConfiguration.title}
+								className="mb-4"
+								collapsable={false}
+								displayType="secondary"
+								role="group"
+							>
+								<div className="c-gap-4 d-flex flex-column p-4">
+									<h2 className="mb-0 py-2 text-6 text-dark">
+										{pimConnectorConfiguration.title}
+									</h2>
+
+									{pimConnectorConfiguration.fields.map(
+										(field) => (
+											<PIMConnectorConfigurationField
+												field={field}
+												key={field.name}
+												onChange={(value) =>
+													setConfigurationValues(
+														(
+															previousConfigurationValues
+														) => ({
+															...previousConfigurationValues,
+															[field.name]: value,
+														})
+													)
+												}
+												value={
+													configurationValues[
+														field.name
+													]
+												}
+											/>
+										)
+									)}
+								</div>
+							</ClayPanel>
+						)}
+				</ClayForm>
+			</div>
+		</>
+	);
+}

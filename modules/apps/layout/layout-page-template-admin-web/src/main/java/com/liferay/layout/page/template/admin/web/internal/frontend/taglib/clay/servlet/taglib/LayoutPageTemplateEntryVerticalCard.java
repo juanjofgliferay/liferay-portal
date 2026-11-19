@@ -12,6 +12,7 @@ import com.liferay.frontend.taglib.clay.servlet.taglib.util.LabelItemListBuilder
 import com.liferay.layout.constants.LayoutTypeSettingsConstants;
 import com.liferay.layout.page.template.admin.web.internal.security.permission.resource.LayoutPageTemplateEntryPermission;
 import com.liferay.layout.page.template.admin.web.internal.servlet.taglib.util.LayoutPageTemplateEntryActionDropdownItemsProvider;
+import com.liferay.layout.page.template.admin.web.internal.util.LayoutPageTemplatePortletUtil;
 import com.liferay.layout.page.template.constants.LayoutPageTemplateEntryTypeConstants;
 import com.liferay.layout.page.template.model.LayoutPageTemplateEntry;
 import com.liferay.portal.kernel.dao.search.RowChecker;
@@ -32,13 +33,13 @@ import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.List;
 import java.util.Objects;
-
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Eudaldo Alonso
@@ -115,7 +116,9 @@ public class LayoutPageTemplateEntryVerticalCard extends BaseVerticalCard {
 					LayoutLocalServiceUtil.fetchDraftLayout(
 						_layoutPageTemplateEntry.getPlid()),
 					themeDisplay),
-				"p_l_back_url", themeDisplay.getURLCurrent(),
+				"p_l_back_url",
+				LayoutPageTemplatePortletUtil.getBackURL(
+					_renderResponse, themeDisplay),
 				"p_l_back_url_title", portletDisplay.getTitle(), "p_l_mode",
 				Constants.EDIT);
 		}
@@ -147,13 +150,6 @@ public class LayoutPageTemplateEntryVerticalCard extends BaseVerticalCard {
 
 	@Override
 	public List<LabelItem> getLabels() {
-		if (Objects.equals(
-				_layoutPageTemplateEntry.getType(),
-				LayoutPageTemplateEntryTypeConstants.WIDGET_PAGE)) {
-
-			return super.getLabels();
-		}
-
 		Layout draftLayout = LayoutLocalServiceUtil.fetchDraftLayout(
 			_layoutPageTemplateEntry.getPlid());
 

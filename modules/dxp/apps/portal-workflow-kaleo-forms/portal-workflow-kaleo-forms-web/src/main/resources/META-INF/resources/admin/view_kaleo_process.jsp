@@ -24,7 +24,6 @@ KaleoProcess kaleoProcess = kaleoFormsViewRecordsDisplayContext.getKaleoProcess(
 %>
 
 <clay:navigation-bar
-	inverted="<%= true %>"
 	navigationItems="<%= kaleoFormsViewRecordsDisplayContext.getNavigationItems() %>"
 />
 
@@ -43,15 +42,17 @@ KaleoProcess kaleoProcess = kaleoFormsViewRecordsDisplayContext.getKaleoProcess(
 	%>'
 	clearResultsURL="<%= kaleoFormsViewRecordsDisplayContext.getClearResultsURL() %>"
 	creationMenu="<%= kaleoFormsViewRecordsDisplayContext.getCreationMenu() %>"
-	filterDropdownItems="<%= kaleoFormsViewRecordsDisplayContext.getFilterItemsDropdownItems() %>"
 	itemsTotal="<%= kaleoFormsViewRecordsDisplayContext.getTotalItems() %>"
-	propsTransformer="admin/js/KaleoFormsViewRecordsManagementToolbarPropsTransformer"
+	orderDropdownItems="<%= kaleoFormsViewRecordsDisplayContext.getOrderItemsDropdownItems() %>"
+	propsTransformer="{KaleoFormsViewRecordsManagementToolbarPropsTransformer} from portal-workflow-kaleo-forms-web"
 	searchActionURL="<%= kaleoFormsViewRecordsDisplayContext.getSearchActionURL() %>"
 	searchContainerId="<%= kaleoFormsViewRecordsDisplayContext.getSearchContainerId() %>"
 	searchFormName="fm"
 	sortingOrder="<%= kaleoFormsViewRecordsDisplayContext.getOrderByType() %>"
 	sortingURL="<%= kaleoFormsViewRecordsDisplayContext.getSortingURL() %>"
 />
+
+<%@ include file="/admin/deprecated_warning.jspf" %>
 
 <clay:container-fluid
 	id='<%= liferayPortletResponse.getNamespace() + "formContainer" %>'
@@ -178,36 +179,6 @@ KaleoProcess kaleoProcess = kaleoFormsViewRecordsDisplayContext.getKaleoProcess(
 </clay:container-fluid>
 
 <%@ include file="/admin/export_kaleo_process.jspf" %>
-
-<aui:script>
-	AUI().use('liferay-portlet-dynamic-data-lists');
-
-	Liferay.provide(
-		window,
-		'<portlet:namespace />openPreviewDialog',
-		(content) => {
-			var Util = Liferay.Util;
-
-			var dialog = Util.getWindow('<portlet:namespace />previewDialog');
-
-			if (!dialog) {
-				dialog = Util.Window.getWindow({
-					dialog: {
-						bodyContent: content,
-					},
-					id: '<portlet:namespace />previewDialog',
-					title: Liferay.Language.get('preview'),
-				});
-			}
-			else {
-				dialog.show();
-
-				dialog.set('bodyContent', content);
-			}
-		},
-		['liferay-util-window']
-	);
-</aui:script>
 
 <%
 portletDisplay.setShowBackIcon(true);

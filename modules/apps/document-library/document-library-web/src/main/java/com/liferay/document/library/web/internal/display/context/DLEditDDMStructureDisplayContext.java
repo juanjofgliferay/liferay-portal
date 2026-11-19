@@ -7,16 +7,20 @@ package com.liferay.document.library.web.internal.display.context;
 
 import com.liferay.dynamic.data.mapping.constants.DDMStructureConstants;
 import com.liferay.dynamic.data.mapping.model.DDMStructure;
+import com.liferay.dynamic.data.mapping.model.DDMStructureVersion;
 import com.liferay.dynamic.data.mapping.service.DDMStructureLocalServiceUtil;
 import com.liferay.dynamic.data.mapping.util.DDMUtil;
+import com.liferay.frontend.js.loader.modules.extender.esm.ESImportUtil;
+import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.bean.BeanParamUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
 import com.liferay.portal.kernel.portlet.LiferayWindowState;
 import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
+import com.liferay.portal.kernel.servlet.taglib.aui.ESImport;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.ListUtil;
@@ -24,11 +28,12 @@ import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.portal.url.builder.AbsolutePortalURLBuilderFactory;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.List;
 import java.util.Map;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Cristina González
@@ -43,9 +48,7 @@ public class DLEditDDMStructureDisplayContext {
 		_liferayPortletResponse = liferayPortletResponse;
 	}
 
-	public List<Map<String, Object>> getAdditionalPanels(
-		String npmResolvedPackageName) {
-
+	public List<Map<String, Object>> getAdditionalPanels() {
 		return ListUtil.fromArray(
 			HashMapBuilder.<String, Object>put(
 				"icon", "cog"
@@ -53,8 +56,18 @@ public class DLEditDDMStructureDisplayContext {
 				"label", LanguageUtil.get(_httpServletRequest, "properties")
 			).put(
 				"pluginEntryPoint",
-				npmResolvedPackageName +
-					"/document_library/js/data-engine/panels/index.es"
+				() -> {
+					ESImport esImport = ESImportUtil.getESImport(
+						_absolutePortalURLBuilderFactorySnapshot.get(
+						).getAbsolutePortalURLBuilder(
+							_httpServletRequest
+						),
+						"{Panels} from document-library-web");
+
+					return StringBundler.concat(
+						"{", esImport.getSymbol(), "} from ",
+						esImport.getModule());
+				}
 			).put(
 				"sidebarPanelId", "properties"
 			).put(
@@ -178,9 +191,12 @@ public class DLEditDDMStructureDisplayContext {
 		DDMStructure ddmStructure = getDDMStructure();
 
 		if (ddmStructure != null) {
-			_script = BeanParamUtil.getString(
-				ddmStructure.getLatestStructureVersion(), _httpServletRequest,
-				"definition");
+			DDMStructureVersion ddmStructureVersion =
+				ddmStructure.getLatestStructureVersion();
+
+			_script = ParamUtil.getString(
+				_httpServletRequest, "definition",
+				ddmStructureVersion.getDefinition());
 		}
 		else {
 			_script = ParamUtil.getString(_httpServletRequest, "definition");
@@ -205,6 +221,11 @@ public class DLEditDDMStructureDisplayContext {
 
 		return _defaultLanguageId;
 	}
+
+	private static final Snapshot<AbsolutePortalURLBuilderFactory>
+		_absolutePortalURLBuilderFactorySnapshot = new Snapshot<>(
+			DLEditDDMStructureDisplayContext.class,
+			AbsolutePortalURLBuilderFactory.class);
 
 	private DDMStructure _ddmStructure;
 	private Long _ddmStructureId;

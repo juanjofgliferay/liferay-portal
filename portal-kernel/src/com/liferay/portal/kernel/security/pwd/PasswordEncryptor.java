@@ -5,6 +5,7 @@
 
 package com.liferay.portal.kernel.security.pwd;
 
+import com.liferay.petra.string.CharPool;
 import com.liferay.portal.kernel.exception.PwdEncryptorException;
 
 import org.osgi.annotation.versioning.ProviderType;
@@ -38,16 +39,28 @@ public interface PasswordEncryptor {
 	public static final String TYPE_UFC_CRYPT = "UFC-CRYPT";
 
 	public default String encrypt(
-			String algorithm, String plainTextPassword,
+			String algorithm, String plaintextPassword,
 			String encryptedPassword)
 		throws PwdEncryptorException {
 
-		return encrypt(algorithm, plainTextPassword, encryptedPassword, false);
+		return encrypt(algorithm, plaintextPassword, encryptedPassword, false);
 	}
 
 	public String encrypt(
-			String algorithm, String plainTextPassword,
+			String algorithm, String plaintextPassword,
 			String encryptedPassword, boolean upgradeHashSecurity)
 		throws PwdEncryptorException;
+
+	public default String getEncryptedPasswordAlgorithmSettings(
+		String encryptedPassword) {
+
+		int index = encryptedPassword.indexOf(CharPool.CLOSE_CURLY_BRACE);
+
+		if (index < 0) {
+			return null;
+		}
+
+		return encryptedPassword.substring(1, index);
+	}
 
 }

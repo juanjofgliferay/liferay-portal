@@ -7,6 +7,7 @@ package com.liferay.portal.dao.sql.transformer;
 
 import com.liferay.portal.kernel.dao.db.DB;
 import com.liferay.portal.kernel.util.ArrayUtil;
+import com.liferay.portal.kernel.util.StringUtil;
 
 import java.util.function.Function;
 import java.util.regex.Matcher;
@@ -17,13 +18,15 @@ import java.util.regex.Matcher;
 public class MySQLSQLTransformerLogic extends BaseSQLTransformerLogic {
 
 	public MySQLSQLTransformerLogic(DB db) {
-		super(db);
+		_db = db;
 
 		Function[] functions = {
-			getBitwiseCheckFunction(), getBooleanFunction(),
-			getCastClobTextFunction(), getCastLongFunction(),
-			getCastTextFunction(), getDropTableIfExistsTextFunction(),
-			getIntegerDivisionFunction(), getNullDateFunction()
+			getAggregationFunction(), getBitwiseCheckFunction(),
+			getBitwiseOrFunction(), getBooleanFunction(),
+			getCastClobTextFunction(), getCastDecimalFunction(),
+			getCastLongFunction(), getCastTextFunction(),
+			getDropTableIfExistsTextFunction(), getIntegerDivisionFunction(),
+			getNullDateFunction(), getTruncateTableFunction()
 		};
 
 		if (!db.isSupportsStringCaseSensitiveQuery()) {
@@ -34,8 +37,17 @@ public class MySQLSQLTransformerLogic extends BaseSQLTransformerLogic {
 	}
 
 	@Override
+	protected Function<String, String> getBooleanFunction() {
+		return (String sql) -> StringUtil.replace(
+			sql, new String[] {"[$FALSE$]", "[$TRUE$]"},
+			new String[] {_db.getTemplateFalse(), _db.getTemplateTrue()});
+	}
+
+	@Override
 	protected String replaceIntegerDivision(Matcher matcher) {
 		return matcher.replaceAll("$1 DIV $2");
 	}
+
+	private final DB _db;
 
 }

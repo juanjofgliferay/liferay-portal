@@ -8,11 +8,17 @@ package com.liferay.portal.store.file.system;
 import com.liferay.document.library.kernel.exception.NoSuchFileException;
 import com.liferay.document.library.kernel.store.Store;
 import com.liferay.document.library.kernel.util.DLUtil;
+import com.liferay.petra.io.unsync.UnsyncByteArrayInputStream;
 import com.liferay.petra.reflect.ReflectionUtil;
+import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.SystemException;
+import com.liferay.portal.kernel.instance.PortalInstancePool;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.FileUtil;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.PropsUtil;
 import com.liferay.portal.kernel.util.StringUtil;
@@ -20,15 +26,18 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.store.file.system.configuration.FileSystemStoreConfiguration;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.attribute.BasicFileAttributes;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * @author Brian Wing Shun Chan
@@ -87,10 +96,28 @@ public class FileSystemStore implements Store {
 	}
 
 	@Override
+	public void deleteDirectory(long companyId) {
+		File companyDir = new File(_rootDir, String.valueOf(companyId));
+
+		if (!companyDir.exists()) {
+			return;
+		}
+
+		FileUtil.deltree(companyDir);
+	}
+
+	@Override
 	public void deleteDirectory(
 		long companyId, long repositoryId, String dirName) {
 
-		File dirNameDir = getDirNameDir(companyId, repositoryId, dirName);
+		File dirNameDir = null;
+
+		if (Objects.equals(dirName, StringPool.SLASH)) {
+			dirNameDir = getRepositoryDir(companyId, repositoryId);
+		}
+		else {
+			dirNameDir = getDirNameDir(companyId, repositoryId, dirName);
+		}
 
 		if (!dirNameDir.exists()) {
 			return;
@@ -141,13 +168,21 @@ public class FileSystemStore implements Store {
 		File fileNameVersionFile = getFileNameVersionFile(
 			companyId, repositoryId, fileName, versionLabel);
 
+		Path path = fileNameVersionFile.toPath();
+
 		try {
-			return new FileInputStream(fileNameVersionFile);
+			BasicFileAttributes basicFileAttributes = Files.readAttributes(
+				path, BasicFileAttributes.class);
+
+			if (basicFileAttributes.size() == 0) {
+				return _unsyncByteArrayInputStream;
+			}
+
+			return Files.newInputStream(path);
 		}
-		catch (FileNotFoundException fileNotFoundException) {
+		catch (IOException ioException) {
 			throw new NoSuchFileException(
-				companyId, repositoryId, fileName, versionLabel,
-				fileNotFoundException);
+				companyId, repositoryId, fileName, versionLabel, ioException);
 		}
 	}
 
@@ -229,6 +264,36 @@ public class FileSystemStore implements Store {
 		return fileNameVersionFile.exists();
 	}
 
+	@Override
+	public void verifyCompanyStores() {
+		File[] storeDirs = _rootDir.listFiles(
+			file -> file.isDirectory() && Validator.isNumber(file.getName()));
+
+		if (storeDirs == null) {
+			return;
+		}
+
+		long[] companyIds = PortalInstancePool.getCompanyIds();
+
+		for (File storeDir : storeDirs) {
+			long storeCompanyId = GetterUtil.getLong(storeDir.getName());
+
+			if ((storeCompanyId == 0) ||
+				ArrayUtil.contains(companyIds, storeCompanyId)) {
+
+				continue;
+			}
+
+			if (_log.isWarnEnabled()) {
+				_log.warn(
+					StringBundler.concat(
+						"Manually remove unused store ", storeCompanyId,
+						" that belongs to company ", storeCompanyId,
+						" if it is no longer used anywhere else"));
+			}
+		}
+	}
+
 	protected File getDirNameDir(
 		long companyId, long repositoryId, String dirName) {
 
@@ -239,6 +304,13 @@ public class FileSystemStore implements Store {
 		long companyId, long repositoryId, String fileName) {
 
 		return new File(getRepositoryDir(companyId, repositoryId), fileName);
+	}
+
+	protected File getFileNameVersionFile(
+		long companyId, long repositoryId, String fileName, String version) {
+
+		return new File(
+			getFileNameDir(companyId, repositoryId, fileName), version);
 	}
 
 	protected void getFileNames(
@@ -271,13 +343,6 @@ public class FileSystemStore implements Store {
 		}
 	}
 
-	protected File getFileNameVersionFile(
-		long companyId, long repositoryId, String fileName, String version) {
-
-		return new File(
-			getFileNameDir(companyId, repositoryId, fileName), version);
-	}
-
 	protected String getHeadVersionLabel(
 		long companyId, long repositoryId, String fileName) {
 
@@ -292,9 +357,11 @@ public class FileSystemStore implements Store {
 		String headVersionLabel = VERSION_DEFAULT;
 
 		for (String versionLabel : versionLabels) {
-			if (DLUtil.compareVersions(versionLabel, headVersionLabel) > 0) {
-				headVersionLabel = versionLabel;
+			if (DLUtil.compareVersions(versionLabel, headVersionLabel) <= 0) {
+				continue;
 			}
+
+			headVersionLabel = versionLabel;
 		}
 
 		return headVersionLabel;
@@ -312,7 +379,7 @@ public class FileSystemStore implements Store {
 	}
 
 	private void _deleteEmptyAncestors(File file) {
-		while (file != null) {
+		while ((file != null) && !file.equals(_rootDir)) {
 			if (!file.delete()) {
 				return;
 			}
@@ -320,6 +387,13 @@ public class FileSystemStore implements Store {
 			file = file.getParentFile();
 		}
 	}
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		FileSystemStore.class);
+
+	private static final UnsyncByteArrayInputStream
+		_unsyncByteArrayInputStream = new UnsyncByteArrayInputStream(
+			new byte[0]);
 
 	private final File _rootDir;
 

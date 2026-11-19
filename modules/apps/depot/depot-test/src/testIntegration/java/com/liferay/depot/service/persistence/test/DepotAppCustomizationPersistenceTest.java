@@ -113,12 +113,10 @@ public class DepotAppCustomizationPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
+		DepotAppCustomization newDepotAppCustomization =
+			addDepotAppCustomization();
 
-		DepotAppCustomization newDepotAppCustomization = _persistence.create(
-			pk);
-
-		newDepotAppCustomization.setMvccVersion(RandomTestUtil.nextLong());
+		newDepotAppCustomization.setCtCollectionId(RandomTestUtil.nextLong());
 
 		newDepotAppCustomization.setCompanyId(RandomTestUtil.nextLong());
 
@@ -128,8 +126,10 @@ public class DepotAppCustomizationPersistenceTest {
 
 		newDepotAppCustomization.setPortletId(RandomTestUtil.randomString());
 
-		_depotAppCustomizations.add(
-			_persistence.update(newDepotAppCustomization));
+		newDepotAppCustomization = _persistence.update(
+			newDepotAppCustomization);
+
+		_depotAppCustomizations.add(newDepotAppCustomization);
 
 		DepotAppCustomization existingDepotAppCustomization =
 			_persistence.findByPrimaryKey(
@@ -138,6 +138,9 @@ public class DepotAppCustomizationPersistenceTest {
 		Assert.assertEquals(
 			existingDepotAppCustomization.getMvccVersion(),
 			newDepotAppCustomization.getMvccVersion());
+		Assert.assertEquals(
+			existingDepotAppCustomization.getCtCollectionId(),
+			newDepotAppCustomization.getCtCollectionId());
 		Assert.assertEquals(
 			existingDepotAppCustomization.getDepotAppCustomizationId(),
 			newDepotAppCustomization.getDepotAppCustomizationId());
@@ -207,9 +210,9 @@ public class DepotAppCustomizationPersistenceTest {
 
 	protected OrderByComparator<DepotAppCustomization> getOrderByComparator() {
 		return OrderByComparatorFactoryUtil.create(
-			"DepotAppCustomization", "mvccVersion", true,
-			"depotAppCustomizationId", true, "companyId", true, "depotEntryId",
-			true, "enabled", true, "portletId", true);
+			"DepotAppCustomization", "mvccVersion", true, "ctCollectionId",
+			true, "depotAppCustomizationId", true, "companyId", true,
+			"depotEntryId", true, "enabled", true, "portletId", true);
 	}
 
 	@Test
@@ -535,7 +538,7 @@ public class DepotAppCustomizationPersistenceTest {
 
 		DepotAppCustomization depotAppCustomization = _persistence.create(pk);
 
-		depotAppCustomization.setMvccVersion(RandomTestUtil.nextLong());
+		depotAppCustomization.setCtCollectionId(RandomTestUtil.nextLong());
 
 		depotAppCustomization.setCompanyId(RandomTestUtil.nextLong());
 
@@ -556,3 +559,4 @@ public class DepotAppCustomizationPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1284350686

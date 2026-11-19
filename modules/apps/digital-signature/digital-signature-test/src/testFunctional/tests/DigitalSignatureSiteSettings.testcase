@@ -1,4 +1,4 @@
-@component-name = "portal-solutions"
+@component-name = "portal-bpm"
 definition {
 
 	property portal.release = "true";
@@ -11,10 +11,7 @@ definition {
 		User.firstLoginUI();
 
 		task ("Configure digital signature with credentials") {
-			ApplicationsMenu.gotoPortlet(
-				category = "Configuration",
-				panel = "Control Panel",
-				portlet = "Instance Settings");
+			PortalSettings.openInstanceSettingsAdmin();
 
 			SystemSettings.gotoConfiguration(
 				configurationCategory = "Digital Signature",
@@ -39,6 +36,12 @@ definition {
 	@description = "This is a test for LPS-131427. Verify if Digital Signature can be enable in Site Settings, using the Always Override Strategy"
 	@priority = 5
 	test CanEnableDigitalSignatureBySiteSettings {
+		property portal.release = "quarantine";
+
+		var randomString = StringUtil.randomString(8);
+
+		var envelopeName = "Poshi Test CanEnableDigitalSignatureBySiteSettings ${randomString}";
+
 		task ("Given that the digital signature site strategy is set as 'Always Override'") {
 			DigitalSignature.selectSiteStrategy(siteStrategy = "Always Override");
 
@@ -58,15 +61,31 @@ definition {
 				addEmail = "test@liferay.com",
 				addFullName = "Recipient Full Name",
 				addMessage = "Email Message",
-				addName = "Poshi Test CannotCreateEnvelopeWithUnsupportedFiles",
+				addName = ${envelopeName},
 				addSubject = "Email Subject",
 				dmDocumentFile = "Document_2.docx");
 
 			Button.click(button = "Send");
+
+			Alert.viewSuccessMessageText(successMessage = "Your envelope was created successfully.");
 		}
 
 		task ("Then the user can see that digital signature can be enabled using the Always Override strategy") {
-			DigitalSignature.viewDigitalSignatureEnabled(dsStatus = "Sent");
+			DigitalSignature.viewEnvelopeStatus(
+				dsStatus = "Sent",
+				envelopeName = ${envelopeName});
+		}
+
+		task ("Clean up the envelope and the document") {
+			DigitalSignature.deleteEnvelope(envelopeName = ${envelopeName});
+
+			DMNavigator.openDocumentsAndMediaAdmin(siteURLKey = "guest");
+
+			DMDocument.deleteCP(dmDocumentTitle = "DM Document Title");
+
+			RecycleBin.openRecycleBinAdmin(siteURLKey = "guest");
+
+			RecycleBin.emptyCP();
 		}
 	}
 

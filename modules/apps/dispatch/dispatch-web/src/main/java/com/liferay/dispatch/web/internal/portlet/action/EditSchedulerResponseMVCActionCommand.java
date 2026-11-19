@@ -10,14 +10,16 @@ import com.liferay.dispatch.scheduler.SchedulerResponseManager;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCActionCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
 import com.liferay.portal.kernel.scheduler.StorageType;
-import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
+import com.liferay.portal.kernel.security.permission.PermissionChecker;
+import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.ParamUtil;
+import com.liferay.portal.kernel.util.WebKeys;
+
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
 import java.util.Objects;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -27,7 +29,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + DispatchPortletKeys.DISPATCH,
+		"jakarta.portlet.name=" + DispatchPortletKeys.DISPATCH,
 		"mvc.command.name=/dispatch/edit_scheduler_response"
 	},
 	service = MVCActionCommand.class
@@ -40,43 +42,30 @@ public class EditSchedulerResponseMVCActionCommand
 			ActionRequest actionRequest, ActionResponse actionResponse)
 		throws Exception {
 
+		ThemeDisplay themeDisplay = (ThemeDisplay)actionRequest.getAttribute(
+			WebKeys.THEME_DISPLAY);
+
+		PermissionChecker permissionChecker =
+			themeDisplay.getPermissionChecker();
+
 		String cmd = ParamUtil.getString(actionRequest, Constants.CMD);
 
-		if (Objects.equals(cmd, "runScheduledJob")) {
-			_runScheduledJob(actionRequest);
-		}
-		else if (Objects.equals(cmd, "pause") ||
-				 Objects.equals(cmd, "resume")) {
-
-			_updateScheduledJob(actionRequest, cmd);
-		}
-	}
-
-	private void _runScheduledJob(ActionRequest actionRequest)
-		throws Exception {
-
-		String jobName = ParamUtil.getString(actionRequest, "jobName");
 		String groupName = ParamUtil.getString(actionRequest, "groupName");
-		StorageType storageType = StorageType.valueOf(
-			ParamUtil.getString(actionRequest, "storageType"));
-
-		_schedulerResponseManager.run(
-			CompanyThreadLocal.getCompanyId(), jobName, groupName, storageType);
-	}
-
-	private void _updateScheduledJob(ActionRequest actionRequest, String cmd)
-		throws Exception {
-
 		String jobName = ParamUtil.getString(actionRequest, "jobName");
-		String groupName = ParamUtil.getString(actionRequest, "groupName");
 		StorageType storageType = StorageType.valueOf(
 			ParamUtil.getString(actionRequest, "storageType"));
 
 		if (Objects.equals(cmd, "pause")) {
-			_schedulerResponseManager.pause(jobName, groupName, storageType);
+			_schedulerResponseManager.pause(
+				permissionChecker, jobName, groupName, storageType);
 		}
-		else {
-			_schedulerResponseManager.resume(jobName, groupName, storageType);
+		else if (Objects.equals(cmd, "resume")) {
+			_schedulerResponseManager.resume(
+				permissionChecker, jobName, groupName, storageType);
+		}
+		else if (Objects.equals(cmd, "runScheduledJob")) {
+			_schedulerResponseManager.run(
+				permissionChecker, jobName, groupName, storageType);
 		}
 	}
 

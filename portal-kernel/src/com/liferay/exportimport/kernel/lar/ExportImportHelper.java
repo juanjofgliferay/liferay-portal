@@ -7,6 +7,7 @@ package com.liferay.exportimport.kernel.lar;
 
 import com.liferay.portal.kernel.backgroundtask.BackgroundTask;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.Portlet;
 import com.liferay.portal.kernel.model.StagedModel;
@@ -15,12 +16,13 @@ import com.liferay.portal.kernel.xml.Document;
 import com.liferay.portal.kernel.xml.Element;
 import com.liferay.portal.kernel.zip.ZipWriter;
 
+import jakarta.portlet.PortletRequest;
+
 import java.io.File;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
-
-import javax.portlet.PortletRequest;
 
 import org.osgi.annotation.versioning.ProviderType;
 
@@ -38,12 +40,17 @@ public interface ExportImportHelper {
 	public Map<Long, Boolean> getAllLayoutIdsMap(
 		long groupId, boolean privateLayout);
 
+	public int getChildGroupsCount(Group group) throws PortalException;
+
 	public List<Portlet> getDataSiteAndInstanceLevelPortlets(long companyId)
 		throws Exception;
 
 	public List<Portlet> getDataSiteAndInstanceLevelPortlets(
 			long companyId, boolean excludeDataAlwaysStaged)
 		throws Exception;
+
+	public Portlet getDataSiteLevelPortlet(
+		String className, long companyId, boolean excludeDataAlwaysStaged);
 
 	public List<Portlet> getDataSiteLevelPortlets(long companyId)
 		throws Exception;
@@ -52,7 +59,11 @@ public interface ExportImportHelper {
 			long companyId, boolean excludeDataAlwaysStaged)
 		throws Exception;
 
-	public String getExportableRootPortletId(long companyId, String portletId)
+	public List<ExportImportGroup> getExportImportGroups(FileEntry fileEntry)
+		throws Exception;
+
+	public List<ExportImportGroup> getExportImportGroups(
+			PortletDataContext portletDataContext)
 		throws Exception;
 
 	public Map<String, Boolean> getExportPortletControlsMap(
@@ -65,8 +76,27 @@ public interface ExportImportHelper {
 			Map<String, String[]> parameterMap, String type)
 		throws Exception;
 
+	public List<Portlet> getExportablePortlets(
+		long companyId, boolean excludeDataAlwaysStaged, long groupId);
+
+	public String getExportableRootPortletId(long companyId, String portletId)
+		throws Exception;
+
+	public String getExportableRootPortletId(
+			long companyId, String sourcePortletId, String targetPortletId)
+		throws Exception;
+
+	public String getGroupPath(Group group, Locale locale)
+		throws PortalException;
+
 	public Map<String, Boolean> getImportPortletControlsMap(
 			long companyId, String portletId,
+			Map<String, String[]> parameterMap, Element portletDataElement,
+			ManifestSummary manifestSummary)
+		throws Exception;
+
+	public Map<String, Boolean> getImportPortletControlsMap(
+			long companyId, String sourcePortletId, String targetPortletId,
 			Map<String, String[]> parameterMap, Element portletDataElement,
 			ManifestSummary manifestSummary)
 		throws Exception;
@@ -124,6 +154,11 @@ public interface ExportImportHelper {
 			StagedModelType stagedModelType)
 		throws PortalException;
 
+	public long getModelDeletionCount(
+			PortletDataContext portletDataContext,
+			StagedModelType stagedModelType, String type)
+		throws PortalException;
+
 	public String getPortletExportFileName(Portlet portlet);
 
 	public ZipWriter getPortletZipWriter(String portletId);
@@ -147,6 +182,11 @@ public interface ExportImportHelper {
 		String rootPortletId);
 
 	public boolean isExportPortletData(PortletDataContext portletDataContext);
+
+	public boolean isGroupMatching(
+		ExportImportGroup exportImportGroup, Group group);
+
+	public boolean isGroupSupported(Group group);
 
 	public boolean isLayoutRevisionInReview(Layout layout);
 

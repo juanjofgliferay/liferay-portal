@@ -70,6 +70,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 *
 	 * @param applicationType an application type
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void addApplicationType(
 		com.liferay.portal.kernel.application.type.ApplicationType
 			applicationType);
@@ -79,6 +80,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 *
 	 * @param portletDependency the portlet CSS/JavaScript resource dependency
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void addPortletDependency(
 		com.liferay.portal.kernel.model.portlet.PortletDependency
 			portletDependency);
@@ -86,6 +88,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	/**
 	 * Adds a processing event.
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void addProcessingEvent(
 		com.liferay.portal.kernel.xml.QName processingEvent);
 
@@ -94,18 +97,21 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 *
 	 * @param publicRenderParameter a public render parameter
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void addPublicRenderParameter(
 		PublicRenderParameter publicRenderParameter);
 
 	/**
 	 * Adds a publishing event.
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void addPublishingEvent(
 		com.liferay.portal.kernel.xml.QName publishingEvent);
 
 	/**
 	 * Adds a scheduler entry.
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void addSchedulerEntry(
 		com.liferay.portal.kernel.scheduler.SchedulerEntry schedulerEntry);
 
@@ -208,6 +214,13 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 through the portlet
 	 */
 	public java.util.Set<String> getAutopropagatedParameters();
+
+	/**
+	 * Returns the category names of the portlet.
+	 *
+	 * @return the category names of the portlet
+	 */
+	public java.util.Set<String> getCategoryNames();
 
 	/**
 	 * Returns <code>true</code> if the portlet is found in a WAR file.
@@ -505,6 +518,13 @@ public interface Portlet extends PersistedModel, PortletModel {
 	public java.util.Map<String, String> getInitParams();
 
 	/**
+	 * Returns the instance ID of the portlet.
+	 *
+	 * @return the instance ID of the portlet
+	 */
+	public String getInstanceId();
+
+	/**
 	 * Returns <code>true</code> if the portlet can be added multiple times to a
 	 * layout.
 	 *
@@ -512,13 +532,6 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 layout
 	 */
 	public boolean getInstanceable();
-
-	/**
-	 * Returns the instance ID of the portlet.
-	 *
-	 * @return the instance ID of the portlet
-	 */
-	public String getInstanceId();
 
 	/**
 	 * Returns <code>true</code> to allow the portlet to be cached within the
@@ -1107,6 +1120,20 @@ public interface Portlet extends PersistedModel, PortletModel {
 		getTrashHandlerInstances();
 
 	/**
+	 * Returns the name of the URL encoder class of the portlet.
+	 *
+	 * @return the name of the URL encoder class of the portlet
+	 */
+	public String getURLEncoderClass();
+
+	/**
+	 * Returns the URL encoder instance of the portlet.
+	 *
+	 * @return the URL encoder instance of the portlet
+	 */
+	public com.liferay.portal.kernel.servlet.URLEncoder getURLEncoderInstance();
+
+	/**
 	 * Returns <code>true</code> if the portlet is an undeployed portlet.
 	 *
 	 * @return <code>true</code> if the portlet is a placeholder of an
@@ -1120,20 +1147,6 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 * @return unlinked roles of the portlet
 	 */
 	public java.util.Set<String> getUnlinkedRoles();
-
-	/**
-	 * Returns the name of the URL encoder class of the portlet.
-	 *
-	 * @return the name of the URL encoder class of the portlet
-	 */
-	public String getURLEncoderClass();
-
-	/**
-	 * Returns the URL encoder instance of the portlet.
-	 *
-	 * @return the URL encoder instance of the portlet
-	 */
-	public com.liferay.portal.kernel.servlet.URLEncoder getURLEncoderInstance();
 
 	/**
 	 * Returns <code>true</code> if the portlet uses the default template.
@@ -1269,8 +1282,6 @@ public interface Portlet extends PersistedModel, PortletModel {
 
 	public boolean hasFooterPortletJavaScript();
 
-	public int hashCode();
-
 	public boolean hasHeaderPortalCss();
 
 	public boolean hasHeaderPortalJavaScript();
@@ -1297,7 +1308,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 and portlet mode
 	 */
 	public boolean hasPortletMode(
-		String mimeType, javax.portlet.PortletMode portletMode);
+		String mimeType, jakarta.portlet.PortletMode portletMode);
 
 	/**
 	 * Returns <code>true</code> if the portlet has a role with the specified
@@ -1319,7 +1330,9 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 and window state
 	 */
 	public boolean hasWindowState(
-		String mimeType, javax.portlet.WindowState windowState);
+		String mimeType, jakarta.portlet.WindowState windowState);
+
+	public int hashCode();
 
 	/**
 	 * Returns <code>true</code> if an action URL for this portlet should cause
@@ -1356,6 +1369,8 @@ public interface Portlet extends PersistedModel, PortletModel {
 	public boolean isAsyncSupported();
 
 	public boolean isFullPageDisplayable();
+
+	public boolean isHeaderPortlet();
 
 	/**
 	 * Returns <code>true</code> to include the portlet and make it available to
@@ -1425,10 +1440,11 @@ public interface Portlet extends PersistedModel, PortletModel {
 
 	/**
 	 * Returns <code>true</code> if the CSS resource dependencies specified in
-	 * <code>portlet.xml</code>, @{@link javax.portlet.annotations.Dependency},
-	 * {@link javax.portlet.HeaderResponse#addDependency(String, String,
-	 * String)}, or {@link javax.portlet.HeaderResponse#addDependency(String,
-	 * String, String, String)} are to be referenced in the page's header.
+	 * <code>portlet.xml</code>, @{@link
+	 * jakarta.portlet.annotations.Dependency}, {@link
+	 * HeaderResponse#addDependency(String, String, String)}, or {@link
+	 * HeaderResponse#addDependency(String, String, String, String)} are to be
+	 * referenced in the page's header.
 	 *
 	 * @return <code>true</code> if the specified CSS resource dependencies are
 	 to be referenced in the page's header
@@ -1438,10 +1454,10 @@ public interface Portlet extends PersistedModel, PortletModel {
 	/**
 	 * Returns <code>true</code> if the JavaScript resource dependencies
 	 * specified in <code>portlet.xml</code>, @{@link
-	 * javax.portlet.annotations.Dependency}, {@link
-	 * javax.portlet.HeaderResponse#addDependency(String, String, String)}, or
-	 * {@link javax.portlet.HeaderResponse#addDependency(String, String, String,
-	 * String)} are to be referenced in the page's header.
+	 * jakarta.portlet.annotations.Dependency}, {@link
+	 * HeaderResponse#addDependency(String, String, String)}, or {@link
+	 * HeaderResponse#addDependency(String, String, String, String)} are to be
+	 * referenced in the page's header.
 	 *
 	 * @return <code>true</code> if the specified JavaScript resource
 	 dependencies are to be referenced in the page's header
@@ -1604,6 +1620,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 * Link the role names set in portlet.xml with the Liferay roles set in
 	 * liferay-portlet.xml.
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void linkRoles();
 
 	/**
@@ -1611,6 +1628,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 *
 	 * @param actionTimeout the action timeout of the portlet
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setActionTimeout(int actionTimeout);
 
 	/**
@@ -1620,6 +1638,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 * @param actionURLRedirect boolean value for whether an action URL for this
 	 portlet should cause an auto redirect
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setActionURLRedirect(boolean actionURLRedirect);
 
 	/**
@@ -1629,6 +1648,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 * @param addDefaultResource boolean value for whether or not default
 	 resources for the portlet are added to a page
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setAddDefaultResource(boolean addDefaultResource);
 
 	/**
@@ -1637,6 +1657,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 * @param ajaxable boolean value for whether the portlet can be displayed
 	 via Ajax
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setAjaxable(boolean ajaxable);
 
 	/**
@@ -1644,6 +1665,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 *
 	 * @param applicationTypes the application types of the portlet
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setApplicationTypes(
 		java.util.Set
 			<com.liferay.portal.kernel.application.type.ApplicationType>
@@ -1656,6 +1678,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 * @param assetRendererFactoryClasses the names of the classes that
 	 represent asset types associated with the portlet
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setAssetRendererFactoryClasses(
 		java.util.List<String> assetRendererFactoryClasses);
 
@@ -1666,6 +1689,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 * @param asyncSupported boolean value for whether the portlet supports
 	 asynchronous processing in resource requests
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setAsyncSupported(boolean asyncSupported);
 
 	/**
@@ -1675,8 +1699,17 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 * @param autopropagatedParameters the names of the parameters that will be
 	 automatically propagated through the portlet
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setAutopropagatedParameters(
 		java.util.Set<String> autopropagatedParameters);
+
+	/**
+	 * Sets the category names of the portlet.
+	 *
+	 * @param categoryNames the category names of the portlet
+	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
+	public void setCategoryNames(java.util.Set<String> categoryNames);
 
 	/**
 	 * Sets the configuration action class of the portlet.
@@ -1684,6 +1717,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 * @param configurationActionClass the configuration action class of the
 	 portlet
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setConfigurationActionClass(String configurationActionClass);
 
 	/**
@@ -1693,6 +1727,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 * @param controlPanelEntryCategory the name of the category of the Control
 	 Panel where the portlet will be shown
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setControlPanelEntryCategory(String controlPanelEntryCategory);
 
 	/**
@@ -1702,6 +1737,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 * @param controlPanelEntryClass the name of the class that will control
 	 when the portlet will be shown in the Control Panel
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setControlPanelEntryClass(String controlPanelEntryClass);
 
 	/**
@@ -1712,6 +1748,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 respect to the other portlets in the same category of the Control
 	 Panel
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setControlPanelEntryWeight(double controlPanelEntryWeight);
 
 	/**
@@ -1721,6 +1758,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 * @param cssClassWrapper the name of the CSS class that will be injected in
 	 the DIV that wraps this portlet
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setCssClassWrapper(String cssClassWrapper);
 
 	/**
@@ -1730,6 +1768,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 * @param customAttributesDisplayClasses the names of the classes that
 	 represent custom attribute displays associated with the portlet
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setCustomAttributesDisplayClasses(
 		java.util.List<String> customAttributesDisplayClasses);
 
@@ -1738,6 +1777,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 *
 	 * @param pluginSetting the plugin setting
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setDefaultPluginSetting(PluginSetting pluginSetting);
 
 	/**
@@ -1745,6 +1785,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 *
 	 * @param defaultPreferences the default preferences of the portlet
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setDefaultPreferences(String defaultPreferences);
 
 	/**
@@ -1752,6 +1793,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 *
 	 * @param displayName the display name of the portlet
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setDisplayName(String displayName);
 
 	/**
@@ -1759,6 +1801,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 *
 	 * @param expCache expiration cache of the portlet
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setExpCache(Integer expCache);
 
 	/**
@@ -1768,6 +1811,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 * @param footerPortalCss a list of CSS files that will be referenced from
 	 the page's footer relative to the portal's context path
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setFooterPortalCss(java.util.List<String> footerPortalCss);
 
 	/**
@@ -1778,6 +1822,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 referenced from the page's footer relative to the portal's context
 	 path
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setFooterPortalJavaScript(
 		java.util.List<String> footerPortalJavaScript);
 
@@ -1788,6 +1833,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 * @param footerPortletCss a list of CSS files that will be referenced from
 	 the page's footer relative to the portlet's context path
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setFooterPortletCss(java.util.List<String> footerPortletCss);
 
 	/**
@@ -1798,6 +1844,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 referenced from the page's footer relative to the portlet's
 	 context path
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setFooterPortletJavaScript(
 		java.util.List<String> footerPortletJavaScript);
 
@@ -1807,6 +1854,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 * @param friendlyURLMapperClass the name of the friendly URL mapper class
 	 of the portlet
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setFriendlyURLMapperClass(String friendlyURLMapperClass);
 
 	/**
@@ -1815,6 +1863,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 * @param friendlyURLMapping the name of the friendly URL mapping of the
 	 portlet
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setFriendlyURLMapping(String friendlyURLMapping);
 
 	/**
@@ -1824,6 +1873,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 * @param friendlyURLRoutes the class loader resource path to the friendly
 	 URL routes of the portlet
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setFriendlyURLRoutes(String friendlyURLRoutes);
 
 	/**
@@ -1833,6 +1883,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 * @param headerPortalCss a list of CSS files that will be referenced from
 	 the page's header relative to the portal's context path
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setHeaderPortalCss(java.util.List<String> headerPortalCss);
 
 	/**
@@ -1843,6 +1894,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 referenced from the page's header relative to the portal's context
 	 path
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setHeaderPortalJavaScript(
 		java.util.List<String> headerPortalJavaScript);
 
@@ -1853,6 +1905,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 * @param headerPortletCss a list of CSS files that will be referenced from
 	 the page's header relative to the portlet's context path
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setHeaderPortletCss(java.util.List<String> headerPortletCss);
 
 	/**
@@ -1863,6 +1916,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 referenced from the page's header relative to the portlet's
 	 context path
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setHeaderPortletJavaScript(
 		java.util.List<String> headerPortletJavaScript);
 
@@ -1878,6 +1932,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 any of the prefixes will be copied from the header request to the
 	 subsequent render request.
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setHeaderRequestAttributePrefixes(
 		java.util.List<String> headerRequestAttributePrefixes);
 
@@ -1886,6 +1941,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 *
 	 * @param headerTimeout the header timeout of the portlet
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setHeaderTimeout(int headerTimeout);
 
 	/**
@@ -1893,6 +1949,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 *
 	 * @param icon the icon of the portlet
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setIcon(String icon);
 
 	/**
@@ -1902,6 +1959,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 * @param include boolean value for whether to include the portlet and make
 	 it available to be made active
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setInclude(boolean include);
 
 	/**
@@ -1911,6 +1969,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 * @param indexerClasses the names of the classes that represent indexers
 	 associated with the portlet
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setIndexerClasses(java.util.List<String> indexerClasses);
 
 	/**
@@ -1918,6 +1977,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 *
 	 * @param initParams the init parameters of the portlet
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setInitParams(java.util.Map<String, String> initParams);
 
 	/**
@@ -1927,6 +1987,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 * @param instanceable boolean value for whether the portlet can be added
 	 multiple times to a layout
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setInstanceable(boolean instanceable);
 
 	/**
@@ -1936,6 +1997,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 * @param layoutCacheable boolean value for whether the portlet can be
 	 cached within the layout
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setLayoutCacheable(boolean layoutCacheable);
 
 	/**
@@ -1945,6 +2007,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 * @param maximizeEdit boolean value for whether the portlet goes into the
 	 maximized state when the user goes into the edit mode
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setMaximizeEdit(boolean maximizeEdit);
 
 	/**
@@ -1954,6 +2017,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 * @param maximizeHelp boolean value for whether the portlet goes into the
 	 maximized state when the user goes into the help mode
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setMaximizeHelp(boolean maximizeHelp);
 
 	/**
@@ -1962,6 +2026,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 * @param multipartFileSizeThreshold the maximum size of buffered bytes
 	 before storing occurs
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setMultipartFileSizeThreshold(int multipartFileSizeThreshold);
 
 	/**
@@ -1969,6 +2034,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 *
 	 * @param multipartLocation the directory for storing uploaded files
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setMultipartLocation(String multipartLocation);
 
 	/**
@@ -1977,6 +2043,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 * @param multipartMaxFileSize the maximum number of bytes permitted for an
 	 uploaded file
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setMultipartMaxFileSize(long multipartMaxFileSize);
 
 	/**
@@ -1985,6 +2052,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 * @param multipartMaxRequestSize the maximum number of bytes permitted for
 	 a multipart request
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setMultipartMaxRequestSize(long multipartMaxRequestSize);
 
 	/**
@@ -1992,6 +2060,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 *
 	 * @param openSearchClass the name of the open search class of the portlet
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setOpenSearchClass(String openSearchClass);
 
 	/**
@@ -1999,6 +2068,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 *
 	 * @param parentStrutsPath the parent struts path of the portlet
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setParentStrutsPath(String parentStrutsPath);
 
 	/**
@@ -2010,12 +2080,14 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 method should be invoked during a partial action triggered by a
 	 different portlet on the same portal page
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setPartialActionServeResource(
 		boolean partialActionServeResource);
 
 	/**
 	 * Sets the name of the permission propagator class of the portlet.
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setPermissionPropagatorClass(String permissionPropagatorClass);
 
 	/**
@@ -2023,6 +2095,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 *
 	 * @param pluginPackage this portlet's plugin package
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setPluginPackage(
 		com.liferay.portal.kernel.plugin.PluginPackage pluginPackage);
 
@@ -2032,6 +2105,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 * @param popMessageListenerClass the name of the POP message listener class
 	 of the portlet
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setPopMessageListenerClass(String popMessageListenerClass);
 
 	/**
@@ -2041,6 +2115,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 * @param popUpPrint whether the portlet goes into the pop up state when the
 	 user goes into the print mode
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setPopUpPrint(boolean popUpPrint);
 
 	/**
@@ -2048,6 +2123,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 *
 	 * @param portletApp this portlet's application
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setPortletApp(PortletApp portletApp);
 
 	/**
@@ -2055,8 +2131,10 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 *
 	 * @param portletClass the name of the portlet class of the portlet
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setPortletClass(String portletClass);
 
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setPortletConfigurationListenerClass(
 		String portletConfigurationListenerClass);
 
@@ -2066,36 +2144,40 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 * @param portletDataHandlerClass the name of portlet data handler class of
 	 the portlet
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setPortletDataHandlerClass(String portletDataHandlerClass);
 
 	/**
 	 * Sets whether the CSS resource dependencies specified in
-	 * <code>portlet.xml</code>, @{@link javax.portlet.annotations.Dependency},
-	 * {@link javax.portlet.HeaderResponse#addDependency(String, String,
-	 * String)}, or {@link javax.portlet.HeaderResponse#addDependency(String,
-	 * String, String, String)} are to be referenced in the page's header.
+	 * <code>portlet.xml</code>, @{@link
+	 * jakarta.portlet.annotations.Dependency}, {@link
+	 * HeaderResponse#addDependency(String, String, String)}, or {@link
+	 * HeaderResponse#addDependency(String, String, String, String)} are to be
+	 * referenced in the page's header.
 	 *
 	 * @param portletDependencyCssEnabled whether the CSS resource dependencies
 	 that are specified in <code>portlet.xml</code>,
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setPortletDependencyCssEnabled(
 		boolean portletDependencyCssEnabled);
 
 	/**
 	 * Sets whether the JavaScript resource dependencies specified in
-	 * <code>portlet.xml</code>, @{@link javax.portlet.annotations.Dependency},
-	 * {@link javax.portlet.HeaderResponse#addDependency(String, String,
-	 * String)}, or {@link javax.portlet.HeaderResponse#addDependency(String,
-	 * String, String, String)} are to be referenced in the page's header.
+	 * <code>portlet.xml</code>, @{@link
+	 * jakarta.portlet.annotations.Dependency}, {@link
+	 * HeaderResponse#addDependency(String, String, String)}, or {@link
+	 * HeaderResponse#addDependency(String, String, String, String)} are to be
+	 * referenced in the page's header.
 	 *
 	 * @param portletDependencyJavaScriptEnabled whether the JavaScript resource
 	 dependencies specified in <code>portlet.xml</code>, @{@link
-	 javax.portlet.annotations.Dependency}, {@link
-	 javax.portlet.HeaderResponse#addDependency(String, String,
-	 String)}, or {@link
-	 javax.portlet.HeaderResponse#addDependency(String, String, String,
-	 String)} are to be referenced in the page's header
+	 jakarta.portlet.annotations.Dependency}, {@link
+	 HeaderResponse#addDependency(String, String, String)}, or {@link
+	 HeaderResponse#addDependency(String, String, String, String)} are
+	 to be referenced in the page's header
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setPortletDependencyJavaScriptEnabled(
 		boolean portletDependencyJavaScriptEnabled);
 
@@ -2104,6 +2186,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 *
 	 * @param portletFilters the filters of the portlet
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setPortletFilters(
 		java.util.Map<String, PortletFilter> portletFilters);
 
@@ -2112,6 +2195,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 *
 	 * @param portletInfo the portlet info of the portlet
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setPortletInfo(PortletInfo portletInfo);
 
 	/**
@@ -2120,6 +2204,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 * @param portletLayoutListenerClass the name of the portlet layout listener
 	 class of the portlet
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setPortletLayoutListenerClass(
 		String portletLayoutListenerClass);
 
@@ -2128,6 +2213,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 *
 	 * @param portletModes the portlet modes of the portlet
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setPortletModes(
 		java.util.Map<String, java.util.Set<String>> portletModes);
 
@@ -2136,6 +2222,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 *
 	 * @param portletName the name of the portlet
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setPortletName(String portletName);
 
 	/**
@@ -2143,6 +2230,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 *
 	 * @param portletURLClass the name of the portlet URL class of the portlet
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setPortletURLClass(String portletURLClass);
 
 	/**
@@ -2152,6 +2240,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 * @param preferencesCompanyWide boolean value for whether preferences are
 	 shared across the entire company
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setPreferencesCompanyWide(boolean preferencesCompanyWide);
 
 	/**
@@ -2163,6 +2252,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 owned by the group when the portlet is shown in a group layout or
 	 preferences are owned by the user at all times
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setPreferencesOwnedByGroup(boolean preferencesOwnedByGroup);
 
 	/**
@@ -2171,6 +2261,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 * @param preferencesUniquePerLayout boolean value for whether preferences
 	 are unique per layout
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setPreferencesUniquePerLayout(
 		boolean preferencesUniquePerLayout);
 
@@ -2180,6 +2271,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 * @param preferencesValidator the name of the preferences validator class
 	 of the portlet
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setPreferencesValidator(String preferencesValidator);
 
 	/**
@@ -2190,6 +2282,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 shares request attributes with the portal or portlets from another
 	 WAR
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setPrivateRequestAttributes(boolean privateRequestAttributes);
 
 	/**
@@ -2199,6 +2292,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 * @param privateSessionAttributes boolean value for whether the portlet
 	 shares session attributes with the portal
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setPrivateSessionAttributes(boolean privateSessionAttributes);
 
 	/**
@@ -2206,6 +2300,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 *
 	 * @param processingEvents the processing events of the portlet
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setProcessingEvents(
 		java.util.Set<com.liferay.portal.kernel.xml.QName> processingEvents);
 
@@ -2214,6 +2309,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 *
 	 * @param publicRenderParameters the public render parameters of the portlet
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setPublicRenderParameters(
 		java.util.Set<PublicRenderParameter> publicRenderParameters);
 
@@ -2222,6 +2318,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 *
 	 * @param publishingEvents the publishing events of the portlet
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setPublishingEvents(
 		java.util.Set<com.liferay.portal.kernel.xml.QName> publishingEvents);
 
@@ -2230,6 +2327,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 *
 	 * @param ready whether the portlet is ready to be used
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setReady(boolean ready);
 
 	/**
@@ -2237,6 +2335,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 *
 	 * @param renderTimeout the render timeout of the portlet
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setRenderTimeout(int renderTimeout);
 
 	/**
@@ -2244,6 +2343,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 *
 	 * @param renderWeight int value for the render weight of the portlet
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setRenderWeight(int renderWeight);
 
 	/**
@@ -2253,6 +2353,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 * @param requiresNamespacedParameters boolean value for whether the portlet
 	 will only process namespaced parameters
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setRequiresNamespacedParameters(
 		boolean requiresNamespacedParameters);
 
@@ -2261,6 +2362,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 *
 	 * @param resourceBundle the resource bundle of the portlet
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setResourceBundle(String resourceBundle);
 
 	/**
@@ -2270,6 +2372,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 * @param restoreCurrentView boolean value for whether the portlet restores
 	 to the current view from the maximized state
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setRestoreCurrentView(boolean restoreCurrentView);
 
 	/**
@@ -2277,6 +2380,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 *
 	 * @param roleMappers the role mappers of the portlet
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setRoleMappers(java.util.Map<String, String> roleMappers);
 
 	/**
@@ -2284,6 +2388,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 *
 	 * @param rolesArray an array of required roles of the portlet
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setRolesArray(String[] rolesArray);
 
 	/**
@@ -2291,6 +2396,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 *
 	 * @param schedulerEntries the scheduler entries of the portlet
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setSchedulerEntries(
 		java.util.List<com.liferay.portal.kernel.scheduler.SchedulerEntry>
 			schedulerEntries);
@@ -2301,6 +2407,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 * @param scopeable boolean value for whether or not the the portlet
 	 supports scoping of data
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setScopeable(boolean scopeable);
 
 	/**
@@ -2310,6 +2417,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 * @param showPortletAccessDenied boolean value for whether users are shown
 	 that they do not have access to the portlet
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setShowPortletAccessDenied(boolean showPortletAccessDenied);
 
 	/**
@@ -2318,6 +2426,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 * @param showPortletInactive boolean value for whether users are shown that
 	 the portlet is inactive
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setShowPortletInactive(boolean showPortletInactive);
 
 	/**
@@ -2326,6 +2435,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 * @param singlePageApplication boolean value for whether or not the the
 	 portlet uses Single Page Application
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setSinglePageApplication(boolean singlePageApplication);
 
 	/**
@@ -2335,6 +2445,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 * @param socialActivityInterpreterClasses the names of the classes that
 	 represent social activity interpreters associated with the portlet
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setSocialActivityInterpreterClasses(
 		java.util.List<String> socialActivityInterpreterClasses);
 
@@ -2344,6 +2455,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 * @param socialRequestInterpreterClass the name of the request interpreter
 	 class of the portlet
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setSocialRequestInterpreterClass(
 		String socialRequestInterpreterClass);
 
@@ -2354,6 +2466,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 * @param stagedModelDataHandlerClasses the names of the classes that
 	 represent staged model data handlers associated with the portlet
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setStagedModelDataHandlerClasses(
 		java.util.List<String> stagedModelDataHandlerClasses);
 
@@ -2364,6 +2477,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 * @param staticPortlet boolean value for whether the portlet is a static
 	 portlet that cannot be moved
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setStatic(boolean staticPortlet);
 
 	/**
@@ -2373,6 +2487,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 * @param staticPortletStart boolean value for whether the portlet is a
 	 static portlet at the start of a list of portlets
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setStaticStart(boolean staticPortletStart);
 
 	/**
@@ -2380,6 +2495,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 *
 	 * @param strutsPath the struts path of the portlet
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setStrutsPath(String strutsPath);
 
 	/**
@@ -2387,6 +2503,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 *
 	 * @param supportedLocales the supported locales of the portlet
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setSupportedLocales(java.util.Set<String> supportedLocales);
 
 	/**
@@ -2396,6 +2513,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 * @param system boolean value for whether the portlet is a system portlet
 	 that a user cannot manually add to their page
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setSystem(boolean system);
 
 	/**
@@ -2404,6 +2522,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 * @param templateHandlerClass the name of template handler class of the
 	 portlet
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setTemplateHandlerClass(String templateHandlerClass);
 
 	/**
@@ -2413,8 +2532,17 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 * @param trashHandlerClasses the names of the classes that represent trash
 	 handlers associated with the portlet
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setTrashHandlerClasses(
 		java.util.List<String> trashHandlerClasses);
+
+	/**
+	 * Sets the name of the URL encoder class of the portlet.
+	 *
+	 * @param urlEncoderClass the name of the URL encoder class of the portlet
+	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
+	public void setURLEncoderClass(String urlEncoderClass);
 
 	/**
 	 * Set to <code>true</code> if the portlet is an undeployed portlet.
@@ -2422,6 +2550,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 * @param undeployedPortlet boolean value for whether the portlet is an
 	 undeployed portlet
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setUndeployedPortlet(boolean undeployedPortlet);
 
 	/**
@@ -2429,14 +2558,8 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 *
 	 * @param unlinkedRoles the unlinked roles of the portlet
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setUnlinkedRoles(java.util.Set<String> unlinkedRoles);
-
-	/**
-	 * Sets the name of the URL encoder class of the portlet.
-	 *
-	 * @param urlEncoderClass the name of the URL encoder class of the portlet
-	 */
-	public void setURLEncoderClass(String urlEncoderClass);
 
 	/**
 	 * Set to <code>true</code> if the portlet uses the default template.
@@ -2444,6 +2567,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 * @param useDefaultTemplate boolean value for whether the portlet uses the
 	 default template
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setUseDefaultTemplate(boolean useDefaultTemplate);
 
 	/**
@@ -2453,6 +2577,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 * @param userNotificationDefinitions the class loader resource path to the
 	 user notification definitions of the portlet
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setUserNotificationDefinitions(
 		String userNotificationDefinitions);
 
@@ -2463,6 +2588,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 * @param userNotificationHandlerClasses the names of the classes that
 	 represent user notification handlers associated with the portlet
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setUserNotificationHandlerClasses(
 		java.util.List<String> userNotificationHandlerClasses);
 
@@ -2471,6 +2597,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 *
 	 * @param userPrincipalStrategy the user principal strategy of the portlet
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setUserPrincipalStrategy(String userPrincipalStrategy);
 
 	/**
@@ -2478,6 +2605,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 *
 	 * @param virtualPath the virtual path of the portlet
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setVirtualPath(String virtualPath);
 
 	/**
@@ -2486,6 +2614,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 * @param webDAVStorageClass the name of the WebDAV storage class of the
 	 portlet
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setWebDAVStorageClass(String webDAVStorageClass);
 
 	/**
@@ -2494,6 +2623,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 * @param webDAVStorageToken the name of the WebDAV storage token of the
 	 portlet
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setWebDAVStorageToken(String webDAVStorageToken);
 
 	/**
@@ -2501,6 +2631,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 *
 	 * @param windowStates the window states of the portlet
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setWindowStates(
 		java.util.Map<String, java.util.Set<String>> windowStates);
 
@@ -2511,6 +2642,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 * @param workflowHandlerClasses the names of the classes that represent
 	 workflow handlers associated with the portlet
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setWorkflowHandlerClasses(
 		java.util.List<String> workflowHandlerClasses);
 
@@ -2520,8 +2652,11 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 * @param xmlRpcMethodClass the name of the XML-RPC method class of the
 	 portlet
 	 */
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void setXmlRpcMethodClass(String xmlRpcMethodClass);
 
+	@com.liferay.portal.kernel.template.TemplateRestricted
 	public void unsetReady();
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-228832188

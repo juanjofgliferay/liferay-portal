@@ -12,11 +12,11 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.security.content.security.policy.internal.configuration.ContentSecurityPolicyConfiguration;
 import com.liferay.portal.security.content.security.policy.internal.configuration.ContentSecurityPolicyConfigurationUtil;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 import java.io.PrintWriter;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -24,7 +24,10 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Iván Zaera Avellón
  */
-@Component(service = DynamicInclude.class)
+@Component(
+	property = "dynamic.include.key=/html/common/themes/top_js.jspf#resources",
+	service = DynamicInclude.class
+)
 public class ContentSecurityPolicyTopHeadDynamicInclude
 	implements DynamicInclude {
 
@@ -47,15 +50,16 @@ public class ContentSecurityPolicyTopHeadDynamicInclude
 			printWriter.print(StringPool.QUOTE);
 		}
 
-		printWriter.print(
-			" type=\"text/javascript\">window.Liferay = window.Liferay || ");
-		printWriter.print("{}; window.Liferay.CSP = {nonce: '");
+		printWriter.print(" type=\"text/javascript\">window.Liferay.CSP = ");
+		printWriter.print("{nonce: '");
 
 		ContentSecurityPolicyConfiguration contentSecurityPolicyConfiguration =
 			ContentSecurityPolicyConfigurationUtil.
 				getContentSecurityPolicyConfiguration(httpServletRequest);
 
-		if (contentSecurityPolicyConfiguration.enabled()) {
+		if ((contentSecurityPolicyConfiguration != null) &&
+			contentSecurityPolicyConfiguration.enabled()) {
+
 			String policy = contentSecurityPolicyConfiguration.policy();
 
 			if (!policy.contains("'strict-dynamic'")) {
@@ -64,11 +68,6 @@ public class ContentSecurityPolicyTopHeadDynamicInclude
 		}
 
 		printWriter.println("'};</script>");
-	}
-
-	@Override
-	public void register(DynamicIncludeRegistry dynamicIncludeRegistry) {
-		dynamicIncludeRegistry.register("/html/common/themes/top_head.jsp#pre");
 	}
 
 	@Reference

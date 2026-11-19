@@ -12,7 +12,7 @@
 <%
 String backURL = ParamUtil.getString(request, "backURL");
 
-int instanceIndex = BeanParamUtil.getInteger(calendarBooking, request, "instanceIndex");
+int instanceIndex = BeanParamUtil.getInteger(calendarBooking, request, "instanceIndex", CalendarBooking::getInstanceIndex);
 
 calendarBooking = RecurrenceUtil.getCalendarBookingInstance(calendarBooking, instanceIndex);
 
@@ -27,6 +27,8 @@ long endTime = calendarBooking.getEndTime();
 java.util.Calendar endTimeJCalendar = JCalendarUtil.getJCalendar(endTime, userTimeZone);
 
 AssetEntry layoutAssetEntry = AssetEntryLocalServiceUtil.getEntry(CalendarBooking.class.getName(), calendarBooking.getCalendarBookingId());
+
+portletDisplay.setShowBackIcon(Validator.isNotNull(backURL));
 %>
 
 <c:if test="<%= CalendarPermission.contains(themeDisplay.getPermissionChecker(), calendar, CalendarActionKeys.VIEW_BOOKING_DETAILS) %>">
@@ -57,7 +59,7 @@ AssetEntry layoutAssetEntry = AssetEntryLocalServiceUtil.getEntry(CalendarBookin
 						<c:choose>
 							<c:when test="<%= calendarBooking.isAllDay() %>">
 								<dd>
-									<%= utcLongDateJFormat.format(startTimeJCalendar.getTime()) %>, <%= utcTimeJFormat.format(startTimeJCalendar.getTime()) %>
+									<%= utcLongDateJFormat.format(startTimeJCalendar.getTime()) %>
 								</dd>
 							</c:when>
 							<c:otherwise>
@@ -74,7 +76,7 @@ AssetEntry layoutAssetEntry = AssetEntryLocalServiceUtil.getEntry(CalendarBookin
 						<c:choose>
 							<c:when test="<%= calendarBooking.isAllDay() %>">
 								<dd>
-									<%= utcLongDateJFormat.format(endTimeJCalendar.getTime()) %>, <%= utcTimeJFormat.format(endTimeJCalendar.getTime()) %>
+									<%= utcLongDateJFormat.format(endTimeJCalendar.getTime()) %>
 								</dd>
 							</c:when>
 							<c:otherwise>
@@ -110,7 +112,7 @@ AssetEntry layoutAssetEntry = AssetEntryLocalServiceUtil.getEntry(CalendarBookin
 
 						<c:if test="<%= Validator.isNotNull(calendarBooking.getLocation()) %>">
 							<dt>
-								<liferay-ui:message key="location" />:
+								<liferay-ui:message key="location[place]" />:
 							</dt>
 							<dd>
 								<span class="location"><%= HtmlUtil.escape(calendarBooking.getLocation()) %></span>

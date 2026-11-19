@@ -9,6 +9,7 @@ import com.liferay.petra.string.CharPool;
 import com.liferay.portal.kernel.bean.BeanReference;
 import com.liferay.portal.kernel.cache.thread.local.ThreadLocalCachable;
 import com.liferay.portal.kernel.exception.DuplicatePasswordPolicyException;
+import com.liferay.portal.kernel.exception.NoSuchPasswordPolicyException;
 import com.liferay.portal.kernel.exception.PasswordPolicyNameException;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.RequiredPasswordPolicyException;
@@ -28,11 +29,10 @@ import com.liferay.portal.kernel.service.persistence.PasswordPolicyRelPersistenc
 import com.liferay.portal.kernel.service.persistence.UserPersistence;
 import com.liferay.portal.kernel.systemevent.SystemEvent;
 import com.liferay.portal.kernel.util.ArrayUtil;
-import com.liferay.portal.kernel.util.OrderByComparator;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.service.base.PasswordPolicyLocalServiceBaseImpl;
 import com.liferay.portal.util.PortalInstances;
-import com.liferay.portal.util.PropsValues;
 
 import java.util.List;
 
@@ -168,9 +168,11 @@ public class PasswordPolicyLocalServiceImpl
 			passwordPolicyPersistence.findByCompanyId(companyId);
 
 		for (PasswordPolicy passwordPolicy : passwordPolicies) {
-			if (!passwordPolicy.isDefaultPolicy()) {
-				passwordPolicyLocalService.deletePasswordPolicy(passwordPolicy);
+			if (passwordPolicy.isDefaultPolicy()) {
+				continue;
 			}
+
+			passwordPolicyLocalService.deletePasswordPolicy(passwordPolicy);
 		}
 	}
 
@@ -216,37 +218,80 @@ public class PasswordPolicyLocalServiceImpl
 	}
 
 	@Override
+	public PasswordPolicy fetchDefaultPasswordPolicy(long companyId) {
+		return passwordPolicyPersistence.fetchByC_N(
+			companyId, PropsValues.PASSWORDS_DEFAULT_POLICY_NAME);
+	}
+
+	@Override
 	public PasswordPolicy fetchPasswordPolicy(long companyId, String name) {
 		return passwordPolicyPersistence.fetchByC_N(companyId, name);
+	}
+
+	@Override
+	public PasswordPolicy fetchPasswordPolicyByUser(User user)
+		throws PortalException {
+
+		if (LDAPSettingsUtil.isPasswordPolicyEnabled(
+				user.getLdapServerId(), user.getCompanyId())) {
+
+			return null;
+		}
+
+		long count = passwordPolicyPersistence.countByCompanyId(
+			user.getCompanyId());
+
+		if (count == 1) {
+			return passwordPolicyPersistence.fetchByC_N(
+				user.getCompanyId(), PropsValues.PASSWORDS_DEFAULT_POLICY_NAME);
+		}
+
+		PasswordPolicyRel passwordPolicyRel =
+			_passwordPolicyRelPersistence.fetchByC_C(
+				_classNameLocalService.getClassNameId(User.class.getName()),
+				user.getUserId());
+
+		if (passwordPolicyRel != null) {
+			return getPasswordPolicy(passwordPolicyRel.getPasswordPolicyId());
+		}
+
+		long[] organizationIds = _userPersistence.getOrganizationPrimaryKeys(
+			user.getUserId());
+
+		if (organizationIds.length == 0) {
+			return passwordPolicyPersistence.fetchByC_N(
+				user.getCompanyId(), PropsValues.PASSWORDS_DEFAULT_POLICY_NAME);
+		}
+
+		return getPasswordPolicy(user.getCompanyId(), organizationIds);
+	}
+
+	@Override
+	@ThreadLocalCachable
+	public PasswordPolicy fetchPasswordPolicyByUserId(long userId)
+		throws PortalException {
+
+		User user = _userPersistence.fetchByPrimaryKey(userId);
+
+		if (user == null) {
+			return null;
+		}
+
+		return fetchPasswordPolicyByUser(user);
 	}
 
 	@Override
 	public PasswordPolicy getDefaultPasswordPolicy(long companyId)
 		throws PortalException {
 
-		if (LDAPSettingsUtil.isPasswordPolicyEnabled(companyId)) {
-			return null;
-		}
-
-		return passwordPolicyPersistence.findByC_DP(companyId, true);
-	}
-
-	@Override
-	public PasswordPolicy getPasswordPolicy(
-			long companyId, boolean defaultPolicy)
-		throws PortalException {
-
-		return passwordPolicyPersistence.findByC_DP(companyId, defaultPolicy);
+		return passwordPolicyPersistence.findByC_N(
+			companyId, PropsValues.PASSWORDS_DEFAULT_POLICY_NAME);
 	}
 
 	@Override
 	public PasswordPolicy getPasswordPolicy(
 			long companyId, long[] organizationIds)
 		throws PortalException {
-
-		if (LDAPSettingsUtil.isPasswordPolicyEnabled(companyId)) {
-			return null;
-		}
 
 		if (ArrayUtil.isEmpty(organizationIds)) {
 			return getDefaultPasswordPolicy(companyId);
@@ -274,36 +319,14 @@ public class PasswordPolicyLocalServiceImpl
 	public PasswordPolicy getPasswordPolicyByUser(User user)
 		throws PortalException {
 
-		if (LDAPSettingsUtil.isPasswordPolicyEnabled(user.getCompanyId())) {
-			return null;
+		PasswordPolicy passwordPolicy = fetchPasswordPolicyByUser(user);
+
+		if (passwordPolicy == null) {
+			throw new NoSuchPasswordPolicyException(
+				"No password policy exists for user " + user.getUserId());
 		}
 
-		long count = passwordPolicyPersistence.countByCompanyId(
-			user.getCompanyId());
-
-		if (count == 1) {
-			return passwordPolicyPersistence.findByC_DP(
-				user.getCompanyId(), true);
-		}
-
-		PasswordPolicyRel passwordPolicyRel =
-			_passwordPolicyRelPersistence.fetchByC_C(
-				_classNameLocalService.getClassNameId(User.class.getName()),
-				user.getUserId());
-
-		if (passwordPolicyRel != null) {
-			return getPasswordPolicy(passwordPolicyRel.getPasswordPolicyId());
-		}
-
-		long[] organizationIds = _userPersistence.getOrganizationPrimaryKeys(
-			user.getUserId());
-
-		if (organizationIds.length == 0) {
-			return passwordPolicyPersistence.findByC_DP(
-				user.getCompanyId(), true);
-		}
-
-		return getPasswordPolicy(user.getCompanyId(), organizationIds);
+		return passwordPolicy;
 	}
 
 	@Override
@@ -313,20 +336,6 @@ public class PasswordPolicyLocalServiceImpl
 
 		return getPasswordPolicyByUser(
 			_userPersistence.findByPrimaryKey(userId));
-	}
-
-	@Override
-	public List<PasswordPolicy> search(
-		long companyId, String name, int start, int end,
-		OrderByComparator<PasswordPolicy> orderByComparator) {
-
-		return passwordPolicyFinder.findByC_N(
-			companyId, name, start, end, orderByComparator);
-	}
-
-	@Override
-	public int searchCount(long companyId, String name) {
-		return passwordPolicyFinder.countByC_N(companyId, name);
 	}
 
 	@Override

@@ -252,14 +252,6 @@ public class COREntryRelLocalServiceWrapper
 	}
 
 	@Override
-	public com.liferay.commerce.order.rule.model.COREntryRel fetchCOREntryRel(
-		String className, long classPK, long corEntryId) {
-
-		return _corEntryRelLocalService.fetchCOREntryRel(
-			className, classPK, corEntryId);
-	}
-
-	@Override
 	public java.util.List<com.liferay.commerce.order.rule.model.COREntryRel>
 		getAccountEntryCOREntryRels(
 			long corEntryId, String keywords, int start, int end) {
@@ -466,3 +458,4 @@ public class COREntryRelLocalServiceWrapper
 	private COREntryRelLocalService _corEntryRelLocalService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-490964889

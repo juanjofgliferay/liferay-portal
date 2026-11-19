@@ -62,6 +62,13 @@ definition {
 			entryName = ${sku},
 			label = "SKU");
 
+		if (isSet(quantity)) {
+			Type(
+				key_fieldLabel = "Quantity",
+				locator1 = "TextInput#GENERIC_TEXT_INPUT",
+				value1 = ${quantity});
+		}
+
 		Button.clickSave();
 
 		Alert.viewSuccessMessage();
@@ -178,11 +185,11 @@ definition {
 		if (isSet(productAddOptionCategoriesList)) {
 			for (var categoryName : list ${productAddOptionCategoriesList}) {
 				Type(
-					locator1 = "ACSettings#INVITE_USERS_INPUT",
+					locator1 = "CommerceEntry#MULTISELECT_INPUT",
 					value1 = ${categoryName});
 
 				KeyPress(
-					locator1 = "ACSettings#INVITE_USERS_INPUT",
+					locator1 = "CommerceEntry#MULTISELECT_INPUT",
 					value1 = "\RETURN");
 
 				AssertElementPresent(

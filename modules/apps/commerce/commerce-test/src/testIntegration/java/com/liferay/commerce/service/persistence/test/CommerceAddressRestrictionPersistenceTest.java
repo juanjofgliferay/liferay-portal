@@ -115,12 +115,8 @@ public class CommerceAddressRestrictionPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
 		CommerceAddressRestriction newCommerceAddressRestriction =
-			_persistence.create(pk);
-
-		newCommerceAddressRestriction.setMvccVersion(RandomTestUtil.nextLong());
+			addCommerceAddressRestriction();
 
 		newCommerceAddressRestriction.setGroupId(RandomTestUtil.nextLong());
 
@@ -142,8 +138,10 @@ public class CommerceAddressRestrictionPersistenceTest {
 
 		newCommerceAddressRestriction.setCountryId(RandomTestUtil.nextLong());
 
-		_commerceAddressRestrictions.add(
-			_persistence.update(newCommerceAddressRestriction));
+		newCommerceAddressRestriction = _persistence.update(
+			newCommerceAddressRestriction);
+
+		_commerceAddressRestrictions.add(newCommerceAddressRestriction);
 
 		CommerceAddressRestriction existingCommerceAddressRestriction =
 			_persistence.findByPrimaryKey(
@@ -187,13 +185,6 @@ public class CommerceAddressRestrictionPersistenceTest {
 		Assert.assertEquals(
 			existingCommerceAddressRestriction.getCountryId(),
 			newCommerceAddressRestriction.getCountryId());
-	}
-
-	@Test
-	public void testCountByCountryId() throws Exception {
-		_persistence.countByCountryId(RandomTestUtil.nextLong());
-
-		_persistence.countByCountryId(0L);
 	}
 
 	@Test
@@ -578,8 +569,6 @@ public class CommerceAddressRestrictionPersistenceTest {
 		CommerceAddressRestriction commerceAddressRestriction =
 			_persistence.create(pk);
 
-		commerceAddressRestriction.setMvccVersion(RandomTestUtil.nextLong());
-
 		commerceAddressRestriction.setGroupId(RandomTestUtil.nextLong());
 
 		commerceAddressRestriction.setCompanyId(RandomTestUtil.nextLong());
@@ -610,3 +599,4 @@ public class CommerceAddressRestrictionPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1070393225

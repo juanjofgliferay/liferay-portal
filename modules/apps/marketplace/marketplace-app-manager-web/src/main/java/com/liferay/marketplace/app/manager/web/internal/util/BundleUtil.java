@@ -39,9 +39,11 @@ public class BundleUtil {
 			String bundleType = GetterUtil.getString(
 				headers.get("Liferay-Releng-Bundle-Type"));
 
-			if (bundleType.equals("lpkg")) {
-				iterator.remove();
+			if (!bundleType.equals("lpkg")) {
+				continue;
 			}
+
+			iterator.remove();
 		}
 	}
 
@@ -51,11 +53,7 @@ public class BundleUtil {
 
 		String fragmentHost = headers.get(Constants.FRAGMENT_HOST);
 
-		if (Validator.isNotNull(fragmentHost)) {
-			return true;
-		}
-
-		return false;
+		return Validator.isNotNull(fragmentHost);
 	}
 
 }

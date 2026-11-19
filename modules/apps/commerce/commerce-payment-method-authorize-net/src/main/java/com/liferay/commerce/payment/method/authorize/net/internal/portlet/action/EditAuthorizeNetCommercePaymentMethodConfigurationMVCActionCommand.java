@@ -18,8 +18,8 @@ import com.liferay.portal.kernel.settings.Settings;
 import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.ParamUtil;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -29,7 +29,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + CPPortletKeys.COMMERCE_PAYMENT_METHODS,
+		"jakarta.portlet.name=" + CPPortletKeys.COMMERCE_PAYMENT_METHODS,
 		"mvc.command.name=/commerce_payment_methods/edit_authorize_net_commerce_payment_method_configuration"
 	},
 	service = MVCActionCommand.class
@@ -101,6 +101,11 @@ public class EditAuthorizeNetCommercePaymentMethodConfigurationMVCActionCommand
 			actionRequest, "settings--showStoreName--");
 
 		modifiableSettings.setValue("showStoreName", showStoreName);
+
+		String signatureKey = ParamUtil.getString(
+			actionRequest, "settings--signatureKey--");
+
+		modifiableSettings.setValue("signatureKey", signatureKey);
 
 		String transactionKey = ParamUtil.getString(
 			actionRequest, "settings--transactionKey--");

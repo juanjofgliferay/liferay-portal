@@ -57,8 +57,10 @@ import java.util.function.Function;
  *
  * @author Brian Wing Shun Chan
  * @see LayoutRevisionImpl
+ * @deprecated As of Cavanaugh (7.4.x), with no direct replacement
  * @generated
  */
+@Deprecated
 @JSON(strict = true)
 public class LayoutRevisionModelImpl
 	extends BaseModelImpl<LayoutRevision> implements LayoutRevisionModel {
@@ -127,6 +129,8 @@ public class LayoutRevisionModelImpl
 		"create table LayoutRevision (mvccVersion LONG default 0 not null,layoutRevisionId LONG not null primary key,groupId LONG,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,layoutSetBranchId LONG,layoutBranchId LONG,parentLayoutRevisionId LONG,head BOOLEAN,major BOOLEAN,plid LONG,privateLayout BOOLEAN,name STRING null,title STRING null,description STRING null,keywords STRING null,robots STRING null,typeSettings TEXT null,iconImageId LONG,themeId VARCHAR(75) null,colorSchemeId VARCHAR(75) null,css TEXT null,status INTEGER,statusByUserId LONG,statusByUserName VARCHAR(75) null,statusDate DATE null)";
 
 	public static final String TABLE_SQL_DROP = "drop table LayoutRevision";
+
+	public static final String ENTITY_ALIAS = "layoutRevision";
 
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY layoutRevision.modifiedDate DESC";
@@ -202,7 +206,7 @@ public class LayoutRevisionModelImpl
 	public static final long MODIFIEDDATE_COLUMN_BITMASK = 64L;
 
 	public static final long LOCK_EXPIRATION_TIME = GetterUtil.getLong(
-		com.liferay.portal.util.PropsUtil.get(
+		com.liferay.portal.kernel.util.PropsUtil.get(
 			"lock.expiration.time.com.liferay.portal.kernel.model.LayoutRevision"));
 
 	public LayoutRevisionModelImpl() {
@@ -2370,3 +2374,4 @@ public class LayoutRevisionModelImpl
 	private LayoutRevision _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:733464934

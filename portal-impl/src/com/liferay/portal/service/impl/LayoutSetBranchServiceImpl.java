@@ -6,14 +6,18 @@
 package com.liferay.portal.service.impl;
 
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.LayoutSetBranch;
+import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.permission.GroupPermissionUtil;
 import com.liferay.portal.kernel.service.permission.LayoutSetBranchPermissionUtil;
+import com.liferay.portal.kernel.util.comparator.LayoutSetBranchCreateDateComparator;
 import com.liferay.portal.service.base.LayoutSetBranchServiceBaseImpl;
 
 import java.util.ArrayList;
@@ -22,7 +26,9 @@ import java.util.List;
 /**
  * @author Raymond Augé
  * @author Brian Wing Shun Chan
+ * @deprecated As of Cavanaugh (7.4.x), with no direct replacement
  */
+@Deprecated
 public class LayoutSetBranchServiceImpl extends LayoutSetBranchServiceBaseImpl {
 
 	@Override
@@ -32,8 +38,13 @@ public class LayoutSetBranchServiceImpl extends LayoutSetBranchServiceBaseImpl {
 			ServiceContext serviceContext)
 		throws PortalException {
 
+		FeatureFlagManagerUtil.checkEnabled(
+			serviceContext.getCompanyId(), "LPD-105778");
+
 		GroupPermissionUtil.check(
 			getPermissionChecker(), groupId, ActionKeys.ADD_LAYOUT_SET_BRANCH);
+
+		_checkLayoutSetBranch(groupId, copyLayoutSetBranchId, privateLayout);
 
 		return layoutSetBranchLocalService.addLayoutSetBranch(
 			getUserId(), groupId, privateLayout, name, description, master,
@@ -70,8 +81,10 @@ public class LayoutSetBranchServiceImpl extends LayoutSetBranchServiceBaseImpl {
 			if (GroupPermissionUtil.contains(
 					getPermissionChecker(), groupId, ActionKeys.VIEW_STAGING)) {
 
-				return layoutSetBranchLocalService.getLayoutSetBranches(
-					groupId, privateLayout);
+				return layoutSetBranchPersistence.findByG_P(
+					groupId, privateLayout, QueryUtil.ALL_POS,
+					QueryUtil.ALL_POS,
+					LayoutSetBranchCreateDateComparator.getInstance(true));
 			}
 		}
 		catch (PortalException portalException) {
@@ -94,8 +107,15 @@ public class LayoutSetBranchServiceImpl extends LayoutSetBranchServiceBaseImpl {
 			ServiceContext serviceContext)
 		throws PortalException {
 
+		LayoutSetBranch layoutSetBranch =
+			layoutSetBranchPersistence.findByPrimaryKey(layoutSetBranchId);
+
 		LayoutSetBranchPermissionUtil.check(
-			getPermissionChecker(), layoutSetBranchId, ActionKeys.UPDATE);
+			getPermissionChecker(), layoutSetBranch, ActionKeys.UPDATE);
+
+		_checkLayoutSetBranch(
+			layoutSetBranch.getGroupId(), mergeLayoutSetBranchId,
+			layoutSetBranch.isPrivateLayout());
 
 		return layoutSetBranchLocalService.mergeLayoutSetBranch(
 			layoutSetBranchId, mergeLayoutSetBranchId, serviceContext);
@@ -112,6 +132,26 @@ public class LayoutSetBranchServiceImpl extends LayoutSetBranchServiceBaseImpl {
 
 		return layoutSetBranchLocalService.updateLayoutSetBranch(
 			layoutSetBranchId, name, description, serviceContext);
+	}
+
+	private void _checkLayoutSetBranch(
+			long groupId, long layoutSetBranchId, boolean privateLayout)
+		throws PortalException {
+
+		if (layoutSetBranchId <= 0) {
+			return;
+		}
+
+		LayoutSetBranch layoutSetBranch =
+			layoutSetBranchPersistence.findByPrimaryKey(layoutSetBranchId);
+
+		if ((layoutSetBranch.getGroupId() != groupId) ||
+			(layoutSetBranch.isPrivateLayout() != privateLayout)) {
+
+			throw new PrincipalException.MustHavePermission(
+				getPermissionChecker(), LayoutSetBranch.class.getName(),
+				layoutSetBranchId, ActionKeys.VIEW);
+		}
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(

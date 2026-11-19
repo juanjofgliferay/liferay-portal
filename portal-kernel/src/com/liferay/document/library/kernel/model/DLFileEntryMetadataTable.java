@@ -31,6 +31,10 @@ public class DLFileEntryMetadataTable
 			"ctCollectionId", Long.class, Types.BIGINT, Column.FLAG_PRIMARY);
 	public final Column<DLFileEntryMetadataTable, String> uuid = createColumn(
 		"uuid_", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
+	public final Column<DLFileEntryMetadataTable, String>
+		externalReferenceCode = createColumn(
+			"externalReferenceCode", String.class, Types.VARCHAR,
+			Column.FLAG_DEFAULT);
 	public final Column<DLFileEntryMetadataTable, Long> fileEntryMetadataId =
 		createColumn(
 			"fileEntryMetadataId", Long.class, Types.BIGINT,
@@ -56,3 +60,4 @@ public class DLFileEntryMetadataTable
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1604706256

@@ -6,10 +6,14 @@
 package com.liferay.fragment.entry.processor.drop.zone.listener;
 
 import com.liferay.fragment.constants.FragmentEntryLinkConstants;
+import com.liferay.fragment.entry.processor.constants.FragmentEntryProcessorConstants;
 import com.liferay.fragment.listener.FragmentEntryLinkListener;
 import com.liferay.fragment.model.FragmentEntryLink;
 import com.liferay.fragment.processor.DefaultFragmentEntryProcessorContext;
 import com.liferay.fragment.processor.FragmentEntryProcessorRegistry;
+import com.liferay.fragment.processor.util.FragmentEntryHtmlParserUtil;
+import com.liferay.fragment.util.configuration.FragmentConfigurationField;
+import com.liferay.fragment.util.configuration.FragmentEntryConfigurationParser;
 import com.liferay.layout.page.template.model.LayoutPageTemplateStructure;
 import com.liferay.layout.page.template.service.LayoutPageTemplateStructureLocalService;
 import com.liferay.layout.page.template.util.CheckUnlockedLayoutThreadLocal;
@@ -19,25 +23,31 @@ import com.liferay.layout.util.structure.LayoutStructure;
 import com.liferay.layout.util.structure.LayoutStructureItem;
 import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ListUtil;
+import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
@@ -56,6 +66,24 @@ public class DropZoneFragmentEntryLinkListener
 	public void onAddFragmentEntryLink(FragmentEntryLink fragmentEntryLink) {
 		try {
 			updateLayoutPageTemplateStructure(fragmentEntryLink, null);
+		}
+		catch (Exception exception) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(
+					"Unable to update layout page template structure",
+					exception);
+			}
+		}
+	}
+
+	@Override
+	public void onCopyFragmentEntryLink(
+		FragmentEntryLink fragmentEntryLink,
+		FragmentEntryLink originalFragmentEntryLink) {
+
+		try {
+			updateLayoutPageTemplateStructure(
+				fragmentEntryLink, originalFragmentEntryLink);
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
@@ -132,19 +160,35 @@ public class DropZoneFragmentEntryLinkListener
 			httpServletResponse = themeDisplay.getResponse();
 		}
 
-		String processedHTML =
-			_fragmentEntryProcessorRegistry.processFragmentEntryLinkHTML(
-				fragmentEntryLink,
-				new DefaultFragmentEntryProcessorContext(
-					httpServletRequest, httpServletResponse,
-					FragmentEntryLinkConstants.EDIT,
-					serviceContext.getLocale()));
+		int dropZoneElementsCount = 0;
 
-		Document document = _getDocument(processedHTML);
+		List<String> elementDropZoneIds = new LinkedList<>();
 
-		Elements elements = document.select("lfr-drop-zone");
+		for (Locale locale : _getLocales(fragmentEntryLink, serviceContext)) {
+			Elements elements = _getDropZoneElements(
+				fragmentEntryLink, httpServletRequest, httpServletResponse,
+				locale);
 
-		if (elements.size() <= 0) {
+			if (elements.size() > dropZoneElementsCount) {
+				dropZoneElementsCount = elements.size();
+			}
+
+			for (Element element : elements) {
+				String dropZoneId = element.attr("data-lfr-drop-zone-id");
+
+				if (Validator.isBlank(dropZoneId)) {
+					break;
+				}
+
+				if (elementDropZoneIds.contains(dropZoneId)) {
+					continue;
+				}
+
+				elementDropZoneIds.add(dropZoneId);
+			}
+		}
+
+		if (dropZoneElementsCount == 0) {
 			return;
 		}
 
@@ -163,48 +207,37 @@ public class DropZoneFragmentEntryLinkListener
 			return;
 		}
 
-		List<String> elementDropZoneIds = new LinkedList<>();
-
-		for (Element element : elements) {
-			String dropZoneId = element.attr("data-lfr-drop-zone-id");
-
-			if (Validator.isBlank(dropZoneId)) {
-				break;
-			}
-
-			elementDropZoneIds.add(dropZoneId);
-		}
-
-		if (elementDropZoneIds.size() < elements.size()) {
+		if (elementDropZoneIds.size() < dropZoneElementsCount) {
 			List<String> childrenItemIds =
 				parentLayoutStructureItem.getChildrenItemIds();
 
-			if (childrenItemIds.size() == elements.size()) {
+			if (childrenItemIds.size() == dropZoneElementsCount) {
 				return;
 			}
 
-			if (childrenItemIds.size() > elements.size()) {
-				List<String> childrenItemIdsToRemove = childrenItemIds.subList(
-					elements.size(), childrenItemIds.size());
-
-				childrenItemIdsToRemove.forEach(
-					itemId ->
-						layoutStructure.markLayoutStructureItemForDeletion(
-							itemId, Collections.emptyList()));
+			if (childrenItemIds.size() > dropZoneElementsCount) {
+				layoutStructure.markLayoutStructureItemForDeletion(
+					new ArrayList<>(
+						childrenItemIds.subList(
+							dropZoneElementsCount, childrenItemIds.size())),
+					Collections.emptyList());
 			}
 			else {
-				for (int i = childrenItemIds.size(); i < elements.size(); i++) {
+				for (int i = childrenItemIds.size(); i < dropZoneElementsCount;
+					 i++) {
+
 					_addOrRestoreDropZoneLayoutStructureItem(
 						layoutStructure, parentLayoutStructureItem);
 				}
 			}
 
 			try (SafeCloseable safeCloseable =
-					CheckUnlockedLayoutThreadLocal.setWithSafeCloseable(
-						false)) {
+					CheckUnlockedLayoutThreadLocal.
+						setCheckUnlockedLayoutWithSafeCloseable(false)) {
 
 				_layoutPageTemplateStructureLocalService.
 					updateLayoutPageTemplateStructureData(
+						fragmentEntryLink.getUserId(),
 						fragmentEntryLink.getGroupId(),
 						fragmentEntryLink.getPlid(),
 						fragmentEntryLink.getSegmentsExperienceId(),
@@ -379,7 +412,8 @@ public class DropZoneFragmentEntryLinkListener
 					noExistingIdFragmentDropZoneLayoutStructureItems) {
 
 			layoutStructure.markLayoutStructureItemForDeletion(
-				fragmentDropZoneLayoutStructureItem.getItemId(),
+				Collections.singletonList(
+					fragmentDropZoneLayoutStructureItem.getItemId()),
 				Collections.emptyList());
 
 			update = true;
@@ -390,7 +424,8 @@ public class DropZoneFragmentEntryLinkListener
 					noIdFragmentDropZoneLayoutStructureItems) {
 
 			layoutStructure.markLayoutStructureItemForDeletion(
-				fragmentDropZoneLayoutStructureItem.getItemId(),
+				Collections.singletonList(
+					fragmentDropZoneLayoutStructureItem.getItemId()),
 				Collections.emptyList());
 
 			update = true;
@@ -398,11 +433,12 @@ public class DropZoneFragmentEntryLinkListener
 
 		if (update) {
 			try (SafeCloseable safeCloseable =
-					CheckUnlockedLayoutThreadLocal.setWithSafeCloseable(
-						false)) {
+					CheckUnlockedLayoutThreadLocal.
+						setCheckUnlockedLayoutWithSafeCloseable(false)) {
 
 				_layoutPageTemplateStructureLocalService.
 					updateLayoutPageTemplateStructureData(
+						fragmentEntryLink.getUserId(),
 						fragmentEntryLink.getGroupId(),
 						fragmentEntryLink.getPlid(),
 						fragmentEntryLink.getSegmentsExperienceId(),
@@ -488,16 +524,27 @@ public class DropZoneFragmentEntryLinkListener
 		return null;
 	}
 
-	private Document _getDocument(String html) {
-		Document document = Jsoup.parseBodyFragment(html);
+	private Elements _getDropZoneElements(
+			FragmentEntryLink fragmentEntryLink,
+			HttpServletRequest httpServletRequest,
+			HttpServletResponse httpServletResponse, Locale locale)
+		throws PortalException {
 
-		Document.OutputSettings outputSettings = new Document.OutputSettings();
+		DefaultFragmentEntryProcessorContext
+			defaultFragmentEntryProcessorContext =
+				new DefaultFragmentEntryProcessorContext(
+					fragmentEntryLink.getCompanyId(), httpServletRequest,
+					httpServletResponse, locale,
+					FragmentEntryLinkConstants.EDIT,
+					fragmentEntryLink.getGroupId());
 
-		outputSettings.prettyPrint(false);
+		defaultFragmentEntryProcessorContext.setDisablePortletRender(true);
 
-		document.outputSettings(outputSettings);
+		Document document = FragmentEntryHtmlParserUtil.parseBodyFragment(
+			_fragmentEntryProcessorRegistry.processFragmentEntryLinkHTML(
+				fragmentEntryLink, defaultFragmentEntryProcessorContext));
 
-		return document;
+		return document.getElementsByTag("lfr-drop-zone");
 	}
 
 	private List<String> _getElementDropZoneIds(
@@ -511,25 +558,13 @@ public class DropZoneFragmentEntryLinkListener
 			return Collections.emptyList();
 		}
 
-		String processedHTML =
-			_fragmentEntryProcessorRegistry.processFragmentEntryLinkHTML(
-				fragmentEntryLink,
-				new DefaultFragmentEntryProcessorContext(
-					httpServletRequest, httpServletResponse,
-					FragmentEntryLinkConstants.EDIT,
-					serviceContext.getLocale()));
-
-		Document document = _getDocument(processedHTML);
-
-		Elements elements = document.select("lfr-drop-zone");
-
-		if (elements.size() <= 0) {
-			return Collections.emptyList();
-		}
-
 		List<String> elementDropZoneIds = new LinkedList<>();
 
-		for (Element element : elements) {
+		for (Element element :
+				_getDropZoneElements(
+					fragmentEntryLink, httpServletRequest, httpServletResponse,
+					serviceContext.getLocale())) {
+
 			String dropZoneId = element.attr("data-lfr-drop-zone-id");
 
 			if (Validator.isBlank(dropZoneId)) {
@@ -565,8 +600,66 @@ public class DropZoneFragmentEntryLinkListener
 		return LayoutStructure.of(data);
 	}
 
+	private Collection<Locale> _getLocales(
+			FragmentEntryLink fragmentEntryLink, ServiceContext serviceContext)
+		throws PortalException {
+
+		List<FragmentConfigurationField> fragmentConfigurationFields =
+			_fragmentEntryConfigurationParser.getFragmentConfigurationFields(
+				fragmentEntryLink.getConfigurationJSONObject());
+
+		if (!ListUtil.exists(
+				fragmentConfigurationFields,
+				FragmentConfigurationField::isLocalizable)) {
+
+			return Collections.singletonList(serviceContext.getLocale());
+		}
+
+		Collection<Locale> locales = new LinkedHashSet<>();
+
+		locales.add(
+			_portal.getSiteDefaultLocale(fragmentEntryLink.getGroupId()));
+
+		JSONObject editableValuesJSONObject =
+			fragmentEntryLink.getEditableValuesJSONObject();
+
+		JSONObject configurationValuesJSONObject =
+			editableValuesJSONObject.getJSONObject(
+				FragmentEntryProcessorConstants.
+					KEY_FREEMARKER_FRAGMENT_ENTRY_PROCESSOR);
+
+		if (configurationValuesJSONObject == null) {
+			return locales;
+		}
+
+		for (FragmentConfigurationField fragmentConfigurationField :
+				fragmentConfigurationFields) {
+
+			if (!fragmentConfigurationField.isLocalizable()) {
+				continue;
+			}
+
+			JSONObject valueJSONObject =
+				configurationValuesJSONObject.getJSONObject(
+					fragmentConfigurationField.getName());
+
+			if (valueJSONObject == null) {
+				continue;
+			}
+
+			for (String languageId : valueJSONObject.keySet()) {
+				locales.add(LocaleUtil.fromLanguageId(languageId, false));
+			}
+		}
+
+		return locales;
+	}
+
 	private static final Log _log = LogFactoryUtil.getLog(
 		DropZoneFragmentEntryLinkListener.class);
+
+	@Reference
+	private FragmentEntryConfigurationParser _fragmentEntryConfigurationParser;
 
 	@Reference
 	private FragmentEntryProcessorRegistry _fragmentEntryProcessorRegistry;
@@ -574,5 +667,8 @@ public class DropZoneFragmentEntryLinkListener
 	@Reference
 	private LayoutPageTemplateStructureLocalService
 		_layoutPageTemplateStructureLocalService;
+
+	@Reference
+	private Portal _portal;
 
 }

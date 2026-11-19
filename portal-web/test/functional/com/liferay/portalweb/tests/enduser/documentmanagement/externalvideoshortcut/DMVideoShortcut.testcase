@@ -1,10 +1,11 @@
-@component-name = "portal-document-management"
+@component-name = "portal-content-management"
 definition {
 
+	property browser.chrome.version = "139.0";
 	property custom.properties = "dl.actions.visible=true";
 	property portal.release = "true";
 	property portal.upstream = "true";
-	property testray.main.component.name = "Document Management";
+	property testray.main.component.name = "Documents and Media";
 
 	setUp {
 		TestCase.setUpPortalInstance();
@@ -37,7 +38,7 @@ definition {
 
 			DMFolder.tearDownCP();
 
-			User.logoutPG();
+			JSONGroup.deleteGroupByNameIfPresent(groupName = "Site Name");
 		}
 	}
 
@@ -215,7 +216,7 @@ definition {
 			webContentContent = "WC WebContent Content",
 			webContentTitle = "WC WebContent Title");
 
-		PortletEntry.publish();
+		WebContent.publishWithPermissions();
 
 		DepotNavigator.openDepotWebContentAdmin(depotName = "Test Depot Name");
 
@@ -316,48 +317,12 @@ definition {
 			webContentContent = "WC WebContent Content",
 			webContentTitle = "WC WebContent Title");
 
-		PortletEntry.publish();
-
-		WebContentNavigator.openWebContentAdmin(siteURLKey = "guest");
-
-		WebContentNavigator.gotoPreviewEntryCP(webContentTitle = "WC WebContent Title");
-
-		WaitForVisible(locator1 = "IFrame#MODAL_BODY");
-
-		SelectFrame(locator1 = "IFrame#MODAL_BODY");
-
-		AssertVisible(
-			key_service = "twitch",
-			locator1 = "BlogsEntry#CONTENT_VIDEO");
-	}
-
-	@description = "This test ensures that a user is able to embed an external video in web content."
-	@priority = 4
-	@refactordone
-	test CanAddWCWithEmbeddedVideo {
-		DMNavigator.openDocumentsAndMediaAdmin(siteURLKey = "guest");
-
-		VideoShortcut.addCP(
-			videoShortcutTitle = "Test YouTube Video Name",
-			videoURL = "https://www.youtube.com/watch?v=HOdbzGCI5ME");
-
-		WebContentNavigator.openWebContentAdmin(siteURLKey = "guest");
-
-		WebContentNavigator.gotoAddCP();
-
-		WebContent.addCP(
-			embedVideo = "true",
-			navTab = "Documents and Media",
-			videoShortcutTitle = "Test YouTube Video Name",
-			webContentContent = "WC WebContent Content",
-			webContentTitle = "WC WebContent Title");
-
-		PortletEntry.publish();
+		WebContent.publishWithPermissions();
 
 		WebContentNavigator.openWebContentAdmin(siteURLKey = "guest");
 
 		WebContent.viewVideoPreview(
-			service = "https://www.youtube.com",
+			service = "https://player.twitch.tv",
 			webContentTitle = "WC WebContent Title");
 	}
 
@@ -377,7 +342,7 @@ definition {
 			webContentContent = "WC WebContent Content",
 			webContentTitle = "WC WebContent Title");
 
-		PortletEntry.publish();
+		WebContent.publishWithPermissions();
 
 		WebContentNavigator.openWebContentAdmin(siteURLKey = "guest");
 
@@ -780,6 +745,10 @@ definition {
 			layoutName = "Content Page Name",
 			type = "content");
 
+		JSONLayout.publishLayout(
+			groupName = "Guest",
+			layoutName = "Content Page Name");
+
 		DMNavigator.openDocumentsAndMediaAdmin(siteURLKey = "guest");
 
 		VideoShortcut.addCP(
@@ -869,6 +838,10 @@ definition {
 	@priority = 4
 	@refactordone
 	test CanViewThumbnailViaAP {
+		task ("Enable dynamic and manual selection") {
+			AssetPublisherPortlet.enableDynamicAndManualSelection();
+		}
+
 		JSONLayout.addPublicLayout(
 			groupName = "Guest",
 			layoutName = "Page Name");
@@ -881,14 +854,14 @@ definition {
 		Navigator.gotoPage(pageName = "Documents and Media Page");
 
 		VideoShortcut.addPG(
-			extractedVideoShortcutTitle = "RONALDINHO vs NEYMAR. ¿A quién eliges? Los disfrutamos. #MundoMaldini",
+			extractedVideoShortcutTitle = "Liferay Digital Experience Platform",
 			videoShortcutDescription = "Video Shortcut Description",
 			videoShortcutPreview = "https://www.youtube.com",
-			videoURL = "https://www.youtube.com/watch?v=2ewB-7_VMGU");
+			videoURL = "https://www.youtube.com/watch?v=HOdbzGCI5ME");
 
 		VideoShortcut.viewPG(
 			videoShortcutDescription = "Video Shortcut Description",
-			videoShortcutTitle = "RONALDINHO vs NEYMAR. ¿A quién eliges? Los disfrutamos. #MundoMaldini");
+			videoShortcutTitle = "Liferay Digital Experience Platform");
 
 		Navigator.gotoSitePage(
 			pageName = "Page Name",
@@ -917,7 +890,7 @@ definition {
 			webContentContent = "Web Content Content",
 			webContentTitle = "WC WebContent Title");
 
-		PortletEntry.publish();
+		WebContent.publishWithPermissions();
 
 		JSONFolder.addFolder(
 			dmFolderDescription = "DM Folder Description",

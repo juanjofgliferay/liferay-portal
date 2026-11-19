@@ -5,6 +5,7 @@
 
 package com.liferay.journal.service.persistence.impl;
 
+import com.liferay.journal.internal.util.JournalArticleViewableStatusUtil;
 import com.liferay.journal.model.JournalArticle;
 import com.liferay.journal.model.impl.JournalArticleImpl;
 import com.liferay.journal.service.persistence.JournalArticleFinder;
@@ -24,7 +25,6 @@ import com.liferay.portal.kernel.security.permission.InlineSQLHelperUtil;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
-import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
@@ -62,9 +62,6 @@ public class JournalArticleFinderImpl
 	public static final String FIND_BY_G_F_L =
 		JournalArticleFinder.class.getName() + ".findByG_F_L";
 
-	public static final String FIND_BY_G_U_F_C =
-		JournalArticleFinder.class.getName() + ".findByG_U_F_C";
-
 	public static final String FIND_BY_G_U_F_C_L =
 		JournalArticleFinder.class.getName() + ".findByG_U_F_C_L";
 
@@ -77,15 +74,6 @@ public class JournalArticleFinderImpl
 		QueryDefinition<JournalArticle> queryDefinition) {
 
 		return doCountByG_F(groupId, folderIds, queryDefinition, false);
-	}
-
-	@Override
-	public int countByG_F_C(
-		long groupId, List<Long> folderIds, long classNameId,
-		QueryDefinition<JournalArticle> queryDefinition) {
-
-		return doCountByG_F_C(
-			groupId, folderIds, classNameId, queryDefinition, false);
 	}
 
 	@Override
@@ -160,24 +148,6 @@ public class JournalArticleFinderImpl
 	}
 
 	@Override
-	public List<JournalArticle> findByG_F_L(
-		long groupId, List<Long> folderIds, Locale locale,
-		QueryDefinition<JournalArticle> queryDefinition) {
-
-		return doFindByG_F_L(
-			groupId, folderIds, locale, queryDefinition, false);
-	}
-
-	@Override
-	public List<JournalArticle> findByG_F_C(
-		long groupId, List<Long> folderIds, long classNameId,
-		QueryDefinition<JournalArticle> queryDefinition) {
-
-		return doFindByG_F_C(
-			groupId, folderIds, classNameId, queryDefinition, false);
-	}
-
-	@Override
 	public List<JournalArticle> findByG_F_C_S_L(
 		long groupId, List<Long> folderIds, long classNameId,
 		long ddmStructureId, Locale locale,
@@ -202,6 +172,9 @@ public class JournalArticleFinderImpl
 				getClass(), COUNT_BY_G_F, queryDefinition, "JournalArticle");
 
 			sql = replaceStatusJoin(sql, groupId, queryDefinition);
+
+			sql = JournalArticleViewableStatusUtil.replaceViewableStatus(
+				groupId, inlineSQLHelper, sql);
 
 			if (inlineSQLHelper) {
 				sql = InlineSQLHelperUtil.replacePermissionCheck(
@@ -259,6 +232,9 @@ public class JournalArticleFinderImpl
 			String sql = _customSQL.get(
 				getClass(), COUNT_BY_G_ST, queryDefinition, "JournalArticle");
 
+			sql = JournalArticleViewableStatusUtil.replaceViewableStatus(
+				groupId, inlineSQLHelper, sql);
+
 			if (inlineSQLHelper) {
 				sql = InlineSQLHelperUtil.replacePermissionCheck(
 					sql, JournalArticle.class.getName(),
@@ -310,6 +286,9 @@ public class JournalArticleFinderImpl
 
 			sql = replaceStatusJoin(sql, groupId, queryDefinition);
 
+			sql = JournalArticleViewableStatusUtil.replaceViewableStatus(
+				groupId, inlineSQLHelper, sql);
+
 			if (folderIds.isEmpty()) {
 				sql = StringUtil.removeSubstring(sql, "([$FOLDER_ID$]) AND");
 			}
@@ -338,13 +317,7 @@ public class JournalArticleFinderImpl
 				queryPos.add(folderId);
 			}
 
-			if (queryDefinition.getOwnerUserId() > 0) {
-				queryPos.add(queryDefinition.getOwnerUserId());
-
-				if (queryDefinition.isIncludeOwner()) {
-					queryPos.add(WorkflowConstants.STATUS_IN_TRASH);
-				}
-			}
+			_addOwnerUserId(queryDefinition, queryPos);
 
 			queryPos.add(queryDefinition.getStatus());
 
@@ -383,6 +356,9 @@ public class JournalArticleFinderImpl
 				"JournalArticle");
 
 			sql = replaceStatusJoin(sql, groupId, queryDefinition);
+
+			sql = JournalArticleViewableStatusUtil.replaceViewableStatus(
+				groupId, inlineSQLHelper, sql);
 
 			if (groupId <= 0) {
 				sql = StringUtil.removeSubstring(
@@ -469,6 +445,9 @@ public class JournalArticleFinderImpl
 
 			sql = _customSQL.replaceOrderBy(sql, orderByComparator);
 
+			sql = JournalArticleViewableStatusUtil.replaceViewableStatus(
+				groupId, inlineSQLHelper, sql);
+
 			if (inlineSQLHelper) {
 				sql = InlineSQLHelperUtil.replacePermissionCheck(
 					sql, JournalArticle.class.getName(),
@@ -519,6 +498,9 @@ public class JournalArticleFinderImpl
 
 			sql = replaceStatusJoin(sql, groupId, queryDefinition);
 
+			sql = JournalArticleViewableStatusUtil.replaceViewableStatus(
+				groupId, inlineSQLHelper, sql);
+
 			OrderByComparator<JournalArticle> orderByComparator =
 				queryDefinition.getOrderByComparator();
 
@@ -567,84 +549,6 @@ public class JournalArticleFinderImpl
 		}
 	}
 
-	protected List<JournalArticle> doFindByG_F_C(
-		long groupId, List<Long> folderIds, long classNameId,
-		QueryDefinition<JournalArticle> queryDefinition,
-		boolean inlineSQLHelper) {
-
-		Session session = null;
-
-		try {
-			session = openSession();
-
-			String sql = _customSQL.get(
-				getClass(), FIND_BY_G_U_F_C, queryDefinition, "JournalArticle");
-
-			sql = replaceStatusJoin(sql, groupId, queryDefinition);
-
-			OrderByComparator<JournalArticle> orderByComparator =
-				queryDefinition.getOrderByComparator();
-
-			sql = _customSQL.replaceOrderBy(sql, orderByComparator);
-
-			if (folderIds.isEmpty()) {
-				sql = StringUtil.removeSubstring(sql, "([$FOLDER_ID$]) AND");
-			}
-			else {
-				sql = StringUtil.replace(
-					sql, "[$FOLDER_ID$]",
-					getFolderIds(folderIds, JournalArticleImpl.TABLE_NAME));
-			}
-
-			if (inlineSQLHelper) {
-				sql = InlineSQLHelperUtil.replacePermissionCheck(
-					sql, JournalArticle.class.getName(),
-					"JournalArticle.resourcePrimKey", groupId);
-			}
-
-			SQLQuery sqlQuery = session.createSynchronizedSQLQuery(sql);
-
-			sqlQuery.addEntity(
-				JournalArticleImpl.TABLE_NAME, JournalArticleImpl.class);
-
-			QueryPos queryPos = QueryPos.getInstance(sqlQuery);
-
-			if (_isOrderByTitle(orderByComparator)) {
-				queryPos.add(1);
-			}
-			else {
-				queryPos.add(0);
-			}
-
-			queryPos.add(groupId);
-			queryPos.add(classNameId);
-
-			if (queryDefinition.getOwnerUserId() > 0) {
-				queryPos.add(queryDefinition.getOwnerUserId());
-
-				if (queryDefinition.isIncludeOwner()) {
-					queryPos.add(WorkflowConstants.STATUS_IN_TRASH);
-				}
-			}
-
-			for (long folderId : folderIds) {
-				queryPos.add(folderId);
-			}
-
-			queryPos.add(queryDefinition.getStatus());
-
-			return (List<JournalArticle>)QueryUtil.list(
-				sqlQuery, getDialect(), queryDefinition.getStart(),
-				queryDefinition.getEnd());
-		}
-		catch (Exception exception) {
-			throw new SystemException(exception);
-		}
-		finally {
-			closeSession(session);
-		}
-	}
-
 	protected List<JournalArticle> doFindByG_C_S_L(
 		long groupId, List<Long> folderIds, long classNameId,
 		long ddmStructureId, Locale locale,
@@ -661,6 +565,9 @@ public class JournalArticleFinderImpl
 				"JournalArticle");
 
 			sql = replaceStatusJoin(sql, groupId, queryDefinition);
+
+			sql = JournalArticleViewableStatusUtil.replaceViewableStatus(
+				groupId, inlineSQLHelper, sql);
 
 			OrderByComparator<JournalArticle> orderByComparator =
 				queryDefinition.getOrderByComparator();
@@ -750,6 +657,9 @@ public class JournalArticleFinderImpl
 
 			sql = replaceStatusJoin(sql, groupId, queryDefinition);
 
+			sql = JournalArticleViewableStatusUtil.replaceViewableStatus(
+				groupId, inlineSQLHelper, sql);
+
 			OrderByComparator<JournalArticle> orderByComparator =
 				queryDefinition.getOrderByComparator();
 
@@ -791,13 +701,7 @@ public class JournalArticleFinderImpl
 				queryPos.add(folderId);
 			}
 
-			if (queryDefinition.getOwnerUserId() > 0) {
-				queryPos.add(queryDefinition.getOwnerUserId());
-
-				if (queryDefinition.isIncludeOwner()) {
-					queryPos.add(WorkflowConstants.STATUS_IN_TRASH);
-				}
-			}
+			_addOwnerUserId(queryDefinition, queryPos);
 
 			queryPos.add(queryDefinition.getStatus());
 
@@ -826,9 +730,11 @@ public class JournalArticleFinderImpl
 			sb.append(tableName);
 			sb.append(".folderId = ? ");
 
-			if ((i + 1) != folderIds.size()) {
-				sb.append(WHERE_OR);
+			if ((i + 1) == folderIds.size()) {
+				continue;
 			}
+
+			sb.append(WHERE_OR);
 		}
 
 		sb.append(StringPool.CLOSE_PARENTHESIS);
@@ -877,6 +783,20 @@ public class JournalArticleFinderImpl
 		return sql;
 	}
 
+	private void _addOwnerUserId(
+		QueryDefinition<JournalArticle> queryDefinition, QueryPos queryPos) {
+
+		if (queryDefinition.getOwnerUserId() <= 0) {
+			return;
+		}
+
+		queryPos.add(queryDefinition.getOwnerUserId());
+
+		if (queryDefinition.isIncludeOwner()) {
+			queryPos.add(WorkflowConstants.STATUS_IN_TRASH);
+		}
+	}
+
 	private boolean _isOrderByTitle(
 		OrderByComparator<JournalArticle> orderByComparator) {
 
@@ -905,8 +825,5 @@ public class JournalArticleFinderImpl
 
 	@Reference
 	private GroupLocalService _groupLocalService;
-
-	@Reference
-	private Portal _portal;
 
 }

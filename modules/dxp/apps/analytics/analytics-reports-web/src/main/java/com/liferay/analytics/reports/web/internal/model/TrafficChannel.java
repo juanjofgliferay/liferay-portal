@@ -14,14 +14,14 @@ import com.liferay.portal.kernel.util.ResourceBundleUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Tuple;
 
+import jakarta.portlet.ResourceURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 import java.util.ResourceBundle;
-
-import javax.portlet.ResourceURL;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author David Arques
@@ -162,7 +162,7 @@ public class TrafficChannel {
 			}
 		).put(
 			"title",
-			ResourceBundleUtil.getString(resourceBundle, _type.toString())
+			ResourceBundleUtil.getString(resourceBundle, _getTitleKey())
 		).put(
 			"value",
 			() -> {
@@ -208,6 +208,14 @@ public class TrafficChannel {
 
 	public enum Type {
 
+		CHATBOT {
+
+			@Override
+			public String toString() {
+				return "chatbot";
+			}
+
+		},
 		DIRECT {
 
 			@Override
@@ -259,8 +267,24 @@ public class TrafficChannel {
 		_error = false;
 	}
 
+	private String _getTitleKey() {
+		if (_type == Type.CHATBOT) {
+			return "ai-chatbot";
+		}
+
+		if (_type == Type.DIRECT) {
+			return "direct[traffic-channel]";
+		}
+
+		return _type.toString();
+	}
+
 	private static final Map<Type, String> _helpMessageKeys =
 		HashMapBuilder.put(
+			Type.CHATBOT,
+			"this-is-the-number-of-page-views-generated-by-people-coming-to-" +
+				"your-page-from-ai-chatbots"
+		).put(
 			Type.DIRECT,
 			"this-is-the-number-of-page-views-generated-by-people-arriving-" +
 				"directly-to-your-page"

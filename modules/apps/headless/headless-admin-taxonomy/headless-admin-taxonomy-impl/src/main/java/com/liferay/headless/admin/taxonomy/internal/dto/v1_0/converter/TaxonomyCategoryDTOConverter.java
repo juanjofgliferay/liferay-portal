@@ -13,12 +13,19 @@ import com.liferay.asset.kernel.service.AssetCategoryLocalService;
 import com.liferay.asset.kernel.service.AssetCategoryService;
 import com.liferay.asset.kernel.service.AssetEntryLocalService;
 import com.liferay.asset.kernel.service.AssetVocabularyService;
+import com.liferay.friendly.url.model.FriendlyURLEntry;
+import com.liferay.friendly.url.service.FriendlyURLEntryLocalService;
 import com.liferay.headless.admin.taxonomy.dto.v1_0.ParentTaxonomyCategory;
 import com.liferay.headless.admin.taxonomy.dto.v1_0.ParentTaxonomyVocabulary;
 import com.liferay.headless.admin.taxonomy.dto.v1_0.TaxonomyCategory;
 import com.liferay.headless.admin.taxonomy.dto.v1_0.TaxonomyCategoryProperty;
 import com.liferay.headless.admin.taxonomy.internal.dto.v1_0.util.CreatorUtil;
 import com.liferay.petra.function.transform.TransformUtil;
+import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.Portal;
@@ -28,10 +35,13 @@ import com.liferay.portal.vulcan.dto.action.DTOActionProvider;
 import com.liferay.portal.vulcan.dto.converter.DTOConverter;
 import com.liferay.portal.vulcan.dto.converter.DTOConverterContext;
 import com.liferay.portal.vulcan.fields.NestedFieldsSupplier;
+import com.liferay.portal.vulcan.util.GroupUtil;
 import com.liferay.portal.vulcan.util.LocalizedMapUtil;
 
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.UriInfo;
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.UriInfo;
+
+import java.util.Map;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -42,7 +52,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"application.name=Liferay.Headless.Admin.Taxonomy",
+		"application.name=Liferay.Headless.Admin.Taxonomy", "default=true",
 		"dto.class.name=com.liferay.asset.kernel.model.AssetCategory",
 		"version=v1.0"
 	},
@@ -76,15 +86,49 @@ public class TaxonomyCategoryDTOConverter
 		return _toTaxonomyCategory(dtoConverterContext, assetCategory);
 	}
 
+	private FriendlyURLEntry _fetchFriendlyURLEntry(
+		AssetCategory assetCategory) {
+
+		return _friendlyURLEntryLocalService.fetchMainFriendlyURLEntry(
+			_portal.getClassNameId(AssetCategory.class),
+			assetCategory.getCategoryId());
+	}
+
+	private Map<String, Map<String, String>> _getActions(
+		AssetCategory assetCategory, DTOConverterContext dtoConverterContext) {
+
+		Map<String, Map<String, String>> actions =
+			_dtoActionProvider.getActions(
+				assetCategory.getGroupId(), assetCategory.getCategoryId(),
+				dtoConverterContext.getUriInfo(),
+				dtoConverterContext.getUserId());
+
+		if (assetCategory.isSystem()) {
+			actions.remove("add-category");
+			actions.remove("delete");
+			actions.remove("replace");
+			actions.remove("update");
+		}
+
+		return actions;
+	}
+
 	private ParentTaxonomyCategory _toParentTaxonomyCategory(
 		AssetCategory parentAssetCategory,
 		DTOConverterContext dtoConverterContext) {
 
 		return new ParentTaxonomyCategory() {
 			{
-				id = parentAssetCategory.getCategoryId();
-				name = parentAssetCategory.getTitle(
-					dtoConverterContext.getLocale());
+				setExternalReferenceCode(
+					parentAssetCategory::getExternalReferenceCode);
+				setId(parentAssetCategory::getCategoryId);
+				setName(
+					() -> parentAssetCategory.getTitle(
+						dtoConverterContext.getLocale()));
+				setName_i18n(
+					() -> LocalizedMapUtil.getI18nMap(
+						dtoConverterContext.isAcceptAllLanguages(),
+						parentAssetCategory.getTitleMap()));
 			}
 		};
 	}
@@ -96,41 +140,142 @@ public class TaxonomyCategoryDTOConverter
 
 		return new TaxonomyCategory() {
 			{
-				actions = _dtoActionProvider.getActions(
-					assetCategory.getGroupId(), assetCategory.getCategoryId(),
-					dtoConverterContext.getUriInfo(),
-					dtoConverterContext.getUserId());
-				availableLanguages = LocaleUtil.toW3cLanguageIds(
-					assetCategory.getAvailableLanguageIds());
-				creator = CreatorUtil.toCreator(
-					_portal,
-					_userLocalService.fetchUser(assetCategory.getUserId()));
-				dateCreated = assetCategory.getCreateDate();
-				dateModified = assetCategory.getModifiedDate();
-				description = assetCategory.getDescription(
-					dtoConverterContext.getLocale());
-				description_i18n = LocalizedMapUtil.getI18nMap(
-					dtoConverterContext.isAcceptAllLanguages(),
-					assetCategory.getDescriptionMap());
-				externalReferenceCode =
-					assetCategory.getExternalReferenceCode();
-				id = String.valueOf(assetCategory.getCategoryId());
-				name = assetCategory.getTitle(dtoConverterContext.getLocale());
-				name_i18n = LocalizedMapUtil.getI18nMap(
-					dtoConverterContext.isAcceptAllLanguages(),
-					assetCategory.getTitleMap());
-				numberOfTaxonomyCategories =
-					_assetCategoryService.getChildCategoriesCount(
-						assetCategory.getCategoryId());
-				siteId = assetCategory.getGroupId();
-				taxonomyCategoryProperties = TransformUtil.transformToArray(
-					_assetCategoryPropertyLocalService.getCategoryProperties(
-						assetCategory.getCategoryId()),
-					assetCategoryProperties -> _toTaxonomyCategoryProperty(
-						assetCategoryProperties),
-					TaxonomyCategoryProperty.class);
-				taxonomyCategoryUsageCount =
-					NestedFieldsSupplier.<Integer>supply(
+				setActions(
+					() -> _getActions(assetCategory, dtoConverterContext));
+				setAssetLibraryKey(
+					() -> {
+						Group group = _groupLocalService.fetchGroup(
+							assetCategory.getGroupId());
+
+						if (group == null) {
+							return null;
+						}
+
+						return GroupUtil.getAssetLibraryKey(group);
+					});
+				setAvailableLanguages(
+					() -> LocaleUtil.toW3cLanguageIds(
+						assetCategory.getAvailableLanguageIds()));
+				setCreator(
+					() -> CreatorUtil.toCreator(
+						_portal,
+						_userLocalService.fetchUser(
+							assetCategory.getUserId())));
+				setDateCreated(assetCategory::getCreateDate);
+				setDateModified(assetCategory::getModifiedDate);
+				setDescription(
+					() -> assetCategory.getDescription(
+						dtoConverterContext.getLocale()));
+				setDescription_i18n(
+					() -> LocalizedMapUtil.getI18nMap(
+						dtoConverterContext.isAcceptAllLanguages(),
+						assetCategory.getDescriptionMap()));
+				setExternalReferenceCode(
+					assetCategory::getExternalReferenceCode);
+				setFriendlyUrlPath(
+					() -> {
+						FriendlyURLEntry friendlyURLEntry =
+							_fetchFriendlyURLEntry(assetCategory);
+
+						if (friendlyURLEntry == null) {
+							return null;
+						}
+
+						return friendlyURLEntry.getUrlTitle(
+							LocaleUtil.toLanguageId(
+								dtoConverterContext.getLocale()));
+					});
+				setFriendlyUrlPath_i18n(
+					() -> {
+						FriendlyURLEntry friendlyURLEntry =
+							_fetchFriendlyURLEntry(assetCategory);
+
+						if (friendlyURLEntry == null) {
+							return null;
+						}
+
+						return LocalizedMapUtil.getI18nMap(
+							dtoConverterContext.isAcceptAllLanguages(),
+							LocalizedMapUtil.getLocalizedMap(
+								friendlyURLEntry.getLanguageIdToUrlTitleMap()));
+					});
+				setId(() -> String.valueOf(assetCategory.getCategoryId()));
+				setName(
+					() -> assetCategory.getTitle(
+						dtoConverterContext.getLocale()));
+				setName_i18n(
+					() -> LocalizedMapUtil.getI18nMap(
+						dtoConverterContext.isAcceptAllLanguages(),
+						assetCategory.getTitleMap()));
+				setNumberOfTaxonomyCategories(
+					() -> _assetCategoryService.getChildCategoriesCount(
+						assetCategory.getCategoryId()));
+				setParentTaxonomyCategory(
+					() -> {
+						if (assetCategory.getParentCategory() == null) {
+							return null;
+						}
+
+						return _toParentTaxonomyCategory(
+							assetCategory.getParentCategory(),
+							dtoConverterContext);
+					});
+				setParentTaxonomyVocabulary(
+					() -> {
+						if (assetCategory.getVocabularyId() == 0) {
+							return null;
+						}
+
+						AssetVocabulary assetVocabulary =
+							_assetVocabularyService.fetchVocabulary(
+								assetCategory.getVocabularyId());
+
+						if (assetVocabulary == null) {
+							return null;
+						}
+
+						return new ParentTaxonomyVocabulary() {
+							{
+								setExternalReferenceCode(
+									assetVocabulary::getExternalReferenceCode);
+								setId(assetCategory::getVocabularyId);
+								setName(
+									() -> assetVocabulary.getTitle(
+										dtoConverterContext.getLocale()));
+								setName_i18n(
+									() -> LocalizedMapUtil.getI18nMap(
+										dtoConverterContext.
+											isAcceptAllLanguages(),
+										assetVocabulary.getTitleMap()));
+							}
+						};
+					});
+				setPath(
+					() -> {
+						try {
+							return assetCategory.getPath(
+								dtoConverterContext.getLocale(), true);
+						}
+						catch (PortalException portalException) {
+							if (_log.isWarnEnabled()) {
+								_log.warn(portalException);
+							}
+
+							return null;
+						}
+					});
+				setSiteId(assetCategory::getGroupId);
+				setSystem(assetCategory::isSystem);
+				setTaxonomyCategoryProperties(
+					() -> TransformUtil.transformToArray(
+						_assetCategoryPropertyLocalService.
+							getCategoryProperties(
+								assetCategory.getCategoryId()),
+						assetCategoryProperties -> _toTaxonomyCategoryProperty(
+							assetCategoryProperties),
+						TaxonomyCategoryProperty.class));
+				setTaxonomyCategoryUsageCount(
+					() -> NestedFieldsSupplier.<Integer>supply(
 						"taxonomyCategoryUsageCount",
 						fieldName -> {
 							UriInfo uriInfo = dtoConverterContext.getUriInfo();
@@ -160,41 +305,9 @@ public class TaxonomyCategoryDTOConverter
 									WorkflowConstants.STATUS_SCHEDULED
 								},
 								false);
-						});
-				taxonomyVocabularyId = assetCategory.getVocabularyId();
-
-				setParentTaxonomyCategory(
-					() -> {
-						if (assetCategory.getParentCategory() == null) {
-							return null;
-						}
-
-						return _toParentTaxonomyCategory(
-							assetCategory.getParentCategory(),
-							dtoConverterContext);
-					});
-				setParentTaxonomyVocabulary(
-					() -> {
-						if (assetCategory.getVocabularyId() == 0) {
-							return null;
-						}
-
-						AssetVocabulary assetVocabulary =
-							_assetVocabularyService.fetchVocabulary(
-								assetCategory.getVocabularyId());
-
-						if (assetVocabulary == null) {
-							return null;
-						}
-
-						return new ParentTaxonomyVocabulary() {
-							{
-								id = assetCategory.getVocabularyId();
-								name = assetVocabulary.getTitle(
-									dtoConverterContext.getLocale());
-							}
-						};
-					});
+						}));
+				setTaxonomyVocabularyId(assetCategory::getVocabularyId);
+				setUuid(assetCategory::getUuid);
 			}
 		};
 	}
@@ -204,11 +317,16 @@ public class TaxonomyCategoryDTOConverter
 
 		return new TaxonomyCategoryProperty() {
 			{
-				key = assetCategoryProperty.getKey();
-				value = assetCategoryProperty.getValue();
+				setExternalReferenceCode(
+					assetCategoryProperty::getExternalReferenceCode);
+				setKey(assetCategoryProperty::getKey);
+				setValue(assetCategoryProperty::getValue);
 			}
 		};
 	}
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		TaxonomyCategoryDTOConverter.class);
 
 	@Reference
 	private AssetCategoryLocalService _assetCategoryLocalService;
@@ -230,6 +348,12 @@ public class TaxonomyCategoryDTOConverter
 		target = "(dto.class.name=com.liferay.headless.admin.taxonomy.dto.v1_0.TaxonomyCategory)"
 	)
 	private DTOActionProvider _dtoActionProvider;
+
+	@Reference
+	private FriendlyURLEntryLocalService _friendlyURLEntryLocalService;
+
+	@Reference
+	private GroupLocalService _groupLocalService;
 
 	@Reference
 	private Portal _portal;

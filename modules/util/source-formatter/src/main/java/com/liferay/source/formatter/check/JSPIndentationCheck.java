@@ -5,11 +5,12 @@
 
 package com.liferay.source.formatter.check;
 
+import com.liferay.petra.io.unsync.UnsyncBufferedReader;
+import com.liferay.petra.io.unsync.UnsyncStringReader;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.io.unsync.UnsyncBufferedReader;
-import com.liferay.portal.kernel.io.unsync.UnsyncStringReader;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
+import com.liferay.source.formatter.check.util.SourceUtil;
 
 import java.io.IOException;
 
@@ -67,7 +68,7 @@ public class JSPIndentationCheck extends BaseFileCheck {
 
 		text = _stripJavaSource(text);
 
-		text = stripQuotes(text);
+		text = SourceUtil.stripQuotes(text);
 
 		int level = 0;
 
@@ -144,11 +145,13 @@ public class JSPIndentationCheck extends BaseFileCheck {
 						content.substring(lineStartPos + 1);
 			}
 
-			if (!insideUnformattedTextTag &&
-				trimmedLine.matches("<(pre|textarea).*")) {
+			if (insideUnformattedTextTag ||
+				!trimmedLine.matches("<(pre|textarea).*")) {
 
-				insideUnformattedTextTag = true;
+				continue;
 			}
+
+			insideUnformattedTextTag = true;
 		}
 
 		return content;
@@ -502,9 +505,11 @@ public class JSPIndentationCheck extends BaseFileCheck {
 
 			int tabCount = getLeadingTabCount(line);
 
-			if ((minimumTabCount == -1) || (tabCount < minimumTabCount)) {
-				minimumTabCount = tabCount;
+			if ((minimumTabCount != -1) && (tabCount >= minimumTabCount)) {
+				continue;
 			}
+
+			minimumTabCount = tabCount;
 		}
 
 		return minimumTabCount;
@@ -587,16 +592,16 @@ public class JSPIndentationCheck extends BaseFileCheck {
 			return null;
 		}
 
-		public boolean isClosed() {
-			return _closed;
-		}
-
 		public boolean isCloseTag() {
 			if (!_javaSource && (_lineTabLevel == -1)) {
 				return true;
 			}
 
 			return false;
+		}
+
+		public boolean isClosed() {
+			return _closed;
 		}
 
 		public boolean isJavaSource() {
@@ -617,9 +622,9 @@ public class JSPIndentationCheck extends BaseFileCheck {
 			_closed = closed;
 		}
 
-		private boolean _closed;
 		private final Pattern _closeTagNamePattern = Pattern.compile(
 			"</([\\-:\\w]+?)>");
+		private boolean _closed;
 		private final boolean _javaSource;
 		private final String _line;
 		private final int _lineNumber;

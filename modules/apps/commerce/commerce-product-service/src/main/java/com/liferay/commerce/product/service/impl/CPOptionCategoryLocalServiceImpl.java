@@ -7,6 +7,7 @@ package com.liferay.commerce.product.service.impl;
 
 import com.liferay.commerce.product.constants.CPOptionCategoryConstants;
 import com.liferay.commerce.product.exception.CPOptionCategoryKeyException;
+import com.liferay.commerce.product.exception.CPOptionCategoryTitleException;
 import com.liferay.commerce.product.internal.search.CPOptionCategoryIndexer;
 import com.liferay.commerce.product.model.CPDefinitionSpecificationOptionValue;
 import com.liferay.commerce.product.model.CPOptionCategory;
@@ -16,6 +17,8 @@ import com.liferay.commerce.product.service.CPSpecificationOptionLocalService;
 import com.liferay.commerce.product.service.base.CPOptionCategoryLocalServiceBaseImpl;
 import com.liferay.commerce.product.service.persistence.CPDefinitionSpecificationOptionValuePersistence;
 import com.liferay.commerce.product.service.persistence.CPSpecificationOptionPersistence;
+import com.liferay.exportimport.kernel.empty.model.EmptyModelManager;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.ResourceConstants;
@@ -41,11 +44,14 @@ import com.liferay.portal.kernel.util.FriendlyURLNormalizer;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.LinkedHashMapBuilder;
+import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
 import java.io.Serializable;
 
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -67,22 +73,23 @@ public class CPOptionCategoryLocalServiceImpl
 	@Indexable(type = IndexableType.REINDEX)
 	@Override
 	public CPOptionCategory addCPOptionCategory(
-			long userId, Map<Locale, String> titleMap,
-			Map<Locale, String> descriptionMap, double priority, String key,
-			ServiceContext serviceContext)
+			String externalReferenceCode, long userId,
+			Map<Locale, String> titleMap, Map<Locale, String> descriptionMap,
+			double priority, String key, ServiceContext serviceContext)
 		throws PortalException {
 
 		User user = _userLocalService.getUser(userId);
 
 		key = _friendlyURLNormalizer.normalize(key);
 
-		_validate(0, user.getCompanyId(), key);
+		_validate(0, user.getCompanyId(), key, titleMap);
 
 		long cpOptionCategoryId = counterLocalService.increment();
 
 		CPOptionCategory cpOptionCategory = cpOptionCategoryPersistence.create(
 			cpOptionCategoryId);
 
+		cpOptionCategory.setExternalReferenceCode(externalReferenceCode);
 		cpOptionCategory.setCompanyId(user.getCompanyId());
 		cpOptionCategory.setUserId(user.getUserId());
 		cpOptionCategory.setUserName(user.getFullName());
@@ -90,6 +97,13 @@ public class CPOptionCategoryLocalServiceImpl
 		cpOptionCategory.setDescriptionMap(descriptionMap);
 		cpOptionCategory.setPriority(priority);
 		cpOptionCategory.setKey(key);
+
+		if (_emptyModelManager.isEmptyModel()) {
+			cpOptionCategory.setStatus(WorkflowConstants.STATUS_EMPTY);
+		}
+		else {
+			cpOptionCategory.setStatus(WorkflowConstants.STATUS_APPROVED);
+		}
 
 		cpOptionCategory = cpOptionCategoryPersistence.update(cpOptionCategory);
 
@@ -99,6 +113,37 @@ public class CPOptionCategoryLocalServiceImpl
 			cpOptionCategory, serviceContext);
 
 		return cpOptionCategory;
+	}
+
+	@Override
+	public CPOptionCategory addOrUpdateCPOptionCategory(
+			String externalReferenceCode, long userId, long cpOptionCategoryId,
+			Map<Locale, String> titleMap, Map<Locale, String> descriptionMap,
+			double priority, String key, ServiceContext serviceContext)
+		throws PortalException {
+
+		if (Validator.isNotNull(externalReferenceCode)) {
+			CPOptionCategory cpOptionCategory =
+				cpOptionCategoryPersistence.fetchByERC_C(
+					externalReferenceCode, serviceContext.getCompanyId());
+
+			if ((cpOptionCategory == null) && (cpOptionCategoryId > 0)) {
+				cpOptionCategory =
+					cpOptionCategoryPersistence.fetchByPrimaryKey(
+						cpOptionCategoryId);
+			}
+
+			if (cpOptionCategory != null) {
+				return cpOptionCategoryLocalService.updateCPOptionCategory(
+					externalReferenceCode,
+					cpOptionCategory.getCPOptionCategoryId(), titleMap,
+					descriptionMap, priority, key);
+			}
+		}
+
+		return cpOptionCategoryLocalService.addCPOptionCategory(
+			externalReferenceCode, userId, titleMap, descriptionMap, priority,
+			key, serviceContext);
 	}
 
 	@Override
@@ -198,6 +243,29 @@ public class CPOptionCategoryLocalServiceImpl
 	}
 
 	@Override
+	public CPOptionCategory getOrAddEmptyCPOptionCategory(
+			String externalReferenceCode, long companyId, long userId)
+		throws PortalException {
+
+		ServiceContext serviceContext = new ServiceContext();
+
+		serviceContext.setCompanyId(companyId);
+		serviceContext.setUserId(userId);
+
+		return _emptyModelManager.getOrAddEmptyModel(
+			CPOptionCategory.class, companyId,
+			() -> cpOptionCategoryLocalService.addCPOptionCategory(
+				externalReferenceCode, userId,
+				Collections.singletonMap(
+					LocaleUtil.getSiteDefault(), externalReferenceCode),
+				null, 0, externalReferenceCode, serviceContext),
+			externalReferenceCode,
+			this::fetchCPOptionCategoryByExternalReferenceCode,
+			this::getCPOptionCategoryByExternalReferenceCode,
+			CPOptionCategory.class.getName());
+	}
+
+	@Override
 	public BaseModelSearchResult<CPOptionCategory> searchCPOptionCategories(
 			long companyId, String keywords, int start, int end, Sort sort)
 		throws PortalException {
@@ -211,8 +279,9 @@ public class CPOptionCategoryLocalServiceImpl
 	@Indexable(type = IndexableType.REINDEX)
 	@Override
 	public CPOptionCategory updateCPOptionCategory(
-			long cpOptionCategoryId, Map<Locale, String> titleMap,
-			Map<Locale, String> descriptionMap, double priority, String key)
+			String externalReferenceCode, long cpOptionCategoryId,
+			Map<Locale, String> titleMap, Map<Locale, String> descriptionMap,
+			double priority, String key)
 		throws PortalException {
 
 		CPOptionCategory cpOptionCategory =
@@ -222,12 +291,20 @@ public class CPOptionCategoryLocalServiceImpl
 
 		_validate(
 			cpOptionCategory.getCPOptionCategoryId(),
-			cpOptionCategory.getCompanyId(), key);
+			cpOptionCategory.getCompanyId(), key, titleMap);
 
+		cpOptionCategory.setExternalReferenceCode(externalReferenceCode);
 		cpOptionCategory.setTitleMap(titleMap);
 		cpOptionCategory.setDescriptionMap(descriptionMap);
 		cpOptionCategory.setPriority(priority);
 		cpOptionCategory.setKey(key);
+		cpOptionCategory.setStatus(
+			_emptyModelManager.solveEmptyModel(
+				cpOptionCategory.getExternalReferenceCode(),
+				cpOptionCategory.getModelClassName(),
+				cpOptionCategory.getCompanyId(), 0,
+				cpOptionCategory.getStatus(),
+				() -> WorkflowConstants.STATUS_APPROVED));
 
 		return cpOptionCategoryPersistence.update(cpOptionCategory);
 	}
@@ -278,17 +355,19 @@ public class CPOptionCategoryLocalServiceImpl
 
 		List<Document> documents = hits.toList();
 
-		List<CPOptionCategory> cpOptionCategories = new ArrayList<>(
-			documents.size());
+		return TransformUtil.transform(
+			documents,
+			document -> {
+				long cpOptionCategoryId = GetterUtil.getLong(
+					document.get(Field.ENTRY_CLASS_PK));
 
-		for (Document document : documents) {
-			long cpOptionCategoryId = GetterUtil.getLong(
-				document.get(Field.ENTRY_CLASS_PK));
+				CPOptionCategory cpOptionCategory = fetchCPOptionCategory(
+					cpOptionCategoryId);
 
-			CPOptionCategory cpOptionCategory = fetchCPOptionCategory(
-				cpOptionCategoryId);
+				if (cpOptionCategory != null) {
+					return cpOptionCategory;
+				}
 
-			if (cpOptionCategory == null) {
 				Indexer<CPOptionCategory> indexer =
 					IndexerRegistryUtil.getIndexer(CPOptionCategory.class);
 
@@ -296,13 +375,9 @@ public class CPOptionCategoryLocalServiceImpl
 					document.get(Field.COMPANY_ID));
 
 				indexer.delete(companyId, document.getUID());
-			}
-			else if (cpOptionCategory != null) {
-				cpOptionCategories.add(cpOptionCategory);
-			}
-		}
 
-		return cpOptionCategories;
+				return null;
+			});
 	}
 
 	private BaseModelSearchResult<CPOptionCategory> _searchCPOptionCategories(
@@ -323,8 +398,14 @@ public class CPOptionCategoryLocalServiceImpl
 			"Unable to fix the search index after 10 attempts");
 	}
 
-	private void _validate(long cpOptionCategoryId, long companyId, String key)
+	private void _validate(
+			long cpOptionCategoryId, long companyId, String key,
+			Map<Locale, String> titleMap)
 		throws PortalException {
+
+		if (Validator.isNull(key)) {
+			throw new CPOptionCategoryKeyException("Key is null");
+		}
 
 		CPOptionCategory cpOptionCategory =
 			cpOptionCategoryPersistence.fetchByC_K(companyId, key);
@@ -333,6 +414,10 @@ public class CPOptionCategoryLocalServiceImpl
 			(cpOptionCategory.getCPOptionCategoryId() != cpOptionCategoryId)) {
 
 			throw new CPOptionCategoryKeyException();
+		}
+
+		if (MapUtil.isEmpty(titleMap)) {
+			throw new CPOptionCategoryTitleException("Title is empty");
 		}
 	}
 
@@ -354,6 +439,9 @@ public class CPOptionCategoryLocalServiceImpl
 
 	@Reference
 	private CPSpecificationOptionPersistence _cpSpecificationOptionPersistence;
+
+	@Reference
+	private EmptyModelManager _emptyModelManager;
 
 	@Reference
 	private FriendlyURLNormalizer _friendlyURLNormalizer;

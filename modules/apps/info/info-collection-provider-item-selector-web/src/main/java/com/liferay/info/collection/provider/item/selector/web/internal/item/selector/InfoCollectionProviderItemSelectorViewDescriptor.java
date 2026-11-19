@@ -16,14 +16,15 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Eudaldo Alonso
@@ -34,11 +35,13 @@ public class InfoCollectionProviderItemSelectorViewDescriptor
 	public InfoCollectionProviderItemSelectorViewDescriptor(
 		HttpServletRequest httpServletRequest, PortletURL portletURL,
 		List<InfoCollectionProvider<?>> infoCollectionProviders,
-		InfoItemServiceRegistry infoItemServiceRegistry) {
+		InfoItemServiceRegistry infoItemServiceRegistry,
+		Map<InfoCollectionProvider<?>, String> labels) {
 
 		super(httpServletRequest, portletURL, infoCollectionProviders);
 
 		_infoItemServiceRegistry = infoItemServiceRegistry;
+		_labels = labels;
 	}
 
 	@Override
@@ -46,8 +49,8 @@ public class InfoCollectionProviderItemSelectorViewDescriptor
 		InfoCollectionProvider<?> infoCollectionProvider) {
 
 		return new InfoCollectionProviderItemDescriptor(
-			httpServletRequest, infoCollectionProvider,
-			_infoItemServiceRegistry);
+			infoCollectionProvider, _infoItemServiceRegistry,
+			_labels.get(infoCollectionProvider));
 	}
 
 	@Override
@@ -58,21 +61,21 @@ public class InfoCollectionProviderItemSelectorViewDescriptor
 	public SearchContainer<InfoCollectionProvider<?>> getSearchContainer() {
 		PortletRequest portletRequest =
 			(PortletRequest)httpServletRequest.getAttribute(
-				JavaConstants.JAVAX_PORTLET_REQUEST);
+				JavaConstants.JAKARTA_PORTLET_REQUEST);
 
 		SearchContainer<InfoCollectionProvider<?>> searchContainer =
 			new SearchContainer<>(
 				portletRequest, portletURL, null,
 				"there-are-no-info-collection-providers");
 
-		List<InfoCollectionProvider<?>> infoCollectionProviderList =
+		List<InfoCollectionProvider<?>> filteredInfoCollectionProviders =
 			new ArrayList<>(infoCollectionProviders);
 
 		String itemType = ParamUtil.getString(httpServletRequest, "itemType");
 
 		if (Validator.isNotNull(itemType)) {
-			infoCollectionProviderList = ListUtil.filter(
-				infoCollectionProviderList,
+			filteredInfoCollectionProviders = ListUtil.filter(
+				filteredInfoCollectionProviders,
 				infoCollectionProvider -> Objects.equals(
 					infoCollectionProvider.getCollectionItemClassName(),
 					itemType));
@@ -81,22 +84,22 @@ public class InfoCollectionProviderItemSelectorViewDescriptor
 		String keywords = ParamUtil.getString(httpServletRequest, "keywords");
 
 		if (Validator.isNotNull(keywords)) {
-			infoCollectionProviderList = ListUtil.filter(
-				infoCollectionProviderList,
+			filteredInfoCollectionProviders = ListUtil.filter(
+				filteredInfoCollectionProviders,
 				infoCollectionProvider -> {
 					String label = StringUtil.toLowerCase(
-						infoCollectionProvider.getLabel(
-							themeDisplay.getLocale()));
+						_labels.get(infoCollectionProvider));
 
 					return label.contains(StringUtil.toLowerCase(keywords));
 				});
 		}
 
-		searchContainer.setResultsAndTotal(infoCollectionProviderList);
+		searchContainer.setResultsAndTotal(filteredInfoCollectionProviders);
 
 		return searchContainer;
 	}
 
 	private final InfoItemServiceRegistry _infoItemServiceRegistry;
+	private final Map<InfoCollectionProvider<?>, String> _labels;
 
 }

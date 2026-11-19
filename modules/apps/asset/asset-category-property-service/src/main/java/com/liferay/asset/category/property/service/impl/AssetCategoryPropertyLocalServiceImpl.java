@@ -70,11 +70,13 @@ public class AssetCategoryPropertyLocalServiceImpl
 
 	@Override
 	public void deleteCategoryProperties(long entryId) {
-		List<AssetCategoryProperty> categoryProperties =
+		List<AssetCategoryProperty> assetCategoryProperties =
 			assetCategoryPropertyPersistence.findByCategoryId(entryId);
 
-		for (AssetCategoryProperty categoryProperty : categoryProperties) {
-			deleteCategoryProperty(categoryProperty);
+		for (AssetCategoryProperty assetCategoryProperty :
+				assetCategoryProperties) {
+
+			deleteCategoryProperty(assetCategoryProperty);
 		}
 	}
 
@@ -103,29 +105,8 @@ public class AssetCategoryPropertyLocalServiceImpl
 	}
 
 	@Override
-	public List<AssetCategoryProperty> getCategoryProperties() {
-		return assetCategoryPropertyPersistence.findAll();
-	}
-
-	@Override
 	public List<AssetCategoryProperty> getCategoryProperties(long entryId) {
 		return assetCategoryPropertyPersistence.findByCategoryId(entryId);
-	}
-
-	@Override
-	public AssetCategoryProperty getCategoryProperty(long categoryPropertyId)
-		throws PortalException {
-
-		return assetCategoryPropertyPersistence.findByPrimaryKey(
-			categoryPropertyId);
-	}
-
-	@Override
-	public AssetCategoryProperty getCategoryProperty(
-			long categoryId, String key)
-		throws PortalException {
-
-		return assetCategoryPropertyPersistence.findByCA_K(categoryId, key);
 	}
 
 	@Override
@@ -183,14 +164,6 @@ public class AssetCategoryPropertyLocalServiceImpl
 		categoryProperty.setValue(value);
 
 		return assetCategoryPropertyPersistence.update(categoryProperty);
-	}
-
-	@Override
-	public AssetCategoryProperty updateCategoryProperty(
-			long categoryPropertyId, String key, String value)
-		throws PortalException {
-
-		return updateCategoryProperty(0, categoryPropertyId, key, value);
 	}
 
 	private boolean _hasCategoryProperty(long categoryId, String key) {

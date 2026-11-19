@@ -13,6 +13,7 @@ import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.model.ClassName;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
@@ -107,12 +108,28 @@ public class SharingPermissionImpl implements SharingPermission {
 			long groupId, Collection<SharingEntryAction> sharingEntryActions)
 		throws PortalException {
 
-		SharingPermissionChecker sharingPermissionChecker =
-			_serviceTrackerMap.getService(classNameId);
+		SharingPermissionChecker sharingPermissionChecker = null;
+
+		try {
+			ClassName className = _classNameLocalService.fetchByClassNameId(
+				classNameId);
+
+			if (className == null) {
+				throw new PrincipalException(
+					"Sharing permission checker is null for class name ID " +
+						classNameId);
+			}
+
+			sharingPermissionChecker = _serviceTrackerMap.getService(
+				className.getValue());
+		}
+		catch (PortalException portalException) {
+			throw new SystemException(portalException);
+		}
 
 		if (sharingPermissionChecker == null) {
 			throw new PrincipalException(
-				"sharing permission checker is null for class name ID " +
+				"Sharing permission checker is null for class name ID " +
 					classNameId);
 		}
 
@@ -205,11 +222,7 @@ public class SharingPermissionImpl implements SharingPermission {
 	@Activate
 	protected void activate(BundleContext bundleContext) {
 		_serviceTrackerMap = ServiceTrackerMapFactory.openSingleValueMap(
-			bundleContext, SharingPermissionChecker.class,
-			"(model.class.name=*)",
-			(serviceReference, emitter) -> emitter.emit(
-				_classNameLocalService.getClassNameId(
-					(String)serviceReference.getProperty("model.class.name"))));
+			bundleContext, SharingPermissionChecker.class, "model.class.name");
 	}
 
 	@Deactivate
@@ -223,7 +236,7 @@ public class SharingPermissionImpl implements SharingPermission {
 	@Reference
 	private ClassNameLocalService _classNameLocalService;
 
-	private ServiceTrackerMap<Long, SharingPermissionChecker>
+	private ServiceTrackerMap<String, SharingPermissionChecker>
 		_serviceTrackerMap;
 
 	@Reference

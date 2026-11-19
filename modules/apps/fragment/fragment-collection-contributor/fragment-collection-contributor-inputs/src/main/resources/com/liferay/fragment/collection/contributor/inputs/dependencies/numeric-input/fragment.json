@@ -2,7 +2,8 @@
 	"cacheable": false,
 	"fragmentEntryKey": "numeric-input",
 	"icon": "number",
-	"name": "numeric-input",
+	"name": "numeric",
+	"thumbnail": "numeric.svg",
 	"type": "input",
 	"typeOptions": {
 		"fieldTypes": [

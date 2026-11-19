@@ -1,0 +1,151 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`HelpWidgetModal Should render 1`] = `
+<body
+  class="dxp modal-open"
+>
+  <div
+    aria-hidden="true"
+    data-suppressed="true"
+  />
+  <div>
+    <div
+      aria-hidden="true"
+      class="modal-backdrop fade show"
+      data-suppressed="true"
+    />
+    <div
+      class="fade modal d-block show"
+    >
+      <div
+        class="modal-dialog"
+      >
+        <div
+          aria-labelledby="clay-modal-label-1"
+          aria-modal="true"
+          class="modal-content"
+          role="dialog"
+          tabindex="-1"
+        >
+          <div
+            class="modal-header"
+          >
+            <h1
+              class="modal-title"
+              id="clay-modal-label-1"
+              tabindex="-1"
+            >
+              Report an Issue
+            </h1>
+            <button
+              aria-label="Close"
+              class="close btn btn-unstyled"
+              type="button"
+            >
+              <svg
+                class="lexicon-icon lexicon-icon-times"
+                role="presentation"
+              >
+                <use
+                  href="#times"
+                />
+              </svg>
+            </button>
+          </div>
+          <form
+            class="form-root"
+          >
+            <div
+              class="modal-body"
+            >
+              <div
+                class="form-group"
+              >
+                <div
+                  class="form-group-item mb-4"
+                >
+                  <div
+                    class=""
+                  >
+                    <label
+                      class="form-control-label label-root required"
+                      for="issueTitle"
+                    >
+                      <span
+                        class="content-container"
+                      >
+                        Issue Title
+                      </span>
+                    </label>
+                    <input
+                      class="input-root form-control"
+                      id="issueTitle"
+                      name="issueTitle"
+                      type="text"
+                      value=""
+                    />
+                  </div>
+                </div>
+                <div
+                  class="form-group-item"
+                >
+                  <div
+                    class=""
+                  >
+                    <label
+                      class="form-control-label label-root required"
+                      for="description"
+                    >
+                      <span
+                        class="content-container"
+                      >
+                        Description
+                      </span>
+                    </label>
+                    <textarea
+                      class="input-root form-control"
+                      id="description"
+                      name="description"
+                      type="textarea"
+                    />
+                  </div>
+                </div>
+                <div
+                  class="form-group-item text-secondary"
+                >
+                  Please include as many details as possible.
+                </div>
+              </div>
+            </div>
+            <div
+              class="modal-footer"
+            >
+              <div
+                class="modal-item-last"
+              >
+                <div
+                  class="btn-group-spaced"
+                  role="group"
+                >
+                  <button
+                    class="button-root btn btn-secondary"
+                    type="button"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    class="button-root btn btn-primary"
+                    type="submit"
+                  >
+                    Submit
+                  </button>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+`;

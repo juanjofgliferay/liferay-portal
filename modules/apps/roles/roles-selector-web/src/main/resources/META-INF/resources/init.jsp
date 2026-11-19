@@ -5,7 +5,7 @@
  */
 --%>
 
-<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<%@ taglib uri="jakarta.tags.core" prefix="c" %>
 
 <%@ taglib uri="http://java.sun.com/portlet_2_0" prefix="portlet" %>
 
@@ -38,6 +38,7 @@ page import="com.liferay.portal.kernel.service.UserGroupServiceUtil" %><%@
 page import="com.liferay.portal.kernel.util.HtmlUtil" %><%@
 page import="com.liferay.portal.kernel.util.ParamUtil" %><%@
 page import="com.liferay.portal.kernel.util.Validator" %><%@
+page import="com.liferay.portal.kernel.workflow.WorkflowConstants" %><%@
 page import="com.liferay.portal.service.persistence.constants.UserGroupFinderConstants" %><%@
 page import="com.liferay.portlet.usersadmin.util.UsersAdminUtil" %><%@
 page import="com.liferay.roles.selector.web.internal.constants.RolesSelectorPortletKeys" %><%@
@@ -45,9 +46,9 @@ page import="com.liferay.roles.selector.web.internal.display.context.EditRolesDi
 page import="com.liferay.roles.selector.web.internal.display.context.EditRolesUsersDisplayContext" %><%@
 page import="com.liferay.site.search.UserGroupGroupRoleUserGroupChecker" %>
 
-<%@ page import="java.util.LinkedHashMap" %>
+<%@ page import="jakarta.portlet.PortletURL" %>
 
-<%@ page import="javax.portlet.PortletURL" %>
+<%@ page import="java.util.LinkedHashMap" %>
 
 <liferay-frontend:defineObjects />
 

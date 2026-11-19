@@ -107,6 +107,8 @@ public class DDMFormInstanceRecordModelImpl
 	public static final String TABLE_SQL_DROP =
 		"drop table DDMFormInstanceRecord";
 
+	public static final String ENTITY_ALIAS = "ddmFormInstanceRecord";
+
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY ddmFormInstanceRecord.formInstanceRecordId ASC";
 
@@ -135,13 +137,13 @@ public class DDMFormInstanceRecordModelImpl
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long FORMINSTANCEVERSION_COLUMN_BITMASK = 4L;
+	public static final long GROUPID_COLUMN_BITMASK = 4L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long GROUPID_COLUMN_BITMASK = 8L;
+	public static final long IPADDRESS_COLUMN_BITMASK = 8L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
@@ -725,15 +727,6 @@ public class DDMFormInstanceRecordModelImpl
 		_formInstanceVersion = formInstanceVersion;
 	}
 
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #getColumnOriginalValue(String)}
-	 */
-	@Deprecated
-	public String getOriginalFormInstanceVersion() {
-		return getColumnOriginalValue("formInstanceVersion");
-	}
-
 	@JSON
 	@Override
 	public long getStorageId() {
@@ -787,6 +780,15 @@ public class DDMFormInstanceRecordModelImpl
 		}
 
 		_ipAddress = ipAddress;
+	}
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
+	 *             #getColumnOriginalValue(String)}
+	 */
+	@Deprecated
+	public String getOriginalIpAddress() {
+		return getColumnOriginalValue("ipAddress");
 	}
 
 	@JSON
@@ -1312,3 +1314,4 @@ public class DDMFormInstanceRecordModelImpl
 	private DDMFormInstanceRecord _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1811279800

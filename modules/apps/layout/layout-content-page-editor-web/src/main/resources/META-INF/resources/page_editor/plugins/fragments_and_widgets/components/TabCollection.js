@@ -5,7 +5,7 @@
 
 import ClayIcon from '@clayui/icon';
 import classNames from 'classnames';
-import {useSessionState} from 'frontend-js-components-web';
+import {FeatureIndicator, useSessionState} from 'frontend-js-components-web';
 import PropTypes from 'prop-types';
 import React, {useRef, useState} from 'react';
 
@@ -14,6 +14,7 @@ import {HIGHLIGHTED_COLLECTION_ID} from '../../../app/config/constants/highlight
 import {LIST_ITEM_TYPES} from '../../../app/config/constants/listItemTypes';
 import {config} from '../../../app/config/index';
 import useKeyboardNavigation from '../hooks/useKeyboardNavigation';
+import {ScopeIndicator} from './ScopeIndicator';
 import TabItem from './TabItem';
 
 export default function TabCollection({
@@ -51,8 +52,10 @@ export default function TabCollection({
 	return (
 		<TabCollectionCollapse
 			collapseRef={collapseRef}
+			deprecated={collection.deprecated}
 			isSearchResult={isSearchResult}
 			open={open}
+			scope={collection.scope}
 			setOpen={setOpen}
 			title={collection.label}
 		>
@@ -131,8 +134,10 @@ TabPortletItems.proptypes = {
 function TabCollectionCollapse({
 	children,
 	collapseRef,
+	deprecated,
 	isSearchResult,
 	open,
+	scope,
 	setOpen,
 	title,
 }) {
@@ -167,11 +172,12 @@ function TabCollectionCollapse({
 				tabIndex={isTarget ? 0 : -1}
 				type="button"
 			>
-				<span
-					className="c-inner panel-title text-truncate"
-					tabIndex={-1}
-				>
-					{title}
+				<span className="panel-title">
+					<span className="c-mr-2">{title}</span>
+
+					<ScopeIndicator scope={scope} />
+
+					{deprecated ? <FeatureIndicator type="deprecated" /> : null}
 
 					<span
 						className={`text-secondary collapse-icon-${

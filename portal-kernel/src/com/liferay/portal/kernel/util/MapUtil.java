@@ -7,19 +7,18 @@ package com.liferay.portal.kernel.util;
 
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.log.Log;
-import com.liferay.portal.kernel.log.LogFactoryUtil;
 
-import java.lang.reflect.Constructor;
-
+import java.util.AbstractMap;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Dictionary;
 import java.util.Enumeration;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiConsumer;
+import java.util.function.Function;
 
 /**
  * @author Brian Wing Shun Chan
@@ -111,6 +110,18 @@ public class MapUtil {
 		}
 
 		return GetterUtil.getDouble(String.valueOf(value), defaultValue);
+	}
+
+	public static <K, V> Map.Entry<K, V> getEntry(Map<K, V> map, K key) {
+		Map<K, Object> objectMap = (Map<K, Object>)map;
+
+		Object value = objectMap.getOrDefault(key, _ABSENT_VALUE);
+
+		if (value == _ABSENT_VALUE) {
+			return null;
+		}
+
+		return new AbstractMap.SimpleImmutableEntry<>(key, (V)value);
 	}
 
 	public static int getInteger(Map<String, ?> map, String key) {
@@ -219,14 +230,14 @@ public class MapUtil {
 		return GetterUtil.getShort(String.valueOf(value), defaultValue);
 	}
 
-	public static String getString(Map<String, ?> map, String key) {
+	public static <K, V> String getString(Map<K, V> map, K key) {
 		return getString(map, key, GetterUtil.DEFAULT_STRING);
 	}
 
-	public static String getString(
-		Map<String, ?> map, String key, String defaultValue) {
+	public static <K, V> String getString(
+		Map<K, V> map, K key, String defaultValue) {
 
-		Object value = map.get(key);
+		V value = map.get(key);
 
 		if (value == null) {
 			return defaultValue;
@@ -298,75 +309,23 @@ public class MapUtil {
 		return new SingletonDictionary<>(key, value);
 	}
 
-	public static <T> LinkedHashMap<String, T> toLinkedHashMap(
-		String[] params) {
+	public static <K, V> Map<K, List<V>> toPartitionMap(
+		List<V> list, Function<V, K> keyExtractor) {
 
-		return toLinkedHashMap(params, StringPool.COLON);
-	}
-
-	public static <T> LinkedHashMap<String, T> toLinkedHashMap(
-		String[] params, String delimiter) {
-
-		LinkedHashMap<String, Object> map = new LinkedHashMap<>();
-
-		if (params == null) {
-			return (LinkedHashMap<String, T>)map;
+		if (list.isEmpty()) {
+			return Collections.emptyMap();
 		}
 
-		for (String param : params) {
-			String[] kvp = StringUtil.split(param, delimiter);
+		Map<K, List<V>> map = new HashMap<>();
 
-			if (kvp.length == 2) {
-				map.put(kvp[0], kvp[1]);
-			}
-			else if (kvp.length == 3) {
-				String type = kvp[2];
+		for (V v : list) {
+			List<V> partitionList = map.computeIfAbsent(
+				keyExtractor.apply(v), key -> new ArrayList<>());
 
-				if (StringUtil.equalsIgnoreCase(type, "boolean") ||
-					type.equals(Boolean.class.getName())) {
-
-					map.put(kvp[0], Boolean.valueOf(kvp[1]));
-				}
-				else if (StringUtil.equalsIgnoreCase(type, "double") ||
-						 type.equals(Double.class.getName())) {
-
-					map.put(kvp[0], Double.valueOf(kvp[1]));
-				}
-				else if (StringUtil.equalsIgnoreCase(type, "int") ||
-						 type.equals(Integer.class.getName())) {
-
-					map.put(kvp[0], Integer.valueOf(kvp[1]));
-				}
-				else if (StringUtil.equalsIgnoreCase(type, "long") ||
-						 type.equals(Long.class.getName())) {
-
-					map.put(kvp[0], Long.valueOf(kvp[1]));
-				}
-				else if (StringUtil.equalsIgnoreCase(type, "short") ||
-						 type.equals(Short.class.getName())) {
-
-					map.put(kvp[0], Short.valueOf(kvp[1]));
-				}
-				else if (type.equals(String.class.getName())) {
-					map.put(kvp[0], kvp[1]);
-				}
-				else {
-					try {
-						Class<?> clazz = Class.forName(type);
-
-						Constructor<?> constructor = clazz.getConstructor(
-							String.class);
-
-						map.put(kvp[0], constructor.newInstance(kvp[1]));
-					}
-					catch (Exception exception) {
-						_log.error(exception);
-					}
-				}
-			}
+			partitionList.add(v);
 		}
 
-		return (LinkedHashMap<String, T>)map;
+		return map;
 	}
 
 	public static String toString(Map<?, ?> map) {
@@ -428,7 +387,7 @@ public class MapUtil {
 		return sb.toString();
 	}
 
-	private static final Log _log = LogFactoryUtil.getLog(MapUtil.class);
+	private static final Object _ABSENT_VALUE = new Object();
 
 	private static class SingletonDictionary<K, V> extends Dictionary<K, V> {
 

@@ -5,8 +5,8 @@
 
 package com.liferay.commerce.pricing.internal.upgrade.registry;
 
-import com.liferay.commerce.pricing.internal.upgrade.v2_0_1.CommercePriceModifierUpgradeProcess;
 import com.liferay.commerce.pricing.internal.upgrade.v2_1_0.CommercePricingConfigurationUpgradeProcess;
+import com.liferay.commerce.pricing.internal.upgrade.v2_4_0.CommercePricingClassUpgradeProcess;
 import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.service.ResourceActionLocalService;
 import com.liferay.portal.kernel.service.ResourceLocalService;
@@ -42,7 +42,14 @@ public class CommercePricingServiceUpgradeStepRegistrator
 					_resourceActionLocalService, _resourceLocalService));
 
 		registry.register(
-			"2.0.0", "2.0.1", new CommercePriceModifierUpgradeProcess());
+			"2.0.0", "2.0.1",
+			UpgradeProcessFactory.runSQL(
+				"update CommercePriceModifier set target = 'product-groups' " +
+					"where target = 'pricing-classes'",
+				"update CommercePriceModifier set modifierType = " +
+					"'fixed-amount' where modifierType = 'absolute'",
+				"update CommercePriceModifier set modifierType = 'replace' " +
+					"where modifierType = 'override'"));
 
 		registry.register("2.0.1", "2.0.2", new DummyUpgradeProcess());
 
@@ -70,6 +77,9 @@ public class CommercePricingServiceUpgradeStepRegistrator
 			new CTModelUpgradeProcess(
 				"CPricingClassCPDefinitionRel", "CommercePriceModifier",
 				"CommercePriceModifierRel", "CommercePricingClass"));
+
+		registry.register(
+			"2.3.0", "2.4.0", new CommercePricingClassUpgradeProcess());
 	}
 
 	@Reference

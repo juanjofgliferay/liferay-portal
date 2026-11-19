@@ -1,0 +1,139 @@
+/**
+ * SPDX-FileCopyrightText: (c) 2024 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
+ */
+
+package com.liferay.jenkins.results.parser.test.clazz.group;
+
+import com.liferay.jenkins.results.parser.DownstreamBuildReport;
+import com.liferay.jenkins.results.parser.JenkinsResultsParserUtil;
+import com.liferay.jenkins.results.parser.TestClassReport;
+import com.liferay.jenkins.results.parser.test.clazz.JSUnitJUnitTestClass;
+import com.liferay.jenkins.results.parser.test.clazz.TestClass;
+
+import java.io.File;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+import org.json.JSONObject;
+
+/**
+ * @author Michael Hashimoto
+ */
+public class JSUnitAxisTestClassGroup extends AxisTestClassGroup {
+
+	@Override
+	public List<DownstreamBuildReport> getCachedDownstreamBuildReports() {
+		if (!isBuildCachingEnabled() || !isResultsCached()) {
+			return null;
+		}
+
+		Set<DownstreamBuildReport> cachedDownstreamBuildReports =
+			new HashSet<>();
+
+		for (JSUnitJUnitTestClass jsUnitJUnitTestClass :
+				getJSUnitJUnitTestClasses()) {
+
+			DownstreamBuildReport downstreamBuildReport =
+				jsUnitJUnitTestClass.getCachedDownstreamBuildReport();
+
+			cachedDownstreamBuildReports.add(downstreamBuildReport);
+		}
+
+		return new ArrayList<>(cachedDownstreamBuildReports);
+	}
+
+	@Override
+	public JSONObject getJSONObject() {
+		JSONObject jsonObject = super.getJSONObject();
+
+		File testBaseDir = getTestBaseDir();
+
+		if ((testBaseDir != null) && testBaseDir.exists()) {
+			jsonObject.put(
+				"test_base_dir",
+				JenkinsResultsParserUtil.getCanonicalPath(testBaseDir));
+		}
+
+		return jsonObject;
+	}
+
+	public List<JSUnitJUnitTestClass> getJSUnitJUnitTestClasses() {
+		List<JSUnitJUnitTestClass> jsUnitJUnitTestClasses = new ArrayList<>();
+
+		for (TestClass testClass : getTestClasses()) {
+			if (!(testClass instanceof JSUnitJUnitTestClass)) {
+				continue;
+			}
+
+			jsUnitJUnitTestClasses.add((JSUnitJUnitTestClass)testClass);
+		}
+
+		return jsUnitJUnitTestClasses;
+	}
+
+	@Override
+	public File getTestBaseDir() {
+		if (_testBaseDir != null) {
+			return _testBaseDir;
+		}
+
+		List<TestClass> testClasses = getTestClasses();
+
+		if (testClasses.isEmpty()) {
+			return null;
+		}
+
+		TestClass testClass = testClasses.get(0);
+
+		_testBaseDir = testClass.getTestClassFile();
+
+		return _testBaseDir;
+	}
+
+	@Override
+	public boolean isResultsCached() {
+		if (!isBuildCachingEnabled()) {
+			return false;
+		}
+
+		for (JSUnitJUnitTestClass jsUnitJUnitTestClass :
+				getJSUnitJUnitTestClasses()) {
+
+			List<TestClassReport> cachedTestClassReports =
+				jsUnitJUnitTestClass.getCachedTestClassReports();
+
+			if ((cachedTestClassReports == null) ||
+				cachedTestClassReports.isEmpty()) {
+
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	protected JSUnitAxisTestClassGroup(
+		JSONObject jsonObject, SegmentTestClassGroup segmentTestClassGroup) {
+
+		super(jsonObject, segmentTestClassGroup);
+
+		String testBaseDirPath = jsonObject.optString("test_base_dir");
+
+		if (!JenkinsResultsParserUtil.isNullOrEmpty(testBaseDirPath)) {
+			_testBaseDir = new File(testBaseDirPath);
+		}
+	}
+
+	protected JSUnitAxisTestClassGroup(
+		JSUnitModulesBatchTestClassGroup jsUnitModulesBatchTestClassGroup) {
+
+		super(jsUnitModulesBatchTestClassGroup);
+	}
+
+	private File _testBaseDir;
+
+}

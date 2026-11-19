@@ -238,22 +238,18 @@ public class ContactLocalServiceWrapper
 	}
 
 	@Override
+	public java.util.Map
+		<java.io.Serializable, com.liferay.portal.kernel.model.Contact>
+			fetchContacts(java.util.Set<java.io.Serializable> primaryKeys) {
+
+		return _contactLocalService.fetchContacts(primaryKeys);
+	}
+
+	@Override
 	public com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery
 		getActionableDynamicQuery() {
 
 		return _contactLocalService.getActionableDynamicQuery();
-	}
-
-	@Override
-	public java.util.List<com.liferay.portal.kernel.model.Contact>
-		getCompanyContacts(long companyId, int start, int end) {
-
-		return _contactLocalService.getCompanyContacts(companyId, start, end);
-	}
-
-	@Override
-	public int getCompanyContactsCount(long companyId) {
-		return _contactLocalService.getCompanyContactsCount(companyId);
 	}
 
 	/**
@@ -288,16 +284,6 @@ public class ContactLocalServiceWrapper
 		return _contactLocalService.getContacts(start, end);
 	}
 
-	@Override
-	public java.util.List<com.liferay.portal.kernel.model.Contact> getContacts(
-		long classNameId, long classPK, int start, int end,
-		com.liferay.portal.kernel.util.OrderByComparator
-			<com.liferay.portal.kernel.model.Contact> orderByComparator) {
-
-		return _contactLocalService.getContacts(
-			classNameId, classPK, start, end, orderByComparator);
-	}
-
 	/**
 	 * Returns the number of contacts.
 	 *
@@ -306,11 +292,6 @@ public class ContactLocalServiceWrapper
 	@Override
 	public int getContactsCount() {
 		return _contactLocalService.getContactsCount();
-	}
-
-	@Override
-	public int getContactsCount(long classNameId, long classPK) {
-		return _contactLocalService.getContactsCount(classNameId, classPK);
 	}
 
 	@Override
@@ -392,3 +373,4 @@ public class ContactLocalServiceWrapper
 	private ContactLocalService _contactLocalService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1007604418

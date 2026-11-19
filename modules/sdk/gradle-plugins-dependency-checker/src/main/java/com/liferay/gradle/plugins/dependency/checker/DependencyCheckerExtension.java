@@ -146,11 +146,13 @@ public class DependencyCheckerExtension {
 		Map<Object, Object> extractedArgs = new HashMap<>();
 
 		for (Object key : keys) {
-			if (args.containsKey(key)) {
-				Object value = args.remove(key);
+			Object value = args.remove(key);
 
-				extractedArgs.put(key, value);
+			if (value == null) {
+				continue;
 			}
+
+			extractedArgs.put(key, value);
 		}
 
 		return extractedArgs;

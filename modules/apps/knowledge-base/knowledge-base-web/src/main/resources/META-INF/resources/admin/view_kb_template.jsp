@@ -39,7 +39,9 @@
 		%>
 
 		<div class="management-bar management-bar-light navbar navbar-expand-md">
-			<clay:container-fluid>
+			<clay:container-fluid
+				fullWidth="<%= true %>"
+			>
 				<ul class="justify-content-end navbar-nav navbar-nav-expand">
 					<li class="nav-item">
 						<clay:link
@@ -65,7 +67,7 @@
 						<clay:dropdown-actions
 							aria-label='<%= LanguageUtil.get(request, "show-actions") %>'
 							dropdownItems="<%= kbDropdownItemsProvider.getKBTemplateMoreActionsDropdownItems(kbTemplate) %>"
-							propsTransformer="admin/js/KBDropdownPropsTransformer"
+							propsTransformer="{KBDropdownPropsTransformer} from knowledge-base-web"
 						/>
 					</li>
 				</ul>
@@ -73,7 +75,7 @@
 		</div>
 	</c:if>
 
-	<div class="container-fluid container-fluid-max-xl container-form-lg">
+	<div class="container-fluid container-fluid-max-lg container-form-lg">
 		<div class="kb-article sheet">
 			<div class="kb-entity-body">
 				<div class="kb-article-title">

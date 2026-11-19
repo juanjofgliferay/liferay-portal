@@ -9,6 +9,8 @@ import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.ResourceAction;
 import com.liferay.portal.kernel.model.ResourceConstants;
 import com.liferay.portal.kernel.model.Role;
+import com.liferay.portal.kernel.model.role.RoleConstants;
+import com.liferay.portal.kernel.security.auth.PrincipalThreadLocal;
 import com.liferay.portal.kernel.service.ResourceActionLocalService;
 import com.liferay.portal.kernel.service.ResourcePermissionLocalService;
 import com.liferay.portal.kernel.service.RoleLocalService;
@@ -30,28 +32,24 @@ public class ModelPermissionsUtil {
 			RoleLocalService roleLocalService)
 		throws PortalException {
 
-		if (permissions == null) {
+		ModelPermissions modelPermissions = toModelPermissions(
+			companyId, permissions, resourceName, roleLocalService);
+
+		if (modelPermissions == null) {
 			return null;
 		}
 
-		ModelPermissions modelPermissions = ModelPermissionsFactory.create(
-			new String[0], new String[0], resourceName);
+		List<ResourceAction> resourceActions =
+			resourceActionLocalService.getResourceActions(resourceName);
 
 		for (Permission permission : permissions) {
 			String[] actionIds = permission.getActionIds();
 
 			if (actionIds.length > 0) {
-				modelPermissions.addRolePermissions(
-					permission.getRoleName(), permission.getActionIds());
-
 				continue;
 			}
 
-			List<ResourceAction> resourceActions =
-				resourceActionLocalService.getResourceActions(resourceName);
-
-			Role role = roleLocalService.getRole(
-				companyId, permission.getRoleName());
+			Role role = _getOrAddRole(companyId, permission, roleLocalService);
 
 			for (ResourceAction resourceAction : resourceActions) {
 				resourcePermissionLocalService.removeResourcePermission(
@@ -62,6 +60,50 @@ public class ModelPermissionsUtil {
 		}
 
 		return modelPermissions;
+	}
+
+	public static ModelPermissions toModelPermissions(
+			long companyId, Permission[] permissions, String resourceName,
+			RoleLocalService roleLocalService)
+		throws PortalException {
+
+		if (permissions == null) {
+			return null;
+		}
+
+		ModelPermissions modelPermissions = ModelPermissionsFactory.create(
+			new String[0], new String[0], resourceName);
+
+		for (Permission permission : permissions) {
+			_getOrAddRole(companyId, permission, roleLocalService);
+
+			String[] actionIds = permission.getActionIds();
+
+			if (actionIds.length == 0) {
+				continue;
+			}
+
+			modelPermissions.addRolePermissions(
+				permission.getRoleName(), actionIds);
+		}
+
+		return modelPermissions;
+	}
+
+	private static Role _getOrAddRole(
+			long companyId, Permission permission,
+			RoleLocalService roleLocalService)
+		throws PortalException {
+
+		if (permission.getRoleExternalReferenceCode() != null) {
+			return roleLocalService.getOrAddEmptyRole(
+				permission.getRoleExternalReferenceCode(), companyId,
+				PrincipalThreadLocal.getUserId(), null, 0,
+				permission.getRoleName(),
+				RoleConstants.getLabelType(permission.getRoleType()));
+		}
+
+		return roleLocalService.getRole(companyId, permission.getRoleName());
 	}
 
 }

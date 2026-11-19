@@ -1,4 +1,4 @@
-@component-name = "portal-lima"
+@component-name = "portal-content-management"
 definition {
 
 	property custom.properties = "default.layout.template.id=1_column";
@@ -7,7 +7,7 @@ definition {
 	property portal.release = "false";
 	property portal.upstream = "true";
 	property test.assert.warning.exceptions = "true";
-	property testray.main.component.name = "My Subscriptions";
+	property testray.main.component.name = "My Subscriptions Widget";
 
 	setUp {
 		TestCase.setUpPortalInstance();

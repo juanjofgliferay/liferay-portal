@@ -6,6 +6,7 @@
 package com.liferay.headless.commerce.admin.pricing.internal.dto.v2_0.converter;
 
 import com.liferay.commerce.currency.model.CommerceCurrency;
+import com.liferay.commerce.currency.service.CommerceCurrencyLocalService;
 import com.liferay.commerce.price.list.model.CommercePriceList;
 import com.liferay.commerce.price.list.service.CommercePriceListService;
 import com.liferay.commerce.product.model.CommerceCatalog;
@@ -13,12 +14,16 @@ import com.liferay.commerce.product.service.CommerceCatalogService;
 import com.liferay.expando.kernel.model.ExpandoBridge;
 import com.liferay.headless.commerce.admin.pricing.dto.v2_0.PriceList;
 import com.liferay.headless.commerce.admin.pricing.dto.v2_0.Status;
+import com.liferay.headless.commerce.admin.pricing.internal.dto.v2_0.util.CreatorUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.language.Language;
+import com.liferay.portal.kernel.service.UserLocalService;
+import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.language.LanguageResources;
 import com.liferay.portal.vulcan.dto.converter.DTOConverter;
 import com.liferay.portal.vulcan.dto.converter.DTOConverterContext;
+import com.liferay.portal.vulcan.fields.NestedFieldsSupplier;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -27,7 +32,10 @@ import org.osgi.service.component.annotations.Reference;
  * @author Alessio Antonio Rendina
  */
 @Component(
-	property = "dto.class.name=com.liferay.commerce.price.list.model.CommercePriceList",
+	property = {
+		"default=true",
+		"dto.class.name=com.liferay.commerce.price.list.model.CommercePriceList"
+	},
 	service = DTOConverter.class
 )
 public class PriceListDTOConverter
@@ -49,72 +57,123 @@ public class PriceListDTOConverter
 		CommerceCurrency commerceCurrency =
 			commercePriceList.getCommerceCurrency();
 
-		String priceListStatusLabel = WorkflowConstants.getStatusLabel(
-			commercePriceList.getStatus());
-
-		String priceListStatusLabelI18n = _language.get(
-			LanguageResources.getResourceBundle(
-				dtoConverterContext.getLocale()),
-			WorkflowConstants.getStatusLabel(commercePriceList.getStatus()));
-
-		ExpandoBridge expandoBridge = commercePriceList.getExpandoBridge();
+		CommerceCatalog commerceCatalog =
+			_commerceCatalogService.fetchCommerceCatalogByGroupId(
+				commercePriceList.getGroupId());
 
 		return new PriceList() {
 			{
-				actions = dtoConverterContext.getActions();
-				active = !commercePriceList.isInactive();
-				author = commercePriceList.getUserName();
-				catalogBasePriceList =
-					commercePriceList.isCatalogBasePriceList();
-				catalogId = _getCatalogId(commercePriceList);
-				catalogName = _getCatalogName(commercePriceList);
-				createDate = commercePriceList.getCreateDate();
-				currencyCode = commerceCurrency.getCode();
-				customFields = expandoBridge.getAttributes();
-				displayDate = commercePriceList.getDisplayDate();
-				expirationDate = commercePriceList.getExpirationDate();
-				externalReferenceCode =
-					commercePriceList.getExternalReferenceCode();
-				id = commercePriceList.getCommercePriceListId();
-				name = commercePriceList.getName();
-				netPrice = commercePriceList.isNetPrice();
-				parentPriceListId =
-					commercePriceList.getParentCommercePriceListId();
-				priority = commercePriceList.getPriority();
-				type = Type.create(commercePriceList.getType());
-				workflowStatusInfo = _toStatus(
-					commercePriceList.getStatus(), priceListStatusLabel,
-					priceListStatusLabelI18n);
+				setActions(dtoConverterContext::getActions);
+				setActive(() -> !commercePriceList.isInactive());
+				setAuthor(commercePriceList::getUserName);
+				setCatalogBasePriceList(
+					commercePriceList::isCatalogBasePriceList);
+				setCatalogCurrencyCode(
+					() -> {
+						if (commerceCatalog == null) {
+							return null;
+						}
+
+						return commerceCatalog.getCommerceCurrencyCode();
+					});
+				setCatalogCurrencyExternalReferenceCode(
+					() -> {
+						CommerceCurrency catalogCommerceCurrency =
+							_fetchCommerceCurrency(commerceCatalog);
+
+						if (catalogCommerceCurrency == null) {
+							return null;
+						}
+
+						return catalogCommerceCurrency.
+							getExternalReferenceCode();
+					});
+				setCatalogExternalReferenceCode(
+					() -> {
+						if (commerceCatalog == null) {
+							return null;
+						}
+
+						return commerceCatalog.getExternalReferenceCode();
+					});
+				setCatalogId(
+					() -> {
+						if (commerceCatalog == null) {
+							return 0L;
+						}
+
+						return commerceCatalog.getCommerceCatalogId();
+					});
+				setCatalogName(
+					() -> {
+						if (commerceCatalog == null) {
+							return StringPool.BLANK;
+						}
+
+						return commerceCatalog.getName();
+					});
+				setCreateDate(commercePriceList::getCreateDate);
+				setCreator(
+					() -> NestedFieldsSupplier.supply(
+						"creator",
+						fieldName -> CreatorUtil.toCreator(
+							_portal,
+							_userLocalService.fetchUser(
+								commercePriceList.getUserId()))));
+				setCurrencyCode(commerceCurrency::getCode);
+				setCurrencyExternalReferenceCode(
+					commerceCurrency::getExternalReferenceCode);
+				setCurrencyId(commerceCurrency::getCommerceCurrencyId);
+				setCustomFields(
+					() -> {
+						ExpandoBridge expandoBridge =
+							commercePriceList.getExpandoBridge();
+
+						return expandoBridge.getAttributes();
+					});
+				setDateCreated(commercePriceList::getCreateDate);
+				setDateModified(commercePriceList::getModifiedDate);
+				setDisplayDate(commercePriceList::getDisplayDate);
+				setExpirationDate(commercePriceList::getExpirationDate);
+				setExternalReferenceCode(
+					commercePriceList::getExternalReferenceCode);
+				setId(commercePriceList::getCommercePriceListId);
+				setName(commercePriceList::getName);
+				setNetPrice(commercePriceList::isNetPrice);
+				setParentPriceListId(
+					commercePriceList::getParentCommercePriceListId);
+				setPriority(commercePriceList::getPriority);
+				setType(() -> Type.create(commercePriceList.getType()));
+				setWorkflowStatusInfo(
+					() -> {
+						String priceListStatusLabel =
+							WorkflowConstants.getStatusLabel(
+								commercePriceList.getStatus());
+
+						String priceListStatusLabelI18n = _language.get(
+							LanguageResources.getResourceBundle(
+								dtoConverterContext.getLocale()),
+							WorkflowConstants.getStatusLabel(
+								commercePriceList.getStatus()));
+
+						return _toStatus(
+							commercePriceList.getStatus(), priceListStatusLabel,
+							priceListStatusLabelI18n);
+					});
 			}
 		};
 	}
 
-	private long _getCatalogId(CommercePriceList commercePriceList)
-		throws Exception {
-
-		CommerceCatalog commerceCatalog =
-			_commerceCatalogService.fetchCommerceCatalogByGroupId(
-				commercePriceList.getGroupId());
+	private CommerceCurrency _fetchCommerceCurrency(
+		CommerceCatalog commerceCatalog) {
 
 		if (commerceCatalog == null) {
-			return 0L;
+			return null;
 		}
 
-		return commerceCatalog.getCommerceCatalogId();
-	}
-
-	private String _getCatalogName(CommercePriceList commercePriceList)
-		throws Exception {
-
-		CommerceCatalog commerceCatalog =
-			_commerceCatalogService.fetchCommerceCatalogByGroupId(
-				commercePriceList.getGroupId());
-
-		if (commerceCatalog == null) {
-			return StringPool.BLANK;
-		}
-
-		return commerceCatalog.getName();
+		return _commerceCurrencyLocalService.fetchCommerceCurrency(
+			commerceCatalog.getCompanyId(),
+			commerceCatalog.getCommerceCurrencyCode());
 	}
 
 	private Status _toStatus(
@@ -123,9 +182,9 @@ public class PriceListDTOConverter
 
 		return new Status() {
 			{
-				code = statusCode;
-				label = priceListStatusLabel;
-				label_i18n = priceListStatusLabelI18n;
+				setCode(() -> statusCode);
+				setLabel(() -> priceListStatusLabel);
+				setLabel_i18n(() -> priceListStatusLabelI18n);
 			}
 		};
 	}
@@ -134,9 +193,18 @@ public class PriceListDTOConverter
 	private CommerceCatalogService _commerceCatalogService;
 
 	@Reference
+	private CommerceCurrencyLocalService _commerceCurrencyLocalService;
+
+	@Reference
 	private CommercePriceListService _commercePriceListService;
 
 	@Reference
 	private Language _language;
+
+	@Reference
+	private Portal _portal;
+
+	@Reference
+	private UserLocalService _userLocalService;
 
 }

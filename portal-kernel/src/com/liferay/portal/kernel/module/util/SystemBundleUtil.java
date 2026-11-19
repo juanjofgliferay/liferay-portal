@@ -6,6 +6,7 @@
 package com.liferay.portal.kernel.module.util;
 
 import com.liferay.petra.function.UnsafeFunction;
+import com.liferay.portal.kernel.util.StringUtil;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -81,6 +82,11 @@ public class SystemBundleUtil {
 		}
 	}
 
+	public static String escapeFilterValue(String value) {
+		return StringUtil.replace(
+			value, _FILTER_VALUE_CHARS_UNESCAPED, _FILTER_VALUE_CHARS_ESCAPED);
+	}
+
 	public static BundleContext getBundleContext() {
 		Bundle systemBundle = _systemBundleProvider.getSystemBundle();
 
@@ -95,6 +101,14 @@ public class SystemBundleUtil {
 		return new ServiceLatch(getBundleContext());
 	}
 
+	private static final String[] _FILTER_VALUE_CHARS_ESCAPED = {
+		"\\(", "\\)", "\\*", "\\\\"
+	};
+
+	private static final char[] _FILTER_VALUE_CHARS_UNESCAPED = {
+		'(', ')', '*', '\\'
+	};
+
 	private static final SystemBundleProvider _systemBundleProvider;
 
 	static {
@@ -106,11 +120,32 @@ public class SystemBundleUtil {
 
 		List<SystemBundleProvider> systemBundleProviders = new ArrayList<>();
 
-		iterator.forEachRemaining(systemBundleProviders::add);
+		Throwable throwable1 = null;
+
+		try {
+			while (iterator.hasNext()) {
+				systemBundleProviders.add(iterator.next());
+			}
+		}
+		catch (Throwable throwable2) {
+			if (throwable1 == null) {
+				throwable1 = throwable2;
+			}
+			else {
+				throwable1.addSuppressed(throwable2);
+			}
+		}
 
 		if (systemBundleProviders.isEmpty()) {
-			throw new ExceptionInInitializerError(
-				"Unable to locate module framework implementation");
+			ExceptionInInitializerError exceptionInInitializerError =
+				new ExceptionInInitializerError(
+					"Unable to locate module framework implementation");
+
+			if (throwable1 != null) {
+				exceptionInInitializerError.addSuppressed(throwable1);
+			}
+
+			throw exceptionInInitializerError;
 		}
 
 		systemBundleProviders.sort(Comparator.reverseOrder());

@@ -12,24 +12,29 @@ import com.liferay.exportimport.kernel.lar.PortletDataContext;
 import com.liferay.exportimport.kernel.lar.PortletDataException;
 import com.liferay.exportimport.portlet.preferences.processor.Capability;
 import com.liferay.exportimport.portlet.preferences.processor.ExportImportPortletPreferencesProcessor;
+import com.liferay.exportimport.portlet.preferences.processor.ExportImportPortletPreferencesProcessorHelper;
 import com.liferay.exportimport.portlet.preferences.processor.base.BaseExportImportPortletPreferencesProcessor;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Portlet;
 import com.liferay.portal.kernel.service.CompanyLocalService;
-import com.liferay.portal.kernel.service.PortletLocalService;
+import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.portlet.PortletPreferences;
+import jakarta.portlet.ReadOnlyException;
+
+import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import javax.portlet.PortletPreferences;
+import java.util.function.Function;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -38,7 +43,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Máté Thurzó
  */
 @Component(
-	property = "javax.portlet.name=" + AssetCategoriesNavigationPortletKeys.ASSET_CATEGORIES_NAVIGATION,
+	property = "jakarta.portlet.name=" + AssetCategoriesNavigationPortletKeys.ASSET_CATEGORIES_NAVIGATION,
 	service = ExportImportPortletPreferencesProcessor.class
 )
 public class AssetCategoriesNavigationPortletPreferencesProcessor
@@ -55,20 +60,55 @@ public class AssetCategoriesNavigationPortletPreferencesProcessor
 	}
 
 	@Override
-	public PortletPreferences processExportPortletPreferences(
-			PortletDataContext portletDataContext,
-			PortletPreferences portletPreferences)
+	public void processExportPortletPreferences(
+			long companyId, PortletPreferences portletPreferences)
 		throws PortletDataException {
 
 		try {
-			return _updateExportPortletPreferences(
-				portletDataContext, portletPreferences,
-				portletDataContext.getPortletId());
+			_updateGroupExternalReferenceCodes(
+				portletPreferences,
+				groupExternalReferenceCode ->
+					_exportImportPortletPreferencesProcessorHelper.
+						getGroupExportPortletPreferencesExternalReferenceCode(
+							companyId, groupExternalReferenceCode));
 		}
 		catch (Exception exception) {
 			throw new PortletDataException(
 				"Unable to update asset categories navigation portlet " +
 					"preferences during export",
+				exception);
+		}
+	}
+
+	@Override
+	public PortletPreferences processExportPortletPreferences(
+			PortletDataContext portletDataContext,
+			PortletPreferences portletPreferences)
+		throws PortletDataException {
+
+		processExportPortletPreferences(
+			portletDataContext.getCompanyId(), portletPreferences);
+
+		return portletPreferences;
+	}
+
+	@Override
+	public void processImportPortletPreferences(
+			long companyId, PortletPreferences portletPreferences)
+		throws PortletDataException {
+
+		try {
+			_updateGroupExternalReferenceCodes(
+				portletPreferences,
+				groupExternalReferenceCode ->
+					_exportImportPortletPreferencesProcessorHelper.
+						getGroupImportPortletPreferencesExternalReferenceCode(
+							companyId, groupExternalReferenceCode));
+		}
+		catch (Exception exception) {
+			throw new PortletDataException(
+				"Unable to update asset categories navigation portlet " +
+					"preferences during import",
 				exception);
 		}
 	}
@@ -80,6 +120,13 @@ public class AssetCategoriesNavigationPortletPreferencesProcessor
 		throws PortletDataException {
 
 		try {
+			_updateGroupExternalReferenceCodes(
+				portletPreferences,
+				groupExternalReferenceCode ->
+					_exportImportPortletPreferencesProcessorHelper.
+						getGroupImportPortletPreferencesExternalReferenceCode(
+							portletDataContext, groupExternalReferenceCode));
+
 			return _updateImportPortletPreferences(
 				portletDataContext, portletPreferences);
 		}
@@ -152,42 +199,104 @@ public class AssetCategoriesNavigationPortletPreferencesProcessor
 				groupIds, GetterUtil.getLong(oldValues[1]));
 		}
 
-		if (className.equals(AssetVocabulary.class.getName())) {
-			String uuid = oldValues[0];
+		if (!className.equals(AssetVocabulary.class.getName())) {
+			return null;
+		}
 
-			AssetVocabulary assetVocabulary =
-				_assetVocabularyLocalService.
-					fetchAssetVocabularyByUuidAndGroupId(uuid, groupId);
+		String uuid = oldValues[0];
 
-			if (assetVocabulary != null) {
-				return assetVocabulary.getVocabularyId();
-			}
+		AssetVocabulary assetVocabulary =
+			_assetVocabularyLocalService.fetchAssetVocabularyByUuidAndGroupId(
+				uuid, groupId);
+
+		if (assetVocabulary != null) {
+			return assetVocabulary.getVocabularyId();
 		}
 
 		return null;
 	}
 
-	private PortletPreferences _updateExportPortletPreferences(
-			PortletDataContext portletDataContext,
-			PortletPreferences portletPreferences, String portletId)
-		throws Exception {
+	private void _updateGroupExternalReferenceCodes(
+			PortletPreferences portletPreferences,
+			Function<String, String> groupExternalReferenceCodeFunction)
+		throws ReadOnlyException {
 
-		Portlet portlet = _portletLocalService.getPortletById(
-			portletDataContext.getCompanyId(), portletId);
+		String[] assetVocabularyGroupExternalReferenceCodes =
+			portletPreferences.getValues(
+				"assetVocabularyGroupExternalReferenceCodes", null);
 
-		Enumeration<String> enumeration = portletPreferences.getNames();
-
-		while (enumeration.hasMoreElements()) {
-			String name = enumeration.nextElement();
-
-			if (name.equals("assetVocabularyIds")) {
-				updateExportPortletPreferencesClassPKs(
-					portletDataContext, portlet, portletPreferences, name,
-					AssetVocabulary.class.getName());
-			}
+		if (assetVocabularyGroupExternalReferenceCodes == null) {
+			return;
 		}
 
-		return portletPreferences;
+		Map<String, String[]> assetVocabularyExternalReferenceCodesMap =
+			new HashMap<>();
+
+		for (String assetVocabularyGroupExternalReferenceCode :
+				assetVocabularyGroupExternalReferenceCodes) {
+
+			if (Validator.isNull(assetVocabularyGroupExternalReferenceCode) ||
+				assetVocabularyExternalReferenceCodesMap.containsKey(
+					assetVocabularyGroupExternalReferenceCode)) {
+
+				continue;
+			}
+
+			String[] assetVocabularyExternalReferenceCodes =
+				portletPreferences.getValues(
+					"assetVocabularyExternalReferenceCodes_" +
+						assetVocabularyGroupExternalReferenceCode,
+					null);
+
+			if (assetVocabularyExternalReferenceCodes == null) {
+				continue;
+			}
+
+			assetVocabularyExternalReferenceCodesMap.put(
+				assetVocabularyGroupExternalReferenceCode,
+				assetVocabularyExternalReferenceCodes);
+
+			portletPreferences.reset(
+				"assetVocabularyExternalReferenceCodes_" +
+					assetVocabularyGroupExternalReferenceCode);
+		}
+
+		List<String> groupExternalReferenceCodes = new ArrayList<>();
+
+		for (String assetVocabularyGroupExternalReferenceCode :
+				assetVocabularyGroupExternalReferenceCodes) {
+
+			if (Validator.isNull(assetVocabularyGroupExternalReferenceCode)) {
+				groupExternalReferenceCodes.add(
+					assetVocabularyGroupExternalReferenceCode);
+
+				continue;
+			}
+
+			String[] assetVocabularyExternalReferenceCodes =
+				assetVocabularyExternalReferenceCodesMap.get(
+					assetVocabularyGroupExternalReferenceCode);
+
+			if (assetVocabularyExternalReferenceCodes == null) {
+				continue;
+			}
+
+			String newAssetVocabularyGroupExternalReferenceCode =
+				groupExternalReferenceCodeFunction.apply(
+					assetVocabularyGroupExternalReferenceCode);
+
+			groupExternalReferenceCodes.add(
+				newAssetVocabularyGroupExternalReferenceCode);
+
+			portletPreferences.setValues(
+				"assetVocabularyExternalReferenceCodes_" +
+					newAssetVocabularyGroupExternalReferenceCode,
+				assetVocabularyExternalReferenceCodes);
+		}
+
+		portletPreferences.setValues(
+			"assetVocabularyGroupExternalReferenceCodes",
+			ArrayUtil.toStringArray(groupExternalReferenceCodes));
 	}
 
 	private PortletPreferences _updateImportPortletPreferences(
@@ -205,11 +314,13 @@ public class AssetCategoriesNavigationPortletPreferencesProcessor
 		while (enumeration.hasMoreElements()) {
 			String name = enumeration.nextElement();
 
-			if (name.equals("assetVocabularyIds")) {
-				updateImportPortletPreferencesClassPKs(
-					portletDataContext, portletPreferences, name,
-					AssetVocabulary.class, companyGroup.getGroupId());
+			if (!name.equals("assetVocabularyIds")) {
+				continue;
 			}
+
+			updateImportPortletPreferencesClassPKs(
+				portletDataContext, portletPreferences, name,
+				AssetVocabulary.class, companyGroup.getGroupId());
 		}
 
 		return portletPreferences;
@@ -224,10 +335,11 @@ public class AssetCategoriesNavigationPortletPreferencesProcessor
 	@Reference(target = "(name=PortletDisplayTemplateExporter)")
 	private Capability _exportCapability;
 
+	@Reference
+	private ExportImportPortletPreferencesProcessorHelper
+		_exportImportPortletPreferencesProcessorHelper;
+
 	@Reference(target = "(name=PortletDisplayTemplateImporter)")
 	private Capability _importCapability;
-
-	@Reference
-	private PortletLocalService _portletLocalService;
 
 }

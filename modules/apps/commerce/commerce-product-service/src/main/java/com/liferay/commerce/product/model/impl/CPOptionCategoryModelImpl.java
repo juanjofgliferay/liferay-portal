@@ -72,12 +72,13 @@ public class CPOptionCategoryModelImpl
 
 	public static final Object[][] TABLE_COLUMNS = {
 		{"mvccVersion", Types.BIGINT}, {"ctCollectionId", Types.BIGINT},
-		{"uuid_", Types.VARCHAR}, {"CPOptionCategoryId", Types.BIGINT},
-		{"companyId", Types.BIGINT}, {"userId", Types.BIGINT},
-		{"userName", Types.VARCHAR}, {"createDate", Types.TIMESTAMP},
-		{"modifiedDate", Types.TIMESTAMP}, {"title", Types.VARCHAR},
-		{"description", Types.VARCHAR}, {"priority", Types.DOUBLE},
-		{"key_", Types.VARCHAR}, {"lastPublishDate", Types.TIMESTAMP}
+		{"uuid_", Types.VARCHAR}, {"externalReferenceCode", Types.VARCHAR},
+		{"CPOptionCategoryId", Types.BIGINT}, {"companyId", Types.BIGINT},
+		{"userId", Types.BIGINT}, {"userName", Types.VARCHAR},
+		{"createDate", Types.TIMESTAMP}, {"modifiedDate", Types.TIMESTAMP},
+		{"title", Types.VARCHAR}, {"description", Types.VARCHAR},
+		{"priority", Types.DOUBLE}, {"key_", Types.VARCHAR},
+		{"lastPublishDate", Types.TIMESTAMP}, {"status", Types.INTEGER}
 	};
 
 	public static final Map<String, Integer> TABLE_COLUMNS_MAP =
@@ -87,6 +88,7 @@ public class CPOptionCategoryModelImpl
 		TABLE_COLUMNS_MAP.put("mvccVersion", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("ctCollectionId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("uuid_", Types.VARCHAR);
+		TABLE_COLUMNS_MAP.put("externalReferenceCode", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("CPOptionCategoryId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("companyId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("userId", Types.BIGINT);
@@ -98,18 +100,26 @@ public class CPOptionCategoryModelImpl
 		TABLE_COLUMNS_MAP.put("priority", Types.DOUBLE);
 		TABLE_COLUMNS_MAP.put("key_", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("lastPublishDate", Types.TIMESTAMP);
+		TABLE_COLUMNS_MAP.put("status", Types.INTEGER);
 	}
 
 	public static final String TABLE_SQL_CREATE =
-		"create table CPOptionCategory (mvccVersion LONG default 0 not null,ctCollectionId LONG default 0 not null,uuid_ VARCHAR(75) null,CPOptionCategoryId LONG not null,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,title STRING null,description STRING null,priority DOUBLE,key_ VARCHAR(75) null,lastPublishDate DATE null,primary key (CPOptionCategoryId, ctCollectionId))";
+		"create table CPOptionCategory (mvccVersion LONG default 0 not null,ctCollectionId LONG default 0 not null,uuid_ VARCHAR(75) null,externalReferenceCode VARCHAR(75) null,CPOptionCategoryId LONG not null,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,title STRING null,description STRING null,priority DOUBLE,key_ VARCHAR(75) null,lastPublishDate DATE null,status INTEGER,primary key (CPOptionCategoryId, ctCollectionId))";
 
 	public static final String TABLE_SQL_DROP = "drop table CPOptionCategory";
+
+	public static final String ENTITY_ALIAS = "cpOptionCategory";
+
+	public static final String FILTER_PK_COLUMN_NAME = "CPOptionCategoryId";
 
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY cpOptionCategory.title ASC, cpOptionCategory.priority ASC";
 
 	public static final String ORDER_BY_SQL =
 		" ORDER BY CPOptionCategory.title ASC, CPOptionCategory.priority ASC";
+
+	public static final String ORDER_BY_SQL_INLINE_DISTINCT =
+		" ORDER BY cpOptionCategory.title ASC, cpOptionCategory.priority ASC";
 
 	public static final String DATA_SOURCE = "liferayDataSource";
 
@@ -127,27 +137,33 @@ public class CPOptionCategoryModelImpl
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long KEY_COLUMN_BITMASK = 2L;
+	public static final long EXTERNALREFERENCECODE_COLUMN_BITMASK = 2L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long UUID_COLUMN_BITMASK = 4L;
+	public static final long KEY_COLUMN_BITMASK = 4L;
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
+	 */
+	@Deprecated
+	public static final long UUID_COLUMN_BITMASK = 8L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
 	 *		#getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long TITLE_COLUMN_BITMASK = 8L;
+	public static final long TITLE_COLUMN_BITMASK = 16L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
 	 *		#getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long PRIORITY_COLUMN_BITMASK = 16L;
+	public static final long PRIORITY_COLUMN_BITMASK = 32L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
@@ -265,6 +281,9 @@ public class CPOptionCategoryModelImpl
 				"ctCollectionId", CPOptionCategory::getCtCollectionId);
 			attributeGetterFunctions.put("uuid", CPOptionCategory::getUuid);
 			attributeGetterFunctions.put(
+				"externalReferenceCode",
+				CPOptionCategory::getExternalReferenceCode);
+			attributeGetterFunctions.put(
 				"CPOptionCategoryId", CPOptionCategory::getCPOptionCategoryId);
 			attributeGetterFunctions.put(
 				"companyId", CPOptionCategory::getCompanyId);
@@ -283,6 +302,7 @@ public class CPOptionCategoryModelImpl
 			attributeGetterFunctions.put("key", CPOptionCategory::getKey);
 			attributeGetterFunctions.put(
 				"lastPublishDate", CPOptionCategory::getLastPublishDate);
+			attributeGetterFunctions.put("status", CPOptionCategory::getStatus);
 
 			_attributeGetterFunctions = Collections.unmodifiableMap(
 				attributeGetterFunctions);
@@ -313,6 +333,10 @@ public class CPOptionCategoryModelImpl
 				"uuid",
 				(BiConsumer<CPOptionCategory, String>)
 					CPOptionCategory::setUuid);
+			attributeSetterBiConsumers.put(
+				"externalReferenceCode",
+				(BiConsumer<CPOptionCategory, String>)
+					CPOptionCategory::setExternalReferenceCode);
 			attributeSetterBiConsumers.put(
 				"CPOptionCategoryId",
 				(BiConsumer<CPOptionCategory, Long>)
@@ -356,6 +380,10 @@ public class CPOptionCategoryModelImpl
 				"lastPublishDate",
 				(BiConsumer<CPOptionCategory, Date>)
 					CPOptionCategory::setLastPublishDate);
+			attributeSetterBiConsumers.put(
+				"status",
+				(BiConsumer<CPOptionCategory, Integer>)
+					CPOptionCategory::setStatus);
 
 			_attributeSetterBiConsumers = Collections.unmodifiableMap(
 				(Map)attributeSetterBiConsumers);
@@ -420,6 +448,35 @@ public class CPOptionCategoryModelImpl
 	@Deprecated
 	public String getOriginalUuid() {
 		return getColumnOriginalValue("uuid_");
+	}
+
+	@JSON
+	@Override
+	public String getExternalReferenceCode() {
+		if (_externalReferenceCode == null) {
+			return "";
+		}
+		else {
+			return _externalReferenceCode;
+		}
+	}
+
+	@Override
+	public void setExternalReferenceCode(String externalReferenceCode) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_externalReferenceCode = externalReferenceCode;
+	}
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
+	 *             #getColumnOriginalValue(String)}
+	 */
+	@Deprecated
+	public String getOriginalExternalReferenceCode() {
+		return getColumnOriginalValue("externalReferenceCode");
 	}
 
 	@JSON
@@ -829,6 +886,21 @@ public class CPOptionCategoryModelImpl
 		_lastPublishDate = lastPublishDate;
 	}
 
+	@JSON
+	@Override
+	public int getStatus() {
+		return _status;
+	}
+
+	@Override
+	public void setStatus(int status) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_status = status;
+	}
+
 	@Override
 	public StagedModelType getStagedModelType() {
 		return new StagedModelType(
@@ -982,6 +1054,8 @@ public class CPOptionCategoryModelImpl
 		cpOptionCategoryImpl.setMvccVersion(getMvccVersion());
 		cpOptionCategoryImpl.setCtCollectionId(getCtCollectionId());
 		cpOptionCategoryImpl.setUuid(getUuid());
+		cpOptionCategoryImpl.setExternalReferenceCode(
+			getExternalReferenceCode());
 		cpOptionCategoryImpl.setCPOptionCategoryId(getCPOptionCategoryId());
 		cpOptionCategoryImpl.setCompanyId(getCompanyId());
 		cpOptionCategoryImpl.setUserId(getUserId());
@@ -993,6 +1067,7 @@ public class CPOptionCategoryModelImpl
 		cpOptionCategoryImpl.setPriority(getPriority());
 		cpOptionCategoryImpl.setKey(getKey());
 		cpOptionCategoryImpl.setLastPublishDate(getLastPublishDate());
+		cpOptionCategoryImpl.setStatus(getStatus());
 
 		cpOptionCategoryImpl.resetOriginalValues();
 
@@ -1009,6 +1084,8 @@ public class CPOptionCategoryModelImpl
 			this.<Long>getColumnOriginalValue("ctCollectionId"));
 		cpOptionCategoryImpl.setUuid(
 			this.<String>getColumnOriginalValue("uuid_"));
+		cpOptionCategoryImpl.setExternalReferenceCode(
+			this.<String>getColumnOriginalValue("externalReferenceCode"));
 		cpOptionCategoryImpl.setCPOptionCategoryId(
 			this.<Long>getColumnOriginalValue("CPOptionCategoryId"));
 		cpOptionCategoryImpl.setCompanyId(
@@ -1031,6 +1108,8 @@ public class CPOptionCategoryModelImpl
 			this.<String>getColumnOriginalValue("key_"));
 		cpOptionCategoryImpl.setLastPublishDate(
 			this.<Date>getColumnOriginalValue("lastPublishDate"));
+		cpOptionCategoryImpl.setStatus(
+			this.<Integer>getColumnOriginalValue("status"));
 
 		return cpOptionCategoryImpl;
 	}
@@ -1133,6 +1212,18 @@ public class CPOptionCategoryModelImpl
 			cpOptionCategoryCacheModel.uuid = null;
 		}
 
+		cpOptionCategoryCacheModel.externalReferenceCode =
+			getExternalReferenceCode();
+
+		String externalReferenceCode =
+			cpOptionCategoryCacheModel.externalReferenceCode;
+
+		if ((externalReferenceCode != null) &&
+			(externalReferenceCode.length() == 0)) {
+
+			cpOptionCategoryCacheModel.externalReferenceCode = null;
+		}
+
 		cpOptionCategoryCacheModel.CPOptionCategoryId = getCPOptionCategoryId();
 
 		cpOptionCategoryCacheModel.companyId = getCompanyId();
@@ -1201,6 +1292,8 @@ public class CPOptionCategoryModelImpl
 			cpOptionCategoryCacheModel.lastPublishDate = Long.MIN_VALUE;
 		}
 
+		cpOptionCategoryCacheModel.status = getStatus();
+
 		return cpOptionCategoryCacheModel;
 	}
 
@@ -1266,6 +1359,7 @@ public class CPOptionCategoryModelImpl
 	private long _mvccVersion;
 	private long _ctCollectionId;
 	private String _uuid;
+	private String _externalReferenceCode;
 	private long _CPOptionCategoryId;
 	private long _companyId;
 	private long _userId;
@@ -1280,6 +1374,7 @@ public class CPOptionCategoryModelImpl
 	private double _priority;
 	private String _key;
 	private Date _lastPublishDate;
+	private int _status;
 
 	public <T> T getColumnValue(String columnName) {
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
@@ -1314,6 +1409,8 @@ public class CPOptionCategoryModelImpl
 		_columnOriginalValues.put("mvccVersion", _mvccVersion);
 		_columnOriginalValues.put("ctCollectionId", _ctCollectionId);
 		_columnOriginalValues.put("uuid_", _uuid);
+		_columnOriginalValues.put(
+			"externalReferenceCode", _externalReferenceCode);
 		_columnOriginalValues.put("CPOptionCategoryId", _CPOptionCategoryId);
 		_columnOriginalValues.put("companyId", _companyId);
 		_columnOriginalValues.put("userId", _userId);
@@ -1325,6 +1422,7 @@ public class CPOptionCategoryModelImpl
 		_columnOriginalValues.put("priority", _priority);
 		_columnOriginalValues.put("key_", _key);
 		_columnOriginalValues.put("lastPublishDate", _lastPublishDate);
+		_columnOriginalValues.put("status", _status);
 	}
 
 	private static final Map<String, String> _attributeNames;
@@ -1355,27 +1453,31 @@ public class CPOptionCategoryModelImpl
 
 		columnBitmasks.put("uuid_", 4L);
 
-		columnBitmasks.put("CPOptionCategoryId", 8L);
+		columnBitmasks.put("externalReferenceCode", 8L);
 
-		columnBitmasks.put("companyId", 16L);
+		columnBitmasks.put("CPOptionCategoryId", 16L);
 
-		columnBitmasks.put("userId", 32L);
+		columnBitmasks.put("companyId", 32L);
 
-		columnBitmasks.put("userName", 64L);
+		columnBitmasks.put("userId", 64L);
 
-		columnBitmasks.put("createDate", 128L);
+		columnBitmasks.put("userName", 128L);
 
-		columnBitmasks.put("modifiedDate", 256L);
+		columnBitmasks.put("createDate", 256L);
 
-		columnBitmasks.put("title", 512L);
+		columnBitmasks.put("modifiedDate", 512L);
 
-		columnBitmasks.put("description", 1024L);
+		columnBitmasks.put("title", 1024L);
 
-		columnBitmasks.put("priority", 2048L);
+		columnBitmasks.put("description", 2048L);
 
-		columnBitmasks.put("key_", 4096L);
+		columnBitmasks.put("priority", 4096L);
 
-		columnBitmasks.put("lastPublishDate", 8192L);
+		columnBitmasks.put("key_", 8192L);
+
+		columnBitmasks.put("lastPublishDate", 16384L);
+
+		columnBitmasks.put("status", 32768L);
 
 		_columnBitmasks = Collections.unmodifiableMap(columnBitmasks);
 	}
@@ -1384,3 +1486,4 @@ public class CPOptionCategoryModelImpl
 	private CPOptionCategory _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1290002624

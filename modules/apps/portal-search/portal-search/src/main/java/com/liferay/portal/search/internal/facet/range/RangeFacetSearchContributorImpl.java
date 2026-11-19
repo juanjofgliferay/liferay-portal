@@ -173,13 +173,15 @@ public class RangeFacetSearchContributorImpl
 		private String[] _getSelectedRanges() {
 			List<String> ranges = new ArrayList<>();
 
-			if (!ArrayUtil.isEmpty(_selectedRanges)) {
+			if (ArrayUtil.isNotEmpty(_selectedRanges)) {
 				Map<String, String> rangesMap = _getRangesMap(_rangesJSONArray);
 
 				for (String selectedRange : _selectedRanges) {
-					if (rangesMap.containsValue(selectedRange)) {
-						ranges.add(selectedRange);
+					if (!rangesMap.containsValue(selectedRange)) {
+						continue;
 					}
+
+					ranges.add(selectedRange);
 				}
 			}
 

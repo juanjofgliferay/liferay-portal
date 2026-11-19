@@ -15,11 +15,11 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.security.sso.facebook.connect.constants.FacebookConnectWebKeys;
 
-import java.io.IOException;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -31,7 +31,10 @@ import org.osgi.service.component.annotations.Reference;
  *
  * @author Michael C. Han
  */
-@Component(service = DynamicInclude.class)
+@Component(
+	property = "dynamic.include.key=com.liferay.login.web#/navigation.jsp#pre",
+	service = DynamicInclude.class
+)
 public class FacebookConnectNavigationPreJSPDynamicInclude
 	extends BaseJSPDynamicInclude {
 
@@ -79,14 +82,6 @@ public class FacebookConnectNavigationPreJSPDynamicInclude
 			FacebookConnectWebKeys.FACEBOOK_APP_ID, facebookAppId);
 
 		super.include(httpServletRequest, httpServletResponse, key);
-	}
-
-	@Override
-	public void register(
-		DynamicInclude.DynamicIncludeRegistry dynamicIncludeRegistry) {
-
-		dynamicIncludeRegistry.register(
-			"com.liferay.login.web#/navigation.jsp#pre");
 	}
 
 	@Override

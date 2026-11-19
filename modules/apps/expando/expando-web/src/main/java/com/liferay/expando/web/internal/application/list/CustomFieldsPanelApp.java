@@ -19,12 +19,17 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"panel.app.order:Integer=700",
-		"panel.category.key=" + PanelCategoryKeys.CONTROL_PANEL_CONFIGURATION
+		"panel.app.order:Integer=200",
+		"panel.category.key=" + PanelCategoryKeys.CONTROL_PANEL_INSTANCE
 	},
 	service = PanelApp.class
 )
 public class CustomFieldsPanelApp extends BasePanelApp {
+
+	@Override
+	public String getIcon() {
+		return "custom-field";
+	}
 
 	@Override
 	public Portlet getPortlet() {
@@ -37,7 +42,7 @@ public class CustomFieldsPanelApp extends BasePanelApp {
 	}
 
 	@Reference(
-		target = "(javax.portlet.name=" + ExpandoPortletKeys.EXPANDO + ")"
+		target = "(jakarta.portlet.name=" + ExpandoPortletKeys.EXPANDO + ")"
 	)
 	private Portlet _portlet;
 

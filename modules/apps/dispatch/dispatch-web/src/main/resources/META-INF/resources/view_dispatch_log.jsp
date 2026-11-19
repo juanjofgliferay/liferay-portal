@@ -69,7 +69,7 @@ Format dateTimeFormat = FastDateFormatFactoryUtil.getDateTime(FastDateFormatCons
 							cssClass='<%= String.format("background-task-status-row background-task-status-%s %s", dispatchTaskStatus.getLabel(), dispatchTaskStatus.getCssClass()) %>'
 							md="8"
 						>
-							<h6><liferay-ui:message key="<%= dispatchTaskStatus.getLabel() %>" /></h6>
+							<div class="h6"><liferay-ui:message key="<%= dispatchTaskStatus.getLabel() %>" /></div>
 						</clay:col>
 					</clay:row>
 
@@ -98,7 +98,7 @@ Format dateTimeFormat = FastDateFormatFactoryUtil.getDateTime(FastDateFormatCons
 							<clay:col
 								md="8"
 							>
-								<pre><%= dispatchLog.getError() %></pre>
+								<pre><%= HtmlUtil.escape(dispatchLog.getError()) %></pre>
 							</clay:col>
 						</clay:row>
 					</c:if>
@@ -114,7 +114,7 @@ Format dateTimeFormat = FastDateFormatFactoryUtil.getDateTime(FastDateFormatCons
 							<clay:col
 								md="8"
 							>
-								<pre><%= dispatchLog.getOutput() %></pre>
+								<pre><%= HtmlUtil.escape(dispatchLog.getOutput()) %></pre>
 							</clay:col>
 						</clay:row>
 					</c:if>

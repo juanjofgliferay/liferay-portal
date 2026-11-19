@@ -21,7 +21,6 @@ import com.liferay.poshi.core.util.StringPool;
 import com.liferay.poshi.core.util.StringUtil;
 import com.liferay.poshi.core.util.Validator;
 import com.liferay.poshi.runner.exception.ElementNotFoundPoshiRunnerException;
-import com.liferay.poshi.runner.exception.JavaScriptException;
 import com.liferay.poshi.runner.exception.PoshiRunnerWarningException;
 import com.liferay.poshi.runner.util.AntCommands;
 import com.liferay.poshi.runner.util.ArchiveUtil;
@@ -76,8 +75,6 @@ import javax.xml.xpath.XPathExpression;
 import javax.xml.xpath.XPathFactory;
 
 import junit.framework.TestCase;
-
-import net.jsourcerer.webdriver.jserrorcollector.JavaScriptError;
 
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
@@ -142,6 +139,11 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 		setDefaultWindowHandle(webDriver.getWindowHandle());
 
 		WebDriver.Options options = webDriver.manage();
+
+		WebDriver.Timeouts timeouts = options.timeouts();
+
+		timeouts.pageLoadTimeout(
+			Duration.ofSeconds(poshiProperties.timeoutPageLoadWait));
 
 		options.deleteAllCookies();
 
@@ -210,14 +212,7 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 
 		Future<Void> future = executorService.submit(antCommands);
 
-		try {
-			future.get(150, TimeUnit.SECONDS);
-		}
-		catch (ExecutionException executionException) {
-			throw executionException;
-		}
-		catch (TimeoutException timeoutException) {
-		}
+		future.get(150, TimeUnit.SECONDS);
 	}
 
 	@Override
@@ -374,7 +369,7 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 		List<Rule> violations = results.getViolations();
 
 		if (violations.isEmpty()) {
-			System.out.println("No accessiblity violations were found");
+			System.out.println("No accessibility violations were found");
 
 			return;
 		}
@@ -395,7 +390,7 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 		}
 
 		if (rules.isEmpty()) {
-			System.out.println("No accessiblity violations were found");
+			System.out.println("No accessibility violations were found");
 
 			return;
 		}
@@ -451,7 +446,7 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 	public void assertHTMLSourceTextNotPresent(String value) throws Exception {
 		if (isHTMLSourceTextPresent(value)) {
 			throw new Exception(
-				"Pattern \"" + value + "\" does exists in the HTML source");
+				"Pattern \"" + value + "\" exists in the HTML source");
 		}
 	}
 
@@ -459,7 +454,7 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 	public void assertHTMLSourceTextPresent(String value) throws Exception {
 		if (!isHTMLSourceTextPresent(value)) {
 			throw new Exception(
-				"Pattern \"" + value + "\" does not exists in the HTML source");
+				"Pattern \"" + value + "\" does not exist in the HTML source");
 		}
 	}
 
@@ -477,66 +472,6 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 	@Override
 	public void assertJavaScriptErrors(String ignoreJavaScriptError)
 		throws Exception {
-
-		if (!poshiProperties.testAssertJavascriptErrors) {
-			return;
-		}
-
-		String pageSource = null;
-
-		try {
-			pageSource = getPageSource();
-		}
-		catch (Exception exception) {
-			WebDriver.TargetLocator targetLocator = switchTo();
-
-			targetLocator.window(_defaultWindowHandle);
-
-			pageSource = getPageSource();
-		}
-
-		if (pageSource == null) {
-			System.out.println("Unable to obtain HTML source");
-		}
-		else if (pageSource.contains(
-					"html id=\"feedHandler\" xmlns=" +
-						"\"http://www.w3.org/1999/xhtml\"")) {
-
-			return;
-		}
-
-		JavaScriptException javaScriptException = null;
-
-		List<JavaScriptError> javaScriptErrors = JavaScriptError.readErrors(
-			getWrappedWebDriver("//body"));
-
-		for (JavaScriptError javaScriptError : javaScriptErrors) {
-			String javaScriptErrorValue = javaScriptError.toString();
-
-			if ((Validator.isNotNull(ignoreJavaScriptError) &&
-				 javaScriptErrorValue.contains(ignoreJavaScriptError)) ||
-				LiferaySeleniumUtil.isInIgnoreErrorsFile(
-					javaScriptErrorValue, "javascript")) {
-
-				continue;
-			}
-
-			String message = "JAVA_SCRIPT_ERROR: " + javaScriptErrorValue;
-
-			System.out.println(message);
-
-			if (javaScriptException == null) {
-				javaScriptException = new JavaScriptException(message);
-			}
-			else {
-				PoshiRunnerWarningException.addException(
-					new JavaScriptException(message));
-			}
-		}
-
-		if (javaScriptException != null) {
-			throw javaScriptException;
-		}
 	}
 
 	@Override
@@ -1429,6 +1364,7 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 		return LiferaySeleniumUtil.getNumberIncrement(value);
 	}
 
+	@Override
 	public String getOcularBaselineImageDirName() {
 		return _OCULAR_BASELINE_IMAGE_DIR_NAME;
 	}
@@ -1490,9 +1426,11 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 		for (int i = 0; i < allSelectedOptionsWebElements.size(); i++) {
 			WebElement webElement = allSelectedOptionsWebElements.get(i);
 
-			if (webElement != null) {
-				selectedOptionsWebElements[i] = webElement.getText();
+			if (webElement == null) {
+				continue;
 			}
+
+			selectedOptionsWebElements[i] = webElement.getText();
 		}
 
 		return selectedOptionsWebElements;
@@ -1711,11 +1649,7 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 	public boolean isHTMLSourceTextPresent(String value) throws Exception {
 		String pageSource = getPageSource();
 
-		if (pageSource.contains(value)) {
-			return true;
-		}
-
-		return false;
+		return pageSource.contains(value);
 	}
 
 	@Override
@@ -2289,6 +2223,19 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 	}
 
 	@Override
+	public Map<String, Object> returnCDPCommand(
+		String commandName, Map<String, Object> commandParameters) {
+
+		Augmenter augmenter = new Augmenter();
+
+		WebDriver webDriver = augmenter.augment(getWebDriver());
+
+		HasCdp hasCdp = (HasCdp)webDriver;
+
+		return hasCdp.executeCdpCommand(commandName, commandParameters);
+	}
+
+	@Override
 	public void rightClick(String locator) {
 		WebElement webElement = getWebElement(locator);
 
@@ -2362,7 +2309,7 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 			saveScreenshot(fileName);
 		}
 		catch (UnhandledAlertException unhandledAlertException) {
-			LiferaySeleniumUtil.captureScreen(fileName);
+			System.out.println("Unable to save screenshot due to alert");
 		}
 	}
 
@@ -2597,6 +2544,7 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 		_primaryTestSuiteName = primaryTestSuiteName;
 	}
 
+	@Override
 	public void setTestName(String testName) {
 		_testName = testName;
 	}
@@ -2786,9 +2734,11 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 			for (int i = 0; i < tokens.length; i++) {
 				keyboard.type(tokens[i]);
 
-				if ((i + 1) < tokens.length) {
-					keyboard.type(Key.ENTER);
+				if ((i + 1) >= tokens.length) {
+					continue;
 				}
+
+				keyboard.type(Key.ENTER);
 			}
 
 			if (value.endsWith("${line.separator}")) {
@@ -2951,16 +2901,17 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 
 			retryCount++;
 
-			if (retryCount < maxRetries) {
-				String message =
-					"Actual typed value: '" + typedValue +
-						"' did not match expected typed value: '" + value +
-							"'.";
-
-				System.out.println(
-					message + " Retrying LiferaySelenium.type() attempt #" +
-						(retryCount + 1) + ".");
+			if (retryCount >= maxRetries) {
+				continue;
 			}
+
+			String message =
+				"Actual typed value: '" + typedValue +
+					"' did not match expected typed value: '" + value + "'.";
+
+			System.out.println(
+				message + " Retrying LiferaySelenium.type() attempt #" +
+					(retryCount + 1) + ".");
 		}
 	}
 
@@ -3098,10 +3049,10 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 			List<CharSequence> charSequences = new ArrayList<>();
 
 			for (String key : value.split(",")) {
-				CharSequence charSequence = key;
+				CharSequence charSequence = _keysMap.get(key);
 
-				if (_keysMap.containsKey(key)) {
-					charSequence = _keysMap.get(key);
+				if (charSequence == null) {
+					charSequence = key;
 				}
 
 				charSequences.add(charSequence);
@@ -3411,7 +3362,7 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 	public void waitForPopUp(String windowID, String timeout) {
 		int wait = 0;
 
-		if (timeout.equals("")) {
+		if (timeout.equals("") || timeout.equals("null")) {
 			wait = 30;
 		}
 		else {
@@ -3573,7 +3524,7 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 		sb.append(eventType);
 		sb.append("');event.initEvent('");
 		sb.append(event);
-		sb.append("', true, false);element.dispatchEvent(event);");
+		sb.append("', true, true);element.dispatchEvent(event);");
 
 		javascriptExecutor.executeScript(sb.toString(), webElement);
 	}
@@ -3604,6 +3555,32 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 
 	protected By getBy(String locator) {
 		return LiferaySeleniumUtil.getBy(locator);
+	}
+
+	protected String getCSSSource(String htmlSource) throws Exception {
+		org.jsoup.nodes.Document htmlDocument = Jsoup.parse(htmlSource);
+
+		Elements elements = htmlDocument.select("link[type=text/css]");
+
+		StringBuilder sb = new StringBuilder();
+
+		for (Element element : elements) {
+			String href = element.attr("href");
+
+			if (!href.contains(poshiProperties.portalURL)) {
+				href = poshiProperties.portalURL + href;
+			}
+
+			Connection connection = Jsoup.connect(href);
+
+			org.jsoup.nodes.Document document = connection.get();
+
+			sb.append(document.text());
+
+			sb.append("\n");
+		}
+
+		return sb.toString();
 	}
 
 	protected Condition getConfirmationCondition(String pattern) {
@@ -3655,32 +3632,6 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 		};
 	}
 
-	protected String getCSSSource(String htmlSource) throws Exception {
-		org.jsoup.nodes.Document htmlDocument = Jsoup.parse(htmlSource);
-
-		Elements elements = htmlDocument.select("link[type=text/css]");
-
-		StringBuilder sb = new StringBuilder();
-
-		for (Element element : elements) {
-			String href = element.attr("href");
-
-			if (!href.contains(poshiProperties.portalURL)) {
-				href = poshiProperties.portalURL + href;
-			}
-
-			Connection connection = Jsoup.connect(href);
-
-			org.jsoup.nodes.Document document = connection.get();
-
-			sb.append(document.text());
-
-			sb.append("\n");
-		}
-
-		return sb.toString();
-	}
-
 	protected String getDefaultWindowHandle() {
 		return _defaultWindowHandle;
 	}
@@ -3703,7 +3654,7 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 	protected String getEditorName(String locator) {
 		String titleAttribute = getAttribute(locator + "@title");
 
-		if (titleAttribute.contains("Rich Text Editor,")) {
+		if (titleAttribute.contains("Rich Text Editor")) {
 			int x = titleAttribute.indexOf(",");
 
 			int y = titleAttribute.indexOf(",", x + 1);

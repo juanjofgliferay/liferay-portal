@@ -1,0 +1,1029 @@
+/**
+ * SPDX-FileCopyrightText: (c) 2024 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
+ */
+
+package com.liferay.asset.list.web.internal.display.context;
+
+import com.liferay.asset.kernel.AssetRendererFactoryRegistryUtil;
+import com.liferay.asset.kernel.model.AssetCategory;
+import com.liferay.asset.kernel.model.AssetRendererFactory;
+import com.liferay.asset.kernel.model.AssetVocabulary;
+import com.liferay.asset.kernel.model.ClassTypeReader;
+import com.liferay.asset.kernel.service.AssetCategoryLocalServiceUtil;
+import com.liferay.asset.kernel.service.AssetTagLocalServiceUtil;
+import com.liferay.asset.kernel.service.AssetVocabularyServiceUtil;
+import com.liferay.asset.list.constants.AssetListConstants;
+import com.liferay.asset.list.model.AssetListEntry;
+import com.liferay.asset.list.service.AssetListEntryLocalService;
+import com.liferay.asset.list.service.AssetListEntryLocalServiceUtil;
+import com.liferay.asset.test.util.asset.renderer.factory.TestAssetRendererFactory;
+import com.liferay.asset.util.AssetRendererFactoryClassProvider;
+import com.liferay.depot.util.SiteConnectedGroupGroupProviderUtil;
+import com.liferay.info.search.InfoSearchClassMapperRegistry;
+import com.liferay.item.selector.ItemSelector;
+import com.liferay.object.service.ObjectDefinitionLocalService;
+import com.liferay.petra.string.StringPool;
+import com.liferay.portal.json.JSONFactoryImpl;
+import com.liferay.portal.kernel.json.JSONArray;
+import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.json.JSONObject;
+import com.liferay.portal.kernel.json.JSONUtil;
+import com.liferay.portal.kernel.language.Language;
+import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.module.service.Snapshot;
+import com.liferay.portal.kernel.module.util.SystemBundleUtil;
+import com.liferay.portal.kernel.search.Field;
+import com.liferay.portal.kernel.test.ReflectionTestUtil;
+import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.HashMapBuilder;
+import com.liferay.portal.kernel.util.ListUtil;
+import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.UnicodeProperties;
+import com.liferay.portal.kernel.util.UnicodePropertiesBuilder;
+import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.portal.test.log.LogCapture;
+import com.liferay.portal.test.log.LogEntry;
+import com.liferay.portal.test.log.LoggerTestUtil;
+import com.liferay.portal.test.rule.LiferayUnitTestRule;
+import com.liferay.segments.configuration.provider.SegmentsConfigurationProvider;
+import com.liferay.staging.StagingGroupHelper;
+import com.liferay.staging.StagingGroupHelperUtil;
+
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Rule;
+import org.junit.Test;
+
+import org.mockito.AdditionalMatchers;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
+import org.mockito.stubbing.Answer;
+
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.FrameworkUtil;
+
+/**
+ * @author Lourdes Fernández Besada
+ */
+public class EditAssetListDisplayContextTest {
+
+	@ClassRule
+	@Rule
+	public static final LiferayUnitTestRule liferayUnitTestRule =
+		LiferayUnitTestRule.INSTANCE;
+
+	@AfterClass
+	public static void tearDownClass() {
+		_assetRendererFactoryRegistryUtilMockedStatic.close();
+		_frameworkUtilMockedStatic.close();
+		_stagingGroupHelperUtilMockedStatic.close();
+	}
+
+	@Before
+	public void setUp() {
+		_httpServletRequest = Mockito.mock(HttpServletRequest.class);
+
+		_themeDisplay = Mockito.mock(ThemeDisplay.class);
+
+		Mockito.when(
+			_themeDisplay.getLocale()
+		).thenReturn(
+			LocaleUtil.getDefault()
+		);
+
+		Mockito.when(
+			_themeDisplay.getScopeGroupId()
+		).thenReturn(
+			_SCOPE_GROUP_ID
+		);
+
+		Mockito.when(
+			_httpServletRequest.getAttribute(WebKeys.THEME_DISPLAY)
+		).thenReturn(
+			_themeDisplay
+		);
+
+		_portletRequest = Mockito.mock(PortletRequest.class);
+
+		_setUpJSONFactoryUtil();
+		_setUpLanguageUtil();
+		_setUpPortalUtil();
+		_setUpSiteConnectedGroupGroupProviderUtil();
+		_setUpStagingGroupHelperUtil();
+	}
+
+	@After
+	public void tearDown() {
+		_siteConnectedGroupGroupProviderUtilMockedStatic.close();
+	}
+
+	@Test
+	public void testGetAssetEntryTypesJSONArray() throws Exception {
+		String className = RandomTestUtil.randomString();
+		long classNameId = RandomTestUtil.randomLong();
+		String expectedLabel = RandomTestUtil.randomString();
+
+		_setUpAssetRendererFactoryRegistryUtil(
+			className, classNameId, expectedLabel);
+
+		UnicodeProperties unicodeProperties = UnicodePropertiesBuilder.put(
+			"classNameIds", classNameId
+		).put(
+			"selectionStyle", "manual"
+		).build();
+
+		_setUpAssetListEntryLocalServiceUtil(
+			StringPool.BLANK, className, unicodeProperties.toString());
+
+		EditAssetListDisplayContext editAssetListDisplayContext =
+			_getEditAssetListDisplayContext(unicodeProperties);
+
+		JSONArray assetEntryTypesJSONArray =
+			editAssetListDisplayContext.getAssetEntryTypesJSONArray();
+
+		Assert.assertEquals(
+			assetEntryTypesJSONArray.toString(), 1,
+			assetEntryTypesJSONArray.length());
+
+		JSONObject assetEntryTypeJSONObject =
+			assetEntryTypesJSONArray.getJSONObject(0);
+
+		Assert.assertEquals(
+			classNameId, assetEntryTypeJSONObject.getLong("classNameId"));
+		Assert.assertArrayEquals(
+			new long[] {_SCOPE_GROUP_ID},
+			JSONUtil.toLongArray(
+				assetEntryTypeJSONObject.getJSONArray("groupIds")));
+		Assert.assertEquals(
+			expectedLabel, assetEntryTypeJSONObject.getString("label"));
+	}
+
+	@Test
+	public void testGetAssetEntryTypesJSONArrayNoAvailableClassNameId()
+		throws Exception {
+
+		long classNameId = RandomTestUtil.randomLong();
+
+		_setUpAssetRendererFactoryRegistryUtil(null, classNameId, null);
+
+		UnicodeProperties unicodeProperties = UnicodePropertiesBuilder.put(
+			"classNameIds", classNameId
+		).put(
+			"selectionStyle", "manual"
+		).build();
+
+		_setUpAssetListEntryLocalServiceUtil(
+			StringPool.BLANK, RandomTestUtil.randomString(),
+			unicodeProperties.toString());
+
+		EditAssetListDisplayContext editAssetListDisplayContext =
+			_getEditAssetListDisplayContext(unicodeProperties);
+
+		JSONArray assetEntryTypesJSONArray =
+			editAssetListDisplayContext.getAssetEntryTypesJSONArray();
+
+		Assert.assertEquals(
+			assetEntryTypesJSONArray.toString(), 0,
+			assetEntryTypesJSONArray.length());
+	}
+
+	@Test
+	public void testGetAssetEntryTypesJSONArrayWithUnstagedPortlet()
+		throws Exception {
+
+		String className = RandomTestUtil.randomString();
+		long classNameId = RandomTestUtil.randomLong();
+
+		_setUpAssetRendererFactoryRegistryUtil(
+			className, classNameId, RandomTestUtil.randomString());
+
+		long liveGroupId = RandomTestUtil.randomLong();
+
+		Mockito.when(
+			_stagingGroupHelper.getStagedPortletGroupId(
+				Mockito.eq(_SCOPE_GROUP_ID), Mockito.any())
+		).thenReturn(
+			liveGroupId
+		);
+
+		_setUpCurrentAndAncestorSiteAndDepotGroupIds(
+			_SCOPE_GROUP_ID, _SCOPE_GROUP_ID, RandomTestUtil.randomLong());
+
+		long liveDepotGroupId = RandomTestUtil.randomLong();
+
+		_setUpCurrentAndAncestorSiteAndDepotGroupIds(
+			liveGroupId, liveGroupId, liveDepotGroupId);
+
+		UnicodeProperties unicodeProperties = UnicodePropertiesBuilder.put(
+			"classNameIds", classNameId
+		).put(
+			"selectionStyle", "manual"
+		).build();
+
+		_setUpAssetListEntryLocalServiceUtil(
+			StringPool.BLANK, className, unicodeProperties.toString());
+
+		EditAssetListDisplayContext editAssetListDisplayContext =
+			_getEditAssetListDisplayContext(unicodeProperties);
+
+		JSONArray assetEntryTypesJSONArray =
+			editAssetListDisplayContext.getAssetEntryTypesJSONArray();
+
+		JSONObject assetEntryTypeJSONObject =
+			assetEntryTypesJSONArray.getJSONObject(0);
+
+		Assert.assertArrayEquals(
+			new long[] {liveGroupId, liveDepotGroupId},
+			JSONUtil.toLongArray(
+				assetEntryTypeJSONObject.getJSONArray("groupIds")));
+	}
+
+	@Test
+	public void testGetClassNameIdsDynamicSelection() {
+		long classNameId = RandomTestUtil.randomLong();
+
+		UnicodeProperties unicodeProperties = UnicodePropertiesBuilder.put(
+			"anyAssetType", classNameId
+		).put(
+			"selectionStyle", "dynamic"
+		).build();
+
+		EditAssetListDisplayContext editAssetListDisplayContext =
+			_getEditAssetListDisplayContext(unicodeProperties);
+
+		Assert.assertArrayEquals(
+			new long[] {classNameId},
+			editAssetListDisplayContext.getClassNameIds(
+				unicodeProperties,
+				new long[] {
+					RandomTestUtil.randomLong(), classNameId,
+					RandomTestUtil.randomLong()
+				}));
+	}
+
+	@Test
+	public void testGetClassNameIdsDynamicSelectionNoAvailableClassNameId() {
+		UnicodeProperties unicodeProperties = UnicodePropertiesBuilder.put(
+			"anyAssetType", RandomTestUtil.randomLong()
+		).put(
+			"selectionStyle", "dynamic"
+		).build();
+
+		EditAssetListDisplayContext editAssetListDisplayContext =
+			_getEditAssetListDisplayContext(unicodeProperties);
+
+		Assert.assertArrayEquals(
+			new long[0],
+			editAssetListDisplayContext.getClassNameIds(
+				unicodeProperties,
+				new long[] {
+					RandomTestUtil.randomLong(), RandomTestUtil.randomLong(),
+					RandomTestUtil.randomLong()
+				}));
+	}
+
+	@Test
+	public void testGetClassNameIdsDynamicSelectionNonexistentClassNameId() {
+		UnicodeProperties unicodeProperties = UnicodePropertiesBuilder.put(
+			"anyAssetType", AssetListConstants.CLASS_NAME_ID_NONEXISTENT
+		).put(
+			"selectionStyle", "dynamic"
+		).build();
+
+		EditAssetListDisplayContext editAssetListDisplayContext =
+			_getEditAssetListDisplayContext(unicodeProperties);
+
+		Assert.assertArrayEquals(
+			new long[0],
+			editAssetListDisplayContext.getClassNameIds(
+				unicodeProperties,
+				new long[] {
+					RandomTestUtil.randomLong(), RandomTestUtil.randomLong()
+				}));
+	}
+
+	@Test
+	public void testGetFilterMaps() {
+		long[] groupIds = {RandomTestUtil.randomLong()};
+
+		Mockito.when(
+			_portal.getCurrentAndAncestorSiteGroupIds(
+				Mockito.any(long[].class), Mockito.eq(true))
+		).thenReturn(
+			groupIds
+		);
+
+		Mockito.when(
+			_themeDisplay.getScopeGroup()
+		).thenReturn(
+			Mockito.mock(Group.class)
+		);
+
+		try (MockedStatic<AssetCategoryLocalServiceUtil>
+				assetCategoryLocalServiceUtilMockedStatic = Mockito.mockStatic(
+					AssetCategoryLocalServiceUtil.class);
+			MockedStatic<AssetTagLocalServiceUtil>
+				assetTagLocalServiceUtilMockedStatic = Mockito.mockStatic(
+					AssetTagLocalServiceUtil.class)) {
+
+			AssetCategory assetCategory1 = _getAssetCategory(
+				RandomTestUtil.randomLong(), RandomTestUtil.randomString());
+
+			assetCategoryLocalServiceUtilMockedStatic.when(
+				() -> AssetCategoryLocalServiceUtil.fetchAssetCategory(
+					assetCategory1.getCategoryId())
+			).thenReturn(
+				assetCategory1
+			);
+
+			AssetCategory assetCategory2 = _getAssetCategory(
+				RandomTestUtil.randomLong(), RandomTestUtil.randomString());
+
+			assetCategoryLocalServiceUtilMockedStatic.when(
+				() -> AssetCategoryLocalServiceUtil.fetchAssetCategory(
+					assetCategory2.getCategoryId())
+			).thenReturn(
+				assetCategory2
+			);
+
+			String assetTagName = RandomTestUtil.randomString();
+
+			assetTagLocalServiceUtilMockedStatic.when(
+				() -> AssetTagLocalServiceUtil.getTagIds(groupIds, assetTagName)
+			).thenReturn(
+				new long[] {RandomTestUtil.randomLong()}
+			);
+
+			JSONArray objectFieldValueJSONArray = JSONUtil.put(
+				JSONUtil.put(
+					"label", RandomTestUtil.randomString()
+				).put(
+					"value", String.valueOf(assetCategory1.getCategoryId())
+				));
+
+			EditAssetListDisplayContext editAssetListDisplayContext =
+				_getEditAssetListDisplayContext(
+					UnicodePropertiesBuilder.put(
+						"filters",
+						JSONUtil.putAll(
+							JSONUtil.put(
+								"propertyName", "assetCategories"
+							).put(
+								"value",
+								JSONUtil.putAll(
+									JSONUtil.put(
+										"label", RandomTestUtil.randomString()
+									).put(
+										"value",
+										String.valueOf(
+											assetCategory1.getCategoryId())
+									),
+									JSONUtil.put(
+										"value",
+										String.valueOf(
+											assetCategory2.getCategoryId())),
+									JSONUtil.put(
+										"label", RandomTestUtil.randomString()
+									).put(
+										"value",
+										String.valueOf(
+											RandomTestUtil.randomLong())
+									))
+							),
+							JSONUtil.put(
+								"propertyName", "assetTags"
+							).put(
+								"value",
+								JSONUtil.putAll(
+									JSONUtil.put(
+										"label", assetTagName
+									).put(
+										"value", assetTagName
+									),
+									JSONUtil.put(
+										"value", RandomTestUtil.randomString()))
+							),
+							JSONUtil.put(
+								"classNameId", RandomTestUtil.randomLong()
+							).put(
+								"propertyName", "assetCategories"
+							).put(
+								"value", objectFieldValueJSONArray
+							)
+						).toString()
+					).build());
+
+			List<Map<String, Object>> filterMaps =
+				editAssetListDisplayContext.getFilterMaps();
+
+			Assert.assertEquals(filterMaps.toString(), 3, filterMaps.size());
+
+			Map<String, Object> filterMap = filterMaps.get(0);
+
+			Assert.assertEquals(
+				Arrays.asList(
+					HashMapBuilder.<String, Object>put(
+						"label",
+						assetCategory1.getTitle(LocaleUtil.getDefault())
+					).put(
+						"value", String.valueOf(assetCategory1.getCategoryId())
+					).build(),
+					HashMapBuilder.<String, Object>put(
+						"label",
+						assetCategory2.getTitle(LocaleUtil.getDefault())
+					).put(
+						"value", String.valueOf(assetCategory2.getCategoryId())
+					).build()),
+				filterMap.get("value"));
+
+			filterMap = filterMaps.get(1);
+
+			Assert.assertEquals(
+				Collections.singletonList(
+					HashMapBuilder.<String, Object>put(
+						"label", assetTagName
+					).put(
+						"value", assetTagName
+					).build()),
+				filterMap.get("value"));
+
+			filterMap = filterMaps.get(2);
+
+			Assert.assertEquals(
+				objectFieldValueJSONArray.toString(),
+				String.valueOf(filterMap.get("value")));
+		}
+	}
+
+	@Test
+	public void testGetFilterMapsWhenAssetCategoryAndAssetTagAreDeleted() {
+		Mockito.when(
+			_portal.getCurrentAndAncestorSiteGroupIds(
+				Mockito.any(long[].class), Mockito.eq(true))
+		).thenReturn(
+			new long[] {RandomTestUtil.randomLong()}
+		);
+
+		Mockito.when(
+			_themeDisplay.getScopeGroup()
+		).thenReturn(
+			Mockito.mock(Group.class)
+		);
+
+		try (MockedStatic<AssetCategoryLocalServiceUtil>
+				assetCategoryLocalServiceUtilMockedStatic = Mockito.mockStatic(
+					AssetCategoryLocalServiceUtil.class);
+			MockedStatic<AssetTagLocalServiceUtil>
+				assetTagLocalServiceUtilMockedStatic = Mockito.mockStatic(
+					AssetTagLocalServiceUtil.class)) {
+
+			String keywords = RandomTestUtil.randomString();
+
+			EditAssetListDisplayContext editAssetListDisplayContext =
+				_getEditAssetListDisplayContext(
+					UnicodePropertiesBuilder.put(
+						"filters",
+						JSONUtil.putAll(
+							JSONUtil.put(
+								"propertyName", "assetCategories"
+							).put(
+								"value",
+								JSONUtil.put(
+									JSONUtil.put(
+										"label", RandomTestUtil.randomString()
+									).put(
+										"value",
+										String.valueOf(
+											RandomTestUtil.randomLong())
+									))
+							),
+							JSONUtil.put(
+								"propertyName", "assetTags"
+							).put(
+								"value",
+								JSONUtil.put(
+									JSONUtil.put(
+										"value", RandomTestUtil.randomString()))
+							),
+							JSONUtil.put(
+								"propertyName", "keywords"
+							).put(
+								"value", keywords
+							)
+						).toString()
+					).build());
+
+			List<Map<String, Object>> filterMaps =
+				editAssetListDisplayContext.getFilterMaps();
+
+			Assert.assertEquals(filterMaps.toString(), 1, filterMaps.size());
+
+			Map<String, Object> filterMap = filterMaps.get(0);
+
+			Assert.assertEquals("keywords", filterMap.get("propertyName"));
+			Assert.assertEquals(keywords, filterMap.get("value"));
+		}
+	}
+
+	@Test
+	public void testGetFilterMapsWhenAssetCategoryLookupFails() {
+		try (MockedStatic<AssetCategoryLocalServiceUtil>
+				assetCategoryLocalServiceUtilMockedStatic = Mockito.mockStatic(
+					AssetCategoryLocalServiceUtil.class);
+			LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
+				EditAssetListDisplayContext.class.getName(),
+				LoggerTestUtil.WARN)) {
+
+			long assetCategoryId = RandomTestUtil.randomLong();
+
+			assetCategoryLocalServiceUtilMockedStatic.when(
+				() -> AssetCategoryLocalServiceUtil.fetchAssetCategory(
+					assetCategoryId)
+			).thenThrow(
+				new RuntimeException()
+			);
+
+			JSONArray assetCategoriesValueJSONArray = JSONUtil.put(
+				JSONUtil.put(
+					"label", RandomTestUtil.randomString()
+				).put(
+					"value", String.valueOf(assetCategoryId)
+				));
+
+			String keywords = RandomTestUtil.randomString();
+
+			EditAssetListDisplayContext editAssetListDisplayContext =
+				_getEditAssetListDisplayContext(
+					UnicodePropertiesBuilder.put(
+						"filters",
+						JSONUtil.putAll(
+							JSONUtil.put(
+								"propertyName", "assetCategories"
+							).put(
+								"value", assetCategoriesValueJSONArray
+							),
+							JSONUtil.put(
+								"propertyName", "keywords"
+							).put(
+								"value", keywords
+							)
+						).toString()
+					).build());
+
+			List<Map<String, Object>> filterMaps =
+				editAssetListDisplayContext.getFilterMaps();
+
+			Assert.assertEquals(filterMaps.toString(), 2, filterMaps.size());
+
+			Map<String, Object> filterMap = filterMaps.get(0);
+
+			Assert.assertEquals(
+				assetCategoriesValueJSONArray.toString(),
+				String.valueOf(filterMap.get("value")));
+
+			filterMap = filterMaps.get(1);
+
+			Assert.assertEquals(keywords, filterMap.get("value"));
+
+			List<LogEntry> logEntries = logCapture.getLogEntries();
+
+			Assert.assertEquals(logEntries.toString(), 1, logEntries.size());
+
+			LogEntry logEntry = logEntries.get(0);
+
+			Assert.assertTrue(
+				StringUtil.startsWith(
+					logEntry.getMessage(), "Unable to resolve filter "));
+		}
+	}
+
+	@Test
+	public void testGetNonexistentClassNameIds() {
+		long classNameId = RandomTestUtil.randomLong();
+		long nonexistentClassNameId = RandomTestUtil.randomLong();
+
+		Mockito.when(
+			_portal.fetchClassName(classNameId)
+		).thenReturn(
+			RandomTestUtil.randomString()
+		);
+
+		EditAssetListDisplayContext editAssetListDisplayContext =
+			_getEditAssetListDisplayContext(new UnicodeProperties());
+
+		Assert.assertArrayEquals(
+			new long[] {AssetListConstants.CLASS_NAME_ID_NONEXISTENT},
+			editAssetListDisplayContext.getNonexistentClassNameIds(
+				UnicodePropertiesBuilder.put(
+					"anyAssetType", AssetListConstants.CLASS_NAME_ID_NONEXISTENT
+				).build()));
+		Assert.assertArrayEquals(
+			new long[] {nonexistentClassNameId},
+			editAssetListDisplayContext.getNonexistentClassNameIds(
+				UnicodePropertiesBuilder.put(
+					"anyAssetType", Boolean.FALSE.toString()
+				).put(
+					"classNameIds",
+					StringUtil.merge(
+						new long[] {classNameId, nonexistentClassNameId})
+				).build()));
+		Assert.assertArrayEquals(
+			new long[0],
+			editAssetListDisplayContext.getNonexistentClassNameIds(
+				UnicodePropertiesBuilder.put(
+					"anyAssetType", Boolean.TRUE.toString()
+				).put(
+					"classNameIds", String.valueOf(nonexistentClassNameId)
+				).build()));
+		Assert.assertArrayEquals(
+			new long[0],
+			editAssetListDisplayContext.getNonexistentClassNameIds(
+				UnicodePropertiesBuilder.put(
+					"anyAssetType", classNameId
+				).put(
+					"classNameIds", String.valueOf(nonexistentClassNameId)
+				).build()));
+		Assert.assertArrayEquals(
+			new long[] {nonexistentClassNameId},
+			editAssetListDisplayContext.getNonexistentClassNameIds(
+				UnicodePropertiesBuilder.put(
+					"anyAssetType", nonexistentClassNameId
+				).build()));
+	}
+
+	@Test
+	public void testGetOrderByColumnsWhenLegacyModifiedDateIsSaved() {
+		EditAssetListDisplayContext editAssetListDisplayContext =
+			_getEditAssetListDisplayContext(
+				UnicodePropertiesBuilder.put(
+					"orderByColumn1", "modifiedDate"
+				).put(
+					"orderByColumn2", "modifiedDate"
+				).build());
+
+		Assert.assertEquals(
+			Field.MODIFIED_DATE,
+			editAssetListDisplayContext.getOrderByColumn1());
+		Assert.assertEquals(
+			Field.MODIFIED_DATE,
+			editAssetListDisplayContext.getOrderByColumn2());
+	}
+
+	@Test
+	public void testGetOrderByColumnsWhenUnset() {
+		EditAssetListDisplayContext editAssetListDisplayContext =
+			_getEditAssetListDisplayContext(new UnicodeProperties());
+
+		Assert.assertEquals(
+			Field.MODIFIED_DATE,
+			editAssetListDisplayContext.getOrderByColumn1());
+		Assert.assertEquals(
+			"title", editAssetListDisplayContext.getOrderByColumn2());
+	}
+
+	@Test
+	public void testGetVocabularyIdsWithMissingClassName() throws Exception {
+		AssetVocabulary assetVocabulary = Mockito.mock(AssetVocabulary.class);
+
+		long missingClassNameId = RandomTestUtil.randomLong();
+
+		Mockito.when(
+			assetVocabulary.getSelectedClassNameIds()
+		).thenReturn(
+			new long[] {missingClassNameId}
+		);
+
+		Mockito.when(
+			_portal.getClassName(missingClassNameId)
+		).thenThrow(
+			new RuntimeException()
+		);
+
+		long[] groupIds = {RandomTestUtil.randomLong()};
+
+		Mockito.when(
+			_portal.getCurrentAndAncestorSiteGroupIds(Mockito.any(long[].class))
+		).thenReturn(
+			groupIds
+		);
+
+		Mockito.when(
+			_portal.getCurrentAndAncestorSiteGroupIds(
+				Mockito.any(long[].class), Mockito.eq(true))
+		).thenReturn(
+			groupIds
+		);
+
+		Mockito.when(
+			_themeDisplay.getScopeGroup()
+		).thenReturn(
+			Mockito.mock(Group.class)
+		);
+
+		try (MockedStatic<AssetVocabularyServiceUtil>
+				assetVocabularyServiceUtilMockedStatic = Mockito.mockStatic(
+					AssetVocabularyServiceUtil.class)) {
+
+			assetVocabularyServiceUtilMockedStatic.when(
+				() -> AssetVocabularyServiceUtil.getGroupsVocabularies(
+					Mockito.any(long[].class))
+			).thenReturn(
+				ListUtil.fromArray(assetVocabulary)
+			);
+
+			EditAssetListDisplayContext editAssetListDisplayContext =
+				_getEditAssetListDisplayContext(new UnicodeProperties());
+
+			Assert.assertEquals(
+				Collections.emptyList(),
+				editAssetListDisplayContext.getVocabularyIds());
+		}
+	}
+
+	private AssetCategory _getAssetCategory(long categoryId, String title) {
+		AssetCategory assetCategory = Mockito.mock(AssetCategory.class);
+
+		Mockito.when(
+			assetCategory.getCategoryId()
+		).thenReturn(
+			categoryId
+		);
+
+		Mockito.when(
+			assetCategory.getTitle(LocaleUtil.getDefault())
+		).thenReturn(
+			title
+		);
+
+		return assetCategory;
+	}
+
+	private EditAssetListDisplayContext _getEditAssetListDisplayContext(
+		UnicodeProperties unicodeProperties) {
+
+		AssetRendererFactoryClassProvider assetRendererFactoryClassProvider =
+			Mockito.mock(AssetRendererFactoryClassProvider.class);
+
+		Mockito.when(
+			assetRendererFactoryClassProvider.getClass(
+				Mockito.any(AssetRendererFactory.class))
+		).thenAnswer(
+			(Answer<Class<? extends AssetRendererFactory<?>>>)
+				invocationOnMock -> TestAssetRendererFactory.class
+		);
+
+		return new EditAssetListDisplayContext(
+			assetRendererFactoryClassProvider,
+			Mockito.mock(InfoSearchClassMapperRegistry.class),
+			Mockito.mock(ItemSelector.class),
+			Mockito.mock(ObjectDefinitionLocalService.class), _portletRequest,
+			Mockito.mock(PortletResponse.class),
+			Mockito.mock(SegmentsConfigurationProvider.class),
+			unicodeProperties);
+	}
+
+	private void _setUpAssetListEntryLocalServiceUtil(
+		String assetEntrySubtype, String assetEntryType, String typeSettings) {
+
+		AssetListEntry assetListEntry = Mockito.mock(AssetListEntry.class);
+
+		Mockito.when(
+			assetListEntry.getAssetEntrySubtype()
+		).thenReturn(
+			assetEntrySubtype
+		);
+
+		Mockito.when(
+			assetListEntry.getAssetEntryType()
+		).thenReturn(
+			assetEntryType
+		);
+
+		Mockito.when(
+			assetListEntry.getTypeSettings(Mockito.anyLong())
+		).thenReturn(
+			typeSettings
+		);
+
+		AssetListEntryLocalService assetListEntryLocalService = Mockito.mock(
+			AssetListEntryLocalService.class);
+
+		Mockito.when(
+			assetListEntryLocalService.fetchAssetListEntry(Mockito.anyLong())
+		).thenReturn(
+			assetListEntry
+		);
+
+		ReflectionTestUtil.setFieldValue(
+			AssetListEntryLocalServiceUtil.class, "_serviceSnapshot",
+			new Snapshot<AssetListEntryLocalService>(
+				AssetListEntryLocalServiceUtil.class,
+				AssetListEntryLocalService.class) {
+
+				@Override
+				public AssetListEntryLocalService get() {
+					return assetListEntryLocalService;
+				}
+
+			});
+	}
+
+	private void _setUpAssetRendererFactoryRegistryUtil(
+		String className, long classNameId, ClassTypeReader classTypeReader,
+		boolean supportsClassTypes, String typeName) {
+
+		AssetRendererFactory<?> assetRendererFactory = null;
+
+		if (className != null) {
+			assetRendererFactory = Mockito.mock(AssetRendererFactory.class);
+
+			Mockito.when(
+				assetRendererFactory.isActive(Mockito.anyLong())
+			).thenReturn(
+				true
+			);
+
+			Mockito.when(
+				assetRendererFactory.getClassName()
+			).thenReturn(
+				className
+			);
+
+			Mockito.when(
+				assetRendererFactory.getClassNameId()
+			).thenReturn(
+				classNameId
+			);
+
+			Mockito.when(
+				assetRendererFactory.getClassTypeReader()
+			).thenReturn(
+				classTypeReader
+			);
+
+			Mockito.when(
+				assetRendererFactory.getTypeName(LocaleUtil.getDefault())
+			).thenReturn(
+				typeName
+			);
+
+			Mockito.when(
+				assetRendererFactory.isSelectable()
+			).thenReturn(
+				true
+			);
+
+			Mockito.when(
+				assetRendererFactory.isSupportsClassTypes()
+			).thenReturn(
+				supportsClassTypes
+			);
+		}
+
+		_assetRendererFactoryRegistryUtilMockedStatic.when(
+			() ->
+				AssetRendererFactoryRegistryUtil.
+					getAssetRendererFactoryByClassNameId(classNameId)
+		).thenReturn(
+			assetRendererFactory
+		);
+
+		ArrayList<AssetRendererFactory<?>> assetRendererFactories =
+			new ArrayList<>();
+
+		assetRendererFactories.add(assetRendererFactory);
+
+		_assetRendererFactoryRegistryUtilMockedStatic.when(
+			() -> AssetRendererFactoryRegistryUtil.getAssetRendererFactories(
+				Mockito.anyLong(), Mockito.eq(true))
+		).thenReturn(
+			assetRendererFactories
+		);
+	}
+
+	private void _setUpAssetRendererFactoryRegistryUtil(
+		String className, long classNameId, String typeName) {
+
+		_setUpAssetRendererFactoryRegistryUtil(
+			className, classNameId, null, false, typeName);
+	}
+
+	private void _setUpCurrentAndAncestorSiteAndDepotGroupIds(
+		long groupId, long... currentAndAncestorSiteAndDepotGroupIds) {
+
+		_siteConnectedGroupGroupProviderUtilMockedStatic.when(
+			() ->
+				SiteConnectedGroupGroupProviderUtil.
+					getCurrentAndAncestorSiteAndDepotGroupIds(
+						AdditionalMatchers.aryEq(new long[] {groupId}))
+		).thenReturn(
+			currentAndAncestorSiteAndDepotGroupIds
+		);
+	}
+
+	private void _setUpJSONFactoryUtil() {
+		JSONFactoryUtil jsonFactoryUtil = new JSONFactoryUtil();
+
+		jsonFactoryUtil.setJSONFactory(new JSONFactoryImpl());
+	}
+
+	private void _setUpLanguageUtil() {
+		LanguageUtil languageUtil = new LanguageUtil();
+
+		languageUtil.setLanguage(Mockito.mock(Language.class));
+	}
+
+	private void _setUpPortalUtil() {
+		PortalUtil portalUtil = new PortalUtil();
+
+		_portal = Mockito.mock(Portal.class);
+
+		Mockito.when(
+			_portal.getHttpServletRequest(_portletRequest)
+		).thenReturn(
+			_httpServletRequest
+		);
+
+		portalUtil.setPortal(_portal);
+	}
+
+	private void _setUpSiteConnectedGroupGroupProviderUtil() {
+		BundleContext bundleContext = SystemBundleUtil.getBundleContext();
+
+		_frameworkUtilMockedStatic.when(
+			() -> FrameworkUtil.getBundle(
+				SiteConnectedGroupGroupProviderUtil.class)
+		).thenReturn(
+			bundleContext.getBundle()
+		);
+
+		_siteConnectedGroupGroupProviderUtilMockedStatic = Mockito.mockStatic(
+			SiteConnectedGroupGroupProviderUtil.class);
+
+		_siteConnectedGroupGroupProviderUtilMockedStatic.when(
+			() ->
+				SiteConnectedGroupGroupProviderUtil.
+					getCurrentAndAncestorSiteAndDepotGroupIds(
+						Mockito.any(long[].class))
+		).thenAnswer(
+			invocationOnMock -> invocationOnMock.getArgument(0)
+		);
+	}
+
+	private void _setUpStagingGroupHelperUtil() {
+		_stagingGroupHelper = Mockito.mock(StagingGroupHelper.class);
+
+		Mockito.when(
+			_stagingGroupHelper.getStagedPortletGroupId(
+				Mockito.anyLong(), Mockito.any())
+		).thenAnswer(
+			invocationOnMock -> invocationOnMock.getArgument(0)
+		);
+
+		_stagingGroupHelperUtilMockedStatic.when(
+			StagingGroupHelperUtil::getStagingGroupHelper
+		).thenReturn(
+			_stagingGroupHelper
+		);
+	}
+
+	private static final long _SCOPE_GROUP_ID = RandomTestUtil.randomLong();
+
+	private static final MockedStatic<AssetRendererFactoryRegistryUtil>
+		_assetRendererFactoryRegistryUtilMockedStatic = Mockito.mockStatic(
+			AssetRendererFactoryRegistryUtil.class);
+	private static final MockedStatic<FrameworkUtil>
+		_frameworkUtilMockedStatic = Mockito.mockStatic(FrameworkUtil.class);
+	private static final MockedStatic<StagingGroupHelperUtil>
+		_stagingGroupHelperUtilMockedStatic = Mockito.mockStatic(
+			StagingGroupHelperUtil.class);
+
+	private HttpServletRequest _httpServletRequest;
+	private Portal _portal;
+	private PortletRequest _portletRequest;
+	private MockedStatic<SiteConnectedGroupGroupProviderUtil>
+		_siteConnectedGroupGroupProviderUtilMockedStatic;
+	private StagingGroupHelper _stagingGroupHelper;
+	private ThemeDisplay _themeDisplay;
+
+}

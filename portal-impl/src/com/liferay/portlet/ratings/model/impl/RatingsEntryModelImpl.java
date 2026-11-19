@@ -96,6 +96,8 @@ public class RatingsEntryModelImpl
 
 	public static final String TABLE_SQL_DROP = "drop table RatingsEntry";
 
+	public static final String ENTITY_ALIAS = "ratingsEntry";
+
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY ratingsEntry.entryId ASC";
 
@@ -148,29 +150,23 @@ public class RatingsEntryModelImpl
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long SCORE_COLUMN_BITMASK = 8L;
+	public static final long USERID_COLUMN_BITMASK = 8L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long USERID_COLUMN_BITMASK = 16L;
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
-	 */
-	@Deprecated
-	public static final long UUID_COLUMN_BITMASK = 32L;
+	public static final long UUID_COLUMN_BITMASK = 16L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
 	 *		#getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long ENTRYID_COLUMN_BITMASK = 64L;
+	public static final long ENTRYID_COLUMN_BITMASK = 32L;
 
 	public static final long LOCK_EXPIRATION_TIME = GetterUtil.getLong(
-		com.liferay.portal.util.PropsUtil.get(
+		com.liferay.portal.kernel.util.PropsUtil.get(
 			"lock.expiration.time.com.liferay.ratings.kernel.model.RatingsEntry"));
 
 	public RatingsEntryModelImpl() {
@@ -626,16 +622,6 @@ public class RatingsEntryModelImpl
 		_score = score;
 	}
 
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #getColumnOriginalValue(String)}
-	 */
-	@Deprecated
-	public double getOriginalScore() {
-		return GetterUtil.getDouble(
-			this.<Double>getColumnOriginalValue("score"));
-	}
-
 	@Override
 	public StagedModelType getStagedModelType() {
 		return new StagedModelType(
@@ -1041,3 +1027,4 @@ public class RatingsEntryModelImpl
 	private RatingsEntry _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-663649329

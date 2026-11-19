@@ -14,7 +14,6 @@ import com.liferay.object.model.ObjectDefinition;
 import com.liferay.object.service.ObjectActionLocalService;
 import com.liferay.object.service.ObjectDefinitionLocalService;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.feature.flag.FeatureFlagManager;
 import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
@@ -28,13 +27,13 @@ import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.ResourceBundleUtil;
 import com.liferay.portal.kernel.util.UnicodePropertiesBuilder;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.ResourceBundle;
 import java.util.concurrent.Callable;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -54,10 +53,6 @@ public class SplitOrderByCatalogHealthStatus implements CommerceHealthStatus {
 	@Override
 	public void fixIssue(HttpServletRequest httpServletRequest)
 		throws PortalException {
-
-		if (!_featureFlagManager.isEnabled("COMMERCE-11026")) {
-			throw new UnsupportedOperationException();
-		}
 
 		try {
 			ServiceContext serviceContext = ServiceContextFactory.getInstance(
@@ -110,16 +105,12 @@ public class SplitOrderByCatalogHealthStatus implements CommerceHealthStatus {
 
 	@Override
 	public boolean isActive() {
-		return _featureFlagManager.isEnabled("COMMERCE-11026");
+		return true;
 	}
 
 	@Override
 	public boolean isFixed(long companyId, long commerceChannelId)
 		throws PortalException {
-
-		if (!_featureFlagManager.isEnabled("COMMERCE-11026")) {
-			return true;
-		}
 
 		ObjectDefinition commerceOrderObjectDefinition =
 			_objectDefinitionLocalService.fetchObjectDefinitionByClassName(
@@ -148,9 +139,6 @@ public class SplitOrderByCatalogHealthStatus implements CommerceHealthStatus {
 			Propagation.REQUIRED, new Class<?>[] {Exception.class});
 
 	@Reference
-	private FeatureFlagManager _featureFlagManager;
-
-	@Reference
 	private Language _language;
 
 	@Reference
@@ -173,8 +161,11 @@ public class SplitOrderByCatalogHealthStatus implements CommerceHealthStatus {
 					null, _serviceContext.getUserId(),
 					commerceOrderObjectDefinition.getObjectDefinitionId(),
 					false, "orderStatus = 10",
-					"This action splits an order into supplier orders by " +
-						"catalog",
+					HashMapBuilder.put(
+						_serviceContext.getLocale(),
+						"This action splits an order into supplier orders by " +
+							"catalog"
+					).build(),
 					null,
 					HashMapBuilder.put(
 						_serviceContext.getLocale(), "Split order by catalog"

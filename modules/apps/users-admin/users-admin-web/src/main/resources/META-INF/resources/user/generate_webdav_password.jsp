@@ -11,6 +11,32 @@
 
 <br /><br />
 
-<aui:input label="web-dav-username" name="<%= StringUtil.randomId() %>" type="resource" value="<%= user.getUserId() %>" />
+<%
+User selectedUser = userDisplayContext.getSelectedUser();
+%>
 
-<aui:input id="webDAVPassword" label="web-dav-password" name="<%= StringUtil.randomId() %>" type="resource" value='<%= renderRequest.getParameter("webDAVPassword") %>' />
+<div>
+	<react:component
+		module="{WebdavInputCopyButton} from users-admin-web"
+		props='<%=
+			HashMapBuilder.<String, Object>put(
+				"fields",
+				Arrays.asList(
+					HashMapBuilder.<String, Object>put(
+						"id", liferayPortletResponse.getNamespace() + "webDAVUusername"
+					).put(
+						"label", LanguageUtil.get(request, "web-dav-username")
+					).put(
+						"value", selectedUser.getUserId()
+					).build(),
+					HashMapBuilder.<String, Object>put(
+						"id", liferayPortletResponse.getNamespace() + "webDAVPassword"
+					).put(
+						"label", LanguageUtil.get(request, "web-dav-password")
+					).put(
+						"value", renderRequest.getParameter("webDAVPassword")
+					).build())
+			).build()
+		%>'
+	/>
+</div>

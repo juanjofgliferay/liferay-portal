@@ -98,81 +98,6 @@ public class DLServiceVerifyProcessTest extends BaseVerifyProcessTestCase {
 	}
 
 	@Test
-	public void testDeleteMismatchCompanyIdDLFileEntryMetadatas()
-		throws Exception {
-
-		DLFileEntry dlFileEntry = addDLFileEntry();
-
-		DLFileEntryType dlFileEntryType = dlFileEntry.getDLFileEntryType();
-
-		List<DDMStructure> ddmStructures = DLFileEntryTypeUtil.getDDMStructures(
-			dlFileEntryType);
-
-		DDMStructure ddmStructure = ddmStructures.get(0);
-
-		ddmStructure.setCompanyId(0);
-
-		try {
-			ddmStructure = DDMStructureLocalServiceUtil.updateDDMStructure(
-				ddmStructure);
-
-			DLFileVersion dlFileVersion = dlFileEntry.getFileVersion();
-
-			DLFileEntryMetadata dlFileEntryMetadata =
-				DLFileEntryMetadataLocalServiceUtil.fetchFileEntryMetadata(
-					ddmStructure.getStructureId(),
-					dlFileVersion.getFileVersionId());
-
-			Assert.assertNotNull(dlFileEntryMetadata);
-
-			doVerify();
-
-			dlFileEntryMetadata =
-				DLFileEntryMetadataLocalServiceUtil.fetchFileEntryMetadata(
-					ddmStructure.getStructureId(),
-					dlFileVersion.getFileVersionId());
-
-			Assert.assertNull(dlFileEntryMetadata);
-		}
-		finally {
-			ddmStructure.setCompanyId(dlFileEntryType.getCompanyId());
-
-			DDMStructureLocalServiceUtil.updateDDMStructure(ddmStructure);
-		}
-	}
-
-	@Test
-	public void testDeleteNoStructuresDLFileEntryMetadatas() throws Exception {
-		DLFileEntry dlFileEntry = addDLFileEntry();
-
-		List<DDMStructure> ddmStructures = DLFileEntryTypeUtil.getDDMStructures(
-			dlFileEntry.getDLFileEntryType());
-
-		DDMStructure ddmStructure = ddmStructures.get(0);
-
-		DDMStructureLocalServiceUtil.deleteDDMStructure(
-			ddmStructure.getStructureId());
-
-		DLFileVersion dlFileVersion = dlFileEntry.getFileVersion();
-
-		DLFileEntryMetadata dlFileEntryMetadata =
-			DLFileEntryMetadataLocalServiceUtil.fetchFileEntryMetadata(
-				ddmStructure.getStructureId(),
-				dlFileVersion.getFileVersionId());
-
-		Assert.assertNotNull(dlFileEntryMetadata);
-
-		doVerify();
-
-		dlFileEntryMetadata =
-			DLFileEntryMetadataLocalServiceUtil.fetchFileEntryMetadata(
-				ddmStructure.getStructureId(),
-				dlFileVersion.getFileVersionId());
-
-		Assert.assertNull(dlFileEntryMetadata);
-	}
-
-	@Test
 	public void testDLFileEntryTreePathWithDLFileEntryInTrash()
 		throws Exception {
 
@@ -265,7 +190,7 @@ public class DLServiceVerifyProcessTest extends BaseVerifyProcessTestCase {
 		FileEntry fileEntry = addFileEntry(parentFolder.getFolderId());
 
 		FileShortcut fileShortcut = DLAppLocalServiceUtil.addFileShortcut(
-			TestPropsValues.getUserId(), _group.getGroupId(),
+			null, TestPropsValues.getUserId(), _group.getGroupId(),
 			parentFolder.getFolderId(), fileEntry.getFileEntryId(),
 			serviceContext);
 
@@ -388,6 +313,81 @@ public class DLServiceVerifyProcessTest extends BaseVerifyProcessTestCase {
 				DLFolder.class.getName(), folderId));
 	}
 
+	@Test
+	public void testDeleteMismatchCompanyIdDLFileEntryMetadatas()
+		throws Exception {
+
+		DLFileEntry dlFileEntry = addDLFileEntry();
+
+		DLFileEntryType dlFileEntryType = dlFileEntry.getDLFileEntryType();
+
+		List<DDMStructure> ddmStructures = DLFileEntryTypeUtil.getDDMStructures(
+			dlFileEntryType);
+
+		DDMStructure ddmStructure = ddmStructures.get(0);
+
+		ddmStructure.setCompanyId(0);
+
+		try {
+			ddmStructure = DDMStructureLocalServiceUtil.updateDDMStructure(
+				ddmStructure);
+
+			DLFileVersion dlFileVersion = dlFileEntry.getFileVersion();
+
+			DLFileEntryMetadata dlFileEntryMetadata =
+				DLFileEntryMetadataLocalServiceUtil.fetchFileEntryMetadata(
+					ddmStructure.getStructureId(),
+					dlFileVersion.getFileVersionId());
+
+			Assert.assertNotNull(dlFileEntryMetadata);
+
+			doVerify();
+
+			dlFileEntryMetadata =
+				DLFileEntryMetadataLocalServiceUtil.fetchFileEntryMetadata(
+					ddmStructure.getStructureId(),
+					dlFileVersion.getFileVersionId());
+
+			Assert.assertNull(dlFileEntryMetadata);
+		}
+		finally {
+			ddmStructure.setCompanyId(dlFileEntryType.getCompanyId());
+
+			DDMStructureLocalServiceUtil.updateDDMStructure(ddmStructure);
+		}
+	}
+
+	@Test
+	public void testDeleteNoStructuresDLFileEntryMetadatas() throws Exception {
+		DLFileEntry dlFileEntry = addDLFileEntry();
+
+		List<DDMStructure> ddmStructures = DLFileEntryTypeUtil.getDDMStructures(
+			dlFileEntry.getDLFileEntryType());
+
+		DDMStructure ddmStructure = ddmStructures.get(0);
+
+		DDMStructureLocalServiceUtil.deleteDDMStructure(
+			ddmStructure.getStructureId());
+
+		DLFileVersion dlFileVersion = dlFileEntry.getFileVersion();
+
+		DLFileEntryMetadata dlFileEntryMetadata =
+			DLFileEntryMetadataLocalServiceUtil.fetchFileEntryMetadata(
+				ddmStructure.getStructureId(),
+				dlFileVersion.getFileVersionId());
+
+		Assert.assertNotNull(dlFileEntryMetadata);
+
+		doVerify();
+
+		dlFileEntryMetadata =
+			DLFileEntryMetadataLocalServiceUtil.fetchFileEntryMetadata(
+				ddmStructure.getStructureId(),
+				dlFileVersion.getFileVersionId());
+
+		Assert.assertNull(dlFileEntryMetadata);
+	}
+
 	protected DLFileEntry addDLFileEntry() throws Exception {
 		ServiceContext serviceContext =
 			ServiceContextTestUtil.getServiceContext(
@@ -407,7 +407,7 @@ public class DLServiceVerifyProcessTest extends BaseVerifyProcessTestCase {
 				_ddmFormDeserializer.deserialize(builder.build());
 
 		DDMStructure ddmStructure = DDMStructureTestUtil.addStructure(
-			DLFileEntryMetadata.class.getName(),
+			_group.getGroupId(), DLFileEntryMetadata.class.getName(),
 			ddmFormDeserializerDeserializeResponse.getDDMForm());
 
 		User user = TestPropsValues.getUser();
@@ -416,7 +416,7 @@ public class DLServiceVerifyProcessTest extends BaseVerifyProcessTestCase {
 
 		DLFileEntryType dlFileEntryType =
 			DLFileEntryTypeLocalServiceUtil.addFileEntryType(
-				TestPropsValues.getUserId(), _group.getGroupId(),
+				null, TestPropsValues.getUserId(), _group.getGroupId(),
 				ddmStructure.getStructureId(), null,
 				Collections.singletonMap(LocaleUtil.US, "New File Entry Type"),
 				Collections.singletonMap(LocaleUtil.US, "New File Entry Type"),
@@ -436,14 +436,14 @@ public class DLServiceVerifyProcessTest extends BaseVerifyProcessTestCase {
 			RandomTestUtil.randomString(), null, null,
 			dlFileEntryType.getFileEntryTypeId(), ddmFormValuesMap, null,
 			byteArrayInputStream, byteArrayInputStream.available(), null, null,
-			serviceContext);
+			null, serviceContext);
 	}
 
 	protected FileEntry addFileEntry(long folderId) throws Exception {
 		return DLAppLocalServiceUtil.addFileEntry(
 			null, TestPropsValues.getUserId(), _group.getGroupId(), folderId,
 			RandomTestUtil.randomString() + ".txt", ContentTypes.TEXT_PLAIN,
-			TestDataConstants.TEST_BYTE_ARRAY, null, null,
+			TestDataConstants.TEST_BYTE_ARRAY, null, null, null,
 			ServiceContextTestUtil.getServiceContext(
 				_group.getGroupId(), TestPropsValues.getUserId()));
 	}
@@ -491,16 +491,16 @@ public class DLServiceVerifyProcessTest extends BaseVerifyProcessTestCase {
 		return _verifyProcess;
 	}
 
-	@Inject(
-		filter = "component.name=com.liferay.document.library.internal.verify.DLServiceVerifyProcess",
-		type = VerifyProcess.class
-	)
-	private static VerifyProcess _verifyProcess;
-
 	@Inject(filter = "ddm.form.deserializer.type=xsd")
 	private DDMFormDeserializer _ddmFormDeserializer;
 
 	@DeleteAfterTestRun
 	private Group _group;
+
+	@Inject(
+		filter = "component.name=com.liferay.document.library.internal.verify.DLServiceVerifyProcess",
+		type = VerifyProcess.class
+	)
+	private VerifyProcess _verifyProcess;
 
 }

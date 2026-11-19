@@ -10,7 +10,7 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.servlet.taglib.BaseJSPDynamicInclude;
 import com.liferay.portal.kernel.servlet.taglib.DynamicInclude;
 
-import javax.servlet.ServletContext;
+import jakarta.servlet.ServletContext;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -18,18 +18,15 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Hai Yu
  */
-@Component(service = DynamicInclude.class)
+@Component(
+	property = "dynamic.include.key=/html/portal/setup_wizard.jsp#help_link",
+	service = DynamicInclude.class
+)
 public class LearnMessageJSPDynamicInclude extends BaseJSPDynamicInclude {
 
 	@Override
 	public ServletContext getServletContext() {
 		return _servletContext;
-	}
-
-	@Override
-	public void register(DynamicIncludeRegistry dynamicIncludeRegistry) {
-		dynamicIncludeRegistry.register(
-			"/html/portal/setup_wizard.jsp#help_link");
 	}
 
 	@Override

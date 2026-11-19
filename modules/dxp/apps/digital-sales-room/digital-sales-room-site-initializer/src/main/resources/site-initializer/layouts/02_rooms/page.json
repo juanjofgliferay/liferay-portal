@@ -1,0 +1,19 @@
+{
+	"friendlyURL": "/rooms",
+	"hidden": false,
+	"name": "Rooms",
+	"name_i18n": {
+		"[$FOR_EACH_LANGUAGE_ID$]": "rooms"
+	},
+	"permissions": [
+		{
+			"actionIds": [
+			],
+			"roleName": "Guest",
+			"scope": 4
+		}
+	],
+	"private": false,
+	"system": false,
+	"type": "Content"
+}

@@ -6,6 +6,7 @@
 package com.liferay.staging.processes.web.internal.portlet.configuration.icon;
 
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
@@ -21,8 +22,8 @@ import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.staging.constants.StagingProcessesPortletKeys;
 
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -31,7 +32,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Máté Thurzó
  */
 @Component(
-	property = "javax.portlet.name=" + StagingProcessesPortletKeys.STAGING_PROCESSES,
+	property = "jakarta.portlet.name=" + StagingProcessesPortletKeys.STAGING_PROCESSES,
 	service = PortletConfigurationIcon.class
 )
 public class PublishTemplatesConfigurationIcon
@@ -73,6 +74,12 @@ public class PublishTemplatesConfigurationIcon
 		ThemeDisplay themeDisplay = (ThemeDisplay)portletRequest.getAttribute(
 			WebKeys.THEME_DISPLAY);
 
+		if (!FeatureFlagManagerUtil.isEnabled(
+				themeDisplay.getCompanyId(), "LPD-101272")) {
+
+			return false;
+		}
+
 		Group scopeGroup = themeDisplay.getScopeGroup();
 
 		try {
@@ -102,11 +109,7 @@ public class PublishTemplatesConfigurationIcon
 
 		User user = themeDisplay.getUser();
 
-		if (user.isGuestUser()) {
-			return false;
-		}
-
-		return true;
+		return !user.isGuestUser();
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(

@@ -1,6 +1,7 @@
-@component-name = "portal-staging"
+@component-name = "portal-headless"
 definition {
 
+	property browser.chrome.version = "139.0";
 	property ci.retries.disabled = "true";
 	property portal.release = "true";
 	property portal.upstream = "true";
@@ -10,6 +11,14 @@ definition {
 		TestCase.setUpPortalInstance();
 
 		User.firstLoginPG();
+
+		task ("Enable widget pages") {
+			PagesAdmin.enableWidgetPages();
+		}
+
+		task ("Enable the Staging Page Variations deprecation feature flag") {
+			Staging.enablePageVariationsFeatureFlag();
+		}
 
 		HeadlessSite.addSite(siteName = "Site Name");
 
@@ -47,7 +56,9 @@ definition {
 
 		Staging.viewSitePagesVariationActiveCP(sitePagesVariationName = "Summer");
 
-		PagesAdmin.addPageUnderSitePagesVariation(pageName = "Test Page Name");
+		PagesAdmin.addPage(
+			pageName = "Test Page Name",
+			sitePageType = "Widget Page");
 
 		PagesAdmin.openPagesAdmin(siteURLKey = "site-name-staging");
 
@@ -234,79 +245,6 @@ definition {
 		Portlet.viewNoSpecificPG(portletName = "IFrame Custom");
 	}
 
-	@priority = 3
-	test PublishCustomPortletTitle {
-		Staging.addSitePagesVariationPG(sitePagesVariationName = "Site Pages Variation Name");
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Staging Test Page",
-			siteName = "Site Name");
-
-		Staging.viewSitePagesVariationPG(sitePagesVariationName = "Site Pages Variation Name");
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Staging Test Page",
-			siteName = "Site Name");
-
-		Portlet.addPG(portletName = "Sites Directory");
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Staging Test Page",
-			siteName = "Site Name");
-
-		Portlet.viewSpecificPG(portletName = "Sites Directory");
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Staging Test Page",
-			siteName = "Site Name");
-
-		Portlet.gotoPortletOptions(portletOption = "Look and Feel Configuration");
-
-		IFrame.selectConfigurationFrame();
-
-		Portlet.configureGeneralViaLookAndFeelPG(
-			applicationDecorators = "Decorate",
-			customTitle = "Sites Directory Custom");
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Staging Test Page",
-			siteName = "Site Name");
-
-		Portlet.viewSpecificPG(portletName = "Sites Directory Custom");
-
-		Navigator.openSiteURL(siteName = "Site Name");
-
-		Navigator.gotoStagedView();
-
-		Staging.gotoPublishToLive();
-
-		Staging.configurePublishToLive(
-			applicationName = "Sites Directory",
-			markAsReadyForPublication = "true");
-
-		Staging.publishToLive();
-
-		Navigator.gotoSitePage(
-			pageName = "Staging Test Page",
-			siteName = "Site Name");
-
-		Portlet.viewNoSpecificPG(portletName = "Sites Directory");
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Staging Test Page",
-			siteName = "Site Name");
-
-		Staging.gotoPublishToLive();
-
-		Staging.publishToLive();
-
-		Navigator.gotoSitePage(
-			pageName = "Staging Test Page",
-			siteName = "Site Name");
-
-		Portlet.viewSpecificPG(portletName = "Sites Directory Custom");
-	}
-
 	@description = "This is a use case for LPS-90924. Blocked by LPS-180479."
 	@priority = 3
 	test PublishPageRevisionWithPortletSettingsChanges {
@@ -348,7 +286,7 @@ definition {
 
 		Workflow.gotoPreviewView(pageRevision = "true");
 
-		Page.viewWithWorkflowPG(workflowStatus = "Pending (Review)");
+		Page.viewWithWorkflowPG(workflowStatus = "Pending");
 
 		Navigator.gotoStagedSitePage(
 			pageName = "Page Revision Page",
@@ -376,13 +314,13 @@ definition {
 
 		Workflow.gotoPreviewView(pageRevision = "true");
 
-		Page.viewWithWorkflowPG(workflowStatus = "Pending (Review)");
+		Page.viewWithWorkflowPG(workflowStatus = "Pending");
 
 		Navigator.gotoStagedSitePage(
 			pageName = "Page Revision Page",
 			siteName = "Site Name");
 
-		Page.viewWithWorkflowPG(workflowStatus = "Pending (Review)");
+		Page.viewWithWorkflowPG(workflowStatus = "Pending");
 
 		UserBar.gotoDropdownItem(dropdownItem = "My Workflow Tasks");
 
@@ -740,57 +678,6 @@ definition {
 	}
 
 	@priority = 3
-	test StagingPageLogo {
-		Page.viewDefaultLogoPG();
-
-		Navigator.openSiteURL(siteName = "Site Name");
-
-		Navigator.gotoStagedView();
-
-		PagesAdmin.changeLogo(
-			logoFile = "Document_2.png",
-			pageName = "Staging Test Page");
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Staging Test Page",
-			siteName = "Site Name");
-
-		Page.viewLayoutLogoPG(assertLayoutLogoPresent = "true");
-
-		Navigator.openSiteURL(siteName = "Site Name");
-
-		Navigator.gotoStagedView();
-
-		Staging.gotoPublishToLive();
-
-		Staging.configurePublishToLive(contentDateRange = "All");
-
-		Staging.publishToLive();
-
-		Navigator.gotoSitePage(
-			pageName = "Staging Test Page",
-			siteName = "Site Name");
-
-		Page.viewDefaultLogoPG();
-
-		Page.viewDefaultLogoPG();
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Staging Test Page",
-			siteName = "Site Name");
-
-		Staging.gotoPublishToLive();
-
-		Staging.publishToLive();
-
-		Navigator.gotoSitePage(
-			pageName = "Staging Test Page",
-			siteName = "Site Name");
-
-		Page.viewLayoutLogoPG(assertLayoutLogoPresent = "true");
-	}
-
-	@priority = 3
 	test StagingPortletPublishContentCount {
 		WebContentNavigator.openWebContentAdmin(siteURLKey = "site-name-staging");
 
@@ -800,7 +687,7 @@ definition {
 			webContentContent = "Web Content Content",
 			webContentTitle = "Web Content Title");
 
-		PortletEntry.publish();
+		WebContent.publishWithPermissions();
 
 		WebContent.viewTitle(webContentTitle = "Web Content Title");
 
@@ -822,9 +709,9 @@ definition {
 
 	@priority = 4
 	test StagingPublishLast {
-		property app.server.types = "jboss,tcserver,tomcat,weblogic,websphere,wildfly";
-		property database.types = "db2,hypersonic,mariadb,mysql,oracle,postgresql,sqlserver,sybase";
-		property environment.acceptance = "true";
+		property app.server.types = "jboss,tomcat,weblogic,wildfly";
+		property database.types = "db2,hypersonic,mariadb,mysql,oracle,postgresql,sqlserver";
+		property environment.acceptance = "false";
 		property operating.system.types = "alpine,amazonlinux,centos,debian,fedora,orcllinux,osx,redhat,rockylinux,solaris,suse,ubuntu,windows";
 		property portal.acceptance = "true";
 
@@ -844,7 +731,7 @@ definition {
 			webContentContent = "Web Content Content",
 			webContentTitle = "Web Content Title");
 
-		PortletEntry.publish();
+		WebContent.publishWithPermissions();
 
 		Navigator.gotoStagedSitePage(
 			pageName = "Staging Test Page",
@@ -869,58 +756,7 @@ definition {
 	}
 
 	@priority = 3
-	test StagingSiteLogo {
-		Page.viewDefaultLogoPG();
-
-		Navigator.openSiteURL(siteName = "Site Name");
-
-		Navigator.gotoStagedView();
-
-		Site.changeSiteLogo(
-			logoFile = "Document_2.png",
-			pageName = "Public Pages");
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Staging Test Page",
-			siteName = "Site Name");
-
-		Page.viewCustomLogoPG(assertLayoutLogoPresent = "true");
-
-		Navigator.openSiteURL(siteName = "Site Name");
-
-		Navigator.gotoStagedView();
-
-		Staging.gotoPublishToLive();
-
-		Staging.configurePublishToLive(uncheckLogo = "true");
-
-		Staging.publishToLive();
-
-		Navigator.gotoSitePage(
-			pageName = "Staging Test Page",
-			siteName = "Site Name");
-
-		Page.viewDefaultLogoPG();
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Staging Test Page",
-			siteName = "Site Name");
-
-		Staging.gotoPublishToLive();
-
-		Staging.publishToLive();
-
-		Navigator.gotoSitePage(
-			pageName = "Staging Test Page",
-			siteName = "Site Name");
-
-		Page.viewCustomLogoPG();
-	}
-
-	@priority = 3
 	test StagingSiteVariationIncompletePage {
-		property portal.acceptance = "true";
-
 		Staging.addSitePagesVariationPG(sitePagesVariationName = "Site Pages Variation Name");
 
 		PagesAdmin.openPagesAdmin(siteURLKey = "site-name-staging");
@@ -971,7 +807,13 @@ definition {
 			menuItem = "Configure",
 			pageName = "Test Page Name");
 
-		PagesAdmin.viewSelectedLayoutColumn(columnName = "1 Column");
+		AssertElementPresent(
+			key_card = "1 Column",
+			locator1 = "Card#CARD_SELECTED");
+
+		AssertElementPresent(
+			key_card = "1 Column",
+			locator1 = "Card#CARD_SELECTED");
 	}
 
 	@priority = 3

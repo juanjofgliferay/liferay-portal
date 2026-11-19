@@ -6,39 +6,47 @@
 package com.liferay.journal.service.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.journal.configuration.JournalServiceConfiguration;
 import com.liferay.journal.constants.JournalFolderConstants;
 import com.liferay.journal.model.JournalArticle;
 import com.liferay.journal.service.JournalArticleLocalService;
 import com.liferay.journal.test.util.JournalTestUtil;
 import com.liferay.journal.util.JournalHelper;
+import com.liferay.petra.function.UnsafeRunnable;
 import com.liferay.portal.kernel.model.Group;
-import com.liferay.portal.kernel.portlet.PortalPreferences;
-import com.liferay.portal.kernel.portlet.PortletPreferencesFactory;
-import com.liferay.portal.kernel.portlet.PortletPreferencesFactoryUtil;
+import com.liferay.portal.kernel.search.BaseIndexerPostProcessor;
+import com.liferay.portal.kernel.search.Document;
 import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.kernel.search.Hits;
 import com.liferay.portal.kernel.search.Indexer;
+import com.liferay.portal.kernel.search.IndexerPostProcessor;
 import com.liferay.portal.kernel.search.IndexerRegistry;
 import com.liferay.portal.kernel.search.SearchContext;
-import com.liferay.portal.kernel.service.PortalPreferencesLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.settings.CompanyServiceSettingsLocator;
+import com.liferay.portal.kernel.settings.FallbackKeysSettingsUtil;
+import com.liferay.portal.kernel.settings.ModifiableSettings;
+import com.liferay.portal.kernel.settings.Settings;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
+import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.SearchContextTestUtil;
 import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
-import com.liferay.portal.kernel.util.PortletKeys;
+import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.search.legacy.searcher.SearchRequestBuilderFactory;
 import com.liferay.portal.search.searcher.SearchResponse;
 import com.liferay.portal.search.searcher.Searcher;
-import com.liferay.portal.search.test.util.SearchTestRule;
+import com.liferay.portal.search.test.rule.SearchTestRule;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -47,6 +55,11 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.FrameworkUtil;
+import org.osgi.framework.ServiceRegistration;
 
 /**
  * @author Eudaldo Alonso
@@ -65,30 +78,29 @@ public class JournalArticleIndexVersionsTest {
 	public void setUp() throws Exception {
 		_group = GroupTestUtil.addGroup();
 
-		PortalPreferences portalPreferences =
-			_portletPreferencesFactory.getPortalPreferences(
-				TestPropsValues.getUserId(), true);
+		Settings settings = FallbackKeysSettingsUtil.getSettings(
+			new CompanyServiceSettingsLocator(
+				TestPropsValues.getCompanyId(),
+				JournalServiceConfiguration.class.getName()));
 
-		_originalPortalPreferencesXML = _portletPreferencesFactory.toXML(
-			portalPreferences);
+		ModifiableSettings modifiableSettings =
+			settings.getModifiableSettings();
 
-		portalPreferences.setValue(
-			"", "expireAllArticleVersionsEnabled", "true");
-		portalPreferences.setValue(
-			"", "indexAllArticleVersionsEnabled", "false");
+		_originalExpireAllArticleVersionsEnabled = GetterUtil.getBoolean(
+			modifiableSettings.getValue(
+				"expireAllArticleVersionsEnabled", "true"));
+		_originalIndexAllArticleVersionsEnabled = GetterUtil.getBoolean(
+			modifiableSettings.getValue(
+				"indexAllArticleVersionsEnabled", "true"));
 
-		_portalPreferencesLocalService.updatePreferences(
-			TestPropsValues.getCompanyId(),
-			PortletKeys.PREFS_OWNER_TYPE_COMPANY,
-			PortletPreferencesFactoryUtil.toXML(portalPreferences));
+		_updateJournalServiceConfiguration(true, false);
 	}
 
 	@After
 	public void tearDown() throws Exception {
-		_portalPreferencesLocalService.updatePreferences(
-			TestPropsValues.getCompanyId(),
-			PortletKeys.PREFS_OWNER_TYPE_COMPANY,
-			_originalPortalPreferencesXML);
+		_updateJournalServiceConfiguration(
+			_originalExpireAllArticleVersionsEnabled,
+			_originalIndexAllArticleVersionsEnabled);
 	}
 
 	@Test
@@ -101,14 +113,14 @@ public class JournalArticleIndexVersionsTest {
 
 		assertSearchCount(1, true);
 
-		JournalArticle updateArticle = JournalTestUtil.updateArticle(
+		JournalArticle updatedArticle = JournalTestUtil.updateArticle(
 			article, article.getTitleMap(), article.getContent(), true, true,
 			ServiceContextTestUtil.getServiceContext());
 
 		assertSearchCount(1, true);
 
 		_journalArticleLocalService.deleteArticle(
-			_group.getGroupId(), updateArticle.getArticleId(),
+			_group.getGroupId(), updatedArticle.getArticleId(),
 			ServiceContextTestUtil.getServiceContext());
 
 		assertSearchCount(0, true);
@@ -127,14 +139,14 @@ public class JournalArticleIndexVersionsTest {
 		ServiceContext serviceContext =
 			ServiceContextTestUtil.getServiceContext();
 
-		JournalArticle updateArticle = JournalTestUtil.updateArticle(
+		JournalArticle updatedArticle = JournalTestUtil.updateArticle(
 			article, article.getTitleMap(), article.getContent(), true, true,
 			serviceContext);
 
 		assertSearchCount(1, true);
 
 		_journalArticleLocalService.deleteArticle(
-			updateArticle, updateArticle.getUrlTitle(), serviceContext);
+			updatedArticle, updatedArticle.getUrlTitle(), serviceContext);
 
 		assertSearchArticle(1, article);
 	}
@@ -151,16 +163,73 @@ public class JournalArticleIndexVersionsTest {
 
 		assertSearchCount(1, true);
 
-		JournalArticle updateArticle = JournalTestUtil.updateArticle(
+		JournalArticle updatedArticle = JournalTestUtil.updateArticle(
 			article, article.getTitleMap(), article.getContent(), true, true,
 			ServiceContextTestUtil.getServiceContext());
 
 		assertSearchCount(1, true);
 
-		JournalTestUtil.expireArticle(_group.getGroupId(), updateArticle);
+		JournalTestUtil.expireArticle(_group.getGroupId(), updatedArticle);
 
 		assertSearchCount(0, true);
 		assertSearchCount(1, false);
+	}
+
+	@Test
+	public void testExpireAllArticleVersionsReindexArticleOnce()
+		throws Exception {
+
+		_enableIndexAllArticleVersions();
+
+		JournalArticle article = JournalTestUtil.addArticle(
+			_group.getGroupId(),
+			JournalFolderConstants.DEFAULT_PARENT_FOLDER_ID);
+
+		JournalArticle updatedArticle1 = JournalTestUtil.updateArticle(
+			article, article.getTitleMap(), article.getContent(), true, true,
+			ServiceContextTestUtil.getServiceContext());
+
+		JournalArticle updatedArticle2 = JournalTestUtil.updateArticle(
+			updatedArticle1, updatedArticle1.getTitleMap(),
+			updatedArticle1.getContent(), true, true,
+			ServiceContextTestUtil.getServiceContext());
+
+		Assert.assertEquals(
+			3,
+			_getPostProcessedDocumentCount(
+				() -> JournalTestUtil.expireArticle(
+					_group.getGroupId(), updatedArticle2)));
+	}
+
+	@Test
+	public void testExpireAllArticleVersionsWhenIndexAllArticleVersionsEnabled()
+		throws Exception {
+
+		_enableIndexAllArticleVersions();
+
+		assertSearchCount(0, true);
+		assertSearchCount(0, false);
+
+		JournalArticle article = JournalTestUtil.addArticle(
+			_group.getGroupId(),
+			JournalFolderConstants.DEFAULT_PARENT_FOLDER_ID);
+
+		JournalArticle updatedArticle = JournalTestUtil.updateArticle(
+			article, article.getTitleMap(), article.getContent(), true, true,
+			ServiceContextTestUtil.getServiceContext());
+
+		updatedArticle = JournalTestUtil.updateArticle(
+			updatedArticle, updatedArticle.getTitleMap(),
+			updatedArticle.getContent(), true, true,
+			ServiceContextTestUtil.getServiceContext());
+
+		assertSearchCount(1, true);
+		assertSearchCount(3, false);
+
+		JournalTestUtil.expireArticle(_group.getGroupId(), updatedArticle);
+
+		assertSearchCount(0, true);
+		assertSearchCount(3, false);
 	}
 
 	@Test
@@ -173,14 +242,14 @@ public class JournalArticleIndexVersionsTest {
 
 		assertSearchCount(1, true);
 
-		JournalArticle updateArticle = JournalTestUtil.updateArticle(
+		JournalArticle updatedArticle = JournalTestUtil.updateArticle(
 			article, article.getTitleMap(), article.getContent(), true, true,
 			ServiceContextTestUtil.getServiceContext());
 
 		assertSearchCount(1, true);
 
 		JournalTestUtil.expireArticle(
-			_group.getGroupId(), updateArticle, updateArticle.getVersion());
+			_group.getGroupId(), updatedArticle, updatedArticle.getVersion());
 
 		assertSearchArticle(1, article);
 	}
@@ -210,6 +279,37 @@ public class JournalArticleIndexVersionsTest {
 			ServiceContextTestUtil.getServiceContext());
 
 		assertSearchCount(1, true);
+	}
+
+	@Test
+	public void testUpdateArticleKeepsSingleHeadArticleVersion()
+		throws Exception {
+
+		_enableIndexAllArticleVersions();
+
+		JournalArticle article = _updateArticle(_VERSION_COUNT);
+
+		assertSearchArticle(
+			1,
+			_journalArticleLocalService.fetchLatestArticle(
+				article.getResourcePrimKey()));
+
+		assertSearchCount(_VERSION_COUNT, false);
+	}
+
+	@Test
+	public void testUpdateArticleReindexesConstantNumberOfArticleVersions()
+		throws Exception {
+
+		_enableIndexAllArticleVersions();
+
+		JournalArticle article1 = _updateArticle(
+			RandomTestUtil.randomInt(3, _VERSION_COUNT));
+		JournalArticle article2 = _updateArticle(2);
+
+		Assert.assertEquals(
+			_getPostProcessedDocumentCount(() -> _updateArticle(article2)),
+			_getPostProcessedDocumentCount(() -> _updateArticle(article1)));
 	}
 
 	@Rule
@@ -269,11 +369,94 @@ public class JournalArticleIndexVersionsTest {
 			expectedCount, searchResponse.getCount());
 	}
 
-	@Inject
-	private static Searcher _searcher;
+	private void _enableIndexAllArticleVersions() throws Exception {
+		_updateJournalServiceConfiguration(true, true);
+	}
 
-	@Inject
-	private static SearchRequestBuilderFactory _searchRequestBuilderFactory;
+	private int _getPostProcessedDocumentCount(
+			UnsafeRunnable<Exception> unsafeRunnable)
+		throws Exception {
+
+		AtomicInteger postProcessedDocumentCount = new AtomicInteger();
+
+		Bundle bundle = FrameworkUtil.getBundle(
+			JournalArticleIndexVersionsTest.class);
+
+		BundleContext bundleContext = bundle.getBundleContext();
+
+		Indexer<JournalArticle> indexer = _indexerRegistry.getIndexer(
+			JournalArticle.class);
+
+		ServiceRegistration<IndexerPostProcessor> serviceRegistration =
+			bundleContext.registerService(
+				IndexerPostProcessor.class,
+				new BaseIndexerPostProcessor() {
+
+					@Override
+					public void postProcessDocument(
+						Document document, Object object) {
+
+						postProcessedDocumentCount.incrementAndGet();
+					}
+
+				},
+				MapUtil.singletonDictionary(
+					"indexer.class.name", indexer.getClassName()));
+
+		try {
+			unsafeRunnable.run();
+		}
+		finally {
+			serviceRegistration.unregister();
+		}
+
+		return postProcessedDocumentCount.get();
+	}
+
+	private JournalArticle _updateArticle(int versionCount) throws Exception {
+		JournalArticle article = JournalTestUtil.addArticle(
+			_group.getGroupId(),
+			JournalFolderConstants.DEFAULT_PARENT_FOLDER_ID);
+
+		for (int i = 1; i < versionCount; i++) {
+			article = _updateArticle(article);
+		}
+
+		return article;
+	}
+
+	private JournalArticle _updateArticle(JournalArticle article)
+		throws Exception {
+
+		return JournalTestUtil.updateArticle(
+			article, article.getTitleMap(), article.getContent(), true, true,
+			ServiceContextTestUtil.getServiceContext());
+	}
+
+	private void _updateJournalServiceConfiguration(
+			boolean expireAllArticleVersionsEnabled,
+			boolean indexAllArticleVersionsEnabled)
+		throws Exception {
+
+		Settings settings = FallbackKeysSettingsUtil.getSettings(
+			new CompanyServiceSettingsLocator(
+				TestPropsValues.getCompanyId(),
+				JournalServiceConfiguration.class.getName()));
+
+		ModifiableSettings modifiableSettings =
+			settings.getModifiableSettings();
+
+		modifiableSettings.setValue(
+			"expireAllArticleVersionsEnabled",
+			String.valueOf(expireAllArticleVersionsEnabled));
+		modifiableSettings.setValue(
+			"indexAllArticleVersionsEnabled",
+			String.valueOf(indexAllArticleVersionsEnabled));
+
+		modifiableSettings.store();
+	}
+
+	private static final int _VERSION_COUNT = 10;
 
 	@DeleteAfterTestRun
 	private Group _group;
@@ -287,12 +470,13 @@ public class JournalArticleIndexVersionsTest {
 	@Inject
 	private JournalHelper _journalHelper;
 
-	private String _originalPortalPreferencesXML;
+	private boolean _originalExpireAllArticleVersionsEnabled;
+	private boolean _originalIndexAllArticleVersionsEnabled;
 
 	@Inject
-	private PortalPreferencesLocalService _portalPreferencesLocalService;
+	private SearchRequestBuilderFactory _searchRequestBuilderFactory;
 
 	@Inject
-	private PortletPreferencesFactory _portletPreferencesFactory;
+	private Searcher _searcher;
 
 }

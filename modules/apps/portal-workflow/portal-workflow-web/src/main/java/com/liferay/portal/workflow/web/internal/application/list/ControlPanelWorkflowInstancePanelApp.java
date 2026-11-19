@@ -19,12 +19,17 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"panel.app.order:Integer=200",
+		"panel.app.order:Integer=250",
 		"panel.category.key=" + PanelCategoryKeys.CONTROL_PANEL_WORKFLOW
 	},
 	service = PanelApp.class
 )
 public class ControlPanelWorkflowInstancePanelApp extends BasePanelApp {
+
+	@Override
+	public String getIcon() {
+		return "submission";
+	}
 
 	@Override
 	public Portlet getPortlet() {
@@ -37,7 +42,7 @@ public class ControlPanelWorkflowInstancePanelApp extends BasePanelApp {
 	}
 
 	@Reference(
-		target = "(javax.portlet.name=" + WorkflowPortletKeys.CONTROL_PANEL_WORKFLOW_INSTANCE + ")"
+		target = "(jakarta.portlet.name=" + WorkflowPortletKeys.CONTROL_PANEL_WORKFLOW_INSTANCE + ")"
 	)
 	private Portlet _portlet;
 

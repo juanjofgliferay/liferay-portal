@@ -9,46 +9,65 @@ import com.liferay.info.exception.NoSuchInfoItemException;
 import com.liferay.info.item.ClassPKInfoItemIdentifier;
 import com.liferay.info.item.ERCInfoItemIdentifier;
 import com.liferay.info.item.InfoItemIdentifier;
-import com.liferay.info.item.provider.InfoItemObjectProvider;
+import com.liferay.info.item.provider.BaseInfoItemObjectProvider;
 import com.liferay.object.model.ObjectDefinition;
 import com.liferay.object.model.ObjectEntry;
 import com.liferay.object.rest.manager.v1_0.ObjectEntryManager;
 import com.liferay.object.rest.manager.v1_0.ObjectEntryManagerRegistry;
+import com.liferay.object.service.ObjectDefinitionLocalService;
 import com.liferay.object.service.ObjectEntryLocalService;
 import com.liferay.object.web.internal.util.ObjectEntryUtil;
+import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
-import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.service.UserLocalService;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.vulcan.dto.converter.DefaultDTOConverterContext;
+
+import jakarta.servlet.http.HttpServletRequest;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
 
 /**
  * @author Guilherme Camacho
  */
 public class ObjectEntryInfoItemObjectProvider
-	implements InfoItemObjectProvider<ObjectEntry> {
+	extends BaseInfoItemObjectProvider<ObjectEntry> {
 
 	public ObjectEntryInfoItemObjectProvider(
-		ObjectDefinition objectDefinition,
+		GroupLocalService groupLocalService, ObjectDefinition objectDefinition,
+		ObjectDefinitionLocalService objectDefinitionLocalService,
 		ObjectEntryLocalService objectEntryLocalService,
-		ObjectEntryManagerRegistry objectEntryManagerRegistry) {
+		ObjectEntryManagerRegistry objectEntryManagerRegistry,
+		UserLocalService userLocalService) {
 
-		_objectDefinition = objectDefinition;
+		_groupLocalService = groupLocalService;
+		_objectDefinitionLocalService = objectDefinitionLocalService;
 		_objectEntryLocalService = objectEntryLocalService;
 		_objectEntryManagerRegistry = objectEntryManagerRegistry;
+		_userLocalService = userLocalService;
+
+		_companyId = objectDefinition.getCompanyId();
+		_objectDefinitionId = objectDefinition.getObjectDefinitionId();
+		_storageType = objectDefinition.getStorageType();
 	}
 
 	@Override
-	public ObjectEntry getInfoItem(InfoItemIdentifier infoItemIdentifier)
+	protected ObjectEntry doGetInfoItem(
+			long groupId, InfoItemIdentifier infoItemIdentifier)
 		throws NoSuchInfoItemException {
 
 		if (!(infoItemIdentifier instanceof ClassPKInfoItemIdentifier) &&
 			!(infoItemIdentifier instanceof ERCInfoItemIdentifier)) {
 
 			throw new NoSuchInfoItemException(
-				"Unsupported info item identifier type " + infoItemIdentifier);
+				"Unsupported info item identifier " + infoItemIdentifier);
 		}
 
 		if (infoItemIdentifier instanceof ClassPKInfoItemIdentifier) {
@@ -64,36 +83,83 @@ public class ObjectEntryInfoItemObjectProvider
 						classPKInfoItemIdentifier.getClassPK());
 			}
 
-			return objectEntry;
+			return _resolveLatestApprovedObjectEntry(
+				objectEntry, classPKInfoItemIdentifier.getVersion());
 		}
-
-		ObjectEntryManager objectEntryManager =
-			_objectEntryManagerRegistry.getObjectEntryManager(
-				_objectDefinition.getStorageType());
 
 		ServiceContext serviceContext =
 			ServiceContextThreadLocal.getServiceContext();
 
-		ThemeDisplay themeDisplay = serviceContext.getThemeDisplay();
-
 		ERCInfoItemIdentifier ercInfoItemIdentifier =
 			(ERCInfoItemIdentifier)infoItemIdentifier;
 
+		Map<InfoItemIdentifier, ObjectEntry> objectEntries = _getObjectEntries(
+			serviceContext.getRequest());
+
+		ObjectEntry curObjectEntry = objectEntries.get(ercInfoItemIdentifier);
+
+		if (curObjectEntry != null) {
+			return _resolveLatestApprovedObjectEntry(
+				curObjectEntry, ercInfoItemIdentifier.getVersion());
+		}
+
+		Group group = null;
+
+		if (Validator.isNull(
+				ercInfoItemIdentifier.getScopeExternalReferenceCode())) {
+
+			group = _groupLocalService.fetchGroup(groupId);
+
+			if (group == null) {
+				throw new NoSuchInfoItemException(
+					"No group found with group ID " + groupId);
+			}
+		}
+		else {
+			group = _groupLocalService.fetchGroupByExternalReferenceCode(
+				ercInfoItemIdentifier.getScopeExternalReferenceCode(),
+				serviceContext.getCompanyId());
+
+			if (group == null) {
+				throw new NoSuchInfoItemException(
+					StringBundler.concat(
+						"No group found with company ID ",
+						serviceContext.getCompanyId(),
+						" and external reference code ",
+						ercInfoItemIdentifier.getScopeExternalReferenceCode()));
+			}
+		}
+
+		ObjectEntryManager objectEntryManager =
+			_objectEntryManagerRegistry.getObjectEntryManager(
+				_companyId, _storageType);
+
 		try {
-			Group group = themeDisplay.getScopeGroup();
+			ObjectDefinition objectDefinition =
+				_objectDefinitionLocalService.getObjectDefinition(
+					_objectDefinitionId);
 
 			com.liferay.object.rest.dto.v1_0.ObjectEntry objectEntry =
 				objectEntryManager.getObjectEntry(
-					themeDisplay.getCompanyId(),
+					group.getCompanyId(),
 					new DefaultDTOConverterContext(
-						false, null, null, null, null, themeDisplay.getLocale(),
-						null, themeDisplay.getUser()),
+						false, null, null, null, null,
+						serviceContext.getLocale(), null,
+						_userLocalService.getUser(serviceContext.getUserId())),
 					ercInfoItemIdentifier.getExternalReferenceCode(),
-					_objectDefinition, group.getGroupKey());
+					objectDefinition, group.getGroupKey());
 
 			if (objectEntry != null) {
-				return ObjectEntryUtil.toObjectEntry(
-					_objectDefinition.getObjectDefinitionId(), objectEntry);
+				ObjectEntry serviceBuilderObjectEntry =
+					ObjectEntryUtil.toObjectEntry(
+						objectDefinition, objectEntry);
+
+				objectEntries.put(
+					ercInfoItemIdentifier, serviceBuilderObjectEntry);
+
+				return _resolveLatestApprovedObjectEntry(
+					serviceBuilderObjectEntry,
+					ercInfoItemIdentifier.getVersion());
 			}
 		}
 		catch (Exception exception) {
@@ -107,11 +173,66 @@ public class ObjectEntryInfoItemObjectProvider
 				ercInfoItemIdentifier.getExternalReferenceCode());
 	}
 
+	private Map<InfoItemIdentifier, ObjectEntry> _getObjectEntries(
+		HttpServletRequest httpServletRequest) {
+
+		if (httpServletRequest == null) {
+			return new HashMap<>();
+		}
+
+		Map<InfoItemIdentifier, ObjectEntry> objectEntries =
+			(Map<InfoItemIdentifier, ObjectEntry>)
+				httpServletRequest.getAttribute(_OBJECT_ENTRIES);
+
+		if (objectEntries == null) {
+			objectEntries = new HashMap<>();
+
+			httpServletRequest.setAttribute(_OBJECT_ENTRIES, objectEntries);
+		}
+
+		return objectEntries;
+	}
+
+	private ObjectEntry _resolveLatestApprovedObjectEntry(
+			ObjectEntry objectEntry, String version)
+		throws NoSuchInfoItemException {
+
+		if ((Validator.isNotNull(version) &&
+			 !Objects.equals(
+				 version, InfoItemIdentifier.VERSION_LATEST_APPROVED)) ||
+			objectEntry.isApproved()) {
+
+			return objectEntry;
+		}
+
+		ObjectEntry latestApprovedObjectEntry =
+			_objectEntryLocalService.fetchObjectEntryByHeadObjectEntryId(
+				objectEntry.getObjectEntryId());
+
+		if ((latestApprovedObjectEntry != null) &&
+			latestApprovedObjectEntry.isApproved()) {
+
+			return latestApprovedObjectEntry;
+		}
+
+		throw new NoSuchInfoItemException(
+			"Unable to get an approved object entry " +
+				objectEntry.getObjectEntryId());
+	}
+
+	private static final String _OBJECT_ENTRIES =
+		ObjectEntryInfoItemObjectProvider.class.getName() + "#OBJECT_ENTRIES";
+
 	private static final Log _log = LogFactoryUtil.getLog(
 		ObjectEntryInfoItemObjectProvider.class);
 
-	private final ObjectDefinition _objectDefinition;
+	private final long _companyId;
+	private final GroupLocalService _groupLocalService;
+	private final long _objectDefinitionId;
+	private final ObjectDefinitionLocalService _objectDefinitionLocalService;
 	private final ObjectEntryLocalService _objectEntryLocalService;
 	private final ObjectEntryManagerRegistry _objectEntryManagerRegistry;
+	private final String _storageType;
+	private final UserLocalService _userLocalService;
 
 }

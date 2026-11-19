@@ -1,6 +1,11 @@
+.edit-object-definition-wrapper {
+	position: relative;
+	top: calc(-1 * var(--control-menu-container-height, 56px));
+}
+
 .lfr-objects__object-definition-details {
 	margin-bottom: 25px;
-	margin-top: 25px;
+	margin-top: calc(var(--control-menu-container-height, 56px) + 4rem);
 
 	&-configuration {
 		display: flex;
@@ -9,8 +14,8 @@
 }
 
 .lfr-objects__object-definition-details-management-toolbar {
-	position: fixed;
-	top: 3.5rem;
+	position: sticky;
+	top: var(--control-menu-container-height, 56px);
 	width: 100%;
 	z-index: 1;
 }

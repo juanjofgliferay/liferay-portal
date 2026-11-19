@@ -11,7 +11,9 @@ import com.liferay.commerce.order.rule.service.COREntryService;
 import com.liferay.commerce.order.rule.web.internal.constants.COREntryFDSNames;
 import com.liferay.commerce.order.rule.web.internal.frontend.model.Product;
 import com.liferay.commerce.product.model.CPDefinition;
+import com.liferay.commerce.product.model.CProduct;
 import com.liferay.commerce.product.service.CPDefinitionService;
+import com.liferay.commerce.product.service.CProductLocalService;
 import com.liferay.frontend.data.set.provider.FDSDataProvider;
 import com.liferay.frontend.data.set.provider.search.FDSKeywords;
 import com.liferay.frontend.data.set.provider.search.FDSPagination;
@@ -28,9 +30,9 @@ import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.kernel.util.UnicodePropertiesBuilder;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import java.util.List;
+import jakarta.servlet.http.HttpServletRequest;
 
-import javax.servlet.http.HttpServletRequest;
+import java.util.List;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -66,18 +68,20 @@ public class ProductsLimitCOREntryFDSDataProvider
 					StringUtil.split(
 						typeSettingsUnicodeProperties.getProperty(
 							COREntryConstants.
-								TYPE_PRODUCTS_LIMIT_FIELD_PRODUCT_IDS)),
-					cProductId ->
-						_cpDefinitionService.fetchCPDefinitionByCProductId(
-							Long.valueOf(cProductId))),
+								TYPE_PRODUCTS_LIMIT_FIELD_PRODUCT_EXTERNAL_REFERENCE_CODES)),
+					cProductExternalReferenceCode -> _fetchCPDefinition(
+						cProductExternalReferenceCode,
+						corEntry.getCompanyId())),
 				cpDefinition -> cpDefinition != null),
 			filteredCPDefinition -> {
 				ThemeDisplay themeDisplay =
 					(ThemeDisplay)httpServletRequest.getAttribute(
 						WebKeys.THEME_DISPLAY);
 
+				CProduct cProduct = filteredCPDefinition.getCProduct();
+
 				return new Product(
-					filteredCPDefinition.getCProductId(),
+					cProduct.getExternalReferenceCode(),
 					filteredCPDefinition.getName(themeDisplay.getLanguageId()));
 			});
 	}
@@ -96,30 +100,48 @@ public class ProductsLimitCOREntryFDSDataProvider
 				corEntry.getTypeSettings()
 			).build();
 
-		List<String> cProductIds = ListUtil.filter(
+		List<String> cProductExternalReferenceCodes = ListUtil.filter(
 			StringUtil.split(
 				typeSettingsUnicodeProperties.getProperty(
-					COREntryConstants.TYPE_PRODUCTS_LIMIT_FIELD_PRODUCT_IDS)),
-			cProductId -> {
-				try {
-					CPDefinition cpDefinition =
-						_cpDefinitionService.fetchCPDefinitionByCProductId(
-							Long.valueOf(cProductId));
+					COREntryConstants.
+						TYPE_PRODUCTS_LIMIT_FIELD_PRODUCT_EXTERNAL_REFERENCE_CODES)),
+			cProductExternalReferenceCode -> {
+				CPDefinition cpDefinition = _fetchCPDefinition(
+					cProductExternalReferenceCode, corEntry.getCompanyId());
 
-					return cpDefinition != null;
-				}
-				catch (PortalException portalException) {
-					_log.error(portalException);
-				}
-
-				return false;
+				return cpDefinition != null;
 			});
 
-		return cProductIds.size();
+		return cProductExternalReferenceCodes.size();
+	}
+
+	private CPDefinition _fetchCPDefinition(
+		String cProductExternalReferenceCode, long companyId) {
+
+		try {
+			CProduct cProduct =
+				_cProductLocalService.fetchCProductByExternalReferenceCode(
+					cProductExternalReferenceCode, companyId);
+
+			if (cProduct == null) {
+				return null;
+			}
+
+			return _cpDefinitionService.fetchCPDefinitionByCProductId(
+				cProduct.getCProductId(), false);
+		}
+		catch (PortalException portalException) {
+			_log.error(portalException);
+		}
+
+		return null;
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		ProductsLimitCOREntryFDSDataProvider.class);
+
+	@Reference
+	private CProductLocalService _cProductLocalService;
 
 	@Reference
 	private COREntryService _corEntryService;

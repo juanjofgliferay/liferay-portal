@@ -6,7 +6,7 @@
 package com.liferay.feature.flag.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
-import com.liferay.feature.flag.test.helper.FeatureFlagTestHelper;
+import com.liferay.feature.flag.test.util.FeatureFlagTestHelper;
 import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.portal.kernel.feature.flag.FeatureFlagListener;
 import com.liferay.portal.kernel.model.CompanyConstants;
@@ -21,6 +21,8 @@ import com.liferay.portal.test.log.LoggerTestUtil;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import org.junit.AfterClass;
@@ -67,6 +69,10 @@ public class FeatureFlagListenerTest {
 
 		_companyId = TestPropsValues.getCompanyId();
 
+		_companyIds.add(_companyId);
+
+		_companyIds.add(CompanyConstants.SYSTEM);
+
 		_value1 = _featureFlagTestHelper.getFeatureFlagValue(
 			_companyId, FeatureFlagTestHelper.FEATURE_FLAG_KEY_1);
 		_value2 = _featureFlagTestHelper.getFeatureFlagValue(
@@ -108,7 +114,7 @@ public class FeatureFlagListenerTest {
 					FeatureFlagTestHelper.FEATURE_FLAG_KEY_1,
 					FeatureFlagTestHelper.FEATURE_FLAG_KEY_2)) {
 
-			testFeatureFlagListener.assertInvocations(
+			testFeatureFlagListener.assertInvocationsInAnyOrder(
 				_valuesToString(
 					_companyId, FeatureFlagTestHelper.FEATURE_FLAG_KEY_1,
 					_value1),
@@ -186,7 +192,7 @@ public class FeatureFlagListenerTest {
 		try (TestFeatureFlagListener testFeatureFlagListener =
 				new TestFeatureFlagListener("*")) {
 
-			testFeatureFlagListener.assertInvocations(
+			testFeatureFlagListener.assertInvocationsInAnyOrder(
 				_valuesToString(
 					_companyId, FeatureFlagTestHelper.FEATURE_FLAG_KEY_1,
 					_value1),
@@ -233,10 +239,11 @@ public class FeatureFlagListenerTest {
 			featureFlagKey, enabled);
 	}
 
-	private static long _companyId;
 	private static FeatureFlagTestHelper _featureFlagTestHelper;
 
 	private BundleContext _bundleContext;
+	private long _companyId;
+	private final List<Long> _companyIds = new ArrayList<>();
 	private boolean _value1;
 	private boolean _value2;
 	private boolean _valueSystem;
@@ -248,7 +255,7 @@ public class FeatureFlagListenerTest {
 			_serviceRegistration = _bundleContext.registerService(
 				FeatureFlagListener.class, this,
 				HashMapDictionaryBuilder.put(
-					"featureFlagKey",
+					"feature.flag.key",
 					() -> {
 						if (featureFlagKeys.length == 0) {
 							return null;
@@ -273,6 +280,14 @@ public class FeatureFlagListenerTest {
 			_strings.clear();
 		}
 
+		public void assertInvocationsInAnyOrder(String... expectedStrings) {
+			Arrays.sort(expectedStrings);
+
+			Collections.sort(_strings);
+
+			assertInvocations(expectedStrings);
+		}
+
 		@Override
 		public void close() {
 			_serviceRegistration.unregister();
@@ -282,7 +297,9 @@ public class FeatureFlagListenerTest {
 		public void onValue(
 			long companyId, String featureFlagKey, boolean enabled) {
 
-			if (featureFlagKey.startsWith("FAKE-")) {
+			if (_companyIds.contains(companyId) &&
+				featureFlagKey.startsWith("FAKE-")) {
+
 				_strings.add(
 					_valuesToString(companyId, featureFlagKey, enabled));
 			}

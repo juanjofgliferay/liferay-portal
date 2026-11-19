@@ -41,12 +41,12 @@ import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portlet.asset.service.permission.AssetCategoryPermission;
 import com.liferay.taglib.security.PermissionsURLTag;
 
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.List;
-
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Víctor Galán
@@ -80,7 +80,9 @@ public class AssetCategoryActionDropdownItemsProvider {
 			dropdownGroupItem -> {
 				dropdownGroupItem.setDropdownItems(
 					DropdownItemListBuilder.add(
-						() -> _hasPermission(category, ActionKeys.UPDATE),
+						() ->
+							!_isSystemCategory(category) &&
+							_hasPermission(category, ActionKeys.UPDATE),
 						dropdownItem -> {
 							dropdownItem.setHref(
 								PortletURLBuilder.createRenderURL(
@@ -105,6 +107,7 @@ public class AssetCategoryActionDropdownItemsProvider {
 					DropdownItemListBuilder.add(
 						() ->
 							!_assetCategoriesLimitExceeded &&
+							!_isSystemCategory(category) &&
 							_hasPermission(category, ActionKeys.ADD_CATEGORY),
 						dropdownItem -> {
 							dropdownItem.setHref(
@@ -141,7 +144,9 @@ public class AssetCategoryActionDropdownItemsProvider {
 			dropdownGroupItem -> {
 				dropdownGroupItem.setDropdownItems(
 					DropdownItemListBuilder.add(
-						() -> _hasPermission(category, ActionKeys.UPDATE),
+						() ->
+							!_isSystemCategory(category) &&
+							_hasPermission(category, ActionKeys.UPDATE),
 						dropdownItem -> {
 							dropdownItem.putData("action", "moveCategory");
 							dropdownItem.putData(
@@ -194,7 +199,9 @@ public class AssetCategoryActionDropdownItemsProvider {
 			dropdownGroupItem -> {
 				dropdownGroupItem.setDropdownItems(
 					DropdownItemListBuilder.add(
-						() -> _hasPermission(category, ActionKeys.DELETE),
+						() ->
+							!_isSystemCategory(category) &&
+							_hasPermission(category, ActionKeys.DELETE),
 						dropdownItem -> {
 							dropdownItem.putData("action", "deleteCategory");
 
@@ -267,13 +274,13 @@ public class AssetCategoryActionDropdownItemsProvider {
 				AssetVocabulary vocabulary =
 					AssetVocabularyServiceUtil.getVocabulary(vocabularyId);
 
-				List<AssetVocabulary> vocabularies =
+				List<AssetVocabulary> assetVocabularies =
 					AssetVocabularyServiceUtil.getGroupVocabularies(
 						_themeDisplay.getScopeGroupId(),
 						vocabulary.getVisibilityType());
 
 				return ListUtil.toString(
-					vocabularies, AssetVocabulary.VOCABULARY_ID_ACCESSOR);
+					assetVocabularies, AssetVocabulary.VOCABULARY_ID_ACCESSOR);
 			}
 		).buildString();
 	}
@@ -337,6 +344,14 @@ public class AssetCategoryActionDropdownItemsProvider {
 		}
 
 		return false;
+	}
+
+	private boolean _isSystemCategory(AssetCategory category) {
+		if (category == null) {
+			return false;
+		}
+
+		return category.isSystem();
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(

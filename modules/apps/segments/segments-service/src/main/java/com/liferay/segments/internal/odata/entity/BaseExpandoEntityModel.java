@@ -21,8 +21,9 @@ import com.liferay.portal.kernel.model.BaseModelListener;
 import com.liferay.portal.kernel.model.ModelListener;
 import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.kernel.service.ClassNameLocalService;
-import com.liferay.portal.kernel.transaction.TransactionCommitCallbackUtil;
+import com.liferay.portal.kernel.transaction.TransactionCallbackUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.odata.entity.BooleanEntityField;
 import com.liferay.portal.odata.entity.ComplexEntityField;
@@ -32,7 +33,7 @@ import com.liferay.portal.odata.entity.EntityField;
 import com.liferay.portal.odata.entity.EntityModel;
 import com.liferay.portal.odata.entity.IntegerEntityField;
 import com.liferay.portal.odata.entity.StringEntityField;
-import com.liferay.portal.search.expando.ExpandoBridgeIndexer;
+import com.liferay.portal.search.expando.ExpandoBridgeUtil;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -57,6 +58,16 @@ public abstract class BaseExpandoEntityModel implements EntityModel {
 	@Override
 	public Map<String, EntityField> getEntityFieldsMap() {
 		return _entityFieldsMap;
+	}
+
+	public EntityModel getEntityModel(boolean indexed) {
+		if (indexed) {
+			return this;
+		}
+
+		_entityFieldsMapDCLSingleton.getSingleton(this::_createEntityFieldsMap);
+
+		return _entityModelDCLSingleton.getSingleton(this::_createEntityModel);
 	}
 
 	@Activate
@@ -86,12 +97,6 @@ public abstract class BaseExpandoEntityModel implements EntityModel {
 	protected ClassNameLocalService classNameLocalService;
 
 	@Reference
-	protected EntityModelFieldMapper entityModelFieldMapper;
-
-	@Reference
-	protected ExpandoBridgeIndexer expandoBridgeIndexer;
-
-	@Reference
 	protected ExpandoColumnLocalService expandoColumnLocalService;
 
 	@Reference
@@ -104,6 +109,10 @@ public abstract class BaseExpandoEntityModel implements EntityModel {
 		_serviceRegistration = _bundleContext.registerService(
 			ModelListener.class, new ExpandoColumnModelListener(), null);
 
+		return _createEntityFieldsMap(true);
+	}
+
+	private Map<String, EntityField> _createEntityFieldsMap(boolean indexed) {
 		Map<String, EntityField> entityFieldsMap = new HashMap<>();
 
 		long classNameId = classNameLocalService.getClassNameId(
@@ -131,27 +140,50 @@ public abstract class BaseExpandoEntityModel implements EntityModel {
 			));
 
 		for (ExpandoColumn expandoColumn : expandoColumns) {
+			if (indexed && !_isIndexType(expandoColumn)) {
+				continue;
+			}
+
 			EntityField entityField = _getEntityField(expandoColumn);
 
-			if (entityField != null) {
-				entityFieldsMap.put(entityField.getName(), entityField);
-			}
+			entityFieldsMap.put(entityField.getName(), entityField);
 		}
 
 		return entityFieldsMap;
 	}
 
-	private EntityField _getEntityField(ExpandoColumn expandoColumn) {
-		if (!_isIndexType(expandoColumn)) {
-			return null;
-		}
+	private EntityModel _createEntityModel() {
+		Map<String, EntityField> entityFieldsMap =
+			HashMapBuilder.<String, EntityField>putAll(
+				_entityFieldsMap
+			).put(
+				"customField",
+				new ComplexEntityField(
+					"customField", _createEntityFieldsMap(false), "customField")
+			).build();
 
+		return new EntityModel() {
+
+			@Override
+			public Map<String, EntityField> getEntityFieldsMap() {
+				return entityFieldsMap;
+			}
+
+			@Override
+			public String getName() {
+				return BaseExpandoEntityModel.this.getName();
+			}
+
+		};
+	}
+
+	private EntityField _getEntityField(ExpandoColumn expandoColumn) {
 		EntityField entityField = null;
 
 		String encodedName =
-			entityModelFieldMapper.getExpandoColumnEntityFieldName(
+			EntityModelFieldMapperUtil.getExpandoColumnEntityFieldName(
 				expandoColumn);
-		String encodedIndexedFieldName = expandoBridgeIndexer.encodeFieldName(
+		String encodedIndexedFieldName = ExpandoBridgeUtil.encodeFieldName(
 			expandoColumn);
 
 		if (expandoColumn.getType() == ExpandoColumnConstants.BOOLEAN) {
@@ -222,7 +254,7 @@ public abstract class BaseExpandoEntityModel implements EntityModel {
 	}
 
 	private void _refresh() {
-		TransactionCommitCallbackUtil.registerCallback(
+		TransactionCallbackUtil.registerCommitCallback(
 			() -> {
 				Class<?> clazz = getClass();
 
@@ -249,6 +281,8 @@ public abstract class BaseExpandoEntityModel implements EntityModel {
 	private Map<String, EntityField> _entityFieldsMap;
 	private final DCLSingleton<Map<String, EntityField>>
 		_entityFieldsMapDCLSingleton = new DCLSingleton<>();
+	private final DCLSingleton<EntityModel> _entityModelDCLSingleton =
+		new DCLSingleton<>();
 	private volatile ServiceRegistration<?> _serviceRegistration;
 
 	private class ExpandoColumnModelListener
@@ -258,7 +292,7 @@ public abstract class BaseExpandoEntityModel implements EntityModel {
 		public void onAfterCreate(ExpandoColumn expandoColumn)
 			throws ModelListenerException {
 
-			if (_isTargetTable(expandoColumn) && _isIndexType(expandoColumn)) {
+			if (_isTargetTable(expandoColumn)) {
 				_refresh();
 			}
 		}
@@ -267,7 +301,7 @@ public abstract class BaseExpandoEntityModel implements EntityModel {
 		public void onAfterRemove(ExpandoColumn expandoColumn)
 			throws ModelListenerException {
 
-			if (_isTargetTable(expandoColumn) && _isIndexType(expandoColumn)) {
+			if (_isTargetTable(expandoColumn)) {
 				_refresh();
 			}
 		}
@@ -278,10 +312,7 @@ public abstract class BaseExpandoEntityModel implements EntityModel {
 				ExpandoColumn expandoColumn)
 			throws ModelListenerException {
 
-			if (_isTargetTable(expandoColumn) &&
-				(_isIndexType(originalExpandoColumn) ||
-				 _isIndexType(expandoColumn))) {
-
+			if (_isTargetTable(expandoColumn)) {
 				_refresh();
 			}
 		}

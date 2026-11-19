@@ -5,10 +5,10 @@
 
 package com.liferay.portal.kernel.servlet.taglib;
 
-import java.io.IOException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 
 /**
  * @author Carlos Sierra Andrés
@@ -20,7 +20,9 @@ public interface DynamicInclude {
 			HttpServletResponse httpServletResponse, String key)
 		throws IOException;
 
-	public void register(DynamicIncludeRegistry dynamicIncludeRegistry);
+	public default void register(
+		DynamicIncludeRegistry dynamicIncludeRegistry) {
+	}
 
 	public interface DynamicIncludeRegistry {
 

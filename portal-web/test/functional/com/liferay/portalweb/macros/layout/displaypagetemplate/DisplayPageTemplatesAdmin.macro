@@ -19,6 +19,10 @@ definition {
 	macro addDisplayPage(displayPageName = null, subType = null, contentType = null, masterLayoutName = null) {
 		LexiconEntry.gotoAdd();
 
+		if (IsElementPresent(key_menuItem = "Folder", locator1 = "MenuItem#ANY_MENU_ITEM")) {
+			MenuItem.click(menuItem = "Display Page Template");
+		}
+
 		if (isSet(masterLayoutName)) {
 			LexiconCard.clickCard(card = ${masterLayoutName});
 		}
@@ -35,6 +39,17 @@ definition {
 		Button.clickSave();
 
 		PageEditor.assertFragmentSidebarLoaded();
+	}
+
+	@summary = "Add a folder"
+	macro addFolder(folderName = null) {
+		LexiconEntry.gotoAdd();
+
+		MenuItem.click(menuItem = "Folder");
+
+		PortletEntry.inputName(name = ${folderName});
+
+		PortletEntry.create();
 	}
 
 	@summary = "Default summary"
@@ -75,6 +90,11 @@ definition {
 		LexiconCard.clickEllipsisItem(
 			card = ${displayPageName},
 			item = ${item});
+	}
+
+	@summary = "Go to a folder"
+	macro gotoFolder(folderName = null) {
+		LexiconCard.clickCardTitleLink(card = ${folderName});
 	}
 
 	@summary = "Default summary"
@@ -124,22 +144,6 @@ definition {
 	@summary = "Default summary"
 	macro openDisplayPagesAdmin(siteURLKey = null) {
 		Navigator.openWithAppendToBaseURL(urlAppend = "group/${siteURLKey}/~/control_panel/manage?p_p_id=com_liferay_layout_page_template_admin_web_portlet_LayoutPageTemplatesPortlet&_com_liferay_layout_page_template_admin_web_portlet_LayoutPageTemplatesPortlet_tabs1=display-page-templates");
-	}
-
-	@summary = "Default summary"
-	macro renameDisplayPage(newDisplayPageName = null, displayPageName = null) {
-		DisplayPageTemplatesAdmin.gotoDisplayPageEllipsisItem(
-			displayPageName = ${displayPageName},
-			item = "Rename");
-
-		PortletEntry.inputName(name = ${newDisplayPageName});
-
-		Modal.save();
-	}
-
-	@summary = "Default summary"
-	macro viewDisplayPageNotPresent(displayPageName = null) {
-		LexiconCard.viewCardNotPresent(card = ${displayPageName});
 	}
 
 	@summary = "Default summary"

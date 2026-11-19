@@ -7,7 +7,7 @@
 
 <%@ include file="/dynamic_include/init.jsp" %>
 
-<script type="text/javascript">
+<aui:script position="inline" type="text/javascript">
 	var Tawk_API = Tawk_API || {},
 		Tawk_LoadStart = new Date();
 
@@ -18,7 +18,8 @@
 		s1.async = true;
 		s1.charset = 'UTF-8';
 		s1.setAttribute('crossorigin', '*');
-		s1.src = 'https://embed.tawk.to/<%= clickToChatChatProviderAccountId %>';
+		s1.src =
+			'https://embed.tawk.to/<%= HtmlUtil.escapeJS(clickToChatChatProviderAccountId) %>';
 
 		s0.parentNode.insertBefore(s1, s0);
 	})();
@@ -27,8 +28,8 @@
 		Tawk_API = Tawk_API || {};
 
 		Tawk_API.visitor = {
-			email: '<%= user.getEmailAddress() %>',
-			name: '<%= user.getScreenName() %>',
+			email: '<%= HtmlUtil.escapeJS(user.getEmailAddress()) %>',
+			name: '<%= HtmlUtil.escapeJS(user.getScreenName()) %>',
 		};
 	</c:if>
-</script>
+</aui:script>

@@ -31,12 +31,12 @@ public class DTOProperty {
 		this(new HashMap<>(), name, type);
 	}
 
-	public String getDescription() {
-		return _description;
-	}
-
 	public List<DTOProperty> getDTOProperties() {
 		return _dtoProperties;
+	}
+
+	public String getDescription() {
+		return _description;
 	}
 
 	public Map<String, Object> getExtensions() {
@@ -47,6 +47,10 @@ public class DTOProperty {
 		return _name;
 	}
 
+	public Boolean getReadOnly() {
+		return _readOnly;
+	}
+
 	public String getType() {
 		return _type;
 	}
@@ -55,16 +59,20 @@ public class DTOProperty {
 		return _required;
 	}
 
-	public void setDescription(String description) {
-		_description = description;
-	}
-
 	public void setDTOProperties(List<DTOProperty> dtoProperties) {
 		_dtoProperties = dtoProperties;
 	}
 
+	public void setDescription(String description) {
+		_description = description;
+	}
+
 	public void setName(String name) {
 		_name = name;
+	}
+
+	public void setReadOnly(boolean readOnly) {
+		_readOnly = readOnly;
 	}
 
 	public void setRequired(boolean required) {
@@ -79,6 +87,7 @@ public class DTOProperty {
 	private List<DTOProperty> _dtoProperties = new ArrayList<>();
 	private final Map<String, Object> _extensions;
 	private String _name;
+	private Boolean _readOnly;
 	private boolean _required;
 	private String _type;
 

@@ -15,12 +15,10 @@ import com.liferay.dynamic.data.lists.model.DDLFormRecord;
 import com.liferay.dynamic.data.lists.model.DDLRecord;
 import com.liferay.dynamic.data.lists.model.DDLRecordSet;
 import com.liferay.dynamic.data.lists.model.DDLRecordVersion;
-import com.liferay.dynamic.data.lists.service.DDLRecordVersionLocalService;
 import com.liferay.dynamic.data.lists.service.base.DDLRecordLocalServiceBaseImpl;
 import com.liferay.dynamic.data.lists.service.persistence.DDLRecordSetPersistence;
 import com.liferay.dynamic.data.lists.service.persistence.DDLRecordVersionPersistence;
 import com.liferay.dynamic.data.lists.util.DDL;
-import com.liferay.dynamic.data.lists.util.comparator.DDLRecordIdComparator;
 import com.liferay.dynamic.data.mapping.exception.StorageException;
 import com.liferay.dynamic.data.mapping.model.DDMStructure;
 import com.liferay.dynamic.data.mapping.service.DDMStructureLocalService;
@@ -292,22 +290,22 @@ public class DDLRecordLocalServiceImpl extends DDLRecordLocalServiceBaseImpl {
 
 		// Record Versions
 
-		List<DDLRecordVersion> recordVersions =
+		List<DDLRecordVersion> ddlRecordVersions =
 			_ddlRecordVersionPersistence.findByRecordId(record.getRecordId());
 
-		for (DDLRecordVersion recordVersion : recordVersions) {
-			_ddlRecordVersionPersistence.remove(recordVersion);
+		for (DDLRecordVersion ddlRecordVersion : ddlRecordVersions) {
+			_ddlRecordVersionPersistence.remove(ddlRecordVersion);
 
 			// Dynamic data mapping storage
 
 			ddmStorageEngineManager.deleteByClass(
-				recordVersion.getDDMStorageId());
+				ddlRecordVersion.getDDMStorageId());
 
 			// Workflow
 
 			deleteWorkflowInstanceLink(
 				record.getCompanyId(), record.getGroupId(),
-				recordVersion.getPrimaryKey());
+				ddlRecordVersion.getPrimaryKey());
 		}
 
 		// Asset
@@ -343,18 +341,12 @@ public class DDLRecordLocalServiceImpl extends DDLRecordLocalServiceBaseImpl {
 	 */
 	@Override
 	public void deleteRecords(long recordSetId) throws PortalException {
-		List<DDLRecord> records = ddlRecordPersistence.findByRecordSetId(
+		List<DDLRecord> ddlRecords = ddlRecordPersistence.findByRecordSetId(
 			recordSetId);
 
-		for (DDLRecord record : records) {
-			ddlRecordLocalService.deleteRecord(record);
+		for (DDLRecord ddlRecord : ddlRecords) {
+			ddlRecordLocalService.deleteRecord(ddlRecord);
 		}
-	}
-
-	@Override
-	public DDLRecord fetchFirstRecord(String className, long classPK) {
-		return ddlRecordPersistence.fetchByC_C_First(
-			className, classPK, new DDLRecordIdComparator(true));
 	}
 
 	/**
@@ -367,59 +359,6 @@ public class DDLRecordLocalServiceImpl extends DDLRecordLocalServiceBaseImpl {
 	@Override
 	public DDLRecord fetchRecord(long recordId) {
 		return ddlRecordPersistence.fetchByPrimaryKey(recordId);
-	}
-
-	/**
-	 * Returns an ordered range of all the records matching the company,
-	 * workflow status, and scope.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end -
-	 * start</code> instances. <code>start</code> and <code>end</code> are not
-	 * primary keys, they are indexes in the result set. Thus, <code>0</code>
-	 * refers to the first result in the set. Setting both <code>start</code>
-	 * and <code>end</code> to <code>QueryUtil.ALL_POS</code> will return the
-	 * full result set.
-	 * </p>
-	 *
-	 * @param  companyId the primary key of the record's company
-	 * @param  status the record's workflow status. For more information search
-	 *         the portal kernel's WorkflowConstants class for constants
-	 *         starting with the "STATUS_" prefix.
-	 * @param  scope the record's scope. For more information search the
-	 *         dynamic-data-lists-api module's DDLRecordSetConstants class for
-	 *         constants starting with the "SCOPE_" prefix.
-	 * @param  start the lower bound of the range of records to return
-	 * @param  end the upper bound of the range of records to return (not
-	 *         inclusive)
-	 * @param  orderByComparator the comparator to order the records
-	 * @return the range of matching records ordered by the comparator
-	 */
-	@Override
-	public List<DDLRecord> getCompanyRecords(
-		long companyId, int status, int scope, int start, int end,
-		OrderByComparator<DDLRecord> orderByComparator) {
-
-		return ddlRecordFinder.findByC_S_S(
-			companyId, status, scope, start, end, orderByComparator);
-	}
-
-	/**
-	 * Returns the number of records matching the company, workflow status, and
-	 * scope.
-	 *
-	 * @param  companyId the primary key of the record's company
-	 * @param  status the record's workflow status. For more information search
-	 *         the portal kernel's WorkflowConstants class for constants
-	 *         starting with the "STATUS_" prefix.
-	 * @param  scope the record's scope. For more information search the
-	 *         dynamic-data-lists-api module's DDLRecordSetConstants class for
-	 *         constants starting with the "SCOPE_" prefix.
-	 * @return the number of matching records
-	 */
-	@Override
-	public int getCompanyRecordsCount(long companyId, int status, int scope) {
-		return ddlRecordFinder.countByC_S_S(companyId, status, scope);
 	}
 
 	/**
@@ -440,22 +379,6 @@ public class DDLRecordLocalServiceImpl extends DDLRecordLocalServiceBaseImpl {
 		catch (PortalException portalException) {
 			throw new StorageException(portalException);
 		}
-	}
-
-	@Override
-	public Long[] getMinAndMaxCompanyRecordIds(
-		long companyId, int status, int scope) {
-
-		return ddlRecordFinder.findByC_S_S_MinAndMax(companyId, status, scope);
-	}
-
-	@Override
-	public List<DDLRecord> getMinAndMaxCompanyRecords(
-		long companyId, int status, int scope, long minRecordId,
-		long maxRecordId) {
-
-		return ddlRecordFinder.findByC_S_S_MinAndMax(
-			companyId, status, scope, minRecordId, maxRecordId);
 	}
 
 	/**
@@ -584,8 +507,8 @@ public class DDLRecordLocalServiceImpl extends DDLRecordLocalServiceBaseImpl {
 			ServiceContext serviceContext)
 		throws PortalException {
 
-		DDLRecordVersion recordVersion =
-			_ddlRecordVersionLocalService.getRecordVersion(recordId, version);
+		DDLRecordVersion recordVersion = _ddlRecordVersionPersistence.findByR_V(
+			recordId, version);
 
 		if (!recordVersion.isApproved()) {
 			return;
@@ -978,14 +901,14 @@ public class DDLRecordLocalServiceImpl extends DDLRecordLocalServiceBaseImpl {
 
 				String newVersion = DDLRecordConstants.VERSION_DEFAULT;
 
-				List<DDLRecordVersion> approvedRecordVersions =
+				List<DDLRecordVersion> approvedDDLRecordVersions =
 					_ddlRecordVersionPersistence.findByR_S(
 						record.getRecordId(),
 						WorkflowConstants.STATUS_APPROVED);
 
-				if (!approvedRecordVersions.isEmpty()) {
+				if (!approvedDDLRecordVersions.isEmpty()) {
 					DDLRecordVersion approvedRecordVersion =
-						approvedRecordVersions.get(0);
+						approvedDDLRecordVersions.get(0);
 
 					newVersion = approvedRecordVersion.getVersion();
 				}
@@ -1086,7 +1009,7 @@ public class DDLRecordLocalServiceImpl extends DDLRecordLocalServiceBaseImpl {
 	}
 
 	protected List<DDLRecord> getRecords(Hits hits) throws PortalException {
-		List<DDLRecord> records = new ArrayList<>();
+		List<DDLRecord> ddlRecords = new ArrayList<>();
 
 		for (Document document : hits.toList()) {
 			long recordId = GetterUtil.getLong(
@@ -1094,7 +1017,7 @@ public class DDLRecordLocalServiceImpl extends DDLRecordLocalServiceBaseImpl {
 					com.liferay.portal.kernel.search.Field.ENTRY_CLASS_PK));
 
 			try {
-				records.add(getRecord(recordId));
+				ddlRecords.add(getRecord(recordId));
 			}
 			catch (NoSuchRecordException noSuchRecordException) {
 				if (_log.isWarnEnabled()) {
@@ -1114,7 +1037,7 @@ public class DDLRecordLocalServiceImpl extends DDLRecordLocalServiceBaseImpl {
 			}
 		}
 
-		return records;
+		return ddlRecords;
 	}
 
 	protected String getWorkflowAssetClassName(DDLRecordSet recordSet) {
@@ -1160,11 +1083,7 @@ public class DDLRecordLocalServiceImpl extends DDLRecordLocalServiceBaseImpl {
 		Map<String, Serializable> latestAttributes =
 			latestExpandoBridge.getAttributes();
 
-		if (!lastAttributes.equals(latestAttributes)) {
-			return false;
-		}
-
-		return true;
+		return lastAttributes.equals(latestAttributes);
 	}
 
 	protected Fields toFields(
@@ -1359,9 +1278,6 @@ public class DDLRecordLocalServiceImpl extends DDLRecordLocalServiceBaseImpl {
 
 	@Reference
 	private DDLRecordSetPersistence _ddlRecordSetPersistence;
-
-	@Reference
-	private DDLRecordVersionLocalService _ddlRecordVersionLocalService;
 
 	@Reference
 	private DDLRecordVersionPersistence _ddlRecordVersionPersistence;

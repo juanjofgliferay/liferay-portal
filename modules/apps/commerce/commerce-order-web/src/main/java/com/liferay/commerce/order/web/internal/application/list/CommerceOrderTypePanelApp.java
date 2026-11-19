@@ -27,6 +27,11 @@ import org.osgi.service.component.annotations.Reference;
 public class CommerceOrderTypePanelApp extends BasePanelApp {
 
 	@Override
+	public String getIcon() {
+		return "order-form-tag";
+	}
+
+	@Override
 	public Portlet getPortlet() {
 		return _portlet;
 	}
@@ -37,7 +42,7 @@ public class CommerceOrderTypePanelApp extends BasePanelApp {
 	}
 
 	@Reference(
-		target = "(javax.portlet.name=" + CommercePortletKeys.COMMERCE_ORDER_TYPE + ")"
+		target = "(jakarta.portlet.name=" + CommercePortletKeys.COMMERCE_ORDER_TYPE + ")"
 	)
 	private Portlet _portlet;
 

@@ -13,9 +13,9 @@ import com.liferay.headless.commerce.admin.shipment.resource.v1_0.ShipmentResour
 import com.liferay.headless.commerce.admin.shipment.resource.v1_0.ShippingAddressResource;
 import com.liferay.petra.function.UnsafeConsumer;
 import com.liferay.petra.function.UnsafeFunction;
-import com.liferay.portal.kernel.search.Sort;
-import com.liferay.portal.kernel.search.filter.Filter;
 import com.liferay.portal.kernel.service.GroupLocalService;
+import com.liferay.portal.kernel.service.ResourceActionLocalService;
+import com.liferay.portal.kernel.service.ResourcePermissionLocalService;
 import com.liferay.portal.kernel.service.RoleLocalService;
 import com.liferay.portal.vulcan.accept.language.AcceptLanguage;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
@@ -24,15 +24,15 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLTypeExtension;
 import com.liferay.portal.vulcan.pagination.Page;
 import com.liferay.portal.vulcan.pagination.Pagination;
 
+import jakarta.annotation.Generated;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+import jakarta.ws.rs.core.UriInfo;
+
 import java.util.Map;
 import java.util.function.BiFunction;
-
-import javax.annotation.Generated;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import javax.ws.rs.core.UriInfo;
 
 import org.osgi.service.component.ComponentServiceObjects;
 
@@ -70,9 +70,48 @@ public class Query {
 	/**
 	 * Invoke this method with the command line:
 	 *
+	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {shipment(shipmentId: ___){accountId, actions, carrier, createDate, customFields, expectedDate, externalReferenceCode, id, modifiedDate, orderExternalReferenceCode, orderId, shipmentItems, shippingAddress, shippingAddressId, shippingDate, shippingMethodId, shippingOptionName, status, trackingNumber, trackingURL, userName}}"}' -u 'test@liferay.com:test'
+	 */
+	@GraphQLField(
+		description = "Returns the shipment identified by shipmentId. Read-only fetch; the response includes the actions HATEOAS map for the current user."
+	)
+	public Shipment shipment(@GraphQLName("shipmentId") Long shipmentId)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_shipmentResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			shipmentResource -> shipmentResource.getShipment(shipmentId));
+	}
+
+	/**
+	 * Invoke this method with the command line:
+	 *
+	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {shipmentByExternalReferenceCode(externalReferenceCode: ___){accountId, actions, carrier, createDate, customFields, expectedDate, externalReferenceCode, id, modifiedDate, orderExternalReferenceCode, orderId, shipmentItems, shippingAddress, shippingAddressId, shippingDate, shippingMethodId, shippingOptionName, status, trackingNumber, trackingURL, userName}}"}' -u 'test@liferay.com:test'
+	 */
+	@GraphQLField(
+		description = "Returns the shipment identified by external reference code. Resolves the row against the current company scope; raises a not-found error (404) when the ERC is unknown."
+	)
+	public Shipment shipmentByExternalReferenceCode(
+			@GraphQLName("externalReferenceCode") String externalReferenceCode)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_shipmentResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			shipmentResource ->
+				shipmentResource.getShipmentByExternalReferenceCode(
+					externalReferenceCode));
+	}
+
+	/**
+	 * Invoke this method with the command line:
+	 *
 	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {shipments(filter: ___, page: ___, pageSize: ___, search: ___, sorts: ___){items {__}, page, pageSize, totalCount}}"}' -u 'test@liferay.com:test'
 	 */
-	@GraphQLField
+	@GraphQLField(
+		description = "Lists shipment rows for the current company through Liferay's SearchUtil with status set to STATUS_ANY (all workflow states returned). Supports OData v4 filter, full-text search across the shipment's indexed fields, sort, and one-based page/pageSize pagination; the filter and sort fields are sourced from shipment's entity model."
+	)
 	public ShipmentPage shipments(
 			@GraphQLName("search") String search,
 			@GraphQLName("filter") String filterString,
@@ -95,42 +134,11 @@ public class Query {
 	/**
 	 * Invoke this method with the command line:
 	 *
-	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {shipmentByExternalReferenceCode(externalReferenceCode: ___){accountId, actions, carrier, createDate, customFields, expectedDate, externalReferenceCode, id, modifiedDate, orderId, shipmentItems, shippingAddress, shippingAddressId, shippingDate, shippingMethodId, shippingOptionName, status, trackingNumber, trackingURL, userName}}"}' -u 'test@liferay.com:test'
+	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {shipmentByExternalReferenceCodeItem(externalReferenceCode: ___){actions, createDate, externalReferenceCode, id, modifiedDate, orderItemExternalReferenceCode, orderItemId, quantity, shipmentExternalReferenceCode, shipmentId, unitOfMeasureKey, userName, validateInventory, warehouseExternalReferenceCode, warehouseId}}"}' -u 'test@liferay.com:test'
 	 */
-	@GraphQLField(description = "Retrive information of the given Shipment.")
-	public Shipment shipmentByExternalReferenceCode(
-			@GraphQLName("externalReferenceCode") String externalReferenceCode)
-		throws Exception {
-
-		return _applyComponentServiceObjects(
-			_shipmentResourceComponentServiceObjects,
-			this::_populateResourceContext,
-			shipmentResource ->
-				shipmentResource.getShipmentByExternalReferenceCode(
-					externalReferenceCode));
-	}
-
-	/**
-	 * Invoke this method with the command line:
-	 *
-	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {shipment(shipmentId: ___){accountId, actions, carrier, createDate, customFields, expectedDate, externalReferenceCode, id, modifiedDate, orderId, shipmentItems, shippingAddress, shippingAddressId, shippingDate, shippingMethodId, shippingOptionName, status, trackingNumber, trackingURL, userName}}"}' -u 'test@liferay.com:test'
-	 */
-	@GraphQLField
-	public Shipment shipment(@GraphQLName("shipmentId") Long shipmentId)
-		throws Exception {
-
-		return _applyComponentServiceObjects(
-			_shipmentResourceComponentServiceObjects,
-			this::_populateResourceContext,
-			shipmentResource -> shipmentResource.getShipment(shipmentId));
-	}
-
-	/**
-	 * Invoke this method with the command line:
-	 *
-	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {shipmentByExternalReferenceCodeItem(externalReferenceCode: ___){actions, createDate, externalReferenceCode, id, modifiedDate, orderItemId, quantity, shipmentExternalReferenceCode, shipmentId, unitOfMeasureKey, userName, validateInventory, warehouseId}}"}' -u 'test@liferay.com:test'
-	 */
-	@GraphQLField
+	@GraphQLField(
+		description = "Returns the shipment item identified by external reference code. Resolves the row against the current company scope; raises a not-found error (404) when the ERC is unknown."
+	)
 	public ShipmentItem shipmentByExternalReferenceCodeItem(
 			@GraphQLName("externalReferenceCode") String externalReferenceCode)
 		throws Exception {
@@ -146,26 +154,11 @@ public class Query {
 	/**
 	 * Invoke this method with the command line:
 	 *
-	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {shipmentItem(shipmentItemId: ___){actions, createDate, externalReferenceCode, id, modifiedDate, orderItemId, quantity, shipmentExternalReferenceCode, shipmentId, unitOfMeasureKey, userName, validateInventory, warehouseId}}"}' -u 'test@liferay.com:test'
-	 */
-	@GraphQLField
-	public ShipmentItem shipmentItem(
-			@GraphQLName("shipmentItemId") Long shipmentItemId)
-		throws Exception {
-
-		return _applyComponentServiceObjects(
-			_shipmentItemResourceComponentServiceObjects,
-			this::_populateResourceContext,
-			shipmentItemResource -> shipmentItemResource.getShipmentItem(
-				shipmentItemId));
-	}
-
-	/**
-	 * Invoke this method with the command line:
-	 *
 	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {shipmentByExternalReferenceCodeItems(externalReferenceCode: ___, page: ___, pageSize: ___){items {__}, page, pageSize, totalCount}}"}' -u 'test@liferay.com:test'
 	 */
-	@GraphQLField
+	@GraphQLField(
+		description = "Returns the shipment item rows owned by the shipment identified by external reference code, paged. Raises a not-found error (404) when the parent ERC is unknown."
+	)
 	public ShipmentItemPage shipmentByExternalReferenceCodeItems(
 			@GraphQLName("externalReferenceCode") String externalReferenceCode,
 			@GraphQLName("pageSize") int pageSize,
@@ -184,9 +177,30 @@ public class Query {
 	/**
 	 * Invoke this method with the command line:
 	 *
+	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {shipmentItem(shipmentItemId: ___){actions, createDate, externalReferenceCode, id, modifiedDate, orderItemExternalReferenceCode, orderItemId, quantity, shipmentExternalReferenceCode, shipmentId, unitOfMeasureKey, userName, validateInventory, warehouseExternalReferenceCode, warehouseId}}"}' -u 'test@liferay.com:test'
+	 */
+	@GraphQLField(
+		description = "Returns the shipment item identified by shipmentItemId. Read-only fetch; the response includes the actions HATEOAS map for the current user."
+	)
+	public ShipmentItem shipmentItem(
+			@GraphQLName("shipmentItemId") Long shipmentItemId)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_shipmentItemResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			shipmentItemResource -> shipmentItemResource.getShipmentItem(
+				shipmentItemId));
+	}
+
+	/**
+	 * Invoke this method with the command line:
+	 *
 	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {shipmentItems(page: ___, pageSize: ___, shipmentId: ___){items {__}, page, pageSize, totalCount}}"}' -u 'test@liferay.com:test'
 	 */
-	@GraphQLField
+	@GraphQLField(
+		description = "Returns the shipment item rows owned by the shipment identified by shipmentId, paged. Exposed as a nested field on the Shipment schema so a single GET on the parent can expand the shipmentItems collection."
+	)
 	public ShipmentItemPage shipmentItems(
 			@GraphQLName("shipmentId") Long shipmentId,
 			@GraphQLName("pageSize") int pageSize,
@@ -206,7 +220,9 @@ public class Query {
 	 *
 	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {shipmentByExternalReferenceCodeShippingAddress(externalReferenceCode: ___){city, countryISOCode, description, externalReferenceCode, id, latitude, longitude, name, phoneNumber, regionISOCode, street1, street2, street3, zip}}"}' -u 'test@liferay.com:test'
 	 */
-	@GraphQLField
+	@GraphQLField(
+		description = "Returns the ShippingAddress bound to the shipment identified by external reference code. Resolves the parent shipment via fetchCommerceShipmentByExternalReferenceCode and reads the address; raises a not-found error (404) when the ERC is unknown. Returns an empty ShippingAddress when no address is bound yet."
+	)
 	public ShippingAddress shipmentByExternalReferenceCodeShippingAddress(
 			@GraphQLName("externalReferenceCode") String externalReferenceCode)
 		throws Exception {
@@ -225,7 +241,9 @@ public class Query {
 	 *
 	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {shipmentShippingAddress(shipmentId: ___){city, countryISOCode, description, externalReferenceCode, id, latitude, longitude, name, phoneNumber, regionISOCode, street1, street2, street3, zip}}"}' -u 'test@liferay.com:test'
 	 */
-	@GraphQLField
+	@GraphQLField(
+		description = "Returns the ShippingAddress bound to the shipment identified by shipmentId. Reads the underlying address; returns an empty ShippingAddress when no address is bound yet. Exposed as a nested field on the Shipment schema so a single GET on the parent can expand the shippingAddress object."
+	)
 	public ShippingAddress shipmentShippingAddress(
 			@GraphQLName("shipmentId") Long shipmentId)
 		throws Exception {
@@ -237,6 +255,53 @@ public class Query {
 				shippingAddressResource.getShipmentShippingAddress(shipmentId));
 	}
 
+	@GraphQLTypeExtension(ShipmentItem.class)
+	public class GetShipmentTypeExtension {
+
+		public GetShipmentTypeExtension(ShipmentItem shipmentItem) {
+			_shipmentItem = shipmentItem;
+		}
+
+		@GraphQLField(
+			description = "Returns the shipment identified by shipmentId. Read-only fetch; the response includes the actions HATEOAS map for the current user."
+		)
+		public Shipment shipment() throws Exception {
+			return _applyComponentServiceObjects(
+				_shipmentResourceComponentServiceObjects,
+				Query.this::_populateResourceContext,
+				shipmentResource -> shipmentResource.getShipment(
+					_shipmentItem.getShipmentId()));
+		}
+
+		private ShipmentItem _shipmentItem;
+
+	}
+
+	@GraphQLTypeExtension(ShipmentItem.class)
+	public class GetShipmentByExternalReferenceCodeTypeExtension {
+
+		public GetShipmentByExternalReferenceCodeTypeExtension(
+			ShipmentItem shipmentItem) {
+
+			_shipmentItem = shipmentItem;
+		}
+
+		@GraphQLField(
+			description = "Returns the shipment identified by external reference code. Resolves the row against the current company scope; raises a not-found error (404) when the ERC is unknown."
+		)
+		public Shipment shipmentByExternalReferenceCode() throws Exception {
+			return _applyComponentServiceObjects(
+				_shipmentResourceComponentServiceObjects,
+				Query.this::_populateResourceContext,
+				shipmentResource ->
+					shipmentResource.getShipmentByExternalReferenceCode(
+						_shipmentItem.getExternalReferenceCode()));
+		}
+
+		private ShipmentItem _shipmentItem;
+
+	}
+
 	@GraphQLTypeExtension(Shipment.class)
 	public class GetShipmentByExternalReferenceCodeItemTypeExtension {
 
@@ -246,7 +311,9 @@ public class Query {
 			_shipment = shipment;
 		}
 
-		@GraphQLField
+		@GraphQLField(
+			description = "Returns the shipment item identified by external reference code. Resolves the row against the current company scope; raises a not-found error (404) when the ERC is unknown."
+		)
 		public ShipmentItem byExternalReferenceCodeItem() throws Exception {
 			return _applyComponentServiceObjects(
 				_shipmentItemResourceComponentServiceObjects,
@@ -254,6 +321,33 @@ public class Query {
 				shipmentItemResource ->
 					shipmentItemResource.getShipmentByExternalReferenceCodeItem(
 						_shipment.getExternalReferenceCode()));
+		}
+
+		private Shipment _shipment;
+
+	}
+
+	@GraphQLTypeExtension(Shipment.class)
+	public class GetShipmentItemsPageTypeExtension {
+
+		public GetShipmentItemsPageTypeExtension(Shipment shipment) {
+			_shipment = shipment;
+		}
+
+		@GraphQLField(
+			description = "Returns the shipment item rows owned by the shipment identified by shipmentId, paged. Exposed as a nested field on the Shipment schema so a single GET on the parent can expand the shipmentItems collection."
+		)
+		public ShipmentItemPage items(
+				@GraphQLName("pageSize") int pageSize,
+				@GraphQLName("page") int page)
+			throws Exception {
+
+			return _applyComponentServiceObjects(
+				_shipmentItemResourceComponentServiceObjects,
+				Query.this::_populateResourceContext,
+				shipmentItemResource -> new ShipmentItemPage(
+					shipmentItemResource.getShipmentItemsPage(
+						_shipment.getId(), Pagination.of(page, pageSize))));
 		}
 
 		private Shipment _shipment;
@@ -269,7 +363,9 @@ public class Query {
 			_shipment = shipment;
 		}
 
-		@GraphQLField
+		@GraphQLField(
+			description = "Returns the shipment item rows owned by the shipment identified by external reference code, paged. Raises a not-found error (404) when the parent ERC is unknown."
+		)
 		public ShipmentItemPage byExternalReferenceCodeItems(
 				@GraphQLName("pageSize") int pageSize,
 				@GraphQLName("page") int page)
@@ -299,7 +395,9 @@ public class Query {
 			_shipment = shipment;
 		}
 
-		@GraphQLField
+		@GraphQLField(
+			description = "Returns the ShippingAddress bound to the shipment identified by external reference code. Resolves the parent shipment via fetchCommerceShipmentByExternalReferenceCode and reads the address; raises a not-found error (404) when the ERC is unknown. Returns an empty ShippingAddress when no address is bound yet."
+		)
 		public ShippingAddress byExternalReferenceCodeShippingAddress()
 			throws Exception {
 
@@ -310,76 +408,6 @@ public class Query {
 					shippingAddressResource.
 						getShipmentByExternalReferenceCodeShippingAddress(
 							_shipment.getExternalReferenceCode()));
-		}
-
-		private Shipment _shipment;
-
-	}
-
-	@GraphQLTypeExtension(ShipmentItem.class)
-	public class GetShipmentTypeExtension {
-
-		public GetShipmentTypeExtension(ShipmentItem shipmentItem) {
-			_shipmentItem = shipmentItem;
-		}
-
-		@GraphQLField
-		public Shipment shipment() throws Exception {
-			return _applyComponentServiceObjects(
-				_shipmentResourceComponentServiceObjects,
-				Query.this::_populateResourceContext,
-				shipmentResource -> shipmentResource.getShipment(
-					_shipmentItem.getShipmentId()));
-		}
-
-		private ShipmentItem _shipmentItem;
-
-	}
-
-	@GraphQLTypeExtension(ShipmentItem.class)
-	public class GetShipmentByExternalReferenceCodeTypeExtension {
-
-		public GetShipmentByExternalReferenceCodeTypeExtension(
-			ShipmentItem shipmentItem) {
-
-			_shipmentItem = shipmentItem;
-		}
-
-		@GraphQLField(
-			description = "Retrive information of the given Shipment."
-		)
-		public Shipment shipmentByExternalReferenceCode() throws Exception {
-			return _applyComponentServiceObjects(
-				_shipmentResourceComponentServiceObjects,
-				Query.this::_populateResourceContext,
-				shipmentResource ->
-					shipmentResource.getShipmentByExternalReferenceCode(
-						_shipmentItem.getExternalReferenceCode()));
-		}
-
-		private ShipmentItem _shipmentItem;
-
-	}
-
-	@GraphQLTypeExtension(Shipment.class)
-	public class GetShipmentItemsPageTypeExtension {
-
-		public GetShipmentItemsPageTypeExtension(Shipment shipment) {
-			_shipment = shipment;
-		}
-
-		@GraphQLField
-		public ShipmentItemPage items(
-				@GraphQLName("pageSize") int pageSize,
-				@GraphQLName("page") int page)
-			throws Exception {
-
-			return _applyComponentServiceObjects(
-				_shipmentItemResourceComponentServiceObjects,
-				Query.this::_populateResourceContext,
-				shipmentItemResource -> new ShipmentItemPage(
-					shipmentItemResource.getShipmentItemsPage(
-						_shipment.getId(), Pagination.of(page, pageSize))));
 		}
 
 		private Shipment _shipment;
@@ -514,6 +542,10 @@ public class Query {
 		shipmentResource.setContextUriInfo(_uriInfo);
 		shipmentResource.setContextUser(_user);
 		shipmentResource.setGroupLocalService(_groupLocalService);
+		shipmentResource.setResourceActionLocalService(
+			_resourceActionLocalService);
+		shipmentResource.setResourcePermissionLocalService(
+			_resourcePermissionLocalService);
 		shipmentResource.setRoleLocalService(_roleLocalService);
 	}
 
@@ -529,6 +561,10 @@ public class Query {
 		shipmentItemResource.setContextUriInfo(_uriInfo);
 		shipmentItemResource.setContextUser(_user);
 		shipmentItemResource.setGroupLocalService(_groupLocalService);
+		shipmentItemResource.setResourceActionLocalService(
+			_resourceActionLocalService);
+		shipmentItemResource.setResourcePermissionLocalService(
+			_resourcePermissionLocalService);
 		shipmentItemResource.setRoleLocalService(_roleLocalService);
 	}
 
@@ -545,6 +581,10 @@ public class Query {
 		shippingAddressResource.setContextUriInfo(_uriInfo);
 		shippingAddressResource.setContextUser(_user);
 		shippingAddressResource.setGroupLocalService(_groupLocalService);
+		shippingAddressResource.setResourceActionLocalService(
+			_resourceActionLocalService);
+		shippingAddressResource.setResourcePermissionLocalService(
+			_resourcePermissionLocalService);
 		shippingAddressResource.setRoleLocalService(_roleLocalService);
 	}
 
@@ -557,13 +597,19 @@ public class Query {
 
 	private AcceptLanguage _acceptLanguage;
 	private com.liferay.portal.kernel.model.Company _company;
-	private BiFunction<Object, String, Filter> _filterBiFunction;
+	private BiFunction
+		<Object, String, com.liferay.portal.kernel.search.filter.Filter>
+			_filterBiFunction;
 	private GroupLocalService _groupLocalService;
 	private HttpServletRequest _httpServletRequest;
 	private HttpServletResponse _httpServletResponse;
+	private ResourceActionLocalService _resourceActionLocalService;
+	private ResourcePermissionLocalService _resourcePermissionLocalService;
 	private RoleLocalService _roleLocalService;
-	private BiFunction<Object, String, Sort[]> _sortsBiFunction;
+	private BiFunction<Object, String, com.liferay.portal.kernel.search.Sort[]>
+		_sortsBiFunction;
 	private UriInfo _uriInfo;
 	private com.liferay.portal.kernel.model.User _user;
 
 }
+// LIFERAY-REST-BUILDER-HASH:918779929

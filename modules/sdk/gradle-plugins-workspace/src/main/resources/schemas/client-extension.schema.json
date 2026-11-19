@@ -181,6 +181,14 @@
 					],
 					"description": "Description for customElement"
 				},
+				"editorConfigContributor": {
+					"allOf": [
+						{
+							"$ref": "#/definitions/propertySets/properties/url"
+						}
+					],
+					"description": "Description for editorConfigContributor"
+				},
 				"fdsCellRenderer": {
 					"allOf": [
 						{
@@ -197,10 +205,29 @@
 					],
 					"description": "Description for fdsFilter"
 				},
+				"fdsVisualizationMode": {
+					"allOf": [
+						{
+							"$ref": "#/definitions/propertySets/properties/url"
+						}
+					],
+					"description": "Description for fdsVisualizationMode"
+				},
 				"globalCSS": {
 					"allOf": [
 						{
 							"$ref": "#/definitions/propertySets/properties/url"
+						},
+						{
+							"properties": {
+								"scope": {
+									"default": "layout",
+									"enum": [
+										"company",
+										"layout"
+									]
+								}
+							}
 						}
 					],
 					"description": "Description for globalCSS"
@@ -209,6 +236,38 @@
 					"allOf": [
 						{
 							"$ref": "#/definitions/propertySets/properties/url"
+						},
+						{
+							"properties": {
+								"scope": {
+									"default": "layout",
+									"enum": [
+										"company",
+										"layout"
+									]
+								},
+								"scriptElementAttributes": {
+									"additionalProperties": {
+										"type": [
+											"boolean",
+											"integer",
+											"number",
+											"string"
+										]
+									},
+									"description": "",
+									"properties": {
+										"src": false
+									},
+									"title": "Script Element Attributes",
+									"type": "object"
+								},
+								"scriptLocation": {
+									"description": "",
+									"type": "string"
+								}
+							},
+							"type": "object"
 						}
 					],
 					"description": "Description for globalJS"
@@ -230,19 +289,7 @@
 					"description": "Description for iframe"
 				},
 				"instanceSettings": {
-					"allOf": [
-						{
-							"properties": {
-								"pid": {
-									"type": "string"
-								}
-							},
-							"required": [
-								"pid"
-							],
-							"type": "object"
-						}
-					],
+					"$ref": "./client-extension-type-instance-settings.schema.json",
 					"description": "Description for instanceSettings"
 				},
 				"jsImportMapsEntry": {
@@ -273,6 +320,14 @@
 					"allOf": [
 						{
 							"$ref": "#/definitions/propertySets/properties/externalService"
+						},
+						{
+							"properties": {
+								"forwardUpstreamToken": {
+									"type": "boolean"
+								}
+							},
+							"type": "object"
 						}
 					],
 					"description": "Description for oAuthApplicationHeadlessServer"
@@ -349,6 +404,12 @@
 								},
 								"siteName": {
 									"type": "string"
+								},
+								"siteName_i18n": {
+									"additionalProperties": {
+										"type": "string"
+									},
+									"type": "object"
 								}
 							},
 							"required": [
@@ -367,11 +428,24 @@
 					"allOf": [
 						{
 							"properties": {
+								"clayRTLURL": {
+									"type": "string"
+								},
 								"clayURL": {
+									"type": "string"
+								},
+								"mainRTLURL": {
 									"type": "string"
 								},
 								"mainURL": {
 									"type": "string"
+								},
+								"scope": {
+									"default": "layout",
+									"enum": [
+										"controlPanel",
+										"layout"
+									]
 								}
 							},
 							"type": "object"
@@ -427,6 +501,14 @@
 					}
 				},
 				{
+					"$ref": "#/definitions/types/properties/editorConfigContributor",
+					"properties": {
+						"type": {
+							"const": "editorConfigContributor"
+						}
+					}
+				},
+				{
 					"$ref": "#/definitions/types/properties/fdsCellRenderer",
 					"properties": {
 						"type": {
@@ -439,6 +521,14 @@
 					"properties": {
 						"type": {
 							"const": "fdsFilter"
+						}
+					}
+				},
+				{
+					"$ref": "#/definitions/types/properties/fdsVisualizationMode",
+					"properties": {
+						"type": {
+							"const": "fdsVisualizationMode"
 						}
 					}
 				},
@@ -590,8 +680,10 @@
 					"enum": [
 						"batch",
 						"customElement",
+						"editorConfigContributor",
 						"fdsCellRenderer",
 						"fdsFilter",
+						"fdsVisualizationMode",
 						"globalCSS",
 						"globalJS",
 						"iframe",

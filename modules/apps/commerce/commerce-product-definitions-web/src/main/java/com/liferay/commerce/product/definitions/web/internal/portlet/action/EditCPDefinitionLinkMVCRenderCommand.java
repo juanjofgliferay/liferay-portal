@@ -10,15 +10,14 @@ import com.liferay.commerce.product.definitions.web.internal.display.context.CPD
 import com.liferay.commerce.product.links.CPDefinitionLinkTypeRegistry;
 import com.liferay.commerce.product.portlet.action.ActionHelper;
 import com.liferay.commerce.product.service.CPDefinitionLinkService;
-import com.liferay.item.selector.ItemSelector;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCRenderCommand;
 import com.liferay.portal.kernel.service.WorkflowDefinitionLinkLocalService;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import javax.portlet.PortletException;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -28,7 +27,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + CPPortletKeys.CP_DEFINITIONS,
+		"jakarta.portlet.name=" + CPPortletKeys.CP_DEFINITIONS,
 		"mvc.command.name=/cp_definitions/edit_cp_definition_link"
 	},
 	service = MVCRenderCommand.class
@@ -44,7 +43,7 @@ public class EditCPDefinitionLinkMVCRenderCommand implements MVCRenderCommand {
 			new CPDefinitionLinkDisplayContext(
 				_actionHelper, _portal.getHttpServletRequest(renderRequest),
 				_cpDefinitionLinkService, _cpDefinitionLinkTypeRegistry,
-				_itemSelector, _workflowDefinitionLinkLocalService);
+				_workflowDefinitionLinkLocalService);
 
 		renderRequest.setAttribute(
 			WebKeys.PORTLET_DISPLAY_CONTEXT, cpDefinitionLinkDisplayContext);
@@ -60,9 +59,6 @@ public class EditCPDefinitionLinkMVCRenderCommand implements MVCRenderCommand {
 
 	@Reference
 	private CPDefinitionLinkTypeRegistry _cpDefinitionLinkTypeRegistry;
-
-	@Reference
-	private ItemSelector _itemSelector;
 
 	@Reference
 	private Portal _portal;

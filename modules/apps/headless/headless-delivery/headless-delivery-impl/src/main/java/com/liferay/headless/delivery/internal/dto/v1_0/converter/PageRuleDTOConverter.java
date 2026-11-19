@@ -21,7 +21,10 @@ import org.osgi.service.component.annotations.Component;
  * @author Lourdes Fernández Besada
  */
 @Component(
-	property = "dto.class.name=com.liferay.layout.util.structure.LayoutStructureRule",
+	property = {
+		"default=true",
+		"dto.class.name=com.liferay.layout.util.structure.LayoutStructureRule"
+	},
 	service = DTOConverter.class
 )
 public class PageRuleDTOConverter
@@ -40,18 +43,21 @@ public class PageRuleDTOConverter
 
 		return new PageRule() {
 			{
-				conditionType = ConditionType.create(
-					ConditionTypeConverter.convertToExternalValue(
-						layoutStructureRule.getConditionType()));
-				id = layoutStructureRule.getId();
-				name = layoutStructureRule.getName();
-				pageRuleActions = JSONUtil.toArray(
-					layoutStructureRule.getActionsJSONArray(),
-					PageRulesUtil::toPageRuleAction, PageRuleAction.class);
-				pageRuleConditions = JSONUtil.toArray(
-					layoutStructureRule.getConditionsJSONArray(),
-					PageRulesUtil::toPageRuleCondition,
-					PageRuleCondition.class);
+				setConditionType(
+					() -> ConditionType.create(
+						ConditionTypeConverter.convertToExternalValue(
+							layoutStructureRule.getConditionType())));
+				setId(layoutStructureRule::getId);
+				setName(layoutStructureRule::getName);
+				setPageRuleActions(
+					() -> JSONUtil.toArray(
+						layoutStructureRule.getActionsJSONArray(),
+						PageRulesUtil::toPageRuleAction, PageRuleAction.class));
+				setPageRuleConditions(
+					() -> JSONUtil.toArray(
+						layoutStructureRule.getConditionsJSONArray(),
+						PageRulesUtil::toPageRuleCondition,
+						PageRuleCondition.class));
 			}
 		};
 	}

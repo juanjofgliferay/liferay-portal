@@ -22,22 +22,24 @@ import com.liferay.portal.kernel.portlet.PortalPreferences;
 import com.liferay.portal.kernel.portlet.PortletPreferencesFactoryUtil;
 import com.liferay.portal.kernel.portlet.SearchOrderByUtil;
 import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
+import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.site.display.context.GroupDisplayContextHelper;
+
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.io.Serializable;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Péter Alius
@@ -116,7 +118,14 @@ public class ExportImportToolbarDisplayContext {
 							LanguageUtil.get(_httpServletRequest, label));
 					});
 
-				if (Objects.equals(cmd, Constants.EXPORT)) {
+				ThemeDisplay themeDisplay =
+					(ThemeDisplay)_httpServletRequest.getAttribute(
+						WebKeys.THEME_DISPLAY);
+
+				if (Objects.equals(cmd, Constants.EXPORT) &&
+					FeatureFlagManagerUtil.isEnabled(
+						themeDisplay.getCompanyId(), "LPD-96546")) {
+
 					List<ExportImportConfiguration> exportImportConfigurations =
 						ExportImportConfigurationLocalServiceUtil.
 							getExportImportConfigurations(
@@ -172,13 +181,6 @@ public class ExportImportToolbarDisplayContext {
 				dropdownGroupItem.setLabel(
 					LanguageUtil.get(_httpServletRequest, "filter"));
 				dropdownGroupItem.setSeparator(true);
-			}
-		).addGroup(
-			() -> !FeatureFlagManagerUtil.isEnabled("LPS-144527"),
-			dropdownGroupItem -> {
-				dropdownGroupItem.setDropdownItems(getOrderByDropDownItems());
-				dropdownGroupItem.setLabel(
-					LanguageUtil.get(_httpServletRequest, "order-by"));
 			}
 		).build();
 	}

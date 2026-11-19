@@ -10,15 +10,14 @@ import com.liferay.asset.display.page.constants.AssetDisplayPageConstants;
 import com.liferay.asset.display.page.service.AssetDisplayPageEntryLocalService;
 import com.liferay.content.dashboard.item.action.ContentDashboardItemAction;
 import com.liferay.content.dashboard.item.action.provider.ContentDashboardItemActionProvider;
-import com.liferay.dynamic.data.mapping.model.DDMStructure;
 import com.liferay.info.item.InfoItemReference;
 import com.liferay.journal.constants.JournalArticleConstants;
 import com.liferay.journal.model.JournalArticle;
 import com.liferay.journal.test.util.JournalTestUtil;
 import com.liferay.layout.display.page.LayoutDisplayPageProvider;
-import com.liferay.layout.page.template.constants.LayoutPageTemplateEntryTypeConstants;
 import com.liferay.layout.page.template.model.LayoutPageTemplateEntry;
 import com.liferay.layout.page.template.service.LayoutPageTemplateEntryLocalService;
+import com.liferay.layout.page.template.test.util.DisplayPageTemplateTestUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
@@ -33,8 +32,10 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.model.impl.LayoutSetImpl;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
@@ -73,19 +74,15 @@ public class ViewJournalArticleContentDashboardItemActionProviderTest {
 			JournalArticle journalArticle = JournalTestUtil.addArticle(
 				_group.getGroupId(), 0);
 
-			DDMStructure ddmStructure = journalArticle.getDDMStructure();
+			LayoutPageTemplateEntry layoutPageTemplateEntry =
+				DisplayPageTemplateTestUtil.addDisplayPageTemplate(
+					_group.getGroupId(),
+					_portal.getClassNameId(JournalArticle.class.getName()),
+					journalArticle.getDDMStructureKey(), true,
+					WorkflowConstants.STATUS_APPROVED);
 
 			ServiceContext serviceContext =
 				ServiceContextTestUtil.getServiceContext(_group.getGroupId());
-
-			LayoutPageTemplateEntry layoutPageTemplateEntry =
-				_layoutPageTemplateEntryLocalService.addLayoutPageTemplateEntry(
-					_group.getCreatorUserId(), _group.getGroupId(), 0,
-					_portal.getClassNameId(JournalArticle.class.getName()),
-					ddmStructure.getStructureId(),
-					RandomTestUtil.randomString(),
-					LayoutPageTemplateEntryTypeConstants.DISPLAY_PAGE, 0, true,
-					0, 0, 0, 0, serviceContext);
 
 			_assetDisplayPageEntryLocalService.addAssetDisplayPageEntry(
 				journalArticle.getUserId(), _group.getGroupId(),
@@ -120,7 +117,11 @@ public class ViewJournalArticleContentDashboardItemActionProviderTest {
 
 			themeDisplay.setRequest(mockHttpServletRequest);
 
-			themeDisplay.setURLCurrent("http://localhost:8080/currentURL");
+			String urlCurrent =
+				"http://localhost:" + PortalUtil.getPortalServerPort(false) +
+					"/currentURL";
+
+			themeDisplay.setURLCurrent(urlCurrent);
 
 			serviceContext.setRequest(mockHttpServletRequest);
 
@@ -138,11 +139,8 @@ public class ViewJournalArticleContentDashboardItemActionProviderTest {
 				url.contains(
 					StringUtil.toLowerCase(
 						journalArticle.getTitle(LocaleUtil.US))));
-
-			String escapeURL = HtmlUtil.escapeURL(
-				"http://localhost:8080/currentURL");
-
-			Assert.assertTrue(url.contains("p_l_back_url=" + escapeURL));
+			Assert.assertTrue(
+				url.contains("p_l_back_url=" + HtmlUtil.escapeURL(urlCurrent)));
 		}
 		finally {
 			ServiceContextThreadLocal.popServiceContext();
@@ -179,16 +177,12 @@ public class ViewJournalArticleContentDashboardItemActionProviderTest {
 				RandomTestUtil.randomString(), RandomTestUtil.randomString(),
 				LocaleUtil.getSiteDefault(), false, false, serviceContext);
 
-			DDMStructure ddmStructure = journalArticle.getDDMStructure();
-
 			LayoutPageTemplateEntry layoutPageTemplateEntry =
-				_layoutPageTemplateEntryLocalService.addLayoutPageTemplateEntry(
-					_group.getCreatorUserId(), _group.getGroupId(), 0,
+				DisplayPageTemplateTestUtil.addDisplayPageTemplate(
+					_group.getGroupId(),
 					_portal.getClassNameId(JournalArticle.class.getName()),
-					ddmStructure.getStructureId(),
-					RandomTestUtil.randomString(),
-					LayoutPageTemplateEntryTypeConstants.DISPLAY_PAGE, 0, true,
-					0, 0, 0, 0, serviceContext);
+					journalArticle.getDDMStructureKey(), true,
+					WorkflowConstants.STATUS_APPROVED);
 
 			_assetDisplayPageEntryLocalService.addAssetDisplayPageEntry(
 				journalArticle.getUserId(), _group.getGroupId(),
@@ -267,19 +261,15 @@ public class ViewJournalArticleContentDashboardItemActionProviderTest {
 			JournalArticle journalArticle = JournalTestUtil.addArticle(
 				_group.getGroupId(), 0);
 
-			DDMStructure ddmStructure = journalArticle.getDDMStructure();
+			LayoutPageTemplateEntry layoutPageTemplateEntry =
+				DisplayPageTemplateTestUtil.addDisplayPageTemplate(
+					_group.getGroupId(),
+					_portal.getClassNameId(JournalArticle.class.getName()),
+					journalArticle.getDDMStructureKey(), true,
+					WorkflowConstants.STATUS_APPROVED);
 
 			ServiceContext serviceContext =
 				ServiceContextTestUtil.getServiceContext(_group.getGroupId());
-
-			LayoutPageTemplateEntry layoutPageTemplateEntry =
-				_layoutPageTemplateEntryLocalService.addLayoutPageTemplateEntry(
-					_group.getCreatorUserId(), _group.getGroupId(), 0,
-					_portal.getClassNameId(JournalArticle.class.getName()),
-					ddmStructure.getStructureId(),
-					RandomTestUtil.randomString(),
-					LayoutPageTemplateEntryTypeConstants.DISPLAY_PAGE, 0, true,
-					0, 0, 0, 0, serviceContext);
 
 			_assetDisplayPageEntryLocalService.addAssetDisplayPageEntry(
 				journalArticle.getUserId(), _group.getGroupId(),
@@ -309,7 +299,9 @@ public class ViewJournalArticleContentDashboardItemActionProviderTest {
 
 			themeDisplay.setRequest(mockHttpServletRequest);
 
-			themeDisplay.setURLCurrent("http://localhost:8080/currentURL");
+			themeDisplay.setURLCurrent(
+				"http://localhost:" + PortalUtil.getPortalServerPort(false) +
+					"/currentURL");
 
 			serviceContext.setRequest(mockHttpServletRequest);
 

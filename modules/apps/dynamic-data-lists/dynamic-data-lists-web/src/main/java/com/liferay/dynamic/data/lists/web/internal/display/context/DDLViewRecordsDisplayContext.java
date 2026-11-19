@@ -58,15 +58,13 @@ import com.liferay.portal.kernel.util.PrefsParamUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
+import jakarta.portlet.PortletException;
+import jakarta.portlet.PortletURL;
+
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
-import javax.portlet.PortletException;
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Rafael Praxedes
@@ -168,10 +166,30 @@ public class DDLViewRecordsDisplayContext {
 			orderByComparator = new DDLRecordModifiedDateComparator(orderByAsc);
 		}
 		else {
-			orderByComparator = new DDLRecordCreateDateComparator(orderByAsc);
+			orderByComparator = DDLRecordCreateDateComparator.getInstance(
+				orderByAsc);
 		}
 
 		return orderByComparator;
+	}
+
+	public Map<String, List<DDMFormFieldValue>> getDDMFormFieldValuesMap(
+			DDLRecordVersion recordVersion)
+		throws StorageException {
+
+		Map<String, List<DDMFormFieldValue>> ddmFormFieldValuesMap =
+			new LinkedHashMap<>();
+
+		DDMFormValues ddmFormValues = recordVersion.getDDMFormValues();
+
+		List<DDMFormFieldValue> ddmFormFieldValues =
+			ddmFormValues.getDDMFormFieldValues();
+
+		for (DDMFormFieldValue ddmFormFieldValue : ddmFormFieldValues) {
+			_putDDMFormFieldValue(ddmFormFieldValuesMap, ddmFormFieldValue);
+		}
+
+		return ddmFormFieldValuesMap;
 	}
 
 	public List<DDMFormField> getDDMFormFields() {
@@ -190,51 +208,12 @@ public class DDLViewRecordsDisplayContext {
 		return _ddmFormFields;
 	}
 
-	public Map<String, List<DDMFormFieldValue>> getDDMFormFieldValuesMap(
-			DDLRecordVersion recordVersion)
-		throws StorageException {
-
-		DDMFormValues ddmFormValues = recordVersion.getDDMFormValues();
-
-		List<DDMFormFieldValue> ddmFormFieldValues =
-			ddmFormValues.getDDMFormFieldValues();
-
-		Map<String, List<DDMFormFieldValue>> ddmFormFieldValuesMap =
-			new LinkedHashMap<>();
-
-		for (DDMFormFieldValue ddmFormFieldValue : ddmFormFieldValues) {
-			_putDDMFormFieldValue(ddmFormFieldValuesMap, ddmFormFieldValue);
-		}
-
-		return ddmFormFieldValuesMap;
-	}
-
 	public DDMStructure getDDMStructure() {
 		return _ddmStructure;
 	}
 
 	public String getDisplayStyle() {
 		return "list";
-	}
-
-	public List<DropdownItem> getFilterItemsDropdownItems() {
-		HttpServletRequest httpServletRequest = _ddlRequestHelper.getRequest();
-
-		return DropdownItemListBuilder.addGroup(
-			dropdownGroupItem -> {
-				dropdownGroupItem.setDropdownItems(
-					getFilterNavigationDropdownItems());
-				dropdownGroupItem.setLabel(
-					LanguageUtil.get(
-						httpServletRequest, "filter-by-navigation"));
-			}
-		).addGroup(
-			dropdownGroupItem -> {
-				dropdownGroupItem.setDropdownItems(getOrderByDropdownItems());
-				dropdownGroupItem.setLabel(
-					LanguageUtil.get(httpServletRequest, "order-by"));
-			}
-		).build();
 	}
 
 	public List<NavigationItem> getNavigationItems() {
@@ -270,6 +249,14 @@ public class DDLViewRecordsDisplayContext {
 			"view-records-order-by-type", "asc");
 
 		return _orderByType;
+	}
+
+	public List<DropdownItem> getOrderItemsDropdownItems() {
+		return DropdownItemListBuilder.add(
+			getOrderByDropdownItem("create-date")
+		).add(
+			getOrderByDropdownItem("modified-date")
+		).build();
 	}
 
 	public PortletURL getPortletURL() {
@@ -512,17 +499,6 @@ public class DDLViewRecordsDisplayContext {
 		return !_user.isGuestUser();
 	}
 
-	protected List<DropdownItem> getFilterNavigationDropdownItems() {
-		return DropdownItemListBuilder.add(
-			dropdownItem -> {
-				dropdownItem.setActive(true);
-				dropdownItem.setHref(getPortletURL(), "navigation", "all");
-				dropdownItem.setLabel(
-					LanguageUtil.get(_ddlRequestHelper.getRequest(), "all"));
-			}
-		).build();
-	}
-
 	protected String getKeywords() {
 		return ParamUtil.getString(_liferayPortletRequest, "keywords");
 	}
@@ -536,14 +512,6 @@ public class DDLViewRecordsDisplayContext {
 			dropdownItem.setLabel(
 				LanguageUtil.get(_ddlRequestHelper.getRequest(), orderByCol));
 		};
-	}
-
-	protected List<DropdownItem> getOrderByDropdownItems() {
-		return DropdownItemListBuilder.add(
-			getOrderByDropdownItem("create-date")
-		).add(
-			getOrderByDropdownItem("modified-date")
-		).build();
 	}
 
 	protected PermissionChecker getPermissionChecker() {
@@ -563,11 +531,7 @@ public class DDLViewRecordsDisplayContext {
 	}
 
 	protected boolean isSearch() {
-		if (Validator.isNotNull(getKeywords())) {
-			return true;
-		}
-
-		return false;
+		return Validator.isNotNull(getKeywords());
 	}
 
 	protected boolean isShowAddRecordButton() throws PortalException {
@@ -624,11 +588,7 @@ public class DDLViewRecordsDisplayContext {
 	}
 
 	private boolean _isDDMFormFieldTransient(DDMFormField ddmFormField) {
-		if (Validator.isNull(ddmFormField.getDataType())) {
-			return true;
-		}
-
-		return false;
+		return Validator.isNull(ddmFormField.getDataType());
 	}
 
 	private void _putDDMFormFieldValue(

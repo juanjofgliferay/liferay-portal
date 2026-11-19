@@ -65,8 +65,18 @@ public class ExtRepositoryFileVersionAdapter
 	}
 
 	@Override
+	public Date getDisplayDate() {
+		return null;
+	}
+
+	@Override
 	public Date getExpirationDate() {
 		return null;
+	}
+
+	@Override
+	public ExtRepositoryFileVersion getExtRepositoryModel() {
+		return _extRepositoryFileVersion;
 	}
 
 	@Override
@@ -77,11 +87,6 @@ public class ExtRepositoryFileVersionAdapter
 	@Override
 	public String getExtraSettings() {
 		return null;
-	}
-
-	@Override
-	public ExtRepositoryFileVersion getExtRepositoryModel() {
-		return _extRepositoryFileVersion;
 	}
 
 	@Override
@@ -197,6 +202,11 @@ public class ExtRepositoryFileVersionAdapter
 
 	@Override
 	public boolean isPending() {
+		return false;
+	}
+
+	@Override
+	public boolean isScheduled() {
 		return false;
 	}
 

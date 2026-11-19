@@ -3,8 +3,16 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import ClayForm, {ClayRadio, ClayRadioGroup, ClaySelect} from '@clayui/form';
+import ClayAlert from '@clayui/alert';
+import ClayForm, {
+	ClayRadio,
+	ClayRadioGroup,
+	ClaySelect,
+	ClayToggle,
+} from '@clayui/form';
+import ClayIcon from '@clayui/icon';
 import ClayLayout from '@clayui/layout';
+import {ClayTooltipProvider} from '@clayui/tooltip';
 import getCN from 'classnames';
 import React, {useContext} from 'react';
 
@@ -17,6 +25,7 @@ import CodeMirrorEditor from '../../shared/CodeMirrorEditor';
 import LearnMessage from '../../shared/LearnMessage';
 import ThemeContext from '../../shared/ThemeContext';
 import {DEFAULT_INDEX_CONFIGURATION} from '../../utils/constants';
+import isDefined from '../../utils/functions/is_defined';
 
 const CONFIGURATION_SCHEMAS = {
 	advancedConfig: advancedConfigurationSchema,
@@ -26,20 +35,25 @@ const CONFIGURATION_SCHEMAS = {
 	sortConfig: sortConfigurationSchema,
 };
 
+const OBJECT_DEFINITION_CLASS_NAME_PREFIX =
+	'com.liferay.object.model.ObjectDefinition#';
+
 function ConfigurationTab({
 	advancedConfig,
 	aggregationConfig,
 	errors,
+	frameworkConfig,
 	highlightConfig,
 	indexConfig,
 	parameterConfig,
 	searchIndexes,
+	searchableTypes,
 	setFieldTouched,
 	setFieldValue,
 	sortConfig,
 	touched,
 }) {
-	const {featureFlagLps153813, isCompanyAdmin} = useContext(ThemeContext);
+	const {isCompanyAdmin} = useContext(ThemeContext);
 
 	/**
 	 * Gets the `external` value using the `searchIndexes` array.
@@ -49,6 +63,39 @@ function ConfigurationTab({
 	const _getExternalValue = (name) => {
 		return searchIndexes.find((searchIndex) => searchIndex.name === name)
 			.external;
+	};
+
+	/**
+	 * Called when the "Enable as Collection Provider" toggle selection is
+	 * changed.
+	 */
+	const _handleCollectionProviderChange = () => {
+		setFieldValue('frameworkConfig', {
+			...frameworkConfig,
+			collectionProvider: !frameworkConfig.collectionProvider,
+
+			// When disabling collection provider, also disable
+			// `legacyAssetCollectionProvider` if available.
+
+			...(isDefined(frameworkConfig.legacyAssetCollectionProvider) &&
+				frameworkConfig.collectionProvider && {
+					legacyAssetCollectionProvider: false,
+				}),
+		});
+	};
+
+	/**
+	 * Triggered by changes to the "Enable as Collection Provider with Return
+	 * Type Asset" toggle. This ensures backward compatibility (LPD-58958) for
+	 * older blueprints, allowing them to continue acting as collection providers
+	 * returning Assets. New blueprints will not utilize `legacyAssetCollectionProvider`.
+	 */
+	const _handleLegacyAssetCollectionProviderChange = () => {
+		setFieldValue('frameworkConfig', {
+			...frameworkConfig,
+			legacyAssetCollectionProvider:
+				!frameworkConfig.legacyAssetCollectionProvider,
+		});
 	};
 
 	/**
@@ -65,7 +112,7 @@ function ConfigurationTab({
 				: {
 						external: searchIndexes[0].external,
 						indexName: searchIndexes[0].name,
-				  }
+					}
 		);
 	};
 
@@ -79,6 +126,29 @@ function ConfigurationTab({
 			external: _getExternalValue(event.target.value),
 			indexName: event.target.value,
 		});
+	};
+
+	const _isCollectionProviderUnavailable = () => {
+		const searchableAssetTypes = frameworkConfig.searchableAssetTypes || [];
+
+		if (
+			!frameworkConfig.collectionProvider ||
+			frameworkConfig.legacyAssetCollectionProvider ||
+			!searchableAssetTypes.length ||
+			!searchableTypes
+		) {
+			return false;
+		}
+
+		const classNames = searchableAssetTypes.map(
+			(searchableAssetType) => searchableAssetType.split('&&')[0]
+		);
+
+		return (
+			classNames.every((className) => className === classNames[0]) &&
+			classNames[0].startsWith(OBJECT_DEFINITION_CLASS_NAME_PREFIX) &&
+			searchableTypes.every(({className}) => className !== classNames[0])
+		);
 	};
 
 	/**
@@ -131,6 +201,99 @@ function ConfigurationTab({
 
 						<LearnMessage resourceKey="search-blueprint-configuration" />
 					</div>
+
+					<div className="align-items-center c-mb-4">
+						<ClayToggle
+							aria-label={Liferay.Language.get(
+								'enable-as-a-collection-provider'
+							)}
+							label={
+								<>
+									{Liferay.Language.get(
+										'enable-as-a-collection-provider'
+									)}
+
+									<ClayTooltipProvider>
+										<span
+											title={
+												!frameworkConfig.collectionProvider
+													? Liferay.Language.get(
+															'enable-as-a-collection-provider-help'
+														)
+													: Liferay.Language.get(
+															'disable-as-a-collection-provider-help'
+														)
+											}
+										>
+											<ClayIcon
+												className="c-ml-2 text-secondary"
+												symbol="question-circle-full"
+											/>
+										</span>
+									</ClayTooltipProvider>
+								</>
+							}
+							onToggle={_handleCollectionProviderChange}
+							toggled={
+								frameworkConfig.collectionProvider || false
+							}
+						/>
+
+						<span className="c-ml-2 sheet-text">
+							<LearnMessage resourceKey="collections-with-search-blueprints" />
+						</span>
+					</div>
+
+					{_isCollectionProviderUnavailable() && (
+						<ClayAlert
+							displayType="warning"
+							title={Liferay.Language.get('warning') + ':'}
+						>
+							{Liferay.Language.get(
+								'missing-type-reference-collection-provider-warning'
+							)}
+						</ClayAlert>
+					)}
+
+					{isDefined(
+						frameworkConfig.legacyAssetCollectionProvider
+					) && (
+						<div className="align-items-center c-mb-4">
+							<ClayToggle
+								aria-label={Liferay.Language.get(
+									'enable-as-a-collection-provider-with-return-type-asset'
+								)}
+								disabled={!frameworkConfig.collectionProvider}
+								label={
+									<>
+										{Liferay.Language.get(
+											'enable-as-a-collection-provider-with-return-type-asset'
+										)}
+
+										<ClayTooltipProvider>
+											<span
+												title={Liferay.Language.get(
+													'enable-as-a-collection-provider-with-return-type-asset-help'
+												)}
+											>
+												<ClayIcon
+													className="c-ml-2 text-secondary"
+													symbol="question-circle-full"
+												/>
+											</span>
+										</ClayTooltipProvider>
+									</>
+								}
+								onToggle={
+									_handleLegacyAssetCollectionProviderChange
+								}
+								toggled={
+									frameworkConfig.legacyAssetCollectionProvider ??
+									false
+								}
+							/>
+						</div>
+					)}
 
 					<ClayForm.Group>
 						<label>
@@ -222,7 +385,7 @@ function ConfigurationTab({
 						{_renderEditor('advancedConfig', advancedConfig)}
 					</ClayForm.Group>
 
-					{featureFlagLps153813 && isCompanyAdmin && (
+					{Liferay.FeatureFlags['LPS-153813'] && isCompanyAdmin && (
 						<ClayForm.Group>
 							<label>
 								{Liferay.Language.get('index-configuration')}

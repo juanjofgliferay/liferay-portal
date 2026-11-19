@@ -8,9 +8,9 @@ package com.liferay.commerce.product.type.grouped.web.internal.portlet.template;
 import com.liferay.commerce.product.type.grouped.util.GroupedCPTypeHelper;
 import com.liferay.portal.kernel.template.TemplateContextContributor;
 
-import java.util.Map;
+import jakarta.servlet.http.HttpServletRequest;
 
-import javax.servlet.http.HttpServletRequest;
+import java.util.Map;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -19,7 +19,10 @@ import org.osgi.service.component.annotations.Reference;
  * @author Alessio Antonio Rendina
  */
 @Component(
-	property = "type=" + TemplateContextContributor.TYPE_GLOBAL,
+	property = {
+		"template.context.keys=groupedCPTypeHelper",
+		"type=" + TemplateContextContributor.TYPE_GLOBAL
+	},
 	service = TemplateContextContributor.class
 )
 public class GroupedCPTypeTemplateContextContributor

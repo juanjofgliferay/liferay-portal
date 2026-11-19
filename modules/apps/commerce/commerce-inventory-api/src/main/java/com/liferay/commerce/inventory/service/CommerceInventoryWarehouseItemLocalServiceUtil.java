@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -58,26 +59,29 @@ public class CommerceInventoryWarehouseItemLocalServiceUtil {
 			addCommerceInventoryWarehouseItem(
 				String externalReferenceCode, long userId,
 				long commerceInventoryWarehouseId,
-				java.math.BigDecimal quantity, String sku,
+				java.math.BigDecimal quantity,
+				java.math.BigDecimal reservedQuantity, String sku,
 				String unitOfMeasureKey)
 		throws PortalException {
 
 		return getService().addCommerceInventoryWarehouseItem(
 			externalReferenceCode, userId, commerceInventoryWarehouseId,
-			quantity, sku, unitOfMeasureKey);
+			quantity, reservedQuantity, sku, unitOfMeasureKey);
 	}
 
 	public static CommerceInventoryWarehouseItem
 			addOrUpdateCommerceInventoryWarehouseItem(
 				String externalReferenceCode, long companyId, long userId,
 				long commerceInventoryWarehouseId,
-				java.math.BigDecimal quantity, String sku,
+				java.math.BigDecimal quantity,
+				java.math.BigDecimal reservedQuantity, String sku,
 				String unitOfMeasureKey)
 		throws PortalException {
 
 		return getService().addOrUpdateCommerceInventoryWarehouseItem(
 			externalReferenceCode, companyId, userId,
-			commerceInventoryWarehouseId, quantity, sku, unitOfMeasureKey);
+			commerceInventoryWarehouseId, quantity, reservedQuantity, sku,
+			unitOfMeasureKey);
 	}
 
 	public static int countItemsByCompanyId(
@@ -313,6 +317,13 @@ public class CommerceInventoryWarehouseItemLocalServiceUtil {
 		return getService().getActionableDynamicQuery();
 	}
 
+	public static List<Long> getCommerceInventoryWarehouseIds(
+		long companyId, String sku, String unitOfMeasureKey) {
+
+		return getService().getCommerceInventoryWarehouseIds(
+			companyId, sku, unitOfMeasureKey);
+	}
+
 	/**
 	 * Returns the commerce inventory warehouse item with the primary key.
 	 *
@@ -327,16 +338,6 @@ public class CommerceInventoryWarehouseItemLocalServiceUtil {
 
 		return getService().getCommerceInventoryWarehouseItem(
 			commerceInventoryWarehouseItemId);
-	}
-
-	public static CommerceInventoryWarehouseItem
-			getCommerceInventoryWarehouseItem(
-				long commerceInventoryWarehouseId, String sku,
-				String unitOfMeasureKey)
-		throws PortalException {
-
-		return getService().getCommerceInventoryWarehouseItem(
-			commerceInventoryWarehouseId, sku, unitOfMeasureKey);
 	}
 
 	public static CommerceInventoryWarehouseItem
@@ -392,14 +393,6 @@ public class CommerceInventoryWarehouseItemLocalServiceUtil {
 	}
 
 	public static List<CommerceInventoryWarehouseItem>
-		getCommerceInventoryWarehouseItemsByCompanyId(
-			long companyId, int start, int end) {
-
-		return getService().getCommerceInventoryWarehouseItemsByCompanyId(
-			companyId, start, end);
-	}
-
-	public static List<CommerceInventoryWarehouseItem>
 		getCommerceInventoryWarehouseItemsByCompanyIdSkuAndUnitOfMeasureKey(
 			long companyId, String sku, String unitOfMeasureKey, int start,
 			int end, boolean replacePermissionCheck) {
@@ -429,17 +422,11 @@ public class CommerceInventoryWarehouseItemLocalServiceUtil {
 	}
 
 	public static int getCommerceInventoryWarehouseItemsCount(
-		long commerceInventoryWarehouseId) {
+		long companyId, long accountEntryId, long groupId, String sku,
+		String unitOfMeasureKey) {
 
 		return getService().getCommerceInventoryWarehouseItemsCount(
-			commerceInventoryWarehouseId);
-	}
-
-	public static int getCommerceInventoryWarehouseItemsCount(
-		long companyId, long groupId, String sku, String unitOfMeasureKey) {
-
-		return getService().getCommerceInventoryWarehouseItemsCount(
-			companyId, groupId, sku, unitOfMeasureKey);
+			companyId, accountEntryId, groupId, sku, unitOfMeasureKey);
 	}
 
 	public static int getCommerceInventoryWarehouseItemsCount(
@@ -448,13 +435,6 @@ public class CommerceInventoryWarehouseItemLocalServiceUtil {
 
 		return getService().getCommerceInventoryWarehouseItemsCount(
 			companyId, sku, unitOfMeasureKey, replacePermissionCheck);
-	}
-
-	public static int getCommerceInventoryWarehouseItemsCountByCompanyId(
-		long companyId) {
-
-		return getService().getCommerceInventoryWarehouseItemsCountByCompanyId(
-			companyId);
 	}
 
 	public static int getCommerceInventoryWarehouseItemsCountByModifiedDate(
@@ -508,10 +488,11 @@ public class CommerceInventoryWarehouseItemLocalServiceUtil {
 	}
 
 	public static java.math.BigDecimal getStockQuantity(
-		long companyId, long groupId, String sku, String unitOfMeasureKey) {
+		long companyId, long accountEntryId, long groupId, String sku,
+		String unitOfMeasureKey) {
 
 		return getService().getStockQuantity(
-			companyId, groupId, sku, unitOfMeasureKey);
+			companyId, accountEntryId, groupId, sku, unitOfMeasureKey);
 	}
 
 	public static java.math.BigDecimal getStockQuantity(
@@ -563,36 +544,23 @@ public class CommerceInventoryWarehouseItemLocalServiceUtil {
 			updateCommerceInventoryWarehouseItem(
 				long userId, long commerceInventoryWarehouseItemId,
 				java.math.BigDecimal quantity,
-				java.math.BigDecimal reservedQuantity, long mvccVersion)
+				java.math.BigDecimal reservedQuantity, String unitOfMeasureKey,
+				long mvccVersion)
 		throws PortalException {
 
 		return getService().updateCommerceInventoryWarehouseItem(
 			userId, commerceInventoryWarehouseItemId, quantity,
-			reservedQuantity, mvccVersion);
-	}
-
-	public static CommerceInventoryWarehouseItem
-			updateCommerceInventoryWarehouseItem(
-				long userId, long commerceInventoryWarehouseItemId,
-				long mvccVersion, java.math.BigDecimal quantity,
-				String unitOfMeasureKey)
-		throws PortalException {
-
-		return getService().updateCommerceInventoryWarehouseItem(
-			userId, commerceInventoryWarehouseItemId, mvccVersion, quantity,
-			unitOfMeasureKey);
+			reservedQuantity, unitOfMeasureKey, mvccVersion);
 	}
 
 	public static CommerceInventoryWarehouseItemLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(
-		CommerceInventoryWarehouseItemLocalService service) {
-
-		_service = service;
-	}
-
-	private static volatile CommerceInventoryWarehouseItemLocalService _service;
+	private static final Snapshot<CommerceInventoryWarehouseItemLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			CommerceInventoryWarehouseItemLocalServiceUtil.class,
+			CommerceInventoryWarehouseItemLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:14017774

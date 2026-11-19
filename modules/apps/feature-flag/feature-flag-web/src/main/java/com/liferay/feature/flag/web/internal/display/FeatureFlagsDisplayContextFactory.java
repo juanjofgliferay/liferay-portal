@@ -30,6 +30,11 @@ import com.liferay.portal.kernel.util.PropsUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -38,19 +43,17 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.function.Predicate;
 
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
-
-import javax.servlet.http.HttpServletRequest;
-
-import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.Reference;
-
 /**
  * @author Drew Brokke
  */
-@Component(service = FeatureFlagsDisplayContextFactory.class)
 public class FeatureFlagsDisplayContextFactory {
+
+	public FeatureFlagsDisplayContextFactory(
+		FeatureFlagsBagProvider featureFlagsBagProvider, Portal portal) {
+
+		_featureFlagsBagProvider = featureFlagsBagProvider;
+		_portal = portal;
+	}
 
 	public FeatureFlagsDisplayContext create(
 		FeatureFlagType featureFlagType, HttpServletRequest httpServletRequest,
@@ -66,7 +69,7 @@ public class FeatureFlagsDisplayContextFactory {
 
 		PortletRequest portletRequest =
 			(PortletRequest)httpServletRequest.getAttribute(
-				JavaConstants.JAVAX_PORTLET_REQUEST);
+				JavaConstants.JAKARTA_PORTLET_REQUEST);
 
 		String displayStyle = ParamUtil.getString(
 			portletRequest, "displayStyle", "descriptive");
@@ -75,7 +78,7 @@ public class FeatureFlagsDisplayContextFactory {
 
 		PortletResponse portletResponse =
 			(PortletResponse)httpServletRequest.getAttribute(
-				JavaConstants.JAVAX_PORTLET_RESPONSE);
+				JavaConstants.JAKARTA_PORTLET_RESPONSE);
 
 		LiferayPortletRequest liferayPortletRequest =
 			_portal.getLiferayPortletRequest(portletRequest);
@@ -186,15 +189,17 @@ public class FeatureFlagsDisplayContextFactory {
 			List<String> systemScopedDependencyKeys = new ArrayList<>();
 
 			for (String key : dependencyKeys) {
-				if (GetterUtil.getBoolean(
+				if (!GetterUtil.getBoolean(
 						PropsUtil.get(
 							FeatureFlagConstants.getKey(
 								key,
 								ExtendedObjectClassDefinition.Scope.SYSTEM.
 									getValue())))) {
 
-					systemScopedDependencyKeys.add(key);
+					continue;
 				}
+
+				systemScopedDependencyKeys.add(key);
 			}
 
 			dependencyKeys.removeAll(systemScopedDependencyKeys);
@@ -222,10 +227,7 @@ public class FeatureFlagsDisplayContextFactory {
 		return StringUtil.toLowerCase(string, locale);
 	}
 
-	@Reference
-	private FeatureFlagsBagProvider _featureFlagsBagProvider;
-
-	@Reference
-	private Portal _portal;
+	private final FeatureFlagsBagProvider _featureFlagsBagProvider;
+	private final Portal _portal;
 
 }

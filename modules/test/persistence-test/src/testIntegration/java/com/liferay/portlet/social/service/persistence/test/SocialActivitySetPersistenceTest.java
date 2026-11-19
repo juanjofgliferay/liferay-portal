@@ -108,11 +108,7 @@ public class SocialActivitySetPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		SocialActivitySet newSocialActivitySet = _persistence.create(pk);
-
-		newSocialActivitySet.setMvccVersion(RandomTestUtil.nextLong());
+		SocialActivitySet newSocialActivitySet = addSocialActivitySet();
 
 		newSocialActivitySet.setCtCollectionId(RandomTestUtil.nextLong());
 
@@ -136,7 +132,9 @@ public class SocialActivitySetPersistenceTest {
 
 		newSocialActivitySet.setActivityCount(RandomTestUtil.nextInt());
 
-		_socialActivitySets.add(_persistence.update(newSocialActivitySet));
+		newSocialActivitySet = _persistence.update(newSocialActivitySet);
+
+		_socialActivitySets.add(newSocialActivitySet);
 
 		SocialActivitySet existingSocialActivitySet =
 			_persistence.findByPrimaryKey(newSocialActivitySet.getPrimaryKey());
@@ -194,42 +192,6 @@ public class SocialActivitySetPersistenceTest {
 		_persistence.countByUserId(RandomTestUtil.nextLong());
 
 		_persistence.countByUserId(0L);
-	}
-
-	@Test
-	public void testCountByG_U_T() throws Exception {
-		_persistence.countByG_U_T(
-			RandomTestUtil.nextLong(), RandomTestUtil.nextLong(),
-			RandomTestUtil.nextInt());
-
-		_persistence.countByG_U_T(0L, 0L, 0);
-	}
-
-	@Test
-	public void testCountByC_C_T() throws Exception {
-		_persistence.countByC_C_T(
-			RandomTestUtil.nextLong(), RandomTestUtil.nextLong(),
-			RandomTestUtil.nextInt());
-
-		_persistence.countByC_C_T(0L, 0L, 0);
-	}
-
-	@Test
-	public void testCountByG_U_C_T() throws Exception {
-		_persistence.countByG_U_C_T(
-			RandomTestUtil.nextLong(), RandomTestUtil.nextLong(),
-			RandomTestUtil.nextLong(), RandomTestUtil.nextInt());
-
-		_persistence.countByG_U_C_T(0L, 0L, 0L, 0);
-	}
-
-	@Test
-	public void testCountByU_C_C_T() throws Exception {
-		_persistence.countByU_C_C_T(
-			RandomTestUtil.nextLong(), RandomTestUtil.nextLong(),
-			RandomTestUtil.nextLong(), RandomTestUtil.nextInt());
-
-		_persistence.countByU_C_C_T(0L, 0L, 0L, 0);
 	}
 
 	@Test
@@ -485,8 +447,6 @@ public class SocialActivitySetPersistenceTest {
 
 		SocialActivitySet socialActivitySet = _persistence.create(pk);
 
-		socialActivitySet.setMvccVersion(RandomTestUtil.nextLong());
-
 		socialActivitySet.setCtCollectionId(RandomTestUtil.nextLong());
 
 		socialActivitySet.setGroupId(RandomTestUtil.nextLong());
@@ -520,3 +480,4 @@ public class SocialActivitySetPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-592983255

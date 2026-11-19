@@ -6,10 +6,10 @@
 import ClayButton from '@clayui/button';
 import {useMutation} from 'graphql-hooks';
 import React, {useContext, useEffect, useRef, useState} from 'react';
-import {withRouter} from 'react-router-dom';
 
 import {AppContext} from '../../AppContext.es';
 import DefaultQuestionsEditor from '../../components/DefaultQuestionsEditor.es';
+import {withRouter} from '../../hooks/withRouter.es';
 import {
 	client,
 	getMessageQuery,
@@ -18,21 +18,15 @@ import {
 import {getContextLink} from '../../utils/utils.es';
 
 export default withRouter(
-	({
-		history,
-		match: {
-			params: {answerId, questionId, sectionTitle},
-		},
-	}) => {
+	({history, params: {answerId, questionId, sectionTitle}}) => {
 		const context = useContext(AppContext);
 
 		const [addUpdateMessage] = useMutation(updateMessageQuery);
 
 		const [data, setData] = useState();
 		const editorRef = useRef('');
-		const [isUpdateButtonDisabled, setIsUpdateButtonDisabled] = useState(
-			false
-		);
+		const [isUpdateButtonDisabled, setIsUpdateButtonDisabled] =
+			useState(false);
 
 		useEffect(() => {
 			editorRef.current.setContent(
@@ -98,13 +92,13 @@ export default withRouter(
 										? isAReplyMessage
 											? Liferay.Language.get(
 													'update-your-comment'
-											  )
+												)
 											: Liferay.Language.get(
 													'update-your-answer'
-											  )
+												)
 										: Liferay.Language.get(
 												'submit-for-publication'
-										  )
+											)
 								}
 								className="c-mt-4 c-mt-sm-0"
 								disabled={isUpdateButtonDisabled}
@@ -115,13 +109,13 @@ export default withRouter(
 									? isAReplyMessage
 										? Liferay.Language.get(
 												'update-your-comment'
-										  )
+											)
 										: Liferay.Language.get(
 												'update-your-answer'
-										  )
+											)
 									: Liferay.Language.get(
 											'submit-for-workflow'
-									  )}
+										)}
 							</ClayButton>
 
 							<ClayButton

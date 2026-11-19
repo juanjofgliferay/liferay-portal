@@ -5,10 +5,8 @@
 
 package com.liferay.portal.cluster.multiple.internal.jgroups;
 
-import com.liferay.petra.concurrent.ConcurrentReferenceKeyHashMap;
 import com.liferay.petra.io.StreamUtil;
 import com.liferay.petra.io.unsync.UnsyncByteArrayInputStream;
-import com.liferay.petra.memory.FinalizeManager;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
@@ -16,14 +14,14 @@ import com.liferay.portal.cluster.multiple.configuration.ClusterExecutorConfigur
 import com.liferay.portal.cluster.multiple.internal.ClusterChannel;
 import com.liferay.portal.cluster.multiple.internal.ClusterChannelFactory;
 import com.liferay.portal.cluster.multiple.internal.ClusterReceiver;
-import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
 import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.util.DigesterUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.PortalClassLoaderUtil;
-import com.liferay.portal.kernel.util.Props;
 import com.liferay.portal.kernel.util.PropsKeys;
+import com.liferay.portal.kernel.util.PropsUtil;
 import com.liferay.portal.kernel.util.SocketUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
@@ -35,28 +33,37 @@ import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 
-import java.util.Map;
+import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 
-import org.jgroups.conf.ConfiguratorFactory;
-import org.jgroups.conf.ProtocolStackConfigurator;
+import javax.crypto.spec.SecretKeySpec;
 
-import org.osgi.framework.BundleContext;
-import org.osgi.service.component.annotations.Activate;
-import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.Deactivate;
-import org.osgi.service.component.annotations.Modified;
-import org.osgi.service.component.annotations.Reference;
+import org.jgroups.conf.ConfiguratorFactory;
+import org.jgroups.conf.ProtocolConfiguration;
+import org.jgroups.conf.ProtocolStackConfigurator;
+import org.jgroups.protocols.SYM_ENCRYPT;
+import org.jgroups.stack.Protocol;
 
 /**
  * @author Tina Tian
  */
-@Component(
-	configurationPid = "com.liferay.portal.cluster.multiple.configuration.ClusterExecutorConfiguration",
-	enabled = false, service = ClusterChannelFactory.class
-)
 public class JGroupsClusterChannelFactory implements ClusterChannelFactory {
+
+	public JGroupsClusterChannelFactory(
+		ClusterExecutorConfiguration clusterExecutorConfiguration) {
+
+		_clusterExecutorConfiguration = clusterExecutorConfiguration;
+
+		_initSystemProperties(
+			PropsUtil.getArray(
+				PropsKeys.CLUSTER_LINK_CHANNEL_SYSTEM_PROPERTIES));
+
+		_initBindAddress(
+			GetterUtil.getString(
+				PropsUtil.get(PropsKeys.CLUSTER_LINK_AUTODETECT_ADDRESS)));
+	}
 
 	@Override
 	public ClusterChannel createClusterChannel(
@@ -67,8 +74,8 @@ public class JGroupsClusterChannelFactory implements ClusterChannelFactory {
 		try {
 			return new JGroupsClusterChannel(
 				executorService, channleLogicName,
-				_parseChannelProperties(channelPropertiesLocation), clusterName,
-				clusterReceiver, _bindInetAddress,
+				_parseChannelProperties(channelPropertiesLocation, clusterName),
+				clusterName, clusterReceiver, _bindInetAddress,
 				_clusterExecutorConfiguration, _classLoaders);
 		}
 		catch (Exception exception) {
@@ -85,27 +92,6 @@ public class JGroupsClusterChannelFactory implements ClusterChannelFactory {
 	@Override
 	public NetworkInterface getBindNetworkInterface() {
 		return _bindNetworkInterface;
-	}
-
-	@Activate
-	@Modified
-	protected synchronized void activate(
-		BundleContext bundleContext, Map<String, Object> properties) {
-
-		_clusterExecutorConfiguration = ConfigurableUtil.createConfigurable(
-			ClusterExecutorConfiguration.class, properties);
-
-		_initSystemProperties(
-			_props.getArray(PropsKeys.CLUSTER_LINK_CHANNEL_SYSTEM_PROPERTIES));
-
-		_initBindAddress(
-			GetterUtil.getString(
-				_props.get(PropsKeys.CLUSTER_LINK_AUTODETECT_ADDRESS)));
-	}
-
-	@Deactivate
-	protected synchronized void deactivate() {
-		_classLoaders.clear();
 	}
 
 	private InputStream _getInputStream(String channelPropertiesLocation)
@@ -215,7 +201,7 @@ public class JGroupsClusterChannelFactory implements ClusterChannelFactory {
 	}
 
 	private ProtocolStackConfigurator _parseChannelProperties(
-			String channelPropertiesLocation)
+			String channelPropertiesLocation, String clusterName)
 		throws Exception {
 
 		try (InputStream inputStream = _getInputStream(
@@ -245,10 +231,25 @@ public class JGroupsClusterChannelFactory implements ClusterChannelFactory {
 				String propertyKey = configXML.substring(
 					startIndex + 2, endIndex);
 
-				Object value = _props.get(
+				Object value = PropsUtil.get(
 					StringUtil.replace(
 						propertyKey, _ENCODED_CHARACTERS,
 						_ORIGINAL_CHARACTERS));
+
+				if (propertyKey.equals(PropsKeys.CLUSTER_LINK_AUTH_VALUE) &&
+					value.equals("liferay-cluster") && _log.isWarnEnabled() &&
+					_defaultSecretWarning) {
+
+					_log.warn(
+						StringBundler.concat(
+							"Clustering authentication is using default ",
+							"cluster link authentication value. Please ",
+							"configure the property \"",
+							PropsKeys.CLUSTER_LINK_AUTH_VALUE,
+							"\" in portal.properties."));
+
+					_defaultSecretWarning = false;
+				}
 
 				if (value instanceof String) {
 					sb.append(configXML.substring(index, startIndex));
@@ -272,9 +273,32 @@ public class JGroupsClusterChannelFactory implements ClusterChannelFactory {
 				configXML = sb.toString();
 			}
 
-			return ConfiguratorFactory.getStackConfigurator(
-				new UnsyncByteArrayInputStream(
-					configXML.getBytes(StringPool.UTF8)));
+			ProtocolStackConfigurator protocolStackConfigurator =
+				ConfiguratorFactory.getStackConfigurator(
+					new UnsyncByteArrayInputStream(
+						configXML.getBytes(StringPool.UTF8)));
+
+			if (channelPropertiesLocation.startsWith(
+					"jgroups/secure/sym_encrypt/")) {
+
+				if (_log.isWarnEnabled() && _defaultSymEncryptWarning) {
+					_log.warn(
+						StringBundler.concat(
+							"Clustering authentication is using SYM_ENCRYPT ",
+							"default implementation. Please note that this ",
+							"implementation is not secure enough to be used ",
+							"in production. Refer to the documentation for ",
+							"details on configuring secure JGroups ",
+							"connections."));
+
+					_defaultSymEncryptWarning = false;
+				}
+
+				return new SymEncryptProtocolStackConfigurator(
+					clusterName, protocolStackConfigurator);
+			}
+
+			return protocolStackConfigurator;
 		}
 	}
 
@@ -291,14 +315,53 @@ public class JGroupsClusterChannelFactory implements ClusterChannelFactory {
 	private static final Log _log = LogFactoryUtil.getLog(
 		JGroupsClusterChannelFactory.class);
 
+	private static boolean _defaultSecretWarning = true;
+	private static boolean _defaultSymEncryptWarning = true;
+
 	private InetAddress _bindInetAddress;
 	private NetworkInterface _bindNetworkInterface;
 	private final ConcurrentMap<ClassLoader, ClassLoader> _classLoaders =
-		new ConcurrentReferenceKeyHashMap<>(
-			FinalizeManager.WEAK_REFERENCE_FACTORY);
+		new ConcurrentHashMap<>();
 	private volatile ClusterExecutorConfiguration _clusterExecutorConfiguration;
 
-	@Reference
-	private Props _props;
+	private static class SymEncryptProtocolStackConfigurator
+		implements ProtocolStackConfigurator {
+
+		@Override
+		public void afterCreation(Protocol protocol) {
+			if (!(protocol instanceof SYM_ENCRYPT symEncrypt) ||
+				(symEncrypt.keystoreName() != null)) {
+
+				return;
+			}
+
+			symEncrypt.setSecretKey(
+				new SecretKeySpec(
+					DigesterUtil.digestRaw(DigesterUtil.SHA_256, _clusterName),
+					"AES"));
+		}
+
+		@Override
+		public List<ProtocolConfiguration> getProtocolStack() {
+			return _protocolStackConfigurator.getProtocolStack();
+		}
+
+		@Override
+		public String getProtocolStackString() {
+			return _protocolStackConfigurator.getProtocolStackString();
+		}
+
+		private SymEncryptProtocolStackConfigurator(
+			String clusterName,
+			ProtocolStackConfigurator protocolStackConfigurator) {
+
+			_clusterName = clusterName;
+			_protocolStackConfigurator = protocolStackConfigurator;
+		}
+
+		private final String _clusterName;
+		private final ProtocolStackConfigurator _protocolStackConfigurator;
+
+	}
 
 }

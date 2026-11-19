@@ -46,13 +46,6 @@ public class DLSyncEventLocalServiceWrapper
 		return _dlSyncEventLocalService.addDLSyncEvent(dlSyncEvent);
 	}
 
-	@Override
-	public com.liferay.document.library.sync.model.DLSyncEvent addDLSyncEvent(
-		String event, String type, long typePK) {
-
-		return _dlSyncEventLocalService.addDLSyncEvent(event, type, typePK);
-	}
-
 	/**
 	 * Creates a new dl sync event with the primary key. Does not add the dl sync event to the database.
 	 *
@@ -112,11 +105,6 @@ public class DLSyncEventLocalServiceWrapper
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _dlSyncEventLocalService.deleteDLSyncEvent(syncEventId);
-	}
-
-	@Override
-	public void deleteDLSyncEvents() {
-		_dlSyncEventLocalService.deleteDLSyncEvents();
 	}
 
 	/**
@@ -279,13 +267,6 @@ public class DLSyncEventLocalServiceWrapper
 		return _dlSyncEventLocalService.getDLSyncEvents(start, end);
 	}
 
-	@Override
-	public java.util.List<com.liferay.document.library.sync.model.DLSyncEvent>
-		getDLSyncEvents(long modifiedTime) {
-
-		return _dlSyncEventLocalService.getDLSyncEvents(modifiedTime);
-	}
-
 	/**
 	 * Returns the number of dl sync events.
 	 *
@@ -301,13 +282,6 @@ public class DLSyncEventLocalServiceWrapper
 		getIndexableActionableDynamicQuery() {
 
 		return _dlSyncEventLocalService.getIndexableActionableDynamicQuery();
-	}
-
-	@Override
-	public java.util.List<com.liferay.document.library.sync.model.DLSyncEvent>
-		getLatestDLSyncEvents() {
-
-		return _dlSyncEventLocalService.getLatestDLSyncEvents();
 	}
 
 	/**
@@ -369,3 +343,4 @@ public class DLSyncEventLocalServiceWrapper
 	private DLSyncEventLocalService _dlSyncEventLocalService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1601295687

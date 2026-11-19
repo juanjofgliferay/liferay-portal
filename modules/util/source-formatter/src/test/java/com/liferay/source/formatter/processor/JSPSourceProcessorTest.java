@@ -16,10 +16,10 @@ public class JSPSourceProcessorTest extends BaseSourceProcessorTestCase {
 	public void testCombineJavaSourceBlocks() throws Exception {
 		test(
 			"CombineJavaSourceBlocks1.testjsp",
-			"'<%!...%>' block should come after <%...%> blcok", 10);
+			"\"<%!...%>\" block should come after <%...%> block", 10);
 		test(
 			"CombineJavaSourceBlocks2.testjsp",
-			"Combine <%!...%> blocks at line '20' and '25'");
+			"Combine <%!...%> blocks at line \"20\" and \"25\"");
 	}
 
 	@Test
@@ -48,13 +48,13 @@ public class JSPSourceProcessorTest extends BaseSourceProcessorTestCase {
 	}
 
 	@Test
-	public void testFormatTaglibs() throws Exception {
-		test("FormatTaglibs.testjsp");
+	public void testFormatTagLineBreaks() throws Exception {
+		test("FormatTagLineBreaks.testjsp");
 	}
 
 	@Test
-	public void testFormatTagLineBreaks() throws Exception {
-		test("FormatTagLineBreaks.testjsp");
+	public void testFormatTaglibs() throws Exception {
+		test("FormatTaglibs.testjsp");
 	}
 
 	@Test
@@ -78,10 +78,23 @@ public class JSPSourceProcessorTest extends BaseSourceProcessorTestCase {
 			SourceProcessorTestParameters.create(
 				"IncorrectMethodCalls.testjsp"
 			).addExpectedMessage(
-				"Use type 'LiferayPortletResponse' to call 'getNamespace()'", 12
+				"Use type \"LiferayPortletResponse\" to call " +
+					"\"getNamespace()\"",
+				12
 			).addExpectedMessage(
-				"Use type 'LiferayPortletResponse' to call 'getNamespace()'", 19
+				"Use type \"LiferayPortletResponse\" to call " +
+					"\"getNamespace()\"",
+				19
 			));
+	}
+
+	@Test
+	public void testJSONUtilPutCalls() throws Exception {
+		test(
+			"JSONUtilPutCalls.testjsp",
+			"Combine calls \"JSONFactoryUtil.createJSONObject\" (9) and " +
+				"\"jsonObject.put\" (11) into single call \"JSONUtil.put\"",
+			9);
 	}
 
 	@Test
@@ -101,7 +114,8 @@ public class JSPSourceProcessorTest extends BaseSourceProcessorTestCase {
 		test(
 			"MissingTaglibAttributes.testjsp",
 			"When using <clay:dropdown-actions>, always specify one of the " +
-				"follwing attributes: 'aria-label', 'aria-labelledby', 'title'",
+				"following attributes: \"aria-label\", \"aria-labelledby\", " +
+					"\"title\"",
 			10);
 	}
 
@@ -111,11 +125,11 @@ public class JSPSourceProcessorTest extends BaseSourceProcessorTestCase {
 			SourceProcessorTestParameters.create(
 				"MissingTaglibs.testjsp"
 			).addExpectedMessage(
-				"Missing taglib for tag with prefix 'aui'"
+				"Missing taglib for tag with prefix \"aui\""
 			).addExpectedMessage(
-				"Missing taglib for tag with prefix 'liferay-portlet'"
+				"Missing taglib for tag with prefix \"liferay-portlet\""
 			).addExpectedMessage(
-				"Missing taglib for tag with prefix 'liferay-ui'"
+				"Missing taglib for tag with prefix \"liferay-ui\""
 			));
 	}
 

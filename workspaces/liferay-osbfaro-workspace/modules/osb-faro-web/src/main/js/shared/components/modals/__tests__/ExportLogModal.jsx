@@ -1,0 +1,223 @@
+import ExportLogModal from '../ExportLogModal';
+import mockStore from 'test/mock-store';
+import React from 'react';
+import {act, fireEvent, render, screen, waitFor} from '@testing-library/react';
+import {InMemoryCache} from '@apollo/client';
+import {MemoryRouter, Route, Routes} from 'react-router-dom';
+import {MockedProvider} from '@apollo/client/testing';
+import {mockPreferenceReq} from 'test/graphql-data';
+import {noop} from 'lodash';
+import {Provider} from 'react-redux';
+import {useModal} from '@clayui/modal';
+import {waitForModal} from 'test/render-modal';
+
+jest.unmock('react-dom');
+
+// Mock DateRangeInput to simplify the test and avoid complex portal/calendar
+// logic. Tests that pin the displayed range opt into rendering the real input
+// next to the mock button through mockRenderActualDateRangeInput.
+
+let mockRenderActualDateRangeInput = false;
+
+jest.mock('shared/components/DateRangeInput', () => props => {
+	const {onChange} = props;
+
+	const {default: ActualDateRangeInput} = jest.requireActual(
+		'shared/components/DateRangeInput'
+	);
+
+	return (
+		<div data-testid='mock-date-range-input'>
+			<button
+				onClick={() =>
+					onChange(
+						mockRenderActualDateRangeInput
+							? {end: '2026-06-17', start: '2026-06-10'}
+							: {
+									end: require('moment')('2024-01-02'),
+									start: require('moment')('2024-01-01')
+								}
+					)
+				}
+			>
+				{'Set Date Range'}
+			</button>
+
+			{mockRenderActualDateRangeInput && (
+				<ActualDateRangeInput {...props} />
+			)}
+		</div>
+	);
+});
+
+jest.mock('shared/hooks/useTimeZone', () => ({
+	useTimeZone: () => ({
+		timeZoneId: 'UTC'
+	})
+}));
+
+const TestModal = props => {
+	const {observer} = useModal({defaultOpen: true});
+
+	return <ExportLogModal observer={observer} {...props} />;
+};
+
+const Wrapper = ({children, mocks = [mockPreferenceReq()]}) => (
+	<Provider store={mockStore()}>
+		<MemoryRouter initialEntries={['/workspace/123/456/2000']}>
+			<Routes>
+				<Route
+					element={
+						<MockedProvider
+							cache={
+								new InMemoryCache({
+									addTypename: false
+								})
+							}
+							mocks={mocks}
+						>
+							{children}
+						</MockedProvider>
+					}
+					path='/workspace/:groupId/:channelId/:assetId'
+				/>
+			</Routes>
+		</MemoryRouter>
+	</Provider>
+);
+
+describe('ExportLogModal', () => {
+	it('renders', async () => {
+		render(
+			<Wrapper>
+				<TestModal
+					description='Test description'
+					onClose={noop}
+					title='Test Title'
+				/>
+			</Wrapper>
+		);
+
+		await waitForModal();
+
+		expect(document.body).toMatchSnapshot();
+	});
+
+	it('should have a loading state when download is triggered', async () => {
+		let resolveSubmit;
+		const onSubmit = jest.fn(
+			() =>
+				new Promise(resolve => {
+					resolveSubmit = resolve;
+				})
+		);
+
+		render(
+			<Wrapper>
+				<TestModal
+					description='Test description'
+					onClose={noop}
+					onSubmit={onSubmit}
+					title='Test Title'
+				/>
+			</Wrapper>
+		);
+
+		await waitForModal();
+
+		// Set date range via mock
+		fireEvent.click(screen.getByText('Set Date Range'));
+
+		const downloadBtn = screen.getByRole('button', {name: /download/i});
+
+		// Wait for the button to be enabled
+		await waitFor(() => expect(downloadBtn).not.toBeDisabled());
+
+		fireEvent.click(downloadBtn);
+
+		// Verify loading indicator appears in the button
+		expect(document.querySelector('.loading-root')).toBeTruthy();
+
+		// Resolve the submission
+		await act(async () => {
+			resolveSubmit('csv-data');
+		});
+
+		// Verify loading indicator is removed
+		await waitFor(() =>
+			expect(document.querySelector('.loading-root')).toBeNull()
+		);
+	});
+
+	it('should stop loading if the download failed', async () => {
+		let rejectSubmit;
+		const onSubmit = jest.fn(
+			() =>
+				new Promise((_, reject) => {
+					rejectSubmit = reject;
+				})
+		);
+
+		render(
+			<Wrapper>
+				<TestModal
+					description='Test description'
+					onClose={noop}
+					onSubmit={onSubmit}
+					title='Test Title'
+				/>
+			</Wrapper>
+		);
+
+		await waitForModal();
+
+		// Set date range via mock
+		fireEvent.click(screen.getByText('Set Date Range'));
+
+		const downloadBtn = screen.getByRole('button', {name: /download/i});
+
+		await waitFor(() => expect(downloadBtn).not.toBeDisabled());
+
+		fireEvent.click(downloadBtn);
+
+		expect(document.querySelector('.loading-root')).toBeTruthy();
+
+		// Reject the submission
+		await act(async () => {
+			rejectSubmit(new Error('fail'));
+		});
+
+		await waitFor(() =>
+			expect(document.querySelector('.loading-root')).toBeNull()
+		);
+	});
+	describe('with the real date range input', () => {
+		afterEach(() => {
+			mockRenderActualDateRangeInput = false;
+		});
+
+		beforeEach(() => {
+			mockRenderActualDateRangeInput = true;
+		});
+
+		it('renders the selected date range in the custom date format', async () => {
+			render(
+				<Wrapper>
+					<TestModal
+						description='Test description'
+						onClose={noop}
+						title='Test Title'
+					/>
+				</Wrapper>
+			);
+
+			await waitForModal();
+
+			fireEvent.click(screen.getByText('Set Date Range'));
+
+			expect(screen.getByTestId('date-range-input')).toHaveValue(
+				'Jun 10, 2026 to Jun 17, 2026'
+			);
+		});
+	});
+});

@@ -1,0 +1,33 @@
+@import 'atlas-variables';
+
+.content-section-scroll {
+	max-height: 600px;
+	overflow: auto;
+
+	@include media-breakpoint-down(sm) {
+		max-height: none;
+		overflow: visible;
+	}
+}
+
+.cursor-pointer {
+	cursor: pointer;
+}
+
+.date-part-grid {
+	display: grid;
+	gap: 0.25rem;
+	grid-template-columns: repeat(7, 1fr);
+
+	@include media-breakpoint-down(sm) {
+		grid-template-columns: repeat(4, 1fr);
+	}
+}
+
+.month-grid {
+	grid-template-columns: repeat(6, 1fr);
+
+	@include media-breakpoint-down(sm) {
+		grid-template-columns: repeat(3, 1fr);
+	}
+}

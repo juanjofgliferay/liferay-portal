@@ -337,14 +337,6 @@ public class CommerceSubscriptionEntryLocalServiceWrapper
 
 	@Override
 	public java.util.List<com.liferay.commerce.model.CommerceSubscriptionEntry>
-		getActiveCommerceSubscriptionEntries(long commerceAccountId) {
-
-		return _commerceSubscriptionEntryLocalService.
-			getActiveCommerceSubscriptionEntries(commerceAccountId);
-	}
-
-	@Override
-	public java.util.List<com.liferay.commerce.model.CommerceSubscriptionEntry>
 		getCommerceDeliverySubscriptionEntriesToRenew() {
 
 		return _commerceSubscriptionEntryLocalService.
@@ -460,14 +452,6 @@ public class CommerceSubscriptionEntryLocalServiceWrapper
 
 		return _commerceSubscriptionEntryLocalService.
 			getCommerceSubscriptionEntriesCount(companyId, userId);
-	}
-
-	@Override
-	public int getCommerceSubscriptionEntriesCount(
-		long companyId, long groupId, long userId) {
-
-		return _commerceSubscriptionEntryLocalService.
-			getCommerceSubscriptionEntriesCount(companyId, groupId, userId);
 	}
 
 	@Override
@@ -755,3 +739,4 @@ public class CommerceSubscriptionEntryLocalServiceWrapper
 		_commerceSubscriptionEntryLocalService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:599874561

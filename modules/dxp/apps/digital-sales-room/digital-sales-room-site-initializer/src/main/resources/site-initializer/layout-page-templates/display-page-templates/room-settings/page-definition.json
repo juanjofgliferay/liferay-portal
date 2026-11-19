@@ -1,0 +1,37 @@
+{
+	"pageElement": {
+		"id": "a1f0d2c4-7b3e-4a91-8c2d-1e5f6a7b8c90",
+		"pageElements": [
+			{
+				"definition": {
+					"indexed": true
+				},
+				"id": "b2e1c3d5-8c4f-4b02-9d3e-2f6a7b8c9d01",
+				"pageElements": [
+					{
+						"definition": {
+							"fragment": {
+								"key": "dsr-room-settings-component-section"
+							},
+							"fragmentConfig": {
+							},
+							"fragmentFields": [
+							],
+							"indexed": true
+						},
+						"id": "c3f2d4e6-9d50-4c13-ae4f-3a7b8c9d0e12",
+						"type": "Fragment"
+					}
+				],
+				"type": "Section"
+			}
+		],
+		"type": "Root"
+	},
+	"settings": {
+		"masterPage": {
+			"key": "room-settings-master"
+		}
+	},
+	"version": 1.1
+}

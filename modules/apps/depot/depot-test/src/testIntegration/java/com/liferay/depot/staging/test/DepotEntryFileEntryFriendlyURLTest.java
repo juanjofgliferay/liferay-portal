@@ -6,9 +6,11 @@
 package com.liferay.depot.staging.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.depot.constants.DepotConstants;
 import com.liferay.depot.model.DepotEntry;
 import com.liferay.depot.service.DepotEntryLocalService;
 import com.liferay.depot.test.util.DepotStagingTestUtil;
+import com.liferay.document.library.helper.DLURLHelper;
 import com.liferay.document.library.kernel.model.DLFolderConstants;
 import com.liferay.document.library.kernel.model.DLVersionNumberIncrease;
 import com.liferay.document.library.kernel.service.DLAppLocalService;
@@ -16,11 +18,13 @@ import com.liferay.document.library.kernel.service.DLAppServiceUtil;
 import com.liferay.document.library.kernel.service.DLTrashService;
 import com.liferay.friendly.url.model.FriendlyURLEntry;
 import com.liferay.friendly.url.service.FriendlyURLEntryLocalService;
+import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
 import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.test.TestInfo;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
@@ -87,7 +91,7 @@ public class DepotEntryFileEntryFriendlyURLTest {
 			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
 			StringUtil.randomString(), ContentTypes.APPLICATION_OCTET_STREAM,
 			StringUtil.randomString(), "urltitle", StringUtil.randomString(),
-			StringUtil.randomString(), new byte[0], null, null,
+			StringUtil.randomString(), new byte[0], null, null, null,
 			ServiceContextTestUtil.getServiceContext(
 				_liveDepotEntry.getGroupId()));
 
@@ -109,7 +113,7 @@ public class DepotEntryFileEntryFriendlyURLTest {
 			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
 			StringUtil.randomString(), ContentTypes.APPLICATION_OCTET_STREAM,
 			StringUtil.randomString(), "urltitle", StringUtil.randomString(),
-			StringUtil.randomString(), new byte[0], null, null,
+			StringUtil.randomString(), new byte[0], null, null, null,
 			ServiceContextTestUtil.getServiceContext(
 				_liveDepotEntry.getGroupId()));
 
@@ -127,7 +131,7 @@ public class DepotEntryFileEntryFriendlyURLTest {
 			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
 			StringUtil.randomString(), ContentTypes.APPLICATION_OCTET_STREAM,
 			StringUtil.randomString(), "urltitle", StringUtil.randomString(),
-			StringUtil.randomString(), new byte[0], null, null,
+			StringUtil.randomString(), new byte[0], null, null, null,
 			ServiceContextTestUtil.getServiceContext(
 				_liveDepotEntry.getGroupId()));
 
@@ -149,7 +153,7 @@ public class DepotEntryFileEntryFriendlyURLTest {
 			StringUtil.randomString(), ContentTypes.APPLICATION_OCTET_STREAM,
 			StringUtil.randomString(), StringPool.BLANK,
 			StringUtil.randomString(), StringUtil.randomString(), new byte[0],
-			null, null,
+			null, null, null,
 			ServiceContextTestUtil.getServiceContext(
 				_liveDepotEntry.getGroupId()));
 
@@ -173,7 +177,7 @@ public class DepotEntryFileEntryFriendlyURLTest {
 			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
 			StringUtil.randomString(), ContentTypes.APPLICATION_OCTET_STREAM,
 			StringUtil.randomString(), "urltitle", StringUtil.randomString(),
-			StringUtil.randomString(), new byte[0], null, null,
+			StringUtil.randomString(), new byte[0], null, null, null,
 			ServiceContextTestUtil.getServiceContext(
 				_liveDepotEntry.getGroupId()));
 
@@ -189,7 +193,7 @@ public class DepotEntryFileEntryFriendlyURLTest {
 			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
 			StringUtil.randomString(), ContentTypes.APPLICATION_OCTET_STREAM,
 			StringUtil.randomString(), "urltitle", StringUtil.randomString(),
-			StringUtil.randomString(), new byte[0], null, null,
+			StringUtil.randomString(), new byte[0], null, null, null,
 			ServiceContextTestUtil.getServiceContext(
 				_liveDepotEntry.getGroupId()));
 
@@ -214,7 +218,8 @@ public class DepotEntryFileEntryFriendlyURLTest {
 			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
 			StringUtil.randomString(), ContentTypes.APPLICATION_OCTET_STREAM,
 			StringUtil.randomString(), "urltitle", StringUtil.randomString(),
-			StringUtil.randomString(), new byte[0], null, null, serviceContext);
+			StringUtil.randomString(), new byte[0], null, null, null,
+			serviceContext);
 
 		FriendlyURLEntry friendlyURLEntry =
 			_friendlyURLEntryLocalService.getMainFriendlyURLEntry(
@@ -228,7 +233,7 @@ public class DepotEntryFileEntryFriendlyURLTest {
 			fileEntry.getFileEntryId(), StringPool.BLANK,
 			ContentTypes.TEXT_PLAIN, fileEntry.getTitle(), "modifiedurltitle",
 			StringPool.BLANK, StringPool.BLANK, DLVersionNumberIncrease.MINOR,
-			(byte[])null, null, null, serviceContext);
+			(byte[])null, null, null, null, serviceContext);
 
 		friendlyURLEntry =
 			_friendlyURLEntryLocalService.getMainFriendlyURLEntry(
@@ -236,6 +241,53 @@ public class DepotEntryFileEntryFriendlyURLTest {
 				fileEntry.getFileEntryId());
 
 		Assert.assertNotNull(friendlyURLEntry);
+		Assert.assertEquals("modifiedurltitle", friendlyURLEntry.getUrlTitle());
+	}
+
+	@Test
+	@TestInfo("LPD-112613")
+	public void testDisableStagingDepotEntryFileEntryFriendlyURLEntries()
+		throws Exception {
+
+		FileEntry fileEntry = _dlAppLocalService.addFileEntry(
+			null, TestPropsValues.getUserId(), _liveDepotEntry.getGroupId(),
+			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
+			StringUtil.randomString(), ContentTypes.APPLICATION_OCTET_STREAM,
+			StringUtil.randomString(), StringUtil.randomString(),
+			StringUtil.randomString(), StringUtil.randomString(), new byte[0],
+			null, null, null,
+			ServiceContextTestUtil.getServiceContext(
+				_liveDepotEntry.getGroupId()));
+
+		DepotEntry stagingDepotEntry = DepotStagingTestUtil.enableLocalStaging(
+			_liveDepotEntry);
+
+		FileEntry stagingFileEntry =
+			_dlAppLocalService.getFileEntryByUuidAndGroupId(
+				fileEntry.getUuid(), stagingDepotEntry.getGroupId());
+
+		DLAppServiceUtil.updateFileEntry(
+			stagingFileEntry.getFileEntryId(), StringPool.BLANK,
+			ContentTypes.APPLICATION_OCTET_STREAM, stagingFileEntry.getTitle(),
+			"modifiedurltitle", StringPool.BLANK, StringPool.BLANK,
+			DLVersionNumberIncrease.MINOR, (byte[])null, null, null, null,
+			ServiceContextTestUtil.getServiceContext(
+				stagingDepotEntry.getGroupId()));
+
+		DepotStagingTestUtil.publishLayouts(
+			stagingDepotEntry.getGroup(), _liveDepotEntry.getGroup());
+
+		DepotStagingTestUtil.disableStaging(_liveDepotEntry);
+
+		FileEntry liveFileEntry =
+			_dlAppLocalService.getFileEntryByUuidAndGroupId(
+				fileEntry.getUuid(), _liveDepotEntry.getGroupId());
+
+		FriendlyURLEntry friendlyURLEntry =
+			_friendlyURLEntryLocalService.getMainFriendlyURLEntry(
+				_portal.getClassNameId(FileEntry.class),
+				liveFileEntry.getFileEntryId());
+
 		Assert.assertEquals("modifiedurltitle", friendlyURLEntry.getUrlTitle());
 	}
 
@@ -249,7 +301,7 @@ public class DepotEntryFileEntryFriendlyURLTest {
 			StringUtil.randomString(), ContentTypes.APPLICATION_OCTET_STREAM,
 			StringUtil.randomString(), StringPool.BLANK,
 			StringUtil.randomString(), StringUtil.randomString(), new byte[0],
-			null, null,
+			null, null, null,
 			ServiceContextTestUtil.getServiceContext(
 				_liveDepotEntry.getGroupId()));
 
@@ -280,6 +332,35 @@ public class DepotEntryFileEntryFriendlyURLTest {
 	}
 
 	@Test
+	public void testStageDepotEntryFileEntryFriendlyURLEntries()
+		throws Exception {
+
+		FileEntry fileEntry = _dlAppLocalService.addFileEntry(
+			null, TestPropsValues.getUserId(), _liveDepotEntry.getGroupId(),
+			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
+			StringUtil.randomString(), ContentTypes.APPLICATION_OCTET_STREAM,
+			StringUtil.randomString(), "urltitle", StringUtil.randomString(),
+			StringUtil.randomString(), new byte[0], null, null, null,
+			ServiceContextTestUtil.getServiceContext(
+				_liveDepotEntry.getGroupId()));
+
+		_stagingDepotEntry = DepotStagingTestUtil.enableLocalStaging(
+			_liveDepotEntry);
+
+		FileEntry stagedFileEntry =
+			_dlAppLocalService.getFileEntryByUuidAndGroupId(
+				fileEntry.getUuid(), _liveDepotEntry.getGroupId());
+
+		FriendlyURLEntry friendlyURLEntry =
+			_friendlyURLEntryLocalService.getMainFriendlyURLEntry(
+				_portal.getClassNameId(FileEntry.class),
+				stagedFileEntry.getFileEntryId());
+
+		Assert.assertNotNull(friendlyURLEntry);
+		Assert.assertEquals("urltitle", friendlyURLEntry.getUrlTitle());
+	}
+
+	@Test
 	public void testStagedDepotEntryFileEntryFriendlyURLEntriesNormalizedTitle()
 		throws Exception {
 
@@ -289,7 +370,7 @@ public class DepotEntryFileEntryFriendlyURLTest {
 			StringUtil.randomString(), ContentTypes.APPLICATION_OCTET_STREAM,
 			StringUtil.randomString(), StringPool.BLANK,
 			StringUtil.randomString(), StringUtil.randomString(), new byte[0],
-			null, null,
+			null, null, null,
 			ServiceContextTestUtil.getServiceContext(
 				_liveDepotEntry.getGroupId()));
 
@@ -312,32 +393,58 @@ public class DepotEntryFileEntryFriendlyURLTest {
 	}
 
 	@Test
-	public void testStageDepotEntryFileEntryFriendlyURLEntries()
+	@TestInfo({"LPD-113633", "LPS-154412"})
+	public void testStagedDepotEntryFileEntryFriendlyURLEntriesUpdatingFileEntry()
 		throws Exception {
-
-		FileEntry fileEntry = _dlAppLocalService.addFileEntry(
-			null, TestPropsValues.getUserId(), _liveDepotEntry.getGroupId(),
-			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
-			StringUtil.randomString(), ContentTypes.APPLICATION_OCTET_STREAM,
-			StringUtil.randomString(), "urltitle", StringUtil.randomString(),
-			StringUtil.randomString(), new byte[0], null, null,
-			ServiceContextTestUtil.getServiceContext(
-				_liveDepotEntry.getGroupId()));
 
 		_stagingDepotEntry = DepotStagingTestUtil.enableLocalStaging(
 			_liveDepotEntry);
 
-		FileEntry stagedFileEntry =
+		ServiceContext serviceContext =
+			ServiceContextTestUtil.getServiceContext(
+				_stagingDepotEntry.getGroupId());
+
+		FileEntry fileEntry = _dlAppLocalService.addFileEntry(
+			null, TestPropsValues.getUserId(), _stagingDepotEntry.getGroupId(),
+			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
+			StringUtil.randomString(), ContentTypes.IMAGE_JPEG,
+			StringUtil.randomString(), "urltitle", StringUtil.randomString(),
+			StringUtil.randomString(), RandomTestUtil.randomBytes(), null, null,
+			null, serviceContext);
+
+		Group liveGroup = _liveDepotEntry.getGroup();
+
+		DepotStagingTestUtil.publishLayouts(
+			_stagingDepotEntry.getGroup(), liveGroup);
+
+		DLAppServiceUtil.updateFileEntry(
+			fileEntry.getFileEntryId(), StringPool.BLANK,
+			ContentTypes.IMAGE_JPEG, fileEntry.getTitle(), "modifiedurltitle",
+			StringPool.BLANK, StringPool.BLANK, DLVersionNumberIncrease.MINOR,
+			(byte[])null, null, null, null, serviceContext);
+
+		DepotStagingTestUtil.publishLayouts(
+			_stagingDepotEntry.getGroup(), liveGroup);
+
+		FileEntry liveFileEntry =
 			_dlAppLocalService.getFileEntryByUuidAndGroupId(
-				fileEntry.getUuid(), _liveDepotEntry.getGroupId());
+				fileEntry.getUuid(), liveGroup.getGroupId());
+
+		Assert.assertEquals(
+			StringBundler.concat(
+				_portal.getPathContext(), "/documents/d",
+				liveGroup.getFriendlyURL(), "/modifiedurltitle"),
+			_dlURLHelper.getPreviewURL(
+				liveFileEntry, liveFileEntry.getFileVersion(), null,
+				StringPool.BLANK, false, false));
 
 		FriendlyURLEntry friendlyURLEntry =
-			_friendlyURLEntryLocalService.getMainFriendlyURLEntry(
-				_portal.getClassNameId(FileEntry.class),
-				stagedFileEntry.getFileEntryId());
+			_friendlyURLEntryLocalService.fetchFriendlyURLEntry(
+				liveGroup.getGroupId(), _portal.getClassNameId(FileEntry.class),
+				"urltitle");
 
-		Assert.assertNotNull(friendlyURLEntry);
-		Assert.assertEquals("urltitle", friendlyURLEntry.getUrlTitle());
+		Assert.assertEquals(
+			liveFileEntry.getFileEntryId(), friendlyURLEntry.getClassPK());
 	}
 
 	private DepotEntry _addDepotEntry() throws Exception {
@@ -346,6 +453,7 @@ public class DepotEntryFileEntryFriendlyURLTest {
 				LocaleUtil.getDefault(), RandomTestUtil.randomString()),
 			Collections.singletonMap(
 				LocaleUtil.getDefault(), RandomTestUtil.randomString()),
+			DepotConstants.TYPE_ASSET_LIBRARY,
 			ServiceContextTestUtil.getServiceContext());
 	}
 
@@ -357,6 +465,9 @@ public class DepotEntryFileEntryFriendlyURLTest {
 
 	@Inject
 	private DLTrashService _dlTrashService;
+
+	@Inject
+	private DLURLHelper _dlURLHelper;
 
 	@Inject
 	private FriendlyURLEntryLocalService _friendlyURLEntryLocalService;

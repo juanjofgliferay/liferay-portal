@@ -33,13 +33,15 @@ portletDisplay.setURLBack(redirect);
 renderResponse.setTitle(LanguageUtil.get(request, "search-results"));
 %>
 
-<div class="sticky-top" style="top: var(--control-menu-container-height);">
+<aui:style type="text/css">
+	.configuration-admin--search-results {
+		top: var(--control-menu-container-height);
+	}
+</aui:style>
+
+<div class="configuration-admin--search-results">
 	<clay:management-toolbar
-		clearResultsURL="<%= redirect %>"
-		itemsTotal="<%= configurationEntryIterator.getTotal() %>"
-		searchActionURL="<%= searchURL.toString() %>"
-		selectable="<%= false %>"
-		showSearch="<%= true %>"
+		managementToolbarDisplayContext="<%= new ConfigurationScopeManagementToolbarDisplayContext(request, liferayPortletRequest, liferayPortletResponse, configurationEntryIterator.getTotal()) %>"
 	/>
 </div>
 
@@ -64,7 +66,7 @@ renderResponse.setTitle(LanguageUtil.get(request, "search-results"));
 				cssClass="table-cell-expand"
 				name="name"
 			>
-				<aui:a href="<%= configurationEntry.getEditURL(renderRequest, renderResponse) %>"><strong><%= configurationEntry.getName() %></strong></aui:a>
+				<a href="<%= HtmlUtil.escapeAttribute(configurationEntry.getEditURL(renderRequest, renderResponse)) %>"><strong><%= configurationEntry.getName(locale) %></strong></a>
 			</liferay-ui:search-container-column-text>
 
 			<liferay-ui:search-container-column-text
@@ -79,9 +81,7 @@ renderResponse.setTitle(LanguageUtil.get(request, "search-results"));
 				String category = null;
 
 				if (configurationCategory != null) {
-					ConfigurationCategoryMenuDisplay configurationCategoryMenuDisplay = configurationEntryRetriever.getConfigurationCategoryMenuDisplay(configurationCategory.getCategoryKey(), themeDisplay.getLanguageId(), configurationScopeDisplayContext.getScope(), configurationScopeDisplayContext.getScopePK());
-
-					ConfigurationCategoryDisplay configurationCategoryDisplay = configurationCategoryMenuDisplay.getConfigurationCategoryDisplay();
+					ConfigurationCategoryDisplay configurationCategoryDisplay = new ConfigurationCategoryDisplay(configurationCategory);
 
 					category = HtmlUtil.escape(configurationCategoryDisplay.getCategoryLabel(locale));
 

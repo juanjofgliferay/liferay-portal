@@ -69,7 +69,7 @@ public class DLFolderFinderTest {
 				_group.getGroupId(), TestPropsValues.getUserId());
 
 		RepositoryLocalServiceUtil.addRepository(
-			TestPropsValues.getUserId(), _group.getGroupId(),
+			null, TestPropsValues.getUserId(), _group.getGroupId(),
 			PortalUtil.getClassNameId(PortletRepository.class.getName()),
 			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID, "Test Repository",
 			StringUtil.randomString(), StringUtil.randomString(),
@@ -97,7 +97,7 @@ public class DLFolderFinderTest {
 			ContentTypes.TEXT_PLAIN);
 
 		_fileShortcut = DLAppLocalServiceUtil.addFileShortcut(
-			TestPropsValues.getUserId(), _group.getGroupId(),
+			null, TestPropsValues.getUserId(), _group.getGroupId(),
 			fileEntry.getFolderId(), fileEntry.getFileEntryId(),
 			serviceContext);
 
@@ -174,32 +174,6 @@ public class DLFolderFinderTest {
 				_group.getGroupId(), _folder.getFolderId(),
 				new String[] {ContentTypes.TEXT_PLAIN}, false,
 				queryDefinition));
-	}
-
-	@Test
-	public void testCountFE_ByG_F() throws Exception {
-		QueryDefinition<?> queryDefinition = new QueryDefinition<>();
-
-		queryDefinition.setStatus(WorkflowConstants.STATUS_ANY);
-
-		Assert.assertEquals(
-			3,
-			DLFolderFinderUtil.countFE_ByG_F(
-				_group.getGroupId(), _folder.getFolderId(), queryDefinition));
-
-		queryDefinition.setStatus(WorkflowConstants.STATUS_IN_TRASH);
-
-		Assert.assertEquals(
-			1,
-			DLFolderFinderUtil.countFE_ByG_F(
-				_group.getGroupId(), _folder.getFolderId(), queryDefinition));
-
-		queryDefinition.setStatus(WorkflowConstants.STATUS_IN_TRASH, true);
-
-		Assert.assertEquals(
-			2,
-			DLFolderFinderUtil.countFE_ByG_F(
-				_group.getGroupId(), _folder.getFolderId(), queryDefinition));
 	}
 
 	@Test
@@ -371,7 +345,7 @@ public class DLFolderFinderTest {
 		return DLAppLocalServiceUtil.addFileEntry(
 			null, TestPropsValues.getUserId(), groupId, folderId,
 			sourceFileName, mimeType, TestDataConstants.TEST_BYTE_ARRAY, null,
-			null, serviceContext);
+			null, null, serviceContext);
 	}
 
 	private FileShortcut _fileShortcut;

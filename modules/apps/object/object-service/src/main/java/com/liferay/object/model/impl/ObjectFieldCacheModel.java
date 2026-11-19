@@ -68,7 +68,7 @@ public class ObjectFieldCacheModel
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(55);
+		StringBundler sb = new StringBundler(57);
 
 		sb.append("{mvccVersion=");
 		sb.append(mvccVersion);
@@ -100,6 +100,8 @@ public class ObjectFieldCacheModel
 		sb.append(dbTableName);
 		sb.append(", dbType=");
 		sb.append(dbType);
+		sb.append(", description=");
+		sb.append(description);
 		sb.append(", indexed=");
 		sb.append(indexed);
 		sb.append(", indexedAsKeyword=");
@@ -205,6 +207,13 @@ public class ObjectFieldCacheModel
 			objectFieldImpl.setDBType(dbType);
 		}
 
+		if (description == null) {
+			objectFieldImpl.setDescription("");
+		}
+		else {
+			objectFieldImpl.setDescription(description);
+		}
+
 		objectFieldImpl.setIndexed(indexed);
 		objectFieldImpl.setIndexedAsKeyword(indexedAsKeyword);
 
@@ -286,12 +295,13 @@ public class ObjectFieldCacheModel
 		dbColumnName = objectInput.readUTF();
 		dbTableName = objectInput.readUTF();
 		dbType = objectInput.readUTF();
+		description = objectInput.readUTF();
 
 		indexed = objectInput.readBoolean();
 
 		indexedAsKeyword = objectInput.readBoolean();
 		indexedLanguageId = objectInput.readUTF();
-		label = objectInput.readUTF();
+		label = (String)objectInput.readObject();
 
 		localized = objectInput.readBoolean();
 		name = objectInput.readUTF();
@@ -372,6 +382,13 @@ public class ObjectFieldCacheModel
 			objectOutput.writeUTF(dbType);
 		}
 
+		if (description == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(description);
+		}
+
 		objectOutput.writeBoolean(indexed);
 
 		objectOutput.writeBoolean(indexedAsKeyword);
@@ -384,10 +401,10 @@ public class ObjectFieldCacheModel
 		}
 
 		if (label == null) {
-			objectOutput.writeUTF("");
+			objectOutput.writeObject("");
 		}
 		else {
-			objectOutput.writeUTF(label);
+			objectOutput.writeObject(label);
 		}
 
 		objectOutput.writeBoolean(localized);
@@ -442,6 +459,7 @@ public class ObjectFieldCacheModel
 	public String dbColumnName;
 	public String dbTableName;
 	public String dbType;
+	public String description;
 	public boolean indexed;
 	public boolean indexedAsKeyword;
 	public String indexedLanguageId;
@@ -456,3 +474,4 @@ public class ObjectFieldCacheModel
 	public boolean system;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1267564296

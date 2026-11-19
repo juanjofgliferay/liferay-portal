@@ -25,8 +25,10 @@ import org.osgi.annotation.versioning.ProviderType;
  *
  * @author Alessio Antonio Rendina
  * @see CommerceNotificationQueueEntry
+ * @deprecated
  * @generated
  */
+@Deprecated
 @ProviderType
 public interface CommerceNotificationQueueEntryModel
 	extends AttachedModel, BaseModel<CommerceNotificationQueueEntry>,
@@ -430,3 +432,4 @@ public interface CommerceNotificationQueueEntryModel
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:965843723

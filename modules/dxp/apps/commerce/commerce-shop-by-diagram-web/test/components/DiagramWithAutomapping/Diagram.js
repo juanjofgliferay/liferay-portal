@@ -5,7 +5,7 @@
 
 import Diagram from '../../../src/main/resources/META-INF/resources/js/DiagramWithAutomapping/Diagram';
 
-import '@testing-library/jest-dom/extend-expect';
+import '@testing-library/jest-dom';
 import {act, fireEvent, render, waitFor} from '@testing-library/react';
 import fetchMock from 'fetch-mock';
 import React from 'react';
@@ -32,9 +32,11 @@ const svgContent = `
 
 describe('Diagram', () => {
 	beforeEach(() => {
+		fetchMock.mockGlobal();
+
 		mockCommonEndpoints();
 
-		fetchMock.mock(defaultDiagramProps.imageURL, () => {
+		fetchMock.route(defaultDiagramProps.imageURL, () => {
 			return {
 				body: svgContent,
 				headers: new Headers({'Content-Type': 'text/html'}),
@@ -43,7 +45,7 @@ describe('Diagram', () => {
 	});
 
 	afterEach(() => {
-		fetchMock.restore();
+		fetchMock.hardReset();
 	});
 
 	describe('SVG Renderer Admin', () => {

@@ -39,17 +39,19 @@ public class IncorrectFilePathCheck extends BaseFileCheck {
 					fileName,
 					StringBundler.concat(
 						"Do not add leading/trailing spaces in file or folder ",
-						"names '", path, "'"));
+						"names \"", path, "\""));
 			}
 
 			for (String illegalCharacter : _ILLEGAL_CHARACTERS) {
-				if (path.contains(illegalCharacter)) {
-					addMessage(
-						fileName,
-						StringBundler.concat(
-							"Do not use '", illegalCharacter, "' in file or ",
-							"folder names '", path, "'"));
+				if (!path.contains(illegalCharacter)) {
+					continue;
 				}
+
+				addMessage(
+					fileName,
+					StringBundler.concat(
+						"Do not use \"", illegalCharacter, "\" in file or ",
+						"folder names \"", path, "\""));
 			}
 		}
 

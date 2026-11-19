@@ -11,9 +11,10 @@ import com.liferay.oauth2.provider.model.OAuth2Authorization;
 import com.liferay.oauth2.provider.service.OAuth2AuthorizationLocalService;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
+import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.MapUtil;
-import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.Time;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
@@ -63,9 +64,18 @@ public class ExpiredAuthorizationsAfterlifeTest extends BaseClientTestCase {
 		Assert.assertNotNull(oAuth2Authorization3);
 	}
 
-	public static class
-		ExpiredAuthorizationsAfterlifeTestPreparatorBundleActivator
-			extends BaseTestPreparatorBundleActivator {
+	@Override
+	protected BundleActivator getBundleActivator() {
+		return new ExpiredAuthorizationsAfterlifeTestPreparatorBundleActivator();
+	}
+
+	private static final String _CLIENT_ID = RandomTestUtil.randomString();
+
+	@Inject
+	private OAuth2AuthorizationLocalService _oAuth2AuthorizationLocalService;
+
+	private class ExpiredAuthorizationsAfterlifeTestPreparatorBundleActivator
+		extends BaseTestPreparatorBundleActivator {
 
 		@Override
 		protected void prepareTest() throws Exception {
@@ -74,13 +84,12 @@ public class ExpiredAuthorizationsAfterlifeTest extends BaseClientTestCase {
 					"oauth2.expired.authorizations.afterlife.duration",
 					Time.HOUR * 12 / Time.SECOND));
 
-			long companyId = PortalUtil.getDefaultCompanyId();
+			long companyId = TestPropsValues.getCompanyId();
 
 			User user = UserTestUtil.getAdminUser(companyId);
 
 			OAuth2Application oAuth2Application = createOAuth2Application(
-				companyId, user, "oauthTestApplication",
-				Arrays.asList("everything.read"));
+				companyId, user, _CLIENT_ID, Arrays.asList("everything.read"));
 
 			addOAuth2Authorization(
 				companyId, user, oAuth2Application, "accessToken1", new Date(),
@@ -94,13 +103,5 @@ public class ExpiredAuthorizationsAfterlifeTest extends BaseClientTestCase {
 		}
 
 	}
-
-	@Override
-	protected BundleActivator getBundleActivator() {
-		return new ExpiredAuthorizationsAfterlifeTestPreparatorBundleActivator();
-	}
-
-	@Inject
-	private OAuth2AuthorizationLocalService _oAuth2AuthorizationLocalService;
 
 }

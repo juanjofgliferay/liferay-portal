@@ -1,0 +1,40 @@
+suite: Search Config ConfigMap
+templates:
+    -   templates/liferay-search-config-cm.yaml
+tests:
+    -   asserts:
+            -   matchRegex:
+                    path: data["com.liferay.portal.search.elasticsearch7.configuration.ElasticsearchConfiguration.config"]
+                    pattern: productionModeEnabled=B"true"
+            -   matchRegex:
+                    path: data["com.liferay.portal.search.elasticsearch7.configuration.ElasticsearchConfiguration.config"]
+                    pattern: remoteClusterConnectionId="REMOTE"
+            -   matchRegex:
+                    path: data["com.liferay.portal.search.elasticsearch8.configuration.ElasticsearchConfiguration.config"]
+                    pattern: productionModeEnabled=B"true"
+            -   matchRegex:
+                    path: data["com.liferay.portal.search.elasticsearch8.configuration.ElasticsearchConfiguration.config"]
+                    pattern: remoteClusterConnectionId="REMOTE"
+        it: Keeps the Elasticsearch sidecar down when the engine is opensearch
+        set:
+            liferay-default.search.engine: opensearch
+    -   asserts:
+            -   matchRegex:
+                    path: data["com.liferay.portal.search.elasticsearch7.configuration.ElasticsearchConfiguration.config"]
+                    pattern: operationMode="REMOTE"
+            -   matchRegex:
+                    path: data["com.liferay.portal.search.elasticsearch8.configuration.ElasticsearchConfiguration.config"]
+                    pattern: productionModeEnabled=B"true"
+        it: Renders the Elasticsearch configuration when the engine is elasticsearch
+        set:
+            liferay-default.search.engine: elasticsearch
+    -   asserts:
+            -   matchRegex:
+                    path: data["com.liferay.portal.search.opensearch2.configuration.OpenSearchConfiguration.config"]
+                    pattern: remoteClusterConnectionId="REMOTE"
+            -   matchRegex:
+                    path: data["com.liferay.portal.search.opensearch2.configuration.OpenSearchConnectionConfiguration-REMOTE.config"]
+                    pattern: active=B"true"
+        it: Renders the OpenSearch configuration when the engine is opensearch
+        set:
+            liferay-default.search.engine: opensearch

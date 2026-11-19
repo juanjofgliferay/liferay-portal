@@ -15,12 +15,12 @@ import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.RenderRequest;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.RenderRequest;
 
 /**
  * @author Brian Wing Shun Chan
@@ -51,6 +51,10 @@ public class DLUtil {
 		return _dl.getDDMStructureKey(fileEntryTypeUuid);
 	}
 
+	public static DL getDL() {
+		return _dl;
+	}
+
 	public static String getDeprecatedDDMStructureKey(
 		DLFileEntryType dlFileEntryType) {
 
@@ -63,10 +67,6 @@ public class DLUtil {
 
 	public static String getDividedPath(long id) {
 		return _dl.getDividedPath(id);
-	}
-
-	public static DL getDL() {
-		return _dl;
 	}
 
 	public static Map<String, String> getEmailDefinitionTerms(

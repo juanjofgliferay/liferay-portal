@@ -5,7 +5,6 @@
 
 package com.liferay.users.admin.web.internal.portlet.action;
 
-import com.liferay.portal.kernel.bean.BeanParamUtil;
 import com.liferay.portal.kernel.exception.NoSuchUserException;
 import com.liferay.portal.kernel.exception.UserPasswordException;
 import com.liferay.portal.kernel.model.Company;
@@ -18,7 +17,6 @@ import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.security.ldap.LDAPSettingsUtil;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.service.UserLocalService;
-import com.liferay.portal.kernel.service.UserService;
 import com.liferay.portal.kernel.service.permission.UserPermissionUtil;
 import com.liferay.portal.kernel.servlet.SessionErrors;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
@@ -30,13 +28,13 @@ import com.liferay.portal.security.auth.session.AuthenticatedSessionManagerUtil;
 import com.liferay.portlet.usersadmin.util.UsersAdminUtil;
 import com.liferay.users.admin.constants.UsersAdminPortletKeys;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
+
 import java.util.Date;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -46,8 +44,8 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + UsersAdminPortletKeys.MY_ORGANIZATIONS,
-		"javax.portlet.name=" + UsersAdminPortletKeys.USERS_ADMIN,
+		"jakarta.portlet.name=" + UsersAdminPortletKeys.MY_ORGANIZATIONS,
+		"jakarta.portlet.name=" + UsersAdminPortletKeys.USERS_ADMIN,
 		"mvc.command.name=/users_admin/update_password"
 	},
 	service = MVCActionCommand.class
@@ -80,7 +78,8 @@ public class UpdatePasswordMVCActionCommand extends BaseMVCActionCommand {
 			boolean ldapPasswordPolicyEnabled =
 				LDAPSettingsUtil.isPasswordPolicyEnabled(user.getCompanyId());
 
-			if ((user.getLastLoginDate() == null) &&
+			if (((user.getLastLoginDate() == null) ||
+				 (themeDisplay.getUserId() != user.getUserId())) &&
 				(((passwordPolicy == null) && !ldapPasswordPolicyEnabled) ||
 				 ((passwordPolicy != null) && passwordPolicy.isChangeable() &&
 				  passwordPolicy.isChangeRequired()))) {
@@ -88,16 +87,18 @@ public class UpdatePasswordMVCActionCommand extends BaseMVCActionCommand {
 				passwordReset = true;
 			}
 
-			String reminderQueryQuestion = BeanParamUtil.getString(
-				user, actionRequest, "reminderQueryQuestion");
+			String reminderQueryQuestion = ParamUtil.getString(
+				actionRequest, "reminderQueryQuestion",
+				user.getReminderQueryQuestion());
 
 			if (reminderQueryQuestion.equals(UsersAdminUtil.CUSTOM_QUESTION)) {
-				reminderQueryQuestion = BeanParamUtil.getStringSilent(
-					user, actionRequest, "reminderQueryCustomQuestion");
+				reminderQueryQuestion = ParamUtil.getString(
+					actionRequest, "reminderQueryCustomQuestion");
 			}
 
-			String reminderQueryAnswer = BeanParamUtil.getString(
-				user, actionRequest, "reminderQueryAnswer");
+			String reminderQueryAnswer = ParamUtil.getString(
+				actionRequest, "reminderQueryAnswer",
+				user.getReminderQueryAnswer());
 
 			boolean passwordModified = false;
 
@@ -192,8 +193,5 @@ public class UpdatePasswordMVCActionCommand extends BaseMVCActionCommand {
 
 	@Reference
 	private UserLocalService _userLocalService;
-
-	@Reference
-	private UserService _userService;
 
 }

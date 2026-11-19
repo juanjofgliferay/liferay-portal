@@ -11,30 +11,38 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import com.liferay.petra.function.UnsafeSupplier;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Andrea Sbarra
  * @generated
  */
 @Generated("")
-@GraphQLName("CouponCode")
+@GraphQLName(
+	description = "Request payload for applying a coupon to a cart. Carries the coupon code string the discount engine resolves against the active promotion rules.",
+	value = "CouponCode"
+)
+@io.swagger.v3.oas.annotations.media.Schema(
+	description = "Request payload for applying a coupon to a cart. Carries the coupon code string the discount engine resolves against the active promotion rules."
+)
 @JsonFilter("Liferay.Vulcan")
 @XmlRootElement(name = "CouponCode")
 public class CouponCode implements Serializable {
@@ -47,31 +55,49 @@ public class CouponCode implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(CouponCode.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Coupon code string to apply. Resolved against the active discount rules; raises an error when the code is unknown, expired, or not applicable to the cart.",
+		example = "SUMMER25"
+	)
 	public String getCode() {
+		if (_codeSupplier != null) {
+			code = _codeSupplier.get();
+
+			_codeSupplier = null;
+		}
+
 		return code;
 	}
 
 	public void setCode(String code) {
 		this.code = code;
+
+		_codeSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setCode(UnsafeSupplier<String, Exception> codeUnsafeSupplier) {
-		try {
-			code = codeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_codeSupplier = () -> {
+			try {
+				return codeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Coupon code string to apply. Resolved against the active discount rules; raises an error when the code is unknown, expired, or not applicable to the cart."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String code;
+
+	@JsonIgnore
+	private Supplier<String> _codeSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -100,6 +126,8 @@ public class CouponCode implements Serializable {
 
 		sb.append("{");
 
+		String code = getCode();
+
 		if (code != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -119,8 +147,8 @@ public class CouponCode implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.commerce.delivery.cart.dto.v1_0.CouponCode",
 		name = "x-class-name"
 	)
@@ -166,7 +194,10 @@ public class CouponCode implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -204,6 +235,27 @@ public class CouponCode implements Serializable {
 		return sb.toString();
 	}
 
+	private static String _toJSON(Object value) {
+		if (value instanceof Collection) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONArray((Collection<?>)value));
+		}
+		else if (value instanceof Map) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONObject((Map<?, ?>)value));
+		}
+		else if (value instanceof Object[]) {
+			return String.valueOf(
+				JSONFactoryUtil.createJSONArray(
+					Arrays.asList((Object[])value)));
+		}
+		else if (value instanceof String) {
+			return StringBundler.concat("\"", _escape(value), "\"");
+		}
+
+		return String.valueOf(value);
+	}
+
 	private static final String[][] _JSON_ESCAPE_STRINGS = {
 		{"\\", "\"", "\b", "\f", "\n", "\r", "\t"},
 		{"\\\\", "\\\"", "\\b", "\\f", "\\n", "\\r", "\\t"}
@@ -212,3 +264,4 @@ public class CouponCode implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:-518826656

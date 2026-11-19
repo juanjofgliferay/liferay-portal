@@ -33,13 +33,6 @@ public class CPInstanceImpl extends CPInstanceBaseImpl {
 	}
 
 	@Override
-	public CommerceCatalog getCommerceCatalog() throws PortalException {
-		CPDefinition cpDefinition = getCPDefinition();
-
-		return cpDefinition.getCommerceCatalog();
-	}
-
-	@Override
 	public CPDefinition getCPDefinition() throws PortalException {
 		return CPDefinitionLocalServiceUtil.getCPDefinition(
 			getCPDefinitionId());
@@ -99,6 +92,13 @@ public class CPInstanceImpl extends CPInstanceBaseImpl {
 	}
 
 	@Override
+	public CommerceCatalog getCommerceCatalog() throws PortalException {
+		CPDefinition cpDefinition = getCPDefinition();
+
+		return cpDefinition.getCommerceCatalog();
+	}
+
+	@Override
 	public UnicodeProperties
 		getDeliverySubscriptionTypeSettingsUnicodeProperties() {
 
@@ -126,6 +126,19 @@ public class CPInstanceImpl extends CPInstanceBaseImpl {
 		}
 
 		return _subscriptionTypeSettingsUnicodeProperties;
+	}
+
+	@Override
+	public boolean hasCPInstanceUnitOfMeasures() {
+		int cpInstanceUnitOfMeasuresCount =
+			CPInstanceUnitOfMeasureLocalServiceUtil.
+				getCPInstanceUnitOfMeasuresCount(getCPInstanceId());
+
+		if (cpInstanceUnitOfMeasuresCount > 0) {
+			return true;
+		}
+
+		return false;
 	}
 
 	@Override

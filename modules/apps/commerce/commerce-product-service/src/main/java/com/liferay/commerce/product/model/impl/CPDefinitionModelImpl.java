@@ -75,32 +75,34 @@ public class CPDefinitionModelImpl
 		{"CPDefinitionId", Types.BIGINT}, {"groupId", Types.BIGINT},
 		{"companyId", Types.BIGINT}, {"userId", Types.BIGINT},
 		{"userName", Types.VARCHAR}, {"createDate", Types.TIMESTAMP},
-		{"modifiedDate", Types.TIMESTAMP}, {"CProductId", Types.BIGINT},
-		{"CPTaxCategoryId", Types.BIGINT}, {"productTypeName", Types.VARCHAR},
+		{"modifiedDate", Types.TIMESTAMP},
+		{"CProductExternalReferenceCode", Types.VARCHAR},
+		{"CProductId", Types.BIGINT}, {"CPTaxCategoryId", Types.BIGINT},
+		{"accountGroupFilterEnabled", Types.BOOLEAN},
 		{"availableIndividually", Types.BOOLEAN},
-		{"ignoreSKUCombinations", Types.BOOLEAN}, {"shippable", Types.BOOLEAN},
-		{"freeShipping", Types.BOOLEAN}, {"shipSeparately", Types.BOOLEAN},
-		{"shippingExtraPrice", Types.DOUBLE}, {"width", Types.DOUBLE},
-		{"height", Types.DOUBLE}, {"depth", Types.DOUBLE},
-		{"weight", Types.DOUBLE}, {"taxExempt", Types.BOOLEAN},
-		{"telcoOrElectronics", Types.BOOLEAN},
-		{"DDMStructureKey", Types.VARCHAR}, {"published", Types.BOOLEAN},
-		{"displayDate", Types.TIMESTAMP}, {"expirationDate", Types.TIMESTAMP},
-		{"lastPublishDate", Types.TIMESTAMP},
-		{"subscriptionEnabled", Types.BOOLEAN},
-		{"subscriptionLength", Types.INTEGER},
-		{"subscriptionType", Types.VARCHAR},
-		{"subscriptionTypeSettings", Types.CLOB},
-		{"maxSubscriptionCycles", Types.BIGINT},
+		{"channelFilterEnabled", Types.BOOLEAN},
+		{"DDMStructureKey", Types.VARCHAR},
+		{"deliveryMaxSubscriptionCycles", Types.BIGINT},
 		{"deliverySubscriptionEnabled", Types.BOOLEAN},
 		{"deliverySubscriptionLength", Types.INTEGER},
 		{"deliverySubscriptionType", Types.VARCHAR},
-		{"deliverySubTypeSettings", Types.VARCHAR},
-		{"deliveryMaxSubscriptionCycles", Types.BIGINT},
-		{"accountGroupFilterEnabled", Types.BOOLEAN},
-		{"channelFilterEnabled", Types.BOOLEAN}, {"version", Types.INTEGER},
-		{"status", Types.INTEGER}, {"statusByUserId", Types.BIGINT},
-		{"statusByUserName", Types.VARCHAR}, {"statusDate", Types.TIMESTAMP}
+		{"deliverySubTypeSettings", Types.VARCHAR}, {"depth", Types.DOUBLE},
+		{"displayDate", Types.TIMESTAMP}, {"expirationDate", Types.TIMESTAMP},
+		{"freeShipping", Types.BOOLEAN}, {"height", Types.DOUBLE},
+		{"ignoreSKUCombinations", Types.BOOLEAN},
+		{"maxSubscriptionCycles", Types.BIGINT},
+		{"productTypeName", Types.VARCHAR}, {"published", Types.BOOLEAN},
+		{"shipSeparately", Types.BOOLEAN}, {"shippable", Types.BOOLEAN},
+		{"shippingExtraPrice", Types.DOUBLE},
+		{"subscriptionEnabled", Types.BOOLEAN},
+		{"subscriptionLength", Types.INTEGER},
+		{"subscriptionType", Types.VARCHAR},
+		{"subscriptionTypeSettings", Types.CLOB}, {"taxExempt", Types.BOOLEAN},
+		{"telcoOrElectronics", Types.BOOLEAN}, {"version", Types.INTEGER},
+		{"weight", Types.DOUBLE}, {"width", Types.DOUBLE},
+		{"lastPublishDate", Types.TIMESTAMP}, {"status", Types.INTEGER},
+		{"statusByUserId", Types.BIGINT}, {"statusByUserName", Types.VARCHAR},
+		{"statusDate", Types.TIMESTAMP}
 	};
 
 	public static final Map<String, Integer> TABLE_COLUMNS_MAP =
@@ -118,39 +120,40 @@ public class CPDefinitionModelImpl
 		TABLE_COLUMNS_MAP.put("userName", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("createDate", Types.TIMESTAMP);
 		TABLE_COLUMNS_MAP.put("modifiedDate", Types.TIMESTAMP);
+		TABLE_COLUMNS_MAP.put("CProductExternalReferenceCode", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("CProductId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("CPTaxCategoryId", Types.BIGINT);
-		TABLE_COLUMNS_MAP.put("productTypeName", Types.VARCHAR);
+		TABLE_COLUMNS_MAP.put("accountGroupFilterEnabled", Types.BOOLEAN);
 		TABLE_COLUMNS_MAP.put("availableIndividually", Types.BOOLEAN);
-		TABLE_COLUMNS_MAP.put("ignoreSKUCombinations", Types.BOOLEAN);
-		TABLE_COLUMNS_MAP.put("shippable", Types.BOOLEAN);
-		TABLE_COLUMNS_MAP.put("freeShipping", Types.BOOLEAN);
-		TABLE_COLUMNS_MAP.put("shipSeparately", Types.BOOLEAN);
-		TABLE_COLUMNS_MAP.put("shippingExtraPrice", Types.DOUBLE);
-		TABLE_COLUMNS_MAP.put("width", Types.DOUBLE);
-		TABLE_COLUMNS_MAP.put("height", Types.DOUBLE);
-		TABLE_COLUMNS_MAP.put("depth", Types.DOUBLE);
-		TABLE_COLUMNS_MAP.put("weight", Types.DOUBLE);
-		TABLE_COLUMNS_MAP.put("taxExempt", Types.BOOLEAN);
-		TABLE_COLUMNS_MAP.put("telcoOrElectronics", Types.BOOLEAN);
+		TABLE_COLUMNS_MAP.put("channelFilterEnabled", Types.BOOLEAN);
 		TABLE_COLUMNS_MAP.put("DDMStructureKey", Types.VARCHAR);
-		TABLE_COLUMNS_MAP.put("published", Types.BOOLEAN);
-		TABLE_COLUMNS_MAP.put("displayDate", Types.TIMESTAMP);
-		TABLE_COLUMNS_MAP.put("expirationDate", Types.TIMESTAMP);
-		TABLE_COLUMNS_MAP.put("lastPublishDate", Types.TIMESTAMP);
-		TABLE_COLUMNS_MAP.put("subscriptionEnabled", Types.BOOLEAN);
-		TABLE_COLUMNS_MAP.put("subscriptionLength", Types.INTEGER);
-		TABLE_COLUMNS_MAP.put("subscriptionType", Types.VARCHAR);
-		TABLE_COLUMNS_MAP.put("subscriptionTypeSettings", Types.CLOB);
-		TABLE_COLUMNS_MAP.put("maxSubscriptionCycles", Types.BIGINT);
+		TABLE_COLUMNS_MAP.put("deliveryMaxSubscriptionCycles", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("deliverySubscriptionEnabled", Types.BOOLEAN);
 		TABLE_COLUMNS_MAP.put("deliverySubscriptionLength", Types.INTEGER);
 		TABLE_COLUMNS_MAP.put("deliverySubscriptionType", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("deliverySubTypeSettings", Types.VARCHAR);
-		TABLE_COLUMNS_MAP.put("deliveryMaxSubscriptionCycles", Types.BIGINT);
-		TABLE_COLUMNS_MAP.put("accountGroupFilterEnabled", Types.BOOLEAN);
-		TABLE_COLUMNS_MAP.put("channelFilterEnabled", Types.BOOLEAN);
+		TABLE_COLUMNS_MAP.put("depth", Types.DOUBLE);
+		TABLE_COLUMNS_MAP.put("displayDate", Types.TIMESTAMP);
+		TABLE_COLUMNS_MAP.put("expirationDate", Types.TIMESTAMP);
+		TABLE_COLUMNS_MAP.put("freeShipping", Types.BOOLEAN);
+		TABLE_COLUMNS_MAP.put("height", Types.DOUBLE);
+		TABLE_COLUMNS_MAP.put("ignoreSKUCombinations", Types.BOOLEAN);
+		TABLE_COLUMNS_MAP.put("maxSubscriptionCycles", Types.BIGINT);
+		TABLE_COLUMNS_MAP.put("productTypeName", Types.VARCHAR);
+		TABLE_COLUMNS_MAP.put("published", Types.BOOLEAN);
+		TABLE_COLUMNS_MAP.put("shipSeparately", Types.BOOLEAN);
+		TABLE_COLUMNS_MAP.put("shippable", Types.BOOLEAN);
+		TABLE_COLUMNS_MAP.put("shippingExtraPrice", Types.DOUBLE);
+		TABLE_COLUMNS_MAP.put("subscriptionEnabled", Types.BOOLEAN);
+		TABLE_COLUMNS_MAP.put("subscriptionLength", Types.INTEGER);
+		TABLE_COLUMNS_MAP.put("subscriptionType", Types.VARCHAR);
+		TABLE_COLUMNS_MAP.put("subscriptionTypeSettings", Types.CLOB);
+		TABLE_COLUMNS_MAP.put("taxExempt", Types.BOOLEAN);
+		TABLE_COLUMNS_MAP.put("telcoOrElectronics", Types.BOOLEAN);
 		TABLE_COLUMNS_MAP.put("version", Types.INTEGER);
+		TABLE_COLUMNS_MAP.put("weight", Types.DOUBLE);
+		TABLE_COLUMNS_MAP.put("width", Types.DOUBLE);
+		TABLE_COLUMNS_MAP.put("lastPublishDate", Types.TIMESTAMP);
 		TABLE_COLUMNS_MAP.put("status", Types.INTEGER);
 		TABLE_COLUMNS_MAP.put("statusByUserId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("statusByUserName", Types.VARCHAR);
@@ -158,15 +161,22 @@ public class CPDefinitionModelImpl
 	}
 
 	public static final String TABLE_SQL_CREATE =
-		"create table CPDefinition (mvccVersion LONG default 0 not null,ctCollectionId LONG default 0 not null,uuid_ VARCHAR(75) null,defaultLanguageId VARCHAR(75) null,CPDefinitionId LONG not null,groupId LONG,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,CProductId LONG,CPTaxCategoryId LONG,productTypeName VARCHAR(75) null,availableIndividually BOOLEAN,ignoreSKUCombinations BOOLEAN,shippable BOOLEAN,freeShipping BOOLEAN,shipSeparately BOOLEAN,shippingExtraPrice DOUBLE,width DOUBLE,height DOUBLE,depth DOUBLE,weight DOUBLE,taxExempt BOOLEAN,telcoOrElectronics BOOLEAN,DDMStructureKey VARCHAR(75) null,published BOOLEAN,displayDate DATE null,expirationDate DATE null,lastPublishDate DATE null,subscriptionEnabled BOOLEAN,subscriptionLength INTEGER,subscriptionType VARCHAR(75) null,subscriptionTypeSettings TEXT null,maxSubscriptionCycles LONG,deliverySubscriptionEnabled BOOLEAN,deliverySubscriptionLength INTEGER,deliverySubscriptionType VARCHAR(75) null,deliverySubTypeSettings VARCHAR(75) null,deliveryMaxSubscriptionCycles LONG,accountGroupFilterEnabled BOOLEAN,channelFilterEnabled BOOLEAN,version INTEGER,status INTEGER,statusByUserId LONG,statusByUserName VARCHAR(75) null,statusDate DATE null,primary key (CPDefinitionId, ctCollectionId))";
+		"create table CPDefinition (mvccVersion LONG default 0 not null,ctCollectionId LONG default 0 not null,uuid_ VARCHAR(75) null,defaultLanguageId VARCHAR(75) null,CPDefinitionId LONG not null,groupId LONG,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,CProductExternalReferenceCode VARCHAR(75) null,CProductId LONG,CPTaxCategoryId LONG,accountGroupFilterEnabled BOOLEAN,availableIndividually BOOLEAN,channelFilterEnabled BOOLEAN,DDMStructureKey VARCHAR(75) null,deliveryMaxSubscriptionCycles LONG,deliverySubscriptionEnabled BOOLEAN,deliverySubscriptionLength INTEGER,deliverySubscriptionType VARCHAR(75) null,deliverySubTypeSettings VARCHAR(75) null,depth DOUBLE,displayDate DATE null,expirationDate DATE null,freeShipping BOOLEAN,height DOUBLE,ignoreSKUCombinations BOOLEAN,maxSubscriptionCycles LONG,productTypeName VARCHAR(75) null,published BOOLEAN,shipSeparately BOOLEAN,shippable BOOLEAN,shippingExtraPrice DOUBLE,subscriptionEnabled BOOLEAN,subscriptionLength INTEGER,subscriptionType VARCHAR(75) null,subscriptionTypeSettings TEXT null,taxExempt BOOLEAN,telcoOrElectronics BOOLEAN,version INTEGER,weight DOUBLE,width DOUBLE,lastPublishDate DATE null,status INTEGER,statusByUserId LONG,statusByUserName VARCHAR(75) null,statusDate DATE null,primary key (CPDefinitionId, ctCollectionId))";
 
 	public static final String TABLE_SQL_DROP = "drop table CPDefinition";
+
+	public static final String ENTITY_ALIAS = "cpDefinition";
+
+	public static final String FILTER_PK_COLUMN_NAME = "CPDefinitionId";
 
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY cpDefinition.displayDate DESC, cpDefinition.createDate DESC";
 
 	public static final String ORDER_BY_SQL =
 		" ORDER BY CPDefinition.displayDate DESC, CPDefinition.createDate DESC";
+
+	public static final String ORDER_BY_SQL_INLINE_DISTINCT =
+		" ORDER BY cpDefinition.displayDate DESC, cpDefinition.createDate DESC";
 
 	public static final String DATA_SOURCE = "liferayDataSource";
 
@@ -214,26 +224,20 @@ public class CPDefinitionModelImpl
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long SUBSCRIPTIONENABLED_COLUMN_BITMASK = 64L;
+	public static final long UUID_COLUMN_BITMASK = 64L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long UUID_COLUMN_BITMASK = 128L;
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
-	 */
-	@Deprecated
-	public static final long VERSION_COLUMN_BITMASK = 256L;
+	public static final long VERSION_COLUMN_BITMASK = 128L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
 	 *		#getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long CREATEDATE_COLUMN_BITMASK = 512L;
+	public static final long CREATEDATE_COLUMN_BITMASK = 256L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
@@ -363,55 +367,25 @@ public class CPDefinitionModelImpl
 			attributeGetterFunctions.put(
 				"modifiedDate", CPDefinition::getModifiedDate);
 			attributeGetterFunctions.put(
+				"CProductExternalReferenceCode",
+				CPDefinition::getCProductExternalReferenceCode);
+			attributeGetterFunctions.put(
 				"CProductId", CPDefinition::getCProductId);
 			attributeGetterFunctions.put(
 				"CPTaxCategoryId", CPDefinition::getCPTaxCategoryId);
 			attributeGetterFunctions.put(
-				"productTypeName", CPDefinition::getProductTypeName);
+				"accountGroupFilterEnabled",
+				CPDefinition::getAccountGroupFilterEnabled);
 			attributeGetterFunctions.put(
 				"availableIndividually",
 				CPDefinition::getAvailableIndividually);
 			attributeGetterFunctions.put(
-				"ignoreSKUCombinations",
-				CPDefinition::getIgnoreSKUCombinations);
-			attributeGetterFunctions.put(
-				"shippable", CPDefinition::getShippable);
-			attributeGetterFunctions.put(
-				"freeShipping", CPDefinition::getFreeShipping);
-			attributeGetterFunctions.put(
-				"shipSeparately", CPDefinition::getShipSeparately);
-			attributeGetterFunctions.put(
-				"shippingExtraPrice", CPDefinition::getShippingExtraPrice);
-			attributeGetterFunctions.put("width", CPDefinition::getWidth);
-			attributeGetterFunctions.put("height", CPDefinition::getHeight);
-			attributeGetterFunctions.put("depth", CPDefinition::getDepth);
-			attributeGetterFunctions.put("weight", CPDefinition::getWeight);
-			attributeGetterFunctions.put(
-				"taxExempt", CPDefinition::getTaxExempt);
-			attributeGetterFunctions.put(
-				"telcoOrElectronics", CPDefinition::getTelcoOrElectronics);
+				"channelFilterEnabled", CPDefinition::getChannelFilterEnabled);
 			attributeGetterFunctions.put(
 				"DDMStructureKey", CPDefinition::getDDMStructureKey);
 			attributeGetterFunctions.put(
-				"published", CPDefinition::getPublished);
-			attributeGetterFunctions.put(
-				"displayDate", CPDefinition::getDisplayDate);
-			attributeGetterFunctions.put(
-				"expirationDate", CPDefinition::getExpirationDate);
-			attributeGetterFunctions.put(
-				"lastPublishDate", CPDefinition::getLastPublishDate);
-			attributeGetterFunctions.put(
-				"subscriptionEnabled", CPDefinition::getSubscriptionEnabled);
-			attributeGetterFunctions.put(
-				"subscriptionLength", CPDefinition::getSubscriptionLength);
-			attributeGetterFunctions.put(
-				"subscriptionType", CPDefinition::getSubscriptionType);
-			attributeGetterFunctions.put(
-				"subscriptionTypeSettings",
-				CPDefinition::getSubscriptionTypeSettings);
-			attributeGetterFunctions.put(
-				"maxSubscriptionCycles",
-				CPDefinition::getMaxSubscriptionCycles);
+				"deliveryMaxSubscriptionCycles",
+				CPDefinition::getDeliveryMaxSubscriptionCycles);
 			attributeGetterFunctions.put(
 				"deliverySubscriptionEnabled",
 				CPDefinition::getDeliverySubscriptionEnabled);
@@ -424,15 +398,48 @@ public class CPDefinitionModelImpl
 			attributeGetterFunctions.put(
 				"deliverySubscriptionTypeSettings",
 				CPDefinition::getDeliverySubscriptionTypeSettings);
+			attributeGetterFunctions.put("depth", CPDefinition::getDepth);
 			attributeGetterFunctions.put(
-				"deliveryMaxSubscriptionCycles",
-				CPDefinition::getDeliveryMaxSubscriptionCycles);
+				"displayDate", CPDefinition::getDisplayDate);
 			attributeGetterFunctions.put(
-				"accountGroupFilterEnabled",
-				CPDefinition::getAccountGroupFilterEnabled);
+				"expirationDate", CPDefinition::getExpirationDate);
 			attributeGetterFunctions.put(
-				"channelFilterEnabled", CPDefinition::getChannelFilterEnabled);
+				"freeShipping", CPDefinition::getFreeShipping);
+			attributeGetterFunctions.put("height", CPDefinition::getHeight);
+			attributeGetterFunctions.put(
+				"ignoreSKUCombinations",
+				CPDefinition::getIgnoreSKUCombinations);
+			attributeGetterFunctions.put(
+				"maxSubscriptionCycles",
+				CPDefinition::getMaxSubscriptionCycles);
+			attributeGetterFunctions.put(
+				"productTypeName", CPDefinition::getProductTypeName);
+			attributeGetterFunctions.put(
+				"published", CPDefinition::getPublished);
+			attributeGetterFunctions.put(
+				"shipSeparately", CPDefinition::getShipSeparately);
+			attributeGetterFunctions.put(
+				"shippable", CPDefinition::getShippable);
+			attributeGetterFunctions.put(
+				"shippingExtraPrice", CPDefinition::getShippingExtraPrice);
+			attributeGetterFunctions.put(
+				"subscriptionEnabled", CPDefinition::getSubscriptionEnabled);
+			attributeGetterFunctions.put(
+				"subscriptionLength", CPDefinition::getSubscriptionLength);
+			attributeGetterFunctions.put(
+				"subscriptionType", CPDefinition::getSubscriptionType);
+			attributeGetterFunctions.put(
+				"subscriptionTypeSettings",
+				CPDefinition::getSubscriptionTypeSettings);
+			attributeGetterFunctions.put(
+				"taxExempt", CPDefinition::getTaxExempt);
+			attributeGetterFunctions.put(
+				"telcoOrElectronics", CPDefinition::getTelcoOrElectronics);
 			attributeGetterFunctions.put("version", CPDefinition::getVersion);
+			attributeGetterFunctions.put("weight", CPDefinition::getWeight);
+			attributeGetterFunctions.put("width", CPDefinition::getWidth);
+			attributeGetterFunctions.put(
+				"lastPublishDate", CPDefinition::getLastPublishDate);
 			attributeGetterFunctions.put("status", CPDefinition::getStatus);
 			attributeGetterFunctions.put(
 				"statusByUserId", CPDefinition::getStatusByUserId);
@@ -494,6 +501,10 @@ public class CPDefinitionModelImpl
 				"modifiedDate",
 				(BiConsumer<CPDefinition, Date>)CPDefinition::setModifiedDate);
 			attributeSetterBiConsumers.put(
+				"CProductExternalReferenceCode",
+				(BiConsumer<CPDefinition, String>)
+					CPDefinition::setCProductExternalReferenceCode);
+			attributeSetterBiConsumers.put(
 				"CProductId",
 				(BiConsumer<CPDefinition, Long>)CPDefinition::setCProductId);
 			attributeSetterBiConsumers.put(
@@ -501,89 +512,25 @@ public class CPDefinitionModelImpl
 				(BiConsumer<CPDefinition, Long>)
 					CPDefinition::setCPTaxCategoryId);
 			attributeSetterBiConsumers.put(
-				"productTypeName",
-				(BiConsumer<CPDefinition, String>)
-					CPDefinition::setProductTypeName);
+				"accountGroupFilterEnabled",
+				(BiConsumer<CPDefinition, Boolean>)
+					CPDefinition::setAccountGroupFilterEnabled);
 			attributeSetterBiConsumers.put(
 				"availableIndividually",
 				(BiConsumer<CPDefinition, Boolean>)
 					CPDefinition::setAvailableIndividually);
 			attributeSetterBiConsumers.put(
-				"ignoreSKUCombinations",
+				"channelFilterEnabled",
 				(BiConsumer<CPDefinition, Boolean>)
-					CPDefinition::setIgnoreSKUCombinations);
-			attributeSetterBiConsumers.put(
-				"shippable",
-				(BiConsumer<CPDefinition, Boolean>)CPDefinition::setShippable);
-			attributeSetterBiConsumers.put(
-				"freeShipping",
-				(BiConsumer<CPDefinition, Boolean>)
-					CPDefinition::setFreeShipping);
-			attributeSetterBiConsumers.put(
-				"shipSeparately",
-				(BiConsumer<CPDefinition, Boolean>)
-					CPDefinition::setShipSeparately);
-			attributeSetterBiConsumers.put(
-				"shippingExtraPrice",
-				(BiConsumer<CPDefinition, Double>)
-					CPDefinition::setShippingExtraPrice);
-			attributeSetterBiConsumers.put(
-				"width",
-				(BiConsumer<CPDefinition, Double>)CPDefinition::setWidth);
-			attributeSetterBiConsumers.put(
-				"height",
-				(BiConsumer<CPDefinition, Double>)CPDefinition::setHeight);
-			attributeSetterBiConsumers.put(
-				"depth",
-				(BiConsumer<CPDefinition, Double>)CPDefinition::setDepth);
-			attributeSetterBiConsumers.put(
-				"weight",
-				(BiConsumer<CPDefinition, Double>)CPDefinition::setWeight);
-			attributeSetterBiConsumers.put(
-				"taxExempt",
-				(BiConsumer<CPDefinition, Boolean>)CPDefinition::setTaxExempt);
-			attributeSetterBiConsumers.put(
-				"telcoOrElectronics",
-				(BiConsumer<CPDefinition, Boolean>)
-					CPDefinition::setTelcoOrElectronics);
+					CPDefinition::setChannelFilterEnabled);
 			attributeSetterBiConsumers.put(
 				"DDMStructureKey",
 				(BiConsumer<CPDefinition, String>)
 					CPDefinition::setDDMStructureKey);
 			attributeSetterBiConsumers.put(
-				"published",
-				(BiConsumer<CPDefinition, Boolean>)CPDefinition::setPublished);
-			attributeSetterBiConsumers.put(
-				"displayDate",
-				(BiConsumer<CPDefinition, Date>)CPDefinition::setDisplayDate);
-			attributeSetterBiConsumers.put(
-				"expirationDate",
-				(BiConsumer<CPDefinition, Date>)
-					CPDefinition::setExpirationDate);
-			attributeSetterBiConsumers.put(
-				"lastPublishDate",
-				(BiConsumer<CPDefinition, Date>)
-					CPDefinition::setLastPublishDate);
-			attributeSetterBiConsumers.put(
-				"subscriptionEnabled",
-				(BiConsumer<CPDefinition, Boolean>)
-					CPDefinition::setSubscriptionEnabled);
-			attributeSetterBiConsumers.put(
-				"subscriptionLength",
-				(BiConsumer<CPDefinition, Integer>)
-					CPDefinition::setSubscriptionLength);
-			attributeSetterBiConsumers.put(
-				"subscriptionType",
-				(BiConsumer<CPDefinition, String>)
-					CPDefinition::setSubscriptionType);
-			attributeSetterBiConsumers.put(
-				"subscriptionTypeSettings",
-				(BiConsumer<CPDefinition, String>)
-					CPDefinition::setSubscriptionTypeSettings);
-			attributeSetterBiConsumers.put(
-				"maxSubscriptionCycles",
+				"deliveryMaxSubscriptionCycles",
 				(BiConsumer<CPDefinition, Long>)
-					CPDefinition::setMaxSubscriptionCycles);
+					CPDefinition::setDeliveryMaxSubscriptionCycles);
 			attributeSetterBiConsumers.put(
 				"deliverySubscriptionEnabled",
 				(BiConsumer<CPDefinition, Boolean>)
@@ -601,20 +548,84 @@ public class CPDefinitionModelImpl
 				(BiConsumer<CPDefinition, String>)
 					CPDefinition::setDeliverySubscriptionTypeSettings);
 			attributeSetterBiConsumers.put(
-				"deliveryMaxSubscriptionCycles",
+				"depth",
+				(BiConsumer<CPDefinition, Double>)CPDefinition::setDepth);
+			attributeSetterBiConsumers.put(
+				"displayDate",
+				(BiConsumer<CPDefinition, Date>)CPDefinition::setDisplayDate);
+			attributeSetterBiConsumers.put(
+				"expirationDate",
+				(BiConsumer<CPDefinition, Date>)
+					CPDefinition::setExpirationDate);
+			attributeSetterBiConsumers.put(
+				"freeShipping",
+				(BiConsumer<CPDefinition, Boolean>)
+					CPDefinition::setFreeShipping);
+			attributeSetterBiConsumers.put(
+				"height",
+				(BiConsumer<CPDefinition, Double>)CPDefinition::setHeight);
+			attributeSetterBiConsumers.put(
+				"ignoreSKUCombinations",
+				(BiConsumer<CPDefinition, Boolean>)
+					CPDefinition::setIgnoreSKUCombinations);
+			attributeSetterBiConsumers.put(
+				"maxSubscriptionCycles",
 				(BiConsumer<CPDefinition, Long>)
-					CPDefinition::setDeliveryMaxSubscriptionCycles);
+					CPDefinition::setMaxSubscriptionCycles);
 			attributeSetterBiConsumers.put(
-				"accountGroupFilterEnabled",
-				(BiConsumer<CPDefinition, Boolean>)
-					CPDefinition::setAccountGroupFilterEnabled);
+				"productTypeName",
+				(BiConsumer<CPDefinition, String>)
+					CPDefinition::setProductTypeName);
 			attributeSetterBiConsumers.put(
-				"channelFilterEnabled",
+				"published",
+				(BiConsumer<CPDefinition, Boolean>)CPDefinition::setPublished);
+			attributeSetterBiConsumers.put(
+				"shipSeparately",
 				(BiConsumer<CPDefinition, Boolean>)
-					CPDefinition::setChannelFilterEnabled);
+					CPDefinition::setShipSeparately);
+			attributeSetterBiConsumers.put(
+				"shippable",
+				(BiConsumer<CPDefinition, Boolean>)CPDefinition::setShippable);
+			attributeSetterBiConsumers.put(
+				"shippingExtraPrice",
+				(BiConsumer<CPDefinition, Double>)
+					CPDefinition::setShippingExtraPrice);
+			attributeSetterBiConsumers.put(
+				"subscriptionEnabled",
+				(BiConsumer<CPDefinition, Boolean>)
+					CPDefinition::setSubscriptionEnabled);
+			attributeSetterBiConsumers.put(
+				"subscriptionLength",
+				(BiConsumer<CPDefinition, Integer>)
+					CPDefinition::setSubscriptionLength);
+			attributeSetterBiConsumers.put(
+				"subscriptionType",
+				(BiConsumer<CPDefinition, String>)
+					CPDefinition::setSubscriptionType);
+			attributeSetterBiConsumers.put(
+				"subscriptionTypeSettings",
+				(BiConsumer<CPDefinition, String>)
+					CPDefinition::setSubscriptionTypeSettings);
+			attributeSetterBiConsumers.put(
+				"taxExempt",
+				(BiConsumer<CPDefinition, Boolean>)CPDefinition::setTaxExempt);
+			attributeSetterBiConsumers.put(
+				"telcoOrElectronics",
+				(BiConsumer<CPDefinition, Boolean>)
+					CPDefinition::setTelcoOrElectronics);
 			attributeSetterBiConsumers.put(
 				"version",
 				(BiConsumer<CPDefinition, Integer>)CPDefinition::setVersion);
+			attributeSetterBiConsumers.put(
+				"weight",
+				(BiConsumer<CPDefinition, Double>)CPDefinition::setWeight);
+			attributeSetterBiConsumers.put(
+				"width",
+				(BiConsumer<CPDefinition, Double>)CPDefinition::setWidth);
+			attributeSetterBiConsumers.put(
+				"lastPublishDate",
+				(BiConsumer<CPDefinition, Date>)
+					CPDefinition::setLastPublishDate);
 			attributeSetterBiConsumers.put(
 				"status",
 				(BiConsumer<CPDefinition, Integer>)CPDefinition::setStatus);
@@ -653,138 +664,6 @@ public class CPDefinitionModelImpl
 		}
 
 		return availableLanguageIds;
-	}
-
-	@Override
-	public String getName() {
-		return getName(getDefaultLanguageId(), false);
-	}
-
-	@Override
-	public String getName(String languageId) {
-		return getName(languageId, true);
-	}
-
-	@Override
-	public String getName(String languageId, boolean useDefault) {
-		if (useDefault) {
-			return LocalizationUtil.getLocalization(
-				new Function<String, String>() {
-
-					@Override
-					public String apply(String languageId) {
-						return _getName(languageId);
-					}
-
-				},
-				languageId, getDefaultLanguageId());
-		}
-
-		return _getName(languageId);
-	}
-
-	@Override
-	public String getNameMapAsXML() {
-		return LocalizationUtil.getXml(
-			getLanguageIdToNameMap(), getDefaultLanguageId(), "Name");
-	}
-
-	@Override
-	public Map<String, String> getLanguageIdToNameMap() {
-		Map<String, String> languageIdToNameMap = new HashMap<String, String>();
-
-		List<CPDefinitionLocalization> cpDefinitionLocalizations =
-			CPDefinitionLocalServiceUtil.getCPDefinitionLocalizations(
-				getPrimaryKey());
-
-		for (CPDefinitionLocalization cpDefinitionLocalization :
-				cpDefinitionLocalizations) {
-
-			languageIdToNameMap.put(
-				cpDefinitionLocalization.getLanguageId(),
-				cpDefinitionLocalization.getName());
-		}
-
-		return languageIdToNameMap;
-	}
-
-	private String _getName(String languageId) {
-		CPDefinitionLocalization cpDefinitionLocalization =
-			CPDefinitionLocalServiceUtil.fetchCPDefinitionLocalization(
-				getPrimaryKey(), languageId);
-
-		if (cpDefinitionLocalization == null) {
-			return "";
-		}
-
-		return cpDefinitionLocalization.getName();
-	}
-
-	@Override
-	public String getShortDescription() {
-		return getShortDescription(getDefaultLanguageId(), false);
-	}
-
-	@Override
-	public String getShortDescription(String languageId) {
-		return getShortDescription(languageId, true);
-	}
-
-	@Override
-	public String getShortDescription(String languageId, boolean useDefault) {
-		if (useDefault) {
-			return LocalizationUtil.getLocalization(
-				new Function<String, String>() {
-
-					@Override
-					public String apply(String languageId) {
-						return _getShortDescription(languageId);
-					}
-
-				},
-				languageId, getDefaultLanguageId());
-		}
-
-		return _getShortDescription(languageId);
-	}
-
-	@Override
-	public String getShortDescriptionMapAsXML() {
-		return LocalizationUtil.getXml(
-			getLanguageIdToShortDescriptionMap(), getDefaultLanguageId(),
-			"ShortDescription");
-	}
-
-	@Override
-	public Map<String, String> getLanguageIdToShortDescriptionMap() {
-		Map<String, String> languageIdToShortDescriptionMap =
-			new HashMap<String, String>();
-
-		List<CPDefinitionLocalization> cpDefinitionLocalizations =
-			CPDefinitionLocalServiceUtil.getCPDefinitionLocalizations(
-				getPrimaryKey());
-
-		for (CPDefinitionLocalization cpDefinitionLocalization :
-				cpDefinitionLocalizations) {
-
-			languageIdToShortDescriptionMap.put(
-				cpDefinitionLocalization.getLanguageId(),
-				cpDefinitionLocalization.getShortDescription());
-		}
-
-		return languageIdToShortDescriptionMap;
-	}
-
-	private String _getShortDescription(String languageId) {
-		CPDefinitionLocalization cpDefinitionLocalization =
-			CPDefinitionLocalServiceUtil.fetchCPDefinitionLocalization(
-				getPrimaryKey(), languageId);
-
-		if (cpDefinitionLocalization == null) {
-			return "";
-		}
-
-		return cpDefinitionLocalization.getShortDescription();
 	}
 
 	@Override
@@ -852,72 +731,6 @@ public class CPDefinitionModelImpl
 		}
 
 		return cpDefinitionLocalization.getDescription();
-	}
-
-	@Override
-	public String getMetaTitle() {
-		return getMetaTitle(getDefaultLanguageId(), false);
-	}
-
-	@Override
-	public String getMetaTitle(String languageId) {
-		return getMetaTitle(languageId, true);
-	}
-
-	@Override
-	public String getMetaTitle(String languageId, boolean useDefault) {
-		if (useDefault) {
-			return LocalizationUtil.getLocalization(
-				new Function<String, String>() {
-
-					@Override
-					public String apply(String languageId) {
-						return _getMetaTitle(languageId);
-					}
-
-				},
-				languageId, getDefaultLanguageId());
-		}
-
-		return _getMetaTitle(languageId);
-	}
-
-	@Override
-	public String getMetaTitleMapAsXML() {
-		return LocalizationUtil.getXml(
-			getLanguageIdToMetaTitleMap(), getDefaultLanguageId(), "MetaTitle");
-	}
-
-	@Override
-	public Map<String, String> getLanguageIdToMetaTitleMap() {
-		Map<String, String> languageIdToMetaTitleMap =
-			new HashMap<String, String>();
-
-		List<CPDefinitionLocalization> cpDefinitionLocalizations =
-			CPDefinitionLocalServiceUtil.getCPDefinitionLocalizations(
-				getPrimaryKey());
-
-		for (CPDefinitionLocalization cpDefinitionLocalization :
-				cpDefinitionLocalizations) {
-
-			languageIdToMetaTitleMap.put(
-				cpDefinitionLocalization.getLanguageId(),
-				cpDefinitionLocalization.getMetaTitle());
-		}
-
-		return languageIdToMetaTitleMap;
-	}
-
-	private String _getMetaTitle(String languageId) {
-		CPDefinitionLocalization cpDefinitionLocalization =
-			CPDefinitionLocalServiceUtil.fetchCPDefinitionLocalization(
-				getPrimaryKey(), languageId);
-
-		if (cpDefinitionLocalization == null) {
-			return "";
-		}
-
-		return cpDefinitionLocalization.getMetaTitle();
 	}
 
 	@Override
@@ -1052,6 +865,204 @@ public class CPDefinitionModelImpl
 		}
 
 		return cpDefinitionLocalization.getMetaKeywords();
+	}
+
+	@Override
+	public String getMetaTitle() {
+		return getMetaTitle(getDefaultLanguageId(), false);
+	}
+
+	@Override
+	public String getMetaTitle(String languageId) {
+		return getMetaTitle(languageId, true);
+	}
+
+	@Override
+	public String getMetaTitle(String languageId, boolean useDefault) {
+		if (useDefault) {
+			return LocalizationUtil.getLocalization(
+				new Function<String, String>() {
+
+					@Override
+					public String apply(String languageId) {
+						return _getMetaTitle(languageId);
+					}
+
+				},
+				languageId, getDefaultLanguageId());
+		}
+
+		return _getMetaTitle(languageId);
+	}
+
+	@Override
+	public String getMetaTitleMapAsXML() {
+		return LocalizationUtil.getXml(
+			getLanguageIdToMetaTitleMap(), getDefaultLanguageId(), "MetaTitle");
+	}
+
+	@Override
+	public Map<String, String> getLanguageIdToMetaTitleMap() {
+		Map<String, String> languageIdToMetaTitleMap =
+			new HashMap<String, String>();
+
+		List<CPDefinitionLocalization> cpDefinitionLocalizations =
+			CPDefinitionLocalServiceUtil.getCPDefinitionLocalizations(
+				getPrimaryKey());
+
+		for (CPDefinitionLocalization cpDefinitionLocalization :
+				cpDefinitionLocalizations) {
+
+			languageIdToMetaTitleMap.put(
+				cpDefinitionLocalization.getLanguageId(),
+				cpDefinitionLocalization.getMetaTitle());
+		}
+
+		return languageIdToMetaTitleMap;
+	}
+
+	private String _getMetaTitle(String languageId) {
+		CPDefinitionLocalization cpDefinitionLocalization =
+			CPDefinitionLocalServiceUtil.fetchCPDefinitionLocalization(
+				getPrimaryKey(), languageId);
+
+		if (cpDefinitionLocalization == null) {
+			return "";
+		}
+
+		return cpDefinitionLocalization.getMetaTitle();
+	}
+
+	@Override
+	public String getName() {
+		return getName(getDefaultLanguageId(), false);
+	}
+
+	@Override
+	public String getName(String languageId) {
+		return getName(languageId, true);
+	}
+
+	@Override
+	public String getName(String languageId, boolean useDefault) {
+		if (useDefault) {
+			return LocalizationUtil.getLocalization(
+				new Function<String, String>() {
+
+					@Override
+					public String apply(String languageId) {
+						return _getName(languageId);
+					}
+
+				},
+				languageId, getDefaultLanguageId());
+		}
+
+		return _getName(languageId);
+	}
+
+	@Override
+	public String getNameMapAsXML() {
+		return LocalizationUtil.getXml(
+			getLanguageIdToNameMap(), getDefaultLanguageId(), "Name");
+	}
+
+	@Override
+	public Map<String, String> getLanguageIdToNameMap() {
+		Map<String, String> languageIdToNameMap = new HashMap<String, String>();
+
+		List<CPDefinitionLocalization> cpDefinitionLocalizations =
+			CPDefinitionLocalServiceUtil.getCPDefinitionLocalizations(
+				getPrimaryKey());
+
+		for (CPDefinitionLocalization cpDefinitionLocalization :
+				cpDefinitionLocalizations) {
+
+			languageIdToNameMap.put(
+				cpDefinitionLocalization.getLanguageId(),
+				cpDefinitionLocalization.getName());
+		}
+
+		return languageIdToNameMap;
+	}
+
+	private String _getName(String languageId) {
+		CPDefinitionLocalization cpDefinitionLocalization =
+			CPDefinitionLocalServiceUtil.fetchCPDefinitionLocalization(
+				getPrimaryKey(), languageId);
+
+		if (cpDefinitionLocalization == null) {
+			return "";
+		}
+
+		return cpDefinitionLocalization.getName();
+	}
+
+	@Override
+	public String getShortDescription() {
+		return getShortDescription(getDefaultLanguageId(), false);
+	}
+
+	@Override
+	public String getShortDescription(String languageId) {
+		return getShortDescription(languageId, true);
+	}
+
+	@Override
+	public String getShortDescription(String languageId, boolean useDefault) {
+		if (useDefault) {
+			return LocalizationUtil.getLocalization(
+				new Function<String, String>() {
+
+					@Override
+					public String apply(String languageId) {
+						return _getShortDescription(languageId);
+					}
+
+				},
+				languageId, getDefaultLanguageId());
+		}
+
+		return _getShortDescription(languageId);
+	}
+
+	@Override
+	public String getShortDescriptionMapAsXML() {
+		return LocalizationUtil.getXml(
+			getLanguageIdToShortDescriptionMap(), getDefaultLanguageId(),
+			"ShortDescription");
+	}
+
+	@Override
+	public Map<String, String> getLanguageIdToShortDescriptionMap() {
+		Map<String, String> languageIdToShortDescriptionMap =
+			new HashMap<String, String>();
+
+		List<CPDefinitionLocalization> cpDefinitionLocalizations =
+			CPDefinitionLocalServiceUtil.getCPDefinitionLocalizations(
+				getPrimaryKey());
+
+		for (CPDefinitionLocalization cpDefinitionLocalization :
+				cpDefinitionLocalizations) {
+
+			languageIdToShortDescriptionMap.put(
+				cpDefinitionLocalization.getLanguageId(),
+				cpDefinitionLocalization.getShortDescription());
+		}
+
+		return languageIdToShortDescriptionMap;
+	}
+
+	private String _getShortDescription(String languageId) {
+		CPDefinitionLocalization cpDefinitionLocalization =
+			CPDefinitionLocalServiceUtil.fetchCPDefinitionLocalization(
+				getPrimaryKey(), languageId);
+
+		if (cpDefinitionLocalization == null) {
+			return "";
+		}
+
+		return cpDefinitionLocalization.getShortDescription();
 	}
 
 	@JSON
@@ -1286,6 +1297,28 @@ public class CPDefinitionModelImpl
 
 	@JSON
 	@Override
+	public String getCProductExternalReferenceCode() {
+		if (_CProductExternalReferenceCode == null) {
+			return "";
+		}
+		else {
+			return _CProductExternalReferenceCode;
+		}
+	}
+
+	@Override
+	public void setCProductExternalReferenceCode(
+		String CProductExternalReferenceCode) {
+
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_CProductExternalReferenceCode = CProductExternalReferenceCode;
+	}
+
+	@JSON
+	@Override
 	public long getCProductId() {
 		return _CProductId;
 	}
@@ -1336,22 +1369,25 @@ public class CPDefinitionModelImpl
 
 	@JSON
 	@Override
-	public String getProductTypeName() {
-		if (_productTypeName == null) {
-			return "";
-		}
-		else {
-			return _productTypeName;
-		}
+	public boolean getAccountGroupFilterEnabled() {
+		return _accountGroupFilterEnabled;
+	}
+
+	@JSON
+	@Override
+	public boolean isAccountGroupFilterEnabled() {
+		return _accountGroupFilterEnabled;
 	}
 
 	@Override
-	public void setProductTypeName(String productTypeName) {
+	public void setAccountGroupFilterEnabled(
+		boolean accountGroupFilterEnabled) {
+
 		if (_columnOriginalValues == Collections.EMPTY_MAP) {
 			_setColumnOriginalValues();
 		}
 
-		_productTypeName = productTypeName;
+		_accountGroupFilterEnabled = accountGroupFilterEnabled;
 	}
 
 	@JSON
@@ -1377,203 +1413,23 @@ public class CPDefinitionModelImpl
 
 	@JSON
 	@Override
-	public boolean getIgnoreSKUCombinations() {
-		return _ignoreSKUCombinations;
+	public boolean getChannelFilterEnabled() {
+		return _channelFilterEnabled;
 	}
 
 	@JSON
 	@Override
-	public boolean isIgnoreSKUCombinations() {
-		return _ignoreSKUCombinations;
+	public boolean isChannelFilterEnabled() {
+		return _channelFilterEnabled;
 	}
 
 	@Override
-	public void setIgnoreSKUCombinations(boolean ignoreSKUCombinations) {
+	public void setChannelFilterEnabled(boolean channelFilterEnabled) {
 		if (_columnOriginalValues == Collections.EMPTY_MAP) {
 			_setColumnOriginalValues();
 		}
 
-		_ignoreSKUCombinations = ignoreSKUCombinations;
-	}
-
-	@JSON
-	@Override
-	public boolean getShippable() {
-		return _shippable;
-	}
-
-	@JSON
-	@Override
-	public boolean isShippable() {
-		return _shippable;
-	}
-
-	@Override
-	public void setShippable(boolean shippable) {
-		if (_columnOriginalValues == Collections.EMPTY_MAP) {
-			_setColumnOriginalValues();
-		}
-
-		_shippable = shippable;
-	}
-
-	@JSON
-	@Override
-	public boolean getFreeShipping() {
-		return _freeShipping;
-	}
-
-	@JSON
-	@Override
-	public boolean isFreeShipping() {
-		return _freeShipping;
-	}
-
-	@Override
-	public void setFreeShipping(boolean freeShipping) {
-		if (_columnOriginalValues == Collections.EMPTY_MAP) {
-			_setColumnOriginalValues();
-		}
-
-		_freeShipping = freeShipping;
-	}
-
-	@JSON
-	@Override
-	public boolean getShipSeparately() {
-		return _shipSeparately;
-	}
-
-	@JSON
-	@Override
-	public boolean isShipSeparately() {
-		return _shipSeparately;
-	}
-
-	@Override
-	public void setShipSeparately(boolean shipSeparately) {
-		if (_columnOriginalValues == Collections.EMPTY_MAP) {
-			_setColumnOriginalValues();
-		}
-
-		_shipSeparately = shipSeparately;
-	}
-
-	@JSON
-	@Override
-	public double getShippingExtraPrice() {
-		return _shippingExtraPrice;
-	}
-
-	@Override
-	public void setShippingExtraPrice(double shippingExtraPrice) {
-		if (_columnOriginalValues == Collections.EMPTY_MAP) {
-			_setColumnOriginalValues();
-		}
-
-		_shippingExtraPrice = shippingExtraPrice;
-	}
-
-	@JSON
-	@Override
-	public double getWidth() {
-		return _width;
-	}
-
-	@Override
-	public void setWidth(double width) {
-		if (_columnOriginalValues == Collections.EMPTY_MAP) {
-			_setColumnOriginalValues();
-		}
-
-		_width = width;
-	}
-
-	@JSON
-	@Override
-	public double getHeight() {
-		return _height;
-	}
-
-	@Override
-	public void setHeight(double height) {
-		if (_columnOriginalValues == Collections.EMPTY_MAP) {
-			_setColumnOriginalValues();
-		}
-
-		_height = height;
-	}
-
-	@JSON
-	@Override
-	public double getDepth() {
-		return _depth;
-	}
-
-	@Override
-	public void setDepth(double depth) {
-		if (_columnOriginalValues == Collections.EMPTY_MAP) {
-			_setColumnOriginalValues();
-		}
-
-		_depth = depth;
-	}
-
-	@JSON
-	@Override
-	public double getWeight() {
-		return _weight;
-	}
-
-	@Override
-	public void setWeight(double weight) {
-		if (_columnOriginalValues == Collections.EMPTY_MAP) {
-			_setColumnOriginalValues();
-		}
-
-		_weight = weight;
-	}
-
-	@JSON
-	@Override
-	public boolean getTaxExempt() {
-		return _taxExempt;
-	}
-
-	@JSON
-	@Override
-	public boolean isTaxExempt() {
-		return _taxExempt;
-	}
-
-	@Override
-	public void setTaxExempt(boolean taxExempt) {
-		if (_columnOriginalValues == Collections.EMPTY_MAP) {
-			_setColumnOriginalValues();
-		}
-
-		_taxExempt = taxExempt;
-	}
-
-	@JSON
-	@Override
-	public boolean getTelcoOrElectronics() {
-		return _telcoOrElectronics;
-	}
-
-	@JSON
-	@Override
-	public boolean isTelcoOrElectronics() {
-		return _telcoOrElectronics;
-	}
-
-	@Override
-	public void setTelcoOrElectronics(boolean telcoOrElectronics) {
-		if (_columnOriginalValues == Collections.EMPTY_MAP) {
-			_setColumnOriginalValues();
-		}
-
-		_telcoOrElectronics = telcoOrElectronics;
+		_channelFilterEnabled = channelFilterEnabled;
 	}
 
 	@JSON
@@ -1598,178 +1454,19 @@ public class CPDefinitionModelImpl
 
 	@JSON
 	@Override
-	public boolean getPublished() {
-		return _published;
-	}
-
-	@JSON
-	@Override
-	public boolean isPublished() {
-		return _published;
+	public long getDeliveryMaxSubscriptionCycles() {
+		return _deliveryMaxSubscriptionCycles;
 	}
 
 	@Override
-	public void setPublished(boolean published) {
+	public void setDeliveryMaxSubscriptionCycles(
+		long deliveryMaxSubscriptionCycles) {
+
 		if (_columnOriginalValues == Collections.EMPTY_MAP) {
 			_setColumnOriginalValues();
 		}
 
-		_published = published;
-	}
-
-	@JSON
-	@Override
-	public Date getDisplayDate() {
-		return _displayDate;
-	}
-
-	@Override
-	public void setDisplayDate(Date displayDate) {
-		if (_columnOriginalValues == Collections.EMPTY_MAP) {
-			_setColumnOriginalValues();
-		}
-
-		_displayDate = displayDate;
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #getColumnOriginalValue(String)}
-	 */
-	@Deprecated
-	public Date getOriginalDisplayDate() {
-		return getColumnOriginalValue("displayDate");
-	}
-
-	@JSON
-	@Override
-	public Date getExpirationDate() {
-		return _expirationDate;
-	}
-
-	@Override
-	public void setExpirationDate(Date expirationDate) {
-		if (_columnOriginalValues == Collections.EMPTY_MAP) {
-			_setColumnOriginalValues();
-		}
-
-		_expirationDate = expirationDate;
-	}
-
-	@JSON
-	@Override
-	public Date getLastPublishDate() {
-		return _lastPublishDate;
-	}
-
-	@Override
-	public void setLastPublishDate(Date lastPublishDate) {
-		if (_columnOriginalValues == Collections.EMPTY_MAP) {
-			_setColumnOriginalValues();
-		}
-
-		_lastPublishDate = lastPublishDate;
-	}
-
-	@JSON
-	@Override
-	public boolean getSubscriptionEnabled() {
-		return _subscriptionEnabled;
-	}
-
-	@JSON
-	@Override
-	public boolean isSubscriptionEnabled() {
-		return _subscriptionEnabled;
-	}
-
-	@Override
-	public void setSubscriptionEnabled(boolean subscriptionEnabled) {
-		if (_columnOriginalValues == Collections.EMPTY_MAP) {
-			_setColumnOriginalValues();
-		}
-
-		_subscriptionEnabled = subscriptionEnabled;
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #getColumnOriginalValue(String)}
-	 */
-	@Deprecated
-	public boolean getOriginalSubscriptionEnabled() {
-		return GetterUtil.getBoolean(
-			this.<Boolean>getColumnOriginalValue("subscriptionEnabled"));
-	}
-
-	@JSON
-	@Override
-	public int getSubscriptionLength() {
-		return _subscriptionLength;
-	}
-
-	@Override
-	public void setSubscriptionLength(int subscriptionLength) {
-		if (_columnOriginalValues == Collections.EMPTY_MAP) {
-			_setColumnOriginalValues();
-		}
-
-		_subscriptionLength = subscriptionLength;
-	}
-
-	@JSON
-	@Override
-	public String getSubscriptionType() {
-		if (_subscriptionType == null) {
-			return "";
-		}
-		else {
-			return _subscriptionType;
-		}
-	}
-
-	@Override
-	public void setSubscriptionType(String subscriptionType) {
-		if (_columnOriginalValues == Collections.EMPTY_MAP) {
-			_setColumnOriginalValues();
-		}
-
-		_subscriptionType = subscriptionType;
-	}
-
-	@JSON
-	@Override
-	public String getSubscriptionTypeSettings() {
-		if (_subscriptionTypeSettings == null) {
-			return "";
-		}
-		else {
-			return _subscriptionTypeSettings;
-		}
-	}
-
-	@Override
-	public void setSubscriptionTypeSettings(String subscriptionTypeSettings) {
-		if (_columnOriginalValues == Collections.EMPTY_MAP) {
-			_setColumnOriginalValues();
-		}
-
-		_subscriptionTypeSettings = subscriptionTypeSettings;
-	}
-
-	@JSON
-	@Override
-	public long getMaxSubscriptionCycles() {
-		return _maxSubscriptionCycles;
-	}
-
-	@Override
-	public void setMaxSubscriptionCycles(long maxSubscriptionCycles) {
-		if (_columnOriginalValues == Collections.EMPTY_MAP) {
-			_setColumnOriginalValues();
-		}
-
-		_maxSubscriptionCycles = maxSubscriptionCycles;
+		_deliveryMaxSubscriptionCycles = deliveryMaxSubscriptionCycles;
 	}
 
 	@JSON
@@ -1854,63 +1551,344 @@ public class CPDefinitionModelImpl
 
 	@JSON
 	@Override
-	public long getDeliveryMaxSubscriptionCycles() {
-		return _deliveryMaxSubscriptionCycles;
+	public double getDepth() {
+		return _depth;
 	}
 
 	@Override
-	public void setDeliveryMaxSubscriptionCycles(
-		long deliveryMaxSubscriptionCycles) {
-
+	public void setDepth(double depth) {
 		if (_columnOriginalValues == Collections.EMPTY_MAP) {
 			_setColumnOriginalValues();
 		}
 
-		_deliveryMaxSubscriptionCycles = deliveryMaxSubscriptionCycles;
+		_depth = depth;
 	}
 
 	@JSON
 	@Override
-	public boolean getAccountGroupFilterEnabled() {
-		return _accountGroupFilterEnabled;
-	}
-
-	@JSON
-	@Override
-	public boolean isAccountGroupFilterEnabled() {
-		return _accountGroupFilterEnabled;
+	public Date getDisplayDate() {
+		return _displayDate;
 	}
 
 	@Override
-	public void setAccountGroupFilterEnabled(
-		boolean accountGroupFilterEnabled) {
-
+	public void setDisplayDate(Date displayDate) {
 		if (_columnOriginalValues == Collections.EMPTY_MAP) {
 			_setColumnOriginalValues();
 		}
 
-		_accountGroupFilterEnabled = accountGroupFilterEnabled;
+		_displayDate = displayDate;
+	}
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
+	 *             #getColumnOriginalValue(String)}
+	 */
+	@Deprecated
+	public Date getOriginalDisplayDate() {
+		return getColumnOriginalValue("displayDate");
 	}
 
 	@JSON
 	@Override
-	public boolean getChannelFilterEnabled() {
-		return _channelFilterEnabled;
-	}
-
-	@JSON
-	@Override
-	public boolean isChannelFilterEnabled() {
-		return _channelFilterEnabled;
+	public Date getExpirationDate() {
+		return _expirationDate;
 	}
 
 	@Override
-	public void setChannelFilterEnabled(boolean channelFilterEnabled) {
+	public void setExpirationDate(Date expirationDate) {
 		if (_columnOriginalValues == Collections.EMPTY_MAP) {
 			_setColumnOriginalValues();
 		}
 
-		_channelFilterEnabled = channelFilterEnabled;
+		_expirationDate = expirationDate;
+	}
+
+	@JSON
+	@Override
+	public boolean getFreeShipping() {
+		return _freeShipping;
+	}
+
+	@JSON
+	@Override
+	public boolean isFreeShipping() {
+		return _freeShipping;
+	}
+
+	@Override
+	public void setFreeShipping(boolean freeShipping) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_freeShipping = freeShipping;
+	}
+
+	@JSON
+	@Override
+	public double getHeight() {
+		return _height;
+	}
+
+	@Override
+	public void setHeight(double height) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_height = height;
+	}
+
+	@JSON
+	@Override
+	public boolean getIgnoreSKUCombinations() {
+		return _ignoreSKUCombinations;
+	}
+
+	@JSON
+	@Override
+	public boolean isIgnoreSKUCombinations() {
+		return _ignoreSKUCombinations;
+	}
+
+	@Override
+	public void setIgnoreSKUCombinations(boolean ignoreSKUCombinations) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_ignoreSKUCombinations = ignoreSKUCombinations;
+	}
+
+	@JSON
+	@Override
+	public long getMaxSubscriptionCycles() {
+		return _maxSubscriptionCycles;
+	}
+
+	@Override
+	public void setMaxSubscriptionCycles(long maxSubscriptionCycles) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_maxSubscriptionCycles = maxSubscriptionCycles;
+	}
+
+	@JSON
+	@Override
+	public String getProductTypeName() {
+		if (_productTypeName == null) {
+			return "";
+		}
+		else {
+			return _productTypeName;
+		}
+	}
+
+	@Override
+	public void setProductTypeName(String productTypeName) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_productTypeName = productTypeName;
+	}
+
+	@JSON
+	@Override
+	public boolean getPublished() {
+		return _published;
+	}
+
+	@JSON
+	@Override
+	public boolean isPublished() {
+		return _published;
+	}
+
+	@Override
+	public void setPublished(boolean published) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_published = published;
+	}
+
+	@JSON
+	@Override
+	public boolean getShipSeparately() {
+		return _shipSeparately;
+	}
+
+	@JSON
+	@Override
+	public boolean isShipSeparately() {
+		return _shipSeparately;
+	}
+
+	@Override
+	public void setShipSeparately(boolean shipSeparately) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_shipSeparately = shipSeparately;
+	}
+
+	@JSON
+	@Override
+	public boolean getShippable() {
+		return _shippable;
+	}
+
+	@JSON
+	@Override
+	public boolean isShippable() {
+		return _shippable;
+	}
+
+	@Override
+	public void setShippable(boolean shippable) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_shippable = shippable;
+	}
+
+	@JSON
+	@Override
+	public double getShippingExtraPrice() {
+		return _shippingExtraPrice;
+	}
+
+	@Override
+	public void setShippingExtraPrice(double shippingExtraPrice) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_shippingExtraPrice = shippingExtraPrice;
+	}
+
+	@JSON
+	@Override
+	public boolean getSubscriptionEnabled() {
+		return _subscriptionEnabled;
+	}
+
+	@JSON
+	@Override
+	public boolean isSubscriptionEnabled() {
+		return _subscriptionEnabled;
+	}
+
+	@Override
+	public void setSubscriptionEnabled(boolean subscriptionEnabled) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_subscriptionEnabled = subscriptionEnabled;
+	}
+
+	@JSON
+	@Override
+	public int getSubscriptionLength() {
+		return _subscriptionLength;
+	}
+
+	@Override
+	public void setSubscriptionLength(int subscriptionLength) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_subscriptionLength = subscriptionLength;
+	}
+
+	@JSON
+	@Override
+	public String getSubscriptionType() {
+		if (_subscriptionType == null) {
+			return "";
+		}
+		else {
+			return _subscriptionType;
+		}
+	}
+
+	@Override
+	public void setSubscriptionType(String subscriptionType) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_subscriptionType = subscriptionType;
+	}
+
+	@JSON
+	@Override
+	public String getSubscriptionTypeSettings() {
+		if (_subscriptionTypeSettings == null) {
+			return "";
+		}
+		else {
+			return _subscriptionTypeSettings;
+		}
+	}
+
+	@Override
+	public void setSubscriptionTypeSettings(String subscriptionTypeSettings) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_subscriptionTypeSettings = subscriptionTypeSettings;
+	}
+
+	@JSON
+	@Override
+	public boolean getTaxExempt() {
+		return _taxExempt;
+	}
+
+	@JSON
+	@Override
+	public boolean isTaxExempt() {
+		return _taxExempt;
+	}
+
+	@Override
+	public void setTaxExempt(boolean taxExempt) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_taxExempt = taxExempt;
+	}
+
+	@JSON
+	@Override
+	public boolean getTelcoOrElectronics() {
+		return _telcoOrElectronics;
+	}
+
+	@JSON
+	@Override
+	public boolean isTelcoOrElectronics() {
+		return _telcoOrElectronics;
+	}
+
+	@Override
+	public void setTelcoOrElectronics(boolean telcoOrElectronics) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_telcoOrElectronics = telcoOrElectronics;
 	}
 
 	@JSON
@@ -1936,6 +1914,51 @@ public class CPDefinitionModelImpl
 	public int getOriginalVersion() {
 		return GetterUtil.getInteger(
 			this.<Integer>getColumnOriginalValue("version"));
+	}
+
+	@JSON
+	@Override
+	public double getWeight() {
+		return _weight;
+	}
+
+	@Override
+	public void setWeight(double weight) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_weight = weight;
+	}
+
+	@JSON
+	@Override
+	public double getWidth() {
+		return _width;
+	}
+
+	@Override
+	public void setWidth(double width) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_width = width;
+	}
+
+	@JSON
+	@Override
+	public Date getLastPublishDate() {
+		return _lastPublishDate;
+	}
+
+	@Override
+	public void setLastPublishDate(Date lastPublishDate) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_lastPublishDate = lastPublishDate;
 	}
 
 	@JSON
@@ -2182,32 +2205,17 @@ public class CPDefinitionModelImpl
 		cpDefinitionImpl.setUserName(getUserName());
 		cpDefinitionImpl.setCreateDate(getCreateDate());
 		cpDefinitionImpl.setModifiedDate(getModifiedDate());
+		cpDefinitionImpl.setCProductExternalReferenceCode(
+			getCProductExternalReferenceCode());
 		cpDefinitionImpl.setCProductId(getCProductId());
 		cpDefinitionImpl.setCPTaxCategoryId(getCPTaxCategoryId());
-		cpDefinitionImpl.setProductTypeName(getProductTypeName());
+		cpDefinitionImpl.setAccountGroupFilterEnabled(
+			isAccountGroupFilterEnabled());
 		cpDefinitionImpl.setAvailableIndividually(isAvailableIndividually());
-		cpDefinitionImpl.setIgnoreSKUCombinations(isIgnoreSKUCombinations());
-		cpDefinitionImpl.setShippable(isShippable());
-		cpDefinitionImpl.setFreeShipping(isFreeShipping());
-		cpDefinitionImpl.setShipSeparately(isShipSeparately());
-		cpDefinitionImpl.setShippingExtraPrice(getShippingExtraPrice());
-		cpDefinitionImpl.setWidth(getWidth());
-		cpDefinitionImpl.setHeight(getHeight());
-		cpDefinitionImpl.setDepth(getDepth());
-		cpDefinitionImpl.setWeight(getWeight());
-		cpDefinitionImpl.setTaxExempt(isTaxExempt());
-		cpDefinitionImpl.setTelcoOrElectronics(isTelcoOrElectronics());
+		cpDefinitionImpl.setChannelFilterEnabled(isChannelFilterEnabled());
 		cpDefinitionImpl.setDDMStructureKey(getDDMStructureKey());
-		cpDefinitionImpl.setPublished(isPublished());
-		cpDefinitionImpl.setDisplayDate(getDisplayDate());
-		cpDefinitionImpl.setExpirationDate(getExpirationDate());
-		cpDefinitionImpl.setLastPublishDate(getLastPublishDate());
-		cpDefinitionImpl.setSubscriptionEnabled(isSubscriptionEnabled());
-		cpDefinitionImpl.setSubscriptionLength(getSubscriptionLength());
-		cpDefinitionImpl.setSubscriptionType(getSubscriptionType());
-		cpDefinitionImpl.setSubscriptionTypeSettings(
-			getSubscriptionTypeSettings());
-		cpDefinitionImpl.setMaxSubscriptionCycles(getMaxSubscriptionCycles());
+		cpDefinitionImpl.setDeliveryMaxSubscriptionCycles(
+			getDeliveryMaxSubscriptionCycles());
 		cpDefinitionImpl.setDeliverySubscriptionEnabled(
 			isDeliverySubscriptionEnabled());
 		cpDefinitionImpl.setDeliverySubscriptionLength(
@@ -2216,12 +2224,29 @@ public class CPDefinitionModelImpl
 			getDeliverySubscriptionType());
 		cpDefinitionImpl.setDeliverySubscriptionTypeSettings(
 			getDeliverySubscriptionTypeSettings());
-		cpDefinitionImpl.setDeliveryMaxSubscriptionCycles(
-			getDeliveryMaxSubscriptionCycles());
-		cpDefinitionImpl.setAccountGroupFilterEnabled(
-			isAccountGroupFilterEnabled());
-		cpDefinitionImpl.setChannelFilterEnabled(isChannelFilterEnabled());
+		cpDefinitionImpl.setDepth(getDepth());
+		cpDefinitionImpl.setDisplayDate(getDisplayDate());
+		cpDefinitionImpl.setExpirationDate(getExpirationDate());
+		cpDefinitionImpl.setFreeShipping(isFreeShipping());
+		cpDefinitionImpl.setHeight(getHeight());
+		cpDefinitionImpl.setIgnoreSKUCombinations(isIgnoreSKUCombinations());
+		cpDefinitionImpl.setMaxSubscriptionCycles(getMaxSubscriptionCycles());
+		cpDefinitionImpl.setProductTypeName(getProductTypeName());
+		cpDefinitionImpl.setPublished(isPublished());
+		cpDefinitionImpl.setShipSeparately(isShipSeparately());
+		cpDefinitionImpl.setShippable(isShippable());
+		cpDefinitionImpl.setShippingExtraPrice(getShippingExtraPrice());
+		cpDefinitionImpl.setSubscriptionEnabled(isSubscriptionEnabled());
+		cpDefinitionImpl.setSubscriptionLength(getSubscriptionLength());
+		cpDefinitionImpl.setSubscriptionType(getSubscriptionType());
+		cpDefinitionImpl.setSubscriptionTypeSettings(
+			getSubscriptionTypeSettings());
+		cpDefinitionImpl.setTaxExempt(isTaxExempt());
+		cpDefinitionImpl.setTelcoOrElectronics(isTelcoOrElectronics());
 		cpDefinitionImpl.setVersion(getVersion());
+		cpDefinitionImpl.setWeight(getWeight());
+		cpDefinitionImpl.setWidth(getWidth());
+		cpDefinitionImpl.setLastPublishDate(getLastPublishDate());
 		cpDefinitionImpl.setStatus(getStatus());
 		cpDefinitionImpl.setStatusByUserId(getStatusByUserId());
 		cpDefinitionImpl.setStatusByUserName(getStatusByUserName());
@@ -2256,54 +2281,23 @@ public class CPDefinitionModelImpl
 			this.<Date>getColumnOriginalValue("createDate"));
 		cpDefinitionImpl.setModifiedDate(
 			this.<Date>getColumnOriginalValue("modifiedDate"));
+		cpDefinitionImpl.setCProductExternalReferenceCode(
+			this.<String>getColumnOriginalValue(
+				"CProductExternalReferenceCode"));
 		cpDefinitionImpl.setCProductId(
 			this.<Long>getColumnOriginalValue("CProductId"));
 		cpDefinitionImpl.setCPTaxCategoryId(
 			this.<Long>getColumnOriginalValue("CPTaxCategoryId"));
-		cpDefinitionImpl.setProductTypeName(
-			this.<String>getColumnOriginalValue("productTypeName"));
+		cpDefinitionImpl.setAccountGroupFilterEnabled(
+			this.<Boolean>getColumnOriginalValue("accountGroupFilterEnabled"));
 		cpDefinitionImpl.setAvailableIndividually(
 			this.<Boolean>getColumnOriginalValue("availableIndividually"));
-		cpDefinitionImpl.setIgnoreSKUCombinations(
-			this.<Boolean>getColumnOriginalValue("ignoreSKUCombinations"));
-		cpDefinitionImpl.setShippable(
-			this.<Boolean>getColumnOriginalValue("shippable"));
-		cpDefinitionImpl.setFreeShipping(
-			this.<Boolean>getColumnOriginalValue("freeShipping"));
-		cpDefinitionImpl.setShipSeparately(
-			this.<Boolean>getColumnOriginalValue("shipSeparately"));
-		cpDefinitionImpl.setShippingExtraPrice(
-			this.<Double>getColumnOriginalValue("shippingExtraPrice"));
-		cpDefinitionImpl.setWidth(this.<Double>getColumnOriginalValue("width"));
-		cpDefinitionImpl.setHeight(
-			this.<Double>getColumnOriginalValue("height"));
-		cpDefinitionImpl.setDepth(this.<Double>getColumnOriginalValue("depth"));
-		cpDefinitionImpl.setWeight(
-			this.<Double>getColumnOriginalValue("weight"));
-		cpDefinitionImpl.setTaxExempt(
-			this.<Boolean>getColumnOriginalValue("taxExempt"));
-		cpDefinitionImpl.setTelcoOrElectronics(
-			this.<Boolean>getColumnOriginalValue("telcoOrElectronics"));
+		cpDefinitionImpl.setChannelFilterEnabled(
+			this.<Boolean>getColumnOriginalValue("channelFilterEnabled"));
 		cpDefinitionImpl.setDDMStructureKey(
 			this.<String>getColumnOriginalValue("DDMStructureKey"));
-		cpDefinitionImpl.setPublished(
-			this.<Boolean>getColumnOriginalValue("published"));
-		cpDefinitionImpl.setDisplayDate(
-			this.<Date>getColumnOriginalValue("displayDate"));
-		cpDefinitionImpl.setExpirationDate(
-			this.<Date>getColumnOriginalValue("expirationDate"));
-		cpDefinitionImpl.setLastPublishDate(
-			this.<Date>getColumnOriginalValue("lastPublishDate"));
-		cpDefinitionImpl.setSubscriptionEnabled(
-			this.<Boolean>getColumnOriginalValue("subscriptionEnabled"));
-		cpDefinitionImpl.setSubscriptionLength(
-			this.<Integer>getColumnOriginalValue("subscriptionLength"));
-		cpDefinitionImpl.setSubscriptionType(
-			this.<String>getColumnOriginalValue("subscriptionType"));
-		cpDefinitionImpl.setSubscriptionTypeSettings(
-			this.<String>getColumnOriginalValue("subscriptionTypeSettings"));
-		cpDefinitionImpl.setMaxSubscriptionCycles(
-			this.<Long>getColumnOriginalValue("maxSubscriptionCycles"));
+		cpDefinitionImpl.setDeliveryMaxSubscriptionCycles(
+			this.<Long>getColumnOriginalValue("deliveryMaxSubscriptionCycles"));
 		cpDefinitionImpl.setDeliverySubscriptionEnabled(
 			this.<Boolean>getColumnOriginalValue(
 				"deliverySubscriptionEnabled"));
@@ -2313,14 +2307,48 @@ public class CPDefinitionModelImpl
 			this.<String>getColumnOriginalValue("deliverySubscriptionType"));
 		cpDefinitionImpl.setDeliverySubscriptionTypeSettings(
 			this.<String>getColumnOriginalValue("deliverySubTypeSettings"));
-		cpDefinitionImpl.setDeliveryMaxSubscriptionCycles(
-			this.<Long>getColumnOriginalValue("deliveryMaxSubscriptionCycles"));
-		cpDefinitionImpl.setAccountGroupFilterEnabled(
-			this.<Boolean>getColumnOriginalValue("accountGroupFilterEnabled"));
-		cpDefinitionImpl.setChannelFilterEnabled(
-			this.<Boolean>getColumnOriginalValue("channelFilterEnabled"));
+		cpDefinitionImpl.setDepth(this.<Double>getColumnOriginalValue("depth"));
+		cpDefinitionImpl.setDisplayDate(
+			this.<Date>getColumnOriginalValue("displayDate"));
+		cpDefinitionImpl.setExpirationDate(
+			this.<Date>getColumnOriginalValue("expirationDate"));
+		cpDefinitionImpl.setFreeShipping(
+			this.<Boolean>getColumnOriginalValue("freeShipping"));
+		cpDefinitionImpl.setHeight(
+			this.<Double>getColumnOriginalValue("height"));
+		cpDefinitionImpl.setIgnoreSKUCombinations(
+			this.<Boolean>getColumnOriginalValue("ignoreSKUCombinations"));
+		cpDefinitionImpl.setMaxSubscriptionCycles(
+			this.<Long>getColumnOriginalValue("maxSubscriptionCycles"));
+		cpDefinitionImpl.setProductTypeName(
+			this.<String>getColumnOriginalValue("productTypeName"));
+		cpDefinitionImpl.setPublished(
+			this.<Boolean>getColumnOriginalValue("published"));
+		cpDefinitionImpl.setShipSeparately(
+			this.<Boolean>getColumnOriginalValue("shipSeparately"));
+		cpDefinitionImpl.setShippable(
+			this.<Boolean>getColumnOriginalValue("shippable"));
+		cpDefinitionImpl.setShippingExtraPrice(
+			this.<Double>getColumnOriginalValue("shippingExtraPrice"));
+		cpDefinitionImpl.setSubscriptionEnabled(
+			this.<Boolean>getColumnOriginalValue("subscriptionEnabled"));
+		cpDefinitionImpl.setSubscriptionLength(
+			this.<Integer>getColumnOriginalValue("subscriptionLength"));
+		cpDefinitionImpl.setSubscriptionType(
+			this.<String>getColumnOriginalValue("subscriptionType"));
+		cpDefinitionImpl.setSubscriptionTypeSettings(
+			this.<String>getColumnOriginalValue("subscriptionTypeSettings"));
+		cpDefinitionImpl.setTaxExempt(
+			this.<Boolean>getColumnOriginalValue("taxExempt"));
+		cpDefinitionImpl.setTelcoOrElectronics(
+			this.<Boolean>getColumnOriginalValue("telcoOrElectronics"));
 		cpDefinitionImpl.setVersion(
 			this.<Integer>getColumnOriginalValue("version"));
+		cpDefinitionImpl.setWeight(
+			this.<Double>getColumnOriginalValue("weight"));
+		cpDefinitionImpl.setWidth(this.<Double>getColumnOriginalValue("width"));
+		cpDefinitionImpl.setLastPublishDate(
+			this.<Date>getColumnOriginalValue("lastPublishDate"));
 		cpDefinitionImpl.setStatus(
 			this.<Integer>getColumnOriginalValue("status"));
 		cpDefinitionImpl.setStatusByUserId(
@@ -2471,43 +2499,29 @@ public class CPDefinitionModelImpl
 			cpDefinitionCacheModel.modifiedDate = Long.MIN_VALUE;
 		}
 
+		cpDefinitionCacheModel.CProductExternalReferenceCode =
+			getCProductExternalReferenceCode();
+
+		String CProductExternalReferenceCode =
+			cpDefinitionCacheModel.CProductExternalReferenceCode;
+
+		if ((CProductExternalReferenceCode != null) &&
+			(CProductExternalReferenceCode.length() == 0)) {
+
+			cpDefinitionCacheModel.CProductExternalReferenceCode = null;
+		}
+
 		cpDefinitionCacheModel.CProductId = getCProductId();
 
 		cpDefinitionCacheModel.CPTaxCategoryId = getCPTaxCategoryId();
 
-		cpDefinitionCacheModel.productTypeName = getProductTypeName();
-
-		String productTypeName = cpDefinitionCacheModel.productTypeName;
-
-		if ((productTypeName != null) && (productTypeName.length() == 0)) {
-			cpDefinitionCacheModel.productTypeName = null;
-		}
+		cpDefinitionCacheModel.accountGroupFilterEnabled =
+			isAccountGroupFilterEnabled();
 
 		cpDefinitionCacheModel.availableIndividually =
 			isAvailableIndividually();
 
-		cpDefinitionCacheModel.ignoreSKUCombinations =
-			isIgnoreSKUCombinations();
-
-		cpDefinitionCacheModel.shippable = isShippable();
-
-		cpDefinitionCacheModel.freeShipping = isFreeShipping();
-
-		cpDefinitionCacheModel.shipSeparately = isShipSeparately();
-
-		cpDefinitionCacheModel.shippingExtraPrice = getShippingExtraPrice();
-
-		cpDefinitionCacheModel.width = getWidth();
-
-		cpDefinitionCacheModel.height = getHeight();
-
-		cpDefinitionCacheModel.depth = getDepth();
-
-		cpDefinitionCacheModel.weight = getWeight();
-
-		cpDefinitionCacheModel.taxExempt = isTaxExempt();
-
-		cpDefinitionCacheModel.telcoOrElectronics = isTelcoOrElectronics();
+		cpDefinitionCacheModel.channelFilterEnabled = isChannelFilterEnabled();
 
 		cpDefinitionCacheModel.DDMStructureKey = getDDMStructureKey();
 
@@ -2517,61 +2531,8 @@ public class CPDefinitionModelImpl
 			cpDefinitionCacheModel.DDMStructureKey = null;
 		}
 
-		cpDefinitionCacheModel.published = isPublished();
-
-		Date displayDate = getDisplayDate();
-
-		if (displayDate != null) {
-			cpDefinitionCacheModel.displayDate = displayDate.getTime();
-		}
-		else {
-			cpDefinitionCacheModel.displayDate = Long.MIN_VALUE;
-		}
-
-		Date expirationDate = getExpirationDate();
-
-		if (expirationDate != null) {
-			cpDefinitionCacheModel.expirationDate = expirationDate.getTime();
-		}
-		else {
-			cpDefinitionCacheModel.expirationDate = Long.MIN_VALUE;
-		}
-
-		Date lastPublishDate = getLastPublishDate();
-
-		if (lastPublishDate != null) {
-			cpDefinitionCacheModel.lastPublishDate = lastPublishDate.getTime();
-		}
-		else {
-			cpDefinitionCacheModel.lastPublishDate = Long.MIN_VALUE;
-		}
-
-		cpDefinitionCacheModel.subscriptionEnabled = isSubscriptionEnabled();
-
-		cpDefinitionCacheModel.subscriptionLength = getSubscriptionLength();
-
-		cpDefinitionCacheModel.subscriptionType = getSubscriptionType();
-
-		String subscriptionType = cpDefinitionCacheModel.subscriptionType;
-
-		if ((subscriptionType != null) && (subscriptionType.length() == 0)) {
-			cpDefinitionCacheModel.subscriptionType = null;
-		}
-
-		cpDefinitionCacheModel.subscriptionTypeSettings =
-			getSubscriptionTypeSettings();
-
-		String subscriptionTypeSettings =
-			cpDefinitionCacheModel.subscriptionTypeSettings;
-
-		if ((subscriptionTypeSettings != null) &&
-			(subscriptionTypeSettings.length() == 0)) {
-
-			cpDefinitionCacheModel.subscriptionTypeSettings = null;
-		}
-
-		cpDefinitionCacheModel.maxSubscriptionCycles =
-			getMaxSubscriptionCycles();
+		cpDefinitionCacheModel.deliveryMaxSubscriptionCycles =
+			getDeliveryMaxSubscriptionCycles();
 
 		cpDefinitionCacheModel.deliverySubscriptionEnabled =
 			isDeliverySubscriptionEnabled();
@@ -2603,15 +2564,94 @@ public class CPDefinitionModelImpl
 			cpDefinitionCacheModel.deliverySubscriptionTypeSettings = null;
 		}
 
-		cpDefinitionCacheModel.deliveryMaxSubscriptionCycles =
-			getDeliveryMaxSubscriptionCycles();
+		cpDefinitionCacheModel.depth = getDepth();
 
-		cpDefinitionCacheModel.accountGroupFilterEnabled =
-			isAccountGroupFilterEnabled();
+		Date displayDate = getDisplayDate();
 
-		cpDefinitionCacheModel.channelFilterEnabled = isChannelFilterEnabled();
+		if (displayDate != null) {
+			cpDefinitionCacheModel.displayDate = displayDate.getTime();
+		}
+		else {
+			cpDefinitionCacheModel.displayDate = Long.MIN_VALUE;
+		}
+
+		Date expirationDate = getExpirationDate();
+
+		if (expirationDate != null) {
+			cpDefinitionCacheModel.expirationDate = expirationDate.getTime();
+		}
+		else {
+			cpDefinitionCacheModel.expirationDate = Long.MIN_VALUE;
+		}
+
+		cpDefinitionCacheModel.freeShipping = isFreeShipping();
+
+		cpDefinitionCacheModel.height = getHeight();
+
+		cpDefinitionCacheModel.ignoreSKUCombinations =
+			isIgnoreSKUCombinations();
+
+		cpDefinitionCacheModel.maxSubscriptionCycles =
+			getMaxSubscriptionCycles();
+
+		cpDefinitionCacheModel.productTypeName = getProductTypeName();
+
+		String productTypeName = cpDefinitionCacheModel.productTypeName;
+
+		if ((productTypeName != null) && (productTypeName.length() == 0)) {
+			cpDefinitionCacheModel.productTypeName = null;
+		}
+
+		cpDefinitionCacheModel.published = isPublished();
+
+		cpDefinitionCacheModel.shipSeparately = isShipSeparately();
+
+		cpDefinitionCacheModel.shippable = isShippable();
+
+		cpDefinitionCacheModel.shippingExtraPrice = getShippingExtraPrice();
+
+		cpDefinitionCacheModel.subscriptionEnabled = isSubscriptionEnabled();
+
+		cpDefinitionCacheModel.subscriptionLength = getSubscriptionLength();
+
+		cpDefinitionCacheModel.subscriptionType = getSubscriptionType();
+
+		String subscriptionType = cpDefinitionCacheModel.subscriptionType;
+
+		if ((subscriptionType != null) && (subscriptionType.length() == 0)) {
+			cpDefinitionCacheModel.subscriptionType = null;
+		}
+
+		cpDefinitionCacheModel.subscriptionTypeSettings =
+			getSubscriptionTypeSettings();
+
+		String subscriptionTypeSettings =
+			cpDefinitionCacheModel.subscriptionTypeSettings;
+
+		if ((subscriptionTypeSettings != null) &&
+			(subscriptionTypeSettings.length() == 0)) {
+
+			cpDefinitionCacheModel.subscriptionTypeSettings = null;
+		}
+
+		cpDefinitionCacheModel.taxExempt = isTaxExempt();
+
+		cpDefinitionCacheModel.telcoOrElectronics = isTelcoOrElectronics();
 
 		cpDefinitionCacheModel.version = getVersion();
+
+		cpDefinitionCacheModel.weight = getWeight();
+
+		cpDefinitionCacheModel.width = getWidth();
+
+		Date lastPublishDate = getLastPublishDate();
+
+		if (lastPublishDate != null) {
+			cpDefinitionCacheModel.lastPublishDate = lastPublishDate.getTime();
+		}
+		else {
+			cpDefinitionCacheModel.lastPublishDate = Long.MIN_VALUE;
+		}
 
 		cpDefinitionCacheModel.status = getStatus();
 
@@ -2707,39 +2747,40 @@ public class CPDefinitionModelImpl
 	private Date _createDate;
 	private Date _modifiedDate;
 	private boolean _setModifiedDate;
+	private String _CProductExternalReferenceCode;
 	private long _CProductId;
 	private long _CPTaxCategoryId;
-	private String _productTypeName;
+	private boolean _accountGroupFilterEnabled;
 	private boolean _availableIndividually;
-	private boolean _ignoreSKUCombinations;
-	private boolean _shippable;
-	private boolean _freeShipping;
-	private boolean _shipSeparately;
-	private double _shippingExtraPrice;
-	private double _width;
-	private double _height;
-	private double _depth;
-	private double _weight;
-	private boolean _taxExempt;
-	private boolean _telcoOrElectronics;
+	private boolean _channelFilterEnabled;
 	private String _DDMStructureKey;
-	private boolean _published;
-	private Date _displayDate;
-	private Date _expirationDate;
-	private Date _lastPublishDate;
-	private boolean _subscriptionEnabled;
-	private int _subscriptionLength;
-	private String _subscriptionType;
-	private String _subscriptionTypeSettings;
-	private long _maxSubscriptionCycles;
+	private long _deliveryMaxSubscriptionCycles;
 	private boolean _deliverySubscriptionEnabled;
 	private int _deliverySubscriptionLength;
 	private String _deliverySubscriptionType;
 	private String _deliverySubscriptionTypeSettings;
-	private long _deliveryMaxSubscriptionCycles;
-	private boolean _accountGroupFilterEnabled;
-	private boolean _channelFilterEnabled;
+	private double _depth;
+	private Date _displayDate;
+	private Date _expirationDate;
+	private boolean _freeShipping;
+	private double _height;
+	private boolean _ignoreSKUCombinations;
+	private long _maxSubscriptionCycles;
+	private String _productTypeName;
+	private boolean _published;
+	private boolean _shipSeparately;
+	private boolean _shippable;
+	private double _shippingExtraPrice;
+	private boolean _subscriptionEnabled;
+	private int _subscriptionLength;
+	private String _subscriptionType;
+	private String _subscriptionTypeSettings;
+	private boolean _taxExempt;
+	private boolean _telcoOrElectronics;
 	private int _version;
+	private double _weight;
+	private double _width;
+	private Date _lastPublishDate;
 	private int _status;
 	private long _statusByUserId;
 	private String _statusByUserName;
@@ -2786,35 +2827,19 @@ public class CPDefinitionModelImpl
 		_columnOriginalValues.put("userName", _userName);
 		_columnOriginalValues.put("createDate", _createDate);
 		_columnOriginalValues.put("modifiedDate", _modifiedDate);
+		_columnOriginalValues.put(
+			"CProductExternalReferenceCode", _CProductExternalReferenceCode);
 		_columnOriginalValues.put("CProductId", _CProductId);
 		_columnOriginalValues.put("CPTaxCategoryId", _CPTaxCategoryId);
-		_columnOriginalValues.put("productTypeName", _productTypeName);
+		_columnOriginalValues.put(
+			"accountGroupFilterEnabled", _accountGroupFilterEnabled);
 		_columnOriginalValues.put(
 			"availableIndividually", _availableIndividually);
 		_columnOriginalValues.put(
-			"ignoreSKUCombinations", _ignoreSKUCombinations);
-		_columnOriginalValues.put("shippable", _shippable);
-		_columnOriginalValues.put("freeShipping", _freeShipping);
-		_columnOriginalValues.put("shipSeparately", _shipSeparately);
-		_columnOriginalValues.put("shippingExtraPrice", _shippingExtraPrice);
-		_columnOriginalValues.put("width", _width);
-		_columnOriginalValues.put("height", _height);
-		_columnOriginalValues.put("depth", _depth);
-		_columnOriginalValues.put("weight", _weight);
-		_columnOriginalValues.put("taxExempt", _taxExempt);
-		_columnOriginalValues.put("telcoOrElectronics", _telcoOrElectronics);
+			"channelFilterEnabled", _channelFilterEnabled);
 		_columnOriginalValues.put("DDMStructureKey", _DDMStructureKey);
-		_columnOriginalValues.put("published", _published);
-		_columnOriginalValues.put("displayDate", _displayDate);
-		_columnOriginalValues.put("expirationDate", _expirationDate);
-		_columnOriginalValues.put("lastPublishDate", _lastPublishDate);
-		_columnOriginalValues.put("subscriptionEnabled", _subscriptionEnabled);
-		_columnOriginalValues.put("subscriptionLength", _subscriptionLength);
-		_columnOriginalValues.put("subscriptionType", _subscriptionType);
 		_columnOriginalValues.put(
-			"subscriptionTypeSettings", _subscriptionTypeSettings);
-		_columnOriginalValues.put(
-			"maxSubscriptionCycles", _maxSubscriptionCycles);
+			"deliveryMaxSubscriptionCycles", _deliveryMaxSubscriptionCycles);
 		_columnOriginalValues.put(
 			"deliverySubscriptionEnabled", _deliverySubscriptionEnabled);
 		_columnOriginalValues.put(
@@ -2823,13 +2848,31 @@ public class CPDefinitionModelImpl
 			"deliverySubscriptionType", _deliverySubscriptionType);
 		_columnOriginalValues.put(
 			"deliverySubTypeSettings", _deliverySubscriptionTypeSettings);
+		_columnOriginalValues.put("depth", _depth);
+		_columnOriginalValues.put("displayDate", _displayDate);
+		_columnOriginalValues.put("expirationDate", _expirationDate);
+		_columnOriginalValues.put("freeShipping", _freeShipping);
+		_columnOriginalValues.put("height", _height);
 		_columnOriginalValues.put(
-			"deliveryMaxSubscriptionCycles", _deliveryMaxSubscriptionCycles);
+			"ignoreSKUCombinations", _ignoreSKUCombinations);
 		_columnOriginalValues.put(
-			"accountGroupFilterEnabled", _accountGroupFilterEnabled);
+			"maxSubscriptionCycles", _maxSubscriptionCycles);
+		_columnOriginalValues.put("productTypeName", _productTypeName);
+		_columnOriginalValues.put("published", _published);
+		_columnOriginalValues.put("shipSeparately", _shipSeparately);
+		_columnOriginalValues.put("shippable", _shippable);
+		_columnOriginalValues.put("shippingExtraPrice", _shippingExtraPrice);
+		_columnOriginalValues.put("subscriptionEnabled", _subscriptionEnabled);
+		_columnOriginalValues.put("subscriptionLength", _subscriptionLength);
+		_columnOriginalValues.put("subscriptionType", _subscriptionType);
 		_columnOriginalValues.put(
-			"channelFilterEnabled", _channelFilterEnabled);
+			"subscriptionTypeSettings", _subscriptionTypeSettings);
+		_columnOriginalValues.put("taxExempt", _taxExempt);
+		_columnOriginalValues.put("telcoOrElectronics", _telcoOrElectronics);
 		_columnOriginalValues.put("version", _version);
+		_columnOriginalValues.put("weight", _weight);
+		_columnOriginalValues.put("width", _width);
+		_columnOriginalValues.put("lastPublishDate", _lastPublishDate);
 		_columnOriginalValues.put("status", _status);
 		_columnOriginalValues.put("statusByUserId", _statusByUserId);
 		_columnOriginalValues.put("statusByUserName", _statusByUserName);
@@ -2881,79 +2924,81 @@ public class CPDefinitionModelImpl
 
 		columnBitmasks.put("modifiedDate", 1024L);
 
-		columnBitmasks.put("CProductId", 2048L);
+		columnBitmasks.put("CProductExternalReferenceCode", 2048L);
 
-		columnBitmasks.put("CPTaxCategoryId", 4096L);
+		columnBitmasks.put("CProductId", 4096L);
 
-		columnBitmasks.put("productTypeName", 8192L);
+		columnBitmasks.put("CPTaxCategoryId", 8192L);
 
-		columnBitmasks.put("availableIndividually", 16384L);
+		columnBitmasks.put("accountGroupFilterEnabled", 16384L);
 
-		columnBitmasks.put("ignoreSKUCombinations", 32768L);
+		columnBitmasks.put("availableIndividually", 32768L);
 
-		columnBitmasks.put("shippable", 65536L);
+		columnBitmasks.put("channelFilterEnabled", 65536L);
 
-		columnBitmasks.put("freeShipping", 131072L);
+		columnBitmasks.put("DDMStructureKey", 131072L);
 
-		columnBitmasks.put("shipSeparately", 262144L);
+		columnBitmasks.put("deliveryMaxSubscriptionCycles", 262144L);
 
-		columnBitmasks.put("shippingExtraPrice", 524288L);
+		columnBitmasks.put("deliverySubscriptionEnabled", 524288L);
 
-		columnBitmasks.put("width", 1048576L);
+		columnBitmasks.put("deliverySubscriptionLength", 1048576L);
 
-		columnBitmasks.put("height", 2097152L);
+		columnBitmasks.put("deliverySubscriptionType", 2097152L);
 
-		columnBitmasks.put("depth", 4194304L);
+		columnBitmasks.put("deliverySubTypeSettings", 4194304L);
 
-		columnBitmasks.put("weight", 8388608L);
+		columnBitmasks.put("depth", 8388608L);
 
-		columnBitmasks.put("taxExempt", 16777216L);
+		columnBitmasks.put("displayDate", 16777216L);
 
-		columnBitmasks.put("telcoOrElectronics", 33554432L);
+		columnBitmasks.put("expirationDate", 33554432L);
 
-		columnBitmasks.put("DDMStructureKey", 67108864L);
+		columnBitmasks.put("freeShipping", 67108864L);
 
-		columnBitmasks.put("published", 134217728L);
+		columnBitmasks.put("height", 134217728L);
 
-		columnBitmasks.put("displayDate", 268435456L);
+		columnBitmasks.put("ignoreSKUCombinations", 268435456L);
 
-		columnBitmasks.put("expirationDate", 536870912L);
+		columnBitmasks.put("maxSubscriptionCycles", 536870912L);
 
-		columnBitmasks.put("lastPublishDate", 1073741824L);
+		columnBitmasks.put("productTypeName", 1073741824L);
 
-		columnBitmasks.put("subscriptionEnabled", 2147483648L);
+		columnBitmasks.put("published", 2147483648L);
 
-		columnBitmasks.put("subscriptionLength", 4294967296L);
+		columnBitmasks.put("shipSeparately", 4294967296L);
 
-		columnBitmasks.put("subscriptionType", 8589934592L);
+		columnBitmasks.put("shippable", 8589934592L);
 
-		columnBitmasks.put("subscriptionTypeSettings", 17179869184L);
+		columnBitmasks.put("shippingExtraPrice", 17179869184L);
 
-		columnBitmasks.put("maxSubscriptionCycles", 34359738368L);
+		columnBitmasks.put("subscriptionEnabled", 34359738368L);
 
-		columnBitmasks.put("deliverySubscriptionEnabled", 68719476736L);
+		columnBitmasks.put("subscriptionLength", 68719476736L);
 
-		columnBitmasks.put("deliverySubscriptionLength", 137438953472L);
+		columnBitmasks.put("subscriptionType", 137438953472L);
 
-		columnBitmasks.put("deliverySubscriptionType", 274877906944L);
+		columnBitmasks.put("subscriptionTypeSettings", 274877906944L);
 
-		columnBitmasks.put("deliverySubTypeSettings", 549755813888L);
+		columnBitmasks.put("taxExempt", 549755813888L);
 
-		columnBitmasks.put("deliveryMaxSubscriptionCycles", 1099511627776L);
+		columnBitmasks.put("telcoOrElectronics", 1099511627776L);
 
-		columnBitmasks.put("accountGroupFilterEnabled", 2199023255552L);
+		columnBitmasks.put("version", 2199023255552L);
 
-		columnBitmasks.put("channelFilterEnabled", 4398046511104L);
+		columnBitmasks.put("weight", 4398046511104L);
 
-		columnBitmasks.put("version", 8796093022208L);
+		columnBitmasks.put("width", 8796093022208L);
 
-		columnBitmasks.put("status", 17592186044416L);
+		columnBitmasks.put("lastPublishDate", 17592186044416L);
 
-		columnBitmasks.put("statusByUserId", 35184372088832L);
+		columnBitmasks.put("status", 35184372088832L);
 
-		columnBitmasks.put("statusByUserName", 70368744177664L);
+		columnBitmasks.put("statusByUserId", 70368744177664L);
 
-		columnBitmasks.put("statusDate", 140737488355328L);
+		columnBitmasks.put("statusByUserName", 140737488355328L);
+
+		columnBitmasks.put("statusDate", 281474976710656L);
 
 		_columnBitmasks = Collections.unmodifiableMap(columnBitmasks);
 	}
@@ -2962,3 +3007,4 @@ public class CPDefinitionModelImpl
 	private CPDefinition _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1088897790

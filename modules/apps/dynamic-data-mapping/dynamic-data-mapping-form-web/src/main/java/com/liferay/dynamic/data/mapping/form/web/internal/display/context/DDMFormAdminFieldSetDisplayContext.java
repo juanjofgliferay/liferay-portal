@@ -26,6 +26,7 @@ import com.liferay.dynamic.data.mapping.model.DDMFormLayout;
 import com.liferay.dynamic.data.mapping.model.DDMStructure;
 import com.liferay.dynamic.data.mapping.service.DDMFormInstanceLocalService;
 import com.liferay.dynamic.data.mapping.service.DDMFormInstanceRecordLocalService;
+import com.liferay.dynamic.data.mapping.service.DDMFormInstanceRecordService;
 import com.liferay.dynamic.data.mapping.service.DDMFormInstanceService;
 import com.liferay.dynamic.data.mapping.service.DDMFormInstanceVersionLocalService;
 import com.liferay.dynamic.data.mapping.service.DDMStructureLocalService;
@@ -64,16 +65,16 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.jsp.PageContext;
+
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-
-import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.jsp.PageContext;
 
 /**
  * @author Leonardo Barros
@@ -90,6 +91,7 @@ public class DDMFormAdminFieldSetDisplayContext
 		DDMFormFieldTypesSerializer ddmFormFieldTypesSerializer,
 		DDMFormInstanceLocalService ddmFormInstanceLocalService,
 		DDMFormInstanceRecordLocalService ddmFormInstanceRecordLocalService,
+		DDMFormInstanceRecordService ddmFormInstanceRecordService,
 		DDMFormInstanceRecordWriterRegistry ddmFormInstanceRecordWriterRegistry,
 		DDMFormInstanceService ddmFormInstanceService,
 		DDMFormInstanceVersionLocalService ddmFormInstanceVersionLocalService,
@@ -110,10 +112,10 @@ public class DDMFormAdminFieldSetDisplayContext
 			ddmFormBuilderSettingsRetriever, ddmFormContextToDDMFormValues,
 			ddmFormFieldTypeServicesRegistry, ddmFormFieldTypesSerializer,
 			ddmFormInstanceLocalService, ddmFormInstanceRecordLocalService,
-			ddmFormInstanceRecordWriterRegistry, ddmFormInstanceService,
-			ddmFormInstanceVersionLocalService, ddmFormRenderer,
-			ddmFormTemplateContextFactory, ddmFormValuesFactory,
-			ddmFormValuesMerger, ddmFormWebConfiguration,
+			ddmFormInstanceRecordService, ddmFormInstanceRecordWriterRegistry,
+			ddmFormInstanceService, ddmFormInstanceVersionLocalService,
+			ddmFormRenderer, ddmFormTemplateContextFactory,
+			ddmFormValuesFactory, ddmFormValuesMerger, ddmFormWebConfiguration,
 			ddmStorageAdapterRegistry, ddmStructureLocalService,
 			ddmStructureService, jsonFactory, npmResolver,
 			objectDefinitionLocalService, portal);
@@ -428,7 +430,8 @@ public class DDMFormAdminFieldSetDisplayContext
 		OrderByComparator<DDMStructure> orderByComparator = null;
 
 		if (orderByCol.equals("create-date")) {
-			orderByComparator = new StructureCreateDateComparator(orderByAsc);
+			orderByComparator = StructureCreateDateComparator.getInstance(
+				orderByAsc);
 		}
 		else if (orderByCol.equals("modified-date")) {
 			orderByComparator = new StructureModifiedDateComparator(orderByAsc);

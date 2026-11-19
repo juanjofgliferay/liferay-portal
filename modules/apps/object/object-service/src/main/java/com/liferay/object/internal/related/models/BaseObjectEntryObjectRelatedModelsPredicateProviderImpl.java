@@ -17,6 +17,8 @@ import com.liferay.petra.sql.dsl.expression.Predicate;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.odata.filter.InvalidFilterException;
 
+import java.util.Collection;
+
 /**
  * @author Luis Miguel Barcos
  */
@@ -38,7 +40,8 @@ public abstract class BaseObjectEntryObjectRelatedModelsPredicateProviderImpl
 
 	@Override
 	public Predicate getPredicate(
-			ObjectRelationship objectRelationship, Predicate predicate)
+			Long[] groupIds, ObjectRelationship objectRelationship,
+			Predicate predicate)
 		throws PortalException {
 
 		ObjectDefinition relatedObjectDefinition =
@@ -51,12 +54,12 @@ public abstract class BaseObjectEntryObjectRelatedModelsPredicateProviderImpl
 		}
 
 		return getPredicate(
-			objectRelationship, predicate, relatedObjectDefinition);
+			groupIds, objectRelationship, predicate, relatedObjectDefinition);
 	}
 
 	public abstract Predicate getPredicate(
-			ObjectRelationship objectRelationship, Predicate predicate,
-			ObjectDefinition relatedObjectDefinition)
+			Long[] groupIds, ObjectRelationship objectRelationship,
+			Predicate predicate, ObjectDefinition relatedObjectDefinition)
 		throws PortalException;
 
 	protected DynamicObjectDefinitionTable getDynamicObjectDefinitionTable(
@@ -80,6 +83,24 @@ public abstract class BaseObjectEntryObjectRelatedModelsPredicateProviderImpl
 				objectDefinition.getObjectDefinitionId(),
 				objectDefinition.getExtensionDBTableName()),
 			objectDefinition.getExtensionDBTableName());
+	}
+
+	protected Predicate getExtensionLeftJoinPredicate(
+		DynamicObjectDefinitionTable dynamicObjectDefinitionTable,
+		DynamicObjectDefinitionTable extensionDynamicObjectDefinitionTable) {
+
+		Collection<Column<DynamicObjectDefinitionTable, ?>> columns =
+			extensionDynamicObjectDefinitionTable.getColumns();
+
+		if (columns.size() > 1) {
+			Column<DynamicObjectDefinitionTable, Long> primaryKeyColumn =
+				dynamicObjectDefinitionTable.getPrimaryKeyColumn();
+
+			return primaryKeyColumn.eq(
+				extensionDynamicObjectDefinitionTable.getPrimaryKeyColumn());
+		}
+
+		return null;
 	}
 
 	protected <T extends BaseTable<T>> Column<?, ?> getPKObjectFieldColumn(

@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -206,23 +207,6 @@ public class DDLRecordVersionLocalServiceUtil {
 		return getService().fetchDDLRecordVersion(recordVersionId);
 	}
 
-	/**
-	 * Returns the latest record version matching the user, the record set, the
-	 * record set version and workflow status.
-	 *
-	 * @param userId the primary key of the user
-	 * @param recordSetId the primary key of the record set
-	 * @param recordSetVersion the version of the record set
-	 * @param status the workflow status
-	 * @return the latest matching record version or <code>null</code>
-	 */
-	public static DDLRecordVersion fetchLatestRecordVersion(
-		long userId, long recordSetId, String recordSetVersion, int status) {
-
-		return getService().fetchLatestRecordVersion(
-			userId, recordSetId, recordSetVersion, status);
-	}
-
 	public static com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery
 		getActionableDynamicQuery() {
 
@@ -389,13 +373,13 @@ public class DDLRecordVersionLocalServiceUtil {
 	}
 
 	public static DDLRecordVersionLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(DDLRecordVersionLocalService service) {
-		_service = service;
-	}
-
-	private static volatile DDLRecordVersionLocalService _service;
+	private static final Snapshot<DDLRecordVersionLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			DDLRecordVersionLocalServiceUtil.class,
+			DDLRecordVersionLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1886103845

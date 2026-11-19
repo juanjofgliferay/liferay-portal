@@ -6,6 +6,7 @@
 package com.liferay.site.navigation.service;
 
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.site.navigation.model.SiteNavigationMenuItem;
 
@@ -31,15 +32,15 @@ public class SiteNavigationMenuItemServiceUtil {
 	 * Never modify this class directly. Add custom service methods to <code>com.liferay.site.navigation.service.impl.SiteNavigationMenuItemServiceImpl</code> and rerun ServiceBuilder to regenerate this class.
 	 */
 	public static SiteNavigationMenuItem addSiteNavigationMenuItem(
-			long groupId, long siteNavigationMenuId,
-			long parentSiteNavigationMenuItemId, String type,
-			String typeSettings,
+			String externalReferenceCode, long groupId,
+			long siteNavigationMenuId, long parentSiteNavigationMenuItemId,
+			String type, String typeSettings,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().addSiteNavigationMenuItem(
-			groupId, siteNavigationMenuId, parentSiteNavigationMenuItemId, type,
-			typeSettings, serviceContext);
+			externalReferenceCode, groupId, siteNavigationMenuId,
+			parentSiteNavigationMenuItemId, type, typeSettings, serviceContext);
 	}
 
 	public static SiteNavigationMenuItem deleteSiteNavigationMenuItem(
@@ -58,6 +59,14 @@ public class SiteNavigationMenuItemServiceUtil {
 			siteNavigationMenuItemId, deleteChildren);
 	}
 
+	public static SiteNavigationMenuItem deleteSiteNavigationMenuItem(
+			String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		return getService().deleteSiteNavigationMenuItem(
+			externalReferenceCode, groupId);
+	}
+
 	public static void deleteSiteNavigationMenuItems(long siteNavigationMenuId)
 		throws PortalException {
 
@@ -74,14 +83,25 @@ public class SiteNavigationMenuItemServiceUtil {
 	}
 
 	public static List<Long> getParentSiteNavigationMenuItemIds(
-		long siteNavigationMenuId, String typeSettingsKeyword) {
+			long siteNavigationMenuId, String typeSettingsKeyword)
+		throws PortalException {
 
 		return getService().getParentSiteNavigationMenuItemIds(
 			siteNavigationMenuId, typeSettingsKeyword);
 	}
 
+	public static SiteNavigationMenuItem
+			getSiteNavigationMenuItemByExternalReferenceCode(
+				String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		return getService().getSiteNavigationMenuItemByExternalReferenceCode(
+			externalReferenceCode, groupId);
+	}
+
 	public static List<SiteNavigationMenuItem> getSiteNavigationMenuItems(
-		long siteNavigationMenuId) {
+			long siteNavigationMenuId)
+		throws PortalException {
 
 		return getService().getSiteNavigationMenuItems(siteNavigationMenuId);
 	}
@@ -95,39 +115,40 @@ public class SiteNavigationMenuItemServiceUtil {
 	}
 
 	public static List<SiteNavigationMenuItem> getSiteNavigationMenuItems(
-		long siteNavigationMenuId,
-		OrderByComparator<SiteNavigationMenuItem> orderByComparator) {
+			long siteNavigationMenuId,
+			OrderByComparator<SiteNavigationMenuItem> orderByComparator)
+		throws PortalException {
 
 		return getService().getSiteNavigationMenuItems(
 			siteNavigationMenuId, orderByComparator);
 	}
 
 	public static SiteNavigationMenuItem updateSiteNavigationMenuItem(
-			long siteNavigationMenuId, long parentSiteNavigationMenuItemId,
+			long siteNavigationMenuItemId, long parentSiteNavigationMenuItemId,
 			int order)
 		throws PortalException {
 
 		return getService().updateSiteNavigationMenuItem(
-			siteNavigationMenuId, parentSiteNavigationMenuItemId, order);
+			siteNavigationMenuItemId, parentSiteNavigationMenuItemId, order);
 	}
 
 	public static SiteNavigationMenuItem updateSiteNavigationMenuItem(
-			long siteNavigationMenuId, String typeSettings,
+			long siteNavigationMenuItemId, String typeSettings,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().updateSiteNavigationMenuItem(
-			siteNavigationMenuId, typeSettings, serviceContext);
+			siteNavigationMenuItemId, typeSettings, serviceContext);
 	}
 
 	public static SiteNavigationMenuItemService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(SiteNavigationMenuItemService service) {
-		_service = service;
-	}
-
-	private static volatile SiteNavigationMenuItemService _service;
+	private static final Snapshot<SiteNavigationMenuItemService>
+		_serviceSnapshot = new Snapshot<>(
+			SiteNavigationMenuItemServiceUtil.class,
+			SiteNavigationMenuItemService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:2111575170

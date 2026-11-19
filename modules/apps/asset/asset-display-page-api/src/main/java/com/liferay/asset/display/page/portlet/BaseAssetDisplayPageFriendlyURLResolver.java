@@ -14,6 +14,8 @@ import com.liferay.asset.kernel.model.AssetEntry;
 import com.liferay.asset.kernel.model.AssetRendererFactory;
 import com.liferay.asset.kernel.service.AssetEntryService;
 import com.liferay.asset.util.LinkedAssetEntryIdsUtil;
+import com.liferay.design.library.util.DesignLibraryUtil;
+import com.liferay.friendly.url.provider.FriendlyURLSeparatorProvider;
 import com.liferay.info.constants.InfoDisplayWebKeys;
 import com.liferay.info.exception.NoSuchInfoItemException;
 import com.liferay.info.item.ClassPKInfoItemIdentifier;
@@ -24,6 +26,7 @@ import com.liferay.info.item.InfoItemServiceRegistry;
 import com.liferay.info.item.provider.InfoItemDetailsProvider;
 import com.liferay.info.item.provider.InfoItemFieldValuesProvider;
 import com.liferay.info.item.provider.InfoItemObjectProvider;
+import com.liferay.info.item.provider.InfoItemPermissionProvider;
 import com.liferay.info.search.InfoSearchClassMapperRegistry;
 import com.liferay.layout.display.page.LayoutDisplayPageObjectProvider;
 import com.liferay.layout.display.page.LayoutDisplayPageProvider;
@@ -31,6 +34,7 @@ import com.liferay.layout.display.page.LayoutDisplayPageProviderRegistry;
 import com.liferay.layout.display.page.constants.LayoutDisplayPageWebKeys;
 import com.liferay.layout.page.template.model.LayoutPageTemplateEntry;
 import com.liferay.layout.page.template.service.LayoutPageTemplateEntryService;
+import com.liferay.layout.page.template.util.LayoutPageTemplateEntryUtil;
 import com.liferay.layout.seo.template.LayoutSEOTemplateProcessor;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringPool;
@@ -42,22 +46,33 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.LayoutFriendlyURLComposite;
 import com.liferay.portal.kernel.model.LayoutQueryStringComposite;
+import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.model.impl.VirtualLayout;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.portlet.FriendlyURLResolver;
+import com.liferay.portal.kernel.portlet.FriendlyURLResolverRegistryUtil;
+import com.liferay.portal.kernel.security.permission.ActionKeys;
+import com.liferay.portal.kernel.security.permission.PermissionChecker;
+import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
+import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.LayoutLocalService;
+import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
+import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
 
 import org.osgi.service.component.annotations.Reference;
 
@@ -84,7 +99,7 @@ public abstract class BaseAssetDisplayPageFriendlyURLResolver
 			(HttpServletRequest)requestContext.get("request");
 
 		LayoutDisplayPageProvider<?> layoutDisplayPageProvider =
-			getLayoutDisplayPageProvider(friendlyURL);
+			getLayoutDisplayPageProvider(companyId, friendlyURL);
 
 		LayoutDisplayPageObjectProvider<?> layoutDisplayPageObjectProvider =
 			getLayoutDisplayPageObjectProvider(
@@ -103,6 +118,17 @@ public abstract class BaseAssetDisplayPageFriendlyURLResolver
 			InfoDisplayWebKeys.INFO_ITEM_DETAILS,
 			infoItemDetailsProvider.getInfoItemDetails(infoItem));
 
+		Layout layout = getLayoutDisplayPageObjectProviderLayout(
+			groupId, friendlyURL, layoutDisplayPageObjectProvider,
+			layoutDisplayPageProvider);
+
+		if (!_hasViewPermission(
+				infoItem, layoutDisplayPageObjectProvider, requestContext)) {
+
+			return portal.getLayoutActualURL(layout, mainPath) +
+				layoutQueryStringComposite.getQueryString();
+		}
+
 		httpServletRequest.setAttribute(
 			LayoutDisplayPageWebKeys.LAYOUT_DISPLAY_PAGE_OBJECT_PROVIDER,
 			layoutDisplayPageObjectProvider);
@@ -110,7 +136,8 @@ public abstract class BaseAssetDisplayPageFriendlyURLResolver
 			LayoutDisplayPageWebKeys.LAYOUT_DISPLAY_PAGE_PROVIDER,
 			layoutDisplayPageProvider);
 
-		AssetEntry assetEntry = _getAssetEntry(layoutDisplayPageObjectProvider);
+		AssetEntry assetEntry = _getAssetEntry(
+			infoItem, layoutDisplayPageObjectProvider);
 
 		httpServletRequest.setAttribute(WebKeys.LAYOUT_ASSET_ENTRY, assetEntry);
 
@@ -119,23 +146,29 @@ public abstract class BaseAssetDisplayPageFriendlyURLResolver
 				httpServletRequest, assetEntry.getEntryId());
 		}
 
+		String mappedDescription = layout.getTypeSettingsProperty(
+			"mapped-description");
+		String mappedTitle = layout.getTypeSettingsProperty("mapped-title");
+
+		InfoItemFieldValues infoItemFieldValues = null;
+
+		if (Validator.isNotNull(mappedDescription) ||
+			Validator.isNotNull(mappedTitle)) {
+
+			InfoItemFieldValuesProvider<Object> infoItemFieldValuesProvider =
+				infoItemServiceRegistry.getFirstInfoItemService(
+					InfoItemFieldValuesProvider.class,
+					layoutDisplayPageObjectProvider.getClassName());
+
+			infoItemFieldValues =
+				infoItemFieldValuesProvider.getInfoItemFieldValues(
+					layoutDisplayPageObjectProvider.getDisplayObject());
+		}
+
 		Locale locale = portal.getLocale(httpServletRequest);
-		Layout layout = getLayoutDisplayPageObjectProviderLayout(
-			groupId, friendlyURL, layoutDisplayPageObjectProvider,
-			layoutDisplayPageProvider);
-
-		InfoItemFieldValuesProvider<Object> infoItemFieldValuesProvider =
-			infoItemServiceRegistry.getFirstInfoItemService(
-				InfoItemFieldValuesProvider.class,
-				layoutDisplayPageObjectProvider.getClassName());
-
-		InfoItemFieldValues infoItemFieldValues =
-			infoItemFieldValuesProvider.getInfoItemFieldValues(
-				layoutDisplayPageObjectProvider.getDisplayObject());
 
 		String description = _getMappedValue(
-			layout.getTypeSettingsProperty("mapped-description"),
-			infoItemFieldValues, locale);
+			mappedDescription, infoItemFieldValues, locale);
 
 		if (description == null) {
 			description = layoutDisplayPageObjectProvider.getDescription(
@@ -151,8 +184,7 @@ public abstract class BaseAssetDisplayPageFriendlyURLResolver
 			httpServletRequest);
 
 		String title = _getMappedValue(
-			layout.getTypeSettingsProperty("mapped-title"), infoItemFieldValues,
-			locale);
+			mappedTitle, infoItemFieldValues, locale);
 
 		if (title == null) {
 			title = layoutDisplayPageObjectProvider.getTitle(locale);
@@ -172,7 +204,7 @@ public abstract class BaseAssetDisplayPageFriendlyURLResolver
 		throws PortalException {
 
 		LayoutDisplayPageProvider<?> layoutDisplayPageProvider =
-			getLayoutDisplayPageProvider(friendlyURL);
+			getLayoutDisplayPageProvider(companyId, friendlyURL);
 
 		LayoutDisplayPageObjectProvider<?> layoutDisplayPageObjectProvider =
 			getLayoutDisplayPageObjectProvider(
@@ -186,23 +218,61 @@ public abstract class BaseAssetDisplayPageFriendlyURLResolver
 			groupId, friendlyURL, layoutDisplayPageObjectProvider,
 			layoutDisplayPageProvider);
 
-		String originalFriendlyURL = _getOriginalFriendlyURL(friendlyURL);
+		if (!useOriginalFriendlyURL() ||
+			!_hasViewPermission(
+				layoutDisplayPageObjectProvider.getDisplayObject(),
+				layoutDisplayPageObjectProvider, requestContext)) {
 
-		String localizedFriendlyURL = originalFriendlyURL;
+			return new LayoutFriendlyURLComposite(layout, friendlyURL, false);
+		}
 
 		String urlTitle = layoutDisplayPageObjectProvider.getURLTitle(
 			getLocale(requestContext));
 
-		if (useOriginalFriendlyURL() && Validator.isNotNull(urlTitle)) {
-			localizedFriendlyURL = getURLSeparator() + urlTitle;
-		}
+		if (Validator.isNotNull(urlTitle)) {
+			String localizedFriendlyURL = getURLSeparator() + urlTitle;
 
-		if (!Objects.equals(originalFriendlyURL, localizedFriendlyURL)) {
-			return new LayoutFriendlyURLComposite(
-				layout, localizedFriendlyURL, true);
+			if (!isSameFriendlyURL(
+					_getOriginalFriendlyURL(friendlyURL),
+					localizedFriendlyURL)) {
+
+				return new LayoutFriendlyURLComposite(
+					layout, localizedFriendlyURL, true);
+			}
 		}
 
 		return new LayoutFriendlyURLComposite(layout, friendlyURL, false);
+	}
+
+	@Override
+	public String getURLSeparator() {
+		if (!isURLSeparatorConfigurable()) {
+			return getDefaultURLSeparator();
+		}
+
+		FriendlyURLSeparatorProvider friendlyURLSeparatorProvider =
+			_friendlyURLSeparatorProviderSnapshot.get();
+
+		if (friendlyURLSeparatorProvider == null) {
+			return getDefaultURLSeparator();
+		}
+
+		ServiceContext serviceContext =
+			ServiceContextThreadLocal.getServiceContext();
+
+		if (serviceContext == null) {
+			return getDefaultURLSeparator();
+		}
+
+		String urlSeparator =
+			friendlyURLSeparatorProvider.getFriendlyURLSeparator(
+				serviceContext.getCompanyId(), getKey());
+
+		if (Validator.isNull(urlSeparator)) {
+			return getDefaultURLSeparator();
+		}
+
+		return urlSeparator;
 	}
 
 	protected AssetDisplayPageEntry getAssetDisplayPageEntry(
@@ -221,24 +291,27 @@ public abstract class BaseAssetDisplayPageFriendlyURLResolver
 
 		return _getLayoutDisplayPageObjectProvider(
 			layoutDisplayPageProvider, groupId, friendlyURL,
-			_getVersion(params));
+			getVersion(params));
 	}
 
 	protected Layout getLayoutDisplayPageObjectProviderLayout(
-		long groupId, String friendlyURL,
-		LayoutDisplayPageObjectProvider<?> layoutDisplayPageObjectProvider,
-		LayoutDisplayPageProvider<?> layoutDisplayPageProvider) {
+			long groupId, String friendlyURL,
+			LayoutDisplayPageObjectProvider<?> layoutDisplayPageObjectProvider,
+			LayoutDisplayPageProvider<?> layoutDisplayPageProvider)
+		throws PortalException {
 
-		return _getLayoutDisplayPageObjectProviderLayout(
-			groupId, layoutDisplayPageObjectProvider,
-			layoutDisplayPageProvider);
+		return getVirtualLayout(
+			groupId,
+			_getLayoutDisplayPageObjectProviderLayout(
+				groupId, layoutDisplayPageObjectProvider,
+				layoutDisplayPageProvider));
 	}
 
 	protected LayoutDisplayPageProvider<?> getLayoutDisplayPageProvider(
-			String friendlyURL)
+			long companyId, String friendlyURL)
 		throws PortalException {
 
-		return _getLayoutDisplayPageProvider(friendlyURL);
+		return _getLayoutDisplayPageProvider(companyId, friendlyURL);
 	}
 
 	protected Locale getLocale(Map<String, Object> requestContext) {
@@ -258,6 +331,39 @@ public abstract class BaseAssetDisplayPageFriendlyURLResolver
 		}
 
 		return locale;
+	}
+
+	protected String getVersion(Map<String, String[]> params) {
+		String[] versions = params.get("version");
+
+		if (ArrayUtil.isEmpty(versions)) {
+			return StringPool.BLANK;
+		}
+
+		return versions[0];
+	}
+
+	protected Layout getVirtualLayout(long groupId, Layout layout)
+		throws PortalException {
+
+		if ((layout == null) || (layout.getGroupId() == groupId) ||
+			!DesignLibraryUtil.isConnectedDesignLibraryGroupId(
+				layout.getGroupId(), groupId)) {
+
+			return layout;
+		}
+
+		GroupLocalService groupLocalService = _groupLocalServiceSnapshot.get();
+
+		if (groupLocalService == null) {
+			return layout;
+		}
+
+		return new VirtualLayout(layout, groupLocalService.getGroup(groupId));
+	}
+
+	protected boolean isSameFriendlyURL(String url1, String url2) {
+		return Objects.equals(url1, url2);
 	}
 
 	protected boolean useOriginalFriendlyURL() {
@@ -293,13 +399,14 @@ public abstract class BaseAssetDisplayPageFriendlyURLResolver
 	@Reference
 	protected Portal portal;
 
-	private AssetEntry _getAssetEntry(
+	private <T> AssetEntry _getAssetEntry(
+		T infoItem,
 		LayoutDisplayPageObjectProvider<?> layoutDisplayPageObjectProvider) {
 
 		String className = infoSearchClassMapperRegistry.getSearchClassName(
 			layoutDisplayPageObjectProvider.getClassName());
 
-		AssetRendererFactory<?> assetRendererFactory =
+		AssetRendererFactory<T> assetRendererFactory =
 			AssetRendererFactoryRegistryUtil.getAssetRendererFactoryByClassName(
 				className);
 
@@ -307,7 +414,11 @@ public abstract class BaseAssetDisplayPageFriendlyURLResolver
 			return null;
 		}
 
-		long classPK = layoutDisplayPageObjectProvider.getClassPK();
+		long classPK = assetRendererFactory.getAssetEntryClassPK(infoItem);
+
+		if (classPK == 0) {
+			return null;
+		}
 
 		try {
 			AssetEntry assetEntry = assetRendererFactory.getAssetEntry(
@@ -339,14 +450,14 @@ public abstract class BaseAssetDisplayPageFriendlyURLResolver
 			Map<String, String[]> params)
 		throws NoSuchInfoItemException {
 
-		String version = _getVersion(params);
+		String version = getVersion(params);
 
 		if (Validator.isNull(version)) {
 			return layoutDisplayPageObjectProvider.getDisplayObject();
 		}
 
 		InfoItemIdentifier infoItemIdentifier = new ClassPKInfoItemIdentifier(
-			layoutDisplayPageObjectProvider.getClassPK());
+			layoutDisplayPageObjectProvider.getClassPK(), version);
 
 		InfoItemObjectProvider<Object> infoItemObjectProvider =
 			(InfoItemObjectProvider<Object>)
@@ -354,8 +465,6 @@ public abstract class BaseAssetDisplayPageFriendlyURLResolver
 					InfoItemObjectProvider.class,
 					layoutDisplayPageObjectProvider.getClassName(),
 					infoItemIdentifier.getInfoItemServiceFilter());
-
-		infoItemIdentifier.setVersion(version);
 
 		return infoItemObjectProvider.getInfoItem(infoItemIdentifier);
 	}
@@ -414,27 +523,40 @@ public abstract class BaseAssetDisplayPageFriendlyURLResolver
 		}
 
 		LayoutPageTemplateEntry layoutPageTemplateEntry =
-			layoutPageTemplateEntryService.fetchDefaultLayoutPageTemplateEntry(
-				groupId, layoutDisplayPageObjectProvider.getClassNameId(),
-				layoutDisplayPageObjectProvider.getClassTypeId());
+			LayoutPageTemplateEntryUtil.fetchDefaultLayoutPageTemplateEntry(
+				layoutDisplayPageObjectProvider.getClassNameId(),
+				layoutDisplayPageObjectProvider.getClassTypeId(),
+				DesignLibraryUtil.fetchConnectedDesignLibraryGroupIds(groupId),
+				groupId);
 
-		if (layoutPageTemplateEntry != null) {
-			return layoutLocalService.fetchLayout(
-				layoutPageTemplateEntry.getPlid());
+		if (layoutPageTemplateEntry == null) {
+			return null;
 		}
 
-		return null;
+		return layoutLocalService.fetchLayout(
+			layoutPageTemplateEntry.getPlid());
 	}
 
 	private LayoutDisplayPageProvider<?> _getLayoutDisplayPageProvider(
-			String friendlyURL)
+			long companyId, String friendlyURL)
 		throws PortalException {
 
 		String urlSeparator = _getURLSeparator(friendlyURL);
 
+		FriendlyURLResolver friendlyURLResolver =
+			FriendlyURLResolverRegistryUtil.getFriendlyURLResolver(
+				companyId, urlSeparator);
+
+		if ((friendlyURLResolver != null) &&
+			friendlyURLResolver.isURLSeparatorConfigurable()) {
+
+			urlSeparator = friendlyURLResolver.getDefaultURLSeparator();
+		}
+
 		LayoutDisplayPageProvider<?> layoutDisplayPageProvider =
 			layoutDisplayPageProviderRegistry.
-				getLayoutDisplayPageProviderByURLSeparator(urlSeparator);
+				getLayoutDisplayPageProviderByURLSeparator(
+					companyId, urlSeparator);
 
 		if (layoutDisplayPageProvider == null) {
 			throw new PortalException(
@@ -467,6 +589,29 @@ public abstract class BaseAssetDisplayPageFriendlyURLResolver
 		return friendlyURL.substring(0, pos);
 	}
 
+	private PermissionChecker _getPermissionChecker(
+			Map<String, Object> requestContext)
+		throws PortalException {
+
+		HttpServletRequest httpServletRequest =
+			(HttpServletRequest)requestContext.get("request");
+
+		if (httpServletRequest == null) {
+			return PermissionThreadLocal.getPermissionChecker();
+		}
+
+		User user = portal.getUser(httpServletRequest);
+
+		if (user == null) {
+			UserLocalService userLocalService = _userLocalServiceSnapshot.get();
+
+			user = userLocalService.getGuestUser(
+				portal.getCompanyId(httpServletRequest));
+		}
+
+		return PermissionThreadLocal.getPermissionChecker(user, false);
+	}
+
 	private String _getURLSeparator(String friendlyURL) {
 		List<String> paths = StringUtil.split(friendlyURL, CharPool.SLASH);
 
@@ -493,17 +638,70 @@ public abstract class BaseAssetDisplayPageFriendlyURLResolver
 		return StringPool.BLANK;
 	}
 
-	private String _getVersion(Map<String, String[]> params) {
-		String[] versions = params.get("version");
+	private boolean _hasViewPermission(
+		Object infoItem,
+		LayoutDisplayPageObjectProvider<?> layoutDisplayPageObjectProvider,
+		Map<String, Object> requestContext) {
 
-		if (ArrayUtil.isEmpty(versions)) {
-			return StringPool.BLANK;
+		PermissionChecker originalPermissionChecker =
+			PermissionThreadLocal.getPermissionChecker();
+
+		try {
+			PermissionChecker permissionChecker = _getPermissionChecker(
+				requestContext);
+
+			PermissionThreadLocal.setPermissionChecker(permissionChecker);
+
+			InfoItemPermissionProvider<Object> infoItemPermissionProvider =
+				infoItemServiceRegistry.getFirstInfoItemService(
+					InfoItemPermissionProvider.class,
+					layoutDisplayPageObjectProvider.getClassName());
+
+			if (infoItemPermissionProvider != null) {
+				return infoItemPermissionProvider.hasPermission(
+					permissionChecker, infoItem, ActionKeys.VIEW);
+			}
+
+			AssetRendererFactory<?> assetRendererFactory =
+				AssetRendererFactoryRegistryUtil.
+					getAssetRendererFactoryByClassName(
+						layoutDisplayPageObjectProvider.getClassName());
+
+			if (assetRendererFactory == null) {
+				return true;
+			}
+
+			return assetRendererFactory.hasPermission(
+				permissionChecker, layoutDisplayPageObjectProvider.getClassPK(),
+				ActionKeys.VIEW);
 		}
+		catch (Exception exception) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(exception);
+			}
 
-		return versions[0];
+			return false;
+		}
+		finally {
+			PermissionThreadLocal.setPermissionChecker(
+				originalPermissionChecker);
+		}
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		BaseAssetDisplayPageFriendlyURLResolver.class);
+
+	private static final Snapshot<FriendlyURLSeparatorProvider>
+		_friendlyURLSeparatorProviderSnapshot = new Snapshot<>(
+			BaseAssetDisplayPageFriendlyURLResolver.class,
+			FriendlyURLSeparatorProvider.class);
+	private static final Snapshot<GroupLocalService>
+		_groupLocalServiceSnapshot = new Snapshot<>(
+			BaseAssetDisplayPageFriendlyURLResolver.class,
+			GroupLocalService.class);
+	private static final Snapshot<UserLocalService> _userLocalServiceSnapshot =
+		new Snapshot<>(
+			BaseAssetDisplayPageFriendlyURLResolver.class,
+			UserLocalService.class);
 
 }

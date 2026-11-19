@@ -21,7 +21,6 @@ import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
-import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.security.permission.PermissionCheckerFactoryUtil;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.permission.ModelPermissionsFactory;
@@ -36,12 +35,13 @@ import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.ObjectValuePair;
-import com.liferay.portal.security.permission.DoAsUserThread;
+import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.test.log.LogCapture;
 import com.liferay.portal.test.log.LogEntry;
 import com.liferay.portal.test.log.LoggerTestUtil;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
+import com.liferay.portal.test.security.permission.DoAsUserThread;
 
 import java.io.InputStream;
 
@@ -113,11 +113,12 @@ public class MBMessageServiceTest {
 				MBCategory.class.getName()));
 
 		_category = MBCategoryServiceUtil.addCategory(
-			MBCategoryConstants.DEFAULT_PARENT_CATEGORY_ID, name, description,
-			displayStyle, emailAddress, inProtocol, inServerName, inServerPort,
-			inUseSSL, inUserName, inPassword, inReadInterval, outEmailAddress,
-			outCustom, outServerName, outServerPort, outUseSSL, outUserName,
-			outPassword, allowAnonymous, mailingListActive, serviceContext);
+			null, MBCategoryConstants.DEFAULT_PARENT_CATEGORY_ID, name,
+			description, displayStyle, emailAddress, inProtocol, inServerName,
+			inServerPort, inUseSSL, inUserName, inPassword, inReadInterval,
+			outEmailAddress, outCustom, outServerName, outServerPort, outUseSSL,
+			outUserName, outPassword, allowAnonymous, mailingListActive,
+			serviceContext);
 	}
 
 	@Test
@@ -170,43 +171,16 @@ public class MBMessageServiceTest {
 						message.startsWith("Unable to process message"));
 				}
 			}
-			else if (DBManagerUtil.getDBType() == DBType.SYBASE) {
-				for (LogEntry logEntry : logCapture1.getLogEntries()) {
-					String message = logEntry.getMessage();
-
-					Assert.assertTrue(
-						message.startsWith("Caught unexpected exception"));
-				}
-
-				for (LogEntry logEntry : logCapture3.getLogEntries()) {
-					String message = logEntry.getMessage();
-
-					Assert.assertTrue(
-						message.startsWith(
-							"com.liferay.portal.kernel.exception." +
-								"SystemException:"));
-				}
-
-				for (LogEntry logEntry : logCapture4.getLogEntries()) {
-					String message = logEntry.getMessage();
-
-					Assert.assertTrue(
-						message, message.contains("Your server command"));
-					Assert.assertTrue(
-						message,
-						message.contains(
-							"encountered a deadlock situation. Please re-run " +
-								"your command."));
-				}
-			}
 		}
 
 		int successCount = 0;
 
 		for (DoAsUserThread doAsUserThread : doAsUserThreads) {
-			if (doAsUserThread.isSuccess()) {
-				successCount++;
+			if (!doAsUserThread.isSuccess()) {
+				continue;
 			}
+
+			successCount++;
 		}
 
 		Assert.assertTrue(
@@ -227,11 +201,8 @@ public class MBMessageServiceTest {
 		MBBanLocalServiceUtil.addBan(
 			TestPropsValues.getUserId(), user.getUserId(), serviceContext);
 
-		PermissionChecker permissionChecker =
-			PermissionCheckerFactoryUtil.create(user);
-
 		try (ContextUserReplace contextUserReplace = new ContextUserReplace(
-				user, permissionChecker)) {
+				user, PermissionCheckerFactoryUtil.create(user))) {
 
 			MBMessageServiceUtil.addMessage(
 				_group.getGroupId(), _category.getCategoryId(),
@@ -252,11 +223,8 @@ public class MBMessageServiceTest {
 		MBBanLocalServiceUtil.addBan(
 			TestPropsValues.getUserId(), user.getUserId(), serviceContext);
 
-		PermissionChecker permissionChecker =
-			PermissionCheckerFactoryUtil.create(user);
-
 		try (ContextUserReplace contextUserReplace = new ContextUserReplace(
-				user, permissionChecker)) {
+				user, PermissionCheckerFactoryUtil.create(user))) {
 
 			MBMessageServiceUtil.addMessage(
 				_group.getGroupId(),
@@ -267,10 +235,55 @@ public class MBMessageServiceTest {
 		}
 	}
 
+	@Test
+	public void testGetCategoryMessagesCount() throws Exception {
+		ServiceContext serviceContext =
+			ServiceContextTestUtil.getServiceContext(_group.getGroupId());
+
+		serviceContext.setAddGuestPermissions(false);
+
+		MBMessageServiceUtil.addMessage(
+			_group.getGroupId(), _category.getCategoryId(),
+			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
+			MBMessageConstants.DEFAULT_FORMAT, new ArrayList<>(), false, 0.0,
+			false, serviceContext);
+
+		Assert.assertEquals(
+			1,
+			MBMessageServiceUtil.getCategoryMessagesCount(
+				_group.getGroupId(), _category.getCategoryId(),
+				WorkflowConstants.STATUS_ANY));
+		Assert.assertEquals(
+			1,
+			MBMessageServiceUtil.getCategoryMessagesCount(
+				_group.getGroupId(), _category.getCategoryId(),
+				WorkflowConstants.STATUS_APPROVED));
+
+		_user = UserTestUtil.addUser();
+
+		try (ContextUserReplace contextUserReplace = new ContextUserReplace(
+				_user, PermissionCheckerFactoryUtil.create(_user))) {
+
+			Assert.assertEquals(
+				0,
+				MBMessageServiceUtil.getCategoryMessagesCount(
+					_group.getGroupId(), _category.getCategoryId(),
+					WorkflowConstants.STATUS_ANY));
+			Assert.assertEquals(
+				0,
+				MBMessageServiceUtil.getCategoryMessagesCount(
+					_group.getGroupId(), _category.getCategoryId(),
+					WorkflowConstants.STATUS_APPROVED));
+		}
+	}
+
 	private MBCategory _category;
 
 	@DeleteAfterTestRun
 	private Group _group;
+
+	@DeleteAfterTestRun
+	private User _user;
 
 	@DeleteAfterTestRun
 	private User[] _users;

@@ -12,28 +12,34 @@ import com.liferay.commerce.price.list.service.CommercePriceEntryLocalService;
 import com.liferay.commerce.price.list.service.CommercePriceListLocalService;
 import com.liferay.commerce.pricing.configuration.CommercePricingConfiguration;
 import com.liferay.commerce.pricing.constants.CommercePricingConstants;
+import com.liferay.commerce.product.exception.NoSuchCPDefinitionOptionValueRelException;
+import com.liferay.commerce.product.exception.NoSuchCPOptionException;
 import com.liferay.commerce.product.model.CPDefinition;
 import com.liferay.commerce.product.model.CPDefinitionOptionRel;
 import com.liferay.commerce.product.model.CPDefinitionOptionValueRel;
 import com.liferay.commerce.product.model.CPInstance;
+import com.liferay.commerce.product.model.CPOption;
 import com.liferay.commerce.product.service.CPDefinitionOptionRelService;
 import com.liferay.commerce.product.service.CPDefinitionOptionValueRelService;
+import com.liferay.commerce.product.service.CPDefinitionService;
 import com.liferay.commerce.product.service.CPInstanceService;
+import com.liferay.commerce.product.service.CPOptionService;
 import com.liferay.headless.commerce.admin.catalog.dto.v1_0.Sku;
 import com.liferay.headless.commerce.admin.catalog.dto.v1_0.SkuOption;
 import com.liferay.headless.commerce.admin.catalog.dto.v1_0.SkuSubscriptionConfiguration;
 import com.liferay.headless.commerce.admin.catalog.internal.util.DateConfigUtil;
 import com.liferay.headless.commerce.core.util.DateConfig;
+import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONUtil;
+import com.liferay.portal.kernel.lazy.referencing.LazyReferencingThreadLocal;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.service.ServiceContext;
-import com.liferay.portal.kernel.settings.SystemSettingsLocator;
 import com.liferay.portal.kernel.util.CalendarFactoryUtil;
 import com.liferay.portal.kernel.util.DateFormatFactoryUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
@@ -54,11 +60,13 @@ import java.util.Objects;
 public class SkuUtil {
 
 	public static CPInstance addOrUpdateCPInstance(
-			CPInstanceService cpInstanceService, Sku sku,
 			CPDefinition cpDefinition,
 			CPDefinitionOptionRelService cpDefinitionOptionRelService,
 			CPDefinitionOptionValueRelService cpDefinitionOptionValueRelService,
-			ServiceContext serviceContext)
+			CPDefinitionService cpDefinitionService,
+			CPInstanceService cpInstanceService,
+			CPOptionService cpOptionService, String externalReferenceCode,
+			ServiceContext serviceContext, Sku sku)
 		throws PortalException {
 
 		long replacementCProductId = 0;
@@ -74,7 +82,7 @@ public class SkuUtil {
 					sku.getReplacementSkuExternalReferenceCode())) {
 
 				discontinuedCPInstance =
-					cpInstanceService.fetchByExternalReferenceCode(
+					cpInstanceService.fetchCPInstanceByExternalReferenceCode(
 						sku.getReplacementSkuExternalReferenceCode(),
 						cpDefinition.getCompanyId());
 			}
@@ -82,9 +90,31 @@ public class SkuUtil {
 			long replacementSkuId = GetterUtil.getLong(
 				sku.getReplacementSkuId());
 
-			if ((discontinuedCPInstance == null) && (replacementSkuId > 0)) {
+			if ((discontinuedCPInstance == null) && (replacementSkuId > 0) &&
+				!LazyReferencingThreadLocal.isEnabled()) {
+
 				discontinuedCPInstance = cpInstanceService.fetchCPInstance(
 					replacementSkuId);
+			}
+
+			if ((discontinuedCPInstance == null) &&
+				LazyReferencingThreadLocal.isEnabled() &&
+				Validator.isNotNull(
+					sku.getReplacementProductExternalReferenceCode()) &&
+				Validator.isNotNull(
+					sku.getReplacementSkuExternalReferenceCode())) {
+
+				CPDefinition replacementCPDefinition =
+					ProductUtil.getCPDefinitionByCProductExternalReferenceCode(
+						cpDefinition.getCompanyId(), cpDefinitionService,
+						sku.getReplacementProductExternalReferenceCode(),
+						cpDefinition.getGroupId(), null);
+
+				discontinuedCPInstance =
+					cpInstanceService.getOrAddEmptyCPInstance(
+						sku.getReplacementSkuExternalReferenceCode(),
+						replacementCPDefinition.getCPDefinitionId(),
+						cpDefinition.getGroupId());
 			}
 
 			if (discontinuedCPInstance != null) {
@@ -143,6 +173,37 @@ public class SkuUtil {
 		long subscriptionMaxSubscriptionCycles = 0;
 		UnicodeProperties subscriptionTypeSettingsUnicodeProperties = null;
 		String subscriptionTypeValue = StringPool.BLANK;
+
+		if ((skuSubscriptionConfiguration == null) &&
+			LazyReferencingThreadLocal.isEnabled()) {
+
+			CPInstance cpInstance =
+				cpInstanceService.fetchCPInstanceByExternalReferenceCode(
+					externalReferenceCode, cpDefinition.getCompanyId());
+
+			if (cpInstance != null) {
+				deliverySubscriptionEnable =
+					cpInstance.isDeliverySubscriptionEnabled();
+				deliverySubscriptionLength =
+					cpInstance.getDeliverySubscriptionLength();
+				deliverySubscriptionMaxSubscriptionCycles =
+					cpInstance.getDeliveryMaxSubscriptionCycles();
+				deliverySubscriptionTypeSettingsUnicodeProperties =
+					cpInstance.
+						getDeliverySubscriptionTypeSettingsUnicodeProperties();
+				deliverySubscriptionTypeValue =
+					cpInstance.getDeliverySubscriptionType();
+				overrideSubscriptionInfo =
+					cpInstance.isOverrideSubscriptionInfo();
+				subscriptionEnable = cpInstance.isSubscriptionEnabled();
+				subscriptionLength = cpInstance.getSubscriptionLength();
+				subscriptionMaxSubscriptionCycles =
+					cpInstance.getMaxSubscriptionCycles();
+				subscriptionTypeSettingsUnicodeProperties =
+					cpInstance.getSubscriptionTypeSettingsUnicodeProperties();
+				subscriptionTypeValue = cpInstance.getSubscriptionType();
+			}
+		}
 
 		if (skuSubscriptionConfiguration != null) {
 			deliverySubscriptionEnable = GetterUtil.getBoolean(
@@ -209,13 +270,13 @@ public class SkuUtil {
 		}
 
 		return cpInstanceService.addOrUpdateCPInstance(
-			sku.getExternalReferenceCode(), cpDefinition.getCPDefinitionId(),
+			externalReferenceCode, cpDefinition.getCPDefinitionId(),
 			cpDefinition.getGroupId(), sku.getSku(), sku.getGtin(),
 			sku.getManufacturerPartNumber(),
 			GetterUtil.get(sku.getPurchasable(), false),
 			_getOptions(
-				cpDefinitionOptionRelService, cpDefinitionOptionValueRelService,
-				sku),
+				cpDefinition, cpDefinitionOptionRelService,
+				cpDefinitionOptionValueRelService, cpOptionService, sku),
 			GetterUtil.get(sku.getWidth(), 0.0),
 			GetterUtil.get(sku.getHeight(), 0.0),
 			GetterUtil.get(sku.getDepth(), 0.0),
@@ -229,7 +290,7 @@ public class SkuUtil {
 			displayDateConfig.getMinute(), expirationDateConfig.getMonth(),
 			expirationDateConfig.getDay(), expirationDateConfig.getYear(),
 			expirationDateConfig.getHour(), expirationDateConfig.getMinute(),
-			GetterUtil.get(sku.getNeverExpire(), false),
+			_isNeverExpire(sku.getExpirationDate(), sku.getNeverExpire()),
 			overrideSubscriptionInfo, subscriptionEnable, subscriptionLength,
 			subscriptionTypeValue, subscriptionTypeSettingsUnicodeProperties,
 			subscriptionMaxSubscriptionCycles, deliverySubscriptionEnable,
@@ -246,7 +307,7 @@ public class SkuUtil {
 			CommercePriceEntryLocalService commercePriceEntryLocalService,
 			CommercePriceListLocalService commercePriceListLocalService,
 			ConfigurationProvider configurationProvider, CPInstance cpInstance,
-			BigDecimal price, BigDecimal promoPrice,
+			BigDecimal price, BigDecimal promoPrice, String unitOfMeasureKey,
 			ServiceContext serviceContext)
 		throws Exception {
 
@@ -257,12 +318,137 @@ public class SkuUtil {
 			_updateCommercePriceEntry(
 				commercePriceEntryLocalService, commercePriceListLocalService,
 				cpInstance, CommercePriceListConstants.TYPE_PRICE_LIST, price,
-				serviceContext);
+				unitOfMeasureKey, serviceContext);
 			_updateCommercePriceEntry(
 				commercePriceEntryLocalService, commercePriceListLocalService,
 				cpInstance, CommercePriceListConstants.TYPE_PROMOTION,
-				promoPrice, serviceContext);
+				promoPrice, unitOfMeasureKey, serviceContext);
 		}
+	}
+
+	private static CPDefinitionOptionRel _fetchCPDefinitionOptionRel(
+			CPDefinition cpDefinition,
+			CPDefinitionOptionRelService cpDefinitionOptionRelService,
+			CPOptionService cpOptionService, SkuOption skuOption)
+		throws PortalException {
+
+		String optionExternalReferenceCode =
+			skuOption.getOptionExternalReferenceCode();
+
+		if (Validator.isNotNull(optionExternalReferenceCode)) {
+			if (!LazyReferencingThreadLocal.isEnabled()) {
+				return cpDefinitionOptionRelService.
+					getCPDefinitionOptionRelByExternalReferenceCode(
+						optionExternalReferenceCode,
+						cpDefinition.getCompanyId());
+			}
+
+			return _getOrAddEmptyCPDefinitionOptionRel(
+				cpDefinition, cpDefinitionOptionRelService, cpOptionService,
+				skuOption);
+		}
+
+		if (Validator.isNull(skuOption.getKey())) {
+			return cpDefinitionOptionRelService.fetchCPDefinitionOptionRel(
+				GetterUtil.getLong(skuOption.getOptionId()));
+		}
+
+		try {
+			return cpDefinitionOptionRelService.fetchCPDefinitionOptionRel(
+				GetterUtil.getLongStrict(skuOption.getKey()));
+		}
+		catch (NumberFormatException numberFormatException) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(numberFormatException);
+			}
+		}
+
+		return null;
+	}
+
+	private static CPDefinitionOptionValueRel _fetchCPDefinitionOptionValueRel(
+			long companyId, CPDefinitionOptionRel cpDefinitionOptionRel,
+			CPDefinitionOptionValueRelService cpDefinitionOptionValueRelService,
+			SkuOption skuOption)
+		throws PortalException {
+
+		String externalReferenceCode =
+			skuOption.getOptionValueExternalReferenceCode();
+
+		if (Validator.isNotNull(externalReferenceCode)) {
+			if (cpDefinitionOptionRel == null) {
+				return cpDefinitionOptionValueRelService.
+					fetchCPDefinitionOptionValueRelByExternalReferenceCode(
+						externalReferenceCode, companyId);
+			}
+
+			long cpDefinitionOptionRelId =
+				cpDefinitionOptionRel.getCPDefinitionOptionRelId();
+
+			CPDefinitionOptionValueRel cpDefinitionOptionValueRel =
+				_getCPDefinitionOptionValueRel(
+					companyId, cpDefinitionOptionRelId,
+					cpDefinitionOptionValueRelService, externalReferenceCode,
+					skuOption.getValue());
+
+			if (cpDefinitionOptionValueRel.getCPDefinitionOptionRelId() !=
+					cpDefinitionOptionRelId) {
+
+				throw new NoSuchCPDefinitionOptionValueRelException(
+					StringBundler.concat(
+						"Product option value with external reference code ",
+						externalReferenceCode,
+						" does not belong to product option ",
+						cpDefinitionOptionRel.getKey()));
+			}
+
+			return cpDefinitionOptionValueRel;
+		}
+
+		if (Validator.isNull(skuOption.getValue())) {
+			return cpDefinitionOptionValueRelService.
+				fetchCPDefinitionOptionValueRel(
+					GetterUtil.getLong(skuOption.getOptionValueId()));
+		}
+
+		try {
+			return cpDefinitionOptionValueRelService.
+				fetchCPDefinitionOptionValueRel(
+					GetterUtil.getLongStrict(skuOption.getValue()));
+		}
+		catch (NumberFormatException numberFormatException) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(numberFormatException);
+			}
+		}
+
+		return null;
+	}
+
+	private static CPDefinitionOptionValueRel _getCPDefinitionOptionValueRel(
+			long companyId, long cpDefinitionOptionRelId,
+			CPDefinitionOptionValueRelService cpDefinitionOptionValueRelService,
+			String externalReferenceCode, String key)
+		throws PortalException {
+
+		if (!LazyReferencingThreadLocal.isEnabled()) {
+			CPDefinitionOptionValueRel cpDefinitionOptionValueRel =
+				cpDefinitionOptionValueRelService.
+					fetchCPDefinitionOptionValueRelByExternalReferenceCode(
+						externalReferenceCode, companyId);
+
+			if (cpDefinitionOptionValueRel == null) {
+				throw new NoSuchCPDefinitionOptionValueRelException(
+					"Unable to find product option value with external " +
+						"reference code " + externalReferenceCode);
+			}
+
+			return cpDefinitionOptionValueRel;
+		}
+
+		return cpDefinitionOptionValueRelService.
+			getOrAddEmptyCPDefinitionOptionValueRel(
+				externalReferenceCode, cpDefinitionOptionRelId, key);
 	}
 
 	private static String _getCommercePricingConfigurationKey(
@@ -270,49 +456,18 @@ public class SkuUtil {
 		throws Exception {
 
 		CommercePricingConfiguration commercePricingConfiguration =
-			configurationProvider.getConfiguration(
-				CommercePricingConfiguration.class,
-				new SystemSettingsLocator(
-					CommercePricingConstants.SERVICE_NAME));
+			configurationProvider.getSystemConfiguration(
+				CommercePricingConfiguration.class);
 
 		return commercePricingConfiguration.commercePricingCalculationKey();
 	}
 
-	private static String _getCPDefinitionOptionRelKey(
-			long optionId,
-			CPDefinitionOptionRelService cpDefinitionOptionRelService)
-		throws Exception {
-
-		CPDefinitionOptionRel cpDefinitionOptionRel =
-			cpDefinitionOptionRelService.fetchCPDefinitionOptionRel(optionId);
-
-		if (cpDefinitionOptionRel != null) {
-			return cpDefinitionOptionRel.getKey();
-		}
-
-		return null;
-	}
-
-	private static String _getCPDefinitionOptionValueRelKey(
-			long optionValueId,
-			CPDefinitionOptionValueRelService cpDefinitionOptionValueRelService)
-		throws Exception {
-
-		CPDefinitionOptionValueRel cpDefinitionOptionValueRel =
-			cpDefinitionOptionValueRelService.fetchCPDefinitionOptionValueRel(
-				optionValueId);
-
-		if (cpDefinitionOptionValueRel != null) {
-			return cpDefinitionOptionValueRel.getKey();
-		}
-
-		return null;
-	}
-
 	private static String _getOptions(
-		CPDefinitionOptionRelService cpDefinitionOptionRelService,
-		CPDefinitionOptionValueRelService cpDefinitionOptionValueRelService,
-		Sku sku) {
+			CPDefinition cpDefinition,
+			CPDefinitionOptionRelService cpDefinitionOptionRelService,
+			CPDefinitionOptionValueRelService cpDefinitionOptionValueRelService,
+			CPOptionService cpOptionService, Sku sku)
+		throws PortalException {
 
 		SkuOption[] skuOptions = sku.getSkuOptions();
 
@@ -323,31 +478,22 @@ public class SkuUtil {
 		JSONArray jsonArray = JSONFactoryUtil.createJSONArray();
 
 		for (SkuOption skuOption : skuOptions) {
+			CPDefinitionOptionRel cpDefinitionOptionRel =
+				_fetchCPDefinitionOptionRel(
+					cpDefinition, cpDefinitionOptionRelService, cpOptionService,
+					skuOption);
+
+			CPDefinitionOptionValueRel cpDefinitionOptionValueRel =
+				_fetchCPDefinitionOptionValueRel(
+					cpDefinition.getCompanyId(), cpDefinitionOptionRel,
+					cpDefinitionOptionValueRelService, skuOption);
+
 			jsonArray.put(
 				JSONUtil.put(
 					"key",
 					() -> {
-						if (Validator.isNull(skuOption.getKey())) {
-							return _getCPDefinitionOptionRelKey(
-								GetterUtil.getLong(skuOption.getOptionId()),
-								cpDefinitionOptionRelService);
-						}
-
-						try {
-							String cpDefinitionOptionRelKey =
-								_getCPDefinitionOptionRelKey(
-									GetterUtil.getLongStrict(
-										skuOption.getKey()),
-									cpDefinitionOptionRelService);
-
-							if (Validator.isNotNull(cpDefinitionOptionRelKey)) {
-								return cpDefinitionOptionRelKey;
-							}
-						}
-						catch (NumberFormatException numberFormatException) {
-							if (_log.isDebugEnabled()) {
-								_log.debug(numberFormatException);
-							}
+						if (cpDefinitionOptionRel != null) {
+							return cpDefinitionOptionRel.getKey();
 						}
 
 						return skuOption.getKey();
@@ -356,32 +502,8 @@ public class SkuUtil {
 					"value",
 					JSONUtil.put(
 						() -> {
-							if (Validator.isNull(skuOption.getValue())) {
-								return _getCPDefinitionOptionValueRelKey(
-									GetterUtil.getLong(
-										skuOption.getOptionValueId()),
-									cpDefinitionOptionValueRelService);
-							}
-
-							try {
-								String cpDefinitionOptionValueRelKey =
-									_getCPDefinitionOptionValueRelKey(
-										GetterUtil.getLongStrict(
-											skuOption.getValue()),
-										cpDefinitionOptionValueRelService);
-
-								if (Validator.isNotNull(
-										cpDefinitionOptionValueRelKey)) {
-
-									return cpDefinitionOptionValueRelKey;
-								}
-							}
-							catch (NumberFormatException
-										numberFormatException) {
-
-								if (_log.isDebugEnabled()) {
-									_log.debug(numberFormatException);
-								}
+							if (cpDefinitionOptionValueRel != null) {
+								return cpDefinitionOptionValueRel.getKey();
 							}
 
 							return skuOption.getValue();
@@ -392,11 +514,67 @@ public class SkuUtil {
 		return jsonArray.toString();
 	}
 
+	private static CPDefinitionOptionRel _getOrAddEmptyCPDefinitionOptionRel(
+			CPDefinition cpDefinition,
+			CPDefinitionOptionRelService cpDefinitionOptionRelService,
+			CPOptionService cpOptionService, SkuOption skuOption)
+		throws PortalException {
+
+		CPOption cpOption = null;
+
+		String parentOptionExternalReferenceCode =
+			skuOption.getParentOptionExternalReferenceCode();
+
+		if (Validator.isNull(parentOptionExternalReferenceCode)) {
+			cpOption = cpOptionService.fetchCPOption(
+				cpDefinition.getCompanyId(), skuOption.getKey());
+
+			if (cpOption == null) {
+				throw new NoSuchCPOptionException(
+					"Unable to find option with key " + skuOption.getKey());
+			}
+		}
+		else {
+			cpOption = cpOptionService.getOrAddEmptyCPOption(
+				parentOptionExternalReferenceCode, null,
+				skuOption.getParentOptionFieldType(),
+				GetterUtil.get(
+					skuOption.getParentOptionSkuContributor(), false),
+				skuOption.getKey());
+		}
+
+		return cpDefinitionOptionRelService.getOrAddEmptyCPDefinitionOptionRel(
+			skuOption.getOptionExternalReferenceCode(),
+			cpDefinition.getCPDefinitionId(), cpOption.getCPOptionId(),
+			GetterUtil.get(
+				skuOption.getOptionFieldType(),
+				cpOption.getCommerceOptionTypeKey()),
+			GetterUtil.get(
+				skuOption.getOptionSkuContributor(),
+				cpOption.isSkuContributor()));
+	}
+
+	private static boolean _isNeverExpire(
+		Date expirationDate, Boolean neverExpire) {
+
+		if (neverExpire != null) {
+			return neverExpire;
+		}
+
+		if (LazyReferencingThreadLocal.isEnabled() &&
+			(expirationDate == null)) {
+
+			return true;
+		}
+
+		return false;
+	}
+
 	private static void _updateCommercePriceEntry(
 			CommercePriceEntryLocalService commercePriceEntryLocalService,
 			CommercePriceListLocalService commercePriceListLocalService,
 			CPInstance cpInstance, String type, BigDecimal price,
-			ServiceContext serviceContext)
+			String unitOfMeasureKey, ServiceContext serviceContext)
 		throws Exception {
 
 		CommercePriceList commercePriceList =
@@ -406,7 +584,7 @@ public class SkuUtil {
 		CommercePriceEntry commercePriceEntry =
 			commercePriceEntryLocalService.fetchCommercePriceEntry(
 				commercePriceList.getCommercePriceListId(),
-				cpInstance.getCPInstanceUuid(), StringPool.BLANK);
+				cpInstance.getCPInstanceUuid(), unitOfMeasureKey);
 
 		serviceContext.setWorkflowAction(WorkflowConstants.ACTION_PUBLISH);
 
@@ -417,14 +595,7 @@ public class SkuUtil {
 				null, cpDefinition.getCProductId(),
 				cpInstance.getCPInstanceUuid(),
 				commercePriceList.getCommercePriceListId(), price, false, null,
-				null, serviceContext);
-		}
-		else {
-			commercePriceEntryLocalService.updatePricingInfo(
-				commercePriceEntry.getCommercePriceEntryId(),
-				commercePriceEntry.isBulkPricing(), price,
-				commercePriceEntry.isPriceOnApplication(), null, null,
-				serviceContext);
+				unitOfMeasureKey, serviceContext);
 		}
 	}
 

@@ -8,10 +8,11 @@ package com.liferay.commerce.payment.integration;
 import com.liferay.commerce.constants.CommercePaymentEntryConstants;
 import com.liferay.commerce.payment.model.CommercePaymentEntry;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.util.UnicodeProperties;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.Locale;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Luca Pellizzon
@@ -37,9 +38,21 @@ public interface CommercePaymentIntegration {
 
 	public String getKey();
 
-	public String getPaymentIntegrationName();
+	public String getName(Locale locale);
 
 	public int getPaymentIntegrationType();
+
+	public default UnicodeProperties getPaymentIntegrationTypeSettings() {
+		return null;
+	}
+
+	public default boolean isValid(
+			HttpServletRequest httpServletRequest,
+			CommercePaymentEntry commercePaymentEntry)
+		throws PortalException {
+
+		return true;
+	}
 
 	public CommercePaymentEntry refund(
 			HttpServletRequest httpServletRequest,

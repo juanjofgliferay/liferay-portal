@@ -24,7 +24,7 @@ import com.liferay.item.selector.ItemSelectorReturnType;
 import com.liferay.item.selector.criteria.InfoItemItemSelectorReturnType;
 import com.liferay.item.selector.criteria.UUIDItemSelectorReturnType;
 import com.liferay.item.selector.criteria.info.item.criterion.InfoItemItemSelectorCriterion;
-import com.liferay.layout.item.selector.criterion.LayoutItemSelectorCriterion;
+import com.liferay.layout.item.selector.LayoutItemSelectorCriterion;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.configuration.module.configuration.ConfigurationProviderUtil;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -45,14 +45,14 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.Collections;
 import java.util.List;
-
-import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Alessio Antonio Rendina
@@ -97,6 +97,20 @@ public class CategoryCPDisplayLayoutDisplayContext
 		throws PortalException {
 
 		return _assetCategoryLocalService.getAssetCategory(assetCategoryId);
+	}
+
+	public CPDisplayLayout getCPDisplayLayout() throws PortalException {
+		if (_cpDisplayLayout != null) {
+			return _cpDisplayLayout;
+		}
+
+		long cpDisplayLayoutId = ParamUtil.getLong(
+			cpRequestHelper.getRequest(), "cpDisplayLayoutId");
+
+		_cpDisplayLayout = _cpDisplayLayoutService.fetchCPDisplayLayout(
+			cpDisplayLayoutId);
+
+		return _cpDisplayLayout;
 	}
 
 	public String getCategorySelectorURL(RenderResponse renderResponse) {
@@ -147,20 +161,6 @@ public class CategoryCPDisplayLayoutDisplayContext
 		}
 
 		return commerceChannel.getCommerceChannelId();
-	}
-
-	public CPDisplayLayout getCPDisplayLayout() throws PortalException {
-		if (_cpDisplayLayout != null) {
-			return _cpDisplayLayout;
-		}
-
-		long cpDisplayLayoutId = ParamUtil.getLong(
-			cpRequestHelper.getRequest(), "cpDisplayLayoutId");
-
-		_cpDisplayLayout = _cpDisplayLayoutService.fetchCPDisplayLayout(
-			cpDisplayLayoutId);
-
-		return _cpDisplayLayout;
 	}
 
 	public CreationMenu getCreationMenu() throws Exception {

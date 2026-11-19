@@ -5,8 +5,11 @@
 
 package com.liferay.commerce.inventory.web.internal.portlet.action;
 
+import com.liferay.commerce.inventory.exception.CommerceInventoryWarehouseItemQuantityException;
+import com.liferay.commerce.inventory.model.CommerceInventoryWarehouseItem;
 import com.liferay.commerce.inventory.service.CommerceInventoryWarehouseItemService;
 import com.liferay.commerce.product.constants.CPPortletKeys;
+import com.liferay.commerce.util.CommerceOrderItemQuantityFormatter;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCActionCommand;
@@ -16,10 +19,8 @@ import com.liferay.portal.kernel.servlet.SessionErrors;
 import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.ParamUtil;
 
-import java.math.BigDecimal;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -30,7 +31,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + CPPortletKeys.COMMERCE_INVENTORY,
+		"jakarta.portlet.name=" + CPPortletKeys.COMMERCE_INVENTORY,
 		"mvc.command.name=/commerce_inventory/transfer_quantities"
 	},
 	service = MVCActionCommand.class
@@ -50,7 +51,10 @@ public class TransferQuantitiesMVCActionCommand extends BaseMVCActionCommand {
 			}
 		}
 		catch (Exception exception) {
-			if (exception instanceof PrincipalException.MustHavePermission) {
+			if (exception instanceof
+					CommerceInventoryWarehouseItemQuantityException ||
+				exception instanceof PrincipalException.MustHavePermission) {
+
 				SessionErrors.add(actionRequest, exception.getClass());
 
 				hideDefaultErrorMessage(actionRequest);
@@ -69,15 +73,14 @@ public class TransferQuantitiesMVCActionCommand extends BaseMVCActionCommand {
 			actionRequest, "fromCommerceInventoryWarehouseId");
 		long toCommerceInventoryWarehouseId = ParamUtil.getLong(
 			actionRequest, "toCommerceInventoryWarehouseId");
-		BigDecimal quantity = (BigDecimal)ParamUtil.getNumber(
-			actionRequest, "quantity", BigDecimal.ZERO);
-		String sku = ParamUtil.getString(actionRequest, "sku");
-		String unitOfMeasureKey = ParamUtil.getString(
-			actionRequest, "unitOfMeasureKey");
 
 		_commerceInventoryWarehouseItemService.moveQuantitiesBetweenWarehouses(
 			fromCommerceInventoryWarehouseId, toCommerceInventoryWarehouseId,
-			quantity, sku, unitOfMeasureKey);
+			_commerceOrderItemQuantityFormatter.parse(
+				actionRequest, CommerceInventoryWarehouseItem.class.getName(),
+				"quantity"),
+			ParamUtil.getString(actionRequest, "sku"),
+			ParamUtil.getString(actionRequest, "unitOfMeasureKey"));
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
@@ -86,5 +89,9 @@ public class TransferQuantitiesMVCActionCommand extends BaseMVCActionCommand {
 	@Reference
 	private CommerceInventoryWarehouseItemService
 		_commerceInventoryWarehouseItemService;
+
+	@Reference
+	private CommerceOrderItemQuantityFormatter
+		_commerceOrderItemQuantityFormatter;
 
 }

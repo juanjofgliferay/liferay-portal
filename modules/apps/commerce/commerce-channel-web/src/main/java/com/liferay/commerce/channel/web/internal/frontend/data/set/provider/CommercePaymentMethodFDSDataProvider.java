@@ -23,14 +23,17 @@ import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
+import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -95,6 +98,7 @@ public class CommercePaymentMethodFDSDataProvider
 					commercePaymentDescription, commercePaymentMethod.getKey(),
 					commercePaymentName,
 					commercePaymentMethod.getName(themeDisplay.getLocale()),
+					null,
 					CommerceChannelClayTableUtil.getLabelField(
 						_isActive(commercePaymentMethodGroupRel),
 						themeDisplay.getLocale())));
@@ -104,39 +108,43 @@ public class CommercePaymentMethodFDSDataProvider
 			_commercePaymentIntegrationRegistry.
 				getCommercePaymentIntegrations();
 
-		for (Map.Entry<String, CommercePaymentIntegration> entry :
-				commercePaymentIntegrations.entrySet()) {
+		for (CommercePaymentIntegration commercePaymentIntegration :
+				commercePaymentIntegrations.values()) {
 
-			CommercePaymentIntegration commercePaymentIntegration =
-				entry.getValue();
+			String key = commercePaymentIntegration.getKey();
 
 			CommercePaymentMethodGroupRel commercePaymentMethodGroupRel =
 				_commercePaymentMethodGroupRelService.
 					fetchCommercePaymentMethodGroupRel(
-						commerceChannel.getGroupId(),
-						commercePaymentIntegration.getKey());
+						commerceChannel.getGroupId(), key);
 
 			String description = StringPool.BLANK;
-			String paymentIntegrationName =
-				commercePaymentIntegration.getPaymentIntegrationName();
+			String name = commercePaymentIntegration.getName(
+				_portal.getLocale(httpServletRequest));
 
 			if (commercePaymentMethodGroupRel != null) {
 				description = commercePaymentMethodGroupRel.getDescription(
 					themeDisplay.getLocale());
-				paymentIntegrationName = commercePaymentMethodGroupRel.getName(
+				name = commercePaymentMethodGroupRel.getName(
+					themeDisplay.getLocale());
+			}
+
+			if (Validator.isNull(description)) {
+				description = commercePaymentIntegration.getDescription(
 					themeDisplay.getLocale());
 			}
 
 			paymentMethods.add(
 				new PaymentMethod(
-					description, commercePaymentIntegration.getKey(),
-					paymentIntegrationName, paymentIntegrationName,
+					description, key, name, name, key,
 					CommerceChannelClayTableUtil.getLabelField(
 						_isActive(commercePaymentMethodGroupRel),
 						themeDisplay.getLocale())));
 		}
 
-		return paymentMethods;
+		return ListUtil.subList(
+			paymentMethods, fdsPagination.getStartPosition(),
+			fdsPagination.getEndPosition());
 	}
 
 	@Override
@@ -144,10 +152,14 @@ public class CommercePaymentMethodFDSDataProvider
 			FDSKeywords fdsKeywords, HttpServletRequest httpServletRequest)
 		throws PortalException {
 
+		Map<String, CommercePaymentIntegration> commercePaymentIntegrations =
+			_commercePaymentIntegrationRegistry.
+				getCommercePaymentIntegrations();
 		Map<String, CommercePaymentMethod> commercePaymentMethodMap =
 			_commercePaymentMethodRegistry.getCommercePaymentMethods();
 
-		return commercePaymentMethodMap.size();
+		return commercePaymentIntegrations.size() +
+			commercePaymentMethodMap.size();
 	}
 
 	private boolean _isActive(
@@ -173,5 +185,8 @@ public class CommercePaymentMethodFDSDataProvider
 
 	@Reference
 	private CommercePaymentMethodRegistry _commercePaymentMethodRegistry;
+
+	@Reference
+	private Portal _portal;
 
 }

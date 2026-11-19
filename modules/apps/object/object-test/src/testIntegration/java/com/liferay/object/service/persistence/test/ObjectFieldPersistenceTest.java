@@ -111,11 +111,7 @@ public class ObjectFieldPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		ObjectField newObjectField = _persistence.create(pk);
-
-		newObjectField.setMvccVersion(RandomTestUtil.nextLong());
+		ObjectField newObjectField = addObjectField();
 
 		newObjectField.setUuid(RandomTestUtil.randomString());
 
@@ -143,6 +139,8 @@ public class ObjectFieldPersistenceTest {
 
 		newObjectField.setDBType(RandomTestUtil.randomString());
 
+		newObjectField.setDescription(RandomTestUtil.randomString());
+
 		newObjectField.setIndexed(RandomTestUtil.randomBoolean());
 
 		newObjectField.setIndexedAsKeyword(RandomTestUtil.randomBoolean());
@@ -168,7 +166,9 @@ public class ObjectFieldPersistenceTest {
 
 		newObjectField.setSystem(RandomTestUtil.randomBoolean());
 
-		_objectFields.add(_persistence.update(newObjectField));
+		newObjectField = _persistence.update(newObjectField);
+
+		_objectFields.add(newObjectField);
 
 		ObjectField existingObjectField = _persistence.findByPrimaryKey(
 			newObjectField.getPrimaryKey());
@@ -213,6 +213,9 @@ public class ObjectFieldPersistenceTest {
 			newObjectField.getDBTableName());
 		Assert.assertEquals(
 			existingObjectField.getDBType(), newObjectField.getDBType());
+		Assert.assertEquals(
+			existingObjectField.getDescription(),
+			newObjectField.getDescription());
 		Assert.assertEquals(
 			existingObjectField.isIndexed(), newObjectField.isIndexed());
 		Assert.assertEquals(
@@ -262,6 +265,13 @@ public class ObjectFieldPersistenceTest {
 	}
 
 	@Test
+	public void testCountByCompanyId() throws Exception {
+		_persistence.countByCompanyId(RandomTestUtil.nextLong());
+
+		_persistence.countByCompanyId(0L);
+	}
+
+	@Test
 	public void testCountByListTypeDefinitionId() throws Exception {
 		_persistence.countByListTypeDefinitionId(RandomTestUtil.nextLong());
 
@@ -276,11 +286,28 @@ public class ObjectFieldPersistenceTest {
 	}
 
 	@Test
+	public void testCountByC_U() throws Exception {
+		_persistence.countByC_U(
+			RandomTestUtil.nextLong(), RandomTestUtil.nextLong());
+
+		_persistence.countByC_U(0L, 0L);
+	}
+
+	@Test
 	public void testCountByLTDI_S() throws Exception {
 		_persistence.countByLTDI_S(
 			RandomTestUtil.nextLong(), RandomTestUtil.randomBoolean());
 
 		_persistence.countByLTDI_S(0L, RandomTestUtil.randomBoolean());
+	}
+
+	@Test
+	public void testCountByODI_BT() throws Exception {
+		_persistence.countByODI_BT(RandomTestUtil.nextLong(), "");
+
+		_persistence.countByODI_BT(0L, "null");
+
+		_persistence.countByODI_BT(0L, (String)null);
 	}
 
 	@Test
@@ -348,6 +375,16 @@ public class ObjectFieldPersistenceTest {
 	}
 
 	@Test
+	public void testCountByODI_L_S() throws Exception {
+		_persistence.countByODI_L_S(
+			RandomTestUtil.nextLong(), RandomTestUtil.randomBoolean(),
+			RandomTestUtil.randomBoolean());
+
+		_persistence.countByODI_L_S(
+			0L, RandomTestUtil.randomBoolean(), RandomTestUtil.randomBoolean());
+	}
+
+	@Test
 	public void testFindByPrimaryKeyExisting() throws Exception {
 		ObjectField newObjectField = addObjectField();
 
@@ -377,9 +414,9 @@ public class ObjectFieldPersistenceTest {
 			true, "userId", true, "userName", true, "createDate", true,
 			"modifiedDate", true, "listTypeDefinitionId", true,
 			"objectDefinitionId", true, "businessType", true, "dbColumnName",
-			true, "dbTableName", true, "dbType", true, "indexed", true,
-			"indexedAsKeyword", true, "indexedLanguageId", true, "label", true,
-			"localized", true, "name", true, "readOnly", true,
+			true, "dbTableName", true, "dbType", true, "description", true,
+			"indexed", true, "indexedAsKeyword", true, "indexedLanguageId",
+			true, "localized", true, "name", true, "readOnly", true,
 			"relationshipType", true, "required", true, "state", true, "system",
 			true);
 	}
@@ -677,8 +714,6 @@ public class ObjectFieldPersistenceTest {
 
 		ObjectField objectField = _persistence.create(pk);
 
-		objectField.setMvccVersion(RandomTestUtil.nextLong());
-
 		objectField.setUuid(RandomTestUtil.randomString());
 
 		objectField.setExternalReferenceCode(RandomTestUtil.randomString());
@@ -704,6 +739,8 @@ public class ObjectFieldPersistenceTest {
 		objectField.setDBTableName(RandomTestUtil.randomString());
 
 		objectField.setDBType(RandomTestUtil.randomString());
+
+		objectField.setDescription(RandomTestUtil.randomString());
 
 		objectField.setIndexed(RandomTestUtil.randomBoolean());
 
@@ -740,3 +777,4 @@ public class ObjectFieldPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:983136310

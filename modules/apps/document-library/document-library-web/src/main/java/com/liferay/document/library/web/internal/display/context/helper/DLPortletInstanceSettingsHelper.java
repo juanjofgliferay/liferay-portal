@@ -7,10 +7,23 @@ package com.liferay.document.library.web.internal.display.context.helper;
 
 import com.liferay.document.library.constants.DLPortletKeys;
 import com.liferay.document.library.kernel.model.DLFileEntryConstants;
+import com.liferay.document.library.kernel.model.DLFolderConstants;
+import com.liferay.document.library.kernel.service.DLAppLocalServiceUtil;
 import com.liferay.document.library.kernel.util.DLUtil;
 import com.liferay.document.library.web.internal.settings.DLPortletInstanceSettings;
+import com.liferay.portal.kernel.exception.NoSuchGroupException;
+import com.liferay.portal.kernel.exception.NoSuchRepositoryException;
+import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.model.Repository;
+import com.liferay.portal.kernel.repository.model.Folder;
 import com.liferay.portal.kernel.service.ClassNameLocalServiceUtil;
+import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
+import com.liferay.portal.kernel.service.RepositoryLocalServiceUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
@@ -18,10 +31,11 @@ import com.liferay.portal.kernel.util.KeyValuePair;
 import com.liferay.portal.kernel.util.KeyValuePairComparator;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.PortletKeys;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.SetUtil;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.view.count.ViewCountManagerUtil;
-import com.liferay.portal.util.PropsValues;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -107,6 +121,88 @@ public class DLPortletInstanceSettingsHelper {
 		return entryColumns;
 	}
 
+	public Folder getRootFolder() throws PortalException {
+		DLPortletInstanceSettings dlPortletInstanceSettings =
+			_dlRequestHelper.getDLPortletInstanceSettings();
+
+		String rootFolderExternalReferenceCode =
+			dlPortletInstanceSettings.getRootFolderExternalReferenceCode();
+
+		if (Validator.isBlank(rootFolderExternalReferenceCode)) {
+			return null;
+		}
+
+		String selectedGroupExternalReferenceCode =
+			dlPortletInstanceSettings.getSelectedGroupExternalReferenceCode();
+
+		Group selectedGroup = _getSelectedGroup(
+			dlPortletInstanceSettings, selectedGroupExternalReferenceCode,
+			_dlRequestHelper.getThemeDisplay());
+
+		return DLAppLocalServiceUtil.getFolderByExternalReferenceCode(
+			rootFolderExternalReferenceCode, selectedGroup.getGroupId());
+	}
+
+	public long getRootFolderId() throws PortalException {
+		Folder rootFolder = getRootFolder();
+
+		if (rootFolder == null) {
+			return DLFolderConstants.DEFAULT_PARENT_FOLDER_ID;
+		}
+
+		return rootFolder.getFolderId();
+	}
+
+	public long getSelectedRepositoryId() {
+		DLPortletInstanceSettings dlPortletInstanceSettings =
+			_dlRequestHelper.getDLPortletInstanceSettings();
+
+		String selectedGroupExternalReferenceCode =
+			dlPortletInstanceSettings.getSelectedGroupExternalReferenceCode();
+
+		if (Validator.isBlank(selectedGroupExternalReferenceCode)) {
+			return 0;
+		}
+
+		try {
+			ThemeDisplay themeDisplay = _dlRequestHelper.getThemeDisplay();
+
+			Group selectedGroup = _getSelectedGroup(
+				GroupLocalServiceUtil.getGroupByExternalReferenceCode(
+					selectedGroupExternalReferenceCode,
+					themeDisplay.getCompanyId()),
+				themeDisplay);
+
+			String selectedRepositoryExternalReferenceCode =
+				dlPortletInstanceSettings.
+					getSelectedRepositoryExternalReferenceCode();
+
+			if (Validator.isBlank(selectedRepositoryExternalReferenceCode)) {
+				return selectedGroup.getGroupId();
+			}
+
+			Repository selectedRepository =
+				RepositoryLocalServiceUtil.getRepositoryByExternalReferenceCode(
+					selectedRepositoryExternalReferenceCode,
+					selectedGroup.getGroupId());
+
+			return selectedRepository.getRepositoryId();
+		}
+		catch (NoSuchGroupException | NoSuchRepositoryException exception) {
+			if (_log.isWarnEnabled()) {
+				_log.warn(
+					"Unable to get the selected repository, using the " +
+						"default scope",
+					exception);
+			}
+
+			return 0;
+		}
+		catch (PortalException portalException) {
+			throw new SystemException(portalException);
+		}
+	}
+
 	public boolean isShowActions() {
 		String portletName = _dlRequestHelper.getPortletName();
 		String portletResource = _dlRequestHelper.getPortletResource();
@@ -141,15 +237,11 @@ public class DLPortletInstanceSettingsHelper {
 	public boolean isShowTabs() {
 		String portletName = _dlRequestHelper.getPortletName();
 
-		if (portletName.equals(DLPortletKeys.DOCUMENT_LIBRARY_ADMIN)) {
-			return true;
-		}
-
-		return false;
+		return portletName.equals(DLPortletKeys.DOCUMENT_LIBRARY_ADMIN);
 	}
 
 	private String[] _getAllEntryColumns() {
-		String allEntryColumns = "name,description,size,status";
+		String allEntryColumns = "name,description,document-type,size,status";
 
 		if (ViewCountManagerUtil.isViewCountEnabled(
 				ClassNameLocalServiceUtil.getClassNameId(
@@ -165,6 +257,34 @@ public class DLPortletInstanceSettingsHelper {
 		allEntryColumns += ",modified-date,create-date";
 
 		return StringUtil.split(allEntryColumns);
+	}
+
+	private Group _getSelectedGroup(
+			DLPortletInstanceSettings dlPortletInstanceSettings,
+			String selectedGroupExternalReferenceCode,
+			ThemeDisplay themeDisplay)
+		throws PortalException {
+
+		if (Validator.isNull(selectedGroupExternalReferenceCode)) {
+			return themeDisplay.getScopeGroup();
+		}
+
+		return _getSelectedGroup(
+			GroupLocalServiceUtil.getGroupByExternalReferenceCode(
+				dlPortletInstanceSettings.
+					getSelectedGroupExternalReferenceCode(),
+				themeDisplay.getCompanyId()),
+			themeDisplay);
+	}
+
+	private Group _getSelectedGroup(Group group, ThemeDisplay themeDisplay) {
+		Group scopeGroup = themeDisplay.getScopeGroup();
+
+		if (group.isStagingGroup() && !scopeGroup.isStagingGroup()) {
+			return group.getLiveGroup();
+		}
+
+		return group;
 	}
 
 	private void _populateDisplayViews() {
@@ -192,14 +312,16 @@ public class DLPortletInstanceSettingsHelper {
 			PropsValues.DL_DISPLAY_VIEWS);
 
 		for (String displayView : allDisplayViews) {
-			if (Arrays.binarySearch(displayViews, displayView) < 0) {
-				_availableDisplayViews.add(
-					new KeyValuePair(
-						displayView,
-						LanguageUtil.get(
-							_dlRequestHelper.getLocale(),
-							_displayViews.get(displayView))));
+			if (Arrays.binarySearch(displayViews, displayView) >= 0) {
+				continue;
 			}
+
+			_availableDisplayViews.add(
+				new KeyValuePair(
+					displayView,
+					LanguageUtil.get(
+						_dlRequestHelper.getLocale(),
+						_displayViews.get(displayView))));
 		}
 
 		_availableDisplayViews = ListUtil.sort(
@@ -233,13 +355,15 @@ public class DLPortletInstanceSettingsHelper {
 		Set<String> allEntryColumns = SetUtil.fromArray(_getAllEntryColumns());
 
 		for (String entryColumn : allEntryColumns) {
-			if (Arrays.binarySearch(entryColumns, entryColumn) < 0) {
-				_availableEntryColumns.add(
-					new KeyValuePair(
-						entryColumn,
-						LanguageUtil.get(
-							_dlRequestHelper.getLocale(), entryColumn)));
+			if (Arrays.binarySearch(entryColumns, entryColumn) >= 0) {
+				continue;
 			}
+
+			_availableEntryColumns.add(
+				new KeyValuePair(
+					entryColumn,
+					LanguageUtil.get(
+						_dlRequestHelper.getLocale(), entryColumn)));
 		}
 
 		_availableEntryColumns = ListUtil.sort(
@@ -272,14 +396,19 @@ public class DLPortletInstanceSettingsHelper {
 			DLUtil.getAllMediaGalleryMimeTypes();
 
 		for (String mimeType : allMediaGalleryMimeTypes) {
-			if (Arrays.binarySearch(mediaGalleryMimeTypes, mimeType) < 0) {
-				_availableMimeTypes.add(
-					new KeyValuePair(
-						mimeType,
-						LanguageUtil.get(themeDisplay.getLocale(), mimeType)));
+			if (Arrays.binarySearch(mediaGalleryMimeTypes, mimeType) >= 0) {
+				continue;
 			}
+
+			_availableMimeTypes.add(
+				new KeyValuePair(
+					mimeType,
+					LanguageUtil.get(themeDisplay.getLocale(), mimeType)));
 		}
 	}
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		DLPortletInstanceSettingsHelper.class);
 
 	private static final Map<String, String> _displayViews = HashMapBuilder.put(
 		"descriptive", "list"

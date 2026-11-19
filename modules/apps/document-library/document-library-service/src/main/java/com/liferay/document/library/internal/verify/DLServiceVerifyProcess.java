@@ -27,7 +27,6 @@ import com.liferay.dynamic.data.mapping.service.DDMStructureLocalService;
 import com.liferay.exportimport.kernel.staging.Staging;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.change.tracking.store.CTStoreFactory;
 import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.Criterion;
 import com.liferay.portal.kernel.dao.orm.Property;
@@ -37,7 +36,6 @@ import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.metadata.RawMetadataProcessorUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Release;
 import com.liferay.portal.kernel.repository.model.FileEntry;
@@ -148,7 +146,6 @@ public class DLServiceVerifyProcess extends VerifyProcess {
 
 				if (ddmStructure != null) {
 					DDMForm ddmForm = DDMFormUtil.buildDDMForm(
-						RawMetadataProcessorUtil.getFieldNames(),
 						_portal.getSiteDefaultLocale(group.getGroupId()));
 
 					String definition = _serializeJSONDDMForm(ddmForm);
@@ -432,9 +429,6 @@ public class DLServiceVerifyProcess extends VerifyProcess {
 
 	@Reference
 	private CompanyLocalService _companyLocalService;
-
-	@Reference
-	private CTStoreFactory _ctStoreFactory;
 
 	@Reference
 	private DDMStructureLocalService _ddmStructureLocalService;

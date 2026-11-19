@@ -53,7 +53,7 @@ public class AuditEventCacheModel
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(33);
+		StringBundler sb = new StringBundler(65);
 
 		sb.append("{auditEventId=");
 		sb.append(auditEventId);
@@ -67,26 +67,58 @@ public class AuditEventCacheModel
 		sb.append(userName);
 		sb.append(", createDate=");
 		sb.append(createDate);
-		sb.append(", eventType=");
-		sb.append(eventType);
+		sb.append(", accountEntryId=");
+		sb.append(accountEntryId);
+		sb.append(", additionalInfo=");
+		sb.append(additionalInfo);
 		sb.append(", className=");
 		sb.append(className);
 		sb.append(", classPK=");
 		sb.append(classPK);
-		sb.append(", message=");
-		sb.append(message);
 		sb.append(", clientHost=");
 		sb.append(clientHost);
 		sb.append(", clientIP=");
 		sb.append(clientIP);
+		sb.append(", contextName=");
+		sb.append(contextName);
+		sb.append(", correlationId=");
+		sb.append(correlationId);
+		sb.append(", eventType=");
+		sb.append(eventType);
+		sb.append(", httpMethod=");
+		sb.append(httpMethod);
+		sb.append(", impersonated=");
+		sb.append(impersonated);
+		sb.append(", impersonatedUserEmailAddress=");
+		sb.append(impersonatedUserEmailAddress);
+		sb.append(", impersonatedUserId=");
+		sb.append(impersonatedUserId);
+		sb.append(", impersonatedUserName=");
+		sb.append(impersonatedUserName);
+		sb.append(", message=");
+		sb.append(message);
+		sb.append(", objectName=");
+		sb.append(objectName);
+		sb.append(", requestId=");
+		sb.append(requestId);
+		sb.append(", requestIdGenerated=");
+		sb.append(requestIdGenerated);
+		sb.append(", resourceAction=");
+		sb.append(resourceAction);
+		sb.append(", resourceType=");
+		sb.append(resourceType);
+		sb.append(", roles=");
+		sb.append(roles);
 		sb.append(", serverName=");
 		sb.append(serverName);
 		sb.append(", serverPort=");
 		sb.append(serverPort);
 		sb.append(", sessionID=");
 		sb.append(sessionID);
-		sb.append(", additionalInfo=");
-		sb.append(additionalInfo);
+		sb.append(", userAgent=");
+		sb.append(userAgent);
+		sb.append(", userEmailAddress=");
+		sb.append(userEmailAddress);
 		sb.append("}");
 
 		return sb.toString();
@@ -115,11 +147,13 @@ public class AuditEventCacheModel
 			auditEventImpl.setCreateDate(new Date(createDate));
 		}
 
-		if (eventType == null) {
-			auditEventImpl.setEventType("");
+		auditEventImpl.setAccountEntryId(accountEntryId);
+
+		if (additionalInfo == null) {
+			auditEventImpl.setAdditionalInfo("");
 		}
 		else {
-			auditEventImpl.setEventType(eventType);
+			auditEventImpl.setAdditionalInfo(additionalInfo);
 		}
 
 		if (className == null) {
@@ -136,13 +170,6 @@ public class AuditEventCacheModel
 			auditEventImpl.setClassPK(classPK);
 		}
 
-		if (message == null) {
-			auditEventImpl.setMessage("");
-		}
-		else {
-			auditEventImpl.setMessage(message);
-		}
-
 		if (clientHost == null) {
 			auditEventImpl.setClientHost("");
 		}
@@ -155,6 +182,97 @@ public class AuditEventCacheModel
 		}
 		else {
 			auditEventImpl.setClientIP(clientIP);
+		}
+
+		if (contextName == null) {
+			auditEventImpl.setContextName("");
+		}
+		else {
+			auditEventImpl.setContextName(contextName);
+		}
+
+		if (correlationId == null) {
+			auditEventImpl.setCorrelationId("");
+		}
+		else {
+			auditEventImpl.setCorrelationId(correlationId);
+		}
+
+		if (eventType == null) {
+			auditEventImpl.setEventType("");
+		}
+		else {
+			auditEventImpl.setEventType(eventType);
+		}
+
+		if (httpMethod == null) {
+			auditEventImpl.setHttpMethod("");
+		}
+		else {
+			auditEventImpl.setHttpMethod(httpMethod);
+		}
+
+		auditEventImpl.setImpersonated(impersonated);
+
+		if (impersonatedUserEmailAddress == null) {
+			auditEventImpl.setImpersonatedUserEmailAddress("");
+		}
+		else {
+			auditEventImpl.setImpersonatedUserEmailAddress(
+				impersonatedUserEmailAddress);
+		}
+
+		auditEventImpl.setImpersonatedUserId(impersonatedUserId);
+
+		if (impersonatedUserName == null) {
+			auditEventImpl.setImpersonatedUserName("");
+		}
+		else {
+			auditEventImpl.setImpersonatedUserName(impersonatedUserName);
+		}
+
+		if (message == null) {
+			auditEventImpl.setMessage("");
+		}
+		else {
+			auditEventImpl.setMessage(message);
+		}
+
+		if (objectName == null) {
+			auditEventImpl.setObjectName("");
+		}
+		else {
+			auditEventImpl.setObjectName(objectName);
+		}
+
+		if (requestId == null) {
+			auditEventImpl.setRequestId("");
+		}
+		else {
+			auditEventImpl.setRequestId(requestId);
+		}
+
+		auditEventImpl.setRequestIdGenerated(requestIdGenerated);
+
+		if (resourceAction == null) {
+			auditEventImpl.setResourceAction("");
+		}
+		else {
+			auditEventImpl.setResourceAction(resourceAction);
+		}
+
+		if (resourceType == null) {
+			auditEventImpl.setResourceType("");
+		}
+		else {
+			auditEventImpl.setResourceType(resourceType);
+		}
+
+		if (roles == null) {
+			auditEventImpl.setRoles("");
+		}
+		else {
+			auditEventImpl.setRoles(roles);
 		}
 
 		if (serverName == null) {
@@ -173,11 +291,18 @@ public class AuditEventCacheModel
 			auditEventImpl.setSessionID(sessionID);
 		}
 
-		if (additionalInfo == null) {
-			auditEventImpl.setAdditionalInfo("");
+		if (userAgent == null) {
+			auditEventImpl.setUserAgent("");
 		}
 		else {
-			auditEventImpl.setAdditionalInfo(additionalInfo);
+			auditEventImpl.setUserAgent(userAgent);
+		}
+
+		if (userEmailAddress == null) {
+			auditEventImpl.setUserEmailAddress("");
+		}
+		else {
+			auditEventImpl.setUserEmailAddress(userEmailAddress);
 		}
 
 		auditEventImpl.resetOriginalValues();
@@ -198,17 +323,37 @@ public class AuditEventCacheModel
 		userId = objectInput.readLong();
 		userName = objectInput.readUTF();
 		createDate = objectInput.readLong();
-		eventType = objectInput.readUTF();
+
+		accountEntryId = objectInput.readLong();
+		additionalInfo = (String)objectInput.readObject();
 		className = objectInput.readUTF();
 		classPK = objectInput.readUTF();
-		message = objectInput.readUTF();
 		clientHost = objectInput.readUTF();
 		clientIP = objectInput.readUTF();
+		contextName = objectInput.readUTF();
+		correlationId = objectInput.readUTF();
+		eventType = objectInput.readUTF();
+		httpMethod = objectInput.readUTF();
+
+		impersonated = objectInput.readBoolean();
+		impersonatedUserEmailAddress = objectInput.readUTF();
+
+		impersonatedUserId = objectInput.readLong();
+		impersonatedUserName = objectInput.readUTF();
+		message = objectInput.readUTF();
+		objectName = objectInput.readUTF();
+		requestId = objectInput.readUTF();
+
+		requestIdGenerated = objectInput.readBoolean();
+		resourceAction = objectInput.readUTF();
+		resourceType = objectInput.readUTF();
+		roles = (String)objectInput.readObject();
 		serverName = objectInput.readUTF();
 
 		serverPort = objectInput.readInt();
 		sessionID = objectInput.readUTF();
-		additionalInfo = (String)objectInput.readObject();
+		userAgent = objectInput.readUTF();
+		userEmailAddress = objectInput.readUTF();
 	}
 
 	@Override
@@ -230,11 +375,13 @@ public class AuditEventCacheModel
 
 		objectOutput.writeLong(createDate);
 
-		if (eventType == null) {
-			objectOutput.writeUTF("");
+		objectOutput.writeLong(accountEntryId);
+
+		if (additionalInfo == null) {
+			objectOutput.writeObject("");
 		}
 		else {
-			objectOutput.writeUTF(eventType);
+			objectOutput.writeObject(additionalInfo);
 		}
 
 		if (className == null) {
@@ -251,13 +398,6 @@ public class AuditEventCacheModel
 			objectOutput.writeUTF(classPK);
 		}
 
-		if (message == null) {
-			objectOutput.writeUTF("");
-		}
-		else {
-			objectOutput.writeUTF(message);
-		}
-
 		if (clientHost == null) {
 			objectOutput.writeUTF("");
 		}
@@ -270,6 +410,96 @@ public class AuditEventCacheModel
 		}
 		else {
 			objectOutput.writeUTF(clientIP);
+		}
+
+		if (contextName == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(contextName);
+		}
+
+		if (correlationId == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(correlationId);
+		}
+
+		if (eventType == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(eventType);
+		}
+
+		if (httpMethod == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(httpMethod);
+		}
+
+		objectOutput.writeBoolean(impersonated);
+
+		if (impersonatedUserEmailAddress == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(impersonatedUserEmailAddress);
+		}
+
+		objectOutput.writeLong(impersonatedUserId);
+
+		if (impersonatedUserName == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(impersonatedUserName);
+		}
+
+		if (message == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(message);
+		}
+
+		if (objectName == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(objectName);
+		}
+
+		if (requestId == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(requestId);
+		}
+
+		objectOutput.writeBoolean(requestIdGenerated);
+
+		if (resourceAction == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(resourceAction);
+		}
+
+		if (resourceType == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(resourceType);
+		}
+
+		if (roles == null) {
+			objectOutput.writeObject("");
+		}
+		else {
+			objectOutput.writeObject(roles);
 		}
 
 		if (serverName == null) {
@@ -288,11 +518,18 @@ public class AuditEventCacheModel
 			objectOutput.writeUTF(sessionID);
 		}
 
-		if (additionalInfo == null) {
-			objectOutput.writeObject("");
+		if (userAgent == null) {
+			objectOutput.writeUTF("");
 		}
 		else {
-			objectOutput.writeObject(additionalInfo);
+			objectOutput.writeUTF(userAgent);
+		}
+
+		if (userEmailAddress == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(userEmailAddress);
 		}
 	}
 
@@ -302,15 +539,32 @@ public class AuditEventCacheModel
 	public long userId;
 	public String userName;
 	public long createDate;
-	public String eventType;
+	public long accountEntryId;
+	public String additionalInfo;
 	public String className;
 	public String classPK;
-	public String message;
 	public String clientHost;
 	public String clientIP;
+	public String contextName;
+	public String correlationId;
+	public String eventType;
+	public String httpMethod;
+	public boolean impersonated;
+	public String impersonatedUserEmailAddress;
+	public long impersonatedUserId;
+	public String impersonatedUserName;
+	public String message;
+	public String objectName;
+	public String requestId;
+	public boolean requestIdGenerated;
+	public String resourceAction;
+	public String resourceType;
+	public String roles;
 	public String serverName;
 	public int serverPort;
 	public String sessionID;
-	public String additionalInfo;
+	public String userAgent;
+	public String userEmailAddress;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1646860033

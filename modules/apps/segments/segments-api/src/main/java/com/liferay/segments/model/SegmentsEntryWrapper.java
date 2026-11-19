@@ -39,6 +39,7 @@ public class SegmentsEntryWrapper
 		attributes.put("mvccVersion", getMvccVersion());
 		attributes.put("ctCollectionId", getCtCollectionId());
 		attributes.put("uuid", getUuid());
+		attributes.put("externalReferenceCode", getExternalReferenceCode());
 		attributes.put("segmentsEntryId", getSegmentsEntryId());
 		attributes.put("groupId", getGroupId());
 		attributes.put("companyId", getCompanyId());
@@ -76,6 +77,13 @@ public class SegmentsEntryWrapper
 
 		if (uuid != null) {
 			setUuid(uuid);
+		}
+
+		String externalReferenceCode = (String)attributes.get(
+			"externalReferenceCode");
+
+		if (externalReferenceCode != null) {
+			setExternalReferenceCode(externalReferenceCode);
 		}
 
 		Long segmentsEntryId = (Long)attributes.get("segmentsEntryId");
@@ -156,7 +164,7 @@ public class SegmentsEntryWrapper
 			setSource(source);
 		}
 
-		String type = (String)attributes.get("type");
+		Integer type = (Integer)attributes.get("type");
 
 		if (type != null) {
 			setType(type);
@@ -313,6 +321,16 @@ public class SegmentsEntryWrapper
 	@Override
 	public Map<java.util.Locale, String> getDescriptionMap() {
 		return model.getDescriptionMap();
+	}
+
+	/**
+	 * Returns the external reference code of this segments entry.
+	 *
+	 * @return the external reference code of this segments entry
+	 */
+	@Override
+	public String getExternalReferenceCode() {
+		return model.getExternalReferenceCode();
 	}
 
 	/**
@@ -482,7 +500,7 @@ public class SegmentsEntryWrapper
 	 * @return the type of this segments entry
 	 */
 	@Override
-	public String getType() {
+	public int getType() {
 		return model.getType();
 	}
 
@@ -674,6 +692,16 @@ public class SegmentsEntryWrapper
 	}
 
 	/**
+	 * Sets the external reference code of this segments entry.
+	 *
+	 * @param externalReferenceCode the external reference code of this segments entry
+	 */
+	@Override
+	public void setExternalReferenceCode(String externalReferenceCode) {
+		model.setExternalReferenceCode(externalReferenceCode);
+	}
+
+	/**
 	 * Sets the group ID of this segments entry.
 	 *
 	 * @param groupId the group ID of this segments entry
@@ -822,7 +850,7 @@ public class SegmentsEntryWrapper
 	 * @param type the type of this segments entry
 	 */
 	@Override
-	public void setType(String type) {
+	public void setType(int type) {
 		model.setType(type);
 	}
 
@@ -896,3 +924,4 @@ public class SegmentsEntryWrapper
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:417465346

@@ -1,10 +1,11 @@
 /* eslint-disable sort-keys */
+
 /**
  * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import '@testing-library/jest-dom/extend-expect';
+import '@testing-library/jest-dom';
 import {fireEvent, render, waitFor, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
@@ -433,9 +434,8 @@ describe('Detail', () => {
 			});
 
 			const bestKeywordLabel = getByText('best-keyword');
-			const questionCircleIcon = within(bestKeywordLabel).getByRole(
-				'presentation'
-			);
+			const questionCircleIcon =
+				within(bestKeywordLabel).getByRole('presentation');
 			fireEvent.mouseEnter(questionCircleIcon);
 			expect(getByText('best-keyword-help')).toBeInTheDocument();
 		});
@@ -461,7 +461,7 @@ describe('Detail', () => {
 			const trafficDropdown = getAllByText('traffic')[0];
 			userEvent.click(trafficDropdown);
 			expect(getByText('search-volume')).toBeInTheDocument();
-			expect(getByText('position')).toBeInTheDocument();
+			expect(getByText('position[ranking]')).toBeInTheDocument();
 		});
 
 		it('displays the top five relevant keywords sorted by search volume when user clicks on the dropdown option search volume', async () => {
@@ -541,7 +541,7 @@ describe('Detail', () => {
 
 			const trafficDropdown = getAllByText('traffic')[0];
 			userEvent.click(trafficDropdown);
-			const searchVolumeLabel = getByText('position');
+			const searchVolumeLabel = getByText('position[ranking]');
 			userEvent.click(searchVolumeLabel);
 
 			expect(getByText('commerce')).toBeInTheDocument();

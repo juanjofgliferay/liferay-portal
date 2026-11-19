@@ -264,15 +264,6 @@ public interface JournalFeedLocalService
 	public List<JournalFeed> getFeeds();
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<JournalFeed> getFeeds(long groupId);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<JournalFeed> getFeeds(long groupId, int start, int end);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getFeedsCount(long groupId);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public IndexableActionableDynamicQuery getIndexableActionableDynamicQuery();
 
 	/**
@@ -406,3 +397,4 @@ public interface JournalFeedLocalService
 		throws E;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1551547002

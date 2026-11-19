@@ -15,7 +15,6 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleTokenResponse;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.client.util.store.DataStore;
-import com.google.api.client.util.store.MemoryDataStoreFactory;
 import com.google.api.services.drive.DriveScopes;
 
 import com.liferay.document.library.google.drive.configuration.DLGoogleDriveCompanyConfiguration;
@@ -28,6 +27,7 @@ import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.security.key.secret.SecretResolver;
 
 import java.io.IOException;
 
@@ -185,6 +185,8 @@ public class OAuth2Manager {
 	@Deactivate
 	protected void deactivate() {
 		_googleAuthorizationCodeFlows.clear();
+
+		StoredCredentialUtil.clear();
 	}
 
 	private DLGoogleDriveCompanyConfiguration
@@ -208,10 +210,10 @@ public class OAuth2Manager {
 				dlGoogleDriveCompanyConfiguration =
 					_getDLGoogleDriveCompanyConfiguration(companyId);
 
-			if (_googleAuthorizationCodeFlows.containsKey(companyId)) {
-				GoogleAuthorizationCodeFlow googleAuthorizationCodeFlow =
-					_googleAuthorizationCodeFlows.get(companyId);
+			GoogleAuthorizationCodeFlow googleAuthorizationCodeFlow =
+				_googleAuthorizationCodeFlows.get(companyId);
 
+			if (googleAuthorizationCodeFlow != null) {
 				ClientParametersAuthentication clientParametersAuthentication =
 					(ClientParametersAuthentication)
 						googleAuthorizationCodeFlow.getClientAuthentication();
@@ -221,7 +223,10 @@ public class OAuth2Manager {
 						dlGoogleDriveCompanyConfiguration.clientId()) &&
 					StringUtil.equals(
 						clientParametersAuthentication.getClientSecret(),
-						dlGoogleDriveCompanyConfiguration.clientSecret())) {
+						_secretResolver.resolve(
+							companyId,
+							dlGoogleDriveCompanyConfiguration.
+								clientSecret()))) {
 
 					return googleAuthorizationCodeFlow;
 				}
@@ -240,14 +245,17 @@ public class OAuth2Manager {
 						GetterUtil.getString(
 							dlGoogleDriveCompanyConfiguration.clientId()),
 						GetterUtil.getString(
-							dlGoogleDriveCompanyConfiguration.clientSecret()),
+							_secretResolver.resolve(
+								companyId,
+								dlGoogleDriveCompanyConfiguration.
+									clientSecret())),
 						Collections.singleton(DriveScopes.DRIVE_FILE));
 
 			googleAuthorizationCodeFlowBuilder =
 				googleAuthorizationCodeFlowBuilder.setDataStoreFactory(
-					MemoryDataStoreFactory.getDefaultInstance());
+					new StoredCredentialDataStoreFactory(companyId));
 
-			GoogleAuthorizationCodeFlow googleAuthorizationCodeFlow =
+			googleAuthorizationCodeFlow =
 				googleAuthorizationCodeFlowBuilder.build();
 
 			_googleAuthorizationCodeFlows.put(
@@ -270,5 +278,8 @@ public class OAuth2Manager {
 
 	private final Map<Long, GoogleAuthorizationCodeFlow>
 		_googleAuthorizationCodeFlows = new ConcurrentHashMap<>();
+
+	@Reference
+	private SecretResolver _secretResolver;
 
 }

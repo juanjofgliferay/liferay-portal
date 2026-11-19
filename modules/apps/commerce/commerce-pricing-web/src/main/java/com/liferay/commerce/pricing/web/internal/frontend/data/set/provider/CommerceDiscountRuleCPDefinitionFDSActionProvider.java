@@ -26,14 +26,14 @@ import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.WindowStateException;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.List;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
-import javax.portlet.WindowStateException;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -68,8 +68,9 @@ public class CommerceDiscountRuleCPDefinitionFDSActionProvider
 			dropdownItem -> {
 				dropdownItem.setHref(
 					_getDiscountRuleDeleteCPDefinitionURL(
-						discountRuleCPDefinition.getCPDefinitionId(),
 						discountRuleCPDefinition.getDiscountRuleId(),
+						discountRuleCPDefinition.
+							getCProductExternalReferenceCode(),
 						httpServletRequest));
 				dropdownItem.setLabel(
 					_language.get(httpServletRequest, Constants.REMOVE));
@@ -78,7 +79,7 @@ public class CommerceDiscountRuleCPDefinitionFDSActionProvider
 	}
 
 	private PortletURL _getDiscountRuleDeleteCPDefinitionURL(
-			long cpDefinitionId, long commerceDiscountRuleId,
+			long commerceDiscountRuleId, String cProductExternalReferenceCode,
 			HttpServletRequest httpServletRequest)
 		throws PortalException {
 
@@ -107,7 +108,7 @@ public class CommerceDiscountRuleCPDefinitionFDSActionProvider
 		portletURL.setParameter(
 			"commerceDiscountRuleId", String.valueOf(commerceDiscountRuleId));
 		portletURL.setParameter(
-			"cpDefinitionId", String.valueOf(cpDefinitionId));
+			"cProductExternalReferenceCode", cProductExternalReferenceCode);
 
 		return portletURL;
 	}

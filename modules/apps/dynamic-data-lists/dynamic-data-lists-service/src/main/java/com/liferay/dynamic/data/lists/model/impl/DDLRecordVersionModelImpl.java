@@ -103,6 +103,8 @@ public class DDLRecordVersionModelImpl
 
 	public static final String TABLE_SQL_DROP = "drop table DDLRecordVersion";
 
+	public static final String ENTITY_ALIAS = "ddlRecordVersion";
+
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY ddlRecordVersion.recordVersionId ASC";
 
@@ -125,38 +127,20 @@ public class DDLRecordVersionModelImpl
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long RECORDSETID_COLUMN_BITMASK = 2L;
+	public static final long STATUS_COLUMN_BITMASK = 2L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long RECORDSETVERSION_COLUMN_BITMASK = 4L;
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
-	 */
-	@Deprecated
-	public static final long STATUS_COLUMN_BITMASK = 8L;
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
-	 */
-	@Deprecated
-	public static final long USERID_COLUMN_BITMASK = 16L;
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
-	 */
-	@Deprecated
-	public static final long VERSION_COLUMN_BITMASK = 32L;
+	public static final long VERSION_COLUMN_BITMASK = 4L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
 	 *		#getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long RECORDVERSIONID_COLUMN_BITMASK = 64L;
+	public static final long RECORDVERSIONID_COLUMN_BITMASK = 8L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
@@ -505,15 +489,6 @@ public class DDLRecordVersionModelImpl
 	public void setUserUuid(String userUuid) {
 	}
 
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #getColumnOriginalValue(String)}
-	 */
-	@Deprecated
-	public long getOriginalUserId() {
-		return GetterUtil.getLong(this.<Long>getColumnOriginalValue("userId"));
-	}
-
 	@JSON
 	@Override
 	public String getUserName() {
@@ -579,16 +554,6 @@ public class DDLRecordVersionModelImpl
 		_recordSetId = recordSetId;
 	}
 
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #getColumnOriginalValue(String)}
-	 */
-	@Deprecated
-	public long getOriginalRecordSetId() {
-		return GetterUtil.getLong(
-			this.<Long>getColumnOriginalValue("recordSetId"));
-	}
-
 	@JSON
 	@Override
 	public String getRecordSetVersion() {
@@ -607,15 +572,6 @@ public class DDLRecordVersionModelImpl
 		}
 
 		_recordSetVersion = recordSetVersion;
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #getColumnOriginalValue(String)}
-	 */
-	@Deprecated
-	public String getOriginalRecordSetVersion() {
-		return getColumnOriginalValue("recordSetVersion");
 	}
 
 	@JSON
@@ -1311,3 +1267,4 @@ public class DDLRecordVersionModelImpl
 	private DDLRecordVersion _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:68908611

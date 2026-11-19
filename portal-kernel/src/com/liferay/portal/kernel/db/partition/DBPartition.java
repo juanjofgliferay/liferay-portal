@@ -5,21 +5,34 @@
 
 package com.liferay.portal.kernel.db.partition;
 
+import com.liferay.counter.kernel.model.Counter;
 import com.liferay.portal.kernel.model.ClassName;
 import com.liferay.portal.kernel.model.ResourceAction;
 import com.liferay.portal.kernel.model.ShardedModel;
-import com.liferay.portal.kernel.util.GetterUtil;
-import com.liferay.portal.kernel.util.PortalRunMode;
-import com.liferay.portal.kernel.util.PropsUtil;
+import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
+import com.liferay.portal.kernel.util.PropsValues;
 
 /**
  * @author Luis Ortiz
  */
 public class DBPartition {
 
+	public static boolean isCurrentCompanyRestricted() {
+		if (!PropsValues.DATABASE_PARTITION_ENABLED ||
+			CompanyThreadLocal.isDefaultCompany() ||
+			CompanyThreadLocal.isInitializingPortalInstance() ||
+			CompanyThreadLocal.isUpgradingPortalInstance()) {
+
+			return false;
+		}
+
+		return true;
+	}
+
 	public static boolean isPartitionedModel(Class<?> clazz) {
-		if (isPartitionEnabled() &&
+		if (PropsValues.DATABASE_PARTITION_ENABLED &&
 			(ClassName.class.isAssignableFrom(clazz) ||
+			 Counter.class.isAssignableFrom(clazz) ||
 			 ResourceAction.class.isAssignableFrom(clazz) ||
 			 ShardedModel.class.isAssignableFrom(clazz))) {
 
@@ -28,17 +41,5 @@ public class DBPartition {
 
 		return false;
 	}
-
-	public static boolean isPartitionEnabled() {
-		if (PortalRunMode.isTestMode()) {
-			return GetterUtil.getBoolean(
-				PropsUtil.get("database.partition.enabled"));
-		}
-
-		return _DATABASE_PARTITION_ENABLED;
-	}
-
-	private static final boolean _DATABASE_PARTITION_ENABLED =
-		GetterUtil.getBoolean(PropsUtil.get("database.partition.enabled"));
 
 }

@@ -24,17 +24,15 @@ public class UnusedParameterCheck extends BaseCheck {
 
 	@Override
 	protected void doVisitToken(DetailAST detailAST) {
-		DetailAST parentDetailAST = detailAST.getParent();
-
-		if (parentDetailAST != null) {
+		if (!isDirectChildOfCompilationUnit(detailAST)) {
 			return;
 		}
 
-		List<DetailAST> constructorsAndMethodsASTList = getAllChildTokens(
+		List<DetailAST> constructorsAndMethodsDetailASTs = getAllChildTokens(
 			detailAST, true, TokenTypes.CTOR_DEF, TokenTypes.METHOD_DEF);
 
 		for (DetailAST constructorOrMethodDetailAST :
-				constructorsAndMethodsASTList) {
+				constructorsAndMethodsDetailASTs) {
 
 			_checkUnusedParameters(detailAST, constructorOrMethodDetailAST);
 		}
@@ -73,35 +71,32 @@ public class UnusedParameterCheck extends BaseCheck {
 		for (String parameterName :
 				getParameterNames(constructorOrMethodDetailAST)) {
 
-			if (names.contains(parameterName)) {
+			if (names.contains(parameterName) ||
+				_isReferencedMethod(
+					classDetailAST, constructorOrMethodDetailAST)) {
+
 				continue;
 			}
 
-			if (!_isReferencedMethod(
-					classDetailAST, constructorOrMethodDetailAST)) {
-
-				log(
-					constructorOrMethodDetailAST, _MSG_UNUSED_PARAMETER,
-					parameterName);
-			}
+			log(
+				constructorOrMethodDetailAST, _MSG_UNUSED_PARAMETER,
+				parameterName);
 		}
 	}
 
 	private boolean _isReferencedMethod(
 		DetailAST classDetailAST, DetailAST constructorOrMethodDetailAST) {
 
-		List<DetailAST> methodReferenceDetailASTList = getAllChildTokens(
+		List<DetailAST> methodReferenceDetailASTs = getAllChildTokens(
 			classDetailAST, true, TokenTypes.METHOD_REF);
 
-		if (methodReferenceDetailASTList.isEmpty()) {
+		if (methodReferenceDetailASTs.isEmpty()) {
 			return false;
 		}
 
 		String constructorOrMethodName = getName(constructorOrMethodDetailAST);
 
-		for (DetailAST methodReferenceDetailAST :
-				methodReferenceDetailASTList) {
-
+		for (DetailAST methodReferenceDetailAST : methodReferenceDetailASTs) {
 			for (String name : getNames(methodReferenceDetailAST, true)) {
 				if (constructorOrMethodName.equals(name)) {
 					return true;

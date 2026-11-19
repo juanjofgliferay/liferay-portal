@@ -3,7 +3,7 @@
 
 <service-builder auto-import-default-references="false" auto-namespace-tables="false" change-tracking-enabled="true" dependency-injector="ds" mvcc-enabled="true" package-path="com.liferay.dynamic.data.mapping">
 	<namespace>DDM</namespace>
-	<entity deprecated="true" local-service="true" name="DDMContent" remote-service="false" uuid="true">
+	<entity local-service="true" name="DDMContent" remote-service="false" uuid="true">
 
 		<!-- PK fields -->
 
@@ -26,19 +26,6 @@
 		<column localized="true" name="name" type="String" />
 		<column name="description" type="String" />
 		<column name="data" type="String" />
-
-		<!-- Finder methods -->
-
-		<finder name="GroupId" return-type="Collection">
-			<finder-column name="groupId" />
-		</finder>
-		<finder name="CompanyId" return-type="Collection">
-			<finder-column name="companyId" />
-		</finder>
-
-		<!-- References -->
-
-		<reference entity="User" package-path="com.liferay.portal" />
 	</entity>
 	<entity local-service="true" name="DDMDataProviderInstance" remote-service="true" uuid="true">
 
@@ -135,13 +122,6 @@
 		<finder name="StorageId" return-type="Collection">
 			<finder-column name="storageId" />
 		</finder>
-		<finder name="StructureVersionId" return-type="Collection">
-			<finder-column name="structureVersionId" />
-		</finder>
-		<finder name="C_F" return-type="Collection">
-			<finder-column name="companyId" />
-			<finder-column name="fieldType" />
-		</finder>
 		<finder name="S_F" return-type="Collection">
 			<finder-column name="storageId" />
 			<finder-column name="fieldName" />
@@ -183,10 +163,6 @@
 			<finder-column name="storageId" />
 			<finder-column arrayable-operator="OR" name="languageId" />
 		</finder>
-		<finder name="AN_SAV" return-type="Collection">
-			<finder-column name="attributeName" />
-			<finder-column name="smallAttributeValue" />
-		</finder>
 		<finder name="F_AN_L" return-type="DDMFieldAttribute" unique="true">
 			<finder-column name="fieldId" />
 			<finder-column name="attributeName" />
@@ -227,6 +203,9 @@
 		<finder name="GroupId" return-type="Collection">
 			<finder-column arrayable-operator="OR" name="groupId" />
 		</finder>
+		<finder name="StructureId" return-type="DDMFormInstance" unique="true">
+			<finder-column name="structureId" />
+		</finder>
 	</entity>
 	<entity local-service="true" name="DDMFormInstanceRecord" remote-service="true" uuid="true">
 
@@ -259,9 +238,6 @@
 
 		<!-- Finder methods -->
 
-		<finder name="CompanyId" return-type="Collection">
-			<finder-column name="companyId" />
-		</finder>
 		<finder name="FormInstanceId" return-type="Collection">
 			<finder-column name="formInstanceId" />
 		</finder>
@@ -269,9 +245,9 @@
 			<finder-column name="userId" />
 			<finder-column name="formInstanceId" />
 		</finder>
-		<finder name="F_F" return-type="Collection">
+		<finder name="F_I" return-type="Collection">
 			<finder-column name="formInstanceId" />
-			<finder-column name="formInstanceVersion" />
+			<finder-column name="ipAddress" />
 		</finder>
 	</entity>
 	<entity local-service="true" name="DDMFormInstanceRecordVersion" remote-service="true">
@@ -311,10 +287,6 @@
 		<finder name="U_F" return-type="Collection">
 			<finder-column name="userId" />
 			<finder-column name="formInstanceId" />
-		</finder>
-		<finder name="F_F" return-type="Collection">
-			<finder-column name="formInstanceId" />
-			<finder-column name="formInstanceVersion" />
 		</finder>
 		<finder name="F_V" return-type="DDMFormInstanceRecordVersion" unique="true">
 			<finder-column name="formInstanceRecordId" />
@@ -433,6 +405,10 @@
 	</entity>
 	<entity local-service="true" name="DDMStructure" remote-service="true" uuid="true">
 
+		<!-- External reference code -->
+
+		<column name="externalReferenceCode" type="String" />
+
 		<!-- PK fields -->
 
 		<column name="structureId" primary="true" type="long" />
@@ -472,13 +448,6 @@
 		<finder name="ParentStructureId" return-type="Collection">
 			<finder-column name="parentStructureId" />
 		</finder>
-		<finder name="StructureKey" return-type="Collection">
-			<finder-column name="structureKey" />
-		</finder>
-		<finder name="G_P" return-type="Collection">
-			<finder-column name="groupId" />
-			<finder-column name="parentStructureId" />
-		</finder>
 		<finder name="G_C" return-type="Collection">
 			<finder-column arrayable-operator="OR" name="groupId" />
 			<finder-column name="classNameId" />
@@ -487,24 +456,18 @@
 			<finder-column name="companyId" />
 			<finder-column name="classNameId" />
 		</finder>
+		<finder name="ERC_G_C" return-type="DDMStructure" unique="true">
+			<finder-column name="externalReferenceCode" />
+			<finder-column name="groupId" />
+			<finder-column name="classNameId" />
+		</finder>
 		<finder name="G_C_S" return-type="DDMStructure" unique="true">
 			<finder-column name="groupId" />
 			<finder-column name="classNameId" />
 			<finder-column name="structureKey" />
 		</finder>
-		<finder db-index="false" name="G_N_D" return-type="Collection">
-			<finder-column name="groupId" />
-			<finder-column name="name" />
-			<finder-column name="description" />
-		</finder>
-		<finder db-index="false" name="G_C_N_D" return-type="Collection">
-			<finder-column arrayable-operator="OR" name="groupId" />
-			<finder-column name="classNameId" />
-			<finder-column name="name" />
-			<finder-column name="description" />
-		</finder>
 	</entity>
-	<entity local-service="true" name="DDMStructureLayout" remote-service="true" uuid="true">
+	<entity local-service="true" name="DDMStructureLayout" remote-service="false" uuid="true">
 
 		<!-- PK fields -->
 
@@ -536,15 +499,8 @@
 		<finder name="GroupId" return-type="Collection">
 			<finder-column name="groupId" />
 		</finder>
-		<finder name="StructureLayoutKey" return-type="Collection">
-			<finder-column name="structureLayoutKey" />
-		</finder>
 		<finder name="StructureVersionId" return-type="DDMStructureLayout">
 			<finder-column name="structureVersionId" />
-		</finder>
-		<finder name="G_C" return-type="Collection">
-			<finder-column name="groupId" />
-			<finder-column name="classNameId" />
 		</finder>
 		<finder name="G_C_S" return-type="DDMStructureLayout" unique="true">
 			<finder-column name="groupId" />
@@ -557,7 +513,7 @@
 			<finder-column name="structureVersionId" />
 		</finder>
 	</entity>
-	<entity local-service="true" name="DDMStructureLink" remote-service="false">
+	<entity local-service="true" name="DDMStructureLink" remote-service="true">
 
 		<!-- PK fields -->
 
@@ -629,12 +585,8 @@
 			<finder-column name="structureId" />
 			<finder-column name="version" />
 		</finder>
-		<finder name="S_S" return-type="Collection">
-			<finder-column name="structureId" />
-			<finder-column name="status" />
-		</finder>
 	</entity>
-	<entity local-service="true" name="DDMTemplate" remote-service="true" uuid="true">
+	<entity external-reference-code="group" local-service="true" name="DDMTemplate" remote-service="true" uuid="true">
 
 		<!-- PK fields -->
 
@@ -683,12 +635,6 @@
 		</finder>
 		<finder name="TemplateKey" return-type="Collection">
 			<finder-column name="templateKey" />
-		</finder>
-		<finder name="Type" return-type="Collection">
-			<finder-column name="type" />
-		</finder>
-		<finder name="Language" return-type="Collection">
-			<finder-column name="language" />
 		</finder>
 		<finder name="SmallImageId" return-type="DDMTemplate">
 			<finder-column name="smallImageId" />
@@ -797,10 +743,6 @@
 			<finder-column name="templateId" />
 			<finder-column name="version" />
 		</finder>
-		<finder name="T_S" return-type="Collection">
-			<finder-column name="templateId" />
-			<finder-column name="status" />
-		</finder>
 	</entity>
 	<exceptions>
 		<exception>Content</exception>
@@ -809,6 +751,7 @@
 		<exception>DataProviderInstanceName</exception>
 		<exception>DataProviderInstanceURL</exception>
 		<exception>DuplicateDataProviderInstanceInputParameterName</exception>
+		<exception>DuplicateDDMStructureExternalReferenceCode</exception>
 		<exception>FormInstanceExpired</exception>
 		<exception>FormInstanceName</exception>
 		<exception>FormInstanceNotPublished</exception>

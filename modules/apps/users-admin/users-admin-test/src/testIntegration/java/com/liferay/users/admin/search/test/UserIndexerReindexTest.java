@@ -14,8 +14,8 @@ import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.rule.SynchronousDestinationTestRule;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.search.test.rule.SearchTestRule;
 import com.liferay.portal.search.test.util.IndexerFixture;
-import com.liferay.portal.search.test.util.SearchTestRule;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
@@ -88,7 +88,7 @@ public class UserIndexerReindexTest {
 
 		_indexerFixture.searchNoOne(searchTerm);
 
-		_indexerFixture.reindex(user.getCompanyId());
+		_indexerFixture.reindexCompany(user.getCompanyId());
 
 		_indexerFixture.searchOnlyOne(searchTerm);
 	}
@@ -99,15 +99,15 @@ public class UserIndexerReindexTest {
 	@Inject
 	protected UserLocalService userLocalService;
 
+	private GroupSearchFixture _groupSearchFixture;
+
 	@DeleteAfterTestRun
 	private List<Group> _groups;
 
-	private GroupSearchFixture _groupSearchFixture;
 	private IndexerFixture<User> _indexerFixture;
+	private UserSearchFixture _userSearchFixture;
 
 	@DeleteAfterTestRun
 	private List<User> _users;
-
-	private UserSearchFixture _userSearchFixture;
 
 }

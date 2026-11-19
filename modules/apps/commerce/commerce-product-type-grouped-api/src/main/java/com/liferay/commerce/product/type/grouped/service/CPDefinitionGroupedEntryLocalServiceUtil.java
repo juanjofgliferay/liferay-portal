@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -104,6 +105,13 @@ public class CPDefinitionGroupedEntryLocalServiceUtil {
 
 	public static void deleteCPDefinitionGroupedEntries(long cpDefinitionId) {
 		getService().deleteCPDefinitionGroupedEntries(cpDefinitionId);
+	}
+
+	public static void deleteCPDefinitionGroupedEntriesByEntryCProductId(
+		long entryCProductId) {
+
+		getService().deleteCPDefinitionGroupedEntriesByEntryCProductId(
+			entryCProductId);
 	}
 
 	/**
@@ -312,13 +320,6 @@ public class CPDefinitionGroupedEntryLocalServiceUtil {
 			companyId, cpDefinitionId, keywords, start, end, sort);
 	}
 
-	public static List<CPDefinitionGroupedEntry>
-		getCPDefinitionGroupedEntriesByCPDefinitionId(long cpDefinitionId) {
-
-		return getService().getCPDefinitionGroupedEntriesByCPDefinitionId(
-			cpDefinitionId);
-	}
-
 	/**
 	 * Returns all the cp definition grouped entries matching the UUID and company.
 	 *
@@ -360,10 +361,6 @@ public class CPDefinitionGroupedEntryLocalServiceUtil {
 	 */
 	public static int getCPDefinitionGroupedEntriesCount() {
 		return getService().getCPDefinitionGroupedEntriesCount();
-	}
-
-	public static int getCPDefinitionGroupedEntriesCount(long cpDefinitionId) {
-		return getService().getCPDefinitionGroupedEntriesCount(cpDefinitionId);
 	}
 
 	public static int getCPDefinitionGroupedEntriesCount(
@@ -491,15 +488,13 @@ public class CPDefinitionGroupedEntryLocalServiceUtil {
 	}
 
 	public static CPDefinitionGroupedEntryLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(
-		CPDefinitionGroupedEntryLocalService service) {
-
-		_service = service;
-	}
-
-	private static volatile CPDefinitionGroupedEntryLocalService _service;
+	private static final Snapshot<CPDefinitionGroupedEntryLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			CPDefinitionGroupedEntryLocalServiceUtil.class,
+			CPDefinitionGroupedEntryLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1006030590

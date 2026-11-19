@@ -6,25 +6,35 @@
 package com.liferay.commerce.product.internal.search.spi.model.query.contributor;
 
 import com.liferay.commerce.product.constants.CPField;
+import com.liferay.commerce.product.constants.CommerceChannelAccountEntryRelConstants;
 import com.liferay.commerce.product.model.CommerceCatalog;
+import com.liferay.commerce.product.model.CommerceChannel;
+import com.liferay.commerce.product.model.CommerceChannelAccountEntryRel;
 import com.liferay.commerce.product.service.CommerceCatalogService;
+import com.liferay.commerce.product.service.CommerceChannelAccountEntryRelLocalService;
+import com.liferay.commerce.product.service.CommerceChannelLocalService;
+import com.liferay.commerce.util.CommerceChannelConfigurationUtil;
 import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.search.BooleanClauseOccur;
 import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.kernel.search.SearchContext;
 import com.liferay.portal.kernel.search.facet.util.RangeParserUtil;
 import com.liferay.portal.kernel.search.filter.BooleanFilter;
-import com.liferay.portal.kernel.search.filter.Filter;
 import com.liferay.portal.kernel.search.filter.RangeTermFilter;
 import com.liferay.portal.kernel.search.filter.TermFilter;
 import com.liferay.portal.kernel.search.filter.TermsFilter;
+import com.liferay.portal.kernel.security.permission.PermissionChecker;
+import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.search.spi.model.query.contributor.ModelPreFilterContributor;
 import com.liferay.portal.search.spi.model.registrar.ModelSearchSettings;
+
+import java.util.List;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -60,6 +70,11 @@ public class CPDefinitionModelPreFilterContributor
 		if (GetterUtil.getBoolean(searchContext.getAttribute("secure"))) {
 			_filterByAccountGroupIds(booleanFilter, searchContext);
 			_filterByCommerceChannelId(booleanFilter, searchContext);
+			_filterByGuestBrowsing(booleanFilter, searchContext);
+		}
+		else {
+			_filterByGuestBrowsingEnabledCommerceChannels(
+				booleanFilter, searchContext);
 		}
 
 		if (_isIndexersSuppressed(searchContext)) {
@@ -86,11 +101,11 @@ public class CPDefinitionModelPreFilterContributor
 			BooleanFilter accountGroupIdsBooleanFilter = new BooleanFilter();
 
 			for (long accountGroupId : accountGroupIds) {
-				Filter termFilter = new TermFilter(
-					"commerceAccountGroupIds", String.valueOf(accountGroupId));
-
 				accountGroupIdsBooleanFilter.add(
-					termFilter, BooleanClauseOccur.SHOULD);
+					new TermFilter(
+						"commerceAccountGroupIds",
+						String.valueOf(accountGroupId)),
+					BooleanClauseOccur.SHOULD);
 			}
 
 			accountGroupsFilterEnableBooleanFilter.add(
@@ -156,9 +171,7 @@ public class CPDefinitionModelPreFilterContributor
 			booleanFilter.add(termsFilter, BooleanClauseOccur.MUST);
 		}
 		else {
-			long[] groupIds = searchContext.getGroupIds();
-
-			if ((groupIds == null) || (groupIds.length == 0)) {
+			if (ArrayUtil.isEmpty(searchContext.getGroupIds())) {
 				booleanFilter.addTerm(
 					Field.GROUP_ID, "-1", BooleanClauseOccur.MUST);
 			}
@@ -177,6 +190,9 @@ public class CPDefinitionModelPreFilterContributor
 			CPField.CHANNEL_FILTER_ENABLED, Boolean.TRUE.toString(),
 			BooleanClauseOccur.MUST);
 
+		long accountEntryId = GetterUtil.getLong(
+			searchContext.getAttribute("accountEntryId"));
+
 		long commerceChannelGroupId = GetterUtil.getLong(
 			searchContext.getAttribute("commerceChannelGroupId"));
 
@@ -186,9 +202,42 @@ public class CPDefinitionModelPreFilterContributor
 
 		for (long groupId : commerceChannelGroupIds) {
 			if (groupId > 0) {
-				commerceChannelFilterEnableBooleanFilter.addTerm(
-					CPField.COMMERCE_CHANNEL_GROUP_IDS, String.valueOf(groupId),
-					BooleanClauseOccur.MUST);
+				CommerceChannel commerceChannel =
+					_commerceChannelLocalService.
+						fetchCommerceChannelByGroupClassPK(groupId);
+
+				if (commerceChannel == null) {
+					commerceChannelFilterEnableBooleanFilter.addTerm(
+						CPField.COMMERCE_CHANNEL_GROUP_IDS, "-1",
+						BooleanClauseOccur.MUST);
+
+					continue;
+				}
+
+				int count =
+					_commerceChannelAccountEntryRelLocalService.
+						getCommerceChannelAccountEntryRelsCount(
+							commerceChannel.getCommerceChannelId(), null,
+							CommerceChannelAccountEntryRelConstants.
+								TYPE_ELIGIBILITY);
+				CommerceChannelAccountEntryRel commerceChannelAccountEntryRel =
+					_commerceChannelAccountEntryRelLocalService.
+						fetchCommerceChannelAccountEntryRel(
+							accountEntryId,
+							commerceChannel.getCommerceChannelId(),
+							CommerceChannelAccountEntryRelConstants.
+								TYPE_ELIGIBILITY);
+
+				if ((count == 0) || (commerceChannelAccountEntryRel != null)) {
+					commerceChannelFilterEnableBooleanFilter.addTerm(
+						CPField.COMMERCE_CHANNEL_GROUP_IDS,
+						String.valueOf(groupId), BooleanClauseOccur.MUST);
+				}
+				else {
+					commerceChannelFilterEnableBooleanFilter.addTerm(
+						CPField.COMMERCE_CHANNEL_GROUP_IDS, "-1",
+						BooleanClauseOccur.MUST);
+				}
 			}
 			else {
 				commerceChannelFilterEnableBooleanFilter.addTerm(
@@ -239,6 +288,94 @@ public class CPDefinitionModelPreFilterContributor
 				Field.ENTRY_CLASS_PK, String.valueOf(excludedCPDefinitionId),
 				BooleanClauseOccur.MUST_NOT);
 		}
+	}
+
+	private void _filterByGuestBrowsing(
+		BooleanFilter booleanFilter, SearchContext searchContext) {
+
+		PermissionChecker permissionChecker =
+			PermissionThreadLocal.getPermissionChecker();
+
+		if (((permissionChecker != null) && permissionChecker.isSignedIn()) ||
+			!FeatureFlagManagerUtil.isEnabled(
+				searchContext.getCompanyId(), "LPD-109588")) {
+
+			return;
+		}
+
+		long commerceChannelGroupId = GetterUtil.getLong(
+			searchContext.getAttribute("commerceChannelGroupId"));
+
+		long[] commerceChannelGroupIds = GetterUtil.getLongValues(
+			searchContext.getAttribute("commerceChannelGroupIds"),
+			new long[] {commerceChannelGroupId});
+
+		for (long groupId : commerceChannelGroupIds) {
+			if ((groupId > 0) &&
+				!CommerceChannelConfigurationUtil.isGuestBrowsingEnabled(
+					groupId)) {
+
+				booleanFilter.addTerm(
+					Field.ENTRY_CLASS_PK, "-1", BooleanClauseOccur.MUST);
+
+				return;
+			}
+		}
+	}
+
+	private void _filterByGuestBrowsingEnabledCommerceChannels(
+		BooleanFilter booleanFilter, SearchContext searchContext) {
+
+		PermissionChecker permissionChecker =
+			PermissionThreadLocal.getPermissionChecker();
+
+		if ((permissionChecker == null) || permissionChecker.isSignedIn() ||
+			!FeatureFlagManagerUtil.isEnabled(
+				searchContext.getCompanyId(), "LPD-109588")) {
+
+			return;
+		}
+
+		booleanFilter.addRequiredTerm(CPField.PUBLISHED, true);
+
+		List<CommerceChannel> commerceChannels =
+			_commerceChannelLocalService.getCommerceChannels(
+				searchContext.getCompanyId());
+
+		TermsFilter termsFilter = new TermsFilter(
+			CPField.COMMERCE_CHANNEL_GROUP_IDS);
+
+		for (CommerceChannel commerceChannel : commerceChannels) {
+			if (!CommerceChannelConfigurationUtil.isGuestBrowsingEnabled(
+					commerceChannel.getGroupId())) {
+
+				continue;
+			}
+
+			termsFilter.addValue(String.valueOf(commerceChannel.getGroupId()));
+		}
+
+		if (ArrayUtil.getLength(termsFilter.getValues()) ==
+				commerceChannels.size()) {
+
+			return;
+		}
+
+		if (termsFilter.isEmpty()) {
+			booleanFilter.addTerm(
+				Field.ENTRY_CLASS_PK, "-1", BooleanClauseOccur.MUST);
+
+			return;
+		}
+
+		BooleanFilter guestBrowsingBooleanFilter = new BooleanFilter();
+
+		guestBrowsingBooleanFilter.add(termsFilter, BooleanClauseOccur.SHOULD);
+		guestBrowsingBooleanFilter.addTerm(
+			CPField.CHANNEL_FILTER_ENABLED, Boolean.FALSE.toString(),
+			BooleanClauseOccur.SHOULD);
+
+		booleanFilter.add(guestBrowsingBooleanFilter, BooleanClauseOccur.MUST);
 	}
 
 	private void _filterByPublished(
@@ -302,5 +439,12 @@ public class CPDefinitionModelPreFilterContributor
 
 	@Reference
 	private CommerceCatalogService _commerceCatalogService;
+
+	@Reference
+	private CommerceChannelAccountEntryRelLocalService
+		_commerceChannelAccountEntryRelLocalService;
+
+	@Reference
+	private CommerceChannelLocalService _commerceChannelLocalService;
 
 }

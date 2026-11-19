@@ -9,7 +9,6 @@ import com.liferay.captcha.configuration.CaptchaConfiguration;
 import com.liferay.captcha.simplecaptcha.SimpleCaptchaImpl;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
 import com.liferay.portal.kernel.captcha.Captcha;
 import com.liferay.portal.kernel.captcha.CaptchaConfigurationException;
 import com.liferay.portal.kernel.captcha.CaptchaException;
@@ -26,22 +25,19 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.security.key.secret.SecretResolver;
+
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.ResourceRequest;
+import jakarta.portlet.ResourceResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequestWrapper;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 
-import java.util.Map;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.ResourceRequest;
-import javax.portlet.ResourceResponse;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletRequestWrapper;
-import javax.servlet.http.HttpServletResponse;
-
-import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.Modified;
 import org.osgi.service.component.annotations.Reference;
 
 /**
@@ -51,15 +47,14 @@ import org.osgi.service.component.annotations.Reference;
  * @author Daniel Sanz
  */
 @Component(
-	configurationPid = "com.liferay.captcha.configuration.CaptchaConfiguration",
 	property = "captcha.engine.impl=com.liferay.captcha.recaptcha.ReCaptchaImpl",
 	service = Captcha.class
 )
 public class ReCaptchaImpl extends SimpleCaptchaImpl {
 
 	@Override
-	public String getTaglibPath() {
-		return _TAGLIB_PATH;
+	public String getName() {
+		return "reCAPTCHA";
 	}
 
 	@Override
@@ -77,14 +72,9 @@ public class ReCaptchaImpl extends SimpleCaptchaImpl {
 		throw new UnsupportedOperationException();
 	}
 
-	@Activate
-	@Modified
 	@Override
-	protected void activate(Map<String, Object> properties) {
-		_captchaConfiguration = ConfigurableUtil.createConfigurable(
-			CaptchaConfiguration.class, properties);
-
-		setCaptchaConfiguration(_captchaConfiguration);
+	protected String getTaglibPath() {
+		return _TAGLIB_PATH;
 	}
 
 	@Override
@@ -118,11 +108,18 @@ public class ReCaptchaImpl extends SimpleCaptchaImpl {
 
 		Http.Options options = new Http.Options();
 
-		options.setLocation(_captchaConfiguration.reCaptchaVerifyURL());
+		CaptchaConfiguration captchaConfiguration =
+			captchaProvider.getCaptchaConfiguration();
+
+		options.setFollowRedirects(false);
+		options.setLocation(captchaConfiguration.reCaptchaVerifyURL());
 
 		try {
 			options.addPart(
-				"secret", _captchaConfiguration.reCaptchaPrivateKey());
+				"secret",
+				_secretResolver.resolve(
+					PortalUtil.getCompanyId(httpServletRequest),
+					captchaConfiguration.reCaptchaPrivateKey()));
 		}
 		catch (SystemException systemException) {
 			_log.error(systemException);
@@ -171,9 +168,11 @@ public class ReCaptchaImpl extends SimpleCaptchaImpl {
 			for (int i = 0; i < jsonArray.length(); i++) {
 				sb.append(jsonArray.getString(i));
 
-				if (i < (jsonArray.length() - 1)) {
-					sb.append(StringPool.COMMA_AND_SPACE);
+				if (i >= (jsonArray.length() - 1)) {
+					continue;
 				}
+
+				sb.append(StringPool.COMMA_AND_SPACE);
 			}
 
 			_log.error("reCAPTCHA encountered an error: " + sb.toString());
@@ -201,9 +200,10 @@ public class ReCaptchaImpl extends SimpleCaptchaImpl {
 
 	private static final Log _log = LogFactoryUtil.getLog(ReCaptchaImpl.class);
 
-	private volatile CaptchaConfiguration _captchaConfiguration;
-
 	@Reference
 	private JSONFactory _jsonFactory;
+
+	@Reference
+	private SecretResolver _secretResolver;
 
 }

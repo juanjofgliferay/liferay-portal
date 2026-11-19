@@ -15,6 +15,8 @@ import com.liferay.portal.kernel.model.OrganizationConstants;
 import com.liferay.portal.kernel.service.OrganizationLocalServiceUtil;
 import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.ListUtil;
+import com.liferay.portal.kernel.workflow.WorkflowConstants;
+import com.liferay.taglib.search.StatusSearchEntry;
 import com.liferay.taglib.search.TextSearchEntry;
 
 import java.util.ArrayList;
@@ -32,7 +34,7 @@ public class OrganizationTableItemView implements TableItemView {
 
 	@Override
 	public List<String> getHeaderNames() {
-		return ListUtil.fromArray("name", "path", "type");
+		return ListUtil.fromArray("name", "path", "type", "status");
 	}
 
 	@Override
@@ -64,6 +66,14 @@ public class OrganizationTableItemView implements TableItemView {
 
 		searchEntries.add(typeTextSearchEntry);
 
+		StatusSearchEntry statusSearchEntry = new StatusSearchEntry();
+
+		statusSearchEntry.setCssClass("text-nowrap");
+		statusSearchEntry.setName(
+			WorkflowConstants.getStatusLabel(_organization.getStatus()));
+
+		searchEntries.add(statusSearchEntry);
+
 		return searchEntries;
 	}
 
@@ -93,7 +103,7 @@ public class OrganizationTableItemView implements TableItemView {
 
 		organization = organizations.get(size - 1);
 
-		sb.append(organization.getName());
+		sb.append(HtmlUtil.escape(organization.getName()));
 
 		for (int i = size - 2; i >= 0; i--) {
 			organization = organizations.get(i);
@@ -101,7 +111,7 @@ public class OrganizationTableItemView implements TableItemView {
 			sb.append(StringPool.SPACE);
 			sb.append(StringPool.GREATER_THAN);
 			sb.append(StringPool.SPACE);
-			sb.append(organization.getName());
+			sb.append(HtmlUtil.escape(organization.getName()));
 		}
 
 		return sb.toString();

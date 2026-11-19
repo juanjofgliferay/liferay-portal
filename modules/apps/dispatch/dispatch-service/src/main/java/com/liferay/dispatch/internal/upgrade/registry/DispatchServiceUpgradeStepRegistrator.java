@@ -5,11 +5,20 @@
 
 package com.liferay.dispatch.internal.upgrade.registry;
 
+import com.liferay.dispatch.internal.upgrade.v4_4_0.DispatchRepositoryResourcePermissionUpgradeProcess;
+import com.liferay.document.library.kernel.service.DLFileEntryLocalService;
+import com.liferay.document.library.kernel.service.DLFolderLocalService;
+import com.liferay.portal.kernel.service.CompanyLocalService;
+import com.liferay.portal.kernel.service.GroupLocalService;
+import com.liferay.portal.kernel.service.RepositoryLocalService;
+import com.liferay.portal.kernel.service.ResourcePermissionLocalService;
+import com.liferay.portal.kernel.service.RoleLocalService;
 import com.liferay.portal.kernel.upgrade.BaseUuidUpgradeProcess;
 import com.liferay.portal.kernel.upgrade.UpgradeProcessFactory;
 import com.liferay.portal.upgrade.registry.UpgradeStepRegistrator;
 
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Igor Beslic
@@ -25,9 +34,9 @@ public class DispatchServiceUpgradeStepRegistrator
 			UpgradeProcessFactory.addColumns(
 				"DispatchTrigger", "endDate DATE null", "startDate DATE null"),
 			UpgradeProcessFactory.alterColumnName(
-				"DispatchTrigger", "typeSettings", "taskSettings TEXT null"),
+				"DispatchTrigger", "typeSettings", "taskSettings"),
 			UpgradeProcessFactory.alterColumnName(
-				"DispatchTrigger", "type_", "taskType VARCHAR(75) null"));
+				"DispatchTrigger", "type_", "taskType"));
 
 		registry.register(
 			"2.0.0", "2.1.0",
@@ -37,8 +46,7 @@ public class DispatchServiceUpgradeStepRegistrator
 		registry.register(
 			"2.1.0", "3.0.0",
 			UpgradeProcessFactory.alterColumnName(
-				"DispatchTrigger", "taskType",
-				"taskExecutorType VARCHAR(75) null"));
+				"DispatchTrigger", "taskType", "taskExecutorType"));
 
 		registry.register(
 			"3.0.0", "3.1.0",
@@ -47,20 +55,20 @@ public class DispatchServiceUpgradeStepRegistrator
 
 		registry.register(
 			"3.1.0", "3.1.1",
-			new com.liferay.dispatch.internal.upgrade.v3_1_1.
-				DispatchTriggerModelResourcePermissionUpgradeProcess());
+			UpgradeProcessFactory.runSQL(
+				"delete from ResourceAction where name = '90' and actionId = " +
+					"'ADD_DISPATCH_TRIGGER'"));
 
 		registry.register(
 			"3.1.1", "4.0.0",
 			UpgradeProcessFactory.alterColumnName(
 				"DispatchTrigger", "taskClusterMode",
-				"dispatchTaskClusterMode INTEGER null"),
+				"dispatchTaskClusterMode"),
 			UpgradeProcessFactory.alterColumnName(
 				"DispatchTrigger", "taskExecutorType",
-				"dispatchTaskExecutorType VARCHAR(75) null"),
+				"dispatchTaskExecutorType"),
 			UpgradeProcessFactory.alterColumnName(
-				"DispatchTrigger", "taskSettings",
-				"dispatchTaskSettings TEXT null"));
+				"DispatchTrigger", "taskSettings", "dispatchTaskSettings"));
 
 		registry.register(
 			"4.0.0", "4.0.1",
@@ -80,10 +88,8 @@ public class DispatchServiceUpgradeStepRegistrator
 			new BaseUuidUpgradeProcess() {
 
 				@Override
-				protected String[][] getTableAndPrimaryKeyColumnNames() {
-					return new String[][] {
-						{"DispatchTrigger", "dispatchTriggerId"}
-					};
+				protected String[] getTableNames() {
+					return new String[] {"DispatchTrigger"};
 				}
 
 			});
@@ -92,6 +98,35 @@ public class DispatchServiceUpgradeStepRegistrator
 			"4.2.0", "4.3.0",
 			new com.liferay.dispatch.internal.upgrade.v4_3_0.
 				DispatchTriggerUpgradeProcess());
+
+		registry.register(
+			"4.3.0", "4.4.0",
+			new DispatchRepositoryResourcePermissionUpgradeProcess(
+				_companyLocalService, _dlFileEntryLocalService,
+				_dlFolderLocalService, _groupLocalService,
+				_repositoryLocalService, _resourcePermissionLocalService,
+				_roleLocalService));
 	}
+
+	@Reference
+	private CompanyLocalService _companyLocalService;
+
+	@Reference
+	private DLFileEntryLocalService _dlFileEntryLocalService;
+
+	@Reference
+	private DLFolderLocalService _dlFolderLocalService;
+
+	@Reference
+	private GroupLocalService _groupLocalService;
+
+	@Reference
+	private RepositoryLocalService _repositoryLocalService;
+
+	@Reference
+	private ResourcePermissionLocalService _resourcePermissionLocalService;
+
+	@Reference
+	private RoleLocalService _roleLocalService;
 
 }

@@ -36,6 +36,20 @@ public class SocialRequestUtil {
 	 */
 
 	/**
+	 * @see com.liferay.portal.kernel.service.persistence.BasePersistence#cacheResult(List)
+	 */
+	public static void cacheResult(List<SocialRequest> socialRequests) {
+		getPersistence().cacheResult(socialRequests);
+	}
+
+	/**
+	 * @see com.liferay.portal.kernel.service.persistence.BasePersistence#cacheResult(com.liferay.portal.kernel.model.BaseModel)
+	 */
+	public static void cacheResult(SocialRequest socialRequest) {
+		getPersistence().cacheResult(socialRequest);
+	}
+
+	/**
 	 * @see com.liferay.portal.kernel.service.persistence.BasePersistence#clearCache()
 	 */
 	public static void clearCache() {
@@ -111,58 +125,10 @@ public class SocialRequestUtil {
 	}
 
 	/**
-	 * Returns all the social requests where uuid = &#63;.
-	 *
-	 * @param uuid the uuid
-	 * @return the matching social requests
-	 */
-	public static List<SocialRequest> findByUuid(String uuid) {
-		return getPersistence().findByUuid(uuid);
-	}
-
-	/**
-	 * Returns a range of all the social requests where uuid = &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>SocialRequestModelImpl</code>.
-	 * </p>
-	 *
-	 * @param uuid the uuid
-	 * @param start the lower bound of the range of social requests
-	 * @param end the upper bound of the range of social requests (not inclusive)
-	 * @return the range of matching social requests
-	 */
-	public static List<SocialRequest> findByUuid(
-		String uuid, int start, int end) {
-
-		return getPersistence().findByUuid(uuid, start, end);
-	}
-
-	/**
 	 * Returns an ordered range of all the social requests where uuid = &#63;.
 	 *
 	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>SocialRequestModelImpl</code>.
-	 * </p>
-	 *
-	 * @param uuid the uuid
-	 * @param start the lower bound of the range of social requests
-	 * @param end the upper bound of the range of social requests (not inclusive)
-	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
-	 * @return the ordered range of matching social requests
-	 */
-	public static List<SocialRequest> findByUuid(
-		String uuid, int start, int end,
-		OrderByComparator<SocialRequest> orderByComparator) {
-
-		return getPersistence().findByUuid(uuid, start, end, orderByComparator);
-	}
-
-	/**
-	 * Returns an ordered range of all the social requests where uuid = &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>SocialRequestModelImpl</code>.
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>com.liferay.portlet.social.model.impl.SocialRequestModelImpl</code>.
 	 * </p>
 	 *
 	 * @param uuid the uuid
@@ -210,52 +176,6 @@ public class SocialRequestUtil {
 	}
 
 	/**
-	 * Returns the last social request in the ordered set where uuid = &#63;.
-	 *
-	 * @param uuid the uuid
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the last matching social request
-	 * @throws NoSuchRequestException if a matching social request could not be found
-	 */
-	public static SocialRequest findByUuid_Last(
-			String uuid, OrderByComparator<SocialRequest> orderByComparator)
-		throws com.liferay.social.kernel.exception.NoSuchRequestException {
-
-		return getPersistence().findByUuid_Last(uuid, orderByComparator);
-	}
-
-	/**
-	 * Returns the last social request in the ordered set where uuid = &#63;.
-	 *
-	 * @param uuid the uuid
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the last matching social request, or <code>null</code> if a matching social request could not be found
-	 */
-	public static SocialRequest fetchByUuid_Last(
-		String uuid, OrderByComparator<SocialRequest> orderByComparator) {
-
-		return getPersistence().fetchByUuid_Last(uuid, orderByComparator);
-	}
-
-	/**
-	 * Returns the social requests before and after the current social request in the ordered set where uuid = &#63;.
-	 *
-	 * @param requestId the primary key of the current social request
-	 * @param uuid the uuid
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the previous, current, and next social request
-	 * @throws NoSuchRequestException if a social request with the primary key could not be found
-	 */
-	public static SocialRequest[] findByUuid_PrevAndNext(
-			long requestId, String uuid,
-			OrderByComparator<SocialRequest> orderByComparator)
-		throws com.liferay.social.kernel.exception.NoSuchRequestException {
-
-		return getPersistence().findByUuid_PrevAndNext(
-			requestId, uuid, orderByComparator);
-	}
-
-	/**
 	 * Removes all the social requests where uuid = &#63; from the database.
 	 *
 	 * @param uuid the uuid
@@ -286,17 +206,6 @@ public class SocialRequestUtil {
 		throws com.liferay.social.kernel.exception.NoSuchRequestException {
 
 		return getPersistence().findByUUID_G(uuid, groupId);
-	}
-
-	/**
-	 * Returns the social request where uuid = &#63; and groupId = &#63; or returns <code>null</code> if it could not be found. Uses the finder cache.
-	 *
-	 * @param uuid the uuid
-	 * @param groupId the group ID
-	 * @return the matching social request, or <code>null</code> if a matching social request could not be found
-	 */
-	public static SocialRequest fetchByUUID_G(String uuid, long groupId) {
-		return getPersistence().fetchByUUID_G(uuid, groupId);
 	}
 
 	/**
@@ -338,64 +247,10 @@ public class SocialRequestUtil {
 	}
 
 	/**
-	 * Returns all the social requests where uuid = &#63; and companyId = &#63;.
-	 *
-	 * @param uuid the uuid
-	 * @param companyId the company ID
-	 * @return the matching social requests
-	 */
-	public static List<SocialRequest> findByUuid_C(
-		String uuid, long companyId) {
-
-		return getPersistence().findByUuid_C(uuid, companyId);
-	}
-
-	/**
-	 * Returns a range of all the social requests where uuid = &#63; and companyId = &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>SocialRequestModelImpl</code>.
-	 * </p>
-	 *
-	 * @param uuid the uuid
-	 * @param companyId the company ID
-	 * @param start the lower bound of the range of social requests
-	 * @param end the upper bound of the range of social requests (not inclusive)
-	 * @return the range of matching social requests
-	 */
-	public static List<SocialRequest> findByUuid_C(
-		String uuid, long companyId, int start, int end) {
-
-		return getPersistence().findByUuid_C(uuid, companyId, start, end);
-	}
-
-	/**
 	 * Returns an ordered range of all the social requests where uuid = &#63; and companyId = &#63;.
 	 *
 	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>SocialRequestModelImpl</code>.
-	 * </p>
-	 *
-	 * @param uuid the uuid
-	 * @param companyId the company ID
-	 * @param start the lower bound of the range of social requests
-	 * @param end the upper bound of the range of social requests (not inclusive)
-	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
-	 * @return the ordered range of matching social requests
-	 */
-	public static List<SocialRequest> findByUuid_C(
-		String uuid, long companyId, int start, int end,
-		OrderByComparator<SocialRequest> orderByComparator) {
-
-		return getPersistence().findByUuid_C(
-			uuid, companyId, start, end, orderByComparator);
-	}
-
-	/**
-	 * Returns an ordered range of all the social requests where uuid = &#63; and companyId = &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>SocialRequestModelImpl</code>.
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>com.liferay.portlet.social.model.impl.SocialRequestModelImpl</code>.
 	 * </p>
 	 *
 	 * @param uuid the uuid
@@ -450,59 +305,6 @@ public class SocialRequestUtil {
 	}
 
 	/**
-	 * Returns the last social request in the ordered set where uuid = &#63; and companyId = &#63;.
-	 *
-	 * @param uuid the uuid
-	 * @param companyId the company ID
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the last matching social request
-	 * @throws NoSuchRequestException if a matching social request could not be found
-	 */
-	public static SocialRequest findByUuid_C_Last(
-			String uuid, long companyId,
-			OrderByComparator<SocialRequest> orderByComparator)
-		throws com.liferay.social.kernel.exception.NoSuchRequestException {
-
-		return getPersistence().findByUuid_C_Last(
-			uuid, companyId, orderByComparator);
-	}
-
-	/**
-	 * Returns the last social request in the ordered set where uuid = &#63; and companyId = &#63;.
-	 *
-	 * @param uuid the uuid
-	 * @param companyId the company ID
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the last matching social request, or <code>null</code> if a matching social request could not be found
-	 */
-	public static SocialRequest fetchByUuid_C_Last(
-		String uuid, long companyId,
-		OrderByComparator<SocialRequest> orderByComparator) {
-
-		return getPersistence().fetchByUuid_C_Last(
-			uuid, companyId, orderByComparator);
-	}
-
-	/**
-	 * Returns the social requests before and after the current social request in the ordered set where uuid = &#63; and companyId = &#63;.
-	 *
-	 * @param requestId the primary key of the current social request
-	 * @param uuid the uuid
-	 * @param companyId the company ID
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the previous, current, and next social request
-	 * @throws NoSuchRequestException if a social request with the primary key could not be found
-	 */
-	public static SocialRequest[] findByUuid_C_PrevAndNext(
-			long requestId, String uuid, long companyId,
-			OrderByComparator<SocialRequest> orderByComparator)
-		throws com.liferay.social.kernel.exception.NoSuchRequestException {
-
-		return getPersistence().findByUuid_C_PrevAndNext(
-			requestId, uuid, companyId, orderByComparator);
-	}
-
-	/**
 	 * Removes all the social requests where uuid = &#63; and companyId = &#63; from the database.
 	 *
 	 * @param uuid the uuid
@@ -524,228 +326,10 @@ public class SocialRequestUtil {
 	}
 
 	/**
-	 * Returns all the social requests where companyId = &#63;.
-	 *
-	 * @param companyId the company ID
-	 * @return the matching social requests
-	 */
-	public static List<SocialRequest> findByCompanyId(long companyId) {
-		return getPersistence().findByCompanyId(companyId);
-	}
-
-	/**
-	 * Returns a range of all the social requests where companyId = &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>SocialRequestModelImpl</code>.
-	 * </p>
-	 *
-	 * @param companyId the company ID
-	 * @param start the lower bound of the range of social requests
-	 * @param end the upper bound of the range of social requests (not inclusive)
-	 * @return the range of matching social requests
-	 */
-	public static List<SocialRequest> findByCompanyId(
-		long companyId, int start, int end) {
-
-		return getPersistence().findByCompanyId(companyId, start, end);
-	}
-
-	/**
-	 * Returns an ordered range of all the social requests where companyId = &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>SocialRequestModelImpl</code>.
-	 * </p>
-	 *
-	 * @param companyId the company ID
-	 * @param start the lower bound of the range of social requests
-	 * @param end the upper bound of the range of social requests (not inclusive)
-	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
-	 * @return the ordered range of matching social requests
-	 */
-	public static List<SocialRequest> findByCompanyId(
-		long companyId, int start, int end,
-		OrderByComparator<SocialRequest> orderByComparator) {
-
-		return getPersistence().findByCompanyId(
-			companyId, start, end, orderByComparator);
-	}
-
-	/**
-	 * Returns an ordered range of all the social requests where companyId = &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>SocialRequestModelImpl</code>.
-	 * </p>
-	 *
-	 * @param companyId the company ID
-	 * @param start the lower bound of the range of social requests
-	 * @param end the upper bound of the range of social requests (not inclusive)
-	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
-	 * @param useFinderCache whether to use the finder cache
-	 * @return the ordered range of matching social requests
-	 */
-	public static List<SocialRequest> findByCompanyId(
-		long companyId, int start, int end,
-		OrderByComparator<SocialRequest> orderByComparator,
-		boolean useFinderCache) {
-
-		return getPersistence().findByCompanyId(
-			companyId, start, end, orderByComparator, useFinderCache);
-	}
-
-	/**
-	 * Returns the first social request in the ordered set where companyId = &#63;.
-	 *
-	 * @param companyId the company ID
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the first matching social request
-	 * @throws NoSuchRequestException if a matching social request could not be found
-	 */
-	public static SocialRequest findByCompanyId_First(
-			long companyId, OrderByComparator<SocialRequest> orderByComparator)
-		throws com.liferay.social.kernel.exception.NoSuchRequestException {
-
-		return getPersistence().findByCompanyId_First(
-			companyId, orderByComparator);
-	}
-
-	/**
-	 * Returns the first social request in the ordered set where companyId = &#63;.
-	 *
-	 * @param companyId the company ID
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the first matching social request, or <code>null</code> if a matching social request could not be found
-	 */
-	public static SocialRequest fetchByCompanyId_First(
-		long companyId, OrderByComparator<SocialRequest> orderByComparator) {
-
-		return getPersistence().fetchByCompanyId_First(
-			companyId, orderByComparator);
-	}
-
-	/**
-	 * Returns the last social request in the ordered set where companyId = &#63;.
-	 *
-	 * @param companyId the company ID
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the last matching social request
-	 * @throws NoSuchRequestException if a matching social request could not be found
-	 */
-	public static SocialRequest findByCompanyId_Last(
-			long companyId, OrderByComparator<SocialRequest> orderByComparator)
-		throws com.liferay.social.kernel.exception.NoSuchRequestException {
-
-		return getPersistence().findByCompanyId_Last(
-			companyId, orderByComparator);
-	}
-
-	/**
-	 * Returns the last social request in the ordered set where companyId = &#63;.
-	 *
-	 * @param companyId the company ID
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the last matching social request, or <code>null</code> if a matching social request could not be found
-	 */
-	public static SocialRequest fetchByCompanyId_Last(
-		long companyId, OrderByComparator<SocialRequest> orderByComparator) {
-
-		return getPersistence().fetchByCompanyId_Last(
-			companyId, orderByComparator);
-	}
-
-	/**
-	 * Returns the social requests before and after the current social request in the ordered set where companyId = &#63;.
-	 *
-	 * @param requestId the primary key of the current social request
-	 * @param companyId the company ID
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the previous, current, and next social request
-	 * @throws NoSuchRequestException if a social request with the primary key could not be found
-	 */
-	public static SocialRequest[] findByCompanyId_PrevAndNext(
-			long requestId, long companyId,
-			OrderByComparator<SocialRequest> orderByComparator)
-		throws com.liferay.social.kernel.exception.NoSuchRequestException {
-
-		return getPersistence().findByCompanyId_PrevAndNext(
-			requestId, companyId, orderByComparator);
-	}
-
-	/**
-	 * Removes all the social requests where companyId = &#63; from the database.
-	 *
-	 * @param companyId the company ID
-	 */
-	public static void removeByCompanyId(long companyId) {
-		getPersistence().removeByCompanyId(companyId);
-	}
-
-	/**
-	 * Returns the number of social requests where companyId = &#63;.
-	 *
-	 * @param companyId the company ID
-	 * @return the number of matching social requests
-	 */
-	public static int countByCompanyId(long companyId) {
-		return getPersistence().countByCompanyId(companyId);
-	}
-
-	/**
-	 * Returns all the social requests where userId = &#63;.
-	 *
-	 * @param userId the user ID
-	 * @return the matching social requests
-	 */
-	public static List<SocialRequest> findByUserId(long userId) {
-		return getPersistence().findByUserId(userId);
-	}
-
-	/**
-	 * Returns a range of all the social requests where userId = &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>SocialRequestModelImpl</code>.
-	 * </p>
-	 *
-	 * @param userId the user ID
-	 * @param start the lower bound of the range of social requests
-	 * @param end the upper bound of the range of social requests (not inclusive)
-	 * @return the range of matching social requests
-	 */
-	public static List<SocialRequest> findByUserId(
-		long userId, int start, int end) {
-
-		return getPersistence().findByUserId(userId, start, end);
-	}
-
-	/**
 	 * Returns an ordered range of all the social requests where userId = &#63;.
 	 *
 	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>SocialRequestModelImpl</code>.
-	 * </p>
-	 *
-	 * @param userId the user ID
-	 * @param start the lower bound of the range of social requests
-	 * @param end the upper bound of the range of social requests (not inclusive)
-	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
-	 * @return the ordered range of matching social requests
-	 */
-	public static List<SocialRequest> findByUserId(
-		long userId, int start, int end,
-		OrderByComparator<SocialRequest> orderByComparator) {
-
-		return getPersistence().findByUserId(
-			userId, start, end, orderByComparator);
-	}
-
-	/**
-	 * Returns an ordered range of all the social requests where userId = &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>SocialRequestModelImpl</code>.
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>com.liferay.portlet.social.model.impl.SocialRequestModelImpl</code>.
 	 * </p>
 	 *
 	 * @param userId the user ID
@@ -793,52 +377,6 @@ public class SocialRequestUtil {
 	}
 
 	/**
-	 * Returns the last social request in the ordered set where userId = &#63;.
-	 *
-	 * @param userId the user ID
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the last matching social request
-	 * @throws NoSuchRequestException if a matching social request could not be found
-	 */
-	public static SocialRequest findByUserId_Last(
-			long userId, OrderByComparator<SocialRequest> orderByComparator)
-		throws com.liferay.social.kernel.exception.NoSuchRequestException {
-
-		return getPersistence().findByUserId_Last(userId, orderByComparator);
-	}
-
-	/**
-	 * Returns the last social request in the ordered set where userId = &#63;.
-	 *
-	 * @param userId the user ID
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the last matching social request, or <code>null</code> if a matching social request could not be found
-	 */
-	public static SocialRequest fetchByUserId_Last(
-		long userId, OrderByComparator<SocialRequest> orderByComparator) {
-
-		return getPersistence().fetchByUserId_Last(userId, orderByComparator);
-	}
-
-	/**
-	 * Returns the social requests before and after the current social request in the ordered set where userId = &#63;.
-	 *
-	 * @param requestId the primary key of the current social request
-	 * @param userId the user ID
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the previous, current, and next social request
-	 * @throws NoSuchRequestException if a social request with the primary key could not be found
-	 */
-	public static SocialRequest[] findByUserId_PrevAndNext(
-			long requestId, long userId,
-			OrderByComparator<SocialRequest> orderByComparator)
-		throws com.liferay.social.kernel.exception.NoSuchRequestException {
-
-		return getPersistence().findByUserId_PrevAndNext(
-			requestId, userId, orderByComparator);
-	}
-
-	/**
 	 * Removes all the social requests where userId = &#63; from the database.
 	 *
 	 * @param userId the user ID
@@ -858,62 +396,10 @@ public class SocialRequestUtil {
 	}
 
 	/**
-	 * Returns all the social requests where receiverUserId = &#63;.
-	 *
-	 * @param receiverUserId the receiver user ID
-	 * @return the matching social requests
-	 */
-	public static List<SocialRequest> findByReceiverUserId(
-		long receiverUserId) {
-
-		return getPersistence().findByReceiverUserId(receiverUserId);
-	}
-
-	/**
-	 * Returns a range of all the social requests where receiverUserId = &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>SocialRequestModelImpl</code>.
-	 * </p>
-	 *
-	 * @param receiverUserId the receiver user ID
-	 * @param start the lower bound of the range of social requests
-	 * @param end the upper bound of the range of social requests (not inclusive)
-	 * @return the range of matching social requests
-	 */
-	public static List<SocialRequest> findByReceiverUserId(
-		long receiverUserId, int start, int end) {
-
-		return getPersistence().findByReceiverUserId(
-			receiverUserId, start, end);
-	}
-
-	/**
 	 * Returns an ordered range of all the social requests where receiverUserId = &#63;.
 	 *
 	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>SocialRequestModelImpl</code>.
-	 * </p>
-	 *
-	 * @param receiverUserId the receiver user ID
-	 * @param start the lower bound of the range of social requests
-	 * @param end the upper bound of the range of social requests (not inclusive)
-	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
-	 * @return the ordered range of matching social requests
-	 */
-	public static List<SocialRequest> findByReceiverUserId(
-		long receiverUserId, int start, int end,
-		OrderByComparator<SocialRequest> orderByComparator) {
-
-		return getPersistence().findByReceiverUserId(
-			receiverUserId, start, end, orderByComparator);
-	}
-
-	/**
-	 * Returns an ordered range of all the social requests where receiverUserId = &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>SocialRequestModelImpl</code>.
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>com.liferay.portlet.social.model.impl.SocialRequestModelImpl</code>.
 	 * </p>
 	 *
 	 * @param receiverUserId the receiver user ID
@@ -965,56 +451,6 @@ public class SocialRequestUtil {
 	}
 
 	/**
-	 * Returns the last social request in the ordered set where receiverUserId = &#63;.
-	 *
-	 * @param receiverUserId the receiver user ID
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the last matching social request
-	 * @throws NoSuchRequestException if a matching social request could not be found
-	 */
-	public static SocialRequest findByReceiverUserId_Last(
-			long receiverUserId,
-			OrderByComparator<SocialRequest> orderByComparator)
-		throws com.liferay.social.kernel.exception.NoSuchRequestException {
-
-		return getPersistence().findByReceiverUserId_Last(
-			receiverUserId, orderByComparator);
-	}
-
-	/**
-	 * Returns the last social request in the ordered set where receiverUserId = &#63;.
-	 *
-	 * @param receiverUserId the receiver user ID
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the last matching social request, or <code>null</code> if a matching social request could not be found
-	 */
-	public static SocialRequest fetchByReceiverUserId_Last(
-		long receiverUserId,
-		OrderByComparator<SocialRequest> orderByComparator) {
-
-		return getPersistence().fetchByReceiverUserId_Last(
-			receiverUserId, orderByComparator);
-	}
-
-	/**
-	 * Returns the social requests before and after the current social request in the ordered set where receiverUserId = &#63;.
-	 *
-	 * @param requestId the primary key of the current social request
-	 * @param receiverUserId the receiver user ID
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the previous, current, and next social request
-	 * @throws NoSuchRequestException if a social request with the primary key could not be found
-	 */
-	public static SocialRequest[] findByReceiverUserId_PrevAndNext(
-			long requestId, long receiverUserId,
-			OrderByComparator<SocialRequest> orderByComparator)
-		throws com.liferay.social.kernel.exception.NoSuchRequestException {
-
-		return getPersistence().findByReceiverUserId_PrevAndNext(
-			requestId, receiverUserId, orderByComparator);
-	}
-
-	/**
 	 * Removes all the social requests where receiverUserId = &#63; from the database.
 	 *
 	 * @param receiverUserId the receiver user ID
@@ -1034,248 +470,10 @@ public class SocialRequestUtil {
 	}
 
 	/**
-	 * Returns all the social requests where userId = &#63; and status = &#63;.
-	 *
-	 * @param userId the user ID
-	 * @param status the status
-	 * @return the matching social requests
-	 */
-	public static List<SocialRequest> findByU_S(long userId, int status) {
-		return getPersistence().findByU_S(userId, status);
-	}
-
-	/**
-	 * Returns a range of all the social requests where userId = &#63; and status = &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>SocialRequestModelImpl</code>.
-	 * </p>
-	 *
-	 * @param userId the user ID
-	 * @param status the status
-	 * @param start the lower bound of the range of social requests
-	 * @param end the upper bound of the range of social requests (not inclusive)
-	 * @return the range of matching social requests
-	 */
-	public static List<SocialRequest> findByU_S(
-		long userId, int status, int start, int end) {
-
-		return getPersistence().findByU_S(userId, status, start, end);
-	}
-
-	/**
-	 * Returns an ordered range of all the social requests where userId = &#63; and status = &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>SocialRequestModelImpl</code>.
-	 * </p>
-	 *
-	 * @param userId the user ID
-	 * @param status the status
-	 * @param start the lower bound of the range of social requests
-	 * @param end the upper bound of the range of social requests (not inclusive)
-	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
-	 * @return the ordered range of matching social requests
-	 */
-	public static List<SocialRequest> findByU_S(
-		long userId, int status, int start, int end,
-		OrderByComparator<SocialRequest> orderByComparator) {
-
-		return getPersistence().findByU_S(
-			userId, status, start, end, orderByComparator);
-	}
-
-	/**
-	 * Returns an ordered range of all the social requests where userId = &#63; and status = &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>SocialRequestModelImpl</code>.
-	 * </p>
-	 *
-	 * @param userId the user ID
-	 * @param status the status
-	 * @param start the lower bound of the range of social requests
-	 * @param end the upper bound of the range of social requests (not inclusive)
-	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
-	 * @param useFinderCache whether to use the finder cache
-	 * @return the ordered range of matching social requests
-	 */
-	public static List<SocialRequest> findByU_S(
-		long userId, int status, int start, int end,
-		OrderByComparator<SocialRequest> orderByComparator,
-		boolean useFinderCache) {
-
-		return getPersistence().findByU_S(
-			userId, status, start, end, orderByComparator, useFinderCache);
-	}
-
-	/**
-	 * Returns the first social request in the ordered set where userId = &#63; and status = &#63;.
-	 *
-	 * @param userId the user ID
-	 * @param status the status
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the first matching social request
-	 * @throws NoSuchRequestException if a matching social request could not be found
-	 */
-	public static SocialRequest findByU_S_First(
-			long userId, int status,
-			OrderByComparator<SocialRequest> orderByComparator)
-		throws com.liferay.social.kernel.exception.NoSuchRequestException {
-
-		return getPersistence().findByU_S_First(
-			userId, status, orderByComparator);
-	}
-
-	/**
-	 * Returns the first social request in the ordered set where userId = &#63; and status = &#63;.
-	 *
-	 * @param userId the user ID
-	 * @param status the status
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the first matching social request, or <code>null</code> if a matching social request could not be found
-	 */
-	public static SocialRequest fetchByU_S_First(
-		long userId, int status,
-		OrderByComparator<SocialRequest> orderByComparator) {
-
-		return getPersistence().fetchByU_S_First(
-			userId, status, orderByComparator);
-	}
-
-	/**
-	 * Returns the last social request in the ordered set where userId = &#63; and status = &#63;.
-	 *
-	 * @param userId the user ID
-	 * @param status the status
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the last matching social request
-	 * @throws NoSuchRequestException if a matching social request could not be found
-	 */
-	public static SocialRequest findByU_S_Last(
-			long userId, int status,
-			OrderByComparator<SocialRequest> orderByComparator)
-		throws com.liferay.social.kernel.exception.NoSuchRequestException {
-
-		return getPersistence().findByU_S_Last(
-			userId, status, orderByComparator);
-	}
-
-	/**
-	 * Returns the last social request in the ordered set where userId = &#63; and status = &#63;.
-	 *
-	 * @param userId the user ID
-	 * @param status the status
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the last matching social request, or <code>null</code> if a matching social request could not be found
-	 */
-	public static SocialRequest fetchByU_S_Last(
-		long userId, int status,
-		OrderByComparator<SocialRequest> orderByComparator) {
-
-		return getPersistence().fetchByU_S_Last(
-			userId, status, orderByComparator);
-	}
-
-	/**
-	 * Returns the social requests before and after the current social request in the ordered set where userId = &#63; and status = &#63;.
-	 *
-	 * @param requestId the primary key of the current social request
-	 * @param userId the user ID
-	 * @param status the status
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the previous, current, and next social request
-	 * @throws NoSuchRequestException if a social request with the primary key could not be found
-	 */
-	public static SocialRequest[] findByU_S_PrevAndNext(
-			long requestId, long userId, int status,
-			OrderByComparator<SocialRequest> orderByComparator)
-		throws com.liferay.social.kernel.exception.NoSuchRequestException {
-
-		return getPersistence().findByU_S_PrevAndNext(
-			requestId, userId, status, orderByComparator);
-	}
-
-	/**
-	 * Removes all the social requests where userId = &#63; and status = &#63; from the database.
-	 *
-	 * @param userId the user ID
-	 * @param status the status
-	 */
-	public static void removeByU_S(long userId, int status) {
-		getPersistence().removeByU_S(userId, status);
-	}
-
-	/**
-	 * Returns the number of social requests where userId = &#63; and status = &#63;.
-	 *
-	 * @param userId the user ID
-	 * @param status the status
-	 * @return the number of matching social requests
-	 */
-	public static int countByU_S(long userId, int status) {
-		return getPersistence().countByU_S(userId, status);
-	}
-
-	/**
-	 * Returns all the social requests where classNameId = &#63; and classPK = &#63;.
-	 *
-	 * @param classNameId the class name ID
-	 * @param classPK the class pk
-	 * @return the matching social requests
-	 */
-	public static List<SocialRequest> findByC_C(
-		long classNameId, long classPK) {
-
-		return getPersistence().findByC_C(classNameId, classPK);
-	}
-
-	/**
-	 * Returns a range of all the social requests where classNameId = &#63; and classPK = &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>SocialRequestModelImpl</code>.
-	 * </p>
-	 *
-	 * @param classNameId the class name ID
-	 * @param classPK the class pk
-	 * @param start the lower bound of the range of social requests
-	 * @param end the upper bound of the range of social requests (not inclusive)
-	 * @return the range of matching social requests
-	 */
-	public static List<SocialRequest> findByC_C(
-		long classNameId, long classPK, int start, int end) {
-
-		return getPersistence().findByC_C(classNameId, classPK, start, end);
-	}
-
-	/**
 	 * Returns an ordered range of all the social requests where classNameId = &#63; and classPK = &#63;.
 	 *
 	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>SocialRequestModelImpl</code>.
-	 * </p>
-	 *
-	 * @param classNameId the class name ID
-	 * @param classPK the class pk
-	 * @param start the lower bound of the range of social requests
-	 * @param end the upper bound of the range of social requests (not inclusive)
-	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
-	 * @return the ordered range of matching social requests
-	 */
-	public static List<SocialRequest> findByC_C(
-		long classNameId, long classPK, int start, int end,
-		OrderByComparator<SocialRequest> orderByComparator) {
-
-		return getPersistence().findByC_C(
-			classNameId, classPK, start, end, orderByComparator);
-	}
-
-	/**
-	 * Returns an ordered range of all the social requests where classNameId = &#63; and classPK = &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>SocialRequestModelImpl</code>.
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>com.liferay.portlet.social.model.impl.SocialRequestModelImpl</code>.
 	 * </p>
 	 *
 	 * @param classNameId the class name ID
@@ -1331,59 +529,6 @@ public class SocialRequestUtil {
 	}
 
 	/**
-	 * Returns the last social request in the ordered set where classNameId = &#63; and classPK = &#63;.
-	 *
-	 * @param classNameId the class name ID
-	 * @param classPK the class pk
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the last matching social request
-	 * @throws NoSuchRequestException if a matching social request could not be found
-	 */
-	public static SocialRequest findByC_C_Last(
-			long classNameId, long classPK,
-			OrderByComparator<SocialRequest> orderByComparator)
-		throws com.liferay.social.kernel.exception.NoSuchRequestException {
-
-		return getPersistence().findByC_C_Last(
-			classNameId, classPK, orderByComparator);
-	}
-
-	/**
-	 * Returns the last social request in the ordered set where classNameId = &#63; and classPK = &#63;.
-	 *
-	 * @param classNameId the class name ID
-	 * @param classPK the class pk
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the last matching social request, or <code>null</code> if a matching social request could not be found
-	 */
-	public static SocialRequest fetchByC_C_Last(
-		long classNameId, long classPK,
-		OrderByComparator<SocialRequest> orderByComparator) {
-
-		return getPersistence().fetchByC_C_Last(
-			classNameId, classPK, orderByComparator);
-	}
-
-	/**
-	 * Returns the social requests before and after the current social request in the ordered set where classNameId = &#63; and classPK = &#63;.
-	 *
-	 * @param requestId the primary key of the current social request
-	 * @param classNameId the class name ID
-	 * @param classPK the class pk
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the previous, current, and next social request
-	 * @throws NoSuchRequestException if a social request with the primary key could not be found
-	 */
-	public static SocialRequest[] findByC_C_PrevAndNext(
-			long requestId, long classNameId, long classPK,
-			OrderByComparator<SocialRequest> orderByComparator)
-		throws com.liferay.social.kernel.exception.NoSuchRequestException {
-
-		return getPersistence().findByC_C_PrevAndNext(
-			requestId, classNameId, classPK, orderByComparator);
-	}
-
-	/**
 	 * Removes all the social requests where classNameId = &#63; and classPK = &#63; from the database.
 	 *
 	 * @param classNameId the class name ID
@@ -1405,64 +550,10 @@ public class SocialRequestUtil {
 	}
 
 	/**
-	 * Returns all the social requests where receiverUserId = &#63; and status = &#63;.
-	 *
-	 * @param receiverUserId the receiver user ID
-	 * @param status the status
-	 * @return the matching social requests
-	 */
-	public static List<SocialRequest> findByR_S(
-		long receiverUserId, int status) {
-
-		return getPersistence().findByR_S(receiverUserId, status);
-	}
-
-	/**
-	 * Returns a range of all the social requests where receiverUserId = &#63; and status = &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>SocialRequestModelImpl</code>.
-	 * </p>
-	 *
-	 * @param receiverUserId the receiver user ID
-	 * @param status the status
-	 * @param start the lower bound of the range of social requests
-	 * @param end the upper bound of the range of social requests (not inclusive)
-	 * @return the range of matching social requests
-	 */
-	public static List<SocialRequest> findByR_S(
-		long receiverUserId, int status, int start, int end) {
-
-		return getPersistence().findByR_S(receiverUserId, status, start, end);
-	}
-
-	/**
 	 * Returns an ordered range of all the social requests where receiverUserId = &#63; and status = &#63;.
 	 *
 	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>SocialRequestModelImpl</code>.
-	 * </p>
-	 *
-	 * @param receiverUserId the receiver user ID
-	 * @param status the status
-	 * @param start the lower bound of the range of social requests
-	 * @param end the upper bound of the range of social requests (not inclusive)
-	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
-	 * @return the ordered range of matching social requests
-	 */
-	public static List<SocialRequest> findByR_S(
-		long receiverUserId, int status, int start, int end,
-		OrderByComparator<SocialRequest> orderByComparator) {
-
-		return getPersistence().findByR_S(
-			receiverUserId, status, start, end, orderByComparator);
-	}
-
-	/**
-	 * Returns an ordered range of all the social requests where receiverUserId = &#63; and status = &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>SocialRequestModelImpl</code>.
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>com.liferay.portlet.social.model.impl.SocialRequestModelImpl</code>.
 	 * </p>
 	 *
 	 * @param receiverUserId the receiver user ID
@@ -1518,59 +609,6 @@ public class SocialRequestUtil {
 	}
 
 	/**
-	 * Returns the last social request in the ordered set where receiverUserId = &#63; and status = &#63;.
-	 *
-	 * @param receiverUserId the receiver user ID
-	 * @param status the status
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the last matching social request
-	 * @throws NoSuchRequestException if a matching social request could not be found
-	 */
-	public static SocialRequest findByR_S_Last(
-			long receiverUserId, int status,
-			OrderByComparator<SocialRequest> orderByComparator)
-		throws com.liferay.social.kernel.exception.NoSuchRequestException {
-
-		return getPersistence().findByR_S_Last(
-			receiverUserId, status, orderByComparator);
-	}
-
-	/**
-	 * Returns the last social request in the ordered set where receiverUserId = &#63; and status = &#63;.
-	 *
-	 * @param receiverUserId the receiver user ID
-	 * @param status the status
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the last matching social request, or <code>null</code> if a matching social request could not be found
-	 */
-	public static SocialRequest fetchByR_S_Last(
-		long receiverUserId, int status,
-		OrderByComparator<SocialRequest> orderByComparator) {
-
-		return getPersistence().fetchByR_S_Last(
-			receiverUserId, status, orderByComparator);
-	}
-
-	/**
-	 * Returns the social requests before and after the current social request in the ordered set where receiverUserId = &#63; and status = &#63;.
-	 *
-	 * @param requestId the primary key of the current social request
-	 * @param receiverUserId the receiver user ID
-	 * @param status the status
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the previous, current, and next social request
-	 * @throws NoSuchRequestException if a social request with the primary key could not be found
-	 */
-	public static SocialRequest[] findByR_S_PrevAndNext(
-			long requestId, long receiverUserId, int status,
-			OrderByComparator<SocialRequest> orderByComparator)
-		throws com.liferay.social.kernel.exception.NoSuchRequestException {
-
-		return getPersistence().findByR_S_PrevAndNext(
-			requestId, receiverUserId, status, orderByComparator);
-	}
-
-	/**
 	 * Removes all the social requests where receiverUserId = &#63; and status = &#63; from the database.
 	 *
 	 * @param receiverUserId the receiver user ID
@@ -1608,24 +646,6 @@ public class SocialRequestUtil {
 		throws com.liferay.social.kernel.exception.NoSuchRequestException {
 
 		return getPersistence().findByU_C_C_T_R(
-			userId, classNameId, classPK, type, receiverUserId);
-	}
-
-	/**
-	 * Returns the social request where userId = &#63; and classNameId = &#63; and classPK = &#63; and type = &#63; and receiverUserId = &#63; or returns <code>null</code> if it could not be found. Uses the finder cache.
-	 *
-	 * @param userId the user ID
-	 * @param classNameId the class name ID
-	 * @param classPK the class pk
-	 * @param type the type
-	 * @param receiverUserId the receiver user ID
-	 * @return the matching social request, or <code>null</code> if a matching social request could not be found
-	 */
-	public static SocialRequest fetchByU_C_C_T_R(
-		long userId, long classNameId, long classPK, int type,
-		long receiverUserId) {
-
-		return getPersistence().fetchByU_C_C_T_R(
 			userId, classNameId, classPK, type, receiverUserId);
 	}
 
@@ -1686,78 +706,10 @@ public class SocialRequestUtil {
 	}
 
 	/**
-	 * Returns all the social requests where userId = &#63; and classNameId = &#63; and classPK = &#63; and type = &#63; and status = &#63;.
-	 *
-	 * @param userId the user ID
-	 * @param classNameId the class name ID
-	 * @param classPK the class pk
-	 * @param type the type
-	 * @param status the status
-	 * @return the matching social requests
-	 */
-	public static List<SocialRequest> findByU_C_C_T_S(
-		long userId, long classNameId, long classPK, int type, int status) {
-
-		return getPersistence().findByU_C_C_T_S(
-			userId, classNameId, classPK, type, status);
-	}
-
-	/**
-	 * Returns a range of all the social requests where userId = &#63; and classNameId = &#63; and classPK = &#63; and type = &#63; and status = &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>SocialRequestModelImpl</code>.
-	 * </p>
-	 *
-	 * @param userId the user ID
-	 * @param classNameId the class name ID
-	 * @param classPK the class pk
-	 * @param type the type
-	 * @param status the status
-	 * @param start the lower bound of the range of social requests
-	 * @param end the upper bound of the range of social requests (not inclusive)
-	 * @return the range of matching social requests
-	 */
-	public static List<SocialRequest> findByU_C_C_T_S(
-		long userId, long classNameId, long classPK, int type, int status,
-		int start, int end) {
-
-		return getPersistence().findByU_C_C_T_S(
-			userId, classNameId, classPK, type, status, start, end);
-	}
-
-	/**
 	 * Returns an ordered range of all the social requests where userId = &#63; and classNameId = &#63; and classPK = &#63; and type = &#63; and status = &#63;.
 	 *
 	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>SocialRequestModelImpl</code>.
-	 * </p>
-	 *
-	 * @param userId the user ID
-	 * @param classNameId the class name ID
-	 * @param classPK the class pk
-	 * @param type the type
-	 * @param status the status
-	 * @param start the lower bound of the range of social requests
-	 * @param end the upper bound of the range of social requests (not inclusive)
-	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
-	 * @return the ordered range of matching social requests
-	 */
-	public static List<SocialRequest> findByU_C_C_T_S(
-		long userId, long classNameId, long classPK, int type, int status,
-		int start, int end,
-		OrderByComparator<SocialRequest> orderByComparator) {
-
-		return getPersistence().findByU_C_C_T_S(
-			userId, classNameId, classPK, type, status, start, end,
-			orderByComparator);
-	}
-
-	/**
-	 * Returns an ordered range of all the social requests where userId = &#63; and classNameId = &#63; and classPK = &#63; and type = &#63; and status = &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>SocialRequestModelImpl</code>.
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>com.liferay.portlet.social.model.impl.SocialRequestModelImpl</code>.
 	 * </p>
 	 *
 	 * @param userId the user ID
@@ -1822,70 +774,6 @@ public class SocialRequestUtil {
 	}
 
 	/**
-	 * Returns the last social request in the ordered set where userId = &#63; and classNameId = &#63; and classPK = &#63; and type = &#63; and status = &#63;.
-	 *
-	 * @param userId the user ID
-	 * @param classNameId the class name ID
-	 * @param classPK the class pk
-	 * @param type the type
-	 * @param status the status
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the last matching social request
-	 * @throws NoSuchRequestException if a matching social request could not be found
-	 */
-	public static SocialRequest findByU_C_C_T_S_Last(
-			long userId, long classNameId, long classPK, int type, int status,
-			OrderByComparator<SocialRequest> orderByComparator)
-		throws com.liferay.social.kernel.exception.NoSuchRequestException {
-
-		return getPersistence().findByU_C_C_T_S_Last(
-			userId, classNameId, classPK, type, status, orderByComparator);
-	}
-
-	/**
-	 * Returns the last social request in the ordered set where userId = &#63; and classNameId = &#63; and classPK = &#63; and type = &#63; and status = &#63;.
-	 *
-	 * @param userId the user ID
-	 * @param classNameId the class name ID
-	 * @param classPK the class pk
-	 * @param type the type
-	 * @param status the status
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the last matching social request, or <code>null</code> if a matching social request could not be found
-	 */
-	public static SocialRequest fetchByU_C_C_T_S_Last(
-		long userId, long classNameId, long classPK, int type, int status,
-		OrderByComparator<SocialRequest> orderByComparator) {
-
-		return getPersistence().fetchByU_C_C_T_S_Last(
-			userId, classNameId, classPK, type, status, orderByComparator);
-	}
-
-	/**
-	 * Returns the social requests before and after the current social request in the ordered set where userId = &#63; and classNameId = &#63; and classPK = &#63; and type = &#63; and status = &#63;.
-	 *
-	 * @param requestId the primary key of the current social request
-	 * @param userId the user ID
-	 * @param classNameId the class name ID
-	 * @param classPK the class pk
-	 * @param type the type
-	 * @param status the status
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the previous, current, and next social request
-	 * @throws NoSuchRequestException if a social request with the primary key could not be found
-	 */
-	public static SocialRequest[] findByU_C_C_T_S_PrevAndNext(
-			long requestId, long userId, long classNameId, long classPK,
-			int type, int status,
-			OrderByComparator<SocialRequest> orderByComparator)
-		throws com.liferay.social.kernel.exception.NoSuchRequestException {
-
-		return getPersistence().findByU_C_C_T_S_PrevAndNext(
-			requestId, userId, classNameId, classPK, type, status,
-			orderByComparator);
-	}
-
-	/**
 	 * Removes all the social requests where userId = &#63; and classNameId = &#63; and classPK = &#63; and type = &#63; and status = &#63; from the database.
 	 *
 	 * @param userId the user ID
@@ -1919,79 +807,10 @@ public class SocialRequestUtil {
 	}
 
 	/**
-	 * Returns all the social requests where classNameId = &#63; and classPK = &#63; and type = &#63; and receiverUserId = &#63; and status = &#63;.
-	 *
-	 * @param classNameId the class name ID
-	 * @param classPK the class pk
-	 * @param type the type
-	 * @param receiverUserId the receiver user ID
-	 * @param status the status
-	 * @return the matching social requests
-	 */
-	public static List<SocialRequest> findByC_C_T_R_S(
-		long classNameId, long classPK, int type, long receiverUserId,
-		int status) {
-
-		return getPersistence().findByC_C_T_R_S(
-			classNameId, classPK, type, receiverUserId, status);
-	}
-
-	/**
-	 * Returns a range of all the social requests where classNameId = &#63; and classPK = &#63; and type = &#63; and receiverUserId = &#63; and status = &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>SocialRequestModelImpl</code>.
-	 * </p>
-	 *
-	 * @param classNameId the class name ID
-	 * @param classPK the class pk
-	 * @param type the type
-	 * @param receiverUserId the receiver user ID
-	 * @param status the status
-	 * @param start the lower bound of the range of social requests
-	 * @param end the upper bound of the range of social requests (not inclusive)
-	 * @return the range of matching social requests
-	 */
-	public static List<SocialRequest> findByC_C_T_R_S(
-		long classNameId, long classPK, int type, long receiverUserId,
-		int status, int start, int end) {
-
-		return getPersistence().findByC_C_T_R_S(
-			classNameId, classPK, type, receiverUserId, status, start, end);
-	}
-
-	/**
 	 * Returns an ordered range of all the social requests where classNameId = &#63; and classPK = &#63; and type = &#63; and receiverUserId = &#63; and status = &#63;.
 	 *
 	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>SocialRequestModelImpl</code>.
-	 * </p>
-	 *
-	 * @param classNameId the class name ID
-	 * @param classPK the class pk
-	 * @param type the type
-	 * @param receiverUserId the receiver user ID
-	 * @param status the status
-	 * @param start the lower bound of the range of social requests
-	 * @param end the upper bound of the range of social requests (not inclusive)
-	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
-	 * @return the ordered range of matching social requests
-	 */
-	public static List<SocialRequest> findByC_C_T_R_S(
-		long classNameId, long classPK, int type, long receiverUserId,
-		int status, int start, int end,
-		OrderByComparator<SocialRequest> orderByComparator) {
-
-		return getPersistence().findByC_C_T_R_S(
-			classNameId, classPK, type, receiverUserId, status, start, end,
-			orderByComparator);
-	}
-
-	/**
-	 * Returns an ordered range of all the social requests where classNameId = &#63; and classPK = &#63; and type = &#63; and receiverUserId = &#63; and status = &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>SocialRequestModelImpl</code>.
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>com.liferay.portlet.social.model.impl.SocialRequestModelImpl</code>.
 	 * </p>
 	 *
 	 * @param classNameId the class name ID
@@ -2059,72 +878,6 @@ public class SocialRequestUtil {
 	}
 
 	/**
-	 * Returns the last social request in the ordered set where classNameId = &#63; and classPK = &#63; and type = &#63; and receiverUserId = &#63; and status = &#63;.
-	 *
-	 * @param classNameId the class name ID
-	 * @param classPK the class pk
-	 * @param type the type
-	 * @param receiverUserId the receiver user ID
-	 * @param status the status
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the last matching social request
-	 * @throws NoSuchRequestException if a matching social request could not be found
-	 */
-	public static SocialRequest findByC_C_T_R_S_Last(
-			long classNameId, long classPK, int type, long receiverUserId,
-			int status, OrderByComparator<SocialRequest> orderByComparator)
-		throws com.liferay.social.kernel.exception.NoSuchRequestException {
-
-		return getPersistence().findByC_C_T_R_S_Last(
-			classNameId, classPK, type, receiverUserId, status,
-			orderByComparator);
-	}
-
-	/**
-	 * Returns the last social request in the ordered set where classNameId = &#63; and classPK = &#63; and type = &#63; and receiverUserId = &#63; and status = &#63;.
-	 *
-	 * @param classNameId the class name ID
-	 * @param classPK the class pk
-	 * @param type the type
-	 * @param receiverUserId the receiver user ID
-	 * @param status the status
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the last matching social request, or <code>null</code> if a matching social request could not be found
-	 */
-	public static SocialRequest fetchByC_C_T_R_S_Last(
-		long classNameId, long classPK, int type, long receiverUserId,
-		int status, OrderByComparator<SocialRequest> orderByComparator) {
-
-		return getPersistence().fetchByC_C_T_R_S_Last(
-			classNameId, classPK, type, receiverUserId, status,
-			orderByComparator);
-	}
-
-	/**
-	 * Returns the social requests before and after the current social request in the ordered set where classNameId = &#63; and classPK = &#63; and type = &#63; and receiverUserId = &#63; and status = &#63;.
-	 *
-	 * @param requestId the primary key of the current social request
-	 * @param classNameId the class name ID
-	 * @param classPK the class pk
-	 * @param type the type
-	 * @param receiverUserId the receiver user ID
-	 * @param status the status
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the previous, current, and next social request
-	 * @throws NoSuchRequestException if a social request with the primary key could not be found
-	 */
-	public static SocialRequest[] findByC_C_T_R_S_PrevAndNext(
-			long requestId, long classNameId, long classPK, int type,
-			long receiverUserId, int status,
-			OrderByComparator<SocialRequest> orderByComparator)
-		throws com.liferay.social.kernel.exception.NoSuchRequestException {
-
-		return getPersistence().findByC_C_T_R_S_PrevAndNext(
-			requestId, classNameId, classPK, type, receiverUserId, status,
-			orderByComparator);
-	}
-
-	/**
 	 * Removes all the social requests where classNameId = &#63; and classPK = &#63; and type = &#63; and receiverUserId = &#63; and status = &#63; from the database.
 	 *
 	 * @param classNameId the class name ID
@@ -2157,24 +910,6 @@ public class SocialRequestUtil {
 
 		return getPersistence().countByC_C_T_R_S(
 			classNameId, classPK, type, receiverUserId, status);
-	}
-
-	/**
-	 * Caches the social request in the entity cache if it is enabled.
-	 *
-	 * @param socialRequest the social request
-	 */
-	public static void cacheResult(SocialRequest socialRequest) {
-		getPersistence().cacheResult(socialRequest);
-	}
-
-	/**
-	 * Caches the social requests in the entity cache if it is enabled.
-	 *
-	 * @param socialRequests the social requests
-	 */
-	public static void cacheResult(List<SocialRequest> socialRequests) {
-		getPersistence().cacheResult(socialRequests);
 	}
 
 	/**
@@ -2228,83 +963,480 @@ public class SocialRequestUtil {
 	}
 
 	/**
-	 * Returns all the social requests.
+	 * Returns the social request where uuid = &#63; and groupId = &#63; or returns <code>null</code> if it could not be found. Uses the finder cache.
 	 *
-	 * @return the social requests
+	 * @param uuid the uuid
+	 * @param groupId the group ID
+	 * @return the matching social request, or <code>null</code> if a matching social request could not be found
 	 */
-	public static List<SocialRequest> findAll() {
-		return getPersistence().findAll();
+	public static SocialRequest fetchByUUID_G(String uuid, long groupId) {
+		return getPersistence().fetchByUUID_G(uuid, groupId);
 	}
 
 	/**
-	 * Returns a range of all the social requests.
+	 * Returns the social request where userId = &#63; and classNameId = &#63; and classPK = &#63; and type = &#63; and receiverUserId = &#63; or returns <code>null</code> if it could not be found. Uses the finder cache.
+	 *
+	 * @param userId the user ID
+	 * @param classNameId the class name ID
+	 * @param classPK the class pk
+	 * @param type the type
+	 * @param receiverUserId the receiver user ID
+	 * @return the matching social request, or <code>null</code> if a matching social request could not be found
+	 */
+	public static SocialRequest fetchByU_C_C_T_R(
+		long userId, long classNameId, long classPK, int type,
+		long receiverUserId) {
+
+		return getPersistence().fetchByU_C_C_T_R(
+			userId, classNameId, classPK, type, receiverUserId);
+	}
+
+	/**
+	 * Returns all the social requests where uuid = &#63;.
+	 *
+	 * @param uuid the uuid
+	 * @return the matching social requests
+	 */
+	public static List<SocialRequest> findByUuid(String uuid) {
+		return getPersistence().findByUuid(uuid);
+	}
+
+	/**
+	 * Returns a range of all the social requests where uuid = &#63;.
 	 *
 	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>SocialRequestModelImpl</code>.
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>com.liferay.portlet.social.model.impl.SocialRequestModelImpl</code>.
 	 * </p>
 	 *
+	 * @param uuid the uuid
 	 * @param start the lower bound of the range of social requests
 	 * @param end the upper bound of the range of social requests (not inclusive)
-	 * @return the range of social requests
+	 * @return the range of matching social requests
 	 */
-	public static List<SocialRequest> findAll(int start, int end) {
-		return getPersistence().findAll(start, end);
+	public static List<SocialRequest> findByUuid(
+		String uuid, int start, int end) {
+
+		return getPersistence().findByUuid(uuid, start, end);
 	}
 
 	/**
-	 * Returns an ordered range of all the social requests.
+	 * Returns an ordered range of all the social requests where uuid = &#63;.
 	 *
 	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>SocialRequestModelImpl</code>.
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>com.liferay.portlet.social.model.impl.SocialRequestModelImpl</code>.
 	 * </p>
 	 *
+	 * @param uuid the uuid
 	 * @param start the lower bound of the range of social requests
 	 * @param end the upper bound of the range of social requests (not inclusive)
 	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
-	 * @return the ordered range of social requests
+	 * @return the ordered range of matching social requests
 	 */
-	public static List<SocialRequest> findAll(
+	public static List<SocialRequest> findByUuid(
+		String uuid, int start, int end,
+		OrderByComparator<SocialRequest> orderByComparator) {
+
+		return getPersistence().findByUuid(uuid, start, end, orderByComparator);
+	}
+
+	/**
+	 * Returns all the social requests where uuid = &#63; and companyId = &#63;.
+	 *
+	 * @param uuid the uuid
+	 * @param companyId the company ID
+	 * @return the matching social requests
+	 */
+	public static List<SocialRequest> findByUuid_C(
+		String uuid, long companyId) {
+
+		return getPersistence().findByUuid_C(uuid, companyId);
+	}
+
+	/**
+	 * Returns a range of all the social requests where uuid = &#63; and companyId = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>com.liferay.portlet.social.model.impl.SocialRequestModelImpl</code>.
+	 * </p>
+	 *
+	 * @param uuid the uuid
+	 * @param companyId the company ID
+	 * @param start the lower bound of the range of social requests
+	 * @param end the upper bound of the range of social requests (not inclusive)
+	 * @return the range of matching social requests
+	 */
+	public static List<SocialRequest> findByUuid_C(
+		String uuid, long companyId, int start, int end) {
+
+		return getPersistence().findByUuid_C(uuid, companyId, start, end);
+	}
+
+	/**
+	 * Returns an ordered range of all the social requests where uuid = &#63; and companyId = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>com.liferay.portlet.social.model.impl.SocialRequestModelImpl</code>.
+	 * </p>
+	 *
+	 * @param uuid the uuid
+	 * @param companyId the company ID
+	 * @param start the lower bound of the range of social requests
+	 * @param end the upper bound of the range of social requests (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching social requests
+	 */
+	public static List<SocialRequest> findByUuid_C(
+		String uuid, long companyId, int start, int end,
+		OrderByComparator<SocialRequest> orderByComparator) {
+
+		return getPersistence().findByUuid_C(
+			uuid, companyId, start, end, orderByComparator);
+	}
+
+	/**
+	 * Returns all the social requests where userId = &#63;.
+	 *
+	 * @param userId the user ID
+	 * @return the matching social requests
+	 */
+	public static List<SocialRequest> findByUserId(long userId) {
+		return getPersistence().findByUserId(userId);
+	}
+
+	/**
+	 * Returns a range of all the social requests where userId = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>com.liferay.portlet.social.model.impl.SocialRequestModelImpl</code>.
+	 * </p>
+	 *
+	 * @param userId the user ID
+	 * @param start the lower bound of the range of social requests
+	 * @param end the upper bound of the range of social requests (not inclusive)
+	 * @return the range of matching social requests
+	 */
+	public static List<SocialRequest> findByUserId(
+		long userId, int start, int end) {
+
+		return getPersistence().findByUserId(userId, start, end);
+	}
+
+	/**
+	 * Returns an ordered range of all the social requests where userId = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>com.liferay.portlet.social.model.impl.SocialRequestModelImpl</code>.
+	 * </p>
+	 *
+	 * @param userId the user ID
+	 * @param start the lower bound of the range of social requests
+	 * @param end the upper bound of the range of social requests (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching social requests
+	 */
+	public static List<SocialRequest> findByUserId(
+		long userId, int start, int end,
+		OrderByComparator<SocialRequest> orderByComparator) {
+
+		return getPersistence().findByUserId(
+			userId, start, end, orderByComparator);
+	}
+
+	/**
+	 * Returns all the social requests where receiverUserId = &#63;.
+	 *
+	 * @param receiverUserId the receiver user ID
+	 * @return the matching social requests
+	 */
+	public static List<SocialRequest> findByReceiverUserId(
+		long receiverUserId) {
+
+		return getPersistence().findByReceiverUserId(receiverUserId);
+	}
+
+	/**
+	 * Returns a range of all the social requests where receiverUserId = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>com.liferay.portlet.social.model.impl.SocialRequestModelImpl</code>.
+	 * </p>
+	 *
+	 * @param receiverUserId the receiver user ID
+	 * @param start the lower bound of the range of social requests
+	 * @param end the upper bound of the range of social requests (not inclusive)
+	 * @return the range of matching social requests
+	 */
+	public static List<SocialRequest> findByReceiverUserId(
+		long receiverUserId, int start, int end) {
+
+		return getPersistence().findByReceiverUserId(
+			receiverUserId, start, end);
+	}
+
+	/**
+	 * Returns an ordered range of all the social requests where receiverUserId = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>com.liferay.portlet.social.model.impl.SocialRequestModelImpl</code>.
+	 * </p>
+	 *
+	 * @param receiverUserId the receiver user ID
+	 * @param start the lower bound of the range of social requests
+	 * @param end the upper bound of the range of social requests (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching social requests
+	 */
+	public static List<SocialRequest> findByReceiverUserId(
+		long receiverUserId, int start, int end,
+		OrderByComparator<SocialRequest> orderByComparator) {
+
+		return getPersistence().findByReceiverUserId(
+			receiverUserId, start, end, orderByComparator);
+	}
+
+	/**
+	 * Returns all the social requests where classNameId = &#63; and classPK = &#63;.
+	 *
+	 * @param classNameId the class name ID
+	 * @param classPK the class pk
+	 * @return the matching social requests
+	 */
+	public static List<SocialRequest> findByC_C(
+		long classNameId, long classPK) {
+
+		return getPersistence().findByC_C(classNameId, classPK);
+	}
+
+	/**
+	 * Returns a range of all the social requests where classNameId = &#63; and classPK = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>com.liferay.portlet.social.model.impl.SocialRequestModelImpl</code>.
+	 * </p>
+	 *
+	 * @param classNameId the class name ID
+	 * @param classPK the class pk
+	 * @param start the lower bound of the range of social requests
+	 * @param end the upper bound of the range of social requests (not inclusive)
+	 * @return the range of matching social requests
+	 */
+	public static List<SocialRequest> findByC_C(
+		long classNameId, long classPK, int start, int end) {
+
+		return getPersistence().findByC_C(classNameId, classPK, start, end);
+	}
+
+	/**
+	 * Returns an ordered range of all the social requests where classNameId = &#63; and classPK = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>com.liferay.portlet.social.model.impl.SocialRequestModelImpl</code>.
+	 * </p>
+	 *
+	 * @param classNameId the class name ID
+	 * @param classPK the class pk
+	 * @param start the lower bound of the range of social requests
+	 * @param end the upper bound of the range of social requests (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching social requests
+	 */
+	public static List<SocialRequest> findByC_C(
+		long classNameId, long classPK, int start, int end,
+		OrderByComparator<SocialRequest> orderByComparator) {
+
+		return getPersistence().findByC_C(
+			classNameId, classPK, start, end, orderByComparator);
+	}
+
+	/**
+	 * Returns all the social requests where receiverUserId = &#63; and status = &#63;.
+	 *
+	 * @param receiverUserId the receiver user ID
+	 * @param status the status
+	 * @return the matching social requests
+	 */
+	public static List<SocialRequest> findByR_S(
+		long receiverUserId, int status) {
+
+		return getPersistence().findByR_S(receiverUserId, status);
+	}
+
+	/**
+	 * Returns a range of all the social requests where receiverUserId = &#63; and status = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>com.liferay.portlet.social.model.impl.SocialRequestModelImpl</code>.
+	 * </p>
+	 *
+	 * @param receiverUserId the receiver user ID
+	 * @param status the status
+	 * @param start the lower bound of the range of social requests
+	 * @param end the upper bound of the range of social requests (not inclusive)
+	 * @return the range of matching social requests
+	 */
+	public static List<SocialRequest> findByR_S(
+		long receiverUserId, int status, int start, int end) {
+
+		return getPersistence().findByR_S(receiverUserId, status, start, end);
+	}
+
+	/**
+	 * Returns an ordered range of all the social requests where receiverUserId = &#63; and status = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>com.liferay.portlet.social.model.impl.SocialRequestModelImpl</code>.
+	 * </p>
+	 *
+	 * @param receiverUserId the receiver user ID
+	 * @param status the status
+	 * @param start the lower bound of the range of social requests
+	 * @param end the upper bound of the range of social requests (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching social requests
+	 */
+	public static List<SocialRequest> findByR_S(
+		long receiverUserId, int status, int start, int end,
+		OrderByComparator<SocialRequest> orderByComparator) {
+
+		return getPersistence().findByR_S(
+			receiverUserId, status, start, end, orderByComparator);
+	}
+
+	/**
+	 * Returns all the social requests where userId = &#63; and classNameId = &#63; and classPK = &#63; and type = &#63; and status = &#63;.
+	 *
+	 * @param userId the user ID
+	 * @param classNameId the class name ID
+	 * @param classPK the class pk
+	 * @param type the type
+	 * @param status the status
+	 * @return the matching social requests
+	 */
+	public static List<SocialRequest> findByU_C_C_T_S(
+		long userId, long classNameId, long classPK, int type, int status) {
+
+		return getPersistence().findByU_C_C_T_S(
+			userId, classNameId, classPK, type, status);
+	}
+
+	/**
+	 * Returns a range of all the social requests where userId = &#63; and classNameId = &#63; and classPK = &#63; and type = &#63; and status = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>com.liferay.portlet.social.model.impl.SocialRequestModelImpl</code>.
+	 * </p>
+	 *
+	 * @param userId the user ID
+	 * @param classNameId the class name ID
+	 * @param classPK the class pk
+	 * @param type the type
+	 * @param status the status
+	 * @param start the lower bound of the range of social requests
+	 * @param end the upper bound of the range of social requests (not inclusive)
+	 * @return the range of matching social requests
+	 */
+	public static List<SocialRequest> findByU_C_C_T_S(
+		long userId, long classNameId, long classPK, int type, int status,
+		int start, int end) {
+
+		return getPersistence().findByU_C_C_T_S(
+			userId, classNameId, classPK, type, status, start, end);
+	}
+
+	/**
+	 * Returns an ordered range of all the social requests where userId = &#63; and classNameId = &#63; and classPK = &#63; and type = &#63; and status = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>com.liferay.portlet.social.model.impl.SocialRequestModelImpl</code>.
+	 * </p>
+	 *
+	 * @param userId the user ID
+	 * @param classNameId the class name ID
+	 * @param classPK the class pk
+	 * @param type the type
+	 * @param status the status
+	 * @param start the lower bound of the range of social requests
+	 * @param end the upper bound of the range of social requests (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching social requests
+	 */
+	public static List<SocialRequest> findByU_C_C_T_S(
+		long userId, long classNameId, long classPK, int type, int status,
 		int start, int end,
 		OrderByComparator<SocialRequest> orderByComparator) {
 
-		return getPersistence().findAll(start, end, orderByComparator);
+		return getPersistence().findByU_C_C_T_S(
+			userId, classNameId, classPK, type, status, start, end,
+			orderByComparator);
 	}
 
 	/**
-	 * Returns an ordered range of all the social requests.
+	 * Returns all the social requests where classNameId = &#63; and classPK = &#63; and type = &#63; and receiverUserId = &#63; and status = &#63;.
+	 *
+	 * @param classNameId the class name ID
+	 * @param classPK the class pk
+	 * @param type the type
+	 * @param receiverUserId the receiver user ID
+	 * @param status the status
+	 * @return the matching social requests
+	 */
+	public static List<SocialRequest> findByC_C_T_R_S(
+		long classNameId, long classPK, int type, long receiverUserId,
+		int status) {
+
+		return getPersistence().findByC_C_T_R_S(
+			classNameId, classPK, type, receiverUserId, status);
+	}
+
+	/**
+	 * Returns a range of all the social requests where classNameId = &#63; and classPK = &#63; and type = &#63; and receiverUserId = &#63; and status = &#63;.
 	 *
 	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>SocialRequestModelImpl</code>.
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>com.liferay.portlet.social.model.impl.SocialRequestModelImpl</code>.
 	 * </p>
 	 *
+	 * @param classNameId the class name ID
+	 * @param classPK the class pk
+	 * @param type the type
+	 * @param receiverUserId the receiver user ID
+	 * @param status the status
+	 * @param start the lower bound of the range of social requests
+	 * @param end the upper bound of the range of social requests (not inclusive)
+	 * @return the range of matching social requests
+	 */
+	public static List<SocialRequest> findByC_C_T_R_S(
+		long classNameId, long classPK, int type, long receiverUserId,
+		int status, int start, int end) {
+
+		return getPersistence().findByC_C_T_R_S(
+			classNameId, classPK, type, receiverUserId, status, start, end);
+	}
+
+	/**
+	 * Returns an ordered range of all the social requests where classNameId = &#63; and classPK = &#63; and type = &#63; and receiverUserId = &#63; and status = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>com.liferay.portlet.social.model.impl.SocialRequestModelImpl</code>.
+	 * </p>
+	 *
+	 * @param classNameId the class name ID
+	 * @param classPK the class pk
+	 * @param type the type
+	 * @param receiverUserId the receiver user ID
+	 * @param status the status
 	 * @param start the lower bound of the range of social requests
 	 * @param end the upper bound of the range of social requests (not inclusive)
 	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
-	 * @param useFinderCache whether to use the finder cache
-	 * @return the ordered range of social requests
+	 * @return the ordered range of matching social requests
 	 */
-	public static List<SocialRequest> findAll(
-		int start, int end, OrderByComparator<SocialRequest> orderByComparator,
-		boolean useFinderCache) {
+	public static List<SocialRequest> findByC_C_T_R_S(
+		long classNameId, long classPK, int type, long receiverUserId,
+		int status, int start, int end,
+		OrderByComparator<SocialRequest> orderByComparator) {
 
-		return getPersistence().findAll(
-			start, end, orderByComparator, useFinderCache);
-	}
-
-	/**
-	 * Removes all the social requests from the database.
-	 */
-	public static void removeAll() {
-		getPersistence().removeAll();
-	}
-
-	/**
-	 * Returns the number of social requests.
-	 *
-	 * @return the number of social requests
-	 */
-	public static int countAll() {
-		return getPersistence().countAll();
+		return getPersistence().findByC_C_T_R_S(
+			classNameId, classPK, type, receiverUserId, status, start, end,
+			orderByComparator);
 	}
 
 	public static SocialRequestPersistence getPersistence() {
@@ -2318,3 +1450,4 @@ public class SocialRequestUtil {
 	private static volatile SocialRequestPersistence _persistence;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1785431587

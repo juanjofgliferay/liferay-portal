@@ -6,8 +6,9 @@
 package com.liferay.layout.reports.web.internal.struts.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
-import com.liferay.layout.reports.web.internal.util.LayoutReportsTestUtil;
+import com.liferay.layout.reports.web.internal.test.util.LayoutReportsTestUtil;
 import com.liferay.layout.test.util.LayoutTestUtil;
+import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
@@ -22,14 +23,17 @@ import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.UnicodeProperties;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.portal.test.rule.FeatureFlags;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
+import com.liferay.segments.model.SegmentsEntry;
 import com.liferay.segments.model.SegmentsExperience;
 import com.liferay.segments.service.SegmentsExperienceLocalService;
+import com.liferay.segments.test.util.SegmentsTestUtil;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -44,7 +48,6 @@ import org.springframework.mock.web.MockHttpServletResponse;
 /**
  * @author Mikel Lorza
  */
-@FeatureFlags("LPS-187284")
 @RunWith(Arquillian.class)
 public class GetLayoutReportsDataStrutsActionTest {
 
@@ -123,13 +126,15 @@ public class GetLayoutReportsDataStrutsActionTest {
 	public void testGetLayoutReportsDataStrutsActionWithContentLayoutAndSomeExperiences()
 		throws Exception {
 
+		SegmentsEntry segmentsEntry = SegmentsTestUtil.addSegmentsEntry(
+			_group.getGroupId());
 		Layout layout = LayoutTestUtil.addTypeContentLayout(_group);
 
 		SegmentsExperience segmentsExperience =
 			_segmentsExperienceLocalService.addSegmentsExperience(
-				TestPropsValues.getUserId(), _group.getGroupId(),
-				RandomTestUtil.randomLong(), layout.getPlid(),
-				RandomTestUtil.randomLocaleStringMap(), true,
+				null, TestPropsValues.getUserId(), _group.getGroupId(),
+				segmentsEntry.getExternalReferenceCode(), null,
+				layout.getPlid(), RandomTestUtil.randomLocaleStringMap(), true,
 				new UnicodeProperties(true),
 				ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
 
@@ -162,10 +167,13 @@ public class GetLayoutReportsDataStrutsActionTest {
 
 		Assert.assertFalse(segmentsExperienceJSONObject.getBoolean("active"));
 		Assert.assertEquals(
-			segmentsExperience.getSegmentsEntryId(),
-			segmentsExperienceJSONObject.getLong("segmentsEntryId"));
+			segmentsExperience.getSegmentsEntryERC(),
+			segmentsExperienceJSONObject.getString("segmentsEntryERC"));
 		Assert.assertEquals(
-			"Anyone",
+			segmentsExperience.getSegmentsEntryScopeERC(),
+			segmentsExperienceJSONObject.getString("segmentsEntryScopeERC"));
+		Assert.assertEquals(
+			segmentsEntry.getName(LocaleUtil.getDefault()),
 			segmentsExperienceJSONObject.getString("segmentsEntryName"));
 		Assert.assertEquals(
 			segmentsExperience.getSegmentsExperienceId(),
@@ -230,9 +238,10 @@ public class GetLayoutReportsDataStrutsActionTest {
 		Assert.assertEquals("page-speed-insights", jsonObject.getString("id"));
 		Assert.assertEquals("PageSpeed Insights", jsonObject.getString("name"));
 		Assert.assertEquals(
-			"http://localhost:8080/layout_reports" +
-				"/get_google_page_speed_data?p_l_id=" +
-					String.valueOf(layout.getPlid()),
+			StringBundler.concat(
+				"http://localhost:", PortalUtil.getPortalServerPort(false),
+				"/layout_reports/get_google_page_speed_data?p_l_id=",
+				layout.getPlid()),
 			jsonObject.getString("url"));
 	}
 
@@ -242,9 +251,10 @@ public class GetLayoutReportsDataStrutsActionTest {
 		Assert.assertEquals("performance", jsonObject.getString("id"));
 		Assert.assertEquals("Performance", jsonObject.getString("name"));
 		Assert.assertEquals(
-			"http://localhost:8080/layout_reports" +
-				"/get_layout_item_data?p_l_id=" +
-					String.valueOf(layout.getPlid()),
+			StringBundler.concat(
+				"http://localhost:", PortalUtil.getPortalServerPort(false),
+				"/layout_reports/get_layout_item_data?p_l_id=",
+				layout.getPlid()),
 			jsonObject.getString("url"));
 	}
 
@@ -256,6 +266,14 @@ public class GetLayoutReportsDataStrutsActionTest {
 			selectedSegmentsExperienceJSONObject.getBoolean("active"));
 		Assert.assertEquals(
 			0, selectedSegmentsExperienceJSONObject.getLong("segmentsEntryId"));
+		Assert.assertTrue(
+			Validator.isNull(
+				selectedSegmentsExperienceJSONObject.getString(
+					"segmentsEntryERC")));
+		Assert.assertTrue(
+			Validator.isNull(
+				selectedSegmentsExperienceJSONObject.getString(
+					"segmentsEntryScopeERC")));
 		Assert.assertEquals(
 			"Anyone",
 			selectedSegmentsExperienceJSONObject.getString(
@@ -285,7 +303,8 @@ public class GetLayoutReportsDataStrutsActionTest {
 		themeDisplay.setLocale(
 			LocaleUtil.fromLanguageId(_group.getDefaultLanguageId()));
 		themeDisplay.setPlid(layout.getPlid());
-		themeDisplay.setPortalURL("http://localhost:8080");
+		themeDisplay.setPortalURL(
+			"http://localhost:" + PortalUtil.getPortalServerPort(false));
 		themeDisplay.setScopeGroupId(_group.getGroupId());
 		themeDisplay.setSiteGroupId(_group.getGroupId());
 

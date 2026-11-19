@@ -129,7 +129,8 @@ public class CommerceVirtualOrderItemServiceHttp {
 	}
 
 	public static java.io.File getFile(
-			HttpPrincipal httpPrincipal, long commerceVirtualOrderItemId)
+			HttpPrincipal httpPrincipal, long commerceVirtualOrderItemId,
+			long commerceVirtualOrderItemFileEntryId)
 		throws Exception {
 
 		try {
@@ -138,7 +139,8 @@ public class CommerceVirtualOrderItemServiceHttp {
 				_getFileParameterTypes2);
 
 			MethodHandler methodHandler = new MethodHandler(
-				methodKey, commerceVirtualOrderItemId);
+				methodKey, commerceVirtualOrderItemId,
+				commerceVirtualOrderItemFileEntryId);
 
 			Object returnObj = null;
 
@@ -165,22 +167,59 @@ public class CommerceVirtualOrderItemServiceHttp {
 		}
 	}
 
+	public static void propagateCPDVirtualSettingFileEntry(
+			HttpPrincipal httpPrincipal, long cpdVirtualSettingFileEntryId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		try {
+			MethodKey methodKey = new MethodKey(
+				CommerceVirtualOrderItemServiceUtil.class,
+				"propagateCPDVirtualSettingFileEntry",
+				_propagateCPDVirtualSettingFileEntryParameterTypes3);
+
+			MethodHandler methodHandler = new MethodHandler(
+				methodKey, cpdVirtualSettingFileEntryId);
+
+			try {
+				TunnelUtil.invoke(httpPrincipal, methodHandler);
+			}
+			catch (Exception exception) {
+				if (exception instanceof
+						com.liferay.portal.kernel.exception.PortalException) {
+
+					throw (com.liferay.portal.kernel.exception.PortalException)
+						exception;
+				}
+
+				throw new com.liferay.portal.kernel.exception.SystemException(
+					exception);
+			}
+		}
+		catch (com.liferay.portal.kernel.exception.SystemException
+					systemException) {
+
+			_log.error(systemException, systemException);
+
+			throw systemException;
+		}
+	}
+
 	public static com.liferay.commerce.product.type.virtual.order.model.
 		CommerceVirtualOrderItem updateCommerceVirtualOrderItem(
 				HttpPrincipal httpPrincipal, long commerceVirtualOrderItemId,
-				long fileEntryId, String url, int activationStatus,
-				long duration, int usages, int maxUsages, boolean active)
+				int activationStatus, long duration, int maxUsages,
+				boolean active)
 			throws com.liferay.portal.kernel.exception.PortalException {
 
 		try {
 			MethodKey methodKey = new MethodKey(
 				CommerceVirtualOrderItemServiceUtil.class,
 				"updateCommerceVirtualOrderItem",
-				_updateCommerceVirtualOrderItemParameterTypes3);
+				_updateCommerceVirtualOrderItemParameterTypes4);
 
 			MethodHandler methodHandler = new MethodHandler(
-				methodKey, commerceVirtualOrderItemId, fileEntryId, url,
-				activationStatus, duration, usages, maxUsages, active);
+				methodKey, commerceVirtualOrderItemId, activationStatus,
+				duration, maxUsages, active);
 
 			Object returnObj = null;
 
@@ -222,12 +261,16 @@ public class CommerceVirtualOrderItemServiceHttp {
 		_fetchCommerceVirtualOrderItemByCommerceOrderItemIdParameterTypes1 =
 			new Class[] {long.class};
 	private static final Class<?>[] _getFileParameterTypes2 = new Class[] {
-		long.class
+		long.class, long.class
 	};
 	private static final Class<?>[]
-		_updateCommerceVirtualOrderItemParameterTypes3 = new Class[] {
-			long.class, long.class, String.class, int.class, long.class,
-			int.class, int.class, boolean.class
+		_propagateCPDVirtualSettingFileEntryParameterTypes3 = new Class[] {
+			long.class
+		};
+	private static final Class<?>[]
+		_updateCommerceVirtualOrderItemParameterTypes4 = new Class[] {
+			long.class, int.class, long.class, int.class, boolean.class
 		};
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1311097929

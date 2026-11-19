@@ -11,6 +11,8 @@ import com.liferay.portal.json.web.service.client.server.simulator.HTTPSServerSi
 import com.liferay.portal.json.web.service.client.server.simulator.constants.SimulatorConstants;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
+import java.security.KeyStore;
+
 import java.util.Map;
 
 import org.junit.Assert;
@@ -30,11 +32,13 @@ public class JSONWebServiceClientImplSSLGetTest
 		LiferayUnitTestRule.INSTANCE;
 
 	@Test
-	public void test200OKOnGetIfTLS11() throws Exception {
+	public void test200OKOnGetIfTLS12() throws Exception {
+		System.setProperty("https.protocols", "TLSv1.2");
+
 		JSONWebServiceClientImpl jsonWebServiceClientImpl =
 			_createJsonWebServiceClient();
 
-		HTTPSServerSimulator.start("TLSv1.1");
+		HTTPSServerSimulator.start("TLSv1.2");
 
 		String json = jsonWebServiceClientImpl.doGet(
 			"/testGet/", getParameters("200"));
@@ -48,11 +52,13 @@ public class JSONWebServiceClientImplSSLGetTest
 	}
 
 	@Test
-	public void test200OKOnGetIfTLS12() throws Exception {
+	public void test200OKOnGetIfTLS13() throws Exception {
+		System.setProperty("https.protocols", "TLSv1.3");
+
 		JSONWebServiceClientImpl jsonWebServiceClientImpl =
 			_createJsonWebServiceClient();
 
-		HTTPSServerSimulator.start("TLSv1.2");
+		HTTPSServerSimulator.start("TLSv1.3");
 
 		String json = jsonWebServiceClientImpl.doGet(
 			"/testGet/", getParameters("200"));
@@ -82,6 +88,61 @@ public class JSONWebServiceClientImplSSLGetTest
 				json,
 				json.contains(
 					SimulatorConstants.HTTP_PARAMETER_RESPOND_WITH_STATUS));
+		}
+		finally {
+			HTTPSServerSimulator.stop();
+		}
+	}
+
+	@Test(expected = JSONWebServiceException.class)
+	public void testJSONWebServiceExceptionOnGetIfTLS11() throws Exception {
+		JSONWebServiceClientImpl jsonWebServiceClientImpl =
+			_createJsonWebServiceClient();
+
+		HTTPSServerSimulator.start("TLSv1.1");
+
+		try {
+			String json = jsonWebServiceClientImpl.doGet(
+				"/testGet/", getParameters("200"));
+
+			Assert.assertTrue(
+				json,
+				json.contains(
+					SimulatorConstants.HTTP_PARAMETER_RESPOND_WITH_STATUS));
+		}
+		finally {
+			HTTPSServerSimulator.stop();
+		}
+	}
+
+	@Test(expected = JSONWebServiceException.class)
+	public void testJSONWebServiceExceptionOnGetIfUntrustedCertificate()
+		throws Exception {
+
+		System.setProperty("https.protocols", "TLSv1.2");
+
+		JSONWebServiceClientImpl jsonWebServiceClientImpl =
+			new JSONWebServiceClientImpl();
+
+		Map<String, Object> properties = getBaseProperties();
+
+		properties.put("hostPort", 9443);
+
+		KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+
+		keyStore.load(null);
+
+		properties.put("keyStore", keyStore);
+
+		properties.put("protocol", "https");
+		properties.put("trustSelfSignedCertificates", false);
+
+		jsonWebServiceClientImpl.activate(properties);
+
+		HTTPSServerSimulator.start("TLSv1.2");
+
+		try {
+			jsonWebServiceClientImpl.doGet("/testGet/", getParameters("200"));
 		}
 		finally {
 			HTTPSServerSimulator.stop();

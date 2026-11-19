@@ -54,7 +54,11 @@ public interface CPDefinition extends CPDefinitionModel, PersistedModel {
 	@Override
 	public boolean equals(Object object);
 
-	public CommerceCatalog getCommerceCatalog();
+	public CPConfigurationEntry fetchCPConfigurationEntry(
+		long cpConfigurationListId);
+
+	public CPConfigurationEntry fetchMasterCPConfigurationEntry()
+		throws com.liferay.portal.kernel.exception.PortalException;
 
 	public java.util.List<CPAttachmentFileEntry> getCPAttachmentFileEntries(
 			int type, int status)
@@ -67,11 +71,13 @@ public interface CPDefinition extends CPDefinitionModel, PersistedModel {
 
 	public java.util.List<CPInstance> getCPInstances();
 
+	public CPTaxCategory getCPTaxCategory()
+		throws com.liferay.portal.kernel.exception.PortalException;
+
 	public CProduct getCProduct()
 		throws com.liferay.portal.kernel.exception.PortalException;
 
-	public CPTaxCategory getCPTaxCategory()
-		throws com.liferay.portal.kernel.exception.PortalException;
+	public CommerceCatalog getCommerceCatalog();
 
 	public String getDefaultImageThumbnailSrc(long commerceAccountId)
 		throws Exception;
@@ -80,6 +86,9 @@ public interface CPDefinition extends CPDefinitionModel, PersistedModel {
 		getDeliverySubscriptionTypeSettingsUnicodeProperties();
 
 	public java.util.Map<java.util.Locale, String> getDescriptionMap();
+
+	public CPConfigurationList getMasterCPConfigurationList()
+		throws com.liferay.portal.kernel.exception.PortalException;
 
 	public java.util.Map<java.util.Locale, String> getMetaDescriptionMap();
 
@@ -122,3 +131,4 @@ public interface CPDefinition extends CPDefinitionModel, PersistedModel {
 		java.util.Map<java.util.Locale, String> urlTitleMap);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1637029073

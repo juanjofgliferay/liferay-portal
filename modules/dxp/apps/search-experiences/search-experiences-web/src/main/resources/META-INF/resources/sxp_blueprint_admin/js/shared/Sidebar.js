@@ -16,11 +16,11 @@ function Sidebar({children, className, onClose, title, visible}) {
 			})}
 		>
 			<div className="sidebar-header">
-				<h4 className="component-title">
+				<div className="component-title">
 					<span className="text-truncate-inline">
 						<span className="text-truncate">{title}</span>
 					</span>
-				</h4>
+				</div>
 
 				<span>
 					<ClayButton
@@ -29,7 +29,7 @@ function Sidebar({children, className, onClose, title, visible}) {
 						displayType="secondary"
 						monospaced
 						onClick={onClose}
-						small
+						size="sm"
 					>
 						<ClayIcon symbol="times" />
 					</ClayButton>

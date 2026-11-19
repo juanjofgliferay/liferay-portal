@@ -22,12 +22,16 @@ import org.osgi.service.component.annotations.Reference;
  * @author Crescenzo Rega
  */
 @Component(
-	property = "dto.class.name=com.liferay.commerce.product.model.CPMeasurementUnit",
+	property = {
+		"default=true",
+		"dto.class.name=com.liferay.commerce.product.model.CPMeasurementUnit"
+	},
 	service = DTOConverter.class
 )
 public class MeasurementUnitDTOConverter
 	implements DTOConverter<CPMeasurementUnit, MeasurementUnit> {
 
+	@Override
 	public String getContentType() {
 		return MeasurementUnit.class.getSimpleName();
 	}
@@ -42,21 +46,23 @@ public class MeasurementUnitDTOConverter
 
 		return new MeasurementUnit() {
 			{
-				companyId = cpMeasurementUnit.getCompanyId();
-				externalReferenceCode =
-					cpMeasurementUnit.getExternalReferenceCode();
-				id = cpMeasurementUnit.getCPMeasurementUnitId();
-				key = cpMeasurementUnit.getKey();
-				name = LanguageUtils.getLanguageIdMap(
-					cpMeasurementUnit.getNameMap());
-				primary = cpMeasurementUnit.isPrimary();
-				priority = cpMeasurementUnit.getPriority();
-				rate = cpMeasurementUnit.getRate();
-				type = _language.get(
-					dtoConverterContext.getLocale(),
-					StringUtil.toLowerCase(
-						CPMeasurementUnitConstants.typesMap.get(
-							cpMeasurementUnit.getType())));
+				setCompanyId(cpMeasurementUnit::getCompanyId);
+				setExternalReferenceCode(
+					cpMeasurementUnit::getExternalReferenceCode);
+				setId(cpMeasurementUnit::getCPMeasurementUnitId);
+				setKey(cpMeasurementUnit::getKey);
+				setName(
+					() -> LanguageUtils.getLanguageIdMap(
+						cpMeasurementUnit.getNameMap()));
+				setPrimary(cpMeasurementUnit::isPrimary);
+				setPriority(cpMeasurementUnit::getPriority);
+				setRate(cpMeasurementUnit::getRate);
+				setType(
+					() -> _language.get(
+						dtoConverterContext.getLocale(),
+						StringUtil.toLowerCase(
+							CPMeasurementUnitConstants.typesMap.get(
+								cpMeasurementUnit.getType()))));
 			}
 		};
 	}

@@ -12,12 +12,12 @@ String redirect = ParamUtil.getString(request, "redirect");
 
 AnnouncementsEntry entry = (AnnouncementsEntry)request.getAttribute(AnnouncementsWebKeys.ANNOUNCEMENTS_ENTRY);
 
-long entryId = BeanParamUtil.getLong(entry, request, "entryId");
+long entryId = BeanParamUtil.getLong(entry, request, "entryId", AnnouncementsEntry::getEntryId);
 
-String title = BeanParamUtil.getString(entry, request, "title");
-String content = BeanParamUtil.getString(entry, request, "content");
+String title = BeanParamUtil.getString(entry, request, "title", AnnouncementsEntry::getTitle);
+String content = BeanParamUtil.getString(entry, request, "content", AnnouncementsEntry::getContent);
 
-boolean alert = BeanParamUtil.getBoolean(entry, request, "alert");
+boolean alert = BeanParamUtil.getBoolean(entry, request, "alert", AnnouncementsEntry::isAlert);
 
 boolean displayImmediately = ParamUtil.getBoolean(request, "displayImmediately", entry == null);
 
@@ -79,6 +79,7 @@ if (portletTitleBasedNavigation) {
 						editorName='<%= PropsUtil.get("editor.wysiwyg.portal-web.docroot.html.portlet.announcements.edit_entry.jsp") %>'
 						name="contentEditor"
 						placeholder="content"
+						required="<%= true %>"
 					/>
 
 					<aui:input name="content" type="hidden" />
@@ -135,7 +136,7 @@ if (portletTitleBasedNavigation) {
 						</c:when>
 						<c:otherwise>
 							<aui:select name="priority">
-								<aui:option label="normal" selected="<%= (entry != null) && (entry.getPriority() == 0) %>" value="0" />
+								<aui:option label="normal[priority]" selected="<%= (entry != null) && (entry.getPriority() == 0) %>" value="0" />
 								<aui:option label="important" selected="<%= (entry != null) && (entry.getPriority() == 1) %>" value="1" />
 							</aui:select>
 						</c:otherwise>

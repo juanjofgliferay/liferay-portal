@@ -6,13 +6,10 @@
 package com.liferay.commerce.pricing.service.impl;
 
 import com.liferay.commerce.pricing.constants.CommercePricingClassActionKeys;
-import com.liferay.commerce.pricing.exception.NoSuchPricingClassException;
 import com.liferay.commerce.pricing.model.CommercePricingClass;
 import com.liferay.commerce.pricing.service.base.CommercePricingClassServiceBaseImpl;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.log.Log;
-import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.search.BaseModelSearchResult;
 import com.liferay.portal.kernel.search.Sort;
@@ -69,18 +66,14 @@ public class CommercePricingClassServiceImpl
 		throws PortalException {
 
 		if (commercePricingClassId > 0) {
-			try {
-				return updateCommercePricingClass(
+			CommercePricingClass commercePricingClass =
+				commercePricingClassPersistence.fetchByPrimaryKey(
+					commercePricingClassId);
+
+			if (commercePricingClass != null) {
+				return commercePricingClassService.updateCommercePricingClass(
 					commercePricingClassId, titleMap, descriptionMap,
 					serviceContext);
-			}
-			catch (NoSuchPricingClassException noSuchPricingClassException) {
-				if (_log.isDebugEnabled()) {
-					_log.debug(
-						"Unable to find pricing class with ID: " +
-							commercePricingClassId,
-						noSuchPricingClassException);
-				}
 			}
 		}
 
@@ -90,14 +83,13 @@ public class CommercePricingClassServiceImpl
 					externalReferenceCode, serviceContext.getCompanyId());
 
 			if (commercePricingClass != null) {
-				return commercePricingClassLocalService.
-					updateCommercePricingClass(
-						commercePricingClassId, getUserId(), titleMap,
-						descriptionMap, serviceContext);
+				return commercePricingClassService.updateCommercePricingClass(
+					commercePricingClass.getCommercePricingClassId(), titleMap,
+					descriptionMap, serviceContext);
 			}
 		}
 
-		return addCommercePricingClass(
+		return commercePricingClassService.addCommercePricingClass(
 			externalReferenceCode, titleMap, descriptionMap, serviceContext);
 	}
 
@@ -114,13 +106,13 @@ public class CommercePricingClassServiceImpl
 	}
 
 	@Override
-	public CommercePricingClass fetchByExternalReferenceCode(
-			String externalReferenceCode, long companyId)
+	public CommercePricingClass fetchCommercePricingClass(
+			long commercePricingClassId)
 		throws PortalException {
 
 		CommercePricingClass commercePricingClass =
-			commercePricingClassLocalService.fetchByExternalReferenceCode(
-				externalReferenceCode, companyId);
+			commercePricingClassPersistence.fetchByPrimaryKey(
+				commercePricingClassId);
 
 		if (commercePricingClass != null) {
 			_commercePricingClassResourcePermission.check(
@@ -131,13 +123,14 @@ public class CommercePricingClassServiceImpl
 	}
 
 	@Override
-	public CommercePricingClass fetchCommercePricingClass(
-			long commercePricingClassId)
+	public CommercePricingClass
+			fetchCommercePricingClassByExternalReferenceCode(
+				String externalReferenceCode, long companyId)
 		throws PortalException {
 
 		CommercePricingClass commercePricingClass =
-			commercePricingClassLocalService.fetchCommercePricingClass(
-				commercePricingClassId);
+			commercePricingClassPersistence.fetchByERC_C(
+				externalReferenceCode, companyId);
 
 		if (commercePricingClass != null) {
 			_commercePricingClassResourcePermission.check(
@@ -155,7 +148,7 @@ public class CommercePricingClassServiceImpl
 		_commercePricingClassResourcePermission.check(
 			getPermissionChecker(), commercePricingClassId, ActionKeys.VIEW);
 
-		return commercePricingClassLocalService.getCommercePricingClass(
+		return commercePricingClassPersistence.findByPrimaryKey(
 			commercePricingClassId);
 	}
 
@@ -192,6 +185,31 @@ public class CommercePricingClassServiceImpl
 
 		return commercePricingClassFinder.countByCPDefinitionId(
 			cpDefinitionId, title, true);
+	}
+
+	@Override
+	public CommercePricingClass getOrAddEmptyCommercePricingClass(
+			String externalReferenceCode)
+		throws PortalException {
+
+		PermissionChecker permissionChecker = getPermissionChecker();
+
+		CommercePricingClass commercePricingClass =
+			commercePricingClassService.
+				fetchCommercePricingClassByExternalReferenceCode(
+					externalReferenceCode, permissionChecker.getCompanyId());
+
+		if (commercePricingClass != null) {
+			return commercePricingClass;
+		}
+
+		_checkPortletResourcePermission(
+			null, CommercePricingClassActionKeys.ADD_COMMERCE_PRICING_CLASS);
+
+		return commercePricingClassLocalService.
+			getOrAddEmptyCommercePricingClass(
+				externalReferenceCode, permissionChecker.getCompanyId(),
+				permissionChecker.getUserId());
 	}
 
 	@Override
@@ -250,9 +268,6 @@ public class CommercePricingClassServiceImpl
 		portletResourcePermission.check(
 			getPermissionChecker(), group, actionId);
 	}
-
-	private static final Log _log = LogFactoryUtil.getLog(
-		CommercePricingClassServiceImpl.class);
 
 	@Reference(
 		target = "(model.class.name=com.liferay.commerce.pricing.model.CommercePricingClass)"

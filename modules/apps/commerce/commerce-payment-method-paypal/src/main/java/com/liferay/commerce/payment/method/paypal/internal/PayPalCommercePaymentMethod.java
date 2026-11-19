@@ -21,6 +21,7 @@ import com.liferay.commerce.payment.result.CommercePaymentResult;
 import com.liferay.commerce.product.constants.CPConstants;
 import com.liferay.commerce.service.CommerceAddressLocalService;
 import com.liferay.commerce.service.CommerceOrderLocalService;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
@@ -34,6 +35,7 @@ import com.liferay.portal.kernel.settings.GroupServiceSettingsLocator;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.ResourceBundleUtil;
 import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.security.key.secret.SecretResolver;
 
 import com.paypal.api.payments.Agreement;
 import com.paypal.api.payments.AgreementStateDescriptor;
@@ -134,7 +136,8 @@ public class PayPalCommercePaymentMethod implements CommercePaymentMethod {
 			_commerceOrderLocalService.getCommerceOrder(
 				commercePaymentRequest.getCommerceOrderId());
 
-		APIContext apiContext = _getAPIContext(commerceOrder.getGroupId());
+		APIContext apiContext = _getAPIContext(
+			commerceOrder.getCompanyId(), commerceOrder.getGroupId());
 
 		AgreementStateDescriptor agreementStateDescriptor =
 			new AgreementStateDescriptor();
@@ -148,14 +151,9 @@ public class PayPalCommercePaymentMethod implements CommercePaymentMethod {
 		Agreement updatedAgreement = Agreement.get(
 			apiContext, agreement.getId());
 
-		if (Objects.equals(
-				PayPalCommercePaymentMethodConstants.ACTIVE,
-				updatedAgreement.getState())) {
-
-			return true;
-		}
-
-		return false;
+		return Objects.equals(
+			PayPalCommercePaymentMethodConstants.ACTIVE,
+			updatedAgreement.getState());
 	}
 
 	@Override
@@ -210,13 +208,15 @@ public class PayPalCommercePaymentMethod implements CommercePaymentMethod {
 					for (LinkDescription linkDescription :
 							authorizeOrder.links()) {
 
-						if (Objects.equals(
+						if (!Objects.equals(
 								PayPalCommercePaymentMethodConstants.
 									APPROVE_URL,
 								linkDescription.rel())) {
 
-							url = linkDescription.href();
+							continue;
 						}
+
+						url = linkDescription.href();
 					}
 
 					success = true;
@@ -270,7 +270,8 @@ public class PayPalCommercePaymentMethod implements CommercePaymentMethod {
 			_commerceOrderLocalService.getCommerceOrder(
 				commercePaymentRequest.getCommerceOrderId());
 
-		APIContext apiContext = _getAPIContext(commerceOrder.getGroupId());
+		APIContext apiContext = _getAPIContext(
+			commerceOrder.getCompanyId(), commerceOrder.getGroupId());
 
 		AgreementStateDescriptor agreementStateDescriptor =
 			new AgreementStateDescriptor();
@@ -284,14 +285,9 @@ public class PayPalCommercePaymentMethod implements CommercePaymentMethod {
 		Agreement updatedAgreement = Agreement.get(
 			apiContext, agreement.getId());
 
-		if (Objects.equals(
-				PayPalCommercePaymentMethodConstants.CANCELLED,
-				updatedAgreement.getState())) {
-
-			return true;
-		}
-
-		return false;
+		return Objects.equals(
+			PayPalCommercePaymentMethodConstants.CANCELLED,
+			updatedAgreement.getState());
 	}
 
 	@Override
@@ -411,7 +407,8 @@ public class PayPalCommercePaymentMethod implements CommercePaymentMethod {
 					commercePaymentRequest.getCommerceOrderId());
 
 			Agreement activeAgreement = agreement.execute(
-				_getAPIContext(commerceOrder.getGroupId()),
+				_getAPIContext(
+					commerceOrder.getCompanyId(), commerceOrder.getGroupId()),
 				agreement.getToken());
 
 			if (PayPalCommercePaymentMethodConstants.PAYMENT_STATE_FAILED.
@@ -487,7 +484,8 @@ public class PayPalCommercePaymentMethod implements CommercePaymentMethod {
 
 		try {
 			Agreement agreement = Agreement.get(
-				_getAPIContext(commerceOrder.getGroupId()),
+				_getAPIContext(
+					commerceOrder.getCompanyId(), commerceOrder.getGroupId()),
 				commercePaymentRequest.getTransactionId());
 
 			String agreementState = agreement.getState();
@@ -647,12 +645,14 @@ public class PayPalCommercePaymentMethod implements CommercePaymentMethod {
 				Order createOrder = orderCreateHttpResponse.result();
 
 				for (LinkDescription linkDescription : createOrder.links()) {
-					if (Objects.equals(
+					if (!Objects.equals(
 							PayPalCommercePaymentMethodConstants.APPROVE_URL,
 							linkDescription.rel())) {
 
-						url = linkDescription.href();
+						continue;
 					}
+
+					url = linkDescription.href();
 				}
 
 				if (Validator.isNull(url)) {
@@ -701,7 +701,8 @@ public class PayPalCommercePaymentMethod implements CommercePaymentMethod {
 		int status = CommerceOrderPaymentConstants.STATUS_FAILED;
 
 		try {
-			APIContext apiContext = _getAPIContext(commerceOrder.getGroupId());
+			APIContext apiContext = _getAPIContext(
+				commerceOrder.getCompanyId(), commerceOrder.getGroupId());
 
 			Plan plan = _getPlan(
 				commercePaymentRequest, commerceOrder, apiContext,
@@ -816,7 +817,8 @@ public class PayPalCommercePaymentMethod implements CommercePaymentMethod {
 			_commerceOrderLocalService.getCommerceOrder(
 				commercePaymentRequest.getCommerceOrderId());
 
-		APIContext apiContext = _getAPIContext(commerceOrder.getGroupId());
+		APIContext apiContext = _getAPIContext(
+			commerceOrder.getCompanyId(), commerceOrder.getGroupId());
 
 		AgreementStateDescriptor agreementStateDescriptor =
 			new AgreementStateDescriptor();
@@ -830,14 +832,9 @@ public class PayPalCommercePaymentMethod implements CommercePaymentMethod {
 		Agreement updatedAgreement = Agreement.get(
 			apiContext, agreement.getId());
 
-		if (Objects.equals(
-				PayPalCommercePaymentMethodConstants.SUSPENDED,
-				updatedAgreement.getState())) {
-
-			return true;
-		}
-
-		return false;
+		return Objects.equals(
+			PayPalCommercePaymentMethodConstants.SUSPENDED,
+			updatedAgreement.getState());
 	}
 
 	@Override
@@ -928,36 +925,34 @@ public class PayPalCommercePaymentMethod implements CommercePaymentMethod {
 			purchaseUnitRequest.shippingDetail(shippingDetail);
 		}
 
-		List<Item> items = new ArrayList<>();
+		purchaseUnitRequest.items(
+			TransformUtil.transform(
+				commerceOrder.getCommerceOrderItems(),
+				commerceOrderItem -> {
+					Item item = new Item();
 
-		for (CommerceOrderItem commerceOrderItem :
-				commerceOrder.getCommerceOrderItems()) {
+					item.name(commerceOrderItem.getName(locale));
+					item.quantity(
+						String.valueOf(commerceOrderItem.getQuantity()));
+					item.sku(commerceOrderItem.getSku());
 
-			Item item = new Item();
+					com.paypal.orders.Money unitAmountMoney =
+						new com.paypal.orders.Money();
 
-			item.name(commerceOrderItem.getName(locale));
-			item.quantity(String.valueOf(commerceOrderItem.getQuantity()));
-			item.sku(commerceOrderItem.getSku());
+					unitAmountMoney.currencyCode(commerceCurrency.getCode());
 
-			com.paypal.orders.Money unitAmountMoney =
-				new com.paypal.orders.Money();
+					BigDecimal finalPrice = commerceOrderItem.getFinalPrice();
 
-			unitAmountMoney.currencyCode(commerceCurrency.getCode());
+					BigDecimal unitAmount = finalPrice.divide(
+						commerceOrderItem.getQuantity());
 
-			BigDecimal finalPrice = commerceOrderItem.getFinalPrice();
+					unitAmountMoney.value(
+						_getAmountValue(unitAmount, commerceCurrency));
 
-			BigDecimal unitAmount = finalPrice.divide(
-				commerceOrderItem.getQuantity());
+					item.unitAmount(unitAmountMoney);
 
-			unitAmountMoney.value(
-				_getAmountValue(unitAmount, commerceCurrency));
-
-			item.unitAmount(unitAmountMoney);
-
-			items.add(item);
-		}
-
-		purchaseUnitRequest.items(items);
+					return item;
+				}));
 
 		purchaseUnitRequests.add(purchaseUnitRequest);
 
@@ -968,31 +963,29 @@ public class PayPalCommercePaymentMethod implements CommercePaymentMethod {
 			CommerceOrder commerceOrder)
 		throws PortalException {
 
-		List<PurchaseUnitRequest> purchaseUnitRequests = new ArrayList<>();
-
 		CommerceCurrency commerceCurrency = commerceOrder.getCommerceCurrency();
 
-		for (CommerceOrderItem commerceOrderItem :
-				commerceOrder.getCommerceOrderItems()) {
+		return TransformUtil.transform(
+			commerceOrder.getCommerceOrderItems(),
+			commerceOrderItem -> {
+				AmountWithBreakdown amountWithBreakdown =
+					new AmountWithBreakdown();
 
-			AmountWithBreakdown amountWithBreakdown = new AmountWithBreakdown();
+				amountWithBreakdown.currencyCode(commerceCurrency.getCode());
 
-			amountWithBreakdown.currencyCode(commerceCurrency.getCode());
+				amountWithBreakdown.value(
+					_getAmountValue(
+						commerceOrderItem.getFinalPrice(), commerceCurrency));
 
-			amountWithBreakdown.value(
-				_getAmountValue(
-					commerceOrderItem.getFinalPrice(), commerceCurrency));
+				PurchaseUnitRequest purchaseUnitRequest =
+					new PurchaseUnitRequest();
 
-			PurchaseUnitRequest purchaseUnitRequest = new PurchaseUnitRequest();
+				purchaseUnitRequest.amountWithBreakdown(amountWithBreakdown);
+				purchaseUnitRequest.referenceId(
+					String.valueOf(commerceOrderItem.getCommerceOrderItemId()));
 
-			purchaseUnitRequest.amountWithBreakdown(amountWithBreakdown);
-			purchaseUnitRequest.referenceId(
-				String.valueOf(commerceOrderItem.getCommerceOrderItemId()));
-
-			purchaseUnitRequests.add(purchaseUnitRequest);
-		}
-
-		return purchaseUnitRequests;
+				return purchaseUnitRequest;
+			});
 	}
 
 	private RefundRequest _buildRefundRequestBody(
@@ -1027,6 +1020,19 @@ public class PayPalCommercePaymentMethod implements CommercePaymentMethod {
 		}
 
 		return _buildMinimalRequestBody(commerceOrder);
+	}
+
+	private APIContext _getAPIContext(long companyId, long groupId)
+		throws PortalException {
+
+		PayPalGroupServiceConfiguration payPalGroupServiceConfiguration =
+			_getPayPalGroupServiceConfiguration(groupId);
+
+		return new APIContext(
+			payPalGroupServiceConfiguration.clientId(),
+			_secretResolver.resolve(
+				companyId, payPalGroupServiceConfiguration.clientSecret()),
+			payPalGroupServiceConfiguration.mode());
 	}
 
 	private Agreement _getAgreement(
@@ -1099,16 +1105,6 @@ public class PayPalCommercePaymentMethod implements CommercePaymentMethod {
 		return scaledAmount.toPlainString();
 	}
 
-	private APIContext _getAPIContext(long groupId) throws PortalException {
-		PayPalGroupServiceConfiguration payPalGroupServiceConfiguration =
-			_getPayPalGroupServiceConfiguration(groupId);
-
-		return new APIContext(
-			payPalGroupServiceConfiguration.clientId(),
-			payPalGroupServiceConfiguration.clientSecret(),
-			payPalGroupServiceConfiguration.mode());
-	}
-
 	private List<String> _getErrorMessages(
 		JSONObject jsonObject, String prefix) {
 
@@ -1167,16 +1163,18 @@ public class PayPalCommercePaymentMethod implements CommercePaymentMethod {
 		PayPalGroupServiceConfiguration payPalGroupServiceConfiguration =
 			_getPayPalGroupServiceConfiguration(commerceOrder.getGroupId());
 
-		PayPalEnvironment payPalEnvironment = new PayPalEnvironment.Sandbox(
-			payPalGroupServiceConfiguration.clientId(),
+		String clientSecret = _secretResolver.resolve(
+			commerceOrder.getCompanyId(),
 			payPalGroupServiceConfiguration.clientSecret());
+
+		PayPalEnvironment payPalEnvironment = new PayPalEnvironment.Sandbox(
+			payPalGroupServiceConfiguration.clientId(), clientSecret);
 
 		String mode = payPalGroupServiceConfiguration.mode();
 
 		if (mode.equals(PayPalCommercePaymentMethodConstants.MODE_LIVE)) {
 			payPalEnvironment = new PayPalEnvironment.Live(
-				payPalGroupServiceConfiguration.clientId(),
-				payPalGroupServiceConfiguration.clientSecret());
+				payPalGroupServiceConfiguration.clientId(), clientSecret);
 		}
 
 		return new PayPalHttpClient(payPalEnvironment);
@@ -1364,5 +1362,8 @@ public class PayPalCommercePaymentMethod implements CommercePaymentMethod {
 
 	@Reference
 	private Language _language;
+
+	@Reference
+	private SecretResolver _secretResolver;
 
 }

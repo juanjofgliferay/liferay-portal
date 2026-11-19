@@ -37,8 +37,10 @@ import com.liferay.portal.kernel.util.MethodKey;
  * </p>
  *
  * @author Alessio Antonio Rendina
+ * @deprecated As of Cavanaugh (7.4.x)
  * @generated
  */
+@Deprecated
 public class CommerceNotificationTemplateServiceHttp {
 
 	public static
@@ -517,3 +519,4 @@ public class CommerceNotificationTemplateServiceHttp {
 		};
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1934858617

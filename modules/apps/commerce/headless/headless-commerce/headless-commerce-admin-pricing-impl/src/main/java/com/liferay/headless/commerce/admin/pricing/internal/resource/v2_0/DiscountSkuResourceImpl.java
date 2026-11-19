@@ -5,16 +5,19 @@
 
 package com.liferay.headless.commerce.admin.pricing.internal.resource.v2_0;
 
+import com.liferay.commerce.currency.service.CommerceCurrencyService;
 import com.liferay.commerce.discount.model.CommerceDiscountRel;
 import com.liferay.commerce.discount.service.CommerceDiscountRelService;
 import com.liferay.commerce.discount.service.CommerceDiscountService;
-import com.liferay.commerce.product.service.CPInstanceLocalService;
+import com.liferay.commerce.product.service.CPDefinitionService;
+import com.liferay.commerce.product.service.CPInstanceService;
 import com.liferay.commerce.product.service.CPInstanceUnitOfMeasureLocalService;
+import com.liferay.commerce.product.service.CommerceCatalogService;
 import com.liferay.headless.commerce.admin.pricing.dto.v2_0.Discount;
 import com.liferay.headless.commerce.admin.pricing.dto.v2_0.DiscountSku;
 import com.liferay.headless.commerce.admin.pricing.internal.util.v2_0.DiscountSkuUtil;
 import com.liferay.headless.commerce.admin.pricing.resource.v2_0.DiscountSkuResource;
-import com.liferay.headless.commerce.core.util.ServiceContextHelper;
+import com.liferay.headless.commerce.core.helper.ServiceContextHelper;
 import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.search.filter.Filter;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
@@ -73,10 +76,11 @@ public class DiscountSkuResourceImpl extends BaseDiscountSkuResourceImpl {
 
 		CommerceDiscountRel commerceDiscountRel =
 			DiscountSkuUtil.addCommerceDiscountRel(
+				_commerceCatalogService, _commerceCurrencyService,
 				_commerceDiscountService.getCommerceDiscount(id),
-				_commerceDiscountRelService, _cpInstanceLocalService,
-				_cpInstanceUnitOfMeasureLocalService, discountSku,
-				_serviceContextHelper);
+				_commerceDiscountRelService, _cpDefinitionService,
+				_cpInstanceService, _cpInstanceUnitOfMeasureLocalService,
+				discountSku, _serviceContextHelper);
 
 		return _toDiscountSku(commerceDiscountRel.getCommerceDiscountRelId());
 	}
@@ -108,6 +112,12 @@ public class DiscountSkuResourceImpl extends BaseDiscountSkuResourceImpl {
 				contextUser));
 	}
 
+	@Reference
+	private CommerceCatalogService _commerceCatalogService;
+
+	@Reference
+	private CommerceCurrencyService _commerceCurrencyService;
+
 	@Reference(
 		target = "(model.class.name=com.liferay.commerce.discount.model.CommerceDiscountRel)"
 	)
@@ -121,7 +131,10 @@ public class DiscountSkuResourceImpl extends BaseDiscountSkuResourceImpl {
 	private CommerceDiscountService _commerceDiscountService;
 
 	@Reference
-	private CPInstanceLocalService _cpInstanceLocalService;
+	private CPDefinitionService _cpDefinitionService;
+
+	@Reference
+	private CPInstanceService _cpInstanceService;
 
 	@Reference
 	private CPInstanceUnitOfMeasureLocalService

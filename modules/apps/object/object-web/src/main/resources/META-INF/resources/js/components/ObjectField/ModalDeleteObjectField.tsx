@@ -6,10 +6,9 @@
 import ClayButton from '@clayui/button';
 import {Text} from '@clayui/core';
 import ClayModal, {ClayModalProvider, useModal} from '@clayui/modal';
-import {getLocalizableLabel} from '@liferay/object-js-components-web';
+import {stringUtils} from '@liferay/object-js-components-web';
 import React from 'react';
 
-import {defaultLanguageId} from '../../utils/constants';
 import {deleteObjectField} from './deleteObjectFieldUtil';
 
 interface ModalDeleteObjectFieldProps {
@@ -33,7 +32,9 @@ export function ModalDeleteObjectField({
 		<ClayModalProvider>
 			{objectField && (
 				<ClayModal center observer={observer} status="danger">
-					<ClayModal.Header>
+					<ClayModal.Header
+						closeButtonAriaLabel={Liferay.Language.get('close')}
+					>
 						{Liferay.Language.get('delete-object-field')}
 					</ClayModal.Header>
 
@@ -68,17 +69,16 @@ export function ModalDeleteObjectField({
 									onClick={() => {
 										deleteObjectField(
 											objectField.id,
-											getLocalizableLabel(
-												defaultLanguageId,
-												objectField.label,
-												objectField.name
-											)
+											stringUtils.getLocalizableLabel({
+												fallbackLabel: objectField.name,
+												labels: objectField.label,
+											})
 										);
 
 										open
 											? onClose()
 											: setObjectField &&
-											  setObjectField(null);
+												setObjectField(null);
 
 										onAfterSubmit();
 									}}

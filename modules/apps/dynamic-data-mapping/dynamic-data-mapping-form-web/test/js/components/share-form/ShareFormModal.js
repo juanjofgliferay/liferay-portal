@@ -15,9 +15,9 @@ import userEvent from '@testing-library/user-event';
 import React from 'react';
 import ReactDOM from 'react-dom';
 
-import {Modal} from '../../../../src/main/resources/META-INF/resources/admin/js/components/share-form/openShareFormModal.es';
+import {Modal} from '../../../../src/main/resources/META-INF/resources/js/components/share-form/openShareFormModal.es';
 
-import '@testing-library/jest-dom/extend-expect';
+import '@testing-library/jest-dom';
 
 global.ResizeObserver = require('resize-observer-polyfill');
 

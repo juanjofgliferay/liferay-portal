@@ -5,6 +5,7 @@
 
 package com.liferay.layout.internal.struts;
 
+import com.liferay.layout.seo.provider.LayoutSetSEORobotsProvider;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
@@ -20,12 +21,11 @@ import com.liferay.portal.kernel.struts.StrutsAction;
 import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.util.PropsValues;
-import com.liferay.portal.util.RobotsUtil;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -33,7 +33,10 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author David Truong
  */
-@Component(property = "path=/portal/robots", service = StrutsAction.class)
+@Component(
+	property = {"layout.required=false", "path=/portal/robots"},
+	service = StrutsAction.class
+)
 public class RobotsStrutsAction implements StrutsAction {
 
 	@Override
@@ -69,7 +72,7 @@ public class RobotsStrutsAction implements StrutsAction {
 				}
 			}
 
-			String robots = RobotsUtil.getRobots(
+			String robots = _layoutSetSEORobotsProvider.getRobots(
 				layoutSet, httpServletRequest.isSecure());
 
 			ServletResponseUtil.sendFile(
@@ -97,6 +100,9 @@ public class RobotsStrutsAction implements StrutsAction {
 
 	@Reference
 	private LayoutSetLocalService _layoutSetLocalService;
+
+	@Reference
+	private LayoutSetSEORobotsProvider _layoutSetSEORobotsProvider;
 
 	@Reference
 	private Portal _portal;

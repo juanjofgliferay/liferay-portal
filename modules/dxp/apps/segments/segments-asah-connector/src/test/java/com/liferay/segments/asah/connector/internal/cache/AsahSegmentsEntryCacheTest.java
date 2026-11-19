@@ -5,11 +5,12 @@
 
 package com.liferay.segments.asah.connector.internal.cache;
 
+import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.cache.PortalCache;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
-import com.liferay.segments.asah.connector.internal.configuration.provider.SegmentsAsahConfigurationProvider;
+import com.liferay.segments.asah.connector.internal.configuration.SegmentsAsahCompanyConfiguration;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -32,18 +33,10 @@ public class AsahSegmentsEntryCacheTest {
 	@Before
 	public void setUp() {
 		ReflectionTestUtil.setFieldValue(
-			_asahSegmentsEntryCache, "_portalCache", _portalCache);
+			_asahSegmentsEntryCacheImpl, "_configurationProvider",
+			_configurationProvider);
 		ReflectionTestUtil.setFieldValue(
-			_asahSegmentsEntryCache, "_segmentsAsahConfigurationProvider",
-			new SegmentsAsahConfigurationProvider() {
-
-				public int getAnonymousUserSegmentsCacheExpirationTime(
-					long companyId) {
-
-					return 0;
-				}
-
-			});
+			_asahSegmentsEntryCacheImpl, "_portalCache", _portalCache);
 	}
 
 	@Test
@@ -64,7 +57,7 @@ public class AsahSegmentsEntryCacheTest {
 
 		Assert.assertArrayEquals(
 			segmentsEntryIds,
-			_asahSegmentsEntryCache.getSegmentsEntryIds(userId));
+			_asahSegmentsEntryCacheImpl.getSegmentsEntryIds(userId));
 
 		Mockito.verify(
 			_portalCache, Mockito.times(1)
@@ -74,7 +67,25 @@ public class AsahSegmentsEntryCacheTest {
 	}
 
 	@Test
-	public void testPutSegmentsEntryIds() {
+	public void testPutSegmentsEntryIds() throws Exception {
+		int anonymousUserSegmentsCacheExpirationTime =
+			RandomTestUtil.randomInt();
+
+		Mockito.when(
+			_configurationProvider.getCompanyConfiguration(
+				Mockito.eq(SegmentsAsahCompanyConfiguration.class),
+				Mockito.anyLong())
+		).thenReturn(
+			new SegmentsAsahCompanyConfiguration() {
+
+				@Override
+				public int anonymousUserSegmentsCacheExpirationTime() {
+					return anonymousUserSegmentsCacheExpirationTime;
+				}
+
+			}
+		);
+
 		String userId = RandomTestUtil.randomString();
 
 		long[] segmentsEntryIds = {
@@ -83,12 +94,13 @@ public class AsahSegmentsEntryCacheTest {
 
 		String cacheKey = _generateCacheKey(userId);
 
-		_asahSegmentsEntryCache.putSegmentsEntryIds(userId, segmentsEntryIds);
+		_asahSegmentsEntryCacheImpl.putSegmentsEntryIds(
+			userId, segmentsEntryIds);
 
 		Mockito.verify(
 			_portalCache, Mockito.times(1)
 		).put(
-			cacheKey, segmentsEntryIds, 0
+			cacheKey, segmentsEntryIds, anonymousUserSegmentsCacheExpirationTime
 		);
 	}
 
@@ -96,8 +108,10 @@ public class AsahSegmentsEntryCacheTest {
 		return "segments-" + userId;
 	}
 
-	private final AsahSegmentsEntryCache _asahSegmentsEntryCache =
-		new AsahSegmentsEntryCache();
+	private final AsahSegmentsEntryCacheImpl _asahSegmentsEntryCacheImpl =
+		new AsahSegmentsEntryCacheImpl();
+	private final ConfigurationProvider _configurationProvider = Mockito.mock(
+		ConfigurationProvider.class);
 	private final PortalCache<String, long[]> _portalCache = Mockito.mock(
 		PortalCache.class);
 

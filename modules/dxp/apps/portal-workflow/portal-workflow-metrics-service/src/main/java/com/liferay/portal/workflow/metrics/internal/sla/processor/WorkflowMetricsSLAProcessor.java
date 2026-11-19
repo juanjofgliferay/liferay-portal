@@ -30,19 +30,16 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Stack;
 
-import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.Reference;
-
 /**
  * @author Rafael Praxedes
  */
-@Component(service = WorkflowMetricsSLAProcessor.class)
 public class WorkflowMetricsSLAProcessor {
 
 	public WorkflowMetricsSLAInstanceResult process(
 		LocalDateTime completionLocalDateTime,
 		LocalDateTime createLocalDateTime, List<Document> documents,
 		long instanceId, LocalDateTime nowLocalDateTime, long startNodeId,
+		WorkflowMetricsSLACalendarRegistry workflowMetricsSLACalendarRegistry,
 		WorkflowMetricsSLADefinitionVersion workflowMetricsSLADefinitionVersion,
 		WorkflowMetricsSLAInstanceResult workflowMetricsSLAInstanceResult) {
 
@@ -69,7 +66,7 @@ public class WorkflowMetricsSLAProcessor {
 		}
 
 		WorkflowMetricsSLACalendar workflowMetricsSLACalendar =
-			_workflowMetricsSLACalendarRegistry.getWorkflowMetricsSLACalendar(
+			workflowMetricsSLACalendarRegistry.getWorkflowMetricsSLACalendar(
 				workflowMetricsSLADefinitionVersion.getCalendarKey());
 		WorkflowMetricsSLAStopwatch workflowMetricsSLAStopwatch =
 			_createWorkflowMetricsSLAStopwatch(
@@ -155,11 +152,7 @@ public class WorkflowMetricsSLAProcessor {
 		LocalDateTime completionDateLocalDateTime = LocalDateTime.parse(
 			document.getDate("completionDate"), _dateTimeFormatter);
 
-		if (completionDateLocalDateTime.isAfter(overdueLocalDateTime)) {
-			return true;
-		}
-
-		return false;
+		return completionDateLocalDateTime.isAfter(overdueLocalDateTime);
 	}
 
 	protected boolean isOnTime(
@@ -350,8 +343,10 @@ public class WorkflowMetricsSLAProcessor {
 			TaskInterval taskInterval = _toTaskInterval(
 				document, lastCheckLocalDateTime, null);
 
+			String stopTimeMarker = stopTimeMarkers.get(nodeId);
+
 			if (pauseTimeMarkers.containsKey(nodeId) &&
-				!stopTimeMarkers.containsKey(nodeId)) {
+				(stopTimeMarker == null)) {
 
 				workflowMetricsSLAStopwatch.pause(
 					taskInterval._startLocalDateTime);
@@ -362,13 +357,14 @@ public class WorkflowMetricsSLAProcessor {
 				}
 			}
 
-			if (startTimeMarkers.containsKey(nodeId)) {
-				if (Objects.equals(startTimeMarkers.get(nodeId), "enter")) {
+			String startTimeMarker = startTimeMarkers.get(nodeId);
+
+			if (startTimeMarker != null) {
+				if (Objects.equals(startTimeMarker, "enter")) {
 					workflowMetricsSLAStopwatch.run(
 						taskInterval._startLocalDateTime);
 				}
-				else if (Objects.equals(
-							startTimeMarkers.get(nodeId), "leave") &&
+				else if (Objects.equals(startTimeMarker, "leave") &&
 						 (taskInterval._endLocalDateTime != null)) {
 
 					workflowMetricsSLAStopwatch.run(
@@ -376,17 +372,19 @@ public class WorkflowMetricsSLAProcessor {
 				}
 			}
 
-			if (stopTimeMarkers.containsKey(nodeId)) {
-				if (Objects.equals(stopTimeMarkers.get(nodeId), "enter")) {
-					workflowMetricsSLAStopwatch.stop(
-						taskInterval._startLocalDateTime);
-				}
-				else if (Objects.equals(stopTimeMarkers.get(nodeId), "leave") &&
-						 (taskInterval._endLocalDateTime != null)) {
+			if (stopTimeMarker == null) {
+				continue;
+			}
 
-					workflowMetricsSLAStopwatch.stop(
-						taskInterval._endLocalDateTime);
-				}
+			if (Objects.equals(stopTimeMarker, "enter")) {
+				workflowMetricsSLAStopwatch.stop(
+					taskInterval._startLocalDateTime);
+			}
+			else if (Objects.equals(stopTimeMarker, "leave") &&
+					 (taskInterval._endLocalDateTime != null)) {
+
+				workflowMetricsSLAStopwatch.stop(
+					taskInterval._endLocalDateTime);
 			}
 		}
 
@@ -602,9 +600,5 @@ public class WorkflowMetricsSLAProcessor {
 
 	private final DateTimeFormatter _dateTimeFormatter =
 		DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
-
-	@Reference
-	private WorkflowMetricsSLACalendarRegistry
-		_workflowMetricsSLACalendarRegistry;
 
 }

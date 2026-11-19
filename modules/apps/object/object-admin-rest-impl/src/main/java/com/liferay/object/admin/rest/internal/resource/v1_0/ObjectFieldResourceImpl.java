@@ -14,12 +14,10 @@ import com.liferay.object.admin.rest.internal.dto.v1_0.util.ObjectFieldSettingUt
 import com.liferay.object.admin.rest.internal.dto.v1_0.util.ObjectFieldUtil;
 import com.liferay.object.admin.rest.internal.odata.entity.v1_0.ObjectFieldEntityModel;
 import com.liferay.object.admin.rest.resource.v1_0.ObjectFieldResource;
-import com.liferay.object.constants.ObjectFieldConstants;
 import com.liferay.object.service.ObjectDefinitionLocalService;
 import com.liferay.object.service.ObjectFieldService;
 import com.liferay.object.service.ObjectFieldSettingLocalService;
 import com.liferay.object.service.ObjectFilterLocalService;
-import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.search.filter.Filter;
@@ -31,14 +29,15 @@ import com.liferay.portal.odata.entity.EntityModel;
 import com.liferay.portal.vulcan.dto.converter.DTOConverter;
 import com.liferay.portal.vulcan.dto.converter.DefaultDTOConverterContext;
 import com.liferay.portal.vulcan.fields.NestedField;
+import com.liferay.portal.vulcan.fields.NestedFieldId;
 import com.liferay.portal.vulcan.pagination.Page;
 import com.liferay.portal.vulcan.pagination.Pagination;
 import com.liferay.portal.vulcan.util.LocalizedMapUtil;
 import com.liferay.portal.vulcan.util.SearchUtil;
 
-import java.util.Objects;
+import jakarta.ws.rs.core.MultivaluedMap;
 
-import javax.ws.rs.core.MultivaluedMap;
+import java.util.Objects;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -83,8 +82,8 @@ public class ObjectFieldResourceImpl extends BaseObjectFieldResourceImpl {
 	@NestedField(parentClass = ObjectDefinition.class, value = "objectFields")
 	@Override
 	public Page<ObjectField> getObjectDefinitionObjectFieldsPage(
-			Long objectDefinitionId, String search, Filter filter,
-			Pagination pagination, Sort[] sorts)
+			@NestedFieldId(value = "id") Long objectDefinitionId, String search,
+			Filter filter, Pagination pagination, Sort[] sorts)
 		throws Exception {
 
 		return _getObjectFieldsPage(
@@ -118,19 +117,11 @@ public class ObjectFieldResourceImpl extends BaseObjectFieldResourceImpl {
 			Long objectDefinitionId, ObjectField objectField)
 		throws Exception {
 
-		if (!FeatureFlagManagerUtil.isEnabled("LPS-164948") &&
-			Objects.equals(
-				objectField.getBusinessTypeAsString(),
-				ObjectFieldConstants.BUSINESS_TYPE_FORMULA)) {
-
-			throw new UnsupportedOperationException();
-		}
-
 		com.liferay.object.model.ObjectDefinition objectDefinition =
 			_objectDefinitionLocalService.getObjectDefinition(
 				objectDefinitionId);
 
-		return _toObjectField(
+		com.liferay.object.model.ObjectField serviceBuilderObjectField =
 			_objectFieldService.addCustomObjectField(
 				objectField.getExternalReferenceCode(),
 				ObjectFieldUtil.getListTypeDefinitionId(
@@ -140,25 +131,33 @@ public class ObjectFieldResourceImpl extends BaseObjectFieldResourceImpl {
 				ObjectFieldUtil.getDBType(
 					objectField.getDBTypeAsString(),
 					objectField.getTypeAsString()),
+				LocalizedMapUtil.populateLocalizedMap(
+					objectField.getDescription()),
 				GetterUtil.getBoolean(objectField.getIndexed()),
 				GetterUtil.getBoolean(objectField.getIndexedAsKeyword()),
 				objectField.getIndexedLanguageId(),
-				LocalizedMapUtil.getLocalizedMap(objectField.getLabel()),
-				GetterUtil.getBoolean(
-					objectField.getLocalized(),
-					objectDefinition.isEnableLocalization()),
+				LocalizedMapUtil.populateLocalizedMap(objectField.getLabel()),
+				GetterUtil.getBoolean(objectField.getLocalized()),
 				objectField.getName(), objectField.getReadOnlyAsString(),
 				objectField.getReadOnlyConditionExpression(),
 				objectField.getRequired(),
 				GetterUtil.getBoolean(objectField.getState()),
 				ObjectFieldSettingUtil.toObjectFieldSettings(
+					groupLocalService,
 					ObjectFieldUtil.addListTypeDefinition(
 						contextUser.getCompanyId(),
 						_listTypeDefinitionLocalService,
 						_listTypeEntryLocalService, objectField,
 						contextUser.getUserId()),
 					objectField, _objectFieldSettingLocalService,
-					_objectFilterLocalService)));
+					_objectFilterLocalService));
+
+		if (objectDefinition.isApproved() && objectDefinition.isActive()) {
+			_objectDefinitionLocalService.deployObjectDefinition(
+				objectDefinition);
+		}
+
+		return _toObjectField(serviceBuilderObjectField);
 	}
 
 	@Override
@@ -166,13 +165,51 @@ public class ObjectFieldResourceImpl extends BaseObjectFieldResourceImpl {
 			Long objectFieldId, ObjectField objectField)
 		throws Exception {
 
-		if (!FeatureFlagManagerUtil.isEnabled("LPS-164948") &&
-			Objects.equals(
-				objectField.getBusinessTypeAsString(),
-				ObjectFieldConstants.BUSINESS_TYPE_FORMULA)) {
+		Long listTypeDefinitionId = objectField.getListTypeDefinitionId();
 
-			throw new UnsupportedOperationException();
+		objectField.setListTypeDefinitionId(
+			() -> _getListTypeDefinitionId(
+				objectField, objectFieldId, listTypeDefinitionId));
+
+		return _toObjectField(
+			_objectFieldService.updateObjectField(
+				objectField.getExternalReferenceCode(), objectFieldId,
+				objectField.getListTypeDefinitionId(),
+				objectField.getBusinessTypeAsString(),
+				ObjectFieldUtil.getDBType(
+					objectField.getDBTypeAsString(),
+					objectField.getTypeAsString()),
+				LocalizedMapUtil.populateLocalizedMap(
+					objectField.getDescription()),
+				GetterUtil.getBoolean(objectField.getIndexed()),
+				GetterUtil.getBoolean(objectField.getIndexedAsKeyword()),
+				objectField.getIndexedLanguageId(),
+				LocalizedMapUtil.populateLocalizedMap(objectField.getLabel()),
+				GetterUtil.getBoolean(objectField.getLocalized()),
+				objectField.getName(), objectField.getReadOnlyAsString(),
+				objectField.getReadOnlyConditionExpression(),
+				objectField.getRequired(),
+				GetterUtil.getBoolean(objectField.getState()),
+				ObjectFieldSettingUtil.toObjectFieldSettings(
+					groupLocalService, objectField.getListTypeDefinitionId(),
+					objectField, _objectFieldSettingLocalService,
+					_objectFilterLocalService)));
+	}
+
+	@Override
+	protected void preparePatch(
+		ObjectField objectField, ObjectField existingObjectField) {
+
+		if (objectField.getObjectFieldSettings() != null) {
+			existingObjectField.setObjectFieldSettings(
+				objectField::getObjectFieldSettings);
 		}
+	}
+
+	private Long _getListTypeDefinitionId(
+			ObjectField objectField, long objectFieldId,
+			Long listTypeDefinitionId)
+		throws Exception {
 
 		com.liferay.object.model.ObjectField serviceBuilderObjectField =
 			_objectFieldService.getObjectField(objectFieldId);
@@ -183,49 +220,18 @@ public class ObjectFieldResourceImpl extends BaseObjectFieldResourceImpl {
 					serviceBuilderObjectField.getObjectDefinitionId());
 
 		if (!serviceBuilderObjectDefinition.isApproved()) {
-			objectField.setListTypeDefinitionId(
-				ObjectFieldUtil.addListTypeDefinition(
-					contextUser.getCompanyId(), _listTypeDefinitionLocalService,
-					_listTypeEntryLocalService, objectField,
-					contextUser.getUserId()));
+			listTypeDefinitionId = ObjectFieldUtil.addListTypeDefinition(
+				contextUser.getCompanyId(), _listTypeDefinitionLocalService,
+				_listTypeEntryLocalService, objectField,
+				contextUser.getUserId());
 		}
 
-		if (Validator.isNull(objectField.getListTypeDefinitionId())) {
-			objectField.setListTypeDefinitionId(
-				serviceBuilderObjectField.getListTypeDefinitionId());
+		if (Validator.isNull(listTypeDefinitionId)) {
+			listTypeDefinitionId =
+				serviceBuilderObjectField.getListTypeDefinitionId();
 		}
 
-		return _toObjectField(
-			_objectFieldService.updateObjectField(
-				objectField.getExternalReferenceCode(), objectFieldId,
-				objectField.getListTypeDefinitionId(),
-				objectField.getBusinessTypeAsString(),
-				ObjectFieldUtil.getDBType(
-					objectField.getDBTypeAsString(),
-					objectField.getTypeAsString()),
-				GetterUtil.getBoolean(objectField.getIndexed()),
-				GetterUtil.getBoolean(objectField.getIndexedAsKeyword()),
-				objectField.getIndexedLanguageId(),
-				LocalizedMapUtil.getLocalizedMap(objectField.getLabel()),
-				GetterUtil.getBoolean(objectField.getLocalized()),
-				objectField.getName(), objectField.getReadOnlyAsString(),
-				objectField.getReadOnlyConditionExpression(),
-				objectField.getRequired(),
-				GetterUtil.getBoolean(objectField.getState()),
-				ObjectFieldSettingUtil.toObjectFieldSettings(
-					objectField.getListTypeDefinitionId(), objectField,
-					_objectFieldSettingLocalService,
-					_objectFilterLocalService)));
-	}
-
-	@Override
-	protected void preparePatch(
-		ObjectField objectField, ObjectField existingObjectField) {
-
-		if (objectField.getObjectFieldSettings() != null) {
-			existingObjectField.setObjectFieldSettings(
-				objectField.getObjectFieldSettings());
-		}
+		return listTypeDefinitionId;
 	}
 
 	private Page<ObjectField> _getObjectFieldsPage(

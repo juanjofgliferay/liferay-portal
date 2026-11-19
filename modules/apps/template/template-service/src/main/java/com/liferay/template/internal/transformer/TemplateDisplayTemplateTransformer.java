@@ -11,8 +11,8 @@ import com.liferay.info.field.InfoField;
 import com.liferay.info.field.InfoFieldValue;
 import com.liferay.info.item.InfoItemFieldValues;
 import com.liferay.info.item.provider.InfoItemFormProvider;
+import com.liferay.petra.io.unsync.UnsyncStringWriter;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.io.unsync.UnsyncStringWriter;
 import com.liferay.portal.kernel.template.TemplateConstants;
 import com.liferay.portal.kernel.template.TemplateHandler;
 import com.liferay.portal.kernel.template.TemplateHandlerRegistryUtil;
@@ -70,8 +70,22 @@ public class TemplateDisplayTemplateTransformer {
 				continue;
 			}
 
-			TemplateNode templateNode = _templateNodeFactory.createTemplateNode(
-				infoFieldValue, themeDisplay);
+			TemplateNode templateNode;
+
+			if (infoField.isRepeatable()) {
+				TemplateNode siblingTemplateNode =
+					_templateNodeFactory.createTemplateNode(
+						infoFieldValue, themeDisplay);
+
+				templateNode = (TemplateNode)contextObjects.computeIfAbsent(
+					infoField.getName(), key -> siblingTemplateNode);
+
+				templateNode.appendSibling(siblingTemplateNode);
+			}
+			else {
+				templateNode = _templateNodeFactory.createTemplateNode(
+					infoFieldValue, themeDisplay);
+			}
 
 			contextObjects.put(infoField.getName(), templateNode);
 			contextObjects.put(infoField.getUniqueId(), templateNode);
